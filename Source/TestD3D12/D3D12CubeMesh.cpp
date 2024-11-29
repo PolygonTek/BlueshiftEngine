@@ -28,9 +28,14 @@ struct CubeVertex {
     Vec2        texCoord;
 };
 
-struct CubeConstants {
-    Mat3x4      worldMatrix;
+struct CubeConstantData {
     Mat4        viewProjMatrix;
+    Mat3x4      worldMatrix;
+};
+
+struct CubeInstancedConstantData {
+    Mat4        viewProjMatrix;
+    Mat3x4      worldMatrix[1024];
 };
 
 void D3D12CubeMesh::InitMesh() {
@@ -92,6 +97,7 @@ void D3D12CubeMesh::FreeMesh() {
 
     SAFE_RELEASE(rootSignature);
     SAFE_RELEASE(pipelineState);
+    SAFE_RELEASE(pipelineStateInstancing);
 }
 
 void D3D12CubeMesh::InitRootSignature() {
@@ -156,113 +162,29 @@ void D3D12CubeMesh::InitRootSignature() {
 }
 
 void D3D12CubeMesh::InitPipelineState() {
-    // Shader Compile
-    const char* shaderText = R"(
-struct VSInput {
-    float4 position : POSITION;
-    float4 color : COLOR;
-    float2 texCoord : TEXCOORD0;
-};
-
-struct PSInput {
-    float4 position : SV_POSITION;
-    float4 color : COLOR;
-    float2 texCoord : TEXCOORD0;
-};
-
-cbuffer CONSTANT_BUFFER_DEFAULT : register(b0) {
-    row_major float3x4 worldMatrix;
-    row_major float4x4 viewProjMatrix;
-};
-
-Texture2D defaultTexture : register(t0);
-SamplerState defaultSampler : register(s0);
-
-PSInput VSMain(VSInput input) {
-    PSInput result = (PSInput)0;
-
-    float3 positionWS3 = mul(worldMatrix, input.position);
-    float4 positionWS = float4(positionWS3, 1.0);
-    result.position = mul(viewProjMatrix, positionWS);
-    result.color = input.color;
-    result.texCoord = input.texCoord;
-
-    return result;
-}
-
-float4 PSMain(PSInput input) : SV_TARGET {
-    float4 color = defaultTexture.Sample(defaultSampler, input.texCoord);
-    return color * input.color;
-})";
-
-#if defined(_DEBUG)
-    // Enable better shader debugging with the graphics debugging tools.
-    UINT compileFlags = D3DCOMPILE_DEBUG | D3DCOMPILE_SKIP_OPTIMIZATION;
-#else
-    UINT compileFlags = 0;
-#endif
-
-    ID3DBlob *errorBlob = nullptr;
-    ID3DBlob* compiledVertexShader = nullptr;
-    if (FAILED(D3DCompile(shaderText, strlen(shaderText), "shaderText", nullptr, nullptr, "VSMain", "vs_5_0", compileFlags, 0, &compiledVertexShader, &errorBlob))) {
-        renderer.PrintCompileErrorMessages(errorBlob);
-    }
-    SAFE_RELEASE(errorBlob);
-
-    ID3DBlob* compiledPixelShader = nullptr;
-    if (FAILED(D3DCompile(shaderText, strlen(shaderText), "shaderText", nullptr, nullptr, "PSMain", "ps_5_0", compileFlags, 0, &compiledPixelShader, nullptr))) {
-        renderer.PrintCompileErrorMessages(errorBlob);
-    }
-    SAFE_RELEASE(errorBlob);
-
-    // Define the vertex input layout.
     D3D12_INPUT_ELEMENT_DESC inputElementDescs[] = {
         { "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
         { "COLOR", 0, DXGI_FORMAT_R8G8B8A8_UNORM, 0, 12, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
         { "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 16, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 }
     };
 
-    // PSO 만들기
-    D3D12_GRAPHICS_PIPELINE_STATE_DESC psoDesc = {};
-    // NOTE: 나중에 호출할 SetGraphicsRootSignature() 에서 PSO 에 지정된 RootSignature 와 다르면 안된다.
-    // 여기서 RootSignature 를 지정하는 이유는 파이프라인 호환성 검사 및 최적화 때문이다.
-    psoDesc.pRootSignature = rootSignature;
-    psoDesc.VS = CD3DX12_SHADER_BYTECODE(compiledVertexShader->GetBufferPointer(), compiledVertexShader->GetBufferSize());
-    psoDesc.PS = CD3DX12_SHADER_BYTECODE(compiledPixelShader->GetBufferPointer(), compiledPixelShader->GetBufferSize());
-    psoDesc.BlendState = CD3DX12_BLEND_DESC(D3D12_DEFAULT);
-    psoDesc.SampleMask = UINT_MAX;
-    psoDesc.RasterizerState = CD3DX12_RASTERIZER_DESC(D3D12_DEFAULT);
-    psoDesc.RasterizerState.CullMode = D3D12_CULL_MODE_NONE;
-    psoDesc.DepthStencilState = CD3DX12_DEPTH_STENCIL_DESC(D3D12_DEFAULT);
-    psoDesc.DepthStencilState.DepthWriteMask = D3D12_DEPTH_WRITE_MASK_ALL;
-    psoDesc.DepthStencilState.DepthFunc = D3D12_COMPARISON_FUNC_LESS_EQUAL;
-    psoDesc.DepthStencilState.DepthEnable = TRUE;
-    psoDesc.DepthStencilState.StencilEnable = FALSE;
-    psoDesc.InputLayout = { inputElementDescs, COUNT_OF(inputElementDescs) };
-    psoDesc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
-    psoDesc.NumRenderTargets = 1;
-    psoDesc.RTVFormats[0] = DXGI_FORMAT_R8G8B8A8_UNORM;
-    psoDesc.DSVFormat = DXGI_FORMAT_D24_UNORM_S8_UINT;
-    psoDesc.SampleDesc.Count = 1;
-    renderer.device->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&pipelineState));
-
-    SAFE_RELEASE(compiledVertexShader);
-    SAFE_RELEASE(compiledPixelShader);
+    pipelineState = CreatePSO(rootSignature, "Source/TestD3D12/Shaders/Cube.hlsl", { inputElementDescs, COUNT_OF(inputElementDescs) });
+    pipelineStateInstancing = CreatePSO(rootSignature, "Source/TestD3D12/Shaders/CubeInstancing.hlsl", { inputElementDescs, COUNT_OF(inputElementDescs) });
 }
 
-void D3D12CubeMesh::DrawMesh(int threadIndex, int drawIndex, D3D12CommandList* commandList, const Mat3x4& worldMatrix) {
+void D3D12CubeMesh::DrawMesh(int threadIndex, D3D12CommandList* commandList, const Mat3x4& worldMatrix) {
     D3D12RootDescriptorPool* rootDescriptorPool = renderer.currentFrameData->threadData[threadIndex].rootDescriptorPool;
 
     // 상수 버퍼 공간을 할당한다.
     D3D12_CPU_DESCRIPTOR_HANDLE cbvDescriptorHandle = {0};
-    void *writePtr = renderer.currentFrameData->AllocConstant(threadIndex, sizeof(CubeConstants), &cbvDescriptorHandle);
+    void *writePtr = renderer.currentFrameData->AllocConstant(threadIndex, sizeof(CubeConstantData), &cbvDescriptorHandle);
     if (!writePtr) {
         return;
     }
 
-    CubeConstants *constantPtr = (reinterpret_cast<CubeConstants*>(writePtr));
-    constantPtr->worldMatrix = worldMatrix;
-    constantPtr->viewProjMatrix = app.viewProjMatrix;
+    CubeConstantData *constantDataPtr = (reinterpret_cast<CubeConstantData*>(writePtr));
+    constantDataPtr->viewProjMatrix = app.viewProjMatrix;
+    constantDataPtr->worldMatrix = worldMatrix;
 
     // 2개의 디스크립터를 갖는 루트 디스크립터 테이블을 할당한다. 여기서 디스크립터 테이블은 연속된 디스크립터 핸들을 말한다.
     D3D12_CPU_DESCRIPTOR_HANDLE cpuRootDescriptorHandle;
@@ -299,4 +221,55 @@ void D3D12CubeMesh::DrawMesh(int threadIndex, int drawIndex, D3D12CommandList* c
     commandList->SetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
     commandList->graphicsCommandList->DrawIndexedInstanced(36, 1, 0, 0, 0);
+}
+
+void D3D12CubeMesh::DrawMeshInstanced(int threadIndex, D3D12CommandList *commandList, const Mat3x4 *instanceData, int instanceCount) {
+    D3D12RootDescriptorPool *rootDescriptorPool = renderer.currentFrameData->threadData[threadIndex].rootDescriptorPool;
+
+    // 상수 버퍼 공간을 할당한다.
+    D3D12_CPU_DESCRIPTOR_HANDLE cbvDescriptorHandle = { 0 };
+    void *writePtr = renderer.currentFrameData->AllocConstant(threadIndex, sizeof(CubeInstancedConstantData), &cbvDescriptorHandle);
+    if (!writePtr) {
+        return;
+    }
+
+    CubeInstancedConstantData *constantPtr = (reinterpret_cast<CubeInstancedConstantData *>(writePtr));
+    constantPtr->viewProjMatrix = app.viewProjMatrix;
+
+    for (int i = 0; i < instanceCount; ++i) {
+        constantPtr->worldMatrix[i] = instanceData[i];
+    }
+
+    // 2개의 디스크립터를 갖는 루트 디스크립터 테이블을 할당한다. 여기서 디스크립터 테이블은 연속된 디스크립터 핸들을 말한다.
+    D3D12_CPU_DESCRIPTOR_HANDLE cpuRootDescriptorHandle;
+    D3D12_GPU_DESCRIPTOR_HANDLE gpuRootDescriptorHandle;
+    if (!rootDescriptorPool->AllocRange(2, &cpuRootDescriptorHandle, &gpuRootDescriptorHandle)) {
+        return;
+    }
+
+    // 루트 디스크립터 테이블에 SRV 디스크립터 카피 - 0번
+    CD3DX12_CPU_DESCRIPTOR_HANDLE srvDest(cpuRootDescriptorHandle, 0, rootDescriptorPool->descriptorHandleSize);
+    renderer.device->CopyDescriptorsSimple(1, srvDest, texture->descriptorHandle, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+
+    // 루트 디스크립터 테이블에 CBV 디스크립터 카피 - 1번
+    CD3DX12_CPU_DESCRIPTOR_HANDLE cbvDest(cpuRootDescriptorHandle, 1, rootDescriptorPool->descriptorHandleSize);
+    renderer.device->CopyDescriptorsSimple(1, cbvDest, cbvDescriptorHandle, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+
+    // 루트 디스크립터 힙을 지정한다.
+    ID3D12DescriptorHeap *descriptorHeaps[] = { rootDescriptorPool->descriptorHeap };
+    commandList->SetDescriptorHeaps(COUNT_OF(descriptorHeaps), descriptorHeaps);
+
+    // 루트 시그니쳐를 세팅한다.
+    commandList->SetGraphicsRootSignature(rootSignature);
+
+    // 위에서 할당한 루트 디스크립터 테이블을 세팅한다.
+    commandList->graphicsCommandList->SetGraphicsRootDescriptorTable(0, gpuRootDescriptorHandle);
+
+    commandList->SetVertexBuffers(0, 1, &vertexBuffer->vbv);
+    commandList->SetIndexBuffer(&indexBuffer->ibv);
+
+    commandList->SetPipelineState(pipelineStateInstancing);
+    commandList->SetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+
+    commandList->graphicsCommandList->DrawIndexedInstanced(36, instanceCount, 0, 0, 0);
 }

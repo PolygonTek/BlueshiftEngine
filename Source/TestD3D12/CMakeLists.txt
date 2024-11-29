@@ -44,7 +44,13 @@ set(SRC_FILES
     WinRes/TestD3D12.ico
     WinRes/TestD3D12.rc)
 
-set(ALL_FILES ${SRC_FILES})
+file(GLOB_RECURSE SHADER_FILES RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/Shaders/**.hlsl)
+
+set_source_files_properties(${SHADER_FILES} PROPERTIES HEADER_FILE_ONLY TRUE)
+
+set(ALL_FILES
+    ${SRC_FILES}
+    ${SHADER_FILES})
 
 auto_source_group(${ALL_FILES})
 

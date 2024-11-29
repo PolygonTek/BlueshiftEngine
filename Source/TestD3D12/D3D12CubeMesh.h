@@ -25,7 +25,8 @@ public:
     virtual void                    InitMesh() override;
     virtual void                    FreeMesh() override;
 
-    void                            DrawMesh(int threadIndex, int drawIndex, D3D12CommandList* commandList, const Mat3x4& worldMatrix);
+    void                            DrawMesh(int threadIndex, D3D12CommandList* commandList, const Mat3x4& worldMatrix);
+    void                            DrawMeshInstanced(int threadIndex, D3D12CommandList *commandList, const Mat3x4* instanceData, int instanceCount);
 
     void                            InitRootSignature();
     void                            InitPipelineState();
@@ -36,4 +37,5 @@ public:
  
     ID3D12RootSignature *           rootSignature = nullptr;
     ID3D12PipelineState *           pipelineState = nullptr;
+    ID3D12PipelineState *           pipelineStateInstancing = nullptr;
 };

@@ -23,25 +23,58 @@ void D3D12RenderObject::Update(const State &stateDef) {
     state = stateDef;
 }
 
-void D3D12RenderObject::Draw(int threadIndex, int drawIndex, D3D12CommandList* commandList) {
+void D3D12RenderObject::Draw(int threadIndex, D3D12CommandList* commandList) {
     PIX_SCOPED_EVENT(commandList->graphicsCommandList, 8, "D3D12RenderObject::Draw");
 
     switch (state.meshType) {
     case D3D12MeshType::TriangleMesh:
-        DrawTriangleMesh(threadIndex, drawIndex, commandList);
+        DrawTriangleMesh(threadIndex, commandList);
         break;
     case D3D12MeshType::CubeMesh:
-        DrawCubeMesh(threadIndex, drawIndex, commandList);
+        DrawCubeMesh(threadIndex, commandList);
         break;
     }
 }
 
-void D3D12RenderObject::DrawTriangleMesh(int threadIndex, int drawIndex, D3D12CommandList* commandList) {
-    D3D12TriangleMesh *triangleMesh = static_cast<D3D12TriangleMesh *>(state.mesh);
-    triangleMesh->DrawMesh(threadIndex, drawIndex, commandList, state.offset);
+void D3D12RenderObject::DrawInstanced(int threadIndex, D3D12CommandList *commandList, D3D12RenderObject **renderObjectPtrs, int instanceCount) {
+    PIX_SCOPED_EVENT(commandList->graphicsCommandList, 8, "D3D12RenderObject::DrawInstanced");
+
+    switch (renderObjectPtrs[0]->state.meshType) {
+    case D3D12MeshType::TriangleMesh:
+        D3D12RenderObject::DrawTriangleMeshInstanced(threadIndex, commandList, renderObjectPtrs, instanceCount);
+        break;
+    case D3D12MeshType::CubeMesh:
+        D3D12RenderObject::DrawCubeMeshInstanced(threadIndex, commandList, renderObjectPtrs, instanceCount);
+        break;
+    }
 }
 
-void D3D12RenderObject::DrawCubeMesh(int threadIndex, int drawIndex, D3D12CommandList *commandList) {
+void D3D12RenderObject::DrawTriangleMesh(int threadIndex, D3D12CommandList* commandList) {
+    D3D12TriangleMesh *triangleMesh = static_cast<D3D12TriangleMesh *>(state.mesh);
+    triangleMesh->DrawMesh(threadIndex, commandList, state.offset);
+}
+
+void D3D12RenderObject::DrawTriangleMeshInstanced(int threadIndex, D3D12CommandList *commandList, D3D12RenderObject **renderObjectPtrs, int instanceCount) {
+    Vec2* instanceData = (Vec2 *)_alloca32(instanceCount * sizeof(renderObjectPtrs[0]->state.offset));
+
+    for (int i = 0; i < instanceCount; i++) {
+        instanceData[i] = renderObjectPtrs[i]->state.offset;
+    }
+    D3D12TriangleMesh *triangleMesh = static_cast<D3D12TriangleMesh *>(renderObjectPtrs[0]->state.mesh);
+    triangleMesh->DrawMeshInstanced(threadIndex, commandList, instanceData, instanceCount);
+}
+
+void D3D12RenderObject::DrawCubeMesh(int threadIndex, D3D12CommandList *commandList) {
     D3D12CubeMesh *cubeMesh = static_cast<D3D12CubeMesh *>(state.mesh);
-    cubeMesh->DrawMesh(threadIndex, drawIndex, commandList, state.worldMatrix);
+    cubeMesh->DrawMesh(threadIndex, commandList, state.worldMatrix);
+}
+
+void D3D12RenderObject::DrawCubeMeshInstanced(int threadIndex, D3D12CommandList *commandList, D3D12RenderObject **renderObjectPtrs, int instanceCount) {
+    Mat3x4 *instanceData = (Mat3x4 *)_alloca32(instanceCount * sizeof(renderObjectPtrs[0]->state.worldMatrix));
+
+    for (int i = 0; i < instanceCount; i++) {
+        instanceData[i] = renderObjectPtrs[i]->state.worldMatrix;
+    }
+    D3D12CubeMesh *cubeMesh = static_cast<D3D12CubeMesh *>(renderObjectPtrs[0]->state.mesh);
+    cubeMesh->DrawMeshInstanced(threadIndex, commandList, instanceData, instanceCount);
 }

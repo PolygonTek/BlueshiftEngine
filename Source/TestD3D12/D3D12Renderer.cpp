@@ -383,7 +383,6 @@ void D3D12Renderer::BeginFrame() {
     // 백버퍼와 깊이버퍼를 Clear
     commandList->graphicsCommandList->ClearRenderTargetView(rtvDescriptorHandle, Color4::blue, 0, nullptr);
     commandList->graphicsCommandList->ClearDepthStencilView(dsvDescriptorHandle, D3D12_CLEAR_FLAG_DEPTH, 1.0f, 0, 0, nullptr);
-
     commandList->graphicsCommandList->OMSetRenderTargets(1, &rtvDescriptorHandle, FALSE, &dsvDescriptorHandle);
 
     // CommandList 기록을 마치고 CommandQueue 로 실행
@@ -661,6 +660,95 @@ void D3D12Renderer::FlushRenderObjects() {
 #endif
 }
 
+// 전체 flushedRenderObjects 를 그린다.
+void D3D12Renderer::DrawRenderObjects() {
+    PIX_SCOPED_EVENT(commandQueue, 4, "D3D12Renderer::DrawRenderObjects");
+
+#ifdef USE_RENDER_THREAD
+    Array<D3D12RenderObject *> &currentFlushedRenderObjects = flushedRenderObjects[renderFrameIndex];
+#else
+    Array<D3D12RenderObject *> &currentFlushedRenderObjects = flushedRenderObjects[0];
+#endif
+
+    int numRenderObjects = currentFlushedRenderObjects.Count();
+    if (numRenderObjects == 0) {
+        return;
+    }
+
+#ifdef USE_RENDER_TASK
+#ifdef USE_RENDEROBJECT_INSTANCING
+    int numDrawCalls = (int)Math::Ceil((float)numRenderObjects / 1024);
+#else
+    int numDrawCalls = numRenderObjects;
+#endif
+
+    int numTasks = Min(taskManager.NumThreads(), (int)Math::Ceil((float)numDrawCalls / MaxDrawCallsPerTask));
+    if (numTasks > 1) {
+        DrawRenderObjectsWithTask(numTasks);
+    } else {
+        DrawRenderObjectsWithoutTask();
+    }
+#else
+    DrawRenderObjectsWithoutTask();
+#endif
+}
+
+// 특정 범위 인덱스의 flushedRenderObjects 를 그린다.
+void D3D12Renderer::DrawRenderObjects(int threadIndex, D3D12CommandList *commandList, int startIndex, int endIndex) {
+#ifdef USE_RENDER_THREAD
+    Array<D3D12RenderObject *> &currentFlushedRenderObjects = flushedRenderObjects[renderFrameIndex];
+#else
+    Array<D3D12RenderObject *> &currentFlushedRenderObjects = flushedRenderObjects[0];
+#endif
+
+    int index = startIndex;
+
+    while (index <= endIndex) {
+        D3D12RenderObject **renderObjectPtr = &currentFlushedRenderObjects[index];
+
+#ifdef USE_RENDEROBJECT_INSTANCING
+        int instanceCount = Min(1024, endIndex - index + 1);
+        if (instanceCount > 1) {
+            D3D12RenderObject::DrawInstanced(threadIndex, commandList, renderObjectPtr, instanceCount);
+            index += instanceCount;
+        } else {
+            renderObjectPtr[0]->Draw(threadIndex, commandList);
+            ++index;
+        }
+#else
+        renderObjectPtr[0]->Draw(threadIndex, commandList);
+        ++index;
+#endif
+    }
+}
+
+// 전체 flushedRenderObjects 를 task 없이 한번에 그린다.
+void D3D12Renderer::DrawRenderObjectsWithoutTask() {
+#ifdef USE_RENDER_THREAD
+    Array<D3D12RenderObject *> &currentFlushedRenderObjects = flushedRenderObjects[renderFrameIndex];
+#else
+    Array<D3D12RenderObject *> &currentFlushedRenderObjects = flushedRenderObjects[0];
+#endif
+
+    // 커맨드 리스트 풀에서 커맨드 리스트를 얻어온다.
+    D3D12CommandList *commandList = currentFrameData->threadData[0].commandListPool->Alloc();
+
+    // CommandAllocator 를 재사용하도록 리셋하고, CommandList 를 CommandAllocator 를 이용하여 초기 상태로 리셋
+    commandList->Reset();
+
+    // 뷰포트 & ScissorRect 설정
+    commandList->graphicsCommandList->RSSetViewports(1, &viewport);
+    commandList->graphicsCommandList->RSSetScissorRects(1, &scissorRect);
+    commandList->graphicsCommandList->OMSetRenderTargets(1, &rtvDescriptorHandle, FALSE, &dsvDescriptorHandle);
+
+    // 플러시된 렌더 오브젝트들을 인덱스 범위 만큼 그린다.
+    DrawRenderObjects(0, commandList, 0, currentFlushedRenderObjects.Count() - 1);
+
+    // CommandList 기록을 마치고 CommandQueue 로 실행
+    commandList->CloseAndExecute();
+}
+
+#ifdef USE_RENDER_TASK
 void D3D12Renderer::DrawRenderObjectsByTask(D3D12Renderer::RenderObjectTaskDesc *taskDesc) {
     PIX_CPU_SCOPED_EVENT(3, "D3D12Renderer::DrawRenderObjectsByTask");
 
@@ -674,13 +762,10 @@ void D3D12Renderer::DrawRenderObjectsByTask(D3D12Renderer::RenderObjectTaskDesc 
     // 뷰포트 & ScissorRect 설정
     commandList->graphicsCommandList->RSSetViewports(1, &viewport);
     commandList->graphicsCommandList->RSSetScissorRects(1, &scissorRect);
-
     commandList->graphicsCommandList->OMSetRenderTargets(1, &rtvDescriptorHandle, FALSE, &dsvDescriptorHandle);
 
-    for (int i = taskDesc->renderObjectStartIndex; i <= taskDesc->renderObjectEndIndex; ++i) {
-        D3D12RenderObject *renderObject = renderObjects[i];
-        renderObject->Draw(taskDesc->threadIndex, i, commandList);
-    }
+    // 플러시된 렌더 오브젝트들을 인덱스 범위 만큼 그린다.
+    DrawRenderObjects(taskDesc->threadIndex, commandList, taskDesc->renderObjectStartIndex, taskDesc->renderObjectEndIndex);
 
     // 렌더링 시나리오에 따라 중간에 Flush 할 수도 있다.
     //commandList = FlushCommandList(commandList);
@@ -697,18 +782,15 @@ static void RenderObjectsByTask(void *data) {
     renderer.DrawRenderObjectsByTask(taskDesc);
 }
 
-void D3D12Renderer::DrawRenderObjects() {
-    PIX_SCOPED_EVENT(commandQueue, 4, "D3D12Renderer::DrawRenderObjects");
-
+// 전체 flushedRenderObjects 를 task 로 나눠서 그린다.
+void D3D12Renderer::DrawRenderObjectsWithTask(int numTasks) {
 #ifdef USE_RENDER_THREAD
     Array<D3D12RenderObject *> &currentFlushedRenderObjects = flushedRenderObjects[renderFrameIndex];
 #else
     Array<D3D12RenderObject *> &currentFlushedRenderObjects = flushedRenderObjects[0];
 #endif
 
-#ifdef USE_RENDER_TASK
     int numRenderObjects = currentFlushedRenderObjects.Count();
-    int numTasks = Min(taskManager.NumThreads(), (int)Math::Ceil((float)numRenderObjects / MaxRenderObjectsPerTask));
     int numRenderObjectsPerTasks = (int)Math::Ceil((float)numRenderObjects / numTasks);
 
     int threadIndex = 0;
@@ -743,27 +825,8 @@ void D3D12Renderer::DrawRenderObjects() {
     if (renderTaskCount > 0) {
         commandQueue->ExecuteCommandLists(renderTaskCount, execCommandLists);
     }
-#else
-    // 커맨드 리스트 풀에서 커맨드 리스트를 얻어온다.
-    D3D12CommandList *commandList = currentFrameData->threadData[0].commandListPool->Alloc();
-
-    // CommandAllocator 를 재사용하도록 리셋하고, CommandList 를 CommandAllocator 를 이용하여 초기 상태로 리셋
-    commandList->Reset();
-
-    // 뷰포트 & ScissorRect 설정
-    commandList->graphicsCommandList->RSSetViewports(1, &viewport);
-    commandList->graphicsCommandList->RSSetScissorRects(1, &scissorRect);
-    commandList->graphicsCommandList->OMSetRenderTargets(1, &rtvDescriptorHandle, FALSE, &dsvDescriptorHandle);
-
-    for (int i = 0; i < currentFlushedRenderObjects.Count(); ++i) {
-        D3D12RenderObject *renderObject = currentFlushedRenderObjects[i];
-        renderObject->Draw(0, i, commandList);
-    }
-
-    // CommandList 기록을 마치고 CommandQueue 로 실행
-    commandList->CloseAndExecute();
-#endif
 }
+#endif
 
 #ifdef USE_RENDER_THREAD
 void D3D12Renderer::InitRenderThread() {

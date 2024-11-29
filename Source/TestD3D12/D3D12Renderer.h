@@ -84,10 +84,15 @@ public:
     void                                FlushRenderObjects();
 
     void                                DrawRenderObjects();
+    void                                DrawRenderObjects(int threadIndex, D3D12CommandList *commandList, int startIndex, int endIndex);
+    void                                DrawRenderObjectsWithoutTask();
+#ifdef USE_RENDER_TASK
+    void                                DrawRenderObjectsWithTask(int numTasks);
     void                                DrawRenderObjectsByTask(D3D12Renderer::RenderObjectTaskDesc *taskDesc);
+#endif
 
     static constexpr UINT               NumSwapChainBuffers = 3;
-    static constexpr UINT               MaxRenderObjectsPerTask = 400;
+    static constexpr UINT               MaxDrawCallsPerTask = 512;
 
     ID3D12Device5 *                     device = nullptr;
     DXGI_ADAPTER_DESC1                  adapterDesc = {};

@@ -250,7 +250,7 @@ void D3D12App::DrawTriangles(D3D12CommandList* commandList) {
         offset.x = 0.5f * Math::Cos(t);
         offset.y = 0.5f * Math::Sin(t * 3);
 
-        triangleMesh->DrawMesh(0, i, commandList, offset);
+        triangleMesh->DrawMesh(0, commandList, offset);
     }
 }
 
@@ -270,7 +270,7 @@ void D3D12App::DrawCubes(D3D12CommandList *commandList) {
 
             worldMatrix.SetTranslationRotation(Vec3(0, startX + CubeSpacing * x, startY + CubeSpacing * y), Mat3::FromRotationZYX(t * 1.0f, 0, t * 0.25f), false);
 
-            cubeMesh->DrawMesh(0, index, commandList, worldMatrix);
+            cubeMesh->DrawMesh(0, commandList, worldMatrix);
         }
     }
 }

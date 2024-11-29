@@ -18,4 +18,9 @@ class D3D12Mesh {
 public:
     virtual void                    InitMesh() = 0;
     virtual void                    FreeMesh() = 0;
+
+    bool                            CreateShader(const char *shaderText, int shaderTextSize, ID3DBlob **compiledVertexShader, ID3DBlob **compiledPixelShader);
+    bool                            CreateShaderFromFile(const char *shaderFilename, ID3DBlob **compiledVertexShader, ID3DBlob **compiledPixelShader);
+    ID3D12PipelineState *           CreatePSO(ID3D12RootSignature *rootSignature, ID3DBlob *compiledVertexShader, ID3DBlob *compiledPixelShader, const D3D12_INPUT_LAYOUT_DESC &inputLayout);
+    ID3D12PipelineState *           CreatePSO(ID3D12RootSignature *rootSignature, const char *shaderFilename, const D3D12_INPUT_LAYOUT_DESC &inputLayout);
 };

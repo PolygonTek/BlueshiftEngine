@@ -35,6 +35,9 @@
 // 스테이트 캐싱 사용 여부
 #define USE_STATE_CACHE_FOR_COMMAND_LIST
 
+// 인스턴싱 사용 여부
+#define USE_RENDEROBJECT_INSTANCING
+
 #if defined(USE_PIX_MARKERS) && defined(USE_PIX)
 #define PIX_CPU_BEGIN_EVENT(colorIndex, string) PIXBeginEvent(PIX_COLOR_INDEX(colorIndex), string)
 #define PIX_CPU_END_EVENT() PIXEndEvent()
