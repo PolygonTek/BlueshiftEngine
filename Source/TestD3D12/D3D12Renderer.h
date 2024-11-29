@@ -40,7 +40,7 @@ struct D3D12PendingResource {
 
 class D3D12Renderer {
 public:
-    void                                Init(HWND hwnd, bool enableDebugLayer, bool withGpuValidation);
+    void                                Init(HWND hwnd);
     void                                Shutdown();
 
     bool                                IsInitialized() const { return initialized; }

@@ -13,6 +13,7 @@
 // limitations under the License.
 
 #include "Precompiled.h"
+#include "D3D12CommandListPool.h"
 #include "D3D12RenderObject.h"
 #include "D3D12TriangleMesh.h"
 #include "D3D12CubeMesh.h"
@@ -23,6 +24,8 @@ void D3D12RenderObject::Update(const State &stateDef) {
 }
 
 void D3D12RenderObject::Draw(int threadIndex, int drawIndex, D3D12CommandList* commandList) {
+    PIX_SCOPED_EVENT(commandList->graphicsCommandList, 8, "D3D12RenderObject::Draw");
+
     switch (state.meshType) {
     case D3D12MeshType::TriangleMesh:
         DrawTriangleMesh(threadIndex, drawIndex, commandList);

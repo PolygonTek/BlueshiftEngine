@@ -14,6 +14,12 @@
 
 #pragma once
 
+// D3D12 디버그 레이어 사용 여부
+//#define USE_DEBUG_LAYER
+
+// PIX 마커 사용 여부
+#define USE_PIX_MARKERS
+
 // D3D12 Memory Allocator 사용 여부
 #define USE_D3D12_MEMALLOC
 
@@ -28,6 +34,26 @@
 
 // 스테이트 캐싱 사용 여부
 #define USE_STATE_CACHE_FOR_COMMAND_LIST
+
+#ifdef USE_PIX_MARKERS
+#define PIX_CPU_BEGIN_EVENT(colorIndex, string) PIXBeginEvent(PIX_COLOR_INDEX(colorIndex), string)
+#define PIX_CPU_END_EVENT() PIXEndEvent()
+#define PIX_CPU_SCOPED_EVENT(colorIndex, string) PIXScopedEvent(PIX_COLOR_INDEX(colorIndex), string)
+#define PIX_CPU_MARKER(colorIndex, string) PIXSetMarker(PIX_COLOR_INDEX(colorIndex), string)
+#define PIX_BEGIN_EVENT(commandListOrCommandQueue, colorIndex, string) PIXBeginEvent(commandListOrCommandQueue, PIX_COLOR_INDEX(colorIndex), string)
+#define PIX_END_EVENT(commandListOrCommandQueue) PIXEndEvent(commandListOrCommandQueue)
+#define PIX_SCOPED_EVENT(commandListOrCommandQueue, colorIndex, string) PIXScopedEvent(commandListOrCommandQueue, PIX_COLOR_INDEX(colorIndex), string)
+#define PIX_MARKER(commandListOrCommandQueue, colorIndex, string) PIXSetMarker(commandListOrCommandQueue, PIX_COLOR_INDEX(colorIndex), string)
+#else
+#define PIX_CPU_BEGIN_EVENT(colorIndex, string)
+#define PIX_CPU_END_EVENT()
+#define PIX_CPU_SCOPED_EVENT(colorIndex, string)
+#define PIX_CPU_MARKER(colorIndex, string)
+#define PIX_BEGIN_EVENT(commandListOrCommandQueue, colorIndex, string)
+#define PIX_END_EVENT(commandListOrCommandQueue)
+#define PIX_SCOPED_EVENT(commandListOrCommandQueue, colorIndex, string)
+#define PIX_MARKER(commandListOrCommandQueue, colorIndex, string)
+#endif
 
 #ifdef USE_FRAME_RESOURCES
 static constexpr int            NumFrameResources = 2;

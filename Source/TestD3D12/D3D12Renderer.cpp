@@ -26,7 +26,15 @@ extern "C" { __declspec(dllexport) extern const char *D3D12SDKPath = u8"."; }
 
 D3D12Renderer       renderer;
 
-void D3D12Renderer::Init(HWND hwnd, bool enableDebugLayer, bool withGpuValidation) {
+void D3D12Renderer::Init(HWND hwnd) {
+#ifdef USE_DEBUG_LAYER
+    bool enableDebugLayer = true;
+    bool withGpuValidation = true;
+#else
+    bool enableDebugLayer = false;
+    bool withGpuValidation = false;
+#endif
+
     DWORD createFactoryFlags = 0;
     HRESULT hr;
 
@@ -349,6 +357,8 @@ void D3D12Renderer::CreateDSV(int width, int height) {
 }
 
 void D3D12Renderer::BeginFrame() {
+    PIX_SCOPED_EVENT(commandQueue, 0, "D3D12Renderer::BeginFrame");
+
     currentFrameData = &frameData[currentFrameIndex];
 
     // 프레임 데이터를 초기화하고, 이전 프레임에 대한 펜스를 기다린다.
@@ -360,12 +370,12 @@ void D3D12Renderer::BeginFrame() {
     // CommandAllocator 를 재사용하도록 리셋하고, CommandList 를 CommandAllocator 를 이용하여 초기 상태로 리셋
     commandList->Reset();
 
+    // 백버퍼를 렌더 타겟 상태로 전환
+    commandList->ResourceBarrier(renderTargetBuffers[currentBackBufferIndex], D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET);
+
     // 뷰포트 & ScissorRect 설정
     commandList->graphicsCommandList->RSSetViewports(1, &viewport);
     commandList->graphicsCommandList->RSSetScissorRects(1, &scissorRect);
-
-    // 백버퍼를 렌더 타겟 상태로 전환
-    commandList->ResourceBarrier(renderTargetBuffers[currentBackBufferIndex], D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET);
 
     rtvDescriptorHandle = CD3DX12_CPU_DESCRIPTOR_HANDLE(rtvDescriptorHeap->GetCPUDescriptorHandleForHeapStart(), currentBackBufferIndex, descriptorHandleSize[D3D12_DESCRIPTOR_HEAP_TYPE_RTV]);
     dsvDescriptorHandle = CD3DX12_CPU_DESCRIPTOR_HANDLE(dsvDescriptorHeap->GetCPUDescriptorHandleForHeapStart());
@@ -381,6 +391,8 @@ void D3D12Renderer::BeginFrame() {
 }
 
 void D3D12Renderer::EndFrame() {
+    PIX_SCOPED_EVENT(commandQueue, 0, "D3D12Renderer::EndFrame");
+
     // TODO: 렌더 커맨드버퍼의 종료 마킹을 하고, 렌더 커맨드 버퍼를 실행한다.
 
     // 커맨드 리스트 풀에서 커맨드 리스트를 얻어온다.
@@ -414,6 +426,8 @@ void D3D12Renderer::EndFrame() {
 }
 
 D3D12CommandList* D3D12Renderer::FlushCommandList(D3D12CommandList* commandList) {
+    PIX_SCOPED_EVENT(commandQueue, 1, "D3D12Renderer::FlushCommandList");
+
     // CommandList 기록을 마치고 CommandQueue 로 실행
     commandList->CloseAndExecute();
 
@@ -611,6 +625,8 @@ void D3D12Renderer::RemoveRenderObject(int index) {
 }
 
 void D3D12Renderer::FlushRenderObjects() {
+    PIX_CPU_SCOPED_EVENT(2, "D3D12Renderer::FlushRenderObjects");
+
     assert(Engine::IsInMainThread());
 
 #ifdef USE_RENDER_THREAD
@@ -627,7 +643,7 @@ void D3D12Renderer::FlushRenderObjects() {
 
     // NOTE: Signal 보내기 전에 Lock 을 걸지 않으면 Signal 이 분실될 수 있다.
     {
-        ScopeWriteLock scopeLock(renderer.smpLock);
+        ScopeWriteLock scopeLock(smpLock);
 
         frameSyncState = FrameSyncState::WaitingForRenderCompleted;
 
@@ -646,16 +662,18 @@ void D3D12Renderer::FlushRenderObjects() {
 }
 
 void D3D12Renderer::DrawRenderObjectsByTask(D3D12Renderer::RenderObjectTaskDesc *taskDesc) {
+    PIX_CPU_SCOPED_EVENT(3, "D3D12Renderer::DrawRenderObjectsByTask");
+
     int threadIndex = taskDesc->threadIndex;
-    D3D12CommandListPool *commandListPool = renderer.currentFrameData->threadData[threadIndex].commandListPool;
+    D3D12CommandListPool *commandListPool = currentFrameData->threadData[threadIndex].commandListPool;
     D3D12CommandList *commandList = commandListPool->Alloc();
 
     // CommandAllocator 를 재사용하도록 리셋하고, CommandList 를 CommandAllocator 를 이용하여 초기 상태로 리셋
     commandList->Reset();
 
     // 뷰포트 & ScissorRect 설정
-    commandList->graphicsCommandList->RSSetViewports(1, &renderer.viewport);
-    commandList->graphicsCommandList->RSSetScissorRects(1, &renderer.scissorRect);
+    commandList->graphicsCommandList->RSSetViewports(1, &viewport);
+    commandList->graphicsCommandList->RSSetScissorRects(1, &scissorRect);
 
     commandList->graphicsCommandList->OMSetRenderTargets(1, &rtvDescriptorHandle, FALSE, &dsvDescriptorHandle);
 
@@ -680,6 +698,8 @@ static void RenderObjectsByTask(void *data) {
 }
 
 void D3D12Renderer::DrawRenderObjects() {
+    PIX_SCOPED_EVENT(commandQueue, 4, "D3D12Renderer::DrawRenderObjects");
+
 #ifdef USE_RENDER_THREAD
     Array<D3D12RenderObject *> &currentFlushedRenderObjects = flushedRenderObjects[renderFrameIndex];
 #else
@@ -688,39 +708,41 @@ void D3D12Renderer::DrawRenderObjects() {
 
 #ifdef USE_RENDER_TASK
     int numRenderObjects = currentFlushedRenderObjects.Count();
-    int numTasks = Min(renderer.taskManager.NumThreads(), (int)Math::Ceil((float)numRenderObjects / MaxRenderObjectsPerTask));
+    int numTasks = Min(taskManager.NumThreads(), (int)Math::Ceil((float)numRenderObjects / MaxRenderObjectsPerTask));
     int numRenderObjectsPerTasks = (int)Math::Ceil((float)numRenderObjects / numTasks);
 
     int threadIndex = 0;
     int lastEndIndex = -1;
 
     // 태스크 정보 초기화
-    renderer.renderObjectTaskDescs.Reserve(renderer.taskManager.NumThreads());
-    renderer.renderObjectTaskDescs.SetCount(0, false);
+    renderObjectTaskDescs.Reserve(taskManager.NumThreads());
+    renderObjectTaskDescs.SetCount(0, false);
 
     // 최대 쓰레드 개수만큼 task 를 실행한다.
     while (lastEndIndex < numRenderObjects - 1) {
-        RenderObjectTaskDesc &currentThreadDesc = renderer.renderObjectTaskDescs.Alloc();
+        RenderObjectTaskDesc &currentThreadDesc = renderObjectTaskDescs.Alloc();
 
         currentThreadDesc.threadIndex = threadIndex++;
         currentThreadDesc.renderObjectStartIndex = lastEndIndex + 1;
         currentThreadDesc.renderObjectEndIndex = Min(currentThreadDesc.renderObjectStartIndex + numRenderObjectsPerTasks, numRenderObjects) - 1;
-        renderer.taskManager.AddTask(RenderObjectsByTask, &currentThreadDesc, false);
+        taskManager.AddTask(RenderObjectsByTask, &currentThreadDesc, false);
 
         lastEndIndex = currentThreadDesc.renderObjectEndIndex;
     }
 
-    renderer.taskManager.WaitFinish(true);
+    taskManager.WaitFinish(true);
 
     // 태스크 별로 execute 할 CommandList 들을 모두 모은다.
-    int renderTaskCount = renderer.renderObjectTaskDescs.Count();
+    int renderTaskCount = renderObjectTaskDescs.Count();
     ID3D12CommandList *execCommandLists[MaxRenderTaskThreads];
     for (int threadIndex = 0; threadIndex < renderTaskCount; ++threadIndex) {
-        execCommandLists[threadIndex] = renderer.renderObjectTaskDescs[threadIndex].activeCommandList->graphicsCommandList;
+        execCommandLists[threadIndex] = renderObjectTaskDescs[threadIndex].activeCommandList->graphicsCommandList;
     }
 
     // CommandList 들을 한꺼번에 실행
-    renderer.commandQueue->ExecuteCommandLists(renderTaskCount, execCommandLists);
+    if (renderTaskCount > 0) {
+        commandQueue->ExecuteCommandLists(renderTaskCount, execCommandLists);
+    }
 #else
     // 커맨드 리스트 풀에서 커맨드 리스트를 얻어온다.
     D3D12CommandList *commandList = currentFrameData->threadData[0].commandListPool->Alloc();
@@ -729,8 +751,8 @@ void D3D12Renderer::DrawRenderObjects() {
     commandList->Reset();
 
     // 뷰포트 & ScissorRect 설정
-    commandList->graphicsCommandList->RSSetViewports(1, &renderer.viewport);
-    commandList->graphicsCommandList->RSSetScissorRects(1, &renderer.scissorRect);
+    commandList->graphicsCommandList->RSSetViewports(1, &viewport);
+    commandList->graphicsCommandList->RSSetScissorRects(1, &scissorRect);
     commandList->graphicsCommandList->OMSetRenderTargets(1, &rtvDescriptorHandle, FALSE, &dsvDescriptorHandle);
 
     for (int i = 0; i < currentFlushedRenderObjects.Count(); ++i) {
@@ -787,6 +809,7 @@ unsigned int RenderThreadProc(void *param) {
     SIMD::SetDenormalFlushMode(true);
 
     while (1) {
+        PIX_CPU_SCOPED_EVENT(5, "RenderThreadProcLoop");
         {
             ScopeReadLock scopeLock(renderer.smpLock);
 

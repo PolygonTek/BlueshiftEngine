@@ -48,12 +48,15 @@ set(ALL_FILES ${SRC_FILES})
 
 auto_source_group(${ALL_FILES})
 
+include(FindPIX)
+
 include_directories(
     ${PROJECT_SOURCE_DIR}
     ${ENGINE_INCLUDE_DIR}/Runtime/Public
     ${ENGINE_INCLUDE_DIR}/ThirdParty
     ${ENGINE_INCLUDE_DIR}/ThirdParty/DirectX12/include
-    ${ENGINE_INCLUDE_DIR}/ThirdParty/DirectX12/include/d3dx12)
+    ${ENGINE_INCLUDE_DIR}/ThirdParty/DirectX12/include/d3dx12
+    ${PIX_INCLUDE_DIR})
 
 enable_precompiled_header(Precompiled.h Precompiled.cpp SRC_FILES)
 
@@ -70,4 +73,5 @@ set_target_properties(${PROJECT_NAME} PROPERTIES FOLDER Test)
 
 target_link_libraries(${PROJECT_NAME} winmm.lib dxgi.lib dxguid.lib d3d12.lib d3dcompiler.lib)
 target_link_libraries(${PROJECT_NAME} D3D12MemAlloc)
+target_link_libraries(${PROJECT_NAME} ${PIX_LIBRARY})
 target_link_libraries(${PROJECT_NAME} BlueshiftRuntime)

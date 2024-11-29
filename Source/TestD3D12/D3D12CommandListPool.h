@@ -82,7 +82,7 @@ BE_INLINE void D3D12CommandList::CloseAndExecute() {
 }
 
 BE_INLINE void D3D12CommandList::ResourceBarrier(ID3D12Resource *resource, D3D12_RESOURCE_STATES stateBefore, D3D12_RESOURCE_STATES stateAfter) {
-    D3D12_RESOURCE_BARRIER barrier = {};
+    D3D12_RESOURCE_BARRIER barrier;
     barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
     barrier.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
     barrier.Transition.pResource = resource;

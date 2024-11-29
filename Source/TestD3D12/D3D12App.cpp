@@ -33,15 +33,7 @@ static constexpr float      CubeSpacing = 2.82842712f;
 D3D12App                    app;
 
 void D3D12App::Init(HWND hwnd) {
-#ifdef _DEBUG
-    bool enableDebugLayer = true;
-    bool withGpuValidation = true;
-#else
-    bool enableDebugLayer = false;
-    bool withGpuValidation = false;
-#endif
-
-    renderer.Init(hwnd, enableDebugLayer, withGpuValidation);
+    renderer.Init(hwnd);
 
     InitGameObjects();
 
@@ -69,6 +61,8 @@ void D3D12App::Shutdown() {
 }
 
 void D3D12App::RunFrame(int frameMsec) {
+    PIX_CPU_SCOPED_EVENT(7, "D3D12App::RunFrame");
+
     elapsedMsec += frameMsec;
 
     UpdateCamera();
@@ -112,6 +106,8 @@ void D3D12App::SetViewMatrix(const Mat3 &viewAxis, const Vec3 &viewOrigin, float
 }
 
 void D3D12App::UpdateCamera() {
+    PIX_CPU_SCOPED_EVENT(8, "D3D12App::UpdateCamera");
+
     Mat4 projMatrix;
     float aspectRatio = renderer.viewport.Width / renderer.viewport.Height;
     projMatrix.SetPerspectiveRH(45, aspectRatio, 1, 1000, false);
@@ -141,6 +137,8 @@ void D3D12App::InitGameObjects() {
 }
 
 void D3D12App::UpdateGameObjects() {
+    PIX_CPU_SCOPED_EVENT(9, "D3D12App::UpdateGameObjects");
+
 #if TRIANGLE_OR_CUBE == 1
     UpdateTriangles();
 #else

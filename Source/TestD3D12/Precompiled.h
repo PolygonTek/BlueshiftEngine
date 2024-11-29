@@ -23,6 +23,9 @@
 #include <d3dcompiler.h>
 #include <DirectXMath.h>
 
+#define PROFILE_BUILD
+#include <pix3.h>
+
 using namespace BE1;
 
 #define SAFE_RELEASE(p)         if (p) { p->Release(); p = nullptr; }
