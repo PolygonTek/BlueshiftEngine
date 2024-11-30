@@ -13,7 +13,7 @@
 // limitations under the License.
 
 #include "Precompiled.h"
-#include "D3D12CommandListPool.h"
+#include "D3D12CommandList.h"
 #include "D3D12RenderObject.h"
 #include "D3D12TriangleMesh.h"
 #include "D3D12CubeMesh.h"

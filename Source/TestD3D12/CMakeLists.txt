@@ -26,6 +26,8 @@ set(SRC_FILES
     D3D12IndexBuffer.cpp
     D3D12ConstantBuffer.h
     D3D12ConstantBuffer.cpp
+    D3D12CommandList.h
+    D3D12CommandList.cpp
     D3D12CommandListPool.h
     D3D12CommandListPool.cpp
     D3D12FrameData.h

@@ -15,10 +15,10 @@
 #include "Precompiled.h"
 #include "Platform/PlatformSystem.h"
 #include "D3D12Renderer.h"
+#include "D3D12CommandList.h"
 #include "D3D12CommandListPool.h"
 #include "D3D12RootDescriptorPool.h"
 #include "D3D12DescriptorPool.h"
-#include <dxgidebug.h>
 
 // D3D12.dll 이 D3D12Core.dll 을 찾기 위한 설정
 extern "C" { __declspec(dllexport) extern const UINT D3D12SDKVersion = 614; }
@@ -392,7 +392,7 @@ void D3D12Renderer::BeginFrame() {
 void D3D12Renderer::EndFrame() {
     PIX_SCOPED_EVENT(commandQueue, 0, "D3D12Renderer::EndFrame");
 
-    // TODO: 렌더 커맨드버퍼의 종료 마킹을 하고, 렌더 커맨드 버퍼를 실행한다.
+    // TODO: 렌더큐에 종료 마킹을 하고, 렌더큐를 실행한다.
 
     // 커맨드 리스트 풀에서 커맨드 리스트를 얻어온다.
     D3D12CommandList *commandList = currentFrameData->threadData[0].commandListPool->Alloc();
@@ -640,10 +640,10 @@ void D3D12Renderer::FlushRenderObjects() {
         }
     }
 
-    // NOTE: Signal 보내기 전에 Lock 을 걸지 않으면 Signal 이 분실될 수 있다.
     {
         ScopeWriteLock scopeLock(smpLock);
 
+        // (렌더 스레드의) 다음 렌더링이 끝나기를 기다리는 상태로 변경
         frameSyncState = FrameSyncState::WaitingForRenderCompleted;
 
         PlatformCondition::Signal(updateCompletedCondition);
@@ -860,7 +860,7 @@ void D3D12Renderer::WaitRenderCompleted() {
 
     ScopeReadLock scopeLock(smpLock);
 
-    // 업데이트가 끝나길 기다리는 상황인지 체크하면서 렌더링이 끝나기를 기다린다.
+    // 렌더 스레드가 렌더링이 완료되어 (다음) 업데이트를 기다리는 상태가 될 때까지 기다린다.
     PlatformCondition::Wait(renderCompletedCondition, smpLock, false, [this] {
         return frameSyncState == FrameSyncState::WaitingForUpdateCompleted;
     });
@@ -876,7 +876,7 @@ unsigned int RenderThreadProc(void *param) {
         {
             ScopeReadLock scopeLock(renderer.smpLock);
 
-            // 렌더링이 끝나길 기다리는 상황인지 체크하면서 업데이트가 끝나기를 기다린다.
+            // 메인 스레드가 업데이트가 완료되어 (다음) 렌더링을 기다리는 상태가 될 때까지 기다린다.
             PlatformCondition::Wait(renderer.updateCompletedCondition, renderer.smpLock, false, [] {
                 return renderer.frameSyncState == FrameSyncState::WaitingForRenderCompleted || renderer.isStoppingRenderThread;
             });
@@ -890,11 +890,12 @@ unsigned int RenderThreadProc(void *param) {
         renderer.DrawRenderObjects();
         renderer.EndFrame();
 
-        // NOTE: Signal 보내기 전에 Lock 을 걸지 않으면 Signal 이 분실될 수 있다.
         {
             ScopeWriteLock scopeLock(renderer.smpLock);
 
             renderer.renderFrameIndex ^= renderer.renderFrameIndex;
+
+            // (메인 스레드의) 다음 업데이트가 끝나기를 기다리는 상태로 변경
             renderer.frameSyncState = FrameSyncState::WaitingForUpdateCompleted;
 
             PlatformCondition::Signal(renderer.renderCompletedCondition);

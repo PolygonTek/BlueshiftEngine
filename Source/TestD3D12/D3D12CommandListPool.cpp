@@ -15,6 +15,7 @@
 #include "Precompiled.h"
 #include "D3D12Renderer.h"
 #include "D3D12CommandListPool.h"
+#include "D3D12CommandList.h"
 
 void D3D12CommandListPool::Init(D3D12_COMMAND_LIST_TYPE commandListType, int maxCommandLists) {
     this->maxCommandLists = maxCommandLists;

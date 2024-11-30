@@ -12,24 +12,5 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#pragma once
-
-#include "BlueshiftEngine.h"
-
-#include <d3d12.h>
-#include <dxgi1_4.h>
-#include <d3d11on12.h>
-#include <d3dx12.h>
-#include <d3dcompiler.h>
-#include <dxgidebug.h>
-#include <DirectXMath.h>
-
-#if defined(_DEBUG) || defined(_DEVELOPMENT)
-#define PROFILE_BUILD
-#include <pix3.h>
-#endif
-
-using namespace BE1;
-
-#define SAFE_RELEASE(p)         if (p) { p->Release(); p = nullptr; }
-#define SAFE_RELEASE_ARRAY(p)   for (int i = 0; i < COUNT_OF(p); i++) if (p[i]) { (p[i])->Release(); (p[i]) = nullptr; }
+#include "Precompiled.h"
+#include "D3D12CommandList.h"

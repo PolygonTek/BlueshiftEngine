@@ -28,8 +28,8 @@ class D3D12DescriptorPool;
 
 #ifdef USE_RENDER_THREAD
 enum class FrameSyncState : byte {
-    WaitingForUpdateCompleted,
-    WaitingForRenderCompleted
+    WaitingForUpdateCompleted,  // (렌더 스레드가 렌더링이 완료되어) 메인 스레드의 다음 업데이트 작업이 완료되기를 기다리는 상태
+    WaitingForRenderCompleted   // (메인 스레드가 업데이트가 완료되어) 렌더 스레드의 다음 렌더링 작업이 완료되기를 기다리는 상태
 };
 #endif
 
@@ -92,7 +92,6 @@ public:
 #endif
 
     static constexpr UINT               NumSwapChainBuffers = 3;
-    static constexpr UINT               MaxDrawCallsPerTask = 512;
 
     ID3D12Device5 *                     device = nullptr;
     DXGI_ADAPTER_DESC1                  adapterDesc = {};

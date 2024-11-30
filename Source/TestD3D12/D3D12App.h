@@ -15,9 +15,7 @@
 #pragma once
 
 #include "D3D12Common.h"
-#include "D3D12ConstantBuffer.h"
 
-class D3D12CommandList;
 class D3D12GameObject;
 class D3D12TriangleMesh;
 class D3D12CubeMesh;
@@ -44,10 +42,6 @@ public:
     void                            UpdateGameObjects();
     void                            UpdateTriangles();
     void                            UpdateCubes();
-
-    void                            DrawMeshes();
-    void                            DrawTriangles(D3D12CommandList *commandList);
-    void                            DrawCubes(D3D12CommandList *commandList);
 
     Array<D3D12GameObject *>        gameObjects;
 

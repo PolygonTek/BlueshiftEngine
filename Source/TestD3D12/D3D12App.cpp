@@ -18,8 +18,6 @@
 #include "D3D12GameObject.h"
 #include "D3D12TriangleMesh.h"
 #include "D3D12CubeMesh.h"
-#include "D3D12RootDescriptorPool.h"
-#include "D3D12CommandListPool.h"
 
 #define TRIANGLE_OR_CUBE    0
 
@@ -213,64 +211,6 @@ void D3D12App::UpdateCubes() {
             gameObject->renderObjectDef.worldMatrix.SetTranslationRotation(Vec3(0, startX + CubeSpacing * x, startY + CubeSpacing * y), Mat3::FromRotationZYX(t * 1.0f, 0, t * 0.25f), false);
 
             renderer.UpdateRenderObject(gameObject->renderObjectHandle, gameObject->renderObjectDef);
-        }
-    }
-}
-
-void D3D12App::DrawMeshes() {
-    // 커맨드 리스트 풀에서 커맨드 리스트를 얻어온다.
-    D3D12CommandList *commandList = renderer.currentFrameData->threadData[0].commandListPool->Alloc();
-
-    // CommandAllocator 를 재사용하도록 리셋하고, CommandList 를 CommandAllocator 를 이용하여 초기 상태로 리셋
-    commandList->Reset();
-
-    // 뷰포트 & ScissorRect 설정
-    commandList->graphicsCommandList->RSSetViewports(1, &renderer.viewport);
-    commandList->graphicsCommandList->RSSetScissorRects(1, &renderer.scissorRect);
-
-    commandList->graphicsCommandList->OMSetRenderTargets(1, &renderer.rtvDescriptorHandle, FALSE, &renderer.dsvDescriptorHandle);
-
-#if TRIANGLE_OR_CUBE == 1
-    DrawTriangles(commandList);
-#else
-    DrawCubes(commandList);
-#endif
-
-    // CommandList 기록을 마치고 CommandQueue 로 실행
-    commandList->CloseAndExecute();
-}
-
-void D3D12App::DrawTriangles(D3D12CommandList* commandList) {
-    float elapsedSeconds = MILLI2SEC(elapsedMsec);
-
-    for (int i = 0; i < TriangleCount; ++i) {
-        float t = elapsedSeconds + i * 0.1f;
-
-        Vec2 offset;
-        offset.x = 0.5f * Math::Cos(t);
-        offset.y = 0.5f * Math::Sin(t * 3);
-
-        triangleMesh->DrawMesh(0, commandList, offset);
-    }
-}
-
-void D3D12App::DrawCubes(D3D12CommandList *commandList) {
-    float elapsedSeconds = MILLI2SEC(elapsedMsec);
-
-    constexpr float startX = -CubeSpacing * (CubeDimensionX - 1) * 0.5f;
-    constexpr float startY = -CubeSpacing * (CubeDimensionY - 1) * 0.5f;
-
-    Mat3x4 worldMatrix;
-
-    for (int y = 0; y < CubeDimensionY; ++y) {
-        for (int x = 0; x < CubeDimensionX; ++x) {
-            int index = CubeDimensionX * y + x;
-            float t = elapsedSeconds + index * 0.1f;
-            float scale = 1.0f + 0.25f * Math::Sin(t * 4);
-
-            worldMatrix.SetTranslationRotation(Vec3(0, startX + CubeSpacing * x, startY + CubeSpacing * y), Mat3::FromRotationZYX(t * 1.0f, 0, t * 0.25f), false);
-
-            cubeMesh->DrawMesh(0, commandList, worldMatrix);
         }
     }
 }

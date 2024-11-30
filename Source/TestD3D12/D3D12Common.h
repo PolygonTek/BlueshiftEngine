@@ -67,6 +67,8 @@ static constexpr int            NumFrameResources = 1;
 #ifdef USE_RENDER_TASK
 // 렌더링할 때 쓰이는 최대 태스크 개수
 static constexpr int            MaxRenderTasks = 64;
-// 렌더링 태스크 매니져에서 사용할 최대 스레드 개수 (실제 코드는 물리 코어 개수 이하로 사용한다)
+// 렌더링 태스크 매니져에서 사용할 최대 스레드 개수 (실제 코드는 물리 코어 개수 이하로 사용된다)
 static constexpr int            MaxRenderTaskThreads = 16;
+// 태스크 당 처리할 최대 Draw Call 횟수
+static constexpr int            MaxDrawCallsPerTask = 512;
 #endif
