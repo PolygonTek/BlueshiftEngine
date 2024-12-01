@@ -74,7 +74,7 @@
 #endif
 
 // Utils
-#include "Core/ScopeLock.h"
+#include "Core/ScopedLock.h"
 
 // Profiler
 #include "Profiler/Profiler.h"

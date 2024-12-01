@@ -18,49 +18,49 @@
 
 BE_NAMESPACE_BEGIN
 
-class ScopeLock {
+class ScopedLock {
 public:
-    ScopeLock(PlatformMutex *mu) : mutex(mu) {
+    ScopedLock(PlatformMutex *mu) : mutex(mu) {
         PlatformMutex::Lock(mutex);
     }
-    ~ScopeLock() {
+    ~ScopedLock() {
         PlatformMutex::Unlock(mutex);
     }
-    ScopeLock() = delete;
-    ScopeLock(const ScopeLock &) = delete;
-    ScopeLock &operator=(const ScopeLock &) = delete;
+    ScopedLock() = delete;
+    ScopedLock(const ScopedLock &) = delete;
+    ScopedLock &operator=(const ScopedLock &) = delete;
 
 private:
     PlatformMutex *mutex;
 };
 
-class ScopeReadLock {
+class ScopedReadLock {
 public:
-    ScopeReadLock(PlatformSRWLock *lock) : readLock(lock) {
+    ScopedReadLock(PlatformSRWLock *lock) : readLock(lock) {
         PlatformSRWLock::AquireReadLock(readLock);
     }
-    ~ScopeReadLock() {
+    ~ScopedReadLock() {
         PlatformSRWLock::ReleaseReadLock(readLock);
     }
-    ScopeReadLock() = delete;
-    ScopeReadLock(const ScopeReadLock &) = delete;
-    ScopeReadLock &operator=(const ScopeReadLock &) = delete;
+    ScopedReadLock() = delete;
+    ScopedReadLock(const ScopedReadLock &) = delete;
+    ScopedReadLock &operator=(const ScopedReadLock &) = delete;
 
 private:
     PlatformSRWLock *readLock;
 };
 
-class ScopeWriteLock {
+class ScopedWriteLock {
 public:
-    ScopeWriteLock(PlatformSRWLock *lock) : writeLock(lock) {
+    ScopedWriteLock(PlatformSRWLock *lock) : writeLock(lock) {
         PlatformSRWLock::AquireWriteLock(writeLock);
     }
-    ~ScopeWriteLock() {
+    ~ScopedWriteLock() {
         PlatformSRWLock::ReleaseWriteLock(writeLock);
     }
-    ScopeWriteLock() = delete;
-    ScopeWriteLock(const ScopeReadLock &) = delete;
-    ScopeWriteLock &operator=(const ScopeReadLock &) = delete;
+    ScopedWriteLock() = delete;
+    ScopedWriteLock(const ScopedReadLock &) = delete;
+    ScopedWriteLock &operator=(const ScopedReadLock &) = delete;
 
 private:
     PlatformSRWLock *writeLock;

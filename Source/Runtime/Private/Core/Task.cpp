@@ -16,7 +16,7 @@
 #include "Platform/PlatformSystem.h"
 #include "Platform/cpuid.h"
 #include "SIMD/SIMD.h"
-#include "Core/ScopeLock.h"
+#include "Core/ScopedLock.h"
 #include "Core/Task.h"
 
 BE_NAMESPACE_BEGIN
@@ -72,7 +72,7 @@ void TaskManager::Stop() {
 
     // Set the stopping and wake all the task threads.
     {
-        ScopeLock scopeLock(taskMutex);
+        ScopedLock lock(taskMutex);
         stopping = true;
         PlatformCondition::Broadcast(taskCondition);
     }
@@ -87,7 +87,7 @@ void TaskManager::Stop() {
 
 bool TaskManager::AddTask(TaskFunc taskFunction, void *data, bool withWake) {
     // Lock to add the task.
-    ScopeLock scopeLock(taskMutex);
+    ScopedLock lock(taskMutex);
 
     int nextTaskIndex = (tailTaskIndex + 1) % taskRingBuffer.Count();
     if (nextTaskIndex == headTaskIndex) {
@@ -108,7 +108,7 @@ bool TaskManager::AddTask(TaskFunc taskFunction, void *data, bool withWake) {
 }
 
 void TaskManager::WaitFinish(bool withWake) {
-    ScopeLock scopeLock(taskMutex);
+    ScopedLock lock(taskMutex);
 
     // Check if all tasks are already finished
     if (IsTaskEmpty() && numActiveTasks <= 0) {
@@ -126,7 +126,7 @@ void TaskManager::WaitFinish(bool withWake) {
 
 // Return false if a timeout occurs.
 bool TaskManager::TimedWaitFinish(int ms, bool withWake) {
-    ScopeLock scopeLock(taskMutex);
+    ScopedLock lock(taskMutex);
 
     // Check if all tasks are already finished
     if (IsTaskEmpty() && numActiveTasks <= 0) {
@@ -160,7 +160,7 @@ unsigned int TaskThreadProc(void *param) {
     while (1) {
         // Lock to get the task.
         {
-            ScopeLock scopeLock(taskManager->taskMutex);
+            ScopedLock lock(taskManager->taskMutex);
 
             // Wait for task condition variable.
             PlatformCondition::Wait(taskManager->taskCondition, taskManager->taskMutex, [taskManager] {
@@ -181,7 +181,7 @@ unsigned int TaskThreadProc(void *param) {
 
         // Handle task completion
         {
-            ScopeLock scopeLock(taskManager->taskMutex);
+            ScopedLock lock(taskManager->taskMutex);
 
             // Decrease active task count after finishing a task function.
             --taskManager->numActiveTasks;

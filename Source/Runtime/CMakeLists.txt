@@ -53,7 +53,7 @@ set(COMMON_ENGINE_FILES
     Public/Core/Event.h
     Public/Core/Object.h
     Public/Core/Property.h
-    Public/Core/ScopeLock.h
+    Public/Core/ScopedLock.h
     Public/Core/Serializable.h
     Public/Core/Signal.h
     Public/Core/SignalObject.h

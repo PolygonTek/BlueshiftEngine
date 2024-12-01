@@ -640,6 +640,7 @@ void D3D12Renderer::FlushRenderObjects() {
 #ifdef USE_RENDER_THREAD
     WaitRenderCompleted();
 
+    // 렌더 스레드에서 다음 렌더링에 사용할 오브젝트들의 포인터들을 준비 (카피) 한다.
     Array<D3D12RenderObject *> &currentFlushedRenderObjects = flushedRenderObjects[renderFrameIndex ^ 1];
     currentFlushedRenderObjects.SetCount(0, false);
 
@@ -650,11 +651,12 @@ void D3D12Renderer::FlushRenderObjects() {
     }
 
     {
-        ScopeWriteLock scopeLock(smpLock);
+        ScopedWriteLock lock(smpLock);
 
         // (렌더 스레드의) 다음 렌더링이 끝나기를 기다리는 상태로 변경
         frameSyncState = FrameSyncState::WaitingForRenderCompleted;
 
+        // 업데이트가 완료되었다고 신호를 보내고, 이후 다음 프레임의 업데이트를 진행한다.
         PlatformCondition::Signal(updateCompletedCondition);
     }
 #else
@@ -857,7 +859,7 @@ void D3D12Renderer::InitRenderThread() {
 
 void D3D12Renderer::ShutdownRenderThread() {
     {
-        ScopeWriteLock scopeLock(smpLock);
+        ScopedWriteLock lock(smpLock);
         isStoppingRenderThread = true;
         PlatformCondition::Signal(updateCompletedCondition);
     }
@@ -876,7 +878,7 @@ void D3D12Renderer::WaitRenderCompleted() {
         return;
     }
 
-    ScopeReadLock scopeLock(smpLock);
+    ScopedReadLock lock(smpLock);
 
     // 렌더 스레드가 렌더링이 완료되어 (다음) 업데이트를 기다리는 상태가 될 때까지 기다린다.
     PlatformCondition::Wait(renderCompletedCondition, smpLock, false, [this] {
@@ -892,7 +894,7 @@ unsigned int RenderThreadProc(void *param) {
     while (1) {
         PIX_CPU_SCOPED_EVENT(7, "RenderThreadProcLoop");
         {
-            ScopeReadLock scopeLock(renderer.smpLock);
+            ScopedReadLock lock(renderer.smpLock);
 
             // 메인 스레드가 업데이트가 완료되어 (다음) 렌더링을 기다리는 상태가 될 때까지 기다린다.
             PlatformCondition::Wait(renderer.updateCompletedCondition, renderer.smpLock, false, [] {
@@ -909,7 +911,7 @@ unsigned int RenderThreadProc(void *param) {
         renderer.EndFrame();
 
         {
-            ScopeWriteLock scopeLock(renderer.smpLock);
+            ScopedWriteLock lock(renderer.smpLock);
 
             renderer.renderFrameIndex ^= renderer.renderFrameIndex;
 
