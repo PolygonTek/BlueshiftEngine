@@ -196,7 +196,7 @@ void Batch::SetSubMeshVertexFormat(const SubMesh *subMesh, int vertexFormatIndex
         if (subMesh->IsGpuSkinningEnabled()) {
             rhi.SetVertexFormat(vertexFormats[vertexFormatIndex + 4 + subMesh->gpuSkinningVersionIndex + 1].vertexFormatHandle);
 
-            int vertexWeightBase = ((vertexSize * numVerts + 15) >> 4) << 4;
+            int vertexWeightBase = AlignUp(vertexSize * numVerts, 32);
 
             rhi.SetStreamSource(0, vertexBuffer, 0, vertexSize);
             rhi.SetStreamSource(1, vertexBuffer, vertexWeightBase, subMesh->VertexWeightSize());
@@ -211,7 +211,7 @@ void Batch::SetSubMeshVertexFormat(const SubMesh *subMesh, int vertexFormatIndex
         if (subMesh->IsGpuSkinningEnabled()) {
             rhi.SetVertexFormat(vertexFormats[vertexFormatIndex + subMesh->gpuSkinningVersionIndex + 1].vertexFormatHandle);
 
-            int vertexWeightBase = ((vertexSize * numVerts + 15) >> 4) << 4;
+            int vertexWeightBase = AlignUp(vertexSize * numVerts, 32);
 
             rhi.SetStreamSource(0, vertexBuffer, 0, vertexSize);
             rhi.SetStreamSource(1, vertexBuffer, vertexWeightBase, subMesh->VertexWeightSize());
