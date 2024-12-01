@@ -59,7 +59,7 @@ void D3D12App::Shutdown() {
 }
 
 void D3D12App::RunFrame(int frameMsec) {
-    PIX_CPU_SCOPED_EVENT(7, "D3D12App::RunFrame");
+    PIX_CPU_SCOPED_EVENT(2, "D3D12App::RunFrame");
 
     elapsedMsec += frameMsec;
 
@@ -71,7 +71,7 @@ void D3D12App::RunFrame(int frameMsec) {
 
 #ifndef USE_RENDER_THREAD
     renderer.BeginFrame();
-    renderer.DrawRenderObjects();
+    renderer.RenderCamera();
     renderer.EndFrame();
 #endif
 
@@ -104,7 +104,7 @@ void D3D12App::SetViewMatrix(const Mat3 &viewAxis, const Vec3 &viewOrigin, float
 }
 
 void D3D12App::UpdateCamera() {
-    PIX_CPU_SCOPED_EVENT(8, "D3D12App::UpdateCamera");
+    PIX_CPU_SCOPED_EVENT(0, "D3D12App::UpdateCamera");
 
     Mat4 projMatrix;
     float aspectRatio = renderer.viewport.Width / renderer.viewport.Height;
@@ -135,7 +135,7 @@ void D3D12App::InitGameObjects() {
 }
 
 void D3D12App::UpdateGameObjects() {
-    PIX_CPU_SCOPED_EVENT(9, "D3D12App::UpdateGameObjects");
+    PIX_CPU_SCOPED_EVENT(1, "D3D12App::UpdateGameObjects");
 
 #if TRIANGLE_OR_CUBE == 1
     UpdateTriangles();

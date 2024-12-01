@@ -21,7 +21,7 @@ class D3D12CommandListPool;
 
 class D3D12CommandList {
 public:
-    void                            Reset();
+    void                            Reset(bool resetCacheStates = true);
 
     void                            CloseAndExecute();
 
@@ -51,7 +51,7 @@ public:
 #endif
 };
 
-BE_INLINE void D3D12CommandList::Reset() {
+BE_INLINE void D3D12CommandList::Reset(bool resetCacheStates) {
     // NOTE: CommandList 는 GPU 작업 완료 여부와 상관없이 Reset 하여 재사용할 수 있지만,
     // CommandAllocator 는 GPU 에서 해당 CommandList 를 사용하는 작업이 모두 완료되기 전에는 Reset 하면 안된다.
     // 
@@ -62,15 +62,17 @@ BE_INLINE void D3D12CommandList::Reset() {
     graphicsCommandList->Reset(commandAllocator, nullptr);
 
 #ifdef USE_STATE_CACHE_FOR_COMMAND_LIST
-    // 각종 상태를 초기값으로 변경
-    cachedRootDescriptorHeaps.SetCount(0);
-    cachedGraphicsRootSignature = nullptr;
-    cachedPipelineState = nullptr;
-    cachedPrimitiveTopology = D3D_PRIMITIVE_TOPOLOGY_UNDEFINED;
-    for (int i = 0; i < D3D12_IA_VERTEX_INPUT_RESOURCE_SLOT_COUNT; ++i) {
-        cachedVertexBufferViews[i] = {};
+    if (resetCacheStates) {
+        // 모든 캐시된 상태들을 초기값으로 변경
+        cachedRootDescriptorHeaps.SetCount(0);
+        cachedGraphicsRootSignature = nullptr;
+        cachedPipelineState = nullptr;
+        cachedPrimitiveTopology = D3D_PRIMITIVE_TOPOLOGY_UNDEFINED;
+        for (int i = 0; i < D3D12_IA_VERTEX_INPUT_RESOURCE_SLOT_COUNT; ++i) {
+            cachedVertexBufferViews[i] = {};
+        }
+        cachedIndexBufferView = {};
     }
-    cachedIndexBufferView = {};
 #endif
 }
 

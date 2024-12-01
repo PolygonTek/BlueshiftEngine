@@ -47,6 +47,7 @@ public:
 
     void                                BeginFrame();
     void                                EndFrame();
+    void                                SwapChainBuffers();
 
     void                                OnResize(int width, int height);
 
@@ -83,7 +84,7 @@ public:
     void                                RemoveRenderObject(int handle);
     void                                FlushRenderObjects();
 
-    void                                DrawRenderObjects();
+    void                                RenderCamera();
     void                                DrawRenderObjects(int threadIndex, D3D12CommandList *commandList, int startIndex, int endIndex);
     void                                DrawRenderObjectsWithoutTask();
 #ifdef USE_RENDER_TASK

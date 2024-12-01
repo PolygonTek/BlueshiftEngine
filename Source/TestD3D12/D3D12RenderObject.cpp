@@ -24,7 +24,7 @@ void D3D12RenderObject::Update(const State &stateDef) {
 }
 
 void D3D12RenderObject::Draw(int threadIndex, D3D12CommandList* commandList) {
-    PIX_SCOPED_EVENT(commandList->graphicsCommandList, 8, "D3D12RenderObject::Draw");
+    PIX_SCOPED_EVENT(commandList->graphicsCommandList, 6, "D3D12RenderObject::Draw");
 
     switch (state.meshType) {
     case D3D12MeshType::TriangleMesh:
@@ -37,7 +37,7 @@ void D3D12RenderObject::Draw(int threadIndex, D3D12CommandList* commandList) {
 }
 
 void D3D12RenderObject::DrawInstanced(int threadIndex, D3D12CommandList *commandList, D3D12RenderObject **renderObjectPtrs, int instanceCount) {
-    PIX_SCOPED_EVENT(commandList->graphicsCommandList, 8, "D3D12RenderObject::DrawInstanced");
+    PIX_SCOPED_EVENT(commandList->graphicsCommandList, 7, "D3D12RenderObject::DrawInstanced");
 
     switch (renderObjectPtrs[0]->state.meshType) {
     case D3D12MeshType::TriangleMesh:

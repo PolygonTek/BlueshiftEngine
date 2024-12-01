@@ -127,16 +127,20 @@ void D3D12Renderer::Init(HWND hwnd) {
     swapChainDesc.SampleDesc.Quality = 0;
     swapChainDesc.Scaling = DXGI_SCALING_NONE;
     swapChainDesc.SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD;
-    swapChainDesc.AlphaMode = DXGI_ALPHA_MODE_IGNORE;
+    swapChainDesc.AlphaMode = DXGI_ALPHA_MODE_UNSPECIFIED;
     swapChainDesc.Flags |= DXGI_SWAP_CHAIN_FLAG_ALLOW_TEARING;
 
     DXGI_SWAP_CHAIN_FULLSCREEN_DESC swapChainFullscreenDesc = {};
     swapChainFullscreenDesc.Windowed = TRUE;
 
     IDXGISwapChain1 *swapChain1 = nullptr;
-    hr = factory4->CreateSwapChainForHwnd(commandQueue, hwnd, &swapChainDesc, &swapChainFullscreenDesc, nullptr, &swapChain1);
+    hr = factory4->CreateSwapChainForHwnd(commandQueue, hwnd, &swapChainDesc, nullptr, nullptr, &swapChain1);
     if (FAILED(hr)) {
         BE_FATALERROR("CreateSwapChainForHwnd : failed");
+    }
+    hr = factory4->MakeWindowAssociation(hwnd, DXGI_MWA_NO_ALT_ENTER);
+    if (FAILED(hr)) {
+        BE_FATALERROR("MakeWindowAssociation : failed");
     }
     swapChain1->QueryInterface(IID_PPV_ARGS(&swapChain));
     swapChain1->Release();
@@ -359,6 +363,7 @@ void D3D12Renderer::CreateDSV(int width, int height) {
 void D3D12Renderer::BeginFrame() {
     PIX_SCOPED_EVENT(commandQueue, 0, "D3D12Renderer::BeginFrame");
 
+    currentFrameIndex = frameCount % NumFrameResources;
     currentFrameData = &frameData[currentFrameIndex];
 
     // 프레임 데이터를 초기화하고, 이전 프레임에 대한 펜스를 기다린다.
@@ -390,7 +395,7 @@ void D3D12Renderer::BeginFrame() {
 }
 
 void D3D12Renderer::EndFrame() {
-    PIX_SCOPED_EVENT(commandQueue, 0, "D3D12Renderer::EndFrame");
+    PIX_SCOPED_EVENT(commandQueue, 1, "D3D12Renderer::EndFrame");
 
     // TODO: 렌더큐에 종료 마킹을 하고, 렌더큐를 실행한다.
 
@@ -398,7 +403,7 @@ void D3D12Renderer::EndFrame() {
     D3D12CommandList *commandList = currentFrameData->threadData[0].commandListPool->Alloc();
 
     // CommandAllocator 를 재사용하도록 리셋하고, CommandList 를 CommandAllocator 를 이용하여 초기 상태로 리셋
-    commandList->Reset();
+    commandList->Reset(false);
 
     // 백버퍼 RTV 를 Present 할 수 있는 상태로 전환
     commandList->ResourceBarrier(renderTargetBuffers[currentBackBufferIndex], D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT);
@@ -410,22 +415,26 @@ void D3D12Renderer::EndFrame() {
     currentFrameData->EndFrame();
 
     // 백버퍼를 전면버퍼와 교환한다.
+    SwapChainBuffers();
+
+    frameCount++;
+
+    FreePendingResources();
+}
+
+void D3D12Renderer::SwapChainBuffers() {
+    PIX_SCOPED_EVENT(commandQueue, 2, "D3D12Renderer::SwapChainBuffers");
+
     if (swapChain->Present(0, DXGI_PRESENT_ALLOW_TEARING) == DXGI_ERROR_DEVICE_REMOVED) {
         BE_FATALERROR("DXGI Device Removed");
     }
 
     // 다음 프레임에 사용할 백버퍼 인덱스 얻어오기
     currentBackBufferIndex = swapChain->GetCurrentBackBufferIndex();
-
-    frameCount++;
-
-    currentFrameIndex = (frameCount % NumFrameResources);
-
-    FreePendingResources();
 }
 
 D3D12CommandList* D3D12Renderer::FlushCommandList(D3D12CommandList* commandList) {
-    PIX_SCOPED_EVENT(commandQueue, 1, "D3D12Renderer::FlushCommandList");
+    PIX_SCOPED_EVENT(commandQueue, 3, "D3D12Renderer::FlushCommandList");
 
     // CommandList 기록을 마치고 CommandQueue 로 실행
     commandList->CloseAndExecute();
@@ -624,9 +633,9 @@ void D3D12Renderer::RemoveRenderObject(int index) {
 }
 
 void D3D12Renderer::FlushRenderObjects() {
-    PIX_CPU_SCOPED_EVENT(2, "D3D12Renderer::FlushRenderObjects");
-
     assert(Engine::IsInMainThread());
+
+    PIX_CPU_SCOPED_EVENT(3, "D3D12Renderer::FlushRenderObjects");
 
 #ifdef USE_RENDER_THREAD
     WaitRenderCompleted();
@@ -660,9 +669,8 @@ void D3D12Renderer::FlushRenderObjects() {
 #endif
 }
 
-// 전체 flushedRenderObjects 를 그린다.
-void D3D12Renderer::DrawRenderObjects() {
-    PIX_SCOPED_EVENT(commandQueue, 4, "D3D12Renderer::DrawRenderObjects");
+void D3D12Renderer::RenderCamera() {
+    PIX_SCOPED_EVENT(commandQueue, 4, "D3D12Renderer::RenderCamera");
 
 #ifdef USE_RENDER_THREAD
     Array<D3D12RenderObject *> &currentFlushedRenderObjects = flushedRenderObjects[renderFrameIndex];
@@ -674,6 +682,12 @@ void D3D12Renderer::DrawRenderObjects() {
     if (numRenderObjects == 0) {
         return;
     }
+
+    // TODO 1: 현재 카메라에 기반해 SceneGraph 나 Frustum culling 등으로 렌더링에 사용할 렌더 오브젝트들을 추려낸다.
+    // TODO 2: 렌더링에 사용할 라이트들도 추려낸다.
+    // TODO 3: 렌더링할 Surface 리스트를 작성한다.
+    // TODO 4: Surface 들을 소팅한다.
+    // TODO 5: 이후에는 Surface 단위로 그려야 한다.
 
 #ifdef USE_RENDER_TASK
 #ifdef USE_RENDEROBJECT_INSTANCING
@@ -724,6 +738,8 @@ void D3D12Renderer::DrawRenderObjects(int threadIndex, D3D12CommandList *command
 
 // 전체 flushedRenderObjects 를 task 없이 한번에 그린다.
 void D3D12Renderer::DrawRenderObjectsWithoutTask() {
+    PIX_CPU_SCOPED_EVENT(4, "D3D12Renderer::DrawRenderObjectsWithoutTask");
+
 #ifdef USE_RENDER_THREAD
     Array<D3D12RenderObject *> &currentFlushedRenderObjects = flushedRenderObjects[renderFrameIndex];
 #else
@@ -750,7 +766,7 @@ void D3D12Renderer::DrawRenderObjectsWithoutTask() {
 
 #ifdef USE_RENDER_TASK
 void D3D12Renderer::DrawRenderObjectsByTask(D3D12Renderer::RenderObjectTaskDesc *taskDesc) {
-    PIX_CPU_SCOPED_EVENT(3, "D3D12Renderer::DrawRenderObjectsByTask");
+    PIX_CPU_SCOPED_EVENT(5, "D3D12Renderer::DrawRenderObjectsByTask");
 
     int threadIndex = taskDesc->threadIndex;
     D3D12CommandListPool *commandListPool = currentFrameData->threadData[threadIndex].commandListPool;
@@ -784,6 +800,8 @@ static void RenderObjectsByTask(void *data) {
 
 // 전체 flushedRenderObjects 를 task 로 나눠서 그린다.
 void D3D12Renderer::DrawRenderObjectsWithTask(int numTasks) {
+    PIX_CPU_SCOPED_EVENT(6, "D3D12Renderer::DrawRenderObjectsWithTask");
+
 #ifdef USE_RENDER_THREAD
     Array<D3D12RenderObject *> &currentFlushedRenderObjects = flushedRenderObjects[renderFrameIndex];
 #else
@@ -872,7 +890,7 @@ unsigned int RenderThreadProc(void *param) {
     SIMD::SetDenormalFlushMode(true);
 
     while (1) {
-        PIX_CPU_SCOPED_EVENT(5, "RenderThreadProcLoop");
+        PIX_CPU_SCOPED_EVENT(7, "RenderThreadProcLoop");
         {
             ScopeReadLock scopeLock(renderer.smpLock);
 
@@ -887,7 +905,7 @@ unsigned int RenderThreadProc(void *param) {
         }
 
         renderer.BeginFrame();
-        renderer.DrawRenderObjects();
+        renderer.RenderCamera();
         renderer.EndFrame();
 
         {
