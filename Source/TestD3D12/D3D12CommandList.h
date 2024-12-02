@@ -27,12 +27,12 @@ public:
 
     void                            ResourceBarrier(ID3D12Resource *resource, D3D12_RESOURCE_STATES stateBefore, D3D12_RESOURCE_STATES stateAfter);
 
-    void                            SetDescriptorHeaps(int numDescriptorHeaps, ID3D12DescriptorHeap* descriptorHeaps[]);
-    void                            SetGraphicsRootSignature(ID3D12RootSignature* graphicsRootSignature);
-    void                            SetPipelineState(ID3D12PipelineState* piplelineState);
+    void                            SetDescriptorHeaps(int numDescriptorHeaps, ID3D12DescriptorHeap *descriptorHeaps[]);
+    void                            SetGraphicsRootSignature(ID3D12RootSignature *graphicsRootSignature);
+    void                            SetPipelineState(ID3D12PipelineState *piplelineState);
     void                            SetPrimitiveTopology(D3D12_PRIMITIVE_TOPOLOGY primitiveTopology);
-    void                            SetVertexBuffers(UINT startSlot, UINT numViews, const D3D12_VERTEX_BUFFER_VIEW* vertexBufferView);
-    void                            SetIndexBuffer(const D3D12_INDEX_BUFFER_VIEW* indexBufferView);
+    void                            SetVertexBuffers(UINT startSlot, UINT numViews, const D3D12_VERTEX_BUFFER_VIEW *vertexBufferView);
+    void                            SetIndexBuffer(const D3D12_INDEX_BUFFER_VIEW *indexBufferView);
 
     ID3D12CommandAllocator *        commandAllocator = nullptr;
     ID3D12GraphicsCommandList *     graphicsCommandList = nullptr;

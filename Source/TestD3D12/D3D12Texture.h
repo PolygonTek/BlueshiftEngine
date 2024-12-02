@@ -40,12 +40,12 @@ public:
     bool                            SetTextureSubImage2D(UINT level, UINT x, UINT y, UINT width, UINT height, Image::Format::Enum imageFormat, const void* pixels);
     bool                            SetTextureSubImage3D(UINT level, UINT x, UINT y, UINT z, UINT width, UINT height, UINT depth, Image::Format::Enum imageFormat, const void* pixels);
 
-    static D3D12Texture *           CreateTexture(D3D12Texture::Type textureType, const char* filename, bool useCompression = true, bool useNormalMap = false);
-    static D3D12Texture *           CreateTexture(D3D12Texture::Type textureType, const Image* image, Image::Format::Enum dstFormat, bool useMipmaps);
-    static D3D12Texture *           CreateTexture(D3D12Texture::Type textureType, const Image* image);
+    static D3D12Texture *           CreateTexture(D3D12Texture::Type textureType, const char *filename, bool useCompression = true, bool useNormalMap = false);
+    static D3D12Texture *           CreateTexture(D3D12Texture::Type textureType, const Image *image, Image::Format::Enum dstFormat, bool useMipmaps);
+    static D3D12Texture *           CreateTexture(D3D12Texture::Type textureType, const Image *image);
 
     static bool                     ImageFormatToDXGIFormat(Image::Format::Enum imageFormat, bool isSRGB, DXGI_FORMAT* dxgiFormat);
-    static bool                     DXGIFormatToImageFormat(DXGI_FORMAT dxgiFormat, Image::Format::Enum* imageFormat, bool *isSRGB);
+    static bool                     DXGIFormatToImageFormat(DXGI_FORMAT dxgiFormat, Image::Format::Enum *imageFormat, bool *isSRGB);
     static bool                     IsSupportedImageFormat(Image::Format::Enum imageFormat) { return ImageFormatToDXGIFormat(imageFormat, false, nullptr); }
     static Image::Format::Enum      ToUncompressedImageFormat(Image::Format::Enum imageFormat);
     static Image::Format::Enum      ToCompressedImageFormat(Image::Format::Enum inFormat, bool useNormalMap);
