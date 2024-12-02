@@ -14,8 +14,8 @@
 
 #pragma once
 
-class D3D12CommandList;
 class D3D12Mesh;
+class D3D12Renderer;
 
 enum class D3D12MeshType : byte {
     None,
@@ -24,25 +24,21 @@ enum class D3D12MeshType : byte {
 };
 
 class D3D12RenderObject {
+    friend class D3D12Renderer;
+
 public:
     struct State {
-        D3D12MeshType       meshType;
-        D3D12Mesh*          mesh = nullptr;
+        D3D12MeshType       meshType = D3D12MeshType::None;
+        std::shared_ptr<D3D12Mesh> mesh;
         Mat3x4              worldMatrix;
         Vec2                offset;
     };
 
+    State &                 GetState() { return state; }
+
     void                    Update(const State &state);
 
-    void                    Draw(int threadIndex, D3D12CommandList* commandList);
-    static void             DrawInstanced(int threadIndex, D3D12CommandList *commandList, D3D12RenderObject **renderObjectPtrs, int instanceCount);
-
-    void                    DrawTriangleMesh(int threadIndex, D3D12CommandList* commandList);
-    static void             DrawTriangleMeshInstanced(int threadIndex, D3D12CommandList *commandList, D3D12RenderObject **renderObjectPtrs, int instanceCount);
-
-    void                    DrawCubeMesh(int threadIndex, D3D12CommandList* commandList);
-    static void             DrawCubeMeshInstanced(int threadIndex, D3D12CommandList *commandList, D3D12RenderObject **renderObjectPtrs, int instanceCount);
-
+private:
     State                   state;      // 오브젝트를 렌더링할 때 필요한 실제 상태를 들고 있음 (Update 함수에서 갱신됨)
     int                     index = -1; // D3D12App::renderObjects 의 인덱스
 };

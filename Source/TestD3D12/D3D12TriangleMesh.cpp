@@ -35,6 +35,19 @@ struct TriangleInstancedConstantData {
     Vec4        offset[1024];
 };
 
+std::shared_ptr<D3D12TriangleMesh> D3D12TriangleMesh::CreateMesh() {
+    std::shared_ptr triangleMesh = std::make_shared<D3D12TriangleMesh>();
+    triangleMesh->InitMesh();
+    return triangleMesh;
+}
+
+void D3D12TriangleMesh::DestroyMesh(std::shared_ptr<D3D12TriangleMesh>& triangleMesh) {
+    if (triangleMesh) {
+        triangleMesh->FreeMesh();
+        triangleMesh.reset();
+    }
+}
+
 void D3D12TriangleMesh::InitMesh() {
     // 삼각형의 버텍스/인덱스 버퍼 내용을 작성
     // NOTE: UV 좌표의 V 는 아래쪽으로 증가함을 주의한다. 나중에 통합 렌더러를 작성한다면, shader code 에서 하는게 좋을 듯..

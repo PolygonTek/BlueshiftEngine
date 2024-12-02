@@ -45,16 +45,6 @@ void D3D12App::Shutdown() {
 
     ClearGameObjects();
 
-    if (triangleMesh) {
-        triangleMesh->FreeMesh();
-        delete triangleMesh;
-    }
-
-    if (cubeMesh) {
-        cubeMesh->FreeMesh();
-        delete cubeMesh;
-    }
-
     renderer.Shutdown();
 }
 
@@ -122,8 +112,13 @@ void D3D12App::ClearGameObjects() {
     for (int i = 0; i < gameObjects.Count(); ++i) {
         D3D12GameObject *gameObject = gameObjects[i];
 
+        gameObject->renderObjectDef.mesh.reset();
+
         renderer.RemoveRenderObject(gameObject->renderObjectHandle);
     }
+
+    D3D12TriangleMesh::DestroyMesh(triangleMesh);
+    D3D12CubeMesh::DestroyMesh(cubeMesh);
 
     gameObjects.DeleteContents(true);
 }
@@ -147,8 +142,7 @@ void D3D12App::UpdateGameObjects() {
 }
 
 void D3D12App::InitTriangles() {
-    triangleMesh = new D3D12TriangleMesh;
-    triangleMesh->InitMesh();
+    triangleMesh = D3D12TriangleMesh::CreateMesh();
 
     gameObjects.Reserve(TriangleCount);
 
@@ -165,8 +159,7 @@ void D3D12App::InitTriangles() {
 }
 
 void D3D12App::InitCubes() {
-    cubeMesh = new D3D12CubeMesh;
-    cubeMesh->InitMesh();
+    cubeMesh = D3D12CubeMesh::CreateMesh();
 
     gameObjects.Reserve(CubeCount);
 

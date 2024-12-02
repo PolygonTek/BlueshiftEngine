@@ -46,8 +46,8 @@ public:
 
     Array<D3D12GameObject *>        gameObjects;
 
-    D3D12TriangleMesh *             triangleMesh = nullptr;
-    D3D12CubeMesh *                 cubeMesh = nullptr;
+    std::shared_ptr<D3D12TriangleMesh> triangleMesh;
+    std::shared_ptr<D3D12CubeMesh>  cubeMesh;
 
     Mat4                            viewProjMatrix;
 

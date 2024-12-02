@@ -22,6 +22,9 @@ class D3D12IndexBuffer;
 
 class D3D12CubeMesh : public D3D12Mesh {
 public:
+    static std::shared_ptr<D3D12CubeMesh> CreateMesh();
+    static void                     DestroyMesh(std::shared_ptr<D3D12CubeMesh> &cubeMesh);
+
     virtual void                    InitMesh() override;
     virtual void                    FreeMesh() override;
 

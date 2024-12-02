@@ -12,6 +12,8 @@ set(SRC_FILES
     D3D12Renderer.cpp
     D3D12RenderObject.h
     D3D12RenderObject.cpp
+    D3D12VisObject.h
+    D3D12VisObject.cpp
     D3D12RootDescriptorPool.h
     D3D12RootDescriptorPool.cpp
     D3D12DescriptorPool.h

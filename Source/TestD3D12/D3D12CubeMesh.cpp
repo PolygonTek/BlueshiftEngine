@@ -38,6 +38,19 @@ struct CubeInstancedConstantData {
     Mat3x4      worldMatrix[1024];
 };
 
+std::shared_ptr<D3D12CubeMesh> D3D12CubeMesh::CreateMesh() {
+    std::shared_ptr cubeMesh = std::make_shared<D3D12CubeMesh>();
+    cubeMesh->InitMesh();
+    return cubeMesh;
+}
+
+void D3D12CubeMesh::DestroyMesh(std::shared_ptr<D3D12CubeMesh> &cubeMesh) {
+    if (cubeMesh) {
+        cubeMesh->FreeMesh();
+        cubeMesh.reset();
+    }
+}
+
 void D3D12CubeMesh::InitMesh() {
     // NOTE: UV 좌표의 V 는 아래쪽으로 증가함을 주의한다. 나중에 통합 렌더러를 작성한다면, shader code 에서 하는게 좋을 듯..
     ALIGN_AS32 const CubeVertex verts[] = {

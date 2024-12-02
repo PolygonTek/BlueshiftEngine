@@ -20,16 +20,10 @@ class D3D12CommandListPool;
 class D3D12RootDescriptorPool;
 class D3D12DescriptorPool;
 class D3D12ConstantBuffer;
+class D3D12VisObject;
 
 class D3D12FrameData {
 public:
-    struct MemBlock {
-        MemBlock *                  next;
-        int32_t                     size;
-        int32_t                     used;
-        byte *                      base;
-    };
-
     struct DataPerThread {
         D3D12CommandListPool *      commandListPool = nullptr;
         D3D12RootDescriptorPool *   rootDescriptorPool = nullptr;
@@ -43,6 +37,16 @@ public:
     void                            Init();
     void                            Shutdown();
 
+    void *                          MemAlloc(int size);
+    void *                          ClearedMemAlloc(int size);
+    D3D12VisObject *                AllocVisObjects(int numVisObjects);
+    void                            FreeVisObjects();
+
+    int                             NumVisObjects() const { return numVisObjects; }
+    D3D12VisObject *                GetVisObjects() { return visObjects; }
+
+    void                            ClearMemAllocs();
+
     void *                          AllocConstant(int threadIndex, int size, D3D12_CPU_DESCRIPTOR_HANDLE *outDescriptorHandlePtr);
 
     void                            BeginFrame();
@@ -50,17 +54,26 @@ public:
 
     DataPerThread &                 GetThreadData(int threadIndex) { return threadData[threadIndex]; }
 
-    void *                          MemAlloc(int size);
-    void *                          ClearedMemAlloc(int size);
-    void                            ClearMemAllocs();
-
     UINT64                          GetFenceValue() const { return fenceValue; }
     void                            SetFenceValue(UINT64 fenceValue) { this->fenceValue = fenceValue; }
 
 private:
+struct MemBlock {
+        MemBlock *                  next;
+        int32_t                     size;
+        int32_t                     used;
+        byte *                      base;
+    };
+
     void                            InitMemBlocks();
     void                            ClearMemBlocks();
     MemBlock *                      AllocMemBlock();
+
+    MemBlock *                      headBlock;
+    MemBlock *                      currentBlock;
+
+    int                             numVisObjects = 0;
+    D3D12VisObject *                visObjects = nullptr;
 
 #ifdef USE_RENDER_TASK
     DataPerThread                   threadData[MaxRenderTaskThreads];
@@ -68,9 +81,6 @@ private:
     DataPerThread                   threadData[1];
 #endif
     int                             numThreads = 0;
-
-    MemBlock *                      headBlock;
-    MemBlock *                      currentBlock;
 
     UINT64                          fenceValue = 0;
 };

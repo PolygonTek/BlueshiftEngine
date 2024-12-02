@@ -23,6 +23,9 @@ class D3D12IndexBuffer;
 
 class D3D12TriangleMesh : public D3D12Mesh {
 public:
+    static std::shared_ptr<D3D12TriangleMesh> CreateMesh();
+    static void                     DestroyMesh(std::shared_ptr<D3D12TriangleMesh> &triangleMesh);
+
     virtual void                    InitMesh() override;
     virtual void                    FreeMesh() override;
 

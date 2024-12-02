@@ -20,6 +20,7 @@
 #include "D3D12DescriptorPool.h"
 #include "D3D12ConstantBuffer.h"
 #include "D3D12Buffer.h"
+#include "D3D12VisObject.h"
 
 static constexpr int MaxMemSizePerBlock = 0x100000;
 static constexpr int MemAlignSize = 32;
@@ -69,13 +70,12 @@ void D3D12FrameData::Shutdown() {
         SAFE_DELETE(data->commandListPool);
     }
 
+    FreeVisObjects();
+
     ClearMemBlocks();
 }
 
 void D3D12FrameData::BeginFrame() {
-    // 지난번 프레임에서 할당했던 메모리를 해제한다.
-    ClearMemAllocs();
-
     // 쓰레드 별로 사용할 자원을 Reset 한다.
     for (int threadIndex = 0; threadIndex < numThreads; ++threadIndex) {
         DataPerThread *data = &threadData[threadIndex];
@@ -161,6 +161,8 @@ void *D3D12FrameData::ClearedMemAlloc(int size) {
 }
 
 void D3D12FrameData::ClearMemAllocs() {
+    FreeVisObjects();
+
     // Reset the mem allocation to the first block.
     currentBlock = headBlock;
 
@@ -168,6 +170,33 @@ void D3D12FrameData::ClearMemAllocs() {
     for (MemBlock *block = headBlock; block; block = block->next) {
         block->used = 0;
     }
+}
+
+D3D12VisObject* D3D12FrameData::AllocVisObjects(int numVisObjects) {
+    assert(!visObjects);
+
+    this->numVisObjects = numVisObjects;
+    this->visObjects = (D3D12VisObject *)MemAlloc(sizeof(D3D12VisObject) * numVisObjects);
+
+    // placement new 로 생성자 호출
+    for (int visObjectIndex = 0; visObjectIndex < numVisObjects; ++visObjectIndex) {
+        new (visObjects + visObjectIndex) D3D12VisObject();
+    }
+    return visObjects;
+}
+
+void D3D12FrameData::FreeVisObjects() {
+    if (!visObjects) {
+        return;
+    }
+
+    // 소멸자 호출
+    for (int visObjectIndex = 0; visObjectIndex < numVisObjects; ++visObjectIndex) {
+        (visObjects + visObjectIndex)->~D3D12VisObject();
+    }
+
+    visObjects = nullptr;
+    numVisObjects = 0;
 }
 
 void *D3D12FrameData::AllocConstant(int threadIndex, int size, D3D12_CPU_DESCRIPTOR_HANDLE* outDescriptorHandlePtr) {

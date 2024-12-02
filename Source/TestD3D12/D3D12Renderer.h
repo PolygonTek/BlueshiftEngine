@@ -35,12 +35,7 @@ enum class FrameSyncState : byte {
 
 struct D3D12PendingResource {
     UINT64                              fenceValue = 0;
-    ID3D12Resource*                     resource = nullptr;
-};
-
-class D3D12VisObject {
-    ALIGN_AS32 Mat4                     modelViewProjMatrix;
-    ALIGN_AS32 Mat3x4                   modelViewMatrix;
+    ID3D12Resource *                    resource = nullptr;
 };
 
 class D3D12Renderer {
@@ -77,10 +72,10 @@ public:
     void                                PrintMemoryAllocatorStats();
 #endif
 
-    struct RenderObjectTaskDesc {
+    struct DrawObjectTaskDesc {
         int                             threadIndex = -1;
-        int                             renderObjectStartIndex = -1;
-        int                             renderObjectEndIndex = -1;
+        int                             visObjectStartIndex = -1;
+        int                             visObjectEndIndex = -1;
         D3D12CommandList *              activeCommandList = nullptr;
     };
 
@@ -91,11 +86,11 @@ public:
     void                                RenderScene();
 
     void                                RenderFrame();
-    void                                DrawRenderObjects(int threadIndex, D3D12CommandList *commandList, int startIndex, int endIndex);
-    void                                DrawRenderObjectsWithoutTask();
+    void                                DrawVisObjects(int threadIndex, D3D12CommandList *commandList, int startIndex, int endIndex);
+    void                                DrawVisObjectsWithoutTask();
 #ifdef USE_RENDER_TASK
-    void                                DrawRenderObjectsWithTask(int numTasks);
-    void                                DrawRenderObjectsByTask(D3D12Renderer::RenderObjectTaskDesc *taskDesc);
+    void                                DrawVisObjectsWithTask(int numTasks);
+    void                                DrawVisObjectsByTask(D3D12Renderer::DrawObjectTaskDesc *taskDesc);
 #endif
 
     static constexpr UINT               NumSwapChainBuffers = 3;
@@ -140,8 +135,7 @@ public:
     int                                 tailPendingIndex = 0;
 
     Array<D3D12RenderObject *>          renderObjects;
-    Array<D3D12RenderObject *>          visObjects[2];
-    Array<RenderObjectTaskDesc>         renderObjectTaskDescs;
+    Array<DrawObjectTaskDesc>           objectDrawingTaskDescs;
 
 #ifdef USE_RENDER_TASK
     TaskManager                         taskManager = TaskManager(MaxRenderTasks);
