@@ -23,6 +23,13 @@ class D3D12ConstantBuffer;
 
 class D3D12FrameData {
 public:
+    struct MemBlock {
+        MemBlock *                  next;
+        int32_t                     size;
+        int32_t                     used;
+        byte *                      base;
+    };
+
     struct DataPerThread {
         D3D12CommandListPool *      commandListPool = nullptr;
         D3D12RootDescriptorPool *   rootDescriptorPool = nullptr;
@@ -41,6 +48,20 @@ public:
     void                            BeginFrame();
     void                            EndFrame();
 
+    DataPerThread &                 GetThreadData(int threadIndex) { return threadData[threadIndex]; }
+
+    void *                          MemAlloc(int size);
+    void *                          ClearedMemAlloc(int size);
+    void                            ClearMemAllocs();
+
+    UINT64                          GetFenceValue() const { return fenceValue; }
+    void                            SetFenceValue(UINT64 fenceValue) { this->fenceValue = fenceValue; }
+
+private:
+    void                            InitMemBlocks();
+    void                            ClearMemBlocks();
+    MemBlock *                      AllocMemBlock();
+
 #ifdef USE_RENDER_TASK
     DataPerThread                   threadData[MaxRenderTaskThreads];
 #else
@@ -48,5 +69,8 @@ public:
 #endif
     int                             numThreads = 0;
 
-    UINT64                          lastFrameFenceValue = 0;
+    MemBlock *                      headBlock;
+    MemBlock *                      currentBlock;
+
+    UINT64                          fenceValue = 0;
 };

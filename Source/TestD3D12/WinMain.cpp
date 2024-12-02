@@ -220,6 +220,7 @@ static bool RunFrameInstance(int frameMsec) {
     }
 
     app.RunFrame(frameMsec);
+    app.Render(frameMsec);
 
     return true;
 }

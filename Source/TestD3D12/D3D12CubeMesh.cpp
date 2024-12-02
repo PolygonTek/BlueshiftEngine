@@ -173,7 +173,7 @@ void D3D12CubeMesh::InitPipelineState() {
 }
 
 void D3D12CubeMesh::DrawMesh(int threadIndex, D3D12CommandList* commandList, const Mat3x4& worldMatrix) {
-    D3D12RootDescriptorPool* rootDescriptorPool = renderer.currentFrameData->threadData[threadIndex].rootDescriptorPool;
+    D3D12RootDescriptorPool* rootDescriptorPool = renderer.currentFrameData->GetThreadData(threadIndex).rootDescriptorPool;
 
     // 상수 버퍼 공간을 할당한다.
     D3D12_CPU_DESCRIPTOR_HANDLE cbvDescriptorHandle = {0};
@@ -224,7 +224,7 @@ void D3D12CubeMesh::DrawMesh(int threadIndex, D3D12CommandList* commandList, con
 }
 
 void D3D12CubeMesh::DrawMeshInstanced(int threadIndex, D3D12CommandList *commandList, const Mat3x4 *instanceData, int instanceCount) {
-    D3D12RootDescriptorPool *rootDescriptorPool = renderer.currentFrameData->threadData[threadIndex].rootDescriptorPool;
+    D3D12RootDescriptorPool *rootDescriptorPool = renderer.currentFrameData->GetThreadData(threadIndex).rootDescriptorPool;
 
     // 상수 버퍼 공간을 할당한다.
     D3D12_CPU_DESCRIPTOR_HANDLE cbvDescriptorHandle = { 0 };

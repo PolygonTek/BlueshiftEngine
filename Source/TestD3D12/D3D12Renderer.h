@@ -38,6 +38,11 @@ struct D3D12PendingResource {
     ID3D12Resource*                     resource = nullptr;
 };
 
+class D3D12VisObject {
+    ALIGN_AS32 Mat4                     modelViewProjMatrix;
+    ALIGN_AS32 Mat3x4                   modelViewMatrix;
+};
+
 class D3D12Renderer {
 public:
     void                                Init(HWND hwnd);
@@ -63,7 +68,7 @@ public:
 
     void                                WaitAllFrameFences();
 
-    void                                MarkForRelease(ID3D12Resource* resource);
+    void                                MarkForRelease(ID3D12Resource *resource);
     void                                FreePendingResources(bool waitPendings = false);
 
     void                                PrintCompileErrorMessages(ID3DBlob *errorBlob);
@@ -82,9 +87,10 @@ public:
     int                                 AddRenderObject(const D3D12RenderObject::State &def);
     void                                UpdateRenderObject(int handle, const D3D12RenderObject::State &def);
     void                                RemoveRenderObject(int handle);
-    void                                FlushRenderObjects();
 
-    void                                RenderCamera();
+    void                                RenderScene();
+
+    void                                RenderFrame();
     void                                DrawRenderObjects(int threadIndex, D3D12CommandList *commandList, int startIndex, int endIndex);
     void                                DrawRenderObjectsWithoutTask();
 #ifdef USE_RENDER_TASK
@@ -134,7 +140,7 @@ public:
     int                                 tailPendingIndex = 0;
 
     Array<D3D12RenderObject *>          renderObjects;
-    Array<D3D12RenderObject *>          flushedRenderObjects[2];
+    Array<D3D12RenderObject *>          visObjects[2];
     Array<RenderObjectTaskDesc>         renderObjectTaskDescs;
 
 #ifdef USE_RENDER_TASK

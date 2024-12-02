@@ -67,15 +67,17 @@ void D3D12App::RunFrame(int frameMsec) {
 
     UpdateGameObjects();
 
-    renderer.FlushRenderObjects();
+    cmdSystem.ExecuteCommandBuffer();
+}
+
+void D3D12App::Render(int frameMsec) {
+    renderer.RenderScene();
 
 #ifndef USE_RENDER_THREAD
     renderer.BeginFrame();
-    renderer.RenderCamera();
+    renderer.RenderFrame();
     renderer.EndFrame();
 #endif
-
-    cmdSystem.ExecuteCommandBuffer();
 }
 
 void D3D12App::SetViewMatrix(const Mat3 &viewAxis, const Vec3 &viewOrigin, float *rowMajor4x4ViewMatrix) const {

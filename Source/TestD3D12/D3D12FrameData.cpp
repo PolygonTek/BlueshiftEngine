@@ -21,7 +21,12 @@
 #include "D3D12ConstantBuffer.h"
 #include "D3D12Buffer.h"
 
+static constexpr int MaxMemSizePerBlock = 0x100000;
+static constexpr int MemAlignSize = 32;
+
 void D3D12FrameData::Init() {
+    InitMemBlocks();
+
 #ifdef USE_RENDER_TASK
     numThreads = renderer.taskManager.NumThreads();
 #else
@@ -63,9 +68,14 @@ void D3D12FrameData::Shutdown() {
         SAFE_DELETE(data->rootDescriptorPool);
         SAFE_DELETE(data->commandListPool);
     }
+
+    ClearMemBlocks();
 }
 
 void D3D12FrameData::BeginFrame() {
+    // 지난번 프레임에서 할당했던 메모리를 해제한다.
+    ClearMemAllocs();
+
     // 쓰레드 별로 사용할 자원을 Reset 한다.
     for (int threadIndex = 0; threadIndex < numThreads; ++threadIndex) {
         DataPerThread *data = &threadData[threadIndex];
@@ -84,11 +94,80 @@ void D3D12FrameData::BeginFrame() {
     }
 
     // 이번 프레임에 사용할 프레임 데이터를 사용하기 위해서는, GPU 에서 이전 프레임에 대한 렌더링이 완료되야 한다.
-    renderer.WaitFence(lastFrameFenceValue);
+    renderer.WaitFence(fenceValue);
 }
 
 void D3D12FrameData::EndFrame() {
-    lastFrameFenceValue = renderer.SignalFence();
+    fenceValue = renderer.SignalFence();
+}
+
+void D3D12FrameData::InitMemBlocks() {
+    headBlock = AllocMemBlock();
+    currentBlock = headBlock;
+}
+
+void D3D12FrameData::ClearMemBlocks() {
+    MemBlock *nextBlock;
+
+    for (MemBlock *block = headBlock; block; block = nextBlock) {
+        nextBlock = block->next;
+        Mem_Free(block);
+    }
+
+    headBlock = nullptr;
+    currentBlock = nullptr;
+}
+
+D3D12FrameData::MemBlock *D3D12FrameData::AllocMemBlock() {
+    MemBlock *block = (MemBlock *)Mem_Alloc(sizeof(*block) + MemAlignSize - 1 + MaxMemSizePerBlock);
+    if (!block) {
+        BE_FATALERROR("D3D12FrameData::AllocMemBlock: failed to allocate memory");
+    }
+
+    block->base = (byte *)AlignUp((intptr_t)block + sizeof(*block), MemAlignSize);
+    block->size = MaxMemSizePerBlock;
+    block->used = 0;
+    block->next = nullptr;
+    return block;
+}
+
+void *D3D12FrameData::MemAlloc(int size) {
+    size = AlignUp(size, MemAlignSize);
+    if (size > MaxMemSizePerBlock) {
+        BE_FATALERROR("D3D12FrameData::MemAlloc: %i exceeded MaxMemSizePerBlock", size);
+    }
+
+    for (MemBlock *block = currentBlock; block; block = block->next) {
+        if (block->size - block->used >= size) {
+            void *alloc = block->base + block->used;
+            block->used += size;
+            currentBlock = block;
+            return alloc;
+        }
+    }
+
+    MemBlock *newBlock = AllocMemBlock();
+    currentBlock->next = newBlock;
+    currentBlock = newBlock;
+    currentBlock->used = size;
+
+    return currentBlock->base;
+}
+
+void *D3D12FrameData::ClearedMemAlloc(int size) {
+    void *mem = MemAlloc(size);
+    simdProcessor->Memset(mem, 0, size);
+    return mem;
+}
+
+void D3D12FrameData::ClearMemAllocs() {
+    // Reset the mem allocation to the first block.
+    currentBlock = headBlock;
+
+    // Clear all the blocks.
+    for (MemBlock *block = headBlock; block; block = block->next) {
+        block->used = 0;
+    }
 }
 
 void *D3D12FrameData::AllocConstant(int threadIndex, int size, D3D12_CPU_DESCRIPTOR_HANDLE* outDescriptorHandlePtr) {

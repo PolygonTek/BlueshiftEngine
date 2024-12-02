@@ -223,8 +223,8 @@ void D3D12Renderer::Init(HWND hwnd) {
     pendingResourceBuffer = new D3D12PendingResource[maxPendingResources];
 
     renderObjects.Reserve(16384);
-    flushedRenderObjects[0].Reserve(16384);
-    flushedRenderObjects[1].Reserve(16384);
+    visObjects[0].Reserve(16384);
+    visObjects[1].Reserve(16384);
 
 #ifdef USE_RENDER_TASK
     // 태스크 스레드를 최대 물리코어 개수만큼만 생성한다.
@@ -237,7 +237,7 @@ void D3D12Renderer::Init(HWND hwnd) {
     }
 
     currentFrameIndex = 0;
-    frameData[currentFrameIndex].lastFrameFenceValue = SignalFence();
+    frameData[currentFrameIndex].SetFenceValue(SignalFence());
 
 #ifdef USE_RENDER_THREAD
     InitRenderThread();
@@ -370,7 +370,7 @@ void D3D12Renderer::BeginFrame() {
     currentFrameData->BeginFrame();
 
     // 커맨드 리스트 풀에서 커맨드 리스트를 얻어온다.
-    D3D12CommandList* commandList = currentFrameData->threadData[0].commandListPool->Alloc();
+    D3D12CommandList* commandList = currentFrameData->GetThreadData(0).commandListPool->Alloc();
 
     // CommandAllocator 를 재사용하도록 리셋하고, CommandList 를 CommandAllocator 를 이용하여 초기 상태로 리셋
     commandList->Reset();
@@ -400,7 +400,7 @@ void D3D12Renderer::EndFrame() {
     // TODO: 렌더큐에 종료 마킹을 하고, 렌더큐를 실행한다.
 
     // 커맨드 리스트 풀에서 커맨드 리스트를 얻어온다.
-    D3D12CommandList *commandList = currentFrameData->threadData[0].commandListPool->Alloc();
+    D3D12CommandList *commandList = currentFrameData->GetThreadData(0).commandListPool->Alloc();
 
     // CommandAllocator 를 재사용하도록 리셋하고, CommandList 를 CommandAllocator 를 이용하여 초기 상태로 리셋
     commandList->Reset(false);
@@ -477,7 +477,7 @@ void D3D12Renderer::Finish() {
 
 void D3D12Renderer::WaitAllFrameFences() {
     for (int frameIndex = 0; frameIndex < NumFrameResources; ++frameIndex) {
-        WaitFence(frameData[frameIndex].lastFrameFenceValue);
+        WaitFence(frameData[frameIndex].GetFenceValue());
     }
 }
 
@@ -632,16 +632,22 @@ void D3D12Renderer::RemoveRenderObject(int index) {
     renderObjects[index] = nullptr;
 }
 
-void D3D12Renderer::FlushRenderObjects() {
+void D3D12Renderer::RenderScene() {
     assert(Engine::IsInMainThread());
 
-    PIX_CPU_SCOPED_EVENT(3, "D3D12Renderer::FlushRenderObjects");
+    PIX_CPU_SCOPED_EVENT(3, "D3D12Renderer::RenderScene");
 
 #ifdef USE_RENDER_THREAD
     WaitRenderCompleted();
 
+    // TODO 1: 현재 카메라에 기반해 SceneGraph 나 Frustum culling 등으로 렌더링에 사용할 렌더 오브젝트들을 추려낸다. 추려낸 렌더 오브젝트들의 상태 변수는 복사해서 가지고 있어야 한다.
+    // TODO 2: 렌더링에 사용할 라이트들도 추려낸다.
+    // TODO 3: 렌더링할 Surface 리스트를 작성한다.
+    // TODO 4: Surface 들을 소팅한다.
+    // TODO 5: 이후에는 Surface 단위로 그려야 한다.
+
     // 렌더 스레드에서 다음 렌더링에 사용할 오브젝트들의 포인터들을 준비 (카피) 한다.
-    Array<D3D12RenderObject *> &currentFlushedRenderObjects = flushedRenderObjects[renderFrameIndex ^ 1];
+    Array<D3D12RenderObject *> &currentFlushedRenderObjects = visObjects[renderFrameIndex ^ 1];
     currentFlushedRenderObjects.SetCount(0, false);
 
     for (int i = 0; i < renderObjects.Count(); ++i) {
@@ -660,7 +666,7 @@ void D3D12Renderer::FlushRenderObjects() {
         PlatformCondition::Signal(updateCompletedCondition);
     }
 #else
-    Array<D3D12RenderObject *> &currentFlushedRenderObjects = flushedRenderObjects[0];
+    Array<D3D12RenderObject *> &currentFlushedRenderObjects = visObjects[0];
     currentFlushedRenderObjects.SetCount(0, false);
 
     for (int i = 0; i < renderObjects.Count(); ++i) {
@@ -671,25 +677,19 @@ void D3D12Renderer::FlushRenderObjects() {
 #endif
 }
 
-void D3D12Renderer::RenderCamera() {
-    PIX_SCOPED_EVENT(commandQueue, 4, "D3D12Renderer::RenderCamera");
+void D3D12Renderer::RenderFrame() {
+    PIX_SCOPED_EVENT(commandQueue, 4, "D3D12Renderer::RenderFrame");
 
 #ifdef USE_RENDER_THREAD
-    Array<D3D12RenderObject *> &currentFlushedRenderObjects = flushedRenderObjects[renderFrameIndex];
+    Array<D3D12RenderObject *> &currentFlushedRenderObjects = visObjects[renderFrameIndex];
 #else
-    Array<D3D12RenderObject *> &currentFlushedRenderObjects = flushedRenderObjects[0];
+    Array<D3D12RenderObject *> &currentFlushedRenderObjects = visObjects[0];
 #endif
 
     int numRenderObjects = currentFlushedRenderObjects.Count();
     if (numRenderObjects == 0) {
         return;
     }
-
-    // TODO 1: 현재 카메라에 기반해 SceneGraph 나 Frustum culling 등으로 렌더링에 사용할 렌더 오브젝트들을 추려낸다.
-    // TODO 2: 렌더링에 사용할 라이트들도 추려낸다.
-    // TODO 3: 렌더링할 Surface 리스트를 작성한다.
-    // TODO 4: Surface 들을 소팅한다.
-    // TODO 5: 이후에는 Surface 단위로 그려야 한다.
 
 #ifdef USE_RENDER_TASK
 #ifdef USE_RENDEROBJECT_INSTANCING
@@ -712,9 +712,9 @@ void D3D12Renderer::RenderCamera() {
 // 특정 범위 인덱스의 flushedRenderObjects 를 그린다.
 void D3D12Renderer::DrawRenderObjects(int threadIndex, D3D12CommandList *commandList, int startIndex, int endIndex) {
 #ifdef USE_RENDER_THREAD
-    Array<D3D12RenderObject *> &currentFlushedRenderObjects = flushedRenderObjects[renderFrameIndex];
+    Array<D3D12RenderObject *> &currentFlushedRenderObjects = visObjects[renderFrameIndex];
 #else
-    Array<D3D12RenderObject *> &currentFlushedRenderObjects = flushedRenderObjects[0];
+    Array<D3D12RenderObject *> &currentFlushedRenderObjects = visObjects[0];
 #endif
 
     int index = startIndex;
@@ -743,13 +743,13 @@ void D3D12Renderer::DrawRenderObjectsWithoutTask() {
     PIX_CPU_SCOPED_EVENT(4, "D3D12Renderer::DrawRenderObjectsWithoutTask");
 
 #ifdef USE_RENDER_THREAD
-    Array<D3D12RenderObject *> &currentFlushedRenderObjects = flushedRenderObjects[renderFrameIndex];
+    Array<D3D12RenderObject *> &currentFlushedRenderObjects = visObjects[renderFrameIndex];
 #else
-    Array<D3D12RenderObject *> &currentFlushedRenderObjects = flushedRenderObjects[0];
+    Array<D3D12RenderObject *> &currentFlushedRenderObjects = visObjects[0];
 #endif
 
     // 커맨드 리스트 풀에서 커맨드 리스트를 얻어온다.
-    D3D12CommandList *commandList = currentFrameData->threadData[0].commandListPool->Alloc();
+    D3D12CommandList *commandList = currentFrameData->GetThreadData(0).commandListPool->Alloc();
 
     // CommandAllocator 를 재사용하도록 리셋하고, CommandList 를 CommandAllocator 를 이용하여 초기 상태로 리셋
     commandList->Reset();
@@ -771,7 +771,7 @@ void D3D12Renderer::DrawRenderObjectsByTask(D3D12Renderer::RenderObjectTaskDesc 
     PIX_CPU_SCOPED_EVENT(5, "D3D12Renderer::DrawRenderObjectsByTask");
 
     int threadIndex = taskDesc->threadIndex;
-    D3D12CommandListPool *commandListPool = currentFrameData->threadData[threadIndex].commandListPool;
+    D3D12CommandListPool *commandListPool = currentFrameData->GetThreadData(threadIndex).commandListPool;
     D3D12CommandList *commandList = commandListPool->Alloc();
 
     // CommandAllocator 를 재사용하도록 리셋하고, CommandList 를 CommandAllocator 를 이용하여 초기 상태로 리셋
@@ -805,9 +805,9 @@ void D3D12Renderer::DrawRenderObjectsWithTask(int numTasks) {
     PIX_CPU_SCOPED_EVENT(6, "D3D12Renderer::DrawRenderObjectsWithTask");
 
 #ifdef USE_RENDER_THREAD
-    Array<D3D12RenderObject *> &currentFlushedRenderObjects = flushedRenderObjects[renderFrameIndex];
+    Array<D3D12RenderObject *> &currentFlushedRenderObjects = visObjects[renderFrameIndex];
 #else
-    Array<D3D12RenderObject *> &currentFlushedRenderObjects = flushedRenderObjects[0];
+    Array<D3D12RenderObject *> &currentFlushedRenderObjects = visObjects[0];
 #endif
 
     int numRenderObjects = currentFlushedRenderObjects.Count();
@@ -907,7 +907,7 @@ unsigned int RenderThreadProc(void *param) {
         }
 
         renderer.BeginFrame();
-        renderer.RenderCamera();
+        renderer.RenderFrame();
         renderer.EndFrame();
 
         {

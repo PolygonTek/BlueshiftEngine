@@ -140,7 +140,7 @@ void D3D12TriangleMesh::InitPipelineState() {
 }
 
 void D3D12TriangleMesh::DrawMesh(int threadIndex, D3D12CommandList *commandList, const Vec2& offset) {
-    D3D12RootDescriptorPool* rootDescriptorPool = renderer.currentFrameData->threadData[threadIndex].rootDescriptorPool;
+    D3D12RootDescriptorPool* rootDescriptorPool = renderer.currentFrameData->GetThreadData(threadIndex).rootDescriptorPool;
 
     // 상수 버퍼 공간을 할당한다.
     D3D12_CPU_DESCRIPTOR_HANDLE cbvDescriptorHandle = {0};
@@ -191,7 +191,7 @@ void D3D12TriangleMesh::DrawMesh(int threadIndex, D3D12CommandList *commandList,
 }
 
 void D3D12TriangleMesh::DrawMeshInstanced(int threadIndex, D3D12CommandList* commandList, const Vec2* instanceData, int instanceCount) {
-    D3D12RootDescriptorPool *rootDescriptorPool = renderer.currentFrameData->threadData[threadIndex].rootDescriptorPool;
+    D3D12RootDescriptorPool *rootDescriptorPool = renderer.currentFrameData->GetThreadData(threadIndex).rootDescriptorPool;
 
     // 상수 버퍼 공간을 할당한다.
     D3D12_CPU_DESCRIPTOR_HANDLE cbvDescriptorHandle = { 0 };

@@ -26,6 +26,7 @@ public:
     void                            Shutdown();
 
     void                            RunFrame(int elapsedMsec);
+    void                            Render(int elapsedMsec);
 
     int                             GetElapsedMsec() const { return elapsedMsec; }
 
