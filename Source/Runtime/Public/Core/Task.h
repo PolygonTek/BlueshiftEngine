@@ -19,11 +19,24 @@
 
 BE_NAMESPACE_BEGIN
 
+class BE_API TaskWorker {
+public:
+    virtual void            DoWork() = 0;
+};
+
+enum class TaskState : uint8_t {
+    Ready,
+    Running,
+    Waiting
+};
+
 using TaskFunc = void (*)(void *data);
 
 struct Task {
     TaskFunc                function;
     void *                  data;
+    uint32_t                id;
+    TaskState               state;
 };
 
 class BE_API TaskManager {
@@ -51,12 +64,15 @@ public:
                             /// Stops all the tasks.
     void                    Stop();
 
-                            /// Adds a task with the given task function, and the task will be started immediately.
-    bool                    AddTask(TaskFunc function, void *data, bool withWake = true);
+                            /// Adds a task with the given task worker object.
+    int32_t                 AddTask(TaskWorker *taskWorker, bool withWake = true);
+
+                            /// Adds a task with the given task function.
+    int32_t                 AddTask(TaskFunc function, void *data, bool withWake = true);
 
                             /// Adds a task with a lambda function.
     template <typename Lambda>
-    bool                    AddTask(Lambda &&lambda, bool withWake = true);
+    int32_t                 AddTask(Lambda &&lambda, bool withWake = true);
     
                             /// Waits until finishing all tasks.
     void                    WaitFinish(bool withWake = false);
@@ -65,8 +81,12 @@ public:
                             /// Returns true if it finished in given time.
     bool                    TimedWaitFinish(int msec, bool withWake = false);
 
+                            /// Check if task is running with the given task id.
+    bool                    IsTaskRunning(int32_t taskId) const;
+    bool                    IsTaskRunning(const Array<int32_t> &taskIds) const;
+
 private:
-    Task                    GetTaskInternal();
+    Task *                  GetTaskInternal();
 
     Array<Task>             taskRingBuffer;             ///< Ring buffer of task list.
     int                     headTaskIndex = 0;
@@ -74,6 +94,7 @@ private:
 
     int                     numActiveTasks = 0;         ///< Number of tasks in active state.
     bool                    stopping = false;
+    int32_t                 nextTaskId = 0;
 
     Array<PlatformThread *> threads;
 
@@ -85,7 +106,10 @@ private:
 };
 
 template <typename Lambda>
-bool BE1::TaskManager::AddTask(Lambda &&lambda, bool withWake) {
+int32_t BE1::TaskManager::AddTask(Lambda &&lambda, bool withWake) {
+    if constexpr (std::is_convertible_v<Lambda, TaskFunc>) {
+        return AddTask(static_cast<TaskFunc>(lambda), nullptr, withWake);
+    }
     struct LambdaWrapper {
         static void Call(void *data) {
             Lambda* lambda = reinterpret_cast<Lambda *>(data);
@@ -99,13 +123,12 @@ bool BE1::TaskManager::AddTask(Lambda &&lambda, bool withWake) {
     std::unique_ptr<Lambda> lambdaPtr(new Lambda(std::forward<Lambda>(lambda)));
     void *data = lambdaPtr.get();
 
-    if (!AddTask(&LambdaWrapper::Call, data, withWake)) {
-        return false;
-    }
+    int32_t taskId = AddTask(&LambdaWrapper::Call, data, withWake);
 
     // Release ownership as the task manager is now responsible for cleaning up.
     lambdaPtr.release();
-    return true;
+
+    return taskId;
 }
 
 BE_NAMESPACE_END

@@ -54,6 +54,7 @@ void TaskManager::Start(int numThreads, bool useAffinity) {
     tailTaskIndex = 0;
     headTaskIndex = 0;
     numActiveTasks = 0;
+    nextTaskId = 0;
 
     threads.Reserve(numThreads);
 
@@ -85,17 +86,22 @@ void TaskManager::Stop() {
     stopping = false;
 }
 
-bool TaskManager::AddTask(TaskFunc taskFunction, void *data, bool withWake) {
+int32_t TaskManager::AddTask(TaskFunc taskFunction, void *data, bool withWake) {
     // Lock to add the task.
     ScopedLock lock(taskMutex);
 
     int nextTaskIndex = (tailTaskIndex + 1) % taskRingBuffer.Count();
     if (nextTaskIndex == headTaskIndex) {
         BE_ERRLOG("TaskManager::AddTask: Task queue is full, task rejected\n");
-        return false;
+        return -1;
     }
 
-    taskRingBuffer[tailTaskIndex] = {taskFunction, data};
+    Task &task = taskRingBuffer[tailTaskIndex];
+    task.id = nextTaskId++;
+    task.state = TaskState::Ready;
+    task.function = taskFunction;
+    task.data = data;
+
     tailTaskIndex = nextTaskIndex;
 
     ++numActiveTasks;
@@ -104,7 +110,34 @@ bool TaskManager::AddTask(TaskFunc taskFunction, void *data, bool withWake) {
         PlatformCondition::Signal(taskCondition);
     }
 
-    return true;
+    return task.id;
+}
+
+int32_t TaskManager::AddTask(TaskWorker *taskWorker, bool withWake) {
+    // Lock to add the task.
+    ScopedLock lock(taskMutex);
+
+    int nextTaskIndex = (tailTaskIndex + 1) % taskRingBuffer.Count();
+    if (nextTaskIndex == headTaskIndex) {
+        BE_ERRLOG("TaskManager::AddTask: Task queue is full, task rejected\n");
+        return -1;
+    }
+
+    Task &task = taskRingBuffer[tailTaskIndex];
+    task.id = nextTaskId++;
+    task.state = TaskState::Ready;
+    task.function = nullptr;
+    task.data = taskWorker;
+
+    tailTaskIndex = nextTaskIndex;
+
+    ++numActiveTasks;
+
+    if (withWake) {
+        PlatformCondition::Signal(taskCondition);
+    }
+
+    return task.id;
 }
 
 void TaskManager::WaitFinish(bool withWake) {
@@ -142,8 +175,48 @@ bool TaskManager::TimedWaitFinish(int ms, bool withWake) {
     });
 }
 
-Task TaskManager::GetTaskInternal() {
-    Task task = taskRingBuffer[headTaskIndex];
+bool TaskManager::IsTaskRunning(int32_t taskId) const {
+    ScopedLock lock(taskMutex);
+
+    for (int taskIndex = headTaskIndex; taskIndex != tailTaskIndex; taskIndex = (taskIndex + 1) % taskRingBuffer.Count()) {
+        const Task &task = taskRingBuffer[taskIndex];
+
+        if (task.id == taskId) {
+            return task.state == TaskState::Running;
+        }
+    }
+    return false;
+}
+
+bool TaskManager::IsTaskRunning(const Array<int32_t>& taskIds) const {
+    ScopedLock lock(taskMutex);
+
+    for (int i = 0; i < taskIds.Count(); ++i) {
+        int32_t taskId = taskIds[i];
+        bool taskIdFound = false;
+
+        for (int taskIndex = headTaskIndex; taskIndex != tailTaskIndex; taskIndex = (taskIndex + 1) % taskRingBuffer.Count()) {
+            const Task &task = taskRingBuffer[taskIndex];
+
+            if (task.id == taskId) {
+                taskIdFound = true;
+
+                if (task.state != TaskState::Running) {
+                    return false;
+                }
+                break;
+            }
+        }
+
+        if (!taskIdFound) {
+            return false;
+        }
+    }
+    return true;
+}
+
+Task *TaskManager::GetTaskInternal() {
+    Task *task = &taskRingBuffer[headTaskIndex];
     headTaskIndex = (headTaskIndex + 1) % taskRingBuffer.Count();
 
     return task;
@@ -155,7 +228,7 @@ unsigned int TaskThreadProc(void *param) {
     SIMD::SetDenormalFlushMode(true);
 
     TaskManager *taskManager = reinterpret_cast<TaskManager *>(param);
-    Task task;
+    Task *task;
 
     while (1) {
         // Lock to get the task.
@@ -176,8 +249,16 @@ unsigned int TaskThreadProc(void *param) {
             task = taskManager->GetTaskInternal();
         }
 
+        task->state = TaskState::Running;
+
         // Do the task.
-        task.function(task.data);
+        if (task->function) {
+            task->function(task->data);
+        } else {
+            TaskWorker *taskWorker = reinterpret_cast<TaskWorker *>(task->data);
+            taskWorker->DoWork();
+            delete taskWorker;
+        }
 
         // Handle task completion
         {
