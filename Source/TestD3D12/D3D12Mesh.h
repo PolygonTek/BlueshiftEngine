@@ -19,8 +19,13 @@ public:
     virtual void                    InitMesh() = 0;
     virtual void                    FreeMesh() = 0;
 
-    bool                            CreateShader(const char *shaderText, int shaderTextSize, ID3DBlob **compiledVertexShader, ID3DBlob **compiledPixelShader);
-    bool                            CreateShaderFromFile(const char *shaderFilename, ID3DBlob **compiledVertexShader, ID3DBlob **compiledPixelShader);
-    ID3D12PipelineState *           CreatePSO(ID3D12RootSignature *rootSignature, ID3DBlob *compiledVertexShader, ID3DBlob *compiledPixelShader, const D3D12_INPUT_LAYOUT_DESC &inputLayout);
+    bool                            CreateShader(const char *sourceName, const char *shaderText, int shaderTextSize, const char *entryPoint, const char *target, ID3DBlob **compiledShaderBlob);
+    bool                            CreateShaderFromFile(const char *shaderFilename, const char *entryPoint, const char *target, ID3DBlob **compiledShaderBlob);
+    bool                            CreateVertexAndPixelShaderFromFile(const char *shaderFilename, ID3DBlob **compiledVertexShaderBlob, ID3DBlob **compiledPixelShaderBlob);
+    ID3D12PipelineState *           CreatePSO(ID3D12RootSignature *rootSignature, const D3D12_SHADER_BYTECODE &compiledVertexShaderByteCode, const D3D12_SHADER_BYTECODE &compiledPixelShaderByteCode, const D3D12_INPUT_LAYOUT_DESC &inputLayout);
     ID3D12PipelineState *           CreatePSO(ID3D12RootSignature *rootSignature, const char *shaderFilename, const D3D12_INPUT_LAYOUT_DESC &inputLayout);
+
+private:
+    bool                            LoadCompiledShader(const char *name, const uint32_t hash, ID3DBlob **compiledShaderBlob);
+    void                            CacheCompiledShader(const char *name, const uint32_t hash, ID3DBlob *compiledShaderBlob);
 };

@@ -18,6 +18,8 @@ set(SRC_FILES
     D3D12RootDescriptorPool.cpp
     D3D12DescriptorPool.h
     D3D12DescriptorPool.cpp
+    D3D12CompiledShaderBlob.h
+    D3D12CompiledShaderBlob.cpp
     D3D12Buffer.h
     D3D12Buffer.cpp
     D3D12Texture.h

@@ -47,7 +47,7 @@ public:
 
     void                                BeginFrame();
     void                                EndFrame();
-    void                                SwapChainBuffers();
+    void                                SwapChainBuffers(bool vsync);
 
     void                                OnResize(int width, int height);
 
@@ -123,6 +123,7 @@ public:
     D3D12DescriptorPool *               srvDescriptorPool = nullptr;
     D3D12DescriptorPool *               rtvDescriptorPool = nullptr;
     D3D12DescriptorPool *               dsvDescriptorPool = nullptr;
+    D3D12DescriptorPool *               samplerDescriptorPool = nullptr;
 
     UINT                                frameCount = 0;
     D3D12FrameData                      frameData[NumFrameResources];

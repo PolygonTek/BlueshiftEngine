@@ -142,3 +142,4 @@ D3D12/
 PIX/
 Cache/
 Contents.meta
+*.cso

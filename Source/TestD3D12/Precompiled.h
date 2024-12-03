@@ -30,6 +30,3 @@
 #endif
 
 using namespace BE1;
-
-#define SAFE_RELEASE(p)         if (p) { p->Release(); p = nullptr; }
-#define SAFE_RELEASE_ARRAY(p)   for (int i = 0; i < COUNT_OF(p); i++) if (p[i]) { (p[i])->Release(); (p[i]) = nullptr; }

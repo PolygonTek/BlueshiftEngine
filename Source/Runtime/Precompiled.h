@@ -225,8 +225,14 @@
 #define SWAP_WORD(w)                ((((w) & 0xff) << 8) | (((w) & 0xff00) >> 8))
 #define SWAP_LONG(l)                ((((l) & 0xff) << 24) | (((l) & 0xff00) << 8) | (((l) & 0xff0000) >> 8) | (((l) & 0xff000000) >> 24))
 
-#define SAFE_DELETE(p)              if (p) { delete p; p = nullptr; }
-#define SAFE_DELETE_ARRAY(p)        if (p) { delete[] p; p = nullptr; }
+#define SAFE_DELETE(p)              if (p) { delete (p); (p) = nullptr; }
+#define SAFE_DELETE_ARRAY(p)        if (p) { delete[] (p); (p) = nullptr; }
+
+#define SAFE_MEM_FREE(p)            if (p) { Mem_Free(p); (p) = nullptr; }
+#define SAFE_MEM_ALIGNEDFREE(p)     if (p) { Mem_AlignedFree(p); (p) = nullptr; }
+
+#define SAFE_RELEASE(p)             if (p) { (p)->Release(); (p) = nullptr; }
+#define SAFE_RELEASE_ARRAY(p)       for (int i = 0; i < COUNT_OF(p); i++) if ((p)[i]) { ((p)[i])->Release(); ((p)[i]) = nullptr; }
 
 #ifndef FLT_INFINITY
     #define FLT_INFINITY            std::numeric_limits<float>::infinity()

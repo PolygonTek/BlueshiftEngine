@@ -28,6 +28,7 @@ public:
         Readback = 2
     };
 
+    D3D12Buffer() = default;
     ~D3D12Buffer() { Release(); }
 
     void                            Release();
@@ -37,6 +38,7 @@ public:
 
     static D3D12Buffer *            CreateBuffer(Usage usage, int size);
 
+private:
 #ifdef USE_D3D12_MEMALLOC
     D3D12MA::Allocation *           bufferAllocation = nullptr;
 #else

@@ -58,6 +58,8 @@ D3D12Buffer* D3D12Buffer::CreateBuffer(D3D12Buffer::Usage usage, int size) {
         heapType = D3D12_HEAP_TYPE_READBACK;
         initialState = D3D12_RESOURCE_STATE_COPY_DEST;
         break;
+    default:
+        return nullptr;
     }
 
     D3D12_RESOURCE_DESC bufferDesc = {};

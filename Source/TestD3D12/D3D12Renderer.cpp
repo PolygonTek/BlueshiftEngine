@@ -111,6 +111,7 @@ void D3D12Renderer::Init(HWND hwnd) {
     if (FAILED(hr)) {
         BE_FATALERROR("CreateCommandQueue : failed");
     }
+    commandQueue->SetName(L"Graphics");
 
     // 스왑 체인 (백버퍼) 생성
     RECT rc;
@@ -122,30 +123,36 @@ void D3D12Renderer::Init(HWND hwnd) {
     swapChainDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
     //swapChainDesc.BufferDesc.RefreshRate.Numerator = m_uiRefreshRate;
     //swapChainDesc.BufferDesc.RefreshRate.Denominator = 1;
-    swapChainDesc.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
+    swapChainDesc.BufferUsage = DXGI_USAGE_BACK_BUFFER | DXGI_USAGE_RENDER_TARGET_OUTPUT;
     swapChainDesc.BufferCount = NumSwapChainBuffers;
     swapChainDesc.SampleDesc.Count = 1;
     swapChainDesc.SampleDesc.Quality = 0;
     swapChainDesc.Scaling = DXGI_SCALING_NONE;
     swapChainDesc.SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD;
     swapChainDesc.AlphaMode = DXGI_ALPHA_MODE_UNSPECIFIED;
-    swapChainDesc.Flags |= DXGI_SWAP_CHAIN_FLAG_ALLOW_TEARING;
+    swapChainDesc.Flags = DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH | DXGI_SWAP_CHAIN_FLAG_ALLOW_TEARING;
 
     DXGI_SWAP_CHAIN_FULLSCREEN_DESC swapChainFullscreenDesc = {};
     swapChainFullscreenDesc.Windowed = TRUE;
 
     IDXGISwapChain1 *swapChain1 = nullptr;
-    hr = factory4->CreateSwapChainForHwnd(commandQueue, hwnd, &swapChainDesc, nullptr, nullptr, &swapChain1);
+    hr = factory4->CreateSwapChainForHwnd(commandQueue, hwnd, &swapChainDesc, &swapChainFullscreenDesc, nullptr, &swapChain1);
     if (FAILED(hr)) {
         BE_FATALERROR("CreateSwapChainForHwnd : failed");
     }
-    hr = factory4->MakeWindowAssociation(hwnd, DXGI_MWA_NO_ALT_ENTER);
+    hr = factory4->MakeWindowAssociation(hwnd, DXGI_MWA_NO_WINDOW_CHANGES | DXGI_MWA_NO_ALT_ENTER);
     if (FAILED(hr)) {
         BE_FATALERROR("MakeWindowAssociation : failed");
     }
-    swapChain1->QueryInterface(IID_PPV_ARGS(&swapChain));
+    hr = swapChain1->QueryInterface(IID_PPV_ARGS(&swapChain));
     swapChain1->Release();
+    if (FAILED(hr)) {
+        BE_FATALERROR("Failed to create swapchain");
+    }
     factory4->Release();
+
+    //IDXGIOutput *output = nullptr;
+    //hr = swapChain->GetContainingOutput(&output);
 
     // Viewport 설정을 백버퍼 크기에 맞게 설정
     viewport.Width = (float)swapChainDesc.Width;
@@ -219,6 +226,7 @@ void D3D12Renderer::Init(HWND hwnd) {
     srvDescriptorPool = new D3D12DescriptorPool(D3D12DescriptorPool::Type::SRV, 100000, false);
     rtvDescriptorPool = new D3D12DescriptorPool(D3D12DescriptorPool::Type::RTV, 16, false);
     dsvDescriptorPool = new D3D12DescriptorPool(D3D12DescriptorPool::Type::DSV, 16, false);
+    samplerDescriptorPool = new D3D12DescriptorPool(D3D12DescriptorPool::Type::Sampler, 16, true);
 
     maxPendingResources = 1024;
     pendingResourceBuffer = new D3D12PendingResource[maxPendingResources];
@@ -267,6 +275,7 @@ void D3D12Renderer::Shutdown() {
     SAFE_DELETE(srvDescriptorPool);
     SAFE_DELETE(rtvDescriptorPool);
     SAFE_DELETE(dsvDescriptorPool);
+    SAFE_DELETE(samplerDescriptorPool);
 
     SAFE_RELEASE(rtvDescriptorHeap);
     SAFE_RELEASE(dsvDescriptorHeap);
@@ -413,7 +422,7 @@ void D3D12Renderer::EndFrame() {
     currentFrameData->EndFrame();
 
     // 백버퍼를 전면버퍼와 교환한다.
-    SwapChainBuffers();
+    SwapChainBuffers(false);
 
     frameCount++;
 
@@ -425,10 +434,10 @@ void D3D12Renderer::EndFrame() {
     FreePendingResources();
 }
 
-void D3D12Renderer::SwapChainBuffers() {
+void D3D12Renderer::SwapChainBuffers(bool vsync) {
     PIX_SCOPED_EVENT(commandQueue, 2, "D3D12Renderer::SwapChainBuffers");
 
-    if (swapChain->Present(0, DXGI_PRESENT_ALLOW_TEARING) == DXGI_ERROR_DEVICE_REMOVED) {
+    if (swapChain->Present(vsync ? 1 : 0, vsync ? 0 : DXGI_PRESENT_ALLOW_TEARING) == DXGI_ERROR_DEVICE_REMOVED) {
         BE_FATALERROR("DXGI Device Removed");
     }
 
