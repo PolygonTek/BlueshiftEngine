@@ -14,11 +14,13 @@
 
 #include "Precompiled.h"
 #include "Platform/PlatformSystem.h"
+#include "Platform/PlatformFile.h"
 #include "D3D12Renderer.h"
 #include "D3D12CommandList.h"
 #include "D3D12CommandListPool.h"
 #include "D3D12RootDescriptorPool.h"
 #include "D3D12DescriptorPool.h"
+#include "D3D12CompiledShaderBlob.h"
 #include "D3D12VisObject.h"
 
 // D3D12.dll 이 D3D12Core.dll 을 찾기 위한 설정
@@ -26,6 +28,8 @@ extern "C" { __declspec(dllexport) extern const UINT D3D12SDKVersion = 614; }
 extern "C" { __declspec(dllexport) extern const char *D3D12SDKPath = u8"."; }
 
 D3D12Renderer       renderer;
+
+static Str          shaderCacheDir = "Cache/D3D12CompiledShaderCache";
 
 void D3D12Renderer::Init(HWND hwnd) {
 #ifdef USE_DEBUG_LAYER
@@ -234,9 +238,9 @@ void D3D12Renderer::Init(HWND hwnd) {
     renderObjects.Reserve(16384);
 
 #ifdef USE_RENDER_TASK
-    // 태스크 스레드를 최대 물리코어 개수만큼만 생성한다.
+    // 렌더 태스크 스레드를 최대 물리코어 개수만큼만 생성한다.
     int numCores = PlatformSystem::NumCPUCores();
-    taskManager.Start(Min(numCores, MaxRenderTaskThreads));
+    renderTaskManager.Start(Min(numCores, MaxRenderTaskThreads));
 #endif
 
     for (int frameIndex = 0; frameIndex < NumFrameResources; ++frameIndex) {
@@ -259,7 +263,7 @@ void D3D12Renderer::Shutdown() {
 #endif
 
 #ifdef USE_RENDER_TASK
-    taskManager.Stop();
+    renderTaskManager.Stop();
 #endif
 
     Finish();
@@ -560,6 +564,202 @@ void D3D12Renderer::OnResize(int width, int height) {
     scissorRect.bottom = height;
 }
 
+bool D3D12Renderer::LoadCompiledShader(const char *name, const uint32_t hash, ID3DBlob **compiledShaderBlob) {
+    Str filename;// = shaderCacheDir;
+    filename.AppendPath(name);
+    filename.SetFileExtension(".cso");
+
+    PlatformFileMapping *fileMapping = PlatformFileMapping::OpenFileRead(filename);
+    if (!fileMapping) {
+        return false;
+    }
+
+    const byte *fileData = (const byte *)fileMapping->GetData();
+    // 저장된 cso 파일과 hash 값이 같은지 비교한다.
+    if (*(uint32_t *)fileData != hash) {
+        delete fileMapping;
+        return false;
+    }
+
+    *compiledShaderBlob = new D3D12CompiledShaderBlob(fileData, fileMapping->GetSize());
+    delete fileMapping;
+
+    return true;
+}
+
+void D3D12Renderer::CacheCompiledShader(const char *name, const uint32_t hash, ID3DBlob *compiledShaderBlob) {
+    if (!compiledShaderBlob || compiledShaderBlob->GetBufferSize() == 0) {
+        return;
+    }
+
+    Str filename;// = shaderCacheDir;
+    filename.AppendPath(name);
+    filename.SetFileExtension(".cso");
+    PlatformFile *file = (PlatformFile *)PlatformFile::OpenFileWrite(filename);
+    if (!file) {
+        return;
+    }
+
+    int fileDataSize = compiledShaderBlob->GetBufferSize() + sizeof(uint32_t);
+    byte *fileData = (byte *)Mem_Alloc32(fileDataSize);
+
+    // 캐싱된 cso 파일의 첫 4바이트는 hash 값을 저장한다.
+    *(uint32_t *)fileData = hash;
+    memcpy(fileData + sizeof(uint32_t), compiledShaderBlob->GetBufferPointer(), compiledShaderBlob->GetBufferSize());
+
+    file->Write(fileData, fileDataSize);
+
+    Mem_AlignedFree(fileData);
+    delete file;
+}
+
+bool D3D12Renderer::CreateShader(const char *sourceName, const char *shaderText, int shaderTextSize, const char *entryPoint, const char *target, ID3DBlob **compiledShaderBlob) {
+    Str fileName = sourceName;
+    Str fileBase;
+    fileName.ExtractFileBase(fileBase);
+    char mangledFilename[256];
+    Str::snPrintf(mangledFilename, sizeof(mangledFilename), "%s-%s-%s", fileBase.c_str(), entryPoint, target);
+
+    Str extension;
+    fileName.ExtractFileExtension(extension);
+    fileName.StripFileName();
+    fileName.AppendPath(mangledFilename);
+    fileName.SetFileExtension(extension);
+
+    // 이미 컴파일된 cso 파일을 로드해본다.
+    const uint32_t shaderTextHash = MD5_BlockChecksum(shaderText, shaderTextSize);
+    bool shouldCompileShader = !LoadCompiledShader(fileName, shaderTextHash, compiledShaderBlob);
+
+    // hash 값이 다르거나 파일이 없다면 새로 컴파일한다.
+    if (shouldCompileShader) {
+#if defined(_DEBUG)
+        // Enable better shader debugging with the graphics debugging tools.
+        UINT compileFlags = D3DCOMPILE_DEBUG | D3DCOMPILE_SKIP_OPTIMIZATION;
+#else
+        UINT compileFlags = 0;
+#endif
+        ID3DBlob *errorBlob = nullptr;
+
+        *compiledShaderBlob = nullptr;
+
+        if (FAILED(D3DCompile(shaderText, shaderTextSize, sourceName, nullptr, nullptr, entryPoint, target, compileFlags, 0, compiledShaderBlob, &errorBlob))) {
+            renderer.PrintCompileErrorMessages(errorBlob);
+            SAFE_RELEASE(errorBlob);
+            return false;
+        }
+
+        // 컴파일했으므로 cso 파일을 저장한다.
+        CacheCompiledShader(fileName, shaderTextHash, *compiledShaderBlob);
+
+        SAFE_RELEASE(errorBlob);
+    }
+    return true;
+}
+
+bool D3D12Renderer::CreateShaderFromFile(const char *shaderFilename, const char *entryPoint, const char *target, ID3DBlob **compiledShaderBlob) {
+    char *shaderText;
+    int shaderTextSize = fileSystem.LoadFile(shaderFilename, true, (void **)&shaderText);
+    if (!shaderText) {
+        return false;
+    }
+
+    if (!CreateShader(shaderFilename, shaderText, shaderTextSize, entryPoint, target, compiledShaderBlob)) {
+        fileSystem.FreeFile(shaderText);
+        return false;
+    }
+
+    fileSystem.FreeFile(shaderText);
+    return true;
+}
+
+bool D3D12Renderer::CreateVertexAndPixelShaderFromFile(const char *shaderFilename, const char *vsEntryPoint, const char *vsTarget, const char *psEntryPoint, const char *psTarget, ID3DBlob **compiledVSBlob, ID3DBlob **compiledPSBlob) {
+    char *shaderText;
+    int shaderTextSize = fileSystem.LoadFile(shaderFilename, true, (void **)&shaderText);
+    if (!shaderText) {
+        return false;
+    }
+
+    bool vsCreated = CreateShader(shaderFilename, shaderText, shaderTextSize, vsEntryPoint, vsTarget, compiledVSBlob);
+    bool psCreated = CreateShader(shaderFilename, shaderText, shaderTextSize, psEntryPoint, psTarget, compiledPSBlob);
+
+    fileSystem.FreeFile(shaderText);
+
+    if (!vsCreated || !psCreated) {
+        SAFE_RELEASE(*compiledVSBlob);
+        SAFE_RELEASE(*compiledPSBlob);
+        return false;
+    }
+    return true;
+}
+
+ID3D12PipelineState *D3D12Renderer::CreatePSO(ID3D12RootSignature *rootSignature, const D3D12_SHADER_BYTECODE &byteCodeVS, const D3D12_SHADER_BYTECODE &byteCodePS, const D3D12_INPUT_LAYOUT_DESC &inputLayout) {
+    const D3D12_RENDER_TARGET_BLEND_DESC defaultRenderTargetBlendDesc = {
+        FALSE, FALSE,
+        D3D12_BLEND_ONE, D3D12_BLEND_ZERO, D3D12_BLEND_OP_ADD,
+        D3D12_BLEND_ONE, D3D12_BLEND_ZERO, D3D12_BLEND_OP_ADD,
+        D3D12_LOGIC_OP_NOOP,
+        D3D12_COLOR_WRITE_ENABLE_ALL
+    };
+    ID3D12PipelineState *pso = nullptr;
+    D3D12_GRAPHICS_PIPELINE_STATE_DESC psoDesc = {};
+    // NOTE: 나중에 호출할 SetGraphicsRootSignature() 에서 PSO 에 지정된 RootSignature 와 다르면 안된다.
+    // 여기서 RootSignature 를 지정하는 이유는 파이프라인 호환성 검사 및 최적화 때문이다.
+    psoDesc.pRootSignature = rootSignature;
+    psoDesc.VS = byteCodeVS;
+    psoDesc.PS = byteCodePS;
+    psoDesc.BlendState.AlphaToCoverageEnable = FALSE;
+    psoDesc.BlendState.IndependentBlendEnable = FALSE;
+    for (UINT i = 0; i < D3D12_SIMULTANEOUS_RENDER_TARGET_COUNT; ++i) {
+        psoDesc.BlendState.RenderTarget[i] = defaultRenderTargetBlendDesc;
+    }
+    psoDesc.SampleMask = UINT_MAX;
+    psoDesc.RasterizerState.FillMode = D3D12_FILL_MODE_SOLID;
+    psoDesc.RasterizerState.CullMode = D3D12_CULL_MODE_BACK;
+    psoDesc.RasterizerState.FrontCounterClockwise = TRUE;
+    psoDesc.RasterizerState.DepthBias = D3D12_DEFAULT_DEPTH_BIAS;
+    psoDesc.RasterizerState.DepthBiasClamp = D3D12_DEFAULT_DEPTH_BIAS_CLAMP;
+    psoDesc.RasterizerState.DepthClipEnable = TRUE;
+    psoDesc.RasterizerState.ConservativeRaster = D3D12_CONSERVATIVE_RASTERIZATION_MODE_OFF;
+    psoDesc.DepthStencilState.DepthEnable = TRUE;
+    psoDesc.DepthStencilState.DepthWriteMask = D3D12_DEPTH_WRITE_MASK_ALL;
+    psoDesc.DepthStencilState.DepthFunc = D3D12_COMPARISON_FUNC_LESS_EQUAL;
+    psoDesc.DepthStencilState.StencilEnable = FALSE;
+    psoDesc.DepthStencilState.StencilReadMask = D3D12_DEFAULT_STENCIL_READ_MASK;
+    psoDesc.DepthStencilState.StencilWriteMask = D3D12_DEFAULT_STENCIL_WRITE_MASK;
+    psoDesc.DepthStencilState.FrontFace = { D3D12_STENCIL_OP_KEEP, D3D12_STENCIL_OP_KEEP, D3D12_STENCIL_OP_KEEP, D3D12_COMPARISON_FUNC_ALWAYS };
+    psoDesc.DepthStencilState.BackFace = { D3D12_STENCIL_OP_KEEP, D3D12_STENCIL_OP_KEEP, D3D12_STENCIL_OP_KEEP, D3D12_COMPARISON_FUNC_ALWAYS };
+    psoDesc.InputLayout = inputLayout;
+    psoDesc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
+    psoDesc.NumRenderTargets = 1;
+    psoDesc.RTVFormats[0] = DXGI_FORMAT_R8G8B8A8_UNORM;
+    psoDesc.DSVFormat = DXGI_FORMAT_D24_UNORM_S8_UINT;
+    psoDesc.SampleDesc.Count = 1;
+    if (FAILED(renderer.device->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&pso)))) {
+        BE_WARNLOG("device->CreateGraphicsPipelineState() failed\n");
+        return nullptr;
+    }
+    return pso;
+}
+
+ID3D12PipelineState *D3D12Renderer::CreatePSO(ID3D12RootSignature *rootSignature, const char *shaderFilename, const D3D12_INPUT_LAYOUT_DESC &inputLayout) {
+    ID3DBlob *compiledVSBlob = nullptr;
+    ID3DBlob *compiledPSBlob = nullptr;
+
+    if (!CreateVertexAndPixelShaderFromFile(shaderFilename, "VSMain", "vs_5_0", "PSMain", "ps_5_0", &compiledVSBlob, &compiledPSBlob)) {
+        return nullptr;
+    }
+
+    D3D12_SHADER_BYTECODE byteCodeVS = CD3DX12_SHADER_BYTECODE(compiledVSBlob->GetBufferPointer(), compiledVSBlob->GetBufferSize());
+    D3D12_SHADER_BYTECODE byteCodePS = CD3DX12_SHADER_BYTECODE(compiledPSBlob->GetBufferPointer(), compiledPSBlob->GetBufferSize());
+
+    ID3D12PipelineState *pso = CreatePSO(rootSignature, byteCodeVS, byteCodePS, inputLayout);
+
+    SAFE_RELEASE(compiledVSBlob);
+    SAFE_RELEASE(compiledPSBlob);
+
+    return pso;
+}
+
 void D3D12Renderer::PrintCompileErrorMessages(ID3DBlob *errorBlob) {
     if (!errorBlob) {
         BE_WARNLOG("D3DCompile failed, but no error message was provided\n");
@@ -702,7 +902,7 @@ void D3D12Renderer::RenderFrame() {
     int numDrawCalls = numVisObjects;
 #endif
 
-    int numTasks = Min(taskManager.NumThreads(), (int)Math::Ceil((float)numDrawCalls / MaxDrawCallsPerTask));
+    int numTasks = Min(renderTaskManager.NumThreads(), (int)Math::Ceil((float)numDrawCalls / MaxDrawCallsPerTask));
     if (numTasks > 1) {
         DrawVisObjectsWithTask(numTasks);
     } else {
@@ -817,7 +1017,7 @@ void D3D12Renderer::DrawVisObjectsWithTask(int numTasks) {
     int lastEndIndex = -1;
 
     // 태스크 정보 초기화
-    objectDrawingTaskDescs.Reserve(taskManager.NumThreads());
+    objectDrawingTaskDescs.Reserve(renderTaskManager.NumThreads());
     objectDrawingTaskDescs.SetCount(0, false);
 
     // 최대 쓰레드 개수만큼 task 를 실행한다.
@@ -827,12 +1027,12 @@ void D3D12Renderer::DrawVisObjectsWithTask(int numTasks) {
         currentThreadDesc.threadIndex = threadIndex++;
         currentThreadDesc.visObjectStartIndex = lastEndIndex + 1;
         currentThreadDesc.visObjectEndIndex = Min(currentThreadDesc.visObjectStartIndex + numVisObjectsPerTasks, numVisObjects) - 1;
-        taskManager.AddTask(::DrawVisObjectsByTaskFunction, &currentThreadDesc, false);
+        renderTaskManager.AddTask(::DrawVisObjectsByTaskFunction, &currentThreadDesc, false);
 
         lastEndIndex = currentThreadDesc.visObjectEndIndex;
     }
 
-    taskManager.WaitFinish(true);
+    renderTaskManager.WaitFinish(true);
 
     // 태스크 별로 execute 할 CommandList 들을 모두 모은다.
     int renderTaskCount = objectDrawingTaskDescs.Count();

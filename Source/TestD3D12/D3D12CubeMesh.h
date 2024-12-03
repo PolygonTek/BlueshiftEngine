@@ -39,6 +39,6 @@ public:
     D3D12IndexBuffer *              indexBuffer = nullptr;
  
     ID3D12RootSignature *           rootSignature = nullptr;
-    ID3D12PipelineState *           pipelineState = nullptr;
-    ID3D12PipelineState *           pipelineStateInstancing = nullptr;
+    ID3D12PipelineState *           singlePSO = nullptr;
+    ID3D12PipelineState *           instancingPSO = nullptr;
 };

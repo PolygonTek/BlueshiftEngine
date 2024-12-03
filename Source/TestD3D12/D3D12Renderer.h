@@ -66,6 +66,16 @@ public:
     void                                MarkForRelease(ID3D12Resource *resource);
     void                                FreePendingResources(bool waitPendings = false);
 
+    bool                                CreateShader(const char *sourceName, const char *shaderText, int shaderTextSize, const char *entryPoint, const char *target, ID3DBlob **compiledShaderBlob);
+    bool                                CreateShaderFromFile(const char *shaderFilename, const char *entryPoint, const char *target, ID3DBlob **compiledShaderBlob);
+    bool                                CreateVertexAndPixelShaderFromFile(const char *shaderFilename, const char *vsEntryPoint, const char *vsTarget, const char *psEntryPoint, const char *psTarget, ID3DBlob **compiledVSBlob, ID3DBlob **compiledPSBlob);
+
+    ID3D12PipelineState *               CreatePSO(ID3D12RootSignature *rootSignature, const D3D12_SHADER_BYTECODE &byteCodeVS, const D3D12_SHADER_BYTECODE &byteCodePS, const D3D12_INPUT_LAYOUT_DESC &inputLayout);
+    ID3D12PipelineState *               CreatePSO(ID3D12RootSignature *rootSignature, const char *shaderFilename, const D3D12_INPUT_LAYOUT_DESC &inputLayout);
+
+    bool                                LoadCompiledShader(const char *name, const uint32_t hash, ID3DBlob **compiledShaderBlob);
+    void                                CacheCompiledShader(const char *name, const uint32_t hash, ID3DBlob *compiledShaderBlob);
+
     void                                PrintCompileErrorMessages(ID3DBlob *errorBlob);
 
 #ifdef USE_D3D12_MEMALLOC
@@ -139,7 +149,7 @@ public:
     Array<DrawObjectTaskDesc>           objectDrawingTaskDescs;
 
 #ifdef USE_RENDER_TASK
-    TaskManager                         taskManager = TaskManager(MaxRenderTasks);
+    TaskManager                         renderTaskManager = TaskManager(MaxRenderTasks);
 #endif
 
 #ifdef USE_RENDER_THREAD

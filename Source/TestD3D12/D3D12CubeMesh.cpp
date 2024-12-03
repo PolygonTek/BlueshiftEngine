@@ -109,8 +109,8 @@ void D3D12CubeMesh::FreeMesh() {
     SAFE_DELETE(indexBuffer);
 
     SAFE_RELEASE(rootSignature);
-    SAFE_RELEASE(pipelineState);
-    SAFE_RELEASE(pipelineStateInstancing);
+    SAFE_RELEASE(singlePSO);
+    SAFE_RELEASE(instancingPSO);
 }
 
 void D3D12CubeMesh::InitRootSignature() {
@@ -162,16 +162,16 @@ void D3D12CubeMesh::InitRootSignature() {
     rootSignatureDesc.pStaticSamplers = &samplerDesc;
     rootSignatureDesc.Flags = D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT;
 
-    ID3DBlob* pSignatureBlob = nullptr;
-    ID3DBlob* pErrorBlob = nullptr;
+    ID3DBlob* signatureBlob = nullptr;
+    ID3DBlob* errorBlob = nullptr;
 
     // TODO: 필요한 루트 시그니쳐를 캐싱하는 방식으로 접근하자.
-    if (SUCCEEDED(D3D12SerializeRootSignature(&rootSignatureDesc, D3D_ROOT_SIGNATURE_VERSION_1, &pSignatureBlob, &pErrorBlob))) {
-        renderer.device->CreateRootSignature(0, pSignatureBlob->GetBufferPointer(), pSignatureBlob->GetBufferSize(), IID_PPV_ARGS(&rootSignature));
+    if (SUCCEEDED(D3D12SerializeRootSignature(&rootSignatureDesc, D3D_ROOT_SIGNATURE_VERSION_1, &signatureBlob, &errorBlob))) {
+        renderer.device->CreateRootSignature(0, signatureBlob->GetBufferPointer(), signatureBlob->GetBufferSize(), IID_PPV_ARGS(&rootSignature));
     }
 
-    SAFE_RELEASE(pSignatureBlob);
-    SAFE_RELEASE(pErrorBlob);
+    SAFE_RELEASE(signatureBlob);
+    SAFE_RELEASE(errorBlob);
 }
 
 void D3D12CubeMesh::InitPipelineState() {
@@ -181,8 +181,8 @@ void D3D12CubeMesh::InitPipelineState() {
         { "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 16, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 }
     };
 
-    pipelineState = CreatePSO(rootSignature, "Source/TestD3D12/Shaders/Cube.hlsl", { inputElementDescs, COUNT_OF(inputElementDescs) });
-    pipelineStateInstancing = CreatePSO(rootSignature, "Source/TestD3D12/Shaders/CubeInstancing.hlsl", { inputElementDescs, COUNT_OF(inputElementDescs) });
+    singlePSO = renderer.CreatePSO(rootSignature, "Source/TestD3D12/Shaders/Cube.hlsl", { inputElementDescs, COUNT_OF(inputElementDescs) });
+    instancingPSO = renderer.CreatePSO(rootSignature, "Source/TestD3D12/Shaders/CubeInstancing.hlsl", { inputElementDescs, COUNT_OF(inputElementDescs) });
 }
 
 void D3D12CubeMesh::DrawMesh(int threadIndex, D3D12CommandList* commandList, const Mat3x4& worldMatrix) {
@@ -230,7 +230,7 @@ void D3D12CubeMesh::DrawMesh(int threadIndex, D3D12CommandList* commandList, con
     commandList->SetVertexBuffers(0, 1, &vertexBuffer->vbv);
     commandList->SetIndexBuffer(&indexBuffer->ibv);
 
-    commandList->SetPipelineState(pipelineState);
+    commandList->SetPipelineState(singlePSO);
     commandList->SetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
     commandList->graphicsCommandList->DrawIndexedInstanced(36, 1, 0, 0, 0);
@@ -281,7 +281,7 @@ void D3D12CubeMesh::DrawMeshInstanced(int threadIndex, D3D12CommandList *command
     commandList->SetVertexBuffers(0, 1, &vertexBuffer->vbv);
     commandList->SetIndexBuffer(&indexBuffer->ibv);
 
-    commandList->SetPipelineState(pipelineStateInstancing);
+    commandList->SetPipelineState(instancingPSO);
     commandList->SetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
     commandList->graphicsCommandList->DrawIndexedInstanced(36, instanceCount, 0, 0, 0);

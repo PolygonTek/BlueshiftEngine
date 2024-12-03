@@ -29,7 +29,7 @@ void D3D12FrameData::Init() {
     InitMemBlocks();
 
 #ifdef USE_RENDER_TASK
-    numThreads = renderer.taskManager.NumThreads();
+    numThreads = renderer.renderTaskManager.NumThreads();
 #else
     numThreads = 1;
 #endif

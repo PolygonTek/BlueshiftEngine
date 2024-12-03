@@ -18,6 +18,7 @@
 
 class D3D12CompiledShaderBlob : public ID3DBlob {
 public:
+    // dataSize 는 uint32_t 타입의 hash 값이 포함된 크기다.
     explicit D3D12CompiledShaderBlob(size_t dataSize);
     D3D12CompiledShaderBlob(const void *data, size_t dataSize);
     ~D3D12CompiledShaderBlob();
