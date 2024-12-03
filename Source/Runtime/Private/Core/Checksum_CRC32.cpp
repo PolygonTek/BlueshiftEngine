@@ -1,6 +1,8 @@
 #include "Precompiled.h"
 #include "Core/Checksum_CRC32.h"
 
+BE_NAMESPACE_BEGIN
+
 /*
    CRC-32
    Copyright (C) 1995-1998 Mark Adler
@@ -165,3 +167,5 @@ uint32_t CRC32_BlockChecksum(const void *data, int length) {
 
     return crc;
 }
+
+BE_NAMESPACE_END

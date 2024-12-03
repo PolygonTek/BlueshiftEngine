@@ -9,6 +9,8 @@
 -------------------------------------------------------------------------------
 */
 
+BE_NAMESPACE_BEGIN
+
 /* MD5 context. */
 struct MD5_CTX {
     unsigned int    state[4];
@@ -21,3 +23,5 @@ void BE_API MD5_Update(MD5_CTX *context, unsigned char const *input, size_t inpu
 void BE_API MD5_Final(MD5_CTX *context, unsigned char digest[16]);
 
 uint32_t BE_API MD5_BlockChecksum(const void *data, int length);
+
+BE_NAMESPACE_END

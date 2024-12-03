@@ -1,6 +1,8 @@
 #include "Precompiled.h"
 #include "Core/Checksum_MD5.h"
 
+BE_NAMESPACE_BEGIN
+
 /*
    MD5 Message Digest Algorithm. (RFC1321)
 */
@@ -241,3 +243,5 @@ uint32_t MD5_BlockChecksum(const void *data, int length) {
 
     return val;
 }
+
+BE_NAMESPACE_END

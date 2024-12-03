@@ -31,6 +31,7 @@ set(COMMON_ENGINE_FILES
     Public/Core/BinSearch.h
     Public/Core/Checksum_CRC32.h
     Public/Core/Checksum_MD5.h
+    Public/Core/Checksum_CityHash.h
     Public/Core/Delegate.h
     Public/Core/Heap.h
     Public/Core/Range.h
@@ -294,6 +295,7 @@ set(COMMON_ENGINE_FILES
 
     Private/Core/Checksum_CRC32.cpp
     Private/Core/Checksum_MD5.cpp
+    Private/Core/Checksum_CityHash.cpp
     Private/Core/IDAllocator.cpp
     Private/Core/Heap.cpp
     Private/Core/UTF8.cpp
@@ -1043,7 +1045,7 @@ elseif (APPLE)
     add_framework(${PROJECT_NAME} OpenAL)
 endif ()
 
-target_link_libraries(${PROJECT_NAME} 
+target_link_libraries(${PROJECT_NAME}
     zlib
     minizip
     libjpeg
