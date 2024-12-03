@@ -73,8 +73,8 @@ public:
     ID3D12PipelineState *               CreatePSO(ID3D12RootSignature *rootSignature, const D3D12_SHADER_BYTECODE &byteCodeVS, const D3D12_SHADER_BYTECODE &byteCodePS, const D3D12_INPUT_LAYOUT_DESC &inputLayout);
     ID3D12PipelineState *               CreatePSO(ID3D12RootSignature *rootSignature, const char *shaderFilename, const D3D12_INPUT_LAYOUT_DESC &inputLayout);
 
-    bool                                LoadCompiledShader(const char *name, const uint32_t hash, ID3DBlob **compiledShaderBlob);
-    void                                CacheCompiledShader(const char *name, const uint32_t hash, ID3DBlob *compiledShaderBlob);
+    bool                                LoadCompiledShader(const char *name, const uint64_t hash, ID3DBlob **compiledShaderBlob);
+    void                                CacheCompiledShader(const char *name, const uint64_t hash, ID3DBlob *compiledShaderBlob);
 
     void                                PrintCompileErrorMessages(ID3DBlob *errorBlob);
 

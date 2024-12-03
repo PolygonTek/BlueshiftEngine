@@ -564,7 +564,7 @@ void D3D12Renderer::OnResize(int width, int height) {
     scissorRect.bottom = height;
 }
 
-bool D3D12Renderer::LoadCompiledShader(const char *name, const uint32_t hash, ID3DBlob **compiledShaderBlob) {
+bool D3D12Renderer::LoadCompiledShader(const char *name, const uint64_t hash, ID3DBlob **compiledShaderBlob) {
     Str filename;// = shaderCacheDir;
     filename.AppendPath(name);
     filename.SetFileExtension(".cso");
@@ -576,7 +576,7 @@ bool D3D12Renderer::LoadCompiledShader(const char *name, const uint32_t hash, ID
 
     const byte *fileData = (const byte *)fileMapping->GetData();
     // 저장된 cso 파일과 hash 값이 같은지 비교한다.
-    if (*(uint32_t *)fileData != hash) {
+    if (*(uint64_t *)fileData != hash) {
         delete fileMapping;
         return false;
     }
@@ -587,7 +587,7 @@ bool D3D12Renderer::LoadCompiledShader(const char *name, const uint32_t hash, ID
     return true;
 }
 
-void D3D12Renderer::CacheCompiledShader(const char *name, const uint32_t hash, ID3DBlob *compiledShaderBlob) {
+void D3D12Renderer::CacheCompiledShader(const char *name, const uint64_t hash, ID3DBlob *compiledShaderBlob) {
     if (!compiledShaderBlob || compiledShaderBlob->GetBufferSize() == 0) {
         return;
     }
@@ -600,12 +600,12 @@ void D3D12Renderer::CacheCompiledShader(const char *name, const uint32_t hash, I
         return;
     }
 
-    int fileDataSize = compiledShaderBlob->GetBufferSize() + sizeof(uint32_t);
+    int fileDataSize = compiledShaderBlob->GetBufferSize() + sizeof(uint64_t);
     byte *fileData = (byte *)Mem_Alloc32(fileDataSize);
 
-    // 캐싱된 cso 파일의 첫 4바이트는 hash 값을 저장한다.
-    *(uint32_t *)fileData = hash;
-    memcpy(fileData + sizeof(uint32_t), compiledShaderBlob->GetBufferPointer(), compiledShaderBlob->GetBufferSize());
+    // 캐싱된 cso 파일의 첫 64 비트는 hash 값을 저장한다.
+    *(uint64_t *)fileData = hash;
+    memcpy(fileData + sizeof(uint64_t), compiledShaderBlob->GetBufferPointer(), compiledShaderBlob->GetBufferSize());
 
     file->Write(fileData, fileDataSize);
 
@@ -627,7 +627,7 @@ bool D3D12Renderer::CreateShader(const char *sourceName, const char *shaderText,
     fileName.SetFileExtension(extension);
 
     // 이미 컴파일된 cso 파일을 로드해본다.
-    const uint32_t shaderTextHash = MD5_BlockChecksum(shaderText, shaderTextSize);
+    const uint64_t shaderTextHash = CityHash64(shaderText, shaderTextSize);
     bool shouldCompileShader = !LoadCompiledShader(fileName, shaderTextHash, compiledShaderBlob);
 
     // hash 값이 다르거나 파일이 없다면 새로 컴파일한다.

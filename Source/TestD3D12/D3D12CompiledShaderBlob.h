@@ -26,8 +26,8 @@ public:
     virtual ULONG STDMETHODCALLTYPE     AddRef() override;
     virtual ULONG STDMETHODCALLTYPE     Release() override;
     virtual HRESULT STDMETHODCALLTYPE   QueryInterface(REFIID riid, void **ppvObject) override;
-    virtual void *STDMETHODCALLTYPE     GetBufferPointer() override { return (byte *)buffer + sizeof(uint32_t); }
-    virtual SIZE_T STDMETHODCALLTYPE    GetBufferSize() override { return size - sizeof(uint32_t); }
+    virtual void *STDMETHODCALLTYPE     GetBufferPointer() override { return (byte *)buffer + sizeof(uint64_t); }
+    virtual SIZE_T STDMETHODCALLTYPE    GetBufferSize() override { return size - sizeof(uint64_t); }
 
 private:
     std::atomic_ulong                   refCount;
