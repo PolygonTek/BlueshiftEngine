@@ -13,11 +13,7 @@
 // limitations under the License.
 
 #include "Precompiled.h"
-#include "D3D12CommandList.h"
 #include "D3D12RenderObject.h"
-#include "D3D12TriangleMesh.h"
-#include "D3D12CubeMesh.h"
-#include "D3D12Renderer.h"
 
 void D3D12RenderObject::Update(const State &stateDef) {
     state = stateDef;

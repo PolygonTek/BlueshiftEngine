@@ -33,7 +33,7 @@ D3D12Renderer       renderer;
 static Str          shaderCacheDir = "Cache/D3D12CompiledShaderCache";
 
 void D3D12Renderer::Init(HWND hwnd) {
-#ifdef USE_DEBUG_LAYER
+#if defined(_DEBUG) || defined(_DEVELOPMENT)
     bool enableDebugLayer = true;
     bool withGpuValidation = true;
 #else
@@ -102,14 +102,15 @@ void D3D12Renderer::Init(HWND hwnd) {
     CreateDevice(&adapter1);
 
     // 어댑터 정보 얻어오기
-    adapter1->GetDesc1(&adapterDesc);
-    vendorId = adapterDesc.VendorId;
-    deviceId = adapterDesc.DeviceId;
-    dedicatedVideoMemSize = adapterDesc.DedicatedVideoMemory;
-    dedicatedSystemMemSize = adapterDesc.DedicatedSystemMemory;
-    sharedSystemMemSize = adapterDesc.SharedSystemMemory;
+    DXGI_ADAPTER_DESC1 dxgiAdapterDesc;
+    adapter1->GetDesc1(&dxgiAdapterDesc);
+    vendorId = dxgiAdapterDesc.VendorId;
+    deviceId = dxgiAdapterDesc.DeviceId;
+    dedicatedVideoMemSize = dxgiAdapterDesc.DedicatedVideoMemory;
+    dedicatedSystemMemSize = dxgiAdapterDesc.DedicatedSystemMemory;
+    sharedSystemMemSize = dxgiAdapterDesc.SharedSystemMemory;
     char temp[128] = "";
-    BE1::PlatformWinUtils::UCS2ToUTF8(adapterDesc.Description, temp, COUNT_OF(temp));
+    BE1::PlatformWinUtils::UCS2ToUTF8(dxgiAdapterDesc.Description, temp, COUNT_OF(temp));
     adapterName = temp;
 
     BE_LOG("Adapter: %s\n", adapterName.c_str());
@@ -174,11 +175,11 @@ void D3D12Renderer::Init(HWND hwnd) {
     queueDesc.Priority = D3D12_COMMAND_QUEUE_PRIORITY_NORMAL;
     queueDesc.Type = D3D12_COMMAND_LIST_TYPE_DIRECT;
 
-    hr = device->CreateCommandQueue(&queueDesc, IID_PPV_ARGS(&commandQueues[D3D12CommandQueueType::Graphics]));
+    hr = device->CreateCommandQueue(&queueDesc, IID_PPV_ARGS(&commandQueues[to_int(D3D12CommandQueueType::Graphics)]));
     if (FAILED(hr)) {
         BE_FATALERROR("CreateCommandQueue (Graphics) failed, ERROR: 0x%x", hr);
     }
-    commandQueues[D3D12CommandQueueType::Graphics]->SetName(L"GraphicsCommandQueue");
+    commandQueues[to_int(D3D12CommandQueueType::Graphics)]->SetName(L"GraphicsCommandQueue");
 
     // Compute CommandQueue 생성
     queueDesc = {};
@@ -186,11 +187,11 @@ void D3D12Renderer::Init(HWND hwnd) {
     queueDesc.Priority = D3D12_COMMAND_QUEUE_PRIORITY_NORMAL;
     queueDesc.Type = D3D12_COMMAND_LIST_TYPE_COMPUTE;
 
-    hr = device->CreateCommandQueue(&queueDesc, IID_PPV_ARGS(&commandQueues[D3D12CommandQueueType::Compute]));
+    hr = device->CreateCommandQueue(&queueDesc, IID_PPV_ARGS(&commandQueues[to_int(D3D12CommandQueueType::Compute)]));
     if (FAILED(hr)) {
         BE_FATALERROR("CreateCommandQueue (Compute) failed, ERROR: 0x%x", hr);
     }
-    commandQueues[D3D12CommandQueueType::Compute]->SetName(L"ComputeCommandQueue");
+    commandQueues[to_int(D3D12CommandQueueType::Compute)]->SetName(L"ComputeCommandQueue");
 
     // Fence 객체 생성
     hr = device->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&fence));
@@ -288,7 +289,7 @@ void D3D12Renderer::Init(HWND hwnd) {
     resourceCommandList = commandListPool->Alloc();
 
     // 현재 백버퍼 인덱스 초기화
-    currentBackBufferIndex = swapChain->GetCurrentBackBufferIndex();
+    currentBackBufferIndex = dxgiSwapChain->GetCurrentBackBufferIndex();
 
     maxPendingResources = 1024;
     pendingResourceBuffer = new D3D12PendingResource[maxPendingResources];
@@ -326,28 +327,27 @@ void D3D12Renderer::Shutdown() {
 
     Finish();
 
-    FreePendingResources(true);
-    SAFE_DELETE(pendingResourceBuffer);
-    maxPendingResources = 0;
-
     for (int frameIndex = 0; frameIndex < NumFrameResources; ++frameIndex) {
         frameData[frameIndex].Shutdown();
     }
+
+    FreePendingResources(true);
+    SAFE_DELETE(pendingResourceBuffer);
+    maxPendingResources = 0;
 
     SAFE_DELETE(srvDescriptorPool);
     SAFE_DELETE(rtvDescriptorPool);
     SAFE_DELETE(dsvDescriptorPool);
     SAFE_DELETE(samplerDescriptorPool);
+    SAFE_DELETE(commandListPool);
 
     SAFE_RELEASE(rtvDescriptorHeap);
     SAFE_RELEASE(dsvDescriptorHeap);
     SAFE_RELEASE_ARRAY(renderTargetBuffers);
     SAFE_RELEASE(depthStencilBuffer);
-    SAFE_RELEASE(swapChain);
-
-    SAFE_DELETE(commandListPool);
-    SAFE_RELEASE(commandQueues[D3D12CommandQueueType::Graphics]);
-    SAFE_RELEASE(commandQueues[D3D12CommandQueueType::Compute]);
+    SAFE_RELEASE(dxgiSwapChain);
+    SAFE_RELEASE(commandQueues[to_int(D3D12CommandQueueType::Graphics)]);
+    SAFE_RELEASE(commandQueues[to_int(D3D12CommandQueueType::Compute)]);
     SAFE_RELEASE(fence);
     SAFE_RELEASE(dxgiFactory);
 
@@ -371,10 +371,10 @@ void D3D12Renderer::Shutdown() {
     }
 }
 
-void D3D12Renderer::CreateSwapChain(HWND hwnd, UINT width, UINT height) {
+void D3D12Renderer::CreateSwapChain(HWND hwnd, int width, int height) {
     DXGI_SWAP_CHAIN_DESC1 swapChainDesc = {};
-    swapChainDesc.Width = width;
-    swapChainDesc.Height = height;
+    swapChainDesc.Width = (UINT)width;
+    swapChainDesc.Height = (UINT)height;
     swapChainDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
     //swapChainDesc.BufferDesc.RefreshRate.Numerator = m_uiRefreshRate;
     //swapChainDesc.BufferDesc.RefreshRate.Denominator = 1;
@@ -395,7 +395,7 @@ void D3D12Renderer::CreateSwapChain(HWND hwnd, UINT width, UINT height) {
     swapChainFullscreenDesc.Windowed = TRUE;
 
     IDXGISwapChain1 *swapChain1 = nullptr;
-    HRESULT hr = dxgiFactory->CreateSwapChainForHwnd(commandQueues[D3D12CommandQueueType::Graphics], hwnd, &swapChainDesc, &swapChainFullscreenDesc, nullptr, &swapChain1);
+    HRESULT hr = dxgiFactory->CreateSwapChainForHwnd(commandQueues[to_int(D3D12CommandQueueType::Graphics)], hwnd, &swapChainDesc, &swapChainFullscreenDesc, nullptr, &swapChain1);
     if (FAILED(hr)) {
         BE_FATALERROR("CreateSwapChainForHwnd failed, ERROR: 0x%x", hr);
     }
@@ -403,7 +403,7 @@ void D3D12Renderer::CreateSwapChain(HWND hwnd, UINT width, UINT height) {
     if (FAILED(hr)) {
         BE_FATALERROR("MakeWindowAssociation failed, ERROR: 0x%x", hr);
     }
-    hr = swapChain1->QueryInterface(IID_PPV_ARGS(&swapChain));
+    hr = swapChain1->QueryInterface(IID_PPV_ARGS(&dxgiSwapChain));
     swapChain1->Release();
     if (FAILED(hr)) {
         BE_FATALERROR("Failed to create swapchain, ERROR: 0x%x", hr);
@@ -415,7 +415,7 @@ void D3D12Renderer::CreateRTVs() {
 
     // 스왑 체인의 버퍼를 가져와서 각 RTV 에 연결한다.
     for (UINT renderTargetIndex = 0; renderTargetIndex < NumSwapChainBuffers; ++renderTargetIndex) {
-        swapChain->GetBuffer(renderTargetIndex, IID_PPV_ARGS(&renderTargetBuffers[renderTargetIndex]));
+        dxgiSwapChain->GetBuffer(renderTargetIndex, IID_PPV_ARGS(&renderTargetBuffers[renderTargetIndex]));
 
         device->CreateRenderTargetView(renderTargetBuffers[renderTargetIndex], nullptr, rtvDescriptorHandle);
 
@@ -473,7 +473,7 @@ void D3D12Renderer::CreateDSV(int width, int height) {
 }
 
 void D3D12Renderer::BeginFrame() {
-    PIX_SCOPED_EVENT(commandQueues[D3D12CommandQueueType::Graphics], 0, "D3D12Renderer::BeginFrame");
+    PIX_SCOPED_EVENT(commandQueues[to_int(D3D12CommandQueueType::Graphics)], 0, "D3D12Renderer::BeginFrame");
 
     currentFrameData = &frameData[currentFrameIndex];
 
@@ -506,7 +506,7 @@ void D3D12Renderer::BeginFrame() {
 }
 
 void D3D12Renderer::EndFrame() {
-    PIX_SCOPED_EVENT(commandQueues[D3D12CommandQueueType::Graphics], 1, "D3D12Renderer::EndFrame");
+    PIX_SCOPED_EVENT(commandQueues[to_int(D3D12CommandQueueType::Graphics)], 1, "D3D12Renderer::EndFrame");
 
     // TODO: 렌더큐에 종료 마킹을 하고, 렌더큐를 실행한다.
 
@@ -539,18 +539,18 @@ void D3D12Renderer::EndFrame() {
 }
 
 void D3D12Renderer::SwapChainBuffers(bool vsync) {
-    PIX_SCOPED_EVENT(commandQueues[D3D12CommandQueueType::Graphics], 2, "D3D12Renderer::SwapChainBuffers");
+    PIX_SCOPED_EVENT(commandQueues[to_int(D3D12CommandQueueType::Graphics)], 2, "D3D12Renderer::SwapChainBuffers");
 
-    if (swapChain->Present(vsync ? 1 : 0, vsync ? 0 : DXGI_PRESENT_ALLOW_TEARING) == DXGI_ERROR_DEVICE_REMOVED) {
+    if (dxgiSwapChain->Present(vsync ? 1 : 0, vsync ? 0 : DXGI_PRESENT_ALLOW_TEARING) == DXGI_ERROR_DEVICE_REMOVED) {
         BE_FATALERROR("DXGI Device Removed");
     }
 
     // 다음 프레임에 사용할 백버퍼 인덱스 얻어오기
-    currentBackBufferIndex = swapChain->GetCurrentBackBufferIndex();
+    currentBackBufferIndex = dxgiSwapChain->GetCurrentBackBufferIndex();
 }
 
 D3D12CommandList* D3D12Renderer::FlushCommandList(D3D12CommandList* commandList) {
-    PIX_SCOPED_EVENT(commandQueues[D3D12CommandQueueType::Graphics], 3, "D3D12Renderer::FlushCommandList");
+    PIX_SCOPED_EVENT(commandQueues[to_int(D3D12CommandQueueType::Graphics)], 3, "D3D12Renderer::FlushCommandList");
 
     // CommandList 기록을 마치고 CommandQueue 로 실행
     commandList->CloseAndExecute(D3D12CommandQueueType::Graphics);
@@ -569,18 +569,18 @@ D3D12CommandList* D3D12Renderer::FlushCommandList(D3D12CommandList* commandList)
     return commandList;
 }
 
-UINT64 D3D12Renderer::SignalFence() {
+uint64_t D3D12Renderer::SignalFence() {
     fenceValue++;
-    commandQueues[D3D12CommandQueueType::Graphics]->Signal(fence, fenceValue);
+    commandQueues[to_int(D3D12CommandQueueType::Graphics)]->Signal(fence, fenceValue);
 
     return fenceValue;
 }
 
-bool D3D12Renderer::IsFenceComplete(UINT64 checkFenceValue) {
+bool D3D12Renderer::IsFenceComplete(uint64_t checkFenceValue) {
     return fence->GetCompletedValue() < checkFenceValue ? false : true;
 }
 
-void D3D12Renderer::WaitFence(UINT64 expectedFenceValue) {
+void D3D12Renderer::WaitFence(uint64_t expectedFenceValue) {
     if (fence->GetCompletedValue() < expectedFenceValue) {
         fence->SetEventOnCompletion(expectedFenceValue, fenceEventHandle);
         WaitForSingleObject(fenceEventHandle, INFINITE);
@@ -600,8 +600,20 @@ void D3D12Renderer::WaitAllFrameFences() {
 void D3D12Renderer::MarkForRelease(ID3D12Resource *resource) {
     D3D12PendingResource *newPendingResource = &pendingResourceBuffer[headPendingIndex];
     newPendingResource->fenceValue = SignalFence();
-    newPendingResource->resource = resource;
+    newPendingResource->resourceToRelease = resource;
 
+    OnPendingResourceAdded();
+}
+
+void D3D12Renderer::MarkForDelete(Resource *resource) {
+    D3D12PendingResource *newPendingResource = &pendingResourceBuffer[headPendingIndex];
+    newPendingResource->fenceValue = SignalFence();
+    newPendingResource->resourceToDelete = resource;
+
+    OnPendingResourceAdded();
+}
+
+void D3D12Renderer::OnPendingResourceAdded() {
     headPendingIndex = headPendingIndex + 1;
 
     // 버퍼가 꽉 찼다면, 가장 오래된 pending resource 를 기다린 후 Release 한다.
@@ -609,7 +621,10 @@ void D3D12Renderer::MarkForRelease(ID3D12Resource *resource) {
         D3D12PendingResource *oldestPendingResource = &pendingResourceBuffer[tailPendingIndex];
 
         WaitFence(oldestPendingResource->fenceValue);
-        oldestPendingResource->resource->Release();
+
+        SAFE_RELEASE(oldestPendingResource->resourceToRelease);
+        SAFE_DELETE(oldestPendingResource->resourceToDelete)
+
         oldestPendingResource->fenceValue = 0;
 
         tailPendingIndex = (tailPendingIndex + 1) % maxPendingResources;
@@ -629,7 +644,8 @@ void D3D12Renderer::FreePendingResources(bool waitPendings) {
             }
         }
 
-        pendingResource->resource->Release();
+        SAFE_RELEASE(pendingResource->resourceToRelease);
+        SAFE_DELETE(pendingResource->resourceToDelete)
 
         tailPendingIndex = (tailPendingIndex + 1) % maxPendingResources;
     }
@@ -649,13 +665,13 @@ void D3D12Renderer::OnResize(int width, int height) {
     SAFE_RELEASE(depthStencilBuffer);
 
     // 스왑 체인 버퍼의 사이즈를 조정한다.
-    swapChain->ResizeBuffers(NumSwapChainBuffers, width, height, DXGI_FORMAT_R8G8B8A8_UNORM, DXGI_SWAP_CHAIN_FLAG_ALLOW_TEARING);
+    dxgiSwapChain->ResizeBuffers(NumSwapChainBuffers, width, height, DXGI_FORMAT_R8G8B8A8_UNORM, DXGI_SWAP_CHAIN_FLAG_ALLOW_TEARING);
 
     CreateRTVs();
 
     CreateDSV(width, height);
 
-    currentBackBufferIndex = swapChain->GetCurrentBackBufferIndex();
+    currentBackBufferIndex = dxgiSwapChain->GetCurrentBackBufferIndex();
 
     viewport.Width = static_cast<float>(width);
     viewport.Height = static_cast<float>(height);
@@ -758,7 +774,25 @@ void D3D12Renderer::CacheCompiledShader(const char *name, const uint64_t hash, I
     delete file;
 }
 
-bool D3D12Renderer::CreateShader(const char *sourceName, const char *shaderText, int shaderTextSize, const char *entryPoint, const char *target, ID3DBlob **compiledShaderBlob) {
+RHIRenderer::Shader *D3D12Renderer::CreateShader(ShaderStage shaderStage, const char *sourceName, const char *shaderText, int shaderTextSize, const char *entryPoint) {
+    LPCSTR target = nullptr;
+    switch (shaderStage) {
+    case ShaderStage::Vertex:
+        target = "vs_5_0";
+        break;
+    case ShaderStage::Fragment:
+        target = "ps_5_0";
+        break;
+    case ShaderStage::Geometry:
+        target = "gs_5_0";
+        break;
+    case ShaderStage::Compute:
+        target = "cs_5_0";
+        break;
+    default:
+        return nullptr;
+    }
+
     Str fileName = sourceName;
     Str fileBase;
     fileName.ExtractFileBase(fileBase);
@@ -771,9 +805,11 @@ bool D3D12Renderer::CreateShader(const char *sourceName, const char *shaderText,
     fileName.AppendPath(mangledFilename);
     fileName.SetFileExtension(extension);
 
+    ID3DBlob *compiledShaderBlob = nullptr;
+
     // 이미 컴파일된 cso 파일을 로드해본다.
     const uint64_t shaderTextHash = CityHash64(shaderText, shaderTextSize);
-    bool shouldCompileShader = !LoadCompiledShader(fileName, shaderTextHash, compiledShaderBlob);
+    bool shouldCompileShader = !LoadCompiledShader(fileName, shaderTextHash, &compiledShaderBlob);
 
     // hash 값이 다르거나 파일이 없다면 새로 컴파일한다.
     if (shouldCompileShader) {
@@ -785,56 +821,39 @@ bool D3D12Renderer::CreateShader(const char *sourceName, const char *shaderText,
 #endif
         ID3DBlob *errorBlob = nullptr;
 
-        *compiledShaderBlob = nullptr;
-
-        if (FAILED(D3DCompile(shaderText, shaderTextSize, sourceName, nullptr, nullptr, entryPoint, target, compileFlags, 0, compiledShaderBlob, &errorBlob))) {
+        if (FAILED(D3DCompile(shaderText, shaderTextSize, sourceName, nullptr, nullptr, entryPoint, target, compileFlags, 0, &compiledShaderBlob, &errorBlob))) {
             PrintCompileErrorMessages(errorBlob);
             SAFE_RELEASE(errorBlob);
-            return false;
+            return nullptr;
         }
 
-        // 컴파일했으므로 cso 파일을 저장한다.
-        CacheCompiledShader(fileName, shaderTextHash, *compiledShaderBlob);
-
         SAFE_RELEASE(errorBlob);
+
+        // 컴파일했으므로 cso 파일을 저장한다.
+        CacheCompiledShader(fileName, shaderTextHash, compiledShaderBlob);
     }
-    return true;
+
+    D3D12Shader *shader = new D3D12Shader;
+    shader->shaderStage = shaderStage;
+    shader->compiledShaderBlob = compiledShaderBlob;
+    return shader;
 }
 
-bool D3D12Renderer::CreateShaderFromFile(const char *shaderFilename, const char *entryPoint, const char *target, ID3DBlob **compiledShaderBlob) {
+RHIRenderer::Shader *D3D12Renderer::CreateShaderFromFile(ShaderStage shaderStage, const char *filename, const char *entryPoint) {
     char *shaderText;
-    int shaderTextSize = fileSystem.LoadFile(shaderFilename, true, (void **)&shaderText);
+    int shaderTextSize = fileSystem.LoadFile(filename, true, (void **)&shaderText);
     if (!shaderText) {
-        return false;
+        return nullptr;
     }
 
-    if (!CreateShader(shaderFilename, shaderText, shaderTextSize, entryPoint, target, compiledShaderBlob)) {
+    Shader *shader = CreateShader(shaderStage, filename, shaderText, shaderTextSize, entryPoint);
+    if (!shader) {
         fileSystem.FreeFile(shaderText);
-        return false;
+        return nullptr;
     }
 
     fileSystem.FreeFile(shaderText);
-    return true;
-}
-
-bool D3D12Renderer::CreateVertexAndPixelShaderFromFile(const char *shaderFilename, const char *vsEntryPoint, const char *vsTarget, const char *psEntryPoint, const char *psTarget, ID3DBlob **compiledVSBlob, ID3DBlob **compiledPSBlob) {
-    char *shaderText;
-    int shaderTextSize = fileSystem.LoadFile(shaderFilename, true, (void **)&shaderText);
-    if (!shaderText) {
-        return false;
-    }
-
-    bool vsCreated = CreateShader(shaderFilename, shaderText, shaderTextSize, vsEntryPoint, vsTarget, compiledVSBlob);
-    bool psCreated = CreateShader(shaderFilename, shaderText, shaderTextSize, psEntryPoint, psTarget, compiledPSBlob);
-
-    fileSystem.FreeFile(shaderText);
-
-    if (!vsCreated || !psCreated) {
-        SAFE_RELEASE(*compiledVSBlob);
-        SAFE_RELEASE(*compiledPSBlob);
-        return false;
-    }
-    return true;
+    return shader;
 }
 
 ID3D12PipelineState *D3D12Renderer::CreatePSOFromLibrary(const D3D12_PIPELINE_STATE_STREAM_DESC *streamDesc, ID3D12PipelineLibrary1 *library, const TCHAR *name) {
@@ -911,20 +930,30 @@ ID3D12PipelineState *D3D12Renderer::CreatePSO(ID3D12RootSignature *rootSignature
 }
 
 ID3D12PipelineState *D3D12Renderer::CreatePSO(ID3D12RootSignature *rootSignature, const char *shaderFilename, const D3D12_INPUT_LAYOUT_DESC &inputLayout) {
-    ID3DBlob *compiledVSBlob = nullptr;
-    ID3DBlob *compiledPSBlob = nullptr;
-
-    if (!CreateVertexAndPixelShaderFromFile(shaderFilename, "VSMain", "vs_5_0", "PSMain", "ps_5_0", &compiledVSBlob, &compiledPSBlob)) {
+    char *shaderText;
+    int shaderTextSize = fileSystem.LoadFile(shaderFilename, true, (void **)&shaderText);
+    if (!shaderText) {
         return nullptr;
     }
 
-    D3D12_SHADER_BYTECODE byteCodeVS = CD3DX12_SHADER_BYTECODE(compiledVSBlob->GetBufferPointer(), compiledVSBlob->GetBufferSize());
-    D3D12_SHADER_BYTECODE byteCodePS = CD3DX12_SHADER_BYTECODE(compiledPSBlob->GetBufferPointer(), compiledPSBlob->GetBufferSize());
+    D3D12Shader *vs = static_cast<D3D12Shader *>(CreateShader(ShaderStage::Vertex, shaderFilename, shaderText, shaderTextSize, "VSMain"));
+    D3D12Shader *ps = static_cast<D3D12Shader *>(CreateShader(ShaderStage::Fragment, shaderFilename, shaderText, shaderTextSize, "PSMain"));
+
+    fileSystem.FreeFile(shaderText);
+
+    if (!vs || !ps) {
+        SAFE_DELETE(vs);
+        SAFE_DELETE(ps);
+        return nullptr;
+    }
+
+    D3D12_SHADER_BYTECODE byteCodeVS = CD3DX12_SHADER_BYTECODE(vs->compiledShaderBlob->GetBufferPointer(), vs->compiledShaderBlob->GetBufferSize());
+    D3D12_SHADER_BYTECODE byteCodePS = CD3DX12_SHADER_BYTECODE(ps->compiledShaderBlob->GetBufferPointer(), ps->compiledShaderBlob->GetBufferSize());
 
     ID3D12PipelineState *pso = CreatePSO(rootSignature, byteCodeVS, byteCodePS, inputLayout);
 
-    SAFE_RELEASE(compiledVSBlob);
-    SAFE_RELEASE(compiledPSBlob);
+    SAFE_DELETE(vs);
+    SAFE_DELETE(ps);
 
     return pso;
 }
@@ -1057,7 +1086,7 @@ void D3D12Renderer::RenderScene(/*const D3D12Camera *camera*/) {
 }
 
 void D3D12Renderer::RenderFrame() {
-    PIX_SCOPED_EVENT(commandQueues[D3D12CommandQueueType::Graphics], 4, "D3D12Renderer::RenderFrame");
+    PIX_SCOPED_EVENT(commandQueues[to_int(D3D12CommandQueueType::Graphics)], 4, "D3D12Renderer::RenderFrame");
 
     int numVisObjects = currentFrameData->NumVisObjects();
     if (numVisObjects == 0) {
@@ -1212,7 +1241,7 @@ void D3D12Renderer::DrawVisObjectsWithTask(int numTasks) {
 
     // CommandList 들을 한꺼번에 실행
     if (renderTaskCount > 0) {
-        commandQueues[D3D12CommandQueueType::Graphics]->ExecuteCommandLists(renderTaskCount, execCommandLists);
+        commandQueues[to_int(D3D12CommandQueueType::Graphics)]->ExecuteCommandLists(renderTaskCount, execCommandLists);
     }
 }
 #endif

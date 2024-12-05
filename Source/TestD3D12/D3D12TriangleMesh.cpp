@@ -16,9 +16,6 @@
 #include "D3D12Renderer.h"
 #include "D3D12CommandList.h"
 #include "D3D12RootDescriptorPool.h"
-#include "D3D12VertexBuffer.h"
-#include "D3D12IndexBuffer.h"
-#include "D3D12Texture.h"
 #include "D3D12TriangleMesh.h"
 
 struct TriangleVertex {
@@ -61,9 +58,9 @@ void D3D12TriangleMesh::InitMesh() {
         0, 1, 2
     };
 
-    vertexBuffer = D3D12VertexBuffer::CreateVertexBuffer(D3D12VertexBuffer::Type::Static, sizeof(verts[0]), COUNT_OF(verts), (void *)verts);
-    indexBuffer = D3D12IndexBuffer::CreateIndexBuffer(D3D12IndexBuffer::Type::Static, sizeof(indexes[0]), COUNT_OF(indexes), (void *)indexes);
-    texture = D3D12Texture::CreateTexture(D3D12Texture::Type::Texture2D, "Data/EngineTextures/checker.dds");
+    vertexBuffer = renderer.CreateVertexBuffer(RHIRenderer::BufferType::Static, sizeof(verts[0]), COUNT_OF(verts), (void *)verts);
+    indexBuffer = renderer.CreateIndexBuffer(RHIRenderer::BufferType::Static, sizeof(indexes[0]), COUNT_OF(indexes), (void *)indexes);
+    texture = renderer.CreateTextureFromFile(RHIRenderer::TextureType::Texture2D, "Data/EngineTextures/checker.dds");
 
     InitRootSignature();
 
@@ -71,9 +68,9 @@ void D3D12TriangleMesh::InitMesh() {
 }
 
 void D3D12TriangleMesh::FreeMesh() {
-    SAFE_DELETE(texture);
-    SAFE_DELETE(vertexBuffer);
-    SAFE_DELETE(indexBuffer);
+    renderer.MarkForDelete(texture);
+    renderer.MarkForDelete(vertexBuffer);
+    renderer.MarkForDelete(indexBuffer);
 
     SAFE_RELEASE(rootSignature);
     SAFE_RELEASE(singlePSO);
@@ -122,18 +119,19 @@ void D3D12TriangleMesh::InitRootSignature() {
     samplerDesc.RegisterSpace = 0;
     samplerDesc.ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;
 
-    D3D12_ROOT_SIGNATURE_DESC rootSignatureDesc;
-    rootSignatureDesc.NumParameters = COUNT_OF(rootParameters);
-    rootSignatureDesc.pParameters = rootParameters;
-    rootSignatureDesc.NumStaticSamplers = 1;
-    rootSignatureDesc.pStaticSamplers = &samplerDesc;
-    rootSignatureDesc.Flags = D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT;
+    D3D12_VERSIONED_ROOT_SIGNATURE_DESC rootSignatureDesc;
+    rootSignatureDesc.Version = D3D_ROOT_SIGNATURE_VERSION_1_0;
+    rootSignatureDesc.Desc_1_0.NumParameters = COUNT_OF(rootParameters);
+    rootSignatureDesc.Desc_1_0.pParameters = rootParameters;
+    rootSignatureDesc.Desc_1_0.NumStaticSamplers = 1;
+    rootSignatureDesc.Desc_1_0.pStaticSamplers = &samplerDesc;
+    rootSignatureDesc.Desc_1_0.Flags = D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT;
 
     ID3DBlob* signatureBlob = nullptr;
     ID3DBlob* errorBlob = nullptr;
 
     // TODO: 필요한 루트 시그니쳐를 캐싱하는 방식으로 접근하자.
-    if (SUCCEEDED(D3D12SerializeRootSignature(&rootSignatureDesc, D3D_ROOT_SIGNATURE_VERSION_1, &signatureBlob, &errorBlob))) {
+    if (SUCCEEDED(D3D12SerializeVersionedRootSignature(&rootSignatureDesc, &signatureBlob, &errorBlob))) {
         renderer.device->CreateRootSignature(0, signatureBlob->GetBufferPointer(), signatureBlob->GetBufferSize(), IID_PPV_ARGS(&rootSignature));
     }
 
@@ -175,7 +173,7 @@ void D3D12TriangleMesh::DrawMesh(int threadIndex, D3D12CommandList *commandList,
 
     // 루트 디스크립터 테이블에 SRV 디스크립터 카피 - 0번
     CD3DX12_CPU_DESCRIPTOR_HANDLE srvDest(cpuRootDescriptorHandle, 0, rootDescriptorPool->descriptorHandleSize);
-    renderer.device->CopyDescriptorsSimple(1, srvDest, texture->descriptorHandle, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+    renderer.device->CopyDescriptorsSimple(1, srvDest, static_cast<D3D12Texture *>(texture)->descriptorHandle, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
 
     // 루트 디스크립터 테이블에 CBV 디스크립터 카피 - 1번
     CD3DX12_CPU_DESCRIPTOR_HANDLE cbvDest(cpuRootDescriptorHandle, 1, rootDescriptorPool->descriptorHandleSize);
@@ -195,10 +193,10 @@ void D3D12TriangleMesh::DrawMesh(int threadIndex, D3D12CommandList *commandList,
     //commandList->graphicsCommandList->SetGraphicsRootDescriptorTable(1, gpuRootDescriptorHandle);
 
     commandList->SetPipelineState(singlePSO);
-    commandList->SetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+    commandList->SetPrimitiveTopology(RHIRenderer::PrimitiveTopology::TriangleList);
 
-    commandList->SetVertexBuffers(0, 1, &vertexBuffer->vbv);
-    commandList->SetIndexBuffer(&indexBuffer->ibv);
+    commandList->SetVertexBuffer(0, vertexBuffer);
+    commandList->SetIndexBuffer(indexBuffer);
 
     commandList->graphicsCommandList->DrawIndexedInstanced(3, 1, 0, 0, 0);
 }
@@ -227,7 +225,7 @@ void D3D12TriangleMesh::DrawMeshInstanced(int threadIndex, D3D12CommandList* com
 
     // 루트 디스크립터 테이블에 SRV 디스크립터 카피 - 0번
     CD3DX12_CPU_DESCRIPTOR_HANDLE srvDest(cpuRootDescriptorHandle, 0, rootDescriptorPool->descriptorHandleSize);
-    renderer.device->CopyDescriptorsSimple(1, srvDest, texture->descriptorHandle, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+    renderer.device->CopyDescriptorsSimple(1, srvDest, static_cast<D3D12Texture *>(texture)->descriptorHandle, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
 
     // 루트 디스크립터 테이블에 CBV 디스크립터 카피 - 1번
     CD3DX12_CPU_DESCRIPTOR_HANDLE cbvDest(cpuRootDescriptorHandle, 1, rootDescriptorPool->descriptorHandleSize);
@@ -247,10 +245,10 @@ void D3D12TriangleMesh::DrawMeshInstanced(int threadIndex, D3D12CommandList* com
     //commandList->graphicsCommandList->SetGraphicsRootDescriptorTable(1, gpuRootDescriptorHandle);
 
     commandList->SetPipelineState(instancingPSO);
-    commandList->SetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+    commandList->SetPrimitiveTopology(RHIRenderer::PrimitiveTopology::TriangleList);
 
-    commandList->SetVertexBuffers(0, 1, &vertexBuffer->vbv);
-    commandList->SetIndexBuffer(&indexBuffer->ibv);
+    commandList->SetVertexBuffer(0, vertexBuffer);
+    commandList->SetIndexBuffer(indexBuffer);
 
     commandList->graphicsCommandList->DrawIndexedInstanced(3, instanceCount, 0, 0, 0);
 }

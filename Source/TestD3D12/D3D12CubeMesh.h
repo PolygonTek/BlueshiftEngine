@@ -34,9 +34,9 @@ public:
     void                            InitRootSignature();
     void                            InitPipelineState();
 
-    D3D12Texture *                  texture = nullptr;
-    D3D12VertexBuffer *             vertexBuffer = nullptr;
-    D3D12IndexBuffer *              indexBuffer = nullptr;
+    RHIRenderer::Texture *          texture = nullptr;
+    RHIRenderer::VertexBuffer *     vertexBuffer = nullptr;
+    RHIRenderer::IndexBuffer *      indexBuffer = nullptr;
  
     ID3D12RootSignature *           rootSignature = nullptr;
     ID3D12PipelineState *           singlePSO = nullptr;

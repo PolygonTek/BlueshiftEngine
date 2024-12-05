@@ -14,3 +14,19 @@
 
 #include "Precompiled.h"
 #include "D3D12CommandList.h"
+
+D3D12_PRIMITIVE_TOPOLOGY D3D12CommandList::ToD3D12PrimitiveTopology(RHIRenderer::PrimitiveTopology primitiveTopology) {
+    switch (primitiveTopology) {
+    case RHIRenderer::PrimitiveTopology::PointList:
+        return D3D_PRIMITIVE_TOPOLOGY_POINTLIST;
+    case RHIRenderer::PrimitiveTopology::LineList:
+        return D3D_PRIMITIVE_TOPOLOGY_LINELIST;
+    case RHIRenderer::PrimitiveTopology::LineStrip:
+        return D3D_PRIMITIVE_TOPOLOGY_LINESTRIP;
+    case RHIRenderer::PrimitiveTopology::TriangleList:
+        return D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+    case RHIRenderer::PrimitiveTopology::TriangleStrip:
+        return D3D_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP;
+    }
+    return D3D_PRIMITIVE_TOPOLOGY_UNDEFINED;
+}

@@ -14,6 +14,7 @@
 
 #pragma once
 
+#include "RHIRenderer.h"
 #include "D3D12Common.h"
 
 #ifdef USE_D3D12_MEMALLOC
@@ -26,27 +27,112 @@
 class D3D12CommandList;
 class D3D12DescriptorPool;
 
+class D3D12Buffer : public RHIRenderer::Buffer {
+public:
+    D3D12Buffer() = default;
+    virtual ~D3D12Buffer() { Release(); }
+
+    void                                Release();
+
+    ID3D12Resource *                    GetResource();
+    uint64_t                            GetSize();
+
+#ifdef USE_D3D12_MEMALLOC
+    D3D12MA::Allocation *               bufferAllocation = nullptr;
+#else
+    ID3D12Resource *                    bufferResource = nullptr;
+#endif
+};
+
+class D3D12VertexBuffer : public RHIRenderer::VertexBuffer {
+public:
+    virtual ~D3D12VertexBuffer() { Release(); }
+
+    void                                Release() { SAFE_DELETE(buffer); }
+
+    D3D12Buffer *                       buffer = nullptr;
+    D3D12_VERTEX_BUFFER_VIEW            vbv = {};
+};
+
+class D3D12IndexBuffer : public RHIRenderer::IndexBuffer {
+public:
+    virtual ~D3D12IndexBuffer() { Release(); }
+
+    void                                Release() { SAFE_DELETE(buffer); }
+
+    D3D12Buffer *                       buffer = nullptr;
+    D3D12_INDEX_BUFFER_VIEW             ibv = {};
+};
+
+class D3D12ConstantBuffer : public RHIRenderer::ConstantBuffer {
+public:
+    virtual ~D3D12ConstantBuffer() { Release(); }
+
+    void                                Release() { SAFE_DELETE(buffer); }
+
+    D3D12Buffer *                       buffer = nullptr;
+};
+
+class D3D12Texture : public RHIRenderer::Texture {
+public:
+    virtual ~D3D12Texture() { Release(); }
+
+    void                                Release();
+
+    static bool                         ImageFormatToDXGIFormat(Image::Format::Enum imageFormat, bool isSRGB, DXGI_FORMAT* dxgiFormat);
+    static bool                         DXGIFormatToImageFormat(DXGI_FORMAT dxgiFormat, Image::Format::Enum *imageFormat, bool *isSRGB);
+    static bool                         IsSupportedImageFormat(Image::Format::Enum imageFormat) { return D3D12Texture::ImageFormatToDXGIFormat(imageFormat, false, nullptr); }
+    static Image::Format::Enum          ToUncompressedImageFormat(Image::Format::Enum imageFormat);
+    static Image::Format::Enum          ToCompressedImageFormat(Image::Format::Enum inFormat, bool useNormalMap);
+    static void                         AdjustTextureFormat(bool useCompression, bool useNormalMap, Image::Format::Enum inFormat, Image::Format::Enum *outFormat);
+
+#ifdef USE_D3D12_MEMALLOC
+    D3D12MA::Allocation *               textureAllocation = nullptr;
+#else
+    ID3D12Resource *                    textureResource = nullptr;
+#endif
+    D3D12_RESOURCE_DESC                 textureDesc;
+    D3D12_CPU_DESCRIPTOR_HANDLE         descriptorHandle = {0};
+};
+
+class D3D12Shader : public RHIRenderer::Shader {
+public:
+    virtual ~D3D12Shader() { Release(); }
+
+    void                                Release() { SAFE_RELEASE(compiledShaderBlob); }
+
+    ID3DBlob *                          compiledShaderBlob = nullptr;
+};
+
+class D3D12PipelineState : public RHIRenderer::PipelineState {
+public:
+    virtual ~D3D12PipelineState() { Release(); }
+
+    void                                Release() { SAFE_RELEASE(pso); }
+
+    ID3D12PipelineState *               pso = nullptr;
+};
+
 #ifdef USE_RENDER_THREAD
 enum class FrameSyncState : uint8_t {
-    WaitingForUpdateCompleted,  // (렌더 스레드가 렌더링이 완료되어) 메인 스레드의 다음 업데이트 작업이 완료되기를 기다리는 상태
-    WaitingForRenderCompleted   // (메인 스레드가 업데이트가 완료되어) 렌더 스레드의 다음 렌더링 작업이 완료되기를 기다리는 상태
+    WaitingForUpdateCompleted,          // (렌더 스레드가 렌더링이 완료되어) 메인 스레드의 다음 업데이트 작업이 완료되기를 기다리는 상태
+    WaitingForRenderCompleted           // (메인 스레드가 업데이트가 완료되어) 렌더 스레드의 다음 렌더링 작업이 완료되기를 기다리는 상태
 };
 #endif
 
-struct D3D12CommandQueueType {
-    enum Enum {
-        Graphics,
-        Compute,
-        MaxCommandQueueType
-    };
+enum class D3D12CommandQueueType : uint8_t {
+    Graphics,
+    Compute,
+    Count
 };
 
 struct D3D12PendingResource {
     UINT64                              fenceValue = 0;
-    ID3D12Resource *                    resource = nullptr;
+    ID3D12Resource *                    resourceToRelease = nullptr;
+    RHIRenderer::Resource *             resourceToDelete = nullptr;
 };
 
-class D3D12Renderer {
+class D3D12Renderer : public RHIRenderer {
 public:
     void                                Init(HWND hwnd);
     void                                Shutdown();
@@ -60,25 +146,39 @@ public:
     void                                OnResize(int width, int height);
 
     void                                CreateDevice(IDXGIAdapter1 **adapterPtr);
-    void                                CreateSwapChain(HWND hwnd, UINT width, UINT height);
+    void                                CreateSwapChain(HWND hwnd, int width, int height);
     void                                CreateRTVs();
     void                                CreateDSV(int width, int height);
 
     D3D12CommandList *                  FlushCommandList(D3D12CommandList *commandList);
 
-    UINT64                              SignalFence();
-    bool                                IsFenceComplete(UINT64 checkFenceValue);
-    void                                WaitFence(UINT64 expectedFenceValue);
+    uint64_t                            SignalFence();
+    bool                                IsFenceComplete(uint64_t checkFenceValue);
+    void                                WaitFence(uint64_t expectedFenceValue);
     void                                Finish();
 
     void                                WaitAllFrameFences();
 
     void                                MarkForRelease(ID3D12Resource *resource);
+    void                                MarkForDelete(Resource *resource);
+    void                                OnPendingResourceAdded();
     void                                FreePendingResources(bool waitPendings = false);
 
-    bool                                CreateShader(const char *sourceName, const char *shaderText, int shaderTextSize, const char *entryPoint, const char *target, ID3DBlob **compiledShaderBlob);
-    bool                                CreateShaderFromFile(const char *shaderFilename, const char *entryPoint, const char *target, ID3DBlob **compiledShaderBlob);
-    bool                                CreateVertexAndPixelShaderFromFile(const char *shaderFilename, const char *vsEntryPoint, const char *vsTarget, const char *psEntryPoint, const char *psTarget, ID3DBlob **compiledVSBlob, ID3DBlob **compiledPSBlob);
+    Buffer *                            CreateBuffer(BufferUsage usage, int size);
+    VertexBuffer *                      CreateVertexBuffer(BufferType type, int vertexSize, int numVerts, void *data);
+    IndexBuffer *                       CreateIndexBuffer(BufferType type, int indexSize, int numIndexes, void *data);
+    ConstantBuffer *                    CreateConstantBuffer(BufferType type, int size, void *data);
+
+    Texture *                           CreateTexture(TextureType textureType, const Image *image);
+    Texture *                           CreateTexture(TextureType textureType, const Image *image, Image::Format::Enum dstFormat, bool useMipmaps);
+    Texture *                           CreateTextureFromFile(TextureType textureType, const char *filename, bool useCompression = true, bool useNormalMap = false);
+
+    void                                GetTextureImage2D(Texture *texture, int level, Image::Format::Enum imageFormat, void *outPixels);
+    bool                                SetTextureSubImage2D(Texture *texture, int level, int x, int y, int width, int height, Image::Format::Enum imageFormat, const void *pixels);
+    bool                                SetTextureSubImage3D(Texture *texture, int level, int x, int y, int z, int width, int height, int depth, Image::Format::Enum imageFormat, const void *pixels);
+
+    Shader *                            CreateShader(ShaderStage shaderStage, const char *sourceName, const char *shaderText, int shaderTextSize, const char *entryPoint);
+    Shader *                            CreateShaderFromFile(ShaderStage shaderStage, const char *filename, const char *entryPoint);
 
     ID3D12PipelineState *               CreatePSOFromLibrary(const D3D12_PIPELINE_STATE_STREAM_DESC *streamDesc, ID3D12PipelineLibrary1 *library, const TCHAR *name);
     ID3D12PipelineState *               CreatePSO(ID3D12RootSignature *rootSignature, const D3D12_SHADER_BYTECODE &byteCodeVS, const D3D12_SHADER_BYTECODE &byteCodePS, const D3D12_INPUT_LAYOUT_DESC &inputLayout);
@@ -114,19 +214,17 @@ public:
     void                                DrawVisObjectsByTask(D3D12Renderer::DrawObjectTaskDesc *taskDesc);
 #endif
 
-    static constexpr UINT               NumSwapChainBuffers = 3;
+    static constexpr int                NumSwapChainBuffers = 3;
 
-    IDXGIFactory4 *                     dxgiFactory = nullptr;
     ID3D12Device5 *                     device = nullptr;
-    DXGI_ADAPTER_DESC1                  adapterDesc = {};
-    IDXGISwapChain3 *                   swapChain = nullptr;
-    ID3D12CommandQueue *                commandQueues[D3D12CommandQueueType::MaxCommandQueueType] = {};
+    IDXGIFactory4 *                     dxgiFactory = nullptr;
+    IDXGISwapChain3 *                   dxgiSwapChain = nullptr;
+    ID3D12CommandQueue *                commandQueues[to_int(D3D12CommandQueueType::Count)] = {};
     D3D12CommandListPool *              commandListPool = nullptr;
     D3D12CommandList *                  resourceCommandList = nullptr;
     ID3D12Fence *                       fence = nullptr;
-    UINT64                              fenceValue = 0;
+    uint64_t                            fenceValue = 0;
     HANDLE                              fenceEventHandle = nullptr;
-
 #ifdef USE_D3D12_MEMALLOC
     D3D12MA::Allocator *                allocator = nullptr;
 #endif

@@ -312,6 +312,11 @@ inline T *address_of(T &&in) {
     return &in;
 }
 
+template <typename EnumType>
+constexpr std::underlying_type_t<EnumType> to_int(EnumType e) noexcept {
+    return static_cast<std::underlying_type_t<EnumType>>(e);
+}
+
 template <bool... B>
 struct static_all_of;
 

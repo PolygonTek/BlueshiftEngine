@@ -13,13 +13,11 @@
 // limitations under the License.
 
 #include "Precompiled.h"
-#include "D3D12FrameData.h"
 #include "D3D12Renderer.h"
+#include "D3D12FrameData.h"
 #include "D3D12CommandListPool.h"
 #include "D3D12RootDescriptorPool.h"
 #include "D3D12DescriptorPool.h"
-#include "D3D12ConstantBuffer.h"
-#include "D3D12Buffer.h"
 #include "D3D12VisObject.h"
 
 static constexpr int MaxMemSizePerBlock = 0x100000;
@@ -47,7 +45,7 @@ void D3D12FrameData::Init() {
         data->cbvDescriptorPool = new D3D12DescriptorPool(D3D12DescriptorPool::Type::SRV, 8192, false);
 
         // 다이나믹 상수 버퍼 생성
-        data->constantBuffer = D3D12ConstantBuffer::CreateConstantBuffer(65536 * 16);
+        data->constantBuffer = static_cast<D3D12ConstantBuffer *>(renderer.CreateConstantBuffer(RHIRenderer::BufferType::Dynamic, 65536 * 16, nullptr));
 
         // 상수 버퍼를 프로그램이 끝날 때 까지 Map 해놓고 쓴다. (Pinned) 
         data->constantBuffer->buffer->GetResource()->Map(0, nullptr, reinterpret_cast<void **>(&data->mappedConstantBase));
@@ -64,7 +62,8 @@ void D3D12FrameData::Shutdown() {
         data->cbvDescriptorPool->Clear();
         data->cbvDescriptorHandles.SetCount(0, false);
 
-        SAFE_DELETE(data->constantBuffer);
+        renderer.MarkForDelete(data->constantBuffer);
+
         SAFE_DELETE(data->cbvDescriptorPool);
         SAFE_DELETE(data->rootDescriptorPool);
         SAFE_DELETE(data->commandListPool);
@@ -208,7 +207,7 @@ void *D3D12FrameData::AllocConstant(int threadIndex, int size, D3D12_CPU_DESCRIP
 
     DataPerThread* data = &threadData[threadIndex];
     ID3D12Resource *resource = data->constantBuffer->buffer->GetResource();
-    UINT maxSize = data->constantBuffer->buffer->GetSize();
+    uint64_t maxSize = data->constantBuffer->buffer->GetSize();
 
     if (data->usedConstantBytes + alignedSize > maxSize) {
         BE_WARNLOG("Out of constant buffer cache\n");

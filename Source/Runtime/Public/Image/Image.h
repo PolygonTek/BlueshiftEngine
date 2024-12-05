@@ -398,7 +398,7 @@ public:
     static bool         IsDepthFormat(Format::Enum imageFormat);
     static bool         IsDepthStencilFormat(Format::Enum imageFormat);
     static bool         NeedFloatConversion(Format::Enum imageFormat);
-    static int          MemRequired(int width, int height, int depth, int numMipmaps, Format::Enum imageFormat);
+    static uint64_t     MemRequired(int width, int height, int depth, int numMipmaps, Format::Enum imageFormat);
     static int          MaxMipMapLevels(int width, int height, int depth);
 
                         /// Converts an sRGB value in the range [0, 1] to a linear value in the range [0, 1].

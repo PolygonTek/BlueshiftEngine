@@ -685,12 +685,12 @@ bool Image::NeedFloatConversion(Image::Format::Enum imageFormat) {
     return false;
 }
 
-int Image::MemRequired(int width, int height, int depth, int numMipmaps, Image::Format::Enum imageFormat) {
+uint64_t Image::MemRequired(int width, int height, int depth, int numMipmaps, Image::Format::Enum imageFormat) {
     int w = width;
     int h = height;
     int d = depth;
 
-    int size = 0;
+    uint64_t size = 0;
     while (numMipmaps) {
         if (IsCompressed(imageFormat)) {
             int blockWidth, blockHeight;

@@ -150,7 +150,7 @@ void D3D12App::InitTriangles() {
         D3D12GameObject *gameObject = new D3D12GameObject;
         gameObjects.Append(gameObject);
 
-        gameObject->renderObjectDef.meshType = D3D12MeshType::TriangleMesh;
+        gameObject->renderObjectDef.meshType = MeshType::TriangleMesh;
         gameObject->renderObjectDef.mesh = triangleMesh;
         gameObject->renderObjectDef.offset.Set(0, 0);
 
@@ -167,7 +167,7 @@ void D3D12App::InitCubes() {
         D3D12GameObject *gameObject = new D3D12GameObject;
         gameObjects.Append(gameObject);
 
-        gameObject->renderObjectDef.meshType = D3D12MeshType::CubeMesh;
+        gameObject->renderObjectDef.meshType = MeshType::CubeMesh;
         gameObject->renderObjectDef.mesh = cubeMesh;
         gameObject->renderObjectDef.worldMatrix.SetIdentity();
 

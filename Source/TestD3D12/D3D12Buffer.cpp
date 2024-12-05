@@ -13,7 +13,6 @@
 // limitations under the License.
 
 #include "Precompiled.h"
-#include "D3D12Buffer.h"
 #include "D3D12Renderer.h"
 
 void D3D12Buffer::Release() {
@@ -32,29 +31,29 @@ ID3D12Resource *D3D12Buffer::GetResource() {
 #endif
 }
 
-UINT D3D12Buffer::GetSize() {
+uint64_t D3D12Buffer::GetSize() {
 #ifdef USE_D3D12_MEMALLOC
     return bufferAllocation->GetSize();
 #else
     D3D12_RESOURCE_DESC resourceDesc = bufferResource->GetDesc();
-    return resourceDesc.Width;
+    return Image::MemRequired(resourceDesc.Width, resourceDesc.Height, resourceDesc.DepthOrArraySize, resourceDesc.MipLevels, D3D12Texture::DXGIFormatToImageFormat(resourceDesc.Format));
 #endif
 }
 
-D3D12Buffer* D3D12Buffer::CreateBuffer(D3D12Buffer::Usage usage, int size) {
+RHIRenderer::Buffer* D3D12Renderer::CreateBuffer(BufferUsage usage, int size) {
     D3D12_HEAP_TYPE heapType;
     D3D12_RESOURCE_STATES initialState;
 
     switch (usage) {
-    case D3D12Buffer::Usage::Default:
+    case RHIRenderer::BufferUsage::Default:
         heapType = D3D12_HEAP_TYPE_DEFAULT;
         initialState = D3D12_RESOURCE_STATE_COPY_DEST;
         break;
-    case D3D12Buffer::Usage::Upload:
+    case RHIRenderer::BufferUsage::Upload:
         heapType = D3D12_HEAP_TYPE_UPLOAD;
         initialState = D3D12_RESOURCE_STATE_COMMON;
         break;
-    case D3D12Buffer::Usage::Readback:
+    case RHIRenderer::BufferUsage::Readback:
         heapType = D3D12_HEAP_TYPE_READBACK;
         initialState = D3D12_RESOURCE_STATE_COPY_DEST;
         break;

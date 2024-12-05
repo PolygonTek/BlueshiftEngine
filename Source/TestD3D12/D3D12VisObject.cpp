@@ -13,19 +13,19 @@
 // limitations under the License.
 
 #include "Precompiled.h"
-#include "D3D12VisObject.h"
 #include "D3D12CommandList.h"
 #include "D3D12TriangleMesh.h"
 #include "D3D12CubeMesh.h"
+#include "D3D12VisObject.h"
 
 void D3D12VisObject::Draw(int threadIndex, D3D12CommandList *commandList, D3D12VisObject *visObject) {
     PIX_SCOPED_EVENT(commandList->graphicsCommandList, 6, "D3D12VisObject::Draw");
 
     switch (visObject->state.meshType) {
-    case D3D12MeshType::TriangleMesh:
+    case MeshType::TriangleMesh:
         DrawTriangleMesh(threadIndex, commandList, visObject);
         break;
-    case D3D12MeshType::CubeMesh:
+    case MeshType::CubeMesh:
         DrawCubeMesh(threadIndex, commandList, visObject);
         break;
     }
@@ -35,10 +35,10 @@ void D3D12VisObject::DrawInstanced(int threadIndex, D3D12CommandList *commandLis
     PIX_SCOPED_EVENT(commandList->graphicsCommandList, 7, "D3D12VisObject::DrawInstanced");
 
     switch (visObjects[0].state.meshType) {
-    case D3D12MeshType::TriangleMesh:
+    case MeshType::TriangleMesh:
         D3D12VisObject::DrawTriangleMeshInstanced(threadIndex, commandList, visObjects, instanceCount);
         break;
-    case D3D12MeshType::CubeMesh:
+    case MeshType::CubeMesh:
         D3D12VisObject::DrawCubeMeshInstanced(threadIndex, commandList, visObjects, instanceCount);
         break;
     }

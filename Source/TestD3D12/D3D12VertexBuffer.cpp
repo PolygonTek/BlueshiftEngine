@@ -13,23 +13,17 @@
 // limitations under the License.
 
 #include "Precompiled.h"
-#include "D3D12CommandList.h"
-#include "D3D12VertexBuffer.h"
-#include "D3D12Buffer.h"
 #include "D3D12Renderer.h"
+#include "D3D12CommandList.h"
 
-void D3D12VertexBuffer::Release() {
-    SAFE_DELETE(buffer);
-}
-
-D3D12VertexBuffer* D3D12VertexBuffer::CreateVertexBuffer(D3D12VertexBuffer::Type type, int vertexSize, int numVerts, void *data) {
+RHIRenderer::VertexBuffer* D3D12Renderer::CreateVertexBuffer(RHIRenderer::BufferType type, int vertexSize, int numVerts, void *data) {
     UINT bufferSize = vertexSize * numVerts;
     D3D12Buffer *buffer = nullptr;
 
-    if (type == D3D12VertexBuffer::Type::Static) {
-        buffer = D3D12Buffer::CreateBuffer(D3D12Buffer::Usage::Default, bufferSize);
+    if (type == RHIRenderer::BufferType::Static) {
+        buffer = static_cast<D3D12Buffer *>(CreateBuffer(RHIRenderer::BufferUsage::Default, bufferSize));
     } else {
-        buffer = D3D12Buffer::CreateBuffer(D3D12Buffer::Usage::Upload, bufferSize);
+        buffer = static_cast<D3D12Buffer *>(CreateBuffer(RHIRenderer::BufferUsage::Upload, bufferSize));
     }
 
     if (!buffer) {
@@ -40,7 +34,7 @@ D3D12VertexBuffer* D3D12VertexBuffer::CreateVertexBuffer(D3D12VertexBuffer::Type
     ID3D12Resource* uploadBuffer = nullptr;
 
     if (data) {
-        if (type == D3D12VertexBuffer::Type::Static) {
+        if (type == RHIRenderer::BufferType::Static) {
             D3D12_RESOURCE_DESC uploadBufferDesc;
             uploadBufferDesc.Dimension = D3D12_RESOURCE_DIMENSION_BUFFER;
             uploadBufferDesc.Alignment = 0;
@@ -85,7 +79,7 @@ D3D12VertexBuffer* D3D12VertexBuffer::CreateVertexBuffer(D3D12VertexBuffer::Type
             renderer.resourceCommandList->graphicsCommandList->CopyBufferRegion(bufferResource, 0, uploadBuffer, 0, bufferSize);
             renderer.resourceCommandList->ResourceBarrier(bufferResource, D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER);
             renderer.resourceCommandList->CloseAndExecute(D3D12CommandQueueType::Graphics);
-        } else if (type == D3D12VertexBuffer::Type::Dynamic) {
+        } else if (type == RHIRenderer::BufferType::Dynamic) {
             UINT8 *mappedPtr = nullptr;
             bufferResource->Map(0, nullptr, reinterpret_cast<void **>(&mappedPtr));
 
@@ -105,7 +99,6 @@ D3D12VertexBuffer* D3D12VertexBuffer::CreateVertexBuffer(D3D12VertexBuffer::Type
 
     D3D12VertexBuffer* vertexBuffer = new D3D12VertexBuffer;
     vertexBuffer->buffer = buffer;
-
     vertexBuffer->vbv.BufferLocation = bufferResource->GetGPUVirtualAddress();
     vertexBuffer->vbv.StrideInBytes = vertexSize;
     vertexBuffer->vbv.SizeInBytes = bufferSize;

@@ -13,25 +13,19 @@
 // limitations under the License.
 
 #include "Precompiled.h"
-#include "D3D12CommandList.h"
-#include "D3D12IndexBuffer.h"
-#include "D3D12Buffer.h"
 #include "D3D12Renderer.h"
+#include "D3D12CommandList.h"
 
-void D3D12IndexBuffer::Release() {
-    SAFE_DELETE(buffer);
-}
-
-D3D12IndexBuffer *D3D12IndexBuffer::CreateIndexBuffer(D3D12IndexBuffer::Type type, int indexSize, int numIndexes, void *data) {
+RHIRenderer::IndexBuffer *D3D12Renderer::CreateIndexBuffer(RHIRenderer::BufferType type, int indexSize, int numIndexes, void *data) {
     assert(indexSize == 2 || indexSize == 4);
 
     UINT bufferSize = indexSize * numIndexes;
     D3D12Buffer *buffer = nullptr;
 
-    if (type == D3D12IndexBuffer::Type::Static) {
-        buffer = D3D12Buffer::CreateBuffer(D3D12Buffer::Usage::Default, bufferSize);
+    if (type == RHIRenderer::BufferType::Static) {
+        buffer = static_cast<D3D12Buffer *>(CreateBuffer(RHIRenderer::BufferUsage::Default, bufferSize));
     } else {
-        buffer = D3D12Buffer::CreateBuffer(D3D12Buffer::Usage::Upload, bufferSize);
+        buffer = static_cast<D3D12Buffer *>(CreateBuffer(RHIRenderer::BufferUsage::Upload, bufferSize));
     }
 
     if (!buffer) {
@@ -42,7 +36,7 @@ D3D12IndexBuffer *D3D12IndexBuffer::CreateIndexBuffer(D3D12IndexBuffer::Type typ
     ID3D12Resource* uploadBuffer = nullptr;
 
     if (data) {
-        if (type == D3D12IndexBuffer::Type::Static) {
+        if (type == RHIRenderer::BufferType::Static) {
             D3D12_RESOURCE_DESC uploadBufferDesc;
             uploadBufferDesc.Dimension = D3D12_RESOURCE_DIMENSION_BUFFER;
             uploadBufferDesc.Alignment = 0;
@@ -87,7 +81,7 @@ D3D12IndexBuffer *D3D12IndexBuffer::CreateIndexBuffer(D3D12IndexBuffer::Type typ
             renderer.resourceCommandList->graphicsCommandList->CopyBufferRegion(bufferResource, 0, uploadBuffer, 0, bufferSize);
             renderer.resourceCommandList->ResourceBarrier(bufferResource, D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_INDEX_BUFFER);
             renderer.resourceCommandList->CloseAndExecute(D3D12CommandQueueType::Graphics);
-        } else if (type == D3D12IndexBuffer::Type::Dynamic) {
+        } else if (type == RHIRenderer::BufferType::Dynamic) {
             UINT8* mappedPtr = nullptr;
             bufferResource->Map(0, nullptr, reinterpret_cast<void **>(&mappedPtr));
 
@@ -107,7 +101,6 @@ D3D12IndexBuffer *D3D12IndexBuffer::CreateIndexBuffer(D3D12IndexBuffer::Type typ
 
     D3D12IndexBuffer *indexBuffer = new D3D12IndexBuffer;
     indexBuffer->buffer = buffer;
-
     indexBuffer->ibv.BufferLocation = bufferResource->GetGPUVirtualAddress();
     indexBuffer->ibv.Format = (indexSize == sizeof(uint16_t) ? DXGI_FORMAT_R16_UINT : DXGI_FORMAT_R32_UINT);
     indexBuffer->ibv.SizeInBytes = bufferSize;

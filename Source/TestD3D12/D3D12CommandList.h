@@ -23,16 +23,19 @@ class D3D12CommandList {
 public:
     void                            Reset(bool resetCacheStates = true);
 
-    void                            CloseAndExecute(D3D12CommandQueueType::Enum queueType);
+    void                            CloseAndExecute(D3D12CommandQueueType queueType);
 
     void                            ResourceBarrier(ID3D12Resource *resource, D3D12_RESOURCE_STATES stateBefore, D3D12_RESOURCE_STATES stateAfter);
 
     void                            SetDescriptorHeaps(int numDescriptorHeaps, ID3D12DescriptorHeap *descriptorHeaps[]);
     void                            SetGraphicsRootSignature(ID3D12RootSignature *graphicsRootSignature);
     void                            SetPipelineState(ID3D12PipelineState *piplelineState);
-    void                            SetPrimitiveTopology(D3D12_PRIMITIVE_TOPOLOGY primitiveTopology);
-    void                            SetVertexBuffers(UINT startSlot, UINT numViews, const D3D12_VERTEX_BUFFER_VIEW *vertexBufferView);
-    void                            SetIndexBuffer(const D3D12_INDEX_BUFFER_VIEW *indexBufferView);
+    void                            SetPrimitiveTopology(RHIRenderer::PrimitiveTopology primitiveTopology);
+    void                            SetVertexBuffers(int startSlot, int numViews, RHIRenderer::VertexBuffer *const*vertexBuffers);
+    void                            SetVertexBuffer(int slot, const RHIRenderer::VertexBuffer *vertexBuffer);
+    void                            SetIndexBuffer(const RHIRenderer::IndexBuffer *indexBuffer);
+
+    static D3D12_PRIMITIVE_TOPOLOGY ToD3D12PrimitiveTopology(RHIRenderer::PrimitiveTopology primitiveTopology);
 
     ID3D12CommandAllocator *        commandAllocator = nullptr;
     ID3D12GraphicsCommandList *     graphicsCommandList = nullptr;
@@ -76,13 +79,13 @@ BE_INLINE void D3D12CommandList::Reset(bool resetCacheStates) {
 #endif
 }
 
-BE_INLINE void D3D12CommandList::CloseAndExecute(D3D12CommandQueueType::Enum queueType) {
-    assert(queueType > 0 && queueType < D3D12CommandQueueType::MaxCommandQueueType);
+BE_INLINE void D3D12CommandList::CloseAndExecute(D3D12CommandQueueType queueType) {
+    assert(queueType < D3D12CommandQueueType::Count);
 
     graphicsCommandList->Close();
 
     ID3D12CommandList *execCommandLists[] = { graphicsCommandList };
-    renderer.commandQueues[queueType]->ExecuteCommandLists(COUNT_OF(execCommandLists), execCommandLists);
+    renderer.commandQueues[static_cast<int>(queueType)]->ExecuteCommandLists(COUNT_OF(execCommandLists), execCommandLists);
 }
 
 BE_INLINE void D3D12CommandList::ResourceBarrier(ID3D12Resource *resource, D3D12_RESOURCE_STATES stateBefore, D3D12_RESOURCE_STATES stateAfter) {
@@ -143,44 +146,68 @@ BE_INLINE void D3D12CommandList::SetPipelineState(ID3D12PipelineState *pipleline
     graphicsCommandList->SetPipelineState(piplelineState);
 }
 
-BE_INLINE void D3D12CommandList::SetPrimitiveTopology(D3D12_PRIMITIVE_TOPOLOGY primitiveTopology) {
+BE_INLINE void D3D12CommandList::SetPrimitiveTopology(RHIRenderer::PrimitiveTopology primitiveTopology) {
+    D3D12_PRIMITIVE_TOPOLOGY d3d12PrimitiveTopology = D3D12CommandList::ToD3D12PrimitiveTopology(primitiveTopology);
+
 #ifdef USE_STATE_CACHE_FOR_COMMAND_LIST
-    if (primitiveTopology == cachedPrimitiveTopology) {
+    if (d3d12PrimitiveTopology == cachedPrimitiveTopology) {
         return;
     }
-    cachedPrimitiveTopology = primitiveTopology;
+    cachedPrimitiveTopology = d3d12PrimitiveTopology;
 #endif
-    graphicsCommandList->IASetPrimitiveTopology(primitiveTopology);
+    graphicsCommandList->IASetPrimitiveTopology(d3d12PrimitiveTopology);
 }
 
-BE_INLINE void D3D12CommandList::SetVertexBuffers(UINT startSlot, UINT numViews, const D3D12_VERTEX_BUFFER_VIEW *vertexBufferViews) {
+BE_INLINE void D3D12CommandList::SetVertexBuffers(int startSlot, int numViews, RHIRenderer::VertexBuffer *const*vertexBuffers) {
+    D3D12_VERTEX_BUFFER_VIEW vbv[8];
+    for (int i = 0; i < numViews; ++i) {
+        vbv[i] = static_cast<const D3D12VertexBuffer *>(vertexBuffers[i])->vbv;
+    }
+
 #ifdef USE_STATE_CACHE_FOR_COMMAND_LIST
     bool needsUpdate = false;
     for (int i = 0; i < numViews; ++i) {
         int slot = startSlot + i;
 
-        if (cachedVertexBufferViews[slot].BufferLocation != vertexBufferViews[i].BufferLocation ||
-            cachedVertexBufferViews[slot].SizeInBytes != vertexBufferViews[i].SizeInBytes ||
-            cachedVertexBufferViews[slot].StrideInBytes != vertexBufferViews[i].StrideInBytes) {
-            cachedVertexBufferViews[slot] = vertexBufferViews[i];
+        if (cachedVertexBufferViews[slot].BufferLocation != vbv[i].BufferLocation ||
+            cachedVertexBufferViews[slot].SizeInBytes != vbv[i].SizeInBytes ||
+            cachedVertexBufferViews[slot].StrideInBytes != vbv[i].StrideInBytes) {
+            cachedVertexBufferViews[slot] = vbv[i];
             needsUpdate = true;
+            break;
         }
     }
     if (!needsUpdate) {
         return;
     }
 #endif
-    graphicsCommandList->IASetVertexBuffers(startSlot, numViews, vertexBufferViews);
+    graphicsCommandList->IASetVertexBuffers(startSlot, numViews, vbv);
 }
 
-BE_INLINE void D3D12CommandList::SetIndexBuffer(const D3D12_INDEX_BUFFER_VIEW *indexBufferView) {
+BE_INLINE void D3D12CommandList::SetVertexBuffer(int slot, const RHIRenderer::VertexBuffer *vertexBuffer) {
+    const D3D12_VERTEX_BUFFER_VIEW &vbv = static_cast<const D3D12VertexBuffer *>(vertexBuffer)->vbv;
+
 #ifdef USE_STATE_CACHE_FOR_COMMAND_LIST
-    if (!(cachedIndexBufferView.BufferLocation != indexBufferView->BufferLocation ||
-        cachedIndexBufferView.SizeInBytes != indexBufferView->SizeInBytes ||
-        cachedIndexBufferView.Format != indexBufferView->Format)) {
+    if (!(cachedVertexBufferViews[slot].BufferLocation != vbv.BufferLocation ||
+        cachedVertexBufferViews[slot].SizeInBytes != vbv.SizeInBytes ||
+        cachedVertexBufferViews[slot].StrideInBytes != vbv.StrideInBytes)) {
+        cachedVertexBufferViews[slot] = vbv;
         return;
     }
-    cachedIndexBufferView = *indexBufferView;
 #endif
-    graphicsCommandList->IASetIndexBuffer(indexBufferView);
+    graphicsCommandList->IASetVertexBuffers(slot, 1, &vbv);
+}
+
+BE_INLINE void D3D12CommandList::SetIndexBuffer(const RHIRenderer::IndexBuffer *indexBuffer) {
+    const D3D12IndexBuffer *d3d12IndexBuffer = static_cast<const D3D12IndexBuffer *>(indexBuffer);
+
+#ifdef USE_STATE_CACHE_FOR_COMMAND_LIST
+    if (!(cachedIndexBufferView.BufferLocation != d3d12IndexBuffer->ibv.BufferLocation ||
+        cachedIndexBufferView.SizeInBytes != d3d12IndexBuffer->ibv.SizeInBytes ||
+        cachedIndexBufferView.Format != d3d12IndexBuffer->ibv.Format)) {
+        return;
+    }
+    cachedIndexBufferView = d3d12IndexBuffer->ibv;
+#endif
+    graphicsCommandList->IASetIndexBuffer(&d3d12IndexBuffer->ibv);
 }
