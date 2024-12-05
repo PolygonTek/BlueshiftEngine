@@ -15,6 +15,7 @@
 #include "Precompiled.h"
 #include "Platform/PlatformSystem.h"
 #include "Platform/PlatformFile.h"
+#include "Platform/Windows/PlatformWinUtils.h"
 #include "D3D12Renderer.h"
 #include "D3D12CommandList.h"
 #include "D3D12CommandListPool.h"
@@ -40,7 +41,6 @@ void D3D12Renderer::Init(HWND hwnd) {
     bool withGpuValidation = false;
 #endif
 
-    DWORD createFactoryFlags = 0;
     HRESULT hr;
 
     if (enableDebugLayer) {
@@ -49,7 +49,6 @@ void D3D12Renderer::Init(HWND hwnd) {
         hr = D3D12GetDebugInterface(IID_PPV_ARGS(&debugController));
         if (SUCCEEDED(hr)) {
             debugController->EnableDebugLayer();
-            createFactoryFlags = DXGI_CREATE_FACTORY_DEBUG;
 
             // GPU Validation 활성화
             if (withGpuValidation) {
@@ -57,48 +56,152 @@ void D3D12Renderer::Init(HWND hwnd) {
                 if (SUCCEEDED(debugController->QueryInterface(IID_PPV_ARGS(&debugController5))))
                 {
                     debugController5->SetEnableGPUBasedValidation(TRUE);
+                    debugController5->SetEnableSynchronizedCommandQueueValidation(TRUE);
                     debugController5->SetEnableAutoName(TRUE);
                     debugController5->Release();
                 }
             }
             debugController->Release();
         }
+
+        // DRED (Device Removed Extended Data) 기능을 활성화
+        ID3D12DeviceRemovedExtendedDataSettings1 *dredSettings;
+        hr = D3D12GetDebugInterface(IID_PPV_ARGS(&dredSettings));
+        if (SUCCEEDED(hr)) {
+            // Turn on auto-breadcrumbs and page fault reporting.
+            dredSettings->SetAutoBreadcrumbsEnablement(D3D12_DRED_ENABLEMENT_FORCED_ON);
+            dredSettings->SetPageFaultEnablement(D3D12_DRED_ENABLEMENT_FORCED_ON);
+            dredSettings->SetBreadcrumbContextEnablement(D3D12_DRED_ENABLEMENT_FORCED_ON);
+            dredSettings->Release();
+        }
     }
 
-    IDXGIFactory4* factory4 = nullptr;
-    CreateDXGIFactory2(createFactoryFlags, IID_PPV_ARGS(&factory4));
+    // Factory 생성
+    hr = CreateDXGIFactory2(enableDebugLayer ? DXGI_CREATE_FACTORY_DEBUG : 0, IID_PPV_ARGS(&dxgiFactory));
+    if (FAILED(hr)) {
+        BE_FATALERROR("CreateDXGIFactory2 failed, ERROR: 0x%x", hr);
+    }
+
+    IDXGIFactory5 *dxgiFactory5 = nullptr;
+    if (SUCCEEDED(dxgiFactory->QueryInterface(IID_PPV_ARGS(&dxgiFactory5)))) {
+        // VRR (Variable Refresh Rate) 지원 여부 체크
+        BOOL allowTearing = FALSE;
+        hr = dxgiFactory5->CheckFeatureSupport(DXGI_FEATURE_PRESENT_ALLOW_TEARING, &allowTearing, sizeof(allowTearing));
+
+        if (FAILED(hr) || !allowTearing) {
+            supportsTearing = false;
+
+            BE_WARNLOG("Unsupported variable refresh rate displays\n");
+        } else {
+            supportsTearing = true;
+        }
+        dxgiFactory5->Release();
+    }
+
+    IDXGIAdapter1 *adapter1 = nullptr;
+    CreateDevice(&adapter1);
 
     // 어댑터 정보 얻어오기
-    IDXGIAdapter1* adapter1 = nullptr;
-    factory4->EnumAdapters1(0, &adapter1);
     adapter1->GetDesc1(&adapterDesc);
+    vendorId = adapterDesc.VendorId;
+    deviceId = adapterDesc.DeviceId;
+    dedicatedVideoMemSize = adapterDesc.DedicatedVideoMemory;
+    dedicatedSystemMemSize = adapterDesc.DedicatedSystemMemory;
+    sharedSystemMemSize = adapterDesc.SharedSystemMemory;
+    char temp[128] = "";
+    BE1::PlatformWinUtils::UCS2ToUTF8(adapterDesc.Description, temp, COUNT_OF(temp));
+    adapterName = temp;
 
-    // D3D12 디바이스 생성
-    hr = D3D12CreateDevice(adapter1, D3D_FEATURE_LEVEL_12_2, IID_PPV_ARGS(&device));
+    BE_LOG("Adapter: %s\n", adapterName.c_str());
+    BE_LOG("Dedicated VideoMem Size: %s\n", Str::FormatBytes(dedicatedVideoMemSize).c_str());
+    BE_LOG("Dedicated SystemMem Size: %s\n", Str::FormatBytes(dedicatedSystemMemSize).c_str());
+    BE_LOG("Shared SystemMem Size: %s\n", Str::FormatBytes(sharedSystemMemSize).c_str());
+
+    if (enableDebugLayer) {
+        // 디버그 표시 정보 설정
+        ID3D12InfoQueue *infoQueue = nullptr;
+        hr = device->QueryInterface(IID_PPV_ARGS(&infoQueue));
+        if (SUCCEEDED(hr)) {
+#ifdef _DEBUG
+            infoQueue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_CORRUPTION, TRUE);
+            infoQueue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_ERROR, TRUE);
+#endif
+
+            D3D12_MESSAGE_SEVERITY enabledSeverities[] = {
+                D3D12_MESSAGE_SEVERITY_CORRUPTION,
+                D3D12_MESSAGE_SEVERITY_ERROR,
+                D3D12_MESSAGE_SEVERITY_WARNING,
+                D3D12_MESSAGE_SEVERITY_MESSAGE
+            };
+
+            D3D12_MESSAGE_ID disabledMessages[] = {
+                D3D12_MESSAGE_ID_MAP_INVALID_NULLRANGE,
+                D3D12_MESSAGE_ID_UNMAP_INVALID_NULLRANGE,
+                // Workarounds for debug layer issues on hybrid-graphics systems
+                D3D12_MESSAGE_ID_EXECUTECOMMANDLISTS_WRONGSWAPCHAINBUFFERREFERENCE,
+                D3D12_MESSAGE_ID_RESOURCE_BARRIER_MISMATCHING_COMMAND_LIST_TYPE
+            };
+
+            D3D12_INFO_QUEUE_FILTER filter = {};
+            filter.AllowList.NumSeverities = (UINT)COUNT_OF(enabledSeverities);
+            filter.AllowList.pSeverityList = enabledSeverities;
+            filter.DenyList.NumIDs = (UINT)COUNT_OF(disabledMessages);
+            filter.DenyList.pIDList = disabledMessages;
+            infoQueue->AddStorageFilterEntries(&filter);
+            infoQueue->Release();
+        }
+    }
+
+#ifdef USE_D3D12_MEMALLOC
+    // D3D12MA Allocator 생성
+    D3D12MA::ALLOCATOR_DESC allocatorDesc = {};
+    allocatorDesc.pDevice = device;
+    allocatorDesc.pAdapter = adapter1;
+    allocatorDesc.Flags = D3D12MA::ALLOCATOR_FLAG_MSAA_TEXTURES_ALWAYS_COMMITTED | D3D12MA::ALLOCATOR_FLAG_DEFAULT_POOLS_NOT_ZEROED;
+    allocatorDesc.Flags |= D3D12MA::ALLOCATOR_FLAG_DONT_PREFER_SMALL_BUFFERS_COMMITTED;
+
+    hr = D3D12MA::CreateAllocator(&allocatorDesc, &allocator);
     if (FAILED(hr)) {
-        BE_FATALERROR("D3D12CreateDevice : failed");
+        BE_FATALERROR("D3D12MA::CreateAllocator failed, ERROR: 0x%x", hr);
     }
+#endif
 
-    // 디버그 표시 정보 설정
-    ID3D12InfoQueue *infoQueue = nullptr;
-    device->QueryInterface(IID_PPV_ARGS(&infoQueue));
-    if (infoQueue) {
-        infoQueue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_CORRUPTION, TRUE);
-        infoQueue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_ERROR, TRUE);
+    adapter1->Release();
 
-        D3D12_MESSAGE_ID hideMessages[] = {
-            D3D12_MESSAGE_ID_MAP_INVALID_NULLRANGE,
-            D3D12_MESSAGE_ID_UNMAP_INVALID_NULLRANGE,
-            // Workarounds for debug layer issues on hybrid-graphics systems
-            D3D12_MESSAGE_ID_EXECUTECOMMANDLISTS_WRONGSWAPCHAINBUFFERREFERENCE,
-            D3D12_MESSAGE_ID_RESOURCE_BARRIER_MISMATCHING_COMMAND_LIST_TYPE
-        };
-        D3D12_INFO_QUEUE_FILTER filter = {};
-        filter.DenyList.NumIDs = (UINT)COUNT_OF(hideMessages);
-        filter.DenyList.pIDList = hideMessages;
-        infoQueue->AddStorageFilterEntries(&filter);
-        infoQueue->Release();
+    // Graphics CommandQueue 생성
+    D3D12_COMMAND_QUEUE_DESC queueDesc = {};
+    queueDesc.Flags = D3D12_COMMAND_QUEUE_FLAG_NONE;
+    queueDesc.Priority = D3D12_COMMAND_QUEUE_PRIORITY_NORMAL;
+    queueDesc.Type = D3D12_COMMAND_LIST_TYPE_DIRECT;
+
+    hr = device->CreateCommandQueue(&queueDesc, IID_PPV_ARGS(&commandQueues[D3D12CommandQueueType::Graphics]));
+    if (FAILED(hr)) {
+        BE_FATALERROR("CreateCommandQueue (Graphics) failed, ERROR: 0x%x", hr);
     }
+    commandQueues[D3D12CommandQueueType::Graphics]->SetName(L"GraphicsCommandQueue");
+
+    // Compute CommandQueue 생성
+    queueDesc = {};
+    queueDesc.Flags = D3D12_COMMAND_QUEUE_FLAG_NONE;
+    queueDesc.Priority = D3D12_COMMAND_QUEUE_PRIORITY_NORMAL;
+    queueDesc.Type = D3D12_COMMAND_LIST_TYPE_COMPUTE;
+
+    hr = device->CreateCommandQueue(&queueDesc, IID_PPV_ARGS(&commandQueues[D3D12CommandQueueType::Compute]));
+    if (FAILED(hr)) {
+        BE_FATALERROR("CreateCommandQueue (Compute) failed, ERROR: 0x%x", hr);
+    }
+    commandQueues[D3D12CommandQueueType::Compute]->SetName(L"ComputeCommandQueue");
+
+    // Fence 객체 생성
+    hr = device->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&fence));
+    if (FAILED(hr)) {
+        BE_FATALERROR("CreateFence failed, ERROR: 0x%x", hr);
+    }
+    // Fence 초기값
+    fenceValue = 0;
+
+    // Fence 를 대기하기 위한 이벤트 객체 생성
+    fenceEventHandle = CreateEvent(nullptr, FALSE, FALSE, nullptr);
 
     // 디스크립터 힙 타입 별 디스크립터 핸들 사이즈 정보 얻기 (보통은 32바이트를 차지)
     descriptorHandleSize[D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV] = device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
@@ -106,61 +209,45 @@ void D3D12Renderer::Init(HWND hwnd) {
     descriptorHandleSize[D3D12_DESCRIPTOR_HEAP_TYPE_RTV] = device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
     descriptorHandleSize[D3D12_DESCRIPTOR_HEAP_TYPE_DSV] = device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_DSV);
 
-    // CommandQueue 생성
-    D3D12_COMMAND_QUEUE_DESC queueDesc = {};
-    queueDesc.Flags = D3D12_COMMAND_QUEUE_FLAG_NONE;
-    queueDesc.Type = D3D12_COMMAND_LIST_TYPE_DIRECT;
+    // 디스크립터 풀 생성
+    srvDescriptorPool = new D3D12DescriptorPool(D3D12DescriptorPool::Type::SRV, 1000000, false);
+    rtvDescriptorPool = new D3D12DescriptorPool(D3D12DescriptorPool::Type::RTV, 16, false);
+    dsvDescriptorPool = new D3D12DescriptorPool(D3D12DescriptorPool::Type::DSV, 16, false);
+    samplerDescriptorPool = new D3D12DescriptorPool(D3D12DescriptorPool::Type::Sampler, 2048, true);
 
-    hr = device->CreateCommandQueue(&queueDesc, IID_PPV_ARGS(&commandQueue));
-    if (FAILED(hr)) {
-        BE_FATALERROR("CreateCommandQueue : failed");
+    // Init feature check (https://devblogs.microsoft.com/directx/introducing-a-new-api-for-checking-feature-support-in-direct3d-12/)
+    CD3DX12FeatureSupport features;
+    hr = features.Init(device);
+    assert(SUCCEEDED(hr));
+
+    if (features.VariableShadingRateTier() >= D3D12_VARIABLE_SHADING_RATE_TIER_1) {
+        supportsVRS = true;
     }
-    commandQueue->SetName(L"Graphics");
+    if (features.RaytracingTier() >= D3D12_RAYTRACING_TIER_1_1) {
+        supportsRayTracing = true;
+    }
+    if (features.MeshShaderTier() >= D3D12_MESH_SHADER_TIER_1) {
+        supportsMeshShader = true;
+    }
+    if (features.DepthBoundsTestSupported() == TRUE) {
+        supportsDepthBoundsTest = true;
+    }
 
-    // 스왑 체인 (백버퍼) 생성
+    // 윈도우 크기 얻기
     RECT rc;
     GetClientRect(hwnd, &rc);
+    UINT backBufferWidth = rc.right;
+    UINT backBufferHeight = rc.bottom;
 
-    DXGI_SWAP_CHAIN_DESC1 swapChainDesc = {};
-    swapChainDesc.Width = rc.right;
-    swapChainDesc.Height = rc.bottom;
-    swapChainDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
-    //swapChainDesc.BufferDesc.RefreshRate.Numerator = m_uiRefreshRate;
-    //swapChainDesc.BufferDesc.RefreshRate.Denominator = 1;
-    swapChainDesc.BufferUsage = DXGI_USAGE_BACK_BUFFER | DXGI_USAGE_RENDER_TARGET_OUTPUT;
-    swapChainDesc.BufferCount = NumSwapChainBuffers;
-    swapChainDesc.SampleDesc.Count = 1;
-    swapChainDesc.SampleDesc.Quality = 0;
-    swapChainDesc.Scaling = DXGI_SCALING_NONE;
-    swapChainDesc.SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD;
-    swapChainDesc.AlphaMode = DXGI_ALPHA_MODE_UNSPECIFIED;
-    swapChainDesc.Flags = DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH | DXGI_SWAP_CHAIN_FLAG_ALLOW_TEARING;
-
-    DXGI_SWAP_CHAIN_FULLSCREEN_DESC swapChainFullscreenDesc = {};
-    swapChainFullscreenDesc.Windowed = TRUE;
-
-    IDXGISwapChain1 *swapChain1 = nullptr;
-    hr = factory4->CreateSwapChainForHwnd(commandQueue, hwnd, &swapChainDesc, &swapChainFullscreenDesc, nullptr, &swapChain1);
-    if (FAILED(hr)) {
-        BE_FATALERROR("CreateSwapChainForHwnd : failed");
-    }
-    hr = factory4->MakeWindowAssociation(hwnd, DXGI_MWA_NO_WINDOW_CHANGES | DXGI_MWA_NO_ALT_ENTER);
-    if (FAILED(hr)) {
-        BE_FATALERROR("MakeWindowAssociation : failed");
-    }
-    hr = swapChain1->QueryInterface(IID_PPV_ARGS(&swapChain));
-    swapChain1->Release();
-    if (FAILED(hr)) {
-        BE_FATALERROR("Failed to create swapchain");
-    }
-    factory4->Release();
+    // 스왑 체인 (백버퍼) 생성
+    CreateSwapChain(hwnd, backBufferWidth, backBufferHeight);
 
     //IDXGIOutput *output = nullptr;
     //hr = swapChain->GetContainingOutput(&output);
 
     // Viewport 설정을 백버퍼 크기에 맞게 설정
-    viewport.Width = (float)swapChainDesc.Width;
-    viewport.Height = (float)swapChainDesc.Height;
+    viewport.Width = (float)backBufferWidth;
+    viewport.Height = (float)backBufferHeight;
     viewport.MinDepth = 0.0f;
     viewport.MaxDepth = 1.0f;
 
@@ -177,7 +264,7 @@ void D3D12Renderer::Init(HWND hwnd) {
     rtvDescriptorHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
     hr = device->CreateDescriptorHeap(&rtvDescriptorHeapDesc, IID_PPV_ARGS(&rtvDescriptorHeap));
     if (FAILED(hr)) {
-        BE_FATALERROR("CreateDescriptorHeap for back buffers: failed");
+        BE_FATALERROR("CreateDescriptorHeap for back buffers failed, ERROR: 0x%x", hr);
     }
 
     // 뎁스/스텐실 버퍼 용 디스크립터 힙 생성
@@ -187,55 +274,24 @@ void D3D12Renderer::Init(HWND hwnd) {
     dsvDescriptorHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
     hr = device->CreateDescriptorHeap(&dsvDescriptorHeapDesc, IID_PPV_ARGS(&dsvDescriptorHeap));
     if (FAILED(hr)) {
-        BE_FATALERROR("CreateDescriptorHeap for depth/stencil buffer : failed");
+        BE_FATALERROR("CreateDescriptorHeap for depth/stencil buffer failed, ERROR: 0x%x", hr);
     }
 
     CreateRTVs();
 
-    CreateDSV(swapChainDesc.Width, swapChainDesc.Height);
+    CreateDSV(backBufferWidth, backBufferHeight);
 
+    // 커맨드 리스트 풀 생성
     commandListPool = new D3D12CommandListPool(D3D12_COMMAND_LIST_TYPE_DIRECT, 8);
+
+    // 리소스 생성 용 커맨드 리스트
     resourceCommandList = commandListPool->Alloc();
-
-    // Fence 객체 생성
-    hr = device->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&fence));
-    if (FAILED(hr)) {
-        BE_FATALERROR("CreateFence : failed");
-    }
-    // Fence 초기값
-    fenceValue = 0;
-
-    // Fence 를 대기하기 위한 이벤트 객체 생성
-    fenceEventHandle = CreateEvent(nullptr, FALSE, FALSE, nullptr);
 
     // 현재 백버퍼 인덱스 초기화
     currentBackBufferIndex = swapChain->GetCurrentBackBufferIndex();
 
-#ifdef USE_D3D12_MEMALLOC
-    // D3D12MA Allocator 생성
-    D3D12MA::ALLOCATOR_DESC allocatorDesc = {};
-    allocatorDesc.pDevice = device;
-    allocatorDesc.pAdapter = adapter1;
-    allocatorDesc.Flags = D3D12MA::ALLOCATOR_FLAG_MSAA_TEXTURES_ALWAYS_COMMITTED | D3D12MA::ALLOCATOR_FLAG_DEFAULT_POOLS_NOT_ZEROED;
-    allocatorDesc.Flags |= D3D12MA::ALLOCATOR_FLAG_DONT_PREFER_SMALL_BUFFERS_COMMITTED;
-
-    hr = D3D12MA::CreateAllocator(&allocatorDesc, &allocator);
-    if (FAILED(hr)) {
-        BE_FATALERROR("D3D12MA::CreateAllocator : failed");
-    }
-#endif
-
-    adapter1->Release();
-
-    srvDescriptorPool = new D3D12DescriptorPool(D3D12DescriptorPool::Type::SRV, 100000, false);
-    rtvDescriptorPool = new D3D12DescriptorPool(D3D12DescriptorPool::Type::RTV, 16, false);
-    dsvDescriptorPool = new D3D12DescriptorPool(D3D12DescriptorPool::Type::DSV, 16, false);
-    samplerDescriptorPool = new D3D12DescriptorPool(D3D12DescriptorPool::Type::Sampler, 16, true);
-
     maxPendingResources = 1024;
     pendingResourceBuffer = new D3D12PendingResource[maxPendingResources];
-
-    renderObjects.Reserve(16384);
 
 #ifdef USE_RENDER_TASK
     // 렌더 태스크 스레드를 최대 물리코어 개수만큼만 생성한다.
@@ -253,6 +309,8 @@ void D3D12Renderer::Init(HWND hwnd) {
 #ifdef USE_RENDER_THREAD
     InitRenderThread();
 #endif
+
+    renderObjects.Reserve(16384);
 
     initialized = true;
 }
@@ -286,9 +344,12 @@ void D3D12Renderer::Shutdown() {
     SAFE_RELEASE_ARRAY(renderTargetBuffers);
     SAFE_RELEASE(depthStencilBuffer);
     SAFE_RELEASE(swapChain);
-    SAFE_RELEASE(commandQueue);
+
     SAFE_DELETE(commandListPool);
+    SAFE_RELEASE(commandQueues[D3D12CommandQueueType::Graphics]);
+    SAFE_RELEASE(commandQueues[D3D12CommandQueueType::Compute]);
     SAFE_RELEASE(fence);
+    SAFE_RELEASE(dxgiFactory);
 
 #ifdef USE_D3D12_MEMALLOC
     SAFE_RELEASE(allocator);
@@ -307,6 +368,45 @@ void D3D12Renderer::Shutdown() {
             pDebug->Release();
         }
         PlatformSystem::DebugBreak();
+    }
+}
+
+void D3D12Renderer::CreateSwapChain(HWND hwnd, UINT width, UINT height) {
+    DXGI_SWAP_CHAIN_DESC1 swapChainDesc = {};
+    swapChainDesc.Width = width;
+    swapChainDesc.Height = height;
+    swapChainDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+    //swapChainDesc.BufferDesc.RefreshRate.Numerator = m_uiRefreshRate;
+    //swapChainDesc.BufferDesc.RefreshRate.Denominator = 1;
+    swapChainDesc.BufferUsage = DXGI_USAGE_BACK_BUFFER | DXGI_USAGE_RENDER_TARGET_OUTPUT;
+    swapChainDesc.BufferCount = NumSwapChainBuffers;
+    swapChainDesc.SampleDesc.Count = 1;
+    swapChainDesc.SampleDesc.Quality = 0;
+    swapChainDesc.Scaling = DXGI_SCALING_NONE;
+    swapChainDesc.SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD;
+    swapChainDesc.AlphaMode = DXGI_ALPHA_MODE_UNSPECIFIED;
+    swapChainDesc.Flags = DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH;
+
+    if (supportsTearing) {
+        swapChainDesc.Flags |= DXGI_SWAP_CHAIN_FLAG_ALLOW_TEARING;
+    }
+
+    DXGI_SWAP_CHAIN_FULLSCREEN_DESC swapChainFullscreenDesc = {};
+    swapChainFullscreenDesc.Windowed = TRUE;
+
+    IDXGISwapChain1 *swapChain1 = nullptr;
+    HRESULT hr = dxgiFactory->CreateSwapChainForHwnd(commandQueues[D3D12CommandQueueType::Graphics], hwnd, &swapChainDesc, &swapChainFullscreenDesc, nullptr, &swapChain1);
+    if (FAILED(hr)) {
+        BE_FATALERROR("CreateSwapChainForHwnd failed, ERROR: 0x%x", hr);
+    }
+    hr = dxgiFactory->MakeWindowAssociation(hwnd, DXGI_MWA_NO_WINDOW_CHANGES | DXGI_MWA_NO_ALT_ENTER);
+    if (FAILED(hr)) {
+        BE_FATALERROR("MakeWindowAssociation failed, ERROR: 0x%x", hr);
+    }
+    hr = swapChain1->QueryInterface(IID_PPV_ARGS(&swapChain));
+    swapChain1->Release();
+    if (FAILED(hr)) {
+        BE_FATALERROR("Failed to create swapchain, ERROR: 0x%x", hr);
     }
 }
 
@@ -358,7 +458,7 @@ void D3D12Renderer::CreateDSV(int width, int height) {
         &depthStencilOptimizedClearValue,
         IID_PPV_ARGS(&depthStencilBuffer));
     if (FAILED(hr)) {
-        BE_FATALERROR("Create depth/stencil buffer : failed");
+        BE_FATALERROR("Create depth/stencil buffer failed, ERROR: 0x%x", hr);
     }
     //depthStencilBuffer->SetName(L"depthStencilBuffer");
 
@@ -373,7 +473,7 @@ void D3D12Renderer::CreateDSV(int width, int height) {
 }
 
 void D3D12Renderer::BeginFrame() {
-    PIX_SCOPED_EVENT(commandQueue, 0, "D3D12Renderer::BeginFrame");
+    PIX_SCOPED_EVENT(commandQueues[D3D12CommandQueueType::Graphics], 0, "D3D12Renderer::BeginFrame");
 
     currentFrameData = &frameData[currentFrameIndex];
 
@@ -402,11 +502,11 @@ void D3D12Renderer::BeginFrame() {
     commandList->graphicsCommandList->OMSetRenderTargets(1, &rtvDescriptorHandle, FALSE, &dsvDescriptorHandle);
 
     // CommandList 기록을 마치고 CommandQueue 로 실행
-    commandList->CloseAndExecute();
+    commandList->CloseAndExecute(D3D12CommandQueueType::Graphics);
 }
 
 void D3D12Renderer::EndFrame() {
-    PIX_SCOPED_EVENT(commandQueue, 1, "D3D12Renderer::EndFrame");
+    PIX_SCOPED_EVENT(commandQueues[D3D12CommandQueueType::Graphics], 1, "D3D12Renderer::EndFrame");
 
     // TODO: 렌더큐에 종료 마킹을 하고, 렌더큐를 실행한다.
 
@@ -420,7 +520,7 @@ void D3D12Renderer::EndFrame() {
     commandList->ResourceBarrier(renderTargetBuffers[currentBackBufferIndex], D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT);
 
     // CommandList 기록을 마치고 CommandQueue 로 실행
-    commandList->CloseAndExecute();
+    commandList->CloseAndExecute(D3D12CommandQueueType::Graphics);
 
     // 이번 프레임에서 수행하는 렌더링 커맨드들에 대한 펜스를 친다.
     currentFrameData->EndFrame();
@@ -439,7 +539,7 @@ void D3D12Renderer::EndFrame() {
 }
 
 void D3D12Renderer::SwapChainBuffers(bool vsync) {
-    PIX_SCOPED_EVENT(commandQueue, 2, "D3D12Renderer::SwapChainBuffers");
+    PIX_SCOPED_EVENT(commandQueues[D3D12CommandQueueType::Graphics], 2, "D3D12Renderer::SwapChainBuffers");
 
     if (swapChain->Present(vsync ? 1 : 0, vsync ? 0 : DXGI_PRESENT_ALLOW_TEARING) == DXGI_ERROR_DEVICE_REMOVED) {
         BE_FATALERROR("DXGI Device Removed");
@@ -450,10 +550,10 @@ void D3D12Renderer::SwapChainBuffers(bool vsync) {
 }
 
 D3D12CommandList* D3D12Renderer::FlushCommandList(D3D12CommandList* commandList) {
-    PIX_SCOPED_EVENT(commandQueue, 3, "D3D12Renderer::FlushCommandList");
+    PIX_SCOPED_EVENT(commandQueues[D3D12CommandQueueType::Graphics], 3, "D3D12Renderer::FlushCommandList");
 
     // CommandList 기록을 마치고 CommandQueue 로 실행
-    commandList->CloseAndExecute();
+    commandList->CloseAndExecute(D3D12CommandQueueType::Graphics);
 
     // 커맨드 리스트 풀에서 새로운 커맨드 리스트를 얻어온다.
     commandList = commandList->parentPool->Alloc();
@@ -471,7 +571,7 @@ D3D12CommandList* D3D12Renderer::FlushCommandList(D3D12CommandList* commandList)
 
 UINT64 D3D12Renderer::SignalFence() {
     fenceValue++;
-    commandQueue->Signal(fence, fenceValue);
+    commandQueues[D3D12CommandQueueType::Graphics]->Signal(fence, fenceValue);
 
     return fenceValue;
 }
@@ -564,6 +664,51 @@ void D3D12Renderer::OnResize(int width, int height) {
     scissorRect.bottom = height;
 }
 
+void D3D12Renderer::CreateDevice(IDXGIAdapter1 **adapterPtr) {
+    D3D_FEATURE_LEVEL featurelevels[] = {
+        D3D_FEATURE_LEVEL_12_2,
+        D3D_FEATURE_LEVEL_12_1,
+        D3D_FEATURE_LEVEL_12_0,
+        D3D_FEATURE_LEVEL_11_1,
+        D3D_FEATURE_LEVEL_11_0,
+    };
+
+    IDXGIAdapter1 *currentAdapter = nullptr;
+
+    for (UINT adapterIndex = 0; ; ++adapterIndex) {
+        SAFE_RELEASE(currentAdapter);
+        HRESULT hr = dxgiFactory->EnumAdapters1(adapterIndex, &currentAdapter);
+        if (hr == DXGI_ERROR_NOT_FOUND) {
+            break;
+        }
+
+        DXGI_ADAPTER_DESC1 currentAdapterDesc;
+        hr = currentAdapter->GetDesc1(&currentAdapterDesc);
+        if (SUCCEEDED(hr)) {
+            if (currentAdapterDesc.Flags & DXGI_ADAPTER_FLAG_SOFTWARE) {
+                continue;
+            }
+
+            for (const D3D_FEATURE_LEVEL &featureLevel : featurelevels) {
+                // D3D12 디바이스 생성
+                if (SUCCEEDED(D3D12CreateDevice(currentAdapter, featureLevel, IID_PPV_ARGS(&device)))) {
+                    break;
+                }
+            }
+
+            if (device) {
+                break;
+            }
+        }
+    }
+
+    if (!device) {
+        BE_FATALERROR("Failed to create D3D12 device");
+    }
+
+    *adapterPtr = currentAdapter;
+}
+
 bool D3D12Renderer::LoadCompiledShader(const char *name, const uint64_t hash, ID3DBlob **compiledShaderBlob) {
     Str filename;// = shaderCacheDir;
     filename.AppendPath(name);
@@ -643,7 +788,7 @@ bool D3D12Renderer::CreateShader(const char *sourceName, const char *shaderText,
         *compiledShaderBlob = nullptr;
 
         if (FAILED(D3DCompile(shaderText, shaderTextSize, sourceName, nullptr, nullptr, entryPoint, target, compileFlags, 0, compiledShaderBlob, &errorBlob))) {
-            renderer.PrintCompileErrorMessages(errorBlob);
+            PrintCompileErrorMessages(errorBlob);
             SAFE_RELEASE(errorBlob);
             return false;
         }
@@ -692,6 +837,28 @@ bool D3D12Renderer::CreateVertexAndPixelShaderFromFile(const char *shaderFilenam
     return true;
 }
 
+ID3D12PipelineState *D3D12Renderer::CreatePSOFromLibrary(const D3D12_PIPELINE_STATE_STREAM_DESC *streamDesc, ID3D12PipelineLibrary1 *library, const TCHAR *name) {
+    ID3D12PipelineState *pso = nullptr;
+    HRESULT hr;
+
+    if (library) {
+        hr = library->LoadPipeline(name, streamDesc, IID_PPV_ARGS(&pso));
+        if (hr == E_INVALIDARG) {
+            hr = device->CreatePipelineState(streamDesc, IID_PPV_ARGS(&pso));
+            if (SUCCEEDED(hr)) {
+                library->StorePipeline(name, pso);
+            }
+        }
+    } else {
+        hr = device->CreatePipelineState(streamDesc, IID_PPV_ARGS(&pso));
+        if (FAILED(hr)) {
+            BE_ERRLOG("Failed to create pipeline state with name %s, ERROR: 0x%x.", name, hr);
+        }
+    }
+
+    return pso;
+}
+
 ID3D12PipelineState *D3D12Renderer::CreatePSO(ID3D12RootSignature *rootSignature, const D3D12_SHADER_BYTECODE &byteCodeVS, const D3D12_SHADER_BYTECODE &byteCodePS, const D3D12_INPUT_LAYOUT_DESC &inputLayout) {
     const D3D12_RENDER_TARGET_BLEND_DESC defaultRenderTargetBlendDesc = {
         FALSE, FALSE,
@@ -734,8 +901,10 @@ ID3D12PipelineState *D3D12Renderer::CreatePSO(ID3D12RootSignature *rootSignature
     psoDesc.RTVFormats[0] = DXGI_FORMAT_R8G8B8A8_UNORM;
     psoDesc.DSVFormat = DXGI_FORMAT_D24_UNORM_S8_UINT;
     psoDesc.SampleDesc.Count = 1;
-    if (FAILED(renderer.device->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&pso)))) {
-        BE_WARNLOG("device->CreateGraphicsPipelineState() failed\n");
+
+    HRESULT hr = device->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&pso));
+    if (FAILED(hr)) {
+        BE_WARNLOG("device->CreateGraphicsPipelineState() failed, ERROR: 0x%x\n", hr);
         return nullptr;
     }
     return pso;
@@ -888,7 +1057,7 @@ void D3D12Renderer::RenderScene(/*const D3D12Camera *camera*/) {
 }
 
 void D3D12Renderer::RenderFrame() {
-    PIX_SCOPED_EVENT(commandQueue, 4, "D3D12Renderer::RenderFrame");
+    PIX_SCOPED_EVENT(commandQueues[D3D12CommandQueueType::Graphics], 4, "D3D12Renderer::RenderFrame");
 
     int numVisObjects = currentFrameData->NumVisObjects();
     if (numVisObjects == 0) {
@@ -966,7 +1135,7 @@ void D3D12Renderer::DrawVisObjectsWithoutTask() {
     DrawVisObjects(0, commandList, 0, numVisObjects - 1);
 
     // CommandList 기록을 마치고 CommandQueue 로 실행
-    commandList->CloseAndExecute();
+    commandList->CloseAndExecute(D3D12CommandQueueType::Graphics);
 }
 
 #ifdef USE_RENDER_TASK
@@ -1043,7 +1212,7 @@ void D3D12Renderer::DrawVisObjectsWithTask(int numTasks) {
 
     // CommandList 들을 한꺼번에 실행
     if (renderTaskCount > 0) {
-        commandQueue->ExecuteCommandLists(renderTaskCount, execCommandLists);
+        commandQueues[D3D12CommandQueueType::Graphics]->ExecuteCommandLists(renderTaskCount, execCommandLists);
     }
 }
 #endif

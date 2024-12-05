@@ -38,24 +38,29 @@
 // 인스턴싱 사용 여부
 #define USE_RENDEROBJECT_INSTANCING
 
+template <typename T>
+T *NormalizePointer(T *&ptr) noexcept {
+    return ptr;
+}
+
 #if defined(USE_PIX_MARKERS) && defined(USE_PIX)
 #define PIX_CPU_BEGIN_EVENT(colorIndex, string) PIXBeginEvent(PIX_COLOR_INDEX(colorIndex), string)
 #define PIX_CPU_END_EVENT() PIXEndEvent()
 #define PIX_CPU_SCOPED_EVENT(colorIndex, string) PIXScopedEvent(PIX_COLOR_INDEX(colorIndex), string)
 #define PIX_CPU_MARKER(colorIndex, string) PIXSetMarker(PIX_COLOR_INDEX(colorIndex), string)
-#define PIX_BEGIN_EVENT(commandListOrCommandQueue, colorIndex, string) PIXBeginEvent(commandListOrCommandQueue, PIX_COLOR_INDEX(colorIndex), string)
-#define PIX_END_EVENT(commandListOrCommandQueue) PIXEndEvent(commandListOrCommandQueue)
-#define PIX_SCOPED_EVENT(commandListOrCommandQueue, colorIndex, string) PIXScopedEvent(commandListOrCommandQueue, PIX_COLOR_INDEX(colorIndex), string)
-#define PIX_MARKER(commandListOrCommandQueue, colorIndex, string) PIXSetMarker(commandListOrCommandQueue, PIX_COLOR_INDEX(colorIndex), string)
+#define PIX_BEGIN_EVENT(context, colorIndex, string) PIXBeginEvent(NormalizePointer(context), PIX_COLOR_INDEX(colorIndex), string)
+#define PIX_END_EVENT(context) PIXEndEvent(NormalizePointer(context))
+#define PIX_SCOPED_EVENT(context, colorIndex, string) PIXScopedEvent(NormalizePointer(context), PIX_COLOR_INDEX(colorIndex), string)
+#define PIX_MARKER(context, colorIndex, string) PIXSetMarker(NormalizePointer(context), PIX_COLOR_INDEX(colorIndex), string)
 #else
 #define PIX_CPU_BEGIN_EVENT(colorIndex, string)
 #define PIX_CPU_END_EVENT()
 #define PIX_CPU_SCOPED_EVENT(colorIndex, string)
 #define PIX_CPU_MARKER(colorIndex, string)
-#define PIX_BEGIN_EVENT(commandListOrCommandQueue, colorIndex, string)
-#define PIX_END_EVENT(commandListOrCommandQueue)
-#define PIX_SCOPED_EVENT(commandListOrCommandQueue, colorIndex, string)
-#define PIX_MARKER(commandListOrCommandQueue, colorIndex, string)
+#define PIX_BEGIN_EVENT(context, colorIndex, string)
+#define PIX_END_EVENT(context)
+#define PIX_SCOPED_EVENT(context, colorIndex, string)
+#define PIX_MARKER(context, colorIndex, string)
 #endif
 
 #ifdef USE_FRAME_RESOURCES

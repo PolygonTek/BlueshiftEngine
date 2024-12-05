@@ -23,7 +23,7 @@ class D3D12CommandList {
 public:
     void                            Reset(bool resetCacheStates = true);
 
-    void                            CloseAndExecute();
+    void                            CloseAndExecute(D3D12CommandQueueType::Enum queueType);
 
     void                            ResourceBarrier(ID3D12Resource *resource, D3D12_RESOURCE_STATES stateBefore, D3D12_RESOURCE_STATES stateAfter);
 
@@ -76,11 +76,13 @@ BE_INLINE void D3D12CommandList::Reset(bool resetCacheStates) {
 #endif
 }
 
-BE_INLINE void D3D12CommandList::CloseAndExecute() {
+BE_INLINE void D3D12CommandList::CloseAndExecute(D3D12CommandQueueType::Enum queueType) {
+    assert(queueType > 0 && queueType < D3D12CommandQueueType::MaxCommandQueueType);
+
     graphicsCommandList->Close();
 
     ID3D12CommandList *execCommandLists[] = { graphicsCommandList };
-    renderer.commandQueue->ExecuteCommandLists(COUNT_OF(execCommandLists), execCommandLists);
+    renderer.commandQueues[queueType]->ExecuteCommandLists(COUNT_OF(execCommandLists), execCommandLists);
 }
 
 BE_INLINE void D3D12CommandList::ResourceBarrier(ID3D12Resource *resource, D3D12_RESOURCE_STATES stateBefore, D3D12_RESOURCE_STATES stateAfter) {

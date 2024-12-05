@@ -84,7 +84,7 @@ D3D12VertexBuffer* D3D12VertexBuffer::CreateVertexBuffer(D3D12VertexBuffer::Type
             renderer.resourceCommandList->Reset();
             renderer.resourceCommandList->graphicsCommandList->CopyBufferRegion(bufferResource, 0, uploadBuffer, 0, bufferSize);
             renderer.resourceCommandList->ResourceBarrier(bufferResource, D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER);
-            renderer.resourceCommandList->CloseAndExecute();
+            renderer.resourceCommandList->CloseAndExecute(D3D12CommandQueueType::Graphics);
         } else if (type == D3D12VertexBuffer::Type::Dynamic) {
             UINT8 *mappedPtr = nullptr;
             bufferResource->Map(0, nullptr, reinterpret_cast<void **>(&mappedPtr));

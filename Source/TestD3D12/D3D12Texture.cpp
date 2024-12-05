@@ -72,7 +72,7 @@ void D3D12Texture::GetTextureImage2D(UINT level, Image::Format::Enum dstFormat, 
     renderer.resourceCommandList->ResourceBarrier(textureResource, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_COPY_SOURCE);
     renderer.resourceCommandList->graphicsCommandList->CopyTextureRegion(&dstLocation, 0, 0, 0, &srcLocation, nullptr);
     renderer.resourceCommandList->ResourceBarrier(textureResource, D3D12_RESOURCE_STATE_COPY_SOURCE, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
-    renderer.resourceCommandList->CloseAndExecute();
+    renderer.resourceCommandList->CloseAndExecute(D3D12CommandQueueType::Graphics);
 
     // GPU 에서 복사가 끝날 때까지 기다린다.
     renderer.Finish();
@@ -205,7 +205,7 @@ bool D3D12Texture::SetTextureSubImage2D(UINT level, UINT x, UINT y, UINT width, 
     renderer.resourceCommandList->graphicsCommandList->CopyTextureRegion(&dstLocation, x, y, 0, &srcLocation, &box);
 
     renderer.resourceCommandList->ResourceBarrier(textureResource, D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_ALL_SHADER_RESOURCE);
-    renderer.resourceCommandList->CloseAndExecute();
+    renderer.resourceCommandList->CloseAndExecute(D3D12CommandQueueType::Graphics);
 
     renderer.MarkForRelease(uploadBuffer);
 
@@ -296,7 +296,7 @@ bool D3D12Texture::SetTextureSubImage3D(UINT level, UINT x, UINT y, UINT z, UINT
     renderer.resourceCommandList->graphicsCommandList->CopyTextureRegion(&dstLocation, x, y, z, &srcLocation, &box);
 
     renderer.resourceCommandList->ResourceBarrier(textureResource, D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_ALL_SHADER_RESOURCE);
-    renderer.resourceCommandList->CloseAndExecute();
+    renderer.resourceCommandList->CloseAndExecute(D3D12CommandQueueType::Graphics);
 
     renderer.MarkForRelease(uploadBuffer);
 
@@ -538,7 +538,7 @@ D3D12Texture* D3D12Texture::CreateTexture(D3D12Texture::Type textureType, const 
     }
 
     renderer.resourceCommandList->ResourceBarrier(textureResource, D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_ALL_SHADER_RESOURCE);
-    renderer.resourceCommandList->CloseAndExecute();
+    renderer.resourceCommandList->CloseAndExecute(D3D12CommandQueueType::Graphics);
 
     if (uploadBuffer) {
         renderer.MarkForRelease(uploadBuffer);

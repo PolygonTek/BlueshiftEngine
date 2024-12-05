@@ -27,11 +27,19 @@ class D3D12CommandList;
 class D3D12DescriptorPool;
 
 #ifdef USE_RENDER_THREAD
-enum class FrameSyncState : byte {
+enum class FrameSyncState : uint8_t {
     WaitingForUpdateCompleted,  // (렌더 스레드가 렌더링이 완료되어) 메인 스레드의 다음 업데이트 작업이 완료되기를 기다리는 상태
     WaitingForRenderCompleted   // (메인 스레드가 업데이트가 완료되어) 렌더 스레드의 다음 렌더링 작업이 완료되기를 기다리는 상태
 };
 #endif
+
+struct D3D12CommandQueueType {
+    enum Enum {
+        Graphics,
+        Compute,
+        MaxCommandQueueType
+    };
+};
 
 struct D3D12PendingResource {
     UINT64                              fenceValue = 0;
@@ -51,6 +59,8 @@ public:
 
     void                                OnResize(int width, int height);
 
+    void                                CreateDevice(IDXGIAdapter1 **adapterPtr);
+    void                                CreateSwapChain(HWND hwnd, UINT width, UINT height);
     void                                CreateRTVs();
     void                                CreateDSV(int width, int height);
 
@@ -70,6 +80,7 @@ public:
     bool                                CreateShaderFromFile(const char *shaderFilename, const char *entryPoint, const char *target, ID3DBlob **compiledShaderBlob);
     bool                                CreateVertexAndPixelShaderFromFile(const char *shaderFilename, const char *vsEntryPoint, const char *vsTarget, const char *psEntryPoint, const char *psTarget, ID3DBlob **compiledVSBlob, ID3DBlob **compiledPSBlob);
 
+    ID3D12PipelineState *               CreatePSOFromLibrary(const D3D12_PIPELINE_STATE_STREAM_DESC *streamDesc, ID3D12PipelineLibrary1 *library, const TCHAR *name);
     ID3D12PipelineState *               CreatePSO(ID3D12RootSignature *rootSignature, const D3D12_SHADER_BYTECODE &byteCodeVS, const D3D12_SHADER_BYTECODE &byteCodePS, const D3D12_INPUT_LAYOUT_DESC &inputLayout);
     ID3D12PipelineState *               CreatePSO(ID3D12RootSignature *rootSignature, const char *shaderFilename, const D3D12_INPUT_LAYOUT_DESC &inputLayout);
 
@@ -105,10 +116,11 @@ public:
 
     static constexpr UINT               NumSwapChainBuffers = 3;
 
+    IDXGIFactory4 *                     dxgiFactory = nullptr;
     ID3D12Device5 *                     device = nullptr;
     DXGI_ADAPTER_DESC1                  adapterDesc = {};
     IDXGISwapChain3 *                   swapChain = nullptr;
-    ID3D12CommandQueue *                commandQueue = nullptr;
+    ID3D12CommandQueue *                commandQueues[D3D12CommandQueueType::MaxCommandQueueType] = {};
     D3D12CommandListPool *              commandListPool = nullptr;
     D3D12CommandList *                  resourceCommandList = nullptr;
     ID3D12Fence *                       fence = nullptr;
@@ -126,6 +138,18 @@ public:
 
     D3D12_CPU_DESCRIPTOR_HANDLE         rtvDescriptorHandle = CD3DX12_CPU_DESCRIPTOR_HANDLE();
     D3D12_CPU_DESCRIPTOR_HANDLE         dsvDescriptorHandle = CD3DX12_CPU_DESCRIPTOR_HANDLE();
+
+    uint32_t                            vendorId;
+    uint32_t                            deviceId;
+    Str                                 adapterName;
+    uint64_t                            dedicatedVideoMemSize = 0;
+    uint64_t                            dedicatedSystemMemSize = 0;
+    uint64_t                            sharedSystemMemSize = 0;
+    bool                                supportsTearing = false;
+    bool                                supportsVRS = false;
+    bool                                supportsRayTracing = false;
+    bool                                supportsMeshShader = false;
+    bool                                supportsDepthBoundsTest = false;
 
     UINT                                currentBackBufferIndex = 0;
     D3D12_VIEWPORT                      viewport = {};

@@ -86,7 +86,7 @@ D3D12IndexBuffer *D3D12IndexBuffer::CreateIndexBuffer(D3D12IndexBuffer::Type typ
             renderer.resourceCommandList->Reset();
             renderer.resourceCommandList->graphicsCommandList->CopyBufferRegion(bufferResource, 0, uploadBuffer, 0, bufferSize);
             renderer.resourceCommandList->ResourceBarrier(bufferResource, D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_INDEX_BUFFER);
-            renderer.resourceCommandList->CloseAndExecute();
+            renderer.resourceCommandList->CloseAndExecute(D3D12CommandQueueType::Graphics);
         } else if (type == D3D12IndexBuffer::Type::Dynamic) {
             UINT8* mappedPtr = nullptr;
             bufferResource->Map(0, nullptr, reinterpret_cast<void **>(&mappedPtr));
