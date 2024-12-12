@@ -78,6 +78,12 @@ public:
             RGBA_32F_32F_32F_32F,
             RGBE_9_9_9_5,
             RGB_11F_11F_10F,
+            // Depth formats
+            Depth_16,
+            Depth_24,
+            Depth_32F,
+            DepthStencil_24_8,
+            DepthStencil_32F_8,
             // Compressed (DXT) formats
             DXT1, // BC1
             DXT3, // BC2
@@ -105,12 +111,6 @@ public:
             RGB_ATC,
             RGBA_EA_ATC, // Explicit alpha
             RGBA_IA_ATC, // Interpolated alpha
-            // Depth formats
-            Depth_16,
-            Depth_24,
-            Depth_32F,
-            DepthStencil_24_8,
-            DepthStencil_32F_8,
             Count
         };
     };

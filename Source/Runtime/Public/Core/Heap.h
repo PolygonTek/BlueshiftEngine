@@ -39,7 +39,7 @@
 #define Mem_Alloc16(size)                   std::aligned_alloc(16, size)
 #define Mem_Alloc32(size)                   std::aligned_alloc(32, size)
 #define Mem_Alloc64(size)                   std::aligned_alloc(64, size)
-#define Mem_Alloc256(size)                   std::aligned_alloc(256, size)
+#define Mem_Alloc256(size)                  std::aligned_alloc(256, size)
 #define Mem_AlignedFree(ptr)                free(ptr)
 #endif
 
