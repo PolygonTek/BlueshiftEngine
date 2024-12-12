@@ -174,9 +174,9 @@ float HashIndex::GetVariance() const {
 
 int HashIndex::GenerateHash(const char *string, bool caseSensitive) const {
     if (caseSensitive) {
-        return (Str::Hash(string) & hashMask);
+        return (Str::Hash32(string) & hashMask);
     } else {
-        return (Str::IHash(string) & hashMask);
+        return (Str::IHash32(string) & hashMask);
     }
 }
 

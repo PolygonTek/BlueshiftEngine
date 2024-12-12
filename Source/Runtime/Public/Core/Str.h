@@ -406,12 +406,19 @@ public:
     friend int BE_CDECL sprintf(Str &dest, const char *fmt, ...);
     friend int BE_CDECL vsprintf(Str &dest, const char *fmt, va_list ap);
 
-    int                 ToHash() const { return Hash(data); }
+    uint32_t            ToHash() const { return Hash32(data); }
+    uint32_t            ToHash32() const { return Hash32(data); }
+    uint64_t            ToHash64() const { return Hash64(data); }
  
-    static int          Hash(const char *string);
-    static int          Hash(const char *string, int length);
-    static int          IHash(const char *string);
-    static int          IHash(const char *string, int length);
+    static uint32_t     Hash32(const char *string);
+    static uint32_t     Hash32(const char *string, int length);
+    static uint32_t     IHash32(const char *string);
+    static uint32_t     IHash32(const char *string, int length);
+
+    static uint64_t     Hash64(const char *string);
+    static uint64_t     Hash64(const char *string, int length);
+    static uint64_t     IHash64(const char *string);
+    static uint64_t     IHash64(const char *string, int length);
 
     static char         ToLower(int c);
     static char         ToUpper(int c);
@@ -1172,34 +1179,98 @@ BE_INLINE bool Str::CheckExtension(const char *ext) const {
     return Str::CheckExtension(data, ext);
 }
 
-BE_INLINE int Str::Hash(const char *string) {
-    int hash = 0;
-    for (int i = 0; *string != '\0'; i++) {
-        hash += (*string++) * (i + 119);
+BE_INLINE uint32_t Str::Hash32(const char *string) {
+    constexpr uint32_t prime = 0x01000193;
+    uint32_t hash = 0x811c9dc5;
+
+    while (*string) {
+        hash ^= static_cast<uint32_t>(*string);
+        hash *= prime;
+        ++string;
     }
     return hash;
 }
 
-BE_INLINE int Str::Hash(const char *string, int length) {
-    int hash = 0;
+BE_INLINE uint32_t Str::Hash32(const char *string, int length) {
+    constexpr uint32_t prime = 0x01000193;
+    uint32_t hash = 0x811c9dc5;
+
     for (int i = 0; i < length; i++) {
-        hash += (*string++) * (i + 119);
+        hash ^= static_cast<uint32_t>(*string);
+        hash *= prime;
+        ++string;
     }
     return hash;
 }
 
-BE_INLINE int Str::IHash(const char *string) {
-    int hash = 0;
-    for (int i = 0; *string != '\0'; i++) {
-        hash += ToLower(*string++) * (i + 119);
+BE_INLINE uint32_t Str::IHash32(const char *string) {
+    constexpr uint32_t prime = 0x01000193;
+    uint32_t hash = 0x811c9dc5;
+
+    while (*string) {
+        hash ^= static_cast<uint32_t>(ToLower(*string));
+        hash *= prime;
+        ++string;
     }
     return hash;
 }
 
-BE_INLINE int Str::IHash(const char *string, int length) {
-    int hash = 0;
+BE_INLINE uint32_t Str::IHash32(const char *string, int length) {
+    constexpr uint32_t prime = 0x01000193;
+    uint32_t hash = 0x811c9dc5;
+
     for (int i = 0; i < length; i++) {
-        hash += ToLower(*string++) * (i + 119);
+        hash ^= static_cast<uint32_t>(ToLower(*string));
+        hash *= prime;
+        ++string;
+    }
+    return hash;
+}
+
+BE_INLINE uint64_t Str::Hash64(const char *string) {
+    constexpr uint64_t prime = 0x00000100000001b3;
+    uint64_t hash = 0xcbf29ce484222325;
+
+    while (*string) {
+        hash ^= static_cast<uint64_t>(*string);
+        hash *= prime;
+        ++string;
+    }
+    return hash;
+}
+
+BE_INLINE uint64_t Str::Hash64(const char *string, int length) {
+    constexpr uint64_t prime = 0x00000100000001b3;
+    uint64_t hash = 0xcbf29ce484222325;
+
+    for (int i = 0; i < length; i++) {
+        hash ^= static_cast<uint64_t>(*string);
+        hash *= prime;
+        ++string;
+    }
+    return hash;
+}
+
+BE_INLINE uint64_t Str::IHash64(const char *string) {
+    constexpr uint64_t prime = 0x00000100000001b3;
+    uint64_t hash = 0xcbf29ce484222325;
+
+    while (*string) {
+        hash ^= static_cast<uint64_t>(ToLower(*string));
+        hash *= prime;
+        ++string;
+    }
+    return hash;
+}
+
+BE_INLINE uint64_t Str::IHash64(const char *string, int length) {
+    constexpr uint64_t prime = 0x00000100000001b3;
+    uint64_t hash = 0xcbf29ce484222325;
+
+    for (int i = 0; i < length; i++) {
+        hash ^= static_cast<uint64_t>(ToLower(*string));
+        hash *= prime;
+        ++string;
     }
     return hash;
 }
