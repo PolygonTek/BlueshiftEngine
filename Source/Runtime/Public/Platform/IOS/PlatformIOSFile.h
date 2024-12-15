@@ -25,18 +25,18 @@ class BE_API PlatformIOSFile : public PlatformPosixFile {
 public:
     PlatformIOSFile(FILE *fp);
     virtual ~PlatformIOSFile();
-    
+
     static PlatformBaseFile *   OpenFileRead(const char *filename);
     static PlatformBaseFile *   OpenFileWrite(const char *filename);
     static PlatformBaseFile *   OpenFileAppend(const char *filename);
-    
+
     static bool                 FileExists(const char *filename);
     static size_t               FileSize(const char *filename);
     static bool                 IsFileWritable(const char *filename);
     static bool                 IsReadOnly(const char *filename);
     static bool                 RemoveFile(const char *filename);
     static bool                 MoveFile(const char *srcFilename, const char *dstFilename);
-    
+
     static bool                 DirectoryExists(const char *dirname);
     static bool                 CreateDirectory(const char *dirname);
     static bool                 RemoveDirectory(const char *dirname);
@@ -47,12 +47,13 @@ public:
     static const char *         UserDocumentDir();
     static const char *         UserAppDataDir();
     static const char *         UserTempDir();
-    
+
     static Str                  ConvertToIOSPath(const Str &filename, bool forWrite);
 
-protected:
     static Str                  NormalizeFilename(const char *filename);
     static Str                  NormalizeDirectoryName(const char *dirname);
+
+protected:
 };
 
 class BE_API PlatformIOSFileMapping : public PlatformBaseFileMapping {

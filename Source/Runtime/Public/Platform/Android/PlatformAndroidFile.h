@@ -68,10 +68,10 @@ public:
 
     static int                  ListFiles(const char *directory, const char *nameFilter, bool recursive, bool includeSubDir, Array<FileInfo> &files);
 
-protected:
     static Str                  NormalizeFilename(const char *filename);
     static Str                  NormalizeDirectoryName(const char *dirname);
 
+protected:
     FILE *                      fp;
     AAsset *                    asset;
 };

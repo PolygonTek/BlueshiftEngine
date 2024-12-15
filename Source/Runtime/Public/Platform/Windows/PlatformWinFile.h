@@ -64,10 +64,10 @@ public:
     
     static int                  ListFiles(const char *directory, const char *nameFilter, bool recursive, bool includeSubDir, Array<FileInfo> &list);
 
-protected:
     static Str                  NormalizeFilename(const char *filename);
-    static Str                  NormalizeDirectory(const char *dirname);
+    static Str                  NormalizeDirectoryName(const char *dirname);
 
+protected:
     HANDLE                      fileHandle;
 };
 

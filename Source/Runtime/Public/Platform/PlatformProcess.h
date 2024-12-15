@@ -14,6 +14,9 @@
 
 #pragma once
 
+#include "Core/Str.h"
+#include "Containers/Array.h"
+
 BE_NAMESPACE_BEGIN
 
 // type for shared library
@@ -38,7 +41,10 @@ public:
     static bool                 ReadProcessOutput(ProcessHandle &processHandle, int bufferLength, char *buffer);
 
     static void                 Sleep(float seconds);
-    
+
+    static bool                 AddDllDirectory(const char *directory);
+    static bool                 RemoveDllDirectory(const char *directory);
+
                                 /// Loads a shared library
     static SharedLib            OpenLibrary(const char *filename);
                                 /// Unloads a shared library

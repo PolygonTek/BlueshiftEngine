@@ -48,10 +48,10 @@ public:
     static bool                 MoveFile(const char *srcFilename, const char *dstFilename);
     static int                  GetFileMode(const char *filename);
     static void                 SetFileMode(const char *filename, int mode);
-    
+
     static DateTime             GetTimeStamp(const char *filename);
     static void                 SetTimeStamp(const char *filename, const DateTime &timeStamp);
-    
+
     static bool                 DirectoryExists(const char *dirname);
     static bool                 CreateDirectory(const char *dirname);
     static bool                 RemoveDirectory(const char *dirname);
@@ -60,13 +60,13 @@ public:
     static const char *         Cwd();
     static bool                 SetCwd(const char *dirname);
     static const char *         ExecutablePath();
-    
+
     static int                  ListFiles(const char *directory, const char *nameFilter, bool recursive, bool includeSubDir, Array<FileInfo> &files);
-    
-protected:
+
     static Str                  NormalizeFilename(const char *filename);
     static Str                  NormalizeDirectoryName(const char *dirname);
 
+protected:
     FILE *                      fp;
 };
 

@@ -15,6 +15,7 @@
 #pragma once
 
 #include "Core/Str.h"
+#include "Containers/HashMap.h"
 
 BE_NAMESPACE_BEGIN
 
@@ -68,12 +69,18 @@ public:
 
     static void                 Sleep(float seconds);
 
+    static bool                 AddDllDirectory(const char *directory);
+    static bool                 RemoveDllDirectory(const char *directory);
+
                                 // Loads a shared library
     static SharedLib            OpenLibrary(const char *filename);
                                 // Unloads a shared library
     static void                 CloseLibrary(SharedLib lib);
                                 // Returns address of a symbol from the library
     static void *               GetSymbol(SharedLib lib, const char *sym);
+
+private:
+    static HashMap<Str, DLL_DIRECTORY_COOKIE> dllDirHandleMap;
 };
 
 typedef PlatformWinProcess      PlatformProcess;

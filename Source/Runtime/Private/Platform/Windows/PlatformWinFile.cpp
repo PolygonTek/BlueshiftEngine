@@ -136,7 +136,7 @@ Str PlatformWinFile::NormalizeFilename(const char *filename) {
     return normalizedFilename;
 }
 
-Str PlatformWinFile::NormalizeDirectory(const char *dirname) {
+Str PlatformWinFile::NormalizeDirectoryName(const char *dirname) {
     Str normalizedDirname;
     if (FileSystem::IsAbsolutePath(dirname)) {
         normalizedDirname = dirname;
@@ -531,7 +531,7 @@ int PlatformWinFile::ListFiles(const char *directory, const char *nameFilter, bo
 
     files.Clear();
 
-    Str normalizedDirectory = NormalizeDirectory(directory);
+    Str normalizedDirectory = NormalizeDirectoryName(directory);
     
     if (recursive) {
         ListFilesRecursive(normalizedDirectory, "", nameFilter, includeSubDir, files);

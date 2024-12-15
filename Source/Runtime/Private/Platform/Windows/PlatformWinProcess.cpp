@@ -15,7 +15,7 @@
 #include "Precompiled.h"
 #include "Core/Str.h"
 #include "Platform/PlatformProcess.h"
-#include "Platform/Windows/PlatformWinProcess.h"
+#include "Platform/PlatformFile.h"
 #include "Platform/Windows/PlatformWinUtils.h"
 
 #include <errno.h>
@@ -31,6 +31,8 @@
 #endif
 
 BE_NAMESPACE_BEGIN
+
+HashMap<Str, DLL_DIRECTORY_COOKIE> PlatformWinProcess::dllDirHandleMap;
 
 // get the full path to the running executable
 const char *PlatformWinProcess::ExecutableFileName() {
@@ -235,6 +237,31 @@ bool PlatformWinProcess::ReadProcessOutput(ProcessHandle &processHandle, int buf
 
 void PlatformWinProcess::Sleep(float seconds) {
     ::Sleep((DWORD)(seconds * 1000.0));
+}
+
+bool PlatformWinProcess::AddDllDirectory(const char *directory) {
+    wchar_t wDirectory[256] = L"";
+
+    Str normalizedDirname = PlatformWinFile::NormalizeDirectoryName(directory);
+    PlatformWinUtils::UTF8ToUCS2(normalizedDirname, wDirectory, COUNT_OF(wDirectory));
+
+    DLL_DIRECTORY_COOKIE dirHandle = ::AddDllDirectory(wDirectory);
+    if (!dirHandle) {
+        return false;
+    }
+
+    dllDirHandleMap.Set(Str(directory), dirHandle);
+    return true;
+}
+
+bool PlatformWinProcess::RemoveDllDirectory(const char *directory) {
+    auto *entry = dllDirHandleMap.Get(Str(directory));
+    if (!entry) {
+        return false;
+    }
+
+    ::RemoveDllDirectory(entry->second);
+    return true;
 }
 
 BE_NAMESPACE_END

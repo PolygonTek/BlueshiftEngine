@@ -140,4 +140,12 @@ bool PlatformBaseProcess::ReadProcessOutput(ProcessHandle &processHandle, int bu
 void PlatformBaseProcess::Sleep(float seconds) {
 }
 
+bool PlatformBaseProcess::AddDllDirectory(const char *directory) {
+    return false;
+}
+
+bool PlatformBaseProcess::RemoveDllDirectory(const char *directory) {
+    return false;
+}
+
 BE_NAMESPACE_END
