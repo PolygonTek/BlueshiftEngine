@@ -178,6 +178,14 @@ RHIRenderer::Shader *D3D12Renderer::CreateShaderFromFile(ShaderStage shaderStage
     return shader;
 }
 
+void D3D12Renderer::DestroyShader(Shader *shader, bool immediate) {
+    if (immediate) {
+        delete shader;
+    } else {
+        MarkForDelete(shader);
+    }
+}
+
 void D3D12Renderer::PrintCompileErrorMessages(ID3DBlob *errorBlob) {
     if (!errorBlob) {
         BE_WARNLOG("D3DCompile failed, but no error message was provided\n");

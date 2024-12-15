@@ -99,10 +99,9 @@ void D3D12CubeMesh::InitMesh() {
 }
 
 void D3D12CubeMesh::FreeMesh() {
-    renderer.MarkForDelete(texture);
-    renderer.MarkForDelete(vertexBuffer);
-    renderer.MarkForDelete(indexBuffer);
-
+    renderer.DestroyTexture(texture);
+    renderer.DestroyVertexBuffer(vertexBuffer);
+    renderer.DestroyIndexBuffer(indexBuffer);
     renderer.DestroyPSO(singlePSO);
     renderer.DestroyPSO(instancingPSO);
 }
@@ -182,32 +181,51 @@ void D3D12CubeMesh::InitPipelineState() {
     renderPass.renderTargetFormats[0] = Image::Format::RGBA_8_8_8_8;
     renderPass.depthStencilFormat = Image::Format::DepthStencil_24_8;
 
-    RHIRenderer::PipelineStateDesc psoDesc;
-    psoDesc.vs = static_cast<RHIRenderer::Shader *>(renderer.CreateShaderFromFile(RHIRenderer::ShaderStage::Vertex, "Source/TestD3D12/Shaders/Cube.hlsl", "VSMain"));
-    psoDesc.ps = static_cast<RHIRenderer::Shader *>(renderer.CreateShaderFromFile(RHIRenderer::ShaderStage::Fragment, "Source/TestD3D12/Shaders/Cube.hlsl", "PSMain"));
-    psoDesc.rasterizerState = renderer.GetRasterizerState(RHIRenderer::RasterizerStateType::SolidFrontSided);
-    psoDesc.depthStencilState = renderer.GetDepthStencilState(RHIRenderer::DepthStencilStateType::Default);
-    psoDesc.blendState = renderer.GetBlendState(RHIRenderer::BlendStateType::Opaque);
-    psoDesc.inputLayout = &inputLayout;
-    psoDesc.primitiveTopology = RHIRenderer::PrimitiveTopology::TriangleList;
-    psoDesc.renderPass = &renderPass;
-    singlePSO = renderer.CreatePSO(&psoDesc);
+    RHIRenderer::Shader *cubeVS = static_cast<RHIRenderer::Shader *>(renderer.CreateShaderFromFile(RHIRenderer::ShaderStage::Vertex, "Source/TestD3D12/Shaders/Cube.hlsl", "VSMain"));
+    RHIRenderer::Shader *cubePS = static_cast<RHIRenderer::Shader *>(renderer.CreateShaderFromFile(RHIRenderer::ShaderStage::Fragment, "Source/TestD3D12/Shaders/Cube.hlsl", "PSMain"));
 
-    SAFE_DELETE(psoDesc.vs);
-    SAFE_DELETE(psoDesc.ps);
+    if (cubeVS && cubePS) {
+        RHIRenderer::PipelineStateDesc psoDesc;
+        psoDesc.vs = cubeVS;
+        psoDesc.ps = cubePS;
+        psoDesc.rasterizerState = renderer.GetRasterizerState(RHIRenderer::RasterizerStateType::SolidFrontSided);
+        psoDesc.depthStencilState = renderer.GetDepthStencilState(RHIRenderer::DepthStencilStateType::Default);
+        psoDesc.blendState = renderer.GetBlendState(RHIRenderer::BlendStateType::Opaque);
+        psoDesc.inputLayout = &inputLayout;
+        psoDesc.primitiveTopology = RHIRenderer::PrimitiveTopology::TriangleList;
+        psoDesc.renderPass = &renderPass;
+        singlePSO = renderer.CreatePSO(&psoDesc);
+    }
 
-    psoDesc.vs = static_cast<RHIRenderer::Shader *>(renderer.CreateShaderFromFile(RHIRenderer::ShaderStage::Vertex, "Source/TestD3D12/Shaders/CubeInstancing.hlsl", "VSMain"));
-    psoDesc.ps = static_cast<RHIRenderer::Shader *>(renderer.CreateShaderFromFile(RHIRenderer::ShaderStage::Fragment, "Source/TestD3D12/Shaders/CubeInstancing.hlsl", "PSMain"));
-    psoDesc.rasterizerState = renderer.GetRasterizerState(RHIRenderer::RasterizerStateType::SolidFrontSided);
-    psoDesc.depthStencilState = renderer.GetDepthStencilState(RHIRenderer::DepthStencilStateType::Default);
-    psoDesc.blendState = renderer.GetBlendState(RHIRenderer::BlendStateType::Opaque);
-    psoDesc.inputLayout = &inputLayout;
-    psoDesc.primitiveTopology = RHIRenderer::PrimitiveTopology::TriangleList;
-    psoDesc.renderPass = &renderPass;
-    instancingPSO = renderer.CreatePSO(&psoDesc);
+    if (cubeVS) {
+        renderer.DestroyShader(cubeVS, true);
+    }
+    if (cubePS) {
+        renderer.DestroyShader(cubePS, true);
+    }
 
-    SAFE_DELETE(psoDesc.vs);
-    SAFE_DELETE(psoDesc.ps);
+    RHIRenderer::Shader *cubeInstancingVS = static_cast<RHIRenderer::Shader *>(renderer.CreateShaderFromFile(RHIRenderer::ShaderStage::Vertex, "Source/TestD3D12/Shaders/CubeInstancing.hlsl", "VSMain"));
+    RHIRenderer::Shader *cubeInstancingPS = static_cast<RHIRenderer::Shader *>(renderer.CreateShaderFromFile(RHIRenderer::ShaderStage::Fragment, "Source/TestD3D12/Shaders/CubeInstancing.hlsl", "PSMain"));
+
+    if (cubeInstancingVS && cubeInstancingPS) {
+        RHIRenderer::PipelineStateDesc psoDesc;
+        psoDesc.vs = cubeInstancingVS;
+        psoDesc.ps = cubeInstancingPS;
+        psoDesc.rasterizerState = renderer.GetRasterizerState(RHIRenderer::RasterizerStateType::SolidFrontSided);
+        psoDesc.depthStencilState = renderer.GetDepthStencilState(RHIRenderer::DepthStencilStateType::Default);
+        psoDesc.blendState = renderer.GetBlendState(RHIRenderer::BlendStateType::Opaque);
+        psoDesc.inputLayout = &inputLayout;
+        psoDesc.primitiveTopology = RHIRenderer::PrimitiveTopology::TriangleList;
+        psoDesc.renderPass = &renderPass;
+        instancingPSO = renderer.CreatePSO(&psoDesc);
+    }
+
+    if (cubeInstancingVS) {
+        renderer.DestroyShader(cubeInstancingVS, true);
+    }
+    if (cubeInstancingPS) {
+        renderer.DestroyShader(cubeInstancingPS, true);
+    }
 }
 
 void D3D12CubeMesh::DrawMesh(int threadIndex, D3D12CommandList* commandList, const Mat3x4& worldMatrix) {

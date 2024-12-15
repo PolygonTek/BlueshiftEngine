@@ -62,7 +62,7 @@ void D3D12FrameData::Shutdown() {
         data->cbvDescriptorPool->Clear();
         data->cbvDescriptorHandles.SetCount(0, false);
 
-        renderer.MarkForDelete(data->constantBuffer);
+        renderer.DestroyConstantBuffer(data->constantBuffer);
 
         SAFE_DELETE(data->cbvDescriptorPool);
         SAFE_DELETE(data->rootDescriptorPool);

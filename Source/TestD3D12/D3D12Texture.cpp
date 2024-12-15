@@ -338,6 +338,14 @@ RHIRenderer::Texture *D3D12Renderer::CreateTextureFromFile(TextureType textureTy
     return texture;
 }
 
+void D3D12Renderer::DestroyTexture(Texture *texture, bool immediate) {
+    if (immediate) {
+        delete texture;
+    } else {
+        MarkForDelete(texture);
+    }
+}
+
 void D3D12Renderer::GetTextureImage2D(Texture *texture, int level, Image::Format::Enum dstFormat, void *outPixels) {
     D3D12Texture *d3d12Texture = static_cast<D3D12Texture *>(texture);
     assert(d3d12Texture);

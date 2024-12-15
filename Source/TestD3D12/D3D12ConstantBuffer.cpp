@@ -103,3 +103,11 @@ RHIRenderer::ConstantBuffer* D3D12Renderer::CreateConstantBuffer(BufferType type
 
     return constantBuffer;
 }
+
+void D3D12Renderer::DestroyConstantBuffer(ConstantBuffer *constantBuffer, bool immediate) {
+    if (immediate) {
+        delete constantBuffer;
+    } else {
+        MarkForDelete(constantBuffer);
+    }
+}

@@ -107,3 +107,11 @@ RHIRenderer::IndexBuffer *D3D12Renderer::CreateIndexBuffer(RHIRenderer::BufferTy
 
     return indexBuffer;
 }
+
+void D3D12Renderer::DestroyIndexBuffer(IndexBuffer *indexBuffer, bool immediate) {
+    if (immediate) {
+        delete indexBuffer;
+    } else {
+        MarkForDelete(indexBuffer);
+    }
+}

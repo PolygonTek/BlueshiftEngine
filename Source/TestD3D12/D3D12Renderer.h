@@ -195,13 +195,20 @@ public:
     void                                FreePendingResources(bool waitPendings = false);
 
     Buffer *                            CreateBuffer(BufferUsage usage, int size);
+
     VertexBuffer *                      CreateVertexBuffer(BufferType type, int vertexSize, int numVerts, void *data);
+    void                                DestroyVertexBuffer(VertexBuffer *vertexBuffer, bool immediate = false);
+
     IndexBuffer *                       CreateIndexBuffer(BufferType type, int indexSize, int numIndexes, void *data);
+    void                                DestroyIndexBuffer(IndexBuffer *indexBuffer, bool immediate = false);
+
     ConstantBuffer *                    CreateConstantBuffer(BufferType type, int size, void *data);
+    void                                DestroyConstantBuffer(ConstantBuffer *constantBuffer, bool immediate = false);
 
     Texture *                           CreateTexture(TextureType textureType, const Image *image);
     Texture *                           CreateTexture(TextureType textureType, const Image *image, Image::Format::Enum dstFormat, bool useMipmaps);
     Texture *                           CreateTextureFromFile(TextureType textureType, const char *filename, bool useCompression = true, bool useNormalMap = false);
+    void                                DestroyTexture(Texture *texture, bool immediate = false);
 
     void                                GetTextureImage2D(Texture *texture, int level, Image::Format::Enum imageFormat, void *outPixels);
     bool                                SetTextureSubImage2D(Texture *texture, int level, int x, int y, int width, int height, Image::Format::Enum imageFormat, const void *pixels);
@@ -209,9 +216,10 @@ public:
 
     Shader *                            CreateShader(ShaderStage shaderStage, const char *sourceName, const char *shaderText, int shaderTextSize, const char *entryPoint);
     Shader *                            CreateShaderFromFile(ShaderStage shaderStage, const char *filename, const char *entryPoint);
+    void                                DestroyShader(Shader *shader, bool immediate = false);
 
     PipelineState *                     CreatePSO(RHIRenderer::PipelineStateDesc *desc);
-    void                                DestroyPSO(PipelineState *pipelineState);
+    void                                DestroyPSO(PipelineState *pipelineState, bool immediate = false);
 
     PipelineState *                     CreateBasicPSO(ID3D12RootSignature *rootSignature, const D3D12_SHADER_BYTECODE &byteCodeVS, const D3D12_SHADER_BYTECODE &byteCodePS, const D3D12_INPUT_LAYOUT_DESC &inputLayout);
     PipelineState *                     CreateBasicPSO(ID3D12RootSignature *rootSignature, const char *shaderFilename, const D3D12_INPUT_LAYOUT_DESC &inputLayout);

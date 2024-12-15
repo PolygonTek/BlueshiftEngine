@@ -66,10 +66,9 @@ void D3D12TriangleMesh::InitMesh() {
 }
 
 void D3D12TriangleMesh::FreeMesh() {
-    renderer.MarkForDelete(texture);
-    renderer.MarkForDelete(vertexBuffer);
-    renderer.MarkForDelete(indexBuffer);
-
+    renderer.DestroyTexture(texture);
+    renderer.DestroyVertexBuffer(vertexBuffer);
+    renderer.DestroyIndexBuffer(indexBuffer);
     renderer.DestroyPSO(singlePSO);
     renderer.DestroyPSO(instancingPSO);
 }
@@ -87,32 +86,51 @@ void D3D12TriangleMesh::InitPipelineState() {
     renderPass.renderTargetFormats[0] = Image::Format::RGBA_8_8_8_8;
     renderPass.depthStencilFormat = Image::Format::DepthStencil_24_8;
 
-    RHIRenderer::PipelineStateDesc psoDesc;
-    psoDesc.vs = static_cast<RHIRenderer::Shader *>(renderer.CreateShaderFromFile(RHIRenderer::ShaderStage::Vertex, "Source/TestD3D12/Shaders/Triangle.hlsl", "VSMain"));
-    psoDesc.ps = static_cast<RHIRenderer::Shader *>(renderer.CreateShaderFromFile(RHIRenderer::ShaderStage::Fragment, "Source/TestD3D12/Shaders/Triangle.hlsl", "PSMain"));
-    psoDesc.rasterizerState = renderer.GetRasterizerState(RHIRenderer::RasterizerStateType::SolidFrontSided);
-    psoDesc.depthStencilState = renderer.GetDepthStencilState(RHIRenderer::DepthStencilStateType::Default);
-    psoDesc.blendState = renderer.GetBlendState(RHIRenderer::BlendStateType::Opaque);
-    psoDesc.inputLayout = &inputLayout;
-    psoDesc.primitiveTopology = RHIRenderer::PrimitiveTopology::TriangleList;
-    psoDesc.renderPass = &renderPass;
-    singlePSO = renderer.CreatePSO(&psoDesc);
+    RHIRenderer::Shader *triangleVS = static_cast<RHIRenderer::Shader *>(renderer.CreateShaderFromFile(RHIRenderer::ShaderStage::Vertex, "Source/TestD3D12/Shaders/Triangle.hlsl", "VSMain"));
+    RHIRenderer::Shader *trianglePS = static_cast<RHIRenderer::Shader *>(renderer.CreateShaderFromFile(RHIRenderer::ShaderStage::Fragment, "Source/TestD3D12/Shaders/Triangle.hlsl", "PSMain"));
 
-    SAFE_DELETE(psoDesc.vs);
-    SAFE_DELETE(psoDesc.ps);
+    if (triangleVS && trianglePS) {
+        RHIRenderer::PipelineStateDesc psoDesc;
+        psoDesc.vs = triangleVS;
+        psoDesc.ps = trianglePS;
+        psoDesc.rasterizerState = renderer.GetRasterizerState(RHIRenderer::RasterizerStateType::SolidFrontSided);
+        psoDesc.depthStencilState = renderer.GetDepthStencilState(RHIRenderer::DepthStencilStateType::Default);
+        psoDesc.blendState = renderer.GetBlendState(RHIRenderer::BlendStateType::Opaque);
+        psoDesc.inputLayout = &inputLayout;
+        psoDesc.primitiveTopology = RHIRenderer::PrimitiveTopology::TriangleList;
+        psoDesc.renderPass = &renderPass;
+        singlePSO = renderer.CreatePSO(&psoDesc);
+    }
 
-    psoDesc.vs = static_cast<RHIRenderer::Shader *>(renderer.CreateShaderFromFile(RHIRenderer::ShaderStage::Vertex, "Source/TestD3D12/Shaders/TriangleInstancing.hlsl", "VSMain"));
-    psoDesc.ps = static_cast<RHIRenderer::Shader *>(renderer.CreateShaderFromFile(RHIRenderer::ShaderStage::Fragment, "Source/TestD3D12/Shaders/TriangleInstancing.hlsl", "PSMain"));
-    psoDesc.rasterizerState = renderer.GetRasterizerState(RHIRenderer::RasterizerStateType::SolidFrontSided);
-    psoDesc.depthStencilState = renderer.GetDepthStencilState(RHIRenderer::DepthStencilStateType::Default);
-    psoDesc.blendState = renderer.GetBlendState(RHIRenderer::BlendStateType::Opaque);
-    psoDesc.inputLayout = &inputLayout;
-    psoDesc.primitiveTopology = RHIRenderer::PrimitiveTopology::TriangleList;
-    psoDesc.renderPass = &renderPass;
-    instancingPSO = renderer.CreatePSO(&psoDesc);
+    if (triangleVS) {
+        renderer.DestroyShader(triangleVS, true);
+    }
+    if (trianglePS) {
+        renderer.DestroyShader(trianglePS, true);
+    }
 
-    SAFE_DELETE(psoDesc.vs);
-    SAFE_DELETE(psoDesc.ps);
+    RHIRenderer::Shader *triangleInstancingVS = static_cast<RHIRenderer::Shader *>(renderer.CreateShaderFromFile(RHIRenderer::ShaderStage::Vertex, "Source/TestD3D12/Shaders/TriangleInstancing.hlsl", "VSMain"));
+    RHIRenderer::Shader *triangleInstancingPS = static_cast<RHIRenderer::Shader *>(renderer.CreateShaderFromFile(RHIRenderer::ShaderStage::Fragment, "Source/TestD3D12/Shaders/TriangleInstancing.hlsl", "PSMain"));
+
+    if (triangleInstancingVS && triangleInstancingPS) {
+        RHIRenderer::PipelineStateDesc psoDesc;
+        psoDesc.vs = triangleInstancingVS;
+        psoDesc.ps = triangleInstancingPS;
+        psoDesc.rasterizerState = renderer.GetRasterizerState(RHIRenderer::RasterizerStateType::SolidFrontSided);
+        psoDesc.depthStencilState = renderer.GetDepthStencilState(RHIRenderer::DepthStencilStateType::Default);
+        psoDesc.blendState = renderer.GetBlendState(RHIRenderer::BlendStateType::Opaque);
+        psoDesc.inputLayout = &inputLayout;
+        psoDesc.primitiveTopology = RHIRenderer::PrimitiveTopology::TriangleList;
+        psoDesc.renderPass = &renderPass;
+        instancingPSO = renderer.CreatePSO(&psoDesc);
+    }
+
+    if (triangleInstancingVS) {
+        renderer.DestroyShader(triangleInstancingVS, true);
+    }
+    if (triangleInstancingPS) {
+        renderer.DestroyShader(triangleInstancingPS, true);
+    }
 }
 
 void D3D12TriangleMesh::DrawMesh(int threadIndex, D3D12CommandList *commandList, const Vec2& offset) {

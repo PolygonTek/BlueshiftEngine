@@ -396,7 +396,8 @@ RHIRenderer::PipelineState *D3D12Renderer::CreatePSO(RHIRenderer::PipelineStateD
 
     // 없다면 PSO cache 파일을 로딩해본다.
     if (!cachedPsoBlob) {
-        LoadCachedPSO(shaderHash, &cachedPsoBlob);
+        // FIXME: 현재는 cached pso 를 사용하지 않는다. 나중에 고치자.
+        //LoadCachedPSO(shaderHash, &cachedPsoBlob);
     }
 
     uint32_t psoStreamSize = 0;
@@ -755,8 +756,12 @@ ID3D12PipelineState *D3D12Renderer::CreatePSOFromLibrary(const D3D12_PIPELINE_ST
     return pso;
 }
 
-void D3D12Renderer::DestroyPSO(PipelineState *pipelineState) {
+void D3D12Renderer::DestroyPSO(PipelineState *pipelineState, bool immediate) {
     psoMap.Remove(pipelineState->hash);
 
-    MarkForDelete(pipelineState);
+    if (immediate) {
+        delete pipelineState;
+    } else {
+        MarkForDelete(pipelineState);
+    }
 }

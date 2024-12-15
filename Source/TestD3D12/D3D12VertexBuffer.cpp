@@ -105,3 +105,11 @@ RHIRenderer::VertexBuffer* D3D12Renderer::CreateVertexBuffer(RHIRenderer::Buffer
 
     return vertexBuffer;
 }
+
+void D3D12Renderer::DestroyVertexBuffer(VertexBuffer *vertexBuffer, bool immediate) {
+    if (immediate) {
+        delete vertexBuffer;
+    } else {
+        MarkForDelete(vertexBuffer);
+    }
+}
