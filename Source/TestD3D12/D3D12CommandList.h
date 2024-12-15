@@ -29,9 +29,9 @@ public:
 
     void                            SetDescriptorHeaps(int numDescriptorHeaps, ID3D12DescriptorHeap *descriptorHeaps[]);
     void                            SetGraphicsRootSignature(ID3D12RootSignature *graphicsRootSignature);
-    void                            SetPipelineState(ID3D12PipelineState *piplelineState);
+    void                            SetPipelineState(RHIRenderer::PipelineState *piplelineState);
     void                            SetPrimitiveTopology(RHIRenderer::PrimitiveTopology primitiveTopology);
-    void                            SetVertexBuffers(int startSlot, int numViews, RHIRenderer::VertexBuffer *const*vertexBuffers);
+    void                            SetVertexBuffers(int startSlot, int numViews, const RHIRenderer::VertexBuffer *vertexBuffers[]);
     void                            SetVertexBuffer(int slot, const RHIRenderer::VertexBuffer *vertexBuffer);
     void                            SetIndexBuffer(const RHIRenderer::IndexBuffer *indexBuffer);
 
@@ -136,14 +136,17 @@ BE_INLINE void D3D12CommandList::SetGraphicsRootSignature(ID3D12RootSignature *g
     graphicsCommandList->SetGraphicsRootSignature(graphicsRootSignature);
 }
 
-BE_INLINE void D3D12CommandList::SetPipelineState(ID3D12PipelineState *piplelineState) {
+BE_INLINE void D3D12CommandList::SetPipelineState(RHIRenderer::PipelineState *piplelineState) {
+    D3D12PipelineState *d3d12PipelineState = static_cast<D3D12PipelineState *>(piplelineState);
+
 #ifdef USE_STATE_CACHE_FOR_COMMAND_LIST
-    if (piplelineState == cachedPipelineState) {
+    if (d3d12PipelineState->pso == cachedPipelineState) {
         return;
     }
-    cachedPipelineState = piplelineState;
+    cachedPipelineState = d3d12PipelineState->pso;
 #endif
-    graphicsCommandList->SetPipelineState(piplelineState);
+    graphicsCommandList->SetPipelineState(d3d12PipelineState->pso);
+    graphicsCommandList->SetGraphicsRootSignature(d3d12PipelineState->rootSignature);
 }
 
 BE_INLINE void D3D12CommandList::SetPrimitiveTopology(RHIRenderer::PrimitiveTopology primitiveTopology) {
@@ -158,7 +161,7 @@ BE_INLINE void D3D12CommandList::SetPrimitiveTopology(RHIRenderer::PrimitiveTopo
     graphicsCommandList->IASetPrimitiveTopology(d3d12PrimitiveTopology);
 }
 
-BE_INLINE void D3D12CommandList::SetVertexBuffers(int startSlot, int numViews, RHIRenderer::VertexBuffer *const*vertexBuffers) {
+BE_INLINE void D3D12CommandList::SetVertexBuffers(int startSlot, int numViews, const RHIRenderer::VertexBuffer *vertexBuffers[]) {
     D3D12_VERTEX_BUFFER_VIEW vbv[8];
     for (int i = 0; i < numViews; ++i) {
         vbv[i] = static_cast<const D3D12VertexBuffer *>(vertexBuffers[i])->vbv;

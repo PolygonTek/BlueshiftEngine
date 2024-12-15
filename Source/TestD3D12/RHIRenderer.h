@@ -14,6 +14,8 @@
 
 #pragma once
 
+#include "Image/Image.h"
+
 class RHIRenderer {
 public:
     enum class FillMode : uint8_t {
@@ -32,7 +34,7 @@ public:
         All
     };
 
-    enum class ColorWrite {
+    enum class ColorWriteMask {
         Red                         = BIT(0),
         Green                       = BIT(1),
         Blue                        = BIT(2),
@@ -58,11 +60,11 @@ public:
         InvSrcColor,
         SrcAlpha,
         InvSrcAlpha,
-        DestAlpha,
-        InvDestAlpha,
+        SrcAlphaSat,
         DestColor,
         InvDestColor,
-        SrcAlphaSat,
+        DestAlpha,
+        InvDestAlpha,
         BlendFactor,
         InvBlendFactor,
         Src1Color,
@@ -96,7 +98,8 @@ public:
         LineList,
         LineStrip,
         TriangleList,
-        TriangleStrip
+        TriangleStrip,
+        PatchList
     };
 
     enum class BufferUsage : uint8_t {
@@ -127,36 +130,6 @@ public:
         Count
     };
 
-    class Resource {
-    public:
-        virtual ~Resource() {}
-    };
-
-    class Buffer : public Resource {
-    public:
-    };
-
-    class VertexBuffer : public Resource {
-    public:
-    };
-
-    class IndexBuffer : public Resource {
-    public:
-    };
-
-    class ConstantBuffer : public Resource {
-    public:
-    };
-
-    class Texture : public Resource {
-    public:
-    };
-
-    class Shader : public Resource {
-    public:
-        ShaderStage                 shaderStage = ShaderStage::Count;
-    };
-
     struct RasterizerState {
         FillMode                    fillMode = FillMode::Solid;
         CullMode                    cullMode = CullMode::None;
@@ -164,6 +137,8 @@ public:
         float                       depthBiasClamp = 0;
         float                       slopeScaledDepthBias = 0;
         bool                        depthClipEnabled = false;
+        bool                        smoothLineEnabled = false;
+        bool                        conservativeRasterization = false;
     };
 
     struct DepthStencilOp {
@@ -193,7 +168,7 @@ public:
         Blend                       srcFactorAlpha = Blend::One;
         Blend                       destFactorAlpha = Blend::One;
         BlendOp                     blendOpAlpha = BlendOp::Add;
-        ColorWrite                  colorWriteMask = ColorWrite::All;
+        ColorWriteMask              colorWriteMask = ColorWriteMask::All;
     };
 
     struct BlendState {
@@ -202,18 +177,205 @@ public:
         RenderTargetBlendState      renderTargets[8];
     };
 
+    struct InputLayoutElement {
+        enum class Format : uint8_t {
+            Unknown,
+            Float4,
+            Float3,
+            Float2,
+            Float1,
+            UInt4,
+            UInt3,
+            UInt2,
+            UInt1,
+            Int4,
+            Int3,
+            Int2,
+            Int1,
+            Half4,
+            Half2,
+            Half1,
+            UShort4,
+            UShort2,
+            UShort1,
+            UShort4N,
+            UShort2N,
+            UShort1N,
+            Short4,
+            Short2,
+            Short1,
+            Short4N,
+            Short2N,
+            Short1N,
+            UByte4,
+            UByte2,
+            UByte1,
+            UByte4N,
+            UByte2N,
+            UByte1N,
+            Byte4,
+            Byte2,
+            Byte1,
+            Byte4N,
+            Byte2N,
+            Byte1N
+        };
+
+        Str                         semanticName;
+        uint32_t                    semanticIndex = 0;
+        uint32_t                    offset = 0;
+        uint32_t                    inputSlot = 0;
+        Format                      format = Format::Unknown;
+    };
+
+    struct InputLayout {
+        Array<InputLayoutElement>   elements;
+    };
+
+    class Resource {
+    public:
+        virtual ~Resource() = default;
+    };
+
+    class Buffer : public Resource {
+    public:
+    };
+
+    class VertexBuffer : public Resource {
+    public:
+    };
+
+    class IndexBuffer : public Resource {
+    public:
+    };
+
+    class ConstantBuffer : public Resource {
+    public:
+    };
+
+    class Texture : public Resource {
+    public:
+    };
+
+    class Shader : public Resource {
+    public:
+        ShaderStage                 shaderStage = ShaderStage::Count;
+    };
+
+    struct RenderPass {
+        uint32_t                    renderTargetCount = 0;
+        Image::Format::Enum         renderTargetFormats[8] = {};
+        Image::Format::Enum         depthStencilFormat = Image::Format::Unknown;
+        uint32_t                    sampleCount = 1;
+
+        constexpr uint64_t          GetHash() const {
+            union Hasher {
+                struct {
+                    uint64_t renderTargetFormat_0 : 6;
+                    uint64_t renderTargetFormat_1 : 6;
+                    uint64_t renderTargetFormat_2 : 6;
+                    uint64_t renderTargetFormat_3 : 6;
+                    uint64_t renderTargetFormat_4 : 6;
+                    uint64_t renderTargetFormat_5 : 6;
+                    uint64_t renderTargetFormat_6 : 6;
+                    uint64_t renderTargetFormat_7 : 6;
+                    uint64_t depthStencilFormat : 6;
+                } bits;
+                uint64_t value;
+            } hasher = {};
+            static_assert(sizeof(Hasher) == sizeof(uint64_t));
+            hasher.bits.renderTargetFormat_0 = (uint64_t)renderTargetFormats[0];
+            hasher.bits.renderTargetFormat_1 = (uint64_t)renderTargetFormats[1];
+            hasher.bits.renderTargetFormat_2 = (uint64_t)renderTargetFormats[2];
+            hasher.bits.renderTargetFormat_3 = (uint64_t)renderTargetFormats[3];
+            hasher.bits.renderTargetFormat_4 = (uint64_t)renderTargetFormats[4];
+            hasher.bits.renderTargetFormat_5 = (uint64_t)renderTargetFormats[5];
+            hasher.bits.renderTargetFormat_6 = (uint64_t)renderTargetFormats[6];
+            hasher.bits.renderTargetFormat_7 = (uint64_t)renderTargetFormats[7];
+            hasher.bits.depthStencilFormat = (uint64_t)depthStencilFormat;
+            return hasher.value;
+        }
+    };
+
     struct PipelineStateDesc {
         const Shader *              vs = nullptr;
         const Shader *              ps = nullptr;
+        const Shader *              ds = nullptr;
+        const Shader *              hs = nullptr;
         const Shader *              gs = nullptr;
-        const Shader *              cs = nullptr;
-        const BlendState *          blendState = nullptr;
+        const InputLayout *         inputLayout;
+        PrimitiveTopology           primitiveTopology = PrimitiveTopology::TriangleList;
         const RasterizerState *     rasterizerState = nullptr;
         const DepthStencilState *   depthStencilState = nullptr;
-        PrimitiveTopology           primitiveTopology = PrimitiveTopology::TriangleList;
+        const BlendState *          blendState = nullptr;
+        const RenderPass *          renderPass;
+        uint32_t                    sampleMask = 0xffffffff;
+        uint32_t                    sampleCount = 1;
+        uint32_t                    sampleQuality = 0;
     };
 
-    struct PipelineState {
-        PipelineStateDesc           desc;
+    struct PipelineStateCache {
     };
+
+    class PipelineState : public Resource {
+    public:
+        uint64_t                    hash = 0;
+    };
+
+    struct RasterizerStateType {
+        enum Enum {
+            SolidFrontSided,
+            SolidBackSided,
+            Wire,
+            WireSmooth,
+            Count
+        };
+    };
+
+    struct DepthStencilStateType {
+        enum Enum {
+            Default,
+            Count
+        };
+    };
+
+    struct BlendStateType {
+        enum Enum {
+            Opaque,
+            AlphaBlend,
+            Add,
+            Count
+        };
+    };
+
+    virtual void                    Init(HWND hwnd);
+    virtual void                    Shutdown();
+
+    bool                            IsInitialized() const { return initialized; }
+
+    const RasterizerState *         GetRasterizerState(RasterizerStateType::Enum type) const { return &rasterizerStates[type]; }
+    const DepthStencilState *       GetDepthStencilState(DepthStencilStateType::Enum type) const { return &depthStencilStates[type]; }
+    const BlendState *              GetBlendState(BlendStateType::Enum type) const { return &blendStates[type]; }
+
+protected:
+    void                            SetupStates();
+
+    RasterizerState                 rasterizerStates[RasterizerStateType::Count];
+    DepthStencilState               depthStencilStates[DepthStencilStateType::Count];
+    BlendState                      blendStates[BlendStateType::Count];
+    bool                            initialized = false;
 };
+
+namespace std {
+    template <>
+    struct hash<RHIRenderer::InputLayoutElement> {
+        size_t operator()(const RHIRenderer::InputLayoutElement &element) const {
+            size_t hash = element.semanticName.ToHash64();
+            hash = hash_combine(hash, std::hash<uint32_t>()(element.semanticIndex));
+            hash = hash_combine(hash, std::hash<uint32_t>()(element.offset));
+            hash = hash_combine(hash, std::hash<uint32_t>()(element.inputSlot));
+            hash = hash_combine(hash, std::hash<uint8_t>()(static_cast<uint8_t>(element.format)));
+            return hash;
+        }
+    };
+}

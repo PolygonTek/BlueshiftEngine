@@ -23,6 +23,7 @@
 
 #include "D3D12FrameData.h"
 #include "D3D12RenderObject.h"
+#include "D3D12CompiledShaderBlob.h"
 
 class D3D12CommandList;
 class D3D12DescriptorPool;
@@ -79,11 +80,6 @@ public:
 
     void                                Release();
 
-    static bool                         ImageFormatToDXGIFormat(Image::Format::Enum imageFormat, bool isSRGB, DXGI_FORMAT* dxgiFormat);
-    static bool                         DXGIFormatToImageFormat(DXGI_FORMAT dxgiFormat, Image::Format::Enum *imageFormat, bool *isSRGB);
-    static bool                         IsSupportedImageFormat(Image::Format::Enum imageFormat) { return D3D12Texture::ImageFormatToDXGIFormat(imageFormat, false, nullptr); }
-    static Image::Format::Enum          ToUncompressedImageFormat(Image::Format::Enum imageFormat);
-    static Image::Format::Enum          ToCompressedImageFormat(Image::Format::Enum inFormat, bool useNormalMap);
     static void                         AdjustTextureFormat(bool useCompression, bool useNormalMap, Image::Format::Enum inFormat, Image::Format::Enum *outFormat);
 
 #ifdef USE_D3D12_MEMALLOC
@@ -99,18 +95,54 @@ class D3D12Shader : public RHIRenderer::Shader {
 public:
     virtual ~D3D12Shader() { Release(); }
 
-    void                                Release() { SAFE_RELEASE(compiledShaderBlob); }
+    void                                Release();
 
+    uint64_t                            hash = 0;
     ID3DBlob *                          compiledShaderBlob = nullptr;
+    ID3D12RootSignature *               rootSignature = nullptr;
 };
 
 class D3D12PipelineState : public RHIRenderer::PipelineState {
 public:
     virtual ~D3D12PipelineState() { Release(); }
 
-    void                                Release() { SAFE_RELEASE(pso); }
+    void                                Release();
+
+    struct PipelineStateStream1 {
+        CD3DX12_PIPELINE_STATE_STREAM_FLAGS flags;
+        CD3DX12_PIPELINE_STATE_STREAM_ROOT_SIGNATURE rootSignature;
+        CD3DX12_PIPELINE_STATE_STREAM_INPUT_LAYOUT inputLayout;
+        CD3DX12_PIPELINE_STATE_STREAM_PRIMITIVE_TOPOLOGY primitiveTopology;
+    };
+
+    struct PipelineStateStream2 {
+        CD3DX12_PIPELINE_STATE_STREAM_BLEND_DESC blendDesc;
+        CD3DX12_PIPELINE_STATE_STREAM_DEPTH_STENCIL1 depthStencil;
+        CD3DX12_PIPELINE_STATE_STREAM_DEPTH_STENCIL_FORMAT depthStencilFormat;
+        CD3DX12_PIPELINE_STATE_STREAM_RASTERIZER rasterizer;
+        CD3DX12_PIPELINE_STATE_STREAM_RENDER_TARGET_FORMATS renderTargetFormats;
+        CD3DX12_PIPELINE_STATE_STREAM_SAMPLE_DESC sampleDesc;
+        CD3DX12_PIPELINE_STATE_STREAM_SAMPLE_MASK sampleMask;
+    };
+
+    struct PipelineStateStream {
+        PipelineStateStream1 stream1;
+        CD3DX12_PIPELINE_STATE_STREAM_VS vs;
+        CD3DX12_PIPELINE_STATE_STREAM_GS gs;
+        CD3DX12_PIPELINE_STATE_STREAM_HS hs;
+        CD3DX12_PIPELINE_STATE_STREAM_DS ds;
+        CD3DX12_PIPELINE_STATE_STREAM_PS ps;
+        PipelineStateStream2 stream2;
+    };
+
+    struct CachedPipelineStateStream {
+        PipelineStateStream1 stream1;
+        PipelineStateStream2 stream2;
+        CD3DX12_PIPELINE_STATE_STREAM_CACHED_PSO shaderCachedPSO;
+    };
 
     ID3D12PipelineState *               pso = nullptr;
+    ID3D12RootSignature *               rootSignature = nullptr;
 };
 
 #ifdef USE_RENDER_THREAD
@@ -134,10 +166,8 @@ struct D3D12PendingResource {
 
 class D3D12Renderer : public RHIRenderer {
 public:
-    void                                Init(HWND hwnd);
-    void                                Shutdown();
-
-    bool                                IsInitialized() const { return initialized; }
+    virtual void                        Init(HWND hwnd) override;
+    virtual void                        Shutdown() override;
 
     void                                BeginFrame();
     void                                EndFrame();
@@ -180,12 +210,18 @@ public:
     Shader *                            CreateShader(ShaderStage shaderStage, const char *sourceName, const char *shaderText, int shaderTextSize, const char *entryPoint);
     Shader *                            CreateShaderFromFile(ShaderStage shaderStage, const char *filename, const char *entryPoint);
 
+    PipelineState *                     CreatePSO(RHIRenderer::PipelineStateDesc *desc);
+    void                                DestroyPSO(PipelineState *pipelineState);
+
+    PipelineState *                     CreateBasicPSO(ID3D12RootSignature *rootSignature, const D3D12_SHADER_BYTECODE &byteCodeVS, const D3D12_SHADER_BYTECODE &byteCodePS, const D3D12_INPUT_LAYOUT_DESC &inputLayout);
+    PipelineState *                     CreateBasicPSO(ID3D12RootSignature *rootSignature, const char *shaderFilename, const D3D12_INPUT_LAYOUT_DESC &inputLayout);
     ID3D12PipelineState *               CreatePSOFromLibrary(const D3D12_PIPELINE_STATE_STREAM_DESC *streamDesc, ID3D12PipelineLibrary1 *library, const TCHAR *name);
-    ID3D12PipelineState *               CreatePSO(ID3D12RootSignature *rootSignature, const D3D12_SHADER_BYTECODE &byteCodeVS, const D3D12_SHADER_BYTECODE &byteCodePS, const D3D12_INPUT_LAYOUT_DESC &inputLayout);
-    ID3D12PipelineState *               CreatePSO(ID3D12RootSignature *rootSignature, const char *shaderFilename, const D3D12_INPUT_LAYOUT_DESC &inputLayout);
+
+    bool                                LoadCachedPSO(const uint64_t hash, ID3DBlob **cachedPSOBlob);
+    void                                WriteCachedPSO(const uint64_t hash, ID3DBlob *cachedPSOBlob);
 
     bool                                LoadCompiledShader(const char *name, const uint64_t hash, ID3DBlob **compiledShaderBlob);
-    void                                CacheCompiledShader(const char *name, const uint64_t hash, ID3DBlob *compiledShaderBlob);
+    void                                WriteCompiledShader(const char *name, const uint64_t hash, ID3DBlob *compiledShaderBlob);
 
     void                                PrintCompileErrorMessages(ID3DBlob *errorBlob);
 
@@ -214,7 +250,16 @@ public:
     void                                DrawVisObjectsByTask(D3D12Renderer::DrawObjectTaskDesc *taskDesc);
 #endif
 
+    static bool                         ImageFormatToDXGIFormat(Image::Format::Enum imageFormat, bool isSRGB, DXGI_FORMAT *dxgiFormat);
+    static bool                         DXGIFormatToImageFormat(DXGI_FORMAT dxgiFormat, Image::Format::Enum *imageFormat, bool *isSRGB);
+    static bool                         IsSupportedImageFormat(Image::Format::Enum imageFormat) { return ImageFormatToDXGIFormat(imageFormat, false, nullptr); }
+    static Image::Format::Enum          ToUncompressedImageFormat(Image::Format::Enum imageFormat);
+    static Image::Format::Enum          ToCompressedImageFormat(Image::Format::Enum inFormat, bool useNormalMap);
+
     static constexpr int                NumSwapChainBuffers = 3;
+
+    static Str                          shaderCacheDir;
+    static Str                          psoCacheDir;
 
     ID3D12Device5 *                     device = nullptr;
     IDXGIFactory4 *                     dxgiFactory = nullptr;
@@ -237,6 +282,9 @@ public:
     D3D12_CPU_DESCRIPTOR_HANDLE         rtvDescriptorHandle = CD3DX12_CPU_DESCRIPTOR_HANDLE();
     D3D12_CPU_DESCRIPTOR_HANDLE         dsvDescriptorHandle = CD3DX12_CPU_DESCRIPTOR_HANDLE();
 
+    HashMap<uint64_t, D3D12PipelineState *> psoMap;
+    HashMap<uint64_t, ID3DBlob *>       cachedPsoBlobMap;
+
     uint32_t                            vendorId;
     uint32_t                            deviceId;
     Str                                 adapterName;
@@ -244,6 +292,7 @@ public:
     uint64_t                            dedicatedSystemMemSize = 0;
     uint64_t                            sharedSystemMemSize = 0;
     bool                                supportsTearing = false;
+    bool                                supportsConservativeRasterization = false;
     bool                                supportsVRS = false;
     bool                                supportsRayTracing = false;
     bool                                supportsMeshShader = false;
@@ -289,8 +338,6 @@ public:
     int                                 renderFrameIndex = 1;
     FrameSyncState                      frameSyncState = FrameSyncState::WaitingForUpdateCompleted;
 #endif
-
-    bool                                initialized = false;
 };
 
 extern D3D12Renderer                    renderer;

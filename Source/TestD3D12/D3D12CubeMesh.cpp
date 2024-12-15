@@ -95,8 +95,6 @@ void D3D12CubeMesh::InitMesh() {
     indexBuffer = renderer.CreateIndexBuffer(RHIRenderer::BufferType::Static, sizeof(indexes[0]), COUNT_OF(indexes), (void *)indexes);
     texture = renderer.CreateTextureFromFile(RHIRenderer::TextureType::Texture2D, "Data/EngineTextures/checker.dds");
 
-    InitRootSignature();
-
     InitPipelineState();
 }
 
@@ -105,12 +103,11 @@ void D3D12CubeMesh::FreeMesh() {
     renderer.MarkForDelete(vertexBuffer);
     renderer.MarkForDelete(indexBuffer);
 
-    SAFE_RELEASE(rootSignature);
-    SAFE_RELEASE(singlePSO);
-    SAFE_RELEASE(instancingPSO);
+    renderer.DestroyPSO(singlePSO);
+    renderer.DestroyPSO(instancingPSO);
 }
 
-void D3D12CubeMesh::InitRootSignature() {
+/*void D3D12CubeMesh::InitRootSignature() {
     // 디스크립터 레인지로 루트 디스크립터 테이블을 정의한다.
     // 디스크립터 레인지는 같은 타입의 디스크립터 여러개를 순차적으로 나타낸다.
     // 디스크립터 테이블 하나는 여러개의 디스크립터 레인지로 구성된다.
@@ -170,17 +167,47 @@ void D3D12CubeMesh::InitRootSignature() {
 
     SAFE_RELEASE(signatureBlob);
     SAFE_RELEASE(errorBlob);
-}
+}*/
 
 void D3D12CubeMesh::InitPipelineState() {
-    D3D12_INPUT_ELEMENT_DESC inputElementDescs[] = {
-        { "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
-        { "COLOR", 0, DXGI_FORMAT_R8G8B8A8_UNORM, 0, 12, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
-        { "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 16, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 }
+    RHIRenderer::InputLayout inputLayout;
+    inputLayout.elements = {
+        { "POSITION", 0, 0, 0, RHIRenderer::InputLayoutElement::Format::Float3 },
+        { "COLOR", 0, 12, 0, RHIRenderer::InputLayoutElement::Format::UByte4N },
+        { "TEXCOORD", 0, 16, 0, RHIRenderer::InputLayoutElement::Format::Float2 },
     };
 
-    singlePSO = renderer.CreatePSO(rootSignature, "Source/TestD3D12/Shaders/Cube.hlsl", { inputElementDescs, COUNT_OF(inputElementDescs) });
-    instancingPSO = renderer.CreatePSO(rootSignature, "Source/TestD3D12/Shaders/CubeInstancing.hlsl", { inputElementDescs, COUNT_OF(inputElementDescs) });
+    RHIRenderer::RenderPass renderPass;
+    renderPass.renderTargetCount = 1;
+    renderPass.renderTargetFormats[0] = Image::Format::RGBA_8_8_8_8;
+    renderPass.depthStencilFormat = Image::Format::DepthStencil_24_8;
+
+    RHIRenderer::PipelineStateDesc psoDesc;
+    psoDesc.vs = static_cast<RHIRenderer::Shader *>(renderer.CreateShaderFromFile(RHIRenderer::ShaderStage::Vertex, "Source/TestD3D12/Shaders/Cube.hlsl", "VSMain"));
+    psoDesc.ps = static_cast<RHIRenderer::Shader *>(renderer.CreateShaderFromFile(RHIRenderer::ShaderStage::Fragment, "Source/TestD3D12/Shaders/Cube.hlsl", "PSMain"));
+    psoDesc.rasterizerState = renderer.GetRasterizerState(RHIRenderer::RasterizerStateType::SolidFrontSided);
+    psoDesc.depthStencilState = renderer.GetDepthStencilState(RHIRenderer::DepthStencilStateType::Default);
+    psoDesc.blendState = renderer.GetBlendState(RHIRenderer::BlendStateType::Opaque);
+    psoDesc.inputLayout = &inputLayout;
+    psoDesc.primitiveTopology = RHIRenderer::PrimitiveTopology::TriangleList;
+    psoDesc.renderPass = &renderPass;
+    singlePSO = renderer.CreatePSO(&psoDesc);
+
+    SAFE_DELETE(psoDesc.vs);
+    SAFE_DELETE(psoDesc.ps);
+
+    psoDesc.vs = static_cast<RHIRenderer::Shader *>(renderer.CreateShaderFromFile(RHIRenderer::ShaderStage::Vertex, "Source/TestD3D12/Shaders/CubeInstancing.hlsl", "VSMain"));
+    psoDesc.ps = static_cast<RHIRenderer::Shader *>(renderer.CreateShaderFromFile(RHIRenderer::ShaderStage::Fragment, "Source/TestD3D12/Shaders/CubeInstancing.hlsl", "PSMain"));
+    psoDesc.rasterizerState = renderer.GetRasterizerState(RHIRenderer::RasterizerStateType::SolidFrontSided);
+    psoDesc.depthStencilState = renderer.GetDepthStencilState(RHIRenderer::DepthStencilStateType::Default);
+    psoDesc.blendState = renderer.GetBlendState(RHIRenderer::BlendStateType::Opaque);
+    psoDesc.inputLayout = &inputLayout;
+    psoDesc.primitiveTopology = RHIRenderer::PrimitiveTopology::TriangleList;
+    psoDesc.renderPass = &renderPass;
+    instancingPSO = renderer.CreatePSO(&psoDesc);
+
+    SAFE_DELETE(psoDesc.vs);
+    SAFE_DELETE(psoDesc.ps);
 }
 
 void D3D12CubeMesh::DrawMesh(int threadIndex, D3D12CommandList* commandList, const Mat3x4& worldMatrix) {
@@ -216,8 +243,8 @@ void D3D12CubeMesh::DrawMesh(int threadIndex, D3D12CommandList* commandList, con
     ID3D12DescriptorHeap *descriptorHeaps[] = { rootDescriptorPool->descriptorHeap };
     commandList->SetDescriptorHeaps(COUNT_OF(descriptorHeaps), descriptorHeaps);
 
-    // 루트 시그니쳐를 세팅한다.
-    commandList->SetGraphicsRootSignature(rootSignature);
+    commandList->SetPipelineState(singlePSO);
+    commandList->SetPrimitiveTopology(RHIRenderer::PrimitiveTopology::TriangleList);
 
     // 위에서 할당한 루트 디스크립터 테이블을 세팅한다.
     commandList->graphicsCommandList->SetGraphicsRootDescriptorTable(0, gpuRootDescriptorHandle);
@@ -227,9 +254,6 @@ void D3D12CubeMesh::DrawMesh(int threadIndex, D3D12CommandList* commandList, con
 
     commandList->SetVertexBuffer(0, vertexBuffer);
     commandList->SetIndexBuffer(indexBuffer);
-
-    commandList->SetPipelineState(singlePSO);
-    commandList->SetPrimitiveTopology(RHIRenderer::PrimitiveTopology::TriangleList);
 
     commandList->graphicsCommandList->DrawIndexedInstanced(36, 1, 0, 0, 0);
 }
@@ -270,17 +294,14 @@ void D3D12CubeMesh::DrawMeshInstanced(int threadIndex, D3D12CommandList *command
     ID3D12DescriptorHeap *descriptorHeaps[] = { rootDescriptorPool->descriptorHeap };
     commandList->SetDescriptorHeaps(COUNT_OF(descriptorHeaps), descriptorHeaps);
 
-    // 루트 시그니쳐를 세팅한다.
-    commandList->SetGraphicsRootSignature(rootSignature);
+    commandList->SetPipelineState(instancingPSO);
+    commandList->SetPrimitiveTopology(RHIRenderer::PrimitiveTopology::TriangleList);
 
     // 위에서 할당한 루트 디스크립터 테이블을 세팅한다.
     commandList->graphicsCommandList->SetGraphicsRootDescriptorTable(0, gpuRootDescriptorHandle);
 
     commandList->SetVertexBuffer(0, vertexBuffer);
     commandList->SetIndexBuffer(indexBuffer);
-
-    commandList->SetPipelineState(instancingPSO);
-    commandList->SetPrimitiveTopology(RHIRenderer::PrimitiveTopology::TriangleList);
 
     commandList->graphicsCommandList->DrawIndexedInstanced(36, instanceCount, 0, 0, 0);
 }

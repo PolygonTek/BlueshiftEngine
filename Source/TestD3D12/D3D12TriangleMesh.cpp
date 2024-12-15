@@ -62,8 +62,6 @@ void D3D12TriangleMesh::InitMesh() {
     indexBuffer = renderer.CreateIndexBuffer(RHIRenderer::BufferType::Static, sizeof(indexes[0]), COUNT_OF(indexes), (void *)indexes);
     texture = renderer.CreateTextureFromFile(RHIRenderer::TextureType::Texture2D, "Data/EngineTextures/checker.dds");
 
-    InitRootSignature();
-
     InitPipelineState();
 }
 
@@ -72,82 +70,49 @@ void D3D12TriangleMesh::FreeMesh() {
     renderer.MarkForDelete(vertexBuffer);
     renderer.MarkForDelete(indexBuffer);
 
-    SAFE_RELEASE(rootSignature);
-    SAFE_RELEASE(singlePSO);
-    SAFE_RELEASE(instancingPSO);
-}
-
-void D3D12TriangleMesh::InitRootSignature() {
-    // 디스크립터 레인지로 루트 디스크립터 테이블을 정의한다.
-    // 디스크립터 레인지는 같은 타입의 디스크립터 여러개를 순차적으로 나타낸다.
-    // 디스크립터 테이블 하나는 여러개의 디스크립터 레인지로 구성된다.
-    D3D12_DESCRIPTOR_RANGE descriptorRanges[2] = {};
-
-    // SRV (texture) 디스크립터
-    descriptorRanges[0].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_SRV;
-    descriptorRanges[0].NumDescriptors = 1;
-    descriptorRanges[0].BaseShaderRegister = 0; // t0 부터 시작
-    descriptorRanges[0].RegisterSpace = 0;
-    descriptorRanges[0].OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND;
-
-    // CBV 디스크립터
-    descriptorRanges[1].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_CBV;
-    descriptorRanges[1].NumDescriptors = 1;
-    descriptorRanges[1].BaseShaderRegister = 0; // b0 부터 시작
-    descriptorRanges[1].RegisterSpace = 0;
-    descriptorRanges[1].OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND;
-
-    // Root Parameter 하나 당 Descriptor Table 하나를 참조하게 된다.
-    D3D12_ROOT_PARAMETER rootParameters[1] = {};
-    rootParameters[0].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;
-    rootParameters[0].ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL;
-    rootParameters[0].DescriptorTable.NumDescriptorRanges = COUNT_OF(descriptorRanges);
-    rootParameters[0].DescriptorTable.pDescriptorRanges = descriptorRanges;
-
-    D3D12_STATIC_SAMPLER_DESC samplerDesc = {};
-    samplerDesc.Filter = D3D12_FILTER_MIN_MAG_MIP_LINEAR; // Trilinear 필터링
-    samplerDesc.AddressU = D3D12_TEXTURE_ADDRESS_MODE_CLAMP;
-    samplerDesc.AddressV = D3D12_TEXTURE_ADDRESS_MODE_CLAMP;
-    samplerDesc.AddressW = D3D12_TEXTURE_ADDRESS_MODE_CLAMP;
-    samplerDesc.MipLODBias = 0.0f;
-    samplerDesc.MaxAnisotropy = 16;
-    samplerDesc.ComparisonFunc = D3D12_COMPARISON_FUNC_NEVER;
-    samplerDesc.BorderColor = D3D12_STATIC_BORDER_COLOR_OPAQUE_WHITE;
-    samplerDesc.MinLOD = -FLT_MAX;
-    samplerDesc.MaxLOD = D3D12_FLOAT32_MAX;
-    samplerDesc.ShaderRegister = 0;
-    samplerDesc.RegisterSpace = 0;
-    samplerDesc.ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;
-
-    D3D12_VERSIONED_ROOT_SIGNATURE_DESC rootSignatureDesc;
-    rootSignatureDesc.Version = D3D_ROOT_SIGNATURE_VERSION_1_0;
-    rootSignatureDesc.Desc_1_0.NumParameters = COUNT_OF(rootParameters);
-    rootSignatureDesc.Desc_1_0.pParameters = rootParameters;
-    rootSignatureDesc.Desc_1_0.NumStaticSamplers = 1;
-    rootSignatureDesc.Desc_1_0.pStaticSamplers = &samplerDesc;
-    rootSignatureDesc.Desc_1_0.Flags = D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT;
-
-    ID3DBlob* signatureBlob = nullptr;
-    ID3DBlob* errorBlob = nullptr;
-
-    // TODO: 필요한 루트 시그니쳐를 캐싱하는 방식으로 접근하자.
-    if (SUCCEEDED(D3D12SerializeVersionedRootSignature(&rootSignatureDesc, &signatureBlob, &errorBlob))) {
-        renderer.device->CreateRootSignature(0, signatureBlob->GetBufferPointer(), signatureBlob->GetBufferSize(), IID_PPV_ARGS(&rootSignature));
-    }
-
-    SAFE_RELEASE(signatureBlob);
-    SAFE_RELEASE(errorBlob);
+    renderer.DestroyPSO(singlePSO);
+    renderer.DestroyPSO(instancingPSO);
 }
 
 void D3D12TriangleMesh::InitPipelineState() {
-    D3D12_INPUT_ELEMENT_DESC inputElementDescs[] = {
-        { "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
-        { "COLOR", 0, DXGI_FORMAT_R8G8B8A8_UNORM, 0, 12, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
-        { "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 16, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 }
+    RHIRenderer::InputLayout inputLayout;
+    inputLayout.elements = {
+        { "POSITION", 0, 0, 0, RHIRenderer::InputLayoutElement::Format::Float3 },
+        { "COLOR", 0, 12, 0, RHIRenderer::InputLayoutElement::Format::UByte4N },
+        { "TEXCOORD", 0, 16, 0, RHIRenderer::InputLayoutElement::Format::Float2 },
     };
 
-    singlePSO = renderer.CreatePSO(rootSignature, "Source/TestD3D12/Shaders/Triangle.hlsl", { inputElementDescs, COUNT_OF(inputElementDescs) });
-    instancingPSO = renderer.CreatePSO(rootSignature, "Source/TestD3D12/Shaders/TriangleInstancing.hlsl", { inputElementDescs, COUNT_OF(inputElementDescs) });
+    RHIRenderer::RenderPass renderPass;
+    renderPass.renderTargetCount = 1;
+    renderPass.renderTargetFormats[0] = Image::Format::RGBA_8_8_8_8;
+    renderPass.depthStencilFormat = Image::Format::DepthStencil_24_8;
+
+    RHIRenderer::PipelineStateDesc psoDesc;
+    psoDesc.vs = static_cast<RHIRenderer::Shader *>(renderer.CreateShaderFromFile(RHIRenderer::ShaderStage::Vertex, "Source/TestD3D12/Shaders/Triangle.hlsl", "VSMain"));
+    psoDesc.ps = static_cast<RHIRenderer::Shader *>(renderer.CreateShaderFromFile(RHIRenderer::ShaderStage::Fragment, "Source/TestD3D12/Shaders/Triangle.hlsl", "PSMain"));
+    psoDesc.rasterizerState = renderer.GetRasterizerState(RHIRenderer::RasterizerStateType::SolidFrontSided);
+    psoDesc.depthStencilState = renderer.GetDepthStencilState(RHIRenderer::DepthStencilStateType::Default);
+    psoDesc.blendState = renderer.GetBlendState(RHIRenderer::BlendStateType::Opaque);
+    psoDesc.inputLayout = &inputLayout;
+    psoDesc.primitiveTopology = RHIRenderer::PrimitiveTopology::TriangleList;
+    psoDesc.renderPass = &renderPass;
+    singlePSO = renderer.CreatePSO(&psoDesc);
+
+    SAFE_DELETE(psoDesc.vs);
+    SAFE_DELETE(psoDesc.ps);
+
+    psoDesc.vs = static_cast<RHIRenderer::Shader *>(renderer.CreateShaderFromFile(RHIRenderer::ShaderStage::Vertex, "Source/TestD3D12/Shaders/TriangleInstancing.hlsl", "VSMain"));
+    psoDesc.ps = static_cast<RHIRenderer::Shader *>(renderer.CreateShaderFromFile(RHIRenderer::ShaderStage::Fragment, "Source/TestD3D12/Shaders/TriangleInstancing.hlsl", "PSMain"));
+    psoDesc.rasterizerState = renderer.GetRasterizerState(RHIRenderer::RasterizerStateType::SolidFrontSided);
+    psoDesc.depthStencilState = renderer.GetDepthStencilState(RHIRenderer::DepthStencilStateType::Default);
+    psoDesc.blendState = renderer.GetBlendState(RHIRenderer::BlendStateType::Opaque);
+    psoDesc.inputLayout = &inputLayout;
+    psoDesc.primitiveTopology = RHIRenderer::PrimitiveTopology::TriangleList;
+    psoDesc.renderPass = &renderPass;
+    instancingPSO = renderer.CreatePSO(&psoDesc);
+
+    SAFE_DELETE(psoDesc.vs);
+    SAFE_DELETE(psoDesc.ps);
 }
 
 void D3D12TriangleMesh::DrawMesh(int threadIndex, D3D12CommandList *commandList, const Vec2& offset) {
@@ -183,17 +148,14 @@ void D3D12TriangleMesh::DrawMesh(int threadIndex, D3D12CommandList *commandList,
     ID3D12DescriptorHeap *descriptorHeaps[] = { rootDescriptorPool->descriptorHeap };
     commandList->SetDescriptorHeaps(COUNT_OF(descriptorHeaps), descriptorHeaps);
 
-    // 루트 시그니쳐를 세팅한다.
-    commandList->SetGraphicsRootSignature(rootSignature);
+    commandList->SetPipelineState(singlePSO);
+    commandList->SetPrimitiveTopology(RHIRenderer::PrimitiveTopology::TriangleList);
  
     // 위에서 할당한 루트 디스크립터 테이블을 세팅한다.
     commandList->graphicsCommandList->SetGraphicsRootDescriptorTable(0, gpuRootDescriptorHandle);
 
     //gpuRootDescriptorHandle.Offset(1, rootDescriptorPool->descriptorHandleSize * 2);
     //commandList->graphicsCommandList->SetGraphicsRootDescriptorTable(1, gpuRootDescriptorHandle);
-
-    commandList->SetPipelineState(singlePSO);
-    commandList->SetPrimitiveTopology(RHIRenderer::PrimitiveTopology::TriangleList);
 
     commandList->SetVertexBuffer(0, vertexBuffer);
     commandList->SetIndexBuffer(indexBuffer);
@@ -235,17 +197,14 @@ void D3D12TriangleMesh::DrawMeshInstanced(int threadIndex, D3D12CommandList* com
     ID3D12DescriptorHeap *descriptorHeaps[] = { rootDescriptorPool->descriptorHeap };
     commandList->SetDescriptorHeaps(COUNT_OF(descriptorHeaps), descriptorHeaps);
 
-    // 루트 시그니쳐를 세팅한다.
-    commandList->SetGraphicsRootSignature(rootSignature);
+    commandList->SetPipelineState(instancingPSO);
+    commandList->SetPrimitiveTopology(RHIRenderer::PrimitiveTopology::TriangleList);
 
     // 위에서 할당한 루트 디스크립터 테이블을 세팅한다.
     commandList->graphicsCommandList->SetGraphicsRootDescriptorTable(0, gpuRootDescriptorHandle);
 
     //gpuRootDescriptorHandle.Offset(1, rootDescriptorPool->descriptorHandleSize * 2);
     //commandList->graphicsCommandList->SetGraphicsRootDescriptorTable(1, gpuRootDescriptorHandle);
-
-    commandList->SetPipelineState(instancingPSO);
-    commandList->SetPrimitiveTopology(RHIRenderer::PrimitiveTopology::TriangleList);
 
     commandList->SetVertexBuffer(0, vertexBuffer);
     commandList->SetIndexBuffer(indexBuffer);

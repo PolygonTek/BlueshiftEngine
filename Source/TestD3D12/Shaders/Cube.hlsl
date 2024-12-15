@@ -1,3 +1,7 @@
+#define COMMON_ROOT_SIGNATURE "RootFlags(ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT), " \
+    "DescriptorTable(SRV(t0), CBV(b0)), " \
+    "StaticSampler(s0, FILTER = FILTER_MIN_MAG_MIP_LINEAR, ADDRESSU = TEXTURE_ADDRESS_CLAMP, ADDRESSV = TEXTURE_ADDRESS_CLAMP, ADDRESSW = TEXTURE_ADDRESS_CLAMP)"
+
 struct VSInput {
     float4 position : POSITION;
     float4 color : COLOR;
@@ -18,6 +22,8 @@ cbuffer CONSTANT_BUFFER_DEFAULT : register(b0) {
 Texture2D defaultTexture : register(t0);
 SamplerState defaultSampler : register(s0);
 
+[RootSignature(COMMON_ROOT_SIGNATURE)]
+
 PSInput VSMain(VSInput input) {
     PSInput result = (PSInput)0;
 
@@ -29,6 +35,8 @@ PSInput VSMain(VSInput input) {
 
     return result;
 }
+
+[RootSignature(COMMON_ROOT_SIGNATURE)]
 
 float4 PSMain(PSInput input) : SV_TARGET {
     float4 color = defaultTexture.Sample(defaultSampler, input.texCoord);

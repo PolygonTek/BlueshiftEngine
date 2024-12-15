@@ -30,333 +30,6 @@ void D3D12Texture::Release() {
 #endif
 }
 
-bool D3D12Texture::ImageFormatToDXGIFormat(Image::Format::Enum imageFormat, bool isSRGB, DXGI_FORMAT *dxgiFormat) {
-    switch (imageFormat) {
-    case Image::Format::L_8:
-    case Image::Format::R_8:
-        if (dxgiFormat) *dxgiFormat = DXGI_FORMAT_R8_UNORM;
-        return true;
-    case Image::Format::A_8:
-        if (dxgiFormat) *dxgiFormat = DXGI_FORMAT_A8_UNORM;
-        return true;
-    case Image::Format::RG_8_8:
-        if (dxgiFormat) *dxgiFormat = DXGI_FORMAT_R8G8_UNORM;
-        return true;
-    case Image::Format::RGBA_8_8_8_8:
-        if (dxgiFormat) *dxgiFormat = isSRGB ? DXGI_FORMAT_R8G8B8A8_UNORM_SRGB : DXGI_FORMAT_R8G8B8A8_UNORM;
-        return true;
-    case Image::Format::BGRA_8_8_8_8:
-        if (dxgiFormat) *dxgiFormat = isSRGB ? DXGI_FORMAT_B8G8R8A8_UNORM_SRGB : DXGI_FORMAT_B8G8R8A8_UNORM;
-        return true;
-    case Image::Format::BGRX_8_8_8_8:
-        if (dxgiFormat) *dxgiFormat = isSRGB ? DXGI_FORMAT_B8G8R8X8_UNORM_SRGB : DXGI_FORMAT_B8G8R8X8_UNORM;
-        return true;
-    case Image::Format::R_8_SNORM:
-        if (dxgiFormat) *dxgiFormat = DXGI_FORMAT_R8_SNORM;
-        return true;
-    case Image::Format::RG_8_8_SNORM:
-        if (dxgiFormat) *dxgiFormat = DXGI_FORMAT_R8G8_SNORM;
-        return true;
-    case Image::Format::RGBA_8_8_8_8_SNORM:
-        if (dxgiFormat) *dxgiFormat = DXGI_FORMAT_R8G8B8A8_SNORM;
-        return true;
-    case Image::Format::BGR_5_6_5:
-        if (dxgiFormat) *dxgiFormat = DXGI_FORMAT_B5G6R5_UNORM;
-        return true;
-    case Image::Format::BGRA_4_4_4_4:
-        if (dxgiFormat) *dxgiFormat = DXGI_FORMAT_B4G4R4A4_UNORM;
-        return true;
-    case Image::Format::ABGR_4_4_4_4:
-        if (dxgiFormat) *dxgiFormat = DXGI_FORMAT_A4B4G4R4_UNORM;
-        return true;
-    case Image::Format::BGRA_5_5_5_1:
-        if (dxgiFormat) *dxgiFormat = DXGI_FORMAT_B5G5R5A1_UNORM;
-        return true;
-    case Image::Format::RGBA_10_10_10_2:
-        if (dxgiFormat) *dxgiFormat = DXGI_FORMAT_R10G10B10A2_UNORM;
-        return true;
-    case Image::Format::L_16F:
-    case Image::Format::R_16F:
-        if (dxgiFormat) *dxgiFormat = DXGI_FORMAT_R16_FLOAT;
-        return true;
-    case Image::Format::RG_16F_16F:
-        if (dxgiFormat) *dxgiFormat = DXGI_FORMAT_R16G16_FLOAT;
-        return true;
-    case Image::Format::RGBA_16F_16F_16F_16F:
-        if (dxgiFormat) *dxgiFormat = DXGI_FORMAT_R16G16B16A16_FLOAT;
-        return true;
-    case Image::Format::R_32F:
-        if (dxgiFormat) *dxgiFormat = DXGI_FORMAT_R32_FLOAT;
-        return true;
-    case Image::Format::RG_32F_32F:
-        if (dxgiFormat) *dxgiFormat = DXGI_FORMAT_R32G32_FLOAT;
-        return true;
-    case Image::Format::RGB_32F_32F_32F:
-        if (dxgiFormat) *dxgiFormat = DXGI_FORMAT_R32G32B32_FLOAT;
-        return true;
-    case Image::Format::RGBA_32F_32F_32F_32F:
-        if (dxgiFormat) *dxgiFormat = DXGI_FORMAT_R32G32B32A32_FLOAT;
-        return true;
-    case Image::Format::RGBE_9_9_9_5:
-        if (dxgiFormat) *dxgiFormat = DXGI_FORMAT_R9G9B9E5_SHAREDEXP;
-        return true;
-    case Image::Format::RGB_11F_11F_10F:
-        if (dxgiFormat) *dxgiFormat = DXGI_FORMAT_R11G11B10_FLOAT;
-        return true;
-    case Image::Format::DXT1: // BC1
-        if (dxgiFormat) *dxgiFormat = isSRGB ? DXGI_FORMAT_BC1_UNORM_SRGB : DXGI_FORMAT_BC1_UNORM;
-        return true;
-    case Image::Format::DXT3: // BC2
-        if (dxgiFormat) *dxgiFormat = isSRGB ? DXGI_FORMAT_BC2_UNORM_SRGB : DXGI_FORMAT_BC2_UNORM;
-        return true;
-    case Image::Format::DXT5: // BC3
-        if (dxgiFormat) *dxgiFormat = isSRGB ? DXGI_FORMAT_BC3_UNORM_SRGB : DXGI_FORMAT_BC3_UNORM;
-        return true;
-    case Image::Format::DXN1: // BC4
-        if (dxgiFormat) *dxgiFormat = DXGI_FORMAT_BC4_UNORM;
-        return true;
-    case Image::Format::DXN2: // BC5
-        if (dxgiFormat) *dxgiFormat = DXGI_FORMAT_BC5_UNORM;
-        return true;
-    case Image::Format::Depth_16:
-        if (dxgiFormat) *dxgiFormat = DXGI_FORMAT_D16_UNORM;
-        return true;
-    case Image::Format::Depth_32F:
-        if (dxgiFormat) *dxgiFormat = DXGI_FORMAT_D32_FLOAT;
-        return true;
-    case Image::Format::DepthStencil_24_8:
-        if (dxgiFormat) *dxgiFormat = DXGI_FORMAT_D24_UNORM_S8_UINT;
-        return true;
-    }
-    return false;
-}
-
-bool D3D12Texture::DXGIFormatToImageFormat(DXGI_FORMAT dxgiFormat, Image::Format::Enum *imageFormat, bool *isSRGB) {
-    if (isSRGB) {
-        *isSRGB = false;
-        switch (dxgiFormat) {
-        case DXGI_FORMAT_R8G8B8A8_UNORM_SRGB:
-        case DXGI_FORMAT_B8G8R8A8_UNORM_SRGB:
-        case DXGI_FORMAT_B8G8R8X8_UNORM_SRGB:
-        case DXGI_FORMAT_BC1_UNORM_SRGB:
-        case DXGI_FORMAT_BC2_UNORM_SRGB:
-        case DXGI_FORMAT_BC3_UNORM_SRGB:
-            *isSRGB = true;
-            break;
-        }
-    }
-
-    switch (dxgiFormat) {
-    case DXGI_FORMAT_R8_UNORM:
-        if (imageFormat) *imageFormat = Image::Format::R_8;
-        return true;
-    case DXGI_FORMAT_A8_UNORM:
-        if (imageFormat) *imageFormat = Image::Format::A_8;
-        return true;
-    case DXGI_FORMAT_R8G8_UNORM:
-        if (imageFormat) *imageFormat = Image::Format::RG_8_8;
-        return true;
-    case DXGI_FORMAT_R8G8B8A8_UNORM:
-    case DXGI_FORMAT_R8G8B8A8_UNORM_SRGB:
-        if (imageFormat) *imageFormat = Image::Format::RGBA_8_8_8_8;
-        return true;
-    case DXGI_FORMAT_B8G8R8A8_UNORM:
-    case DXGI_FORMAT_B8G8R8A8_UNORM_SRGB:
-        if (imageFormat) *imageFormat = Image::Format::BGRA_8_8_8_8;
-        return true;
-    case DXGI_FORMAT_B8G8R8X8_UNORM:
-    case DXGI_FORMAT_B8G8R8X8_UNORM_SRGB:
-        if (imageFormat) *imageFormat = Image::Format::BGRX_8_8_8_8;
-        return true;
-    case DXGI_FORMAT_R8_SNORM:
-        if (imageFormat) *imageFormat = Image::Format::R_8_SNORM;
-        return true;
-    case DXGI_FORMAT_R8G8_SNORM:
-        if (imageFormat) *imageFormat = Image::Format::RG_8_8_SNORM;
-        return true;
-    case DXGI_FORMAT_R8G8B8A8_SNORM:
-        if (imageFormat) *imageFormat = Image::Format::RGBA_8_8_8_8_SNORM;
-        return true;
-    case DXGI_FORMAT_B5G6R5_UNORM:
-        if (imageFormat) *imageFormat = Image::Format::BGR_5_6_5;
-        return true;
-    case DXGI_FORMAT_B4G4R4A4_UNORM:
-        if (imageFormat) *imageFormat = Image::Format::BGRA_4_4_4_4;
-        return true;
-    case DXGI_FORMAT_A4B4G4R4_UNORM:
-        if (imageFormat) *imageFormat = Image::Format::ABGR_4_4_4_4;
-        return true;
-    case DXGI_FORMAT_B5G5R5A1_UNORM:
-        if (imageFormat) *imageFormat = Image::Format::BGRA_5_5_5_1;
-        return true;
-    case DXGI_FORMAT_R10G10B10A2_UNORM:
-        if (imageFormat) *imageFormat = Image::Format::RGBA_10_10_10_2;
-        return true;
-    case DXGI_FORMAT_R16_FLOAT:
-        if (imageFormat) *imageFormat = Image::Format::R_16F;
-        return true;
-    case DXGI_FORMAT_R16G16_FLOAT:
-        if (imageFormat) *imageFormat = Image::Format::RG_16F_16F;
-        return true;
-    case DXGI_FORMAT_R16G16B16A16_FLOAT:
-        if (imageFormat) *imageFormat = Image::Format::RGBA_16F_16F_16F_16F;
-        return true;
-    case DXGI_FORMAT_R32_FLOAT:
-        if (imageFormat) *imageFormat = Image::Format::R_32F;
-        return true;
-    case DXGI_FORMAT_R32G32_FLOAT:
-        if (imageFormat) *imageFormat = Image::Format::RG_32F_32F;
-        return true;
-    case DXGI_FORMAT_R32G32B32_FLOAT:
-        if (imageFormat) *imageFormat = Image::Format::RGB_32F_32F_32F;
-        return true;
-    case DXGI_FORMAT_R32G32B32A32_FLOAT:
-        if (imageFormat) *imageFormat = Image::Format::RGBA_32F_32F_32F_32F;
-        return true;
-    case DXGI_FORMAT_R9G9B9E5_SHAREDEXP:
-        if (imageFormat) *imageFormat = Image::Format::RGBE_9_9_9_5;
-        return true;
-    case DXGI_FORMAT_R11G11B10_FLOAT:
-        if (imageFormat) *imageFormat = Image::Format::RGB_11F_11F_10F;
-        return true;
-    case DXGI_FORMAT_BC1_UNORM:
-    case DXGI_FORMAT_BC1_UNORM_SRGB:
-        if (imageFormat) *imageFormat = Image::Format::DXT1;
-        return true;
-    case DXGI_FORMAT_BC2_UNORM:
-    case DXGI_FORMAT_BC2_UNORM_SRGB:
-        if (imageFormat) *imageFormat = Image::Format::DXT3;
-        return true;
-    case DXGI_FORMAT_BC3_UNORM:
-    case DXGI_FORMAT_BC3_UNORM_SRGB:
-        if (imageFormat) *imageFormat = Image::Format::DXT5;
-        return true;
-    case DXGI_FORMAT_BC4_UNORM:
-        if (imageFormat) *imageFormat = Image::Format::DXN1;
-        return true;
-    case DXGI_FORMAT_BC5_UNORM:
-        if (imageFormat) *imageFormat = Image::Format::DXN2;
-        return true;
-    case DXGI_FORMAT_D16_UNORM:
-        if (imageFormat) *imageFormat = Image::Format::Depth_16;
-        return true;
-    case DXGI_FORMAT_D32_FLOAT:
-        if (imageFormat) *imageFormat = Image::Format::Depth_32F;
-        return true;
-    case DXGI_FORMAT_D24_UNORM_S8_UINT:
-        if (imageFormat) *imageFormat = Image::Format::DepthStencil_24_8;
-        return true;
-    }
-    return false;
-}
-
-Image::Format::Enum D3D12Texture::ToUncompressedImageFormat(Image::Format::Enum inFormat) {
-    Image::Format::Enum outFormat;
-
-    switch (inFormat) {
-    case Image::Format::RGB_5_6_5:
-    case Image::Format::RGB_8_8_8:
-    case Image::Format::BGR_5_6_5:
-    case Image::Format::BGR_8_8_8:
-    case Image::Format::RGBX_4_4_4_4:
-    case Image::Format::RGBX_5_5_5_1:
-    case Image::Format::RGBX_8_8_8_8:
-    case Image::Format::BGRX_4_4_4_4:
-    case Image::Format::BGRX_5_5_5_1:
-        outFormat = Image::Format::BGRX_8_8_8_8;
-        break;
-    case Image::Format::LA_8_8:
-    case Image::Format::RGBA_4_4_4_4:
-    case Image::Format::RGBA_5_5_5_1:
-    case Image::Format::BGRA_4_4_4_4:
-    case Image::Format::BGRA_5_5_5_1:
-    case Image::Format::ABGR_4_4_4_4:
-    case Image::Format::ABGR_1_5_5_5:
-    case Image::Format::ABGR_8_8_8_8:
-    case Image::Format::ARGB_4_4_4_4:
-    case Image::Format::ARGB_1_5_5_5:
-    case Image::Format::ARGB_8_8_8_8:
-        outFormat = Image::Format::BGRA_8_8_8_8;
-        break;
-    case Image::Format::RGB_8_8_8_SNORM:
-        outFormat = Image::Format::RGBA_8_8_8_8_SNORM;
-        break;
-    case Image::Format::RGB_16F_16F_16F:
-        outFormat = Image::Format::RGBA_16F_16F_16F_16F;
-        break;
-    case Image::Format::RGB_32F_32F_32F:
-        outFormat = Image::Format::RGBA_32F_32F_32F_32F;
-        break;
-    case Image::Format::DXN1:
-    case Image::Format::DXN2:
-    case Image::Format::RGB_PVRTC_2BPPV1:
-    case Image::Format::RGB_PVRTC_4BPPV1:
-    case Image::Format::RGB_8_ETC1:
-    case Image::Format::RGB_8_ETC2:
-    case Image::Format::RGB_ATC:
-        outFormat = Image::Format::BGRX_8_8_8_8;
-        break;
-    case Image::Format::DXT1:
-    case Image::Format::DXT3:
-    case Image::Format::DXT5:
-    case Image::Format::RGBA_PVRTC_2BPPV1:
-    case Image::Format::RGBA_PVRTC_4BPPV1:
-    case Image::Format::RGBA_PVRTC_2BPPV2:
-    case Image::Format::RGBA_PVRTC_4BPPV2:
-    case Image::Format::RGBA_8_1_ETC2:
-    case Image::Format::RGBA_8_8_ETC2:
-    case Image::Format::RGBA_EA_ATC:
-    case Image::Format::RGBA_IA_ATC:
-        outFormat = Image::Format::RGBA_8_8_8_8;
-        break;
-    case Image::Format::R_11_EAC:
-    case Image::Format::SignedR_11_EAC:
-        outFormat = Image::Format::R_16F;
-        break;
-    case Image::Format::RG_11_11_EAC:
-    case Image::Format::SignedRG_11_11_EAC:
-        outFormat = Image::Format::RG_16F_16F;
-        break;
-    default:
-        assert(0);
-        outFormat = inFormat;
-        break;
-    }
-    return outFormat;
-}
-
-Image::Format::Enum D3D12Texture::ToCompressedImageFormat(Image::Format::Enum inFormat, bool useNormalMap) {
-    if (Image::IsCompressed(inFormat)) {
-        assert(0);
-        return inFormat;
-    }
-
-    int redBits, greenBits, blueBits, alphaBits;
-    Image::GetBits(inFormat, &redBits, &greenBits, &blueBits, &alphaBits);
-
-    Image::Format::Enum outFormat = inFormat;
-
-    if (redBits > 0 && greenBits > 0 && blueBits > 0) {
-        if (Image::IsFloatFormat(inFormat) || Image::IsHalfFormat(inFormat)) {
-            if (alphaBits == 0) {
-                outFormat = Image::Format::RGBE_9_9_9_5;
-            }
-        } else if (useNormalMap) {
-            outFormat = Image::Format::DXN2;
-        } else {
-            if (alphaBits <= 1) {
-                outFormat = Image::Format::DXT1;
-            } else if (alphaBits <= 4) {
-                outFormat = Image::Format::DXT3;
-            } else {
-                outFormat = Image::Format::DXT5;
-            }
-        }
-    }
-
-    return outFormat;
-}
-
 void D3D12Texture::AdjustTextureFormat(bool useCompression, bool useNormalMap, Image::Format::Enum inFormat, Image::Format::Enum *outFormat) {
     if (Image::IsDepthFormat(inFormat) || Image::IsDepthStencilFormat(inFormat)) {
         *outFormat = inFormat;
@@ -364,15 +37,15 @@ void D3D12Texture::AdjustTextureFormat(bool useCompression, bool useNormalMap, I
     }
 
     if (Image::IsCompressed(inFormat)) {
-        if (IsSupportedImageFormat(inFormat)) {
+        if (D3D12Renderer::IsSupportedImageFormat(inFormat)) {
             *outFormat = inFormat;
             return;
         }
 
-        inFormat = ToUncompressedImageFormat(inFormat);
+        inFormat = D3D12Renderer::ToUncompressedImageFormat(inFormat);
     }
 
-    *outFormat = useCompression ? ToCompressedImageFormat(inFormat, useNormalMap) : ToUncompressedImageFormat(inFormat);
+    *outFormat = useCompression ? D3D12Renderer::ToCompressedImageFormat(inFormat, useNormalMap) : D3D12Renderer::ToUncompressedImageFormat(inFormat);
 }
 
 RHIRenderer::Texture *D3D12Renderer::CreateTexture(TextureType textureType, const Image *srcImage) {
@@ -380,7 +53,7 @@ RHIRenderer::Texture *D3D12Renderer::CreateTexture(TextureType textureType, cons
     bool isLinearSpace = srcImage->GetGammaSpace() == Image::GammaSpace::Linear;
 
     DXGI_FORMAT dxgiFormat;
-    bool srcFormatSupported = D3D12Texture::ImageFormatToDXGIFormat(srcFormat, !isLinearSpace, &dxgiFormat);
+    bool srcFormatSupported = D3D12Renderer::ImageFormatToDXGIFormat(srcFormat, !isLinearSpace, &dxgiFormat);
     if (!srcFormatSupported) {
         BE_WARNLOG("D3D12Renderer::CreateTexture: Unsupported image format %s\n", Image::FormatName(srcFormat));
         return nullptr;
@@ -600,8 +273,8 @@ RHIRenderer::Texture *D3D12Renderer::CreateTexture(TextureType textureType, cons
     bool srcCompressed = Image::IsCompressed(srcFormat);
     bool dstCompressed = Image::IsCompressed(dstFormat);
 
-    bool srcFormatSupported = D3D12Texture::IsSupportedImageFormat(srcFormat);
-    bool dstFormatSupported = D3D12Texture::IsSupportedImageFormat(dstFormat);
+    bool srcFormatSupported = D3D12Renderer::IsSupportedImageFormat(srcFormat);
+    bool dstFormatSupported = D3D12Renderer::IsSupportedImageFormat(dstFormat);
 
     if (!dstFormatSupported) {
         BE_WARNLOG("D3D12Renderer::CreateTexture: Unsupported internal image format %s\n", Image::FormatName(dstFormat));
@@ -613,13 +286,13 @@ RHIRenderer::Texture *D3D12Renderer::CreateTexture(TextureType textureType, cons
     if (useMipmaps && srcImage->NumMipmaps() == 1) {
         if (srcImage->IsPacked() || srcImage->IsCompressed()) {
             // 밉맵을 생성해야 한다면, 지원되는 가장 비슷한 무압축 포맷으로 컨버팅한다.
-            Image::Format::Enum supportedUncompressedFormat = D3D12Texture::ToUncompressedImageFormat(srcFormat);
+            Image::Format::Enum supportedUncompressedFormat = D3D12Renderer::ToUncompressedImageFormat(srcFormat);
 
             srcImage->ConvertFormat(supportedUncompressedFormat, uncompressedImage);
             srcImage = &uncompressedImage;
 
             srcFormat = supportedUncompressedFormat;
-            srcFormatSupported = D3D12Texture::IsSupportedImageFormat(srcFormat);
+            srcFormatSupported = D3D12Renderer::IsSupportedImageFormat(srcFormat);
             srcCompressed = false;
         }
     }
@@ -671,7 +344,7 @@ void D3D12Renderer::GetTextureImage2D(Texture *texture, int level, Image::Format
 
     Image::Format::Enum textureImageFormat;
     bool isSRGB;
-    if (!D3D12Texture::DXGIFormatToImageFormat(d3d12Texture->textureDesc.Format, &textureImageFormat, &isSRGB)) {
+    if (!D3D12Renderer::DXGIFormatToImageFormat(d3d12Texture->textureDesc.Format, &textureImageFormat, &isSRGB)) {
         BE_WARNLOG("D3D12Texture::GetTexture2D: Unsupported DXGI format %i\n", d3d12Texture->textureDesc.Format);
         return;
     }

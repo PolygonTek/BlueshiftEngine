@@ -32,14 +32,11 @@ public:
     void                            DrawMesh(int threadIndex, D3D12CommandList *commandList, const Vec2 &offset);
     void                            DrawMeshInstanced(int threadIndex, D3D12CommandList *commandList, const Vec2 *instanceData, int instanceCount);
 
-    void                            InitRootSignature();
     void                            InitPipelineState();
 
     RHIRenderer::Texture *          texture = nullptr;
     RHIRenderer::VertexBuffer *     vertexBuffer = nullptr;
-    RHIRenderer::IndexBuffer *      indexBuffer = nullptr;
- 
-    ID3D12RootSignature *           rootSignature = nullptr;
-    ID3D12PipelineState *           singlePSO = nullptr;
-    ID3D12PipelineState *           instancingPSO = nullptr;
+    RHIRenderer::IndexBuffer *      indexBuffer = nullptr; 
+    RHIRenderer::PipelineState *    singlePSO = nullptr;
+    RHIRenderer::PipelineState *    instancingPSO = nullptr;
 };

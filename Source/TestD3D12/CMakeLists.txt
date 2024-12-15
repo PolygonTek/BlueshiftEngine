@@ -6,6 +6,7 @@ set(SRC_FILES
     Precompiled.h
     Precompiled.cpp
     RHIRenderer.h
+    RHIRenderer.cpp
     D3D12Common.h
     D3D12App.h
     D3D12App.cpp
@@ -22,10 +23,12 @@ set(SRC_FILES
     D3D12CompiledShaderBlob.h
     D3D12CompiledShaderBlob.cpp
     D3D12Buffer.cpp
+    D3D12Shader.cpp
     D3D12Texture.cpp
     D3D12VertexBuffer.cpp
     D3D12IndexBuffer.cpp
     D3D12ConstantBuffer.cpp
+    D3D12PipelineState.cpp
     D3D12CommandList.h
     D3D12CommandList.cpp
     D3D12CommandListPool.h

@@ -30,8 +30,6 @@ extern "C" { __declspec(dllexport) extern const char *D3D12SDKPath = u8"."; }
 
 D3D12Renderer       renderer;
 
-static Str          shaderCacheDir = "Cache/D3D12CompiledShaderCache";
-
 void D3D12Renderer::Init(HWND hwnd) {
 #if defined(_DEBUG) || defined(_DEVELOPMENT)
     bool enableDebugLayer = true;
@@ -123,10 +121,8 @@ void D3D12Renderer::Init(HWND hwnd) {
         ID3D12InfoQueue *infoQueue = nullptr;
         hr = device->QueryInterface(IID_PPV_ARGS(&infoQueue));
         if (SUCCEEDED(hr)) {
-#ifdef _DEBUG
             infoQueue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_CORRUPTION, TRUE);
             infoQueue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_ERROR, TRUE);
-#endif
 
             D3D12_MESSAGE_SEVERITY enabledSeverities[] = {
                 D3D12_MESSAGE_SEVERITY_CORRUPTION,
@@ -221,6 +217,9 @@ void D3D12Renderer::Init(HWND hwnd) {
     hr = features.Init(device);
     assert(SUCCEEDED(hr));
 
+    if (features.ConservativeRasterizationTier() >= D3D12_CONSERVATIVE_RASTERIZATION_TIER_1) {
+        supportsConservativeRasterization = true;
+    }
     if (features.VariableShadingRateTier() >= D3D12_VARIABLE_SHADING_RATE_TIER_1) {
         supportsVRS = true;
     }
@@ -232,6 +231,20 @@ void D3D12Renderer::Init(HWND hwnd) {
     }
     if (features.DepthBoundsTestSupported() == TRUE) {
         supportsDepthBoundsTest = true;
+    }
+
+    // shader cache 디렉토리 초기화
+    D3D12Renderer::shaderCacheDir = "Cache/D3D12CompiledShaderCache";
+
+    if (!PlatformFile::DirectoryExists(D3D12Renderer::shaderCacheDir)) {
+        PlatformFile::CreateDirectoryTree(D3D12Renderer::shaderCacheDir);
+    }
+
+    // PSO cache 디렉토리 초기화
+    D3D12Renderer::psoCacheDir = "Cache/D3D12PSOCache";
+
+    if (!PlatformFile::DirectoryExists(D3D12Renderer::psoCacheDir)) {
+        PlatformFile::CreateDirectoryTree(D3D12Renderer::psoCacheDir);
     }
 
     // 윈도우 크기 얻기
@@ -313,10 +326,12 @@ void D3D12Renderer::Init(HWND hwnd) {
 
     renderObjects.Reserve(16384);
 
-    initialized = true;
+    RHIRenderer::Init(hwnd);
 }
 
 void D3D12Renderer::Shutdown() {
+    RHIRenderer::Shutdown();
+
 #ifdef USE_RENDER_THREAD
     ShutdownRenderThread();
 #endif
@@ -334,6 +349,13 @@ void D3D12Renderer::Shutdown() {
     FreePendingResources(true);
     SAFE_DELETE(pendingResourceBuffer);
     maxPendingResources = 0;
+
+    psoMap.DeleteContents(true);
+
+    for (int i = 0; i < cachedPsoBlobMap.Count(); ++i) {
+        auto *entry = cachedPsoBlobMap.GetByIndex(i);
+        SAFE_RELEASE(entry->second);
+    }
 
     SAFE_DELETE(srvDescriptorPool);
     SAFE_DELETE(rtvDescriptorPool);
@@ -725,254 +747,6 @@ void D3D12Renderer::CreateDevice(IDXGIAdapter1 **adapterPtr) {
     *adapterPtr = currentAdapter;
 }
 
-bool D3D12Renderer::LoadCompiledShader(const char *name, const uint64_t hash, ID3DBlob **compiledShaderBlob) {
-    Str filename;// = shaderCacheDir;
-    filename.AppendPath(name);
-    filename.SetFileExtension(".cso");
-
-    PlatformFileMapping *fileMapping = PlatformFileMapping::OpenFileRead(filename);
-    if (!fileMapping) {
-        return false;
-    }
-
-    const byte *fileData = (const byte *)fileMapping->GetData();
-    // 저장된 cso 파일과 hash 값이 같은지 비교한다.
-    if (*(uint64_t *)fileData != hash) {
-        delete fileMapping;
-        return false;
-    }
-
-    *compiledShaderBlob = new D3D12CompiledShaderBlob(fileData, fileMapping->GetSize());
-    delete fileMapping;
-
-    return true;
-}
-
-void D3D12Renderer::CacheCompiledShader(const char *name, const uint64_t hash, ID3DBlob *compiledShaderBlob) {
-    if (!compiledShaderBlob || compiledShaderBlob->GetBufferSize() == 0) {
-        return;
-    }
-
-    Str filename;// = shaderCacheDir;
-    filename.AppendPath(name);
-    filename.SetFileExtension(".cso");
-    PlatformFile *file = (PlatformFile *)PlatformFile::OpenFileWrite(filename);
-    if (!file) {
-        return;
-    }
-
-    int fileDataSize = compiledShaderBlob->GetBufferSize() + sizeof(uint64_t);
-    byte *fileData = (byte *)Mem_Alloc32(fileDataSize);
-
-    // 캐싱된 cso 파일의 첫 64 비트는 hash 값을 저장한다.
-    *(uint64_t *)fileData = hash;
-    memcpy(fileData + sizeof(uint64_t), compiledShaderBlob->GetBufferPointer(), compiledShaderBlob->GetBufferSize());
-
-    file->Write(fileData, fileDataSize);
-
-    Mem_AlignedFree(fileData);
-    delete file;
-}
-
-RHIRenderer::Shader *D3D12Renderer::CreateShader(ShaderStage shaderStage, const char *sourceName, const char *shaderText, int shaderTextSize, const char *entryPoint) {
-    LPCSTR target = nullptr;
-    switch (shaderStage) {
-    case ShaderStage::Vertex:
-        target = "vs_5_0";
-        break;
-    case ShaderStage::Fragment:
-        target = "ps_5_0";
-        break;
-    case ShaderStage::Geometry:
-        target = "gs_5_0";
-        break;
-    case ShaderStage::Compute:
-        target = "cs_5_0";
-        break;
-    default:
-        return nullptr;
-    }
-
-    Str fileName = sourceName;
-    Str fileBase;
-    fileName.ExtractFileBase(fileBase);
-    char mangledFilename[256];
-    Str::snPrintf(mangledFilename, sizeof(mangledFilename), "%s-%s-%s", fileBase.c_str(), entryPoint, target);
-
-    Str extension;
-    fileName.ExtractFileExtension(extension);
-    fileName.StripFileName();
-    fileName.AppendPath(mangledFilename);
-    fileName.SetFileExtension(extension);
-
-    ID3DBlob *compiledShaderBlob = nullptr;
-
-    // 이미 컴파일된 cso 파일을 로드해본다.
-    const uint64_t shaderTextHash = CityHash64(shaderText, shaderTextSize);
-    bool shouldCompileShader = !LoadCompiledShader(fileName, shaderTextHash, &compiledShaderBlob);
-
-    // hash 값이 다르거나 파일이 없다면 새로 컴파일한다.
-    if (shouldCompileShader) {
-#if defined(_DEBUG)
-        // Enable better shader debugging with the graphics debugging tools.
-        UINT compileFlags = D3DCOMPILE_DEBUG | D3DCOMPILE_SKIP_OPTIMIZATION;
-#else
-        UINT compileFlags = 0;
-#endif
-        ID3DBlob *errorBlob = nullptr;
-
-        if (FAILED(D3DCompile(shaderText, shaderTextSize, sourceName, nullptr, nullptr, entryPoint, target, compileFlags, 0, &compiledShaderBlob, &errorBlob))) {
-            PrintCompileErrorMessages(errorBlob);
-            SAFE_RELEASE(errorBlob);
-            return nullptr;
-        }
-
-        SAFE_RELEASE(errorBlob);
-
-        // 컴파일했으므로 cso 파일을 저장한다.
-        CacheCompiledShader(fileName, shaderTextHash, compiledShaderBlob);
-    }
-
-    D3D12Shader *shader = new D3D12Shader;
-    shader->shaderStage = shaderStage;
-    shader->compiledShaderBlob = compiledShaderBlob;
-    return shader;
-}
-
-RHIRenderer::Shader *D3D12Renderer::CreateShaderFromFile(ShaderStage shaderStage, const char *filename, const char *entryPoint) {
-    char *shaderText;
-    int shaderTextSize = fileSystem.LoadFile(filename, true, (void **)&shaderText);
-    if (!shaderText) {
-        return nullptr;
-    }
-
-    Shader *shader = CreateShader(shaderStage, filename, shaderText, shaderTextSize, entryPoint);
-    if (!shader) {
-        fileSystem.FreeFile(shaderText);
-        return nullptr;
-    }
-
-    fileSystem.FreeFile(shaderText);
-    return shader;
-}
-
-ID3D12PipelineState *D3D12Renderer::CreatePSOFromLibrary(const D3D12_PIPELINE_STATE_STREAM_DESC *streamDesc, ID3D12PipelineLibrary1 *library, const TCHAR *name) {
-    ID3D12PipelineState *pso = nullptr;
-    HRESULT hr;
-
-    if (library) {
-        hr = library->LoadPipeline(name, streamDesc, IID_PPV_ARGS(&pso));
-        if (hr == E_INVALIDARG) {
-            hr = device->CreatePipelineState(streamDesc, IID_PPV_ARGS(&pso));
-            if (SUCCEEDED(hr)) {
-                library->StorePipeline(name, pso);
-            }
-        }
-    } else {
-        hr = device->CreatePipelineState(streamDesc, IID_PPV_ARGS(&pso));
-        if (FAILED(hr)) {
-            BE_ERRLOG("Failed to create pipeline state with name %s, ERROR: 0x%x.", name, hr);
-        }
-    }
-
-    return pso;
-}
-
-ID3D12PipelineState *D3D12Renderer::CreatePSO(ID3D12RootSignature *rootSignature, const D3D12_SHADER_BYTECODE &byteCodeVS, const D3D12_SHADER_BYTECODE &byteCodePS, const D3D12_INPUT_LAYOUT_DESC &inputLayout) {
-    const D3D12_RENDER_TARGET_BLEND_DESC defaultRenderTargetBlendDesc = {
-        FALSE, FALSE,
-        D3D12_BLEND_ONE, D3D12_BLEND_ZERO, D3D12_BLEND_OP_ADD,
-        D3D12_BLEND_ONE, D3D12_BLEND_ZERO, D3D12_BLEND_OP_ADD,
-        D3D12_LOGIC_OP_NOOP,
-        D3D12_COLOR_WRITE_ENABLE_ALL
-    };
-    ID3D12PipelineState *pso = nullptr;
-    D3D12_GRAPHICS_PIPELINE_STATE_DESC psoDesc = {};
-    // NOTE: 나중에 호출할 SetGraphicsRootSignature() 에서 PSO 에 지정된 RootSignature 와 다르면 안된다.
-    // 여기서 RootSignature 를 지정하는 이유는 파이프라인 호환성 검사 및 최적화 때문이다.
-    psoDesc.pRootSignature = rootSignature;
-    psoDesc.VS = byteCodeVS;
-    psoDesc.PS = byteCodePS;
-    psoDesc.BlendState.AlphaToCoverageEnable = FALSE;
-    psoDesc.BlendState.IndependentBlendEnable = FALSE;
-    for (UINT i = 0; i < D3D12_SIMULTANEOUS_RENDER_TARGET_COUNT; ++i) {
-        psoDesc.BlendState.RenderTarget[i] = defaultRenderTargetBlendDesc;
-    }
-    psoDesc.SampleMask = UINT_MAX;
-    psoDesc.RasterizerState.FillMode = D3D12_FILL_MODE_SOLID;
-    psoDesc.RasterizerState.CullMode = D3D12_CULL_MODE_BACK;
-    psoDesc.RasterizerState.FrontCounterClockwise = TRUE;
-    psoDesc.RasterizerState.DepthBias = D3D12_DEFAULT_DEPTH_BIAS;
-    psoDesc.RasterizerState.DepthBiasClamp = D3D12_DEFAULT_DEPTH_BIAS_CLAMP;
-    psoDesc.RasterizerState.DepthClipEnable = TRUE;
-    psoDesc.RasterizerState.ConservativeRaster = D3D12_CONSERVATIVE_RASTERIZATION_MODE_OFF;
-    psoDesc.DepthStencilState.DepthEnable = TRUE;
-    psoDesc.DepthStencilState.DepthWriteMask = D3D12_DEPTH_WRITE_MASK_ALL;
-    psoDesc.DepthStencilState.DepthFunc = D3D12_COMPARISON_FUNC_LESS_EQUAL;
-    psoDesc.DepthStencilState.StencilEnable = FALSE;
-    psoDesc.DepthStencilState.StencilReadMask = D3D12_DEFAULT_STENCIL_READ_MASK;
-    psoDesc.DepthStencilState.StencilWriteMask = D3D12_DEFAULT_STENCIL_WRITE_MASK;
-    psoDesc.DepthStencilState.FrontFace = { D3D12_STENCIL_OP_KEEP, D3D12_STENCIL_OP_KEEP, D3D12_STENCIL_OP_KEEP, D3D12_COMPARISON_FUNC_ALWAYS };
-    psoDesc.DepthStencilState.BackFace = { D3D12_STENCIL_OP_KEEP, D3D12_STENCIL_OP_KEEP, D3D12_STENCIL_OP_KEEP, D3D12_COMPARISON_FUNC_ALWAYS };
-    psoDesc.InputLayout = inputLayout;
-    psoDesc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
-    psoDesc.NumRenderTargets = 1;
-    psoDesc.RTVFormats[0] = DXGI_FORMAT_R8G8B8A8_UNORM;
-    psoDesc.DSVFormat = DXGI_FORMAT_D24_UNORM_S8_UINT;
-    psoDesc.SampleDesc.Count = 1;
-
-    HRESULT hr = device->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&pso));
-    if (FAILED(hr)) {
-        BE_WARNLOG("device->CreateGraphicsPipelineState() failed, ERROR: 0x%x\n", hr);
-        return nullptr;
-    }
-    return pso;
-}
-
-ID3D12PipelineState *D3D12Renderer::CreatePSO(ID3D12RootSignature *rootSignature, const char *shaderFilename, const D3D12_INPUT_LAYOUT_DESC &inputLayout) {
-    char *shaderText;
-    int shaderTextSize = fileSystem.LoadFile(shaderFilename, true, (void **)&shaderText);
-    if (!shaderText) {
-        return nullptr;
-    }
-
-    D3D12Shader *vs = static_cast<D3D12Shader *>(CreateShader(ShaderStage::Vertex, shaderFilename, shaderText, shaderTextSize, "VSMain"));
-    D3D12Shader *ps = static_cast<D3D12Shader *>(CreateShader(ShaderStage::Fragment, shaderFilename, shaderText, shaderTextSize, "PSMain"));
-
-    fileSystem.FreeFile(shaderText);
-
-    if (!vs || !ps) {
-        SAFE_DELETE(vs);
-        SAFE_DELETE(ps);
-        return nullptr;
-    }
-
-    D3D12_SHADER_BYTECODE byteCodeVS = CD3DX12_SHADER_BYTECODE(vs->compiledShaderBlob->GetBufferPointer(), vs->compiledShaderBlob->GetBufferSize());
-    D3D12_SHADER_BYTECODE byteCodePS = CD3DX12_SHADER_BYTECODE(ps->compiledShaderBlob->GetBufferPointer(), ps->compiledShaderBlob->GetBufferSize());
-
-    ID3D12PipelineState *pso = CreatePSO(rootSignature, byteCodeVS, byteCodePS, inputLayout);
-
-    SAFE_DELETE(vs);
-    SAFE_DELETE(ps);
-
-    return pso;
-}
-
-void D3D12Renderer::PrintCompileErrorMessages(ID3DBlob *errorBlob) {
-    if (!errorBlob) {
-        BE_WARNLOG("D3DCompile failed, but no error message was provided\n");
-    }
-
-    const char *errorMessage = static_cast<const char *>(errorBlob->GetBufferPointer());
-    size_t errorMessageLength = errorBlob->GetBufferSize();
-
-    Str errorMessageStr;
-    errorMessageStr.EnsureAlloced(errorMessageLength + 1);
-    Str::Copynz((char *)errorMessageStr, errorMessage, errorMessageLength + 1);
-
-    BE_WARNLOG(errorMessageStr);
-}
-
 #ifdef USE_D3D12_MEMALLOC
 void D3D12Renderer::PrintMemoryAllocatorStats() {
     D3D12MA::Budget localBudget;
@@ -1322,3 +1096,333 @@ unsigned int RenderThreadProc(void *param) {
     return 0;
 }
 #endif
+
+bool D3D12Renderer::ImageFormatToDXGIFormat(Image::Format::Enum imageFormat, bool isSRGB, DXGI_FORMAT *dxgiFormat) {
+    switch (imageFormat) {
+    case Image::Format::L_8:
+    case Image::Format::R_8:
+        if (dxgiFormat) *dxgiFormat = DXGI_FORMAT_R8_UNORM;
+        return true;
+    case Image::Format::A_8:
+        if (dxgiFormat) *dxgiFormat = DXGI_FORMAT_A8_UNORM;
+        return true;
+    case Image::Format::RG_8_8:
+        if (dxgiFormat) *dxgiFormat = DXGI_FORMAT_R8G8_UNORM;
+        return true;
+    case Image::Format::RGBA_8_8_8_8:
+        if (dxgiFormat) *dxgiFormat = isSRGB ? DXGI_FORMAT_R8G8B8A8_UNORM_SRGB : DXGI_FORMAT_R8G8B8A8_UNORM;
+        return true;
+    case Image::Format::BGRA_8_8_8_8:
+        if (dxgiFormat) *dxgiFormat = isSRGB ? DXGI_FORMAT_B8G8R8A8_UNORM_SRGB : DXGI_FORMAT_B8G8R8A8_UNORM;
+        return true;
+    case Image::Format::BGRX_8_8_8_8:
+        if (dxgiFormat) *dxgiFormat = isSRGB ? DXGI_FORMAT_B8G8R8X8_UNORM_SRGB : DXGI_FORMAT_B8G8R8X8_UNORM;
+        return true;
+    case Image::Format::R_8_SNORM:
+        if (dxgiFormat) *dxgiFormat = DXGI_FORMAT_R8_SNORM;
+        return true;
+    case Image::Format::RG_8_8_SNORM:
+        if (dxgiFormat) *dxgiFormat = DXGI_FORMAT_R8G8_SNORM;
+        return true;
+    case Image::Format::RGBA_8_8_8_8_SNORM:
+        if (dxgiFormat) *dxgiFormat = DXGI_FORMAT_R8G8B8A8_SNORM;
+        return true;
+    case Image::Format::BGR_5_6_5:
+        if (dxgiFormat) *dxgiFormat = DXGI_FORMAT_B5G6R5_UNORM;
+        return true;
+    case Image::Format::BGRA_4_4_4_4:
+        if (dxgiFormat) *dxgiFormat = DXGI_FORMAT_B4G4R4A4_UNORM;
+        return true;
+    case Image::Format::ABGR_4_4_4_4:
+        if (dxgiFormat) *dxgiFormat = DXGI_FORMAT_A4B4G4R4_UNORM;
+        return true;
+    case Image::Format::BGRA_5_5_5_1:
+        if (dxgiFormat) *dxgiFormat = DXGI_FORMAT_B5G5R5A1_UNORM;
+        return true;
+    case Image::Format::RGBA_10_10_10_2:
+        if (dxgiFormat) *dxgiFormat = DXGI_FORMAT_R10G10B10A2_UNORM;
+        return true;
+    case Image::Format::L_16F:
+    case Image::Format::R_16F:
+        if (dxgiFormat) *dxgiFormat = DXGI_FORMAT_R16_FLOAT;
+        return true;
+    case Image::Format::RG_16F_16F:
+        if (dxgiFormat) *dxgiFormat = DXGI_FORMAT_R16G16_FLOAT;
+        return true;
+    case Image::Format::RGBA_16F_16F_16F_16F:
+        if (dxgiFormat) *dxgiFormat = DXGI_FORMAT_R16G16B16A16_FLOAT;
+        return true;
+    case Image::Format::R_32F:
+        if (dxgiFormat) *dxgiFormat = DXGI_FORMAT_R32_FLOAT;
+        return true;
+    case Image::Format::RG_32F_32F:
+        if (dxgiFormat) *dxgiFormat = DXGI_FORMAT_R32G32_FLOAT;
+        return true;
+    case Image::Format::RGB_32F_32F_32F:
+        if (dxgiFormat) *dxgiFormat = DXGI_FORMAT_R32G32B32_FLOAT;
+        return true;
+    case Image::Format::RGBA_32F_32F_32F_32F:
+        if (dxgiFormat) *dxgiFormat = DXGI_FORMAT_R32G32B32A32_FLOAT;
+        return true;
+    case Image::Format::RGBE_9_9_9_5:
+        if (dxgiFormat) *dxgiFormat = DXGI_FORMAT_R9G9B9E5_SHAREDEXP;
+        return true;
+    case Image::Format::RGB_11F_11F_10F:
+        if (dxgiFormat) *dxgiFormat = DXGI_FORMAT_R11G11B10_FLOAT;
+        return true;
+    case Image::Format::DXT1: // BC1
+        if (dxgiFormat) *dxgiFormat = isSRGB ? DXGI_FORMAT_BC1_UNORM_SRGB : DXGI_FORMAT_BC1_UNORM;
+        return true;
+    case Image::Format::DXT3: // BC2
+        if (dxgiFormat) *dxgiFormat = isSRGB ? DXGI_FORMAT_BC2_UNORM_SRGB : DXGI_FORMAT_BC2_UNORM;
+        return true;
+    case Image::Format::DXT5: // BC3
+        if (dxgiFormat) *dxgiFormat = isSRGB ? DXGI_FORMAT_BC3_UNORM_SRGB : DXGI_FORMAT_BC3_UNORM;
+        return true;
+    case Image::Format::DXN1: // BC4
+        if (dxgiFormat) *dxgiFormat = DXGI_FORMAT_BC4_UNORM;
+        return true;
+    case Image::Format::DXN2: // BC5
+        if (dxgiFormat) *dxgiFormat = DXGI_FORMAT_BC5_UNORM;
+        return true;
+    case Image::Format::Depth_16:
+        if (dxgiFormat) *dxgiFormat = DXGI_FORMAT_D16_UNORM;
+        return true;
+    case Image::Format::Depth_24:
+        if (dxgiFormat) *dxgiFormat = DXGI_FORMAT_R24_UNORM_X8_TYPELESS;
+        return true;
+    case Image::Format::Depth_32F:
+        if (dxgiFormat) *dxgiFormat = DXGI_FORMAT_D32_FLOAT;
+        return true;
+    case Image::Format::DepthStencil_24_8:
+        if (dxgiFormat) *dxgiFormat = DXGI_FORMAT_D24_UNORM_S8_UINT;
+        return true;
+    }
+    return false;
+}
+
+bool D3D12Renderer::DXGIFormatToImageFormat(DXGI_FORMAT dxgiFormat, Image::Format::Enum *imageFormat, bool *isSRGB) {
+    if (isSRGB) {
+        *isSRGB = false;
+        switch (dxgiFormat) {
+        case DXGI_FORMAT_R8G8B8A8_UNORM_SRGB:
+        case DXGI_FORMAT_B8G8R8A8_UNORM_SRGB:
+        case DXGI_FORMAT_B8G8R8X8_UNORM_SRGB:
+        case DXGI_FORMAT_BC1_UNORM_SRGB:
+        case DXGI_FORMAT_BC2_UNORM_SRGB:
+        case DXGI_FORMAT_BC3_UNORM_SRGB:
+            *isSRGB = true;
+            break;
+        }
+    }
+
+    switch (dxgiFormat) {
+    case DXGI_FORMAT_R8_UNORM:
+        if (imageFormat) *imageFormat = Image::Format::R_8;
+        return true;
+    case DXGI_FORMAT_A8_UNORM:
+        if (imageFormat) *imageFormat = Image::Format::A_8;
+        return true;
+    case DXGI_FORMAT_R8G8_UNORM:
+        if (imageFormat) *imageFormat = Image::Format::RG_8_8;
+        return true;
+    case DXGI_FORMAT_R8G8B8A8_UNORM:
+    case DXGI_FORMAT_R8G8B8A8_UNORM_SRGB:
+        if (imageFormat) *imageFormat = Image::Format::RGBA_8_8_8_8;
+        return true;
+    case DXGI_FORMAT_B8G8R8A8_UNORM:
+    case DXGI_FORMAT_B8G8R8A8_UNORM_SRGB:
+        if (imageFormat) *imageFormat = Image::Format::BGRA_8_8_8_8;
+        return true;
+    case DXGI_FORMAT_B8G8R8X8_UNORM:
+    case DXGI_FORMAT_B8G8R8X8_UNORM_SRGB:
+        if (imageFormat) *imageFormat = Image::Format::BGRX_8_8_8_8;
+        return true;
+    case DXGI_FORMAT_R8_SNORM:
+        if (imageFormat) *imageFormat = Image::Format::R_8_SNORM;
+        return true;
+    case DXGI_FORMAT_R8G8_SNORM:
+        if (imageFormat) *imageFormat = Image::Format::RG_8_8_SNORM;
+        return true;
+    case DXGI_FORMAT_R8G8B8A8_SNORM:
+        if (imageFormat) *imageFormat = Image::Format::RGBA_8_8_8_8_SNORM;
+        return true;
+    case DXGI_FORMAT_B5G6R5_UNORM:
+        if (imageFormat) *imageFormat = Image::Format::BGR_5_6_5;
+        return true;
+    case DXGI_FORMAT_B4G4R4A4_UNORM:
+        if (imageFormat) *imageFormat = Image::Format::BGRA_4_4_4_4;
+        return true;
+    case DXGI_FORMAT_A4B4G4R4_UNORM:
+        if (imageFormat) *imageFormat = Image::Format::ABGR_4_4_4_4;
+        return true;
+    case DXGI_FORMAT_B5G5R5A1_UNORM:
+        if (imageFormat) *imageFormat = Image::Format::BGRA_5_5_5_1;
+        return true;
+    case DXGI_FORMAT_R10G10B10A2_UNORM:
+        if (imageFormat) *imageFormat = Image::Format::RGBA_10_10_10_2;
+        return true;
+    case DXGI_FORMAT_R16_FLOAT:
+        if (imageFormat) *imageFormat = Image::Format::R_16F;
+        return true;
+    case DXGI_FORMAT_R16G16_FLOAT:
+        if (imageFormat) *imageFormat = Image::Format::RG_16F_16F;
+        return true;
+    case DXGI_FORMAT_R16G16B16A16_FLOAT:
+        if (imageFormat) *imageFormat = Image::Format::RGBA_16F_16F_16F_16F;
+        return true;
+    case DXGI_FORMAT_R32_FLOAT:
+        if (imageFormat) *imageFormat = Image::Format::R_32F;
+        return true;
+    case DXGI_FORMAT_R32G32_FLOAT:
+        if (imageFormat) *imageFormat = Image::Format::RG_32F_32F;
+        return true;
+    case DXGI_FORMAT_R32G32B32_FLOAT:
+        if (imageFormat) *imageFormat = Image::Format::RGB_32F_32F_32F;
+        return true;
+    case DXGI_FORMAT_R32G32B32A32_FLOAT:
+        if (imageFormat) *imageFormat = Image::Format::RGBA_32F_32F_32F_32F;
+        return true;
+    case DXGI_FORMAT_R9G9B9E5_SHAREDEXP:
+        if (imageFormat) *imageFormat = Image::Format::RGBE_9_9_9_5;
+        return true;
+    case DXGI_FORMAT_R11G11B10_FLOAT:
+        if (imageFormat) *imageFormat = Image::Format::RGB_11F_11F_10F;
+        return true;
+    case DXGI_FORMAT_BC1_UNORM:
+    case DXGI_FORMAT_BC1_UNORM_SRGB:
+        if (imageFormat) *imageFormat = Image::Format::DXT1;
+        return true;
+    case DXGI_FORMAT_BC2_UNORM:
+    case DXGI_FORMAT_BC2_UNORM_SRGB:
+        if (imageFormat) *imageFormat = Image::Format::DXT3;
+        return true;
+    case DXGI_FORMAT_BC3_UNORM:
+    case DXGI_FORMAT_BC3_UNORM_SRGB:
+        if (imageFormat) *imageFormat = Image::Format::DXT5;
+        return true;
+    case DXGI_FORMAT_BC4_UNORM:
+        if (imageFormat) *imageFormat = Image::Format::DXN1;
+        return true;
+    case DXGI_FORMAT_BC5_UNORM:
+        if (imageFormat) *imageFormat = Image::Format::DXN2;
+        return true;
+    case DXGI_FORMAT_D16_UNORM:
+        if (imageFormat) *imageFormat = Image::Format::Depth_16;
+        return true;
+    case DXGI_FORMAT_D32_FLOAT:
+        if (imageFormat) *imageFormat = Image::Format::Depth_32F;
+        return true;
+    case DXGI_FORMAT_D24_UNORM_S8_UINT:
+        if (imageFormat) *imageFormat = Image::Format::DepthStencil_24_8;
+        return true;
+    }
+    return false;
+}
+
+Image::Format::Enum D3D12Renderer::ToUncompressedImageFormat(Image::Format::Enum inFormat) {
+    Image::Format::Enum outFormat;
+
+    switch (inFormat) {
+    case Image::Format::RGB_5_6_5:
+    case Image::Format::RGB_8_8_8:
+    case Image::Format::BGR_5_6_5:
+    case Image::Format::BGR_8_8_8:
+    case Image::Format::RGBX_4_4_4_4:
+    case Image::Format::RGBX_5_5_5_1:
+    case Image::Format::RGBX_8_8_8_8:
+    case Image::Format::BGRX_4_4_4_4:
+    case Image::Format::BGRX_5_5_5_1:
+        outFormat = Image::Format::BGRX_8_8_8_8;
+        break;
+    case Image::Format::LA_8_8:
+    case Image::Format::RGBA_4_4_4_4:
+    case Image::Format::RGBA_5_5_5_1:
+    case Image::Format::BGRA_4_4_4_4:
+    case Image::Format::BGRA_5_5_5_1:
+    case Image::Format::ABGR_4_4_4_4:
+    case Image::Format::ABGR_1_5_5_5:
+    case Image::Format::ABGR_8_8_8_8:
+    case Image::Format::ARGB_4_4_4_4:
+    case Image::Format::ARGB_1_5_5_5:
+    case Image::Format::ARGB_8_8_8_8:
+        outFormat = Image::Format::BGRA_8_8_8_8;
+        break;
+    case Image::Format::RGB_8_8_8_SNORM:
+        outFormat = Image::Format::RGBA_8_8_8_8_SNORM;
+        break;
+    case Image::Format::RGB_16F_16F_16F:
+        outFormat = Image::Format::RGBA_16F_16F_16F_16F;
+        break;
+    case Image::Format::RGB_32F_32F_32F:
+        outFormat = Image::Format::RGBA_32F_32F_32F_32F;
+        break;
+    case Image::Format::DXN1:
+    case Image::Format::DXN2:
+    case Image::Format::RGB_PVRTC_2BPPV1:
+    case Image::Format::RGB_PVRTC_4BPPV1:
+    case Image::Format::RGB_8_ETC1:
+    case Image::Format::RGB_8_ETC2:
+    case Image::Format::RGB_ATC:
+        outFormat = Image::Format::BGRX_8_8_8_8;
+        break;
+    case Image::Format::DXT1:
+    case Image::Format::DXT3:
+    case Image::Format::DXT5:
+    case Image::Format::RGBA_PVRTC_2BPPV1:
+    case Image::Format::RGBA_PVRTC_4BPPV1:
+    case Image::Format::RGBA_PVRTC_2BPPV2:
+    case Image::Format::RGBA_PVRTC_4BPPV2:
+    case Image::Format::RGBA_8_1_ETC2:
+    case Image::Format::RGBA_8_8_ETC2:
+    case Image::Format::RGBA_EA_ATC:
+    case Image::Format::RGBA_IA_ATC:
+        outFormat = Image::Format::RGBA_8_8_8_8;
+        break;
+    case Image::Format::R_11_EAC:
+    case Image::Format::SignedR_11_EAC:
+        outFormat = Image::Format::R_16F;
+        break;
+    case Image::Format::RG_11_11_EAC:
+    case Image::Format::SignedRG_11_11_EAC:
+        outFormat = Image::Format::RG_16F_16F;
+        break;
+    default:
+        assert(0);
+        outFormat = inFormat;
+        break;
+    }
+    return outFormat;
+}
+
+Image::Format::Enum D3D12Renderer::ToCompressedImageFormat(Image::Format::Enum inFormat, bool useNormalMap) {
+    if (Image::IsCompressed(inFormat)) {
+        assert(0);
+        return inFormat;
+    }
+
+    int redBits, greenBits, blueBits, alphaBits;
+    Image::GetBits(inFormat, &redBits, &greenBits, &blueBits, &alphaBits);
+
+    Image::Format::Enum outFormat = inFormat;
+
+    if (redBits > 0 && greenBits > 0 && blueBits > 0) {
+        if (Image::IsFloatFormat(inFormat) || Image::IsHalfFormat(inFormat)) {
+            if (alphaBits == 0) {
+                outFormat = Image::Format::RGBE_9_9_9_5;
+            }
+        } else if (useNormalMap) {
+            outFormat = Image::Format::DXN2;
+        } else {
+            if (alphaBits <= 1) {
+                outFormat = Image::Format::DXT1;
+            } else if (alphaBits <= 4) {
+                outFormat = Image::Format::DXT3;
+            } else {
+                outFormat = Image::Format::DXT5;
+            }
+        }
+    }
+
+    return outFormat;
+}
