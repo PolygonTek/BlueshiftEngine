@@ -23,7 +23,6 @@
 
 #include "D3D12FrameData.h"
 #include "D3D12RenderObject.h"
-#include "D3D12CompiledShaderBlob.h"
 
 class D3D12CommandList;
 class D3D12DescriptorPool;
@@ -98,7 +97,8 @@ public:
     void                                Release();
 
     uint64_t                            hash = 0;
-    ID3DBlob *                          compiledShaderBlob = nullptr;
+    byte *                              compiledShaderData = nullptr;
+    uint32_t                            compiledShaderDataSize = 0;
     ID3D12RootSignature *               rootSignature = nullptr;
 };
 
@@ -179,6 +179,9 @@ public:
     void                                CreateSwapChain(HWND hwnd, int width, int height);
     void                                CreateRTVs();
     void                                CreateDSV(int width, int height);
+    void                                CreateShaderCompiler();
+
+    ShaderFormat                        GetShaderFormat() const;
 
     D3D12CommandList *                  FlushCommandList(D3D12CommandList *commandList);
 
@@ -214,8 +217,8 @@ public:
     bool                                SetTextureSubImage2D(Texture *texture, int level, int x, int y, int width, int height, Image::Format::Enum imageFormat, const void *pixels);
     bool                                SetTextureSubImage3D(Texture *texture, int level, int x, int y, int z, int width, int height, int depth, Image::Format::Enum imageFormat, const void *pixels);
 
-    Shader *                            CreateShader(ShaderStage shaderStage, const char *sourceName, const char *shaderText, int shaderTextSize, const char *entryPoint);
-    Shader *                            CreateShaderFromFile(ShaderStage shaderStage, const char *filename, const char *entryPoint);
+    Shader *                            CreateShader(ShaderModel shaderModel, ShaderStage shaderStage, const char *sourceName, const char *shaderText, int shaderTextSize, const char *entryPoint);
+    Shader *                            CreateShaderFromFile(ShaderModel shaderModel, ShaderStage shaderStage, const char *filename, const char *entryPoint);
     void                                DestroyShader(Shader *shader, bool immediate = false);
 
     PipelineState *                     CreatePSO(RHIRenderer::PipelineStateDesc *desc);
@@ -228,10 +231,11 @@ public:
     bool                                LoadCachedPSO(const uint64_t hash, ID3DBlob **cachedPSOBlob);
     void                                WriteCachedPSO(const uint64_t hash, ID3DBlob *cachedPSOBlob);
 
-    bool                                LoadCompiledShader(const char *name, const uint64_t hash, ID3DBlob **compiledShaderBlob);
-    void                                WriteCompiledShader(const char *name, const uint64_t hash, ID3DBlob *compiledShaderBlob);
-
-    void                                PrintCompileErrorMessages(ID3DBlob *errorBlob);
+    bool                                CompileShader(const ShaderCompileInput *compileInput, ShaderCompileOutput *compileOutput);
+    bool                                CompileShaderD3D(const ShaderCompileInput *compileInput, ShaderCompileOutput *compileOutput);
+    bool                                CompileShaderDXC(const ShaderCompileInput *compileInput, ShaderCompileOutput *compileOutput);
+    bool                                LoadCompiledShader(const char *name, const uint64_t hash, byte **compiledShaderDataPtr, uint32_t *compiledShaderDataSizePtr);
+    void                                WriteCompiledShader(const char *name, const uint64_t hash, const byte *compiledShaderData, uint32_t compiledShaderDataSize);
 
 #ifdef USE_D3D12_MEMALLOC
     void                                PrintMemoryAllocatorStats();
@@ -266,9 +270,6 @@ public:
 
     static constexpr int                NumSwapChainBuffers = 3;
 
-    static Str                          shaderCacheDir;
-    static Str                          psoCacheDir;
-
     ID3D12Device5 *                     device = nullptr;
     IDXGIFactory4 *                     dxgiFactory = nullptr;
     IDXGISwapChain3 *                   dxgiSwapChain = nullptr;
@@ -289,6 +290,10 @@ public:
 
     D3D12_CPU_DESCRIPTOR_HANDLE         rtvDescriptorHandle = CD3DX12_CPU_DESCRIPTOR_HANDLE();
     D3D12_CPU_DESCRIPTOR_HANDLE         dsvDescriptorHandle = CD3DX12_CPU_DESCRIPTOR_HANDLE();
+
+    SharedLib                           dxcompilerLibrary = nullptr;
+    Str                                 shaderCacheDir;
+    Str                                 psoCacheDir;
 
     HashMap<uint64_t, D3D12PipelineState *> psoMap;
     HashMap<uint64_t, ID3DBlob *>       cachedPsoBlobMap;
@@ -313,6 +318,10 @@ public:
     D3D12DescriptorPool *               rtvDescriptorPool = nullptr;
     D3D12DescriptorPool *               dsvDescriptorPool = nullptr;
     D3D12DescriptorPool *               samplerDescriptorPool = nullptr;
+
+    IDxcCompiler3 *                     dxcCompiler = nullptr;
+    IDxcUtils *                         dxcUtils = nullptr;
+    IDxcLibrary *                       dxcLibrary = nullptr;
 
     UINT                                frameCount = 0;
     D3D12FrameData                      frameData[NumFrameResources];

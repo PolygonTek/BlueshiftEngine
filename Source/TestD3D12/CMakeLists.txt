@@ -20,8 +20,6 @@ set(SRC_FILES
     D3D12RootDescriptorPool.cpp
     D3D12DescriptorPool.h
     D3D12DescriptorPool.cpp
-    D3D12CompiledShaderBlob.h
-    D3D12CompiledShaderBlob.cpp
     D3D12Buffer.cpp
     D3D12Shader.cpp
     D3D12Texture.cpp
@@ -87,6 +85,6 @@ target_include_directories(${PROJECT_NAME} PUBLIC ${DXC_INCLUDE_DIR})
 
 target_link_libraries(${PROJECT_NAME} winmm.lib dxgi.lib dxguid.lib d3d12.lib d3dcompiler.lib)
 target_link_libraries(${PROJECT_NAME} D3D12MemAlloc)
-target_link_libraries(${PROJECT_NAME} ${DXC_LIBRARY})
+#target_link_libraries(${PROJECT_NAME} ${DXC_LIBRARY})
 target_link_libraries(${PROJECT_NAME} ${PIX_LIBRARY})
 target_link_libraries(${PROJECT_NAME} BlueshiftRuntime)

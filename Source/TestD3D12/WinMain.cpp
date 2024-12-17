@@ -13,6 +13,7 @@
 // limitations under the License.
 
 #include "Precompiled.h"
+#include "Platform/PlatformSystem.h"
 #include "Platform/Windows/PlatformWinUtils.h"
 #include "WinResource.h"
 #include "D3D12App.h"
@@ -154,10 +155,21 @@ static HWND CreateMainWindow(const TCHAR* title, int width, int height) {
 
 static BOOL InitInstance(int nCmdShow) {
     Engine::isMainThread = true;
-    Str basePath = PlatformFile::ExecutablePath();
+    Str execPath = PlatformFile::ExecutablePath();
+    Str basePath = execPath;
     basePath.AppendPath("../../..");
     basePath.CleanPath();
-    Engine::InitBase(basePath.c_str(), SystemLog, SystemError);
+    Engine::InitBase(basePath, SystemLog, SystemError);
+
+    // Win64 폴더를 추가적인 DLL 폴더로 추가
+    Str commonDllPath = execPath;
+    commonDllPath.AppendPath("..");
+    commonDllPath.CleanPath();
+    //PlatformProcess::AddDllDirectory(commonDllPath);
+    char pathBuffer[4096];
+    PlatformSystem::GetEnvVar("PATH", pathBuffer, 4096);
+    Str newPath = commonDllPath + ";" + pathBuffer;
+    PlatformSystem::SetEnvVar("PATH", newPath);
 
     char temp[128];
     Str::snPrintf(temp, sizeof(temp), "%ls %s %s %s", szTitle, PlatformProcess::PlatformName(), __DATE__, __TIME__);

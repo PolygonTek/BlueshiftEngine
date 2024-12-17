@@ -89,15 +89,22 @@ Str PlatformWinProcess::GetLastErrorText() {
 }
 
 SharedLib PlatformWinProcess::OpenLibrary(const char *filename) {
-    HMODULE handle = LoadLibraryA(filename);
+    wchar_t wFilename[1024];
+    PlatformWinUtils::UTF8ToUCS2(filename, wFilename, COUNT_OF(wFilename));
+
+    HMODULE handle = LoadLibraryEx(wFilename, nullptr, 0);
     if (!handle) {
-        char str[512];
-        Str::snPrintf(str, sizeof(str), "%s.dll", filename);
-        handle = LoadLibraryA(str);
-        // So you can see what the error is in the debugger...
-        if (!handle) {
-            Str lastErrorText = PlatformWinProcess::GetLastErrorText();
-            BE_WARNLOG("Failed to LoadLibrary : %s", lastErrorText.c_str());
+        if (!Str::CheckExtension(filename, ".dll")) {
+            char str[1024];
+            Str::snPrintf(str, sizeof(str), "%s.dll", filename);
+            PlatformWinUtils::UTF8ToUCS2(str, wFilename, COUNT_OF(wFilename));
+
+            handle = LoadLibraryEx(wFilename, nullptr, 0);
+            // So you can see what the error is in the debugger...
+            if (!handle) {
+                Str lastErrorText = PlatformWinProcess::GetLastErrorText();
+                BE_WARNLOG("Failed to LoadLibrary : %s", lastErrorText.c_str());
+            }
         }
     }
 

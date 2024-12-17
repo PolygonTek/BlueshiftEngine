@@ -122,12 +122,49 @@ public:
         TextureBuffer
     };
 
+    enum class ShaderFormat : uint8_t {
+        None,
+        HLSL5,      // DXBC (Shader Model 5.0)
+        HLSL6,      // DXIL (Shader Model 5.1 이상)
+        SPIRV       // SPIR-V
+    };
+
+    enum class ShaderModel : uint8_t {
+        SM_5_0,
+        SM_6_0,
+        SM_6_1,
+        SM_6_2,
+        SM_6_3,
+        SM_6_4,
+        SM_6_5,
+        SM_6_6,
+        SM_6_7,
+    };
+
     enum class ShaderStage : uint8_t {
         Vertex,
-        Fragment,
+        Hull,
+        Domain,
         Geometry,
+        Fragment,
         Compute,
         Count
+    };
+
+    struct ShaderCompileInput {
+        ShaderFormat                shaderFormat;
+        ShaderModel                 shaderModel;
+        ShaderStage                 shaderStage;
+        const char *                sourceName;
+        const char *                shaderText;
+        int                         shaderTextSize;
+        const char *                entryPoint;
+    };
+
+    struct ShaderCompileOutput {
+        byte *                      compiledShaderData = nullptr;
+        uint32_t                    compiledShaderDataSize = 0;
+        Str                         errorMessage;
     };
 
     struct RasterizerState {
@@ -312,9 +349,6 @@ public:
         uint32_t                    sampleMask = 0xffffffff;
         uint32_t                    sampleCount = 1;
         uint32_t                    sampleQuality = 0;
-    };
-
-    struct PipelineStateCache {
     };
 
     class PipelineState : public Resource {

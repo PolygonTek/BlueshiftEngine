@@ -19,13 +19,333 @@
 #include "D3D12Renderer.h"
 
 void D3D12Shader::Release() {
-    SAFE_RELEASE(compiledShaderBlob);
+    SAFE_MEM_FREE(compiledShaderData);
     SAFE_RELEASE(rootSignature);
 }
 
-Str D3D12Renderer::shaderCacheDir;
+bool D3D12Renderer::CompileShader(const ShaderCompileInput *compileInput, ShaderCompileOutput *compileOutput) {
+    switch (compileInput->shaderFormat) {
+    case ShaderFormat::HLSL5:
+        return CompileShaderD3D(compileInput, compileOutput);
+    case ShaderFormat::HLSL6:
+        return CompileShaderDXC(compileInput, compileOutput);
+    }
+    return false;
+}
 
-bool D3D12Renderer::LoadCompiledShader(const char *name, const uint64_t hash, ID3DBlob **compiledShaderBlob) {
+bool D3D12Renderer::CompileShaderD3D(const ShaderCompileInput *compileInput, ShaderCompileOutput *compileOutput) {
+    assert(compileInput->shaderModel <= ShaderModel::SM_5_0);
+
+    LPCSTR target = nullptr;
+    switch (compileInput->shaderStage) {
+    case ShaderStage::Vertex:
+        target = "vs_5_0";
+        break;
+    case ShaderStage::Hull:
+        target = "hs_5_0";
+        break;
+    case ShaderStage::Domain:
+        target = "ds_5_0";
+        break;
+    case ShaderStage::Geometry:
+        target = "gs_5_0";
+        break;
+    case ShaderStage::Fragment:
+        target = "ps_5_0";
+        break;
+    case ShaderStage::Compute:
+        target = "cs_5_0";
+        break;
+    default:
+        return false;
+    }
+
+    UINT compileFlags = 0;
+#if defined(_DEBUG)
+    compileFlags |= (D3DCOMPILE_DEBUG | D3DCOMPILE_SKIP_OPTIMIZATION | D3DCOMPILE_ENABLE_STRICTNESS);
+#endif
+    ID3DBlob *errorBlob = nullptr;
+    ID3DBlob *compiledShaderBlob = nullptr;
+
+    HRESULT hr = D3DCompile(compileInput->shaderText, compileInput->shaderTextSize, compileInput->sourceName, nullptr, nullptr, compileInput->entryPoint, target, compileFlags, 0, &compiledShaderBlob, &errorBlob);
+    if (errorBlob && errorBlob->GetBufferSize() > 0) {
+        compileOutput->errorMessage = static_cast<const char *>(errorBlob->GetBufferPointer());
+        errorBlob->Release();
+    }
+
+    if (FAILED(hr) || !compiledShaderBlob) {
+        return false;
+    }
+
+    compileOutput->compiledShaderDataSize = compiledShaderBlob->GetBufferSize();
+    compileOutput->compiledShaderData = (byte *)Mem_Alloc(compiledShaderBlob->GetBufferSize());
+    memcpy(compileOutput->compiledShaderData, compiledShaderBlob->GetBufferPointer(), compiledShaderBlob->GetBufferSize());
+    compiledShaderBlob->Release();
+    return true;
+}
+
+bool D3D12Renderer::CompileShaderDXC(const ShaderCompileInput *compileInput, ShaderCompileOutput *compileOutput) {
+    std::vector<std::wstring> args = {
+        L"-res-may-alias",
+        //L"-flegacy-macro-expansion",
+        //L"-no-legacy-cbuf-layout",
+        //L"-pack-optimized", // this has problem with tessellation shaders: https://github.com/microsoft/DirectXShaderCompiler/issues/3362
+        //L"-all-resources-bound",
+        //L"-Gis", // Force IEEE strictness
+        //L"-Gec", // Enable backward compatibility mode
+        //L"-Ges", // Enable strict mode
+        //L"-O0", // Optimization Level 0
+        //L"-enable-16bit-types",
+        L"-Wno-conversion",
+    };
+
+#if defined(_DEBUG)
+    // Disable optimization
+    args.push_back(L"-Od");
+#endif
+
+    // only valid in HLSL6 compiler
+    args.push_back(L"-Qstrip_reflect");
+
+    //args.push_back(L"-rootsig-define");
+    //args.push_back(L"DEFAULT_ROOTSIGNATURE");
+
+    args.push_back(L"-T");
+
+    switch (compileInput->shaderStage) {
+    case ShaderStage::Vertex:
+        switch (compileInput->shaderModel) {
+        case ShaderModel::SM_6_7:
+            args.push_back(L"vs_6_7");
+            break;
+        case ShaderModel::SM_6_6:
+            args.push_back(L"vs_6_6");
+            break;
+        case ShaderModel::SM_6_5:
+            args.push_back(L"vs_6_5");
+            break;
+        case ShaderModel::SM_6_4:
+            args.push_back(L"vs_6_4");
+            break;
+        case ShaderModel::SM_6_3:
+            args.push_back(L"vs_6_3");
+            break;
+        case ShaderModel::SM_6_2:
+            args.push_back(L"vs_6_2");
+            break;
+        case ShaderModel::SM_6_1:
+            args.push_back(L"vs_6_1");
+            break;
+        case ShaderModel::SM_6_0:
+        default:
+            args.push_back(L"vs_6_0");
+            break;
+        }
+        break;
+    case ShaderStage::Hull:
+        switch (compileInput->shaderModel) {
+        case ShaderModel::SM_6_7:
+            args.push_back(L"hs_6_7");
+            break;
+        case ShaderModel::SM_6_6:
+            args.push_back(L"hs_6_6");
+            break;
+        case ShaderModel::SM_6_5:
+            args.push_back(L"hs_6_5");
+            break;
+        case ShaderModel::SM_6_4:
+            args.push_back(L"hs_6_4");
+            break;
+        case ShaderModel::SM_6_3:
+            args.push_back(L"hs_6_3");
+            break;
+        case ShaderModel::SM_6_2:
+            args.push_back(L"hs_6_2");
+            break;
+        case ShaderModel::SM_6_1:
+            args.push_back(L"hs_6_1");
+            break;
+        case ShaderModel::SM_6_0:
+        default:
+            args.push_back(L"hs_6_0");
+            break;
+        }
+        break;
+    case ShaderStage::Domain:
+        switch (compileInput->shaderModel) {
+        case ShaderModel::SM_6_7:
+            args.push_back(L"ds_6_7");
+            break;
+        case ShaderModel::SM_6_6:
+            args.push_back(L"ds_6_6");
+            break;
+        case ShaderModel::SM_6_5:
+            args.push_back(L"ds_6_5");
+            break;
+        case ShaderModel::SM_6_4:
+            args.push_back(L"ds_6_4");
+            break;
+        case ShaderModel::SM_6_3:
+            args.push_back(L"ds_6_3");
+            break;
+        case ShaderModel::SM_6_2:
+            args.push_back(L"ds_6_2");
+            break;
+        case ShaderModel::SM_6_1:
+            args.push_back(L"ds_6_1");
+            break;
+        case ShaderModel::SM_6_0:
+        default:
+            args.push_back(L"ds_6_0");
+            break;
+        }
+        break;
+    case ShaderStage::Geometry:
+        switch (compileInput->shaderModel) {
+        case ShaderModel::SM_6_7:
+            args.push_back(L"gs_6_7");
+            break;
+        case ShaderModel::SM_6_6:
+            args.push_back(L"gs_6_6");
+            break;
+        case ShaderModel::SM_6_5:
+            args.push_back(L"gs_6_5");
+            break;
+        case ShaderModel::SM_6_4:
+            args.push_back(L"gs_6_4");
+            break;
+        case ShaderModel::SM_6_3:
+            args.push_back(L"gs_6_3");
+            break;
+        case ShaderModel::SM_6_2:
+            args.push_back(L"gs_6_2");
+            break;
+        case ShaderModel::SM_6_1:
+            args.push_back(L"gs_6_1");
+            break;
+        case ShaderModel::SM_6_0:
+        default:
+            args.push_back(L"gs_6_0");
+            break;
+        }
+        break;
+    case ShaderStage::Fragment:
+        switch (compileInput->shaderModel) {
+        case ShaderModel::SM_6_7:
+            args.push_back(L"ps_6_7");
+            break;
+        case ShaderModel::SM_6_6:
+            args.push_back(L"ps_6_6");
+            break;
+        case ShaderModel::SM_6_5:
+            args.push_back(L"ps_6_5");
+            break;
+        case ShaderModel::SM_6_4:
+            args.push_back(L"ps_6_4");
+            break;
+        case ShaderModel::SM_6_3:
+            args.push_back(L"ps_6_3");
+            break;
+        case ShaderModel::SM_6_2:
+            args.push_back(L"ps_6_2");
+            break;
+        case ShaderModel::SM_6_1:
+            args.push_back(L"ps_6_1");
+            break;
+        case ShaderModel::SM_6_0:
+        default:
+            args.push_back(L"ps_6_0");
+            break;
+        }
+        break;
+    case ShaderStage::Compute:
+        switch (compileInput->shaderModel) {
+        case ShaderModel::SM_6_7:
+            args.push_back(L"cs_6_7");
+            break;
+        case ShaderModel::SM_6_6:
+            args.push_back(L"cs_6_6");
+            break;
+        case ShaderModel::SM_6_5:
+            args.push_back(L"cs_6_5");
+            break;
+        case ShaderModel::SM_6_4:
+            args.push_back(L"cs_6_4");
+            break;
+        case ShaderModel::SM_6_3:
+            args.push_back(L"cs_6_3");
+            break;
+        case ShaderModel::SM_6_2:
+            args.push_back(L"cs_6_2");
+            break;
+        case ShaderModel::SM_6_1:
+            args.push_back(L"cs_6_1");
+            break;
+        case ShaderModel::SM_6_0:
+        default:
+            args.push_back(L"cs_6_0");
+            break;
+        }
+        break;
+    default:
+        return false;
+    }
+
+    // 엔트리 포인트 이름
+    args.push_back(L"-E");
+    wchar_t wEntryPoint[256];
+    PlatformWinUtils::UTF8ToUCS2(compileInput->entryPoint, wEntryPoint, COUNT_OF(wEntryPoint));
+    args.push_back(wEntryPoint);
+
+    // 소스 파일 이름
+    wchar_t wSourceName[256];
+    PlatformWinUtils::UTF8ToUCS2(compileInput->sourceName, wSourceName, COUNT_OF(wSourceName));
+    args.push_back(wSourceName);
+
+    // wchar_t 포인터 배열을 만든다.
+    std::vector<const wchar_t *> argv;
+    argv.reserve(args.size());
+    for (auto &arg : args) {
+        argv.push_back(arg.c_str());
+    }
+
+    DxcBuffer source;
+    source.Ptr = compileInput->shaderText;
+    source.Size = compileInput->shaderTextSize;
+    source.Encoding = DXC_CP_ACP;
+
+    IDxcResult *dxcResult = nullptr;
+    dxcCompiler->Compile(&source, argv.data(), (UINT32)args.size(), nullptr, IID_PPV_ARGS(&dxcResult));
+
+    // 경고 & 에러 메시지를 받아온다.
+    IDxcBlobUtf8 *dxcErrorBlob = nullptr;
+    dxcResult->GetOutput(DXC_OUT_ERRORS, IID_PPV_ARGS(&dxcErrorBlob), nullptr);
+    if (dxcErrorBlob) {
+        compileOutput->errorMessage = dxcErrorBlob->GetStringPointer();
+        dxcErrorBlob->Release();
+    }
+
+    HRESULT hrStatus;
+    dxcResult->GetStatus(&hrStatus);
+    if (FAILED(hrStatus)) {
+        // 컴파일 실패
+        return false;
+    }
+
+    IDxcBlob *dxcShaderBlob = nullptr;
+    dxcResult->GetOutput(DXC_OUT_OBJECT, IID_PPV_ARGS(&dxcShaderBlob), nullptr);
+    if (!dxcShaderBlob) {
+        return false;
+    }
+
+    compileOutput->compiledShaderDataSize = dxcShaderBlob->GetBufferSize();
+    compileOutput->compiledShaderData = (byte *)Mem_Alloc(dxcShaderBlob->GetBufferSize());
+    memcpy(compileOutput->compiledShaderData, (const byte *)dxcShaderBlob->GetBufferPointer(), dxcShaderBlob->GetBufferSize());
+    dxcShaderBlob->Release();
+    return true;
+}
+
+bool D3D12Renderer::LoadCompiledShader(const char *name, const uint64_t hash, byte **compiledShaderDataPtr, uint32_t *compiledShaderDataSizePtr) {
     Str filename;// = shaderCacheDir;
     filename.AppendPath(name);
     filename.SetFileExtension(".cso");
@@ -42,14 +362,17 @@ bool D3D12Renderer::LoadCompiledShader(const char *name, const uint64_t hash, ID
         return false;
     }
 
-    *compiledShaderBlob = new D3D12CompiledShaderBlob(fileData, fileMapping->GetSize());
-    delete fileMapping;
+    // 해시값 스킵
+    fileData += sizeof(uint64_t);
 
+    *compiledShaderDataSizePtr = fileMapping->GetSize() - sizeof(uint64_t);
+    *compiledShaderDataPtr = (byte *)Mem_Alloc(*compiledShaderDataSizePtr);
+    memcpy(*compiledShaderDataPtr, fileData, *compiledShaderDataSizePtr);
     return true;
 }
 
-void D3D12Renderer::WriteCompiledShader(const char *name, const uint64_t hash, ID3DBlob *compiledShaderBlob) {
-    if (!compiledShaderBlob || compiledShaderBlob->GetBufferSize() == 0) {
+void D3D12Renderer::WriteCompiledShader(const char *name, const uint64_t hash, const byte *compiledShaderData, uint32_t compiledShaderDataSize) {
+    if (!compiledShaderData || compiledShaderDataSize == 0) {
         return;
     }
 
@@ -61,12 +384,12 @@ void D3D12Renderer::WriteCompiledShader(const char *name, const uint64_t hash, I
         return;
     }
 
-    int fileDataSize = compiledShaderBlob->GetBufferSize() + sizeof(uint64_t);
+    int fileDataSize = compiledShaderDataSize + sizeof(uint64_t);
     byte *fileData = (byte *)Mem_Alloc32(fileDataSize);
 
     // 캐싱된 cso 파일의 첫 64 비트는 hash 값을 저장한다.
     *(uint64_t *)fileData = hash;
-    memcpy(fileData + sizeof(uint64_t), compiledShaderBlob->GetBufferPointer(), compiledShaderBlob->GetBufferSize());
+    memcpy(fileData + sizeof(uint64_t), compiledShaderData, compiledShaderDataSize);
 
     file->Write(fileData, fileDataSize);
 
@@ -74,20 +397,26 @@ void D3D12Renderer::WriteCompiledShader(const char *name, const uint64_t hash, I
     delete file;
 }
 
-RHIRenderer::Shader *D3D12Renderer::CreateShader(ShaderStage shaderStage, const char *sourceName, const char *shaderText, int shaderTextSize, const char *entryPoint) {
-    LPCSTR target = nullptr;
+RHIRenderer::Shader *D3D12Renderer::CreateShader(ShaderModel shaderModel, ShaderStage shaderStage, const char *sourceName, const char *shaderText, int shaderTextSize, const char *entryPoint) {
+    const char *shaderStageName = nullptr;
     switch (shaderStage) {
     case ShaderStage::Vertex:
-        target = "vs_5_0";
+        shaderStageName = "vs";
         break;
-    case ShaderStage::Fragment:
-        target = "ps_5_0";
+    case ShaderStage::Hull:
+        shaderStageName = "hs";
+        break;
+    case ShaderStage::Domain:
+        shaderStageName = "ds";
         break;
     case ShaderStage::Geometry:
-        target = "gs_5_0";
+        shaderStageName = "gs";
+        break;
+    case ShaderStage::Fragment:
+        shaderStageName = "ps";
         break;
     case ShaderStage::Compute:
-        target = "cs_5_0";
+        shaderStageName = "cs";
         break;
     default:
         return nullptr;
@@ -97,7 +426,7 @@ RHIRenderer::Shader *D3D12Renderer::CreateShader(ShaderStage shaderStage, const 
     Str fileBase;
     fileName.ExtractFileBase(fileBase);
     char mangledFilename[256];
-    Str::snPrintf(mangledFilename, sizeof(mangledFilename), "%s-%s-%s", fileBase.c_str(), entryPoint, target);
+    Str::snPrintf(mangledFilename, sizeof(mangledFilename), "%s-%s-%s", fileBase.c_str(), entryPoint, shaderStageName);
 
     Str extension;
     fileName.ExtractFileExtension(extension);
@@ -105,34 +434,44 @@ RHIRenderer::Shader *D3D12Renderer::CreateShader(ShaderStage shaderStage, const 
     fileName.AppendPath(mangledFilename);
     fileName.SetFileExtension(extension);
 
-    ID3DBlob *compiledShaderBlob = nullptr;
+    byte *compiledShaderData = nullptr;
+    uint32_t compiledShaderDataSize = 0;
 
     // 이미 컴파일된 cso 파일을 로드해본다.
     const uint64_t shaderTextHash = CityHash64(shaderText, shaderTextSize);
-    bool shouldCompileShader = !LoadCompiledShader(fileName, shaderTextHash, &compiledShaderBlob);
+#ifndef _DEBUG
+    bool shouldCompileShader = !LoadCompiledShader(fileName, shaderTextHash, &compiledShaderData, &compiledShaderDataSize);
+#else
+    bool shouldCompileShader = true;
+#endif
 
     // hash 값이 다르거나 파일이 없다면 새로 컴파일한다.
     if (shouldCompileShader) {
-        UINT compileFlags = 0;
-#if defined(_DEBUG)
-        compileFlags |= (D3DCOMPILE_DEBUG | D3DCOMPILE_SKIP_OPTIMIZATION | D3DCOMPILE_ENABLE_STRICTNESS);
-#endif
-        ID3DBlob *errorBlob = nullptr;
+        RHIRenderer::ShaderCompileInput compileInput = {};
+        compileInput.shaderFormat = GetShaderFormat();
+        compileInput.shaderModel = shaderModel;
+        compileInput.shaderStage = shaderStage;
+        compileInput.sourceName = sourceName;
+        compileInput.shaderText = shaderText;
+        compileInput.shaderTextSize = shaderTextSize;
+        compileInput.entryPoint = entryPoint;
 
-        if (FAILED(D3DCompile(shaderText, shaderTextSize, sourceName, nullptr, nullptr, entryPoint, target, compileFlags, 0, &compiledShaderBlob, &errorBlob))) {
-            PrintCompileErrorMessages(errorBlob);
-            SAFE_RELEASE(errorBlob);
+        RHIRenderer::ShaderCompileOutput compileOutput = {};
+        bool compileSucceeded = CompileShader(&compileInput, &compileOutput);
+        if (!compileOutput.errorMessage.IsEmpty()) {
+            BE_WARNLOG(compileOutput.errorMessage);
+        }
+        if (!compileSucceeded) {
             return nullptr;
         }
 
-        // 경고 메시지 출력
-        if (errorBlob && errorBlob->GetBufferSize() > 0) {
-            PrintCompileErrorMessages(errorBlob);
-        }
-        SAFE_RELEASE(errorBlob);
+        compiledShaderData = compileOutput.compiledShaderData;
+        compiledShaderDataSize = compileOutput.compiledShaderDataSize;
 
+#ifndef _DEBUG
         // 컴파일했으므로 cso 파일을 저장한다.
-        WriteCompiledShader(fileName, shaderTextHash, compiledShaderBlob);
+        WriteCompiledShader(fileName, shaderTextHash, compiledShaderData, compiledShaderDataSize);
+#endif
     }
 
 #if 0
@@ -140,7 +479,7 @@ RHIRenderer::Shader *D3D12Renderer::CreateShader(ShaderStage shaderStage, const 
     const D3D12_VERSIONED_ROOT_SIGNATURE_DESC *rootSignatureDesc = nullptr;
 
     // shader text 에서 root signature 를 얻기 위한 deserializer 를 생성한다.
-    HRESULT hr = D3D12CreateVersionedRootSignatureDeserializer(compiledShaderBlob->GetBufferPointer(), compiledShaderBlob->GetBufferSize(), IID_PPV_ARGS(&rootSignatureDeserializer));
+    HRESULT hr = D3D12CreateVersionedRootSignatureDeserializer(compiledShaderData, compiledShaderDataSize, IID_PPV_ARGS(&rootSignatureDeserializer));
     if (SUCCEEDED(hr)) {
         // deserializer 로 부터 root signature desc 포인터를 얻어낸다. (deserializer 가 파괴될 때 까지 desc 의 메모리는 유지된다)
         rootSignatureDeserializer->GetRootSignatureDescAtVersion(D3D_ROOT_SIGNATURE_VERSION_1_1, &rootSignatureDesc);
@@ -149,26 +488,27 @@ RHIRenderer::Shader *D3D12Renderer::CreateShader(ShaderStage shaderStage, const 
 #endif
 
     ID3D12RootSignature *rootSignature = nullptr;
-    if (FAILED(renderer.device->CreateRootSignature(0, compiledShaderBlob->GetBufferPointer(), compiledShaderBlob->GetBufferSize(), IID_PPV_ARGS(&rootSignature)))) {
+    if (FAILED(renderer.device->CreateRootSignature(0, compiledShaderData, compiledShaderDataSize, IID_PPV_ARGS(&rootSignature)))) {
         return nullptr;
     }
 
     D3D12Shader *shader = new D3D12Shader;
     shader->shaderStage = shaderStage;
     shader->hash = shaderTextHash;
-    shader->compiledShaderBlob = compiledShaderBlob;
+    shader->compiledShaderData = compiledShaderData;
+    shader->compiledShaderDataSize = compiledShaderDataSize;
     shader->rootSignature = rootSignature;
     return shader;
 }
 
-RHIRenderer::Shader *D3D12Renderer::CreateShaderFromFile(ShaderStage shaderStage, const char *filename, const char *entryPoint) {
+RHIRenderer::Shader *D3D12Renderer::CreateShaderFromFile(ShaderModel shaderModel, ShaderStage shaderStage, const char *filename, const char *entryPoint) {
     char *shaderText;
     int shaderTextSize = fileSystem.LoadFile(filename, true, (void **)&shaderText);
     if (!shaderText) {
         return nullptr;
     }
 
-    Shader *shader = CreateShader(shaderStage, filename, shaderText, shaderTextSize, entryPoint);
+    Shader *shader = CreateShader(shaderModel, shaderStage, filename, shaderText, shaderTextSize, entryPoint);
     if (!shader) {
         fileSystem.FreeFile(shaderText);
         return nullptr;
@@ -184,19 +524,4 @@ void D3D12Renderer::DestroyShader(Shader *shader, bool immediate) {
     } else {
         MarkForDelete(shader);
     }
-}
-
-void D3D12Renderer::PrintCompileErrorMessages(ID3DBlob *errorBlob) {
-    if (!errorBlob) {
-        BE_WARNLOG("D3DCompile failed, but no error message was provided\n");
-    }
-
-    const char *errorMessage = static_cast<const char *>(errorBlob->GetBufferPointer());
-    size_t errorMessageLength = errorBlob->GetBufferSize();
-
-    Str errorMessageStr;
-    errorMessageStr.EnsureAlloced(errorMessageLength + 1);
-    Str::Copynz((char *)errorMessageStr, errorMessage, errorMessageLength + 1);
-
-    BE_WARNLOG(errorMessageStr);
 }

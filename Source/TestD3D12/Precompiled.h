@@ -21,8 +21,10 @@
 #include <d3d11on12.h>
 #include <d3dx12.h>
 #include <d3dcompiler.h>
+#include <dxcapi.h>
 #include <dxgidebug.h>
 #include <DirectXMath.h>
+#include <wrl/client.h> // ComPtr
 
 #if defined(_DEBUG) || defined(_DEVELOPMENT)
 #define PROFILE_BUILD

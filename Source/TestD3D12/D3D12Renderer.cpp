@@ -21,7 +21,6 @@
 #include "D3D12CommandListPool.h"
 #include "D3D12RootDescriptorPool.h"
 #include "D3D12DescriptorPool.h"
-#include "D3D12CompiledShaderBlob.h"
 #include "D3D12VisObject.h"
 
 // D3D12.dll 이 D3D12Core.dll 을 찾기 위한 설정
@@ -234,17 +233,17 @@ void D3D12Renderer::Init(HWND hwnd) {
     }
 
     // shader cache 디렉토리 초기화
-    D3D12Renderer::shaderCacheDir = "Cache/D3D12CompiledShaderCache";
+    shaderCacheDir = "Cache/D3D12CompiledShaderCache";
 
-    if (!PlatformFile::DirectoryExists(D3D12Renderer::shaderCacheDir)) {
-        PlatformFile::CreateDirectoryTree(D3D12Renderer::shaderCacheDir);
+    if (!PlatformFile::DirectoryExists(shaderCacheDir)) {
+        PlatformFile::CreateDirectoryTree(shaderCacheDir);
     }
 
     // PSO cache 디렉토리 초기화
-    D3D12Renderer::psoCacheDir = "Cache/D3D12PSOCache";
+    psoCacheDir = "Cache/D3D12PSOCache";
 
-    if (!PlatformFile::DirectoryExists(D3D12Renderer::psoCacheDir)) {
-        PlatformFile::CreateDirectoryTree(D3D12Renderer::psoCacheDir);
+    if (!PlatformFile::DirectoryExists(psoCacheDir)) {
+        PlatformFile::CreateDirectoryTree(psoCacheDir);
     }
 
     // 윈도우 크기 얻기
@@ -294,6 +293,8 @@ void D3D12Renderer::Init(HWND hwnd) {
     CreateRTVs();
 
     CreateDSV(backBufferWidth, backBufferHeight);
+
+    CreateShaderCompiler();
 
     // 커맨드 리스트 풀 생성
     commandListPool = new D3D12CommandListPool(D3D12_COMMAND_LIST_TYPE_DIRECT, 8);
@@ -363,6 +364,9 @@ void D3D12Renderer::Shutdown() {
     SAFE_DELETE(samplerDescriptorPool);
     SAFE_DELETE(commandListPool);
 
+    SAFE_RELEASE(dxcCompiler);
+    SAFE_RELEASE(dxcUtils);
+    SAFE_RELEASE(dxcLibrary);
     SAFE_RELEASE(rtvDescriptorHeap);
     SAFE_RELEASE(dsvDescriptorHeap);
     SAFE_RELEASE_ARRAY(renderTargetBuffers);
@@ -376,6 +380,10 @@ void D3D12Renderer::Shutdown() {
 #ifdef USE_D3D12_MEMALLOC
     SAFE_RELEASE(allocator);
 #endif
+
+    if (dxcompilerLibrary) {
+        PlatformProcess::CloseLibrary(dxcompilerLibrary);
+    }
 
     if (fenceEventHandle) {
         CloseHandle(fenceEventHandle);
@@ -492,6 +500,51 @@ void D3D12Renderer::CreateDSV(int width, int height) {
 
     CD3DX12_CPU_DESCRIPTOR_HANDLE dsvDescriptorHandle(dsvDescriptorHeap->GetCPUDescriptorHandleForHeapStart());
     device->CreateDepthStencilView(depthStencilBuffer, &dsvDesc, dsvDescriptorHandle);
+}
+
+void D3D12Renderer::CreateShaderCompiler() {
+#if 1
+    dxcompilerLibrary = PlatformProcess::OpenLibrary("dxcompiler.dll");
+    if (!dxcompilerLibrary) {
+        return;
+    }
+
+    DxcCreateInstanceProc DxcCreateInstance = (DxcCreateInstanceProc)PlatformProcess::GetSymbol(dxcompilerLibrary, "DxcCreateInstance");
+    if (!DxcCreateInstance) {
+        BE_WARNLOG("Failed to get symbol \"DxcCreateInstance\"\n");
+        return;
+    }
+#endif
+
+    HRESULT hr = DxcCreateInstance(CLSID_DxcCompiler, IID_PPV_ARGS(&dxcCompiler));
+    if (FAILED(hr)) {
+        BE_FATALERROR("Create dxc compiler failed, ERROR: 0x%x", hr);
+    }
+
+    uint32_t dxcVersionMajor = 0;
+    uint32_t dxcVersionMinor = 0;
+
+    IDxcVersionInfo *dxcVersionInfo = nullptr;
+    if (SUCCEEDED(dxcCompiler->QueryInterface(IID_PPV_ARGS(&dxcVersionInfo)))) {
+        if (SUCCEEDED(dxcVersionInfo->GetVersion(&dxcVersionMajor, &dxcVersionMinor))) {
+            BE_LOG("DXC version: %i.%i\n", dxcVersionMajor, dxcVersionMinor);
+        }
+        dxcVersionInfo->Release();
+    }
+
+    hr = DxcCreateInstance(CLSID_DxcUtils, IID_PPV_ARGS(&dxcUtils));
+    if (FAILED(hr)) {
+        BE_FATALERROR("Create dxc util failed, ERROR: 0x%x", hr);
+    }
+
+    hr = DxcCreateInstance(CLSID_DxcLibrary, IID_PPV_ARGS(&dxcLibrary));
+    if (FAILED(hr)) {
+        BE_FATALERROR("Create dxc library failed, ERROR: 0x%x", hr);
+    }
+}
+
+RHIRenderer::ShaderFormat D3D12Renderer::GetShaderFormat() const {
+    return ShaderFormat::HLSL6;
 }
 
 void D3D12Renderer::BeginFrame() {

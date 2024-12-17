@@ -283,8 +283,6 @@ void D3D12PipelineState::Release() {
     SAFE_RELEASE(rootSignature);
 }
 
-Str D3D12Renderer::psoCacheDir;
-
 RHIRenderer::PipelineState *D3D12Renderer::CreatePSO(RHIRenderer::PipelineStateDesc *desc) {
     struct PSOHashData {
         struct ShaderHashData {
@@ -385,20 +383,23 @@ RHIRenderer::PipelineState *D3D12Renderer::CreatePSO(RHIRenderer::PipelineStateD
     D3D12PipelineState *pipelineState = new D3D12PipelineState;
     pipelineState->hash = psoHash;
 
-    // shader hash 값으로 동일한 PSO cache 가 존재하는지 찾아보고, 있으면 재활용한다.
-    const uint64_t shaderHash = CityHash64((char *)&psoHashData.shaderHashData, sizeof(psoHashData.shaderHashData));
-    const auto *cachedPsoBlobEntry = cachedPsoBlobMap.Get(shaderHash);
+    // combined shader hash 값으로 동일한 PSO cache 가 존재하는지 찾아보고, 있으면 재활용한다.
+    const uint64_t combinedShaderHash = CityHash64((char *)&psoHashData.shaderHashData, sizeof(psoHashData.shaderHashData));
+    const auto *cachedPsoBlobEntry = cachedPsoBlobMap.Get(combinedShaderHash);
 
     ID3DBlob *cachedPsoBlob = nullptr;
     if (cachedPsoBlobEntry) {
         cachedPsoBlob = cachedPsoBlobEntry->second;
     }
 
+#ifndef _DEBUG
     // 없다면 PSO cache 파일을 로딩해본다.
     if (!cachedPsoBlob) {
-        // FIXME: 현재는 cached pso 를 사용하지 않는다. 나중에 고치자.
-        //LoadCachedPSO(shaderHash, &cachedPsoBlob);
+        // FIXME: 원인 불명의 에러 수정할 것
+        // D3D12 ERROR: ID3D12Device::CreateInputLayout: Encoded Signature size doesn't match specified size. [ STATE_CREATION ERROR #63: CREATEINPUTLAYOUT_UNPARSEABLEINPUTSIGNATURE]
+        //LoadCachedPSO(combinedShaderHash, &cachedPsoBlob);
     }
+#endif
 
     uint32_t psoStreamSize = 0;
     void *psoStream = nullptr;
@@ -428,27 +429,27 @@ RHIRenderer::PipelineState *D3D12Renderer::CreatePSO(RHIRenderer::PipelineStateD
 
         if (desc->vs) {
             const D3D12Shader *vs = static_cast<const D3D12Shader *>(desc->vs);
-            nonCachedStream->vs = { vs->compiledShaderBlob->GetBufferPointer(), vs->compiledShaderBlob->GetBufferSize() };
+            nonCachedStream->vs = { vs->compiledShaderData, vs->compiledShaderDataSize };
         }
 
         if (desc->gs) {
             const D3D12Shader *gs = static_cast<const D3D12Shader *>(desc->gs);
-            nonCachedStream->gs = { gs->compiledShaderBlob->GetBufferPointer(), gs->compiledShaderBlob->GetBufferSize() };
+            nonCachedStream->gs = { gs->compiledShaderData, gs->compiledShaderDataSize };
         }
 
         if (desc->hs) {
             const D3D12Shader *hs = static_cast<const D3D12Shader *>(desc->hs);
-            nonCachedStream->hs = { hs->compiledShaderBlob->GetBufferPointer(), hs->compiledShaderBlob->GetBufferSize() };
+            nonCachedStream->hs = { hs->compiledShaderData, hs->compiledShaderDataSize };
         }
 
         if (desc->ds) {
             const D3D12Shader *ds = static_cast<const D3D12Shader *>(desc->ds);
-            nonCachedStream->ds = { ds->compiledShaderBlob->GetBufferPointer(), ds->compiledShaderBlob->GetBufferSize() };
+            nonCachedStream->ds = { ds->compiledShaderData, ds->compiledShaderDataSize };
         }
 
         if (desc->ps) {
             const D3D12Shader *ps = static_cast<const D3D12Shader *>(desc->ps);
-            nonCachedStream->ps = { ps->compiledShaderBlob->GetBufferPointer(), ps->compiledShaderBlob->GetBufferSize() };
+            nonCachedStream->ps = { ps->compiledShaderData, ps->compiledShaderDataSize };
         }
     }
 
@@ -592,14 +593,16 @@ RHIRenderer::PipelineState *D3D12Renderer::CreatePSO(RHIRenderer::PipelineStateD
 
     psoMap.Set(psoHash, pipelineState);
 
+#ifndef _DEBUG
     // PSO cache 가 없었다면 새로 추가한다.
     if (!cachedPsoBlobEntry) {
         ID3DBlob *cachedPSOBlob = nullptr;
         if (SUCCEEDED(pipelineState->pso->GetCachedBlob(&cachedPSOBlob))) {
-            cachedPsoBlobMap.Set(shaderHash, cachedPSOBlob);
-            WriteCachedPSO(shaderHash, cachedPSOBlob);
+            cachedPsoBlobMap.Set(combinedShaderHash, cachedPSOBlob);
+            WriteCachedPSO(combinedShaderHash, cachedPSOBlob);
         }
     }
+#endif
 
     return pipelineState;
 }
@@ -712,8 +715,8 @@ RHIRenderer::PipelineState *D3D12Renderer::CreateBasicPSO(ID3D12RootSignature *r
         return nullptr;
     }
 
-    D3D12Shader *vs = static_cast<D3D12Shader *>(CreateShader(ShaderStage::Vertex, shaderFilename, shaderText, shaderTextSize, "VSMain"));
-    D3D12Shader *ps = static_cast<D3D12Shader *>(CreateShader(ShaderStage::Fragment, shaderFilename, shaderText, shaderTextSize, "PSMain"));
+    D3D12Shader *vs = static_cast<D3D12Shader *>(CreateShader(ShaderModel::SM_5_0, ShaderStage::Vertex, shaderFilename, shaderText, shaderTextSize, "VSMain"));
+    D3D12Shader *ps = static_cast<D3D12Shader *>(CreateShader(ShaderModel::SM_5_0, ShaderStage::Fragment, shaderFilename, shaderText, shaderTextSize, "PSMain"));
 
     fileSystem.FreeFile(shaderText);
 
@@ -723,8 +726,8 @@ RHIRenderer::PipelineState *D3D12Renderer::CreateBasicPSO(ID3D12RootSignature *r
         return nullptr;
     }
 
-    D3D12_SHADER_BYTECODE byteCodeVS = CD3DX12_SHADER_BYTECODE(vs->compiledShaderBlob->GetBufferPointer(), vs->compiledShaderBlob->GetBufferSize());
-    D3D12_SHADER_BYTECODE byteCodePS = CD3DX12_SHADER_BYTECODE(ps->compiledShaderBlob->GetBufferPointer(), ps->compiledShaderBlob->GetBufferSize());
+    D3D12_SHADER_BYTECODE byteCodeVS = CD3DX12_SHADER_BYTECODE(vs->compiledShaderData, vs->compiledShaderDataSize);
+    D3D12_SHADER_BYTECODE byteCodePS = CD3DX12_SHADER_BYTECODE(ps->compiledShaderData, ps->compiledShaderDataSize);
 
     PipelineState *pso = CreateBasicPSO(rootSignature, byteCodeVS, byteCodePS, inputLayout);
 

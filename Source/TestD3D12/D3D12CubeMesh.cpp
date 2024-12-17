@@ -159,7 +159,6 @@ void D3D12CubeMesh::FreeMesh() {
     ID3DBlob* signatureBlob = nullptr;
     ID3DBlob* errorBlob = nullptr;
 
-    // TODO: 필요한 루트 시그니쳐를 캐싱하는 방식으로 접근하자.
     if (SUCCEEDED(D3D12SerializeVersionedRootSignature(&rootSignatureDesc, &signatureBlob, &errorBlob))) {
         renderer.device->CreateRootSignature(0, signatureBlob->GetBufferPointer(), signatureBlob->GetBufferSize(), IID_PPV_ARGS(&rootSignature));
     }
@@ -181,8 +180,8 @@ void D3D12CubeMesh::InitPipelineState() {
     renderPass.renderTargetFormats[0] = Image::Format::RGBA_8_8_8_8;
     renderPass.depthStencilFormat = Image::Format::DepthStencil_24_8;
 
-    RHIRenderer::Shader *cubeVS = static_cast<RHIRenderer::Shader *>(renderer.CreateShaderFromFile(RHIRenderer::ShaderStage::Vertex, "Source/TestD3D12/Shaders/Cube.hlsl", "VSMain"));
-    RHIRenderer::Shader *cubePS = static_cast<RHIRenderer::Shader *>(renderer.CreateShaderFromFile(RHIRenderer::ShaderStage::Fragment, "Source/TestD3D12/Shaders/Cube.hlsl", "PSMain"));
+    RHIRenderer::Shader *cubeVS = static_cast<RHIRenderer::Shader *>(renderer.CreateShaderFromFile(RHIRenderer::ShaderModel::SM_6_0, RHIRenderer::ShaderStage::Vertex, "Source/TestD3D12/Shaders/Cube.hlsl", "VSMain"));
+    RHIRenderer::Shader *cubePS = static_cast<RHIRenderer::Shader *>(renderer.CreateShaderFromFile(RHIRenderer::ShaderModel::SM_6_0, RHIRenderer::ShaderStage::Fragment, "Source/TestD3D12/Shaders/Cube.hlsl", "PSMain"));
 
     if (cubeVS && cubePS) {
         RHIRenderer::PipelineStateDesc psoDesc;
@@ -204,8 +203,8 @@ void D3D12CubeMesh::InitPipelineState() {
         renderer.DestroyShader(cubePS, true);
     }
 
-    RHIRenderer::Shader *cubeInstancingVS = static_cast<RHIRenderer::Shader *>(renderer.CreateShaderFromFile(RHIRenderer::ShaderStage::Vertex, "Source/TestD3D12/Shaders/CubeInstancing.hlsl", "VSMain"));
-    RHIRenderer::Shader *cubeInstancingPS = static_cast<RHIRenderer::Shader *>(renderer.CreateShaderFromFile(RHIRenderer::ShaderStage::Fragment, "Source/TestD3D12/Shaders/CubeInstancing.hlsl", "PSMain"));
+    RHIRenderer::Shader *cubeInstancingVS = static_cast<RHIRenderer::Shader *>(renderer.CreateShaderFromFile(RHIRenderer::ShaderModel::SM_6_0, RHIRenderer::ShaderStage::Vertex, "Source/TestD3D12/Shaders/CubeInstancing.hlsl", "VSMain"));
+    RHIRenderer::Shader *cubeInstancingPS = static_cast<RHIRenderer::Shader *>(renderer.CreateShaderFromFile(RHIRenderer::ShaderModel::SM_6_0, RHIRenderer::ShaderStage::Fragment, "Source/TestD3D12/Shaders/CubeInstancing.hlsl", "PSMain"));
 
     if (cubeInstancingVS && cubeInstancingPS) {
         RHIRenderer::PipelineStateDesc psoDesc;

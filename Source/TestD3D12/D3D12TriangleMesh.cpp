@@ -86,8 +86,8 @@ void D3D12TriangleMesh::InitPipelineState() {
     renderPass.renderTargetFormats[0] = Image::Format::RGBA_8_8_8_8;
     renderPass.depthStencilFormat = Image::Format::DepthStencil_24_8;
 
-    RHIRenderer::Shader *triangleVS = static_cast<RHIRenderer::Shader *>(renderer.CreateShaderFromFile(RHIRenderer::ShaderStage::Vertex, "Source/TestD3D12/Shaders/Triangle.hlsl", "VSMain"));
-    RHIRenderer::Shader *trianglePS = static_cast<RHIRenderer::Shader *>(renderer.CreateShaderFromFile(RHIRenderer::ShaderStage::Fragment, "Source/TestD3D12/Shaders/Triangle.hlsl", "PSMain"));
+    RHIRenderer::Shader *triangleVS = static_cast<RHIRenderer::Shader *>(renderer.CreateShaderFromFile(RHIRenderer::ShaderModel::SM_6_0, RHIRenderer::ShaderStage::Vertex, "Source/TestD3D12/Shaders/Triangle.hlsl", "VSMain"));
+    RHIRenderer::Shader *trianglePS = static_cast<RHIRenderer::Shader *>(renderer.CreateShaderFromFile(RHIRenderer::ShaderModel::SM_6_0, RHIRenderer::ShaderStage::Fragment, "Source/TestD3D12/Shaders/Triangle.hlsl", "PSMain"));
 
     if (triangleVS && trianglePS) {
         RHIRenderer::PipelineStateDesc psoDesc;
@@ -109,8 +109,8 @@ void D3D12TriangleMesh::InitPipelineState() {
         renderer.DestroyShader(trianglePS, true);
     }
 
-    RHIRenderer::Shader *triangleInstancingVS = static_cast<RHIRenderer::Shader *>(renderer.CreateShaderFromFile(RHIRenderer::ShaderStage::Vertex, "Source/TestD3D12/Shaders/TriangleInstancing.hlsl", "VSMain"));
-    RHIRenderer::Shader *triangleInstancingPS = static_cast<RHIRenderer::Shader *>(renderer.CreateShaderFromFile(RHIRenderer::ShaderStage::Fragment, "Source/TestD3D12/Shaders/TriangleInstancing.hlsl", "PSMain"));
+    RHIRenderer::Shader *triangleInstancingVS = static_cast<RHIRenderer::Shader *>(renderer.CreateShaderFromFile(RHIRenderer::ShaderModel::SM_6_0, RHIRenderer::ShaderStage::Vertex, "Source/TestD3D12/Shaders/TriangleInstancing.hlsl", "VSMain"));
+    RHIRenderer::Shader *triangleInstancingPS = static_cast<RHIRenderer::Shader *>(renderer.CreateShaderFromFile(RHIRenderer::ShaderModel::SM_6_0, RHIRenderer::ShaderStage::Fragment, "Source/TestD3D12/Shaders/TriangleInstancing.hlsl", "PSMain"));
 
     if (triangleInstancingVS && triangleInstancingPS) {
         RHIRenderer::PipelineStateDesc psoDesc;
