@@ -7,32 +7,32 @@ set(SRC_FILES
     Precompiled.cpp
     RHIRenderer.h
     RHIRenderer.cpp
-    D3D12Common.h
+    D3D12Renderer/D3D12Common.h
+    D3D12Renderer/D3D12Renderer.h
+    D3D12Renderer/D3D12Renderer.cpp
+    D3D12Renderer/D3D12RootDescriptorPool.h
+    D3D12Renderer/D3D12RootDescriptorPool.cpp
+    D3D12Renderer/D3D12DescriptorPool.h
+    D3D12Renderer/D3D12DescriptorPool.cpp
+    D3D12Renderer/D3D12Buffer.cpp
+    D3D12Renderer/D3D12Shader.cpp
+    D3D12Renderer/D3D12Texture.cpp
+    D3D12Renderer/D3D12VertexBuffer.cpp
+    D3D12Renderer/D3D12IndexBuffer.cpp
+    D3D12Renderer/D3D12ConstantBuffer.cpp
+    D3D12Renderer/D3D12PipelineState.cpp
+    D3D12Renderer/D3D12CommandList.h
+    D3D12Renderer/D3D12CommandList.cpp
+    D3D12Renderer/D3D12CommandListPool.h
+    D3D12Renderer/D3D12CommandListPool.cpp
+    D3D12Renderer/D3D12FrameData.h
+    D3D12Renderer/D3D12FrameData.cpp
+    D3D12Renderer/D3D12VisObject.h
+    D3D12Renderer/D3D12VisObject.cpp
     D3D12App.h
     D3D12App.cpp
-    D3D12Renderer.h
-    D3D12Renderer.cpp
     D3D12RenderObject.h
     D3D12RenderObject.cpp
-    D3D12VisObject.h
-    D3D12VisObject.cpp
-    D3D12RootDescriptorPool.h
-    D3D12RootDescriptorPool.cpp
-    D3D12DescriptorPool.h
-    D3D12DescriptorPool.cpp
-    D3D12Buffer.cpp
-    D3D12Shader.cpp
-    D3D12Texture.cpp
-    D3D12VertexBuffer.cpp
-    D3D12IndexBuffer.cpp
-    D3D12ConstantBuffer.cpp
-    D3D12PipelineState.cpp
-    D3D12CommandList.h
-    D3D12CommandList.cpp
-    D3D12CommandListPool.h
-    D3D12CommandListPool.cpp
-    D3D12FrameData.h
-    D3D12FrameData.cpp
     D3D12Mesh.h
     D3D12Mesh.cpp
     D3D12TriangleMesh.h

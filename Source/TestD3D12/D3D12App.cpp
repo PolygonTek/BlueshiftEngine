@@ -13,7 +13,7 @@
 // limitations under the License.
 
 #include "Precompiled.h"
-#include "D3D12Renderer.h"
+#include "D3D12Renderer/D3D12Renderer.h"
 #include "D3D12App.h"
 #include "D3D12GameObject.h"
 #include "D3D12TriangleMesh.h"

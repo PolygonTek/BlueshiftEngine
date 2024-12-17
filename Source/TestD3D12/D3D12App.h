@@ -14,8 +14,6 @@
 
 #pragma once
 
-#include "D3D12Common.h"
-
 class D3D12GameObject;
 class D3D12TriangleMesh;
 class D3D12CubeMesh;

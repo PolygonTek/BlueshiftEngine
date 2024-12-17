@@ -387,9 +387,40 @@ public:
 
     bool                            IsInitialized() const { return initialized; }
 
+    virtual void                    BeginFrame() = 0;
+    virtual void                    EndFrame() = 0;
+    virtual void                    SwapChainBuffers(bool vsync) = 0;
+
+    virtual void                    OnResize(int width, int height) = 0;
+
     const RasterizerState *         GetRasterizerState(RasterizerStateType::Enum type) const { return &rasterizerStates[type]; }
     const DepthStencilState *       GetDepthStencilState(DepthStencilStateType::Enum type) const { return &depthStencilStates[type]; }
     const BlendState *              GetBlendState(BlendStateType::Enum type) const { return &blendStates[type]; }
+
+    virtual VertexBuffer *          CreateVertexBuffer(BufferType type, int vertexSize, int numVerts, void *data) = 0;
+    virtual void                    DestroyVertexBuffer(VertexBuffer *vertexBuffer, bool immediate = false) = 0;
+
+    virtual IndexBuffer *           CreateIndexBuffer(BufferType type, int indexSize, int numIndexes, void *data) = 0;
+    virtual void                    DestroyIndexBuffer(IndexBuffer *indexBuffer, bool immediate = false) = 0;
+
+    virtual ConstantBuffer *        CreateConstantBuffer(BufferType type, int size, void *data) = 0;
+    virtual void                    DestroyConstantBuffer(ConstantBuffer *constantBuffer, bool immediate = false) = 0;
+
+    virtual Texture *               CreateTexture(TextureType textureType, const Image *image) = 0;
+    virtual Texture *               CreateTexture(TextureType textureType, const Image *image, Image::Format::Enum dstFormat, bool useMipmaps) = 0;
+    virtual Texture *               CreateTextureFromFile(TextureType textureType, const char *filename, bool useCompression = true, bool useNormalMap = false) = 0;
+    virtual void                    DestroyTexture(Texture *texture, bool immediate = false) = 0;
+
+    virtual void                    GetTextureImage2D(Texture *texture, int level, Image::Format::Enum imageFormat, void *outPixels) = 0;
+    virtual bool                    SetTextureSubImage2D(Texture *texture, int level, int x, int y, int width, int height, Image::Format::Enum imageFormat, const void *pixels) = 0;
+    virtual bool                    SetTextureSubImage3D(Texture *texture, int level, int x, int y, int z, int width, int height, int depth, Image::Format::Enum imageFormat, const void *pixels) = 0;
+
+    virtual Shader *                CreateShader(ShaderModel shaderModel, ShaderStage shaderStage, const char *sourceName, const char *shaderText, int shaderTextSize, const char *entryPoint) = 0;
+    virtual Shader *                CreateShaderFromFile(ShaderModel shaderModel, ShaderStage shaderStage, const char *filename, const char *entryPoint) = 0;
+    virtual void                    DestroyShader(Shader *shader, bool immediate = false) = 0;
+
+    virtual PipelineState *         CreatePSO(RHIRenderer::PipelineStateDesc *desc) = 0;
+    virtual void                    DestroyPSO(PipelineState *pipelineState, bool immediate = false) = 0;
 
 protected:
     void                            SetupStates();

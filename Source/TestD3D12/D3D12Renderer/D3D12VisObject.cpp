@@ -14,9 +14,9 @@
 
 #include "Precompiled.h"
 #include "D3D12CommandList.h"
-#include "D3D12TriangleMesh.h"
-#include "D3D12CubeMesh.h"
 #include "D3D12VisObject.h"
+#include "../D3D12TriangleMesh.h"
+#include "../D3D12CubeMesh.h"
 
 void D3D12VisObject::Draw(int threadIndex, D3D12CommandList *commandList, D3D12VisObject *visObject) {
     PIX_SCOPED_EVENT(commandList->graphicsCommandList, 6, "D3D12VisObject::Draw");

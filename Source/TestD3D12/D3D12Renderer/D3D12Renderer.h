@@ -14,7 +14,7 @@
 
 #pragma once
 
-#include "RHIRenderer.h"
+#include "../RHIRenderer.h"
 #include "D3D12Common.h"
 
 #ifdef USE_D3D12_MEMALLOC
@@ -22,7 +22,7 @@
 #endif
 
 #include "D3D12FrameData.h"
-#include "D3D12RenderObject.h"
+#include "../D3D12RenderObject.h"
 
 class D3D12CommandList;
 class D3D12DescriptorPool;
@@ -169,9 +169,9 @@ public:
     virtual void                        Init(HWND hwnd) override;
     virtual void                        Shutdown() override;
 
-    void                                BeginFrame();
-    void                                EndFrame();
-    void                                SwapChainBuffers(bool vsync);
+    virtual void                        BeginFrame() override;
+    virtual void                        EndFrame() override;
+    virtual void                        SwapChainBuffers(bool vsync) override;
 
     void                                OnResize(int width, int height);
 
@@ -199,30 +199,30 @@ public:
 
     Buffer *                            CreateBuffer(BufferUsage usage, int size);
 
-    VertexBuffer *                      CreateVertexBuffer(BufferType type, int vertexSize, int numVerts, void *data);
-    void                                DestroyVertexBuffer(VertexBuffer *vertexBuffer, bool immediate = false);
+    virtual VertexBuffer *              CreateVertexBuffer(BufferType type, int vertexSize, int numVerts, void *data) override;
+    virtual void                        DestroyVertexBuffer(VertexBuffer *vertexBuffer, bool immediate = false) override;
 
-    IndexBuffer *                       CreateIndexBuffer(BufferType type, int indexSize, int numIndexes, void *data);
-    void                                DestroyIndexBuffer(IndexBuffer *indexBuffer, bool immediate = false);
+    virtual IndexBuffer *               CreateIndexBuffer(BufferType type, int indexSize, int numIndexes, void *data) override;
+    virtual void                        DestroyIndexBuffer(IndexBuffer *indexBuffer, bool immediate = false) override;
 
-    ConstantBuffer *                    CreateConstantBuffer(BufferType type, int size, void *data);
-    void                                DestroyConstantBuffer(ConstantBuffer *constantBuffer, bool immediate = false);
+    virtual ConstantBuffer *            CreateConstantBuffer(BufferType type, int size, void *data) override;
+    virtual void                        DestroyConstantBuffer(ConstantBuffer *constantBuffer, bool immediate = false) override;
 
-    Texture *                           CreateTexture(TextureType textureType, const Image *image);
-    Texture *                           CreateTexture(TextureType textureType, const Image *image, Image::Format::Enum dstFormat, bool useMipmaps);
-    Texture *                           CreateTextureFromFile(TextureType textureType, const char *filename, bool useCompression = true, bool useNormalMap = false);
-    void                                DestroyTexture(Texture *texture, bool immediate = false);
+    virtual Texture *                   CreateTexture(TextureType textureType, const Image *image) override;
+    virtual Texture *                   CreateTexture(TextureType textureType, const Image *image, Image::Format::Enum dstFormat, bool useMipmaps) override;
+    virtual Texture *                   CreateTextureFromFile(TextureType textureType, const char *filename, bool useCompression = true, bool useNormalMap = false) override;
+    virtual void                        DestroyTexture(Texture *texture, bool immediate = false) override;
 
-    void                                GetTextureImage2D(Texture *texture, int level, Image::Format::Enum imageFormat, void *outPixels);
-    bool                                SetTextureSubImage2D(Texture *texture, int level, int x, int y, int width, int height, Image::Format::Enum imageFormat, const void *pixels);
-    bool                                SetTextureSubImage3D(Texture *texture, int level, int x, int y, int z, int width, int height, int depth, Image::Format::Enum imageFormat, const void *pixels);
+    virtual void                        GetTextureImage2D(Texture *texture, int level, Image::Format::Enum imageFormat, void *outPixels) override;
+    virtual bool                        SetTextureSubImage2D(Texture *texture, int level, int x, int y, int width, int height, Image::Format::Enum imageFormat, const void *pixels) override;
+    virtual bool                        SetTextureSubImage3D(Texture *texture, int level, int x, int y, int z, int width, int height, int depth, Image::Format::Enum imageFormat, const void *pixels) override;
 
-    Shader *                            CreateShader(ShaderModel shaderModel, ShaderStage shaderStage, const char *sourceName, const char *shaderText, int shaderTextSize, const char *entryPoint);
-    Shader *                            CreateShaderFromFile(ShaderModel shaderModel, ShaderStage shaderStage, const char *filename, const char *entryPoint);
-    void                                DestroyShader(Shader *shader, bool immediate = false);
+    virtual Shader *                    CreateShader(ShaderModel shaderModel, ShaderStage shaderStage, const char *sourceName, const char *shaderText, int shaderTextSize, const char *entryPoint) override;
+    virtual Shader *                    CreateShaderFromFile(ShaderModel shaderModel, ShaderStage shaderStage, const char *filename, const char *entryPoint) override;
+    virtual void                        DestroyShader(Shader *shader, bool immediate = false) override;
 
-    PipelineState *                     CreatePSO(RHIRenderer::PipelineStateDesc *desc);
-    void                                DestroyPSO(PipelineState *pipelineState, bool immediate = false);
+    virtual PipelineState *             CreatePSO(RHIRenderer::PipelineStateDesc *desc) override;
+    virtual void                        DestroyPSO(PipelineState *pipelineState, bool immediate = false) override;
 
     PipelineState *                     CreateBasicPSO(ID3D12RootSignature *rootSignature, const D3D12_SHADER_BYTECODE &byteCodeVS, const D3D12_SHADER_BYTECODE &byteCodePS, const D3D12_INPUT_LAYOUT_DESC &inputLayout);
     PipelineState *                     CreateBasicPSO(ID3D12RootSignature *rootSignature, const char *shaderFilename, const D3D12_INPUT_LAYOUT_DESC &inputLayout);

@@ -17,7 +17,7 @@
 #include "Platform/Windows/PlatformWinUtils.h"
 #include "WinResource.h"
 #include "D3D12App.h"
-#include "D3D12Renderer.h"
+#include "D3D12Renderer/D3D12Renderer.h"
 #include <tchar.h>
 
 static const TCHAR*         mainWindowClassName  = _T("BLUESHIFT_MAIN_WINDOW");

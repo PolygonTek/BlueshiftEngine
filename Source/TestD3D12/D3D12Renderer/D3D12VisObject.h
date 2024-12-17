@@ -15,7 +15,7 @@
 #pragma once
 
 #include "D3D12Common.h"
-#include "D3D12RenderObject.h"
+#include "../D3D12RenderObject.h"
 
 class D3D12CommandList;
 

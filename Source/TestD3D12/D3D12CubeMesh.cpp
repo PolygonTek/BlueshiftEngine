@@ -13,9 +13,9 @@
 // limitations under the License.
 
 #include "Precompiled.h"
-#include "D3D12Renderer.h"
-#include "D3D12CommandList.h"
-#include "D3D12RootDescriptorPool.h"
+#include "D3D12Renderer/D3D12Renderer.h"
+#include "D3D12Renderer/D3D12CommandList.h"
+#include "D3D12Renderer/D3D12RootDescriptorPool.h"
 #include "D3D12CubeMesh.h"
 #include "D3D12App.h"
 
