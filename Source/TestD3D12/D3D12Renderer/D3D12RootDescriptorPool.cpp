@@ -13,23 +13,22 @@
 // limitations under the License.
 
 #include "Precompiled.h"
-#include "D3D12Renderer.h"
 #include "D3D12RootDescriptorPool.h"
 
-void D3D12RootDescriptorPool::Init(UINT maxDescriptorCount) {
+void D3D12RootDescriptorPool::Init(ID3D12Device *device, UINT maxDescriptorCount) {
     this->maxDescriptorCount = maxDescriptorCount;
     this->usedCount = 0;
 
     D3D12_DESCRIPTOR_HEAP_TYPE descriptorHeapType = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
 
-    descriptorHandleSize = renderer.device->GetDescriptorHandleIncrementSize(descriptorHeapType);
+    descriptorHandleSize = device->GetDescriptorHandleIncrementSize(descriptorHeapType);
 
     // 미리 크게 할당해 놓고, 순차적으로 사용할 예정
     D3D12_DESCRIPTOR_HEAP_DESC descriptorHeapDesc = {};
     descriptorHeapDesc.NumDescriptors = maxDescriptorCount;
     descriptorHeapDesc.Type = descriptorHeapType;
     descriptorHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
-    renderer.device->CreateDescriptorHeap(&descriptorHeapDesc, IID_PPV_ARGS(&descriptorHeap));
+    device->CreateDescriptorHeap(&descriptorHeapDesc, IID_PPV_ARGS(&descriptorHeap));
 
     baseCpuDescriptorHandle = descriptorHeap->GetCPUDescriptorHandleForHeapStart();
     baseGpuDescriptorHandle = descriptorHeap->GetGPUDescriptorHandleForHeapStart();

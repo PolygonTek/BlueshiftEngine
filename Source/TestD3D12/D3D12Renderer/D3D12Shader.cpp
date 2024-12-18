@@ -17,9 +17,11 @@
 #include "Platform/PlatformFile.h"
 #include "Platform/Windows/PlatformWinUtils.h"
 #include "D3D12Renderer.h"
+#include "D3D12Shader.h"
 
 void D3D12Shader::Release() {
     SAFE_MEM_FREE(compiledShaderData);
+    SAFE_RELEASE(rootSignatureDeserializer);
     SAFE_RELEASE(rootSignature);
 }
 
@@ -474,21 +476,19 @@ RHIRenderer::Shader *D3D12Renderer::CreateShader(ShaderModel shaderModel, Shader
 #endif
     }
 
-#if 0
+    // shader text 로부터 root signature 를 얻기 위한 deserializer 를 생성한다.
     ID3D12VersionedRootSignatureDeserializer *rootSignatureDeserializer = nullptr;
     const D3D12_VERSIONED_ROOT_SIGNATURE_DESC *rootSignatureDesc = nullptr;
-
-    // shader text 에서 root signature 를 얻기 위한 deserializer 를 생성한다.
     HRESULT hr = D3D12CreateVersionedRootSignatureDeserializer(compiledShaderData, compiledShaderDataSize, IID_PPV_ARGS(&rootSignatureDeserializer));
     if (SUCCEEDED(hr)) {
-        // deserializer 로 부터 root signature desc 포인터를 얻어낸다. (deserializer 가 파괴될 때 까지 desc 의 메모리는 유지된다)
+        // deserializer 로부터 root signature desc 포인터를 얻어낸다. (deserializer 가 파괴될 때까지 desc 의 메모리는 유지된다)
         rootSignatureDeserializer->GetRootSignatureDescAtVersion(D3D_ROOT_SIGNATURE_VERSION_1_1, &rootSignatureDesc);
         assert(rootSignatureDesc->Version == D3D_ROOT_SIGNATURE_VERSION_1_1);
     }
-#endif
 
     ID3D12RootSignature *rootSignature = nullptr;
-    if (FAILED(renderer.device->CreateRootSignature(0, compiledShaderData, compiledShaderDataSize, IID_PPV_ARGS(&rootSignature)))) {
+    if (FAILED(device->CreateRootSignature(0, compiledShaderData, compiledShaderDataSize, IID_PPV_ARGS(&rootSignature)))) {
+        rootSignatureDeserializer->Release();
         return nullptr;
     }
 
@@ -498,6 +498,8 @@ RHIRenderer::Shader *D3D12Renderer::CreateShader(ShaderModel shaderModel, Shader
     shader->compiledShaderData = compiledShaderData;
     shader->compiledShaderDataSize = compiledShaderDataSize;
     shader->rootSignature = rootSignature;
+    shader->rootSignatureDeserializer = rootSignatureDeserializer;
+    shader->rootSignatureDesc = rootSignatureDesc;
     return shader;
 }
 

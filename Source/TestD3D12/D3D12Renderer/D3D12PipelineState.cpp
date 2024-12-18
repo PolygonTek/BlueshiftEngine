@@ -17,6 +17,10 @@
 #include "Platform/PlatformFile.h"
 #include "Platform/Windows/PlatformWinUtils.h"
 #include "D3D12Renderer.h"
+#include "D3D12PipelineState.h"
+#include "D3D12Shader.h"
+#include "D3D12CommandList.h"
+#include "D3D12RootDescriptorPool.h"
 
 static constexpr D3D12_FILL_MODE ToD3D12FillMode(RHIRenderer::FillMode fillMode) {
     switch (fillMode) {
@@ -261,7 +265,7 @@ static constexpr DXGI_FORMAT ToD3D12InputLayoutElementFormat(RHIRenderer::InputL
     return DXGI_FORMAT_UNKNOWN;
 }
 
-static constexpr D3D12_PRIMITIVE_TOPOLOGY_TYPE ToD3DTopologyType(RHIRenderer::PrimitiveTopology primitiveTopology) {
+static constexpr D3D12_PRIMITIVE_TOPOLOGY_TYPE ToD3D12TopologyType(RHIRenderer::PrimitiveTopology primitiveTopology) {
     switch (primitiveTopology) {
     case RHIRenderer::PrimitiveTopology::PointList:
         return D3D12_PRIMITIVE_TOPOLOGY_TYPE_POINT;
@@ -276,6 +280,22 @@ static constexpr D3D12_PRIMITIVE_TOPOLOGY_TYPE ToD3DTopologyType(RHIRenderer::Pr
     }
     assert(0);
     return D3D12_PRIMITIVE_TOPOLOGY_TYPE_UNDEFINED;
+}
+
+static constexpr D3D12_PRIMITIVE_TOPOLOGY ToD3DPrimitiveTopology(RHIRenderer::PrimitiveTopology primitiveTopology) {
+    switch (primitiveTopology) {
+    case RHIRenderer::PrimitiveTopology::PointList:
+        return D3D_PRIMITIVE_TOPOLOGY_POINTLIST;
+    case RHIRenderer::PrimitiveTopology::LineList:
+        return D3D_PRIMITIVE_TOPOLOGY_LINELIST;
+    case RHIRenderer::PrimitiveTopology::LineStrip:
+        return D3D_PRIMITIVE_TOPOLOGY_LINESTRIP;
+    case RHIRenderer::PrimitiveTopology::TriangleList:
+        return D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+    case RHIRenderer::PrimitiveTopology::TriangleStrip:
+        return D3D_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP;
+    }
+    return D3D_PRIMITIVE_TOPOLOGY_UNDEFINED;
 }
 
 void D3D12PipelineState::Release() {
@@ -301,12 +321,16 @@ RHIRenderer::PipelineState *D3D12Renderer::CreatePSO(RHIRenderer::PipelineStateD
     } psoHashData;
 
     ID3D12RootSignature *rootSignature = nullptr;
+    ID3D12VersionedRootSignatureDeserializer *rootSignatureDeserializer = nullptr;
+    const D3D12_VERSIONED_ROOT_SIGNATURE_DESC *rootSignatureDesc = nullptr;
 
     if (desc->vs) {
         const D3D12Shader *vs = static_cast<const D3D12Shader *>(desc->vs);
         psoHashData.shaderHashData.vsHash = vs->hash;
         if (!rootSignature && vs->rootSignature) {
             rootSignature = vs->rootSignature;
+            rootSignatureDeserializer = vs->rootSignatureDeserializer;
+            rootSignatureDesc = vs->rootSignatureDesc;
         }
     }
 
@@ -315,6 +339,8 @@ RHIRenderer::PipelineState *D3D12Renderer::CreatePSO(RHIRenderer::PipelineStateD
         psoHashData.shaderHashData.gsHash = gs->hash;
         if (!rootSignature && gs->rootSignature) {
             rootSignature = gs->rootSignature;
+            rootSignatureDeserializer = gs->rootSignatureDeserializer;
+            rootSignatureDesc = gs->rootSignatureDesc;
         }
     }
 
@@ -323,6 +349,8 @@ RHIRenderer::PipelineState *D3D12Renderer::CreatePSO(RHIRenderer::PipelineStateD
         psoHashData.shaderHashData.hsHash = hs->hash;
         if (!rootSignature && hs->rootSignature) {
             rootSignature = hs->rootSignature;
+            rootSignatureDeserializer = hs->rootSignatureDeserializer;
+            rootSignatureDesc = hs->rootSignatureDesc;
         }
     }
 
@@ -331,6 +359,8 @@ RHIRenderer::PipelineState *D3D12Renderer::CreatePSO(RHIRenderer::PipelineStateD
         psoHashData.shaderHashData.dsHash = ds->hash;
         if (!rootSignature && ds->rootSignature) {
             rootSignature = ds->rootSignature;
+            rootSignatureDeserializer = ds->rootSignatureDeserializer;
+            rootSignatureDesc = ds->rootSignatureDesc;
         }
     }
 
@@ -339,10 +369,12 @@ RHIRenderer::PipelineState *D3D12Renderer::CreatePSO(RHIRenderer::PipelineStateD
         psoHashData.shaderHashData.psHash = ps->hash;
         if (!rootSignature && ps->rootSignature) {
             rootSignature = ps->rootSignature;
+            rootSignatureDeserializer = ps->rootSignatureDeserializer;
+            rootSignatureDesc = ps->rootSignatureDesc;
         }
     }
 
-    D3D12_PRIMITIVE_TOPOLOGY_TYPE primitiveTopologyType = ToD3DTopologyType(desc->primitiveTopology);
+    D3D12_PRIMITIVE_TOPOLOGY_TYPE primitiveTopologyType = ToD3D12TopologyType(desc->primitiveTopology);
     psoHashData.primitiveTopologyType = primitiveTopologyType;
 
     if (desc->inputLayout) {
@@ -458,8 +490,11 @@ RHIRenderer::PipelineState *D3D12Renderer::CreatePSO(RHIRenderer::PipelineStateD
 
     // RootSignature
     if (rootSignature) {
+        rootSignature->AddRef();
+        rootSignatureDeserializer->AddRef();
+
         pipelineState->rootSignature = rootSignature;
-        pipelineState->rootSignature->AddRef();
+        pipelineState->rootSignatureDesc = rootSignatureDesc;
 
         stream1->rootSignature = pipelineState->rootSignature;
     }
@@ -491,7 +526,8 @@ RHIRenderer::PipelineState *D3D12Renderer::CreatePSO(RHIRenderer::PipelineStateD
     }
 
     // PrimitiveTopology
-    stream1->primitiveTopology = primitiveTopologyType;
+    stream1->primitiveTopologyType = primitiveTopologyType;
+    pipelineState->primitiveTopology = ToD3DPrimitiveTopology(desc->primitiveTopology);
 
     // BlendState
     if (desc->blendState) {
@@ -766,5 +802,65 @@ void D3D12Renderer::DestroyPSO(PipelineState *pipelineState, bool immediate) {
         delete pipelineState;
     } else {
         MarkForDelete(pipelineState);
+    }
+}
+
+void D3D12Renderer::SetPSO(CommandList *commandList, const PipelineState *pipelineState) {
+    D3D12CommandList *d3d12CommandList = static_cast<D3D12CommandList *>(commandList);
+    d3d12CommandList->SetPipelineState(pipelineState);
+
+    int threadIndex = d3d12CommandList->GetThreadIndex();
+    D3D12FrameData::DataPerThread &threadData = currentFrameData->threadData[threadIndex];
+    D3D12RootDescriptorPool *rootDescriptorPool = threadData.rootDescriptorPool;
+
+    const D3D12_ROOT_SIGNATURE_DESC1 &rootSignatureDesc = d3d12CommandList->currentPSO->rootSignatureDesc->Desc_1_1;
+
+    for (int parameterIndex = 0; parameterIndex < rootSignatureDesc.NumParameters; ++parameterIndex) {
+        const D3D12_ROOT_PARAMETER1 *parameter = &rootSignatureDesc.pParameters[parameterIndex];
+
+        if (parameter->ParameterType == D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE) {
+            int numDescriptors = 0;
+
+            // 디스크립터 테이블이 사용하는 전체 디스크립터 개수 계산
+            for (int rangeIndex = 0; rangeIndex < parameter->DescriptorTable.NumDescriptorRanges; ++rangeIndex) {
+                const D3D12_DESCRIPTOR_RANGE1 &descriptorRange = parameter->DescriptorTable.pDescriptorRanges[rangeIndex];
+
+                numDescriptors += descriptorRange.NumDescriptors;
+            }
+
+            // 디스크립터 풀에서 루트 디스크립터 테이블 할당
+            D3D12_CPU_DESCRIPTOR_HANDLE cpuRootDescriptorHandle;
+            D3D12_GPU_DESCRIPTOR_HANDLE gpuRootDescriptorHandle;
+            if (!rootDescriptorPool->AllocRange(numDescriptors, &cpuRootDescriptorHandle, &gpuRootDescriptorHandle)) {
+                return;
+            }
+
+            int descriptorOffset = 0;
+
+            // 필요한 디스크립터들을 루트 디스크립터 테이블에 복사
+            for (int rangeIndex = 0; rangeIndex < parameter->DescriptorTable.NumDescriptorRanges; ++rangeIndex) {
+                const D3D12_DESCRIPTOR_RANGE1 &descriptorRange = parameter->DescriptorTable.pDescriptorRanges[rangeIndex];
+                CD3DX12_CPU_DESCRIPTOR_HANDLE destDescriptorHandle(cpuRootDescriptorHandle, descriptorOffset, rootDescriptorPool->descriptorHandleSize);
+
+                assert(descriptorOffset < COUNT_OF(threadData.psoDescriptorHandles));
+
+                switch (descriptorRange.RangeType) {
+                case D3D12_DESCRIPTOR_RANGE_TYPE_CBV:
+                case D3D12_DESCRIPTOR_RANGE_TYPE_SRV:
+                case D3D12_DESCRIPTOR_RANGE_TYPE_UAV:
+                    device->CopyDescriptorsSimple(descriptorRange.NumDescriptors, destDescriptorHandle, threadData.psoDescriptorHandles[descriptorOffset], D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+                    break;
+                case D3D12_DESCRIPTOR_RANGE_TYPE_SAMPLER:
+                    device->CopyDescriptorsSimple(descriptorRange.NumDescriptors, destDescriptorHandle, threadData.psoDescriptorHandles[descriptorOffset], D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER);
+                    break;
+                }
+
+                descriptorOffset += descriptorRange.NumDescriptors;
+            }
+
+            // 루트 디스크립터 테이블 설정
+            //gpuRootDescriptorHandle.Offset(1, rootDescriptorPool->descriptorHandleSize * XX);
+            d3d12CommandList->graphicsCommandList->SetGraphicsRootDescriptorTable(parameterIndex, gpuRootDescriptorHandle);
+        }
     }
 }

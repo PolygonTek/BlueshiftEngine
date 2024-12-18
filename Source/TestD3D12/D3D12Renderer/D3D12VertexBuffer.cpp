@@ -14,6 +14,7 @@
 
 #include "Precompiled.h"
 #include "D3D12Renderer.h"
+#include "D3D12VertexBuffer.h"
 #include "D3D12CommandList.h"
 
 RHIRenderer::VertexBuffer* D3D12Renderer::CreateVertexBuffer(RHIRenderer::BufferType type, int vertexSize, int numVerts, void *data) {
@@ -56,7 +57,7 @@ RHIRenderer::VertexBuffer* D3D12Renderer::CreateVertexBuffer(RHIRenderer::Buffer
             heapProperties.VisibleNodeMask = 1;
 
             // CPU 에서 GPU 로 전송할 업로드 버퍼 생성
-            if (FAILED(renderer.device->CreateCommittedResource(
+            if (FAILED(device->CreateCommittedResource(
                 &heapProperties,
                 D3D12_HEAP_FLAG_NONE,
                 &uploadBufferDesc,
@@ -75,10 +76,10 @@ RHIRenderer::VertexBuffer* D3D12Renderer::CreateVertexBuffer(RHIRenderer::Buffer
             uploadBuffer->Unmap(0, &writtenRange);
 
             // 업로드 버퍼에서 GPU 버퍼로 데이터 카피
-            renderer.resourceCommandList->Reset();
-            renderer.resourceCommandList->graphicsCommandList->CopyBufferRegion(bufferResource, 0, uploadBuffer, 0, bufferSize);
-            renderer.resourceCommandList->ResourceBarrier(bufferResource, D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER);
-            renderer.resourceCommandList->CloseAndExecute(D3D12CommandQueueType::Graphics);
+            resourceCommandList->Reset();
+            resourceCommandList->graphicsCommandList->CopyBufferRegion(bufferResource, 0, uploadBuffer, 0, bufferSize);
+            resourceCommandList->ResourceBarrier(bufferResource, D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER);
+            resourceCommandList->CloseAndExecute(CommandQueueType::Graphics);
         } else if (type == RHIRenderer::BufferType::Dynamic) {
             UINT8 *mappedPtr = nullptr;
             bufferResource->Map(0, nullptr, reinterpret_cast<void **>(&mappedPtr));
@@ -94,10 +95,11 @@ RHIRenderer::VertexBuffer* D3D12Renderer::CreateVertexBuffer(RHIRenderer::Buffer
     }
 
     if (uploadBuffer) {
-        renderer.MarkForRelease(uploadBuffer);
+        MarkForRelease(uploadBuffer);
     }
 
     D3D12VertexBuffer* vertexBuffer = new D3D12VertexBuffer;
+    vertexBuffer->bufferType = type;
     vertexBuffer->buffer = buffer;
     vertexBuffer->vbv.BufferLocation = bufferResource->GetGPUVirtualAddress();
     vertexBuffer->vbv.StrideInBytes = vertexSize;
@@ -112,4 +114,9 @@ void D3D12Renderer::DestroyVertexBuffer(VertexBuffer *vertexBuffer, bool immedia
     } else {
         MarkForDelete(vertexBuffer);
     }
+}
+
+void D3D12Renderer::SetVertexBuffer(CommandList *commandList, int slot, const VertexBuffer *vertexBuffer) {
+    D3D12CommandList *d3d12CommandList = static_cast<D3D12CommandList *>(commandList);
+    d3d12CommandList->SetVertexBuffer(slot, vertexBuffer);
 }

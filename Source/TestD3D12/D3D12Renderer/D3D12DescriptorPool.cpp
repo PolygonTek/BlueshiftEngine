@@ -16,7 +16,7 @@
 #include "D3D12Renderer.h"
 #include "D3D12DescriptorPool.h"
 
-void D3D12DescriptorPool::Init(D3D12DescriptorPool::Type type, UINT maxDescriptorCount, bool isShaderVisible) {
+void D3D12DescriptorPool::Init(ID3D12Device *device, D3D12DescriptorPool::Type type, UINT maxDescriptorCount, bool isShaderVisible) {
     this->maxDescriptorCount = maxDescriptorCount;
 
     D3D12_DESCRIPTOR_HEAP_TYPE descriptorHeapType;
@@ -35,13 +35,13 @@ void D3D12DescriptorPool::Init(D3D12DescriptorPool::Type type, UINT maxDescripto
         break;
     }
 
-    descriptorHandleSize = renderer.device->GetDescriptorHandleIncrementSize(descriptorHeapType);
+    descriptorHandleSize = device->GetDescriptorHandleIncrementSize(descriptorHeapType);
 
     D3D12_DESCRIPTOR_HEAP_DESC descriptorHeapDesc = {};
     descriptorHeapDesc.NumDescriptors = maxDescriptorCount;
     descriptorHeapDesc.Type = descriptorHeapType;
     descriptorHeapDesc.Flags = isShaderVisible ? D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE : D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
-    renderer.device->CreateDescriptorHeap(&descriptorHeapDesc, IID_PPV_ARGS(&descriptorHeap));
+    device->CreateDescriptorHeap(&descriptorHeapDesc, IID_PPV_ARGS(&descriptorHeap));
 
     // 내부적으로 D3D12_DESCRIPTOR_HEAP_FLAG_NONE 타입은 CPU 쪽에만 힙을 만든다.
     // descriptorHeap->GetGPUDescriptorHandleForHeapStart() 를 호출하면 크래시 발생함

@@ -16,11 +16,6 @@
 
 #include "D3D12Mesh.h"
 
-class D3D12CommandList;
-class D3D12Texture;
-class D3D12VertexBuffer;
-class D3D12IndexBuffer;
-
 class D3D12TriangleMesh : public D3D12Mesh {
 public:
     static std::shared_ptr<D3D12TriangleMesh> CreateMesh();
@@ -29,10 +24,10 @@ public:
     virtual void                    InitMesh() override;
     virtual void                    FreeMesh() override;
 
-    void                            DrawMesh(int threadIndex, D3D12CommandList *commandList, const Vec2 &offset);
-    void                            DrawMeshInstanced(int threadIndex, D3D12CommandList *commandList, const Vec2 *instanceData, int instanceCount);
-
     void                            InitPipelineState();
+
+    void                            DrawMesh(RHIRenderer::CommandList *commandList, const Vec2 &offset);
+    void                            DrawMeshInstanced(RHIRenderer::CommandList *commandList, const Vec2 *instanceData, int instanceCount);
 
     RHIRenderer::Texture *          texture = nullptr;
     RHIRenderer::VertexBuffer *     vertexBuffer = nullptr;

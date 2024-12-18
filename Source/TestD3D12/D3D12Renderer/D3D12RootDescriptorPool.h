@@ -16,18 +16,23 @@
 
 #include "D3D12Common.h"
 
+class D3D12Renderer;
+
 class D3D12RootDescriptorPool {
+    friend class D3D12Renderer;
+
 public:
     D3D12RootDescriptorPool() = default;
-    D3D12RootDescriptorPool(UINT maxCount) { Init(maxCount); }
+    D3D12RootDescriptorPool(ID3D12Device *device, UINT maxCount) { Init(device, maxCount); }
     ~D3D12RootDescriptorPool() { Shutdown(); }
 
-    void                            Init(UINT maxCount);
+    void                            Init(ID3D12Device *device, UINT maxCount);
     void                            Shutdown();
 
     void                            Reset();
     bool                            AllocRange(UINT count, D3D12_CPU_DESCRIPTOR_HANDLE *outCpuDescriptorHandle, D3D12_GPU_DESCRIPTOR_HANDLE *outGpuDescriptorHandle);
 
+private:
     ID3D12DescriptorHeap *          descriptorHeap = nullptr;
     D3D12_CPU_DESCRIPTOR_HANDLE     baseCpuDescriptorHandle;
     D3D12_GPU_DESCRIPTOR_HANDLE     baseGpuDescriptorHandle;

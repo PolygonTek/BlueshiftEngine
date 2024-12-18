@@ -14,11 +14,12 @@
 
 #include "Precompiled.h"
 #include "D3D12Renderer.h"
+#include "D3D12ConstantBuffer.h"
 #include "D3D12FrameData.h"
 #include "D3D12CommandListPool.h"
 #include "D3D12RootDescriptorPool.h"
 #include "D3D12DescriptorPool.h"
-#include "D3D12VisObject.h"
+#include "../D3D12VisObject.h"
 
 static constexpr int MaxMemSizePerBlock = 0x100000;
 static constexpr int MemAlignSize = 32;
@@ -27,7 +28,7 @@ void D3D12FrameData::Init() {
     InitMemBlocks();
 
 #ifdef USE_RENDER_TASK
-    numThreads = renderer.renderTaskManager.NumThreads();
+    numThreads = renderer->renderTaskManager.NumThreads();
 #else
     numThreads = 1;
 #endif
@@ -36,22 +37,25 @@ void D3D12FrameData::Init() {
         DataPerThread* data = &threadData[threadIndex];
 
         // 커맨드 리스트 풀을 생성한다.
-        data->commandListPool = new D3D12CommandListPool(D3D12_COMMAND_LIST_TYPE_DIRECT, 8);
+        data->commandListPool = new D3D12CommandListPool(renderer->device, threadIndex, D3D12_COMMAND_LIST_TYPE_DIRECT, 8);
 
         // 쉐이더에서 사용할 디스크립터 힙을 생성한다.
-        data->rootDescriptorPool = new D3D12RootDescriptorPool(16384);
+        data->rootDescriptorPool = new D3D12RootDescriptorPool(renderer->device, 16384);
 
         // 상수 버퍼 디스크립터 풀을 생성한다.
-        data->cbvDescriptorPool = new D3D12DescriptorPool(D3D12DescriptorPool::Type::SRV, 8192, false);
+        data->cbvDescriptorPool = new D3D12DescriptorPool(renderer->device, D3D12DescriptorPool::Type::SRV, 8192, false);
 
         // 다이나믹 상수 버퍼 생성
-        data->constantBuffer = static_cast<D3D12ConstantBuffer *>(renderer.CreateConstantBuffer(RHIRenderer::BufferType::Dynamic, 65536 * 16, nullptr));
+        data->constantBuffer = static_cast<D3D12ConstantBuffer *>(renderer->CreateConstantBuffer(RHIRenderer::BufferType::Dynamic, 65536 * 16, nullptr));
 
         // 상수 버퍼를 프로그램이 끝날 때 까지 Map 해놓고 쓴다. (Pinned) 
         data->constantBuffer->buffer->GetResource()->Map(0, nullptr, reinterpret_cast<void **>(&data->mappedConstantBase));
 
         data->cbvDescriptorHandles.SetGranularity(2048);
         data->cbvDescriptorHandles.Reserve(4096);
+
+        data->subResources.SetGranularity(256);
+        data->subResources.Reserve(256);
     }
 }
 
@@ -62,7 +66,7 @@ void D3D12FrameData::Shutdown() {
         data->cbvDescriptorPool->Clear();
         data->cbvDescriptorHandles.SetCount(0, false);
 
-        renderer.DestroyConstantBuffer(data->constantBuffer);
+        renderer->DestroyConstantBuffer(data->constantBuffer);
 
         SAFE_DELETE(data->cbvDescriptorPool);
         SAFE_DELETE(data->rootDescriptorPool);
@@ -90,14 +94,16 @@ void D3D12FrameData::BeginFrame() {
         data->commandListPool->Clear();
 
         data->usedConstantBytes = 0;
+
+        data->subResources.SetCount(0, false);
     }
 
     // 이번 프레임에 사용할 프레임 데이터를 사용하기 위해서는, GPU 에서 이전 프레임에 대한 렌더링이 완료되야 한다.
-    renderer.WaitFence(fenceValue);
+    renderer->WaitFence(fenceValue);
 }
 
 void D3D12FrameData::EndFrame() {
-    fenceValue = renderer.SignalFence();
+    fenceValue = renderer->SignalFence();
 }
 
 void D3D12FrameData::InitMemBlocks() {
@@ -198,7 +204,7 @@ void D3D12FrameData::FreeVisObjects() {
     numVisObjects = 0;
 }
 
-void *D3D12FrameData::AllocConstant(int threadIndex, int size, D3D12_CPU_DESCRIPTOR_HANDLE* outDescriptorHandlePtr) {
+RHIRenderer::GPUSubResource *D3D12FrameData::AllocConstant(int threadIndex, int size) {
     UINT alignedSize = (UINT)AlignUp(size, D3D12_CONSTANT_BUFFER_DATA_PLACEMENT_ALIGNMENT);
     if (alignedSize > D3D12_REQ_CONSTANT_BUFFER_ELEMENT_COUNT * 16) {
         BE_WARNLOG("Constant buffer view size cannot exceeds 64KB limit\n");
@@ -224,13 +230,15 @@ void *D3D12FrameData::AllocConstant(int threadIndex, int size, D3D12_CPU_DESCRIP
         return nullptr;
     }
 
-    renderer.device->CreateConstantBufferView(&cbvDesc, descriptorHandle);
-
+    renderer->device->CreateConstantBufferView(&cbvDesc, descriptorHandle);
     data->cbvDescriptorHandles.Append(descriptorHandle);
-    *outDescriptorHandlePtr = descriptorHandle;
 
-    void *outPtr = (byte *)data->mappedConstantBase + data->usedConstantBytes;
+    D3D12GPUSubResource subResource;
+    subResource.descriptorHandle = descriptorHandle;
+    subResource.writePtr = (byte *)data->mappedConstantBase + data->usedConstantBytes;
+    data->subResources.Append(subResource);
+
     data->usedConstantBytes += alignedSize;
 
-    return outPtr;
+    return &data->subResources.Last();
 }

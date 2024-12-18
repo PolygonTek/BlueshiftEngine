@@ -16,27 +16,26 @@
 
 #include "D3D12Common.h"
 
+class D3D12Renderer;
 class D3D12CommandListPool;
 class D3D12RootDescriptorPool;
 class D3D12DescriptorPool;
 class D3D12ConstantBuffer;
 class D3D12VisObject;
 
-class D3D12FrameData {
+class D3D12GPUSubResource : public RHIRenderer::GPUSubResource {
 public:
-    struct DataPerThread {
-        D3D12CommandListPool *      commandListPool = nullptr;
-        D3D12RootDescriptorPool *   rootDescriptorPool = nullptr;
-        D3D12DescriptorPool *       cbvDescriptorPool = nullptr;
-        D3D12ConstantBuffer *       constantBuffer = nullptr;
-        void *                      mappedConstantBase = nullptr;
-        UINT                        usedConstantBytes = 0;
-        Array<D3D12_CPU_DESCRIPTOR_HANDLE> cbvDescriptorHandles;
-    };
+    D3D12_CPU_DESCRIPTOR_HANDLE     descriptorHandle = {0};
+};
 
+class D3D12FrameData {
+    friend class D3D12Renderer;
+
+public:
     void                            Init();
     void                            Shutdown();
 
+                                    // 프레임 별로 임시로 할당하는 메모리 (not thread-safe)
     void *                          MemAlloc(int size);
     void *                          ClearedMemAlloc(int size);
     D3D12VisObject *                AllocVisObjects(int numVisObjects);
@@ -47,18 +46,16 @@ public:
 
     void                            ClearMemAllocs();
 
-    void *                          AllocConstant(int threadIndex, int size, D3D12_CPU_DESCRIPTOR_HANDLE *outDescriptorHandlePtr);
+    RHIRenderer::GPUSubResource *   AllocConstant(int threadIndex, int size);
 
     void                            BeginFrame();
     void                            EndFrame();
-
-    DataPerThread &                 GetThreadData(int threadIndex) { return threadData[threadIndex]; }
 
     UINT64                          GetFenceValue() const { return fenceValue; }
     void                            SetFenceValue(UINT64 fenceValue) { this->fenceValue = fenceValue; }
 
 private:
-struct MemBlock {
+    struct MemBlock {
         MemBlock *                  next;
         int32_t                     size;
         int32_t                     used;
@@ -74,6 +71,18 @@ struct MemBlock {
 
     int                             numVisObjects = 0;
     D3D12VisObject *                visObjects = nullptr;
+
+    struct DataPerThread {
+        D3D12CommandListPool *      commandListPool = nullptr;
+        D3D12RootDescriptorPool *   rootDescriptorPool = nullptr;
+        D3D12DescriptorPool *       cbvDescriptorPool = nullptr;
+        D3D12ConstantBuffer *       constantBuffer = nullptr;
+        void *                      mappedConstantBase = nullptr;
+        UINT                        usedConstantBytes = 0;
+        Array<D3D12_CPU_DESCRIPTOR_HANDLE> cbvDescriptorHandles;
+        D3D12_CPU_DESCRIPTOR_HANDLE psoDescriptorHandles[64] = { CD3DX12_CPU_DESCRIPTOR_HANDLE() };
+        Array<D3D12GPUSubResource>  subResources;
+    };
 
 #ifdef USE_RENDER_TASK
     DataPerThread                   threadData[MaxRenderTaskThreads];

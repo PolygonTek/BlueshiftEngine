@@ -16,33 +16,45 @@
 
 #include "D3D12Common.h"
 #include "D3D12Renderer.h"
+#include "D3D12VertexBuffer.h"
+#include "D3D12IndexBuffer.h"
+#include "D3D12PipelineState.h"
 
 class D3D12CommandListPool;
 
-class D3D12CommandList {
+class D3D12CommandList : public RHIRenderer::CommandList {
 public:
-    void                            Reset(bool resetCacheStates = true);
+    virtual void                    Reset(bool resetCacheStates = true) override;
 
-    void                            CloseAndExecute(D3D12CommandQueueType queueType);
+    virtual void                    CloseAndExecute(RHIRenderer::CommandQueueType queueType) override;
+
+    virtual int                     GetThreadIndex() const override;
+
+    ID3D12GraphicsCommandList *     GetGraphicsCommandList() { return graphicsCommandList; }
 
     void                            ResourceBarrier(ID3D12Resource *resource, D3D12_RESOURCE_STATES stateBefore, D3D12_RESOURCE_STATES stateAfter);
 
     void                            SetDescriptorHeaps(int numDescriptorHeaps, ID3D12DescriptorHeap *descriptorHeaps[]);
     void                            SetGraphicsRootSignature(ID3D12RootSignature *graphicsRootSignature);
-    void                            SetPipelineState(RHIRenderer::PipelineState *piplelineState);
-    void                            SetPrimitiveTopology(RHIRenderer::PrimitiveTopology primitiveTopology);
+
+    void                            SetPipelineState(const RHIRenderer::PipelineState *piplelineState);
     void                            SetVertexBuffers(int startSlot, int numViews, const RHIRenderer::VertexBuffer *vertexBuffers[]);
     void                            SetVertexBuffer(int slot, const RHIRenderer::VertexBuffer *vertexBuffer);
     void                            SetIndexBuffer(const RHIRenderer::IndexBuffer *indexBuffer);
 
-    static D3D12_PRIMITIVE_TOPOLOGY ToD3D12PrimitiveTopology(RHIRenderer::PrimitiveTopology primitiveTopology);
+    void                            Draw(uint32_t vertexCount, uint32_t startVertexLocation);
+    void                            DrawIndexed(uint32_t indexCount, uint32_t startIndexLocation, uint32_t baseVertexLocation);
+    void                            DrawInstanced(uint32_t vertexCount, uint32_t instanceCount, uint32_t startVertexLocation, uint32_t startInstanceLocation);
+    void                            DrawIndexedInstanced(uint32_t indexCount, uint32_t instanceCount, uint32_t startIndexLocation, uint32_t baseVertexLocation, uint32_t startInstanceLocation);
 
     ID3D12CommandAllocator *        commandAllocator = nullptr;
     ID3D12GraphicsCommandList *     graphicsCommandList = nullptr;
     D3D12CommandListPool *          parentPool = nullptr;
     LinkList<D3D12CommandList>      node;
+    const D3D12PipelineState *      currentPSO = nullptr;
 
 #ifdef USE_STATE_CACHE_FOR_COMMAND_LIST
+private:
     bool                            IsSameDescriptorHeaps(int numDescriptorHeaps, ID3D12DescriptorHeap *descriptorHeaps[]);
 
     StaticArray<ID3D12DescriptorHeap *, 16> cachedRootDescriptorHeaps;
@@ -64,6 +76,8 @@ BE_INLINE void D3D12CommandList::Reset(bool resetCacheStates) {
     // CommandList 를 CommandAllocator 를 이용하여 초기 상태로 리셋
     graphicsCommandList->Reset(commandAllocator, nullptr);
 
+    currentPSO = nullptr;
+
 #ifdef USE_STATE_CACHE_FOR_COMMAND_LIST
     if (resetCacheStates) {
         // 모든 캐시된 상태들을 초기값으로 변경
@@ -79,13 +93,13 @@ BE_INLINE void D3D12CommandList::Reset(bool resetCacheStates) {
 #endif
 }
 
-BE_INLINE void D3D12CommandList::CloseAndExecute(D3D12CommandQueueType queueType) {
-    assert(queueType < D3D12CommandQueueType::Count);
+BE_INLINE void D3D12CommandList::CloseAndExecute(RHIRenderer::CommandQueueType queueType) {
+    assert(queueType < RHIRenderer::CommandQueueType::Count);
 
     graphicsCommandList->Close();
 
     ID3D12CommandList *execCommandLists[] = { graphicsCommandList };
-    renderer.commandQueues[static_cast<int>(queueType)]->ExecuteCommandLists(COUNT_OF(execCommandLists), execCommandLists);
+    renderer->commandQueues[static_cast<int>(queueType)]->ExecuteCommandLists(COUNT_OF(execCommandLists), execCommandLists);
 }
 
 BE_INLINE void D3D12CommandList::ResourceBarrier(ID3D12Resource *resource, D3D12_RESOURCE_STATES stateBefore, D3D12_RESOURCE_STATES stateAfter) {
@@ -136,8 +150,8 @@ BE_INLINE void D3D12CommandList::SetGraphicsRootSignature(ID3D12RootSignature *g
     graphicsCommandList->SetGraphicsRootSignature(graphicsRootSignature);
 }
 
-BE_INLINE void D3D12CommandList::SetPipelineState(RHIRenderer::PipelineState *piplelineState) {
-    D3D12PipelineState *d3d12PipelineState = static_cast<D3D12PipelineState *>(piplelineState);
+BE_INLINE void D3D12CommandList::SetPipelineState(const RHIRenderer::PipelineState *piplelineState) {
+    const D3D12PipelineState *d3d12PipelineState = static_cast<const D3D12PipelineState *>(piplelineState);
 
 #ifdef USE_STATE_CACHE_FOR_COMMAND_LIST
     if (d3d12PipelineState->pso == cachedPipelineState) {
@@ -147,18 +161,9 @@ BE_INLINE void D3D12CommandList::SetPipelineState(RHIRenderer::PipelineState *pi
 #endif
     graphicsCommandList->SetPipelineState(d3d12PipelineState->pso);
     graphicsCommandList->SetGraphicsRootSignature(d3d12PipelineState->rootSignature);
-}
+    graphicsCommandList->IASetPrimitiveTopology(d3d12PipelineState->primitiveTopology);
 
-BE_INLINE void D3D12CommandList::SetPrimitiveTopology(RHIRenderer::PrimitiveTopology primitiveTopology) {
-    D3D12_PRIMITIVE_TOPOLOGY d3d12PrimitiveTopology = D3D12CommandList::ToD3D12PrimitiveTopology(primitiveTopology);
-
-#ifdef USE_STATE_CACHE_FOR_COMMAND_LIST
-    if (d3d12PrimitiveTopology == cachedPrimitiveTopology) {
-        return;
-    }
-    cachedPrimitiveTopology = d3d12PrimitiveTopology;
-#endif
-    graphicsCommandList->IASetPrimitiveTopology(d3d12PrimitiveTopology);
+    currentPSO = d3d12PipelineState;
 }
 
 BE_INLINE void D3D12CommandList::SetVertexBuffers(int startSlot, int numViews, const RHIRenderer::VertexBuffer *vertexBuffers[]) {

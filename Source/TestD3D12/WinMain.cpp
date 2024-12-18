@@ -297,8 +297,8 @@ LRESULT CALLBACK MainWndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lPar
         break;
     case WM_SIZE:
         if (wParam != SIZE_MINIMIZED) {
-            if (renderer.IsInitialized()) {
-                renderer.OnResize(LOWORD(lParam), HIWORD(lParam));
+            if (renderer && renderer->IsInitialized()) {
+                renderer->OnResize(LOWORD(lParam), HIWORD(lParam));
             }
         }
         return 0;

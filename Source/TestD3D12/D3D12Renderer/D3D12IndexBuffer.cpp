@@ -58,7 +58,7 @@ RHIRenderer::IndexBuffer *D3D12Renderer::CreateIndexBuffer(RHIRenderer::BufferTy
             heapProperties.VisibleNodeMask = 1;
 
             // CPU 에서 GPU 로 전송할 업로드 버퍼 생성
-            if (FAILED(renderer.device->CreateCommittedResource(
+            if (FAILED(device->CreateCommittedResource(
                 &heapProperties,
                 D3D12_HEAP_FLAG_NONE,
                 &uploadBufferDesc,
@@ -77,10 +77,10 @@ RHIRenderer::IndexBuffer *D3D12Renderer::CreateIndexBuffer(RHIRenderer::BufferTy
             uploadBuffer->Unmap(0, &writtenRange);
 
             // 업로드 버퍼에서 GPU 버퍼로 데이터 카피
-            renderer.resourceCommandList->Reset();
-            renderer.resourceCommandList->graphicsCommandList->CopyBufferRegion(bufferResource, 0, uploadBuffer, 0, bufferSize);
-            renderer.resourceCommandList->ResourceBarrier(bufferResource, D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_INDEX_BUFFER);
-            renderer.resourceCommandList->CloseAndExecute(D3D12CommandQueueType::Graphics);
+            resourceCommandList->Reset();
+            resourceCommandList->graphicsCommandList->CopyBufferRegion(bufferResource, 0, uploadBuffer, 0, bufferSize);
+            resourceCommandList->ResourceBarrier(bufferResource, D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_INDEX_BUFFER);
+            resourceCommandList->CloseAndExecute(CommandQueueType::Graphics);
         } else if (type == RHIRenderer::BufferType::Dynamic) {
             UINT8* mappedPtr = nullptr;
             bufferResource->Map(0, nullptr, reinterpret_cast<void **>(&mappedPtr));
@@ -96,10 +96,11 @@ RHIRenderer::IndexBuffer *D3D12Renderer::CreateIndexBuffer(RHIRenderer::BufferTy
     }
 
     if (uploadBuffer) {
-        renderer.MarkForRelease(uploadBuffer);
+        MarkForRelease(uploadBuffer);
     }
 
     D3D12IndexBuffer *indexBuffer = new D3D12IndexBuffer;
+    indexBuffer->bufferType = type;
     indexBuffer->buffer = buffer;
     indexBuffer->ibv.BufferLocation = bufferResource->GetGPUVirtualAddress();
     indexBuffer->ibv.Format = (indexSize == sizeof(uint16_t) ? DXGI_FORMAT_R16_UINT : DXGI_FORMAT_R32_UINT);
@@ -114,4 +115,9 @@ void D3D12Renderer::DestroyIndexBuffer(IndexBuffer *indexBuffer, bool immediate)
     } else {
         MarkForDelete(indexBuffer);
     }
+}
+
+void D3D12Renderer::SetIndexBuffer(CommandList *commandList, const IndexBuffer *indexBuffer) {
+    D3D12CommandList *d3d12CommandList = static_cast<D3D12CommandList *>(commandList);
+    d3d12CommandList->SetIndexBuffer(indexBuffer);
 }

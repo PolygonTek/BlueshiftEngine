@@ -269,34 +269,48 @@ public:
         Array<InputLayoutElement>   elements;
     };
 
-    class Resource {
+    class GPUResource {
     public:
-        virtual ~Resource() = default;
+        virtual ~GPUResource() = default;
     };
 
-    class Buffer : public Resource {
-    public:
-    };
-
-    class VertexBuffer : public Resource {
+    class Buffer : public GPUResource {
     public:
     };
 
-    class IndexBuffer : public Resource {
+    class VertexBuffer : public GPUResource {
     public:
+        BufferType                  bufferType;
     };
 
-    class ConstantBuffer : public Resource {
+    class IndexBuffer : public GPUResource {
     public:
+        BufferType                  bufferType;
     };
 
-    class Texture : public Resource {
+    class ConstantBuffer : public GPUResource {
     public:
+        BufferType                  bufferType;
     };
 
-    class Shader : public Resource {
+    class Texture : public GPUResource {
+    public:
+        TextureType                 textureType;
+    };
+
+    class Shader : public GPUResource {
     public:
         ShaderStage                 shaderStage = ShaderStage::Count;
+    };
+
+    class PipelineState : public GPUResource {
+    public:
+        uint64_t                    hash = 0;
+    };
+
+    class GPUSubResource {
+    public:
+        void *                      writePtr = nullptr;
     };
 
     struct RenderPass {
@@ -351,9 +365,19 @@ public:
         uint32_t                    sampleQuality = 0;
     };
 
-    class PipelineState : public Resource {
+    enum class CommandQueueType : uint8_t {
+        Graphics,
+        Compute,
+        Count
+    };
+
+    class CommandList {
     public:
-        uint64_t                    hash = 0;
+        virtual void                Reset(bool resetCacheStates = true) = 0;
+
+        virtual void                CloseAndExecute(RHIRenderer::CommandQueueType queueType) = 0;
+
+        virtual int                 GetThreadIndex() const = 0;
     };
 
     struct RasterizerStateType {
@@ -410,7 +434,6 @@ public:
     virtual Texture *               CreateTexture(TextureType textureType, const Image *image, Image::Format::Enum dstFormat, bool useMipmaps) = 0;
     virtual Texture *               CreateTextureFromFile(TextureType textureType, const char *filename, bool useCompression = true, bool useNormalMap = false) = 0;
     virtual void                    DestroyTexture(Texture *texture, bool immediate = false) = 0;
-
     virtual void                    GetTextureImage2D(Texture *texture, int level, Image::Format::Enum imageFormat, void *outPixels) = 0;
     virtual bool                    SetTextureSubImage2D(Texture *texture, int level, int x, int y, int width, int height, Image::Format::Enum imageFormat, const void *pixels) = 0;
     virtual bool                    SetTextureSubImage3D(Texture *texture, int level, int x, int y, int z, int width, int height, int depth, Image::Format::Enum imageFormat, const void *pixels) = 0;
@@ -421,6 +444,18 @@ public:
 
     virtual PipelineState *         CreatePSO(RHIRenderer::PipelineStateDesc *desc) = 0;
     virtual void                    DestroyPSO(PipelineState *pipelineState, bool immediate = false) = 0;
+
+    virtual void                    SetVertexBuffer(CommandList *commandList, int slot, const VertexBuffer *vertexBuffer) = 0;
+    virtual void                    SetIndexBuffer(CommandList *commandList, const IndexBuffer *indexBuffer) = 0;
+    virtual void                    SetConstantBuffer(CommandList *commandList, int slot, const ConstantBuffer *constantBuffer) = 0;
+    virtual void                    SetTexture(CommandList *commandList, int slot, const Texture *texture) = 0;
+    virtual void                    SetSubResource(CommandList *commandList, int slot, GPUSubResource *subResource) = 0;
+    virtual void                    SetPSO(CommandList *commandList, const PipelineState *pipelineState) = 0;
+
+    virtual void                    Draw(CommandList *commandList, uint32_t vertexCount, uint32_t startVertexLocation) = 0;
+    virtual void                    DrawIndexed(CommandList *commandList, uint32_t indexCount, uint32_t startIndexLocation, uint32_t baseVertexLocation) = 0;
+    virtual void                    DrawInstanced(CommandList *commandList, uint32_t vertexCount, uint32_t instanceCount, uint32_t startVertexLocation, uint32_t startInstanceLocation) = 0;
+    virtual void                    DrawIndexedInstanced(CommandList *commandList, uint32_t indexCount, uint32_t instanceCount, uint32_t startIndexLocation, uint32_t baseVertexLocation, uint32_t startInstanceLocation) = 0;
 
 protected:
     void                            SetupStates();

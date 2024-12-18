@@ -31,21 +31,23 @@ static constexpr float      CubeSpacing = 2.82842712f;
 D3D12App                    app;
 
 void D3D12App::Init(HWND hwnd) {
-    renderer.Init(hwnd);
+    renderer = new D3D12Renderer;
+    renderer->Init(hwnd);
 
     InitGameObjects();
 
 #ifdef USE_D3D12_MEMALLOC
-    renderer.PrintMemoryAllocatorStats();
+    renderer->PrintMemoryAllocatorStats();
 #endif
 }
 
 void D3D12App::Shutdown() {
-    renderer.Finish();
+    renderer->Finish();
 
     ClearGameObjects();
 
-    renderer.Shutdown();
+    renderer->Shutdown();
+    SAFE_DELETE(renderer);
 }
 
 void D3D12App::RunFrame(int frameMsec) {
@@ -61,12 +63,12 @@ void D3D12App::RunFrame(int frameMsec) {
 }
 
 void D3D12App::Render(int frameMsec) {
-    renderer.RenderScene();
+    renderer->RenderScene();
 
 #ifndef USE_RENDER_THREAD
-    renderer.BeginFrame();
-    renderer.RenderFrame();
-    renderer.EndFrame();
+    renderer->BeginFrame();
+    renderer->RenderFrame();
+    renderer->EndFrame();
 #endif
 }
 
@@ -99,7 +101,7 @@ void D3D12App::UpdateCamera() {
     PIX_CPU_SCOPED_EVENT(0, "D3D12App::UpdateCamera");
 
     Mat4 projMatrix;
-    float aspectRatio = renderer.viewport.Width / renderer.viewport.Height;
+    float aspectRatio = renderer->viewport.Width / renderer->viewport.Height;
     projMatrix.SetPerspectiveRH(45, aspectRatio, 1, 1000, false);
 
     Mat4 viewMatrix;
@@ -114,7 +116,7 @@ void D3D12App::ClearGameObjects() {
 
         gameObject->renderObjectDef.mesh.reset();
 
-        renderer.RemoveRenderObject(gameObject->renderObjectHandle);
+        renderer->RemoveRenderObject(gameObject->renderObjectHandle);
     }
 
     D3D12TriangleMesh::DestroyMesh(triangleMesh);
@@ -154,7 +156,7 @@ void D3D12App::InitTriangles() {
         gameObject->renderObjectDef.mesh = triangleMesh;
         gameObject->renderObjectDef.offset.Set(0, 0);
 
-        gameObject->renderObjectHandle = renderer.AddRenderObject(gameObject->renderObjectDef);
+        gameObject->renderObjectHandle = renderer->AddRenderObject(gameObject->renderObjectDef);
     }
 }
 
@@ -171,7 +173,7 @@ void D3D12App::InitCubes() {
         gameObject->renderObjectDef.mesh = cubeMesh;
         gameObject->renderObjectDef.worldMatrix.SetIdentity();
 
-        gameObject->renderObjectHandle = renderer.AddRenderObject(gameObject->renderObjectDef);
+        gameObject->renderObjectHandle = renderer->AddRenderObject(gameObject->renderObjectDef);
     }
 }
 
@@ -186,7 +188,7 @@ void D3D12App::UpdateTriangles() {
         gameObject->renderObjectDef.offset.x = 0.5f * Math::Cos(t);
         gameObject->renderObjectDef.offset.y = 0.5f * Math::Sin(t * 3);
 
-        renderer.UpdateRenderObject(gameObject->renderObjectHandle, gameObject->renderObjectDef);
+        renderer->UpdateRenderObject(gameObject->renderObjectHandle, gameObject->renderObjectDef);
     }
 }
 
@@ -205,7 +207,7 @@ void D3D12App::UpdateCubes() {
             D3D12GameObject* gameObject = gameObjects[index];
             gameObject->renderObjectDef.worldMatrix.SetTranslationRotation(Vec3(0, startX + CubeSpacing * x, startY + CubeSpacing * y), Mat3::FromRotationZYX(t * 1.0f, 0, t * 0.25f), false);
 
-            renderer.UpdateRenderObject(gameObject->renderObjectHandle, gameObject->renderObjectDef);
+            renderer->UpdateRenderObject(gameObject->renderObjectHandle, gameObject->renderObjectDef);
         }
     }
 }

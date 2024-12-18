@@ -24,126 +24,9 @@
 #include "D3D12FrameData.h"
 #include "../D3D12RenderObject.h"
 
+class D3D12PipelineState;
 class D3D12CommandList;
 class D3D12DescriptorPool;
-
-class D3D12Buffer : public RHIRenderer::Buffer {
-public:
-    D3D12Buffer() = default;
-    virtual ~D3D12Buffer() { Release(); }
-
-    void                                Release();
-
-    ID3D12Resource *                    GetResource();
-    uint64_t                            GetSize();
-
-#ifdef USE_D3D12_MEMALLOC
-    D3D12MA::Allocation *               bufferAllocation = nullptr;
-#else
-    ID3D12Resource *                    bufferResource = nullptr;
-#endif
-};
-
-class D3D12VertexBuffer : public RHIRenderer::VertexBuffer {
-public:
-    virtual ~D3D12VertexBuffer() { Release(); }
-
-    void                                Release() { SAFE_DELETE(buffer); }
-
-    D3D12Buffer *                       buffer = nullptr;
-    D3D12_VERTEX_BUFFER_VIEW            vbv = {};
-};
-
-class D3D12IndexBuffer : public RHIRenderer::IndexBuffer {
-public:
-    virtual ~D3D12IndexBuffer() { Release(); }
-
-    void                                Release() { SAFE_DELETE(buffer); }
-
-    D3D12Buffer *                       buffer = nullptr;
-    D3D12_INDEX_BUFFER_VIEW             ibv = {};
-};
-
-class D3D12ConstantBuffer : public RHIRenderer::ConstantBuffer {
-public:
-    virtual ~D3D12ConstantBuffer() { Release(); }
-
-    void                                Release() { SAFE_DELETE(buffer); }
-
-    D3D12Buffer *                       buffer = nullptr;
-};
-
-class D3D12Texture : public RHIRenderer::Texture {
-public:
-    virtual ~D3D12Texture() { Release(); }
-
-    void                                Release();
-
-    static void                         AdjustTextureFormat(bool useCompression, bool useNormalMap, Image::Format::Enum inFormat, Image::Format::Enum *outFormat);
-
-#ifdef USE_D3D12_MEMALLOC
-    D3D12MA::Allocation *               textureAllocation = nullptr;
-#else
-    ID3D12Resource *                    textureResource = nullptr;
-#endif
-    D3D12_RESOURCE_DESC                 textureDesc;
-    D3D12_CPU_DESCRIPTOR_HANDLE         descriptorHandle = {0};
-};
-
-class D3D12Shader : public RHIRenderer::Shader {
-public:
-    virtual ~D3D12Shader() { Release(); }
-
-    void                                Release();
-
-    uint64_t                            hash = 0;
-    byte *                              compiledShaderData = nullptr;
-    uint32_t                            compiledShaderDataSize = 0;
-    ID3D12RootSignature *               rootSignature = nullptr;
-};
-
-class D3D12PipelineState : public RHIRenderer::PipelineState {
-public:
-    virtual ~D3D12PipelineState() { Release(); }
-
-    void                                Release();
-
-    struct PipelineStateStream1 {
-        CD3DX12_PIPELINE_STATE_STREAM_FLAGS flags;
-        CD3DX12_PIPELINE_STATE_STREAM_ROOT_SIGNATURE rootSignature;
-        CD3DX12_PIPELINE_STATE_STREAM_INPUT_LAYOUT inputLayout;
-        CD3DX12_PIPELINE_STATE_STREAM_PRIMITIVE_TOPOLOGY primitiveTopology;
-    };
-
-    struct PipelineStateStream2 {
-        CD3DX12_PIPELINE_STATE_STREAM_BLEND_DESC blendDesc;
-        CD3DX12_PIPELINE_STATE_STREAM_DEPTH_STENCIL1 depthStencil;
-        CD3DX12_PIPELINE_STATE_STREAM_DEPTH_STENCIL_FORMAT depthStencilFormat;
-        CD3DX12_PIPELINE_STATE_STREAM_RASTERIZER rasterizer;
-        CD3DX12_PIPELINE_STATE_STREAM_RENDER_TARGET_FORMATS renderTargetFormats;
-        CD3DX12_PIPELINE_STATE_STREAM_SAMPLE_DESC sampleDesc;
-        CD3DX12_PIPELINE_STATE_STREAM_SAMPLE_MASK sampleMask;
-    };
-
-    struct PipelineStateStream {
-        PipelineStateStream1 stream1;
-        CD3DX12_PIPELINE_STATE_STREAM_VS vs;
-        CD3DX12_PIPELINE_STATE_STREAM_GS gs;
-        CD3DX12_PIPELINE_STATE_STREAM_HS hs;
-        CD3DX12_PIPELINE_STATE_STREAM_DS ds;
-        CD3DX12_PIPELINE_STATE_STREAM_PS ps;
-        PipelineStateStream2 stream2;
-    };
-
-    struct CachedPipelineStateStream {
-        PipelineStateStream1 stream1;
-        PipelineStateStream2 stream2;
-        CD3DX12_PIPELINE_STATE_STREAM_CACHED_PSO shaderCachedPSO;
-    };
-
-    ID3D12PipelineState *               pso = nullptr;
-    ID3D12RootSignature *               rootSignature = nullptr;
-};
 
 #ifdef USE_RENDER_THREAD
 enum class FrameSyncState : uint8_t {
@@ -152,16 +35,10 @@ enum class FrameSyncState : uint8_t {
 };
 #endif
 
-enum class D3D12CommandQueueType : uint8_t {
-    Graphics,
-    Compute,
-    Count
-};
-
 struct D3D12PendingResource {
     UINT64                              fenceValue = 0;
     ID3D12Resource *                    resourceToRelease = nullptr;
-    RHIRenderer::Resource *             resourceToDelete = nullptr;
+    RHIRenderer::GPUResource *          resourceToDelete = nullptr;
 };
 
 class D3D12Renderer : public RHIRenderer {
@@ -173,13 +50,7 @@ public:
     virtual void                        EndFrame() override;
     virtual void                        SwapChainBuffers(bool vsync) override;
 
-    void                                OnResize(int width, int height);
-
-    void                                CreateDevice(IDXGIAdapter1 **adapterPtr);
-    void                                CreateSwapChain(HWND hwnd, int width, int height);
-    void                                CreateRTVs();
-    void                                CreateDSV(int width, int height);
-    void                                CreateShaderCompiler();
+    virtual void                        OnResize(int width, int height) override;
 
     ShaderFormat                        GetShaderFormat() const;
 
@@ -192,8 +63,8 @@ public:
 
     void                                WaitAllFrameFences();
 
+    void                                MarkForDelete(GPUResource *resource);
     void                                MarkForRelease(ID3D12Resource *resource);
-    void                                MarkForDelete(Resource *resource);
     void                                OnPendingResourceAdded();
     void                                FreePendingResources(bool waitPendings = false);
 
@@ -212,7 +83,6 @@ public:
     virtual Texture *                   CreateTexture(TextureType textureType, const Image *image, Image::Format::Enum dstFormat, bool useMipmaps) override;
     virtual Texture *                   CreateTextureFromFile(TextureType textureType, const char *filename, bool useCompression = true, bool useNormalMap = false) override;
     virtual void                        DestroyTexture(Texture *texture, bool immediate = false) override;
-
     virtual void                        GetTextureImage2D(Texture *texture, int level, Image::Format::Enum imageFormat, void *outPixels) override;
     virtual bool                        SetTextureSubImage2D(Texture *texture, int level, int x, int y, int width, int height, Image::Format::Enum imageFormat, const void *pixels) override;
     virtual bool                        SetTextureSubImage3D(Texture *texture, int level, int x, int y, int z, int width, int height, int depth, Image::Format::Enum imageFormat, const void *pixels) override;
@@ -223,6 +93,18 @@ public:
 
     virtual PipelineState *             CreatePSO(RHIRenderer::PipelineStateDesc *desc) override;
     virtual void                        DestroyPSO(PipelineState *pipelineState, bool immediate = false) override;
+
+    virtual void                        SetVertexBuffer(CommandList *commandList, int slot, const VertexBuffer *vertexBuffer) override;
+    virtual void                        SetIndexBuffer(CommandList *commandList, const IndexBuffer *indexBuffer) override;
+    virtual void                        SetConstantBuffer(CommandList *commandList, int slot, const ConstantBuffer *constantBuffer) override;
+    virtual void                        SetTexture(CommandList *commandList, int slot, const Texture *texture) override;
+    virtual void                        SetSubResource(CommandList *commandList, int slot, GPUSubResource *subResource) override;
+    virtual void                        SetPSO(CommandList *commandList, const PipelineState *pipelineState) override;
+
+    virtual void                        Draw(CommandList *commandList, uint32_t vertexCount, uint32_t startVertexLocation) override;
+    virtual void                        DrawIndexed(CommandList *commandList, uint32_t indexCount, uint32_t startIndexLocation, uint32_t baseVertexLocation) override;
+    virtual void                        DrawInstanced(CommandList *commandList, uint32_t vertexCount, uint32_t instanceCount, uint32_t startVertexLocation, uint32_t startInstanceLocation) override;
+    virtual void                        DrawIndexedInstanced(CommandList *commandList, uint32_t indexCount, uint32_t instanceCount, uint32_t startIndexLocation, uint32_t baseVertexLocation, uint32_t startInstanceLocation) override;
 
     PipelineState *                     CreateBasicPSO(ID3D12RootSignature *rootSignature, const D3D12_SHADER_BYTECODE &byteCodeVS, const D3D12_SHADER_BYTECODE &byteCodePS, const D3D12_INPUT_LAYOUT_DESC &inputLayout);
     PipelineState *                     CreateBasicPSO(ID3D12RootSignature *rootSignature, const char *shaderFilename, const D3D12_INPUT_LAYOUT_DESC &inputLayout);
@@ -236,6 +118,12 @@ public:
     bool                                CompileShaderDXC(const ShaderCompileInput *compileInput, ShaderCompileOutput *compileOutput);
     bool                                LoadCompiledShader(const char *name, const uint64_t hash, byte **compiledShaderDataPtr, uint32_t *compiledShaderDataSizePtr);
     void                                WriteCompiledShader(const char *name, const uint64_t hash, const byte *compiledShaderData, uint32_t compiledShaderDataSize);
+
+    void                                CreateDevice(IDXGIAdapter1 **adapterPtr);
+    void                                CreateSwapChain(HWND hwnd, int width, int height);
+    void                                CreateRTVs();
+    void                                CreateDSV(int width, int height);
+    void                                CreateShaderCompiler();
 
 #ifdef USE_D3D12_MEMALLOC
     void                                PrintMemoryAllocatorStats();
@@ -273,7 +161,7 @@ public:
     ID3D12Device5 *                     device = nullptr;
     IDXGIFactory4 *                     dxgiFactory = nullptr;
     IDXGISwapChain3 *                   dxgiSwapChain = nullptr;
-    ID3D12CommandQueue *                commandQueues[to_int(D3D12CommandQueueType::Count)] = {};
+    ID3D12CommandQueue *                commandQueues[to_int(CommandQueueType::Count)] = {};
     D3D12CommandListPool *              commandListPool = nullptr;
     D3D12CommandList *                  resourceCommandList = nullptr;
     ID3D12Fence *                       fence = nullptr;
@@ -314,6 +202,7 @@ public:
     UINT                                currentBackBufferIndex = 0;
     D3D12_VIEWPORT                      viewport = {};
     D3D12_RECT                          scissorRect = {};
+    D3D12DescriptorPool *               cbvDescriptorPool = nullptr;
     D3D12DescriptorPool *               srvDescriptorPool = nullptr;
     D3D12DescriptorPool *               rtvDescriptorPool = nullptr;
     D3D12DescriptorPool *               dsvDescriptorPool = nullptr;
@@ -357,4 +246,4 @@ public:
 #endif
 };
 
-extern D3D12Renderer                    renderer;
+extern D3D12Renderer *                  renderer;

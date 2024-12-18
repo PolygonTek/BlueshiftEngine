@@ -14,6 +14,7 @@
 
 #include "Precompiled.h"
 #include "D3D12Renderer.h"
+#include "D3D12Buffer.h"
 
 void D3D12Buffer::Release() {
 #ifdef USE_D3D12_MEMALLOC
@@ -81,7 +82,7 @@ RHIRenderer::Buffer* D3D12Renderer::CreateBuffer(BufferUsage usage, int size) {
     allocationDesc.HeapType = heapType;
 
     D3D12MA::Allocation *bufferAllocation;
-    if (FAILED(renderer.allocator->CreateResource(
+    if (FAILED(allocator->CreateResource(
         &allocationDesc,
         &bufferDesc,
         initialState,
@@ -99,7 +100,7 @@ RHIRenderer::Buffer* D3D12Renderer::CreateBuffer(BufferUsage usage, int size) {
     heapProperties.VisibleNodeMask = 1;
 
     ID3D12Resource *bufferResource = nullptr;
-    if (FAILED(renderer.device->CreateCommittedResource(
+    if (FAILED(device->CreateCommittedResource(
         &heapProperties,
         D3D12_HEAP_FLAG_NONE,
         &bufferDesc,

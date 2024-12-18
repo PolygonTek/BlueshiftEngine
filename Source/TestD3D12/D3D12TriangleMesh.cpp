@@ -14,8 +14,6 @@
 
 #include "Precompiled.h"
 #include "D3D12Renderer/D3D12Renderer.h"
-#include "D3D12Renderer/D3D12CommandList.h"
-#include "D3D12Renderer/D3D12RootDescriptorPool.h"
 #include "D3D12TriangleMesh.h"
 
 struct TriangleVertex {
@@ -58,19 +56,19 @@ void D3D12TriangleMesh::InitMesh() {
         0, 1, 2
     };
 
-    vertexBuffer = renderer.CreateVertexBuffer(RHIRenderer::BufferType::Static, sizeof(verts[0]), COUNT_OF(verts), (void *)verts);
-    indexBuffer = renderer.CreateIndexBuffer(RHIRenderer::BufferType::Static, sizeof(indexes[0]), COUNT_OF(indexes), (void *)indexes);
-    texture = renderer.CreateTextureFromFile(RHIRenderer::TextureType::Texture2D, "Data/EngineTextures/checker.dds");
+    vertexBuffer = renderer->CreateVertexBuffer(RHIRenderer::BufferType::Static, sizeof(verts[0]), COUNT_OF(verts), (void *)verts);
+    indexBuffer = renderer->CreateIndexBuffer(RHIRenderer::BufferType::Static, sizeof(indexes[0]), COUNT_OF(indexes), (void *)indexes);
+    texture = renderer->CreateTextureFromFile(RHIRenderer::TextureType::Texture2D, "Data/EngineTextures/checker.dds");
 
     InitPipelineState();
 }
 
 void D3D12TriangleMesh::FreeMesh() {
-    renderer.DestroyTexture(texture);
-    renderer.DestroyVertexBuffer(vertexBuffer);
-    renderer.DestroyIndexBuffer(indexBuffer);
-    renderer.DestroyPSO(singlePSO);
-    renderer.DestroyPSO(instancingPSO);
+    renderer->DestroyTexture(texture);
+    renderer->DestroyVertexBuffer(vertexBuffer);
+    renderer->DestroyIndexBuffer(indexBuffer);
+    renderer->DestroyPSO(singlePSO);
+    renderer->DestroyPSO(instancingPSO);
 }
 
 void D3D12TriangleMesh::InitPipelineState() {
@@ -86,146 +84,94 @@ void D3D12TriangleMesh::InitPipelineState() {
     renderPass.renderTargetFormats[0] = Image::Format::RGBA_8_8_8_8;
     renderPass.depthStencilFormat = Image::Format::DepthStencil_24_8;
 
-    RHIRenderer::Shader *triangleVS = static_cast<RHIRenderer::Shader *>(renderer.CreateShaderFromFile(RHIRenderer::ShaderModel::SM_6_0, RHIRenderer::ShaderStage::Vertex, "Source/TestD3D12/Shaders/Triangle.hlsl", "VSMain"));
-    RHIRenderer::Shader *trianglePS = static_cast<RHIRenderer::Shader *>(renderer.CreateShaderFromFile(RHIRenderer::ShaderModel::SM_6_0, RHIRenderer::ShaderStage::Fragment, "Source/TestD3D12/Shaders/Triangle.hlsl", "PSMain"));
+    RHIRenderer::Shader *triangleVS = static_cast<RHIRenderer::Shader *>(renderer->CreateShaderFromFile(RHIRenderer::ShaderModel::SM_6_0, RHIRenderer::ShaderStage::Vertex, "Source/TestD3D12/Shaders/Triangle.hlsl", "VSMain"));
+    RHIRenderer::Shader *trianglePS = static_cast<RHIRenderer::Shader *>(renderer->CreateShaderFromFile(RHIRenderer::ShaderModel::SM_6_0, RHIRenderer::ShaderStage::Fragment, "Source/TestD3D12/Shaders/Triangle.hlsl", "PSMain"));
 
     if (triangleVS && trianglePS) {
         RHIRenderer::PipelineStateDesc psoDesc;
         psoDesc.vs = triangleVS;
         psoDesc.ps = trianglePS;
-        psoDesc.rasterizerState = renderer.GetRasterizerState(RHIRenderer::RasterizerStateType::SolidFrontSided);
-        psoDesc.depthStencilState = renderer.GetDepthStencilState(RHIRenderer::DepthStencilStateType::Default);
-        psoDesc.blendState = renderer.GetBlendState(RHIRenderer::BlendStateType::Opaque);
+        psoDesc.rasterizerState = renderer->GetRasterizerState(RHIRenderer::RasterizerStateType::SolidFrontSided);
+        psoDesc.depthStencilState = renderer->GetDepthStencilState(RHIRenderer::DepthStencilStateType::Default);
+        psoDesc.blendState = renderer->GetBlendState(RHIRenderer::BlendStateType::Opaque);
         psoDesc.inputLayout = &inputLayout;
         psoDesc.primitiveTopology = RHIRenderer::PrimitiveTopology::TriangleList;
         psoDesc.renderPass = &renderPass;
-        singlePSO = renderer.CreatePSO(&psoDesc);
+        singlePSO = renderer->CreatePSO(&psoDesc);
     }
 
     if (triangleVS) {
-        renderer.DestroyShader(triangleVS, true);
+        renderer->DestroyShader(triangleVS, true);
     }
     if (trianglePS) {
-        renderer.DestroyShader(trianglePS, true);
+        renderer->DestroyShader(trianglePS, true);
     }
 
-    RHIRenderer::Shader *triangleInstancingVS = static_cast<RHIRenderer::Shader *>(renderer.CreateShaderFromFile(RHIRenderer::ShaderModel::SM_6_0, RHIRenderer::ShaderStage::Vertex, "Source/TestD3D12/Shaders/TriangleInstancing.hlsl", "VSMain"));
-    RHIRenderer::Shader *triangleInstancingPS = static_cast<RHIRenderer::Shader *>(renderer.CreateShaderFromFile(RHIRenderer::ShaderModel::SM_6_0, RHIRenderer::ShaderStage::Fragment, "Source/TestD3D12/Shaders/TriangleInstancing.hlsl", "PSMain"));
+    RHIRenderer::Shader *triangleInstancingVS = static_cast<RHIRenderer::Shader *>(renderer->CreateShaderFromFile(RHIRenderer::ShaderModel::SM_6_0, RHIRenderer::ShaderStage::Vertex, "Source/TestD3D12/Shaders/TriangleInstancing.hlsl", "VSMain"));
+    RHIRenderer::Shader *triangleInstancingPS = static_cast<RHIRenderer::Shader *>(renderer->CreateShaderFromFile(RHIRenderer::ShaderModel::SM_6_0, RHIRenderer::ShaderStage::Fragment, "Source/TestD3D12/Shaders/TriangleInstancing.hlsl", "PSMain"));
 
     if (triangleInstancingVS && triangleInstancingPS) {
         RHIRenderer::PipelineStateDesc psoDesc;
         psoDesc.vs = triangleInstancingVS;
         psoDesc.ps = triangleInstancingPS;
-        psoDesc.rasterizerState = renderer.GetRasterizerState(RHIRenderer::RasterizerStateType::SolidFrontSided);
-        psoDesc.depthStencilState = renderer.GetDepthStencilState(RHIRenderer::DepthStencilStateType::Default);
-        psoDesc.blendState = renderer.GetBlendState(RHIRenderer::BlendStateType::Opaque);
+        psoDesc.rasterizerState = renderer->GetRasterizerState(RHIRenderer::RasterizerStateType::SolidFrontSided);
+        psoDesc.depthStencilState = renderer->GetDepthStencilState(RHIRenderer::DepthStencilStateType::Default);
+        psoDesc.blendState = renderer->GetBlendState(RHIRenderer::BlendStateType::Opaque);
         psoDesc.inputLayout = &inputLayout;
         psoDesc.primitiveTopology = RHIRenderer::PrimitiveTopology::TriangleList;
         psoDesc.renderPass = &renderPass;
-        instancingPSO = renderer.CreatePSO(&psoDesc);
+        instancingPSO = renderer->CreatePSO(&psoDesc);
     }
 
     if (triangleInstancingVS) {
-        renderer.DestroyShader(triangleInstancingVS, true);
+        renderer->DestroyShader(triangleInstancingVS, true);
     }
     if (triangleInstancingPS) {
-        renderer.DestroyShader(triangleInstancingPS, true);
+        renderer->DestroyShader(triangleInstancingPS, true);
     }
 }
 
-void D3D12TriangleMesh::DrawMesh(int threadIndex, D3D12CommandList *commandList, const Vec2& offset) {
-    D3D12RootDescriptorPool* rootDescriptorPool = renderer.currentFrameData->GetThreadData(threadIndex).rootDescriptorPool;
+void D3D12TriangleMesh::DrawMesh(RHIRenderer::CommandList *commandList, const Vec2 &offset) {
+    int threadIndex = commandList->GetThreadIndex();
 
     // 상수 버퍼 공간을 할당한다.
-    D3D12_CPU_DESCRIPTOR_HANDLE cbvDescriptorHandle = {0};
-    void *writePtr = renderer.currentFrameData->AllocConstant(threadIndex, sizeof(TriangleConstantData), &cbvDescriptorHandle);
-    if (!writePtr) {
+    RHIRenderer::GPUSubResource *cbSubResource = renderer->currentFrameData->AllocConstant(threadIndex, sizeof(TriangleConstantData));
+    if (!cbSubResource) {
         return;
     }
 
-    TriangleConstantData *constantDataPtr = (reinterpret_cast<TriangleConstantData*>(writePtr));
+    TriangleConstantData *constantDataPtr = reinterpret_cast<TriangleConstantData*>(cbSubResource->writePtr);
     constantDataPtr->offset.x = offset.x;
     constantDataPtr->offset.y = offset.y;
 
-    // 2개의 디스크립터를 갖는 루트 디스크립터 테이블을 할당한다. 여기서 디스크립터 테이블은 연속된 디스크립터 핸들을 말한다.
-    D3D12_CPU_DESCRIPTOR_HANDLE cpuRootDescriptorHandle;
-    D3D12_GPU_DESCRIPTOR_HANDLE gpuRootDescriptorHandle;
-    if (!rootDescriptorPool->AllocRange(2, &cpuRootDescriptorHandle, &gpuRootDescriptorHandle)) {
-        return;
-    }
+    renderer->SetTexture(commandList, 0, texture);
+    renderer->SetSubResource(commandList, 1, cbSubResource);
 
-    // 루트 디스크립터 테이블에 SRV 디스크립터 카피 - 0번
-    CD3DX12_CPU_DESCRIPTOR_HANDLE srvDest(cpuRootDescriptorHandle, 0, rootDescriptorPool->descriptorHandleSize);
-    renderer.device->CopyDescriptorsSimple(1, srvDest, static_cast<D3D12Texture *>(texture)->descriptorHandle, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
-
-    // 루트 디스크립터 테이블에 CBV 디스크립터 카피 - 1번
-    CD3DX12_CPU_DESCRIPTOR_HANDLE cbvDest(cpuRootDescriptorHandle, 1, rootDescriptorPool->descriptorHandleSize);
-    renderer.device->CopyDescriptorsSimple(1, cbvDest, cbvDescriptorHandle, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
-
-    // 루트 디스크립터 힙을 지정한다.
-    ID3D12DescriptorHeap *descriptorHeaps[] = { rootDescriptorPool->descriptorHeap };
-    commandList->SetDescriptorHeaps(COUNT_OF(descriptorHeaps), descriptorHeaps);
-
-    commandList->SetPipelineState(singlePSO);
-    commandList->SetPrimitiveTopology(RHIRenderer::PrimitiveTopology::TriangleList);
- 
-    // 위에서 할당한 루트 디스크립터 테이블을 세팅한다.
-    commandList->graphicsCommandList->SetGraphicsRootDescriptorTable(0, gpuRootDescriptorHandle);
-
-    //gpuRootDescriptorHandle.Offset(1, rootDescriptorPool->descriptorHandleSize * 2);
-    //commandList->graphicsCommandList->SetGraphicsRootDescriptorTable(1, gpuRootDescriptorHandle);
-
-    commandList->SetVertexBuffer(0, vertexBuffer);
-    commandList->SetIndexBuffer(indexBuffer);
-
-    commandList->graphicsCommandList->DrawIndexedInstanced(3, 1, 0, 0, 0);
+    renderer->SetPSO(commandList, singlePSO);
+    renderer->SetVertexBuffer(commandList, 0, vertexBuffer);
+    renderer->SetIndexBuffer(commandList, indexBuffer);
+    renderer->DrawIndexed(commandList, 3, 0, 0);
 }
 
-void D3D12TriangleMesh::DrawMeshInstanced(int threadIndex, D3D12CommandList* commandList, const Vec2* instanceData, int instanceCount) {
-    D3D12RootDescriptorPool *rootDescriptorPool = renderer.currentFrameData->GetThreadData(threadIndex).rootDescriptorPool;
+void D3D12TriangleMesh::DrawMeshInstanced(RHIRenderer::CommandList *commandList, const Vec2 *instanceData, int instanceCount) {
+    int threadIndex = commandList->GetThreadIndex();
 
     // 상수 버퍼 공간을 할당한다.
-    D3D12_CPU_DESCRIPTOR_HANDLE cbvDescriptorHandle = { 0 };
-    void *writePtr = renderer.currentFrameData->AllocConstant(threadIndex, sizeof(TriangleInstancedConstantData), &cbvDescriptorHandle);
-    if (!writePtr) {
+    RHIRenderer::GPUSubResource *cbSubResource = renderer->currentFrameData->AllocConstant(threadIndex, sizeof(TriangleInstancedConstantData));
+    if (!cbSubResource) {
         return;
     }
 
-    TriangleInstancedConstantData *constantDataPtr = (reinterpret_cast<TriangleInstancedConstantData *>(writePtr));
+    TriangleInstancedConstantData *constantDataPtr = reinterpret_cast<TriangleInstancedConstantData *>(cbSubResource->writePtr);
     for (int i = 0; i < instanceCount; ++i) {
         constantDataPtr->offset[i] = Vec4(instanceData[i], Vec2::zero);
     }
 
-    // 2개의 디스크립터를 갖는 루트 디스크립터 테이블을 할당한다. 여기서 디스크립터 테이블은 연속된 디스크립터 핸들을 말한다.
-    D3D12_CPU_DESCRIPTOR_HANDLE cpuRootDescriptorHandle;
-    D3D12_GPU_DESCRIPTOR_HANDLE gpuRootDescriptorHandle;
-    if (!rootDescriptorPool->AllocRange(2, &cpuRootDescriptorHandle, &gpuRootDescriptorHandle)) {
-        return;
-    }
+    renderer->SetTexture(commandList, 0, texture);
+    renderer->SetSubResource(commandList, 1, cbSubResource);
 
-    // 루트 디스크립터 테이블에 SRV 디스크립터 카피 - 0번
-    CD3DX12_CPU_DESCRIPTOR_HANDLE srvDest(cpuRootDescriptorHandle, 0, rootDescriptorPool->descriptorHandleSize);
-    renderer.device->CopyDescriptorsSimple(1, srvDest, static_cast<D3D12Texture *>(texture)->descriptorHandle, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
-
-    // 루트 디스크립터 테이블에 CBV 디스크립터 카피 - 1번
-    CD3DX12_CPU_DESCRIPTOR_HANDLE cbvDest(cpuRootDescriptorHandle, 1, rootDescriptorPool->descriptorHandleSize);
-    renderer.device->CopyDescriptorsSimple(1, cbvDest, cbvDescriptorHandle, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
-
-    // 루트 디스크립터 힙을 지정한다.
-    ID3D12DescriptorHeap *descriptorHeaps[] = { rootDescriptorPool->descriptorHeap };
-    commandList->SetDescriptorHeaps(COUNT_OF(descriptorHeaps), descriptorHeaps);
-
-    commandList->SetPipelineState(instancingPSO);
-    commandList->SetPrimitiveTopology(RHIRenderer::PrimitiveTopology::TriangleList);
-
-    // 위에서 할당한 루트 디스크립터 테이블을 세팅한다.
-    commandList->graphicsCommandList->SetGraphicsRootDescriptorTable(0, gpuRootDescriptorHandle);
-
-    //gpuRootDescriptorHandle.Offset(1, rootDescriptorPool->descriptorHandleSize * 2);
-    //commandList->graphicsCommandList->SetGraphicsRootDescriptorTable(1, gpuRootDescriptorHandle);
-
-    commandList->SetVertexBuffer(0, vertexBuffer);
-    commandList->SetIndexBuffer(indexBuffer);
-
-    commandList->graphicsCommandList->DrawIndexedInstanced(3, instanceCount, 0, 0, 0);
+    renderer->SetPSO(commandList, instancingPSO);
+    renderer->SetVertexBuffer(commandList, 0, vertexBuffer);
+    renderer->SetIndexBuffer(commandList, indexBuffer);
+    renderer->DrawIndexedInstanced(commandList, 3, instanceCount, 0, 0, 0);
 }

@@ -14,7 +14,18 @@
 
 #include "Precompiled.h"
 #include "D3D12Renderer.h"
+#include "D3D12ConstantBuffer.h"
 #include "D3D12CommandList.h"
+#include "D3D12DescriptorPool.h"
+
+void D3D12ConstantBuffer::Release() {
+    if (descriptorHandle.ptr != 0) {
+        renderer->srvDescriptorPool->Free(descriptorHandle);
+        descriptorHandle.ptr = 0;
+    }
+
+    SAFE_DELETE(buffer);
+}
 
 RHIRenderer::ConstantBuffer* D3D12Renderer::CreateConstantBuffer(BufferType type, int size, void *data) {
     // 상수 버퍼는 어차피 GPU 에 요청하면 256 바이트로 주소 & 사이즈가 정렬된다.
@@ -57,7 +68,7 @@ RHIRenderer::ConstantBuffer* D3D12Renderer::CreateConstantBuffer(BufferType type
             heapProperties.VisibleNodeMask = 1;
 
             // CPU 에서 GPU 로 전송할 업로드 버퍼 생성
-            if (FAILED(renderer.device->CreateCommittedResource(
+            if (FAILED(device->CreateCommittedResource(
                 &heapProperties,
                 D3D12_HEAP_FLAG_NONE,
                 &uploadBufferDesc,
@@ -76,10 +87,10 @@ RHIRenderer::ConstantBuffer* D3D12Renderer::CreateConstantBuffer(BufferType type
             uploadBuffer->Unmap(0, &writtenRange);
 
             // 업로드 버퍼에서 GPU 버퍼로 데이터 카피
-            renderer.resourceCommandList->Reset();
-            renderer.resourceCommandList->graphicsCommandList->CopyBufferRegion(bufferResource, 0, uploadBuffer, 0, alignedSize);
-            renderer.resourceCommandList->ResourceBarrier(bufferResource, D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER);
-            renderer.resourceCommandList->CloseAndExecute(D3D12CommandQueueType::Graphics);
+            resourceCommandList->Reset();
+            resourceCommandList->graphicsCommandList->CopyBufferRegion(bufferResource, 0, uploadBuffer, 0, alignedSize);
+            resourceCommandList->ResourceBarrier(bufferResource, D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER);
+            resourceCommandList->CloseAndExecute(CommandQueueType::Graphics);
         } else if (type == RHIRenderer::BufferType::Dynamic) {
             UINT8 *mappedPtr = nullptr;
             bufferResource->Map(0, nullptr, reinterpret_cast<void **>(&mappedPtr));
@@ -95,11 +106,24 @@ RHIRenderer::ConstantBuffer* D3D12Renderer::CreateConstantBuffer(BufferType type
     }
 
     if (uploadBuffer) {
-        renderer.MarkForRelease(uploadBuffer);
+        MarkForRelease(uploadBuffer);
+    }
+
+    D3D12_CPU_DESCRIPTOR_HANDLE descriptorHandle = { 0 };
+
+    if (type == RHIRenderer::BufferType::Static) {
+        D3D12_CONSTANT_BUFFER_VIEW_DESC cbvDesc = { 0 };
+        cbvDesc.BufferLocation = bufferResource->GetGPUVirtualAddress();
+        cbvDesc.SizeInBytes = alignedSize;
+
+        descriptorHandle = cbvDescriptorPool->Alloc();
+        device->CreateConstantBufferView(&cbvDesc, descriptorHandle);
     }
 
     D3D12ConstantBuffer* constantBuffer = new D3D12ConstantBuffer;
+    constantBuffer->bufferType = type;
     constantBuffer->buffer = buffer;
+    constantBuffer->descriptorHandle = descriptorHandle;
 
     return constantBuffer;
 }
@@ -110,4 +134,14 @@ void D3D12Renderer::DestroyConstantBuffer(ConstantBuffer *constantBuffer, bool i
     } else {
         MarkForDelete(constantBuffer);
     }
+}
+
+void D3D12Renderer::SetConstantBuffer(CommandList *commandList, int slot, const ConstantBuffer *constantBuffer) {
+    D3D12CommandList *d3d12CommandList = static_cast<D3D12CommandList *>(commandList);
+    int threadIndex = d3d12CommandList->GetThreadIndex();
+
+    assert(slot < COUNT_OF(currentFrameData->threadData[threadIndex].psoDescriptorHandles));
+
+    const D3D12ConstantBuffer *d3d12ConstantBuffer = static_cast<const D3D12ConstantBuffer *>(constantBuffer);
+    currentFrameData->threadData[threadIndex].psoDescriptorHandles[slot] = d3d12ConstantBuffer->descriptorHandle;
 }

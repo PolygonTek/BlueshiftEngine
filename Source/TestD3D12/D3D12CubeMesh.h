@@ -16,10 +16,6 @@
 
 #include "D3D12Mesh.h"
 
-class D3D12Texture;
-class D3D12VertexBuffer;
-class D3D12IndexBuffer;
-
 class D3D12CubeMesh : public D3D12Mesh {
 public:
     static std::shared_ptr<D3D12CubeMesh> CreateMesh();
@@ -30,8 +26,8 @@ public:
 
     void                            InitPipelineState();
 
-    void                            DrawMesh(int threadIndex, D3D12CommandList *commandList, const Mat3x4 &worldMatrix);
-    void                            DrawMeshInstanced(int threadIndex, D3D12CommandList *commandList, const Mat3x4 *instanceData, int instanceCount);
+    void                            DrawMesh(RHIRenderer::CommandList *commandList, const Mat3x4 &worldMatrix);
+    void                            DrawMeshInstanced(RHIRenderer::CommandList *commandList, const Mat3x4 *instanceData, int instanceCount);
 
     RHIRenderer::Texture *          texture = nullptr;
     RHIRenderer::VertexBuffer *     vertexBuffer = nullptr;

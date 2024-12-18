@@ -14,12 +14,13 @@
 
 #include "Precompiled.h"
 #include "D3D12Renderer.h"
+#include "D3D12Texture.h"
 #include "D3D12CommandList.h"
 #include "D3D12DescriptorPool.h"
 
 void D3D12Texture::Release() {
     if (descriptorHandle.ptr != 0) {
-        renderer.srvDescriptorPool->Free(descriptorHandle);
+        renderer->srvDescriptorPool->Free(descriptorHandle);
         descriptorHandle.ptr = 0;
     }
 
@@ -95,7 +96,7 @@ RHIRenderer::Texture *D3D12Renderer::CreateTexture(TextureType textureType, cons
     allocationDesc.HeapType = D3D12_HEAP_TYPE_DEFAULT;
 
     D3D12MA::Allocation *allocation;
-    if (FAILED(renderer.allocator->CreateResource(
+    if (FAILED(allocator->CreateResource(
         &allocationDesc,
         &textureDesc,
         D3D12_RESOURCE_STATE_COPY_DEST,
@@ -107,7 +108,7 @@ RHIRenderer::Texture *D3D12Renderer::CreateTexture(TextureType textureType, cons
     ID3D12Resource *textureResource = allocation->GetResource();
 #else
     ID3D12Resource *textureResource = nullptr;
-    if (FAILED(renderer.device->CreateCommittedResource(
+    if (FAILED(device->CreateCommittedResource(
         &CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT),
         D3D12_HEAP_FLAG_NONE,
         &textureDesc,
@@ -120,7 +121,7 @@ RHIRenderer::Texture *D3D12Renderer::CreateTexture(TextureType textureType, cons
     // 텍스쳐 리소스의 서브 리소스 별 메모리 정보를 얻어온다.
     D3D12_PLACED_SUBRESOURCE_FOOTPRINT mipLevelFootprints[16];
     UINT64 size;
-    renderer.device->GetCopyableFootprints(&textureDesc, 0, textureDesc.MipLevels, 0, mipLevelFootprints, nullptr, nullptr, &size);
+    device->GetCopyableFootprints(&textureDesc, 0, textureDesc.MipLevels, 0, mipLevelFootprints, nullptr, nullptr, &size);
 
     D3D12_RESOURCE_DESC uploadBufferDesc;
     uploadBufferDesc.Dimension = D3D12_RESOURCE_DIMENSION_BUFFER;
@@ -144,7 +145,7 @@ RHIRenderer::Texture *D3D12Renderer::CreateTexture(TextureType textureType, cons
 
     // 업로드 버퍼 생성
     ID3D12Resource *uploadBuffer = nullptr;
-    if (FAILED(renderer.device->CreateCommittedResource(
+    if (FAILED(device->CreateCommittedResource(
         &heapProperties,
         D3D12_HEAP_FLAG_NONE,
         &uploadBufferDesc,
@@ -188,7 +189,7 @@ RHIRenderer::Texture *D3D12Renderer::CreateTexture(TextureType textureType, cons
     uploadBuffer->Unmap(0, &writtenRange);
 
     // 업로드 버퍼에서 텍스쳐로 데이터 카피
-    renderer.resourceCommandList->Reset();
+    resourceCommandList->Reset();
 
     for (int sliceIndex = 0; sliceIndex < numSlices; ++sliceIndex) {
         for (int faceIndex = 0; faceIndex < numFaces; ++faceIndex) {
@@ -206,16 +207,16 @@ RHIRenderer::Texture *D3D12Renderer::CreateTexture(TextureType textureType, cons
                 dstLocation.Type = D3D12_TEXTURE_COPY_TYPE_SUBRESOURCE_INDEX;
                 dstLocation.SubresourceIndex = subresourceIndex;
 
-                renderer.resourceCommandList->graphicsCommandList->CopyTextureRegion(&dstLocation, 0, 0, 0, &srcLocation, nullptr);
+                resourceCommandList->graphicsCommandList->CopyTextureRegion(&dstLocation, 0, 0, 0, &srcLocation, nullptr);
             }
         }
     }
 
-    renderer.resourceCommandList->ResourceBarrier(textureResource, D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_ALL_SHADER_RESOURCE);
-    renderer.resourceCommandList->CloseAndExecute(D3D12CommandQueueType::Graphics);
+    resourceCommandList->ResourceBarrier(textureResource, D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_ALL_SHADER_RESOURCE);
+    resourceCommandList->CloseAndExecute(CommandQueueType::Graphics);
 
     if (uploadBuffer) {
-        renderer.MarkForRelease(uploadBuffer);
+        MarkForRelease(uploadBuffer);
     }
 
     // 디스크립터에 SRV 정보 기록하기
@@ -252,10 +253,11 @@ RHIRenderer::Texture *D3D12Renderer::CreateTexture(TextureType textureType, cons
         break;
     }
 
-    D3D12_CPU_DESCRIPTOR_HANDLE descriptorHandle = renderer.srvDescriptorPool->Alloc();
-    renderer.device->CreateShaderResourceView(textureResource, &srvDesc, descriptorHandle);
+    D3D12_CPU_DESCRIPTOR_HANDLE descriptorHandle = srvDescriptorPool->Alloc();
+    device->CreateShaderResourceView(textureResource, &srvDesc, descriptorHandle);
 
     D3D12Texture *texture = new D3D12Texture;
+    texture->textureType = textureType;
 #ifdef USE_D3D12_MEMALLOC
     texture->textureAllocation = allocation;
 #else
@@ -360,7 +362,7 @@ void D3D12Renderer::GetTextureImage2D(Texture *texture, int level, Image::Format
     // 텍스쳐 리소스의 특정 밉레벨 (서브 리소스) 의 메모리 정보를 얻어온다.
     D3D12_PLACED_SUBRESOURCE_FOOTPRINT mipLevelFootprint;
     UINT64 mipLevelSize;
-    renderer.device->GetCopyableFootprints(&d3d12Texture->textureDesc, level, 1, 0, &mipLevelFootprint, nullptr, nullptr, &mipLevelSize);
+    device->GetCopyableFootprints(&d3d12Texture->textureDesc, level, 1, 0, &mipLevelFootprint, nullptr, nullptr, &mipLevelSize);
 
     D3D12Buffer *readbackBuffer = static_cast<D3D12Buffer *>(CreateBuffer(RHIRenderer::BufferUsage::Readback, mipLevelSize));
     if (!readbackBuffer) {
@@ -385,14 +387,14 @@ void D3D12Renderer::GetTextureImage2D(Texture *texture, int level, Image::Format
     dstLocation.Type = D3D12_TEXTURE_COPY_TYPE_PLACED_FOOTPRINT;
     dstLocation.PlacedFootprint = mipLevelFootprint;
 
-    renderer.resourceCommandList->Reset();
-    renderer.resourceCommandList->ResourceBarrier(textureResource, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_COPY_SOURCE);
-    renderer.resourceCommandList->graphicsCommandList->CopyTextureRegion(&dstLocation, 0, 0, 0, &srcLocation, nullptr);
-    renderer.resourceCommandList->ResourceBarrier(textureResource, D3D12_RESOURCE_STATE_COPY_SOURCE, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
-    renderer.resourceCommandList->CloseAndExecute(D3D12CommandQueueType::Graphics);
+    resourceCommandList->Reset();
+    resourceCommandList->ResourceBarrier(textureResource, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_COPY_SOURCE);
+    resourceCommandList->graphicsCommandList->CopyTextureRegion(&dstLocation, 0, 0, 0, &srcLocation, nullptr);
+    resourceCommandList->ResourceBarrier(textureResource, D3D12_RESOURCE_STATE_COPY_SOURCE, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
+    resourceCommandList->CloseAndExecute(CommandQueueType::Graphics);
 
     // GPU 에서 복사가 끝날 때까지 기다린다.
-    renderer.Finish();
+    Finish();
 
     // 복사된 리드백 버퍼를 메모리로 읽어오기 위해 Map 을 한다.
     void *mappedPtr = nullptr;
@@ -446,7 +448,7 @@ bool D3D12Renderer::SetTextureSubImage2D(Texture *texture, int level, int x, int
 
     // 텍스쳐 리소스의 특정 mipLevel 에 대한 메모리 정보를 얻어온다.
     D3D12_PLACED_SUBRESOURCE_FOOTPRINT mipLevelFootprint;
-    renderer.device->GetCopyableFootprints(&d3d12Texture->textureDesc, level, 1, 0, &mipLevelFootprint, nullptr, nullptr, nullptr);
+    device->GetCopyableFootprints(&d3d12Texture->textureDesc, level, 1, 0, &mipLevelFootprint, nullptr, nullptr, nullptr);
 
     int srcPitch = Image::MemRequired(width, 1, 1, 1, srcFormat);
     int dstPitch = mipLevelFootprint.Footprint.RowPitch;
@@ -474,7 +476,7 @@ bool D3D12Renderer::SetTextureSubImage2D(Texture *texture, int level, int x, int
 
     // 업로드 버퍼 생성 (pitch 를 타겟 텍스쳐와 동일하게 잡는다)
     ID3D12Resource *uploadBuffer = nullptr;
-    if (FAILED(renderer.device->CreateCommittedResource(
+    if (FAILED(device->CreateCommittedResource(
         &heapProperties,
         D3D12_HEAP_FLAG_NONE,
         &uploadBufferDesc,
@@ -506,8 +508,8 @@ bool D3D12Renderer::SetTextureSubImage2D(Texture *texture, int level, int x, int
 #endif
 
     // 업로드 버퍼에서 텍스쳐로 데이터 카피
-    renderer.resourceCommandList->Reset();
-    renderer.resourceCommandList->ResourceBarrier(textureResource, D3D12_RESOURCE_STATE_ALL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_COPY_DEST);
+    resourceCommandList->Reset();
+    resourceCommandList->ResourceBarrier(textureResource, D3D12_RESOURCE_STATE_ALL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_COPY_DEST);
 
     D3D12_TEXTURE_COPY_LOCATION srcLocation = {};
     srcLocation.PlacedFootprint = mipLevelFootprint;
@@ -524,12 +526,12 @@ bool D3D12Renderer::SetTextureSubImage2D(Texture *texture, int level, int x, int
     dstLocation.SubresourceIndex = level;
 
     D3D12_BOX box = { 0, 0, 0, (UINT)width, (UINT)height, 1 };
-    renderer.resourceCommandList->graphicsCommandList->CopyTextureRegion(&dstLocation, x, y, 0, &srcLocation, &box);
+    resourceCommandList->graphicsCommandList->CopyTextureRegion(&dstLocation, x, y, 0, &srcLocation, &box);
 
-    renderer.resourceCommandList->ResourceBarrier(textureResource, D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_ALL_SHADER_RESOURCE);
-    renderer.resourceCommandList->CloseAndExecute(D3D12CommandQueueType::Graphics);
+    resourceCommandList->ResourceBarrier(textureResource, D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_ALL_SHADER_RESOURCE);
+    resourceCommandList->CloseAndExecute(CommandQueueType::Graphics);
 
-    renderer.MarkForRelease(uploadBuffer);
+    MarkForRelease(uploadBuffer);
 
     return true;
 }
@@ -540,7 +542,7 @@ bool D3D12Renderer::SetTextureSubImage3D(Texture *texture, int level, int x, int
 
     // 텍스쳐 리소스의 특정 mipLevel 에 대한 메모리 정보를 얻어온다.
     D3D12_PLACED_SUBRESOURCE_FOOTPRINT mipLevelFootprint;
-    renderer.device->GetCopyableFootprints(&d3d12Texture->textureDesc, level, 1, 0, &mipLevelFootprint, nullptr, nullptr, nullptr);
+    device->GetCopyableFootprints(&d3d12Texture->textureDesc, level, 1, 0, &mipLevelFootprint, nullptr, nullptr, nullptr);
 
     int srcPitch = Image::MemRequired(width, 1, 1, 1, srcFormat);
     int dstPitch = mipLevelFootprint.Footprint.RowPitch;
@@ -568,7 +570,7 @@ bool D3D12Renderer::SetTextureSubImage3D(Texture *texture, int level, int x, int
 
     // 업로드 버퍼 생성 (pitch 를 타겟 텍스쳐와 동일하게 잡는다)
     ID3D12Resource *uploadBuffer = nullptr;
-    if (FAILED(renderer.device->CreateCommittedResource(
+    if (FAILED(device->CreateCommittedResource(
         &heapProperties,
         D3D12_HEAP_FLAG_NONE,
         &uploadBufferDesc,
@@ -602,8 +604,8 @@ bool D3D12Renderer::SetTextureSubImage3D(Texture *texture, int level, int x, int
 #endif
 
     // 업로드 버퍼에서 텍스쳐로 데이터 카피
-    renderer.resourceCommandList->Reset();
-    renderer.resourceCommandList->ResourceBarrier(textureResource, D3D12_RESOURCE_STATE_ALL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_COPY_DEST);
+    resourceCommandList->Reset();
+    resourceCommandList->ResourceBarrier(textureResource, D3D12_RESOURCE_STATE_ALL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_COPY_DEST);
 
     D3D12_TEXTURE_COPY_LOCATION srcLocation = {};
     srcLocation.PlacedFootprint = mipLevelFootprint;
@@ -620,12 +622,22 @@ bool D3D12Renderer::SetTextureSubImage3D(Texture *texture, int level, int x, int
     dstLocation.SubresourceIndex = level;
 
     D3D12_BOX box = { 0, 0, 0, (UINT)width, (UINT)height, (UINT)depth };
-    renderer.resourceCommandList->graphicsCommandList->CopyTextureRegion(&dstLocation, x, y, z, &srcLocation, &box);
+    resourceCommandList->graphicsCommandList->CopyTextureRegion(&dstLocation, x, y, z, &srcLocation, &box);
 
-    renderer.resourceCommandList->ResourceBarrier(textureResource, D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_ALL_SHADER_RESOURCE);
-    renderer.resourceCommandList->CloseAndExecute(D3D12CommandQueueType::Graphics);
+    resourceCommandList->ResourceBarrier(textureResource, D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_ALL_SHADER_RESOURCE);
+    resourceCommandList->CloseAndExecute(CommandQueueType::Graphics);
 
-    renderer.MarkForRelease(uploadBuffer);
+    MarkForRelease(uploadBuffer);
 
     return true;
+}
+
+void D3D12Renderer::SetTexture(CommandList *commandList, int slot, const Texture *texture) {
+    D3D12CommandList *d3d12CommandList = static_cast<D3D12CommandList *>(commandList);
+    int threadIndex = d3d12CommandList->GetThreadIndex();
+
+    assert(slot < COUNT_OF(currentFrameData->threadData[threadIndex].psoDescriptorHandles));
+
+    const D3D12Texture *d3d12Texture = static_cast<const D3D12Texture *>(texture);
+    currentFrameData->threadData[threadIndex].psoDescriptorHandles[slot] = d3d12Texture->descriptorHandle;
 }

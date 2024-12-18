@@ -14,19 +14,24 @@
 
 #include "Precompiled.h"
 #include "D3D12CommandList.h"
+#include "D3D12CommandListPool.h"
 
-D3D12_PRIMITIVE_TOPOLOGY D3D12CommandList::ToD3D12PrimitiveTopology(RHIRenderer::PrimitiveTopology primitiveTopology) {
-    switch (primitiveTopology) {
-    case RHIRenderer::PrimitiveTopology::PointList:
-        return D3D_PRIMITIVE_TOPOLOGY_POINTLIST;
-    case RHIRenderer::PrimitiveTopology::LineList:
-        return D3D_PRIMITIVE_TOPOLOGY_LINELIST;
-    case RHIRenderer::PrimitiveTopology::LineStrip:
-        return D3D_PRIMITIVE_TOPOLOGY_LINESTRIP;
-    case RHIRenderer::PrimitiveTopology::TriangleList:
-        return D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
-    case RHIRenderer::PrimitiveTopology::TriangleStrip:
-        return D3D_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP;
-    }
-    return D3D_PRIMITIVE_TOPOLOGY_UNDEFINED;
+int D3D12CommandList::GetThreadIndex() const {
+    return parentPool->GetThreadIndex();
+}
+
+void D3D12CommandList::Draw(uint32_t vertexCount, uint32_t startVertexLocation) {
+    graphicsCommandList->DrawInstanced(vertexCount, 1, startVertexLocation, 0);
+}
+
+void D3D12CommandList::DrawIndexed(uint32_t indexCount, uint32_t startIndexLocation, uint32_t baseVertexLocation) {
+    graphicsCommandList->DrawIndexedInstanced(indexCount, 1, startIndexLocation, baseVertexLocation, 0);
+}
+
+void D3D12CommandList::DrawInstanced(uint32_t vertexCount, uint32_t instanceCount, uint32_t startVertexLocation, uint32_t startInstanceLocation) {
+    graphicsCommandList->DrawInstanced(vertexCount, instanceCount, startVertexLocation, startInstanceLocation);
+}
+
+void D3D12CommandList::DrawIndexedInstanced(uint32_t indexCount, uint32_t instanceCount, uint32_t startIndexLocation, uint32_t baseVertexLocation, uint32_t startInstanceLocation) {
+    graphicsCommandList->DrawIndexedInstanced(indexCount, instanceCount, startIndexLocation, baseVertexLocation, startInstanceLocation);
 }

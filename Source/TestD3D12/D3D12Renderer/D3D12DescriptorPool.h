@@ -16,7 +16,11 @@
 
 #include "D3D12Common.h"
 
+class D3D12Renderer;
+
 class D3D12DescriptorPool {
+    friend class D3D12Renderer;
+
 public:
     enum class Type : byte {
         SRV,
@@ -26,10 +30,10 @@ public:
     };
 
     D3D12DescriptorPool() = default;
-    D3D12DescriptorPool(Type type, UINT maxCount, bool isShaderVisible) { Init(type, maxCount, isShaderVisible); }
+    D3D12DescriptorPool(ID3D12Device *device, Type type, UINT maxCount, bool isShaderVisible) { Init(device, type, maxCount, isShaderVisible); }
     ~D3D12DescriptorPool() { Shutdown(); }
 
-    void                            Init(Type type, UINT maxCount, bool isShaderVisible);
+    void                            Init(ID3D12Device *device, Type type, UINT maxCount, bool isShaderVisible);
     void                            Shutdown();
 
     void                            Clear();
@@ -40,6 +44,7 @@ public:
     D3D12_CPU_DESCRIPTOR_HANDLE     AllocRange(int count);
     void                            FreeRange(const D3D12_CPU_DESCRIPTOR_HANDLE &descriptorHandle, int count);
 
+private:
     ID3D12DescriptorHeap *          descriptorHeap = nullptr;
     D3D12_CPU_DESCRIPTOR_HANDLE     baseDescriptorHandle;
     UINT                            descriptorHandleSize;

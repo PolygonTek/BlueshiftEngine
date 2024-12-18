@@ -17,21 +17,22 @@
 #include "D3D12CommandListPool.h"
 #include "D3D12CommandList.h"
 
-void D3D12CommandListPool::Init(D3D12_COMMAND_LIST_TYPE commandListType, int maxCommandLists) {
+void D3D12CommandListPool::Init(ID3D12Device *device, int threadIndex, D3D12_COMMAND_LIST_TYPE commandListType, int maxCommandLists) {
     this->maxCommandLists = maxCommandLists;
     this->commandListPool = new D3D12CommandList[maxCommandLists];
+    this->threadIndex = threadIndex;
 
     for (int i = 0; i < maxCommandLists; ++i) {
         D3D12CommandList* commandList = &commandListPool[i];
         commandList->parentPool = this;
 
         // 그래픽스 CommandList 를 위한 CommandAllocator 생성
-        if (FAILED(renderer.device->CreateCommandAllocator(commandListType, IID_PPV_ARGS(&commandList->commandAllocator)))) {
+        if (FAILED(device->CreateCommandAllocator(commandListType, IID_PPV_ARGS(&commandList->commandAllocator)))) {
             BE_FATALERROR("CreateCommandAllocator : failed");
         }
 
         // 그래픽스 CommandList 생성
-        if (FAILED(renderer.device->CreateCommandList(0, commandListType, commandList->commandAllocator, nullptr, IID_PPV_ARGS(&commandList->graphicsCommandList)))) {
+        if (FAILED(device->CreateCommandList(0, commandListType, commandList->commandAllocator, nullptr, IID_PPV_ARGS(&commandList->graphicsCommandList)))) {
             BE_FATALERROR("CreateCommandList : failed");
         }
 
