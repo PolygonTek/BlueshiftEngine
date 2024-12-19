@@ -305,7 +305,7 @@ void D3D12PipelineState::Release() {
     SAFE_RELEASE(rootSignature);
 }
 
-RHIRenderer::PipelineState *D3D12Renderer::CreatePSO(RHIRenderer::PipelineStateDesc *desc) {
+RHIRenderer::PipelineState *D3D12Renderer::CreatePSO(const RHIRenderer::PipelineStateDesc *desc) {
     struct PSOHashData {
         struct ShaderHashData {
             uint64_t vsHash = 0;

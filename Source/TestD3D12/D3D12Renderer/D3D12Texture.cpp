@@ -431,7 +431,7 @@ void D3D12Renderer::GetTextureImage2D(Texture *texture, int level, Image::Format
     readbackBuffer->GetResource()->Unmap(0, &writtenRange);
 
     // 리드백 버퍼 삭제
-    SAFE_DELETE(readbackBuffer);
+    DestroyBuffer(readbackBuffer, true);
 
     // 컨버팅이 필요없다면 바로 리턴한다.
     if (textureImageFormat == dstFormat) {

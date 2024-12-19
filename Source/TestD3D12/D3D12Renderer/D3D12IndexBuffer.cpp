@@ -16,6 +16,13 @@
 #include "D3D12Renderer.h"
 #include "D3D12CommandList.h"
 
+void D3D12IndexBuffer::Release() {
+    if (buffer) {
+        renderer->DestroyBuffer(buffer, true);
+        buffer = nullptr;
+    }
+}
+
 RHIRenderer::IndexBuffer *D3D12Renderer::CreateIndexBuffer(RHIRenderer::BufferType type, int indexSize, int numIndexes, void *data) {
     assert(indexSize == 2 || indexSize == 4);
 

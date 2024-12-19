@@ -68,7 +68,8 @@ public:
     void                                OnPendingResourceAdded();
     void                                FreePendingResources(bool waitPendings = false);
 
-    Buffer *                            CreateBuffer(BufferUsage usage, int size);
+    virtual Buffer *                    CreateBuffer(BufferUsage usage, int size) override;
+    virtual void                        DestroyBuffer(Buffer *buffer, bool immediate = false) override;
 
     virtual VertexBuffer *              CreateVertexBuffer(BufferType type, int vertexSize, int numVerts, void *data) override;
     virtual void                        DestroyVertexBuffer(VertexBuffer *vertexBuffer, bool immediate = false) override;
@@ -91,8 +92,11 @@ public:
     virtual Shader *                    CreateShaderFromFile(ShaderModel shaderModel, ShaderStage shaderStage, const char *filename, const char *entryPoint) override;
     virtual void                        DestroyShader(Shader *shader, bool immediate = false) override;
 
-    virtual PipelineState *             CreatePSO(RHIRenderer::PipelineStateDesc *desc) override;
+    virtual PipelineState *             CreatePSO(const PipelineStateDesc *desc) override;
     virtual void                        DestroyPSO(PipelineState *pipelineState, bool immediate = false) override;
+
+    virtual QueryHeap *                 CreateQueryHeap(const QueryHeapDesc *desc) override;
+    virtual void                        DestroyQueryHeap(QueryHeap *queryHeap, bool immediate = false) override;
 
     virtual void                        SetVertexBuffer(CommandList *commandList, int slot, const VertexBuffer *vertexBuffer) override;
     virtual void                        SetIndexBuffer(CommandList *commandList, const IndexBuffer *indexBuffer) override;
@@ -107,6 +111,10 @@ public:
     virtual void                        SetViewport(CommandList *commandList, const Rect &viewportRect) override;
     virtual void                        SetScissorRect(CommandList *commandList, const Rect &scissorRect) override;
     virtual void                        SetDepthBounds(CommandList *commandList, float depthMin, float depthMax) override;
+    virtual void                        BeginQuery(CommandList *commandList, const QueryHeap *queryHeap, uint32_t index) override;
+    virtual void                        EndQuery(CommandList *commandList, const QueryHeap *queryHeap, uint32_t index) override;
+    virtual void                        ResolveQuery(CommandList *commandList, const QueryHeap *queryHeap, uint32_t index, uint32_t count, const Buffer *destBuffer, uint64_t destOffset) override;
+    virtual void                        ResetQuery(CommandList *commandList, const QueryHeap *queryHeap, uint32_t index, uint32_t count) override;
 
     virtual void                        Draw(CommandList *commandList, uint32_t vertexCount, uint32_t startVertexLocation) override;
     virtual void                        DrawIndexed(CommandList *commandList, uint32_t indexCount, uint32_t startIndexLocation, uint32_t baseVertexLocation) override;

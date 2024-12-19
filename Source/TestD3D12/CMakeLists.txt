@@ -28,6 +28,8 @@ set(SRC_FILES
     D3D12Renderer/D3D12ConstantBuffer.cpp
     D3D12Renderer/D3D12PipelineState.h
     D3D12Renderer/D3D12PipelineState.cpp
+    D3D12Renderer/D3D12Query.h
+    D3D12Renderer/D3D12Query.cpp
     D3D12Renderer/D3D12CommandList.h
     D3D12Renderer/D3D12CommandList.cpp
     D3D12Renderer/D3D12CommandListPool.h

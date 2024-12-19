@@ -24,7 +24,7 @@ void D3D12Buffer::Release() {
 #endif
 }
 
-ID3D12Resource *D3D12Buffer::GetResource() {
+ID3D12Resource *D3D12Buffer::GetResource() const {
 #ifdef USE_D3D12_MEMALLOC
     return bufferAllocation->GetResource();
 #else
@@ -41,9 +41,10 @@ uint64_t D3D12Buffer::GetSize() {
 #endif
 }
 
-RHIRenderer::Buffer* D3D12Renderer::CreateBuffer(BufferUsage usage, int size) {
+RHIRenderer::Buffer *D3D12Renderer::CreateBuffer(BufferUsage usage, int size) {
     D3D12_HEAP_TYPE heapType;
     D3D12_RESOURCE_STATES initialState;
+    D3D12_RESOURCE_FLAGS flags = D3D12_RESOURCE_FLAG_NONE;
 
     switch (usage) {
     case RHIRenderer::BufferUsage::Default:
@@ -52,11 +53,12 @@ RHIRenderer::Buffer* D3D12Renderer::CreateBuffer(BufferUsage usage, int size) {
         break;
     case RHIRenderer::BufferUsage::Upload:
         heapType = D3D12_HEAP_TYPE_UPLOAD;
-        initialState = D3D12_RESOURCE_STATE_COMMON;
+        initialState = D3D12_RESOURCE_STATE_GENERIC_READ;
         break;
     case RHIRenderer::BufferUsage::Readback:
         heapType = D3D12_HEAP_TYPE_READBACK;
         initialState = D3D12_RESOURCE_STATE_COPY_DEST;
+        flags |= D3D12_RESOURCE_FLAG_DENY_SHADER_RESOURCE;
         break;
     default:
         return nullptr;
@@ -73,7 +75,7 @@ RHIRenderer::Buffer* D3D12Renderer::CreateBuffer(BufferUsage usage, int size) {
     bufferDesc.SampleDesc.Count = 1;
     bufferDesc.SampleDesc.Quality = 0;
     bufferDesc.Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
-    bufferDesc.Flags = D3D12_RESOURCE_FLAG_NONE;
+    bufferDesc.Flags = flags;
 
 #ifdef USE_D3D12_MEMALLOC
     D3D12MA::ALLOCATION_DESC allocationDesc = {};
@@ -117,4 +119,12 @@ RHIRenderer::Buffer* D3D12Renderer::CreateBuffer(BufferUsage usage, int size) {
     buffer->bufferResource = bufferResource;
 #endif
     return buffer;
+}
+
+void D3D12Renderer::DestroyBuffer(Buffer *buffer, bool immediate) {
+    if (immediate) {
+        delete buffer;
+    } else {
+        MarkForDelete(buffer);
+    }
 }

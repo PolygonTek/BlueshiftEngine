@@ -738,7 +738,7 @@ void D3D12Renderer::SetConstants(CommandList *commandList, const void *data, uin
     int threadIndex = d3d12CommandList->GetThreadIndex();
     D3D12FrameData::DataPerThread &threadData = currentFrameData->threadData[threadIndex];
 
-    memcpy(threadData.rootConstants + offset, data, size);
+    memcpy(threadData.rootConstants + offset / sizeof(uint32_t), data, size);
 }
 
 void D3D12Renderer::SetSubResource(CommandList *commandList, int slot, GPUSubResource *subResource) {

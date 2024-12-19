@@ -17,6 +17,13 @@
 #include "D3D12VertexBuffer.h"
 #include "D3D12CommandList.h"
 
+void D3D12VertexBuffer::Release() {
+    if (buffer) {
+        renderer->DestroyBuffer(buffer, true);
+        buffer = nullptr;
+    }
+}
+
 RHIRenderer::VertexBuffer* D3D12Renderer::CreateVertexBuffer(RHIRenderer::BufferType type, int vertexSize, int numVerts, void *data) {
     UINT bufferSize = vertexSize * numVerts;
     D3D12Buffer *buffer = nullptr;

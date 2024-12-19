@@ -23,8 +23,10 @@ void D3D12ConstantBuffer::Release() {
         renderer->srvDescriptorPool->Free(descriptorHandle);
         descriptorHandle.ptr = 0;
     }
-
-    SAFE_DELETE(buffer);
+    if (buffer) {
+        renderer->DestroyBuffer(buffer, true);
+        buffer = nullptr;
+    }
 }
 
 ID3D12Resource *D3D12ConstantBuffer::GetResource() const {

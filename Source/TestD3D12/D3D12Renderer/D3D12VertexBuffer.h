@@ -28,7 +28,7 @@ class D3D12VertexBuffer : public RHIRenderer::VertexBuffer {
 public:
     virtual ~D3D12VertexBuffer() { Release(); }
 
-    void                                Release() { SAFE_DELETE(buffer); }
+    void                                Release();
 
 private:
     D3D12Buffer *                       buffer = nullptr;

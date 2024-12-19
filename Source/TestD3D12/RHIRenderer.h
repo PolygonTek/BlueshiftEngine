@@ -280,6 +280,17 @@ public:
         Array<InputLayoutElement>   elements;
     };
 
+    enum class QueryType : uint8_t {
+        TimeStamp,
+        Occlusion,
+        OcclusionBinary
+    };
+
+    struct QueryHeapDesc {
+        QueryType                   type = QueryType::TimeStamp;
+        uint32_t                    queryCount = 0;
+    };
+
     class GPUResource {
     public:
         virtual ~GPUResource() = default;
@@ -317,6 +328,11 @@ public:
     class PipelineState : public GPUResource {
     public:
         uint64_t                    hash = 0;
+    };
+
+    class QueryHeap : public GPUResource {
+    public:
+        QueryHeapDesc               desc = {};
     };
 
     class GPUSubResource {
@@ -432,6 +448,9 @@ public:
     const DepthStencilState *       GetDepthStencilState(DepthStencilStateType::Enum type) const { return &depthStencilStates[type]; }
     const BlendState *              GetBlendState(BlendStateType::Enum type) const { return &blendStates[type]; }
 
+    virtual Buffer *                CreateBuffer(BufferUsage usage, int size) = 0;
+    virtual void                    DestroyBuffer(Buffer *buffer, bool immediate = false) = 0;
+
     virtual VertexBuffer *          CreateVertexBuffer(BufferType type, int vertexSize, int numVerts, void *data) = 0;
     virtual void                    DestroyVertexBuffer(VertexBuffer *vertexBuffer, bool immediate = false) = 0;
 
@@ -453,8 +472,11 @@ public:
     virtual Shader *                CreateShaderFromFile(ShaderModel shaderModel, ShaderStage shaderStage, const char *filename, const char *entryPoint) = 0;
     virtual void                    DestroyShader(Shader *shader, bool immediate = false) = 0;
 
-    virtual PipelineState *         CreatePSO(RHIRenderer::PipelineStateDesc *desc) = 0;
+    virtual PipelineState *         CreatePSO(const PipelineStateDesc *desc) = 0;
     virtual void                    DestroyPSO(PipelineState *pipelineState, bool immediate = false) = 0;
+
+    virtual QueryHeap *             CreateQueryHeap(const QueryHeapDesc *desc) = 0;
+    virtual void                    DestroyQueryHeap(QueryHeap *queryHeap, bool immediate = false) = 0;
 
     virtual void                    SetVertexBuffer(CommandList *commandList, int slot, const VertexBuffer *vertexBuffer) = 0;
     virtual void                    SetIndexBuffer(CommandList *commandList, const IndexBuffer *indexBuffer) = 0;
@@ -469,6 +491,10 @@ public:
     virtual void                    SetViewport(CommandList *commandList, const Rect &viewportRect) = 0;
     virtual void                    SetScissorRect(CommandList *commandList, const Rect &scissorRect) = 0;
     virtual void                    SetDepthBounds(CommandList *commandList, float depthMin, float depthMax) = 0;
+    virtual void                    BeginQuery(CommandList *commandList, const QueryHeap *queryHeap, uint32_t index) = 0;
+    virtual void                    EndQuery(CommandList *commandList, const QueryHeap *queryHeap, uint32_t index) = 0;
+    virtual void                    ResolveQuery(CommandList *commandList, const QueryHeap *queryHeap, uint32_t index, uint32_t count, const Buffer *destBuffer, uint64_t destOffset) = 0;
+    virtual void                    ResetQuery(CommandList *commandList, const QueryHeap *queryHeap, uint32_t index, uint32_t count) = 0;
 
     virtual void                    Draw(CommandList *commandList, uint32_t vertexCount, uint32_t startVertexLocation) = 0;
     virtual void                    DrawIndexed(CommandList *commandList, uint32_t indexCount, uint32_t startIndexLocation, uint32_t baseVertexLocation) = 0;

@@ -17,23 +17,16 @@
 #include "../RHIRenderer.h"
 #include "D3D12Common.h"
 
-#ifdef USE_D3D12_MEMALLOC
-#include "D3D12MemoryAllocator/D3D12MemAlloc.h"
-#endif
+class D3D12Renderer;
 
-class D3D12Buffer : public RHIRenderer::Buffer {
+class D3D12QueryHeap : public RHIRenderer::QueryHeap {
+    friend class D3D12Renderer;
+
 public:
-    D3D12Buffer() = default;
-    virtual ~D3D12Buffer() { Release(); }
+    virtual ~D3D12QueryHeap() { Release(); }
 
-    void                                Release();
+    void                                Release() { SAFE_RELEASE(queryHeap); }
 
-    ID3D12Resource *                    GetResource() const;
-    uint64_t                            GetSize();
-
-#ifdef USE_D3D12_MEMALLOC
-    D3D12MA::Allocation *               bufferAllocation = nullptr;
-#else
-    ID3D12Resource *                    bufferResource = nullptr;
-#endif
+private:
+    ID3D12QueryHeap *                   queryHeap = nullptr;
 };
