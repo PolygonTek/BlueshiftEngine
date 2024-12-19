@@ -97,6 +97,7 @@ public:
     virtual void                        SetVertexBuffer(CommandList *commandList, int slot, const VertexBuffer *vertexBuffer) override;
     virtual void                        SetIndexBuffer(CommandList *commandList, const IndexBuffer *indexBuffer) override;
     virtual void                        SetConstantBuffer(CommandList *commandList, int slot, const ConstantBuffer *constantBuffer) override;
+    virtual void                        SetConstants(CommandList *commandList, const void *data, uint32_t size, uint32_t offset) override;
     virtual void                        SetTexture(CommandList *commandList, int slot, const Texture *texture) override;
     virtual void                        SetSubResource(CommandList *commandList, int slot, GPUSubResource *subResource) override;
     virtual void                        SetPSO(CommandList *commandList, const PipelineState *pipelineState) override;

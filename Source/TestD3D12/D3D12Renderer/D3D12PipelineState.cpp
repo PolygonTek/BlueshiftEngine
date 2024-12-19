@@ -19,6 +19,8 @@
 #include "D3D12Renderer.h"
 #include "D3D12PipelineState.h"
 #include "D3D12Shader.h"
+#include "D3D12Texture.h"
+#include "D3D12ConstantBuffer.h"
 #include "D3D12CommandList.h"
 #include "D3D12RootDescriptorPool.h"
 
@@ -815,20 +817,20 @@ void D3D12Renderer::SetPSO(CommandList *commandList, const PipelineState *pipeli
 
     const D3D12_ROOT_SIGNATURE_DESC1 &rootSignatureDesc = d3d12CommandList->currentPSO->rootSignatureDesc->Desc_1_1;
 
-    for (int parameterIndex = 0; parameterIndex < rootSignatureDesc.NumParameters; ++parameterIndex) {
-        const D3D12_ROOT_PARAMETER1 *parameter = &rootSignatureDesc.pParameters[parameterIndex];
+    for (int rootParameterIndex = 0; rootParameterIndex < rootSignatureDesc.NumParameters; ++rootParameterIndex) {
+        const D3D12_ROOT_PARAMETER1 *rootParameter = &rootSignatureDesc.pParameters[rootParameterIndex];
 
-        if (parameter->ParameterType == D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE) {
+        if (rootParameter->ParameterType == D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE) {
             int numDescriptors = 0;
 
             // 디스크립터 테이블이 사용하는 전체 디스크립터 개수 계산
-            for (int rangeIndex = 0; rangeIndex < parameter->DescriptorTable.NumDescriptorRanges; ++rangeIndex) {
-                const D3D12_DESCRIPTOR_RANGE1 &descriptorRange = parameter->DescriptorTable.pDescriptorRanges[rangeIndex];
+            for (int rangeIndex = 0; rangeIndex < rootParameter->DescriptorTable.NumDescriptorRanges; ++rangeIndex) {
+                const D3D12_DESCRIPTOR_RANGE1 &descriptorRange = rootParameter->DescriptorTable.pDescriptorRanges[rangeIndex];
 
                 numDescriptors += descriptorRange.NumDescriptors;
             }
 
-            // 디스크립터 풀에서 루트 디스크립터 테이블 할당
+            // 디스크립터 풀에서 디스크립터 테이블 할당
             D3D12_CPU_DESCRIPTOR_HANDLE cpuRootDescriptorHandle;
             D3D12_GPU_DESCRIPTOR_HANDLE gpuRootDescriptorHandle;
             if (!rootDescriptorPool->AllocRange(numDescriptors, &cpuRootDescriptorHandle, &gpuRootDescriptorHandle)) {
@@ -837,9 +839,9 @@ void D3D12Renderer::SetPSO(CommandList *commandList, const PipelineState *pipeli
 
             int descriptorOffset = 0;
 
-            // 필요한 디스크립터들을 루트 디스크립터 테이블에 복사
-            for (int rangeIndex = 0; rangeIndex < parameter->DescriptorTable.NumDescriptorRanges; ++rangeIndex) {
-                const D3D12_DESCRIPTOR_RANGE1 &descriptorRange = parameter->DescriptorTable.pDescriptorRanges[rangeIndex];
+            // 필요한 디스크립터들을 디스크립터 테이블에 복사
+            for (int rangeIndex = 0; rangeIndex < rootParameter->DescriptorTable.NumDescriptorRanges; ++rangeIndex) {
+                const D3D12_DESCRIPTOR_RANGE1 &descriptorRange = rootParameter->DescriptorTable.pDescriptorRanges[rangeIndex];
                 CD3DX12_CPU_DESCRIPTOR_HANDLE destDescriptorHandle(cpuRootDescriptorHandle, descriptorOffset, rootDescriptorPool->descriptorHandleSize);
 
                 assert(descriptorOffset < COUNT_OF(threadData.psoDescriptorHandles));
@@ -858,9 +860,33 @@ void D3D12Renderer::SetPSO(CommandList *commandList, const PipelineState *pipeli
                 descriptorOffset += descriptorRange.NumDescriptors;
             }
 
-            // 루트 디스크립터 테이블 설정
-            //gpuRootDescriptorHandle.Offset(1, rootDescriptorPool->descriptorHandleSize * XX);
-            d3d12CommandList->graphicsCommandList->SetGraphicsRootDescriptorTable(parameterIndex, gpuRootDescriptorHandle);
+            // 디스크립터 테이블 설정
+            d3d12CommandList->graphicsCommandList->SetGraphicsRootDescriptorTable(rootParameterIndex, gpuRootDescriptorHandle);
+        } else if (rootParameter->ParameterType == D3D12_ROOT_PARAMETER_TYPE_32BIT_CONSTANTS) {
+            // 루트 상수 설정
+            UINT num32BitValues = rootParameter->Constants.Num32BitValues;
+            // NOTE: 현재는 일부만 세팅하는 경우는 없다고 가정한다.
+            d3d12CommandList->graphicsCommandList->SetGraphicsRoot32BitConstants(rootParameterIndex, num32BitValues, threadData.rootConstants, 0);
+        } else if (rootParameter->ParameterType == D3D12_ROOT_PARAMETER_TYPE_CBV) {
+            // 루트 레벨 CBV 설정
+            UINT shaderRegister = rootParameter->Descriptor.ShaderRegister;
+            const D3D12ConstantBuffer *constantBuffer = static_cast<const D3D12ConstantBuffer *>(threadData.gpuResources[shaderRegister]);
+            if (constantBuffer) {
+                D3D12_GPU_VIRTUAL_ADDRESS gpuAddress = constantBuffer->GetResource()->GetGPUVirtualAddress();
+                d3d12CommandList->graphicsCommandList->SetGraphicsRootConstantBufferView(rootParameterIndex, gpuAddress);
+            }
+        } else if (rootParameter->ParameterType == D3D12_ROOT_PARAMETER_TYPE_SRV) {
+            // 루트 레벨 SRV 설정
+            UINT shaderRegister = rootParameter->Descriptor.ShaderRegister;
+            const D3D12Texture *texture = static_cast<const D3D12Texture *>(threadData.gpuResources[shaderRegister]);
+            if (texture) {
+                D3D12_GPU_VIRTUAL_ADDRESS gpuAddress = texture->GetResource()->GetGPUVirtualAddress();
+                d3d12CommandList->graphicsCommandList->SetGraphicsRootShaderResourceView(rootParameterIndex, gpuAddress);
+            }
+        } else if (rootParameter->ParameterType == D3D12_ROOT_PARAMETER_TYPE_UAV) {
+            // 루트 레벨 UAV 설정
+            UINT shaderRegister = rootParameter->Descriptor.ShaderRegister;
+            //d3d12CommandList->graphicsCommandList->SetGraphicsRootUnorderedAccessView(rootParameterIndex, gpuAddress);
         }
     }
 }

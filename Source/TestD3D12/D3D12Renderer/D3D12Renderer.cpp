@@ -733,14 +733,23 @@ void D3D12Renderer::FreePendingResources(bool waitPendings) {
     }
 }
 
+void D3D12Renderer::SetConstants(CommandList *commandList, const void *data, uint32_t size, uint32_t offset) {
+    D3D12CommandList *d3d12CommandList = static_cast<D3D12CommandList *>(commandList);
+    int threadIndex = d3d12CommandList->GetThreadIndex();
+    D3D12FrameData::DataPerThread &threadData = currentFrameData->threadData[threadIndex];
+
+    memcpy(threadData.rootConstants + offset, data, size);
+}
+
 void D3D12Renderer::SetSubResource(CommandList *commandList, int slot, GPUSubResource *subResource) {
     D3D12CommandList *d3d12CommandList = static_cast<D3D12CommandList *>(commandList);
     int threadIndex = d3d12CommandList->GetThreadIndex();
+    D3D12FrameData::DataPerThread &threadData = currentFrameData->threadData[threadIndex];
 
-    assert(slot < COUNT_OF(currentFrameData->threadData[threadIndex].psoDescriptorHandles));
+    assert(slot < COUNT_OF(threadData.psoDescriptorHandles));
 
     const D3D12GPUSubResource *d3d12SubResource = static_cast<const D3D12GPUSubResource *>(subResource);
-    currentFrameData->threadData[threadIndex].psoDescriptorHandles[slot] = d3d12SubResource->descriptorHandle;
+    threadData.psoDescriptorHandles[slot] = d3d12SubResource->descriptorHandle;
 }
 
 void D3D12Renderer::OnResize(int width, int height) {

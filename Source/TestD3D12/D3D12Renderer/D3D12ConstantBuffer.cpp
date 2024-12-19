@@ -27,6 +27,10 @@ void D3D12ConstantBuffer::Release() {
     SAFE_DELETE(buffer);
 }
 
+ID3D12Resource *D3D12ConstantBuffer::GetResource() const {
+    return buffer->GetResource();
+}
+
 RHIRenderer::ConstantBuffer* D3D12Renderer::CreateConstantBuffer(BufferType type, int size, void *data) {
     // 상수 버퍼는 어차피 GPU 에 요청하면 256 바이트로 주소 & 사이즈가 정렬된다.
     UINT alignedSize = (UINT)AlignUp(size, D3D12_CONSTANT_BUFFER_DATA_PLACEMENT_ALIGNMENT);
@@ -139,9 +143,11 @@ void D3D12Renderer::DestroyConstantBuffer(ConstantBuffer *constantBuffer, bool i
 void D3D12Renderer::SetConstantBuffer(CommandList *commandList, int slot, const ConstantBuffer *constantBuffer) {
     D3D12CommandList *d3d12CommandList = static_cast<D3D12CommandList *>(commandList);
     int threadIndex = d3d12CommandList->GetThreadIndex();
+    D3D12FrameData::DataPerThread &threadData = currentFrameData->threadData[threadIndex];
 
-    assert(slot < COUNT_OF(currentFrameData->threadData[threadIndex].psoDescriptorHandles));
+    assert(slot < COUNT_OF(threadData.psoDescriptorHandles));
 
     const D3D12ConstantBuffer *d3d12ConstantBuffer = static_cast<const D3D12ConstantBuffer *>(constantBuffer);
-    currentFrameData->threadData[threadIndex].psoDescriptorHandles[slot] = d3d12ConstantBuffer->descriptorHandle;
+    threadData.psoDescriptorHandles[slot] = d3d12ConstantBuffer->descriptorHandle;
+    threadData.gpuResources[slot] = d3d12ConstantBuffer;
 }

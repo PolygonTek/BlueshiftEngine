@@ -30,6 +30,8 @@ public:
 
     void                                Release();
 
+    ID3D12Resource *                    GetResource() const;
+
 private:
     D3D12Buffer *                       buffer = nullptr;
     D3D12_CPU_DESCRIPTOR_HANDLE         descriptorHandle = {0};

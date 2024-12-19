@@ -31,6 +31,14 @@ void D3D12Texture::Release() {
 #endif
 }
 
+ID3D12Resource *D3D12Texture::GetResource() const {
+#ifdef USE_D3D12_MEMALLOC
+    return textureAllocation->GetResource();
+#else
+    return textureResource;
+#endif
+}
+
 void D3D12Texture::AdjustTextureFormat(bool useCompression, bool useNormalMap, Image::Format::Enum inFormat, Image::Format::Enum *outFormat) {
     if (Image::IsDepthFormat(inFormat) || Image::IsDepthStencilFormat(inFormat)) {
         *outFormat = inFormat;
@@ -370,11 +378,7 @@ void D3D12Renderer::GetTextureImage2D(Texture *texture, int level, Image::Format
         return;
     }
 
-#ifdef USE_D3D12_MEMALLOC
-    ID3D12Resource *textureResource = d3d12Texture->textureAllocation->GetResource();
-#else
-    ID3D12Resource *textureResource = d3d12Texture->textureResource;
-#endif
+    ID3D12Resource *textureResource = d3d12Texture->GetResource();
 
     // 텍스쳐에서 리드백 버퍼로 복사한다.
     D3D12_TEXTURE_COPY_LOCATION srcLocation = {};
@@ -501,11 +505,7 @@ bool D3D12Renderer::SetTextureSubImage2D(Texture *texture, int level, int x, int
     CD3DX12_RANGE writtenRange(0, uploadBufferSize);
     uploadBuffer->Unmap(0, &writtenRange);
 
-#ifdef USE_D3D12_MEMALLOC
-    ID3D12Resource *textureResource = d3d12Texture->textureAllocation->GetResource();
-#else
-    ID3D12Resource *textureResource = d3d12Texture->textureResource;
-#endif
+    ID3D12Resource *textureResource = d3d12Texture->GetResource();
 
     // 업로드 버퍼에서 텍스쳐로 데이터 카피
     resourceCommandList->Reset();
@@ -597,11 +597,7 @@ bool D3D12Renderer::SetTextureSubImage3D(Texture *texture, int level, int x, int
     CD3DX12_RANGE writtenRange(0, uploadBufferSize);
     uploadBuffer->Unmap(0, &writtenRange);
 
-#ifdef USE_D3D12_MEMALLOC
-    ID3D12Resource *textureResource = d3d12Texture->textureAllocation->GetResource();
-#else
-    ID3D12Resource *textureResource = d3d12Texture->textureResource;
-#endif
+    ID3D12Resource *textureResource = d3d12Texture->GetResource();
 
     // 업로드 버퍼에서 텍스쳐로 데이터 카피
     resourceCommandList->Reset();
@@ -635,9 +631,11 @@ bool D3D12Renderer::SetTextureSubImage3D(Texture *texture, int level, int x, int
 void D3D12Renderer::SetTexture(CommandList *commandList, int slot, const Texture *texture) {
     D3D12CommandList *d3d12CommandList = static_cast<D3D12CommandList *>(commandList);
     int threadIndex = d3d12CommandList->GetThreadIndex();
+    D3D12FrameData::DataPerThread &threadData = currentFrameData->threadData[threadIndex];
 
-    assert(slot < COUNT_OF(currentFrameData->threadData[threadIndex].psoDescriptorHandles));
+    assert(slot < COUNT_OF(threadData.psoDescriptorHandles));
 
     const D3D12Texture *d3d12Texture = static_cast<const D3D12Texture *>(texture);
-    currentFrameData->threadData[threadIndex].psoDescriptorHandles[slot] = d3d12Texture->descriptorHandle;
+    threadData.psoDescriptorHandles[slot] = d3d12Texture->descriptorHandle;
+    threadData.gpuResources[slot] = d3d12Texture;
 }

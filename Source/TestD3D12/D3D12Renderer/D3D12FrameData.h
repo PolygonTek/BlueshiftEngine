@@ -81,6 +81,8 @@ private:
         UINT                        usedConstantBytes = 0;
         Array<D3D12_CPU_DESCRIPTOR_HANDLE> cbvDescriptorHandles;
         D3D12_CPU_DESCRIPTOR_HANDLE psoDescriptorHandles[64] = { CD3DX12_CPU_DESCRIPTOR_HANDLE() };
+        const RHIRenderer::GPUResource *gpuResources[64] = {};
+        uint32_t                    rootConstants[64] = {};
         Array<D3D12GPUSubResource>  subResources;
     };
 
