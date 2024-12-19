@@ -16,8 +16,43 @@
 #include "D3D12CommandList.h"
 #include "D3D12CommandListPool.h"
 
+static constexpr D3D12_SHADING_RATE ToD3D12ShadingRate(RHIRenderer::ShadingRate shadingRate) {
+    switch (shadingRate) {
+    case RHIRenderer::ShadingRate::Rate1X1:
+        return D3D12_SHADING_RATE_1X1;
+    case RHIRenderer::ShadingRate::Rate1X2:
+        return D3D12_SHADING_RATE_1X2;
+    case RHIRenderer::ShadingRate::Rate2X1:
+        return D3D12_SHADING_RATE_2X1;
+    case RHIRenderer::ShadingRate::Rate2X2:
+        return D3D12_SHADING_RATE_2X2;
+    case RHIRenderer::ShadingRate::Rate2X4:
+        return D3D12_SHADING_RATE_2X4;
+    case RHIRenderer::ShadingRate::Rate4X2:
+        return D3D12_SHADING_RATE_4X2;
+    case RHIRenderer::ShadingRate::Rate4X4:
+        return D3D12_SHADING_RATE_4X4;
+    }
+    return D3D12_SHADING_RATE_1X1;
+}
+
 int D3D12CommandList::GetThreadIndex() const {
     return parentPool->GetThreadIndex();
+}
+
+void D3D12CommandList::SetShadingRate(RHIRenderer::ShadingRate shadingRate) {
+    D3D12_SHADING_RATE rate = ToD3D12ShadingRate(shadingRate);
+#ifdef USE_STATE_CACHE_FOR_COMMAND_LIST
+    if (cachedShadingRate == rate) {
+        return;
+    }
+    cachedShadingRate = rate;
+#endif
+    D3D12_SHADING_RATE_COMBINER combiners[] = {
+        D3D12_SHADING_RATE_COMBINER_MAX,
+        D3D12_SHADING_RATE_COMBINER_MAX
+    };
+    graphicsCommandList->RSSetShadingRate(rate, combiners);
 }
 
 void D3D12CommandList::Draw(uint32_t vertexCount, uint32_t startVertexLocation) {

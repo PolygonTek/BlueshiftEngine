@@ -48,8 +48,8 @@ void D3D12TriangleMesh::InitMesh() {
     // NOTE: UV 좌표의 V 는 아래쪽으로 증가함을 주의한다. 나중에 통합 렌더러를 작성한다면, shader code 에서 하는게 좋을 듯..
     ALIGN_AS32 const TriangleVertex verts[] = {
         { { 0.0f, 0.5f, 0.0f }, Color4::red.ToUInt32(), { 0.5f, 0.0f }},
-        { { 0.5f, -0.5f, 0.0f }, Color4::green.ToUInt32(), { 1.0f, 1.0f } },
-        { { -0.5f, -0.5f, 0.0f }, Color4::blue.ToUInt32(), { 0.0f, 1.0f } },
+        { { -0.5f, -0.5f, 0.0f }, Color4::green.ToUInt32(), { 1.0f, 1.0f } },
+        { { 0.5f, -0.5f, 0.0f }, Color4::blue.ToUInt32(), { 0.0f, 1.0f } },
     };
 
     ALIGN_AS32 const uint16_t indexes[] = {
@@ -146,7 +146,6 @@ void D3D12TriangleMesh::DrawMesh(RHIRenderer::CommandList *commandList, const Ve
 
     renderer->SetTexture(commandList, 0, texture);
     renderer->SetSubResource(commandList, 1, cbSubResource);
-
     renderer->SetPSO(commandList, singlePSO);
     renderer->SetVertexBuffer(commandList, 0, vertexBuffer);
     renderer->SetIndexBuffer(commandList, indexBuffer);
@@ -169,7 +168,6 @@ void D3D12TriangleMesh::DrawMeshInstanced(RHIRenderer::CommandList *commandList,
 
     renderer->SetTexture(commandList, 0, texture);
     renderer->SetSubResource(commandList, 1, cbSubResource);
-
     renderer->SetPSO(commandList, instancingPSO);
     renderer->SetVertexBuffer(commandList, 0, vertexBuffer);
     renderer->SetIndexBuffer(commandList, indexBuffer);

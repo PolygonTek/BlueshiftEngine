@@ -260,16 +260,16 @@ void D3D12Renderer::Init(HWND hwnd) {
     //hr = swapChain->GetContainingOutput(&output);
 
     // Viewport 설정을 백버퍼 크기에 맞게 설정
-    viewport.Width = (float)backBufferWidth;
-    viewport.Height = (float)backBufferHeight;
-    viewport.MinDepth = 0.0f;
-    viewport.MaxDepth = 1.0f;
+    viewportRect.x = 0.0f;
+    viewportRect.y = 0.0f;
+    viewportRect.w = (float)backBufferWidth;
+    viewportRect.h = (float)backBufferHeight;
 
     // ScissorRect 설정을 백버퍼 크기에 맞게 설정
-    scissorRect.left = 0;
-    scissorRect.top = 0;
-    scissorRect.right = viewport.Width;
-    scissorRect.bottom = viewport.Height;
+    scissorRect.x = 0;
+    scissorRect.y = 0;
+    scissorRect.w = viewportRect.w;
+    scissorRect.h = viewportRect.h;
 
     // 백버퍼 용 디스크립터 힙 생성
     D3D12_DESCRIPTOR_HEAP_DESC rtvDescriptorHeapDesc = {};
@@ -571,8 +571,8 @@ void D3D12Renderer::BeginFrame() {
     commandList->ResourceBarrier(renderTargetBuffers[currentBackBufferIndex], D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET);
 
     // 뷰포트 & ScissorRect 설정
-    commandList->graphicsCommandList->RSSetViewports(1, &viewport);
-    commandList->graphicsCommandList->RSSetScissorRects(1, &scissorRect);
+    SetViewport(commandList, viewportRect);
+    SetScissorRect(commandList, scissorRect);
 
     rtvDescriptorHandle = CD3DX12_CPU_DESCRIPTOR_HANDLE(rtvDescriptorHeap->GetCPUDescriptorHandleForHeapStart(), currentBackBufferIndex, descriptorHandleSize[D3D12_DESCRIPTOR_HEAP_TYPE_RTV]);
     dsvDescriptorHandle = CD3DX12_CPU_DESCRIPTOR_HANDLE(dsvDescriptorHeap->GetCPUDescriptorHandleForHeapStart());
@@ -643,8 +643,9 @@ D3D12CommandList* D3D12Renderer::FlushCommandList(D3D12CommandList* commandList)
     commandList->Reset();
 
     // 뷰포트 & ScissorRect 설정
-    commandList->graphicsCommandList->RSSetViewports(1, &viewport);
-    commandList->graphicsCommandList->RSSetScissorRects(1, &scissorRect);
+    SetViewport(commandList, viewportRect);
+    SetScissorRect(commandList, scissorRect);
+
     commandList->graphicsCommandList->OMSetRenderTargets(1, &rtvDescriptorHandle, FALSE, &dsvDescriptorHandle);
 
     return commandList;
@@ -764,11 +765,11 @@ void D3D12Renderer::OnResize(int width, int height) {
 
     currentBackBufferIndex = dxgiSwapChain->GetCurrentBackBufferIndex();
 
-    viewport.Width = static_cast<float>(width);
-    viewport.Height = static_cast<float>(height);
+    viewportRect.w = static_cast<float>(width);
+    viewportRect.h = static_cast<float>(height);
 
-    scissorRect.right = width;
-    scissorRect.bottom = height;
+    scissorRect.w = width;
+    scissorRect.h = height;
 }
 
 void D3D12Renderer::CreateDevice(IDXGIAdapter1 **adapterPtr) {
@@ -832,6 +833,56 @@ void D3D12Renderer::PrintMemoryAllocatorStats() {
     BE_LOG("GPU memory currently has %u allocations taking %s\n", localBudget.Stats.AllocationCount, Str::FormatBytes(localBudget.Stats.AllocationBytes).c_str());
 }
 #endif
+
+void D3D12Renderer::SetBlendFactor(CommandList *commandList, const Color4 &rgba) {
+    D3D12CommandList *d3d12CommandList = static_cast<D3D12CommandList *>(commandList);
+    d3d12CommandList->SetBlendFactor(rgba);
+}
+
+void D3D12Renderer::SetStencilRef(CommandList *commandList, uint32_t value) {
+    D3D12CommandList *d3d12CommandList = static_cast<D3D12CommandList *>(commandList);
+    d3d12CommandList->SetStencilRef(value);
+}
+
+void D3D12Renderer::SetShadingRate(CommandList *commandList, ShadingRate shadingRate) {
+    if (!supportsVRS) {
+        return;
+    }
+    D3D12CommandList *d3d12CommandList = static_cast<D3D12CommandList *>(commandList);
+    d3d12CommandList->SetShadingRate(shadingRate);
+}
+
+void D3D12Renderer::SetViewport(CommandList *commandList, const Rect &viewportRect) {
+    D3D12_VIEWPORT viewport;
+    viewport.TopLeftX = viewportRect.x;
+    viewport.TopLeftY = viewportRect.y;
+    viewport.Width = viewportRect.w;
+    viewport.Height = viewportRect.h;
+    viewport.MinDepth = 0.0f;
+    viewport.MaxDepth = 1.0f;
+
+    D3D12CommandList *d3d12CommandList = static_cast<D3D12CommandList *>(commandList);
+    d3d12CommandList->graphicsCommandList->RSSetViewports(1, &viewport);
+}
+
+void D3D12Renderer::SetScissorRect(CommandList *commandList, const Rect &scissorRect) {
+    static_assert(sizeof(Rect) == sizeof(D3D12_RECT));
+    static_assert(offsetof(Rect, x) == offsetof(D3D12_RECT, left));
+    static_assert(offsetof(Rect, y) == offsetof(D3D12_RECT, top));
+    static_assert(offsetof(Rect, w) == offsetof(D3D12_RECT, right));
+    static_assert(offsetof(Rect, h) == offsetof(D3D12_RECT, bottom));
+
+    D3D12CommandList *d3d12CommandList = static_cast<D3D12CommandList *>(commandList);
+    d3d12CommandList->graphicsCommandList->RSSetScissorRects(1, (D3D12_RECT *)&scissorRect);
+}
+
+void D3D12Renderer::SetDepthBounds(CommandList *commandList, float depthMin, float depthMax) {
+    if (!supportsDepthBoundsTest) {
+        return;
+    }
+    D3D12CommandList *d3d12CommandList = static_cast<D3D12CommandList *>(commandList);
+    d3d12CommandList->graphicsCommandList->OMSetDepthBounds(depthMin, depthMax);
+}
 
 void D3D12Renderer::Draw(CommandList *commandList, uint32_t vertexCount, uint32_t startVertexLocation) {
     D3D12CommandList *d3d12CommandList = static_cast<D3D12CommandList *>(commandList);
@@ -1020,8 +1071,9 @@ void D3D12Renderer::DrawVisObjectsWithoutTask() {
     commandList->Reset();
 
     // 뷰포트 & ScissorRect 설정
-    commandList->graphicsCommandList->RSSetViewports(1, &viewport);
-    commandList->graphicsCommandList->RSSetScissorRects(1, &scissorRect);
+    SetViewport(commandList, viewportRect);
+    SetScissorRect(commandList, scissorRect);
+
     commandList->graphicsCommandList->OMSetRenderTargets(1, &rtvDescriptorHandle, FALSE, &dsvDescriptorHandle);
 
     D3D12RootDescriptorPool *rootDescriptorPool = currentFrameData->threadData[0].rootDescriptorPool;
@@ -1050,8 +1102,9 @@ void D3D12Renderer::DrawVisObjectsByTask(D3D12Renderer::DrawObjectTaskDesc *task
     commandList->Reset();
 
     // 뷰포트 & ScissorRect 설정
-    commandList->graphicsCommandList->RSSetViewports(1, &viewport);
-    commandList->graphicsCommandList->RSSetScissorRects(1, &scissorRect);
+    SetViewport(commandList, viewportRect);
+    SetScissorRect(commandList, scissorRect);
+
     commandList->graphicsCommandList->OMSetRenderTargets(1, &rtvDescriptorHandle, FALSE, &dsvDescriptorHandle);
 
     // 루트 디스크립터 힙을 지정한다.

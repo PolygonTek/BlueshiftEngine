@@ -100,6 +100,12 @@ public:
     virtual void                        SetTexture(CommandList *commandList, int slot, const Texture *texture) override;
     virtual void                        SetSubResource(CommandList *commandList, int slot, GPUSubResource *subResource) override;
     virtual void                        SetPSO(CommandList *commandList, const PipelineState *pipelineState) override;
+    virtual void                        SetBlendFactor(CommandList *commandList, const Color4 &rgba) override;
+    virtual void                        SetStencilRef(CommandList *commandList, uint32_t value) override;
+    virtual void                        SetShadingRate(CommandList *commandList, ShadingRate shadingRate) override;
+    virtual void                        SetViewport(CommandList *commandList, const Rect &viewportRect) override;
+    virtual void                        SetScissorRect(CommandList *commandList, const Rect &scissorRect) override;
+    virtual void                        SetDepthBounds(CommandList *commandList, float depthMin, float depthMax) override;
 
     virtual void                        Draw(CommandList *commandList, uint32_t vertexCount, uint32_t startVertexLocation) override;
     virtual void                        DrawIndexed(CommandList *commandList, uint32_t indexCount, uint32_t startIndexLocation, uint32_t baseVertexLocation) override;
@@ -200,8 +206,8 @@ public:
     bool                                supportsDepthBoundsTest = false;
 
     UINT                                currentBackBufferIndex = 0;
-    D3D12_VIEWPORT                      viewport = {};
-    D3D12_RECT                          scissorRect = {};
+    Rect                                viewportRect;
+    Rect                                scissorRect;
     D3D12DescriptorPool *               cbvDescriptorPool = nullptr;
     D3D12DescriptorPool *               srvDescriptorPool = nullptr;
     D3D12DescriptorPool *               rtvDescriptorPool = nullptr;

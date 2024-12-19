@@ -179,7 +179,6 @@ void D3D12CubeMesh::DrawMesh(RHIRenderer::CommandList* commandList, const Mat3x4
 
     renderer->SetTexture(commandList, 0, texture);
     renderer->SetSubResource(commandList, 1, cbSubResource);
-
     renderer->SetPSO(commandList, singlePSO);
     renderer->SetVertexBuffer(commandList, 0, vertexBuffer);
     renderer->SetIndexBuffer(commandList, indexBuffer);
@@ -204,7 +203,6 @@ void D3D12CubeMesh::DrawMeshInstanced(RHIRenderer::CommandList *commandList, con
 
     renderer->SetTexture(commandList, 0, texture);
     renderer->SetSubResource(commandList, 1, cbSubResource);
-
     renderer->SetPSO(commandList, instancingPSO);
     renderer->SetVertexBuffer(commandList, 0, vertexBuffer);
     renderer->SetIndexBuffer(commandList, indexBuffer);

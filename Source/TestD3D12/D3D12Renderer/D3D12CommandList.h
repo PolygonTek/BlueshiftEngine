@@ -41,6 +41,9 @@ public:
     void                            SetVertexBuffers(int startSlot, int numViews, const RHIRenderer::VertexBuffer *vertexBuffers[]);
     void                            SetVertexBuffer(int slot, const RHIRenderer::VertexBuffer *vertexBuffer);
     void                            SetIndexBuffer(const RHIRenderer::IndexBuffer *indexBuffer);
+    void                            SetBlendFactor(const Color4 &rgba);
+    void                            SetStencilRef(uint32_t value);
+    void                            SetShadingRate(RHIRenderer::ShadingRate shadingRate);
 
     void                            Draw(uint32_t vertexCount, uint32_t startVertexLocation);
     void                            DrawIndexed(uint32_t indexCount, uint32_t startIndexLocation, uint32_t baseVertexLocation);
@@ -48,7 +51,7 @@ public:
     void                            DrawIndexedInstanced(uint32_t indexCount, uint32_t instanceCount, uint32_t startIndexLocation, uint32_t baseVertexLocation, uint32_t startInstanceLocation);
 
     ID3D12CommandAllocator *        commandAllocator = nullptr;
-    ID3D12GraphicsCommandList *     graphicsCommandList = nullptr;
+    ID3D12GraphicsCommandList6 *    graphicsCommandList = nullptr;
     D3D12CommandListPool *          parentPool = nullptr;
     LinkList<D3D12CommandList>      node;
     const D3D12PipelineState *      currentPSO = nullptr;
@@ -60,9 +63,11 @@ private:
     StaticArray<ID3D12DescriptorHeap *, 16> cachedRootDescriptorHeaps;
     ID3D12RootSignature *           cachedGraphicsRootSignature = nullptr;
     ID3D12PipelineState *           cachedPipelineState = nullptr;
-    D3D12_PRIMITIVE_TOPOLOGY        cachedPrimitiveTopology = D3D_PRIMITIVE_TOPOLOGY_UNDEFINED;
     D3D12_VERTEX_BUFFER_VIEW        cachedVertexBufferViews[D3D12_IA_VERTEX_INPUT_RESOURCE_SLOT_COUNT] = {};
     D3D12_INDEX_BUFFER_VIEW         cachedIndexBufferView = {};
+    Color4                          cachedBlendFactor = Color4(1, 1, 1, 1);
+    uint32_t                        cachedStencilRef = 0;
+    D3D12_SHADING_RATE              cachedShadingRate = D3D12_SHADING_RATE::D3D12_SHADING_RATE_1X1;
 #endif
 };
 
@@ -84,11 +89,13 @@ BE_INLINE void D3D12CommandList::Reset(bool resetCacheStates) {
         cachedRootDescriptorHeaps.SetCount(0);
         cachedGraphicsRootSignature = nullptr;
         cachedPipelineState = nullptr;
-        cachedPrimitiveTopology = D3D_PRIMITIVE_TOPOLOGY_UNDEFINED;
         for (int i = 0; i < D3D12_IA_VERTEX_INPUT_RESOURCE_SLOT_COUNT; ++i) {
             cachedVertexBufferViews[i] = {};
         }
         cachedIndexBufferView = {};
+        cachedBlendFactor = Color4(1, 1, 1, 1);
+        cachedStencilRef = 0;
+        cachedShadingRate = D3D12_SHADING_RATE::D3D12_SHADING_RATE_1X1;
     }
 #endif
 }
@@ -218,4 +225,24 @@ BE_INLINE void D3D12CommandList::SetIndexBuffer(const RHIRenderer::IndexBuffer *
     cachedIndexBufferView = d3d12IndexBuffer->ibv;
 #endif
     graphicsCommandList->IASetIndexBuffer(&d3d12IndexBuffer->ibv);
+}
+
+BE_INLINE void D3D12CommandList::SetBlendFactor(const Color4 &rgba) {
+#ifdef USE_STATE_CACHE_FOR_COMMAND_LIST
+    if (cachedBlendFactor == rgba) {
+        return;
+    }
+    cachedBlendFactor = rgba;
+#endif
+    graphicsCommandList->OMSetBlendFactor(rgba.Ptr());
+}
+
+BE_INLINE void D3D12CommandList::SetStencilRef(uint32_t value) {
+#ifdef USE_STATE_CACHE_FOR_COMMAND_LIST
+    if (cachedStencilRef == value) {
+        return;
+    }
+    cachedStencilRef = value;
+#endif
+    graphicsCommandList->OMSetStencilRef(value);
 }

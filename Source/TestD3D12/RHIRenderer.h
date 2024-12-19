@@ -151,6 +151,17 @@ public:
         Count
     };
 
+    enum class ShadingRate : uint8_t {
+        InvalidRate,
+        Rate1X1,
+        Rate1X2,
+        Rate2X1,
+        Rate2X2,
+        Rate2X4,
+        Rate4X2,
+        Rate4X4
+    };
+
     struct ShaderCompileInput {
         ShaderFormat                shaderFormat;
         ShaderModel                 shaderModel;
@@ -451,6 +462,12 @@ public:
     virtual void                    SetTexture(CommandList *commandList, int slot, const Texture *texture) = 0;
     virtual void                    SetSubResource(CommandList *commandList, int slot, GPUSubResource *subResource) = 0;
     virtual void                    SetPSO(CommandList *commandList, const PipelineState *pipelineState) = 0;
+    virtual void                    SetBlendFactor(CommandList *commandList, const Color4 &rgba) = 0;
+    virtual void                    SetStencilRef(CommandList *commandList, uint32_t value) = 0;
+    virtual void                    SetShadingRate(CommandList *commandList, ShadingRate shadingRate) = 0;
+    virtual void                    SetViewport(CommandList *commandList, const Rect &viewportRect) = 0;
+    virtual void                    SetScissorRect(CommandList *commandList, const Rect &scissorRect) = 0;
+    virtual void                    SetDepthBounds(CommandList *commandList, float depthMin, float depthMax) = 0;
 
     virtual void                    Draw(CommandList *commandList, uint32_t vertexCount, uint32_t startVertexLocation) = 0;
     virtual void                    DrawIndexed(CommandList *commandList, uint32_t indexCount, uint32_t startIndexLocation, uint32_t baseVertexLocation) = 0;
