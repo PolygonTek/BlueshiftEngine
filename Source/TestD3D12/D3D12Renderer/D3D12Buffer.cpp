@@ -41,10 +41,10 @@ uint64_t D3D12Buffer::GetSize() {
 #endif
 }
 
-RHIRenderer::Buffer *D3D12Renderer::CreateBuffer(BufferUsage usage, int size) {
+RHIRenderer::Buffer *D3D12Renderer::CreateBuffer(BufferUsage usage, int flags, int size) {
     D3D12_HEAP_TYPE heapType;
     D3D12_RESOURCE_STATES initialState;
-    D3D12_RESOURCE_FLAGS flags = D3D12_RESOURCE_FLAG_NONE;
+    D3D12_RESOURCE_FLAGS resourceFlags = D3D12_RESOURCE_FLAG_NONE;
 
     switch (usage) {
     case RHIRenderer::BufferUsage::Default:
@@ -58,10 +58,22 @@ RHIRenderer::Buffer *D3D12Renderer::CreateBuffer(BufferUsage usage, int size) {
     case RHIRenderer::BufferUsage::Readback:
         heapType = D3D12_HEAP_TYPE_READBACK;
         initialState = D3D12_RESOURCE_STATE_COPY_DEST;
-        flags |= D3D12_RESOURCE_FLAG_DENY_SHADER_RESOURCE;
+        resourceFlags |= D3D12_RESOURCE_FLAG_DENY_SHADER_RESOURCE;
         break;
     default:
         return nullptr;
+    }
+
+    if (!(flags & BufferFlag::ShaderResource)) {
+        resourceFlags |= D3D12_RESOURCE_FLAG_DENY_SHADER_RESOURCE;
+    }
+    if (flags & BufferFlag::UnorderedAccess) {
+        resourceFlags |= D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS;
+    }
+
+    if (flags & BufferFlag::ConstantBuffer) {
+        // 상수 버퍼는 어차피 GPU 에 요청하면 256 바이트로 주소 & 사이즈가 정렬된다.
+        size = AlignUp(size, D3D12_CONSTANT_BUFFER_DATA_PLACEMENT_ALIGNMENT);
     }
 
     D3D12_RESOURCE_DESC bufferDesc = {};
@@ -75,7 +87,7 @@ RHIRenderer::Buffer *D3D12Renderer::CreateBuffer(BufferUsage usage, int size) {
     bufferDesc.SampleDesc.Count = 1;
     bufferDesc.SampleDesc.Quality = 0;
     bufferDesc.Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
-    bufferDesc.Flags = flags;
+    bufferDesc.Flags = resourceFlags;
 
 #ifdef USE_D3D12_MEMALLOC
     D3D12MA::ALLOCATION_DESC allocationDesc = {};

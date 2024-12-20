@@ -34,20 +34,19 @@ ID3D12Resource *D3D12ConstantBuffer::GetResource() const {
 }
 
 RHIRenderer::ConstantBuffer* D3D12Renderer::CreateConstantBuffer(BufferType type, int size, void *data) {
-    // 상수 버퍼는 어차피 GPU 에 요청하면 256 바이트로 주소 & 사이즈가 정렬된다.
-    UINT alignedSize = (UINT)AlignUp(size, D3D12_CONSTANT_BUFFER_DATA_PLACEMENT_ALIGNMENT);
     D3D12Buffer *buffer = nullptr;
 
     if (type == RHIRenderer::BufferType::Static) {
-        buffer = static_cast<D3D12Buffer *>(CreateBuffer(RHIRenderer::BufferUsage::Default, alignedSize));
+        buffer = static_cast<D3D12Buffer *>(CreateBuffer(RHIRenderer::BufferUsage::Default, BufferFlag::ShaderResource | BufferFlag::ConstantBuffer, size));
     } else {
-        buffer = static_cast<D3D12Buffer *>(CreateBuffer(RHIRenderer::BufferUsage::Upload, alignedSize));
+        buffer = static_cast<D3D12Buffer *>(CreateBuffer(RHIRenderer::BufferUsage::Upload, BufferFlag::ShaderResource | BufferFlag::ConstantBuffer, size));
     }
 
     if (!buffer) {
         return nullptr;
     }
 
+    UINT bufferSize = buffer->GetSize();
     ID3D12Resource *bufferResource = buffer->GetResource();
     ID3D12Resource *uploadBuffer = nullptr;
 
@@ -56,7 +55,7 @@ RHIRenderer::ConstantBuffer* D3D12Renderer::CreateConstantBuffer(BufferType type
             D3D12_RESOURCE_DESC uploadBufferDesc;
             uploadBufferDesc.Dimension = D3D12_RESOURCE_DIMENSION_BUFFER;
             uploadBufferDesc.Alignment = 0;
-            uploadBufferDesc.Width = alignedSize;
+            uploadBufferDesc.Width = bufferSize;
             uploadBufferDesc.Height = 1;
             uploadBufferDesc.DepthOrArraySize = 1;
             uploadBufferDesc.MipLevels = 1;
@@ -87,23 +86,23 @@ RHIRenderer::ConstantBuffer* D3D12Renderer::CreateConstantBuffer(BufferType type
             UINT8 *mappedPtr = nullptr;
             uploadBuffer->Map(0, nullptr, reinterpret_cast<void **>(&mappedPtr));
 
-            simdProcessor->MemcpyStream(mappedPtr, data, alignedSize);
+            simdProcessor->MemcpyStream(mappedPtr, data, size);
 
-            CD3DX12_RANGE writtenRange(0, alignedSize);
+            CD3DX12_RANGE writtenRange(0, size);
             uploadBuffer->Unmap(0, &writtenRange);
 
             // 업로드 버퍼에서 GPU 버퍼로 데이터 카피
             resourceCommandList->Reset();
-            resourceCommandList->graphicsCommandList->CopyBufferRegion(bufferResource, 0, uploadBuffer, 0, alignedSize);
+            resourceCommandList->graphicsCommandList->CopyBufferRegion(bufferResource, 0, uploadBuffer, 0, size);
             resourceCommandList->ResourceBarrier(bufferResource, D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER);
             resourceCommandList->CloseAndExecute(CommandQueueType::Graphics);
         } else if (type == RHIRenderer::BufferType::Dynamic) {
             UINT8 *mappedPtr = nullptr;
             bufferResource->Map(0, nullptr, reinterpret_cast<void **>(&mappedPtr));
 
-            simdProcessor->MemcpyStream(mappedPtr, data, alignedSize);
+            simdProcessor->MemcpyStream(mappedPtr, data, size);
 
-            CD3DX12_RANGE writtenRange(0, alignedSize);
+            CD3DX12_RANGE writtenRange(0, size);
             bufferResource->Unmap(0, &writtenRange);
         } else {
             SAFE_DELETE(buffer);
@@ -120,7 +119,7 @@ RHIRenderer::ConstantBuffer* D3D12Renderer::CreateConstantBuffer(BufferType type
     if (type == RHIRenderer::BufferType::Static) {
         D3D12_CONSTANT_BUFFER_VIEW_DESC cbvDesc = { 0 };
         cbvDesc.BufferLocation = bufferResource->GetGPUVirtualAddress();
-        cbvDesc.SizeInBytes = alignedSize;
+        cbvDesc.SizeInBytes = bufferSize;
 
         descriptorHandle = cbvDescriptorPool->Alloc();
         device->CreateConstantBufferView(&cbvDesc, descriptorHandle);

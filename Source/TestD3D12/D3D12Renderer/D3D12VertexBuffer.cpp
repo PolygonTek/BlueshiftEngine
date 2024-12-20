@@ -24,14 +24,14 @@ void D3D12VertexBuffer::Release() {
     }
 }
 
-RHIRenderer::VertexBuffer* D3D12Renderer::CreateVertexBuffer(RHIRenderer::BufferType type, int vertexSize, int numVerts, void *data) {
+RHIRenderer::VertexBuffer* D3D12Renderer::CreateVertexBuffer(BufferType type, int vertexSize, int numVerts, void *data) {
     UINT bufferSize = vertexSize * numVerts;
     D3D12Buffer *buffer = nullptr;
 
-    if (type == RHIRenderer::BufferType::Static) {
-        buffer = static_cast<D3D12Buffer *>(CreateBuffer(RHIRenderer::BufferUsage::Default, bufferSize));
+    if (type == BufferType::Static) {
+        buffer = static_cast<D3D12Buffer *>(CreateBuffer(BufferUsage::Default, BufferFlag::ShaderResource | BufferFlag::VertexBuffer, bufferSize));
     } else {
-        buffer = static_cast<D3D12Buffer *>(CreateBuffer(RHIRenderer::BufferUsage::Upload, bufferSize));
+        buffer = static_cast<D3D12Buffer *>(CreateBuffer(BufferUsage::Upload, BufferFlag::ShaderResource | BufferFlag::VertexBuffer, bufferSize));
     }
 
     if (!buffer) {
@@ -42,7 +42,7 @@ RHIRenderer::VertexBuffer* D3D12Renderer::CreateVertexBuffer(RHIRenderer::Buffer
     ID3D12Resource* uploadBuffer = nullptr;
 
     if (data) {
-        if (type == RHIRenderer::BufferType::Static) {
+        if (type == BufferType::Static) {
             D3D12_RESOURCE_DESC uploadBufferDesc;
             uploadBufferDesc.Dimension = D3D12_RESOURCE_DIMENSION_BUFFER;
             uploadBufferDesc.Alignment = 0;
@@ -87,7 +87,7 @@ RHIRenderer::VertexBuffer* D3D12Renderer::CreateVertexBuffer(RHIRenderer::Buffer
             resourceCommandList->graphicsCommandList->CopyBufferRegion(bufferResource, 0, uploadBuffer, 0, bufferSize);
             resourceCommandList->ResourceBarrier(bufferResource, D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER);
             resourceCommandList->CloseAndExecute(CommandQueueType::Graphics);
-        } else if (type == RHIRenderer::BufferType::Dynamic) {
+        } else if (type == BufferType::Dynamic) {
             UINT8 *mappedPtr = nullptr;
             bufferResource->Map(0, nullptr, reinterpret_cast<void **>(&mappedPtr));
 

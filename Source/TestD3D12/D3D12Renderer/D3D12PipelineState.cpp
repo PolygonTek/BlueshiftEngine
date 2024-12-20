@@ -886,7 +886,11 @@ void D3D12Renderer::SetPSO(CommandList *commandList, const PipelineState *pipeli
         } else if (rootParameter->ParameterType == D3D12_ROOT_PARAMETER_TYPE_UAV) {
             // 루트 레벨 UAV 설정
             UINT shaderRegister = rootParameter->Descriptor.ShaderRegister;
-            //d3d12CommandList->graphicsCommandList->SetGraphicsRootUnorderedAccessView(rootParameterIndex, gpuAddress);
+            const D3D12Buffer *buffer = static_cast<const D3D12Buffer *>(threadData.uavResources[shaderRegister]);
+            if (buffer) {
+                D3D12_GPU_VIRTUAL_ADDRESS gpuAddress = buffer->GetResource()->GetGPUVirtualAddress();
+                d3d12CommandList->graphicsCommandList->SetGraphicsRootUnorderedAccessView(rootParameterIndex, gpuAddress);
+            }
         }
     }
 }

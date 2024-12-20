@@ -372,7 +372,7 @@ void D3D12Renderer::GetTextureImage2D(Texture *texture, int level, Image::Format
     UINT64 mipLevelSize;
     device->GetCopyableFootprints(&d3d12Texture->textureDesc, level, 1, 0, &mipLevelFootprint, nullptr, nullptr, &mipLevelSize);
 
-    D3D12Buffer *readbackBuffer = static_cast<D3D12Buffer *>(CreateBuffer(RHIRenderer::BufferUsage::Readback, mipLevelSize));
+    D3D12Buffer *readbackBuffer = static_cast<D3D12Buffer *>(CreateBuffer(BufferUsage::Readback, BufferFlag::None, mipLevelSize));
     if (!readbackBuffer) {
         BE_WARNLOG("D3D12Texture::GetTextureImage2D: Failed to create readback buffer\n");
         return;

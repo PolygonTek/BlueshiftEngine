@@ -68,7 +68,7 @@ public:
     void                                OnPendingResourceAdded();
     void                                FreePendingResources(bool waitPendings = false);
 
-    virtual Buffer *                    CreateBuffer(BufferUsage usage, int size) override;
+    virtual Buffer *                    CreateBuffer(BufferUsage usage, int flags, int size) override;
     virtual void                        DestroyBuffer(Buffer *buffer, bool immediate = false) override;
 
     virtual VertexBuffer *              CreateVertexBuffer(BufferType type, int vertexSize, int numVerts, void *data) override;
@@ -149,6 +149,7 @@ public:
 #endif
 
     struct DrawObjectTaskDesc {
+        D3D12Renderer *                 renderer = nullptr;
         int                             threadIndex = -1;
         int                             visObjectStartIndex = -1;
         int                             visObjectEndIndex = -1;

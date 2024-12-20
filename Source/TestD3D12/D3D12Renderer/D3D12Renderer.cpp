@@ -1135,7 +1135,7 @@ void D3D12Renderer::DrawVisObjectsByTask(D3D12Renderer::DrawObjectTaskDesc *task
 
 static void DrawVisObjectsByTaskFunction(void *data) {
     D3D12Renderer::DrawObjectTaskDesc *taskDesc = reinterpret_cast<D3D12Renderer::DrawObjectTaskDesc *>(data);
-    renderer->DrawVisObjectsByTask(taskDesc);
+    taskDesc->renderer->DrawVisObjectsByTask(taskDesc);
 }
 
 // 전체 visObjects 를 task 로 나눠서 그린다.
@@ -1159,6 +1159,7 @@ void D3D12Renderer::DrawVisObjectsWithTask(int numTasks) {
     while (lastEndIndex < numVisObjects - 1) {
         DrawObjectTaskDesc &currentThreadDesc = objectDrawingTaskDescs.Alloc();
 
+        currentThreadDesc.renderer = this;
         currentThreadDesc.threadIndex = threadIndex++;
         currentThreadDesc.visObjectStartIndex = lastEndIndex + 1;
         currentThreadDesc.visObjectEndIndex = Min(currentThreadDesc.visObjectStartIndex + numVisObjectsPerTasks, numVisObjects) - 1;
@@ -1222,6 +1223,8 @@ void D3D12Renderer::WaitRenderCompleted() {
 }
 
 unsigned int RenderThreadProc(void *param) {
+    D3D12Renderer *renderer = reinterpret_cast<D3D12Renderer *>(param);
+
     PlatformThread::SetCurrentThreadName("RenderThreadProc");
 
     SIMD::SetDenormalFlushMode(true);
@@ -1232,7 +1235,7 @@ unsigned int RenderThreadProc(void *param) {
             ScopedReadLock lock(renderer->smpLock);
 
             // 메인 스레드가 업데이트가 완료되어 (다음) 렌더링을 기다리는 상태가 될 때까지 기다린다.
-            PlatformCondition::Wait(renderer->updateCompletedCondition, renderer->smpLock, false, [] {
+            PlatformCondition::Wait(renderer->updateCompletedCondition, renderer->smpLock, false, [renderer] {
                 return renderer->frameSyncState == FrameSyncState::WaitingForRenderCompleted || renderer->isStoppingRenderThread;
             });
 

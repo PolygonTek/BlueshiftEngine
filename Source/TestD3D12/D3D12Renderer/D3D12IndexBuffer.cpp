@@ -23,16 +23,16 @@ void D3D12IndexBuffer::Release() {
     }
 }
 
-RHIRenderer::IndexBuffer *D3D12Renderer::CreateIndexBuffer(RHIRenderer::BufferType type, int indexSize, int numIndexes, void *data) {
+RHIRenderer::IndexBuffer *D3D12Renderer::CreateIndexBuffer(BufferType type, int indexSize, int numIndexes, void *data) {
     assert(indexSize == 2 || indexSize == 4);
 
     UINT bufferSize = indexSize * numIndexes;
     D3D12Buffer *buffer = nullptr;
 
-    if (type == RHIRenderer::BufferType::Static) {
-        buffer = static_cast<D3D12Buffer *>(CreateBuffer(RHIRenderer::BufferUsage::Default, bufferSize));
+    if (type == BufferType::Static) {
+        buffer = static_cast<D3D12Buffer *>(CreateBuffer(BufferUsage::Default, BufferFlag::ShaderResource | BufferFlag::IndexBuffer, bufferSize));
     } else {
-        buffer = static_cast<D3D12Buffer *>(CreateBuffer(RHIRenderer::BufferUsage::Upload, bufferSize));
+        buffer = static_cast<D3D12Buffer *>(CreateBuffer(BufferUsage::Upload, BufferFlag::ShaderResource | BufferFlag::IndexBuffer, bufferSize));
     }
 
     if (!buffer) {
@@ -43,7 +43,7 @@ RHIRenderer::IndexBuffer *D3D12Renderer::CreateIndexBuffer(RHIRenderer::BufferTy
     ID3D12Resource* uploadBuffer = nullptr;
 
     if (data) {
-        if (type == RHIRenderer::BufferType::Static) {
+        if (type == BufferType::Static) {
             D3D12_RESOURCE_DESC uploadBufferDesc;
             uploadBufferDesc.Dimension = D3D12_RESOURCE_DIMENSION_BUFFER;
             uploadBufferDesc.Alignment = 0;
@@ -88,7 +88,7 @@ RHIRenderer::IndexBuffer *D3D12Renderer::CreateIndexBuffer(RHIRenderer::BufferTy
             resourceCommandList->graphicsCommandList->CopyBufferRegion(bufferResource, 0, uploadBuffer, 0, bufferSize);
             resourceCommandList->ResourceBarrier(bufferResource, D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_INDEX_BUFFER);
             resourceCommandList->CloseAndExecute(CommandQueueType::Graphics);
-        } else if (type == RHIRenderer::BufferType::Dynamic) {
+        } else if (type == BufferType::Dynamic) {
             UINT8* mappedPtr = nullptr;
             bufferResource->Map(0, nullptr, reinterpret_cast<void **>(&mappedPtr));
 

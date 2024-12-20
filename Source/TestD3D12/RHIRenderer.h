@@ -129,6 +129,17 @@ public:
         Readback
     };
 
+    struct BufferFlag {
+        enum Enum {
+            None                    = 0,
+            ConstantBuffer          = BIT(0),
+            VertexBuffer            = BIT(1),
+            IndexBuffer             = BIT(2),
+            UnorderedAccess         = BIT(3),
+            ShaderResource          = BIT(4)
+        };
+    };
+
     enum class BufferType : uint8_t {
         Static,
         Dynamic
@@ -486,7 +497,7 @@ public:
     const DepthStencilState *       GetDepthStencilState(DepthStencilStateType::Enum type) const { return &depthStencilStates[type]; }
     const BlendState *              GetBlendState(BlendStateType::Enum type) const { return &blendStates[type]; }
 
-    virtual Buffer *                CreateBuffer(BufferUsage usage, int size) = 0;
+    virtual Buffer *                CreateBuffer(BufferUsage usage, int flags, int size) = 0;
     virtual void                    DestroyBuffer(Buffer *buffer, bool immediate = false) = 0;
 
     virtual VertexBuffer *          CreateVertexBuffer(BufferType type, int vertexSize, int numVerts, void *data) = 0;
