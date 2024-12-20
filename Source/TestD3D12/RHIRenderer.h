@@ -92,6 +92,27 @@ public:
         Invert
     };
 
+    enum class TextureFilter : uint8_t {
+        NearestMipmapNearest,   // Min/Mag/Mip : Point
+        LinearMipmapNearest,    // Min/Mag : Linear, Mip : Point
+        NearestMipmapLinear,    // Min/Mag : Point, Mip : Linear
+        LinearMipmapLinear,     // Min/Mag/Mip : Linear
+        Anisotropic
+    };
+
+    enum class TextureAddressMode : uint8_t {
+        Repeat,
+        MirroredRepeat,
+        Clamp,
+        ClampToBorder
+    };
+
+    enum class TextureBorderColor : uint8_t {
+        TransparentBlack,
+        OpaqueBlack,
+        OpaqueWhite
+    };
+
     enum class PrimitiveTopology : uint8_t {
         Undefined,
         PointList,
@@ -160,6 +181,18 @@ public:
         Rate2X4,
         Rate4X2,
         Rate4X4
+    };
+
+    struct SamplerDesc {
+        TextureFilter               filter = TextureFilter::NearestMipmapNearest;
+        TextureAddressMode          addressModeU = TextureAddressMode::Clamp;
+        TextureAddressMode          addressModeV = TextureAddressMode::Clamp;
+        TextureAddressMode          addressModeW = TextureAddressMode::Clamp;
+        float                       mipLodBias = 0.0f;
+        uint32_t                    maxAnisotropy = 0;
+        TextureBorderColor          borderColor = TextureBorderColor::OpaqueBlack;
+        float                       minLod = 0.0f;
+        float                       maxLod = std::numeric_limits<float>::max();
     };
 
     struct ShaderCompileInput {
@@ -325,6 +358,11 @@ public:
         ShaderStage                 shaderStage = ShaderStage::Count;
     };
 
+    class Sampler : public GPUResource {
+    public:
+        SamplerDesc                 desc = {};
+    };
+
     class PipelineState : public GPUResource {
     public:
         uint64_t                    hash = 0;
@@ -472,6 +510,9 @@ public:
     virtual Shader *                CreateShaderFromFile(ShaderModel shaderModel, ShaderStage shaderStage, const char *filename, const char *entryPoint) = 0;
     virtual void                    DestroyShader(Shader *shader, bool immediate = false) = 0;
 
+    virtual Sampler *               CreateSampler(const SamplerDesc *desc) = 0;
+    virtual void                    DestroySampler(Sampler *sampler, bool immediate = false) = 0;
+
     virtual PipelineState *         CreatePSO(const PipelineStateDesc *desc) = 0;
     virtual void                    DestroyPSO(PipelineState *pipelineState, bool immediate = false) = 0;
 
@@ -484,6 +525,7 @@ public:
     virtual void                    SetConstants(CommandList *commandList, const void *data, uint32_t size, uint32_t offset) = 0;
     virtual void                    SetTexture(CommandList *commandList, int slot, const Texture *texture) = 0;
     virtual void                    SetSubResource(CommandList *commandList, int slot, GPUSubResource *subResource) = 0;
+    virtual void                    SetSampler(CommandList *commandList, int slot, Sampler *sampler) = 0;
     virtual void                    SetPSO(CommandList *commandList, const PipelineState *pipelineState) = 0;
     virtual void                    SetBlendFactor(CommandList *commandList, const Color4 &rgba) = 0;
     virtual void                    SetStencilRef(CommandList *commandList, uint32_t value) = 0;

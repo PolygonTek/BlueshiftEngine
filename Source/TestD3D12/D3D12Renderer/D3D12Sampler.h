@@ -16,23 +16,18 @@
 
 #include "../RHIRenderer.h"
 #include "D3D12Common.h"
-#include "D3D12Buffer.h"
 
 class D3D12Renderer;
-class D3D12FrameData;
 
-class D3D12ConstantBuffer : public RHIRenderer::ConstantBuffer {
+class D3D12Sampler : public RHIRenderer::Sampler {
     friend class D3D12Renderer;
-    friend class D3D12FrameData;
 
 public:
-    virtual ~D3D12ConstantBuffer() { Release(); }
+    D3D12Sampler() = default;
+    virtual ~D3D12Sampler() { Release(); }
 
     void                                Release();
 
-    ID3D12Resource *                    GetResource() const;
-
 private:
-    D3D12Buffer *                       buffer = nullptr;
     D3D12_CPU_DESCRIPTOR_HANDLE         descriptorHandle = { 0 };
 };

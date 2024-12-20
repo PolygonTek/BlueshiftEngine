@@ -15,8 +15,8 @@
 #include "Precompiled.h"
 #include "D3D12Renderer.h"
 #include "D3D12ConstantBuffer.h"
-#include "D3D12CommandList.h"
 #include "D3D12DescriptorPool.h"
+#include "D3D12CommandList.h"
 
 void D3D12ConstantBuffer::Release() {
     if (descriptorHandle.ptr != 0) {
@@ -151,5 +151,5 @@ void D3D12Renderer::SetConstantBuffer(CommandList *commandList, int slot, const 
 
     const D3D12ConstantBuffer *d3d12ConstantBuffer = static_cast<const D3D12ConstantBuffer *>(constantBuffer);
     threadData.psoDescriptorHandles[slot] = d3d12ConstantBuffer->descriptorHandle;
-    threadData.gpuResources[slot] = d3d12ConstantBuffer;
+    threadData.cbvResources[slot] = d3d12ConstantBuffer;
 }

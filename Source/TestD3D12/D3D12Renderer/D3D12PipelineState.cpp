@@ -870,7 +870,7 @@ void D3D12Renderer::SetPSO(CommandList *commandList, const PipelineState *pipeli
         } else if (rootParameter->ParameterType == D3D12_ROOT_PARAMETER_TYPE_CBV) {
             // 루트 레벨 CBV 설정
             UINT shaderRegister = rootParameter->Descriptor.ShaderRegister;
-            const D3D12ConstantBuffer *constantBuffer = static_cast<const D3D12ConstantBuffer *>(threadData.gpuResources[shaderRegister]);
+            const D3D12ConstantBuffer *constantBuffer = static_cast<const D3D12ConstantBuffer *>(threadData.cbvResources[shaderRegister]);
             if (constantBuffer) {
                 D3D12_GPU_VIRTUAL_ADDRESS gpuAddress = constantBuffer->GetResource()->GetGPUVirtualAddress();
                 d3d12CommandList->graphicsCommandList->SetGraphicsRootConstantBufferView(rootParameterIndex, gpuAddress);
@@ -878,7 +878,7 @@ void D3D12Renderer::SetPSO(CommandList *commandList, const PipelineState *pipeli
         } else if (rootParameter->ParameterType == D3D12_ROOT_PARAMETER_TYPE_SRV) {
             // 루트 레벨 SRV 설정
             UINT shaderRegister = rootParameter->Descriptor.ShaderRegister;
-            const D3D12Texture *texture = static_cast<const D3D12Texture *>(threadData.gpuResources[shaderRegister]);
+            const D3D12Texture *texture = static_cast<const D3D12Texture *>(threadData.srvResources[shaderRegister]);
             if (texture) {
                 D3D12_GPU_VIRTUAL_ADDRESS gpuAddress = texture->GetResource()->GetGPUVirtualAddress();
                 d3d12CommandList->graphicsCommandList->SetGraphicsRootShaderResourceView(rootParameterIndex, gpuAddress);

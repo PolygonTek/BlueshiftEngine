@@ -20,6 +20,8 @@ set(SRC_FILES
     D3D12Renderer/D3D12Shader.cpp
     D3D12Renderer/D3D12Texture.h
     D3D12Renderer/D3D12Texture.cpp
+    D3D12Renderer/D3D12Sampler.h
+    D3D12Renderer/D3D12Sampler.cpp
     D3D12Renderer/D3D12VertexBuffer.h
     D3D12Renderer/D3D12VertexBuffer.cpp
     D3D12Renderer/D3D12IndexBuffer.h

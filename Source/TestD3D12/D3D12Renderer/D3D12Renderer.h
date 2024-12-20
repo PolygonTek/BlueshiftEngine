@@ -92,6 +92,9 @@ public:
     virtual Shader *                    CreateShaderFromFile(ShaderModel shaderModel, ShaderStage shaderStage, const char *filename, const char *entryPoint) override;
     virtual void                        DestroyShader(Shader *shader, bool immediate = false) override;
 
+    virtual Sampler *                   CreateSampler(const SamplerDesc *desc) override;
+    virtual void                        DestroySampler(Sampler *sampler, bool immediate = false) override;
+
     virtual PipelineState *             CreatePSO(const PipelineStateDesc *desc) override;
     virtual void                        DestroyPSO(PipelineState *pipelineState, bool immediate = false) override;
 
@@ -104,6 +107,7 @@ public:
     virtual void                        SetConstants(CommandList *commandList, const void *data, uint32_t size, uint32_t offset) override;
     virtual void                        SetTexture(CommandList *commandList, int slot, const Texture *texture) override;
     virtual void                        SetSubResource(CommandList *commandList, int slot, GPUSubResource *subResource) override;
+    virtual void                        SetSampler(CommandList *commandList, int slot, Sampler *sampler) override;
     virtual void                        SetPSO(CommandList *commandList, const PipelineState *pipelineState) override;
     virtual void                        SetBlendFactor(CommandList *commandList, const Color4 &rgba) override;
     virtual void                        SetStencilRef(CommandList *commandList, uint32_t value) override;

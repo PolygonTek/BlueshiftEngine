@@ -1,0 +1,119 @@
+// Copyright(c) 2017 POLYGONTEK
+// 
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+// 
+// http ://www.apache.org/licenses/LICENSE-2.0
+// 
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+#include "Precompiled.h"
+#include "D3D12Renderer.h"
+#include "D3D12Sampler.h"
+#include "D3D12DescriptorPool.h"
+#include "D3D12CommandList.h"
+
+static constexpr D3D12_FILTER ToD3D12TextureFilter(RHIRenderer::TextureFilter filter) {
+    switch (filter) {
+    case RHIRenderer::TextureFilter::NearestMipmapNearest:
+        return D3D12_FILTER_MIN_MAG_MIP_POINT;
+    case RHIRenderer::TextureFilter::LinearMipmapNearest:
+        return D3D12_FILTER_MIN_MAG_LINEAR_MIP_POINT;
+    case RHIRenderer::TextureFilter::NearestMipmapLinear:
+        return D3D12_FILTER_MIN_MAG_POINT_MIP_LINEAR;
+    case RHIRenderer::TextureFilter::LinearMipmapLinear:
+        return D3D12_FILTER_MIN_MAG_MIP_LINEAR;
+    case RHIRenderer::TextureFilter::Anisotropic:
+        return D3D12_FILTER_ANISOTROPIC;
+    }
+    assert(0);
+    return D3D12_FILTER_MIN_MAG_MIP_POINT;
+}
+
+static constexpr D3D12_TEXTURE_ADDRESS_MODE ToD3D12TextureAddressMode(RHIRenderer::TextureAddressMode addressMode) {
+    switch (addressMode) {
+    case RHIRenderer::TextureAddressMode::Repeat:
+        return D3D12_TEXTURE_ADDRESS_MODE_WRAP;
+    case RHIRenderer::TextureAddressMode::MirroredRepeat:
+        return D3D12_TEXTURE_ADDRESS_MODE_MIRROR;
+    case RHIRenderer::TextureAddressMode::Clamp:
+        return D3D12_TEXTURE_ADDRESS_MODE_CLAMP;
+    case RHIRenderer::TextureAddressMode::ClampToBorder:
+        return D3D12_TEXTURE_ADDRESS_MODE_BORDER;
+    }
+    assert(0);
+    return D3D12_TEXTURE_ADDRESS_MODE_WRAP;
+}
+
+static void ToD3D12TextureBorderColor(RHIRenderer::TextureBorderColor borderColor, FLOAT *float4BorderColor) {
+    switch (borderColor) {
+    case RHIRenderer::TextureBorderColor::OpaqueBlack:
+        float4BorderColor[0] = 0.0f;
+        float4BorderColor[1] = 0.0f;
+        float4BorderColor[2] = 0.0f;
+        float4BorderColor[3] = 1.0f;
+        return;
+    case RHIRenderer::TextureBorderColor::OpaqueWhite:
+        float4BorderColor[0] = 1.0f;
+        float4BorderColor[1] = 1.0f;
+        float4BorderColor[2] = 1.0f;
+        float4BorderColor[3] = 1.0f;
+        return;
+    case RHIRenderer::TextureBorderColor::TransparentBlack:
+        float4BorderColor[0] = 0.0f;
+        float4BorderColor[1] = 0.0f;
+        float4BorderColor[2] = 0.0f;
+        float4BorderColor[3] = 0.0f;
+        return;
+    }
+    assert(0);
+}
+
+void D3D12Sampler::Release() {
+    if (descriptorHandle.ptr != 0) {
+        renderer->samplerDescriptorPool->Free(descriptorHandle);
+        descriptorHandle.ptr = 0;
+    }
+}
+
+RHIRenderer::Sampler *D3D12Renderer::CreateSampler(const SamplerDesc *desc) {
+    D3D12_SAMPLER_DESC samplerDesc;
+    samplerDesc.Filter = ToD3D12TextureFilter(desc->filter);
+    samplerDesc.AddressU = ToD3D12TextureAddressMode(desc->addressModeU);
+    samplerDesc.AddressV = ToD3D12TextureAddressMode(desc->addressModeV);
+    samplerDesc.AddressW = ToD3D12TextureAddressMode(desc->addressModeW);
+    samplerDesc.MipLODBias = desc->mipLodBias;
+    samplerDesc.MaxAnisotropy = desc->maxAnisotropy;
+    ToD3D12TextureBorderColor(desc->borderColor, samplerDesc.BorderColor);
+    samplerDesc.MinLOD = desc->minLod;
+    samplerDesc.MinLOD = desc->maxLod;
+
+    D3D12_CPU_DESCRIPTOR_HANDLE descriptorHandle = { 0 };
+    descriptorHandle = samplerDescriptorPool->Alloc();
+    device->CreateSampler(&samplerDesc, descriptorHandle);
+
+    D3D12Sampler *sampler = new D3D12Sampler;
+    sampler->desc = *desc;
+    sampler->descriptorHandle = descriptorHandle;
+    return sampler;
+}
+
+void D3D12Renderer::DestroySampler(Sampler *sampler, bool immediate) {
+    delete sampler;
+}
+
+void D3D12Renderer::SetSampler(CommandList *commandList, int slot, Sampler *sampler) {
+    D3D12CommandList *d3d12CommandList = static_cast<D3D12CommandList *>(commandList);
+    int threadIndex = d3d12CommandList->GetThreadIndex();
+    D3D12FrameData::DataPerThread &threadData = currentFrameData->threadData[threadIndex];
+
+    assert(slot < COUNT_OF(threadData.psoDescriptorHandles));
+
+    const D3D12Sampler *d3d12Sampler = static_cast<const D3D12Sampler *>(sampler);
+    threadData.psoDescriptorHandles[slot] = d3d12Sampler->descriptorHandle;
+}

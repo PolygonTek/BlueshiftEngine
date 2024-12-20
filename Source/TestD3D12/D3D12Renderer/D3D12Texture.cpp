@@ -637,5 +637,5 @@ void D3D12Renderer::SetTexture(CommandList *commandList, int slot, const Texture
 
     const D3D12Texture *d3d12Texture = static_cast<const D3D12Texture *>(texture);
     threadData.psoDescriptorHandles[slot] = d3d12Texture->descriptorHandle;
-    threadData.gpuResources[slot] = d3d12Texture;
+    threadData.srvResources[slot] = d3d12Texture;
 }
