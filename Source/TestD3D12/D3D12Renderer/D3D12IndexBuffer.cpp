@@ -85,6 +85,7 @@ RHIRenderer::IndexBuffer *D3D12Renderer::CreateIndexBuffer(BufferType type, int 
 
             // 업로드 버퍼에서 GPU 버퍼로 데이터 카피
             resourceCommandList->Reset();
+            resourceCommandList->ResourceBarrier(bufferResource, D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_COPY_DEST);
             resourceCommandList->graphicsCommandList->CopyBufferRegion(bufferResource, 0, uploadBuffer, 0, bufferSize);
             resourceCommandList->ResourceBarrier(bufferResource, D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_INDEX_BUFFER);
             resourceCommandList->CloseAndExecute(CommandQueueType::Graphics);

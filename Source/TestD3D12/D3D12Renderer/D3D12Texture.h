@@ -29,18 +29,18 @@ class D3D12Texture : public RHIRenderer::Texture {
 public:
     virtual ~D3D12Texture() { Release(); }
 
-    void                                Release();
+    void                            Release();
 
-    ID3D12Resource *                    GetResource() const;
+    ID3D12Resource *                GetResource() const;
 
-    static void                         AdjustTextureFormat(bool useCompression, bool useNormalMap, Image::Format::Enum inFormat, Image::Format::Enum *outFormat);
+    static void                     AdjustTextureFormat(bool useCompression, bool useNormalMap, Image::Format::Enum inFormat, Image::Format::Enum *outFormat);
 
 private:
 #ifdef USE_D3D12_MEMALLOC
-    D3D12MA::Allocation *               textureAllocation = nullptr;
+    D3D12MA::Allocation *           textureAllocation = nullptr;
 #else
-    ID3D12Resource *                    textureResource = nullptr;
+    ID3D12Resource *                textureResource = nullptr;
 #endif
-    D3D12_RESOURCE_DESC                 textureDesc;
-    D3D12_CPU_DESCRIPTOR_HANDLE         descriptorHandle = {0};
+    D3D12_RESOURCE_DESC             textureDesc;
+    D3D12_CPU_DESCRIPTOR_HANDLE     descriptorHandle = {0};
 };

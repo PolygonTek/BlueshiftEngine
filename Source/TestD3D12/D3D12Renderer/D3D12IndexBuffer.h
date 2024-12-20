@@ -28,9 +28,9 @@ class D3D12IndexBuffer : public RHIRenderer::IndexBuffer {
 public:
     virtual ~D3D12IndexBuffer() { Release(); }
 
-    void                                Release();
+    void                            Release();
 
 private:
-    D3D12Buffer *                       buffer = nullptr;
-    D3D12_INDEX_BUFFER_VIEW             ibv = {};
+    D3D12Buffer *                   buffer = nullptr;
+    D3D12_INDEX_BUFFER_VIEW         ibv = {};
 };

@@ -25,13 +25,13 @@ class D3D12Shader : public RHIRenderer::Shader {
 public:
     virtual ~D3D12Shader() { Release(); }
 
-    void                                Release();
+    void                            Release();
 
 private:
-    uint64_t                            hash = 0;
-    byte *                              compiledShaderData = nullptr;
-    uint32_t                            compiledShaderDataSize = 0;
-    ID3D12RootSignature *               rootSignature = nullptr;
+    uint64_t                        hash = 0;
+    byte *                          compiledShaderData = nullptr;
+    uint32_t                        compiledShaderDataSize = 0;
+    ID3D12RootSignature *           rootSignature = nullptr;
     ID3D12VersionedRootSignatureDeserializer *rootSignatureDeserializer = nullptr;
     const D3D12_VERSIONED_ROOT_SIGNATURE_DESC *rootSignatureDesc = nullptr;
 };

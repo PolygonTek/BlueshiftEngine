@@ -37,7 +37,11 @@ uint64_t D3D12Buffer::GetSize() {
     return bufferAllocation->GetSize();
 #else
     D3D12_RESOURCE_DESC resourceDesc = bufferResource->GetDesc();
-    return Image::MemRequired(resourceDesc.Width, resourceDesc.Height, resourceDesc.DepthOrArraySize, resourceDesc.MipLevels, D3D12Texture::DXGIFormatToImageFormat(resourceDesc.Format));
+    Image::Format::Enum imageFormat;
+    if (D3D12Renderer::DXGIFormatToImageFormat(resourceDesc.Format, &imageFormat, nullptr)) {
+        return Image::MemRequired(resourceDesc.Width, resourceDesc.Height, resourceDesc.DepthOrArraySize, resourceDesc.MipLevels, imageFormat);
+    }
+    return resourceDesc.Width;
 #endif
 }
 
@@ -49,14 +53,17 @@ RHIRenderer::Buffer *D3D12Renderer::CreateBuffer(BufferUsage usage, int flags, i
     switch (usage) {
     case RHIRenderer::BufferUsage::Default:
         heapType = D3D12_HEAP_TYPE_DEFAULT;
-        initialState = D3D12_RESOURCE_STATE_COPY_DEST;
+        // NOTE: 텍스처와 달리 D3D12_RESOURCE_DIMENSION_BUFFER 리소스의 initialState 는 항상 D3D12_RESOURCE_STATE_COMMON 로 설정된다.
+        initialState = D3D12_RESOURCE_STATE_COMMON;
         break;
     case RHIRenderer::BufferUsage::Upload:
         heapType = D3D12_HEAP_TYPE_UPLOAD;
+        // NOTE: 리소스가 업로드 힙인 경우 initialState 는 다른 값으로 설정해도 무시되며, 항상 D3D12_RESOURCE_STATE_GENERIC_READ 로 설정된다.
         initialState = D3D12_RESOURCE_STATE_GENERIC_READ;
         break;
     case RHIRenderer::BufferUsage::Readback:
         heapType = D3D12_HEAP_TYPE_READBACK;
+        // NOTE: 리소스가 리드백 힙인 경우 initialState 는 다른 값으로 설정해도 무시되며, 항상 D3D12_RESOURCE_STATE_COPY_DEST 로 설정된다.
         initialState = D3D12_RESOURCE_STATE_COPY_DEST;
         resourceFlags |= D3D12_RESOURCE_FLAG_DENY_SHADER_RESOURCE;
         break;

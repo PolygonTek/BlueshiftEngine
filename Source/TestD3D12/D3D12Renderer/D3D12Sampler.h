@@ -26,8 +26,8 @@ public:
     D3D12Sampler() = default;
     virtual ~D3D12Sampler() { Release(); }
 
-    void                                Release();
+    void                            Release();
 
 private:
-    D3D12_CPU_DESCRIPTOR_HANDLE         descriptorHandle = { 0 };
+    D3D12_CPU_DESCRIPTOR_HANDLE     descriptorHandle = { 0 };
 };

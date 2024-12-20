@@ -126,105 +126,107 @@ RHIRenderer::Texture *D3D12Renderer::CreateTexture(TextureType textureType, cons
     }
 #endif
 
-    // 텍스쳐 리소스의 서브 리소스 별 메모리 정보를 얻어온다.
-    D3D12_PLACED_SUBRESOURCE_FOOTPRINT mipLevelFootprints[16];
-    UINT64 size;
-    device->GetCopyableFootprints(&textureDesc, 0, textureDesc.MipLevels, 0, mipLevelFootprints, nullptr, nullptr, &size);
+    if (!srcImage->IsEmpty()) {
+        // 텍스쳐 리소스의 서브 리소스 별 메모리 정보를 얻어온다.
+        D3D12_PLACED_SUBRESOURCE_FOOTPRINT mipLevelFootprints[16];
+        UINT64 size;
+        device->GetCopyableFootprints(&textureDesc, 0, textureDesc.MipLevels, 0, mipLevelFootprints, nullptr, nullptr, &size);
 
-    D3D12_RESOURCE_DESC uploadBufferDesc;
-    uploadBufferDesc.Dimension = D3D12_RESOURCE_DIMENSION_BUFFER;
-    uploadBufferDesc.Alignment = 0;
-    uploadBufferDesc.Width = size;
-    uploadBufferDesc.Height = 1;
-    uploadBufferDesc.DepthOrArraySize = 1;
-    uploadBufferDesc.MipLevels = 1;
-    uploadBufferDesc.Format = DXGI_FORMAT_UNKNOWN;
-    uploadBufferDesc.SampleDesc.Count = 1;
-    uploadBufferDesc.SampleDesc.Quality = 0;
-    uploadBufferDesc.Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
-    uploadBufferDesc.Flags = D3D12_RESOURCE_FLAG_NONE;
+        D3D12_RESOURCE_DESC uploadBufferDesc;
+        uploadBufferDesc.Dimension = D3D12_RESOURCE_DIMENSION_BUFFER;
+        uploadBufferDesc.Alignment = 0;
+        uploadBufferDesc.Width = size;
+        uploadBufferDesc.Height = 1;
+        uploadBufferDesc.DepthOrArraySize = 1;
+        uploadBufferDesc.MipLevels = 1;
+        uploadBufferDesc.Format = DXGI_FORMAT_UNKNOWN;
+        uploadBufferDesc.SampleDesc.Count = 1;
+        uploadBufferDesc.SampleDesc.Quality = 0;
+        uploadBufferDesc.Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
+        uploadBufferDesc.Flags = D3D12_RESOURCE_FLAG_NONE;
 
-    D3D12_HEAP_PROPERTIES heapProperties;
-    heapProperties.Type = D3D12_HEAP_TYPE_UPLOAD;
-    heapProperties.CPUPageProperty = D3D12_CPU_PAGE_PROPERTY_UNKNOWN;
-    heapProperties.MemoryPoolPreference = D3D12_MEMORY_POOL_UNKNOWN;
-    heapProperties.CreationNodeMask = 1;
-    heapProperties.VisibleNodeMask = 1;
+        D3D12_HEAP_PROPERTIES heapProperties;
+        heapProperties.Type = D3D12_HEAP_TYPE_UPLOAD;
+        heapProperties.CPUPageProperty = D3D12_CPU_PAGE_PROPERTY_UNKNOWN;
+        heapProperties.MemoryPoolPreference = D3D12_MEMORY_POOL_UNKNOWN;
+        heapProperties.CreationNodeMask = 1;
+        heapProperties.VisibleNodeMask = 1;
 
-    // 업로드 버퍼 생성
-    ID3D12Resource *uploadBuffer = nullptr;
-    if (FAILED(device->CreateCommittedResource(
-        &heapProperties,
-        D3D12_HEAP_FLAG_NONE,
-        &uploadBufferDesc,
-        D3D12_RESOURCE_STATE_GENERIC_READ,
-        nullptr, IID_PPV_ARGS(&uploadBuffer)))) {
-        textureResource->Release();
-        return nullptr;
-    }
+        // 업로드 버퍼 생성
+        ID3D12Resource *uploadBuffer = nullptr;
+        if (FAILED(device->CreateCommittedResource(
+            &heapProperties,
+            D3D12_HEAP_FLAG_NONE,
+            &uploadBufferDesc,
+            D3D12_RESOURCE_STATE_GENERIC_READ,
+            nullptr, IID_PPV_ARGS(&uploadBuffer)))) {
+            textureResource->Release();
+            return nullptr;
+        }
 
-    // 이미지 데이터를 업로드 버퍼에 write
-    UINT8 *mappedPtr = nullptr;
-    uploadBuffer->Map(0, nullptr, reinterpret_cast<void **>(&mappedPtr));
+        // 이미지 데이터를 업로드 버퍼에 write
+        UINT8 *mappedPtr = nullptr;
+        uploadBuffer->Map(0, nullptr, reinterpret_cast<void **>(&mappedPtr));
 
-    byte *dstPtr = mappedPtr;
-    int bpp = srcImage->IsCompressed() ? srcImage->BytesPerBlock() : srcImage->BytesPerPixel();
-    int numSlices = srcImage->NumSlices();
-    int numFaces = srcImage->NumFaces();
+        byte *dstPtr = mappedPtr;
+        int bpp = srcImage->IsCompressed() ? srcImage->BytesPerBlock() : srcImage->BytesPerPixel();
+        int numSlices = srcImage->NumSlices();
+        int numFaces = srcImage->NumFaces();
 
-    for (int sliceIndex = 0; sliceIndex < numSlices; ++sliceIndex) {
-        for (int faceIndex = 0; faceIndex < numFaces; ++faceIndex) {
-            for (int mipLevel = 0; mipLevel < maxMipLevels; ++mipLevel) {
-                int srcWidth = srcImage->GetWidth(mipLevel);
-                int srcHeight = srcImage->GetHeight(mipLevel);
-                int srcDepth = srcImage->GetDepth(mipLevel);
-                int srcPitch = (srcImage->IsCompressed() ? (srcWidth >> 2) : srcWidth) * bpp;
-                int srcRows = srcImage->IsCompressed() ? (srcHeight >> 2) : srcHeight;
-                const byte *srcPtr = srcImage->GetPixels(mipLevel);
+        for (int sliceIndex = 0; sliceIndex < numSlices; ++sliceIndex) {
+            for (int faceIndex = 0; faceIndex < numFaces; ++faceIndex) {
+                for (int mipLevel = 0; mipLevel < maxMipLevels; ++mipLevel) {
+                    int srcWidth = srcImage->GetWidth(mipLevel);
+                    int srcHeight = srcImage->GetHeight(mipLevel);
+                    int srcDepth = srcImage->GetDepth(mipLevel);
+                    int srcPitch = (srcImage->IsCompressed() ? (srcWidth >> 2) : srcWidth) * bpp;
+                    int srcRows = srcImage->IsCompressed() ? (srcHeight >> 2) : srcHeight;
+                    const byte *srcPtr = srcImage->GetPixels(mipLevel);
 
-                for (int z = 0; z < srcDepth; ++z) {
-                    for (int r = 0; r < srcRows; ++r) {
-                        simdProcessor->Memcpy(dstPtr, srcPtr, srcPitch);
-                        srcPtr += srcPitch;
-                        dstPtr += mipLevelFootprints[mipLevel].Footprint.RowPitch;
+                    for (int z = 0; z < srcDepth; ++z) {
+                        for (int r = 0; r < srcRows; ++r) {
+                            simdProcessor->Memcpy(dstPtr, srcPtr, srcPitch);
+                            srcPtr += srcPitch;
+                            dstPtr += mipLevelFootprints[mipLevel].Footprint.RowPitch;
+                        }
                     }
                 }
             }
         }
-    }
 
-    CD3DX12_RANGE writtenRange(0, size);
-    uploadBuffer->Unmap(0, &writtenRange);
+        CD3DX12_RANGE writtenRange(0, size);
+        uploadBuffer->Unmap(0, &writtenRange);
 
-    // 업로드 버퍼에서 텍스쳐로 데이터 카피
-    resourceCommandList->Reset();
+        // 업로드 버퍼에서 텍스쳐로 데이터 카피
+        resourceCommandList->Reset();
 
-    for (int sliceIndex = 0; sliceIndex < numSlices; ++sliceIndex) {
-        for (int faceIndex = 0; faceIndex < numFaces; ++faceIndex) {
-            for (int mipLevel = 0; mipLevel < maxMipLevels; ++mipLevel) {
-                int subresourceIndex = maxMipLevels * (numFaces * sliceIndex + faceIndex) + mipLevel;
+        for (int sliceIndex = 0; sliceIndex < numSlices; ++sliceIndex) {
+            for (int faceIndex = 0; faceIndex < numFaces; ++faceIndex) {
+                for (int mipLevel = 0; mipLevel < maxMipLevels; ++mipLevel) {
+                    int subresourceIndex = maxMipLevels * (numFaces * sliceIndex + faceIndex) + mipLevel;
 
-                D3D12_TEXTURE_COPY_LOCATION srcLocation = {};
-                srcLocation.PlacedFootprint = mipLevelFootprints[mipLevel];
-                srcLocation.pResource = uploadBuffer;
-                srcLocation.Type = D3D12_TEXTURE_COPY_TYPE_PLACED_FOOTPRINT;
+                    D3D12_TEXTURE_COPY_LOCATION srcLocation = {};
+                    srcLocation.PlacedFootprint = mipLevelFootprints[mipLevel];
+                    srcLocation.pResource = uploadBuffer;
+                    srcLocation.Type = D3D12_TEXTURE_COPY_TYPE_PLACED_FOOTPRINT;
 
-                D3D12_TEXTURE_COPY_LOCATION dstLocation = {};
-                dstLocation.PlacedFootprint = mipLevelFootprints[mipLevel];
-                dstLocation.pResource = textureResource;
-                dstLocation.Type = D3D12_TEXTURE_COPY_TYPE_SUBRESOURCE_INDEX;
-                dstLocation.SubresourceIndex = subresourceIndex;
+                    D3D12_TEXTURE_COPY_LOCATION dstLocation = {};
+                    dstLocation.PlacedFootprint = mipLevelFootprints[mipLevel];
+                    dstLocation.pResource = textureResource;
+                    dstLocation.Type = D3D12_TEXTURE_COPY_TYPE_SUBRESOURCE_INDEX;
+                    dstLocation.SubresourceIndex = subresourceIndex;
 
-                resourceCommandList->graphicsCommandList->CopyTextureRegion(&dstLocation, 0, 0, 0, &srcLocation, nullptr);
+                    resourceCommandList->graphicsCommandList->CopyTextureRegion(&dstLocation, 0, 0, 0, &srcLocation, nullptr);
+                }
             }
         }
-    }
 
-    resourceCommandList->ResourceBarrier(textureResource, D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_ALL_SHADER_RESOURCE);
-    resourceCommandList->CloseAndExecute(CommandQueueType::Graphics);
+        resourceCommandList->ResourceBarrier(textureResource, D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_ALL_SHADER_RESOURCE);
+        resourceCommandList->CloseAndExecute(CommandQueueType::Graphics);
 
-    if (uploadBuffer) {
-        MarkForRelease(uploadBuffer);
+        if (uploadBuffer) {
+            MarkForRelease(uploadBuffer);
+        }
     }
 
     // 디스크립터에 SRV 정보 기록하기
@@ -256,8 +258,10 @@ RHIRenderer::Texture *D3D12Renderer::CreateTexture(TextureType textureType, cons
         srvDesc.TextureCubeArray.NumCubes = textureDesc.DepthOrArraySize;
         break;
     case TextureType::TextureBuffer:
-        // FIXME
         srvDesc.ViewDimension = D3D12_SRV_DIMENSION_BUFFER;
+        srvDesc.Buffer.FirstElement = 0;
+        srvDesc.Buffer.NumElements = textureDesc.Width;
+        srvDesc.Buffer.StructureByteStride = sizeof(float);
         break;
     }
 

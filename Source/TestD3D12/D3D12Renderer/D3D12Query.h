@@ -25,8 +25,8 @@ class D3D12QueryHeap : public RHIRenderer::QueryHeap {
 public:
     virtual ~D3D12QueryHeap() { Release(); }
 
-    void                                Release() { SAFE_RELEASE(queryHeap); }
+    void                            Release() { SAFE_RELEASE(queryHeap); }
 
 private:
-    ID3D12QueryHeap *                   queryHeap = nullptr;
+    ID3D12QueryHeap *               queryHeap = nullptr;
 };

@@ -93,6 +93,7 @@ RHIRenderer::ConstantBuffer* D3D12Renderer::CreateConstantBuffer(BufferType type
 
             // 업로드 버퍼에서 GPU 버퍼로 데이터 카피
             resourceCommandList->Reset();
+            resourceCommandList->ResourceBarrier(bufferResource, D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_COPY_DEST);
             resourceCommandList->graphicsCommandList->CopyBufferRegion(bufferResource, 0, uploadBuffer, 0, size);
             resourceCommandList->ResourceBarrier(bufferResource, D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER);
             resourceCommandList->CloseAndExecute(CommandQueueType::Graphics);

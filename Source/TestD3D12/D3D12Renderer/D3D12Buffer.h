@@ -26,14 +26,14 @@ public:
     D3D12Buffer() = default;
     virtual ~D3D12Buffer() { Release(); }
 
-    void                                Release();
+    void                            Release();
 
-    ID3D12Resource *                    GetResource() const;
-    uint64_t                            GetSize();
+    ID3D12Resource *                GetResource() const;
+    uint64_t                        GetSize();
 
 #ifdef USE_D3D12_MEMALLOC
-    D3D12MA::Allocation *               bufferAllocation = nullptr;
+    D3D12MA::Allocation *           bufferAllocation = nullptr;
 #else
-    ID3D12Resource *                    bufferResource = nullptr;
+    ID3D12Resource *                bufferResource = nullptr;
 #endif
 };

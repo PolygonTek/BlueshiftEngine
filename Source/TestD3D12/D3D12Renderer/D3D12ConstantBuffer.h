@@ -28,11 +28,11 @@ class D3D12ConstantBuffer : public RHIRenderer::ConstantBuffer {
 public:
     virtual ~D3D12ConstantBuffer() { Release(); }
 
-    void                                Release();
+    void                            Release();
 
-    ID3D12Resource *                    GetResource() const;
+    ID3D12Resource *                GetResource() const;
 
 private:
-    D3D12Buffer *                       buffer = nullptr;
-    D3D12_CPU_DESCRIPTOR_HANDLE         descriptorHandle = { 0 };
+    D3D12Buffer *                   buffer = nullptr;
+    D3D12_CPU_DESCRIPTOR_HANDLE     descriptorHandle = { 0 };
 };
