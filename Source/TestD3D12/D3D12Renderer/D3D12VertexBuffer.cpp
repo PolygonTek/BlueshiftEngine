@@ -24,7 +24,7 @@ void D3D12VertexBuffer::Release() {
     }
 }
 
-RHIRenderer::VertexBuffer* D3D12Renderer::CreateVertexBuffer(BufferType type, int vertexSize, int numVerts, void *data) {
+RHIRenderer::VertexBuffer* D3D12Renderer::CreateVertexBuffer(BufferType type, uint32_t vertexSize, uint32_t numVerts, void *data) {
     UINT bufferSize = vertexSize * numVerts;
     D3D12Buffer *buffer = nullptr;
 
@@ -85,7 +85,7 @@ RHIRenderer::VertexBuffer* D3D12Renderer::CreateVertexBuffer(BufferType type, in
             // 업로드 버퍼에서 GPU 버퍼로 데이터 카피
             resourceCommandList->Reset();
             resourceCommandList->ResourceBarrier(bufferResource, D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_COPY_DEST);
-            resourceCommandList->graphicsCommandList->CopyBufferRegion(bufferResource, 0, uploadBuffer, 0, bufferSize);
+            resourceCommandList->GetGraphicsCommandList()->CopyBufferRegion(bufferResource, 0, uploadBuffer, 0, bufferSize);
             resourceCommandList->ResourceBarrier(bufferResource, D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER);
             resourceCommandList->CloseAndExecute(CommandQueueType::Graphics);
         } else if (type == BufferType::Dynamic) {

@@ -19,7 +19,7 @@
 #include "D3D12CubeMesh.h"
 
 void D3D12VisObject::Draw(D3D12CommandList *commandList, D3D12VisObject *visObject) {
-    PIX_SCOPED_EVENT(commandList->graphicsCommandList, 6, "D3D12VisObject::Draw");
+    PIX_SCOPED_EVENT(commandList->GetGraphicsCommandList(), 6, "D3D12VisObject::Draw");
 
     switch (visObject->state.meshType) {
     case MeshType::TriangleMesh:
@@ -32,7 +32,7 @@ void D3D12VisObject::Draw(D3D12CommandList *commandList, D3D12VisObject *visObje
 }
 
 void D3D12VisObject::DrawInstanced(D3D12CommandList *commandList, D3D12VisObject *visObjects, int instanceCount) {
-    PIX_SCOPED_EVENT(commandList->graphicsCommandList, 7, "D3D12VisObject::DrawInstanced");
+    PIX_SCOPED_EVENT(commandList->GetGraphicsCommandList(), 7, "D3D12VisObject::DrawInstanced");
 
     switch (visObjects[0].state.meshType) {
     case MeshType::TriangleMesh:

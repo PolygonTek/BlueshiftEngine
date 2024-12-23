@@ -45,7 +45,7 @@ uint64_t D3D12Buffer::GetSize() {
 #endif
 }
 
-RHIRenderer::Buffer *D3D12Renderer::CreateBuffer(BufferUsage usage, int flags, int size) {
+RHIRenderer::Buffer *D3D12Renderer::CreateBuffer(BufferUsage usage, int flags, uint32_t size) {
     D3D12_HEAP_TYPE heapType;
     D3D12_RESOURCE_STATES initialState;
     D3D12_RESOURCE_FLAGS resourceFlags = D3D12_RESOURCE_FLAG_NONE;

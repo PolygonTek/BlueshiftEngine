@@ -216,7 +216,7 @@ RHIRenderer::Texture *D3D12Renderer::CreateTexture(TextureType textureType, cons
                     dstLocation.Type = D3D12_TEXTURE_COPY_TYPE_SUBRESOURCE_INDEX;
                     dstLocation.SubresourceIndex = subresourceIndex;
 
-                    resourceCommandList->graphicsCommandList->CopyTextureRegion(&dstLocation, 0, 0, 0, &srcLocation, nullptr);
+                    resourceCommandList->GetGraphicsCommandList()->CopyTextureRegion(&dstLocation, 0, 0, 0, &srcLocation, nullptr);
                 }
             }
         }
@@ -397,7 +397,7 @@ void D3D12Renderer::GetTextureImage2D(Texture *texture, int level, Image::Format
 
     resourceCommandList->Reset();
     resourceCommandList->ResourceBarrier(textureResource, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_COPY_SOURCE);
-    resourceCommandList->graphicsCommandList->CopyTextureRegion(&dstLocation, 0, 0, 0, &srcLocation, nullptr);
+    resourceCommandList->GetGraphicsCommandList()->CopyTextureRegion(&dstLocation, 0, 0, 0, &srcLocation, nullptr);
     resourceCommandList->ResourceBarrier(textureResource, D3D12_RESOURCE_STATE_COPY_SOURCE, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
     resourceCommandList->CloseAndExecute(CommandQueueType::Graphics);
 
@@ -530,7 +530,7 @@ bool D3D12Renderer::SetTextureSubImage2D(Texture *texture, int level, int x, int
     dstLocation.SubresourceIndex = level;
 
     D3D12_BOX box = { 0, 0, 0, (UINT)width, (UINT)height, 1 };
-    resourceCommandList->graphicsCommandList->CopyTextureRegion(&dstLocation, x, y, 0, &srcLocation, &box);
+    resourceCommandList->GetGraphicsCommandList()->CopyTextureRegion(&dstLocation, x, y, 0, &srcLocation, &box);
 
     resourceCommandList->ResourceBarrier(textureResource, D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_ALL_SHADER_RESOURCE);
     resourceCommandList->CloseAndExecute(CommandQueueType::Graphics);
@@ -622,7 +622,7 @@ bool D3D12Renderer::SetTextureSubImage3D(Texture *texture, int level, int x, int
     dstLocation.SubresourceIndex = level;
 
     D3D12_BOX box = { 0, 0, 0, (UINT)width, (UINT)height, (UINT)depth };
-    resourceCommandList->graphicsCommandList->CopyTextureRegion(&dstLocation, x, y, z, &srcLocation, &box);
+    resourceCommandList->GetGraphicsCommandList()->CopyTextureRegion(&dstLocation, x, y, z, &srcLocation, &box);
 
     resourceCommandList->ResourceBarrier(textureResource, D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_ALL_SHADER_RESOURCE);
     resourceCommandList->CloseAndExecute(CommandQueueType::Graphics);

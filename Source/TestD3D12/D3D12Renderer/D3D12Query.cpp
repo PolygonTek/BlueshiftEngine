@@ -68,14 +68,14 @@ void D3D12Renderer::BeginQuery(CommandList *commandList, const QueryHeap *queryH
     D3D12CommandList *d3d12CommandList = static_cast<D3D12CommandList *>(commandList);
     const D3D12QueryHeap *d3d12QueryHeap = static_cast<const D3D12QueryHeap *>(queryHeap);
 
-    d3d12CommandList->graphicsCommandList->BeginQuery(d3d12QueryHeap->queryHeap, ToD3D12QueryType(queryHeap->desc.type), index);
+    d3d12CommandList->GetGraphicsCommandList()->BeginQuery(d3d12QueryHeap->queryHeap, ToD3D12QueryType(queryHeap->desc.type), index);
 }
 
 void D3D12Renderer::EndQuery(CommandList *commandList, const QueryHeap *queryHeap, uint32_t index) {
     D3D12CommandList *d3d12CommandList = static_cast<D3D12CommandList *>(commandList);
     const D3D12QueryHeap *d3d12QueryHeap = static_cast<const D3D12QueryHeap *>(queryHeap);
 
-    d3d12CommandList->graphicsCommandList->EndQuery(d3d12QueryHeap->queryHeap, ToD3D12QueryType(queryHeap->desc.type), index);
+    d3d12CommandList->GetGraphicsCommandList()->EndQuery(d3d12QueryHeap->queryHeap, ToD3D12QueryType(queryHeap->desc.type), index);
 }
 
 void D3D12Renderer::ResolveQuery(CommandList *commandList, const QueryHeap *queryHeap, uint32_t index, uint32_t count, const RHIRenderer::Buffer *destBuffer, uint64_t destOffset) {
@@ -83,7 +83,7 @@ void D3D12Renderer::ResolveQuery(CommandList *commandList, const QueryHeap *quer
     const D3D12QueryHeap *d3d12QueryHeap = static_cast<const D3D12QueryHeap *>(queryHeap);
     const D3D12Buffer *d3d12Buffer = static_cast<const D3D12Buffer *>(destBuffer);
 
-    d3d12CommandList->graphicsCommandList->ResolveQueryData(d3d12QueryHeap->queryHeap, ToD3D12QueryType(queryHeap->desc.type), index, count, d3d12Buffer->GetResource(), destOffset);
+    d3d12CommandList->GetGraphicsCommandList()->ResolveQueryData(d3d12QueryHeap->queryHeap, ToD3D12QueryType(queryHeap->desc.type), index, count, d3d12Buffer->GetResource(), destOffset);
 }
 
 void D3D12Renderer::ResetQuery(CommandList *commandList, const QueryHeap *queryHeap, uint32_t index, uint32_t count) {

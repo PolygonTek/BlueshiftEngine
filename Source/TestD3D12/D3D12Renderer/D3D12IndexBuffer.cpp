@@ -23,7 +23,7 @@ void D3D12IndexBuffer::Release() {
     }
 }
 
-RHIRenderer::IndexBuffer *D3D12Renderer::CreateIndexBuffer(BufferType type, int indexSize, int numIndexes, void *data) {
+RHIRenderer::IndexBuffer *D3D12Renderer::CreateIndexBuffer(BufferType type, uint32_t indexSize, uint32_t numIndexes, void *data) {
     assert(indexSize == 2 || indexSize == 4);
 
     UINT bufferSize = indexSize * numIndexes;
@@ -86,7 +86,7 @@ RHIRenderer::IndexBuffer *D3D12Renderer::CreateIndexBuffer(BufferType type, int 
             // 업로드 버퍼에서 GPU 버퍼로 데이터 카피
             resourceCommandList->Reset();
             resourceCommandList->ResourceBarrier(bufferResource, D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_COPY_DEST);
-            resourceCommandList->graphicsCommandList->CopyBufferRegion(bufferResource, 0, uploadBuffer, 0, bufferSize);
+            resourceCommandList->GetGraphicsCommandList()->CopyBufferRegion(bufferResource, 0, uploadBuffer, 0, bufferSize);
             resourceCommandList->ResourceBarrier(bufferResource, D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_INDEX_BUFFER);
             resourceCommandList->CloseAndExecute(CommandQueueType::Graphics);
         } else if (type == BufferType::Dynamic) {

@@ -35,6 +35,7 @@ public:
     ID3D12GraphicsCommandList6 *&   GetGraphicsCommandList() { return reinterpret_cast<ID3D12GraphicsCommandList6 *&>(commandList); }
 
     void                            ResourceBarrier(ID3D12Resource *resource, D3D12_RESOURCE_STATES stateBefore, D3D12_RESOURCE_STATES stateAfter);
+    void                            MemoryBarrier(ID3D12Resource *resource);
 
     void                            SetDescriptorHeaps(int numDescriptorHeaps, ID3D12DescriptorHeap *descriptorHeaps[]);
     void                            SetGraphicsRootSignature(ID3D12RootSignature *graphicsRootSignature);
@@ -118,6 +119,14 @@ BE_INLINE void D3D12CommandList::ResourceBarrier(ID3D12Resource *resource, D3D12
     barrier.Transition.StateBefore = stateBefore;
     barrier.Transition.StateAfter = stateAfter;
     barrier.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
+    GetGraphicsCommandList()->ResourceBarrier(1, &barrier);
+}
+
+BE_INLINE void D3D12CommandList::MemoryBarrier(ID3D12Resource *resource) {
+    D3D12_RESOURCE_BARRIER barrier;
+    barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_UAV;
+    barrier.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
+    barrier.UAV.pResource = resource;
     GetGraphicsCommandList()->ResourceBarrier(1, &barrier);
 }
 
