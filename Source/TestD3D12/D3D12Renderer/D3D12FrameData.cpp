@@ -21,8 +21,8 @@
 #include "D3D12DescriptorPool.h"
 #include "../D3D12VisObject.h"
 
-static constexpr int MaxMemSizePerBlock = 0x100000;
-static constexpr int MemAlignSize = 32;
+static constexpr uint32_t MaxMemSizePerBlock = 0x100000;
+static constexpr uint32_t MemAlignSize = 32;
 
 void D3D12FrameData::Init() {
     InitMemBlocks();
@@ -36,8 +36,11 @@ void D3D12FrameData::Init() {
     for (int threadIndex = 0; threadIndex < numThreads; ++threadIndex) {
         DataPerThread* data = &threadData[threadIndex];
 
-        // 커맨드 리스트 풀을 생성한다.
-        data->commandListPool = new D3D12CommandListPool(renderer->device, threadIndex, D3D12_COMMAND_LIST_TYPE_DIRECT, 8);
+        // 그래픽스 커맨드 리스트 풀을 생성한다.
+        data->graphicsCommandListPool = new D3D12CommandListPool(renderer->device, threadIndex, D3D12_COMMAND_LIST_TYPE_DIRECT, 8);
+
+        // 컴퓨트 커맨드 리스트 풀을 생성한다.
+        data->computeCommandListPool = new D3D12CommandListPool(renderer->device, threadIndex, D3D12_COMMAND_LIST_TYPE_COMPUTE, 8);
 
         // 쉐이더에서 사용할 디스크립터 힙을 생성한다.
         data->rootDescriptorPool = new D3D12RootDescriptorPool(renderer->device, 16384);
@@ -70,7 +73,8 @@ void D3D12FrameData::Shutdown() {
 
         SAFE_DELETE(data->cbvDescriptorPool);
         SAFE_DELETE(data->rootDescriptorPool);
-        SAFE_DELETE(data->commandListPool);
+        SAFE_DELETE(data->graphicsCommandListPool);
+        SAFE_DELETE(data->computeCommandListPool);
     }
 
     FreeVisObjects();
@@ -91,7 +95,7 @@ void D3D12FrameData::BeginFrame() {
         data->rootDescriptorPool->Reset();
 
         // 커맨드 리스트 풀을 비운다.
-        data->commandListPool->Clear();
+        data->graphicsCommandListPool->Clear();
 
         data->usedConstantBytes = 0;
 

@@ -73,7 +73,8 @@ private:
     D3D12VisObject *                visObjects = nullptr;
 
     struct DataPerThread {
-        D3D12CommandListPool *      commandListPool = nullptr;
+        D3D12CommandListPool *      graphicsCommandListPool = nullptr;
+        D3D12CommandListPool *      computeCommandListPool = nullptr;
         D3D12RootDescriptorPool *   rootDescriptorPool = nullptr;
         D3D12DescriptorPool *       cbvDescriptorPool = nullptr;
         D3D12ConstantBuffer *       constantBuffer = nullptr;

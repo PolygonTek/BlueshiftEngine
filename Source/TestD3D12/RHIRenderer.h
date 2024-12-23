@@ -377,6 +377,7 @@ public:
     class PipelineState : public GPUResource {
     public:
         uint64_t                    hash = 0;
+        bool                        graphics;
     };
 
     class QueryHeap : public GPUResource {
@@ -497,16 +498,16 @@ public:
     const DepthStencilState *       GetDepthStencilState(DepthStencilStateType::Enum type) const { return &depthStencilStates[type]; }
     const BlendState *              GetBlendState(BlendStateType::Enum type) const { return &blendStates[type]; }
 
-    virtual Buffer *                CreateBuffer(BufferUsage usage, int flags, int size) = 0;
+    virtual Buffer *                CreateBuffer(BufferUsage usage, int flags, uint32_t size) = 0;
     virtual void                    DestroyBuffer(Buffer *buffer, bool immediate = false) = 0;
 
-    virtual VertexBuffer *          CreateVertexBuffer(BufferType type, int vertexSize, int numVerts, void *data) = 0;
+    virtual VertexBuffer *          CreateVertexBuffer(BufferType type, uint32_t vertexSize, uint32_t numVerts, void *data) = 0;
     virtual void                    DestroyVertexBuffer(VertexBuffer *vertexBuffer, bool immediate = false) = 0;
 
-    virtual IndexBuffer *           CreateIndexBuffer(BufferType type, int indexSize, int numIndexes, void *data) = 0;
+    virtual IndexBuffer *           CreateIndexBuffer(BufferType type, uint32_t indexSize, uint32_t numIndexes, void *data) = 0;
     virtual void                    DestroyIndexBuffer(IndexBuffer *indexBuffer, bool immediate = false) = 0;
 
-    virtual ConstantBuffer *        CreateConstantBuffer(BufferType type, int size, void *data) = 0;
+    virtual ConstantBuffer *        CreateConstantBuffer(BufferType type, uint32_t size, void *data) = 0;
     virtual void                    DestroyConstantBuffer(ConstantBuffer *constantBuffer, bool immediate = false) = 0;
 
     virtual Texture *               CreateTexture(TextureType textureType, const Image *image) = 0;
@@ -524,7 +525,8 @@ public:
     virtual Sampler *               CreateSampler(const SamplerDesc *desc) = 0;
     virtual void                    DestroySampler(Sampler *sampler, bool immediate = false) = 0;
 
-    virtual PipelineState *         CreatePSO(const PipelineStateDesc *desc) = 0;
+    virtual PipelineState *         CreateGraphicsPSO(const PipelineStateDesc *desc) = 0;
+    virtual PipelineState *         CreateComputePSO(const Shader *computeShader) = 0;
     virtual void                    DestroyPSO(PipelineState *pipelineState, bool immediate = false) = 0;
 
     virtual QueryHeap *             CreateQueryHeap(const QueryHeapDesc *desc) = 0;
@@ -548,6 +550,8 @@ public:
     virtual void                    EndQuery(CommandList *commandList, const QueryHeap *queryHeap, uint32_t index) = 0;
     virtual void                    ResolveQuery(CommandList *commandList, const QueryHeap *queryHeap, uint32_t index, uint32_t count, const Buffer *destBuffer, uint64_t destOffset) = 0;
     virtual void                    ResetQuery(CommandList *commandList, const QueryHeap *queryHeap, uint32_t index, uint32_t count) = 0;
+    virtual void                    Dispatch(CommandList *commandList, uint32_t threadGroupCountX, uint32_t threadGroupCountY, uint32_t threadGroupCountZ) = 0;
+    virtual void                    DispatchMesh(CommandList *commandList, uint32_t threadGroupCountX, uint32_t threadGroupCountY, uint32_t threadGroupCountZ) = 0;
 
     virtual void                    Draw(CommandList *commandList, uint32_t vertexCount, uint32_t startVertexLocation) = 0;
     virtual void                    DrawIndexed(CommandList *commandList, uint32_t indexCount, uint32_t startIndexLocation, uint32_t baseVertexLocation) = 0;

@@ -130,7 +130,7 @@ void D3D12CubeMesh::InitPipelineState() {
         psoDesc.inputLayout = &inputLayout;
         psoDesc.primitiveTopology = RHIRenderer::PrimitiveTopology::TriangleList;
         psoDesc.renderPass = &renderPass;
-        singlePSO = renderer->CreatePSO(&psoDesc);
+        singlePSO = renderer->CreateGraphicsPSO(&psoDesc);
     }
 
     if (cubeVS) {
@@ -153,7 +153,7 @@ void D3D12CubeMesh::InitPipelineState() {
         psoDesc.inputLayout = &inputLayout;
         psoDesc.primitiveTopology = RHIRenderer::PrimitiveTopology::TriangleList;
         psoDesc.renderPass = &renderPass;
-        instancingPSO = renderer->CreatePSO(&psoDesc);
+        instancingPSO = renderer->CreateGraphicsPSO(&psoDesc);
     }
 
     if (cubeInstancingVS) {
@@ -168,7 +168,7 @@ void D3D12CubeMesh::DrawMesh(RHIRenderer::CommandList* commandList, const Mat3x4
     int threadIndex = commandList->GetThreadIndex();
 
     // 상수 버퍼 공간을 할당한다.
-    RHIRenderer::GPUSubResource *cbSubResource = renderer->currentFrameData->AllocConstant(threadIndex, sizeof(CubeConstantData));
+    RHIRenderer::GPUSubResource *cbSubResource = renderer->GetCurrentFrameData()->AllocConstant(threadIndex, sizeof(CubeConstantData));
     if (!cbSubResource) {
         return;
     }
@@ -189,7 +189,7 @@ void D3D12CubeMesh::DrawMeshInstanced(RHIRenderer::CommandList *commandList, con
     int threadIndex = commandList->GetThreadIndex();
 
     // 상수 버퍼 공간을 할당한다.
-    RHIRenderer::GPUSubResource *cbSubResource = renderer->currentFrameData->AllocConstant(threadIndex, sizeof(CubeInstancedConstantData));
+    RHIRenderer::GPUSubResource *cbSubResource = renderer->GetCurrentFrameData()->AllocConstant(threadIndex, sizeof(CubeInstancedConstantData));
     if (!cbSubResource) {
         return;
     }

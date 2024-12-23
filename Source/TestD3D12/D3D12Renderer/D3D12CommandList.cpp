@@ -52,21 +52,5 @@ void D3D12CommandList::SetShadingRate(RHIRenderer::ShadingRate shadingRate) {
         D3D12_SHADING_RATE_COMBINER_MAX,
         D3D12_SHADING_RATE_COMBINER_MAX
     };
-    graphicsCommandList->RSSetShadingRate(rate, combiners);
-}
-
-void D3D12CommandList::Draw(uint32_t vertexCount, uint32_t startVertexLocation) {
-    graphicsCommandList->DrawInstanced(vertexCount, 1, startVertexLocation, 0);
-}
-
-void D3D12CommandList::DrawIndexed(uint32_t indexCount, uint32_t startIndexLocation, uint32_t baseVertexLocation) {
-    graphicsCommandList->DrawIndexedInstanced(indexCount, 1, startIndexLocation, baseVertexLocation, 0);
-}
-
-void D3D12CommandList::DrawInstanced(uint32_t vertexCount, uint32_t instanceCount, uint32_t startVertexLocation, uint32_t startInstanceLocation) {
-    graphicsCommandList->DrawInstanced(vertexCount, instanceCount, startVertexLocation, startInstanceLocation);
-}
-
-void D3D12CommandList::DrawIndexedInstanced(uint32_t indexCount, uint32_t instanceCount, uint32_t startIndexLocation, uint32_t baseVertexLocation, uint32_t startInstanceLocation) {
-    graphicsCommandList->DrawIndexedInstanced(indexCount, instanceCount, startIndexLocation, baseVertexLocation, startInstanceLocation);
+    GetGraphicsCommandList()->RSSetShadingRate(rate, combiners);
 }

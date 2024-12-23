@@ -63,21 +63,23 @@ public:
 
     void                                WaitAllFrameFences();
 
+    D3D12FrameData *                    GetCurrentFrameData() const { return currentFrameData; }
+
     void                                MarkForDelete(GPUResource *resource);
     void                                MarkForRelease(ID3D12Resource *resource);
     void                                OnPendingResourceAdded();
     void                                FreePendingResources(bool waitPendings = false);
 
-    virtual Buffer *                    CreateBuffer(BufferUsage usage, int flags, int size) override;
+    virtual Buffer *                    CreateBuffer(BufferUsage usage, int flags, uint32_t size) override;
     virtual void                        DestroyBuffer(Buffer *buffer, bool immediate = false) override;
 
-    virtual VertexBuffer *              CreateVertexBuffer(BufferType type, int vertexSize, int numVerts, void *data) override;
+    virtual VertexBuffer *              CreateVertexBuffer(BufferType type, uint32_t vertexSize, uint32_t numVerts, void *data) override;
     virtual void                        DestroyVertexBuffer(VertexBuffer *vertexBuffer, bool immediate = false) override;
 
-    virtual IndexBuffer *               CreateIndexBuffer(BufferType type, int indexSize, int numIndexes, void *data) override;
+    virtual IndexBuffer *               CreateIndexBuffer(BufferType type, uint32_t indexSize, uint32_t numIndexes, void *data) override;
     virtual void                        DestroyIndexBuffer(IndexBuffer *indexBuffer, bool immediate = false) override;
 
-    virtual ConstantBuffer *            CreateConstantBuffer(BufferType type, int size, void *data) override;
+    virtual ConstantBuffer *            CreateConstantBuffer(BufferType type, uint32_t size, void *data) override;
     virtual void                        DestroyConstantBuffer(ConstantBuffer *constantBuffer, bool immediate = false) override;
 
     virtual Texture *                   CreateTexture(TextureType textureType, const Image *image) override;
@@ -95,7 +97,8 @@ public:
     virtual Sampler *                   CreateSampler(const SamplerDesc *desc) override;
     virtual void                        DestroySampler(Sampler *sampler, bool immediate = false) override;
 
-    virtual PipelineState *             CreatePSO(const PipelineStateDesc *desc) override;
+    virtual PipelineState *             CreateGraphicsPSO(const PipelineStateDesc *desc) override;
+    virtual PipelineState *             CreateComputePSO(const Shader *computeShader) override;
     virtual void                        DestroyPSO(PipelineState *pipelineState, bool immediate = false) override;
 
     virtual QueryHeap *                 CreateQueryHeap(const QueryHeapDesc *desc) override;
@@ -119,6 +122,8 @@ public:
     virtual void                        EndQuery(CommandList *commandList, const QueryHeap *queryHeap, uint32_t index) override;
     virtual void                        ResolveQuery(CommandList *commandList, const QueryHeap *queryHeap, uint32_t index, uint32_t count, const Buffer *destBuffer, uint64_t destOffset) override;
     virtual void                        ResetQuery(CommandList *commandList, const QueryHeap *queryHeap, uint32_t index, uint32_t count) override;
+    virtual void                        Dispatch(CommandList *commandList, uint32_t threadGroupCountX, uint32_t threadGroupCountY, uint32_t threadGroupCountZ) override;
+    virtual void                        DispatchMesh(CommandList *commandList, uint32_t threadGroupCountX, uint32_t threadGroupCountY, uint32_t threadGroupCountZ) override;
 
     virtual void                        Draw(CommandList *commandList, uint32_t vertexCount, uint32_t startVertexLocation) override;
     virtual void                        DrawIndexed(CommandList *commandList, uint32_t indexCount, uint32_t startIndexLocation, uint32_t baseVertexLocation) override;
@@ -138,10 +143,12 @@ public:
     bool                                LoadCompiledShader(const char *name, const uint64_t hash, byte **compiledShaderDataPtr, uint32_t *compiledShaderDataSizePtr);
     void                                WriteCompiledShader(const char *name, const uint64_t hash, const byte *compiledShaderData, uint32_t compiledShaderDataSize);
 
+    void                                BindRootParameters(D3D12CommandList *commandList, bool graphics);
+
     void                                CreateDevice(IDXGIAdapter1 **adapterPtr);
-    void                                CreateSwapChain(HWND hwnd, int width, int height);
+    void                                CreateSwapChain(HWND hwnd, uint32_t width, uint32_t height);
     void                                CreateRTVs();
-    void                                CreateDSV(int width, int height);
+    void                                CreateDSV(uint32_t width, uint32_t height);
     void                                CreateShaderCompiler();
 
 #ifdef USE_D3D12_MEMALLOC
@@ -182,7 +189,7 @@ public:
     IDXGIFactory4 *                     dxgiFactory = nullptr;
     IDXGISwapChain3 *                   dxgiSwapChain = nullptr;
     ID3D12CommandQueue *                commandQueues[to_int(CommandQueueType::Count)] = {};
-    D3D12CommandListPool *              commandListPool = nullptr;
+    D3D12CommandListPool *              graphicsCommandListPool = nullptr;
     D3D12CommandList *                  resourceCommandList = nullptr;
     ID3D12Fence *                       fence = nullptr;
     uint64_t                            fenceValue = 0;
@@ -203,7 +210,8 @@ public:
     Str                                 shaderCacheDir;
     Str                                 psoCacheDir;
 
-    HashMap<uint64_t, D3D12PipelineState *> psoMap;
+    HashMap<uint64_t, D3D12PipelineState *> graphicsPsoMap;
+    HashMap<uint64_t, D3D12PipelineState *> computePsoMap;
     HashMap<uint64_t, ID3DBlob *>       cachedPsoBlobMap;
 
     uint32_t                            vendorId;

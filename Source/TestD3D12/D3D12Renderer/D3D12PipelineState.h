@@ -23,14 +23,14 @@ public:
 
     void                                    Release();
 
-    struct PipelineStateStream1 {
+    struct GraphicsPSStream1 {
         CD3DX12_PIPELINE_STATE_STREAM_FLAGS flags;
         CD3DX12_PIPELINE_STATE_STREAM_ROOT_SIGNATURE rootSignature;
         CD3DX12_PIPELINE_STATE_STREAM_INPUT_LAYOUT inputLayout;
         CD3DX12_PIPELINE_STATE_STREAM_PRIMITIVE_TOPOLOGY primitiveTopologyType;
     };
 
-    struct PipelineStateStream2 {
+    struct GraphicsPSStream2 {
         CD3DX12_PIPELINE_STATE_STREAM_BLEND_DESC blendDesc;
         CD3DX12_PIPELINE_STATE_STREAM_DEPTH_STENCIL1 depthStencil;
         CD3DX12_PIPELINE_STATE_STREAM_DEPTH_STENCIL_FORMAT depthStencilFormat;
@@ -40,20 +40,23 @@ public:
         CD3DX12_PIPELINE_STATE_STREAM_SAMPLE_MASK sampleMask;
     };
 
-    struct PipelineStateStream {
-        PipelineStateStream1                stream1;
+    struct GraphicsPSStream {
+        GraphicsPSStream1                   stream1;
         CD3DX12_PIPELINE_STATE_STREAM_VS    vs;
         CD3DX12_PIPELINE_STATE_STREAM_GS    gs;
         CD3DX12_PIPELINE_STATE_STREAM_HS    hs;
         CD3DX12_PIPELINE_STATE_STREAM_DS    ds;
         CD3DX12_PIPELINE_STATE_STREAM_PS    ps;
-        PipelineStateStream2                stream2;
+        //CD3DX12_PIPELINE_STATE_STREAM_MS    ms;
+        //CD3DX12_PIPELINE_STATE_STREAM_AS    as;
+        GraphicsPSStream2                   stream2;
+        CD3DX12_PIPELINE_STATE_STREAM_CACHED_PSO shaderCachedPSO;
     };
 
-    struct CachedPipelineStateStream {
-        PipelineStateStream1                stream1;
-        PipelineStateStream2                stream2;
-        CD3DX12_PIPELINE_STATE_STREAM_CACHED_PSO shaderCachedPSO;
+    struct ComputePSStream {
+        CD3DX12_PIPELINE_STATE_STREAM_FLAGS flags;
+        CD3DX12_PIPELINE_STATE_STREAM_ROOT_SIGNATURE rootSignature;
+        CD3DX12_PIPELINE_STATE_STREAM_CS    cs;
     };
 
     ID3D12PipelineState *                   pso = nullptr;

@@ -298,10 +298,10 @@ void D3D12Renderer::Init(HWND hwnd) {
     CreateShaderCompiler();
 
     // 커맨드 리스트 풀 생성
-    commandListPool = new D3D12CommandListPool(device, 0, D3D12_COMMAND_LIST_TYPE_DIRECT, 8);
+    graphicsCommandListPool = new D3D12CommandListPool(device, 0, D3D12_COMMAND_LIST_TYPE_DIRECT, 8);
 
     // 리소스 생성 용 커맨드 리스트
-    resourceCommandList = commandListPool->Alloc();
+    resourceCommandList = graphicsCommandListPool->Alloc();
 
     // 현재 백버퍼 인덱스 초기화
     currentBackBufferIndex = dxgiSwapChain->GetCurrentBackBufferIndex();
@@ -356,7 +356,8 @@ void D3D12Renderer::Shutdown() {
     SAFE_DELETE(pendingResourceBuffer);
     maxPendingResources = 0;
 
-    psoMap.DeleteContents(true);
+    graphicsPsoMap.DeleteContents(true);
+    computePsoMap.DeleteContents(true);
 
     for (int i = 0; i < cachedPsoBlobMap.Count(); ++i) {
         auto *entry = cachedPsoBlobMap.GetByIndex(i);
@@ -368,7 +369,7 @@ void D3D12Renderer::Shutdown() {
     SAFE_DELETE(rtvDescriptorPool);
     SAFE_DELETE(dsvDescriptorPool);
     SAFE_DELETE(samplerDescriptorPool);
-    SAFE_DELETE(commandListPool);
+    SAFE_DELETE(graphicsCommandListPool);
 
     SAFE_RELEASE(dxcCompiler);
     SAFE_RELEASE(dxcUtils);
@@ -407,7 +408,7 @@ void D3D12Renderer::Shutdown() {
     }
 }
 
-void D3D12Renderer::CreateSwapChain(HWND hwnd, int width, int height) {
+void D3D12Renderer::CreateSwapChain(HWND hwnd, uint32_t width, uint32_t height) {
     DXGI_SWAP_CHAIN_DESC1 swapChainDesc = {};
     swapChainDesc.Width = (UINT)width;
     swapChainDesc.Height = (UINT)height;
@@ -459,7 +460,7 @@ void D3D12Renderer::CreateRTVs() {
     }
 }
 
-void D3D12Renderer::CreateDSV(int width, int height) {
+void D3D12Renderer::CreateDSV(uint32_t width, uint32_t height) {
     // 뎁스/스텐실 버퍼 생성
     D3D12_CLEAR_VALUE depthStencilOptimizedClearValue = {};
     depthStencilOptimizedClearValue.Format = DXGI_FORMAT_D24_UNORM_S8_UINT;
@@ -562,7 +563,7 @@ void D3D12Renderer::BeginFrame() {
     currentFrameData->BeginFrame();
 
     // 커맨드 리스트 풀에서 커맨드 리스트를 얻어온다.
-    D3D12CommandList* commandList = currentFrameData->threadData[0].commandListPool->Alloc();
+    D3D12CommandList* commandList = currentFrameData->threadData[0].graphicsCommandListPool->Alloc();
 
     // CommandAllocator 를 재사용하도록 리셋하고, CommandList 를 CommandAllocator 를 이용하여 초기 상태로 리셋
     commandList->Reset();
@@ -578,9 +579,9 @@ void D3D12Renderer::BeginFrame() {
     dsvDescriptorHandle = CD3DX12_CPU_DESCRIPTOR_HANDLE(dsvDescriptorHeap->GetCPUDescriptorHandleForHeapStart());
 
     // 백버퍼와 깊이버퍼를 Clear
-    commandList->graphicsCommandList->ClearRenderTargetView(rtvDescriptorHandle, Color4::blue, 0, nullptr);
-    commandList->graphicsCommandList->ClearDepthStencilView(dsvDescriptorHandle, D3D12_CLEAR_FLAG_DEPTH, 1.0f, 0, 0, nullptr);
-    commandList->graphicsCommandList->OMSetRenderTargets(1, &rtvDescriptorHandle, FALSE, &dsvDescriptorHandle);
+    commandList->GetGraphicsCommandList()->ClearRenderTargetView(rtvDescriptorHandle, Color4::blue, 0, nullptr);
+    commandList->GetGraphicsCommandList()->ClearDepthStencilView(dsvDescriptorHandle, D3D12_CLEAR_FLAG_DEPTH, 1.0f, 0, 0, nullptr);
+    commandList->GetGraphicsCommandList()->OMSetRenderTargets(1, &rtvDescriptorHandle, FALSE, &dsvDescriptorHandle);
 
     // CommandList 기록을 마치고 CommandQueue 로 실행
     commandList->CloseAndExecute(CommandQueueType::Graphics);
@@ -592,7 +593,7 @@ void D3D12Renderer::EndFrame() {
     // TODO: 렌더큐에 종료 마킹을 하고, 렌더큐를 실행한다.
 
     // 커맨드 리스트 풀에서 커맨드 리스트를 얻어온다.
-    D3D12CommandList *commandList = currentFrameData->threadData[0].commandListPool->Alloc();
+    D3D12CommandList *commandList = currentFrameData->threadData[0].graphicsCommandListPool->Alloc();
 
     // CommandAllocator 를 재사용하도록 리셋하고, CommandList 를 CommandAllocator 를 이용하여 초기 상태로 리셋
     commandList->Reset(false);
@@ -646,7 +647,7 @@ D3D12CommandList* D3D12Renderer::FlushCommandList(D3D12CommandList* commandList)
     SetViewport(commandList, viewportRect);
     SetScissorRect(commandList, scissorRect);
 
-    commandList->graphicsCommandList->OMSetRenderTargets(1, &rtvDescriptorHandle, FALSE, &dsvDescriptorHandle);
+    commandList->GetGraphicsCommandList()->OMSetRenderTargets(1, &rtvDescriptorHandle, FALSE, &dsvDescriptorHandle);
 
     return commandList;
 }
@@ -871,7 +872,7 @@ void D3D12Renderer::SetViewport(CommandList *commandList, const Rect &viewportRe
     viewport.MaxDepth = 1.0f;
 
     D3D12CommandList *d3d12CommandList = static_cast<D3D12CommandList *>(commandList);
-    d3d12CommandList->graphicsCommandList->RSSetViewports(1, &viewport);
+    d3d12CommandList->GetGraphicsCommandList()->RSSetViewports(1, &viewport);
 }
 
 void D3D12Renderer::SetScissorRect(CommandList *commandList, const Rect &scissorRect) {
@@ -882,7 +883,7 @@ void D3D12Renderer::SetScissorRect(CommandList *commandList, const Rect &scissor
     static_assert(offsetof(Rect, h) == offsetof(D3D12_RECT, bottom));
 
     D3D12CommandList *d3d12CommandList = static_cast<D3D12CommandList *>(commandList);
-    d3d12CommandList->graphicsCommandList->RSSetScissorRects(1, (D3D12_RECT *)&scissorRect);
+    d3d12CommandList->GetGraphicsCommandList()->RSSetScissorRects(1, (D3D12_RECT *)&scissorRect);
 }
 
 void D3D12Renderer::SetDepthBounds(CommandList *commandList, float depthMin, float depthMax) {
@@ -890,27 +891,37 @@ void D3D12Renderer::SetDepthBounds(CommandList *commandList, float depthMin, flo
         return;
     }
     D3D12CommandList *d3d12CommandList = static_cast<D3D12CommandList *>(commandList);
-    d3d12CommandList->graphicsCommandList->OMSetDepthBounds(depthMin, depthMax);
+    d3d12CommandList->GetGraphicsCommandList()->OMSetDepthBounds(depthMin, depthMax);
+}
+
+void D3D12Renderer::Dispatch(CommandList *commandList, uint32_t threadGroupCountX, uint32_t threadGroupCountY, uint32_t threadGroupCountZ) {
+    D3D12CommandList *d3d12CommandList = static_cast<D3D12CommandList *>(commandList);
+    d3d12CommandList->GetGraphicsCommandList()->Dispatch(threadGroupCountX, threadGroupCountY, threadGroupCountZ);
+}
+
+void D3D12Renderer::DispatchMesh(CommandList *commandList, uint32_t threadGroupCountX, uint32_t threadGroupCountY, uint32_t threadGroupCountZ) {
+    D3D12CommandList *d3d12CommandList = static_cast<D3D12CommandList *>(commandList);
+    d3d12CommandList->GetGraphicsCommandList()->DispatchMesh(threadGroupCountX, threadGroupCountY, threadGroupCountZ);
 }
 
 void D3D12Renderer::Draw(CommandList *commandList, uint32_t vertexCount, uint32_t startVertexLocation) {
     D3D12CommandList *d3d12CommandList = static_cast<D3D12CommandList *>(commandList);
-    d3d12CommandList->Draw(vertexCount, startVertexLocation);
+    d3d12CommandList->GetGraphicsCommandList()->DrawInstanced(vertexCount, 1, startVertexLocation, 0);
 }
 
 void D3D12Renderer::DrawIndexed(CommandList *commandList, uint32_t indexCount, uint32_t startIndexLocation, uint32_t baseVertexLocation) {
     D3D12CommandList *d3d12CommandList = static_cast<D3D12CommandList *>(commandList);
-    d3d12CommandList->DrawIndexed(indexCount, startIndexLocation, baseVertexLocation);
+    d3d12CommandList->GetGraphicsCommandList()->DrawIndexedInstanced(indexCount, 1, startIndexLocation, baseVertexLocation, 0);
 }
 
 void D3D12Renderer::DrawInstanced(CommandList *commandList, uint32_t vertexCount, uint32_t instanceCount, uint32_t startVertexLocation, uint32_t startInstanceLocation) {
     D3D12CommandList *d3d12CommandList = static_cast<D3D12CommandList *>(commandList);
-    d3d12CommandList->DrawInstanced(vertexCount, instanceCount, startVertexLocation, startInstanceLocation);
+    d3d12CommandList->GetGraphicsCommandList()->DrawInstanced(vertexCount, instanceCount, startVertexLocation, startInstanceLocation);
 }
 
 void D3D12Renderer::DrawIndexedInstanced(CommandList *commandList, uint32_t indexCount, uint32_t instanceCount, uint32_t startIndexLocation, uint32_t baseVertexLocation, uint32_t startInstanceLocation) {
     D3D12CommandList *d3d12CommandList = static_cast<D3D12CommandList *>(commandList);
-    d3d12CommandList->DrawIndexedInstanced(indexCount, instanceCount, startIndexLocation, baseVertexLocation, startInstanceLocation);
+    d3d12CommandList->GetGraphicsCommandList()->DrawIndexedInstanced(indexCount, instanceCount, startIndexLocation, baseVertexLocation, startInstanceLocation);
 }
 
 int D3D12Renderer::AddRenderObject(const D3D12RenderObject::State &def) {
@@ -1074,7 +1085,7 @@ void D3D12Renderer::DrawVisObjectsWithoutTask() {
 
     // 커맨드 리스트 풀에서 커맨드 리스트를 얻어온다.
     D3D12FrameData::DataPerThread &currentThreadData = currentFrameData->threadData[0];
-    D3D12CommandList *commandList = currentThreadData.commandListPool->Alloc();
+    D3D12CommandList *commandList = currentThreadData.graphicsCommandListPool->Alloc();
 
     // CommandAllocator 를 재사용하도록 리셋하고, CommandList 를 CommandAllocator 를 이용하여 초기 상태로 리셋
     commandList->Reset();
@@ -1083,7 +1094,7 @@ void D3D12Renderer::DrawVisObjectsWithoutTask() {
     SetViewport(commandList, viewportRect);
     SetScissorRect(commandList, scissorRect);
 
-    commandList->graphicsCommandList->OMSetRenderTargets(1, &rtvDescriptorHandle, FALSE, &dsvDescriptorHandle);
+    commandList->GetGraphicsCommandList()->OMSetRenderTargets(1, &rtvDescriptorHandle, FALSE, &dsvDescriptorHandle);
 
     D3D12RootDescriptorPool *rootDescriptorPool = currentFrameData->threadData[0].rootDescriptorPool;
 
@@ -1104,7 +1115,7 @@ void D3D12Renderer::DrawVisObjectsByTask(D3D12Renderer::DrawObjectTaskDesc *task
 
     int threadIndex = taskDesc->threadIndex;
     D3D12FrameData::DataPerThread &currentThreadData = currentFrameData->threadData[threadIndex];
-    D3D12CommandListPool *commandListPool = currentThreadData.commandListPool;
+    D3D12CommandListPool *commandListPool = currentThreadData.graphicsCommandListPool;
     D3D12CommandList *commandList = commandListPool->Alloc();
 
     // CommandAllocator 를 재사용하도록 리셋하고, CommandList 를 CommandAllocator 를 이용하여 초기 상태로 리셋
@@ -1114,7 +1125,7 @@ void D3D12Renderer::DrawVisObjectsByTask(D3D12Renderer::DrawObjectTaskDesc *task
     SetViewport(commandList, viewportRect);
     SetScissorRect(commandList, scissorRect);
 
-    commandList->graphicsCommandList->OMSetRenderTargets(1, &rtvDescriptorHandle, FALSE, &dsvDescriptorHandle);
+    commandList->GetGraphicsCommandList()->OMSetRenderTargets(1, &rtvDescriptorHandle, FALSE, &dsvDescriptorHandle);
 
     // 루트 디스크립터 힙을 지정한다.
     ID3D12DescriptorHeap *descriptorHeaps[] = { currentThreadData.rootDescriptorPool->descriptorHeap };
@@ -1127,7 +1138,7 @@ void D3D12Renderer::DrawVisObjectsByTask(D3D12Renderer::DrawObjectTaskDesc *task
     //commandList = FlushCommandList(commandList);
 
     // CommandList 기록을 마친다.
-    commandList->graphicsCommandList->Close();
+    commandList->GetGraphicsCommandList()->Close();
 
     // 사용 중인 커맨드 리스트를 나중에 실행하기 위해 저장한다.
     taskDesc->activeCommandList = commandList;
@@ -1174,7 +1185,7 @@ void D3D12Renderer::DrawVisObjectsWithTask(int numTasks) {
     int renderTaskCount = objectDrawingTaskDescs.Count();
     ID3D12CommandList *execCommandLists[MaxRenderTaskThreads];
     for (int threadIndex = 0; threadIndex < renderTaskCount; ++threadIndex) {
-        execCommandLists[threadIndex] = objectDrawingTaskDescs[threadIndex].activeCommandList->graphicsCommandList;
+        execCommandLists[threadIndex] = objectDrawingTaskDescs[threadIndex].activeCommandList->GetGraphicsCommandList();
     }
 
     // CommandList 들을 한꺼번에 실행

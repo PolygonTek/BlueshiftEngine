@@ -305,7 +305,7 @@ void D3D12PipelineState::Release() {
     SAFE_RELEASE(rootSignature);
 }
 
-RHIRenderer::PipelineState *D3D12Renderer::CreatePSO(const RHIRenderer::PipelineStateDesc *desc) {
+RHIRenderer::PipelineState *D3D12Renderer::CreateGraphicsPSO(const RHIRenderer::PipelineStateDesc *desc) {
     struct PSOHashData {
         struct ShaderHashData {
             uint64_t vsHash = 0;
@@ -408,7 +408,7 @@ RHIRenderer::PipelineState *D3D12Renderer::CreatePSO(const RHIRenderer::Pipeline
 
     // 전체 hash 값으로 완전히 동일한 PSO 가 존재하는지 찾아보고, 있으면 리턴한다.
     const uint64_t psoHash = CityHash64((char *)&psoHashData, sizeof(psoHashData));
-    const auto *psoEntry = psoMap.Get(psoHash);
+    const auto *psoEntry = graphicsPsoMap.Get(psoHash);
     if (psoEntry) {
         return psoEntry->second;
     }
@@ -416,6 +416,7 @@ RHIRenderer::PipelineState *D3D12Renderer::CreatePSO(const RHIRenderer::Pipeline
     // 없다면 새로 만든다.
     D3D12PipelineState *pipelineState = new D3D12PipelineState;
     pipelineState->hash = psoHash;
+    pipelineState->graphics = true;
 
     // combined shader hash 값으로 동일한 PSO cache 가 존재하는지 찾아보고, 있으면 재활용한다.
     const uint64_t combinedShaderHash = CityHash64((char *)&psoHashData.shaderHashData, sizeof(psoHashData.shaderHashData));
@@ -429,62 +430,50 @@ RHIRenderer::PipelineState *D3D12Renderer::CreatePSO(const RHIRenderer::Pipeline
 #ifndef _DEBUG
     // 없다면 PSO cache 파일을 로딩해본다.
     if (!cachedPsoBlob) {
-        // FIXME: 원인 불명의 에러 수정할 것
-        // D3D12 ERROR: ID3D12Device::CreateInputLayout: Encoded Signature size doesn't match specified size. [ STATE_CREATION ERROR #63: CREATEINPUTLAYOUT_UNPARSEABLEINPUTSIGNATURE]
-        //LoadCachedPSO(combinedShaderHash, &cachedPsoBlob);
+        LoadCachedPSO(combinedShaderHash, &cachedPsoBlob);
     }
 #endif
 
     uint32_t psoStreamSize = 0;
     void *psoStream = nullptr;
-    D3D12PipelineState::PipelineStateStream1 *stream1 = nullptr;
-    D3D12PipelineState::PipelineStateStream2 *stream2 = nullptr;
+    D3D12PipelineState::GraphicsPSStream1 *stream1 = nullptr;
+    D3D12PipelineState::GraphicsPSStream2 *stream2 = nullptr;
+
+    psoStreamSize = sizeof(D3D12PipelineState::GraphicsPSStream);
+    psoStream = _alloca16(psoStreamSize);
+    new (psoStream) D3D12PipelineState::GraphicsPSStream();
+
+    D3D12PipelineState::GraphicsPSStream *stream = static_cast<D3D12PipelineState::GraphicsPSStream *>(psoStream);
+    stream1 = &stream->stream1;
+    stream2 = &stream->stream2;
 
     if (cachedPsoBlob) {
-        // PSO cache 를 이용해서 shader stream 은 생략한다.
-        psoStreamSize = sizeof(D3D12PipelineState::CachedPipelineStateStream);
-        psoStream = _alloca16(psoStreamSize);
-        new (psoStream) D3D12PipelineState::CachedPipelineStateStream();
+        stream->shaderCachedPSO = { cachedPsoBlob->GetBufferPointer(), cachedPsoBlob->GetBufferSize() };
+    }
 
-        D3D12PipelineState::CachedPipelineStateStream *cachedStream = static_cast<D3D12PipelineState::CachedPipelineStateStream *>(psoStream);
-        stream1 = &cachedStream->stream1;
-        stream2 = &cachedStream->stream2;
+    if (desc->vs) {
+        const D3D12Shader *vs = static_cast<const D3D12Shader *>(desc->vs);
+        stream->vs = { vs->compiledShaderData, vs->compiledShaderDataSize };
+    }
 
-        cachedStream->shaderCachedPSO = { cachedPsoBlob->GetBufferPointer(), cachedPsoBlob->GetBufferSize() };
-    } else {
-        // 그래도 없으면 PSO 를 통째로 새로 만든다.
-        psoStreamSize = sizeof(D3D12PipelineState::PipelineStateStream);
-        psoStream = _alloca16(psoStreamSize);
-        new (psoStream) D3D12PipelineState::PipelineStateStream();
+    if (desc->gs) {
+        const D3D12Shader *gs = static_cast<const D3D12Shader *>(desc->gs);
+        stream->gs = { gs->compiledShaderData, gs->compiledShaderDataSize };
+    }
 
-        D3D12PipelineState::PipelineStateStream *nonCachedStream = static_cast<D3D12PipelineState::PipelineStateStream *>(psoStream);
-        stream1 = &nonCachedStream->stream1;
-        stream2 = &nonCachedStream->stream2;
+    if (desc->hs) {
+        const D3D12Shader *hs = static_cast<const D3D12Shader *>(desc->hs);
+        stream->hs = { hs->compiledShaderData, hs->compiledShaderDataSize };
+    }
 
-        if (desc->vs) {
-            const D3D12Shader *vs = static_cast<const D3D12Shader *>(desc->vs);
-            nonCachedStream->vs = { vs->compiledShaderData, vs->compiledShaderDataSize };
-        }
+    if (desc->ds) {
+        const D3D12Shader *ds = static_cast<const D3D12Shader *>(desc->ds);
+        stream->ds = { ds->compiledShaderData, ds->compiledShaderDataSize };
+    }
 
-        if (desc->gs) {
-            const D3D12Shader *gs = static_cast<const D3D12Shader *>(desc->gs);
-            nonCachedStream->gs = { gs->compiledShaderData, gs->compiledShaderDataSize };
-        }
-
-        if (desc->hs) {
-            const D3D12Shader *hs = static_cast<const D3D12Shader *>(desc->hs);
-            nonCachedStream->hs = { hs->compiledShaderData, hs->compiledShaderDataSize };
-        }
-
-        if (desc->ds) {
-            const D3D12Shader *ds = static_cast<const D3D12Shader *>(desc->ds);
-            nonCachedStream->ds = { ds->compiledShaderData, ds->compiledShaderDataSize };
-        }
-
-        if (desc->ps) {
-            const D3D12Shader *ps = static_cast<const D3D12Shader *>(desc->ps);
-            nonCachedStream->ps = { ps->compiledShaderData, ps->compiledShaderDataSize };
-        }
+    if (desc->ps) {
+        const D3D12Shader *ps = static_cast<const D3D12Shader *>(desc->ps);
+        stream->ps = { ps->compiledShaderData, ps->compiledShaderDataSize };
     }
 
     // Flags
@@ -626,10 +615,11 @@ RHIRenderer::PipelineState *D3D12Renderer::CreatePSO(const RHIRenderer::Pipeline
     HRESULT hr = device->CreatePipelineState(&streamDesc, IID_PPV_ARGS(&pipelineState->pso));
     if (FAILED(hr)) {
         BE_WARNLOG("device->CreatePipelineState() failed, ERROR: 0x%x\n", hr);
+        delete pipelineState;
         return nullptr;
     }
 
-    psoMap.Set(psoHash, pipelineState);
+    graphicsPsoMap.Set(psoHash, pipelineState);
 
 #ifndef _DEBUG
     // PSO cache 가 없었다면 새로 추가한다.
@@ -643,6 +633,57 @@ RHIRenderer::PipelineState *D3D12Renderer::CreatePSO(const RHIRenderer::Pipeline
 #endif
 
     return pipelineState;
+}
+
+RHIRenderer::PipelineState *D3D12Renderer::CreateComputePSO(const Shader *computeShader) {
+    const D3D12Shader *cs = static_cast<const D3D12Shader *>(computeShader);
+    // compute shader 외에 다른 상태가 없으므로 compute shader hash 값을 PSO hash 값으로 사용한다.
+    const uint64_t psoHash = cs->hash; 
+    const auto *psoEntry = computePsoMap.Get(psoHash);
+    if (psoEntry) {
+        return psoEntry->second;
+    }
+
+    D3D12PipelineState *pipelineState = new D3D12PipelineState;
+    pipelineState->hash = psoHash;
+    pipelineState->graphics = false;
+
+    cs->rootSignature->AddRef();
+    cs->rootSignatureDeserializer->AddRef();
+
+    D3D12PipelineState::ComputePSStream stream = {};
+    stream.cs = { cs->compiledShaderData, cs->compiledShaderDataSize };
+    stream.flags = CD3DX12_PIPELINE_STATE_STREAM_FLAGS(D3D12_PIPELINE_STATE_FLAG_NONE);
+    stream.rootSignature = cs->rootSignature;
+
+    D3D12_PIPELINE_STATE_STREAM_DESC streamDesc = {};
+    streamDesc.pPipelineStateSubobjectStream = &stream;
+    streamDesc.SizeInBytes = sizeof(stream);
+
+    HRESULT hr = device->CreatePipelineState(&streamDesc, IID_PPV_ARGS(&pipelineState->pso));
+    if (FAILED(hr)) {
+        BE_WARNLOG("device->CreatePipelineState() failed, ERROR: 0x%x\n", hr);
+        delete pipelineState;
+        return nullptr;
+    }
+
+    computePsoMap.Set(psoHash, pipelineState);
+
+    return pipelineState;
+}
+
+void D3D12Renderer::DestroyPSO(PipelineState *pipelineState, bool immediate) {
+    if (pipelineState->graphics) {
+        graphicsPsoMap.Remove(pipelineState->hash);
+    } else {
+        computePsoMap.Remove(pipelineState->hash);
+    }
+
+    if (immediate) {
+        delete pipelineState;
+    } else {
+        MarkForDelete(pipelineState);
+    }
 }
 
 bool D3D12Renderer::LoadCachedPSO(const uint64_t hash, ID3DBlob **cachedPSOBlob) {
@@ -797,25 +838,19 @@ ID3D12PipelineState *D3D12Renderer::CreatePSOFromLibrary(const D3D12_PIPELINE_ST
     return pso;
 }
 
-void D3D12Renderer::DestroyPSO(PipelineState *pipelineState, bool immediate) {
-    psoMap.Remove(pipelineState->hash);
-
-    if (immediate) {
-        delete pipelineState;
-    } else {
-        MarkForDelete(pipelineState);
-    }
-}
-
 void D3D12Renderer::SetPSO(CommandList *commandList, const PipelineState *pipelineState) {
     D3D12CommandList *d3d12CommandList = static_cast<D3D12CommandList *>(commandList);
     d3d12CommandList->SetPipelineState(pipelineState);
 
-    int threadIndex = d3d12CommandList->GetThreadIndex();
+    BindRootParameters(d3d12CommandList, pipelineState->graphics);
+}
+
+void D3D12Renderer::BindRootParameters(D3D12CommandList *commandList, bool graphics) {
+    int threadIndex = commandList->GetThreadIndex();
     D3D12FrameData::DataPerThread &threadData = currentFrameData->threadData[threadIndex];
     D3D12RootDescriptorPool *rootDescriptorPool = threadData.rootDescriptorPool;
 
-    const D3D12_ROOT_SIGNATURE_DESC1 &rootSignatureDesc = d3d12CommandList->currentPSO->rootSignatureDesc->Desc_1_1;
+    const D3D12_ROOT_SIGNATURE_DESC1 &rootSignatureDesc = commandList->currentPSO->rootSignatureDesc->Desc_1_1;
 
     for (int rootParameterIndex = 0; rootParameterIndex < rootSignatureDesc.NumParameters; ++rootParameterIndex) {
         const D3D12_ROOT_PARAMETER1 *rootParameter = &rootSignatureDesc.pParameters[rootParameterIndex];
@@ -861,19 +896,31 @@ void D3D12Renderer::SetPSO(CommandList *commandList, const PipelineState *pipeli
             }
 
             // 디스크립터 테이블 설정
-            d3d12CommandList->graphicsCommandList->SetGraphicsRootDescriptorTable(rootParameterIndex, gpuRootDescriptorHandle);
+            if (graphics) {
+                commandList->GetGraphicsCommandList()->SetGraphicsRootDescriptorTable(rootParameterIndex, gpuRootDescriptorHandle);
+            } else {
+                commandList->GetGraphicsCommandList()->SetComputeRootDescriptorTable(rootParameterIndex, gpuRootDescriptorHandle);
+            }
         } else if (rootParameter->ParameterType == D3D12_ROOT_PARAMETER_TYPE_32BIT_CONSTANTS) {
             // 루트 상수 설정
             UINT num32BitValues = rootParameter->Constants.Num32BitValues;
             // NOTE: 현재는 일부만 세팅하는 경우는 없다고 가정한다.
-            d3d12CommandList->graphicsCommandList->SetGraphicsRoot32BitConstants(rootParameterIndex, num32BitValues, threadData.rootConstants, 0);
+            if (graphics) {
+                commandList->GetGraphicsCommandList()->SetGraphicsRoot32BitConstants(rootParameterIndex, num32BitValues, threadData.rootConstants, 0);
+            } else {
+                commandList->GetGraphicsCommandList()->SetComputeRoot32BitConstants(rootParameterIndex, num32BitValues, threadData.rootConstants, 0);
+            }
         } else if (rootParameter->ParameterType == D3D12_ROOT_PARAMETER_TYPE_CBV) {
             // 루트 레벨 CBV 설정
             UINT shaderRegister = rootParameter->Descriptor.ShaderRegister;
             const D3D12ConstantBuffer *constantBuffer = static_cast<const D3D12ConstantBuffer *>(threadData.cbvResources[shaderRegister]);
             if (constantBuffer) {
                 D3D12_GPU_VIRTUAL_ADDRESS gpuAddress = constantBuffer->GetResource()->GetGPUVirtualAddress();
-                d3d12CommandList->graphicsCommandList->SetGraphicsRootConstantBufferView(rootParameterIndex, gpuAddress);
+                if (graphics) {
+                    commandList->GetGraphicsCommandList()->SetGraphicsRootConstantBufferView(rootParameterIndex, gpuAddress);
+                } else {
+                    commandList->GetGraphicsCommandList()->SetComputeRootConstantBufferView(rootParameterIndex, gpuAddress);
+                }
             }
         } else if (rootParameter->ParameterType == D3D12_ROOT_PARAMETER_TYPE_SRV) {
             // 루트 레벨 SRV 설정
@@ -881,7 +928,11 @@ void D3D12Renderer::SetPSO(CommandList *commandList, const PipelineState *pipeli
             const D3D12Texture *texture = static_cast<const D3D12Texture *>(threadData.srvResources[shaderRegister]);
             if (texture) {
                 D3D12_GPU_VIRTUAL_ADDRESS gpuAddress = texture->GetResource()->GetGPUVirtualAddress();
-                d3d12CommandList->graphicsCommandList->SetGraphicsRootShaderResourceView(rootParameterIndex, gpuAddress);
+                if (graphics) {
+                    commandList->GetGraphicsCommandList()->SetGraphicsRootShaderResourceView(rootParameterIndex, gpuAddress);
+                } else {
+                    commandList->GetGraphicsCommandList()->SetComputeRootShaderResourceView(rootParameterIndex, gpuAddress);
+                }
             }
         } else if (rootParameter->ParameterType == D3D12_ROOT_PARAMETER_TYPE_UAV) {
             // 루트 레벨 UAV 설정
@@ -889,7 +940,11 @@ void D3D12Renderer::SetPSO(CommandList *commandList, const PipelineState *pipeli
             const D3D12Buffer *buffer = static_cast<const D3D12Buffer *>(threadData.uavResources[shaderRegister]);
             if (buffer) {
                 D3D12_GPU_VIRTUAL_ADDRESS gpuAddress = buffer->GetResource()->GetGPUVirtualAddress();
-                d3d12CommandList->graphicsCommandList->SetGraphicsRootUnorderedAccessView(rootParameterIndex, gpuAddress);
+                if (graphics) {
+                    commandList->GetGraphicsCommandList()->SetGraphicsRootUnorderedAccessView(rootParameterIndex, gpuAddress);
+                } else {
+                    commandList->GetGraphicsCommandList()->SetComputeRootUnorderedAccessView(rootParameterIndex, gpuAddress);
+                }
             }
         }
     }

@@ -18,6 +18,8 @@
 #include "D3D12CommandList.h"
 
 void D3D12CommandListPool::Init(ID3D12Device *device, int threadIndex, D3D12_COMMAND_LIST_TYPE commandListType, int maxCommandLists) {
+    HRESULT hr;
+
     this->maxCommandLists = maxCommandLists;
     this->commandListPool = new D3D12CommandList[maxCommandLists];
     this->threadIndex = threadIndex;
@@ -26,19 +28,46 @@ void D3D12CommandListPool::Init(ID3D12Device *device, int threadIndex, D3D12_COM
         D3D12CommandList* commandList = &commandListPool[i];
         commandList->parentPool = this;
 
-        // 그래픽스 CommandList 를 위한 CommandAllocator 생성
-        if (FAILED(device->CreateCommandAllocator(commandListType, IID_PPV_ARGS(&commandList->commandAllocator)))) {
-            BE_FATALERROR("CreateCommandAllocator : failed");
+        // CommandList 를 위한 CommandAllocator 생성
+        hr = device->CreateCommandAllocator(commandListType, IID_PPV_ARGS(&commandList->commandAllocator));
+        if (FAILED(hr)) {
+            BE_FATALERROR("CreateCommandAllocator : failed, ERROR: 0x%x", hr);
         }
 
-        // 그래픽스 CommandList 생성
-        if (FAILED(device->CreateCommandList(0, commandListType, commandList->commandAllocator, nullptr, IID_PPV_ARGS(&commandList->graphicsCommandList)))) {
-            BE_FATALERROR("CreateCommandList : failed");
+        if (commandListType == D3D12_COMMAND_LIST_TYPE_DIRECT) {
+            // 그래픽스 CommandList 생성
+            ID3D12GraphicsCommandList6 *graphicsCommandList = nullptr;
+            hr = device->CreateCommandList(0, commandListType, commandList->commandAllocator, nullptr, IID_PPV_ARGS(&graphicsCommandList));
+            graphicsCommandList->Close();
+            commandList->commandList = graphicsCommandList;
+        } else if (commandListType == D3D12_COMMAND_LIST_TYPE_COPY) {
+            // 카피 CommandList 생성
+            ID3D12GraphicsCommandList1 *copyCommandList = nullptr;
+            hr = device->CreateCommandList(0, commandListType, commandList->commandAllocator, nullptr, IID_PPV_ARGS(&copyCommandList));
+            copyCommandList->Close();
+            commandList->commandList = copyCommandList;
+        } else if (commandListType == D3D12_COMMAND_LIST_TYPE_VIDEO_DECODE) {
+            // 비디오 디코딩 CommandList 생성
+            ID3D12VideoDecodeCommandList *videoDecodeCommandList = nullptr;
+            hr = device->CreateCommandList(0, commandListType, commandList->commandAllocator, nullptr, IID_PPV_ARGS(&videoDecodeCommandList));
+            videoDecodeCommandList->Close();
+            commandList->commandList = videoDecodeCommandList;
+        } else if (commandListType == D3D12_COMMAND_LIST_TYPE_VIDEO_ENCODE) {
+            // 비디오 인코딩 CommandList 생성
+            ID3D12VideoEncodeCommandList *videoEncodeCommandList = nullptr;
+            hr = device->CreateCommandList(0, commandListType, commandList->commandAllocator, nullptr, IID_PPV_ARGS(&videoEncodeCommandList));
+            videoEncodeCommandList->Close();
+            commandList->commandList = videoEncodeCommandList;
+        } else {
+            // 비 그래픽스 CommandList 생성
+            ID3D12CommandList *nonGraphicsCommandList = nullptr;
+            hr = device->CreateCommandList(0, commandListType, commandList->commandAllocator, nullptr, IID_PPV_ARGS(&nonGraphicsCommandList));
+            commandList->commandList = nonGraphicsCommandList;
         }
 
-        // Command lists are created in the recording state, but there is nothing
-        // to record yet. The main loop expects it to be closed, so close it now.
-        commandList->graphicsCommandList->Close();
+        if (FAILED(hr)) {
+            BE_FATALERROR("CreateCommandList : failed, ERROR: 0x%x", hr);
+        }
     }
 
     // 모든 commandLists 를 free 상태로 초기화
@@ -58,7 +87,7 @@ void D3D12CommandListPool::Shutdown() {
     for (int i = 0; i < maxCommandLists; ++i) {
         D3D12CommandList *currentCommandList = &commandListPool[i];
 
-        SAFE_RELEASE(currentCommandList->graphicsCommandList);
+        SAFE_RELEASE(currentCommandList->commandList);
         SAFE_RELEASE(currentCommandList->commandAllocator);
     }
     SAFE_DELETE_ARRAY(commandListPool);

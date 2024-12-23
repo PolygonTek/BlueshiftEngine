@@ -97,7 +97,7 @@ void D3D12TriangleMesh::InitPipelineState() {
         psoDesc.inputLayout = &inputLayout;
         psoDesc.primitiveTopology = RHIRenderer::PrimitiveTopology::TriangleList;
         psoDesc.renderPass = &renderPass;
-        singlePSO = renderer->CreatePSO(&psoDesc);
+        singlePSO = renderer->CreateGraphicsPSO(&psoDesc);
     }
 
     if (triangleVS) {
@@ -120,7 +120,7 @@ void D3D12TriangleMesh::InitPipelineState() {
         psoDesc.inputLayout = &inputLayout;
         psoDesc.primitiveTopology = RHIRenderer::PrimitiveTopology::TriangleList;
         psoDesc.renderPass = &renderPass;
-        instancingPSO = renderer->CreatePSO(&psoDesc);
+        instancingPSO = renderer->CreateGraphicsPSO(&psoDesc);
     }
 
     if (triangleInstancingVS) {
@@ -135,7 +135,7 @@ void D3D12TriangleMesh::DrawMesh(RHIRenderer::CommandList *commandList, const Ve
     int threadIndex = commandList->GetThreadIndex();
 
     // 상수 버퍼 공간을 할당한다.
-    RHIRenderer::GPUSubResource *cbSubResource = renderer->currentFrameData->AllocConstant(threadIndex, sizeof(TriangleConstantData));
+    RHIRenderer::GPUSubResource *cbSubResource = renderer->GetCurrentFrameData()->AllocConstant(threadIndex, sizeof(TriangleConstantData));
     if (!cbSubResource) {
         return;
     }
@@ -156,7 +156,7 @@ void D3D12TriangleMesh::DrawMeshInstanced(RHIRenderer::CommandList *commandList,
     int threadIndex = commandList->GetThreadIndex();
 
     // 상수 버퍼 공간을 할당한다.
-    RHIRenderer::GPUSubResource *cbSubResource = renderer->currentFrameData->AllocConstant(threadIndex, sizeof(TriangleInstancedConstantData));
+    RHIRenderer::GPUSubResource *cbSubResource = renderer->GetCurrentFrameData()->AllocConstant(threadIndex, sizeof(TriangleInstancedConstantData));
     if (!cbSubResource) {
         return;
     }
