@@ -30,6 +30,8 @@ public:
 
     virtual int                     GetThreadIndex() const override;
 
+    D3D12_COMMAND_LIST_TYPE         GetCommandListType() const;
+
                                     // NOTE: PIX_SCOPED_EVENT 매크로에서 사용하기 위해, 포인터가 아닌 포인터 참조를 리턴하도록 한다.
     ID3D12CommandList *&            GetCommandList() { return commandList; }
     ID3D12GraphicsCommandList6 *&   GetGraphicsCommandList() { return reinterpret_cast<ID3D12GraphicsCommandList6 *&>(commandList); }
@@ -55,6 +57,8 @@ public:
     D3D12CommandListPool *          parentPool = nullptr;
     LinkList<D3D12CommandList>      node;
     const D3D12PipelineState *      currentPSO = nullptr;
+    uint64_t                        graphicsRootParametersDirtyMask = 0;
+    uint64_t                        computeRootParametersDirtyMask = 0;
 
 #ifdef USE_STATE_CACHE_FOR_COMMAND_LIST
 private:

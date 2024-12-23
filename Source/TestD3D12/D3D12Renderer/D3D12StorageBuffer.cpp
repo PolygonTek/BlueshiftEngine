@@ -14,13 +14,13 @@
 
 #include "Precompiled.h"
 #include "D3D12Renderer.h"
-#include "D3D12ConstantBuffer.h"
+#include "D3D12StorageBuffer.h"
 #include "D3D12DescriptorPool.h"
 #include "D3D12CommandList.h"
 
-void D3D12ConstantBuffer::Release() {
+void D3D12StorageBuffer::Release() {
     if (descriptorHandle.ptr != 0) {
-        renderer->cbvDescriptorPool->Free(descriptorHandle);
+        renderer->uavDescriptorPool->Free(descriptorHandle);
         descriptorHandle.ptr = 0;
     }
     if (buffer) {
@@ -29,17 +29,21 @@ void D3D12ConstantBuffer::Release() {
     }
 }
 
-ID3D12Resource *D3D12ConstantBuffer::GetResource() const {
+ID3D12Resource *D3D12StorageBuffer::GetResource() const {
     return buffer->GetResource();
 }
 
-RHIRenderer::ConstantBuffer* D3D12Renderer::CreateConstantBuffer(BufferType type, uint32_t size, void *data) {
+// Image::Format 을 쓰지 말고, 전용 Format enum 을 사용하자!!
+RHIRenderer::StorageBuffer* D3D12Renderer::CreateStorageBuffer(BufferType type, Image::Format::Enum format, uint32_t structuredByteStride, uint32_t count, void *data) {
     D3D12Buffer *buffer = nullptr;
 
+    uint32_t bytesPerPixel = Image::BytesPerPixel(format);
+    uint32_t size = bytesPerPixel * count;
+
     if (type == RHIRenderer::BufferType::Static) {
-        buffer = static_cast<D3D12Buffer *>(CreateBuffer(RHIRenderer::BufferUsage::Default, BufferFlag::ShaderResource | BufferFlag::ConstantBuffer, size));
+        buffer = static_cast<D3D12Buffer *>(CreateBuffer(RHIRenderer::BufferUsage::Default, BufferFlag::ShaderResource | BufferFlag::UnorderedAccess, size));
     } else {
-        buffer = static_cast<D3D12Buffer *>(CreateBuffer(RHIRenderer::BufferUsage::Upload, BufferFlag::ShaderResource | BufferFlag::ConstantBuffer, size));
+        buffer = static_cast<D3D12Buffer *>(CreateBuffer(RHIRenderer::BufferUsage::Upload, BufferFlag::ShaderResource | BufferFlag::UnorderedAccess, size));
     }
 
     if (!buffer) {
@@ -95,7 +99,7 @@ RHIRenderer::ConstantBuffer* D3D12Renderer::CreateConstantBuffer(BufferType type
             resourceCommandList->Reset();
             resourceCommandList->ResourceBarrier(bufferResource, D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_COPY_DEST);
             resourceCommandList->GetGraphicsCommandList()->CopyBufferRegion(bufferResource, 0, uploadBuffer, 0, size);
-            resourceCommandList->ResourceBarrier(bufferResource, D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER);
+            resourceCommandList->ResourceBarrier(bufferResource, D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
             resourceCommandList->CloseAndExecute(CommandQueueType::Graphics);
         } else if (type == RHIRenderer::BufferType::Dynamic) {
             UINT8 *mappedPtr = nullptr;
@@ -118,41 +122,53 @@ RHIRenderer::ConstantBuffer* D3D12Renderer::CreateConstantBuffer(BufferType type
     D3D12_CPU_DESCRIPTOR_HANDLE descriptorHandle = { 0 };
 
     if (type == RHIRenderer::BufferType::Static) {
-        D3D12_CONSTANT_BUFFER_VIEW_DESC cbvDesc = { 0 };
-        cbvDesc.BufferLocation = bufferResource->GetGPUVirtualAddress();
-        cbvDesc.SizeInBytes = bufferSize;
+        D3D12_UNORDERED_ACCESS_VIEW_DESC uavDesc = {};
+        uavDesc.ViewDimension = D3D12_UAV_DIMENSION_BUFFER;
+        uavDesc.Buffer.FirstElement = 0;
+        uavDesc.Buffer.NumElements = count;
+        uavDesc.Buffer.Flags = D3D12_BUFFER_UAV_FLAG_NONE;
 
-        descriptorHandle = cbvDescriptorPool->Alloc();
-        device->CreateConstantBufferView(&cbvDesc, descriptorHandle);
+        if (format != Image::Format::Unknown) {
+            DXGI_FORMAT dxgiFormat;
+            ImageFormatToDXGIFormat(format, false, &dxgiFormat);
+            uavDesc.Format = dxgiFormat;
+            uavDesc.Buffer.StructureByteStride = 0;
+        } else {
+            uavDesc.Format = DXGI_FORMAT_UNKNOWN;
+            uavDesc.Buffer.StructureByteStride = structuredByteStride;
+        }
+
+        descriptorHandle = uavDescriptorPool->Alloc();
+        device->CreateUnorderedAccessView(bufferResource, nullptr, &uavDesc, descriptorHandle);
     }
 
-    D3D12ConstantBuffer* constantBuffer = new D3D12ConstantBuffer;
-    constantBuffer->bufferType = type;
-    constantBuffer->buffer = buffer;
-    constantBuffer->descriptorHandle = descriptorHandle;
+    D3D12StorageBuffer* storageBuffer = new D3D12StorageBuffer;
+    storageBuffer->bufferType = type;
+    storageBuffer->buffer = buffer;
+    storageBuffer->descriptorHandle = descriptorHandle;
 
-    return constantBuffer;
+    return storageBuffer;
 }
 
-void D3D12Renderer::DestroyConstantBuffer(ConstantBuffer *constantBuffer, bool immediate) {
+void D3D12Renderer::DestroyStorageBuffer(StorageBuffer *storageBuffer, bool immediate) {
     if (immediate) {
-        delete constantBuffer;
+        delete storageBuffer;
     } else {
-        MarkForDelete(constantBuffer);
+        MarkForDelete(storageBuffer);
     }
 }
 
-void D3D12Renderer::SetConstantBuffer(CommandList *commandList, int slot, const ConstantBuffer *constantBuffer) {
+void D3D12Renderer::SetStorageBuffer(CommandList *commandList, int slot, const StorageBuffer *storageBuffer) {
     D3D12CommandList *d3d12CommandList = static_cast<D3D12CommandList *>(commandList);
     int threadIndex = d3d12CommandList->GetThreadIndex();
 
-    int rootParameterIndex = d3d12CommandList->currentPSO->binder.rootParameterBinder.cbv[slot];
-    int descriptorIndex = d3d12CommandList->currentPSO->binder.descriptorTableBinder.cbv[slot];
+    int rootParameterIndex = d3d12CommandList->currentPSO->binder.rootParameterBinder.uav[slot];
+    int descriptorIndex = d3d12CommandList->currentPSO->binder.descriptorTableBinder.uav[slot];
 
-    const D3D12ConstantBuffer *d3d12ConstantBuffer = static_cast<const D3D12ConstantBuffer *>(constantBuffer);
+    const D3D12StorageBuffer *d3d12StorageBuffer = static_cast<const D3D12StorageBuffer *>(storageBuffer);
     D3D12FrameData::DataPerThread &threadData = currentFrameData->threadData[threadIndex];
-    threadData.psoDescriptorHandles[rootParameterIndex][descriptorIndex] = d3d12ConstantBuffer->descriptorHandle;
-    threadData.cbvResources[rootParameterIndex] = d3d12ConstantBuffer;
+    threadData.psoDescriptorHandles[rootParameterIndex][descriptorIndex] = d3d12StorageBuffer->descriptorHandle;
+    threadData.cbvResources[rootParameterIndex] = d3d12StorageBuffer;
 
     if (d3d12CommandList->GetCommandListType() == D3D12_COMMAND_LIST_TYPE_COMPUTE) {
         d3d12CommandList->computeRootParametersDirtyMask |= BIT64(rootParameterIndex);

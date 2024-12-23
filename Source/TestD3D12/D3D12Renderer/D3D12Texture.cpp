@@ -635,11 +635,18 @@ bool D3D12Renderer::SetTextureSubImage3D(Texture *texture, int level, int x, int
 void D3D12Renderer::SetTexture(CommandList *commandList, int slot, const Texture *texture) {
     D3D12CommandList *d3d12CommandList = static_cast<D3D12CommandList *>(commandList);
     int threadIndex = d3d12CommandList->GetThreadIndex();
-    D3D12FrameData::DataPerThread &threadData = currentFrameData->threadData[threadIndex];
 
-    assert(slot < COUNT_OF(threadData.psoDescriptorHandles));
+    int rootParameterIndex = d3d12CommandList->currentPSO->binder.rootParameterBinder.srv[slot];
+    int descriptorIndex = d3d12CommandList->currentPSO->binder.descriptorTableBinder.srv[slot];
 
     const D3D12Texture *d3d12Texture = static_cast<const D3D12Texture *>(texture);
-    threadData.psoDescriptorHandles[slot] = d3d12Texture->descriptorHandle;
-    threadData.srvResources[slot] = d3d12Texture;
+    D3D12FrameData::DataPerThread &threadData = currentFrameData->threadData[threadIndex];
+    threadData.psoDescriptorHandles[rootParameterIndex][descriptorIndex] = d3d12Texture->descriptorHandle;
+    threadData.srvResources[rootParameterIndex] = d3d12Texture;
+
+    if (d3d12CommandList->GetCommandListType() == D3D12_COMMAND_LIST_TYPE_COMPUTE) {
+        d3d12CommandList->computeRootParametersDirtyMask |= BIT64(rootParameterIndex);
+    } else {
+        d3d12CommandList->graphicsRootParametersDirtyMask |= BIT64(rootParameterIndex);
+    }
 }

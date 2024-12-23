@@ -27,6 +27,8 @@ public:
     void                            Init(ID3D12Device *device, int threadIndex, D3D12_COMMAND_LIST_TYPE commandListType, int maxCommandLists);
     void                            Shutdown();
 
+    D3D12_COMMAND_LIST_TYPE         GetCommandListType() const { return commandListType; }
+
     void                            Clear();
     D3D12CommandList *              Alloc();
     void                            Free(D3D12CommandList *commandList);
@@ -36,6 +38,7 @@ public:
     int                             UsedCount() const { return usedCount; }
 
 private:
+    D3D12_COMMAND_LIST_TYPE         commandListType = D3D12_COMMAND_LIST_TYPE_NONE;
     D3D12CommandList *              commandListPool = nullptr;
     int                             maxCommandLists = 0;
     LinkList<D3D12CommandList>      freeCommandLists;

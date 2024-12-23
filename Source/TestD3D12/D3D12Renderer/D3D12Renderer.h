@@ -82,6 +82,9 @@ public:
     virtual ConstantBuffer *            CreateConstantBuffer(BufferType type, uint32_t size, void *data) override;
     virtual void                        DestroyConstantBuffer(ConstantBuffer *constantBuffer, bool immediate = false) override;
 
+    virtual StorageBuffer *             CreateStorageBuffer(BufferType type, Image::Format::Enum format, uint32_t structuredByteStride, uint32_t count, void *data) override;
+    virtual void                        DestroyStorageBuffer(StorageBuffer *storageBuffer, bool immediate = false) override;
+
     virtual Texture *                   CreateTexture(TextureType textureType, const Image *image) override;
     virtual Texture *                   CreateTexture(TextureType textureType, const Image *image, Image::Format::Enum dstFormat, bool useMipmaps) override;
     virtual Texture *                   CreateTextureFromFile(TextureType textureType, const char *filename, bool useCompression = true, bool useNormalMap = false) override;
@@ -111,6 +114,7 @@ public:
     virtual void                        SetTexture(CommandList *commandList, int slot, const Texture *texture) override;
     virtual void                        SetSubResource(CommandList *commandList, int slot, GPUSubResource *subResource) override;
     virtual void                        SetSampler(CommandList *commandList, int slot, Sampler *sampler) override;
+    virtual void                        SetStorageBuffer(CommandList *commandList, int slot, const StorageBuffer *storageBuffer);
     virtual void                        SetPSO(CommandList *commandList, const PipelineState *pipelineState) override;
     virtual void                        SetBlendFactor(CommandList *commandList, const Color4 &rgba) override;
     virtual void                        SetStencilRef(CommandList *commandList, uint32_t value) override;
@@ -232,6 +236,7 @@ public:
     Rect                                scissorRect;
     D3D12DescriptorPool *               cbvDescriptorPool = nullptr;
     D3D12DescriptorPool *               srvDescriptorPool = nullptr;
+    D3D12DescriptorPool *               uavDescriptorPool = nullptr;
     D3D12DescriptorPool *               rtvDescriptorPool = nullptr;
     D3D12DescriptorPool *               dsvDescriptorPool = nullptr;
     D3D12DescriptorPool *               samplerDescriptorPool = nullptr;

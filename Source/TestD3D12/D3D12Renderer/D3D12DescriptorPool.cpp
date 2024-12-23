@@ -21,7 +21,7 @@ void D3D12DescriptorPool::Init(ID3D12Device *device, D3D12DescriptorPool::Type t
 
     D3D12_DESCRIPTOR_HEAP_TYPE descriptorHeapType;
     switch (type) {
-    case Type::SRV:
+    case Type::CBV_SRV_UAV:
         descriptorHeapType = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
         break;
     case Type::RTV:

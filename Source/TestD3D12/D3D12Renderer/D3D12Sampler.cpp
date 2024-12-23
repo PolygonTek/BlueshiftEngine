@@ -110,10 +110,17 @@ void D3D12Renderer::DestroySampler(Sampler *sampler, bool immediate) {
 void D3D12Renderer::SetSampler(CommandList *commandList, int slot, Sampler *sampler) {
     D3D12CommandList *d3d12CommandList = static_cast<D3D12CommandList *>(commandList);
     int threadIndex = d3d12CommandList->GetThreadIndex();
-    D3D12FrameData::DataPerThread &threadData = currentFrameData->threadData[threadIndex];
 
-    assert(slot < COUNT_OF(threadData.psoDescriptorHandles));
+    int rootParameterIndex = d3d12CommandList->currentPSO->binder.rootParameterBinder.samplers[slot];
+    int descriptorIndex = d3d12CommandList->currentPSO->binder.descriptorTableBinder.samplers[slot];
 
     const D3D12Sampler *d3d12Sampler = static_cast<const D3D12Sampler *>(sampler);
-    threadData.psoDescriptorHandles[slot] = d3d12Sampler->descriptorHandle;
+    D3D12FrameData::DataPerThread &threadData = currentFrameData->threadData[threadIndex];
+    threadData.psoDescriptorHandles[rootParameterIndex][descriptorIndex] = d3d12Sampler->descriptorHandle;
+
+    if (d3d12CommandList->GetCommandListType() == D3D12_COMMAND_LIST_TYPE_COMPUTE) {
+        d3d12CommandList->computeRootParametersDirtyMask |= BIT64(rootParameterIndex);
+    } else {
+        d3d12CommandList->graphicsRootParametersDirtyMask |= BIT64(rootParameterIndex);
+    }
 }

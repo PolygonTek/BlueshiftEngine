@@ -359,6 +359,11 @@ public:
         BufferType                  bufferType;
     };
 
+    class StorageBuffer : public GPUResource {
+    public:
+        BufferType                  bufferType;
+    };
+
     class Texture : public GPUResource {
     public:
         TextureType                 textureType;
@@ -510,6 +515,9 @@ public:
     virtual ConstantBuffer *        CreateConstantBuffer(BufferType type, uint32_t size, void *data) = 0;
     virtual void                    DestroyConstantBuffer(ConstantBuffer *constantBuffer, bool immediate = false) = 0;
 
+    virtual StorageBuffer *         CreateStorageBuffer(BufferType type, Image::Format::Enum format, uint32_t structuredByteStride, uint32_t count, void *data) = 0;
+    virtual void                    DestroyStorageBuffer(StorageBuffer *storageBuffer, bool immediate = false) = 0;
+
     virtual Texture *               CreateTexture(TextureType textureType, const Image *image) = 0;
     virtual Texture *               CreateTexture(TextureType textureType, const Image *image, Image::Format::Enum dstFormat, bool useMipmaps) = 0;
     virtual Texture *               CreateTextureFromFile(TextureType textureType, const char *filename, bool useCompression = true, bool useNormalMap = false) = 0;
@@ -539,6 +547,7 @@ public:
     virtual void                    SetTexture(CommandList *commandList, int slot, const Texture *texture) = 0;
     virtual void                    SetSubResource(CommandList *commandList, int slot, GPUSubResource *subResource) = 0;
     virtual void                    SetSampler(CommandList *commandList, int slot, Sampler *sampler) = 0;
+    virtual void                    SetStorageBuffer(CommandList *commandList, int slot, const StorageBuffer *storageBuffer) = 0;
     virtual void                    SetPSO(CommandList *commandList, const PipelineState *pipelineState) = 0;
     virtual void                    SetBlendFactor(CommandList *commandList, const Color4 &rgba) = 0;
     virtual void                    SetStencilRef(CommandList *commandList, uint32_t value) = 0;

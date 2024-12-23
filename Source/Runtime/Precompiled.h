@@ -217,6 +217,10 @@
     #define BIT(num)                (1 << (num))
 #endif
 
+#ifndef BIT64
+    #define BIT64(num)              (1ull << (num))
+#endif
+
 #define ADD_BIT(x, num)             (x |= BIT(num))
 #define SUB_BIT(x, num)             (x &= ~BIT(num))
 

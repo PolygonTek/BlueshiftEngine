@@ -46,7 +46,7 @@ void D3D12FrameData::Init() {
         data->rootDescriptorPool = new D3D12RootDescriptorPool(renderer->device, 16384);
 
         // 상수 버퍼 디스크립터 풀을 생성한다.
-        data->cbvDescriptorPool = new D3D12DescriptorPool(renderer->device, D3D12DescriptorPool::Type::SRV, 8192, false);
+        data->cbvDescriptorPool = new D3D12DescriptorPool(renderer->device, D3D12DescriptorPool::Type::CBV_SRV_UAV, 8192, false);
 
         // 다이나믹 상수 버퍼 생성
         data->constantBuffer = static_cast<D3D12ConstantBuffer *>(renderer->CreateConstantBuffer(RHIRenderer::BufferType::Dynamic, 65536 * 16, nullptr));

@@ -488,6 +488,8 @@ RHIRenderer::PipelineState *D3D12Renderer::CreateGraphicsPSO(const RHIRenderer::
         pipelineState->rootSignatureDesc = rootSignatureDesc;
 
         stream1->rootSignature = pipelineState->rootSignature;
+
+        pipelineState->binder.Init(rootSignatureDesc->Desc_1_1);
     }
 
     // InputLayout
@@ -841,18 +843,28 @@ ID3D12PipelineState *D3D12Renderer::CreatePSOFromLibrary(const D3D12_PIPELINE_ST
 void D3D12Renderer::SetPSO(CommandList *commandList, const PipelineState *pipelineState) {
     D3D12CommandList *d3d12CommandList = static_cast<D3D12CommandList *>(commandList);
     d3d12CommandList->SetPipelineState(pipelineState);
-
-    BindRootParameters(d3d12CommandList, pipelineState->graphics);
 }
 
 void D3D12Renderer::BindRootParameters(D3D12CommandList *commandList, bool graphics) {
     int threadIndex = commandList->GetThreadIndex();
     D3D12FrameData::DataPerThread &threadData = currentFrameData->threadData[threadIndex];
     D3D12RootDescriptorPool *rootDescriptorPool = threadData.rootDescriptorPool;
+    uint64_t &rootParameterDirtyMask = graphics ? commandList->graphicsRootParametersDirtyMask : commandList->computeRootParametersDirtyMask;
+    if (rootParameterDirtyMask == 0) {
+        return;
+    }
 
     const D3D12_ROOT_SIGNATURE_DESC1 &rootSignatureDesc = commandList->currentPSO->rootSignatureDesc->Desc_1_1;
 
     for (int rootParameterIndex = 0; rootParameterIndex < rootSignatureDesc.NumParameters; ++rootParameterIndex) {
+        // NOTE: dirty mask 를 이용하여, 바뀐 루트 파라미터들만 바인딩한다.
+        // 전체 리소스 바인딩 중 일부만 바꾸는 경우 안바뀐 부분의 리소스 바인딩을 생략할 수 있다.
+        const uint64_t rootParameterBitMask = BIT64(rootParameterIndex);
+        if (!(rootParameterDirtyMask & rootParameterBitMask)) {
+            continue;
+        }
+        rootParameterDirtyMask ^= rootParameterBitMask;
+
         const D3D12_ROOT_PARAMETER1 *rootParameter = &rootSignatureDesc.pParameters[rootParameterIndex];
 
         if (rootParameter->ParameterType == D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE) {
@@ -879,16 +891,16 @@ void D3D12Renderer::BindRootParameters(D3D12CommandList *commandList, bool graph
                 const D3D12_DESCRIPTOR_RANGE1 &descriptorRange = rootParameter->DescriptorTable.pDescriptorRanges[rangeIndex];
                 CD3DX12_CPU_DESCRIPTOR_HANDLE destDescriptorHandle(cpuRootDescriptorHandle, descriptorOffset, rootDescriptorPool->descriptorHandleSize);
 
-                assert(descriptorOffset < COUNT_OF(threadData.psoDescriptorHandles));
+                assert(descriptorOffset < COUNT_OF(threadData.psoDescriptorHandles[rootParameterIndex]));
 
                 switch (descriptorRange.RangeType) {
                 case D3D12_DESCRIPTOR_RANGE_TYPE_CBV:
                 case D3D12_DESCRIPTOR_RANGE_TYPE_SRV:
                 case D3D12_DESCRIPTOR_RANGE_TYPE_UAV:
-                    device->CopyDescriptorsSimple(descriptorRange.NumDescriptors, destDescriptorHandle, threadData.psoDescriptorHandles[descriptorOffset], D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+                    device->CopyDescriptorsSimple(descriptorRange.NumDescriptors, destDescriptorHandle, threadData.psoDescriptorHandles[rootParameterIndex][descriptorOffset], D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
                     break;
                 case D3D12_DESCRIPTOR_RANGE_TYPE_SAMPLER:
-                    device->CopyDescriptorsSimple(descriptorRange.NumDescriptors, destDescriptorHandle, threadData.psoDescriptorHandles[descriptorOffset], D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER);
+                    device->CopyDescriptorsSimple(descriptorRange.NumDescriptors, destDescriptorHandle, threadData.psoDescriptorHandles[rootParameterIndex][descriptorOffset], D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER);
                     break;
                 }
 

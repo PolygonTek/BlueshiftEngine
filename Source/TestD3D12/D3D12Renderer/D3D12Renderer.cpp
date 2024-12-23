@@ -206,8 +206,9 @@ void D3D12Renderer::Init(HWND hwnd) {
     descriptorHandleSize[D3D12_DESCRIPTOR_HEAP_TYPE_DSV] = device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_DSV);
 
     // 디스크립터 풀 생성
-    cbvDescriptorPool = new D3D12DescriptorPool(device, D3D12DescriptorPool::Type::SRV, 64, true);
-    srvDescriptorPool = new D3D12DescriptorPool(device, D3D12DescriptorPool::Type::SRV, 1000000, false);
+    cbvDescriptorPool = new D3D12DescriptorPool(device, D3D12DescriptorPool::Type::CBV_SRV_UAV, 64, true);
+    srvDescriptorPool = new D3D12DescriptorPool(device, D3D12DescriptorPool::Type::CBV_SRV_UAV, 1000000, false);
+    uavDescriptorPool = new D3D12DescriptorPool(device, D3D12DescriptorPool::Type::CBV_SRV_UAV, 1024, false);
     rtvDescriptorPool = new D3D12DescriptorPool(device, D3D12DescriptorPool::Type::RTV, 16, false);
     dsvDescriptorPool = new D3D12DescriptorPool(device, D3D12DescriptorPool::Type::DSV, 16, false);
     samplerDescriptorPool = new D3D12DescriptorPool(device, D3D12DescriptorPool::Type::Sampler, 2048, true);
@@ -366,6 +367,7 @@ void D3D12Renderer::Shutdown() {
 
     SAFE_DELETE(cbvDescriptorPool);
     SAFE_DELETE(srvDescriptorPool);
+    SAFE_DELETE(uavDescriptorPool);
     SAFE_DELETE(rtvDescriptorPool);
     SAFE_DELETE(dsvDescriptorPool);
     SAFE_DELETE(samplerDescriptorPool);
@@ -450,7 +452,7 @@ void D3D12Renderer::CreateSwapChain(HWND hwnd, uint32_t width, uint32_t height) 
 void D3D12Renderer::CreateRTVs() {
     CD3DX12_CPU_DESCRIPTOR_HANDLE rtvDescriptorHandle(rtvDescriptorHeap->GetCPUDescriptorHandleForHeapStart());
 
-    // 스왑 체인의 버퍼를 가져와서 각 RTV 에 연결한다.
+    // 스왑 체인의 버퍼들을 가져와서 RTV 를 생성한다.
     for (UINT renderTargetIndex = 0; renderTargetIndex < NumSwapChainBuffers; ++renderTargetIndex) {
         dxgiSwapChain->GetBuffer(renderTargetIndex, IID_PPV_ARGS(&renderTargetBuffers[renderTargetIndex]));
 
@@ -737,20 +739,37 @@ void D3D12Renderer::FreePendingResources(bool waitPendings) {
 void D3D12Renderer::SetConstants(CommandList *commandList, const void *data, uint32_t size, uint32_t offset) {
     D3D12CommandList *d3d12CommandList = static_cast<D3D12CommandList *>(commandList);
     int threadIndex = d3d12CommandList->GetThreadIndex();
-    D3D12FrameData::DataPerThread &threadData = currentFrameData->threadData[threadIndex];
 
+    int rootParameterIndex = d3d12CommandList->currentPSO->binder.rootParameterBinder.constants;
+
+    D3D12FrameData::DataPerThread &threadData = currentFrameData->threadData[threadIndex];
     memcpy(threadData.rootConstants + offset / sizeof(uint32_t), data, size);
+
+    if (d3d12CommandList->GetCommandListType() == D3D12_COMMAND_LIST_TYPE_COMPUTE) {
+        d3d12CommandList->computeRootParametersDirtyMask |= BIT64(rootParameterIndex);
+    } else {
+        d3d12CommandList->graphicsRootParametersDirtyMask |= BIT64(rootParameterIndex);
+    }
 }
 
 void D3D12Renderer::SetSubResource(CommandList *commandList, int slot, GPUSubResource *subResource) {
     D3D12CommandList *d3d12CommandList = static_cast<D3D12CommandList *>(commandList);
     int threadIndex = d3d12CommandList->GetThreadIndex();
-    D3D12FrameData::DataPerThread &threadData = currentFrameData->threadData[threadIndex];
 
-    assert(slot < COUNT_OF(threadData.psoDescriptorHandles));
+    // FIXME : CBV 가 아닐 수도 있다. 함수를 분리하던지 하자.
+    int rootParameterIndex = d3d12CommandList->currentPSO->binder.rootParameterBinder.cbv[slot];
+    int descriptorIndex = d3d12CommandList->currentPSO->binder.descriptorTableBinder.cbv[slot];
 
     const D3D12GPUSubResource *d3d12SubResource = static_cast<const D3D12GPUSubResource *>(subResource);
-    threadData.psoDescriptorHandles[slot] = d3d12SubResource->descriptorHandle;
+    D3D12FrameData::DataPerThread &threadData = currentFrameData->threadData[threadIndex];
+    threadData.psoDescriptorHandles[rootParameterIndex][descriptorIndex] = d3d12SubResource->descriptorHandle;
+    //threadData.cbvResources[rootParameterIndex] = d3d12SubResource;
+
+    if (d3d12CommandList->GetCommandListType() == D3D12_COMMAND_LIST_TYPE_COMPUTE) {
+        d3d12CommandList->computeRootParametersDirtyMask |= BIT64(rootParameterIndex);
+    } else {
+        d3d12CommandList->graphicsRootParametersDirtyMask |= BIT64(rootParameterIndex);
+    }
 }
 
 void D3D12Renderer::OnResize(int width, int height) {
@@ -896,31 +915,37 @@ void D3D12Renderer::SetDepthBounds(CommandList *commandList, float depthMin, flo
 
 void D3D12Renderer::Dispatch(CommandList *commandList, uint32_t threadGroupCountX, uint32_t threadGroupCountY, uint32_t threadGroupCountZ) {
     D3D12CommandList *d3d12CommandList = static_cast<D3D12CommandList *>(commandList);
+    BindRootParameters(d3d12CommandList, false);
     d3d12CommandList->GetGraphicsCommandList()->Dispatch(threadGroupCountX, threadGroupCountY, threadGroupCountZ);
 }
 
 void D3D12Renderer::DispatchMesh(CommandList *commandList, uint32_t threadGroupCountX, uint32_t threadGroupCountY, uint32_t threadGroupCountZ) {
     D3D12CommandList *d3d12CommandList = static_cast<D3D12CommandList *>(commandList);
+    BindRootParameters(d3d12CommandList, false);
     d3d12CommandList->GetGraphicsCommandList()->DispatchMesh(threadGroupCountX, threadGroupCountY, threadGroupCountZ);
 }
 
 void D3D12Renderer::Draw(CommandList *commandList, uint32_t vertexCount, uint32_t startVertexLocation) {
     D3D12CommandList *d3d12CommandList = static_cast<D3D12CommandList *>(commandList);
+    BindRootParameters(d3d12CommandList, true);
     d3d12CommandList->GetGraphicsCommandList()->DrawInstanced(vertexCount, 1, startVertexLocation, 0);
 }
 
 void D3D12Renderer::DrawIndexed(CommandList *commandList, uint32_t indexCount, uint32_t startIndexLocation, uint32_t baseVertexLocation) {
     D3D12CommandList *d3d12CommandList = static_cast<D3D12CommandList *>(commandList);
+    BindRootParameters(d3d12CommandList, true);
     d3d12CommandList->GetGraphicsCommandList()->DrawIndexedInstanced(indexCount, 1, startIndexLocation, baseVertexLocation, 0);
 }
 
 void D3D12Renderer::DrawInstanced(CommandList *commandList, uint32_t vertexCount, uint32_t instanceCount, uint32_t startVertexLocation, uint32_t startInstanceLocation) {
     D3D12CommandList *d3d12CommandList = static_cast<D3D12CommandList *>(commandList);
+    BindRootParameters(d3d12CommandList, true);
     d3d12CommandList->GetGraphicsCommandList()->DrawInstanced(vertexCount, instanceCount, startVertexLocation, startInstanceLocation);
 }
 
 void D3D12Renderer::DrawIndexedInstanced(CommandList *commandList, uint32_t indexCount, uint32_t instanceCount, uint32_t startIndexLocation, uint32_t baseVertexLocation, uint32_t startInstanceLocation) {
     D3D12CommandList *d3d12CommandList = static_cast<D3D12CommandList *>(commandList);
+    BindRootParameters(d3d12CommandList, true);
     d3d12CommandList->GetGraphicsCommandList()->DrawIndexedInstanced(indexCount, instanceCount, startIndexLocation, baseVertexLocation, startInstanceLocation);
 }
 

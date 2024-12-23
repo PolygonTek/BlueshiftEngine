@@ -23,7 +23,7 @@ class D3D12DescriptorPool {
 
 public:
     enum class Type : byte {
-        SRV,
+        CBV_SRV_UAV,
         RTV,
         DSV,
         Sampler

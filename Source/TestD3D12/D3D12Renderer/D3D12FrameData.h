@@ -73,6 +73,8 @@ private:
     D3D12VisObject *                visObjects = nullptr;
 
     struct DataPerThread {
+        static constexpr int        MaxRootParameters = 64;
+
         D3D12CommandListPool *      graphicsCommandListPool = nullptr;
         D3D12CommandListPool *      computeCommandListPool = nullptr;
         D3D12RootDescriptorPool *   rootDescriptorPool = nullptr;
@@ -81,10 +83,10 @@ private:
         void *                      mappedConstantBase = nullptr;
         UINT                        usedConstantBytes = 0;
         Array<D3D12_CPU_DESCRIPTOR_HANDLE> cbvDescriptorHandles;
-        D3D12_CPU_DESCRIPTOR_HANDLE psoDescriptorHandles[64] = { CD3DX12_CPU_DESCRIPTOR_HANDLE() };
-        const RHIRenderer::GPUResource *cbvResources[64] = {};
-        const RHIRenderer::GPUResource *srvResources[64] = {};
-        const RHIRenderer::GPUResource *uavResources[64] = {};
+        D3D12_CPU_DESCRIPTOR_HANDLE psoDescriptorHandles[MaxRootParameters][64] = { CD3DX12_CPU_DESCRIPTOR_HANDLE() };
+        const RHIRenderer::GPUResource *cbvResources[MaxRootParameters] = {};
+        const RHIRenderer::GPUResource *srvResources[MaxRootParameters] = {};
+        const RHIRenderer::GPUResource *uavResources[MaxRootParameters] = {};
         uint32_t                    rootConstants[64] = {};
         Array<D3D12GPUSubResource>  subResources;
     };

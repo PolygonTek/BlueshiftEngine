@@ -177,11 +177,13 @@ void D3D12CubeMesh::DrawMesh(RHIRenderer::CommandList* commandList, const Mat3x4
     constantDataPtr->viewProjMatrix = app.viewProjMatrix;
     constantDataPtr->worldMatrix = worldMatrix;
 
-    renderer->SetTexture(commandList, 0, texture);
-    renderer->SetSubResource(commandList, 1, cbSubResource);
-    renderer->SetPSO(commandList, singlePSO);
     renderer->SetVertexBuffer(commandList, 0, vertexBuffer);
     renderer->SetIndexBuffer(commandList, indexBuffer);
+
+    renderer->SetPSO(commandList, singlePSO);
+    renderer->SetTexture(commandList, 0, texture);
+    renderer->SetSubResource(commandList, 0, cbSubResource);
+
     renderer->DrawIndexed(commandList, 36, 0, 0);
 }
 
@@ -201,10 +203,12 @@ void D3D12CubeMesh::DrawMeshInstanced(RHIRenderer::CommandList *commandList, con
         constantPtr->worldMatrix[i] = instanceData[i];
     }
 
-    renderer->SetTexture(commandList, 0, texture);
-    renderer->SetSubResource(commandList, 1, cbSubResource);
-    renderer->SetPSO(commandList, instancingPSO);
     renderer->SetVertexBuffer(commandList, 0, vertexBuffer);
     renderer->SetIndexBuffer(commandList, indexBuffer);
+
+    renderer->SetPSO(commandList, instancingPSO);
+    renderer->SetTexture(commandList, 0, texture);
+    renderer->SetSubResource(commandList, 0, cbSubResource);
+
     renderer->DrawIndexedInstanced(commandList, 36, instanceCount, 0, 0, 0);
 }
