@@ -269,7 +269,7 @@ RHIRenderer::Texture *D3D12Renderer::CreateTexture(TextureType textureType, int 
     return texture;
 }
 
-void D3D12Renderer::CreateSubresource(Texture *texture, SubresourceType type, uint32_t firstSlice, uint32_t sliceCount, uint32_t firstMip, uint32_t mipCount) {
+void D3D12Renderer::CreateSubresource(Texture *texture, SubresourceType type, uint32_t firstSlice, uint32_t sliceCount, uint32_t firstMipLevel, uint32_t mipCount) {
     D3D12Texture *d3d12Texture = static_cast<D3D12Texture *>(texture);
 
     if (type == SubresourceType::SRV) {
@@ -280,44 +280,44 @@ void D3D12Renderer::CreateSubresource(Texture *texture, SubresourceType type, ui
         switch (d3d12Texture->textureType) {
         case TextureType::Texture1D:
             srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE1D;
-            srvDesc.Texture1D.MostDetailedMip = firstMip;
-            srvDesc.Texture1D.MipLevels = Min(mipCount, d3d12Texture->textureDesc.MipLevels - firstMip);
+            srvDesc.Texture1D.MostDetailedMip = firstMipLevel;
+            srvDesc.Texture1D.MipLevels = Min(mipCount, d3d12Texture->textureDesc.MipLevels - firstMipLevel);
             break;
         case TextureType::Texture1DArray:
             srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE1DARRAY;
             srvDesc.Texture1DArray.FirstArraySlice = firstSlice;
             srvDesc.Texture1DArray.ArraySize = Min(sliceCount, d3d12Texture->textureDesc.DepthOrArraySize - firstSlice);
-            srvDesc.Texture1DArray.MostDetailedMip = firstMip;
-            srvDesc.Texture1DArray.MipLevels = Min(mipCount, d3d12Texture->textureDesc.MipLevels - firstMip);
+            srvDesc.Texture1DArray.MostDetailedMip = firstMipLevel;
+            srvDesc.Texture1DArray.MipLevels = Min(mipCount, d3d12Texture->textureDesc.MipLevels - firstMipLevel);
             break;
         case TextureType::Texture2D:
             srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
-            srvDesc.Texture2D.MostDetailedMip = firstMip;
-            srvDesc.Texture2D.MipLevels = Min(mipCount, d3d12Texture->textureDesc.MipLevels - firstMip);
+            srvDesc.Texture2D.MostDetailedMip = firstMipLevel;
+            srvDesc.Texture2D.MipLevels = Min(mipCount, d3d12Texture->textureDesc.MipLevels - firstMipLevel);
             break;
         case TextureType::Texture2DArray:
             srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2DARRAY;
             srvDesc.Texture2DArray.FirstArraySlice = firstSlice;
             srvDesc.Texture2DArray.ArraySize = Min(sliceCount, d3d12Texture->textureDesc.DepthOrArraySize - firstSlice);
-            srvDesc.Texture2DArray.MostDetailedMip = firstMip;
-            srvDesc.Texture2DArray.MipLevels = Min(mipCount, d3d12Texture->textureDesc.MipLevels - firstMip);
+            srvDesc.Texture2DArray.MostDetailedMip = firstMipLevel;
+            srvDesc.Texture2DArray.MipLevels = Min(mipCount, d3d12Texture->textureDesc.MipLevels - firstMipLevel);
             break;
         case TextureType::Texture3D:
             srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE3D;
-            srvDesc.Texture3D.MostDetailedMip = firstMip;
-            srvDesc.Texture3D.MipLevels = Min(mipCount, d3d12Texture->textureDesc.MipLevels - firstMip);
+            srvDesc.Texture3D.MostDetailedMip = firstMipLevel;
+            srvDesc.Texture3D.MipLevels = Min(mipCount, d3d12Texture->textureDesc.MipLevels - firstMipLevel);
             break;
         case TextureType::TextureCube:
             srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURECUBE;
-            srvDesc.TextureCube.MostDetailedMip = firstMip;
-            srvDesc.TextureCube.MipLevels = Min(mipCount, d3d12Texture->textureDesc.MipLevels - firstMip);
+            srvDesc.TextureCube.MostDetailedMip = firstMipLevel;
+            srvDesc.TextureCube.MipLevels = Min(mipCount, d3d12Texture->textureDesc.MipLevels - firstMipLevel);
             break;
         case TextureType::TextureCubeArray:
             srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURECUBEARRAY;
             srvDesc.TextureCubeArray.First2DArrayFace = firstSlice;
             srvDesc.TextureCubeArray.NumCubes = Min(sliceCount, d3d12Texture->textureDesc.DepthOrArraySize - firstSlice);
-            srvDesc.TextureCubeArray.MostDetailedMip = firstMip;
-            srvDesc.TextureCubeArray.MipLevels = Min(mipCount, d3d12Texture->textureDesc.MipLevels - firstMip);
+            srvDesc.TextureCubeArray.MostDetailedMip = firstMipLevel;
+            srvDesc.TextureCubeArray.MipLevels = Min(mipCount, d3d12Texture->textureDesc.MipLevels - firstMipLevel);
             break;
         }
 
@@ -330,27 +330,27 @@ void D3D12Renderer::CreateSubresource(Texture *texture, SubresourceType type, ui
         switch (d3d12Texture->textureType) {
         case TextureType::Texture1D:
             rtvDesc.ViewDimension = D3D12_RTV_DIMENSION_TEXTURE1D;
-            rtvDesc.Texture1D.MipSlice = firstMip;
+            rtvDesc.Texture1D.MipSlice = firstMipLevel;
             break;
         case TextureType::Texture1DArray:
             rtvDesc.ViewDimension = D3D12_RTV_DIMENSION_TEXTURE1DARRAY;
-            rtvDesc.Texture1DArray.MipSlice = firstMip;
+            rtvDesc.Texture1DArray.MipSlice = firstMipLevel;
             rtvDesc.Texture1DArray.FirstArraySlice = firstSlice;
             rtvDesc.Texture1DArray.ArraySize = Min(sliceCount, d3d12Texture->textureDesc.DepthOrArraySize - firstSlice);
             break;
         case TextureType::Texture2D:
             rtvDesc.ViewDimension = D3D12_RTV_DIMENSION_TEXTURE2D;
-            rtvDesc.Texture2D.MipSlice = firstMip;
+            rtvDesc.Texture2D.MipSlice = firstMipLevel;
             break;
         case TextureType::Texture2DArray:
             rtvDesc.ViewDimension = D3D12_RTV_DIMENSION_TEXTURE2DARRAY;
-            rtvDesc.Texture2DArray.MipSlice = firstMip;
+            rtvDesc.Texture2DArray.MipSlice = firstMipLevel;
             rtvDesc.Texture2DArray.FirstArraySlice = firstSlice;
             rtvDesc.Texture2DArray.ArraySize = Min(sliceCount, d3d12Texture->textureDesc.DepthOrArraySize - firstSlice);
             break;
         case TextureType::Texture3D:
             rtvDesc.ViewDimension = D3D12_RTV_DIMENSION_TEXTURE3D;
-            rtvDesc.Texture3D.MipSlice = firstMip;
+            rtvDesc.Texture3D.MipSlice = firstMipLevel;
             rtvDesc.Texture3D.FirstWSlice = 0;
             rtvDesc.Texture3D.WSize = -1;
             break;
@@ -365,21 +365,21 @@ void D3D12Renderer::CreateSubresource(Texture *texture, SubresourceType type, ui
         switch (d3d12Texture->textureType) {
         case TextureType::Texture1D:
             dsvDesc.ViewDimension = D3D12_DSV_DIMENSION_TEXTURE1D;
-            dsvDesc.Texture1D.MipSlice = firstMip;
+            dsvDesc.Texture1D.MipSlice = firstMipLevel;
             break;
         case TextureType::Texture1DArray:
             dsvDesc.ViewDimension = D3D12_DSV_DIMENSION_TEXTURE1DARRAY;
-            dsvDesc.Texture1DArray.MipSlice = firstMip;
+            dsvDesc.Texture1DArray.MipSlice = firstMipLevel;
             dsvDesc.Texture1DArray.FirstArraySlice = firstSlice;
             dsvDesc.Texture1DArray.ArraySize = Min(sliceCount, d3d12Texture->textureDesc.DepthOrArraySize - firstSlice);
             break;
         case TextureType::Texture2D:
             dsvDesc.ViewDimension = D3D12_DSV_DIMENSION_TEXTURE2D;
-            dsvDesc.Texture2D.MipSlice = firstMip;
+            dsvDesc.Texture2D.MipSlice = firstMipLevel;
             break;
         case TextureType::Texture2DArray:
             dsvDesc.ViewDimension = D3D12_DSV_DIMENSION_TEXTURE2DARRAY;
-            dsvDesc.Texture2DArray.MipSlice = firstMip;
+            dsvDesc.Texture2DArray.MipSlice = firstMipLevel;
             dsvDesc.Texture2DArray.FirstArraySlice = firstSlice;
             dsvDesc.Texture2DArray.ArraySize = Min(sliceCount, d3d12Texture->textureDesc.DepthOrArraySize - firstSlice);
             break;
@@ -395,27 +395,27 @@ void D3D12Renderer::CreateSubresource(Texture *texture, SubresourceType type, ui
         switch (d3d12Texture->textureType) {
         case TextureType::Texture1D:
             uavDesc.ViewDimension = D3D12_UAV_DIMENSION_TEXTURE1D;
-            uavDesc.Texture1D.MipSlice = firstMip;
+            uavDesc.Texture1D.MipSlice = firstMipLevel;
             break;
         case TextureType::Texture1DArray:
             uavDesc.ViewDimension = D3D12_UAV_DIMENSION_TEXTURE1DARRAY;
-            uavDesc.Texture1DArray.MipSlice = firstMip;
+            uavDesc.Texture1DArray.MipSlice = firstMipLevel;
             uavDesc.Texture1DArray.FirstArraySlice = firstSlice;
             uavDesc.Texture1DArray.ArraySize = Min(sliceCount, d3d12Texture->textureDesc.DepthOrArraySize - firstSlice);
             break;
         case TextureType::Texture2D:
             uavDesc.ViewDimension = D3D12_UAV_DIMENSION_TEXTURE2D;
-            uavDesc.Texture2D.MipSlice = firstMip;
+            uavDesc.Texture2D.MipSlice = firstMipLevel;
             break;
         case TextureType::Texture2DArray:
             uavDesc.ViewDimension = D3D12_UAV_DIMENSION_TEXTURE2DARRAY;
-            uavDesc.Texture2DArray.MipSlice = firstMip;
+            uavDesc.Texture2DArray.MipSlice = firstMipLevel;
             uavDesc.Texture2DArray.FirstArraySlice = firstSlice;
             uavDesc.Texture2DArray.ArraySize = Min(sliceCount, d3d12Texture->textureDesc.DepthOrArraySize - firstSlice);
             break;
         case TextureType::Texture3D:
             uavDesc.ViewDimension = D3D12_UAV_DIMENSION_TEXTURE3D;
-            uavDesc.Texture3D.MipSlice = firstMip;
+            uavDesc.Texture3D.MipSlice = firstMipLevel;
             uavDesc.Texture3D.FirstWSlice = 0;
             uavDesc.Texture3D.WSize = -1;
             break;
@@ -674,8 +674,8 @@ bool D3D12Renderer::SetTextureSubImage2D(Texture *texture, int level, int x, int
     dstLocation.Type = D3D12_TEXTURE_COPY_TYPE_SUBRESOURCE_INDEX;
     dstLocation.SubresourceIndex = level;
 
-    D3D12_BOX box = { 0, 0, 0, (UINT)width, (UINT)height, 1 };
-    resourceCommandList->GetGraphicsCommandList()->CopyTextureRegion(&dstLocation, x, y, 0, &srcLocation, &box);
+    D3D12_BOX srcBox = { 0, 0, 0, (UINT)width, (UINT)height, 1 };
+    resourceCommandList->GetGraphicsCommandList()->CopyTextureRegion(&dstLocation, x, y, 0, &srcLocation, &srcBox);
 
     resourceCommandList->ResourceBarrier(textureResource, D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_ALL_SHADER_RESOURCE);
     resourceCommandList->CloseAndExecute(CommandQueueType::Graphics);
@@ -766,8 +766,8 @@ bool D3D12Renderer::SetTextureSubImage3D(Texture *texture, int level, int x, int
     dstLocation.Type = D3D12_TEXTURE_COPY_TYPE_SUBRESOURCE_INDEX;
     dstLocation.SubresourceIndex = level;
 
-    D3D12_BOX box = { 0, 0, 0, (UINT)width, (UINT)height, (UINT)depth };
-    resourceCommandList->GetGraphicsCommandList()->CopyTextureRegion(&dstLocation, x, y, z, &srcLocation, &box);
+    D3D12_BOX srcBox = { 0, 0, 0, (UINT)width, (UINT)height, (UINT)depth };
+    resourceCommandList->GetGraphicsCommandList()->CopyTextureRegion(&dstLocation, x, y, z, &srcLocation, &srcBox);
 
     resourceCommandList->ResourceBarrier(textureResource, D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_ALL_SHADER_RESOURCE);
     resourceCommandList->CloseAndExecute(CommandQueueType::Graphics);

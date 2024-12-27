@@ -21,6 +21,7 @@
 #include "D3D12CommandListPool.h"
 #include "D3D12RootDescriptorPool.h"
 #include "D3D12DescriptorPool.h"
+#include "D3D12Texture.h"
 #include "../D3D12VisObject.h"
 
 // D3D12.dll 이 D3D12Core.dll 을 찾기 위한 설정
@@ -903,6 +904,24 @@ void D3D12Renderer::DispatchMesh(CommandList *commandList, uint32_t threadGroupC
     D3D12CommandList *d3d12CommandList = static_cast<D3D12CommandList *>(commandList);
     BindRootParameters(d3d12CommandList, false);
     d3d12CommandList->GetGraphicsCommandList()->DispatchMesh(threadGroupCountX, threadGroupCountY, threadGroupCountZ);
+}
+
+void D3D12Renderer::CopyBuffer(CommandList *commandList, const Buffer *dstBuffer, uint32_t dstOffset, const Buffer *srcBuffer, uint32_t srcOffset, uint32_t size) {
+    const D3D12Buffer *d3d12DstBuffer = static_cast<const D3D12Buffer *>(dstBuffer);
+    const D3D12Buffer *d3d12SrcBuffer = static_cast<const D3D12Buffer *>(srcBuffer);
+    D3D12CommandList *d3d12CommandList = static_cast<D3D12CommandList *>(commandList);
+    d3d12CommandList->GetGraphicsCommandList()->CopyBufferRegion(d3d12DstBuffer->GetResource(), dstOffset, d3d12SrcBuffer->GetResource(), srcOffset, size);
+}
+
+void D3D12Renderer::CopyTexture(CommandList *commandList, const Texture *dstTexture, uint32_t dstSlice, uint32_t dstMipLevel, uint32_t dstX, uint32_t dstY, uint32_t dstZ,
+    const Texture *srcTexture, uint32_t srcSlice, uint32_t srcMipLevel, uint32_t srcX, uint32_t srcY, uint32_t srcZ, uint32_t width, uint32_t height, uint32_t depth) {
+    const D3D12Texture *d3d12DstTexture = static_cast<const D3D12Texture *>(dstTexture);
+    const D3D12Texture *d3d12SrcTexture = static_cast<const D3D12Texture *>(srcTexture);
+    CD3DX12_TEXTURE_COPY_LOCATION dstLocation(d3d12DstTexture->GetResource(), D3D12CalcSubresource(dstMipLevel, dstSlice, 0, d3d12DstTexture->textureDesc.MipLevels, d3d12DstTexture->textureDesc.DepthOrArraySize));
+    CD3DX12_TEXTURE_COPY_LOCATION srcLocation(d3d12SrcTexture->GetResource(), D3D12CalcSubresource(srcMipLevel, srcSlice, 0, d3d12SrcTexture->textureDesc.MipLevels, d3d12SrcTexture->textureDesc.DepthOrArraySize));
+    D3D12CommandList *d3d12CommandList = static_cast<D3D12CommandList *>(commandList);
+    D3D12_BOX srcBox = { srcX, srcY, srcZ, (UINT)width, (UINT)height, (UINT)depth };
+    d3d12CommandList->GetGraphicsCommandList()->CopyTextureRegion(&dstLocation, dstX, dstY, dstZ, &srcLocation, &srcBox);
 }
 
 void D3D12Renderer::Draw(CommandList *commandList, uint32_t vertexCount, uint32_t startVertexLocation) {
