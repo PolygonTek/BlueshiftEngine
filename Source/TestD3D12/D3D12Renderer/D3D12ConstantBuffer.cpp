@@ -19,9 +19,11 @@
 #include "D3D12CommandList.h"
 
 void D3D12ConstantBuffer::Release() {
-    if (descriptorHandle.ptr != 0) {
-        renderer->cbvDescriptorPool->Free(descriptorHandle);
-        descriptorHandle.ptr = 0;
+    if (!writePtr) {
+        if (descriptorHandle.ptr != 0) {
+            renderer->cbvDescriptorPool->Free(descriptorHandle);
+            descriptorHandle.ptr = 0;
+        }
     }
     if (buffer) {
         renderer->DestroyBuffer(buffer, true);
@@ -33,101 +35,25 @@ ID3D12Resource *D3D12ConstantBuffer::GetResource() const {
     return buffer->GetResource();
 }
 
-RHIRenderer::ConstantBuffer* D3D12Renderer::CreateConstantBuffer(BufferType type, uint32_t size, void *data) {
-    D3D12Buffer *buffer = nullptr;
-
-    if (type == RHIRenderer::BufferType::Static) {
-        buffer = static_cast<D3D12Buffer *>(CreateBuffer(RHIRenderer::BufferUsage::Default, BufferFlag::ShaderResource | BufferFlag::ConstantBuffer, size));
-    } else {
-        buffer = static_cast<D3D12Buffer *>(CreateBuffer(RHIRenderer::BufferUsage::Upload, BufferFlag::ShaderResource | BufferFlag::ConstantBuffer, size));
-    }
-
+RHIRenderer::ConstantBuffer* D3D12Renderer::CreateConstantBuffer(BufferUsage usage, uint32_t size, void *data) {
+    D3D12Buffer *buffer = static_cast<D3D12Buffer *>(CreateBuffer(usage, ResourceFlag::ConstantBuffer, size, Image::Format::Unknown, 0, data));
     if (!buffer) {
         return nullptr;
     }
 
-    UINT bufferSize = buffer->GetSize();
-    ID3D12Resource *bufferResource = buffer->GetResource();
-    ID3D12Resource *uploadBuffer = nullptr;
+    D3D12_CPU_DESCRIPTOR_HANDLE descriptorHandle = {};
 
-    if (data) {
-        if (type == RHIRenderer::BufferType::Static) {
-            D3D12_RESOURCE_DESC uploadBufferDesc;
-            uploadBufferDesc.Dimension = D3D12_RESOURCE_DIMENSION_BUFFER;
-            uploadBufferDesc.Alignment = 0;
-            uploadBufferDesc.Width = bufferSize;
-            uploadBufferDesc.Height = 1;
-            uploadBufferDesc.DepthOrArraySize = 1;
-            uploadBufferDesc.MipLevels = 1;
-            uploadBufferDesc.Format = DXGI_FORMAT_UNKNOWN;
-            uploadBufferDesc.SampleDesc.Count = 1;
-            uploadBufferDesc.SampleDesc.Quality = 0;
-            uploadBufferDesc.Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
-            uploadBufferDesc.Flags = D3D12_RESOURCE_FLAG_NONE;
-
-            D3D12_HEAP_PROPERTIES heapProperties;
-            heapProperties.Type = D3D12_HEAP_TYPE_UPLOAD;
-            heapProperties.CPUPageProperty = D3D12_CPU_PAGE_PROPERTY_UNKNOWN;
-            heapProperties.MemoryPoolPreference = D3D12_MEMORY_POOL_UNKNOWN;
-            heapProperties.CreationNodeMask = 1;
-            heapProperties.VisibleNodeMask = 1;
-
-            // CPU 에서 GPU 로 전송할 업로드 버퍼 생성
-            if (FAILED(device->CreateCommittedResource(
-                &heapProperties,
-                D3D12_HEAP_FLAG_NONE,
-                &uploadBufferDesc,
-                D3D12_RESOURCE_STATE_GENERIC_READ,
-                nullptr, IID_PPV_ARGS(&uploadBuffer)))) {
-                SAFE_DELETE(buffer);
-                return nullptr;
-            }
-
-            UINT8 *mappedPtr = nullptr;
-            uploadBuffer->Map(0, nullptr, reinterpret_cast<void **>(&mappedPtr));
-
-            simdProcessor->MemcpyStream(mappedPtr, data, size);
-
-            CD3DX12_RANGE writtenRange(0, size);
-            uploadBuffer->Unmap(0, &writtenRange);
-
-            // 업로드 버퍼에서 GPU 버퍼로 데이터 카피
-            resourceCommandList->Reset();
-            resourceCommandList->ResourceBarrier(bufferResource, D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_COPY_DEST);
-            resourceCommandList->GetGraphicsCommandList()->CopyBufferRegion(bufferResource, 0, uploadBuffer, 0, size);
-            resourceCommandList->ResourceBarrier(bufferResource, D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER);
-            resourceCommandList->CloseAndExecute(CommandQueueType::Graphics);
-        } else if (type == RHIRenderer::BufferType::Dynamic) {
-            UINT8 *mappedPtr = nullptr;
-            bufferResource->Map(0, nullptr, reinterpret_cast<void **>(&mappedPtr));
-
-            simdProcessor->MemcpyStream(mappedPtr, data, size);
-
-            CD3DX12_RANGE writtenRange(0, size);
-            bufferResource->Unmap(0, &writtenRange);
-        } else {
-            SAFE_DELETE(buffer);
-            return nullptr;
-        }
-    }
-
-    if (uploadBuffer) {
-        MarkForRelease(uploadBuffer);
-    }
-
-    D3D12_CPU_DESCRIPTOR_HANDLE descriptorHandle = { 0 };
-
-    if (type == RHIRenderer::BufferType::Static) {
-        D3D12_CONSTANT_BUFFER_VIEW_DESC cbvDesc = { 0 };
-        cbvDesc.BufferLocation = bufferResource->GetGPUVirtualAddress();
-        cbvDesc.SizeInBytes = bufferSize;
+    if (usage == BufferUsage::Default) {
+        D3D12_CONSTANT_BUFFER_VIEW_DESC cbvDesc = {};
+        cbvDesc.BufferLocation = buffer->GetResource()->GetGPUVirtualAddress();
+        cbvDesc.SizeInBytes = size;
 
         descriptorHandle = cbvDescriptorPool->Alloc();
         device->CreateConstantBufferView(&cbvDesc, descriptorHandle);
     }
 
     D3D12ConstantBuffer* constantBuffer = new D3D12ConstantBuffer;
-    constantBuffer->bufferType = type;
+    constantBuffer->bufferUsage = usage;
     constantBuffer->buffer = buffer;
     constantBuffer->descriptorHandle = descriptorHandle;
 
@@ -146,13 +72,15 @@ void D3D12Renderer::SetConstantBuffer(CommandList *commandList, int slot, const 
     D3D12CommandList *d3d12CommandList = static_cast<D3D12CommandList *>(commandList);
     int threadIndex = d3d12CommandList->GetThreadIndex();
 
-    int rootParameterIndex = d3d12CommandList->currentPSO->binder.rootParameterBinder.cbv[slot];
-    int descriptorIndex = d3d12CommandList->currentPSO->binder.descriptorTableBinder.cbv[slot];
+    // 슬롯 (레지스터) 에 대한 루트 파라미터 인덱스를 얻고, 디스크립터 테이블일 경우 테이블 인덱스도 얻어온다.
+    const D3D12PipelineState::Binder &binder = d3d12CommandList->currentPSO->binder;
+    int rootParameterIndex = binder.rootParameterBinder.cbv[slot];
+    int descriptorIndex = binder.descriptorTableBinder.cbv[slot];
 
     const D3D12ConstantBuffer *d3d12ConstantBuffer = static_cast<const D3D12ConstantBuffer *>(constantBuffer);
     D3D12FrameData::DataPerThread &threadData = currentFrameData->threadData[threadIndex];
     threadData.psoDescriptorHandles[rootParameterIndex][descriptorIndex] = d3d12ConstantBuffer->descriptorHandle;
-    threadData.cbvResources[rootParameterIndex] = d3d12ConstantBuffer;
+    threadData.cbvResources[slot] = d3d12ConstantBuffer;
 
     if (d3d12CommandList->GetCommandListType() == D3D12_COMMAND_LIST_TYPE_COMPUTE) {
         d3d12CommandList->computeRootParametersDirtyMask |= BIT64(rootParameterIndex);

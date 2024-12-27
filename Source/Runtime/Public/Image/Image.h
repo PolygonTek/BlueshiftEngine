@@ -26,6 +26,7 @@ public:
     struct Format {
         enum Enum {
             Unknown,
+            R_32_TYPELESS,
             // Plain bytes formats
             L_8,
             A_8,

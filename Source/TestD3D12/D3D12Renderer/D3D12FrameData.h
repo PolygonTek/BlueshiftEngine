@@ -15,17 +15,25 @@
 #pragma once
 
 #include "D3D12Common.h"
+#include "D3D12ConstantBuffer.h"
+#include "D3D12VertexBuffer.h"
+#include "D3D12IndexBuffer.h"
 
 class D3D12Renderer;
 class D3D12CommandListPool;
 class D3D12RootDescriptorPool;
 class D3D12DescriptorPool;
-class D3D12ConstantBuffer;
+class D3D12Buffer;
 class D3D12VisObject;
 
-class D3D12GPUSubResource : public RHIRenderer::GPUSubResource {
+class D3D12DynamicAllocation {
 public:
-    D3D12_CPU_DESCRIPTOR_HANDLE     descriptorHandle = {0};
+    D3D12DynamicAllocation(uint64_t size);
+    ~D3D12DynamicAllocation();
+
+    D3D12Buffer *                   buffer = nullptr;
+    void *                          mappedBase = nullptr;
+    UINT                            usedBytes = 0;
 };
 
 class D3D12FrameData {
@@ -46,7 +54,10 @@ public:
 
     void                            ClearMemAllocs();
 
-    RHIRenderer::GPUSubResource *   AllocConstant(int threadIndex, int size);
+    RHIRenderer::ConstantBuffer *   AllocConstant(int threadIndex, uint32_t size);
+    RHIRenderer::VertexBuffer *     AllocVertex(int threadIndex, uint32_t vertexSize, uint32_t count);
+    RHIRenderer::IndexBuffer *      AllocIndex(int threadIndex, uint32_t indexSize, uint32_t count);
+    RHIRenderer::Buffer *           AllocBuffer(int threadIndex, bool shaderStorage, Image::Format::Enum format, uint32_t structureByteStride, uint32_t count);
 
     void                            BeginFrame();
     void                            EndFrame();
@@ -73,22 +84,23 @@ private:
     D3D12VisObject *                visObjects = nullptr;
 
     struct DataPerThread {
-        static constexpr int        MaxRootParameters = 64;
+        static constexpr uint32_t   MaxRootParameters = 64;
 
         D3D12CommandListPool *      graphicsCommandListPool = nullptr;
         D3D12CommandListPool *      computeCommandListPool = nullptr;
+        Array<D3D12DynamicAllocation *> dynamicAllocations;
+        Array<D3D12ConstantBuffer>  dynamicConstantBuffers;
+        Array<D3D12VertexBuffer>    dynamicVertexBuffers;
+        Array<D3D12IndexBuffer>     dynamicIndexBuffers;
+        Array<D3D12Buffer>          dynamicBuffers;
+        D3D12DescriptorPool *       dynamicDescriptorPool = nullptr;
+        Array<D3D12_CPU_DESCRIPTOR_HANDLE> dynamicDescriptorHandles;
         D3D12RootDescriptorPool *   rootDescriptorPool = nullptr;
-        D3D12DescriptorPool *       cbvDescriptorPool = nullptr;
-        D3D12ConstantBuffer *       constantBuffer = nullptr;
-        void *                      mappedConstantBase = nullptr;
-        UINT                        usedConstantBytes = 0;
-        Array<D3D12_CPU_DESCRIPTOR_HANDLE> cbvDescriptorHandles;
         D3D12_CPU_DESCRIPTOR_HANDLE psoDescriptorHandles[MaxRootParameters][64] = { CD3DX12_CPU_DESCRIPTOR_HANDLE() };
-        const RHIRenderer::GPUResource *cbvResources[MaxRootParameters] = {};
-        const RHIRenderer::GPUResource *srvResources[MaxRootParameters] = {};
-        const RHIRenderer::GPUResource *uavResources[MaxRootParameters] = {};
+        const RHIRenderer::GPUResource *cbvResources[256] = {};
+        const RHIRenderer::GPUResource *srvResources[256] = {};
+        const RHIRenderer::GPUResource *uavResources[256] = {};
         uint32_t                    rootConstants[64] = {};
-        Array<D3D12GPUSubResource>  subResources;
     };
 
 #ifdef USE_RENDER_TASK

@@ -59,7 +59,7 @@ void D3D12DescriptorPool::Clear() {
 }
 
 D3D12_CPU_DESCRIPTOR_HANDLE D3D12DescriptorPool::Alloc() {
-    D3D12_CPU_DESCRIPTOR_HANDLE descriptorHandle = {0};
+    D3D12_CPU_DESCRIPTOR_HANDLE descriptorHandle = {};
 
     uint32_t newId;
     if (!idAllocator.AllocateID(newId)) {
@@ -78,7 +78,7 @@ void D3D12DescriptorPool::Free(const D3D12_CPU_DESCRIPTOR_HANDLE &descriptorHand
 }
 
 D3D12_CPU_DESCRIPTOR_HANDLE D3D12DescriptorPool::AllocRange(int count) {
-    D3D12_CPU_DESCRIPTOR_HANDLE descriptorHandle = { 0 };
+    D3D12_CPU_DESCRIPTOR_HANDLE descriptorHandle = {};
 
     uint32_t newId;
     if (!idAllocator.AllocateRange(newId, count)) {

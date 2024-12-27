@@ -2282,7 +2282,8 @@ static const ImageFormatInfo imageFormatInfo[] = {
     // |                        |   |   |   |   |   |   |  |        |        +------------- unpackRGBA32F
     // |                        |   |   |   |   |   |   |  |        |        |        +---- packRGBA32F
     // |                        |   |   |   |   |   |   |  |        |        |        |
-    { "NULL",                   0,  0,  0,  0,  0,  0,  0, nullptr, nullptr, nullptr, nullptr },
+    { "Unknown",                0,  0,  0,  0,  0,  0,  0, nullptr, nullptr, nullptr, nullptr },
+    { "R_32_TYPELESS",          4,  1,  32, 0,  0,  0,  0, nullptr, nullptr, nullptr, nullptr },
     { "L_8",                    1,  1,  0,  0,  0,  0,  0, L8ToRGBA8888, RGBA8888ToL8, L8ToRGBA32F, RGBA32FToL8 },
     { "A_8",                    1,  1,  0,  0,  0,  8,  0, A8ToRGBA8888, RGBA8888ToA8, A8ToRGBA32F, RGBA32FToA8 },
     { "LA_8_8",                 2,  2,  0,  0,  0,  8,  0, LA88ToRGBA8888, RGBA8888ToLA88, LA88ToRGBA32F, RGBA32FToLA88 },

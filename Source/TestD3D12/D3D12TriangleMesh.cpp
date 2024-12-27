@@ -56,9 +56,9 @@ void D3D12TriangleMesh::InitMesh() {
         0, 1, 2
     };
 
-    vertexBuffer = renderer->CreateVertexBuffer(RHIRenderer::BufferType::Static, sizeof(verts[0]), COUNT_OF(verts), (void *)verts);
-    indexBuffer = renderer->CreateIndexBuffer(RHIRenderer::BufferType::Static, sizeof(indexes[0]), COUNT_OF(indexes), (void *)indexes);
-    texture = renderer->CreateTextureFromFile(RHIRenderer::TextureType::Texture2D, "Data/EngineTextures/checker.dds");
+    vertexBuffer = renderer->CreateVertexBuffer(RHIRenderer::BufferUsage::Default, sizeof(verts[0]), COUNT_OF(verts), (void *)verts);
+    indexBuffer = renderer->CreateIndexBuffer(RHIRenderer::BufferUsage::Default, sizeof(indexes[0]), COUNT_OF(indexes), (void *)indexes);
+    texture = renderer->CreateTextureFromFile(RHIRenderer::TextureType::Texture2D, RHIRenderer::ResourceFlag::ShaderResource, "Data/EngineTextures/checker.dds");
 
     InitPipelineState();
 }
@@ -134,13 +134,13 @@ void D3D12TriangleMesh::InitPipelineState() {
 void D3D12TriangleMesh::DrawMesh(RHIRenderer::CommandList *commandList, const Vec2 &offset) {
     int threadIndex = commandList->GetThreadIndex();
 
-    // 상수 버퍼 공간을 할당한다.
-    RHIRenderer::GPUSubResource *cbSubResource = renderer->GetCurrentFrameData()->AllocConstant(threadIndex, sizeof(TriangleConstantData));
-    if (!cbSubResource) {
+    // 다이나믹 상수 버퍼 공간을 할당한다.
+    RHIRenderer::ConstantBuffer *constantBuffer = renderer->GetCurrentFrameData()->AllocConstant(threadIndex, sizeof(TriangleConstantData));
+    if (!constantBuffer) {
         return;
     }
 
-    TriangleConstantData *constantDataPtr = reinterpret_cast<TriangleConstantData*>(cbSubResource->writePtr);
+    TriangleConstantData *constantDataPtr = reinterpret_cast<TriangleConstantData*>(constantBuffer->writePtr);
     constantDataPtr->offset.x = offset.x;
     constantDataPtr->offset.y = offset.y;
 
@@ -148,8 +148,8 @@ void D3D12TriangleMesh::DrawMesh(RHIRenderer::CommandList *commandList, const Ve
     renderer->SetIndexBuffer(commandList, indexBuffer);
 
     renderer->SetPSO(commandList, singlePSO);
-    renderer->SetTexture(commandList, 0, texture);
-    renderer->SetSubResource(commandList, 0, cbSubResource);
+    renderer->SetTexture(commandList, 0, false, texture);
+    renderer->SetConstantBuffer(commandList, 0, constantBuffer);
 
     renderer->DrawIndexed(commandList, 3, 0, 0);
 }
@@ -157,13 +157,13 @@ void D3D12TriangleMesh::DrawMesh(RHIRenderer::CommandList *commandList, const Ve
 void D3D12TriangleMesh::DrawMeshInstanced(RHIRenderer::CommandList *commandList, const Vec2 *instanceData, int instanceCount) {
     int threadIndex = commandList->GetThreadIndex();
 
-    // 상수 버퍼 공간을 할당한다.
-    RHIRenderer::GPUSubResource *cbSubResource = renderer->GetCurrentFrameData()->AllocConstant(threadIndex, sizeof(TriangleInstancedConstantData));
-    if (!cbSubResource) {
+    // 다이나믹 상수 버퍼 공간을 할당한다.
+    RHIRenderer::ConstantBuffer *constantBuffer = renderer->GetCurrentFrameData()->AllocConstant(threadIndex, sizeof(TriangleInstancedConstantData));
+    if (!constantBuffer) {
         return;
     }
 
-    TriangleInstancedConstantData *constantDataPtr = reinterpret_cast<TriangleInstancedConstantData *>(cbSubResource->writePtr);
+    TriangleInstancedConstantData *constantDataPtr = reinterpret_cast<TriangleInstancedConstantData *>(constantBuffer->writePtr);
     for (int i = 0; i < instanceCount; ++i) {
         constantDataPtr->offset[i] = Vec4(instanceData[i], Vec2::zero);
     }
@@ -172,8 +172,8 @@ void D3D12TriangleMesh::DrawMeshInstanced(RHIRenderer::CommandList *commandList,
     renderer->SetIndexBuffer(commandList, indexBuffer);
 
     renderer->SetPSO(commandList, instancingPSO);
-    renderer->SetTexture(commandList, 0, texture);
-    renderer->SetSubResource(commandList, 0, cbSubResource);
+    renderer->SetTexture(commandList, 0, false, texture);
+    renderer->SetConstantBuffer(commandList, 0, constantBuffer);
     
     renderer->DrawIndexedInstanced(commandList, 3, instanceCount, 0, 0, 0);
 }

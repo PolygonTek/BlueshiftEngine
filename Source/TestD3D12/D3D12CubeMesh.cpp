@@ -89,9 +89,9 @@ void D3D12CubeMesh::InitMesh() {
         20, 21, 22, 22, 23, 20
     };
 
-    vertexBuffer = renderer->CreateVertexBuffer(RHIRenderer::BufferType::Static, sizeof(verts[0]), COUNT_OF(verts), (void *)verts);
-    indexBuffer = renderer->CreateIndexBuffer(RHIRenderer::BufferType::Static, sizeof(indexes[0]), COUNT_OF(indexes), (void *)indexes);
-    texture = renderer->CreateTextureFromFile(RHIRenderer::TextureType::Texture2D, "Data/EngineTextures/checker.dds");
+    vertexBuffer = renderer->CreateVertexBuffer(RHIRenderer::BufferUsage::Default, sizeof(verts[0]), COUNT_OF(verts), (void *)verts);
+    indexBuffer = renderer->CreateIndexBuffer(RHIRenderer::BufferUsage::Default, sizeof(indexes[0]), COUNT_OF(indexes), (void *)indexes);
+    texture = renderer->CreateTextureFromFile(RHIRenderer::TextureType::Texture2D, RHIRenderer::ResourceFlag::ShaderResource, "Data/EngineTextures/checker.dds");
 
     InitPipelineState();
 }
@@ -167,13 +167,13 @@ void D3D12CubeMesh::InitPipelineState() {
 void D3D12CubeMesh::DrawMesh(RHIRenderer::CommandList* commandList, const Mat3x4& worldMatrix) {
     int threadIndex = commandList->GetThreadIndex();
 
-    // 상수 버퍼 공간을 할당한다.
-    RHIRenderer::GPUSubResource *cbSubResource = renderer->GetCurrentFrameData()->AllocConstant(threadIndex, sizeof(CubeConstantData));
-    if (!cbSubResource) {
+    // 다이나믹 상수 버퍼 공간을 할당한다.
+    RHIRenderer::ConstantBuffer *constantBuffer = renderer->GetCurrentFrameData()->AllocConstant(threadIndex, sizeof(CubeConstantData));
+    if (!constantBuffer) {
         return;
     }
 
-    CubeConstantData *constantDataPtr = reinterpret_cast<CubeConstantData*>(cbSubResource->writePtr);
+    CubeConstantData *constantDataPtr = reinterpret_cast<CubeConstantData*>(constantBuffer->writePtr);
     constantDataPtr->viewProjMatrix = app.viewProjMatrix;
     constantDataPtr->worldMatrix = worldMatrix;
 
@@ -181,8 +181,8 @@ void D3D12CubeMesh::DrawMesh(RHIRenderer::CommandList* commandList, const Mat3x4
     renderer->SetIndexBuffer(commandList, indexBuffer);
 
     renderer->SetPSO(commandList, singlePSO);
-    renderer->SetTexture(commandList, 0, texture);
-    renderer->SetSubResource(commandList, 0, cbSubResource);
+    renderer->SetTexture(commandList, 0, false, texture);
+    renderer->SetConstantBuffer(commandList, 0, constantBuffer);
 
     renderer->DrawIndexed(commandList, 36, 0, 0);
 }
@@ -190,13 +190,13 @@ void D3D12CubeMesh::DrawMesh(RHIRenderer::CommandList* commandList, const Mat3x4
 void D3D12CubeMesh::DrawMeshInstanced(RHIRenderer::CommandList *commandList, const Mat3x4 *instanceData, int instanceCount) {
     int threadIndex = commandList->GetThreadIndex();
 
-    // 상수 버퍼 공간을 할당한다.
-    RHIRenderer::GPUSubResource *cbSubResource = renderer->GetCurrentFrameData()->AllocConstant(threadIndex, sizeof(CubeInstancedConstantData));
-    if (!cbSubResource) {
+    // 다이나믹 상수 버퍼 공간을 할당한다.
+    RHIRenderer::ConstantBuffer *constantBuffer = renderer->GetCurrentFrameData()->AllocConstant(threadIndex, sizeof(CubeInstancedConstantData));
+    if (!constantBuffer) {
         return;
     }
 
-    CubeInstancedConstantData *constantPtr = reinterpret_cast<CubeInstancedConstantData *>(cbSubResource->writePtr);
+    CubeInstancedConstantData *constantPtr = reinterpret_cast<CubeInstancedConstantData *>(constantBuffer->writePtr);
     constantPtr->viewProjMatrix = app.viewProjMatrix;
 
     for (int i = 0; i < instanceCount; ++i) {
@@ -207,8 +207,8 @@ void D3D12CubeMesh::DrawMeshInstanced(RHIRenderer::CommandList *commandList, con
     renderer->SetIndexBuffer(commandList, indexBuffer);
 
     renderer->SetPSO(commandList, instancingPSO);
-    renderer->SetTexture(commandList, 0, texture);
-    renderer->SetSubResource(commandList, 0, cbSubResource);
+    renderer->SetTexture(commandList, 0, false, texture);
+    renderer->SetConstantBuffer(commandList, 0, constantBuffer);
 
     renderer->DrawIndexedInstanced(commandList, 36, instanceCount, 0, 0, 0);
 }

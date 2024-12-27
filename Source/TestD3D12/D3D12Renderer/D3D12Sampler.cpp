@@ -93,7 +93,7 @@ RHIRenderer::Sampler *D3D12Renderer::CreateSampler(const SamplerDesc *desc) {
     samplerDesc.MinLOD = desc->minLod;
     samplerDesc.MinLOD = desc->maxLod;
 
-    D3D12_CPU_DESCRIPTOR_HANDLE descriptorHandle = { 0 };
+    D3D12_CPU_DESCRIPTOR_HANDLE descriptorHandle = {};
     descriptorHandle = samplerDescriptorPool->Alloc();
     device->CreateSampler(&samplerDesc, descriptorHandle);
 
@@ -111,8 +111,10 @@ void D3D12Renderer::SetSampler(CommandList *commandList, int slot, Sampler *samp
     D3D12CommandList *d3d12CommandList = static_cast<D3D12CommandList *>(commandList);
     int threadIndex = d3d12CommandList->GetThreadIndex();
 
-    int rootParameterIndex = d3d12CommandList->currentPSO->binder.rootParameterBinder.samplers[slot];
-    int descriptorIndex = d3d12CommandList->currentPSO->binder.descriptorTableBinder.samplers[slot];
+    // 슬롯 (레지스터) 에 대한 루트 파라미터 인덱스를 얻고, 디스크립터 테이블일 경우 테이블 인덱스도 얻어온다.
+    const D3D12PipelineState::Binder &binder = d3d12CommandList->currentPSO->binder;
+    int rootParameterIndex = binder.rootParameterBinder.samplers[slot];
+    int descriptorIndex = binder.descriptorTableBinder.samplers[slot];
 
     const D3D12Sampler *d3d12Sampler = static_cast<const D3D12Sampler *>(sampler);
     D3D12FrameData::DataPerThread &threadData = currentFrameData->threadData[threadIndex];

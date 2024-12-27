@@ -15,8 +15,18 @@
 #include "Precompiled.h"
 #include "D3D12Renderer.h"
 #include "D3D12Buffer.h"
+#include "D3D12CommandList.h"
+#include "D3D12DescriptorPool.h"
 
 void D3D12Buffer::Release() {
+    if (srvDescriptorHandle.ptr != 0) {
+        renderer->srvDescriptorPool->Free(srvDescriptorHandle);
+        srvDescriptorHandle.ptr = 0;
+    }
+    if (uavDescriptorHandle.ptr != 0) {
+        renderer->uavDescriptorPool->Free(uavDescriptorHandle);
+        uavDescriptorHandle.ptr = 0;
+    }
 #ifdef USE_D3D12_MEMALLOC
     SAFE_RELEASE(bufferAllocation);
 #else
@@ -45,7 +55,7 @@ uint64_t D3D12Buffer::GetSize() {
 #endif
 }
 
-RHIRenderer::Buffer *D3D12Renderer::CreateBuffer(BufferUsage usage, int flags, uint32_t size) {
+RHIRenderer::Buffer *D3D12Renderer::CreateBuffer(BufferUsage usage, int flags, uint64_t size, Image::Format::Enum format, uint32_t stride, const void *data) {
     D3D12_HEAP_TYPE heapType;
     D3D12_RESOURCE_STATES initialState;
     D3D12_RESOURCE_FLAGS resourceFlags = D3D12_RESOURCE_FLAG_NONE;
@@ -71,16 +81,17 @@ RHIRenderer::Buffer *D3D12Renderer::CreateBuffer(BufferUsage usage, int flags, u
         return nullptr;
     }
 
-    if (!(flags & BufferFlag::ShaderResource)) {
+    if (flags & ResourceFlag::UnorderedAccess) {
+        resourceFlags |= D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS;
+    } else if (!(flags & ResourceFlag::ShaderResource)) {
         resourceFlags |= D3D12_RESOURCE_FLAG_DENY_SHADER_RESOURCE;
     }
-    if (flags & BufferFlag::UnorderedAccess) {
-        resourceFlags |= D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS;
-    }
 
-    if (flags & BufferFlag::ConstantBuffer) {
+    uint32_t bufferSize = size;
+
+    if (flags & ResourceFlag::ConstantBuffer) {
         // 상수 버퍼는 어차피 GPU 에 요청하면 256 바이트로 주소 & 사이즈가 정렬된다.
-        size = AlignUp(size, D3D12_CONSTANT_BUFFER_DATA_PLACEMENT_ALIGNMENT);
+        bufferSize = AlignUp(bufferSize, D3D12_CONSTANT_BUFFER_DATA_PLACEMENT_ALIGNMENT);
     }
 
     D3D12_RESOURCE_DESC bufferDesc = {};
@@ -88,7 +99,7 @@ RHIRenderer::Buffer *D3D12Renderer::CreateBuffer(BufferUsage usage, int flags, u
     bufferDesc.Alignment = 0;
     bufferDesc.Format = DXGI_FORMAT_UNKNOWN;
     bufferDesc.MipLevels = 1;
-    bufferDesc.Width = size;
+    bufferDesc.Width = bufferSize;
     bufferDesc.Height = 1;
     bufferDesc.DepthOrArraySize = 1;
     bufferDesc.SampleDesc.Count = 1;
@@ -112,6 +123,7 @@ RHIRenderer::Buffer *D3D12Renderer::CreateBuffer(BufferUsage usage, int flags, u
         IID_NULL, nullptr))) {
         return nullptr;
     }
+    ID3D12Resource *bufferResource = bufferAllocation->GetResource();
 #else
     D3D12_HEAP_PROPERTIES heapProperties;
     heapProperties.Type = heapType;
@@ -131,13 +143,153 @@ RHIRenderer::Buffer *D3D12Renderer::CreateBuffer(BufferUsage usage, int flags, u
     }
 #endif
 
-    D3D12Buffer* buffer = new D3D12Buffer;
+    D3D12Buffer *buffer = new D3D12Buffer;
+    buffer->bufferUsage = usage;
+    buffer->flags = flags;
+
 #ifdef USE_D3D12_MEMALLOC
     buffer->bufferAllocation = bufferAllocation;
 #else
     buffer->bufferResource = bufferResource;
 #endif
+
+    buffer->size = size;
+    // format == Image::Format::Unknown 일 경우 structured buffer 이거나 raw buffer 이다.
+    buffer->format = format;
+    // stride 는 structured buffer 에서만 사용된다.
+    buffer->stride = stride;
+
+    ID3D12Resource *uploadBuffer = nullptr;
+
+    if (data) {
+        if (heapType == D3D12_HEAP_TYPE_DEFAULT) {
+            D3D12_RESOURCE_DESC uploadBufferDesc;
+            uploadBufferDesc.Dimension = D3D12_RESOURCE_DIMENSION_BUFFER;
+            uploadBufferDesc.Alignment = 0;
+            uploadBufferDesc.Width = bufferSize;
+            uploadBufferDesc.Height = 1;
+            uploadBufferDesc.DepthOrArraySize = 1;
+            uploadBufferDesc.MipLevels = 1;
+            uploadBufferDesc.Format = DXGI_FORMAT_UNKNOWN;
+            uploadBufferDesc.SampleDesc.Count = 1;
+            uploadBufferDesc.SampleDesc.Quality = 0;
+            uploadBufferDesc.Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
+            uploadBufferDesc.Flags = D3D12_RESOURCE_FLAG_NONE;
+
+            D3D12_HEAP_PROPERTIES heapProperties;
+            heapProperties.Type = D3D12_HEAP_TYPE_UPLOAD;
+            heapProperties.CPUPageProperty = D3D12_CPU_PAGE_PROPERTY_UNKNOWN;
+            heapProperties.MemoryPoolPreference = D3D12_MEMORY_POOL_UNKNOWN;
+            heapProperties.CreationNodeMask = 1;
+            heapProperties.VisibleNodeMask = 1;
+
+            // CPU 에서 GPU 로 전송할 업로드 버퍼 생성
+            if (FAILED(device->CreateCommittedResource(
+                &heapProperties,
+                D3D12_HEAP_FLAG_NONE,
+                &uploadBufferDesc,
+                D3D12_RESOURCE_STATE_GENERIC_READ,
+                nullptr, IID_PPV_ARGS(&uploadBuffer)))) {
+                SAFE_DELETE(buffer);
+                return nullptr;
+            }
+
+            UINT8 *mappedPtr = nullptr;
+            uploadBuffer->Map(0, nullptr, reinterpret_cast<void **>(&mappedPtr));
+
+            simdProcessor->MemcpyStream(mappedPtr, data, size);
+
+            CD3DX12_RANGE writtenRange(0, size);
+            uploadBuffer->Unmap(0, &writtenRange);
+
+            D3D12_RESOURCE_STATES afterResourceState = D3D12_RESOURCE_STATE_COMMON;
+            if (flags & (ResourceFlag::ConstantBuffer | ResourceFlag::VertexBuffer)) {
+                afterResourceState = D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER;
+            } else if (flags & ResourceFlag::IndexBuffer) {
+                afterResourceState = D3D12_RESOURCE_STATE_INDEX_BUFFER;
+            } else if (flags & ResourceFlag::UnorderedAccess) {
+                afterResourceState = D3D12_RESOURCE_STATE_UNORDERED_ACCESS;
+            }
+
+            // 업로드 버퍼에서 GPU 버퍼로 데이터 카피
+            resourceCommandList->Reset();
+            resourceCommandList->ResourceBarrier(bufferResource, D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_COPY_DEST);
+            resourceCommandList->GetGraphicsCommandList()->CopyBufferRegion(bufferResource, 0, uploadBuffer, 0, size);
+            resourceCommandList->ResourceBarrier(bufferResource, D3D12_RESOURCE_STATE_COPY_DEST, afterResourceState);
+            resourceCommandList->CloseAndExecute(CommandQueueType::Graphics);
+        } else if (heapType == D3D12_HEAP_TYPE_UPLOAD) {
+            UINT8 *mappedPtr = nullptr;
+            bufferResource->Map(0, nullptr, reinterpret_cast<void **>(&mappedPtr));
+
+            simdProcessor->MemcpyStream(mappedPtr, data, size);
+
+            CD3DX12_RANGE writtenRange(0, size);
+            bufferResource->Unmap(0, &writtenRange);
+        } else {
+            SAFE_DELETE(buffer);
+            return nullptr;
+        }
+    }
+
+    if (uploadBuffer) {
+        MarkForRelease(uploadBuffer);
+    }
+
+    if (!(flags & ResourceFlag::SkipDefaultViews)) {
+        if (flags & ResourceFlag::ShaderResource) {
+            CreateSubresource(buffer, SubresourceType::SRV);
+        }
+        if (flags & ResourceFlag::UnorderedAccess) {
+            CreateSubresource(buffer, SubresourceType::UAV);
+        }
+    }
+
     return buffer;
+}
+
+void D3D12Renderer::CreateSubresource(Buffer *buffer, SubresourceType type, uint64_t offset, uint64_t size) {
+    D3D12Buffer *d3d12Buffer = static_cast<D3D12Buffer *>(buffer);
+
+    uint32_t stride = d3d12Buffer->format == Image::Format::Unknown ? d3d12Buffer->stride : Image::BytesPerPixel(d3d12Buffer->format);
+
+    if (type == SubresourceType::SRV) {
+        D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
+        srvDesc.ViewDimension = D3D12_SRV_DIMENSION_BUFFER;
+        srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+        ImageFormatToDXGIFormat(d3d12Buffer->format, false, &srvDesc.Format);
+
+        if (d3d12Buffer->format == Image::Format::Unknown) {
+            // Structured buffer
+            srvDesc.Buffer.StructureByteStride = stride;
+        } else if (d3d12Buffer->format == Image::Format::R_32_TYPELESS) {
+            // Raw buffer
+            srvDesc.Buffer.Flags = D3D12_BUFFER_SRV_FLAG_RAW;
+        }
+
+        srvDesc.Buffer.FirstElement = offset / stride;
+        srvDesc.Buffer.NumElements = Min(size, d3d12Buffer->size - offset) / stride;
+
+        d3d12Buffer->srvDescriptorHandle = srvDescriptorPool->Alloc();
+        device->CreateShaderResourceView(d3d12Buffer->GetResource(), &srvDesc, d3d12Buffer->srvDescriptorHandle);
+    } else if (type == SubresourceType::UAV) {
+        D3D12_UNORDERED_ACCESS_VIEW_DESC uavDesc = {};
+        uavDesc.ViewDimension = D3D12_UAV_DIMENSION_BUFFER;
+        ImageFormatToDXGIFormat(d3d12Buffer->format, false, &uavDesc.Format);
+
+        if (d3d12Buffer->format == Image::Format::Unknown) {
+            // Structured buffer
+            uavDesc.Buffer.StructureByteStride = stride;
+        } else if (d3d12Buffer->format == Image::Format::R_32_TYPELESS) {
+            // Raw buffer
+            uavDesc.Buffer.Flags = D3D12_BUFFER_UAV_FLAG_RAW;
+        }
+
+        uavDesc.Buffer.FirstElement = offset / stride;
+        uavDesc.Buffer.NumElements = Min(size, d3d12Buffer->size - offset) / stride;
+
+        d3d12Buffer->uavDescriptorHandle = uavDescriptorPool->Alloc();
+        device->CreateUnorderedAccessView(d3d12Buffer->GetResource(), nullptr, &uavDesc, d3d12Buffer->uavDescriptorHandle);
+    }
 }
 
 void D3D12Renderer::DestroyBuffer(Buffer *buffer, bool immediate) {
@@ -145,5 +297,45 @@ void D3D12Renderer::DestroyBuffer(Buffer *buffer, bool immediate) {
         delete buffer;
     } else {
         MarkForDelete(buffer);
+    }
+}
+
+void D3D12Renderer::SetBuffer(CommandList *commandList, int slot, bool shaderWritable, const Buffer *buffer) {
+    D3D12CommandList *d3d12CommandList = static_cast<D3D12CommandList *>(commandList);
+    int threadIndex = d3d12CommandList->GetThreadIndex();
+
+    const D3D12Buffer *d3d12Buffer = static_cast<const D3D12Buffer *>(buffer);
+    D3D12FrameData::DataPerThread &threadData = currentFrameData->threadData[threadIndex];
+
+    // 슬롯 (레지스터) 에 대한 루트 파라미터 인덱스를 얻고, 디스크립터 테이블일 경우 테이블 인덱스도 얻어온다.
+    const D3D12PipelineState::Binder &binder = d3d12CommandList->currentPSO->binder;
+    int rootParameterIndex = -1;
+
+    if (shaderWritable) {
+        rootParameterIndex = binder.rootParameterBinder.uav[slot];
+        int descriptorIndex = binder.descriptorTableBinder.uav[slot];
+
+        threadData.psoDescriptorHandles[rootParameterIndex][descriptorIndex] = d3d12Buffer->uavDescriptorHandle;
+        if (threadData.psoDescriptorHandles[rootParameterIndex][descriptorIndex].ptr == 0) {
+            BE_ERRLOG("Buffer has no valid UAV descriptor handle\n");
+            return;
+        }
+        threadData.uavResources[slot] = d3d12Buffer;
+    } else {
+        rootParameterIndex = binder.rootParameterBinder.srv[slot];
+        int descriptorIndex = binder.descriptorTableBinder.srv[slot];
+
+        threadData.psoDescriptorHandles[rootParameterIndex][descriptorIndex] = d3d12Buffer->srvDescriptorHandle;
+        if (threadData.psoDescriptorHandles[rootParameterIndex][descriptorIndex].ptr == 0) {
+            BE_ERRLOG("Buffer has no valid SRV descriptor handle\n");
+            return;
+        }
+        threadData.srvResources[slot] = d3d12Buffer;
+    }
+
+    if (d3d12CommandList->GetCommandListType() == D3D12_COMMAND_LIST_TYPE_COMPUTE) {
+        d3d12CommandList->computeRootParametersDirtyMask |= BIT64(rootParameterIndex);
+    } else {
+        d3d12CommandList->graphicsRootParametersDirtyMask |= BIT64(rootParameterIndex);
     }
 }

@@ -29,5 +29,5 @@ public:
     void                            Release();
 
 private:
-    D3D12_CPU_DESCRIPTOR_HANDLE     descriptorHandle = { 0 };
+    D3D12_CPU_DESCRIPTOR_HANDLE     descriptorHandle = {};
 };

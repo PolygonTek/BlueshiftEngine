@@ -42,5 +42,8 @@ private:
     ID3D12Resource *                textureResource = nullptr;
 #endif
     D3D12_RESOURCE_DESC             textureDesc;
-    D3D12_CPU_DESCRIPTOR_HANDLE     descriptorHandle = {0};
+    D3D12_CPU_DESCRIPTOR_HANDLE     srvDescriptorHandle = {};
+    D3D12_CPU_DESCRIPTOR_HANDLE     rtvDescriptorHandle = {};
+    D3D12_CPU_DESCRIPTOR_HANDLE     dsvDescriptorHandle = {};
+    D3D12_CPU_DESCRIPTOR_HANDLE     uavDescriptorHandle = {};
 };

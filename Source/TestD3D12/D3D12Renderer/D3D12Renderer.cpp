@@ -752,26 +752,6 @@ void D3D12Renderer::SetConstants(CommandList *commandList, const void *data, uin
     }
 }
 
-void D3D12Renderer::SetSubResource(CommandList *commandList, int slot, GPUSubResource *subResource) {
-    D3D12CommandList *d3d12CommandList = static_cast<D3D12CommandList *>(commandList);
-    int threadIndex = d3d12CommandList->GetThreadIndex();
-
-    // FIXME : CBV 가 아닐 수도 있다. 함수를 분리하던지 하자.
-    int rootParameterIndex = d3d12CommandList->currentPSO->binder.rootParameterBinder.cbv[slot];
-    int descriptorIndex = d3d12CommandList->currentPSO->binder.descriptorTableBinder.cbv[slot];
-
-    const D3D12GPUSubResource *d3d12SubResource = static_cast<const D3D12GPUSubResource *>(subResource);
-    D3D12FrameData::DataPerThread &threadData = currentFrameData->threadData[threadIndex];
-    threadData.psoDescriptorHandles[rootParameterIndex][descriptorIndex] = d3d12SubResource->descriptorHandle;
-    //threadData.cbvResources[rootParameterIndex] = d3d12SubResource;
-
-    if (d3d12CommandList->GetCommandListType() == D3D12_COMMAND_LIST_TYPE_COMPUTE) {
-        d3d12CommandList->computeRootParametersDirtyMask |= BIT64(rootParameterIndex);
-    } else {
-        d3d12CommandList->graphicsRootParametersDirtyMask |= BIT64(rootParameterIndex);
-    }
-}
-
 void D3D12Renderer::OnResize(int width, int height) {
 #ifdef USE_RENDER_THREAD
     WaitRenderCompleted();
@@ -1301,6 +1281,12 @@ unsigned int RenderThreadProc(void *param) {
 
 bool D3D12Renderer::ImageFormatToDXGIFormat(Image::Format::Enum imageFormat, bool isSRGB, DXGI_FORMAT *dxgiFormat) {
     switch (imageFormat) {
+    case Image::Format::Unknown:
+        if (dxgiFormat) *dxgiFormat = DXGI_FORMAT_UNKNOWN;
+        return true;
+    case Image::Format::R_32_TYPELESS:
+        if (dxgiFormat) *dxgiFormat = DXGI_FORMAT_R32_TYPELESS;
+        return true;
     case Image::Format::L_8:
     case Image::Format::R_8:
         if (dxgiFormat) *dxgiFormat = DXGI_FORMAT_R8_UNORM;

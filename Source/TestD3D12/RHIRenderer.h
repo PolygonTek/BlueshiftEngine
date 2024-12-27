@@ -129,14 +129,18 @@ public:
         Readback
     };
 
-    struct BufferFlag {
+    struct ResourceFlag {
         enum Enum {
             None                    = 0,
             ConstantBuffer          = BIT(0),
             VertexBuffer            = BIT(1),
             IndexBuffer             = BIT(2),
-            UnorderedAccess         = BIT(3),
-            ShaderResource          = BIT(4)
+            ShaderResource          = BIT(3),
+            RenderTarget            = BIT(4),
+            DepthStencil            = BIT(5),
+            UnorderedAccess         = BIT(6),
+            Typeless                = BIT(7),
+            SkipDefaultViews        = BIT(8)
         };
     };
 
@@ -146,12 +150,20 @@ public:
     };
 
     enum class TextureType : uint8_t {
+        Texture1D,
+        Texture1DArray,
         Texture2D,
         Texture2DArray,
         Texture3D,
         TextureCube,
-        TextureCubeArray,
-        TextureBuffer
+        TextureCubeArray
+    };
+
+    enum class SubresourceType : uint8_t {
+        SRV,        // Shader Resource View
+        UAV,        // Unordered Access View
+        RTV,        // Render Target View
+        DSV         // Depth Stencil View
     };
 
     enum class ShaderFormat : uint8_t {
@@ -342,26 +354,27 @@ public:
 
     class Buffer : public GPUResource {
     public:
+        BufferUsage                 bufferUsage;
+        int32_t                     flags = 0;
+        void *                      writePtr = nullptr;
     };
 
     class VertexBuffer : public GPUResource {
     public:
-        BufferType                  bufferType;
+        BufferUsage                 bufferUsage;
+        void *                      writePtr = nullptr;
     };
 
     class IndexBuffer : public GPUResource {
     public:
-        BufferType                  bufferType;
+        BufferUsage                 bufferUsage;
+        void *                      writePtr = nullptr;
     };
 
     class ConstantBuffer : public GPUResource {
     public:
-        BufferType                  bufferType;
-    };
-
-    class StorageBuffer : public GPUResource {
-    public:
-        BufferType                  bufferType;
+        BufferUsage                 bufferUsage;
+        void *                      writePtr = nullptr;
     };
 
     class Texture : public GPUResource {
@@ -388,11 +401,6 @@ public:
     class QueryHeap : public GPUResource {
     public:
         QueryHeapDesc               desc = {};
-    };
-
-    class GPUSubResource {
-    public:
-        void *                      writePtr = nullptr;
     };
 
     struct RenderPass {
@@ -503,28 +511,28 @@ public:
     const DepthStencilState *       GetDepthStencilState(DepthStencilStateType::Enum type) const { return &depthStencilStates[type]; }
     const BlendState *              GetBlendState(BlendStateType::Enum type) const { return &blendStates[type]; }
 
-    virtual Buffer *                CreateBuffer(BufferUsage usage, int flags, uint32_t size) = 0;
+    virtual Buffer *                CreateBuffer(BufferUsage usage, int flags, uint64_t size, Image::Format::Enum format, uint32_t stride, const void *data) = 0;
     virtual void                    DestroyBuffer(Buffer *buffer, bool immediate = false) = 0;
 
-    virtual VertexBuffer *          CreateVertexBuffer(BufferType type, uint32_t vertexSize, uint32_t numVerts, void *data) = 0;
+    virtual VertexBuffer *          CreateVertexBuffer(BufferUsage usage, uint32_t vertexSize, uint32_t numVerts, void *data) = 0;
     virtual void                    DestroyVertexBuffer(VertexBuffer *vertexBuffer, bool immediate = false) = 0;
 
-    virtual IndexBuffer *           CreateIndexBuffer(BufferType type, uint32_t indexSize, uint32_t numIndexes, void *data) = 0;
+    virtual IndexBuffer *           CreateIndexBuffer(BufferUsage usage, uint32_t indexSize, uint32_t numIndexes, void *data) = 0;
     virtual void                    DestroyIndexBuffer(IndexBuffer *indexBuffer, bool immediate = false) = 0;
 
-    virtual ConstantBuffer *        CreateConstantBuffer(BufferType type, uint32_t size, void *data) = 0;
+    virtual ConstantBuffer *        CreateConstantBuffer(BufferUsage usage, uint32_t size, void *data) = 0;
     virtual void                    DestroyConstantBuffer(ConstantBuffer *constantBuffer, bool immediate = false) = 0;
 
-    virtual StorageBuffer *         CreateStorageBuffer(BufferType type, Image::Format::Enum format, uint32_t structuredByteStride, uint32_t count, void *data) = 0;
-    virtual void                    DestroyStorageBuffer(StorageBuffer *storageBuffer, bool immediate = false) = 0;
-
-    virtual Texture *               CreateTexture(TextureType textureType, const Image *image) = 0;
-    virtual Texture *               CreateTexture(TextureType textureType, const Image *image, Image::Format::Enum dstFormat, bool useMipmaps) = 0;
-    virtual Texture *               CreateTextureFromFile(TextureType textureType, const char *filename, bool useCompression = true, bool useNormalMap = false) = 0;
+    virtual Texture *               CreateTexture(TextureType textureType, int flags, const Image *image) = 0;
+    virtual Texture *               CreateTexture(TextureType textureType, int flags, const Image *image, Image::Format::Enum dstFormat, bool useMipmaps) = 0;
+    virtual Texture *               CreateTextureFromFile(TextureType textureType, int flags, const char *filename, bool useCompression = true, bool useNormalMap = false) = 0;
     virtual void                    DestroyTexture(Texture *texture, bool immediate = false) = 0;
     virtual void                    GetTextureImage2D(Texture *texture, int level, Image::Format::Enum imageFormat, void *outPixels) = 0;
     virtual bool                    SetTextureSubImage2D(Texture *texture, int level, int x, int y, int width, int height, Image::Format::Enum imageFormat, const void *pixels) = 0;
     virtual bool                    SetTextureSubImage3D(Texture *texture, int level, int x, int y, int z, int width, int height, int depth, Image::Format::Enum imageFormat, const void *pixels) = 0;
+
+    virtual void                    CreateSubresource(Buffer *buffer, SubresourceType subresourceType, uint64_t offset = 0, uint64_t size = ~0) = 0;
+    virtual void                    CreateSubresource(Texture *texture, SubresourceType type, uint32_t firstSlice = 0, uint32_t sliceCount = ~0, uint32_t firstMip = 0, uint32_t mipCount = ~0) = 0;
 
     virtual Shader *                CreateShader(ShaderModel shaderModel, ShaderStage shaderStage, const char *sourceName, const char *shaderText, int shaderTextSize, const char *entryPoint) = 0;
     virtual Shader *                CreateShaderFromFile(ShaderModel shaderModel, ShaderStage shaderStage, const char *filename, const char *entryPoint) = 0;
@@ -544,10 +552,9 @@ public:
     virtual void                    SetIndexBuffer(CommandList *commandList, const IndexBuffer *indexBuffer) = 0;
     virtual void                    SetConstantBuffer(CommandList *commandList, int slot, const ConstantBuffer *constantBuffer) = 0;
     virtual void                    SetConstants(CommandList *commandList, const void *data, uint32_t size, uint32_t offset) = 0;
-    virtual void                    SetTexture(CommandList *commandList, int slot, const Texture *texture) = 0;
-    virtual void                    SetSubResource(CommandList *commandList, int slot, GPUSubResource *subResource) = 0;
+    virtual void                    SetTexture(CommandList *commandList, int slot, bool shaderWritable, const Texture *texture) = 0;
+    virtual void                    SetBuffer(CommandList *commandList, int slot, bool shaderWritable, const Buffer *buffer) = 0;
     virtual void                    SetSampler(CommandList *commandList, int slot, Sampler *sampler) = 0;
-    virtual void                    SetStorageBuffer(CommandList *commandList, int slot, const StorageBuffer *storageBuffer) = 0;
     virtual void                    SetPSO(CommandList *commandList, const PipelineState *pipelineState) = 0;
     virtual void                    SetBlendFactor(CommandList *commandList, const Color4 &rgba) = 0;
     virtual void                    SetStencilRef(CommandList *commandList, uint32_t value) = 0;

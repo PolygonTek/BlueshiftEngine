@@ -70,28 +70,28 @@ public:
     void                                OnPendingResourceAdded();
     void                                FreePendingResources(bool waitPendings = false);
 
-    virtual Buffer *                    CreateBuffer(BufferUsage usage, int flags, uint32_t size) override;
+    virtual Buffer *                    CreateBuffer(BufferUsage usage, int flags, uint64_t size, Image::Format::Enum format, uint32_t stride, const void *data) override;
     virtual void                        DestroyBuffer(Buffer *buffer, bool immediate = false) override;
 
-    virtual VertexBuffer *              CreateVertexBuffer(BufferType type, uint32_t vertexSize, uint32_t numVerts, void *data) override;
+    virtual VertexBuffer *              CreateVertexBuffer(BufferUsage usage, uint32_t vertexSize, uint32_t numVerts, void *data) override;
     virtual void                        DestroyVertexBuffer(VertexBuffer *vertexBuffer, bool immediate = false) override;
 
-    virtual IndexBuffer *               CreateIndexBuffer(BufferType type, uint32_t indexSize, uint32_t numIndexes, void *data) override;
+    virtual IndexBuffer *               CreateIndexBuffer(BufferUsage usage, uint32_t indexSize, uint32_t numIndexes, void *data) override;
     virtual void                        DestroyIndexBuffer(IndexBuffer *indexBuffer, bool immediate = false) override;
 
-    virtual ConstantBuffer *            CreateConstantBuffer(BufferType type, uint32_t size, void *data) override;
+    virtual ConstantBuffer *            CreateConstantBuffer(BufferUsage usage, uint32_t size, void *data) override;
     virtual void                        DestroyConstantBuffer(ConstantBuffer *constantBuffer, bool immediate = false) override;
 
-    virtual StorageBuffer *             CreateStorageBuffer(BufferType type, Image::Format::Enum format, uint32_t structuredByteStride, uint32_t count, void *data) override;
-    virtual void                        DestroyStorageBuffer(StorageBuffer *storageBuffer, bool immediate = false) override;
-
-    virtual Texture *                   CreateTexture(TextureType textureType, const Image *image) override;
-    virtual Texture *                   CreateTexture(TextureType textureType, const Image *image, Image::Format::Enum dstFormat, bool useMipmaps) override;
-    virtual Texture *                   CreateTextureFromFile(TextureType textureType, const char *filename, bool useCompression = true, bool useNormalMap = false) override;
+    virtual Texture *                   CreateTexture(TextureType textureType, int flags, const Image *image) override;
+    virtual Texture *                   CreateTexture(TextureType textureType, int flags, const Image *image, Image::Format::Enum dstFormat, bool useMipmaps) override;
+    virtual Texture *                   CreateTextureFromFile(TextureType textureType, int flags, const char *filename, bool useCompression = true, bool useNormalMap = false) override;
     virtual void                        DestroyTexture(Texture *texture, bool immediate = false) override;
     virtual void                        GetTextureImage2D(Texture *texture, int level, Image::Format::Enum imageFormat, void *outPixels) override;
     virtual bool                        SetTextureSubImage2D(Texture *texture, int level, int x, int y, int width, int height, Image::Format::Enum imageFormat, const void *pixels) override;
     virtual bool                        SetTextureSubImage3D(Texture *texture, int level, int x, int y, int z, int width, int height, int depth, Image::Format::Enum imageFormat, const void *pixels) override;
+
+    virtual void                        CreateSubresource(Buffer *buffer, SubresourceType type, uint64_t offset = 0, uint64_t size = ~0) override;
+    virtual void                        CreateSubresource(Texture *texture, SubresourceType type, uint32_t firstSlice = 0, uint32_t sliceCount = ~0, uint32_t firstMip = 0, uint32_t mipCount = ~0) override;
 
     virtual Shader *                    CreateShader(ShaderModel shaderModel, ShaderStage shaderStage, const char *sourceName, const char *shaderText, int shaderTextSize, const char *entryPoint) override;
     virtual Shader *                    CreateShaderFromFile(ShaderModel shaderModel, ShaderStage shaderStage, const char *filename, const char *entryPoint) override;
@@ -111,10 +111,9 @@ public:
     virtual void                        SetIndexBuffer(CommandList *commandList, const IndexBuffer *indexBuffer) override;
     virtual void                        SetConstantBuffer(CommandList *commandList, int slot, const ConstantBuffer *constantBuffer) override;
     virtual void                        SetConstants(CommandList *commandList, const void *data, uint32_t size, uint32_t offset) override;
-    virtual void                        SetTexture(CommandList *commandList, int slot, const Texture *texture) override;
-    virtual void                        SetSubResource(CommandList *commandList, int slot, GPUSubResource *subResource) override;
+    virtual void                        SetTexture(CommandList *commandList, int slot, bool shaderWritable, const Texture *texture) override;
+    virtual void                        SetBuffer(CommandList *commandList, int slot, bool shaderWritable, const Buffer *buffer) override;
     virtual void                        SetSampler(CommandList *commandList, int slot, Sampler *sampler) override;
-    virtual void                        SetStorageBuffer(CommandList *commandList, int slot, const StorageBuffer *storageBuffer);
     virtual void                        SetPSO(CommandList *commandList, const PipelineState *pipelineState) override;
     virtual void                        SetBlendFactor(CommandList *commandList, const Color4 &rgba) override;
     virtual void                        SetStencilRef(CommandList *commandList, uint32_t value) override;
@@ -182,8 +181,8 @@ public:
 #endif
 
     static bool                         ImageFormatToDXGIFormat(Image::Format::Enum imageFormat, bool isSRGB, DXGI_FORMAT *dxgiFormat);
-    static bool                         DXGIFormatToImageFormat(DXGI_FORMAT dxgiFormat, Image::Format::Enum *imageFormat, bool *isSRGB);
     static bool                         IsSupportedImageFormat(Image::Format::Enum imageFormat) { return ImageFormatToDXGIFormat(imageFormat, false, nullptr); }
+    static bool                         DXGIFormatToImageFormat(DXGI_FORMAT dxgiFormat, Image::Format::Enum *imageFormat, bool *isSRGB);
     static Image::Format::Enum          ToUncompressedImageFormat(Image::Format::Enum imageFormat);
     static Image::Format::Enum          ToCompressedImageFormat(Image::Format::Enum inFormat, bool useNormalMap);
 

@@ -63,18 +63,18 @@ public:
         void                                Init(const D3D12_ROOT_SIGNATURE_DESC1 &desc);
 
         struct DescriptorTableBinder {
-            uint8_t                         cbv[64];
-            uint8_t                         srv[64];
-            uint8_t                         uav[64];
-            uint8_t                         samplers[64];
+            uint8_t                         cbv[64] = {};
+            uint8_t                         srv[64] = {};
+            uint8_t                         uav[64] = {};
+            uint8_t                         samplers[64] = {};
         };
 
         struct RootParameterBinder {
-            uint8_t                         cbv[16];
-            uint8_t                         srv[16];
-            uint8_t                         uav[16];
-            uint8_t                         samplers[16];
-            uint8_t                         constants;
+            uint8_t                         cbv[16] = {};
+            uint8_t                         srv[16] = {};
+            uint8_t                         uav[16] = {};
+            uint8_t                         samplers[16] = {};
+            uint8_t                         constants = {};
         };
 
         DescriptorTableBinder               descriptorTableBinder;

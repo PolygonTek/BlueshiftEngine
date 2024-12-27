@@ -36,4 +36,9 @@ public:
 #else
     ID3D12Resource *                bufferResource = nullptr;
 #endif
+    Image::Format::Enum             format = Image::Format::Unknown;
+    uint64_t                        size = 0;
+    uint32_t                        stride = 0;
+    D3D12_CPU_DESCRIPTOR_HANDLE     srvDescriptorHandle = {};
+    D3D12_CPU_DESCRIPTOR_HANDLE     uavDescriptorHandle = {};
 };
