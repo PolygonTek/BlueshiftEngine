@@ -66,3 +66,38 @@ void RHIRenderer::SetupStates() {
     bs->renderTargets[0].destFactorAlpha = Blend::Zero;
     bs->renderTargets[0].blendOpAlpha = BlendOp::Add;
 }
+
+RHIRenderer::GPUBarrier RHIRenderer::MakeMemoryBarrier(const GPUResource *resource) {
+    GPUBarrier barrier;
+    barrier.type = GPUBarrier::Type::Memory;
+    barrier.memoryBarrier.resource = resource;
+    return barrier;
+}
+
+RHIRenderer::GPUBarrier RHIRenderer::MakeBufferBarrier(const RHIRenderer::Buffer *buffer, GPUResourceState::Enum stateBefore, GPUResourceState::Enum stateAfter) {
+    GPUBarrier barrier;
+    barrier.type = GPUBarrier::Type::Buffer;
+    barrier.bufferBarrier.buffer = buffer;
+    barrier.bufferBarrier.stateBefore = stateBefore;
+    barrier.bufferBarrier.stateAfter = stateAfter;
+    return barrier;
+}
+
+RHIRenderer::GPUBarrier RHIRenderer::MakeImageBarrier(const Texture *texture, GPUResourceState::Enum stateBefore, GPUResourceState::Enum stateAfter, int slice, int mipLevel) {
+    GPUBarrier barrier;
+    barrier.type = GPUBarrier::Type::Image;
+    barrier.imageBarrier.texture = texture;
+    barrier.imageBarrier.stateBefore = stateBefore;
+    barrier.imageBarrier.stateAfter = stateAfter;
+    barrier.imageBarrier.slice = slice;
+    barrier.imageBarrier.mipLevel = mipLevel;
+    return barrier;
+}
+
+RHIRenderer::GPUBarrier RHIRenderer::MakeAliasingBarrier(const GPUResource *resourceBefore, const GPUResource *resourceAfter) {
+    GPUBarrier barrier;
+    barrier.type = GPUBarrier::Type::Aliasing;
+    barrier.aliasingBarrier.resourceBefore = resourceBefore;
+    barrier.aliasingBarrier.resourceAfter = resourceAfter;
+    return barrier;
+}

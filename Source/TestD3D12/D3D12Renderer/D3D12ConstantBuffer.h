@@ -30,6 +30,8 @@ public:
 
     void                            Release();
 
+    virtual void *                  GetNativeResource() const { return GetResource(); }
+
     ID3D12Resource *                GetResource() const;
 
 private:

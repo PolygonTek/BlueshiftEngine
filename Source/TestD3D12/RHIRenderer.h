@@ -222,9 +222,9 @@ public:
         ShaderFormat                shaderFormat;
         ShaderModel                 shaderModel;
         ShaderStage                 shaderStage;
+        uint32_t                    shaderTextSize;
         const char *                sourceName;
         const char *                shaderText;
-        int                         shaderTextSize;
         const char *                entryPoint;
     };
 
@@ -347,34 +347,39 @@ public:
         uint32_t                    queryCount = 0;
     };
 
-    class GPUResource {
+    class GPUObject {
     public:
-        virtual ~GPUResource() = default;
+        virtual ~GPUObject() = default;
+    };
+
+    class GPUResource : public GPUObject {
+    public:
+        virtual void *              GetNativeResource() const = 0;
     };
 
     class Buffer : public GPUResource {
     public:
+        void *                      writePtr = nullptr;
         BufferUsage                 bufferUsage;
         int32_t                     flags = 0;
-        void *                      writePtr = nullptr;
     };
 
     class VertexBuffer : public GPUResource {
     public:
-        BufferUsage                 bufferUsage;
         void *                      writePtr = nullptr;
+        BufferUsage                 bufferUsage;
     };
 
     class IndexBuffer : public GPUResource {
     public:
-        BufferUsage                 bufferUsage;
         void *                      writePtr = nullptr;
+        BufferUsage                 bufferUsage;
     };
 
     class ConstantBuffer : public GPUResource {
     public:
-        BufferUsage                 bufferUsage;
         void *                      writePtr = nullptr;
+        BufferUsage                 bufferUsage;
     };
 
     class Texture : public GPUResource {
@@ -382,25 +387,87 @@ public:
         TextureType                 textureType;
     };
 
-    class Shader : public GPUResource {
+    class Shader : public GPUObject {
     public:
         ShaderStage                 shaderStage = ShaderStage::Count;
     };
 
-    class Sampler : public GPUResource {
+    class Sampler : public GPUObject {
     public:
         SamplerDesc                 desc = {};
     };
 
-    class PipelineState : public GPUResource {
+    class PipelineState : public GPUObject {
     public:
         uint64_t                    hash = 0;
         bool                        graphics;
     };
 
-    class QueryHeap : public GPUResource {
+    class QueryHeap : public GPUObject {
     public:
         QueryHeapDesc               desc = {};
+    };
+
+    struct GPUResourceState {
+        enum Enum {
+            Undefined               = 0,
+            ShaderResource          = BIT(0),
+            ShaderResourceCompute   = BIT(1),
+            UnorderedAccess         = BIT(2),
+            CopySrc                 = BIT(3),
+            CopyDst                 = BIT(4),
+            RenderTarget            = BIT(5),
+            DepthWrite              = BIT(6),
+            DepthRead               = BIT(7),
+            ShadingRateSource       = BIT(8),
+            VertexBuffer            = BIT(9),
+            IndexBuffer             = BIT(10),
+            ConstantBuffer          = BIT(11),
+            IndirectArgument        = BIT(12),
+            RTAccelerationStructure = BIT(13),
+            Prediction              = BIT(14)
+        };
+    };
+
+    class GPUBarrier {
+    public:
+        enum class Type : uint8_t {
+            Memory,     // UAV 메모리 배리어
+            Buffer,     // 버퍼의 상태 전이 배리어
+            Image,      // 텍스쳐의 상태 전이 배리어
+            Aliasing
+        };
+
+        struct MemoryBarrier {
+            const GPUResource *     resource;
+        };
+
+        struct BufferBarrier {
+            const Buffer *          buffer;
+            GPUResourceState::Enum  stateBefore;
+            GPUResourceState::Enum  stateAfter;
+        };
+
+        struct ImageBarrier {
+            const Texture *         texture;
+            GPUResourceState::Enum  stateBefore;
+            GPUResourceState::Enum  stateAfter;
+            int                     slice;
+            int                     mipLevel;
+        };
+
+        struct AliasingBarrier {
+            const GPUResource *     resourceBefore;
+            const GPUResource *     resourceAfter;
+        };
+
+        Type                        type;
+        union {
+            MemoryBarrier           memoryBarrier;
+            BufferBarrier           bufferBarrier;
+            ImageBarrier            imageBarrier;
+            AliasingBarrier         aliasingBarrier;
+        };
     };
 
     struct RenderPass {
@@ -445,11 +512,11 @@ public:
         const Shader *              hs = nullptr;
         const Shader *              gs = nullptr;
         const InputLayout *         inputLayout;
-        PrimitiveTopology           primitiveTopology = PrimitiveTopology::TriangleList;
         const RasterizerState *     rasterizerState = nullptr;
         const DepthStencilState *   depthStencilState = nullptr;
         const BlendState *          blendState = nullptr;
         const RenderPass *          renderPass;
+        PrimitiveTopology           primitiveTopology = PrimitiveTopology::TriangleList;
         uint32_t                    sampleMask = 0xffffffff;
         uint32_t                    sampleCount = 1;
         uint32_t                    sampleQuality = 0;
@@ -570,11 +637,18 @@ public:
     virtual void                    DispatchMesh(CommandList *commandList, uint32_t threadGroupCountX, uint32_t threadGroupCountY, uint32_t threadGroupCountZ) = 0;
     virtual void                    CopyBuffer(CommandList *commandList, const Buffer *dstBuffer, uint32_t dstOffset, const Buffer *srcBuffer, uint32_t srcOffset, uint32_t size) = 0;
     virtual void                    CopyTexture(CommandList *commandList, const Texture *dstTexture, uint32_t dstSlice, uint32_t dstMipLevel, uint32_t dstX, uint32_t dstY, uint32_t dstZ, const Texture *srcTexture, uint32_t srcSlice, uint32_t srcMipLevel, uint32_t srcX, uint32_t srcY, uint32_t srcZ, uint32_t width, uint32_t height, uint32_t depth) = 0;
+    virtual void                    Barrier(CommandList *commandList, const GPUBarrier *barriers, uint32_t barrierCount) = 0;
+    virtual void                    Barrier(CommandList *commandList, const GPUBarrier &barrier) = 0;
 
     virtual void                    Draw(CommandList *commandList, uint32_t vertexCount, uint32_t startVertexLocation) = 0;
     virtual void                    DrawIndexed(CommandList *commandList, uint32_t indexCount, uint32_t startIndexLocation, uint32_t baseVertexLocation) = 0;
     virtual void                    DrawInstanced(CommandList *commandList, uint32_t vertexCount, uint32_t instanceCount, uint32_t startVertexLocation, uint32_t startInstanceLocation) = 0;
     virtual void                    DrawIndexedInstanced(CommandList *commandList, uint32_t indexCount, uint32_t instanceCount, uint32_t startIndexLocation, uint32_t baseVertexLocation, uint32_t startInstanceLocation) = 0;
+
+    static GPUBarrier               MakeMemoryBarrier(const GPUResource *resource);
+    static GPUBarrier               MakeBufferBarrier(const Buffer *buffer, GPUResourceState::Enum stateBefore, GPUResourceState::Enum stateAfter);
+    static GPUBarrier               MakeImageBarrier(const Texture *texture, GPUResourceState::Enum stateBefore, GPUResourceState::Enum stateAfter, int slice = -1, int mipLevel = -1);
+    static GPUBarrier               MakeAliasingBarrier(const GPUResource *resourceBefore, const GPUResource *resourceAfter);
 
 protected:
     void                            SetupStates();

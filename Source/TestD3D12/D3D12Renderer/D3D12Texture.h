@@ -31,6 +31,8 @@ public:
 
     void                            Release();
 
+    virtual void *                  GetNativeResource() const { return GetResource(); }
+
     ID3D12Resource *                GetResource() const;
 
     static void                     AdjustTextureFormat(bool useCompression, bool useNormalMap, Image::Format::Enum inFormat, Image::Format::Enum *outFormat);

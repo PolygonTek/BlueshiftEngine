@@ -572,7 +572,14 @@ void D3D12Renderer::BeginFrame() {
     commandList->Reset();
 
     // 백버퍼를 렌더 타겟 상태로 전환
-    commandList->ResourceBarrier(renderTargetBuffers[currentBackBufferIndex], D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET);
+    D3D12_RESOURCE_BARRIER barrier;
+    barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
+    barrier.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
+    barrier.Transition.pResource = renderTargetBuffers[currentBackBufferIndex];
+    barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_PRESENT;
+    barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_RENDER_TARGET;
+    barrier.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
+    commandList->GetGraphicsCommandList()->ResourceBarrier(1, &barrier);
 
     // 뷰포트 & ScissorRect 설정
     SetViewport(commandList, viewportRect);
@@ -602,7 +609,14 @@ void D3D12Renderer::EndFrame() {
     commandList->Reset(false);
 
     // 백버퍼 RTV 를 Present 할 수 있는 상태로 전환
-    commandList->ResourceBarrier(renderTargetBuffers[currentBackBufferIndex], D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT);
+    D3D12_RESOURCE_BARRIER barrier;
+    barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
+    barrier.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
+    barrier.Transition.pResource = renderTargetBuffers[currentBackBufferIndex];
+    barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_RENDER_TARGET;
+    barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_PRESENT;
+    barrier.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
+    commandList->GetGraphicsCommandList()->ResourceBarrier(1, &barrier);
 
     // CommandList 기록을 마치고 CommandQueue 로 실행
     commandList->CloseAndExecute(CommandQueueType::Graphics);
@@ -683,10 +697,10 @@ void D3D12Renderer::WaitAllFrameFences() {
     }
 }
 
-void D3D12Renderer::MarkForDelete(GPUResource *resource) {
+void D3D12Renderer::MarkForDelete(GPUObject *object) {
     D3D12PendingResource *newPendingResource = &pendingResourceBuffer[headPendingIndex];
     newPendingResource->fenceValue = SignalFence();
-    newPendingResource->resourceToDelete = resource;
+    newPendingResource->objectToDelete = object;
 
     OnPendingResourceAdded();
 }
@@ -709,7 +723,7 @@ void D3D12Renderer::OnPendingResourceAdded() {
         WaitFence(oldestPendingResource->fenceValue);
 
         SAFE_RELEASE(oldestPendingResource->resourceToRelease);
-        SAFE_DELETE(oldestPendingResource->resourceToDelete)
+        SAFE_DELETE(oldestPendingResource->objectToDelete)
 
         oldestPendingResource->fenceValue = 0;
 
@@ -731,7 +745,7 @@ void D3D12Renderer::FreePendingResources(bool waitPendings) {
         }
 
         SAFE_RELEASE(pendingResource->resourceToRelease);
-        SAFE_DELETE(pendingResource->resourceToDelete)
+        SAFE_DELETE(pendingResource->objectToDelete)
 
         tailPendingIndex = (tailPendingIndex + 1) % maxPendingResources;
     }
@@ -922,6 +936,103 @@ void D3D12Renderer::CopyTexture(CommandList *commandList, const Texture *dstText
     D3D12CommandList *d3d12CommandList = static_cast<D3D12CommandList *>(commandList);
     D3D12_BOX srcBox = { srcX, srcY, srcZ, (UINT)width, (UINT)height, (UINT)depth };
     d3d12CommandList->GetGraphicsCommandList()->CopyTextureRegion(&dstLocation, dstX, dstY, dstZ, &srcLocation, &srcBox);
+}
+
+static constexpr D3D12_RESOURCE_STATES ToD3D12ResourceState(RHIRenderer::GPUResourceState::Enum resourceState) {
+    D3D12_RESOURCE_STATES ret = D3D12_RESOURCE_STATE_COMMON;
+    if (resourceState & RHIRenderer::GPUResourceState::ShaderResource) {
+        ret |= D3D12_RESOURCE_STATE_ALL_SHADER_RESOURCE;
+    }
+    if (resourceState & RHIRenderer::GPUResourceState::ShaderResourceCompute) {
+        ret |= D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE;
+    }
+    if (resourceState & RHIRenderer::GPUResourceState::UnorderedAccess) {
+        ret |= D3D12_RESOURCE_STATE_UNORDERED_ACCESS;
+    }
+    if (resourceState & RHIRenderer::GPUResourceState::CopyDst) {
+        ret |= D3D12_RESOURCE_STATE_COPY_DEST;
+    }
+    if (resourceState & RHIRenderer::GPUResourceState::CopySrc) {
+        ret |= D3D12_RESOURCE_STATE_COPY_SOURCE;
+    }
+    if (resourceState & RHIRenderer::GPUResourceState::RenderTarget) {
+        ret |= D3D12_RESOURCE_STATE_RENDER_TARGET;
+    }
+    if (resourceState & RHIRenderer::GPUResourceState::DepthWrite) {
+        ret |= D3D12_RESOURCE_STATE_DEPTH_WRITE;
+    }
+    if (resourceState & RHIRenderer::GPUResourceState::DepthRead) {
+        ret |= D3D12_RESOURCE_STATE_DEPTH_READ;
+    }
+    if (resourceState & RHIRenderer::GPUResourceState::ShadingRateSource) {
+        ret |= D3D12_RESOURCE_STATE_SHADING_RATE_SOURCE;
+    }
+    if (resourceState & (RHIRenderer::GPUResourceState::VertexBuffer | RHIRenderer::GPUResourceState::ConstantBuffer)) {
+        ret |= D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER;
+    }
+    if (resourceState & RHIRenderer::GPUResourceState::IndexBuffer) {
+        ret |= D3D12_RESOURCE_STATE_INDEX_BUFFER;
+    }
+    if (resourceState & RHIRenderer::GPUResourceState::IndirectArgument) {
+        ret |= D3D12_RESOURCE_STATE_INDIRECT_ARGUMENT;
+    }
+    if (resourceState & RHIRenderer::GPUResourceState::RTAccelerationStructure) {
+        ret |= D3D12_RESOURCE_STATE_RAYTRACING_ACCELERATION_STRUCTURE;
+    }
+    if (resourceState & RHIRenderer::GPUResourceState::Prediction) {
+        ret |= D3D12_RESOURCE_STATE_PREDICATION;
+    }
+    return ret;
+}
+
+void D3D12Renderer::Barrier(CommandList *commandList, const GPUBarrier *barriers, uint32_t barrierCount) {
+    Array<D3D12_RESOURCE_BARRIER> barrierDescs;
+    barrierDescs.Reserve(barrierCount);
+
+    for (uint32_t barrierIndex = 0; barrierIndex < barrierCount; ++barrierIndex) {
+        const GPUBarrier *barrier = &barriers[barrierIndex];
+        D3D12_RESOURCE_BARRIER &barrierDesc = barrierDescs.Alloc();
+
+        switch (barrier->type) {
+        case GPUBarrier::Type::Memory:
+            barrierDesc.Type = D3D12_RESOURCE_BARRIER_TYPE_UAV;
+            barrierDesc.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
+            // UAV.pResource == nullptr 일 때는 특정 UAV 가 아닌 모든 UAV 에 대한 메모리 배리어가 된다.
+            barrierDesc.UAV.pResource = !barrier->memoryBarrier.resource ? nullptr : reinterpret_cast<ID3D12Resource *>(barrier->memoryBarrier.resource->GetNativeResource());
+            break;
+        case GPUBarrier::Type::Buffer:
+            barrierDesc.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
+            barrierDesc.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
+            barrierDesc.Transition.pResource = static_cast<const D3D12Buffer *>(barrier->bufferBarrier.buffer)->GetResource();
+            barrierDesc.Transition.StateBefore = ToD3D12ResourceState(barrier->bufferBarrier.stateBefore);
+            barrierDesc.Transition.StateAfter = ToD3D12ResourceState(barrier->bufferBarrier.stateAfter);
+            barrierDesc.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
+            break;
+        case GPUBarrier::Type::Image:
+            barrierDesc.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
+            barrierDesc.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
+            barrierDesc.Transition.pResource = static_cast<const D3D12Texture *>(barrier->imageBarrier.texture)->GetResource();
+            barrierDesc.Transition.StateBefore = ToD3D12ResourceState(barrier->imageBarrier.stateBefore);
+            barrierDesc.Transition.StateAfter = ToD3D12ResourceState(barrier->imageBarrier.stateAfter);
+
+            if (barrier->imageBarrier.slice >= 0 || barrier->imageBarrier.mipLevel >= 0) {
+                const D3D12Texture *d3d12Texture = static_cast<const D3D12Texture *>(barrier->imageBarrier.texture);
+                barrierDesc.Transition.Subresource = D3D12CalcSubresource(barrier->imageBarrier.mipLevel, barrier->imageBarrier.slice, 0, d3d12Texture->textureDesc.MipLevels, d3d12Texture->textureDesc.DepthOrArraySize);
+            } else {
+                barrierDesc.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
+            }
+            break;
+        case GPUBarrier::Type::Aliasing:
+            barrierDesc.Type = D3D12_RESOURCE_BARRIER_TYPE_ALIASING;
+            barrierDesc.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
+            barrierDesc.Aliasing.pResourceBefore = reinterpret_cast<ID3D12Resource *>(barrier->aliasingBarrier.resourceBefore->GetNativeResource());
+            barrierDesc.Aliasing.pResourceAfter = reinterpret_cast<ID3D12Resource *>(barrier->aliasingBarrier.resourceAfter->GetNativeResource());
+            break;
+        }
+    }
+
+    D3D12CommandList *d3d12CommandList = static_cast<D3D12CommandList *>(commandList);
+    d3d12CommandList->GetGraphicsCommandList()->ResourceBarrier(barrierCount, barrierDescs.Ptr());
 }
 
 void D3D12Renderer::Draw(CommandList *commandList, uint32_t vertexCount, uint32_t startVertexLocation) {

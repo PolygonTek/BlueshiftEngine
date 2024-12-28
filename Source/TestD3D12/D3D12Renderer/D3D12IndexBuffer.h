@@ -32,6 +32,8 @@ public:
 
     void                            Release();
 
+    virtual void *                  GetNativeResource() const { return buffer->GetResource(); }
+
 private:
     D3D12Buffer *                   buffer = nullptr;
     D3D12_INDEX_BUFFER_VIEW         ibv = {};

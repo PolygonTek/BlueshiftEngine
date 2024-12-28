@@ -71,8 +71,8 @@ public:
 
         struct RootParameterBinder {
             uint8_t                         cbv[16] = {};
-            uint8_t                         srv[16] = {};
-            uint8_t                         uav[16] = {};
+            uint8_t                         srv[128] = {};
+            uint8_t                         uav[8] = {};
             uint8_t                         samplers[16] = {};
             uint8_t                         constants = {};
         };

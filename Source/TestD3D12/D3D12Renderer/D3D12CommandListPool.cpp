@@ -17,13 +17,13 @@
 #include "D3D12CommandListPool.h"
 #include "D3D12CommandList.h"
 
-void D3D12CommandListPool::Init(ID3D12Device *device, int threadIndex, D3D12_COMMAND_LIST_TYPE commandListType, int maxCommandLists) {
+void D3D12CommandListPool::Init(ID3D12Device *device, int threadIndex, D3D12_COMMAND_LIST_TYPE commandListType, uint32_t maxCommandLists) {
     HRESULT hr;
 
-    this->maxCommandLists = maxCommandLists;
     this->commandListPool = new D3D12CommandList[maxCommandLists];
-    this->threadIndex = threadIndex;
     this->commandListType = commandListType;
+    this->maxCommandLists = maxCommandLists;
+    this->threadIndex = threadIndex;
 
     for (int i = 0; i < maxCommandLists; ++i) {
         D3D12CommandList* commandList = &commandListPool[i];
