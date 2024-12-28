@@ -31,7 +31,7 @@ extern "C" { __declspec(dllexport) extern const char *D3D12SDKPath = u8"."; }
 D3D12Renderer *     renderer;
 
 void D3D12Renderer::Init(HWND hwnd) {
-#if defined(_DEBUG) || defined(_DEVELOPMENT)
+#if defined(USE_DEBUG_LAYER) && (defined(_DEBUG) || defined(_DEVELOPMENT))
     bool enableDebugLayer = true;
     bool withGpuValidation = true;
 #else

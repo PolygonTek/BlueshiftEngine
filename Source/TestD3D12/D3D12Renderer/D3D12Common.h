@@ -14,6 +14,9 @@
 
 #pragma once
 
+// 디버그 레이어 사용 여부 (Release 모드에서는 사용 안함)
+#define USE_DEBUG_LAYER
+
 // PIX 마커 사용 여부 (Release 모드에서는 사용할 수 없음)
 #define USE_PIX_MARKERS
 
