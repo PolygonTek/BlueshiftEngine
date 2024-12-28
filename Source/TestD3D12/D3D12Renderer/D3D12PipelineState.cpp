@@ -50,16 +50,16 @@ static constexpr D3D12_CULL_MODE ToD3D12CullMode(RHIRenderer::CullMode cullMode)
 
 static constexpr UINT8 ToD3D12ColorWriteMask(RHIRenderer::ColorWriteMask colorWriteMask) {
     UINT8 mask = 0;
-    if (static_cast<uint32_t>(colorWriteMask) & static_cast<uint32_t>(RHIRenderer::ColorWriteMask::Red)) {
+    if (HasFlag(colorWriteMask, RHIRenderer::ColorWriteMask::Red)) {
         mask |= D3D12_COLOR_WRITE_ENABLE_RED;
     }
-    if (static_cast<uint32_t>(colorWriteMask) & static_cast<uint32_t>(RHIRenderer::ColorWriteMask::Green)) {
+    if (HasFlag(colorWriteMask, RHIRenderer::ColorWriteMask::Green)) {
         mask |= D3D12_COLOR_WRITE_ENABLE_GREEN;
     }
-    if (static_cast<uint32_t>(colorWriteMask) & static_cast<uint32_t>(RHIRenderer::ColorWriteMask::Blue)) {
+    if (HasFlag(colorWriteMask, RHIRenderer::ColorWriteMask::Blue)) {
         mask |= D3D12_COLOR_WRITE_ENABLE_BLUE;
     }
-    if (static_cast<uint32_t>(colorWriteMask) & static_cast<uint32_t>(RHIRenderer::ColorWriteMask::Alpha)) {
+    if (HasFlag(colorWriteMask, RHIRenderer::ColorWriteMask::Alpha)) {
         mask |= D3D12_COLOR_WRITE_ENABLE_ALPHA;
     }
     return mask;
@@ -925,9 +925,9 @@ void D3D12Renderer::BindRootParameters(D3D12CommandList *commandList, bool graph
         } else if (rootParameter->ParameterType == D3D12_ROOT_PARAMETER_TYPE_CBV) {
             // 루트 레벨 CBV 설정
             UINT shaderRegister = rootParameter->Descriptor.ShaderRegister;
-            const D3D12ConstantBuffer *constantBuffer = static_cast<const D3D12ConstantBuffer *>(threadData.cbvResources[shaderRegister]);
-            if (constantBuffer) {
-                D3D12_GPU_VIRTUAL_ADDRESS gpuAddress = constantBuffer->GetResource()->GetGPUVirtualAddress();
+            const RHIRenderer::GPUResource *cbvResource = threadData.cbvResources[shaderRegister];
+            if (cbvResource) {
+                D3D12_GPU_VIRTUAL_ADDRESS gpuAddress = reinterpret_cast<ID3D12Resource *>(cbvResource->GetNativeResource())->GetGPUVirtualAddress();
                 if (graphics) {
                     commandList->GetGraphicsCommandList()->SetGraphicsRootConstantBufferView(rootParameterIndex, gpuAddress);
                 } else {
@@ -937,9 +937,9 @@ void D3D12Renderer::BindRootParameters(D3D12CommandList *commandList, bool graph
         } else if (rootParameter->ParameterType == D3D12_ROOT_PARAMETER_TYPE_SRV) {
             // 루트 레벨 SRV 설정
             UINT shaderRegister = rootParameter->Descriptor.ShaderRegister;
-            const D3D12Texture *texture = static_cast<const D3D12Texture *>(threadData.srvResources[shaderRegister]);
-            if (texture) {
-                D3D12_GPU_VIRTUAL_ADDRESS gpuAddress = texture->GetResource()->GetGPUVirtualAddress();
+            const RHIRenderer::GPUResource *srvResource = threadData.srvResources[shaderRegister];
+            if (srvResource) {
+                D3D12_GPU_VIRTUAL_ADDRESS gpuAddress = reinterpret_cast<ID3D12Resource *>(srvResource->GetNativeResource())->GetGPUVirtualAddress();
                 if (graphics) {
                     commandList->GetGraphicsCommandList()->SetGraphicsRootShaderResourceView(rootParameterIndex, gpuAddress);
                 } else {
@@ -949,9 +949,9 @@ void D3D12Renderer::BindRootParameters(D3D12CommandList *commandList, bool graph
         } else if (rootParameter->ParameterType == D3D12_ROOT_PARAMETER_TYPE_UAV) {
             // 루트 레벨 UAV 설정
             UINT shaderRegister = rootParameter->Descriptor.ShaderRegister;
-            const D3D12Buffer *buffer = static_cast<const D3D12Buffer *>(threadData.uavResources[shaderRegister]);
-            if (buffer) {
-                D3D12_GPU_VIRTUAL_ADDRESS gpuAddress = buffer->GetResource()->GetGPUVirtualAddress();
+            const RHIRenderer::GPUResource *uavResource = threadData.uavResources[shaderRegister];
+            if (uavResource) {
+                D3D12_GPU_VIRTUAL_ADDRESS gpuAddress = reinterpret_cast<ID3D12Resource *>(uavResource->GetNativeResource())->GetGPUVirtualAddress();
                 if (graphics) {
                     commandList->GetGraphicsCommandList()->SetGraphicsRootUnorderedAccessView(rootParameterIndex, gpuAddress);
                 } else {

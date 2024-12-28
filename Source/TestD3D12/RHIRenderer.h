@@ -34,7 +34,7 @@ public:
         All
     };
 
-    enum class ColorWriteMask {
+    enum class ColorWriteMask : uint8_t {
         Red                         = BIT(0),
         Green                       = BIT(1),
         Blue                        = BIT(2),
@@ -129,19 +129,17 @@ public:
         Readback
     };
 
-    struct ResourceFlag {
-        enum Enum {
-            None                    = 0,
-            ConstantBuffer          = BIT(0),
-            VertexBuffer            = BIT(1),
-            IndexBuffer             = BIT(2),
-            ShaderResource          = BIT(3),
-            RenderTarget            = BIT(4),
-            DepthStencil            = BIT(5),
-            UnorderedAccess         = BIT(6),
-            Typeless                = BIT(7),
-            SkipDefaultViews        = BIT(8)
-        };
+    enum class ResourceFlag : uint32_t {
+        None                        = 0,
+        ConstantBuffer              = BIT(0),
+        VertexBuffer                = BIT(1),
+        IndexBuffer                 = BIT(2),
+        ShaderResource              = BIT(3),
+        RenderTarget                = BIT(4),
+        DepthStencil                = BIT(5),
+        UnorderedAccess             = BIT(6),
+        Typeless                    = BIT(7),
+        SkipDefaultViews            = BIT(8)
     };
 
     enum class BufferType : uint8_t {
@@ -361,7 +359,7 @@ public:
     public:
         void *                      writePtr = nullptr;
         BufferUsage                 bufferUsage;
-        int32_t                     flags = 0;
+        ResourceFlag                flags = ResourceFlag::None;
     };
 
     class VertexBuffer : public GPUResource {
@@ -408,25 +406,23 @@ public:
         QueryHeapDesc               desc = {};
     };
 
-    struct GPUResourceState {
-        enum Enum {
-            Undefined               = 0,
-            ShaderResource          = BIT(0),
-            ShaderResourceCompute   = BIT(1),
-            UnorderedAccess         = BIT(2),
-            CopySrc                 = BIT(3),
-            CopyDst                 = BIT(4),
-            RenderTarget            = BIT(5),
-            DepthWrite              = BIT(6),
-            DepthRead               = BIT(7),
-            ShadingRateSource       = BIT(8),
-            VertexBuffer            = BIT(9),
-            IndexBuffer             = BIT(10),
-            ConstantBuffer          = BIT(11),
-            IndirectArgument        = BIT(12),
-            RTAccelerationStructure = BIT(13),
-            Prediction              = BIT(14)
-        };
+    enum class GPUResourceState : uint32_t {
+        Undefined                   = 0,
+        ShaderResource              = BIT(0),
+        ShaderResourceCompute       = BIT(1),
+        UnorderedAccess             = BIT(2),
+        CopySrc                     = BIT(3),
+        CopyDst                     = BIT(4),
+        RenderTarget                = BIT(5),
+        DepthWrite                  = BIT(6),
+        DepthRead                   = BIT(7),
+        ShadingRateSource           = BIT(8),
+        VertexBuffer                = BIT(9),
+        IndexBuffer                 = BIT(10),
+        ConstantBuffer              = BIT(11),
+        IndirectArgument            = BIT(12),
+        RTAccelerationStructure     = BIT(13),
+        Prediction                  = BIT(14)
     };
 
     class GPUBarrier {
@@ -444,14 +440,14 @@ public:
 
         struct BufferBarrier {
             const Buffer *          buffer;
-            GPUResourceState::Enum  stateBefore;
-            GPUResourceState::Enum  stateAfter;
+            GPUResourceState        stateBefore;
+            GPUResourceState        stateAfter;
         };
 
         struct ImageBarrier {
             const Texture *         texture;
-            GPUResourceState::Enum  stateBefore;
-            GPUResourceState::Enum  stateAfter;
+            GPUResourceState        stateBefore;
+            GPUResourceState        stateAfter;
             int                     slice;
             int                     mipLevel;
         };
@@ -578,7 +574,7 @@ public:
     const DepthStencilState *       GetDepthStencilState(DepthStencilStateType::Enum type) const { return &depthStencilStates[type]; }
     const BlendState *              GetBlendState(BlendStateType::Enum type) const { return &blendStates[type]; }
 
-    virtual Buffer *                CreateBuffer(BufferUsage usage, int flags, uint64_t size, Image::Format::Enum format, uint32_t stride, const void *data) = 0;
+    virtual Buffer *                CreateBuffer(BufferUsage usage, ResourceFlag flags, uint64_t size, Image::Format::Enum format, uint32_t stride, const void *data) = 0;
     virtual void                    DestroyBuffer(Buffer *buffer, bool immediate = false) = 0;
 
     virtual VertexBuffer *          CreateVertexBuffer(BufferUsage usage, uint32_t vertexSize, uint32_t numVerts, void *data) = 0;
@@ -590,9 +586,9 @@ public:
     virtual ConstantBuffer *        CreateConstantBuffer(BufferUsage usage, uint32_t size, void *data) = 0;
     virtual void                    DestroyConstantBuffer(ConstantBuffer *constantBuffer, bool immediate = false) = 0;
 
-    virtual Texture *               CreateTexture(TextureType textureType, int flags, const Image *image) = 0;
-    virtual Texture *               CreateTexture(TextureType textureType, int flags, const Image *image, Image::Format::Enum dstFormat, bool useMipmaps) = 0;
-    virtual Texture *               CreateTextureFromFile(TextureType textureType, int flags, const char *filename, bool useCompression = true, bool useNormalMap = false) = 0;
+    virtual Texture *               CreateTexture(TextureType textureType, ResourceFlag flags, const Image *image) = 0;
+    virtual Texture *               CreateTexture(TextureType textureType, ResourceFlag flags, const Image *image, Image::Format::Enum dstFormat, bool useMipmaps) = 0;
+    virtual Texture *               CreateTextureFromFile(TextureType textureType, ResourceFlag flags, const char *filename, bool useCompression = true, bool useNormalMap = false) = 0;
     virtual void                    DestroyTexture(Texture *texture, bool immediate = false) = 0;
     virtual void                    GetTextureImage2D(Texture *texture, int level, Image::Format::Enum imageFormat, void *outPixels) = 0;
     virtual bool                    SetTextureSubImage2D(Texture *texture, int level, int x, int y, int width, int height, Image::Format::Enum imageFormat, const void *pixels) = 0;
@@ -646,8 +642,8 @@ public:
     virtual void                    DrawIndexedInstanced(CommandList *commandList, uint32_t indexCount, uint32_t instanceCount, uint32_t startIndexLocation, uint32_t baseVertexLocation, uint32_t startInstanceLocation) = 0;
 
     static GPUBarrier               MakeMemoryBarrier(const GPUResource *resource);
-    static GPUBarrier               MakeBufferBarrier(const Buffer *buffer, GPUResourceState::Enum stateBefore, GPUResourceState::Enum stateAfter);
-    static GPUBarrier               MakeImageBarrier(const Texture *texture, GPUResourceState::Enum stateBefore, GPUResourceState::Enum stateAfter, int slice = -1, int mipLevel = -1);
+    static GPUBarrier               MakeBufferBarrier(const Buffer *buffer, GPUResourceState stateBefore, GPUResourceState stateAfter);
+    static GPUBarrier               MakeImageBarrier(const Texture *texture, GPUResourceState stateBefore, GPUResourceState stateAfter, int slice = -1, int mipLevel = -1);
     static GPUBarrier               MakeAliasingBarrier(const GPUResource *resourceBefore, const GPUResource *resourceAfter);
 
 protected:
@@ -657,6 +653,21 @@ protected:
     DepthStencilState               depthStencilStates[DepthStencilStateType::Count];
     BlendState                      blendStates[BlendStateType::Count];
     bool                            initialized = false;
+};
+
+template<>
+struct enable_bitmask_operators<RHIRenderer::ColorWriteMask> {
+    static const bool enable = true;
+};
+
+template<>
+struct enable_bitmask_operators<RHIRenderer::ResourceFlag> {
+    static const bool enable = true;
+};
+
+template<>
+struct enable_bitmask_operators<RHIRenderer::GPUResourceState> {
+    static const bool enable = true;
 };
 
 namespace std {

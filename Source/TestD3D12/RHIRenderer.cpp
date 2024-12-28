@@ -74,7 +74,7 @@ RHIRenderer::GPUBarrier RHIRenderer::MakeMemoryBarrier(const GPUResource *resour
     return barrier;
 }
 
-RHIRenderer::GPUBarrier RHIRenderer::MakeBufferBarrier(const RHIRenderer::Buffer *buffer, GPUResourceState::Enum stateBefore, GPUResourceState::Enum stateAfter) {
+RHIRenderer::GPUBarrier RHIRenderer::MakeBufferBarrier(const RHIRenderer::Buffer *buffer, GPUResourceState stateBefore, GPUResourceState stateAfter) {
     GPUBarrier barrier;
     barrier.type = GPUBarrier::Type::Buffer;
     barrier.bufferBarrier.buffer = buffer;
@@ -83,7 +83,7 @@ RHIRenderer::GPUBarrier RHIRenderer::MakeBufferBarrier(const RHIRenderer::Buffer
     return barrier;
 }
 
-RHIRenderer::GPUBarrier RHIRenderer::MakeImageBarrier(const Texture *texture, GPUResourceState::Enum stateBefore, GPUResourceState::Enum stateAfter, int slice, int mipLevel) {
+RHIRenderer::GPUBarrier RHIRenderer::MakeImageBarrier(const Texture *texture, GPUResourceState stateBefore, GPUResourceState stateAfter, int slice, int mipLevel) {
     GPUBarrier barrier;
     barrier.type = GPUBarrier::Type::Image;
     barrier.imageBarrier.texture = texture;

@@ -70,7 +70,7 @@ public:
     void                                OnPendingResourceAdded();
     void                                FreePendingResources(bool waitPendings = false);
 
-    virtual Buffer *                    CreateBuffer(BufferUsage usage, int flags, uint64_t size, Image::Format::Enum format, uint32_t stride, const void *data) override;
+    virtual Buffer *                    CreateBuffer(BufferUsage usage, ResourceFlag flags, uint64_t size, Image::Format::Enum format, uint32_t stride, const void *data) override;
     virtual void                        DestroyBuffer(Buffer *buffer, bool immediate = false) override;
 
     virtual VertexBuffer *              CreateVertexBuffer(BufferUsage usage, uint32_t vertexSize, uint32_t numVerts, void *data) override;
@@ -82,9 +82,9 @@ public:
     virtual ConstantBuffer *            CreateConstantBuffer(BufferUsage usage, uint32_t size, void *data) override;
     virtual void                        DestroyConstantBuffer(ConstantBuffer *constantBuffer, bool immediate = false) override;
 
-    virtual Texture *                   CreateTexture(TextureType textureType, int flags, const Image *image) override;
-    virtual Texture *                   CreateTexture(TextureType textureType, int flags, const Image *image, Image::Format::Enum dstFormat, bool useMipmaps) override;
-    virtual Texture *                   CreateTextureFromFile(TextureType textureType, int flags, const char *filename, bool useCompression = true, bool useNormalMap = false) override;
+    virtual Texture *                   CreateTexture(TextureType textureType, ResourceFlag flags, const Image *image) override;
+    virtual Texture *                   CreateTexture(TextureType textureType, ResourceFlag flags, const Image *image, Image::Format::Enum dstFormat, bool useMipmaps) override;
+    virtual Texture *                   CreateTextureFromFile(TextureType textureType, ResourceFlag flags, const char *filename, bool useCompression = true, bool useNormalMap = false) override;
     virtual void                        DestroyTexture(Texture *texture, bool immediate = false) override;
     virtual void                        GetTextureImage2D(Texture *texture, int level, Image::Format::Enum imageFormat, void *outPixels) override;
     virtual bool                        SetTextureSubImage2D(Texture *texture, int level, int x, int y, int width, int height, Image::Format::Enum imageFormat, const void *pixels) override;

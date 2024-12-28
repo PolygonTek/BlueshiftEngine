@@ -938,48 +938,48 @@ void D3D12Renderer::CopyTexture(CommandList *commandList, const Texture *dstText
     d3d12CommandList->GetGraphicsCommandList()->CopyTextureRegion(&dstLocation, dstX, dstY, dstZ, &srcLocation, &srcBox);
 }
 
-static constexpr D3D12_RESOURCE_STATES ToD3D12ResourceState(RHIRenderer::GPUResourceState::Enum resourceState) {
+static constexpr D3D12_RESOURCE_STATES ToD3D12ResourceState(RHIRenderer::GPUResourceState resourceState) {
     D3D12_RESOURCE_STATES ret = D3D12_RESOURCE_STATE_COMMON;
-    if (resourceState & RHIRenderer::GPUResourceState::ShaderResource) {
+    if (HasFlag(resourceState, RHIRenderer::GPUResourceState::ShaderResource)) {
         ret |= D3D12_RESOURCE_STATE_ALL_SHADER_RESOURCE;
     }
-    if (resourceState & RHIRenderer::GPUResourceState::ShaderResourceCompute) {
+    if (HasFlag(resourceState, RHIRenderer::GPUResourceState::ShaderResourceCompute)) {
         ret |= D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE;
     }
-    if (resourceState & RHIRenderer::GPUResourceState::UnorderedAccess) {
+    if (HasFlag(resourceState, RHIRenderer::GPUResourceState::UnorderedAccess)) {
         ret |= D3D12_RESOURCE_STATE_UNORDERED_ACCESS;
     }
-    if (resourceState & RHIRenderer::GPUResourceState::CopyDst) {
+    if (HasFlag(resourceState, RHIRenderer::GPUResourceState::CopyDst)) {
         ret |= D3D12_RESOURCE_STATE_COPY_DEST;
     }
-    if (resourceState & RHIRenderer::GPUResourceState::CopySrc) {
+    if (HasFlag(resourceState, RHIRenderer::GPUResourceState::CopySrc)) {
         ret |= D3D12_RESOURCE_STATE_COPY_SOURCE;
     }
-    if (resourceState & RHIRenderer::GPUResourceState::RenderTarget) {
+    if (HasFlag(resourceState, RHIRenderer::GPUResourceState::RenderTarget)) {
         ret |= D3D12_RESOURCE_STATE_RENDER_TARGET;
     }
-    if (resourceState & RHIRenderer::GPUResourceState::DepthWrite) {
+    if (HasFlag(resourceState, RHIRenderer::GPUResourceState::DepthWrite)) {
         ret |= D3D12_RESOURCE_STATE_DEPTH_WRITE;
     }
-    if (resourceState & RHIRenderer::GPUResourceState::DepthRead) {
+    if (HasFlag(resourceState, RHIRenderer::GPUResourceState::DepthRead)) {
         ret |= D3D12_RESOURCE_STATE_DEPTH_READ;
     }
-    if (resourceState & RHIRenderer::GPUResourceState::ShadingRateSource) {
+    if (HasFlag(resourceState, RHIRenderer::GPUResourceState::ShadingRateSource)) {
         ret |= D3D12_RESOURCE_STATE_SHADING_RATE_SOURCE;
     }
-    if (resourceState & (RHIRenderer::GPUResourceState::VertexBuffer | RHIRenderer::GPUResourceState::ConstantBuffer)) {
+    if (HasFlag(resourceState, RHIRenderer::GPUResourceState::VertexBuffer | RHIRenderer::GPUResourceState::ConstantBuffer)) {
         ret |= D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER;
     }
-    if (resourceState & RHIRenderer::GPUResourceState::IndexBuffer) {
+    if (HasFlag(resourceState, RHIRenderer::GPUResourceState::IndexBuffer)) {
         ret |= D3D12_RESOURCE_STATE_INDEX_BUFFER;
     }
-    if (resourceState & RHIRenderer::GPUResourceState::IndirectArgument) {
+    if (HasFlag(resourceState, RHIRenderer::GPUResourceState::IndirectArgument)) {
         ret |= D3D12_RESOURCE_STATE_INDIRECT_ARGUMENT;
     }
-    if (resourceState & RHIRenderer::GPUResourceState::RTAccelerationStructure) {
+    if (HasFlag(resourceState, RHIRenderer::GPUResourceState::RTAccelerationStructure)) {
         ret |= D3D12_RESOURCE_STATE_RAYTRACING_ACCELERATION_STRUCTURE;
     }
-    if (resourceState & RHIRenderer::GPUResourceState::Prediction) {
+    if (HasFlag(resourceState, RHIRenderer::GPUResourceState::Prediction)) {
         ret |= D3D12_RESOURCE_STATE_PREDICATION;
     }
     return ret;
@@ -1003,7 +1003,7 @@ void D3D12Renderer::Barrier(CommandList *commandList, const GPUBarrier *barriers
         case GPUBarrier::Type::Buffer:
             barrierDesc.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
             barrierDesc.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
-            barrierDesc.Transition.pResource = static_cast<const D3D12Buffer *>(barrier->bufferBarrier.buffer)->GetResource();
+            barrierDesc.Transition.pResource = reinterpret_cast<ID3D12Resource *>(barrier->bufferBarrier.buffer->GetNativeResource());
             barrierDesc.Transition.StateBefore = ToD3D12ResourceState(barrier->bufferBarrier.stateBefore);
             barrierDesc.Transition.StateAfter = ToD3D12ResourceState(barrier->bufferBarrier.stateAfter);
             barrierDesc.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
@@ -1011,7 +1011,7 @@ void D3D12Renderer::Barrier(CommandList *commandList, const GPUBarrier *barriers
         case GPUBarrier::Type::Image:
             barrierDesc.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
             barrierDesc.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
-            barrierDesc.Transition.pResource = static_cast<const D3D12Texture *>(barrier->imageBarrier.texture)->GetResource();
+            barrierDesc.Transition.pResource = reinterpret_cast<ID3D12Resource *>(barrier->imageBarrier.texture->GetNativeResource());
             barrierDesc.Transition.StateBefore = ToD3D12ResourceState(barrier->imageBarrier.stateBefore);
             barrierDesc.Transition.StateAfter = ToD3D12ResourceState(barrier->imageBarrier.stateAfter);
 

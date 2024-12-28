@@ -21,7 +21,13 @@
 #include "D3D12MemoryAllocator/D3D12MemAlloc.h"
 #endif
 
+class D3D12Renderer;
+class D3D12FrameData;
+
 class D3D12Buffer : public RHIRenderer::Buffer {
+    friend class D3D12Renderer;
+    friend class D3D12FrameData;
+
 public:
     D3D12Buffer() = default;
     virtual ~D3D12Buffer() { Release(); }
@@ -33,6 +39,7 @@ public:
     ID3D12Resource *                GetResource() const;
     uint64_t                        GetSize();
 
+private:
 #ifdef USE_D3D12_MEMALLOC
     D3D12MA::Allocation *           bufferAllocation = nullptr;
 #else

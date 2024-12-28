@@ -661,6 +661,55 @@ BE_FORCE_INLINE constexpr int16_t BE_API    HighByte(word w) { return ((w >> 8) 
 
 BE_FORCE_INLINE constexpr bool BE_API       IsPowerOf2(int x) { return x && ((x & (x - 1)) == 0); }
 
+// Enable enum flags:
+// https://www.justsoftwaresolutions.co.uk/cplusplus/using-enum-classes-as-bitfields.html
+template<typename E>
+struct enable_bitmask_operators {
+    static constexpr bool enable = false;
+};
+
+// Bit OR
+template<typename E>
+BE_FORCE_INLINE constexpr typename std::enable_if_t<enable_bitmask_operators<E>::enable, E> operator|(E lhs, E rhs) {
+    typedef typename std::underlying_type_t<E> underlying;
+    return static_cast<E>(static_cast<underlying>(lhs) | static_cast<underlying>(rhs));
+}
+
+// Assignment Bit OR
+template<typename E>
+BE_FORCE_INLINE constexpr typename std::enable_if_t<enable_bitmask_operators<E>::enable, E &> operator|=(E &lhs, E rhs) {
+    typedef typename std::underlying_type_t<E> underlying;
+    lhs = static_cast<E>(static_cast<underlying>(lhs) | static_cast<underlying>(rhs));
+    return lhs;
+}
+
+// Bit AND
+template<typename E>
+BE_FORCE_INLINE constexpr typename std::enable_if_t<enable_bitmask_operators<E>::enable, E> operator&(E lhs, E rhs) {
+    typedef typename std::underlying_type_t<E> underlying;
+    return static_cast<E>(static_cast<underlying>(lhs) & static_cast<underlying>(rhs));
+}
+
+// Assignment Bit AND
+template<typename E>
+BE_FORCE_INLINE constexpr typename std::enable_if_t<enable_bitmask_operators<E>::enable, E &> operator&=(E &lhs, E rhs) {
+    typedef typename std::underlying_type_t<E> underlying;
+    lhs = static_cast<E>(static_cast<underlying>(lhs) & static_cast<underlying>(rhs));
+    return lhs;
+}
+
+// Bit NOT
+template<typename E>
+BE_FORCE_INLINE constexpr typename std::enable_if_t<enable_bitmask_operators<E>::enable, E> operator~(E rhs) {
+    typedef typename std::underlying_type_t<E> underlying;
+    rhs = static_cast<E>(~static_cast<underlying>(rhs));
+    return rhs;
+}
+
+/// Checks if all bits in the specified flag(s) (rhs) are set in the target flags (lhs).
+template<typename E>
+BE_FORCE_INLINE constexpr bool HasFlag(E lhs, E rhs) { return (lhs & rhs) == rhs; }
+
 /// Tests if the value is aligned.
 template <typename T>
 BE_FORCE_INLINE constexpr bool IsAligned(const T &x, int n) { return IsPowerOf2(n) ? ((x & (n - 1)) == 0) : ((x % n) == 0); }

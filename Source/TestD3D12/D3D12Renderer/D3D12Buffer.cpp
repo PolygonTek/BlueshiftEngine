@@ -55,7 +55,7 @@ uint64_t D3D12Buffer::GetSize() {
 #endif
 }
 
-RHIRenderer::Buffer *D3D12Renderer::CreateBuffer(BufferUsage usage, int flags, uint64_t size, Image::Format::Enum format, uint32_t stride, const void *data) {
+RHIRenderer::Buffer *D3D12Renderer::CreateBuffer(BufferUsage usage, ResourceFlag flags, uint64_t size, Image::Format::Enum format, uint32_t stride, const void *data) {
     D3D12_HEAP_TYPE heapType;
     D3D12_RESOURCE_STATES initialState;
     D3D12_RESOURCE_FLAGS resourceFlags = D3D12_RESOURCE_FLAG_NONE;
@@ -81,15 +81,15 @@ RHIRenderer::Buffer *D3D12Renderer::CreateBuffer(BufferUsage usage, int flags, u
         return nullptr;
     }
 
-    if (flags & ResourceFlag::UnorderedAccess) {
+    if (HasFlag(flags, ResourceFlag::UnorderedAccess)) {
         resourceFlags |= D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS;
-    } else if (!(flags & ResourceFlag::ShaderResource)) {
+    } else if (!HasFlag(flags, ResourceFlag::ShaderResource)) {
         resourceFlags |= D3D12_RESOURCE_FLAG_DENY_SHADER_RESOURCE;
     }
 
     uint32_t bufferSize = size;
 
-    if (flags & ResourceFlag::ConstantBuffer) {
+    if (HasFlag(flags, ResourceFlag::ConstantBuffer)) {
         // 상수 버퍼는 어차피 GPU 에 요청하면 256 바이트로 주소 & 사이즈가 정렬된다.
         bufferSize = AlignUp(bufferSize, D3D12_CONSTANT_BUFFER_DATA_PLACEMENT_ALIGNMENT);
     }
@@ -203,11 +203,11 @@ RHIRenderer::Buffer *D3D12Renderer::CreateBuffer(BufferUsage usage, int flags, u
             uploadBuffer->Unmap(0, &writtenRange);
 
             D3D12_RESOURCE_STATES afterResourceState = D3D12_RESOURCE_STATE_COMMON;
-            if (flags & (ResourceFlag::ConstantBuffer | ResourceFlag::VertexBuffer)) {
+            if (HasFlag(flags, ResourceFlag::ConstantBuffer | ResourceFlag::VertexBuffer)) {
                 afterResourceState = D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER;
-            } else if (flags & ResourceFlag::IndexBuffer) {
+            } else if (HasFlag(flags, ResourceFlag::IndexBuffer)) {
                 afterResourceState = D3D12_RESOURCE_STATE_INDEX_BUFFER;
-            } else if (flags & ResourceFlag::UnorderedAccess) {
+            } else if (HasFlag(flags, ResourceFlag::UnorderedAccess)) {
                 afterResourceState = D3D12_RESOURCE_STATE_UNORDERED_ACCESS;
             }
 
@@ -235,11 +235,11 @@ RHIRenderer::Buffer *D3D12Renderer::CreateBuffer(BufferUsage usage, int flags, u
         MarkForRelease(uploadBuffer);
     }
 
-    if (!(flags & ResourceFlag::SkipDefaultViews)) {
-        if (flags & ResourceFlag::ShaderResource) {
+    if (!HasFlag(flags, ResourceFlag::SkipDefaultViews)) {
+        if (HasFlag(flags, ResourceFlag::ShaderResource)) {
             CreateSubresource(buffer, SubresourceType::SRV);
         }
-        if (flags & ResourceFlag::UnorderedAccess) {
+        if (HasFlag(flags, ResourceFlag::UnorderedAccess)) {
             CreateSubresource(buffer, SubresourceType::UAV);
         }
     }

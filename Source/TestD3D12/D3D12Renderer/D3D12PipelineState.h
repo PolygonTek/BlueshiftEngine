@@ -17,12 +17,19 @@
 #include "../RHIRenderer.h"
 #include "D3D12Common.h"
 
+class D3D12Renderer;
+class D3D12CommandList;
+
 class D3D12PipelineState : public RHIRenderer::PipelineState {
+    friend class D3D12Renderer;
+    friend class D3D12CommandList;
+
 public:
     virtual ~D3D12PipelineState() { Release(); }
 
     void                                    Release();
 
+private:
     struct GraphicsPSStream1 {
         CD3DX12_PIPELINE_STATE_STREAM_FLAGS flags;
         CD3DX12_PIPELINE_STATE_STREAM_ROOT_SIGNATURE rootSignature;

@@ -68,7 +68,7 @@ void D3D12Texture::AdjustTextureFormat(bool useCompression, bool useNormalMap, I
     *outFormat = useCompression ? D3D12Renderer::ToCompressedImageFormat(inFormat, useNormalMap) : D3D12Renderer::ToUncompressedImageFormat(inFormat);
 }
 
-RHIRenderer::Texture *D3D12Renderer::CreateTexture(TextureType textureType, int flags, const Image *srcImage) {
+RHIRenderer::Texture *D3D12Renderer::CreateTexture(TextureType textureType, ResourceFlag flags, const Image *srcImage) {
     Image::Format::Enum srcFormat = srcImage->GetFormat();
     bool isLinearSpace = srcImage->GetGammaSpace() == Image::GammaSpace::Linear;
 
@@ -251,17 +251,17 @@ RHIRenderer::Texture *D3D12Renderer::CreateTexture(TextureType textureType, int 
 #endif
     texture->textureDesc = textureResource->GetDesc();
 
-    if (!(flags & ResourceFlag::SkipDefaultViews)) {
-        if (flags & ResourceFlag::ShaderResource) {
+    if (!HasFlag(flags, ResourceFlag::SkipDefaultViews)) {
+        if (HasFlag(flags, ResourceFlag::ShaderResource)) {
             CreateSubresource(texture, SubresourceType::SRV);
         }
-        if (flags & ResourceFlag::RenderTarget) {
+        if (HasFlag(flags, ResourceFlag::RenderTarget)) {
             CreateSubresource(texture, SubresourceType::RTV);
         }
-        if (flags & ResourceFlag::DepthStencil) {
+        if (HasFlag(flags, ResourceFlag::DepthStencil)) {
             CreateSubresource(texture, SubresourceType::DSV);
         }
-        if (flags & ResourceFlag::UnorderedAccess) {
+        if (HasFlag(flags, ResourceFlag::UnorderedAccess)) {
             CreateSubresource(texture, SubresourceType::UAV);
         }
     }
@@ -426,7 +426,7 @@ void D3D12Renderer::CreateSubresource(Texture *texture, SubresourceType type, ui
     }
 }
 
-RHIRenderer::Texture *D3D12Renderer::CreateTexture(TextureType textureType, int flags, const Image *srcImage, Image::Format::Enum dstFormat, bool useMipmaps) {
+RHIRenderer::Texture *D3D12Renderer::CreateTexture(TextureType textureType, ResourceFlag flags, const Image *srcImage, Image::Format::Enum dstFormat, bool useMipmaps) {
     Image::Format::Enum srcFormat = srcImage->GetFormat();
 
     bool srcCompressed = Image::IsCompressed(srcFormat);
@@ -482,7 +482,7 @@ RHIRenderer::Texture *D3D12Renderer::CreateTexture(TextureType textureType, int 
     return CreateTexture(textureType, flags, srcImage);
 }
 
-RHIRenderer::Texture *D3D12Renderer::CreateTextureFromFile(TextureType textureType, int flags, const char *filename, bool useCompression, bool useNormalMap) {
+RHIRenderer::Texture *D3D12Renderer::CreateTextureFromFile(TextureType textureType, ResourceFlag flags, const char *filename, bool useCompression, bool useNormalMap) {
     Image *image = Image::NewImageFromFile(filename);
     if (!image) {
         return nullptr;
