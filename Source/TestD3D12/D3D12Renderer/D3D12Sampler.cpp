@@ -76,7 +76,7 @@ static void ToD3D12TextureBorderColor(RHIRenderer::TextureBorderColor borderColo
 
 void D3D12Sampler::Release() {
     if (descriptorHandle.ptr != 0) {
-        renderer->samplerDescriptorPool->Free(descriptorHandle);
+        renderer->samplerCpuDescriptorPool->FreeIndex(renderer->samplerCpuDescriptorPool->GetIndexFromCPUDescriptorHandle(descriptorHandle));
         descriptorHandle.ptr = 0;
     }
 }
@@ -94,7 +94,10 @@ RHIRenderer::Sampler *D3D12Renderer::CreateSampler(const SamplerDesc *desc) {
     samplerDesc.MinLOD = desc->maxLod;
 
     D3D12_CPU_DESCRIPTOR_HANDLE descriptorHandle = {};
-    descriptorHandle = samplerDescriptorPool->Alloc();
+    if (samplerCpuDescriptorPool->Alloc(&descriptorHandle, nullptr)) {
+        return nullptr;
+    }
+
     device->CreateSampler(&samplerDesc, descriptorHandle);
 
     D3D12Sampler *sampler = new D3D12Sampler;
@@ -118,7 +121,7 @@ void D3D12Renderer::SetSampler(CommandList *commandList, int slot, Sampler *samp
 
     const D3D12Sampler *d3d12Sampler = static_cast<const D3D12Sampler *>(sampler);
     D3D12FrameData::DataPerThread &threadData = currentFrameData->threadData[threadIndex];
-    threadData.psoDescriptorHandles[rootParameterIndex][descriptorIndex] = d3d12Sampler->descriptorHandle;
+    threadData.tableCpuDescriptorHandles[rootParameterIndex][descriptorIndex] = d3d12Sampler->descriptorHandle;
 
     if (d3d12CommandList->GetCommandListType() == D3D12_COMMAND_LIST_TYPE_COMPUTE) {
         d3d12CommandList->computeRootParametersDirtyMask |= BIT64(rootParameterIndex);

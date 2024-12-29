@@ -32,7 +32,8 @@ public:
 
     void                            Release();
 
-    virtual void *                  GetNativeResource() const { return buffer->GetResource(); }
+    virtual void *                  GetNativeResource() const override { return buffer->GetResource(); }
+    virtual const void *            GetNativeBufferObject() const override { return buffer; }
 
 private:
     D3D12Buffer *                   buffer = nullptr;

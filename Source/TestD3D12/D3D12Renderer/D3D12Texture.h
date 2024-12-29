@@ -31,7 +31,8 @@ public:
 
     void                            Release();
 
-    virtual void *                  GetNativeResource() const { return GetResource(); }
+    virtual void *                  GetNativeResource() const override { return GetResource(); }
+    virtual const void *            GetNativeTextureObject() const override { return this; }
 
     ID3D12Resource *                GetResource() const;
 
@@ -44,8 +45,9 @@ private:
     ID3D12Resource *                textureResource = nullptr;
 #endif
     D3D12_RESOURCE_DESC             textureDesc;
-    D3D12_CPU_DESCRIPTOR_HANDLE     srvDescriptorHandle = {};
-    D3D12_CPU_DESCRIPTOR_HANDLE     rtvDescriptorHandle = {};
-    D3D12_CPU_DESCRIPTOR_HANDLE     dsvDescriptorHandle = {};
-    D3D12_CPU_DESCRIPTOR_HANDLE     uavDescriptorHandle = {};
+    D3D12_CPU_DESCRIPTOR_HANDLE     srvCpuDescriptorHandle = {};
+    D3D12_CPU_DESCRIPTOR_HANDLE     rtvCpuDescriptorHandle = {};
+    D3D12_CPU_DESCRIPTOR_HANDLE     dsvCpuDescriptorHandle = {};
+    D3D12_CPU_DESCRIPTOR_HANDLE     uavCpuDescriptorHandle = {};
+    D3D12_GPU_DESCRIPTOR_HANDLE     uavGpuDescriptorHandle = {};
 };

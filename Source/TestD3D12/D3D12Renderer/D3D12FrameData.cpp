@@ -243,8 +243,8 @@ RHIRenderer::ConstantBuffer *D3D12FrameData::AllocConstant(int threadIndex, uint
         data->dynamicAllocations.Append(currentDynamicAllocation);
     }
 
-    D3D12_CPU_DESCRIPTOR_HANDLE descriptorHandle = data->dynamicDescriptorPool->Alloc();
-    if (descriptorHandle.ptr == 0) {
+    D3D12_CPU_DESCRIPTOR_HANDLE descriptorHandle = {};
+    if (!data->dynamicDescriptorPool->Alloc(&descriptorHandle, nullptr)) {
         return nullptr;
     }
 
@@ -333,8 +333,8 @@ RHIRenderer::Buffer *D3D12FrameData::AllocBuffer(int threadIndex, bool shaderWri
         data->dynamicAllocations.Append(currentDynamicAllocation);
     }
 
-    D3D12_CPU_DESCRIPTOR_HANDLE descriptorHandle = data->dynamicDescriptorPool->Alloc();
-    if (descriptorHandle.ptr == 0) {
+    D3D12_CPU_DESCRIPTOR_HANDLE descriptorHandle = {};
+    if (!data->dynamicDescriptorPool->Alloc(&descriptorHandle, nullptr)) {
         return nullptr;
     }
 
@@ -374,9 +374,9 @@ RHIRenderer::Buffer *D3D12FrameData::AllocBuffer(int threadIndex, bool shaderWri
     D3D12Buffer dynamicBuffer;
     dynamicBuffer.writePtr = (byte *)currentDynamicAllocation->mappedBase + alignedOffset;
     if (shaderWritable) {
-        dynamicBuffer.uavDescriptorHandle = descriptorHandle;
+        dynamicBuffer.uavCpuDescriptorHandle = descriptorHandle;
     } else {
-        dynamicBuffer.srvDescriptorHandle = descriptorHandle;
+        dynamicBuffer.srvCpuDescriptorHandle = descriptorHandle;
     }
     data->dynamicBuffers.Append(dynamicBuffer);
 

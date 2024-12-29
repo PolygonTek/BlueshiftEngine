@@ -878,40 +878,43 @@ void D3D12Renderer::BindRootParameters(D3D12CommandList *commandList, bool graph
             }
 
             // 디스크립터 풀에서 디스크립터 테이블 할당
-            D3D12_CPU_DESCRIPTOR_HANDLE cpuRootDescriptorHandle;
-            D3D12_GPU_DESCRIPTOR_HANDLE gpuRootDescriptorHandle;
-            if (!rootDescriptorPool->AllocRange(numDescriptors, &cpuRootDescriptorHandle, &gpuRootDescriptorHandle)) {
+            D3D12_CPU_DESCRIPTOR_HANDLE cpuRootDescriptorStart;
+            D3D12_GPU_DESCRIPTOR_HANDLE gpuRootDescriptorStart;
+            if (!rootDescriptorPool->AllocRange(numDescriptors, &cpuRootDescriptorStart, &gpuRootDescriptorStart)) {
                 return;
             }
 
             int descriptorOffset = 0;
 
-            // 필요한 디스크립터들을 디스크립터 테이블에 복사
+            // 필요한 디스크립터들을 GPU 측 디스크립터 테이블에 복사
             for (int rangeIndex = 0; rangeIndex < rootParameter->DescriptorTable.NumDescriptorRanges; ++rangeIndex) {
                 const D3D12_DESCRIPTOR_RANGE1 &descriptorRange = rootParameter->DescriptorTable.pDescriptorRanges[rangeIndex];
-                CD3DX12_CPU_DESCRIPTOR_HANDLE destDescriptorHandle(cpuRootDescriptorHandle, descriptorOffset, rootDescriptorPool->descriptorHandleSize);
+                CD3DX12_CPU_DESCRIPTOR_HANDLE destDescriptorHandle(cpuRootDescriptorStart, descriptorOffset, rootDescriptorPool->descriptorHandleSize);
 
-                assert(descriptorOffset < COUNT_OF(threadData.psoDescriptorHandles[rootParameterIndex]));
+                assert(descriptorOffset < COUNT_OF(threadData.tableCpuDescriptorHandles[rootParameterIndex]));
 
                 switch (descriptorRange.RangeType) {
                 case D3D12_DESCRIPTOR_RANGE_TYPE_CBV:
                 case D3D12_DESCRIPTOR_RANGE_TYPE_SRV:
                 case D3D12_DESCRIPTOR_RANGE_TYPE_UAV:
-                    device->CopyDescriptorsSimple(descriptorRange.NumDescriptors, destDescriptorHandle, threadData.psoDescriptorHandles[rootParameterIndex][descriptorOffset], D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+                    device->CopyDescriptorsSimple(descriptorRange.NumDescriptors, destDescriptorHandle, threadData.tableCpuDescriptorHandles[rootParameterIndex][descriptorOffset], D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
                     break;
                 case D3D12_DESCRIPTOR_RANGE_TYPE_SAMPLER:
-                    device->CopyDescriptorsSimple(descriptorRange.NumDescriptors, destDescriptorHandle, threadData.psoDescriptorHandles[rootParameterIndex][descriptorOffset], D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER);
+                    device->CopyDescriptorsSimple(descriptorRange.NumDescriptors, destDescriptorHandle, threadData.tableCpuDescriptorHandles[rootParameterIndex][descriptorOffset], D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER);
                     break;
                 }
 
                 descriptorOffset += descriptorRange.NumDescriptors;
             }
 
-            // 디스크립터 테이블 설정
+            // 루트 파라미터 별 GPU 디스크립터 테이블을 기록
+            threadData.tableGpuDescriptorStarts[rootParameterIndex] = gpuRootDescriptorStart;
+
+            // 사용할 디스크립터 테이블 설정
             if (graphics) {
-                commandList->GetGraphicsCommandList()->SetGraphicsRootDescriptorTable(rootParameterIndex, gpuRootDescriptorHandle);
+                commandList->GetGraphicsCommandList()->SetGraphicsRootDescriptorTable(rootParameterIndex, gpuRootDescriptorStart);
             } else {
-                commandList->GetGraphicsCommandList()->SetComputeRootDescriptorTable(rootParameterIndex, gpuRootDescriptorHandle);
+                commandList->GetGraphicsCommandList()->SetComputeRootDescriptorTable(rootParameterIndex, gpuRootDescriptorStart);
             }
         } else if (rootParameter->ParameterType == D3D12_ROOT_PARAMETER_TYPE_32BIT_CONSTANTS) {
             // 루트 상수 설정

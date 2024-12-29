@@ -69,6 +69,7 @@ private:
     struct Binder {
         void                                Init(const D3D12_ROOT_SIGNATURE_DESC1 &desc);
 
+        // 슬롯에 대한 디스크립터 테이블 인덱스
         struct DescriptorTableBinder {
             uint8_t                         cbv[64] = {};
             uint8_t                         srv[64] = {};
@@ -76,6 +77,7 @@ private:
             uint8_t                         samplers[64] = {};
         };
 
+        // 슬롯에 대한 루트 파라미터 인덱스
         struct RootParameterBinder {
             uint8_t                         cbv[16] = {};
             uint8_t                         srv[128] = {};
@@ -147,21 +149,25 @@ BE_INLINE void D3D12PipelineState::Binder::Init(const D3D12_ROOT_SIGNATURE_DESC1
 
                 descriptorOffset += descriptorRange.NumDescriptors;
             }
-        } else if (rootParameter->ParameterType == D3D12_ROOT_PARAMETER_TYPE_32BIT_CONSTANTS) {
-            // NOTE: 현재 구현에서는 32bit 상수를 한개의 루트 파라미터만 지원한다.
-            rootParameterBinder.constants = rootParameterIndex;
-        } else if (rootParameter->ParameterType == D3D12_ROOT_PARAMETER_TYPE_CBV) {
+        } else {
             UINT shaderRegister = rootParameter->Descriptor.ShaderRegister;
-            assert(shaderRegister < COUNT_OF(rootParameterBinder.cbv));
-            rootParameterBinder.cbv[shaderRegister] = rootParameterIndex;
-        } else if (rootParameter->ParameterType == D3D12_ROOT_PARAMETER_TYPE_SRV) {
-            UINT shaderRegister = rootParameter->Descriptor.ShaderRegister;
-            assert(shaderRegister < COUNT_OF(rootParameterBinder.srv));
-            rootParameterBinder.srv[shaderRegister] = rootParameterIndex;
-        } else if (rootParameter->ParameterType == D3D12_ROOT_PARAMETER_TYPE_UAV) {
-            UINT shaderRegister = rootParameter->Descriptor.ShaderRegister;
-            assert(shaderRegister < COUNT_OF(rootParameterBinder.uav));
-            rootParameterBinder.uav[shaderRegister] = rootParameterIndex;
+
+            if (rootParameter->ParameterType == D3D12_ROOT_PARAMETER_TYPE_32BIT_CONSTANTS) {
+                // NOTE: 현재 구현에서는 32bit 상수를 한개의 루트 파라미터만 지원한다.
+                rootParameterBinder.constants = rootParameterIndex;
+            } else if (rootParameter->ParameterType == D3D12_ROOT_PARAMETER_TYPE_CBV) {
+                assert(shaderRegister < COUNT_OF(rootParameterBinder.cbv));
+                rootParameterBinder.cbv[shaderRegister] = rootParameterIndex;
+                descriptorTableBinder.cbv[shaderRegister] = 0xFF;
+            } else if (rootParameter->ParameterType == D3D12_ROOT_PARAMETER_TYPE_SRV) {
+                assert(shaderRegister < COUNT_OF(rootParameterBinder.srv));
+                rootParameterBinder.srv[shaderRegister] = rootParameterIndex;
+                descriptorTableBinder.srv[shaderRegister] = 0xFF;
+            } else if (rootParameter->ParameterType == D3D12_ROOT_PARAMETER_TYPE_UAV) {
+                assert(shaderRegister < COUNT_OF(rootParameterBinder.uav));
+                rootParameterBinder.uav[shaderRegister] = rootParameterIndex;
+                descriptorTableBinder.uav[shaderRegister] = 0xFF;
+            }
         }
     }
 }

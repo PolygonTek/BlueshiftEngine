@@ -206,13 +206,15 @@ void D3D12Renderer::Init(HWND hwnd) {
     descriptorHandleSize[D3D12_DESCRIPTOR_HEAP_TYPE_RTV] = device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
     descriptorHandleSize[D3D12_DESCRIPTOR_HEAP_TYPE_DSV] = device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_DSV);
 
-    // 디스크립터 풀 생성
-    cbvDescriptorPool = new D3D12DescriptorPool(device, D3D12DescriptorPool::Type::CBV_SRV_UAV, 64, true);
-    srvDescriptorPool = new D3D12DescriptorPool(device, D3D12DescriptorPool::Type::CBV_SRV_UAV, 1000000, false);
-    uavDescriptorPool = new D3D12DescriptorPool(device, D3D12DescriptorPool::Type::CBV_SRV_UAV, 1024, false);
-    rtvDescriptorPool = new D3D12DescriptorPool(device, D3D12DescriptorPool::Type::RTV, 16, false);
-    dsvDescriptorPool = new D3D12DescriptorPool(device, D3D12DescriptorPool::Type::DSV, 16, false);
-    samplerDescriptorPool = new D3D12DescriptorPool(device, D3D12DescriptorPool::Type::Sampler, 2048, true);
+    // CPU 디스크립터 풀 생성
+    resCpuDescriptorPool = new D3D12DescriptorPool(device, D3D12DescriptorPool::Type::CBV_SRV_UAV, 1000000, false);
+    rtvCpuDescriptorPool = new D3D12DescriptorPool(device, D3D12DescriptorPool::Type::RTV, 16, false);
+    dsvCpuDescriptorPool = new D3D12DescriptorPool(device, D3D12DescriptorPool::Type::DSV, 16, false);
+    samplerCpuDescriptorPool = new D3D12DescriptorPool(device, D3D12DescriptorPool::Type::Sampler, 2048, false);
+
+    // UAV 의 경우에만 GPU 디스크립터가 필요하다.
+    // ClearUnorderedAccessViewUint 함수에서 CPU (원본) 디스크립터와 GPU 디스크립터가 모두 필요하기 때문에..
+    uavGpuDescriptorPool = new D3D12DescriptorPool(device, D3D12DescriptorPool::Type::CBV_SRV_UAV, 4096, true);
 
     // Init feature check (https://devblogs.microsoft.com/directx/introducing-a-new-api-for-checking-feature-support-in-direct3d-12/)
     CD3DX12FeatureSupport features;
@@ -366,12 +368,11 @@ void D3D12Renderer::Shutdown() {
         SAFE_RELEASE(entry->second);
     }
 
-    SAFE_DELETE(cbvDescriptorPool);
-    SAFE_DELETE(srvDescriptorPool);
-    SAFE_DELETE(uavDescriptorPool);
-    SAFE_DELETE(rtvDescriptorPool);
-    SAFE_DELETE(dsvDescriptorPool);
-    SAFE_DELETE(samplerDescriptorPool);
+    SAFE_DELETE(resCpuDescriptorPool);
+    SAFE_DELETE(rtvCpuDescriptorPool);
+    SAFE_DELETE(dsvCpuDescriptorPool);
+    SAFE_DELETE(samplerCpuDescriptorPool);
+    SAFE_DELETE(uavGpuDescriptorPool);
     SAFE_DELETE(graphicsCommandListPool);
 
     SAFE_RELEASE(dxcCompiler);
@@ -918,6 +919,31 @@ void D3D12Renderer::DispatchMesh(CommandList *commandList, uint32_t threadGroupC
     D3D12CommandList *d3d12CommandList = static_cast<D3D12CommandList *>(commandList);
     BindRootParameters(d3d12CommandList, false);
     d3d12CommandList->GetGraphicsCommandList()->DispatchMesh(threadGroupCountX, threadGroupCountY, threadGroupCountZ);
+}
+
+void D3D12Renderer::ClearUAV(CommandList *commandList, const GPUResource *resource, uint32_t value) {
+    const UINT values[4] = { value, value, value, value };
+    D3D12_CPU_DESCRIPTOR_HANDLE cpuDescriptorHandle = {};
+    D3D12_GPU_DESCRIPTOR_HANDLE gpuDescriptorHandle = {};
+
+    const D3D12Buffer *buffer = reinterpret_cast<const D3D12Buffer *>(resource->GetNativeBufferObject());
+    if (buffer) {
+        cpuDescriptorHandle = buffer->uavCpuDescriptorHandle;
+        gpuDescriptorHandle = buffer->uavGpuDescriptorHandle;
+    } else {
+        const D3D12Texture *texture = reinterpret_cast<const D3D12Texture *>(resource->GetNativeTextureObject());
+        if (texture) {
+            cpuDescriptorHandle = texture->uavCpuDescriptorHandle;
+            gpuDescriptorHandle = texture->uavGpuDescriptorHandle;
+        }
+    }
+
+    if (cpuDescriptorHandle.ptr == 0 || gpuDescriptorHandle.ptr) {
+        BE_ERRLOG("D3D12Renderer::ClearUAV: Invalid UAV descriptor handle\n");
+        return;
+    }
+    D3D12CommandList *d3d12CommandList = static_cast<D3D12CommandList *>(commandList);
+    d3d12CommandList->GetGraphicsCommandList()->ClearUnorderedAccessViewUint(gpuDescriptorHandle, cpuDescriptorHandle, reinterpret_cast<ID3D12Resource *>(resource->GetNativeResource()), values, 0, nullptr);
 }
 
 void D3D12Renderer::CopyBuffer(CommandList *commandList, const Buffer *dstBuffer, uint32_t dstOffset, const Buffer *srcBuffer, uint32_t srcOffset, uint32_t size) {

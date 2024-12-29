@@ -96,7 +96,8 @@ private:
         D3D12DescriptorPool *       dynamicDescriptorPool = nullptr;
         Array<D3D12_CPU_DESCRIPTOR_HANDLE> dynamicDescriptorHandles;
         D3D12RootDescriptorPool *   rootDescriptorPool = nullptr;
-        D3D12_CPU_DESCRIPTOR_HANDLE psoDescriptorHandles[MaxRootParameters][64] = { CD3DX12_CPU_DESCRIPTOR_HANDLE() };
+        D3D12_CPU_DESCRIPTOR_HANDLE tableCpuDescriptorHandles[MaxRootParameters][64] = { CD3DX12_CPU_DESCRIPTOR_HANDLE() };
+        D3D12_GPU_DESCRIPTOR_HANDLE tableGpuDescriptorStarts[MaxRootParameters] = { CD3DX12_GPU_DESCRIPTOR_HANDLE() };
         const RHIRenderer::GPUResource *cbvResources[16] = {};
         const RHIRenderer::GPUResource *srvResources[128] = {};
         const RHIRenderer::GPUResource *uavResources[8] = {};

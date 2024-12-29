@@ -19,22 +19,27 @@
 #include "D3D12DescriptorPool.h"
 
 void D3D12Texture::Release() {
-    if (srvDescriptorHandle.ptr != 0) {
-        renderer->srvDescriptorPool->Free(srvDescriptorHandle);
-        srvDescriptorHandle.ptr = 0;
+    if (srvCpuDescriptorHandle.ptr != 0) {
+        renderer->resCpuDescriptorPool->FreeIndex(renderer->resCpuDescriptorPool->GetIndexFromCPUDescriptorHandle(srvCpuDescriptorHandle));
+        srvCpuDescriptorHandle.ptr = 0;
     }
-    if (rtvDescriptorHandle.ptr != 0) {
-        renderer->srvDescriptorPool->Free(rtvDescriptorHandle);
-        rtvDescriptorHandle.ptr = 0;
+    if (rtvCpuDescriptorHandle.ptr != 0) {
+        renderer->rtvCpuDescriptorPool->FreeIndex(renderer->rtvCpuDescriptorPool->GetIndexFromCPUDescriptorHandle(rtvCpuDescriptorHandle));
+        rtvCpuDescriptorHandle.ptr = 0;
     }
-    if (dsvDescriptorHandle.ptr != 0) {
-        renderer->srvDescriptorPool->Free(dsvDescriptorHandle);
-        dsvDescriptorHandle.ptr = 0;
+    if (dsvCpuDescriptorHandle.ptr != 0) {
+        renderer->dsvCpuDescriptorPool->FreeIndex(renderer->dsvCpuDescriptorPool->GetIndexFromCPUDescriptorHandle(dsvCpuDescriptorHandle));
+        dsvCpuDescriptorHandle.ptr = 0;
     }
-    if (uavDescriptorHandle.ptr != 0) {
-        renderer->srvDescriptorPool->Free(uavDescriptorHandle);
-        uavDescriptorHandle.ptr = 0;
+    if (uavCpuDescriptorHandle.ptr != 0) {
+        renderer->resCpuDescriptorPool->FreeIndex(renderer->resCpuDescriptorPool->GetIndexFromCPUDescriptorHandle(uavCpuDescriptorHandle));
+        uavCpuDescriptorHandle.ptr = 0;
     }
+    if (uavGpuDescriptorHandle.ptr != 0) {
+        renderer->uavGpuDescriptorPool->FreeIndex(renderer->uavGpuDescriptorPool->GetIndexFromGPUDescriptorHandle(uavGpuDescriptorHandle));
+        uavGpuDescriptorHandle.ptr = 0;
+    }
+
 #ifdef USE_D3D12_MEMALLOC
     SAFE_RELEASE(textureAllocation);
 #else
@@ -321,8 +326,10 @@ void D3D12Renderer::CreateSubresource(Texture *texture, SubresourceType type, ui
             break;
         }
 
-        d3d12Texture->srvDescriptorHandle = srvDescriptorPool->Alloc();
-        device->CreateShaderResourceView(d3d12Texture->GetResource(), &srvDesc, d3d12Texture->srvDescriptorHandle);
+        if (!resCpuDescriptorPool->Alloc(&d3d12Texture->srvCpuDescriptorHandle, nullptr)) {
+            return;
+        }
+        device->CreateShaderResourceView(d3d12Texture->GetResource(), &srvDesc, d3d12Texture->srvCpuDescriptorHandle);
     } else if (type == SubresourceType::RTV) {
         D3D12_RENDER_TARGET_VIEW_DESC rtvDesc = {};
         rtvDesc.Format = d3d12Texture->textureDesc.Format;
@@ -356,8 +363,10 @@ void D3D12Renderer::CreateSubresource(Texture *texture, SubresourceType type, ui
             break;
         }
 
-        d3d12Texture->rtvDescriptorHandle = rtvDescriptorPool->Alloc();
-        device->CreateRenderTargetView(d3d12Texture->GetResource(), &rtvDesc, d3d12Texture->rtvDescriptorHandle);
+        if (!rtvCpuDescriptorPool->Alloc(&d3d12Texture->rtvCpuDescriptorHandle, nullptr)) {
+            return;
+        }
+        device->CreateRenderTargetView(d3d12Texture->GetResource(), &rtvDesc, d3d12Texture->rtvCpuDescriptorHandle);
     } else if (type == SubresourceType::DSV) {
         D3D12_DEPTH_STENCIL_VIEW_DESC dsvDesc = {};
         dsvDesc.Format = d3d12Texture->textureDesc.Format;
@@ -385,8 +394,10 @@ void D3D12Renderer::CreateSubresource(Texture *texture, SubresourceType type, ui
             break;
         }
 
-        d3d12Texture->dsvDescriptorHandle = dsvDescriptorPool->Alloc();
-        device->CreateDepthStencilView(d3d12Texture->GetResource(), &dsvDesc, d3d12Texture->dsvDescriptorHandle);
+        if (!dsvCpuDescriptorPool->Alloc(&d3d12Texture->dsvCpuDescriptorHandle, nullptr)) {
+            return;
+        }
+        device->CreateDepthStencilView(d3d12Texture->GetResource(), &dsvDesc, d3d12Texture->dsvCpuDescriptorHandle);
     } else if (type == SubresourceType::UAV) {
         D3D12_UNORDERED_ACCESS_VIEW_DESC uavDesc = {};
         uavDesc.ViewDimension = D3D12_UAV_DIMENSION_BUFFER;
@@ -421,8 +432,15 @@ void D3D12Renderer::CreateSubresource(Texture *texture, SubresourceType type, ui
             break;
         }
 
-        d3d12Texture->uavDescriptorHandle = uavDescriptorPool->Alloc();
-        device->CreateUnorderedAccessView(d3d12Texture->GetResource(), nullptr, &uavDesc, d3d12Texture->uavDescriptorHandle);
+        resCpuDescriptorPool->Alloc(&d3d12Texture->uavCpuDescriptorHandle, nullptr);
+        uavGpuDescriptorPool->Alloc(nullptr, &d3d12Texture->uavGpuDescriptorHandle);
+
+        device->CreateUnorderedAccessView(d3d12Texture->GetResource(), nullptr, &uavDesc, d3d12Texture->uavCpuDescriptorHandle);
+
+        // UAV 디스크립터를 shader visible 한 디스크립터에 복사
+        uint32 index = uavGpuDescriptorPool->GetIndexFromGPUDescriptorHandle(d3d12Texture->uavGpuDescriptorHandle);
+        D3D12_CPU_DESCRIPTOR_HANDLE uavCpuDescriptorHandle = uavGpuDescriptorPool->GetCPUDescriptorHandleFromIndex(index);
+        device->CopyDescriptorsSimple(1, uavCpuDescriptorHandle, d3d12Texture->uavCpuDescriptorHandle, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
     }
 }
 
@@ -786,28 +804,37 @@ void D3D12Renderer::SetTexture(CommandList *commandList, int slot, bool shaderWr
 
     // 슬롯 (레지스터) 에 대한 루트 파라미터 인덱스를 얻고, 디스크립터 테이블일 경우 테이블 인덱스도 얻어온다.
     const D3D12PipelineState::Binder &binder = d3d12CommandList->currentPSO->binder;
-    int rootParameterIndex = -1;
+    uint8_t rootParameterIndex = 0xFF;
 
     if (shaderWritable) {
+        // UAV
         rootParameterIndex = binder.rootParameterBinder.uav[slot];
-        int descriptorIndex = binder.descriptorTableBinder.uav[slot];
-
-        threadData.psoDescriptorHandles[rootParameterIndex][descriptorIndex] = d3d12Texture->uavDescriptorHandle;
-        if (threadData.psoDescriptorHandles[rootParameterIndex][descriptorIndex].ptr == 0) {
-            BE_ERRLOG("Texture has no valid UAV descriptor handle\n");
-            return;
+        uint8_t descriptorIndex = binder.descriptorTableBinder.uav[slot];
+        if (descriptorIndex != 0xFF) {
+            threadData.tableCpuDescriptorHandles[rootParameterIndex][descriptorIndex] = d3d12Texture->uavCpuDescriptorHandle;
+            if (threadData.tableCpuDescriptorHandles[rootParameterIndex][descriptorIndex].ptr == 0) {
+                BE_ERRLOG("D3D12Renderer::SetTexture: Texture has no valid UAV descriptor handle\n");
+                return;
+            }
         }
         threadData.uavResources[slot] = d3d12Texture;
     } else {
+        // SRV
         rootParameterIndex = binder.rootParameterBinder.srv[slot];
-        int descriptorIndex = binder.descriptorTableBinder.srv[slot];
-
-        threadData.psoDescriptorHandles[rootParameterIndex][descriptorIndex] = d3d12Texture->srvDescriptorHandle;
-        if (threadData.psoDescriptorHandles[rootParameterIndex][descriptorIndex].ptr == 0) {
-            BE_ERRLOG("Texture has no valid SRV descriptor handle\n");
-            return;
+        uint8_t descriptorIndex = binder.descriptorTableBinder.srv[slot];
+        if (descriptorIndex != 0xFF) {
+            threadData.tableCpuDescriptorHandles[rootParameterIndex][descriptorIndex] = d3d12Texture->srvCpuDescriptorHandle;
+            if (threadData.tableCpuDescriptorHandles[rootParameterIndex][descriptorIndex].ptr == 0) {
+                BE_ERRLOG("D3D12Renderer::SetTexture: Texture has no valid SRV descriptor handle\n");
+                return;
+            }
         }
         threadData.srvResources[slot] = d3d12Texture;
+    }
+
+    if (rootParameterIndex == 0xFF) {
+        BE_ERRLOG("D3D12Renderer::SetTexture: Invalid root parameter index\n");
+        return;
     }
 
     if (d3d12CommandList->GetCommandListType() == D3D12_COMMAND_LIST_TYPE_COMPUTE) {

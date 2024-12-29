@@ -21,7 +21,7 @@
 void D3D12ConstantBuffer::Release() {
     if (!writePtr) {
         if (descriptorHandle.ptr != 0) {
-            renderer->cbvDescriptorPool->Free(descriptorHandle);
+            renderer->resCpuDescriptorPool->FreeIndex(renderer->resCpuDescriptorPool->GetIndexFromCPUDescriptorHandle(descriptorHandle));
             descriptorHandle.ptr = 0;
         }
     }
@@ -48,7 +48,9 @@ RHIRenderer::ConstantBuffer* D3D12Renderer::CreateConstantBuffer(BufferUsage usa
         cbvDesc.BufferLocation = buffer->GetResource()->GetGPUVirtualAddress();
         cbvDesc.SizeInBytes = size;
 
-        descriptorHandle = cbvDescriptorPool->Alloc();
+        if (!resCpuDescriptorPool->Alloc(&descriptorHandle, nullptr)) {
+            return nullptr;
+        }
         device->CreateConstantBufferView(&cbvDesc, descriptorHandle);
     }
 
@@ -74,13 +76,20 @@ void D3D12Renderer::SetConstantBuffer(CommandList *commandList, int slot, const 
 
     // 슬롯 (레지스터) 에 대한 루트 파라미터 인덱스를 얻고, 디스크립터 테이블일 경우 테이블 인덱스도 얻어온다.
     const D3D12PipelineState::Binder &binder = d3d12CommandList->currentPSO->binder;
-    int rootParameterIndex = binder.rootParameterBinder.cbv[slot];
-    int descriptorIndex = binder.descriptorTableBinder.cbv[slot];
+    uint8_t rootParameterIndex = binder.rootParameterBinder.cbv[slot];
+    uint8_t descriptorIndex = binder.descriptorTableBinder.cbv[slot];
 
     const D3D12ConstantBuffer *d3d12ConstantBuffer = static_cast<const D3D12ConstantBuffer *>(constantBuffer);
     D3D12FrameData::DataPerThread &threadData = currentFrameData->threadData[threadIndex];
-    threadData.psoDescriptorHandles[rootParameterIndex][descriptorIndex] = d3d12ConstantBuffer->descriptorHandle;
+    if (descriptorIndex != 0xFF) {
+        threadData.tableCpuDescriptorHandles[rootParameterIndex][descriptorIndex] = d3d12ConstantBuffer->descriptorHandle;
+    }
     threadData.cbvResources[slot] = d3d12ConstantBuffer;
+
+    if (rootParameterIndex == 0xFF) {
+        BE_ERRLOG("D3D12Renderer::SetConstantBuffer: Invalid root parameter index\n");
+        return;
+    }
 
     if (d3d12CommandList->GetCommandListType() == D3D12_COMMAND_LIST_TYPE_COMPUTE) {
         d3d12CommandList->computeRootParametersDirtyMask |= BIT64(rootParameterIndex);

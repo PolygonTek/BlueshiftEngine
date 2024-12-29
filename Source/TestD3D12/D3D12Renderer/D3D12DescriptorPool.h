@@ -30,23 +30,30 @@ public:
     };
 
     D3D12DescriptorPool() = default;
-    D3D12DescriptorPool(ID3D12Device *device, Type type, UINT maxCount, bool isShaderVisible) { Init(device, type, maxCount, isShaderVisible); }
+    D3D12DescriptorPool(ID3D12Device *device, Type type, UINT maxCount, bool isGpuHeap) { Init(device, type, maxCount, isGpuHeap); }
     ~D3D12DescriptorPool() { Shutdown(); }
 
-    void                            Init(ID3D12Device *device, Type type, UINT maxCount, bool isShaderVisible);
+    void                            Init(ID3D12Device *device, Type type, UINT maxCount, bool isGpuHeap);
     void                            Shutdown();
 
     void                            Clear();
 
-    D3D12_CPU_DESCRIPTOR_HANDLE     Alloc();
-    void                            Free(const D3D12_CPU_DESCRIPTOR_HANDLE& descriptorHandle);
+    uint32_t                        AllocIndex();
+    bool                            Alloc(D3D12_CPU_DESCRIPTOR_HANDLE *outCpuDescriptorHandle, D3D12_GPU_DESCRIPTOR_HANDLE *outGpuDescriptorHandle);
+    void                            FreeIndex(uint32_t descriptorIndex);
+
+    uint32_t                        GetIndexFromCPUDescriptorHandle(D3D12_CPU_DESCRIPTOR_HANDLE descriptorHandle) const;
+    uint32_t                        GetIndexFromGPUDescriptorHandle(D3D12_GPU_DESCRIPTOR_HANDLE descriptorHandle) const;
+    D3D12_CPU_DESCRIPTOR_HANDLE     GetCPUDescriptorHandleFromIndex(uint32_t descriptorIndex) const;
+    D3D12_GPU_DESCRIPTOR_HANDLE     GetGPUDescriptorHandleFromIndex(uint32_t descriptorIndex) const;
 
     D3D12_CPU_DESCRIPTOR_HANDLE     AllocRange(int count);
     void                            FreeRange(const D3D12_CPU_DESCRIPTOR_HANDLE &descriptorHandle, int count);
 
 private:
     ID3D12DescriptorHeap *          descriptorHeap = nullptr;
-    D3D12_CPU_DESCRIPTOR_HANDLE     baseDescriptorHandle;
+    D3D12_CPU_DESCRIPTOR_HANDLE     baseCpuDescriptorHandle = {};
+    D3D12_GPU_DESCRIPTOR_HANDLE     baseGpuDescriptorHandle = {};
     UINT                            descriptorHandleSize;
     UINT                            maxDescriptorCount;
     IDAllocator                     idAllocator;

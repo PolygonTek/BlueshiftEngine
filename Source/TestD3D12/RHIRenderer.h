@@ -353,6 +353,8 @@ public:
     class GPUResource : public GPUObject {
     public:
         virtual void *              GetNativeResource() const = 0;
+        virtual const void *        GetNativeBufferObject() const { return nullptr; }
+        virtual const void *        GetNativeTextureObject() const { return nullptr; }
     };
 
     class Buffer : public GPUResource {
@@ -631,6 +633,7 @@ public:
     virtual void                    ResetQuery(CommandList *commandList, const QueryHeap *queryHeap, uint32_t index, uint32_t count) = 0;
     virtual void                    Dispatch(CommandList *commandList, uint32_t threadGroupCountX, uint32_t threadGroupCountY, uint32_t threadGroupCountZ) = 0;
     virtual void                    DispatchMesh(CommandList *commandList, uint32_t threadGroupCountX, uint32_t threadGroupCountY, uint32_t threadGroupCountZ) = 0;
+    virtual void                    ClearUAV(CommandList *commandList, const GPUResource *resource, uint32_t value) = 0;
     virtual void                    CopyBuffer(CommandList *commandList, const Buffer *dstBuffer, uint32_t dstOffset, const Buffer *srcBuffer, uint32_t srcOffset, uint32_t size) = 0;
     virtual void                    CopyTexture(CommandList *commandList, const Texture *dstTexture, uint32_t dstSlice, uint32_t dstMipLevel, uint32_t dstX, uint32_t dstY, uint32_t dstZ, const Texture *srcTexture, uint32_t srcSlice, uint32_t srcMipLevel, uint32_t srcX, uint32_t srcY, uint32_t srcZ, uint32_t width, uint32_t height, uint32_t depth) = 0;
     virtual void                    Barrier(CommandList *commandList, const GPUBarrier *barriers, uint32_t barrierCount) = 0;

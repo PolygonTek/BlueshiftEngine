@@ -30,7 +30,8 @@ public:
 
     void                            Release();
 
-    virtual void *                  GetNativeResource() const { return GetResource(); }
+    virtual void *                  GetNativeResource() const override { return GetResource(); }
+    virtual const void *            GetNativeBufferObject() const override { return buffer; }
 
     ID3D12Resource *                GetResource() const;
 

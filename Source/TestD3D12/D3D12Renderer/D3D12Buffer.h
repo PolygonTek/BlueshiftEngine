@@ -34,7 +34,8 @@ public:
 
     void                            Release();
 
-    virtual void *                  GetNativeResource() const { return GetResource(); }
+    virtual void *                  GetNativeResource() const override { return GetResource(); }
+    virtual const void *            GetNativeBufferObject() const override { return this; }
 
     ID3D12Resource *                GetResource() const;
     uint64_t                        GetSize();
@@ -48,6 +49,7 @@ private:
     Image::Format::Enum             format = Image::Format::Unknown;
     uint32_t                        stride = 0;
     uint64_t                        size = 0;
-    D3D12_CPU_DESCRIPTOR_HANDLE     srvDescriptorHandle = {};
-    D3D12_CPU_DESCRIPTOR_HANDLE     uavDescriptorHandle = {};
+    D3D12_CPU_DESCRIPTOR_HANDLE     srvCpuDescriptorHandle = {};
+    D3D12_CPU_DESCRIPTOR_HANDLE     uavCpuDescriptorHandle = {};
+    D3D12_GPU_DESCRIPTOR_HANDLE     uavGpuDescriptorHandle = {};
 };
