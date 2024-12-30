@@ -18,6 +18,13 @@
 
 class RHIRenderer {
 public:
+    enum class ClearFlag : uint32_t {
+        None                        = 0,
+        Color                       = BIT(0),
+        Depth                       = BIT(1),
+        Stencil                     = BIT(2)
+    };
+
     enum class FillMode : uint8_t {
         Wire,
         Solid
@@ -647,6 +654,8 @@ public:
     virtual void                    CopyTexture(CommandList *commandList, const Texture *dstTexture, uint32_t dstSlice, uint32_t dstMipLevel, uint32_t dstX, uint32_t dstY, uint32_t dstZ, const Texture *srcTexture, uint32_t srcSlice, uint32_t srcMipLevel, uint32_t srcX, uint32_t srcY, uint32_t srcZ, uint32_t width, uint32_t height, uint32_t depth) = 0;
     virtual void                    Barrier(CommandList *commandList, const GPUBarrier *barriers, uint32_t barrierCount) = 0;
     virtual void                    Barrier(CommandList *commandList, const GPUBarrier &barrier) = 0;
+    virtual void                    BeginRenderPass(CommandList *commandList, const SwapChain *swapChain, const Color4 &clearColor, float clearDepth, uint8_t clearStencil, ClearFlag clearFlag) = 0;
+    virtual void                    EndRenderPass(CommandList *commandList) = 0;
 
     virtual void                    Draw(CommandList *commandList, uint32_t vertexCount, uint32_t startVertexLocation) = 0;
     virtual void                    DrawIndexed(CommandList *commandList, uint32_t indexCount, uint32_t startIndexLocation, uint32_t baseVertexLocation) = 0;
@@ -665,6 +674,11 @@ protected:
     DepthStencilState               depthStencilStates[DepthStencilStateType::Count];
     BlendState                      blendStates[BlendStateType::Count];
     bool                            initialized = false;
+};
+
+template<>
+struct enable_bitmask_operators<RHIRenderer::ClearFlag> {
+    static const bool enable = true;
 };
 
 template<>

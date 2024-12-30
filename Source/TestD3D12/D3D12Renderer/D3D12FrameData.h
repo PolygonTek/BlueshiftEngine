@@ -54,6 +54,7 @@ public:
 
     void                            ClearMemAllocs();
 
+                                    // 프레임 별로 임시로 할당하는 다이나믹 버퍼 (thread-safe)
     RHIRenderer::ConstantBuffer *   AllocConstant(int threadIndex, uint32_t size);
     RHIRenderer::VertexBuffer *     AllocVertex(int threadIndex, uint32_t vertexSize, uint32_t count);
     RHIRenderer::IndexBuffer *      AllocIndex(int threadIndex, uint32_t indexSize, uint32_t count);

@@ -293,15 +293,16 @@ void D3D12Renderer::CreateSubresource(Buffer *buffer, SubresourceType type, uint
         uavDesc.Buffer.FirstElement = offset / stride;
         uavDesc.Buffer.NumElements = Min(size, d3d12Buffer->size - offset) / stride;
 
+        // UAV 는 GPU 디스크립터도 같이 할당한다.
         resCpuDescriptorPool->Alloc(&d3d12Buffer->uavCpuDescriptorHandle, nullptr);
         uavGpuDescriptorPool->Alloc(nullptr, &d3d12Buffer->uavGpuDescriptorHandle);
 
         device->CreateUnorderedAccessView(d3d12Buffer->GetResource(), nullptr, &uavDesc, d3d12Buffer->uavCpuDescriptorHandle);
 
-        // UAV 디스크립터를 shader visible 한 디스크립터에 복사
+        // 만들어진 UAV 디스크립터를 GPU 디스크립터에 복사
         uint32 index = uavGpuDescriptorPool->GetIndexFromGPUDescriptorHandle(d3d12Buffer->uavGpuDescriptorHandle);
-        D3D12_CPU_DESCRIPTOR_HANDLE uavCpuDescriptorHandle = uavGpuDescriptorPool->GetCPUDescriptorHandleFromIndex(index);
-        device->CopyDescriptorsSimple(1, uavCpuDescriptorHandle, d3d12Buffer->uavCpuDescriptorHandle, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+        D3D12_CPU_DESCRIPTOR_HANDLE destDescriptorHandle = uavGpuDescriptorPool->GetCPUDescriptorHandleFromIndex(index);
+        device->CopyDescriptorsSimple(1, destDescriptorHandle, d3d12Buffer->uavCpuDescriptorHandle, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
     }
 }
 

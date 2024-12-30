@@ -35,6 +35,9 @@ public:
     virtual void                    Resize(uint32_t width, uint32_t height) override;
     virtual void                    SwapBuffers(bool vsync) override;
 
+    ID3D12Resource *                GetCurrentBackBuffer() const { return renderTargetBuffers[currentBackBufferIndex]; }
+    D3D12_CPU_DESCRIPTOR_HANDLE     GetCurrentBackBufferDescriptorHandle() const { return rtvDescriptorHandles[currentBackBufferIndex]; }
+
     bool                            IsSwapChainSupportsHDR() const;
 
     static constexpr int            NumSwapChainBuffers = 3;

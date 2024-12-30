@@ -136,6 +136,8 @@ public:
     virtual void                        CopyTexture(CommandList *commandList, const Texture *dstTexture, uint32_t dstSlice, uint32_t dstMipLevel, uint32_t dstX, uint32_t dstY, uint32_t dstZ, const Texture *srcTexture, uint32_t srcSlice, uint32_t srcMipLevel, uint32_t srcX, uint32_t srcY, uint32_t srcZ, uint32_t width, uint32_t height, uint32_t depth) override;
     virtual void                        Barrier(CommandList *commandList, const GPUBarrier *barriers, uint32_t barrierCount) override;
     virtual void                        Barrier(CommandList *commandList, const GPUBarrier &barrier) override { Barrier(commandList, &barrier, 1); }
+    virtual void                        BeginRenderPass(CommandList *commandList, const SwapChain *swapChain, const Color4 &clearColor, float clearDepth, uint8_t clearStencil, ClearFlag clearFlag) override;
+    virtual void                        EndRenderPass(CommandList *commandList) override;
 
     virtual void                        Draw(CommandList *commandList, uint32_t vertexCount, uint32_t startVertexLocation) override;
     virtual void                        DrawIndexed(CommandList *commandList, uint32_t indexCount, uint32_t startIndexLocation, uint32_t baseVertexLocation) override;
