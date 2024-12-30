@@ -58,6 +58,7 @@ public:
     const D3D12PipelineState *      currentPSO = nullptr;
     uint64_t                        graphicsRootParametersDirtyMask = 0;
     uint64_t                        computeRootParametersDirtyMask = 0;
+    Array<D3D12_RESOURCE_BARRIER>   renderPassEndBarriers;
 
 #ifdef USE_STATE_CACHE_FOR_COMMAND_LIST
 private:

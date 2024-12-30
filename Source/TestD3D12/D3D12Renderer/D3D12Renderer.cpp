@@ -17,6 +17,7 @@
 #include "Platform/PlatformFile.h"
 #include "Platform/Windows/PlatformWinUtils.h"
 #include "D3D12Renderer.h"
+#include "D3D12SwapChain.h"
 #include "D3D12CommandList.h"
 #include "D3D12CommandListPool.h"
 #include "D3D12RootDescriptorPool.h"
@@ -258,44 +259,7 @@ void D3D12Renderer::Init(HWND hwnd) {
     UINT backBufferHeight = rc.bottom;
 
     // 스왑 체인 (백버퍼) 생성
-    CreateSwapChain(hwnd, backBufferWidth, backBufferHeight);
-
-    //IDXGIOutput *output = nullptr;
-    //hr = swapChain->GetContainingOutput(&output);
-
-    // Viewport 설정을 백버퍼 크기에 맞게 설정
-    viewportRect.x = 0.0f;
-    viewportRect.y = 0.0f;
-    viewportRect.w = (float)backBufferWidth;
-    viewportRect.h = (float)backBufferHeight;
-
-    // ScissorRect 설정을 백버퍼 크기에 맞게 설정
-    scissorRect.x = 0;
-    scissorRect.y = 0;
-    scissorRect.w = viewportRect.w;
-    scissorRect.h = viewportRect.h;
-
-    // 백버퍼 용 디스크립터 힙 생성
-    D3D12_DESCRIPTOR_HEAP_DESC rtvDescriptorHeapDesc = {};
-    rtvDescriptorHeapDesc.NumDescriptors = NumSwapChainBuffers;
-    rtvDescriptorHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_RTV;
-    rtvDescriptorHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
-    hr = device->CreateDescriptorHeap(&rtvDescriptorHeapDesc, IID_PPV_ARGS(&rtvDescriptorHeap));
-    if (FAILED(hr)) {
-        BE_FATALERROR("CreateDescriptorHeap for back buffers failed, ERROR: 0x%x", hr);
-    }
-
-    // 뎁스/스텐실 버퍼 용 디스크립터 힙 생성
-    D3D12_DESCRIPTOR_HEAP_DESC dsvDescriptorHeapDesc = {};
-    dsvDescriptorHeapDesc.NumDescriptors = 1;
-    dsvDescriptorHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_DSV;
-    dsvDescriptorHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
-    hr = device->CreateDescriptorHeap(&dsvDescriptorHeapDesc, IID_PPV_ARGS(&dsvDescriptorHeap));
-    if (FAILED(hr)) {
-        BE_FATALERROR("CreateDescriptorHeap for depth/stencil buffer failed, ERROR: 0x%x", hr);
-    }
-
-    CreateRTVs();
+    swapChain = CreateSwapChain(hwnd, backBufferWidth, backBufferHeight);
 
     CreateDSV(backBufferWidth, backBufferHeight);
 
@@ -306,9 +270,6 @@ void D3D12Renderer::Init(HWND hwnd) {
 
     // 리소스 생성 용 커맨드 리스트
     resourceCommandList = graphicsCommandListPool->Alloc();
-
-    // 현재 백버퍼 인덱스 초기화
-    currentBackBufferIndex = dxgiSwapChain->GetCurrentBackBufferIndex();
 
     maxPendingResources = 1024;
     pendingResourceBuffer = new D3D12PendingResource[maxPendingResources];
@@ -368,6 +329,8 @@ void D3D12Renderer::Shutdown() {
         SAFE_RELEASE(entry->second);
     }
 
+    DestroySwapChain(swapChain);
+
     SAFE_DELETE(resCpuDescriptorPool);
     SAFE_DELETE(rtvCpuDescriptorPool);
     SAFE_DELETE(dsvCpuDescriptorPool);
@@ -375,14 +338,10 @@ void D3D12Renderer::Shutdown() {
     SAFE_DELETE(uavGpuDescriptorPool);
     SAFE_DELETE(graphicsCommandListPool);
 
+    SAFE_RELEASE(depthStencilBuffer);
     SAFE_RELEASE(dxcCompiler);
     SAFE_RELEASE(dxcUtils);
     SAFE_RELEASE(dxcLibrary);
-    SAFE_RELEASE(rtvDescriptorHeap);
-    SAFE_RELEASE(dsvDescriptorHeap);
-    SAFE_RELEASE_ARRAY(renderTargetBuffers);
-    SAFE_RELEASE(depthStencilBuffer);
-    SAFE_RELEASE(dxgiSwapChain);
     SAFE_RELEASE(commandQueues[to_int(CommandQueueType::Graphics)]);
     SAFE_RELEASE(commandQueues[to_int(CommandQueueType::Compute)]);
     SAFE_RELEASE(fence);
@@ -409,58 +368,6 @@ void D3D12Renderer::Shutdown() {
             pDebug->Release();
         }
         PlatformSystem::DebugBreak();
-    }
-}
-
-void D3D12Renderer::CreateSwapChain(HWND hwnd, uint32_t width, uint32_t height) {
-    DXGI_SWAP_CHAIN_DESC1 swapChainDesc = {};
-    swapChainDesc.Width = (UINT)width;
-    swapChainDesc.Height = (UINT)height;
-    swapChainDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
-    //swapChainDesc.BufferDesc.RefreshRate.Numerator = m_uiRefreshRate;
-    //swapChainDesc.BufferDesc.RefreshRate.Denominator = 1;
-    swapChainDesc.BufferUsage = DXGI_USAGE_BACK_BUFFER | DXGI_USAGE_RENDER_TARGET_OUTPUT;
-    swapChainDesc.BufferCount = NumSwapChainBuffers;
-    swapChainDesc.SampleDesc.Count = 1;
-    swapChainDesc.SampleDesc.Quality = 0;
-    swapChainDesc.Scaling = DXGI_SCALING_NONE;
-    swapChainDesc.SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD;
-    swapChainDesc.AlphaMode = DXGI_ALPHA_MODE_UNSPECIFIED;
-    swapChainDesc.Flags = DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH;
-
-    if (supportsTearing) {
-        swapChainDesc.Flags |= DXGI_SWAP_CHAIN_FLAG_ALLOW_TEARING;
-    }
-
-    DXGI_SWAP_CHAIN_FULLSCREEN_DESC swapChainFullscreenDesc = {};
-    swapChainFullscreenDesc.Windowed = TRUE;
-
-    IDXGISwapChain1 *swapChain1 = nullptr;
-    HRESULT hr = dxgiFactory->CreateSwapChainForHwnd(commandQueues[to_int(CommandQueueType::Graphics)], hwnd, &swapChainDesc, &swapChainFullscreenDesc, nullptr, &swapChain1);
-    if (FAILED(hr)) {
-        BE_FATALERROR("CreateSwapChainForHwnd failed, ERROR: 0x%x", hr);
-    }
-    hr = dxgiFactory->MakeWindowAssociation(hwnd, DXGI_MWA_NO_WINDOW_CHANGES | DXGI_MWA_NO_ALT_ENTER);
-    if (FAILED(hr)) {
-        BE_FATALERROR("MakeWindowAssociation failed, ERROR: 0x%x", hr);
-    }
-    hr = swapChain1->QueryInterface(IID_PPV_ARGS(&dxgiSwapChain));
-    swapChain1->Release();
-    if (FAILED(hr)) {
-        BE_FATALERROR("Failed to create swapchain, ERROR: 0x%x", hr);
-    }
-}
-
-void D3D12Renderer::CreateRTVs() {
-    CD3DX12_CPU_DESCRIPTOR_HANDLE rtvDescriptorHandle(rtvDescriptorHeap->GetCPUDescriptorHandleForHeapStart());
-
-    // 스왑 체인의 버퍼들을 가져와서 RTV 를 생성한다.
-    for (UINT renderTargetIndex = 0; renderTargetIndex < NumSwapChainBuffers; ++renderTargetIndex) {
-        dxgiSwapChain->GetBuffer(renderTargetIndex, IID_PPV_ARGS(&renderTargetBuffers[renderTargetIndex]));
-
-        device->CreateRenderTargetView(renderTargetBuffers[renderTargetIndex], nullptr, rtvDescriptorHandle);
-
-        rtvDescriptorHandle.Offset(1, descriptorHandleSize[D3D12_DESCRIPTOR_HEAP_TYPE_RTV]);
     }
 }
 
@@ -509,7 +416,10 @@ void D3D12Renderer::CreateDSV(uint32_t width, uint32_t height) {
     dsvDesc.ViewDimension = D3D12_DSV_DIMENSION_TEXTURE2D;
     dsvDesc.Flags = D3D12_DSV_FLAG_NONE;
 
-    CD3DX12_CPU_DESCRIPTOR_HANDLE dsvDescriptorHandle(dsvDescriptorHeap->GetCPUDescriptorHandleForHeapStart());
+    if (dsvDescriptorHandle.ptr != 0) {
+        dsvCpuDescriptorPool->FreeIndex(renderer->dsvCpuDescriptorPool->GetIndexFromCPUDescriptorHandle(dsvDescriptorHandle));
+    }
+    dsvCpuDescriptorPool->Alloc(&dsvDescriptorHandle, nullptr);
     device->CreateDepthStencilView(depthStencilBuffer, &dsvDesc, dsvDescriptorHandle);
 }
 
@@ -572,27 +482,24 @@ void D3D12Renderer::BeginFrame() {
     // CommandAllocator 를 재사용하도록 리셋하고, CommandList 를 CommandAllocator 를 이용하여 초기 상태로 리셋
     commandList->Reset();
 
+    // 뷰포트 & ScissorRect 설정
+    SetViewport(commandList, swapChain->viewportRect);
+    SetScissorRect(commandList, swapChain->scissorRect);
+
     // 백버퍼를 렌더 타겟 상태로 전환
     D3D12_RESOURCE_BARRIER barrier;
     barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
     barrier.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
-    barrier.Transition.pResource = renderTargetBuffers[currentBackBufferIndex];
+    barrier.Transition.pResource = swapChain->renderTargetBuffers[swapChain->currentBackBufferIndex];
     barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_PRESENT;
     barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_RENDER_TARGET;
     barrier.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
     commandList->GetGraphicsCommandList()->ResourceBarrier(1, &barrier);
 
-    // 뷰포트 & ScissorRect 설정
-    SetViewport(commandList, viewportRect);
-    SetScissorRect(commandList, scissorRect);
-
-    rtvDescriptorHandle = CD3DX12_CPU_DESCRIPTOR_HANDLE(rtvDescriptorHeap->GetCPUDescriptorHandleForHeapStart(), currentBackBufferIndex, descriptorHandleSize[D3D12_DESCRIPTOR_HEAP_TYPE_RTV]);
-    dsvDescriptorHandle = CD3DX12_CPU_DESCRIPTOR_HANDLE(dsvDescriptorHeap->GetCPUDescriptorHandleForHeapStart());
-
     // 백버퍼와 깊이버퍼를 Clear
-    commandList->GetGraphicsCommandList()->ClearRenderTargetView(rtvDescriptorHandle, Color4::blue, 0, nullptr);
+    commandList->GetGraphicsCommandList()->ClearRenderTargetView(swapChain->rtvDescriptorHandles[swapChain->currentBackBufferIndex], Color4::blue, 0, nullptr);
     commandList->GetGraphicsCommandList()->ClearDepthStencilView(dsvDescriptorHandle, D3D12_CLEAR_FLAG_DEPTH, 1.0f, 0, 0, nullptr);
-    commandList->GetGraphicsCommandList()->OMSetRenderTargets(1, &rtvDescriptorHandle, FALSE, &dsvDescriptorHandle);
+    commandList->GetGraphicsCommandList()->OMSetRenderTargets(1, &swapChain->rtvDescriptorHandles[swapChain->currentBackBufferIndex], FALSE, &dsvDescriptorHandle);
 
     // CommandList 기록을 마치고 CommandQueue 로 실행
     commandList->CloseAndExecute(CommandQueueType::Graphics);
@@ -613,7 +520,7 @@ void D3D12Renderer::EndFrame() {
     D3D12_RESOURCE_BARRIER barrier;
     barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
     barrier.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
-    barrier.Transition.pResource = renderTargetBuffers[currentBackBufferIndex];
+    barrier.Transition.pResource = swapChain->renderTargetBuffers[swapChain->currentBackBufferIndex];
     barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_RENDER_TARGET;
     barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_PRESENT;
     barrier.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
@@ -641,12 +548,7 @@ void D3D12Renderer::EndFrame() {
 void D3D12Renderer::SwapChainBuffers(bool vsync) {
     PIX_SCOPED_EVENT(commandQueues[to_int(CommandQueueType::Graphics)], 2, "D3D12Renderer::SwapChainBuffers");
 
-    if (dxgiSwapChain->Present(vsync ? 1 : 0, vsync ? 0 : DXGI_PRESENT_ALLOW_TEARING) == DXGI_ERROR_DEVICE_REMOVED) {
-        BE_FATALERROR("DXGI Device Removed");
-    }
-
-    // 다음 프레임에 사용할 백버퍼 인덱스 얻어오기
-    currentBackBufferIndex = dxgiSwapChain->GetCurrentBackBufferIndex();
+    swapChain->SwapBuffers(vsync);
 }
 
 D3D12CommandList* D3D12Renderer::FlushCommandList(D3D12CommandList* commandList) {
@@ -662,10 +564,10 @@ D3D12CommandList* D3D12Renderer::FlushCommandList(D3D12CommandList* commandList)
     commandList->Reset();
 
     // 뷰포트 & ScissorRect 설정
-    SetViewport(commandList, viewportRect);
-    SetScissorRect(commandList, scissorRect);
+    SetViewport(commandList, swapChain->viewportRect);
+    SetScissorRect(commandList, swapChain->scissorRect);
 
-    commandList->GetGraphicsCommandList()->OMSetRenderTargets(1, &rtvDescriptorHandle, FALSE, &dsvDescriptorHandle);
+    commandList->GetGraphicsCommandList()->OMSetRenderTargets(1, &swapChain->rtvDescriptorHandles[swapChain->currentBackBufferIndex], FALSE, &dsvDescriptorHandle);
 
     return commandList;
 }
@@ -752,6 +654,10 @@ void D3D12Renderer::FreePendingResources(bool waitPendings) {
     }
 }
 
+void D3D12Renderer::DestroySwapChain(D3D12SwapChain *swapChain) {
+    SAFE_DELETE(swapChain);
+}
+
 void D3D12Renderer::SetConstants(CommandList *commandList, const void *data, uint32_t size, uint32_t offset) {
     D3D12CommandList *d3d12CommandList = static_cast<D3D12CommandList *>(commandList);
     int threadIndex = d3d12CommandList->GetThreadIndex();
@@ -775,26 +681,12 @@ void D3D12Renderer::OnResize(int width, int height) {
 
     Finish();
 
-    // 기존 백버퍼 해제
-    SAFE_RELEASE_ARRAY(renderTargetBuffers);
+    swapChain->Resize(width, height);
 
     // 기존 뎁스/스텐실 버퍼 해제
     SAFE_RELEASE(depthStencilBuffer);
 
-    // 스왑 체인 버퍼의 사이즈를 조정한다.
-    dxgiSwapChain->ResizeBuffers(NumSwapChainBuffers, width, height, DXGI_FORMAT_R8G8B8A8_UNORM, DXGI_SWAP_CHAIN_FLAG_ALLOW_TEARING);
-
-    CreateRTVs();
-
     CreateDSV(width, height);
-
-    currentBackBufferIndex = dxgiSwapChain->GetCurrentBackBufferIndex();
-
-    viewportRect.w = static_cast<float>(width);
-    viewportRect.h = static_cast<float>(height);
-
-    scissorRect.w = width;
-    scissorRect.h = height;
 }
 
 void D3D12Renderer::CreateDevice(IDXGIAdapter1 **adapterPtr) {
@@ -1252,10 +1144,10 @@ void D3D12Renderer::DrawVisObjectsWithoutTask() {
     commandList->Reset();
 
     // 뷰포트 & ScissorRect 설정
-    SetViewport(commandList, viewportRect);
-    SetScissorRect(commandList, scissorRect);
+    SetViewport(commandList, swapChain->viewportRect);
+    SetScissorRect(commandList, swapChain->scissorRect);
 
-    commandList->GetGraphicsCommandList()->OMSetRenderTargets(1, &rtvDescriptorHandle, FALSE, &dsvDescriptorHandle);
+    commandList->GetGraphicsCommandList()->OMSetRenderTargets(1, &swapChain->rtvDescriptorHandles[swapChain->currentBackBufferIndex], FALSE, &dsvDescriptorHandle);
 
     D3D12RootDescriptorPool *rootDescriptorPool = currentFrameData->threadData[0].rootDescriptorPool;
 
@@ -1283,10 +1175,10 @@ void D3D12Renderer::DrawVisObjectsByTask(D3D12Renderer::DrawObjectTaskDesc *task
     commandList->Reset();
 
     // 뷰포트 & ScissorRect 설정
-    SetViewport(commandList, viewportRect);
-    SetScissorRect(commandList, scissorRect);
+    SetViewport(commandList, swapChain->viewportRect);
+    SetScissorRect(commandList, swapChain->scissorRect);
 
-    commandList->GetGraphicsCommandList()->OMSetRenderTargets(1, &rtvDescriptorHandle, FALSE, &dsvDescriptorHandle);
+    commandList->GetGraphicsCommandList()->OMSetRenderTargets(1, &swapChain->rtvDescriptorHandles[swapChain->currentBackBufferIndex], FALSE, &dsvDescriptorHandle);
 
     // 루트 디스크립터 힙을 지정한다.
     ID3D12DescriptorHeap *descriptorHeaps[] = { currentThreadData.rootDescriptorPool->descriptorHeap };

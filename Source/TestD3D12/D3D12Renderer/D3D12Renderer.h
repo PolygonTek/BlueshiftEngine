@@ -21,6 +21,7 @@
 #include "D3D12MemoryAllocator/D3D12MemAlloc.h"
 #endif
 
+#include "D3D12SwapChain.h"
 #include "D3D12FrameData.h"
 #include "../D3D12RenderObject.h"
 
@@ -69,6 +70,9 @@ public:
     void                                MarkForRelease(ID3D12Resource *resource);
     void                                OnPendingResourceAdded();
     void                                FreePendingResources(bool waitPendings = false);
+
+    D3D12SwapChain *                    CreateSwapChain(HWND hwnd, uint32_t width, uint32_t height);
+    void                                DestroySwapChain(D3D12SwapChain *swapChain);
 
     virtual Buffer *                    CreateBuffer(BufferUsage usage, ResourceFlag flags, uint64_t size, Image::Format::Enum format, uint32_t stride, const void *data) override;
     virtual void                        DestroyBuffer(Buffer *buffer, bool immediate = false) override;
@@ -154,8 +158,6 @@ public:
     void                                BindRootParameters(D3D12CommandList *commandList, bool graphics);
 
     void                                CreateDevice(IDXGIAdapter1 **adapterPtr);
-    void                                CreateSwapChain(HWND hwnd, uint32_t width, uint32_t height);
-    void                                CreateRTVs();
     void                                CreateDSV(uint32_t width, uint32_t height);
     void                                CreateShaderCompiler();
 
@@ -191,11 +193,8 @@ public:
     static Image::Format::Enum          ToUncompressedImageFormat(Image::Format::Enum imageFormat);
     static Image::Format::Enum          ToCompressedImageFormat(Image::Format::Enum inFormat, bool useNormalMap);
 
-    static constexpr int                NumSwapChainBuffers = 3;
-
     ID3D12Device5 *                     device = nullptr;
     IDXGIFactory4 *                     dxgiFactory = nullptr;
-    IDXGISwapChain3 *                   dxgiSwapChain = nullptr;
     ID3D12CommandQueue *                commandQueues[to_int(CommandQueueType::Count)] = {};
     D3D12CommandListPool *              graphicsCommandListPool = nullptr;
     D3D12CommandList *                  resourceCommandList = nullptr;
@@ -206,21 +205,11 @@ public:
     D3D12MA::Allocator *                allocator = nullptr;
 #endif
     UINT                                descriptorHandleSize[D3D12_DESCRIPTOR_HEAP_TYPE_NUM_TYPES];
-    ID3D12DescriptorHeap *              rtvDescriptorHeap = nullptr;
-    ID3D12DescriptorHeap *              dsvDescriptorHeap = nullptr;
-    ID3D12Resource *                    renderTargetBuffers[NumSwapChainBuffers] = {};
+
+    // TODO: Renderer 외부로 뺄 것
+    D3D12SwapChain *                    swapChain = nullptr;
     ID3D12Resource *                    depthStencilBuffer = nullptr;
-
-    D3D12_CPU_DESCRIPTOR_HANDLE         rtvDescriptorHandle = CD3DX12_CPU_DESCRIPTOR_HANDLE();
-    D3D12_CPU_DESCRIPTOR_HANDLE         dsvDescriptorHandle = CD3DX12_CPU_DESCRIPTOR_HANDLE();
-
-    SharedLib                           dxcompilerLibrary = nullptr;
-    Str                                 shaderCacheDir;
-    Str                                 psoCacheDir;
-
-    HashMap<uint64_t, D3D12PipelineState *> graphicsPsoMap;
-    HashMap<uint64_t, D3D12PipelineState *> computePsoMap;
-    HashMap<uint64_t, ID3DBlob *>       cachedPsoBlobMap;
+    D3D12_CPU_DESCRIPTOR_HANDLE         dsvDescriptorHandle = {};
 
     uint32_t                            vendorId;
     uint32_t                            deviceId;
@@ -235,14 +224,19 @@ public:
     bool                                supportsMeshShader = false;
     bool                                supportsDepthBoundsTest = false;
 
-    UINT                                currentBackBufferIndex = 0;
-    Rect                                viewportRect;
-    Rect                                scissorRect;
     D3D12DescriptorPool *               resCpuDescriptorPool = nullptr;
     D3D12DescriptorPool *               rtvCpuDescriptorPool = nullptr;
     D3D12DescriptorPool *               dsvCpuDescriptorPool = nullptr;
     D3D12DescriptorPool *               uavGpuDescriptorPool = nullptr;
     D3D12DescriptorPool *               samplerCpuDescriptorPool = nullptr;
+
+    SharedLib                           dxcompilerLibrary = nullptr;
+    Str                                 shaderCacheDir;
+    Str                                 psoCacheDir;
+
+    HashMap<uint64_t, D3D12PipelineState *> graphicsPsoMap;
+    HashMap<uint64_t, D3D12PipelineState *> computePsoMap;
+    HashMap<uint64_t, ID3DBlob *>       cachedPsoBlobMap;
 
     IDxcCompiler3 *                     dxcCompiler = nullptr;
     IDxcUtils *                         dxcUtils = nullptr;

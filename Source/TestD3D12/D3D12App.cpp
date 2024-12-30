@@ -100,8 +100,11 @@ void D3D12App::SetViewMatrix(const Mat3 &viewAxis, const Vec3 &viewOrigin, float
 void D3D12App::UpdateCamera() {
     PIX_CPU_SCOPED_EVENT(0, "D3D12App::UpdateCamera");
 
+    float w = renderer->swapChain->GetWidth();
+    float h = renderer->swapChain->GetHeight();
+    float aspectRatio = w / h;
+
     Mat4 projMatrix;
-    float aspectRatio = (float)renderer->viewportRect.w / renderer->viewportRect.h;
     projMatrix.SetPerspectiveRH(45, aspectRatio, 1, 1000, false);
 
     Mat4 viewMatrix;

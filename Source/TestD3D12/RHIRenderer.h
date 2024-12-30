@@ -520,6 +520,15 @@ public:
         uint32_t                    sampleQuality = 0;
     };
 
+    class SwapChain {
+    public:
+        virtual uint32_t            GetWidth() const = 0;
+        virtual uint32_t            GetHeight() const = 0;
+
+        virtual void                Resize(uint32_t width, uint32_t height) = 0;
+        virtual void                SwapBuffers(bool vsync) = 0;
+    };
+
     enum class CommandQueueType : uint8_t {
         Graphics,
         Compute,
