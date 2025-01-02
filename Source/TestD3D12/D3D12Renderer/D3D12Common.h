@@ -35,6 +35,9 @@
 // 스테이트 캐싱 사용 여부
 #define USE_STATE_CACHE_FOR_COMMAND_LIST
 
+// 세컨더리 커맨드 리스트 (Bundle) 사용 여부
+#define USE_SECONDARY_COMMAND_LISTS
+
 // 인스턴싱 사용 여부
 #define USE_RENDEROBJECT_INSTANCING
 

@@ -37,8 +37,13 @@ void D3D12FrameData::Init() {
     for (int threadIndex = 0; threadIndex < numThreads; ++threadIndex) {
         DataPerThread *data = &threadData[threadIndex];
 
+#ifdef USE_SECONDARY_COMMAND_LISTS
+        uint32_t maxSecondaryCommandLists = 8;
+#else
+        uint32_t maxSecondaryCommandLists = 0;
+#endif
         // 그래픽스 커맨드 리스트 풀을 생성한다.
-        data->graphicsCommandListPool = new D3D12CommandListPool(renderer->device, threadIndex, D3D12_COMMAND_LIST_TYPE_DIRECT, 8);
+        data->graphicsCommandListPool = new D3D12CommandListPool(renderer->device, threadIndex, D3D12_COMMAND_LIST_TYPE_DIRECT, 8, maxSecondaryCommandLists);
 
         // 컴퓨트 커맨드 리스트 풀을 생성한다.
         data->computeCommandListPool = new D3D12CommandListPool(renderer->device, threadIndex, D3D12_COMMAND_LIST_TYPE_COMPUTE, 8);

@@ -37,6 +37,9 @@ static constexpr D3D12_SHADING_RATE ToD3D12ShadingRate(RHIRenderer::ShadingRate 
 }
 
 D3D12_COMMAND_LIST_TYPE D3D12CommandList::GetCommandListType() const {
+    if (secondary) {
+        return D3D12_COMMAND_LIST_TYPE_BUNDLE;
+    }
     return parentPool->GetCommandListType();
 }
 

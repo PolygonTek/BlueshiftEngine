@@ -17,19 +17,19 @@
 #include "D3D12CommandListPool.h"
 #include "D3D12CommandList.h"
 
-void D3D12CommandListPool::Init(ID3D12Device *device, int threadIndex, D3D12_COMMAND_LIST_TYPE commandListType, uint32_t maxCommandLists) {
+void D3D12CommandListPool::Init(ID3D12Device *device, int threadIndex, D3D12_COMMAND_LIST_TYPE commandListType, uint32_t maxPrimaryCommandLists, uint32_t maxSecondaryCommandLists) {
     HRESULT hr;
 
+    this->maxCommandLists = maxPrimaryCommandLists + maxSecondaryCommandLists;
     this->commandListPool = new D3D12CommandList[maxCommandLists];
     this->commandListType = commandListType;
-    this->maxCommandLists = maxCommandLists;
     this->threadIndex = threadIndex;
 
-    for (int i = 0; i < maxCommandLists; ++i) {
-        D3D12CommandList* commandList = &commandListPool[i];
+    // Primary 커맨드 리스트 생성
+    for (int i = 0; i < maxPrimaryCommandLists; ++i) {
+        D3D12CommandList *commandList = &commandListPool[i];
         commandList->parentPool = this;
 
-        // CommandList 를 위한 CommandAllocator 생성
         hr = device->CreateCommandAllocator(commandListType, IID_PPV_ARGS(&commandList->commandAllocator));
         if (FAILED(hr)) {
             BE_FATALERROR("CreateCommandAllocator : failed, ERROR: 0x%x", hr);
@@ -73,12 +73,42 @@ void D3D12CommandListPool::Init(ID3D12Device *device, int threadIndex, D3D12_COM
         }
     }
 
-    // 모든 commandLists 를 free 상태로 초기화
-    for (int i = 0; i < maxCommandLists; ++i) {
+    // Secondary 커맨드 리스트 생성
+    for (int i = maxPrimaryCommandLists; i < maxCommandLists; ++i) {
+        D3D12CommandList *commandList = &commandListPool[i];
+        commandList->parentPool = this;
+        commandList->secondary = true;
+
+        hr = device->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_BUNDLE, IID_PPV_ARGS(&commandList->commandAllocator));
+        if (FAILED(hr)) {
+            BE_FATALERROR("CreateCommandAllocator : failed, ERROR: 0x%x", hr);
+        }
+
+        // 번들 CommandList 생성
+        ID3D12GraphicsCommandList6 *bundleCommandList = nullptr;
+        hr = device->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_BUNDLE, commandList->commandAllocator, nullptr, IID_PPV_ARGS(&bundleCommandList));
+        if (FAILED(hr)) {
+            BE_FATALERROR("CreateCommandList : failed, ERROR: 0x%x", hr);
+        }
+
+        bundleCommandList->Close();
+        commandList->commandList = bundleCommandList;
+    }
+
+    // 모든 Primary 커맨드 리스트들을 free 상태로 초기화
+    for (int i = 0; i < maxPrimaryCommandLists; ++i) {
         D3D12CommandList *commandList = &commandListPool[i];
 
         commandList->node.SetOwner(commandList);
-        commandList->node.AddToEnd(freeCommandLists);
+        commandList->node.AddToEnd(freeCommandLists[to_int(RHIRenderer::CommandListType::Primary)]);
+    }
+
+    // 모든 Secondary 커맨드 리스트들을 free 상태로 초기화
+    for (int i = maxPrimaryCommandLists; i < maxCommandLists; ++i) {
+        D3D12CommandList *commandList = &commandListPool[i];
+
+        commandList->node.SetOwner(commandList);
+        commandList->node.AddToEnd(freeCommandLists[to_int(RHIRenderer::CommandListType::Secondary)]);
     }
 
     usedCount = 0;
@@ -106,13 +136,15 @@ void D3D12CommandListPool::Clear() {
     assert(usedCount == 0);
 }
 
-D3D12CommandList *D3D12CommandListPool::Alloc() {
-    if (freeCommandLists.IsListEmpty()) {
+D3D12CommandList *D3D12CommandListPool::Alloc(RHIRenderer::CommandListType type) {
+    LinkList<D3D12CommandList> &currentFreeCommandLists = freeCommandLists[to_int(type)];
+
+    if (currentFreeCommandLists.IsListEmpty()) {
         BE_ERRLOG("D3D12CommandListPool::Alooc: not enough free command list\n");
         return nullptr;
     }
 
-    D3D12CommandList* newCommandList = freeCommandLists.Next();
+    D3D12CommandList* newCommandList = currentFreeCommandLists.Next();
     newCommandList->node.Remove();
 
     usedCount++;
@@ -126,7 +158,8 @@ void D3D12CommandListPool::Free(D3D12CommandList* commandList) {
         return;
     }
 
-    commandList->node.AddToEnd(freeCommandLists);
+    LinkList<D3D12CommandList> &currentFreeCommandLists = freeCommandLists[to_int(commandList->secondary ? RHIRenderer::CommandListType::Secondary : RHIRenderer::CommandListType::Primary)];
+    commandList->node.AddToEnd(currentFreeCommandLists);
 
     usedCount--;
 }

@@ -21,16 +21,17 @@ class D3D12CommandList;
 class D3D12CommandListPool {
 public:
     D3D12CommandListPool() = default;
-    D3D12CommandListPool(ID3D12Device *device, int threadIndex, D3D12_COMMAND_LIST_TYPE commandListType, uint32_t maxCommandLists) { Init(device, threadIndex, commandListType, maxCommandLists); }
+    D3D12CommandListPool(ID3D12Device *device, int threadIndex, D3D12_COMMAND_LIST_TYPE commandListType, uint32_t maxPrimaryCommandLists, uint32_t maxSecondaryCommandLists = 0) { Init(device, threadIndex, commandListType, maxPrimaryCommandLists, maxSecondaryCommandLists); }
     ~D3D12CommandListPool() { Shutdown(); }
 
-    void                            Init(ID3D12Device *device, int threadIndex, D3D12_COMMAND_LIST_TYPE commandListType, uint32_t maxCommandLists);
+    void                            Init(ID3D12Device *device, int threadIndex, D3D12_COMMAND_LIST_TYPE commandListType, uint32_t maxPrimaryCommandLists, uint32_t maxSecondaryCommandLists = 0);
     void                            Shutdown();
 
+                                    // Primary 커맨드 리스트 타입 리턴
     D3D12_COMMAND_LIST_TYPE         GetCommandListType() const { return commandListType; }
 
     void                            Clear();
-    D3D12CommandList *              Alloc();
+    D3D12CommandList *              Alloc(RHIRenderer::CommandListType type = RHIRenderer::CommandListType::Primary);
     void                            Free(D3D12CommandList *commandList);
 
     int                             GetThreadIndex() const { return threadIndex; }
@@ -41,7 +42,7 @@ private:
     D3D12CommandList *              commandListPool = nullptr;
     D3D12_COMMAND_LIST_TYPE         commandListType = D3D12_COMMAND_LIST_TYPE_NONE;
     uint32_t                        maxCommandLists = 0;
-    LinkList<D3D12CommandList>      freeCommandLists;
+    LinkList<D3D12CommandList>      freeCommandLists[to_int(RHIRenderer::CommandListType::Count)];
     int                             threadIndex = -1;
     int                             usedCount = 0;
 };

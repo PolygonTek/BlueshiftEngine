@@ -542,11 +542,18 @@ public:
         Count
     };
 
+    enum class CommandListType : uint8_t {
+        Primary,
+        Secondary,
+        Count
+    };
+
     class CommandList {
     public:
-        virtual void                Reset(bool resetCacheStates = true) = 0;
+        virtual void                Reset(bool resetCacheStates = true, const CommandList *primaryCommandList = nullptr) = 0;
 
         virtual void                CloseAndExecute(RHIRenderer::CommandQueueType queueType) = 0;
+        virtual void                CloseAndExecuteSecondary(RHIRenderer::CommandList *primaryCommandList) = 0;
 
         virtual int                 GetThreadIndex() const = 0;
     };

@@ -23,10 +23,14 @@
 class D3D12CommandListPool;
 
 class D3D12CommandList : public RHIRenderer::CommandList {
+    friend class D3D12Renderer;
+    friend class D3D12CommandListPool;
+
 public:
-    virtual void                    Reset(bool resetCacheStates = true) override;
+    virtual void                    Reset(bool resetCacheStates = true, const RHIRenderer::CommandList *primaryCommandList = nullptr) override;
 
     virtual void                    CloseAndExecute(RHIRenderer::CommandQueueType queueType) override;
+    virtual void                    CloseAndExecuteSecondary(RHIRenderer::CommandList *primaryCommandList) override;
 
     virtual int                     GetThreadIndex() const override;
 
@@ -51,6 +55,7 @@ public:
     void                            SetStencilRef(uint32_t value);
     void                            SetShadingRate(RHIRenderer::ShadingRate shadingRate);
 
+private:
     ID3D12CommandAllocator *        commandAllocator = nullptr;
     ID3D12CommandList *             commandList = nullptr;
     D3D12CommandListPool *          parentPool = nullptr;
@@ -58,13 +63,12 @@ public:
     const D3D12PipelineState *      currentPSO = nullptr;
     uint64_t                        graphicsRootParametersDirtyMask = 0;
     uint64_t                        computeRootParametersDirtyMask = 0;
-    Array<D3D12_RESOURCE_BARRIER>   endRenderPassBarriers;
+    Array<D3D12_RESOURCE_BARRIER>   endRenderPassBarriers; // BeginRenderPass 와 EndRenderPass 사이에서만 유지됨
 
 #ifdef USE_STATE_CACHE_FOR_COMMAND_LIST
-private:
     bool                            IsSameDescriptorHeaps(int numDescriptorHeaps, ID3D12DescriptorHeap *descriptorHeaps[]);
 
-    StaticArray<ID3D12DescriptorHeap *, 16> cachedRootDescriptorHeaps;
+    StaticArray<ID3D12DescriptorHeap*, 16> cachedRootDescriptorHeaps;
     ID3D12RootSignature *           cachedGraphicsRootSignature = nullptr;
     ID3D12RootSignature *           cachedComputeRootSignature = nullptr;
     D3D12_PRIMITIVE_TOPOLOGY        cachedPrimitiveTopology = D3D12_PRIMITIVE_TOPOLOGY::D3D_PRIMITIVE_TOPOLOGY_UNDEFINED;
@@ -74,9 +78,11 @@ private:
     uint32_t                        cachedStencilRef = 0;
     D3D12_SHADING_RATE              cachedShadingRate = D3D12_SHADING_RATE::D3D12_SHADING_RATE_1X1;
 #endif
+
+    bool                            secondary = false;
 };
 
-BE_INLINE void D3D12CommandList::Reset(bool resetCacheStates) {
+BE_INLINE void D3D12CommandList::Reset(bool resetCacheStates, const RHIRenderer::CommandList *primaryCommandList) {
     // NOTE: CommandList 는 GPU 작업 완료 여부와 상관없이 Reset 하여 재사용할 수 있지만,
     // CommandAllocator 는 GPU 에서 해당 CommandList 를 사용하는 작업이 모두 완료되기 전에는 Reset 하면 안된다.
     // 
@@ -87,21 +93,39 @@ BE_INLINE void D3D12CommandList::Reset(bool resetCacheStates) {
     GetGraphicsCommandList()->Reset(commandAllocator, nullptr);
 
     currentPSO = nullptr;
+    graphicsRootParametersDirtyMask = 0;
+    computeRootParametersDirtyMask = 0;
 
 #ifdef USE_STATE_CACHE_FOR_COMMAND_LIST
     if (resetCacheStates) {
-        // 모든 캐시된 상태들을 초기값으로 변경
         cachedRootDescriptorHeaps.SetCount(0);
-        cachedGraphicsRootSignature = nullptr;
-        cachedComputeRootSignature = nullptr;
         cachedPrimitiveTopology = D3D12_PRIMITIVE_TOPOLOGY::D3D_PRIMITIVE_TOPOLOGY_UNDEFINED;
-        for (int i = 0; i < D3D12_IA_VERTEX_INPUT_RESOURCE_SLOT_COUNT; ++i) {
-            cachedVertexBufferViews[i] = {};
+
+        if (primaryCommandList) {
+            // 모든 캐시된 상태들을 primaryCommandList 의 상태와 같도록 초기화
+            // SetDescriptorHeaps() 와 IASetPrimitiveTopology() 는 상속되지 않는다.
+            const D3D12CommandList *d3d12PrimaryCommandList = static_cast<const D3D12CommandList *>(primaryCommandList);
+            cachedGraphicsRootSignature = d3d12PrimaryCommandList->cachedGraphicsRootSignature;
+            cachedComputeRootSignature = d3d12PrimaryCommandList->cachedComputeRootSignature;
+            for (int i = 0; i < D3D12_IA_VERTEX_INPUT_RESOURCE_SLOT_COUNT; ++i) {
+                cachedVertexBufferViews[i] = d3d12PrimaryCommandList->cachedVertexBufferViews[i];
+            }
+            cachedIndexBufferView = d3d12PrimaryCommandList->cachedIndexBufferView;
+            cachedBlendFactor = d3d12PrimaryCommandList->cachedBlendFactor;
+            cachedStencilRef = d3d12PrimaryCommandList->cachedStencilRef;
+            cachedShadingRate = d3d12PrimaryCommandList->cachedShadingRate;
+        } else {
+            // 모든 캐시된 상태들을 초기값으로 변경
+            cachedGraphicsRootSignature = nullptr;
+            cachedComputeRootSignature = nullptr;
+            for (int i = 0; i < D3D12_IA_VERTEX_INPUT_RESOURCE_SLOT_COUNT; ++i) {
+                cachedVertexBufferViews[i] = {};
+            }
+            cachedIndexBufferView = {};
+            cachedBlendFactor = Color4(1, 1, 1, 1);
+            cachedStencilRef = 0;
+            cachedShadingRate = D3D12_SHADING_RATE::D3D12_SHADING_RATE_1X1;
         }
-        cachedIndexBufferView = {};
-        cachedBlendFactor = Color4(1, 1, 1, 1);
-        cachedStencilRef = 0;
-        cachedShadingRate = D3D12_SHADING_RATE::D3D12_SHADING_RATE_1X1;
     }
 #endif
 }
@@ -112,7 +136,14 @@ BE_INLINE void D3D12CommandList::CloseAndExecute(RHIRenderer::CommandQueueType q
     GetGraphicsCommandList()->Close();
 
     ID3D12CommandList *execCommandLists[] = { commandList };
-    renderer->commandQueues[static_cast<int>(queueType)]->ExecuteCommandLists(COUNT_OF(execCommandLists), execCommandLists);
+    renderer->commandQueues[to_int(queueType)]->ExecuteCommandLists(COUNT_OF(execCommandLists), execCommandLists);
+}
+
+BE_INLINE void D3D12CommandList::CloseAndExecuteSecondary(RHIRenderer::CommandList *primaryCommandList) {
+    GetGraphicsCommandList()->Close();
+
+    D3D12CommandList *d3d12PrimaryCommandList = static_cast<D3D12CommandList *>(primaryCommandList);
+    d3d12PrimaryCommandList->GetGraphicsCommandList()->ExecuteBundle(GetGraphicsCommandList());
 }
 
 BE_INLINE void D3D12CommandList::ResourceBarrier(ID3D12Resource *resource, D3D12_RESOURCE_STATES stateBefore, D3D12_RESOURCE_STATES stateAfter) {
@@ -189,13 +220,13 @@ BE_INLINE void D3D12CommandList::SetPipelineState(const RHIRenderer::PipelineSta
         currentPSO = d3d12PipelineState;
     }
 #else
-    commandList->SetPipelineState(d3d12PipelineState->pso);
+    GetGraphicsCommandList()->SetPipelineState(d3d12PipelineState->pso);
 
     if (pipelineState->graphics) {
-        commandList->SetGraphicsRootSignature(d3d12PipelineState->rootSignature);
-        commandList->IASetPrimitiveTopology(d3d12PipelineState->primitiveTopology);
+        GetGraphicsCommandList()->SetGraphicsRootSignature(d3d12PipelineState->rootSignature);
+        GetGraphicsCommandList()->IASetPrimitiveTopology(d3d12PipelineState->primitiveTopology);
     } else {
-        commandList->SetComputeRootSignature(d3d12PipelineState->rootSignature);
+        GetGraphicsCommandList()->SetComputeRootSignature(d3d12PipelineState->rootSignature);
     }
     currentPSO = d3d12PipelineState;
 #endif

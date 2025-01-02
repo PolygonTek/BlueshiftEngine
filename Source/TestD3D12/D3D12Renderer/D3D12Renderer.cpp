@@ -265,8 +265,13 @@ void D3D12Renderer::Init(HWND hwnd) {
 
     CreateShaderCompiler();
 
+#ifdef USE_SECONDARY_COMMAND_LISTS
+    uint32_t maxSecondaryCommandLists = 8;
+#else
+    uint32_t maxSecondaryCommandLists = 0;
+#endif
     // 커맨드 리스트 풀 생성
-    graphicsCommandListPool = new D3D12CommandListPool(device, 0, D3D12_COMMAND_LIST_TYPE_DIRECT, 8);
+    graphicsCommandListPool = new D3D12CommandListPool(device, 0, D3D12_COMMAND_LIST_TYPE_DIRECT, 8, maxSecondaryCommandLists);
 
     // 리소스 생성 용 커맨드 리스트
     resourceCommandList = graphicsCommandListPool->Alloc();
@@ -477,7 +482,8 @@ void D3D12Renderer::BeginFrame() {
     currentFrameData->BeginFrame();
 
     // 커맨드 리스트 풀에서 커맨드 리스트를 얻어온다.
-    D3D12CommandList* commandList = currentFrameData->threadData[0].graphicsCommandListPool->Alloc();
+    D3D12CommandList *commandList = currentFrameData->threadData[0].graphicsCommandListPool->Alloc();
+    mainCommandList = commandList;
 
     // CommandAllocator 를 재사용하도록 리셋하고, CommandList 를 CommandAllocator 를 이용하여 초기 상태로 리셋
     commandList->Reset();
@@ -486,6 +492,9 @@ void D3D12Renderer::BeginFrame() {
     SetViewport(commandList, swapChain->viewportRect);
     SetScissorRect(commandList, swapChain->scissorRect);
 
+#ifdef USE_SECONDARY_COMMAND_LISTS
+    BeginRenderPass(commandList, swapChain, Color4::blue, 1.0f, 0, RHIRenderer::ClearFlag::Color | RHIRenderer::ClearFlag::Depth);
+#else
     // 백버퍼를 렌더 타겟 상태로 전환
     D3D12_RESOURCE_BARRIER barrier;
     barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
@@ -502,6 +511,7 @@ void D3D12Renderer::BeginFrame() {
 
     // CommandList 기록을 마치고 CommandQueue 로 실행
     commandList->CloseAndExecute(CommandQueueType::Graphics);
+#endif
 }
 
 void D3D12Renderer::EndFrame() {
@@ -509,6 +519,11 @@ void D3D12Renderer::EndFrame() {
 
     // TODO: 렌더큐에 종료 마킹을 하고, 렌더큐를 실행한다.
 
+#ifdef USE_SECONDARY_COMMAND_LISTS
+    D3D12CommandList *commandList = mainCommandList;
+
+    EndRenderPass(commandList);
+#else
     // 커맨드 리스트 풀에서 커맨드 리스트를 얻어온다.
     D3D12CommandList *commandList = currentFrameData->threadData[0].graphicsCommandListPool->Alloc();
 
@@ -524,6 +539,7 @@ void D3D12Renderer::EndFrame() {
     barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_PRESENT;
     barrier.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
     commandList->GetGraphicsCommandList()->ResourceBarrier(1, &barrier);
+#endif
 
     // CommandList 기록을 마치고 CommandQueue 로 실행
     commandList->CloseAndExecute(CommandQueueType::Graphics);
@@ -1219,20 +1235,37 @@ void D3D12Renderer::DrawVisObjectsWithoutTask() {
         return;
     }
 
-    // 커맨드 리스트 풀에서 커맨드 리스트를 얻어온다.
     D3D12FrameData::DataPerThread &currentThreadData = currentFrameData->threadData[0];
+
+#ifdef USE_SECONDARY_COMMAND_LISTS
+    // ExecuteBundle 을 실행하기 전에 Primary CommandList 의 루트 디스크립터 힙을 지정한다.
+    ID3D12DescriptorHeap *descriptorHeaps[] = { currentThreadData.rootDescriptorPool->descriptorHeap };
+    mainCommandList->SetDescriptorHeaps(COUNT_OF(descriptorHeaps), descriptorHeaps);
+
+    // Secondary CommandList 를 얻어온다.
+    D3D12CommandList *commandList = currentThreadData.graphicsCommandListPool->Alloc(RHIRenderer::CommandListType::Secondary);
+    commandList->Reset(true, mainCommandList);
+
+    // Secondary CommandList 의 루트 디스크립터 힙을 지정한다.
+    // 반드시 Primary CommandList 와 동일한 디스크립터 힙을 사용해야 한다.
+    commandList->SetDescriptorHeaps(COUNT_OF(descriptorHeaps), descriptorHeaps);
+
+    // 플러시된 렌더 오브젝트들을 인덱스 범위 만큼 그린다.
+    DrawVisObjects(0, commandList, 0, numVisObjects - 1);
+
+    // Secondary CommandList 를 닫고 메인 CommandList 에 등록한다.
+    commandList->CloseAndExecuteSecondary(mainCommandList);
+#else
+    // 커맨드 리스트 풀에서 커맨드 리스트를 얻어온다.
     D3D12CommandList *commandList = currentThreadData.graphicsCommandListPool->Alloc();
+    commandList->Reset(true, mainCommandList);
 
-    // CommandAllocator 를 재사용하도록 리셋하고, CommandList 를 CommandAllocator 를 이용하여 초기 상태로 리셋
-    commandList->Reset();
-
-    // 뷰포트 & ScissorRect 설정
+    // 뷰포트 설정
     SetViewport(commandList, swapChain->viewportRect);
+    // ScissorRect 설정
     SetScissorRect(commandList, swapChain->scissorRect);
 
     commandList->GetGraphicsCommandList()->OMSetRenderTargets(1, &swapChain->rtvDescriptorHandles[swapChain->currentBackBufferIndex], FALSE, &dsvDescriptorHandle);
-
-    D3D12RootDescriptorPool *rootDescriptorPool = currentFrameData->threadData[0].rootDescriptorPool;
 
     // 루트 디스크립터 힙을 지정한다.
     ID3D12DescriptorHeap *descriptorHeaps[] = { currentThreadData.rootDescriptorPool->descriptorHeap };
@@ -1243,6 +1276,7 @@ void D3D12Renderer::DrawVisObjectsWithoutTask() {
 
     // CommandList 기록을 마치고 CommandQueue 로 실행
     commandList->CloseAndExecute(CommandQueueType::Graphics);
+#endif
 }
 
 #ifdef USE_RENDER_TASK
@@ -1251,9 +1285,20 @@ void D3D12Renderer::DrawVisObjectsByTask(D3D12Renderer::DrawObjectTaskDesc *task
 
     int threadIndex = taskDesc->threadIndex;
     D3D12FrameData::DataPerThread &currentThreadData = currentFrameData->threadData[threadIndex];
-    D3D12CommandList *commandList = currentThreadData.graphicsCommandListPool->Alloc();
 
-    // CommandAllocator 를 재사용하도록 리셋하고, CommandList 를 CommandAllocator 를 이용하여 초기 상태로 리셋
+#ifdef USE_SECONDARY_COMMAND_LISTS
+    D3D12CommandList *commandList = currentThreadData.graphicsCommandListPool->Alloc(RHIRenderer::CommandListType::Secondary);
+    commandList->Reset();
+
+    // Secondary CommandList 의 루트 디스크립터 힙을 지정한다.
+    // 반드시 Primary CommandList 와 동일한 디스크립터 힙을 사용해야 한다.
+    ID3D12DescriptorHeap *descriptorHeaps[] = { currentThreadData.rootDescriptorPool->descriptorHeap };
+    commandList->SetDescriptorHeaps(COUNT_OF(descriptorHeaps), descriptorHeaps);
+
+    // 플러시된 렌더 오브젝트들을 인덱스 범위 만큼 그린다.
+    DrawVisObjects(taskDesc->threadIndex, commandList, taskDesc->visObjectStartIndex, taskDesc->visObjectEndIndex);
+#else
+    D3D12CommandList *commandList = currentThreadData.graphicsCommandListPool->Alloc();
     commandList->Reset();
 
     // 뷰포트 & ScissorRect 설정
@@ -1271,7 +1316,7 @@ void D3D12Renderer::DrawVisObjectsByTask(D3D12Renderer::DrawObjectTaskDesc *task
 
     // 렌더링 시나리오에 따라 중간에 Flush 할 수도 있다.
     //commandList = FlushCommandList(commandList);
-
+#endif
     // CommandList 기록을 마친다.
     commandList->GetGraphicsCommandList()->Close();
 
@@ -1322,11 +1367,20 @@ void D3D12Renderer::DrawVisObjectsWithTask(int numTasks) {
     for (int threadIndex = 0; threadIndex < renderTaskCount; ++threadIndex) {
         execCommandLists[threadIndex] = objectDrawingTaskDescs[threadIndex].activeCommandList->GetGraphicsCommandList();
     }
+#ifdef USE_SECONDARY_COMMAND_LISTS
+    for (int threadIndex = 0; threadIndex < renderTaskCount; ++threadIndex) {
+        // ExecuteBundle 을 실행하기 전에 Primary CommandList 의 루트 디스크립터 힙을 지정한다.
+        ID3D12DescriptorHeap *descriptorHeaps[] = { currentFrameData->threadData[threadIndex].rootDescriptorPool->descriptorHeap };
+        mainCommandList->SetDescriptorHeaps(COUNT_OF(descriptorHeaps), descriptorHeaps);
 
+        mainCommandList->GetGraphicsCommandList()->ExecuteBundle(static_cast<ID3D12GraphicsCommandList6 *>(execCommandLists[threadIndex]));
+    }
+#else
     // CommandList 들을 한꺼번에 실행
     if (renderTaskCount > 0) {
         commandQueues[to_int(CommandQueueType::Graphics)]->ExecuteCommandLists(renderTaskCount, execCommandLists);
     }
+#endif
 }
 #endif
 

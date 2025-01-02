@@ -37,6 +37,9 @@ public:
 
     /// Constructs from another array.
     StaticArray(const StaticArray<T, capacity> &array);
+
+    /// Assigns from another array, replacing its current contents.
+    StaticArray<T, capacity> &operator=(const StaticArray<T, capacity> &rhs);
     
     /// Aggregates initialization constructor.
     StaticArray(const std::initializer_list<T> &array);
@@ -222,6 +225,21 @@ BE_INLINE StaticArray<T, capacity>::StaticArray() {
 template <typename T, int capacity>
 BE_INLINE StaticArray<T, capacity>::StaticArray(const StaticArray<T, capacity> &array) {
     *this = array;
+}
+
+template <typename T, int capacity>
+BE_INLINE StaticArray<T, capacity> &StaticArray<T, capacity>::operator=(const StaticArray<T, capacity> &rhs) {
+    // In case of self-assignment do nothing
+    if (&rhs == this) {
+        return *this;
+    }
+
+    count = rhs.count;
+    for (int i = 0; i < count; i++) {
+        elements[i] = rhs.elements[i];
+    }
+
+    return *this;
 }
 
 template <typename T, int capacity>

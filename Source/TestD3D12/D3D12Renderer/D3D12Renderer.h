@@ -199,6 +199,7 @@ public:
     IDXGIFactory4 *                     dxgiFactory = nullptr;
     ID3D12CommandQueue *                commandQueues[to_int(CommandQueueType::Count)] = {};
     D3D12CommandListPool *              graphicsCommandListPool = nullptr;
+    D3D12CommandList *                  mainCommandList = nullptr;
     D3D12CommandList *                  resourceCommandList = nullptr;
     ID3D12Fence *                       fence = nullptr;
     uint64_t                            fenceValue = 0;
