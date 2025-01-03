@@ -22,7 +22,7 @@
 #include "../D3D12VisObject.h"
 
 static constexpr uint32_t DynamicAllocationBlockSize = 65536 * 64;
-static constexpr uint32_t MaxMemSizePerBlock = 0x100000;
+static constexpr uint32_t MaxMemSizePerBlock = 0x1000000;
 static constexpr uint32_t MemAlignSize = 32;
 
 void D3D12FrameData::Init() {
