@@ -42,7 +42,7 @@ void D3D12App::Init(HWND hwnd) {
 }
 
 void D3D12App::Shutdown() {
-    renderer->Finish();
+    renderer->Finish(RHIRenderer::CommandQueueType::Graphics);
 
     ClearGameObjects();
 

@@ -604,6 +604,11 @@ public:
 
     virtual void                    OnResize(int width, int height) = 0;
 
+    virtual uint64_t                SignalFence(CommandQueueType queueType) = 0;
+    virtual bool                    IsFenceComplete(uint64_t checkFenceValue) = 0;
+    virtual void                    WaitFence(uint64_t expectedFenceValue) = 0;
+    virtual void                    Finish(CommandQueueType queueType) = 0;
+
     const RasterizerState *         GetRasterizerState(RasterizerStateType type) const { return &rasterizerStates[to_int(type)]; }
     const DepthStencilState *       GetDepthStencilState(DepthStencilStateType type) const { return &depthStencilStates[to_int(type)]; }
     const BlendState *              GetBlendState(BlendStateType type) const { return &blendStates[to_int(type)]; }

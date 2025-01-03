@@ -128,7 +128,7 @@ void D3D12FrameData::BeginFrame() {
 }
 
 void D3D12FrameData::EndFrame() {
-    fenceValue = renderer->SignalFence();
+    fenceValue = renderer->SignalFence(RHIRenderer::CommandQueueType::Graphics);
 }
 
 void D3D12FrameData::InitMemBlocks() {

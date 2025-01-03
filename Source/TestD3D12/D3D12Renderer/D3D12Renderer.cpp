@@ -289,7 +289,7 @@ void D3D12Renderer::Init(HWND hwnd) {
     }
 
     currentFrameIndex = 0;
-    frameData[currentFrameIndex].SetFenceValue(SignalFence());
+    frameData[currentFrameIndex].SetFenceValue(SignalFence(CommandQueueType::Graphics));
 
 #ifdef USE_RENDER_THREAD
     InitRenderThread();
@@ -311,7 +311,8 @@ void D3D12Renderer::Shutdown() {
     renderTaskManager.Stop();
 #endif
 
-    Finish();
+    Finish(CommandQueueType::Graphics);
+    Finish(CommandQueueType::Compute);
 
     for (int frameIndex = 0; frameIndex < NumFrameResources; ++frameIndex) {
         frameData[frameIndex].Shutdown();
@@ -583,9 +584,9 @@ D3D12CommandList* D3D12Renderer::FlushCommandList(D3D12CommandList* commandList)
     return commandList;
 }
 
-uint64_t D3D12Renderer::SignalFence() {
+uint64_t D3D12Renderer::SignalFence(CommandQueueType queueType) {
     fenceValue++;
-    commandQueues[to_int(CommandQueueType::Graphics)]->Signal(fence, fenceValue);
+    commandQueues[to_int(queueType)]->Signal(fence, fenceValue);
 
     return fenceValue;
 }
@@ -601,8 +602,8 @@ void D3D12Renderer::WaitFence(uint64_t expectedFenceValue) {
     }
 }
 
-void D3D12Renderer::Finish() {
-    WaitFence(SignalFence());
+void D3D12Renderer::Finish(CommandQueueType queueType) {
+    WaitFence(SignalFence(queueType));
 }
 
 void D3D12Renderer::WaitAllFrameFences() {
@@ -613,7 +614,7 @@ void D3D12Renderer::WaitAllFrameFences() {
 
 void D3D12Renderer::MarkForDelete(GPUObject *object) {
     D3D12PendingResource *newPendingResource = &pendingResourceBuffer[headPendingIndex];
-    newPendingResource->fenceValue = SignalFence();
+    newPendingResource->fenceValue = SignalFence(CommandQueueType::Graphics);
     newPendingResource->objectToDelete = object;
 
     OnPendingResourceAdded();
@@ -621,7 +622,7 @@ void D3D12Renderer::MarkForDelete(GPUObject *object) {
 
 void D3D12Renderer::MarkForRelease(ID3D12Resource *resource) {
     D3D12PendingResource *newPendingResource = &pendingResourceBuffer[headPendingIndex];
-    newPendingResource->fenceValue = SignalFence();
+    newPendingResource->fenceValue = SignalFence(CommandQueueType::Graphics);
     newPendingResource->resourceToRelease = resource;
 
     OnPendingResourceAdded();
@@ -690,7 +691,7 @@ void D3D12Renderer::OnResize(int width, int height) {
     WaitRenderCompleted();
 #endif
 
-    Finish();
+    Finish(CommandQueueType::Graphics);
 
     swapChain->Resize(width, height);
 

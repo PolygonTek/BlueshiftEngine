@@ -573,7 +573,7 @@ void D3D12Renderer::GetTextureImage2D(Texture *texture, int level, Image::Format
     resourceCommandList->CloseAndExecute(CommandQueueType::Graphics);
 
     // GPU 에서 복사가 끝날 때까지 기다린다.
-    Finish();
+    Finish(CommandQueueType::Graphics);
 
     // 복사된 리드백 버퍼를 메모리로 읽어오기 위해 Map 을 한다.
     void *mappedPtr = nullptr;

@@ -57,10 +57,10 @@ public:
 
     D3D12CommandList *                  FlushCommandList(D3D12CommandList *commandList);
 
-    uint64_t                            SignalFence();
-    bool                                IsFenceComplete(uint64_t checkFenceValue);
-    void                                WaitFence(uint64_t expectedFenceValue);
-    void                                Finish();
+    virtual uint64_t                    SignalFence(CommandQueueType queueType) override;
+    virtual bool                        IsFenceComplete(uint64_t checkFenceValue) override;
+    virtual void                        WaitFence(uint64_t expectedFenceValue) override;
+    virtual void                        Finish(CommandQueueType queueType) override;
 
     void                                WaitAllFrameFences();
 
