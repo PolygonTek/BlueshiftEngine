@@ -13,14 +13,11 @@
 // limitations under the License.
 
 #include "Precompiled.h"
-#include "D3D12Renderer/D3D12CommandList.h"
 #include "VisObject.h"
 #include "TriangleMesh.h"
 #include "CubeMesh.h"
 
-void VisObject::Draw(D3D12CommandList *commandList, VisObject *visObject) {
-    PIX_SCOPED_EVENT(commandList->GetGraphicsCommandList(), 6, "D3D12VisObject::Draw");
-
+void VisObject::Draw(RHI::CommandList *commandList, VisObject *visObject) {
     switch (visObject->state.meshType) {
     case MeshType::TriangleMesh:
         DrawTriangleMesh(commandList, visObject);
@@ -31,9 +28,7 @@ void VisObject::Draw(D3D12CommandList *commandList, VisObject *visObject) {
     }
 }
 
-void VisObject::DrawInstanced(D3D12CommandList *commandList, VisObject *visObjects, int instanceCount) {
-    PIX_SCOPED_EVENT(commandList->GetGraphicsCommandList(), 7, "D3D12VisObject::DrawInstanced");
-
+void VisObject::DrawInstanced(RHI::CommandList *commandList, VisObject *visObjects, int instanceCount) {
     switch (visObjects[0].state.meshType) {
     case MeshType::TriangleMesh:
         VisObject::DrawTriangleMeshInstanced(commandList, visObjects, instanceCount);
@@ -44,12 +39,12 @@ void VisObject::DrawInstanced(D3D12CommandList *commandList, VisObject *visObjec
     }
 }
 
-void VisObject::DrawTriangleMesh(D3D12CommandList *commandList, VisObject *visObject) {
+void VisObject::DrawTriangleMesh(RHI::CommandList *commandList, VisObject *visObject) {
     TriangleMesh *triangleMesh = static_cast<TriangleMesh *>(visObject->state.mesh.get());
     triangleMesh->DrawMesh(commandList, visObject->state.offset);
 }
 
-void VisObject::DrawTriangleMeshInstanced(D3D12CommandList *commandList, VisObject *visObjects, int instanceCount) {
+void VisObject::DrawTriangleMeshInstanced(RHI::CommandList *commandList, VisObject *visObjects, int instanceCount) {
     BE1::Vec2 *instanceData = (BE1::Vec2 *)_alloca32(instanceCount * sizeof(visObjects[0].state.offset));
 
     for (int i = 0; i < instanceCount; i++) {
@@ -59,12 +54,12 @@ void VisObject::DrawTriangleMeshInstanced(D3D12CommandList *commandList, VisObje
     triangleMesh->DrawMeshInstanced(commandList, instanceData, instanceCount);
 }
 
-void VisObject::DrawCubeMesh(D3D12CommandList *commandList, VisObject *visObject) {
+void VisObject::DrawCubeMesh(RHI::CommandList *commandList, VisObject *visObject) {
     CubeMesh *cubeMesh = static_cast<CubeMesh *>(visObject->state.mesh.get());
     cubeMesh->DrawMesh(commandList, visObject->state.worldMatrix);
 }
 
-void VisObject::DrawCubeMeshInstanced(D3D12CommandList *commandList, VisObject *visObjects, int instanceCount) {
+void VisObject::DrawCubeMeshInstanced(RHI::CommandList *commandList, VisObject *visObjects, int instanceCount) {
     BE1::Mat3x4 *instanceData = (BE1::Mat3x4 *)_alloca32(instanceCount * sizeof(visObjects[0].state.worldMatrix));
 
     for (int i = 0; i < instanceCount; i++) {

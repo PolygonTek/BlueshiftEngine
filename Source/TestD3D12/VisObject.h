@@ -14,23 +14,22 @@
 
 #pragma once
 
+#include "RHIRenderer.h"
 #include "RenderObject.h"
-
-class D3D12CommandList;
 
 class VisObject {
 public:
     RenderObject::State &      GetState() { return state; }
 
-    static void                     Draw(D3D12CommandList *commandList, VisObject *visObject);
-    static void                     DrawInstanced(D3D12CommandList *commandList, VisObject *visObjects, int instanceCount);
+    static void                     Draw(RHI::CommandList *commandList, VisObject *visObject);
+    static void                     DrawInstanced(RHI::CommandList *commandList, VisObject *visObjects, int instanceCount);
 
 private:
-    static void                     DrawTriangleMesh(D3D12CommandList *commandList, VisObject *visObject);
-    static void                     DrawTriangleMeshInstanced(D3D12CommandList *commandList, VisObject *visObjects, int instanceCount);
+    static void                     DrawTriangleMesh(RHI::CommandList *commandList, VisObject *visObject);
+    static void                     DrawTriangleMeshInstanced(RHI::CommandList *commandList, VisObject *visObjects, int instanceCount);
 
-    static void                     DrawCubeMesh(D3D12CommandList *commandList, VisObject *visObject);
-    static void                     DrawCubeMeshInstanced(D3D12CommandList *commandList, VisObject *visObjects, int instanceCount);
+    static void                     DrawCubeMesh(RHI::CommandList *commandList, VisObject *visObject);
+    static void                     DrawCubeMeshInstanced(RHI::CommandList *commandList, VisObject *visObjects, int instanceCount);
 
     RenderObject::State        state;
 };

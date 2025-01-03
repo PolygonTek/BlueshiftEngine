@@ -14,6 +14,7 @@
 
 #pragma once
 
+#include "RHIRenderer.h"
 #include "Mesh.h"
 
 class TriangleMesh : public Mesh {

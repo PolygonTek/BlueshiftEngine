@@ -1199,6 +1199,8 @@ void D3D12Renderer::RenderFrame() {
 
 // 특정 인덱스 범위의 visObjects 를 그린다.
 void D3D12Renderer::DrawVisObjects(int threadIndex, D3D12CommandList *commandList, int startIndex, int endIndex) {
+    PIX_SCOPED_EVENT(commandList->GetGraphicsCommandList(), 6, "D3D12VisObject::DrawVisObjects");
+
     int numVisObjects = currentFrameData->NumVisObjects();
     if (numVisObjects == 0) {
         return;
