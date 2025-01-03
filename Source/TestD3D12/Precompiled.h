@@ -32,4 +32,4 @@
 #include <pix3.h>
 #endif
 
-using namespace BE1;
+//using namespace BE1;

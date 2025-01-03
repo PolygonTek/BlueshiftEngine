@@ -19,7 +19,7 @@
 
 class D3D12Renderer;
 
-class D3D12Sampler : public RHIRenderer::Sampler {
+class D3D12Sampler : public RHI::Sampler {
     friend class D3D12Renderer;
 
 public:

@@ -14,11 +14,11 @@
 
 #pragma once
 
-class D3D12GameObject;
-class D3D12TriangleMesh;
-class D3D12CubeMesh;
+class GameObject;
+class TriangleMesh;
+class CubeMesh;
 
-class D3D12App {
+class App {
 public:
     void                            Init(HWND windowHandle);
     void                            Shutdown();
@@ -28,7 +28,7 @@ public:
 
     int                             GetElapsedMsec() const { return elapsedMsec; }
 
-    void                            SetViewMatrix(const Mat3 &viewAxis, const Vec3 &viewOrigin, float *rowMajor4x4ViewMatrix) const;
+    void                            SetViewMatrix(const BE1::Mat3 &viewAxis, const BE1::Vec3 &viewOrigin, float *rowMajor4x4ViewMatrix) const;
 
     void                            UpdateCamera();
 
@@ -42,14 +42,14 @@ public:
     void                            UpdateTriangles();
     void                            UpdateCubes();
 
-    Array<D3D12GameObject *>        gameObjects;
+    BE1::Array<GameObject *>        gameObjects;
 
-    std::shared_ptr<D3D12TriangleMesh> triangleMesh;
-    std::shared_ptr<D3D12CubeMesh>  cubeMesh;
+    std::shared_ptr<TriangleMesh>   triangleMesh;
+    std::shared_ptr<CubeMesh>       cubeMesh;
 
-    Mat4                            viewProjMatrix;
+    BE1::Mat4                       viewProjMatrix;
 
     int                             elapsedMsec = 0;
 };
 
-extern D3D12App                     app;
+extern App                          app;

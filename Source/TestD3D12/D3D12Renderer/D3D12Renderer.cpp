@@ -23,7 +23,7 @@
 #include "D3D12RootDescriptorPool.h"
 #include "D3D12DescriptorPool.h"
 #include "D3D12Texture.h"
-#include "../D3D12VisObject.h"
+#include "../VisObject.h"
 
 // D3D12.dll 이 D3D12Core.dll 을 찾기 위한 설정
 extern "C" { __declspec(dllexport) extern const UINT D3D12SDKVersion = 614; }
@@ -113,9 +113,9 @@ void D3D12Renderer::Init(HWND hwnd) {
     adapterName = temp;
 
     BE_LOG("Adapter: %s\n", adapterName.c_str());
-    BE_LOG("Dedicated VideoMem Size: %s\n", Str::FormatBytes(dedicatedVideoMemSize).c_str());
-    BE_LOG("Dedicated SystemMem Size: %s\n", Str::FormatBytes(dedicatedSystemMemSize).c_str());
-    BE_LOG("Shared SystemMem Size: %s\n", Str::FormatBytes(sharedSystemMemSize).c_str());
+    BE_LOG("Dedicated VideoMem Size: %s\n", BE1::Str::FormatBytes(dedicatedVideoMemSize).c_str());
+    BE_LOG("Dedicated SystemMem Size: %s\n", BE1::Str::FormatBytes(dedicatedSystemMemSize).c_str());
+    BE_LOG("Shared SystemMem Size: %s\n", BE1::Str::FormatBytes(sharedSystemMemSize).c_str());
 
     if (enableDebugLayer) {
         // 디버그 표시 정보 설정
@@ -172,11 +172,11 @@ void D3D12Renderer::Init(HWND hwnd) {
     queueDesc.Priority = D3D12_COMMAND_QUEUE_PRIORITY_NORMAL;
     queueDesc.Type = D3D12_COMMAND_LIST_TYPE_DIRECT;
 
-    hr = device->CreateCommandQueue(&queueDesc, IID_PPV_ARGS(&commandQueues[to_int(CommandQueueType::Graphics)]));
+    hr = device->CreateCommandQueue(&queueDesc, IID_PPV_ARGS(&commandQueues[to_int(RHI::CommandQueueType::Graphics)]));
     if (FAILED(hr)) {
         BE_FATALERROR("CreateCommandQueue (Graphics) failed, ERROR: 0x%x", hr);
     }
-    commandQueues[to_int(CommandQueueType::Graphics)]->SetName(L"GraphicsCommandQueue");
+    commandQueues[to_int(RHI::CommandQueueType::Graphics)]->SetName(L"GraphicsCommandQueue");
 
     // Compute CommandQueue 생성
     queueDesc = {};
@@ -184,11 +184,11 @@ void D3D12Renderer::Init(HWND hwnd) {
     queueDesc.Priority = D3D12_COMMAND_QUEUE_PRIORITY_NORMAL;
     queueDesc.Type = D3D12_COMMAND_LIST_TYPE_COMPUTE;
 
-    hr = device->CreateCommandQueue(&queueDesc, IID_PPV_ARGS(&commandQueues[to_int(CommandQueueType::Compute)]));
+    hr = device->CreateCommandQueue(&queueDesc, IID_PPV_ARGS(&commandQueues[to_int(RHI::CommandQueueType::Compute)]));
     if (FAILED(hr)) {
         BE_FATALERROR("CreateCommandQueue (Compute) failed, ERROR: 0x%x", hr);
     }
-    commandQueues[to_int(CommandQueueType::Compute)]->SetName(L"ComputeCommandQueue");
+    commandQueues[to_int(RHI::CommandQueueType::Compute)]->SetName(L"ComputeCommandQueue");
 
     // Fence 객체 생성
     hr = device->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&fence));
@@ -236,15 +236,15 @@ void D3D12Renderer::Init(HWND hwnd) {
     // shader cache 디렉토리 초기화
     shaderCacheDir = "Cache/D3D12CompiledShaderCache";
 
-    if (!PlatformFile::DirectoryExists(shaderCacheDir)) {
-        PlatformFile::CreateDirectoryTree(shaderCacheDir);
+    if (!BE1::PlatformFile::DirectoryExists(shaderCacheDir)) {
+        BE1::PlatformFile::CreateDirectoryTree(shaderCacheDir);
     }
 
     // PSO cache 디렉토리 초기화
     psoCacheDir = "Cache/D3D12PSOCache";
 
-    if (!PlatformFile::DirectoryExists(psoCacheDir)) {
-        PlatformFile::CreateDirectoryTree(psoCacheDir);
+    if (!BE1::PlatformFile::DirectoryExists(psoCacheDir)) {
+        BE1::PlatformFile::CreateDirectoryTree(psoCacheDir);
     }
 
     // 윈도우 크기 얻기
@@ -276,8 +276,8 @@ void D3D12Renderer::Init(HWND hwnd) {
 
 #ifdef USE_RENDER_TASK
     // 렌더 태스크 스레드 개수는 물리코어 개수를 넘지 않는다.
-    int numCores = PlatformSystem::NumCPUCores();
-    int numTaskThreads = Min(numCores, MaxRenderTaskThreads);
+    int numCores = BE1::PlatformSystem::NumCPUCores();
+    int numTaskThreads = BE1::Min(numCores, MaxRenderTaskThreads);
 
     renderTaskManager.Start(numTaskThreads);
 
@@ -289,7 +289,7 @@ void D3D12Renderer::Init(HWND hwnd) {
     }
 
     currentFrameIndex = 0;
-    frameData[currentFrameIndex].SetFenceValue(SignalFence(CommandQueueType::Graphics));
+    frameData[currentFrameIndex].SetFenceValue(SignalFence(RHI::CommandQueueType::Graphics));
 
 #ifdef USE_RENDER_THREAD
     InitRenderThread();
@@ -311,8 +311,8 @@ void D3D12Renderer::Shutdown() {
     renderTaskManager.Stop();
 #endif
 
-    Finish(CommandQueueType::Graphics);
-    Finish(CommandQueueType::Compute);
+    Finish(RHI::CommandQueueType::Graphics);
+    Finish(RHI::CommandQueueType::Compute);
 
     for (int frameIndex = 0; frameIndex < NumFrameResources; ++frameIndex) {
         frameData[frameIndex].Shutdown();
@@ -344,8 +344,8 @@ void D3D12Renderer::Shutdown() {
     SAFE_RELEASE(dxcCompiler);
     SAFE_RELEASE(dxcUtils);
     SAFE_RELEASE(dxcLibrary);
-    SAFE_RELEASE(commandQueues[to_int(CommandQueueType::Graphics)]);
-    SAFE_RELEASE(commandQueues[to_int(CommandQueueType::Compute)]);
+    SAFE_RELEASE(commandQueues[to_int(RHI::CommandQueueType::Graphics)]);
+    SAFE_RELEASE(commandQueues[to_int(RHI::CommandQueueType::Compute)]);
     SAFE_RELEASE(fence);
     SAFE_RELEASE(dxgiFactory);
 
@@ -354,7 +354,7 @@ void D3D12Renderer::Shutdown() {
 #endif
 
     if (dxcompilerLibrary) {
-        PlatformProcess::CloseLibrary(dxcompilerLibrary);
+        BE1::PlatformProcess::CloseLibrary(dxcompilerLibrary);
     }
 
     if (fenceEventHandle) {
@@ -369,7 +369,7 @@ void D3D12Renderer::Shutdown() {
             pDebug->ReportLiveObjects(DXGI_DEBUG_ALL, DXGI_DEBUG_RLO_SUMMARY);
             pDebug->Release();
         }
-        PlatformSystem::DebugBreak();
+        BE1::PlatformSystem::DebugBreak();
     }
 }
 
@@ -427,12 +427,12 @@ void D3D12Renderer::CreateDSV(uint32_t width, uint32_t height) {
 
 void D3D12Renderer::CreateShaderCompiler() {
 #if 1
-    dxcompilerLibrary = PlatformProcess::OpenLibrary("dxcompiler.dll");
+    dxcompilerLibrary = BE1::PlatformProcess::OpenLibrary("dxcompiler.dll");
     if (!dxcompilerLibrary) {
         return;
     }
 
-    DxcCreateInstanceProc DxcCreateInstance = (DxcCreateInstanceProc)PlatformProcess::GetSymbol(dxcompilerLibrary, "DxcCreateInstance");
+    DxcCreateInstanceProc DxcCreateInstance = (DxcCreateInstanceProc)BE1::PlatformProcess::GetSymbol(dxcompilerLibrary, "DxcCreateInstance");
     if (!DxcCreateInstance) {
         BE_WARNLOG("Failed to get symbol \"DxcCreateInstance\"\n");
         return;
@@ -466,12 +466,12 @@ void D3D12Renderer::CreateShaderCompiler() {
     }
 }
 
-RHIRenderer::ShaderFormat D3D12Renderer::GetShaderFormat() const {
-    return ShaderFormat::HLSL6;
+RHI::ShaderFormat D3D12Renderer::GetShaderFormat() const {
+    return RHI::ShaderFormat::HLSL6;
 }
 
 void D3D12Renderer::BeginFrame() {
-    PIX_SCOPED_EVENT(commandQueues[to_int(CommandQueueType::Graphics)], 0, "D3D12Renderer::BeginFrame");
+    PIX_SCOPED_EVENT(commandQueues[to_int(RHI::CommandQueueType::Graphics)], 0, "D3D12Renderer::BeginFrame");
 
     currentFrameData = &frameData[currentFrameIndex];
 
@@ -490,7 +490,7 @@ void D3D12Renderer::BeginFrame() {
     SetScissorRect(commandList, swapChain->scissorRect);
 
 #ifdef USE_SECONDARY_COMMAND_LISTS
-    BeginRenderPass(commandList, swapChain, Color4::blue, 1.0f, 0, RHIRenderer::ClearFlag::Color | RHIRenderer::ClearFlag::Depth);
+    BeginRenderPass(commandList, swapChain, BE1::Color4::blue, 1.0f, 0, RHI::ClearFlag::Color | RHI::ClearFlag::Depth);
 #else
     // 백버퍼를 렌더 타겟 상태로 전환
     D3D12_RESOURCE_BARRIER barrier;
@@ -507,12 +507,12 @@ void D3D12Renderer::BeginFrame() {
     commandList->GetGraphicsCommandList()->OMSetRenderTargets(1, &swapChain->GetCurrentBackBufferDescriptorHandle(), FALSE, &dsvDescriptorHandle);
 
     // CommandList 기록을 마치고 CommandQueue 로 실행
-    commandList->CloseAndExecute(CommandQueueType::Graphics);
+    commandList->CloseAndExecute(RHI::CommandQueueType::Graphics);
 #endif
 }
 
 void D3D12Renderer::EndFrame() {
-    PIX_SCOPED_EVENT(commandQueues[to_int(CommandQueueType::Graphics)], 1, "D3D12Renderer::EndFrame");
+    PIX_SCOPED_EVENT(commandQueues[to_int(RHI::CommandQueueType::Graphics)], 1, "D3D12Renderer::EndFrame");
 
     // TODO: 렌더큐에 종료 마킹을 하고, 렌더큐를 실행한다.
 
@@ -539,7 +539,7 @@ void D3D12Renderer::EndFrame() {
 #endif
 
     // CommandList 기록을 마치고 CommandQueue 로 실행
-    commandList->CloseAndExecute(CommandQueueType::Graphics);
+    commandList->CloseAndExecute(RHI::CommandQueueType::Graphics);
 
     // 이번 프레임에서 수행하는 렌더링 커맨드들에 대한 펜스를 친다.
     currentFrameData->EndFrame();
@@ -558,16 +558,16 @@ void D3D12Renderer::EndFrame() {
 }
 
 void D3D12Renderer::SwapChainBuffers(bool vsync) {
-    PIX_SCOPED_EVENT(commandQueues[to_int(CommandQueueType::Graphics)], 2, "D3D12Renderer::SwapChainBuffers");
+    PIX_SCOPED_EVENT(commandQueues[to_int(RHI::CommandQueueType::Graphics)], 2, "D3D12Renderer::SwapChainBuffers");
 
     swapChain->SwapBuffers(vsync);
 }
 
 D3D12CommandList* D3D12Renderer::FlushCommandList(D3D12CommandList* commandList) {
-    PIX_SCOPED_EVENT(commandQueues[to_int(CommandQueueType::Graphics)], 3, "D3D12Renderer::FlushCommandList");
+    PIX_SCOPED_EVENT(commandQueues[to_int(RHI::CommandQueueType::Graphics)], 3, "D3D12Renderer::FlushCommandList");
 
     // CommandList 기록을 마치고 CommandQueue 로 실행
-    commandList->CloseAndExecute(CommandQueueType::Graphics);
+    commandList->CloseAndExecute(RHI::CommandQueueType::Graphics);
 
     // 커맨드 리스트 풀에서 새로운 커맨드 리스트를 얻어온다.
     commandList = commandList->parentPool->Alloc();
@@ -584,7 +584,7 @@ D3D12CommandList* D3D12Renderer::FlushCommandList(D3D12CommandList* commandList)
     return commandList;
 }
 
-uint64_t D3D12Renderer::SignalFence(CommandQueueType queueType) {
+uint64_t D3D12Renderer::SignalFence(RHI::CommandQueueType queueType) {
     fenceValue++;
     commandQueues[to_int(queueType)]->Signal(fence, fenceValue);
 
@@ -602,7 +602,7 @@ void D3D12Renderer::WaitFence(uint64_t expectedFenceValue) {
     }
 }
 
-void D3D12Renderer::Finish(CommandQueueType queueType) {
+void D3D12Renderer::Finish(RHI::CommandQueueType queueType) {
     WaitFence(SignalFence(queueType));
 }
 
@@ -612,9 +612,9 @@ void D3D12Renderer::WaitAllFrameFences() {
     }
 }
 
-void D3D12Renderer::MarkForDelete(GPUObject *object) {
+void D3D12Renderer::MarkForDelete(RHI::GPUObject *object) {
     D3D12PendingResource *newPendingResource = &pendingResourceBuffer[headPendingIndex];
-    newPendingResource->fenceValue = SignalFence(CommandQueueType::Graphics);
+    newPendingResource->fenceValue = SignalFence(RHI::CommandQueueType::Graphics);
     newPendingResource->objectToDelete = object;
 
     OnPendingResourceAdded();
@@ -622,7 +622,7 @@ void D3D12Renderer::MarkForDelete(GPUObject *object) {
 
 void D3D12Renderer::MarkForRelease(ID3D12Resource *resource) {
     D3D12PendingResource *newPendingResource = &pendingResourceBuffer[headPendingIndex];
-    newPendingResource->fenceValue = SignalFence(CommandQueueType::Graphics);
+    newPendingResource->fenceValue = SignalFence(RHI::CommandQueueType::Graphics);
     newPendingResource->resourceToRelease = resource;
 
     OnPendingResourceAdded();
@@ -670,7 +670,7 @@ void D3D12Renderer::DestroySwapChain(D3D12SwapChain *swapChain) {
     SAFE_DELETE(swapChain);
 }
 
-void D3D12Renderer::SetConstants(CommandList *commandList, const void *data, uint32_t size, uint32_t offset) {
+void D3D12Renderer::SetConstants(RHI::CommandList *commandList, const void *data, uint32_t size, uint32_t offset) {
     D3D12CommandList *d3d12CommandList = static_cast<D3D12CommandList *>(commandList);
     int threadIndex = d3d12CommandList->GetThreadIndex();
 
@@ -691,7 +691,7 @@ void D3D12Renderer::OnResize(int width, int height) {
     WaitRenderCompleted();
 #endif
 
-    Finish(CommandQueueType::Graphics);
+    Finish(RHI::CommandQueueType::Graphics);
 
     swapChain->Resize(width, height);
 
@@ -755,25 +755,25 @@ void D3D12Renderer::PrintMemoryAllocatorStats() {
 
     // TODO: 확인 필요
     // GPU 에서 사용 중인 메모리 크기, 사용 가능한 메모리 크기
-    BE_LOG("D3D12 reports total usage %s with budget %s (%.2f %%)\n", Str::FormatBytes(localBudget.UsageBytes).c_str(), Str::FormatBytes(localBudget.BudgetBytes).c_str(), (100.0f * localBudget.UsageBytes) / localBudget.BudgetBytes);
+    BE_LOG("D3D12 reports total usage %s with budget %s (%.2f %%)\n", BE1::Str::FormatBytes(localBudget.UsageBytes).c_str(), BE1::Str::FormatBytes(localBudget.BudgetBytes).c_str(), (100.0f * localBudget.UsageBytes) / localBudget.BudgetBytes);
     // D3D12 heap 에 할당된 리소스의 개수, 크기
-    BE_LOG("allocated out of %u D3D12 memory heaps taking %s\n", localBudget.Stats.BlockCount, Str::FormatBytes(localBudget.Stats.BlockBytes).c_str());
+    BE_LOG("allocated out of %u D3D12 memory heaps taking %s\n", localBudget.Stats.BlockCount, BE1::Str::FormatBytes(localBudget.Stats.BlockBytes).c_str());
     // 프로그램에서 실제 사용 중인 리소스 메모리의 개수, 크기
-    BE_LOG("GPU memory currently has %u allocations taking %s\n", localBudget.Stats.AllocationCount, Str::FormatBytes(localBudget.Stats.AllocationBytes).c_str());
+    BE_LOG("GPU memory currently has %u allocations taking %s\n", localBudget.Stats.AllocationCount, BE1::Str::FormatBytes(localBudget.Stats.AllocationBytes).c_str());
 }
 #endif
 
-void D3D12Renderer::SetBlendFactor(CommandList *commandList, const Color4 &rgba) {
+void D3D12Renderer::SetBlendFactor(RHI::CommandList *commandList, const BE1::Color4 &rgba) {
     D3D12CommandList *d3d12CommandList = static_cast<D3D12CommandList *>(commandList);
     d3d12CommandList->SetBlendFactor(rgba);
 }
 
-void D3D12Renderer::SetStencilRef(CommandList *commandList, uint32_t value) {
+void D3D12Renderer::SetStencilRef(RHI::CommandList *commandList, uint32_t value) {
     D3D12CommandList *d3d12CommandList = static_cast<D3D12CommandList *>(commandList);
     d3d12CommandList->SetStencilRef(value);
 }
 
-void D3D12Renderer::SetShadingRate(CommandList *commandList, ShadingRate shadingRate) {
+void D3D12Renderer::SetShadingRate(RHI::CommandList *commandList, RHI::ShadingRate shadingRate) {
     if (!supportsVRS) {
         return;
     }
@@ -781,7 +781,7 @@ void D3D12Renderer::SetShadingRate(CommandList *commandList, ShadingRate shading
     d3d12CommandList->SetShadingRate(shadingRate);
 }
 
-void D3D12Renderer::SetViewport(CommandList *commandList, const Rect &viewportRect) {
+void D3D12Renderer::SetViewport(RHI::CommandList *commandList, const BE1::Rect &viewportRect) {
     D3D12_VIEWPORT viewport;
     viewport.TopLeftX = viewportRect.x;
     viewport.TopLeftY = viewportRect.y;
@@ -794,18 +794,18 @@ void D3D12Renderer::SetViewport(CommandList *commandList, const Rect &viewportRe
     d3d12CommandList->GetGraphicsCommandList()->RSSetViewports(1, &viewport);
 }
 
-void D3D12Renderer::SetScissorRect(CommandList *commandList, const Rect &scissorRect) {
-    static_assert(sizeof(Rect) == sizeof(D3D12_RECT));
-    static_assert(offsetof(Rect, x) == offsetof(D3D12_RECT, left));
-    static_assert(offsetof(Rect, y) == offsetof(D3D12_RECT, top));
-    static_assert(offsetof(Rect, w) == offsetof(D3D12_RECT, right));
-    static_assert(offsetof(Rect, h) == offsetof(D3D12_RECT, bottom));
+void D3D12Renderer::SetScissorRect(RHI::CommandList *commandList, const BE1::Rect &scissorRect) {
+    static_assert(sizeof(BE1::Rect) == sizeof(D3D12_RECT));
+    static_assert(offsetof(BE1::Rect, x) == offsetof(D3D12_RECT, left));
+    static_assert(offsetof(BE1::Rect, y) == offsetof(D3D12_RECT, top));
+    static_assert(offsetof(BE1::Rect, w) == offsetof(D3D12_RECT, right));
+    static_assert(offsetof(BE1::Rect, h) == offsetof(D3D12_RECT, bottom));
 
     D3D12CommandList *d3d12CommandList = static_cast<D3D12CommandList *>(commandList);
     d3d12CommandList->GetGraphicsCommandList()->RSSetScissorRects(1, (D3D12_RECT *)&scissorRect);
 }
 
-void D3D12Renderer::SetDepthBounds(CommandList *commandList, float depthMin, float depthMax) {
+void D3D12Renderer::SetDepthBounds(RHI::CommandList *commandList, float depthMin, float depthMax) {
     if (!supportsDepthBoundsTest) {
         return;
     }
@@ -813,21 +813,21 @@ void D3D12Renderer::SetDepthBounds(CommandList *commandList, float depthMin, flo
     d3d12CommandList->GetGraphicsCommandList()->OMSetDepthBounds(depthMin, depthMax);
 }
 
-void D3D12Renderer::Dispatch(CommandList *commandList, uint32_t threadGroupCountX, uint32_t threadGroupCountY, uint32_t threadGroupCountZ) {
+void D3D12Renderer::Dispatch(RHI::CommandList *commandList, uint32_t threadGroupCountX, uint32_t threadGroupCountY, uint32_t threadGroupCountZ) {
     D3D12CommandList *d3d12CommandList = static_cast<D3D12CommandList *>(commandList);
     BindRootParameters(d3d12CommandList, false);
     d3d12CommandList->GetGraphicsCommandList()->Dispatch(threadGroupCountX, threadGroupCountY, threadGroupCountZ);
 }
 
-void D3D12Renderer::DispatchMesh(CommandList *commandList, uint32_t threadGroupCountX, uint32_t threadGroupCountY, uint32_t threadGroupCountZ) {
+void D3D12Renderer::DispatchMesh(RHI::CommandList *commandList, uint32_t threadGroupCountX, uint32_t threadGroupCountY, uint32_t threadGroupCountZ) {
     D3D12CommandList *d3d12CommandList = static_cast<D3D12CommandList *>(commandList);
     BindRootParameters(d3d12CommandList, false);
     d3d12CommandList->GetGraphicsCommandList()->DispatchMesh(threadGroupCountX, threadGroupCountY, threadGroupCountZ);
 }
 
-void D3D12Renderer::ClearUAV(CommandList *commandList, const GPUResource *resource, uint32_t value) {
+void D3D12Renderer::ClearUAV(RHI::CommandList *commandList, const RHI::GPUResource *resource, uint32_t value) {
     const UINT values[4] = { value, value, value, value };
-    const Array<D3D12_CPU_DESCRIPTOR_HANDLE> *cpuDescriptorHandlesPtr = nullptr;
+    const BE1::Array<D3D12_CPU_DESCRIPTOR_HANDLE> *cpuDescriptorHandlesPtr = nullptr;
 
     const D3D12Buffer *buffer = reinterpret_cast<const D3D12Buffer *>(resource->GetNativeBufferObject());
     if (buffer) {
@@ -853,15 +853,15 @@ void D3D12Renderer::ClearUAV(CommandList *commandList, const GPUResource *resour
     }
 }
 
-void D3D12Renderer::CopyBuffer(CommandList *commandList, const Buffer *dstBuffer, uint32_t dstOffset, const Buffer *srcBuffer, uint32_t srcOffset, uint32_t size) {
+void D3D12Renderer::CopyBuffer(RHI::CommandList *commandList, const RHI::Buffer *dstBuffer, uint32_t dstOffset, const RHI::Buffer *srcBuffer, uint32_t srcOffset, uint32_t size) {
     const D3D12Buffer *d3d12DstBuffer = static_cast<const D3D12Buffer *>(dstBuffer);
     const D3D12Buffer *d3d12SrcBuffer = static_cast<const D3D12Buffer *>(srcBuffer);
     D3D12CommandList *d3d12CommandList = static_cast<D3D12CommandList *>(commandList);
     d3d12CommandList->GetGraphicsCommandList()->CopyBufferRegion(d3d12DstBuffer->GetResource(), dstOffset, d3d12SrcBuffer->GetResource(), srcOffset, size);
 }
 
-void D3D12Renderer::CopyTexture(CommandList *commandList, const Texture *dstTexture, uint32_t dstSlice, uint32_t dstMipLevel, uint32_t dstX, uint32_t dstY, uint32_t dstZ,
-    const Texture *srcTexture, uint32_t srcSlice, uint32_t srcMipLevel, uint32_t srcX, uint32_t srcY, uint32_t srcZ, uint32_t width, uint32_t height, uint32_t depth) {
+void D3D12Renderer::CopyTexture(RHI::CommandList *commandList, const RHI::Texture *dstTexture, uint32_t dstSlice, uint32_t dstMipLevel, uint32_t dstX, uint32_t dstY, uint32_t dstZ,
+    const RHI::Texture *srcTexture, uint32_t srcSlice, uint32_t srcMipLevel, uint32_t srcX, uint32_t srcY, uint32_t srcZ, uint32_t width, uint32_t height, uint32_t depth) {
     const D3D12Texture *d3d12DstTexture = static_cast<const D3D12Texture *>(dstTexture);
     const D3D12Texture *d3d12SrcTexture = static_cast<const D3D12Texture *>(srcTexture);
     CD3DX12_TEXTURE_COPY_LOCATION dstLocation(d3d12DstTexture->GetResource(), D3D12CalcSubresource(dstMipLevel, dstSlice, 0, d3d12DstTexture->textureDesc.MipLevels, d3d12DstTexture->textureDesc.DepthOrArraySize));
@@ -871,69 +871,69 @@ void D3D12Renderer::CopyTexture(CommandList *commandList, const Texture *dstText
     d3d12CommandList->GetGraphicsCommandList()->CopyTextureRegion(&dstLocation, dstX, dstY, dstZ, &srcLocation, &srcBox);
 }
 
-static constexpr D3D12_RESOURCE_STATES ToD3D12ResourceState(RHIRenderer::GPUResourceState resourceState) {
+static constexpr D3D12_RESOURCE_STATES ToD3D12ResourceState(RHI::GPUResourceState resourceState) {
     D3D12_RESOURCE_STATES ret = D3D12_RESOURCE_STATE_COMMON;
-    if (HasFlag(resourceState, RHIRenderer::GPUResourceState::ShaderResource)) {
+    if (BE1::HasFlag(resourceState, RHI::GPUResourceState::ShaderResource)) {
         ret |= D3D12_RESOURCE_STATE_ALL_SHADER_RESOURCE;
     }
-    if (HasFlag(resourceState, RHIRenderer::GPUResourceState::ShaderResourceCompute)) {
+    if (BE1::HasFlag(resourceState, RHI::GPUResourceState::ShaderResourceCompute)) {
         ret |= D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE;
     }
-    if (HasFlag(resourceState, RHIRenderer::GPUResourceState::UnorderedAccess)) {
+    if (BE1::HasFlag(resourceState, RHI::GPUResourceState::UnorderedAccess)) {
         ret |= D3D12_RESOURCE_STATE_UNORDERED_ACCESS;
     }
-    if (HasFlag(resourceState, RHIRenderer::GPUResourceState::CopyDst)) {
+    if (BE1::HasFlag(resourceState, RHI::GPUResourceState::CopyDst)) {
         ret |= D3D12_RESOURCE_STATE_COPY_DEST;
     }
-    if (HasFlag(resourceState, RHIRenderer::GPUResourceState::CopySrc)) {
+    if (BE1::HasFlag(resourceState, RHI::GPUResourceState::CopySrc)) {
         ret |= D3D12_RESOURCE_STATE_COPY_SOURCE;
     }
-    if (HasFlag(resourceState, RHIRenderer::GPUResourceState::RenderTarget)) {
+    if (BE1::HasFlag(resourceState, RHI::GPUResourceState::RenderTarget)) {
         ret |= D3D12_RESOURCE_STATE_RENDER_TARGET;
     }
-    if (HasFlag(resourceState, RHIRenderer::GPUResourceState::DepthWrite)) {
+    if (BE1::HasFlag(resourceState, RHI::GPUResourceState::DepthWrite)) {
         ret |= D3D12_RESOURCE_STATE_DEPTH_WRITE;
     }
-    if (HasFlag(resourceState, RHIRenderer::GPUResourceState::DepthRead)) {
+    if (BE1::HasFlag(resourceState, RHI::GPUResourceState::DepthRead)) {
         ret |= D3D12_RESOURCE_STATE_DEPTH_READ;
     }
-    if (HasFlag(resourceState, RHIRenderer::GPUResourceState::ShadingRateSource)) {
+    if (BE1::HasFlag(resourceState, RHI::GPUResourceState::ShadingRateSource)) {
         ret |= D3D12_RESOURCE_STATE_SHADING_RATE_SOURCE;
     }
-    if (HasFlag(resourceState, RHIRenderer::GPUResourceState::VertexBuffer | RHIRenderer::GPUResourceState::ConstantBuffer)) {
+    if (BE1::HasFlag(resourceState, RHI::GPUResourceState::VertexBuffer | RHI::GPUResourceState::ConstantBuffer)) {
         ret |= D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER;
     }
-    if (HasFlag(resourceState, RHIRenderer::GPUResourceState::IndexBuffer)) {
+    if (BE1::HasFlag(resourceState, RHI::GPUResourceState::IndexBuffer)) {
         ret |= D3D12_RESOURCE_STATE_INDEX_BUFFER;
     }
-    if (HasFlag(resourceState, RHIRenderer::GPUResourceState::IndirectArgument)) {
+    if (BE1::HasFlag(resourceState, RHI::GPUResourceState::IndirectArgument)) {
         ret |= D3D12_RESOURCE_STATE_INDIRECT_ARGUMENT;
     }
-    if (HasFlag(resourceState, RHIRenderer::GPUResourceState::RTAccelerationStructure)) {
+    if (BE1::HasFlag(resourceState, RHI::GPUResourceState::RTAccelerationStructure)) {
         ret |= D3D12_RESOURCE_STATE_RAYTRACING_ACCELERATION_STRUCTURE;
     }
-    if (HasFlag(resourceState, RHIRenderer::GPUResourceState::Prediction)) {
+    if (BE1::HasFlag(resourceState, RHI::GPUResourceState::Prediction)) {
         ret |= D3D12_RESOURCE_STATE_PREDICATION;
     }
     return ret;
 }
 
-void D3D12Renderer::Barrier(CommandList *commandList, const GPUBarrier *barriers, uint32_t barrierCount) {
-    Array<D3D12_RESOURCE_BARRIER> barrierDescs;
+void D3D12Renderer::Barrier(RHI::CommandList *commandList, const RHI::GPUBarrier *barriers, uint32_t barrierCount) {
+    BE1::Array<D3D12_RESOURCE_BARRIER> barrierDescs;
     barrierDescs.Reserve(barrierCount);
 
     for (uint32_t barrierIndex = 0; barrierIndex < barrierCount; ++barrierIndex) {
-        const GPUBarrier *barrier = &barriers[barrierIndex];
+        const RHI::GPUBarrier *barrier = &barriers[barrierIndex];
         D3D12_RESOURCE_BARRIER &barrierDesc = barrierDescs.Alloc();
 
         switch (barrier->type) {
-        case GPUBarrier::Type::Memory:
+        case RHI::GPUBarrier::Type::Memory:
             barrierDesc.Type = D3D12_RESOURCE_BARRIER_TYPE_UAV;
             barrierDesc.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
             // UAV.pResource == nullptr 일 때는 특정 UAV 가 아닌 모든 UAV 에 대한 메모리 배리어가 된다.
             barrierDesc.UAV.pResource = !barrier->memoryBarrier.resource ? nullptr : reinterpret_cast<ID3D12Resource *>(barrier->memoryBarrier.resource->GetNativeResource());
             break;
-        case GPUBarrier::Type::Buffer:
+        case RHI::GPUBarrier::Type::Buffer:
             barrierDesc.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
             barrierDesc.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
             barrierDesc.Transition.pResource = reinterpret_cast<ID3D12Resource *>(barrier->bufferBarrier.buffer->GetNativeResource());
@@ -941,7 +941,7 @@ void D3D12Renderer::Barrier(CommandList *commandList, const GPUBarrier *barriers
             barrierDesc.Transition.StateAfter = ToD3D12ResourceState(barrier->bufferBarrier.stateAfter);
             barrierDesc.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
             break;
-        case GPUBarrier::Type::Image:
+        case RHI::GPUBarrier::Type::Image:
             barrierDesc.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
             barrierDesc.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
             barrierDesc.Transition.pResource = reinterpret_cast<ID3D12Resource *>(barrier->imageBarrier.texture->GetNativeResource());
@@ -955,7 +955,7 @@ void D3D12Renderer::Barrier(CommandList *commandList, const GPUBarrier *barriers
                 barrierDesc.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
             }
             break;
-        case GPUBarrier::Type::Aliasing:
+        case RHI::GPUBarrier::Type::Aliasing:
             barrierDesc.Type = D3D12_RESOURCE_BARRIER_TYPE_ALIASING;
             barrierDesc.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
             barrierDesc.Aliasing.pResourceBefore = reinterpret_cast<ID3D12Resource *>(barrier->aliasingBarrier.resourceBefore->GetNativeResource());
@@ -968,7 +968,7 @@ void D3D12Renderer::Barrier(CommandList *commandList, const GPUBarrier *barriers
     d3d12CommandList->GetGraphicsCommandList()->ResourceBarrier(barrierCount, barrierDescs.Ptr());
 }
 
-void D3D12Renderer::BeginRenderPass(CommandList *commandList, const SwapChain *swapChain, const Color4 &clearColor, float clearDepth, uint8_t clearStencil, ClearFlag clearFlag) {
+void D3D12Renderer::BeginRenderPass(RHI::CommandList *commandList, const RHI::SwapChain *swapChain, const BE1::Color4 &clearColor, float clearDepth, uint8_t clearStencil, RHI::ClearFlag clearFlag) {
     D3D12CommandList *d3d12CommandList = static_cast<D3D12CommandList *>(commandList);
     d3d12CommandList->endRenderPassBarriers.SetCount(0, false);
 
@@ -992,7 +992,7 @@ void D3D12Renderer::BeginRenderPass(CommandList *commandList, const SwapChain *s
     // 렌더 타겟
     D3D12_RENDER_PASS_RENDER_TARGET_DESC rtDesc = {};
     rtDesc.cpuDescriptor = d3d12SwapChain->GetCurrentBackBufferDescriptorHandle();
-    if (HasFlag(clearFlag, ClearFlag::Color)) {
+    if (BE1::HasFlag(clearFlag, RHI::ClearFlag::Color)) {
         rtDesc.BeginningAccess.Type = D3D12_RENDER_PASS_BEGINNING_ACCESS_TYPE_CLEAR;
         rtDesc.BeginningAccess.Clear.ClearValue.Color[0] = clearColor[0];
         rtDesc.BeginningAccess.Clear.ClearValue.Color[1] = clearColor[1];
@@ -1006,14 +1006,14 @@ void D3D12Renderer::BeginRenderPass(CommandList *commandList, const SwapChain *s
     // 뎁스/스텐실
     D3D12_RENDER_PASS_DEPTH_STENCIL_DESC dsDesc = {};
     dsDesc.cpuDescriptor = dsvDescriptorHandle;
-    if (HasFlag(clearFlag, ClearFlag::Depth)) {
+    if (BE1::HasFlag(clearFlag, RHI::ClearFlag::Depth)) {
         dsDesc.DepthBeginningAccess.Type = D3D12_RENDER_PASS_BEGINNING_ACCESS_TYPE_CLEAR;
         dsDesc.DepthBeginningAccess.Clear.ClearValue.DepthStencil.Depth = clearDepth;
     } else {
         dsDesc.DepthBeginningAccess.Type = D3D12_RENDER_PASS_BEGINNING_ACCESS_TYPE_DISCARD;
     }
     dsDesc.DepthEndingAccess.Type = D3D12_RENDER_PASS_ENDING_ACCESS_TYPE_PRESERVE;
-    if (HasFlag(clearFlag, ClearFlag::Stencil)) {
+    if (BE1::HasFlag(clearFlag, RHI::ClearFlag::Stencil)) {
         dsDesc.StencilBeginningAccess.Type = D3D12_RENDER_PASS_BEGINNING_ACCESS_TYPE_CLEAR;
         dsDesc.StencilBeginningAccess.Clear.ClearValue.DepthStencil.Stencil = clearStencil;
     } else {
@@ -1023,15 +1023,15 @@ void D3D12Renderer::BeginRenderPass(CommandList *commandList, const SwapChain *s
 
     d3d12CommandList->GetGraphicsCommandList()->BeginRenderPass(1, &rtDesc, &dsDesc, D3D12_RENDER_PASS_FLAG_ALLOW_UAV_WRITES);
 #else
-    if (HasFlag(clearFlag, ClearFlag::Color)) {
+    if (BE1::HasFlag(clearFlag, RHI::ClearFlag::Color)) {
         d3d12CommandList->GetGraphicsCommandList()->ClearRenderTargetView(d3d12SwapChain->GetCurrentBackBufferDescriptorHandle(), clearColor, 0, nullptr);
     }
-    if (HasFlag(clearFlag, ClearFlag::Depth | ClearFlag::Stencil)) {
+    if (BE1::HasFlag(clearFlag, RHI::ClearFlag::Depth | RHI::ClearFlag::Stencil)) {
         D3D12_CLEAR_FLAGS clearDepthStencilFlags = 0;
-        if (HasFlag(clearFlag, ClearFlag::Depth)) {
+        if (BE1::HasFlag(clearFlag, RHI::ClearFlag::Depth)) {
             clearDepthStencilFlags |= D3D12_CLEAR_FLAG_DEPTH;
         }
-        if (HasFlag(clearFlag, ClearFlag::Stencil)) {
+        if (BE1::HasFlag(clearFlag, RHI::ClearFlag::Stencil)) {
             clearDepthStencilFlags |= D3D12_CLEAR_FLAG_STENCIL;
         }
         d3d12CommandList->GetGraphicsCommandList()->ClearDepthStencilView(dsvDescriptorHandle, clearDepthStencilFlags, clearDepth, clearStencil, 0, nullptr);
@@ -1040,7 +1040,7 @@ void D3D12Renderer::BeginRenderPass(CommandList *commandList, const SwapChain *s
 #endif
 }
 
-void D3D12Renderer::EndRenderPass(CommandList *commandList) {
+void D3D12Renderer::EndRenderPass(RHI::CommandList *commandList) {
     D3D12CommandList *d3d12CommandList = static_cast<D3D12CommandList *>(commandList);
 
 #if 1
@@ -1052,32 +1052,32 @@ void D3D12Renderer::EndRenderPass(CommandList *commandList) {
     }
 }
 
-void D3D12Renderer::Draw(CommandList *commandList, uint32_t vertexCount, uint32_t startVertexLocation) {
+void D3D12Renderer::Draw(RHI::CommandList *commandList, uint32_t vertexCount, uint32_t startVertexLocation) {
     D3D12CommandList *d3d12CommandList = static_cast<D3D12CommandList *>(commandList);
     BindRootParameters(d3d12CommandList, true);
     d3d12CommandList->GetGraphicsCommandList()->DrawInstanced(vertexCount, 1, startVertexLocation, 0);
 }
 
-void D3D12Renderer::DrawIndexed(CommandList *commandList, uint32_t indexCount, uint32_t startIndexLocation, uint32_t baseVertexLocation) {
+void D3D12Renderer::DrawIndexed(RHI::CommandList *commandList, uint32_t indexCount, uint32_t startIndexLocation, uint32_t baseVertexLocation) {
     D3D12CommandList *d3d12CommandList = static_cast<D3D12CommandList *>(commandList);
     BindRootParameters(d3d12CommandList, true);
     d3d12CommandList->GetGraphicsCommandList()->DrawIndexedInstanced(indexCount, 1, startIndexLocation, baseVertexLocation, 0);
 }
 
-void D3D12Renderer::DrawInstanced(CommandList *commandList, uint32_t vertexCount, uint32_t instanceCount, uint32_t startVertexLocation, uint32_t startInstanceLocation) {
+void D3D12Renderer::DrawInstanced(RHI::CommandList *commandList, uint32_t vertexCount, uint32_t instanceCount, uint32_t startVertexLocation, uint32_t startInstanceLocation) {
     D3D12CommandList *d3d12CommandList = static_cast<D3D12CommandList *>(commandList);
     BindRootParameters(d3d12CommandList, true);
     d3d12CommandList->GetGraphicsCommandList()->DrawInstanced(vertexCount, instanceCount, startVertexLocation, startInstanceLocation);
 }
 
-void D3D12Renderer::DrawIndexedInstanced(CommandList *commandList, uint32_t indexCount, uint32_t instanceCount, uint32_t startIndexLocation, uint32_t baseVertexLocation, uint32_t startInstanceLocation) {
+void D3D12Renderer::DrawIndexedInstanced(RHI::CommandList *commandList, uint32_t indexCount, uint32_t instanceCount, uint32_t startIndexLocation, uint32_t baseVertexLocation, uint32_t startInstanceLocation) {
     D3D12CommandList *d3d12CommandList = static_cast<D3D12CommandList *>(commandList);
     BindRootParameters(d3d12CommandList, true);
     d3d12CommandList->GetGraphicsCommandList()->DrawIndexedInstanced(indexCount, instanceCount, startIndexLocation, baseVertexLocation, startInstanceLocation);
 }
 
-int D3D12Renderer::AddRenderObject(const D3D12RenderObject::State &def) {
-    assert(Engine::IsInMainThread());
+int D3D12Renderer::AddRenderObject(const RenderObject::State &def) {
+    assert(BE1::Engine::IsInMainThread());
 
     int index = renderObjects.FindNull();
     if (index == -1) {
@@ -1088,16 +1088,16 @@ int D3D12Renderer::AddRenderObject(const D3D12RenderObject::State &def) {
     return index;
 }
 
-void D3D12Renderer::UpdateRenderObject(int index, const D3D12RenderObject::State &def) {
-    assert(Engine::IsInMainThread());
+void D3D12Renderer::UpdateRenderObject(int index, const RenderObject::State &def) {
+    assert(BE1::Engine::IsInMainThread());
 
     while (index >= renderObjects.Count()) {
         renderObjects.Append(nullptr);
     }
 
-    D3D12RenderObject *renderObject = renderObjects[index];
+    RenderObject *renderObject = renderObjects[index];
     if (!renderObject) {
-        renderObject = new D3D12RenderObject;
+        renderObject = new RenderObject;
         renderObject->index = index;
         renderObjects[index] = renderObject;
     }
@@ -1106,14 +1106,14 @@ void D3D12Renderer::UpdateRenderObject(int index, const D3D12RenderObject::State
 }
 
 void D3D12Renderer::RemoveRenderObject(int index) {
-    assert(Engine::IsInMainThread());
+    assert(BE1::Engine::IsInMainThread());
 
     if (!renderObjects.IsValidIndex(index)) {
         BE_WARNLOG("D3D12Renderer::RemoveRenderObject: invalid index %i\n", index);
         return;
     }
 
-    D3D12RenderObject *renderObject = renderObjects[index];
+    RenderObject *renderObject = renderObjects[index];
     if (!renderObject) {
         BE_WARNLOG("D3D12Renderer::RemoveRenderObject: index %i is nullptr\n", index);
         return;
@@ -1124,7 +1124,7 @@ void D3D12Renderer::RemoveRenderObject(int index) {
 }
 
 void D3D12Renderer::RenderScene(/*const D3D12Camera *camera*/) {
-    assert(Engine::IsInMainThread());
+    assert(BE1::Engine::IsInMainThread());
 
     PIX_CPU_SCOPED_EVENT(3, "D3D12Renderer::RenderScene");
 
@@ -1138,7 +1138,7 @@ void D3D12Renderer::RenderScene(/*const D3D12Camera *camera*/) {
 
     D3D12FrameData* writeFrameData = &frameData[currentFrameIndex];
     // TODO: RenderScene 을 여러번 호출할 수 있어야함
-    D3D12VisObject* visObjects = writeFrameData->AllocVisObjects(numVisObjects);
+    VisObject* visObjects = writeFrameData->AllocVisObjects(numVisObjects);
 
     // TODO 1: 현재 카메라에 기반해 SceneGraph 나 Frustum culling 등으로 렌더링에 사용할 렌더 오브젝트들을 추려낸다. 추려낸 렌더 오브젝트들의 변수는 복사 or (레퍼런스 카운트를 이용한) 공유를 해서 가지고 있어야 한다.
     for (int i = 0; i < numVisObjects; ++i) {
@@ -1151,19 +1151,19 @@ void D3D12Renderer::RenderScene(/*const D3D12Camera *camera*/) {
     // TODO 5: 이후에는 Surface 단위로 그려야 한다.
 
     {
-        ScopedWriteLock lock(smpLock);
+        BE1::ScopedWriteLock lock(smpLock);
 
         // (렌더 스레드의) 다음 렌더링이 끝나기를 기다리는 상태로 변경
         frameSyncState = FrameSyncState::WaitingForRenderCompleted;
 
         // 업데이트가 완료되었다고 신호를 보내고, 이후 다음 프레임의 업데이트를 진행한다.
-        PlatformCondition::Signal(updateCompletedCondition);
+        BE1::PlatformCondition::Signal(updateCompletedCondition);
     }
 #else
     int numVisObjects = renderObjects.Count();
 
     D3D12FrameData *writeFrameData = &frameData[currentFrameIndex];
-    D3D12VisObject *visObjects = writeFrameData->AllocVisObjects(numVisObjects);
+    VisObject *visObjects = writeFrameData->AllocVisObjects(numVisObjects);
 
     for (int i = 0; i < numVisObjects; ++i) {
         visObjects[i].GetState() = renderObjects[i]->GetState();
@@ -1172,7 +1172,7 @@ void D3D12Renderer::RenderScene(/*const D3D12Camera *camera*/) {
 }
 
 void D3D12Renderer::RenderFrame() {
-    PIX_SCOPED_EVENT(commandQueues[to_int(CommandQueueType::Graphics)], 4, "D3D12Renderer::RenderFrame");
+    PIX_SCOPED_EVENT(commandQueues[to_int(RHI::CommandQueueType::Graphics)], 4, "D3D12Renderer::RenderFrame");
 
     int numVisObjects = currentFrameData->NumVisObjects();
     if (numVisObjects == 0) {
@@ -1181,12 +1181,12 @@ void D3D12Renderer::RenderFrame() {
 
 #ifdef USE_RENDER_TASK
 #ifdef USE_RENDEROBJECT_INSTANCING
-    int numDrawCalls = (int)Math::Ceil((float)numVisObjects / 1024);
+    int numDrawCalls = (int)BE1::Math::Ceil((float)numVisObjects / 1024);
 #else
     int numDrawCalls = numVisObjects;
 #endif
 
-    int numTasks = Min(renderTaskManager.NumThreads(), (int)Math::Ceil((float)numDrawCalls / MaxDrawCallsPerTask));
+    int numTasks = BE1::Min(renderTaskManager.NumThreads(), (int)BE1::Math::Ceil((float)numDrawCalls / MaxDrawCallsPerTask));
     if (numTasks > 1) {
         DrawVisObjectsWithTask(numTasks);
     } else {
@@ -1204,23 +1204,23 @@ void D3D12Renderer::DrawVisObjects(int threadIndex, D3D12CommandList *commandLis
         return;
     }
 
-    D3D12VisObject *visObjects = currentFrameData->GetVisObjects();
+    VisObject *visObjects = currentFrameData->GetVisObjects();
     int index = startIndex;
 
     while (index <= endIndex) {
-        D3D12VisObject *currentVisObjectPtr = &visObjects[index];
+        VisObject *currentVisObjectPtr = &visObjects[index];
 
 #ifdef USE_RENDEROBJECT_INSTANCING
-        int instanceCount = Min(1024, endIndex - index + 1);
+        int instanceCount = BE1::Min(1024, endIndex - index + 1);
         if (instanceCount > 1) {
-            D3D12VisObject::DrawInstanced(commandList, currentVisObjectPtr, instanceCount);
+            VisObject::DrawInstanced(commandList, currentVisObjectPtr, instanceCount);
             index += instanceCount;
         } else {
-            D3D12VisObject::Draw(commandList, &currentVisObjectPtr[0]);
+            VisObject::Draw(commandList, &currentVisObjectPtr[0]);
             ++index;
         }
 #else
-        D3D12VisObject::Draw(commandList, &currentVisObjectPtr[0]);
+        VisObject::Draw(commandList, &currentVisObjectPtr[0]);
         ++index;
 #endif
     }
@@ -1243,7 +1243,7 @@ void D3D12Renderer::DrawVisObjectsWithoutTask() {
     mainCommandList->SetDescriptorHeaps(COUNT_OF(descriptorHeaps), descriptorHeaps);
 
     // Secondary CommandList 를 얻어온다.
-    D3D12CommandList *commandList = currentThreadData.graphicsCommandListPool->Alloc(RHIRenderer::CommandListType::Secondary);
+    D3D12CommandList *commandList = currentThreadData.graphicsCommandListPool->Alloc(RHI::CommandListType::Secondary);
     commandList->Reset(true, mainCommandList);
 
     // Secondary CommandList 의 루트 디스크립터 힙을 지정한다.
@@ -1287,7 +1287,7 @@ void D3D12Renderer::DrawVisObjectsByTask(D3D12Renderer::DrawObjectTaskDesc *task
     D3D12FrameData::DataPerThread &currentThreadData = currentFrameData->threadData[threadIndex];
 
 #ifdef USE_SECONDARY_COMMAND_LISTS
-    D3D12CommandList *commandList = currentThreadData.graphicsCommandListPool->Alloc(RHIRenderer::CommandListType::Secondary);
+    D3D12CommandList *commandList = currentThreadData.graphicsCommandListPool->Alloc(RHI::CommandListType::Secondary);
     commandList->Reset();
 
     // Secondary CommandList 의 루트 디스크립터 힙을 지정한다.
@@ -1338,7 +1338,7 @@ void D3D12Renderer::DrawVisObjectsWithTask(int numTasks) {
         return;
     }
 
-    int numVisObjectsPerTasks = (int)Math::Ceil((float)numVisObjects / numTasks);
+    int numVisObjectsPerTasks = (int)BE1::Math::Ceil((float)numVisObjects / numTasks);
     int threadIndex = 0;
     int lastEndIndex = -1;
 
@@ -1353,7 +1353,7 @@ void D3D12Renderer::DrawVisObjectsWithTask(int numTasks) {
         currentThreadDesc.renderer = this;
         currentThreadDesc.threadIndex = threadIndex++;
         currentThreadDesc.visObjectStartIndex = lastEndIndex + 1;
-        currentThreadDesc.visObjectEndIndex = Min(currentThreadDesc.visObjectStartIndex + numVisObjectsPerTasks, numVisObjects) - 1;
+        currentThreadDesc.visObjectEndIndex = BE1::Min(currentThreadDesc.visObjectStartIndex + numVisObjectsPerTasks, numVisObjects) - 1;
         renderTaskManager.AddTask(::DrawVisObjectsByTaskFunction, &currentThreadDesc, false);
 
         lastEndIndex = currentThreadDesc.visObjectEndIndex;
@@ -1386,38 +1386,38 @@ void D3D12Renderer::DrawVisObjectsWithTask(int numTasks) {
 
 #ifdef USE_RENDER_THREAD
 void D3D12Renderer::InitRenderThread() {
-    smpLock = PlatformSRWLock::Create();
-    renderCompletedCondition = PlatformCondition::Create();
-    updateCompletedCondition = PlatformCondition::Create();
+    smpLock = BE1::PlatformSRWLock::Create();
+    renderCompletedCondition = BE1::PlatformCondition::Create();
+    updateCompletedCondition = BE1::PlatformCondition::Create();
 
-    renderThread = PlatformThread::Start(RenderThreadProc, this);
+    renderThread = BE1::PlatformThread::Start(RenderThreadProc, this);
 }
 
 void D3D12Renderer::ShutdownRenderThread() {
     {
-        ScopedWriteLock lock(smpLock);
+        BE1::ScopedWriteLock lock(smpLock);
         isStoppingRenderThread = true;
-        PlatformCondition::Signal(updateCompletedCondition);
+        BE1::PlatformCondition::Signal(updateCompletedCondition);
     }
-    PlatformThread::Join(renderThread);
+    BE1::PlatformThread::Join(renderThread);
     renderThread = nullptr;
 
-    PlatformCondition::Destroy(renderCompletedCondition);
-    PlatformCondition::Destroy(updateCompletedCondition);
-    PlatformSRWLock::Destroy(smpLock);
+    BE1::PlatformCondition::Destroy(renderCompletedCondition);
+    BE1::PlatformCondition::Destroy(updateCompletedCondition);
+    BE1::PlatformSRWLock::Destroy(smpLock);
 }
 
 void D3D12Renderer::WaitRenderCompleted() {
-    assert(Engine::IsInMainThread());
+    assert(BE1::Engine::IsInMainThread());
 
     if (!renderThread) {
         return;
     }
 
-    ScopedReadLock lock(smpLock);
+    BE1::ScopedReadLock lock(smpLock);
 
     // 렌더 스레드가 렌더링이 완료되어 (다음) 업데이트를 기다리는 상태가 될 때까지 기다린다.
-    PlatformCondition::Wait(renderCompletedCondition, smpLock, false, [this] {
+    BE1::PlatformCondition::Wait(renderCompletedCondition, smpLock, false, [this] {
         return frameSyncState == FrameSyncState::WaitingForUpdateCompleted;
     });
 }
@@ -1425,17 +1425,17 @@ void D3D12Renderer::WaitRenderCompleted() {
 unsigned int RenderThreadProc(void *param) {
     D3D12Renderer *renderer = reinterpret_cast<D3D12Renderer *>(param);
 
-    PlatformThread::SetCurrentThreadName("RenderThreadProc");
+    BE1::PlatformThread::SetCurrentThreadName("RenderThreadProc");
 
-    SIMD::SetDenormalFlushMode(true);
+    BE1::SIMD::SetDenormalFlushMode(true);
 
     while (1) {
         PIX_CPU_SCOPED_EVENT(7, "RenderThreadProcLoop");
         {
-            ScopedReadLock lock(renderer->smpLock);
+            BE1::ScopedReadLock lock(renderer->smpLock);
 
             // 메인 스레드가 업데이트가 완료되어 (다음) 렌더링을 기다리는 상태가 될 때까지 기다린다.
-            PlatformCondition::Wait(renderer->updateCompletedCondition, renderer->smpLock, false, [renderer] {
+            BE1::PlatformCondition::Wait(renderer->updateCompletedCondition, renderer->smpLock, false, [renderer] {
                 return renderer->frameSyncState == FrameSyncState::WaitingForRenderCompleted || renderer->isStoppingRenderThread;
             });
 
@@ -1449,131 +1449,131 @@ unsigned int RenderThreadProc(void *param) {
         renderer->EndFrame();
 
         {
-            ScopedWriteLock lock(renderer->smpLock);
+            BE1::ScopedWriteLock lock(renderer->smpLock);
 
             renderer->renderFrameIndex ^= renderer->renderFrameIndex;
 
             // (메인 스레드의) 다음 업데이트가 끝나기를 기다리는 상태로 변경
             renderer->frameSyncState = FrameSyncState::WaitingForUpdateCompleted;
 
-            PlatformCondition::Signal(renderer->renderCompletedCondition);
+            BE1::PlatformCondition::Signal(renderer->renderCompletedCondition);
         }
     }
     return 0;
 }
 #endif
 
-bool D3D12Renderer::ImageFormatToDXGIFormat(Image::Format::Enum imageFormat, bool isSRGB, DXGI_FORMAT *dxgiFormat) {
+bool D3D12Renderer::ImageFormatToDXGIFormat(BE1::Image::Format::Enum imageFormat, bool isSRGB, DXGI_FORMAT *dxgiFormat) {
     switch (imageFormat) {
-    case Image::Format::Unknown:
+    case BE1::Image::Format::Unknown:
         if (dxgiFormat) *dxgiFormat = DXGI_FORMAT_UNKNOWN;
         return true;
-    case Image::Format::R_32_TYPELESS:
+    case BE1::Image::Format::R_32_TYPELESS:
         if (dxgiFormat) *dxgiFormat = DXGI_FORMAT_R32_TYPELESS;
         return true;
-    case Image::Format::L_8:
-    case Image::Format::R_8:
+    case BE1::Image::Format::L_8:
+    case BE1::Image::Format::R_8:
         if (dxgiFormat) *dxgiFormat = DXGI_FORMAT_R8_UNORM;
         return true;
-    case Image::Format::A_8:
+    case BE1::Image::Format::A_8:
         if (dxgiFormat) *dxgiFormat = DXGI_FORMAT_A8_UNORM;
         return true;
-    case Image::Format::RG_8_8:
+    case BE1::Image::Format::RG_8_8:
         if (dxgiFormat) *dxgiFormat = DXGI_FORMAT_R8G8_UNORM;
         return true;
-    case Image::Format::RGBA_8_8_8_8:
+    case BE1::Image::Format::RGBA_8_8_8_8:
         if (dxgiFormat) *dxgiFormat = isSRGB ? DXGI_FORMAT_R8G8B8A8_UNORM_SRGB : DXGI_FORMAT_R8G8B8A8_UNORM;
         return true;
-    case Image::Format::BGRA_8_8_8_8:
+    case BE1::Image::Format::BGRA_8_8_8_8:
         if (dxgiFormat) *dxgiFormat = isSRGB ? DXGI_FORMAT_B8G8R8A8_UNORM_SRGB : DXGI_FORMAT_B8G8R8A8_UNORM;
         return true;
-    case Image::Format::BGRX_8_8_8_8:
+    case BE1::Image::Format::BGRX_8_8_8_8:
         if (dxgiFormat) *dxgiFormat = isSRGB ? DXGI_FORMAT_B8G8R8X8_UNORM_SRGB : DXGI_FORMAT_B8G8R8X8_UNORM;
         return true;
-    case Image::Format::R_8_SNORM:
+    case BE1::Image::Format::R_8_SNORM:
         if (dxgiFormat) *dxgiFormat = DXGI_FORMAT_R8_SNORM;
         return true;
-    case Image::Format::RG_8_8_SNORM:
+    case BE1::Image::Format::RG_8_8_SNORM:
         if (dxgiFormat) *dxgiFormat = DXGI_FORMAT_R8G8_SNORM;
         return true;
-    case Image::Format::RGBA_8_8_8_8_SNORM:
+    case BE1::Image::Format::RGBA_8_8_8_8_SNORM:
         if (dxgiFormat) *dxgiFormat = DXGI_FORMAT_R8G8B8A8_SNORM;
         return true;
-    case Image::Format::BGR_5_6_5:
+    case BE1::Image::Format::BGR_5_6_5:
         if (dxgiFormat) *dxgiFormat = DXGI_FORMAT_B5G6R5_UNORM;
         return true;
-    case Image::Format::BGRA_4_4_4_4:
+    case BE1::Image::Format::BGRA_4_4_4_4:
         if (dxgiFormat) *dxgiFormat = DXGI_FORMAT_B4G4R4A4_UNORM;
         return true;
-    case Image::Format::ABGR_4_4_4_4:
+    case BE1::Image::Format::ABGR_4_4_4_4:
         if (dxgiFormat) *dxgiFormat = DXGI_FORMAT_A4B4G4R4_UNORM;
         return true;
-    case Image::Format::BGRA_5_5_5_1:
+    case BE1::Image::Format::BGRA_5_5_5_1:
         if (dxgiFormat) *dxgiFormat = DXGI_FORMAT_B5G5R5A1_UNORM;
         return true;
-    case Image::Format::RGBA_10_10_10_2:
+    case BE1::Image::Format::RGBA_10_10_10_2:
         if (dxgiFormat) *dxgiFormat = DXGI_FORMAT_R10G10B10A2_UNORM;
         return true;
-    case Image::Format::L_16F:
-    case Image::Format::R_16F:
+    case BE1::Image::Format::L_16F:
+    case BE1::Image::Format::R_16F:
         if (dxgiFormat) *dxgiFormat = DXGI_FORMAT_R16_FLOAT;
         return true;
-    case Image::Format::RG_16F_16F:
+    case BE1::Image::Format::RG_16F_16F:
         if (dxgiFormat) *dxgiFormat = DXGI_FORMAT_R16G16_FLOAT;
         return true;
-    case Image::Format::RGBA_16F_16F_16F_16F:
+    case BE1::Image::Format::RGBA_16F_16F_16F_16F:
         if (dxgiFormat) *dxgiFormat = DXGI_FORMAT_R16G16B16A16_FLOAT;
         return true;
-    case Image::Format::R_32F:
+    case BE1::Image::Format::R_32F:
         if (dxgiFormat) *dxgiFormat = DXGI_FORMAT_R32_FLOAT;
         return true;
-    case Image::Format::RG_32F_32F:
+    case BE1::Image::Format::RG_32F_32F:
         if (dxgiFormat) *dxgiFormat = DXGI_FORMAT_R32G32_FLOAT;
         return true;
-    case Image::Format::RGB_32F_32F_32F:
+    case BE1::Image::Format::RGB_32F_32F_32F:
         if (dxgiFormat) *dxgiFormat = DXGI_FORMAT_R32G32B32_FLOAT;
         return true;
-    case Image::Format::RGBA_32F_32F_32F_32F:
+    case BE1::Image::Format::RGBA_32F_32F_32F_32F:
         if (dxgiFormat) *dxgiFormat = DXGI_FORMAT_R32G32B32A32_FLOAT;
         return true;
-    case Image::Format::RGBE_9_9_9_5:
+    case BE1::Image::Format::RGBE_9_9_9_5:
         if (dxgiFormat) *dxgiFormat = DXGI_FORMAT_R9G9B9E5_SHAREDEXP;
         return true;
-    case Image::Format::RGB_11F_11F_10F:
+    case BE1::Image::Format::RGB_11F_11F_10F:
         if (dxgiFormat) *dxgiFormat = DXGI_FORMAT_R11G11B10_FLOAT;
         return true;
-    case Image::Format::DXT1: // BC1
+    case BE1::Image::Format::DXT1: // BC1
         if (dxgiFormat) *dxgiFormat = isSRGB ? DXGI_FORMAT_BC1_UNORM_SRGB : DXGI_FORMAT_BC1_UNORM;
         return true;
-    case Image::Format::DXT3: // BC2
+    case BE1::Image::Format::DXT3: // BC2
         if (dxgiFormat) *dxgiFormat = isSRGB ? DXGI_FORMAT_BC2_UNORM_SRGB : DXGI_FORMAT_BC2_UNORM;
         return true;
-    case Image::Format::DXT5: // BC3
+    case BE1::Image::Format::DXT5: // BC3
         if (dxgiFormat) *dxgiFormat = isSRGB ? DXGI_FORMAT_BC3_UNORM_SRGB : DXGI_FORMAT_BC3_UNORM;
         return true;
-    case Image::Format::DXN1: // BC4
+    case BE1::Image::Format::DXN1: // BC4
         if (dxgiFormat) *dxgiFormat = DXGI_FORMAT_BC4_UNORM;
         return true;
-    case Image::Format::DXN2: // BC5
+    case BE1::Image::Format::DXN2: // BC5
         if (dxgiFormat) *dxgiFormat = DXGI_FORMAT_BC5_UNORM;
         return true;
-    case Image::Format::Depth_16:
+    case BE1::Image::Format::Depth_16:
         if (dxgiFormat) *dxgiFormat = DXGI_FORMAT_D16_UNORM;
         return true;
-    case Image::Format::Depth_24:
+    case BE1::Image::Format::Depth_24:
         if (dxgiFormat) *dxgiFormat = DXGI_FORMAT_R24_UNORM_X8_TYPELESS;
         return true;
-    case Image::Format::Depth_32F:
+    case BE1::Image::Format::Depth_32F:
         if (dxgiFormat) *dxgiFormat = DXGI_FORMAT_D32_FLOAT;
         return true;
-    case Image::Format::DepthStencil_24_8:
+    case BE1::Image::Format::DepthStencil_24_8:
         if (dxgiFormat) *dxgiFormat = DXGI_FORMAT_D24_UNORM_S8_UINT;
         return true;
     }
     return false;
 }
 
-bool D3D12Renderer::DXGIFormatToImageFormat(DXGI_FORMAT dxgiFormat, Image::Format::Enum *imageFormat, bool *isSRGB) {
+bool D3D12Renderer::DXGIFormatToImageFormat(DXGI_FORMAT dxgiFormat, BE1::Image::Format::Enum *imageFormat, bool *isSRGB) {
     if (isSRGB) {
         *isSRGB = false;
         switch (dxgiFormat) {
@@ -1590,174 +1590,174 @@ bool D3D12Renderer::DXGIFormatToImageFormat(DXGI_FORMAT dxgiFormat, Image::Forma
 
     switch (dxgiFormat) {
     case DXGI_FORMAT_R8_UNORM:
-        if (imageFormat) *imageFormat = Image::Format::R_8;
+        if (imageFormat) *imageFormat = BE1::Image::Format::R_8;
         return true;
     case DXGI_FORMAT_A8_UNORM:
-        if (imageFormat) *imageFormat = Image::Format::A_8;
+        if (imageFormat) *imageFormat = BE1::Image::Format::A_8;
         return true;
     case DXGI_FORMAT_R8G8_UNORM:
-        if (imageFormat) *imageFormat = Image::Format::RG_8_8;
+        if (imageFormat) *imageFormat = BE1::Image::Format::RG_8_8;
         return true;
     case DXGI_FORMAT_R8G8B8A8_UNORM:
     case DXGI_FORMAT_R8G8B8A8_UNORM_SRGB:
-        if (imageFormat) *imageFormat = Image::Format::RGBA_8_8_8_8;
+        if (imageFormat) *imageFormat = BE1::Image::Format::RGBA_8_8_8_8;
         return true;
     case DXGI_FORMAT_B8G8R8A8_UNORM:
     case DXGI_FORMAT_B8G8R8A8_UNORM_SRGB:
-        if (imageFormat) *imageFormat = Image::Format::BGRA_8_8_8_8;
+        if (imageFormat) *imageFormat = BE1::Image::Format::BGRA_8_8_8_8;
         return true;
     case DXGI_FORMAT_B8G8R8X8_UNORM:
     case DXGI_FORMAT_B8G8R8X8_UNORM_SRGB:
-        if (imageFormat) *imageFormat = Image::Format::BGRX_8_8_8_8;
+        if (imageFormat) *imageFormat = BE1::Image::Format::BGRX_8_8_8_8;
         return true;
     case DXGI_FORMAT_R8_SNORM:
-        if (imageFormat) *imageFormat = Image::Format::R_8_SNORM;
+        if (imageFormat) *imageFormat = BE1::Image::Format::R_8_SNORM;
         return true;
     case DXGI_FORMAT_R8G8_SNORM:
-        if (imageFormat) *imageFormat = Image::Format::RG_8_8_SNORM;
+        if (imageFormat) *imageFormat = BE1::Image::Format::RG_8_8_SNORM;
         return true;
     case DXGI_FORMAT_R8G8B8A8_SNORM:
-        if (imageFormat) *imageFormat = Image::Format::RGBA_8_8_8_8_SNORM;
+        if (imageFormat) *imageFormat = BE1::Image::Format::RGBA_8_8_8_8_SNORM;
         return true;
     case DXGI_FORMAT_B5G6R5_UNORM:
-        if (imageFormat) *imageFormat = Image::Format::BGR_5_6_5;
+        if (imageFormat) *imageFormat = BE1::Image::Format::BGR_5_6_5;
         return true;
     case DXGI_FORMAT_B4G4R4A4_UNORM:
-        if (imageFormat) *imageFormat = Image::Format::BGRA_4_4_4_4;
+        if (imageFormat) *imageFormat = BE1::Image::Format::BGRA_4_4_4_4;
         return true;
     case DXGI_FORMAT_A4B4G4R4_UNORM:
-        if (imageFormat) *imageFormat = Image::Format::ABGR_4_4_4_4;
+        if (imageFormat) *imageFormat = BE1::Image::Format::ABGR_4_4_4_4;
         return true;
     case DXGI_FORMAT_B5G5R5A1_UNORM:
-        if (imageFormat) *imageFormat = Image::Format::BGRA_5_5_5_1;
+        if (imageFormat) *imageFormat = BE1::Image::Format::BGRA_5_5_5_1;
         return true;
     case DXGI_FORMAT_R10G10B10A2_UNORM:
-        if (imageFormat) *imageFormat = Image::Format::RGBA_10_10_10_2;
+        if (imageFormat) *imageFormat = BE1::Image::Format::RGBA_10_10_10_2;
         return true;
     case DXGI_FORMAT_R16_FLOAT:
-        if (imageFormat) *imageFormat = Image::Format::R_16F;
+        if (imageFormat) *imageFormat = BE1::Image::Format::R_16F;
         return true;
     case DXGI_FORMAT_R16G16_FLOAT:
-        if (imageFormat) *imageFormat = Image::Format::RG_16F_16F;
+        if (imageFormat) *imageFormat = BE1::Image::Format::RG_16F_16F;
         return true;
     case DXGI_FORMAT_R16G16B16A16_FLOAT:
-        if (imageFormat) *imageFormat = Image::Format::RGBA_16F_16F_16F_16F;
+        if (imageFormat) *imageFormat = BE1::Image::Format::RGBA_16F_16F_16F_16F;
         return true;
     case DXGI_FORMAT_R32_FLOAT:
-        if (imageFormat) *imageFormat = Image::Format::R_32F;
+        if (imageFormat) *imageFormat = BE1::Image::Format::R_32F;
         return true;
     case DXGI_FORMAT_R32G32_FLOAT:
-        if (imageFormat) *imageFormat = Image::Format::RG_32F_32F;
+        if (imageFormat) *imageFormat = BE1::Image::Format::RG_32F_32F;
         return true;
     case DXGI_FORMAT_R32G32B32_FLOAT:
-        if (imageFormat) *imageFormat = Image::Format::RGB_32F_32F_32F;
+        if (imageFormat) *imageFormat = BE1::Image::Format::RGB_32F_32F_32F;
         return true;
     case DXGI_FORMAT_R32G32B32A32_FLOAT:
-        if (imageFormat) *imageFormat = Image::Format::RGBA_32F_32F_32F_32F;
+        if (imageFormat) *imageFormat = BE1::Image::Format::RGBA_32F_32F_32F_32F;
         return true;
     case DXGI_FORMAT_R9G9B9E5_SHAREDEXP:
-        if (imageFormat) *imageFormat = Image::Format::RGBE_9_9_9_5;
+        if (imageFormat) *imageFormat = BE1::Image::Format::RGBE_9_9_9_5;
         return true;
     case DXGI_FORMAT_R11G11B10_FLOAT:
-        if (imageFormat) *imageFormat = Image::Format::RGB_11F_11F_10F;
+        if (imageFormat) *imageFormat = BE1::Image::Format::RGB_11F_11F_10F;
         return true;
     case DXGI_FORMAT_BC1_UNORM:
     case DXGI_FORMAT_BC1_UNORM_SRGB:
-        if (imageFormat) *imageFormat = Image::Format::DXT1;
+        if (imageFormat) *imageFormat = BE1::Image::Format::DXT1;
         return true;
     case DXGI_FORMAT_BC2_UNORM:
     case DXGI_FORMAT_BC2_UNORM_SRGB:
-        if (imageFormat) *imageFormat = Image::Format::DXT3;
+        if (imageFormat) *imageFormat = BE1::Image::Format::DXT3;
         return true;
     case DXGI_FORMAT_BC3_UNORM:
     case DXGI_FORMAT_BC3_UNORM_SRGB:
-        if (imageFormat) *imageFormat = Image::Format::DXT5;
+        if (imageFormat) *imageFormat = BE1::Image::Format::DXT5;
         return true;
     case DXGI_FORMAT_BC4_UNORM:
-        if (imageFormat) *imageFormat = Image::Format::DXN1;
+        if (imageFormat) *imageFormat = BE1::Image::Format::DXN1;
         return true;
     case DXGI_FORMAT_BC5_UNORM:
-        if (imageFormat) *imageFormat = Image::Format::DXN2;
+        if (imageFormat) *imageFormat = BE1::Image::Format::DXN2;
         return true;
     case DXGI_FORMAT_D16_UNORM:
-        if (imageFormat) *imageFormat = Image::Format::Depth_16;
+        if (imageFormat) *imageFormat = BE1::Image::Format::Depth_16;
         return true;
     case DXGI_FORMAT_D32_FLOAT:
-        if (imageFormat) *imageFormat = Image::Format::Depth_32F;
+        if (imageFormat) *imageFormat = BE1::Image::Format::Depth_32F;
         return true;
     case DXGI_FORMAT_D24_UNORM_S8_UINT:
-        if (imageFormat) *imageFormat = Image::Format::DepthStencil_24_8;
+        if (imageFormat) *imageFormat = BE1::Image::Format::DepthStencil_24_8;
         return true;
     }
     return false;
 }
 
-Image::Format::Enum D3D12Renderer::ToUncompressedImageFormat(Image::Format::Enum inFormat) {
-    Image::Format::Enum outFormat;
+BE1::Image::Format::Enum D3D12Renderer::ToUncompressedImageFormat(BE1::Image::Format::Enum inFormat) {
+    BE1::Image::Format::Enum outFormat;
 
     switch (inFormat) {
-    case Image::Format::RGB_5_6_5:
-    case Image::Format::RGB_8_8_8:
-    case Image::Format::BGR_5_6_5:
-    case Image::Format::BGR_8_8_8:
-    case Image::Format::RGBX_4_4_4_4:
-    case Image::Format::RGBX_5_5_5_1:
-    case Image::Format::RGBX_8_8_8_8:
-    case Image::Format::BGRX_4_4_4_4:
-    case Image::Format::BGRX_5_5_5_1:
-        outFormat = Image::Format::BGRX_8_8_8_8;
+    case BE1::Image::Format::RGB_5_6_5:
+    case BE1::Image::Format::RGB_8_8_8:
+    case BE1::Image::Format::BGR_5_6_5:
+    case BE1::Image::Format::BGR_8_8_8:
+    case BE1::Image::Format::RGBX_4_4_4_4:
+    case BE1::Image::Format::RGBX_5_5_5_1:
+    case BE1::Image::Format::RGBX_8_8_8_8:
+    case BE1::Image::Format::BGRX_4_4_4_4:
+    case BE1::Image::Format::BGRX_5_5_5_1:
+        outFormat = BE1::Image::Format::BGRX_8_8_8_8;
         break;
-    case Image::Format::LA_8_8:
-    case Image::Format::RGBA_4_4_4_4:
-    case Image::Format::RGBA_5_5_5_1:
-    case Image::Format::BGRA_4_4_4_4:
-    case Image::Format::BGRA_5_5_5_1:
-    case Image::Format::ABGR_4_4_4_4:
-    case Image::Format::ABGR_1_5_5_5:
-    case Image::Format::ABGR_8_8_8_8:
-    case Image::Format::ARGB_4_4_4_4:
-    case Image::Format::ARGB_1_5_5_5:
-    case Image::Format::ARGB_8_8_8_8:
-        outFormat = Image::Format::BGRA_8_8_8_8;
+    case BE1::Image::Format::LA_8_8:
+    case BE1::Image::Format::RGBA_4_4_4_4:
+    case BE1::Image::Format::RGBA_5_5_5_1:
+    case BE1::Image::Format::BGRA_4_4_4_4:
+    case BE1::Image::Format::BGRA_5_5_5_1:
+    case BE1::Image::Format::ABGR_4_4_4_4:
+    case BE1::Image::Format::ABGR_1_5_5_5:
+    case BE1::Image::Format::ABGR_8_8_8_8:
+    case BE1::Image::Format::ARGB_4_4_4_4:
+    case BE1::Image::Format::ARGB_1_5_5_5:
+    case BE1::Image::Format::ARGB_8_8_8_8:
+        outFormat = BE1::Image::Format::BGRA_8_8_8_8;
         break;
-    case Image::Format::RGB_8_8_8_SNORM:
-        outFormat = Image::Format::RGBA_8_8_8_8_SNORM;
+    case BE1::Image::Format::RGB_8_8_8_SNORM:
+        outFormat = BE1::Image::Format::RGBA_8_8_8_8_SNORM;
         break;
-    case Image::Format::RGB_16F_16F_16F:
-        outFormat = Image::Format::RGBA_16F_16F_16F_16F;
+    case BE1::Image::Format::RGB_16F_16F_16F:
+        outFormat = BE1::Image::Format::RGBA_16F_16F_16F_16F;
         break;
-    case Image::Format::RGB_32F_32F_32F:
-        outFormat = Image::Format::RGBA_32F_32F_32F_32F;
+    case BE1::Image::Format::RGB_32F_32F_32F:
+        outFormat = BE1::Image::Format::RGBA_32F_32F_32F_32F;
         break;
-    case Image::Format::DXN1:
-    case Image::Format::DXN2:
-    case Image::Format::RGB_PVRTC_2BPPV1:
-    case Image::Format::RGB_PVRTC_4BPPV1:
-    case Image::Format::RGB_8_ETC1:
-    case Image::Format::RGB_8_ETC2:
-    case Image::Format::RGB_ATC:
-        outFormat = Image::Format::BGRX_8_8_8_8;
+    case BE1::Image::Format::DXN1:
+    case BE1::Image::Format::DXN2:
+    case BE1::Image::Format::RGB_PVRTC_2BPPV1:
+    case BE1::Image::Format::RGB_PVRTC_4BPPV1:
+    case BE1::Image::Format::RGB_8_ETC1:
+    case BE1::Image::Format::RGB_8_ETC2:
+    case BE1::Image::Format::RGB_ATC:
+        outFormat = BE1::Image::Format::BGRX_8_8_8_8;
         break;
-    case Image::Format::DXT1:
-    case Image::Format::DXT3:
-    case Image::Format::DXT5:
-    case Image::Format::RGBA_PVRTC_2BPPV1:
-    case Image::Format::RGBA_PVRTC_4BPPV1:
-    case Image::Format::RGBA_PVRTC_2BPPV2:
-    case Image::Format::RGBA_PVRTC_4BPPV2:
-    case Image::Format::RGBA_8_1_ETC2:
-    case Image::Format::RGBA_8_8_ETC2:
-    case Image::Format::RGBA_EA_ATC:
-    case Image::Format::RGBA_IA_ATC:
-        outFormat = Image::Format::RGBA_8_8_8_8;
+    case BE1::Image::Format::DXT1:
+    case BE1::Image::Format::DXT3:
+    case BE1::Image::Format::DXT5:
+    case BE1::Image::Format::RGBA_PVRTC_2BPPV1:
+    case BE1::Image::Format::RGBA_PVRTC_4BPPV1:
+    case BE1::Image::Format::RGBA_PVRTC_2BPPV2:
+    case BE1::Image::Format::RGBA_PVRTC_4BPPV2:
+    case BE1::Image::Format::RGBA_8_1_ETC2:
+    case BE1::Image::Format::RGBA_8_8_ETC2:
+    case BE1::Image::Format::RGBA_EA_ATC:
+    case BE1::Image::Format::RGBA_IA_ATC:
+        outFormat = BE1::Image::Format::RGBA_8_8_8_8;
         break;
-    case Image::Format::R_11_EAC:
-    case Image::Format::SignedR_11_EAC:
-        outFormat = Image::Format::R_16F;
+    case BE1::Image::Format::R_11_EAC:
+    case BE1::Image::Format::SignedR_11_EAC:
+        outFormat = BE1::Image::Format::R_16F;
         break;
-    case Image::Format::RG_11_11_EAC:
-    case Image::Format::SignedRG_11_11_EAC:
-        outFormat = Image::Format::RG_16F_16F;
+    case BE1::Image::Format::RG_11_11_EAC:
+    case BE1::Image::Format::SignedRG_11_11_EAC:
+        outFormat = BE1::Image::Format::RG_16F_16F;
         break;
     default:
         assert(0);
@@ -1767,31 +1767,31 @@ Image::Format::Enum D3D12Renderer::ToUncompressedImageFormat(Image::Format::Enum
     return outFormat;
 }
 
-Image::Format::Enum D3D12Renderer::ToCompressedImageFormat(Image::Format::Enum inFormat, bool useNormalMap) {
-    if (Image::IsCompressed(inFormat)) {
+BE1::Image::Format::Enum D3D12Renderer::ToCompressedImageFormat(BE1::Image::Format::Enum inFormat, bool useNormalMap) {
+    if (BE1::Image::IsCompressed(inFormat)) {
         assert(0);
         return inFormat;
     }
 
     int redBits, greenBits, blueBits, alphaBits;
-    Image::GetBits(inFormat, &redBits, &greenBits, &blueBits, &alphaBits);
+    BE1::Image::GetBits(inFormat, &redBits, &greenBits, &blueBits, &alphaBits);
 
-    Image::Format::Enum outFormat = inFormat;
+    BE1::Image::Format::Enum outFormat = inFormat;
 
     if (redBits > 0 && greenBits > 0 && blueBits > 0) {
-        if (Image::IsFloatFormat(inFormat) || Image::IsHalfFormat(inFormat)) {
+        if (BE1::Image::IsFloatFormat(inFormat) || BE1::Image::IsHalfFormat(inFormat)) {
             if (alphaBits == 0) {
-                outFormat = Image::Format::RGBE_9_9_9_5;
+                outFormat = BE1::Image::Format::RGBE_9_9_9_5;
             }
         } else if (useNormalMap) {
-            outFormat = Image::Format::DXN2;
+            outFormat = BE1::Image::Format::DXN2;
         } else {
             if (alphaBits <= 1) {
-                outFormat = Image::Format::DXT1;
+                outFormat = BE1::Image::Format::DXT1;
             } else if (alphaBits <= 4) {
-                outFormat = Image::Format::DXT3;
+                outFormat = BE1::Image::Format::DXT3;
             } else {
-                outFormat = Image::Format::DXT5;
+                outFormat = BE1::Image::Format::DXT5;
             }
         }
     }

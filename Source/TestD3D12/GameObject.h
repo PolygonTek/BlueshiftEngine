@@ -14,10 +14,10 @@
 
 #pragma once
 
-#include "D3D12RenderObject.h"
+#include "RenderObject.h"
 
-class D3D12GameObject {
+class GameObject {
 public:
-    D3D12RenderObject::State    renderObjectDef;            // RenderObject 를 정의
-    int                         renderObjectHandle = -1;
+    RenderObject::State     renderObjectDef;            // RenderObject 를 정의
+    int                     renderObjectHandle = -1;
 };

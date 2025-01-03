@@ -60,5 +60,5 @@ private:
     D3D12_GPU_DESCRIPTOR_HANDLE     baseGpuDescriptorHandle = {};
     UINT                            descriptorHandleSize;
     UINT                            maxDescriptorCount;
-    IDAllocator                     idAllocator;
+    BE1::IDAllocator                idAllocator;
 };

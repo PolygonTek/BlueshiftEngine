@@ -35,15 +35,15 @@ ID3D12Resource *D3D12ConstantBuffer::GetResource() const {
     return buffer->GetResource();
 }
 
-RHIRenderer::ConstantBuffer* D3D12Renderer::CreateConstantBuffer(BufferUsage usage, uint32_t size, void *data) {
-    D3D12Buffer *buffer = static_cast<D3D12Buffer *>(CreateBuffer(usage, ResourceFlag::ConstantBuffer, size, Image::Format::Unknown, 0, data));
+RHI::ConstantBuffer* D3D12Renderer::CreateConstantBuffer(RHI::BufferUsage usage, uint32_t size, void *data) {
+    D3D12Buffer *buffer = static_cast<D3D12Buffer *>(CreateBuffer(usage, RHI::ResourceFlag::ConstantBuffer, size, BE1::Image::Format::Unknown, 0, data));
     if (!buffer) {
         return nullptr;
     }
 
     D3D12_CPU_DESCRIPTOR_HANDLE descriptorHandle = {};
 
-    if (usage == BufferUsage::Default) {
+    if (usage == RHI::BufferUsage::Default) {
         D3D12_CONSTANT_BUFFER_VIEW_DESC cbvDesc = {};
         cbvDesc.BufferLocation = buffer->GetResource()->GetGPUVirtualAddress();
         cbvDesc.SizeInBytes = size;
@@ -62,7 +62,7 @@ RHIRenderer::ConstantBuffer* D3D12Renderer::CreateConstantBuffer(BufferUsage usa
     return constantBuffer;
 }
 
-void D3D12Renderer::DestroyConstantBuffer(ConstantBuffer *constantBuffer, bool immediate) {
+void D3D12Renderer::DestroyConstantBuffer(RHI::ConstantBuffer *constantBuffer, bool immediate) {
     if (immediate) {
         delete constantBuffer;
     } else {
@@ -70,7 +70,7 @@ void D3D12Renderer::DestroyConstantBuffer(ConstantBuffer *constantBuffer, bool i
     }
 }
 
-void D3D12Renderer::SetConstantBuffer(CommandList *commandList, int slot, const ConstantBuffer *constantBuffer) {
+void D3D12Renderer::SetConstantBuffer(RHI::CommandList *commandList, int slot, const RHI::ConstantBuffer *constantBuffer) {
     D3D12CommandList *d3d12CommandList = static_cast<D3D12CommandList *>(commandList);
     int threadIndex = d3d12CommandList->GetThreadIndex();
 

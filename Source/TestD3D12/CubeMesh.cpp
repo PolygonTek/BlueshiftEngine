@@ -14,39 +14,39 @@
 
 #include "Precompiled.h"
 #include "D3D12Renderer/D3D12Renderer.h"
-#include "D3D12CubeMesh.h"
-#include "D3D12App.h"
+#include "CubeMesh.h"
+#include "App.h"
 
 struct CubeVertex {
-    Vec3        position;
-    uint32_t    color;
-    Vec2        texCoord;
+    BE1::Vec3       position;
+    uint32_t        color;
+    BE1::Vec2       texCoord;
 };
 
 struct CubeConstantData {
-    Mat4        viewProjMatrix;
-    Mat3x4      worldMatrix;
+    BE1::Mat4       viewProjMatrix;
+    BE1::Mat3x4     worldMatrix;
 };
 
 struct CubeInstancedConstantData {
-    Mat4        viewProjMatrix;
-    Mat3x4      worldMatrix[1024];
+    BE1::Mat4       viewProjMatrix;
+    BE1::Mat3x4     worldMatrix[1024];
 };
 
-std::shared_ptr<D3D12CubeMesh> D3D12CubeMesh::CreateMesh() {
-    std::shared_ptr cubeMesh = std::make_shared<D3D12CubeMesh>();
+std::shared_ptr<CubeMesh> CubeMesh::CreateMesh() {
+    std::shared_ptr cubeMesh = std::make_shared<CubeMesh>();
     cubeMesh->InitMesh();
     return cubeMesh;
 }
 
-void D3D12CubeMesh::DestroyMesh(std::shared_ptr<D3D12CubeMesh> &cubeMesh) {
+void CubeMesh::DestroyMesh(std::shared_ptr<CubeMesh> &cubeMesh) {
     if (cubeMesh) {
         cubeMesh->FreeMesh();
         cubeMesh.reset();
     }
 }
 
-void D3D12CubeMesh::InitMesh() {
+void CubeMesh::InitMesh() {
     // NOTE: UV 좌표의 V 는 아래쪽으로 증가함을 주의한다. 나중에 통합 렌더러를 작성한다면, shader code 에서 하는게 좋을 듯..
     ALIGN_AS32 const CubeVertex verts[] = {
         { { -1.0f, -1.0f, -1.0f }, 0xffffffff, { 0.0f, 1.0f } },
@@ -89,14 +89,14 @@ void D3D12CubeMesh::InitMesh() {
         20, 21, 22, 22, 23, 20
     };
 
-    vertexBuffer = renderer->CreateVertexBuffer(RHIRenderer::BufferUsage::Default, sizeof(verts[0]), COUNT_OF(verts), (void *)verts);
-    indexBuffer = renderer->CreateIndexBuffer(RHIRenderer::BufferUsage::Default, sizeof(indexes[0]), COUNT_OF(indexes), (void *)indexes);
-    texture = renderer->CreateTextureFromFile(RHIRenderer::TextureType::Texture2D, RHIRenderer::ResourceFlag::ShaderResource, "Data/EngineTextures/checker.dds");
+    vertexBuffer = renderer->CreateVertexBuffer(RHI::BufferUsage::Default, sizeof(verts[0]), COUNT_OF(verts), (void *)verts);
+    indexBuffer = renderer->CreateIndexBuffer(RHI::BufferUsage::Default, sizeof(indexes[0]), COUNT_OF(indexes), (void *)indexes);
+    texture = renderer->CreateTextureFromFile(RHI::TextureType::Texture2D, RHI::ResourceFlag::ShaderResource, "Data/EngineTextures/checker.dds");
 
     InitPipelineState();
 }
 
-void D3D12CubeMesh::FreeMesh() {
+void CubeMesh::FreeMesh() {
     renderer->DestroyTexture(texture);
     renderer->DestroyVertexBuffer(vertexBuffer);
     renderer->DestroyIndexBuffer(indexBuffer);
@@ -104,31 +104,31 @@ void D3D12CubeMesh::FreeMesh() {
     renderer->DestroyPSO(instancingPSO);
 }
 
-void D3D12CubeMesh::InitPipelineState() {
-    RHIRenderer::InputLayout inputLayout;
+void CubeMesh::InitPipelineState() {
+    RHI::InputLayout inputLayout;
     inputLayout.elements = {
-        { "POSITION", 0, 0, 0, RHIRenderer::InputLayoutElement::Format::Float3 },
-        { "COLOR", 0, 12, 0, RHIRenderer::InputLayoutElement::Format::UByte4N },
-        { "TEXCOORD", 0, 16, 0, RHIRenderer::InputLayoutElement::Format::Float2 },
+        { "POSITION", 0, 0, 0, RHI::InputLayoutElement::Format::Float3 },
+        { "COLOR", 0, 12, 0, RHI::InputLayoutElement::Format::UByte4N },
+        { "TEXCOORD", 0, 16, 0, RHI::InputLayoutElement::Format::Float2 },
     };
 
-    RHIRenderer::RenderDest renderDest;
+    RHI::RenderDest renderDest;
     renderDest.renderTargetCount = 1;
-    renderDest.renderTargetFormats[0] = Image::Format::RGBA_8_8_8_8;
-    renderDest.depthStencilFormat = Image::Format::DepthStencil_24_8;
+    renderDest.renderTargetFormats[0] = BE1::Image::Format::RGBA_8_8_8_8;
+    renderDest.depthStencilFormat = BE1::Image::Format::DepthStencil_24_8;
 
-    RHIRenderer::Shader *cubeVS = static_cast<RHIRenderer::Shader *>(renderer->CreateShaderFromFile(RHIRenderer::ShaderModel::SM_6_0, RHIRenderer::ShaderStage::Vertex, "Source/TestD3D12/Shaders/Cube.hlsl", "VSMain"));
-    RHIRenderer::Shader *cubePS = static_cast<RHIRenderer::Shader *>(renderer->CreateShaderFromFile(RHIRenderer::ShaderModel::SM_6_0, RHIRenderer::ShaderStage::Fragment, "Source/TestD3D12/Shaders/Cube.hlsl", "PSMain"));
+    RHI::Shader *cubeVS = static_cast<RHI::Shader *>(renderer->CreateShaderFromFile(RHI::ShaderModel::SM_6_0, RHI::ShaderStage::Vertex, "Source/TestD3D12/Shaders/Cube.hlsl", "VSMain"));
+    RHI::Shader *cubePS = static_cast<RHI::Shader *>(renderer->CreateShaderFromFile(RHI::ShaderModel::SM_6_0, RHI::ShaderStage::Fragment, "Source/TestD3D12/Shaders/Cube.hlsl", "PSMain"));
 
     if (cubeVS && cubePS) {
-        RHIRenderer::PipelineStateDesc psoDesc;
+        RHI::PipelineStateDesc psoDesc;
         psoDesc.vs = cubeVS;
         psoDesc.ps = cubePS;
-        psoDesc.rasterizerState = renderer->GetRasterizerState(RHIRenderer::RasterizerStateType::SolidFrontSided);
-        psoDesc.depthStencilState = renderer->GetDepthStencilState(RHIRenderer::DepthStencilStateType::Default);
-        psoDesc.blendState = renderer->GetBlendState(RHIRenderer::BlendStateType::Opaque);
+        psoDesc.rasterizerState = renderer->GetRasterizerState(RHI::RasterizerStateType::SolidFrontSided);
+        psoDesc.depthStencilState = renderer->GetDepthStencilState(RHI::DepthStencilStateType::Default);
+        psoDesc.blendState = renderer->GetBlendState(RHI::BlendStateType::Opaque);
         psoDesc.inputLayout = &inputLayout;
-        psoDesc.primitiveTopology = RHIRenderer::PrimitiveTopology::TriangleList;
+        psoDesc.primitiveTopology = RHI::PrimitiveTopology::TriangleList;
         psoDesc.renderDest = &renderDest;
         singlePSO = renderer->CreateGraphicsPSO(&psoDesc);
     }
@@ -140,18 +140,18 @@ void D3D12CubeMesh::InitPipelineState() {
         renderer->DestroyShader(cubePS, true);
     }
 
-    RHIRenderer::Shader *cubeInstancingVS = static_cast<RHIRenderer::Shader *>(renderer->CreateShaderFromFile(RHIRenderer::ShaderModel::SM_6_0, RHIRenderer::ShaderStage::Vertex, "Source/TestD3D12/Shaders/CubeInstancing.hlsl", "VSMain"));
-    RHIRenderer::Shader *cubeInstancingPS = static_cast<RHIRenderer::Shader *>(renderer->CreateShaderFromFile(RHIRenderer::ShaderModel::SM_6_0, RHIRenderer::ShaderStage::Fragment, "Source/TestD3D12/Shaders/CubeInstancing.hlsl", "PSMain"));
+    RHI::Shader *cubeInstancingVS = static_cast<RHI::Shader *>(renderer->CreateShaderFromFile(RHI::ShaderModel::SM_6_0, RHI::ShaderStage::Vertex, "Source/TestD3D12/Shaders/CubeInstancing.hlsl", "VSMain"));
+    RHI::Shader *cubeInstancingPS = static_cast<RHI::Shader *>(renderer->CreateShaderFromFile(RHI::ShaderModel::SM_6_0, RHI::ShaderStage::Fragment, "Source/TestD3D12/Shaders/CubeInstancing.hlsl", "PSMain"));
 
     if (cubeInstancingVS && cubeInstancingPS) {
-        RHIRenderer::PipelineStateDesc psoDesc;
+        RHI::PipelineStateDesc psoDesc;
         psoDesc.vs = cubeInstancingVS;
         psoDesc.ps = cubeInstancingPS;
-        psoDesc.rasterizerState = renderer->GetRasterizerState(RHIRenderer::RasterizerStateType::SolidFrontSided);
-        psoDesc.depthStencilState = renderer->GetDepthStencilState(RHIRenderer::DepthStencilStateType::Default);
-        psoDesc.blendState = renderer->GetBlendState(RHIRenderer::BlendStateType::Opaque);
+        psoDesc.rasterizerState = renderer->GetRasterizerState(RHI::RasterizerStateType::SolidFrontSided);
+        psoDesc.depthStencilState = renderer->GetDepthStencilState(RHI::DepthStencilStateType::Default);
+        psoDesc.blendState = renderer->GetBlendState(RHI::BlendStateType::Opaque);
         psoDesc.inputLayout = &inputLayout;
-        psoDesc.primitiveTopology = RHIRenderer::PrimitiveTopology::TriangleList;
+        psoDesc.primitiveTopology = RHI::PrimitiveTopology::TriangleList;
         psoDesc.renderDest = &renderDest;
         instancingPSO = renderer->CreateGraphicsPSO(&psoDesc);
     }
@@ -164,11 +164,11 @@ void D3D12CubeMesh::InitPipelineState() {
     }
 }
 
-void D3D12CubeMesh::DrawMesh(RHIRenderer::CommandList* commandList, const Mat3x4& worldMatrix) {
+void CubeMesh::DrawMesh(RHI::CommandList* commandList, const BE1::Mat3x4& worldMatrix) {
     int threadIndex = commandList->GetThreadIndex();
 
     // 다이나믹 상수 버퍼 공간을 할당한다.
-    RHIRenderer::ConstantBuffer *constantBuffer = renderer->GetCurrentFrameData()->AllocConstant(threadIndex, sizeof(CubeConstantData));
+    RHI::ConstantBuffer *constantBuffer = renderer->GetCurrentFrameData()->AllocConstant(threadIndex, sizeof(CubeConstantData));
     if (!constantBuffer) {
         return;
     }
@@ -187,11 +187,11 @@ void D3D12CubeMesh::DrawMesh(RHIRenderer::CommandList* commandList, const Mat3x4
     renderer->DrawIndexed(commandList, 36, 0, 0);
 }
 
-void D3D12CubeMesh::DrawMeshInstanced(RHIRenderer::CommandList *commandList, const Mat3x4 *instanceData, int instanceCount) {
+void CubeMesh::DrawMeshInstanced(RHI::CommandList *commandList, const BE1::Mat3x4 *instanceData, int instanceCount) {
     int threadIndex = commandList->GetThreadIndex();
 
     // 다이나믹 상수 버퍼 공간을 할당한다.
-    RHIRenderer::ConstantBuffer *constantBuffer = renderer->GetCurrentFrameData()->AllocConstant(threadIndex, sizeof(CubeInstancedConstantData));
+    RHI::ConstantBuffer *constantBuffer = renderer->GetCurrentFrameData()->AllocConstant(threadIndex, sizeof(CubeInstancedConstantData));
     if (!constantBuffer) {
         return;
     }

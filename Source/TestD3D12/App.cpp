@@ -14,10 +14,10 @@
 
 #include "Precompiled.h"
 #include "D3D12Renderer/D3D12Renderer.h"
-#include "D3D12App.h"
-#include "D3D12GameObject.h"
-#include "D3D12TriangleMesh.h"
-#include "D3D12CubeMesh.h"
+#include "App.h"
+#include "GameObject.h"
+#include "TriangleMesh.h"
+#include "CubeMesh.h"
 
 #define TRIANGLE_OR_CUBE    0
 
@@ -28,9 +28,9 @@ static constexpr int        CubeDimensionY = 64;
 static constexpr int        CubeCount = CubeDimensionX * CubeDimensionY;
 static constexpr float      CubeSpacing = 2.82842712f;
 
-D3D12App                    app;
+App                         app;
 
-void D3D12App::Init(HWND hwnd) {
+void App::Init(HWND hwnd) {
     renderer = new D3D12Renderer;
     renderer->Init(hwnd);
 
@@ -41,8 +41,8 @@ void D3D12App::Init(HWND hwnd) {
 #endif
 }
 
-void D3D12App::Shutdown() {
-    renderer->Finish(RHIRenderer::CommandQueueType::Graphics);
+void App::Shutdown() {
+    renderer->Finish(RHI::CommandQueueType::Graphics);
 
     ClearGameObjects();
 
@@ -50,7 +50,7 @@ void D3D12App::Shutdown() {
     SAFE_DELETE(renderer);
 }
 
-void D3D12App::RunFrame(int frameMsec) {
+void App::RunFrame(int frameMsec) {
     PIX_CPU_SCOPED_EVENT(2, "D3D12App::RunFrame");
 
     elapsedMsec += frameMsec;
@@ -59,10 +59,10 @@ void D3D12App::RunFrame(int frameMsec) {
 
     UpdateGameObjects();
 
-    cmdSystem.ExecuteCommandBuffer();
+    BE1::cmdSystem.ExecuteCommandBuffer();
 }
 
-void D3D12App::Render(int frameMsec) {
+void App::Render(int frameMsec) {
     renderer->RenderScene();
 
 #ifndef USE_RENDER_THREAD
@@ -72,7 +72,7 @@ void D3D12App::Render(int frameMsec) {
 #endif
 }
 
-void D3D12App::SetViewMatrix(const Mat3 &viewAxis, const Vec3 &viewOrigin, float *rowMajor4x4ViewMatrix) const {
+void App::SetViewMatrix(const BE1::Mat3 &viewAxis, const BE1::Vec3 &viewOrigin, float *rowMajor4x4ViewMatrix) const {
     // left axis
     rowMajor4x4ViewMatrix[0] = -viewAxis[1].x;
     rowMajor4x4ViewMatrix[1] = -viewAxis[1].y;
@@ -97,38 +97,38 @@ void D3D12App::SetViewMatrix(const Mat3 &viewAxis, const Vec3 &viewOrigin, float
     rowMajor4x4ViewMatrix[15] = 1.0f;
 }
 
-void D3D12App::UpdateCamera() {
+void App::UpdateCamera() {
     PIX_CPU_SCOPED_EVENT(0, "D3D12App::UpdateCamera");
 
     float w = renderer->swapChain->GetWidth();
     float h = renderer->swapChain->GetHeight();
     float aspectRatio = w / h;
 
-    Mat4 projMatrix;
+    BE1::Mat4 projMatrix;
     projMatrix.SetPerspectiveRH(45, aspectRatio, 1, 1000, false);
 
-    Mat4 viewMatrix;
-    SetViewMatrix(Mat3(-1, 0, 0, 0, -1, 0, 0, 0, 1), Vec3(220, 0, 0), viewMatrix);
+    BE1::Mat4 viewMatrix;
+    SetViewMatrix(BE1::Mat3(-1, 0, 0, 0, -1, 0, 0, 0, 1), BE1::Vec3(220, 0, 0), viewMatrix);
 
     viewProjMatrix = projMatrix * viewMatrix;
 }
 
-void D3D12App::ClearGameObjects() {
+void App::ClearGameObjects() {
     for (int i = 0; i < gameObjects.Count(); ++i) {
-        D3D12GameObject *gameObject = gameObjects[i];
+        GameObject *gameObject = gameObjects[i];
 
         gameObject->renderObjectDef.mesh.reset();
 
         renderer->RemoveRenderObject(gameObject->renderObjectHandle);
     }
 
-    D3D12TriangleMesh::DestroyMesh(triangleMesh);
-    D3D12CubeMesh::DestroyMesh(cubeMesh);
+    TriangleMesh::DestroyMesh(triangleMesh);
+    CubeMesh::DestroyMesh(cubeMesh);
 
     gameObjects.DeleteContents(true);
 }
 
-void D3D12App::InitGameObjects() {
+void App::InitGameObjects() {
 #if TRIANGLE_OR_CUBE == 1
     InitTriangles();
 #else
@@ -136,7 +136,7 @@ void D3D12App::InitGameObjects() {
 #endif
 }
 
-void D3D12App::UpdateGameObjects() {
+void App::UpdateGameObjects() {
     PIX_CPU_SCOPED_EVENT(1, "D3D12App::UpdateGameObjects");
 
 #if TRIANGLE_OR_CUBE == 1
@@ -146,13 +146,13 @@ void D3D12App::UpdateGameObjects() {
 #endif
 }
 
-void D3D12App::InitTriangles() {
-    triangleMesh = D3D12TriangleMesh::CreateMesh();
+void App::InitTriangles() {
+    triangleMesh = TriangleMesh::CreateMesh();
 
     gameObjects.Reserve(TriangleCount);
 
     for (int i = 0; i < TriangleCount; ++i) {
-        D3D12GameObject *gameObject = new D3D12GameObject;
+        GameObject *gameObject = new GameObject;
         gameObjects.Append(gameObject);
 
         gameObject->renderObjectDef.meshType = MeshType::TriangleMesh;
@@ -163,13 +163,13 @@ void D3D12App::InitTriangles() {
     }
 }
 
-void D3D12App::InitCubes() {
-    cubeMesh = D3D12CubeMesh::CreateMesh();
+void App::InitCubes() {
+    cubeMesh = CubeMesh::CreateMesh();
 
     gameObjects.Reserve(CubeCount);
 
     for (int i = 0; i < CubeCount; ++i) {
-        D3D12GameObject *gameObject = new D3D12GameObject;
+        GameObject *gameObject = new GameObject;
         gameObjects.Append(gameObject);
 
         gameObject->renderObjectDef.meshType = MeshType::CubeMesh;
@@ -180,22 +180,22 @@ void D3D12App::InitCubes() {
     }
 }
 
-void D3D12App::UpdateTriangles() {
+void App::UpdateTriangles() {
     float elapsedSeconds = MILLI2SEC(elapsedMsec);
 
     for (int i = 0; i < TriangleCount; ++i) {
         float t = elapsedSeconds + i * 0.1f;
 
-        D3D12GameObject *gameObject = gameObjects[i];
+        GameObject *gameObject = gameObjects[i];
 
-        gameObject->renderObjectDef.offset.x = 0.5f * Math::Cos(t);
-        gameObject->renderObjectDef.offset.y = 0.5f * Math::Sin(t * 3);
+        gameObject->renderObjectDef.offset.x = 0.5f * BE1::Math::Cos(t);
+        gameObject->renderObjectDef.offset.y = 0.5f * BE1::Math::Sin(t * 3);
 
         renderer->UpdateRenderObject(gameObject->renderObjectHandle, gameObject->renderObjectDef);
     }
 }
 
-void D3D12App::UpdateCubes() {
+void App::UpdateCubes() {
     float elapsedSeconds = MILLI2SEC(elapsedMsec);
 
     constexpr float startX = -CubeSpacing * (CubeDimensionX - 1) * 0.5f;
@@ -207,8 +207,8 @@ void D3D12App::UpdateCubes() {
 
             float t = elapsedSeconds + index * 0.1f;
 
-            D3D12GameObject* gameObject = gameObjects[index];
-            gameObject->renderObjectDef.worldMatrix.SetTranslationRotation(Vec3(0, startX + CubeSpacing * x, startY + CubeSpacing * y), Mat3::FromRotationZYX(t * 1.0f, 0, t * 0.25f), false);
+            GameObject* gameObject = gameObjects[index];
+            gameObject->renderObjectDef.worldMatrix.SetTranslationRotation(BE1::Vec3(0, startX + CubeSpacing * x, startY + CubeSpacing * y), BE1::Mat3::FromRotationZYX(t * 1.0f, 0, t * 0.25f), false);
 
             renderer->UpdateRenderObject(gameObject->renderObjectHandle, gameObject->renderObjectDef);
         }

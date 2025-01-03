@@ -23,11 +23,11 @@ void D3D12IndexBuffer::Release() {
     }
 }
 
-RHIRenderer::IndexBuffer *D3D12Renderer::CreateIndexBuffer(BufferUsage usage, uint32_t indexSize, uint32_t numIndexes, void *data) {
+RHI::IndexBuffer *D3D12Renderer::CreateIndexBuffer(RHI::BufferUsage usage, uint32_t indexSize, uint32_t numIndexes, void *data) {
     assert(indexSize == 2 || indexSize == 4);
 
     UINT size = indexSize * numIndexes;
-    D3D12Buffer *buffer = static_cast<D3D12Buffer *>(CreateBuffer(usage, ResourceFlag::IndexBuffer, size, Image::Format::Unknown, 0, data));
+    D3D12Buffer *buffer = static_cast<D3D12Buffer *>(CreateBuffer(usage, RHI::ResourceFlag::IndexBuffer, size, BE1::Image::Format::Unknown, 0, data));
     if (!buffer) {
         return nullptr;
     }
@@ -42,7 +42,7 @@ RHIRenderer::IndexBuffer *D3D12Renderer::CreateIndexBuffer(BufferUsage usage, ui
     return indexBuffer;
 }
 
-void D3D12Renderer::DestroyIndexBuffer(IndexBuffer *indexBuffer, bool immediate) {
+void D3D12Renderer::DestroyIndexBuffer(RHI::IndexBuffer *indexBuffer, bool immediate) {
     if (immediate) {
         delete indexBuffer;
     } else {
@@ -50,7 +50,7 @@ void D3D12Renderer::DestroyIndexBuffer(IndexBuffer *indexBuffer, bool immediate)
     }
 }
 
-void D3D12Renderer::SetIndexBuffer(CommandList *commandList, const IndexBuffer *indexBuffer) {
+void D3D12Renderer::SetIndexBuffer(RHI::CommandList *commandList, const RHI::IndexBuffer *indexBuffer) {
     D3D12CommandList *d3d12CommandList = static_cast<D3D12CommandList *>(commandList);
     d3d12CommandList->SetIndexBuffer(indexBuffer);
 }

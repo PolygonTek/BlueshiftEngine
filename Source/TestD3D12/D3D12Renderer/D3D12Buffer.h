@@ -24,7 +24,7 @@
 class D3D12Renderer;
 class D3D12FrameData;
 
-class D3D12Buffer : public RHIRenderer::Buffer {
+class D3D12Buffer : public RHI::Buffer {
     friend class D3D12Renderer;
     friend class D3D12FrameData;
 
@@ -46,9 +46,9 @@ private:
 #else
     ID3D12Resource *                bufferResource = nullptr;
 #endif
-    Image::Format::Enum             format = Image::Format::Unknown;
+    BE1::Image::Format::Enum        format = BE1::Image::Format::Unknown;
     uint32_t                        stride = 0;
     uint64_t                        size = 0;
-    Array<D3D12_CPU_DESCRIPTOR_HANDLE> srvCpuDescriptorHandles;
-    Array<D3D12_CPU_DESCRIPTOR_HANDLE> uavCpuDescriptorHandles;
+    BE1::Array<D3D12_CPU_DESCRIPTOR_HANDLE> srvCpuDescriptorHandles;
+    BE1::Array<D3D12_CPU_DESCRIPTOR_HANDLE> uavCpuDescriptorHandles;
 };

@@ -40,20 +40,20 @@ set(SRC_FILES
     D3D12Renderer/D3D12CommandListPool.cpp
     D3D12Renderer/D3D12FrameData.h
     D3D12Renderer/D3D12FrameData.cpp
-    D3D12App.h
-    D3D12App.cpp
-    D3D12RenderObject.h
-    D3D12RenderObject.cpp
-    D3D12VisObject.h
-    D3D12VisObject.cpp
-    D3D12Mesh.h
-    D3D12Mesh.cpp
-    D3D12TriangleMesh.h
-    D3D12TriangleMesh.cpp
-    D3D12CubeMesh.h
-    D3D12CubeMesh.cpp
-    D3D12GameObject.h
-    D3D12GameObject.cpp
+    App.h
+    App.cpp
+    RenderObject.h
+    RenderObject.cpp
+    VisObject.h
+    VisObject.cpp
+    Mesh.h
+    Mesh.cpp
+    TriangleMesh.h
+    TriangleMesh.cpp
+    CubeMesh.h
+    CubeMesh.cpp
+    GameObject.h
+    GameObject.cpp
     WinMain.cpp
     WinResource.h
     WinRes/small.ico

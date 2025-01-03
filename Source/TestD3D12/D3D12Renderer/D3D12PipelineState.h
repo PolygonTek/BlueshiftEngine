@@ -20,7 +20,7 @@
 class D3D12Renderer;
 class D3D12CommandList;
 
-class D3D12PipelineState : public RHIRenderer::PipelineState {
+class D3D12PipelineState : public RHI::PipelineState {
     friend class D3D12Renderer;
     friend class D3D12CommandList;
 

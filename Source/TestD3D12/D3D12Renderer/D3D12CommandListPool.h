@@ -31,7 +31,7 @@ public:
     D3D12_COMMAND_LIST_TYPE         GetCommandListType() const { return commandListType; }
 
     void                            Clear();
-    D3D12CommandList *              Alloc(RHIRenderer::CommandListType type = RHIRenderer::CommandListType::Primary);
+    D3D12CommandList *              Alloc(RHI::CommandListType type = RHI::CommandListType::Primary);
     void                            Free(D3D12CommandList *commandList);
 
     int                             GetThreadIndex() const { return threadIndex; }
@@ -42,7 +42,7 @@ private:
     D3D12CommandList *              commandListPool = nullptr;
     D3D12_COMMAND_LIST_TYPE         commandListType = D3D12_COMMAND_LIST_TYPE_NONE;
     uint32_t                        maxCommandLists = 0;
-    LinkList<D3D12CommandList>      freeCommandLists[to_int(RHIRenderer::CommandListType::Count)];
+    BE1::LinkList<D3D12CommandList> freeCommandLists[to_int(RHI::CommandListType::Count)];
     int                             threadIndex = -1;
     int                             usedCount = 0;
 };

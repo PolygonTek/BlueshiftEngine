@@ -13,8 +13,8 @@
 // limitations under the License.
 
 #include "Precompiled.h"
-#include "D3D12RenderObject.h"
+#include "RenderObject.h"
 
-void D3D12RenderObject::Update(const State &stateDef) {
+void RenderObject::Update(const State &stateDef) {
     state = stateDef;
 }

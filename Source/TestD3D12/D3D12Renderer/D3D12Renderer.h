@@ -23,7 +23,7 @@
 
 #include "D3D12SwapChain.h"
 #include "D3D12FrameData.h"
-#include "../D3D12RenderObject.h"
+#include "../RenderObject.h"
 
 class D3D12PipelineState;
 class D3D12CommandList;
@@ -39,7 +39,7 @@ enum class FrameSyncState : uint8_t {
 struct D3D12PendingResource {
     UINT64                              fenceValue = 0;
     ID3D12Resource *                    resourceToRelease = nullptr;
-    RHIRenderer::GPUObject *            objectToDelete = nullptr;
+    RHI::GPUObject *                    objectToDelete = nullptr;
 };
 
 class D3D12Renderer : public RHIRenderer {
@@ -53,110 +53,110 @@ public:
 
     virtual void                        OnResize(int width, int height) override;
 
-    ShaderFormat                        GetShaderFormat() const;
+    RHI::ShaderFormat                   GetShaderFormat() const;
 
     D3D12CommandList *                  FlushCommandList(D3D12CommandList *commandList);
 
-    virtual uint64_t                    SignalFence(CommandQueueType queueType) override;
+    virtual uint64_t                    SignalFence(RHI::CommandQueueType queueType) override;
     virtual bool                        IsFenceComplete(uint64_t checkFenceValue) override;
     virtual void                        WaitFence(uint64_t expectedFenceValue) override;
-    virtual void                        Finish(CommandQueueType queueType) override;
+    virtual void                        Finish(RHI::CommandQueueType queueType) override;
 
     void                                WaitAllFrameFences();
 
     D3D12FrameData *                    GetCurrentFrameData() const { return currentFrameData; }
 
-    void                                MarkForDelete(GPUObject *object);
+    void                                MarkForDelete(RHI::GPUObject *object);
     void                                MarkForRelease(ID3D12Resource *resource);
     void                                OnPendingResourceAdded();
     void                                FreePendingResources(bool waitPendings = false);
 
-    virtual bool                        IsSupportedImageFormat(Image::Format::Enum imageFormat) override { return ImageFormatToDXGIFormat(imageFormat, false, nullptr); }
-    virtual Image::Format::Enum         ToUncompressedImageFormat(Image::Format::Enum imageFormat) override;
-    virtual Image::Format::Enum         ToCompressedImageFormat(Image::Format::Enum inFormat, bool useNormalMap) override;
+    virtual bool                        IsSupportedImageFormat(BE1::Image::Format::Enum imageFormat) override { return ImageFormatToDXGIFormat(imageFormat, false, nullptr); }
+    virtual BE1::Image::Format::Enum    ToUncompressedImageFormat(BE1::Image::Format::Enum imageFormat) override;
+    virtual BE1::Image::Format::Enum    ToCompressedImageFormat(BE1::Image::Format::Enum inFormat, bool useNormalMap) override;
 
     D3D12SwapChain *                    CreateSwapChain(HWND hwnd, uint32_t width, uint32_t height);
     void                                DestroySwapChain(D3D12SwapChain *swapChain);
 
-    virtual Buffer *                    CreateBuffer(BufferUsage usage, ResourceFlag flags, uint64_t size, Image::Format::Enum format, uint32_t stride, const void *data) override;
-    virtual void                        DestroyBuffer(Buffer *buffer, bool immediate = false) override;
+    virtual RHI::Buffer *               CreateBuffer(RHI::BufferUsage usage, RHI::ResourceFlag flags, uint64_t size, BE1::Image::Format::Enum format, uint32_t stride, const void *data) override;
+    virtual void                        DestroyBuffer(RHI::Buffer *buffer, bool immediate = false) override;
 
-    virtual VertexBuffer *              CreateVertexBuffer(BufferUsage usage, uint32_t vertexSize, uint32_t numVerts, void *data) override;
-    virtual void                        DestroyVertexBuffer(VertexBuffer *vertexBuffer, bool immediate = false) override;
+    virtual RHI::VertexBuffer *         CreateVertexBuffer(RHI::BufferUsage usage, uint32_t vertexSize, uint32_t numVerts, void *data) override;
+    virtual void                        DestroyVertexBuffer(RHI::VertexBuffer *vertexBuffer, bool immediate = false) override;
 
-    virtual IndexBuffer *               CreateIndexBuffer(BufferUsage usage, uint32_t indexSize, uint32_t numIndexes, void *data) override;
-    virtual void                        DestroyIndexBuffer(IndexBuffer *indexBuffer, bool immediate = false) override;
+    virtual RHI::IndexBuffer *          CreateIndexBuffer(RHI::BufferUsage usage, uint32_t indexSize, uint32_t numIndexes, void *data) override;
+    virtual void                        DestroyIndexBuffer(RHI::IndexBuffer *indexBuffer, bool immediate = false) override;
 
-    virtual ConstantBuffer *            CreateConstantBuffer(BufferUsage usage, uint32_t size, void *data) override;
-    virtual void                        DestroyConstantBuffer(ConstantBuffer *constantBuffer, bool immediate = false) override;
+    virtual RHI::ConstantBuffer *       CreateConstantBuffer(RHI::BufferUsage usage, uint32_t size, void *data) override;
+    virtual void                        DestroyConstantBuffer(RHI::ConstantBuffer *constantBuffer, bool immediate = false) override;
 
-    virtual Texture *                   CreateTexture(TextureType textureType, ResourceFlag flags, const Image *image, uint32_t sampleCount = 1) override;
-    virtual Texture *                   CreateTexture(TextureType textureType, ResourceFlag flags, const Image *image, Image::Format::Enum dstFormat, bool useMipmaps) override;
-    virtual void                        DestroyTexture(Texture *texture, bool immediate = false) override;
-    virtual void                        GetTextureImage2D(Texture *texture, int level, Image::Format::Enum imageFormat, void *outPixels) override;
-    virtual bool                        SetTextureSubImage2D(Texture *texture, int level, int x, int y, int width, int height, Image::Format::Enum imageFormat, const void *pixels) override;
-    virtual bool                        SetTextureSubImage3D(Texture *texture, int level, int x, int y, int z, int width, int height, int depth, Image::Format::Enum imageFormat, const void *pixels) override;
+    virtual RHI::Texture *              CreateTexture(RHI::TextureType textureType, RHI::ResourceFlag flags, const BE1::Image *image, uint32_t sampleCount = 1) override;
+    virtual RHI::Texture *              CreateTexture(RHI::TextureType textureType, RHI::ResourceFlag flags, const BE1::Image *image, BE1::Image::Format::Enum dstFormat, bool useMipmaps) override;
+    virtual void                        DestroyTexture(RHI::Texture *texture, bool immediate = false) override;
+    virtual void                        GetTextureImage2D(RHI::Texture *texture, int level, BE1::Image::Format::Enum imageFormat, void *outPixels) override;
+    virtual bool                        SetTextureSubImage2D(RHI::Texture *texture, int level, int x, int y, int width, int height, BE1::Image::Format::Enum imageFormat, const void *pixels) override;
+    virtual bool                        SetTextureSubImage3D(RHI::Texture *texture, int level, int x, int y, int z, int width, int height, int depth, BE1::Image::Format::Enum imageFormat, const void *pixels) override;
 
-    virtual int                         CreateSubresource(Buffer *buffer, SubresourceType type, uint64_t offset = 0, uint64_t size = ~0) override;
-    virtual int                         CreateSubresource(Texture *texture, SubresourceType type, uint32_t firstSlice = 0, uint32_t sliceCount = ~0, uint32_t firstMipLevel = 0, uint32_t mipCount = ~0) override;
+    virtual int                         CreateSubresource(RHI::Buffer *buffer, RHI::SubresourceType type, uint64_t offset = 0, uint64_t size = ~0) override;
+    virtual int                         CreateSubresource(RHI::Texture *texture, RHI::SubresourceType type, uint32_t firstSlice = 0, uint32_t sliceCount = ~0, uint32_t firstMipLevel = 0, uint32_t mipCount = ~0) override;
 
-    virtual Shader *                    CreateShader(ShaderModel shaderModel, ShaderStage shaderStage, const char *sourceName, const char *shaderText, int shaderTextSize, const char *entryPoint) override;
-    virtual Shader *                    CreateShaderFromFile(ShaderModel shaderModel, ShaderStage shaderStage, const char *filename, const char *entryPoint) override;
-    virtual void                        DestroyShader(Shader *shader, bool immediate = false) override;
+    virtual RHI::Shader *               CreateShader(RHI::ShaderModel shaderModel, RHI::ShaderStage shaderStage, const char *sourceName, const char *shaderText, int shaderTextSize, const char *entryPoint) override;
+    virtual RHI::Shader *               CreateShaderFromFile(RHI::ShaderModel shaderModel, RHI::ShaderStage shaderStage, const char *filename, const char *entryPoint) override;
+    virtual void                        DestroyShader(RHI::Shader *shader, bool immediate = false) override;
 
-    virtual Sampler *                   CreateSampler(const SamplerDesc *desc) override;
-    virtual void                        DestroySampler(Sampler *sampler, bool immediate = false) override;
+    virtual RHI::Sampler *              CreateSampler(const RHI::SamplerDesc *desc) override;
+    virtual void                        DestroySampler(RHI::Sampler *sampler, bool immediate = false) override;
 
-    virtual PipelineState *             CreateGraphicsPSO(const PipelineStateDesc *desc) override;
-    virtual PipelineState *             CreateComputePSO(const Shader *computeShader) override;
-    virtual void                        DestroyPSO(PipelineState *pipelineState, bool immediate = false) override;
+    virtual RHI::PipelineState *        CreateGraphicsPSO(const RHI::PipelineStateDesc *desc) override;
+    virtual RHI::PipelineState *        CreateComputePSO(const RHI::Shader *computeShader) override;
+    virtual void                        DestroyPSO(RHI::PipelineState *pipelineState, bool immediate = false) override;
 
-    virtual QueryHeap *                 CreateQueryHeap(const QueryHeapDesc *desc) override;
-    virtual void                        DestroyQueryHeap(QueryHeap *queryHeap, bool immediate = false) override;
+    virtual RHI::QueryHeap *            CreateQueryHeap(const RHI::QueryHeapDesc *desc) override;
+    virtual void                        DestroyQueryHeap(RHI::QueryHeap *queryHeap, bool immediate = false) override;
 
-    virtual void                        SetVertexBuffer(CommandList *commandList, int slot, const VertexBuffer *vertexBuffer) override;
-    virtual void                        SetIndexBuffer(CommandList *commandList, const IndexBuffer *indexBuffer) override;
-    virtual void                        SetConstantBuffer(CommandList *commandList, int slot, const ConstantBuffer *constantBuffer) override;
-    virtual void                        SetConstants(CommandList *commandList, const void *data, uint32_t size, uint32_t offset) override;
-    virtual void                        SetTexture(CommandList *commandList, int slot, bool shaderWritable, const Texture *texture, int subresourceIndex = 0) override;
-    virtual void                        SetBuffer(CommandList *commandList, int slot, bool shaderWritable, const Buffer *buffer, int subresourceIndex = 0) override;
-    virtual void                        SetSampler(CommandList *commandList, int slot, Sampler *sampler) override;
-    virtual void                        SetPSO(CommandList *commandList, const PipelineState *pipelineState) override;
-    virtual void                        SetBlendFactor(CommandList *commandList, const Color4 &rgba) override;
-    virtual void                        SetStencilRef(CommandList *commandList, uint32_t value) override;
-    virtual void                        SetShadingRate(CommandList *commandList, ShadingRate shadingRate) override;
-    virtual void                        SetViewport(CommandList *commandList, const Rect &viewportRect) override;
-    virtual void                        SetScissorRect(CommandList *commandList, const Rect &scissorRect) override;
-    virtual void                        SetDepthBounds(CommandList *commandList, float depthMin, float depthMax) override;
-    virtual void                        BeginQuery(CommandList *commandList, const QueryHeap *queryHeap, uint32_t index) override;
-    virtual void                        EndQuery(CommandList *commandList, const QueryHeap *queryHeap, uint32_t index) override;
-    virtual void                        ResolveQuery(CommandList *commandList, const QueryHeap *queryHeap, uint32_t index, uint32_t count, const Buffer *destBuffer, uint64_t destOffset) override;
-    virtual void                        ResetQuery(CommandList *commandList, const QueryHeap *queryHeap, uint32_t index, uint32_t count) override;
-    virtual void                        Dispatch(CommandList *commandList, uint32_t threadGroupCountX, uint32_t threadGroupCountY, uint32_t threadGroupCountZ) override;
-    virtual void                        DispatchMesh(CommandList *commandList, uint32_t threadGroupCountX, uint32_t threadGroupCountY, uint32_t threadGroupCountZ) override;
-    virtual void                        ClearUAV(CommandList *commandList, const GPUResource *resource, uint32_t value) override;
-    virtual void                        CopyBuffer(CommandList *commandList, const Buffer *dstBuffer, uint32_t dstOffset, const Buffer *srcBuffer, uint32_t srcOffset, uint32_t size) override;
-    virtual void                        CopyTexture(CommandList *commandList, const Texture *dstTexture, uint32_t dstSlice, uint32_t dstMipLevel, uint32_t dstX, uint32_t dstY, uint32_t dstZ, const Texture *srcTexture, uint32_t srcSlice, uint32_t srcMipLevel, uint32_t srcX, uint32_t srcY, uint32_t srcZ, uint32_t width, uint32_t height, uint32_t depth) override;
-    virtual void                        Barrier(CommandList *commandList, const GPUBarrier *barriers, uint32_t barrierCount) override;
-    virtual void                        Barrier(CommandList *commandList, const GPUBarrier &barrier) override { Barrier(commandList, &barrier, 1); }
-    virtual void                        BeginRenderPass(CommandList *commandList, const SwapChain *swapChain, const Color4 &clearColor, float clearDepth, uint8_t clearStencil, ClearFlag clearFlag) override;
-    virtual void                        EndRenderPass(CommandList *commandList) override;
+    virtual void                        SetVertexBuffer(RHI::CommandList *commandList, int slot, const RHI::VertexBuffer *vertexBuffer) override;
+    virtual void                        SetIndexBuffer(RHI::CommandList *commandList, const RHI::IndexBuffer *indexBuffer) override;
+    virtual void                        SetConstantBuffer(RHI::CommandList *commandList, int slot, const RHI::ConstantBuffer *constantBuffer) override;
+    virtual void                        SetConstants(RHI::CommandList *commandList, const void *data, uint32_t size, uint32_t offset) override;
+    virtual void                        SetTexture(RHI::CommandList *commandList, int slot, bool shaderWritable, const RHI::Texture *texture, int subresourceIndex = 0) override;
+    virtual void                        SetBuffer(RHI::CommandList *commandList, int slot, bool shaderWritable, const RHI::Buffer *buffer, int subresourceIndex = 0) override;
+    virtual void                        SetSampler(RHI::CommandList *commandList, int slot, RHI::Sampler *sampler) override;
+    virtual void                        SetPSO(RHI::CommandList *commandList, const RHI::PipelineState *pipelineState) override;
+    virtual void                        SetBlendFactor(RHI::CommandList *commandList, const BE1::Color4 &rgba) override;
+    virtual void                        SetStencilRef(RHI::CommandList *commandList, uint32_t value) override;
+    virtual void                        SetShadingRate(RHI::CommandList *commandList, RHI::ShadingRate shadingRate) override;
+    virtual void                        SetViewport(RHI::CommandList *commandList, const BE1::Rect &viewportRect) override;
+    virtual void                        SetScissorRect(RHI::CommandList *commandList, const BE1::Rect &scissorRect) override;
+    virtual void                        SetDepthBounds(RHI::CommandList *commandList, float depthMin, float depthMax) override;
+    virtual void                        BeginQuery(RHI::CommandList *commandList, const RHI::QueryHeap *queryHeap, uint32_t index) override;
+    virtual void                        EndQuery(RHI::CommandList *commandList, const RHI::QueryHeap *queryHeap, uint32_t index) override;
+    virtual void                        ResolveQuery(RHI::CommandList *commandList, const RHI::QueryHeap *queryHeap, uint32_t index, uint32_t count, const RHI::Buffer *destBuffer, uint64_t destOffset) override;
+    virtual void                        ResetQuery(RHI::CommandList *commandList, const RHI::QueryHeap *queryHeap, uint32_t index, uint32_t count) override;
+    virtual void                        Dispatch(RHI::CommandList *commandList, uint32_t threadGroupCountX, uint32_t threadGroupCountY, uint32_t threadGroupCountZ) override;
+    virtual void                        DispatchMesh(RHI::CommandList *commandList, uint32_t threadGroupCountX, uint32_t threadGroupCountY, uint32_t threadGroupCountZ) override;
+    virtual void                        ClearUAV(RHI::CommandList *commandList, const RHI::GPUResource *resource, uint32_t value) override;
+    virtual void                        CopyBuffer(RHI::CommandList *commandList, const RHI::Buffer *dstBuffer, uint32_t dstOffset, const RHI::Buffer *srcBuffer, uint32_t srcOffset, uint32_t size) override;
+    virtual void                        CopyTexture(RHI::CommandList *commandList, const RHI::Texture *dstTexture, uint32_t dstSlice, uint32_t dstMipLevel, uint32_t dstX, uint32_t dstY, uint32_t dstZ, const RHI::Texture *srcTexture, uint32_t srcSlice, uint32_t srcMipLevel, uint32_t srcX, uint32_t srcY, uint32_t srcZ, uint32_t width, uint32_t height, uint32_t depth) override;
+    virtual void                        Barrier(RHI::CommandList *commandList, const RHI::GPUBarrier *barriers, uint32_t barrierCount) override;
+    virtual void                        Barrier(RHI::CommandList *commandList, const RHI::GPUBarrier &barrier) override { Barrier(commandList, &barrier, 1); }
+    virtual void                        BeginRenderPass(RHI::CommandList *commandList, const RHI::SwapChain *swapChain, const BE1::Color4 &clearColor, float clearDepth, uint8_t clearStencil, RHI::ClearFlag clearFlag) override;
+    virtual void                        EndRenderPass(RHI::CommandList *commandList) override;
 
-    virtual void                        Draw(CommandList *commandList, uint32_t vertexCount, uint32_t startVertexLocation) override;
-    virtual void                        DrawIndexed(CommandList *commandList, uint32_t indexCount, uint32_t startIndexLocation, uint32_t baseVertexLocation) override;
-    virtual void                        DrawInstanced(CommandList *commandList, uint32_t vertexCount, uint32_t instanceCount, uint32_t startVertexLocation, uint32_t startInstanceLocation) override;
-    virtual void                        DrawIndexedInstanced(CommandList *commandList, uint32_t indexCount, uint32_t instanceCount, uint32_t startIndexLocation, uint32_t baseVertexLocation, uint32_t startInstanceLocation) override;
+    virtual void                        Draw(RHI::CommandList *commandList, uint32_t vertexCount, uint32_t startVertexLocation) override;
+    virtual void                        DrawIndexed(RHI::CommandList *commandList, uint32_t indexCount, uint32_t startIndexLocation, uint32_t baseVertexLocation) override;
+    virtual void                        DrawInstanced(RHI::CommandList *commandList, uint32_t vertexCount, uint32_t instanceCount, uint32_t startVertexLocation, uint32_t startInstanceLocation) override;
+    virtual void                        DrawIndexedInstanced(RHI::CommandList *commandList, uint32_t indexCount, uint32_t instanceCount, uint32_t startIndexLocation, uint32_t baseVertexLocation, uint32_t startInstanceLocation) override;
 
-    PipelineState *                     CreateBasicPSO(ID3D12RootSignature *rootSignature, const D3D12_SHADER_BYTECODE &byteCodeVS, const D3D12_SHADER_BYTECODE &byteCodePS, const D3D12_INPUT_LAYOUT_DESC &inputLayout);
-    PipelineState *                     CreateBasicPSO(ID3D12RootSignature *rootSignature, const char *shaderFilename, const D3D12_INPUT_LAYOUT_DESC &inputLayout);
+    RHI::PipelineState *                CreateBasicPSO(ID3D12RootSignature *rootSignature, const D3D12_SHADER_BYTECODE &byteCodeVS, const D3D12_SHADER_BYTECODE &byteCodePS, const D3D12_INPUT_LAYOUT_DESC &inputLayout);
+    RHI::PipelineState *                CreateBasicPSO(ID3D12RootSignature *rootSignature, const char *shaderFilename, const D3D12_INPUT_LAYOUT_DESC &inputLayout);
     ID3D12PipelineState *               CreatePSOFromLibrary(const D3D12_PIPELINE_STATE_STREAM_DESC *streamDesc, ID3D12PipelineLibrary1 *library, const TCHAR *name);
 
     bool                                LoadCachedPSO(const uint64_t hash, ID3DBlob **cachedPSOBlob);
     void                                WriteCachedPSO(const uint64_t hash, ID3DBlob *cachedPSOBlob);
 
-    bool                                CompileShader(const ShaderCompileInput *compileInput, ShaderCompileOutput *compileOutput);
-    bool                                CompileShaderD3D(const ShaderCompileInput *compileInput, ShaderCompileOutput *compileOutput);
-    bool                                CompileShaderDXC(const ShaderCompileInput *compileInput, ShaderCompileOutput *compileOutput);
+    bool                                CompileShader(const RHI::ShaderCompileInput *compileInput, RHI::ShaderCompileOutput *compileOutput);
+    bool                                CompileShaderD3D(const RHI::ShaderCompileInput *compileInput, RHI::ShaderCompileOutput *compileOutput);
+    bool                                CompileShaderDXC(const RHI::ShaderCompileInput *compileInput, RHI::ShaderCompileOutput *compileOutput);
     bool                                LoadCompiledShader(const char *name, const uint64_t hash, byte **compiledShaderDataPtr, uint32_t *compiledShaderDataSizePtr);
     void                                WriteCompiledShader(const char *name, const uint64_t hash, const byte *compiledShaderData, uint32_t compiledShaderDataSize);
 
@@ -178,8 +178,8 @@ public:
         D3D12CommandList *              activeCommandList = nullptr;
     };
 
-    int                                 AddRenderObject(const D3D12RenderObject::State &def);
-    void                                UpdateRenderObject(int handle, const D3D12RenderObject::State &def);
+    int                                 AddRenderObject(const RenderObject::State &def);
+    void                                UpdateRenderObject(int handle, const RenderObject::State &def);
     void                                RemoveRenderObject(int handle);
 
     void                                RenderScene();
@@ -192,12 +192,12 @@ public:
     void                                DrawVisObjectsByTask(D3D12Renderer::DrawObjectTaskDesc *taskDesc);
 #endif
 
-    static bool                         ImageFormatToDXGIFormat(Image::Format::Enum imageFormat, bool isSRGB, DXGI_FORMAT *dxgiFormat);
-    static bool                         DXGIFormatToImageFormat(DXGI_FORMAT dxgiFormat, Image::Format::Enum *imageFormat, bool *isSRGB);
+    static bool                         ImageFormatToDXGIFormat(BE1::Image::Format::Enum imageFormat, bool isSRGB, DXGI_FORMAT *dxgiFormat);
+    static bool                         DXGIFormatToImageFormat(DXGI_FORMAT dxgiFormat, BE1::Image::Format::Enum *imageFormat, bool *isSRGB);
 
     ID3D12Device5 *                     device = nullptr;
     IDXGIFactory4 *                     dxgiFactory = nullptr;
-    ID3D12CommandQueue *                commandQueues[to_int(CommandQueueType::Count)] = {};
+    ID3D12CommandQueue *                commandQueues[to_int(RHI::CommandQueueType::Count)] = {};
     D3D12CommandListPool *              graphicsCommandListPool = nullptr;
     D3D12CommandList *                  mainCommandList = nullptr;
     D3D12CommandList *                  resourceCommandList = nullptr;
@@ -215,7 +215,7 @@ public:
 
     uint32_t                            vendorId;
     uint32_t                            deviceId;
-    Str                                 adapterName;
+    BE1::Str                            adapterName;
     uint64_t                            dedicatedVideoMemSize = 0;
     uint64_t                            dedicatedSystemMemSize = 0;
     uint64_t                            sharedSystemMemSize = 0;
@@ -233,13 +233,13 @@ public:
     D3D12DescriptorPool *               dsvCpuDescriptorPool = nullptr;
     D3D12DescriptorPool *               samCpuDescriptorPool = nullptr;
 
-    SharedLib                           dxcompilerLibrary = nullptr;
-    Str                                 shaderCacheDir;
-    Str                                 psoCacheDir;
+    BE1::SharedLib                      dxcompilerLibrary = nullptr;
+    BE1::Str                            shaderCacheDir;
+    BE1::Str                            psoCacheDir;
 
-    HashMap<uint64_t, D3D12PipelineState *> graphicsPsoMap;
-    HashMap<uint64_t, D3D12PipelineState *> computePsoMap;
-    HashMap<uint64_t, ID3DBlob *>       cachedPsoBlobMap;
+    BE1::HashMap<uint64_t, D3D12PipelineState *> graphicsPsoMap;
+    BE1::HashMap<uint64_t, D3D12PipelineState *> computePsoMap;
+    BE1::HashMap<uint64_t, ID3DBlob *>  cachedPsoBlobMap;
 
     IDxcCompiler3 *                     dxcCompiler = nullptr;
     IDxcUtils *                         dxcUtils = nullptr;
@@ -255,11 +255,11 @@ public:
     int                                 headPendingIndex = 0;
     int                                 tailPendingIndex = 0;
 
-    Array<D3D12RenderObject *>          renderObjects;
-    Array<DrawObjectTaskDesc>           objectDrawingTaskDescs;
+    BE1::Array<RenderObject *>          renderObjects;
+    BE1::Array<DrawObjectTaskDesc>      objectDrawingTaskDescs;
 
 #ifdef USE_RENDER_TASK
-    TaskManager                         renderTaskManager = TaskManager(MaxRenderTasks);
+    BE1::TaskManager                    renderTaskManager = BE1::TaskManager(MaxRenderTasks);
 #endif
 
 #ifdef USE_RENDER_THREAD
@@ -269,10 +269,10 @@ public:
     void                                ShutdownRenderThread();
     void                                WaitRenderCompleted();
 
-    PlatformSRWLock *                   smpLock = nullptr;
-    PlatformCondition *                 renderCompletedCondition = nullptr;
-    PlatformCondition *                 updateCompletedCondition = nullptr;
-    PlatformThread *                    renderThread = nullptr;
+    BE1::PlatformSRWLock *              smpLock = nullptr;
+    BE1::PlatformCondition *            renderCompletedCondition = nullptr;
+    BE1::PlatformCondition *            updateCompletedCondition = nullptr;
+    BE1::PlatformThread *               renderThread = nullptr;
     bool                                isStoppingRenderThread = false;
     int                                 renderFrameIndex = 1;
     FrameSyncState                      frameSyncState = FrameSyncState::WaitingForUpdateCompleted;

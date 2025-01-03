@@ -24,277 +24,277 @@
 #include "D3D12CommandList.h"
 #include "D3D12RootDescriptorPool.h"
 
-static constexpr D3D12_FILL_MODE ToD3D12FillMode(RHIRenderer::FillMode fillMode) {
+static constexpr D3D12_FILL_MODE ToD3D12FillMode(RHI::FillMode fillMode) {
     switch (fillMode) {
-    case RHIRenderer::FillMode::Wire:
+    case RHI::FillMode::Wire:
         return D3D12_FILL_MODE_WIREFRAME;
-    case RHIRenderer::FillMode::Solid:
+    case RHI::FillMode::Solid:
         return D3D12_FILL_MODE_SOLID;
     }
     assert(0);
     return D3D12_FILL_MODE_SOLID;
 }
 
-static constexpr D3D12_CULL_MODE ToD3D12CullMode(RHIRenderer::CullMode cullMode) {
+static constexpr D3D12_CULL_MODE ToD3D12CullMode(RHI::CullMode cullMode) {
     switch (cullMode) {
-    case RHIRenderer::CullMode::Back:
+    case RHI::CullMode::Back:
         return D3D12_CULL_MODE_BACK;
-    case RHIRenderer::CullMode::Front:
+    case RHI::CullMode::Front:
         return D3D12_CULL_MODE_FRONT;
-    case RHIRenderer::CullMode::None:
+    case RHI::CullMode::None:
         return D3D12_CULL_MODE_NONE;
     }
     assert(0);
     return D3D12_CULL_MODE_NONE;
 }
 
-static constexpr UINT8 ToD3D12ColorWriteMask(RHIRenderer::ColorWriteMask colorWriteMask) {
+static constexpr UINT8 ToD3D12ColorWriteMask(RHI::ColorWriteMask colorWriteMask) {
     UINT8 mask = 0;
-    if (HasFlag(colorWriteMask, RHIRenderer::ColorWriteMask::Red)) {
+    if (BE1::HasFlag(colorWriteMask, RHI::ColorWriteMask::Red)) {
         mask |= D3D12_COLOR_WRITE_ENABLE_RED;
     }
-    if (HasFlag(colorWriteMask, RHIRenderer::ColorWriteMask::Green)) {
+    if (BE1::HasFlag(colorWriteMask, RHI::ColorWriteMask::Green)) {
         mask |= D3D12_COLOR_WRITE_ENABLE_GREEN;
     }
-    if (HasFlag(colorWriteMask, RHIRenderer::ColorWriteMask::Blue)) {
+    if (BE1::HasFlag(colorWriteMask, RHI::ColorWriteMask::Blue)) {
         mask |= D3D12_COLOR_WRITE_ENABLE_BLUE;
     }
-    if (HasFlag(colorWriteMask, RHIRenderer::ColorWriteMask::Alpha)) {
+    if (BE1::HasFlag(colorWriteMask, RHI::ColorWriteMask::Alpha)) {
         mask |= D3D12_COLOR_WRITE_ENABLE_ALPHA;
     }
     return mask;
 }
 
-static constexpr D3D12_DEPTH_WRITE_MASK ToD3D12DepthWriteMask(RHIRenderer::DepthWriteMask depthWriteMask) {
-    if (depthWriteMask == RHIRenderer::DepthWriteMask::Zero) {
+static constexpr D3D12_DEPTH_WRITE_MASK ToD3D12DepthWriteMask(RHI::DepthWriteMask depthWriteMask) {
+    if (depthWriteMask == RHI::DepthWriteMask::Zero) {
         return D3D12_DEPTH_WRITE_MASK_ZERO;
     }
-    if (depthWriteMask == RHIRenderer::DepthWriteMask::All) {
+    if (depthWriteMask == RHI::DepthWriteMask::All) {
         return D3D12_DEPTH_WRITE_MASK_ALL;
     }
     assert(0);
     return D3D12_DEPTH_WRITE_MASK_ZERO;
 }
 
-static constexpr D3D12_COMPARISON_FUNC ToD3D12ComparisonFunc(RHIRenderer::ComparisonFunc comparisonFunc) {
+static constexpr D3D12_COMPARISON_FUNC ToD3D12ComparisonFunc(RHI::ComparisonFunc comparisonFunc) {
     switch (comparisonFunc) {
-    case RHIRenderer::ComparisonFunc::Always:
+    case RHI::ComparisonFunc::Always:
         return D3D12_COMPARISON_FUNC_ALWAYS;
-    case RHIRenderer::ComparisonFunc::Less:
+    case RHI::ComparisonFunc::Less:
         return D3D12_COMPARISON_FUNC_LESS;
-    case RHIRenderer::ComparisonFunc::LEqual:
+    case RHI::ComparisonFunc::LEqual:
         return D3D12_COMPARISON_FUNC_LESS_EQUAL;
-    case RHIRenderer::ComparisonFunc::Equal:
+    case RHI::ComparisonFunc::Equal:
         return D3D12_COMPARISON_FUNC_EQUAL;
-    case RHIRenderer::ComparisonFunc::NotEqual:
+    case RHI::ComparisonFunc::NotEqual:
         return D3D12_COMPARISON_FUNC_NOT_EQUAL;
-    case RHIRenderer::ComparisonFunc::GEqual:
+    case RHI::ComparisonFunc::GEqual:
         return D3D12_COMPARISON_FUNC_GREATER_EQUAL;
-    case RHIRenderer::ComparisonFunc::Greater:
+    case RHI::ComparisonFunc::Greater:
         return D3D12_COMPARISON_FUNC_GREATER;
-    case RHIRenderer::ComparisonFunc::Never:
+    case RHI::ComparisonFunc::Never:
         return D3D12_COMPARISON_FUNC_NEVER;
     }
     assert(0);
     return D3D12_COMPARISON_FUNC_NEVER;
 }
 
-static constexpr D3D12_STENCIL_OP ToD3D12StencilOp(RHIRenderer::StencilOp stencilOp) {
+static constexpr D3D12_STENCIL_OP ToD3D12StencilOp(RHI::StencilOp stencilOp) {
     switch (stencilOp) {
-    case RHIRenderer::StencilOp::Keep:
+    case RHI::StencilOp::Keep:
         return D3D12_STENCIL_OP_KEEP;
-    case RHIRenderer::StencilOp::Zero:
+    case RHI::StencilOp::Zero:
         return D3D12_STENCIL_OP_ZERO;
-    case RHIRenderer::StencilOp::Replace:
+    case RHI::StencilOp::Replace:
         return D3D12_STENCIL_OP_REPLACE;
-    case RHIRenderer::StencilOp::Incr:
+    case RHI::StencilOp::Incr:
         return D3D12_STENCIL_OP_INCR;
-    case RHIRenderer::StencilOp::Decr:
+    case RHI::StencilOp::Decr:
         return D3D12_STENCIL_OP_DECR;
-    case RHIRenderer::StencilOp::IncrWrap:
+    case RHI::StencilOp::IncrWrap:
         return D3D12_STENCIL_OP_INCR_SAT;
-    case RHIRenderer::StencilOp::DecrWrap:
+    case RHI::StencilOp::DecrWrap:
         return D3D12_STENCIL_OP_DECR_SAT;
-    case RHIRenderer::StencilOp::Invert:
+    case RHI::StencilOp::Invert:
         return D3D12_STENCIL_OP_INVERT;
     }
     assert(0);
     return D3D12_STENCIL_OP_KEEP;
 }
 
-static constexpr D3D12_BLEND ToD3D12Blend(RHIRenderer::Blend blend) {
+static constexpr D3D12_BLEND ToD3D12Blend(RHI::Blend blend) {
     switch (blend) {
-    case RHIRenderer::Blend::Zero:
+    case RHI::Blend::Zero:
         return D3D12_BLEND_ZERO;
-    case RHIRenderer::Blend::One:
+    case RHI::Blend::One:
         return D3D12_BLEND_ONE;
-    case RHIRenderer::Blend::SrcColor:
+    case RHI::Blend::SrcColor:
         return D3D12_BLEND_SRC_COLOR;
-    case RHIRenderer::Blend::InvSrcColor:
+    case RHI::Blend::InvSrcColor:
         return D3D12_BLEND_INV_SRC_COLOR;
-    case RHIRenderer::Blend::SrcAlpha:
+    case RHI::Blend::SrcAlpha:
         return D3D12_BLEND_SRC_ALPHA;
-    case RHIRenderer::Blend::InvSrcAlpha:
+    case RHI::Blend::InvSrcAlpha:
         return D3D12_BLEND_INV_SRC_ALPHA;
-    case RHIRenderer::Blend::SrcAlphaSat:
+    case RHI::Blend::SrcAlphaSat:
         return D3D12_BLEND_SRC_ALPHA_SAT;
-    case RHIRenderer::Blend::DestColor:
+    case RHI::Blend::DestColor:
         return D3D12_BLEND_DEST_COLOR;
-    case RHIRenderer::Blend::InvDestColor:
+    case RHI::Blend::InvDestColor:
         return D3D12_BLEND_INV_DEST_COLOR;
-    case RHIRenderer::Blend::DestAlpha:
+    case RHI::Blend::DestAlpha:
         return D3D12_BLEND_DEST_ALPHA;
-    case RHIRenderer::Blend::InvDestAlpha:
+    case RHI::Blend::InvDestAlpha:
         return D3D12_BLEND_INV_DEST_ALPHA;
-    case RHIRenderer::Blend::BlendFactor:
+    case RHI::Blend::BlendFactor:
         return D3D12_BLEND_BLEND_FACTOR;
-    case RHIRenderer::Blend::InvBlendFactor:
+    case RHI::Blend::InvBlendFactor:
         return D3D12_BLEND_INV_BLEND_FACTOR;
-    case RHIRenderer::Blend::Src1Color:
+    case RHI::Blend::Src1Color:
         return D3D12_BLEND_SRC1_COLOR;
-    case RHIRenderer::Blend::InvSrc1Color:
+    case RHI::Blend::InvSrc1Color:
         return D3D12_BLEND_INV_SRC1_COLOR;
-    case RHIRenderer::Blend::Src1Alpha:
+    case RHI::Blend::Src1Alpha:
         return D3D12_BLEND_SRC1_ALPHA;
-    case RHIRenderer::Blend::InvSrc1Alpha:
+    case RHI::Blend::InvSrc1Alpha:
         return D3D12_BLEND_INV_SRC1_ALPHA;
     }
     assert(0);
     return D3D12_BLEND_ZERO;
 }
 
-static constexpr D3D12_BLEND_OP ToD3D12BlendOp(RHIRenderer::BlendOp blendOp) {
+static constexpr D3D12_BLEND_OP ToD3D12BlendOp(RHI::BlendOp blendOp) {
     switch (blendOp) {
-    case RHIRenderer::BlendOp::Add:
+    case RHI::BlendOp::Add:
         return D3D12_BLEND_OP_ADD;
-    case RHIRenderer::BlendOp::Subtract:
+    case RHI::BlendOp::Subtract:
         return D3D12_BLEND_OP_SUBTRACT;
-    case RHIRenderer::BlendOp::ReverseSubtract:
+    case RHI::BlendOp::ReverseSubtract:
         return D3D12_BLEND_OP_REV_SUBTRACT;
-    case RHIRenderer::BlendOp::Min:
+    case RHI::BlendOp::Min:
         return D3D12_BLEND_OP_MIN;
-    case RHIRenderer::BlendOp::Max:
+    case RHI::BlendOp::Max:
         return D3D12_BLEND_OP_MAX;
     }
     assert(0);
     return D3D12_BLEND_OP_ADD;
 }
 
-static constexpr DXGI_FORMAT ToD3D12InputLayoutElementFormat(RHIRenderer::InputLayoutElement::Format format) {
+static constexpr DXGI_FORMAT ToD3D12InputLayoutElementFormat(RHI::InputLayoutElement::Format format) {
     switch (format) {
-    case RHIRenderer::InputLayoutElement::Format::Unknown:
+    case RHI::InputLayoutElement::Format::Unknown:
         return DXGI_FORMAT_UNKNOWN;
-    case RHIRenderer::InputLayoutElement::Format::Float4:
+    case RHI::InputLayoutElement::Format::Float4:
         return DXGI_FORMAT_R32G32B32A32_FLOAT;
-    case RHIRenderer::InputLayoutElement::Format::Float3:
+    case RHI::InputLayoutElement::Format::Float3:
         return DXGI_FORMAT_R32G32B32_FLOAT;
-    case RHIRenderer::InputLayoutElement::Format::Float2:
+    case RHI::InputLayoutElement::Format::Float2:
         return DXGI_FORMAT_R32G32_FLOAT;
-    case RHIRenderer::InputLayoutElement::Format::Float1:
+    case RHI::InputLayoutElement::Format::Float1:
         return DXGI_FORMAT_R32_FLOAT;
-    case RHIRenderer::InputLayoutElement::Format::UInt4:
+    case RHI::InputLayoutElement::Format::UInt4:
         return DXGI_FORMAT_R32G32B32A32_UINT;
-    case RHIRenderer::InputLayoutElement::Format::UInt3:
+    case RHI::InputLayoutElement::Format::UInt3:
         return DXGI_FORMAT_R32G32B32_UINT;
-    case RHIRenderer::InputLayoutElement::Format::UInt2:
+    case RHI::InputLayoutElement::Format::UInt2:
         return DXGI_FORMAT_R32G32_UINT;
-    case RHIRenderer::InputLayoutElement::Format::UInt1:
+    case RHI::InputLayoutElement::Format::UInt1:
         return DXGI_FORMAT_R32_UINT;
-    case RHIRenderer::InputLayoutElement::Format::Int4:
+    case RHI::InputLayoutElement::Format::Int4:
         return DXGI_FORMAT_R32G32B32A32_SINT;
-    case RHIRenderer::InputLayoutElement::Format::Int3:
+    case RHI::InputLayoutElement::Format::Int3:
         return DXGI_FORMAT_R32G32B32_SINT;
-    case RHIRenderer::InputLayoutElement::Format::Int2:
+    case RHI::InputLayoutElement::Format::Int2:
         return DXGI_FORMAT_R32G32_SINT;
-    case RHIRenderer::InputLayoutElement::Format::Int1:
+    case RHI::InputLayoutElement::Format::Int1:
         return DXGI_FORMAT_R32_SINT;
-    case RHIRenderer::InputLayoutElement::Format::Half4:
+    case RHI::InputLayoutElement::Format::Half4:
         return DXGI_FORMAT_R16G16B16A16_FLOAT;
-    case RHIRenderer::InputLayoutElement::Format::Half2:
+    case RHI::InputLayoutElement::Format::Half2:
         return DXGI_FORMAT_R16G16_FLOAT;
-    case RHIRenderer::InputLayoutElement::Format::Half1:
+    case RHI::InputLayoutElement::Format::Half1:
         return DXGI_FORMAT_R16_FLOAT;
-    case RHIRenderer::InputLayoutElement::Format::UShort4:
+    case RHI::InputLayoutElement::Format::UShort4:
         return DXGI_FORMAT_R16G16B16A16_UINT;
-    case RHIRenderer::InputLayoutElement::Format::UShort2:
+    case RHI::InputLayoutElement::Format::UShort2:
         return DXGI_FORMAT_R16G16_UINT;
-    case RHIRenderer::InputLayoutElement::Format::UShort1:
+    case RHI::InputLayoutElement::Format::UShort1:
         return DXGI_FORMAT_R16_UINT;
-    case RHIRenderer::InputLayoutElement::Format::UShort4N:
+    case RHI::InputLayoutElement::Format::UShort4N:
         return DXGI_FORMAT_R16G16B16A16_UNORM;
-    case RHIRenderer::InputLayoutElement::Format::UShort2N:
+    case RHI::InputLayoutElement::Format::UShort2N:
         return DXGI_FORMAT_R16G16_UNORM;
-    case RHIRenderer::InputLayoutElement::Format::UShort1N:
+    case RHI::InputLayoutElement::Format::UShort1N:
         return DXGI_FORMAT_R16_UNORM;
-    case RHIRenderer::InputLayoutElement::Format::Short4:
+    case RHI::InputLayoutElement::Format::Short4:
         return DXGI_FORMAT_R16G16B16A16_SINT;
-    case RHIRenderer::InputLayoutElement::Format::Short2:
+    case RHI::InputLayoutElement::Format::Short2:
         return DXGI_FORMAT_R16G16_SINT;
-    case RHIRenderer::InputLayoutElement::Format::Short1:
+    case RHI::InputLayoutElement::Format::Short1:
         return DXGI_FORMAT_R16_SINT;
-    case RHIRenderer::InputLayoutElement::Format::Short4N:
+    case RHI::InputLayoutElement::Format::Short4N:
         return DXGI_FORMAT_R16G16B16A16_SNORM;
-    case RHIRenderer::InputLayoutElement::Format::Short2N:
+    case RHI::InputLayoutElement::Format::Short2N:
         return DXGI_FORMAT_R16G16_SNORM;
-    case RHIRenderer::InputLayoutElement::Format::Short1N:
+    case RHI::InputLayoutElement::Format::Short1N:
         return DXGI_FORMAT_R16_SNORM;
-    case RHIRenderer::InputLayoutElement::Format::UByte4:
+    case RHI::InputLayoutElement::Format::UByte4:
         return DXGI_FORMAT_R8G8B8A8_UINT;
-    case RHIRenderer::InputLayoutElement::Format::UByte2:
+    case RHI::InputLayoutElement::Format::UByte2:
         return DXGI_FORMAT_R8G8_UINT;
-    case RHIRenderer::InputLayoutElement::Format::UByte1:
+    case RHI::InputLayoutElement::Format::UByte1:
         return DXGI_FORMAT_R8_UINT;
-    case RHIRenderer::InputLayoutElement::Format::UByte4N:
+    case RHI::InputLayoutElement::Format::UByte4N:
         return DXGI_FORMAT_R8G8B8A8_UNORM;
-    case RHIRenderer::InputLayoutElement::Format::UByte2N:
+    case RHI::InputLayoutElement::Format::UByte2N:
         return DXGI_FORMAT_R8G8_UNORM;
-    case RHIRenderer::InputLayoutElement::Format::UByte1N:
+    case RHI::InputLayoutElement::Format::UByte1N:
         return DXGI_FORMAT_R8_UNORM;
-    case RHIRenderer::InputLayoutElement::Format::Byte4:
+    case RHI::InputLayoutElement::Format::Byte4:
         return DXGI_FORMAT_R8G8B8A8_SINT;
-    case RHIRenderer::InputLayoutElement::Format::Byte2:
+    case RHI::InputLayoutElement::Format::Byte2:
         return DXGI_FORMAT_R8G8_SINT;
-    case RHIRenderer::InputLayoutElement::Format::Byte1:
+    case RHI::InputLayoutElement::Format::Byte1:
         return DXGI_FORMAT_R8_SINT;
-    case RHIRenderer::InputLayoutElement::Format::Byte4N:
+    case RHI::InputLayoutElement::Format::Byte4N:
         return DXGI_FORMAT_R8G8B8A8_SNORM;
-    case RHIRenderer::InputLayoutElement::Format::Byte2N:
+    case RHI::InputLayoutElement::Format::Byte2N:
         return DXGI_FORMAT_R8G8_SNORM;
-    case RHIRenderer::InputLayoutElement::Format::Byte1N:
+    case RHI::InputLayoutElement::Format::Byte1N:
         return DXGI_FORMAT_R8_SNORM;
     }
     assert(0);
     return DXGI_FORMAT_UNKNOWN;
 }
 
-static constexpr D3D12_PRIMITIVE_TOPOLOGY_TYPE ToD3D12TopologyType(RHIRenderer::PrimitiveTopology primitiveTopology) {
+static constexpr D3D12_PRIMITIVE_TOPOLOGY_TYPE ToD3D12TopologyType(RHI::PrimitiveTopology primitiveTopology) {
     switch (primitiveTopology) {
-    case RHIRenderer::PrimitiveTopology::PointList:
+    case RHI::PrimitiveTopology::PointList:
         return D3D12_PRIMITIVE_TOPOLOGY_TYPE_POINT;
-    case RHIRenderer::PrimitiveTopology::LineList:
-    case RHIRenderer::PrimitiveTopology::LineStrip:
+    case RHI::PrimitiveTopology::LineList:
+    case RHI::PrimitiveTopology::LineStrip:
         return D3D12_PRIMITIVE_TOPOLOGY_TYPE_LINE;
-    case RHIRenderer::PrimitiveTopology::TriangleList:
-    case RHIRenderer::PrimitiveTopology::TriangleStrip:
+    case RHI::PrimitiveTopology::TriangleList:
+    case RHI::PrimitiveTopology::TriangleStrip:
         return D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
-    case RHIRenderer::PrimitiveTopology::PatchList:
+    case RHI::PrimitiveTopology::PatchList:
         return D3D12_PRIMITIVE_TOPOLOGY_TYPE_PATCH;
     }
     assert(0);
     return D3D12_PRIMITIVE_TOPOLOGY_TYPE_UNDEFINED;
 }
 
-static constexpr D3D12_PRIMITIVE_TOPOLOGY ToD3DPrimitiveTopology(RHIRenderer::PrimitiveTopology primitiveTopology) {
+static constexpr D3D12_PRIMITIVE_TOPOLOGY ToD3DPrimitiveTopology(RHI::PrimitiveTopology primitiveTopology) {
     switch (primitiveTopology) {
-    case RHIRenderer::PrimitiveTopology::PointList:
+    case RHI::PrimitiveTopology::PointList:
         return D3D_PRIMITIVE_TOPOLOGY_POINTLIST;
-    case RHIRenderer::PrimitiveTopology::LineList:
+    case RHI::PrimitiveTopology::LineList:
         return D3D_PRIMITIVE_TOPOLOGY_LINELIST;
-    case RHIRenderer::PrimitiveTopology::LineStrip:
+    case RHI::PrimitiveTopology::LineStrip:
         return D3D_PRIMITIVE_TOPOLOGY_LINESTRIP;
-    case RHIRenderer::PrimitiveTopology::TriangleList:
+    case RHI::PrimitiveTopology::TriangleList:
         return D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
-    case RHIRenderer::PrimitiveTopology::TriangleStrip:
+    case RHI::PrimitiveTopology::TriangleStrip:
         return D3D_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP;
     }
     return D3D_PRIMITIVE_TOPOLOGY_UNDEFINED;
@@ -305,7 +305,7 @@ void D3D12PipelineState::Release() {
     SAFE_RELEASE(rootSignature);
 }
 
-RHIRenderer::PipelineState *D3D12Renderer::CreateGraphicsPSO(const RHIRenderer::PipelineStateDesc *desc) {
+RHI::PipelineState *D3D12Renderer::CreateGraphicsPSO(const RHI::PipelineStateDesc *desc) {
     struct PSOHashData {
         struct ShaderHashData {
             uint64_t vsHash = 0;
@@ -382,23 +382,23 @@ RHIRenderer::PipelineState *D3D12Renderer::CreateGraphicsPSO(const RHIRenderer::
     if (desc->inputLayout) {
         size_t hash = 0;
         for (int i = 0; i < desc->inputLayout->elements.Count(); ++i) {
-            hash = hash_combine(hash, std::hash<InputLayoutElement>()(desc->inputLayout->elements[i]));
+            hash = hash_combine(hash, std::hash<RHI::InputLayoutElement>()(desc->inputLayout->elements[i]));
         }
         psoHashData.inputLayoutHash = static_cast<uint64_t>(hash);
     }
 
     if (desc->blendState) {
-        std::hash<const BlendState *> hasher;
+        std::hash<const RHI::BlendState *> hasher;
         psoHashData.blendHash = static_cast<uint64_t>(hasher(desc->blendState));
     }
 
     if (desc->depthStencilState) {
-        std::hash<const DepthStencilState *> hasher;
+        std::hash<const RHI::DepthStencilState *> hasher;
         psoHashData.depthStencilHash = static_cast<uint64_t>(hasher(desc->depthStencilState));
     }
 
     if (desc->rasterizerState) {
-        std::hash<const RasterizerState *> hasher;
+        std::hash<const RHI::RasterizerState *> hasher;
         psoHashData.rasterizerHash = static_cast<uint64_t>(hasher(desc->rasterizerState));
     }
 
@@ -407,7 +407,7 @@ RHIRenderer::PipelineState *D3D12Renderer::CreateGraphicsPSO(const RHIRenderer::
     }
 
     // 전체 hash 값으로 완전히 동일한 PSO 가 존재하는지 찾아보고, 있으면 리턴한다.
-    const uint64_t psoHash = CityHash64((char *)&psoHashData, sizeof(psoHashData));
+    const uint64_t psoHash = BE1::CityHash64((char *)&psoHashData, sizeof(psoHashData));
     const auto *psoEntry = graphicsPsoMap.Get(psoHash);
     if (psoEntry) {
         return psoEntry->second;
@@ -419,7 +419,7 @@ RHIRenderer::PipelineState *D3D12Renderer::CreateGraphicsPSO(const RHIRenderer::
     pipelineState->graphics = true;
 
     // combined shader hash 값으로 동일한 PSO cache 가 존재하는지 찾아보고, 있으면 재활용한다.
-    const uint64_t combinedShaderHash = CityHash64((char *)&psoHashData.shaderHashData, sizeof(psoHashData.shaderHashData));
+    const uint64_t combinedShaderHash = BE1::CityHash64((char *)&psoHashData.shaderHashData, sizeof(psoHashData.shaderHashData));
     const auto *cachedPsoBlobEntry = cachedPsoBlobMap.Get(combinedShaderHash);
 
     ID3DBlob *cachedPsoBlob = nullptr;
@@ -494,14 +494,14 @@ RHIRenderer::PipelineState *D3D12Renderer::CreateGraphicsPSO(const RHIRenderer::
 
     // InputLayout
     D3D12_INPUT_LAYOUT_DESC inputLayoutDesc = {};
-    Array<D3D12_INPUT_ELEMENT_DESC> inputElementDescs;
+    BE1::Array<D3D12_INPUT_ELEMENT_DESC> inputElementDescs;
 
     if (desc->inputLayout) {
         int numElements = desc->inputLayout->elements.Count();
         inputElementDescs.SetCount(numElements);
 
         for (int i = 0; i < numElements; ++i) {
-            const InputLayoutElement *element = &desc->inputLayout->elements[i];
+            const RHI::InputLayoutElement *element = &desc->inputLayout->elements[i];
             D3D12_INPUT_ELEMENT_DESC *elementDesc = &inputElementDescs[i];
 
             elementDesc->SemanticName = element->semanticName.c_str();
@@ -529,7 +529,7 @@ RHIRenderer::PipelineState *D3D12Renderer::CreateGraphicsPSO(const RHIRenderer::
         blendDesc.IndependentBlendEnable = desc->blendState->independentBlendEnabled;
 
         for (int i = 0; i < COUNT_OF(blendDesc.RenderTarget); ++i) {
-            const RenderTargetBlendState *renderTargetBlendState = &desc->blendState->renderTargets[i];
+            const RHI::RenderTargetBlendState *renderTargetBlendState = &desc->blendState->renderTargets[i];
             D3D12_RENDER_TARGET_BLEND_DESC *renderTargetBlendDesc = &blendDesc.RenderTarget[i];
 
             renderTargetBlendDesc->BlendEnable = renderTargetBlendState->blendEnabled;
@@ -637,7 +637,7 @@ RHIRenderer::PipelineState *D3D12Renderer::CreateGraphicsPSO(const RHIRenderer::
     return pipelineState;
 }
 
-RHIRenderer::PipelineState *D3D12Renderer::CreateComputePSO(const Shader *computeShader) {
+RHI::PipelineState *D3D12Renderer::CreateComputePSO(const RHI::Shader *computeShader) {
     const D3D12Shader *cs = static_cast<const D3D12Shader *>(computeShader);
     // compute shader 외에 다른 상태가 없으므로 compute shader hash 값을 PSO hash 값으로 사용한다.
     const uint64_t psoHash = cs->hash; 
@@ -674,7 +674,7 @@ RHIRenderer::PipelineState *D3D12Renderer::CreateComputePSO(const Shader *comput
     return pipelineState;
 }
 
-void D3D12Renderer::DestroyPSO(PipelineState *pipelineState, bool immediate) {
+void D3D12Renderer::DestroyPSO(RHI::PipelineState *pipelineState, bool immediate) {
     if (pipelineState->graphics) {
         graphicsPsoMap.Remove(pipelineState->hash);
     } else {
@@ -689,11 +689,11 @@ void D3D12Renderer::DestroyPSO(PipelineState *pipelineState, bool immediate) {
 }
 
 bool D3D12Renderer::LoadCachedPSO(const uint64_t hash, ID3DBlob **cachedPSOBlob) {
-    Str filename = psoCacheDir;
-    filename.AppendPath(va("%016llx", hash));
+    BE1::Str filename = psoCacheDir;
+    filename.AppendPath(BE1::va("%016llx", hash));
     filename.SetFileExtension(".pso");
 
-    PlatformFileMapping *fileMapping = PlatformFileMapping::OpenFileRead(filename);
+    BE1::PlatformFileMapping *fileMapping = BE1::PlatformFileMapping::OpenFileRead(filename);
     if (!fileMapping) {
         return false;
     }
@@ -715,10 +715,10 @@ void D3D12Renderer::WriteCachedPSO(const uint64_t hash, ID3DBlob *cachedPSOBlob)
         return;
     }
 
-    Str filename = psoCacheDir;
-    filename.AppendPath(va("%016llx", hash));
+    BE1::Str filename = psoCacheDir;
+    filename.AppendPath(BE1::va("%016llx", hash));
     filename.SetFileExtension(".pso");
-    PlatformFile *file = (PlatformFile *)PlatformFile::OpenFileWrite(filename);
+    BE1::PlatformFile *file = (BE1::PlatformFile *)BE1::PlatformFile::OpenFileWrite(filename);
     if (!file) {
         return;
     }
@@ -728,7 +728,7 @@ void D3D12Renderer::WriteCachedPSO(const uint64_t hash, ID3DBlob *cachedPSOBlob)
     delete file;
 }
 
-RHIRenderer::PipelineState *D3D12Renderer::CreateBasicPSO(ID3D12RootSignature *rootSignature, const D3D12_SHADER_BYTECODE &byteCodeVS, const D3D12_SHADER_BYTECODE &byteCodePS, const D3D12_INPUT_LAYOUT_DESC &inputLayout) {
+RHI::PipelineState *D3D12Renderer::CreateBasicPSO(ID3D12RootSignature *rootSignature, const D3D12_SHADER_BYTECODE &byteCodeVS, const D3D12_SHADER_BYTECODE &byteCodePS, const D3D12_INPUT_LAYOUT_DESC &inputLayout) {
     const D3D12_RENDER_TARGET_BLEND_DESC defaultRenderTargetBlendDesc = {
         FALSE, FALSE,
         D3D12_BLEND_ONE, D3D12_BLEND_ZERO, D3D12_BLEND_OP_ADD,
@@ -789,17 +789,17 @@ RHIRenderer::PipelineState *D3D12Renderer::CreateBasicPSO(ID3D12RootSignature *r
     return pipelineState;
 }
 
-RHIRenderer::PipelineState *D3D12Renderer::CreateBasicPSO(ID3D12RootSignature *rootSignature, const char *shaderFilename, const D3D12_INPUT_LAYOUT_DESC &inputLayout) {
+RHI::PipelineState *D3D12Renderer::CreateBasicPSO(ID3D12RootSignature *rootSignature, const char *shaderFilename, const D3D12_INPUT_LAYOUT_DESC &inputLayout) {
     char *shaderText;
-    int shaderTextSize = fileSystem.LoadFile(shaderFilename, true, (void **)&shaderText);
+    int shaderTextSize = BE1::fileSystem.LoadFile(shaderFilename, true, (void **)&shaderText);
     if (!shaderText) {
         return nullptr;
     }
 
-    D3D12Shader *vs = static_cast<D3D12Shader *>(CreateShader(ShaderModel::SM_5_0, ShaderStage::Vertex, shaderFilename, shaderText, shaderTextSize, "VSMain"));
-    D3D12Shader *ps = static_cast<D3D12Shader *>(CreateShader(ShaderModel::SM_5_0, ShaderStage::Fragment, shaderFilename, shaderText, shaderTextSize, "PSMain"));
+    D3D12Shader *vs = static_cast<D3D12Shader *>(CreateShader(RHI::ShaderModel::SM_5_0, RHI::ShaderStage::Vertex, shaderFilename, shaderText, shaderTextSize, "VSMain"));
+    D3D12Shader *ps = static_cast<D3D12Shader *>(CreateShader(RHI::ShaderModel::SM_5_0, RHI::ShaderStage::Fragment, shaderFilename, shaderText, shaderTextSize, "PSMain"));
 
-    fileSystem.FreeFile(shaderText);
+    BE1::fileSystem.FreeFile(shaderText);
 
     if (!vs || !ps) {
         SAFE_DELETE(vs);
@@ -810,7 +810,7 @@ RHIRenderer::PipelineState *D3D12Renderer::CreateBasicPSO(ID3D12RootSignature *r
     D3D12_SHADER_BYTECODE byteCodeVS = CD3DX12_SHADER_BYTECODE(vs->compiledShaderData, vs->compiledShaderDataSize);
     D3D12_SHADER_BYTECODE byteCodePS = CD3DX12_SHADER_BYTECODE(ps->compiledShaderData, ps->compiledShaderDataSize);
 
-    PipelineState *pso = CreateBasicPSO(rootSignature, byteCodeVS, byteCodePS, inputLayout);
+    RHI::PipelineState *pso = CreateBasicPSO(rootSignature, byteCodeVS, byteCodePS, inputLayout);
 
     SAFE_DELETE(vs);
     SAFE_DELETE(ps);
@@ -840,7 +840,7 @@ ID3D12PipelineState *D3D12Renderer::CreatePSOFromLibrary(const D3D12_PIPELINE_ST
     return pso;
 }
 
-void D3D12Renderer::SetPSO(CommandList *commandList, const PipelineState *pipelineState) {
+void D3D12Renderer::SetPSO(RHI::CommandList *commandList, const RHI::PipelineState *pipelineState) {
     D3D12CommandList *d3d12CommandList = static_cast<D3D12CommandList *>(commandList);
     d3d12CommandList->SetPipelineState(pipelineState);
 }
@@ -928,7 +928,7 @@ void D3D12Renderer::BindRootParameters(D3D12CommandList *commandList, bool graph
         } else if (rootParameter->ParameterType == D3D12_ROOT_PARAMETER_TYPE_CBV) {
             // 루트 레벨 CBV 설정
             UINT shaderRegister = rootParameter->Descriptor.ShaderRegister;
-            const RHIRenderer::GPUResource *cbvResource = threadData.cbvResources[shaderRegister];
+            const RHI::GPUResource *cbvResource = threadData.cbvResources[shaderRegister];
             if (cbvResource) {
                 D3D12_GPU_VIRTUAL_ADDRESS gpuAddress = reinterpret_cast<ID3D12Resource *>(cbvResource->GetNativeResource())->GetGPUVirtualAddress();
                 if (graphics) {
@@ -940,7 +940,7 @@ void D3D12Renderer::BindRootParameters(D3D12CommandList *commandList, bool graph
         } else if (rootParameter->ParameterType == D3D12_ROOT_PARAMETER_TYPE_SRV) {
             // 루트 레벨 SRV 설정
             UINT shaderRegister = rootParameter->Descriptor.ShaderRegister;
-            const RHIRenderer::GPUResource *srvResource = threadData.srvResources[shaderRegister];
+            const RHI::GPUResource *srvResource = threadData.srvResources[shaderRegister];
             if (srvResource) {
                 D3D12_GPU_VIRTUAL_ADDRESS gpuAddress = reinterpret_cast<ID3D12Resource *>(srvResource->GetNativeResource())->GetGPUVirtualAddress();
                 if (graphics) {
@@ -952,7 +952,7 @@ void D3D12Renderer::BindRootParameters(D3D12CommandList *commandList, bool graph
         } else if (rootParameter->ParameterType == D3D12_ROOT_PARAMETER_TYPE_UAV) {
             // 루트 레벨 UAV 설정
             UINT shaderRegister = rootParameter->Descriptor.ShaderRegister;
-            const RHIRenderer::GPUResource *uavResource = threadData.uavResources[shaderRegister];
+            const RHI::GPUResource *uavResource = threadData.uavResources[shaderRegister];
             if (uavResource) {
                 D3D12_GPU_VIRTUAL_ADDRESS gpuAddress = reinterpret_cast<ID3D12Resource *>(uavResource->GetNativeResource())->GetGPUVirtualAddress();
                 if (graphics) {

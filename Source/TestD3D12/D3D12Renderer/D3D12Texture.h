@@ -23,7 +23,7 @@
 
 class D3D12Renderer;
 
-class D3D12Texture : public RHIRenderer::Texture {
+class D3D12Texture : public RHI::Texture {
     friend class D3D12Renderer;
 
 public:
@@ -36,7 +36,7 @@ public:
 
     ID3D12Resource *                GetResource() const;
 
-    static void                     AdjustTextureFormat(bool useCompression, bool useNormalMap, Image::Format::Enum inFormat, Image::Format::Enum *outFormat);
+    static void                     AdjustTextureFormat(bool useCompression, bool useNormalMap, BE1::Image::Format::Enum inFormat, BE1::Image::Format::Enum *outFormat);
 
 private:
 #ifdef USE_D3D12_MEMALLOC
@@ -45,8 +45,8 @@ private:
     ID3D12Resource *                textureResource = nullptr;
 #endif
     D3D12_RESOURCE_DESC             textureDesc;
-    Array<D3D12_CPU_DESCRIPTOR_HANDLE> srvCpuDescriptorHandles;
-    Array<D3D12_CPU_DESCRIPTOR_HANDLE> rtvCpuDescriptorHandles;
-    Array<D3D12_CPU_DESCRIPTOR_HANDLE> dsvCpuDescriptorHandles;
-    Array<D3D12_CPU_DESCRIPTOR_HANDLE> uavCpuDescriptorHandles;
+    BE1::Array<D3D12_CPU_DESCRIPTOR_HANDLE> srvCpuDescriptorHandles;
+    BE1::Array<D3D12_CPU_DESCRIPTOR_HANDLE> rtvCpuDescriptorHandles;
+    BE1::Array<D3D12_CPU_DESCRIPTOR_HANDLE> dsvCpuDescriptorHandles;
+    BE1::Array<D3D12_CPU_DESCRIPTOR_HANDLE> uavCpuDescriptorHandles;
 };

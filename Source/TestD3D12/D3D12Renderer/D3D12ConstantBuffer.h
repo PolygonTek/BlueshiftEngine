@@ -21,7 +21,7 @@
 class D3D12Renderer;
 class D3D12FrameData;
 
-class D3D12ConstantBuffer : public RHIRenderer::ConstantBuffer {
+class D3D12ConstantBuffer : public RHI::ConstantBuffer {
     friend class D3D12Renderer;
     friend class D3D12FrameData;
 

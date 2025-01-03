@@ -12,5 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "Precompiled.h"
-#include "D3D12Mesh.h"
+#pragma once
+
+class Mesh {
+public:
+    virtual void                    InitMesh() = 0;
+    virtual void                    FreeMesh() = 0;
+};

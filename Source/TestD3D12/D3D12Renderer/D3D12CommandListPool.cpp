@@ -100,7 +100,7 @@ void D3D12CommandListPool::Init(ID3D12Device *device, int threadIndex, D3D12_COM
         D3D12CommandList *commandList = &commandListPool[i];
 
         commandList->node.SetOwner(commandList);
-        commandList->node.AddToEnd(freeCommandLists[to_int(RHIRenderer::CommandListType::Primary)]);
+        commandList->node.AddToEnd(freeCommandLists[to_int(RHI::CommandListType::Primary)]);
     }
 
     // 모든 Secondary 커맨드 리스트들을 free 상태로 초기화
@@ -108,7 +108,7 @@ void D3D12CommandListPool::Init(ID3D12Device *device, int threadIndex, D3D12_COM
         D3D12CommandList *commandList = &commandListPool[i];
 
         commandList->node.SetOwner(commandList);
-        commandList->node.AddToEnd(freeCommandLists[to_int(RHIRenderer::CommandListType::Secondary)]);
+        commandList->node.AddToEnd(freeCommandLists[to_int(RHI::CommandListType::Secondary)]);
     }
 
     usedCount = 0;
@@ -136,8 +136,8 @@ void D3D12CommandListPool::Clear() {
     assert(usedCount == 0);
 }
 
-D3D12CommandList *D3D12CommandListPool::Alloc(RHIRenderer::CommandListType type) {
-    LinkList<D3D12CommandList> &currentFreeCommandLists = freeCommandLists[to_int(type)];
+D3D12CommandList *D3D12CommandListPool::Alloc(RHI::CommandListType type) {
+    BE1::LinkList<D3D12CommandList> &currentFreeCommandLists = freeCommandLists[to_int(type)];
 
     if (currentFreeCommandLists.IsListEmpty()) {
         BE_ERRLOG("D3D12CommandListPool::Alooc: not enough free command list\n");
@@ -158,7 +158,7 @@ void D3D12CommandListPool::Free(D3D12CommandList* commandList) {
         return;
     }
 
-    LinkList<D3D12CommandList> &currentFreeCommandLists = freeCommandLists[to_int(commandList->secondary ? RHIRenderer::CommandListType::Secondary : RHIRenderer::CommandListType::Primary)];
+    BE1::LinkList<D3D12CommandList> &currentFreeCommandLists = freeCommandLists[to_int(commandList->secondary ? RHI::CommandListType::Secondary : RHI::CommandListType::Primary)];
     commandList->node.AddToEnd(currentFreeCommandLists);
 
     usedCount--;

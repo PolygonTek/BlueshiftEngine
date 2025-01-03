@@ -19,7 +19,7 @@
 
 class D3D12Renderer;
 
-class D3D12QueryHeap : public RHIRenderer::QueryHeap {
+class D3D12QueryHeap : public RHI::QueryHeap {
     friend class D3D12Renderer;
 
 public:

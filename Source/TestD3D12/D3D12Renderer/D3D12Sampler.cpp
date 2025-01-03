@@ -18,53 +18,53 @@
 #include "D3D12DescriptorPool.h"
 #include "D3D12CommandList.h"
 
-static constexpr D3D12_FILTER ToD3D12TextureFilter(RHIRenderer::TextureFilter filter) {
+static constexpr D3D12_FILTER ToD3D12TextureFilter(RHI::TextureFilter filter) {
     switch (filter) {
-    case RHIRenderer::TextureFilter::NearestMipmapNearest:
+    case RHI::TextureFilter::NearestMipmapNearest:
         return D3D12_FILTER_MIN_MAG_MIP_POINT;
-    case RHIRenderer::TextureFilter::LinearMipmapNearest:
+    case RHI::TextureFilter::LinearMipmapNearest:
         return D3D12_FILTER_MIN_MAG_LINEAR_MIP_POINT;
-    case RHIRenderer::TextureFilter::NearestMipmapLinear:
+    case RHI::TextureFilter::NearestMipmapLinear:
         return D3D12_FILTER_MIN_MAG_POINT_MIP_LINEAR;
-    case RHIRenderer::TextureFilter::LinearMipmapLinear:
+    case RHI::TextureFilter::LinearMipmapLinear:
         return D3D12_FILTER_MIN_MAG_MIP_LINEAR;
-    case RHIRenderer::TextureFilter::Anisotropic:
+    case RHI::TextureFilter::Anisotropic:
         return D3D12_FILTER_ANISOTROPIC;
     }
     assert(0);
     return D3D12_FILTER_MIN_MAG_MIP_POINT;
 }
 
-static constexpr D3D12_TEXTURE_ADDRESS_MODE ToD3D12TextureAddressMode(RHIRenderer::TextureAddressMode addressMode) {
+static constexpr D3D12_TEXTURE_ADDRESS_MODE ToD3D12TextureAddressMode(RHI::TextureAddressMode addressMode) {
     switch (addressMode) {
-    case RHIRenderer::TextureAddressMode::Repeat:
+    case RHI::TextureAddressMode::Repeat:
         return D3D12_TEXTURE_ADDRESS_MODE_WRAP;
-    case RHIRenderer::TextureAddressMode::MirroredRepeat:
+    case RHI::TextureAddressMode::MirroredRepeat:
         return D3D12_TEXTURE_ADDRESS_MODE_MIRROR;
-    case RHIRenderer::TextureAddressMode::Clamp:
+    case RHI::TextureAddressMode::Clamp:
         return D3D12_TEXTURE_ADDRESS_MODE_CLAMP;
-    case RHIRenderer::TextureAddressMode::ClampToBorder:
+    case RHI::TextureAddressMode::ClampToBorder:
         return D3D12_TEXTURE_ADDRESS_MODE_BORDER;
     }
     assert(0);
     return D3D12_TEXTURE_ADDRESS_MODE_WRAP;
 }
 
-static void ToD3D12TextureBorderColor(RHIRenderer::TextureBorderColor borderColor, FLOAT *float4BorderColor) {
+static void ToD3D12TextureBorderColor(RHI::TextureBorderColor borderColor, FLOAT *float4BorderColor) {
     switch (borderColor) {
-    case RHIRenderer::TextureBorderColor::OpaqueBlack:
+    case RHI::TextureBorderColor::OpaqueBlack:
         float4BorderColor[0] = 0.0f;
         float4BorderColor[1] = 0.0f;
         float4BorderColor[2] = 0.0f;
         float4BorderColor[3] = 1.0f;
         return;
-    case RHIRenderer::TextureBorderColor::OpaqueWhite:
+    case RHI::TextureBorderColor::OpaqueWhite:
         float4BorderColor[0] = 1.0f;
         float4BorderColor[1] = 1.0f;
         float4BorderColor[2] = 1.0f;
         float4BorderColor[3] = 1.0f;
         return;
-    case RHIRenderer::TextureBorderColor::TransparentBlack:
+    case RHI::TextureBorderColor::TransparentBlack:
         float4BorderColor[0] = 0.0f;
         float4BorderColor[1] = 0.0f;
         float4BorderColor[2] = 0.0f;
@@ -81,7 +81,7 @@ void D3D12Sampler::Release() {
     }
 }
 
-RHIRenderer::Sampler *D3D12Renderer::CreateSampler(const SamplerDesc *desc) {
+RHI::Sampler *D3D12Renderer::CreateSampler(const RHI::SamplerDesc *desc) {
     D3D12_SAMPLER_DESC samplerDesc;
     samplerDesc.Filter = ToD3D12TextureFilter(desc->filter);
     samplerDesc.AddressU = ToD3D12TextureAddressMode(desc->addressModeU);
@@ -106,11 +106,11 @@ RHIRenderer::Sampler *D3D12Renderer::CreateSampler(const SamplerDesc *desc) {
     return sampler;
 }
 
-void D3D12Renderer::DestroySampler(Sampler *sampler, bool immediate) {
+void D3D12Renderer::DestroySampler(RHI::Sampler *sampler, bool immediate) {
     delete sampler;
 }
 
-void D3D12Renderer::SetSampler(CommandList *commandList, int slot, Sampler *sampler) {
+void D3D12Renderer::SetSampler(RHI::CommandList *commandList, int slot, RHI::Sampler *sampler) {
     D3D12CommandList *d3d12CommandList = static_cast<D3D12CommandList *>(commandList);
     int threadIndex = d3d12CommandList->GetThreadIndex();
 

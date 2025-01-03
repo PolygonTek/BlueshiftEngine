@@ -24,9 +24,9 @@ void D3D12VertexBuffer::Release() {
     }
 }
 
-RHIRenderer::VertexBuffer* D3D12Renderer::CreateVertexBuffer(BufferUsage usage, uint32_t vertexSize, uint32_t numVerts, void *data) {
+RHI::VertexBuffer* D3D12Renderer::CreateVertexBuffer(RHI::BufferUsage usage, uint32_t vertexSize, uint32_t numVerts, void *data) {
     UINT size = vertexSize * numVerts;
-    D3D12Buffer *buffer = static_cast<D3D12Buffer *>(CreateBuffer(usage, ResourceFlag::VertexBuffer, size, Image::Format::Unknown, 0, data));
+    D3D12Buffer *buffer = static_cast<D3D12Buffer *>(CreateBuffer(usage, RHI::ResourceFlag::VertexBuffer, size, BE1::Image::Format::Unknown, 0, data));
     if (!buffer) {
         return nullptr;
     }
@@ -41,7 +41,7 @@ RHIRenderer::VertexBuffer* D3D12Renderer::CreateVertexBuffer(BufferUsage usage, 
     return vertexBuffer;
 }
 
-void D3D12Renderer::DestroyVertexBuffer(VertexBuffer *vertexBuffer, bool immediate) {
+void D3D12Renderer::DestroyVertexBuffer(RHI::VertexBuffer *vertexBuffer, bool immediate) {
     if (immediate) {
         delete vertexBuffer;
     } else {
@@ -49,7 +49,7 @@ void D3D12Renderer::DestroyVertexBuffer(VertexBuffer *vertexBuffer, bool immedia
     }
 }
 
-void D3D12Renderer::SetVertexBuffer(CommandList *commandList, int slot, const VertexBuffer *vertexBuffer) {
+void D3D12Renderer::SetVertexBuffer(RHI::CommandList *commandList, int slot, const RHI::VertexBuffer *vertexBuffer) {
     D3D12CommandList *d3d12CommandList = static_cast<D3D12CommandList *>(commandList);
     d3d12CommandList->SetVertexBuffer(slot, vertexBuffer);
 }

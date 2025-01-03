@@ -19,7 +19,7 @@
 
 class D3D12Renderer;
 
-class D3D12Shader : public RHIRenderer::Shader {
+class D3D12Shader : public RHI::Shader {
     friend class D3D12Renderer;
 
 public:

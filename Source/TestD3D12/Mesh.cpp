@@ -13,4 +13,4 @@
 // limitations under the License.
 
 #include "Precompiled.h"
-#include "D3D12GameObject.h"
+#include "Mesh.h"

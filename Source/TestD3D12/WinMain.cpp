@@ -16,7 +16,7 @@
 #include "Platform/PlatformSystem.h"
 #include "Platform/Windows/PlatformWinUtils.h"
 #include "WinResource.h"
-#include "D3D12App.h"
+#include "App.h"
 #include "D3D12Renderer/D3D12Renderer.h"
 #include <tchar.h>
 
@@ -31,21 +31,21 @@ static WCHAR                windowTitleString[256];
 LRESULT CALLBACK            MainWndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam);
 
 static void SystemLog(int logLevel, const char* text) {
-    int len = PlatformWinUtils::UTF8ToUCS2(text, nullptr, 0);
+    int len = BE1::PlatformWinUtils::UTF8ToUCS2(text, nullptr, 0);
     wchar_t* wText = (wchar_t *)alloca(sizeof(wchar_t) * len);
-    PlatformWinUtils::UTF8ToUCS2(text, wText, len);
+    BE1::PlatformWinUtils::UTF8ToUCS2(text, wText, len);
 
     OutputDebugString(wText);
 }
 
 static void SystemError(int errLevel, const char* text) {
-    int len = PlatformWinUtils::UTF8ToUCS2(text, nullptr, 0);
+    int len = BE1::PlatformWinUtils::UTF8ToUCS2(text, nullptr, 0);
     wchar_t* wText = (wchar_t *)alloca(sizeof(wchar_t) * len);
-    PlatformWinUtils::UTF8ToUCS2(text, wText, len);
+    BE1::PlatformWinUtils::UTF8ToUCS2(text, wText, len);
 
     HWND hwnd = FindWindow(mainWindowClassName, nullptr);
     MessageBox(hwnd, wText, L"Error", MB_OK);
-    if (errLevel == ErrorLevel::Fatal) {
+    if (errLevel == BE1::ErrorLevel::Fatal) {
         exit(0);
     }
 }
@@ -53,7 +53,7 @@ static void SystemError(int errLevel, const char* text) {
 static HWND CreateRenderWindow(const TCHAR* title, const TCHAR* classname, int width, int height, bool fullscreen) {
     int style = WS_VISIBLE;
     int styleEx;
-    Rect windowRect;
+    BE1::Rect windowRect;
 
     if (fullscreen) {
         styleEx = WS_EX_TOPMOST;
@@ -114,7 +114,7 @@ static void ChangeRenderWindow(HWND hwnd, int width, int height, bool fullscreen
     ::SetRect(&rect, 0, 0, width, height);
     ::AdjustWindowRect(&rect, style, 0);
     
-    Rect windowRect;
+    BE1::Rect windowRect;
     windowRect.w = rect.right - rect.left;
     windowRect.h = rect.bottom - rect.top;
 
@@ -154,28 +154,28 @@ static HWND CreateMainWindow(const TCHAR* title, int width, int height) {
 }
 
 static BOOL InitInstance(int nCmdShow) {
-    Engine::isMainThread = true;
-    Str execPath = PlatformFile::ExecutablePath();
-    Str basePath = execPath;
+    BE1::Engine::isMainThread = true;
+    BE1::Str execPath = BE1::PlatformFile::ExecutablePath();
+    BE1::Str basePath = execPath;
     basePath.AppendPath("../../..");
     basePath.CleanPath();
-    Engine::InitBase(basePath, SystemLog, SystemError);
+    BE1::Engine::InitBase(basePath, SystemLog, SystemError);
 
     // Win64 폴더를 추가적인 DLL 폴더로 추가
-    Str commonDllPath = execPath;
+    BE1::Str commonDllPath = execPath;
     commonDllPath.AppendPath("..");
     commonDllPath.CleanPath();
     //PlatformProcess::AddDllDirectory(commonDllPath);
     char pathBuffer[4096];
-    PlatformSystem::GetEnvVar("PATH", pathBuffer, 4096);
-    Str newPath = commonDllPath + ";" + pathBuffer;
-    PlatformSystem::SetEnvVar("PATH", newPath);
+    BE1::PlatformSystem::GetEnvVar("PATH", pathBuffer, 4096);
+    BE1::Str newPath = commonDllPath + ";" + pathBuffer;
+    BE1::PlatformSystem::SetEnvVar("PATH", newPath);
 
     char temp[128];
-    Str::snPrintf(temp, sizeof(temp), "%ls %s %s %s", szTitle, PlatformProcess::PlatformName(), __DATE__, __TIME__);
+    BE1::Str::snPrintf(temp, sizeof(temp), "%ls %s %s %s", szTitle, BE1::PlatformProcess::PlatformName(), __DATE__, __TIME__);
 
     wchar_t szFullTitle[128];
-    PlatformWinUtils::UTF8ToUCS2(temp, szFullTitle, COUNT_OF(szFullTitle));
+    BE1::PlatformWinUtils::UTF8ToUCS2(temp, szFullTitle, COUNT_OF(szFullTitle));
 
     hwndMain = CreateMainWindow(szFullTitle, 1024, 768);
 
@@ -189,7 +189,7 @@ static BOOL InitInstance(int nCmdShow) {
 static void ShutdownInstance() {
     app.Shutdown();
 
-    Engine::ShutdownBase();
+    BE1::Engine::ShutdownBase();
 }
 
 static bool ProcessEventLoop() {
@@ -257,12 +257,12 @@ int APIENTRY _tWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPTSTR lpCm
 
     GetWindowText(hwndMain, windowTitleString, COUNT_OF(windowTitleString));
 
-    int t0 = PlatformTime::Milliseconds();
+    int t0 = BE1::PlatformTime::Milliseconds();
 
     while (1) {
-        int t = PlatformTime::Milliseconds();
+        int t = BE1::PlatformTime::Milliseconds();
         int elapsedMsec = t - t0;
-        Clamp(elapsedMsec, 0, 1000);
+        BE1::Clamp(elapsedMsec, 0, 1000);
 
         t0 = t;
 

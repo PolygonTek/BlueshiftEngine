@@ -16,21 +16,21 @@
 #include "D3D12CommandList.h"
 #include "D3D12CommandListPool.h"
 
-static constexpr D3D12_SHADING_RATE ToD3D12ShadingRate(RHIRenderer::ShadingRate shadingRate) {
+static constexpr D3D12_SHADING_RATE ToD3D12ShadingRate(RHI::ShadingRate shadingRate) {
     switch (shadingRate) {
-    case RHIRenderer::ShadingRate::Rate1X1:
+    case RHI::ShadingRate::Rate1X1:
         return D3D12_SHADING_RATE_1X1;
-    case RHIRenderer::ShadingRate::Rate1X2:
+    case RHI::ShadingRate::Rate1X2:
         return D3D12_SHADING_RATE_1X2;
-    case RHIRenderer::ShadingRate::Rate2X1:
+    case RHI::ShadingRate::Rate2X1:
         return D3D12_SHADING_RATE_2X1;
-    case RHIRenderer::ShadingRate::Rate2X2:
+    case RHI::ShadingRate::Rate2X2:
         return D3D12_SHADING_RATE_2X2;
-    case RHIRenderer::ShadingRate::Rate2X4:
+    case RHI::ShadingRate::Rate2X4:
         return D3D12_SHADING_RATE_2X4;
-    case RHIRenderer::ShadingRate::Rate4X2:
+    case RHI::ShadingRate::Rate4X2:
         return D3D12_SHADING_RATE_4X2;
-    case RHIRenderer::ShadingRate::Rate4X4:
+    case RHI::ShadingRate::Rate4X4:
         return D3D12_SHADING_RATE_4X4;
     }
     return D3D12_SHADING_RATE_1X1;
@@ -47,7 +47,7 @@ int D3D12CommandList::GetThreadIndex() const {
     return parentPool->GetThreadIndex();
 }
 
-void D3D12CommandList::SetShadingRate(RHIRenderer::ShadingRate shadingRate) {
+void D3D12CommandList::SetShadingRate(RHI::ShadingRate shadingRate) {
     D3D12_SHADING_RATE rate = ToD3D12ShadingRate(shadingRate);
 #ifdef USE_STATE_CACHE_FOR_COMMAND_LIST
     if (cachedShadingRate == rate) {

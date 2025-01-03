@@ -22,7 +22,7 @@ class D3D12Renderer;
 class D3D12CommandList;
 class D3D12FrameData;
 
-class D3D12VertexBuffer : public RHIRenderer::VertexBuffer {
+class D3D12VertexBuffer : public RHI::VertexBuffer {
     friend class D3D12Renderer;
     friend class D3D12CommandList;
     friend class D3D12FrameData;

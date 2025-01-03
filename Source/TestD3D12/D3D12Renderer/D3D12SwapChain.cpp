@@ -41,7 +41,7 @@ D3D12SwapChain *D3D12Renderer::CreateSwapChain(HWND hwnd, uint32_t width, uint32
     swapChainFullscreenDesc.Windowed = TRUE;
 
     IDXGISwapChain1 *dxgiSwapChain1 = nullptr;
-    HRESULT hr = dxgiFactory->CreateSwapChainForHwnd(commandQueues[to_int(CommandQueueType::Graphics)], hwnd, &swapChainDesc, &swapChainFullscreenDesc, nullptr, &dxgiSwapChain1);
+    HRESULT hr = dxgiFactory->CreateSwapChainForHwnd(commandQueues[to_int(RHI::CommandQueueType::Graphics)], hwnd, &swapChainDesc, &swapChainFullscreenDesc, nullptr, &dxgiSwapChain1);
     if (FAILED(hr)) {
         BE_FATALERROR("CreateSwapChainForHwnd failed, ERROR: 0x%x", hr);
     }

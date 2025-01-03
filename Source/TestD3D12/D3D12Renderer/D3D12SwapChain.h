@@ -19,7 +19,7 @@
 
 class D3D12Renderer;
 
-class D3D12SwapChain : public RHIRenderer::SwapChain {
+class D3D12SwapChain : public RHI::SwapChain {
     friend class D3D12Renderer;
 
 public:
@@ -47,6 +47,6 @@ private:
     ID3D12Resource *                renderTargetBuffers[NumSwapChainBuffers] = {};
     D3D12_CPU_DESCRIPTOR_HANDLE     rtvDescriptorHandles[NumSwapChainBuffers] = {};
     uint32_t                        currentBackBufferIndex = 0;
-    Rect                            viewportRect;
-    Rect                            scissorRect;
+    BE1::Rect                       viewportRect;
+    BE1::Rect                       scissorRect;
 };

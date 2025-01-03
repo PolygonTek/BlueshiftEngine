@@ -14,21 +14,21 @@
 
 #pragma once
 
-class D3D12Mesh;
+class Mesh;
 
-enum class MeshType : byte {
+enum class MeshType : uint8_t {
     None,
     TriangleMesh,
     CubeMesh
 };
 
-class D3D12RenderObject {
+class RenderObject {
 public:
     struct State {
         MeshType            meshType = MeshType::None;
-        std::shared_ptr<D3D12Mesh> mesh;
-        Mat3x4              worldMatrix;
-        Vec2                offset;
+        std::shared_ptr<Mesh> mesh;
+        BE1::Mat3x4         worldMatrix;
+        BE1::Vec2           offset;
     };
 
     State &                 GetState() { return state; }

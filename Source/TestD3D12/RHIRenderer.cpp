@@ -26,66 +26,66 @@ void RHIRenderer::Shutdown() {
 }
 
 void RHIRenderer::SetupStates() {
-    RasterizerState *rs = &rasterizerStates[to_int(RasterizerStateType::SolidFrontSided)];
-    rs->fillMode = FillMode::Solid;
-    rs->cullMode = CullMode::Back;
+    RHI::RasterizerState *rs = &rasterizerStates[to_int(RHI::RasterizerStateType::SolidFrontSided)];
+    rs->fillMode = RHI::FillMode::Solid;
+    rs->cullMode = RHI::CullMode::Back;
 
-    rs = &rasterizerStates[to_int(RasterizerStateType::SolidBackSided)];
-    rs->fillMode = FillMode::Solid;
-    rs->cullMode = CullMode::Front;
+    rs = &rasterizerStates[to_int(RHI::RasterizerStateType::SolidBackSided)];
+    rs->fillMode = RHI::FillMode::Solid;
+    rs->cullMode = RHI::CullMode::Front;
 
-    rs = &rasterizerStates[to_int(RasterizerStateType::Wire)];
-    rs->fillMode = FillMode::Wire;
-    rs->cullMode = CullMode::None;
+    rs = &rasterizerStates[to_int(RHI::RasterizerStateType::Wire)];
+    rs->fillMode = RHI::FillMode::Wire;
+    rs->cullMode = RHI::CullMode::None;
 
-    rs = &rasterizerStates[to_int(RasterizerStateType::WireSmooth)];
-    rs->fillMode = FillMode::Wire;
-    rs->cullMode = CullMode::None;
+    rs = &rasterizerStates[to_int(RHI::RasterizerStateType::WireSmooth)];
+    rs->fillMode = RHI::FillMode::Wire;
+    rs->cullMode = RHI::CullMode::None;
     rs->smoothLineEnabled = true;
 
-    DepthStencilState *dss = &depthStencilStates[to_int(DepthStencilStateType::Default)];
+    RHI::DepthStencilState *dss = &depthStencilStates[to_int(RHI::DepthStencilStateType::Default)];
     dss->depthTestEnabled = true;
-    dss->depthWriteMask = DepthWriteMask::All;
-    dss->depthFunc = ComparisonFunc::LEqual;
+    dss->depthWriteMask = RHI::DepthWriteMask::All;
+    dss->depthFunc = RHI::ComparisonFunc::LEqual;
 
-    BlendState *bs = &blendStates[to_int(BlendStateType::AlphaBlend)];
+    RHI::BlendState *bs = &blendStates[to_int(RHI::BlendStateType::AlphaBlend)];
     bs->renderTargets[0].blendEnabled = true;
-    bs->renderTargets[0].srcFactorColor = Blend::SrcAlpha;
-    bs->renderTargets[0].destFactorColor = Blend::InvSrcAlpha;
-    bs->renderTargets[0].blendOpColor = BlendOp::Add;
-    bs->renderTargets[0].srcFactorAlpha = Blend::One;
-    bs->renderTargets[0].destFactorAlpha = Blend::Zero;
-    bs->renderTargets[0].blendOpAlpha = BlendOp::Add;
+    bs->renderTargets[0].srcFactorColor = RHI::Blend::SrcAlpha;
+    bs->renderTargets[0].destFactorColor = RHI::Blend::InvSrcAlpha;
+    bs->renderTargets[0].blendOpColor = RHI::BlendOp::Add;
+    bs->renderTargets[0].srcFactorAlpha = RHI::Blend::One;
+    bs->renderTargets[0].destFactorAlpha = RHI::Blend::Zero;
+    bs->renderTargets[0].blendOpAlpha = RHI::BlendOp::Add;
 
-    bs = &blendStates[to_int(BlendStateType::Add)];
+    bs = &blendStates[to_int(RHI::BlendStateType::Add)];
     bs->renderTargets[0].blendEnabled = true;
-    bs->renderTargets[0].srcFactorColor = Blend::One;
-    bs->renderTargets[0].destFactorColor = Blend::One;
-    bs->renderTargets[0].blendOpColor = BlendOp::Add;
-    bs->renderTargets[0].srcFactorAlpha = Blend::One;
-    bs->renderTargets[0].destFactorAlpha = Blend::Zero;
-    bs->renderTargets[0].blendOpAlpha = BlendOp::Add;
+    bs->renderTargets[0].srcFactorColor = RHI::Blend::One;
+    bs->renderTargets[0].destFactorColor = RHI::Blend::One;
+    bs->renderTargets[0].blendOpColor = RHI::BlendOp::Add;
+    bs->renderTargets[0].srcFactorAlpha = RHI::Blend::One;
+    bs->renderTargets[0].destFactorAlpha = RHI::Blend::Zero;
+    bs->renderTargets[0].blendOpAlpha = RHI::BlendOp::Add;
 }
 
-RHIRenderer::GPUBarrier RHIRenderer::MakeMemoryBarrier(const GPUResource *resource) {
-    GPUBarrier barrier;
-    barrier.type = GPUBarrier::Type::Memory;
+RHI::GPUBarrier RHIRenderer::MakeMemoryBarrier(const RHI::GPUResource *resource) {
+    RHI::GPUBarrier barrier;
+    barrier.type = RHI::GPUBarrier::Type::Memory;
     barrier.memoryBarrier.resource = resource;
     return barrier;
 }
 
-RHIRenderer::GPUBarrier RHIRenderer::MakeBufferBarrier(const RHIRenderer::Buffer *buffer, GPUResourceState stateBefore, GPUResourceState stateAfter) {
-    GPUBarrier barrier;
-    barrier.type = GPUBarrier::Type::Buffer;
+RHI::GPUBarrier RHIRenderer::MakeBufferBarrier(const RHI::Buffer *buffer, RHI::GPUResourceState stateBefore, RHI::GPUResourceState stateAfter) {
+    RHI::GPUBarrier barrier;
+    barrier.type = RHI::GPUBarrier::Type::Buffer;
     barrier.bufferBarrier.buffer = buffer;
     barrier.bufferBarrier.stateBefore = stateBefore;
     barrier.bufferBarrier.stateAfter = stateAfter;
     return barrier;
 }
 
-RHIRenderer::GPUBarrier RHIRenderer::MakeImageBarrier(const Texture *texture, GPUResourceState stateBefore, GPUResourceState stateAfter, int slice, int mipLevel) {
-    GPUBarrier barrier;
-    barrier.type = GPUBarrier::Type::Image;
+RHI::GPUBarrier RHIRenderer::MakeImageBarrier(const RHI::Texture *texture, RHI::GPUResourceState stateBefore, RHI::GPUResourceState stateAfter, int slice, int mipLevel) {
+    RHI::GPUBarrier barrier;
+    barrier.type = RHI::GPUBarrier::Type::Image;
     barrier.imageBarrier.texture = texture;
     barrier.imageBarrier.stateBefore = stateBefore;
     barrier.imageBarrier.stateAfter = stateAfter;
@@ -94,36 +94,36 @@ RHIRenderer::GPUBarrier RHIRenderer::MakeImageBarrier(const Texture *texture, GP
     return barrier;
 }
 
-RHIRenderer::GPUBarrier RHIRenderer::MakeAliasingBarrier(const GPUResource *resourceBefore, const GPUResource *resourceAfter) {
-    GPUBarrier barrier;
-    barrier.type = GPUBarrier::Type::Aliasing;
+RHI::GPUBarrier RHIRenderer::MakeAliasingBarrier(const RHI::GPUResource *resourceBefore, const RHI::GPUResource *resourceAfter) {
+    RHI::GPUBarrier barrier;
+    barrier.type = RHI::GPUBarrier::Type::Aliasing;
     barrier.aliasingBarrier.resourceBefore = resourceBefore;
     barrier.aliasingBarrier.resourceAfter = resourceAfter;
     return barrier;
 }
 
-RHIRenderer::Texture *RHIRenderer::CreateTextureFromFile(TextureType textureType, ResourceFlag flags, const char *filename, bool useCompression, bool useNormalMap) {
-    Image *image = Image::NewImageFromFile(filename);
+RHI::Texture *RHIRenderer::CreateTextureFromFile(RHI::TextureType textureType, RHI::ResourceFlag flags, const char *filename, bool useCompression, bool useNormalMap) {
+    BE1::Image *image = BE1::Image::NewImageFromFile(filename);
     if (!image) {
         return nullptr;
     }
 
-    Image::Format::Enum dstFormat;
+    BE1::Image::Format::Enum dstFormat;
     AdjustTextureFormat(useCompression, useNormalMap, image->GetFormat(), &dstFormat);
 
-    Texture *texture = CreateTexture(textureType, flags, image, dstFormat, true);
+    RHI::Texture *texture = CreateTexture(textureType, flags, image, dstFormat, true);
     delete image;
 
     return texture;
 }
 
-void RHIRenderer::AdjustTextureFormat(bool useCompression, bool useNormalMap, Image::Format::Enum inFormat, Image::Format::Enum *outFormat) {
-    if (Image::IsDepthFormat(inFormat) || Image::IsDepthStencilFormat(inFormat)) {
+void RHIRenderer::AdjustTextureFormat(bool useCompression, bool useNormalMap, BE1::Image::Format::Enum inFormat, BE1::Image::Format::Enum *outFormat) {
+    if (BE1::Image::IsDepthFormat(inFormat) || BE1::Image::IsDepthStencilFormat(inFormat)) {
         *outFormat = inFormat;
         return;
     }
 
-    if (Image::IsCompressed(inFormat)) {
+    if (BE1::Image::IsCompressed(inFormat)) {
         if (IsSupportedImageFormat(inFormat)) {
             *outFormat = inFormat;
             return;

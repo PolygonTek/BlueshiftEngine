@@ -19,7 +19,7 @@
 #include "D3D12CommandListPool.h"
 #include "D3D12RootDescriptorPool.h"
 #include "D3D12DescriptorPool.h"
-#include "../D3D12VisObject.h"
+#include "../VisObject.h"
 
 static constexpr uint32_t DynamicAllocationBlockSize = 65536 * 64;
 static constexpr uint32_t MaxMemSizePerBlock = 0x1000000;
@@ -128,7 +128,7 @@ void D3D12FrameData::BeginFrame() {
 }
 
 void D3D12FrameData::EndFrame() {
-    fenceValue = renderer->SignalFence(RHIRenderer::CommandQueueType::Graphics);
+    fenceValue = renderer->SignalFence(RHI::CommandQueueType::Graphics);
 }
 
 void D3D12FrameData::InitMemBlocks() {
@@ -154,7 +154,7 @@ D3D12FrameData::MemBlock *D3D12FrameData::AllocMemBlock() {
         BE_FATALERROR("D3D12FrameData::AllocMemBlock: failed to allocate memory");
     }
 
-    block->base = (byte *)AlignUp((intptr_t)block + sizeof(*block), MemAlignSize);
+    block->base = (byte *)BE1::AlignUp((intptr_t)block + sizeof(*block), MemAlignSize);
     block->size = MaxMemSizePerBlock;
     block->used = 0;
     block->next = nullptr;
@@ -162,7 +162,7 @@ D3D12FrameData::MemBlock *D3D12FrameData::AllocMemBlock() {
 }
 
 void *D3D12FrameData::MemAlloc(int size) {
-    size = AlignUp(size, MemAlignSize);
+    size = BE1::AlignUp(size, MemAlignSize);
     if (size > MaxMemSizePerBlock) {
         BE_FATALERROR("D3D12FrameData::MemAlloc: %i exceeded MaxMemSizePerBlock", size);
     }
@@ -186,7 +186,7 @@ void *D3D12FrameData::MemAlloc(int size) {
 
 void *D3D12FrameData::ClearedMemAlloc(int size) {
     void *mem = MemAlloc(size);
-    simdProcessor->Memset(mem, 0, size);
+    BE1::simdProcessor->Memset(mem, 0, size);
     return mem;
 }
 
@@ -202,15 +202,15 @@ void D3D12FrameData::ClearMemAllocs() {
     }
 }
 
-D3D12VisObject* D3D12FrameData::AllocVisObjects(int numVisObjects) {
+VisObject* D3D12FrameData::AllocVisObjects(int numVisObjects) {
     assert(!visObjects);
 
     this->numVisObjects = numVisObjects;
-    this->visObjects = (D3D12VisObject *)MemAlloc(sizeof(D3D12VisObject) * numVisObjects);
+    this->visObjects = (VisObject *)MemAlloc(sizeof(VisObject) * numVisObjects);
 
     // placement new 로 생성자 호출
     for (int visObjectIndex = 0; visObjectIndex < numVisObjects; ++visObjectIndex) {
-        new (visObjects + visObjectIndex) D3D12VisObject();
+        new (visObjects + visObjectIndex) VisObject();
     }
     return visObjects;
 }
@@ -222,20 +222,20 @@ void D3D12FrameData::FreeVisObjects() {
 
     // 소멸자 호출
     for (int visObjectIndex = 0; visObjectIndex < numVisObjects; ++visObjectIndex) {
-        (visObjects + visObjectIndex)->~D3D12VisObject();
+        (visObjects + visObjectIndex)->~VisObject();
     }
 
     visObjects = nullptr;
     numVisObjects = 0;
 }
 
-RHIRenderer::ConstantBuffer *D3D12FrameData::AllocConstant(int threadIndex, uint32_t size) {
+RHI::ConstantBuffer *D3D12FrameData::AllocConstant(int threadIndex, uint32_t size) {
     DataPerThread *data = &threadData[threadIndex];
     D3D12DynamicAllocation *currentDynamicAllocation = data->dynamicAllocations.Last();
 
     // 상수 버퍼의 오프셋 & 크기는 256 바이트 단위로 정렬
-    uint32_t alignedOffset = AlignUp(currentDynamicAllocation->usedBytes, D3D12_CONSTANT_BUFFER_DATA_PLACEMENT_ALIGNMENT);
-    uint32_t alignedSize = AlignUp(size, D3D12_CONSTANT_BUFFER_DATA_PLACEMENT_ALIGNMENT);
+    uint32_t alignedOffset = BE1::AlignUp(currentDynamicAllocation->usedBytes, D3D12_CONSTANT_BUFFER_DATA_PLACEMENT_ALIGNMENT);
+    uint32_t alignedSize = BE1::AlignUp(size, D3D12_CONSTANT_BUFFER_DATA_PLACEMENT_ALIGNMENT);
 
     // 상수 버퍼의 크기는 64kb 를 넘길 수 없다
     if (alignedSize > D3D12_REQ_CONSTANT_BUFFER_ELEMENT_COUNT * 16) {
@@ -272,12 +272,12 @@ RHIRenderer::ConstantBuffer *D3D12FrameData::AllocConstant(int threadIndex, uint
     return &data->dynamicConstantBuffers.Last();
 }
 
-RHIRenderer::VertexBuffer *D3D12FrameData::AllocVertex(int threadIndex, uint32_t vertexSize, uint32_t count) {
+RHI::VertexBuffer *D3D12FrameData::AllocVertex(int threadIndex, uint32_t vertexSize, uint32_t count) {
     DataPerThread *data = &threadData[threadIndex];
     D3D12DynamicAllocation *currentDynamicAllocation = data->dynamicAllocations.Last();
 
     // 버텍스 버퍼의 오프셋은 4 바이트 단위로 정렬
-    uint32_t alignedOffset = AlignUp(currentDynamicAllocation->usedBytes, 4);
+    uint32_t alignedOffset = BE1::AlignUp(currentDynamicAllocation->usedBytes, 4);
     uint32_t size = vertexSize * count;
 
     // 필요한 데이터의 크기가 다이나믹 버퍼의 크기를 넘어간다면 추가로 다이나믹 버퍼를 생성한다.
@@ -298,12 +298,12 @@ RHIRenderer::VertexBuffer *D3D12FrameData::AllocVertex(int threadIndex, uint32_t
     return &data->dynamicVertexBuffers.Last();
 }
 
-RHIRenderer::IndexBuffer *D3D12FrameData::AllocIndex(int threadIndex, uint32_t indexSize, uint32_t count) {
+RHI::IndexBuffer *D3D12FrameData::AllocIndex(int threadIndex, uint32_t indexSize, uint32_t count) {
     DataPerThread *data = &threadData[threadIndex];
     D3D12DynamicAllocation *currentDynamicAllocation = data->dynamicAllocations.Last();
 
     // 인덱스 버퍼의 오프셋은 4 바이트 단위로 정렬
-    uint32_t alignedOffset = AlignUp(currentDynamicAllocation->usedBytes, 4);
+    uint32_t alignedOffset = BE1::AlignUp(currentDynamicAllocation->usedBytes, 4);
     uint32_t size = indexSize * count;
 
     // 필요한 데이터의 크기가 다이나믹 버퍼의 크기를 넘어간다면 추가로 다이나믹 버퍼를 생성한다.
@@ -324,13 +324,13 @@ RHIRenderer::IndexBuffer *D3D12FrameData::AllocIndex(int threadIndex, uint32_t i
     return &data->dynamicIndexBuffers.Last();
 }
 
-RHIRenderer::Buffer *D3D12FrameData::AllocBuffer(int threadIndex, bool shaderWritable, Image::Format::Enum format, uint32_t structureByteStride, uint32_t count) {
+RHI::Buffer *D3D12FrameData::AllocBuffer(int threadIndex, bool shaderWritable, BE1::Image::Format::Enum format, uint32_t structureByteStride, uint32_t count) {
     DataPerThread *data = &threadData[threadIndex];
     D3D12DynamicAllocation *currentDynamicAllocation = data->dynamicAllocations.Last();
 
     // 버퍼의 오프셋은 stride 단위로 정렬
-    uint32_t stride = format == Image::Format::Unknown ? structureByteStride : Image::BytesPerPixel(format);
-    uint32_t alignedOffset = AlignUp(currentDynamicAllocation->usedBytes, stride);
+    uint32_t stride = format == BE1::Image::Format::Unknown ? structureByteStride : BE1::Image::BytesPerPixel(format);
+    uint32_t alignedOffset = BE1::AlignUp(currentDynamicAllocation->usedBytes, stride);
     uint32_t size = stride * count;
 
     // 필요한 데이터의 크기가 다이나믹 버퍼의 크기를 넘어간다면 추가로 다이나믹 버퍼를 생성한다.
@@ -393,9 +393,9 @@ RHIRenderer::Buffer *D3D12FrameData::AllocBuffer(int threadIndex, bool shaderWri
 
 D3D12DynamicAllocation::D3D12DynamicAllocation(uint64_t size) {
     // 업로드 버퍼 생성
-    buffer = static_cast<D3D12Buffer *>(renderer->CreateBuffer(RHIRenderer::BufferUsage::Upload,
-        RHIRenderer::ResourceFlag::ConstantBuffer | RHIRenderer::ResourceFlag::VertexBuffer | RHIRenderer::ResourceFlag::IndexBuffer | RHIRenderer::ResourceFlag::ShaderResource,
-        size, Image::Format::R_32_TYPELESS, 0, nullptr));
+    buffer = static_cast<D3D12Buffer *>(renderer->CreateBuffer(RHI::BufferUsage::Upload,
+        RHI::ResourceFlag::ConstantBuffer | RHI::ResourceFlag::VertexBuffer | RHI::ResourceFlag::IndexBuffer | RHI::ResourceFlag::ShaderResource,
+        size, BE1::Image::Format::R_32_TYPELESS, 0, nullptr));
 
     // 버퍼를 프로그램이 끝날 때 까지 Map 해놓고 쓴다. (Pinned) 
     buffer->GetResource()->Map(0, nullptr, reinterpret_cast<void **>(&mappedBase));

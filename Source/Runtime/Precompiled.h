@@ -179,8 +179,122 @@
 #include <atomic>
 #include <thread>
 
-#define BE1 BE1
-#define BE_NAMESPACE_BEGIN namespace BE1 {
+template <typename T>
+inline T *address_of(T &&in) {
+    return &in;
+}
+
+template <typename EnumType>
+constexpr std::underlying_type_t<EnumType> to_int(EnumType e) noexcept {
+    return static_cast<std::underlying_type_t<EnumType>>(e);
+}
+
+template <bool... B>
+struct static_all_of;
+
+// Do recursion if the first argument is true.
+template <bool... Tail>
+struct static_all_of<true, Tail...> : static_all_of<Tail...> {};
+
+// End recursion if first argument is false.
+template <bool... Tail>
+struct static_all_of<false, Tail...> : std::false_type {};
+
+// End recursion if no more arguments need to be processed.
+template <> struct static_all_of<> : std::true_type {};
+
+template <typename T, typename... Ts>
+struct is_same_all : static_all_of<std::is_same<typename std::decay<Ts>::type, T>::value...> {};
+
+template <typename T, typename... Ts>
+struct is_assignable_all : static_all_of<std::is_assignable<T, Ts>::value...> {};
+
+template <typename T1, typename T2>
+inline const ptrdiff_t offset_of(T1 T2:: *member) {
+    static char obj_dummy[sizeof(T2)];
+    const T2 *obj = reinterpret_cast<T2 *>(obj_dummy);
+    return ptrdiff_t(intptr_t(&(obj->*member)) - intptr_t(obj));
+}
+
+template <typename T, std::size_t N>
+constexpr std::size_t count_of(T(&)[N]) {
+    return N;
+}
+
+template <class T>
+constexpr size_t hash_combine(size_t &seed, const T &v) {
+    std::hash<T> hasher;
+    return seed ^ hasher(v) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
+}
+
+template <typename T>
+struct return_type;
+
+template <typename R, typename... Args>
+struct return_type<R(*)(Args...)> { using type = R; };
+
+template <typename R, typename C, typename... Args>
+struct return_type<R(C:: *)(Args...)> { using type = R; };
+
+template <typename R, typename C, typename... Args>
+struct return_type<R(C:: *)(Args...) const> { using type = R; };
+
+template <typename R, typename C, typename... Args>
+struct return_type<R(C:: *)(Args...) volatile> { using type = R; };
+
+template <typename R, typename C, typename... Args>
+struct return_type<R(C:: *)(Args...) const volatile> { using type = R; };
+
+template <typename T>
+using return_type_t = typename return_type<T>::type;
+
+// Enable enum flags:
+// https://www.justsoftwaresolutions.co.uk/cplusplus/using-enum-classes-as-bitfields.html
+template<typename E>
+struct enable_bitmask_operators {
+    static constexpr bool enable = false;
+};
+
+// Bit OR
+template<typename E>
+constexpr typename std::enable_if_t<enable_bitmask_operators<E>::enable, E> operator|(E lhs, E rhs) {
+    typedef typename std::underlying_type_t<E> underlying;
+    return static_cast<E>(static_cast<underlying>(lhs) | static_cast<underlying>(rhs));
+}
+
+// Assignment Bit OR
+template<typename E>
+constexpr typename std::enable_if_t<enable_bitmask_operators<E>::enable, E &> operator|=(E &lhs, E rhs) {
+    typedef typename std::underlying_type_t<E> underlying;
+    lhs = static_cast<E>(static_cast<underlying>(lhs) | static_cast<underlying>(rhs));
+    return lhs;
+}
+
+// Bit AND
+template<typename E>
+constexpr typename std::enable_if_t<enable_bitmask_operators<E>::enable, E> operator&(E lhs, E rhs) {
+    typedef typename std::underlying_type_t<E> underlying;
+    return static_cast<E>(static_cast<underlying>(lhs) & static_cast<underlying>(rhs));
+}
+
+// Assignment Bit AND
+template<typename E>
+constexpr typename std::enable_if_t<enable_bitmask_operators<E>::enable, E &> operator&=(E &lhs, E rhs) {
+    typedef typename std::underlying_type_t<E> underlying;
+    lhs = static_cast<E>(static_cast<underlying>(lhs) & static_cast<underlying>(rhs));
+    return lhs;
+}
+
+// Bit NOT
+template<typename E>
+constexpr typename std::enable_if_t<enable_bitmask_operators<E>::enable, E> operator~(E rhs) {
+    typedef typename std::underlying_type_t<E> underlying;
+    rhs = static_cast<E>(~static_cast<underlying>(rhs));
+    return rhs;
+}
+
+#define BE BE1
+#define BE_NAMESPACE_BEGIN namespace BE {
 #define BE_NAMESPACE_END }
 
 #define BE_STATIC_LINK
@@ -310,75 +424,6 @@ typedef uint64_t    qword;  // 64 bits
 #define ALIGN_AS16 ALIGN_AS(16)
 #define ALIGN_AS32 ALIGN_AS(32)
 #define ALIGN_AS64 ALIGN_AS(64)
-
-template <typename T>
-inline T *address_of(T &&in) {
-    return &in;
-}
-
-template <typename EnumType>
-constexpr std::underlying_type_t<EnumType> to_int(EnumType e) noexcept {
-    return static_cast<std::underlying_type_t<EnumType>>(e);
-}
-
-template <bool... B>
-struct static_all_of;
-
-// Do recursion if the first argument is true.
-template <bool... Tail>
-struct static_all_of<true, Tail...> : static_all_of<Tail...> {};
-
-// End recursion if first argument is false.
-template <bool... Tail>
-struct static_all_of<false, Tail...> : std::false_type {};
-
-// End recursion if no more arguments need to be processed.
-template <> struct static_all_of<> : std::true_type {};
-
-template <typename T, typename... Ts>
-struct is_same_all : static_all_of<std::is_same<typename std::decay<Ts>::type, T>::value...> {};
-
-template <typename T, typename... Ts>
-struct is_assignable_all : static_all_of<std::is_assignable<T, Ts>::value...> {};
-
-template <typename T1, typename T2>
-inline const ptrdiff_t offset_of(T1 T2::*member) {
-    static char obj_dummy[sizeof(T2)];
-    const T2 *obj = reinterpret_cast<T2 *>(obj_dummy);
-    return ptrdiff_t(intptr_t(&(obj->*member)) - intptr_t(obj));
-}
-
-template <typename T, std::size_t N>
-constexpr std::size_t count_of(T (&)[N]) {
-    return N;
-}
-
-template <class T>
-constexpr size_t hash_combine(size_t &seed, const T &v) {
-    std::hash<T> hasher;
-    return seed ^ hasher(v) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
-}
-
-template <typename T>
-struct return_type;
-
-template <typename R, typename... Args>
-struct return_type<R(*)(Args...)> { using type = R; };
-
-template <typename R, typename C, typename... Args>
-struct return_type<R(C:: *)(Args...)> { using type = R; };
-
-template <typename R, typename C, typename... Args>
-struct return_type<R(C:: *)(Args...) const> { using type = R; };
-
-template <typename R, typename C, typename... Args>
-struct return_type<R(C:: *)(Args...) volatile> { using type = R; };
-
-template <typename R, typename C, typename... Args>
-struct return_type<R(C:: *)(Args...) const volatile> { using type = R; };
-
-template <typename T>
-using return_type_t = typename return_type<T>::type;
 
 //----------------------------------------------------------------------------------------------
 // Win32
@@ -661,135 +706,90 @@ BE_FORCE_INLINE constexpr int16_t BE_API    HighByte(word w) { return ((w >> 8) 
 
 BE_FORCE_INLINE constexpr bool BE_API       IsPowerOf2(int x) { return x && ((x & (x - 1)) == 0); }
 
-// Enable enum flags:
-// https://www.justsoftwaresolutions.co.uk/cplusplus/using-enum-classes-as-bitfields.html
-template<typename E>
-struct enable_bitmask_operators {
-    static constexpr bool enable = false;
-};
-
-// Bit OR
-template<typename E>
-BE_FORCE_INLINE constexpr typename std::enable_if_t<enable_bitmask_operators<E>::enable, E> operator|(E lhs, E rhs) {
-    typedef typename std::underlying_type_t<E> underlying;
-    return static_cast<E>(static_cast<underlying>(lhs) | static_cast<underlying>(rhs));
-}
-
-// Assignment Bit OR
-template<typename E>
-BE_FORCE_INLINE constexpr typename std::enable_if_t<enable_bitmask_operators<E>::enable, E &> operator|=(E &lhs, E rhs) {
-    typedef typename std::underlying_type_t<E> underlying;
-    lhs = static_cast<E>(static_cast<underlying>(lhs) | static_cast<underlying>(rhs));
-    return lhs;
-}
-
-// Bit AND
-template<typename E>
-BE_FORCE_INLINE constexpr typename std::enable_if_t<enable_bitmask_operators<E>::enable, E> operator&(E lhs, E rhs) {
-    typedef typename std::underlying_type_t<E> underlying;
-    return static_cast<E>(static_cast<underlying>(lhs) & static_cast<underlying>(rhs));
-}
-
-// Assignment Bit AND
-template<typename E>
-BE_FORCE_INLINE constexpr typename std::enable_if_t<enable_bitmask_operators<E>::enable, E &> operator&=(E &lhs, E rhs) {
-    typedef typename std::underlying_type_t<E> underlying;
-    lhs = static_cast<E>(static_cast<underlying>(lhs) & static_cast<underlying>(rhs));
-    return lhs;
-}
-
-// Bit NOT
-template<typename E>
-BE_FORCE_INLINE constexpr typename std::enable_if_t<enable_bitmask_operators<E>::enable, E> operator~(E rhs) {
-    typedef typename std::underlying_type_t<E> underlying;
-    rhs = static_cast<E>(~static_cast<underlying>(rhs));
-    return rhs;
-}
-
 /// Checks if all bits in the specified flag(s) (rhs) are set in the target flags (lhs).
 template<typename E>
-BE_FORCE_INLINE constexpr bool HasFlag(E lhs, E rhs) { return (lhs & rhs) == rhs; }
+constexpr bool HasFlag(E lhs, E rhs) { return (lhs & rhs) == rhs; }
 
 /// Tests if the value is aligned.
 template <typename T>
-BE_FORCE_INLINE constexpr bool IsAligned(const T &x, int n) { return IsPowerOf2(n) ? ((x & (n - 1)) == 0) : ((x % n) == 0); }
+constexpr bool IsAligned(const T &x, int n) { return IsPowerOf2(n) ? ((x & (n - 1)) == 0) : ((x % n) == 0); }
 
 /// Returns aligned up value by n.
 template <typename T>
-BE_FORCE_INLINE constexpr T AlignUp(const T &x, int n) { return IsPowerOf2(n) ? ((x + n - 1) & (~(n - 1))) : ((x + n - 1) - (x + n - 1) % n); }
+constexpr T AlignUp(const T &x, int n) { return IsPowerOf2(n) ? ((x + n - 1) & (~(n - 1))) : ((x + n - 1) - (x + n - 1) % n); }
 
 /// Returns aligned down value by n. 
 template <typename T>
-BE_FORCE_INLINE constexpr T AlignDown(const T &x, int n) { return IsPowerOf2(n) ? (x & (~(n - 1))) : (x - x % n); }
+constexpr T AlignDown(const T &x, int n) { return IsPowerOf2(n) ? (x & (~(n - 1))) : (x - x % n); }
 
 /// Returns the smaller of two values.
 template <typename T>
-BE_FORCE_INLINE constexpr T Min(const T &x, const T &y) { return (x < y) ? x : y; }
+constexpr T Min(const T &x, const T &y) { return (x < y) ? x : y; }
 /// Returns the larger of two values.
 template <typename T>
-BE_FORCE_INLINE constexpr T Max(const T &x, const T &y) { return (x > y) ? x : y; }
+constexpr T Max(const T &x, const T &y) { return (x > y) ? x : y; }
 
 /// Returns the smaller index of two values.
 template <typename T>
-BE_FORCE_INLINE constexpr int MinIndex(const T &x, const T &y) { return (x < y) ? 0 : 1; }
+constexpr int MinIndex(const T &x, const T &y) { return (x < y) ? 0 : 1; }
 /// Returns the larger index of two values.
 template <typename T>
-BE_FORCE_INLINE constexpr int MaxIndex(const T &x, const T &y) { return (x > y) ? 0 : 1; }
+constexpr int MaxIndex(const T &x, const T &y) { return (x > y) ? 0 : 1; }
 
 /// Returns the smaller of three values.
 template <typename T>
-BE_FORCE_INLINE constexpr T Min3(const T &x, const T &y, const T &z) { return (x < y) ? ((x < z) ? x : z) : ((y < z) ? y : z); }
+constexpr T Min3(const T &x, const T &y, const T &z) { return (x < y) ? ((x < z) ? x : z) : ((y < z) ? y : z); }
 /// Returns the larger of three values.
 template <typename T>
-BE_FORCE_INLINE constexpr T Max3(const T &x, const T &y, const T &z) { return (x > y) ? ((x > z) ? x : z) : ((y > z) ? y : z); }
+constexpr T Max3(const T &x, const T &y, const T &z) { return (x > y) ? ((x > z) ? x : z) : ((y > z) ? y : z); }
 /// Returns the median of three values.
 template <typename T>
-BE_FORCE_INLINE constexpr T Median(const T &x, const T &y, const T &z) { return (x > y) ? ((x > z) ? Max(y, z) : x) : ((y > z) ? Max(x, z) : y); }
+constexpr T Median(const T &x, const T &y, const T &z) { return (x > y) ? ((x > z) ? Max(y, z) : x) : ((y > z) ? Max(x, z) : y); }
 
 /// Returns the smaller index of three values.
 template <typename T>
-BE_FORCE_INLINE constexpr int Min3Index(const T &x, const T &y, const T &z) { return (x < y) ? ((x < z) ? 0 : 2) : ((y < z) ? 1 : 2); }
+constexpr int Min3Index(const T &x, const T &y, const T &z) { return (x < y) ? ((x < z) ? 0 : 2) : ((y < z) ? 1 : 2); }
 /// Returns the larger index of three values.
 template <typename T>
-BE_FORCE_INLINE constexpr int Max3Index(const T &x, const T &y, const T &z) { return (x > y) ? ((x > z) ? 0 : 2) : ((y > z) ? 1 : 2); }
+constexpr int Max3Index(const T &x, const T &y, const T &z) { return (x > y) ? ((x > z) ? 0 : 2) : ((y > z) ? 1 : 2); }
 /// Returns the median index of three values.
 template <typename T>
-BE_FORCE_INLINE constexpr int MedianIndex(const T &x, const T &y, const T &z) { return (x > y) ? ((x > z) ? MaxIndex(y, z) : 0) : ((y > z) ? MaxIndex(x, z) : 1); }
+constexpr int MedianIndex(const T &x, const T &y, const T &z) { return (x > y) ? ((x > z) ? MaxIndex(y, z) : 0) : ((y > z) ? MaxIndex(x, z) : 1); }
 
 /// Swaps two values.
 template <typename T> 
-BE_FORCE_INLINE void Swap(T &a, T &b) noexcept { T c = std::move(a); a = std::move(b); b = std::move(c); }
+void Swap(T &a, T &b) noexcept { T c = std::move(a); a = std::move(b); b = std::move(c); }
 
 /// Clamps a number to a range.
 template <typename T>
-BE_FORCE_INLINE void Clamp(T &v, const T &min, const T &max) { v = (v > max) ? max : (v < min ? min : v); }
+void Clamp(T &v, const T &min, const T &max) { v = (v > max) ? max : (v < min ? min : v); }
 /// Clamps a number to the range [0, 1].
 template <typename T>
-BE_FORCE_INLINE void Clamp01(T &v) { Clamp(v, T(0), T(1)); }
+void Clamp01(T &v) { Clamp(v, T(0), T(1)); }
 
 /// Returns the clamped number to a range.
 template <typename T>
-BE_FORCE_INLINE constexpr T Clamp(const T &v, const T &min, const T&max) { return (v > max) ? max : (v < min ? min : v); }
+constexpr T Clamp(const T &v, const T &min, const T&max) { return (v > max) ? max : (v < min ? min : v); }
 /// Returns the clamped number to the range [0, 1].
 template <typename T>
-BE_FORCE_INLINE constexpr T Clamp01(const T &v) { return Clamp(v, T(0), T(1)); }
+constexpr T Clamp01(const T &v) { return Clamp(v, T(0), T(1)); }
 
 /// Returns remainder of the division operation x / y.
 template <typename T>
-BE_FORCE_INLINE constexpr T Mod(const T &x, const T &y) { return std::fmod((T)x, (T)y); }
+constexpr T Mod(const T &x, const T &y) { return std::fmod((T)x, (T)y); }
 template <>
-BE_FORCE_INLINE constexpr int Mod(const int &x, const int &y) { return x % y; }
+constexpr int Mod(const int &x, const int &y) { return x % y; }
 
 /// Wraps a number to a range.
 template <typename T>
-BE_FORCE_INLINE void Wrap(T &v, const T &min, const T &max) {
+void Wrap(T &v, const T &min, const T &max) {
     if (v > max) v = min + Mod(v - min, max - min);
     if (v < min) v = max - Mod(min - v, max - min);
 }
 
 /// Returns the wrapped number to a range.
 template <typename T>
-BE_FORCE_INLINE constexpr T Wrap(const T &v, const T &min, const T &max) {
+constexpr T Wrap(const T &v, const T &min, const T &max) {
     if (v > max) return min + Mod(v - min, max - min);
     if (v < min) return max - Mod(min - v, max - min);
     return v;
@@ -826,28 +826,28 @@ BE_FORCE_INLINE float ClampFloat(float min, float max, float value) {
 }
 
 template <typename T>
-BE_FORCE_INLINE constexpr T UnitToMeter(T x) { return x * 1.0f; }
+constexpr T UnitToMeter(T x) { return x * 1.0f; }
 
 template <typename T>
-BE_FORCE_INLINE constexpr T MeterToUnit(T x) { return x / UnitToMeter(1.0f); }
+constexpr T MeterToUnit(T x) { return x / UnitToMeter(1.0f); }
 
 template <typename T>
-BE_FORCE_INLINE constexpr T UnitToCm(T x) { return UnitToMeter(x) * 100.0f; }
+constexpr T UnitToCm(T x) { return UnitToMeter(x) * 100.0f; }
 
 template <typename T>
-BE_FORCE_INLINE constexpr T CmToUnit(T x) { return MeterToUnit(x * 0.01f); }
+constexpr T CmToUnit(T x) { return MeterToUnit(x * 0.01f); }
 
 template <typename T>
-BE_FORCE_INLINE constexpr T UnitToMm(T x) { return UnitToMeter(x) * 1000.0f; }
+constexpr T UnitToMm(T x) { return UnitToMeter(x) * 1000.0f; }
 
 template <typename T>
-BE_FORCE_INLINE constexpr T MmToUnit(T x) { return MeterToUnit(x * 0.001f); }
+constexpr T MmToUnit(T x) { return MeterToUnit(x * 0.001f); }
 
 template <typename T>
-BE_FORCE_INLINE constexpr T UnitToKm(T x) { return UnitToMeter(x) * 0.001f; }
+constexpr T UnitToKm(T x) { return UnitToMeter(x) * 0.001f; }
 
 template <typename T>
-BE_FORCE_INLINE constexpr T KmToUnit(T x) { return MeterToUnit(x * 1000.0f); }
+constexpr T KmToUnit(T x) { return MeterToUnit(x * 1000.0f); }
 
 void BE_CDECL BE_API Log(int logLevel, const char *msg, ...);
 void BE_CDECL BE_API Error(int errLevel, const char *msg, ...);

@@ -25,37 +25,37 @@ void D3D12Shader::Release() {
     SAFE_RELEASE(rootSignature);
 }
 
-bool D3D12Renderer::CompileShader(const ShaderCompileInput *compileInput, ShaderCompileOutput *compileOutput) {
+bool D3D12Renderer::CompileShader(const RHI::ShaderCompileInput *compileInput, RHI::ShaderCompileOutput *compileOutput) {
     switch (compileInput->shaderFormat) {
-    case ShaderFormat::HLSL5:
+    case RHI::ShaderFormat::HLSL5:
         return CompileShaderD3D(compileInput, compileOutput);
-    case ShaderFormat::HLSL6:
+    case RHI::ShaderFormat::HLSL6:
         return CompileShaderDXC(compileInput, compileOutput);
     }
     return false;
 }
 
-bool D3D12Renderer::CompileShaderD3D(const ShaderCompileInput *compileInput, ShaderCompileOutput *compileOutput) {
-    assert(compileInput->shaderModel <= ShaderModel::SM_5_0);
+bool D3D12Renderer::CompileShaderD3D(const RHI::ShaderCompileInput *compileInput, RHI::ShaderCompileOutput *compileOutput) {
+    assert(compileInput->shaderModel <= RHI::ShaderModel::SM_5_0);
 
     LPCSTR target = nullptr;
     switch (compileInput->shaderStage) {
-    case ShaderStage::Vertex:
+    case RHI::ShaderStage::Vertex:
         target = "vs_5_0";
         break;
-    case ShaderStage::Hull:
+    case RHI::ShaderStage::Hull:
         target = "hs_5_0";
         break;
-    case ShaderStage::Domain:
+    case RHI::ShaderStage::Domain:
         target = "ds_5_0";
         break;
-    case ShaderStage::Geometry:
+    case RHI::ShaderStage::Geometry:
         target = "gs_5_0";
         break;
-    case ShaderStage::Fragment:
+    case RHI::ShaderStage::Fragment:
         target = "ps_5_0";
         break;
-    case ShaderStage::Compute:
+    case RHI::ShaderStage::Compute:
         target = "cs_5_0";
         break;
     default:
@@ -86,7 +86,7 @@ bool D3D12Renderer::CompileShaderD3D(const ShaderCompileInput *compileInput, Sha
     return true;
 }
 
-bool D3D12Renderer::CompileShaderDXC(const ShaderCompileInput *compileInput, ShaderCompileOutput *compileOutput) {
+bool D3D12Renderer::CompileShaderDXC(const RHI::ShaderCompileInput *compileInput, RHI::ShaderCompileOutput *compileOutput) {
     std::vector<std::wstring> args = {
         L"-res-may-alias",
         //L"-flegacy-macro-expansion",
@@ -115,175 +115,175 @@ bool D3D12Renderer::CompileShaderDXC(const ShaderCompileInput *compileInput, Sha
     args.push_back(L"-T");
 
     switch (compileInput->shaderStage) {
-    case ShaderStage::Vertex:
+    case RHI::ShaderStage::Vertex:
         switch (compileInput->shaderModel) {
-        case ShaderModel::SM_6_7:
+        case RHI::ShaderModel::SM_6_7:
             args.push_back(L"vs_6_7");
             break;
-        case ShaderModel::SM_6_6:
+        case RHI::ShaderModel::SM_6_6:
             args.push_back(L"vs_6_6");
             break;
-        case ShaderModel::SM_6_5:
+        case RHI::ShaderModel::SM_6_5:
             args.push_back(L"vs_6_5");
             break;
-        case ShaderModel::SM_6_4:
+        case RHI::ShaderModel::SM_6_4:
             args.push_back(L"vs_6_4");
             break;
-        case ShaderModel::SM_6_3:
+        case RHI::ShaderModel::SM_6_3:
             args.push_back(L"vs_6_3");
             break;
-        case ShaderModel::SM_6_2:
+        case RHI::ShaderModel::SM_6_2:
             args.push_back(L"vs_6_2");
             break;
-        case ShaderModel::SM_6_1:
+        case RHI::ShaderModel::SM_6_1:
             args.push_back(L"vs_6_1");
             break;
-        case ShaderModel::SM_6_0:
+        case RHI::ShaderModel::SM_6_0:
         default:
             args.push_back(L"vs_6_0");
             break;
         }
         break;
-    case ShaderStage::Hull:
+    case RHI::ShaderStage::Hull:
         switch (compileInput->shaderModel) {
-        case ShaderModel::SM_6_7:
+        case RHI::ShaderModel::SM_6_7:
             args.push_back(L"hs_6_7");
             break;
-        case ShaderModel::SM_6_6:
+        case RHI::ShaderModel::SM_6_6:
             args.push_back(L"hs_6_6");
             break;
-        case ShaderModel::SM_6_5:
+        case RHI::ShaderModel::SM_6_5:
             args.push_back(L"hs_6_5");
             break;
-        case ShaderModel::SM_6_4:
+        case RHI::ShaderModel::SM_6_4:
             args.push_back(L"hs_6_4");
             break;
-        case ShaderModel::SM_6_3:
+        case RHI::ShaderModel::SM_6_3:
             args.push_back(L"hs_6_3");
             break;
-        case ShaderModel::SM_6_2:
+        case RHI::ShaderModel::SM_6_2:
             args.push_back(L"hs_6_2");
             break;
-        case ShaderModel::SM_6_1:
+        case RHI::ShaderModel::SM_6_1:
             args.push_back(L"hs_6_1");
             break;
-        case ShaderModel::SM_6_0:
+        case RHI::ShaderModel::SM_6_0:
         default:
             args.push_back(L"hs_6_0");
             break;
         }
         break;
-    case ShaderStage::Domain:
+    case RHI::ShaderStage::Domain:
         switch (compileInput->shaderModel) {
-        case ShaderModel::SM_6_7:
+        case RHI::ShaderModel::SM_6_7:
             args.push_back(L"ds_6_7");
             break;
-        case ShaderModel::SM_6_6:
+        case RHI::ShaderModel::SM_6_6:
             args.push_back(L"ds_6_6");
             break;
-        case ShaderModel::SM_6_5:
+        case RHI::ShaderModel::SM_6_5:
             args.push_back(L"ds_6_5");
             break;
-        case ShaderModel::SM_6_4:
+        case RHI::ShaderModel::SM_6_4:
             args.push_back(L"ds_6_4");
             break;
-        case ShaderModel::SM_6_3:
+        case RHI::ShaderModel::SM_6_3:
             args.push_back(L"ds_6_3");
             break;
-        case ShaderModel::SM_6_2:
+        case RHI::ShaderModel::SM_6_2:
             args.push_back(L"ds_6_2");
             break;
-        case ShaderModel::SM_6_1:
+        case RHI::ShaderModel::SM_6_1:
             args.push_back(L"ds_6_1");
             break;
-        case ShaderModel::SM_6_0:
+        case RHI::ShaderModel::SM_6_0:
         default:
             args.push_back(L"ds_6_0");
             break;
         }
         break;
-    case ShaderStage::Geometry:
+    case RHI::ShaderStage::Geometry:
         switch (compileInput->shaderModel) {
-        case ShaderModel::SM_6_7:
+        case RHI::ShaderModel::SM_6_7:
             args.push_back(L"gs_6_7");
             break;
-        case ShaderModel::SM_6_6:
+        case RHI::ShaderModel::SM_6_6:
             args.push_back(L"gs_6_6");
             break;
-        case ShaderModel::SM_6_5:
+        case RHI::ShaderModel::SM_6_5:
             args.push_back(L"gs_6_5");
             break;
-        case ShaderModel::SM_6_4:
+        case RHI::ShaderModel::SM_6_4:
             args.push_back(L"gs_6_4");
             break;
-        case ShaderModel::SM_6_3:
+        case RHI::ShaderModel::SM_6_3:
             args.push_back(L"gs_6_3");
             break;
-        case ShaderModel::SM_6_2:
+        case RHI::ShaderModel::SM_6_2:
             args.push_back(L"gs_6_2");
             break;
-        case ShaderModel::SM_6_1:
+        case RHI::ShaderModel::SM_6_1:
             args.push_back(L"gs_6_1");
             break;
-        case ShaderModel::SM_6_0:
+        case RHI::ShaderModel::SM_6_0:
         default:
             args.push_back(L"gs_6_0");
             break;
         }
         break;
-    case ShaderStage::Fragment:
+    case RHI::ShaderStage::Fragment:
         switch (compileInput->shaderModel) {
-        case ShaderModel::SM_6_7:
+        case RHI::ShaderModel::SM_6_7:
             args.push_back(L"ps_6_7");
             break;
-        case ShaderModel::SM_6_6:
+        case RHI::ShaderModel::SM_6_6:
             args.push_back(L"ps_6_6");
             break;
-        case ShaderModel::SM_6_5:
+        case RHI::ShaderModel::SM_6_5:
             args.push_back(L"ps_6_5");
             break;
-        case ShaderModel::SM_6_4:
+        case RHI::ShaderModel::SM_6_4:
             args.push_back(L"ps_6_4");
             break;
-        case ShaderModel::SM_6_3:
+        case RHI::ShaderModel::SM_6_3:
             args.push_back(L"ps_6_3");
             break;
-        case ShaderModel::SM_6_2:
+        case RHI::ShaderModel::SM_6_2:
             args.push_back(L"ps_6_2");
             break;
-        case ShaderModel::SM_6_1:
+        case RHI::ShaderModel::SM_6_1:
             args.push_back(L"ps_6_1");
             break;
-        case ShaderModel::SM_6_0:
+        case RHI::ShaderModel::SM_6_0:
         default:
             args.push_back(L"ps_6_0");
             break;
         }
         break;
-    case ShaderStage::Compute:
+    case RHI::ShaderStage::Compute:
         switch (compileInput->shaderModel) {
-        case ShaderModel::SM_6_7:
+        case RHI::ShaderModel::SM_6_7:
             args.push_back(L"cs_6_7");
             break;
-        case ShaderModel::SM_6_6:
+        case RHI::ShaderModel::SM_6_6:
             args.push_back(L"cs_6_6");
             break;
-        case ShaderModel::SM_6_5:
+        case RHI::ShaderModel::SM_6_5:
             args.push_back(L"cs_6_5");
             break;
-        case ShaderModel::SM_6_4:
+        case RHI::ShaderModel::SM_6_4:
             args.push_back(L"cs_6_4");
             break;
-        case ShaderModel::SM_6_3:
+        case RHI::ShaderModel::SM_6_3:
             args.push_back(L"cs_6_3");
             break;
-        case ShaderModel::SM_6_2:
+        case RHI::ShaderModel::SM_6_2:
             args.push_back(L"cs_6_2");
             break;
-        case ShaderModel::SM_6_1:
+        case RHI::ShaderModel::SM_6_1:
             args.push_back(L"cs_6_1");
             break;
-        case ShaderModel::SM_6_0:
+        case RHI::ShaderModel::SM_6_0:
         default:
             args.push_back(L"cs_6_0");
             break;
@@ -296,12 +296,12 @@ bool D3D12Renderer::CompileShaderDXC(const ShaderCompileInput *compileInput, Sha
     // 엔트리 포인트 이름
     args.push_back(L"-E");
     wchar_t wEntryPoint[256];
-    PlatformWinUtils::UTF8ToUCS2(compileInput->entryPoint, wEntryPoint, COUNT_OF(wEntryPoint));
+    BE1::PlatformWinUtils::UTF8ToUCS2(compileInput->entryPoint, wEntryPoint, COUNT_OF(wEntryPoint));
     args.push_back(wEntryPoint);
 
     // 소스 파일 이름
     wchar_t wSourceName[256];
-    PlatformWinUtils::UTF8ToUCS2(compileInput->sourceName, wSourceName, COUNT_OF(wSourceName));
+    BE1::PlatformWinUtils::UTF8ToUCS2(compileInput->sourceName, wSourceName, COUNT_OF(wSourceName));
     args.push_back(wSourceName);
 
     // wchar_t 포인터 배열을 만든다.
@@ -348,11 +348,11 @@ bool D3D12Renderer::CompileShaderDXC(const ShaderCompileInput *compileInput, Sha
 }
 
 bool D3D12Renderer::LoadCompiledShader(const char *name, const uint64_t hash, byte **compiledShaderDataPtr, uint32_t *compiledShaderDataSizePtr) {
-    Str filename;// = shaderCacheDir;
+    BE1::Str filename;// = shaderCacheDir;
     filename.AppendPath(name);
     filename.SetFileExtension(".cso");
 
-    PlatformFileMapping *fileMapping = PlatformFileMapping::OpenFileRead(filename);
+    BE1::PlatformFileMapping *fileMapping = BE1::PlatformFileMapping::OpenFileRead(filename);
     if (!fileMapping) {
         return false;
     }
@@ -378,10 +378,10 @@ void D3D12Renderer::WriteCompiledShader(const char *name, const uint64_t hash, c
         return;
     }
 
-    Str filename;// = shaderCacheDir;
+    BE1::Str filename;// = shaderCacheDir;
     filename.AppendPath(name);
     filename.SetFileExtension(".cso");
-    PlatformFile *file = (PlatformFile *)PlatformFile::OpenFileWrite(filename);
+    BE1::PlatformFile *file = (BE1::PlatformFile *)BE1::PlatformFile::OpenFileWrite(filename);
     if (!file) {
         return;
     }
@@ -399,38 +399,38 @@ void D3D12Renderer::WriteCompiledShader(const char *name, const uint64_t hash, c
     delete file;
 }
 
-RHIRenderer::Shader *D3D12Renderer::CreateShader(ShaderModel shaderModel, ShaderStage shaderStage, const char *sourceName, const char *shaderText, int shaderTextSize, const char *entryPoint) {
+RHI::Shader *D3D12Renderer::CreateShader(RHI::ShaderModel shaderModel, RHI::ShaderStage shaderStage, const char *sourceName, const char *shaderText, int shaderTextSize, const char *entryPoint) {
     const char *shaderStageName = nullptr;
     switch (shaderStage) {
-    case ShaderStage::Vertex:
+    case RHI::ShaderStage::Vertex:
         shaderStageName = "vs";
         break;
-    case ShaderStage::Hull:
+    case RHI::ShaderStage::Hull:
         shaderStageName = "hs";
         break;
-    case ShaderStage::Domain:
+    case RHI::ShaderStage::Domain:
         shaderStageName = "ds";
         break;
-    case ShaderStage::Geometry:
+    case RHI::ShaderStage::Geometry:
         shaderStageName = "gs";
         break;
-    case ShaderStage::Fragment:
+    case RHI::ShaderStage::Fragment:
         shaderStageName = "ps";
         break;
-    case ShaderStage::Compute:
+    case RHI::ShaderStage::Compute:
         shaderStageName = "cs";
         break;
     default:
         return nullptr;
     }
 
-    Str fileName = sourceName;
-    Str fileBase;
+    BE1::Str fileName = sourceName;
+    BE1::Str fileBase;
     fileName.ExtractFileBase(fileBase);
     char mangledFilename[256];
-    Str::snPrintf(mangledFilename, sizeof(mangledFilename), "%s-%s-%s", fileBase.c_str(), entryPoint, shaderStageName);
+    BE1::Str::snPrintf(mangledFilename, sizeof(mangledFilename), "%s-%s-%s", fileBase.c_str(), entryPoint, shaderStageName);
 
-    Str extension;
+    BE1::Str extension;
     fileName.ExtractFileExtension(extension);
     fileName.StripFileName();
     fileName.AppendPath(mangledFilename);
@@ -440,7 +440,7 @@ RHIRenderer::Shader *D3D12Renderer::CreateShader(ShaderModel shaderModel, Shader
     uint32_t compiledShaderDataSize = 0;
 
     // 이미 컴파일된 cso 파일을 로드해본다.
-    const uint64_t shaderTextHash = CityHash64(shaderText, shaderTextSize);
+    const uint64_t shaderTextHash = BE1::CityHash64(shaderText, shaderTextSize);
 #ifndef _DEBUG
     bool shouldCompileShader = !LoadCompiledShader(fileName, shaderTextHash, &compiledShaderData, &compiledShaderDataSize);
 #else
@@ -449,7 +449,7 @@ RHIRenderer::Shader *D3D12Renderer::CreateShader(ShaderModel shaderModel, Shader
 
     // hash 값이 다르거나 파일이 없다면 새로 컴파일한다.
     if (shouldCompileShader) {
-        RHIRenderer::ShaderCompileInput compileInput = {};
+        RHI::ShaderCompileInput compileInput = {};
         compileInput.shaderFormat = GetShaderFormat();
         compileInput.shaderModel = shaderModel;
         compileInput.shaderStage = shaderStage;
@@ -458,7 +458,7 @@ RHIRenderer::Shader *D3D12Renderer::CreateShader(ShaderModel shaderModel, Shader
         compileInput.shaderTextSize = shaderTextSize;
         compileInput.entryPoint = entryPoint;
 
-        RHIRenderer::ShaderCompileOutput compileOutput = {};
+        RHI::ShaderCompileOutput compileOutput = {};
         bool compileSucceeded = CompileShader(&compileInput, &compileOutput);
         if (!compileOutput.errorMessage.IsEmpty()) {
             BE_WARNLOG(compileOutput.errorMessage);
@@ -503,24 +503,24 @@ RHIRenderer::Shader *D3D12Renderer::CreateShader(ShaderModel shaderModel, Shader
     return shader;
 }
 
-RHIRenderer::Shader *D3D12Renderer::CreateShaderFromFile(ShaderModel shaderModel, ShaderStage shaderStage, const char *filename, const char *entryPoint) {
+RHI::Shader *D3D12Renderer::CreateShaderFromFile(RHI::ShaderModel shaderModel, RHI::ShaderStage shaderStage, const char *filename, const char *entryPoint) {
     char *shaderText;
-    int shaderTextSize = fileSystem.LoadFile(filename, true, (void **)&shaderText);
+    int shaderTextSize = BE1::fileSystem.LoadFile(filename, true, (void **)&shaderText);
     if (!shaderText) {
         return nullptr;
     }
 
-    Shader *shader = CreateShader(shaderModel, shaderStage, filename, shaderText, shaderTextSize, entryPoint);
+    RHI::Shader *shader = CreateShader(shaderModel, shaderStage, filename, shaderText, shaderTextSize, entryPoint);
     if (!shader) {
-        fileSystem.FreeFile(shaderText);
+        BE1::fileSystem.FreeFile(shaderText);
         return nullptr;
     }
 
-    fileSystem.FreeFile(shaderText);
+    BE1::fileSystem.FreeFile(shaderText);
     return shader;
 }
 
-void D3D12Renderer::DestroyShader(Shader *shader, bool immediate) {
+void D3D12Renderer::DestroyShader(RHI::Shader *shader, bool immediate) {
     if (immediate) {
         delete shader;
     } else {
