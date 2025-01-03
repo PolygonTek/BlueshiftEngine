@@ -39,8 +39,12 @@ public:
     void                            Clear();
 
     uint32_t                        AllocIndex();
-    bool                            Alloc(D3D12_CPU_DESCRIPTOR_HANDLE *outCpuDescriptorHandle, D3D12_GPU_DESCRIPTOR_HANDLE *outGpuDescriptorHandle);
     void                            FreeIndex(uint32_t descriptorIndex);
+    bool                            Alloc(D3D12_CPU_DESCRIPTOR_HANDLE *outCpuDescriptorHandle, D3D12_GPU_DESCRIPTOR_HANDLE *outGpuDescriptorHandle);
+    void                            Free(D3D12_CPU_DESCRIPTOR_HANDLE cpuDescriptorHandle);
+
+    D3D12_CPU_DESCRIPTOR_HANDLE     GetBaseCPUDescriptorHandle() const { return baseCpuDescriptorHandle; }
+    D3D12_GPU_DESCRIPTOR_HANDLE     GetBaseGPUDescriptorHandle() const { return baseGpuDescriptorHandle; }
 
     uint32_t                        GetIndexFromCPUDescriptorHandle(D3D12_CPU_DESCRIPTOR_HANDLE descriptorHandle) const;
     uint32_t                        GetIndexFromGPUDescriptorHandle(D3D12_GPU_DESCRIPTOR_HANDLE descriptorHandle) const;

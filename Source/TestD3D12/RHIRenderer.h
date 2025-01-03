@@ -608,6 +608,10 @@ public:
     const DepthStencilState *       GetDepthStencilState(DepthStencilStateType type) const { return &depthStencilStates[to_int(type)]; }
     const BlendState *              GetBlendState(BlendStateType type) const { return &blendStates[to_int(type)]; }
 
+    virtual bool                    IsSupportedImageFormat(Image::Format::Enum imageFormat) = 0;
+    virtual Image::Format::Enum     ToUncompressedImageFormat(Image::Format::Enum imageFormat) = 0;
+    virtual Image::Format::Enum     ToCompressedImageFormat(Image::Format::Enum inFormat, bool useNormalMap) = 0;
+
     virtual Buffer *                CreateBuffer(BufferUsage usage, ResourceFlag flags, uint64_t size, Image::Format::Enum format, uint32_t stride, const void *data) = 0;
     virtual void                    DestroyBuffer(Buffer *buffer, bool immediate = false) = 0;
 
@@ -620,16 +624,18 @@ public:
     virtual ConstantBuffer *        CreateConstantBuffer(BufferUsage usage, uint32_t size, void *data) = 0;
     virtual void                    DestroyConstantBuffer(ConstantBuffer *constantBuffer, bool immediate = false) = 0;
 
-    virtual Texture *               CreateTexture(TextureType textureType, ResourceFlag flags, const Image *image) = 0;
+    void                            AdjustTextureFormat(bool useCompression, bool useNormalMap, Image::Format::Enum inFormat, Image::Format::Enum *outFormat);
+
+    virtual Texture *               CreateTexture(TextureType textureType, ResourceFlag flags, const Image *image, uint32_t sampleCount = 1) = 0;
     virtual Texture *               CreateTexture(TextureType textureType, ResourceFlag flags, const Image *image, Image::Format::Enum dstFormat, bool useMipmaps) = 0;
-    virtual Texture *               CreateTextureFromFile(TextureType textureType, ResourceFlag flags, const char *filename, bool useCompression = true, bool useNormalMap = false) = 0;
+    virtual Texture *               CreateTextureFromFile(TextureType textureType, ResourceFlag flags, const char *filename, bool useCompression = true, bool useNormalMap = false);
     virtual void                    DestroyTexture(Texture *texture, bool immediate = false) = 0;
     virtual void                    GetTextureImage2D(Texture *texture, int level, Image::Format::Enum imageFormat, void *outPixels) = 0;
     virtual bool                    SetTextureSubImage2D(Texture *texture, int level, int x, int y, int width, int height, Image::Format::Enum imageFormat, const void *pixels) = 0;
     virtual bool                    SetTextureSubImage3D(Texture *texture, int level, int x, int y, int z, int width, int height, int depth, Image::Format::Enum imageFormat, const void *pixels) = 0;
 
-    virtual void                    CreateSubresource(Buffer *buffer, SubresourceType subresourceType, uint64_t offset = 0, uint64_t size = ~0) = 0;
-    virtual void                    CreateSubresource(Texture *texture, SubresourceType type, uint32_t firstSlice = 0, uint32_t sliceCount = ~0, uint32_t firstMipLevel = 0, uint32_t mipCount = ~0, uint32_t sampleCount = 0) = 0;
+    virtual int                     CreateSubresource(Buffer *buffer, SubresourceType subresourceType, uint64_t offset = 0, uint64_t size = ~0) = 0;
+    virtual int                     CreateSubresource(Texture *texture, SubresourceType type, uint32_t firstSlice = 0, uint32_t sliceCount = ~0, uint32_t firstMipLevel = 0, uint32_t mipCount = ~0) = 0;
 
     virtual Shader *                CreateShader(ShaderModel shaderModel, ShaderStage shaderStage, const char *sourceName, const char *shaderText, int shaderTextSize, const char *entryPoint) = 0;
     virtual Shader *                CreateShaderFromFile(ShaderModel shaderModel, ShaderStage shaderStage, const char *filename, const char *entryPoint) = 0;
@@ -649,8 +655,8 @@ public:
     virtual void                    SetIndexBuffer(CommandList *commandList, const IndexBuffer *indexBuffer) = 0;
     virtual void                    SetConstantBuffer(CommandList *commandList, int slot, const ConstantBuffer *constantBuffer) = 0;
     virtual void                    SetConstants(CommandList *commandList, const void *data, uint32_t size, uint32_t offset) = 0;
-    virtual void                    SetTexture(CommandList *commandList, int slot, bool shaderWritable, const Texture *texture) = 0;
-    virtual void                    SetBuffer(CommandList *commandList, int slot, bool shaderWritable, const Buffer *buffer) = 0;
+    virtual void                    SetTexture(CommandList *commandList, int slot, bool shaderWritable, const Texture *texture, int subresourceIndex = 0) = 0;
+    virtual void                    SetBuffer(CommandList *commandList, int slot, bool shaderWritable, const Buffer *buffer, int subresourceIndex = 0) = 0;
     virtual void                    SetSampler(CommandList *commandList, int slot, Sampler *sampler) = 0;
     virtual void                    SetPSO(CommandList *commandList, const PipelineState *pipelineState) = 0;
     virtual void                    SetBlendFactor(CommandList *commandList, const Color4 &rgba) = 0;

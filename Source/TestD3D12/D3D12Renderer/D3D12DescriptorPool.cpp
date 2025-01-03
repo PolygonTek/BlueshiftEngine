@@ -38,6 +38,7 @@ void D3D12DescriptorPool::Init(ID3D12Device *device, D3D12DescriptorPool::Type t
         break;
     }
 
+    // 디스크립터 힙 타입에 대한 디스크립터 핸들 사이즈 정보 얻기 (보통은 32바이트를 차지)
     descriptorHandleSize = device->GetDescriptorHandleIncrementSize(descriptorHeapType);
 
     D3D12_DESCRIPTOR_HEAP_DESC descriptorHeapDesc = {};
@@ -92,6 +93,12 @@ bool D3D12DescriptorPool::Alloc(D3D12_CPU_DESCRIPTOR_HANDLE *outCpuDescriptorHan
         *outGpuDescriptorHandle = CD3DX12_GPU_DESCRIPTOR_HANDLE(baseGpuDescriptorHandle, newIndex, descriptorHandleSize);
     }
     return true;
+}
+
+void D3D12DescriptorPool::Free(D3D12_CPU_DESCRIPTOR_HANDLE cpuDescriptorHandle) {
+    uint32_t descriptorIndex = GetIndexFromCPUDescriptorHandle(cpuDescriptorHandle);
+
+    FreeIndex(descriptorIndex);
 }
 
 uint32_t D3D12DescriptorPool::GetIndexFromCPUDescriptorHandle(D3D12_CPU_DESCRIPTOR_HANDLE descriptorHandle) const {

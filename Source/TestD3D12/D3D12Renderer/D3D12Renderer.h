@@ -71,6 +71,10 @@ public:
     void                                OnPendingResourceAdded();
     void                                FreePendingResources(bool waitPendings = false);
 
+    virtual bool                        IsSupportedImageFormat(Image::Format::Enum imageFormat) override { return ImageFormatToDXGIFormat(imageFormat, false, nullptr); }
+    virtual Image::Format::Enum         ToUncompressedImageFormat(Image::Format::Enum imageFormat) override;
+    virtual Image::Format::Enum         ToCompressedImageFormat(Image::Format::Enum inFormat, bool useNormalMap) override;
+
     D3D12SwapChain *                    CreateSwapChain(HWND hwnd, uint32_t width, uint32_t height);
     void                                DestroySwapChain(D3D12SwapChain *swapChain);
 
@@ -86,16 +90,15 @@ public:
     virtual ConstantBuffer *            CreateConstantBuffer(BufferUsage usage, uint32_t size, void *data) override;
     virtual void                        DestroyConstantBuffer(ConstantBuffer *constantBuffer, bool immediate = false) override;
 
-    virtual Texture *                   CreateTexture(TextureType textureType, ResourceFlag flags, const Image *image) override;
+    virtual Texture *                   CreateTexture(TextureType textureType, ResourceFlag flags, const Image *image, uint32_t sampleCount = 1) override;
     virtual Texture *                   CreateTexture(TextureType textureType, ResourceFlag flags, const Image *image, Image::Format::Enum dstFormat, bool useMipmaps) override;
-    virtual Texture *                   CreateTextureFromFile(TextureType textureType, ResourceFlag flags, const char *filename, bool useCompression = true, bool useNormalMap = false) override;
     virtual void                        DestroyTexture(Texture *texture, bool immediate = false) override;
     virtual void                        GetTextureImage2D(Texture *texture, int level, Image::Format::Enum imageFormat, void *outPixels) override;
     virtual bool                        SetTextureSubImage2D(Texture *texture, int level, int x, int y, int width, int height, Image::Format::Enum imageFormat, const void *pixels) override;
     virtual bool                        SetTextureSubImage3D(Texture *texture, int level, int x, int y, int z, int width, int height, int depth, Image::Format::Enum imageFormat, const void *pixels) override;
 
-    virtual void                        CreateSubresource(Buffer *buffer, SubresourceType type, uint64_t offset = 0, uint64_t size = ~0) override;
-    virtual void                        CreateSubresource(Texture *texture, SubresourceType type, uint32_t firstSlice = 0, uint32_t sliceCount = ~0, uint32_t firstMipLevel = 0, uint32_t mipCount = ~0, uint32_t sampleCount = 0) override;
+    virtual int                         CreateSubresource(Buffer *buffer, SubresourceType type, uint64_t offset = 0, uint64_t size = ~0) override;
+    virtual int                         CreateSubresource(Texture *texture, SubresourceType type, uint32_t firstSlice = 0, uint32_t sliceCount = ~0, uint32_t firstMipLevel = 0, uint32_t mipCount = ~0) override;
 
     virtual Shader *                    CreateShader(ShaderModel shaderModel, ShaderStage shaderStage, const char *sourceName, const char *shaderText, int shaderTextSize, const char *entryPoint) override;
     virtual Shader *                    CreateShaderFromFile(ShaderModel shaderModel, ShaderStage shaderStage, const char *filename, const char *entryPoint) override;
@@ -115,8 +118,8 @@ public:
     virtual void                        SetIndexBuffer(CommandList *commandList, const IndexBuffer *indexBuffer) override;
     virtual void                        SetConstantBuffer(CommandList *commandList, int slot, const ConstantBuffer *constantBuffer) override;
     virtual void                        SetConstants(CommandList *commandList, const void *data, uint32_t size, uint32_t offset) override;
-    virtual void                        SetTexture(CommandList *commandList, int slot, bool shaderWritable, const Texture *texture) override;
-    virtual void                        SetBuffer(CommandList *commandList, int slot, bool shaderWritable, const Buffer *buffer) override;
+    virtual void                        SetTexture(CommandList *commandList, int slot, bool shaderWritable, const Texture *texture, int subresourceIndex = 0) override;
+    virtual void                        SetBuffer(CommandList *commandList, int slot, bool shaderWritable, const Buffer *buffer, int subresourceIndex = 0) override;
     virtual void                        SetSampler(CommandList *commandList, int slot, Sampler *sampler) override;
     virtual void                        SetPSO(CommandList *commandList, const PipelineState *pipelineState) override;
     virtual void                        SetBlendFactor(CommandList *commandList, const Color4 &rgba) override;
@@ -190,10 +193,7 @@ public:
 #endif
 
     static bool                         ImageFormatToDXGIFormat(Image::Format::Enum imageFormat, bool isSRGB, DXGI_FORMAT *dxgiFormat);
-    static bool                         IsSupportedImageFormat(Image::Format::Enum imageFormat) { return ImageFormatToDXGIFormat(imageFormat, false, nullptr); }
     static bool                         DXGIFormatToImageFormat(DXGI_FORMAT dxgiFormat, Image::Format::Enum *imageFormat, bool *isSRGB);
-    static Image::Format::Enum          ToUncompressedImageFormat(Image::Format::Enum imageFormat);
-    static Image::Format::Enum          ToCompressedImageFormat(Image::Format::Enum inFormat, bool useNormalMap);
 
     ID3D12Device5 *                     device = nullptr;
     IDXGIFactory4 *                     dxgiFactory = nullptr;
@@ -207,7 +207,6 @@ public:
 #ifdef USE_D3D12_MEMALLOC
     D3D12MA::Allocator *                allocator = nullptr;
 #endif
-    UINT                                descriptorHandleSize[D3D12_DESCRIPTOR_HEAP_TYPE_NUM_TYPES];
 
     // TODO: Renderer 외부로 뺄 것
     D3D12SwapChain *                    swapChain = nullptr;
@@ -228,10 +227,11 @@ public:
     bool                                supportsDepthBoundsTest = false;
 
     D3D12DescriptorPool *               resCpuDescriptorPool = nullptr;
+    D3D12DescriptorPool *               uavCpuDescriptorPool = nullptr;
+    D3D12DescriptorPool *               uavGpuDescriptorPool = nullptr;
     D3D12DescriptorPool *               rtvCpuDescriptorPool = nullptr;
     D3D12DescriptorPool *               dsvCpuDescriptorPool = nullptr;
-    D3D12DescriptorPool *               uavGpuDescriptorPool = nullptr;
-    D3D12DescriptorPool *               samplerCpuDescriptorPool = nullptr;
+    D3D12DescriptorPool *               samCpuDescriptorPool = nullptr;
 
     SharedLib                           dxcompilerLibrary = nullptr;
     Str                                 shaderCacheDir;

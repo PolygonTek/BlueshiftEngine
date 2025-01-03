@@ -101,3 +101,36 @@ RHIRenderer::GPUBarrier RHIRenderer::MakeAliasingBarrier(const GPUResource *reso
     barrier.aliasingBarrier.resourceAfter = resourceAfter;
     return barrier;
 }
+
+RHIRenderer::Texture *RHIRenderer::CreateTextureFromFile(TextureType textureType, ResourceFlag flags, const char *filename, bool useCompression, bool useNormalMap) {
+    Image *image = Image::NewImageFromFile(filename);
+    if (!image) {
+        return nullptr;
+    }
+
+    Image::Format::Enum dstFormat;
+    AdjustTextureFormat(useCompression, useNormalMap, image->GetFormat(), &dstFormat);
+
+    Texture *texture = CreateTexture(textureType, flags, image, dstFormat, true);
+    delete image;
+
+    return texture;
+}
+
+void RHIRenderer::AdjustTextureFormat(bool useCompression, bool useNormalMap, Image::Format::Enum inFormat, Image::Format::Enum *outFormat) {
+    if (Image::IsDepthFormat(inFormat) || Image::IsDepthStencilFormat(inFormat)) {
+        *outFormat = inFormat;
+        return;
+    }
+
+    if (Image::IsCompressed(inFormat)) {
+        if (IsSupportedImageFormat(inFormat)) {
+            *outFormat = inFormat;
+            return;
+        }
+
+        inFormat = ToUncompressedImageFormat(inFormat);
+    }
+
+    *outFormat = useCompression ? ToCompressedImageFormat(inFormat, useNormalMap) : ToUncompressedImageFormat(inFormat);
+}

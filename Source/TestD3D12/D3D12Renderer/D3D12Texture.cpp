@@ -19,27 +19,30 @@
 #include "D3D12DescriptorPool.h"
 
 void D3D12Texture::Release() {
-    if (srvCpuDescriptorHandle.ptr != 0) {
-        renderer->resCpuDescriptorPool->FreeIndex(renderer->resCpuDescriptorPool->GetIndexFromCPUDescriptorHandle(srvCpuDescriptorHandle));
-        srvCpuDescriptorHandle.ptr = 0;
+    for (int i = 0; i < srvCpuDescriptorHandles.Count(); ++i) {
+        if (srvCpuDescriptorHandles[i].ptr != 0) {
+            renderer->resCpuDescriptorPool->Free(srvCpuDescriptorHandles[i]);
+            srvCpuDescriptorHandles[i].ptr = 0;
+        }
     }
-    if (rtvCpuDescriptorHandle.ptr != 0) {
-        renderer->rtvCpuDescriptorPool->FreeIndex(renderer->rtvCpuDescriptorPool->GetIndexFromCPUDescriptorHandle(rtvCpuDescriptorHandle));
-        rtvCpuDescriptorHandle.ptr = 0;
+    for (int i = 0; i < rtvCpuDescriptorHandles.Count(); ++i) {
+        if (rtvCpuDescriptorHandles[i].ptr != 0) {
+            renderer->rtvCpuDescriptorPool->Free(rtvCpuDescriptorHandles[i]);
+            rtvCpuDescriptorHandles[i].ptr = 0;
+        }
     }
-    if (dsvCpuDescriptorHandle.ptr != 0) {
-        renderer->dsvCpuDescriptorPool->FreeIndex(renderer->dsvCpuDescriptorPool->GetIndexFromCPUDescriptorHandle(dsvCpuDescriptorHandle));
-        dsvCpuDescriptorHandle.ptr = 0;
+    for (int i = 0; i < dsvCpuDescriptorHandles.Count(); ++i) {
+        if (dsvCpuDescriptorHandles[i].ptr != 0) {
+            renderer->dsvCpuDescriptorPool->Free(dsvCpuDescriptorHandles[i]);
+            dsvCpuDescriptorHandles[i].ptr = 0;
+        }
     }
-    if (uavCpuDescriptorHandle.ptr != 0) {
-        renderer->resCpuDescriptorPool->FreeIndex(renderer->resCpuDescriptorPool->GetIndexFromCPUDescriptorHandle(uavCpuDescriptorHandle));
-        uavCpuDescriptorHandle.ptr = 0;
+    for (int i = 0; i < uavCpuDescriptorHandles.Count(); ++i) {
+        if (uavCpuDescriptorHandles[i].ptr != 0) {
+            renderer->uavCpuDescriptorPool->Free(uavCpuDescriptorHandles[i]);
+            uavCpuDescriptorHandles[i].ptr = 0;
+        }
     }
-    if (uavGpuDescriptorHandle.ptr != 0) {
-        renderer->uavGpuDescriptorPool->FreeIndex(renderer->uavGpuDescriptorPool->GetIndexFromGPUDescriptorHandle(uavGpuDescriptorHandle));
-        uavGpuDescriptorHandle.ptr = 0;
-    }
-
 #ifdef USE_D3D12_MEMALLOC
     SAFE_RELEASE(textureAllocation);
 #else
@@ -55,25 +58,7 @@ ID3D12Resource *D3D12Texture::GetResource() const {
 #endif
 }
 
-void D3D12Texture::AdjustTextureFormat(bool useCompression, bool useNormalMap, Image::Format::Enum inFormat, Image::Format::Enum *outFormat) {
-    if (Image::IsDepthFormat(inFormat) || Image::IsDepthStencilFormat(inFormat)) {
-        *outFormat = inFormat;
-        return;
-    }
-
-    if (Image::IsCompressed(inFormat)) {
-        if (D3D12Renderer::IsSupportedImageFormat(inFormat)) {
-            *outFormat = inFormat;
-            return;
-        }
-
-        inFormat = D3D12Renderer::ToUncompressedImageFormat(inFormat);
-    }
-
-    *outFormat = useCompression ? D3D12Renderer::ToCompressedImageFormat(inFormat, useNormalMap) : D3D12Renderer::ToUncompressedImageFormat(inFormat);
-}
-
-RHIRenderer::Texture *D3D12Renderer::CreateTexture(TextureType textureType, ResourceFlag flags, const Image *srcImage) {
+RHIRenderer::Texture *D3D12Renderer::CreateTexture(TextureType textureType, ResourceFlag flags, const Image *srcImage, uint32_t sampleCount) {
     Image::Format::Enum srcFormat = srcImage->GetFormat();
     bool isLinearSpace = srcImage->GetGammaSpace() == Image::GammaSpace::Linear;
 
@@ -112,7 +97,7 @@ RHIRenderer::Texture *D3D12Renderer::CreateTexture(TextureType textureType, Reso
     textureDesc.Width = static_cast<UINT>(srcImage->GetWidth());
     textureDesc.Height = static_cast<UINT>(srcImage->GetHeight());
     textureDesc.DepthOrArraySize = static_cast<UINT>(textureDimension == D3D12_RESOURCE_DIMENSION_TEXTURE3D ? srcImage->GetDepth() : srcImage->NumSlices());
-    textureDesc.SampleDesc.Count = 1;
+    textureDesc.SampleDesc.Count = sampleCount;
     textureDesc.SampleDesc.Quality = 0;
     textureDesc.Flags = resourceFlags;
 
@@ -274,8 +259,9 @@ RHIRenderer::Texture *D3D12Renderer::CreateTexture(TextureType textureType, Reso
     return texture;
 }
 
-void D3D12Renderer::CreateSubresource(Texture *texture, SubresourceType type, uint32_t firstSlice, uint32_t sliceCount, uint32_t firstMipLevel, uint32_t mipCount, uint32_t sampleCount) {
+int D3D12Renderer::CreateSubresource(Texture *texture, SubresourceType type, uint32_t firstSlice, uint32_t sliceCount, uint32_t firstMipLevel, uint32_t mipCount) {
     D3D12Texture *d3d12Texture = static_cast<D3D12Texture *>(texture);
+    int subresourceIndex = 0;
 
     if (type == SubresourceType::SRV) {
         D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
@@ -296,7 +282,7 @@ void D3D12Renderer::CreateSubresource(Texture *texture, SubresourceType type, ui
             srvDesc.Texture1DArray.MipLevels = Min(mipCount, d3d12Texture->textureDesc.MipLevels - firstMipLevel);
             break;
         case TextureType::Texture2D:
-            if (sampleCount > 1) {
+            if (d3d12Texture->textureDesc.SampleDesc.Count > 1) {
                 srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2DMS;
             } else {
                 srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
@@ -305,7 +291,7 @@ void D3D12Renderer::CreateSubresource(Texture *texture, SubresourceType type, ui
             }
             break;
         case TextureType::Texture2DArray:
-            if (sampleCount > 1) {
+            if (d3d12Texture->textureDesc.SampleDesc.Count > 1) {
                 srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2DMSARRAY;
                 srvDesc.Texture2DMSArray.FirstArraySlice = firstSlice;
                 srvDesc.Texture2DMSArray.ArraySize = Min(sliceCount, d3d12Texture->textureDesc.DepthOrArraySize - firstSlice);
@@ -337,13 +323,12 @@ void D3D12Renderer::CreateSubresource(Texture *texture, SubresourceType type, ui
         }
 
         D3D12_CPU_DESCRIPTOR_HANDLE srvCpuDescriptorHandle;
-
         if (!resCpuDescriptorPool->Alloc(&srvCpuDescriptorHandle, nullptr)) {
-            return;
+            return -1;
         }
         device->CreateShaderResourceView(d3d12Texture->GetResource(), &srvDesc, srvCpuDescriptorHandle);
 
-        d3d12Texture->srvCpuDescriptorHandle = srvCpuDescriptorHandle;
+        subresourceIndex = d3d12Texture->srvCpuDescriptorHandles.Append(srvCpuDescriptorHandle);
     } else if (type == SubresourceType::RTV) {
         D3D12_RENDER_TARGET_VIEW_DESC rtvDesc = {};
         rtvDesc.Format = d3d12Texture->textureDesc.Format;
@@ -360,7 +345,7 @@ void D3D12Renderer::CreateSubresource(Texture *texture, SubresourceType type, ui
             rtvDesc.Texture1DArray.ArraySize = Min(sliceCount, d3d12Texture->textureDesc.DepthOrArraySize - firstSlice);
             break;
         case TextureType::Texture2D:
-            if (sampleCount > 1) {
+            if (d3d12Texture->textureDesc.SampleDesc.Count > 1) {
                 rtvDesc.ViewDimension = D3D12_RTV_DIMENSION_TEXTURE2DMSARRAY;
             } else {
                 rtvDesc.ViewDimension = D3D12_RTV_DIMENSION_TEXTURE2D;
@@ -368,7 +353,7 @@ void D3D12Renderer::CreateSubresource(Texture *texture, SubresourceType type, ui
             }
             break;
         case TextureType::Texture2DArray:
-            if (sampleCount > 1) {
+            if (d3d12Texture->textureDesc.SampleDesc.Count > 1) {
                 rtvDesc.ViewDimension = D3D12_RTV_DIMENSION_TEXTURE2DMSARRAY;
                 rtvDesc.Texture2DMSArray.FirstArraySlice = firstSlice;
                 rtvDesc.Texture2DMSArray.ArraySize = Min(sliceCount, d3d12Texture->textureDesc.DepthOrArraySize - firstSlice);
@@ -388,13 +373,12 @@ void D3D12Renderer::CreateSubresource(Texture *texture, SubresourceType type, ui
         }
 
         D3D12_CPU_DESCRIPTOR_HANDLE rtvCpuDescriptorHandle;
-
         if (!rtvCpuDescriptorPool->Alloc(&rtvCpuDescriptorHandle, nullptr)) {
-            return;
+            return -1;
         }
         device->CreateRenderTargetView(d3d12Texture->GetResource(), &rtvDesc, rtvCpuDescriptorHandle);
 
-        d3d12Texture->rtvCpuDescriptorHandle = rtvCpuDescriptorHandle;
+        subresourceIndex = d3d12Texture->rtvCpuDescriptorHandles.Append(rtvCpuDescriptorHandle);
     } else if (type == SubresourceType::DSV) {
         D3D12_DEPTH_STENCIL_VIEW_DESC dsvDesc = {};
         dsvDesc.Format = d3d12Texture->textureDesc.Format;
@@ -423,13 +407,12 @@ void D3D12Renderer::CreateSubresource(Texture *texture, SubresourceType type, ui
         }
 
         D3D12_CPU_DESCRIPTOR_HANDLE dsvCpuDescriptorHandle;
-
         if (!dsvCpuDescriptorPool->Alloc(&dsvCpuDescriptorHandle, nullptr)) {
-            return;
+            return -1;
         }
         device->CreateDepthStencilView(d3d12Texture->GetResource(), &dsvDesc, dsvCpuDescriptorHandle);
 
-        d3d12Texture->dsvCpuDescriptorHandle = dsvCpuDescriptorHandle;
+        subresourceIndex = d3d12Texture->dsvCpuDescriptorHandles.Append(dsvCpuDescriptorHandle);
     } else if (type == SubresourceType::UAV) {
         D3D12_UNORDERED_ACCESS_VIEW_DESC uavDesc = {};
         uavDesc.ViewDimension = D3D12_UAV_DIMENSION_BUFFER;
@@ -465,21 +448,23 @@ void D3D12Renderer::CreateSubresource(Texture *texture, SubresourceType type, ui
         }
 
         D3D12_CPU_DESCRIPTOR_HANDLE uavCpuDescriptorHandle;
-        D3D12_GPU_DESCRIPTOR_HANDLE uavGpuDescriptorHandle;
+        D3D12_CPU_DESCRIPTOR_HANDLE destCpuDescriptorHandle;
+        D3D12_GPU_DESCRIPTOR_HANDLE destGpuDescriptorHandle;
 
-        resCpuDescriptorPool->Alloc(&uavCpuDescriptorHandle, nullptr);
-        uavGpuDescriptorPool->Alloc(nullptr, &uavGpuDescriptorHandle);
-
+        if (!uavCpuDescriptorPool->Alloc(&uavCpuDescriptorHandle, nullptr)) {
+            return -1;
+        }
+        if (!uavGpuDescriptorPool->Alloc(&destCpuDescriptorHandle, &destGpuDescriptorHandle)) {
+            return -1;
+        }
         device->CreateUnorderedAccessView(d3d12Texture->GetResource(), nullptr, &uavDesc, uavCpuDescriptorHandle);
 
-        // UAV 디스크립터를 shader visible 한 디스크립터에 복사
-        uint32 index = uavGpuDescriptorPool->GetIndexFromGPUDescriptorHandle(uavGpuDescriptorHandle);
-        D3D12_CPU_DESCRIPTOR_HANDLE destDescriptorHandle = uavGpuDescriptorPool->GetCPUDescriptorHandleFromIndex(index);
-        device->CopyDescriptorsSimple(1, destDescriptorHandle, uavCpuDescriptorHandle, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+        // 만들어진 UAV 디스크립터를 shader visible 한 디스크립터에 복사 (CPU + GPU)
+        device->CopyDescriptorsSimple(1, destCpuDescriptorHandle, uavCpuDescriptorHandle, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
 
-        d3d12Texture->uavCpuDescriptorHandle = uavCpuDescriptorHandle;
-        d3d12Texture->uavGpuDescriptorHandle = uavGpuDescriptorHandle;
+        subresourceIndex = d3d12Texture->uavCpuDescriptorHandles.Append(uavCpuDescriptorHandle);
     }
+    return subresourceIndex;
 }
 
 RHIRenderer::Texture *D3D12Renderer::CreateTexture(TextureType textureType, ResourceFlag flags, const Image *srcImage, Image::Format::Enum dstFormat, bool useMipmaps) {
@@ -488,8 +473,8 @@ RHIRenderer::Texture *D3D12Renderer::CreateTexture(TextureType textureType, Reso
     bool srcCompressed = Image::IsCompressed(srcFormat);
     bool dstCompressed = Image::IsCompressed(dstFormat);
 
-    bool srcFormatSupported = D3D12Renderer::IsSupportedImageFormat(srcFormat);
-    bool dstFormatSupported = D3D12Renderer::IsSupportedImageFormat(dstFormat);
+    bool srcFormatSupported = IsSupportedImageFormat(srcFormat);
+    bool dstFormatSupported = IsSupportedImageFormat(dstFormat);
 
     if (!dstFormatSupported) {
         BE_WARNLOG("D3D12Renderer::CreateTexture: Unsupported internal image format %s\n", Image::FormatName(dstFormat));
@@ -501,13 +486,13 @@ RHIRenderer::Texture *D3D12Renderer::CreateTexture(TextureType textureType, Reso
     if (useMipmaps && srcImage->NumMipmaps() == 1) {
         if (srcImage->IsPacked() || srcImage->IsCompressed()) {
             // 밉맵을 생성해야 한다면, 지원되는 가장 비슷한 무압축 포맷으로 컨버팅한다.
-            Image::Format::Enum supportedUncompressedFormat = D3D12Renderer::ToUncompressedImageFormat(srcFormat);
+            Image::Format::Enum supportedUncompressedFormat = ToUncompressedImageFormat(srcFormat);
 
             srcImage->ConvertFormat(supportedUncompressedFormat, uncompressedImage);
             srcImage = &uncompressedImage;
 
             srcFormat = supportedUncompressedFormat;
-            srcFormatSupported = D3D12Renderer::IsSupportedImageFormat(srcFormat);
+            srcFormatSupported = IsSupportedImageFormat(srcFormat);
             srcCompressed = false;
         }
     }
@@ -536,21 +521,6 @@ RHIRenderer::Texture *D3D12Renderer::CreateTexture(TextureType textureType, Reso
     }
 
     return CreateTexture(textureType, flags, srcImage);
-}
-
-RHIRenderer::Texture *D3D12Renderer::CreateTextureFromFile(TextureType textureType, ResourceFlag flags, const char *filename, bool useCompression, bool useNormalMap) {
-    Image *image = Image::NewImageFromFile(filename);
-    if (!image) {
-        return nullptr;
-    }
-
-    Image::Format::Enum dstFormat;
-    D3D12Texture::AdjustTextureFormat(useCompression, useNormalMap, image->GetFormat(), &dstFormat);
-
-    Texture *texture = CreateTexture(textureType, flags, image, dstFormat, true);
-    delete image;
-
-    return texture;
 }
 
 void D3D12Renderer::DestroyTexture(Texture *texture, bool immediate) {
@@ -833,7 +803,7 @@ bool D3D12Renderer::SetTextureSubImage3D(Texture *texture, int level, int x, int
     return true;
 }
 
-void D3D12Renderer::SetTexture(CommandList *commandList, int slot, bool shaderWritable, const Texture *texture) {
+void D3D12Renderer::SetTexture(CommandList *commandList, int slot, bool shaderWritable, const Texture *texture, int subresourceIndex) {
     D3D12CommandList *d3d12CommandList = static_cast<D3D12CommandList *>(commandList);
     int threadIndex = d3d12CommandList->GetThreadIndex();
 
@@ -849,7 +819,7 @@ void D3D12Renderer::SetTexture(CommandList *commandList, int slot, bool shaderWr
         rootParameterIndex = binder.rootParameterBinder.uav[slot];
         uint8_t descriptorIndex = binder.descriptorTableBinder.uav[slot];
         if (descriptorIndex != 0xFF) {
-            threadData.tableCpuDescriptorHandles[rootParameterIndex][descriptorIndex] = d3d12Texture->uavCpuDescriptorHandle;
+            threadData.tableCpuDescriptorHandles[rootParameterIndex][descriptorIndex] = d3d12Texture->uavCpuDescriptorHandles[subresourceIndex];
             if (threadData.tableCpuDescriptorHandles[rootParameterIndex][descriptorIndex].ptr == 0) {
                 BE_ERRLOG("D3D12Renderer::SetTexture: Texture has no valid UAV descriptor handle\n");
                 return;
@@ -861,7 +831,7 @@ void D3D12Renderer::SetTexture(CommandList *commandList, int slot, bool shaderWr
         rootParameterIndex = binder.rootParameterBinder.srv[slot];
         uint8_t descriptorIndex = binder.descriptorTableBinder.srv[slot];
         if (descriptorIndex != 0xFF) {
-            threadData.tableCpuDescriptorHandles[rootParameterIndex][descriptorIndex] = d3d12Texture->srvCpuDescriptorHandle;
+            threadData.tableCpuDescriptorHandles[rootParameterIndex][descriptorIndex] = d3d12Texture->srvCpuDescriptorHandles[subresourceIndex];
             if (threadData.tableCpuDescriptorHandles[rootParameterIndex][descriptorIndex].ptr == 0) {
                 BE_ERRLOG("D3D12Renderer::SetTexture: Texture has no valid SRV descriptor handle\n");
                 return;

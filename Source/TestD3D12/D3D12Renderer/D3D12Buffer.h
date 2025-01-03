@@ -49,7 +49,6 @@ private:
     Image::Format::Enum             format = Image::Format::Unknown;
     uint32_t                        stride = 0;
     uint64_t                        size = 0;
-    D3D12_CPU_DESCRIPTOR_HANDLE     srvCpuDescriptorHandle = {};
-    D3D12_CPU_DESCRIPTOR_HANDLE     uavCpuDescriptorHandle = {};
-    D3D12_GPU_DESCRIPTOR_HANDLE     uavGpuDescriptorHandle = {};
+    Array<D3D12_CPU_DESCRIPTOR_HANDLE> srvCpuDescriptorHandles;
+    Array<D3D12_CPU_DESCRIPTOR_HANDLE> uavCpuDescriptorHandles;
 };

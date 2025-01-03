@@ -201,20 +201,15 @@ void D3D12Renderer::Init(HWND hwnd) {
     // Fence 를 대기하기 위한 이벤트 객체 생성
     fenceEventHandle = CreateEvent(nullptr, FALSE, FALSE, nullptr);
 
-    // 디스크립터 힙 타입 별 디스크립터 핸들 사이즈 정보 얻기 (보통은 32바이트를 차지)
-    descriptorHandleSize[D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV] = device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
-    descriptorHandleSize[D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER] = device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER);
-    descriptorHandleSize[D3D12_DESCRIPTOR_HEAP_TYPE_RTV] = device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
-    descriptorHandleSize[D3D12_DESCRIPTOR_HEAP_TYPE_DSV] = device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_DSV);
-
     // CPU 디스크립터 풀 생성
     resCpuDescriptorPool = new D3D12DescriptorPool(device, D3D12DescriptorPool::Type::CBV_SRV_UAV, 1000000, false);
     rtvCpuDescriptorPool = new D3D12DescriptorPool(device, D3D12DescriptorPool::Type::RTV, 16, false);
     dsvCpuDescriptorPool = new D3D12DescriptorPool(device, D3D12DescriptorPool::Type::DSV, 16, false);
-    samplerCpuDescriptorPool = new D3D12DescriptorPool(device, D3D12DescriptorPool::Type::Sampler, 2048, false);
+    samCpuDescriptorPool = new D3D12DescriptorPool(device, D3D12DescriptorPool::Type::Sampler, 2048, false);
 
-    // UAV 의 경우에만 GPU 디스크립터가 필요하다.
+    // UAV 의 경우에만 CPU & GPU 디스크립터가 필요하다.
     // ClearUnorderedAccessViewUint 함수에서 CPU (원본) 디스크립터와 GPU 디스크립터가 모두 필요하기 때문에..
+    uavCpuDescriptorPool = new D3D12DescriptorPool(device, D3D12DescriptorPool::Type::CBV_SRV_UAV, 4096, false);
     uavGpuDescriptorPool = new D3D12DescriptorPool(device, D3D12DescriptorPool::Type::CBV_SRV_UAV, 4096, true);
 
     // Init feature check (https://devblogs.microsoft.com/directx/introducing-a-new-api-for-checking-feature-support-in-direct3d-12/)
@@ -337,10 +332,11 @@ void D3D12Renderer::Shutdown() {
     DestroySwapChain(swapChain);
 
     SAFE_DELETE(resCpuDescriptorPool);
+    SAFE_DELETE(uavCpuDescriptorPool);
+    SAFE_DELETE(uavGpuDescriptorPool);
     SAFE_DELETE(rtvCpuDescriptorPool);
     SAFE_DELETE(dsvCpuDescriptorPool);
-    SAFE_DELETE(samplerCpuDescriptorPool);
-    SAFE_DELETE(uavGpuDescriptorPool);
+    SAFE_DELETE(samCpuDescriptorPool);
     SAFE_DELETE(graphicsCommandListPool);
 
     SAFE_RELEASE(depthStencilBuffer);
@@ -422,7 +418,7 @@ void D3D12Renderer::CreateDSV(uint32_t width, uint32_t height) {
     dsvDesc.Flags = D3D12_DSV_FLAG_NONE;
 
     if (dsvDescriptorHandle.ptr != 0) {
-        dsvCpuDescriptorPool->FreeIndex(renderer->dsvCpuDescriptorPool->GetIndexFromCPUDescriptorHandle(dsvDescriptorHandle));
+        dsvCpuDescriptorPool->Free(dsvDescriptorHandle);
     }
     dsvCpuDescriptorPool->Alloc(&dsvDescriptorHandle, nullptr);
     device->CreateDepthStencilView(depthStencilBuffer, &dsvDesc, dsvDescriptorHandle);
@@ -830,27 +826,30 @@ void D3D12Renderer::DispatchMesh(CommandList *commandList, uint32_t threadGroupC
 
 void D3D12Renderer::ClearUAV(CommandList *commandList, const GPUResource *resource, uint32_t value) {
     const UINT values[4] = { value, value, value, value };
-    D3D12_CPU_DESCRIPTOR_HANDLE cpuDescriptorHandle = {};
-    D3D12_GPU_DESCRIPTOR_HANDLE gpuDescriptorHandle = {};
+    const Array<D3D12_CPU_DESCRIPTOR_HANDLE> *cpuDescriptorHandlesPtr = nullptr;
 
     const D3D12Buffer *buffer = reinterpret_cast<const D3D12Buffer *>(resource->GetNativeBufferObject());
     if (buffer) {
-        cpuDescriptorHandle = buffer->uavCpuDescriptorHandle;
-        gpuDescriptorHandle = buffer->uavGpuDescriptorHandle;
+        cpuDescriptorHandlesPtr = &buffer->uavCpuDescriptorHandles;
     } else {
         const D3D12Texture *texture = reinterpret_cast<const D3D12Texture *>(resource->GetNativeTextureObject());
         if (texture) {
-            cpuDescriptorHandle = texture->uavCpuDescriptorHandle;
-            gpuDescriptorHandle = texture->uavGpuDescriptorHandle;
+            cpuDescriptorHandlesPtr = &texture->uavCpuDescriptorHandles;
         }
     }
 
-    if (cpuDescriptorHandle.ptr == 0 || gpuDescriptorHandle.ptr) {
+    if (!cpuDescriptorHandlesPtr) {
         BE_ERRLOG("D3D12Renderer::ClearUAV: Invalid UAV descriptor handle\n");
         return;
     }
     D3D12CommandList *d3d12CommandList = static_cast<D3D12CommandList *>(commandList);
-    d3d12CommandList->GetGraphicsCommandList()->ClearUnorderedAccessViewUint(gpuDescriptorHandle, cpuDescriptorHandle, reinterpret_cast<ID3D12Resource *>(resource->GetNativeResource()), values, 0, nullptr);
+    for (int i = 0; i < cpuDescriptorHandlesPtr->Count(); ++i) {
+        D3D12_CPU_DESCRIPTOR_HANDLE cpuDescriptorHandle = (*cpuDescriptorHandlesPtr)[i];
+        int descriptorIndex = uavCpuDescriptorPool->GetIndexFromCPUDescriptorHandle(cpuDescriptorHandle);
+        D3D12_GPU_DESCRIPTOR_HANDLE gpuDescriptorHandle = uavGpuDescriptorPool->GetGPUDescriptorHandleFromIndex(descriptorIndex);
+
+        d3d12CommandList->GetGraphicsCommandList()->ClearUnorderedAccessViewUint(gpuDescriptorHandle, cpuDescriptorHandle, reinterpret_cast<ID3D12Resource *>(resource->GetNativeResource()), values, 0, nullptr);
+    }
 }
 
 void D3D12Renderer::CopyBuffer(CommandList *commandList, const Buffer *dstBuffer, uint32_t dstOffset, const Buffer *srcBuffer, uint32_t srcOffset, uint32_t size) {

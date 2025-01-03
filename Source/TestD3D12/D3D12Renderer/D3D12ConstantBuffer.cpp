@@ -21,7 +21,7 @@
 void D3D12ConstantBuffer::Release() {
     if (!writePtr) {
         if (descriptorHandle.ptr != 0) {
-            renderer->resCpuDescriptorPool->FreeIndex(renderer->resCpuDescriptorPool->GetIndexFromCPUDescriptorHandle(descriptorHandle));
+            renderer->resCpuDescriptorPool->Free(descriptorHandle);
             descriptorHandle.ptr = 0;
         }
     }

@@ -87,7 +87,7 @@ void D3D12SwapChain::Release() {
 void D3D12SwapChain::CreateRTVs() {
     for (UINT bufferIndex = 0; bufferIndex < D3D12SwapChain::NumSwapChainBuffers; ++bufferIndex) {
         if (rtvDescriptorHandles[bufferIndex].ptr != 0) {
-            renderer->rtvCpuDescriptorPool->FreeIndex(renderer->rtvCpuDescriptorPool->GetIndexFromCPUDescriptorHandle(rtvDescriptorHandles[bufferIndex]));
+            renderer->rtvCpuDescriptorPool->Free(rtvDescriptorHandles[bufferIndex]);
         }
         renderer->rtvCpuDescriptorPool->Alloc(&rtvDescriptorHandles[bufferIndex], nullptr);
 

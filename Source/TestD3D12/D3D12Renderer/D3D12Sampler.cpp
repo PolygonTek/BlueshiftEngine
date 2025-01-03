@@ -76,7 +76,7 @@ static void ToD3D12TextureBorderColor(RHIRenderer::TextureBorderColor borderColo
 
 void D3D12Sampler::Release() {
     if (descriptorHandle.ptr != 0) {
-        renderer->samplerCpuDescriptorPool->FreeIndex(renderer->samplerCpuDescriptorPool->GetIndexFromCPUDescriptorHandle(descriptorHandle));
+        renderer->samCpuDescriptorPool->Free(descriptorHandle);
         descriptorHandle.ptr = 0;
     }
 }
@@ -94,7 +94,7 @@ RHIRenderer::Sampler *D3D12Renderer::CreateSampler(const SamplerDesc *desc) {
     samplerDesc.MinLOD = desc->maxLod;
 
     D3D12_CPU_DESCRIPTOR_HANDLE descriptorHandle = {};
-    if (samplerCpuDescriptorPool->Alloc(&descriptorHandle, nullptr)) {
+    if (samCpuDescriptorPool->Alloc(&descriptorHandle, nullptr)) {
         return nullptr;
     }
 

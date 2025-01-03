@@ -53,6 +53,7 @@ void D3D12FrameData::Init() {
 
         // 미리 다이나믹 버퍼 블럭을 1개 생성한다.
         D3D12DynamicAllocation *dynamicAllocation = new D3D12DynamicAllocation(DynamicAllocationBlockSize);
+        data->dynamicAllocations.SetGranularity(16);
         data->dynamicAllocations.Append(dynamicAllocation);
 
         // 다이나믹 버퍼에서 사용할 (CBV, SRV, UAV) 디스크립터 풀을 생성한다.
@@ -379,9 +380,9 @@ RHIRenderer::Buffer *D3D12FrameData::AllocBuffer(int threadIndex, bool shaderWri
     D3D12Buffer dynamicBuffer;
     dynamicBuffer.writePtr = (byte *)currentDynamicAllocation->mappedBase + alignedOffset;
     if (shaderWritable) {
-        dynamicBuffer.uavCpuDescriptorHandle = descriptorHandle;
+        dynamicBuffer.uavCpuDescriptorHandles.Append(descriptorHandle);
     } else {
-        dynamicBuffer.srvCpuDescriptorHandle = descriptorHandle;
+        dynamicBuffer.srvCpuDescriptorHandles.Append(descriptorHandle);
     }
     data->dynamicBuffers.Append(dynamicBuffer);
 
