@@ -112,10 +112,10 @@ void D3D12CubeMesh::InitPipelineState() {
         { "TEXCOORD", 0, 16, 0, RHIRenderer::InputLayoutElement::Format::Float2 },
     };
 
-    RHIRenderer::RenderPass renderPass;
-    renderPass.renderTargetCount = 1;
-    renderPass.renderTargetFormats[0] = Image::Format::RGBA_8_8_8_8;
-    renderPass.depthStencilFormat = Image::Format::DepthStencil_24_8;
+    RHIRenderer::RenderDest renderDest;
+    renderDest.renderTargetCount = 1;
+    renderDest.renderTargetFormats[0] = Image::Format::RGBA_8_8_8_8;
+    renderDest.depthStencilFormat = Image::Format::DepthStencil_24_8;
 
     RHIRenderer::Shader *cubeVS = static_cast<RHIRenderer::Shader *>(renderer->CreateShaderFromFile(RHIRenderer::ShaderModel::SM_6_0, RHIRenderer::ShaderStage::Vertex, "Source/TestD3D12/Shaders/Cube.hlsl", "VSMain"));
     RHIRenderer::Shader *cubePS = static_cast<RHIRenderer::Shader *>(renderer->CreateShaderFromFile(RHIRenderer::ShaderModel::SM_6_0, RHIRenderer::ShaderStage::Fragment, "Source/TestD3D12/Shaders/Cube.hlsl", "PSMain"));
@@ -129,7 +129,7 @@ void D3D12CubeMesh::InitPipelineState() {
         psoDesc.blendState = renderer->GetBlendState(RHIRenderer::BlendStateType::Opaque);
         psoDesc.inputLayout = &inputLayout;
         psoDesc.primitiveTopology = RHIRenderer::PrimitiveTopology::TriangleList;
-        psoDesc.renderPass = &renderPass;
+        psoDesc.renderDest = &renderDest;
         singlePSO = renderer->CreateGraphicsPSO(&psoDesc);
     }
 
@@ -152,7 +152,7 @@ void D3D12CubeMesh::InitPipelineState() {
         psoDesc.blendState = renderer->GetBlendState(RHIRenderer::BlendStateType::Opaque);
         psoDesc.inputLayout = &inputLayout;
         psoDesc.primitiveTopology = RHIRenderer::PrimitiveTopology::TriangleList;
-        psoDesc.renderPass = &renderPass;
+        psoDesc.renderDest = &renderDest;
         instancingPSO = renderer->CreateGraphicsPSO(&psoDesc);
     }
 

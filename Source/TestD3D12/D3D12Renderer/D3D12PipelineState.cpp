@@ -319,7 +319,7 @@ RHIRenderer::PipelineState *D3D12Renderer::CreateGraphicsPSO(const RHIRenderer::
         uint64_t blendHash = 0;
         uint64_t depthStencilHash = 0;
         uint64_t rasterizerHash = 0;
-        uint64_t renderPassHash = 0;
+        uint64_t renderDestHash = 0;
     } psoHashData;
 
     ID3D12RootSignature *rootSignature = nullptr;
@@ -402,8 +402,8 @@ RHIRenderer::PipelineState *D3D12Renderer::CreateGraphicsPSO(const RHIRenderer::
         psoHashData.rasterizerHash = static_cast<uint64_t>(hasher(desc->rasterizerState));
     }
 
-    if (desc->renderPass) {
-        psoHashData.renderPassHash = desc->renderPass->GetHash();
+    if (desc->renderDest) {
+        psoHashData.renderDestHash = desc->renderDest->GetHash();
     }
 
     // 전체 hash 값으로 완전히 동일한 PSO 가 존재하는지 찾아보고, 있으면 리턴한다.
@@ -585,17 +585,17 @@ RHIRenderer::PipelineState *D3D12Renderer::CreateGraphicsPSO(const RHIRenderer::
     }
 
     // RenderPass
-    if (desc->renderPass) {
+    if (desc->renderDest) {
         D3D12_RT_FORMAT_ARRAY renderTargetFormatArray = {};
-        renderTargetFormatArray.NumRenderTargets = desc->renderPass->renderTargetCount;
+        renderTargetFormatArray.NumRenderTargets = desc->renderDest->renderTargetCount;
 
         for (int i = 0; i < renderTargetFormatArray.NumRenderTargets; ++i) {
             DXGI_FORMAT renderTargetFormat;
-            ImageFormatToDXGIFormat(desc->renderPass->renderTargetFormats[i], false, &renderTargetFormat);
+            ImageFormatToDXGIFormat(desc->renderDest->renderTargetFormats[i], false, &renderTargetFormat);
             renderTargetFormatArray.RTFormats[i] = renderTargetFormat;
         }
         DXGI_FORMAT depthStencilFormat;
-        ImageFormatToDXGIFormat(desc->renderPass->depthStencilFormat, false, &depthStencilFormat);
+        ImageFormatToDXGIFormat(desc->renderDest->depthStencilFormat, false, &depthStencilFormat);
 
         DXGI_SAMPLE_DESC sampleDesc = {};
         sampleDesc.Count = desc->sampleCount;

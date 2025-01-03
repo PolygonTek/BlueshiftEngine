@@ -475,7 +475,7 @@ public:
         };
     };
 
-    struct RenderPass {
+    struct RenderDest {
         uint32_t                    renderTargetCount = 0;
         Image::Format::Enum         renderTargetFormats[8] = {};
         Image::Format::Enum         depthStencilFormat = Image::Format::Unknown;
@@ -520,11 +520,26 @@ public:
         const RasterizerState *     rasterizerState = nullptr;
         const DepthStencilState *   depthStencilState = nullptr;
         const BlendState *          blendState = nullptr;
-        const RenderPass *          renderPass;
+        const RenderDest *          renderDest;
         PrimitiveTopology           primitiveTopology = PrimitiveTopology::TriangleList;
         uint32_t                    sampleMask = 0xffffffff;
         uint32_t                    sampleCount = 1;
         uint32_t                    sampleQuality = 0;
+    };
+
+    enum class RenderPassFlag : uint8_t {
+        None                        = 0,
+        AllowUAVWrites              = BIT(0),
+        Suspending                  = BIT(1),
+        Resuming                    = BIT(2)
+    };
+
+    struct RenderPass {
+        struct RenderTargetEntry {
+        };
+
+        struct DepthStencilEntry {
+        };
     };
 
     class SwapChain {
@@ -558,30 +573,24 @@ public:
         virtual int                 GetThreadIndex() const = 0;
     };
 
-    struct RasterizerStateType {
-        enum Enum {
-            SolidFrontSided,
-            SolidBackSided,
-            Wire,
-            WireSmooth,
-            Count
-        };
+    enum class RasterizerStateType {
+        SolidFrontSided,
+        SolidBackSided,
+        Wire,
+        WireSmooth,
+        Count
     };
 
-    struct DepthStencilStateType {
-        enum Enum {
-            Default,
-            Count
-        };
+    enum class DepthStencilStateType {
+        Default,
+        Count
     };
 
-    struct BlendStateType {
-        enum Enum {
-            Opaque,
-            AlphaBlend,
-            Add,
-            Count
-        };
+    enum class BlendStateType {
+        Opaque,
+        AlphaBlend,
+        Add,
+        Count
     };
 
     virtual void                    Init(HWND hwnd);
@@ -595,9 +604,9 @@ public:
 
     virtual void                    OnResize(int width, int height) = 0;
 
-    const RasterizerState *         GetRasterizerState(RasterizerStateType::Enum type) const { return &rasterizerStates[type]; }
-    const DepthStencilState *       GetDepthStencilState(DepthStencilStateType::Enum type) const { return &depthStencilStates[type]; }
-    const BlendState *              GetBlendState(BlendStateType::Enum type) const { return &blendStates[type]; }
+    const RasterizerState *         GetRasterizerState(RasterizerStateType type) const { return &rasterizerStates[to_int(type)]; }
+    const DepthStencilState *       GetDepthStencilState(DepthStencilStateType type) const { return &depthStencilStates[to_int(type)]; }
+    const BlendState *              GetBlendState(BlendStateType type) const { return &blendStates[to_int(type)]; }
 
     virtual Buffer *                CreateBuffer(BufferUsage usage, ResourceFlag flags, uint64_t size, Image::Format::Enum format, uint32_t stride, const void *data) = 0;
     virtual void                    DestroyBuffer(Buffer *buffer, bool immediate = false) = 0;
@@ -620,7 +629,7 @@ public:
     virtual bool                    SetTextureSubImage3D(Texture *texture, int level, int x, int y, int z, int width, int height, int depth, Image::Format::Enum imageFormat, const void *pixels) = 0;
 
     virtual void                    CreateSubresource(Buffer *buffer, SubresourceType subresourceType, uint64_t offset = 0, uint64_t size = ~0) = 0;
-    virtual void                    CreateSubresource(Texture *texture, SubresourceType type, uint32_t firstSlice = 0, uint32_t sliceCount = ~0, uint32_t firstMipLevel = 0, uint32_t mipCount = ~0) = 0;
+    virtual void                    CreateSubresource(Texture *texture, SubresourceType type, uint32_t firstSlice = 0, uint32_t sliceCount = ~0, uint32_t firstMipLevel = 0, uint32_t mipCount = ~0, uint32_t sampleCount = 0) = 0;
 
     virtual Shader *                CreateShader(ShaderModel shaderModel, ShaderStage shaderStage, const char *sourceName, const char *shaderText, int shaderTextSize, const char *entryPoint) = 0;
     virtual Shader *                CreateShaderFromFile(ShaderModel shaderModel, ShaderStage shaderStage, const char *filename, const char *entryPoint) = 0;
@@ -677,9 +686,9 @@ public:
 protected:
     void                            SetupStates();
 
-    RasterizerState                 rasterizerStates[RasterizerStateType::Count];
-    DepthStencilState               depthStencilStates[DepthStencilStateType::Count];
-    BlendState                      blendStates[BlendStateType::Count];
+    RasterizerState                 rasterizerStates[to_int(RasterizerStateType::Count)];
+    DepthStencilState               depthStencilStates[to_int(DepthStencilStateType::Count)];
+    BlendState                      blendStates[to_int(BlendStateType::Count)];
     bool                            initialized = false;
 };
 
@@ -700,6 +709,11 @@ struct enable_bitmask_operators<RHIRenderer::ResourceFlag> {
 
 template<>
 struct enable_bitmask_operators<RHIRenderer::GPUResourceState> {
+    static const bool enable = true;
+};
+
+template<>
+struct enable_bitmask_operators<RHIRenderer::RenderPassFlag> {
     static const bool enable = true;
 };
 

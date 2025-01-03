@@ -274,9 +274,13 @@ void D3D12Renderer::CreateSubresource(Buffer *buffer, SubresourceType type, uint
         srvDesc.Buffer.FirstElement = offset / stride;
         srvDesc.Buffer.NumElements = Min(size, d3d12Buffer->size - offset) / stride;
 
-        resCpuDescriptorPool->Alloc(&d3d12Buffer->srvCpuDescriptorHandle, nullptr);
+        D3D12_CPU_DESCRIPTOR_HANDLE srvCpuDescriptorHandle;
 
-        device->CreateShaderResourceView(d3d12Buffer->GetResource(), &srvDesc, d3d12Buffer->srvCpuDescriptorHandle);
+        resCpuDescriptorPool->Alloc(&srvCpuDescriptorHandle, nullptr);
+
+        device->CreateShaderResourceView(d3d12Buffer->GetResource(), &srvDesc, srvCpuDescriptorHandle);
+
+        d3d12Buffer->srvCpuDescriptorHandle = srvCpuDescriptorHandle;
     } else if (type == SubresourceType::UAV) {
         D3D12_UNORDERED_ACCESS_VIEW_DESC uavDesc = {};
         uavDesc.ViewDimension = D3D12_UAV_DIMENSION_BUFFER;
@@ -294,15 +298,21 @@ void D3D12Renderer::CreateSubresource(Buffer *buffer, SubresourceType type, uint
         uavDesc.Buffer.NumElements = Min(size, d3d12Buffer->size - offset) / stride;
 
         // UAV 는 GPU 디스크립터도 같이 할당한다.
-        resCpuDescriptorPool->Alloc(&d3d12Buffer->uavCpuDescriptorHandle, nullptr);
-        uavGpuDescriptorPool->Alloc(nullptr, &d3d12Buffer->uavGpuDescriptorHandle);
+        D3D12_CPU_DESCRIPTOR_HANDLE uavCpuDescriptorHandle;
+        D3D12_GPU_DESCRIPTOR_HANDLE uavGpuDescriptorHandle;
 
-        device->CreateUnorderedAccessView(d3d12Buffer->GetResource(), nullptr, &uavDesc, d3d12Buffer->uavCpuDescriptorHandle);
+        resCpuDescriptorPool->Alloc(&uavCpuDescriptorHandle, nullptr);
+        uavGpuDescriptorPool->Alloc(nullptr, &uavGpuDescriptorHandle);
+
+        device->CreateUnorderedAccessView(d3d12Buffer->GetResource(), nullptr, &uavDesc, uavCpuDescriptorHandle);
 
         // 만들어진 UAV 디스크립터를 GPU 디스크립터에 복사
-        uint32 index = uavGpuDescriptorPool->GetIndexFromGPUDescriptorHandle(d3d12Buffer->uavGpuDescriptorHandle);
+        uint32 index = uavGpuDescriptorPool->GetIndexFromGPUDescriptorHandle(uavGpuDescriptorHandle);
         D3D12_CPU_DESCRIPTOR_HANDLE destDescriptorHandle = uavGpuDescriptorPool->GetCPUDescriptorHandleFromIndex(index);
-        device->CopyDescriptorsSimple(1, destDescriptorHandle, d3d12Buffer->uavCpuDescriptorHandle, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+        device->CopyDescriptorsSimple(1, destDescriptorHandle, uavCpuDescriptorHandle, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+
+        d3d12Buffer->uavCpuDescriptorHandle = uavCpuDescriptorHandle;
+        d3d12Buffer->uavGpuDescriptorHandle = uavGpuDescriptorHandle;
     }
 }
 

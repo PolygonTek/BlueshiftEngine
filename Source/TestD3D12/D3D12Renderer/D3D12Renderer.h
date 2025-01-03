@@ -95,7 +95,7 @@ public:
     virtual bool                        SetTextureSubImage3D(Texture *texture, int level, int x, int y, int z, int width, int height, int depth, Image::Format::Enum imageFormat, const void *pixels) override;
 
     virtual void                        CreateSubresource(Buffer *buffer, SubresourceType type, uint64_t offset = 0, uint64_t size = ~0) override;
-    virtual void                        CreateSubresource(Texture *texture, SubresourceType type, uint32_t firstSlice = 0, uint32_t sliceCount = ~0, uint32_t firstMipLevel = 0, uint32_t mipCount = ~0) override;
+    virtual void                        CreateSubresource(Texture *texture, SubresourceType type, uint32_t firstSlice = 0, uint32_t sliceCount = ~0, uint32_t firstMipLevel = 0, uint32_t mipCount = ~0, uint32_t sampleCount = 0) override;
 
     virtual Shader *                    CreateShader(ShaderModel shaderModel, ShaderStage shaderStage, const char *sourceName, const char *shaderText, int shaderTextSize, const char *entryPoint) override;
     virtual Shader *                    CreateShaderFromFile(ShaderModel shaderModel, ShaderStage shaderStage, const char *filename, const char *entryPoint) override;

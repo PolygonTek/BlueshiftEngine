@@ -26,29 +26,29 @@ void RHIRenderer::Shutdown() {
 }
 
 void RHIRenderer::SetupStates() {
-    RasterizerState *rs = &rasterizerStates[RasterizerStateType::SolidFrontSided];
+    RasterizerState *rs = &rasterizerStates[to_int(RasterizerStateType::SolidFrontSided)];
     rs->fillMode = FillMode::Solid;
     rs->cullMode = CullMode::Back;
 
-    rs = &rasterizerStates[RasterizerStateType::SolidBackSided];
+    rs = &rasterizerStates[to_int(RasterizerStateType::SolidBackSided)];
     rs->fillMode = FillMode::Solid;
     rs->cullMode = CullMode::Front;
 
-    rs = &rasterizerStates[RasterizerStateType::Wire];
+    rs = &rasterizerStates[to_int(RasterizerStateType::Wire)];
     rs->fillMode = FillMode::Wire;
     rs->cullMode = CullMode::None;
 
-    rs = &rasterizerStates[RasterizerStateType::WireSmooth];
+    rs = &rasterizerStates[to_int(RasterizerStateType::WireSmooth)];
     rs->fillMode = FillMode::Wire;
     rs->cullMode = CullMode::None;
     rs->smoothLineEnabled = true;
 
-    DepthStencilState *dss = &depthStencilStates[DepthStencilStateType::Default];
+    DepthStencilState *dss = &depthStencilStates[to_int(DepthStencilStateType::Default)];
     dss->depthTestEnabled = true;
     dss->depthWriteMask = DepthWriteMask::All;
     dss->depthFunc = ComparisonFunc::LEqual;
 
-    BlendState *bs = &blendStates[BlendStateType::AlphaBlend];
+    BlendState *bs = &blendStates[to_int(BlendStateType::AlphaBlend)];
     bs->renderTargets[0].blendEnabled = true;
     bs->renderTargets[0].srcFactorColor = Blend::SrcAlpha;
     bs->renderTargets[0].destFactorColor = Blend::InvSrcAlpha;
@@ -57,7 +57,7 @@ void RHIRenderer::SetupStates() {
     bs->renderTargets[0].destFactorAlpha = Blend::Zero;
     bs->renderTargets[0].blendOpAlpha = BlendOp::Add;
 
-    bs = &blendStates[BlendStateType::Add];
+    bs = &blendStates[to_int(BlendStateType::Add)];
     bs->renderTargets[0].blendEnabled = true;
     bs->renderTargets[0].srcFactorColor = Blend::One;
     bs->renderTargets[0].destFactorColor = Blend::One;
