@@ -502,7 +502,7 @@ void D3D12Renderer::BeginFrame() {
     barrier.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
     commandList->GetGraphicsCommandList()->ResourceBarrier(1, &barrier);
 
-    commandList->GetGraphicsCommandList()->ClearRenderTargetView(swapChain->GetCurrentBackBufferDescriptorHandle(), Color4::blue, 0, nullptr);
+    commandList->GetGraphicsCommandList()->ClearRenderTargetView(swapChain->GetCurrentBackBufferDescriptorHandle(), BE1::Color4::blue, 0, nullptr);
     commandList->GetGraphicsCommandList()->ClearDepthStencilView(dsvDescriptorHandle, D3D12_CLEAR_FLAG_DEPTH, 1.0f, 0, 0, nullptr);
     commandList->GetGraphicsCommandList()->OMSetRenderTargets(1, &swapChain->GetCurrentBackBufferDescriptorHandle(), FALSE, &dsvDescriptorHandle);
 
@@ -1277,7 +1277,7 @@ void D3D12Renderer::DrawVisObjectsWithoutTask() {
     DrawVisObjects(0, commandList, 0, numVisObjects - 1);
 
     // CommandList 기록을 마치고 CommandQueue 로 실행
-    commandList->CloseAndExecute(CommandQueueType::Graphics);
+    commandList->CloseAndExecute(RHI::CommandQueueType::Graphics);
 #endif
 }
 
@@ -1380,7 +1380,7 @@ void D3D12Renderer::DrawVisObjectsWithTask(int numTasks) {
 #else
     // CommandList 들을 한꺼번에 실행
     if (renderTaskCount > 0) {
-        commandQueues[to_int(CommandQueueType::Graphics)]->ExecuteCommandLists(renderTaskCount, execCommandLists);
+        commandQueues[to_int(RHI::CommandQueueType::Graphics)]->ExecuteCommandLists(renderTaskCount, execCommandLists);
     }
 #endif
 }
