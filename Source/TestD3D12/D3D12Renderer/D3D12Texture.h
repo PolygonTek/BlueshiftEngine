@@ -14,7 +14,6 @@
 
 #pragma once
 
-#include "../RHIRenderer.h"
 #include "D3D12Common.h"
 
 #ifdef USE_D3D12_MEMALLOC
@@ -36,8 +35,6 @@ public:
 
     ID3D12Resource *                GetResource() const;
 
-    static void                     AdjustTextureFormat(bool useCompression, bool useNormalMap, BE1::Image::Format::Enum inFormat, BE1::Image::Format::Enum *outFormat);
-
 private:
 #ifdef USE_D3D12_MEMALLOC
     D3D12MA::Allocation *           textureAllocation = nullptr;
@@ -45,8 +42,17 @@ private:
     ID3D12Resource *                textureResource = nullptr;
 #endif
     D3D12_RESOURCE_DESC             textureDesc;
-    BE1::Array<D3D12_CPU_DESCRIPTOR_HANDLE> srvCpuDescriptorHandles;
-    BE1::Array<D3D12_CPU_DESCRIPTOR_HANDLE> rtvCpuDescriptorHandles;
-    BE1::Array<D3D12_CPU_DESCRIPTOR_HANDLE> dsvCpuDescriptorHandles;
-    BE1::Array<D3D12_CPU_DESCRIPTOR_HANDLE> uavCpuDescriptorHandles;
+    D3D12_CLEAR_VALUE               clearValue;
+    BE1::Array<D3D12SRVDescriptor>  srvDescriptors = (8);
+    BE1::Array<D3D12RTVDescriptor>  rtvDescriptors = (8);
+    BE1::Array<D3D12DSVDescriptor>  dsvDescriptors = (8);
+    BE1::Array<D3D12UAVDescriptor>  uavDescriptors = (8);
 };
+
+BE_INLINE ID3D12Resource *D3D12Texture::GetResource() const {
+#ifdef USE_D3D12_MEMALLOC
+    return textureAllocation->GetResource();
+#else
+    return textureResource;
+#endif
+}

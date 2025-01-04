@@ -32,6 +32,8 @@ extern "C" { __declspec(dllexport) extern const char *D3D12SDKPath = u8"."; }
 D3D12Renderer *     renderer;
 
 void D3D12Renderer::Init(HWND hwnd) {
+    RHIRenderer::Init(hwnd);
+
 #if defined(USE_DEBUG_LAYER) && (defined(_DEBUG) || defined(_DEVELOPMENT))
     bool enableDebugLayer = true;
     bool withGpuValidation = true;
@@ -217,6 +219,8 @@ void D3D12Renderer::Init(HWND hwnd) {
     hr = features.Init(device);
     assert(SUCCEEDED(hr));
 
+    resourceHeapTier = features.ResourceHeapTier();
+
     if (features.ConservativeRasterizationTier() >= D3D12_CONSERVATIVE_RASTERIZATION_TIER_1) {
         supportsConservativeRasterization = true;
     }
@@ -231,6 +235,10 @@ void D3D12Renderer::Init(HWND hwnd) {
     }
     if (features.DepthBoundsTestSupported() == TRUE) {
         supportsDepthBoundsTest = true;
+    }
+    if (features.CastingFullyTypedFormatSupported() == TRUE) {
+        // https://microsoft.github.io/DirectX-Specs/d3d/RelaxedCasting.html#casting-rules-for-rs2-drivers
+        supportsCastingFullyTypedFormat = true;
     }
 
     // shader cache 디렉토리 초기화
@@ -297,7 +305,15 @@ void D3D12Renderer::Init(HWND hwnd) {
 
     renderObjects.Reserve(16384);
 
-    RHIRenderer::Init(hwnd);
+    BE1::Image mainRenderImage;
+    mainRenderImage.InitFromMemory(backBufferWidth, backBufferHeight, 1, 1, 1, BE1::Image::Format::RGBA_8_8_8_8, BE1::Image::GammaSpace::Linear, nullptr, 0);
+    mainRenderTexture = CreateTexture(RHI::TextureType::Texture2D, RHI::ResourceFlag::RenderTarget | RHI::ResourceFlag::ShaderResource | RHI::ResourceFlag::UnorderedAccess,
+        &mainRenderImage, RHI::ClearValue::Color(1.0f, 0.0f, 1.0f, 0.0f), 1);
+
+    BE1::Image mainDepthImage;
+    mainDepthImage.InitFromMemory(backBufferWidth, backBufferHeight, 1, 1, 1, BE1::Image::Format::DepthStencil_24_8, BE1::Image::GammaSpace::Linear, nullptr, 0);
+    mainDepthTexture = CreateTexture(RHI::TextureType::Texture2D, RHI::ResourceFlag::DepthStencil,
+        &mainDepthImage, RHI::ClearValue::DepthStencil(1.0f, 0), 1, RHI::GPUResourceState::DepthWrite);
 }
 
 void D3D12Renderer::Shutdown() {
@@ -313,6 +329,9 @@ void D3D12Renderer::Shutdown() {
 
     Finish(RHI::CommandQueueType::Graphics);
     Finish(RHI::CommandQueueType::Compute);
+
+    DestroyTexture(mainRenderTexture, true);
+    DestroyTexture(mainDepthTexture, true);
 
     for (int frameIndex = 0; frameIndex < NumFrameResources; ++frameIndex) {
         frameData[frameIndex].Shutdown();
@@ -491,6 +510,12 @@ void D3D12Renderer::BeginFrame() {
 
 #ifdef USE_SECONDARY_COMMAND_LISTS
     BeginRenderPass(commandList, swapChain, BE1::Color4::blue, 1.0f, 0, RHI::ClearFlag::Color | RHI::ClearFlag::Depth);
+
+    /*RHI::RenderPassImage renderPassImages[] = {
+        RHI::RenderPassImage::Color(mainRenderTexture, 0, RHI::RenderPassImage::LoadAction::Clear),
+        RHI::RenderPassImage::DepthStencil(mainDepthTexture, 0, RHI::RenderPassImage::LoadAction::Clear)
+    };
+    BeginRenderPass(commandList, renderPassImages, COUNT_OF(renderPassImages));*/
 #else
     // 백버퍼를 렌더 타겟 상태로 전환
     D3D12_RESOURCE_BARRIER barrier;
@@ -699,6 +724,19 @@ void D3D12Renderer::OnResize(int width, int height) {
     SAFE_RELEASE(depthStencilBuffer);
 
     CreateDSV(width, height);
+
+    DestroyTexture(mainRenderTexture, true);
+    DestroyTexture(mainDepthTexture, true);
+
+    BE1::Image mainRenderImage;
+    mainRenderImage.InitFromMemory(width, height, 1, 1, 1, BE1::Image::Format::RGBA_8_8_8_8, BE1::Image::GammaSpace::Linear, nullptr, 0);
+    mainRenderTexture = CreateTexture(RHI::TextureType::Texture2D, RHI::ResourceFlag::RenderTarget | RHI::ResourceFlag::ShaderResource | RHI::ResourceFlag::UnorderedAccess,
+        &mainRenderImage, RHI::ClearValue::Color(1.0f, 0.0f, 1.0f, 0.0f), 1);
+
+    BE1::Image mainDepthImage;
+    mainDepthImage.InitFromMemory(width, height, 1, 1, 1, BE1::Image::Format::DepthStencil_24_8, BE1::Image::GammaSpace::Linear, nullptr, 0);
+    mainDepthTexture = CreateTexture(RHI::TextureType::Texture2D, RHI::ResourceFlag::DepthStencil,
+        &mainDepthImage, RHI::ClearValue::DepthStencil(1.0f, 0), 1, RHI::GPUResourceState::DepthWrite);
 }
 
 void D3D12Renderer::CreateDevice(IDXGIAdapter1 **adapterPtr) {
@@ -827,25 +865,25 @@ void D3D12Renderer::DispatchMesh(RHI::CommandList *commandList, uint32_t threadG
 
 void D3D12Renderer::ClearUAV(RHI::CommandList *commandList, const RHI::GPUResource *resource, uint32_t value) {
     const UINT values[4] = { value, value, value, value };
-    const BE1::Array<D3D12_CPU_DESCRIPTOR_HANDLE> *cpuDescriptorHandlesPtr = nullptr;
+    const BE1::Array<D3D12UAVDescriptor> *uavDescriptors = nullptr;
 
     const D3D12Buffer *buffer = reinterpret_cast<const D3D12Buffer *>(resource->GetNativeBufferObject());
     if (buffer) {
-        cpuDescriptorHandlesPtr = &buffer->uavCpuDescriptorHandles;
+        uavDescriptors = &buffer->uavDescriptors;
     } else {
         const D3D12Texture *texture = reinterpret_cast<const D3D12Texture *>(resource->GetNativeTextureObject());
         if (texture) {
-            cpuDescriptorHandlesPtr = &texture->uavCpuDescriptorHandles;
+            uavDescriptors = &texture->uavDescriptors;
         }
     }
 
-    if (!cpuDescriptorHandlesPtr) {
-        BE_ERRLOG("D3D12Renderer::ClearUAV: Invalid UAV descriptor handle\n");
+    if (!uavDescriptors) {
+        BE_ERRLOG("D3D12Renderer::ClearUAV: Invalid UAV descriptors\n");
         return;
     }
     D3D12CommandList *d3d12CommandList = static_cast<D3D12CommandList *>(commandList);
-    for (int i = 0; i < cpuDescriptorHandlesPtr->Count(); ++i) {
-        D3D12_CPU_DESCRIPTOR_HANDLE cpuDescriptorHandle = (*cpuDescriptorHandlesPtr)[i];
+    for (int i = 0; i < uavDescriptors->Count(); ++i) {
+        D3D12_CPU_DESCRIPTOR_HANDLE cpuDescriptorHandle = (*uavDescriptors)[i].cpuDescriptorHandle;
         int descriptorIndex = uavCpuDescriptorPool->GetIndexFromCPUDescriptorHandle(cpuDescriptorHandle);
         D3D12_GPU_DESCRIPTOR_HANDLE gpuDescriptorHandle = uavGpuDescriptorPool->GetGPUDescriptorHandleFromIndex(descriptorIndex);
 
@@ -856,6 +894,7 @@ void D3D12Renderer::ClearUAV(RHI::CommandList *commandList, const RHI::GPUResour
 void D3D12Renderer::CopyBuffer(RHI::CommandList *commandList, const RHI::Buffer *dstBuffer, uint32_t dstOffset, const RHI::Buffer *srcBuffer, uint32_t srcOffset, uint32_t size) {
     const D3D12Buffer *d3d12DstBuffer = static_cast<const D3D12Buffer *>(dstBuffer);
     const D3D12Buffer *d3d12SrcBuffer = static_cast<const D3D12Buffer *>(srcBuffer);
+
     D3D12CommandList *d3d12CommandList = static_cast<D3D12CommandList *>(commandList);
     d3d12CommandList->GetGraphicsCommandList()->CopyBufferRegion(d3d12DstBuffer->GetResource(), dstOffset, d3d12SrcBuffer->GetResource(), srcOffset, size);
 }
@@ -864,14 +903,16 @@ void D3D12Renderer::CopyTexture(RHI::CommandList *commandList, const RHI::Textur
     const RHI::Texture *srcTexture, uint32_t srcSlice, uint32_t srcMipLevel, uint32_t srcX, uint32_t srcY, uint32_t srcZ, uint32_t width, uint32_t height, uint32_t depth) {
     const D3D12Texture *d3d12DstTexture = static_cast<const D3D12Texture *>(dstTexture);
     const D3D12Texture *d3d12SrcTexture = static_cast<const D3D12Texture *>(srcTexture);
+
     CD3DX12_TEXTURE_COPY_LOCATION dstLocation(d3d12DstTexture->GetResource(), D3D12CalcSubresource(dstMipLevel, dstSlice, 0, d3d12DstTexture->textureDesc.MipLevels, d3d12DstTexture->textureDesc.DepthOrArraySize));
     CD3DX12_TEXTURE_COPY_LOCATION srcLocation(d3d12SrcTexture->GetResource(), D3D12CalcSubresource(srcMipLevel, srcSlice, 0, d3d12SrcTexture->textureDesc.MipLevels, d3d12SrcTexture->textureDesc.DepthOrArraySize));
-    D3D12CommandList *d3d12CommandList = static_cast<D3D12CommandList *>(commandList);
+
     D3D12_BOX srcBox = { srcX, srcY, srcZ, (UINT)width, (UINT)height, (UINT)depth };
+    D3D12CommandList *d3d12CommandList = static_cast<D3D12CommandList *>(commandList);
     d3d12CommandList->GetGraphicsCommandList()->CopyTextureRegion(&dstLocation, dstX, dstY, dstZ, &srcLocation, &srcBox);
 }
 
-static constexpr D3D12_RESOURCE_STATES ToD3D12ResourceState(RHI::GPUResourceState resourceState) {
+D3D12_RESOURCE_STATES D3D12Renderer::ToD3D12ResourceState(RHI::GPUResourceState resourceState) {
     D3D12_RESOURCE_STATES ret = D3D12_RESOURCE_STATE_COMMON;
     if (BE1::HasFlag(resourceState, RHI::GPUResourceState::ShaderResource)) {
         ret |= D3D12_RESOURCE_STATE_ALL_SHADER_RESOURCE;
@@ -968,11 +1009,9 @@ void D3D12Renderer::Barrier(RHI::CommandList *commandList, const RHI::GPUBarrier
     d3d12CommandList->GetGraphicsCommandList()->ResourceBarrier(barrierCount, barrierDescs.Ptr());
 }
 
-void D3D12Renderer::BeginRenderPass(RHI::CommandList *commandList, const RHI::SwapChain *swapChain, const BE1::Color4 &clearColor, float clearDepth, uint8_t clearStencil, RHI::ClearFlag clearFlag) {
-    D3D12CommandList *d3d12CommandList = static_cast<D3D12CommandList *>(commandList);
-    d3d12CommandList->endRenderPassBarriers.SetCount(0, false);
-
+void D3D12Renderer::BeginRenderPass(RHI::CommandList *commandList, const RHI::SwapChain *swapChain, const BE1::Color4 &clearColor, float clearDepth, uint8_t clearStencil, RHI::ClearFlag clearFlags) {
     const D3D12SwapChain *d3d12SwapChain = static_cast<const D3D12SwapChain *>(swapChain);
+    D3D12CommandList *d3d12CommandList = static_cast<D3D12CommandList *>(commandList);
 
     // 백버퍼를 렌더 타겟 상태로 전환
     D3D12_RESOURCE_BARRIER barrier;
@@ -992,7 +1031,7 @@ void D3D12Renderer::BeginRenderPass(RHI::CommandList *commandList, const RHI::Sw
     // 렌더 타겟
     D3D12_RENDER_PASS_RENDER_TARGET_DESC rtDesc = {};
     rtDesc.cpuDescriptor = d3d12SwapChain->GetCurrentBackBufferDescriptorHandle();
-    if (BE1::HasFlag(clearFlag, RHI::ClearFlag::Color)) {
+    if (BE1::HasFlag(clearFlags, RHI::ClearFlag::Color)) {
         rtDesc.BeginningAccess.Type = D3D12_RENDER_PASS_BEGINNING_ACCESS_TYPE_CLEAR;
         rtDesc.BeginningAccess.Clear.ClearValue.Color[0] = clearColor[0];
         rtDesc.BeginningAccess.Clear.ClearValue.Color[1] = clearColor[1];
@@ -1006,14 +1045,14 @@ void D3D12Renderer::BeginRenderPass(RHI::CommandList *commandList, const RHI::Sw
     // 뎁스/스텐실
     D3D12_RENDER_PASS_DEPTH_STENCIL_DESC dsDesc = {};
     dsDesc.cpuDescriptor = dsvDescriptorHandle;
-    if (BE1::HasFlag(clearFlag, RHI::ClearFlag::Depth)) {
+    if (BE1::HasFlag(clearFlags, RHI::ClearFlag::Depth)) {
         dsDesc.DepthBeginningAccess.Type = D3D12_RENDER_PASS_BEGINNING_ACCESS_TYPE_CLEAR;
         dsDesc.DepthBeginningAccess.Clear.ClearValue.DepthStencil.Depth = clearDepth;
     } else {
         dsDesc.DepthBeginningAccess.Type = D3D12_RENDER_PASS_BEGINNING_ACCESS_TYPE_DISCARD;
     }
     dsDesc.DepthEndingAccess.Type = D3D12_RENDER_PASS_ENDING_ACCESS_TYPE_PRESERVE;
-    if (BE1::HasFlag(clearFlag, RHI::ClearFlag::Stencil)) {
+    if (BE1::HasFlag(clearFlags, RHI::ClearFlag::Stencil)) {
         dsDesc.StencilBeginningAccess.Type = D3D12_RENDER_PASS_BEGINNING_ACCESS_TYPE_CLEAR;
         dsDesc.StencilBeginningAccess.Clear.ClearValue.DepthStencil.Stencil = clearStencil;
     } else {
@@ -1023,21 +1062,356 @@ void D3D12Renderer::BeginRenderPass(RHI::CommandList *commandList, const RHI::Sw
 
     d3d12CommandList->GetGraphicsCommandList()->BeginRenderPass(1, &rtDesc, &dsDesc, D3D12_RENDER_PASS_FLAG_ALLOW_UAV_WRITES);
 #else
-    if (BE1::HasFlag(clearFlag, RHI::ClearFlag::Color)) {
+    if (BE1::HasFlag(clearFlags, RHI::ClearFlag::Color)) {
         d3d12CommandList->GetGraphicsCommandList()->ClearRenderTargetView(d3d12SwapChain->GetCurrentBackBufferDescriptorHandle(), clearColor, 0, nullptr);
     }
-    if (BE1::HasFlag(clearFlag, RHI::ClearFlag::Depth | RHI::ClearFlag::Stencil)) {
+    if (BE1::HasFlag(clearFlags, RHI::ClearFlag::Depth | RHI::ClearFlag::Stencil)) {
         D3D12_CLEAR_FLAGS clearDepthStencilFlags = 0;
-        if (BE1::HasFlag(clearFlag, RHI::ClearFlag::Depth)) {
+        if (BE1::HasFlag(clearFlags, RHI::ClearFlag::Depth)) {
             clearDepthStencilFlags |= D3D12_CLEAR_FLAG_DEPTH;
         }
-        if (BE1::HasFlag(clearFlag, RHI::ClearFlag::Stencil)) {
+        if (BE1::HasFlag(clearFlags, RHI::ClearFlag::Stencil)) {
             clearDepthStencilFlags |= D3D12_CLEAR_FLAG_STENCIL;
         }
         d3d12CommandList->GetGraphicsCommandList()->ClearDepthStencilView(dsvDescriptorHandle, clearDepthStencilFlags, clearDepth, clearStencil, 0, nullptr);
     }
     d3d12CommandList->GetGraphicsCommandList()->OMSetRenderTargets(1, &d3d12SwapChain->GetCurrentBackBufferDescriptorHandle(), FALSE, &dsvDescriptorHandle);
 #endif
+}
+
+static void GetInfoFromRTVDesc(const D3D12_RENDER_TARGET_VIEW_DESC &rtvDesc, UINT &mipSlice, UINT &firstArraySlice, UINT &arraySize) {
+    switch (rtvDesc.ViewDimension) {
+    case D3D12_RTV_DIMENSION_TEXTURE1D:
+        mipSlice = rtvDesc.Texture1D.MipSlice;
+        firstArraySlice = 0;
+        arraySize = 1;
+        break;
+    case D3D12_RTV_DIMENSION_TEXTURE1DARRAY:
+        mipSlice = rtvDesc.Texture1DArray.MipSlice;
+        firstArraySlice = rtvDesc.Texture1DArray.FirstArraySlice;
+        arraySize = rtvDesc.Texture1DArray.ArraySize;
+        break;
+    case D3D12_RTV_DIMENSION_TEXTURE2D:
+        mipSlice = rtvDesc.Texture2D.MipSlice;
+        firstArraySlice = 0;
+        arraySize = 1;
+        break;
+    case D3D12_RTV_DIMENSION_TEXTURE2DARRAY:
+        mipSlice = rtvDesc.Texture2DArray.MipSlice;
+        firstArraySlice = rtvDesc.Texture2DArray.FirstArraySlice;
+        arraySize = rtvDesc.Texture2DArray.ArraySize;
+        break;
+    case D3D12_RTV_DIMENSION_TEXTURE2DMSARRAY:
+        mipSlice = 0;
+        firstArraySlice = rtvDesc.Texture2DMSArray.FirstArraySlice;
+        arraySize = rtvDesc.Texture2DMSArray.ArraySize;
+        break;
+    case D3D12_RTV_DIMENSION_TEXTURE3D:
+        mipSlice = rtvDesc.Texture3D.MipSlice;
+        firstArraySlice = 0;
+        arraySize = 1;
+        break;
+    default:
+        assert(0);
+        break;
+    }
+}
+
+static void GetInfoFromDSVDesc(const D3D12_DEPTH_STENCIL_VIEW_DESC &dsvDesc, UINT &mipSlice, UINT &firstArraySlice, UINT &arraySize) {
+    switch (dsvDesc.ViewDimension) {
+    case D3D12_DSV_DIMENSION_TEXTURE1D:
+        mipSlice = dsvDesc.Texture1D.MipSlice;
+        firstArraySlice = 0;
+        arraySize = 1;
+        break;
+    case D3D12_DSV_DIMENSION_TEXTURE1DARRAY:
+        mipSlice = dsvDesc.Texture1DArray.MipSlice;
+        firstArraySlice = dsvDesc.Texture1DArray.FirstArraySlice;
+        arraySize = dsvDesc.Texture1DArray.ArraySize;
+        break;
+    case D3D12_DSV_DIMENSION_TEXTURE2D:
+        mipSlice = dsvDesc.Texture2D.MipSlice;
+        firstArraySlice = 0;
+        arraySize = 1;
+        break;
+    case D3D12_DSV_DIMENSION_TEXTURE2DARRAY:
+        mipSlice = dsvDesc.Texture2DArray.MipSlice;
+        firstArraySlice = dsvDesc.Texture2DArray.FirstArraySlice;
+        arraySize = dsvDesc.Texture2DArray.ArraySize;
+        break;
+    case D3D12_DSV_DIMENSION_TEXTURE2DMSARRAY:
+        mipSlice = 0;
+        firstArraySlice = dsvDesc.Texture2DMSArray.FirstArraySlice;
+        arraySize = dsvDesc.Texture2DMSArray.ArraySize;
+        break;
+    default:
+        assert(0);
+        break;
+    }
+}
+
+void D3D12Renderer::BeginRenderPass(RHI::CommandList *commandList, const RHI::RenderPassImage renderPassImages[], int numRenderPassImages, RHI::RenderPassFlag flags) {
+    D3D12CommandList *d3d12CommandList = static_cast<D3D12CommandList *>(commandList);
+
+    struct ResolveSource {
+        ID3D12Resource *resource = nullptr;
+        BOOL preserve = FALSE;
+        uint32_t maxMipLevels;
+        uint32_t maxArraySize;
+        uint32_t mipSlice;
+        uint32_t firstArraySlice;
+        uint32_t arraySize;
+    };
+    ResolveSource rtResolveSources[D3D12_SIMULTANEOUS_RENDER_TARGET_COUNT] = {};
+    ResolveSource dsResolveSource = {};
+    D3D12_RENDER_PASS_RENDER_TARGET_DESC rtDescs[D3D12_SIMULTANEOUS_RENDER_TARGET_COUNT] = {};
+    D3D12_RENDER_PASS_DEPTH_STENCIL_DESC dsDesc = {};
+    BE1::Array<D3D12_RENDER_PASS_ENDING_ACCESS_RESOLVE_SUBRESOURCE_PARAMETERS> resolveSubresourceParams[D3D12_SIMULTANEOUS_RENDER_TARGET_COUNT];
+    uint32_t rtCount = 0;
+    BE1::Array<D3D12_RESOURCE_BARRIER> barriers;
+
+    for (int i = 0; i < numRenderPassImages; ++i) {
+        const RHI::RenderPassImage &renderPassImage = renderPassImages[i];
+        const D3D12Texture *texture = static_cast<const D3D12Texture *>(renderPassImage.texture);
+        bool useEntireSubresources = true;
+        UINT destMipSlice = 0;
+        UINT destFirstArraySlice = 0;
+        UINT destArraySize = 1;
+
+        D3D12_RENDER_PASS_BEGINNING_ACCESS_TYPE beginningAccessType = D3D12_RENDER_PASS_BEGINNING_ACCESS_TYPE_DISCARD;
+        if (renderPassImage.loadAction == RHI::RenderPassImage::LoadAction::Load) {
+            beginningAccessType = D3D12_RENDER_PASS_BEGINNING_ACCESS_TYPE_PRESERVE;
+        } else if (renderPassImage.loadAction == RHI::RenderPassImage::LoadAction::Clear) {
+            beginningAccessType = D3D12_RENDER_PASS_BEGINNING_ACCESS_TYPE_CLEAR;
+        }
+        D3D12_RENDER_PASS_ENDING_ACCESS_TYPE endingAccessType = D3D12_RENDER_PASS_ENDING_ACCESS_TYPE_DISCARD;
+        if (renderPassImage.storeAction == RHI::RenderPassImage::StoreAction::Store) {
+            endingAccessType = D3D12_RENDER_PASS_ENDING_ACCESS_TYPE_PRESERVE;
+        }
+
+        switch (renderPassImage.type) {
+        case RHI::RenderPassImage::Type::Color:
+        {
+            // 사용할 Color 렌더타겟 정보를 기록한다.
+            const D3D12RTVDescriptor &rtvDescriptor = texture->rtvDescriptors[renderPassImage.subresourceIndex];
+            useEntireSubresources = texture->rtvDescriptors.Count() == 1;
+            D3D12_RENDER_PASS_RENDER_TARGET_DESC &rtDesc = rtDescs[rtCount];
+            rtDesc.cpuDescriptor = rtvDescriptor.cpuDescriptorHandle;
+            rtDesc.BeginningAccess.Type = beginningAccessType;
+            rtDesc.BeginningAccess.Clear.ClearValue = texture->clearValue;
+            rtDesc.EndingAccess.Type = endingAccessType;
+
+            // 텍스쳐의 RTV 정보를 가져온다.
+            GetInfoFromRTVDesc(rtvDescriptor.rtvDesc, destMipSlice, destFirstArraySlice, destArraySize);
+
+            // Resolve 가능하도록 미리 정보를 기록한다.
+            ResolveSource &rtResolveSource = rtResolveSources[rtCount];
+            rtResolveSource.resource = reinterpret_cast<ID3D12Resource *>(texture->GetNativeResource());
+            rtResolveSource.preserve = endingAccessType == D3D12_RENDER_PASS_ENDING_ACCESS_TYPE_PRESERVE;
+            rtResolveSource.maxMipLevels = texture->textureDesc.MipLevels;
+            rtResolveSource.maxArraySize = texture->textureDesc.DepthOrArraySize;
+            rtResolveSource.mipSlice = destMipSlice;
+            rtResolveSource.firstArraySlice = destFirstArraySlice;
+            rtResolveSource.arraySize = destArraySize;
+            rtCount++;
+            break;
+        }
+        case RHI::RenderPassImage::Type::DepthStencil:
+        {
+            // 사용할 Depth/Stencil 정보를 기록한다.
+            const D3D12DSVDescriptor &dsvDescriptor = texture->dsvDescriptors[renderPassImage.subresourceIndex];
+            useEntireSubresources = texture->dsvDescriptors.Count() == 1;
+            dsDesc.cpuDescriptor = dsvDescriptor.cpuDescriptorHandle;
+            dsDesc.DepthBeginningAccess.Type = beginningAccessType;
+            dsDesc.DepthBeginningAccess.Clear.ClearValue = texture->clearValue;
+            dsDesc.DepthEndingAccess.Type = endingAccessType;
+
+            if (IsStencilFormat(texture->textureDesc.Format)) {
+                dsDesc.StencilBeginningAccess = dsDesc.DepthBeginningAccess;
+                dsDesc.StencilEndingAccess = dsDesc.DepthEndingAccess;
+            }
+
+            // 텍스쳐의 DSV 정보를 가져온다.
+            GetInfoFromDSVDesc(dsvDescriptor.dsvDesc, destMipSlice, destFirstArraySlice, destArraySize);
+
+            // Resolve 가능하도록 미리 정보를 기록한다.
+            dsResolveSource.resource = reinterpret_cast<ID3D12Resource *>(texture->GetNativeResource());
+            dsResolveSource.preserve = endingAccessType == D3D12_RENDER_PASS_ENDING_ACCESS_TYPE_PRESERVE;
+            dsResolveSource.maxMipLevels = texture->textureDesc.MipLevels;
+            dsResolveSource.maxArraySize = texture->textureDesc.DepthOrArraySize;
+            dsResolveSource.mipSlice = destMipSlice;
+            dsResolveSource.firstArraySlice = destFirstArraySlice;
+            dsResolveSource.arraySize = destArraySize;
+            break;
+        }
+        case RHI::RenderPassImage::Type::ResolveColor:
+        {
+            // 지정한 Color 렌더타겟의 Resolve 정보를 기록한다.
+            const D3D12RTVDescriptor &rtvDescriptor = texture->rtvDescriptors[renderPassImage.subresourceIndex];
+            useEntireSubresources = texture->rtvDescriptors.Count() == 1;
+            const ResolveSource &resolveSource = rtResolveSources[renderPassImage.resolveSourceIndex];
+            D3D12_RENDER_PASS_RENDER_TARGET_DESC &rtDesc = rtDescs[renderPassImage.resolveSourceIndex];
+            rtDesc.EndingAccess.Type = D3D12_RENDER_PASS_ENDING_ACCESS_TYPE_RESOLVE;
+            rtDesc.EndingAccess.Resolve.Format = texture->textureDesc.Format;
+            rtDesc.EndingAccess.Resolve.ResolveMode = D3D12_RESOLVE_MODE::D3D12_RESOLVE_MODE_AVERAGE;
+            rtDesc.EndingAccess.Resolve.pSrcResource = resolveSource.resource;
+            rtDesc.EndingAccess.Resolve.pDstResource = reinterpret_cast<ID3D12Resource *>(texture->GetNativeResource());
+            rtDesc.EndingAccess.Resolve.PreserveResolveSource = resolveSource.preserve;
+
+            // 텍스쳐의 RTV 정보를 가져온다.
+            GetInfoFromRTVDesc(rtvDescriptor.rtvDesc, destMipSlice, destFirstArraySlice, destArraySize);
+
+            UINT destWidth = BE1::Max((int)(texture->textureDesc.Width >> destMipSlice), 1);
+            UINT destHeight = BE1::Max((int)(texture->textureDesc.Height >> destMipSlice), 1);
+            UINT arraySize = BE1::Min(destArraySize, resolveSource.arraySize);
+
+            BE1::Array<D3D12_RENDER_PASS_ENDING_ACCESS_RESOLVE_SUBRESOURCE_PARAMETERS> &subresourceParams = resolveSubresourceParams[renderPassImage.resolveSourceIndex];
+
+            for (UINT slice = 0; slice < arraySize; ++slice) {
+                D3D12_RENDER_PASS_ENDING_ACCESS_RESOLVE_SUBRESOURCE_PARAMETERS &params = subresourceParams.Alloc();
+                params.SrcSubresource = D3D12CalcSubresource(resolveSource.mipSlice, resolveSource.firstArraySlice + slice, 0, resolveSource.maxMipLevels, resolveSource.maxArraySize);
+                params.DstSubresource = D3D12CalcSubresource(destMipSlice, destFirstArraySlice + slice, 0, texture->textureDesc.MipLevels, texture->textureDesc.DepthOrArraySize);
+                params.SrcRect.left = 0;
+                params.SrcRect.top = 0;
+                params.SrcRect.right = destWidth;
+                params.SrcRect.bottom = destHeight;
+            }
+
+            rtDesc.EndingAccess.Resolve.pSubresourceParameters = subresourceParams.Ptr();
+            rtDesc.EndingAccess.Resolve.SubresourceCount = subresourceParams.Count();
+            break;
+        }
+        case RHI::RenderPassImage::Type::ResolveDepth:
+        {
+            // Depth/Stencil 의 Resolve 정보를 기록한다.
+            const D3D12DSVDescriptor &dsvDescriptor = texture->dsvDescriptors[renderPassImage.subresourceIndex];
+            useEntireSubresources = texture->dsvDescriptors.Count() == 1;
+            dsDesc.DepthEndingAccess.Type = D3D12_RENDER_PASS_ENDING_ACCESS_TYPE_RESOLVE;
+            dsDesc.DepthEndingAccess.Resolve.Format = texture->textureDesc.Format;
+            switch (renderPassImage.depthResolveMode) {
+            case RHI::RenderPassImage::DepthResolveMode::Min:
+                dsDesc.DepthEndingAccess.Resolve.ResolveMode = D3D12_RESOLVE_MODE_MIN;
+                break;
+            case RHI::RenderPassImage::DepthResolveMode::Max:
+                dsDesc.DepthEndingAccess.Resolve.ResolveMode = D3D12_RESOLVE_MODE_MAX;
+                break;
+            }
+            dsDesc.DepthEndingAccess.Resolve.pSrcResource = dsResolveSource.resource;
+            dsDesc.DepthEndingAccess.Resolve.pDstResource = reinterpret_cast<ID3D12Resource *>(texture->GetNativeResource());
+            dsDesc.DepthEndingAccess.Resolve.PreserveResolveSource = dsResolveSource.preserve;
+
+            // 텍스쳐의 DSV 정보를 가져온다.
+            GetInfoFromDSVDesc(dsvDescriptor.dsvDesc, destMipSlice, destFirstArraySlice, destArraySize);
+
+            UINT destWidth = BE1::Max((int)(texture->textureDesc.Width >> destMipSlice), 1);
+            UINT destHeight = BE1::Max((int)(texture->textureDesc.Height >> destMipSlice), 1);
+            UINT arraySize = BE1::Min(destArraySize, dsResolveSource.arraySize);
+
+            BE1::Array<D3D12_RENDER_PASS_ENDING_ACCESS_RESOLVE_SUBRESOURCE_PARAMETERS> &subresourceParams = resolveSubresourceParams[renderPassImage.resolveSourceIndex];
+
+            for (UINT slice = 0; slice < arraySize; ++slice) {
+                D3D12_RENDER_PASS_ENDING_ACCESS_RESOLVE_SUBRESOURCE_PARAMETERS &params = subresourceParams.Alloc();
+                params.SrcSubresource = D3D12CalcSubresource(dsResolveSource.mipSlice, dsResolveSource.firstArraySlice + slice, 0, dsResolveSource.maxMipLevels, dsResolveSource.maxArraySize);
+                params.DstSubresource = D3D12CalcSubresource(destMipSlice, destFirstArraySlice + slice, 0, texture->textureDesc.MipLevels, texture->textureDesc.DepthOrArraySize);
+                params.SrcRect.left = 0;
+                params.SrcRect.top = 0;
+                params.SrcRect.right = destWidth;
+                params.SrcRect.bottom = destHeight;
+            }
+
+            dsDesc.DepthEndingAccess.Resolve.pSubresourceParameters = subresourceParams.Ptr();
+            dsDesc.DepthEndingAccess.Resolve.SubresourceCount = subresourceParams.Count();
+
+            if (IsStencilFormat(texture->textureDesc.Format)) {
+                dsDesc.StencilEndingAccess = dsDesc.DepthEndingAccess;
+            }
+            break;
+        }
+        case RHI::RenderPassImage::Type::ShadingRateSource:
+            d3d12CommandList->shadingRateImage = reinterpret_cast<ID3D12Resource *>(texture->GetNativeResource());
+            break;
+        default:
+            assert(0);
+            break;
+        }
+
+        // RenderPass 시작 배리어
+        {
+            D3D12_RESOURCE_STATES beforeState = ToD3D12ResourceState(renderPassImage.beforeState);
+            D3D12_RESOURCE_STATES afterState = ToD3D12ResourceState(renderPassImage.duringState);
+
+            if (renderPassImage.type == RHI::RenderPassImage::Type::ResolveColor || renderPassImage.type == RHI::RenderPassImage::Type::ResolveDepth) {
+                afterState = D3D12_RESOURCE_STATE_RESOLVE_DEST;
+            }
+            if (beforeState != afterState) {
+                D3D12_RESOURCE_BARRIER barrier = {};
+                barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
+                barrier.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
+                barrier.Transition.pResource = reinterpret_cast<ID3D12Resource *>(texture->GetNativeResource());
+                barrier.Transition.StateBefore = beforeState;
+                barrier.Transition.StateAfter = afterState;
+
+                if (useEntireSubresources) {
+                    barrier.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
+                    barriers.Append(barrier);
+                } else {
+                    for (UINT slice = 0; slice < destArraySize; ++slice) {
+                        barrier.Transition.Subresource = D3D12CalcSubresource(destMipSlice, destFirstArraySlice + slice, 0, texture->textureDesc.MipLevels, texture->textureDesc.DepthOrArraySize);
+                        barriers.Append(barrier);
+                    }
+                }
+            }
+        }
+
+        // RenderPass 종료 배리어
+        {
+            D3D12_RESOURCE_STATES beforeState = ToD3D12ResourceState(renderPassImage.duringState);
+            D3D12_RESOURCE_STATES afterState = ToD3D12ResourceState(renderPassImage.afterState);
+
+            if (renderPassImage.type == RHI::RenderPassImage::Type::ResolveColor || renderPassImage.type == RHI::RenderPassImage::Type::ResolveDepth) {
+                afterState = D3D12_RESOURCE_STATE_RESOLVE_DEST;
+            }
+            if (beforeState != afterState) {
+                D3D12_RESOURCE_BARRIER barrier = {};
+                barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
+                barrier.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
+                barrier.Transition.pResource = reinterpret_cast<ID3D12Resource *>(texture->GetNativeResource());
+                barrier.Transition.StateBefore = beforeState;
+                barrier.Transition.StateAfter = afterState;
+
+                if (useEntireSubresources) {
+                    barrier.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
+                    d3d12CommandList->endRenderPassBarriers.Append(barrier);
+                } else {
+                    for (UINT slice = 0; slice < destArraySize; ++slice) {
+                        barrier.Transition.Subresource = D3D12CalcSubresource(destMipSlice, destFirstArraySlice + slice, 0, texture->textureDesc.MipLevels, texture->textureDesc.DepthOrArraySize);
+                        d3d12CommandList->endRenderPassBarriers.Append(barrier);
+                    }
+                }
+            }
+        }
+    }
+
+    if (!barriers.IsEmpty()) {
+        d3d12CommandList->GetGraphicsCommandList()->ResourceBarrier(barriers.Count(), barriers.Ptr());
+    }
+
+    if (d3d12CommandList->shadingRateImage) {
+        d3d12CommandList->GetGraphicsCommandList()->RSSetShadingRateImage(d3d12CommandList->shadingRateImage);
+    }
+
+    D3D12_RENDER_PASS_FLAGS renderPassFlags = D3D12_RENDER_PASS_FLAG_NONE;
+    if (BE1::HasFlag(flags, RHI::RenderPassFlag::AllowUAVWrites)) {
+        renderPassFlags |= D3D12_RENDER_PASS_FLAG_ALLOW_UAV_WRITES;
+    }
+    if (BE1::HasFlag(flags, RHI::RenderPassFlag::Suspending)) {
+        renderPassFlags |= D3D12_RENDER_PASS_FLAG_SUSPENDING_PASS;
+    }
+    if (BE1::HasFlag(flags, RHI::RenderPassFlag::Resuming)) {
+        renderPassFlags |= D3D12_RENDER_PASS_FLAG_RESUMING_PASS;
+    }
+
+    d3d12CommandList->GetGraphicsCommandList()->BeginRenderPass(rtCount, rtDescs, &dsDesc, renderPassFlags);
 }
 
 void D3D12Renderer::EndRenderPass(RHI::CommandList *commandList) {
@@ -1047,9 +1421,16 @@ void D3D12Renderer::EndRenderPass(RHI::CommandList *commandList) {
     d3d12CommandList->GetGraphicsCommandList()->EndRenderPass();
 #endif
 
+    if (d3d12CommandList->shadingRateImage) {
+        d3d12CommandList->GetGraphicsCommandList()->RSSetShadingRateImage(nullptr);
+        d3d12CommandList->shadingRateImage = nullptr;
+    }
+
     if (!d3d12CommandList->endRenderPassBarriers.IsEmpty()) {
         d3d12CommandList->GetGraphicsCommandList()->ResourceBarrier((UINT)d3d12CommandList->endRenderPassBarriers.Count(), d3d12CommandList->endRenderPassBarriers.Ptr());
     }
+
+    d3d12CommandList->endRenderPassBarriers.SetCount(0, false);
 }
 
 void D3D12Renderer::Draw(RHI::CommandList *commandList, uint32_t vertexCount, uint32_t startVertexLocation) {
@@ -1690,11 +2071,32 @@ bool D3D12Renderer::DXGIFormatToImageFormat(DXGI_FORMAT dxgiFormat, BE1::Image::
     case DXGI_FORMAT_D24_UNORM_S8_UINT:
         if (imageFormat) *imageFormat = BE1::Image::Format::DepthStencil_24_8;
         return true;
+    case DXGI_FORMAT_D32_FLOAT_S8X24_UINT:
+        if (imageFormat) *imageFormat = BE1::Image::Format::DepthStencil_32F_8;
+        return true;
     }
     return false;
 }
 
-BE1::Image::Format::Enum D3D12Renderer::ToUncompressedImageFormat(BE1::Image::Format::Enum inFormat) {
+bool D3D12Renderer::IsDepthFormat(DXGI_FORMAT format) {
+    if (format == DXGI_FORMAT::DXGI_FORMAT_D16_UNORM ||
+        format == DXGI_FORMAT::DXGI_FORMAT_D32_FLOAT ||
+        format == DXGI_FORMAT::DXGI_FORMAT_D24_UNORM_S8_UINT ||
+        format == DXGI_FORMAT::DXGI_FORMAT_D32_FLOAT_S8X24_UINT) {
+        return true;
+    }
+    return false;
+}
+
+bool D3D12Renderer::IsStencilFormat(DXGI_FORMAT format) {
+    if (format == DXGI_FORMAT::DXGI_FORMAT_D24_UNORM_S8_UINT ||
+        format == DXGI_FORMAT::DXGI_FORMAT_D32_FLOAT_S8X24_UINT) {
+        return true;
+    }
+    return false;
+}
+
+BE1::Image::Format::Enum D3D12Renderer::ToUncompressedImageFormat(BE1::Image::Format::Enum inFormat) const {
     BE1::Image::Format::Enum outFormat;
 
     switch (inFormat) {
@@ -1769,7 +2171,7 @@ BE1::Image::Format::Enum D3D12Renderer::ToUncompressedImageFormat(BE1::Image::Fo
     return outFormat;
 }
 
-BE1::Image::Format::Enum D3D12Renderer::ToCompressedImageFormat(BE1::Image::Format::Enum inFormat, bool useNormalMap) {
+BE1::Image::Format::Enum D3D12Renderer::ToCompressedImageFormat(BE1::Image::Format::Enum inFormat, bool useNormalMap) const {
     if (BE1::Image::IsCompressed(inFormat)) {
         assert(0);
         return inFormat;

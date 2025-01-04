@@ -345,46 +345,47 @@ RHI::Buffer *D3D12FrameData::AllocBuffer(int threadIndex, bool shaderWritable, B
     }
 
     if (shaderWritable) {
-        D3D12_UNORDERED_ACCESS_VIEW_DESC uavDesc = {};
-        uavDesc.ViewDimension = D3D12_UAV_DIMENSION_BUFFER;
-        D3D12Renderer::ImageFormatToDXGIFormat(format, false, &uavDesc.Format);
-        uavDesc.Buffer.FirstElement = alignedOffset / stride;
-        uavDesc.Buffer.NumElements = count;
+        D3D12UAVDescriptor uavDescriptor;
+        uavDescriptor.uavDesc.ViewDimension = D3D12_UAV_DIMENSION_BUFFER;
+        D3D12Renderer::ImageFormatToDXGIFormat(format, false, &uavDescriptor.uavDesc.Format);
+        uavDescriptor.uavDesc.Buffer.FirstElement = alignedOffset / stride;
+        uavDescriptor.uavDesc.Buffer.NumElements = count;
 
-        if (uavDesc.Format == DXGI_FORMAT_UNKNOWN) {
-            uavDesc.Buffer.StructureByteStride = structureByteStride;
-        } else if (uavDesc.Format == DXGI_FORMAT_R32_TYPELESS) {
-            uavDesc.Buffer.Flags = D3D12_BUFFER_UAV_FLAG_RAW;
+        if (uavDescriptor.uavDesc.Format == DXGI_FORMAT_UNKNOWN) {
+            uavDescriptor.uavDesc.Buffer.StructureByteStride = structureByteStride;
+        } else if (uavDescriptor.uavDesc.Format == DXGI_FORMAT_R32_TYPELESS) {
+            uavDescriptor.uavDesc.Buffer.Flags = D3D12_BUFFER_UAV_FLAG_RAW;
         }
 
-        renderer->device->CreateUnorderedAccessView(currentDynamicAllocation->buffer->GetResource(), nullptr, &uavDesc, descriptorHandle);
+        renderer->device->CreateUnorderedAccessView(currentDynamicAllocation->buffer->GetResource(), nullptr, &uavDescriptor.uavDesc, uavDescriptor.cpuDescriptorHandle);
         data->dynamicDescriptorHandles.Append(descriptorHandle);
-    } else {
-        D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
-        srvDesc.ViewDimension = D3D12_SRV_DIMENSION_BUFFER;
-        srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
-        D3D12Renderer::ImageFormatToDXGIFormat(format, false, &srvDesc.Format);
-        srvDesc.Buffer.FirstElement = alignedOffset / stride;
-        srvDesc.Buffer.NumElements = count;
 
-        if (srvDesc.Format == DXGI_FORMAT_UNKNOWN) {
-            srvDesc.Buffer.StructureByteStride = structureByteStride;
-        } else if (srvDesc.Format == DXGI_FORMAT_R32_TYPELESS) {
-            srvDesc.Buffer.Flags = D3D12_BUFFER_SRV_FLAG_RAW;
+        D3D12Buffer dynamicBuffer;
+        dynamicBuffer.writePtr = (byte *)currentDynamicAllocation->mappedBase + alignedOffset;
+        dynamicBuffer.uavDescriptors.Append(uavDescriptor);
+        data->dynamicBuffers.Append(dynamicBuffer);
+    } else {
+        D3D12SRVDescriptor srvDescriptor;
+        srvDescriptor.srvDesc.ViewDimension = D3D12_SRV_DIMENSION_BUFFER;
+        srvDescriptor.srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+        D3D12Renderer::ImageFormatToDXGIFormat(format, false, &srvDescriptor.srvDesc.Format);
+        srvDescriptor.srvDesc.Buffer.FirstElement = alignedOffset / stride;
+        srvDescriptor.srvDesc.Buffer.NumElements = count;
+
+        if (srvDescriptor.srvDesc.Format == DXGI_FORMAT_UNKNOWN) {
+            srvDescriptor.srvDesc.Buffer.StructureByteStride = structureByteStride;
+        } else if (srvDescriptor.srvDesc.Format == DXGI_FORMAT_R32_TYPELESS) {
+            srvDescriptor.srvDesc.Buffer.Flags = D3D12_BUFFER_SRV_FLAG_RAW;
         }
 
-        renderer->device->CreateShaderResourceView(currentDynamicAllocation->buffer->GetResource(), &srvDesc, descriptorHandle);
+        renderer->device->CreateShaderResourceView(currentDynamicAllocation->buffer->GetResource(), &srvDescriptor.srvDesc, srvDescriptor.cpuDescriptorHandle);
         data->dynamicDescriptorHandles.Append(descriptorHandle);
-    }
 
-    D3D12Buffer dynamicBuffer;
-    dynamicBuffer.writePtr = (byte *)currentDynamicAllocation->mappedBase + alignedOffset;
-    if (shaderWritable) {
-        dynamicBuffer.uavCpuDescriptorHandles.Append(descriptorHandle);
-    } else {
-        dynamicBuffer.srvCpuDescriptorHandles.Append(descriptorHandle);
+        D3D12Buffer dynamicBuffer;
+        dynamicBuffer.writePtr = (byte *)currentDynamicAllocation->mappedBase + alignedOffset;
+        dynamicBuffer.srvDescriptors.Append(srvDescriptor);
+        data->dynamicBuffers.Append(dynamicBuffer);
     }
-    data->dynamicBuffers.Append(dynamicBuffer);
 
     currentDynamicAllocation->usedBytes = alignedOffset + size;
 

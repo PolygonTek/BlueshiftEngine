@@ -19,30 +19,24 @@
 #include "D3D12DescriptorPool.h"
 
 void D3D12Buffer::Release() {
-    for (int i = 0; i < srvCpuDescriptorHandles.Count(); ++i) {
-        if (srvCpuDescriptorHandles[i].ptr != 0) {
-            renderer->resCpuDescriptorPool->Free(srvCpuDescriptorHandles[i]);
-            srvCpuDescriptorHandles[i].ptr = 0;
+    for (int i = 0; i < srvDescriptors.Count(); ++i) {
+        if (srvDescriptors[i].cpuDescriptorHandle.ptr != 0) {
+            renderer->resCpuDescriptorPool->Free(srvDescriptors[i].cpuDescriptorHandle);
         }
     }
-    for (int i = 0; i < uavCpuDescriptorHandles.Count(); ++i) {
-        if (uavCpuDescriptorHandles[i].ptr != 0) {
-            renderer->uavCpuDescriptorPool->Free(uavCpuDescriptorHandles[i]);
-            uavCpuDescriptorHandles[i].ptr = 0;
+    srvDescriptors.Clear();
+
+    for (int i = 0; i < uavDescriptors.Count(); ++i) {
+        if (uavDescriptors[i].cpuDescriptorHandle.ptr != 0) {
+            renderer->uavCpuDescriptorPool->Free(uavDescriptors[i].cpuDescriptorHandle);
         }
     }
+    uavDescriptors.Clear();
+
 #ifdef USE_D3D12_MEMALLOC
     SAFE_RELEASE(bufferAllocation);
 #else
     SAFE_RELEASE(bufferResource);
-#endif
-}
-
-ID3D12Resource *D3D12Buffer::GetResource() const {
-#ifdef USE_D3D12_MEMALLOC
-    return bufferAllocation->GetResource();
-#else
-    return bufferResource;
 #endif
 }
 
@@ -253,69 +247,85 @@ RHI::Buffer *D3D12Renderer::CreateBuffer(RHI::BufferUsage usage, RHI::ResourceFl
 
 int D3D12Renderer::CreateSubresource(RHI::Buffer *buffer, RHI::SubresourceType type, uint64_t offset, uint64_t size) {
     D3D12Buffer *d3d12Buffer = static_cast<D3D12Buffer *>(buffer);
-    int subresourceIndex = 0;
-
-    uint32_t stride = d3d12Buffer->format == BE1::Image::Format::Unknown ? d3d12Buffer->stride : BE1::Image::BytesPerPixel(d3d12Buffer->format);
 
     if (type == RHI::SubresourceType::SRV) {
-        D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
-        srvDesc.ViewDimension = D3D12_SRV_DIMENSION_BUFFER;
-        srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
-        ImageFormatToDXGIFormat(d3d12Buffer->format, false, &srvDesc.Format);
-
-        if (d3d12Buffer->format == BE1::Image::Format::Unknown) {
-            // Structured buffer
-            srvDesc.Buffer.StructureByteStride = stride;
-        } else if (d3d12Buffer->format == BE1::Image::Format::R_32_TYPELESS) {
-            // Raw buffer
-            srvDesc.Buffer.Flags = D3D12_BUFFER_SRV_FLAG_RAW;
-        }
-
-        srvDesc.Buffer.FirstElement = offset / stride;
-        srvDesc.Buffer.NumElements = BE1::Min(size, d3d12Buffer->size - offset) / stride;
-
-        D3D12_CPU_DESCRIPTOR_HANDLE srvCpuDescriptorHandle;
-        if (!resCpuDescriptorPool->Alloc(&srvCpuDescriptorHandle, nullptr)) {
-            return -1;
-        }
-        device->CreateShaderResourceView(d3d12Buffer->GetResource(), &srvDesc, srvCpuDescriptorHandle);
-
-        subresourceIndex = d3d12Buffer->srvCpuDescriptorHandles.Append(srvCpuDescriptorHandle);
-    } else if (type == RHI::SubresourceType::UAV) {
-        D3D12_UNORDERED_ACCESS_VIEW_DESC uavDesc = {};
-        uavDesc.ViewDimension = D3D12_UAV_DIMENSION_BUFFER;
-        ImageFormatToDXGIFormat(d3d12Buffer->format, false, &uavDesc.Format);
-
-        if (d3d12Buffer->format == BE1::Image::Format::Unknown) {
-            // Structured buffer
-            uavDesc.Buffer.StructureByteStride = stride;
-        } else if (d3d12Buffer->format == BE1::Image::Format::R_32_TYPELESS) {
-            // Raw buffer
-            uavDesc.Buffer.Flags = D3D12_BUFFER_UAV_FLAG_RAW;
-        }
-
-        uavDesc.Buffer.FirstElement = offset / stride;
-        uavDesc.Buffer.NumElements = BE1::Min(size, d3d12Buffer->size - offset) / stride;
-
-        // UAV 는 GPU 디스크립터도 같이 할당한다.
-        D3D12_CPU_DESCRIPTOR_HANDLE uavCpuDescriptorHandle;
-        D3D12_CPU_DESCRIPTOR_HANDLE destCpuDescriptorHandle;
-        D3D12_GPU_DESCRIPTOR_HANDLE destGpuDescriptorHandle;
-
-        if (!uavCpuDescriptorPool->Alloc(&uavCpuDescriptorHandle, nullptr)) {
-            return -1;
-        }
-        if (!uavGpuDescriptorPool->Alloc(&destCpuDescriptorHandle, &destGpuDescriptorHandle)) {
-            return -1;
-        }
-        device->CreateUnorderedAccessView(d3d12Buffer->GetResource(), nullptr, &uavDesc, uavCpuDescriptorHandle);
-
-        // 만들어진 UAV 디스크립터를 shader visible 한 디스크립터에 복사 (CPU + GPU)
-        device->CopyDescriptorsSimple(1, destCpuDescriptorHandle, uavCpuDescriptorHandle, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
-
-        subresourceIndex = d3d12Buffer->uavCpuDescriptorHandles.Append(uavCpuDescriptorHandle);
+        return CreateSubresourceSRV(d3d12Buffer, offset, size);
     }
-    return subresourceIndex;
+    if (type == RHI::SubresourceType::UAV) {
+        return CreateSubresourceUAV(d3d12Buffer, offset, size);
+    }
+    return -1;
+}
+
+int D3D12Renderer::CreateSubresourceSRV(D3D12Buffer *buffer, uint64_t offset, uint64_t size) {
+    D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
+    srvDesc.ViewDimension = D3D12_SRV_DIMENSION_BUFFER;
+    srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+    ImageFormatToDXGIFormat(buffer->format, false, &srvDesc.Format);
+
+    uint32_t stride = buffer->format == BE1::Image::Format::Unknown ? buffer->stride : BE1::Image::BytesPerPixel(buffer->format);
+
+    if (buffer->format == BE1::Image::Format::Unknown) {
+        // Structured buffer
+        srvDesc.Buffer.StructureByteStride = stride;
+    } else if (buffer->format == BE1::Image::Format::R_32_TYPELESS) {
+        // Raw buffer
+        srvDesc.Buffer.Flags = D3D12_BUFFER_SRV_FLAG_RAW;
+    }
+
+    srvDesc.Buffer.FirstElement = offset / stride;
+    srvDesc.Buffer.NumElements = BE1::Min(size, buffer->size - offset) / stride;
+
+    D3D12_CPU_DESCRIPTOR_HANDLE srvCpuDescriptorHandle;
+    if (!resCpuDescriptorPool->Alloc(&srvCpuDescriptorHandle, nullptr)) {
+        return -1;
+    }
+    device->CreateShaderResourceView(buffer->GetResource(), &srvDesc, srvCpuDescriptorHandle);
+
+    D3D12SRVDescriptor srvDescriptor;
+    srvDescriptor.srvDesc = srvDesc;
+    srvDescriptor.cpuDescriptorHandle = srvCpuDescriptorHandle;
+    return buffer->srvDescriptors.Append(srvDescriptor);
+}
+
+int D3D12Renderer::CreateSubresourceUAV(D3D12Buffer *buffer, uint64_t offset, uint64_t size) {
+    D3D12_UNORDERED_ACCESS_VIEW_DESC uavDesc = {};
+    uavDesc.ViewDimension = D3D12_UAV_DIMENSION_BUFFER;
+    ImageFormatToDXGIFormat(buffer->format, false, &uavDesc.Format);
+
+    uint32_t stride = buffer->format == BE1::Image::Format::Unknown ? buffer->stride : BE1::Image::BytesPerPixel(buffer->format);
+
+    if (buffer->format == BE1::Image::Format::Unknown) {
+        // Structured buffer
+        uavDesc.Buffer.StructureByteStride = stride;
+    } else if (buffer->format == BE1::Image::Format::R_32_TYPELESS) {
+        // Raw buffer
+        uavDesc.Buffer.Flags = D3D12_BUFFER_UAV_FLAG_RAW;
+    }
+
+    uavDesc.Buffer.FirstElement = offset / stride;
+    uavDesc.Buffer.NumElements = BE1::Min(size, buffer->size - offset) / stride;
+
+    // UAV 는 GPU 디스크립터도 같이 할당한다.
+    D3D12_CPU_DESCRIPTOR_HANDLE uavCpuDescriptorHandle;
+    D3D12_CPU_DESCRIPTOR_HANDLE destCpuDescriptorHandle;
+    D3D12_GPU_DESCRIPTOR_HANDLE destGpuDescriptorHandle;
+
+    if (!uavCpuDescriptorPool->Alloc(&uavCpuDescriptorHandle, nullptr)) {
+        return -1;
+    }
+    if (!uavGpuDescriptorPool->Alloc(&destCpuDescriptorHandle, &destGpuDescriptorHandle)) {
+        return -1;
+    }
+    device->CreateUnorderedAccessView(buffer->GetResource(), nullptr, &uavDesc, uavCpuDescriptorHandle);
+
+    // 만들어진 UAV 디스크립터를 shader visible 한 디스크립터에 복사 (CPU + GPU)
+    device->CopyDescriptorsSimple(1, destCpuDescriptorHandle, uavCpuDescriptorHandle, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+
+    D3D12UAVDescriptor uavDescriptor;
+    uavDescriptor.uavDesc = uavDesc;
+    uavDescriptor.cpuDescriptorHandle = uavCpuDescriptorHandle;
+    return buffer->uavDescriptors.Append(uavDescriptor);
 }
 
 void D3D12Renderer::DestroyBuffer(RHI::Buffer *buffer, bool immediate) {
@@ -342,7 +352,7 @@ void D3D12Renderer::SetBuffer(RHI::CommandList *commandList, int slot, bool shad
         rootParameterIndex = binder.rootParameterBinder.uav[slot];
         uint8_t descriptorIndex = binder.descriptorTableBinder.uav[slot];
         if (descriptorIndex != 0xFF) {
-            threadData.tableCpuDescriptorHandles[rootParameterIndex][descriptorIndex] = d3d12Buffer->uavCpuDescriptorHandles[subresourceIndex];
+            threadData.tableCpuDescriptorHandles[rootParameterIndex][descriptorIndex] = d3d12Buffer->uavDescriptors[subresourceIndex].cpuDescriptorHandle;
             if (threadData.tableCpuDescriptorHandles[rootParameterIndex][descriptorIndex].ptr == 0) {
                 BE_ERRLOG("D3D12Renderer::SetBuffer: Buffer has no valid UAV descriptor handle\n");
                 return;
@@ -354,7 +364,7 @@ void D3D12Renderer::SetBuffer(RHI::CommandList *commandList, int slot, bool shad
         rootParameterIndex = binder.rootParameterBinder.srv[slot];
         uint8_t descriptorIndex = binder.descriptorTableBinder.srv[slot];
         if (descriptorIndex != 0xFF) {
-            threadData.tableCpuDescriptorHandles[rootParameterIndex][descriptorIndex] = d3d12Buffer->srvCpuDescriptorHandles[subresourceIndex];
+            threadData.tableCpuDescriptorHandles[rootParameterIndex][descriptorIndex] = d3d12Buffer->srvDescriptors[subresourceIndex].cpuDescriptorHandle;
             if (threadData.tableCpuDescriptorHandles[rootParameterIndex][descriptorIndex].ptr == 0) {
                 BE_ERRLOG("D3D12Renderer::SetBuffer: Buffer has no valid SRV descriptor handle\n");
                 return;

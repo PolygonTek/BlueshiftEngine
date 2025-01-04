@@ -67,16 +67,36 @@ T *NormalizePointer(T *&ptr) noexcept {
 #endif
 
 #ifdef USE_FRAME_RESOURCES
-static constexpr int            NumFrameResources = 2;
+static constexpr int NumFrameResources = 2;
 #else
-static constexpr int            NumFrameResources = 1;
+static constexpr int NumFrameResources = 1;
 #endif
 
 #ifdef USE_RENDER_TASK
 // 렌더링할 때 쓰이는 최대 태스크 개수
-static constexpr int            MaxRenderTasks = 64;
+static constexpr int MaxRenderTasks = 64;
 // 렌더링 태스크 매니져에서 사용할 최대 스레드 개수 (실제 코드는 물리 코어 개수 이하로 사용된다)
-static constexpr int            MaxRenderTaskThreads = 16;
+static constexpr int MaxRenderTaskThreads = 16;
 // 태스크 당 처리할 최대 Draw Call 횟수
-static constexpr int            MaxDrawCallsPerTask = 512;
+static constexpr int MaxDrawCallsPerTask = 512;
 #endif
+
+struct D3D12SRVDescriptor {
+    D3D12_SHADER_RESOURCE_VIEW_DESC     srvDesc = {};
+    D3D12_CPU_DESCRIPTOR_HANDLE         cpuDescriptorHandle = {};
+};
+
+struct D3D12RTVDescriptor {
+    D3D12_RENDER_TARGET_VIEW_DESC       rtvDesc = {};
+    D3D12_CPU_DESCRIPTOR_HANDLE         cpuDescriptorHandle = {};
+};
+
+struct D3D12DSVDescriptor {
+    D3D12_DEPTH_STENCIL_VIEW_DESC       dsvDesc = {};
+    D3D12_CPU_DESCRIPTOR_HANDLE         cpuDescriptorHandle = {};
+};
+
+struct D3D12UAVDescriptor {
+    D3D12_UNORDERED_ACCESS_VIEW_DESC    uavDesc = {};
+    D3D12_CPU_DESCRIPTOR_HANDLE         cpuDescriptorHandle = {};
+};

@@ -25,6 +25,7 @@
 #include "D3D12FrameData.h"
 #include "../RenderObject.h"
 
+class D3D12Texture;
 class D3D12PipelineState;
 class D3D12CommandList;
 class D3D12DescriptorPool;
@@ -71,9 +72,9 @@ public:
     void                                OnPendingResourceAdded();
     void                                FreePendingResources(bool waitPendings = false);
 
-    virtual bool                        IsSupportedImageFormat(BE1::Image::Format::Enum imageFormat) override { return ImageFormatToDXGIFormat(imageFormat, false, nullptr); }
-    virtual BE1::Image::Format::Enum    ToUncompressedImageFormat(BE1::Image::Format::Enum imageFormat) override;
-    virtual BE1::Image::Format::Enum    ToCompressedImageFormat(BE1::Image::Format::Enum inFormat, bool useNormalMap) override;
+    virtual bool                        IsSupportedImageFormat(BE1::Image::Format::Enum imageFormat) const override { return ImageFormatToDXGIFormat(imageFormat, false, nullptr); }
+    virtual BE1::Image::Format::Enum    ToUncompressedImageFormat(BE1::Image::Format::Enum imageFormat) const override;
+    virtual BE1::Image::Format::Enum    ToCompressedImageFormat(BE1::Image::Format::Enum inFormat, bool useNormalMap) const override;
 
     D3D12SwapChain *                    CreateSwapChain(HWND hwnd, uint32_t width, uint32_t height);
     void                                DestroySwapChain(D3D12SwapChain *swapChain);
@@ -90,7 +91,7 @@ public:
     virtual RHI::ConstantBuffer *       CreateConstantBuffer(RHI::BufferUsage usage, uint32_t size, void *data) override;
     virtual void                        DestroyConstantBuffer(RHI::ConstantBuffer *constantBuffer, bool immediate = false) override;
 
-    virtual RHI::Texture *              CreateTexture(RHI::TextureType textureType, RHI::ResourceFlag flags, const BE1::Image *image, uint32_t sampleCount = 1) override;
+    virtual RHI::Texture *              CreateTexture(RHI::TextureType textureType, RHI::ResourceFlag flags, const BE1::Image *image, RHI::ClearValue &clearValue, uint32_t sampleCount = 1, RHI::GPUResourceState initialState = RHI::GPUResourceState::Undefined) override;
     virtual RHI::Texture *              CreateTexture(RHI::TextureType textureType, RHI::ResourceFlag flags, const BE1::Image *image, BE1::Image::Format::Enum dstFormat, bool useMipmaps) override;
     virtual void                        DestroyTexture(RHI::Texture *texture, bool immediate = false) override;
     virtual void                        GetTextureImage2D(RHI::Texture *texture, int level, BE1::Image::Format::Enum imageFormat, void *outPixels) override;
@@ -99,6 +100,14 @@ public:
 
     virtual int                         CreateSubresource(RHI::Buffer *buffer, RHI::SubresourceType type, uint64_t offset = 0, uint64_t size = ~0) override;
     virtual int                         CreateSubresource(RHI::Texture *texture, RHI::SubresourceType type, uint32_t firstSlice = 0, uint32_t sliceCount = ~0, uint32_t firstMipLevel = 0, uint32_t mipCount = ~0) override;
+
+    int                                 CreateSubresourceSRV(D3D12Buffer *buffer, uint64_t offset = 0, uint64_t size = ~0);
+    int                                 CreateSubresourceUAV(D3D12Buffer *buffer, uint64_t offset = 0, uint64_t size = ~0);
+
+    int                                 CreateSubresourceSRV(D3D12Texture *texture, uint32_t firstSlice = 0, uint32_t sliceCount = ~0, uint32_t firstMipLevel = 0, uint32_t mipCount = ~0);
+    int                                 CreateSubresourceRTV(D3D12Texture *texture, uint32_t firstSlice = 0, uint32_t sliceCount = ~0, uint32_t firstMipLevel = 0);
+    int                                 CreateSubresourceDSV(D3D12Texture *texture, uint32_t firstSlice = 0, uint32_t sliceCount = ~0, uint32_t firstMipLevel = 0);
+    int                                 CreateSubresourceUAV(D3D12Texture *texture, uint32_t firstSlice = 0, uint32_t sliceCount = ~0, uint32_t firstMipLevel = 0);
 
     virtual RHI::Shader *               CreateShader(RHI::ShaderModel shaderModel, RHI::ShaderStage shaderStage, const char *sourceName, const char *shaderText, int shaderTextSize, const char *entryPoint) override;
     virtual RHI::Shader *               CreateShaderFromFile(RHI::ShaderModel shaderModel, RHI::ShaderStage shaderStage, const char *filename, const char *entryPoint) override;
@@ -138,7 +147,8 @@ public:
     virtual void                        CopyBuffer(RHI::CommandList *commandList, const RHI::Buffer *dstBuffer, uint32_t dstOffset, const RHI::Buffer *srcBuffer, uint32_t srcOffset, uint32_t size) override;
     virtual void                        CopyTexture(RHI::CommandList *commandList, const RHI::Texture *dstTexture, uint32_t dstSlice, uint32_t dstMipLevel, uint32_t dstX, uint32_t dstY, uint32_t dstZ, const RHI::Texture *srcTexture, uint32_t srcSlice, uint32_t srcMipLevel, uint32_t srcX, uint32_t srcY, uint32_t srcZ, uint32_t width, uint32_t height, uint32_t depth) override;
     virtual void                        Barrier(RHI::CommandList *commandList, const RHI::GPUBarrier *barriers, uint32_t barrierCount) override;
-    virtual void                        BeginRenderPass(RHI::CommandList *commandList, const RHI::SwapChain *swapChain, const BE1::Color4 &clearColor, float clearDepth, uint8_t clearStencil, RHI::ClearFlag clearFlag) override;
+    virtual void                        BeginRenderPass(RHI::CommandList *commandList, const RHI::SwapChain *swapChain, const BE1::Color4 &clearColor, float clearDepth, uint8_t clearStencil, RHI::ClearFlag clearFlags) override;
+    virtual void                        BeginRenderPass(RHI::CommandList *commandList, const RHI::RenderPassImage renderPassImages[], int numRenderPassImages, RHI::RenderPassFlag flags = RHI::RenderPassFlag::None) override;
     virtual void                        EndRenderPass(RHI::CommandList *commandList) override;
 
     virtual void                        Draw(RHI::CommandList *commandList, uint32_t vertexCount, uint32_t startVertexLocation) override;
@@ -193,6 +203,9 @@ public:
 
     static bool                         ImageFormatToDXGIFormat(BE1::Image::Format::Enum imageFormat, bool isSRGB, DXGI_FORMAT *dxgiFormat);
     static bool                         DXGIFormatToImageFormat(DXGI_FORMAT dxgiFormat, BE1::Image::Format::Enum *imageFormat, bool *isSRGB);
+    static bool                         IsDepthFormat(DXGI_FORMAT format);
+    static bool                         IsStencilFormat(DXGI_FORMAT format);
+    static D3D12_RESOURCE_STATES        ToD3D12ResourceState(RHI::GPUResourceState resourceState);
 
     ID3D12Device5 *                     device = nullptr;
     IDXGIFactory4 *                     dxgiFactory = nullptr;
@@ -207,10 +220,12 @@ public:
     D3D12MA::Allocator *                allocator = nullptr;
 #endif
 
-    // TODO: Renderer 외부로 뺄 것
+    // TODO: Renderer 외부 (RenderContext) 로 뺄 것
     D3D12SwapChain *                    swapChain = nullptr;
     ID3D12Resource *                    depthStencilBuffer = nullptr;
     D3D12_CPU_DESCRIPTOR_HANDLE         dsvDescriptorHandle = {};
+    RHI::Texture *                      mainRenderTexture = nullptr;
+    RHI::Texture *                      mainDepthTexture = nullptr;
 
     uint32_t                            vendorId;
     uint32_t                            deviceId;
@@ -218,12 +233,14 @@ public:
     uint64_t                            dedicatedVideoMemSize = 0;
     uint64_t                            dedicatedSystemMemSize = 0;
     uint64_t                            sharedSystemMemSize = 0;
+    D3D12_RESOURCE_HEAP_TIER            resourceHeapTier = {};
     bool                                supportsTearing = false;
     bool                                supportsConservativeRasterization = false;
     bool                                supportsVRS = false;
     bool                                supportsRayTracing = false;
     bool                                supportsMeshShader = false;
     bool                                supportsDepthBoundsTest = false;
+    bool                                supportsCastingFullyTypedFormat = false;
 
     D3D12DescriptorPool *               resCpuDescriptorPool = nullptr;
     D3D12DescriptorPool *               uavCpuDescriptorPool = nullptr;

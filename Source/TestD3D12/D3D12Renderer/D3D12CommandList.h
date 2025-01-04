@@ -14,7 +14,6 @@
 
 #pragma once
 
-#include "D3D12Common.h"
 #include "D3D12Renderer.h"
 #include "D3D12VertexBuffer.h"
 #include "D3D12IndexBuffer.h"
@@ -63,7 +62,8 @@ private:
     const D3D12PipelineState *      currentPSO = nullptr;
     uint64_t                        graphicsRootParametersDirtyMask = 0;
     uint64_t                        computeRootParametersDirtyMask = 0;
-    BE1::Array<D3D12_RESOURCE_BARRIER> endRenderPassBarriers; // BeginRenderPass 와 EndRenderPass 사이에서만 유지됨
+    BE1::Array<D3D12_RESOURCE_BARRIER> endRenderPassBarriers;
+    ID3D12Resource *                shadingRateImage = nullptr;
 
 #ifdef USE_STATE_CACHE_FOR_COMMAND_LIST
     bool                            IsSameDescriptorHeaps(int numDescriptorHeaps, ID3D12DescriptorHeap *descriptorHeaps[]);
@@ -95,6 +95,10 @@ BE_INLINE void D3D12CommandList::Reset(bool resetCacheStates, const RHI::Command
     currentPSO = nullptr;
     graphicsRootParametersDirtyMask = 0;
     computeRootParametersDirtyMask = 0;
+
+    // BeginRenderPass/EndRenderPass 중간에 Reset 하면 assert 가 발생한다
+    assert(endRenderPassBarriers.Count() == 0);
+    assert(!shadingRateImage);
 
 #ifdef USE_STATE_CACHE_FOR_COMMAND_LIST
     if (resetCacheStates) {

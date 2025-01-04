@@ -14,14 +14,12 @@
 
 #pragma once
 
-#include "../RHIRenderer.h"
 #include "D3D12Common.h"
 
 #ifdef USE_D3D12_MEMALLOC
 #include "D3D12MemoryAllocator/D3D12MemAlloc.h"
 #endif
 
-class D3D12Renderer;
 class D3D12FrameData;
 
 class D3D12Buffer : public RHI::Buffer {
@@ -49,6 +47,14 @@ private:
     BE1::Image::Format::Enum        format = BE1::Image::Format::Unknown;
     uint32_t                        stride = 0;
     uint64_t                        size = 0;
-    BE1::Array<D3D12_CPU_DESCRIPTOR_HANDLE> srvCpuDescriptorHandles;
-    BE1::Array<D3D12_CPU_DESCRIPTOR_HANDLE> uavCpuDescriptorHandles;
+    BE1::Array<D3D12SRVDescriptor>  srvDescriptors = (8);
+    BE1::Array<D3D12UAVDescriptor>  uavDescriptors = (8);
 };
+
+BE_INLINE ID3D12Resource *D3D12Buffer::GetResource() const {
+#ifdef USE_D3D12_MEMALLOC
+    return bufferAllocation->GetResource();
+#else
+    return bufferResource;
+#endif
+}

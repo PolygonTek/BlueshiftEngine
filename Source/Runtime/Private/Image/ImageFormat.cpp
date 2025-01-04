@@ -2339,7 +2339,7 @@ static const ImageFormatInfo imageFormatInfo[] = {
     { "RGBE_9_9_9_5",           4,  3,  9,  9,  9,  0,  Image::FormatType::Float | Image::FormatType::Packed, RGBE9995ToRGBA8888, RGBA8888ToRGBE9995, RGBE9995ToRGBA32F, RGBA32FToRGBE9995 },
     { "RGB_11F_11F_10F",        4,  3,  11, 11, 10, 0,  Image::FormatType::Float | Image::FormatType::Packed, RGB11F11F10FToRGBA8888, RGBA8888ToRGB11F11F10F, RGB11F11F10FToRGBA32F, RGBA32FToRGB11F11F10F },
 
-    // depth --------------------------------------------------------------------------------------
+    // depth/stencil ------------------------------------------------------------------------------
     { "Depth_16",               2,  1,  0,  0,  0,  0,  Image::FormatType::Depth, nullptr, nullptr, L16ToRGBA32F, RGBA32FToL16 },
     { "Depth_24",               3,  1,  0,  0,  0,  0,  Image::FormatType::Depth, nullptr, nullptr, nullptr, nullptr },
     { "Depth_32F",              4,  1,  0,  0,  0,  0,  Image::FormatType::Depth | Image::FormatType::Float, nullptr, nullptr, L32FToRGBA32F, RGBA32FToL32F },

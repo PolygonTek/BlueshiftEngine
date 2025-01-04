@@ -24,6 +24,34 @@ struct RHI {
         Stencil                         = BIT(2)
     };
 
+    struct DepthStencilValue {
+        float                           depth;
+        uint32_t                        stencil = 0;
+    };
+
+    struct ClearValue {
+        union {
+            float                       color[4] = {};
+            DepthStencilValue           depthStencil;
+        };
+
+        static ClearValue Color(float r, float g, float b, float a) {
+            ClearValue clearValue;
+            clearValue.color[0] = r;
+            clearValue.color[1] = g;
+            clearValue.color[2] = b;
+            clearValue.color[3] = a;
+            return clearValue;
+        }
+
+        static ClearValue DepthStencil(float depth, uint32_t stencil) {
+            ClearValue clearValue;
+            clearValue.depthStencil.depth = depth;
+            clearValue.depthStencil.stencil = stencil;
+            return clearValue;
+        }
+    };
+
     enum class FillMode : uint8_t {
         Wire,
         Solid
@@ -158,9 +186,9 @@ struct RHI {
         Texture1DArray,
         Texture2D,
         Texture2DArray,
-        Texture3D,
         TextureCube,
-        TextureCubeArray
+        TextureCubeArray,
+        Texture3D,
     };
 
     enum class SubresourceType : uint8_t {
@@ -533,12 +561,106 @@ struct RHI {
         Resuming                        = BIT(2)
     };
 
-    struct RenderPass {
-        struct RenderTargetEntry {
+    struct RenderPassImage {
+        enum class Type : uint8_t {
+            Color,
+            DepthStencil,
+            ResolveColor,
+            ResolveDepth,
+            ShadingRateSource
         };
 
-        struct DepthStencilEntry {
+        enum class LoadAction : uint8_t {
+            Load,
+            Clear,
+            DontCare
         };
+
+        enum class StoreAction : uint8_t {
+            Store,
+            DontCare
+        };
+
+        enum class DepthResolveMode : uint8_t {
+            None,
+            Min,
+            Max
+        };
+
+        const Texture *                 texture = nullptr;
+        int                             subresourceIndex = 0;
+        int                             resolveSourceIndex = 0;
+        Type                            type = Type::Color;
+        LoadAction                      loadAction = LoadAction::Load;
+        StoreAction                     storeAction = StoreAction::Store;
+        DepthResolveMode                depthResolveMode = DepthResolveMode::None;
+        GPUResourceState                beforeState = GPUResourceState::Undefined;
+        GPUResourceState                duringState = GPUResourceState::Undefined;
+        GPUResourceState                afterState = GPUResourceState::Undefined;
+
+        static RenderPassImage Color(const Texture *texture, int subresourceIndex = 0, LoadAction loadAction = LoadAction::Load, StoreAction storeAction = StoreAction::Store,
+            GPUResourceState beforeState = GPUResourceState::ShaderResource, GPUResourceState afterState = GPUResourceState::ShaderResource) {
+            RenderPassImage image;
+            image.texture = texture;
+            image.subresourceIndex = subresourceIndex;
+            image.type = Type::Color;
+            image.loadAction = loadAction;
+            image.storeAction = storeAction;
+            image.beforeState = beforeState;
+            image.duringState = GPUResourceState::RenderTarget;
+            image.afterState = afterState;
+            return image;
+        }
+
+        static RenderPassImage DepthStencil(const Texture *texture, int subresourceIndex = 0, LoadAction loadAction = LoadAction::Load, StoreAction storeAction = StoreAction::Store,
+            GPUResourceState beforeState = GPUResourceState::DepthWrite, GPUResourceState duringState = GPUResourceState::DepthWrite, GPUResourceState afterState = GPUResourceState::DepthWrite) {
+            RenderPassImage image;
+            image.texture = texture;
+            image.subresourceIndex = subresourceIndex;
+            image.type = Type::DepthStencil;
+            image.loadAction = loadAction;
+            image.storeAction = storeAction;
+            image.beforeState = beforeState;
+            image.duringState = duringState;
+            image.afterState = afterState;
+            return image;
+        }
+
+        static RenderPassImage ResolveColor(const Texture *texture, int subresourceIndex = 0, int resolveSourceIndex = 0,
+            GPUResourceState beforeState = GPUResourceState::ShaderResource, GPUResourceState afterState = GPUResourceState::ShaderResource) {
+            RenderPassImage image;
+            image.texture = texture;
+            image.subresourceIndex = subresourceIndex;
+            image.resolveSourceIndex = resolveSourceIndex;
+            image.type = Type::ResolveColor;
+            image.beforeState = beforeState;
+            image.duringState = GPUResourceState::CopyDst;
+            image.afterState = afterState;
+            return image;
+        }
+
+        static RenderPassImage ResolveDepth(const Texture *texture, int subresourceIndex = 0, DepthResolveMode depthResolveMode = DepthResolveMode::Min,
+            GPUResourceState beforeState = GPUResourceState::ShaderResource, GPUResourceState afterState = GPUResourceState::ShaderResource) {
+            RenderPassImage image;
+            image.texture = texture;
+            image.subresourceIndex = subresourceIndex;
+            image.type = Type::ResolveDepth;
+            image.beforeState = beforeState;
+            image.duringState = GPUResourceState::CopyDst;
+            image.afterState = afterState;
+            return image;
+        }
+
+        static RenderPassImage ShadingRateSource(const Texture *texture,
+            GPUResourceState beforeState = GPUResourceState::ShadingRateSource, GPUResourceState afterState = GPUResourceState::ShadingRateSource) {
+            RenderPassImage image;
+            image.texture = texture;
+            image.type = Type::ShadingRateSource;
+            image.beforeState = beforeState;
+            image.duringState = GPUResourceState::ShadingRateSource;
+            image.afterState = afterState;
+            return image;
+        }
     };
 
     class SwapChain {
@@ -615,9 +737,9 @@ public:
     const RHI::DepthStencilState *      GetDepthStencilState(RHI::DepthStencilStateType type) const { return &depthStencilStates[to_int(type)]; }
     const RHI::BlendState *             GetBlendState(RHI::BlendStateType type) const { return &blendStates[to_int(type)]; }
 
-    virtual bool                        IsSupportedImageFormat(BE1::Image::Format::Enum imageFormat) = 0;
-    virtual BE1::Image::Format::Enum    ToUncompressedImageFormat(BE1::Image::Format::Enum imageFormat) = 0;
-    virtual BE1::Image::Format::Enum    ToCompressedImageFormat(BE1::Image::Format::Enum inFormat, bool useNormalMap) = 0;
+    virtual bool                        IsSupportedImageFormat(BE1::Image::Format::Enum imageFormat) const = 0;
+    virtual BE1::Image::Format::Enum    ToUncompressedImageFormat(BE1::Image::Format::Enum imageFormat) const = 0;
+    virtual BE1::Image::Format::Enum    ToCompressedImageFormat(BE1::Image::Format::Enum inFormat, bool useNormalMap) const = 0;
 
     virtual RHI::Buffer *               CreateBuffer(RHI::BufferUsage usage, RHI::ResourceFlag flags, uint64_t size, BE1::Image::Format::Enum format, uint32_t stride, const void *data) = 0;
     virtual void                        DestroyBuffer(RHI::Buffer *buffer, bool immediate = false) = 0;
@@ -633,7 +755,7 @@ public:
 
     void                                AdjustTextureFormat(bool useCompression, bool useNormalMap, BE1::Image::Format::Enum inFormat, BE1::Image::Format::Enum *outFormat);
 
-    virtual RHI::Texture *              CreateTexture(RHI::TextureType textureType, RHI::ResourceFlag flags, const BE1::Image *image, uint32_t sampleCount = 1) = 0;
+    virtual RHI::Texture *              CreateTexture(RHI::TextureType textureType, RHI::ResourceFlag flags, const BE1::Image *image, RHI::ClearValue &clearValue, uint32_t sampleCount = 1, RHI::GPUResourceState initialState = RHI::GPUResourceState::Undefined) = 0;
     virtual RHI::Texture *              CreateTexture(RHI::TextureType textureType, RHI::ResourceFlag flags, const BE1::Image *image, BE1::Image::Format::Enum dstFormat, bool useMipmaps) = 0;
     virtual RHI::Texture *              CreateTextureFromFile(RHI::TextureType textureType, RHI::ResourceFlag flags, const char *filename, bool useCompression = true, bool useNormalMap = false);
     virtual void                        DestroyTexture(RHI::Texture *texture, bool immediate = false) = 0;
@@ -683,7 +805,8 @@ public:
     virtual void                        CopyTexture(RHI::CommandList *commandList, const RHI::Texture *dstTexture, uint32_t dstSlice, uint32_t dstMipLevel, uint32_t dstX, uint32_t dstY, uint32_t dstZ, const RHI::Texture *srcTexture, uint32_t srcSlice, uint32_t srcMipLevel, uint32_t srcX, uint32_t srcY, uint32_t srcZ, uint32_t width, uint32_t height, uint32_t depth) = 0;
     virtual void                        Barrier(RHI::CommandList *commandList, const RHI::GPUBarrier *barriers, uint32_t barrierCount) = 0;
     void                                Barrier(RHI::CommandList *commandList, const RHI::GPUBarrier &barrier) { Barrier(commandList, &barrier, 1); }
-    virtual void                        BeginRenderPass(RHI::CommandList *commandList, const RHI::SwapChain *swapChain, const BE1::Color4 &clearColor, float clearDepth, uint8_t clearStencil, RHI::ClearFlag clearFlag) = 0;
+    virtual void                        BeginRenderPass(RHI::CommandList *commandList, const RHI::SwapChain *swapChain, const BE1::Color4 &clearColor, float clearDepth, uint8_t clearStencil, RHI::ClearFlag clearFlags) = 0;
+    virtual void                        BeginRenderPass(RHI::CommandList *commandList, const RHI::RenderPassImage renderPassImages[], int numRenderPassImages, RHI::RenderPassFlag flags) = 0;
     virtual void                        EndRenderPass(RHI::CommandList *commandList) = 0;
 
     virtual void                        Draw(RHI::CommandList *commandList, uint32_t vertexCount, uint32_t startVertexLocation) = 0;
