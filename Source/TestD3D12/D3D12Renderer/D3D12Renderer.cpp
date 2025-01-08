@@ -262,9 +262,9 @@ void D3D12Renderer::Init(HWND hwnd) {
     UINT backBufferHeight = rc.bottom;
 
     // 스왑 체인 (백버퍼) 생성
-    swapChain = CreateSwapChain(hwnd, backBufferWidth, backBufferHeight);
-
-    CreateDSV(backBufferWidth, backBufferHeight);
+    DXGI_FORMAT dxgiFormat;
+    ImageFormatToDXGIFormat(BE1::Image::Format::RGBA_8_8_8_8, false, &dxgiFormat);
+    swapChain = CreateSwapChain(hwnd, backBufferWidth, backBufferHeight, dxgiFormat);
 
     CreateShaderCompiler();
 
@@ -306,14 +306,16 @@ void D3D12Renderer::Init(HWND hwnd) {
     renderObjects.Reserve(16384);
 
     BE1::Image mainRenderImage;
-    mainRenderImage.InitFromMemory(backBufferWidth, backBufferHeight, 1, 1, 1, BE1::Image::Format::RGBA_8_8_8_8, BE1::Image::GammaSpace::Linear, nullptr, 0);
+    mainRenderImage.InitFromMemory(backBufferWidth, backBufferHeight, 1, 1, 1, GetMainColorFormat(), BE1::Image::GammaSpace::Linear, nullptr, 0);
     mainRenderTexture = CreateTexture(RHI::TextureType::Texture2D, RHI::ResourceFlag::RenderTarget | RHI::ResourceFlag::ShaderResource | RHI::ResourceFlag::UnorderedAccess,
-        &mainRenderImage, RHI::ClearValue::Color(1.0f, 0.0f, 1.0f, 0.0f), 1);
+        &mainRenderImage, RHI::ClearValue::Color(0.0f, 0.0f, 1.0f, 0.0f), 1);
 
     BE1::Image mainDepthImage;
-    mainDepthImage.InitFromMemory(backBufferWidth, backBufferHeight, 1, 1, 1, BE1::Image::Format::DepthStencil_24_8, BE1::Image::GammaSpace::Linear, nullptr, 0);
+    mainDepthImage.InitFromMemory(backBufferWidth, backBufferHeight, 1, 1, 1, GetMainDepthFormat(), BE1::Image::GammaSpace::Linear, nullptr, 0);
     mainDepthTexture = CreateTexture(RHI::TextureType::Texture2D, RHI::ResourceFlag::DepthStencil,
         &mainDepthImage, RHI::ClearValue::DepthStencil(1.0f, 0), 1, RHI::GPUResourceState::DepthWrite);
+
+    InitFullScreenTrianglePSO();
 }
 
 void D3D12Renderer::Shutdown() {
@@ -329,6 +331,8 @@ void D3D12Renderer::Shutdown() {
 
     Finish(RHI::CommandQueueType::Graphics);
     Finish(RHI::CommandQueueType::Compute);
+
+    DestroyPSO(imagePSO);
 
     DestroyTexture(mainRenderTexture, true);
     DestroyTexture(mainDepthTexture, true);
@@ -359,7 +363,6 @@ void D3D12Renderer::Shutdown() {
     SAFE_DELETE(samCpuDescriptorPool);
     SAFE_DELETE(graphicsCommandListPool);
 
-    SAFE_RELEASE(depthStencilBuffer);
     SAFE_RELEASE(dxcCompiler);
     SAFE_RELEASE(dxcUtils);
     SAFE_RELEASE(dxcLibrary);
@@ -392,56 +395,38 @@ void D3D12Renderer::Shutdown() {
     }
 }
 
-void D3D12Renderer::CreateDSV(uint32_t width, uint32_t height) {
-    // 뎁스/스텐실 버퍼 생성
-    D3D12_CLEAR_VALUE depthStencilOptimizedClearValue = {};
-    depthStencilOptimizedClearValue.Format = DXGI_FORMAT_D24_UNORM_S8_UINT;
-    depthStencilOptimizedClearValue.DepthStencil.Depth = 1.0f;
-    depthStencilOptimizedClearValue.DepthStencil.Stencil = 0;
+void D3D12Renderer::InitFullScreenTrianglePSO() {
+    BE1::Image::Format::Enum imageFormat = BE1::Image::Format::Unknown;
+    bool isSRGB = false;
+    DXGI_FORMAT swapChainDxgiFormat = swapChain->GetDXGIFormat();
+    DXGIFormatToImageFormat(swapChainDxgiFormat, &imageFormat, &isSRGB);
 
-    D3D12_RESOURCE_DESC depthStencilBufferDesc = {};
-    depthStencilBufferDesc.Dimension = D3D12_RESOURCE_DIMENSION_TEXTURE2D;
-    depthStencilBufferDesc.Alignment = 0;
-    depthStencilBufferDesc.Width = width;
-    depthStencilBufferDesc.Height = height;
-    depthStencilBufferDesc.DepthOrArraySize = 1;
-    depthStencilBufferDesc.MipLevels = 1;
-    depthStencilBufferDesc.Format = DXGI_FORMAT_D24_UNORM_S8_UINT;
-    depthStencilBufferDesc.SampleDesc.Count = 1;
-    depthStencilBufferDesc.SampleDesc.Quality = 0;
-    depthStencilBufferDesc.Layout = D3D12_TEXTURE_LAYOUT_UNKNOWN;
-    depthStencilBufferDesc.Flags = D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL | D3D12_RESOURCE_FLAG_DENY_SHADER_RESOURCE;
+    RHI::RenderDest renderDest;
+    renderDest.renderTargetCount = 1;
+    renderDest.renderTargetFormats[0] = imageFormat;
+    renderDest.renderTargetForematSRGBs[0] = isSRGB;
 
-    D3D12_HEAP_PROPERTIES heapProperties;
-    heapProperties.Type = D3D12_HEAP_TYPE_DEFAULT;
-    heapProperties.CPUPageProperty = D3D12_CPU_PAGE_PROPERTY_UNKNOWN;
-    heapProperties.MemoryPoolPreference = D3D12_MEMORY_POOL_UNKNOWN;
-    heapProperties.CreationNodeMask = 1;
-    heapProperties.VisibleNodeMask = 1;
+    RHI::Shader *vs = static_cast<RHI::Shader *>(renderer->CreateShaderFromFile(RHI::ShaderModel::SM_6_0, RHI::ShaderStage::Vertex, "Source/TestD3D12/Shaders/FullScreenTriangle.hlsl", "VSMain"));
+    RHI::Shader *ps = static_cast<RHI::Shader *>(renderer->CreateShaderFromFile(RHI::ShaderModel::SM_6_0, RHI::ShaderStage::Fragment, "Source/TestD3D12/Shaders/FullScreenTriangle.hlsl", "PSMain"));
 
-    HRESULT hr = device->CreateCommittedResource(
-        &heapProperties,
-        D3D12_HEAP_FLAG_NONE,
-        &depthStencilBufferDesc,
-        D3D12_RESOURCE_STATE_DEPTH_WRITE,
-        &depthStencilOptimizedClearValue,
-        IID_PPV_ARGS(&depthStencilBuffer));
-    if (FAILED(hr)) {
-        BE_FATALERROR("Create depth/stencil buffer failed, ERROR: 0x%x", hr);
+    if (vs && ps) {
+        RHI::PipelineStateDesc psoDesc;
+        psoDesc.vs = vs;
+        psoDesc.ps = ps;
+        psoDesc.rasterizerState = renderer->GetRasterizerState(RHI::RasterizerStateType::SolidFrontSided);
+        psoDesc.depthStencilState = renderer->GetDepthStencilState(RHI::DepthStencilStateType::Never);
+        psoDesc.blendState = renderer->GetBlendState(RHI::BlendStateType::Opaque);
+        psoDesc.primitiveTopology = RHI::PrimitiveTopology::TriangleList;
+        psoDesc.renderDest = &renderDest;
+        imagePSO = renderer->CreateGraphicsPSO(&psoDesc);
     }
-    //depthStencilBuffer->SetName(L"depthStencilBuffer");
 
-    // 뎁스/스텐실 버퍼를 DSV 에 연결한다.
-    D3D12_DEPTH_STENCIL_VIEW_DESC dsvDesc = {};
-    dsvDesc.Format = DXGI_FORMAT_D24_UNORM_S8_UINT;
-    dsvDesc.ViewDimension = D3D12_DSV_DIMENSION_TEXTURE2D;
-    dsvDesc.Flags = D3D12_DSV_FLAG_NONE;
-
-    if (dsvDescriptorHandle.ptr != 0) {
-        dsvCpuDescriptorPool->Free(dsvDescriptorHandle);
+    if (vs) {
+        renderer->DestroyShader(vs, true);
     }
-    dsvCpuDescriptorPool->Alloc(&dsvDescriptorHandle, nullptr);
-    device->CreateDepthStencilView(depthStencilBuffer, &dsvDesc, dsvDescriptorHandle);
+    if (ps) {
+        renderer->DestroyShader(ps, true);
+    }
 }
 
 void D3D12Renderer::CreateShaderCompiler() {
@@ -509,13 +494,13 @@ void D3D12Renderer::BeginFrame() {
     SetScissorRect(commandList, swapChain->scissorRect);
 
 #ifdef USE_SECONDARY_COMMAND_LISTS
-    BeginRenderPass(commandList, swapChain, BE1::Color4::blue, 1.0f, 0, RHI::ClearFlag::Color | RHI::ClearFlag::Depth);
+    //BeginRenderPass(commandList, swapChain, mainDepthTexture, BE1::Color4::blue, 1.0f, 0, RHI::ClearFlag::Color | RHI::ClearFlag::Depth);
 
-    /*RHI::RenderPassImage renderPassImages[] = {
+    RHI::RenderPassImage renderPassImages[] = {
         RHI::RenderPassImage::Color(mainRenderTexture, 0, RHI::RenderPassImage::LoadAction::Clear),
         RHI::RenderPassImage::DepthStencil(mainDepthTexture, 0, RHI::RenderPassImage::LoadAction::Clear)
     };
-    BeginRenderPass(commandList, renderPassImages, COUNT_OF(renderPassImages));*/
+    BeginRenderPass(commandList, renderPassImages, COUNT_OF(renderPassImages));
 #else
     // 백버퍼를 렌더 타겟 상태로 전환
     D3D12_RESOURCE_BARRIER barrier;
@@ -527,9 +512,9 @@ void D3D12Renderer::BeginFrame() {
     barrier.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
     commandList->GetGraphicsCommandList()->ResourceBarrier(1, &barrier);
 
-    commandList->GetGraphicsCommandList()->ClearRenderTargetView(swapChain->GetCurrentBackBufferDescriptorHandle(), BE1::Color4::blue, 0, nullptr);
+    commandList->GetGraphicsCommandList()->ClearRenderTargetView(swapChain->GetCurrentBackBufferRTVDescriptorHandle(), BE1::Color4::blue, 0, nullptr);
     commandList->GetGraphicsCommandList()->ClearDepthStencilView(dsvDescriptorHandle, D3D12_CLEAR_FLAG_DEPTH, 1.0f, 0, 0, nullptr);
-    commandList->GetGraphicsCommandList()->OMSetRenderTargets(1, &swapChain->GetCurrentBackBufferDescriptorHandle(), FALSE, &dsvDescriptorHandle);
+    commandList->GetGraphicsCommandList()->OMSetRenderTargets(1, &swapChain->GetCurrentBackBufferRTVDescriptorHandle(), FALSE, &dsvDescriptorHandle);
 
     // CommandList 기록을 마치고 CommandQueue 로 실행
     commandList->CloseAndExecute(RHI::CommandQueueType::Graphics);
@@ -544,6 +529,12 @@ void D3D12Renderer::EndFrame() {
 #ifdef USE_SECONDARY_COMMAND_LISTS
     D3D12CommandList *commandList = mainCommandList;
 
+    EndRenderPass(commandList);
+
+    BeginRenderPass(commandList, swapChain, nullptr);
+    SetPSO(commandList, imagePSO);
+    SetTexture(commandList, 0, false, mainRenderTexture);
+    Draw(commandList, 3, 0);
     EndRenderPass(commandList);
 #else
     // 커맨드 리스트 풀에서 커맨드 리스트를 얻어온다.
@@ -604,7 +595,7 @@ D3D12CommandList* D3D12Renderer::FlushCommandList(D3D12CommandList* commandList)
     SetViewport(commandList, swapChain->viewportRect);
     SetScissorRect(commandList, swapChain->scissorRect);
 
-    commandList->GetGraphicsCommandList()->OMSetRenderTargets(1, &swapChain->rtvDescriptorHandles[swapChain->currentBackBufferIndex], FALSE, &dsvDescriptorHandle);
+    commandList->GetGraphicsCommandList()->OMSetRenderTargets(1, &swapChain->GetCurrentBackBufferRTVDescriptorHandle(), FALSE, &static_cast<D3D12Texture *>(mainDepthTexture)->dsvDescriptors[0].cpuDescriptorHandle);
 
     return commandList;
 }
@@ -720,21 +711,16 @@ void D3D12Renderer::OnResize(int width, int height) {
 
     swapChain->Resize(width, height);
 
-    // 기존 뎁스/스텐실 버퍼 해제
-    SAFE_RELEASE(depthStencilBuffer);
-
-    CreateDSV(width, height);
-
     DestroyTexture(mainRenderTexture, true);
     DestroyTexture(mainDepthTexture, true);
 
     BE1::Image mainRenderImage;
-    mainRenderImage.InitFromMemory(width, height, 1, 1, 1, BE1::Image::Format::RGBA_8_8_8_8, BE1::Image::GammaSpace::Linear, nullptr, 0);
+    mainRenderImage.InitFromMemory(width, height, 1, 1, 1, GetMainColorFormat(), BE1::Image::GammaSpace::Linear, nullptr, 0);
     mainRenderTexture = CreateTexture(RHI::TextureType::Texture2D, RHI::ResourceFlag::RenderTarget | RHI::ResourceFlag::ShaderResource | RHI::ResourceFlag::UnorderedAccess,
-        &mainRenderImage, RHI::ClearValue::Color(1.0f, 0.0f, 1.0f, 0.0f), 1);
+        &mainRenderImage, RHI::ClearValue::Color(0.0f, 0.0f, 1.0f, 0.0f), 1);
 
     BE1::Image mainDepthImage;
-    mainDepthImage.InitFromMemory(width, height, 1, 1, 1, BE1::Image::Format::DepthStencil_24_8, BE1::Image::GammaSpace::Linear, nullptr, 0);
+    mainDepthImage.InitFromMemory(width, height, 1, 1, 1, GetMainDepthFormat(), BE1::Image::GammaSpace::Linear, nullptr, 0);
     mainDepthTexture = CreateTexture(RHI::TextureType::Texture2D, RHI::ResourceFlag::DepthStencil,
         &mainDepthImage, RHI::ClearValue::DepthStencil(1.0f, 0), 1, RHI::GPUResourceState::DepthWrite);
 }
@@ -1009,58 +995,67 @@ void D3D12Renderer::Barrier(RHI::CommandList *commandList, const RHI::GPUBarrier
     d3d12CommandList->GetGraphicsCommandList()->ResourceBarrier(barrierCount, barrierDescs.Ptr());
 }
 
-void D3D12Renderer::BeginRenderPass(RHI::CommandList *commandList, const RHI::SwapChain *swapChain, const BE1::Color4 &clearColor, float clearDepth, uint8_t clearStencil, RHI::ClearFlag clearFlags) {
-    const D3D12SwapChain *d3d12SwapChain = static_cast<const D3D12SwapChain *>(swapChain);
+void D3D12Renderer::BeginRenderPass(RHI::CommandList *commandList, const RHI::SwapChain *swapChain, const RHI::Texture *depthStencilTexture, const BE1::Color4 &clearColor, float clearDepth, uint8_t clearStencil, RHI::ClearFlag clearFlags) {
     D3D12CommandList *d3d12CommandList = static_cast<D3D12CommandList *>(commandList);
 
-    // 백버퍼를 렌더 타겟 상태로 전환
-    D3D12_RESOURCE_BARRIER barrier;
-    barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
-    barrier.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
-    barrier.Transition.pResource = d3d12SwapChain->GetCurrentBackBuffer();
-    barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_PRESENT;
-    barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_RENDER_TARGET;
-    barrier.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
-    d3d12CommandList->GetGraphicsCommandList()->ResourceBarrier(1, &barrier);
+    if (swapChain) {
+        // 백버퍼를 렌더 타겟 상태로 전환
+        D3D12_RESOURCE_BARRIER barrier;
+        barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
+        barrier.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
+        barrier.Transition.pResource = static_cast<const D3D12SwapChain *>(swapChain)->GetCurrentBackBuffer();
+        barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_PRESENT;
+        barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_RENDER_TARGET;
+        barrier.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
+        d3d12CommandList->GetGraphicsCommandList()->ResourceBarrier(1, &barrier);
 
-    // EndRenderPass 에서 사용할 Barrier 를 미리 등록
-    barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_RENDER_TARGET;
-    barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_PRESENT;
-    d3d12CommandList->endRenderPassBarriers.Append(barrier);
+        // EndRenderPass 에서 사용할 Barrier 를 미리 등록
+        barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_RENDER_TARGET;
+        barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_PRESENT;
+        d3d12CommandList->endRenderPassBarriers.Append(barrier);
+    }
 #if 1
     // 렌더 타겟
     D3D12_RENDER_PASS_RENDER_TARGET_DESC rtDesc = {};
-    rtDesc.cpuDescriptor = d3d12SwapChain->GetCurrentBackBufferDescriptorHandle();
-    if (BE1::HasFlag(clearFlags, RHI::ClearFlag::Color)) {
-        rtDesc.BeginningAccess.Type = D3D12_RENDER_PASS_BEGINNING_ACCESS_TYPE_CLEAR;
-        rtDesc.BeginningAccess.Clear.ClearValue.Color[0] = clearColor[0];
-        rtDesc.BeginningAccess.Clear.ClearValue.Color[1] = clearColor[1];
-        rtDesc.BeginningAccess.Clear.ClearValue.Color[2] = clearColor[2];
-        rtDesc.BeginningAccess.Clear.ClearValue.Color[3] = clearColor[3];
-    } else {
-        rtDesc.BeginningAccess.Type = D3D12_RENDER_PASS_BEGINNING_ACCESS_TYPE_DISCARD;
+    D3D12_RENDER_PASS_RENDER_TARGET_DESC *rtDescPtr = nullptr;
+    if (swapChain) {
+        rtDesc.cpuDescriptor = static_cast<const D3D12SwapChain *>(swapChain)->GetCurrentBackBufferRTVDescriptorHandle();
+        if (BE1::HasFlag(clearFlags, RHI::ClearFlag::Color)) {
+            rtDesc.BeginningAccess.Type = D3D12_RENDER_PASS_BEGINNING_ACCESS_TYPE_CLEAR;
+            rtDesc.BeginningAccess.Clear.ClearValue.Color[0] = clearColor[0];
+            rtDesc.BeginningAccess.Clear.ClearValue.Color[1] = clearColor[1];
+            rtDesc.BeginningAccess.Clear.ClearValue.Color[2] = clearColor[2];
+            rtDesc.BeginningAccess.Clear.ClearValue.Color[3] = clearColor[3];
+        } else {
+            rtDesc.BeginningAccess.Type = D3D12_RENDER_PASS_BEGINNING_ACCESS_TYPE_DISCARD;
+        }
+        rtDesc.EndingAccess.Type = D3D12_RENDER_PASS_ENDING_ACCESS_TYPE_PRESERVE;
+        rtDescPtr = &rtDesc;
     }
-    rtDesc.EndingAccess.Type = D3D12_RENDER_PASS_ENDING_ACCESS_TYPE_PRESERVE;
 
     // 뎁스/스텐실
     D3D12_RENDER_PASS_DEPTH_STENCIL_DESC dsDesc = {};
-    dsDesc.cpuDescriptor = dsvDescriptorHandle;
-    if (BE1::HasFlag(clearFlags, RHI::ClearFlag::Depth)) {
-        dsDesc.DepthBeginningAccess.Type = D3D12_RENDER_PASS_BEGINNING_ACCESS_TYPE_CLEAR;
-        dsDesc.DepthBeginningAccess.Clear.ClearValue.DepthStencil.Depth = clearDepth;
-    } else {
-        dsDesc.DepthBeginningAccess.Type = D3D12_RENDER_PASS_BEGINNING_ACCESS_TYPE_DISCARD;
+    D3D12_RENDER_PASS_DEPTH_STENCIL_DESC *dsDescPtr = nullptr;
+    if (depthStencilTexture) {
+        dsDesc.cpuDescriptor = static_cast<const D3D12Texture *>(depthStencilTexture)->dsvDescriptors[0].cpuDescriptorHandle;
+        if (BE1::HasFlag(clearFlags, RHI::ClearFlag::Depth)) {
+            dsDesc.DepthBeginningAccess.Type = D3D12_RENDER_PASS_BEGINNING_ACCESS_TYPE_CLEAR;
+            dsDesc.DepthBeginningAccess.Clear.ClearValue.DepthStencil.Depth = clearDepth;
+        } else {
+            dsDesc.DepthBeginningAccess.Type = D3D12_RENDER_PASS_BEGINNING_ACCESS_TYPE_DISCARD;
+        }
+        dsDesc.DepthEndingAccess.Type = D3D12_RENDER_PASS_ENDING_ACCESS_TYPE_PRESERVE;
+        if (BE1::HasFlag(clearFlags, RHI::ClearFlag::Stencil)) {
+            dsDesc.StencilBeginningAccess.Type = D3D12_RENDER_PASS_BEGINNING_ACCESS_TYPE_CLEAR;
+            dsDesc.StencilBeginningAccess.Clear.ClearValue.DepthStencil.Stencil = clearStencil;
+        } else {
+            dsDesc.StencilBeginningAccess.Type = D3D12_RENDER_PASS_BEGINNING_ACCESS_TYPE_DISCARD;
+        }
+        dsDesc.StencilEndingAccess.Type = D3D12_RENDER_PASS_ENDING_ACCESS_TYPE_DISCARD;
+        dsDescPtr = &dsDesc;
     }
-    dsDesc.DepthEndingAccess.Type = D3D12_RENDER_PASS_ENDING_ACCESS_TYPE_PRESERVE;
-    if (BE1::HasFlag(clearFlags, RHI::ClearFlag::Stencil)) {
-        dsDesc.StencilBeginningAccess.Type = D3D12_RENDER_PASS_BEGINNING_ACCESS_TYPE_CLEAR;
-        dsDesc.StencilBeginningAccess.Clear.ClearValue.DepthStencil.Stencil = clearStencil;
-    } else {
-        dsDesc.StencilBeginningAccess.Type = D3D12_RENDER_PASS_BEGINNING_ACCESS_TYPE_DISCARD;
-    }
-    dsDesc.StencilEndingAccess.Type = D3D12_RENDER_PASS_ENDING_ACCESS_TYPE_DISCARD;
 
-    d3d12CommandList->GetGraphicsCommandList()->BeginRenderPass(1, &rtDesc, &dsDesc, D3D12_RENDER_PASS_FLAG_ALLOW_UAV_WRITES);
+    d3d12CommandList->GetGraphicsCommandList()->BeginRenderPass(1, rtDescPtr, dsDescPtr, D3D12_RENDER_PASS_FLAG_ALLOW_UAV_WRITES);
 #else
     if (BE1::HasFlag(clearFlags, RHI::ClearFlag::Color)) {
         d3d12CommandList->GetGraphicsCommandList()->ClearRenderTargetView(d3d12SwapChain->GetCurrentBackBufferDescriptorHandle(), clearColor, 0, nullptr);
@@ -1648,7 +1643,7 @@ void D3D12Renderer::DrawVisObjectsWithoutTask() {
     // ScissorRect 설정
     SetScissorRect(commandList, swapChain->scissorRect);
 
-    commandList->GetGraphicsCommandList()->OMSetRenderTargets(1, &swapChain->rtvDescriptorHandles[swapChain->currentBackBufferIndex], FALSE, &dsvDescriptorHandle);
+    commandList->GetGraphicsCommandList()->OMSetRenderTargets(1, &swapChain->GetCurrentBackBufferRTVDescriptorHandle(), FALSE, &dsvDescriptorHandle);
 
     // 루트 디스크립터 힙을 지정한다.
     ID3D12DescriptorHeap *descriptorHeaps[] = { currentThreadData.rootDescriptorPool->descriptorHeap };
@@ -1688,7 +1683,7 @@ void D3D12Renderer::DrawVisObjectsByTask(D3D12Renderer::DrawObjectTaskDesc *task
     SetViewport(commandList, swapChain->viewportRect);
     SetScissorRect(commandList, swapChain->scissorRect);
 
-    commandList->GetGraphicsCommandList()->OMSetRenderTargets(1, &swapChain->rtvDescriptorHandles[swapChain->currentBackBufferIndex], FALSE, &dsvDescriptorHandle);
+    commandList->GetGraphicsCommandList()->OMSetRenderTargets(1, &swapChain->GetCurrentBackBufferRTVDescriptorHandle(), FALSE, &dsvDescriptorHandle);
 
     // 루트 디스크립터 힙을 지정한다.
     ID3D12DescriptorHeap *descriptorHeaps[] = { currentThreadData.rootDescriptorPool->descriptorHeap };

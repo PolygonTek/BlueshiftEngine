@@ -76,7 +76,7 @@ public:
     virtual BE1::Image::Format::Enum    ToUncompressedImageFormat(BE1::Image::Format::Enum imageFormat) const override;
     virtual BE1::Image::Format::Enum    ToCompressedImageFormat(BE1::Image::Format::Enum inFormat, bool useNormalMap) const override;
 
-    D3D12SwapChain *                    CreateSwapChain(HWND hwnd, uint32_t width, uint32_t height);
+    D3D12SwapChain *                    CreateSwapChain(HWND hwnd, uint32_t width, uint32_t height, DXGI_FORMAT format);
     void                                DestroySwapChain(D3D12SwapChain *swapChain);
 
     virtual RHI::Buffer *               CreateBuffer(RHI::BufferUsage usage, RHI::ResourceFlag flags, uint64_t size, BE1::Image::Format::Enum format, uint32_t stride, const void *data) override;
@@ -147,7 +147,7 @@ public:
     virtual void                        CopyBuffer(RHI::CommandList *commandList, const RHI::Buffer *dstBuffer, uint32_t dstOffset, const RHI::Buffer *srcBuffer, uint32_t srcOffset, uint32_t size) override;
     virtual void                        CopyTexture(RHI::CommandList *commandList, const RHI::Texture *dstTexture, uint32_t dstSlice, uint32_t dstMipLevel, uint32_t dstX, uint32_t dstY, uint32_t dstZ, const RHI::Texture *srcTexture, uint32_t srcSlice, uint32_t srcMipLevel, uint32_t srcX, uint32_t srcY, uint32_t srcZ, uint32_t width, uint32_t height, uint32_t depth) override;
     virtual void                        Barrier(RHI::CommandList *commandList, const RHI::GPUBarrier *barriers, uint32_t barrierCount) override;
-    virtual void                        BeginRenderPass(RHI::CommandList *commandList, const RHI::SwapChain *swapChain, const BE1::Color4 &clearColor, float clearDepth, uint8_t clearStencil, RHI::ClearFlag clearFlags) override;
+    virtual void                        BeginRenderPass(RHI::CommandList *commandList, const RHI::SwapChain *swapChain, const RHI::Texture *depthStencilTexture, const BE1::Color4 &clearColor = {}, float clearDepth = 0, uint8_t clearStencil = 0, RHI::ClearFlag clearFlags = RHI::ClearFlag::None) override;
     virtual void                        BeginRenderPass(RHI::CommandList *commandList, const RHI::RenderPassImage renderPassImages[], int numRenderPassImages, RHI::RenderPassFlag flags = RHI::RenderPassFlag::None) override;
     virtual void                        EndRenderPass(RHI::CommandList *commandList) override;
 
@@ -172,12 +172,13 @@ public:
     void                                BindRootParameters(D3D12CommandList *commandList, bool graphics);
 
     void                                CreateDevice(IDXGIAdapter1 **adapterPtr);
-    void                                CreateDSV(uint32_t width, uint32_t height);
     void                                CreateShaderCompiler();
 
 #ifdef USE_D3D12_MEMALLOC
     void                                PrintMemoryAllocatorStats();
 #endif
+
+    void                                InitFullScreenTrianglePSO();
 
     struct DrawObjectTaskDesc {
         D3D12Renderer *                 renderer = nullptr;
@@ -222,8 +223,6 @@ public:
 
     // TODO: Renderer 외부 (RenderContext) 로 뺄 것
     D3D12SwapChain *                    swapChain = nullptr;
-    ID3D12Resource *                    depthStencilBuffer = nullptr;
-    D3D12_CPU_DESCRIPTOR_HANDLE         dsvDescriptorHandle = {};
     RHI::Texture *                      mainRenderTexture = nullptr;
     RHI::Texture *                      mainDepthTexture = nullptr;
 
@@ -256,6 +255,8 @@ public:
     BE1::HashMap<uint64_t, D3D12PipelineState *> graphicsPsoMap;
     BE1::HashMap<uint64_t, D3D12PipelineState *> computePsoMap;
     BE1::HashMap<uint64_t, ID3DBlob *>  cachedPsoBlobMap;
+
+    RHI::PipelineState *                imagePSO = nullptr;//
 
     IDxcCompiler3 *                     dxcCompiler = nullptr;
     IDxcUtils *                         dxcUtils = nullptr;

@@ -25,6 +25,14 @@ void RHIRenderer::Shutdown() {
     initialized = false;
 }
 
+BE1::Image::Format::Enum RHIRenderer::GetMainColorFormat() const {
+    return BE1::Image::Format::RGBA_8_8_8_8;
+}
+
+BE1::Image::Format::Enum RHIRenderer::GetMainDepthFormat() const {
+    return BE1::Image::Format::DepthStencil_24_8;
+}
+
 void RHIRenderer::SetupStates() {
     RHI::RasterizerState *rs = &rasterizerStates[to_int(RHI::RasterizerStateType::SolidFrontSided)];
     rs->fillMode = RHI::FillMode::Solid;
@@ -47,6 +55,11 @@ void RHIRenderer::SetupStates() {
     dss->depthTestEnabled = true;
     dss->depthWriteMask = RHI::DepthWriteMask::All;
     dss->depthFunc = RHI::ComparisonFunc::LEqual;
+
+    dss = &depthStencilStates[to_int(RHI::DepthStencilStateType::Never)];
+    dss->depthTestEnabled = false;
+    dss->depthWriteMask = RHI::DepthWriteMask::Zero;
+    dss->depthFunc = RHI::ComparisonFunc::Never;
 
     RHI::BlendState *bs = &blendStates[to_int(RHI::BlendStateType::AlphaBlend)];
     bs->renderTargets[0].blendEnabled = true;

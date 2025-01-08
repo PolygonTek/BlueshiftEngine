@@ -17,11 +17,11 @@
 #include "D3D12DescriptorPool.h"
 #include "D3D12SwapChain.h"
 
-D3D12SwapChain *D3D12Renderer::CreateSwapChain(HWND hwnd, uint32_t width, uint32_t height) {
+D3D12SwapChain *D3D12Renderer::CreateSwapChain(HWND hwnd, uint32_t width, uint32_t height, DXGI_FORMAT format) {
     DXGI_SWAP_CHAIN_DESC1 swapChainDesc = {};
     swapChainDesc.Width = (UINT)width;
     swapChainDesc.Height = (UINT)height;
-    swapChainDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+    swapChainDesc.Format = format;
     //swapChainDesc.BufferDesc.RefreshRate.Numerator = m_uiRefreshRate;
     //swapChainDesc.BufferDesc.RefreshRate.Denominator = 1;
     swapChainDesc.BufferUsage = DXGI_USAGE_BACK_BUFFER | DXGI_USAGE_RENDER_TARGET_OUTPUT;
@@ -61,6 +61,7 @@ D3D12SwapChain *D3D12Renderer::CreateSwapChain(HWND hwnd, uint32_t width, uint32
     //hr = dxgiSwapChain3->GetContainingOutput(&dxgiOutput);
 
     D3D12SwapChain *swapChain = new D3D12SwapChain;
+    swapChain->dxgiFormat = format;
     swapChain->dxgiSwapChain = dxgiSwapChain3;
     swapChain->CreateRTVs();
 
@@ -80,22 +81,22 @@ D3D12SwapChain *D3D12Renderer::CreateSwapChain(HWND hwnd, uint32_t width, uint32
 }
 
 void D3D12SwapChain::Release() {
-    SAFE_RELEASE_ARRAY(renderTargetBuffers);
+    SAFE_RELEASE_ARRAY(backBuffers);
     SAFE_RELEASE(dxgiSwapChain);
 }
 
 void D3D12SwapChain::CreateRTVs() {
     for (UINT bufferIndex = 0; bufferIndex < D3D12SwapChain::NumSwapChainBuffers; ++bufferIndex) {
-        if (rtvDescriptorHandles[bufferIndex].ptr != 0) {
-            renderer->rtvCpuDescriptorPool->Free(rtvDescriptorHandles[bufferIndex]);
+        if (backBufferRTVs[bufferIndex].ptr != 0) {
+            renderer->rtvCpuDescriptorPool->Free(backBufferRTVs[bufferIndex]);
         }
-        renderer->rtvCpuDescriptorPool->Alloc(&rtvDescriptorHandles[bufferIndex], nullptr);
+        renderer->rtvCpuDescriptorPool->Alloc(&backBufferRTVs[bufferIndex], nullptr);
 
         // 스왑체인의 백버퍼 리소스를 가져온다.
-        dxgiSwapChain->GetBuffer(bufferIndex, IID_PPV_ARGS(&renderTargetBuffers[bufferIndex]));
+        dxgiSwapChain->GetBuffer(bufferIndex, IID_PPV_ARGS(&backBuffers[bufferIndex]));
 
         // 백버퍼로 RTV 를 생성한다.
-        renderer->device->CreateRenderTargetView(renderTargetBuffers[bufferIndex], nullptr, rtvDescriptorHandles[bufferIndex]);
+        renderer->device->CreateRenderTargetView(backBuffers[bufferIndex], nullptr, backBufferRTVs[bufferIndex]);
     }
 
     currentBackBufferIndex = dxgiSwapChain->GetCurrentBackBufferIndex();
@@ -103,10 +104,10 @@ void D3D12SwapChain::CreateRTVs() {
 
 void D3D12SwapChain::Resize(uint32_t width, uint32_t height) {
     // 기존 스왑 체인 백버퍼 해제
-    SAFE_RELEASE_ARRAY(renderTargetBuffers);
+    SAFE_RELEASE_ARRAY(backBuffers);
 
     // 스왑 체인 버퍼의 사이즈를 조정한다.
-    dxgiSwapChain->ResizeBuffers(D3D12SwapChain::NumSwapChainBuffers, width, height, DXGI_FORMAT_R8G8B8A8_UNORM, DXGI_SWAP_CHAIN_FLAG_ALLOW_TEARING);
+    dxgiSwapChain->ResizeBuffers(D3D12SwapChain::NumSwapChainBuffers, width, height, dxgiFormat, DXGI_SWAP_CHAIN_FLAG_ALLOW_TEARING);
 
     CreateRTVs();
 

@@ -505,6 +505,7 @@ struct RHI {
     struct RenderDest {
         uint32_t                        renderTargetCount = 0;
         BE1::Image::Format::Enum        renderTargetFormats[8] = {};
+        bool                            renderTargetForematSRGBs[8] = {};
         BE1::Image::Format::Enum        depthStencilFormat = BE1::Image::Format::Unknown;
         uint32_t                        sampleCount = 1;
 
@@ -519,6 +520,14 @@ struct RHI {
                     uint64_t renderTargetFormat_5 : 6;
                     uint64_t renderTargetFormat_6 : 6;
                     uint64_t renderTargetFormat_7 : 6;
+                    uint64_t renderTargetFormatSRGB_0 : 1;
+                    uint64_t renderTargetFormatSRGB_1 : 1;
+                    uint64_t renderTargetFormatSRGB_2 : 1;
+                    uint64_t renderTargetFormatSRGB_3 : 1;
+                    uint64_t renderTargetFormatSRGB_4 : 1;
+                    uint64_t renderTargetFormatSRGB_5 : 1;
+                    uint64_t renderTargetFormatSRGB_6 : 1;
+                    uint64_t renderTargetFormatSRGB_7 : 1;
                     uint64_t depthStencilFormat : 6;
                 } bits;
                 uint64_t value;
@@ -532,6 +541,14 @@ struct RHI {
             hasher.bits.renderTargetFormat_5 = (uint64_t)renderTargetFormats[5];
             hasher.bits.renderTargetFormat_6 = (uint64_t)renderTargetFormats[6];
             hasher.bits.renderTargetFormat_7 = (uint64_t)renderTargetFormats[7];
+            hasher.bits.renderTargetFormatSRGB_0 = (uint64_t)renderTargetForematSRGBs[0];
+            hasher.bits.renderTargetFormatSRGB_1 = (uint64_t)renderTargetForematSRGBs[1];
+            hasher.bits.renderTargetFormatSRGB_2 = (uint64_t)renderTargetForematSRGBs[2];
+            hasher.bits.renderTargetFormatSRGB_3 = (uint64_t)renderTargetForematSRGBs[3];
+            hasher.bits.renderTargetFormatSRGB_4 = (uint64_t)renderTargetForematSRGBs[4];
+            hasher.bits.renderTargetFormatSRGB_5 = (uint64_t)renderTargetForematSRGBs[5];
+            hasher.bits.renderTargetFormatSRGB_6 = (uint64_t)renderTargetForematSRGBs[6];
+            hasher.bits.renderTargetFormatSRGB_7 = (uint64_t)renderTargetForematSRGBs[7];
             hasher.bits.depthStencilFormat = (uint64_t)depthStencilFormat;
             return hasher.value;
         }
@@ -543,11 +560,11 @@ struct RHI {
         const Shader *                  ds = nullptr;
         const Shader *                  hs = nullptr;
         const Shader *                  gs = nullptr;
-        const InputLayout *             inputLayout;
+        const InputLayout *             inputLayout = nullptr;
         const RasterizerState *         rasterizerState = nullptr;
         const DepthStencilState *       depthStencilState = nullptr;
         const BlendState *              blendState = nullptr;
-        const RenderDest *              renderDest;
+        const RenderDest *              renderDest = nullptr;
         PrimitiveTopology               primitiveTopology = PrimitiveTopology::TriangleList;
         uint32_t                        sampleMask = 0xffffffff;
         uint32_t                        sampleCount = 1;
@@ -704,6 +721,7 @@ struct RHI {
 
     enum class DepthStencilStateType {
         Default,
+        Never,
         Count
     };
 
@@ -736,6 +754,9 @@ public:
     const RHI::RasterizerState *        GetRasterizerState(RHI::RasterizerStateType type) const { return &rasterizerStates[to_int(type)]; }
     const RHI::DepthStencilState *      GetDepthStencilState(RHI::DepthStencilStateType type) const { return &depthStencilStates[to_int(type)]; }
     const RHI::BlendState *             GetBlendState(RHI::BlendStateType type) const { return &blendStates[to_int(type)]; }
+
+    BE1::Image::Format::Enum            GetMainColorFormat() const;
+    BE1::Image::Format::Enum            GetMainDepthFormat() const;
 
     virtual bool                        IsSupportedImageFormat(BE1::Image::Format::Enum imageFormat) const = 0;
     virtual BE1::Image::Format::Enum    ToUncompressedImageFormat(BE1::Image::Format::Enum imageFormat) const = 0;
@@ -805,8 +826,8 @@ public:
     virtual void                        CopyTexture(RHI::CommandList *commandList, const RHI::Texture *dstTexture, uint32_t dstSlice, uint32_t dstMipLevel, uint32_t dstX, uint32_t dstY, uint32_t dstZ, const RHI::Texture *srcTexture, uint32_t srcSlice, uint32_t srcMipLevel, uint32_t srcX, uint32_t srcY, uint32_t srcZ, uint32_t width, uint32_t height, uint32_t depth) = 0;
     virtual void                        Barrier(RHI::CommandList *commandList, const RHI::GPUBarrier *barriers, uint32_t barrierCount) = 0;
     void                                Barrier(RHI::CommandList *commandList, const RHI::GPUBarrier &barrier) { Barrier(commandList, &barrier, 1); }
-    virtual void                        BeginRenderPass(RHI::CommandList *commandList, const RHI::SwapChain *swapChain, const BE1::Color4 &clearColor, float clearDepth, uint8_t clearStencil, RHI::ClearFlag clearFlags) = 0;
-    virtual void                        BeginRenderPass(RHI::CommandList *commandList, const RHI::RenderPassImage renderPassImages[], int numRenderPassImages, RHI::RenderPassFlag flags) = 0;
+    virtual void                        BeginRenderPass(RHI::CommandList *commandList, const RHI::SwapChain *swapChain, const RHI::Texture *depthStencilTexture, const BE1::Color4 &clearColor = {}, float clearDepth = 0, uint8_t clearStencil = 0, RHI::ClearFlag clearFlags = RHI::ClearFlag::None) = 0;
+    virtual void                        BeginRenderPass(RHI::CommandList *commandList, const RHI::RenderPassImage renderPassImages[], int numRenderPassImages, RHI::RenderPassFlag flags = RHI::RenderPassFlag::None) = 0;
     virtual void                        EndRenderPass(RHI::CommandList *commandList) = 0;
 
     virtual void                        Draw(RHI::CommandList *commandList, uint32_t vertexCount, uint32_t startVertexLocation) = 0;

@@ -34,8 +34,10 @@ public:
     virtual void                    Resize(uint32_t width, uint32_t height) override;
     virtual void                    SwapBuffers(bool vsync) override;
 
-    ID3D12Resource *                GetCurrentBackBuffer() const { return renderTargetBuffers[currentBackBufferIndex]; }
-    D3D12_CPU_DESCRIPTOR_HANDLE     GetCurrentBackBufferDescriptorHandle() const { return rtvDescriptorHandles[currentBackBufferIndex]; }
+    ID3D12Resource *                GetCurrentBackBuffer() const { return backBuffers[currentBackBufferIndex]; }
+    const D3D12_CPU_DESCRIPTOR_HANDLE &GetCurrentBackBufferRTVDescriptorHandle() const { return backBufferRTVs[currentBackBufferIndex]; }
+
+    DXGI_FORMAT                     GetDXGIFormat() const { return dxgiFormat; }
 
     bool                            IsSwapChainSupportsHDR() const;
 
@@ -43,8 +45,9 @@ public:
 
 private:
     IDXGISwapChain3 *               dxgiSwapChain = nullptr;
-    ID3D12Resource *                renderTargetBuffers[NumSwapChainBuffers] = {};
-    D3D12_CPU_DESCRIPTOR_HANDLE     rtvDescriptorHandles[NumSwapChainBuffers] = {};
+    DXGI_FORMAT                     dxgiFormat;
+    ID3D12Resource *                backBuffers[NumSwapChainBuffers] = {};
+    D3D12_CPU_DESCRIPTOR_HANDLE     backBufferRTVs[NumSwapChainBuffers] = {};
     uint32_t                        currentBackBufferIndex = 0;
     BE1::Rect                       viewportRect;
     BE1::Rect                       scissorRect;
