@@ -81,9 +81,9 @@ void TriangleMesh::InitPipelineState() {
 
     RHI::RenderDest renderDest;
     renderDest.renderTargetCount = 1;
-    renderDest.renderTargetFormats[0] = renderer->GetMainColorFormat();
-    renderDest.depthStencilFormat = renderer->GetMainDepthFormat();
-    renderDest.sampleCount = renderer->GetMainMSAASampleCount();
+    renderDest.renderTargetFormats[0] = renderer->GetMainRTColorFormat();
+    renderDest.depthStencilFormat = renderer->GetMainRTDepthFormat();
+    renderDest.sampleCount = renderer->GetMainRTSampleCount();
 
     RHI::Shader *triangleVS = static_cast<RHI::Shader *>(renderer->CreateShaderFromFile(RHI::ShaderModel::SM_6_0, RHI::ShaderStage::Vertex, "Source/TestD3D12/Shaders/Triangle.hlsl", "VSMain"));
     RHI::Shader *trianglePS = static_cast<RHI::Shader *>(renderer->CreateShaderFromFile(RHI::ShaderModel::SM_6_0, RHI::ShaderStage::Fragment, "Source/TestD3D12/Shaders/Triangle.hlsl", "PSMain"));

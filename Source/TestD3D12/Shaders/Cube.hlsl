@@ -23,7 +23,6 @@ Texture2D defaultTexture : register(t0);
 SamplerState defaultSampler : register(s0);
 
 [RootSignature(COMMON_ROOT_SIGNATURE)]
-
 PSInput VSMain(VSInput input) {
     PSInput result;
     float4 positionWS = float4(mul(worldMatrix, input.position), 1.0);
@@ -35,7 +34,6 @@ PSInput VSMain(VSInput input) {
 }
 
 [RootSignature(COMMON_ROOT_SIGNATURE)]
-
 float4 PSMain(PSInput input) : SV_TARGET {
     float4 color = defaultTexture.Sample(defaultSampler, input.texCoord);
     return color * input.color;

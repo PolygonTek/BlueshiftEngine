@@ -178,6 +178,7 @@ public:
     void                                PrintMemoryAllocatorStats();
 #endif
 
+    void                                CreateMainRenderTextures(uint32_t width, uint32_t height);
     void                                InitFullScreenTrianglePSO();
 
     struct DrawObjectTaskDesc {
@@ -214,6 +215,7 @@ public:
     D3D12CommandListPool *              graphicsCommandListPool = nullptr;
     D3D12CommandList *                  mainCommandList = nullptr;
     D3D12CommandList *                  resourceCommandList = nullptr;
+
     ID3D12Fence *                       fence = nullptr;
     uint64_t                            fenceValue = 0;
     HANDLE                              fenceEventHandle = nullptr;
@@ -223,9 +225,9 @@ public:
 
     // TODO: Renderer 외부 (RenderContext) 로 뺄 것
     D3D12SwapChain *                    swapChain = nullptr;
-    RHI::Texture *                      mainMSAARenderTexture = nullptr;
-    RHI::Texture *                      mainRenderTexture = nullptr;
-    RHI::Texture *                      mainDepthTexture = nullptr;
+    RHI::Texture *                      mainRTColorMSAATexture = nullptr;
+    RHI::Texture *                      mainRTColorTexture = nullptr;
+    RHI::Texture *                      mainRTDepthTexture = nullptr;
 
     uint32_t                            vendorId;
     uint32_t                            deviceId;
@@ -257,7 +259,7 @@ public:
     BE1::HashMap<uint64_t, D3D12PipelineState *> computePsoMap;
     BE1::HashMap<uint64_t, ID3DBlob *>  cachedPsoBlobMap;
 
-    RHI::PipelineState *                imagePSO = nullptr;//
+    RHI::PipelineState *                imagePSO = nullptr;
 
     IDxcCompiler3 *                     dxcCompiler = nullptr;
     IDxcUtils *                         dxcUtils = nullptr;

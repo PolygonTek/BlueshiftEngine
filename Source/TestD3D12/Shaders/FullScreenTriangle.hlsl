@@ -10,7 +10,6 @@ Texture2D defaultTexture : register(t0);
 SamplerState defaultSampler : register(s0);
 
 [RootSignature(COMMON_ROOT_SIGNATURE)]
-
 PSInput VSMain(uint vertexID : SV_VertexID) {
     PSInput result;
 
@@ -21,13 +20,12 @@ PSInput VSMain(uint vertexID : SV_VertexID) {
     result.position.w = 1;
 
     result.texCoord.x = (float)(vertexID % 2) * 2;
-    result.texCoord.y = (float)(vertexID / 2) * 2;
+    result.texCoord.y = 1.0f - (float)(vertexID / 2) * 2;
 
     return result;
 }
 
 [RootSignature(COMMON_ROOT_SIGNATURE)]
-
 float4 PSMain(PSInput input) : SV_TARGET {
     return defaultTexture.Sample(defaultSampler, input.texCoord);
 }

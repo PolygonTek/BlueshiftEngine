@@ -716,6 +716,9 @@ struct RHI {
         Add,
         Count
     };
+
+    class Context {
+    };
 };
 
 class RHIRenderer {
@@ -740,9 +743,9 @@ public:
     const RHI::DepthStencilState *      GetDepthStencilState(RHI::DepthStencilStateType type) const { return &depthStencilStates[to_int(type)]; }
     const RHI::BlendState *             GetBlendState(RHI::BlendStateType type) const { return &blendStates[to_int(type)]; }
 
-    BE1::Image::Format::Enum            GetMainColorFormat() const;
-    BE1::Image::Format::Enum            GetMainDepthFormat() const;
-    uint32_t                            GetMainMSAASampleCount() const;
+    BE1::Image::Format::Enum            GetMainRTColorFormat() const;
+    BE1::Image::Format::Enum            GetMainRTDepthFormat() const;
+    uint32_t                            GetMainRTSampleCount() const;
 
     virtual bool                        IsSupportedImageFormat(BE1::Image::Format::Enum imageFormat) const = 0;
     virtual BE1::Image::Format::Enum    ToUncompressedImageFormat(BE1::Image::Format::Enum imageFormat) const = 0;

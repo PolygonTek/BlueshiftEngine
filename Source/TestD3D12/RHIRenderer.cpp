@@ -25,15 +25,15 @@ void RHIRenderer::Shutdown() {
     initialized = false;
 }
 
-BE1::Image::Format::Enum RHIRenderer::GetMainColorFormat() const {
+BE1::Image::Format::Enum RHIRenderer::GetMainRTColorFormat() const {
     return BE1::Image::Format::RGBA_8_8_8_8;
 }
 
-BE1::Image::Format::Enum RHIRenderer::GetMainDepthFormat() const {
-    return BE1::Image::Format::DepthStencil_24_8;
+BE1::Image::Format::Enum RHIRenderer::GetMainRTDepthFormat() const {
+    return BE1::Image::Format::Depth_32F;
 }
 
-uint32_t RHIRenderer::GetMainMSAASampleCount() const {
+uint32_t RHIRenderer::GetMainRTSampleCount() const {
     return 1;
 }
 

@@ -168,52 +168,6 @@ void D3D12Renderer::Init(HWND hwnd) {
 
     adapter1->Release();
 
-    // Graphics CommandQueue 생성
-    D3D12_COMMAND_QUEUE_DESC queueDesc = {};
-    queueDesc.Flags = D3D12_COMMAND_QUEUE_FLAG_NONE;
-    queueDesc.Priority = D3D12_COMMAND_QUEUE_PRIORITY_NORMAL;
-    queueDesc.Type = D3D12_COMMAND_LIST_TYPE_DIRECT;
-
-    hr = device->CreateCommandQueue(&queueDesc, IID_PPV_ARGS(&commandQueues[to_int(RHI::CommandQueueType::Graphics)]));
-    if (FAILED(hr)) {
-        BE_FATALERROR("CreateCommandQueue (Graphics) failed, ERROR: 0x%x", hr);
-    }
-    commandQueues[to_int(RHI::CommandQueueType::Graphics)]->SetName(L"GraphicsCommandQueue");
-
-    // Compute CommandQueue 생성
-    queueDesc = {};
-    queueDesc.Flags = D3D12_COMMAND_QUEUE_FLAG_NONE;
-    queueDesc.Priority = D3D12_COMMAND_QUEUE_PRIORITY_NORMAL;
-    queueDesc.Type = D3D12_COMMAND_LIST_TYPE_COMPUTE;
-
-    hr = device->CreateCommandQueue(&queueDesc, IID_PPV_ARGS(&commandQueues[to_int(RHI::CommandQueueType::Compute)]));
-    if (FAILED(hr)) {
-        BE_FATALERROR("CreateCommandQueue (Compute) failed, ERROR: 0x%x", hr);
-    }
-    commandQueues[to_int(RHI::CommandQueueType::Compute)]->SetName(L"ComputeCommandQueue");
-
-    // Fence 객체 생성
-    hr = device->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&fence));
-    if (FAILED(hr)) {
-        BE_FATALERROR("CreateFence failed, ERROR: 0x%x", hr);
-    }
-    // Fence 초기값
-    fenceValue = 0;
-
-    // Fence 를 대기하기 위한 이벤트 객체 생성
-    fenceEventHandle = CreateEvent(nullptr, FALSE, FALSE, nullptr);
-
-    // CPU 디스크립터 풀 생성
-    resCpuDescriptorPool = new D3D12DescriptorPool(device, D3D12DescriptorPool::Type::CBV_SRV_UAV, 1000000, false);
-    rtvCpuDescriptorPool = new D3D12DescriptorPool(device, D3D12DescriptorPool::Type::RTV, 16, false);
-    dsvCpuDescriptorPool = new D3D12DescriptorPool(device, D3D12DescriptorPool::Type::DSV, 16, false);
-    samCpuDescriptorPool = new D3D12DescriptorPool(device, D3D12DescriptorPool::Type::Sampler, 2048, false);
-
-    // UAV 의 경우에만 CPU & GPU 디스크립터가 필요하다.
-    // ClearUnorderedAccessViewUint 함수에서 CPU (원본) 디스크립터와 GPU 디스크립터가 모두 필요하기 때문에..
-    uavCpuDescriptorPool = new D3D12DescriptorPool(device, D3D12DescriptorPool::Type::CBV_SRV_UAV, 4096, false);
-    uavGpuDescriptorPool = new D3D12DescriptorPool(device, D3D12DescriptorPool::Type::CBV_SRV_UAV, 4096, true);
-
     // Init feature check (https://devblogs.microsoft.com/directx/introducing-a-new-api-for-checking-feature-support-in-direct3d-12/)
     CD3DX12FeatureSupport features;
     hr = features.Init(device);
@@ -241,6 +195,52 @@ void D3D12Renderer::Init(HWND hwnd) {
         supportsCastingFullyTypedFormat = true;
     }
 
+    // Graphics CommandQueue 생성
+    D3D12_COMMAND_QUEUE_DESC queueDesc = {};
+    queueDesc.Flags = D3D12_COMMAND_QUEUE_FLAG_NONE;
+    queueDesc.Priority = D3D12_COMMAND_QUEUE_PRIORITY_NORMAL;
+    queueDesc.Type = D3D12_COMMAND_LIST_TYPE_DIRECT;
+
+    hr = device->CreateCommandQueue(&queueDesc, IID_PPV_ARGS(&commandQueues[to_int(RHI::CommandQueueType::Graphics)]));
+    if (FAILED(hr)) {
+        BE_FATALERROR("CreateCommandQueue (Graphics) failed, ERROR: 0x%x", hr);
+    }
+    commandQueues[to_int(RHI::CommandQueueType::Graphics)]->SetName(L"GraphicsCommandQueue");
+
+    // Compute CommandQueue 생성
+    queueDesc = {};
+    queueDesc.Flags = D3D12_COMMAND_QUEUE_FLAG_NONE;
+    queueDesc.Priority = D3D12_COMMAND_QUEUE_PRIORITY_NORMAL;
+    queueDesc.Type = D3D12_COMMAND_LIST_TYPE_COMPUTE;
+
+    hr = device->CreateCommandQueue(&queueDesc, IID_PPV_ARGS(&commandQueues[to_int(RHI::CommandQueueType::Compute)]));
+    if (FAILED(hr)) {
+        BE_FATALERROR("CreateCommandQueue (Compute) failed, ERROR: 0x%x", hr);
+    }
+    commandQueues[to_int(RHI::CommandQueueType::Compute)]->SetName(L"ComputeCommandQueue");
+
+#ifdef USE_SECONDARY_COMMAND_LISTS
+    uint32_t maxSecondaryCommandLists = 8;
+#else
+    uint32_t maxSecondaryCommandLists = 0;
+#endif
+    // 커맨드 리스트 풀 생성
+    graphicsCommandListPool = new D3D12CommandListPool(device, 0, D3D12_COMMAND_LIST_TYPE_DIRECT, 8, maxSecondaryCommandLists);
+
+    // 리소스 생성 용 커맨드 리스트
+    resourceCommandList = graphicsCommandListPool->Alloc();
+
+    // CPU 디스크립터 풀 생성
+    resCpuDescriptorPool = new D3D12DescriptorPool(device, D3D12DescriptorPool::Type::CBV_SRV_UAV, 1000000, false);
+    rtvCpuDescriptorPool = new D3D12DescriptorPool(device, D3D12DescriptorPool::Type::RTV, 16, false);
+    dsvCpuDescriptorPool = new D3D12DescriptorPool(device, D3D12DescriptorPool::Type::DSV, 16, false);
+    samCpuDescriptorPool = new D3D12DescriptorPool(device, D3D12DescriptorPool::Type::Sampler, 2048, false);
+
+    // UAV 의 경우에만 CPU & GPU 디스크립터가 필요하다.
+    // ClearUnorderedAccessViewUint 함수에서 CPU (원본) 디스크립터와 GPU 디스크립터가 모두 필요하기 때문에..
+    uavCpuDescriptorPool = new D3D12DescriptorPool(device, D3D12DescriptorPool::Type::CBV_SRV_UAV, 4096, false);
+    uavGpuDescriptorPool = new D3D12DescriptorPool(device, D3D12DescriptorPool::Type::CBV_SRV_UAV, 4096, true);
+
     // shader cache 디렉토리 초기화
     shaderCacheDir = "Cache/D3D12CompiledShaderCache";
 
@@ -255,29 +255,7 @@ void D3D12Renderer::Init(HWND hwnd) {
         BE1::PlatformFile::CreateDirectoryTree(psoCacheDir);
     }
 
-    // 윈도우 크기 얻기
-    RECT rc;
-    GetClientRect(hwnd, &rc);
-    UINT backBufferWidth = rc.right;
-    UINT backBufferHeight = rc.bottom;
-
-    // 스왑 체인 (백버퍼) 생성
-    DXGI_FORMAT dxgiFormat;
-    ImageFormatToDXGIFormat(BE1::Image::Format::RGBA_8_8_8_8, false, &dxgiFormat);
-    swapChain = CreateSwapChain(hwnd, backBufferWidth, backBufferHeight, dxgiFormat);
-
     CreateShaderCompiler();
-
-#ifdef USE_SECONDARY_COMMAND_LISTS
-    uint32_t maxSecondaryCommandLists = 8;
-#else
-    uint32_t maxSecondaryCommandLists = 0;
-#endif
-    // 커맨드 리스트 풀 생성
-    graphicsCommandListPool = new D3D12CommandListPool(device, 0, D3D12_COMMAND_LIST_TYPE_DIRECT, 8, maxSecondaryCommandLists);
-
-    // 리소스 생성 용 커맨드 리스트
-    resourceCommandList = graphicsCommandListPool->Alloc();
 
     maxPendingResources = 1024;
     pendingResourceBuffer = new D3D12PendingResource[maxPendingResources];
@@ -296,6 +274,17 @@ void D3D12Renderer::Init(HWND hwnd) {
         frameData[frameIndex].Init();
     }
 
+    // Fence 객체 생성
+    hr = device->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&fence));
+    if (FAILED(hr)) {
+        BE_FATALERROR("CreateFence failed, ERROR: 0x%x", hr);
+    }
+    // Fence 초기값
+    fenceValue = 0;
+
+    // Fence 를 대기하기 위한 이벤트 객체 생성
+    fenceEventHandle = CreateEvent(nullptr, FALSE, FALSE, nullptr);
+
     currentFrameIndex = 0;
     frameData[currentFrameIndex].SetFenceValue(SignalFence(RHI::CommandQueueType::Graphics));
 
@@ -303,24 +292,22 @@ void D3D12Renderer::Init(HWND hwnd) {
     InitRenderThread();
 #endif
 
-    renderObjects.Reserve(16384);
+    // 윈도우 크기 얻기
+    RECT rc;
+    GetClientRect(hwnd, &rc);
+    UINT backBufferWidth = rc.right;
+    UINT backBufferHeight = rc.bottom;
 
-    BE1::Image mainRenderImage;
-    mainRenderImage.InitFromMemory(backBufferWidth, backBufferHeight, 1, 1, 1, GetMainColorFormat(), BE1::Image::GammaSpace::Linear, nullptr, 0);
-    mainRenderTexture = CreateTexture(RHI::TextureType::Texture2D, RHI::ResourceFlag::RenderTarget | RHI::ResourceFlag::ShaderResource | RHI::ResourceFlag::UnorderedAccess,
-        &mainRenderImage, RHI::ClearValue::Color(0.0f, 0.0f, 1.0f, 0.0f), 1);
+    // 스왑 체인 (백버퍼) 생성
+    DXGI_FORMAT dxgiFormat;
+    ImageFormatToDXGIFormat(BE1::Image::Format::RGBA_8_8_8_8, false, &dxgiFormat);
+    swapChain = CreateSwapChain(hwnd, backBufferWidth, backBufferHeight, dxgiFormat);
 
-    if (GetMainMSAASampleCount() > 1) {
-        mainMSAARenderTexture = CreateTexture(RHI::TextureType::Texture2D, RHI::ResourceFlag::RenderTarget | RHI::ResourceFlag::ShaderResource,
-            &mainRenderImage, RHI::ClearValue::Color(0.0f, 0.0f, 1.0f, 0.0f), GetMainMSAASampleCount());
-    }
-
-    BE1::Image mainDepthImage;
-    mainDepthImage.InitFromMemory(backBufferWidth, backBufferHeight, 1, 1, 1, GetMainDepthFormat(), BE1::Image::GammaSpace::Linear, nullptr, 0);
-    mainDepthTexture = CreateTexture(RHI::TextureType::Texture2D, RHI::ResourceFlag::DepthStencil,
-        &mainDepthImage, RHI::ClearValue::DepthStencil(1.0f, 0), GetMainMSAASampleCount(), RHI::GPUResourceState::DepthWrite);
+    CreateMainRenderTextures(backBufferWidth, backBufferHeight);
 
     InitFullScreenTrianglePSO();
+
+    renderObjects.Reserve(16384);
 }
 
 void D3D12Renderer::Shutdown() {
@@ -339,14 +326,14 @@ void D3D12Renderer::Shutdown() {
 
     DestroyPSO(imagePSO);
 
-    if (mainRenderTexture) {
-        DestroyTexture(mainRenderTexture, true);
+    if (mainRTColorTexture) {
+        DestroyTexture(mainRTColorTexture, true);
     }
-    if (mainMSAARenderTexture) {
-        DestroyTexture(mainMSAARenderTexture, true);
+    if (mainRTColorMSAATexture) {
+        DestroyTexture(mainRTColorMSAATexture, true);
     }
-    if (mainDepthTexture) {
-        DestroyTexture(mainDepthTexture, true);
+    if (mainRTDepthTexture) {
+        DestroyTexture(mainRTDepthTexture, true);
     }
 
     for (int frameIndex = 0; frameIndex < NumFrameResources; ++frameIndex) {
@@ -405,6 +392,23 @@ void D3D12Renderer::Shutdown() {
         }
         BE1::PlatformSystem::DebugBreak();
     }
+}
+
+void D3D12Renderer::CreateMainRenderTextures(uint32_t width, uint32_t height) {
+    BE1::Image colorImage;
+    colorImage.InitFromMemory(width, height, 1, 1, 1, GetMainRTColorFormat(), BE1::Image::GammaSpace::Linear, nullptr, 0);
+    mainRTColorTexture = CreateTexture(RHI::TextureType::Texture2D, RHI::ResourceFlag::RenderTarget | RHI::ResourceFlag::ShaderResource | RHI::ResourceFlag::UnorderedAccess,
+        &colorImage, RHI::ClearValue::Color(0.0f, 0.0f, 1.0f, 0.0f), 1);
+
+    if (GetMainRTSampleCount() > 1) {
+        mainRTColorMSAATexture = CreateTexture(RHI::TextureType::Texture2D, RHI::ResourceFlag::RenderTarget | RHI::ResourceFlag::ShaderResource,
+            &colorImage, RHI::ClearValue::Color(0.0f, 0.0f, 1.0f, 0.0f), GetMainRTSampleCount());
+    }
+
+    BE1::Image depthStencilImage;
+    depthStencilImage.InitFromMemory(width, height, 1, 1, 1, GetMainRTDepthFormat(), BE1::Image::GammaSpace::Linear, nullptr, 0);
+    mainRTDepthTexture = CreateTexture(RHI::TextureType::Texture2D, RHI::ResourceFlag::DepthStencil,
+        &depthStencilImage, RHI::ClearValue::DepthStencil(1.0f, 0), GetMainRTSampleCount(), RHI::GPUResourceState::DepthWrite);
 }
 
 void D3D12Renderer::InitFullScreenTrianglePSO() {
@@ -506,19 +510,19 @@ void D3D12Renderer::BeginFrame() {
     SetScissorRect(commandList, swapChain->scissorRect);
 
 #ifdef USE_SECONDARY_COMMAND_LISTS
-    //BeginRenderPass(commandList, swapChain, mainDepthTexture, BE1::Color4::blue, 1.0f, 0, RHI::ClearFlag::Color | RHI::ClearFlag::Depth);
+    //BeginRenderPass(commandList, swapChain, mainRTDepthTexture, BE1::Color4::blue, 1.0f, 0, RHI::ClearFlag::Color | RHI::ClearFlag::Depth);
 
-    if (GetMainMSAASampleCount() > 1) {
+    if (GetMainRTSampleCount() > 1) {
         RHI::RenderPassImage renderPassImages[] = {
-            RHI::RenderPassImage::Color(mainMSAARenderTexture, 0, RHI::RenderPassImage::LoadAction::Clear),
-            RHI::RenderPassImage::DepthStencil(mainDepthTexture, 0, RHI::RenderPassImage::LoadAction::Clear),
-            RHI::RenderPassImage::ResolveColor(mainRenderTexture, 0, 0)
+            RHI::RenderPassImage::Color(mainRTColorMSAATexture, 0, RHI::RenderPassImage::LoadAction::Clear),
+            RHI::RenderPassImage::DepthStencil(mainRTDepthTexture, 0, RHI::RenderPassImage::LoadAction::Clear),
+            RHI::RenderPassImage::ResolveColor(mainRTColorTexture, 0, 0)
         };
         BeginRenderPass(commandList, renderPassImages, COUNT_OF(renderPassImages));
     } else {
         RHI::RenderPassImage renderPassImages[] = {
-            RHI::RenderPassImage::Color(mainRenderTexture, 0, RHI::RenderPassImage::LoadAction::Clear),
-            RHI::RenderPassImage::DepthStencil(mainDepthTexture, 0, RHI::RenderPassImage::LoadAction::Clear)
+            RHI::RenderPassImage::Color(mainRTColorTexture, 0, RHI::RenderPassImage::LoadAction::Clear),
+            RHI::RenderPassImage::DepthStencil(mainRTDepthTexture, 0, RHI::RenderPassImage::LoadAction::Clear)
         };
         BeginRenderPass(commandList, renderPassImages, COUNT_OF(renderPassImages));
     }
@@ -554,7 +558,7 @@ void D3D12Renderer::EndFrame() {
 
     BeginRenderPass(commandList, swapChain, nullptr);
     SetPSO(commandList, imagePSO);
-    SetTexture(commandList, 0, false, mainRenderTexture);
+    SetTexture(commandList, 0, false, mainRTColorTexture);
     Draw(commandList, 3, 0);
     EndRenderPass(commandList);
 #else
@@ -616,7 +620,7 @@ D3D12CommandList* D3D12Renderer::FlushCommandList(D3D12CommandList* commandList)
     SetViewport(commandList, swapChain->viewportRect);
     SetScissorRect(commandList, swapChain->scissorRect);
 
-    commandList->GetGraphicsCommandList()->OMSetRenderTargets(1, &swapChain->GetCurrentBackBufferRTVDescriptorHandle(), FALSE, &static_cast<D3D12Texture *>(mainDepthTexture)->dsvDescriptors[0].cpuDescriptorHandle);
+    commandList->GetGraphicsCommandList()->OMSetRenderTargets(1, &swapChain->GetCurrentBackBufferRTVDescriptorHandle(), FALSE, &static_cast<D3D12Texture *>(mainRTDepthTexture)->dsvDescriptors[0].cpuDescriptorHandle);
 
     return commandList;
 }
@@ -732,30 +736,17 @@ void D3D12Renderer::OnResize(int width, int height) {
 
     swapChain->Resize(width, height);
 
-    if (mainRenderTexture) {
-        DestroyTexture(mainRenderTexture, true);
+    if (mainRTColorTexture) {
+        DestroyTexture(mainRTColorTexture, true);
     }
-    if (mainMSAARenderTexture) {
-        DestroyTexture(mainMSAARenderTexture, true);
+    if (mainRTColorMSAATexture) {
+        DestroyTexture(mainRTColorMSAATexture, true);
     }
-    if (mainDepthTexture) {
-        DestroyTexture(mainDepthTexture, true);
-    }
-
-    BE1::Image mainRenderImage;
-    mainRenderImage.InitFromMemory(width, height, 1, 1, 1, GetMainColorFormat(), BE1::Image::GammaSpace::Linear, nullptr, 0);
-    mainRenderTexture = CreateTexture(RHI::TextureType::Texture2D, RHI::ResourceFlag::RenderTarget | RHI::ResourceFlag::ShaderResource | RHI::ResourceFlag::UnorderedAccess,
-        &mainRenderImage, RHI::ClearValue::Color(0.0f, 0.0f, 1.0f, 0.0f), 1);
-
-    if (GetMainMSAASampleCount() > 1) {
-        mainMSAARenderTexture = CreateTexture(RHI::TextureType::Texture2D, RHI::ResourceFlag::RenderTarget | RHI::ResourceFlag::ShaderResource,
-            &mainRenderImage, RHI::ClearValue::Color(0.0f, 0.0f, 1.0f, 0.0f), GetMainMSAASampleCount());
+    if (mainRTDepthTexture) {
+        DestroyTexture(mainRTDepthTexture, true);
     }
 
-    BE1::Image mainDepthImage;
-    mainDepthImage.InitFromMemory(width, height, 1, 1, 1, GetMainDepthFormat(), BE1::Image::GammaSpace::Linear, nullptr, 0);
-    mainDepthTexture = CreateTexture(RHI::TextureType::Texture2D, RHI::ResourceFlag::DepthStencil,
-        &mainDepthImage, RHI::ClearValue::DepthStencil(1.0f, 0), GetMainMSAASampleCount(), RHI::GPUResourceState::DepthWrite);
+    CreateMainRenderTextures(width, height);
 }
 
 void D3D12Renderer::CreateDevice(IDXGIAdapter1 **adapterPtr) {
