@@ -137,14 +137,16 @@ BE_INLINE void D3D12CommandList::Reset(bool resetCacheStates, const RHI::Command
 BE_INLINE void D3D12CommandList::CloseAndExecute(RHI::CommandQueueType queueType) {
     assert(queueType < RHI::CommandQueueType::Count);
 
-    GetGraphicsCommandList()->Close();
+    HRESULT hr = GetGraphicsCommandList()->Close();
+    assert(SUCCEEDED(hr));
 
     ID3D12CommandList *execCommandLists[] = { commandList };
     renderer->commandQueues[to_int(queueType)]->ExecuteCommandLists(COUNT_OF(execCommandLists), execCommandLists);
 }
 
 BE_INLINE void D3D12CommandList::CloseAndExecuteSecondary(RHI::CommandList *primaryCommandList) {
-    GetGraphicsCommandList()->Close();
+    HRESULT hr = GetGraphicsCommandList()->Close();
+    assert(SUCCEEDED(hr));
 
     D3D12CommandList *d3d12PrimaryCommandList = static_cast<D3D12CommandList *>(primaryCommandList);
     d3d12PrimaryCommandList->GetGraphicsCommandList()->ExecuteBundle(GetGraphicsCommandList());

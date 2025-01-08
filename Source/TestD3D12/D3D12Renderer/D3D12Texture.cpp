@@ -451,16 +451,26 @@ int D3D12Renderer::CreateSubresourceDSV(D3D12Texture *texture, uint32_t firstSli
         dsvDesc.Texture1DArray.ArraySize = BE1::Min(sliceCount, texture->textureDesc.DepthOrArraySize - firstSlice);
         break;
     case RHI::TextureType::Texture2D:
-        dsvDesc.ViewDimension = D3D12_DSV_DIMENSION_TEXTURE2D;
-        dsvDesc.Texture2D.MipSlice = firstMipLevel;
+        if (texture->textureDesc.SampleDesc.Count > 1) {
+            dsvDesc.ViewDimension = D3D12_DSV_DIMENSION_TEXTURE2DMS;
+        } else {
+            dsvDesc.ViewDimension = D3D12_DSV_DIMENSION_TEXTURE2D;
+            dsvDesc.Texture2D.MipSlice = firstMipLevel;
+        }
         break;
     case RHI::TextureType::Texture2DArray:
     case RHI::TextureType::TextureCube:
     case RHI::TextureType::TextureCubeArray:
-        dsvDesc.ViewDimension = D3D12_DSV_DIMENSION_TEXTURE2DARRAY;
-        dsvDesc.Texture2DArray.MipSlice = firstMipLevel;
-        dsvDesc.Texture2DArray.FirstArraySlice = firstSlice;
-        dsvDesc.Texture2DArray.ArraySize = BE1::Min(sliceCount, texture->textureDesc.DepthOrArraySize - firstSlice);
+        if (texture->textureDesc.SampleDesc.Count > 1) {
+            dsvDesc.ViewDimension = D3D12_DSV_DIMENSION_TEXTURE2DMSARRAY;
+            dsvDesc.Texture2DMSArray.FirstArraySlice = firstSlice;
+            dsvDesc.Texture2DMSArray.ArraySize = BE1::Min(sliceCount, texture->textureDesc.DepthOrArraySize - firstSlice);
+        } else {
+            dsvDesc.ViewDimension = D3D12_DSV_DIMENSION_TEXTURE2DARRAY;
+            dsvDesc.Texture2DArray.MipSlice = firstMipLevel;
+            dsvDesc.Texture2DArray.FirstArraySlice = firstSlice;
+            dsvDesc.Texture2DArray.ArraySize = BE1::Min(sliceCount, texture->textureDesc.DepthOrArraySize - firstSlice);
+        }
         break;
     }
 

@@ -223,6 +223,7 @@ public:
 
     // TODO: Renderer 외부 (RenderContext) 로 뺄 것
     D3D12SwapChain *                    swapChain = nullptr;
+    RHI::Texture *                      mainMSAARenderTexture = nullptr;
     RHI::Texture *                      mainRenderTexture = nullptr;
     RHI::Texture *                      mainDepthTexture = nullptr;
 

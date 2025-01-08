@@ -508,6 +508,7 @@ struct RHI {
         bool                            renderTargetForematSRGBs[8] = {};
         BE1::Image::Format::Enum        depthStencilFormat = BE1::Image::Format::Unknown;
         uint32_t                        sampleCount = 1;
+        uint32_t                        sampleQuality = 0;
 
         constexpr uint64_t              GetHash() const {
             union Hasher {
@@ -567,8 +568,6 @@ struct RHI {
         const RenderDest *              renderDest = nullptr;
         PrimitiveTopology               primitiveTopology = PrimitiveTopology::TriangleList;
         uint32_t                        sampleMask = 0xffffffff;
-        uint32_t                        sampleCount = 1;
-        uint32_t                        sampleQuality = 0;
     };
 
     enum class RenderPassFlag : uint8_t {
@@ -757,6 +756,7 @@ public:
 
     BE1::Image::Format::Enum            GetMainColorFormat() const;
     BE1::Image::Format::Enum            GetMainDepthFormat() const;
+    uint32_t                            GetMainMSAASampleCount() const;
 
     virtual bool                        IsSupportedImageFormat(BE1::Image::Format::Enum imageFormat) const = 0;
     virtual BE1::Image::Format::Enum    ToUncompressedImageFormat(BE1::Image::Format::Enum imageFormat) const = 0;

@@ -33,6 +33,10 @@ BE1::Image::Format::Enum RHIRenderer::GetMainDepthFormat() const {
     return BE1::Image::Format::DepthStencil_24_8;
 }
 
+uint32_t RHIRenderer::GetMainMSAASampleCount() const {
+    return 1;
+}
+
 void RHIRenderer::SetupStates() {
     RHI::RasterizerState *rs = &rasterizerStates[to_int(RHI::RasterizerStateType::SolidFrontSided)];
     rs->fillMode = RHI::FillMode::Solid;

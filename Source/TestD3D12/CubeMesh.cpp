@@ -116,6 +116,7 @@ void CubeMesh::InitPipelineState() {
     renderDest.renderTargetCount = 1;
     renderDest.renderTargetFormats[0] = renderer->GetMainColorFormat();
     renderDest.depthStencilFormat = renderer->GetMainDepthFormat();
+    renderDest.sampleCount = renderer->GetMainMSAASampleCount();
 
     RHI::Shader *cubeVS = static_cast<RHI::Shader *>(renderer->CreateShaderFromFile(RHI::ShaderModel::SM_6_0, RHI::ShaderStage::Vertex, "Source/TestD3D12/Shaders/Cube.hlsl", "VSMain"));
     RHI::Shader *cubePS = static_cast<RHI::Shader *>(renderer->CreateShaderFromFile(RHI::ShaderModel::SM_6_0, RHI::ShaderStage::Fragment, "Source/TestD3D12/Shaders/Cube.hlsl", "PSMain"));

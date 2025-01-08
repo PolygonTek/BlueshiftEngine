@@ -429,6 +429,7 @@ RHI::PipelineState *D3D12Renderer::CreateGraphicsPSO(const RHI::PipelineStateDes
 
 #ifndef _DEBUG
     // 없다면 PSO cache 파일을 로딩해본다.
+    // NOTE: hash 값 충돌로 엉뚱한 cached PSO 파일을 읽어오지는 않는지 체크 필요
     if (!cachedPsoBlob) {
         LoadCachedPSO(combinedShaderHash, &cachedPsoBlob);
     }
@@ -598,8 +599,8 @@ RHI::PipelineState *D3D12Renderer::CreateGraphicsPSO(const RHI::PipelineStateDes
         ImageFormatToDXGIFormat(desc->renderDest->depthStencilFormat, false, &depthStencilFormat);
 
         DXGI_SAMPLE_DESC sampleDesc = {};
-        sampleDesc.Count = desc->sampleCount;
-        sampleDesc.Quality = desc->sampleQuality;
+        sampleDesc.Count = desc->renderDest->sampleCount;
+        sampleDesc.Quality = desc->renderDest->sampleQuality;
 
         stream2->depthStencilFormat = depthStencilFormat;
         stream2->renderTargetFormats = renderTargetFormatArray;

@@ -310,10 +310,15 @@ void D3D12Renderer::Init(HWND hwnd) {
     mainRenderTexture = CreateTexture(RHI::TextureType::Texture2D, RHI::ResourceFlag::RenderTarget | RHI::ResourceFlag::ShaderResource | RHI::ResourceFlag::UnorderedAccess,
         &mainRenderImage, RHI::ClearValue::Color(0.0f, 0.0f, 1.0f, 0.0f), 1);
 
+    if (GetMainMSAASampleCount() > 1) {
+        mainMSAARenderTexture = CreateTexture(RHI::TextureType::Texture2D, RHI::ResourceFlag::RenderTarget | RHI::ResourceFlag::ShaderResource,
+            &mainRenderImage, RHI::ClearValue::Color(0.0f, 0.0f, 1.0f, 0.0f), GetMainMSAASampleCount());
+    }
+
     BE1::Image mainDepthImage;
     mainDepthImage.InitFromMemory(backBufferWidth, backBufferHeight, 1, 1, 1, GetMainDepthFormat(), BE1::Image::GammaSpace::Linear, nullptr, 0);
     mainDepthTexture = CreateTexture(RHI::TextureType::Texture2D, RHI::ResourceFlag::DepthStencil,
-        &mainDepthImage, RHI::ClearValue::DepthStencil(1.0f, 0), 1, RHI::GPUResourceState::DepthWrite);
+        &mainDepthImage, RHI::ClearValue::DepthStencil(1.0f, 0), GetMainMSAASampleCount(), RHI::GPUResourceState::DepthWrite);
 
     InitFullScreenTrianglePSO();
 }
@@ -334,8 +339,15 @@ void D3D12Renderer::Shutdown() {
 
     DestroyPSO(imagePSO);
 
-    DestroyTexture(mainRenderTexture, true);
-    DestroyTexture(mainDepthTexture, true);
+    if (mainRenderTexture) {
+        DestroyTexture(mainRenderTexture, true);
+    }
+    if (mainMSAARenderTexture) {
+        DestroyTexture(mainMSAARenderTexture, true);
+    }
+    if (mainDepthTexture) {
+        DestroyTexture(mainDepthTexture, true);
+    }
 
     for (int frameIndex = 0; frameIndex < NumFrameResources; ++frameIndex) {
         frameData[frameIndex].Shutdown();
@@ -496,11 +508,20 @@ void D3D12Renderer::BeginFrame() {
 #ifdef USE_SECONDARY_COMMAND_LISTS
     //BeginRenderPass(commandList, swapChain, mainDepthTexture, BE1::Color4::blue, 1.0f, 0, RHI::ClearFlag::Color | RHI::ClearFlag::Depth);
 
-    RHI::RenderPassImage renderPassImages[] = {
-        RHI::RenderPassImage::Color(mainRenderTexture, 0, RHI::RenderPassImage::LoadAction::Clear),
-        RHI::RenderPassImage::DepthStencil(mainDepthTexture, 0, RHI::RenderPassImage::LoadAction::Clear)
-    };
-    BeginRenderPass(commandList, renderPassImages, COUNT_OF(renderPassImages));
+    if (GetMainMSAASampleCount() > 1) {
+        RHI::RenderPassImage renderPassImages[] = {
+            RHI::RenderPassImage::Color(mainMSAARenderTexture, 0, RHI::RenderPassImage::LoadAction::Clear),
+            RHI::RenderPassImage::DepthStencil(mainDepthTexture, 0, RHI::RenderPassImage::LoadAction::Clear),
+            RHI::RenderPassImage::ResolveColor(mainRenderTexture, 0, 0)
+        };
+        BeginRenderPass(commandList, renderPassImages, COUNT_OF(renderPassImages));
+    } else {
+        RHI::RenderPassImage renderPassImages[] = {
+            RHI::RenderPassImage::Color(mainRenderTexture, 0, RHI::RenderPassImage::LoadAction::Clear),
+            RHI::RenderPassImage::DepthStencil(mainDepthTexture, 0, RHI::RenderPassImage::LoadAction::Clear)
+        };
+        BeginRenderPass(commandList, renderPassImages, COUNT_OF(renderPassImages));
+    }
 #else
     // 백버퍼를 렌더 타겟 상태로 전환
     D3D12_RESOURCE_BARRIER barrier;
@@ -711,18 +732,30 @@ void D3D12Renderer::OnResize(int width, int height) {
 
     swapChain->Resize(width, height);
 
-    DestroyTexture(mainRenderTexture, true);
-    DestroyTexture(mainDepthTexture, true);
+    if (mainRenderTexture) {
+        DestroyTexture(mainRenderTexture, true);
+    }
+    if (mainMSAARenderTexture) {
+        DestroyTexture(mainMSAARenderTexture, true);
+    }
+    if (mainDepthTexture) {
+        DestroyTexture(mainDepthTexture, true);
+    }
 
     BE1::Image mainRenderImage;
     mainRenderImage.InitFromMemory(width, height, 1, 1, 1, GetMainColorFormat(), BE1::Image::GammaSpace::Linear, nullptr, 0);
     mainRenderTexture = CreateTexture(RHI::TextureType::Texture2D, RHI::ResourceFlag::RenderTarget | RHI::ResourceFlag::ShaderResource | RHI::ResourceFlag::UnorderedAccess,
         &mainRenderImage, RHI::ClearValue::Color(0.0f, 0.0f, 1.0f, 0.0f), 1);
 
+    if (GetMainMSAASampleCount() > 1) {
+        mainMSAARenderTexture = CreateTexture(RHI::TextureType::Texture2D, RHI::ResourceFlag::RenderTarget | RHI::ResourceFlag::ShaderResource,
+            &mainRenderImage, RHI::ClearValue::Color(0.0f, 0.0f, 1.0f, 0.0f), GetMainMSAASampleCount());
+    }
+
     BE1::Image mainDepthImage;
     mainDepthImage.InitFromMemory(width, height, 1, 1, 1, GetMainDepthFormat(), BE1::Image::GammaSpace::Linear, nullptr, 0);
     mainDepthTexture = CreateTexture(RHI::TextureType::Texture2D, RHI::ResourceFlag::DepthStencil,
-        &mainDepthImage, RHI::ClearValue::DepthStencil(1.0f, 0), 1, RHI::GPUResourceState::DepthWrite);
+        &mainDepthImage, RHI::ClearValue::DepthStencil(1.0f, 0), GetMainMSAASampleCount(), RHI::GPUResourceState::DepthWrite);
 }
 
 void D3D12Renderer::CreateDevice(IDXGIAdapter1 **adapterPtr) {
@@ -1091,6 +1124,11 @@ static void GetInfoFromRTVDesc(const D3D12_RENDER_TARGET_VIEW_DESC &rtvDesc, UIN
         firstArraySlice = 0;
         arraySize = 1;
         break;
+    case D3D12_RTV_DIMENSION_TEXTURE2DMS:
+        mipSlice = 0;
+        firstArraySlice = 0;
+        arraySize = 1;
+        break;
     case D3D12_RTV_DIMENSION_TEXTURE2DARRAY:
         mipSlice = rtvDesc.Texture2DArray.MipSlice;
         firstArraySlice = rtvDesc.Texture2DArray.FirstArraySlice;
@@ -1126,6 +1164,11 @@ static void GetInfoFromDSVDesc(const D3D12_DEPTH_STENCIL_VIEW_DESC &dsvDesc, UIN
         break;
     case D3D12_DSV_DIMENSION_TEXTURE2D:
         mipSlice = dsvDesc.Texture2D.MipSlice;
+        firstArraySlice = 0;
+        arraySize = 1;
+        break;
+    case D3D12_DSV_DIMENSION_TEXTURE2DMS:
+        mipSlice = 0;
         firstArraySlice = 0;
         arraySize = 1;
         break;
@@ -1265,11 +1308,13 @@ void D3D12Renderer::BeginRenderPass(RHI::CommandList *commandList, const RHI::Re
             for (UINT slice = 0; slice < arraySize; ++slice) {
                 D3D12_RENDER_PASS_ENDING_ACCESS_RESOLVE_SUBRESOURCE_PARAMETERS &params = subresourceParams.Alloc();
                 params.SrcSubresource = D3D12CalcSubresource(resolveSource.mipSlice, resolveSource.firstArraySlice + slice, 0, resolveSource.maxMipLevels, resolveSource.maxArraySize);
-                params.DstSubresource = D3D12CalcSubresource(destMipSlice, destFirstArraySlice + slice, 0, texture->textureDesc.MipLevels, texture->textureDesc.DepthOrArraySize);
                 params.SrcRect.left = 0;
                 params.SrcRect.top = 0;
                 params.SrcRect.right = destWidth;
                 params.SrcRect.bottom = destHeight;
+                params.DstSubresource = D3D12CalcSubresource(destMipSlice, destFirstArraySlice + slice, 0, texture->textureDesc.MipLevels, texture->textureDesc.DepthOrArraySize);
+                params.DstX = 0;
+                params.DstY = 0;
             }
 
             rtDesc.EndingAccess.Resolve.pSubresourceParameters = subresourceParams.Ptr();
@@ -1307,11 +1352,13 @@ void D3D12Renderer::BeginRenderPass(RHI::CommandList *commandList, const RHI::Re
             for (UINT slice = 0; slice < arraySize; ++slice) {
                 D3D12_RENDER_PASS_ENDING_ACCESS_RESOLVE_SUBRESOURCE_PARAMETERS &params = subresourceParams.Alloc();
                 params.SrcSubresource = D3D12CalcSubresource(dsResolveSource.mipSlice, dsResolveSource.firstArraySlice + slice, 0, dsResolveSource.maxMipLevels, dsResolveSource.maxArraySize);
-                params.DstSubresource = D3D12CalcSubresource(destMipSlice, destFirstArraySlice + slice, 0, texture->textureDesc.MipLevels, texture->textureDesc.DepthOrArraySize);
                 params.SrcRect.left = 0;
                 params.SrcRect.top = 0;
                 params.SrcRect.right = destWidth;
                 params.SrcRect.bottom = destHeight;
+                params.DstSubresource = D3D12CalcSubresource(destMipSlice, destFirstArraySlice + slice, 0, texture->textureDesc.MipLevels, texture->textureDesc.DepthOrArraySize);
+                params.DstX = 0;
+                params.DstY = 0;
             }
 
             dsDesc.DepthEndingAccess.Resolve.pSubresourceParameters = subresourceParams.Ptr();
@@ -1364,7 +1411,7 @@ void D3D12Renderer::BeginRenderPass(RHI::CommandList *commandList, const RHI::Re
             D3D12_RESOURCE_STATES afterState = ToD3D12ResourceState(renderPassImage.afterState);
 
             if (renderPassImage.type == RHI::RenderPassImage::Type::ResolveColor || renderPassImage.type == RHI::RenderPassImage::Type::ResolveDepth) {
-                afterState = D3D12_RESOURCE_STATE_RESOLVE_DEST;
+                beforeState = D3D12_RESOURCE_STATE_RESOLVE_DEST;
             }
             if (beforeState != afterState) {
                 D3D12_RESOURCE_BARRIER barrier = {};
@@ -1406,7 +1453,7 @@ void D3D12Renderer::BeginRenderPass(RHI::CommandList *commandList, const RHI::Re
         renderPassFlags |= D3D12_RENDER_PASS_FLAG_RESUMING_PASS;
     }
 
-    d3d12CommandList->GetGraphicsCommandList()->BeginRenderPass(rtCount, rtDescs, &dsDesc, renderPassFlags);
+    d3d12CommandList->GetGraphicsCommandList()->BeginRenderPass(rtCount, rtDescs, dsDesc.cpuDescriptor.ptr == 0 ? nullptr : &dsDesc, renderPassFlags);
 }
 
 void D3D12Renderer::EndRenderPass(RHI::CommandList *commandList) {
