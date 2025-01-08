@@ -381,8 +381,8 @@ RHI::PipelineState *D3D12Renderer::CreateGraphicsPSO(const RHI::PipelineStateDes
 
     if (desc->inputLayout) {
         size_t hash = 0;
-        for (int i = 0; i < desc->inputLayout->elements.Count(); ++i) {
-            hash = hash_combine(hash, std::hash<RHI::InputLayoutElement>()(desc->inputLayout->elements[i]));
+        for (const RHI::InputLayoutElement &element : desc->inputLayout->elements) {
+            hash = hash_combine(hash, std::hash<RHI::InputLayoutElement>()(element));
         }
         psoHashData.inputLayoutHash = static_cast<uint64_t>(hash);
     }

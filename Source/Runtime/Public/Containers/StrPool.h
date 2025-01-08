@@ -92,8 +92,8 @@ BE_INLINE StrPool::StrPool() {
 
 BE_INLINE size_t StrPool::Allocated() const {
     size_t size = pool.Allocated() + poolHash.Allocated();
-    for (int i = 0; i < pool.Count(); i++) {
-        size += pool[i]->Allocated();
+    for (const PoolStr *poolStr : pool) {
+        size += poolStr->Allocated();
     }
 
     return size;
@@ -101,8 +101,8 @@ BE_INLINE size_t StrPool::Allocated() const {
 
 BE_INLINE size_t StrPool::Size() const {
     size_t size = pool.Size() + poolHash.Size();
-    for (int i = 0; i < pool.Count(); i++) {
-        size += pool[i]->Size();
+    for (const PoolStr *poolStr : pool) {
+        size += poolStr->Size();
     }
 
     return size;
@@ -180,8 +180,8 @@ BE_INLINE const PoolStr *StrPool::CopyString(const PoolStr *poolStr) {
 }
 
 BE_INLINE void StrPool::Clear() {
-    for (int i = 0; i < pool.Count(); i++) {
-        pool[i]->refCount = 0;
+    for (PoolStr *poolStr : pool) {
+        poolStr->refCount = 0;
     }
     
     pool.DeleteContents(true);

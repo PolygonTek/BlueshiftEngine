@@ -22,8 +22,8 @@
 BE_NAMESPACE_BEGIN
 
 void Collider::Purge() {
-    for (int i = 0; i < collisionMeshes.Count(); i++) {
-        FreeCollisionMesh(collisionMeshes[i]);
+    for (CollisionMesh *collisionMesh : collisionMeshes) {
+        FreeCollisionMesh(collisionMesh);
     }
 
     collisionMeshes.Clear();
@@ -367,9 +367,7 @@ void Collider::CreateConvexDecomp(const Mesh *mesh, const Vec3 &scale, float mar
 
     btCompoundShape *compoundShape = new btCompoundShape;
 
-    for (int i = 0; i < collisionMeshes.Count(); i++) {
-        const CollisionMesh *collisionMesh = GetCollisionMesh(i);
-
+    for (const CollisionMesh *collisionMesh : collisionMeshes) {
         btConvexHullShape *convexHullShape = new btConvexHullShape((const btScalar *)collisionMesh->verts, collisionMesh->numVerts, sizeof(collisionMesh->verts[0]));
         convexHullShape->setMargin(SystemUnitToPhysicsUnit(margin));
     
@@ -421,9 +419,7 @@ void Collider::CreateBVHCMSingleMaterial(const Mesh *mesh, const Vec3 &scale) {
 
     btTriangleIndexVertexArray *indexedMeshArray = new btTriangleIndexVertexArray;
 
-    for (int i = 0; i < collisionMeshes.Count(); i++) {
-        const CollisionMesh *collisionMesh = GetCollisionMesh(i);
-
+    for (const CollisionMesh *collisionMesh : collisionMeshes) {
         PHY_ScalarType indexType = sizeof(collisionMesh->indexes[0]) == sizeof(int32_t) ? PHY_INTEGER : PHY_SHORT;
 
         btIndexedMesh indexedMesh;
@@ -469,9 +465,7 @@ void Collider::CreateBVHCMMultiMaterials(const Mesh *mesh, const Vec3 &scale) {
 
     btTriangleIndexVertexMaterialArray *indexedMeshArray = new btTriangleIndexVertexMaterialArray;
 
-    for (int i = 0; i < collisionMeshes.Count(); i++) {
-        const CollisionMesh *collisionMesh = GetCollisionMesh(i);
-
+    for (const CollisionMesh *collisionMesh : collisionMeshes) {
         PHY_ScalarType indexType = sizeof(collisionMesh->indexes[0]) == sizeof(int32_t) ? PHY_INTEGER : PHY_SHORT;
 
         btIndexedMesh indexedMesh;

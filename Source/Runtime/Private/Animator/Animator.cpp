@@ -119,9 +119,7 @@ void Animator::UpdateFrame(Entity *entity, int previousTime, int currentTime) {
         Array<const AnimLayer::AnimTransition *> transitionArray;
         animLayer->ListTransitionsFrom(stateBlenders[0].animState->GetName(), transitionArray);
 
-        for (int transitionIndex = 0; transitionIndex < transitionArray.Count(); transitionIndex++) {
-            const AnimLayer::AnimTransition *transition = transitionArray[transitionIndex];
-
+        for (const AnimLayer::AnimTransition *transition : transitionArray) {
             // Atomic transition cannot be interrupted by other transition until it finish.
             if (stateBlenders[0].IsAtomic()) {
                 if (stateBlenders[0].IsInBlending(currentTime)) {

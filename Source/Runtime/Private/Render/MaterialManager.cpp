@@ -147,8 +147,8 @@ void MaterialManager::DestroyUnusedMaterials() {
         }
     }
 
-    for (int i = 0; i < removeArray.Count(); i++) {
-        DestroyMaterial(removeArray[i]);
+    for (Material *material : removeArray) {
+        DestroyMaterial(material);
     }
 }
 

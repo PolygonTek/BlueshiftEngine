@@ -102,11 +102,9 @@ PhysCollidable *PhysicsSystem::CreateCollidable(const PhysCollidableDesc &desc) 
             // Compute total centroid & volume
             float totalVolume = 0.0f;
 
-            for (int i = 0; i < desc.shapes.Count(); i++) {
-                const PhysShapeDesc *shapeDesc = &desc.shapes[i];
-
-                Vec3 centroid = shapeDesc->localOrigin + shapeDesc->localAxis * shapeDesc->collider->GetCentroid();
-                float volume = shapeDesc->collider->GetVolume();
+            for (const PhysShapeDesc &shapeDesc : desc.shapes) {
+                Vec3 centroid = shapeDesc.localOrigin + shapeDesc.localAxis * shapeDesc.collider->GetCentroid();
+                float volume = shapeDesc.collider->GetVolume();
 
                 totalVolume += volume;
                 totalCentroid += centroid * volume;
@@ -116,18 +114,16 @@ PhysCollidable *PhysicsSystem::CreateCollidable(const PhysCollidableDesc &desc) 
                 totalCentroid /= totalVolume;
             }
 
-            for (int i = 0; i < desc.shapes.Count(); i++) {
-                const PhysShapeDesc *shapeDesc = &desc.shapes[i];
-
-                Vec3 centroid = shapeDesc->localOrigin + shapeDesc->localAxis * shapeDesc->collider->GetCentroid();
+            for (const PhysShapeDesc &shapeDesc : desc.shapes) {
+                Vec3 centroid = shapeDesc.localOrigin + shapeDesc.localAxis * shapeDesc.collider->GetCentroid();
                 Vec3 localCentroid = centroid - totalCentroid;
 
                 // Construct local transform for each child shapes
                 btTransform localTransform;
-                localTransform.setBasis(ToBtMatrix3x3(shapeDesc->localAxis));
+                localTransform.setBasis(ToBtMatrix3x3(shapeDesc.localAxis));
                 localTransform.setOrigin(ToBtVector3(SystemUnitToPhysicsUnit(localCentroid)));
 
-                compoundShape->addChildShape(localTransform, shapeDesc->collider->shape);
+                compoundShape->addChildShape(localTransform, shapeDesc.collider->shape);
             }
 
             // Construct initial world transform 
@@ -447,9 +443,7 @@ void PhysicsSystem::DestroyConstraint(PhysConstraint *constraint) {
 PhysVehicle *PhysicsSystem::CreateVehicle(const PhysVehicleDesc &desc) {
     PhysVehicle *vehicle = new PhysVehicle(desc.chassisBody);
 
-    for (int i = 0; i < desc.wheels.Count(); i++) {
-        const PhysWheelDesc &wheelDesc = desc.wheels[i];
-
+    for (const PhysWheelDesc &wheelDesc : desc.wheels) {
         vehicle->AddWheel(wheelDesc.chassisLocalOrigin, wheelDesc.chassisLocalAxis, wheelDesc.radius,
             wheelDesc.suspensionRestLength, wheelDesc.suspensionMaxDistance, wheelDesc.suspensionMaxForce,
             wheelDesc.suspensionStiffness, wheelDesc.suspensionDampingRelaxation, wheelDesc.suspensionDampingCompression,

@@ -141,8 +141,7 @@ void MeshCombiner::MakeCombinedMesh(Entity *staticBatchRoot, Array<ComStaticMesh
 
     Array<BatchSubMesh> batchSubMeshes;
 
-    for (int i = 0; i < meshRenderers.Count(); i++) {
-        ComStaticMeshRenderer *batchMesh = meshRenderers[i];
+    for (ComStaticMeshRenderer *batchMesh : meshRenderers) {
         batchMesh->staticBatchIndex = staticBatch->GetIndex();
 
         BatchSubMesh batchSubMesh;

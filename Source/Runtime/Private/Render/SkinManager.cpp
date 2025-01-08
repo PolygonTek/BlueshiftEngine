@@ -73,8 +73,8 @@ void SkinManager::DestroyUnusedSkins() {
         }
     }
 
-    for (int i = 0; i < removeArray.Count(); i++) {
-        DestroySkin(removeArray[i]);
+    for (Skin *skin : removeArray) {
+        DestroySkin(skin);
     }
 }
 

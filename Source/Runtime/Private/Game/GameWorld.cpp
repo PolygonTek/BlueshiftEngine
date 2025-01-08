@@ -380,8 +380,8 @@ Entity *GameWorld::CloneEntity(const Entity *sourceEntity) {
         clonedEntity->InitComponents();
     }
 
-    for (int i = 0; i < clonedEntities.Count(); i++) {
-        clonedEntities[i]->LateInitComponents();
+    for (EntityPtr clonedEntity : clonedEntities) {
+        clonedEntity->LateInitComponents();
     }
 
     return clonedEntities[0];
@@ -414,8 +414,8 @@ Entity *GameWorld::InstantiateEntity(const Entity *originalEntity) {
     EntityPtrArray children;
     clonedEntity->GetChildrenRecursive(children);
 
-    for (int i = 0; i < children.Count(); i++) {
-        RegisterEntity(children[i]);
+    for (EntityPtr child : children) {
+        RegisterEntity(child);
     }
 
     return clonedEntity;
@@ -432,8 +432,8 @@ Entity *GameWorld::InstantiateEntityWithTransform(const Entity *originalEntity, 
     EntityPtrArray children;
     clonedEntity->GetChildrenRecursive(children);
 
-    for (int i = 0; i < children.Count(); i++) {
-        RegisterEntity(children[i]);
+    for (EntityPtr child : children) {
+        RegisterEntity(child);
     }
 
     return clonedEntity;
@@ -629,8 +629,8 @@ void GameWorld::Event_DontDestroyOnLoad(Entity *entity) {
     EntityPtrArray children;
     entity->GetChildrenRecursive(children);
 
-    for (int i = 0; i < children.Count(); i++) {
-        children[i]->sceneNum = DontDestroyOnLoadSceneNum;
+    for (EntityPtr child : children) {
+        child->sceneNum = DontDestroyOnLoadSceneNum;
     }
     // Change parent of root entity to reserved scene root.
     entity->GetRoot()->node.SetParent(scenes[DontDestroyOnLoadSceneNum].root);
@@ -922,16 +922,16 @@ void GameWorld::RenderCamera() {
     ListUpActiveCameraComponents(cameraComponents);
 
     // Render camera in order.
-    for (int i = 0; i < cameraComponents.Count(); i++) {
-        cameraComponents[i]->Render();
+    for (ComCamera *cameraComponent : cameraComponents) {
+        cameraComponent->Render();
     }
 
     StaticArray<ComCanvas *, MaxActiveCanvasComponents> canvasComponents;
     ListUpActiveCanvasComponents(canvasComponents);
 
     // Render canvas in order.
-    for (int i = 0; i < canvasComponents.Count(); i++) {
-        canvasComponents[i]->Render();
+    for (ComCanvas *canvasComponent : canvasComponents) {
+        canvasComponent->Render();
     }
 }
 
@@ -1044,9 +1044,7 @@ int GameWorld::OverlapBox(const Vec3 &boxCenter, const Vec3 &boxExtents, int lay
 
     GetPhysicsWorld()->OverlapBox(boxCenter, boxExtents, layerMask, colliders);
 
-    for (int i = 0; i < colliders.Count(); i++) {
-        const PhysCollidable *collidable = colliders[i];
-
+    for (const PhysCollidable *collidable : colliders) {
         if (!collidable->GetUserPointer()) {
             continue;
         }
@@ -1064,9 +1062,7 @@ int GameWorld::OverlapSphere(const Vec3 &sphereCenter, float sphereRadius, int l
 
     GetPhysicsWorld()->OverlapSphere(sphereCenter, sphereRadius, layerMask, colliders);
 
-    for (int i = 0; i < colliders.Count(); i++) {
-        const PhysCollidable *collidable = colliders[i];
-
+    for (const PhysCollidable *collidable : colliders) {
         if (!collidable->GetUserPointer()) {
             continue;
         }
@@ -1084,9 +1080,7 @@ int GameWorld::OverlapTriangle(const Vec3 &a, const Vec3 &b, const Vec3 &c, int 
 
     GetPhysicsWorld()->OverlapTriangle(a, b, c, layerMask, colliders);
 
-    for (int i = 0; i < colliders.Count(); i++) {
-        const PhysCollidable *collidable = colliders[i];
-
+    for (const PhysCollidable *collidable : colliders) {
         if (!collidable->GetUserPointer()) {
             continue;
         }

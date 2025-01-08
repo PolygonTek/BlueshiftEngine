@@ -128,8 +128,8 @@ void MeshManager::DestroyUnusedMeshes() {
         }
     }
 
-    for (int i = 0; i < removeArray.Count(); i++) {
-        DestroyMesh(removeArray[i]);
+    for (Mesh *mesh : removeArray) {
+        DestroyMesh(mesh);
     }
 }
 

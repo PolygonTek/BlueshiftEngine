@@ -408,8 +408,7 @@ void Object::ListClasses(const CmdArgs &args) {
     BE_LOG("%-24s %-24s %-6s %-6s\n", "ClassName", "SuperClass", "Type", "SubClasses");
     BE_LOG("----------------------------------------------------------------------\n");
 
-    for (int i = 0; i < types.Count(); i++) {
-        MetaObject *type = types[i];
+    for (const MetaObject *type : types) {
         BE_LOG("%-24s %-24s %-6d %-6d\n", type->classname, type->superclassname, type->hierarchyIndex, type->lastChildIndex - type->hierarchyIndex);
     }
 

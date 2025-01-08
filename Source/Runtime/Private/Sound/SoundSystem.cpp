@@ -107,9 +107,7 @@ void SoundSystem::DestroyUnusedSounds() {
         }
     }
 
-    for (int i = 0; i < removeArray.Count(); i++) {
-        Sound *sound = removeArray[i];
-
+    for (Sound *sound : removeArray) {
         if (!sound->dupNode.IsListEmpty()) {
             LinkList<Sound> *nextNode;
 

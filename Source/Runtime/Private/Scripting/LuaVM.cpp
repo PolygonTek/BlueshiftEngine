@@ -270,8 +270,8 @@ void LuaVM::InitEngineModule(const GameWorld *gameWorld) {
         RegisterEntity(module);
         RegisterGameWorld(module);
 
-        for (int i = 0; i < engineModuleCallbacks.Count(); i++) {
-            engineModuleCallbacks[i](module);
+        for (EngineModuleCallback &engineModuleCallback : engineModuleCallbacks) {
+            engineModuleCallback(module);
         }
     });
 

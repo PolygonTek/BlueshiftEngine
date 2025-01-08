@@ -68,6 +68,11 @@ public:
                     /// Returns actual size of the used elements.
     size_t          MemoryUsed() const { return count * sizeof(elements[0]); }
 
+    T *             begin() { return elements; }
+    const T *       begin() const { return elements; }
+    T *             end() { return elements + count; }
+    const T *       end() const { return elements + count; }
+
                     /// Returns a pointer to the elements stored in the array.
                     /// The pointer can be used to access and modify the items in the array.
     T *             Ptr() { return &elements[0]; }

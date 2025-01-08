@@ -103,8 +103,8 @@ void FontManager::DestroyUnusedFonts() {
         }
     }
 
-    for (int i = 0; i < removeArray.Count(); i++) {
-        DestroyFont(removeArray[i]);
+    for (Font *font : removeArray) {
+        DestroyFont(font);
     }
 }
 

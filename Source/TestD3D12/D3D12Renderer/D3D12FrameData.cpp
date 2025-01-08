@@ -102,8 +102,8 @@ void D3D12FrameData::BeginFrame() {
         DataPerThread *data = &threadData[threadIndex];
 
         // 다이나믹 버퍼를 리셋한다.
-        for (int i = 0; i < data->dynamicAllocations.Count(); ++i) {
-            data->dynamicAllocations[i]->usedBytes = 0;
+        for (D3D12DynamicAllocation *dynamicAllocation : data->dynamicAllocations) {
+            dynamicAllocation->usedBytes = 0;
         }
 
         // 이번에 프레임에 사용할 다이나믹 버퍼의 디스크립터들을 초기화

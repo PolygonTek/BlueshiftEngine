@@ -182,8 +182,8 @@ BE_INLINE Dict::~Dict() {
 
 BE_INLINE size_t Dict::Allocated() const {
     size_t size = kvArray.Allocated() + kvHash.Allocated();
-    for (int i = 0; i < kvArray.Count(); i++) {
-        size += kvArray[i].Size();
+    for (const KeyValue &kv : kvArray) {
+        size += kv.Size();
     }
 
     return size;

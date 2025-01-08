@@ -59,14 +59,14 @@ void RenderWorld::ClearScene() {
     staticMeshDbvt.Clear();
     probeDbvt.Clear();
 
-    for (int i = 0; i < renderObjects.Count(); i++) {
-        SAFE_DELETE(renderObjects[i]);
+    for (RenderObject *renderObject : renderObjects) {
+        SAFE_DELETE(renderObject);
     }
-    for (int i = 0; i < renderLights.Count(); i++) {
-        SAFE_DELETE(renderLights[i]);
+    for (RenderLight *renderLight : renderLights) {
+        SAFE_DELETE(renderLight);
     }
-    for (int i = 0; i < envProbes.Count(); i++) {
-        SAFE_DELETE(envProbes[i]);
+    for (EnvProbe *envProbe : envProbes) {
+        SAFE_DELETE(envProbe);
     }
 
     distantEnvProbe = nullptr;

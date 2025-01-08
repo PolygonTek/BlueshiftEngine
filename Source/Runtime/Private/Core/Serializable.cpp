@@ -24,7 +24,7 @@ const SignalDef Serializable::SIG_PropertyChanged("Serializable::PropertyChanged
 const SignalDef Serializable::SIG_PropertyArrayCountChanged("Serializable::PropertyArrayCountChanged", "s");
 const SignalDef Serializable::SIG_PropertyInfoUpdated("Serializable::PropertyInfoUpdated", "i");
 
-bool Serializable::GetPropertyInfo(int index, PropertyInfo &propertyInfo) const {
+bool Serializable::GetPropertyInfo(int index, PropertyInfo &outPropertyInfo) const {
     Array<PropertyInfo> propertyInfoList(64);
     GetPropertyInfoList(propertyInfoList);
 
@@ -32,17 +32,17 @@ bool Serializable::GetPropertyInfo(int index, PropertyInfo &propertyInfo) const 
         return false;
     }
 
-    propertyInfo = propertyInfoList[index];
+    outPropertyInfo = propertyInfoList[index];
     return true;
 }
 
-bool Serializable::GetPropertyInfo(const char *name, PropertyInfo &propertyInfo) const {
+bool Serializable::GetPropertyInfo(const char *name, PropertyInfo &outPropertyInfo) const {
     Array<PropertyInfo> propertyInfoList(64);
     GetPropertyInfoList(propertyInfoList);
 
-    for (int i = 0; i < propertyInfoList.Count(); i++) {
-        if (!Str::Cmp(propertyInfoList[i].GetName(), name)) {
-            propertyInfo = propertyInfoList[i];
+    for (PropertyInfo &propertyInfo : propertyInfoList) {
+        if (!Str::Cmp(propertyInfo.GetName(), name)) {
+            outPropertyInfo = propertyInfo;
             return true;
         }
     }

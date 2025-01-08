@@ -114,9 +114,7 @@ void App::UpdateCamera() {
 }
 
 void App::ClearGameObjects() {
-    for (int i = 0; i < gameObjects.Count(); ++i) {
-        GameObject *gameObject = gameObjects[i];
-
+    for (GameObject *gameObject : gameObjects) {
         gameObject->renderObjectDef.mesh.reset();
 
         renderer->RemoveRenderObject(gameObject->renderObjectHandle);

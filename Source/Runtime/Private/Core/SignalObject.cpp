@@ -33,8 +33,7 @@ SignalObject::~SignalObject() {
 }
 
 bool SignalObject::IsConnected(const SignalDef *sigdef, SignalObject *receiver, SignalCallback function) const {
-    for (int i = 0; i < publications.Count(); i++) {
-        const Connection *con = publications[i];
+    for (const Connection *con : publications) {
         if (con->signalDef == sigdef && con->sender == this && con->receiver == receiver && con->function == function) {
             return true;
         }
@@ -44,8 +43,7 @@ bool SignalObject::IsConnected(const SignalDef *sigdef, SignalObject *receiver, 
 }
 
 bool SignalObject::IsConnected(const SignalDef *sigdef, SignalObject *receiver) const {
-    for (int i = 0; i < publications.Count(); i++) {
-        const Connection *con = publications[i];
+    for (const Connection *con : publications) {
         if (con->signalDef == sigdef && con->sender == this && con->receiver == receiver) {
             return true;
         }
@@ -56,9 +54,7 @@ bool SignalObject::IsConnected(const SignalDef *sigdef, SignalObject *receiver) 
 
 bool SignalObject::Connect(const SignalDef *sigdef, SignalObject *receiver, SignalCallback function, int connectionType) {
     if (connectionType == ConnectionType::Unique) {
-        for (int i = 0; i < publications.Count(); i++) {
-            const Connection *con = publications[i];
-
+        for (const Connection *con : publications) {
             if (con->signalDef == sigdef && con->sender == this && con->receiver == receiver && con->function == function) {
                 return false;
             }
@@ -84,7 +80,7 @@ bool SignalObject::Disconnect(const SignalDef *sigdef, SignalObject *receiver, S
         const Connection *con = publications[i];
         if (con->signalDef == sigdef && con->receiver == receiver && con->function == function) {
             // remove receiver's subscription
-            int index = con->receiver->subscriptions.FindIndex(publications[i]);
+            int index = con->receiver->subscriptions.FindIndex(con);
             con->receiver->subscriptions.RemoveIndexFast(index);
 
             // remove sender's publication
@@ -105,7 +101,7 @@ bool SignalObject::Disconnect(const SignalDef *sigdef, SignalObject *receiver) {
         const Connection *con = publications[i];
         if (con->signalDef == sigdef && con->receiver == receiver) {
             // remove receiver's subscription
-            int index = con->receiver->subscriptions.FindIndex(publications[i]);
+            int index = con->receiver->subscriptions.FindIndex(con);
             con->receiver->subscriptions.RemoveIndexFast(index);
 
             // stack sender's publication for remove
@@ -132,7 +128,7 @@ bool SignalObject::Disconnect(const SignalDef *sigdef) {
         const Connection *con = publications[i];
         if (con->signalDef == sigdef) {
             // remove receiver's subscription
-            int index = con->receiver->subscriptions.FindIndex(publications[i]);
+            int index = con->receiver->subscriptions.FindIndex(con);
             con->receiver->subscriptions.RemoveIndexFast(index);
             
             // stack sender's publication for remove
@@ -166,9 +162,7 @@ bool SignalObject::EmitSignalArgs(const SignalDef *sigdef, int numArgs, ...) {
     SignalSystem::CopyArgPtrs(sigdef, numArgs, args, argPtrs);
     va_end(args);
 
-    for (int i = 0; i < publications.Count(); i++) {
-        const Connection *con = publications[i];
-
+    for (const Connection *con : publications) {
         if (con->signalDef != sigdef) {
             continue;
         }

@@ -19,16 +19,16 @@
 #include "D3D12DescriptorPool.h"
 
 void D3D12Buffer::Release() {
-    for (int i = 0; i < srvDescriptors.Count(); ++i) {
-        if (srvDescriptors[i].cpuDescriptorHandle.ptr != 0) {
-            renderer->resCpuDescriptorPool->Free(srvDescriptors[i].cpuDescriptorHandle);
+    for (const D3D12SRVDescriptor &srvDescriptor : srvDescriptors) {
+        if (srvDescriptor.cpuDescriptorHandle.ptr != 0) {
+            renderer->resCpuDescriptorPool->Free(srvDescriptor.cpuDescriptorHandle);
         }
     }
     srvDescriptors.Clear();
 
-    for (int i = 0; i < uavDescriptors.Count(); ++i) {
-        if (uavDescriptors[i].cpuDescriptorHandle.ptr != 0) {
-            renderer->uavCpuDescriptorPool->Free(uavDescriptors[i].cpuDescriptorHandle);
+    for (const D3D12UAVDescriptor &uavDescriptor : uavDescriptors) {
+        if (uavDescriptor.cpuDescriptorHandle.ptr != 0) {
+            renderer->uavCpuDescriptorPool->Free(uavDescriptor.cpuDescriptorHandle);
         }
     }
     uavDescriptors.Clear();

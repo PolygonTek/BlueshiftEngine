@@ -96,8 +96,8 @@ void AnimManager::DestroyUnusedAnims() {
         }
     }
 
-    for (int i = 0; i < removeArray.Count(); i++) {
-        DestroyAnim(removeArray[i]);
+    for (Anim *anim : removeArray) {
+        DestroyAnim(anim);
     }
 }
 

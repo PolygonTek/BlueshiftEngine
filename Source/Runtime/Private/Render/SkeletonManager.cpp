@@ -105,8 +105,8 @@ void SkeletonManager::DestroyUnusedSkeletons() {
         }
     }
 
-    for (int i = 0; i < removeArray.Count(); i++) {
-        DestroySkeleton(removeArray[i]);
+    for (Skeleton *skeleton : removeArray) {
+        DestroySkeleton(skeleton);
     }
 }
 

@@ -880,12 +880,12 @@ const char *Shader::MangleNameWithDefineList(const Str &basename, const Array<Sh
             return (a.name).Icmp(b.name) < 0;
         });
 
-        for (int i = 0; i < defineArray.Count(); i++) {
+        for (const Shader::Define &define : defineArray) {
             // Skip define value is 0
-            if (defineArray[i].value == 0) {
+            if (define.value == 0) {
                 continue;
             }
-            mangledName += "+" + defineArray[i].name + "=" + defineArray[i].value;
+            mangledName += "+" + define.name + "=" + define.value;
         }
     }
 
@@ -1254,8 +1254,8 @@ bool Shader::ProcessShaderText(const char *text, const char *baseDir, const Arra
     outStr = text;
 
     // Insert local define array.
-    for (int i = 0; i < defineArray.Count(); i++) {
-        outStr.Insert(va("#define %s %i\n", defineArray[i].name.c_str(), defineArray[i].value), 0);
+    for (const Define &define : defineArray) {
+        outStr.Insert(va("#define %s %i\n", define.name.c_str(), define.value), 0);
     }
 
     // Insert global define array.
@@ -1872,8 +1872,8 @@ bool Shader::Reload() {
         ret = shader->Load(_hashName);
     }
 
-    for (int i = 0; i < shader->instantiatedShaders.Count(); i++) {
-        instantiatedShaders[i]->flags |= Flag::NeedReinstatiate;
+    for (Shader *instantiatedShader : shader->instantiatedShaders) {
+        instantiatedShader->flags |= Flag::NeedReinstatiate;
     }
 
     return ret;

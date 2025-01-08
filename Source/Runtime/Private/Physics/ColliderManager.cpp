@@ -119,8 +119,8 @@ void ColliderManager::DestroyUnusedColliders() {
         }
     }
 
-    for (int i = 0; i < removeArray.Count(); i++) {
-        DestroyCollider(removeArray[i]);
+    for (Collider *collider : removeArray) {
+        DestroyCollider(collider);
     }
 }
 

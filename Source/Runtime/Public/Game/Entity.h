@@ -436,8 +436,7 @@ BE_INLINE ComponentPtrArray Entity::GetComponentsInChildren(bool skipIfParentDon
 }
 
 BE_INLINE Component *Entity::GetConflictingComponent(const MetaObject *type) const {
-    for (int i = 0; i < components.Count(); i++) {
-        Component *component = components[i];
+    for (Component *component : components) {
         if (component->IsConflictComponent(*type)) {
             return component;
         }
@@ -446,9 +445,7 @@ BE_INLINE Component *Entity::GetConflictingComponent(const MetaObject *type) con
 }
 
 BE_INLINE Component *Entity::GetComponent(const MetaObject *type) const {
-    for (int i = 0; i < components.Count(); i++) {
-        Component *component = components[i];
-
+    for (Component *component : components) {
         if (component->GetMetaObject()->IsTypeOf(*type)) {
             return component;
         }
@@ -459,9 +456,7 @@ BE_INLINE Component *Entity::GetComponent(const MetaObject *type) const {
 BE_INLINE ComponentPtrArray Entity::GetComponents(const MetaObject *type) const {
     ComponentPtrArray subComponents;
 
-    for (int i = 0; i < components.Count(); i++) {
-        Component *component = components[i];
-
+    for (Component *component : components) {
         if (component->GetMetaObject()->IsTypeOf(*type)) {
             subComponents.Append(component);
         }

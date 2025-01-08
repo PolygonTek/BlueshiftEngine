@@ -150,8 +150,8 @@ void TextureManager::DestroyUnusedTextures() {
         }
     }
 
-    for (int i = 0; i < removeArray.Count(); i++) {
-        DestroyTexture(removeArray[i]);
+    for (Texture *texture : removeArray) {
+        DestroyTexture(texture);
     }
 }
 

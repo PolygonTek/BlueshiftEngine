@@ -426,9 +426,7 @@ static Str PreprocessShaderText(const char *shaderName, bool isVertexShader, con
         }
 
         if (!isVertexShader) {
-            for (int i = 0; i < inOutList.Count(); i++) {
-                const InOut &fsOut = inOutList[i];
-
+            for (const InOut &fsOut : inOutList) {
                 if (token == fsOut.name && fsOut.index != -1) {
                     if (fsOutBuiltInVars[fsOut.index].deprecatedVersion > OpenGL::GLSL_VERSION) {
                         token = fsOutBuiltInVars[fsOut.index].name;
@@ -676,8 +674,7 @@ static bool CompileAndLinkProgram(const char *name, const char *vsText, const Ar
         gglAttachShader(programObject, vs);
 
         if (OpenGL::GLSL_VERSION <= 150) {
-            for (int i = 0; i < vsInArray.Count(); i++) {
-                const InOut &vsIn = vsInArray[i];
+            for (const InOut &vsIn : vsInArray) {
                 gglBindAttribLocation(programObject, vsIn.location, vsIn.name.c_str());
             }
         }
@@ -688,8 +685,7 @@ static bool CompileAndLinkProgram(const char *name, const char *vsText, const Ar
 
 #ifdef GL_VERSION_3_0
         if (OpenGL::GLSL_VERSION >= 130 && OpenGL::GLSL_VERSION <= 150) {
-            for (int i = 0; i < fsOutArray.Count(); i++) {
-                const InOut &fsOut = fsOutArray[i];
+            for (const InOut &fsOut : fsOutArray) {
                 gglBindFragDataLocation(programObject, fsOut.location, fsOut.name.c_str());
             }
         }

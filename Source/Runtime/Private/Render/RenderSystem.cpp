@@ -305,24 +305,21 @@ void RenderSystem::IssueCommands() {
 }
 
 void RenderSystem::RecreateScreenMapRT() {
-    for (int i = 0; i < renderContexts.Count(); i++) {
-        RenderContext *rc = renderContexts[i];
+    for (RenderContext *rc : renderContexts) {
         rc->FreeScreenMapRT();
         rc->InitScreenMapRT();
     }
 }
 
 void RenderSystem::RecreateHDRMapRT() {
-    for (int i = 0; i < renderContexts.Count(); i++) {
-        RenderContext *rc = renderContexts[i];
+    for (RenderContext *rc : renderContexts) {
         rc->FreeHdrMapRT();
         rc->InitHdrMapRT();
     }
 }
 
 void RenderSystem::RecreateShadowMapRT() {
-    for (int i = 0; i < renderContexts.Count(); i++) {
-        RenderContext *rc = renderContexts[i];
+    for (RenderContext *rc : renderContexts) {
         rc->FreeShadowMapRT();
         rc->InitShadowMapRT();
     }
@@ -636,10 +633,8 @@ void RenderSystem::UpdateEnvProbes() {
 }
 
 void RenderSystem::ScheduleToRefreshEnvProbe(RenderWorld *renderWorld, int probeHandle) {
-    for (int i = 0; i < envProbeJobs.Count(); i++) {
-        const EnvProbeJob *job = &envProbeJobs[i];
-
-        if (job->GetRenderWorld() == renderWorld && job->GetEnvProbe() == renderWorld->GetEnvProbe(probeHandle)) {
+    for (const EnvProbeJob &job : envProbeJobs) {
+        if (job.GetRenderWorld() == renderWorld && job.GetEnvProbe() == renderWorld->GetEnvProbe(probeHandle)) {
             return;
         }
     }

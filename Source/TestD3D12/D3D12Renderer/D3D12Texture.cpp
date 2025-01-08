@@ -19,30 +19,30 @@
 #include "D3D12DescriptorPool.h"
 
 void D3D12Texture::Release() {
-    for (int i = 0; i < srvDescriptors.Count(); ++i) {
-        if (srvDescriptors[i].cpuDescriptorHandle.ptr != 0) {
-            renderer->resCpuDescriptorPool->Free(srvDescriptors[i].cpuDescriptorHandle);
+    for (const D3D12SRVDescriptor &srvDescriptor : srvDescriptors) {
+        if (srvDescriptor.cpuDescriptorHandle.ptr != 0) {
+            renderer->resCpuDescriptorPool->Free(srvDescriptor.cpuDescriptorHandle);
         }
     }
     srvDescriptors.Clear();
 
-    for (int i = 0; i < rtvDescriptors.Count(); ++i) {
-        if (rtvDescriptors[i].cpuDescriptorHandle.ptr != 0) {
-            renderer->rtvCpuDescriptorPool->Free(rtvDescriptors[i].cpuDescriptorHandle);
+    for (const D3D12RTVDescriptor &rtvDescriptor : rtvDescriptors) {
+        if (rtvDescriptor.cpuDescriptorHandle.ptr != 0) {
+            renderer->rtvCpuDescriptorPool->Free(rtvDescriptor.cpuDescriptorHandle);
         }
     }
     rtvDescriptors.Clear();
 
-    for (int i = 0; i < dsvDescriptors.Count(); ++i) {
-        if (dsvDescriptors[i].cpuDescriptorHandle.ptr != 0) {
-            renderer->dsvCpuDescriptorPool->Free(dsvDescriptors[i].cpuDescriptorHandle);
+    for (const D3D12DSVDescriptor &dsvDescriptor : dsvDescriptors) {
+        if (dsvDescriptor.cpuDescriptorHandle.ptr != 0) {
+            renderer->dsvCpuDescriptorPool->Free(dsvDescriptor.cpuDescriptorHandle);
         }
     }
     dsvDescriptors.Clear();
 
-    for (int i = 0; i < uavDescriptors.Count(); ++i) {
-        if (uavDescriptors[i].cpuDescriptorHandle.ptr != 0) {
-            renderer->uavCpuDescriptorPool->Free(uavDescriptors[i].cpuDescriptorHandle);
+    for (const D3D12UAVDescriptor &uavDescriptor : uavDescriptors) {
+        if (uavDescriptor.cpuDescriptorHandle.ptr != 0) {
+            renderer->uavCpuDescriptorPool->Free(uavDescriptor.cpuDescriptorHandle);
         }
     }
     uavDescriptors.Clear();

@@ -401,8 +401,8 @@ void ShaderManager::DestroyUnusedShaders() {
         }
     }
 
-    for (int i = 0; i < removeArray.Count(); i++) {
-        DestroyShader(removeArray[i]);
+    for (Shader *shader : removeArray) {
+        DestroyShader(shader);
     }
 }
 
@@ -478,9 +478,7 @@ void ShaderManager::RenameShader(Shader *shader, const Str &newName) {
 
         shaderHashMap.Set(newName, shader);
 
-        for (int i = 0; i < shader->instantiatedShaders.Count(); i++) {
-            Shader *instantiatedShader = shader->instantiatedShaders[i];
-
+        for (Shader *instantiatedShader : shader->instantiatedShaders) {
             shaderHashMap.Remove(instantiatedShader->hashName);
 
             Str mangledName;

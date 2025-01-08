@@ -29,11 +29,11 @@ class PropertyInfo;
 class BE_API Serializable : public SignalObject {
 public:
                             /// Gets property info by name. Returns false if not found.
-    bool                    GetPropertyInfo(const char *name, PropertyInfo &propertyInfo) const;
+    bool                    GetPropertyInfo(const char *name, PropertyInfo &outPropertyInfo) const;
                             /// Gets property info by index. Returns false if not found.
-    bool                    GetPropertyInfo(int index, PropertyInfo &propertyInfo) const;
+    bool                    GetPropertyInfo(int index, PropertyInfo &outPropertyInfo) const;
                             /// Gets property info array.
-    virtual void            GetPropertyInfoList(Array<PropertyInfo> &propertyInfoList) const = 0;
+    virtual void            GetPropertyInfoList(Array<PropertyInfo> &outPropertyInfoList) const = 0;
 
                             /// Serialize to JSON value.
     virtual void            Serialize(Json::Value &out, bool forCopying = false) const;

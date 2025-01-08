@@ -99,8 +99,8 @@ void ParticleSystemManager::DestroyUnusedParticleSystems() {
         }
     }
 
-    for (int i = 0; i < removeArray.Count(); i++) {
-        DestroyParticleSystem(removeArray[i]);
+    for (ParticleSystem *particleSystem : removeArray) {
+        DestroyParticleSystem(particleSystem);
     }
 }
 

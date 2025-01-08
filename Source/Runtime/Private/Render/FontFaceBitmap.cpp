@@ -28,8 +28,8 @@ FontFaceBitmap::~FontFaceBitmap() {
 }
 
 void FontFaceBitmap::Purge() {
-    for (int i = 0; i < materialArray.Count(); i++) {
-        materialManager.ReleaseMaterial(materialArray[i]);
+    for (Material *material : materialArray) {
+        materialManager.ReleaseMaterial(material);
     }
     materialArray.Clear();
 
