@@ -56,7 +56,7 @@ private:
         //CD3DX12_PIPELINE_STATE_STREAM_MS    ms;
         //CD3DX12_PIPELINE_STATE_STREAM_AS    as;
         GraphicsPSStream2                   stream2;
-        CD3DX12_PIPELINE_STATE_STREAM_CACHED_PSO shaderCachedPSO;
+        CD3DX12_PIPELINE_STATE_STREAM_CACHED_PSO cachedPSO;
     };
 
     struct ComputePSStream {

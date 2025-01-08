@@ -285,19 +285,18 @@ struct RHI {
     };
 
     struct DepthStencilState {
-        bool                            depthTestEnabled = false;
         DepthWriteMask                  depthWriteMask = DepthWriteMask::Zero;
         ComparisonFunc                  depthFunc = ComparisonFunc::Never;
-        bool                            stencilTestEnabled = false;
         uint8_t                         stencilReadMask = 0xff;
         uint8_t                         stencilWriteMask = 0xff;
         DepthStencilOp                  frontFace;
         DepthStencilOp                  backFace;
+        bool                            depthTestEnabled = false;
+        bool                            stencilTestEnabled = false;
         bool                            depthBoundTestEnabled = false;
     };
 
     struct RenderTargetBlendState {
-        bool                            blendEnabled = false;
         Blend                           srcFactorColor = Blend::SrcAlpha;
         Blend                           destFactorColor = Blend::InvSrcAlpha;
         BlendOp                         blendOpColor = BlendOp::Add;
@@ -305,6 +304,7 @@ struct RHI {
         Blend                           destFactorAlpha = Blend::One;
         BlendOp                         blendOpAlpha = BlendOp::Add;
         ColorWriteMask                  colorWriteMask = ColorWriteMask::All;
+        bool                            blendEnabled = false;
     };
 
     struct BlendState {
@@ -521,15 +521,8 @@ struct RHI {
                     uint64_t renderTargetFormat_5 : 6;
                     uint64_t renderTargetFormat_6 : 6;
                     uint64_t renderTargetFormat_7 : 6;
-                    uint64_t renderTargetFormatSRGB_0 : 1;
-                    uint64_t renderTargetFormatSRGB_1 : 1;
-                    uint64_t renderTargetFormatSRGB_2 : 1;
-                    uint64_t renderTargetFormatSRGB_3 : 1;
-                    uint64_t renderTargetFormatSRGB_4 : 1;
-                    uint64_t renderTargetFormatSRGB_5 : 1;
-                    uint64_t renderTargetFormatSRGB_6 : 1;
-                    uint64_t renderTargetFormatSRGB_7 : 1;
                     uint64_t depthStencilFormat : 6;
+                    uint64_t sampleCount : 4;
                 } bits;
                 uint64_t value;
             } hasher = {};
@@ -542,15 +535,8 @@ struct RHI {
             hasher.bits.renderTargetFormat_5 = (uint64_t)renderTargetFormats[5];
             hasher.bits.renderTargetFormat_6 = (uint64_t)renderTargetFormats[6];
             hasher.bits.renderTargetFormat_7 = (uint64_t)renderTargetFormats[7];
-            hasher.bits.renderTargetFormatSRGB_0 = (uint64_t)renderTargetForematSRGBs[0];
-            hasher.bits.renderTargetFormatSRGB_1 = (uint64_t)renderTargetForematSRGBs[1];
-            hasher.bits.renderTargetFormatSRGB_2 = (uint64_t)renderTargetForematSRGBs[2];
-            hasher.bits.renderTargetFormatSRGB_3 = (uint64_t)renderTargetForematSRGBs[3];
-            hasher.bits.renderTargetFormatSRGB_4 = (uint64_t)renderTargetForematSRGBs[4];
-            hasher.bits.renderTargetFormatSRGB_5 = (uint64_t)renderTargetForematSRGBs[5];
-            hasher.bits.renderTargetFormatSRGB_6 = (uint64_t)renderTargetForematSRGBs[6];
-            hasher.bits.renderTargetFormatSRGB_7 = (uint64_t)renderTargetForematSRGBs[7];
             hasher.bits.depthStencilFormat = (uint64_t)depthStencilFormat;
+            hasher.bits.sampleCount = (uint64_t)sampleCount;
             return hasher.value;
         }
     };
@@ -883,6 +869,75 @@ namespace std {
             hash = hash_combine(hash, std::hash<uint32_t>()(element.offset));
             hash = hash_combine(hash, std::hash<uint32_t>()(element.inputSlot));
             hash = hash_combine(hash, std::hash<uint8_t>()(static_cast<uint8_t>(element.format)));
+            return hash;
+        }
+    };
+
+    template <>
+    struct hash<RHI::RasterizerState> {
+        size_t operator()(const RHI::RasterizerState &state) const {
+            size_t hash = std::hash<uint8_t>()(static_cast<uint8_t>(state.fillMode));
+            hash = hash_combine(hash, std::hash<uint8_t>()(static_cast<uint8_t>(state.cullMode)));
+            hash = hash_combine(hash, std::hash<int32_t>()(state.depthBias));
+            hash = hash_combine(hash, std::hash<float>()(state.depthBiasClamp));
+            hash = hash_combine(hash, std::hash<float>()(state.slopeScaledDepthBias));
+            hash = hash_combine(hash, std::hash<bool>()(state.depthClipEnabled));
+            hash = hash_combine(hash, std::hash<bool>()(state.smoothLineEnabled));
+            hash = hash_combine(hash, std::hash<bool>()(state.conservativeRasterization));
+            return hash;
+        }
+    };
+
+    template <>
+    struct hash<RHI::DepthStencilOp> {
+        size_t operator()(const RHI::DepthStencilOp &op) const {
+            size_t hash = std::hash<uint8_t>()(static_cast<uint8_t>(op.failOp));
+            hash = hash_combine(hash, std::hash<uint8_t>()(static_cast<uint8_t>(op.depthFailOp)));
+            hash = hash_combine(hash, std::hash<uint8_t>()(static_cast<uint8_t>(op.passOp)));
+            hash = hash_combine(hash, std::hash<uint8_t>()(static_cast<uint8_t>(op.stencilFunc)));
+            return hash;
+        }
+    };
+
+    template <>
+    struct hash<RHI::DepthStencilState> {
+        size_t operator()(const RHI::DepthStencilState &state) const {
+            size_t hash = std::hash<uint8_t>()(static_cast<uint8_t>(state.depthWriteMask));
+            hash = hash_combine(hash, std::hash<uint8_t>()(static_cast<uint8_t>(state.depthFunc)));
+            hash = hash_combine(hash, std::hash<uint8_t>()(state.stencilReadMask));
+            hash = hash_combine(hash, std::hash<uint8_t>()(state.stencilWriteMask));
+            hash = hash_combine(hash, std::hash<RHI::DepthStencilOp>()(state.frontFace));
+            hash = hash_combine(hash, std::hash<RHI::DepthStencilOp>()(state.backFace));
+            hash = hash_combine(hash, std::hash<bool>()(state.depthTestEnabled));
+            hash = hash_combine(hash, std::hash<bool>()(state.stencilTestEnabled));
+            hash = hash_combine(hash, std::hash<bool>()(state.depthBoundTestEnabled));
+            return hash;
+        }
+    };
+
+    template <>
+    struct hash<RHI::RenderTargetBlendState> {
+        size_t operator()(const RHI::RenderTargetBlendState &state) const {
+            size_t hash = std::hash<uint8_t>()(static_cast<uint8_t>(state.srcFactorColor));
+            hash = hash_combine(hash, std::hash<uint8_t>()(static_cast<uint8_t>(state.destFactorColor)));
+            hash = hash_combine(hash, std::hash<uint8_t>()(static_cast<uint8_t>(state.blendOpColor)));
+            hash = hash_combine(hash, std::hash<uint8_t>()(static_cast<uint8_t>(state.srcFactorAlpha)));
+            hash = hash_combine(hash, std::hash<uint8_t>()(static_cast<uint8_t>(state.destFactorAlpha)));
+            hash = hash_combine(hash, std::hash<uint8_t>()(static_cast<uint8_t>(state.blendOpAlpha)));
+            hash = hash_combine(hash, std::hash<uint8_t>()(static_cast<uint8_t>(state.colorWriteMask)));
+            hash = hash_combine(hash, std::hash<bool>()(state.blendEnabled));
+            return hash;
+        }
+    };
+
+    template <>
+    struct hash<RHI::BlendState> {
+        size_t operator()(const RHI::BlendState &state) const {
+            size_t hash = std::hash<bool>()(static_cast<bool>(state.alphaToCoverageEnabled));
+            hash = hash_combine(hash, std::hash<bool>()(static_cast<bool>(state.independentBlendEnabled)));
+            for (int i = 0; i < COUNT_OF(state.renderTargets); ++i) {
+                hash = hash_combine(hash, std::hash<RHI::RenderTargetBlendState>()(static_cast<RHI::RenderTargetBlendState>(state.renderTargets[i])));
+            }
             return hash;
         }
     };

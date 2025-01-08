@@ -388,18 +388,18 @@ RHI::PipelineState *D3D12Renderer::CreateGraphicsPSO(const RHI::PipelineStateDes
     }
 
     if (desc->blendState) {
-        std::hash<const RHI::BlendState *> hasher;
-        psoHashData.blendHash = static_cast<uint64_t>(hasher(desc->blendState));
+        std::hash<RHI::BlendState> hasher;
+        psoHashData.blendHash = static_cast<uint64_t>(hasher(*desc->blendState));
     }
 
     if (desc->depthStencilState) {
-        std::hash<const RHI::DepthStencilState *> hasher;
-        psoHashData.depthStencilHash = static_cast<uint64_t>(hasher(desc->depthStencilState));
+        std::hash<RHI::DepthStencilState> hasher;
+        psoHashData.depthStencilHash = static_cast<uint64_t>(hasher(*desc->depthStencilState));
     }
 
     if (desc->rasterizerState) {
-        std::hash<const RHI::RasterizerState *> hasher;
-        psoHashData.rasterizerHash = static_cast<uint64_t>(hasher(desc->rasterizerState));
+        std::hash<RHI::RasterizerState> hasher;
+        psoHashData.rasterizerHash = static_cast<uint64_t>(hasher(*desc->rasterizerState));
     }
 
     if (desc->renderDest) {
@@ -418,9 +418,8 @@ RHI::PipelineState *D3D12Renderer::CreateGraphicsPSO(const RHI::PipelineStateDes
     pipelineState->hash = psoHash;
     pipelineState->graphics = true;
 
-    // combined shader hash 값으로 동일한 PSO cache 가 존재하는지 찾아보고, 있으면 재활용한다.
-    const uint64_t combinedShaderHash = BE1::CityHash64((char *)&psoHashData.shaderHashData, sizeof(psoHashData.shaderHashData));
-    const auto *cachedPsoBlobEntry = cachedPsoBlobMap.Get(combinedShaderHash);
+    // PSO hash 값으로 동일한 PSO cache 가 존재하는지 찾아보고, 찾았다면 재활용한다.
+    const auto *cachedPsoBlobEntry = cachedPsoBlobMap.Get(psoHash);
 
     ID3DBlob *cachedPsoBlob = nullptr;
     if (cachedPsoBlobEntry) {
@@ -431,7 +430,7 @@ RHI::PipelineState *D3D12Renderer::CreateGraphicsPSO(const RHI::PipelineStateDes
     // 없다면 PSO cache 파일을 로딩해본다.
     // NOTE: hash 값 충돌로 엉뚱한 cached PSO 파일을 읽어오지는 않는지 체크 필요
     if (!cachedPsoBlob) {
-        LoadCachedPSO(combinedShaderHash, &cachedPsoBlob);
+        LoadCachedPSO(psoHash, &cachedPsoBlob);
     }
 #endif
 
@@ -449,7 +448,7 @@ RHI::PipelineState *D3D12Renderer::CreateGraphicsPSO(const RHI::PipelineStateDes
     stream2 = &stream->stream2;
 
     if (cachedPsoBlob) {
-        stream->shaderCachedPSO = { cachedPsoBlob->GetBufferPointer(), cachedPsoBlob->GetBufferSize() };
+        stream->cachedPSO = { cachedPsoBlob->GetBufferPointer(), cachedPsoBlob->GetBufferSize() };
     }
 
     if (desc->vs) {
@@ -629,8 +628,8 @@ RHI::PipelineState *D3D12Renderer::CreateGraphicsPSO(const RHI::PipelineStateDes
     if (!cachedPsoBlobEntry) {
         ID3DBlob *cachedPSOBlob = nullptr;
         if (SUCCEEDED(pipelineState->pso->GetCachedBlob(&cachedPSOBlob))) {
-            cachedPsoBlobMap.Set(combinedShaderHash, cachedPSOBlob);
-            WriteCachedPSO(combinedShaderHash, cachedPSOBlob);
+            cachedPsoBlobMap.Set(psoHash, cachedPSOBlob);
+            WriteCachedPSO(psoHash, cachedPSOBlob);
         }
     }
 #endif
