@@ -24,8 +24,7 @@ SamplerState defaultSampler : register(s0);
 [RootSignature(COMMON_ROOT_SIGNATURE)]
 
 PSInput VSMain(VSInput input) {
-    PSInput result = (PSInput)0;
-
+    PSInput result;
     result.position = input.position;
     result.position.xy += offset.xy;
     result.color = input.color;

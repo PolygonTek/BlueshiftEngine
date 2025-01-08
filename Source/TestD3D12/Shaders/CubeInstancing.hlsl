@@ -26,10 +26,8 @@ SamplerState defaultSampler : register(s0);
 [RootSignature(COMMON_ROOT_SIGNATURE)]
 
 PSInput VSMain(VSInput input) {
-    PSInput result = (PSInput)0;
-
-    float3 positionWS3 = mul(worldMatrix[input.instanceID], input.position);
-    float4 positionWS = float4(positionWS3, 1.0);
+    PSInput result;
+    float4 positionWS = float4(mul(worldMatrix[input.instanceID], input.position), 1.0);
     result.position = mul(viewProjMatrix, positionWS);
     result.color = input.color;
     result.texCoord = input.texCoord;
