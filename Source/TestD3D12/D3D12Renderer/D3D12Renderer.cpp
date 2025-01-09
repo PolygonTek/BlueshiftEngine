@@ -230,6 +230,54 @@ void D3D12Renderer::Init(HWND hwnd) {
     // 리소스 생성 용 커맨드 리스트
     resourceCommandList = graphicsCommandListPool->Alloc();
 
+    D3D12_COMMAND_SIGNATURE_DESC commandSignatureDesc = {};
+
+    D3D12_INDIRECT_ARGUMENT_DESC drawInstancedArgs[1];
+    drawInstancedArgs[0].Type = D3D12_INDIRECT_ARGUMENT_TYPE_DRAW;
+
+    commandSignatureDesc.ByteStride = sizeof(D3D12_DRAW_ARGUMENTS);
+    commandSignatureDesc.NumArgumentDescs = 1;
+    commandSignatureDesc.pArgumentDescs = drawInstancedArgs;
+    hr = device->CreateCommandSignature(&commandSignatureDesc, nullptr, IID_PPV_ARGS(&drawInstancedIndirectCommandSignature));
+    if (FAILED(hr)) {
+        BE_FATALERROR("CreateCommandSignature(D3D12_INDIRECT_ARGUMENT_TYPE_DRAW) failed, ERROR: 0x%x", hr);
+    }
+
+    D3D12_INDIRECT_ARGUMENT_DESC drawIndexedInstancedArgs[1];
+    drawIndexedInstancedArgs[0].Type = D3D12_INDIRECT_ARGUMENT_TYPE_DRAW_INDEXED;
+
+    commandSignatureDesc.ByteStride = sizeof(D3D12_DRAW_INDEXED_ARGUMENTS);
+    commandSignatureDesc.NumArgumentDescs = 1;
+    commandSignatureDesc.pArgumentDescs = drawIndexedInstancedArgs;
+    hr = device->CreateCommandSignature(&commandSignatureDesc, nullptr, IID_PPV_ARGS(&drawIndexedInstancedIndirectCommandSignature));
+    if (FAILED(hr)) {
+        BE_FATALERROR("CreateCommandSignature(D3D12_INDIRECT_ARGUMENT_TYPE_DRAW_INDEXED) failed, ERROR: 0x%x", hr);
+    }
+
+    D3D12_INDIRECT_ARGUMENT_DESC dispatchArgs[1];
+    dispatchArgs[0].Type = D3D12_INDIRECT_ARGUMENT_TYPE_DISPATCH;
+
+    commandSignatureDesc.ByteStride = sizeof(D3D12_DISPATCH_ARGUMENTS);
+    commandSignatureDesc.NumArgumentDescs = 1;
+    commandSignatureDesc.pArgumentDescs = dispatchArgs;
+    hr = device->CreateCommandSignature(&commandSignatureDesc, nullptr, IID_PPV_ARGS(&dispatchIndirectCommandSignature));
+    if (FAILED(hr)) {
+        BE_FATALERROR("CreateCommandSignature(D3D12_INDIRECT_ARGUMENT_TYPE_DISPATCH) failed, ERROR: 0x%x", hr);
+    }
+
+    if (supportsMeshShader) {
+        D3D12_INDIRECT_ARGUMENT_DESC dispatchMeshArgs[1];
+        dispatchMeshArgs[0].Type = D3D12_INDIRECT_ARGUMENT_TYPE_DISPATCH_MESH;
+
+        commandSignatureDesc.ByteStride = sizeof(D3D12_DISPATCH_ARGUMENTS);
+        commandSignatureDesc.NumArgumentDescs = 1;
+        commandSignatureDesc.pArgumentDescs = dispatchMeshArgs;
+        hr = device->CreateCommandSignature(&commandSignatureDesc, nullptr, IID_PPV_ARGS(&dispatchMeshIndirectCommandSignature));
+        if (FAILED(hr)) {
+            BE_FATALERROR("CreateCommandSignature(D3D12_INDIRECT_ARGUMENT_TYPE_DISPATCH_MESH) failed, ERROR: 0x%x", hr);
+        }
+    }
+
     // CPU 디스크립터 풀 생성
     resCpuDescriptorPool = new D3D12DescriptorPool(device, D3D12DescriptorPool::Type::CBV_SRV_UAV, 1000000, false);
     rtvCpuDescriptorPool = new D3D12DescriptorPool(device, D3D12DescriptorPool::Type::RTV, 16, false);
@@ -363,6 +411,10 @@ void D3D12Renderer::Shutdown() {
     SAFE_RELEASE(dxcCompiler);
     SAFE_RELEASE(dxcUtils);
     SAFE_RELEASE(dxcLibrary);
+    SAFE_RELEASE(drawInstancedIndirectCommandSignature);
+    SAFE_RELEASE(drawIndexedInstancedIndirectCommandSignature);
+    SAFE_RELEASE(dispatchIndirectCommandSignature);
+    SAFE_RELEASE(dispatchMeshIndirectCommandSignature);
     SAFE_RELEASE(commandQueues[to_int(RHI::CommandQueueType::Graphics)]);
     SAFE_RELEASE(commandQueues[to_int(RHI::CommandQueueType::Compute)]);
     SAFE_RELEASE(fence);
@@ -853,18 +905,6 @@ void D3D12Renderer::SetDepthBounds(RHI::CommandList *commandList, float depthMin
     }
     D3D12CommandList *d3d12CommandList = static_cast<D3D12CommandList *>(commandList);
     d3d12CommandList->GetGraphicsCommandList()->OMSetDepthBounds(depthMin, depthMax);
-}
-
-void D3D12Renderer::Dispatch(RHI::CommandList *commandList, uint32_t threadGroupCountX, uint32_t threadGroupCountY, uint32_t threadGroupCountZ) {
-    D3D12CommandList *d3d12CommandList = static_cast<D3D12CommandList *>(commandList);
-    BindRootParameters(d3d12CommandList, false);
-    d3d12CommandList->GetGraphicsCommandList()->Dispatch(threadGroupCountX, threadGroupCountY, threadGroupCountZ);
-}
-
-void D3D12Renderer::DispatchMesh(RHI::CommandList *commandList, uint32_t threadGroupCountX, uint32_t threadGroupCountY, uint32_t threadGroupCountZ) {
-    D3D12CommandList *d3d12CommandList = static_cast<D3D12CommandList *>(commandList);
-    BindRootParameters(d3d12CommandList, false);
-    d3d12CommandList->GetGraphicsCommandList()->DispatchMesh(threadGroupCountX, threadGroupCountY, threadGroupCountZ);
 }
 
 void D3D12Renderer::ClearUAV(RHI::CommandList *commandList, const RHI::GPUResource *resource, uint32_t value) {
@@ -1478,10 +1518,58 @@ void D3D12Renderer::DrawInstanced(RHI::CommandList *commandList, uint32_t vertex
     d3d12CommandList->GetGraphicsCommandList()->DrawInstanced(vertexCount, instanceCount, startVertexLocation, startInstanceLocation);
 }
 
+void D3D12Renderer::DrawInstancedIndirect(RHI::CommandList *commandList, const RHI::Buffer *argsBuffer, uint32_t argsOffset) {
+    D3D12CommandList *d3d12CommandList = static_cast<D3D12CommandList *>(commandList);
+    BindRootParameters(d3d12CommandList, true);
+    d3d12CommandList->GetGraphicsCommandList()->ExecuteIndirect(drawInstancedIndirectCommandSignature, 1, static_cast<const D3D12Buffer *>(argsBuffer)->GetResource(), argsOffset, nullptr, 0);
+}
+
+void D3D12Renderer::DrawInstancedIndirectCount(RHI::CommandList *commandList, const RHI::Buffer *argsBuffer, uint32_t argsOffset, const RHI::Buffer *countBuffer, uint32_t countOffset, uint32_t maxCount) {
+    D3D12CommandList *d3d12CommandList = static_cast<D3D12CommandList *>(commandList);
+    BindRootParameters(d3d12CommandList, true);
+    d3d12CommandList->GetGraphicsCommandList()->ExecuteIndirect(drawInstancedIndirectCommandSignature, maxCount, static_cast<const D3D12Buffer *>(argsBuffer)->GetResource(), argsOffset, static_cast<const D3D12Buffer *>(countBuffer)->GetResource(), countOffset);
+}
+
 void D3D12Renderer::DrawIndexedInstanced(RHI::CommandList *commandList, uint32_t indexCount, uint32_t instanceCount, uint32_t startIndexLocation, uint32_t baseVertexLocation, uint32_t startInstanceLocation) {
     D3D12CommandList *d3d12CommandList = static_cast<D3D12CommandList *>(commandList);
     BindRootParameters(d3d12CommandList, true);
     d3d12CommandList->GetGraphicsCommandList()->DrawIndexedInstanced(indexCount, instanceCount, startIndexLocation, baseVertexLocation, startInstanceLocation);
+}
+
+void D3D12Renderer::DrawIndexedInstancedIndirect(RHI::CommandList *commandList, const RHI::Buffer *argsBuffer, uint32_t argsOffset) {
+    D3D12CommandList *d3d12CommandList = static_cast<D3D12CommandList *>(commandList);
+    BindRootParameters(d3d12CommandList, true);
+    d3d12CommandList->GetGraphicsCommandList()->ExecuteIndirect(drawIndexedInstancedIndirectCommandSignature, 1, static_cast<const D3D12Buffer *>(argsBuffer)->GetResource(), argsOffset, nullptr, 0);
+}
+
+void D3D12Renderer::DrawIndexedInstancedIndirectCount(RHI::CommandList *commandList, const RHI::Buffer *argsBuffer, uint32_t argsOffset, const RHI::Buffer *countBuffer, uint32_t countOffset, uint32_t maxCount) {
+    D3D12CommandList *d3d12CommandList = static_cast<D3D12CommandList *>(commandList);
+    BindRootParameters(d3d12CommandList, true);
+    d3d12CommandList->GetGraphicsCommandList()->ExecuteIndirect(drawIndexedInstancedIndirectCommandSignature, maxCount, static_cast<const D3D12Buffer *>(argsBuffer)->GetResource(), argsOffset, static_cast<const D3D12Buffer *>(countBuffer)->GetResource(), countOffset);
+}
+
+void D3D12Renderer::Dispatch(RHI::CommandList *commandList, uint32_t threadGroupCountX, uint32_t threadGroupCountY, uint32_t threadGroupCountZ) {
+    D3D12CommandList *d3d12CommandList = static_cast<D3D12CommandList *>(commandList);
+    BindRootParameters(d3d12CommandList, false);
+    d3d12CommandList->GetGraphicsCommandList()->Dispatch(threadGroupCountX, threadGroupCountY, threadGroupCountZ);
+}
+
+void D3D12Renderer::DispatchIndirect(RHI::CommandList *commandList, const RHI::Buffer *argsBuffer, uint32_t argsOffset) {
+    D3D12CommandList *d3d12CommandList = static_cast<D3D12CommandList *>(commandList);
+    BindRootParameters(d3d12CommandList, true);
+    d3d12CommandList->GetGraphicsCommandList()->ExecuteIndirect(dispatchIndirectCommandSignature, 1, static_cast<const D3D12Buffer *>(argsBuffer)->GetResource(), argsOffset, nullptr, 0);
+}
+
+void D3D12Renderer::DispatchMesh(RHI::CommandList *commandList, uint32_t threadGroupCountX, uint32_t threadGroupCountY, uint32_t threadGroupCountZ) {
+    D3D12CommandList *d3d12CommandList = static_cast<D3D12CommandList *>(commandList);
+    BindRootParameters(d3d12CommandList, false);
+    d3d12CommandList->GetGraphicsCommandList()->DispatchMesh(threadGroupCountX, threadGroupCountY, threadGroupCountZ);
+}
+
+void D3D12Renderer::DispatchMeshIndirect(RHI::CommandList *commandList, const RHI::Buffer *argsBuffer, uint32_t argsOffset) {
+    D3D12CommandList *d3d12CommandList = static_cast<D3D12CommandList *>(commandList);
+    BindRootParameters(d3d12CommandList, false);
+    d3d12CommandList->GetGraphicsCommandList()->ExecuteIndirect(dispatchMeshIndirectCommandSignature, 1, static_cast<const D3D12Buffer *>(argsBuffer)->GetResource(), argsOffset, nullptr, 0);
 }
 
 int D3D12Renderer::AddRenderObject(const RenderObject::State &def) {

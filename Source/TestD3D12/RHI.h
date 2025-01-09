@@ -18,10 +18,10 @@
 
 struct RHI {
     enum class ClearFlag : uint32_t {
-        None = 0,
-        Color = BIT(0),
-        Depth = BIT(1),
-        Stencil = BIT(2)
+        None                            = 0,
+        Color                           = BIT(0),
+        Depth                           = BIT(1),
+        Stencil                         = BIT(2)
     };
 
     struct ClearValue {
@@ -67,10 +67,10 @@ struct RHI {
     };
 
     enum class ColorWriteMask : uint8_t {
-        Red = BIT(0),
-        Green = BIT(1),
-        Blue = BIT(2),
-        Alpha = BIT(3),
+        Red                             = BIT(0),
+        Green                           = BIT(1),
+        Blue                            = BIT(2),
+        Alpha                           = BIT(3),
         All = Red | Green | Blue | Alpha,
     };
 
@@ -163,15 +163,16 @@ struct RHI {
 
     enum class ResourceFlag : uint32_t {
         None = 0,
-        ConstantBuffer = BIT(0),
-        VertexBuffer = BIT(1),
-        IndexBuffer = BIT(2),
-        ShaderResource = BIT(3),
-        RenderTarget = BIT(4),
-        DepthStencil = BIT(5),
-        UnorderedAccess = BIT(6),
-        Typeless = BIT(7),
-        SkipDefaultViews = BIT(8)
+        ConstantBuffer                  = BIT(0),
+        VertexBuffer                    = BIT(1),
+        IndexBuffer                     = BIT(2),
+        IndirectBuffer                  = BIT(3),
+        ShaderResource                  = BIT(4),
+        RenderTarget                    = BIT(5),
+        DepthStencil                    = BIT(6),
+        UnorderedAccess                 = BIT(7),
+        Typeless                        = BIT(8),
+        SkipDefaultViews                = BIT(9)
     };
 
     enum class BufferType : uint8_t {
@@ -812,8 +813,6 @@ struct RHI {
         virtual void                    EndQuery(RHI::CommandList *commandList, const RHI::QueryHeap *queryHeap, uint32_t index) = 0;
         virtual void                    ResolveQuery(RHI::CommandList *commandList, const RHI::QueryHeap *queryHeap, uint32_t index, uint32_t count, const RHI::Buffer *destBuffer, uint64_t destOffset) = 0;
         virtual void                    ResetQuery(RHI::CommandList *commandList, const RHI::QueryHeap *queryHeap, uint32_t index, uint32_t count) = 0;
-        virtual void                    Dispatch(RHI::CommandList *commandList, uint32_t threadGroupCountX, uint32_t threadGroupCountY, uint32_t threadGroupCountZ) = 0;
-        virtual void                    DispatchMesh(RHI::CommandList *commandList, uint32_t threadGroupCountX, uint32_t threadGroupCountY, uint32_t threadGroupCountZ) = 0;
         virtual void                    ClearUAV(RHI::CommandList *commandList, const RHI::GPUResource *resource, uint32_t value) = 0;
         virtual void                    CopyBuffer(RHI::CommandList *commandList, const RHI::Buffer *dstBuffer, uint32_t dstOffset, const RHI::Buffer *srcBuffer, uint32_t srcOffset, uint32_t size) = 0;
         virtual void                    CopyTexture(RHI::CommandList *commandList, const RHI::Texture *dstTexture, uint32_t dstSlice, uint32_t dstMipLevel, uint32_t dstX, uint32_t dstY, uint32_t dstZ, const RHI::Texture *srcTexture, uint32_t srcSlice, uint32_t srcMipLevel, uint32_t srcX, uint32_t srcY, uint32_t srcZ, uint32_t width, uint32_t height, uint32_t depth) = 0;
@@ -826,7 +825,16 @@ struct RHI {
         virtual void                    Draw(RHI::CommandList *commandList, uint32_t vertexCount, uint32_t startVertexLocation) = 0;
         virtual void                    DrawIndexed(RHI::CommandList *commandList, uint32_t indexCount, uint32_t startIndexLocation, uint32_t baseVertexLocation) = 0;
         virtual void                    DrawInstanced(RHI::CommandList *commandList, uint32_t vertexCount, uint32_t instanceCount, uint32_t startVertexLocation, uint32_t startInstanceLocation) = 0;
+        virtual void                    DrawInstancedIndirect(RHI::CommandList *commandList, const RHI::Buffer *argsBuffer, uint32_t argsOffset) = 0;
+        virtual void                    DrawInstancedIndirectCount(RHI::CommandList *commandList, const RHI::Buffer *argsBuffer, uint32_t argsOffset, const RHI::Buffer *countBuffer, uint32_t countOffset, uint32_t maxCount) = 0;
         virtual void                    DrawIndexedInstanced(RHI::CommandList *commandList, uint32_t indexCount, uint32_t instanceCount, uint32_t startIndexLocation, uint32_t baseVertexLocation, uint32_t startInstanceLocation) = 0;
+        virtual void                    DrawIndexedInstancedIndirect(RHI::CommandList *commandList, const RHI::Buffer *argsBuffer, uint32_t argsOffset) = 0;
+        virtual void                    DrawIndexedInstancedIndirectCount(RHI::CommandList *commandList, const RHI::Buffer *argsBuffer, uint32_t argsOffset, const RHI::Buffer *countBuffer, uint32_t countOffset, uint32_t maxCount) = 0;
+
+        virtual void                    Dispatch(RHI::CommandList *commandList, uint32_t threadGroupCountX, uint32_t threadGroupCountY, uint32_t threadGroupCountZ) = 0;
+        virtual void                    DispatchIndirect(RHI::CommandList *commandList, const RHI::Buffer *argsBuffer, uint32_t argsOffset) = 0;
+        virtual void                    DispatchMesh(RHI::CommandList *commandList, uint32_t threadGroupCountX, uint32_t threadGroupCountY, uint32_t threadGroupCountZ) = 0;
+        virtual void                    DispatchMeshIndirect(RHI::CommandList *commandList, const RHI::Buffer *argsBuffer, uint32_t argsOffset) = 0;
 
         static RHI::GPUBarrier          MakeMemoryBarrier(const RHI::GPUResource *resource);
         static RHI::GPUBarrier          MakeBufferBarrier(const RHI::Buffer *buffer, RHI::GPUResourceState stateBefore, RHI::GPUResourceState stateAfter);
