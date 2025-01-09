@@ -74,9 +74,8 @@ void SoundSystem::Shutdown() {
 void SoundSystem::DestroyAllSounds() {
     LinkList<Sound> *nextNode;
 
-    for (int i = 0; i < soundHashMap.Count(); i++) {
-        const auto *entry = soundHashMap.GetByIndex(i);
-        Sound *sound = entry->second;
+    for (const auto &entry : soundHashMap) {
+        Sound *sound = entry.second;
 
         if (!sound->dupNode.IsListEmpty()) {
             for (LinkList<Sound> *node = sound->dupNode.NextNode(); node; node = nextNode) {
@@ -98,9 +97,8 @@ void SoundSystem::DestroyAllSounds() {
 void SoundSystem::DestroyUnusedSounds() {
     Array<Sound *> removeArray;
 
-    for (int i = 0; i < soundHashMap.Count(); i++) {
-        const auto *entry = soundHashMap.GetByIndex(i);
-        Sound *sound = entry->second;
+    for (const auto &entry : soundHashMap) {
+        Sound *sound = entry.second;
 
         if (sound && !sound->permanence && sound->refCount == 0) {
             removeArray.Append(sound);

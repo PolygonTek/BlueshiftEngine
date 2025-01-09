@@ -141,9 +141,8 @@ void TextureManager::CreateEngineTextures() {
 void TextureManager::DestroyUnusedTextures() {
     Array<Texture *> removeArray;
 
-    for (int i = 0; i < textureHashMap.Count(); i++) {
-        const auto *entry = textureHashMap.GetByIndex(i);
-        Texture *texture = entry->second;
+    for (const auto &entry : textureHashMap) {
+        Texture *texture = entry.second;
 
         if (texture && !texture->permanence && texture->refCount == 0) {
             removeArray.Append(texture);
@@ -173,10 +172,9 @@ void TextureManager::SetFilter(const char *filterName) {
     }
 
     textureFilter = textureFilterNames[mode].filter;
-    
-    for (int i = 0; i < textureHashMap.Count(); i++) {
-        const auto *entry = textureHashMap.GetByIndex(i);
-        Texture *texture = entry->second;
+
+    for (const auto &entry : textureHashMap) {
+        Texture *texture = entry.second;
 
         if (texture->hasMipmaps && !(texture->flags & Texture::Flag::Nearest)) {
             rhi.BindTexture(texture->textureHandle);
@@ -188,9 +186,8 @@ void TextureManager::SetFilter(const char *filterName) {
 void TextureManager::SetAnisotropy(float degree) {
     textureAnisotropy = degree;
 
-    for (int i = 0; i < textureHashMap.Count(); i++) {
-        const auto *entry = textureHashMap.GetByIndex(i);
-        Texture *texture = entry->second;
+    for (const auto &entry : textureHashMap) {
+        Texture *texture = entry.second;
         
         if (texture->hasMipmaps && !(texture->flags & Texture::Flag::Nearest)) {
             rhi.BindTexture(texture->textureHandle);

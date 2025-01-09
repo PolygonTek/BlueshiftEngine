@@ -109,6 +109,11 @@ public:
     KV *                    Get(const KeyT &key);
     const KV *              Get(const KeyT &key) const;
 
+    KV *                    begin() { return pairs.begin(); }
+    const KV *              begin() const { return pairs.begin(); }
+    KV *                    end() { return pairs.end(); }
+    const KV *              end() const { return pairs.end(); }
+
                             /// Returns a value pointer corresponding to index.
                             /// You can iterate entire buckets with an index, but when a bucket is added or removed, the existing index may no longer be valid.
     KV *                    GetByIndex(int index);

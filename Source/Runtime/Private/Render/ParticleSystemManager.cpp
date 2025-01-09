@@ -90,9 +90,8 @@ void ParticleSystemManager::ReleaseParticleSystem(ParticleSystem *particleSystem
 void ParticleSystemManager::DestroyUnusedParticleSystems() {
     Array<ParticleSystem *> removeArray;
 
-    for (int i = 0; i < particleSystemHashMap.Count(); i++) {
-        const auto *entry = particleSystemHashMap.GetByIndex(i);
-        ParticleSystem *particleSystem = entry->second;
+    for (const auto &entry : particleSystemHashMap) {
+        ParticleSystem *particleSystem = entry.second;
 
         if (particleSystem && !particleSystem->permanence && particleSystem->refCount == 0) {
             removeArray.Append(particleSystem);

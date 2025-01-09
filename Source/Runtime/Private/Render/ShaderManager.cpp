@@ -164,10 +164,8 @@ void ShaderManager::Shutdown() {
     cmdSystem.RemoveCommand("listShaders");
     cmdSystem.RemoveCommand("reloadShader");
 
-    for (int i = 0; i < shaderHashMap.Count(); i++) {
-        const auto *entry = shaderManager.shaderHashMap.GetByIndex(i);
-        Shader *shader = entry->second;
-
+    for (const auto &entry : shaderManager.shaderHashMap) {
+        Shader *shader = entry.second;
         shader->Purge();
     }
 
@@ -366,9 +364,8 @@ void ShaderManager::InstantiateEngineShaders() {
 }
 
 void ShaderManager::ReloadShaders() {
-    for (int i = 0; i < shaderHashMap.Count(); i++) {
-        const auto *entry = shaderManager.shaderHashMap.GetByIndex(i);
-        Shader *shader = entry->second;
+    for (const auto &entry : shaderHashMap) {
+        Shader *shader = entry.second;
 
         if (shader->IsOriginalShader()) {
             shader->Reload();
@@ -377,9 +374,8 @@ void ShaderManager::ReloadShaders() {
 }
 
 void ShaderManager::ReloadLitSurfaceShaders() {
-    for (int i = 0; i < shaderHashMap.Count(); i++) {
-        const auto *entry = shaderManager.shaderHashMap.GetByIndex(i);
-        Shader *shader = entry->second;
+    for (const auto &entry : shaderHashMap) {
+        Shader *shader = entry.second;
 
         if (shader->IsOriginalShader()) {
             if (shader->flags & Shader::Flag::LitSurface) {
@@ -392,9 +388,8 @@ void ShaderManager::ReloadLitSurfaceShaders() {
 void ShaderManager::DestroyUnusedShaders() {
     Array<Shader *> removeArray;
 
-    for (int i = 0; i < shaderHashMap.Count(); i++) {
-        const auto *entry = shaderHashMap.GetByIndex(i);
-        Shader *shader = entry->second;
+    for (const auto &entry : shaderHashMap) {
+        Shader *shader = entry.second;
 
         if (shader && !shader->permanence && shader->refCount == 0) {
             removeArray.Append(shader);
@@ -565,11 +560,8 @@ void ShaderManager::Cmd_ReloadShader(const CmdArgs &args) {
     }
 
     if (!Str::Icmp(args.Argv(1), "all")) {
-        int count = shaderManager.shaderHashMap.Count();
-
-        for (int i = 0; i < count; i++) {
-            const auto *entry = shaderManager.shaderHashMap.GetByIndex(i);
-            Shader *shader = entry->second;
+        for (const auto &entry : shaderManager.shaderHashMap) {
+            Shader *shader = entry.second;
             if (shader->IsOriginalShader()) {
                 shader->Reload();
             }

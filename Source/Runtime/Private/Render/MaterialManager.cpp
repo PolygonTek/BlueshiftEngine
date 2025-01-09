@@ -126,9 +126,8 @@ void MaterialManager::Shutdown() {
     cmdSystem.RemoveCommand("listMaterials");
     cmdSystem.RemoveCommand("reloadMaterial");
     
-    for (int i = 0; i < materialHashMap.Count(); i++) {
-        const auto *entry = materialManager.materialHashMap.GetByIndex(i);
-        Material *material = entry->second;
+    for (const auto &entry : materialHashMap) {
+        Material *material = entry.second;
         material->Purge();
     }
     
@@ -138,9 +137,8 @@ void MaterialManager::Shutdown() {
 void MaterialManager::DestroyUnusedMaterials() {
     Array<Material *> removeArray;
 
-    for (int i = 0; i < materialHashMap.Count(); i++) {
-        const auto *entry = materialHashMap.GetByIndex(i);
-        Material *material = entry->second;
+    for (const auto &entry : materialHashMap) {
+        Material *material = entry.second;
 
         if (material && !material->permanence && material->refCount == 0) {
             removeArray.Append(material);
@@ -365,11 +363,8 @@ void MaterialManager::Cmd_ReloadMaterial(const CmdArgs &args) {
     }
 
     if (!Str::Icmp(args.Argv(1), "all")) {
-        int count = materialManager.materialHashMap.Count();
-
-        for (int i = 0; i < count; i++) {
-            const auto *entry = materialManager.materialHashMap.GetByIndex(i);
-            Material *material = entry->second;
+        for (const auto &entry : materialManager.materialHashMap) {
+            Material *material = entry.second;
             if (!material) {
                 continue;
             }

@@ -96,9 +96,8 @@ void SkeletonManager::ReleaseSkeleton(Skeleton *skeleton, bool immediateDestroy)
 void SkeletonManager::DestroyUnusedSkeletons() {
     Array<Skeleton *> removeArray;
 
-    for (int i = 0; i < skeletonHashMap.Count(); i++) {
-        const auto *entry = skeletonHashMap.GetByIndex(i);
-        Skeleton *skeleton = entry->second;
+    for (const auto &entry : skeletonHashMap) {
+        Skeleton *skeleton = entry.second;
 
         if (skeleton && !skeleton->permanence && skeleton->refCount == 0) {
             removeArray.Append(skeleton);
@@ -171,11 +170,8 @@ void SkeletonManager::Cmd_ReloadSkeleton(const CmdArgs &args) {
     }
 
     if (!Str::Icmp(args.Argv(1), "all")) {
-        int count = skeletonManager.skeletonHashMap.Count();
-
-        for (int i = 0; i < count; i++) {
-            const auto *entry = skeletonManager.skeletonHashMap.GetByIndex(i);
-            Skeleton *skeleton = entry->second;
+        for (const auto &entry : skeletonManager.skeletonHashMap) {
+            Skeleton *skeleton = entry.second;
             skeleton->Reload();
         }
     } else {

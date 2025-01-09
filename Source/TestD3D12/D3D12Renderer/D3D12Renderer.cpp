@@ -347,9 +347,9 @@ void D3D12Renderer::Shutdown() {
     graphicsPsoMap.DeleteContents(true);
     computePsoMap.DeleteContents(true);
 
-    for (int i = 0; i < cachedPsoBlobMap.Count(); ++i) {
-        auto *entry = cachedPsoBlobMap.GetByIndex(i);
-        SAFE_RELEASE(entry->second);
+    for (auto &entry : cachedPsoBlobMap) {
+        ID3DBlob *blob = entry.second;
+        SAFE_RELEASE(blob);
     }
 
     DestroySwapChain(swapChain);

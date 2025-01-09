@@ -37,10 +37,8 @@ void AnimControllerManager::Init() {
 }
 
 void AnimControllerManager::Shutdown() {
-    for (int i = 0; i < animControllerHashMap.Count(); i++) {
-        const auto *entry = animControllerManager.animControllerHashMap.GetByIndex(i);
-        AnimController *animController = entry->second;
-        
+    for (const auto &entry : animControllerHashMap) {
+        AnimController *animController = entry.second;
         animController->Purge();
     }
 
@@ -91,9 +89,8 @@ void AnimControllerManager::ReleaseAnimController(AnimController *animController
 void AnimControllerManager::DestroyUnusedAnimControllers() {
     Array<AnimController *> removeArray;
 
-    for (int i = 0; i < animControllerHashMap.Count(); i++) {
-        const auto *entry = animControllerHashMap.GetByIndex(i);
-        AnimController *animController = entry->second;
+    for (const auto &entry : animControllerHashMap) {
+        AnimController *animController = entry.second;
 
         if (animController && !animController->permanence && animController->refCount == 0) {
             removeArray.Append(animController);

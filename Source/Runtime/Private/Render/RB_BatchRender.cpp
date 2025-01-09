@@ -50,10 +50,9 @@ void Batch::SetShaderProperties(const Shader *shader, const StrHashMap<Shader::P
     const auto &propertyInfoHashMap = shader->GetPropertyInfoHashMap();
 
     // Iterate over all shader property specs.
-    for (int i = 0; i < propertyInfoHashMap.Count(); i++) {
-        const auto *entry = propertyInfoHashMap.GetByIndex(i);
-        const auto &key = entry->first;
-        const auto &propInfo = entry->second;
+    for (const auto &entry : propertyInfoHashMap) {
+        const auto &key = entry.first;
+        const auto &propInfo = entry.second;
 
         // Skip if it is a shader define.
         if (propInfo.GetFlags() & Shader::ShaderPropertyInfo::Flag::ShaderDefine) {

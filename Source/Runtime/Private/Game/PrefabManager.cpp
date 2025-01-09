@@ -40,10 +40,8 @@ void PrefabManager::Shutdown() {
         return;
     }
 
-    for (int i = 0; i < prefabHashMap.Count(); i++) {
-        const auto *entry = prefabHashMap.GetByIndex(i);
-        Prefab *prefab = entry->second;
-
+    for (const auto &entry : prefabHashMap) {
+        Prefab *prefab = entry.second;
         Prefab::DestroyInstanceImmediate(prefab);
     }
 

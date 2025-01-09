@@ -34,9 +34,8 @@ void ColliderManager::Init() {
 void ColliderManager::Shutdown() {
     materials.DeleteContents(true);
     
-    for (int i = 0; i < colliderHashMap.Count(); i++) {
-        const auto *entry = colliderManager.colliderHashMap.GetByIndex(i);
-        Collider *collider = entry->second;
+    for (const auto &entry : colliderHashMap) {
+        Collider *collider = entry.second;
         collider->Purge();
         delete collider;
     }
@@ -110,9 +109,8 @@ void ColliderManager::ReleaseCollider(Collider *collider, bool immediateDestroy)
 void ColliderManager::DestroyUnusedColliders() {
     Array<Collider *> removeArray;
 
-    for (int i = 0; i < colliderHashMap.Count(); i++) {
-        const auto *entry = colliderHashMap.GetByIndex(i);
-        Collider *collider = entry->second;
+    for (const auto &entry : colliderHashMap) {
+        Collider *collider = entry.second;
 
         if (collider && collider->refCount == 0) {
             removeArray.Append(collider);

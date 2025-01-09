@@ -98,9 +98,8 @@ void FontFaceFreeType::Purge() {
 }
 
 void FontFaceFreeType::ClearGlyphCaches() {
-    for (int i = 0; i < glyphHashMap.Count(); i++) {
-        const auto *entry = glyphHashMap.GetByIndex(i);
-        FontGlyph *glyph = entry->second;
+    for (const auto &entry : glyphHashMap) {
+        FontGlyph *glyph = entry.second;
 
         materialManager.ReleaseMaterial(glyph->material);
     }
@@ -310,9 +309,8 @@ bool FontFaceFreeType::Write(const char *filename) {
 
     fp->Write(&bitmap, sizeof(bitmap));
 
-    for (int glyphIndex = 0; glyphIndex < glyphHashMap.Count(); glyphIndex++) {
-        const auto *entry = glyphHashMap.GetByIndex(glyphIndex);
-        const FontGlyph *glyph = entry->second;
+    for (const auto &entry : glyphHashMap) {
+        const FontGlyph *glyph = entry.second;
 
         fp->WriteInt32(glyph->charCode);
         fp->WriteInt32(glyph->width);

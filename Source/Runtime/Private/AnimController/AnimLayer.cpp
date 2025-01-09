@@ -30,9 +30,8 @@ AnimLayer::AnimLayer(AnimController *animController, const AnimLayer *animLayer)
     this->blending          = animLayer->blending;
     this->weight            = animLayer->weight;
 
-    for (int i = 0; i < stateHashMap.Count(); i++) {
-        const auto *entry = stateHashMap.GetByIndex(i);
-        AnimState *otherState = entry->second;
+    for (const auto &entry : stateHashMap) {
+        AnimState *otherState = entry.second;
         AnimState *state = new AnimState(this, otherState);
         stateHashMap.Set(state->name, state);
     }
@@ -207,9 +206,8 @@ AnimState *AnimLayer::CreateState(const char *name) {
 }
 
 void AnimLayer::DeleteState(AnimState *state) {
-    /*for (int i = 0; i < stateHashMap.Count(); i++) {
-        const auto *entry = stateHashMap.GetByIndex(i);
-        AnimState *otherState = entry->second;
+    /*for (const auto &entry : stateHashMap) {
+        AnimState *otherState = entry.second;
         
         for (int j = 0; j < otherState->transitions.Count(); j++) {
             AnimTransition *trans = &otherState->transitions[j];

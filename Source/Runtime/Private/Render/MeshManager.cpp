@@ -96,9 +96,8 @@ void MeshManager::Shutdown() {
     cmdSystem.RemoveCommand("listMeshes");
     cmdSystem.RemoveCommand("reloadMesh");
 
-    for (int i = 0; i < meshHashMap.Count(); i++) {
-        const auto *entry = meshManager.meshHashMap.GetByIndex(i);
-        Mesh *mesh = entry->second;
+    for (const auto &entry : meshHashMap) {
+        Mesh *mesh = entry.second;
         mesh->Purge();
         delete mesh;
     }
@@ -119,9 +118,8 @@ void MeshManager::Shutdown() {
 void MeshManager::DestroyUnusedMeshes() {
     Array<Mesh *> removeArray;
 
-    for (int i = 0; i < meshHashMap.Count(); i++) {
-        const auto *entry = meshHashMap.GetByIndex(i);
-        Mesh *mesh = entry->second;
+    for (const auto &entry : meshHashMap) {
+        Mesh *mesh = entry.second;
 
         if (mesh && !mesh->permanence && mesh->refCount == 0) {
             removeArray.Append(mesh);
@@ -293,9 +291,8 @@ Mesh *MeshManager::CreateCombinedMesh(const char *hashName, const Array<BatchSub
 
 void MeshManager::EndLevelLoad() {
 #if 0
-    for (int i = 0; i < meshHashMap.Count(); i++) {
-        const auto *entry = meshManager.meshHashMap.GetByIndex(i);
-        Mesh *mesh = entry->second;
+    for (const auto &entry : meshHashMap) {
+        Mesh *mesh = entry.second;
 
         mesh->CacheStaticDataToGpu();
     }
@@ -317,9 +314,8 @@ void MeshManager::ReinstantiateSkinnedMeshes() {
 void MeshManager::Cmd_ListMeshes(const CmdArgs &args) {
     int count = 0;
 
-    for (int i = 0; i < meshManager.meshHashMap.Count(); i++) {
-        const auto *entry = meshManager.meshHashMap.GetByIndex(i);
-        Mesh *mesh = entry->second;
+    for (const auto &entry : meshManager.meshHashMap) {
+        Mesh *mesh = entry.second;
 
         int numVerts = 0;
         int numTris = 0;
@@ -349,11 +345,8 @@ void MeshManager::Cmd_ReloadMesh(const CmdArgs &args) {
     }
 
     if (!Str::Icmp(args.Argv(1), "all")) {
-        int count = meshManager.meshHashMap.Count();
-
-        for (int i = 0; i < count; i++) {
-            const auto *entry = meshManager.meshHashMap.GetByIndex(i);
-            Mesh *mesh = entry->second;
+        for (const auto &entry : meshManager.meshHashMap) {
+            Mesh *mesh = entry.second;
             mesh->Reload();
         }
     } else {

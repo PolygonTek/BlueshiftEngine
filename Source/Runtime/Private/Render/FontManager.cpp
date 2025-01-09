@@ -94,9 +94,8 @@ void FontManager::ReleaseFont(Font *font, bool immediateDestroy) {
 void FontManager::DestroyUnusedFonts() {
     Array<Font *> removeArray;
 
-    for (int i = 0; i < fontHashMap.Count(); i++) {
-        const auto *entry = fontHashMap.GetByIndex(i);
-        Font *font = entry->second;
+    for (const auto &entry : fontHashMap) {
+        Font *font = entry.second;
 
         if (font && !font->permanence && font->refCount == 0) {
             removeArray.Append(font);

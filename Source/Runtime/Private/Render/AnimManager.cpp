@@ -87,9 +87,8 @@ void AnimManager::DestroyAnim(Anim *anim) {
 void AnimManager::DestroyUnusedAnims() {
     Array<Anim *> removeArray;
 
-    for (int i = 0; i < animHashMap.Count(); i++) {
-        const auto *entry = animHashMap.GetByIndex(i);
-        Anim *anim = entry->second;
+    for (const auto &entry : animHashMap) {
+        Anim *anim = entry.second;
 
         if (anim && anim->refCount == 0) {
             removeArray.Append(anim);
@@ -164,9 +163,8 @@ Anim *AnimManager::GetDefaultAnim(const char *name, const Skeleton *skeleton) {
 }
 
 void AnimManager::ReloadAnims() {
-    for (int i = 0; i < animHashMap.Count(); i++) {
-        const auto *entry = animHashMap.GetByIndex(i);
-        Anim *anim = entry->second;
+    for (const auto &entry : animHashMap) {
+        Anim *anim = entry.second;
 
         if (anim) {
             anim->Reload();
@@ -180,9 +178,8 @@ void AnimManager::Cmd_ListAnims(const CmdArgs &args) {
     int num = 0;
     size_t size = 0;
 
-    for (int i = 0; i < animManager.animHashMap.Count(); i++) {
-        const auto *entry = animManager.animHashMap.GetByIndex(i);
-        Anim *anim = entry->second;
+    for (const auto &entry : animManager.animHashMap) {
+        Anim *anim = entry.second;
 
         if (anim) {
             size_t s = anim->Size();

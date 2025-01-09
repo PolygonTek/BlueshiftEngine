@@ -89,8 +89,8 @@ void Profiler::SyncFrame() {
     writeFrame.frameCount = frameCount;
     writeFrame.time = PlatformTime::Nanoseconds();
 
-    for (int i = 0; i < cpuThreadInfoMap.Count(); i++) {
-        CpuThreadInfo &ti = cpuThreadInfoMap.GetByIndex(i)->second;
+    for (auto &entry : cpuThreadInfoMap) {
+        CpuThreadInfo &ti = entry.second;
 
         ti.frameIndexes[writeFrameIndex] = ti.currentIndex;
     }

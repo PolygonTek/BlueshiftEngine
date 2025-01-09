@@ -38,11 +38,12 @@ void Material::Purge() {
             pass->texture = nullptr;
         }
 
-        for (int i = 0; i < pass->shaderProperties.Count(); i++) {
-            const auto entry = pass->shaderProperties.GetByIndex(i);
-            if (entry->second.texture) {
-                textureManager.ReleaseTexture(entry->second.texture);
-                entry->second.texture = nullptr;
+        for (auto &entry : pass->shaderProperties) {
+            Shader::Property &shaderProperty = entry.second;
+
+            if (shaderProperty.texture) {
+                textureManager.ReleaseTexture(shaderProperty.texture);
+                shaderProperty.texture = nullptr;
             }
         }
 
@@ -308,11 +309,12 @@ void Material::ChangeShader(Shader *shader) {
     const auto &newPropInfoHashMap = shader->GetPropertyInfoHashMap();
 
     // Release textures of old shader properties.
-    for (int i = 0; i < pass->shaderProperties.Count(); i++) {
-        const auto entry = pass->shaderProperties.GetByIndex(i);
-        if (entry->second.texture) {
-            textureManager.ReleaseTexture(entry->second.texture);
-            entry->second.texture = nullptr;
+    for (auto &entry : pass->shaderProperties) {
+        Shader::Property &shaderProperty = entry.second;
+
+        if (shaderProperty.texture) {
+            textureManager.ReleaseTexture(shaderProperty.texture);
+            shaderProperty.texture = nullptr;
         }
     }
 
@@ -325,14 +327,13 @@ void Material::ChangeShader(Shader *shader) {
     // Set shader properties with reusing old shader properties.
     StrHashMap<Shader::Property> newShaderProperties;
 
-    for (int i = 0; i < newPropInfoHashMap.Count(); i++) {
-        const auto newEntry = newPropInfoHashMap.GetByIndex(i);
-        const auto &key = newEntry->first;
-        const auto &propInfo = newEntry->second;
+    for (const auto &newEntry : newPropInfoHashMap) {
+        const auto &key = newEntry.first;
+        const auto &propInfo = newEntry.second;
 
         const auto oldEntry = oldPropInfoHashMap.Get(key);
 
-        if (oldEntry && oldEntry->second.GetType() == newEntry->second.GetType()) {
+        if (oldEntry && oldEntry->second.GetType() == newEntry.second.GetType()) {
             const auto &oldProp = pass->shaderProperties.Get(key)->second;
 
             newShaderProperties.Set(key, oldProp);
@@ -369,10 +370,9 @@ void Material::CommitShaderPropertiesChanged() {
     const auto &shaderPropertyInfos = pass->referenceShader->GetPropertyInfoHashMap();
 
     // List up define list for re-instantiating shader.
-    for (int i = 0; i < shaderPropertyInfos.Count(); i++) {
-        const auto entry = shaderPropertyInfos.GetByIndex(i);
-        const auto &propName = entry->first;
-        const auto &propInfo = entry->second;
+    for (const auto &entry : shaderPropertyInfos) {
+        const auto &propName = entry.first;
+        const auto &propInfo = entry.second;
 
         // property propInfo with shaderDefine allows only bool/enum type.
         if (propInfo.shaderFlags & Shader::ShaderPropertyInfo::Flag::ShaderDefine) {
@@ -395,10 +395,9 @@ void Material::CommitShaderPropertiesChanged() {
     pass->shader = pass->referenceShader->InstantiateShader(defineArray);
 
     // Reload shader's texture.
-    for (int i = 0; i < shaderPropertyInfos.Count(); i++) {
-        const auto entry = shaderPropertyInfos.GetByIndex(i);
-        const auto &propName = entry->first;
-        const auto &propInfo = entry->second;
+    for (const auto &entry : shaderPropertyInfos) {
+        const auto &propName = entry.first;
+        const auto &propInfo = entry.second;
 
         if (propInfo.GetType() == Variant::Type::Guid && propInfo.GetMetaObject()->IsTypeOf(TextureResource::metaObject)) {
             auto *entry = pass->shaderProperties.Get(propName);
@@ -527,10 +526,9 @@ bool Material::ParseShader(Lexer &lexer, Shader *&referenceShader, StrHashMap<Sh
     const auto &shaderPropertyInfos = referenceShader->GetPropertyInfoHashMap();
 
     // Set shader property values.
-    for (int i = 0; i < shaderPropertyInfos.Count(); i++) {
-        const auto entry = shaderPropertyInfos.GetByIndex(i);
-        const auto &propName = entry->first;
-        const auto &propInfo = entry->second;
+    for (const auto &entry : shaderPropertyInfos) {
+        const auto &propName = entry.first;
+        const auto &propInfo = entry.second;
 
         Shader::Property shaderProperty;
 
@@ -774,9 +772,8 @@ void Material::Write(const char *filename) {
 
         const auto &shaderPropertyInfos = pass->shader->GetOriginalShader()->GetPropertyInfoHashMap();
         
-        for (int i = 0; i < shaderPropertyInfos.Count(); i++) {
-            const auto *keyValue = shaderPropertyInfos.GetByIndex(i);
-            const Shader::ShaderPropertyInfo &propInfo = keyValue->second;
+        for (const auto &keyValue : shaderPropertyInfos) {
+            const Shader::ShaderPropertyInfo &propInfo = keyValue.second;
             const char *name = propInfo.GetName();
             const auto *shaderPropEntry = pass->shaderProperties.Get(name);
             const Variant &value = shaderPropEntry->second.data;
