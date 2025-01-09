@@ -25,16 +25,16 @@ enum class MeshType : uint8_t {
 class RenderObject {
 public:
     struct State {
-        MeshType            meshType = MeshType::None;
-        std::shared_ptr<Mesh> mesh;
-        BE1::Mat3x4         worldMatrix;
-        BE1::Vec2           offset;
+        MeshType                meshType = MeshType::None;
+        std::shared_ptr<Mesh>   mesh;
+        BE1::Mat3x4             worldMatrix;
+        BE1::Vec2               offset;
     };
 
-    State &                 GetState() { return state; }
+    State &                     GetState() { return state; }
 
-    void                    Update(const State &state);
+    void                        Update(const State &state);
 
-    State                   state;      // 오브젝트를 렌더링할 때 필요한 실제 상태를 들고 있음 (Update 함수에서 갱신됨)
-    int                     index = -1; // D3D12Renderer::renderObjects 의 인덱스
+    State                       state;      // 오브젝트를 렌더링할 때 필요한 실제 상태를 들고 있음 (Update 함수에서 갱신됨)
+    int                         index = -1; // D3D12Renderer::renderObjects 의 인덱스
 };

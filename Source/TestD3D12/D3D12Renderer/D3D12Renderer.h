@@ -14,7 +14,7 @@
 
 #pragma once
 
-#include "../RHIRenderer.h"
+#include "../RHI.h"
 #include "D3D12Common.h"
 
 #ifdef USE_D3D12_MEMALLOC
@@ -43,7 +43,7 @@ struct D3D12PendingResource {
     RHI::GPUObject *                    objectToDelete = nullptr;
 };
 
-class D3D12Renderer : public RHIRenderer {
+class D3D12Renderer : public RHI::Renderer {
 public:
     virtual void                        Init(HWND hwnd) override;
     virtual void                        Shutdown() override;
@@ -76,8 +76,8 @@ public:
     virtual BE1::Image::Format::Enum    ToUncompressedImageFormat(BE1::Image::Format::Enum imageFormat) const override;
     virtual BE1::Image::Format::Enum    ToCompressedImageFormat(BE1::Image::Format::Enum inFormat, bool useNormalMap) const override;
 
-    D3D12SwapChain *                    CreateSwapChain(HWND hwnd, uint32_t width, uint32_t height, DXGI_FORMAT format);
-    void                                DestroySwapChain(D3D12SwapChain *swapChain);
+    virtual RHI::SwapChain *            CreateSwapChain(HWND hwnd, uint32_t width, uint32_t height, BE1::Image::Format::Enum format) override;
+    virtual void                        DestroySwapChain(RHI::SwapChain *swapChain) override;
 
     virtual RHI::Buffer *               CreateBuffer(RHI::BufferUsage usage, RHI::ResourceFlag flags, uint64_t size, BE1::Image::Format::Enum format, uint32_t stride, const void *data) override;
     virtual void                        DestroyBuffer(RHI::Buffer *buffer, bool immediate = false) override;
@@ -224,10 +224,11 @@ public:
 #endif
 
     // TODO: Renderer 외부 (RenderContext) 로 뺄 것
-    D3D12SwapChain *                    swapChain = nullptr;
+    RHI::SwapChain *                    swapChain = nullptr;
     RHI::Texture *                      mainRTColorMSAATexture = nullptr;
     RHI::Texture *                      mainRTColorTexture = nullptr;
     RHI::Texture *                      mainRTDepthTexture = nullptr;
+    RHI::PipelineState *                imagePSO = nullptr;
 
     uint32_t                            vendorId;
     uint32_t                            deviceId;
@@ -258,8 +259,6 @@ public:
     BE1::HashMap<uint64_t, D3D12PipelineState *> graphicsPsoMap;
     BE1::HashMap<uint64_t, D3D12PipelineState *> computePsoMap;
     BE1::HashMap<uint64_t, ID3DBlob *>  cachedPsoBlobMap;
-
-    RHI::PipelineState *                imagePSO = nullptr;
 
     IDxcCompiler3 *                     dxcCompiler = nullptr;
     IDxcUtils *                         dxcUtils = nullptr;

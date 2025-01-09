@@ -23,7 +23,6 @@ class D3D12Renderer;
 class D3D12CommandListPool;
 class D3D12RootDescriptorPool;
 class D3D12DescriptorPool;
-class D3D12Buffer;
 class VisObject;
 
 class D3D12DynamicAllocation {

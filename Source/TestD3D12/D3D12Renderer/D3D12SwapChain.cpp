@@ -17,11 +17,14 @@
 #include "D3D12DescriptorPool.h"
 #include "D3D12SwapChain.h"
 
-D3D12SwapChain *D3D12Renderer::CreateSwapChain(HWND hwnd, uint32_t width, uint32_t height, DXGI_FORMAT format) {
+RHI::SwapChain *D3D12Renderer::CreateSwapChain(HWND hwnd, uint32_t width, uint32_t height, BE1::Image::Format::Enum format) {
+    DXGI_FORMAT dxgiFormat;
+    ImageFormatToDXGIFormat(format, false, &dxgiFormat);
+
     DXGI_SWAP_CHAIN_DESC1 swapChainDesc = {};
     swapChainDesc.Width = (UINT)width;
     swapChainDesc.Height = (UINT)height;
-    swapChainDesc.Format = format;
+    swapChainDesc.Format = dxgiFormat;
     //swapChainDesc.BufferDesc.RefreshRate.Numerator = m_uiRefreshRate;
     //swapChainDesc.BufferDesc.RefreshRate.Denominator = 1;
     swapChainDesc.BufferUsage = DXGI_USAGE_BACK_BUFFER | DXGI_USAGE_RENDER_TARGET_OUTPUT;
@@ -61,7 +64,7 @@ D3D12SwapChain *D3D12Renderer::CreateSwapChain(HWND hwnd, uint32_t width, uint32
     //hr = dxgiSwapChain3->GetContainingOutput(&dxgiOutput);
 
     D3D12SwapChain *swapChain = new D3D12SwapChain;
-    swapChain->dxgiFormat = format;
+    swapChain->dxgiFormat = dxgiFormat;
     swapChain->dxgiSwapChain = dxgiSwapChain3;
     swapChain->CreateRTVs();
 
@@ -78,6 +81,10 @@ D3D12SwapChain *D3D12Renderer::CreateSwapChain(HWND hwnd, uint32_t width, uint32
     swapChain->scissorRect.h = height;
 
     return swapChain;
+}
+
+void D3D12Renderer::DestroySwapChain(RHI::SwapChain *swapChain) {
+    SAFE_DELETE(swapChain);
 }
 
 void D3D12SwapChain::Release() {

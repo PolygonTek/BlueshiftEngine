@@ -32,7 +32,7 @@ extern "C" { __declspec(dllexport) extern const char *D3D12SDKPath = u8"."; }
 D3D12Renderer *     renderer;
 
 void D3D12Renderer::Init(HWND hwnd) {
-    RHIRenderer::Init(hwnd);
+    RHI::Renderer::Init(hwnd);
 
 #if defined(USE_DEBUG_LAYER) && (defined(_DEBUG) || defined(_DEVELOPMENT))
     bool enableDebugLayer = true;
@@ -299,9 +299,7 @@ void D3D12Renderer::Init(HWND hwnd) {
     UINT backBufferHeight = rc.bottom;
 
     // 스왑 체인 (백버퍼) 생성
-    DXGI_FORMAT dxgiFormat;
-    ImageFormatToDXGIFormat(BE1::Image::Format::RGBA_8_8_8_8, false, &dxgiFormat);
-    swapChain = CreateSwapChain(hwnd, backBufferWidth, backBufferHeight, dxgiFormat);
+    swapChain = CreateSwapChain(hwnd, backBufferWidth, backBufferHeight, BE1::Image::Format::RGBA_8_8_8_8);
 
     CreateMainRenderTextures(backBufferWidth, backBufferHeight);
 
@@ -311,7 +309,7 @@ void D3D12Renderer::Init(HWND hwnd) {
 }
 
 void D3D12Renderer::Shutdown() {
-    RHIRenderer::Shutdown();
+    RHI::Renderer::Shutdown();
 
 #ifdef USE_RENDER_THREAD
     ShutdownRenderThread();
@@ -414,7 +412,7 @@ void D3D12Renderer::CreateMainRenderTextures(uint32_t width, uint32_t height) {
 void D3D12Renderer::InitFullScreenTrianglePSO() {
     BE1::Image::Format::Enum imageFormat = BE1::Image::Format::Unknown;
     bool isSRGB = false;
-    DXGI_FORMAT swapChainDxgiFormat = swapChain->GetDXGIFormat();
+    DXGI_FORMAT swapChainDxgiFormat = static_cast<D3D12SwapChain *>(swapChain)->GetDXGIFormat();
     DXGIFormatToImageFormat(swapChainDxgiFormat, &imageFormat, &isSRGB);
 
     RHI::RenderDest renderDest;
@@ -506,8 +504,8 @@ void D3D12Renderer::BeginFrame() {
     commandList->Reset();
 
     // 뷰포트 & ScissorRect 설정
-    SetViewport(commandList, swapChain->viewportRect);
-    SetScissorRect(commandList, swapChain->scissorRect);
+    SetViewport(commandList, static_cast<D3D12SwapChain *>(swapChain)->viewportRect);
+    SetScissorRect(commandList, static_cast<D3D12SwapChain *>(swapChain)->scissorRect);
 
 #ifdef USE_SECONDARY_COMMAND_LISTS
     //BeginRenderPass(commandList, swapChain, mainRTDepthTexture, BE1::Color4::blue, 1.0f, 0, RHI::ClearFlag::Color | RHI::ClearFlag::Depth);
@@ -617,10 +615,10 @@ D3D12CommandList* D3D12Renderer::FlushCommandList(D3D12CommandList* commandList)
     commandList->Reset();
 
     // 뷰포트 & ScissorRect 설정
-    SetViewport(commandList, swapChain->viewportRect);
-    SetScissorRect(commandList, swapChain->scissorRect);
+    SetViewport(commandList, static_cast<D3D12SwapChain *>(swapChain)->viewportRect);
+    SetScissorRect(commandList, static_cast<D3D12SwapChain *>(swapChain)->scissorRect);
 
-    commandList->GetGraphicsCommandList()->OMSetRenderTargets(1, &swapChain->GetCurrentBackBufferRTVDescriptorHandle(), FALSE, &static_cast<D3D12Texture *>(mainRTDepthTexture)->dsvDescriptors[0].cpuDescriptorHandle);
+    commandList->GetGraphicsCommandList()->OMSetRenderTargets(1, &static_cast<D3D12SwapChain *>(swapChain)->GetCurrentBackBufferRTVDescriptorHandle(), FALSE, &static_cast<D3D12Texture *>(mainRTDepthTexture)->dsvDescriptors[0].cpuDescriptorHandle);
 
     return commandList;
 }
@@ -705,10 +703,6 @@ void D3D12Renderer::FreePendingResources(bool waitPendings) {
 
         tailPendingIndex = (tailPendingIndex + 1) % maxPendingResources;
     }
-}
-
-void D3D12Renderer::DestroySwapChain(D3D12SwapChain *swapChain) {
-    SAFE_DELETE(swapChain);
 }
 
 void D3D12Renderer::SetConstants(RHI::CommandList *commandList, const void *data, uint32_t size, uint32_t offset) {

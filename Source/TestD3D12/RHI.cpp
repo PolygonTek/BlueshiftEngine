@@ -13,31 +13,31 @@
 // limitations under the License.
 
 #include "Precompiled.h"
-#include "RHIRenderer.h"
+#include "RHI.h"
 
-void RHIRenderer::Init(HWND hwnd) {
+void RHI::Renderer::Init(HWND hwnd) {
     SetupStates();
 
     initialized = true;
 }
 
-void RHIRenderer::Shutdown() {
+void RHI::Renderer::Shutdown() {
     initialized = false;
 }
 
-BE1::Image::Format::Enum RHIRenderer::GetMainRTColorFormat() const {
+BE1::Image::Format::Enum RHI::Renderer::GetMainRTColorFormat() const {
     return BE1::Image::Format::RGBA_8_8_8_8;
 }
 
-BE1::Image::Format::Enum RHIRenderer::GetMainRTDepthFormat() const {
+BE1::Image::Format::Enum RHI::Renderer::GetMainRTDepthFormat() const {
     return BE1::Image::Format::Depth_32F;
 }
 
-uint32_t RHIRenderer::GetMainRTSampleCount() const {
+uint32_t RHI::Renderer::GetMainRTSampleCount() const {
     return 1;
 }
 
-void RHIRenderer::SetupStates() {
+void RHI::Renderer::SetupStates() {
     RHI::RasterizerState *rs = &rasterizerStates[to_int(RHI::RasterizerStateType::SolidFrontSided)];
     rs->fillMode = RHI::FillMode::Solid;
     rs->cullMode = RHI::CullMode::Back;
@@ -84,14 +84,14 @@ void RHIRenderer::SetupStates() {
     bs->renderTargets[0].blendOpAlpha = RHI::BlendOp::Add;
 }
 
-RHI::GPUBarrier RHIRenderer::MakeMemoryBarrier(const RHI::GPUResource *resource) {
+RHI::GPUBarrier RHI::Renderer::MakeMemoryBarrier(const RHI::GPUResource *resource) {
     RHI::GPUBarrier barrier;
     barrier.type = RHI::GPUBarrier::Type::Memory;
     barrier.memoryBarrier.resource = resource;
     return barrier;
 }
 
-RHI::GPUBarrier RHIRenderer::MakeBufferBarrier(const RHI::Buffer *buffer, RHI::GPUResourceState stateBefore, RHI::GPUResourceState stateAfter) {
+RHI::GPUBarrier RHI::Renderer::MakeBufferBarrier(const RHI::Buffer *buffer, RHI::GPUResourceState stateBefore, RHI::GPUResourceState stateAfter) {
     RHI::GPUBarrier barrier;
     barrier.type = RHI::GPUBarrier::Type::Buffer;
     barrier.bufferBarrier.buffer = buffer;
@@ -100,7 +100,7 @@ RHI::GPUBarrier RHIRenderer::MakeBufferBarrier(const RHI::Buffer *buffer, RHI::G
     return barrier;
 }
 
-RHI::GPUBarrier RHIRenderer::MakeImageBarrier(const RHI::Texture *texture, RHI::GPUResourceState stateBefore, RHI::GPUResourceState stateAfter, int slice, int mipLevel) {
+RHI::GPUBarrier RHI::Renderer::MakeImageBarrier(const RHI::Texture *texture, RHI::GPUResourceState stateBefore, RHI::GPUResourceState stateAfter, int slice, int mipLevel) {
     RHI::GPUBarrier barrier;
     barrier.type = RHI::GPUBarrier::Type::Image;
     barrier.imageBarrier.texture = texture;
@@ -111,7 +111,7 @@ RHI::GPUBarrier RHIRenderer::MakeImageBarrier(const RHI::Texture *texture, RHI::
     return barrier;
 }
 
-RHI::GPUBarrier RHIRenderer::MakeAliasingBarrier(const RHI::GPUResource *resourceBefore, const RHI::GPUResource *resourceAfter) {
+RHI::GPUBarrier RHI::Renderer::MakeAliasingBarrier(const RHI::GPUResource *resourceBefore, const RHI::GPUResource *resourceAfter) {
     RHI::GPUBarrier barrier;
     barrier.type = RHI::GPUBarrier::Type::Aliasing;
     barrier.aliasingBarrier.resourceBefore = resourceBefore;
@@ -119,7 +119,7 @@ RHI::GPUBarrier RHIRenderer::MakeAliasingBarrier(const RHI::GPUResource *resourc
     return barrier;
 }
 
-RHI::Texture *RHIRenderer::CreateTextureFromFile(RHI::TextureType textureType, RHI::ResourceFlag flags, const char *filename, bool useCompression, bool useNormalMap) {
+RHI::Texture *RHI::Renderer::CreateTextureFromFile(RHI::TextureType textureType, RHI::ResourceFlag flags, const char *filename, bool useCompression, bool useNormalMap) {
     BE1::Image *image = BE1::Image::NewImageFromFile(filename);
     if (!image) {
         return nullptr;
@@ -134,7 +134,7 @@ RHI::Texture *RHIRenderer::CreateTextureFromFile(RHI::TextureType textureType, R
     return texture;
 }
 
-void RHIRenderer::AdjustTextureFormat(bool useCompression, bool useNormalMap, BE1::Image::Format::Enum inFormat, BE1::Image::Format::Enum *outFormat) {
+void RHI::Renderer::AdjustTextureFormat(bool useCompression, bool useNormalMap, BE1::Image::Format::Enum inFormat, BE1::Image::Format::Enum *outFormat) {
     if (BE1::Image::IsDepthFormat(inFormat) || BE1::Image::IsDepthStencilFormat(inFormat)) {
         *outFormat = inFormat;
         return;

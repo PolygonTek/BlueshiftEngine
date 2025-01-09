@@ -14,25 +14,25 @@
 
 #pragma once
 
-#include "RHIRenderer.h"
+#include "RHI.h"
 #include "Mesh.h"
 
 class TriangleMesh : public Mesh {
 public:
     static std::shared_ptr<TriangleMesh> CreateMesh();
-    static void                     DestroyMesh(std::shared_ptr<TriangleMesh> &triangleMesh);
+    static void                 DestroyMesh(std::shared_ptr<TriangleMesh> &triangleMesh);
 
-    virtual void                    InitMesh() override;
-    virtual void                    FreeMesh() override;
+    virtual void                InitMesh() override;
+    virtual void                FreeMesh() override;
 
-    void                            InitPipelineState();
+    void                        InitPipelineState();
 
-    void                            DrawMesh(RHI::CommandList *commandList, const BE1::Vec2 &offset);
-    void                            DrawMeshInstanced(RHI::CommandList *commandList, const BE1::Vec2 *instanceData, int instanceCount);
+    void                        DrawMesh(RHI::CommandList *commandList, const BE1::Vec2 &offset);
+    void                        DrawMeshInstanced(RHI::CommandList *commandList, const BE1::Vec2 *instanceData, int instanceCount);
 
-    RHI::Texture *                  texture = nullptr;
-    RHI::VertexBuffer *             vertexBuffer = nullptr;
-    RHI::IndexBuffer *              indexBuffer = nullptr; 
-    RHI::PipelineState *            singlePSO = nullptr;
-    RHI::PipelineState *            instancingPSO = nullptr;
+    RHI::Texture *              texture = nullptr;
+    RHI::VertexBuffer *         vertexBuffer = nullptr;
+    RHI::IndexBuffer *          indexBuffer = nullptr; 
+    RHI::PipelineState *        singlePSO = nullptr;
+    RHI::PipelineState *        instancingPSO = nullptr;
 };

@@ -31,6 +31,8 @@ public:
     virtual uint32_t                GetWidth() const { return viewportRect.w; }
     virtual uint32_t                GetHeight() const { return viewportRect.h; }
 
+    virtual bool                    IsSwapChainSupportsHDR() const override;
+
     virtual void                    Resize(uint32_t width, uint32_t height) override;
     virtual void                    SwapBuffers(bool vsync) override;
 
@@ -38,8 +40,6 @@ public:
     const D3D12_CPU_DESCRIPTOR_HANDLE &GetCurrentBackBufferRTVDescriptorHandle() const { return backBufferRTVs[currentBackBufferIndex]; }
 
     DXGI_FORMAT                     GetDXGIFormat() const { return dxgiFormat; }
-
-    bool                            IsSwapChainSupportsHDR() const;
 
     static constexpr int            NumSwapChainBuffers = 3;
 

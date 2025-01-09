@@ -5,8 +5,8 @@ project(TestD3D12)
 set(SRC_FILES
     Precompiled.h
     Precompiled.cpp
-    RHIRenderer.h
-    RHIRenderer.cpp
+    RHI.h
+    RHI.cpp
     D3D12Renderer/D3D12Common.h
     D3D12Renderer/D3D12Renderer.h
     D3D12Renderer/D3D12Renderer.cpp
