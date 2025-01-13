@@ -18,6 +18,7 @@
 #include "D3D12VertexBuffer.h"
 #include "D3D12IndexBuffer.h"
 #include "D3D12PipelineState.h"
+#include "D3D12RootDescriptorPool.h"
 
 class D3D12CommandListPool;
 
@@ -28,12 +29,17 @@ class D3D12CommandList : public RHI::CommandList {
 public:
     virtual void                    Reset(bool resetCacheStates = true, const RHI::CommandList *primaryCommandList = nullptr) override;
 
+    virtual void                    Close() override;
+    virtual void                    Execute(RHI::CommandQueueType queueType) override;
+    virtual void                    ExecuteSecondary(RHI::CommandList *primaryCommandList, const RHI::FrameThreadData *frameThreadData) override;
     virtual void                    CloseAndExecute(RHI::CommandQueueType queueType) override;
-    virtual void                    CloseAndExecuteSecondary(RHI::CommandList *primaryCommandList) override;
+    virtual void                    CloseAndExecuteSecondary(RHI::CommandList *primaryCommandList, const RHI::FrameThreadData *frameThreadData) override;
 
-    virtual int                     GetThreadIndex() const override;
+    virtual RHI::FrameThreadData *  GetFrameThreadData() const override;
 
     D3D12_COMMAND_LIST_TYPE         GetCommandListType() const;
+
+    D3D12CommandListPool *          GetParentPool() const { return parentPool; }
 
                                     // NOTE: PIX_SCOPED_EVENT 매크로에서 사용하기 위해, 포인터가 아닌 포인터 참조를 리턴하도록 한다.
     ID3D12CommandList *&            GetCommandList() { return commandList; }
@@ -134,19 +140,42 @@ BE_INLINE void D3D12CommandList::Reset(bool resetCacheStates, const RHI::Command
 #endif
 }
 
-BE_INLINE void D3D12CommandList::CloseAndExecute(RHI::CommandQueueType queueType) {
-    assert(queueType < RHI::CommandQueueType::Count);
-
+BE_INLINE void D3D12CommandList::Close() {
     HRESULT hr = GetGraphicsCommandList()->Close();
     assert(SUCCEEDED(hr));
+}
 
+BE_INLINE void D3D12CommandList::Execute(RHI::CommandQueueType queueType) {
+    assert(queueType < RHI::CommandQueueType::Count);
     ID3D12CommandList *execCommandLists[] = { commandList };
     renderer->commandQueues[to_int(queueType)]->ExecuteCommandLists(COUNT_OF(execCommandLists), execCommandLists);
 }
 
-BE_INLINE void D3D12CommandList::CloseAndExecuteSecondary(RHI::CommandList *primaryCommandList) {
+BE_INLINE void D3D12CommandList::ExecuteSecondary(RHI::CommandList *primaryCommandList, const RHI::FrameThreadData *frameThreadData) {
+    // ExecuteBundle 을 실행하기 전에 Primary CommandList 의 루트 디스크립터 힙을 지정한다.
+    ID3D12DescriptorHeap *descriptorHeaps[] = { static_cast<const D3D12FrameThreadData *>(frameThreadData)->rootDescriptorPool->descriptorHeap };
+    static_cast<D3D12CommandList *>(primaryCommandList)->SetDescriptorHeaps(COUNT_OF(descriptorHeaps), descriptorHeaps);
+
+    D3D12CommandList *d3d12PrimaryCommandList = static_cast<D3D12CommandList *>(primaryCommandList);
+    d3d12PrimaryCommandList->GetGraphicsCommandList()->ExecuteBundle(GetGraphicsCommandList());
+}
+
+BE_INLINE void D3D12CommandList::CloseAndExecute(RHI::CommandQueueType queueType) {
     HRESULT hr = GetGraphicsCommandList()->Close();
     assert(SUCCEEDED(hr));
+
+    assert(queueType < RHI::CommandQueueType::Count);
+    ID3D12CommandList *execCommandLists[] = { commandList };
+    renderer->commandQueues[to_int(queueType)]->ExecuteCommandLists(COUNT_OF(execCommandLists), execCommandLists);
+}
+
+BE_INLINE void D3D12CommandList::CloseAndExecuteSecondary(RHI::CommandList *primaryCommandList, const RHI::FrameThreadData *frameThreadData) {
+    HRESULT hr = GetGraphicsCommandList()->Close();
+    assert(SUCCEEDED(hr));
+
+    // ExecuteBundle 을 실행하기 전에 Primary CommandList 의 루트 디스크립터 힙을 지정한다.
+    ID3D12DescriptorHeap *descriptorHeaps[] = { static_cast<const D3D12FrameThreadData *>(frameThreadData)->rootDescriptorPool->descriptorHeap };
+    static_cast<D3D12CommandList *>(primaryCommandList)->SetDescriptorHeaps(COUNT_OF(descriptorHeaps), descriptorHeaps);
 
     D3D12CommandList *d3d12PrimaryCommandList = static_cast<D3D12CommandList *>(primaryCommandList);
     d3d12PrimaryCommandList->GetGraphicsCommandList()->ExecuteBundle(GetGraphicsCommandList());

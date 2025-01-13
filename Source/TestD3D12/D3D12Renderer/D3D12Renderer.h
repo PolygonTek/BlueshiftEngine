@@ -23,19 +23,11 @@
 
 #include "D3D12SwapChain.h"
 #include "D3D12FrameData.h"
-#include "../RenderObject.h"
 
 class D3D12Texture;
 class D3D12PipelineState;
 class D3D12CommandList;
 class D3D12DescriptorPool;
-
-#ifdef USE_RENDER_THREAD
-enum class FrameSyncState : uint8_t {
-    WaitingForUpdateCompleted,          // (렌더 스레드가 렌더링이 완료되어) 메인 스레드의 다음 업데이트 작업이 완료되기를 기다리는 상태
-    WaitingForRenderCompleted           // (메인 스레드가 업데이트가 완료되어) 렌더 스레드의 다음 렌더링 작업이 완료되기를 기다리는 상태
-};
-#endif
 
 struct D3D12PendingResource {
     UINT64                              fenceValue = 0;
@@ -48,24 +40,12 @@ public:
     virtual void                        Init(HWND hwnd) override;
     virtual void                        Shutdown() override;
 
-    virtual void                        BeginFrame() override;
-    virtual void                        EndFrame() override;
-    virtual void                        SwapChainBuffers(bool vsync) override;
-
-    virtual void                        OnResize(int width, int height) override;
-
     RHI::ShaderFormat                   GetShaderFormat() const;
-
-    D3D12CommandList *                  FlushCommandList(D3D12CommandList *commandList);
 
     virtual uint64_t                    SignalFence(RHI::CommandQueueType queueType) override;
     virtual bool                        IsFenceComplete(uint64_t checkFenceValue) override;
     virtual void                        WaitFence(uint64_t expectedFenceValue) override;
     virtual void                        Finish(RHI::CommandQueueType queueType) override;
-
-    void                                WaitAllFrameFences();
-
-    D3D12FrameData *                    GetCurrentFrameData() const { return currentFrameData; }
 
     void                                MarkForDelete(RHI::GPUObject *object);
     void                                MarkForRelease(ID3D12Resource *resource);
@@ -75,6 +55,9 @@ public:
     virtual bool                        IsSupportedImageFormat(BE1::Image::Format::Enum imageFormat) const override { return ImageFormatToDXGIFormat(imageFormat, false, nullptr); }
     virtual BE1::Image::Format::Enum    ToUncompressedImageFormat(BE1::Image::Format::Enum imageFormat) const override;
     virtual BE1::Image::Format::Enum    ToCompressedImageFormat(BE1::Image::Format::Enum inFormat, bool useNormalMap) const override;
+
+    virtual RHI::FrameThreadData *      CreateFrameThreadData() override;
+    virtual void                        DestroyFrameThreadData(RHI::FrameThreadData *frameThreadData) override;
 
     virtual RHI::SwapChain *            CreateSwapChain(HWND hwnd, uint32_t width, uint32_t height, BE1::Image::Format::Enum format) override;
     virtual void                        DestroySwapChain(RHI::SwapChain *swapChain) override;
@@ -185,31 +168,6 @@ public:
     void                                PrintMemoryAllocatorStats();
 #endif
 
-    void                                CreateMainRenderTextures(uint32_t width, uint32_t height);
-    void                                InitFullScreenTrianglePSO();
-
-    struct DrawObjectTaskDesc {
-        D3D12Renderer *                 renderer = nullptr;
-        int                             threadIndex = -1;
-        int                             visObjectStartIndex = -1;
-        int                             visObjectEndIndex = -1;
-        D3D12CommandList *              activeCommandList = nullptr;
-    };
-
-    int                                 AddRenderObject(const RenderObject::State &def);
-    void                                UpdateRenderObject(int handle, const RenderObject::State &def);
-    void                                RemoveRenderObject(int handle);
-
-    void                                RenderScene();
-
-    void                                RenderFrame();
-    void                                DrawVisObjects(int threadIndex, D3D12CommandList *commandList, int startIndex, int endIndex);
-    void                                DrawVisObjectsWithoutTask();
-#ifdef USE_RENDER_TASK
-    void                                DrawVisObjectsWithTask(int numTasks);
-    void                                DrawVisObjectsByTask(D3D12Renderer::DrawObjectTaskDesc *taskDesc);
-#endif
-
     static bool                         ImageFormatToDXGIFormat(BE1::Image::Format::Enum imageFormat, bool isSRGB, DXGI_FORMAT *dxgiFormat);
     static bool                         DXGIFormatToImageFormat(DXGI_FORMAT dxgiFormat, BE1::Image::Format::Enum *imageFormat, bool *isSRGB);
     static bool                         IsDepthFormat(DXGI_FORMAT format);
@@ -218,28 +176,19 @@ public:
 
     ID3D12Device5 *                     device = nullptr;
     IDXGIFactory4 *                     dxgiFactory = nullptr;
+    ID3D12Fence *                       fence = nullptr;
+    uint64_t                            fenceValue = 0;
+    HANDLE                              fenceEventHandle = nullptr;
     ID3D12CommandQueue *                commandQueues[to_int(RHI::CommandQueueType::Count)] = {};
     D3D12CommandListPool *              graphicsCommandListPool = nullptr;
-    D3D12CommandList *                  mainCommandList = nullptr;
     D3D12CommandList *                  resourceCommandList = nullptr;
     ID3D12CommandSignature *            drawInstancedIndirectCommandSignature = nullptr;
     ID3D12CommandSignature *            drawIndexedInstancedIndirectCommandSignature = nullptr;
     ID3D12CommandSignature *            dispatchIndirectCommandSignature = nullptr;
     ID3D12CommandSignature *            dispatchMeshIndirectCommandSignature = nullptr;
-
-    ID3D12Fence *                       fence = nullptr;
-    uint64_t                            fenceValue = 0;
-    HANDLE                              fenceEventHandle = nullptr;
 #ifdef USE_D3D12_MEMALLOC
     D3D12MA::Allocator *                allocator = nullptr;
 #endif
-
-    // TODO: Renderer 외부 (RenderContext) 로 뺄 것
-    RHI::SwapChain *                    swapChain = nullptr;
-    RHI::Texture *                      mainRTColorMSAATexture = nullptr;
-    RHI::Texture *                      mainRTColorTexture = nullptr;
-    RHI::Texture *                      mainRTDepthTexture = nullptr;
-    RHI::PipelineState *                imagePSO = nullptr;
 
     uint32_t                            vendorId;
     uint32_t                            deviceId;
@@ -275,38 +224,10 @@ public:
     IDxcUtils *                         dxcUtils = nullptr;
     IDxcLibrary *                       dxcLibrary = nullptr;
 
-    UINT                                frameCount = 0;
-    D3D12FrameData                      frameData[NumFrameResources];
-    D3D12FrameData *                    currentFrameData = nullptr;
-    UINT                                currentFrameIndex = 0;
-
     D3D12PendingResource *              pendingResourceBuffer = nullptr;
     int                                 maxPendingResources = 0;
     int                                 headPendingIndex = 0;
     int                                 tailPendingIndex = 0;
-
-    BE1::Array<RenderObject *>          renderObjects;
-    BE1::Array<DrawObjectTaskDesc>      objectDrawingTaskDescs;
-
-#ifdef USE_RENDER_TASK
-    BE1::TaskManager                    renderTaskManager = BE1::TaskManager(MaxRenderTasks);
-#endif
-
-#ifdef USE_RENDER_THREAD
-    friend unsigned int                 RenderThreadProc(void *param);
-
-    void                                InitRenderThread();
-    void                                ShutdownRenderThread();
-    void                                WaitRenderCompleted();
-
-    BE1::PlatformSRWLock *              smpLock = nullptr;
-    BE1::PlatformCondition *            renderCompletedCondition = nullptr;
-    BE1::PlatformCondition *            updateCompletedCondition = nullptr;
-    BE1::PlatformThread *               renderThread = nullptr;
-    bool                                isStoppingRenderThread = false;
-    int                                 renderFrameIndex = 1;
-    FrameSyncState                      frameSyncState = FrameSyncState::WaitingForUpdateCompleted;
-#endif
 };
 
 extern D3D12Renderer *                  renderer;

@@ -254,13 +254,13 @@ struct RHI {
         ShaderModel                     shaderModel;
         ShaderStage                     shaderStage;
         uint32_t                        shaderTextSize;
-        const char *sourceName;
-        const char *shaderText;
-        const char *entryPoint;
+        const char *                    sourceName;
+        const char *                    shaderText;
+        const char *                    entryPoint;
     };
 
     struct ShaderCompileOutput {
-        byte *compiledShaderData = nullptr;
+        byte *                          compiledShaderData = nullptr;
         uint32_t                        compiledShaderDataSize = 0;
         BE1::Str                        errorMessage;
     };
@@ -385,9 +385,9 @@ struct RHI {
 
     class GPUResource : public GPUObject {
     public:
-        virtual void *GetNativeResource() const = 0;
-        virtual const void *GetNativeBufferObject() const { return nullptr; }
-        virtual const void *GetNativeTextureObject() const { return nullptr; }
+        virtual void *                  GetNativeResource() const = 0;
+        virtual const void *            GetNativeBufferObject() const { return nullptr; }
+        virtual const void *            GetNativeTextureObject() const { return nullptr; }
     };
 
     class Buffer : public GPUResource {
@@ -434,6 +434,7 @@ struct RHI {
     public:
         uint64_t                        hash = 0;
         bool                            graphics;
+        std::atomic_int                 refCount = 1;
     };
 
     class QueryHeap : public GPUObject {
@@ -442,22 +443,22 @@ struct RHI {
     };
 
     enum class GPUResourceState : uint32_t {
-        Undefined = 0,
-        ShaderResource = BIT(0),
-        ShaderResourceCompute = BIT(1),
-        UnorderedAccess = BIT(2),
-        CopySrc = BIT(3),
-        CopyDst = BIT(4),
-        RenderTarget = BIT(5),
-        DepthWrite = BIT(6),
-        DepthRead = BIT(7),
-        ShadingRateSource = BIT(8),
-        VertexBuffer = BIT(9),
-        IndexBuffer = BIT(10),
-        ConstantBuffer = BIT(11),
-        IndirectArgument = BIT(12),
-        RTAccelerationStructure = BIT(13),
-        Prediction = BIT(14)
+        Undefined                       = 0,
+        ShaderResource                  = BIT(0),
+        ShaderResourceCompute           = BIT(1),
+        UnorderedAccess                 = BIT(2),
+        CopySrc                         = BIT(3),
+        CopyDst                         = BIT(4),
+        RenderTarget                    = BIT(5),
+        DepthWrite                      = BIT(6),
+        DepthRead                       = BIT(7),
+        ShadingRateSource               = BIT(8),
+        VertexBuffer                    = BIT(9),
+        IndexBuffer                     = BIT(10),
+        ConstantBuffer                  = BIT(11),
+        IndirectArgument                = BIT(12),
+        RTAccelerationStructure         = BIT(13),
+        Prediction                      = BIT(14)
     };
 
     class GPUBarrier {
@@ -470,11 +471,11 @@ struct RHI {
         };
 
         struct MemoryBarrier {
-            const GPUResource *resource;
+            const GPUResource *         resource;
         };
 
         struct BufferBarrier {
-            const Buffer *buffer;
+            const Buffer *              buffer;
             GPUResourceState            stateBefore;
             GPUResourceState            stateAfter;
         };
@@ -488,8 +489,8 @@ struct RHI {
         };
 
         struct AliasingBarrier {
-            const GPUResource *resourceBefore;
-            const GPUResource *resourceAfter;
+            const GPUResource *         resourceBefore;
+            const GPUResource *         resourceAfter;
         };
 
         Type                            type;
@@ -541,16 +542,16 @@ struct RHI {
     };
 
     struct PipelineStateDesc {
-        const Shader *vs = nullptr;
-        const Shader *ps = nullptr;
-        const Shader *ds = nullptr;
-        const Shader *hs = nullptr;
-        const Shader *gs = nullptr;
-        const InputLayout *inputLayout = nullptr;
-        const RasterizerState *rasterizerState = nullptr;
-        const DepthStencilState *depthStencilState = nullptr;
-        const BlendState *blendState = nullptr;
-        const RenderDest *renderDest = nullptr;
+        const Shader *                  vs = nullptr;
+        const Shader *                  ps = nullptr;
+        const Shader *                  ds = nullptr;
+        const Shader *                  hs = nullptr;
+        const Shader *                  gs = nullptr;
+        const InputLayout *             inputLayout = nullptr;
+        const RasterizerState *         rasterizerState = nullptr;
+        const DepthStencilState *       depthStencilState = nullptr;
+        const BlendState *              blendState = nullptr;
+        const RenderDest *              renderDest = nullptr;
         PrimitiveTopology               primitiveTopology = PrimitiveTopology::TriangleList;
         uint32_t                        sampleMask = 0xffffffff;
     };
@@ -668,10 +669,8 @@ struct RHI {
     public:
         virtual ~SwapChain() = 0 {};
 
-        virtual uint32_t                GetWidth() const = 0;
-        virtual uint32_t                GetHeight() const = 0;
-
         virtual bool                    IsSwapChainSupportsHDR() const = 0;
+        virtual bool                    GetFormat(BE1::Image::Format::Enum *imageFormat, bool *isSRGB) const = 0;
 
         virtual void                    Resize(uint32_t width, uint32_t height) = 0;
         virtual void                    SwapBuffers(bool vsync) = 0;
@@ -689,14 +688,32 @@ struct RHI {
         Count
     };
 
+    class FrameThreadData;
     class CommandList {
     public:
         virtual void                    Reset(bool resetCacheStates = true, const CommandList *primaryCommandList = nullptr) = 0;
 
+        virtual void                    Close() = 0;
+        virtual void                    Execute(RHI::CommandQueueType queueType) = 0;
+        virtual void                    ExecuteSecondary(RHI::CommandList *primaryCommandList, const RHI::FrameThreadData *frameThreadData) = 0;
         virtual void                    CloseAndExecute(RHI::CommandQueueType queueType) = 0;
-        virtual void                    CloseAndExecuteSecondary(RHI::CommandList *primaryCommandList) = 0;
+        virtual void                    CloseAndExecuteSecondary(RHI::CommandList *primaryCommandList, const RHI::FrameThreadData *frameThreadData) = 0;
 
-        virtual int                     GetThreadIndex() const = 0;
+        virtual FrameThreadData *       GetFrameThreadData() const = 0;
+    };
+
+    class FrameThreadData {
+    public:
+        virtual void                    BeginFrame() = 0;
+
+        virtual ConstantBuffer *        AllocConstant(uint32_t size) = 0;
+        virtual VertexBuffer *          AllocVertex(uint32_t vertexSize, uint32_t count) = 0;
+        virtual IndexBuffer *           AllocIndex(uint32_t indexSize, uint32_t count) = 0;
+        virtual Buffer *                AllocBuffer(bool shaderStorage, BE1::Image::Format::Enum format, uint32_t structureByteStride, uint32_t count) = 0;
+
+        virtual CommandList *           AllocGraphicsCommandList(RHI::CommandListType type = RHI::CommandListType::Primary) = 0;
+
+        virtual CommandList *           BeginSecondaryCommandList(const RHI::CommandList *primaryCommandList) = 0;
     };
 
     enum class RasterizerStateType {
@@ -720,9 +737,6 @@ struct RHI {
         Count
     };
 
-    class Context {
-    };
-
     class Renderer {
     public:
         virtual void                    Init(HWND hwnd);
@@ -730,123 +744,116 @@ struct RHI {
 
         bool                            IsInitialized() const { return initialized; }
 
-        virtual void                    BeginFrame() = 0;
-        virtual void                    EndFrame() = 0;
-        virtual void                    SwapChainBuffers(bool vsync) = 0;
-
-        virtual void                    OnResize(int width, int height) = 0;
-
         virtual uint64_t                SignalFence(RHI::CommandQueueType queueType) = 0;
         virtual bool                    IsFenceComplete(uint64_t checkFenceValue) = 0;
         virtual void                    WaitFence(uint64_t expectedFenceValue) = 0;
         virtual void                    Finish(RHI::CommandQueueType queueType) = 0;
 
-        const RHI::RasterizerState *    GetRasterizerState(RHI::RasterizerStateType type) const { return &rasterizerStates[to_int(type)]; }
-        const RHI::DepthStencilState *  GetDepthStencilState(RHI::DepthStencilStateType type) const { return &depthStencilStates[to_int(type)]; }
-        const RHI::BlendState *         GetBlendState(RHI::BlendStateType type) const { return &blendStates[to_int(type)]; }
-
-        BE1::Image::Format::Enum        GetMainRTColorFormat() const;
-        BE1::Image::Format::Enum        GetMainRTDepthFormat() const;
-        uint32_t                        GetMainRTSampleCount() const;
+        const RasterizerState *         GetRasterizerState(RasterizerStateType type) const { return &rasterizerStates[to_int(type)]; }
+        const DepthStencilState *       GetDepthStencilState(DepthStencilStateType type) const { return &depthStencilStates[to_int(type)]; }
+        const BlendState *              GetBlendState(BlendStateType type) const { return &blendStates[to_int(type)]; }
 
         virtual bool                    IsSupportedImageFormat(BE1::Image::Format::Enum imageFormat) const = 0;
         virtual BE1::Image::Format::Enum ToUncompressedImageFormat(BE1::Image::Format::Enum imageFormat) const = 0;
         virtual BE1::Image::Format::Enum ToCompressedImageFormat(BE1::Image::Format::Enum inFormat, bool useNormalMap) const = 0;
 
-        virtual RHI::SwapChain *        CreateSwapChain(HWND hwnd, uint32_t width, uint32_t height, BE1::Image::Format::Enum format) = 0;
-        virtual void                    DestroySwapChain(RHI::SwapChain *swapChain) = 0;
+        virtual RHI::FrameThreadData *  CreateFrameThreadData() = 0;
+        virtual void                    DestroyFrameThreadData(RHI::FrameThreadData *frameThreadData) = 0;
 
-        virtual RHI::Buffer *           CreateBuffer(RHI::BufferUsage usage, RHI::ResourceFlag flags, uint64_t size, BE1::Image::Format::Enum format, uint32_t stride, const void *data) = 0;
-        virtual void                    DestroyBuffer(RHI::Buffer *buffer, bool immediate = false) = 0;
+        virtual SwapChain *             CreateSwapChain(HWND hwnd, uint32_t width, uint32_t height, BE1::Image::Format::Enum format) = 0;
+        virtual void                    DestroySwapChain(SwapChain *swapChain) = 0;
 
-        virtual RHI::VertexBuffer *     CreateVertexBuffer(RHI::BufferUsage usage, uint32_t vertexSize, uint32_t numVerts, void *data) = 0;
-        virtual void                    DestroyVertexBuffer(RHI::VertexBuffer *vertexBuffer, bool immediate = false) = 0;
+        virtual Buffer *                CreateBuffer(BufferUsage usage, ResourceFlag flags, uint64_t size, BE1::Image::Format::Enum format, uint32_t stride, const void *data) = 0;
+        virtual void                    DestroyBuffer(Buffer *buffer, bool immediate = false) = 0;
 
-        virtual RHI::IndexBuffer *      CreateIndexBuffer(RHI::BufferUsage usage, uint32_t indexSize, uint32_t numIndexes, void *data) = 0;
-        virtual void                    DestroyIndexBuffer(RHI::IndexBuffer *indexBuffer, bool immediate = false) = 0;
+        virtual VertexBuffer *          CreateVertexBuffer(BufferUsage usage, uint32_t vertexSize, uint32_t numVerts, void *data) = 0;
+        virtual void                    DestroyVertexBuffer(VertexBuffer *vertexBuffer, bool immediate = false) = 0;
 
-        virtual RHI::ConstantBuffer *   CreateConstantBuffer(RHI::BufferUsage usage, uint32_t size, void *data) = 0;
-        virtual void                    DestroyConstantBuffer(RHI::ConstantBuffer *constantBuffer, bool immediate = false) = 0;
+        virtual IndexBuffer *           CreateIndexBuffer(BufferUsage usage, uint32_t indexSize, uint32_t numIndexes, void *data) = 0;
+        virtual void                    DestroyIndexBuffer(IndexBuffer *indexBuffer, bool immediate = false) = 0;
+
+        virtual ConstantBuffer *        CreateConstantBuffer(BufferUsage usage, uint32_t size, void *data) = 0;
+        virtual void                    DestroyConstantBuffer(ConstantBuffer *constantBuffer, bool immediate = false) = 0;
 
         void                            AdjustTextureFormat(bool useCompression, bool useNormalMap, BE1::Image::Format::Enum inFormat, BE1::Image::Format::Enum *outFormat);
 
-        virtual RHI::Texture *          CreateTexture(RHI::TextureType textureType, RHI::ResourceFlag flags, const BE1::Image *image, RHI::ClearValue &clearValue, uint32_t sampleCount = 1, RHI::GPUResourceState initialState = RHI::GPUResourceState::Undefined) = 0;
-        virtual RHI::Texture *          CreateTexture(RHI::TextureType textureType, RHI::ResourceFlag flags, const BE1::Image *image, BE1::Image::Format::Enum dstFormat, bool useMipmaps) = 0;
-        virtual RHI::Texture *          CreateTextureFromFile(RHI::TextureType textureType, RHI::ResourceFlag flags, const char *filename, bool useCompression = true, bool useNormalMap = false);
-        virtual void                    DestroyTexture(RHI::Texture *texture, bool immediate = false) = 0;
-        virtual void                    GetTextureImage2D(RHI::Texture *texture, int level, BE1::Image::Format::Enum imageFormat, void *outPixels) = 0;
-        virtual bool                    SetTextureSubImage2D(RHI::Texture *texture, int level, int x, int y, int width, int height, BE1::Image::Format::Enum imageFormat, const void *pixels) = 0;
-        virtual bool                    SetTextureSubImage3D(RHI::Texture *texture, int level, int x, int y, int z, int width, int height, int depth, BE1::Image::Format::Enum imageFormat, const void *pixels) = 0;
+        virtual Texture *               CreateTexture(TextureType textureType, ResourceFlag flags, const BE1::Image *image, ClearValue &clearValue, uint32_t sampleCount = 1, GPUResourceState initialState = GPUResourceState::Undefined) = 0;
+        virtual Texture *               CreateTexture(TextureType textureType, ResourceFlag flags, const BE1::Image *image, BE1::Image::Format::Enum dstFormat, bool useMipmaps) = 0;
+        virtual Texture *               CreateTextureFromFile(TextureType textureType, ResourceFlag flags, const char *filename, bool useCompression = true, bool useNormalMap = false);
+        virtual void                    DestroyTexture(Texture *texture, bool immediate = false) = 0;
+        virtual void                    GetTextureImage2D(Texture *texture, int level, BE1::Image::Format::Enum imageFormat, void *outPixels) = 0;
+        virtual bool                    SetTextureSubImage2D(Texture *texture, int level, int x, int y, int width, int height, BE1::Image::Format::Enum imageFormat, const void *pixels) = 0;
+        virtual bool                    SetTextureSubImage3D(Texture *texture, int level, int x, int y, int z, int width, int height, int depth, BE1::Image::Format::Enum imageFormat, const void *pixels) = 0;
 
-        virtual int                     CreateSubresource(RHI::Buffer *buffer, RHI::SubresourceType subresourceType, uint64_t offset = 0, uint64_t size = ~0) = 0;
-        virtual int                     CreateSubresource(RHI::Texture *texture, RHI::SubresourceType type, uint32_t firstSlice = 0, uint32_t sliceCount = ~0, uint32_t firstMipLevel = 0, uint32_t mipCount = ~0) = 0;
+        virtual int                     CreateSubresource(Buffer *buffer, SubresourceType subresourceType, uint64_t offset = 0, uint64_t size = ~0) = 0;
+        virtual int                     CreateSubresource(Texture *texture, SubresourceType type, uint32_t firstSlice = 0, uint32_t sliceCount = ~0, uint32_t firstMipLevel = 0, uint32_t mipCount = ~0) = 0;
 
-        virtual RHI::Shader *           CreateShader(RHI::ShaderModel shaderModel, RHI::ShaderStage shaderStage, const char *sourceName, const char *shaderText, int shaderTextSize, const char *entryPoint) = 0;
-        virtual RHI::Shader *           CreateShaderFromFile(RHI::ShaderModel shaderModel, RHI::ShaderStage shaderStage, const char *filename, const char *entryPoint) = 0;
-        virtual void                    DestroyShader(RHI::Shader *shader, bool immediate = false) = 0;
+        virtual Shader *                CreateShader(ShaderModel shaderModel, ShaderStage shaderStage, const char *sourceName, const char *shaderText, int shaderTextSize, const char *entryPoint) = 0;
+        virtual Shader *                CreateShaderFromFile(ShaderModel shaderModel, ShaderStage shaderStage, const char *filename, const char *entryPoint) = 0;
+        virtual void                    DestroyShader(Shader *shader, bool immediate = false) = 0;
 
-        virtual RHI::Sampler *          CreateSampler(const RHI::SamplerDesc *desc) = 0;
-        virtual void                    DestroySampler(RHI::Sampler *sampler, bool immediate = false) = 0;
+        virtual Sampler *               CreateSampler(const SamplerDesc *desc) = 0;
+        virtual void                    DestroySampler(Sampler *sampler, bool immediate = false) = 0;
 
-        virtual RHI::PipelineState *    CreateGraphicsPSO(const RHI::PipelineStateDesc *desc) = 0;
-        virtual RHI::PipelineState *    CreateComputePSO(const RHI::Shader *computeShader) = 0;
-        virtual void                    DestroyPSO(RHI::PipelineState *pipelineState, bool immediate = false) = 0;
+        virtual PipelineState *         CreateGraphicsPSO(const PipelineStateDesc *desc) = 0;
+        virtual PipelineState *         CreateComputePSO(const Shader *computeShader) = 0;
+        virtual void                    DestroyPSO(PipelineState *pipelineState, bool immediate = false) = 0;
 
-        virtual RHI::QueryHeap *        CreateQueryHeap(const RHI::QueryHeapDesc *desc) = 0;
-        virtual void                    DestroyQueryHeap(RHI::QueryHeap *queryHeap, bool immediate = false) = 0;
+        virtual QueryHeap *             CreateQueryHeap(const QueryHeapDesc *desc) = 0;
+        virtual void                    DestroyQueryHeap(QueryHeap *queryHeap, bool immediate = false) = 0;
 
-        virtual void                    SetVertexBuffer(RHI::CommandList *commandList, int slot, const RHI::VertexBuffer *vertexBuffer) = 0;
-        virtual void                    SetIndexBuffer(RHI::CommandList *commandList, const RHI::IndexBuffer *indexBuffer) = 0;
-        virtual void                    SetConstantBuffer(RHI::CommandList *commandList, int slot, const RHI::ConstantBuffer *constantBuffer) = 0;
-        virtual void                    SetConstants(RHI::CommandList *commandList, const void *data, uint32_t size, uint32_t offset) = 0;
-        virtual void                    SetTexture(RHI::CommandList *commandList, int slot, bool shaderWritable, const RHI::Texture *texture, int subresourceIndex = 0) = 0;
-        virtual void                    SetBuffer(RHI::CommandList *commandList, int slot, bool shaderWritable, const RHI::Buffer *buffer, int subresourceIndex = 0) = 0;
-        virtual void                    SetSampler(RHI::CommandList *commandList, int slot, RHI::Sampler *sampler) = 0;
-        virtual void                    SetPSO(RHI::CommandList *commandList, const RHI::PipelineState *pipelineState) = 0;
-        virtual void                    SetBlendFactor(RHI::CommandList *commandList, const BE1::Color4 &rgba) = 0;
-        virtual void                    SetStencilRef(RHI::CommandList *commandList, uint32_t value) = 0;
-        virtual void                    SetShadingRate(RHI::CommandList *commandList, RHI::ShadingRate shadingRate) = 0;
-        virtual void                    SetViewport(RHI::CommandList *commandList, const BE1::Rect &viewportRect) = 0;
-        virtual void                    SetScissorRect(RHI::CommandList *commandList, const BE1::Rect &scissorRect) = 0;
-        virtual void                    SetDepthBounds(RHI::CommandList *commandList, float depthMin, float depthMax) = 0;
-        virtual void                    BeginQuery(RHI::CommandList *commandList, const RHI::QueryHeap *queryHeap, uint32_t index) = 0;
-        virtual void                    EndQuery(RHI::CommandList *commandList, const RHI::QueryHeap *queryHeap, uint32_t index) = 0;
-        virtual void                    ResolveQuery(RHI::CommandList *commandList, const RHI::QueryHeap *queryHeap, uint32_t index, uint32_t count, const RHI::Buffer *destBuffer, uint64_t destOffset) = 0;
-        virtual void                    ResetQuery(RHI::CommandList *commandList, const RHI::QueryHeap *queryHeap, uint32_t index, uint32_t count) = 0;
-        virtual void                    ClearUAV(RHI::CommandList *commandList, const RHI::GPUResource *resource, uint32_t value) = 0;
-        virtual void                    CopyBuffer(RHI::CommandList *commandList, const RHI::Buffer *dstBuffer, uint32_t dstOffset, const RHI::Buffer *srcBuffer, uint32_t srcOffset, uint32_t size) = 0;
-        virtual void                    CopyTexture(RHI::CommandList *commandList, const RHI::Texture *dstTexture, uint32_t dstSlice, uint32_t dstMipLevel, uint32_t dstX, uint32_t dstY, uint32_t dstZ, const RHI::Texture *srcTexture, uint32_t srcSlice, uint32_t srcMipLevel, uint32_t srcX, uint32_t srcY, uint32_t srcZ, uint32_t width, uint32_t height, uint32_t depth) = 0;
-        virtual void                    Barrier(RHI::CommandList *commandList, const RHI::GPUBarrier *barriers, uint32_t barrierCount) = 0;
-        void                            Barrier(RHI::CommandList *commandList, const RHI::GPUBarrier &barrier) { Barrier(commandList, &barrier, 1); }
-        virtual void                    BeginRenderPass(RHI::CommandList *commandList, const RHI::SwapChain *swapChain, const RHI::Texture *depthStencilTexture, const BE1::Color4 &clearColor = {}, float clearDepth = 0, uint8_t clearStencil = 0, RHI::ClearFlag clearFlags = RHI::ClearFlag::None) = 0;
-        virtual void                    BeginRenderPass(RHI::CommandList *commandList, const RHI::RenderPassImage renderPassImages[], int numRenderPassImages, RHI::RenderPassFlag flags = RHI::RenderPassFlag::None) = 0;
-        virtual void                    EndRenderPass(RHI::CommandList *commandList) = 0;
+        virtual void                    SetVertexBuffer(CommandList *commandList, int slot, const VertexBuffer *vertexBuffer) = 0;
+        virtual void                    SetIndexBuffer(CommandList *commandList, const IndexBuffer *indexBuffer) = 0;
+        virtual void                    SetConstantBuffer(CommandList *commandList, int slot, const ConstantBuffer *constantBuffer) = 0;
+        virtual void                    SetConstants(CommandList *commandList, const void *data, uint32_t size, uint32_t offset) = 0;
+        virtual void                    SetTexture(CommandList *commandList, int slot, bool shaderWritable, const Texture *texture, int subresourceIndex = 0) = 0;
+        virtual void                    SetBuffer(CommandList *commandList, int slot, bool shaderWritable, const Buffer *buffer, int subresourceIndex = 0) = 0;
+        virtual void                    SetSampler(CommandList *commandList, int slot, Sampler *sampler) = 0;
+        virtual void                    SetPSO(CommandList *commandList, const PipelineState *pipelineState) = 0;
+        virtual void                    SetBlendFactor(CommandList *commandList, const BE1::Color4 &rgba) = 0;
+        virtual void                    SetStencilRef(CommandList *commandList, uint32_t value) = 0;
+        virtual void                    SetShadingRate(CommandList *commandList, ShadingRate shadingRate) = 0;
+        virtual void                    SetViewport(CommandList *commandList, const BE1::Rect &viewportRect) = 0;
+        virtual void                    SetScissorRect(CommandList *commandList, const BE1::Rect &scissorRect) = 0;
+        virtual void                    SetDepthBounds(CommandList *commandList, float depthMin, float depthMax) = 0;
+        virtual void                    BeginQuery(CommandList *commandList, const QueryHeap *queryHeap, uint32_t index) = 0;
+        virtual void                    EndQuery(CommandList *commandList, const QueryHeap *queryHeap, uint32_t index) = 0;
+        virtual void                    ResolveQuery(CommandList *commandList, const QueryHeap *queryHeap, uint32_t index, uint32_t count, const Buffer *destBuffer, uint64_t destOffset) = 0;
+        virtual void                    ResetQuery(CommandList *commandList, const QueryHeap *queryHeap, uint32_t index, uint32_t count) = 0;
+        virtual void                    ClearUAV(CommandList *commandList, const GPUResource *resource, uint32_t value) = 0;
+        virtual void                    CopyBuffer(CommandList *commandList, const Buffer *dstBuffer, uint32_t dstOffset, const Buffer *srcBuffer, uint32_t srcOffset, uint32_t size) = 0;
+        virtual void                    CopyTexture(CommandList *commandList, const Texture *dstTexture, uint32_t dstSlice, uint32_t dstMipLevel, uint32_t dstX, uint32_t dstY, uint32_t dstZ, const Texture *srcTexture, uint32_t srcSlice, uint32_t srcMipLevel, uint32_t srcX, uint32_t srcY, uint32_t srcZ, uint32_t width, uint32_t height, uint32_t depth) = 0;
+        virtual void                    Barrier(CommandList *commandList, const GPUBarrier *barriers, uint32_t barrierCount) = 0;
+        void                            Barrier(CommandList *commandList, const GPUBarrier &barrier) { Barrier(commandList, &barrier, 1); }
+        virtual void                    BeginRenderPass(CommandList *commandList, const SwapChain *swapChain, const Texture *depthStencilTexture, const BE1::Color4 &clearColor = {}, float clearDepth = 0, uint8_t clearStencil = 0, ClearFlag clearFlags = ClearFlag::None) = 0;
+        virtual void                    BeginRenderPass(CommandList *commandList, const RenderPassImage renderPassImages[], int numRenderPassImages, RenderPassFlag flags = RenderPassFlag::None) = 0;
+        virtual void                    EndRenderPass(CommandList *commandList) = 0;
 
-        virtual void                    Draw(RHI::CommandList *commandList, uint32_t vertexCount, uint32_t startVertexLocation) = 0;
-        virtual void                    DrawIndexed(RHI::CommandList *commandList, uint32_t indexCount, uint32_t startIndexLocation, uint32_t baseVertexLocation) = 0;
-        virtual void                    DrawInstanced(RHI::CommandList *commandList, uint32_t vertexCount, uint32_t instanceCount, uint32_t startVertexLocation, uint32_t startInstanceLocation) = 0;
-        virtual void                    DrawInstancedIndirect(RHI::CommandList *commandList, const RHI::Buffer *argsBuffer, uint32_t argsOffset) = 0;
-        virtual void                    DrawInstancedIndirectCount(RHI::CommandList *commandList, const RHI::Buffer *argsBuffer, uint32_t argsOffset, const RHI::Buffer *countBuffer, uint32_t countOffset, uint32_t maxCount) = 0;
-        virtual void                    DrawIndexedInstanced(RHI::CommandList *commandList, uint32_t indexCount, uint32_t instanceCount, uint32_t startIndexLocation, uint32_t baseVertexLocation, uint32_t startInstanceLocation) = 0;
-        virtual void                    DrawIndexedInstancedIndirect(RHI::CommandList *commandList, const RHI::Buffer *argsBuffer, uint32_t argsOffset) = 0;
-        virtual void                    DrawIndexedInstancedIndirectCount(RHI::CommandList *commandList, const RHI::Buffer *argsBuffer, uint32_t argsOffset, const RHI::Buffer *countBuffer, uint32_t countOffset, uint32_t maxCount) = 0;
+        virtual void                    Draw(CommandList *commandList, uint32_t vertexCount, uint32_t startVertexLocation) = 0;
+        virtual void                    DrawIndexed(CommandList *commandList, uint32_t indexCount, uint32_t startIndexLocation, uint32_t baseVertexLocation) = 0;
+        virtual void                    DrawInstanced(CommandList *commandList, uint32_t vertexCount, uint32_t instanceCount, uint32_t startVertexLocation, uint32_t startInstanceLocation) = 0;
+        virtual void                    DrawInstancedIndirect(CommandList *commandList, const Buffer *argsBuffer, uint32_t argsOffset) = 0;
+        virtual void                    DrawInstancedIndirectCount(CommandList *commandList, const Buffer *argsBuffer, uint32_t argsOffset, const Buffer *countBuffer, uint32_t countOffset, uint32_t maxCount) = 0;
+        virtual void                    DrawIndexedInstanced(CommandList *commandList, uint32_t indexCount, uint32_t instanceCount, uint32_t startIndexLocation, uint32_t baseVertexLocation, uint32_t startInstanceLocation) = 0;
+        virtual void                    DrawIndexedInstancedIndirect(CommandList *commandList, const Buffer *argsBuffer, uint32_t argsOffset) = 0;
+        virtual void                    DrawIndexedInstancedIndirectCount(CommandList *commandList, const Buffer *argsBuffer, uint32_t argsOffset, const Buffer *countBuffer, uint32_t countOffset, uint32_t maxCount) = 0;
 
-        virtual void                    Dispatch(RHI::CommandList *commandList, uint32_t threadGroupCountX, uint32_t threadGroupCountY, uint32_t threadGroupCountZ) = 0;
-        virtual void                    DispatchIndirect(RHI::CommandList *commandList, const RHI::Buffer *argsBuffer, uint32_t argsOffset) = 0;
-        virtual void                    DispatchMesh(RHI::CommandList *commandList, uint32_t threadGroupCountX, uint32_t threadGroupCountY, uint32_t threadGroupCountZ) = 0;
-        virtual void                    DispatchMeshIndirect(RHI::CommandList *commandList, const RHI::Buffer *argsBuffer, uint32_t argsOffset) = 0;
+        virtual void                    Dispatch(CommandList *commandList, uint32_t threadGroupCountX, uint32_t threadGroupCountY, uint32_t threadGroupCountZ) = 0;
+        virtual void                    DispatchIndirect(CommandList *commandList, const Buffer *argsBuffer, uint32_t argsOffset) = 0;
+        virtual void                    DispatchMesh(CommandList *commandList, uint32_t threadGroupCountX, uint32_t threadGroupCountY, uint32_t threadGroupCountZ) = 0;
+        virtual void                    DispatchMeshIndirect(CommandList *commandList, const Buffer *argsBuffer, uint32_t argsOffset) = 0;
 
-        static RHI::GPUBarrier          MakeMemoryBarrier(const RHI::GPUResource *resource);
-        static RHI::GPUBarrier          MakeBufferBarrier(const RHI::Buffer *buffer, RHI::GPUResourceState stateBefore, RHI::GPUResourceState stateAfter);
-        static RHI::GPUBarrier          MakeImageBarrier(const RHI::Texture *texture, RHI::GPUResourceState stateBefore, RHI::GPUResourceState stateAfter, int slice = -1, int mipLevel = -1);
-        static RHI::GPUBarrier          MakeAliasingBarrier(const RHI::GPUResource *resourceBefore, const RHI::GPUResource *resourceAfter);
+        static GPUBarrier               MakeMemoryBarrier(const GPUResource *resource);
+        static GPUBarrier               MakeBufferBarrier(const Buffer *buffer, GPUResourceState stateBefore, GPUResourceState stateAfter);
+        static GPUBarrier               MakeImageBarrier(const Texture *texture, GPUResourceState stateBefore, GPUResourceState stateAfter, int slice = -1, int mipLevel = -1);
+        static GPUBarrier               MakeAliasingBarrier(const GPUResource *resourceBefore, const GPUResource *resourceAfter);
 
     protected:
         void                            SetupStates();
 
-        RHI::RasterizerState            rasterizerStates[to_int(RHI::RasterizerStateType::Count)];
-        RHI::DepthStencilState          depthStencilStates[to_int(RHI::DepthStencilStateType::Count)];
-        RHI::BlendState                 blendStates[to_int(RHI::BlendStateType::Count)];
+        RasterizerState                 rasterizerStates[to_int(RasterizerStateType::Count)];
+        DepthStencilState               depthStencilStates[to_int(DepthStencilStateType::Count)];
+        BlendState                      blendStates[to_int(BlendStateType::Count)];
         bool                            initialized = false;
     };
 };

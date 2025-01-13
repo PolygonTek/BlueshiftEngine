@@ -16,16 +16,19 @@
 
 #include "D3D12Common.h"
 
+class D3D12FrameThreadData;
 class D3D12CommandList;
 
 class D3D12CommandListPool {
 public:
     D3D12CommandListPool() = default;
-    D3D12CommandListPool(ID3D12Device *device, int threadIndex, D3D12_COMMAND_LIST_TYPE commandListType, uint32_t maxPrimaryCommandLists, uint32_t maxSecondaryCommandLists = 0) { Init(device, threadIndex, commandListType, maxPrimaryCommandLists, maxSecondaryCommandLists); }
+    D3D12CommandListPool(ID3D12Device *device, D3D12FrameThreadData *frameThreadData, D3D12_COMMAND_LIST_TYPE commandListType, uint32_t maxPrimaryCommandLists, uint32_t maxSecondaryCommandLists = 0) { Init(device, frameThreadData, commandListType, maxPrimaryCommandLists, maxSecondaryCommandLists); }
     ~D3D12CommandListPool() { Shutdown(); }
 
-    void                            Init(ID3D12Device *device, int threadIndex, D3D12_COMMAND_LIST_TYPE commandListType, uint32_t maxPrimaryCommandLists, uint32_t maxSecondaryCommandLists = 0);
+    void                            Init(ID3D12Device *device, D3D12FrameThreadData *frameThreadData, D3D12_COMMAND_LIST_TYPE commandListType, uint32_t maxPrimaryCommandLists, uint32_t maxSecondaryCommandLists = 0);
     void                            Shutdown();
+
+    D3D12FrameThreadData *          GetFrameThreadData() const { return frameThreadData; }
 
                                     // Primary 커맨드 리스트 타입 리턴
     D3D12_COMMAND_LIST_TYPE         GetCommandListType() const { return commandListType; }
@@ -34,11 +37,10 @@ public:
     D3D12CommandList *              Alloc(RHI::CommandListType type = RHI::CommandListType::Primary);
     void                            Free(D3D12CommandList *commandList);
 
-    int                             GetThreadIndex() const { return threadIndex; }
-
     int                             UsedCount() const { return usedCount; }
 
 private:
+    D3D12FrameThreadData *          frameThreadData = nullptr;
     D3D12CommandList *              commandListPool = nullptr;
     D3D12_COMMAND_LIST_TYPE         commandListType = D3D12_COMMAND_LIST_TYPE_NONE;
     uint32_t                        maxCommandLists = 0;

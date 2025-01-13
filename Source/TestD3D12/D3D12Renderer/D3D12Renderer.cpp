@@ -23,7 +23,6 @@
 #include "D3D12RootDescriptorPool.h"
 #include "D3D12DescriptorPool.h"
 #include "D3D12Texture.h"
-#include "../VisObject.h"
 
 // D3D12.dll 이 D3D12Core.dll 을 찾기 위한 설정
 extern "C" { __declspec(dllexport) extern const UINT D3D12SDKVersion = 614; }
@@ -195,6 +194,17 @@ void D3D12Renderer::Init(HWND hwnd) {
         supportsCastingFullyTypedFormat = true;
     }
 
+    // Fence 객체 생성
+    hr = renderer->device->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&fence));
+    if (FAILED(hr)) {
+        BE_FATALERROR("CreateFence failed, ERROR: 0x%x", hr);
+    }
+    // Fence 초기값
+    fenceValue = 0;
+
+    // Fence 를 대기하기 위한 이벤트 객체 생성
+    fenceEventHandle = CreateEvent(nullptr, FALSE, FALSE, nullptr);
+
     // Graphics CommandQueue 생성
     D3D12_COMMAND_QUEUE_DESC queueDesc = {};
     queueDesc.Flags = D3D12_COMMAND_QUEUE_FLAG_NONE;
@@ -219,13 +229,9 @@ void D3D12Renderer::Init(HWND hwnd) {
     }
     commandQueues[to_int(RHI::CommandQueueType::Compute)]->SetName(L"ComputeCommandQueue");
 
-#ifdef USE_SECONDARY_COMMAND_LISTS
-    uint32_t maxSecondaryCommandLists = 8;
-#else
-    uint32_t maxSecondaryCommandLists = 0;
-#endif
     // 커맨드 리스트 풀 생성
-    graphicsCommandListPool = new D3D12CommandListPool(device, 0, D3D12_COMMAND_LIST_TYPE_DIRECT, 8, maxSecondaryCommandLists);
+    uint32_t maxSecondaryCommandLists = 8;
+    graphicsCommandListPool = new D3D12CommandListPool(device, nullptr, D3D12_COMMAND_LIST_TYPE_DIRECT, 8, maxSecondaryCommandLists);
 
     // 리소스 생성 용 커맨드 리스트
     resourceCommandList = graphicsCommandListPool->Alloc();
@@ -307,84 +313,13 @@ void D3D12Renderer::Init(HWND hwnd) {
 
     maxPendingResources = 1024;
     pendingResourceBuffer = new D3D12PendingResource[maxPendingResources];
-
-#ifdef USE_RENDER_TASK
-    // 렌더 태스크 스레드 개수는 물리코어 개수를 넘지 않는다.
-    int numCores = BE1::PlatformSystem::NumCPUCores();
-    int numTaskThreads = BE1::Min(numCores, MaxRenderTaskThreads);
-
-    renderTaskManager.Start(numTaskThreads);
-
-    BE_LOG("Rendering task threads (%i) started\n", numTaskThreads);
-#endif
-
-    for (int frameIndex = 0; frameIndex < NumFrameResources; ++frameIndex) {
-        frameData[frameIndex].Init();
-    }
-
-    // Fence 객체 생성
-    hr = device->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&fence));
-    if (FAILED(hr)) {
-        BE_FATALERROR("CreateFence failed, ERROR: 0x%x", hr);
-    }
-    // Fence 초기값
-    fenceValue = 0;
-
-    // Fence 를 대기하기 위한 이벤트 객체 생성
-    fenceEventHandle = CreateEvent(nullptr, FALSE, FALSE, nullptr);
-
-    currentFrameIndex = 0;
-    frameData[currentFrameIndex].SetFenceValue(SignalFence(RHI::CommandQueueType::Graphics));
-
-#ifdef USE_RENDER_THREAD
-    InitRenderThread();
-#endif
-
-    // 윈도우 크기 얻기
-    RECT rc;
-    GetClientRect(hwnd, &rc);
-    UINT backBufferWidth = rc.right;
-    UINT backBufferHeight = rc.bottom;
-
-    // 스왑 체인 (백버퍼) 생성
-    swapChain = CreateSwapChain(hwnd, backBufferWidth, backBufferHeight, BE1::Image::Format::RGBA_8_8_8_8);
-
-    CreateMainRenderTextures(backBufferWidth, backBufferHeight);
-
-    InitFullScreenTrianglePSO();
-
-    renderObjects.Reserve(16384);
 }
 
 void D3D12Renderer::Shutdown() {
     RHI::Renderer::Shutdown();
 
-#ifdef USE_RENDER_THREAD
-    ShutdownRenderThread();
-#endif
-
-#ifdef USE_RENDER_TASK
-    renderTaskManager.Stop();
-#endif
-
     Finish(RHI::CommandQueueType::Graphics);
     Finish(RHI::CommandQueueType::Compute);
-
-    DestroyPSO(imagePSO);
-
-    if (mainRTColorTexture) {
-        DestroyTexture(mainRTColorTexture, true);
-    }
-    if (mainRTColorMSAATexture) {
-        DestroyTexture(mainRTColorMSAATexture, true);
-    }
-    if (mainRTDepthTexture) {
-        DestroyTexture(mainRTDepthTexture, true);
-    }
-
-    for (int frameIndex = 0; frameIndex < NumFrameResources; ++frameIndex) {
-        frameData[frameIndex].Shutdown();
-    }
 
     FreePendingResources(true);
     SAFE_DELETE(pendingResourceBuffer);
@@ -397,8 +332,6 @@ void D3D12Renderer::Shutdown() {
         ID3DBlob *blob = entry.second;
         SAFE_RELEASE(blob);
     }
-
-    DestroySwapChain(swapChain);
 
     SAFE_DELETE(resCpuDescriptorPool);
     SAFE_DELETE(uavCpuDescriptorPool);
@@ -428,11 +361,6 @@ void D3D12Renderer::Shutdown() {
         BE1::PlatformProcess::CloseLibrary(dxcompilerLibrary);
     }
 
-    if (fenceEventHandle) {
-        CloseHandle(fenceEventHandle);
-        fenceEventHandle = nullptr;
-    }
-
     ULONG refCount = device->Release();
     if (refCount > 0) {
         IDXGIDebug1 *pDebug = nullptr;
@@ -444,55 +372,29 @@ void D3D12Renderer::Shutdown() {
     }
 }
 
-void D3D12Renderer::CreateMainRenderTextures(uint32_t width, uint32_t height) {
-    BE1::Image colorImage;
-    colorImage.InitFromMemory(width, height, 1, 1, 1, GetMainRTColorFormat(), BE1::Image::GammaSpace::Linear, nullptr, 0);
-    mainRTColorTexture = CreateTexture(RHI::TextureType::Texture2D, RHI::ResourceFlag::RenderTarget | RHI::ResourceFlag::ShaderResource | RHI::ResourceFlag::UnorderedAccess,
-        &colorImage, RHI::ClearValue::Color(0.0f, 0.0f, 1.0f, 0.0f), 1);
+uint64_t D3D12Renderer::SignalFence(RHI::CommandQueueType queueType) {
+    fenceValue++;
+    renderer->commandQueues[to_int(queueType)]->Signal(fence, fenceValue);
 
-    if (GetMainRTSampleCount() > 1) {
-        mainRTColorMSAATexture = CreateTexture(RHI::TextureType::Texture2D, RHI::ResourceFlag::RenderTarget | RHI::ResourceFlag::ShaderResource,
-            &colorImage, RHI::ClearValue::Color(0.0f, 0.0f, 1.0f, 0.0f), GetMainRTSampleCount());
-    }
-
-    BE1::Image depthStencilImage;
-    depthStencilImage.InitFromMemory(width, height, 1, 1, 1, GetMainRTDepthFormat(), BE1::Image::GammaSpace::Linear, nullptr, 0);
-    mainRTDepthTexture = CreateTexture(RHI::TextureType::Texture2D, RHI::ResourceFlag::DepthStencil,
-        &depthStencilImage, RHI::ClearValue::DepthStencil(1.0f, 0), GetMainRTSampleCount(), RHI::GPUResourceState::DepthWrite);
+    return fenceValue;
 }
 
-void D3D12Renderer::InitFullScreenTrianglePSO() {
-    BE1::Image::Format::Enum imageFormat = BE1::Image::Format::Unknown;
-    bool isSRGB = false;
-    DXGI_FORMAT swapChainDxgiFormat = static_cast<D3D12SwapChain *>(swapChain)->GetDXGIFormat();
-    DXGIFormatToImageFormat(swapChainDxgiFormat, &imageFormat, &isSRGB);
+bool D3D12Renderer::IsFenceComplete(uint64_t checkFenceValue) {
+    UINT64 completedFenceValue = fence->GetCompletedValue();
+    return completedFenceValue < checkFenceValue ? false : true;
+}
 
-    RHI::RenderDest renderDest;
-    renderDest.renderTargetCount = 1;
-    renderDest.renderTargetFormats[0] = imageFormat;
-    renderDest.renderTargetForematSRGBs[0] = isSRGB;
+void D3D12Renderer::WaitFence(uint64_t expectedFenceValue) {
+    UINT64 completedFenceValue = fence->GetCompletedValue();
 
-    RHI::Shader *vs = static_cast<RHI::Shader *>(renderer->CreateShaderFromFile(RHI::ShaderModel::SM_6_0, RHI::ShaderStage::Vertex, "Source/TestD3D12/Shaders/FullScreenTriangle.hlsl", "VSMain"));
-    RHI::Shader *ps = static_cast<RHI::Shader *>(renderer->CreateShaderFromFile(RHI::ShaderModel::SM_6_0, RHI::ShaderStage::Fragment, "Source/TestD3D12/Shaders/FullScreenTriangle.hlsl", "PSMain"));
-
-    if (vs && ps) {
-        RHI::PipelineStateDesc psoDesc;
-        psoDesc.vs = vs;
-        psoDesc.ps = ps;
-        psoDesc.rasterizerState = renderer->GetRasterizerState(RHI::RasterizerStateType::SolidFrontSided);
-        psoDesc.depthStencilState = renderer->GetDepthStencilState(RHI::DepthStencilStateType::Never);
-        psoDesc.blendState = renderer->GetBlendState(RHI::BlendStateType::Opaque);
-        psoDesc.primitiveTopology = RHI::PrimitiveTopology::TriangleList;
-        psoDesc.renderDest = &renderDest;
-        imagePSO = renderer->CreateGraphicsPSO(&psoDesc);
+    if (completedFenceValue < expectedFenceValue) {
+        fence->SetEventOnCompletion(expectedFenceValue, fenceEventHandle);
+        WaitForSingleObject(fenceEventHandle, INFINITE);
     }
+}
 
-    if (vs) {
-        renderer->DestroyShader(vs, true);
-    }
-    if (ps) {
-        renderer->DestroyShader(ps, true);
-    }
+void D3D12Renderer::Finish(RHI::CommandQueueType queueType) {
+    WaitFence(SignalFence(queueType));
 }
 
 void D3D12Renderer::CreateShaderCompiler() {
@@ -538,169 +440,6 @@ void D3D12Renderer::CreateShaderCompiler() {
 
 RHI::ShaderFormat D3D12Renderer::GetShaderFormat() const {
     return RHI::ShaderFormat::HLSL6;
-}
-
-void D3D12Renderer::BeginFrame() {
-    PIX_SCOPED_EVENT(commandQueues[to_int(RHI::CommandQueueType::Graphics)], 0, "D3D12Renderer::BeginFrame");
-
-    currentFrameData = &frameData[currentFrameIndex];
-
-    // 프레임 데이터를 초기화하고, 이전 프레임에 대한 펜스를 기다린다.
-    currentFrameData->BeginFrame();
-
-    // 커맨드 리스트 풀에서 커맨드 리스트를 얻어온다.
-    D3D12CommandList *commandList = currentFrameData->threadData[0].graphicsCommandListPool->Alloc();
-    mainCommandList = commandList;
-
-    // CommandAllocator 를 재사용하도록 리셋하고, CommandList 를 CommandAllocator 를 이용하여 초기 상태로 리셋
-    commandList->Reset();
-
-    // 뷰포트 & ScissorRect 설정
-    SetViewport(commandList, static_cast<D3D12SwapChain *>(swapChain)->viewportRect);
-    SetScissorRect(commandList, static_cast<D3D12SwapChain *>(swapChain)->scissorRect);
-
-#ifdef USE_SECONDARY_COMMAND_LISTS
-    //BeginRenderPass(commandList, swapChain, mainRTDepthTexture, BE1::Color4::blue, 1.0f, 0, RHI::ClearFlag::Color | RHI::ClearFlag::Depth);
-
-    if (GetMainRTSampleCount() > 1) {
-        RHI::RenderPassImage renderPassImages[] = {
-            RHI::RenderPassImage::Color(mainRTColorMSAATexture, 0, RHI::RenderPassImage::LoadAction::Clear),
-            RHI::RenderPassImage::DepthStencil(mainRTDepthTexture, 0, RHI::RenderPassImage::LoadAction::Clear),
-            RHI::RenderPassImage::ResolveColor(mainRTColorTexture, 0, 0)
-        };
-        BeginRenderPass(commandList, renderPassImages, COUNT_OF(renderPassImages));
-    } else {
-        RHI::RenderPassImage renderPassImages[] = {
-            RHI::RenderPassImage::Color(mainRTColorTexture, 0, RHI::RenderPassImage::LoadAction::Clear),
-            RHI::RenderPassImage::DepthStencil(mainRTDepthTexture, 0, RHI::RenderPassImage::LoadAction::Clear)
-        };
-        BeginRenderPass(commandList, renderPassImages, COUNT_OF(renderPassImages));
-    }
-#else
-    // 백버퍼를 렌더 타겟 상태로 전환
-    D3D12_RESOURCE_BARRIER barrier;
-    barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
-    barrier.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
-    barrier.Transition.pResource = swapChain->GetCurrentBackBuffer();
-    barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_PRESENT;
-    barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_RENDER_TARGET;
-    barrier.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
-    commandList->GetGraphicsCommandList()->ResourceBarrier(1, &barrier);
-
-    commandList->GetGraphicsCommandList()->ClearRenderTargetView(swapChain->GetCurrentBackBufferRTVDescriptorHandle(), BE1::Color4::blue, 0, nullptr);
-    commandList->GetGraphicsCommandList()->ClearDepthStencilView(dsvDescriptorHandle, D3D12_CLEAR_FLAG_DEPTH, 1.0f, 0, 0, nullptr);
-    commandList->GetGraphicsCommandList()->OMSetRenderTargets(1, &swapChain->GetCurrentBackBufferRTVDescriptorHandle(), FALSE, &dsvDescriptorHandle);
-
-    // CommandList 기록을 마치고 CommandQueue 로 실행
-    commandList->CloseAndExecute(RHI::CommandQueueType::Graphics);
-#endif
-}
-
-void D3D12Renderer::EndFrame() {
-    PIX_SCOPED_EVENT(commandQueues[to_int(RHI::CommandQueueType::Graphics)], 1, "D3D12Renderer::EndFrame");
-
-    // TODO: 렌더큐에 종료 마킹을 하고, 렌더큐를 실행한다.
-
-#ifdef USE_SECONDARY_COMMAND_LISTS
-    D3D12CommandList *commandList = mainCommandList;
-
-    EndRenderPass(commandList);
-
-    BeginRenderPass(commandList, swapChain, nullptr);
-    SetPSO(commandList, imagePSO);
-    SetTexture(commandList, 0, false, mainRTColorTexture);
-    Draw(commandList, 3, 0);
-    EndRenderPass(commandList);
-#else
-    // 커맨드 리스트 풀에서 커맨드 리스트를 얻어온다.
-    D3D12CommandList *commandList = currentFrameData->threadData[0].graphicsCommandListPool->Alloc();
-
-    // CommandAllocator 를 재사용하도록 리셋하고, CommandList 를 CommandAllocator 를 이용하여 초기 상태로 리셋
-    commandList->Reset(false);
-
-    // 백버퍼 RTV 를 Present 할 수 있는 상태로 전환
-    D3D12_RESOURCE_BARRIER barrier;
-    barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
-    barrier.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
-    barrier.Transition.pResource = swapChain->GetCurrentBackBuffer();
-    barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_RENDER_TARGET;
-    barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_PRESENT;
-    barrier.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
-    commandList->GetGraphicsCommandList()->ResourceBarrier(1, &barrier);
-#endif
-
-    // CommandList 기록을 마치고 CommandQueue 로 실행
-    commandList->CloseAndExecute(RHI::CommandQueueType::Graphics);
-
-    // 이번 프레임에서 수행하는 렌더링 커맨드들에 대한 펜스를 친다.
-    currentFrameData->EndFrame();
-
-    // 백버퍼를 전면버퍼와 교환한다.
-    SwapChainBuffers(false);
-
-    frameCount++;
-
-    currentFrameIndex = frameCount % NumFrameResources;
-
-    // 메인 스레드에서 사용할 수 있도록 이전 프레임에 할당했던 메모리를 초기화한다.
-    frameData[currentFrameIndex].ClearMemAllocs();
-
-    FreePendingResources();
-}
-
-void D3D12Renderer::SwapChainBuffers(bool vsync) {
-    PIX_SCOPED_EVENT(commandQueues[to_int(RHI::CommandQueueType::Graphics)], 2, "D3D12Renderer::SwapChainBuffers");
-
-    swapChain->SwapBuffers(vsync);
-}
-
-D3D12CommandList* D3D12Renderer::FlushCommandList(D3D12CommandList* commandList) {
-    PIX_SCOPED_EVENT(commandQueues[to_int(RHI::CommandQueueType::Graphics)], 3, "D3D12Renderer::FlushCommandList");
-
-    // CommandList 기록을 마치고 CommandQueue 로 실행
-    commandList->CloseAndExecute(RHI::CommandQueueType::Graphics);
-
-    // 커맨드 리스트 풀에서 새로운 커맨드 리스트를 얻어온다.
-    commandList = commandList->parentPool->Alloc();
-
-    // CommandAllocator 를 재사용하도록 리셋하고, CommandList 를 CommandAllocator 를 이용하여 초기 상태로 리셋
-    commandList->Reset();
-
-    // 뷰포트 & ScissorRect 설정
-    SetViewport(commandList, static_cast<D3D12SwapChain *>(swapChain)->viewportRect);
-    SetScissorRect(commandList, static_cast<D3D12SwapChain *>(swapChain)->scissorRect);
-
-    commandList->GetGraphicsCommandList()->OMSetRenderTargets(1, &static_cast<D3D12SwapChain *>(swapChain)->GetCurrentBackBufferRTVDescriptorHandle(), FALSE, &static_cast<D3D12Texture *>(mainRTDepthTexture)->dsvDescriptors[0].cpuDescriptorHandle);
-
-    return commandList;
-}
-
-uint64_t D3D12Renderer::SignalFence(RHI::CommandQueueType queueType) {
-    fenceValue++;
-    commandQueues[to_int(queueType)]->Signal(fence, fenceValue);
-
-    return fenceValue;
-}
-
-bool D3D12Renderer::IsFenceComplete(uint64_t checkFenceValue) {
-    return fence->GetCompletedValue() < checkFenceValue ? false : true;
-}
-
-void D3D12Renderer::WaitFence(uint64_t expectedFenceValue) {
-    if (fence->GetCompletedValue() < expectedFenceValue) {
-        fence->SetEventOnCompletion(expectedFenceValue, fenceEventHandle);
-        WaitForSingleObject(fenceEventHandle, INFINITE);
-    }
-}
-
-void D3D12Renderer::Finish(RHI::CommandQueueType queueType) {
-    WaitFence(SignalFence(queueType));
-}
-
-void D3D12Renderer::WaitAllFrameFences() {
-    for (int frameIndex = 0; frameIndex < NumFrameResources; ++frameIndex) {
-        WaitFence(frameData[frameIndex].GetFenceValue());
-    }
 }
 
 void D3D12Renderer::MarkForDelete(RHI::GPUObject *object) {
@@ -759,40 +498,17 @@ void D3D12Renderer::FreePendingResources(bool waitPendings) {
 
 void D3D12Renderer::SetConstants(RHI::CommandList *commandList, const void *data, uint32_t size, uint32_t offset) {
     D3D12CommandList *d3d12CommandList = static_cast<D3D12CommandList *>(commandList);
-    int threadIndex = d3d12CommandList->GetThreadIndex();
+    D3D12FrameThreadData *threadData = static_cast<D3D12FrameThreadData *>(d3d12CommandList->GetFrameThreadData());
+
+    memcpy(threadData->rootConstants + offset / sizeof(uint32_t), data, size);
 
     int rootParameterIndex = d3d12CommandList->currentPSO->binder.rootParameterBinder.constants;
-
-    D3D12FrameData::DataPerThread &threadData = currentFrameData->threadData[threadIndex];
-    memcpy(threadData.rootConstants + offset / sizeof(uint32_t), data, size);
 
     if (d3d12CommandList->GetCommandListType() == D3D12_COMMAND_LIST_TYPE_COMPUTE) {
         d3d12CommandList->computeRootParametersDirtyMask |= BIT64(rootParameterIndex);
     } else {
         d3d12CommandList->graphicsRootParametersDirtyMask |= BIT64(rootParameterIndex);
     }
-}
-
-void D3D12Renderer::OnResize(int width, int height) {
-#ifdef USE_RENDER_THREAD
-    WaitRenderCompleted();
-#endif
-
-    Finish(RHI::CommandQueueType::Graphics);
-
-    swapChain->Resize(width, height);
-
-    if (mainRTColorTexture) {
-        DestroyTexture(mainRTColorTexture, true);
-    }
-    if (mainRTColorMSAATexture) {
-        DestroyTexture(mainRTColorMSAATexture, true);
-    }
-    if (mainRTDepthTexture) {
-        DestroyTexture(mainRTDepthTexture, true);
-    }
-
-    CreateMainRenderTextures(width, height);
 }
 
 void D3D12Renderer::CreateDevice(IDXGIAdapter1 **adapterPtr) {
@@ -1571,395 +1287,6 @@ void D3D12Renderer::DispatchMeshIndirect(RHI::CommandList *commandList, const RH
     BindRootParameters(d3d12CommandList, false);
     d3d12CommandList->GetGraphicsCommandList()->ExecuteIndirect(dispatchMeshIndirectCommandSignature, 1, static_cast<const D3D12Buffer *>(argsBuffer)->GetResource(), argsOffset, nullptr, 0);
 }
-
-int D3D12Renderer::AddRenderObject(const RenderObject::State &def) {
-    assert(BE1::Engine::IsInMainThread());
-
-    int index = renderObjects.FindNull();
-    if (index == -1) {
-        index = renderObjects.Append(nullptr);
-    }
-
-    UpdateRenderObject(index, def);
-    return index;
-}
-
-void D3D12Renderer::UpdateRenderObject(int index, const RenderObject::State &def) {
-    assert(BE1::Engine::IsInMainThread());
-
-    while (index >= renderObjects.Count()) {
-        renderObjects.Append(nullptr);
-    }
-
-    RenderObject *renderObject = renderObjects[index];
-    if (!renderObject) {
-        renderObject = new RenderObject;
-        renderObject->index = index;
-        renderObjects[index] = renderObject;
-    }
-
-    renderObject->Update(def);
-}
-
-void D3D12Renderer::RemoveRenderObject(int index) {
-    assert(BE1::Engine::IsInMainThread());
-
-    if (!renderObjects.IsValidIndex(index)) {
-        BE_WARNLOG("D3D12Renderer::RemoveRenderObject: invalid index %i\n", index);
-        return;
-    }
-
-    RenderObject *renderObject = renderObjects[index];
-    if (!renderObject) {
-        BE_WARNLOG("D3D12Renderer::RemoveRenderObject: index %i is nullptr\n", index);
-        return;
-    }
-
-    delete renderObjects[index];
-    renderObjects[index] = nullptr;
-}
-
-void D3D12Renderer::RenderScene(/*const D3D12Camera *camera*/) {
-    assert(BE1::Engine::IsInMainThread());
-
-    PIX_CPU_SCOPED_EVENT(3, "D3D12Renderer::RenderScene");
-
-#ifdef USE_RENDER_THREAD
-    WaitRenderCompleted();
-
-    // 렌더 스레드에서 다음 렌더링에 사용할 VisObject 들을 준비한다.
-    // 
-    // TODO: 보이는 오브젝트 수를 계산한다.
-    int numVisObjects = renderObjects.Count();
-
-    D3D12FrameData* writeFrameData = &frameData[currentFrameIndex];
-    // TODO: RenderScene 을 여러번 호출할 수 있어야함
-    VisObject* visObjects = writeFrameData->AllocVisObjects(numVisObjects);
-
-    // TODO 1: 현재 카메라에 기반해 SceneGraph 나 Frustum culling 등으로 렌더링에 사용할 렌더 오브젝트들을 추려낸다. 추려낸 렌더 오브젝트들의 변수는 복사 or (레퍼런스 카운트를 이용한) 공유를 해서 가지고 있어야 한다.
-    for (int i = 0; i < numVisObjects; ++i) {
-        visObjects[i].GetState() = renderObjects[i]->GetState();
-    }
-
-    // TODO 2: 렌더링에 사용할 라이트들도 추려낸다.
-    // TODO 3: 렌더링할 Surface 리스트를 작성한다.
-    // TODO 4: Surface 들을 소팅한다.
-    // TODO 5: 이후에는 Surface 단위로 그려야 한다.
-
-    {
-        BE1::ScopedWriteLock lock(smpLock);
-
-        // (렌더 스레드의) 다음 렌더링이 끝나기를 기다리는 상태로 변경
-        frameSyncState = FrameSyncState::WaitingForRenderCompleted;
-
-        // 업데이트가 완료되었다고 신호를 보내고, 이후 다음 프레임의 업데이트를 진행한다.
-        BE1::PlatformCondition::Signal(updateCompletedCondition);
-    }
-#else
-    int numVisObjects = renderObjects.Count();
-
-    D3D12FrameData *writeFrameData = &frameData[currentFrameIndex];
-    VisObject *visObjects = writeFrameData->AllocVisObjects(numVisObjects);
-
-    for (int i = 0; i < numVisObjects; ++i) {
-        visObjects[i].GetState() = renderObjects[i]->GetState();
-    }
-#endif
-}
-
-void D3D12Renderer::RenderFrame() {
-    PIX_SCOPED_EVENT(commandQueues[to_int(RHI::CommandQueueType::Graphics)], 4, "D3D12Renderer::RenderFrame");
-
-    int numVisObjects = currentFrameData->NumVisObjects();
-    if (numVisObjects == 0) {
-        return;
-    }
-
-#ifdef USE_RENDER_TASK
-#ifdef USE_RENDEROBJECT_INSTANCING
-    int numDrawCalls = (int)BE1::Math::Ceil((float)numVisObjects / 1024);
-#else
-    int numDrawCalls = numVisObjects;
-#endif
-
-    int numTasks = BE1::Min(renderTaskManager.NumThreads(), (int)BE1::Math::Ceil((float)numDrawCalls / MaxDrawCallsPerTask));
-    if (numTasks > 1) {
-        DrawVisObjectsWithTask(numTasks);
-    } else {
-        DrawVisObjectsWithoutTask();
-    }
-#else
-    DrawVisObjectsWithoutTask();
-#endif
-}
-
-// 특정 인덱스 범위의 visObjects 를 그린다.
-void D3D12Renderer::DrawVisObjects(int threadIndex, D3D12CommandList *commandList, int startIndex, int endIndex) {
-    PIX_SCOPED_EVENT(commandList->GetGraphicsCommandList(), 6, "D3D12VisObject::DrawVisObjects");
-
-    int numVisObjects = currentFrameData->NumVisObjects();
-    if (numVisObjects == 0) {
-        return;
-    }
-
-    VisObject *visObjects = currentFrameData->GetVisObjects();
-    int index = startIndex;
-
-    while (index <= endIndex) {
-        VisObject *currentVisObjectPtr = &visObjects[index];
-
-#ifdef USE_RENDEROBJECT_INSTANCING
-        int instanceCount = BE1::Min(1024, endIndex - index + 1);
-        if (instanceCount > 1) {
-            VisObject::DrawInstanced(commandList, currentVisObjectPtr, instanceCount);
-            index += instanceCount;
-        } else {
-            VisObject::Draw(commandList, &currentVisObjectPtr[0]);
-            ++index;
-        }
-#else
-        VisObject::Draw(commandList, &currentVisObjectPtr[0]);
-        ++index;
-#endif
-    }
-}
-
-// 전체 visObjects 를 task 없이 한번에 그린다.
-void D3D12Renderer::DrawVisObjectsWithoutTask() {
-    PIX_CPU_SCOPED_EVENT(4, "D3D12Renderer::DrawVisObjectsWithoutTask");
-
-    int numVisObjects = currentFrameData->NumVisObjects();
-    if (numVisObjects == 0) {
-        return;
-    }
-
-    D3D12FrameData::DataPerThread &currentThreadData = currentFrameData->threadData[0];
-
-#ifdef USE_SECONDARY_COMMAND_LISTS
-    // ExecuteBundle 을 실행하기 전에 Primary CommandList 의 루트 디스크립터 힙을 지정한다.
-    ID3D12DescriptorHeap *descriptorHeaps[] = { currentThreadData.rootDescriptorPool->descriptorHeap };
-    mainCommandList->SetDescriptorHeaps(COUNT_OF(descriptorHeaps), descriptorHeaps);
-
-    // Secondary CommandList 를 얻어온다.
-    D3D12CommandList *commandList = currentThreadData.graphicsCommandListPool->Alloc(RHI::CommandListType::Secondary);
-    commandList->Reset(true, mainCommandList);
-
-    // Secondary CommandList 의 루트 디스크립터 힙을 지정한다.
-    // 반드시 Primary CommandList 와 동일한 디스크립터 힙을 사용해야 한다.
-    commandList->SetDescriptorHeaps(COUNT_OF(descriptorHeaps), descriptorHeaps);
-
-    // 플러시된 렌더 오브젝트들을 인덱스 범위 만큼 그린다.
-    DrawVisObjects(0, commandList, 0, numVisObjects - 1);
-
-    // Secondary CommandList 를 닫고 메인 CommandList 에 등록한다.
-    commandList->CloseAndExecuteSecondary(mainCommandList);
-#else
-    // 커맨드 리스트 풀에서 커맨드 리스트를 얻어온다.
-    D3D12CommandList *commandList = currentThreadData.graphicsCommandListPool->Alloc();
-    commandList->Reset(true, mainCommandList);
-
-    // 뷰포트 설정
-    SetViewport(commandList, swapChain->viewportRect);
-    // ScissorRect 설정
-    SetScissorRect(commandList, swapChain->scissorRect);
-
-    commandList->GetGraphicsCommandList()->OMSetRenderTargets(1, &swapChain->GetCurrentBackBufferRTVDescriptorHandle(), FALSE, &dsvDescriptorHandle);
-
-    // 루트 디스크립터 힙을 지정한다.
-    ID3D12DescriptorHeap *descriptorHeaps[] = { currentThreadData.rootDescriptorPool->descriptorHeap };
-    commandList->SetDescriptorHeaps(COUNT_OF(descriptorHeaps), descriptorHeaps);
-
-    // 플러시된 렌더 오브젝트들을 인덱스 범위 만큼 그린다.
-    DrawVisObjects(0, commandList, 0, numVisObjects - 1);
-
-    // CommandList 기록을 마치고 CommandQueue 로 실행
-    commandList->CloseAndExecute(RHI::CommandQueueType::Graphics);
-#endif
-}
-
-#ifdef USE_RENDER_TASK
-void D3D12Renderer::DrawVisObjectsByTask(D3D12Renderer::DrawObjectTaskDesc *taskDesc) {
-    PIX_CPU_SCOPED_EVENT(5, "D3D12Renderer::DrawVisObjectsByTask");
-
-    int threadIndex = taskDesc->threadIndex;
-    D3D12FrameData::DataPerThread &currentThreadData = currentFrameData->threadData[threadIndex];
-
-#ifdef USE_SECONDARY_COMMAND_LISTS
-    D3D12CommandList *commandList = currentThreadData.graphicsCommandListPool->Alloc(RHI::CommandListType::Secondary);
-    commandList->Reset();
-
-    // Secondary CommandList 의 루트 디스크립터 힙을 지정한다.
-    // 반드시 Primary CommandList 와 동일한 디스크립터 힙을 사용해야 한다.
-    ID3D12DescriptorHeap *descriptorHeaps[] = { currentThreadData.rootDescriptorPool->descriptorHeap };
-    commandList->SetDescriptorHeaps(COUNT_OF(descriptorHeaps), descriptorHeaps);
-
-    // 플러시된 렌더 오브젝트들을 인덱스 범위 만큼 그린다.
-    DrawVisObjects(taskDesc->threadIndex, commandList, taskDesc->visObjectStartIndex, taskDesc->visObjectEndIndex);
-#else
-    D3D12CommandList *commandList = currentThreadData.graphicsCommandListPool->Alloc();
-    commandList->Reset();
-
-    // 뷰포트 & ScissorRect 설정
-    SetViewport(commandList, swapChain->viewportRect);
-    SetScissorRect(commandList, swapChain->scissorRect);
-
-    commandList->GetGraphicsCommandList()->OMSetRenderTargets(1, &swapChain->GetCurrentBackBufferRTVDescriptorHandle(), FALSE, &dsvDescriptorHandle);
-
-    // 루트 디스크립터 힙을 지정한다.
-    ID3D12DescriptorHeap *descriptorHeaps[] = { currentThreadData.rootDescriptorPool->descriptorHeap };
-    commandList->SetDescriptorHeaps(COUNT_OF(descriptorHeaps), descriptorHeaps);
-
-    // 플러시된 렌더 오브젝트들을 인덱스 범위 만큼 그린다.
-    DrawVisObjects(taskDesc->threadIndex, commandList, taskDesc->visObjectStartIndex, taskDesc->visObjectEndIndex);
-
-    // 렌더링 시나리오에 따라 중간에 Flush 할 수도 있다.
-    //commandList = FlushCommandList(commandList);
-#endif
-    // CommandList 기록을 마친다.
-    commandList->GetGraphicsCommandList()->Close();
-
-    // 사용 중인 커맨드 리스트를 나중에 실행하기 위해 저장한다.
-    taskDesc->activeCommandList = commandList;
-}
-
-static void DrawVisObjectsByTaskFunction(void *data) {
-    D3D12Renderer::DrawObjectTaskDesc *taskDesc = reinterpret_cast<D3D12Renderer::DrawObjectTaskDesc *>(data);
-    taskDesc->renderer->DrawVisObjectsByTask(taskDesc);
-}
-
-// 전체 visObjects 를 task 로 나눠서 그린다.
-void D3D12Renderer::DrawVisObjectsWithTask(int numTasks) {
-    PIX_CPU_SCOPED_EVENT(6, "D3D12Renderer::DrawVisObjectsWithTask");
-
-    int numVisObjects = currentFrameData->NumVisObjects();
-    if (numVisObjects == 0) {
-        return;
-    }
-
-    int numVisObjectsPerTasks = (int)BE1::Math::Ceil((float)numVisObjects / numTasks);
-    int threadIndex = 0;
-    int lastEndIndex = -1;
-
-    // 태스크 정보 초기화
-    objectDrawingTaskDescs.Reserve(renderTaskManager.NumThreads());
-    objectDrawingTaskDescs.SetCount(0, false);
-
-    // 최대 쓰레드 개수만큼 task 를 실행한다.
-    while (lastEndIndex < numVisObjects - 1) {
-        DrawObjectTaskDesc &currentThreadDesc = objectDrawingTaskDescs.Alloc();
-
-        currentThreadDesc.renderer = this;
-        currentThreadDesc.threadIndex = threadIndex++;
-        currentThreadDesc.visObjectStartIndex = lastEndIndex + 1;
-        currentThreadDesc.visObjectEndIndex = BE1::Min(currentThreadDesc.visObjectStartIndex + numVisObjectsPerTasks, numVisObjects) - 1;
-        renderTaskManager.AddTask(::DrawVisObjectsByTaskFunction, &currentThreadDesc, false);
-
-        lastEndIndex = currentThreadDesc.visObjectEndIndex;
-    }
-
-    renderTaskManager.WaitFinish(true);
-
-    // 태스크 별로 execute 할 CommandList 들을 모두 모은다.
-    int renderTaskCount = objectDrawingTaskDescs.Count();
-    ID3D12CommandList *execCommandLists[MaxRenderTaskThreads];
-    for (int threadIndex = 0; threadIndex < renderTaskCount; ++threadIndex) {
-        execCommandLists[threadIndex] = objectDrawingTaskDescs[threadIndex].activeCommandList->GetGraphicsCommandList();
-    }
-#ifdef USE_SECONDARY_COMMAND_LISTS
-    for (int threadIndex = 0; threadIndex < renderTaskCount; ++threadIndex) {
-        // ExecuteBundle 을 실행하기 전에 Primary CommandList 의 루트 디스크립터 힙을 지정한다.
-        ID3D12DescriptorHeap *descriptorHeaps[] = { currentFrameData->threadData[threadIndex].rootDescriptorPool->descriptorHeap };
-        mainCommandList->SetDescriptorHeaps(COUNT_OF(descriptorHeaps), descriptorHeaps);
-
-        mainCommandList->GetGraphicsCommandList()->ExecuteBundle(static_cast<ID3D12GraphicsCommandList6 *>(execCommandLists[threadIndex]));
-    }
-#else
-    // CommandList 들을 한꺼번에 실행
-    if (renderTaskCount > 0) {
-        commandQueues[to_int(RHI::CommandQueueType::Graphics)]->ExecuteCommandLists(renderTaskCount, execCommandLists);
-    }
-#endif
-}
-#endif
-
-#ifdef USE_RENDER_THREAD
-void D3D12Renderer::InitRenderThread() {
-    smpLock = BE1::PlatformSRWLock::Create();
-    renderCompletedCondition = BE1::PlatformCondition::Create();
-    updateCompletedCondition = BE1::PlatformCondition::Create();
-
-    renderThread = BE1::PlatformThread::Start(RenderThreadProc, this);
-}
-
-void D3D12Renderer::ShutdownRenderThread() {
-    {
-        BE1::ScopedWriteLock lock(smpLock);
-        isStoppingRenderThread = true;
-        BE1::PlatformCondition::Signal(updateCompletedCondition);
-    }
-    BE1::PlatformThread::Join(renderThread);
-    renderThread = nullptr;
-
-    BE1::PlatformCondition::Destroy(renderCompletedCondition);
-    BE1::PlatformCondition::Destroy(updateCompletedCondition);
-    BE1::PlatformSRWLock::Destroy(smpLock);
-}
-
-void D3D12Renderer::WaitRenderCompleted() {
-    assert(BE1::Engine::IsInMainThread());
-
-    if (!renderThread) {
-        return;
-    }
-
-    BE1::ScopedReadLock lock(smpLock);
-
-    // 렌더 스레드가 렌더링이 완료되어 (다음) 업데이트를 기다리는 상태가 될 때까지 기다린다.
-    BE1::PlatformCondition::Wait(renderCompletedCondition, smpLock, false, [this] {
-        return frameSyncState == FrameSyncState::WaitingForUpdateCompleted;
-    });
-}
-
-unsigned int RenderThreadProc(void *param) {
-    D3D12Renderer *renderer = reinterpret_cast<D3D12Renderer *>(param);
-
-    BE1::PlatformThread::SetCurrentThreadName("RenderThreadProc");
-
-    BE1::SIMD::SetDenormalFlushMode(true);
-
-    while (1) {
-        PIX_CPU_SCOPED_EVENT(7, "RenderThreadProcLoop");
-        {
-            BE1::ScopedReadLock lock(renderer->smpLock);
-
-            // 메인 스레드가 업데이트가 완료되어 (다음) 렌더링을 기다리는 상태가 될 때까지 기다린다.
-            BE1::PlatformCondition::Wait(renderer->updateCompletedCondition, renderer->smpLock, false, [renderer] {
-                return renderer->frameSyncState == FrameSyncState::WaitingForRenderCompleted || renderer->isStoppingRenderThread;
-            });
-
-            if (renderer->isStoppingRenderThread) {
-                break;
-            }
-        }
-
-        renderer->BeginFrame();
-        renderer->RenderFrame();
-        renderer->EndFrame();
-
-        {
-            BE1::ScopedWriteLock lock(renderer->smpLock);
-
-            renderer->renderFrameIndex ^= renderer->renderFrameIndex;
-
-            // (메인 스레드의) 다음 업데이트가 끝나기를 기다리는 상태로 변경
-            renderer->frameSyncState = FrameSyncState::WaitingForUpdateCompleted;
-
-            BE1::PlatformCondition::Signal(renderer->renderCompletedCondition);
-        }
-    }
-    return 0;
-}
-#endif
 
 bool D3D12Renderer::ImageFormatToDXGIFormat(BE1::Image::Format::Enum imageFormat, bool isSRGB, DXGI_FORMAT *dxgiFormat) {
     switch (imageFormat) {

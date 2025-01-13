@@ -28,10 +28,8 @@ public:
 
     void                            CreateRTVs();
 
-    virtual uint32_t                GetWidth() const { return viewportRect.w; }
-    virtual uint32_t                GetHeight() const { return viewportRect.h; }
-
     virtual bool                    IsSwapChainSupportsHDR() const override;
+    virtual bool                    GetFormat(BE1::Image::Format::Enum *imageFormat, bool *isSRGB) const override;
 
     virtual void                    Resize(uint32_t width, uint32_t height) override;
     virtual void                    SwapBuffers(bool vsync) override;
@@ -49,6 +47,4 @@ private:
     ID3D12Resource *                backBuffers[NumSwapChainBuffers] = {};
     D3D12_CPU_DESCRIPTOR_HANDLE     backBufferRTVs[NumSwapChainBuffers] = {};
     uint32_t                        currentBackBufferIndex = 0;
-    BE1::Rect                       viewportRect;
-    BE1::Rect                       scissorRect;
 };

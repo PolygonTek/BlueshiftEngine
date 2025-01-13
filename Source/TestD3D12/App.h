@@ -14,25 +14,31 @@
 
 #pragma once
 
+#include "RHI.h"
+#include "RenderContext.h"
+#include "RenderObject.h"
+
 class GameObject;
 class TriangleMesh;
 class CubeMesh;
 
 class App {
 public:
-    void                            Init(HWND windowHandle);
+    void                            Init();
     void                            Shutdown();
 
     void                            RunFrame(int elapsedMsec);
-    void                            Render(int elapsedMsec);
 
     int                             GetElapsedMsec() const { return elapsedMsec; }
 
     void                            SetViewMatrix(const BE1::Mat3 &viewAxis, const BE1::Vec3 &viewOrigin, float *rowMajor4x4ViewMatrix) const;
 
-    void                            UpdateCamera();
-
     void                            ClearGameObjects();
+
+    void                            RenderScene(RenderContext *renderContext);
+
+    RenderContext *                 CreateRenderContext(HWND hwnd);
+    void                            DestroyRenderContext(RenderContext *renderContext);
 
     void                            InitGameObjects();
     void                            InitTriangles();
@@ -42,12 +48,18 @@ public:
     void                            UpdateTriangles();
     void                            UpdateCubes();
 
+    int                             AddRenderObject(const RenderObject::State &def);
+    void                            UpdateRenderObject(int handle, const RenderObject::State &def);
+    void                            RemoveRenderObject(int handle);
+
+    RenderContext *                 mainRenderContext = nullptr;
+    RenderContext *                 subRenderContext = nullptr;
+
     BE1::Array<GameObject *>        gameObjects;
+    BE1::Array<RenderObject *>      renderObjects;
 
     std::shared_ptr<TriangleMesh>   triangleMesh;
     std::shared_ptr<CubeMesh>       cubeMesh;
-
-    BE1::Mat4                       viewProjMatrix;
 
     int                             elapsedMsec = 0;
 };

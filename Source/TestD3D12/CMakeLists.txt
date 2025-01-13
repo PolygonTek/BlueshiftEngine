@@ -42,6 +42,10 @@ set(SRC_FILES
     D3D12Renderer/D3D12FrameData.cpp
     App.h
     App.cpp
+    RenderContext.h
+    RenderContext.cpp
+    RenderFrameData.h
+    RenderFrameData.cpp
     RenderObject.h
     RenderObject.cpp
     VisObject.h

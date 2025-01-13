@@ -72,7 +72,7 @@ void D3D12Renderer::DestroyConstantBuffer(RHI::ConstantBuffer *constantBuffer, b
 
 void D3D12Renderer::SetConstantBuffer(RHI::CommandList *commandList, int slot, const RHI::ConstantBuffer *constantBuffer) {
     D3D12CommandList *d3d12CommandList = static_cast<D3D12CommandList *>(commandList);
-    int threadIndex = d3d12CommandList->GetThreadIndex();
+    D3D12FrameThreadData *threadData = static_cast<D3D12FrameThreadData *>(d3d12CommandList->GetFrameThreadData());
 
     // 슬롯 (레지스터) 에 대한 루트 파라미터 인덱스를 얻고, 디스크립터 테이블일 경우 테이블 인덱스도 얻어온다.
     const D3D12PipelineState::Binder &binder = d3d12CommandList->currentPSO->binder;
@@ -80,11 +80,10 @@ void D3D12Renderer::SetConstantBuffer(RHI::CommandList *commandList, int slot, c
     uint8_t descriptorIndex = binder.descriptorTableBinder.cbv[slot];
 
     const D3D12ConstantBuffer *d3d12ConstantBuffer = static_cast<const D3D12ConstantBuffer *>(constantBuffer);
-    D3D12FrameData::DataPerThread &threadData = currentFrameData->threadData[threadIndex];
     if (descriptorIndex != 0xFF) {
-        threadData.tableCpuDescriptorHandles[rootParameterIndex][descriptorIndex] = d3d12ConstantBuffer->descriptorHandle;
+        threadData->tableCpuDescriptorHandles[rootParameterIndex][descriptorIndex] = d3d12ConstantBuffer->descriptorHandle;
     }
-    threadData.cbvResources[slot] = d3d12ConstantBuffer;
+    threadData->cbvResources[slot] = d3d12ConstantBuffer;
 
     if (rootParameterIndex == 0xFF) {
         BE_ERRLOG("D3D12Renderer::SetConstantBuffer: Invalid root parameter index\n");

@@ -13,11 +13,12 @@
 // limitations under the License.
 
 #include "Precompiled.h"
-#include "D3D12Renderer/D3D12Renderer.h"
 #include "App.h"
 #include "GameObject.h"
+#include "VisObject.h"
 #include "TriangleMesh.h"
 #include "CubeMesh.h"
+#include "D3D12Renderer/D3D12Renderer.h"
 
 #define TRIANGLE_OR_CUBE    0
 
@@ -30,11 +31,10 @@ static constexpr float      CubeSpacing = 2.82842712f;
 
 App                         app;
 
-void App::Init(HWND hwnd) {
-    renderer = new D3D12Renderer;
-    renderer->Init(hwnd);
-
+void App::Init() {
     InitGameObjects();
+
+    renderObjects.Reserve(16384);
 
 #ifdef USE_D3D12_MEMALLOC
     renderer->PrintMemoryAllocatorStats();
@@ -45,31 +45,18 @@ void App::Shutdown() {
     renderer->Finish(RHI::CommandQueueType::Graphics);
 
     ClearGameObjects();
-
-    renderer->Shutdown();
-    SAFE_DELETE(renderer);
 }
 
 void App::RunFrame(int frameMsec) {
-    PIX_CPU_SCOPED_EVENT(2, "D3D12App::RunFrame");
+    PIX_CPU_SCOPED_EVENT(2, "App::RunFrame");
 
     elapsedMsec += frameMsec;
 
-    UpdateCamera();
-
     UpdateGameObjects();
 
+    renderer->FreePendingResources();
+
     BE1::cmdSystem.ExecuteCommandBuffer();
-}
-
-void App::Render(int frameMsec) {
-    renderer->RenderScene();
-
-#ifndef USE_RENDER_THREAD
-    renderer->BeginFrame();
-    renderer->RenderFrame();
-    renderer->EndFrame();
-#endif
 }
 
 void App::SetViewMatrix(const BE1::Mat3 &viewAxis, const BE1::Vec3 &viewOrigin, float *rowMajor4x4ViewMatrix) const {
@@ -97,27 +84,11 @@ void App::SetViewMatrix(const BE1::Mat3 &viewAxis, const BE1::Vec3 &viewOrigin, 
     rowMajor4x4ViewMatrix[15] = 1.0f;
 }
 
-void App::UpdateCamera() {
-    PIX_CPU_SCOPED_EVENT(0, "D3D12App::UpdateCamera");
-
-    float w = renderer->swapChain->GetWidth();
-    float h = renderer->swapChain->GetHeight();
-    float aspectRatio = w / h;
-
-    BE1::Mat4 projMatrix;
-    projMatrix.SetPerspectiveRH(45, aspectRatio, 1, 1000, false);
-
-    BE1::Mat4 viewMatrix;
-    SetViewMatrix(BE1::Mat3(-1, 0, 0, 0, -1, 0, 0, 0, 1), BE1::Vec3(220, 0, 0), viewMatrix);
-
-    viewProjMatrix = projMatrix * viewMatrix;
-}
-
 void App::ClearGameObjects() {
     for (GameObject *gameObject : gameObjects) {
         gameObject->renderObjectDef.mesh.reset();
 
-        renderer->RemoveRenderObject(gameObject->renderObjectHandle);
+        RemoveRenderObject(gameObject->renderObjectHandle);
     }
 
     TriangleMesh::DestroyMesh(triangleMesh);
@@ -135,13 +106,132 @@ void App::InitGameObjects() {
 }
 
 void App::UpdateGameObjects() {
-    PIX_CPU_SCOPED_EVENT(1, "D3D12App::UpdateGameObjects");
+    PIX_CPU_SCOPED_EVENT(1, "App::UpdateGameObjects");
 
 #if TRIANGLE_OR_CUBE == 1
     UpdateTriangles();
 #else
     UpdateCubes();
 #endif
+}
+
+int App::AddRenderObject(const RenderObject::State &def) {
+    assert(BE1::Engine::IsInMainThread());
+
+    int index = renderObjects.FindNull();
+    if (index == -1) {
+        index = renderObjects.Append(nullptr);
+    }
+
+    UpdateRenderObject(index, def);
+    return index;
+}
+
+void App::UpdateRenderObject(int index, const RenderObject::State &def) {
+    assert(BE1::Engine::IsInMainThread());
+
+    while (index >= renderObjects.Count()) {
+        renderObjects.Append(nullptr);
+    }
+
+    RenderObject *renderObject = renderObjects[index];
+    if (!renderObject) {
+        renderObject = new RenderObject;
+        renderObject->index = index;
+        renderObjects[index] = renderObject;
+    }
+
+    renderObject->Update(def);
+}
+
+void App::RemoveRenderObject(int index) {
+    assert(BE1::Engine::IsInMainThread());
+
+    if (!renderObjects.IsValidIndex(index)) {
+        BE_WARNLOG("RenderWorld::RemoveRenderObject: invalid index %i\n", index);
+        return;
+    }
+
+    RenderObject *renderObject = renderObjects[index];
+    if (!renderObject) {
+        BE_WARNLOG("RenderWorld::RemoveRenderObject: index %i is nullptr\n", index);
+        return;
+    }
+
+    delete renderObjects[index];
+    renderObjects[index] = nullptr;
+}
+
+void App::RenderScene(RenderContext *renderContext/*, const RenderCamera *camera*/) {
+    assert(BE1::Engine::IsInMainThread());
+
+    float w = renderContext->GetWidth();
+    float h = renderContext->GetHeight();
+    float aspectRatio = w / h;
+
+    BE1::Mat4 projMatrix;
+    projMatrix.SetPerspectiveRH(45, aspectRatio, 1, 1000, false);
+
+    BE1::Mat4 viewMatrix;
+    SetViewMatrix(BE1::Mat3(-1, 0, 0, 0, -1, 0, 0, 0, 1), BE1::Vec3(220, 0, 0), viewMatrix);
+
+#ifdef USE_RENDER_THREAD
+    renderContext->WaitRenderCompleted();
+
+    // 렌더 스레드에서 다음 렌더링에 사용할 VisObject 들을 준비한다.
+    // 
+    // TODO: 보이는 오브젝트 수를 계산한다.
+    int numVisObjects = renderObjects.Count();
+
+    RenderFrameData *writeFrameData = renderContext->GetCurrentFrameData();
+
+    VisCamera *visCamera = writeFrameData->AllocVisCamera();
+    visCamera->viewProjMatrix = projMatrix * viewMatrix;
+    
+    // TODO: RenderScene 을 여러번 호출할 수 있어야함
+    VisObject *visObjects = writeFrameData->AllocVisObjects(numVisObjects);
+
+    // TODO 1: 현재 카메라에 기반해 SceneGraph 나 Frustum culling 등으로 렌더링에 사용할 렌더 오브젝트들을 추려낸다. 추려낸 렌더 오브젝트들의 변수는 복사 or (레퍼런스 카운트를 이용한) 공유를 해서 가지고 있어야 한다.
+    for (int i = 0; i < numVisObjects; ++i) {
+        visObjects[i].GetState() = renderObjects[i]->GetState();
+    }
+
+    // TODO 2: 렌더링에 사용할 라이트들도 추려낸다.
+    // TODO 3: 렌더링할 Surface 리스트를 작성한다.
+    // TODO 4: Surface 들을 소팅한다.
+    // TODO 5: 이후에는 Surface 단위로 그려야 한다.
+
+    renderContext->MarkUpdateCompleted();
+#else
+    renderContext->BeginFrame();
+
+    int numVisObjects = renderObjects.Count();
+
+    RenderFrameData *writeFrameData = renderContext->GetCurrentFrameData();
+
+    VisCamera *visCamera = writeFrameData->AllocVisCamera();
+    visCamera->viewProjMatrix = projMatrix * viewMatrix;
+
+    VisObject *visObjects = writeFrameData->AllocVisObjects(numVisObjects);
+
+    for (int i = 0; i < numVisObjects; ++i) {
+        visObjects[i].GetState() = renderObjects[i]->GetState();
+    }
+
+    renderContext->RenderFrame();
+    renderContext->EndFrame();
+#endif
+}
+
+RenderContext *App::CreateRenderContext(HWND hwnd) {
+    RenderContext *renderContext = new RenderContext;
+    renderContext->Init(hwnd);
+    return renderContext;
+}
+
+void App::DestroyRenderContext(RenderContext *renderContext) {
+    renderContext->Shutdown();
+    delete renderContext;
 }
 
 void App::InitTriangles() {
@@ -157,7 +247,7 @@ void App::InitTriangles() {
         gameObject->renderObjectDef.mesh = triangleMesh;
         gameObject->renderObjectDef.offset.Set(0, 0);
 
-        gameObject->renderObjectHandle = renderer->AddRenderObject(gameObject->renderObjectDef);
+        gameObject->renderObjectHandle = AddRenderObject(gameObject->renderObjectDef);
     }
 }
 
@@ -174,7 +264,7 @@ void App::InitCubes() {
         gameObject->renderObjectDef.mesh = cubeMesh;
         gameObject->renderObjectDef.worldMatrix.SetIdentity();
 
-        gameObject->renderObjectHandle = renderer->AddRenderObject(gameObject->renderObjectDef);
+        gameObject->renderObjectHandle = AddRenderObject(gameObject->renderObjectDef);
     }
 }
 
@@ -189,7 +279,7 @@ void App::UpdateTriangles() {
         gameObject->renderObjectDef.offset.x = 0.5f * BE1::Math::Cos(t);
         gameObject->renderObjectDef.offset.y = 0.5f * BE1::Math::Sin(t * 3);
 
-        renderer->UpdateRenderObject(gameObject->renderObjectHandle, gameObject->renderObjectDef);
+        UpdateRenderObject(gameObject->renderObjectHandle, gameObject->renderObjectDef);
     }
 }
 
@@ -208,7 +298,7 @@ void App::UpdateCubes() {
             GameObject* gameObject = gameObjects[index];
             gameObject->renderObjectDef.worldMatrix.SetTranslationRotation(BE1::Vec3(0, startX + CubeSpacing * x, startY + CubeSpacing * y), BE1::Mat3::FromRotationZYX(t * 1.0f, 0, t * 0.25f), false);
 
-            renderer->UpdateRenderObject(gameObject->renderObjectHandle, gameObject->renderObjectDef);
+            UpdateRenderObject(gameObject->renderObjectHandle, gameObject->renderObjectDef);
         }
     }
 }

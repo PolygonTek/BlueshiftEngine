@@ -43,8 +43,8 @@ D3D12_COMMAND_LIST_TYPE D3D12CommandList::GetCommandListType() const {
     return parentPool->GetCommandListType();
 }
 
-int D3D12CommandList::GetThreadIndex() const {
-    return parentPool->GetThreadIndex();
+RHI::FrameThreadData *D3D12CommandList::GetFrameThreadData() const {
+    return parentPool->GetFrameThreadData();
 }
 
 void D3D12CommandList::SetShadingRate(RHI::ShadingRate shadingRate) {

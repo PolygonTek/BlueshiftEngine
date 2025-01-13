@@ -17,6 +17,8 @@
 #include "RHI.h"
 #include "Mesh.h"
 
+class RenderContext;
+
 class TriangleMesh : public Mesh {
 public:
     static std::shared_ptr<TriangleMesh> CreateMesh();
@@ -27,8 +29,8 @@ public:
 
     void                        InitPipelineState();
 
-    void                        DrawMesh(RHI::CommandList *commandList, const BE1::Vec2 &offset);
-    void                        DrawMeshInstanced(RHI::CommandList *commandList, const BE1::Vec2 *instanceData, int instanceCount);
+    void                        DrawMesh(const RenderContext *renderContext, RHI::CommandList *commandList, const BE1::Vec2 &offset);
+    void                        DrawMeshInstanced(const RenderContext *renderContext, RHI::CommandList *commandList, const BE1::Vec2 *instanceData, int instanceCount);
 
     RHI::Texture *              texture = nullptr;
     RHI::VertexBuffer *         vertexBuffer = nullptr;

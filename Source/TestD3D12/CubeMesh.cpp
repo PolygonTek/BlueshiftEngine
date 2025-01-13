@@ -13,9 +13,11 @@
 // limitations under the License.
 
 #include "Precompiled.h"
-#include "D3D12Renderer/D3D12Renderer.h"
 #include "CubeMesh.h"
 #include "App.h"
+#include "D3D12Renderer/D3D12Renderer.h"
+#include "RenderContext.h"
+#include "VisObject.h"
 
 struct CubeVertex {
     BE1::Vec3       position;
@@ -114,9 +116,9 @@ void CubeMesh::InitPipelineState() {
 
     RHI::RenderDest renderDest;
     renderDest.renderTargetCount = 1;
-    renderDest.renderTargetFormats[0] = renderer->GetMainRTColorFormat();
-    renderDest.depthStencilFormat = renderer->GetMainRTDepthFormat();
-    renderDest.sampleCount = renderer->GetMainRTSampleCount();
+    renderDest.renderTargetFormats[0] = app.mainRenderContext->GetMainRTColorFormat();
+    renderDest.depthStencilFormat = app.mainRenderContext->GetMainRTDepthFormat();
+    renderDest.sampleCount = app.mainRenderContext->GetMainRTSampleCount();
 
     RHI::Shader *cubeVS = static_cast<RHI::Shader *>(renderer->CreateShaderFromFile(RHI::ShaderModel::SM_6_0, RHI::ShaderStage::Vertex, "Source/TestD3D12/Shaders/Cube.hlsl", "VSMain"));
     RHI::Shader *cubePS = static_cast<RHI::Shader *>(renderer->CreateShaderFromFile(RHI::ShaderModel::SM_6_0, RHI::ShaderStage::Fragment, "Source/TestD3D12/Shaders/Cube.hlsl", "PSMain"));
@@ -165,17 +167,18 @@ void CubeMesh::InitPipelineState() {
     }
 }
 
-void CubeMesh::DrawMesh(RHI::CommandList* commandList, const BE1::Mat3x4& worldMatrix) {
-    int threadIndex = commandList->GetThreadIndex();
-
-    // 다이나믹 상수 버퍼 공간을 할당한다.
-    RHI::ConstantBuffer *constantBuffer = renderer->GetCurrentFrameData()->AllocConstant(threadIndex, sizeof(CubeConstantData));
+void CubeMesh::DrawMesh(const RenderContext *renderContext, RHI::CommandList* commandList, const BE1::Mat3x4& worldMatrix) {
+    // 한 프레임 동안만 유지되는 다이나믹 상수 버퍼 공간을 할당한다.
+    RHI::FrameThreadData *frameThreadData = commandList->GetFrameThreadData();
+    RHI::ConstantBuffer *constantBuffer = frameThreadData->AllocConstant(sizeof(CubeConstantData));
     if (!constantBuffer) {
         return;
     }
 
+    const RenderFrameData *currentFrameData = renderContext->GetCurrentFrameData();
+
     CubeConstantData *constantDataPtr = reinterpret_cast<CubeConstantData*>(constantBuffer->writePtr);
-    constantDataPtr->viewProjMatrix = app.viewProjMatrix;
+    constantDataPtr->viewProjMatrix = currentFrameData->GetVisCamera()->viewProjMatrix;
     constantDataPtr->worldMatrix = worldMatrix;
 
     renderer->SetVertexBuffer(commandList, 0, vertexBuffer);
@@ -188,17 +191,18 @@ void CubeMesh::DrawMesh(RHI::CommandList* commandList, const BE1::Mat3x4& worldM
     renderer->DrawIndexed(commandList, 36, 0, 0);
 }
 
-void CubeMesh::DrawMeshInstanced(RHI::CommandList *commandList, const BE1::Mat3x4 *instanceData, int instanceCount) {
-    int threadIndex = commandList->GetThreadIndex();
-
-    // 다이나믹 상수 버퍼 공간을 할당한다.
-    RHI::ConstantBuffer *constantBuffer = renderer->GetCurrentFrameData()->AllocConstant(threadIndex, sizeof(CubeInstancedConstantData));
+void CubeMesh::DrawMeshInstanced(const RenderContext *renderContext, RHI::CommandList *commandList, const BE1::Mat3x4 *instanceData, int instanceCount) {
+    // 한 프레임 동안만 유지되는 다이나믹 상수 버퍼 공간을 할당한다.
+    RHI::FrameThreadData *frameThreadData = commandList->GetFrameThreadData();
+    RHI::ConstantBuffer *constantBuffer = frameThreadData->AllocConstant(sizeof(CubeInstancedConstantData));
     if (!constantBuffer) {
         return;
     }
 
+    const RenderFrameData *currentFrameData = renderContext->GetCurrentFrameData();
+
     CubeInstancedConstantData *constantPtr = reinterpret_cast<CubeInstancedConstantData *>(constantBuffer->writePtr);
-    constantPtr->viewProjMatrix = app.viewProjMatrix;
+    constantPtr->viewProjMatrix = currentFrameData->GetVisCamera()->viewProjMatrix;
 
     for (int i = 0; i < instanceCount; ++i) {
         constantPtr->worldMatrix[i] = instanceData[i];

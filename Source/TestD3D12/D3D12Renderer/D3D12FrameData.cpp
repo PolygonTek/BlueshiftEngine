@@ -14,224 +14,113 @@
 
 #include "Precompiled.h"
 #include "D3D12Renderer.h"
-#include "D3D12ConstantBuffer.h"
 #include "D3D12FrameData.h"
+#include "D3D12CommandList.h"
 #include "D3D12CommandListPool.h"
-#include "D3D12RootDescriptorPool.h"
 #include "D3D12DescriptorPool.h"
-#include "../VisObject.h"
+#include "D3D12RootDescriptorPool.h"
 
 static constexpr uint32_t DynamicAllocationBlockSize = 65536 * 64;
-static constexpr uint32_t MaxMemSizePerBlock = 0x1000000;
-static constexpr uint32_t MemAlignSize = 32;
 
-void D3D12FrameData::Init() {
-    InitMemBlocks();
+D3D12DynamicAllocation::D3D12DynamicAllocation(uint64_t size) {
+    // 업로드 버퍼 생성
+    buffer = static_cast<D3D12Buffer *>(renderer->CreateBuffer(RHI::BufferUsage::Upload,
+        RHI::ResourceFlag::ConstantBuffer | RHI::ResourceFlag::VertexBuffer | RHI::ResourceFlag::IndexBuffer | RHI::ResourceFlag::ShaderResource,
+        size, BE1::Image::Format::R_32_TYPELESS, 0, nullptr));
 
-#ifdef USE_RENDER_TASK
-    numThreads = renderer->renderTaskManager.NumThreads();
-#else
-    numThreads = 1;
-#endif
-
-    for (int threadIndex = 0; threadIndex < numThreads; ++threadIndex) {
-        DataPerThread *data = &threadData[threadIndex];
-
-#ifdef USE_SECONDARY_COMMAND_LISTS
-        uint32_t maxSecondaryCommandLists = 8;
-#else
-        uint32_t maxSecondaryCommandLists = 0;
-#endif
-        // 그래픽스 커맨드 리스트 풀을 생성한다.
-        data->graphicsCommandListPool = new D3D12CommandListPool(renderer->device, threadIndex, D3D12_COMMAND_LIST_TYPE_DIRECT, 8, maxSecondaryCommandLists);
-
-        // 컴퓨트 커맨드 리스트 풀을 생성한다.
-        data->computeCommandListPool = new D3D12CommandListPool(renderer->device, threadIndex, D3D12_COMMAND_LIST_TYPE_COMPUTE, 8);
-
-        // 쉐이더에서 사용할 디스크립터 힙을 생성한다.
-        data->rootDescriptorPool = new D3D12RootDescriptorPool(renderer->device, 16384);
-
-        // 미리 다이나믹 버퍼 블럭을 1개 생성한다.
-        D3D12DynamicAllocation *dynamicAllocation = new D3D12DynamicAllocation(DynamicAllocationBlockSize);
-        data->dynamicAllocations.SetGranularity(16);
-        data->dynamicAllocations.Append(dynamicAllocation);
-
-        // 다이나믹 버퍼에서 사용할 (CBV, SRV, UAV) 디스크립터 풀을 생성한다.
-        data->dynamicDescriptorPool = new D3D12DescriptorPool(renderer->device, D3D12DescriptorPool::Type::CBV_SRV_UAV, 8192, false);
-
-        data->dynamicDescriptorHandles.SetGranularity(2048);
-        data->dynamicDescriptorHandles.Reserve(4096);
-
-        data->dynamicConstantBuffers.SetGranularity(256);
-        data->dynamicConstantBuffers.Reserve(256);
-
-        data->dynamicVertexBuffers.SetGranularity(256);
-        data->dynamicVertexBuffers.Reserve(256);
-
-        data->dynamicIndexBuffers.SetGranularity(256);
-        data->dynamicIndexBuffers.Reserve(256);
-
-        data->dynamicBuffers.SetGranularity(256);
-        data->dynamicBuffers.Reserve(256);
-    }
+    // 버퍼를 프로그램이 끝날 때 까지 Map 해놓고 쓴다. (Pinned) 
+    buffer->GetResource()->Map(0, nullptr, reinterpret_cast<void **>(&mappedBase));
 }
 
-void D3D12FrameData::Shutdown() {
-    for (int threadIndex = 0; threadIndex < numThreads; ++threadIndex) {
-        DataPerThread *data = &threadData[threadIndex];
-
-        data->dynamicAllocations.DeleteContents(false);
-
-        data->dynamicDescriptorPool->Clear();
-        data->dynamicDescriptorHandles.SetCount(0, false);
-
-        SAFE_DELETE(data->dynamicDescriptorPool);
-        SAFE_DELETE(data->rootDescriptorPool);
-        SAFE_DELETE(data->graphicsCommandListPool);
-        SAFE_DELETE(data->computeCommandListPool);
-    }
-
-    FreeVisObjects();
-
-    ClearMemBlocks();
+D3D12DynamicAllocation::~D3D12DynamicAllocation() {
+    renderer->DestroyBuffer(buffer);
 }
 
-void D3D12FrameData::BeginFrame() {
-    // 쓰레드 별로 사용할 자원을 Reset 한다.
-    for (int threadIndex = 0; threadIndex < numThreads; ++threadIndex) {
-        DataPerThread *data = &threadData[threadIndex];
+RHI::FrameThreadData *D3D12Renderer::CreateFrameThreadData() {
+    D3D12FrameThreadData *d3d12FrameThreadData = new D3D12FrameThreadData;
+    d3d12FrameThreadData->Init();
+    return d3d12FrameThreadData;
+}
 
-        // 다이나믹 버퍼를 리셋한다.
-        for (D3D12DynamicAllocation *dynamicAllocation : data->dynamicAllocations) {
-            dynamicAllocation->usedBytes = 0;
-        }
+void D3D12Renderer::DestroyFrameThreadData(RHI::FrameThreadData *frameThreadData) {
+    D3D12FrameThreadData *d3d12FrameThreadData = static_cast<D3D12FrameThreadData *>(frameThreadData);
+    d3d12FrameThreadData->Shutdown();
+    delete d3d12FrameThreadData;
+}
 
-        // 이번에 프레임에 사용할 다이나믹 버퍼의 디스크립터들을 초기화
-        data->dynamicDescriptorPool->Clear();
-        data->dynamicDescriptorHandles.SetCount(0, false);
+void D3D12FrameThreadData::Init() {
+    uint32_t maxSecondaryCommandLists = 8;
 
-        // 다이나믹 버퍼들도 비운다.
-        data->dynamicConstantBuffers.SetCount(0, false);
-        data->dynamicVertexBuffers.SetCount(0, false);
-        data->dynamicIndexBuffers.SetCount(0, false);
-        data->dynamicBuffers.SetCount(0, false);
+    // 그래픽스 커맨드 리스트 풀을 생성한다.
+    graphicsCommandListPool = new D3D12CommandListPool(renderer->device, this, D3D12_COMMAND_LIST_TYPE_DIRECT, 8, maxSecondaryCommandLists);
 
-        // 루트 디스크립터 풀을 비운다.
-        data->rootDescriptorPool->Reset();
+    // 컴퓨트 커맨드 리스트 풀을 생성한다.
+    computeCommandListPool = new D3D12CommandListPool(renderer->device, this, D3D12_COMMAND_LIST_TYPE_COMPUTE, 8);
 
-        // 커맨드 리스트 풀을 비운다.
-        data->graphicsCommandListPool->Clear();
+    // 쉐이더에서 사용할 디스크립터 힙을 생성한다.
+    rootDescriptorPool = new D3D12RootDescriptorPool(renderer->device, 16384);
+
+    // 미리 다이나믹 버퍼 블럭을 1개 생성한다.
+    D3D12DynamicAllocation *dynamicAllocation = new D3D12DynamicAllocation(DynamicAllocationBlockSize);
+    dynamicAllocations.SetGranularity(16);
+    dynamicAllocations.Append(dynamicAllocation);
+
+    // 다이나믹 버퍼에서 사용할 (CBV, SRV, UAV) 디스크립터 풀을 생성한다.
+    dynamicDescriptorPool = new D3D12DescriptorPool(renderer->device, D3D12DescriptorPool::Type::CBV_SRV_UAV, 8192, false);
+
+    dynamicDescriptorHandles.SetGranularity(2048);
+    dynamicDescriptorHandles.Reserve(4096);
+
+    dynamicConstantBuffers.SetGranularity(256);
+    dynamicConstantBuffers.Reserve(256);
+
+    dynamicVertexBuffers.SetGranularity(256);
+    dynamicVertexBuffers.Reserve(256);
+
+    dynamicIndexBuffers.SetGranularity(256);
+    dynamicIndexBuffers.Reserve(256);
+
+    dynamicBuffers.SetGranularity(256);
+    dynamicBuffers.Reserve(256);
+}
+
+void D3D12FrameThreadData::Shutdown() {
+    dynamicAllocations.DeleteContents(false);
+
+    dynamicDescriptorPool->Clear();
+    dynamicDescriptorHandles.SetCount(0, false);
+
+    SAFE_DELETE(dynamicDescriptorPool);
+    SAFE_DELETE(rootDescriptorPool);
+    SAFE_DELETE(graphicsCommandListPool);
+    SAFE_DELETE(computeCommandListPool);
+}
+
+void D3D12FrameThreadData::BeginFrame() {
+    // 다이나믹 버퍼를 리셋한다.
+    for (D3D12DynamicAllocation *dynamicAllocation : dynamicAllocations) {
+        dynamicAllocation->usedBytes = 0;
     }
 
-    // 이번 프레임에 사용할 프레임 데이터를 사용하기 위해서는, GPU 에서 이전 프레임에 대한 렌더링이 완료되야 한다.
-    renderer->WaitFence(fenceValue);
+    // 이번에 프레임에 사용할 다이나믹 버퍼의 디스크립터들을 초기화
+    dynamicDescriptorPool->Clear();
+    dynamicDescriptorHandles.SetCount(0, false);
+
+    // 다이나믹 버퍼들도 비운다.
+    dynamicConstantBuffers.SetCount(0, false);
+    dynamicVertexBuffers.SetCount(0, false);
+    dynamicIndexBuffers.SetCount(0, false);
+    dynamicBuffers.SetCount(0, false);
+
+    // 루트 디스크립터 풀을 비운다.
+    rootDescriptorPool->Reset();
+
+    // 커맨드 리스트 풀을 비운다.
+    graphicsCommandListPool->Clear();
 }
 
-void D3D12FrameData::EndFrame() {
-    fenceValue = renderer->SignalFence(RHI::CommandQueueType::Graphics);
-}
-
-void D3D12FrameData::InitMemBlocks() {
-    headBlock = AllocMemBlock();
-    currentBlock = headBlock;
-}
-
-void D3D12FrameData::ClearMemBlocks() {
-    MemBlock *nextBlock;
-
-    for (MemBlock *block = headBlock; block; block = nextBlock) {
-        nextBlock = block->next;
-        Mem_Free(block);
-    }
-
-    headBlock = nullptr;
-    currentBlock = nullptr;
-}
-
-D3D12FrameData::MemBlock *D3D12FrameData::AllocMemBlock() {
-    MemBlock *block = (MemBlock *)Mem_Alloc(sizeof(*block) + MemAlignSize - 1 + MaxMemSizePerBlock);
-    if (!block) {
-        BE_FATALERROR("D3D12FrameData::AllocMemBlock: failed to allocate memory");
-    }
-
-    block->base = (byte *)BE1::AlignUp((intptr_t)block + sizeof(*block), MemAlignSize);
-    block->size = MaxMemSizePerBlock;
-    block->used = 0;
-    block->next = nullptr;
-    return block;
-}
-
-void *D3D12FrameData::MemAlloc(int size) {
-    size = BE1::AlignUp(size, MemAlignSize);
-    if (size > MaxMemSizePerBlock) {
-        BE_FATALERROR("D3D12FrameData::MemAlloc: %i exceeded MaxMemSizePerBlock", size);
-    }
-
-    for (MemBlock *block = currentBlock; block; block = block->next) {
-        if (block->size - block->used >= size) {
-            void *alloc = block->base + block->used;
-            block->used += size;
-            currentBlock = block;
-            return alloc;
-        }
-    }
-
-    MemBlock *newBlock = AllocMemBlock();
-    currentBlock->next = newBlock;
-    currentBlock = newBlock;
-    currentBlock->used = size;
-
-    return currentBlock->base;
-}
-
-void *D3D12FrameData::ClearedMemAlloc(int size) {
-    void *mem = MemAlloc(size);
-    BE1::simdProcessor->Memset(mem, 0, size);
-    return mem;
-}
-
-void D3D12FrameData::ClearMemAllocs() {
-    FreeVisObjects();
-
-    // Reset the mem allocation to the first block.
-    currentBlock = headBlock;
-
-    // Clear all the blocks.
-    for (MemBlock *block = headBlock; block; block = block->next) {
-        block->used = 0;
-    }
-}
-
-VisObject* D3D12FrameData::AllocVisObjects(int numVisObjects) {
-    assert(!visObjects);
-
-    this->numVisObjects = numVisObjects;
-    this->visObjects = (VisObject *)MemAlloc(sizeof(VisObject) * numVisObjects);
-
-    // placement new 로 생성자 호출
-    for (int visObjectIndex = 0; visObjectIndex < numVisObjects; ++visObjectIndex) {
-        new (visObjects + visObjectIndex) VisObject();
-    }
-    return visObjects;
-}
-
-void D3D12FrameData::FreeVisObjects() {
-    if (!visObjects) {
-        return;
-    }
-
-    // 소멸자 호출
-    for (int visObjectIndex = 0; visObjectIndex < numVisObjects; ++visObjectIndex) {
-        (visObjects + visObjectIndex)->~VisObject();
-    }
-
-    visObjects = nullptr;
-    numVisObjects = 0;
-}
-
-RHI::ConstantBuffer *D3D12FrameData::AllocConstant(int threadIndex, uint32_t size) {
-    DataPerThread *data = &threadData[threadIndex];
-    D3D12DynamicAllocation *currentDynamicAllocation = data->dynamicAllocations.Last();
+RHI::ConstantBuffer *D3D12FrameThreadData::AllocConstant(uint32_t size) {
+    D3D12DynamicAllocation *currentDynamicAllocation = dynamicAllocations.Last();
 
     // 상수 버퍼의 오프셋 & 크기는 256 바이트 단위로 정렬
     uint32_t alignedOffset = BE1::AlignUp(currentDynamicAllocation->usedBytes, D3D12_CONSTANT_BUFFER_DATA_PLACEMENT_ALIGNMENT);
@@ -246,11 +135,11 @@ RHI::ConstantBuffer *D3D12FrameData::AllocConstant(int threadIndex, uint32_t siz
     // 필요한 데이터의 크기가 다이나믹 버퍼의 크기를 넘어간다면 추가로 다이나믹 버퍼를 생성한다.
     if (currentDynamicAllocation->usedBytes + alignedSize > currentDynamicAllocation->buffer->GetSize()) {
         currentDynamicAllocation = new D3D12DynamicAllocation(DynamicAllocationBlockSize);
-        data->dynamicAllocations.Append(currentDynamicAllocation);
+        dynamicAllocations.Append(currentDynamicAllocation);
     }
 
     D3D12_CPU_DESCRIPTOR_HANDLE descriptorHandle = {};
-    if (!data->dynamicDescriptorPool->Alloc(&descriptorHandle, nullptr)) {
+    if (!dynamicDescriptorPool->Alloc(&descriptorHandle, nullptr)) {
         return nullptr;
     }
 
@@ -260,21 +149,20 @@ RHI::ConstantBuffer *D3D12FrameData::AllocConstant(int threadIndex, uint32_t siz
     cbvDesc.SizeInBytes = alignedSize;
 
     renderer->device->CreateConstantBufferView(&cbvDesc, descriptorHandle);
-    data->dynamicDescriptorHandles.Append(descriptorHandle);
+    dynamicDescriptorHandles.Append(descriptorHandle);
 
     D3D12ConstantBuffer dynamicConstantBuffer;
     dynamicConstantBuffer.writePtr = (byte *)currentDynamicAllocation->mappedBase + alignedOffset;
     dynamicConstantBuffer.descriptorHandle = descriptorHandle;
-    data->dynamicConstantBuffers.Append(dynamicConstantBuffer);
+    dynamicConstantBuffers.Append(dynamicConstantBuffer);
 
     currentDynamicAllocation->usedBytes = alignedOffset + alignedSize;
 
-    return &data->dynamicConstantBuffers.Last();
+    return &dynamicConstantBuffers.Last();
 }
 
-RHI::VertexBuffer *D3D12FrameData::AllocVertex(int threadIndex, uint32_t vertexSize, uint32_t count) {
-    DataPerThread *data = &threadData[threadIndex];
-    D3D12DynamicAllocation *currentDynamicAllocation = data->dynamicAllocations.Last();
+RHI::VertexBuffer *D3D12FrameThreadData::AllocVertex(uint32_t vertexSize, uint32_t count) {
+    D3D12DynamicAllocation *currentDynamicAllocation = dynamicAllocations.Last();
 
     // 버텍스 버퍼의 오프셋은 4 바이트 단위로 정렬
     uint32_t alignedOffset = BE1::AlignUp(currentDynamicAllocation->usedBytes, 4);
@@ -283,7 +171,7 @@ RHI::VertexBuffer *D3D12FrameData::AllocVertex(int threadIndex, uint32_t vertexS
     // 필요한 데이터의 크기가 다이나믹 버퍼의 크기를 넘어간다면 추가로 다이나믹 버퍼를 생성한다.
     if (alignedOffset + size > currentDynamicAllocation->buffer->GetSize()) {
         currentDynamicAllocation = new D3D12DynamicAllocation(DynamicAllocationBlockSize);
-        data->dynamicAllocations.Append(currentDynamicAllocation);
+        dynamicAllocations.Append(currentDynamicAllocation);
     }
 
     D3D12VertexBuffer dynamicVertexBuffer;
@@ -291,16 +179,15 @@ RHI::VertexBuffer *D3D12FrameData::AllocVertex(int threadIndex, uint32_t vertexS
     dynamicVertexBuffer.vbv.BufferLocation = currentDynamicAllocation->buffer->GetResource()->GetGPUVirtualAddress() + alignedOffset;
     dynamicVertexBuffer.vbv.SizeInBytes = size;
     dynamicVertexBuffer.vbv.StrideInBytes = vertexSize;
-    data->dynamicVertexBuffers.Append(dynamicVertexBuffer);
+    dynamicVertexBuffers.Append(dynamicVertexBuffer);
 
     currentDynamicAllocation->usedBytes = alignedOffset + size;
 
-    return &data->dynamicVertexBuffers.Last();
+    return &dynamicVertexBuffers.Last();
 }
 
-RHI::IndexBuffer *D3D12FrameData::AllocIndex(int threadIndex, uint32_t indexSize, uint32_t count) {
-    DataPerThread *data = &threadData[threadIndex];
-    D3D12DynamicAllocation *currentDynamicAllocation = data->dynamicAllocations.Last();
+RHI::IndexBuffer *D3D12FrameThreadData::AllocIndex(uint32_t indexSize, uint32_t count) {
+    D3D12DynamicAllocation *currentDynamicAllocation = dynamicAllocations.Last();
 
     // 인덱스 버퍼의 오프셋은 4 바이트 단위로 정렬
     uint32_t alignedOffset = BE1::AlignUp(currentDynamicAllocation->usedBytes, 4);
@@ -309,7 +196,7 @@ RHI::IndexBuffer *D3D12FrameData::AllocIndex(int threadIndex, uint32_t indexSize
     // 필요한 데이터의 크기가 다이나믹 버퍼의 크기를 넘어간다면 추가로 다이나믹 버퍼를 생성한다.
     if (alignedOffset + size > currentDynamicAllocation->buffer->GetSize()) {
         currentDynamicAllocation = new D3D12DynamicAllocation(DynamicAllocationBlockSize);
-        data->dynamicAllocations.Append(currentDynamicAllocation);
+        dynamicAllocations.Append(currentDynamicAllocation);
     }
 
     D3D12IndexBuffer dynamicIndexBuffer;
@@ -317,16 +204,15 @@ RHI::IndexBuffer *D3D12FrameData::AllocIndex(int threadIndex, uint32_t indexSize
     dynamicIndexBuffer.ibv.BufferLocation = currentDynamicAllocation->buffer->GetResource()->GetGPUVirtualAddress() + alignedOffset;
     dynamicIndexBuffer.ibv.SizeInBytes = size;
     dynamicIndexBuffer.ibv.Format = (indexSize == sizeof(uint16_t) ? DXGI_FORMAT_R16_UINT : DXGI_FORMAT_R32_UINT);
-    data->dynamicIndexBuffers.Append(dynamicIndexBuffer);
+    dynamicIndexBuffers.Append(dynamicIndexBuffer);
 
     currentDynamicAllocation->usedBytes = alignedOffset + size;
 
-    return &data->dynamicIndexBuffers.Last();
+    return &dynamicIndexBuffers.Last();
 }
 
-RHI::Buffer *D3D12FrameData::AllocBuffer(int threadIndex, bool shaderWritable, BE1::Image::Format::Enum format, uint32_t structureByteStride, uint32_t count) {
-    DataPerThread *data = &threadData[threadIndex];
-    D3D12DynamicAllocation *currentDynamicAllocation = data->dynamicAllocations.Last();
+RHI::Buffer *D3D12FrameThreadData::AllocBuffer(bool shaderWritable, BE1::Image::Format::Enum format, uint32_t structureByteStride, uint32_t count) {
+    D3D12DynamicAllocation *currentDynamicAllocation = dynamicAllocations.Last();
 
     // 버퍼의 오프셋은 stride 단위로 정렬
     uint32_t stride = format == BE1::Image::Format::Unknown ? structureByteStride : BE1::Image::BytesPerPixel(format);
@@ -336,11 +222,11 @@ RHI::Buffer *D3D12FrameData::AllocBuffer(int threadIndex, bool shaderWritable, B
     // 필요한 데이터의 크기가 다이나믹 버퍼의 크기를 넘어간다면 추가로 다이나믹 버퍼를 생성한다.
     if (alignedOffset + size > currentDynamicAllocation->buffer->GetSize()) {
         currentDynamicAllocation = new D3D12DynamicAllocation(DynamicAllocationBlockSize);
-        data->dynamicAllocations.Append(currentDynamicAllocation);
+        dynamicAllocations.Append(currentDynamicAllocation);
     }
 
     D3D12_CPU_DESCRIPTOR_HANDLE descriptorHandle = {};
-    if (!data->dynamicDescriptorPool->Alloc(&descriptorHandle, nullptr)) {
+    if (!dynamicDescriptorPool->Alloc(&descriptorHandle, nullptr)) {
         return nullptr;
     }
 
@@ -358,12 +244,12 @@ RHI::Buffer *D3D12FrameData::AllocBuffer(int threadIndex, bool shaderWritable, B
         }
 
         renderer->device->CreateUnorderedAccessView(currentDynamicAllocation->buffer->GetResource(), nullptr, &uavDescriptor.uavDesc, uavDescriptor.cpuDescriptorHandle);
-        data->dynamicDescriptorHandles.Append(descriptorHandle);
+        dynamicDescriptorHandles.Append(descriptorHandle);
 
         D3D12Buffer dynamicBuffer;
         dynamicBuffer.writePtr = (byte *)currentDynamicAllocation->mappedBase + alignedOffset;
         dynamicBuffer.uavDescriptors.Append(uavDescriptor);
-        data->dynamicBuffers.Append(dynamicBuffer);
+        dynamicBuffers.Append(dynamicBuffer);
     } else {
         D3D12SRVDescriptor srvDescriptor;
         srvDescriptor.srvDesc.ViewDimension = D3D12_SRV_DIMENSION_BUFFER;
@@ -379,29 +265,32 @@ RHI::Buffer *D3D12FrameData::AllocBuffer(int threadIndex, bool shaderWritable, B
         }
 
         renderer->device->CreateShaderResourceView(currentDynamicAllocation->buffer->GetResource(), &srvDescriptor.srvDesc, srvDescriptor.cpuDescriptorHandle);
-        data->dynamicDescriptorHandles.Append(descriptorHandle);
+        dynamicDescriptorHandles.Append(descriptorHandle);
 
         D3D12Buffer dynamicBuffer;
         dynamicBuffer.writePtr = (byte *)currentDynamicAllocation->mappedBase + alignedOffset;
         dynamicBuffer.srvDescriptors.Append(srvDescriptor);
-        data->dynamicBuffers.Append(dynamicBuffer);
+        dynamicBuffers.Append(dynamicBuffer);
     }
 
     currentDynamicAllocation->usedBytes = alignedOffset + size;
 
-    return &data->dynamicBuffers.Last();
+    return &dynamicBuffers.Last();
 }
 
-D3D12DynamicAllocation::D3D12DynamicAllocation(uint64_t size) {
-    // 업로드 버퍼 생성
-    buffer = static_cast<D3D12Buffer *>(renderer->CreateBuffer(RHI::BufferUsage::Upload,
-        RHI::ResourceFlag::ConstantBuffer | RHI::ResourceFlag::VertexBuffer | RHI::ResourceFlag::IndexBuffer | RHI::ResourceFlag::ShaderResource,
-        size, BE1::Image::Format::R_32_TYPELESS, 0, nullptr));
-
-    // 버퍼를 프로그램이 끝날 때 까지 Map 해놓고 쓴다. (Pinned) 
-    buffer->GetResource()->Map(0, nullptr, reinterpret_cast<void **>(&mappedBase));
+RHI::CommandList *D3D12FrameThreadData::AllocGraphicsCommandList(RHI::CommandListType type) {
+    return graphicsCommandListPool->Alloc(type);
 }
 
-D3D12DynamicAllocation::~D3D12DynamicAllocation() {
-    renderer->DestroyBuffer(buffer);
+RHI::CommandList *D3D12FrameThreadData::BeginSecondaryCommandList(const RHI::CommandList *primaryCommandList) {
+    // Secondary CommandList 를 얻어온다.
+    D3D12CommandList *commandList = static_cast<D3D12CommandList *>(AllocGraphicsCommandList(RHI::CommandListType::Secondary));
+    commandList->Reset(true, primaryCommandList);
+
+    // Secondary CommandList 의 루트 디스크립터 힙을 지정한다.
+    // 반드시 Primary CommandList 와 동일한 디스크립터 힙을 사용해야 한다.
+    ID3D12DescriptorHeap *descriptorHeaps[] = { rootDescriptorPool->descriptorHeap };
+    commandList->SetDescriptorHeaps(COUNT_OF(descriptorHeaps), descriptorHeaps);
+
+    return commandList;
 }

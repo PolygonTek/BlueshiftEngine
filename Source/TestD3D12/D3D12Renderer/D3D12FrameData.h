@@ -14,16 +14,13 @@
 
 #pragma once
 
-#include "D3D12Common.h"
 #include "D3D12ConstantBuffer.h"
 #include "D3D12VertexBuffer.h"
 #include "D3D12IndexBuffer.h"
 
-class D3D12Renderer;
 class D3D12CommandListPool;
-class D3D12RootDescriptorPool;
 class D3D12DescriptorPool;
-class VisObject;
+class D3D12RootDescriptorPool;
 
 class D3D12DynamicAllocation {
 public:
@@ -35,81 +32,41 @@ public:
     UINT                                usedBytes = 0;
 };
 
-class D3D12FrameData {
-    friend class D3D12Renderer;
-
+class D3D12FrameThreadData : public RHI::FrameThreadData {
 public:
     void                                Init();
     void                                Shutdown();
 
-                                        // 프레임 별로 임시로 할당하는 메모리 (not thread-safe)
-    void *                              MemAlloc(int size);
-    void *                              ClearedMemAlloc(int size);
-    VisObject *                         AllocVisObjects(int numVisObjects);
-    void                                FreeVisObjects();
+    virtual void                        BeginFrame() override;
 
-    int                                 NumVisObjects() const { return numVisObjects; }
-    VisObject *                         GetVisObjects() { return visObjects; }
+                                        // 프레임 별로 임시로 할당하는 다이나믹 버퍼
+    virtual RHI::ConstantBuffer *       AllocConstant(uint32_t size) override;
+    virtual RHI::VertexBuffer *         AllocVertex(uint32_t vertexSize, uint32_t count) override;
+    virtual RHI::IndexBuffer *          AllocIndex(uint32_t indexSize, uint32_t count) override;
+    virtual RHI::Buffer *               AllocBuffer(bool shaderStorage, BE1::Image::Format::Enum format, uint32_t structureByteStride, uint32_t count) override;
 
-    void                                ClearMemAllocs();
+    virtual RHI::CommandList *          AllocGraphicsCommandList(RHI::CommandListType type = RHI::CommandListType::Primary) override;
 
-                                        // 프레임 별로 임시로 할당하는 다이나믹 버퍼 (thread-safe)
-    RHI::ConstantBuffer *               AllocConstant(int threadIndex, uint32_t size);
-    RHI::VertexBuffer *                 AllocVertex(int threadIndex, uint32_t vertexSize, uint32_t count);
-    RHI::IndexBuffer *                  AllocIndex(int threadIndex, uint32_t indexSize, uint32_t count);
-    RHI::Buffer *                       AllocBuffer(int threadIndex, bool shaderStorage, BE1::Image::Format::Enum format, uint32_t structureByteStride, uint32_t count);
+    virtual RHI::CommandList *          BeginSecondaryCommandList(const RHI::CommandList *primaryCommandList) override;
 
-    void                                BeginFrame();
-    void                                EndFrame();
+    static constexpr uint32_t           MaxRootParameters = 64;
 
-    UINT64                              GetFenceValue() const { return fenceValue; }
-    void                                SetFenceValue(UINT64 fenceValue) { this->fenceValue = fenceValue; }
+    D3D12CommandListPool *              graphicsCommandListPool = nullptr;
+    D3D12CommandListPool *              computeCommandListPool = nullptr;
 
-private:
-    struct MemBlock {
-        MemBlock *                      next;
-        int32_t                         size;
-        int32_t                         used;
-        byte *                          base;
-    };
+    BE1::Array<D3D12DynamicAllocation *> dynamicAllocations;
+    BE1::Array<D3D12ConstantBuffer>     dynamicConstantBuffers;
+    BE1::Array<D3D12VertexBuffer>       dynamicVertexBuffers;
+    BE1::Array<D3D12IndexBuffer>        dynamicIndexBuffers;
+    BE1::Array<D3D12Buffer>             dynamicBuffers;
+    D3D12DescriptorPool *               dynamicDescriptorPool = nullptr;
+    BE1::Array<D3D12_CPU_DESCRIPTOR_HANDLE> dynamicDescriptorHandles;
 
-    void                                InitMemBlocks();
-    void                                ClearMemBlocks();
-    MemBlock *                          AllocMemBlock();
-
-    MemBlock *                          headBlock;
-    MemBlock *                          currentBlock;
-
-    int                                 numVisObjects = 0;
-    VisObject *                         visObjects = nullptr;
-
-    struct DataPerThread {
-        static constexpr uint32_t       MaxRootParameters = 64;
-
-        D3D12CommandListPool *          graphicsCommandListPool = nullptr;
-        D3D12CommandListPool *          computeCommandListPool = nullptr;
-        BE1::Array<D3D12DynamicAllocation *> dynamicAllocations;
-        BE1::Array<D3D12ConstantBuffer> dynamicConstantBuffers;
-        BE1::Array<D3D12VertexBuffer>   dynamicVertexBuffers;
-        BE1::Array<D3D12IndexBuffer>    dynamicIndexBuffers;
-        BE1::Array<D3D12Buffer>         dynamicBuffers;
-        D3D12DescriptorPool *           dynamicDescriptorPool = nullptr;
-        BE1::Array<D3D12_CPU_DESCRIPTOR_HANDLE> dynamicDescriptorHandles;
-        D3D12RootDescriptorPool *       rootDescriptorPool = nullptr;
-        D3D12_CPU_DESCRIPTOR_HANDLE     tableCpuDescriptorHandles[MaxRootParameters][64] = { CD3DX12_CPU_DESCRIPTOR_HANDLE() };
-        D3D12_GPU_DESCRIPTOR_HANDLE     tableGpuDescriptorStarts[MaxRootParameters] = { CD3DX12_GPU_DESCRIPTOR_HANDLE() };
-        const RHI::GPUResource *        cbvResources[16] = {};
-        const RHI::GPUResource *        srvResources[128] = {};
-        const RHI::GPUResource *        uavResources[8] = {};
-        uint32_t                        rootConstants[64] = {};
-    };
-
-#ifdef USE_RENDER_TASK
-    DataPerThread                       threadData[MaxRenderTaskThreads];
-#else
-    DataPerThread                       threadData[1];
-#endif
-    int                                 numThreads = 0;
-
-    UINT64                              fenceValue = 0;
+    D3D12RootDescriptorPool *           rootDescriptorPool = nullptr;
+    D3D12_CPU_DESCRIPTOR_HANDLE         tableCpuDescriptorHandles[MaxRootParameters][64] = { CD3DX12_CPU_DESCRIPTOR_HANDLE() };
+    D3D12_GPU_DESCRIPTOR_HANDLE         tableGpuDescriptorStarts[MaxRootParameters] = { CD3DX12_GPU_DESCRIPTOR_HANDLE() };
+    const RHI::GPUResource *            cbvResources[16] = {};
+    const RHI::GPUResource *            srvResources[128] = {};
+    const RHI::GPUResource *            uavResources[8] = {};
+    uint32_t                            rootConstants[64] = {};
 };

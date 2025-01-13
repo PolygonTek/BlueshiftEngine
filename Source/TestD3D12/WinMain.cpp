@@ -20,15 +20,18 @@
 #include "D3D12Renderer/D3D12Renderer.h"
 #include <tchar.h>
 
-static const TCHAR*         mainWindowClassName  = _T("BLUESHIFT_MAIN_WINDOW");
+static const TCHAR *        mainWindowClassName  = _T("BLUESHIFT_MAIN_WINDOW");
+static const TCHAR *        subWindowClassName = _T("BLUESHIFT_SUB_WINDOW");
 
 static TCHAR                szTitle[100];    // The title bar text
 
 static HWND                 hwndMain;
+static HWND                 hwndSub;
 static HACCEL               hAccelTable;
 static WCHAR                windowTitleString[256];
 
 LRESULT CALLBACK            MainWndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam);
+LRESULT CALLBACK            SubWndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam);
 
 static void SystemLog(int logLevel, const char* text) {
     int len = BE1::PlatformWinUtils::UTF8ToUCS2(text, nullptr, 0);
@@ -153,6 +156,26 @@ static HWND CreateMainWindow(const TCHAR* title, int width, int height) {
     return hwnd;
 }
 
+static HWND CreateSubWindow(const TCHAR *title, int width, int height) {
+    HINSTANCE hInstance = GetModuleHandle(nullptr);
+
+    WNDCLASSEX wcex;
+    memset(&wcex, 0, sizeof(wcex));
+    wcex.cbSize             = sizeof(WNDCLASSEX);
+    wcex.style              = CS_HREDRAW | CS_VREDRAW | CS_OWNDC;
+    wcex.lpfnWndProc        = SubWndProc;
+    wcex.hInstance          = hInstance;
+    wcex.hIcon              = LoadIcon(hInstance, MAKEINTRESOURCE(IDI_TESTD3D12));
+    wcex.hIconSm            = LoadIcon(hInstance, MAKEINTRESOURCE(IDI_SMALL));
+    wcex.hCursor            = LoadCursor(nullptr, IDC_ARROW);
+    //wcex.hbrBackground    = (HBRUSH)GetStockObject(BLACK_BRUSH);
+    wcex.lpszClassName      = subWindowClassName;
+    RegisterClassEx(&wcex);
+
+    HWND hwnd = CreateRenderWindow(title, subWindowClassName, width, height, false);
+    return hwnd;
+}
+
 static BOOL InitInstance(int nCmdShow) {
     BE1::Engine::isMainThread = true;
     BE1::Str execPath = BE1::PlatformFile::ExecutablePath();
@@ -161,7 +184,7 @@ static BOOL InitInstance(int nCmdShow) {
     basePath.CleanPath();
     BE1::Engine::InitBase(basePath, SystemLog, SystemError);
 
-    // Win64 폴더를 추가적인 DLL 폴더로 추가
+    // 추가적인 DLL 폴더로 Win64 폴더를 추가
     BE1::Str commonDllPath = execPath;
     commonDllPath.AppendPath("..");
     commonDllPath.CleanPath();
@@ -171,23 +194,36 @@ static BOOL InitInstance(int nCmdShow) {
     BE1::Str newPath = commonDllPath + ";" + pathBuffer;
     BE1::PlatformSystem::SetEnvVar("PATH", newPath);
 
-    char temp[128];
-    BE1::Str::snPrintf(temp, sizeof(temp), "%ls %s %s %s", szTitle, BE1::PlatformProcess::PlatformName(), __DATE__, __TIME__);
+    char szFullTitle[128];
+    BE1::Str::snPrintf(szFullTitle, sizeof(szFullTitle), "%ls %s %s %s", szTitle, BE1::PlatformProcess::PlatformName(), __DATE__, __TIME__);
 
-    wchar_t szFullTitle[128];
-    BE1::PlatformWinUtils::UTF8ToUCS2(temp, szFullTitle, COUNT_OF(szFullTitle));
+    wchar_t title[128];
+    BE1::PlatformWinUtils::UTF8ToUCS2(szFullTitle, title, COUNT_OF(title));
 
-    hwndMain = CreateMainWindow(szFullTitle, 1024, 768);
+    hwndMain = CreateMainWindow(title, 1024, 768);
 
-    ::ShowWindow(hwndMain, nCmdShow);
+    renderer = new D3D12Renderer;
+    renderer->Init(hwndMain);
 
-    app.Init(hwndMain);
+    app.mainRenderContext = app.CreateRenderContext(hwndMain);
+
+    hwndSub = CreateSubWindow(_T("sub window"), 1024, 768);
+
+    app.subRenderContext = app.CreateRenderContext(hwndSub);
+
+    app.Init();
 
     return TRUE;
 }
 
 static void ShutdownInstance() {
     app.Shutdown();
+
+    app.DestroyRenderContext(app.subRenderContext);
+    app.DestroyRenderContext(app.mainRenderContext);
+
+    renderer->Shutdown();
+    SAFE_DELETE(renderer);
 
     BE1::Engine::ShutdownBase();
 }
@@ -232,7 +268,9 @@ static bool RunFrameInstance(int frameMsec) {
     }
 
     app.RunFrame(frameMsec);
-    app.Render(frameMsec);
+
+    app.RenderScene(app.mainRenderContext);
+    app.RenderScene(app.subRenderContext);
 
     return true;
 }
@@ -297,8 +335,8 @@ LRESULT CALLBACK MainWndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lPar
         break;
     case WM_SIZE:
         if (wParam != SIZE_MINIMIZED) {
-            if (renderer && renderer->IsInitialized()) {
-                renderer->OnResize(LOWORD(lParam), HIWORD(lParam));
+            if (app.mainRenderContext) {
+                app.mainRenderContext->OnResize(LOWORD(lParam), HIWORD(lParam));
             }
         }
         return 0;
@@ -323,6 +361,21 @@ LRESULT CALLBACK MainWndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lPar
     }
     case WM_DESTROY:
         PostQuitMessage(0);
+        return 0;
+    }
+    return DefWindowProc(hwnd, message, wParam, lParam);
+}
+
+LRESULT CALLBACK SubWndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam) {
+    switch (message) {
+    case WM_CLOSE:
+        return 0; // prevent to close sub window
+    case WM_SIZE:
+        if (wParam != SIZE_MINIMIZED) {
+            if (app.subRenderContext) {
+                app.subRenderContext->OnResize(LOWORD(lParam), HIWORD(lParam));
+            }
+        }
         return 0;
     }
     return DefWindowProc(hwnd, message, wParam, lParam);

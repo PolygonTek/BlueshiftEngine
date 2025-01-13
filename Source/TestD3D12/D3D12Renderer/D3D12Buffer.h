@@ -20,11 +20,11 @@
 #include "D3D12MemoryAllocator/D3D12MemAlloc.h"
 #endif
 
-class D3D12FrameData;
+class D3D12FrameThreadData;
 
 class D3D12Buffer : public RHI::Buffer {
     friend class D3D12Renderer;
-    friend class D3D12FrameData;
+    friend class D3D12FrameThreadData;
 
 public:
     D3D12Buffer() = default;

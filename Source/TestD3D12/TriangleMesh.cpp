@@ -13,8 +13,10 @@
 // limitations under the License.
 
 #include "Precompiled.h"
-#include "D3D12Renderer/D3D12Renderer.h"
 #include "TriangleMesh.h"
+#include "App.h"
+#include "D3D12Renderer/D3D12Renderer.h"
+#include "RenderContext.h"
 
 struct TriangleVertex {
     BE1::Vec3       position;
@@ -81,9 +83,9 @@ void TriangleMesh::InitPipelineState() {
 
     RHI::RenderDest renderDest;
     renderDest.renderTargetCount = 1;
-    renderDest.renderTargetFormats[0] = renderer->GetMainRTColorFormat();
-    renderDest.depthStencilFormat = renderer->GetMainRTDepthFormat();
-    renderDest.sampleCount = renderer->GetMainRTSampleCount();
+    renderDest.renderTargetFormats[0] = app.mainRenderContext->GetMainRTColorFormat();
+    renderDest.depthStencilFormat = app.mainRenderContext->GetMainRTDepthFormat();
+    renderDest.sampleCount = app.mainRenderContext->GetMainRTSampleCount();
 
     RHI::Shader *triangleVS = static_cast<RHI::Shader *>(renderer->CreateShaderFromFile(RHI::ShaderModel::SM_6_0, RHI::ShaderStage::Vertex, "Source/TestD3D12/Shaders/Triangle.hlsl", "VSMain"));
     RHI::Shader *trianglePS = static_cast<RHI::Shader *>(renderer->CreateShaderFromFile(RHI::ShaderModel::SM_6_0, RHI::ShaderStage::Fragment, "Source/TestD3D12/Shaders/Triangle.hlsl", "PSMain"));
@@ -132,11 +134,10 @@ void TriangleMesh::InitPipelineState() {
     }
 }
 
-void TriangleMesh::DrawMesh(RHI::CommandList *commandList, const BE1::Vec2 &offset) {
-    int threadIndex = commandList->GetThreadIndex();
-
-    // 다이나믹 상수 버퍼 공간을 할당한다.
-    RHI::ConstantBuffer *constantBuffer = renderer->GetCurrentFrameData()->AllocConstant(threadIndex, sizeof(TriangleConstantData));
+void TriangleMesh::DrawMesh(const RenderContext *renderContext, RHI::CommandList *commandList, const BE1::Vec2 &offset) {
+    // 한 프레임 동안만 유지되는 다이나믹 상수 버퍼 공간을 할당한다.
+    RHI::FrameThreadData *frameThreadData = commandList->GetFrameThreadData();
+    RHI::ConstantBuffer *constantBuffer = frameThreadData->AllocConstant(sizeof(TriangleConstantData));
     if (!constantBuffer) {
         return;
     }
@@ -155,11 +156,10 @@ void TriangleMesh::DrawMesh(RHI::CommandList *commandList, const BE1::Vec2 &offs
     renderer->DrawIndexed(commandList, 3, 0, 0);
 }
 
-void TriangleMesh::DrawMeshInstanced(RHI::CommandList *commandList, const BE1::Vec2 *instanceData, int instanceCount) {
-    int threadIndex = commandList->GetThreadIndex();
-
-    // 다이나믹 상수 버퍼 공간을 할당한다.
-    RHI::ConstantBuffer *constantBuffer = renderer->GetCurrentFrameData()->AllocConstant(threadIndex, sizeof(TriangleInstancedConstantData));
+void TriangleMesh::DrawMeshInstanced(const RenderContext *renderContext, RHI::CommandList *commandList, const BE1::Vec2 *instanceData, int instanceCount) {
+    // 한 프레임 동안만 유지되는 다이나믹 상수 버퍼 공간을 할당한다.
+    RHI::FrameThreadData *frameThreadData = commandList->GetFrameThreadData();
+    RHI::ConstantBuffer *constantBuffer = frameThreadData->AllocConstant(sizeof(TriangleInstancedConstantData));
     if (!constantBuffer) {
         return;
     }

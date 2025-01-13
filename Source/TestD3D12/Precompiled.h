@@ -32,4 +32,41 @@
 #include <pix3.h>
 #endif
 
-//using namespace BE1;
+// 디버그 레이어 사용 여부 (Release 모드에서는 사용 안함)
+#define USE_DEBUG_LAYER
+
+// PIX 마커 사용 여부 (Release 모드에서는 사용할 수 없음)
+#define USE_PIX_MARKERS
+
+// D3D12 Memory Allocator 사용 여부
+#define USE_D3D12_MEMALLOC
+
+// 스테이트 캐싱 사용 여부
+#define USE_STATE_CACHE_FOR_COMMAND_LIST
+
+// 렌더 스레드 사용 여부
+#define USE_RENDER_THREAD
+
+// 렌더 태스크 사용 여부
+#define USE_RENDER_TASK
+
+// 프레임 리소스 버퍼링 사용 여부
+#define USE_FRAME_RESOURCES
+
+// 인스턴싱 사용 여부
+#define USE_RENDEROBJECT_INSTANCING
+
+#ifdef USE_FRAME_RESOURCES
+static constexpr int NumFrameResources = 2;
+#else
+static constexpr int NumFrameResources = 1;
+#endif
+
+#ifdef USE_RENDER_TASK
+// 렌더링할 때 쓰이는 최대 태스크 개수
+static constexpr int MaxRenderTasks = 64;
+// 렌더링 태스크 매니져에서 사용할 최대 스레드 개수 (실제 코드는 물리 코어 개수 이하로 사용된다)
+static constexpr int MaxRenderTaskThreads = 16;
+// 태스크 당 처리할 최대 Draw Call 횟수
+static constexpr int MaxDrawCallsPerTask = 512;
+#endif

@@ -406,11 +406,14 @@ RHI::PipelineState *D3D12Renderer::CreateGraphicsPSO(const RHI::PipelineStateDes
         psoHashData.renderDestHash = desc->renderDest->GetHash();
     }
 
-    // 전체 hash 값으로 완전히 동일한 PSO 가 존재하는지 찾아보고, 있으면 리턴한다.
+    // 전체 hash 값으로 완전히 동일한 PSO 가 존재하는지 찾아본다.
     const uint64_t psoHash = BE1::CityHash64((char *)&psoHashData, sizeof(psoHashData));
     const auto *psoEntry = graphicsPsoMap.Get(psoHash);
     if (psoEntry) {
-        return psoEntry->second;
+        // 동일한 PSO 를 찾았다면, 레퍼런스 카운트를 증가시키고 리턴한다.
+        D3D12PipelineState *pso = psoEntry->second;
+        pso->refCount.fetch_add(1);
+        return pso;
     }
 
     // 없다면 새로 만든다.
@@ -675,6 +678,11 @@ RHI::PipelineState *D3D12Renderer::CreateComputePSO(const RHI::Shader *computeSh
 }
 
 void D3D12Renderer::DestroyPSO(RHI::PipelineState *pipelineState, bool immediate) {
+    int oldRefCount = pipelineState->refCount.fetch_sub(1);
+    if (oldRefCount > 1) {
+        return;
+    }
+
     if (pipelineState->graphics) {
         graphicsPsoMap.Remove(pipelineState->hash);
     } else {
@@ -846,9 +854,8 @@ void D3D12Renderer::SetPSO(RHI::CommandList *commandList, const RHI::PipelineSta
 }
 
 void D3D12Renderer::BindRootParameters(D3D12CommandList *commandList, bool graphics) {
-    int threadIndex = commandList->GetThreadIndex();
-    D3D12FrameData::DataPerThread &threadData = currentFrameData->threadData[threadIndex];
-    D3D12RootDescriptorPool *rootDescriptorPool = threadData.rootDescriptorPool;
+    D3D12FrameThreadData *threadData = static_cast<D3D12FrameThreadData *>(commandList->GetFrameThreadData());
+    D3D12RootDescriptorPool *rootDescriptorPool = threadData->rootDescriptorPool;
     uint64_t &rootParameterDirtyMask = graphics ? commandList->graphicsRootParametersDirtyMask : commandList->computeRootParametersDirtyMask;
     if (rootParameterDirtyMask == 0) {
         return;
@@ -891,16 +898,16 @@ void D3D12Renderer::BindRootParameters(D3D12CommandList *commandList, bool graph
                 const D3D12_DESCRIPTOR_RANGE1 &descriptorRange = rootParameter->DescriptorTable.pDescriptorRanges[rangeIndex];
                 CD3DX12_CPU_DESCRIPTOR_HANDLE destDescriptorHandle(cpuRootDescriptorStart, descriptorOffset, rootDescriptorPool->descriptorHandleSize);
 
-                assert(descriptorOffset < COUNT_OF(threadData.tableCpuDescriptorHandles[rootParameterIndex]));
+                assert(descriptorOffset < COUNT_OF(threadData->tableCpuDescriptorHandles[rootParameterIndex]));
 
                 switch (descriptorRange.RangeType) {
                 case D3D12_DESCRIPTOR_RANGE_TYPE_CBV:
                 case D3D12_DESCRIPTOR_RANGE_TYPE_SRV:
                 case D3D12_DESCRIPTOR_RANGE_TYPE_UAV:
-                    device->CopyDescriptorsSimple(descriptorRange.NumDescriptors, destDescriptorHandle, threadData.tableCpuDescriptorHandles[rootParameterIndex][descriptorOffset], D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+                    device->CopyDescriptorsSimple(descriptorRange.NumDescriptors, destDescriptorHandle, threadData->tableCpuDescriptorHandles[rootParameterIndex][descriptorOffset], D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
                     break;
                 case D3D12_DESCRIPTOR_RANGE_TYPE_SAMPLER:
-                    device->CopyDescriptorsSimple(descriptorRange.NumDescriptors, destDescriptorHandle, threadData.tableCpuDescriptorHandles[rootParameterIndex][descriptorOffset], D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER);
+                    device->CopyDescriptorsSimple(descriptorRange.NumDescriptors, destDescriptorHandle, threadData->tableCpuDescriptorHandles[rootParameterIndex][descriptorOffset], D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER);
                     break;
                 }
 
@@ -908,7 +915,7 @@ void D3D12Renderer::BindRootParameters(D3D12CommandList *commandList, bool graph
             }
 
             // 루트 파라미터 별 GPU 디스크립터 테이블을 기록
-            threadData.tableGpuDescriptorStarts[rootParameterIndex] = gpuRootDescriptorStart;
+            threadData->tableGpuDescriptorStarts[rootParameterIndex] = gpuRootDescriptorStart;
 
             // 사용할 디스크립터 테이블 설정
             if (graphics) {
@@ -921,14 +928,14 @@ void D3D12Renderer::BindRootParameters(D3D12CommandList *commandList, bool graph
             UINT num32BitValues = rootParameter->Constants.Num32BitValues;
             // NOTE: 현재는 일부만 세팅하는 경우는 없다고 가정한다.
             if (graphics) {
-                commandList->GetGraphicsCommandList()->SetGraphicsRoot32BitConstants(rootParameterIndex, num32BitValues, threadData.rootConstants, 0);
+                commandList->GetGraphicsCommandList()->SetGraphicsRoot32BitConstants(rootParameterIndex, num32BitValues, threadData->rootConstants, 0);
             } else {
-                commandList->GetGraphicsCommandList()->SetComputeRoot32BitConstants(rootParameterIndex, num32BitValues, threadData.rootConstants, 0);
+                commandList->GetGraphicsCommandList()->SetComputeRoot32BitConstants(rootParameterIndex, num32BitValues, threadData->rootConstants, 0);
             }
         } else if (rootParameter->ParameterType == D3D12_ROOT_PARAMETER_TYPE_CBV) {
             // 루트 레벨 CBV 설정
             UINT shaderRegister = rootParameter->Descriptor.ShaderRegister;
-            const RHI::GPUResource *cbvResource = threadData.cbvResources[shaderRegister];
+            const RHI::GPUResource *cbvResource = threadData->cbvResources[shaderRegister];
             if (cbvResource) {
                 D3D12_GPU_VIRTUAL_ADDRESS gpuAddress = reinterpret_cast<ID3D12Resource *>(cbvResource->GetNativeResource())->GetGPUVirtualAddress();
                 if (graphics) {
@@ -940,7 +947,7 @@ void D3D12Renderer::BindRootParameters(D3D12CommandList *commandList, bool graph
         } else if (rootParameter->ParameterType == D3D12_ROOT_PARAMETER_TYPE_SRV) {
             // 루트 레벨 SRV 설정
             UINT shaderRegister = rootParameter->Descriptor.ShaderRegister;
-            const RHI::GPUResource *srvResource = threadData.srvResources[shaderRegister];
+            const RHI::GPUResource *srvResource = threadData->srvResources[shaderRegister];
             if (srvResource) {
                 D3D12_GPU_VIRTUAL_ADDRESS gpuAddress = reinterpret_cast<ID3D12Resource *>(srvResource->GetNativeResource())->GetGPUVirtualAddress();
                 if (graphics) {
@@ -952,7 +959,7 @@ void D3D12Renderer::BindRootParameters(D3D12CommandList *commandList, bool graph
         } else if (rootParameter->ParameterType == D3D12_ROOT_PARAMETER_TYPE_UAV) {
             // 루트 레벨 UAV 설정
             UINT shaderRegister = rootParameter->Descriptor.ShaderRegister;
-            const RHI::GPUResource *uavResource = threadData.uavResources[shaderRegister];
+            const RHI::GPUResource *uavResource = threadData->uavResources[shaderRegister];
             if (uavResource) {
                 D3D12_GPU_VIRTUAL_ADDRESS gpuAddress = reinterpret_cast<ID3D12Resource *>(uavResource->GetNativeResource())->GetGPUVirtualAddress();
                 if (graphics) {

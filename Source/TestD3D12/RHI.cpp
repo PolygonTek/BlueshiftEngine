@@ -25,18 +25,6 @@ void RHI::Renderer::Shutdown() {
     initialized = false;
 }
 
-BE1::Image::Format::Enum RHI::Renderer::GetMainRTColorFormat() const {
-    return BE1::Image::Format::RGBA_8_8_8_8;
-}
-
-BE1::Image::Format::Enum RHI::Renderer::GetMainRTDepthFormat() const {
-    return BE1::Image::Format::Depth_32F;
-}
-
-uint32_t RHI::Renderer::GetMainRTSampleCount() const {
-    return 1;
-}
-
 void RHI::Renderer::SetupStates() {
     RHI::RasterizerState *rs = &rasterizerStates[to_int(RHI::RasterizerStateType::SolidFrontSided)];
     rs->fillMode = RHI::FillMode::Solid;

@@ -45,9 +45,9 @@ uint64_t D3D12Buffer::GetSize() {
     return bufferAllocation->GetSize();
 #else
     D3D12_RESOURCE_DESC resourceDesc = bufferResource->GetDesc();
-    Image::Format::Enum imageFormat;
+    BE1::Image::Format::Enum imageFormat;
     if (D3D12Renderer::DXGIFormatToImageFormat(resourceDesc.Format, &imageFormat, nullptr)) {
-        return Image::MemRequired(resourceDesc.Width, resourceDesc.Height, resourceDesc.DepthOrArraySize, resourceDesc.MipLevels, imageFormat);
+        return BE1::Image::MemRequired(resourceDesc.Width, resourceDesc.Height, resourceDesc.DepthOrArraySize, resourceDesc.MipLevels, imageFormat);
     }
     return resourceDesc.Width;
 #endif
@@ -338,10 +338,9 @@ void D3D12Renderer::DestroyBuffer(RHI::Buffer *buffer, bool immediate) {
 
 void D3D12Renderer::SetBuffer(RHI::CommandList *commandList, int slot, bool shaderWritable, const RHI::Buffer *buffer, int subresourceIndex) {
     D3D12CommandList *d3d12CommandList = static_cast<D3D12CommandList *>(commandList);
-    int threadIndex = d3d12CommandList->GetThreadIndex();
+    D3D12FrameThreadData *threadData = static_cast<D3D12FrameThreadData *>(d3d12CommandList->GetFrameThreadData());
 
     const D3D12Buffer *d3d12Buffer = static_cast<const D3D12Buffer *>(buffer);
-    D3D12FrameData::DataPerThread &threadData = currentFrameData->threadData[threadIndex];
 
     // 슬롯 (레지스터) 에 대한 루트 파라미터 인덱스를 얻고, 디스크립터 테이블일 경우 테이블 인덱스도 얻어온다.
     const D3D12PipelineState::Binder &binder = d3d12CommandList->currentPSO->binder;
@@ -352,25 +351,25 @@ void D3D12Renderer::SetBuffer(RHI::CommandList *commandList, int slot, bool shad
         rootParameterIndex = binder.rootParameterBinder.uav[slot];
         uint8_t descriptorIndex = binder.descriptorTableBinder.uav[slot];
         if (descriptorIndex != 0xFF) {
-            threadData.tableCpuDescriptorHandles[rootParameterIndex][descriptorIndex] = d3d12Buffer->uavDescriptors[subresourceIndex].cpuDescriptorHandle;
-            if (threadData.tableCpuDescriptorHandles[rootParameterIndex][descriptorIndex].ptr == 0) {
+            threadData->tableCpuDescriptorHandles[rootParameterIndex][descriptorIndex] = d3d12Buffer->uavDescriptors[subresourceIndex].cpuDescriptorHandle;
+            if (threadData->tableCpuDescriptorHandles[rootParameterIndex][descriptorIndex].ptr == 0) {
                 BE_ERRLOG("D3D12Renderer::SetBuffer: Buffer has no valid UAV descriptor handle\n");
                 return;
             }
         }
-        threadData.uavResources[slot] = d3d12Buffer;
+        threadData->uavResources[slot] = d3d12Buffer;
     } else {
         // SRV
         rootParameterIndex = binder.rootParameterBinder.srv[slot];
         uint8_t descriptorIndex = binder.descriptorTableBinder.srv[slot];
         if (descriptorIndex != 0xFF) {
-            threadData.tableCpuDescriptorHandles[rootParameterIndex][descriptorIndex] = d3d12Buffer->srvDescriptors[subresourceIndex].cpuDescriptorHandle;
-            if (threadData.tableCpuDescriptorHandles[rootParameterIndex][descriptorIndex].ptr == 0) {
+            threadData->tableCpuDescriptorHandles[rootParameterIndex][descriptorIndex] = d3d12Buffer->srvDescriptors[subresourceIndex].cpuDescriptorHandle;
+            if (threadData->tableCpuDescriptorHandles[rootParameterIndex][descriptorIndex].ptr == 0) {
                 BE_ERRLOG("D3D12Renderer::SetBuffer: Buffer has no valid SRV descriptor handle\n");
                 return;
             }
         }
-        threadData.srvResources[slot] = d3d12Buffer;
+        threadData->srvResources[slot] = d3d12Buffer;
     }
 
     if (rootParameterIndex == 0xFF) {

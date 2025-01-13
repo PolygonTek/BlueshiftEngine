@@ -32,7 +32,6 @@ public:
     void                            Reset();
     bool                            AllocRange(UINT count, D3D12_CPU_DESCRIPTOR_HANDLE *outCpuDescriptorHandle, D3D12_GPU_DESCRIPTOR_HANDLE *outGpuDescriptorHandle);
 
-private:
     ID3D12DescriptorHeap *          descriptorHeap = nullptr;
     D3D12_CPU_DESCRIPTOR_HANDLE     baseCpuDescriptorHandle;
     D3D12_GPU_DESCRIPTOR_HANDLE     baseGpuDescriptorHandle;

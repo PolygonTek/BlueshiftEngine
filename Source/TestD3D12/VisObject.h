@@ -17,19 +17,26 @@
 #include "RHI.h"
 #include "RenderObject.h"
 
+class RenderContext;
+
+class VisCamera {
+public:
+    BE1::Mat4                   viewProjMatrix;
+};
+
 class VisObject {
 public:
     RenderObject::State &       GetState() { return state; }
 
-    static void                 Draw(RHI::CommandList *commandList, VisObject *visObject);
-    static void                 DrawInstanced(RHI::CommandList *commandList, VisObject *visObjects, int instanceCount);
+    static void                 Draw(const RenderContext *renderContext, RHI::CommandList *commandList, VisObject *visObject);
+    static void                 DrawInstanced(const RenderContext *renderContext, RHI::CommandList *commandList, VisObject *visObjects, int instanceCount);
 
 private:
-    static void                 DrawTriangleMesh(RHI::CommandList *commandList, VisObject *visObject);
-    static void                 DrawTriangleMeshInstanced(RHI::CommandList *commandList, VisObject *visObjects, int instanceCount);
+    static void                 DrawTriangleMesh(const RenderContext *renderContext, RHI::CommandList *commandList, VisObject *visObject);
+    static void                 DrawTriangleMeshInstanced(const RenderContext *renderContext, RHI::CommandList *commandList, VisObject *visObjects, int instanceCount);
 
-    static void                 DrawCubeMesh(RHI::CommandList *commandList, VisObject *visObject);
-    static void                 DrawCubeMeshInstanced(RHI::CommandList *commandList, VisObject *visObjects, int instanceCount);
+    static void                 DrawCubeMesh(const RenderContext *renderContext, RHI::CommandList *commandList, VisObject *visObject);
+    static void                 DrawCubeMeshInstanced(const RenderContext *renderContext, RHI::CommandList *commandList, VisObject *visObjects, int instanceCount);
 
     RenderObject::State         state;
 };

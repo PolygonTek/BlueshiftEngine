@@ -68,18 +68,6 @@ RHI::SwapChain *D3D12Renderer::CreateSwapChain(HWND hwnd, uint32_t width, uint32
     swapChain->dxgiSwapChain = dxgiSwapChain3;
     swapChain->CreateRTVs();
 
-    // Viewport 설정을 백버퍼 크기에 맞게 설정
-    swapChain->viewportRect.x = 0.0f;
-    swapChain->viewportRect.y = 0.0f;
-    swapChain->viewportRect.w = (float)width;
-    swapChain->viewportRect.h = (float)height;
-
-    // ScissorRect 설정을 백버퍼 크기에 맞게 설정
-    swapChain->scissorRect.x = 0;
-    swapChain->scissorRect.y = 0;
-    swapChain->scissorRect.w = width;
-    swapChain->scissorRect.h = height;
-
     return swapChain;
 }
 
@@ -117,12 +105,6 @@ void D3D12SwapChain::Resize(uint32_t width, uint32_t height) {
     dxgiSwapChain->ResizeBuffers(D3D12SwapChain::NumSwapChainBuffers, width, height, dxgiFormat, DXGI_SWAP_CHAIN_FLAG_ALLOW_TEARING);
 
     CreateRTVs();
-
-    viewportRect.w = static_cast<float>(width);
-    viewportRect.h = static_cast<float>(height);
-
-    scissorRect.w = width;
-    scissorRect.h = height;
 }
 
 void D3D12SwapChain::SwapBuffers(bool vsync) {
@@ -149,4 +131,8 @@ bool D3D12SwapChain::IsSwapChainSupportsHDR() const {
         }
     }
     return false;
+}
+
+bool D3D12SwapChain::GetFormat(BE1::Image::Format::Enum *imageFormat, bool *isSRGB) const {
+    return D3D12Renderer::DXGIFormatToImageFormat(dxgiFormat, imageFormat, isSRGB);
 }

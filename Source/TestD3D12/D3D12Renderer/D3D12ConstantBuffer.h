@@ -18,11 +18,11 @@
 #include "D3D12Buffer.h"
 
 class D3D12Renderer;
-class D3D12FrameData;
+class D3D12FrameThreadData;
 
 class D3D12ConstantBuffer : public RHI::ConstantBuffer {
     friend class D3D12Renderer;
-    friend class D3D12FrameData;
+    friend class D3D12FrameThreadData;
 
 public:
     virtual ~D3D12ConstantBuffer() { Release(); }
