@@ -14,11 +14,13 @@
 
 #pragma once
 
+#include "../RHI.h"
 #include "D3D12ConstantBuffer.h"
 #include "D3D12VertexBuffer.h"
 #include "D3D12IndexBuffer.h"
+#include "D3D12CommandList.h"
+#include "D3D12CommandListPool.h"
 
-class D3D12CommandListPool;
 class D3D12DescriptorPool;
 class D3D12RootDescriptorPool;
 
@@ -70,3 +72,7 @@ public:
     const RHI::GPUResource *            uavResources[8] = {};
     uint32_t                            rootConstants[64] = {};
 };
+
+BE_INLINE RHI::CommandList *D3D12FrameThreadData::AllocGraphicsCommandList(RHI::CommandListType type) {
+    return graphicsCommandListPool->Alloc(type);
+}

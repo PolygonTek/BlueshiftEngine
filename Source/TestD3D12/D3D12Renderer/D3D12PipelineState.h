@@ -14,7 +14,8 @@
 
 #pragma once
 
-#include "D3D12Renderer.h"
+#include "../RHI.h"
+#include "D3D12Common.h"
 
 class D3D12Renderer;
 class D3D12CommandList;

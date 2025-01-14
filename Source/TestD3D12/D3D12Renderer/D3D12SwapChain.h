@@ -14,6 +14,7 @@
 
 #pragma once
 
+#include "../RHI.h"
 #include "D3D12Common.h"
 
 class D3D12Renderer;
@@ -28,7 +29,7 @@ public:
 
     void                            CreateRTVs();
 
-    virtual bool                    IsSwapChainSupportsHDR() const override;
+    virtual bool                    IsSupportsHDR() const override;
     virtual bool                    GetFormat(BE1::Image::Format::Enum *imageFormat, bool *isSRGB) const override;
 
     virtual void                    Resize(uint32_t width, uint32_t height) override;

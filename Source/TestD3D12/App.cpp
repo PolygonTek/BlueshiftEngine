@@ -43,7 +43,7 @@ void App::Shutdown() {
 }
 
 void App::RunFrame(int frameMsec) {
-    PROFILER_CPU_SCOPED_EVENT("App::RunFrame", 2);
+    PROFILER_CPU_SCOPED_EVENT("App::RunFrame", 0);
 
     elapsedMsec += frameMsec;
 
@@ -158,6 +158,8 @@ void App::RemoveRenderObject(int index) {
 }
 
 void App::RenderScene(RenderContext *renderContext/*, const RenderCamera *camera*/) {
+    PROFILER_CPU_SCOPED_EVENT("App::RenderScene", 2);
+
     assert(BE1::Engine::IsInMainThread());
 
     float w = renderContext->GetWidth();
@@ -170,21 +172,22 @@ void App::RenderScene(RenderContext *renderContext/*, const RenderCamera *camera
     BE1::Mat4 viewMatrix;
     SetViewMatrix(BE1::Mat3(-1, 0, 0, 0, -1, 0, 0, 0, 1), BE1::Vec3(220, 0, 0), viewMatrix);
 
-#ifdef USE_RENDER_THREAD
-    renderContext->WaitRenderCompleted();
+    if (renderContext->IsUsingRenderThread()) {
+        renderContext->WaitRenderCompleted();
+    }
 
-    // 렌더 스레드에서 다음 렌더링에 사용할 VisObject 들을 준비한다.
-    // 
+    // 렌더 스레드가 다음 렌더링에 사용할 VisObject 들을 준비한다.
+    //
     // TODO: 보이는 오브젝트 수를 계산한다.
     int numVisObjects = renderObjects.Count();
 
-    RenderFrameData *writeFrameData = renderContext->GetCurrentFrameData();
+    RenderFrameData *frameData = renderContext->GetCurrentFrameData();
 
-    VisCamera *visCamera = writeFrameData->AllocVisCamera();
+    VisCamera *visCamera = frameData->AllocVisCamera();
     visCamera->viewProjMatrix = projMatrix * viewMatrix;
     
     // TODO: RenderScene 을 여러번 호출할 수 있어야함
-    VisObject *visObjects = writeFrameData->AllocVisObjects(numVisObjects);
+    VisObject *visObjects = frameData->AllocVisObjects(numVisObjects);
 
     // TODO 1: 현재 카메라에 기반해 SceneGraph 나 Frustum culling 등으로 렌더링에 사용할 렌더 오브젝트들을 추려낸다. 추려낸 렌더 오브젝트들의 변수는 복사 or (레퍼런스 카운트를 이용한) 공유를 해서 가지고 있어야 한다.
     for (int i = 0; i < numVisObjects; ++i) {
@@ -196,31 +199,19 @@ void App::RenderScene(RenderContext *renderContext/*, const RenderCamera *camera
     // TODO 4: Surface 들을 소팅한다.
     // TODO 5: 이후에는 Surface 단위로 그려야 한다.
 
-    renderContext->MarkUpdateCompleted();
-#else
-    renderContext->BeginFrame();
-
-    int numVisObjects = renderObjects.Count();
-
-    RenderFrameData *writeFrameData = renderContext->GetCurrentFrameData();
-
-    VisCamera *visCamera = writeFrameData->AllocVisCamera();
-    visCamera->viewProjMatrix = projMatrix * viewMatrix;
-
-    VisObject *visObjects = writeFrameData->AllocVisObjects(numVisObjects);
-
-    for (int i = 0; i < numVisObjects; ++i) {
-        visObjects[i].GetState() = renderObjects[i]->GetState();
+    if (renderContext->IsUsingRenderThread()) {
+        renderContext->MarkUpdateCompleted();
     }
-
-    renderContext->RenderFrame();
-    renderContext->EndFrame();
-#endif
 }
 
 RenderContext *App::CreateRenderContext(HWND hwnd) {
     RenderContext *renderContext = new RenderContext;
-    renderContext->Init(hwnd);
+#ifdef USE_RENDER_THREAD
+    bool useRenderThread = true;
+#else
+    bool useRenderThread = false;
+#endif
+    renderContext->Init(hwnd, useRenderThread);
     return renderContext;
 }
 
@@ -290,7 +281,7 @@ void App::UpdateCubes() {
 
             float t = elapsedSeconds + index * 0.1f;
 
-            GameObject* gameObject = gameObjects[index];
+            GameObject *gameObject = gameObjects[index];
             gameObject->renderObjectDef.worldMatrix.SetTranslationRotation(BE1::Vec3(0, startX + CubeSpacing * x, startY + CubeSpacing * y), BE1::Mat3::FromRotationZYX(t * 1.0f, 0, t * 0.25f), false);
 
             UpdateRenderObject(gameObject->renderObjectHandle, gameObject->renderObjectDef);

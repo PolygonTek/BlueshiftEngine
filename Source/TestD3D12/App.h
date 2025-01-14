@@ -53,7 +53,6 @@ public:
     void                            RemoveRenderObject(int handle);
 
     RenderContext *                 mainRenderContext = nullptr;
-    RenderContext *                 subRenderContext = nullptr;
 
     BE1::Array<GameObject *>        gameObjects;
     BE1::Array<RenderObject *>      renderObjects;

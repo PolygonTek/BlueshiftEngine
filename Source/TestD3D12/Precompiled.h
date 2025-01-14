@@ -16,33 +16,11 @@
 
 #include "BlueshiftEngine.h"
 
-#include <d3d12.h>
-#include <dxgi1_6.h>
-#include <d3d11on12.h>
-#include <d3d12video.h>
-#include <d3dx12.h>
-#include <d3dcompiler.h>
-#include <dxcapi.h>
-#include <dxgidebug.h>
-#include <DirectXMath.h>
-#include <wrl/client.h> // ComPtr
-
-#if defined(_DEBUG) || defined(_DEVELOPMENT)
-#define PROFILE_BUILD
-#include <pix3.h>
-#endif
+// 프로파일러 사용 여부 (D3D12 의 경우엔 PIX)
+#define USE_PROFILER
 
 // 디버그 레이어 사용 여부 (Release 모드에서는 사용 안함)
-#define USE_DEBUG_LAYER
-
-// PIX 마커 사용 여부 (Release 모드에서는 사용할 수 없음)
-#define USE_PIX_MARKERS
-
-// D3D12 Memory Allocator 사용 여부
-#define USE_D3D12_MEMALLOC
-
-// 스테이트 캐싱 사용 여부
-#define USE_STATE_CACHE_FOR_COMMAND_LIST
+#define USE_RENDERER_DEBUG_LAYER
 
 // 렌더 스레드 사용 여부
 #define USE_RENDER_THREAD
@@ -51,16 +29,10 @@
 #define USE_RENDER_TASK
 
 // 프레임 리소스 버퍼링 사용 여부
-#define USE_FRAME_RESOURCES
+#define USE_RENDER_FRAME_RESOURCES
 
 // 인스턴싱 사용 여부
 #define USE_RENDEROBJECT_INSTANCING
-
-#ifdef USE_FRAME_RESOURCES
-static constexpr int NumFrameResources = 2;
-#else
-static constexpr int NumFrameResources = 1;
-#endif
 
 #ifdef USE_RENDER_TASK
 // 렌더링할 때 쓰이는 최대 태스크 개수

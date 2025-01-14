@@ -17,6 +17,7 @@
 #include "D3D12Sampler.h"
 #include "D3D12DescriptorPool.h"
 #include "D3D12CommandList.h"
+#include "D3D12FrameData.h"
 
 static constexpr D3D12_FILTER ToD3D12TextureFilter(RHI::TextureFilter filter) {
     switch (filter) {

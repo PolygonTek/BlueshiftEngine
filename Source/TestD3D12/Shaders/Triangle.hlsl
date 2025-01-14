@@ -14,7 +14,7 @@ struct PSInput {
     float2 texCoord : TEXCOORD0;
 };
 
-cbuffer CONSTANT_BUFFER_DEFAULT : register(b0) {
+cbuffer DefaultCB : register(b0) {
     float4 offset;
 };
 

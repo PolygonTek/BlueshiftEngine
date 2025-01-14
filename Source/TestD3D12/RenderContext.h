@@ -18,6 +18,12 @@
 #include "RenderContext.h"
 #include "RenderFrameData.h"
 
+#ifdef USE_RENDER_FRAME_RESOURCES
+static constexpr int NumFrameResources = 2;
+#else
+static constexpr int NumFrameResources = 1;
+#endif
+
 enum class FrameSyncState : uint8_t {
     WaitingForUpdateCompleted,          // (렌더 스레드가 렌더링이 완료되어) 메인 스레드의 다음 업데이트 작업이 완료되기를 기다리는 상태
     WaitingForRenderCompleted           // (메인 스레드가 업데이트가 완료되어) 렌더 스레드의 다음 렌더링 작업이 완료되기를 기다리는 상태
@@ -27,7 +33,7 @@ class RenderContext {
 public:
     RenderContext() = default;
 
-    void                                Init(HWND hwnd);
+    void                                Init(HWND hwnd, bool useRenderThread);
     void                                Shutdown();
 
     void                                BeginFrame();
@@ -50,6 +56,8 @@ public:
     RenderFrameData *                   GetCurrentFrameData() { return &frameData[currentFrameIndex]; }
 
     void                                WaitAllFrameFences();
+
+    bool                                IsUsingRenderThread() const { return !!renderThread; }
 
     void                                WaitRenderCompleted();
     void                                MarkUpdateCompleted();

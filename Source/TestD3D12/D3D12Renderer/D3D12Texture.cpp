@@ -17,6 +17,7 @@
 #include "D3D12Texture.h"
 #include "D3D12CommandList.h"
 #include "D3D12DescriptorPool.h"
+#include "D3D12FrameData.h"
 
 void D3D12Texture::Release() {
     for (const D3D12SRVDescriptor &srvDescriptor : srvDescriptors) {
@@ -573,7 +574,7 @@ RHI::Texture *D3D12Renderer::CreateTexture(RHI::TextureType textureType, RHI::Re
 
     BE1::Image mipmapedImage;
 
-    // 밉맵을 직접 생성한다.
+    // CPU 에서 밉맵을 직접 생성한다.
     if (useMipmaps && srcImage->NumMipmaps() == 1) {
         int w = srcImage->GetWidth();
         int h = srcImage->GetHeight();

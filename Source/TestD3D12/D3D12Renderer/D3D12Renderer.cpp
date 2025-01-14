@@ -14,7 +14,6 @@
 
 #include "Precompiled.h"
 #include "Platform/PlatformSystem.h"
-#include "Platform/PlatformFile.h"
 #include "Platform/Windows/PlatformWinUtils.h"
 #include "D3D12Renderer.h"
 #include "D3D12SwapChain.h"
@@ -23,6 +22,7 @@
 #include "D3D12RootDescriptorPool.h"
 #include "D3D12DescriptorPool.h"
 #include "D3D12Texture.h"
+#include "D3D12FrameData.h"
 
 // D3D12.dll 이 D3D12Core.dll 을 찾기 위한 설정
 extern "C" { __declspec(dllexport) extern const UINT D3D12SDKVersion = 614; }
@@ -31,7 +31,7 @@ extern "C" { __declspec(dllexport) extern const char *D3D12SDKPath = u8"."; }
 void D3D12Renderer::Init(HWND hwnd) {
     RHI::Renderer::Init(hwnd);
 
-#if defined(USE_DEBUG_LAYER) && (defined(_DEBUG) || defined(_DEVELOPMENT))
+#if defined(USE_RENDERER_DEBUG_LAYER) && (defined(_DEBUG) || defined(_DEVELOPMENT))
     bool enableDebugLayer = true;
     bool withGpuValidation = true;
 #else

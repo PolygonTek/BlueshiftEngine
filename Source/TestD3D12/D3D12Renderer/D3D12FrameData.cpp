@@ -278,10 +278,6 @@ RHI::Buffer *D3D12FrameThreadData::AllocBuffer(bool shaderWritable, BE1::Image::
     return &dynamicBuffers.Last();
 }
 
-RHI::CommandList *D3D12FrameThreadData::AllocGraphicsCommandList(RHI::CommandListType type) {
-    return graphicsCommandListPool->Alloc(type);
-}
-
 RHI::CommandList *D3D12FrameThreadData::BeginSecondaryCommandList(const RHI::CommandList *primaryCommandList) {
     // Secondary CommandList 를 얻어온다.
     D3D12CommandList *commandList = static_cast<D3D12CommandList *>(AllocGraphicsCommandList(RHI::CommandListType::Secondary));
@@ -289,7 +285,7 @@ RHI::CommandList *D3D12FrameThreadData::BeginSecondaryCommandList(const RHI::Com
 
     // Secondary CommandList 의 루트 디스크립터 힙을 지정한다.
     // 반드시 Primary CommandList 와 동일한 디스크립터 힙을 사용해야 한다.
-    ID3D12DescriptorHeap *descriptorHeaps[] = { rootDescriptorPool->descriptorHeap };
+    ID3D12DescriptorHeap *descriptorHeaps[] = { rootDescriptorPool->GetDescriptorHeap()};
     commandList->SetDescriptorHeaps(COUNT_OF(descriptorHeaps), descriptorHeaps);
 
     return commandList;

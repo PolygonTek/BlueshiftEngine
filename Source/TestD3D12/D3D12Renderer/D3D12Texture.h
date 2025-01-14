@@ -14,6 +14,7 @@
 
 #pragma once
 
+#include "../RHI.h"
 #include "D3D12Common.h"
 
 #ifdef USE_D3D12_MEMALLOC

@@ -31,7 +31,6 @@ static HACCEL               hAccelTable;
 static WCHAR                windowTitleString[256];
 
 LRESULT CALLBACK            MainWndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam);
-LRESULT CALLBACK            SubWndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam);
 
 static void SystemLog(int logLevel, const char* text) {
     int len = BE1::PlatformWinUtils::UTF8ToUCS2(text, nullptr, 0);
@@ -156,26 +155,6 @@ static HWND CreateMainWindow(const TCHAR* title, int width, int height) {
     return hwnd;
 }
 
-static HWND CreateSubWindow(const TCHAR *title, int width, int height) {
-    HINSTANCE hInstance = GetModuleHandle(nullptr);
-
-    WNDCLASSEX wcex;
-    memset(&wcex, 0, sizeof(wcex));
-    wcex.cbSize             = sizeof(WNDCLASSEX);
-    wcex.style              = CS_HREDRAW | CS_VREDRAW | CS_OWNDC;
-    wcex.lpfnWndProc        = SubWndProc;
-    wcex.hInstance          = hInstance;
-    wcex.hIcon              = LoadIcon(hInstance, MAKEINTRESOURCE(IDI_TESTD3D12));
-    wcex.hIconSm            = LoadIcon(hInstance, MAKEINTRESOURCE(IDI_SMALL));
-    wcex.hCursor            = LoadCursor(nullptr, IDC_ARROW);
-    //wcex.hbrBackground    = (HBRUSH)GetStockObject(BLACK_BRUSH);
-    wcex.lpszClassName      = subWindowClassName;
-    RegisterClassEx(&wcex);
-
-    HWND hwnd = CreateRenderWindow(title, subWindowClassName, width, height, false);
-    return hwnd;
-}
-
 static BOOL InitInstance(int nCmdShow) {
     BE1::Engine::isMainThread = true;
     BE1::Str execPath = BE1::PlatformFile::ExecutablePath();
@@ -207,12 +186,6 @@ static BOOL InitInstance(int nCmdShow) {
 
     app.mainRenderContext = app.CreateRenderContext(hwndMain);
 
-#if 0
-    hwndSub = CreateSubWindow(_T("sub window"), 1024, 768);
-
-    app.subRenderContext = app.CreateRenderContext(hwndSub);
-#endif
-
     app.Init();
 
     return TRUE;
@@ -221,9 +194,6 @@ static BOOL InitInstance(int nCmdShow) {
 static void ShutdownInstance() {
     app.Shutdown();
 
-#if 0
-    app.DestroyRenderContext(app.subRenderContext);
-#endif
     app.DestroyRenderContext(app.mainRenderContext);
 
     RHI::renderer->Shutdown();
@@ -273,10 +243,14 @@ static bool RunFrameInstance(int frameMsec) {
 
     app.RunFrame(frameMsec);
 
-    app.RenderScene(app.mainRenderContext);
-#if 0
-    app.RenderScene(app.subRenderContext);
-#endif
+    if (!app.mainRenderContext->IsUsingRenderThread()) {
+        app.mainRenderContext->BeginFrame();
+        app.RenderScene(app.mainRenderContext);
+        app.mainRenderContext->RenderFrame();
+        app.mainRenderContext->EndFrame();
+    } else {
+        app.RenderScene(app.mainRenderContext);
+    }
 
     return true;
 }
@@ -367,21 +341,6 @@ LRESULT CALLBACK MainWndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lPar
     }
     case WM_DESTROY:
         PostQuitMessage(0);
-        return 0;
-    }
-    return DefWindowProc(hwnd, message, wParam, lParam);
-}
-
-LRESULT CALLBACK SubWndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam) {
-    switch (message) {
-    case WM_CLOSE:
-        return 0; // prevent to close sub window
-    case WM_SIZE:
-        if (wParam != SIZE_MINIMIZED) {
-            if (app.subRenderContext) {
-                app.subRenderContext->OnResize(LOWORD(lParam), HIWORD(lParam));
-            }
-        }
         return 0;
     }
     return DefWindowProc(hwnd, message, wParam, lParam);

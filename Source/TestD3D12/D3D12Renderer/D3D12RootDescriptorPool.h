@@ -29,13 +29,16 @@ public:
     void                            Init(ID3D12Device *device, UINT maxCount);
     void                            Shutdown();
 
-    void                            Reset();
+    void                            Reset() { usedCount = 0; }
     bool                            AllocRange(UINT count, D3D12_CPU_DESCRIPTOR_HANDLE *outCpuDescriptorHandle, D3D12_GPU_DESCRIPTOR_HANDLE *outGpuDescriptorHandle);
 
+    ID3D12DescriptorHeap *          GetDescriptorHeap() const { return descriptorHeap; }
+
+private:
     ID3D12DescriptorHeap *          descriptorHeap = nullptr;
-    D3D12_CPU_DESCRIPTOR_HANDLE     baseCpuDescriptorHandle;
-    D3D12_GPU_DESCRIPTOR_HANDLE     baseGpuDescriptorHandle;
-    UINT                            descriptorHandleSize;
-    UINT                            maxDescriptorCount;
+    D3D12_CPU_DESCRIPTOR_HANDLE     baseCpuDescriptorHandle = {};
+    D3D12_GPU_DESCRIPTOR_HANDLE     baseGpuDescriptorHandle = {};
+    UINT                            descriptorHandleSize = 0;
+    UINT                            maxDescriptorCount = 0;
     UINT                            usedCount = 0;
 };

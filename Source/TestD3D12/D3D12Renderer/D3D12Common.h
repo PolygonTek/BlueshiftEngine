@@ -14,6 +14,28 @@
 
 #pragma once
 
+#include <d3d12.h>
+#include <dxgi1_6.h>
+#include <d3d11on12.h>
+#include <d3d12video.h>
+#include <d3dx12.h>
+#include <d3dcompiler.h>
+#include <dxcapi.h>
+#include <dxgidebug.h>
+#include <DirectXMath.h>
+#include <wrl/client.h> // ComPtr
+
+#if defined(_DEBUG) || defined(_DEVELOPMENT)
+#define PROFILE_BUILD
+#include <pix3.h>
+#endif
+
+// D3D12 Memory Allocator 사용 여부
+#define USE_D3D12_MEMALLOC
+
+// 스테이트 캐싱 사용 여부
+#define USE_STATE_CACHE_FOR_COMMAND_LIST
+
 template <typename T>
 T *NormalizePointer(T *&ptr) noexcept {
     return ptr;

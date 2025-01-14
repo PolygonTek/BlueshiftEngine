@@ -23,6 +23,7 @@
 #include "D3D12ConstantBuffer.h"
 #include "D3D12CommandList.h"
 #include "D3D12RootDescriptorPool.h"
+#include "D3D12FrameData.h"
 
 static constexpr D3D12_FILL_MODE ToD3D12FillMode(RHI::FillMode fillMode) {
     switch (fillMode) {

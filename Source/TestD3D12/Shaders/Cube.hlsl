@@ -14,9 +14,8 @@ struct PSInput {
     float2 texCoord : TEXCOORD0;
 };
 
-cbuffer CONSTANT_BUFFER_DEFAULT : register(b0) {
-    row_major float4x4 viewProjMatrix;
-    row_major float3x4 worldMatrix;
+cbuffer DefaultCB : register(b0) {
+    row_major float4x4 modelViewProjMatrix;
 };
 
 Texture2D defaultTexture : register(t0);
@@ -25,8 +24,7 @@ SamplerState defaultSampler : register(s0);
 [RootSignature(COMMON_ROOT_SIGNATURE)]
 PSInput VSMain(VSInput input) {
     PSInput result;
-    float4 positionWS = float4(mul(worldMatrix, input.position), 1.0);
-    result.position = mul(viewProjMatrix, positionWS);
+    result.position = mul(modelViewProjMatrix, input.position);
     result.color = input.color;
     result.texCoord = input.texCoord;
 

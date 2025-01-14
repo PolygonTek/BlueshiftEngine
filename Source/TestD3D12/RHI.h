@@ -14,8 +14,6 @@
 
 #pragma once
 
-#include "Image/Image.h"
-
 namespace RHI {
     enum class ClearFlag : uint32_t {
         None                            = 0,
@@ -669,7 +667,7 @@ namespace RHI {
     public:
         virtual ~SwapChain() = 0 {};
 
-        virtual bool                    IsSwapChainSupportsHDR() const = 0;
+        virtual bool                    IsSupportsHDR() const = 0;
         virtual bool                    GetFormat(BE1::Image::Format::Enum *imageFormat, bool *isSRGB) const = 0;
 
         virtual void                    Resize(uint32_t width, uint32_t height) = 0;
@@ -877,23 +875,23 @@ namespace RHI {
 };
 
 #ifdef USE_PROFILER
-#define PROFILER_CPU_BEGIN_EVENT(colorIndex, string) RHI::renderer->BeginEvent(nullptr, string, colorIndex)
+#define PROFILER_CPU_BEGIN_EVENT(string, colorIndex) RHI::renderer->BeginEvent(nullptr, string, colorIndex)
 #define PROFILER_CPU_END_EVENT() RHI::renderer->EndEvent(nullptr);
-#define PROFILER_CPU_SCOPED_EVENT(colorIndex, string) RHI::ScopedEventObject(nullptr, string, colorIndex)
-#define PROFILER_CPU_MARKER(colorIndex, string) RHI::renderer->SetMarker(nullptr, string, colorIndex)
-#define PROFILER_BEGIN_EVENT(commandList, colorIndex, string) RHI::renderer->BeginEvent(commandList, string, colorIndex)
+#define PROFILER_CPU_SCOPED_EVENT(string, colorIndex) RHI::ScopedEventObject _scopedEventObject(nullptr, string, colorIndex)
+#define PROFILER_CPU_MARKER(string, colorIndex) RHI::renderer->SetMarker(nullptr, string, colorIndex)
+#define PROFILER_BEGIN_EVENT(commandList, string, colorIndex) RHI::renderer->BeginEvent(commandList, string, colorIndex)
 #define PROFILER_END_EVENT(commandList) RHI::renderer->EndEvent(commandList)
-#define PROFILER_SCOPED_EVENT(commandList, colorIndex, string) RHI::ScopedEventObject(commandList, string, colorIndex)
-#define PROFILER_MARKER(commandList, colorIndex, string) RHI::renderer->SetMarker(commandList, string, colorIndex)
+#define PROFILER_SCOPED_EVENT(commandList, string, colorIndex) RHI::ScopedEventObject _scopedEventObject(commandList, string, colorIndex)
+#define PROFILER_MARKER(commandList, string, colorIndex) RHI::renderer->SetMarker(commandList, string, colorIndex)
 #else
-#define PROFILER_CPU_BEGIN_EVENT(colorIndex, string)
+#define PROFILER_CPU_BEGIN_EVENT(string, colorIndex)
 #define PROFILER_CPU_END_EVENT()
-#define PROFILER_CPU_SCOPED_EVENT(colorIndex, string)
-#define PROFILER_CPU_MARKER(colorIndex, string)
-#define PROFILER_BEGIN_EVENT(commandList, colorIndex, string)
+#define PROFILER_CPU_SCOPED_EVENT(string, colorIndex)
+#define PROFILER_CPU_MARKER(string, colorIndex)
+#define PROFILER_BEGIN_EVENT(commandList, string, colorIndex)
 #define PROFILER_END_EVENT(commandList)
-#define PROFILER_SCOPED_EVENT(commandList, colorIndex, string)
-#define PROFILER_MARKER(commandList, colorIndex, string)
+#define PROFILER_SCOPED_EVENT(commandList, string, colorIndex)
+#define PROFILER_MARKER(commandList, string, colorIndex)
 #endif
 
 template<>

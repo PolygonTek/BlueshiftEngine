@@ -28,15 +28,15 @@ class VisObject {
 public:
     RenderObject::State &       GetState() { return state; }
 
-    static void                 Draw(const RenderContext *renderContext, RHI::CommandList *commandList, VisObject *visObject);
-    static void                 DrawInstanced(const RenderContext *renderContext, RHI::CommandList *commandList, VisObject *visObjects, int instanceCount);
+    static void                 Draw(const RenderContext *renderContext, RHI::CommandList *commandList, const VisObject *visObject);
+    static void                 DrawInstanced(const RenderContext *renderContext, RHI::CommandList *commandList, const VisObject *visObjects, int instanceCount);
 
 private:
-    static void                 DrawTriangleMesh(const RenderContext *renderContext, RHI::CommandList *commandList, VisObject *visObject);
-    static void                 DrawTriangleMeshInstanced(const RenderContext *renderContext, RHI::CommandList *commandList, VisObject *visObjects, int instanceCount);
+    static void                 DrawTriangleMesh(const RenderContext *renderContext, RHI::CommandList *commandList, const VisObject *visObject);
+    static void                 DrawTriangleMeshInstanced(const RenderContext *renderContext, RHI::CommandList *commandList, const VisObject *visObjects, int instanceCount);
 
-    static void                 DrawCubeMesh(const RenderContext *renderContext, RHI::CommandList *commandList, VisObject *visObject);
-    static void                 DrawCubeMeshInstanced(const RenderContext *renderContext, RHI::CommandList *commandList, VisObject *visObjects, int instanceCount);
+    static void                 DrawCubeMesh(const RenderContext *renderContext, RHI::CommandList *commandList, const VisObject *visObject);
+    static void                 DrawCubeMeshInstanced(const RenderContext *renderContext, RHI::CommandList *commandList, const VisObject *visObjects, int instanceCount);
 
     RenderObject::State         state;
 };

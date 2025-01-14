@@ -116,7 +116,7 @@ void D3D12SwapChain::SwapBuffers(bool vsync) {
     currentBackBufferIndex = dxgiSwapChain->GetCurrentBackBufferIndex();
 }
 
-bool D3D12SwapChain::IsSwapChainSupportsHDR() const {
+bool D3D12SwapChain::IsSupportsHDR() const {
     // HDR display query: https://docs.microsoft.com/en-us/windows/win32/direct3darticles/high-dynamic-range
     Microsoft::WRL::ComPtr<IDXGIOutput> dxgiOutput;
     if (SUCCEEDED(dxgiSwapChain->GetContainingOutput(&dxgiOutput))) {

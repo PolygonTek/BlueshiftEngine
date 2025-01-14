@@ -17,6 +17,7 @@
 #include "D3D12ConstantBuffer.h"
 #include "D3D12DescriptorPool.h"
 #include "D3D12CommandList.h"
+#include "D3D12FrameData.h"
 
 void D3D12ConstantBuffer::Release() {
     if (!writePtr) {

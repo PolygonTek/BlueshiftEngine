@@ -18,7 +18,7 @@
 #include "RenderFrameData.h"
 #include "VisObject.h"
 
-void RenderContext::Init(HWND hwnd) {
+void RenderContext::Init(HWND hwnd, bool useRenderThread) {
 #ifdef USE_RENDER_TASK
     // 렌더 태스크 스레드 개수는 물리코어 개수를 넘지 않는다.
     int numCores = BE1::PlatformSystem::NumCPUCores();
@@ -38,9 +38,9 @@ void RenderContext::Init(HWND hwnd) {
     currentFrameIndex = 0;
     frameData[currentFrameIndex].SetFenceValue(RHI::renderer->SignalFence(RHI::CommandQueueType::Graphics));
 
-#ifdef USE_RENDER_THREAD
-    InitRenderThread();
-#endif
+    if (useRenderThread) {
+        InitRenderThread();
+    }
 
     // 윈도우 크기 얻기
     RECT rc;
@@ -70,9 +70,9 @@ void RenderContext::Init(HWND hwnd) {
 }
 
 void RenderContext::Shutdown() {
-#ifdef USE_RENDER_THREAD
-    ShutdownRenderThread();
-#endif
+    if (renderThread) {
+        ShutdownRenderThread();
+    }
 
 #ifdef USE_RENDER_TASK
     renderTaskManager.Stop();
@@ -93,9 +93,9 @@ void RenderContext::Shutdown() {
 }
 
 void RenderContext::OnResize(int width, int height) {
-#ifdef USE_RENDER_THREAD
-    WaitRenderCompleted();
-#endif
+    if (renderThread) {
+        WaitRenderCompleted();
+    }
 
     RHI::renderer->Finish(RHI::CommandQueueType::Graphics);
 
@@ -312,11 +312,11 @@ void RenderContext::BeginFrame() {
 void RenderContext::EndFrame() {
     PROFILER_CPU_SCOPED_EVENT("RenderContext::EndFrame", 1);
 
-    // TODO: 렌더큐에 종료 마킹을 하고, 렌더큐를 실행한다.
-
 #if 1
     RHI::renderer->EndRenderPass(mainCommandList);
 #else
+    RHI::renderer->EndRenderPass(mainCommandList);
+
     RHI::renderer->BeginRenderPass(mainCommandList, swapChain, nullptr);
     RHI::renderer->SetPSO(mainCommandList, imagePSO);
     RHI::renderer->SetTexture(mainCommandList, 0, false, mainRTColorTexture);
@@ -372,17 +372,17 @@ void RenderContext::RenderFrame() {
 void RenderContext::DrawVisObjects(int threadIndex, RHI::CommandList *commandList, int startIndex, int endIndex) {
     PROFILER_SCOPED_EVENT(commandList, "RenderContext::DrawVisObjects", 3);
 
-    RenderFrameData *currentFrameData = GetCurrentFrameData();
+    const RenderFrameData *currentFrameData = GetCurrentFrameData();
     int numVisObjects = currentFrameData->NumVisObjects();
     if (numVisObjects == 0) {
         return;
     }
 
-    VisObject *visObjects = currentFrameData->GetVisObjects();
+    const VisObject *visObjects = currentFrameData->GetVisObjects();
     int index = startIndex;
 
     while (index <= endIndex) {
-        VisObject *currentVisObjectPtr = &visObjects[index];
+        const VisObject *currentVisObjectPtr = &visObjects[index];
 
 #ifdef USE_RENDEROBJECT_INSTANCING
         int instanceCount = BE1::Min(1024, endIndex - index + 1);

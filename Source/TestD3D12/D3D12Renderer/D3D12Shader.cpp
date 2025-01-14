@@ -13,8 +13,6 @@
 // limitations under the License.
 
 #include "Precompiled.h"
-#include "Platform/PlatformSystem.h"
-#include "Platform/PlatformFile.h"
 #include "Platform/Windows/PlatformWinUtils.h"
 #include "D3D12Renderer.h"
 #include "D3D12Shader.h"

@@ -21,12 +21,11 @@
 #include "D3D12MemoryAllocator/D3D12MemAlloc.h"
 #endif
 
-#include "D3D12SwapChain.h"
-#include "D3D12FrameData.h"
-
+class D3D12Buffer;
 class D3D12Texture;
 class D3D12PipelineState;
 class D3D12CommandList;
+class D3D12CommandListPool;
 class D3D12DescriptorPool;
 
 struct D3D12PendingResource {

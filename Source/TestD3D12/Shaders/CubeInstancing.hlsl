@@ -15,7 +15,7 @@ struct PSInput {
     float2 texCoord : TEXCOORD0;
 };
 
-cbuffer CONSTANT_BUFFER_DEFAULT : register(b0) {
+cbuffer DefaultCB : register(b0) {
     row_major float4x4 viewProjMatrix;
     row_major float3x4 worldMatrix[1024];
 };

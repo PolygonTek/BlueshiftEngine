@@ -17,6 +17,7 @@
 #include "D3D12Buffer.h"
 #include "D3D12CommandList.h"
 #include "D3D12DescriptorPool.h"
+#include "D3D12FrameData.h"
 
 void D3D12Buffer::Release() {
     for (const D3D12SRVDescriptor &srvDescriptor : srvDescriptors) {
