@@ -18,7 +18,6 @@
 #include "VisObject.h"
 #include "TriangleMesh.h"
 #include "CubeMesh.h"
-#include "D3D12Renderer/D3D12Renderer.h"
 
 #define TRIANGLE_OR_CUBE    0
 
@@ -35,26 +34,22 @@ void App::Init() {
     InitGameObjects();
 
     renderObjects.Reserve(16384);
-
-#ifdef USE_D3D12_MEMALLOC
-    renderer->PrintMemoryAllocatorStats();
-#endif
 }
 
 void App::Shutdown() {
-    renderer->Finish(RHI::CommandQueueType::Graphics);
+    RHI::renderer->Finish(RHI::CommandQueueType::Graphics);
 
     ClearGameObjects();
 }
 
 void App::RunFrame(int frameMsec) {
-    PIX_CPU_SCOPED_EVENT(2, "App::RunFrame");
+    PROFILER_CPU_SCOPED_EVENT("App::RunFrame", 2);
 
     elapsedMsec += frameMsec;
 
     UpdateGameObjects();
 
-    renderer->FreePendingResources();
+    RHI::renderer->FreePendingResources();
 
     BE1::cmdSystem.ExecuteCommandBuffer();
 }
@@ -106,7 +101,7 @@ void App::InitGameObjects() {
 }
 
 void App::UpdateGameObjects() {
-    PIX_CPU_SCOPED_EVENT(1, "App::UpdateGameObjects");
+    PROFILER_CPU_SCOPED_EVENT("App::UpdateGameObjects", 1);
 
 #if TRIANGLE_OR_CUBE == 1
     UpdateTriangles();

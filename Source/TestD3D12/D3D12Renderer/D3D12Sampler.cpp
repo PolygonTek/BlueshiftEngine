@@ -76,7 +76,7 @@ static void ToD3D12TextureBorderColor(RHI::TextureBorderColor borderColor, FLOAT
 
 void D3D12Sampler::Release() {
     if (descriptorHandle.ptr != 0) {
-        renderer->samCpuDescriptorPool->Free(descriptorHandle);
+        D3D12Renderer::GetRenderer()->samCpuDescriptorPool->Free(descriptorHandle);
         descriptorHandle.ptr = 0;
     }
 }

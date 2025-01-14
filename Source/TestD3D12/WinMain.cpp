@@ -202,8 +202,8 @@ static BOOL InitInstance(int nCmdShow) {
 
     hwndMain = CreateMainWindow(title, 1024, 768);
 
-    renderer = new D3D12Renderer;
-    renderer->Init(hwndMain);
+    RHI::renderer = new D3D12Renderer;
+    RHI::renderer->Init(hwndMain);
 
     app.mainRenderContext = app.CreateRenderContext(hwndMain);
 
@@ -226,8 +226,8 @@ static void ShutdownInstance() {
 #endif
     app.DestroyRenderContext(app.mainRenderContext);
 
-    renderer->Shutdown();
-    SAFE_DELETE(renderer);
+    RHI::renderer->Shutdown();
+    SAFE_DELETE(RHI::renderer);
 
     BE1::Engine::ShutdownBase();
 }

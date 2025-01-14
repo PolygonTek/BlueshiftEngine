@@ -83,15 +83,15 @@ void D3D12SwapChain::Release() {
 void D3D12SwapChain::CreateRTVs() {
     for (UINT bufferIndex = 0; bufferIndex < D3D12SwapChain::NumSwapChainBuffers; ++bufferIndex) {
         if (backBufferRTVs[bufferIndex].ptr != 0) {
-            renderer->rtvCpuDescriptorPool->Free(backBufferRTVs[bufferIndex]);
+            D3D12Renderer::GetRenderer()->rtvCpuDescriptorPool->Free(backBufferRTVs[bufferIndex]);
         }
-        renderer->rtvCpuDescriptorPool->Alloc(&backBufferRTVs[bufferIndex], nullptr);
+        D3D12Renderer::GetRenderer()->rtvCpuDescriptorPool->Alloc(&backBufferRTVs[bufferIndex], nullptr);
 
         // 스왑체인의 백버퍼 리소스를 가져온다.
         dxgiSwapChain->GetBuffer(bufferIndex, IID_PPV_ARGS(&backBuffers[bufferIndex]));
 
         // 백버퍼로 RTV 를 생성한다.
-        renderer->device->CreateRenderTargetView(backBuffers[bufferIndex], nullptr, backBufferRTVs[bufferIndex]);
+        D3D12Renderer::GetRenderer()->device->CreateRenderTargetView(backBuffers[bufferIndex], nullptr, backBufferRTVs[bufferIndex]);
     }
 
     currentBackBufferIndex = dxgiSwapChain->GetCurrentBackBufferIndex();

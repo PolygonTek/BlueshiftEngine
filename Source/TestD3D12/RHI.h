@@ -16,7 +16,7 @@
 
 #include "Image/Image.h"
 
-struct RHI {
+namespace RHI {
     enum class ClearFlag : uint32_t {
         None                            = 0,
         Color                           = BIT(0),
@@ -744,10 +744,12 @@ struct RHI {
 
         bool                            IsInitialized() const { return initialized; }
 
-        virtual uint64_t                SignalFence(RHI::CommandQueueType queueType) = 0;
+        virtual uint64_t                SignalFence(CommandQueueType queueType) = 0;
         virtual bool                    IsFenceComplete(uint64_t checkFenceValue) = 0;
         virtual void                    WaitFence(uint64_t expectedFenceValue) = 0;
-        virtual void                    Finish(RHI::CommandQueueType queueType) = 0;
+        virtual void                    Finish(CommandQueueType queueType) = 0;
+
+        virtual void                    FreePendingResources(bool waitPendings = false) = 0;
 
         const RasterizerState *         GetRasterizerState(RasterizerStateType type) const { return &rasterizerStates[to_int(type)]; }
         const DepthStencilState *       GetDepthStencilState(DepthStencilStateType type) const { return &depthStencilStates[to_int(type)]; }
@@ -758,7 +760,7 @@ struct RHI {
         virtual BE1::Image::Format::Enum ToCompressedImageFormat(BE1::Image::Format::Enum inFormat, bool useNormalMap) const = 0;
 
         virtual RHI::FrameThreadData *  CreateFrameThreadData() = 0;
-        virtual void                    DestroyFrameThreadData(RHI::FrameThreadData *frameThreadData) = 0;
+        virtual void                    DestroyFrameThreadData(FrameThreadData *frameThreadData) = 0;
 
         virtual SwapChain *             CreateSwapChain(HWND hwnd, uint32_t width, uint32_t height, BE1::Image::Format::Enum format) = 0;
         virtual void                    DestroySwapChain(SwapChain *swapChain) = 0;
@@ -843,6 +845,10 @@ struct RHI {
         virtual void                    DispatchMesh(CommandList *commandList, uint32_t threadGroupCountX, uint32_t threadGroupCountY, uint32_t threadGroupCountZ) = 0;
         virtual void                    DispatchMeshIndirect(CommandList *commandList, const Buffer *argsBuffer, uint32_t argsOffset) = 0;
 
+        virtual void                    SetMarker(CommandList *commandList, const char *string, uint8_t colorIndex) = 0;
+        virtual void                    BeginEvent(CommandList *commandList, const char *string, uint8_t colorIndex) = 0;
+        virtual void                    EndEvent(CommandList *commandList) = 0;
+
         static GPUBarrier               MakeMemoryBarrier(const GPUResource *resource);
         static GPUBarrier               MakeBufferBarrier(const Buffer *buffer, GPUResourceState stateBefore, GPUResourceState stateAfter);
         static GPUBarrier               MakeImageBarrier(const Texture *texture, GPUResourceState stateBefore, GPUResourceState stateAfter, int slice = -1, int mipLevel = -1);
@@ -856,7 +862,39 @@ struct RHI {
         BlendState                      blendStates[to_int(BlendStateType::Count)];
         bool                            initialized = false;
     };
+
+    extern Renderer *                   renderer;
+
+    class ScopedEventObject {
+    public:
+        ScopedEventObject() = delete;
+        ScopedEventObject(CommandList *commandList, const char *string, uint8_t colorIndex) : eventCommandList(commandList) { renderer->BeginEvent(commandList, string, colorIndex); }
+        ScopedEventObject(ScopedEventObject &scopedEventObject) = delete;
+        ~ScopedEventObject() { renderer->EndEvent(eventCommandList); }
+
+        CommandList *                   eventCommandList = nullptr;
+    };
 };
+
+#ifdef USE_PROFILER
+#define PROFILER_CPU_BEGIN_EVENT(colorIndex, string) RHI::renderer->BeginEvent(nullptr, string, colorIndex)
+#define PROFILER_CPU_END_EVENT() RHI::renderer->EndEvent(nullptr);
+#define PROFILER_CPU_SCOPED_EVENT(colorIndex, string) RHI::ScopedEventObject(nullptr, string, colorIndex)
+#define PROFILER_CPU_MARKER(colorIndex, string) RHI::renderer->SetMarker(nullptr, string, colorIndex)
+#define PROFILER_BEGIN_EVENT(commandList, colorIndex, string) RHI::renderer->BeginEvent(commandList, string, colorIndex)
+#define PROFILER_END_EVENT(commandList) RHI::renderer->EndEvent(commandList)
+#define PROFILER_SCOPED_EVENT(commandList, colorIndex, string) RHI::ScopedEventObject(commandList, string, colorIndex)
+#define PROFILER_MARKER(commandList, colorIndex, string) RHI::renderer->SetMarker(commandList, string, colorIndex)
+#else
+#define PROFILER_CPU_BEGIN_EVENT(colorIndex, string)
+#define PROFILER_CPU_END_EVENT()
+#define PROFILER_CPU_SCOPED_EVENT(colorIndex, string)
+#define PROFILER_CPU_MARKER(colorIndex, string)
+#define PROFILER_BEGIN_EVENT(commandList, colorIndex, string)
+#define PROFILER_END_EVENT(commandList)
+#define PROFILER_SCOPED_EVENT(commandList, colorIndex, string)
+#define PROFILER_MARKER(commandList, colorIndex, string)
+#endif
 
 template<>
 struct enable_bitmask_operators<RHI::ClearFlag> {

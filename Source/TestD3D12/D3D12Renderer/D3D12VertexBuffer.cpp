@@ -19,7 +19,7 @@
 
 void D3D12VertexBuffer::Release() {
     if (buffer) {
-        renderer->DestroyBuffer(buffer, true);
+        RHI::renderer->DestroyBuffer(buffer, true);
         buffer = nullptr;
     }
 }

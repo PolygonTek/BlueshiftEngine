@@ -18,7 +18,7 @@
 
 void D3D12IndexBuffer::Release() {
     if (buffer) {
-        renderer->DestroyBuffer(buffer, true);
+        RHI::renderer->DestroyBuffer(buffer, true);
         buffer = nullptr;
     }
 }

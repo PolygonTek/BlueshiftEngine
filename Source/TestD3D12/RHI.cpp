@@ -15,6 +15,10 @@
 #include "Precompiled.h"
 #include "RHI.h"
 
+namespace RHI {
+    Renderer *renderer = nullptr;
+}
+
 void RHI::Renderer::Init(HWND hwnd) {
     SetupStates();
 

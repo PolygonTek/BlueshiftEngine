@@ -20,8 +20,6 @@
 #include "D3D12PipelineState.h"
 #include "D3D12RootDescriptorPool.h"
 
-class D3D12CommandListPool;
-
 class D3D12CommandList : public RHI::CommandList {
     friend class D3D12Renderer;
     friend class D3D12CommandListPool;
@@ -148,7 +146,8 @@ BE_INLINE void D3D12CommandList::Close() {
 BE_INLINE void D3D12CommandList::Execute(RHI::CommandQueueType queueType) {
     assert(queueType < RHI::CommandQueueType::Count);
     ID3D12CommandList *execCommandLists[] = { commandList };
-    renderer->commandQueues[to_int(queueType)]->ExecuteCommandLists(COUNT_OF(execCommandLists), execCommandLists);
+
+    D3D12Renderer::GetRenderer()->commandQueues[to_int(queueType)]->ExecuteCommandLists(COUNT_OF(execCommandLists), execCommandLists);
 }
 
 BE_INLINE void D3D12CommandList::ExecuteSecondary(RHI::CommandList *primaryCommandList, const RHI::FrameThreadData *frameThreadData) {
@@ -166,7 +165,7 @@ BE_INLINE void D3D12CommandList::CloseAndExecute(RHI::CommandQueueType queueType
 
     assert(queueType < RHI::CommandQueueType::Count);
     ID3D12CommandList *execCommandLists[] = { commandList };
-    renderer->commandQueues[to_int(queueType)]->ExecuteCommandLists(COUNT_OF(execCommandLists), execCommandLists);
+    D3D12Renderer::GetRenderer()->commandQueues[to_int(queueType)]->ExecuteCommandLists(COUNT_OF(execCommandLists), execCommandLists);
 }
 
 BE_INLINE void D3D12CommandList::CloseAndExecuteSecondary(RHI::CommandList *primaryCommandList, const RHI::FrameThreadData *frameThreadData) {

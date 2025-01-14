@@ -21,12 +21,12 @@
 void D3D12ConstantBuffer::Release() {
     if (!writePtr) {
         if (descriptorHandle.ptr != 0) {
-            renderer->resCpuDescriptorPool->Free(descriptorHandle);
+            D3D12Renderer::GetRenderer()->resCpuDescriptorPool->Free(descriptorHandle);
             descriptorHandle.ptr = 0;
         }
     }
     if (buffer) {
-        renderer->DestroyBuffer(buffer, true);
+        RHI::renderer->DestroyBuffer(buffer, true);
         buffer = nullptr;
     }
 }

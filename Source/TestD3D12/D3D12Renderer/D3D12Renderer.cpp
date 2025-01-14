@@ -28,8 +28,6 @@
 extern "C" { __declspec(dllexport) extern const UINT D3D12SDKVersion = 614; }
 extern "C" { __declspec(dllexport) extern const char *D3D12SDKPath = u8"."; }
 
-D3D12Renderer *     renderer;
-
 void D3D12Renderer::Init(HWND hwnd) {
     RHI::Renderer::Init(hwnd);
 
@@ -195,7 +193,7 @@ void D3D12Renderer::Init(HWND hwnd) {
     }
 
     // Fence 객체 생성
-    hr = renderer->device->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&fence));
+    hr = device->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&fence));
     if (FAILED(hr)) {
         BE_FATALERROR("CreateFence failed, ERROR: 0x%x", hr);
     }
@@ -231,7 +229,7 @@ void D3D12Renderer::Init(HWND hwnd) {
 
     // 커맨드 리스트 풀 생성
     uint32_t maxSecondaryCommandLists = 8;
-    graphicsCommandListPool = new D3D12CommandListPool(device, nullptr, D3D12_COMMAND_LIST_TYPE_DIRECT, 8, maxSecondaryCommandLists);
+    graphicsCommandListPool = new D3D12CommandListPool(nullptr, D3D12_COMMAND_LIST_TYPE_DIRECT, 8, maxSecondaryCommandLists);
 
     // 리소스 생성 용 커맨드 리스트
     resourceCommandList = graphicsCommandListPool->Alloc();
@@ -374,7 +372,7 @@ void D3D12Renderer::Shutdown() {
 
 uint64_t D3D12Renderer::SignalFence(RHI::CommandQueueType queueType) {
     fenceValue++;
-    renderer->commandQueues[to_int(queueType)]->Signal(fence, fenceValue);
+    commandQueues[to_int(queueType)]->Signal(fence, fenceValue);
 
     return fenceValue;
 }
@@ -1286,6 +1284,36 @@ void D3D12Renderer::DispatchMeshIndirect(RHI::CommandList *commandList, const RH
     D3D12CommandList *d3d12CommandList = static_cast<D3D12CommandList *>(commandList);
     BindRootParameters(d3d12CommandList, false);
     d3d12CommandList->GetGraphicsCommandList()->ExecuteIndirect(dispatchMeshIndirectCommandSignature, 1, static_cast<const D3D12Buffer *>(argsBuffer)->GetResource(), argsOffset, nullptr, 0);
+}
+
+void D3D12Renderer::SetMarker(RHI::CommandList *commandList, const char *string, uint8_t colorIndex) {
+#if defined(_DEBUG) || defined(_DEVELOPMENT)
+    if (commandList) {
+        PIXSetMarker(static_cast<D3D12CommandList *>(commandList)->GetGraphicsCommandList(), PIX_COLOR_INDEX(colorIndex), string);
+    } else {
+        PIXSetMarker(PIX_COLOR_INDEX(colorIndex), string);
+    }
+#endif
+}
+
+void D3D12Renderer::BeginEvent(RHI::CommandList *commandList, const char *string, uint8_t colorIndex) {
+#if defined(_DEBUG) || defined(_DEVELOPMENT)
+    if (commandList) {
+        PIXBeginEvent(static_cast<D3D12CommandList *>(commandList)->GetGraphicsCommandList(), PIX_COLOR_INDEX(colorIndex), string);
+    } else {
+        PIXBeginEvent(PIX_COLOR_INDEX(colorIndex), string);
+    }
+#endif
+}
+
+void D3D12Renderer::EndEvent(RHI::CommandList *commandList) {
+#if defined(_DEBUG) || defined(_DEVELOPMENT)
+    if (commandList) {
+        PIXEndEvent(static_cast<D3D12CommandList *>(commandList)->GetGraphicsCommandList());
+    } else {
+        PIXEndEvent();
+    }
+#endif
 }
 
 bool D3D12Renderer::ImageFormatToDXGIFormat(BE1::Image::Format::Enum imageFormat, bool isSRGB, DXGI_FORMAT *dxgiFormat) {

@@ -15,7 +15,6 @@
 #include "Precompiled.h"
 #include "TriangleMesh.h"
 #include "App.h"
-#include "D3D12Renderer/D3D12Renderer.h"
 #include "RenderContext.h"
 
 struct TriangleVertex {
@@ -58,19 +57,19 @@ void TriangleMesh::InitMesh() {
         0, 1, 2
     };
 
-    vertexBuffer = renderer->CreateVertexBuffer(RHI::BufferUsage::Default, sizeof(verts[0]), COUNT_OF(verts), (void *)verts);
-    indexBuffer = renderer->CreateIndexBuffer(RHI::BufferUsage::Default, sizeof(indexes[0]), COUNT_OF(indexes), (void *)indexes);
-    texture = renderer->CreateTextureFromFile(RHI::TextureType::Texture2D, RHI::ResourceFlag::ShaderResource, "Data/EngineTextures/checker.dds");
+    vertexBuffer = RHI::renderer->CreateVertexBuffer(RHI::BufferUsage::Default, sizeof(verts[0]), COUNT_OF(verts), (void *)verts);
+    indexBuffer = RHI::renderer->CreateIndexBuffer(RHI::BufferUsage::Default, sizeof(indexes[0]), COUNT_OF(indexes), (void *)indexes);
+    texture = RHI::renderer->CreateTextureFromFile(RHI::TextureType::Texture2D, RHI::ResourceFlag::ShaderResource, "Data/EngineTextures/checker.dds");
 
     InitPipelineState();
 }
 
 void TriangleMesh::FreeMesh() {
-    renderer->DestroyTexture(texture);
-    renderer->DestroyVertexBuffer(vertexBuffer);
-    renderer->DestroyIndexBuffer(indexBuffer);
-    renderer->DestroyPSO(singlePSO);
-    renderer->DestroyPSO(instancingPSO);
+    RHI::renderer->DestroyTexture(texture);
+    RHI::renderer->DestroyVertexBuffer(vertexBuffer);
+    RHI::renderer->DestroyIndexBuffer(indexBuffer);
+    RHI::renderer->DestroyPSO(singlePSO);
+    RHI::renderer->DestroyPSO(instancingPSO);
 }
 
 void TriangleMesh::InitPipelineState() {
@@ -87,50 +86,50 @@ void TriangleMesh::InitPipelineState() {
     renderDest.depthStencilFormat = app.mainRenderContext->GetMainRTDepthFormat();
     renderDest.sampleCount = app.mainRenderContext->GetMainRTSampleCount();
 
-    RHI::Shader *triangleVS = static_cast<RHI::Shader *>(renderer->CreateShaderFromFile(RHI::ShaderModel::SM_6_0, RHI::ShaderStage::Vertex, "Source/TestD3D12/Shaders/Triangle.hlsl", "VSMain"));
-    RHI::Shader *trianglePS = static_cast<RHI::Shader *>(renderer->CreateShaderFromFile(RHI::ShaderModel::SM_6_0, RHI::ShaderStage::Fragment, "Source/TestD3D12/Shaders/Triangle.hlsl", "PSMain"));
+    RHI::Shader *triangleVS = static_cast<RHI::Shader *>(RHI::renderer->CreateShaderFromFile(RHI::ShaderModel::SM_6_0, RHI::ShaderStage::Vertex, "Source/TestD3D12/Shaders/Triangle.hlsl", "VSMain"));
+    RHI::Shader *trianglePS = static_cast<RHI::Shader *>(RHI::renderer->CreateShaderFromFile(RHI::ShaderModel::SM_6_0, RHI::ShaderStage::Fragment, "Source/TestD3D12/Shaders/Triangle.hlsl", "PSMain"));
 
     if (triangleVS && trianglePS) {
         RHI::PipelineStateDesc psoDesc;
         psoDesc.vs = triangleVS;
         psoDesc.ps = trianglePS;
-        psoDesc.rasterizerState = renderer->GetRasterizerState(RHI::RasterizerStateType::SolidFrontSided);
-        psoDesc.depthStencilState = renderer->GetDepthStencilState(RHI::DepthStencilStateType::Default);
-        psoDesc.blendState = renderer->GetBlendState(RHI::BlendStateType::Opaque);
+        psoDesc.rasterizerState = RHI::renderer->GetRasterizerState(RHI::RasterizerStateType::SolidFrontSided);
+        psoDesc.depthStencilState = RHI::renderer->GetDepthStencilState(RHI::DepthStencilStateType::Default);
+        psoDesc.blendState = RHI::renderer->GetBlendState(RHI::BlendStateType::Opaque);
         psoDesc.inputLayout = &inputLayout;
         psoDesc.primitiveTopology = RHI::PrimitiveTopology::TriangleList;
         psoDesc.renderDest = &renderDest;
-        singlePSO = renderer->CreateGraphicsPSO(&psoDesc);
+        singlePSO = RHI::renderer->CreateGraphicsPSO(&psoDesc);
     }
 
     if (triangleVS) {
-        renderer->DestroyShader(triangleVS, true);
+        RHI::renderer->DestroyShader(triangleVS, true);
     }
     if (trianglePS) {
-        renderer->DestroyShader(trianglePS, true);
+        RHI::renderer->DestroyShader(trianglePS, true);
     }
 
-    RHI::Shader *triangleInstancingVS = static_cast<RHI::Shader *>(renderer->CreateShaderFromFile(RHI::ShaderModel::SM_6_0, RHI::ShaderStage::Vertex, "Source/TestD3D12/Shaders/TriangleInstancing.hlsl", "VSMain"));
-    RHI::Shader *triangleInstancingPS = static_cast<RHI::Shader *>(renderer->CreateShaderFromFile(RHI::ShaderModel::SM_6_0, RHI::ShaderStage::Fragment, "Source/TestD3D12/Shaders/TriangleInstancing.hlsl", "PSMain"));
+    RHI::Shader *triangleInstancingVS = static_cast<RHI::Shader *>(RHI::renderer->CreateShaderFromFile(RHI::ShaderModel::SM_6_0, RHI::ShaderStage::Vertex, "Source/TestD3D12/Shaders/TriangleInstancing.hlsl", "VSMain"));
+    RHI::Shader *triangleInstancingPS = static_cast<RHI::Shader *>(RHI::renderer->CreateShaderFromFile(RHI::ShaderModel::SM_6_0, RHI::ShaderStage::Fragment, "Source/TestD3D12/Shaders/TriangleInstancing.hlsl", "PSMain"));
 
     if (triangleInstancingVS && triangleInstancingPS) {
         RHI::PipelineStateDesc psoDesc;
         psoDesc.vs = triangleInstancingVS;
         psoDesc.ps = triangleInstancingPS;
-        psoDesc.rasterizerState = renderer->GetRasterizerState(RHI::RasterizerStateType::SolidFrontSided);
-        psoDesc.depthStencilState = renderer->GetDepthStencilState(RHI::DepthStencilStateType::Default);
-        psoDesc.blendState = renderer->GetBlendState(RHI::BlendStateType::Opaque);
+        psoDesc.rasterizerState = RHI::renderer->GetRasterizerState(RHI::RasterizerStateType::SolidFrontSided);
+        psoDesc.depthStencilState = RHI::renderer->GetDepthStencilState(RHI::DepthStencilStateType::Default);
+        psoDesc.blendState = RHI::renderer->GetBlendState(RHI::BlendStateType::Opaque);
         psoDesc.inputLayout = &inputLayout;
         psoDesc.primitiveTopology = RHI::PrimitiveTopology::TriangleList;
         psoDesc.renderDest = &renderDest;
-        instancingPSO = renderer->CreateGraphicsPSO(&psoDesc);
+        instancingPSO = RHI::renderer->CreateGraphicsPSO(&psoDesc);
     }
 
     if (triangleInstancingVS) {
-        renderer->DestroyShader(triangleInstancingVS, true);
+        RHI::renderer->DestroyShader(triangleInstancingVS, true);
     }
     if (triangleInstancingPS) {
-        renderer->DestroyShader(triangleInstancingPS, true);
+        RHI::renderer->DestroyShader(triangleInstancingPS, true);
     }
 }
 
@@ -146,14 +145,14 @@ void TriangleMesh::DrawMesh(const RenderContext *renderContext, RHI::CommandList
     constantDataPtr->offset.x = offset.x;
     constantDataPtr->offset.y = offset.y;
 
-    renderer->SetVertexBuffer(commandList, 0, vertexBuffer);
-    renderer->SetIndexBuffer(commandList, indexBuffer);
+    RHI::renderer->SetVertexBuffer(commandList, 0, vertexBuffer);
+    RHI::renderer->SetIndexBuffer(commandList, indexBuffer);
 
-    renderer->SetPSO(commandList, singlePSO);
-    renderer->SetTexture(commandList, 0, false, texture);
-    renderer->SetConstantBuffer(commandList, 0, constantBuffer);
+    RHI::renderer->SetPSO(commandList, singlePSO);
+    RHI::renderer->SetTexture(commandList, 0, false, texture);
+    RHI::renderer->SetConstantBuffer(commandList, 0, constantBuffer);
 
-    renderer->DrawIndexed(commandList, 3, 0, 0);
+    RHI::renderer->DrawIndexed(commandList, 3, 0, 0);
 }
 
 void TriangleMesh::DrawMeshInstanced(const RenderContext *renderContext, RHI::CommandList *commandList, const BE1::Vec2 *instanceData, int instanceCount) {
@@ -169,12 +168,12 @@ void TriangleMesh::DrawMeshInstanced(const RenderContext *renderContext, RHI::Co
         constantDataPtr->offset[i] = BE1::Vec4(instanceData[i], BE1::Vec2::zero);
     }
 
-    renderer->SetVertexBuffer(commandList, 0, vertexBuffer);
-    renderer->SetIndexBuffer(commandList, indexBuffer);
+    RHI::renderer->SetVertexBuffer(commandList, 0, vertexBuffer);
+    RHI::renderer->SetIndexBuffer(commandList, indexBuffer);
 
-    renderer->SetPSO(commandList, instancingPSO);
-    renderer->SetTexture(commandList, 0, false, texture);
-    renderer->SetConstantBuffer(commandList, 0, constantBuffer);
+    RHI::renderer->SetPSO(commandList, instancingPSO);
+    RHI::renderer->SetTexture(commandList, 0, false, texture);
+    RHI::renderer->SetConstantBuffer(commandList, 0, constantBuffer);
     
-    renderer->DrawIndexedInstanced(commandList, 3, instanceCount, 0, 0, 0);
+    RHI::renderer->DrawIndexedInstanced(commandList, 3, instanceCount, 0, 0, 0);
 }

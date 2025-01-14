@@ -50,7 +50,7 @@ public:
     void                                MarkForDelete(RHI::GPUObject *object);
     void                                MarkForRelease(ID3D12Resource *resource);
     void                                OnPendingResourceAdded();
-    void                                FreePendingResources(bool waitPendings = false);
+    virtual void                        FreePendingResources(bool waitPendings = false) override;
 
     virtual bool                        IsSupportedImageFormat(BE1::Image::Format::Enum imageFormat) const override { return ImageFormatToDXGIFormat(imageFormat, false, nullptr); }
     virtual BE1::Image::Format::Enum    ToUncompressedImageFormat(BE1::Image::Format::Enum imageFormat) const override;
@@ -146,6 +146,10 @@ public:
     virtual void                        DispatchMesh(RHI::CommandList *commandList, uint32_t threadGroupCountX, uint32_t threadGroupCountY, uint32_t threadGroupCountZ) override;
     virtual void                        DispatchMeshIndirect(RHI::CommandList *commandList, const RHI::Buffer *argsBuffer, uint32_t argsOffset) override;
 
+    virtual void                        SetMarker(RHI::CommandList *commandList, const char *string, uint8_t colorIndex) override;
+    virtual void                        BeginEvent(RHI::CommandList *commandList, const char *string, uint8_t colorIndex) override;
+    virtual void                        EndEvent(RHI::CommandList *commandList) override;
+
     RHI::PipelineState *                CreateBasicPSO(ID3D12RootSignature *rootSignature, const D3D12_SHADER_BYTECODE &byteCodeVS, const D3D12_SHADER_BYTECODE &byteCodePS, const D3D12_INPUT_LAYOUT_DESC &inputLayout);
     RHI::PipelineState *                CreateBasicPSO(ID3D12RootSignature *rootSignature, const char *shaderFilename, const D3D12_INPUT_LAYOUT_DESC &inputLayout);
     ID3D12PipelineState *               CreatePSOFromLibrary(const D3D12_PIPELINE_STATE_STREAM_DESC *streamDesc, ID3D12PipelineLibrary1 *library, const TCHAR *name);
@@ -173,6 +177,8 @@ public:
     static bool                         IsDepthFormat(DXGI_FORMAT format);
     static bool                         IsStencilFormat(DXGI_FORMAT format);
     static D3D12_RESOURCE_STATES        ToD3D12ResourceState(RHI::GPUResourceState resourceState);
+
+    static D3D12Renderer *              GetRenderer() { return static_cast<D3D12Renderer *>(RHI::renderer); }
 
     ID3D12Device5 *                     device = nullptr;
     IDXGIFactory4 *                     dxgiFactory = nullptr;
@@ -229,5 +235,3 @@ public:
     int                                 headPendingIndex = 0;
     int                                 tailPendingIndex = 0;
 };
-
-extern D3D12Renderer *                  renderer;

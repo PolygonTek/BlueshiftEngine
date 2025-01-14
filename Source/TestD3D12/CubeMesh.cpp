@@ -15,7 +15,6 @@
 #include "Precompiled.h"
 #include "CubeMesh.h"
 #include "App.h"
-#include "D3D12Renderer/D3D12Renderer.h"
 #include "RenderContext.h"
 #include "VisObject.h"
 
@@ -91,19 +90,19 @@ void CubeMesh::InitMesh() {
         20, 21, 22, 22, 23, 20
     };
 
-    vertexBuffer = renderer->CreateVertexBuffer(RHI::BufferUsage::Default, sizeof(verts[0]), COUNT_OF(verts), (void *)verts);
-    indexBuffer = renderer->CreateIndexBuffer(RHI::BufferUsage::Default, sizeof(indexes[0]), COUNT_OF(indexes), (void *)indexes);
-    texture = renderer->CreateTextureFromFile(RHI::TextureType::Texture2D, RHI::ResourceFlag::ShaderResource, "Data/EngineTextures/checker.dds");
+    vertexBuffer = RHI::renderer->CreateVertexBuffer(RHI::BufferUsage::Default, sizeof(verts[0]), COUNT_OF(verts), (void *)verts);
+    indexBuffer = RHI::renderer->CreateIndexBuffer(RHI::BufferUsage::Default, sizeof(indexes[0]), COUNT_OF(indexes), (void *)indexes);
+    texture = RHI::renderer->CreateTextureFromFile(RHI::TextureType::Texture2D, RHI::ResourceFlag::ShaderResource, "Data/EngineTextures/checker.dds");
 
     InitPipelineState();
 }
 
 void CubeMesh::FreeMesh() {
-    renderer->DestroyTexture(texture);
-    renderer->DestroyVertexBuffer(vertexBuffer);
-    renderer->DestroyIndexBuffer(indexBuffer);
-    renderer->DestroyPSO(singlePSO);
-    renderer->DestroyPSO(instancingPSO);
+    RHI::renderer->DestroyTexture(texture);
+    RHI::renderer->DestroyVertexBuffer(vertexBuffer);
+    RHI::renderer->DestroyIndexBuffer(indexBuffer);
+    RHI::renderer->DestroyPSO(singlePSO);
+    RHI::renderer->DestroyPSO(instancingPSO);
 }
 
 void CubeMesh::InitPipelineState() {
@@ -120,50 +119,50 @@ void CubeMesh::InitPipelineState() {
     renderDest.depthStencilFormat = app.mainRenderContext->GetMainRTDepthFormat();
     renderDest.sampleCount = app.mainRenderContext->GetMainRTSampleCount();
 
-    RHI::Shader *cubeVS = static_cast<RHI::Shader *>(renderer->CreateShaderFromFile(RHI::ShaderModel::SM_6_0, RHI::ShaderStage::Vertex, "Source/TestD3D12/Shaders/Cube.hlsl", "VSMain"));
-    RHI::Shader *cubePS = static_cast<RHI::Shader *>(renderer->CreateShaderFromFile(RHI::ShaderModel::SM_6_0, RHI::ShaderStage::Fragment, "Source/TestD3D12/Shaders/Cube.hlsl", "PSMain"));
+    RHI::Shader *cubeVS = static_cast<RHI::Shader *>(RHI::renderer->CreateShaderFromFile(RHI::ShaderModel::SM_6_0, RHI::ShaderStage::Vertex, "Source/TestD3D12/Shaders/Cube.hlsl", "VSMain"));
+    RHI::Shader *cubePS = static_cast<RHI::Shader *>(RHI::renderer->CreateShaderFromFile(RHI::ShaderModel::SM_6_0, RHI::ShaderStage::Fragment, "Source/TestD3D12/Shaders/Cube.hlsl", "PSMain"));
 
     if (cubeVS && cubePS) {
         RHI::PipelineStateDesc psoDesc;
         psoDesc.vs = cubeVS;
         psoDesc.ps = cubePS;
-        psoDesc.rasterizerState = renderer->GetRasterizerState(RHI::RasterizerStateType::SolidFrontSided);
-        psoDesc.depthStencilState = renderer->GetDepthStencilState(RHI::DepthStencilStateType::Default);
-        psoDesc.blendState = renderer->GetBlendState(RHI::BlendStateType::Opaque);
+        psoDesc.rasterizerState = RHI::renderer->GetRasterizerState(RHI::RasterizerStateType::SolidFrontSided);
+        psoDesc.depthStencilState = RHI::renderer->GetDepthStencilState(RHI::DepthStencilStateType::Default);
+        psoDesc.blendState = RHI::renderer->GetBlendState(RHI::BlendStateType::Opaque);
         psoDesc.inputLayout = &inputLayout;
         psoDesc.primitiveTopology = RHI::PrimitiveTopology::TriangleList;
         psoDesc.renderDest = &renderDest;
-        singlePSO = renderer->CreateGraphicsPSO(&psoDesc);
+        singlePSO = RHI::renderer->CreateGraphicsPSO(&psoDesc);
     }
 
     if (cubeVS) {
-        renderer->DestroyShader(cubeVS, true);
+        RHI::renderer->DestroyShader(cubeVS, true);
     }
     if (cubePS) {
-        renderer->DestroyShader(cubePS, true);
+        RHI::renderer->DestroyShader(cubePS, true);
     }
 
-    RHI::Shader *cubeInstancingVS = static_cast<RHI::Shader *>(renderer->CreateShaderFromFile(RHI::ShaderModel::SM_6_0, RHI::ShaderStage::Vertex, "Source/TestD3D12/Shaders/CubeInstancing.hlsl", "VSMain"));
-    RHI::Shader *cubeInstancingPS = static_cast<RHI::Shader *>(renderer->CreateShaderFromFile(RHI::ShaderModel::SM_6_0, RHI::ShaderStage::Fragment, "Source/TestD3D12/Shaders/CubeInstancing.hlsl", "PSMain"));
+    RHI::Shader *cubeInstancingVS = static_cast<RHI::Shader *>(RHI::renderer->CreateShaderFromFile(RHI::ShaderModel::SM_6_0, RHI::ShaderStage::Vertex, "Source/TestD3D12/Shaders/CubeInstancing.hlsl", "VSMain"));
+    RHI::Shader *cubeInstancingPS = static_cast<RHI::Shader *>(RHI::renderer->CreateShaderFromFile(RHI::ShaderModel::SM_6_0, RHI::ShaderStage::Fragment, "Source/TestD3D12/Shaders/CubeInstancing.hlsl", "PSMain"));
 
     if (cubeInstancingVS && cubeInstancingPS) {
         RHI::PipelineStateDesc psoDesc;
         psoDesc.vs = cubeInstancingVS;
         psoDesc.ps = cubeInstancingPS;
-        psoDesc.rasterizerState = renderer->GetRasterizerState(RHI::RasterizerStateType::SolidFrontSided);
-        psoDesc.depthStencilState = renderer->GetDepthStencilState(RHI::DepthStencilStateType::Default);
-        psoDesc.blendState = renderer->GetBlendState(RHI::BlendStateType::Opaque);
+        psoDesc.rasterizerState = RHI::renderer->GetRasterizerState(RHI::RasterizerStateType::SolidFrontSided);
+        psoDesc.depthStencilState = RHI::renderer->GetDepthStencilState(RHI::DepthStencilStateType::Default);
+        psoDesc.blendState = RHI::renderer->GetBlendState(RHI::BlendStateType::Opaque);
         psoDesc.inputLayout = &inputLayout;
         psoDesc.primitiveTopology = RHI::PrimitiveTopology::TriangleList;
         psoDesc.renderDest = &renderDest;
-        instancingPSO = renderer->CreateGraphicsPSO(&psoDesc);
+        instancingPSO = RHI::renderer->CreateGraphicsPSO(&psoDesc);
     }
 
     if (cubeInstancingVS) {
-        renderer->DestroyShader(cubeInstancingVS, true);
+        RHI::renderer->DestroyShader(cubeInstancingVS, true);
     }
     if (cubeInstancingPS) {
-        renderer->DestroyShader(cubeInstancingPS, true);
+        RHI::renderer->DestroyShader(cubeInstancingPS, true);
     }
 }
 
@@ -181,14 +180,14 @@ void CubeMesh::DrawMesh(const RenderContext *renderContext, RHI::CommandList* co
     constantDataPtr->viewProjMatrix = currentFrameData->GetVisCamera()->viewProjMatrix;
     constantDataPtr->worldMatrix = worldMatrix;
 
-    renderer->SetVertexBuffer(commandList, 0, vertexBuffer);
-    renderer->SetIndexBuffer(commandList, indexBuffer);
+    RHI::renderer->SetVertexBuffer(commandList, 0, vertexBuffer);
+    RHI::renderer->SetIndexBuffer(commandList, indexBuffer);
 
-    renderer->SetPSO(commandList, singlePSO);
-    renderer->SetTexture(commandList, 0, false, texture);
-    renderer->SetConstantBuffer(commandList, 0, constantBuffer);
+    RHI::renderer->SetPSO(commandList, singlePSO);
+    RHI::renderer->SetTexture(commandList, 0, false, texture);
+    RHI::renderer->SetConstantBuffer(commandList, 0, constantBuffer);
 
-    renderer->DrawIndexed(commandList, 36, 0, 0);
+    RHI::renderer->DrawIndexed(commandList, 36, 0, 0);
 }
 
 void CubeMesh::DrawMeshInstanced(const RenderContext *renderContext, RHI::CommandList *commandList, const BE1::Mat3x4 *instanceData, int instanceCount) {
@@ -208,12 +207,12 @@ void CubeMesh::DrawMeshInstanced(const RenderContext *renderContext, RHI::Comman
         constantPtr->worldMatrix[i] = instanceData[i];
     }
 
-    renderer->SetVertexBuffer(commandList, 0, vertexBuffer);
-    renderer->SetIndexBuffer(commandList, indexBuffer);
+    RHI::renderer->SetVertexBuffer(commandList, 0, vertexBuffer);
+    RHI::renderer->SetIndexBuffer(commandList, indexBuffer);
 
-    renderer->SetPSO(commandList, instancingPSO);
-    renderer->SetTexture(commandList, 0, false, texture);
-    renderer->SetConstantBuffer(commandList, 0, constantBuffer);
+    RHI::renderer->SetPSO(commandList, instancingPSO);
+    RHI::renderer->SetTexture(commandList, 0, false, texture);
+    RHI::renderer->SetConstantBuffer(commandList, 0, constantBuffer);
 
-    renderer->DrawIndexedInstanced(commandList, 36, instanceCount, 0, 0, 0);
+    RHI::renderer->DrawIndexedInstanced(commandList, 36, instanceCount, 0, 0, 0);
 }

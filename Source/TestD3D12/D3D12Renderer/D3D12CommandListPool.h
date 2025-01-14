@@ -20,12 +20,14 @@ class D3D12FrameThreadData;
 class D3D12CommandList;
 
 class D3D12CommandListPool {
+    friend class D3D12CommandList;
+
 public:
     D3D12CommandListPool() = default;
-    D3D12CommandListPool(ID3D12Device *device, D3D12FrameThreadData *frameThreadData, D3D12_COMMAND_LIST_TYPE commandListType, uint32_t maxPrimaryCommandLists, uint32_t maxSecondaryCommandLists = 0) { Init(device, frameThreadData, commandListType, maxPrimaryCommandLists, maxSecondaryCommandLists); }
+    D3D12CommandListPool(D3D12FrameThreadData *frameThreadData, D3D12_COMMAND_LIST_TYPE commandListType, uint32_t maxPrimaryCommandLists, uint32_t maxSecondaryCommandLists = 0) { Init(frameThreadData, commandListType, maxPrimaryCommandLists, maxSecondaryCommandLists); }
     ~D3D12CommandListPool() { Shutdown(); }
 
-    void                            Init(ID3D12Device *device, D3D12FrameThreadData *frameThreadData, D3D12_COMMAND_LIST_TYPE commandListType, uint32_t maxPrimaryCommandLists, uint32_t maxSecondaryCommandLists = 0);
+    void                            Init(D3D12FrameThreadData *frameThreadData, D3D12_COMMAND_LIST_TYPE commandListType, uint32_t maxPrimaryCommandLists, uint32_t maxSecondaryCommandLists = 0);
     void                            Shutdown();
 
     D3D12FrameThreadData *          GetFrameThreadData() const { return frameThreadData; }

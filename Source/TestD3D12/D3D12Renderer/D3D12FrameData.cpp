@@ -24,7 +24,7 @@ static constexpr uint32_t DynamicAllocationBlockSize = 65536 * 64;
 
 D3D12DynamicAllocation::D3D12DynamicAllocation(uint64_t size) {
     // 업로드 버퍼 생성
-    buffer = static_cast<D3D12Buffer *>(renderer->CreateBuffer(RHI::BufferUsage::Upload,
+    buffer = static_cast<D3D12Buffer *>(RHI::renderer->CreateBuffer(RHI::BufferUsage::Upload,
         RHI::ResourceFlag::ConstantBuffer | RHI::ResourceFlag::VertexBuffer | RHI::ResourceFlag::IndexBuffer | RHI::ResourceFlag::ShaderResource,
         size, BE1::Image::Format::R_32_TYPELESS, 0, nullptr));
 
@@ -33,7 +33,7 @@ D3D12DynamicAllocation::D3D12DynamicAllocation(uint64_t size) {
 }
 
 D3D12DynamicAllocation::~D3D12DynamicAllocation() {
-    renderer->DestroyBuffer(buffer);
+    RHI::renderer->DestroyBuffer(buffer);
 }
 
 RHI::FrameThreadData *D3D12Renderer::CreateFrameThreadData() {
@@ -52,13 +52,13 @@ void D3D12FrameThreadData::Init() {
     uint32_t maxSecondaryCommandLists = 8;
 
     // 그래픽스 커맨드 리스트 풀을 생성한다.
-    graphicsCommandListPool = new D3D12CommandListPool(renderer->device, this, D3D12_COMMAND_LIST_TYPE_DIRECT, 8, maxSecondaryCommandLists);
+    graphicsCommandListPool = new D3D12CommandListPool(this, D3D12_COMMAND_LIST_TYPE_DIRECT, 8, maxSecondaryCommandLists);
 
     // 컴퓨트 커맨드 리스트 풀을 생성한다.
-    computeCommandListPool = new D3D12CommandListPool(renderer->device, this, D3D12_COMMAND_LIST_TYPE_COMPUTE, 8);
+    computeCommandListPool = new D3D12CommandListPool(this, D3D12_COMMAND_LIST_TYPE_COMPUTE, 8);
 
     // 쉐이더에서 사용할 디스크립터 힙을 생성한다.
-    rootDescriptorPool = new D3D12RootDescriptorPool(renderer->device, 16384);
+    rootDescriptorPool = new D3D12RootDescriptorPool(D3D12Renderer::GetRenderer()->device, 16384);
 
     // 미리 다이나믹 버퍼 블럭을 1개 생성한다.
     D3D12DynamicAllocation *dynamicAllocation = new D3D12DynamicAllocation(DynamicAllocationBlockSize);
@@ -66,7 +66,7 @@ void D3D12FrameThreadData::Init() {
     dynamicAllocations.Append(dynamicAllocation);
 
     // 다이나믹 버퍼에서 사용할 (CBV, SRV, UAV) 디스크립터 풀을 생성한다.
-    dynamicDescriptorPool = new D3D12DescriptorPool(renderer->device, D3D12DescriptorPool::Type::CBV_SRV_UAV, 8192, false);
+    dynamicDescriptorPool = new D3D12DescriptorPool(D3D12Renderer::GetRenderer()->device, D3D12DescriptorPool::Type::CBV_SRV_UAV, 8192, false);
 
     dynamicDescriptorHandles.SetGranularity(2048);
     dynamicDescriptorHandles.Reserve(4096);
@@ -148,7 +148,7 @@ RHI::ConstantBuffer *D3D12FrameThreadData::AllocConstant(uint32_t size) {
     cbvDesc.BufferLocation = currentDynamicAllocation->buffer->GetResource()->GetGPUVirtualAddress() + alignedOffset;
     cbvDesc.SizeInBytes = alignedSize;
 
-    renderer->device->CreateConstantBufferView(&cbvDesc, descriptorHandle);
+    D3D12Renderer::GetRenderer()->device->CreateConstantBufferView(&cbvDesc, descriptorHandle);
     dynamicDescriptorHandles.Append(descriptorHandle);
 
     D3D12ConstantBuffer dynamicConstantBuffer;
@@ -243,7 +243,7 @@ RHI::Buffer *D3D12FrameThreadData::AllocBuffer(bool shaderWritable, BE1::Image::
             uavDescriptor.uavDesc.Buffer.Flags = D3D12_BUFFER_UAV_FLAG_RAW;
         }
 
-        renderer->device->CreateUnorderedAccessView(currentDynamicAllocation->buffer->GetResource(), nullptr, &uavDescriptor.uavDesc, uavDescriptor.cpuDescriptorHandle);
+        D3D12Renderer::GetRenderer()->device->CreateUnorderedAccessView(currentDynamicAllocation->buffer->GetResource(), nullptr, &uavDescriptor.uavDesc, uavDescriptor.cpuDescriptorHandle);
         dynamicDescriptorHandles.Append(descriptorHandle);
 
         D3D12Buffer dynamicBuffer;
@@ -264,7 +264,7 @@ RHI::Buffer *D3D12FrameThreadData::AllocBuffer(bool shaderWritable, BE1::Image::
             srvDescriptor.srvDesc.Buffer.Flags = D3D12_BUFFER_SRV_FLAG_RAW;
         }
 
-        renderer->device->CreateShaderResourceView(currentDynamicAllocation->buffer->GetResource(), &srvDescriptor.srvDesc, srvDescriptor.cpuDescriptorHandle);
+        D3D12Renderer::GetRenderer()->device->CreateShaderResourceView(currentDynamicAllocation->buffer->GetResource(), &srvDescriptor.srvDesc, srvDescriptor.cpuDescriptorHandle);
         dynamicDescriptorHandles.Append(descriptorHandle);
 
         D3D12Buffer dynamicBuffer;

@@ -21,14 +21,14 @@
 void D3D12Buffer::Release() {
     for (const D3D12SRVDescriptor &srvDescriptor : srvDescriptors) {
         if (srvDescriptor.cpuDescriptorHandle.ptr != 0) {
-            renderer->resCpuDescriptorPool->Free(srvDescriptor.cpuDescriptorHandle);
+            D3D12Renderer::GetRenderer()->resCpuDescriptorPool->Free(srvDescriptor.cpuDescriptorHandle);
         }
     }
     srvDescriptors.Clear();
 
     for (const D3D12UAVDescriptor &uavDescriptor : uavDescriptors) {
         if (uavDescriptor.cpuDescriptorHandle.ptr != 0) {
-            renderer->uavCpuDescriptorPool->Free(uavDescriptor.cpuDescriptorHandle);
+            D3D12Renderer::GetRenderer()->uavCpuDescriptorPool->Free(uavDescriptor.cpuDescriptorHandle);
         }
     }
     uavDescriptors.Clear();

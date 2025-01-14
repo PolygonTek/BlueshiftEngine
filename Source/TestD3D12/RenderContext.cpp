@@ -17,7 +17,6 @@
 #include "RenderContext.h"
 #include "RenderFrameData.h"
 #include "VisObject.h"
-#include "D3D12Renderer/D3D12Renderer.h"
 
 void RenderContext::Init(HWND hwnd) {
 #ifdef USE_RENDER_TASK
@@ -37,7 +36,7 @@ void RenderContext::Init(HWND hwnd) {
     }
 
     currentFrameIndex = 0;
-    frameData[currentFrameIndex].SetFenceValue(renderer->SignalFence(RHI::CommandQueueType::Graphics));
+    frameData[currentFrameIndex].SetFenceValue(RHI::renderer->SignalFence(RHI::CommandQueueType::Graphics));
 
 #ifdef USE_RENDER_THREAD
     InitRenderThread();
@@ -50,7 +49,7 @@ void RenderContext::Init(HWND hwnd) {
     UINT backBufferHeight = rc.bottom;
 
     // 스왑 체인 (백버퍼) 생성
-    swapChain = renderer->CreateSwapChain(hwnd, backBufferWidth, backBufferHeight, BE1::Image::Format::RGBA_8_8_8_8);
+    swapChain = RHI::renderer->CreateSwapChain(hwnd, backBufferWidth, backBufferHeight, BE1::Image::Format::RGBA_8_8_8_8);
 
     // Viewport 설정을 백버퍼 크기에 맞게 설정
     viewportRect.x = 0.0f;
@@ -79,10 +78,10 @@ void RenderContext::Shutdown() {
     renderTaskManager.Stop();
 #endif
 
-    renderer->Finish(RHI::CommandQueueType::Graphics);
-    renderer->Finish(RHI::CommandQueueType::Compute);
+    RHI::renderer->Finish(RHI::CommandQueueType::Graphics);
+    RHI::renderer->Finish(RHI::CommandQueueType::Compute);
 
-    renderer->DestroyPSO(imagePSO);
+    RHI::renderer->DestroyPSO(imagePSO);
 
     DestroyMainRenderTextures();
 
@@ -90,7 +89,7 @@ void RenderContext::Shutdown() {
         frameData[frameIndex].Shutdown();
     }
 
-    renderer->DestroySwapChain(swapChain);
+    RHI::renderer->DestroySwapChain(swapChain);
 }
 
 void RenderContext::OnResize(int width, int height) {
@@ -98,7 +97,7 @@ void RenderContext::OnResize(int width, int height) {
     WaitRenderCompleted();
 #endif
 
-    renderer->Finish(RHI::CommandQueueType::Graphics);
+    RHI::renderer->Finish(RHI::CommandQueueType::Graphics);
 
     swapChain->Resize(width, height);
 
@@ -115,31 +114,31 @@ void RenderContext::OnResize(int width, int height) {
 void RenderContext::CreateMainRenderTextures(uint32_t width, uint32_t height) {
     BE1::Image colorImage;
     colorImage.InitFromMemory(width, height, 1, 1, 1, mainRTColorFormat, BE1::Image::GammaSpace::Linear, nullptr, 0);
-    mainRTColorTexture = renderer->CreateTexture(RHI::TextureType::Texture2D, RHI::ResourceFlag::RenderTarget | RHI::ResourceFlag::ShaderResource | RHI::ResourceFlag::UnorderedAccess,
+    mainRTColorTexture = RHI::renderer->CreateTexture(RHI::TextureType::Texture2D, RHI::ResourceFlag::RenderTarget | RHI::ResourceFlag::ShaderResource | RHI::ResourceFlag::UnorderedAccess,
         &colorImage, RHI::ClearValue::Color(0.0f, 0.0f, 1.0f, 0.0f), 1);
 
     if (mainRTSampleCount > 1) {
-        mainRTColorMSAATexture = renderer->CreateTexture(RHI::TextureType::Texture2D, RHI::ResourceFlag::RenderTarget | RHI::ResourceFlag::ShaderResource,
+        mainRTColorMSAATexture = RHI::renderer->CreateTexture(RHI::TextureType::Texture2D, RHI::ResourceFlag::RenderTarget | RHI::ResourceFlag::ShaderResource,
             &colorImage, RHI::ClearValue::Color(0.0f, 0.0f, 1.0f, 0.0f), mainRTSampleCount);
     }
 
     BE1::Image depthStencilImage;
     depthStencilImage.InitFromMemory(width, height, 1, 1, 1, mainRTDepthFormat, BE1::Image::GammaSpace::Linear, nullptr, 0);
-    mainRTDepthTexture = renderer->CreateTexture(RHI::TextureType::Texture2D, RHI::ResourceFlag::DepthStencil,
+    mainRTDepthTexture = RHI::renderer->CreateTexture(RHI::TextureType::Texture2D, RHI::ResourceFlag::DepthStencil,
         &depthStencilImage, RHI::ClearValue::DepthStencil(1.0f, 0), mainRTSampleCount, RHI::GPUResourceState::DepthWrite);
 }
 
 void RenderContext::DestroyMainRenderTextures() {
     if (mainRTColorTexture) {
-        renderer->DestroyTexture(mainRTColorTexture, true);
+        RHI::renderer->DestroyTexture(mainRTColorTexture, true);
         mainRTColorTexture = nullptr;
     }
     if (mainRTColorMSAATexture) {
-        renderer->DestroyTexture(mainRTColorMSAATexture, true);
+        RHI::renderer->DestroyTexture(mainRTColorMSAATexture, true);
         mainRTColorMSAATexture = nullptr;
     }
     if (mainRTDepthTexture) {
-        renderer->DestroyTexture(mainRTDepthTexture, true);
+        RHI::renderer->DestroyTexture(mainRTDepthTexture, true);
         mainRTDepthTexture = nullptr;
     }
 }
@@ -154,32 +153,32 @@ void RenderContext::InitFullScreenTrianglePSO() {
     renderDest.renderTargetFormats[0] = imageFormat;
     renderDest.renderTargetForematSRGBs[0] = isSRGB;
 
-    RHI::Shader *vs = static_cast<RHI::Shader *>(renderer->CreateShaderFromFile(RHI::ShaderModel::SM_6_0, RHI::ShaderStage::Vertex, "Source/TestD3D12/Shaders/FullScreenTriangle.hlsl", "VSMain"));
-    RHI::Shader *ps = static_cast<RHI::Shader *>(renderer->CreateShaderFromFile(RHI::ShaderModel::SM_6_0, RHI::ShaderStage::Fragment, "Source/TestD3D12/Shaders/FullScreenTriangle.hlsl", "PSMain"));
+    RHI::Shader *vs = static_cast<RHI::Shader *>(RHI::renderer->CreateShaderFromFile(RHI::ShaderModel::SM_6_0, RHI::ShaderStage::Vertex, "Source/TestD3D12/Shaders/FullScreenTriangle.hlsl", "VSMain"));
+    RHI::Shader *ps = static_cast<RHI::Shader *>(RHI::renderer->CreateShaderFromFile(RHI::ShaderModel::SM_6_0, RHI::ShaderStage::Fragment, "Source/TestD3D12/Shaders/FullScreenTriangle.hlsl", "PSMain"));
 
     if (vs && ps) {
         RHI::PipelineStateDesc psoDesc;
         psoDesc.vs = vs;
         psoDesc.ps = ps;
-        psoDesc.rasterizerState = renderer->GetRasterizerState(RHI::RasterizerStateType::SolidFrontSided);
-        psoDesc.depthStencilState = renderer->GetDepthStencilState(RHI::DepthStencilStateType::Never);
-        psoDesc.blendState = renderer->GetBlendState(RHI::BlendStateType::Opaque);
+        psoDesc.rasterizerState = RHI::renderer->GetRasterizerState(RHI::RasterizerStateType::SolidFrontSided);
+        psoDesc.depthStencilState = RHI::renderer->GetDepthStencilState(RHI::DepthStencilStateType::Never);
+        psoDesc.blendState = RHI::renderer->GetBlendState(RHI::BlendStateType::Opaque);
         psoDesc.primitiveTopology = RHI::PrimitiveTopology::TriangleList;
         psoDesc.renderDest = &renderDest;
-        imagePSO = renderer->CreateGraphicsPSO(&psoDesc);
+        imagePSO = RHI::renderer->CreateGraphicsPSO(&psoDesc);
     }
 
     if (vs) {
-        renderer->DestroyShader(vs, true);
+        RHI::renderer->DestroyShader(vs, true);
     }
     if (ps) {
-        renderer->DestroyShader(ps, true);
+        RHI::renderer->DestroyShader(ps, true);
     }
 }
 
 void RenderContext::WaitAllFrameFences() {
     for (int frameIndex = 0; frameIndex < NumFrameResources; ++frameIndex) {
-        renderer->WaitFence(frameData[frameIndex].GetFenceValue());
+        RHI::renderer->WaitFence(frameData[frameIndex].GetFenceValue());
     }
 }
 
@@ -240,7 +239,7 @@ unsigned int RenderContext::RenderThreadProc(void *param) {
     BE1::SIMD::SetDenormalFlushMode(true);
 
     while (1) {
-        PIX_CPU_SCOPED_EVENT(7, "RenderThreadProcLoop");
+        PROFILER_CPU_SCOPED_EVENT("RenderThreadProcLoop", 7);
         {
             BE1::ScopedReadLock lock(context->smpLock);
 
@@ -273,7 +272,7 @@ unsigned int RenderContext::RenderThreadProc(void *param) {
 }
 
 void RenderContext::BeginFrame() {
-    PIX_SCOPED_EVENT(renderer->commandQueues[to_int(RHI::CommandQueueType::Graphics)], 0, "RenderContext::BeginFrame");
+    PROFILER_CPU_SCOPED_EVENT("RenderContext::BeginFrame", 0);
 
     // 프레임 데이터를 초기화하고, 이전 프레임에 대한 펜스를 기다린다.
     RenderFrameData *currentFrameData = GetCurrentFrameData();
@@ -287,11 +286,11 @@ void RenderContext::BeginFrame() {
     mainCommandList->Reset();
 
     // 뷰포트 & ScissorRect 설정
-    renderer->SetViewport(mainCommandList, viewportRect);
-    renderer->SetScissorRect(mainCommandList, scissorRect);
+    RHI::renderer->SetViewport(mainCommandList, viewportRect);
+    RHI::renderer->SetScissorRect(mainCommandList, scissorRect);
 
 #if 1
-    renderer->BeginRenderPass(mainCommandList, swapChain, mainRTDepthTexture, BE1::Color4::blue, 1.0f, 0, RHI::ClearFlag::Color | RHI::ClearFlag::Depth);
+    RHI::renderer->BeginRenderPass(mainCommandList, swapChain, mainRTDepthTexture, BE1::Color4::blue, 1.0f, 0, RHI::ClearFlag::Color | RHI::ClearFlag::Depth);
 #else
     if (mainRTSampleCount > 1) {
         RHI::RenderPassImage renderPassImages[] = {
@@ -299,30 +298,30 @@ void RenderContext::BeginFrame() {
             RHI::RenderPassImage::DepthStencil(mainRTDepthTexture, 0, RHI::RenderPassImage::LoadAction::Clear),
             RHI::RenderPassImage::ResolveColor(mainRTColorTexture, 0, 0)
         };
-        renderer->BeginRenderPass(mainCommandList, renderPassImages, COUNT_OF(renderPassImages));
+        RHI::renderer->BeginRenderPass(mainCommandList, renderPassImages, COUNT_OF(renderPassImages));
     } else {
         RHI::RenderPassImage renderPassImages[] = {
             RHI::RenderPassImage::Color(mainRTColorTexture, 0, RHI::RenderPassImage::LoadAction::Clear),
             RHI::RenderPassImage::DepthStencil(mainRTDepthTexture, 0, RHI::RenderPassImage::LoadAction::Clear)
         };
-        renderer->BeginRenderPass(mainCommandList, renderPassImages, COUNT_OF(renderPassImages));
+        RHI::renderer->BeginRenderPass(mainCommandList, renderPassImages, COUNT_OF(renderPassImages));
     }
 #endif
 }
 
 void RenderContext::EndFrame() {
-    PIX_SCOPED_EVENT(renderer->commandQueues[to_int(RHI::CommandQueueType::Graphics)], 1, "RenderContext::EndFrame");
+    PROFILER_CPU_SCOPED_EVENT("RenderContext::EndFrame", 1);
 
     // TODO: 렌더큐에 종료 마킹을 하고, 렌더큐를 실행한다.
 
 #if 1
-    renderer->EndRenderPass(mainCommandList);
+    RHI::renderer->EndRenderPass(mainCommandList);
 #else
-    renderer->BeginRenderPass(mainCommandList, swapChain, nullptr);
-    renderer->SetPSO(mainCommandList, imagePSO);
-    renderer->SetTexture(mainCommandList, 0, false, mainRTColorTexture);
-    renderer->Draw(mainCommandList, 3, 0);
-    renderer->EndRenderPass(mainCommandList);
+    RHI::renderer->BeginRenderPass(mainCommandList, swapChain, nullptr);
+    RHI::renderer->SetPSO(mainCommandList, imagePSO);
+    RHI::renderer->SetTexture(mainCommandList, 0, false, mainRTColorTexture);
+    RHI::renderer->Draw(mainCommandList, 3, 0);
+    RHI::renderer->EndRenderPass(mainCommandList);
 #endif
 
     // CommandList 기록을 마치고 CommandQueue 로 실행
@@ -343,7 +342,7 @@ void RenderContext::EndFrame() {
 }
 
 void RenderContext::RenderFrame() {
-    PIX_SCOPED_EVENT(renderer->commandQueues[to_int(RHI::CommandQueueType::Graphics)], 4, "RenderContext::RenderFrame");
+    PROFILER_CPU_SCOPED_EVENT("RenderContext::RenderFrame", 2);
 
     RenderFrameData *currentFrameData = GetCurrentFrameData();
     int numVisObjects = currentFrameData->NumVisObjects();
@@ -371,7 +370,7 @@ void RenderContext::RenderFrame() {
 
 // 특정 인덱스 범위의 visObjects 를 그린다.
 void RenderContext::DrawVisObjects(int threadIndex, RHI::CommandList *commandList, int startIndex, int endIndex) {
-    //PIX_SCOPED_EVENT(commandList->GetGraphicsCommandList(), 6, "RenderContext::DrawVisObjects");
+    PROFILER_SCOPED_EVENT(commandList, "RenderContext::DrawVisObjects", 3);
 
     RenderFrameData *currentFrameData = GetCurrentFrameData();
     int numVisObjects = currentFrameData->NumVisObjects();
@@ -403,7 +402,7 @@ void RenderContext::DrawVisObjects(int threadIndex, RHI::CommandList *commandLis
 
 // 전체 visObjects 를 task 없이 한번에 그린다.
 void RenderContext::DrawVisObjectsWithoutTask() {
-    PIX_CPU_SCOPED_EVENT(4, "RenderContext::DrawVisObjectsWithoutTask");
+    PROFILER_CPU_SCOPED_EVENT("RenderContext::DrawVisObjectsWithoutTask", 4);
 
     RenderFrameData *currentFrameData = GetCurrentFrameData();
     RHI::FrameThreadData *currentFrameThreadData = currentFrameData->GetThreadData(0);
@@ -421,7 +420,7 @@ void RenderContext::DrawVisObjectsWithoutTask() {
 #ifdef USE_RENDER_TASK
 // taskDesc 에 담겨있는 정보를 기반으로 visObjects 를 그린다.
 void RenderContext::DrawVisObjectsByTask(RenderContext::DrawObjectTaskDesc *taskDesc) {
-    PIX_CPU_SCOPED_EVENT(5, "RenderContext::DrawVisObjectsByTask");
+    PROFILER_CPU_SCOPED_EVENT("RenderContext::DrawVisObjectsByTask", 5);
 
     RenderFrameData *currentFrameData = GetCurrentFrameData();
     RHI::FrameThreadData *currentFrameThreadData = currentFrameData->GetThreadData(taskDesc->threadIndex);
@@ -446,7 +445,7 @@ void RenderContext::DrawVisObjectsByTaskFunction(void *data) {
 
 // 전체 visObjects 를 task 로 나눠서 그린다.
 void RenderContext::DrawVisObjectsWithTask(int numTasks) {
-    PIX_CPU_SCOPED_EVENT(6, "RenderContext::DrawVisObjectsWithTask");
+    PROFILER_CPU_SCOPED_EVENT("RenderContext::DrawVisObjectsWithTask", 6);
 
     RenderFrameData *currentFrameData = GetCurrentFrameData();
     int numVisObjects = currentFrameData->NumVisObjects();
@@ -484,7 +483,7 @@ void RenderContext::DrawVisObjectsWithTask(int numTasks) {
 #endif // USE_RENDER_TASK
 
 void RenderContext::SwapBuffers(bool vsync) {
-    PIX_SCOPED_EVENT(renderer->commandQueues[to_int(RHI::CommandQueueType::Graphics)], 2, "RenderContext::SwapBuffers");
+    PROFILER_CPU_SCOPED_EVENT("RenderContext::SwapBuffers", 7);
 
     swapChain->SwapBuffers(vsync);
 }

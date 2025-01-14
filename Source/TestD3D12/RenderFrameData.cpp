@@ -15,7 +15,6 @@
 #include "Precompiled.h"
 #include "RenderFrameData.h"
 #include "VisObject.h"
-#include "D3D12Renderer/D3D12Renderer.h"
 
 static constexpr uint32_t MaxMemSizePerBlock = 0x1000000;
 static constexpr uint32_t MemAlignSize = 32;
@@ -26,13 +25,13 @@ void RenderFrameData::Init(int numThreads) {
     this->numThreads = numThreads;
 
     for (int threadIndex = 0; threadIndex < numThreads; ++threadIndex) {
-        threadData[threadIndex] = renderer->CreateFrameThreadData();
+        threadData[threadIndex] = RHI::renderer->CreateFrameThreadData();
     }
 }
 
 void RenderFrameData::Shutdown() {
     for (int threadIndex = 0; threadIndex < numThreads; ++threadIndex) {
-        renderer->DestroyFrameThreadData(threadData[threadIndex]);
+        RHI::renderer->DestroyFrameThreadData(threadData[threadIndex]);
     }
 
     FreeVisCamera();
@@ -49,11 +48,11 @@ void RenderFrameData::BeginFrame() {
     }
 
     // 이번 프레임에 사용할 프레임 데이터를 사용하기 위해서는, GPU 에서 이전 프레임에 대한 렌더링이 완료되야 한다.
-    renderer->WaitFence(fenceValue);
+    RHI::renderer->WaitFence(fenceValue);
 }
 
 void RenderFrameData::EndFrame() {
-    fenceValue = renderer->SignalFence(RHI::CommandQueueType::Graphics);
+    fenceValue = RHI::renderer->SignalFence(RHI::CommandQueueType::Graphics);
 }
 
 void RenderFrameData::InitMemBlocks() {
