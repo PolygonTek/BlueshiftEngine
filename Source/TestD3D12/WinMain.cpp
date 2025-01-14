@@ -207,9 +207,11 @@ static BOOL InitInstance(int nCmdShow) {
 
     app.mainRenderContext = app.CreateRenderContext(hwndMain);
 
+#if 0
     hwndSub = CreateSubWindow(_T("sub window"), 1024, 768);
 
     app.subRenderContext = app.CreateRenderContext(hwndSub);
+#endif
 
     app.Init();
 
@@ -219,7 +221,9 @@ static BOOL InitInstance(int nCmdShow) {
 static void ShutdownInstance() {
     app.Shutdown();
 
+#if 0
     app.DestroyRenderContext(app.subRenderContext);
+#endif
     app.DestroyRenderContext(app.mainRenderContext);
 
     renderer->Shutdown();
@@ -270,7 +274,9 @@ static bool RunFrameInstance(int frameMsec) {
     app.RunFrame(frameMsec);
 
     app.RenderScene(app.mainRenderContext);
+#if 0
     app.RenderScene(app.subRenderContext);
+#endif
 
     return true;
 }
