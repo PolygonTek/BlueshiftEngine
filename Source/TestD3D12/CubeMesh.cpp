@@ -21,7 +21,7 @@
 struct CubeVertex {
     BE1::Vec3       position;
     uint32_t        color;
-    BE1::Vec2       texCoord;
+    BE1::float16_t  texCoord[2];
 };
 
 struct CubeConstantData {
@@ -49,35 +49,35 @@ void CubeMesh::DestroyMesh(std::shared_ptr<CubeMesh> &cubeMesh) {
 void CubeMesh::InitMesh() {
     // NOTE: UV 좌표의 V 는 아래쪽으로 증가함을 주의한다. 나중에 통합 렌더러를 작성한다면, shader code 에서 하는게 좋을 듯..
     ALIGN_AS32 const CubeVertex verts[] = {
-        { { -1.0f, -1.0f, -1.0f }, 0xffffffff, { 0.0f, 1.0f } },
-        { { -1.0f,  1.0f, -1.0f }, 0xffffffff, { 1.0f, 1.0f } },
-        { {  1.0f,  1.0f, -1.0f }, 0xffffffff, { 1.0f, 0.0f } },
-        { {  1.0f, -1.0f, -1.0f }, 0xffffffff, { 0.0f, 0.0f } },
+        { { -1.0f, -1.0f, -1.0f }, 0xffffffff, { BE1::F16Converter::FromF32(0.0f), BE1::F16Converter::FromF32(1.0f) } },
+        { { -1.0f,  1.0f, -1.0f }, 0xffffffff, { BE1::F16Converter::FromF32(1.0f), BE1::F16Converter::FromF32(1.0f) } },
+        { {  1.0f,  1.0f, -1.0f }, 0xffffffff, { BE1::F16Converter::FromF32(1.0f), BE1::F16Converter::FromF32(0.0f) } },
+        { {  1.0f, -1.0f, -1.0f }, 0xffffffff, { BE1::F16Converter::FromF32(0.0f), BE1::F16Converter::FromF32(0.0f) } },
 
-        { {  1.0f, -1.0f,  1.0f }, 0xffffffff, { 0.0f, 1.0f } },
-        { {  1.0f,  1.0f,  1.0f }, 0xffffffff, { 1.0f, 1.0f } },
-        { { -1.0f,  1.0f,  1.0f }, 0xffffffff, { 1.0f, 0.0f } },
-        { { -1.0f, -1.0f,  1.0f }, 0xffffffff, { 0.0f, 0.0f } },
+        { {  1.0f, -1.0f,  1.0f }, 0xffffffff, { BE1::F16Converter::FromF32(0.0f), BE1::F16Converter::FromF32(1.0f) } },
+        { {  1.0f,  1.0f,  1.0f }, 0xffffffff, { BE1::F16Converter::FromF32(1.0f), BE1::F16Converter::FromF32(1.0f) } },
+        { { -1.0f,  1.0f,  1.0f }, 0xffffffff, { BE1::F16Converter::FromF32(1.0f), BE1::F16Converter::FromF32(0.0f) } },
+        { { -1.0f, -1.0f,  1.0f }, 0xffffffff, { BE1::F16Converter::FromF32(0.0f), BE1::F16Converter::FromF32(0.0f) } },
 
-        { {  1.0f, -1.0f, -1.0f }, 0xffffffff, { 0.0f, 1.0f } },
-        { {  1.0f,  1.0f, -1.0f }, 0xffffffff, { 1.0f, 1.0f } },
-        { {  1.0f,  1.0f,  1.0f }, 0xffffffff, { 1.0f, 0.0f } },
-        { {  1.0f, -1.0f,  1.0f }, 0xffffffff, { 0.0f, 0.0f } },
+        { {  1.0f, -1.0f, -1.0f }, 0xffffffff, { BE1::F16Converter::FromF32(0.0f), BE1::F16Converter::FromF32(1.0f) } },
+        { {  1.0f,  1.0f, -1.0f }, 0xffffffff, { BE1::F16Converter::FromF32(1.0f), BE1::F16Converter::FromF32(1.0f) } },
+        { {  1.0f,  1.0f,  1.0f }, 0xffffffff, { BE1::F16Converter::FromF32(1.0f), BE1::F16Converter::FromF32(0.0f) } },
+        { {  1.0f, -1.0f,  1.0f }, 0xffffffff, { BE1::F16Converter::FromF32(0.0f), BE1::F16Converter::FromF32(0.0f) } },
 
-        { {  1.0f,  1.0f, -1.0f }, 0xffffffff, { 0.0f, 1.0f } },
-        { { -1.0f,  1.0f, -1.0f }, 0xffffffff, { 1.0f, 1.0f } },
-        { { -1.0f,  1.0f,  1.0f }, 0xffffffff, { 1.0f, 0.0f } },
-        { {  1.0f,  1.0f,  1.0f }, 0xffffffff, { 0.0f, 0.0f } },
+        { {  1.0f,  1.0f, -1.0f }, 0xffffffff, { BE1::F16Converter::FromF32(0.0f), BE1::F16Converter::FromF32(1.0f) } },
+        { { -1.0f,  1.0f, -1.0f }, 0xffffffff, { BE1::F16Converter::FromF32(1.0f), BE1::F16Converter::FromF32(1.0f) } },
+        { { -1.0f,  1.0f,  1.0f }, 0xffffffff, { BE1::F16Converter::FromF32(1.0f), BE1::F16Converter::FromF32(0.0f) } },
+        { {  1.0f,  1.0f,  1.0f }, 0xffffffff, { BE1::F16Converter::FromF32(0.0f), BE1::F16Converter::FromF32(0.0f) } },
 
-        { { -1.0f,  1.0f, -1.0f }, 0xffffffff, { 0.0f, 1.0f } },
-        { { -1.0f, -1.0f, -1.0f }, 0xffffffff, { 1.0f, 1.0f } },
-        { { -1.0f, -1.0f,  1.0f }, 0xffffffff, { 1.0f, 0.0f } },
-        { { -1.0f,  1.0f,  1.0f }, 0xffffffff, { 0.0f, 0.0f } },
+        { { -1.0f,  1.0f, -1.0f }, 0xffffffff, { BE1::F16Converter::FromF32(0.0f), BE1::F16Converter::FromF32(1.0f) } },
+        { { -1.0f, -1.0f, -1.0f }, 0xffffffff, { BE1::F16Converter::FromF32(1.0f), BE1::F16Converter::FromF32(1.0f) } },
+        { { -1.0f, -1.0f,  1.0f }, 0xffffffff, { BE1::F16Converter::FromF32(1.0f), BE1::F16Converter::FromF32(0.0f) } },
+        { { -1.0f,  1.0f,  1.0f }, 0xffffffff, { BE1::F16Converter::FromF32(0.0f), BE1::F16Converter::FromF32(0.0f) } },
 
-        { { -1.0f, -1.0f, -1.0f }, 0xffffffff, { 0.0f, 1.0f } },
-        { {  1.0f, -1.0f, -1.0f }, 0xffffffff, { 1.0f, 1.0f } },
-        { {  1.0f, -1.0f,  1.0f }, 0xffffffff, { 1.0f, 0.0f } },
-        { { -1.0f, -1.0f,  1.0f }, 0xffffffff, { 0.0f, 0.0f } },
+        { { -1.0f, -1.0f, -1.0f }, 0xffffffff, { BE1::F16Converter::FromF32(0.0f), BE1::F16Converter::FromF32(1.0f) } },
+        { {  1.0f, -1.0f, -1.0f }, 0xffffffff, { BE1::F16Converter::FromF32(1.0f), BE1::F16Converter::FromF32(1.0f) } },
+        { {  1.0f, -1.0f,  1.0f }, 0xffffffff, { BE1::F16Converter::FromF32(1.0f), BE1::F16Converter::FromF32(0.0f) } },
+        { { -1.0f, -1.0f,  1.0f }, 0xffffffff, { BE1::F16Converter::FromF32(0.0f), BE1::F16Converter::FromF32(0.0f) } },
     };
 
     ALIGN_AS32 const uint16_t indexes[] = {
@@ -109,7 +109,7 @@ void CubeMesh::InitPipelineState() {
     inputLayout.elements = {
         { "POSITION", 0, 0, 0, RHI::InputLayoutElement::Format::Float3 },
         { "COLOR", 0, 12, 0, RHI::InputLayoutElement::Format::UByte4N },
-        { "TEXCOORD", 0, 16, 0, RHI::InputLayoutElement::Format::Float2 },
+        { "TEXCOORD", 0, 16, 0, RHI::InputLayoutElement::Format::Half2 },
     };
 
     RHI::RenderDest renderDest;

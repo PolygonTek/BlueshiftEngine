@@ -20,7 +20,7 @@
 struct TriangleVertex {
     BE1::Vec3       position;
     uint32_t        color;
-    BE1::Vec2       texCoord;
+    BE1::float16_t  texCoord[2];
 };
 
 struct TriangleConstantData {
@@ -48,9 +48,9 @@ void TriangleMesh::InitMesh() {
     // 삼각형의 버텍스/인덱스 버퍼 내용을 작성
     // NOTE: UV 좌표의 V 는 아래쪽으로 증가함을 주의한다. 나중에 통합 렌더러를 작성한다면, shader code 에서 하는게 좋을 듯..
     ALIGN_AS32 const TriangleVertex verts[] = {
-        { { 0.0f, 0.5f, 0.0f }, BE1::Color4::red.ToUInt32(), { 0.5f, 0.0f }},
-        { { -0.5f, -0.5f, 0.0f }, BE1::Color4::green.ToUInt32(), { 1.0f, 1.0f } },
-        { { 0.5f, -0.5f, 0.0f }, BE1::Color4::blue.ToUInt32(), { 0.0f, 1.0f } },
+        { {  0.0f,  0.5f, 0.0f }, BE1::Color4::red.ToUInt32(),   { BE1::F16Converter::FromF32(0.5f), BE1::F16Converter::FromF32(0.0f) }},
+        { { -0.5f, -0.5f, 0.0f }, BE1::Color4::green.ToUInt32(), { BE1::F16Converter::FromF32(1.0f), BE1::F16Converter::FromF32(1.0f) } },
+        { {  0.5f, -0.5f, 0.0f }, BE1::Color4::blue.ToUInt32(),  { BE1::F16Converter::FromF32(0.0f), BE1::F16Converter::FromF32(1.0f) } },
     };
 
     ALIGN_AS32 const uint16_t indexes[] = {
@@ -59,7 +59,7 @@ void TriangleMesh::InitMesh() {
 
     vertexBuffer = RHI::renderer->CreateVertexBuffer(RHI::BufferUsage::Default, sizeof(verts[0]), COUNT_OF(verts), (void *)verts);
     indexBuffer = RHI::renderer->CreateIndexBuffer(RHI::BufferUsage::Default, sizeof(indexes[0]), COUNT_OF(indexes), (void *)indexes);
-    texture = RHI::renderer->CreateTextureFromFile(RHI::TextureType::Texture2D, RHI::ResourceFlag::ShaderResource, "Data/EngineTextures/lightbulb.bmp");
+    texture = RHI::renderer->CreateTextureFromFile(RHI::TextureType::Texture2D, RHI::ResourceFlag::ShaderResource, "Data/EngineTextures/checker.dds");
 
     InitPipelineState();
 }
@@ -77,7 +77,7 @@ void TriangleMesh::InitPipelineState() {
     inputLayout.elements = {
         { "POSITION", 0, 0, 0, RHI::InputLayoutElement::Format::Float3 },
         { "COLOR", 0, 12, 0, RHI::InputLayoutElement::Format::UByte4N },
-        { "TEXCOORD", 0, 16, 0, RHI::InputLayoutElement::Format::Float2 },
+        { "TEXCOORD", 0, 16, 0, RHI::InputLayoutElement::Format::Half2 },
     };
 
     RHI::RenderDest renderDest;
