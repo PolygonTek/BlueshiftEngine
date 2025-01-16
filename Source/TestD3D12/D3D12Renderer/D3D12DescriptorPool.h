@@ -61,4 +61,5 @@ private:
     UINT                            descriptorHandleSize;
     UINT                            maxDescriptorCount;
     BE1::IDAllocator                idAllocator;
+    BE1::PlatformMutex *            mutex = nullptr;
 };

@@ -42,7 +42,7 @@ void D3D12RootDescriptorPool::Shutdown() {
 // 한 프레임이 끝나면 풀에 있는 전체 디스크립터 핸들을 지운다.
 bool D3D12RootDescriptorPool::AllocRange(UINT count, D3D12_CPU_DESCRIPTOR_HANDLE *outCpuDescriptorHandle, D3D12_GPU_DESCRIPTOR_HANDLE *outGpuDescriptorHandle) {
     if (usedCount + count > maxDescriptorCount) {
-        BE_WARNLOG("D3D12DescriptorPool::AllocDescriptors: exceeds max descriptor count\n");
+        BE_WARNLOG("D3D12RootDescriptorPool::AllocRange: exceeds max descriptor count\n");
         return false;
     }
 

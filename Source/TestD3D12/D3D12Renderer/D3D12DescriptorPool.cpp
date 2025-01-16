@@ -56,9 +56,13 @@ void D3D12DescriptorPool::Init(ID3D12Device *device, D3D12DescriptorPool::Type t
     }
 
     idAllocator.Init(maxDescriptorCount);
+
+    mutex = BE1::PlatformMutex::Create();
 }
 
 void D3D12DescriptorPool::Shutdown() {
+    BE1::PlatformMutex::Destroy(mutex);
+
     SAFE_RELEASE(descriptorHeap);
 }
 
@@ -68,18 +72,26 @@ void D3D12DescriptorPool::Clear() {
 
 uint32_t D3D12DescriptorPool::AllocIndex() {
     uint32_t newIndex = static_cast<uint32_t>(-1);
-    if (!idAllocator.AllocateID(newIndex)) {
-        BE_WARNLOG("D3D12DescriptorPool::AllocIndex: no usable descriptors\n");
+    {
+        BE1::ScopedLock lock(mutex);
+        
+        if (!idAllocator.AllocateID(newIndex)) {
+            // TODO: 확장 가능하도록 수정할 것
+            BE_WARNLOG("D3D12DescriptorPool::AllocIndex: no usable descriptors\n");
+        }
     }
     return newIndex;
 }
 
 void D3D12DescriptorPool::FreeIndex(uint32_t descriptorIndex) {
-    idAllocator.FreeID(descriptorIndex);
+    {
+        BE1::ScopedLock lock(mutex);
+
+        idAllocator.FreeID(descriptorIndex);
+    }
 }
 
 bool D3D12DescriptorPool::Alloc(D3D12_CPU_DESCRIPTOR_HANDLE *outCpuDescriptorHandle, D3D12_GPU_DESCRIPTOR_HANDLE *outGpuDescriptorHandle) {
-    // TODO: 스레드 세이프하게 만들 것 
     uint32_t newIndex = AllocIndex();
     if (newIndex == static_cast<uint32_t>(-1)) {
         return false;
@@ -97,7 +109,6 @@ bool D3D12DescriptorPool::Alloc(D3D12_CPU_DESCRIPTOR_HANDLE *outCpuDescriptorHan
 }
 
 void D3D12DescriptorPool::Free(D3D12_CPU_DESCRIPTOR_HANDLE cpuDescriptorHandle) {
-    // TODO: 스레드 세이프하게 만들 것 
     uint32_t descriptorIndex = GetIndexFromCPUDescriptorHandle(cpuDescriptorHandle);
 
     FreeIndex(descriptorIndex);
@@ -133,11 +144,13 @@ D3D12_GPU_DESCRIPTOR_HANDLE D3D12DescriptorPool::GetGPUDescriptorHandleFromIndex
 
 D3D12_CPU_DESCRIPTOR_HANDLE D3D12DescriptorPool::AllocRange(int count) {
     D3D12_CPU_DESCRIPTOR_HANDLE descriptorHandle = {};
-
-    uint32_t newId;
-    if (!idAllocator.AllocateRange(newId, count)) {
-        BE_WARNLOG("D3D12DescriptorPool::AllocRange: no usable consecutive descriptors\n");
-        return descriptorHandle;
+    uint32_t newId = static_cast<uint32_t>(-1);
+    {
+        BE1::ScopedLock lock(mutex);
+        if (!idAllocator.AllocateRange(newId, count)) {
+            BE_WARNLOG("D3D12DescriptorPool::AllocRange: no usable consecutive descriptors\n");
+            return descriptorHandle;
+        }
     }
 
     descriptorHandle = CD3DX12_CPU_DESCRIPTOR_HANDLE(baseCpuDescriptorHandle, (INT)newId, descriptorHandleSize);
@@ -146,6 +159,9 @@ D3D12_CPU_DESCRIPTOR_HANDLE D3D12DescriptorPool::AllocRange(int count) {
 
 void D3D12DescriptorPool::FreeRange(const D3D12_CPU_DESCRIPTOR_HANDLE &descriptorHandle, int count) {
     uint32_t freeId = (uint32_t)(descriptorHandle.ptr - baseCpuDescriptorHandle.ptr) / descriptorHandleSize;
+    {
+        BE1::ScopedLock lock(mutex);
 
-    idAllocator.FreeRange(freeId, count);
+        idAllocator.FreeRange(freeId, count);
+    }
 }
