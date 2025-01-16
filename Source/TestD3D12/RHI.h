@@ -378,11 +378,13 @@ namespace RHI {
 
     class GPUObject {
     public:
-        virtual ~GPUObject() = 0 {};
+        virtual ~GPUObject() = 0 {}
     };
 
     class GPUResource : public GPUObject {
     public:
+        ~GPUResource() = 0 {}
+
         virtual void *                  GetNativeResource() const = 0;
         virtual const void *            GetNativeBufferObject() const { return nullptr; }
         virtual const void *            GetNativeTextureObject() const { return nullptr; }
@@ -390,26 +392,26 @@ namespace RHI {
 
     class Buffer : public GPUResource {
     public:
-        void *writePtr = nullptr;
+        void *                          writePtr = nullptr;
         BufferUsage                     bufferUsage;
         ResourceFlag                    flags = ResourceFlag::None;
     };
 
     class VertexBuffer : public GPUResource {
     public:
-        void *writePtr = nullptr;
+        void *                          writePtr = nullptr;
         BufferUsage                     bufferUsage;
     };
 
     class IndexBuffer : public GPUResource {
     public:
-        void *writePtr = nullptr;
+        void *                          writePtr = nullptr;
         BufferUsage                     bufferUsage;
     };
 
     class ConstantBuffer : public GPUResource {
     public:
-        void *writePtr = nullptr;
+        void *                          writePtr = nullptr;
         BufferUsage                     bufferUsage;
     };
 
@@ -665,7 +667,7 @@ namespace RHI {
 
     class SwapChain {
     public:
-        virtual ~SwapChain() = 0 {};
+        virtual ~SwapChain() = 0 {}
 
         virtual bool                    IsSupportsHDR() const = 0;
         virtual bool                    GetFormat(BE1::Image::Format::Enum *imageFormat, bool *isSRGB) const = 0;
@@ -689,6 +691,8 @@ namespace RHI {
     class FrameThreadData;
     class CommandList {
     public:
+        virtual ~CommandList() = 0 {}
+
         virtual void                    Reset(bool resetCacheStates = true, const CommandList *primaryCommandList = nullptr) = 0;
 
         virtual void                    Close() = 0;
@@ -702,6 +706,8 @@ namespace RHI {
 
     class FrameThreadData {
     public:
+        virtual ~FrameThreadData() = 0 {}
+
         virtual void                    BeginFrame() = 0;
 
         virtual ConstantBuffer *        AllocConstant(uint32_t size) = 0;
@@ -737,6 +743,8 @@ namespace RHI {
 
     class Renderer {
     public:
+        virtual ~Renderer() = 0 {}
+
         virtual void                    Init(HWND hwnd);
         virtual void                    Shutdown();
 

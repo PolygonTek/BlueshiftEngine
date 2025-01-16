@@ -197,7 +197,7 @@ static void ShutdownInstance() {
     app.DestroyRenderContext(app.mainRenderContext);
 
     RHI::renderer->Shutdown();
-    SAFE_DELETE(RHI::renderer);
+    delete RHI::renderer;
 
     BE1::Engine::ShutdownBase();
 }
@@ -243,13 +243,12 @@ static bool RunFrameInstance(int frameMsec) {
 
     app.RunFrame(frameMsec);
 
+    app.renderWorld->RenderScene(app.mainRenderContext);
+
     if (!app.mainRenderContext->IsUsingRenderThread()) {
         app.mainRenderContext->BeginFrame();
-        app.RenderScene(app.mainRenderContext);
         app.mainRenderContext->RenderFrame();
         app.mainRenderContext->EndFrame();
-    } else {
-        app.RenderScene(app.mainRenderContext);
     }
 
     return true;
