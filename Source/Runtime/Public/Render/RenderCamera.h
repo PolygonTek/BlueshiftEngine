@@ -91,6 +91,16 @@ public:
 
     void                    RecalcZFar(float zFar);
 
+    const OBB               GetBox() const { return box; }
+
+    const Frustum &         GetFrustum() const { return frustum; }
+
+    const Plane &           GetFrustumPlane(int index) const { return frustumPlanes[index]; }
+
+    const Mat4 &            GetViewMatrix() const { return viewMatrix; }
+    const Mat4 &            GetProjMatrix() const { return projMatrix; }
+    const Mat4 &            GetViewProjMatrix() const { return viewProjMatrix; }
+
                             /// Transforms world coordinates to normalized device coordinates.
     bool                    TransformWorldToNDC(const Vec3 &worldCoords, Vec3 &normalizedDeviceCoords) const;
 
@@ -130,16 +140,6 @@ public:
 
     float                   CalcViewScale(const Vec3 &position) const;
     float                   CalcClampedViewScale(const Vec3 &position, float viewScaleMin = 0.001f, float viewScaleMax = 0.01f) const { return Clamp(CalcViewScale(position), viewScaleMin, viewScaleMax); }
-
-    const OBB               GetBox() const { return box; }
-
-    const Frustum &         GetFrustum() const { return frustum; }
-
-    const Plane &           GetFrustumPlane(int index) const { return frustumPlanes[index]; }
-
-    const Mat4 &            GetViewMatrix() const { return viewMatrix; }
-    const Mat4 &            GetProjMatrix() const { return projMatrix; }
-    const Mat4 &            GetViewProjMatrix() const { return viewProjMatrix; }
 
     static void             ComputeFov(float fromFovX, float fromAspectRatio, float toAspectRatio, float *toFovX, float *toFovY);
 

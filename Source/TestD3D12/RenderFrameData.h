@@ -24,24 +24,22 @@ public:
     void                            Init(int numThreads);
     void                            Shutdown();
 
-                                    // 프레임 별로 임시로 할당하는 메모리 (not thread-safe)
+                                    // 임시로 할당하는 메모리 (not thread-safe)
     void *                          MemAlloc(int size);
     void *                          ClearedMemAlloc(int size);
+    void                            ClearMemAllocs();
 
     VisCamera *                     AllocVisCamera();
     void                            FreeVisCamera();
+    VisCamera *                     GetVisCamera() const { return visCamera; }
 
     VisObject *                     AllocVisObjects(int numVisObjects);
     void                            FreeVisObjects();
-
-    RHI::FrameThreadData *          GetThreadData(int threadIndex) { assert(threadIndex >= 0 && threadIndex < COUNT_OF(threadData)); return threadData[threadIndex]; }
-
-    VisCamera *                     GetVisCamera() const { return visCamera; }
-
     int                             NumVisObjects() const { return numVisObjects; }
     VisObject *                     GetVisObjects() const { return visObjects; }
 
-    void                            ClearMemAllocs();
+                                    // 스레드 별 프레임 데이터 얻기
+    RHI::FrameThreadData *          GetThreadData(int threadIndex) { assert(threadIndex >= 0 && threadIndex < COUNT_OF(threadData)); return threadData[threadIndex]; }
 
     void                            BeginFrame();
     void                            EndFrame();
@@ -61,11 +59,10 @@ private:
     void                            ClearMemBlocks();
     MemBlock *                      AllocMemBlock();
 
-    MemBlock *                      headBlock;
-    MemBlock *                      currentBlock;
+    MemBlock *                      headBlock = nullptr;
+    MemBlock *                      currentBlock = nullptr;
 
     VisCamera *                     visCamera = nullptr;
-
     int                             numVisObjects = 0;
     VisObject *                     visObjects = nullptr;
 

@@ -17,6 +17,7 @@
 #include "RHI.h"
 #include "RenderContext.h"
 #include "RenderObject.h"
+#include "RenderWorld.h"
 
 class GameObject;
 class TriangleMesh;
@@ -31,14 +32,13 @@ public:
 
     int                             GetElapsedMsec() const { return elapsedMsec; }
 
-    void                            SetViewMatrix(const BE1::Mat3 &viewAxis, const BE1::Vec3 &viewOrigin, float *rowMajor4x4ViewMatrix) const;
-
-    void                            ClearGameObjects();
-
-    void                            RenderScene(RenderContext *renderContext);
-
     RenderContext *                 CreateRenderContext(HWND hwnd);
     void                            DestroyRenderContext(RenderContext *renderContext);
+
+    RenderWorld *                   AllocRenderWorld();
+    void                            FreeRenderWorld(RenderWorld *renderWorld);
+
+    void                            ClearGameObjects();
 
     void                            InitGameObjects();
     void                            InitTriangles();
@@ -48,14 +48,11 @@ public:
     void                            UpdateTriangles();
     void                            UpdateCubes();
 
-    int                             AddRenderObject(const RenderObject::State &def);
-    void                            UpdateRenderObject(int handle, const RenderObject::State &def);
-    void                            RemoveRenderObject(int handle);
-
     RenderContext *                 mainRenderContext = nullptr;
 
     BE1::Array<GameObject *>        gameObjects;
-    BE1::Array<RenderObject *>      renderObjects;
+
+    RenderWorld *                   renderWorld = nullptr;
 
     std::shared_ptr<TriangleMesh>   triangleMesh;
     std::shared_ptr<CubeMesh>       cubeMesh;

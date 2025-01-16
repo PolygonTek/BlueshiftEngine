@@ -134,14 +134,15 @@ void TriangleMesh::InitPipelineState() {
 }
 
 void TriangleMesh::DrawMesh(const RenderContext *renderContext, RHI::CommandList *commandList, const BE1::Vec2 &offset) {
-    // 한 프레임 동안만 유지되는 다이나믹 상수 버퍼 공간을 할당한다.
     RHI::FrameThreadData *frameThreadData = commandList->GetFrameThreadData();
+    // 한 프레임 동안만 유지되는 다이나믹 상수 버퍼 공간을 할당한다.
     RHI::ConstantBuffer *constantBuffer = frameThreadData->AllocConstant(sizeof(TriangleConstantData));
     if (!constantBuffer) {
         return;
     }
 
-    TriangleConstantData *constantDataPtr = reinterpret_cast<TriangleConstantData*>(constantBuffer->writePtr);
+    // 삼각형의 위치를 기록
+    TriangleConstantData *constantDataPtr = reinterpret_cast<TriangleConstantData *>(constantBuffer->writePtr);
     constantDataPtr->offset.x = offset.x;
     constantDataPtr->offset.y = offset.y;
 
@@ -156,13 +157,14 @@ void TriangleMesh::DrawMesh(const RenderContext *renderContext, RHI::CommandList
 }
 
 void TriangleMesh::DrawMeshInstanced(const RenderContext *renderContext, RHI::CommandList *commandList, const BE1::Vec2 *instanceData, int instanceCount) {
-    // 한 프레임 동안만 유지되는 다이나믹 상수 버퍼 공간을 할당한다.
     RHI::FrameThreadData *frameThreadData = commandList->GetFrameThreadData();
+    // 한 프레임 동안만 유지되는 다이나믹 상수 버퍼 공간을 할당한다.
     RHI::ConstantBuffer *constantBuffer = frameThreadData->AllocConstant(sizeof(TriangleInstancedConstantData));
     if (!constantBuffer) {
         return;
     }
 
+    // 삼각형 인스턴스들의 위치를 기록
     TriangleInstancedConstantData *constantDataPtr = reinterpret_cast<TriangleInstancedConstantData *>(constantBuffer->writePtr);
     for (int i = 0; i < instanceCount; ++i) {
         constantDataPtr->offset[i] = BE1::Vec4(instanceData[i], BE1::Vec2::zero);

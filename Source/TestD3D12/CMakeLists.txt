@@ -48,6 +48,10 @@ set(SRC_FILES
     RenderFrameData.cpp
     RenderObject.h
     RenderObject.cpp
+    RenderWorld.h
+    RenderWorld.cpp
+    RenderCamera.h
+    RenderCamera.cpp
     VisObject.h
     VisObject.cpp
     Mesh.h

@@ -20,6 +20,7 @@
 
 void RenderContext::Init(HWND hwnd, bool useRenderThread) {
 #ifdef USE_RENDER_TASK
+    // RenderContext 마다 렌더 태스크를 관리하는 매니져를 실행한다.
     // 렌더 태스크 스레드 개수는 물리코어 개수를 넘지 않는다.
     int numCores = BE1::PlatformSystem::NumCPUCores();
     int numTaskThreads = BE1::Min(numCores, MaxRenderTaskThreads);
@@ -31,13 +32,17 @@ void RenderContext::Init(HWND hwnd, bool useRenderThread) {
     int numTaskThreads = 1;
 #endif
 
+    // 렌더링 프레임 별로 사용할 프레임 데이터들을 초기화한다.
+    // 프레임 데이터 : 임시 메모리, 커맨드 리스트 풀, 루트 디스크립터 힙, 다이나믹 버퍼와 그 디스크립터 풀
     for (int frameIndex = 0; frameIndex < NumFrameResources; ++frameIndex) {
         frameData[frameIndex].Init(numTaskThreads);
     }
 
+    // 렌더 스레드에서 이전 프레임의 프레임 데이터 사용이 완료되었는지 체크하기 위해 펜스를 친다.
     currentFrameIndex = 0;
     frameData[currentFrameIndex].SetFenceValue(RHI::renderer->SignalFence(RHI::CommandQueueType::Graphics));
 
+    // 렌더 스레드 초기화
     if (useRenderThread) {
         InitRenderThread();
     }
@@ -70,14 +75,17 @@ void RenderContext::Init(HWND hwnd, bool useRenderThread) {
 }
 
 void RenderContext::Shutdown() {
+    // 렌더 스레드 종료
     if (renderThread) {
         ShutdownRenderThread();
     }
 
+    // 모든 렌더 태스크 종료
 #ifdef USE_RENDER_TASK
     renderTaskManager.Stop();
 #endif
 
+    // GPU 명령들이 완료될 때까지 기다린다.
     RHI::renderer->Finish(RHI::CommandQueueType::Graphics);
     RHI::renderer->Finish(RHI::CommandQueueType::Compute);
 
@@ -93,12 +101,15 @@ void RenderContext::Shutdown() {
 }
 
 void RenderContext::OnResize(int width, int height) {
+    // 렌더 스레드가 렌더링을 완료할 때까지 기다린다.
     if (renderThread) {
         WaitRenderCompleted();
     }
 
-    RHI::renderer->Finish(RHI::CommandQueueType::Graphics);
+    // 모든 프레임의 GPU 명령들이 완료될 때까지 기다린다.
+    WaitAllFrameFences();
 
+    // 스왑 체인의 크기 조정
     swapChain->Resize(width, height);
 
     viewportRect.w = static_cast<float>(width);
@@ -107,6 +118,7 @@ void RenderContext::OnResize(int width, int height) {
     scissorRect.w = width;
     scissorRect.h = height;
 
+    // 렌더 타겟 텍스쳐 & 뎁스 텍스쳐 재생성
     DestroyMainRenderTextures();
     CreateMainRenderTextures(width, height);
 }
@@ -260,8 +272,6 @@ unsigned int RenderContext::RenderThreadProc(void *param) {
         {
             BE1::ScopedWriteLock lock(context->smpLock);
 
-            context->renderFrameIndex ^= context->renderFrameIndex;
-
             // (메인 스레드의) 다음 업데이트가 끝나기를 기다리는 상태로 변경
             context->frameSyncState = FrameSyncState::WaitingForUpdateCompleted;
 
@@ -285,7 +295,7 @@ void RenderContext::BeginFrame() {
     // CommandAllocator 를 재사용하도록 리셋하고, CommandList 를 CommandAllocator 를 이용하여 초기 상태로 리셋
     mainCommandList->Reset();
 
-    // 뷰포트 & ScissorRect 설정
+    // 뷰포트 & ScissorRect 의 초기값 설정
     RHI::renderer->SetViewport(mainCommandList, viewportRect);
     RHI::renderer->SetScissorRect(mainCommandList, scissorRect);
 
@@ -307,38 +317,6 @@ void RenderContext::BeginFrame() {
         RHI::renderer->BeginRenderPass(mainCommandList, renderPassImages, COUNT_OF(renderPassImages));
     }
 #endif
-}
-
-void RenderContext::EndFrame() {
-    PROFILER_CPU_SCOPED_EVENT("RenderContext::EndFrame", 1);
-
-#if 1
-    RHI::renderer->EndRenderPass(mainCommandList);
-#else
-    RHI::renderer->EndRenderPass(mainCommandList);
-
-    RHI::renderer->BeginRenderPass(mainCommandList, swapChain, nullptr);
-    RHI::renderer->SetPSO(mainCommandList, imagePSO);
-    RHI::renderer->SetTexture(mainCommandList, 0, false, mainRTColorTexture);
-    RHI::renderer->Draw(mainCommandList, 3, 0);
-    RHI::renderer->EndRenderPass(mainCommandList);
-#endif
-
-    // CommandList 기록을 마치고 CommandQueue 로 실행
-    mainCommandList->CloseAndExecute(RHI::CommandQueueType::Graphics);
-
-    // 이번 프레임에서 수행하는 렌더링 커맨드들에 대한 펜스를 친다.
-    GetCurrentFrameData()->EndFrame();
-
-    // 백버퍼를 전면버퍼와 교환한다.
-    SwapBuffers(false);
-
-    frameCount++;
-
-    currentFrameIndex = frameCount % NumFrameResources;
-
-    // 메인 스레드에서 사용할 수 있도록 이전 프레임에 할당했던 메모리를 초기화한다.
-    GetCurrentFrameData()->ClearMemAllocs();
 }
 
 void RenderContext::RenderFrame() {
@@ -366,6 +344,38 @@ void RenderContext::RenderFrame() {
 #else
     DrawVisObjectsWithoutTask();
 #endif
+}
+
+void RenderContext::EndFrame() {
+    PROFILER_CPU_SCOPED_EVENT("RenderContext::EndFrame", 1);
+
+#if 1
+    RHI::renderer->EndRenderPass(mainCommandList);
+#else
+    RHI::renderer->EndRenderPass(mainCommandList);
+
+    RHI::renderer->BeginRenderPass(mainCommandList, swapChain, nullptr);
+    RHI::renderer->SetPSO(mainCommandList, imagePSO);
+    RHI::renderer->SetTexture(mainCommandList, 0, false, mainRTColorTexture);
+    RHI::renderer->Draw(mainCommandList, 3, 0);
+    RHI::renderer->EndRenderPass(mainCommandList);
+#endif
+
+    // CommandList 에 기록을 마치고 실행
+    mainCommandList->CloseAndExecute(RHI::CommandQueueType::Graphics);
+
+    // 이번 프레임에서 수행하는 렌더링 커맨드들에 대한 펜스를 친다.
+    GetCurrentFrameData()->EndFrame();
+
+    // 백버퍼를 전면버퍼와 교환한다.
+    SwapBuffers(false);
+
+    frameCount++;
+
+    currentFrameIndex = frameCount % NumFrameResources;
+
+    // 이번 프레임을 위해 메인 스레드에서 할당했던 메모리를 삭제한다.
+    GetCurrentFrameData()->ClearMemAllocs();
 }
 
 // 특정 인덱스 범위의 visObjects 를 그린다.

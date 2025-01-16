@@ -37,8 +37,8 @@ public:
     void                                Shutdown();
 
     void                                BeginFrame();
-    void                                EndFrame();
     void                                RenderFrame();
+    void                                EndFrame();
 
     void                                SwapBuffers(bool vsync);
     RHI::SwapChain *                    GetSwapChain() const { return swapChain; }
@@ -92,8 +92,8 @@ private:
     BE1::Image::Format::Enum            mainRTDepthFormat = BE1::Image::Format::Depth_32F;
     uint32_t                            mainRTSampleCount = 1;
 
-    BE1::Rect                           viewportRect;
-    BE1::Rect                           scissorRect;
+    BE1::Rect                           viewportRect = BE1::Rect::zero;
+    BE1::Rect                           scissorRect = BE1::Rect::zero;
     RHI::SwapChain *                    swapChain = nullptr;
     RHI::Texture *                      mainRTColorMSAATexture = nullptr;
     RHI::Texture *                      mainRTColorTexture = nullptr;
@@ -110,7 +110,6 @@ private:
     BE1::PlatformCondition *            updateCompletedCondition = nullptr;
     BE1::PlatformThread *               renderThread = nullptr;
     bool                                isStoppingRenderThread = false;
-    int                                 renderFrameIndex = 1;
     FrameSyncState                      frameSyncState = FrameSyncState::WaitingForUpdateCompleted;
 
 #ifdef USE_RENDER_TASK

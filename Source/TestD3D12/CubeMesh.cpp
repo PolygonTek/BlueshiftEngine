@@ -166,16 +166,17 @@ void CubeMesh::InitPipelineState() {
 }
 
 void CubeMesh::DrawMesh(const RenderContext *renderContext, RHI::CommandList* commandList, const BE1::Mat3x4& worldMatrix) {
-    // 한 프레임 동안만 유지되는 다이나믹 상수 버퍼 공간을 할당한다.
     RHI::FrameThreadData *frameThreadData = commandList->GetFrameThreadData();
+    // 한 프레임 동안만 유지되는 다이나믹 상수 버퍼 공간을 할당한다.
     RHI::ConstantBuffer *constantBuffer = frameThreadData->AllocConstant(sizeof(CubeConstantData));
     if (!constantBuffer) {
         return;
     }
 
-    const RenderFrameData *currentFrameData = renderContext->GetCurrentFrameData();
+    CubeConstantData *constantDataPtr = reinterpret_cast<CubeConstantData *>(constantBuffer->writePtr);
 
-    CubeConstantData *constantDataPtr = reinterpret_cast<CubeConstantData*>(constantBuffer->writePtr);
+    // 큐브의 MVP 행렬을 기록
+    const RenderFrameData *currentFrameData = renderContext->GetCurrentFrameData();
     constantDataPtr->modelViewProjMatrix = currentFrameData->GetVisCamera()->viewProjMatrix * worldMatrix;
 
     RHI::renderer->SetVertexBuffer(commandList, 0, vertexBuffer);
@@ -189,18 +190,20 @@ void CubeMesh::DrawMesh(const RenderContext *renderContext, RHI::CommandList* co
 }
 
 void CubeMesh::DrawMeshInstanced(const RenderContext *renderContext, RHI::CommandList *commandList, const BE1::Mat3x4 *instanceData, int instanceCount) {
-    // 한 프레임 동안만 유지되는 다이나믹 상수 버퍼 공간을 할당한다.
     RHI::FrameThreadData *frameThreadData = commandList->GetFrameThreadData();
+    // 한 프레임 동안만 유지되는 다이나믹 상수 버퍼 공간을 할당한다.
     RHI::ConstantBuffer *constantBuffer = frameThreadData->AllocConstant(sizeof(CubeInstancedConstantData));
     if (!constantBuffer) {
         return;
     }
 
-    const RenderFrameData *currentFrameData = renderContext->GetCurrentFrameData();
-
     CubeInstancedConstantData *constantPtr = reinterpret_cast<CubeInstancedConstantData *>(constantBuffer->writePtr);
+
+    // 카메라의 뷰-프로젝션 행렬을 기록
+    const RenderFrameData *currentFrameData = renderContext->GetCurrentFrameData();
     constantPtr->viewProjMatrix = currentFrameData->GetVisCamera()->viewProjMatrix;
 
+    // 큐브 인스턴스들의 월드 행렬을 기록
     for (int i = 0; i < instanceCount; ++i) {
         constantPtr->worldMatrix[i] = instanceData[i];
     }

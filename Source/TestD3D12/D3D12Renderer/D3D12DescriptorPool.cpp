@@ -69,7 +69,7 @@ void D3D12DescriptorPool::Clear() {
 uint32_t D3D12DescriptorPool::AllocIndex() {
     uint32_t newIndex = static_cast<uint32_t>(-1);
     if (!idAllocator.AllocateID(newIndex)) {
-        BE_WARNLOG("D3D12DescriptorPool::Alloc: no usable descriptors\n");
+        BE_WARNLOG("D3D12DescriptorPool::AllocIndex: no usable descriptors\n");
     }
     return newIndex;
 }
@@ -79,6 +79,7 @@ void D3D12DescriptorPool::FreeIndex(uint32_t descriptorIndex) {
 }
 
 bool D3D12DescriptorPool::Alloc(D3D12_CPU_DESCRIPTOR_HANDLE *outCpuDescriptorHandle, D3D12_GPU_DESCRIPTOR_HANDLE *outGpuDescriptorHandle) {
+    // TODO: 스레드 세이프하게 만들 것 
     uint32_t newIndex = AllocIndex();
     if (newIndex == static_cast<uint32_t>(-1)) {
         return false;
@@ -96,6 +97,7 @@ bool D3D12DescriptorPool::Alloc(D3D12_CPU_DESCRIPTOR_HANDLE *outCpuDescriptorHan
 }
 
 void D3D12DescriptorPool::Free(D3D12_CPU_DESCRIPTOR_HANDLE cpuDescriptorHandle) {
+    // TODO: 스레드 세이프하게 만들 것 
     uint32_t descriptorIndex = GetIndexFromCPUDescriptorHandle(cpuDescriptorHandle);
 
     FreeIndex(descriptorIndex);
