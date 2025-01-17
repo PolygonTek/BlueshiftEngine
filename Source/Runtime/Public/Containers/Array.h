@@ -155,7 +155,7 @@ public:
     void            ReserveAlloc(int newCapacity, NewFunc *allocator);
 
                     /// Sets the capacity of this array.
-                    /// Occurs reallocation and copy memory if capicity changed.
+                    /// Occurs reallocation and copy memory if capacity changed.
     void            Resize(int newCapacity);
     void            Resize(int newCapacity, int newGranularity);
 
