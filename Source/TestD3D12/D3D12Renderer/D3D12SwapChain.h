@@ -31,6 +31,8 @@ public:
 
     virtual bool                    IsSupportsHDR() const override;
     virtual bool                    GetFormat(BE1::Image::Format::Enum *imageFormat, bool *isSRGB) const override;
+    virtual uint32_t                GetWidth() const override { return width; }
+    virtual uint32_t                GetHeight() const override { return height; }
 
     virtual void                    Resize(uint32_t width, uint32_t height) override;
     virtual void                    SwapBuffers(bool vsync) override;
@@ -48,4 +50,6 @@ private:
     ID3D12Resource *                backBuffers[NumSwapChainBuffers] = {};
     D3D12_CPU_DESCRIPTOR_HANDLE     backBufferRTVs[NumSwapChainBuffers] = {};
     uint32_t                        currentBackBufferIndex = 0;
+    uint32_t                        width = 0;
+    uint32_t                        height = 0;
 };

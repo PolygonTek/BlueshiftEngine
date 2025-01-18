@@ -36,7 +36,7 @@ struct D3D12PendingResource {
 
 class D3D12Renderer : public RHI::Renderer {
 public:
-    virtual void                        Init(HWND hwnd) override;
+    virtual void                        Init(void *mainWindowHandle) override;
     virtual void                        Shutdown() override;
 
     RHI::ShaderFormat                   GetShaderFormat() const;

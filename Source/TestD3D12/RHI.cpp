@@ -19,7 +19,7 @@ namespace RHI {
     Renderer *renderer = nullptr;
 }
 
-void RHI::Renderer::Init(HWND hwnd) {
+void RHI::Renderer::Init(void *mainWindowHandle) {
     SetupStates();
 
     initialized = true;

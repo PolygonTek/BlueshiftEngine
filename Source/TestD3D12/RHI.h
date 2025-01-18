@@ -671,6 +671,8 @@ namespace RHI {
 
         virtual bool                    IsSupportsHDR() const = 0;
         virtual bool                    GetFormat(BE1::Image::Format::Enum *imageFormat, bool *isSRGB) const = 0;
+        virtual uint32_t                GetWidth() const = 0;
+        virtual uint32_t                GetHeight() const = 0;
 
         virtual void                    Resize(uint32_t width, uint32_t height) = 0;
         virtual void                    SwapBuffers(bool vsync) = 0;
@@ -745,7 +747,7 @@ namespace RHI {
     public:
         virtual ~Renderer() = 0 {}
 
-        virtual void                    Init(HWND hwnd);
+        virtual void                    Init(void *mainWindowHandle);
         virtual void                    Shutdown();
 
         bool                            IsInitialized() const { return initialized; }

@@ -28,8 +28,8 @@
 extern "C" { __declspec(dllexport) extern const UINT D3D12SDKVersion = 614; }
 extern "C" { __declspec(dllexport) extern const char *D3D12SDKPath = u8"."; }
 
-void D3D12Renderer::Init(HWND hwnd) {
-    RHI::Renderer::Init(hwnd);
+void D3D12Renderer::Init(void *mainWindowHandle) {
+    RHI::Renderer::Init(mainWindowHandle);
 
 #if defined(USE_RENDERER_DEBUG_LAYER) && (defined(_DEBUG) || defined(_DEVELOPMENT))
     bool enableDebugLayer = true;

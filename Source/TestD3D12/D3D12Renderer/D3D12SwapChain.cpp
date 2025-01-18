@@ -65,6 +65,8 @@ RHI::SwapChain *D3D12Renderer::CreateSwapChain(HWND hwnd, uint32_t width, uint32
 
     D3D12SwapChain *swapChain = new D3D12SwapChain;
     swapChain->dxgiFormat = dxgiFormat;
+    swapChain->width = width;
+    swapChain->height = height;
     swapChain->dxgiSwapChain = dxgiSwapChain3;
     swapChain->CreateRTVs();
 
@@ -103,6 +105,9 @@ void D3D12SwapChain::Resize(uint32_t width, uint32_t height) {
 
     // 스왑 체인 버퍼의 사이즈를 조정한다.
     dxgiSwapChain->ResizeBuffers(D3D12SwapChain::NumSwapChainBuffers, width, height, dxgiFormat, DXGI_SWAP_CHAIN_FLAG_ALLOW_TEARING);
+
+    this->width = width;
+    this->height = height;
 
     CreateRTVs();
 }
