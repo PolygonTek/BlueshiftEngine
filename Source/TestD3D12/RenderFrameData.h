@@ -16,8 +16,51 @@
 
 #include "RHI.h"
 
+class RenderContext;
 class VisCamera;
 class VisObject;
+
+enum class RenderCommandId : uint32_t {
+    End,
+    BeginContext,
+    DrawCamera,
+    ScreenShot,
+    SwapBuffers
+};
+
+struct RenderCommandBuffer {
+    static constexpr uint32_t       BufferSize = 1024;
+
+    byte                            buffer[BufferSize];
+    uint32_t                        used = 0;
+};
+
+struct BeginContextRenderCommand {
+    RenderCommandId                 commandId;
+    RenderContext *                 renderContext;
+};
+
+struct DrawCameraRenderCommand {
+    RenderCommandId                 commandId;
+    const VisCamera *               visCamera;
+};
+
+struct ScreenShotRenderCommand {
+    RenderCommandId                 commandId;
+    int                             x;
+    int                             y;
+    int                             width;
+    int                             height;
+    char                            filename[BE1::MaxAbsolutePath];
+};
+
+struct SwapBuffersRenderCommand {
+    RenderCommandId                 commandId;
+};
+
+struct EndRenderCommand {
+    RenderCommandId                 commandId;
+};
 
 class RenderFrameData {
 public:
@@ -27,16 +70,24 @@ public:
                                     // 임시로 할당하는 메모리 (not thread-safe)
     void *                          MemAlloc(int size);
     void *                          ClearedMemAlloc(int size);
-    void                            ClearMemAllocs();
 
+    void                            InitMemAllocs();
+    void                            FreeMemAllocs();
+
+    uint32_t                        NumVisCameras() const { return numVisCameras; }
+    VisCamera *                     GetVisCameras() const { return visCameras; }
     VisCamera *                     AllocVisCamera();
-    void                            FreeVisCamera();
-    VisCamera *                     GetVisCamera() const { return visCamera; }
 
-    VisObject *                     AllocVisObjects(int numVisObjects);
-    void                            FreeVisObjects();
-    int                             NumVisObjects() const { return numVisObjects; }
+    uint32_t                        NumVisObjects() const { return numVisObjects; }
     VisObject *                     GetVisObjects() const { return visObjects; }
+    VisObject *                     AllocVisObject();
+
+    RenderCommandBuffer *           GetCommands() { return &commands; }
+
+    void                            BeginCommands(RenderContext *context);
+    void                            CmdDrawCamera(const VisCamera *camera);
+    void                            CmdSwapBuffers();
+    void                            CmdScreenshot(int x, int y, int width, int height, const char *filename);
 
                                     // 스레드 별 프레임 데이터 얻기
     RHI::FrameThreadData *          GetThreadData(int threadIndex) { assert(threadIndex >= 0 && threadIndex < COUNT_OF(threadData)); return threadData[threadIndex]; }
@@ -59,12 +110,25 @@ private:
     void                            ClearMemBlocks();
     MemBlock *                      AllocMemBlock();
 
+    void                            InitVisCameras(uint32_t maxVisCameras);
+    void                            FreeVisCameras();
+
+    void                            InitVisObjects(int maxVisObjects);
+    void                            FreeVisObjects();
+
+    void *                          GetCommandBuffer(uint32_t bytes);
+
     MemBlock *                      headBlock = nullptr;
     MemBlock *                      currentBlock = nullptr;
 
-    VisCamera *                     visCamera = nullptr;
-    int                             numVisObjects = 0;
+    uint32_t                        maxVisCameras = 0;
+    uint32_t                        numVisCameras = 0;
+    VisCamera *                     visCameras = nullptr;
+    uint32_t                        maxVisObjects = 0;
+    uint32_t                        numVisObjects = 0;
     VisObject *                     visObjects = nullptr;
+
+    RenderCommandBuffer             commands;
 
 #ifdef USE_RENDER_TASK
     RHI::FrameThreadData *          threadData[MaxRenderTaskThreads] = {};
@@ -75,3 +139,60 @@ private:
 
     uint64_t                        fenceValue = 0;
 };
+
+BE_INLINE void RenderFrameData::BeginFrame() {
+    // 쓰레드 별로 사용할 자원을 Reset 한다.
+    for (int threadIndex = 0; threadIndex < numThreads; ++threadIndex) {
+        threadData[threadIndex]->Reset();
+    }
+
+    // 이번 프레임에 사용할 프레임 데이터를 사용하기 위해서는, GPU 에서 이전 프레임에 대한 렌더링이 완료되야 한다.
+    RHI::renderer->WaitFence(fenceValue);
+}
+
+BE_INLINE void RenderFrameData::EndFrame() {
+    fenceValue = RHI::renderer->SignalFence(RHI::CommandQueueType::Graphics);
+}
+
+BE_INLINE void RenderFrameData::BeginCommands(RenderContext *context) {
+    BeginContextRenderCommand *cmd = (BeginContextRenderCommand *)GetCommandBuffer(sizeof(BeginContextRenderCommand));
+    if (!cmd) {
+        return;
+    }
+
+    cmd->commandId = RenderCommandId::BeginContext;
+    cmd->renderContext = context;
+}
+
+BE_INLINE void RenderFrameData::CmdDrawCamera(const VisCamera *camera) {
+    DrawCameraRenderCommand *cmd = (DrawCameraRenderCommand *)GetCommandBuffer(sizeof(DrawCameraRenderCommand));
+    if (!cmd) {
+        return;
+    }
+
+    cmd->commandId = RenderCommandId::DrawCamera;
+    cmd->visCamera = camera;
+}
+
+BE_INLINE void RenderFrameData::CmdSwapBuffers() {
+    SwapBuffersRenderCommand *cmd = (SwapBuffersRenderCommand *)GetCommandBuffer(sizeof(SwapBuffersRenderCommand));
+    if (!cmd) {
+        return;
+    }
+
+    cmd->commandId = RenderCommandId::SwapBuffers;
+}
+
+BE_INLINE void RenderFrameData::CmdScreenshot(int x, int y, int width, int height, const char *filename) {
+    ScreenShotRenderCommand *cmd = (ScreenShotRenderCommand *)GetCommandBuffer(sizeof(ScreenShotRenderCommand));
+    if (!cmd) {
+        return;
+    }
+
+    cmd->commandId = RenderCommandId::ScreenShot;
+    cmd->x = x;
+    cmd->y = y;
+    cmd->width = width;
+    cmd->height = height;
+    BE1::Str::Copynz(cmd->filename, filename, COUNT_OF(cmd->filename));
+}

@@ -133,7 +133,7 @@ void TriangleMesh::InitPipelineState() {
     }
 }
 
-void TriangleMesh::DrawMesh(const RenderContext *renderContext, RHI::CommandList *commandList, const BE1::Vec2 &offset) {
+void TriangleMesh::DrawMesh(RHI::CommandList *commandList, const VisCamera *visCamera, const BE1::Vec2 &offset) {
     RHI::FrameThreadData *frameThreadData = commandList->GetFrameThreadData();
     // 한 프레임 동안만 유지되는 다이나믹 상수 버퍼 공간을 할당한다.
     RHI::ConstantBuffer *constantBuffer = frameThreadData->AllocConstant(sizeof(TriangleConstantData));
@@ -156,7 +156,7 @@ void TriangleMesh::DrawMesh(const RenderContext *renderContext, RHI::CommandList
     RHI::renderer->DrawIndexed(commandList, 3, 0, 0);
 }
 
-void TriangleMesh::DrawMeshInstanced(const RenderContext *renderContext, RHI::CommandList *commandList, const BE1::Vec2 *instanceData, int instanceCount) {
+void TriangleMesh::DrawMeshInstanced(RHI::CommandList *commandList, const VisCamera *visCamera, const BE1::Vec2 *instanceData, int instanceCount) {
     RHI::FrameThreadData *frameThreadData = commandList->GetFrameThreadData();
     // 한 프레임 동안만 유지되는 다이나믹 상수 버퍼 공간을 할당한다.
     RHI::ConstantBuffer *constantBuffer = frameThreadData->AllocConstant(sizeof(TriangleInstancedConstantData));

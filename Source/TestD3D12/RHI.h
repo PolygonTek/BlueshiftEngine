@@ -710,7 +710,7 @@ namespace RHI {
     public:
         virtual ~FrameThreadData() = 0 {}
 
-        virtual void                    BeginFrame() = 0;
+        virtual void                    Reset() = 0;
 
         virtual ConstantBuffer *        AllocConstant(uint32_t size) = 0;
         virtual VertexBuffer *          AllocVertex(uint32_t vertexSize, uint32_t count) = 0;
@@ -884,7 +884,7 @@ namespace RHI {
     };
 };
 
-#ifdef USE_PROFILER
+#if defined(USE_PROFILER) && (defined(_DEBUG) || defined(_DEVELOPMENT))
 #define PROFILER_CPU_BEGIN_EVENT(string, colorIndex) RHI::renderer->BeginEvent(nullptr, string, colorIndex)
 #define PROFILER_CPU_END_EVENT() RHI::renderer->EndEvent(nullptr);
 #define PROFILER_CPU_SCOPED_EVENT(string, colorIndex) RHI::ScopedEventObject _scopedEventObject(nullptr, string, colorIndex)

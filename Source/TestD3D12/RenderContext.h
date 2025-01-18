@@ -18,6 +18,8 @@
 #include "RenderContext.h"
 #include "RenderFrameData.h"
 
+class RenderBackEnd;
+
 #ifdef USE_RENDER_FRAME_RESOURCES
 static constexpr int NumFrameResources = 2;
 #else
@@ -30,21 +32,21 @@ enum class FrameSyncState : uint8_t {
 };
 
 class RenderContext {
+    friend class RenderBackEnd;
+
 public:
     RenderContext() = default;
 
-    void                                Init(HWND hwnd, bool useRenderThread);
+    void                                Init(void *windowHandle, bool useRenderThread);
     void                                Shutdown();
 
     void                                BeginFrame();
-    void                                RenderFrame();
     void                                EndFrame();
 
-    void                                SwapBuffers(bool vsync);
     RHI::SwapChain *                    GetSwapChain() const { return swapChain; }
 
-    uint32_t                            GetWidth() const { return viewportRect.w; }
-    uint32_t                            GetHeight() const { return viewportRect.h; }
+    uint32_t                            GetWidth() const { return swapChain->GetWidth(); }
+    uint32_t                            GetHeight() const { return swapChain->GetHeight(); }
 
     void                                OnResize(int width, int height);
 
@@ -63,14 +65,6 @@ public:
     void                                MarkUpdateCompleted();
 
 private:
-    struct DrawObjectTaskDesc {
-        RenderContext *                 renderContext = nullptr;
-        int                             threadIndex = -1;
-        int                             visObjectStartIndex = -1;
-        int                             visObjectEndIndex = -1;
-        RHI::CommandList *              activeCommandList = nullptr;
-    };
-
     void                                CreateMainRenderTextures(uint32_t width, uint32_t height);
     void                                DestroyMainRenderTextures();
     void                                InitFullScreenTrianglePSO();
@@ -80,30 +74,18 @@ private:
     void                                InitRenderThread();
     void                                ShutdownRenderThread();
 
-    void                                DrawVisObjects(int threadIndex, RHI::CommandList *commandList, int startIndex, int endIndex);
-    void                                DrawVisObjectsWithoutTask();
-#ifdef USE_RENDER_TASK
-    void                                DrawVisObjectsWithTask(int numTasks);
-    void                                DrawVisObjectsByTask(RenderContext::DrawObjectTaskDesc *taskDesc);
-#endif
-    static void                         DrawVisObjectsByTaskFunction(void *data);
-
     BE1::Image::Format::Enum            mainRTColorFormat = BE1::Image::Format::RGBA_8_8_8_8;
     BE1::Image::Format::Enum            mainRTDepthFormat = BE1::Image::Format::Depth_32F;
     uint32_t                            mainRTSampleCount = 1;
 
-    BE1::Rect                           viewportRect = BE1::Rect::zero;
-    BE1::Rect                           scissorRect = BE1::Rect::zero;
     RHI::SwapChain *                    swapChain = nullptr;
     RHI::Texture *                      mainRTColorMSAATexture = nullptr;
     RHI::Texture *                      mainRTColorTexture = nullptr;
     RHI::Texture *                      mainRTDepthTexture = nullptr;
     RHI::PipelineState *                imagePSO = nullptr;
 
-    RHI::CommandList *                  mainCommandList = nullptr;
-    UINT                                frameCount = 0;
     RenderFrameData                     frameData[NumFrameResources] = {};
-    UINT                                currentFrameIndex = 0;
+    uint32_t                            currentFrameIndex = 0;
 
     BE1::PlatformSRWLock *              smpLock = nullptr;
     BE1::PlatformCondition *            renderCompletedCondition = nullptr;
@@ -115,6 +97,4 @@ private:
 #ifdef USE_RENDER_TASK
     BE1::TaskManager                    renderTaskManager = BE1::TaskManager(MaxRenderTasks);
 #endif
-
-    BE1::Array<DrawObjectTaskDesc>      objectDrawingTaskDescs;
 };

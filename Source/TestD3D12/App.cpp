@@ -14,11 +14,12 @@
 
 #include "Precompiled.h"
 #include "App.h"
+#include "RenderSystem.h"
+#include "RenderWorld.h"
+#include "RenderCamera.h"
 #include "GameObject.h"
-#include "VisObject.h"
 #include "TriangleMesh.h"
 #include "CubeMesh.h"
-#include "RenderWorld.h"
 
 #define TRIANGLE_OR_CUBE    0
 
@@ -32,7 +33,8 @@ static constexpr float      CubeSpacing = 2.82842712f;
 App                         app;
 
 void App::Init() {
-    renderWorld = AllocRenderWorld();
+    renderWorld = new RenderWorld;
+    renderCamera = new RenderCamera;
 
     InitGameObjects();
 }
@@ -42,7 +44,8 @@ void App::Shutdown() {
 
     ClearGameObjects();
 
-    FreeRenderWorld(renderWorld);
+    SAFE_DELETE(renderCamera);
+    SAFE_DELETE(renderWorld);
 }
 
 void App::RunFrame(int frameMsec) {
@@ -55,6 +58,33 @@ void App::RunFrame(int frameMsec) {
     RHI::renderer->FreePendingResources();
 
     BE1::cmdSystem.ExecuteCommandBuffer();
+}
+
+void App::Render() {
+    PROFILER_CPU_SCOPED_EVENT("App::Render", 1);
+
+    float w = mainRenderContext->GetWidth();
+    float h = mainRenderContext->GetHeight();
+    float aspectRatio = w / h;
+
+    RenderCamera::State &cameraDef = renderCamera->GetState();
+    cameraDef.orthogonal = false;
+    cameraDef.renderRect.Set(0, 0, w, h);
+    cameraDef.origin.Set(220, 0, 0);
+    cameraDef.axis[0].Set(-1, 0, 0);
+    cameraDef.axis[1].Set(0, -1, 0);
+    cameraDef.axis[2].Set(0, 0, 1);
+    cameraDef.fovY = 45;
+    cameraDef.fovX = cameraDef.fovY * aspectRatio;
+    cameraDef.zNear = BE1::CmToUnit(10.0f);
+    cameraDef.zFar = BE1::MeterToUnit(1000.0f);
+    renderCamera->Update();
+
+    mainRenderContext->BeginFrame();
+
+    renderWorld->RenderScene(mainRenderContext, renderCamera);
+
+    mainRenderContext->EndFrame();
 }
 
 void App::ClearGameObjects() {
@@ -86,33 +116,6 @@ void App::UpdateGameObjects() {
 #else
     UpdateCubes();
 #endif
-}
-
-RenderContext *App::CreateRenderContext(HWND hwnd) {
-    RenderContext *renderContext = new RenderContext;
-#ifdef USE_RENDER_THREAD
-    bool useRenderThread = true;
-#else
-    bool useRenderThread = false;
-#endif
-    renderContext->Init(hwnd, useRenderThread);
-    return renderContext;
-}
-
-void App::DestroyRenderContext(RenderContext *renderContext) {
-    renderContext->Shutdown();
-    delete renderContext;
-}
-
-RenderWorld *App::AllocRenderWorld() {
-    RenderWorld *renderWorld = new RenderWorld;
-    return renderWorld;
-}
-
-void App::FreeRenderWorld(RenderWorld *renderWorld) {
-    if (renderWorld) {
-        delete renderWorld;
-    }
 }
 
 void App::InitTriangles() {

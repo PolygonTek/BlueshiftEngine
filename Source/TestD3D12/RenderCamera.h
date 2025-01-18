@@ -23,9 +23,9 @@ public:
     struct State {
         int                 time = 0;               ///< Time in milliseconds for shader effects and other time dependent rendering issues
 
+        BE1::Rect           renderRect;
         BE1::Vec3           origin;                 ///< View origin
         BE1::Mat3           axis;                   ///< View axis [FORWARD, LEFT, UP]
-        BE1::Rect           renderRect;
 
         float               fovX;                   ///< Perspective projection FOV in horizontal axis
         float               fovY;                   ///< Perspective projection FOV in vertical axis
@@ -36,7 +36,7 @@ public:
         bool                orthogonal = false;     ///< True for orthogonal projection or false for perspective projection
     };
 
-    void                    Update(const State *state);
+    void                    Update();
 
     State &                 GetState() { return state; }
 

@@ -96,7 +96,7 @@ void D3D12FrameThreadData::Shutdown() {
     SAFE_DELETE(computeCommandListPool);
 }
 
-void D3D12FrameThreadData::BeginFrame() {
+void D3D12FrameThreadData::Reset() {
     // 다이나믹 버퍼를 리셋한다.
     for (D3D12DynamicAllocation *dynamicAllocation : dynamicAllocations) {
         dynamicAllocation->usedBytes = 0;

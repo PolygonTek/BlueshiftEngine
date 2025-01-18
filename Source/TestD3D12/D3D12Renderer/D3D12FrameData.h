@@ -39,7 +39,7 @@ public:
     void                                Init();
     void                                Shutdown();
 
-    virtual void                        BeginFrame() override;
+    virtual void                        Reset() override;
 
                                         // 프레임 별로 임시로 할당하는 다이나믹 버퍼
     virtual RHI::ConstantBuffer *       AllocConstant(uint32_t size) override;

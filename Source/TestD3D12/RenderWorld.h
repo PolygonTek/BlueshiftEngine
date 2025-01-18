@@ -17,6 +17,9 @@
 #include "RenderObject.h"
 
 class RenderContext;
+class RenderCamera;
+class RenderFrameData;
+class VisCamera;
 
 class RenderWorld {
 public:
@@ -26,8 +29,10 @@ public:
     void                            UpdateRenderObject(int handle, const RenderObject::State &def);
     void                            RemoveRenderObject(int handle);
 
-    void                            RenderScene(RenderContext *renderContext/*, const RenderCamera *renderCamera*/);
+    void                            RenderScene(RenderContext *renderContext, const RenderCamera *renderCamera);
 
 private:
+    void                            DrawCamera(VisCamera *visCamera, RenderFrameData *frameData);
+
     BE1::Array<RenderObject *>      renderObjects;
 };

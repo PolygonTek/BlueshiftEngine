@@ -13,8 +13,11 @@
 // limitations under the License.
 
 #include "Precompiled.h"
+#include "RenderSystem.h"
+#include "RenderBackEnd.h"
 #include "RenderFrameData.h"
-#include "VisObject.h"
+#include "RenderContext.h"
+#include "RenderInternal.h"
 
 static constexpr uint32_t MaxMemSizePerBlock = 0x1000000;
 static constexpr uint32_t MemAlignSize = 32;
@@ -34,25 +37,11 @@ void RenderFrameData::Shutdown() {
         RHI::renderer->DestroyFrameThreadData(threadData[threadIndex]);
     }
 
-    FreeVisCamera();
-
     FreeVisObjects();
 
+    FreeVisCameras();
+
     ClearMemBlocks();
-}
-
-void RenderFrameData::BeginFrame() {
-    // 쓰레드 별로 사용할 자원을 Reset 한다.
-    for (int threadIndex = 0; threadIndex < numThreads; ++threadIndex) {
-        threadData[threadIndex]->BeginFrame();
-    }
-
-    // 이번 프레임에 사용할 프레임 데이터를 사용하기 위해서는, GPU 에서 이전 프레임에 대한 렌더링이 완료되야 한다.
-    RHI::renderer->WaitFence(fenceValue);
-}
-
-void RenderFrameData::EndFrame() {
-    fenceValue = RHI::renderer->SignalFence(RHI::CommandQueueType::Graphics);
 }
 
 void RenderFrameData::InitMemBlocks() {
@@ -114,8 +103,14 @@ void *RenderFrameData::ClearedMemAlloc(int size) {
     return mem;
 }
 
-void RenderFrameData::ClearMemAllocs() {
-    FreeVisCamera();
+void RenderFrameData::InitMemAllocs() {
+    InitVisCameras(16);
+
+    InitVisObjects(16384);
+}
+
+void RenderFrameData::FreeMemAllocs() {
+    FreeVisCameras();
 
     FreeVisObjects();
 
@@ -128,39 +123,35 @@ void RenderFrameData::ClearMemAllocs() {
     }
 }
 
-VisCamera *RenderFrameData::AllocVisCamera() {
-    assert(!visCamera);
+void RenderFrameData::InitVisCameras(uint32_t maxVisCameras) {
+    assert(!visCameras);
 
-    this->visCamera = (VisCamera *)MemAlloc(sizeof(VisCamera));
-
-    // placement new 로 생성자 호출
-    new (visCamera) VisCamera();
-
-    return visCamera;
+    this->maxVisCameras = maxVisCameras;
+    this->numVisCameras = 0;
+    this->visCameras = (VisCamera *)MemAlloc(sizeof(VisCamera) * maxVisCameras);
 }
 
-void RenderFrameData::FreeVisCamera() {
-    if (!visCamera) {
+void RenderFrameData::FreeVisCameras() {
+    if (!visCameras) {
         return;
     }
 
     // 소멸자 호출
-    (visCamera)->~VisCamera();
-    
-    visCamera = nullptr;
+    for (int i = 0; i < numVisCameras; ++i) {
+        (visCameras + i)->~VisCamera();
+    }
+
+    visCameras = nullptr;
+    numVisCameras = 0;
 }
 
-VisObject *RenderFrameData::AllocVisObjects(int numVisObjects) {
+// TODO: 한번에 할당하지 않고, AllocVisObject 에서 최대 개수를 넘어가도 새로운 chunk 를 할당하는 방식으로 수정할 것
+void RenderFrameData::InitVisObjects(int maxVisObjects) {
     assert(!visObjects);
 
-    this->numVisObjects = numVisObjects;
-    this->visObjects = (VisObject *)MemAlloc(sizeof(VisObject) * numVisObjects);
-
-    // placement new 로 생성자 호출
-    for (int visObjectIndex = 0; visObjectIndex < numVisObjects; ++visObjectIndex) {
-        new (visObjects + visObjectIndex) VisObject();
-    }
-    return visObjects;
+    this->maxVisObjects = maxVisObjects;
+    this->numVisObjects = 0;
+    this->visObjects = (VisObject *)MemAlloc(sizeof(VisObject) * maxVisObjects);
 }
 
 void RenderFrameData::FreeVisObjects() {
@@ -169,10 +160,45 @@ void RenderFrameData::FreeVisObjects() {
     }
 
     // 소멸자 호출
-    for (int visObjectIndex = 0; visObjectIndex < numVisObjects; ++visObjectIndex) {
-        (visObjects + visObjectIndex)->~VisObject();
+    for (int i = 0; i < numVisObjects; ++i) {
+        (visObjects + i)->~VisObject();
     }
 
     visObjects = nullptr;
     numVisObjects = 0;
+}
+
+VisCamera *RenderFrameData::AllocVisCamera() {
+    if (numVisCameras + 1 >= maxVisCameras) {
+        return nullptr;
+    }
+
+    // placement new 생성자 호출
+    new (visCameras + numVisCameras) VisCamera();
+
+    return &visCameras[numVisCameras++];
+}
+
+VisObject *RenderFrameData::AllocVisObject() {
+    if (numVisObjects + 1 >= maxVisObjects) {
+        return nullptr;
+    }
+
+    // placement new 생성자 호출
+    new (visObjects + numVisObjects) VisObject();
+
+    return &visObjects[numVisObjects++];
+}
+
+void *RenderFrameData::GetCommandBuffer(uint32_t bytes) {
+    RenderCommandBuffer *cmds = GetCommands();
+
+    if (cmds->used + bytes + sizeof(RenderCommandId) >= RenderCommandBuffer::BufferSize) {
+        BE_WARNLOG("RenderFrameData::GetCommandBuffer: not enough command buffer space\n");
+        return nullptr;
+    }
+
+    cmds->used += bytes;
+
+    return cmds->buffer + cmds->used - bytes;
 }

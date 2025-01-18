@@ -17,7 +17,7 @@
 #include "Platform/Windows/PlatformWinUtils.h"
 #include "WinResource.h"
 #include "App.h"
-#include "D3D12Renderer/D3D12Renderer.h"
+#include "RenderSystem.h"
 #include <tchar.h>
 
 static const TCHAR *        mainWindowClassName  = _T("BLUESHIFT_MAIN_WINDOW");
@@ -181,10 +181,10 @@ static BOOL InitInstance(int nCmdShow) {
 
     hwndMain = CreateMainWindow(title, 1024, 768);
 
-    RHI::renderer = new D3D12Renderer;
-    RHI::renderer->Init(hwndMain);
+    renderSystem = new RenderSystem;
+    renderSystem->Init(hwndMain);
 
-    app.mainRenderContext = app.CreateRenderContext(hwndMain);
+    app.mainRenderContext = renderSystem->CreateRenderContext(hwndMain);
 
     app.Init();
 
@@ -194,10 +194,10 @@ static BOOL InitInstance(int nCmdShow) {
 static void ShutdownInstance() {
     app.Shutdown();
 
-    app.DestroyRenderContext(app.mainRenderContext);
+    renderSystem->DestroyRenderContext(app.mainRenderContext);
 
-    RHI::renderer->Shutdown();
-    delete RHI::renderer;
+    renderSystem->Shutdown();
+    delete renderSystem;
 
     BE1::Engine::ShutdownBase();
 }
@@ -233,7 +233,7 @@ static bool RunFrameInstance(int frameMsec) {
         fpsElapsedMsec = 0;
 
         WCHAR windowText[256];
-        swprintf_s(windowText, L"%s - FPS: %i", windowTitleString, fps);
+        swprintf_s(windowText, L"%s - FPS: %i (%f ms)", windowTitleString, fps, 1000.0f / fps);
         SetWindowText(hwndMain, windowText);
     }
 
@@ -243,13 +243,7 @@ static bool RunFrameInstance(int frameMsec) {
 
     app.RunFrame(frameMsec);
 
-    app.renderWorld->RenderScene(app.mainRenderContext);
-
-    if (!app.mainRenderContext->IsUsingRenderThread()) {
-        app.mainRenderContext->BeginFrame();
-        app.mainRenderContext->RenderFrame();
-        app.mainRenderContext->EndFrame();
-    }
+    app.Render();
 
     return true;
 }

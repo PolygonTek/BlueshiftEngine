@@ -16,10 +16,10 @@
 
 #include "BlueshiftEngine.h"
 
-// 프로파일러 사용 여부 (D3D12 의 경우엔 PIX)
+// 프로파일러 사용 여부 (D3D12 의 경우엔 PIX, Release 모드에서는 무시됨)
 #define USE_PROFILER
 
-// 디버그 레이어 사용 여부 (Release 모드에서는 사용 안함)
+// 디버그 레이어 사용 여부 (Release 모드에서는 무시됨)
 #define USE_RENDERER_DEBUG_LAYER
 
 // 렌더 스레드 사용 여부

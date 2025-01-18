@@ -29,14 +29,9 @@ public:
     void                            Shutdown();
 
     void                            RunFrame(int elapsedMsec);
+    void                            Render();
 
     int                             GetElapsedMsec() const { return elapsedMsec; }
-
-    RenderContext *                 CreateRenderContext(HWND hwnd);
-    void                            DestroyRenderContext(RenderContext *renderContext);
-
-    RenderWorld *                   AllocRenderWorld();
-    void                            FreeRenderWorld(RenderWorld *renderWorld);
 
     void                            ClearGameObjects();
 
@@ -49,10 +44,10 @@ public:
     void                            UpdateCubes();
 
     RenderContext *                 mainRenderContext = nullptr;
+    RenderCamera *                  renderCamera = nullptr;
+    RenderWorld *                   renderWorld = nullptr;
 
     BE1::Array<GameObject *>        gameObjects;
-
-    RenderWorld *                   renderWorld = nullptr;
 
     std::shared_ptr<TriangleMesh>   triangleMesh;
     std::shared_ptr<CubeMesh>       cubeMesh;

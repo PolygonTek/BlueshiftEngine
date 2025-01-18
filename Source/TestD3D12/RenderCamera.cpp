@@ -15,8 +15,65 @@
 #include "Precompiled.h"
 #include "RenderCamera.h"
 
-void RenderCamera::Update(const State *stateDef) {
-    state = *stateDef;
+static void SetViewMatrix(const BE1::Mat3 &viewAxis, const BE1::Vec3 &viewOrigin, float *rowMajor4x4ViewMatrix) {
+    // left axis
+    rowMajor4x4ViewMatrix[0] = -viewAxis[1].x;
+    rowMajor4x4ViewMatrix[1] = -viewAxis[1].y;
+    rowMajor4x4ViewMatrix[2] = -viewAxis[1].z;
+    rowMajor4x4ViewMatrix[3] = -viewAxis[1].Dot(-viewOrigin);
+
+    // up axis
+    rowMajor4x4ViewMatrix[4] = viewAxis[2].x;
+    rowMajor4x4ViewMatrix[5] = viewAxis[2].y;
+    rowMajor4x4ViewMatrix[6] = viewAxis[2].z;
+    rowMajor4x4ViewMatrix[7] = viewAxis[2].Dot(-viewOrigin);
+
+    // forward axis
+    rowMajor4x4ViewMatrix[8] = -viewAxis[0].x;
+    rowMajor4x4ViewMatrix[9] = -viewAxis[0].y;
+    rowMajor4x4ViewMatrix[10] = -viewAxis[0].z;
+    rowMajor4x4ViewMatrix[11] = -viewAxis[0].Dot(-viewOrigin);
+
+    rowMajor4x4ViewMatrix[12] = 0.0f;
+    rowMajor4x4ViewMatrix[13] = 0.0f;
+    rowMajor4x4ViewMatrix[14] = 0.0f;
+    rowMajor4x4ViewMatrix[15] = 1.0f;
+}
+
+void RenderCamera::Update() {
+    zNear = state.zNear;
+    zFar = state.zFar;
+
+    if (state.orthogonal) {
+        // Set bounding volume for orthogonal view.
+        BE1::Vec3 extents((zFar - zNear) * 0.5f, state.sizeX, state.sizeY);
+        box.SetCenter(state.origin + state.axis[0] * (zNear + extents[0]));
+        box.SetExtents(extents);
+        box.SetAxis(state.axis);
+
+        // Calculate orthogonal projection matrix.
+        projMatrix.SetOrthoRH(-state.sizeX, state.sizeX, -state.sizeY, state.sizeY, zNear, zFar, false);
+    } else {
+        // Set bounding frustum for perspective view.
+        frustum.SetOrigin(state.origin);
+        frustum.SetAxis(state.axis);
+        frustum.SetSize(zNear, zFar, zFar * BE1::Math::Tan(DEG2RAD(state.fovX) * 0.5f), zFar * BE1::Math::Tan(DEG2RAD(state.fovY) * 0.5f));
+
+        // Calculate view frustum planes.
+        frustum.ToPlanes(frustumPlanes);
+
+        // Calculate view frustum points.
+        frustum.ToPoints(frustumPoints);
+
+        // Calculate perspective projection matrix.
+        projMatrix.SetPerspectiveRH(state.fovY, state.fovX / state.fovY, zNear, zFar, false);
+    }
+
+    // Calculate view matrix.
+    SetViewMatrix(state.axis, state.origin, viewMatrix);
+
+    // Calculate view projection matrix.
+    viewProjMatrix = projMatrix * viewMatrix;
 }
 
 bool RenderCamera::TransformWorldToNDC(const BE1::Vec3 &worldPosition, BE1::Vec3 &normalizedDeviceCoords) const {

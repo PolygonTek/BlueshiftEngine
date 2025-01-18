@@ -18,6 +18,7 @@
 #include "Mesh.h"
 
 class RenderContext;
+class VisCamera;
 
 class CubeMesh : public Mesh {
 public:
@@ -29,8 +30,8 @@ public:
 
     void                        InitPipelineState();
 
-    void                        DrawMesh(const RenderContext *renderContext, RHI::CommandList *commandList, const BE1::Mat3x4 &worldMatrix);
-    void                        DrawMeshInstanced(const RenderContext *renderContext, RHI::CommandList *commandList, const BE1::Mat3x4 *instanceData, int instanceCount);
+    void                        DrawMesh(RHI::CommandList *commandList, const VisCamera *visCamera, const BE1::Mat3x4 &worldMatrix);
+    void                        DrawMeshInstanced(RHI::CommandList *commandList, const VisCamera *visCamera, const BE1::Mat3x4 *instanceData, int instanceCount);
 
     RHI::Texture *              texture = nullptr;
     RHI::VertexBuffer *         vertexBuffer = nullptr;
