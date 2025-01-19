@@ -16,7 +16,6 @@
 #include "RenderBackEnd.h"
 #include "RenderSystem.h"
 #include "RenderContext.h"
-#include "RenderFrameData.h"
 #include "RenderInternal.h"
 
 void RenderBackEnd::Init() {

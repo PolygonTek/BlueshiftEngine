@@ -15,7 +15,6 @@
 #include "Precompiled.h"
 #include "RenderSystem.h"
 #include "RenderContext.h"
-#include "RenderWorld.h"
 #include "RenderBackEnd.h"
 #include "D3D12Renderer/D3D12Renderer.h"
 

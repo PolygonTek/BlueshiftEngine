@@ -17,7 +17,7 @@
 #include "Platform/Windows/PlatformWinUtils.h"
 #include "WinResource.h"
 #include "App.h"
-#include "RenderSystem.h"
+#include "RenderContext.h"
 #include <tchar.h>
 
 static const TCHAR *        mainWindowClassName  = _T("BLUESHIFT_MAIN_WINDOW");
@@ -181,23 +181,13 @@ static BOOL InitInstance(int nCmdShow) {
 
     hwndMain = CreateMainWindow(title, 1024, 768);
 
-    renderSystem = new RenderSystem;
-    renderSystem->Init(hwndMain);
-
-    app.mainRenderContext = renderSystem->CreateRenderContext(hwndMain);
-
-    app.Init();
+    app.Init(hwndMain);
 
     return TRUE;
 }
 
 static void ShutdownInstance() {
     app.Shutdown();
-
-    renderSystem->DestroyRenderContext(app.mainRenderContext);
-
-    renderSystem->Shutdown();
-    delete renderSystem;
 
     BE1::Engine::ShutdownBase();
 }
@@ -308,8 +298,8 @@ LRESULT CALLBACK MainWndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lPar
         break;
     case WM_SIZE:
         if (wParam != SIZE_MINIMIZED) {
-            if (app.mainRenderContext) {
-                app.mainRenderContext->OnResize(LOWORD(lParam), HIWORD(lParam));
+            if (app.GetMainRenderContext()) {
+                app.GetMainRenderContext()->OnResize(LOWORD(lParam), HIWORD(lParam));
             }
         }
         return 0;

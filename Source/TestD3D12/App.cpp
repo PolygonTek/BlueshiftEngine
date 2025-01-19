@@ -15,6 +15,7 @@
 #include "Precompiled.h"
 #include "App.h"
 #include "RenderSystem.h"
+#include "RenderContext.h"
 #include "RenderWorld.h"
 #include "RenderCamera.h"
 #include "GameObject.h"
@@ -32,7 +33,12 @@ static constexpr float      CubeSpacing = 2.82842712f;
 
 App                         app;
 
-void App::Init() {
+void App::Init(void *mainWindowHandle) {
+    renderSystem = new RenderSystem;
+    renderSystem->Init(mainWindowHandle);
+
+    mainRenderContext = renderSystem->CreateRenderContext(mainWindowHandle);
+
     renderWorld = new RenderWorld;
     renderCamera = new RenderCamera;
 
@@ -46,6 +52,11 @@ void App::Shutdown() {
 
     SAFE_DELETE(renderCamera);
     SAFE_DELETE(renderWorld);
+
+    renderSystem->DestroyRenderContext(mainRenderContext);
+
+    renderSystem->Shutdown();
+    delete renderSystem;
 }
 
 void App::RunFrame(int frameMsec) {
@@ -87,6 +98,14 @@ void App::Render() {
     mainRenderContext->EndFrame();
 }
 
+void App::InitGameObjects() {
+#if TRIANGLE_OR_CUBE == 1
+    InitTriangles();
+#else
+    InitCubes();
+#endif
+}
+
 void App::ClearGameObjects() {
     for (GameObject *gameObject : gameObjects) {
         gameObject->renderObjectDef.mesh.reset();
@@ -94,18 +113,13 @@ void App::ClearGameObjects() {
         renderWorld->RemoveRenderObject(gameObject->renderObjectHandle);
     }
 
+#if TRIANGLE_OR_CUBE == 1
     TriangleMesh::DestroyMesh(triangleMesh);
+#else
     CubeMesh::DestroyMesh(cubeMesh);
+#endif
 
     gameObjects.DeleteContents(true);
-}
-
-void App::InitGameObjects() {
-#if TRIANGLE_OR_CUBE == 1
-    InitTriangles();
-#else
-    InitCubes();
-#endif
 }
 
 void App::UpdateGameObjects() {

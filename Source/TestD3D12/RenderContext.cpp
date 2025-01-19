@@ -15,9 +15,8 @@
 #include "Precompiled.h"
 #include "Platform/PlatformSystem.h"
 #include "RenderSystem.h"
-#include "RenderBackEnd.h"
 #include "RenderContext.h"
-#include "RenderFrameData.h"
+#include "RenderBackEnd.h"
 #include "RenderInternal.h"
 
 void RenderContext::Init(void *windowHandle, bool useRenderThread) {

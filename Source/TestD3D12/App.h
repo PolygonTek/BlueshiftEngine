@@ -15,31 +15,32 @@
 #pragma once
 
 #include "RHI.h"
-#include "RenderContext.h"
-#include "RenderObject.h"
-#include "RenderWorld.h"
 
+class RenderContext;
+class RenderWorld;
+class RenderCamera;
 class GameObject;
 class TriangleMesh;
 class CubeMesh;
 
 class App {
 public:
-    void                            Init();
+    void                            Init(void *mainWindowHandle);
     void                            Shutdown();
 
-    void                            RunFrame(int elapsedMsec);
+    void                            RunFrame(int frameMsec);
     void                            Render();
 
-    int                             GetElapsedMsec() const { return elapsedMsec; }
-
-    void                            ClearGameObjects();
-
     void                            InitGameObjects();
+    void                            ClearGameObjects();
+    void                            UpdateGameObjects();
+
+    RenderContext *                 GetMainRenderContext() const { return mainRenderContext; }
+
+private:
     void                            InitTriangles();
     void                            InitCubes();
 
-    void                            UpdateGameObjects();
     void                            UpdateTriangles();
     void                            UpdateCubes();
 

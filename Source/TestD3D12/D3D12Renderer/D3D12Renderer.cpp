@@ -1198,9 +1198,7 @@ void D3D12Renderer::BeginRenderPass(RHI::CommandList *commandList, const RHI::Re
 void D3D12Renderer::EndRenderPass(RHI::CommandList *commandList) {
     D3D12CommandList *d3d12CommandList = static_cast<D3D12CommandList *>(commandList);
 
-#if 1
     d3d12CommandList->GetGraphicsCommandList()->EndRenderPass();
-#endif
 
     if (d3d12CommandList->shadingRateImage) {
         d3d12CommandList->GetGraphicsCommandList()->RSSetShadingRateImage(nullptr);

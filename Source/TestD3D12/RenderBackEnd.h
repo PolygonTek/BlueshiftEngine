@@ -44,8 +44,8 @@ private:
 #ifdef USE_RENDER_TASK
     void                            DrawVisObjectsWithTask(const VisCamera *visCamera, uint32_t numTasks);
     void                            DrawVisObjectsByTask(RenderBackEnd::DrawObjectTaskDesc *taskDesc);
-#endif
     static void                     DrawVisObjectsByTaskFunction(void *data);
+#endif
 
     RenderContext *                 currentContext = nullptr;
     RHI::CommandList *              mainCommandList = nullptr;

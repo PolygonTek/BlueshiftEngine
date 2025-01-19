@@ -15,7 +15,6 @@
 #include "Precompiled.h"
 
 class RenderContext;
-class RenderWorld;
 class RenderBackEnd;
 
 class RenderSystem {
