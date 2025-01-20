@@ -28,6 +28,8 @@ public:
     virtual void                InitMesh() override;
     virtual void                FreeMesh() override;
 
+    virtual BE1::AABB           GetAABB() const override;
+
     void                        InitPipelineState();
 
     void                        DrawMesh(RHI::CommandList *commandList, const VisCamera *visCamera, const BE1::Mat3x4 &worldMatrix);

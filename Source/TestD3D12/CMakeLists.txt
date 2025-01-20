@@ -60,8 +60,6 @@ set(SRC_FILES
     VisObject.cpp
     Mesh.h
     Mesh.cpp
-    TriangleMesh.h
-    TriangleMesh.cpp
     CubeMesh.h
     CubeMesh.cpp
     GameObject.h

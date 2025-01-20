@@ -20,12 +20,7 @@
 #include "RenderWorld.h"
 #include "RenderCamera.h"
 #include "GameObject.h"
-#include "TriangleMesh.h"
 #include "CubeMesh.h"
-
-#define TRIANGLE_OR_CUBE    0
-
-static constexpr int        TriangleCount = 1024;
 
 static constexpr int        CubeDimensionX = 64;
 static constexpr int        CubeDimensionY = 64;
@@ -100,11 +95,7 @@ void App::Render() {
 }
 
 void App::InitGameObjects() {
-#if TRIANGLE_OR_CUBE == 1
-    InitTriangles();
-#else
     InitCubes();
-#endif
 }
 
 void App::ClearGameObjects() {
@@ -114,11 +105,7 @@ void App::ClearGameObjects() {
         renderWorld->RemoveRenderObject(gameObject->renderObjectHandle);
     }
 
-#if TRIANGLE_OR_CUBE == 1
-    TriangleMesh::DestroyMesh(triangleMesh);
-#else
     CubeMesh::DestroyMesh(cubeMesh);
-#endif
 
     gameObjects.DeleteContents(true);
 }
@@ -126,28 +113,7 @@ void App::ClearGameObjects() {
 void App::UpdateGameObjects() {
     PROFILER_CPU_SCOPED_EVENT("App::UpdateGameObjects", 1);
 
-#if TRIANGLE_OR_CUBE == 1
-    UpdateTriangles();
-#else
     UpdateCubes();
-#endif
-}
-
-void App::InitTriangles() {
-    triangleMesh = TriangleMesh::CreateMesh();
-
-    gameObjects.Reserve(TriangleCount);
-
-    for (int i = 0; i < TriangleCount; ++i) {
-        GameObject *gameObject = new GameObject;
-        gameObjects.Append(gameObject);
-
-        gameObject->renderObjectDef.meshType = MeshType::TriangleMesh;
-        gameObject->renderObjectDef.mesh = triangleMesh;
-        gameObject->renderObjectDef.offset.Set(0, 0);
-
-        gameObject->renderObjectHandle = renderWorld->AddRenderObject(gameObject->renderObjectDef);
-    }
 }
 
 void App::InitCubes() {
@@ -159,26 +125,12 @@ void App::InitCubes() {
         GameObject *gameObject = new GameObject;
         gameObjects.Append(gameObject);
 
+        gameObject->renderObjectDef.aabb = cubeMesh->GetAABB();
+        gameObject->renderObjectDef.worldMatrix.SetIdentity();
         gameObject->renderObjectDef.meshType = MeshType::CubeMesh;
         gameObject->renderObjectDef.mesh = cubeMesh;
-        gameObject->renderObjectDef.worldMatrix.SetIdentity();
 
         gameObject->renderObjectHandle = renderWorld->AddRenderObject(gameObject->renderObjectDef);
-    }
-}
-
-void App::UpdateTriangles() {
-    float elapsedSeconds = MILLI2SEC(elapsedMsec);
-
-    for (int i = 0; i < TriangleCount; ++i) {
-        float t = elapsedSeconds + i * 0.1f;
-
-        GameObject *gameObject = gameObjects[i];
-
-        gameObject->renderObjectDef.offset.x = 0.5f * BE1::Math::Cos(t);
-        gameObject->renderObjectDef.offset.y = 0.5f * BE1::Math::Sin(t * 3);
-
-        renderWorld->UpdateRenderObject(gameObject->renderObjectHandle, gameObject->renderObjectDef);
     }
 }
 

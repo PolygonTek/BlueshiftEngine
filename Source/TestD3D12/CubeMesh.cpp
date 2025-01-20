@@ -104,6 +104,10 @@ void CubeMesh::FreeMesh() {
     RHI::renderer->DestroyPSO(instancingPSO);
 }
 
+BE1::AABB CubeMesh::GetAABB() const {
+    return BE1::AABB(BE1::Vec3(-1.0f, -1.0f, -1.0f), BE1::Vec3(1.0f, 1.0f, 1.0f));
+}
+
 void CubeMesh::InitPipelineState() {
     RHI::InputLayout inputLayout;
     inputLayout.elements = {
@@ -196,14 +200,14 @@ void CubeMesh::DrawMeshInstanced(RHI::CommandList *commandList, const VisCamera 
         return;
     }
 
-    CubeInstancedConstantData *constantPtr = reinterpret_cast<CubeInstancedConstantData *>(constantBuffer->writePtr);
+    CubeInstancedConstantData *constantDataPtr = reinterpret_cast<CubeInstancedConstantData *>(constantBuffer->writePtr);
 
     // 카메라의 뷰-프로젝션 행렬을 기록
-    constantPtr->viewProjMatrix = visCamera->viewProjMatrix;
+    constantDataPtr->viewProjMatrix = visCamera->viewProjMatrix;
 
     // 큐브 인스턴스들의 월드 행렬을 기록
     for (int i = 0; i < instanceCount; ++i) {
-        constantPtr->worldMatrix[i] = instanceData[i];
+        constantDataPtr->worldMatrix[i] = instanceData[i];
     }
 
     RHI::renderer->SetVertexBuffer(commandList, 0, vertexBuffer);

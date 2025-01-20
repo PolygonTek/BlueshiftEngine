@@ -28,9 +28,6 @@ public:
     static void                 Draw(RHI::CommandList *commandList, const VisCamera *visCamera, const VisObject *visObject);
     static void                 DrawInstanced(RHI::CommandList *commandList, const VisCamera *visCamera, const VisObject *visObjects, int instanceCount);
 
-    static void                 DrawTriangleMesh(RHI::CommandList *commandList, const VisCamera *visCamera, const VisObject *visObject);
-    static void                 DrawTriangleMeshInstanced(RHI::CommandList *commandList, const VisCamera *visCamera, const VisObject *visObjects, int instanceCount);
-
     static void                 DrawCubeMesh(RHI::CommandList *commandList, const VisCamera *visCamera, const VisObject *visObject);
     static void                 DrawCubeMeshInstanced(RHI::CommandList *commandList, const VisCamera *visCamera, const VisObject *visObjects, int instanceCount);
 

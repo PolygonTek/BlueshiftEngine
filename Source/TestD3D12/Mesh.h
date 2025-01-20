@@ -18,4 +18,6 @@ class Mesh {
 public:
     virtual void                    InitMesh() = 0;
     virtual void                    FreeMesh() = 0;
+
+    virtual BE1::AABB               GetAABB() const = 0;
 };

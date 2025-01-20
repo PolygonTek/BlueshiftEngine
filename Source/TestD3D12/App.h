@@ -38,10 +38,8 @@ public:
     RenderContext *                 GetMainRenderContext() const { return mainRenderContext; }
 
 private:
-    void                            InitTriangles();
     void                            InitCubes();
 
-    void                            UpdateTriangles();
     void                            UpdateCubes();
 
     RenderContext *                 mainRenderContext = nullptr;
@@ -50,7 +48,6 @@ private:
 
     BE1::Array<GameObject *>        gameObjects;
 
-    std::shared_ptr<TriangleMesh>   triangleMesh;
     std::shared_ptr<CubeMesh>       cubeMesh;
 
     int                             elapsedMsec = 0;

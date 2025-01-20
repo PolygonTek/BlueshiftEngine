@@ -14,14 +14,10 @@
 
 #include "Precompiled.h"
 #include "RenderInternal.h"
-#include "TriangleMesh.h"
 #include "CubeMesh.h"
 
 void VisObject::Draw(RHI::CommandList *commandList, const VisCamera *visCamera, const VisObject *visObject) {
     switch (visObject->state.meshType) {
-    case MeshType::TriangleMesh:
-        DrawTriangleMesh(commandList, visCamera, visObject);
-        break;
     case MeshType::CubeMesh:
         DrawCubeMesh(commandList, visCamera, visObject);
         break;
@@ -30,28 +26,10 @@ void VisObject::Draw(RHI::CommandList *commandList, const VisCamera *visCamera, 
 
 void VisObject::DrawInstanced(RHI::CommandList *commandList, const VisCamera *visCamera, const VisObject *visObjects, int instanceCount) {
     switch (visObjects[0].state.meshType) {
-    case MeshType::TriangleMesh:
-        VisObject::DrawTriangleMeshInstanced(commandList, visCamera, visObjects, instanceCount);
-        break;
     case MeshType::CubeMesh:
         VisObject::DrawCubeMeshInstanced(commandList, visCamera, visObjects, instanceCount);
         break;
     }
-}
-
-void VisObject::DrawTriangleMesh(RHI::CommandList *commandList, const VisCamera *visCamera, const VisObject *visObject) {
-    TriangleMesh *triangleMesh = static_cast<TriangleMesh *>(visObject->state.mesh.get());
-    triangleMesh->DrawMesh(commandList, visCamera, visObject->state.offset);
-}
-
-void VisObject::DrawTriangleMeshInstanced(RHI::CommandList *commandList, const VisCamera *visCamera, const VisObject *visObjects, int instanceCount) {
-    BE1::Vec2 *instanceData = (BE1::Vec2 *)_alloca32(instanceCount * sizeof(visObjects[0].state.offset));
-
-    for (int i = 0; i < instanceCount; i++) {
-        instanceData[i] = visObjects[i].state.offset;
-    }
-    TriangleMesh *triangleMesh = static_cast<TriangleMesh *>(visObjects[0].state.mesh.get());
-    triangleMesh->DrawMeshInstanced(commandList, visCamera, instanceData, instanceCount);
 }
 
 void VisObject::DrawCubeMesh(RHI::CommandList *commandList, const VisCamera *visCamera, const VisObject *visObject) {
