@@ -13,6 +13,7 @@
 // limitations under the License.
 
 #include "Precompiled.h"
+#include "Platform/PlatformSystem.h"
 #include "App.h"
 #include "RenderSystem.h"
 #include "RenderContext.h"

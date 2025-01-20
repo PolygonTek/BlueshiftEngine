@@ -34,22 +34,19 @@ void TaskFunc3(void *data) {
 }
 
 void TestTask() {
-    BE1::TaskManager taskManager(256);
-    taskManager.Start();
+    BE1::Engine::taskManager->AddTask(TaskFunc1, nullptr);
+    BE1::Engine::taskManager->AddTask(TaskFunc2, nullptr);
+    BE1::Engine::taskManager->AddTask(TaskFunc3, nullptr);
+    BE1::Engine::taskManager->WaitFinishAll();
 
-    taskManager.AddTask(TaskFunc1, nullptr);
-    taskManager.AddTask(TaskFunc2, nullptr);
-    taskManager.AddTask(TaskFunc3, nullptr);
-    taskManager.WaitFinishAll();
-
-    taskManager.AddTask([]() {
+    BE1::Engine::taskManager->AddTask([]() {
         TaskFunc1(nullptr);
     });
-    taskManager.AddTask([]() {
+    BE1::Engine::taskManager->AddTask([]() {
         TaskFunc2(nullptr);
     });
-    taskManager.AddTask([]() {
+    BE1::Engine::taskManager->AddTask([]() {
         TaskFunc3(nullptr);
     });
-    taskManager.WaitFinishAll();
+    BE1::Engine::taskManager->WaitFinishAll();
 }

@@ -13,30 +13,16 @@
 // limitations under the License.
 
 #include "Precompiled.h"
-#include "Platform/PlatformSystem.h"
 #include "RenderSystem.h"
 #include "RenderContext.h"
 #include "RenderBackEnd.h"
 #include "RenderInternal.h"
 
 void RenderContext::Init(void *windowHandle, bool useRenderThread) {
-#ifdef USE_RENDER_TASK
-    // RenderContext 마다 렌더 태스크를 관리하는 매니져를 실행한다.
-    // 렌더 태스크 스레드 개수는 물리코어 개수를 넘지 않는다.
-    int numCores = BE1::PlatformSystem::NumCPUCores();
-    int numTaskThreads = BE1::Min(numCores, MaxRenderTaskThreads);
-
-    renderTaskManager.Start(numTaskThreads);
-
-    BE_LOG("Rendering task threads (%i) started\n", numTaskThreads);
-#else
-    int numTaskThreads = 1;
-#endif
-
     // 렌더링 프레임 별로 사용할 프레임 데이터들을 초기화한다.
     // 프레임 데이터 : 임시 메모리, 커맨드 리스트 풀, 루트 디스크립터 힙, 다이나믹 버퍼와 그 디스크립터 풀
     for (int frameIndex = 0; frameIndex < NumFrameResources; ++frameIndex) {
-        frameData[frameIndex].Init(numTaskThreads);
+        frameData[frameIndex].Init();
     }
 
     // 렌더 스레드에서 이전 프레임의 프레임 데이터 사용이 완료되었는지 체크하기 위해 펜스를 친다.
@@ -70,11 +56,6 @@ void RenderContext::Shutdown() {
         ShutdownRenderThread();
     }
 
-    // 모든 렌더 태스크 종료
-#ifdef USE_RENDER_TASK
-    renderTaskManager.Stop();
-#endif
-
     // GPU 명령들이 완료될 때까지 기다린다.
     RHI::renderer->Finish(RHI::CommandQueueType::Graphics);
     RHI::renderer->Finish(RHI::CommandQueueType::Compute);
@@ -96,8 +77,9 @@ void RenderContext::OnResize(int width, int height) {
         WaitRenderCompleted();
     }
 
-    // 모든 프레임의 GPU 명령들이 완료될 때까지 기다린다.
-    WaitAllFrameFences();
+    // GPU 명령들이 완료될 때까지 기다린다.
+    RHI::renderer->Finish(RHI::CommandQueueType::Graphics);
+    RHI::renderer->Finish(RHI::CommandQueueType::Compute);
 
     // 스왑 체인의 크기 조정
     swapChain->Resize(width, height);
@@ -274,7 +256,7 @@ void RenderContext::BeginFrame() {
     RenderFrameData *frameData = GetCurrentFrameData();
 
     // 이번 프레임에서 사용할 임시 메모리를 미리 할당한다.
-    frameData->InitMemAllocs();
+    frameData->BeginFrameMemAllocs();
 
     frameData->BeginCommands(this);
 }

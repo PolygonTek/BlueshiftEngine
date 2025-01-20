@@ -30,6 +30,7 @@ enum class FrameSyncState : uint8_t {
     WaitingForRenderCompleted           // (메인 스레드가 업데이트가 완료되어) 렌더 스레드의 다음 렌더링 작업이 완료되기를 기다리는 상태
 };
 
+// 하나의 윈도우 (SwapChain) 와 연결된 렌더링 컨텍스트
 class RenderContext {
     friend class RenderBackEnd;
 
@@ -92,8 +93,4 @@ private:
     BE1::PlatformThread *               renderThread = nullptr;
     bool                                isStoppingRenderThread = false;
     FrameSyncState                      frameSyncState = FrameSyncState::WaitingForUpdateCompleted;
-
-#ifdef USE_RENDER_TASK
-    BE1::TaskManager                    renderTaskManager = BE1::TaskManager(MaxRenderTasks);
-#endif
 };

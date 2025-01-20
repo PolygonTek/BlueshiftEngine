@@ -16,12 +16,16 @@
 
 #include "Core/Str.h"
 #include "Core/CmdArgs.h"
+#include "Core/Task.h"
 
 BE_NAMESPACE_BEGIN
+
+#define USE_TASK_MANAGER
 
 class Engine {
 public:
     struct InitParms {
+        uint32_t                maxTasks;
         CmdArgs                 args;
         Str                     baseDir;
         Str                     searchPath;
@@ -30,13 +34,14 @@ public:
     static void                 Init(const InitParms *initParms);
     static void                 Shutdown();
 
-    static void                 InitBase(const char *path, const streamOutFunc_t logFunc, const streamOutFunc_t errorFunc);
+    static void                 InitBase(uint32_t maxTasks, const char *path, const streamOutFunc_t logFunc, const streamOutFunc_t errorFunc);
     static void                 ShutdownBase();
 
     static void                 RunFrame(int elapsedMsec);
 
     static bool                 IsInMainThread() { return isMainThread; }
 
+    static TaskManager *        taskManager;
     static CmdArgs              args;
     static Str                  baseDir;
     static Str                  searchPath;

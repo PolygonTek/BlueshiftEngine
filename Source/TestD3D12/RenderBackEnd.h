@@ -41,7 +41,7 @@ private:
 
     void                            DrawVisObjects(RHI::CommandList *commandList, const VisCamera *visCamera, uint32_t startIndex, uint32_t endIndex);
     void                            DrawVisObjectsWithoutTask(const VisCamera *visCamera);
-#ifdef USE_RENDER_TASK
+#ifdef USE_TASK_MANAGER
     void                            DrawVisObjectsWithTask(const VisCamera *visCamera, uint32_t numTasks);
     void                            DrawVisObjectsByTask(RenderBackEnd::DrawObjectTaskDesc *taskDesc);
     static void                     DrawVisObjectsByTaskFunction(void *data);
@@ -52,4 +52,5 @@ private:
     uint32_t                        frameCount = 0;
 
     BE1::Array<DrawObjectTaskDesc>  objectDrawingTaskDescs;
+    uint32_t                        drawGroupId = -1;
 };

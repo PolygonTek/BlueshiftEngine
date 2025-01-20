@@ -19,18 +19,23 @@
 static constexpr uint32_t MaxMemSizePerBlock = 0x1000000;
 static constexpr uint32_t MemAlignSize = 32;
 
-void RenderFrameData::Init(int numThreads) {
+void RenderFrameData::Init() {
     InitMemBlocks();
 
-    this->numThreads = numThreads;
+#ifdef USE_TASK_MANAGER
+    // 최대 렌더 태스크 쓰레드 개수는 태스크 매니져의 쓰레드 개수를 넘을 수 없다.
+    numRenderTaskThreads = BE1::Min(BE1::Engine::taskManager->NumThreads(), RenderFrameData::MaxRenderTaskThreads);
+#else
+    numRenderTaskThreads = 1;
+#endif
 
-    for (int threadIndex = 0; threadIndex < numThreads; ++threadIndex) {
+    for (int threadIndex = 0; threadIndex < numRenderTaskThreads; ++threadIndex) {
         threadData[threadIndex] = RHI::renderer->CreateFrameThreadData();
     }
 }
 
 void RenderFrameData::Shutdown() {
-    for (int threadIndex = 0; threadIndex < numThreads; ++threadIndex) {
+    for (int threadIndex = 0; threadIndex < numRenderTaskThreads; ++threadIndex) {
         RHI::renderer->DestroyFrameThreadData(threadData[threadIndex]);
     }
 
@@ -100,13 +105,13 @@ void *RenderFrameData::ClearedMemAlloc(int size) {
     return mem;
 }
 
-void RenderFrameData::InitMemAllocs() {
+void RenderFrameData::BeginFrameMemAllocs() {
     InitVisCameras(16);
 
     InitVisObjects(16384);
 }
 
-void RenderFrameData::FreeMemAllocs() {
+void RenderFrameData::EndFrameMemAllocs() {
     FreeVisCameras();
 
     FreeVisObjects();

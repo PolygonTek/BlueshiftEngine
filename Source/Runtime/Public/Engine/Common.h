@@ -33,7 +33,7 @@ public:
         };
     };
 
-    void                Init(const char *baseDir);
+    void                Init(uint32_t maxTaskCount, const char *baseDir);
     void                Shutdown();
 
     void                RunFrame(int elapsedMsec);

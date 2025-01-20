@@ -18,7 +18,13 @@
 #include "RenderContext.h"
 #include "RenderInternal.h"
 
+// 태스크 당 처리할 최대 Draw Call 횟수
+static constexpr uint32_t   MaxDrawCallsPerTask = 512;
+
 void RenderBackEnd::Init() {
+#ifdef USE_TASK_MANAGER
+    drawGroupId = BE1::Engine::taskManager->CreateGroupId();
+#endif
 }
 
 void RenderBackEnd::Shutdown() {
@@ -99,14 +105,15 @@ const void *RenderBackEnd::ExecuteDrawCamera(const void *data) {
 
     uint32_t numVisObjects = visCamera->NumVisObjects();
     if (numVisObjects > 0) {
-#ifdef USE_RENDER_TASK
+#ifdef USE_TASK_MANAGER
 #ifdef USE_RENDEROBJECT_INSTANCING
         uint32_t numDrawCalls = (uint32_t)BE1::Math::Ceil((float)numVisObjects / 1024);
 #else
         uint32_t numDrawCalls = numVisObjects;
 #endif
 
-        uint32_t numTasks = BE1::Min(currentContext->renderTaskManager.NumThreads(), (int)BE1::Math::Ceil((float)numDrawCalls / MaxDrawCallsPerTask));
+        uint32_t numTasks = (uint32_t)BE1::Math::Ceil((float)numDrawCalls / MaxDrawCallsPerTask);
+        numTasks = BE1::Min(BE1::Engine::taskManager->NumThreads(), numTasks);
         if (numTasks > 1) {
             DrawVisObjectsWithTask(visCamera, numTasks);
         } else {
@@ -208,7 +215,7 @@ void RenderBackEnd::DrawVisObjectsWithoutTask(const VisCamera *visCamera) {
     commandList->CloseAndExecuteSecondary(mainCommandList, currentFrameThreadData);
 }
 
-#ifdef USE_RENDER_TASK
+#ifdef USE_TASK_MANAGER
 // taskDesc 에 담겨있는 정보를 기반으로 visCamera 에 등록된 visObjects 들을 그린다.
 void RenderBackEnd::DrawVisObjectsByTask(RenderBackEnd::DrawObjectTaskDesc *taskDesc) {
     PROFILER_CPU_SCOPED_EVENT("RenderBackEnd::DrawVisObjectsByTask", 3);
@@ -245,7 +252,7 @@ void RenderBackEnd::DrawVisObjectsWithTask(const VisCamera *visCamera, uint32_t 
     int threadIndex = 0;
 
     // 태스크 정보 초기화
-    objectDrawingTaskDescs.Reserve(currentContext->renderTaskManager.NumThreads());
+    objectDrawingTaskDescs.Reserve(numTasks);
     objectDrawingTaskDescs.SetCount(0, false);
 
     // 최대 쓰레드 개수만큼 task 를 실행한다.
@@ -256,12 +263,12 @@ void RenderBackEnd::DrawVisObjectsWithTask(const VisCamera *visCamera, uint32_t 
         currentThreadDesc.threadIndex = threadIndex++;
         currentThreadDesc.visObjectStartIndex = nextStartIndex;
         currentThreadDesc.visObjectEndIndex = BE1::Min(nextStartIndex + numVisObjectsPerTasks - 1, visCamera->visObjectEndIndex);
-        currentContext->renderTaskManager.AddTask(RenderBackEnd::DrawVisObjectsByTaskFunction, &currentThreadDesc, false);
+        BE1::Engine::taskManager->AddTask(RenderBackEnd::DrawVisObjectsByTaskFunction, &currentThreadDesc, drawGroupId, false);
 
         nextStartIndex = currentThreadDesc.visObjectEndIndex + 1;
     }
 
-    currentContext->renderTaskManager.WaitFinishAll(true);
+    BE1::Engine::taskManager->WaitFinish(drawGroupId, true);
 
     // Main CommandList 에 모든 태스크의 Secondary CommandList 들을 기록한다.
     int renderTaskCount = objectDrawingTaskDescs.Count();
@@ -271,4 +278,4 @@ void RenderBackEnd::DrawVisObjectsWithTask(const VisCamera *visCamera, uint32_t 
         objectDrawingTaskDescs[threadIndex].activeCommandList->ExecuteSecondary(mainCommandList, currentFrameThreadData);
     }
 }
-#endif // USE_RENDER_TASK
+#endif // USE_TASK_MANAGER

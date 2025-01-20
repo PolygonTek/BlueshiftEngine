@@ -106,8 +106,8 @@ static void Common_Error(const int errLevel, const char *msg) {
     }
 }
 
-void Common::Init(const char *baseDir) {
-    Engine::InitBase(baseDir, (const streamOutFunc_t)Common_Log, (const streamOutFunc_t)Common_Error);
+void Common::Init(uint32_t maxTaskCount, const char *baseDir) {
+    Engine::InitBase(maxTaskCount, baseDir, (const streamOutFunc_t)Common_Log, (const streamOutFunc_t)Common_Error);
 
     EventSystem::Init();
     

@@ -49,7 +49,7 @@ public:
     ~TaskManager();
 
                             /// Returns number of threads.
-    int                     NumThreads() const { return threads.Count(); }
+    uint32_t                NumThreads() const { return threads.Count(); }
 
                             /// Is task list empty ?
     bool                    IsTaskEmpty() const { return headTaskIndex == tailTaskIndex; }

@@ -64,15 +64,15 @@ struct EndRenderCommand {
 
 class RenderFrameData {
 public:
-    void                            Init(int numThreads);
+    void                            Init();
     void                            Shutdown();
 
                                     // 임시로 할당하는 메모리 (not thread-safe)
     void *                          MemAlloc(int size);
     void *                          ClearedMemAlloc(int size);
 
-    void                            InitMemAllocs();
-    void                            FreeMemAllocs();
+    void                            BeginFrameMemAllocs();
+    void                            EndFrameMemAllocs();
 
     uint32_t                        NumVisCameras() const { return numVisCameras; }
     VisCamera *                     GetVisCameras() const { return visCameras; }
@@ -130,19 +130,22 @@ private:
 
     RenderCommandBuffer             commands;
 
-#ifdef USE_RENDER_TASK
+#ifdef USE_TASK_MANAGER
+    // 렌더링 태스크에서 사용할 수 있는 최대 스레드 개수
+    static constexpr uint32_t       MaxRenderTaskThreads = 16;
+
     RHI::FrameThreadData *          threadData[MaxRenderTaskThreads] = {};
 #else
     RHI::FrameThreadData *          threadData[1] = {};
 #endif
-    int                             numThreads = 0;
+    int                             numRenderTaskThreads = 0;
 
     uint64_t                        fenceValue = 0;
 };
 
 BE_INLINE void RenderFrameData::BeginFrame() {
     // 쓰레드 별로 사용할 자원을 Reset 한다.
-    for (int threadIndex = 0; threadIndex < numThreads; ++threadIndex) {
+    for (int threadIndex = 0; threadIndex < numRenderTaskThreads; ++threadIndex) {
         threadData[threadIndex]->Reset();
     }
 
