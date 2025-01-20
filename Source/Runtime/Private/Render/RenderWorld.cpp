@@ -105,7 +105,7 @@ void RenderWorld::UpdateRenderObject(int handle, const RenderObject::State *def)
 
     RenderObject *renderObject = renderObjects[handle];
     if (!renderObject) {
-        renderObject = new RenderObject(this, handle);
+        renderObject = new RenderObject(handle);
         renderObjects[handle] = renderObject;
 
         renderObject->Update(def);
@@ -237,7 +237,7 @@ void RenderWorld::UpdateRenderLight(int handle, const RenderLight::State *def) {
 
     RenderLight *renderLight = renderLights[handle];
     if (!renderLight) {
-        renderLight = new RenderLight(this, handle);
+        renderLight = new RenderLight(handle);
         renderLights[handle] = renderLight;
 
         renderLight->Update(def);
@@ -593,8 +593,8 @@ void RenderWorld::DrawGUICamera(GuiMesh &guiMesh) {
     def.materialParms[RenderObject::MaterialParm::Alpha] = 1.0f;
     def.materialParms[RenderObject::MaterialParm::TimeScale] = 1.0f;
 
-    static RenderObject renderObject(this, -1);
-    new (&renderObject) RenderObject(this, -1);
+    static RenderObject renderObject(-1);
+    new (&renderObject) RenderObject(-1);
     renderObject.Update(&def);
 
     // GUI camera

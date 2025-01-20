@@ -541,8 +541,8 @@ void RenderWorld::AddSkyBoxMeshes(VisCamera *camera) {
     roDef.materialParms[RenderObject::MaterialParm::Alpha] = 1.0f;
     roDef.materialParms[RenderObject::MaterialParm::TimeScale] = 1.0f;
 
-    static RenderObject renderObject(this, -1);
-    new (&renderObject) RenderObject(this, -1);
+    static RenderObject renderObject;
+    new (&renderObject) RenderObject(-1);
     renderObject.Update(&roDef);
 
     // Add skybox object.

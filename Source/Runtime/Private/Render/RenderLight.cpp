@@ -19,22 +19,11 @@
 
 BE_NAMESPACE_BEGIN
 
-RenderLight::RenderLight(RenderWorld *renderWorld, int index) {
-    this->renderWorld = renderWorld;
+RenderLight::RenderLight(int index) {
     this->index = index;
 
     worldOBB.SetZero();
     worldFrustum.SetOrigin(Vec3::origin);
-
-    viewMatrix.SetIdentity();
-    projMatrix.SetIdentity();
-    viewProjScaleBiasMatrix.SetIdentity();
-
-    viewCount = 0;
-    visLight = nullptr;
-    proxy = nullptr;
-
-    firstUpdate = true;
 }
 
 RenderLight::~RenderLight() {

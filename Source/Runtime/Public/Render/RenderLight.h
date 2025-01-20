@@ -75,7 +75,8 @@ public:
         float               materialParms[RenderObject::MaterialParm::Count] = { 1, 1, 1, 1, 0, 1 };
     };
 
-    RenderLight(RenderWorld *renderWorld, int index);
+    RenderLight() = default;
+    RenderLight(int index);
     ~RenderLight();
 
                             /// Returns state.
@@ -151,23 +152,22 @@ private:
 
     State                   state;
 
-    bool                    firstUpdate;
+    bool                    firstUpdate = true;
 
     AABB                    worldAABB;
-    OBB                     worldOBB;           // used for Light::Point, Light::Directional
-    Frustum                 worldFrustum;       // used for Light::Spot
-    Mat4                    viewMatrix;
-    Mat4                    projMatrix;
-    Mat4                    viewProjScaleBiasMatrix;
+    OBB                     worldOBB;               // used for Light::Point, Light::Directional
+    Frustum                 worldFrustum;           // used for Light::Spot
+    Mat4                    viewMatrix = Mat4::identity;
+    Mat4                    projMatrix = Mat4::identity;
+    Mat4                    viewProjScaleBiasMatrix = Mat4::identity;
     Mat3x4                  fallOffMatrix;
     float                   maxVisDistSquared;
 
-    VisLight *              visLight;
-    int                     viewCount;
+    VisLight *              visLight = nullptr;
+    int                     viewCount = 0;
 
-    RenderWorld *           renderWorld;
-    int                     index;              // index of light list in RenderWorld
-    DbvtProxy *             proxy;
+    int                     index;                  // index of light list in RenderWorld
+    DbvtProxy *             proxy = nullptr;
 };
 
 BE_NAMESPACE_END

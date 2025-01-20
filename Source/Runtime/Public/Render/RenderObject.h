@@ -204,7 +204,8 @@ public:
         Skin *              customSkin = nullptr;
     };
 
-    RenderObject(RenderWorld *renderWorld, int index);
+    RenderObject() = default;
+    RenderObject(int index);
     ~RenderObject();
 
                             /// Returns object index in world.
@@ -248,7 +249,6 @@ private:
     VisObject *             visObject = nullptr;
     int                     viewCount = 0;
 
-    RenderWorld *           renderWorld;
     int                     index;                      // index of object list in RenderWorld
     DbvtProxy *             proxy = nullptr;            // proxy for render object
 

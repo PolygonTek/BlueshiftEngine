@@ -19,8 +19,7 @@
 
 BE_NAMESPACE_BEGIN
 
-RenderObject::RenderObject(RenderWorld *renderWorld, int index) {
-    this->renderWorld = renderWorld;
+RenderObject::RenderObject(int index) {
     this->index = index;
 }
 
