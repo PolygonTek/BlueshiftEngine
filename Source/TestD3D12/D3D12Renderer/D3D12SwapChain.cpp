@@ -78,12 +78,14 @@ void D3D12Renderer::DestroySwapChain(RHI::SwapChain *swapChain) {
 }
 
 void D3D12SwapChain::Release() {
-    SAFE_RELEASE_ARRAY(backBuffers);
+    for (int bufferIndex = 0; bufferIndex < COUNT_OF(backBuffers); ++bufferIndex) {
+        SAFE_RELEASE(backBuffers[bufferIndex]);
+    }
     SAFE_RELEASE(dxgiSwapChain);
 }
 
 void D3D12SwapChain::CreateRTVs() {
-    for (UINT bufferIndex = 0; bufferIndex < D3D12SwapChain::NumSwapChainBuffers; ++bufferIndex) {
+    for (int bufferIndex = 0; bufferIndex < COUNT_OF(backBuffers); ++bufferIndex) {
         if (backBufferRTVs[bufferIndex].ptr != 0) {
             D3D12Renderer::GetRenderer()->rtvCpuDescriptorPool->Free(backBufferRTVs[bufferIndex]);
         }
@@ -101,7 +103,9 @@ void D3D12SwapChain::CreateRTVs() {
 
 void D3D12SwapChain::Resize(uint32_t width, uint32_t height) {
     // 기존 스왑 체인 백버퍼 해제
-    SAFE_RELEASE_ARRAY(backBuffers);
+    for (int bufferIndex = 0; bufferIndex < COUNT_OF(backBuffers); ++bufferIndex) {
+        SAFE_RELEASE(backBuffers[bufferIndex]);
+    }
 
     // 스왑 체인 버퍼의 사이즈를 조정한다.
     dxgiSwapChain->ResizeBuffers(D3D12SwapChain::NumSwapChainBuffers, width, height, dxgiFormat, DXGI_SWAP_CHAIN_FLAG_ALLOW_TEARING);
