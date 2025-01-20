@@ -38,6 +38,8 @@ BE_NAMESPACE_BEGIN
 class BE_API DynamicAABBTree {
 public:
     DynamicAABBTree();
+    DynamicAABBTree(const DynamicAABBTree &) = delete;
+    DynamicAABBTree &operator=(const DynamicAABBTree &) = delete;
     ~DynamicAABBTree();
 
                         /// Returns total size of allocated memory.
@@ -53,11 +55,11 @@ public:
                         /// Provide a tight fitting AABB and userData pointer.
     int32_t             CreateProxy(const AABB &aabb, float expansion, void *userData);
 
-                        /// Destory a proxy.
+                        /// Destroy a proxy.
                         /// This asserts if the id is invalid.
     void                DestroyProxy(int32_t proxyId);
 
-                        /// Move a proxy with a swepted AABB. If the proxy has moved outside of its fattened AABB,
+                        /// Move a proxy with a swept AABB. If the proxy has moved outside of its fattened AABB,
                         /// then the proxy is removed from the tree and re-inserted.
                         /// Otherwise the function returns immediately.
                         /// @return true if the proxy was re-inserted.
@@ -76,13 +78,16 @@ public:
                         /// Query an bounding volume for overlapping proxies.
                         /// The callback functor is called for each proxy that overlaps the supplied bounding volume.
     template <typename F>
-    void                Query(const Sphere &boundingVolume, const F &callback) const;
+    void                QuerySphere(const Sphere &boundingVolume, const F &callback) const;
+
     template <typename F>
-    void                Query(const AABB &boundingVolume, const F &callback) const;
+    void                QueryAABB(const AABB &boundingVolume, const F &callback) const;
+
     template <typename F>
-    void                Query(const OBB &boundingVolume, const F &callback) const;
+    void                QueryOBB(const OBB &boundingVolume, const F &callback) const;
+
     template <typename F>
-    void                Query(const Frustum &boundingVolume, const F &callback) const;
+    void                QueryFrustum(const Frustum &boundingVolume, const F &callback) const;
 
     template <typename F>
     void                QueryDepthRange(int depthMin, int depthMax, const F &callback) const;
@@ -126,11 +131,11 @@ private:
     struct Node {
         bool            IsLeaf() const { return child1 == -1; }
        
-        AABB            aabb;               // AABB enclosing this node
-        void *          userData;           // user data pointer
-        int32_t         child1;             // child node index
-        int32_t         child2;             // child node index
-        int32_t         height;             // leaf = 0, free node = -1
+        AABB            aabb;           // AABB enclosing this node
+        void *          userData;       // user data pointer
+        int32_t         child1;         // child node index
+        int32_t         child2;         // child node index
+        int32_t         height;         // leaf = 0, free node = -1
 
         union {
             int32_t     parent;
@@ -164,7 +169,7 @@ BE_INLINE const AABB &DynamicAABBTree::GetRootFatAABB() const {
 }
 
 template <typename F>
-BE_INLINE void DynamicAABBTree::Query(const Sphere &sphere, const F &callback) const {
+BE_INLINE void DynamicAABBTree::QuerySphere(const Sphere &sphere, const F &callback) const {
     Stack<int32_t> stack(256);
     stack.Push(root);
 
@@ -191,7 +196,7 @@ BE_INLINE void DynamicAABBTree::Query(const Sphere &sphere, const F &callback) c
 }
 
 template <typename F>
-BE_INLINE void DynamicAABBTree::Query(const AABB &aabb, const F &callback) const {
+BE_INLINE void DynamicAABBTree::QueryAABB(const AABB &aabb, const F &callback) const {
     Stack<int32_t> stack(256);
     stack.Push(root);
 
@@ -218,7 +223,7 @@ BE_INLINE void DynamicAABBTree::Query(const AABB &aabb, const F &callback) const
 }
 
 template <typename F>
-BE_INLINE void DynamicAABBTree::Query(const OBB &obb, const F &callback) const {
+BE_INLINE void DynamicAABBTree::QueryOBB(const OBB &obb, const F &callback) const {
     Stack<int32_t> stack(256);
     stack.Push(root);
 
@@ -245,7 +250,7 @@ BE_INLINE void DynamicAABBTree::Query(const OBB &obb, const F &callback) const {
 }
 
 template <typename F>
-BE_INLINE void DynamicAABBTree::Query(const Frustum &frustum, const F &callback) const {
+BE_INLINE void DynamicAABBTree::QueryFrustum(const Frustum &frustum, const F &callback) const {
     Stack<int32_t> stack(256);
     stack.Push(root);
 

@@ -228,11 +228,11 @@ void RenderWorld::FindVisLightsAndObjects(VisCamera *camera) {
     };
 
     if (camera->def->GetState().orthogonal) {
-        lightDbvt.Query(camera->def->box, addVisibleLights);
-        objectDbvt.Query(camera->def->box, addVisibleObjects);
+        lightDbvt.QueryOBB(camera->def->box, addVisibleLights);
+        objectDbvt.QueryOBB(camera->def->box, addVisibleObjects);
     } else {
-        lightDbvt.Query(camera->def->frustum, addVisibleLights);
-        objectDbvt.Query(camera->def->frustum, addVisibleObjects);
+        lightDbvt.QueryFrustum(camera->def->frustum, addVisibleLights);
+        objectDbvt.QueryFrustum(camera->def->frustum, addVisibleObjects);
     }
 }
 
@@ -289,9 +289,9 @@ void RenderWorld::AddStaticMeshes(VisCamera *camera) {
     };
 
     if (camera->def->GetState().orthogonal) {
-        staticMeshDbvt.Query(camera->def->box, addStaticMeshSurfs);
+        staticMeshDbvt.QueryOBB(camera->def->box, addStaticMeshSurfs);
     } else {
-        staticMeshDbvt.Query(camera->def->frustum, addStaticMeshSurfs);
+        staticMeshDbvt.QueryFrustum(camera->def->frustum, addStaticMeshSurfs);
     }
 }
 
@@ -664,17 +664,17 @@ void RenderWorld::AddStaticMeshesForLights(VisCamera *camera) {
 
         switch (renderLight->state.type) {
         case RenderLight::Type::Directional:
-            staticMeshDbvt.Query(renderLight->worldOBB, addStaticMeshSurfsForLights);
+            staticMeshDbvt.QueryOBB(renderLight->worldOBB, addStaticMeshSurfsForLights);
             break;
         case RenderLight::Type::Point:
             if (renderLight->IsRadiusUniform()) {
-                staticMeshDbvt.Query(Sphere(renderLight->GetOrigin(), renderLight->GetRadius()[0]), addStaticMeshSurfsForLights);
+                staticMeshDbvt.QuerySphere(Sphere(renderLight->GetOrigin(), renderLight->GetRadius()[0]), addStaticMeshSurfsForLights);
             } else {
-                staticMeshDbvt.Query(renderLight->worldOBB, addStaticMeshSurfsForLights);
+                staticMeshDbvt.QueryOBB(renderLight->worldOBB, addStaticMeshSurfsForLights);
             }
             break;
         case RenderLight::Type::Spot:
-            staticMeshDbvt.Query(renderLight->worldFrustum, addStaticMeshSurfsForLights);
+            staticMeshDbvt.QueryFrustum(renderLight->worldFrustum, addStaticMeshSurfsForLights);
             break;
         default:
             break;
@@ -793,17 +793,17 @@ void RenderWorld::AddDynamicAndSkinnedMeshesForLights(VisCamera *camera) {
 
         switch (renderLight->state.type) {
         case RenderLight::Type::Directional:
-            objectDbvt.Query(renderLight->worldOBB, addShadowCasterObjects);
+            objectDbvt.QueryOBB(renderLight->worldOBB, addShadowCasterObjects);
             break;
         case RenderLight::Type::Point:
             if (renderLight->IsRadiusUniform()) {
-                objectDbvt.Query(Sphere(renderLight->GetOrigin(), renderLight->GetRadius()[0]), addShadowCasterObjects);
+                objectDbvt.QuerySphere(Sphere(renderLight->GetOrigin(), renderLight->GetRadius()[0]), addShadowCasterObjects);
             } else {
-                objectDbvt.Query(renderLight->worldOBB, addShadowCasterObjects);
+                objectDbvt.QueryOBB(renderLight->worldOBB, addShadowCasterObjects);
             }
             break;
         case RenderLight::Type::Spot:
-            objectDbvt.Query(renderLight->worldFrustum, addShadowCasterObjects);
+            objectDbvt.QueryFrustum(renderLight->worldFrustum, addShadowCasterObjects);
             break;
         default:
             break;

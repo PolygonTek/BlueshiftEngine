@@ -108,10 +108,11 @@ int32_t DynamicAABBTree::CreateProxy(const AABB &aabb, float expansion, void *us
     int32_t proxyId = AllocNode();
 
     // Fatten the aabb.
-    nodes[proxyId].aabb = aabb;
-    nodes[proxyId].aabb.ExpandSelf(expansion);
-    nodes[proxyId].userData = userData;
-    nodes[proxyId].height = 0;
+    Node *newNode = &nodes[proxyId];
+    newNode->aabb = aabb;
+    newNode->aabb.ExpandSelf(expansion);
+    newNode->userData = userData;
+    newNode->height = 0;
 
     InsertLeaf(proxyId);
 

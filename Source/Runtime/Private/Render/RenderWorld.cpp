@@ -444,7 +444,7 @@ void RenderWorld::GetClosestProbes(const AABB &sourceAABB, EnvProbeBlending::Enu
         return true;
     };
 
-    probeDbvt.Query(sourceAABB, addProbe);
+    probeDbvt.QueryAABB(sourceAABB, addProbe);
 
     if (outProbes.Count() == 0) {
         return;
