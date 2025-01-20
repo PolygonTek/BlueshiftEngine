@@ -41,7 +41,7 @@ BE_NAMESPACE_BEGIN
 template <typename KeyT, class ValueT> 
 class HashBucket {
 public:
-    HashBucket() {}
+    HashBucket() = default;
     HashBucket(const KeyT &key, const ValueT &value, HashBucket *next)
         : key(key), value(value), next(next) {
     }
@@ -69,7 +69,7 @@ public:
 template <typename ValueT>
 class HashBucket<Guid, ValueT> {
 public:
-    HashBucket() {}
+    HashBucket() = default;
     HashBucket(const Guid &key, const ValueT &value, HashBucket *next)
         : key(key), value(value), next(next) {}
 
@@ -96,7 +96,7 @@ public:
 template <typename ValueT>
 class HashBucket<Str, ValueT> {
 public:
-    HashBucket() {}
+    HashBucket() = default;
     HashBucket(const Str &key, const ValueT &value, HashBucket *next)
         : key(key), value(value), next(next) {}
 
@@ -118,7 +118,7 @@ public:
 template <typename ValueT>
 class HashBucket<const char *, ValueT> {
 public:
-    HashBucket() {}
+    HashBucket() = default;
     HashBucket(const char * const &key, const ValueT &value, HashBucket *next)
         : key(key), value(value), next(next) {}
 
@@ -140,7 +140,7 @@ public:
 template <typename KeyT, typename ValueT>
 class HashBucket<KeyT*, ValueT> {
 public:
-    HashBucket() {}
+    HashBucket() = default;
     HashBucket(const KeyT* const &key, const ValueT &value, HashBucket *next)
         : key(key), value(value), next(next) {}
 
@@ -179,53 +179,59 @@ public:
     /// Destructs
     ~HashTable();
 
-                        /// Returns number of hash buckets.
-    int                 Count() const { return numEntries; }
+                            /// Returns number of hash buckets.
+    int                     Count() const { return numEntries; }
     
-                        /// Returns total size of allocated memory.
-    size_t              Allocated() const { return sizeof(heads) * tableSize + sizeof(*heads) * numEntries + blockAllocator.Allocated(); }
+                            /// Returns total size of allocated memory.
+    size_t                  Allocated() const { return sizeof(heads) * tableSize + sizeof(*heads) * numEntries + blockAllocator.Allocated(); }
 
-                        /// Returns total size of allocated memory including size of this type.
-    size_t              Size() const { return sizeof(heads) * tableSize + sizeof(*heads) * numEntries + blockAllocator.Allocated() + sizeof(*this); }
+                            /// Returns total size of allocated memory including size of this type.
+    size_t                  Size() const { return sizeof(heads) * tableSize + sizeof(*heads) * numEntries + blockAllocator.Allocated() + sizeof(*this); }
 
-                        /// Searches the entire hash bucket in order and return the value pointer of the entry that matches the given index.
-                        /// You can iterate entire buckets with an index, but when a bucket is added or removed, the existing index may no longer be valid.
-    ValueT *            GetByIndex(int index) const;
+                            /// Searches the entire hash bucket in order and return the value pointer of the entry that matches the given index.
+                            /// You can iterate entire buckets with an index, but when a bucket is added or removed, the existing index may no longer be valid.
+    ValueT *                GetByIndex(int index) const;
 
-                        /// Searches the entire hash bucket in order and get the key of the entry that matches the given index.
-                        /// You can iterate entire buckets with an index, but when a bucket is added or removed, the existing index may no longer be valid.
-    bool                GetKeyByIndex(int index, KeyT &key) const;
+                            /// Searches the entire hash bucket in order and get the key of the entry that matches the given index.
+                            /// You can iterate entire buckets with an index, but when a bucket is added or removed, the existing index may no longer be valid.
+    bool                    GetKeyByIndex(int index, KeyT &key) const;
 
-                        /// Finds the value by key and get the value pointer.
-    bool                Get(const KeyT &key, ValueT *value = nullptr) const;
+                            /// Finds the value by key and get the value pointer.
+    bool                    Get(const KeyT &key, ValueT *value) const;
 
-                        /// Adds key / value. If the key already exists, only the value will be changed.
-    void                Set(const KeyT &key, const ValueT &value);
-    
-                        /// Searches by key and return value reference. If not, add a new bucket and return a reference
-    ValueT &            operator[](const KeyT &key);
+                            /// Finds the value by key and get the value pointer.
+    bool                    Get(const KeyT &key, ValueT **value = nullptr);
 
-                        /// Removes bucket with the given key.
-    bool                Remove(const KeyT &key);
+                            /// Finds the value by key and get the value pointer.
+    bool                    Get(const KeyT &key, const ValueT **value = nullptr) const;
+
+                            /// Adds key / value. If the key already exists, only the value will be changed.
+    void                    Set(const KeyT &key, const ValueT &value);
+
+                            /// Searches by key and return value reference. If not, add a new bucket and return a reference
+    ValueT &                operator[](const KeyT &key);
+
+                            /// Removes bucket with the given key.
+    bool                    Remove(const KeyT &key);
         
-                        /// Clears all hash buckets.
-    void                Clear();
+                            /// Clears all hash buckets.
+    void                    Clear();
 
-                        /// Clears all hash buckets and delete each values.
-    void                DeleteContents();
+                            /// Clears all hash buckets and delete each values.
+    void                    DeleteContents();
 
-                        /// Get the variance of the distributed hash buckets.
-    float               GetVariance() const;
+                            /// Get the variance of the distributed hash buckets.
+    float                   GetVariance() const;
 
 private:
-    void                Copy(const HashTable<KeyT, ValueT> &other);
+    void                    Copy(const HashTable<KeyT, ValueT> &other);
 
     BlockAllocator<THashBucket, BucketGranularity> blockAllocator;
 
-    THashBucket **      heads;              // hash table
-    int                 tableSize;          // hash table size
-    int                 numEntries;         // number of entries
-    int                 tableSizeMask;      // tableSize - 1
+    THashBucket **          heads;              // hash table
+    int                     tableSize;          // hash table size
+    int                     numEntries;         // number of entries
+    int                     tableSizeMask;      // tableSize - 1
 };
 
 template <typename KeyT, typename ValueT, int BucketGranularity>
@@ -313,7 +319,52 @@ BE_INLINE bool HashTable<KeyT, ValueT, BucketGranularity>::Get(const KeyT &key, 
             break;
         }
     }
+    return false;
+}
 
+template <typename KeyT, typename ValueT, int BucketGranularity>
+BE_INLINE bool HashTable<KeyT, ValueT, BucketGranularity>::Get(const KeyT &key, ValueT **value) {
+    int hash = THashBucket::GenerateHash(key, tableSizeMask);
+    for (THashBucket *node = heads[hash]; node != nullptr; node = node->next) {
+        int s = node->Compare(node->key, key);
+        if (s == 0) {
+            if (value) {
+                *value = &node->value;
+            }
+            return true;
+        }
+
+        if (s > 0) {
+            // not found in ascending order
+            break;
+        }
+    }
+    if (value) {
+        *value = nullptr;
+    }
+    return false;
+}
+
+template <typename KeyT, typename ValueT, int BucketGranularity>
+BE_INLINE bool HashTable<KeyT, ValueT, BucketGranularity>::Get(const KeyT &key, const ValueT **value) const {
+    int hash = THashBucket::GenerateHash(key, tableSizeMask);
+    for (THashBucket *node = heads[hash]; node != nullptr; node = node->next) {
+        int s = node->Compare(node->key, key);
+        if (s == 0) {
+            if (value) {
+                *value = &node->value;
+            }
+            return true;
+        }
+
+        if (s > 0) {
+            // not found in ascending order
+            break;
+        }
+    }
+    if (value) {
+        *value = nullptr;
+    }
     return false;
 }
 
@@ -338,9 +389,7 @@ BE_INLINE void HashTable<KeyT, ValueT, BucketGranularity>::Set(const KeyT &key, 
     }
 
     THashBucket *newBucket = blockAllocator.Alloc();
-    newBucket->key = key;
-    newBucket->value = value;
-    newBucket->next = node;
+    new (newBucket) THashBucket(key, value, node);
     *nextPtr = newBucket;
 
     numEntries++;
@@ -366,8 +415,7 @@ BE_INLINE ValueT &HashTable<KeyT, ValueT, BucketGranularity>::operator[](const K
     }
 
     THashBucket *newBucket = blockAllocator.Alloc();
-    newBucket->key = key;
-    newBucket->next = node;
+    new (newBucket) THashBucket(key, {}, node);
     *nextPtr = newBucket;
 
     numEntries++;

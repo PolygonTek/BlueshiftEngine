@@ -29,6 +29,7 @@ TaskManager::TaskManager(int maxTasks) {
     taskMutex = PlatformMutex::Create();
     taskCondition = PlatformCondition::Create();
     finishCondition = PlatformCondition::Create();
+    groupFinishCondition = PlatformCondition::Create();
 }
 
 TaskManager::~TaskManager() {
@@ -36,6 +37,7 @@ TaskManager::~TaskManager() {
 
     PlatformCondition::Destroy(taskCondition);
     PlatformCondition::Destroy(finishCondition);
+    PlatformCondition::Destroy(groupFinishCondition);
     PlatformMutex::Destroy(taskMutex);
 }
 
@@ -53,7 +55,7 @@ void TaskManager::Start(int numThreads, bool useAffinity) {
 
     tailTaskIndex = 0;
     headTaskIndex = 0;
-    numActiveTasks = 0;
+    activeTaskCount = 0;
     nextTaskId = 0;
 
     threads.Reserve(numThreads);
@@ -86,7 +88,12 @@ void TaskManager::Stop() {
     stopping = false;
 }
 
-int32_t TaskManager::AddTask(TaskFunc taskFunction, void *data, bool withWake) {
+int32_t TaskManager::CreateGroupId() {
+    ScopedLock lock(taskMutex);
+    return nextGroupId++;
+}
+
+int32_t TaskManager::AddTask(TaskFunc taskFunction, void *data, int32_t groupId, bool withWake) {
     // Lock to add the task.
     ScopedLock lock(taskMutex);
 
@@ -98,13 +105,19 @@ int32_t TaskManager::AddTask(TaskFunc taskFunction, void *data, bool withWake) {
 
     Task &task = taskRingBuffer[tailTaskIndex];
     task.id = nextTaskId++;
+    task.groupId = groupId;
     task.state = TaskState::Ready;
     task.function = taskFunction;
     task.data = data;
 
     tailTaskIndex = nextTaskIndex;
 
-    ++numActiveTasks;
+    ++activeTaskCount;
+
+    // If valid groupId, increment groupActiveCount
+    if (groupId >= 0) {
+        groupActiveTaskCount[groupId]++;
+    }
 
     if (withWake) {
         PlatformCondition::Signal(taskCondition);
@@ -113,7 +126,7 @@ int32_t TaskManager::AddTask(TaskFunc taskFunction, void *data, bool withWake) {
     return task.id;
 }
 
-int32_t TaskManager::AddTask(TaskWorker *taskWorker, bool withWake) {
+int32_t TaskManager::AddTask(TaskWorker *taskWorker, int32_t groupId, bool withWake) {
     // Lock to add the task.
     ScopedLock lock(taskMutex);
 
@@ -125,13 +138,14 @@ int32_t TaskManager::AddTask(TaskWorker *taskWorker, bool withWake) {
 
     Task &task = taskRingBuffer[tailTaskIndex];
     task.id = nextTaskId++;
+    task.groupId = groupId;
     task.state = TaskState::Ready;
     task.function = nullptr;
     task.data = taskWorker;
 
     tailTaskIndex = nextTaskIndex;
 
-    ++numActiveTasks;
+    ++activeTaskCount;
 
     if (withWake) {
         PlatformCondition::Signal(taskCondition);
@@ -140,11 +154,30 @@ int32_t TaskManager::AddTask(TaskWorker *taskWorker, bool withWake) {
     return task.id;
 }
 
-void TaskManager::WaitFinish(bool withWake) {
+void TaskManager::WaitFinish(int32_t groupId, bool withWake) {
+    ScopedLock lock(taskMutex);
+
+    // Check If group not exist or count <= 0
+    int32_t *groupTaskCountPtr;
+    if (!groupActiveTaskCount.Get(groupId, &groupTaskCountPtr) || *groupTaskCountPtr <= 0) {
+        return; // No tasks to wait for, return immediately
+    }
+
+    if (withWake) {
+        PlatformCondition::Broadcast(taskCondition);
+    }
+
+    PlatformCondition::Wait(groupFinishCondition, taskMutex, [this, groupId] {
+        int32_t *groupTaskCountPtr;
+        return !groupActiveTaskCount.Get(groupId, &groupTaskCountPtr) || *groupTaskCountPtr <= 0;
+    });
+}
+
+void TaskManager::WaitFinishAll(bool withWake) {
     ScopedLock lock(taskMutex);
 
     // Check if all tasks are already finished
-    if (IsTaskEmpty() && numActiveTasks <= 0) {
+    if (IsTaskEmpty() && activeTaskCount <= 0) {
         return; // No tasks to wait for, return immediately
     }
 
@@ -153,16 +186,34 @@ void TaskManager::WaitFinish(bool withWake) {
     }
 
     PlatformCondition::Wait(finishCondition, taskMutex, [this] {
-        return IsTaskEmpty() && numActiveTasks <= 0;
+        return IsTaskEmpty() && activeTaskCount <= 0;
     });
 }
 
-// Return false if a timeout occurs.
-bool TaskManager::TimedWaitFinish(int ms, bool withWake) {
+bool TaskManager::TimedWaitFinish(int ms, int32_t groupId, bool withWake) {
+    ScopedLock lock(taskMutex);
+
+    // Check If group not exist or count <= 0
+    int32_t *groupTaskCountPtr;
+    if (!groupActiveTaskCount.Get(groupId, &groupTaskCountPtr) || *groupTaskCountPtr <= 0) {
+        return true; // No tasks to wait for, return immediately
+    }
+
+    if (withWake) {
+        PlatformCondition::Broadcast(taskCondition);
+    }
+
+    return PlatformCondition::TimedWait(groupFinishCondition, taskMutex, ms, [this, groupId] {
+        int32_t *groupTaskCountPtr;
+        return !groupActiveTaskCount.Get(groupId, &groupTaskCountPtr) || *groupTaskCountPtr <= 0;
+    });
+}
+
+bool TaskManager::TimedWaitFinishAll(int ms, bool withWake) {
     ScopedLock lock(taskMutex);
 
     // Check if all tasks are already finished
-    if (IsTaskEmpty() && numActiveTasks <= 0) {
+    if (IsTaskEmpty() && activeTaskCount <= 0) {
         return true; // No tasks to wait for, return immediately
     }
 
@@ -171,7 +222,7 @@ bool TaskManager::TimedWaitFinish(int ms, bool withWake) {
     }
 
     return PlatformCondition::TimedWait(finishCondition, taskMutex, ms, [this] {
-        return IsTaskEmpty() && numActiveTasks <= 0;
+        return IsTaskEmpty() && activeTaskCount <= 0;
     });
 }
 
@@ -265,11 +316,23 @@ unsigned int TaskThreadProc(void *param) {
             ScopedLock lock(taskManager->taskMutex);
 
             // Decrease active task count after finishing a task function.
-            --taskManager->numActiveTasks;
+            --taskManager->activeTaskCount;
 
-            // Wake finish condition variable when there is no active tasks.
-            if (taskManager->numActiveTasks == 0 && taskManager->IsTaskEmpty()) {
-            
+            // Decrease active task count in the given group.
+            if (task->groupId >= 0) {
+                int32_t *groupTaskCountPtr;
+                if (taskManager->groupActiveTaskCount.Get(task->groupId, &groupTaskCountPtr)) {
+                    --(*groupTaskCountPtr);
+
+                    if (*groupTaskCountPtr <= 0) {
+                        // Wake the group finish condition variable when there are no active tasks left in this group.
+                        PlatformCondition::Broadcast(taskManager->groupFinishCondition);
+                    }
+                }
+            }
+
+            // Wake the finish condition variable when there are no active tasks remaining.
+            if (taskManager->activeTaskCount == 0 && taskManager->IsTaskEmpty()) {
                 PlatformCondition::Signal(taskManager->finishCondition);
             }
         }

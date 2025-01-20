@@ -157,7 +157,7 @@ const void *RenderBackEnd::ExecuteSwapBuffers(const void *data) {
     frameCount++;
 
     // 이번 프레임을 위해 메인 스레드에서 할당했던 메모리를 해제한다.
-    currentContext->GetCurrentFrameData()->FreeMemAllocs();
+    currentContext->GetCurrentFrameData()->EndFrameMemAllocs();
 
     currentContext->currentFrameIndex = frameCount % NumFrameResources;
 
@@ -261,7 +261,7 @@ void RenderBackEnd::DrawVisObjectsWithTask(const VisCamera *visCamera, uint32_t 
         nextStartIndex = currentThreadDesc.visObjectEndIndex + 1;
     }
 
-    currentContext->renderTaskManager.WaitFinish(true);
+    currentContext->renderTaskManager.WaitFinishAll(true);
 
     // Main CommandList 에 모든 태스크의 Secondary CommandList 들을 기록한다.
     int renderTaskCount = objectDrawingTaskDescs.Count();

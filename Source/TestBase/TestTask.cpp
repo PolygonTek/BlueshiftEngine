@@ -40,7 +40,7 @@ void TestTask() {
     taskManager.AddTask(TaskFunc1, nullptr);
     taskManager.AddTask(TaskFunc2, nullptr);
     taskManager.AddTask(TaskFunc3, nullptr);
-    taskManager.WaitFinish();
+    taskManager.WaitFinishAll();
 
     taskManager.AddTask([]() {
         TaskFunc1(nullptr);
@@ -51,5 +51,5 @@ void TestTask() {
     taskManager.AddTask([]() {
         TaskFunc3(nullptr);
     });
-    taskManager.WaitFinish();
+    taskManager.WaitFinishAll();
 }
