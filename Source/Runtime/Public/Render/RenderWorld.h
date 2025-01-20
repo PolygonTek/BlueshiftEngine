@@ -104,7 +104,7 @@ public:
                             /// Adds global environment probe to this world.
     void                    AddDistantEnvProbe();
 
-                            /// Removes global environemnt probe.
+                            /// Removes global environment probe.
     void                    RemoveDistantEnvProbe();
 
     void                    GetClosestProbes(const AABB &sourceAABB, EnvProbeBlending::Enum blending, Array<EnvProbeBlendInfo> &outProbes) const;
