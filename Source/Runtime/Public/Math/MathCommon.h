@@ -935,7 +935,7 @@ BE_INLINE float Math::Fabs(float f) {
     }
     return -f;
 #else
-    int tmp = *reinterpret_cast<int *>(&f);
+    uint32_t tmp = *reinterpret_cast<uint32_t *>(&f);
     tmp &= 0x7FFFFFFF;
     return *reinterpret_cast<float *>(&tmp);
 #endif

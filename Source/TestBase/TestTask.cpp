@@ -34,19 +34,21 @@ void TaskFunc3(void *data) {
 }
 
 void TestTask() {
-    BE1::Engine::taskManager->AddTask(TaskFunc1, nullptr);
-    BE1::Engine::taskManager->AddTask(TaskFunc2, nullptr);
-    BE1::Engine::taskManager->AddTask(TaskFunc3, nullptr);
-    BE1::Engine::taskManager->WaitFinishAll();
+    int32_t groupId = BE1::Engine::taskManager->CreateGroupId();
+
+    BE1::Engine::taskManager->AddTask(TaskFunc1, nullptr, groupId);
+    BE1::Engine::taskManager->AddTask(TaskFunc2, nullptr, groupId);
+    BE1::Engine::taskManager->AddTask(TaskFunc3, nullptr, groupId);
+    BE1::Engine::taskManager->WaitFinish(groupId);
 
     BE1::Engine::taskManager->AddTask([]() {
         TaskFunc1(nullptr);
-    });
+    }, groupId);
     BE1::Engine::taskManager->AddTask([]() {
         TaskFunc2(nullptr);
-    });
+    }, groupId);
     BE1::Engine::taskManager->AddTask([]() {
         TaskFunc3(nullptr);
-    });
-    BE1::Engine::taskManager->WaitFinishAll();
+    }, groupId);
+    BE1::Engine::taskManager->WaitFinish(groupId);
 }
