@@ -25,7 +25,7 @@ RHI::SwapChain *D3D12Renderer::CreateSwapChain(HWND hwnd, uint32_t width, uint32
     swapChainDesc.Width = (UINT)width;
     swapChainDesc.Height = (UINT)height;
     swapChainDesc.Format = dxgiFormat;
-    //swapChainDesc.BufferDesc.RefreshRate.Numerator = m_uiRefreshRate;
+    //swapChainDesc.BufferDesc.RefreshRate.Numerator = refreshRate;
     //swapChainDesc.BufferDesc.RefreshRate.Denominator = 1;
     swapChainDesc.BufferUsage = DXGI_USAGE_BACK_BUFFER | DXGI_USAGE_RENDER_TARGET_OUTPUT;
     swapChainDesc.BufferCount = D3D12SwapChain::NumSwapChainBuffers;

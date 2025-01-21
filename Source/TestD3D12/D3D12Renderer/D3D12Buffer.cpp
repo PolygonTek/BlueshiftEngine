@@ -96,11 +96,11 @@ RHI::Buffer *D3D12Renderer::CreateBuffer(RHI::BufferUsage usage, RHI::ResourceFl
     D3D12_RESOURCE_DESC bufferDesc = {};
     bufferDesc.Dimension = D3D12_RESOURCE_DIMENSION_BUFFER;
     bufferDesc.Alignment = 0;
-    bufferDesc.Format = DXGI_FORMAT_UNKNOWN;
-    bufferDesc.MipLevels = 1;
     bufferDesc.Width = bufferSize;
     bufferDesc.Height = 1;
     bufferDesc.DepthOrArraySize = 1;
+    bufferDesc.MipLevels = 1;
+    bufferDesc.Format = DXGI_FORMAT_UNKNOWN;
     bufferDesc.SampleDesc.Count = 1;
     bufferDesc.SampleDesc.Quality = 0;
     bufferDesc.Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;

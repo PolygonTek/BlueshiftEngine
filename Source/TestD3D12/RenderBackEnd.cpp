@@ -59,6 +59,10 @@ const void *RenderBackEnd::ExecuteBeginContext(const void *data) {
 
     currentContext = cmd->renderContext;
 
+    // 프레임 데이터를 초기화하고, 이전 프레임에 대한 펜스를 기다린다.
+    RenderFrameData *currentFrameData = currentContext->GetCurrentFrameData();
+    currentFrameData->BeginFrame();
+
     return (const void *)(cmd + 1);
 }
 
@@ -69,12 +73,10 @@ const void *RenderBackEnd::ExecuteDrawCamera(const void *data) {
 
     const VisCamera *visCamera = cmd->visCamera;
 
-    // 프레임 데이터를 초기화하고, 이전 프레임에 대한 펜스를 기다린다.
     RenderFrameData *currentFrameData = currentContext->GetCurrentFrameData();
-    currentFrameData->BeginFrame();
-
-    // 커맨드 리스트 풀에서 커맨드 리스트를 얻어온다.
     RHI::FrameThreadData *frameThreadData = currentFrameData->GetThreadData(0);
+
+    // 커맨드 리스트 풀에서 새로운 커맨드 리스트를 얻어온다.
     mainCommandList = frameThreadData->AllocGraphicsCommandList();
 
     // CommandAllocator 를 재사용하도록 리셋하고, CommandList 를 CommandAllocator 를 이용하여 초기 상태로 리셋
@@ -139,9 +141,6 @@ const void *RenderBackEnd::ExecuteDrawCamera(const void *data) {
     // CommandList 에 기록을 마치고 실행
     mainCommandList->CloseAndExecute(RHI::CommandQueueType::Graphics);
 
-    // 이번 프레임에서 수행하는 렌더링 커맨드들에 대한 펜스를 친다.
-    currentFrameData->EndFrame();
-
     return (const void *)(cmd + 1);
 }
 
@@ -150,6 +149,13 @@ const void *RenderBackEnd::ExecuteScreenshot(const void *data) {
 
     const ScreenShotRenderCommand *cmd = reinterpret_cast<const ScreenShotRenderCommand *>(data);
 
+    RenderFrameData *currentFrameData = currentContext->GetCurrentFrameData();
+    RHI::FrameThreadData *frameThreadData = currentFrameData->GetThreadData(0);
+
+    RHI::SwapChain *swapChain = currentContext->GetSwapChain();
+    //RHI::CommandList *commandList = frameThreadData->AllocGraphicsCommandList();
+    //RHI::renderer->Barrier(commandList, RHI::Renderer::MakeBufferBarrier());
+
     return (const void *)(cmd + 1);
 }
 
@@ -157,6 +163,10 @@ const void *RenderBackEnd::ExecuteSwapBuffers(const void *data) {
     PROFILER_CPU_SCOPED_EVENT("RenderBackEnd::ExecuteSwapBuffers", 0);
 
     const SwapBuffersRenderCommand *cmd = reinterpret_cast<const SwapBuffersRenderCommand *>(data);
+
+    // 이번 프레임에서 수행하는 렌더링 커맨드들에 대한 펜스를 친다.
+    RenderFrameData *currentFrameData = currentContext->GetCurrentFrameData();
+    currentFrameData->EndFrame();
 
     // 백버퍼를 전면버퍼와 교환한다.
     currentContext->GetSwapChain()->SwapBuffers(false);

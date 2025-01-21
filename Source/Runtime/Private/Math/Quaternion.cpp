@@ -312,9 +312,7 @@ CQuat Quat::ToCQuat() const {
 }
 
 Vec3 Quat::ToAngularVelocity() const {
-    Vec3 vec(x, y, z);
-    vec.Normalize();
-    return vec * (2.0f * Math::ACos(w));
+    return Vec3(x, y, z).Normalized() * (2.0f * Math::ACos(w));
 }
 
 BE_NAMESPACE_END

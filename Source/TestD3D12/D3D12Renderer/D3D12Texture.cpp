@@ -98,11 +98,11 @@ RHI::Texture *D3D12Renderer::CreateTexture(RHI::TextureType textureType, RHI::Re
 
     D3D12_RESOURCE_DESC textureDesc = {};
     textureDesc.Dimension = textureDimension;
-    textureDesc.Format = dxgiFormat;
-    textureDesc.MipLevels = static_cast<UINT16>(maxMipLevels);
     textureDesc.Width = static_cast<UINT>(srcImage->GetWidth());
     textureDesc.Height = static_cast<UINT>(srcImage->GetHeight());
     textureDesc.DepthOrArraySize = static_cast<UINT>(textureDimension == D3D12_RESOURCE_DIMENSION_TEXTURE3D ? srcImage->GetDepth() : srcImage->NumSlices());
+    textureDesc.MipLevels = static_cast<UINT16>(maxMipLevels);
+    textureDesc.Format = dxgiFormat;
     textureDesc.SampleDesc.Count = sampleCount;
     textureDesc.SampleDesc.Quality = 0;
     textureDesc.Flags = resourceFlags;
@@ -622,6 +622,7 @@ void D3D12Renderer::GetTextureImage2D(RHI::Texture *texture, int level, BE1::Ima
     UINT64 mipLevelSize;
     device->GetCopyableFootprints(&d3d12Texture->textureDesc, level, 1, 0, &mipLevelFootprint, nullptr, nullptr, &mipLevelSize);
 
+    // 리드백 버퍼를 생성한다.
     D3D12Buffer *readbackBuffer = static_cast<D3D12Buffer *>(CreateBuffer(RHI::BufferUsage::Readback, RHI::ResourceFlag::None, mipLevelSize, textureImageFormat, 0, nullptr));
     if (!readbackBuffer) {
         BE_WARNLOG("D3D12Texture::GetTextureImage2D: Failed to create readback buffer\n");
@@ -650,7 +651,7 @@ void D3D12Renderer::GetTextureImage2D(RHI::Texture *texture, int level, BE1::Ima
     // GPU 에서 복사가 끝날 때까지 기다린다.
     Finish(RHI::CommandQueueType::Graphics);
 
-    // 복사된 리드백 버퍼를 메모리로 읽어오기 위해 Map 을 한다.
+    // 리드백 버퍼를 Map 하여 내용을 메모리로 읽어온다.
     void *mappedPtr = nullptr;
     D3D12_RANGE readRange = { 0, mipLevelSize };
     readbackBuffer->GetResource()->Map(0, &readRange, &mappedPtr);
@@ -658,13 +659,13 @@ void D3D12Renderer::GetTextureImage2D(RHI::Texture *texture, int level, BE1::Ima
     const byte *srcPtr = (byte *)mappedPtr;
     byte *dstPtr = nullptr;
 
-    BE1::Image textureImage;
+    BE1::Image tempImage;
     if (textureImageFormat != dstFormat) {
-        // 컨버팅이 필요하다면 리드백 버퍼에서 textureImage 에 카피한다.
-        textureImage.InitFromMemory(d3d12Texture->textureDesc.Width, d3d12Texture->textureDesc.Height, 1, 1, 1, textureImageFormat, isSRGB ? BE1::Image::GammaSpace::sRGB : BE1::Image::GammaSpace::Linear, nullptr, 0);
-        dstPtr = textureImage.GetPixels();
+        // 컨버팅이 필요하다면, 리드백 버퍼의 내용을 tempImage 에 카피할 준비를 한다.
+        tempImage.InitFromMemory(d3d12Texture->textureDesc.Width, d3d12Texture->textureDesc.Height, 1, 1, 1, textureImageFormat, isSRGB ? BE1::Image::GammaSpace::sRGB : BE1::Image::GammaSpace::Linear, nullptr, 0);
+        dstPtr = tempImage.GetPixels();
     } else {
-        // 컨버팅할 필요가 없다면 리드백 버퍼에서 그대로 outPixels 로 카피한다.
+        // 컨버팅할 필요가 없다면, 리드백 버퍼의 내용을 그대로 outPixels 로 카피할 준비를 한다.
         dstPtr = (byte *)outPixels;
     }
 
@@ -683,16 +684,12 @@ void D3D12Renderer::GetTextureImage2D(RHI::Texture *texture, int level, BE1::Ima
     // 리드백 버퍼 삭제
     DestroyBuffer(readbackBuffer, true);
 
-    // 컨버팅이 필요없다면 바로 리턴한다.
-    if (textureImageFormat == dstFormat) {
-        return;
-    }
-
     // 필요하다면 컨버팅한다.
-    BE1::Image dstImage;
-    if (textureImage.ConvertFormat(dstFormat, dstImage)) {
-        BE1::simdProcessor->Memcpy(outPixels, dstImage.GetPixels(), dstImage.SizeInBytes());
-        return;
+    if (textureImageFormat != dstFormat) {
+        BE1::Image dstImage;
+        if (tempImage.ConvertFormat(dstFormat, dstImage)) {
+            BE1::simdProcessor->Memcpy(outPixels, dstImage.GetPixels(), dstImage.SizeInBytes());
+        }
     }
 }
 

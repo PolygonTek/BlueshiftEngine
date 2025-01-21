@@ -201,15 +201,11 @@ BE_INLINE Vec3 Triangle::UnnormalizedNormalCW() const {
 }
 
 BE_INLINE Vec3 Triangle::NormalCCW() const {
-    Vec3 normal = UnnormalizedNormalCCW();
-    normal.Normalize();
-    return normal;
+    return UnnormalizedNormalCCW().Normalized();
 }
 
 BE_INLINE Vec3 Triangle::NormalCW() const {
-    Vec3 normal = UnnormalizedNormalCW();
-    normal.Normalize();
-    return normal;
+    return UnnormalizedNormalCW().Normalized();
 }
 
 BE_INLINE Plane Triangle::PlaneCCW() const {
