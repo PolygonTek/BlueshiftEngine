@@ -527,17 +527,29 @@ Mat4 Mat4::operator*(const Mat4 &rhs) const & {
 }
 
 Mat4 Mat4::operator*(const Mat3x4 &rhs) const & {
-#if defined(ENABLE_SIMD4_INTRIN)
+#if defined(ENABLE_SIMD8_INTRIN)
+    ALIGN_AS32 Mat4 dst;
+
+    simd8f ar01 = loadu_256ps(mat[0]);
+    simd8f ar23 = loadu_256ps(mat[2]);
+
+    simd8f br00 = broadcast_256ps((simd4f *)&rhs[0]);
+    simd8f br11 = broadcast_256ps((simd4f *)&rhs[1]);
+    simd8f br22 = broadcast_256ps((simd4f *)&rhs[2]);
+
+    store_256ps(lincomb2x3x4(ar01, br00, br11, br22), dst.mat[0]);
+    store_256ps(lincomb2x3x4(ar23, br00, br11, br22), dst.mat[2]);
+#elif defined(ENABLE_SIMD4_INTRIN)
     ALIGN_AS16 Mat4 dst;
 
-    simd4f ar0 = loadu_ps(mat[0]);
-    simd4f ar1 = loadu_ps(mat[1]);
-    simd4f ar2 = loadu_ps(mat[2]);
-    simd4f ar3 = loadu_ps(mat[3]);
+    simd4f ar0 = load_ps(mat[0]);
+    simd4f ar1 = load_ps(mat[1]);
+    simd4f ar2 = load_ps(mat[2]);
+    simd4f ar3 = load_ps(mat[3]);
 
-    simd4f br0 = loadu_ps(rhs.mat[0]);
-    simd4f br1 = loadu_ps(rhs.mat[1]);
-    simd4f br2 = loadu_ps(rhs.mat[2]);
+    simd4f br0 = load_ps(rhs.mat[0]);
+    simd4f br1 = load_ps(rhs.mat[1]);
+    simd4f br2 = load_ps(rhs.mat[2]);
 
     store_ps(lincomb3x4(ar0, br0, br1, br2), dst.mat[0]);
     store_ps(lincomb3x4(ar1, br0, br1, br2), dst.mat[1]);
