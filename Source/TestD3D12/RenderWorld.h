@@ -31,6 +31,7 @@ struct DbvtProxy {
 class RenderWorld {
 public:
     RenderWorld();
+    ~RenderWorld();
 
     void                            ClearScene();
 
@@ -50,5 +51,6 @@ private:
 
 #ifdef USE_DBVT
     BE1::DynamicAABBTree            objectDbvt;             ///< Dynamic bounding volume tree for render objects
+    BE1::PlatformMutex *            objectDbvtMutex = nullptr;
 #endif
 };

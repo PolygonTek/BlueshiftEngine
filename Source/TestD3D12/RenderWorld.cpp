@@ -18,15 +18,30 @@
 #include "RenderContext.h"
 #include "RenderCamera.h"
 #include "RenderInternal.h"
+#include "Platform/PlatformThread.h"
+#include "Core/ScopedLock.h"
 
 RenderWorld::RenderWorld() {
     renderObjects.Reserve(16384);
     renderObjects.SetGranularity(4096);
+
+#ifdef USE_DBVT
+    objectDbvtMutex = BE1::PlatformMutex::Create();
+#endif
+}
+
+RenderWorld::~RenderWorld() {
+#ifdef USE_DBVT
+    BE1::PlatformMutex::Destroy(objectDbvtMutex);
+#endif
 }
 
 void RenderWorld::ClearScene() {
 #ifdef USE_DBVT
-    objectDbvt.Clear();
+    {
+        BE1::ScopedLock lock(objectDbvtMutex);
+        objectDbvt.Clear();
+    }
 #endif
     
     for (RenderObject *renderObject : renderObjects) {
@@ -74,7 +89,10 @@ void RenderWorld::UpdateRenderObject(int index, const RenderObject::Decl &def) {
         renderObject->proxy = (DbvtProxy *)Mem_Alloc(sizeof(DbvtProxy));
         renderObject->proxy->renderObject = renderObject;
         renderObject->proxy->worldAABB = renderObject->GetWorldAABB();
-        renderObject->proxy->id = objectDbvt.CreateProxy(renderObject->proxy->worldAABB, BE1::MeterToUnit(0.0f), renderObject->proxy);
+        {
+            BE1::ScopedLock lock(objectDbvtMutex);
+            renderObject->proxy->id = objectDbvt.CreateProxy(renderObject->proxy->worldAABB, BE1::MeterToUnit(0.0f), renderObject->proxy);
+        }
 #endif
     } else {
 #ifdef USE_DBVT
@@ -87,7 +105,10 @@ void RenderWorld::UpdateRenderObject(int index, const RenderObject::Decl &def) {
             displacementVector = def.worldMatrix.ToTranslationVec3() - renderObject->decl.worldMatrix.ToTranslationVec3();
 
             renderObject->proxy->worldAABB.SetFromTransformedAABBFast(def.aabb, def.worldMatrix);
-            objectDbvt.MoveProxy(renderObject->proxy->id, renderObject->proxy->worldAABB, BE1::MeterToUnit(0.5f), displacementVector);
+            {
+                BE1::ScopedLock lock(objectDbvtMutex);
+                objectDbvt.MoveProxy(renderObject->proxy->id, renderObject->proxy->worldAABB, BE1::MeterToUnit(0.5f), displacementVector);
+            }
         }
 #endif
         renderObject->Update(def);
