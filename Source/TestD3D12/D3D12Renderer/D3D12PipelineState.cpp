@@ -13,9 +13,6 @@
 // limitations under the License.
 
 #include "Precompiled.h"
-#include "Platform/PlatformSystem.h"
-#include "Platform/PlatformFile.h"
-#include "Platform/Windows/PlatformWinUtils.h"
 #include "D3D12Renderer.h"
 #include "D3D12PipelineState.h"
 #include "D3D12Shader.h"
@@ -422,7 +419,7 @@ RHI::PipelineState *D3D12Renderer::CreateGraphicsPSO(const RHI::PipelineStateDes
     pipelineState->hash = psoHash;
     pipelineState->graphics = true;
 
-    // PSO hash 값으로 동일한 PSO cache 가 존재하는지 찾아보고, 찾았다면 재활용한다.
+    // PSO hash 값으로 동일한 cached PSO 가 존재하는지 찾아보고, 찾았다면 재활용한다.
     const auto *cachedPsoBlobEntry = cachedPsoBlobMap.Get(psoHash);
 
     ID3DBlob *cachedPsoBlob = nullptr;
@@ -431,7 +428,7 @@ RHI::PipelineState *D3D12Renderer::CreateGraphicsPSO(const RHI::PipelineStateDes
     }
 
 #ifndef _DEBUG
-    // 없다면 PSO cache 파일을 로딩해본다.
+    // 없다면 cached PSO 파일을 로딩해본다.
     // NOTE: hash 값 충돌로 엉뚱한 cached PSO 파일을 읽어오지는 않는지 체크 필요
     if (!cachedPsoBlob) {
         LoadCachedPSO(psoHash, &cachedPsoBlob);
@@ -618,7 +615,21 @@ RHI::PipelineState *D3D12Renderer::CreateGraphicsPSO(const RHI::PipelineStateDes
     streamDesc.pPipelineStateSubobjectStream = psoStream;
     streamDesc.SizeInBytes = psoStreamSize;
 
+    // streamDesc 를 통해 PSO 를 생성한다.
     HRESULT hr = device->CreatePipelineState(&streamDesc, IID_PPV_ARGS(&pipelineState->pso));
+    if (hr == D3D12_ERROR_DRIVER_VERSION_MISMATCH) {
+        // cached PSO 버젼이 맞지 않는다면, cached PSO 없이 PSO 를 새로 생성한다.
+        stream->cachedPSO = CD3DX12_PIPELINE_STATE_STREAM_CACHED_PSO();
+        // cached PSO 를 릴리즈한다.
+        SAFE_RELEASE(cachedPsoBlob);
+
+        BE1::Str psoCacheFilename;
+        GetCachedPSOFilename(psoHash, psoCacheFilename);
+        BE_WARNLOG("Cached PSO file '%s' has a mismatched driver version\nThe file will be updated\n", psoCacheFilename.c_str());
+
+        hr = device->CreatePipelineState(&streamDesc, IID_PPV_ARGS(&pipelineState->pso));
+    }
+
     if (FAILED(hr)) {
         BE_WARNLOG("device->CreatePipelineState() failed, ERROR: 0x%x\n", hr);
         delete pipelineState;
@@ -628,12 +639,17 @@ RHI::PipelineState *D3D12Renderer::CreateGraphicsPSO(const RHI::PipelineStateDes
     graphicsPsoMap.Set(psoHash, pipelineState);
 
 #ifndef _DEBUG
-    // PSO cache 가 없었다면 새로 추가한다.
     if (!cachedPsoBlobEntry) {
-        ID3DBlob *cachedPSOBlob = nullptr;
-        if (SUCCEEDED(pipelineState->pso->GetCachedBlob(&cachedPSOBlob))) {
-            cachedPsoBlobMap.Set(psoHash, cachedPSOBlob);
-            WriteCachedPSO(psoHash, cachedPSOBlob);
+        if (!cachedPsoBlob) {
+            // cached PSO 가 없었다면 PSO 로부터 가져와서 파일에 저장한다.
+            if (SUCCEEDED(pipelineState->pso->GetCachedBlob(&cachedPsoBlob))) {
+                WriteCachedPSO(psoHash, cachedPsoBlob);
+            }
+        }
+
+        // cached PSO 를 캐싱한다.
+        if (cachedPsoBlob) {
+            cachedPsoBlobMap.Set(psoHash, cachedPsoBlob);
         }
     }
 #endif
@@ -697,10 +713,15 @@ void D3D12Renderer::DestroyPSO(RHI::PipelineState *pipelineState, bool immediate
     }
 }
 
+void D3D12Renderer::GetCachedPSOFilename(const uint64_t hash, BE1::Str &outFilename) const {
+    outFilename = psoCacheDir;
+    outFilename.AppendPath(BE1::va("%016llx", hash));
+    outFilename.SetFileExtension(".pso");
+}
+
 bool D3D12Renderer::LoadCachedPSO(const uint64_t hash, ID3DBlob **cachedPSOBlob) {
-    BE1::Str filename = psoCacheDir;
-    filename.AppendPath(BE1::va("%016llx", hash));
-    filename.SetFileExtension(".pso");
+    BE1::Str filename;
+    GetCachedPSOFilename(hash, filename);
 
     BE1::PlatformFileMapping *fileMapping = BE1::PlatformFileMapping::OpenFileRead(filename);
     if (!fileMapping) {
@@ -724,9 +745,8 @@ void D3D12Renderer::WriteCachedPSO(const uint64_t hash, ID3DBlob *cachedPSOBlob)
         return;
     }
 
-    BE1::Str filename = psoCacheDir;
-    filename.AppendPath(BE1::va("%016llx", hash));
-    filename.SetFileExtension(".pso");
+    BE1::Str filename;
+    GetCachedPSOFilename(hash, filename);
     BE1::PlatformFile *file = (BE1::PlatformFile *)BE1::PlatformFile::OpenFileWrite(filename);
     if (!file) {
         return;

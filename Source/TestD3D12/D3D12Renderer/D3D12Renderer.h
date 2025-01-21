@@ -153,6 +153,7 @@ public:
     RHI::PipelineState *                CreateBasicPSO(ID3D12RootSignature *rootSignature, const char *shaderFilename, const D3D12_INPUT_LAYOUT_DESC &inputLayout);
     ID3D12PipelineState *               CreatePSOFromLibrary(const D3D12_PIPELINE_STATE_STREAM_DESC *streamDesc, ID3D12PipelineLibrary1 *library, const TCHAR *name);
 
+    void                                GetCachedPSOFilename(const uint64_t hash, BE1::Str &outFilename) const;
     bool                                LoadCachedPSO(const uint64_t hash, ID3DBlob **cachedPSOBlob);
     void                                WriteCachedPSO(const uint64_t hash, ID3DBlob *cachedPSOBlob);
 
