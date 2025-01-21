@@ -30,6 +30,7 @@
 -------------------------------------------------------------------------------
 */
 
+#include "Platform/PlatformThread.h"
 #include "Containers/Stack.h"
 #include "Math/Math.h"
 
@@ -149,6 +150,7 @@ private:
     int32_t             freeList;
     Node *              nodes = nullptr;
     int                 insertionCount;
+    PlatformMutex *     mutex = nullptr;
 };
 
 BE_INLINE void *DynamicAABBTree::GetUserData(int32_t proxyId) const {

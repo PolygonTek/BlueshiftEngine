@@ -99,10 +99,6 @@ int RenderWorld::AddRenderObject(const RenderObject::State *def) {
 }
 
 void RenderWorld::UpdateRenderObject(int handle, const RenderObject::State *def) {
-    while (handle >= renderObjects.Count()) {
-        renderObjects.Append(nullptr);
-    }
-
     RenderObject *renderObject = renderObjects[handle];
     if (!renderObject) {
         renderObject = new RenderObject(handle);

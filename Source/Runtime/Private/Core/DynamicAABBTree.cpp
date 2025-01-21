@@ -15,6 +15,7 @@
 #include "Precompiled.h"
 #include "Core/DynamicAABBTree.h"
 #include "Core/Heap.h"
+#include "Core/ScopedLock.h"
 
 BE_NAMESPACE_BEGIN
 
@@ -23,10 +24,14 @@ constexpr float     DisplacementMultiplier      = 2.0f;
 
 DynamicAABBTree::DynamicAABBTree() {
     Clear();
+
+    mutex = BE1::PlatformMutex::Create();
 }
 
 DynamicAABBTree::~DynamicAABBTree() {
     Mem_Free(nodes);
+
+    BE1::PlatformMutex::Destroy(mutex);
 }
 
 void DynamicAABBTree::Clear() {
@@ -105,6 +110,8 @@ void DynamicAABBTree::FreeNode(int32_t nodeId) {
 // Create a proxy in the tree as a leaf node. We return the index
 // of the node instead of a pointer so that we can grow the node pool.
 int32_t DynamicAABBTree::CreateProxy(const AABB &aabb, float expansion, void *userData) {
+    ScopedLock lock(mutex);
+
     int32_t proxyId = AllocNode();
 
     // Fatten the aabb.
@@ -120,6 +127,8 @@ int32_t DynamicAABBTree::CreateProxy(const AABB &aabb, float expansion, void *us
 }
 
 void DynamicAABBTree::DestroyProxy(int32_t proxyId) {
+    ScopedLock lock(mutex);
+
     assert(0 <= proxyId && proxyId < nodeCapacity);
     assert(nodes[proxyId].IsLeaf());
 
@@ -128,6 +137,8 @@ void DynamicAABBTree::DestroyProxy(int32_t proxyId) {
 }
 
 bool DynamicAABBTree::MoveProxy(int32_t proxyId, const AABB &aabb, float expansion, const Vec3 &displacement) {
+    ScopedLock lock(mutex);
+
     assert(0 <= proxyId && proxyId < nodeCapacity);
     assert(nodes[proxyId].IsLeaf());
 
@@ -622,6 +633,8 @@ void DynamicAABBTree::RebuildBottomUp() {
     if (nodeCount == 0) {
         return;
     }
+
+    ScopedLock lock(mutex);
 
     int32_t *nodeIndexes = (int32_t *)Mem_Alloc(nodeCount * sizeof(int32_t));
     int32_t count = 0;
