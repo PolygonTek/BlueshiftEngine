@@ -79,7 +79,7 @@ void App::Render() {
     RenderCamera::Decl &cameraInput = renderCamera->GetDecl();
     cameraInput.orthogonal = false;
     cameraInput.renderRect.Set(0, 0, w, h);
-    cameraInput.origin.Set(40 + (BE1::Math::Sin(MILLI2SEC(elapsedMsec) * 0.5f) + 1.0f) * 0.5f * 200, 0, 0);
+    cameraInput.origin.Set(12 + (BE1::Math::Sin(MILLI2SEC(elapsedMsec) * 0.5f) + 1.0f) * 0.5f * 210, 0, 0);
     cameraInput.axis[0].Set(-1, 0, 0);
     cameraInput.axis[1].Set(0, -1, 0);
     cameraInput.axis[2].Set(0, 0, 1);

@@ -130,14 +130,7 @@ private:
 
     RenderCommandBuffer             commands;
 
-#ifdef USE_TASK_MANAGER
-    // 렌더링 태스크에서 사용할 수 있는 최대 스레드 개수
-    static constexpr uint32_t       MaxRenderTaskThreads = 16;
-
-    RHI::FrameThreadData *          threadData[MaxRenderTaskThreads] = {};
-#else
-    RHI::FrameThreadData *          threadData[1] = {};
-#endif
+    RHI::FrameThreadData **         threadData = nullptr;
     int                             numRenderTaskThreads = 0;
 
     uint64_t                        fenceValue = 0;
