@@ -21,18 +21,34 @@ class RenderCamera;
 class RenderFrameData;
 class VisCamera;
 
+/// Proxy node in the dynamic bounding volume tree
+struct DbvtProxy {
+    int32_t                         id;             ///< Proxy id
+    BE1::AABB                       worldAABB;      ///< World bounding volume for this node
+    RenderObject *                  renderObject;
+};
+
 class RenderWorld {
 public:
     RenderWorld();
 
-    int                             AddRenderObject(const RenderObject::State &def);
-    void                            UpdateRenderObject(int handle, const RenderObject::State &def);
+    void                            ClearScene();
+
+    RenderObject *                  GetRenderObject(int handle) const;
+    int                             AddRenderObject(const RenderObject::Decl &def);
+    void                            UpdateRenderObject(int handle, const RenderObject::Decl &def);
     void                            RemoveRenderObject(int handle);
 
     void                            RenderScene(RenderContext *renderContext, const RenderCamera *renderCamera);
 
 private:
-    void                            DrawCamera(VisCamera *visCamera, RenderFrameData *frameData);
+    void                            FindVisObjects(const RenderCamera *renderCamera, VisCamera *visCamera, RenderFrameData *frameData);
+
+    void                            DrawCamera(const RenderCamera *renderCamera, VisCamera *visCamera, RenderFrameData *frameData);
 
     BE1::Array<RenderObject *>      renderObjects;
+
+#ifdef USE_DBVT
+    BE1::DynamicAABBTree            objectDbvt;             ///< Dynamic bounding volume tree for render objects
+#endif
 };

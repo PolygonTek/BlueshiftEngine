@@ -23,7 +23,7 @@ class VisCamera;
 
 class VisObject {
 public:
-    RenderObject::State &       GetState() { return state; }
+    RenderObject::Decl &        GetDecl() { return decl; }
 
     static void                 Draw(RHI::CommandList *commandList, const VisCamera *visCamera, const VisObject *visObject);
     static void                 DrawInstanced(RHI::CommandList *commandList, const VisCamera *visCamera, const VisObject *visObjects, int instanceCount);
@@ -31,17 +31,25 @@ public:
     static void                 DrawCubeMesh(RHI::CommandList *commandList, const VisCamera *visCamera, const VisObject *visObject);
     static void                 DrawCubeMeshInstanced(RHI::CommandList *commandList, const VisCamera *visCamera, const VisObject *visObjects, int instanceCount);
 
-    RenderObject::State         state;
+    RenderObject::Decl          decl;
+
+    ALIGN_AS32 BE1::Mat4        modelViewProjMatrix;
+    ALIGN_AS32 BE1::Mat3x4      modelViewMatrix;
+
+    bool                        ambientVisible = false;
+    bool                        shadowVisible = false;
 };
 
 class VisCamera {
 public:
-    RenderCamera::State &       GetState() { return state; }
+    RenderCamera::Decl &        GetDecl() { return decl; }
 
     uint32_t                    NumVisObjects() const { return visObjectEndIndex - visObjectStartIndex + 1; }
 
-    RenderCamera::State         state;
-    BE1::Mat4                   viewProjMatrix;
+    RenderCamera::Decl          decl;
+
+    ALIGN_AS32 BE1::Mat4        viewProjMatrix;
+    ALIGN_AS32 BE1::AABB        worldAABB;
 
     uint32_t                    visObjectStartIndex = 0;
     uint32_t                    visObjectEndIndex = -1;

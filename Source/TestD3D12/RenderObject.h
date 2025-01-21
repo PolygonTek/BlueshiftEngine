@@ -14,27 +14,52 @@
 
 #pragma once
 
+struct DbvtProxy;
 class Mesh;
+class RenderWorld;
 
 enum class MeshType : uint8_t {
     None,
-    TriangleMesh,
     CubeMesh
 };
 
 class RenderObject {
+    friend class RenderWorld;
+
 public:
-    struct State {
+    struct Decl {
+        ALIGN_AS32 BE1::Mat3x4  worldMatrix = BE1::Mat3x4::identity;
+        ALIGN_AS32 BE1::AABB    aabb = BE1::AABB::empty; ///< non-scaled AABB in local space
+
         MeshType                meshType = MeshType::None;
         std::shared_ptr<Mesh>   mesh;
-        BE1::Mat3x4             worldMatrix;
-        BE1::Vec2               offset;
     };
 
-    State &                     GetState() { return state; }
+    RenderObject() = default;
+    ~RenderObject();
 
-    void                        Update(const State &state);
+                                /// Returns object index in world.
+    int                         GetIndex() const { return index; }
 
-    State                       state;      // 오브젝트를 렌더링할 때 필요한 실제 상태를 들고 있음 (Update 함수에서 갱신됨)
-    int                         index = -1; // D3D12Renderer::renderObjects 의 인덱스
+                                /// Returns object input definition.
+    Decl &                      GetDecl() { return decl; }
+    const Decl &                GetDecl() const { return decl; }
+
+                                /// Returns AABB in world space.
+    const BE1::AABB &           GetWorldAABB() const { return worldAABB; }
+
+                                /// Returns local to world matrix.
+    const BE1::Mat3x4 &         GetWorldMatrix() const { return decl.worldMatrix; }
+
+private:
+    void                        Update(const Decl &decl);
+
+    Decl                        decl;
+
+    BE1::AABB                   worldAABB = BE1::AABB::empty;
+    int                         index = -1;         // RenderWorld::renderObjects 의 인덱스
+
+#ifdef USE_DBVT
+    DbvtProxy *                 proxy = nullptr;    // proxy for render object
+#endif
 };

@@ -81,8 +81,8 @@ const void *RenderBackEnd::ExecuteDrawCamera(const void *data) {
     mainCommandList->Reset();
 
     // 뷰포트 & ScissorRect 의 초기값 설정
-    RHI::renderer->SetViewport(mainCommandList, visCamera->state.renderRect);
-    RHI::renderer->SetScissorRect(mainCommandList, visCamera->state.renderRect);
+    RHI::renderer->SetViewport(mainCommandList, visCamera->decl.renderRect);
+    RHI::renderer->SetScissorRect(mainCommandList, visCamera->decl.renderRect);
 
 #if 1
     RHI::renderer->BeginRenderPass(mainCommandList, currentContext->swapChain, currentContext->mainRTDepthTexture, BE1::Color4::blue, 1.0f, 0, RHI::ClearFlag::Color | RHI::ClearFlag::Depth);

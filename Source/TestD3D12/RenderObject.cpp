@@ -15,6 +15,16 @@
 #include "Precompiled.h"
 #include "RenderObject.h"
 
-void RenderObject::Update(const State &stateDef) {
-    state = stateDef;
+RenderObject::~RenderObject() {
+#ifdef USE_DBVT
+    if (proxy) {
+        Mem_Free(proxy);
+    }
+#endif
+}
+
+void RenderObject::Update(const Decl &def) {
+    decl = def;
+
+    worldAABB.SetFromTransformedAABBFast(decl.aabb, decl.worldMatrix);
 }

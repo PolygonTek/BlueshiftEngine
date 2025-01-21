@@ -171,7 +171,7 @@ void RenderFrameData::FreeVisObjects() {
 }
 
 VisCamera *RenderFrameData::AllocVisCamera() {
-    if (numVisCameras + 1 >= maxVisCameras) {
+    if (numVisCameras + 1 > maxVisCameras) {
         return nullptr;
     }
 
@@ -182,7 +182,7 @@ VisCamera *RenderFrameData::AllocVisCamera() {
 }
 
 VisObject *RenderFrameData::AllocVisObject() {
-    if (numVisObjects + 1 >= maxVisObjects) {
+    if (numVisObjects + 1 > maxVisObjects) {
         return nullptr;
     }
 

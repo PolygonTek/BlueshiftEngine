@@ -20,7 +20,7 @@ class RenderCamera {
     friend class RenderWorld;
 
 public:
-    struct State {
+    struct Decl {
         int                 time = 0;               ///< Time in milliseconds for shader effects and other time dependent rendering issues
 
         BE1::Rect           renderRect;
@@ -38,7 +38,9 @@ public:
 
     void                    Update();
 
-    State &                 GetState() { return state; }
+                            /// Returns camera input definition.
+    Decl &                  GetDecl() { return decl; }
+    const Decl &            GetDecl() const { return decl; }
 
     float                   GetZNear() const { return zNear; }
     float                   GetZFar() const { return zFar; }
@@ -89,7 +91,7 @@ public:
     bool                    CalcDepthBoundsFromFrustum(const BE1::Frustum &frustum, const BE1::Mat4 &mvp, float *depthMin, float *depthMax) const;
 
 private:
-    State                   state;
+    Decl                    decl;
 
     BE1::OBB                box;
 
@@ -100,7 +102,7 @@ private:
     float                   zNear;
     float                   zFar;
 
-    BE1::Mat4               viewMatrix;
-    BE1::Mat4               projMatrix;
-    BE1::Mat4               viewProjMatrix;
+    ALIGN_AS32 BE1::Mat4    viewMatrix;
+    ALIGN_AS32 BE1::Mat4    projMatrix;
+    ALIGN_AS32 BE1::Mat4    viewProjMatrix;
 };

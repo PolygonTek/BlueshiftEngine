@@ -17,7 +17,7 @@
 #include "CubeMesh.h"
 
 void VisObject::Draw(RHI::CommandList *commandList, const VisCamera *visCamera, const VisObject *visObject) {
-    switch (visObject->state.meshType) {
+    switch (visObject->decl.meshType) {
     case MeshType::CubeMesh:
         DrawCubeMesh(commandList, visCamera, visObject);
         break;
@@ -25,7 +25,7 @@ void VisObject::Draw(RHI::CommandList *commandList, const VisCamera *visCamera, 
 }
 
 void VisObject::DrawInstanced(RHI::CommandList *commandList, const VisCamera *visCamera, const VisObject *visObjects, int instanceCount) {
-    switch (visObjects[0].state.meshType) {
+    switch (visObjects[0].decl.meshType) {
     case MeshType::CubeMesh:
         VisObject::DrawCubeMeshInstanced(commandList, visCamera, visObjects, instanceCount);
         break;
@@ -33,16 +33,16 @@ void VisObject::DrawInstanced(RHI::CommandList *commandList, const VisCamera *vi
 }
 
 void VisObject::DrawCubeMesh(RHI::CommandList *commandList, const VisCamera *visCamera, const VisObject *visObject) {
-    CubeMesh *cubeMesh = static_cast<CubeMesh *>(visObject->state.mesh.get());
-    cubeMesh->DrawMesh(commandList, visCamera, visObject->state.worldMatrix);
+    CubeMesh *cubeMesh = static_cast<CubeMesh *>(visObject->decl.mesh.get());
+    cubeMesh->DrawMesh(commandList, visCamera, visObject->decl.worldMatrix);
 }
 
 void VisObject::DrawCubeMeshInstanced(RHI::CommandList *commandList, const VisCamera *visCamera, const VisObject *visObjects, int instanceCount) {
-    BE1::Mat3x4 *instanceData = (BE1::Mat3x4 *)_alloca32(instanceCount * sizeof(visObjects[0].state.worldMatrix));
+    BE1::Mat3x4 *instanceData = (BE1::Mat3x4 *)_alloca32(instanceCount * sizeof(visObjects[0].decl.worldMatrix));
 
     for (int i = 0; i < instanceCount; i++) {
-        instanceData[i] = visObjects[i].state.worldMatrix;
+        instanceData[i] = visObjects[i].decl.worldMatrix;
     }
-    CubeMesh *cubeMesh = static_cast<CubeMesh *>(visObjects[0].state.mesh.get());
+    CubeMesh *cubeMesh = static_cast<CubeMesh *>(visObjects[0].decl.mesh.get());
     cubeMesh->DrawMeshInstanced(commandList, visCamera, instanceData, instanceCount);
 }

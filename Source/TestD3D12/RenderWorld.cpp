@@ -21,9 +21,35 @@
 
 RenderWorld::RenderWorld() {
     renderObjects.Reserve(16384);
+    renderObjects.SetGranularity(4096);
 }
 
-int RenderWorld::AddRenderObject(const RenderObject::State &def) {
+void RenderWorld::ClearScene() {
+#ifdef USE_DBVT
+    objectDbvt.Clear();
+#endif
+    
+    for (RenderObject *renderObject : renderObjects) {
+        SAFE_DELETE(renderObject);
+    }
+}
+
+RenderObject *RenderWorld::GetRenderObject(int handle) const {
+    if (handle < 0 || handle >= renderObjects.Count()) {
+        BE_WARNLOG("RenderWorld::GetRenderObject: handle %i > %i\n", handle, renderObjects.Count() - 1);
+        return nullptr;
+    }
+
+    RenderObject *renderObject = renderObjects[handle];
+    if (!renderObject) {
+        BE_WARNLOG("RenderWorld::GetRenderObject: handle %i is nullptr\n", handle);
+        return nullptr;
+    }
+
+    return renderObject;
+}
+
+int RenderWorld::AddRenderObject(const RenderObject::Decl &def) {
     assert(BE1::Engine::IsInMainThread());
 
     int index = renderObjects.FindNull();
@@ -35,21 +61,37 @@ int RenderWorld::AddRenderObject(const RenderObject::State &def) {
     return index;
 }
 
-void RenderWorld::UpdateRenderObject(int index, const RenderObject::State &def) {
-    assert(BE1::Engine::IsInMainThread());
-
-    while (index >= renderObjects.Count()) {
-        renderObjects.Append(nullptr);
-    }
-
+void RenderWorld::UpdateRenderObject(int index, const RenderObject::Decl &def) {
     RenderObject *renderObject = renderObjects[index];
     if (!renderObject) {
         renderObject = new RenderObject;
         renderObject->index = index;
         renderObjects[index] = renderObject;
-    }
 
-    renderObject->Update(def);
+        renderObject->Update(def);
+
+#ifdef USE_DBVT
+        renderObject->proxy = (DbvtProxy *)Mem_Alloc(sizeof(DbvtProxy));
+        renderObject->proxy->renderObject = renderObject;
+        renderObject->proxy->worldAABB = renderObject->GetWorldAABB();
+        renderObject->proxy->id = objectDbvt.CreateProxy(renderObject->proxy->worldAABB, BE1::MeterToUnit(0.0f), renderObject->proxy);
+#endif
+    } else {
+#ifdef USE_DBVT
+        const bool worldMatrixMatch = (def.worldMatrix == renderObject->decl.worldMatrix);
+        const bool aabbMatch = (def.aabb == renderObject->decl.aabb);
+        const bool proxyMoved = !worldMatrixMatch || !aabbMatch;
+
+        BE1::Vec3 displacementVector;
+        if (proxyMoved) {
+            displacementVector = def.worldMatrix.ToTranslationVec3() - renderObject->decl.worldMatrix.ToTranslationVec3();
+
+            renderObject->proxy->worldAABB.SetFromTransformedAABBFast(def.aabb, def.worldMatrix);
+            objectDbvt.MoveProxy(renderObject->proxy->id, renderObject->proxy->worldAABB, BE1::MeterToUnit(0.5f), displacementVector);
+        }
+#endif
+        renderObject->Update(def);
+    }
 }
 
 void RenderWorld::RemoveRenderObject(int index) {
@@ -65,6 +107,10 @@ void RenderWorld::RemoveRenderObject(int index) {
         BE_WARNLOG("RenderWorld::RemoveRenderObject: index %i is nullptr\n", index);
         return;
     }
+
+#ifdef USE_DBVT
+    objectDbvt.DestroyProxy(renderObject->proxy->id);
+#endif
 
     delete renderObjects[index];
     renderObjects[index] = nullptr;
@@ -83,24 +129,18 @@ void RenderWorld::RenderScene(RenderContext *renderContext, const RenderCamera *
         return;
     }
 
-    visCamera->state = renderCamera->state;
+    visCamera->decl = renderCamera->decl;
     visCamera->viewProjMatrix = renderCamera->viewProjMatrix;
 
-    DrawCamera(visCamera, frameData);
+    DrawCamera(renderCamera, visCamera, frameData);
 }
 
-void RenderWorld::DrawCamera(VisCamera *visCamera, RenderFrameData *frameData) {
+void RenderWorld::DrawCamera(const RenderCamera *renderCamera, VisCamera *visCamera, RenderFrameData *frameData) {
+    PROFILER_CPU_SCOPED_EVENT("RenderWorld::DrawCamera", 2);
+
     visCamera->visObjectStartIndex = frameData->NumVisObjects();
 
-    // 렌더 스레드가 다음 렌더링에 사용할 VisObject 들을 준비한다.
-    // TODO: 현재 카메라에 기반해서 SceneGraph 나 Frustum culling 등으로 렌더링에 사용할 오브젝트들을 등록한다.
-    for (int i = 0; i < renderObjects.Count(); ++i) {
-        VisObject *visObject = frameData->AllocVisObject();
-        if (!visObject) {
-            continue;
-        }
-        visObject->GetState() = renderObjects[i]->GetState();
-    }
+    FindVisObjects(renderCamera, visCamera, frameData);
 
     visCamera->visObjectEndIndex = frameData->NumVisObjects() - 1;
 
@@ -111,4 +151,57 @@ void RenderWorld::DrawCamera(VisCamera *visCamera, RenderFrameData *frameData) {
 
     // 렌더링 커맨드에 visCamera 를 기록한다.
     frameData->CmdDrawCamera(visCamera);
+}
+
+// 렌더 스레드가 다음 렌더링에 사용할 VisObject 들을 준비한다.
+void RenderWorld::FindVisObjects(const RenderCamera *renderCamera, VisCamera *visCamera, RenderFrameData *frameData) {
+    PROFILER_CPU_SCOPED_EVENT("RenderWorld::FindVisObjects", 3);
+
+    visCamera->worldAABB.Clear();
+#ifdef USE_DBVT
+    // Frustum 에 교차된 render objects 들을 추려낸다.
+    // 콜백함수에서 true 를 리턴하면 다음 쿼리를 진행한다.
+    auto addVisibleObjects = [this, renderCamera, visCamera, frameData](int32_t proxyId) -> bool {
+        const DbvtProxy *proxy = (const DbvtProxy *)objectDbvt.GetUserData(proxyId);
+        const RenderObject *renderObject = proxy->renderObject;
+        if (!renderObject) {
+            return true;
+        }
+
+        VisObject *visObject = frameData->AllocVisObject();
+        if (!visObject) {
+            return true;
+        }
+
+        visCamera->worldAABB.AddAABB(proxy->worldAABB);
+
+        visObject->GetDecl() = renderObject->GetDecl();
+        visObject->modelViewMatrix = renderCamera->viewMatrix * renderObject->GetWorldMatrix();
+        visObject->modelViewProjMatrix = renderCamera->viewProjMatrix * renderObject->GetWorldMatrix();
+        visObject->ambientVisible = true;
+        return true;
+    };
+
+    objectDbvt.QueryFrustum(renderCamera->frustum, addVisibleObjects);
+#else
+    for (int i = 0; i < renderObjects.Count(); ++i) {
+        const RenderObject *renderObject = renderObjects[i];
+
+        if (renderCamera->frustum.CullAABB(renderObject->worldAABB)) {
+            continue;
+        }
+
+        VisObject *visObject = frameData->AllocVisObject();
+        if (!visObject) {
+            continue;
+        }
+
+        visCamera->worldAABB.AddAABB(renderObject->worldAABB);
+
+        visObject->GetDecl() = renderObject->GetDecl();
+        visObject->modelViewMatrix = renderCamera->viewMatrix * renderObject->GetWorldMatrix();
+        visObject->modelViewProjMatrix = renderCamera->viewProjMatrix * renderObject->GetWorldMatrix();
+        visObject->ambientVisible = true;
+    }
+#endif
 }

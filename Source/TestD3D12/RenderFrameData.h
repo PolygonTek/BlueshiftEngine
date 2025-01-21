@@ -84,7 +84,7 @@ public:
 
     RenderCommandBuffer *           GetCommands() { return &commands; }
 
-    void                            BeginCommands(RenderContext *context);
+    void                            CmdBeginContext(RenderContext *context);
     void                            CmdDrawCamera(const VisCamera *camera);
     void                            CmdSwapBuffers();
     void                            CmdScreenshot(int x, int y, int width, int height, const char *filename);
@@ -157,7 +157,7 @@ BE_INLINE void RenderFrameData::EndFrame() {
     fenceValue = RHI::renderer->SignalFence(RHI::CommandQueueType::Graphics);
 }
 
-BE_INLINE void RenderFrameData::BeginCommands(RenderContext *context) {
+BE_INLINE void RenderFrameData::CmdBeginContext(RenderContext *context) {
     BeginContextRenderCommand *cmd = (BeginContextRenderCommand *)GetCommandBuffer(sizeof(BeginContextRenderCommand));
     if (!cmd) {
         return;

@@ -258,7 +258,7 @@ void RenderContext::BeginFrame() {
     // 이번 프레임에서 사용할 임시 메모리를 미리 할당한다.
     frameData->BeginFrameMemAllocs();
 
-    frameData->BeginCommands(this);
+    frameData->CmdBeginContext(this);
 }
 
 void RenderContext::EndFrame() {
