@@ -16,6 +16,11 @@
 
 #include "BlueshiftEngine.h"
 
+#ifdef USE_TASK_MANAGER
+// 렌더 태스크 사용 여부
+#define USE_RENDER_TASK
+#endif
+
 // 렌더 스레드 사용 여부
 #define USE_RENDER_THREAD
 

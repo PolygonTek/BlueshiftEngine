@@ -305,6 +305,11 @@ LRESULT CALLBACK MainWndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lPar
         return 0;
     case WM_TIMER:
         break;
+    case WM_KEYDOWN:
+        if (wParam == VK_F11) {
+            app.TakeScreenshot();
+        }
+        break;
     case WM_COMMAND: {
         int wmId = LOWORD(wParam);
         int wmEvent = HIWORD(wParam);

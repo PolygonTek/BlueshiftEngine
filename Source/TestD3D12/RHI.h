@@ -835,6 +835,7 @@ namespace RHI {
         virtual void                    CopyTexture(CommandList *commandList, const Texture *dstTexture, uint32_t dstSlice, uint32_t dstMipLevel, uint32_t dstX, uint32_t dstY, uint32_t dstZ, const Texture *srcTexture, uint32_t srcSlice, uint32_t srcMipLevel, uint32_t srcX, uint32_t srcY, uint32_t srcZ, uint32_t width, uint32_t height, uint32_t depth) = 0;
         virtual void                    Barrier(CommandList *commandList, const GPUBarrier *barriers, uint32_t barrierCount) = 0;
         void                            Barrier(CommandList *commandList, const GPUBarrier &barrier) { Barrier(commandList, &barrier, 1); }
+        virtual void                    ReadPixels(RHI::CommandList *commandList, const RHI::SwapChain *swapChain, int x, int y, int width, int height, BE1::Image::Format::Enum dstFormat, void *outPixels) = 0;
         virtual void                    BeginRenderPass(CommandList *commandList, const SwapChain *swapChain, const Texture *depthStencilTexture, const BE1::Color4 &clearColor = {}, float clearDepth = 0, uint8_t clearStencil = 0, ClearFlag clearFlags = ClearFlag::None) = 0;
         virtual void                    BeginRenderPass(CommandList *commandList, const RenderPassImage renderPassImages[], int numRenderPassImages, RenderPassFlag flags = RenderPassFlag::None) = 0;
         virtual void                    EndRenderPass(CommandList *commandList) = 0;

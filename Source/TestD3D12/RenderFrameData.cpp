@@ -23,7 +23,7 @@ static constexpr uint32_t   MemAlignSize = 32;
 void RenderFrameData::Init() {
     InitMemBlocks();
 
-#ifdef USE_TASK_MANAGER
+#ifdef USE_RENDER_TASK
     // 최대 렌더 태스크 쓰레드 개수는 태스크 매니져의 쓰레드 개수를 넘을 수 없다.
     numRenderTaskThreads = BE1::Min(BE1::Engine::taskManager->NumThreads(), MaxRenderTaskThreads);
 #else

@@ -35,7 +35,7 @@ void App::Init(void *mainWindowHandle) {
     renderSystem = new RenderSystem;
     renderSystem->Init(mainWindowHandle);
 
-    mainRenderContext = renderSystem->CreateRenderContext(mainWindowHandle);
+    mainRenderContext = renderSystem->CreateRenderContext(mainWindowHandle, true);
 
     renderWorld = new RenderWorld;
     renderCamera = new RenderCamera;
@@ -118,6 +118,10 @@ void App::UpdateGameObjects() {
     PROFILER_CPU_SCOPED_EVENT("App::UpdateGameObjects", 1);
 
     UpdateCubes();
+}
+
+void App::TakeScreenshot() {
+    BE1::cmdSystem.BufferCommandText(BE1::CmdSystem::Execution::Now, "screenshot");
 }
 
 void App::InitCubes() {

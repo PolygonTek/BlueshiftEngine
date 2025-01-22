@@ -22,7 +22,7 @@
 static constexpr uint32_t   MaxDrawCallsPerTask = 512;
 
 void RenderBackEnd::Init() {
-#ifdef USE_TASK_MANAGER
+#ifdef USE_RENDER_TASK
     drawGroupId = BE1::Engine::taskManager->CreateGroupId();
 #endif
 }
@@ -47,6 +47,9 @@ void RenderBackEnd::Execute(const void *data) {
             data = ExecuteSwapBuffers(data);
             continue;
         case RenderCommandId::End:
+            return;
+        default:
+            BE_ERRLOG("RenderBackEnd::Execute: invalid render command ID (%i)\n", cmdId);
             return;
         }
     }
@@ -107,7 +110,7 @@ const void *RenderBackEnd::ExecuteDrawCamera(const void *data) {
 
     uint32_t numVisObjects = visCamera->NumVisObjects();
     if (numVisObjects > 0) {
-#ifdef USE_TASK_MANAGER
+#ifdef USE_RENDER_TASK
 #ifdef USE_RENDEROBJECT_INSTANCING
         uint32_t numDrawCalls = (uint32_t)BE1::Math::Ceil((float)numVisObjects / 1024);
 #else
@@ -149,12 +152,26 @@ const void *RenderBackEnd::ExecuteScreenshot(const void *data) {
 
     const ScreenShotRenderCommand *cmd = reinterpret_cast<const ScreenShotRenderCommand *>(data);
 
+    // 캡쳐 영역 Rect
+    BE1::Rect captureRect(cmd->x, cmd->y, cmd->width, cmd->height);
+
+    // SwapChain 백버퍼를 캡쳐해서 저장할 빈 이미지 (메모리) 를 생성한다.
+    BE1::Image screenImage;
+    screenImage.Create2D(captureRect.w, captureRect.h, 1, BE1::Image::Format::BGR_8_8_8, BE1::Image::GammaSpace::sRGB, nullptr, 0);
+
     RenderFrameData *currentFrameData = currentContext->GetCurrentFrameData();
     RHI::FrameThreadData *frameThreadData = currentFrameData->GetThreadData(0);
 
-    RHI::SwapChain *swapChain = currentContext->GetSwapChain();
-    //RHI::CommandList *commandList = frameThreadData->AllocGraphicsCommandList();
-    //RHI::renderer->Barrier(commandList, RHI::Renderer::MakeBufferBarrier());
+    RHI::CommandList *commandList = frameThreadData->AllocGraphicsCommandList();
+    commandList->Reset(true);
+
+    // 백버퍼의 내용을 (필요하다면 지정된 포맷으로 컨버팅하여) screenImage 에 저장한다.
+    RHI::renderer->ReadPixels(commandList, currentContext->GetSwapChain(), captureRect.x, captureRect.y, captureRect.w, captureRect.h, BE1::Image::Format::BGR_8_8_8, screenImage.GetPixels());
+
+    // 이제 이미지 파일로 저장한다.
+    BE1::Str filename = cmd->filename;
+    filename.DefaultFileExtension(".png");
+    screenImage.Write(filename);
 
     return (const void *)(cmd + 1);
 }
@@ -225,7 +242,7 @@ void RenderBackEnd::DrawVisObjectsWithoutTask(const VisCamera *visCamera) {
     commandList->CloseAndExecuteSecondary(mainCommandList, currentFrameThreadData);
 }
 
-#ifdef USE_TASK_MANAGER
+#ifdef USE_RENDER_TASK
 // taskDesc 에 담겨있는 정보를 기반으로 visCamera 에 등록된 visObjects 들을 그린다.
 void RenderBackEnd::DrawVisObjectsByTask(RenderBackEnd::DrawObjectTaskDesc *taskDesc) {
     PROFILER_CPU_SCOPED_EVENT("RenderBackEnd::DrawVisObjectsByTask", 3);
@@ -265,7 +282,7 @@ void RenderBackEnd::DrawVisObjectsWithTask(const VisCamera *visCamera, uint32_t 
     objectDrawingTaskDescs.Reserve(numTasks);
     objectDrawingTaskDescs.SetCount(0, false);
 
-    // 최대 쓰레드 개수만큼 task 를 실행한다.
+    // numTask 개수만큼 task 를 실행한다.
     while (nextStartIndex <= visCamera->visObjectEndIndex) {
         DrawObjectTaskDesc &currentThreadDesc = objectDrawingTaskDescs.Alloc();
 
@@ -288,4 +305,4 @@ void RenderBackEnd::DrawVisObjectsWithTask(const VisCamera *visCamera, uint32_t 
         objectDrawingTaskDescs[threadIndex].activeCommandList->ExecuteSecondary(mainCommandList, currentFrameThreadData);
     }
 }
-#endif // USE_TASK_MANAGER
+#endif // USE_RENDER_TASK

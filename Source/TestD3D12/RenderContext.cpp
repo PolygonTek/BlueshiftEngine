@@ -206,11 +206,11 @@ void RenderContext::MarkUpdateCompleted() {
 }
 
 unsigned int RenderContext::RenderThreadProc(void *param) {
-    RenderContext *context = reinterpret_cast<RenderContext *>(param);
-
     BE1::PlatformThread::SetCurrentThreadName("RenderContext::RenderThreadProc");
 
     BE1::SIMD::SetDenormalFlushMode(true);
+
+    RenderContext *context = reinterpret_cast<RenderContext *>(param);
 
     while (1) {
         PROFILER_CPU_SCOPED_EVENT("RenderThreadProcLoop", 0);

@@ -662,7 +662,7 @@ void D3D12Renderer::GetTextureImage2D(RHI::Texture *texture, int level, BE1::Ima
     BE1::Image tempImage;
     if (textureImageFormat != dstFormat) {
         // 컨버팅이 필요하다면, 리드백 버퍼의 내용을 tempImage 에 카피할 준비를 한다.
-        tempImage.InitFromMemory(d3d12Texture->textureDesc.Width, d3d12Texture->textureDesc.Height, 1, 1, 1, textureImageFormat, isSRGB ? BE1::Image::GammaSpace::sRGB : BE1::Image::GammaSpace::Linear, nullptr, 0);
+        tempImage.Create2D(d3d12Texture->textureDesc.Width, d3d12Texture->textureDesc.Height, 1, textureImageFormat, isSRGB ? BE1::Image::GammaSpace::sRGB : BE1::Image::GammaSpace::Linear, nullptr, 0);
         dstPtr = tempImage.GetPixels();
     } else {
         // 컨버팅할 필요가 없다면, 리드백 버퍼의 내용을 그대로 outPixels 로 카피할 준비를 한다.

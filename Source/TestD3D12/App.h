@@ -37,6 +37,8 @@ public:
 
     RenderContext *                 GetMainRenderContext() const { return mainRenderContext; }
 
+    void                            TakeScreenshot();
+
 private:
     void                            InitCubes();
 

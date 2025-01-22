@@ -22,12 +22,15 @@ public:
     void                        Init(void *mainWindowHandle);
     void                        Shutdown();
 
-    RenderContext *             CreateRenderContext(void *windowHandle);
+    RenderContext *             CreateRenderContext(void *windowHandle, bool isMain = false);
     void                        DestroyRenderContext(RenderContext *renderContext);
 
     RenderBackEnd *             GetBackEnd() const { return backEnd; }
 
 private:
+    static void                 Cmd_ScreenShot(const BE1::CmdArgs &args);
+
+    RenderContext *             mainRenderContext = nullptr;
     RenderBackEnd *             backEnd = nullptr;
 };
 

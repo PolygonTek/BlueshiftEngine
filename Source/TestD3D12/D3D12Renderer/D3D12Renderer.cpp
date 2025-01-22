@@ -767,6 +767,98 @@ void D3D12Renderer::Barrier(RHI::CommandList *commandList, const RHI::GPUBarrier
     d3d12CommandList->GetGraphicsCommandList()->ResourceBarrier(barrierCount, barrierDescs.Ptr());
 }
 
+void D3D12Renderer::ReadPixels(RHI::CommandList *commandList, const RHI::SwapChain *swapChain, int x, int y, int width, int height, BE1::Image::Format::Enum dstFormat, void *outPixels) {
+    const D3D12SwapChain *swapChainInternal = static_cast<const D3D12SwapChain *>(swapChain);
+    ID3D12Resource *backBufferResource = swapChainInternal->GetCurrentBackBuffer();
+    D3D12_RESOURCE_DESC backBufferDesc = backBufferResource->GetDesc();
+
+    // 백버퍼 리소스의 특정 밉레벨 (서브 리소스) 의 메모리 정보를 얻어온다.
+    D3D12_PLACED_SUBRESOURCE_FOOTPRINT mipLevelFootprint;
+    UINT64 mipLevelSize;
+    device->GetCopyableFootprints(&backBufferDesc, 0, 1, 0, &mipLevelFootprint, nullptr, nullptr, &mipLevelSize);
+
+    mipLevelFootprint.Footprint.Width = width;
+    mipLevelFootprint.Footprint.Height = height;
+
+    // 리드백 버퍼의 크기를 계산한다.
+    UINT64 readBufferSize = mipLevelFootprint.Footprint.RowPitch * height;
+
+    // 리드백 버퍼를 생성한다.
+    BE1::Image::Format::Enum backBufferFormat;
+    bool isSRGB;
+    D3D12Renderer::DXGIFormatToImageFormat(backBufferDesc.Format, &backBufferFormat, &isSRGB);
+    D3D12Buffer *readbackBuffer = static_cast<D3D12Buffer *>(D3D12Renderer::GetRenderer()->CreateBuffer(RHI::BufferUsage::Readback, RHI::ResourceFlag::None, readBufferSize, backBufferFormat, 0, nullptr));
+
+    // 백버퍼에서 리드백 버퍼로 복사한다.
+    D3D12_TEXTURE_COPY_LOCATION srcLocation = {};
+    srcLocation.pResource = backBufferResource;
+    srcLocation.Type = D3D12_TEXTURE_COPY_TYPE_SUBRESOURCE_INDEX;
+    srcLocation.SubresourceIndex = 0;
+
+    D3D12_BOX srcBox = {};
+    srcBox.left = x;
+    srcBox.top = y;
+    srcBox.front = 0;
+    srcBox.right = x + width;
+    srcBox.bottom = y + height;
+    srcBox.back = 1;
+
+    D3D12_TEXTURE_COPY_LOCATION dstLocation = {};
+    dstLocation.pResource = readbackBuffer->GetResource();
+    dstLocation.Type = D3D12_TEXTURE_COPY_TYPE_PLACED_FOOTPRINT;
+    dstLocation.PlacedFootprint = mipLevelFootprint;
+
+    D3D12CommandList *commandListInternal = static_cast<D3D12CommandList *>(commandList);
+    commandListInternal->ResourceBarrier(backBufferResource, D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_COPY_SOURCE);
+    commandListInternal->GetGraphicsCommandList()->CopyTextureRegion(&dstLocation, 0, 0, 0, &srcLocation, &srcBox);
+    commandListInternal->ResourceBarrier(backBufferResource, D3D12_RESOURCE_STATE_COPY_SOURCE, D3D12_RESOURCE_STATE_PRESENT);
+    commandListInternal->CloseAndExecute(RHI::CommandQueueType::Graphics);
+
+    // GPU 에서 복사가 끝날 때까지 기다린다.
+    Finish(RHI::CommandQueueType::Graphics);
+
+    // 리드백 버퍼를 Map 하여 내용을 메모리로 읽어온다.
+    void *mappedPtr = nullptr;
+    D3D12_RANGE readRange = { 0, readBufferSize };
+    readbackBuffer->GetResource()->Map(0, &readRange, &mappedPtr);
+
+    const byte *srcPtr = (byte *)mappedPtr;
+    byte *dstPtr = nullptr;
+
+    BE1::Image tempImage;
+    if (backBufferFormat != dstFormat) {
+        // 컨버팅이 필요하다면, 리드백 버퍼의 내용을 tempImage 에 카피할 준비를 한다.
+        tempImage.Create2D(width, height, 1, backBufferFormat, isSRGB ? BE1::Image::GammaSpace::sRGB : BE1::Image::GammaSpace::Linear, nullptr, 0);
+        dstPtr = tempImage.GetPixels();
+    } else {
+        // 컨버팅할 필요가 없다면, 리드백 버퍼의 내용을 그대로 outPixels 로 카피할 준비를 한다.
+        dstPtr = (byte *)outPixels;
+    }
+
+    int srcPitch = mipLevelFootprint.Footprint.RowPitch;
+    int dstPitch = BE1::Image::MemRequired(width, 1, 1, 1, backBufferFormat);
+
+    for (UINT y = 0; y < height; ++y) {
+        BE1::simdProcessor->Memcpy(dstPtr, srcPtr, srcPitch);
+        srcPtr += srcPitch;
+        dstPtr += dstPitch;
+    }
+
+    D3D12_RANGE writtenRange = { 0, 0 };
+    readbackBuffer->GetResource()->Unmap(0, &writtenRange);
+
+    // 리드백 버퍼 삭제
+    DestroyBuffer(readbackBuffer, true);
+
+    // 필요하다면 컨버팅한다.
+    if (backBufferFormat != dstFormat) {
+        BE1::Image dstImage;
+        if (tempImage.ConvertFormat(dstFormat, dstImage)) {
+            BE1::simdProcessor->Memcpy(outPixels, dstImage.GetPixels(), dstImage.SizeInBytes());
+        }
+    }
+}
+
 void D3D12Renderer::BeginRenderPass(RHI::CommandList *commandList, const RHI::SwapChain *swapChain, const RHI::Texture *depthStencilTexture, const BE1::Color4 &clearColor, float clearDepth, uint8_t clearStencil, RHI::ClearFlag clearFlags) {
     D3D12CommandList *d3d12CommandList = static_cast<D3D12CommandList *>(commandList);
 

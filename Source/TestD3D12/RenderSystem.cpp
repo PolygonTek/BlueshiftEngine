@@ -21,6 +21,8 @@
 RenderSystem *      renderSystem = nullptr;
 
 void RenderSystem::Init(void *mainWindowHandle) {
+    BE1::cmdSystem.AddCommand("screenshot", Cmd_ScreenShot);
+
     RHI::renderer = new D3D12Renderer;
     RHI::renderer->Init(mainWindowHandle);
 
@@ -29,6 +31,8 @@ void RenderSystem::Init(void *mainWindowHandle) {
 }
 
 void RenderSystem::Shutdown() {
+    BE1::cmdSystem.RemoveCommand("screenshot");
+
     backEnd->Shutdown();
     SAFE_DELETE(backEnd);
 
@@ -36,7 +40,7 @@ void RenderSystem::Shutdown() {
     SAFE_DELETE(RHI::renderer);
 }
 
-RenderContext *RenderSystem::CreateRenderContext(void *windowHandle) {
+RenderContext *RenderSystem::CreateRenderContext(void *windowHandle, bool isMain) {
     RenderContext *renderContext = new RenderContext;
 #ifdef USE_RENDER_THREAD
     bool useRenderThread = true;
@@ -44,10 +48,53 @@ RenderContext *RenderSystem::CreateRenderContext(void *windowHandle) {
     bool useRenderThread = false;
 #endif
     renderContext->Init(windowHandle, useRenderThread);
+
+    if (isMain) {
+        assert(!mainRenderContext);
+        mainRenderContext = renderContext;
+    }
+
     return renderContext;
 }
 
 void RenderSystem::DestroyRenderContext(RenderContext *renderContext) {
     renderContext->Shutdown();
     delete renderContext;
+}
+
+void RenderSystem::Cmd_ScreenShot(const BE1::CmdArgs &args) {
+    char path[1024];
+
+    BE1::Str documentDir = BE1::fileSystem.GetUserDocumentDir();
+
+    if (args.Argc() > 1) {
+        BE1::Str::snPrintf(path, sizeof(path), "%s/Screenshots/%s", documentDir.c_str(), args.Argv(1));
+    } else {
+        char filename[16];
+        strcpy(filename, "shot000.png");
+
+        int index;
+        for (index = 0; index <= 999; index++) {
+            filename[4] = '0' + index / 100;
+            filename[5] = '0' + (index % 100) / 10;
+            filename[6] = '0' + index % 10;
+            BE1::Str::snPrintf(path, sizeof(path), "%s/Screenshots/%s", documentDir.c_str(), filename);
+            if (!BE1::fileSystem.FileExists(path)) {
+                break;
+            }
+        }
+
+        if (index == 1000) {
+            BE_WARNLOG("too many screenshot exist\n");
+            return;
+        }
+    }
+
+    RenderContext *renderContext = renderSystem->mainRenderContext;
+    if (renderContext->IsUsingRenderThread()) {
+        renderContext->WaitRenderCompleted();
+    }
+
+    RenderFrameData *currentFrameData = renderContext->GetCurrentFrameData();
+    currentFrameData->CmdScreenshot(0, 0, renderContext->GetSwapChain()->GetWidth(), renderContext->GetSwapChain()->GetHeight(), path);
 }
