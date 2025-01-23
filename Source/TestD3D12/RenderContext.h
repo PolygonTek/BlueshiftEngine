@@ -50,8 +50,8 @@ public:
 
     void                                OnResize(int width, int height);
 
-    BE1::Image::Format::Enum            GetMainRTColorFormat() const { return mainRTColorFormat; }
-    BE1::Image::Format::Enum            GetMainRTDepthFormat() const { return mainRTDepthFormat; }
+    BE1::Image::Format                  GetMainRTColorFormat() const { return mainRTColorFormat; }
+    BE1::Image::Format                  GetMainRTDepthFormat() const { return mainRTDepthFormat; }
     uint32_t                            GetMainRTSampleCount() const { return mainRTSampleCount; }
 
     const RenderFrameData *             GetCurrentFrameData() const { return &frameData[currentFrameIndex]; }
@@ -74,8 +74,8 @@ private:
     void                                InitRenderThread();
     void                                ShutdownRenderThread();
 
-    BE1::Image::Format::Enum            mainRTColorFormat = BE1::Image::Format::RGBA_8_8_8_8;
-    BE1::Image::Format::Enum            mainRTDepthFormat = BE1::Image::Format::Depth_32F;
+    BE1::Image::Format                  mainRTColorFormat = BE1::Image::Format::RGBA_8_8_8_8;
+    BE1::Image::Format                  mainRTDepthFormat = BE1::Image::Format::Depth_32F;
     uint32_t                            mainRTSampleCount = 1;
 
     RHI::SwapChain *                    swapChain = nullptr;

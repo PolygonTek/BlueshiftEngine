@@ -146,7 +146,7 @@ int EnvProbe::ToActualResolution(Resolution::Enum resolution) {
 void EnvProbeJob::RevalidateDiffuseProbeRT(bool clearToBlack) {
     // fixed size (16) for irradiance cubemap
     int size = 16;
-    Image::Format::Enum format = envProbe->state.useHDR ? Image::Format::RGB_11F_11F_10F : Image::Format::RGB_8_8_8;
+    Image::Format format = envProbe->state.useHDR ? Image::Format::RGB_11F_11F_10F : Image::Format::RGB_8_8_8;
 
     // Recreate diffuse probe texture if it need to.
     if (Image::IsCompressed(envProbe->diffuseProbeTexture->GetFormat()) ||
@@ -184,7 +184,7 @@ void EnvProbeJob::RevalidateDiffuseProbeRT(bool clearToBlack) {
 void EnvProbeJob::RevalidateSpecularProbeRT(bool clearToBlack) {
     int size = envProbe->GetSize();
     int numMipLevels = Math::Log(2, size) + 1;
-    Image::Format::Enum format = envProbe->state.useHDR ? Image::Format::RGBA_16F_16F_16F_16F : Image::Format::RGBA_8_8_8_8;
+    Image::Format format = envProbe->state.useHDR ? Image::Format::RGBA_16F_16F_16F_16F : Image::Format::RGBA_8_8_8_8;
 
     // Recreate specular probe texture if it need to.
     if (Image::IsCompressed(envProbe->specularProbeTexture->GetFormat()) ||
@@ -225,7 +225,7 @@ void EnvProbeJob::RevalidateSpecularProbeRT(bool clearToBlack) {
 void EnvProbeJob::RevalidateEnvProbeRT() {
     int size = envProbe->GetSize();
     int numMipLevels = Math::Log(2, size) + 1;
-    Image::Format::Enum format = envProbe->state.useHDR ? Image::Format::RGBA_16F_16F_16F_16F : Image::Format::RGBA_8_8_8_8;
+    Image::Format format = envProbe->state.useHDR ? Image::Format::RGBA_16F_16F_16F_16F : Image::Format::RGBA_8_8_8_8;
 
     if (!envProbe->envProbeTexture) {
         envProbe->envProbeTexture = textureManager.AllocTexture(va("EnvProbe-%s", envProbe->state.guid.ToString()));
@@ -255,7 +255,7 @@ void EnvProbeJob::RevalidateEnvProbeRT() {
 void EnvProbeJob::RevalidateEnvProbeTexture() {
     int size = envProbe->GetSize();
     int numMipLevels = Math::Log(2, size) + 1;
-    Image::Format::Enum format = envProbe->state.useHDR ? Image::Format::RGBA_16F_16F_16F_16F : Image::Format::RGBA_8_8_8_8;
+    Image::Format format = envProbe->state.useHDR ? Image::Format::RGBA_16F_16F_16F_16F : Image::Format::RGBA_8_8_8_8;
 
     if (!envProbe->envProbeTexture) {
         envProbe->envProbeTexture = textureManager.AllocTexture(va("EnvProbe-%s", envProbe->state.guid.ToString()));

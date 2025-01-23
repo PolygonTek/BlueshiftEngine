@@ -168,7 +168,7 @@ Image Image::MakeDilation() const {
     }
 
     Image image;
-    image.Create2D(width, height, 1, format, gammaSpace, nullptr, 0);
+    image.Create2D(width, height, 1, format, gammaSpace, nullptr, Flag::None);
 
     int bpp = BytesPerPixel();
 
@@ -216,7 +216,7 @@ Image Image::MakeErosion() const {
     }
 
     Image image;
-    image.Create2D(width, height, 1, format, gammaSpace, nullptr, 0);
+    image.Create2D(width, height, 1, format, gammaSpace, nullptr, Flag::None);
 
     int bpp = BytesPerPixel();
 
@@ -259,7 +259,7 @@ Image Image::MakeErosion() const {
 
 Image Image::MakeSDF(int spread) const {
     Image image;
-    image.Create2D(width, height, 1, Format::A_8, GammaSpace::Linear, nullptr, 0);
+    image.Create2D(width, height, 1, Format::A_8, GammaSpace::Linear, nullptr, Flag::None);
 
     for (int centerY = 0; centerY < height; centerY++) {
         for (int centerX = 0; centerX < width; centerX++) {
@@ -309,7 +309,7 @@ Image &Image::SwapRedAlphaRGBA8888() {
 
 Image Image::MakeNormalMapRGBA8888(float bumpiness) const {
     Image image;
-    image.Create2D(width, height, 1, Image::Format::RGBA_8_8_8_8, GammaSpace::Linear, nullptr, 0);
+    image.Create2D(width, height, 1, Image::Format::RGBA_8_8_8_8, GammaSpace::Linear, nullptr, Flag::None);
 
     byte *dstPtr = image.pic;
 

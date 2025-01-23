@@ -45,7 +45,7 @@ public:
     virtual RHI::ConstantBuffer *       AllocConstant(uint32_t size) override;
     virtual RHI::VertexBuffer *         AllocVertex(uint32_t vertexSize, uint32_t count) override;
     virtual RHI::IndexBuffer *          AllocIndex(uint32_t indexSize, uint32_t count) override;
-    virtual RHI::Buffer *               AllocBuffer(bool shaderStorage, BE1::Image::Format::Enum format, uint32_t structureByteStride, uint32_t count) override;
+    virtual RHI::Buffer *               AllocBuffer(bool shaderStorage, BE1::Image::Format format, uint32_t structureByteStride, uint32_t count) override;
 
     virtual RHI::CommandList *          AllocGraphicsCommandList(RHI::CommandListType type = RHI::CommandListType::Primary) override;
 

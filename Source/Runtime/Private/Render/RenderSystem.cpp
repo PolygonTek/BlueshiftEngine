@@ -727,9 +727,9 @@ void RenderSystem::CaptureScreenImage(RenderWorld *renderWorld, int layerMask,
     bool colorClear, const Color4 &clearColor, const Vec3 &origin, const Mat3 &axis, float fov, bool useHDR, int width, int height, Image &screenImage) {
     Texture *screenTexture = CaptureScreenTexture(renderWorld, layerMask, colorClear, clearColor, origin, axis, fov, useHDR, width, height);
 
-    Image::GammaSpace::Enum gammaSpace = Image::NeedFloatConversion(screenTexture->GetFormat()) ? Image::GammaSpace::Linear : Image::GammaSpace::sRGB;
+    Image::GammaSpace gammaSpace = Image::NeedFloatConversion(screenTexture->GetFormat()) ? Image::GammaSpace::Linear : Image::GammaSpace::sRGB;
 
-    screenImage.Create2D(screenTexture->GetWidth(), screenTexture->GetHeight(), 1, screenTexture->GetFormat(), gammaSpace, nullptr, 0);
+    screenImage.Create2D(screenTexture->GetWidth(), screenTexture->GetHeight(), 1, screenTexture->GetFormat(), gammaSpace, nullptr, Image::Flag::None);
 
     screenTexture->Bind();
     screenTexture->GetTexels2D(0, screenTexture->GetFormat(), screenImage.GetPixels(0));
@@ -831,7 +831,7 @@ void RenderSystem::GenerateSHConvolvIrradianceEnvCubeRT(const Texture *envCubeTe
                 float t = (y + 0.5f) * invSize;
 
                 // Gets sample direction for each faces.
-                Vec3 dir = Image::FaceToCubeMapCoords((Image::CubeMapFace::Enum)faceIndex, s, t).Normalized();
+                Vec3 dir = Image::FaceToCubeMapCoords((Image::CubeMapFace)faceIndex, s, t).Normalized();
 
                 // 9 terms are required for order 3 SH basis functions.
                 float basisEval[16] = { 0, };
@@ -854,7 +854,7 @@ void RenderSystem::GenerateSHConvolvIrradianceEnvCubeRT(const Texture *envCubeTe
 
         weightTextures[faceIndex] = new Texture;
         weightTextures[faceIndex]->Create(Graphics::TextureType::Texture2D,
-            Image(envMapSize * 4, envMapSize * 4, 1, 1, 1, Image::Format::L_32F, Image::GammaSpace::Linear, (byte *)weightData, 0),
+            Image(envMapSize * 4, envMapSize * 4, 1, 1, 1, Image::Format::L_32F, Image::GammaSpace::Linear, (byte *)weightData, Image::Flag::None),
             Texture::Flag::Clamp | Texture::Flag::Nearest | Texture::Flag::NoMipmaps | Texture::Flag::HighQuality);
     }
 
@@ -866,7 +866,7 @@ void RenderSystem::GenerateSHConvolvIrradianceEnvCubeRT(const Texture *envCubeTe
     Shader *weightedSHProjShader = shaderManager.GetShader("Shaders/WeightedSHProj")->InstantiateShader(Array<Shader::Define>());
 
     Image image;
-    image.Create2D(4, 4, 1, Image::Format::RGB_32F_32F_32F, Image::GammaSpace::Linear, nullptr, 0);
+    image.Create2D(4, 4, 1, Image::Format::RGB_32F_32F_32F, Image::GammaSpace::Linear, nullptr, Image::Flag::None);
     Texture *incidentCoeffTexture = new Texture;
     incidentCoeffTexture->Create(Graphics::TextureType::Texture2D, image, Texture::Flag::Clamp | Texture::Flag::Nearest | Texture::Flag::NoMipmaps | Texture::Flag::HighQuality);
 
@@ -1109,7 +1109,7 @@ void RenderSystem::GenerateGGXDFGSumImage(int size, Image &integrationImage) con
 
     RB_DrawClipRect(0, 0, 1.0f, 1.0f);
 
-    integrationImage.Create2D(size, size, 1, Image::Format::RG_16F_16F, Image::GammaSpace::Linear, nullptr, 0);
+    integrationImage.Create2D(size, size, 1, Image::Format::RG_16F_16F, Image::GammaSpace::Linear, nullptr, Image::Flag::None);
 
     graphics.ReadPixels(0, 0, size, size, Image::Format::RG_16F_16F, integrationImage.GetPixels());
 

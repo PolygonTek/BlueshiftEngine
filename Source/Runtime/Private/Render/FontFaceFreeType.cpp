@@ -41,7 +41,7 @@ static void Atlas_Add(int textureSize) {
     GlyphAtlas &atlas = atlasArray.Alloc();
 
     Image image;
-    image.Create2D(textureSize, textureSize, 1, GLYPH_CACHE_TEXTURE_FORMAT, Image::GammaSpace::Linear, nullptr, 0);
+    image.Create2D(textureSize, textureSize, 1, GLYPH_CACHE_TEXTURE_FORMAT, Image::GammaSpace::Linear, nullptr, Image::Flag::None);
     memset(image.GetPixels(), 0, image.SizeInBytes());
 
     atlas.texture = textureManager.AllocTexture(va("_glyph_cache_%i", atlasArray.Count() - 1));
@@ -341,7 +341,7 @@ void FontFaceFreeType::WriteBitmapFiles(const char *fontFilename) {
         const Texture *texture = atlasArray[i].texture;
 
         Image bitmapImage;
-        bitmapImage.Create2D(texture->GetWidth(), texture->GetHeight(), 1, texture->GetFormat(), Image::GammaSpace::DontCare, nullptr, 0);
+        bitmapImage.Create2D(texture->GetWidth(), texture->GetHeight(), 1, texture->GetFormat(), Image::GammaSpace::DontCare, nullptr, Image::Flag::None);
 
         texture->Bind();
         texture->GetTexels2D(0, texture->GetFormat(), bitmapImage.GetPixels(0));

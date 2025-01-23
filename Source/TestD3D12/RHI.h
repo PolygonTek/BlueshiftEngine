@@ -504,9 +504,9 @@ namespace RHI {
 
     struct RenderDest {
         uint32_t                        renderTargetCount = 0;
-        BE1::Image::Format::Enum        renderTargetFormats[8] = {};
+        BE1::Image::Format              renderTargetFormats[8] = {};
         bool                            renderTargetForematSRGBs[8] = {};
-        BE1::Image::Format::Enum        depthStencilFormat = BE1::Image::Format::Unknown;
+        BE1::Image::Format              depthStencilFormat = BE1::Image::Format::Unknown;
         uint32_t                        sampleCount = 1;
         uint32_t                        sampleQuality = 0;
 
@@ -670,7 +670,7 @@ namespace RHI {
         virtual ~SwapChain() = 0 {}
 
         virtual bool                    IsSupportsHDR() const = 0;
-        virtual bool                    GetFormat(BE1::Image::Format::Enum *imageFormat, bool *isSRGB) const = 0;
+        virtual bool                    GetFormat(BE1::Image::Format *imageFormat, bool *isSRGB) const = 0;
         virtual uint32_t                GetWidth() const = 0;
         virtual uint32_t                GetHeight() const = 0;
 
@@ -715,7 +715,7 @@ namespace RHI {
         virtual ConstantBuffer *        AllocConstant(uint32_t size) = 0;
         virtual VertexBuffer *          AllocVertex(uint32_t vertexSize, uint32_t count) = 0;
         virtual IndexBuffer *           AllocIndex(uint32_t indexSize, uint32_t count) = 0;
-        virtual Buffer *                AllocBuffer(bool shaderStorage, BE1::Image::Format::Enum format, uint32_t structureByteStride, uint32_t count) = 0;
+        virtual Buffer *                AllocBuffer(bool shaderStorage, BE1::Image::Format format, uint32_t structureByteStride, uint32_t count) = 0;
 
         virtual CommandList *           AllocGraphicsCommandList(RHI::CommandListType type = RHI::CommandListType::Primary) = 0;
 
@@ -763,17 +763,17 @@ namespace RHI {
         const DepthStencilState *       GetDepthStencilState(DepthStencilStateType type) const { return &depthStencilStates[to_int(type)]; }
         const BlendState *              GetBlendState(BlendStateType type) const { return &blendStates[to_int(type)]; }
 
-        virtual bool                    IsSupportedImageFormat(BE1::Image::Format::Enum imageFormat) const = 0;
-        virtual BE1::Image::Format::Enum ToUncompressedImageFormat(BE1::Image::Format::Enum imageFormat) const = 0;
-        virtual BE1::Image::Format::Enum ToCompressedImageFormat(BE1::Image::Format::Enum inFormat, bool useNormalMap) const = 0;
+        virtual bool                    IsSupportedImageFormat(BE1::Image::Format imageFormat) const = 0;
+        virtual BE1::Image::Format      ToUncompressedImageFormat(BE1::Image::Format imageFormat) const = 0;
+        virtual BE1::Image::Format      ToCompressedImageFormat(BE1::Image::Format inFormat, bool useNormalMap) const = 0;
 
         virtual RHI::FrameThreadData *  CreateFrameThreadData() = 0;
         virtual void                    DestroyFrameThreadData(FrameThreadData *frameThreadData) = 0;
 
-        virtual SwapChain *             CreateSwapChain(HWND hwnd, uint32_t width, uint32_t height, BE1::Image::Format::Enum format) = 0;
+        virtual SwapChain *             CreateSwapChain(HWND hwnd, uint32_t width, uint32_t height, BE1::Image::Format format) = 0;
         virtual void                    DestroySwapChain(SwapChain *swapChain) = 0;
 
-        virtual Buffer *                CreateBuffer(BufferUsage usage, ResourceFlag flags, uint64_t size, BE1::Image::Format::Enum format, uint32_t stride, const void *data) = 0;
+        virtual Buffer *                CreateBuffer(BufferUsage usage, ResourceFlag flags, uint64_t size, BE1::Image::Format format, uint32_t stride, const void *data) = 0;
         virtual void                    DestroyBuffer(Buffer *buffer, bool immediate = false) = 0;
 
         virtual VertexBuffer *          CreateVertexBuffer(BufferUsage usage, uint32_t vertexSize, uint32_t numVerts, void *data) = 0;
@@ -785,15 +785,15 @@ namespace RHI {
         virtual ConstantBuffer *        CreateConstantBuffer(BufferUsage usage, uint32_t size, void *data) = 0;
         virtual void                    DestroyConstantBuffer(ConstantBuffer *constantBuffer, bool immediate = false) = 0;
 
-        void                            AdjustTextureFormat(bool useCompression, bool useNormalMap, BE1::Image::Format::Enum inFormat, BE1::Image::Format::Enum *outFormat);
+        void                            AdjustTextureFormat(bool useCompression, bool useNormalMap, BE1::Image::Format inFormat, BE1::Image::Format *outFormat);
 
         virtual Texture *               CreateTexture(TextureType textureType, ResourceFlag flags, const BE1::Image *image, ClearValue &clearValue, uint32_t sampleCount = 1, GPUResourceState initialState = GPUResourceState::Undefined) = 0;
-        virtual Texture *               CreateTexture(TextureType textureType, ResourceFlag flags, const BE1::Image *image, BE1::Image::Format::Enum dstFormat, bool useMipmaps) = 0;
+        virtual Texture *               CreateTexture(TextureType textureType, ResourceFlag flags, const BE1::Image *image, BE1::Image::Format dstFormat, bool useMipmaps) = 0;
         virtual Texture *               CreateTextureFromFile(TextureType textureType, ResourceFlag flags, const char *filename, bool useCompression = true, bool useNormalMap = false);
         virtual void                    DestroyTexture(Texture *texture, bool immediate = false) = 0;
-        virtual void                    GetTextureImage2D(Texture *texture, int level, BE1::Image::Format::Enum imageFormat, void *outPixels) = 0;
-        virtual bool                    SetTextureSubImage2D(Texture *texture, int level, int x, int y, int width, int height, BE1::Image::Format::Enum imageFormat, const void *pixels) = 0;
-        virtual bool                    SetTextureSubImage3D(Texture *texture, int level, int x, int y, int z, int width, int height, int depth, BE1::Image::Format::Enum imageFormat, const void *pixels) = 0;
+        virtual void                    GetTextureImage2D(Texture *texture, int level, BE1::Image::Format imageFormat, void *outPixels) = 0;
+        virtual bool                    SetTextureSubImage2D(Texture *texture, int level, int x, int y, int width, int height, BE1::Image::Format imageFormat, const void *pixels) = 0;
+        virtual bool                    SetTextureSubImage3D(Texture *texture, int level, int x, int y, int z, int width, int height, int depth, BE1::Image::Format imageFormat, const void *pixels) = 0;
 
         virtual int                     CreateSubresource(Buffer *buffer, SubresourceType subresourceType, uint64_t offset = 0, uint64_t size = ~0) = 0;
         virtual int                     CreateSubresource(Texture *texture, SubresourceType type, uint32_t firstSlice = 0, uint32_t sliceCount = ~0, uint32_t firstMipLevel = 0, uint32_t mipCount = ~0) = 0;
@@ -835,7 +835,7 @@ namespace RHI {
         virtual void                    CopyTexture(CommandList *commandList, const Texture *dstTexture, uint32_t dstSlice, uint32_t dstMipLevel, uint32_t dstX, uint32_t dstY, uint32_t dstZ, const Texture *srcTexture, uint32_t srcSlice, uint32_t srcMipLevel, uint32_t srcX, uint32_t srcY, uint32_t srcZ, uint32_t width, uint32_t height, uint32_t depth) = 0;
         virtual void                    Barrier(CommandList *commandList, const GPUBarrier *barriers, uint32_t barrierCount) = 0;
         void                            Barrier(CommandList *commandList, const GPUBarrier &barrier) { Barrier(commandList, &barrier, 1); }
-        virtual void                    ReadPixels(RHI::CommandList *commandList, const RHI::SwapChain *swapChain, int x, int y, int width, int height, BE1::Image::Format::Enum dstFormat, void *outPixels) = 0;
+        virtual void                    ReadPixels(RHI::CommandList *commandList, const RHI::SwapChain *swapChain, int x, int y, int width, int height, BE1::Image::Format dstFormat, void *outPixels) = 0;
         virtual void                    BeginRenderPass(CommandList *commandList, const SwapChain *swapChain, const Texture *depthStencilTexture, const BE1::Color4 &clearColor = {}, float clearDepth = 0, uint8_t clearStencil = 0, ClearFlag clearFlags = ClearFlag::None) = 0;
         virtual void                    BeginRenderPass(CommandList *commandList, const RenderPassImage renderPassImages[], int numRenderPassImages, RenderPassFlag flags = RenderPassFlag::None) = 0;
         virtual void                    EndRenderPass(CommandList *commandList) = 0;

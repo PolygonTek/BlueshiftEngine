@@ -294,7 +294,7 @@ bool Image::LoadPVR3FromMemory(const char *name, const byte *data, size_t fileSi
     this->numMipmaps = Max(1, (int)header->u32MIPMapCount);
     //Max(1, (int)header->u32NumSurfaces);
     this->numSlices = Max(1, (int)header->u32NumSurfaces);
-    this->flags = header->u32NumFaces == 6 ? Flag::CubeMap : 0;
+    this->flags = header->u32NumFaces == 6 ? Flag::CubeMap : Flag::None;
     
     size_t dataSize = fileSize - (ptr - data);
     
@@ -332,7 +332,7 @@ bool Image::WritePVR(const char *filename) const {
     header.u32Width = width;
     header.u32Depth = 1;
     header.u32NumSurfaces = 1;
-    header.u32NumFaces = (flags & Flag::CubeMap) ?  6 : 1;
+    header.u32NumFaces = HasFlag(flags, Flag::CubeMap) ?  6 : 1;
     header.u32MIPMapCount = numMipmaps;
 
     switch (format) {

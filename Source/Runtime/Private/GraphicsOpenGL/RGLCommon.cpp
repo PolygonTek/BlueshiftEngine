@@ -476,7 +476,7 @@ void GraphicsOpenGL::Clear(int clearBits, const Color4 &color, float depth, unsi
 #endif
 }
 
-void GraphicsOpenGL::ReadPixels(int x, int y, int width, int height, Image::Format::Enum imageFormat, byte *data) {
+void GraphicsOpenGL::ReadPixels(int x, int y, int width, int height, Image::Format imageFormat, byte *data) {
     GLenum  format;
     GLenum  type;
     

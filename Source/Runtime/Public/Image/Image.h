@@ -23,174 +23,158 @@ class Image {
 public:
     /// Various image format type
     /// Channels (RGBALX) are described by little-endian format (as opposed to D3DFMT_XXX)
-    struct Format {
-        enum Enum {
-            Unknown,
-            R_32_TYPELESS,
-            // Plain bytes formats
-            L_8,
-            A_8,
-            LA_8_8,
-            R_8,
-            RG_8_8,
-            RGB_8_8_8,
-            BGR_8_8_8,
-            RGBX_8_8_8_8,
-            BGRX_8_8_8_8,
-            RGBA_8_8_8_8,
-            BGRA_8_8_8_8,
-            ABGR_8_8_8_8,
-            ARGB_8_8_8_8,
-            // Signed norm formats
-            R_8_SNORM,
-            RG_8_8_SNORM,
-            RGB_8_8_8_SNORM,
-            RGBA_8_8_8_8_SNORM,
-            // Packed formats
-            RGBX_4_4_4_4,
-            BGRX_4_4_4_4,
-            RGBA_4_4_4_4,
-            BGRA_4_4_4_4,
-            ABGR_4_4_4_4,
-            ARGB_4_4_4_4,
-            RGBX_5_5_5_1,
-            BGRX_5_5_5_1,
-            RGBA_5_5_5_1,
-            BGRA_5_5_5_1,
-            ABGR_1_5_5_5,
-            ARGB_1_5_5_5,
-            RGB_5_6_5,
-            BGR_5_6_5,
-            RGBA_10_10_10_2,
-            // Float formats
-            L_16F,
-            A_16F,
-            LA_16F_16F,
-            R_16F,
-            RG_16F_16F,
-            RGB_16F_16F_16F,
-            RGBA_16F_16F_16F_16F,
-            L_32F,
-            A_32F,
-            LA_32F_32F,
-            R_32F,
-            RG_32F_32F,
-            RGB_32F_32F_32F,
-            RGBA_32F_32F_32F_32F,
-            RGBE_9_9_9_5,
-            RGB_11F_11F_10F,
-            // Depth formats
-            Depth_16,
-            Depth_24,
-            Depth_32F,
-            DepthStencil_24_8,
-            DepthStencil_32F_8,
-            // Compressed (DXT) formats
-            DXT1, // BC1
-            DXT3, // BC2
-            DXT5, // BC3
-            XGBR_DXT5,
-            DXN1, // BC4
-            DXN2, // BC5
-            // Compressed (PVRTC) formats
-            RGB_PVRTC_2BPPV1,
-            RGB_PVRTC_4BPPV1,
-            RGBA_PVRTC_2BPPV1,
-            RGBA_PVRTC_4BPPV1,
-            RGBA_PVRTC_2BPPV2,
-            RGBA_PVRTC_4BPPV2,
-            // Compressed (ETC1/ETC2/EAC) formats
-            RGB_8_ETC1,
-            RGB_8_ETC2,
-            RGBA_8_1_ETC2,
-            RGBA_8_8_ETC2,
-            R_11_EAC,
-            RG_11_11_EAC,
-            SignedR_11_EAC,
-            SignedRG_11_11_EAC,
-            // Compressed (ATC) formats
-            RGB_ATC,
-            RGBA_EA_ATC, // Explicit alpha
-            RGBA_IA_ATC, // Interpolated alpha
-            Count
-        };
+    enum class Format : uint8_t {
+        Unknown,
+        R_32_TYPELESS,
+        // Plain bytes formats
+        L_8,
+        A_8,
+        LA_8_8,
+        R_8,
+        RG_8_8,
+        RGB_8_8_8,
+        BGR_8_8_8,
+        RGBX_8_8_8_8,
+        BGRX_8_8_8_8,
+        RGBA_8_8_8_8,
+        BGRA_8_8_8_8,
+        ABGR_8_8_8_8,
+        ARGB_8_8_8_8,
+        // Signed norm formats
+        R_8_SNORM,
+        RG_8_8_SNORM,
+        RGB_8_8_8_SNORM,
+        RGBA_8_8_8_8_SNORM,
+        // Packed formats
+        RGBX_4_4_4_4,
+        BGRX_4_4_4_4,
+        RGBA_4_4_4_4,
+        BGRA_4_4_4_4,
+        ABGR_4_4_4_4,
+        ARGB_4_4_4_4,
+        RGBX_5_5_5_1,
+        BGRX_5_5_5_1,
+        RGBA_5_5_5_1,
+        BGRA_5_5_5_1,
+        ABGR_1_5_5_5,
+        ARGB_1_5_5_5,
+        RGB_5_6_5,
+        BGR_5_6_5,
+        RGBA_10_10_10_2,
+        // Float formats
+        L_16F,
+        A_16F,
+        LA_16F_16F,
+        R_16F,
+        RG_16F_16F,
+        RGB_16F_16F_16F,
+        RGBA_16F_16F_16F_16F,
+        L_32F,
+        A_32F,
+        LA_32F_32F,
+        R_32F,
+        RG_32F_32F,
+        RGB_32F_32F_32F,
+        RGBA_32F_32F_32F_32F,
+        RGBE_9_9_9_5,
+        RGB_11F_11F_10F,
+        // Depth formats
+        Depth_16,
+        Depth_24,
+        Depth_32F,
+        DepthStencil_24_8,
+        DepthStencil_32F_8,
+        // Compressed (DXT) formats
+        DXT1, // BC1
+        DXT3, // BC2
+        DXT5, // BC3
+        XGBR_DXT5,
+        DXN1, // BC4
+        DXN2, // BC5
+        // Compressed (PVRTC) formats
+        RGB_PVRTC_2BPPV1,
+        RGB_PVRTC_4BPPV1,
+        RGBA_PVRTC_2BPPV1,
+        RGBA_PVRTC_4BPPV1,
+        RGBA_PVRTC_2BPPV2,
+        RGBA_PVRTC_4BPPV2,
+        // Compressed (ETC1/ETC2/EAC) formats
+        RGB_8_ETC1,
+        RGB_8_ETC2,
+        RGBA_8_1_ETC2,
+        RGBA_8_8_ETC2,
+        R_11_EAC,
+        RG_11_11_EAC,
+        SignedR_11_EAC,
+        SignedRG_11_11_EAC,
+        // Compressed (ATC) formats
+        RGB_ATC,
+        RGBA_EA_ATC, // Explicit alpha
+        RGBA_IA_ATC, // Interpolated alpha
+        Count
     };
 
     /// Format type
-    struct FormatType {
-        enum Enum {
-            Packed          = BIT(0),
-            SNorm           = BIT(1),
-            Float           = BIT(2),
-            Half            = Float | BIT(3),
-            Depth           = BIT(4),
-            Stencil         = BIT(5),
-            DepthStencil    = Depth | Stencil,
-            Compressed      = BIT(6)
-        };
+    enum class FormatType : uint8_t {
+        None                = 0,
+        Packed              = BIT(0),
+        SNorm               = BIT(1),
+        Float               = BIT(2),
+        Half                = Float | BIT(3),
+        Depth               = BIT(4),
+        Stencil             = BIT(5),
+        DepthStencil        = Depth | Stencil,
+        Compressed          = BIT(6)
     };
 
     /// Enum for the different kinds of gamma spaces we expect to need to convert from/to.
-    struct GammaSpace {
-        enum Enum {
-            DontCare,
-            Linear,
-            Pow22,
-            sRGB
-        };
+    enum class GammaSpace : uint8_t {
+        DontCare,
+        Linear,
+        Pow22,
+        sRGB
     };
 
     /// Image flags
-    struct Flag {
-        enum Enum {
-            CubeMap         = BIT(0),
-            NormalMap       = BIT(1)
-        };
+    enum class Flag : uint8_t {
+        None                = 0,
+        CubeMap             = BIT(0),
+        NormalMap           = BIT(1)
     };
 
     /// Cube map face
-    struct CubeMapFace {
-        enum Enum {
-            PositiveX,
-            NegativeX,
-            PositiveY,
-            NegativeY,
-            PositiveZ,
-            NegativeZ
-        };
+    enum class CubeMapFace : uint8_t {
+        PositiveX,
+        NegativeX,
+        PositiveY,
+        NegativeY,
+        PositiveZ,
+        NegativeZ
     };
 
     /// Sample wrap mode
-    struct SampleWrapMode {
-        enum Enum {
-            Clamp,
-            Repeat
-        };
+    enum class SampleWrapMode : uint8_t {
+        Clamp,
+        Repeat
     };
 
-    struct SampleFilter {
-        enum Enum {
-            Nearest,
-            Bilinear
-        };
+    enum class SampleFilter : uint8_t {
+        Nearest,
+        Bilinear
     };
 
     /// Image resample filter
-    struct ResampleFilter {
-        enum Enum {
-            Nearest,
-            Bilinear,
-            Bicubic
-        };
+    enum class ResampleFilter : uint8_t {
+        Nearest,
+        Bilinear,
+        Bicubic
     };
 
     /// Compression quality
-    struct CompressionQuality {
-        enum Enum {
-            Fast,
-            Normal,
-            HighQuality
-        };
+    enum class CompressionQuality : uint8_t {
+        Fast,
+        Normal,
+        HighQuality
     };
 
     /// Default constructor.
@@ -198,7 +182,7 @@ public:
 
     /// Constructs image with the given data.
     /// If data is not nullptr, the image data is initialized with given data.
-    Image(int width, int height, int depth, int numSlices, int numMipmaps, Format::Enum format, GammaSpace::Enum gammaSpace, byte *data, int flags);
+    Image(int width, int height, int depth, int numSlices, int numMipmaps, Format format, GammaSpace gammaSpace, byte *data, Flag flags);
     
     /// Copy constructor.
     Image(const Image &other);
@@ -247,7 +231,7 @@ public:
                         /// Returns true if image format needs floating conversion in order to not lose precision.
     bool                NeedFloatConversion() const { return Image::NeedFloatConversion(format); }
                         /// Returns true if image is cube map.
-    bool                IsCubeMap() const { return !!(flags & Flag::CubeMap); }
+    bool                IsCubeMap() const { return !!(HasFlag(flags, Flag::CubeMap)); }
 
                         /// Returns image width.
     int                 GetWidth() const { return width; }
@@ -268,13 +252,13 @@ public:
                         /// Returns number of slices.
     int                 NumSlices() const { return numSlices; }
                         /// Returns image flags.
-    int                 GetFlags() const { return flags; }
+    Flag                GetFlags() const { return flags; }
                         /// Returns image format.
-    Format::Enum        GetFormat() const { return format; }
+    Format              GetFormat() const { return format; }
                         /// Returns gamma space of this image.
-    GammaSpace::Enum    GetGammaSpace() const { return gammaSpace; }
+    GammaSpace          GetGammaSpace() const { return gammaSpace; }
                         /// Sets gamma space.
-    void                SetGammaSpace(GammaSpace::Enum gammaSpace) { this->gammaSpace = gammaSpace; }
+    void                SetGammaSpace(GammaSpace gammaSpace) { this->gammaSpace = gammaSpace; }
 
                         /// Returns pixel data pointer.
     byte *              GetPixels() const { return pic; }
@@ -284,9 +268,9 @@ public:
     byte *              GetPixels(int level, int faceIndex, int sliceIndex) const;
 
                         /// Returns linearly interpolated Color4 sample with the given 2D coordinates.
-    Color4              Sample2D(const Vec2 &st, SampleWrapMode::Enum wrapModeS = SampleWrapMode::Clamp, SampleWrapMode::Enum wrapModeT = SampleWrapMode::Clamp, SampleFilter::Enum filter = SampleFilter::Bilinear, int level = 0) const;
+    Color4              Sample2D(const Vec2 &st, SampleWrapMode wrapModeS = SampleWrapMode::Clamp, SampleWrapMode wrapModeT = SampleWrapMode::Clamp, SampleFilter filter = SampleFilter::Bilinear, int level = 0) const;
                         /// Returns linearly interpolated Color4 sample with the given cubemap coordinates.
-    Color4              SampleCube(const Vec3 &str, SampleFilter::Enum filter = SampleFilter::Bilinear, int level = 0) const;
+    Color4              SampleCube(const Vec3 &str, SampleFilter filter = SampleFilter::Bilinear, int level = 0) const;
 
                         /// Returns number of pixels with the given mipmap levels.
     int                 NumPixels(int firstLevel = 0, int numLevels = 1) const;
@@ -300,16 +284,16 @@ public:
     void                Clear();
 
                         /// Creates an image with the given memory.
-    Image &             InitFromMemory(int width, int height, int depth, int numSlices, int numMipmaps, Format::Enum format, GammaSpace::Enum gammaSpace, byte *data, int flags);
+    Image &             InitFromMemory(int width, int height, int depth, int numSlices, int numMipmaps, Format format, GammaSpace gammaSpace, byte *data, Flag flags);
 
                         /// Creates an image.
                         /// If data is nullptr, just allocate the memory.
-    Image &             Create(int width, int height, int depth, int numSlices, int numMipmaps, Format::Enum format, GammaSpace::Enum gammaSpace, const byte *data, int flags);
+    Image &             Create(int width, int height, int depth, int numSlices, int numMipmaps, Format format, GammaSpace gammaSpace, const byte *data, Flag flags);
 
-    Image &             Create2D(int width, int height, int numMipmaps, Format::Enum format, GammaSpace::Enum gammaSpace, const byte *data, int flags);
-    Image &             Create3D(int width, int height, int depth, int numMipmaps, Format::Enum format, GammaSpace::Enum gammaSpace, const byte *data, int flags);
-    Image &             CreateCube(int size, int numMipmaps, Format::Enum format, GammaSpace::Enum gammaSpace, const byte *data, int flags);
-    Image &             Create2DArray(int width, int height, int numSlices, int numMipmaps, Format::Enum format, GammaSpace::Enum gammaSpace, const byte *data, int flags);
+    Image &             Create2D(int width, int height, int numMipmaps, Format format, GammaSpace gammaSpace, const byte *data, Flag flags);
+    Image &             Create3D(int width, int height, int depth, int numMipmaps, Format format, GammaSpace gammaSpace, const byte *data, Flag flags);
+    Image &             CreateCube(int size, int numMipmaps, Format format, GammaSpace gammaSpace, const byte *data, Flag flags);
+    Image &             Create2DArray(int width, int height, int numSlices, int numMipmaps, Format format, GammaSpace gammaSpace, const byte *data, Flag flags);
 
                         /// Creates a cubic image from six square images.
     Image &             CreateCubeFrom6Faces(const Image *faceImages);
@@ -329,16 +313,16 @@ public:
     Image &             GenerateMipmaps();
 
                         /// Converts this image to the given target image.
-    bool                ConvertFormat(Format::Enum dstFormat, Image &dstImage, 
-                            GammaSpace::Enum dstGammaSpace = GammaSpace::DontCare, bool regenerateMipmaps = false, CompressionQuality::Enum compressionQuality = CompressionQuality::Normal) const;
+    bool                ConvertFormat(Format dstFormat, Image &dstImage, 
+                            GammaSpace dstGammaSpace = GammaSpace::DontCare, bool regenerateMipmaps = false, CompressionQuality compressionQuality = CompressionQuality::Normal) const;
                         /// Converts this image in-place.
-    bool                ConvertFormatSelf(Format::Enum dstFormat, 
-                            GammaSpace::Enum dstGammaSpace = GammaSpace::DontCare, bool regenerateMipmaps = false, CompressionQuality::Enum compressionQuality = CompressionQuality::Normal);
+    bool                ConvertFormatSelf(Format dstFormat, 
+                            GammaSpace dstGammaSpace = GammaSpace::DontCare, bool regenerateMipmaps = false, CompressionQuality compressionQuality = CompressionQuality::Normal);
 
                         /// Resizes this image to the given target image.
-    bool                Resize(int width, int height, ResampleFilter::Enum resampleFilter, Image &dstImage) const;
+    bool                Resize(int width, int height, ResampleFilter resampleFilter, Image &dstImage) const;
                         /// Resizes this image in-places.
-    bool                ResizeSelf(int width, int height, ResampleFilter::Enum resampleFilter);
+    bool                ResizeSelf(int width, int height, ResampleFilter resampleFilter);
 
                         /// Flips vertically.
     Image &             FlipX();
@@ -385,21 +369,21 @@ public:
     bool                WriteHDR(const char *filename) const;
     
                         // static helper functions to get image information
-    static const char * FormatName(Format::Enum imageFormat);
-    static int          BytesPerPixel(Format::Enum imageFormat);
-    static int          BytesPerBlock(Format::Enum imageFormat);
-    static int          NumComponents(Format::Enum imageFormat);
-    static void         GetBits(Format::Enum imageFormat, int *redBits, int *greenBits, int *blueBits, int *alphaBits);
-    static bool         HasAlpha(Format::Enum imageFormat);
-    static bool         HasOneBitAlpha(Format::Enum imageFormat);
-    static bool         IsPacked(Format::Enum imageFormat);
-    static bool         IsCompressed(Format::Enum imageFormat);
-    static bool         IsFloatFormat(Format::Enum imageFormat);
-    static bool         IsHalfFormat(Format::Enum imageFormat);
-    static bool         IsDepthFormat(Format::Enum imageFormat);
-    static bool         IsDepthStencilFormat(Format::Enum imageFormat);
-    static bool         NeedFloatConversion(Format::Enum imageFormat);
-    static uint64_t     MemRequired(int width, int height, int depth, int numMipmaps, Format::Enum imageFormat);
+    static const char * FormatName(Format imageFormat);
+    static int          BytesPerPixel(Format imageFormat);
+    static int          BytesPerBlock(Format imageFormat);
+    static int          NumComponents(Format imageFormat);
+    static void         GetBits(Format imageFormat, int *redBits, int *greenBits, int *blueBits, int *alphaBits);
+    static bool         HasAlpha(Format imageFormat);
+    static bool         HasOneBitAlpha(Format imageFormat);
+    static bool         IsPacked(Format imageFormat);
+    static bool         IsCompressed(Format imageFormat);
+    static bool         IsFloatFormat(Format imageFormat);
+    static bool         IsHalfFormat(Format imageFormat);
+    static bool         IsDepthFormat(Format imageFormat);
+    static bool         IsDepthStencilFormat(Format imageFormat);
+    static bool         NeedFloatConversion(Format imageFormat);
+    static uint64_t     MemRequired(int width, int height, int depth, int numMipmaps, Format imageFormat);
     static int          MaxMipMapLevels(int width, int height, int depth);
 
                         /// Converts an sRGB value in the range [0, 1] to a linear value in the range [0, 1].
@@ -417,9 +401,9 @@ public:
     static float        GetLuminance(const Color3 &linearColor);
 
                         /// Converts 2D face coordinates to cubemap coordinates.
-    static Vec3         FaceToCubeMapCoords(CubeMapFace::Enum cubeMapFace, float s, float t);
+    static Vec3         FaceToCubeMapCoords(CubeMapFace cubeMapFace, float s, float t);
                         /// Converts cubemap coordinates to 2D face coordinates.
-    static CubeMapFace::Enum CubeMapToFaceCoords(const Vec3 &cubeMapCoords, float &s, float &t);
+    static CubeMapFace  CubeMapToFaceCoords(const Vec3 &cubeMapCoords, float &s, float &t);
 
     static float        CubeMapTexelSolidAngle(float x, float y, int size);
 
@@ -430,10 +414,10 @@ public:
 
 private:
     template <typename T>
-    T                   WrapCoord(T coord, T maxCoord, SampleWrapMode::Enum wrapMode) const;
+    T                   WrapCoord(T coord, T maxCoord, SampleWrapMode wrapMode) const;
 
-    Color4              Sample2DNearest(const byte *src, const Vec2 &st, SampleWrapMode::Enum wrapModeS, SampleWrapMode::Enum wrapModeT) const;
-    Color4              Sample2DBilinear(const byte *src, const Vec2 &st, SampleWrapMode::Enum wrapModeS, SampleWrapMode::Enum wrapModeT) const;
+    Color4              Sample2DNearest(const byte *src, const Vec2 &st, SampleWrapMode wrapModeS, SampleWrapMode wrapModeT) const;
+    Color4              Sample2DBilinear(const byte *src, const Vec2 &st, SampleWrapMode wrapModeS, SampleWrapMode wrapModeT) const;
 
     bool                LoadDDSFromMemory(const char *name, const byte *data, size_t size);
     bool                LoadPVRFromMemory(const char *name, const byte *data, size_t size);
@@ -445,17 +429,27 @@ private:
     bool                LoadJPGFromMemory(const char *name, const byte *data, size_t size);
     bool                LoadPNGFromMemory(const char *name, const byte *data, size_t size);
     bool                LoadHDRFromMemory(const char *name, const byte *data, size_t size);
-    
+
+    byte *              pic;            ///< Pixel data
     int                 width;          ///< Width
     int                 height;         ///< Height
     int                 depth;          ///< Depth
     int                 numSlices;      ///< Number of array images or 6 for cubic image
     int                 numMipmaps;     ///< Number of mipmaps
-    Format::Enum        format;         ///< Image format
-    GammaSpace::Enum    gammaSpace;     ///< Gamma space enum
-    int                 flags;          ///< Image flags
+    Format              format;         ///< Image format
+    GammaSpace          gammaSpace;     ///< Gamma space enum
+    Flag                flags;          ///< Image flags
     bool                alloced;        ///< Is memory allocated ?
-    byte *              pic;            ///< Actual pixel data
+};
+
+template<>
+struct enable_bitmask_operators<Image::FormatType> {
+    static const bool enable = true;
+};
+
+template<>
+struct enable_bitmask_operators<Image::Flag> {
+    static const bool enable = true;
 };
 
 BE_INLINE Image::Image() {
@@ -466,12 +460,12 @@ BE_INLINE Image::Image() {
     numMipmaps = 0;
     format = Format::Unknown;
     gammaSpace = GammaSpace::sRGB;
-    flags = 0;
+    flags = Flag::None;
     alloced = false;
     pic = nullptr;
 }
 
-BE_INLINE Image::Image(int width, int height, int depth, int numSlices, int numMipmaps, Format::Enum format, GammaSpace::Enum gammaSpace, byte *data, int flags) {
+BE_INLINE Image::Image(int width, int height, int depth, int numSlices, int numMipmaps, Format format, GammaSpace gammaSpace, byte *data, Flag flags) {
     alloced = false;
     InitFromMemory(width, height, depth, numSlices, numMipmaps, format, gammaSpace, data, flags);
     //Create(width, height, depth, numSlices, numMipmaps, format, gammaSpace, data, flags);
@@ -526,19 +520,19 @@ BE_INLINE byte *Image::GetPixels(int level, int faceIndex, int sliceIndex) const
     return pic + offset;
 }
 
-BE_INLINE Image &Image::Create2D(int width, int height, int numMipmaps, Format::Enum format, GammaSpace::Enum gammaSpace, const byte *data, int flags) {
+BE_INLINE Image &Image::Create2D(int width, int height, int numMipmaps, Format format, GammaSpace gammaSpace, const byte *data, Flag flags) {
     return Create(width, height, 1, 1, numMipmaps, format, gammaSpace, data, flags);
 }
 
-BE_INLINE Image &Image::Create3D(int width, int height, int depth, int numMipmaps, Format::Enum format, GammaSpace::Enum gammaSpace, const byte *data, int flags) {
+BE_INLINE Image &Image::Create3D(int width, int height, int depth, int numMipmaps, Format format, GammaSpace gammaSpace, const byte *data, Flag flags) {
     return Create(width, height, depth, 1, numMipmaps, format, gammaSpace, data, flags);
 }
 
-BE_INLINE Image &Image::CreateCube(int size, int numMipmaps, Format::Enum format, GammaSpace::Enum gammaSpace, const byte *data, int flags) {
-    return Create(size, size, 1, 6, numMipmaps, format, gammaSpace, data, flags | Flag::CubeMap);
+BE_INLINE Image &Image::CreateCube(int size, int numMipmaps, Format format, GammaSpace gammaSpace, const byte *data, Flag flags) {
+    return Create(size, size, 1, 6, numMipmaps, format, gammaSpace, data, (flags | Flag::CubeMap));
 }
 
-BE_INLINE Image &Image::Create2DArray(int width, int height, int numSlices, int numMipmaps, Format::Enum format, GammaSpace::Enum gammaSpace, const byte *data, int flags) {
+BE_INLINE Image &Image::Create2DArray(int width, int height, int numSlices, int numMipmaps, Format format, GammaSpace gammaSpace, const byte *data, Flag flags) {
     return Create(width, height, 1, numSlices, numMipmaps, format, gammaSpace, data, flags);
 }
 
@@ -584,7 +578,7 @@ BE_INLINE float Image::GetLuminance(const Color3 &linearRgb) {
 }
 
 template <typename T>
-BE_INLINE T Image::WrapCoord(T coord, T maxCoord, SampleWrapMode::Enum wrapMode) const {
+BE_INLINE T Image::WrapCoord(T coord, T maxCoord, SampleWrapMode wrapMode) const {
     if (wrapMode == SampleWrapMode::Clamp) {
         Clamp<T>(coord, 0, maxCoord);
     } else if (wrapMode == SampleWrapMode::Repeat) {

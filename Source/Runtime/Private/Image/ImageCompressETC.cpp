@@ -23,7 +23,7 @@ BE_NAMESPACE_BEGIN
 #define MIN_JOBS 8
 #define MAX_JOBS 1024
 
-static float QualityToEffort(Image::CompressionQuality::Enum compressionQuality) {
+static float QualityToEffort(Image::CompressionQuality compressionQuality) {
     switch (compressionQuality) {
     case Image::CompressionQuality::HighQuality:
         return 80;
@@ -35,7 +35,7 @@ static float QualityToEffort(Image::CompressionQuality::Enum compressionQuality)
     return 0;
 }
 
-static void EncodeETC(const Image &srcImage, Image &dstImage, Image::CompressionQuality::Enum compressionQuality, Etc::Image::Format format, Etc::ErrorMetric errorMetric) {
+static void EncodeETC(const Image &srcImage, Image &dstImage, Image::CompressionQuality compressionQuality, Etc::Image::Format format, Etc::ErrorMetric errorMetric) {
     assert(srcImage.GetFormat() == Image::Format::RGBA_8_8_8_8 || srcImage.GetFormat() == Image::Format::RGBA_32F_32F_32F_32F);
 
     Etc::ColorFloatRGBA *temp = nullptr;
@@ -88,35 +88,35 @@ static void EncodeETC(const Image &srcImage, Image &dstImage, Image::Compression
     }
 }
 
-void CompressETC1(const Image &srcImage, Image &dstImage, Image::CompressionQuality::Enum compressionQuality) {
+void CompressETC1(const Image &srcImage, Image &dstImage, Image::CompressionQuality compressionQuality) {
     EncodeETC(srcImage, dstImage, compressionQuality, Etc::Image::Format::ETC1, Etc::ErrorMetric::RGBX);
 }
 
-void CompressETC2_RGB8(const Image &srcImage, Image &dstImage, Image::CompressionQuality::Enum compressionQuality) {
+void CompressETC2_RGB8(const Image &srcImage, Image &dstImage, Image::CompressionQuality compressionQuality) {
     EncodeETC(srcImage, dstImage, compressionQuality, Etc::Image::Format::RGB8, Etc::ErrorMetric::RGBX);
 }
 
-void CompressETC2_RGBA1(const Image &srcImage, Image &dstImage, Image::CompressionQuality::Enum compressionQuality) {
+void CompressETC2_RGBA1(const Image &srcImage, Image &dstImage, Image::CompressionQuality compressionQuality) {
     EncodeETC(srcImage, dstImage, compressionQuality, Etc::Image::Format::RGB8A1, Etc::ErrorMetric::RGBA);
 }
 
-void CompressETC2_RGBA8(const Image &srcImage, Image &dstImage, Image::CompressionQuality::Enum compressionQuality) {
+void CompressETC2_RGBA8(const Image &srcImage, Image &dstImage, Image::CompressionQuality compressionQuality) {
     EncodeETC(srcImage, dstImage, compressionQuality, Etc::Image::Format::RGBA8, Etc::ErrorMetric::RGBA);
 }
 
-void CompressEAC_R11(const Image &srcImage, Image &dstImage, Image::CompressionQuality::Enum compressionQuality) {
+void CompressEAC_R11(const Image &srcImage, Image &dstImage, Image::CompressionQuality compressionQuality) {
     EncodeETC(srcImage, dstImage, compressionQuality, Etc::Image::Format::R11, Etc::ErrorMetric::NUMERIC);
 }
 
-void CompressEAC_RG11(const Image &srcImage, Image &dstImage, Image::CompressionQuality::Enum compressionQuality) {
+void CompressEAC_RG11(const Image &srcImage, Image &dstImage, Image::CompressionQuality compressionQuality) {
     EncodeETC(srcImage, dstImage, compressionQuality, Etc::Image::Format::RG11, Etc::ErrorMetric::NORMALXYZ);
 }
 
-void CompressEAC_Signed_R11(const Image &srcImage, Image &dstImage, Image::CompressionQuality::Enum compressionQuality) {
+void CompressEAC_Signed_R11(const Image &srcImage, Image &dstImage, Image::CompressionQuality compressionQuality) {
     EncodeETC(srcImage, dstImage, compressionQuality, Etc::Image::Format::SIGNED_R11, Etc::ErrorMetric::NUMERIC);
 }
 
-void CompressEAC_Signed_RG11(const Image &srcImage, Image &dstImage, Image::CompressionQuality::Enum compressionQuality) {
+void CompressEAC_Signed_RG11(const Image &srcImage, Image &dstImage, Image::CompressionQuality compressionQuality) {
     EncodeETC(srcImage, dstImage, compressionQuality, Etc::Image::Format::SIGNED_RG11, Etc::ErrorMetric::NORMALXYZ);
 }
 

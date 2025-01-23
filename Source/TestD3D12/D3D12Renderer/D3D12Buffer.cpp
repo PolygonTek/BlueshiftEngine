@@ -46,7 +46,7 @@ uint64_t D3D12Buffer::GetSize() {
     return bufferAllocation->GetSize();
 #else
     D3D12_RESOURCE_DESC resourceDesc = bufferResource->GetDesc();
-    BE1::Image::Format::Enum imageFormat;
+    BE1::Image::Format imageFormat;
     if (D3D12Renderer::DXGIFormatToImageFormat(resourceDesc.Format, &imageFormat, nullptr)) {
         return BE1::Image::MemRequired(resourceDesc.Width, resourceDesc.Height, resourceDesc.DepthOrArraySize, resourceDesc.MipLevels, imageFormat);
     }
@@ -54,7 +54,7 @@ uint64_t D3D12Buffer::GetSize() {
 #endif
 }
 
-RHI::Buffer *D3D12Renderer::CreateBuffer(RHI::BufferUsage usage, RHI::ResourceFlag flags, uint64_t size, BE1::Image::Format::Enum format, uint32_t stride, const void *data) {
+RHI::Buffer *D3D12Renderer::CreateBuffer(RHI::BufferUsage usage, RHI::ResourceFlag flags, uint64_t size, BE1::Image::Format format, uint32_t stride, const void *data) {
     D3D12_HEAP_TYPE heapType;
     D3D12_RESOURCE_STATES initialState;
     D3D12_RESOURCE_FLAGS resourceFlags = D3D12_RESOURCE_FLAG_NONE;

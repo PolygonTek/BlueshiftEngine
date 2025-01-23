@@ -48,7 +48,7 @@ void Texture::Create(Graphics::TextureType::Enum type, const Image &srcImage, in
     Upload(&srcImage);
 }
 
-void Texture::CreateEmpty(Graphics::TextureType::Enum type, int width, int height, int depth, int numSlices, int numMipmaps, Image::Format::Enum format, int flags) {
+void Texture::CreateEmpty(Graphics::TextureType::Enum type, int width, int height, int depth, int numSlices, int numMipmaps, Image::Format format, int flags) {
     Purge();
 
     this->type = type;
@@ -56,12 +56,12 @@ void Texture::CreateEmpty(Graphics::TextureType::Enum type, int width, int heigh
     this->flags = flags;
 
     Image image;
-    Image::GammaSpace::Enum gammaSpace = (flags & Texture::Flag::SRGBColorSpace) ? Image::GammaSpace::sRGB : Image::GammaSpace::Linear;
-    image.InitFromMemory(width, height, depth, (type == Graphics::TextureType::TextureCubeMap ? 6 : numSlices), numMipmaps, format, gammaSpace, nullptr, 0);
+    Image::GammaSpace gammaSpace = (flags & Texture::Flag::SRGBColorSpace) ? Image::GammaSpace::sRGB : Image::GammaSpace::Linear;
+    image.InitFromMemory(width, height, depth, (type == Graphics::TextureType::TextureCubeMap ? 6 : numSlices), numMipmaps, format, gammaSpace, nullptr, Image::Flag::None);
     Upload(&image);
 }
 
-void Texture::CreateFromBuffer(Image::Format::Enum format, Graphics::Handle bufferHandle) {
+void Texture::CreateFromBuffer(Image::Format format, Graphics::Handle bufferHandle) {
     Purge();
 
     this->type = Graphics::TextureType::TextureBuffer;
@@ -82,7 +82,7 @@ void Texture::CreateFromBuffer(Image::Format::Enum format, Graphics::Handle buff
 void Texture::CreateIndirectionCubemap(int size, int vcmWidth, int vcmHeight, int flags) {
     Image cubeImage;
     // FIXME: Use RG_32F_32F to get the linear filter working normally.
-    cubeImage.CreateCube(size, 1, Image::Format::RG_16F_16F, Image::GammaSpace::Linear, nullptr, 0);
+    cubeImage.CreateCube(size, 1, Image::Format::RG_16F_16F, Image::GammaSpace::Linear, nullptr, Image::Flag::None);
 
     float16_t *dstPtr = (float16_t *)cubeImage.GetPixels();
 
@@ -126,7 +126,7 @@ void Texture::CreateIndirectionCubemap(int size, int vcmWidth, int vcmHeight, in
 
 void Texture::CreateDefaultTexture(int size, int flags) {
     Image image;
-    image.Create2D(size, size, 1, Image::Format::RGB_8_8_8, Image::GammaSpace::sRGB, nullptr, 0);
+    image.Create2D(size, size, 1, Image::Format::RGB_8_8_8, Image::GammaSpace::sRGB, nullptr, Image::Flag::None);
     byte *dst = image.GetPixels();
 
     for (int y = 0; y < size; y++) {
@@ -156,7 +156,7 @@ void Texture::CreateDefaultTexture(int size, int flags) {
 
 void Texture::CreateZeroClampTexture(int size, int flags) {
     Image image;
-    image.Create2D(size, size, 1, Image::Format::LA_8_8, Image::GammaSpace::Linear, nullptr, 0);
+    image.Create2D(size, size, 1, Image::Format::LA_8_8, Image::GammaSpace::Linear, nullptr, Image::Flag::None);
     byte *dst = image.GetPixels();
 
     for (int y = 0; y < size; y++) {
@@ -180,7 +180,7 @@ void Texture::CreateZeroClampTexture(int size, int flags) {
 
 void Texture::CreateFlatNormalTexture(int size, int flags) {
     Image image;
-    image.Create2D(size, size, 1, Image::Format::RGB_8_8_8, Image::GammaSpace::Linear, nullptr, 0);
+    image.Create2D(size, size, 1, Image::Format::RGB_8_8_8, Image::GammaSpace::Linear, nullptr, Image::Flag::None);
     byte *dst = image.GetPixels();
 
     for (int y = 0; y < size; y++) {
@@ -204,7 +204,7 @@ void Texture::CreateFlatNormalTexture(int size, int flags) {
 
 void Texture::CreateDefaultCubeMapTexture(int size, int flags) {
     Image image;
-    image.CreateCube(size, 1, Image::Format::L_8, Image::GammaSpace::sRGB, nullptr, 0);
+    image.CreateCube(size, 1, Image::Format::L_8, Image::GammaSpace::sRGB, nullptr, Image::Flag::None);
     byte *dst = image.GetPixels();
 
     int faceSize = image.SizeInBytesForFace();
@@ -232,7 +232,7 @@ void Texture::CreateDefaultCubeMapTexture(int size, int flags) {
 
 void Texture::CreateBlackCubeMapTexture(int size, int flags) {
     Image image;
-    image.CreateCube(size, 1, Image::Format::L_8, Image::GammaSpace::sRGB, nullptr, 0);
+    image.CreateCube(size, 1, Image::Format::L_8, Image::GammaSpace::sRGB, nullptr, Image::Flag::None);
     byte *dst = image.GetPixels();
 
     int faceSize = image.SizeInBytesForFace();
@@ -255,7 +255,7 @@ void Texture::CreateBlackCubeMapTexture(int size, int flags) {
 
 void Texture::CreateNormalizationCubeMapTexture(int size, int flags) {
     Image image;
-    image.CreateCube(size, 1, Image::Format::RGB_8_8_8, Image::GammaSpace::Linear, nullptr, 0);
+    image.CreateCube(size, 1, Image::Format::RGB_8_8_8, Image::GammaSpace::Linear, nullptr, Image::Flag::None);
     byte *dst = image.GetPixels();
 
     int sliceSize = image.SizeInBytesForFace();
@@ -268,7 +268,7 @@ void Texture::CreateNormalizationCubeMapTexture(int size, int flags) {
                 float s = (x + 0.5f) * invSize;
                 float t = (y + 0.5f) * invSize;
 
-                dir = Image::FaceToCubeMapCoords((Image::CubeMapFace::Enum)faceIndex, s, t).Normalized();
+                dir = Image::FaceToCubeMapCoords((Image::CubeMapFace)faceIndex, s, t).Normalized();
 
                 // Convert cubemap coordinates from z-up to GL axis
                 dir = Vec3(dir.y, dir.z, dir.x);
@@ -321,7 +321,7 @@ void Texture::CreateCubicNormalCubeMapTexture(int size, int flags) {
     faceNormal[5][2] = -128;
 
     Image image;
-    image.CreateCube(size, 1, Image::Format::RGB_8_8_8_SNORM, Image::GammaSpace::Linear, nullptr, 0);
+    image.CreateCube(size, 1, Image::Format::RGB_8_8_8_SNORM, Image::GammaSpace::Linear, nullptr, Image::Flag::None);
     int8_t *dst = (int8_t *)image.GetPixels();
 
     int facesize = image.SizeInBytesForFace();
@@ -351,7 +351,7 @@ void Texture::CreateCubicNormalCubeMapTexture(int size, int flags) {
 
 void Texture::CreateAttenuationTexture(int size, int flags) {
     Image image;
-    image.Create2D(size, size, 1, Image::Format::LA_8_8, Image::GammaSpace::Linear, nullptr, 0);
+    image.Create2D(size, size, 1, Image::Format::LA_8_8, Image::GammaSpace::Linear, nullptr, Image::Flag::None);
     byte *dst = image.GetPixels();
 
     float centerx = size / 2.0;
@@ -386,7 +386,7 @@ void Texture::CreateAttenuationTexture(int size, int flags) {
 
 void Texture::CreateFogTexture(int flags) {
     Image image;
-    image.Create2D(256, 1, 1, Image::Format::A_8, Image::GammaSpace::Linear, nullptr, 0);
+    image.Create2D(256, 1, 1, Image::Format::A_8, Image::GammaSpace::Linear, nullptr, Image::Flag::None);
     byte *dst = image.GetPixels();
 
     for (int s = 0; s < 256; s++) {
@@ -407,7 +407,7 @@ void Texture::CreateFogTexture(int flags) {
 
 void Texture::CreateFogEnterTexture(int flags) {
     Image image;
-    image.Create2D(256, 1, 1, Image::Format::A_8, Image::GammaSpace::Linear, nullptr, 0);
+    image.Create2D(256, 1, 1, Image::Format::A_8, Image::GammaSpace::Linear, nullptr, Image::Flag::None);
     byte *dst = image.GetPixels();
 
     for (int s = 0; s < 256; s++) {
@@ -428,7 +428,7 @@ void Texture::CreateFogEnterTexture(int flags) {
 
 void Texture::CreateRandomRotMatTexture(int size, int flags) {
     Image image;
-    image.Create2D(size, size, 1, Image::Format::RGBA_8_8_8_8, Image::GammaSpace::Linear, nullptr, 0);
+    image.Create2D(size, size, 1, Image::Format::RGBA_8_8_8_8, Image::GammaSpace::Linear, nullptr, Image::Flag::None);
     byte *dst = image.GetPixels();
     float s, c;
 
@@ -459,7 +459,7 @@ void Texture::CreateRandomRotMatTexture(int size, int flags) {
 
 void Texture::CreateRandomDir4x4Texture(int flags) {
     Image image;
-    image.Create2D(4, 4, 1, Image::Format::RGB_8_8_8, Image::GammaSpace::Linear, nullptr, 0);
+    image.Create2D(4, 4, 1, Image::Format::RGB_8_8_8, Image::GammaSpace::Linear, nullptr, Image::Flag::None);
     byte *dst = image.GetPixels();
     Vec3 dir;
 
@@ -497,8 +497,8 @@ static Graphics::AddressMode::Enum TextureFlagsToAddressMode(int flags) {
 }
 
 void Texture::Upload(const Image *srcImage) {
-    Image::Format::Enum srcFormat = srcImage->GetFormat();
-    Image::Format::Enum forceFormat = Image::Format::Unknown;
+    Image::Format srcFormat = srcImage->GetFormat();
+    Image::Format forceFormat = Image::Format::Unknown;
     Image tmpImage;
 
     if (type == Graphics::TextureType::TextureRectangle) {
@@ -519,7 +519,7 @@ void Texture::Upload(const Image *srcImage) {
     bool useNPOT = (flags & Flag::NonPowerOfTwo) ? true : false;
     bool sRGB = ((flags & Flag::SRGBColorSpace) && r_sRGB.GetBool()) ? true : false;
 
-    Image::Format::Enum dstFormat;
+    Image::Format dstFormat;
     if (forceFormat != Image::Format::Unknown) {
         dstFormat = forceFormat;
     } else {
@@ -591,35 +591,35 @@ void Texture::Upload(const Image *srcImage) {
     }
 }
 
-void Texture::Update2D(int mipLevel, int xoffset, int yoffset, int width, int height, Image::Format::Enum format, const byte *data) {
+void Texture::Update2D(int mipLevel, int xoffset, int yoffset, int width, int height, Image::Format format, const byte *data) {
     graphics.SetTextureSubImage2D(mipLevel, xoffset, yoffset, width, height, format, data);
 }
 
-void Texture::Update3D(int mipLevel, int xoffset, int yoffset, int zoffset, int width, int height, int depth, Image::Format::Enum format, const byte *data) {
+void Texture::Update3D(int mipLevel, int xoffset, int yoffset, int zoffset, int width, int height, int depth, Image::Format format, const byte *data) {
     graphics.SetTextureSubImage3D(0, xoffset, yoffset, zoffset, width, height, depth, format, data);
 }
 
-void Texture::UpdateCubemap(int face, int mipLevel, int xoffset, int yoffset, int width, int height, Image::Format::Enum format, const byte *data) {
+void Texture::UpdateCubemap(int face, int mipLevel, int xoffset, int yoffset, int width, int height, Image::Format format, const byte *data) {
     graphics.SetTextureSubImageCube((Graphics::CubeMapFace::Enum)face, mipLevel, xoffset, yoffset, width, height, format, data);
 }
 
-void Texture::UpdateRect(int xoffset, int yoffset, int width, int height, Image::Format::Enum format, const byte *data) {
+void Texture::UpdateRect(int xoffset, int yoffset, int width, int height, Image::Format format, const byte *data) {
     graphics.SetTextureSubImageRect(xoffset, yoffset, width, height, format, data);
 }
 
-void Texture::GetTexels2D(int mipLevel, Image::Format::Enum format, void *pixels) const {
+void Texture::GetTexels2D(int mipLevel, Image::Format format, void *pixels) const {
     graphics.GetTextureImage2D(mipLevel, format, pixels);
 }
 
-void Texture::GetTexels3D(int mipLevel, Image::Format::Enum format, void *pixels) const {
+void Texture::GetTexels3D(int mipLevel, Image::Format format, void *pixels) const {
     graphics.GetTextureImage3D(mipLevel, format, pixels);
 }
 
-void Texture::GetTexelsCubemap(int face, int mipLevel, Image::Format::Enum format, void *pixels) const {
+void Texture::GetTexelsCubemap(int face, int mipLevel, Image::Format format, void *pixels) const {
     graphics.GetTextureImageCube((Graphics::CubeMapFace::Enum)face, mipLevel, format, pixels);
 }
 
-void Texture::GetTexelsRect(Image::Format::Enum format, void *pixels) const {
+void Texture::GetTexelsRect(Image::Format format, void *pixels) const {
     graphics.GetTextureImageRect(format, pixels);
 }
 
@@ -714,10 +714,10 @@ void Texture::GenerateMipmap() const {
 void Texture::GetCubeImageFromCubeTexture(const Texture *cubeTexture, int numMipLevels, Image &cubeImage) {
     Image faceImages[6];
 
-    Image::GammaSpace::Enum gammaSpace = Image::NeedFloatConversion(cubeTexture->GetFormat()) ? Image::GammaSpace::Linear : Image::GammaSpace::sRGB;
+    Image::GammaSpace gammaSpace = Image::NeedFloatConversion(cubeTexture->GetFormat()) ? Image::GammaSpace::Linear : Image::GammaSpace::sRGB;
 
     for (int faceIndex = 0; faceIndex < 6; faceIndex++) {
-        faceImages[faceIndex].Create2D(cubeTexture->GetWidth(), cubeTexture->GetWidth(), numMipLevels, cubeTexture->GetFormat(), gammaSpace, nullptr, 0);
+        faceImages[faceIndex].Create2D(cubeTexture->GetWidth(), cubeTexture->GetWidth(), numMipLevels, cubeTexture->GetFormat(), gammaSpace, nullptr, Image::Flag::None);
 
         cubeTexture->Bind();
 

@@ -19,7 +19,7 @@
 
 BE_NAMESPACE_BEGIN
 
-void CompressDXT1(const Image &srcImage, Image &dstImage, Image::CompressionQuality::Enum compressionQuality) {
+void CompressDXT1(const Image &srcImage, Image &dstImage, Image::CompressionQuality compressionQuality) {
     assert(srcImage.GetFormat() == Image::Format::RGBA_8_8_8_8);
 
     void (*CompressImage)(const byte *src, const int width, const int height, const int depth, byte *dst);
@@ -50,7 +50,7 @@ void CompressDXT1(const Image &srcImage, Image &dstImage, Image::CompressionQual
     }
 }
 
-void CompressDXT3(const Image &srcImage, Image &dstImage, Image::CompressionQuality::Enum compressionQuality) {
+void CompressDXT3(const Image &srcImage, Image &dstImage, Image::CompressionQuality compressionQuality) {
     assert(srcImage.GetFormat() == Image::Format::RGBA_8_8_8_8);
 
     void (*CompressImage)(const byte *src, const int width, const int height, const int depth, byte *dst);
@@ -81,7 +81,7 @@ void CompressDXT3(const Image &srcImage, Image &dstImage, Image::CompressionQual
     }
 }
 
-void CompressDXT5(const Image &srcImage, Image &dstImage, Image::CompressionQuality::Enum compressionQuality) {
+void CompressDXT5(const Image &srcImage, Image &dstImage, Image::CompressionQuality compressionQuality) {
     assert(srcImage.GetFormat() == Image::Format::RGBA_8_8_8_8);
 
     void (*CompressImage)(const byte *src, const int width, const int height, const int depth, byte *dst);
@@ -112,7 +112,7 @@ void CompressDXT5(const Image &srcImage, Image &dstImage, Image::CompressionQual
     }
 }
 
-void CompressDXN2(const Image &srcImage, Image &dstImage, Image::CompressionQuality::Enum compressionQuality) {
+void CompressDXN2(const Image &srcImage, Image &dstImage, Image::CompressionQuality compressionQuality) {
     assert(srcImage.GetFormat() == Image::Format::RGBA_8_8_8_8);
 
     void (*CompressImage)(const byte *src, const int width, const int height, const int depth, byte *dst);

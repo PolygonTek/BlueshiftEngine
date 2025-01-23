@@ -308,7 +308,7 @@ static void ResizeImageBicubicWithGamma(const byte *src, int srcWidth, int srcHe
 }
 
 template <typename T>
-static void ResizeImage(const T *src, int srcWidth, int srcHeight, T *dst, int dstWidth, int dstHeight, int numComponents, Image::ResampleFilter::Enum filter) {
+static void ResizeImage(const T *src, int srcWidth, int srcHeight, T *dst, int dstWidth, int dstHeight, int numComponents, Image::ResampleFilter filter) {
     switch (filter) {
     case Image::ResampleFilter::Nearest:
         ResizeImageNearest(src, srcWidth, srcHeight, dst, dstWidth, dstHeight, numComponents);
@@ -322,7 +322,7 @@ static void ResizeImage(const T *src, int srcWidth, int srcHeight, T *dst, int d
     }
 }
 
-static void ResizeImageWithGamma(const byte *src, int srcWidth, int srcHeight, byte *dst, int dstWidth, int dstHeight, int numComponents, Image::ResampleFilter::Enum filter, 
+static void ResizeImageWithGamma(const byte *src, int srcWidth, int srcHeight, byte *dst, int dstWidth, int dstHeight, int numComponents, Image::ResampleFilter filter, 
     const float (&gammaToLinear)[256], float (*linearToGamma)(float)) {
     switch (filter) {
     case Image::ResampleFilter::Nearest:
@@ -337,7 +337,7 @@ static void ResizeImageWithGamma(const byte *src, int srcWidth, int srcHeight, b
     }
 }
 
-bool Image::Resize(int dstWidth, int dstHeight, Image::ResampleFilter::Enum filter, Image &dstImage) const {
+bool Image::Resize(int dstWidth, int dstHeight, Image::ResampleFilter filter, Image &dstImage) const {
     assert(width && height);
     assert(dstWidth && dstHeight);
     
@@ -378,7 +378,7 @@ bool Image::Resize(int dstWidth, int dstHeight, Image::ResampleFilter::Enum filt
     return true;
 }
 
-bool Image::ResizeSelf(int dstWidth, int dstHeight, Image::ResampleFilter::Enum filter) {
+bool Image::ResizeSelf(int dstWidth, int dstHeight, Image::ResampleFilter filter) {
     Image dstImage;
     bool ret = Resize(dstWidth, dstHeight, filter, dstImage);
     if (ret) {

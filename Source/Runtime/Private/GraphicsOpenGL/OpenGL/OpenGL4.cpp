@@ -23,7 +23,7 @@ void OpenGL4::Init() {
     OpenGL3::Init();
 }
 
-bool OpenGL4::ImageFormatToGLFormat(Image::Format::Enum imageFormat, bool isSRGB, GLenum *glFormat, GLenum *glType, GLenum *glInternal) {
+bool OpenGL4::ImageFormatToGLFormat(Image::Format imageFormat, bool isSRGB, GLenum *glFormat, GLenum *glType, GLenum *glInternal) {
     switch (imageFormat) {
     case Image::Format::RGB_8_ETC2:
         if (glFormat)   *glFormat = isSRGB ? GL_COMPRESSED_SRGB8_ETC2 : GL_COMPRESSED_RGB8_ETC2;

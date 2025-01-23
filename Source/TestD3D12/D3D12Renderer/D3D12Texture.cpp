@@ -56,7 +56,7 @@ void D3D12Texture::Release() {
 }
 
 RHI::Texture *D3D12Renderer::CreateTexture(RHI::TextureType textureType, RHI::ResourceFlag flags, const BE1::Image *srcImage, RHI::ClearValue &clearValue, uint32_t sampleCount, RHI::GPUResourceState initialState) {
-    BE1::Image::Format::Enum srcFormat = srcImage->GetFormat();
+    BE1::Image::Format srcFormat = srcImage->GetFormat();
     bool isLinearSpace = srcImage->GetGammaSpace() == BE1::Image::GammaSpace::Linear;
 
     DXGI_FORMAT dxgiFormat;
@@ -287,6 +287,70 @@ RHI::Texture *D3D12Renderer::CreateTexture(RHI::TextureType textureType, RHI::Re
     }
 
     return texture;
+}
+
+RHI::Texture *D3D12Renderer::CreateTexture(RHI::TextureType textureType, RHI::ResourceFlag flags, const BE1::Image *srcImage, BE1::Image::Format dstFormat, bool useMipmaps) {
+    BE1::Image::Format srcFormat = srcImage->GetFormat();
+
+    bool srcCompressed = BE1::Image::IsCompressed(srcFormat);
+    bool dstCompressed = BE1::Image::IsCompressed(dstFormat);
+
+    bool srcFormatSupported = IsSupportedImageFormat(srcFormat);
+    bool dstFormatSupported = IsSupportedImageFormat(dstFormat);
+
+    if (!dstFormatSupported) {
+        BE_WARNLOG("D3D12Renderer::CreateTexture: Unsupported internal image format %s\n", BE1::Image::FormatName(dstFormat));
+        return nullptr;
+    }
+
+    BE1::Image uncompressedImage;
+
+    if (useMipmaps && srcImage->NumMipmaps() == 1) {
+        if (srcImage->IsPacked() || srcImage->IsCompressed()) {
+            // 밉맵을 생성해야 한다면, 지원되는 가장 비슷한 무압축 포맷으로 컨버팅한다.
+            BE1::Image::Format supportedUncompressedFormat = ToUncompressedImageFormat(srcFormat);
+
+            srcImage->ConvertFormat(supportedUncompressedFormat, uncompressedImage);
+            srcImage = &uncompressedImage;
+
+            srcFormat = supportedUncompressedFormat;
+            srcFormatSupported = IsSupportedImageFormat(srcFormat);
+            srcCompressed = false;
+        }
+    }
+
+    BE1::Image mipmapedImage;
+
+    // CPU 에서 밉맵을 직접 생성한다.
+    if (useMipmaps && srcImage->NumMipmaps() == 1) {
+        int w = srcImage->GetWidth();
+        int h = srcImage->GetHeight();
+        int d = srcImage->GetDepth();
+        int maxGenLevels = BE1::Image::MaxMipMapLevels(w, h, d);
+
+        mipmapedImage.Create(w, h, d, srcImage->NumSlices(), maxGenLevels, srcImage->GetFormat(), srcImage->GetGammaSpace(), nullptr, srcImage->GetFlags());
+        mipmapedImage.CopyFrom(*srcImage, 0, 1);
+        mipmapedImage.GenerateMipmaps();
+        srcImage = &mipmapedImage;
+    }
+
+    BE1::Image dstImage;
+
+    // dstFormat 으로 컨버팅
+    if (srcFormat != dstFormat) {
+        srcImage->ConvertFormat(dstFormat, dstImage);
+        srcImage = &dstImage;
+    }
+
+    return CreateTexture(textureType, flags, srcImage, RHI::ClearValue());
+}
+
+void D3D12Renderer::DestroyTexture(RHI::Texture *texture, bool immediate) {
+    if (immediate) {
+        delete texture;
+    } else {
+        MarkForDelete(texture);
+    }
 }
 
 int D3D12Renderer::CreateSubresource(RHI::Texture *texture, RHI::SubresourceType type, uint32_t firstSlice, uint32_t sliceCount, uint32_t firstMipLevel, uint32_t mipCount) {
@@ -542,75 +606,11 @@ int D3D12Renderer::CreateSubresourceUAV(D3D12Texture *texture, uint32_t firstSli
     return texture->uavDescriptors.Append(uavDescriptor);
 }
 
-RHI::Texture *D3D12Renderer::CreateTexture(RHI::TextureType textureType, RHI::ResourceFlag flags, const BE1::Image *srcImage, BE1::Image::Format::Enum dstFormat, bool useMipmaps) {
-    BE1::Image::Format::Enum srcFormat = srcImage->GetFormat();
-
-    bool srcCompressed = BE1::Image::IsCompressed(srcFormat);
-    bool dstCompressed = BE1::Image::IsCompressed(dstFormat);
-
-    bool srcFormatSupported = IsSupportedImageFormat(srcFormat);
-    bool dstFormatSupported = IsSupportedImageFormat(dstFormat);
-
-    if (!dstFormatSupported) {
-        BE_WARNLOG("D3D12Renderer::CreateTexture: Unsupported internal image format %s\n", BE1::Image::FormatName(dstFormat));
-        return nullptr;
-    }
-
-    BE1::Image uncompressedImage;
-
-    if (useMipmaps && srcImage->NumMipmaps() == 1) {
-        if (srcImage->IsPacked() || srcImage->IsCompressed()) {
-            // 밉맵을 생성해야 한다면, 지원되는 가장 비슷한 무압축 포맷으로 컨버팅한다.
-            BE1::Image::Format::Enum supportedUncompressedFormat = ToUncompressedImageFormat(srcFormat);
-
-            srcImage->ConvertFormat(supportedUncompressedFormat, uncompressedImage);
-            srcImage = &uncompressedImage;
-
-            srcFormat = supportedUncompressedFormat;
-            srcFormatSupported = IsSupportedImageFormat(srcFormat);
-            srcCompressed = false;
-        }
-    }
-
-    BE1::Image mipmapedImage;
-
-    // CPU 에서 밉맵을 직접 생성한다.
-    if (useMipmaps && srcImage->NumMipmaps() == 1) {
-        int w = srcImage->GetWidth();
-        int h = srcImage->GetHeight();
-        int d = srcImage->GetDepth();
-        int maxGenLevels = BE1::Image::MaxMipMapLevels(w, h, d);
-
-        mipmapedImage.Create(w, h, d, srcImage->NumSlices(), maxGenLevels, srcImage->GetFormat(), srcImage->GetGammaSpace(), nullptr, srcImage->GetFlags());
-        mipmapedImage.CopyFrom(*srcImage, 0, 1);
-        mipmapedImage.GenerateMipmaps();
-        srcImage = &mipmapedImage;
-    }
-
-    BE1::Image dstImage;
-
-    // dstFormat 으로 컨버팅
-    if (srcFormat != dstFormat) {
-        srcImage->ConvertFormat(dstFormat, dstImage);
-        srcImage = &dstImage;
-    }
-
-    return CreateTexture(textureType, flags, srcImage, RHI::ClearValue());
-}
-
-void D3D12Renderer::DestroyTexture(RHI::Texture *texture, bool immediate) {
-    if (immediate) {
-        delete texture;
-    } else {
-        MarkForDelete(texture);
-    }
-}
-
-void D3D12Renderer::GetTextureImage2D(RHI::Texture *texture, int level, BE1::Image::Format::Enum dstFormat, void *outPixels) {
+void D3D12Renderer::GetTextureImage2D(RHI::Texture *texture, int level, BE1::Image::Format dstFormat, void *outPixels) {
     D3D12Texture *d3d12Texture = static_cast<D3D12Texture *>(texture);
     assert(d3d12Texture);
 
-    BE1::Image::Format::Enum textureImageFormat;
+    BE1::Image::Format textureImageFormat;
     bool isSRGB;
     if (!D3D12Renderer::DXGIFormatToImageFormat(d3d12Texture->textureDesc.Format, &textureImageFormat, &isSRGB)) {
         BE_WARNLOG("D3D12Texture::GetTexture2D: Unsupported DXGI format %i\n", d3d12Texture->textureDesc.Format);
@@ -662,7 +662,7 @@ void D3D12Renderer::GetTextureImage2D(RHI::Texture *texture, int level, BE1::Ima
     BE1::Image tempImage;
     if (textureImageFormat != dstFormat) {
         // 컨버팅이 필요하다면, 리드백 버퍼의 내용을 tempImage 에 카피할 준비를 한다.
-        tempImage.Create2D(d3d12Texture->textureDesc.Width, d3d12Texture->textureDesc.Height, 1, textureImageFormat, isSRGB ? BE1::Image::GammaSpace::sRGB : BE1::Image::GammaSpace::Linear, nullptr, 0);
+        tempImage.Create2D(d3d12Texture->textureDesc.Width, d3d12Texture->textureDesc.Height, 1, textureImageFormat, isSRGB ? BE1::Image::GammaSpace::sRGB : BE1::Image::GammaSpace::Linear, nullptr, BE1::Image::Flag::None);
         dstPtr = tempImage.GetPixels();
     } else {
         // 컨버팅할 필요가 없다면, 리드백 버퍼의 내용을 그대로 outPixels 로 카피할 준비를 한다.
@@ -693,7 +693,7 @@ void D3D12Renderer::GetTextureImage2D(RHI::Texture *texture, int level, BE1::Ima
     }
 }
 
-bool D3D12Renderer::SetTextureSubImage2D(RHI::Texture *texture, int level, int x, int y, int width, int height, BE1::Image::Format::Enum srcFormat, const void *pixels) {
+bool D3D12Renderer::SetTextureSubImage2D(RHI::Texture *texture, int level, int x, int y, int width, int height, BE1::Image::Format srcFormat, const void *pixels) {
     D3D12Texture *d3d12Texture = static_cast<D3D12Texture *>(texture);
     assert(d3d12Texture);
 
@@ -783,7 +783,7 @@ bool D3D12Renderer::SetTextureSubImage2D(RHI::Texture *texture, int level, int x
     return true;
 }
 
-bool D3D12Renderer::SetTextureSubImage3D(RHI::Texture *texture, int level, int x, int y, int z, int width, int height, int depth, BE1::Image::Format::Enum srcFormat, const void *pixels) {
+bool D3D12Renderer::SetTextureSubImage3D(RHI::Texture *texture, int level, int x, int y, int z, int width, int height, int depth, BE1::Image::Format srcFormat, const void *pixels) {
     D3D12Texture *d3d12Texture = static_cast<D3D12Texture *>(texture);
     assert(d3d12Texture);
 

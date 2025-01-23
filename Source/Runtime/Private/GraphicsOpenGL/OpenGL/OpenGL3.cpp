@@ -167,7 +167,7 @@ uint64_t OpenGL3::QueryResult64(GLuint queryId) {
     return result;
 }
 
-void OpenGL3::SetTextureSwizzling(GLenum target, Image::Format::Enum format) {
+void OpenGL3::SetTextureSwizzling(GLenum target, Image::Format format) {
     static constexpr GLint swiz_l[4] = { GL_RED, GL_RED, GL_RED, GL_ONE };
     static constexpr GLint swiz_a[4] = { GL_ONE, GL_ONE, GL_ONE, GL_RED };
     static constexpr GLint swiz_la[4] = { GL_RED, GL_RED, GL_RED, GL_GREEN };
@@ -195,7 +195,7 @@ void OpenGL3::SetTextureSwizzling(GLenum target, Image::Format::Enum format) {
     }
 }
 
-bool OpenGL3::ImageFormatToGLFormat(Image::Format::Enum imageFormat, bool isSRGB, GLenum *glFormat, GLenum *glType, GLenum *glInternal) {
+bool OpenGL3::ImageFormatToGLFormat(Image::Format imageFormat, bool isSRGB, GLenum *glFormat, GLenum *glType, GLenum *glInternal) {
     switch (imageFormat) {
     case Image::Format::L_8:
     case Image::Format::A_8:
@@ -454,7 +454,7 @@ bool OpenGL3::ImageFormatToGLFormat(Image::Format::Enum imageFormat, bool isSRGB
     return false;
 }
 
-Image::Format::Enum OpenGL3::ToCompressedImageFormat(Image::Format::Enum inFormat, bool useNormalMap) {
+Image::Format OpenGL3::ToCompressedImageFormat(Image::Format inFormat, bool useNormalMap) {
     if (Image::IsCompressed(inFormat)) {
         assert(0);
         return inFormat;
@@ -463,7 +463,7 @@ Image::Format::Enum OpenGL3::ToCompressedImageFormat(Image::Format::Enum inForma
     int redBits, greenBits, blueBits, alphaBits;
     Image::GetBits(inFormat, &redBits, &greenBits, &blueBits, &alphaBits);
 
-    Image::Format::Enum outFormat = inFormat;
+    Image::Format outFormat = inFormat;
 
     if (redBits > 0 && greenBits > 0 && blueBits > 0) {
         if (Image::IsFloatFormat(inFormat) || Image::IsHalfFormat(inFormat)) {

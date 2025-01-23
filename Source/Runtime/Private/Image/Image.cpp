@@ -93,7 +93,7 @@ float Image::sRGBToLinearTable[256] = {
     0.938685725169219, 0.947306533426946, 0.955973349925421, 0.964686244552961, 0.973445287039244, 0.982250546956257, 0.991102093719252, 1.0,
 };
 
-Image &Image::InitFromMemory(int width, int height, int depth, int numSlices, int numMipmaps, Image::Format::Enum format, GammaSpace::Enum gammaSpace, byte *data, int flags) {
+Image &Image::InitFromMemory(int width, int height, int depth, int numSlices, int numMipmaps, Image::Format format, GammaSpace gammaSpace, byte *data, Flag flags) {
     Clear();
 
     this->width = width;
@@ -110,7 +110,7 @@ Image &Image::InitFromMemory(int width, int height, int depth, int numSlices, in
     return *this;
 }
 
-Image &Image::Create(int width, int height, int depth, int numSlices, int numMipmaps, Image::Format::Enum format, GammaSpace::Enum gammaSpace, const byte *data, int flags) {
+Image &Image::Create(int width, int height, int depth, int numSlices, int numMipmaps, Image::Format format, GammaSpace gammaSpace, const byte *data, Flag flags) {
     Clear();
 
     this->width = width;
@@ -192,7 +192,7 @@ Image &Image::CreateCubeFromEquirectangular(const Image &equirectangularImage, i
                 float dstS = (dstX + 0.5f) * invSize;
                 float dstT = (dstY + 0.5f) * invSize;
 
-                Vec3 dir = FaceToCubeMapCoords((Image::CubeMapFace::Enum)faceIndex, dstS, dstT);
+                Vec3 dir = FaceToCubeMapCoords((Image::CubeMapFace)faceIndex, dstS, dstT);
 
                 float theta, phi;
                 dir.ToSpherical(theta, phi);
@@ -333,7 +333,7 @@ void Image::Clear() {
     }
 }
 
-Color4 Image::Sample2DNearest(const byte *src, const Vec2 &st, SampleWrapMode::Enum wrapModeS, SampleWrapMode::Enum wrapModeT) const {
+Color4 Image::Sample2DNearest(const byte *src, const Vec2 &st, SampleWrapMode wrapModeS, SampleWrapMode wrapModeT) const {
     const ImageFormatInfo *formatInfo = GetImageFormatInfo(format);
 
     int bpp = BytesPerPixel();
@@ -352,7 +352,7 @@ Color4 Image::Sample2DNearest(const byte *src, const Vec2 &st, SampleWrapMode::E
     return outputColor;
 }
 
-Color4 Image::Sample2DBilinear(const byte *src, const Vec2 &st, SampleWrapMode::Enum wrapModeS, SampleWrapMode::Enum wrapModeT) const {
+Color4 Image::Sample2DBilinear(const byte *src, const Vec2 &st, SampleWrapMode wrapModeS, SampleWrapMode wrapModeT) const {
     const ImageFormatInfo *formatInfo = GetImageFormatInfo(format);
 
     int bpp = BytesPerPixel();
@@ -409,7 +409,7 @@ Color4 Image::Sample2DBilinear(const byte *src, const Vec2 &st, SampleWrapMode::
     return outputColor;
 }
 
-Color4 Image::Sample2D(const Vec2 &st, SampleWrapMode::Enum wrapModeS, SampleWrapMode::Enum wrapModeT, SampleFilter::Enum filter, int level) const {
+Color4 Image::Sample2D(const Vec2 &st, SampleWrapMode wrapModeS, SampleWrapMode wrapModeT, SampleFilter filter, int level) const {
     if (IsCompressed()) {
         assert(0);
         return Color4::zero;
@@ -428,7 +428,7 @@ Color4 Image::Sample2D(const Vec2 &st, SampleWrapMode::Enum wrapModeS, SampleWra
     return outputColor;
 }
 
-Color4 Image::SampleCube(const Vec3 &str, SampleFilter::Enum filter, int level) const {
+Color4 Image::SampleCube(const Vec3 &str, SampleFilter filter, int level) const {
     if (IsCompressed()) {
         assert(0);
         return Color4::zero;
@@ -437,7 +437,7 @@ Color4 Image::SampleCube(const Vec3 &str, SampleFilter::Enum filter, int level) 
     Color4 outputColor = Color4(0, 0, 0, 1);
 
     Vec2 st;
-    CubeMapFace::Enum cubeMapFace = CubeMapToFaceCoords(str, st[0], st[1]);
+    CubeMapFace cubeMapFace = CubeMapToFaceCoords(str, st[0], st[1]);
     st[0] *= width;
     st[1] *= height;
 
@@ -452,7 +452,7 @@ Color4 Image::SampleCube(const Vec3 &str, SampleFilter::Enum filter, int level) 
     return outputColor;
 }
 
-Vec3 Image::FaceToCubeMapCoords(CubeMapFace::Enum cubeMapFace, float s, float t) {
+Vec3 Image::FaceToCubeMapCoords(CubeMapFace cubeMapFace, float s, float t) {
     float sc = s * 2.0f - 1.0f;
     float tc = t * 2.0f - 1.0f;
 
@@ -473,7 +473,7 @@ Vec3 Image::FaceToCubeMapCoords(CubeMapFace::Enum cubeMapFace, float s, float t)
     return Vec3(glCubeMapCoords.z, glCubeMapCoords.x, glCubeMapCoords.y);
 }
 
-Image::CubeMapFace::Enum Image::CubeMapToFaceCoords(const Vec3 &cubeMapCoords, float &s, float &t) {
+Image::CubeMapFace Image::CubeMapToFaceCoords(const Vec3 &cubeMapCoords, float &s, float &t) {
     // Convert cubemap coordinates from z-up axis to GL axis.
     Vec3 glCubeMapCoords = Vec3(cubeMapCoords.y, cubeMapCoords.z, cubeMapCoords.x);
 
@@ -518,7 +518,7 @@ Image::CubeMapFace::Enum Image::CubeMapToFaceCoords(const Vec3 &cubeMapCoords, f
     s = (sc / ama + 1.0f) * 0.5f;
     t = (tc / ama + 1.0f) * 0.5f;
 
-    return (CubeMapFace::Enum)faceIndex;
+    return (CubeMapFace)faceIndex;
 }
 
 static float AreaElement(float x, float y) {
@@ -582,23 +582,23 @@ int Image::SizeInBytesForFace(int firstLevel, int numLevels) const {
 //
 //--------------------------------------------------------------------------------------------------
 
-const char *Image::FormatName(Image::Format::Enum imageFormat) {
+const char *Image::FormatName(Image::Format imageFormat) {
     return GetImageFormatInfo(imageFormat)->name;
 }
 
-int Image::BytesPerPixel(Image::Format::Enum imageFormat) {
+int Image::BytesPerPixel(Image::Format imageFormat) {
     return !IsCompressed(imageFormat) ? GetImageFormatInfo(imageFormat)->size : 0;
 }
 
-int Image::BytesPerBlock(Image::Format::Enum imageFormat) {
+int Image::BytesPerBlock(Image::Format imageFormat) {
     return IsCompressed(imageFormat) ? GetImageFormatInfo(imageFormat)->size : 0;
 }
 
-int Image::NumComponents(Image::Format::Enum imageFormat) {
+int Image::NumComponents(Image::Format imageFormat) {
     return GetImageFormatInfo(imageFormat)->numComponents;
 }
 
-void Image::GetBits(Image::Format::Enum imageFormat, int *redBits, int *greenBits, int *blueBits, int *alphaBits) {
+void Image::GetBits(Image::Format imageFormat, int *redBits, int *greenBits, int *blueBits, int *alphaBits) {
     const ImageFormatInfo *formatInfo = GetImageFormatInfo(imageFormat);
     if (redBits)    *redBits    = formatInfo->redBits;
     if (greenBits)  *greenBits  = formatInfo->greenBits;
@@ -606,9 +606,9 @@ void Image::GetBits(Image::Format::Enum imageFormat, int *redBits, int *greenBit
     if (alphaBits)  *alphaBits  = formatInfo->alphaBits;
 }
 
-bool Image::HasAlpha(Image::Format::Enum imageFormat) {
+bool Image::HasAlpha(Image::Format imageFormat) {
     const ImageFormatInfo *formatInfo = GetImageFormatInfo(imageFormat);
-    if (formatInfo->type & FormatType::Compressed) {
+    if (HasFlag(formatInfo->type, FormatType::Compressed)) {
         switch (imageFormat) {
         case Format::DXT1: // TODO: check 1-bit-alpha is used
         case Format::DXT3:
@@ -630,9 +630,9 @@ bool Image::HasAlpha(Image::Format::Enum imageFormat) {
     return formatInfo->alphaBits > 0 ? true : false;
 }
 
-bool Image::HasOneBitAlpha(Image::Format::Enum imageFormat) {
+bool Image::HasOneBitAlpha(Image::Format imageFormat) {
     const ImageFormatInfo *formatInfo = GetImageFormatInfo(imageFormat);
-    if (formatInfo->type & FormatType::Compressed) {
+    if (HasFlag(formatInfo->type, FormatType::Compressed)) {
         switch (imageFormat) {
         case Format::DXT1: // TODO: check 1-bit-alpha is used
         case Format::RGBA_8_1_ETC2:
@@ -644,33 +644,33 @@ bool Image::HasOneBitAlpha(Image::Format::Enum imageFormat) {
     return formatInfo->alphaBits == 1 ? true : false;
 }
 
-bool Image::IsPacked(Image::Format::Enum imageFormat) {
-    return !!(GetImageFormatInfo(imageFormat)->type & FormatType::Packed);
+bool Image::IsPacked(Image::Format imageFormat) {
+    return HasFlag(GetImageFormatInfo(imageFormat)->type, FormatType::Packed);
 }
 
-bool Image::IsCompressed(Image::Format::Enum imageFormat) {
-    return !!(GetImageFormatInfo(imageFormat)->type & FormatType::Compressed);
+bool Image::IsCompressed(Image::Format imageFormat) {
+    return HasFlag(GetImageFormatInfo(imageFormat)->type, FormatType::Compressed);
 }
 
-bool Image::IsFloatFormat(Image::Format::Enum imageFormat) {
-    return !!(GetImageFormatInfo(imageFormat)->type & FormatType::Float);
+bool Image::IsFloatFormat(Image::Format imageFormat) {
+    return HasFlag(GetImageFormatInfo(imageFormat)->type, FormatType::Float);
 }
 
-bool Image::IsHalfFormat(Image::Format::Enum imageFormat) {
-    return !!(GetImageFormatInfo(imageFormat)->type & FormatType::Half);
+bool Image::IsHalfFormat(Image::Format imageFormat) {
+    return HasFlag(GetImageFormatInfo(imageFormat)->type, FormatType::Half);
 }
 
-bool Image::IsDepthFormat(Image::Format::Enum imageFormat) {
-    return !!(GetImageFormatInfo(imageFormat)->type & FormatType::Depth);
+bool Image::IsDepthFormat(Image::Format imageFormat) {
+    return HasFlag(GetImageFormatInfo(imageFormat)->type, FormatType::Depth);
 }
 
-bool Image::IsDepthStencilFormat(Image::Format::Enum imageFormat) {
-    return (GetImageFormatInfo(imageFormat)->type & FormatType::DepthStencil) == FormatType::DepthStencil;
+bool Image::IsDepthStencilFormat(Image::Format imageFormat) {
+    return HasFlag(GetImageFormatInfo(imageFormat)->type, FormatType::DepthStencil);
 }
 
-bool Image::NeedFloatConversion(Image::Format::Enum imageFormat) {
+bool Image::NeedFloatConversion(Image::Format imageFormat) {
     const ImageFormatInfo *formatInfo = GetImageFormatInfo(imageFormat);
-    if (formatInfo->type & (FormatType::Float | FormatType::SNorm)) {
+    if (HasFlag(formatInfo->type, FormatType::Float) || HasFlag(formatInfo->type, FormatType::SNorm)) {
         return true;
     }
     if (formatInfo->redBits > 8 || formatInfo->greenBits > 8 || formatInfo->blueBits > 8 || formatInfo->alphaBits > 8) {
@@ -685,7 +685,7 @@ bool Image::NeedFloatConversion(Image::Format::Enum imageFormat) {
     return false;
 }
 
-uint64_t Image::MemRequired(int width, int height, int depth, int numMipmaps, Image::Format::Enum imageFormat) {
+uint64_t Image::MemRequired(int width, int height, int depth, int numMipmaps, Image::Format imageFormat) {
     int w = width;
     int h = height;
     int d = depth;

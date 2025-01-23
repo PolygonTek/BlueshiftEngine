@@ -30,7 +30,7 @@ public:
     void                            CreateRTVs();
 
     virtual bool                    IsSupportsHDR() const override;
-    virtual bool                    GetFormat(BE1::Image::Format::Enum *imageFormat, bool *isSRGB) const override;
+    virtual bool                    GetFormat(BE1::Image::Format *imageFormat, bool *isSRGB) const override;
     virtual uint32_t                GetWidth() const override { return width; }
     virtual uint32_t                GetHeight() const override { return height; }
 

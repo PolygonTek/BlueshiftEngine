@@ -2269,34 +2269,34 @@ static void RGBA32FToRGB11F11F10F(const byte *src, byte *dst, int numPixels) {
 
 // 컬러 채널 표기(RGBALX)는 바이트 주소체계와 선형이다 (D3D식 표기와 반대)
 static const ImageFormatInfo imageFormatInfo[] = {
-    // +----------------------------------------------------------------------------------- name
-    // |                        +---------------------------------------------------------- size (bytes per pixel or bytes per block)
-    // |                        |   +------------------------------------------------------ number of components
-    // |                        |   |   +-------------------------------------------------- r bits
-    // |                        |   |   |   +---------------------------------------------- g bits
-    // |                        |   |   |   |   +------------------------------------------ b bits
-    // |                        |   |   |   |   |   +-------------------------------------- a bits
-    // |                        |   |   |   |   |   |   +---------------------------------- type
-    // |                        |   |   |   |   |   |   |  +------------------------------- unpackRGBA8888
-    // |                        |   |   |   |   |   |   |  |        +---------------------- packRGBA8888
-    // |                        |   |   |   |   |   |   |  |        |        +------------- unpackRGBA32F
-    // |                        |   |   |   |   |   |   |  |        |        |        +---- packRGBA32F
-    // |                        |   |   |   |   |   |   |  |        |        |        |
-    { "Unknown",                0,  0,  0,  0,  0,  0,  0, nullptr, nullptr, nullptr, nullptr },
-    { "R_32_TYPELESS",          4,  1,  32, 0,  0,  0,  0, nullptr, nullptr, nullptr, nullptr },
-    { "L_8",                    1,  1,  0,  0,  0,  0,  0, L8ToRGBA8888, RGBA8888ToL8, L8ToRGBA32F, RGBA32FToL8 },
-    { "A_8",                    1,  1,  0,  0,  0,  8,  0, A8ToRGBA8888, RGBA8888ToA8, A8ToRGBA32F, RGBA32FToA8 },
-    { "LA_8_8",                 2,  2,  0,  0,  0,  8,  0, LA88ToRGBA8888, RGBA8888ToLA88, LA88ToRGBA32F, RGBA32FToLA88 },
-    { "R_8",                    1,  1,  8,  0,  0,  0,  0, R8ToRGBA8888, RGBA8888ToR8, R8ToRGBA32F, RGBA32FToR8 },
-    { "RG_8_8",                 2,  2,  8,  8,  0,  0,  0, RG88ToRGBA8888, RGBA8888ToRG88, RG88ToRGBA32F, RGBA32FToRG88 },
-    { "RGB_8_8_8",              3,  3,  8,  8,  8,  0,  0, RGB888ToRGBA8888, RGBA8888ToRGB888, RGB888ToRGBA32F, RGBA32FToRGB888 },
-    { "BGR_8_8_8",              3,  3,  8,  8,  8,  0,  0, BGR888ToRGBA8888, RGBA8888ToBGR888, BGR888ToRGBA32F, RGBA32FToBGR888 },
-    { "RGBX_8_8_8_8",           4,  4,  8,  8,  8,  0,  0, RGBX8888ToRGBA8888, RGBA8888ToRGBX8888, RGBX8888ToRGBA32F, RGBA32FToRGBX8888 },
-    { "BGRX_8_8_8_8",           4,  4,  8,  8,  8,  0,  0, BGRX8888ToRGBA8888, RGBA8888ToBGRX8888, BGRX8888ToRGBA32F, RGBA32FToBGRX8888 },
-    { "RGBA_8_8_8_8",           4,  4,  8,  8,  8,  8,  0, RGBA8888ToRGBA8888, RGBA8888ToRGBA8888, RGBA8888ToRGBA32F, RGBA32FToRGBA8888 },
-    { "BGRA_8_8_8_8",           4,  4 , 8,  8,  8,  8,  0, BGRA8888ToRGBA8888, RGBA8888ToBGRA8888, BGRA8888ToRGBA32F, RGBA32FToBGRA8888 },
-    { "ABGR_8_8_8_8",           4,  4,  8,  8,  8,  8,  0, ABGR8888ToRGBA8888, RGBA8888ToABGR8888, ABGR8888ToRGBA32F, RGBA32FToABGR8888 },
-    { "ARGB_8_8_8_8",           4,  4,  8,  8,  8,  8,  0, ARGB8888ToRGBA8888, RGBA8888ToARGB8888, ARGB8888ToRGBA32F, RGBA32FToARGB8888 },
+    // +--------------------------------------------------------------------------------------------------------- name
+    // |                        +-------------------------------------------------------------------------------- size (bytes per pixel or bytes per block)
+    // |                        |   +---------------------------------------------------------------------------- number of components
+    // |                        |   |   +------------------------------------------------------------------------ r bits
+    // |                        |   |   |   +-------------------------------------------------------------------- g bits
+    // |                        |   |   |   |   +---------------------------------------------------------------- b bits
+    // |                        |   |   |   |   |   +------------------------------------------------------------ a bits
+    // |                        |   |   |   |   |   |   +-------------------------------------------------------- type
+    // |                        |   |   |   |   |   |   |                        +------------------------------- unpackRGBA8888
+    // |                        |   |   |   |   |   |   |                        |        +---------------------- packRGBA8888
+    // |                        |   |   |   |   |   |   |                        |        |        +------------- unpackRGBA32F
+    // |                        |   |   |   |   |   |   |                        |        |        |        +---- packRGBA32F
+    // |                        |   |   |   |   |   |   |                        |        |        |        |
+    { "Unknown",                0,  0,  0,  0,  0,  0,  Image::FormatType::None, nullptr, nullptr, nullptr, nullptr },
+    { "R_32_TYPELESS",          4,  1,  32, 0,  0,  0,  Image::FormatType::None, nullptr, nullptr, nullptr, nullptr },
+    { "L_8",                    1,  1,  0,  0,  0,  0,  Image::FormatType::None, L8ToRGBA8888, RGBA8888ToL8, L8ToRGBA32F, RGBA32FToL8 },
+    { "A_8",                    1,  1,  0,  0,  0,  8,  Image::FormatType::None, A8ToRGBA8888, RGBA8888ToA8, A8ToRGBA32F, RGBA32FToA8 },
+    { "LA_8_8",                 2,  2,  0,  0,  0,  8,  Image::FormatType::None, LA88ToRGBA8888, RGBA8888ToLA88, LA88ToRGBA32F, RGBA32FToLA88 },
+    { "R_8",                    1,  1,  8,  0,  0,  0,  Image::FormatType::None, R8ToRGBA8888, RGBA8888ToR8, R8ToRGBA32F, RGBA32FToR8 },
+    { "RG_8_8",                 2,  2,  8,  8,  0,  0,  Image::FormatType::None, RG88ToRGBA8888, RGBA8888ToRG88, RG88ToRGBA32F, RGBA32FToRG88 },
+    { "RGB_8_8_8",              3,  3,  8,  8,  8,  0,  Image::FormatType::None, RGB888ToRGBA8888, RGBA8888ToRGB888, RGB888ToRGBA32F, RGBA32FToRGB888 },
+    { "BGR_8_8_8",              3,  3,  8,  8,  8,  0,  Image::FormatType::None, BGR888ToRGBA8888, RGBA8888ToBGR888, BGR888ToRGBA32F, RGBA32FToBGR888 },
+    { "RGBX_8_8_8_8",           4,  4,  8,  8,  8,  0,  Image::FormatType::None, RGBX8888ToRGBA8888, RGBA8888ToRGBX8888, RGBX8888ToRGBA32F, RGBA32FToRGBX8888 },
+    { "BGRX_8_8_8_8",           4,  4,  8,  8,  8,  0,  Image::FormatType::None, BGRX8888ToRGBA8888, RGBA8888ToBGRX8888, BGRX8888ToRGBA32F, RGBA32FToBGRX8888 },
+    { "RGBA_8_8_8_8",           4,  4,  8,  8,  8,  8,  Image::FormatType::None, RGBA8888ToRGBA8888, RGBA8888ToRGBA8888, RGBA8888ToRGBA32F, RGBA32FToRGBA8888 },
+    { "BGRA_8_8_8_8",           4,  4 , 8,  8,  8,  8,  Image::FormatType::None, BGRA8888ToRGBA8888, RGBA8888ToBGRA8888, BGRA8888ToRGBA32F, RGBA32FToBGRA8888 },
+    { "ABGR_8_8_8_8",           4,  4,  8,  8,  8,  8,  Image::FormatType::None, ABGR8888ToRGBA8888, RGBA8888ToABGR8888, ABGR8888ToRGBA32F, RGBA32FToABGR8888 },
+    { "ARGB_8_8_8_8",           4,  4,  8,  8,  8,  8,  Image::FormatType::None, ARGB8888ToRGBA8888, RGBA8888ToARGB8888, ARGB8888ToRGBA32F, RGBA32FToARGB8888 },
 
     // signed norm format -------------------------------------------------------------------------
     { "R_8_SNORM",              1,  1,  8,  0,  0,  0,  Image::FormatType::SNorm, nullptr, nullptr, R8SNormToRGBA32F, RGBA32FToR8SNorm },
@@ -2378,12 +2378,12 @@ static const ImageFormatInfo imageFormatInfo[] = {
     { "RGBA_IA_ATC",            16, 4,  0,  0,  0,  0,  Image::FormatType::Compressed, nullptr, nullptr, nullptr, nullptr },
 };
 
-const ImageFormatInfo *GetImageFormatInfo(Image::Format::Enum imageFormat) {
+const ImageFormatInfo *GetImageFormatInfo(Image::Format imageFormat) {
     assert(imageFormat < Image::Format::Count);
-    return &imageFormatInfo[imageFormat];
+    return &imageFormatInfo[to_int(imageFormat)];
 }
 
-bool CompressedFormatMinDimensions(Image::Format::Enum imageFormat, int &minWidth, int &minHeight) {
+bool CompressedFormatMinDimensions(Image::Format imageFormat, int &minWidth, int &minHeight) {
     switch (imageFormat) {
     case Image::Format::DXT1:
     case Image::Format::DXT3:
@@ -2436,7 +2436,7 @@ bool CompressedFormatMinDimensions(Image::Format::Enum imageFormat, int &minWidt
     return false;
 }
 
-bool CompressedFormatBlockDimensions(Image::Format::Enum imageFormat, int &blockWidth, int &blockHeight) {
+bool CompressedFormatBlockDimensions(Image::Format imageFormat, int &blockWidth, int &blockHeight) {
     switch (imageFormat) {
     case Image::Format::DXT1:
     case Image::Format::DXT3:

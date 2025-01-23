@@ -110,22 +110,22 @@ void OpenGLBase::Init() {
 #endif
 }
 
-bool OpenGLBase::ImageFormatToGLFormat(Image::Format::Enum imageFormat, bool isSRGB, GLenum *glFormat, GLenum *glType, GLenum *glInternal) {
+bool OpenGLBase::ImageFormatToGLFormat(Image::Format imageFormat, bool isSRGB, GLenum *glFormat, GLenum *glType, GLenum *glInternal) {
     return false;
 }
 
-Image::Format::Enum OpenGLBase::ToCompressedImageFormat(Image::Format::Enum inFormat, bool useNormalMap) {
+Image::Format OpenGLBase::ToCompressedImageFormat(Image::Format inFormat, bool useNormalMap) {
     assert(0);
     return Image::Format::Unknown;
 }
 
-Image::Format::Enum OpenGLBase::ToUncompressedImageFormat(Image::Format::Enum inFormat) {
+Image::Format OpenGLBase::ToUncompressedImageFormat(Image::Format inFormat) {
     if (!Image::IsCompressed(inFormat)) {
         assert(0);
         return inFormat;
     }
 
-    Image::Format::Enum outFormat;
+    Image::Format outFormat;
 
     switch (inFormat) {
     case Image::Format::DXN1:

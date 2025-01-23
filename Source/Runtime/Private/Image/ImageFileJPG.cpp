@@ -152,7 +152,7 @@ bool Image::LoadJPGFromMemory(const char *name, const byte *data, size_t size) {
   /* Make a one-row-high sample array that will go away when done with image */
   buffer = (*cinfo.mem->alloc_sarray)((j_common_ptr) &cinfo, JPOOL_IMAGE, row_stride, 1); 
 
-  Image::Format::Enum imageFormat;
+  Image::Format imageFormat;
   switch (cinfo.output_components) {
   case 1:
     imageFormat = Format::L_8;
@@ -168,7 +168,7 @@ bool Image::LoadJPGFromMemory(const char *name, const byte *data, size_t size) {
     break;
   }
 
-  Create2D(cinfo.output_width, cinfo.output_height, 1, imageFormat, GammaSpace::sRGB, nullptr, 0);
+  Create2D(cinfo.output_width, cinfo.output_height, 1, imageFormat, GammaSpace::sRGB, nullptr, Flag::None);
   
   byte *ptr = this->pic;
 

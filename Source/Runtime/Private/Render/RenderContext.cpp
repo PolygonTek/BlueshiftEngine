@@ -81,7 +81,7 @@ void RenderContext::Shutdown() {
     graphics.DestroyContext(contextHandle);
 }
 
-static Image::Format::Enum GetScreenImageFormat() {
+static Image::Format GetScreenImageFormat() {
     if (r_HDR.GetInteger() == 0) {
         return Image::Format::RGBA_8_8_8_8;
     }
@@ -106,7 +106,7 @@ void RenderContext::InitScreenMapRT() {
 
     int screenTextureFlags = Texture::Flag::Clamp | Texture::Flag::NoMipmaps | Texture::Flag::HighQuality | Texture::Flag::NonPowerOfTwo | Texture::Flag::HighPriority;
 
-    Image::Format::Enum screenImageFormat = GetScreenImageFormat();
+    Image::Format screenImageFormat = GetScreenImageFormat();
 
     screenColorTexture = textureManager.AllocTexture(va("_%i_screenColor", (int)contextHandle));
     screenColorTexture->CreateEmpty(Graphics::TextureType::Texture2D, renderingWidth, renderingHeight, 1, 1, 1, screenImageFormat, screenTextureFlags | Texture::Flag::SRGBColorSpace);
@@ -314,9 +314,9 @@ void RenderContext::InitHdrMapRT() {
     // HDR RT 
     //--------------------------------------
    
-    Image::Format::Enum screenImageFormat = GetScreenImageFormat();
+    Image::Format screenImageFormat = GetScreenImageFormat();
     Image hdrBloomImage;
-    hdrBloomImage.Create2D(quarterWidth, quarterHeight, 1, screenImageFormat, Image::GammaSpace::Linear, nullptr, 0);
+    hdrBloomImage.Create2D(quarterWidth, quarterHeight, 1, screenImageFormat, Image::GammaSpace::Linear, nullptr, Image::Flag::None);
 
     for (int i = 0; i < COUNT_OF(hdrBloomRT); i++) {
         hdrBloomTexture[i] = textureManager.AllocTexture(va("_%i_hdrBloom%i", (int)contextHandle, i));
@@ -325,7 +325,7 @@ void RenderContext::InitHdrMapRT() {
         hdrBloomRT[i] = RenderTarget::Create(hdrBloomTexture[i], nullptr, 0);
     }
 
-    Image::Format::Enum lumImageFormat = Image::Format::L_16F;
+    Image::Format lumImageFormat = Image::Format::L_16F;
     if (r_HDR.GetInteger() == 3) {
         lumImageFormat = Image::Format::L_32F;
     }
@@ -396,8 +396,8 @@ void RenderContext::InitShadowMapRT() {
         return;
     }
 
-    Image::Format::Enum shadowImageFormat = Image::Format::Depth_24;
-    Image::Format::Enum shadowCubeImageFormat = (r_shadowCubeMapFloat.GetBool() && graphics.SupportsDepthBufferFloat()) ? Image::Format::Depth_32F : Image::Format::Depth_24;
+    Image::Format shadowImageFormat = Image::Format::Depth_24;
+    Image::Format shadowCubeImageFormat = (r_shadowCubeMapFloat.GetBool() && graphics.SupportsDepthBufferFloat()) ? Image::Format::Depth_32F : Image::Format::Depth_24;
 
     Graphics::TextureType::Enum textureType = Graphics::TextureType::Texture2DArray;
 
@@ -604,7 +604,7 @@ void RenderContext::UpdateCurrentRenderTexture() const {
 }
 
 float RenderContext::QueryDepth(const Point &point) {
-    Image::Format::Enum format = screenSelectionRT->ColorTexture()->GetFormat();
+    Image::Format format = screenSelectionRT->ColorTexture()->GetFormat();
     byte *depthData = (byte *)_alloca(4);
 
     float scaleX = (float)screenSelectionRT->GetWidth() / screenRT->GetWidth();
@@ -625,7 +625,7 @@ float RenderContext::QueryDepth(const Point &point) {
 }
 
 bool RenderContext::QuerySelection(const Point &point, uint32_t &index) {
-    Image::Format::Enum format = screenSelectionRT->ColorTexture()->GetFormat();
+    Image::Format format = screenSelectionRT->ColorTexture()->GetFormat();
     byte *data = (byte *)_alloca(Image::BytesPerPixel(format));
 
     float scaleX = (float)screenSelectionRT->GetWidth() / screenRT->GetWidth();
@@ -672,7 +672,7 @@ bool RenderContext::QuerySelection(const Rect &rect, Inclusion::Enum inclusion, 
     scaledReadRect.w = Max(rect.w * scaleX, 1.0f);
     scaledReadRect.h = Max(rect.h * scaleY, 1.0f);
 
-    Image::Format::Enum format = screenSelectionRT->ColorTexture()->GetFormat();
+    Image::Format format = screenSelectionRT->ColorTexture()->GetFormat();
     int bpp = Image::BytesPerPixel(format);
 
     if (inclusion == Inclusion::Crossing) {

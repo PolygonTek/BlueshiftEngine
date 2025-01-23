@@ -85,7 +85,7 @@ static bool DecompressImage(const Image &srcImage, Image &dstImage) {
     return true;
 }
 
-static bool CompressImage(const Image &srcImage, Image &dstImage, Image::CompressionQuality::Enum compressionQuality) {
+static bool CompressImage(const Image &srcImage, Image &dstImage, Image::CompressionQuality compressionQuality) {
     assert(srcImage.GetPixels());
 
     //uint64_t startClocks = rdtsc();
@@ -200,7 +200,7 @@ static void Pow22ToSRGB(float *data, int count) {
 
 using GammaConversionFunc = void (*)(float *data, int count);
 
-static GammaConversionFunc GetGammaConversionFunc(Image::GammaSpace::Enum srcGammaSpace, Image::GammaSpace::Enum dstGammaSpace) {
+static GammaConversionFunc GetGammaConversionFunc(Image::GammaSpace srcGammaSpace, Image::GammaSpace dstGammaSpace) {
     if (srcGammaSpace == dstGammaSpace) {
         return nullptr;
     }
@@ -225,7 +225,7 @@ static GammaConversionFunc GetGammaConversionFunc(Image::GammaSpace::Enum srcGam
     return Pow22ToSRGB;
 }
 
-bool Image::ConvertFormat(Image::Format::Enum dstFormat, Image &dstImage, GammaSpace::Enum dstGammaSpace, bool regenerateMipmaps, Image::CompressionQuality::Enum compressionQuality) const {
+bool Image::ConvertFormat(Image::Format dstFormat, Image &dstImage, GammaSpace dstGammaSpace, bool regenerateMipmaps, Image::CompressionQuality compressionQuality) const {
     if (dstGammaSpace == GammaSpace::DontCare) {
         dstGammaSpace = gammaSpace;
     }
@@ -360,7 +360,7 @@ bool Image::ConvertFormat(Image::Format::Enum dstFormat, Image &dstImage, GammaS
     return true;
 }
 
-bool Image::ConvertFormatSelf(Image::Format::Enum dstFormat, GammaSpace::Enum dstGammaSpace, bool regenerateMipmaps, Image::CompressionQuality::Enum compressionQuality) {
+bool Image::ConvertFormatSelf(Image::Format dstFormat, GammaSpace dstGammaSpace, bool regenerateMipmaps, Image::CompressionQuality compressionQuality) {
     Image dstImage;
     bool ret = ConvertFormat(dstFormat, dstImage, dstGammaSpace, regenerateMipmaps, compressionQuality);
     if (ret) {

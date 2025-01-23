@@ -767,7 +767,7 @@ void D3D12Renderer::Barrier(RHI::CommandList *commandList, const RHI::GPUBarrier
     d3d12CommandList->GetGraphicsCommandList()->ResourceBarrier(barrierCount, barrierDescs.Ptr());
 }
 
-void D3D12Renderer::ReadPixels(RHI::CommandList *commandList, const RHI::SwapChain *swapChain, int x, int y, int width, int height, BE1::Image::Format::Enum dstFormat, void *outPixels) {
+void D3D12Renderer::ReadPixels(RHI::CommandList *commandList, const RHI::SwapChain *swapChain, int x, int y, int width, int height, BE1::Image::Format dstFormat, void *outPixels) {
     const D3D12SwapChain *swapChainInternal = static_cast<const D3D12SwapChain *>(swapChain);
     ID3D12Resource *backBufferResource = swapChainInternal->GetCurrentBackBuffer();
     D3D12_RESOURCE_DESC backBufferDesc = backBufferResource->GetDesc();
@@ -784,7 +784,7 @@ void D3D12Renderer::ReadPixels(RHI::CommandList *commandList, const RHI::SwapCha
     UINT64 readBufferSize = mipLevelFootprint.Footprint.RowPitch * height;
 
     // 리드백 버퍼를 생성한다.
-    BE1::Image::Format::Enum backBufferFormat;
+    BE1::Image::Format backBufferFormat;
     bool isSRGB;
     D3D12Renderer::DXGIFormatToImageFormat(backBufferDesc.Format, &backBufferFormat, &isSRGB);
     D3D12Buffer *readbackBuffer = static_cast<D3D12Buffer *>(D3D12Renderer::GetRenderer()->CreateBuffer(RHI::BufferUsage::Readback, RHI::ResourceFlag::None, readBufferSize, backBufferFormat, 0, nullptr));
@@ -828,7 +828,7 @@ void D3D12Renderer::ReadPixels(RHI::CommandList *commandList, const RHI::SwapCha
     BE1::Image tempImage;
     if (backBufferFormat != dstFormat) {
         // 컨버팅이 필요하다면, 리드백 버퍼의 내용을 tempImage 에 카피할 준비를 한다.
-        tempImage.Create2D(width, height, 1, backBufferFormat, isSRGB ? BE1::Image::GammaSpace::sRGB : BE1::Image::GammaSpace::Linear, nullptr, 0);
+        tempImage.Create2D(width, height, 1, backBufferFormat, isSRGB ? BE1::Image::GammaSpace::sRGB : BE1::Image::GammaSpace::Linear, nullptr, BE1::Image::Flag::None);
         dstPtr = tempImage.GetPixels();
     } else {
         // 컨버팅할 필요가 없다면, 리드백 버퍼의 내용을 그대로 outPixels 로 카피할 준비를 한다.
@@ -1406,7 +1406,7 @@ void D3D12Renderer::EndEvent(RHI::CommandList *commandList) {
 #endif
 }
 
-bool D3D12Renderer::ImageFormatToDXGIFormat(BE1::Image::Format::Enum imageFormat, bool isSRGB, DXGI_FORMAT *dxgiFormat) {
+bool D3D12Renderer::ImageFormatToDXGIFormat(BE1::Image::Format imageFormat, bool isSRGB, DXGI_FORMAT *dxgiFormat) {
     switch (imageFormat) {
     case BE1::Image::Format::Unknown:
         if (dxgiFormat) *dxgiFormat = DXGI_FORMAT_UNKNOWN;
@@ -1516,7 +1516,7 @@ bool D3D12Renderer::ImageFormatToDXGIFormat(BE1::Image::Format::Enum imageFormat
     return false;
 }
 
-bool D3D12Renderer::DXGIFormatToImageFormat(DXGI_FORMAT dxgiFormat, BE1::Image::Format::Enum *imageFormat, bool *isSRGB) {
+bool D3D12Renderer::DXGIFormatToImageFormat(DXGI_FORMAT dxgiFormat, BE1::Image::Format *imageFormat, bool *isSRGB) {
     if (isSRGB) {
         *isSRGB = false;
         switch (dxgiFormat) {
@@ -1656,8 +1656,8 @@ bool D3D12Renderer::IsStencilFormat(DXGI_FORMAT format) {
     return false;
 }
 
-BE1::Image::Format::Enum D3D12Renderer::ToUncompressedImageFormat(BE1::Image::Format::Enum inFormat) const {
-    BE1::Image::Format::Enum outFormat;
+BE1::Image::Format D3D12Renderer::ToUncompressedImageFormat(BE1::Image::Format inFormat) const {
+    BE1::Image::Format outFormat;
 
     switch (inFormat) {
     case BE1::Image::Format::RGB_5_6_5:
@@ -1731,7 +1731,7 @@ BE1::Image::Format::Enum D3D12Renderer::ToUncompressedImageFormat(BE1::Image::Fo
     return outFormat;
 }
 
-BE1::Image::Format::Enum D3D12Renderer::ToCompressedImageFormat(BE1::Image::Format::Enum inFormat, bool useNormalMap) const {
+BE1::Image::Format D3D12Renderer::ToCompressedImageFormat(BE1::Image::Format inFormat, bool useNormalMap) const {
     if (BE1::Image::IsCompressed(inFormat)) {
         assert(0);
         return inFormat;
@@ -1740,7 +1740,7 @@ BE1::Image::Format::Enum D3D12Renderer::ToCompressedImageFormat(BE1::Image::Form
     int redBits, greenBits, blueBits, alphaBits;
     BE1::Image::GetBits(inFormat, &redBits, &greenBits, &blueBits, &alphaBits);
 
-    BE1::Image::Format::Enum outFormat = inFormat;
+    BE1::Image::Format outFormat = inFormat;
 
     if (redBits > 0 && greenBits > 0 && blueBits > 0) {
         if (BE1::Image::IsFloatFormat(inFormat) || BE1::Image::IsHalfFormat(inFormat)) {

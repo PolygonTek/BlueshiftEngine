@@ -75,7 +75,7 @@ public:
     int                     GetHeight() const { return height; }
     int                     GetDepth() const { return depth; }
     int                     NumSlices() const { return numSlices; }
-    Image::Format::Enum     GetFormat() const { return format; }
+    Image::Format           GetFormat() const { return format; }
     int                     GetFlags() const { return flags; }
 
     int                     MemRequired(bool includingMipmaps) const;
@@ -85,8 +85,8 @@ public:
     RenderTarget *          GetRenderTarget() const { return renderTarget; }
 
     void                    Create(Graphics::TextureType::Enum type, const Image &srcImage, int flags);
-    void                    CreateEmpty(Graphics::TextureType::Enum type, int width, int height, int depth, int numSlices, int numMipmaps, Image::Format::Enum format, int flags);
-    void                    CreateFromBuffer(Image::Format::Enum format, Graphics::Handle bufferHandle);
+    void                    CreateEmpty(Graphics::TextureType::Enum type, int width, int height, int depth, int numSlices, int numMipmaps, Image::Format format, int flags);
+    void                    CreateFromBuffer(Image::Format format, Graphics::Handle bufferHandle);
 
                             /// Create indirection cubemap
                             /// @param size         size of indirection cubemap
@@ -108,15 +108,15 @@ public:
 
     void                    Upload(const Image *srcImage);
 
-    void                    Update2D(int mipLevel, int xoffset, int yoffset, int width, int height, Image::Format::Enum format, const byte *data);
-    void                    Update3D(int mipLevel, int xoffset, int yoffset, int zoffset, int width, int height, int depth, Image::Format::Enum format, const byte *data);
-    void                    UpdateCubemap(int face, int mipLevel, int xoffset, int yoffset, int width, int height, Image::Format::Enum format, const byte *data);
-    void                    UpdateRect(int xoffset, int yoffset, int width, int height, Image::Format::Enum format, const byte *data);
+    void                    Update2D(int mipLevel, int xoffset, int yoffset, int width, int height, Image::Format format, const byte *data);
+    void                    Update3D(int mipLevel, int xoffset, int yoffset, int zoffset, int width, int height, int depth, Image::Format format, const byte *data);
+    void                    UpdateCubemap(int face, int mipLevel, int xoffset, int yoffset, int width, int height, Image::Format format, const byte *data);
+    void                    UpdateRect(int xoffset, int yoffset, int width, int height, Image::Format format, const byte *data);
 
-    void                    GetTexels2D(int mipLevel, Image::Format::Enum format, void *pixels) const;
-    void                    GetTexels3D(int mipLevel, Image::Format::Enum format, void *pixels) const;
-    void                    GetTexelsCubemap(int face, int mipLevel, Image::Format::Enum format, void *pixels) const;
-    void                    GetTexelsRect(Image::Format::Enum format, void *pixels) const;
+    void                    GetTexels2D(int mipLevel, Image::Format format, void *pixels) const;
+    void                    GetTexels3D(int mipLevel, Image::Format format, void *pixels) const;
+    void                    GetTexelsCubemap(int face, int mipLevel, Image::Format format, void *pixels) const;
+    void                    GetTexelsRect(Image::Format format, void *pixels) const;
 
     void                    CopyTo(int mipLevel, Texture *dstTexture);
 
@@ -146,7 +146,7 @@ private:
     Graphics::TextureType::Enum type = Graphics::TextureType::Texture2D;
     Graphics::AddressMode::Enum addressMode = Graphics::AddressMode::Repeat;
 
-    Image::Format::Enum     format = Image::Format::Unknown;    // internal image format
+    Image::Format           format = Image::Format::Unknown;    // internal image format
 
     int32_t                 srcWidth = 0;               // original width
     int32_t                 srcHeight = 0;              // original height

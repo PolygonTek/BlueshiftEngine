@@ -117,7 +117,7 @@ RHI::Texture *RHI::Renderer::CreateTextureFromFile(RHI::TextureType textureType,
         return nullptr;
     }
 
-    BE1::Image::Format::Enum dstFormat;
+    BE1::Image::Format dstFormat;
     AdjustTextureFormat(useCompression, useNormalMap, image->GetFormat(), &dstFormat);
 
     RHI::Texture *texture = CreateTexture(textureType, flags, image, dstFormat, true);
@@ -126,7 +126,7 @@ RHI::Texture *RHI::Renderer::CreateTextureFromFile(RHI::TextureType textureType,
     return texture;
 }
 
-void RHI::Renderer::AdjustTextureFormat(bool useCompression, bool useNormalMap, BE1::Image::Format::Enum inFormat, BE1::Image::Format::Enum *outFormat) {
+void RHI::Renderer::AdjustTextureFormat(bool useCompression, bool useNormalMap, BE1::Image::Format inFormat, BE1::Image::Format *outFormat) {
     if (BE1::Image::IsDepthFormat(inFormat) || BE1::Image::IsDepthStencilFormat(inFormat)) {
         *outFormat = inFormat;
         return;

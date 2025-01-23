@@ -598,7 +598,7 @@ bool Image::LoadDDSFromMemory(const char *name, const byte *data, size_t size) {
     this->depth = Max((int)header->depth, 1);
     this->numMipmaps = Max((int)header->mipMapCount, 1);
     this->numSlices = arraySize;
-    this->flags = isCube ? Flag::CubeMap : 0;
+    this->flags = isCube ? Flag::CubeMap : Flag::None;
 
     if (this->gammaSpace == Image::GammaSpace::DontCare) {
         if (NeedFloatConversion() || format == Format::DXN1 || format == Format::DXN2) {
@@ -659,7 +659,7 @@ bool Image::WriteDDS(const char *filename) const {
         header.depth = depth;
     }
 
-    if (flags & Flag::CubeMap) {
+    if (HasFlag(flags, Flag::CubeMap)) {
         header.ddsCaps.caps1 |= DDSCAPS_COMPLEX;
         header.ddsCaps.caps2 |= DDSCAPS2_CUBEMAP | DDSCAPS2_CUBEMAP_ALL_FACES;
     }
@@ -677,7 +677,7 @@ bool Image::WriteDDS(const char *filename) const {
     DdsFileHeaderDX10 dx10Header;
     memset(&dx10Header, 0, sizeof(dx10Header));
     dx10Header.resourceDimension = depth > 1 ? DX10_RESOURCE_DIMENSION_TEXTURE3D : DX10_RESOURCE_DIMENSION_TEXTURE2D;
-    dx10Header.miscFlag = (flags & Flag::CubeMap) ? DX10_RESOURCE_MISC_TEXTURECUBE : 0;
+    dx10Header.miscFlag = HasFlag(flags, Flag::CubeMap) ? DX10_RESOURCE_MISC_TEXTURECUBE : 0;
     dx10Header.arraySize = numSlices;
     dx10Header.miscFlag2 = DX10_RESOURCE_MISC2_UNKNOWN;
 

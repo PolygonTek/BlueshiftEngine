@@ -90,7 +90,7 @@ public:
 
     void                    Clear(int clearBits, const Color4 &color, float depth, unsigned int stencil);
 
-    void                    ReadPixels(int x, int y, int width, int height, Image::Format::Enum imageFormat, byte *data);
+    void                    ReadPixels(int x, int y, int width, int height, Image::Format imageFormat, byte *data);
 
     void                    CheckError(const char *fmt, ...) const;
 
@@ -154,7 +154,7 @@ public:
     void                    SetTexture(int textureUnit, Handle textureHandle);
 
     void                    AdjustTextureSize(TextureType::Enum type, bool useNPOT, int inWidth, int inHeight, int inDepth, int *outWidth, int *outHeight, int *outDepth);
-    void                    AdjustTextureFormat(TextureType::Enum type, bool useCompression, bool useNormalMap, Image::Format::Enum inFormat, Image::Format::Enum *outFormat);
+    void                    AdjustTextureFormat(TextureType::Enum type, bool useCompression, bool useNormalMap, Image::Format inFormat, Image::Format *outFormat);
 
     void                    SetTextureFilter(TextureFilter::Enum filter);
     void                    SetTextureAddressMode(AddressMode::Enum addressMode);
@@ -165,22 +165,22 @@ public:
     void                    SetTextureLevel(int baseLevel, int maxLevel = 1000);
     void                    GenerateMipmap();
 
-    void                    SetTextureImage(TextureType::Enum textureType, const Image *srcImage, Image::Format::Enum dstFormat, bool useMipmaps, bool isSRGB);
-    void                    SetTextureImageBuffer(Image::Format::Enum dstFormat, bool sRGB, int bufferHandle);
+    void                    SetTextureImage(TextureType::Enum textureType, const Image *srcImage, Image::Format dstFormat, bool useMipmaps, bool isSRGB);
+    void                    SetTextureImageBuffer(Image::Format dstFormat, bool sRGB, int bufferHandle);
 
-    void                    SetTextureSubImage2D(int level, int xoffset, int yoffset, int width, int height, Image::Format::Enum srcFormat, const void *pixels);
-    void                    SetTextureSubImage3D(int level, int xoffset, int yoffset, int zoffset, int width, int height, int depth, Image::Format::Enum srcFormat, const void *pixels);
-    void                    SetTextureSubImage2DArray(int level, int xoffset, int yoffset, int zoffset, int width, int height, int arrays, Image::Format::Enum srcFormat, const void *pixels);
-    void                    SetTextureSubImageCube(CubeMapFace::Enum face, int level, int xoffset, int yoffset, int width, int height, Image::Format::Enum srcFormat, const void *pixels);
-    void                    SetTextureSubImageRect(int xoffset, int yoffset, int width, int height, Image::Format::Enum srcFormat, const void *pixels);
+    void                    SetTextureSubImage2D(int level, int xoffset, int yoffset, int width, int height, Image::Format srcFormat, const void *pixels);
+    void                    SetTextureSubImage3D(int level, int xoffset, int yoffset, int zoffset, int width, int height, int depth, Image::Format srcFormat, const void *pixels);
+    void                    SetTextureSubImage2DArray(int level, int xoffset, int yoffset, int zoffset, int width, int height, int arrays, Image::Format srcFormat, const void *pixels);
+    void                    SetTextureSubImageCube(CubeMapFace::Enum face, int level, int xoffset, int yoffset, int width, int height, Image::Format srcFormat, const void *pixels);
+    void                    SetTextureSubImageRect(int xoffset, int yoffset, int width, int height, Image::Format srcFormat, const void *pixels);
 
     void                    CopyTextureSubImage2D(int xoffset, int yoffset, int x, int y, int width, int height);
     void                    CopyImageSubData(Handle srcTextureHandle, int srcLevel, int srcX, int srcY, int srcZ, Handle dstTextureHandle, int dstLevel, int dstX, int dstY, int dstZ, int width, int height, int depth);
 
-    void                    GetTextureImage2D(int level, Image::Format::Enum format, void *pixels);
-    void                    GetTextureImage3D(int level, Image::Format::Enum format, void *pixels);
-    void                    GetTextureImageCube(CubeMapFace::Enum face, int level, Image::Format::Enum format, void *pixels);
-    void                    GetTextureImageRect(Image::Format::Enum format, void *pixels);
+    void                    GetTextureImage2D(int level, Image::Format format, void *pixels);
+    void                    GetTextureImage3D(int level, Image::Format format, void *pixels);
+    void                    GetTextureImageCube(CubeMapFace::Enum face, int level, Image::Format format, void *pixels);
+    void                    GetTextureImageRect(Image::Format format, void *pixels);
 
     //---------------------------------------------------------------------------------------------
     // Render Target

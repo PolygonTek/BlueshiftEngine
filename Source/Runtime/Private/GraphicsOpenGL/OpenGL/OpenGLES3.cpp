@@ -123,7 +123,7 @@ void OpenGLES3::TexBuffer(GLenum internalFormat, GLuint buffer) {
 #endif
 }
 
-void OpenGLES3::SetTextureSwizzling(GLenum target, Image::Format::Enum format) {
+void OpenGLES3::SetTextureSwizzling(GLenum target, Image::Format format) {
     switch (format) {
     case Image::Format::L_8:
     case Image::Format::L_16F:
@@ -192,7 +192,7 @@ void OpenGLES3::SetTextureSwizzling(GLenum target, Image::Format::Enum format) {
     }
 }
 
-bool OpenGLES3::ImageFormatToGLFormat(Image::Format::Enum imageFormat, bool isSRGB, GLenum *glFormat, GLenum *glType, GLenum *glInternal) {
+bool OpenGLES3::ImageFormatToGLFormat(Image::Format imageFormat, bool isSRGB, GLenum *glFormat, GLenum *glType, GLenum *glInternal) {
     switch (imageFormat) {
     case Image::Format::L_8:
     case Image::Format::A_8:
@@ -602,7 +602,7 @@ bool OpenGLES3::ImageFormatToGLFormat(Image::Format::Enum imageFormat, bool isSR
     return false;
 }
 
-Image::Format::Enum OpenGLES3::ToCompressedImageFormat(Image::Format::Enum inFormat, bool useNormalMap) {
+Image::Format OpenGLES3::ToCompressedImageFormat(Image::Format inFormat, bool useNormalMap) {
     if (Image::IsCompressed(inFormat)) {
         assert(0);
         return inFormat;
@@ -613,7 +613,7 @@ Image::Format::Enum OpenGLES3::ToCompressedImageFormat(Image::Format::Enum inFor
     int redBits, greenBits, blueBits, alphaBits;
     Image::GetBits(inFormat, &redBits, &greenBits, &blueBits, &alphaBits);
 
-    Image::Format::Enum outFormat = inFormat;
+    Image::Format outFormat = inFormat;
 
     if (redBits > 0 && greenBits > 0 && blueBits > 0) {
         if (Image::IsFloatFormat(inFormat) || Image::IsHalfFormat(inFormat)) {

@@ -91,7 +91,7 @@ void RenderContext::OnResize(int width, int height) {
 
 void RenderContext::CreateMainRenderTextures(uint32_t width, uint32_t height) {
     BE1::Image colorImage;
-    colorImage.InitFromMemory(width, height, 1, 1, 1, mainRTColorFormat, BE1::Image::GammaSpace::Linear, nullptr, 0);
+    colorImage.InitFromMemory(width, height, 1, 1, 1, mainRTColorFormat, BE1::Image::GammaSpace::Linear, nullptr, BE1::Image::Flag::None);
     mainRTColorTexture = RHI::renderer->CreateTexture(RHI::TextureType::Texture2D, RHI::ResourceFlag::RenderTarget | RHI::ResourceFlag::ShaderResource | RHI::ResourceFlag::UnorderedAccess,
         &colorImage, RHI::ClearValue::Color(0.0f, 0.0f, 1.0f, 0.0f), 1);
 
@@ -101,7 +101,7 @@ void RenderContext::CreateMainRenderTextures(uint32_t width, uint32_t height) {
     }
 
     BE1::Image depthStencilImage;
-    depthStencilImage.InitFromMemory(width, height, 1, 1, 1, mainRTDepthFormat, BE1::Image::GammaSpace::Linear, nullptr, 0);
+    depthStencilImage.InitFromMemory(width, height, 1, 1, 1, mainRTDepthFormat, BE1::Image::GammaSpace::Linear, nullptr, BE1::Image::Flag::None);
     mainRTDepthTexture = RHI::renderer->CreateTexture(RHI::TextureType::Texture2D, RHI::ResourceFlag::DepthStencil,
         &depthStencilImage, RHI::ClearValue::DepthStencil(1.0f, 0), mainRTSampleCount, RHI::GPUResourceState::DepthWrite);
 }
@@ -122,7 +122,7 @@ void RenderContext::DestroyMainRenderTextures() {
 }
 
 void RenderContext::InitFullScreenTrianglePSO() {
-    BE1::Image::Format::Enum imageFormat = BE1::Image::Format::Unknown;
+    BE1::Image::Format imageFormat = BE1::Image::Format::Unknown;
     bool isSRGB = false;
     swapChain->GetFormat(&imageFormat, &isSRGB);
 

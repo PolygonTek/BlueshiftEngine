@@ -74,10 +74,10 @@ public:
     static void             MultiDrawElementsIndirect(GLenum mode, GLenum type, const void *indirect, GLsizei drawcount, GLsizei stride);
     static void             CopyImageSubData(GLuint src, GLenum srcTarget, GLint srcLevel, GLint srcX, GLint srcY, GLint srcZ, GLuint dst, GLenum dstTarget, GLint dstLevel, GLint dstX, GLint dstY, GLint dstZ, GLsizei srcWidth, GLsizei srcHeight, GLsizei srcDepth);
 
-    static void             SetTextureSwizzling(GLenum target, Image::Format::Enum format);
-    static bool             ImageFormatToGLFormat(Image::Format::Enum imageFormat, bool isSRGB, GLenum *glFormat, GLenum *glType, GLenum *glInternal);
-    static bool             SupportedImageFormat(Image::Format::Enum imageFormat) { return ImageFormatToGLFormat(imageFormat, false, nullptr, nullptr, nullptr); }
-    static Image::Format::Enum ToCompressedImageFormat(Image::Format::Enum inFormat, bool useNormalMap);
+    static void             SetTextureSwizzling(GLenum target, Image::Format format);
+    static bool             ImageFormatToGLFormat(Image::Format imageFormat, bool isSRGB, GLenum *glFormat, GLenum *glType, GLenum *glInternal);
+    static bool             SupportedImageFormat(Image::Format imageFormat) { return ImageFormatToGLFormat(imageFormat, false, nullptr, nullptr, nullptr); }
+    static Image::Format    ToCompressedImageFormat(Image::Format inFormat, bool useNormalMap);
 
 private:
     static bool             supportsInstancedArrays;

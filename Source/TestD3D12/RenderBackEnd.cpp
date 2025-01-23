@@ -157,7 +157,7 @@ const void *RenderBackEnd::ExecuteScreenshot(const void *data) {
 
     // SwapChain 백버퍼를 캡쳐해서 저장할 빈 이미지 (메모리) 를 생성한다.
     BE1::Image screenImage;
-    screenImage.Create2D(captureRect.w, captureRect.h, 1, BE1::Image::Format::BGR_8_8_8, BE1::Image::GammaSpace::sRGB, nullptr, 0);
+    screenImage.Create2D(captureRect.w, captureRect.h, 1, BE1::Image::Format::BGR_8_8_8, BE1::Image::GammaSpace::sRGB, nullptr, BE1::Image::Flag::None);
 
     RenderFrameData *currentFrameData = currentContext->GetCurrentFrameData();
     RHI::FrameThreadData *frameThreadData = currentFrameData->GetThreadData(0);

@@ -17,7 +17,7 @@
 #include "D3D12DescriptorPool.h"
 #include "D3D12SwapChain.h"
 
-RHI::SwapChain *D3D12Renderer::CreateSwapChain(HWND hwnd, uint32_t width, uint32_t height, BE1::Image::Format::Enum format) {
+RHI::SwapChain *D3D12Renderer::CreateSwapChain(HWND hwnd, uint32_t width, uint32_t height, BE1::Image::Format format) {
     DXGI_FORMAT dxgiFormat;
     ImageFormatToDXGIFormat(format, false, &dxgiFormat);
 
@@ -142,6 +142,6 @@ bool D3D12SwapChain::IsSupportsHDR() const {
     return false;
 }
 
-bool D3D12SwapChain::GetFormat(BE1::Image::Format::Enum *imageFormat, bool *isSRGB) const {
+bool D3D12SwapChain::GetFormat(BE1::Image::Format *imageFormat, bool *isSRGB) const {
     return D3D12Renderer::DXGIFormatToImageFormat(dxgiFormat, imageFormat, isSRGB);
 }

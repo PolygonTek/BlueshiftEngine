@@ -211,7 +211,7 @@ RHI::IndexBuffer *D3D12FrameThreadData::AllocIndex(uint32_t indexSize, uint32_t 
     return &dynamicIndexBuffers.Last();
 }
 
-RHI::Buffer *D3D12FrameThreadData::AllocBuffer(bool shaderWritable, BE1::Image::Format::Enum format, uint32_t structureByteStride, uint32_t count) {
+RHI::Buffer *D3D12FrameThreadData::AllocBuffer(bool shaderWritable, BE1::Image::Format format, uint32_t structureByteStride, uint32_t count) {
     D3D12DynamicAllocation *currentDynamicAllocation = dynamicAllocations.Last();
 
     // 버퍼의 오프셋은 stride 단위로 정렬
