@@ -19,20 +19,20 @@
 #include <android/sensor.h>
 #include <android/log.h>
 
-static bool                 appInitialized = false;
-static int                  currentWindowWidth = 0;
-static int                  currentWindowHeight = 0;
-static bool                 suspended = false;
-static bool                 surfaceCreated = false;
-static bool                 hasFocus = false;
+static bool                     appInitialized = false;
+static int                      currentWindowWidth = 0;
+static int                      currentWindowHeight = 0;
+static bool                     suspended = false;
+static bool                     surfaceCreated = false;
+static bool                     hasFocus = false;
 
-static ASensorManager *     sensorManager = nullptr;
-static const ASensor *      accelerometerSensor = nullptr;
-static const ASensor *      gyroscopeSensor = nullptr;
-static ASensorEventQueue *  sensorEventQueue = nullptr;
+static ASensorManager *         sensorManager = nullptr;
+static const ASensor *          accelerometerSensor = nullptr;
+static const ASensor *          gyroscopeSensor = nullptr;
+static ASensorEventQueue *      sensorEventQueue = nullptr;
 
-static BE1::RHI::Handle     mainContext = BE1::RHI::NullContext;
-static BE1::RHI::Handle     mainRenderTarget = BE1::RHI::NullRenderTarget;
+static BE1::Graphics::Handle    mainContext = BE1::Graphics::NullContext;
+static BE1::Graphics::Handle    mainRenderTarget = BE1::Graphics::NullRenderTarget;
 
 static void SystemLog(int logLevel, const char *msg) {
     if (logLevel == BE1::DevLog) {
@@ -58,7 +58,7 @@ static void SystemError(int errLevel, const char *msg) {
     exit(EXIT_SUCCESS);
 }
 
-static void DisplayMainContext(BE1::RHI::Handle context, void *dataPtr) {
+static void DisplayMainContext(BE1::Graphics::Handle context, void *dataPtr) {
     static float t0 = BE1::PlatformTime::Milliseconds() / 1000.0f;
     float t = BE1::PlatformTime::Milliseconds() / 1000.0f - t0;
 
@@ -76,13 +76,13 @@ static void InitDisplay(ANativeWindow *window) {
 
         ::app.LoadResources();
 
-        mainContext = BE1::rhi.CreateContext(window, false);
+        mainContext = BE1::graphics.CreateContext(window, false);
 
         mainRenderTarget = ::app.CreateRenderTarget(mainContext);
 
-        BE1::rhi.SetContextDisplayFunc(mainContext, DisplayMainContext, nullptr, false);
+        BE1::graphics.SetContextDisplayFunc(mainContext, DisplayMainContext, nullptr, false);
     } else {
-        BE1::rhi.ActivateSurface(mainContext, window);
+        BE1::graphics.ActivateSurface(mainContext, window);
     }
 }
 
@@ -225,7 +225,7 @@ static void HandleCmd(android_app *appState, int32_t cmd) {
 		 * it will be set to NULL.
 		 */
         if (surfaceCreated) {
-            BE1::rhi.DeactivateSurface(mainContext);
+            BE1::graphics.DeactivateSurface(mainContext);
             surfaceCreated = false;
         }
         break;
@@ -342,9 +342,9 @@ static void ShutdownInstance() {
     app.FreeResources();
 
     if (mainContext) {
-        BE1::rhi.DestroyRenderTarget(mainRenderTarget);
+        BE1::graphics.DestroyRenderTarget(mainRenderTarget);
 
-        BE1::rhi.DestroyContext(mainContext);
+        BE1::graphics.DestroyContext(mainContext);
     }
 
     app.Shutdown();
@@ -398,8 +398,8 @@ void android_main(android_app *appState) {
         }
 
         if (surfaceCreated && !suspended) {
-            BE1::RHI::DisplayMetrics displayMetrics;
-            BE1::rhi.GetDisplayMetrics(mainContext, &displayMetrics);
+            BE1::Graphics::DisplayMetrics displayMetrics;
+            BE1::graphics.GetDisplayMetrics(mainContext, &displayMetrics);
 
             if (displayMetrics.backingWidth != currentWindowWidth || displayMetrics.backingHeight != currentWindowHeight) {
                 WindowSizeChanged(displayMetrics.backingWidth, displayMetrics.backingHeight);
@@ -407,7 +407,7 @@ void android_main(android_app *appState) {
 
             app.RunFrame();
 
-            BE1::rhi.DisplayContext(mainContext);
+            BE1::graphics.DisplayContext(mainContext);
         }
     }
 }

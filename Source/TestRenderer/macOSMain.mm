@@ -20,8 +20,8 @@
 
 @interface MyWindow : NSWindow
 
-@property (nonatomic, assign) BE1::RHI::Handle context;
-@property (nonatomic, assign) BE1::RHI::Handle renderTarget;
+@property (nonatomic, assign) BE1::Graphics::Handle context;
+@property (nonatomic, assign) BE1::Graphics::Handle renderTarget;
 
 @end
 
@@ -129,7 +129,7 @@ static void SystemError(int errLevel, const char *msg) {
     }
 }
 
-static void DisplayMainContext(BE1::RHI::Handle context, void *dataPtr) {
+static void DisplayMainContext(BE1::Graphics::Handle context, void *dataPtr) {
     static float t0 = BE1::PlatformTime::Milliseconds() / 1000.0f;
     float t = BE1::PlatformTime::Milliseconds() / 1000.0f - t0;
     
@@ -137,7 +137,7 @@ static void DisplayMainContext(BE1::RHI::Handle context, void *dataPtr) {
 }
 
 #ifdef CREATE_SUB_WINDOW
-static void DisplaySubContext(BE1::RHI::Handle context, void *dataPtr) {
+static void DisplaySubContext(BE1::Graphics::Handle context, void *dataPtr) {
     static float t0 = BE1::PlatformTime::Milliseconds() / 1000.0f;
     float t = BE1::PlatformTime::Milliseconds() / 1000.0f - t0;
     
@@ -156,12 +156,12 @@ static void DisplaySubContext(BE1::RHI::Handle context, void *dataPtr) {
     mainWindow = [self createGLWindow:NSMakeSize(640, 480) title:@"Main Window"];
     NSView *mainContentView = [mainWindow contentView];
 
-    ::app.Init((__bridge BE1::RHI::WindowHandle)mainContentView);
+    ::app.Init((__bridge BE1::Graphics::WindowHandle)mainContentView);
     
     ::app.LoadResources();
     
-    mainWindow.context = BE1::rhi.CreateContext((__bridge BE1::RHI::WindowHandle)mainContentView, USE_SHARED_CONTEXT);    
-    BE1::rhi.SetContextDisplayFunc(mainWindow.context, DisplayMainContext, NULL, true);
+    mainWindow.context = BE1::graphics.CreateContext((__bridge BE1::Graphics::WindowHandle)mainContentView, USE_SHARED_CONTEXT);    
+    BE1::graphics.SetContextDisplayFunc(mainWindow.context, DisplayMainContext, NULL, true);
     
     // FBO cannot be shared, so we should create FBO for each context
     mainWindow.renderTarget = ::app.CreateRenderTarget(mainWindow.context);
@@ -170,8 +170,8 @@ static void DisplaySubContext(BE1::RHI::Handle context, void *dataPtr) {
     subWindow = [self createGLWindow:NSMakeSize(320, 240) title:@"Sub Window"];
     NSView *subContentView = [subWindow contentView];
 
-    subWindow.context = BE1::rhi.CreateContext((__bridge BE1::RHI::WindowHandle)subContentView, USE_SHARED_CONTEXT);    
-    BE1::rhi.SetContextDisplayFunc(subWindow.context, DisplaySubContext, NULL, true);
+    subWindow.context = BE1::graphics.CreateContext((__bridge BE1::Graphics::WindowHandle)subContentView, USE_SHARED_CONTEXT);    
+    BE1::graphics.SetContextDisplayFunc(subWindow.context, DisplaySubContext, NULL, true);
 
     subWindow.renderTarget = ::app.CreateRenderTarget(subWindow.context);
 #endif
@@ -181,16 +181,16 @@ static void DisplaySubContext(BE1::RHI::Handle context, void *dataPtr) {
     ::app.FreeResources();
     
     if (mainWindow.context) {
-        BE1::rhi.DestroyRenderTarget(mainWindow.renderTarget);
-        BE1::rhi.DestroyContext(mainWindow.context);
-        mainWindow.context = BE1::RHI::NullContext;
+        BE1::graphics.DestroyRenderTarget(mainWindow.renderTarget);
+        BE1::graphics.DestroyContext(mainWindow.context);
+        mainWindow.context = BE1::Graphics::NullContext;
     }
    
 #ifdef CREATE_SUB_WINDOW
     if (subWindow.context) {
-        BE1::rhi.DeleteRenderTarget(subWindow.renderTarget);
-        BE1::rhi.DestroyContext(subWindow.context);
-        subWindow.context = BE1::RHI::NullContext;
+        BE1::graphics.DeleteRenderTarget(subWindow.renderTarget);
+        BE1::graphics.DestroyContext(subWindow.context);
+        subWindow.context = BE1::Graphics::NullContext;
     }
 #endif
     
@@ -203,9 +203,9 @@ static void DisplaySubContext(BE1::RHI::Handle context, void *dataPtr) {
     MyWindow *window = [notification object];
     
     if (window.context) {
-        BE1::rhi.DestroyRenderTarget(window.renderTarget);
-        BE1::rhi.DestroyContext(window.context);
-        window.context = BE1::RHI::NullContext;
+        BE1::graphics.DestroyRenderTarget(window.renderTarget);
+        BE1::graphics.DestroyContext(window.context);
+        window.context = BE1::Graphics::NullContext;
     }
 }
 
@@ -218,7 +218,7 @@ static void DisplaySubContext(BE1::RHI::Handle context, void *dataPtr) {
     
     NSSize size = [[window contentView] frame].size;
     
-    BE1::rhi.SetFullscreen(window.context, size.width, size.height);
+    BE1::graphics.SetFullscreen(window.context, size.width, size.height);
 }
 
 - (void)windowWillExitFullScreen:(NSNotification *)notification {
@@ -228,7 +228,7 @@ static void DisplaySubContext(BE1::RHI::Handle context, void *dataPtr) {
     //NSInteger oldStyleMask = [window styleMask];
     //[window setStyleMask:oldStyleMask & ~NSResizableWindowMask];
     
-    BE1::rhi.ResetFullscreen(window.context);
+    BE1::graphics.ResetFullscreen(window.context);
 }
 
 - (void)applicationDidFinishLaunching:(NSNotification *)aNotification {
@@ -247,11 +247,11 @@ static void DisplaySubContext(BE1::RHI::Handle context, void *dataPtr) {
         ::app.RunFrame();
         
         if (mainWindow.context) {
-            BE1::rhi.DisplayContext(mainWindow.context);
+            BE1::graphics.DisplayContext(mainWindow.context);
         }
 #ifdef CREATE_SUB_WINDOW
         if (subWindow.context) {
-            BE1::rhi.DisplayContext(subWindow.context);
+            BE1::graphics.DisplayContext(subWindow.context);
         }
 #endif
     }

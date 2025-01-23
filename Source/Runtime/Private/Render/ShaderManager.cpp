@@ -176,11 +176,11 @@ void ShaderManager::Shutdown() {
 
 void ShaderManager::InitGlobalDefines() {
     if (textureManager.texture_useNormalCompression.GetBool()) {
-        if (rhi.SupportsTextureCompressionRGTC()) {
+        if (graphics.SupportsTextureCompressionRGTC()) {
             shaderManager.AddGlobalHeader("#define RGTC_NORMAL\n");
-        } else if (rhi.SupportsTextureCompressionETC2()) {
+        } else if (graphics.SupportsTextureCompressionETC2()) {
             shaderManager.AddGlobalHeader("#define EAC_NORMAL\n");
-        } else if (rhi.SupportsTextureCompressionS3TC()) {
+        } else if (graphics.SupportsTextureCompressionS3TC()) {
             shaderManager.AddGlobalHeader("#define DXT5_XGBR_NORMAL\n");
         }
     }
@@ -205,7 +205,7 @@ void ShaderManager::InitGlobalDefines() {
         shaderManager.AddGlobalHeader(va("#define MAX_INSTANCE_COUNT %i\n", r_maxInstancingCount.GetInteger()));
     } else if (renderGlobal.instancingMethod == Mesh::InstancingMethod::UniformBuffer) {
         shaderManager.AddGlobalHeader(va("#define INSTANCE_DATA_SIZE %i\n", renderGlobal.instanceBufferOffsetAlignment));
-        shaderManager.AddGlobalHeader(va("#define MAX_INSTANCE_COUNT %i\n", Min(r_maxInstancingCount.GetInteger(), rhi.HWLimit().maxUniformBlockSize / renderGlobal.instanceBufferOffsetAlignment)));
+        shaderManager.AddGlobalHeader(va("#define MAX_INSTANCE_COUNT %i\n", Min(r_maxInstancingCount.GetInteger(), graphics.HWLimit().maxUniformBlockSize / renderGlobal.instanceBufferOffsetAlignment)));
     }
 
     if (renderGlobal.skinningMethod == SkinningJointCache::SkinningMethod::VertexTextureFetch) {
@@ -238,7 +238,7 @@ void ShaderManager::InitGlobalDefines() {
 
     shaderManager.AddGlobalHeader(va("#define SHADOW_MAP_QUALITY %i\n", r_shadowMapQuality.GetInteger()));
 
-    int maxShaderJoints = (rhi.HWLimit().maxVertexUniformComponents - 256) / (4 * 3);
+    int maxShaderJoints = (graphics.HWLimit().maxVertexUniformComponents - 256) / (4 * 3);
     shaderManager.AddGlobalHeader(va("#define MAX_SHADER_JOINTSX3 %i\n", maxShaderJoints * 3));
 
     shaderManager.AddGlobalHeader(va("#define CSM_COUNT %i\n", r_CSM_count.GetInteger()));

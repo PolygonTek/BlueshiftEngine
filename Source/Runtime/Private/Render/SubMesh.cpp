@@ -146,14 +146,14 @@ void SubMesh::FreeSubMesh() {
     alloced = false;
 
     if (type == Mesh::Type::Reference) {
-        if (vertexCache->buffer != RHI::NullBuffer) {
-            rhi.DestroyBuffer(vertexCache->buffer);
-            vertexCache->buffer = RHI::NullBuffer;
+        if (vertexCache->buffer != Graphics::NullBuffer) {
+            graphics.DestroyBuffer(vertexCache->buffer);
+            vertexCache->buffer = Graphics::NullBuffer;
         }
 
-        if (indexCache->buffer != RHI::NullBuffer) {
-            rhi.DestroyBuffer(indexCache->buffer);
-            indexCache->buffer = RHI::NullBuffer;
+        if (indexCache->buffer != Graphics::NullBuffer) {
+            graphics.DestroyBuffer(indexCache->buffer);
+            indexCache->buffer = Graphics::NullBuffer;
         }
 
         Mem_AlignedFree(verts);
@@ -210,13 +210,13 @@ void SubMesh::CacheStaticDataToGpu() {
             
             bufferCacheManager.AllocStaticVertex(size, nullptr, vertexCache);
 
-            rhi.BindBuffer(RHI::BufferType::Vertex, vertexCache->buffer);
-            byte *ptr = (byte *)rhi.MapBuffer(vertexCache->buffer, RHI::BufferLockMode::WriteOnly);
+            graphics.BindBuffer(Graphics::BufferType::Vertex, vertexCache->buffer);
+            byte *ptr = (byte *)graphics.MapBuffer(vertexCache->buffer, Graphics::BufferLockMode::WriteOnly);
 
             simdProcessor->MemcpyStream(ptr, (const byte *)verts, sizeVerts);
             simdProcessor->MemcpyStream(ptr + sizeVertsAligned, (const byte *)vertWeights, sizeWeights);
 
-            if (!rhi.UnmapBuffer(vertexCache->buffer)) {
+            if (!graphics.UnmapBuffer(vertexCache->buffer)) {
                 BE_WARNLOG("Error unmapping buffer\n");
             }
         } else {

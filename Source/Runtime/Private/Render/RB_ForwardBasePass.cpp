@@ -65,9 +65,9 @@ static void RB_BasePass(int numDrawSurfs, DrawSurf **drawSurfs, const VisLight *
                     }
 
                     if (depthHack) {
-                        rhi.SetDepthRange(0.0f, 0.1f);
+                        graphics.SetDepthRange(0.0f, 0.1f);
                     } else {
-                        rhi.SetDepthRange(0.0f, 1.0f);
+                        graphics.SetDepthRange(0.0f, 1.0f);
                     }
 
                     prevDepthHack = depthHack;
@@ -96,7 +96,7 @@ static void RB_BasePass(int numDrawSurfs, DrawSurf **drawSurfs, const VisLight *
 
     // Restore depth hack
     if (prevDepthHack) {
-        rhi.SetDepthRange(0.0f, 1.0f);
+        graphics.SetDepthRange(0.0f, 1.0f);
     }
 }
 

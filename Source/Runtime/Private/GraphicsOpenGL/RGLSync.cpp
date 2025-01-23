@@ -13,12 +13,12 @@
 // limitations under the License.
 
 #include "Precompiled.h"
-#include "RHI/RHIOpenGL.h"
+#include "Graphics/GraphicsOpenGL.h"
 #include "RGLInternal.h"
 
 BE_NAMESPACE_BEGIN
 
-RHI::Handle OpenGLRHI::CreateSync() {
+Graphics::Handle GraphicsOpenGL::CreateSync() {
     GLSync *sync = new GLSync;
 
     int handle = syncList.FindNull();
@@ -33,7 +33,7 @@ RHI::Handle OpenGLRHI::CreateSync() {
     return (Handle)handle;
 }
 
-void OpenGLRHI::DestroySync(Handle syncHandle) {
+void GraphicsOpenGL::DestroySync(Handle syncHandle) {
     GLSync *sync = syncList[syncHandle];
 
     if (gglIsSync(sync->sync)) {
@@ -45,7 +45,7 @@ void OpenGLRHI::DestroySync(Handle syncHandle) {
     syncList[syncHandle] = nullptr;
 }
 
-bool OpenGLRHI::IsSync(Handle syncHandle) const {
+bool GraphicsOpenGL::IsSync(Handle syncHandle) const {
     const GLSync *sync = syncList[syncHandle];
 
     if (syncHandle == NullSync || !sync->sync || !gglIsSync(sync->sync)) {
@@ -54,19 +54,19 @@ bool OpenGLRHI::IsSync(Handle syncHandle) const {
     return true;
 }
 
-void OpenGLRHI::FenceSync(Handle syncHandle) {
+void GraphicsOpenGL::FenceSync(Handle syncHandle) {
     GLSync *sync = syncList[syncHandle];
 
     sync->sync = gglFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
 }
 
-void OpenGLRHI::DeleteSync(Handle syncHandle) {
+void GraphicsOpenGL::DeleteSync(Handle syncHandle) {
     GLSync *sync = syncList[syncHandle];
 
     gglDeleteSync(sync->sync);
 }
 
-void OpenGLRHI::WaitSync(Handle syncHandle) {
+void GraphicsOpenGL::WaitSync(Handle syncHandle) {
     if (syncHandle == NullSync) {
         return;
     }

@@ -13,7 +13,7 @@
 // limitations under the License.
 
 #include "Precompiled.h"
-#include "RHI/RHIOpenGL.h"
+#include "Graphics/GraphicsOpenGL.h"
 #include "RGLInternal.h"
 
 BE_NAMESPACE_BEGIN
@@ -68,7 +68,7 @@ static bool CheckFBOStatus() {
     return false;
 }
 
-RHI::Handle OpenGLRHI::CreateRenderTarget(RenderTargetType::Enum type, int width, int height, int numColorTextures, Handle *colorTextureHandles, Handle depthTextureHandle, int flags) {
+Graphics::Handle GraphicsOpenGL::CreateRenderTarget(RenderTargetType::Enum type, int width, int height, int numColorTextures, Handle *colorTextureHandles, Handle depthTextureHandle, int flags) {
     GLuint fbo;
     GLuint colorRenderBuffer = 0;
     GLuint depthRenderBuffer = 0;
@@ -208,15 +208,15 @@ RHI::Handle OpenGLRHI::CreateRenderTarget(RenderTargetType::Enum type, int width
     return (Handle)handle;
 }
 
-void OpenGLRHI::DestroyRenderTarget(Handle renderTargetHandle) {
+void GraphicsOpenGL::DestroyRenderTarget(Handle renderTargetHandle) {
     if (renderTargetHandle == NullRenderTarget) {
-        BE_WARNLOG("OpenGLRHI::DestroyRenderTarget: invalid render target\n");
+        BE_WARNLOG("GraphicsOpenGL::DestroyRenderTarget: invalid render target\n");
         return;
     }
     
     if (currentContext->state->renderTargetHandleStackDepth > 0 && 
         currentContext->state->renderTargetHandleStack[currentContext->state->renderTargetHandleStackDepth - 1] == renderTargetHandle) {
-        BE_WARNLOG("OpenGLRHI::DestroyRenderTarget: render target is using\n");
+        BE_WARNLOG("GraphicsOpenGL::DestroyRenderTarget: render target is using\n");
         return;
     }
 
@@ -235,9 +235,9 @@ void OpenGLRHI::DestroyRenderTarget(Handle renderTargetHandle) {
     renderTargetList[renderTargetHandle] = nullptr;
 }
 
-void OpenGLRHI::BeginRenderTarget(Handle renderTargetHandle, int level, int sliceIndex) {
+void GraphicsOpenGL::BeginRenderTarget(Handle renderTargetHandle, int level, int sliceIndex) {
     if (currentContext->state->renderTargetHandleStackDepth > 0 && currentContext->state->renderTargetHandleStack[currentContext->state->renderTargetHandleStackDepth - 1] == renderTargetHandle) {
-        BE_WARNLOG("OpenGLRHI::BeginRenderTarget: same render target\n");
+        BE_WARNLOG("GraphicsOpenGL::BeginRenderTarget: same render target\n");
     }
 
     const GLRenderTarget *renderTarget = renderTargetList[renderTargetHandle];
@@ -279,7 +279,7 @@ void OpenGLRHI::BeginRenderTarget(Handle renderTargetHandle, int level, int slic
     }
 }
 
-void OpenGLRHI::EndRenderTarget() {
+void GraphicsOpenGL::EndRenderTarget() {
     if (currentContext->state->renderTargetHandleStackDepth == 0) {
         BE_WARNLOG("unmatched BeginRenderTarget() / EndRenderTarget()\n");
         return;
@@ -297,7 +297,7 @@ void OpenGLRHI::EndRenderTarget() {
     }
 }
 
-void OpenGLRHI::SetDrawBuffersMask(unsigned int colorBufferBitMask) {
+void GraphicsOpenGL::SetDrawBuffersMask(unsigned int colorBufferBitMask) {
     if (colorBufferBitMask > 0) {
         GLenum drawBuffers[16];
         int numDrawBuffers = 0;
@@ -316,7 +316,7 @@ void OpenGLRHI::SetDrawBuffersMask(unsigned int colorBufferBitMask) {
     }
 }
 
-void OpenGLRHI::DiscardRenderTarget(bool depth, bool stencil, uint32_t colorBitMask) {
+void GraphicsOpenGL::DiscardRenderTarget(bool depth, bool stencil, uint32_t colorBitMask) {
     if (!OpenGL::SupportsDiscardFrameBuffer()) {
         return;
     }
@@ -343,7 +343,7 @@ void OpenGLRHI::DiscardRenderTarget(bool depth, bool stencil, uint32_t colorBitM
     OpenGL::DiscardFramebuffer(GL_FRAMEBUFFER, numAttachments, attachments);
 }
 
-void OpenGLRHI::BlitRenderTarget(Handle srcRenderTargetHandle, const Rect &srcRect, Handle dstRenderTargetHandle, const Rect &dstRect, int mask, BlitFilter::Enum filter) const {
+void GraphicsOpenGL::BlitRenderTarget(Handle srcRenderTargetHandle, const Rect &srcRect, Handle dstRenderTargetHandle, const Rect &dstRect, int mask, BlitFilter::Enum filter) const {
     const GLRenderTarget *srcRenderTarget = renderTargetList[srcRenderTargetHandle];
     const GLRenderTarget *dstRenderTarget = renderTargetList[dstRenderTargetHandle];
 
@@ -358,7 +358,7 @@ void OpenGLRHI::BlitRenderTarget(Handle srcRenderTargetHandle, const Rect &srcRe
 
     assert(glmask);
     if (!glmask) {
-        BE_WARNLOG("OpenGLRHI::BlitRenderTarget: NULL mask\n");
+        BE_WARNLOG("GraphicsOpenGL::BlitRenderTarget: NULL mask\n");
         return;
     }
 

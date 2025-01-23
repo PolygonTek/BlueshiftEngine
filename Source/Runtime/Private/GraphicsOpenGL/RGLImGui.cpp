@@ -13,7 +13,7 @@
 // limitations under the License.
 
 #include "Precompiled.h"
-#include "RHI/RHIOpenGL.h"
+#include "Graphics/GraphicsOpenGL.h"
 #include "RGLInternal.h"
 
 #if defined(__IOS__) || defined(__ANDROID__)

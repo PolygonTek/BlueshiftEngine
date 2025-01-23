@@ -16,7 +16,7 @@
 #include "Profiler/Profiler.h"
 #include "Platform/PlatformThread.h"
 #include "Platform/PlatformTime.h"
-#include "RHI/RHIOpenGL.h"
+#include "Graphics/GraphicsOpenGL.h"
 
 BE_NAMESPACE_BEGIN
 
@@ -40,13 +40,13 @@ void Profiler::Init() {
 
     cpuThreadInfoMap.Init(MaxCpuThreads, MaxCpuThreads, MaxCpuThreads);
 
-    if (rhi.SupportsTimestampQueries()) {
+    if (graphics.SupportsTimestampQueries()) {
         // Create GPU queries for GPU markers.
         for (int i = 0; i < COUNT_OF(gpuThreadInfo.markers); i++) {
             GpuMarker &marker = gpuThreadInfo.markers[i];
 
-            marker.startQueryHandle = rhi.CreateQuery(RHI::QueryType::Timestamp);
-            marker.endQueryHandle = rhi.CreateQuery(RHI::QueryType::Timestamp);
+            marker.startQueryHandle = graphics.CreateQuery(Graphics::QueryType::Timestamp);
+            marker.endQueryHandle = graphics.CreateQuery(Graphics::QueryType::Timestamp);
         }
     }
 
@@ -54,13 +54,13 @@ void Profiler::Init() {
 }
 
 void Profiler::Shutdown() {
-    if (rhi.SupportsTimestampQueries()) {
+    if (graphics.SupportsTimestampQueries()) {
         // Destroy all GPU queries.
         for (int i = 0; i < COUNT_OF(gpuThreadInfo.markers); i++) {
             auto &marker = gpuThreadInfo.markers[i];
 
-            rhi.DestroyQuery(marker.startQueryHandle);
-            rhi.DestroyQuery(marker.endQueryHandle);
+            graphics.DestroyQuery(marker.startQueryHandle);
+            graphics.DestroyQuery(marker.endQueryHandle);
         }
     }
 
@@ -95,7 +95,7 @@ void Profiler::SyncFrame() {
         ti.frameIndexes[writeFrameIndex] = ti.currentIndex;
     }
 
-    if (rhi.SupportsTimestampQueries()) {
+    if (graphics.SupportsTimestampQueries()) {
         gpuThreadInfo.frameIndexes[writeFrameIndex] = gpuThreadInfo.currentIndex;
     }
 }
@@ -194,7 +194,7 @@ void Profiler::PushGpuMarker(int tagIndex) {
         return;
     }
 
-    if (!rhi.SupportsTimestampQueries()) {
+    if (!graphics.SupportsTimestampQueries()) {
         return;
     }
 
@@ -205,7 +205,7 @@ void Profiler::PushGpuMarker(int tagIndex) {
     ti.currentIndex = (ti.currentIndex + 1) % COUNT_OF(ti.markers);
 
     marker.tagIndex = tagIndex;
-    rhi.QueryTimestamp(marker.startQueryHandle);
+    graphics.QueryTimestamp(marker.startQueryHandle);
     marker.frameCount = frameCount;
     marker.stackDepth = ti.indexStack.Count() - 1;
 }
@@ -215,7 +215,7 @@ void Profiler::PopGpuMarker() {
         return;
     }
 
-    if (!rhi.SupportsTimestampQueries()) {
+    if (!graphics.SupportsTimestampQueries()) {
         return;
     }
 
@@ -226,7 +226,7 @@ void Profiler::PopGpuMarker() {
 
     GpuMarker &marker = ti.markers[currentIndex];
 
-    rhi.QueryTimestamp(marker.endQueryHandle);
+    graphics.QueryTimestamp(marker.endQueryHandle);
 }
 
 BE_NAMESPACE_END

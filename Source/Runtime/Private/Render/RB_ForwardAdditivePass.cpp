@@ -31,8 +31,8 @@ static void RB_LitPass(const VisLight *visLight) {
     backEnd.batch.SetCurrentLight(visLight);
 
     if (r_useLightScissors.GetBool()) {
-        prevScissorRect = rhi.GetScissor();
-        rhi.SetScissor(visLight->scissorRect);
+        prevScissorRect = graphics.GetScissor();
+        graphics.SetScissor(visLight->scissorRect);
     }
 
     for (int i = 0; i < visLight->numDrawSurfs; i++) {
@@ -46,11 +46,11 @@ static void RB_LitPass(const VisLight *visLight) {
             drawSurf->material->GetPass()->transparency == Material::Transparency::TwoPassesOneSide) {
             if (!depthBoundTestEnabled && r_useDepthBoundTest.GetBool()) {
                 depthBoundTestEnabled = true;
-                rhi.SetDepthBounds(backEnd.depthMin, backEnd.depthMax);
+                graphics.SetDepthBounds(backEnd.depthMin, backEnd.depthMax);
             }
         } else {
             depthBoundTestEnabled = false;
-            rhi.SetDepthBounds(0.0f, 1.0f);
+            graphics.SetDepthBounds(0.0f, 1.0f);
         }
 
         bool isDifferentObject = drawSurf->space != prevSpace;
@@ -78,9 +78,9 @@ static void RB_LitPass(const VisLight *visLight) {
                     }
 
                     if (depthHack) {
-                        rhi.SetDepthRange(0.0f, 0.1f);
+                        graphics.SetDepthRange(0.0f, 0.1f);
                     } else {
-                        rhi.SetDepthRange(0.0f, 1.0f);
+                        graphics.SetDepthRange(0.0f, 1.0f);
                     }
 
                     prevDepthHack = depthHack;
@@ -109,15 +109,15 @@ static void RB_LitPass(const VisLight *visLight) {
 
     // Restore depth hack
     if (prevDepthHack) {
-        rhi.SetDepthRange(0.0f, 1.0f);
+        graphics.SetDepthRange(0.0f, 1.0f);
     }
 
     if (depthBoundTestEnabled) {
-        rhi.SetDepthBounds(0.0f, 1.0f);
+        graphics.SetDepthBounds(0.0f, 1.0f);
     }
 
     if (r_useLightScissors.GetBool()) {
-        rhi.SetScissor(prevScissorRect);
+        graphics.SetScissor(prevScissorRect);
     }
 }
 

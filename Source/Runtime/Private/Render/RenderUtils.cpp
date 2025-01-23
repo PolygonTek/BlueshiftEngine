@@ -18,34 +18,34 @@
 
 BE_NAMESPACE_BEGIN
 
-void R_EnvCubeMapFaceToOpenGLAxis(RHI::CubeMapFace::Enum face, Mat3 &axis) {
+void R_EnvCubeMapFaceToOpenGLAxis(Graphics::CubeMapFace::Enum face, Mat3 &axis) {
     switch (face) {
-    case RHI::CubeMapFace::PositiveX:
+    case Graphics::CubeMapFace::PositiveX:
         axis[0] = Vec3( 1.0f,  0.0f,  0.0f);
         axis[1] = Vec3( 0.0f,  0.0f,  1.0f);
         axis[2] = Vec3( 0.0f, -1.0f,  0.0f);
         break;
-    case RHI::CubeMapFace::NegativeX:
+    case Graphics::CubeMapFace::NegativeX:
         axis[0] = Vec3(-1.0f,  0.0f,  0.0f);
         axis[1] = Vec3( 0.0f,  0.0f, -1.0f);
         axis[2] = Vec3( 0.0f, -1.0f,  0.0f);
         break;
-    case RHI::CubeMapFace::PositiveY:
+    case Graphics::CubeMapFace::PositiveY:
         axis[0] = Vec3( 0.0f,  1.0f,  0.0f);
         axis[1] = Vec3(-1.0f,  0.0f,  0.0f);
         axis[2] = Vec3( 0.0f,  0.0f,  1.0f);
         break;
-    case RHI::CubeMapFace::NegativeY:
+    case Graphics::CubeMapFace::NegativeY:
         axis[0] = Vec3( 0.0f, -1.0f,  0.0f);
         axis[1] = Vec3(-1.0f,  0.0f,  0.0f);
         axis[2] = Vec3( 0.0f,  0.0f, -1.0f);
         break;
-    case RHI::CubeMapFace::PositiveZ:
+    case Graphics::CubeMapFace::PositiveZ:
         axis[0] = Vec3( 0.0f,  0.0f,  1.0f);
         axis[1] = Vec3(-1.0f,  0.0f,  0.0f);
         axis[2] = Vec3( 0.0f, -1.0f,  0.0f);
         break;
-    case RHI::CubeMapFace::NegativeZ:
+    case Graphics::CubeMapFace::NegativeZ:
         axis[0] = Vec3( 0.0f,  0.0f, -1.0f);
         axis[1] = Vec3( 1.0f,  0.0f,  0.0f);
         axis[2] = Vec3( 0.0f, -1.0f,  0.0f);
@@ -53,7 +53,7 @@ void R_EnvCubeMapFaceToOpenGLAxis(RHI::CubeMapFace::Enum face, Mat3 &axis) {
     }
 }
 
-void R_EnvCubeMapFaceToEngineAxis(RHI::CubeMapFace::Enum face, Mat3 &axis) {
+void R_EnvCubeMapFaceToEngineAxis(Graphics::CubeMapFace::Enum face, Mat3 &axis) {
     Mat3 glAxis;
 
     R_EnvCubeMapFaceToOpenGLAxis(face, glAxis);

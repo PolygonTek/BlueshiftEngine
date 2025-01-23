@@ -13,19 +13,19 @@
 // limitations under the License.
 
 #include "Precompiled.h"
-#include "RHI/RHIOpenGL.h"
+#include "Graphics/GraphicsOpenGL.h"
 #include "RGLInternal.h"
 #include "SIMD/SIMD.h"
 
 BE_NAMESPACE_BEGIN
 
-static const GLenum ToGLBufferUsage(RHI::BufferUsage::Enum usage) {
+static const GLenum ToGLBufferUsage(Graphics::BufferUsage::Enum usage) {
     switch (usage) {
-    case RHI::BufferUsage::Static:
+    case Graphics::BufferUsage::Static:
         return GL_STATIC_DRAW;
-    case RHI::BufferUsage::Dynamic:
+    case Graphics::BufferUsage::Dynamic:
         return GL_DYNAMIC_DRAW;
-    case RHI::BufferUsage::Stream:
+    case Graphics::BufferUsage::Stream:
         return GL_STREAM_DRAW;
     default:
         assert(0);
@@ -33,26 +33,26 @@ static const GLenum ToGLBufferUsage(RHI::BufferUsage::Enum usage) {
     }
 }
 
-static const GLenum ToGLBufferTarget(RHI::BufferType::Enum type) {
+static const GLenum ToGLBufferTarget(Graphics::BufferType::Enum type) {
     switch (type) {
-    case RHI::BufferType::Vertex:
+    case Graphics::BufferType::Vertex:
         return GL_ARRAY_BUFFER;
-    case RHI::BufferType::Index:
+    case Graphics::BufferType::Index:
         return GL_ELEMENT_ARRAY_BUFFER;
-    case RHI::BufferType::PixelPack:
+    case Graphics::BufferType::PixelPack:
         return GL_PIXEL_PACK_BUFFER;
-    case RHI::BufferType::PixelUnpack:
+    case Graphics::BufferType::PixelUnpack:
         return GL_PIXEL_UNPACK_BUFFER;
-    case RHI::BufferType::Texel:
+    case Graphics::BufferType::Texel:
         return GL_TEXTURE_BUFFER;
-    case RHI::BufferType::Uniform:
+    case Graphics::BufferType::Uniform:
         return GL_UNIFORM_BUFFER;
-    case RHI::BufferType::TransformFeedback:
+    case Graphics::BufferType::TransformFeedback:
         return GL_TRANSFORM_FEEDBACK_BUFFER;
-    case RHI::BufferType::CopyRead:
+    case Graphics::BufferType::CopyRead:
         return GL_COPY_READ_BUFFER;
 #ifdef GL_ARB_draw_indirect
-    case RHI::BufferType::DrawIndirect:
+    case Graphics::BufferType::DrawIndirect:
         return GL_DRAW_INDIRECT_BUFFER;
 #endif
     default:
@@ -61,7 +61,7 @@ static const GLenum ToGLBufferTarget(RHI::BufferType::Enum type) {
     }
 }
 
-RHI::Handle OpenGLRHI::CreateBuffer(BufferType::Enum type, BufferUsage::Enum usage, int size, int pitch, const void *data) {
+Graphics::Handle GraphicsOpenGL::CreateBuffer(BufferType::Enum type, BufferUsage::Enum usage, int size, int pitch, const void *data) {
     GLenum target = ToGLBufferTarget(type);
 
     GLBuffer *buffer = new GLBuffer;
@@ -97,7 +97,7 @@ RHI::Handle OpenGLRHI::CreateBuffer(BufferType::Enum type, BufferUsage::Enum usa
     return (Handle)handle;
 }
 
-void OpenGLRHI::DestroyBuffer(Handle bufferHandle) {
+void GraphicsOpenGL::DestroyBuffer(Handle bufferHandle) {
     GLBuffer *buffer = bufferList[bufferHandle];
 
     for (int i = 0; i < COUNT_OF(currentContext->state->bufferHandles); i++) {
@@ -114,7 +114,7 @@ void OpenGLRHI::DestroyBuffer(Handle bufferHandle) {
     bufferList[bufferHandle] = nullptr;
 }
 
-void OpenGLRHI::BindBuffer(BufferType::Enum type, Handle bufferHandle) {
+void GraphicsOpenGL::BindBuffer(BufferType::Enum type, Handle bufferHandle) {
     Handle *bufferHandlePtr = &currentContext->state->bufferHandles[type];
     if (*bufferHandlePtr != bufferHandle) {
         *bufferHandlePtr = bufferHandle;
@@ -123,7 +123,7 @@ void OpenGLRHI::BindBuffer(BufferType::Enum type, Handle bufferHandle) {
     }
 }
 
-void OpenGLRHI::BindIndexedBuffer(BufferType::Enum type, int bindingIndex, Handle bufferHandle) {
+void GraphicsOpenGL::BindIndexedBuffer(BufferType::Enum type, int bindingIndex, Handle bufferHandle) {
     // Allowed only target UniformBuffer or TransformFeedbackBuffer.
     assert(type == BufferType::Uniform || type == BufferType::TransformFeedback);
     int targetIndex = type - BufferType::Uniform;
@@ -138,7 +138,7 @@ void OpenGLRHI::BindIndexedBuffer(BufferType::Enum type, int bindingIndex, Handl
     }
 }
 
-void OpenGLRHI::BindIndexedBufferRange(BufferType::Enum type, int bindingIndex, Handle bufferHandle, int offset, int size) {
+void GraphicsOpenGL::BindIndexedBufferRange(BufferType::Enum type, int bindingIndex, Handle bufferHandle, int offset, int size) {
     // Allowed only target UniformBuffer or TransformFeedbackBuffer.
     assert(type == BufferType::Uniform || type == BufferType::TransformFeedback);
     int targetIndex = type - BufferType::Uniform;
@@ -159,7 +159,7 @@ void OpenGLRHI::BindIndexedBufferRange(BufferType::Enum type, int bindingIndex, 
 // GL_MAP_FLUSH_EXPLICIT_BIT -- modifications to each subrange must be explicitly flushed by calling glFlushMappedBufferRange()
 // GL_MAP_PERSISTENT_BIT -- keep mapping and that the client intends to hold and use the returned pointer during subsequent GL operation
 // GL_MAP_COHERENT_BIT -- persistent mapping is also to be coherent (automatically visible to GPU)
-void *OpenGLRHI::MapBufferRange(Handle bufferHandle, BufferLockMode::Enum lockMode, int offset, int size) {
+void *GraphicsOpenGL::MapBufferRange(Handle bufferHandle, BufferLockMode::Enum lockMode, int offset, int size) {
     GLBuffer *buffer = bufferList[bufferHandle];
     
     if (size < 0) {
@@ -199,7 +199,7 @@ void *OpenGLRHI::MapBufferRange(Handle bufferHandle, BufferLockMode::Enum lockMo
     return ptr;
 }
 
-bool OpenGLRHI::UnmapBuffer(Handle bufferHandle) {
+bool GraphicsOpenGL::UnmapBuffer(Handle bufferHandle) {
     GLBuffer *buffer = bufferList[bufferHandle];
     // glUnmapBuffer returns GL_TRUE unless the data store contents have become corrupt during the time the data
     // store was mapped. This can occur for system-specific reasons that affect the availability of graphics
@@ -208,7 +208,7 @@ bool OpenGLRHI::UnmapBuffer(Handle bufferHandle) {
     return !!gglUnmapBuffer(buffer->target);
 }
 
-void OpenGLRHI::FlushMappedBufferRange(Handle bufferHandle, int offset, int size) {
+void GraphicsOpenGL::FlushMappedBufferRange(Handle bufferHandle, int offset, int size) {
     GLBuffer *buffer = bufferList[bufferHandle];
 
     if (size < 0) {
@@ -220,7 +220,7 @@ void OpenGLRHI::FlushMappedBufferRange(Handle bufferHandle, int offset, int size
     gglFlushMappedBufferRange(buffer->target, offset, size);
 }
 
-int OpenGLRHI::BufferDiscardWrite(Handle bufferHandle, int size, const void *data) {
+int GraphicsOpenGL::BufferDiscardWrite(Handle bufferHandle, int size, const void *data) {
     GLBuffer *buffer = bufferList[bufferHandle];
 
     if (gglMapBufferRange) {
@@ -241,7 +241,7 @@ int OpenGLRHI::BufferDiscardWrite(Handle bufferHandle, int size, const void *dat
     return 0;
 }
 
-int OpenGLRHI::BufferWrite(Handle bufferHandle, int alignSize, int size, const void *data) {
+int GraphicsOpenGL::BufferWrite(Handle bufferHandle, int alignSize, int size, const void *data) {
     GLBuffer *writeBuffer = bufferList[bufferHandle];
 
     if (writeBuffer->pitch > 0 && size > writeBuffer->pitch) {
@@ -282,7 +282,7 @@ int OpenGLRHI::BufferWrite(Handle bufferHandle, int alignSize, int size, const v
     return base;
 }
 
-int	OpenGLRHI::BufferCopy(Handle readBufferHandle, Handle writeBufferHandle, int alignSize, int size) {
+int	GraphicsOpenGL::BufferCopy(Handle readBufferHandle, Handle writeBufferHandle, int alignSize, int size) {
     GLBuffer *writeBuffer = bufferList[writeBufferHandle];
     const GLBuffer *readBuffer = bufferList[readBufferHandle];
 
@@ -320,7 +320,7 @@ int	OpenGLRHI::BufferCopy(Handle readBufferHandle, Handle writeBufferHandle, int
     return base;
 }
 
-void OpenGLRHI::BufferRewind(Handle bufferHandle) {
+void GraphicsOpenGL::BufferRewind(Handle bufferHandle) {
     GLBuffer *buffer = bufferList[bufferHandle];
     
     buffer->writeOffset = 0;

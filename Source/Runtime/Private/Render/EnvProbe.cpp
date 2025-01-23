@@ -89,7 +89,7 @@ void EnvProbe::Update(const EnvProbe::State *stateDef) {
         if (!diffuseProbeTexture) {
             // Create default diffuse probe cubemap.
             diffuseProbeTexture = textureManager.AllocTexture(va("DiffuseProbe-%s", state.guid.ToString()));
-            diffuseProbeTexture->CreateEmpty(RHI::TextureType::TextureCubeMap, 16, 16, 1, 1, 1,
+            diffuseProbeTexture->CreateEmpty(Graphics::TextureType::TextureCubeMap, 16, 16, 1, 1, 1,
                 state.useHDR ? Image::Format::RGB_11F_11F_10F : Image::Format::RGB_8_8_8,
                 Texture::Flag::Clamp | Texture::Flag::NoMipmaps | Texture::Flag::HighQuality);
 
@@ -124,7 +124,7 @@ void EnvProbe::Update(const EnvProbe::State *stateDef) {
             int numMipLevels = Math::Log(2, size) + 1;
 
             specularProbeTexture = textureManager.AllocTexture(va("SpecularProbe-%s", state.guid.ToString()));
-            specularProbeTexture->CreateEmpty(RHI::TextureType::TextureCubeMap, size, size, 1, 1, numMipLevels,
+            specularProbeTexture->CreateEmpty(Graphics::TextureType::TextureCubeMap, size, size, 1, 1, numMipLevels,
                 state.useHDR ? Image::Format::RGBA_16F_16F_16F_16F : Image::Format::RGBA_8_8_8_8,
                 Texture::Flag::Clamp | Texture::Flag::Trilinear | Texture::Flag::HighQuality);
 
@@ -151,7 +151,7 @@ void EnvProbeJob::RevalidateDiffuseProbeRT(bool clearToBlack) {
     // Recreate diffuse probe texture if it need to.
     if (Image::IsCompressed(envProbe->diffuseProbeTexture->GetFormat()) ||
         envProbe->diffuseProbeTexture->GetFormat() != format) {
-        envProbe->diffuseProbeTexture->CreateEmpty(RHI::TextureType::TextureCubeMap, size, size, 1, 1, 1, format,
+        envProbe->diffuseProbeTexture->CreateEmpty(Graphics::TextureType::TextureCubeMap, size, size, 1, 1, 1, format,
             Texture::Flag::Clamp | Texture::Flag::NoMipmaps | Texture::Flag::HighQuality);
     }
 
@@ -190,7 +190,7 @@ void EnvProbeJob::RevalidateSpecularProbeRT(bool clearToBlack) {
     if (Image::IsCompressed(envProbe->specularProbeTexture->GetFormat()) ||
         envProbe->specularProbeTexture->GetFormat() != format ||
         size != envProbe->specularProbeTexture->GetWidth()) {
-        envProbe->specularProbeTexture->CreateEmpty(RHI::TextureType::TextureCubeMap, size, size, 1, 1, numMipLevels, format,
+        envProbe->specularProbeTexture->CreateEmpty(Graphics::TextureType::TextureCubeMap, size, size, 1, 1, numMipLevels, format,
             Texture::Flag::Clamp | Texture::Flag::Trilinear | Texture::Flag::HighQuality);
     }
 
@@ -218,7 +218,7 @@ void EnvProbeJob::RevalidateSpecularProbeRT(bool clearToBlack) {
 
     // Create specular probe render target if it is not created yet.
     if (!envProbe->specularProbeRT) {
-        envProbe->specularProbeRT = RenderTarget::Create(envProbe->specularProbeTexture, nullptr, RHI::RenderTargetFlag::HasDepthBuffer);
+        envProbe->specularProbeRT = RenderTarget::Create(envProbe->specularProbeTexture, nullptr, Graphics::RenderTargetFlag::HasDepthBuffer);
     }
 }
 
@@ -234,7 +234,7 @@ void EnvProbeJob::RevalidateEnvProbeRT() {
     // Recreate env probe texture to use when refreshing specular probe texture
     if (size != envProbe->envProbeTexture->GetWidth() ||
         envProbe->envProbeTexture->GetFormat() != format) {
-        envProbe->envProbeTexture->CreateEmpty(RHI::TextureType::TextureCubeMap, size, size, 1, 1, numMipLevels, format,
+        envProbe->envProbeTexture->CreateEmpty(Graphics::TextureType::TextureCubeMap, size, size, 1, 1, numMipLevels, format,
             Texture::Flag::Clamp | Texture::Flag::Trilinear | Texture::Flag::HighQuality);
     }
 
@@ -248,7 +248,7 @@ void EnvProbeJob::RevalidateEnvProbeRT() {
 
     // Create env probe render target if it is not created yet.
     if (!envProbe->envProbeRT) {
-        envProbe->envProbeRT = RenderTarget::Create(envProbe->envProbeTexture, nullptr, RHI::RenderTargetFlag::HasDepthBuffer);
+        envProbe->envProbeRT = RenderTarget::Create(envProbe->envProbeTexture, nullptr, Graphics::RenderTargetFlag::HasDepthBuffer);
     }
 }
 
@@ -264,7 +264,7 @@ void EnvProbeJob::RevalidateEnvProbeTexture() {
     // Recreate env probe texture to use when refreshing specular probe texture
     if (size != envProbe->envProbeTexture->GetWidth() ||
         envProbe->envProbeTexture->GetFormat() != format) {
-        envProbe->envProbeTexture->CreateEmpty(RHI::TextureType::TextureCubeMap, size, size, 1, 1, numMipLevels, format,
+        envProbe->envProbeTexture->CreateEmpty(Graphics::TextureType::TextureCubeMap, size, size, 1, 1, numMipLevels, format,
             Texture::Flag::Clamp | Texture::Flag::Trilinear | Texture::Flag::HighQuality);
     }
 }
@@ -281,7 +281,7 @@ bool EnvProbeJob::Refresh(EnvProbe::TimeSlicing::Enum timeSlicing) {
         if (specularProbeCubemapComputedLevel0Face == -1) {
             RevalidateSpecularProbeRT(envProbe->bounces == 0);
 
-            if (rhi.SupportsCopyImage()) {
+            if (graphics.SupportsCopyImage()) {
                 RevalidateEnvProbeTexture();
             } else {
                 RevalidateEnvProbeRT();
@@ -300,7 +300,7 @@ bool EnvProbeJob::Refresh(EnvProbe::TimeSlicing::Enum timeSlicing) {
                 envProbe->state.clippingNear, envProbe->state.clippingFar,
                 envProbe->specularProbeRT, specularProbeCubemapComputedLevel0Face + 1);
 
-            if (!rhi.SupportsCopyImage()) {
+            if (!graphics.SupportsCopyImage()) {
                 renderSystem.CaptureEnvCubeFaceRT(renderWorld, envProbe->state.layerMask, staticMask,
                     envProbe->state.clearMethod == EnvProbe::ClearMethod::Color, Color4(envProbe->state.clearColor, 0.0f),
                     envProbe->state.origin,
@@ -325,7 +325,7 @@ bool EnvProbeJob::Refresh(EnvProbe::TimeSlicing::Enum timeSlicing) {
     }
 
     if (specularProbeCubemapComputedLevel == 0) {
-        if (rhi.SupportsCopyImage()) {
+        if (graphics.SupportsCopyImage()) {
             envProbe->specularProbeTexture->CopyTo(0, envProbe->envProbeTexture);
         }
 

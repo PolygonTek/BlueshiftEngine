@@ -15,14 +15,14 @@
 #pragma once
 
 #include "Platform/PlatformAtomic.h"
-#include "RHI/RHI.h"
+#include "Graphics/Graphics.h"
 
 BE_NAMESPACE_BEGIN
 
 class Texture;
 
 struct BufferCache {
-    RHI::Handle                 buffer;             // buffer handle (dynamic or static)
+    Graphics::Handle            buffer;             // buffer handle (dynamic or static)
     const Texture *             texture;
     uint32_t                    tcBase[2];
     uint32_t                    offset;             // offset for dynamic buffer. always 0 for static buffer.
@@ -80,21 +80,21 @@ public:
 
     const Texture *             GetFrameTexture() const;
 
-    RHI::Handle                 streamVertexBuffer;
-    RHI::Handle                 streamIndexBuffer;
-    RHI::Handle                 streamUniformBuffer;
+    Graphics::Handle            streamVertexBuffer;
+    Graphics::Handle            streamIndexBuffer;
+    Graphics::Handle            streamUniformBuffer;
 
 private:
     static const int            NumFrames = 3;
 
     struct FrameDataBufferSet {
-        RHI::Handle             vertexBuffer;
-        RHI::Handle             indexBuffer;
-        RHI::Handle             uniformBuffer;
-        RHI::Handle             texelBuffer;
-        RHI::BufferType::Enum   texelBufferType;
+        Graphics::Handle        vertexBuffer;
+        Graphics::Handle        indexBuffer;
+        Graphics::Handle        uniformBuffer;
+        Graphics::Handle        texelBuffer;
+        Graphics::BufferType::Enum texelBufferType;
         Texture *               texture;
-        RHI::Handle             sync;
+        Graphics::Handle        sync;
         void *                  mappedVertexBase;
         void *                  mappedIndexBase;
         void *                  mappedUniformBase;

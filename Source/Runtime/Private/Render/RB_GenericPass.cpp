@@ -106,9 +106,9 @@ void RB_SelectionPass(int numDrawSurfs, DrawSurf **drawSurfs) {
 
                 if (prevDepthHack != depthHack) {
                     if (depthHack) {
-                        rhi.SetDepthRange(0.0f, 0.1f);
+                        graphics.SetDepthRange(0.0f, 0.1f);
                     } else {
-                        rhi.SetDepthRange(0.0f, 1.0f);
+                        graphics.SetDepthRange(0.0f, 1.0f);
                     }
 
                     prevDepthHack = depthHack;
@@ -131,7 +131,7 @@ void RB_SelectionPass(int numDrawSurfs, DrawSurf **drawSurfs) {
     
     // Restore depth hack
     if (prevDepthHack) {
-        rhi.SetDepthRange(0.0f, 1.0f);
+        graphics.SetDepthRange(0.0f, 1.0f);
     }
 }
 
@@ -177,9 +177,9 @@ void RB_OccluderPass(int numDrawSurfs, DrawSurf **drawSurfs) {
 
                 if (prevDepthHack != depthHack) {
                     if (depthHack) {
-                        rhi.SetDepthRange(0.0f, 0.1f);
+                        graphics.SetDepthRange(0.0f, 0.1f);
                     } else {
-                        rhi.SetDepthRange(0.0f, 1.0f);
+                        graphics.SetDepthRange(0.0f, 1.0f);
                     }
 
                     prevDepthHack = depthHack;
@@ -202,7 +202,7 @@ void RB_OccluderPass(int numDrawSurfs, DrawSurf **drawSurfs) {
 
     // Restore depth hack
     if (prevDepthHack) {
-        rhi.SetDepthRange(0.0f, 1.0f);
+        graphics.SetDepthRange(0.0f, 1.0f);
     }
 }
 
@@ -266,9 +266,9 @@ void RB_DepthPrePass(int numDrawSurfs, DrawSurf **drawSurfs) {
                     }
 
                     if (depthHack) {
-                        rhi.SetDepthRange(0.0f, 0.1f);
+                        graphics.SetDepthRange(0.0f, 0.1f);
                     } else {
-                        rhi.SetDepthRange(0.0f, 1.0f);
+                        graphics.SetDepthRange(0.0f, 1.0f);
                     }
 
                     prevDepthHack = depthHack;
@@ -297,7 +297,7 @@ void RB_DepthPrePass(int numDrawSurfs, DrawSurf **drawSurfs) {
     
     // Restore depth hack
     if (prevDepthHack) {
-        rhi.SetDepthRange(0.0f, 1.0f);
+        graphics.SetDepthRange(0.0f, 1.0f);
     }
 
     if (r_usePostProcessing.GetBool() && r_SSAO.GetBool()) {
@@ -357,9 +357,9 @@ void RB_BlendPass(int numDrawSurfs, DrawSurf **drawSurfs) {
                     }
 
                     if (depthHack) {
-                        rhi.SetDepthRange(0.0f, 0.1f);
+                        graphics.SetDepthRange(0.0f, 0.1f);
                     } else {
-                        rhi.SetDepthRange(0.0f, 1.0f);
+                        graphics.SetDepthRange(0.0f, 1.0f);
                     }
 
                     prevDepthHack = depthHack;
@@ -388,7 +388,7 @@ void RB_BlendPass(int numDrawSurfs, DrawSurf **drawSurfs) {
 
     // Restore depth hack
     if (prevDepthHack) {
-        rhi.SetDepthRange(0.0f, 1.0f);
+        graphics.SetDepthRange(0.0f, 1.0f);
     }
 }
 
@@ -462,9 +462,9 @@ void RB_VelocityMapPass(int numDrawSurfs, DrawSurf **drawSurfs) {
 
             backEnd.ctx->ppRTs[PP_RT_VEL]->Begin();
 
-            rhi.SetViewport(Rect(0, 0, backEnd.ctx->ppRTs[PP_RT_VEL]->GetWidth(), backEnd.ctx->ppRTs[PP_RT_VEL]->GetHeight()));
-            rhi.SetStateBits(RHI::ColorWrite | RHI::AlphaWrite | RHI::DepthWrite);
-            rhi.Clear(RHI::ClearBit::Color | RHI::ClearBit::Depth, Color4(0.0f, 0.0f, 0.0f, 1.0f), 1.0f, 0);
+            graphics.SetViewport(Rect(0, 0, backEnd.ctx->ppRTs[PP_RT_VEL]->GetWidth(), backEnd.ctx->ppRTs[PP_RT_VEL]->GetHeight()));
+            graphics.SetStateBits(Graphics::ColorWrite | Graphics::AlphaWrite | Graphics::DepthWrite);
+            graphics.Clear(Graphics::ClearBit::Color | Graphics::ClearBit::Depth, Color4(0.0f, 0.0f, 0.0f, 1.0f), 1.0f, 0);
         }
 
         backEnd.batch.DrawSubMesh(drawSurf->subMesh);
@@ -475,21 +475,21 @@ void RB_VelocityMapPass(int numDrawSurfs, DrawSurf **drawSurfs) {
 
         backEnd.ctx->ppRTs[PP_RT_VEL]->End();
         
-        rhi.SetViewport(backEnd.renderRect);
-        rhi.SetScissor(backEnd.renderRect);
+        graphics.SetViewport(backEnd.renderRect);
+        graphics.SetScissor(backEnd.renderRect);
     } else {
         firstDraw = false;
 
         backEnd.ctx->ppRTs[PP_RT_VEL]->Begin();
 
-        rhi.SetViewport(Rect(0, 0, backEnd.ctx->ppRTs[PP_RT_VEL]->GetWidth(), backEnd.ctx->ppRTs[PP_RT_VEL]->GetHeight()));
-        rhi.SetStateBits(RHI::ColorWrite | RHI::AlphaWrite | RHI::DepthWrite);
-        rhi.Clear(RHI::ClearBit::Color | RHI::ClearBit::Depth, Color4(0.0f, 0.0f, 0.0f, 1.0f), 1.0f, 0);
+        graphics.SetViewport(Rect(0, 0, backEnd.ctx->ppRTs[PP_RT_VEL]->GetWidth(), backEnd.ctx->ppRTs[PP_RT_VEL]->GetHeight()));
+        graphics.SetStateBits(Graphics::ColorWrite | Graphics::AlphaWrite | Graphics::DepthWrite);
+        graphics.Clear(Graphics::ClearBit::Color | Graphics::ClearBit::Depth, Color4(0.0f, 0.0f, 0.0f, 1.0f), 1.0f, 0);
     
         backEnd.ctx->ppRTs[PP_RT_VEL]->End();
 
-        rhi.SetViewport(backEnd.renderRect);
-        rhi.SetScissor(backEnd.renderRect);
+        graphics.SetViewport(backEnd.renderRect);
+        graphics.SetScissor(backEnd.renderRect);
     }
 }
 
@@ -549,9 +549,9 @@ void RB_FinalPass(int numDrawSurfs, DrawSurf **drawSurfs) {
                     }
 
                     if (depthHack) {
-                        rhi.SetDepthRange(0.0f, 0.1f);
+                        graphics.SetDepthRange(0.0f, 0.1f);
                     } else {
-                        rhi.SetDepthRange(0.0f, 1.0f);
+                        graphics.SetDepthRange(0.0f, 1.0f);
                     }
 
                     prevDepthHack = depthHack;
@@ -580,7 +580,7 @@ void RB_FinalPass(int numDrawSurfs, DrawSurf **drawSurfs) {
 
     // Restore depth hack
     if (prevDepthHack) {
-        rhi.SetDepthRange(0.0f, 1.0f);
+        graphics.SetDepthRange(0.0f, 1.0f);
     }
 }
 
@@ -611,9 +611,9 @@ void RB_GuiPass(int numDrawSurfs, DrawSurf **drawSurfs) {
 
                 if (prevDepthHack != depthHack) {
                     if (depthHack) {
-                        rhi.SetDepthRange(0.0f, 0.1f);
+                        graphics.SetDepthRange(0.0f, 0.1f);
                     } else {
-                        rhi.SetDepthRange(0.0f, 1.0f);
+                        graphics.SetDepthRange(0.0f, 1.0f);
                     }
 
                     prevDepthHack = depthHack;
@@ -636,7 +636,7 @@ void RB_GuiPass(int numDrawSurfs, DrawSurf **drawSurfs) {
 
     // Restore depth hack
     if (prevDepthHack) {
-        rhi.SetDepthRange(0.0f, 1.0f);
+        graphics.SetDepthRange(0.0f, 1.0f);
     }
 }
 

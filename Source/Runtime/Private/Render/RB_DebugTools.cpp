@@ -106,7 +106,7 @@ Vec3 *RB_ReserveDebugPrimsVerts(int topology, int numVerts, const Color4 &color,
     if (rb_numDebugPrims < MaxDebugPrims) {
         debugPrims = &rb_debugPrims[rb_numDebugPrims++];
 
-        *reinterpret_cast<uint32_t *>(debugPrims->color) = (rhi.IsSRGBWriteEnabled() ? color.SRGBToLinear() : color).ToUInt32();
+        *reinterpret_cast<uint32_t *>(debugPrims->color) = (graphics.IsSRGBWriteEnabled() ? color.SRGBToLinear() : color).ToUInt32();
         debugPrims->topology    = topology;
         debugPrims->startVert   = rb_numDebugPrimsVerts;
         debugPrims->numVerts    = numVerts;
@@ -145,11 +145,11 @@ static void RB_DrawDebugPrimsElements(int numElements, const int *elements, int 
         }
     }
 
-    if (topology >= RHI::Topology::LineList && topology <= RHI::Topology::LineLoop) {
+    if (topology >= Graphics::Topology::LineList && topology <= Graphics::Topology::LineLoop) {
         if (useSmoothLine) {
-            rhi.EnableLineSmooth(true);
+            graphics.EnableLineSmooth(true);
         }
-        rhi.SetLineWidth(lineWidth);
+        graphics.SetLineWidth(lineWidth);
     }
 
     Shader *shader = ShaderManager::vertexColorShader;
@@ -157,34 +157,34 @@ static void RB_DrawDebugPrimsElements(int numElements, const int *elements, int 
     shader->Bind();
     shader->SetConstant4x4f("modelViewProjectionMatrix", true, backEnd.camera->def->GetViewProjMatrix());
     
-    rhi.BindBuffer(RHI::BufferType::Vertex, bufferCacheManager.streamVertexBuffer);
-    rhi.BufferDiscardWrite(bufferCacheManager.streamVertexBuffer, size, verts);
+    graphics.BindBuffer(Graphics::BufferType::Vertex, bufferCacheManager.streamVertexBuffer);
+    graphics.BufferDiscardWrite(bufferCacheManager.streamVertexBuffer, size, verts);
 
-    rhi.SetVertexFormat(vertexFormats[VertexFormat::Type::XyzColor].vertexFormatHandle);
-    rhi.SetStreamSource(0, bufferCacheManager.streamVertexBuffer, 0, sizeof(DebugVert));
+    graphics.SetVertexFormat(vertexFormats[VertexFormat::Type::XyzColor].vertexFormatHandle);
+    graphics.SetStreamSource(0, bufferCacheManager.streamVertexBuffer, 0, sizeof(DebugVert));
 
-    int stateBits = RHI::PM_Solid | RHI::ColorWrite;
+    int stateBits = Graphics::PM_Solid | Graphics::ColorWrite;
     if (depthTest) {
-        stateBits |= RHI::DF_LEqual;
+        stateBits |= Graphics::DF_LEqual;
     }
 
     if (needAlphaBlend || useSmoothLine) {
-        stateBits |= RHI::BS_SrcAlpha | RHI::BD_OneMinusSrcAlpha;
+        stateBits |= Graphics::BS_SrcAlpha | Graphics::BD_OneMinusSrcAlpha;
     } else {
-        stateBits |= RHI::DepthWrite;
+        stateBits |= Graphics::DepthWrite;
     }
 
-    rhi.SetStateBits(stateBits);
+    graphics.SetStateBits(stateBits);
 
-    int cullMode = twoSided ? RHI::CullType::None : RHI::CullType::Back;
-    rhi.SetCullFace(cullMode);
-    rhi.DrawArrays((RHI::Topology::Enum)topology, 0, numVerts);
+    int cullMode = twoSided ? Graphics::CullType::None : Graphics::CullType::Back;
+    graphics.SetCullFace(cullMode);
+    graphics.DrawArrays((Graphics::Topology::Enum)topology, 0, numVerts);
 
-    if (topology >= RHI::Topology::LineList && topology <= RHI::Topology::LineLoop) {
+    if (topology >= Graphics::Topology::LineList && topology <= Graphics::Topology::LineLoop) {
         if (useSmoothLine) {
-            rhi.EnableLineSmooth(false);
+            graphics.EnableLineSmooth(false);
         }
-        rhi.SetLineWidth(1);
+        graphics.SetLineWidth(1);
     }
 }
 
@@ -227,10 +227,10 @@ static void RB_DrawDebugPrims() {
             prev_twoSided = debugPrims->twoSided;
             prev_depthTest = debugPrims->depthTest;
         } else {
-            bool mergeablePrims = (prev_prims == debugPrims->topology) && (prev_prims == RHI::Topology::LineList || prev_prims == RHI::Topology::TriangleList);
+            bool mergeablePrims = (prev_prims == debugPrims->topology) && (prev_prims == Graphics::Topology::LineList || prev_prims == Graphics::Topology::TriangleList);
 
             if (numVerts + num > maxVerts || !mergeablePrims || prev_alpha != debugPrims->color[3] || 
-                (prev_prims == RHI::Topology::LineList && prev_lineWidth != debugPrims->lineWidth) ||
+                (prev_prims == Graphics::Topology::LineList && prev_lineWidth != debugPrims->lineWidth) ||
                 prev_twoSided != debugPrims->twoSided || prev_depthTest != debugPrims->depthTest) {
                 RB_DrawDebugPrimsElements(numElements, elements, numVerts, prev_lineWidth, prev_twoSided, prev_depthTest);
 
@@ -288,7 +288,7 @@ void RB_AddDebugText(const char *text, const Vec3 &origin, const Mat3 &viewAxis,
     if (rb_numDebugText < MaxDebugText) {
         debugText = &rb_debugText[rb_numDebugText++];
 
-        *reinterpret_cast<uint32_t *>(debugText->color) = (rhi.IsSRGBWriteEnabled() ? color.SRGBToLinear() : color).ToUInt32();
+        *reinterpret_cast<uint32_t *>(debugText->color) = (graphics.IsSRGBWriteEnabled() ? color.SRGBToLinear() : color).ToUInt32();
         debugText->text         = text;
         debugText->origin       = origin;
         debugText->viewAxis     = viewAxis;
@@ -447,38 +447,38 @@ static void RB_DrawDebugTextElements(int numElements, const int *elements, int n
     }
 
     if (useSmoothLine) {
-        rhi.EnableLineSmooth(true);
+        graphics.EnableLineSmooth(true);
     }
-    rhi.SetLineWidth(lineWidth);
+    graphics.SetLineWidth(lineWidth);
 
     Shader *shader = ShaderManager::vertexColorShader;
 
     shader->Bind();
     shader->SetConstant4x4f("modelViewProjectionMatrix", true, backEnd.camera->def->GetViewProjMatrix());
     
-    rhi.BindBuffer(RHI::BufferType::Vertex, bufferCacheManager.streamVertexBuffer);
-    rhi.BufferDiscardWrite(bufferCacheManager.streamVertexBuffer, size, verts);
+    graphics.BindBuffer(Graphics::BufferType::Vertex, bufferCacheManager.streamVertexBuffer);
+    graphics.BufferDiscardWrite(bufferCacheManager.streamVertexBuffer, size, verts);
 
-    rhi.SetVertexFormat(vertexFormats[VertexFormat::Type::XyzColor].vertexFormatHandle);
-    rhi.SetStreamSource(0, bufferCacheManager.streamVertexBuffer, 0, sizeof(DebugVert));
+    graphics.SetVertexFormat(vertexFormats[VertexFormat::Type::XyzColor].vertexFormatHandle);
+    graphics.SetStreamSource(0, bufferCacheManager.streamVertexBuffer, 0, sizeof(DebugVert));
 
-    int stateBits = RHI::PM_Solid | RHI::ColorWrite;
+    int stateBits = Graphics::PM_Solid | Graphics::ColorWrite;
     if (depthTest) {
-        stateBits |= RHI::DF_LEqual;
+        stateBits |= Graphics::DF_LEqual;
     }
 
     if (needAlphaBlend || useSmoothLine) {
-        stateBits |= RHI::BS_SrcAlpha | RHI::BD_OneMinusSrcAlpha;
+        stateBits |= Graphics::BS_SrcAlpha | Graphics::BD_OneMinusSrcAlpha;
     } else {
-        stateBits |= RHI::DepthWrite;
+        stateBits |= Graphics::DepthWrite;
     }
 
-    rhi.SetStateBits(stateBits);
-    rhi.DrawArrays(RHI::Topology::LineList, 0, numVerts);
+    graphics.SetStateBits(stateBits);
+    graphics.DrawArrays(Graphics::Topology::LineList, 0, numVerts);
 
-    rhi.SetLineWidth(1);
+    graphics.SetLineWidth(1);
     if (useSmoothLine) {
-        rhi.EnableLineSmooth(false);
+        graphics.EnableLineSmooth(false);
     }
 }
 
@@ -581,9 +581,9 @@ void RB_DrawTris(int numDrawSurfs, DrawSurf **drawSurfs, bool forceToDraw) {
                     }
 
                     if (depthHack) {
-                        rhi.SetDepthRange(0.0f, 0.1f);
+                        graphics.SetDepthRange(0.0f, 0.1f);
                     } else {
-                        rhi.SetDepthRange(0.0f, 1.0f);
+                        graphics.SetDepthRange(0.0f, 1.0f);
                     }
 
                     prevDepthHack = depthHack;
@@ -610,13 +610,13 @@ void RB_DrawTris(int numDrawSurfs, DrawSurf **drawSurfs, bool forceToDraw) {
 
     // Restore depthHack.
     if (prevDepthHack) {
-        rhi.SetDepthRange(0.0f, 1.0f);
+        graphics.SetDepthRange(0.0f, 1.0f);
     }
 }
 
 static void RB_DrawDebugLights(int mode) {
     if (mode == 2) {
-        rhi.SetDepthRange(0.0f, 0.0f);
+        graphics.SetDepthRange(0.0f, 0.0f);
     }
 
     for (VisLight *visLight = backEnd.visLights->Next(); visLight; visLight = visLight->node.Next()) {
@@ -624,8 +624,8 @@ static void RB_DrawDebugLights(int mode) {
             continue;
         }
         
-        rhi.SetStateBits(RHI::ColorWrite | RHI::BS_SrcAlpha | RHI::BD_One | RHI::DF_LEqual);
-        rhi.SetCullFace(RHI::CullType::Back);
+        graphics.SetStateBits(Graphics::ColorWrite | Graphics::BS_SrcAlpha | Graphics::BD_One | Graphics::DF_LEqual);
+        graphics.SetCullFace(Graphics::CullType::Back);
 
         Shader *shader = ShaderManager::constantColorShader;
 
@@ -635,8 +635,8 @@ static void RB_DrawDebugLights(int mode) {
         shader->SetConstant4f("color", Color4(Color3(&visLight->def->GetState().materialParms[RenderObject::MaterialParm::Red]), 0.25f));
         RB_DrawLightVolume(visLight->def);
 
-        rhi.SetStateBits(RHI::ColorWrite | RHI::PM_Wireframe | RHI::DF_LEqual);
-        rhi.SetCullFace(RHI::CullType::None);
+        graphics.SetStateBits(Graphics::ColorWrite | Graphics::PM_Wireframe | Graphics::DF_LEqual);
+        graphics.SetCullFace(Graphics::CullType::None);
 
         shader->SetConstant4f("color", &visLight->def->GetState().materialParms[RenderObject::MaterialParm::Red]);
     
@@ -646,7 +646,7 @@ static void RB_DrawDebugLights(int mode) {
     }
 
     if (mode == 2) {
-        rhi.SetDepthRange(0.0f, 1.0f);
+        graphics.SetDepthRange(0.0f, 1.0f);
     }
 }
 
@@ -656,8 +656,8 @@ static void RB_DrawDebugLightScissorRects() {
             continue;
         }
 
-        rhi.SetStateBits(RHI::ColorWrite | RHI::PM_Wireframe);
-        rhi.SetCullFace(RHI::CullType::None);
+        graphics.SetStateBits(Graphics::ColorWrite | Graphics::PM_Wireframe);
+        graphics.SetCullFace(Graphics::CullType::None);
         
         Shader *shader = ShaderManager::postPassThruColorShader;
 
@@ -701,8 +701,8 @@ void RB_DebugToolsPass(int numDrawSurfs, DrawSurf **drawSurfs) {
 
             bglColor4ub(255, 255, 0, 127);
 
-            rhi.SetStateBits(ColorWrite | DF_LEqual | BS_SrcAlpha | BD_OneMinusSrcAlpha);
-            rhi.SetCullFace(NoCull);
+            graphics.SetStateBits(ColorWrite | DF_LEqual | BS_SrcAlpha | BD_OneMinusSrcAlpha);
+            graphics.SetCullFace(NoCull);
 
             bglDisableClientState(GL_TEXTURE_COORD_ARRAY);
 

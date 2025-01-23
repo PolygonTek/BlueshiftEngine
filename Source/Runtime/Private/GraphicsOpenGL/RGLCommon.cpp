@@ -14,7 +14,7 @@
 
 #include "Precompiled.h"
 #include "Platform/PlatformFile.h"
-#include "RHI/RHIOpenGL.h"
+#include "Graphics/GraphicsOpenGL.h"
 #include "RGLInternal.h"
 
 BE_NAMESPACE_BEGIN
@@ -35,19 +35,19 @@ static const GLenum toGLTopology[] = {
 #endif
 };
 
-OpenGLRHI       rhi;
+GraphicsOpenGL  graphics;
 
 Str             GLShader::programCacheDir;
 
 extern CVar     r_sRGB;
 
-OpenGLRHI::OpenGLRHI() {
+GraphicsOpenGL::GraphicsOpenGL() {
     initialized = false;
     currentContext = nullptr;
     mainContext = nullptr;
 }
 
-void OpenGLRHI::Init(WindowHandle windowHandle, const Settings *settings) {
+void GraphicsOpenGL::Init(WindowHandle windowHandle, const Settings *settings) {
     BE_LOG("Initializing OpenGL Renderer...\n");
 
     InitHandles();
@@ -76,7 +76,7 @@ void OpenGLRHI::Init(WindowHandle windowHandle, const Settings *settings) {
     initialized = true;
 }
 
-void OpenGLRHI::Shutdown() {
+void GraphicsOpenGL::Shutdown() {
     BE_LOG("Shutting down OpenGL Renderer...\n");
 
     initialized = false;
@@ -90,7 +90,7 @@ void OpenGLRHI::Shutdown() {
     FreeHandles();
 }
 
-void OpenGLRHI::InitHandles() {
+void GraphicsOpenGL::InitHandles() {
     contextList.SetGranularity(16);
     GLContext *zeroContext = new GLContext;
     memset(zeroContext, 0, sizeof(*zeroContext));
@@ -137,7 +137,7 @@ void OpenGLRHI::InitHandles() {
     queryList.Append(zeroQuery);
 }
 
-void OpenGLRHI::FreeHandles() {
+void GraphicsOpenGL::FreeHandles() {
     contextList.DeleteContents(true);
     stencilStateList.DeleteContents(true);
     bufferList.DeleteContents(true);
@@ -149,7 +149,7 @@ void OpenGLRHI::FreeHandles() {
     queryList.DeleteContents(true);
 }
 
-void OpenGLRHI::InitGL() {
+void GraphicsOpenGL::InitGL() {
     OpenGL::Init();
 
     vendorString = (const char *)gglGetString(GL_VENDOR);
@@ -349,79 +349,79 @@ void OpenGLRHI::InitGL() {
     }
 }
 
-Str OpenGLRHI::GetGPUString() const {
+Str GraphicsOpenGL::GetGPUString() const {
     return Str(rendererString);
 }
 
-bool OpenGLRHI::SupportsPolygonMode() const {
+bool GraphicsOpenGL::SupportsPolygonMode() const {
     return OpenGL::SupportsPolygonMode();
 }
 
-bool OpenGLRHI::SupportsPackedFloat() const {
+bool GraphicsOpenGL::SupportsPackedFloat() const {
     return OpenGL::SupportsPackedFloat();
 }
 
-bool OpenGLRHI::SupportsDepthBufferFloat() const {
+bool GraphicsOpenGL::SupportsDepthBufferFloat() const {
     return OpenGL::SupportsDepthBufferFloat();
 }
 
-bool OpenGLRHI::SupportsPixelBuffer() const {
+bool GraphicsOpenGL::SupportsPixelBuffer() const {
     return OpenGL::SupportsPixelBuffer();
 }
 
-bool OpenGLRHI::SupportsTextureRectangle() const {
+bool GraphicsOpenGL::SupportsTextureRectangle() const {
     return OpenGL::SupportsTextureRectangle();
 }
 
-bool OpenGLRHI::SupportsTextureArray() const {
+bool GraphicsOpenGL::SupportsTextureArray() const {
     return OpenGL::SupportsTextureArray();
 }
 
-bool OpenGLRHI::SupportsTextureBuffer() const {
+bool GraphicsOpenGL::SupportsTextureBuffer() const {
     return OpenGL::SupportsTextureBuffer();
 }
 
-bool OpenGLRHI::SupportsTextureCompressionS3TC() const {
+bool GraphicsOpenGL::SupportsTextureCompressionS3TC() const {
     return OpenGL::SupportsTextureCompressionS3TC();
 }
 
-bool OpenGLRHI::SupportsTextureCompressionLATC() const {
+bool GraphicsOpenGL::SupportsTextureCompressionLATC() const {
     return OpenGL::SupportsTextureCompressionLATC();
 }
 
-bool OpenGLRHI::SupportsTextureCompressionRGTC() const {
+bool GraphicsOpenGL::SupportsTextureCompressionRGTC() const {
     return OpenGL::SupportsTextureCompressionRGTC();
 }
 
-bool OpenGLRHI::SupportsTextureCompressionETC2() const {
+bool GraphicsOpenGL::SupportsTextureCompressionETC2() const {
     return OpenGL::SupportsTextureCompressionETC2();
 }
 
-bool OpenGLRHI::SupportsInstancedArrays() const {
+bool GraphicsOpenGL::SupportsInstancedArrays() const {
     return OpenGL::SupportsInstancedArrays();
 }
 
-bool OpenGLRHI::SupportsBufferStorage() const {
+bool GraphicsOpenGL::SupportsBufferStorage() const {
     return OpenGL::SupportsBufferStorage();
 }
 
-bool OpenGLRHI::SupportsMultiDrawIndirect() const {
+bool GraphicsOpenGL::SupportsMultiDrawIndirect() const {
     return OpenGL::SupportsMultiDrawIndirect();
 }
 
-bool OpenGLRHI::SupportsDebugLabel() const {
+bool GraphicsOpenGL::SupportsDebugLabel() const {
     return OpenGL::SupportsDebugLabel();
 }
 
-bool OpenGLRHI::SupportsTimestampQueries() const {
+bool GraphicsOpenGL::SupportsTimestampQueries() const {
     return OpenGL::SupportsTimestampQueries();
 }
 
-bool OpenGLRHI::SupportsCopyImage() const {
+bool GraphicsOpenGL::SupportsCopyImage() const {
     return OpenGL::SupportsCopyImage();
 }
 
-void OpenGLRHI::Clear(int clearBits, const Color4 &color, float depth, unsigned int stencil) {
+void GraphicsOpenGL::Clear(int clearBits, const Color4 &color, float depth, unsigned int stencil) {
 #if 1
     if (clearBits & ClearBit::Color) {
         if (r_sRGB.GetBool() && OpenGL::SupportsFrameBufferSRGB()) {
@@ -476,12 +476,12 @@ void OpenGLRHI::Clear(int clearBits, const Color4 &color, float depth, unsigned 
 #endif
 }
 
-void OpenGLRHI::ReadPixels(int x, int y, int width, int height, Image::Format::Enum imageFormat, byte *data) {
+void GraphicsOpenGL::ReadPixels(int x, int y, int width, int height, Image::Format::Enum imageFormat, byte *data) {
     GLenum  format;
     GLenum  type;
     
     if (!OpenGL::ImageFormatToGLFormat(imageFormat, false, &format, &type, nullptr)) {
-        BE_WARNLOG("OpenGLRHI::ReadPixels: Unsupported image format %s\n", Image::FormatName(imageFormat));
+        BE_WARNLOG("GraphicsOpenGL::ReadPixels: Unsupported image format %s\n", Image::FormatName(imageFormat));
         return;
     }
     
@@ -495,11 +495,11 @@ void OpenGLRHI::ReadPixels(int x, int y, int width, int height, Image::Format::E
     gglPixelStorei(GL_PACK_ALIGNMENT, oldPackAlignment);
 }
 
-void OpenGLRHI::DrawArrays(Topology::Enum topology, int firstVertex, int numVerts) const {
+void GraphicsOpenGL::DrawArrays(Topology::Enum topology, int firstVertex, int numVerts) const {
     gglDrawArrays(toGLTopology[topology], firstVertex, numVerts);
 }
 
-void OpenGLRHI::DrawArraysInstanced(Topology::Enum topology, int firstVertex, int numVerts, int instanceCount) const {
+void GraphicsOpenGL::DrawArraysInstanced(Topology::Enum topology, int firstVertex, int numVerts, int instanceCount) const {
     gglDrawArraysInstanced(toGLTopology[topology], firstVertex, numVerts, instanceCount);
 }
 
@@ -507,7 +507,7 @@ BE_FORCE_INLINE static GLenum TypeFromTypeSize(int typeSize) {
     return typeSize == 1 ? GL_UNSIGNED_BYTE : (typeSize == 2 ? GL_UNSIGNED_SHORT : GL_UNSIGNED_INT);
 }
 
-void OpenGLRHI::DrawElements(Topology::Enum topology, int firstIndex, int numIndices, int indexTypeSize, const void *ptr) const {
+void GraphicsOpenGL::DrawElements(Topology::Enum topology, int firstIndex, int numIndices, int indexTypeSize, const void *ptr) const {
     GLenum indexType = TypeFromTypeSize(indexTypeSize);
     // indexBufferHandle is nonzero if the current index buffer is bound.
     int indexBufferHandle = currentContext->state->bufferHandles[BufferType::Index];
@@ -515,7 +515,7 @@ void OpenGLRHI::DrawElements(Topology::Enum topology, int firstIndex, int numInd
     gglDrawElements(toGLTopology[topology], numIndices, indexType, indices);
 }
 
-void OpenGLRHI::DrawElementsInstanced(Topology::Enum topology, int firstIndex, int numIndices, int indexTypeSize, const void *ptr, int instanceCount) const {
+void GraphicsOpenGL::DrawElementsInstanced(Topology::Enum topology, int firstIndex, int numIndices, int indexTypeSize, const void *ptr, int instanceCount) const {
     GLenum indexType = TypeFromTypeSize(indexTypeSize);
     // indexBufferHandle is nonzero if the current index buffer is bound.
     int indexBufferHandle = currentContext->state->bufferHandles[BufferType::Index];
@@ -523,7 +523,7 @@ void OpenGLRHI::DrawElementsInstanced(Topology::Enum topology, int firstIndex, i
     gglDrawElementsInstanced(toGLTopology[topology], numIndices, indexType, indices, instanceCount);
 }
 
-void OpenGLRHI::DrawElementsBaseVertex(Topology::Enum topology, int firstIndex, int numIndices, int indexTypeSize, const void *ptr, int baseVertexIndex) const {
+void GraphicsOpenGL::DrawElementsBaseVertex(Topology::Enum topology, int firstIndex, int numIndices, int indexTypeSize, const void *ptr, int baseVertexIndex) const {
     GLenum indexType = TypeFromTypeSize(indexTypeSize);
     // indexBufferHandle is nonzero if the current index buffer is bound.
     int indexBufferHandle = currentContext->state->bufferHandles[BufferType::Index];
@@ -531,7 +531,7 @@ void OpenGLRHI::DrawElementsBaseVertex(Topology::Enum topology, int firstIndex, 
     OpenGL::DrawElementsBaseVertex(toGLTopology[topology], numIndices, indexType, indices, baseVertexIndex);
 }
 
-void OpenGLRHI::DrawElementsInstancedBaseVertex(Topology::Enum topology, int firstIndex, int numIndices, int indexTypeSize, const void *ptr, int instanceCount, int baseVertexIndex) const {
+void GraphicsOpenGL::DrawElementsInstancedBaseVertex(Topology::Enum topology, int firstIndex, int numIndices, int indexTypeSize, const void *ptr, int instanceCount, int baseVertexIndex) const {
     GLenum indexType = TypeFromTypeSize(indexTypeSize);
     // indexBufferHandle is nonzero if the current index buffer is bound.
     int indexBufferHandle = currentContext->state->bufferHandles[BufferType::Index];
@@ -539,19 +539,19 @@ void OpenGLRHI::DrawElementsInstancedBaseVertex(Topology::Enum topology, int fir
     OpenGL::DrawElementsInstancedBaseVertex(toGLTopology[topology], numIndices, indexType, indices, instanceCount, baseVertexIndex);
 }
 
-void OpenGLRHI::DrawElementsIndirect(Topology::Enum topology, int indexTypeSize, int indirectBufferOffset) const {
+void GraphicsOpenGL::DrawElementsIndirect(Topology::Enum topology, int indexTypeSize, int indirectBufferOffset) const {
     GLenum indexType = TypeFromTypeSize(indexTypeSize);
     OpenGL::DrawElementsIndirect(toGLTopology[topology], indexType, BUFFER_OFFSET(indirectBufferOffset));
 }
 
-void OpenGLRHI::MultiDrawElementsIndirect(Topology::Enum topology, int indexTypeSize, int indirectBufferOffset, int drawCount, int stride) const {
+void GraphicsOpenGL::MultiDrawElementsIndirect(Topology::Enum topology, int indexTypeSize, int indirectBufferOffset, int drawCount, int stride) const {
     GLenum indexType = TypeFromTypeSize(indexTypeSize);
     OpenGL::MultiDrawElementsIndirect(toGLTopology[topology], indexType, BUFFER_OFFSET(indirectBufferOffset), drawCount, stride);
 }
 
 extern "C" void (*GGLCheckError)(const char *msg);
 
-void OpenGLRHI::CheckError(const char *fmt, ...) const {
+void GraphicsOpenGL::CheckError(const char *fmt, ...) const {
     char buffer[16384];
     va_list args;
 

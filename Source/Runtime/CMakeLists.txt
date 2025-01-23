@@ -150,8 +150,8 @@ set(COMMON_ENGINE_FILES
     Public/IO/FileSystem.h
     Public/IO/ZipArchiver.h
   
-    Public/RHI/RHI.h
-    Public/RHI/RHIOpenGL.h
+    Public/Graphics/Graphics.h
+    Public/Graphics/GraphicsOpenGL.h
 
     Public/Engine/Common.h
     Public/Engine/GameClient.h
@@ -405,19 +405,19 @@ set(COMMON_ENGINE_FILES
     Private/IO/FileSystem.cpp
     Private/IO/ZipArchiver.cpp
 
-    Private/RHIOpenGL/OpenGL/OpenGL.h
-    Private/RHIOpenGL/OpenGL/OpenGL.cpp
-    Private/RHIOpenGL/RGLInternal.h
-    Private/RHIOpenGL/RGLBuffer.cpp
-    Private/RHIOpenGL/RGLCommon.cpp
-    Private/RHIOpenGL/RGLQuery.cpp
-    Private/RHIOpenGL/RGLRenderTarget.cpp
-    Private/RHIOpenGL/RGLShader.cpp
-    Private/RHIOpenGL/RGLState.cpp
-    Private/RHIOpenGL/RGLSync.cpp
-    Private/RHIOpenGL/RGLTexture.cpp
-    Private/RHIOpenGL/RGLVertexFormat.cpp
-    Private/RHIOpenGL/RGLImGui.cpp
+    Private/GraphicsOpenGL/OpenGL/OpenGL.h
+    Private/GraphicsOpenGL/OpenGL/OpenGL.cpp
+    Private/GraphicsOpenGL/RGLInternal.h
+    Private/GraphicsOpenGL/RGLBuffer.cpp
+    Private/GraphicsOpenGL/RGLCommon.cpp
+    Private/GraphicsOpenGL/RGLQuery.cpp
+    Private/GraphicsOpenGL/RGLRenderTarget.cpp
+    Private/GraphicsOpenGL/RGLShader.cpp
+    Private/GraphicsOpenGL/RGLState.cpp
+    Private/GraphicsOpenGL/RGLSync.cpp
+    Private/GraphicsOpenGL/RGLTexture.cpp
+    Private/GraphicsOpenGL/RGLVertexFormat.cpp
+    Private/GraphicsOpenGL/RGLImGui.cpp
 
     Private/Engine/Common.cpp
     Private/Engine/GameClient.cpp
@@ -859,32 +859,32 @@ set(MACOS_ENGINE_FILES
     Private/Network/Packet.cpp)
 
 set(WINDOWS_RENDERER_FILES
-    Private/RHIOpenGL/OpenGL/OpenGL3.h
-    Private/RHIOpenGL/OpenGL/OpenGL3.cpp
-    Private/RHIOpenGL/OpenGL/OpenGL4.h
-    Private/RHIOpenGL/OpenGL/OpenGL4.cpp
-    Private/RHIOpenGL/OpenGL/WinOpenGL.h
-    Private/RHIOpenGL/RGLPlatformWin.cpp)
+    Private/GraphicsOpenGL/OpenGL/OpenGL3.h
+    Private/GraphicsOpenGL/OpenGL/OpenGL3.cpp
+    Private/GraphicsOpenGL/OpenGL/OpenGL4.h
+    Private/GraphicsOpenGL/OpenGL/OpenGL4.cpp
+    Private/GraphicsOpenGL/OpenGL/WinOpenGL.h
+    Private/GraphicsOpenGL/RGLPlatformWin.cpp)
 
 set(ANDROID_RENDERER_FILES
-    Private/RHIOpenGL/OpenGL/OpenGLES3.h
-    Private/RHIOpenGL/OpenGL/OpenGLES3.cpp
-    Private/RHIOpenGL/OpenGL/AndroidOpenGL.h
-    Private/RHIOpenGL/OpenGL/AndroidOpenGL.cpp
-    Private/RHIOpenGL/RGLPlatformAndroid.cpp)
+    Private/GraphicsOpenGL/OpenGL/OpenGLES3.h
+    Private/GraphicsOpenGL/OpenGL/OpenGLES3.cpp
+    Private/GraphicsOpenGL/OpenGL/AndroidOpenGL.h
+    Private/GraphicsOpenGL/OpenGL/AndroidOpenGL.cpp
+    Private/GraphicsOpenGL/RGLPlatformAndroid.cpp)
 
 set(IOS_RENDERER_FILES
-    Private/RHIOpenGL/OpenGL/OpenGLES3.h
-    Private/RHIOpenGL/OpenGL/OpenGLES3.cpp
-    Private/RHIOpenGL/OpenGL/IOSOpenGL.h
-    Private/RHIOpenGL/OpenGL/IOSOpenGL.mm
-    Private/RHIOpenGL/RGLPlatformIOS.mm)
+    Private/GraphicsOpenGL/OpenGL/OpenGLES3.h
+    Private/GraphicsOpenGL/OpenGL/OpenGLES3.cpp
+    Private/GraphicsOpenGL/OpenGL/IOSOpenGL.h
+    Private/GraphicsOpenGL/OpenGL/IOSOpenGL.mm
+    Private/GraphicsOpenGL/RGLPlatformIOS.mm)
 
 set(MACOS_RENDERER_FILES
-    Private/RHIOpenGL/OpenGL/OpenGL3.h
-    Private/RHIOpenGL/OpenGL/OpenGL3.cpp
-    Private/RHIOpenGL/OpenGL/MacOSOpenGL.h
-    Private/RHIOpenGL/RGLPlatformMacOS.mm)
+    Private/GraphicsOpenGL/OpenGL/OpenGL3.h
+    Private/GraphicsOpenGL/OpenGL/OpenGL3.cpp
+    Private/GraphicsOpenGL/OpenGL/MacOSOpenGL.h
+    Private/GraphicsOpenGL/RGLPlatformMacOS.mm)
 
 if (NOT PLATFORM_WINDOWS)
     list(APPEND COMPILING_DISABLED_SOURCES ${WINDOWS_ENGINE_FILES} ${WINDOWS_RENDERER_FILES})

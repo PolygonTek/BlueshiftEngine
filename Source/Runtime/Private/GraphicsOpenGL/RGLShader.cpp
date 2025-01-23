@@ -13,7 +13,7 @@
 // limitations under the License.
 
 #include "Precompiled.h"
-#include "RHI/RHIOpenGL.h"
+#include "Graphics/GraphicsOpenGL.h"
 #include "RGLInternal.h"
 #include "SIMD/SIMD.h"
 #include "Platform/PlatformFile.h"
@@ -42,26 +42,26 @@ struct InOutSemantic {
 
 static const InOutSemantic inOutSemantics[] = {
     // vertex shader input semantics
-    { 0, RHI::VertexElement::Usage::Position, "POSITION" },
-    { 1, RHI::VertexElement::Usage::Normal, "NORMAL" },
-    { 2, RHI::VertexElement::Usage::Color, "COLOR" },
-    { 3, RHI::VertexElement::Usage::SecondaryColor, "SECONDARY_COLOR" },
-    { 4, RHI::VertexElement::Usage::Tangent, "TANGENT" },
-    { 5, RHI::VertexElement::Usage::WeightIndex, "WEIGHT_INDEX" },
-    { 6, RHI::VertexElement::Usage::WeightIndex0, "WEIGHT_INDEX0" },
-    { 7, RHI::VertexElement::Usage::WeightIndex1, "WEIGHT_INDEX1" },
-    { 8, RHI::VertexElement::Usage::WeightValue, "WEIGHT_VALUE" },
-    { 9, RHI::VertexElement::Usage::WeightValue0, "WEIGHT_VALUE0" },
-    { 10, RHI::VertexElement::Usage::WeightValue1, "WEIGHT_VALUE1" },
-    { 11, RHI::VertexElement::Usage::TexCoord, "TEXCOORD" },
-    { 12, RHI::VertexElement::Usage::TexCoord0, "TEXCOORD0" },
-    { 13, RHI::VertexElement::Usage::TexCoord1, "TEXCOORD1" },
-    { 14, RHI::VertexElement::Usage::TexCoord2, "TEXCOORD2" },
-    { 15, RHI::VertexElement::Usage::TexCoord3, "TEXCOORD3" },
-    { 16, RHI::VertexElement::Usage::TexCoord4, "TEXCOORD4" },
-    { 17, RHI::VertexElement::Usage::TexCoord5, "TEXCOORD5" },
-    { 18, RHI::VertexElement::Usage::TexCoord6, "TEXCOORD6" },
-    { 19, RHI::VertexElement::Usage::TexCoord7, "TEXCOORD7" },
+    { 0, Graphics::VertexElement::Usage::Position, "POSITION" },
+    { 1, Graphics::VertexElement::Usage::Normal, "NORMAL" },
+    { 2, Graphics::VertexElement::Usage::Color, "COLOR" },
+    { 3, Graphics::VertexElement::Usage::SecondaryColor, "SECONDARY_COLOR" },
+    { 4, Graphics::VertexElement::Usage::Tangent, "TANGENT" },
+    { 5, Graphics::VertexElement::Usage::WeightIndex, "WEIGHT_INDEX" },
+    { 6, Graphics::VertexElement::Usage::WeightIndex0, "WEIGHT_INDEX0" },
+    { 7, Graphics::VertexElement::Usage::WeightIndex1, "WEIGHT_INDEX1" },
+    { 8, Graphics::VertexElement::Usage::WeightValue, "WEIGHT_VALUE" },
+    { 9, Graphics::VertexElement::Usage::WeightValue0, "WEIGHT_VALUE0" },
+    { 10, Graphics::VertexElement::Usage::WeightValue1, "WEIGHT_VALUE1" },
+    { 11, Graphics::VertexElement::Usage::TexCoord, "TEXCOORD" },
+    { 12, Graphics::VertexElement::Usage::TexCoord0, "TEXCOORD0" },
+    { 13, Graphics::VertexElement::Usage::TexCoord1, "TEXCOORD1" },
+    { 14, Graphics::VertexElement::Usage::TexCoord2, "TEXCOORD2" },
+    { 15, Graphics::VertexElement::Usage::TexCoord3, "TEXCOORD3" },
+    { 16, Graphics::VertexElement::Usage::TexCoord4, "TEXCOORD4" },
+    { 17, Graphics::VertexElement::Usage::TexCoord5, "TEXCOORD5" },
+    { 18, Graphics::VertexElement::Usage::TexCoord6, "TEXCOORD6" },
+    { 19, Graphics::VertexElement::Usage::TexCoord7, "TEXCOORD7" },
 
     // fragment shader output semantics
     { 0, 0, "FRAG_COLOR" },
@@ -927,7 +927,7 @@ void GetUniformBlocks(GLuint programObject, int &numUniformBlocks, GLUniformBloc
     }
 }
 
-RHI::Handle OpenGLRHI::CreateShader(const char *name, const char *vsText, const char *fsText) {
+Graphics::Handle GraphicsOpenGL::CreateShader(const char *name, const char *vsText, const char *fsText) {
     GLuint programObject = gglCreateProgram();
     uint32_t programHash = 0;
     Array<InOut> vsInArray(32);
@@ -1007,7 +1007,7 @@ RHI::Handle OpenGLRHI::CreateShader(const char *name, const char *vsText, const 
     return (Handle)handle;
 }
 
-void OpenGLRHI::DestroyShader(Handle shaderHandle) {
+void GraphicsOpenGL::DestroyShader(Handle shaderHandle) {
     if (currentContext->state->shaderHandle == shaderHandle) {
         BindShader(NullShader);
     }
@@ -1031,7 +1031,7 @@ void OpenGLRHI::DestroyShader(Handle shaderHandle) {
     shaderList[shaderHandle] = nullptr;
 }
 
-void OpenGLRHI::BindShader(Handle shaderHandle) {
+void GraphicsOpenGL::BindShader(Handle shaderHandle) {
     if (currentContext->state->shaderHandle == shaderHandle) {
         return;
     }
@@ -1042,7 +1042,7 @@ void OpenGLRHI::BindShader(Handle shaderHandle) {
     currentContext->state->shaderHandle = shaderHandle;
 }
 
-int OpenGLRHI::GetShaderTextureUnit(Handle shaderHandle, const char *name) const {
+int GraphicsOpenGL::GetShaderTextureUnit(Handle shaderHandle, const char *name) const {
     const GLShader *shader = shaderList[shaderHandle];
     GLUniformTexture find;
     find.name = const_cast<char *>(name);
@@ -1053,7 +1053,7 @@ int OpenGLRHI::GetShaderTextureUnit(Handle shaderHandle, const char *name) const
     return -1;
 }
 
-int OpenGLRHI::GetShaderConstantIndex(Handle shaderHandle, const char *name) const {
+int GraphicsOpenGL::GetShaderConstantIndex(Handle shaderHandle, const char *name) const {
     const GLShader *shader = shaderList[shaderHandle];
     GLUniformConstant find;
     find.name = const_cast<char *>(name);
@@ -1064,7 +1064,7 @@ int OpenGLRHI::GetShaderConstantIndex(Handle shaderHandle, const char *name) con
     return uniformIndex;
 }
 
-int OpenGLRHI::GetShaderConstantBlockIndex(Handle shaderHandle, const char *name) const {
+int GraphicsOpenGL::GetShaderConstantBlockIndex(Handle shaderHandle, const char *name) const {
     const GLShader *shader = shaderList[shaderHandle];
     GLUniformBlock find;
     find.name = const_cast<char *>(name);
@@ -1075,7 +1075,7 @@ int OpenGLRHI::GetShaderConstantBlockIndex(Handle shaderHandle, const char *name
     return uniformIndex;
 }
 
-void OpenGLRHI::SetShaderConstantGeneric(int constantIndex, bool rowMajor, int count, const void *data) const {
+void GraphicsOpenGL::SetShaderConstantGeneric(int constantIndex, bool rowMajor, int count, const void *data) const {
     if (constantIndex < 0) {
         //assert(0);
         return;
@@ -1142,143 +1142,143 @@ void OpenGLRHI::SetShaderConstantGeneric(int constantIndex, bool rowMajor, int c
     }
 }
 
-void OpenGLRHI::SetShaderConstant1i(int constantIndex, const int constant) const {
+void GraphicsOpenGL::SetShaderConstant1i(int constantIndex, const int constant) const {
     SetShaderConstantGeneric(constantIndex, false, 1, &constant);
 }
 
-void OpenGLRHI::SetShaderConstant2i(int constantIndex, const int *constant) const {
+void GraphicsOpenGL::SetShaderConstant2i(int constantIndex, const int *constant) const {
     SetShaderConstantGeneric(constantIndex, false, 1, constant);
 }
 
-void OpenGLRHI::SetShaderConstant3i(int constantIndex, const int *constant) const {
+void GraphicsOpenGL::SetShaderConstant3i(int constantIndex, const int *constant) const {
     SetShaderConstantGeneric(constantIndex, false, 1, constant);
 }
 
-void OpenGLRHI::SetShaderConstant4i(int constantIndex, const int *constant) const {
+void GraphicsOpenGL::SetShaderConstant4i(int constantIndex, const int *constant) const {
     SetShaderConstantGeneric(constantIndex, false, 1, constant);
 }
 
-void OpenGLRHI::SetShaderConstant1ui(int constantIndex, const unsigned int constant) const {
+void GraphicsOpenGL::SetShaderConstant1ui(int constantIndex, const unsigned int constant) const {
     SetShaderConstantGeneric(constantIndex, false, 1, &constant);
 }
 
-void OpenGLRHI::SetShaderConstant2ui(int constantIndex, const unsigned int *constant) const {
+void GraphicsOpenGL::SetShaderConstant2ui(int constantIndex, const unsigned int *constant) const {
     SetShaderConstantGeneric(constantIndex, false, 1, constant);
 }
 
-void OpenGLRHI::SetShaderConstant3ui(int constantIndex, const unsigned int *constant) const {
+void GraphicsOpenGL::SetShaderConstant3ui(int constantIndex, const unsigned int *constant) const {
     SetShaderConstantGeneric(constantIndex, false, 1, constant);
 }
 
-void OpenGLRHI::SetShaderConstant4ui(int constantIndex, const unsigned int *constant) const {
+void GraphicsOpenGL::SetShaderConstant4ui(int constantIndex, const unsigned int *constant) const {
     SetShaderConstantGeneric(constantIndex, false, 1, constant);
 }
 
-void OpenGLRHI::SetShaderConstant1f(int constantIndex, const float constant) const {
+void GraphicsOpenGL::SetShaderConstant1f(int constantIndex, const float constant) const {
     SetShaderConstantGeneric(constantIndex, false, 1, &constant);
 }
 
-void OpenGLRHI::SetShaderConstant2f(int constantIndex, const float *constant) const {
+void GraphicsOpenGL::SetShaderConstant2f(int constantIndex, const float *constant) const {
     SetShaderConstantGeneric(constantIndex, false, 1, constant);
 }
 
-void OpenGLRHI::SetShaderConstant3f(int constantIndex, const float *constant) const {
+void GraphicsOpenGL::SetShaderConstant3f(int constantIndex, const float *constant) const {
     SetShaderConstantGeneric(constantIndex, false, 1, constant);
 }
 
-void OpenGLRHI::SetShaderConstant4f(int constantIndex, const float *constant) const {
+void GraphicsOpenGL::SetShaderConstant4f(int constantIndex, const float *constant) const {
     SetShaderConstantGeneric(constantIndex, false, 1, constant);
 }
 
-void OpenGLRHI::SetShaderConstant2f(int constantIndex, const Vec2 &constant) const {
+void GraphicsOpenGL::SetShaderConstant2f(int constantIndex, const Vec2 &constant) const {
     SetShaderConstantGeneric(constantIndex, false, 1, &constant);
 }
 
-void OpenGLRHI::SetShaderConstant3f(int constantIndex, const Vec3 &constant) const {
+void GraphicsOpenGL::SetShaderConstant3f(int constantIndex, const Vec3 &constant) const {
     SetShaderConstantGeneric(constantIndex, false, 1, &constant);
 }
 
-void OpenGLRHI::SetShaderConstant4f(int constantIndex, const Vec4 &constant) const {
+void GraphicsOpenGL::SetShaderConstant4f(int constantIndex, const Vec4 &constant) const {
     SetShaderConstantGeneric(constantIndex, false, 1, &constant);
 }
 
-void OpenGLRHI::SetShaderConstant2x2f(int constantIndex, bool rowMajor, const Mat2 &constant) const {
+void GraphicsOpenGL::SetShaderConstant2x2f(int constantIndex, bool rowMajor, const Mat2 &constant) const {
     SetShaderConstantGeneric(constantIndex, rowMajor, 1, &constant);
 }
 
-void OpenGLRHI::SetShaderConstant3x3f(int constantIndex, bool rowMajor, const Mat3 &constant) const {
+void GraphicsOpenGL::SetShaderConstant3x3f(int constantIndex, bool rowMajor, const Mat3 &constant) const {
     SetShaderConstantGeneric(constantIndex, rowMajor, 1, &constant);
 }
 
-void OpenGLRHI::SetShaderConstant4x4f(int constantIndex, bool rowMajor, const Mat4 &constant) const {
+void GraphicsOpenGL::SetShaderConstant4x4f(int constantIndex, bool rowMajor, const Mat4 &constant) const {
     SetShaderConstantGeneric(constantIndex, rowMajor, 1, &constant);
 }
 
-void OpenGLRHI::SetShaderConstant4x3f(int constantIndex, bool rowMajor, const Mat3x4 &constant) const {
+void GraphicsOpenGL::SetShaderConstant4x3f(int constantIndex, bool rowMajor, const Mat3x4 &constant) const {
     SetShaderConstantGeneric(constantIndex, rowMajor, 1, &constant);
 }
 
-void OpenGLRHI::SetShaderConstantArray1i(int constantIndex, int count, const int *constant) const {
+void GraphicsOpenGL::SetShaderConstantArray1i(int constantIndex, int count, const int *constant) const {
     SetShaderConstantGeneric(constantIndex, false, count, constant);
 }
 
-void OpenGLRHI::SetShaderConstantArray2i(int constantIndex, int count, const int *constant) const {
+void GraphicsOpenGL::SetShaderConstantArray2i(int constantIndex, int count, const int *constant) const {
     SetShaderConstantGeneric(constantIndex, false, count, constant);
 }
 
-void OpenGLRHI::SetShaderConstantArray3i(int constantIndex, int count, const int *constant) const {
+void GraphicsOpenGL::SetShaderConstantArray3i(int constantIndex, int count, const int *constant) const {
     SetShaderConstantGeneric(constantIndex, false, count, constant);
 }
 
-void OpenGLRHI::SetShaderConstantArray4i(int constantIndex, int count, const int *constant) const {
+void GraphicsOpenGL::SetShaderConstantArray4i(int constantIndex, int count, const int *constant) const {
     SetShaderConstantGeneric(constantIndex, false, count, constant);
 }
 
-void OpenGLRHI::SetShaderConstantArray1f(int constantIndex, int count, const float *constant) const {
+void GraphicsOpenGL::SetShaderConstantArray1f(int constantIndex, int count, const float *constant) const {
     SetShaderConstantGeneric(constantIndex, false, count, constant);
 }
 
-void OpenGLRHI::SetShaderConstantArray2f(int constantIndex, int count, const float *constant) const {
+void GraphicsOpenGL::SetShaderConstantArray2f(int constantIndex, int count, const float *constant) const {
     SetShaderConstantGeneric(constantIndex, false, count, constant);
 }
 
-void OpenGLRHI::SetShaderConstantArray3f(int constantIndex, int count, const float *constant) const {
+void GraphicsOpenGL::SetShaderConstantArray3f(int constantIndex, int count, const float *constant) const {
     SetShaderConstantGeneric(constantIndex, false, count, constant);
 }
 
-void OpenGLRHI::SetShaderConstantArray4f(int constantIndex, int count, const float *constant) const {
+void GraphicsOpenGL::SetShaderConstantArray4f(int constantIndex, int count, const float *constant) const {
     SetShaderConstantGeneric(constantIndex, false, count, constant);
 }
 
-void OpenGLRHI::SetShaderConstantArray2f(int constantIndex, int count, const Vec2 *constant) const {
+void GraphicsOpenGL::SetShaderConstantArray2f(int constantIndex, int count, const Vec2 *constant) const {
     SetShaderConstantGeneric(constantIndex, false, count, constant);
 }
 
-void OpenGLRHI::SetShaderConstantArray3f(int constantIndex, int count, const Vec3 *constant) const {
+void GraphicsOpenGL::SetShaderConstantArray3f(int constantIndex, int count, const Vec3 *constant) const {
     SetShaderConstantGeneric(constantIndex, false, count, constant);
 }
 
-void OpenGLRHI::SetShaderConstantArray4f(int constantIndex, int count, const Vec4 *constant) const {
+void GraphicsOpenGL::SetShaderConstantArray4f(int constantIndex, int count, const Vec4 *constant) const {
     SetShaderConstantGeneric(constantIndex, false, count, constant);
 }
 
-void OpenGLRHI::SetShaderConstantArray2x2f(int constantIndex, bool rowMajor, int count, const Mat2 *constant) const {
+void GraphicsOpenGL::SetShaderConstantArray2x2f(int constantIndex, bool rowMajor, int count, const Mat2 *constant) const {
     SetShaderConstantGeneric(constantIndex, rowMajor, count, constant);
 }
 
-void OpenGLRHI::SetShaderConstantArray3x3f(int constantIndex, bool rowMajor, int count, const Mat3 *constant) const {
+void GraphicsOpenGL::SetShaderConstantArray3x3f(int constantIndex, bool rowMajor, int count, const Mat3 *constant) const {
     SetShaderConstantGeneric(constantIndex, rowMajor, count, constant);
 }
 
-void OpenGLRHI::SetShaderConstantArray4x4f(int constantIndex, bool rowMajor, int count, const Mat4 *constant) const {
+void GraphicsOpenGL::SetShaderConstantArray4x4f(int constantIndex, bool rowMajor, int count, const Mat4 *constant) const {
     SetShaderConstantGeneric(constantIndex, rowMajor, count, constant);
 }
 
-void OpenGLRHI::SetShaderConstantArray4x3f(int constantIndex, bool rowMajor, int count, const Mat3x4 *constant) const {
+void GraphicsOpenGL::SetShaderConstantArray4x3f(int constantIndex, bool rowMajor, int count, const Mat3x4 *constant) const {
     SetShaderConstantGeneric(constantIndex, rowMajor, count, constant);
 }
 
-void OpenGLRHI::SetShaderConstantBlock(int constantIndex, int bindingIndex) {
+void GraphicsOpenGL::SetShaderConstantBlock(int constantIndex, int bindingIndex) {
     const GLShader *shader = shaderList[currentContext->state->shaderHandle];
     const GLUniformBlock *uniformBlock = &shader->uniformBlocks[constantIndex];
 

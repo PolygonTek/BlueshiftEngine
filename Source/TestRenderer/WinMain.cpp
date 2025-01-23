@@ -21,19 +21,19 @@
 //#define CREATE_SUB_WINDOW
 #define USE_SHARED_CONTEXT  false
 
-static const TCHAR *        mainWindowClassName  = _T("BLUESHIFT_MAIN_WINDOW");
-static const TCHAR *        subWindowClassName   = _T("BLUESHIFT_SUB_WINDOW");
+static const TCHAR *            mainWindowClassName  = _T("BLUESHIFT_MAIN_WINDOW");
+static const TCHAR *            subWindowClassName   = _T("BLUESHIFT_SUB_WINDOW");
 
-static TCHAR                szTitle[100];    // The title bar text
+static TCHAR                    szTitle[100];    // The title bar text
 
-static BE1::RHI::Handle     mainContext = BE1::RHI::NullContext;
-static BE1::RHI::Handle     subContext = BE1::RHI::NullContext;
+static BE1::Graphics::Handle    mainContext = BE1::Graphics::NullContext;
+static BE1::Graphics::Handle    subContext = BE1::Graphics::NullContext;
 
-static BE1::RHI::Handle     mainRenderTarget = BE1::RHI::NullRenderTarget;
-static BE1::RHI::Handle     subRenderTarget = BE1::RHI::NullRenderTarget;
+static BE1::Graphics::Handle    mainRenderTarget = BE1::Graphics::NullRenderTarget;
+static BE1::Graphics::Handle    subRenderTarget = BE1::Graphics::NullRenderTarget;
 
-LRESULT CALLBACK            MainWndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam);
-LRESULT CALLBACK            SubWndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam);
+LRESULT CALLBACK                MainWndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam);
+LRESULT CALLBACK                SubWndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam);
 
 static void SystemLog(int logLevel, const char *text) {
     int len = BE1::PlatformWinUtils::UTF8ToUCS2(text, nullptr, 0);
@@ -137,22 +137,22 @@ static void ChangeRenderWindow(HWND hwnd, int width, int height, bool fullscreen
     ::SetFocus(hwnd);
 }
 
-static void ToggleFullscreen(BE1::RHI::Handle ctx) {
+static void ToggleFullscreen(BE1::Graphics::Handle ctx) {
     int width = 1024;
     int height = 768;
 
-    HWND hwnd = (HWND)BE1::rhi.GetWindowHandleFromContext(ctx);
+    HWND hwnd = (HWND)BE1::graphics.GetWindowHandleFromContext(ctx);
 
-    if (!BE1::rhi.IsFullscreen()) {
+    if (!BE1::graphics.IsFullscreen()) {
         ChangeRenderWindow(hwnd, width, height, true);
-        BE1::rhi.SetFullscreen(ctx, width, height);
+        BE1::graphics.SetFullscreen(ctx, width, height);
     } else {
-        BE1::rhi.ResetFullscreen(ctx);
+        BE1::graphics.ResetFullscreen(ctx);
         ChangeRenderWindow(hwnd, width, height, false);
     }
 }
 
-static void DisplayMainContext(BE1::RHI::Handle context, void *dataPtr) {
+static void DisplayMainContext(BE1::Graphics::Handle context, void *dataPtr) {
     static uint32_t t0 = BE1::PlatformTime::Milliseconds();
 
     uint32_t t = BE1::PlatformTime::Milliseconds() - t0;
@@ -160,7 +160,7 @@ static void DisplayMainContext(BE1::RHI::Handle context, void *dataPtr) {
     ::app.Draw(context, mainRenderTarget, MILLI2SEC(t));
 }
 
-static void DisplaySubContext(BE1::RHI::Handle context, void *dataPtr) {
+static void DisplaySubContext(BE1::Graphics::Handle context, void *dataPtr) {
     static uint32_t t0 = BE1::PlatformTime::Milliseconds();
 
     uint32_t t = BE1::PlatformTime::Milliseconds() - t0;
@@ -229,9 +229,9 @@ static BOOL InitInstance(int nCmdShow) {
 
     app.LoadResources();
 
-    mainContext = BE1::rhi.CreateContext(hwndMain, USE_SHARED_CONTEXT);
+    mainContext = BE1::graphics.CreateContext(hwndMain, USE_SHARED_CONTEXT);
 
-    BE1::rhi.SetContextDisplayFunc(mainContext, DisplayMainContext, nullptr, false);
+    BE1::graphics.SetContextDisplayFunc(mainContext, DisplayMainContext, nullptr, false);
 
     // FBO cannot be shared, so we should create FBO for each context
     mainRenderTarget = app.CreateRenderTarget(mainContext);
@@ -241,9 +241,9 @@ static BOOL InitInstance(int nCmdShow) {
 
     ::ShowWindow(hwndSub, nCmdShow);
 
-    subContext = BE1::rhi.CreateContext(hwndSub, USE_SHARED_CONTEXT);
+    subContext = BE1::graphics.CreateContext(hwndSub, USE_SHARED_CONTEXT);
 
-    BE1::rhi.SetContextDisplayFunc(subContext, DisplaySubContext, nullptr, false);
+    BE1::graphics.SetContextDisplayFunc(subContext, DisplaySubContext, nullptr, false);
 
     subRenderTarget = app.CreateRenderTarget(subContext);
 #endif
@@ -256,20 +256,20 @@ static void ShutdownInstance() {
     
 #ifdef CREATE_SUB_WINDOW
     if (subContext) {
-        BE1::rhi.DestroyRenderTarget(subRenderTarget);
+        BE1::graphics.DestroyRenderTarget(subRenderTarget);
 
-        HWND hwnd = (HWND)BE1::rhi.GetWindowHandleFromContext(subContext);
-        BE1::rhi.DestroyContext(subContext);
+        HWND hwnd = (HWND)BE1::graphics.GetWindowHandleFromContext(subContext);
+        BE1::graphics.DestroyContext(subContext);
 
         ::DestroyWindow(hwnd);
     }
 #endif
 
     if (mainContext) {
-        BE1::rhi.DestroyRenderTarget(mainRenderTarget);
+        BE1::graphics.DestroyRenderTarget(mainRenderTarget);
 
-        HWND hwnd = (HWND)BE1::rhi.GetWindowHandleFromContext(mainContext);
-        BE1::rhi.DestroyContext(mainContext);
+        HWND hwnd = (HWND)BE1::graphics.GetWindowHandleFromContext(mainContext);
+        BE1::graphics.DestroyContext(mainContext);
 
         ::DestroyWindow(hwnd);
     }
@@ -314,11 +314,11 @@ int APIENTRY _tWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPTSTR lpCm
         app.RunFrame();
 
         if (mainContext) {
-            BE1::rhi.DisplayContext(mainContext);
+            BE1::graphics.DisplayContext(mainContext);
         }
 #ifdef CREATE_SUB_WINDOW
         if (subContext) {
-            BE1::rhi.DisplayContext(subContext);
+            BE1::graphics.DisplayContext(subContext);
         }
 #endif
     }
@@ -350,7 +350,7 @@ LRESULT CALLBACK MainWndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lPar
         break;
     case WM_TIMER:
         if (mainContext) {
-            //BE1::rhi.DisplayContext(mainContext);
+            //BE1::graphics.DisplayContext(mainContext);
         }
         break;
     case WM_COMMAND: {
@@ -383,7 +383,7 @@ LRESULT CALLBACK SubWndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lPara
         return 0; // prevent to close sub window
     case WM_TIMER:
         if (subContext) {
-            //BE1::rhi.DisplayContext(subContext);
+            //BE1::graphics.DisplayContext(subContext);
         }
         break;
     case WM_SIZE:

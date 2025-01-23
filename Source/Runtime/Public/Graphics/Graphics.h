@@ -17,7 +17,7 @@
 /*
 ===============================================================================
  
-    RHI (Rendering Hardware Interface)
+    Graphics API wrapper
  
 ===============================================================================
 */
@@ -26,7 +26,7 @@
 
 BE_NAMESPACE_BEGIN
 
-class RHI {
+class Graphics {
 public:
     static constexpr int MaxTMU             = 16;       // maximum texture map units
     static constexpr int MaxTCU             = 8;        // maximum texture coordinates units

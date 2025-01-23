@@ -13,7 +13,7 @@
 // limitations under the License.
 
 #include "Precompiled.h"
-#include "RHI/RHIOpenGL.h"
+#include "Graphics/GraphicsOpenGL.h"
 #include "RGLInternal.h"
 #include "Platform/PlatformProcess.h"
 #include "Platform/PlatformTime.h"
@@ -463,7 +463,7 @@ static void InitGLFunctions() {
     DestroyWindow(hwndFake);
 }
 
-void OpenGLRHI::InitMainContext(WindowHandle windowHandle, const Settings *settings) {
+void GraphicsOpenGL::InitMainContext(WindowHandle windowHandle, const Settings *settings) {
     InitGLFunctions();
     
     // Create main context
@@ -524,7 +524,7 @@ void OpenGLRHI::InitMainContext(WindowHandle windowHandle, const Settings *setti
 #endif
 }
 
-void OpenGLRHI::FreeMainContext() {
+void GraphicsOpenGL::FreeMainContext() {
 #ifdef ENABLE_IMGUI
     ImGuiDestroyContext(mainContext);
 #endif
@@ -716,7 +716,7 @@ static LRESULT CALLBACK NewWndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM l
             PAINTSTRUCT ps;
             HDC hdc = BeginPaint(hwnd, &ps);
             if (ctx->onDemandDrawing) {
-                rhi.DisplayContext(ctx->handle);
+                graphics.DisplayContext(ctx->handle);
             }
             EndPaint(hwnd, &ps);
             break;
@@ -726,7 +726,7 @@ static LRESULT CALLBACK NewWndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM l
     return ctx->oldWndProc(hwnd, uMsg, wParam, lParam);
 }
 
-RHI::Handle OpenGLRHI::CreateContext(RHI::WindowHandle windowHandle, bool useSharedContext) {
+Graphics::Handle GraphicsOpenGL::CreateContext(Graphics::WindowHandle windowHandle, bool useSharedContext) {
     GLContext *ctx = new GLContext;
 
     int handle = contextList.FindNull();
@@ -807,7 +807,7 @@ RHI::Handle OpenGLRHI::CreateContext(RHI::WindowHandle windowHandle, bool useSha
     return (Handle)handle;
 }
 
-void OpenGLRHI::DestroyContext(Handle ctxHandle) {
+void GraphicsOpenGL::DestroyContext(Handle ctxHandle) {
     GLContext *ctx = contextList[ctxHandle];
 
     if (ctx->hrc != mainContext->hrc) {
@@ -836,15 +836,15 @@ void OpenGLRHI::DestroyContext(Handle ctxHandle) {
     contextList[ctxHandle] = nullptr; 
 }
 
-void OpenGLRHI::ActivateSurface(Handle ctxHandle, WindowHandle windowHandle) {
+void GraphicsOpenGL::ActivateSurface(Handle ctxHandle, WindowHandle windowHandle) {
     GLContext *ctx = ctxHandle == NullContext ? mainContext : contextList[ctxHandle];
 }
 
-void OpenGLRHI::DeactivateSurface(Handle ctxHandle) {
+void GraphicsOpenGL::DeactivateSurface(Handle ctxHandle) {
     GLContext *ctx = ctxHandle == NullContext ? mainContext : contextList[ctxHandle];
 }
 
-void OpenGLRHI::SetContext(Handle ctxHandle) {
+void GraphicsOpenGL::SetContext(Handle ctxHandle) {
     HDC currentDC = wglGetCurrentDC();
     GLContext *ctx = ctxHandle == NullContext ? mainContext : contextList[ctxHandle];
 
@@ -856,7 +856,7 @@ void OpenGLRHI::SetContext(Handle ctxHandle) {
     }
 
     if (!wglMakeCurrent(ctx->hdc, ctx->hrc)) {
-        BE_FATALERROR("OpenGLRHI::SetContext: Couldn't make current context");
+        BE_FATALERROR("GraphicsOpenGL::SetContext: Couldn't make current context");
     }
 
     this->currentContext = ctx;
@@ -866,7 +866,7 @@ void OpenGLRHI::SetContext(Handle ctxHandle) {
 #endif
 }
 
-void OpenGLRHI::SetContextDisplayFunc(Handle ctxHandle, DisplayContextFunc displayFunc, void *displayFuncDataPtr, bool onDemandDrawing) {
+void GraphicsOpenGL::SetContextDisplayFunc(Handle ctxHandle, DisplayContextFunc displayFunc, void *displayFuncDataPtr, bool onDemandDrawing) {
     GLContext *ctx = ctxHandle == NullContext ? mainContext : contextList[ctxHandle];
     
     ctx->displayFunc = displayFunc;
@@ -874,18 +874,18 @@ void OpenGLRHI::SetContextDisplayFunc(Handle ctxHandle, DisplayContextFunc displ
     ctx->onDemandDrawing = onDemandDrawing;
 }
 
-void OpenGLRHI::DisplayContext(Handle ctxHandle) {
+void GraphicsOpenGL::DisplayContext(Handle ctxHandle) {
     GLContext *ctx = ctxHandle == NullContext ? mainContext : contextList[ctxHandle];
 
     ctx->displayFunc(ctxHandle, ctx->displayFuncDataPtr);
 }
 
-RHI::WindowHandle OpenGLRHI::GetWindowHandleFromContext(Handle ctxHandle) {
+Graphics::WindowHandle GraphicsOpenGL::GetWindowHandleFromContext(Handle ctxHandle) {
     const GLContext *ctx = ctxHandle == NullContext ? mainContext : contextList[ctxHandle];
     return (WindowHandle)ctx->hwnd;
 }
 
-void OpenGLRHI::GetDisplayMetrics(Handle ctxHandle, DisplayMetrics *displayMetrics) const {
+void GraphicsOpenGL::GetDisplayMetrics(Handle ctxHandle, DisplayMetrics *displayMetrics) const {
     const GLContext *ctx = ctxHandle == NullContext ? mainContext : contextList[ctxHandle];
 
 #if 0
@@ -907,11 +907,11 @@ void OpenGLRHI::GetDisplayMetrics(Handle ctxHandle, DisplayMetrics *displayMetri
     displayMetrics->safeAreaInsets.Set(0, 0, 0, 0);
 }
 
-bool OpenGLRHI::IsFullscreen() const {
+bool GraphicsOpenGL::IsFullscreen() const {
     return deviceFullscreen;
 }
 
-bool OpenGLRHI::SetFullscreen(Handle ctxHandle, int width, int height) {
+bool GraphicsOpenGL::SetFullscreen(Handle ctxHandle, int width, int height) {
     HDC hdc;
 
     BE_LOG("Changing display setting...\n");
@@ -964,7 +964,7 @@ bool OpenGLRHI::SetFullscreen(Handle ctxHandle, int width, int height) {
     return true;
 }
 
-void OpenGLRHI::ResetFullscreen(Handle ctxHandle) {
+void GraphicsOpenGL::ResetFullscreen(Handle ctxHandle) {
     if (!deviceFullscreen) {
         return;
     }
@@ -986,20 +986,20 @@ void OpenGLRHI::ResetFullscreen(Handle ctxHandle) {
     BE_LOG("set window mode: %ibpp %ihz\n", deviceBpp, deviceHz);
 }
 
-void OpenGLRHI::GetGammaRamp(unsigned short ramp[768]) const {
+void GraphicsOpenGL::GetGammaRamp(unsigned short ramp[768]) const {
     ::GetDeviceGammaRamp(currentContext->hdc, ramp);
 }
 
-void OpenGLRHI::SetGammaRamp(unsigned short ramp[768]) const {
+void GraphicsOpenGL::SetGammaRamp(unsigned short ramp[768]) const {
     ::SetDeviceGammaRamp(currentContext->hdc, ramp);
 }
 
-bool OpenGLRHI::SwapBuffers() {
-    BE_PROFILE_CPU_SCOPE_STATIC("OpenGLRHI::SwapBuffers");
-    BE_PROFILE_GPU_SCOPE_STATIC("OpenGLRHI::SwapBuffers");
+bool GraphicsOpenGL::SwapBuffers() {
+    BE_PROFILE_CPU_SCOPE_STATIC("GraphicsOpenGL::SwapBuffers");
+    BE_PROFILE_GPU_SCOPE_STATIC("GraphicsOpenGL::SwapBuffers");
 
     if (!gl_ignoreError.GetBool()) {
-        CheckError("OpenGLRHI::SwapBuffers");
+        CheckError("GraphicsOpenGL::SwapBuffers");
     }
 
     if (gl_finish.GetBool()) {
@@ -1033,11 +1033,11 @@ bool OpenGLRHI::SwapBuffers() {
     return true;
 }
 
-void OpenGLRHI::SwapInterval(int interval) const {
+void GraphicsOpenGL::SwapInterval(int interval) const {
     gwglSwapIntervalEXT(interval);
 }
 
-void OpenGLRHI::ImGuiCreateContext(GLContext *ctx) {
+void GraphicsOpenGL::ImGuiCreateContext(GLContext *ctx) {
     // Setup Dear ImGui context
     ctx->imGuiContext = ImGui::CreateContext();
     ImGui::SetCurrentContext(ctx->imGuiContext);
@@ -1054,7 +1054,7 @@ void OpenGLRHI::ImGuiCreateContext(GLContext *ctx) {
     // Setup back-end capabilities flags
     io.BackendFlags |= ImGuiBackendFlags_HasMouseCursors;         // We can honor GetMouseCursor() values (optional)
     //io.BackendFlags |= ImGuiBackendFlags_HasSetMousePos;          // We can honor io.WantSetMousePos requests (optional, rarely used)
-    io.BackendPlatformName = "OpenGLRHI-Windows";
+    io.BackendPlatformName = "GraphicsOpenGL-Windows";
     io.ImeWindowHandle = ctx->hwnd;
 
     // Keyboard mapping. ImGui will use those indices to peek into the io.KeysDown[] array that we will update during the application lifetime.
@@ -1100,14 +1100,14 @@ void OpenGLRHI::ImGuiCreateContext(GLContext *ctx) {
     //io.Fonts->AddFontFromFileTTF("../../../Data/EngineFonts/consola.ttf", 13);
 }
 
-void OpenGLRHI::ImGuiDestroyContext(GLContext *ctx) {
+void GraphicsOpenGL::ImGuiDestroyContext(GLContext *ctx) {
     ImGui_ImplOpenGL_Shutdown();
 
     ImGui::DestroyContext(ctx->imGuiContext);
 }
 
-void OpenGLRHI::ImGuiBeginFrame(Handle ctxHandle) {
-    BE_PROFILE_CPU_SCOPE_STATIC("OpenGLRHI::ImGuiBeginFrame");
+void GraphicsOpenGL::ImGuiBeginFrame(Handle ctxHandle) {
+    BE_PROFILE_CPU_SCOPE_STATIC("GraphicsOpenGL::ImGuiBeginFrame");
 
     ImGui_ImplOpenGL_ValidateFrame();
 
@@ -1145,9 +1145,9 @@ void OpenGLRHI::ImGuiBeginFrame(Handle ctxHandle) {
     ImGui::NewFrame();
 }
 
-void OpenGLRHI::ImGuiRender() {
-    BE_PROFILE_CPU_SCOPE_STATIC("OpenGLRHI::ImGuiRender");
-    BE_PROFILE_GPU_SCOPE_STATIC("OpenGLRHI::ImGuiRender");
+void GraphicsOpenGL::ImGuiRender() {
+    BE_PROFILE_CPU_SCOPE_STATIC("GraphicsOpenGL::ImGuiRender");
+    BE_PROFILE_GPU_SCOPE_STATIC("GraphicsOpenGL::ImGuiRender");
 
     ImGui::Render();
 
@@ -1163,8 +1163,8 @@ void OpenGLRHI::ImGuiRender() {
     }
 }
 
-void OpenGLRHI::ImGuiEndFrame() {
-    BE_PROFILE_CPU_SCOPE_STATIC("OpenGLRHI::ImGuiEndFrame");
+void GraphicsOpenGL::ImGuiEndFrame() {
+    BE_PROFILE_CPU_SCOPE_STATIC("GraphicsOpenGL::ImGuiEndFrame");
 
     ImGui::EndFrame();
 }

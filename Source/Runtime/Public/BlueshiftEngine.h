@@ -113,8 +113,8 @@
 #include "Sound/Pcm.h"
 #include "Sound/SoundSystem.h"
 
-// RHI
-#include "RHI/RHIOpenGL.h"
+// Graphics
+#include "Graphics/GraphicsOpenGL.h"
 
 // Platform
 #include "Platform/Platform.h"

@@ -28,8 +28,8 @@ BE_NAMESPACE_BEGIN
 RenderGlobal    renderGlobal;
 RenderSystem    renderSystem;
 
-void RenderSystem::InitRHI(void *windowHandle) {
-    RHI::Settings settings;
+void RenderSystem::InitGraphics(void *windowHandle) {
+    Graphics::Settings settings;
     settings.colorBits = cvarSystem.GetCVarInteger("r_colorBits");
     settings.alphaBits = settings.colorBits == 32 ? 8 : 0;
     settings.depthBits = cvarSystem.GetCVarInteger("r_depthBits");
@@ -37,7 +37,7 @@ void RenderSystem::InitRHI(void *windowHandle) {
     settings.multiSamples = cvarSystem.GetCVarInteger("r_multiSamples");
 
     // Initialize OpenGL renderer.
-    rhi.Init(windowHandle, &settings);
+    graphics.Init(windowHandle, &settings);
 }
 
 void RenderSystem::Init() {
@@ -45,9 +45,9 @@ void RenderSystem::Init() {
     cmdSystem.AddCommand("genDFGSumGGX", Cmd_GenerateDFGSumGGX);
 
     // Save current gamma ramp table.
-    rhi.GetGammaRamp(savedGammaRamp);
+    graphics.GetGammaRamp(savedGammaRamp);
 
-    if (r_fastSkinning.GetInteger() == 2 && rhi.HWLimit().maxVertexTextureImageUnits > 0) {
+    if (r_fastSkinning.GetInteger() == 2 && graphics.HWLimit().maxVertexTextureImageUnits > 0) {
         renderGlobal.skinningMethod = SkinningJointCache::SkinningMethod::VertexTextureFetch;
     } else if (r_fastSkinning.GetInteger() >= 1) {
         renderGlobal.skinningMethod = SkinningJointCache::SkinningMethod::VertexShader;
@@ -55,20 +55,20 @@ void RenderSystem::Init() {
         renderGlobal.skinningMethod = SkinningJointCache::SkinningMethod::Cpu;
     }
 
-    if (r_vertexTextureUpdate.GetInteger() == 2 && rhi.SupportsTextureBuffer()) {
+    if (r_vertexTextureUpdate.GetInteger() == 2 && graphics.SupportsTextureBuffer()) {
         renderGlobal.vertexTextureMethod = BufferCacheManager::VertexTextureMethod::Tbo;
-    } else if (r_vertexTextureUpdate.GetInteger() >= 1 && rhi.SupportsPixelBuffer()) {
+    } else if (r_vertexTextureUpdate.GetInteger() >= 1 && graphics.SupportsPixelBuffer()) {
         renderGlobal.vertexTextureMethod = BufferCacheManager::VertexTextureMethod::Pbo;
     } else {
         renderGlobal.vertexTextureMethod = BufferCacheManager::VertexTextureMethod::DirectCopy;
     }
 
-    if (r_instancing.GetInteger() == 2 && rhi.SupportsInstancedArrays() && rhi.SupportsMultiDrawIndirect()) {
+    if (r_instancing.GetInteger() == 2 && graphics.SupportsInstancedArrays() && graphics.SupportsMultiDrawIndirect()) {
         renderGlobal.instancingMethod = Mesh::InstancingMethod::InstancedArrays;
         renderGlobal.instanceBufferOffsetAlignment = 64;
     } else if (r_instancing.GetInteger() >= 1) {
         renderGlobal.instancingMethod = Mesh::InstancingMethod::UniformBuffer;
-        renderGlobal.instanceBufferOffsetAlignment = rhi.HWLimit().uniformBufferOffsetAlignment;
+        renderGlobal.instanceBufferOffsetAlignment = graphics.HWLimit().uniformBufferOffsetAlignment;
     } else {
         renderGlobal.instancingMethod = Mesh::InstancingMethod::NoInstancing;
         renderGlobal.instanceBufferOffsetAlignment = 0;
@@ -146,13 +146,13 @@ void RenderSystem::Shutdown() {
 
     Mem_AlignedFree(renderGlobal.instanceBufferData);
 
-    rhi.Shutdown();
+    graphics.Shutdown();
 
     initialized = false;
 }
 
 bool RenderSystem::IsFullscreen() const {
-    return rhi.IsFullscreen();
+    return graphics.IsFullscreen();
 }
 
 void RenderSystem::SetGamma(double gamma) {
@@ -170,11 +170,11 @@ void RenderSystem::SetGamma(double gamma) {
         ramp[i] = ramp[i + 256] = ramp[i + 512] = (unsigned short)value;
     }
 
-    rhi.SetGammaRamp(ramp);
+    graphics.SetGammaRamp(ramp);
 }
 
 void RenderSystem::RestoreGamma() {
-    rhi.SetGammaRamp(savedGammaRamp);
+    graphics.SetGammaRamp(savedGammaRamp);
 }
 
 RenderContext *RenderSystem::AllocRenderContext(bool isMainContext) {
@@ -201,10 +201,10 @@ void RenderSystem::BeginCommands(RenderContext *renderContext) {
 
     renderSystem.currentContext = renderContext;
 
-    rhi.SetContext(renderContext->GetContextHandle());
+    graphics.SetContext(renderContext->GetContextHandle());
 
 #ifdef ENABLE_IMGUI
-    rhi.ImGuiBeginFrame(renderContext->GetContextHandle());
+    graphics.ImGuiBeginFrame(renderContext->GetContextHandle());
 #endif
 
     bufferCacheManager.BeginWrite();
@@ -226,7 +226,7 @@ void RenderSystem::EndCommands() {
     frameData.ToggleFrame();
 
 #ifdef ENABLE_IMGUI
-    rhi.ImGuiEndFrame();
+    graphics.ImGuiEndFrame();
 #endif
 
     renderSystem.currentContext = nullptr;
@@ -353,7 +353,7 @@ void RenderSystem::CheckModifiedCVars() {
     if (r_swapInterval.IsModified()) {
         r_swapInterval.ClearModified();
 
-        rhi.SwapInterval(r_swapInterval.GetInteger());
+        graphics.SwapInterval(r_swapInterval.GetInteger());
     }
 
     if (r_useDeferredLighting.IsModified()) {
@@ -710,11 +710,11 @@ void RenderSystem::CaptureScreenRT(RenderWorld *renderWorld, int layerMask,
 Texture *RenderSystem::CaptureScreenTexture(RenderWorld *renderWorld, int layerMask, 
     bool colorClear, const Color4 &clearColor, const Vec3 &origin, const Mat3 &axis, float fov, bool useHDR, int width, int height) {
     Texture *screenTexture = new Texture;
-    screenTexture->CreateEmpty(RHI::TextureType::Texture2D, width, height, 1, 1, 1, 
+    screenTexture->CreateEmpty(Graphics::TextureType::Texture2D, width, height, 1, 1, 1, 
         useHDR ? Image::Format::RGB_11F_11F_10F : Image::Format::RGB_8_8_8,
         Texture::Flag::Clamp | Texture::Flag::NoMipmaps | Texture::Flag::HighQuality);
 
-    RenderTarget *screenRT = RenderTarget::Create(screenTexture, nullptr, RHI::RenderTargetFlag::HasDepthBuffer);
+    RenderTarget *screenRT = RenderTarget::Create(screenTexture, nullptr, Graphics::RenderTargetFlag::HasDepthBuffer);
 
     CaptureScreenRT(renderWorld, layerMask, colorClear, clearColor, origin, axis, fov, width, height, screenRT);
 
@@ -764,7 +764,7 @@ void RenderSystem::CaptureEnvCubeFaceRT(RenderWorld *renderWorld, int layerMask,
     // Use any render context
     RenderContext *renderContext = renderSystem.renderContexts[0];
 
-    R_EnvCubeMapFaceToEngineAxis((RHI::CubeMapFace::Enum)faceIndex, cameraDef.axis);
+    R_EnvCubeMapFaceToEngineAxis((Graphics::CubeMapFace::Enum)faceIndex, cameraDef.axis);
 
     renderCamera.Update(&cameraDef);
 
@@ -792,11 +792,11 @@ void RenderSystem::CaptureEnvCubeRT(RenderWorld *renderWorld, int layerMask, int
 Texture *RenderSystem::CaptureEnvCubeTexture(RenderWorld *renderWorld, int layerMask, int staticMask, 
     bool colorClear, const Color4 &clearColor, const Vec3 &origin, float zNear, float zFar, bool useHDR, int size) {
     Texture *envCubeTexture = new Texture;
-    envCubeTexture->CreateEmpty(RHI::TextureType::TextureCubeMap, size, size, 1, 1, 1, 
+    envCubeTexture->CreateEmpty(Graphics::TextureType::TextureCubeMap, size, size, 1, 1, 1, 
         useHDR ? Image::Format::RGB_11F_11F_10F : Image::Format::RGB_8_8_8,
         Texture::Flag::Clamp | Texture::Flag::NoMipmaps | Texture::Flag::HighQuality);
 
-    RenderTarget *envCubeRT = RenderTarget::Create(envCubeTexture, nullptr, RHI::RenderTargetFlag::HasDepthBuffer);
+    RenderTarget *envCubeRT = RenderTarget::Create(envCubeTexture, nullptr, Graphics::RenderTargetFlag::HasDepthBuffer);
 
     CaptureEnvCubeRT(renderWorld, layerMask, staticMask, colorClear, clearColor, origin, zNear, zFar, envCubeRT);
 
@@ -853,7 +853,7 @@ void RenderSystem::GenerateSHConvolvIrradianceEnvCubeRT(const Texture *envCubeTe
         }
 
         weightTextures[faceIndex] = new Texture;
-        weightTextures[faceIndex]->Create(RHI::TextureType::Texture2D,
+        weightTextures[faceIndex]->Create(Graphics::TextureType::Texture2D,
             Image(envMapSize * 4, envMapSize * 4, 1, 1, 1, Image::Format::L_32F, Image::GammaSpace::Linear, (byte *)weightData, 0),
             Texture::Flag::Clamp | Texture::Flag::Nearest | Texture::Flag::NoMipmaps | Texture::Flag::HighQuality);
     }
@@ -868,15 +868,15 @@ void RenderSystem::GenerateSHConvolvIrradianceEnvCubeRT(const Texture *envCubeTe
     Image image;
     image.Create2D(4, 4, 1, Image::Format::RGB_32F_32F_32F, Image::GammaSpace::Linear, nullptr, 0);
     Texture *incidentCoeffTexture = new Texture;
-    incidentCoeffTexture->Create(RHI::TextureType::Texture2D, image, Texture::Flag::Clamp | Texture::Flag::Nearest | Texture::Flag::NoMipmaps | Texture::Flag::HighQuality);
+    incidentCoeffTexture->Create(Graphics::TextureType::Texture2D, image, Texture::Flag::Clamp | Texture::Flag::Nearest | Texture::Flag::NoMipmaps | Texture::Flag::HighQuality);
 
     RenderTarget *incidentCoeffRT = RenderTarget::Create(incidentCoeffTexture, nullptr, 0);
 
     incidentCoeffRT->Begin();
 
-    rhi.SetViewport(Rect(0, 0, 4, 4));
-    rhi.SetStateBits(RHI::ColorWrite);
-    rhi.SetCullFace(RHI::CullType::None);
+    graphics.SetViewport(Rect(0, 0, 4, 4));
+    graphics.SetStateBits(Graphics::ColorWrite);
+    graphics.SetCullFace(Graphics::CullType::None);
 
     weightedSHProjShader->Bind();
     weightedSHProjShader->SetTextureArray("weightMap", 6, (const Texture **)weightTextures);
@@ -886,7 +886,7 @@ void RenderSystem::GenerateSHConvolvIrradianceEnvCubeRT(const Texture *envCubeTe
 
     RB_DrawClipRect(0, 0, 1.0f, 1.0f);
 
-    //rhi.ReadPixels(0, 0, 4, 4, Image::RGB_32F_32F_32F, image.GetPixels());
+    //graphics.ReadPixels(0, 0, 4, 4, Image::RGB_32F_32F_32F, image.GetPixels());
 
     incidentCoeffRT->End();
 
@@ -911,12 +911,12 @@ void RenderSystem::GenerateSHConvolvIrradianceEnvCubeRT(const Texture *envCubeTe
     al[1] = SphericalHarmonics::Lambert_Al_Evaluator(1); // 2/3
     al[2] = SphericalHarmonics::Lambert_Al_Evaluator(2); // 1/4
 
-    for (int faceIndex = RHI::CubeMapFace::PositiveX; faceIndex <= RHI::CubeMapFace::NegativeZ; faceIndex++) {
+    for (int faceIndex = Graphics::CubeMapFace::PositiveX; faceIndex <= Graphics::CubeMapFace::NegativeZ; faceIndex++) {
         targetCubeRT->Begin(0, faceIndex);
 
-        rhi.SetViewport(Rect(0, 0, size, size));
-        rhi.SetStateBits(RHI::ColorWrite);
-        rhi.SetCullFace(RHI::CullType::None);
+        graphics.SetViewport(Rect(0, 0, size, size));
+        graphics.SetStateBits(Graphics::ColorWrite);
+        graphics.SetCullFace(Graphics::CullType::None);
 
         genDiffuseCubeMapSHConvolv->Bind();
         genDiffuseCubeMapSHConvolv->SetTexture("incidentCoeffMap", incidentCoeffRT->ColorTexture());
@@ -943,12 +943,12 @@ void RenderSystem::GenerateIrradianceEnvCubeRT(const Texture *envCubeTexture, Re
 
     int size = targetCubeRT->GetWidth();
 
-    for (int faceIndex = RHI::CubeMapFace::PositiveX; faceIndex <= RHI::CubeMapFace::NegativeZ; faceIndex++) {
+    for (int faceIndex = Graphics::CubeMapFace::PositiveX; faceIndex <= Graphics::CubeMapFace::NegativeZ; faceIndex++) {
         targetCubeRT->Begin(0, faceIndex);
 
-        rhi.SetViewport(Rect(0, 0, size, size));
-        rhi.SetStateBits(RHI::ColorWrite);
-        rhi.SetCullFace(RHI::CullType::None);
+        graphics.SetViewport(Rect(0, 0, size, size));
+        graphics.SetStateBits(Graphics::ColorWrite);
+        graphics.SetCullFace(Graphics::CullType::None);
 
         genDiffuseCubeMapShader->Bind();
         genDiffuseCubeMapShader->SetTexture("radianceCubeMap", envCubeTexture);
@@ -978,7 +978,7 @@ void RenderSystem::GeneratePhongSpecularLDSumRT(const Texture *envCubeTexture, i
     // power drop range [maxSpecularPower, 2]
     float powerDropOnMip = Math::Pow(maxSpecularPower, -1.0f / numMipLevels);
 
-    for (int faceIndex = RHI::CubeMapFace::PositiveX; faceIndex <= RHI::CubeMapFace::NegativeZ; faceIndex++) {
+    for (int faceIndex = Graphics::CubeMapFace::PositiveX; faceIndex <= Graphics::CubeMapFace::NegativeZ; faceIndex++) {
         float specularPower = maxSpecularPower;
 
         for (int mipLevel = 0; mipLevel < numMipLevels; mipLevel++) {
@@ -986,9 +986,9 @@ void RenderSystem::GeneratePhongSpecularLDSumRT(const Texture *envCubeTexture, i
 
             targetCubeRT->Begin(mipLevel, faceIndex);
 
-            rhi.SetViewport(Rect(0, 0, mipSize, mipSize));
-            rhi.SetStateBits(RHI::ColorWrite);
-            rhi.SetCullFace(RHI::CullType::None);
+            graphics.SetViewport(Rect(0, 0, mipSize, mipSize));
+            graphics.SetStateBits(Graphics::ColorWrite);
+            graphics.SetCullFace(Graphics::CullType::None);
 
             genLDSumPhongSpecularShader->Bind();
             genLDSumPhongSpecularShader->SetTexture("radianceCubeMap", envCubeTexture);
@@ -1015,12 +1015,12 @@ void RenderSystem::GenerateGGXLDSumRTFirstLevel(const Texture *envCubeTexture, R
     int size = targetCubeRT->GetWidth();
 
     // We can skip complex calculation for mipLevel 0 for perfect specular mirror.
-    for (int faceIndex = RHI::CubeMapFace::PositiveX; faceIndex <= RHI::CubeMapFace::NegativeZ; faceIndex++) {
+    for (int faceIndex = Graphics::CubeMapFace::PositiveX; faceIndex <= Graphics::CubeMapFace::NegativeZ; faceIndex++) {
         targetCubeRT->Begin(0, faceIndex);
 
-        rhi.SetViewport(Rect(0, 0, size, size));
-        rhi.SetStateBits(RHI::ColorWrite);
-        rhi.SetCullFace(RHI::CullType::None);
+        graphics.SetViewport(Rect(0, 0, size, size));
+        graphics.SetStateBits(Graphics::ColorWrite);
+        graphics.SetCullFace(Graphics::CullType::None);
 
         passThruCubeFaceShader->Bind();
         passThruCubeFaceShader->SetTexture("cubemap", envCubeTexture);
@@ -1041,16 +1041,16 @@ void RenderSystem::GenerateGGXLDSumRTRestLevel(const Texture *envCubeTexture, Re
 
     int size = targetCubeRT->GetWidth();
 
-    for (int faceIndex = RHI::CubeMapFace::PositiveX; faceIndex <= RHI::CubeMapFace::NegativeZ; faceIndex++) {
+    for (int faceIndex = Graphics::CubeMapFace::PositiveX; faceIndex <= Graphics::CubeMapFace::NegativeZ; faceIndex++) {
         int mipSize = size >> mipLevel;
 
         float roughness = (float)mipLevel / (numMipLevels - 1);
 
         targetCubeRT->Begin(mipLevel, faceIndex);
 
-        rhi.SetViewport(Rect(0, 0, mipSize, mipSize));
-        rhi.SetStateBits(RHI::ColorWrite);
-        rhi.SetCullFace(RHI::CullType::None);
+        graphics.SetViewport(Rect(0, 0, mipSize, mipSize));
+        graphics.SetStateBits(Graphics::ColorWrite);
+        graphics.SetCullFace(Graphics::CullType::None);
 
         genLDSumGGXShader->Bind();
         genLDSumGGXShader->SetTexture("radianceCubeMap", envCubeTexture);
@@ -1094,16 +1094,16 @@ void RenderSystem::GenerateGGXDFGSumImage(int size, Image &integrationImage) con
     Shader *genDFGSumGGXShader = shaderManager.GetShader("Shaders/GenDFGSumGGX")->InstantiateShader(Array<Shader::Define>());
 
     Texture *integrationLutTexture = new Texture;
-    integrationLutTexture->CreateEmpty(RHI::TextureType::Texture2D, size, size, 1, 1, 1, Image::Format::RG_16F_16F,
+    integrationLutTexture->CreateEmpty(Graphics::TextureType::Texture2D, size, size, 1, 1, 1, Image::Format::RG_16F_16F,
         Texture::Flag::Clamp | Texture::Flag::Nearest | Texture::Flag::NoMipmaps | Texture::Flag::HighQuality);
 
     RenderTarget *integrationLutRT = RenderTarget::Create(integrationLutTexture, nullptr, 0);
 
     integrationLutRT->Begin(0, 0);
 
-    rhi.SetViewport(Rect(0, 0, size, size));
-    rhi.SetStateBits(RHI::ColorWrite);
-    rhi.SetCullFace(RHI::CullType::None);
+    graphics.SetViewport(Rect(0, 0, size, size));
+    graphics.SetStateBits(Graphics::ColorWrite);
+    graphics.SetCullFace(Graphics::CullType::None);
 
     genDFGSumGGXShader->Bind();
 
@@ -1111,7 +1111,7 @@ void RenderSystem::GenerateGGXDFGSumImage(int size, Image &integrationImage) con
 
     integrationImage.Create2D(size, size, 1, Image::Format::RG_16F_16F, Image::GammaSpace::Linear, nullptr, 0);
 
-    rhi.ReadPixels(0, 0, size, size, Image::Format::RG_16F_16F, integrationImage.GetPixels());
+    graphics.ReadPixels(0, 0, size, size, Image::Format::RG_16F_16F, integrationImage.GetPixels());
 
     integrationLutRT->End();
 
@@ -1161,7 +1161,7 @@ void RenderSystem::TakeIrradianceEnvShot(const char *filename, RenderWorld *rend
     Texture *envCubeTexture = CaptureEnvCubeTexture(renderWorld, layerMask, staticMask, false, Color4::black, origin, CmToUnit(5.0f), MeterToUnit(100.0f), useHDR, envSize);
 
     Texture *irradianceEnvCubeTexture = new Texture;
-    irradianceEnvCubeTexture->CreateEmpty(RHI::TextureType::TextureCubeMap, size, size, 1, 1, 1, 
+    irradianceEnvCubeTexture->CreateEmpty(Graphics::TextureType::TextureCubeMap, size, size, 1, 1, 1, 
         useHDR ? Image::Format::RGB_11F_11F_10F : Image::Format::RGB_8_8_8,
         Texture::Flag::Clamp | Texture::Flag::Nearest | Texture::Flag::NoMipmaps | Texture::Flag::HighQuality);
     RenderTarget *irradianceEnvCubeRT = RenderTarget::Create(irradianceEnvCubeTexture, nullptr, 0);
@@ -1194,7 +1194,7 @@ void RenderSystem::TakePrefilteredEnvShot(const char *filename, RenderWorld *ren
     int numMipLevels = Math::Log(2, size) + 1;
 
     Texture *prefilteredCubeTexture = new Texture;
-    prefilteredCubeTexture->CreateEmpty(RHI::TextureType::TextureCubeMap, size, size, 1, 1, numMipLevels,
+    prefilteredCubeTexture->CreateEmpty(Graphics::TextureType::TextureCubeMap, size, size, 1, 1, numMipLevels,
         useHDR ? Image::Format::RGB_11F_11F_10F : Image::Format::RGB_8_8_8,
         Texture::Flag::Clamp | Texture::Flag::Nearest | Texture::Flag::NoMipmaps | Texture::Flag::HighQuality);
     RenderTarget *prefilteredCubeRT = RenderTarget::Create(prefilteredCubeTexture, nullptr, 0);

@@ -363,7 +363,7 @@ static RenderQuality::Enum DetermineRenderQuality(BE1::IOSDevice::Type::Enum dev
     return RenderQuality::Low;
 }
 
-static void DisplayContext(BE1::RHI::Handle context, void *dataPtr) {
+static void DisplayContext(BE1::Graphics::Handle context, void *dataPtr) {
     static int t0 = 0;
     
     if (t0 == 0) {
@@ -411,7 +411,7 @@ static void DisplayContext(BE1::RHI::Handle context, void *dataPtr) {
     
     [mainWindow makeKeyAndVisible];
 
-    BE1::renderSystem.InitRHI((__bridge BE1::RHI::WindowHandle)mainWindow);
+    BE1::renderSystem.InitGraphics((__bridge BE1::Graphics::WindowHandle)mainWindow);
 
     BE1::IOSDevice::Type::Enum deviceType = BE1::IOSDevice::GetIOSDeviceType();
 
@@ -428,7 +428,7 @@ static void DisplayContext(BE1::RHI::Handle context, void *dataPtr) {
     BE1::cmdSystem.BufferCommandText(BE1::CmdSystem::Execution::Now, BE1::va("exec \"Config/%s.cfg\"\n", configName));
     BE1::cvarSystem.ClearModified();
 
-    BE1::gameClient.Init((__bridge BE1::RHI::WindowHandle)mainWindow, false);
+    BE1::gameClient.Init((__bridge BE1::Graphics::WindowHandle)mainWindow, false);
     
     float retinaScale = [[UIScreen mainScreen] scale];
     int renderWidth = screenBounds.size.width * retinaScale;
@@ -449,7 +449,7 @@ static void DisplayContext(BE1::RHI::Handle context, void *dataPtr) {
     renderHeight = renderHeight * screenScaleFactor.y;
 
     app.mainRenderContext = BE1::renderSystem.AllocRenderContext(true);
-    app.mainRenderContext->Init((__bridge BE1::RHI::WindowHandle)[rootViewController view],
+    app.mainRenderContext->Init((__bridge BE1::Graphics::WindowHandle)[rootViewController view],
                                 renderWidth, renderHeight, DisplayContext, nullptr);
 
     app.mainRenderContext->OnResize(renderWidth, renderHeight);

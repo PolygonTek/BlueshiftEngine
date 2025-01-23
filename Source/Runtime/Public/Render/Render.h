@@ -14,7 +14,7 @@
 
 #pragma once
 
-#include "RHI/RHIOpenGL.h"
+#include "Graphics/GraphicsOpenGL.h"
 
 #include "Render/BufferCache.h"
 #include "Render/SkinningJointCache.h"

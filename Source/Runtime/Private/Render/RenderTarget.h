@@ -30,7 +30,7 @@ class RenderTarget {
     friend struct RenderBackEnd;
 
 public:
-    static constexpr int MaxMultipleColorTextures = 8;
+    static constexpr int    MaxMultipleColorTextures = 8;
 
     int                     GetWidth() const;
     int                     GetHeight() const;
@@ -54,7 +54,7 @@ public:
 private:
     friend void             RB_DrawRenderTargetTexture();
 
-    RHI::Handle             rtHandle;
+    Graphics::Handle        rtHandle;
     const Texture *         colorTextures[MaxMultipleColorTextures];
     const Texture *         depthStencilTexture;
     int                     flags;

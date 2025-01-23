@@ -135,18 +135,18 @@ static void DestroyRenderWindow(HWND hwnd) {
 }
 
 static void ToggleFullscreen(HWND hwnd) {
-    if (!BE1::rhi.IsFullscreen()) {
+    if (!BE1::graphics.IsFullscreen()) {
         ChangeRenderWindow(hwnd, disp_width.GetInteger(), disp_height.GetInteger(), true);
 
-        BE1::rhi.SetFullscreen(app.mainRenderContext->GetContextHandle(), disp_width.GetInteger(), disp_height.GetInteger());
+        BE1::graphics.SetFullscreen(app.mainRenderContext->GetContextHandle(), disp_width.GetInteger(), disp_height.GetInteger());
     } else {
-        BE1::rhi.ResetFullscreen(app.mainRenderContext->GetContextHandle());
+        BE1::graphics.ResetFullscreen(app.mainRenderContext->GetContextHandle());
         
         ChangeRenderWindow(hwnd, disp_width.GetInteger(), disp_height.GetInteger(), false);
     }
 }
 
-static void DisplayContext(BE1::RHI::Handle context, void *dataPtr) {
+static void DisplayContext(BE1::Graphics::Handle context, void *dataPtr) {
     app.Draw();
 }
 
@@ -206,7 +206,7 @@ static void InitInstance(HINSTANCE hInstance, LPCTSTR lpCmdLine, int nCmdShow) {
 
     hmainWnd = CreateRenderWindow(szFullTitle, mainWindowClassName, disp_width.GetInteger(), disp_height.GetInteger(), disp_fullscreen.GetBool());
 
-    BE1::renderSystem.InitRHI(hmainWnd);
+    BE1::renderSystem.InitGraphics(hmainWnd);
 
     BE1::gameClient.Init(hmainWnd, true);
 
@@ -218,7 +218,7 @@ static void InitInstance(HINSTANCE hInstance, LPCTSTR lpCmdLine, int nCmdShow) {
     app.OnApplicationResize(1280, 720);
      
     if (disp_fullscreen.GetBool()) {
-        BE1::rhi.SetFullscreen(app.mainRenderContext->GetContextHandle(), disp_width.GetInteger(), disp_height.GetInteger());
+        BE1::graphics.SetFullscreen(app.mainRenderContext->GetContextHandle(), disp_width.GetInteger(), disp_height.GetInteger());
     }
 
     app.Init();

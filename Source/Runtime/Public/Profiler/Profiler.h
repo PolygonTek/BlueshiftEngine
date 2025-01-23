@@ -18,7 +18,7 @@
 #include "Containers/HashMap.h"
 #include "Containers/Stack.h"
 #include "Math/Math.h"
-#include "RHI/RHIOpenGL.h"
+#include "Graphics/GraphicsOpenGL.h"
 
 BE_NAMESPACE_BEGIN
 
@@ -103,27 +103,23 @@ public:
     };
 
     struct GpuMarker : public MarkerBase {
-        RHI::Handle             startQueryHandle;
-        RHI::Handle             endQueryHandle;
+        Graphics::Handle        startQueryHandle;
+        Graphics::Handle        endQueryHandle;
     };
 
     struct CpuThreadInfo {
         uint64_t                threadId;
         CpuMarker               markers[MaxCpuMarkersPerThread];
-        int                     currentIndex;                       // current marker index
-        Stack<int>              indexStack;                         // marker index stack for recursive usage
+        int                     currentIndex = 0;                   // current marker index
+        Stack<int>              indexStack = MaxDepth;              // marker index stack for recursive usage
         int                     frameIndexes[MaxRecordedFrames];    // start marker indexes for frames
-
-        CpuThreadInfo() : currentIndex(0), indexStack(MaxDepth) {}
     };
 
     struct GpuThreadInfo {
         GpuMarker               markers[MaxGpuMarkers];
-        int                     currentIndex;                       // current marker index
-        Stack<int>              indexStack;                         // marker index stack for recursive usage
+        int                     currentIndex = 0;                   // current marker index
+        Stack<int>              indexStack = MaxDepth;              // marker index stack for recursive usage
         int                     frameIndexes[MaxRecordedFrames];    // start marker indexes for frames
-
-        GpuThreadInfo() : currentIndex(0), indexStack(MaxDepth) {}
     };
 
     struct FrameData {
@@ -240,11 +236,11 @@ BE_INLINE void Profiler::IterateGpuMarkers(Func func) const {
             bool isLeaf = nextMarkerIndex == endMarkerIndex || ti.markers[nextMarkerIndex].stackDepth <= marker.stackDepth;
 
             if (marker.stackDepth < skipMinDepth) {
-                if (!rhi.QueryResultAvailable(marker.startQueryHandle) || !rhi.QueryResultAvailable(marker.endQueryHandle)) {
+                if (!graphics.QueryResultAvailable(marker.startQueryHandle) || !graphics.QueryResultAvailable(marker.endQueryHandle)) {
                     continue;
                 }
-                uint64_t startTime = rhi.QueryResult(marker.startQueryHandle);
-                uint64_t endTime = rhi.QueryResult(marker.endQueryHandle);
+                uint64_t startTime = graphics.QueryResult(marker.startQueryHandle);
+                uint64_t endTime = graphics.QueryResult(marker.endQueryHandle);
 
                 const Tag &tag = tags[marker.tagIndex];
 

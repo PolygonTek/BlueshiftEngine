@@ -13,12 +13,12 @@
 // limitations under the License.
 
 #include "Precompiled.h"
-#include "RHI/RHIOpenGL.h"
+#include "Graphics/GraphicsOpenGL.h"
 #include "RGLInternal.h"
 
 BE_NAMESPACE_BEGIN
 
-RHI::Handle OpenGLRHI::CreateQuery(QueryType::Enum queryType) {
+Graphics::Handle GraphicsOpenGL::CreateQuery(QueryType::Enum queryType) {
     GLuint id;
     gglGenQueries(1, &id);
 
@@ -36,7 +36,7 @@ RHI::Handle OpenGLRHI::CreateQuery(QueryType::Enum queryType) {
     return (Handle)handle;
 }
 
-void OpenGLRHI::DestroyQuery(Handle queryHandle) {
+void GraphicsOpenGL::DestroyQuery(Handle queryHandle) {
     GLQuery *query = queryList[queryHandle];
 
     gglDeleteQueries(1, &query->id);
@@ -45,31 +45,31 @@ void OpenGLRHI::DestroyQuery(Handle queryHandle) {
     queryList[queryHandle] = nullptr;
 }
 
-void OpenGLRHI::BeginQuery(Handle queryHandle) {
+void GraphicsOpenGL::BeginQuery(Handle queryHandle) {
     const GLQuery *query = queryList[queryHandle];
 
-    if (query->queryType == RHI::QueryType::Occlusion) {
+    if (query->queryType == Graphics::QueryType::Occlusion) {
         gglBeginQuery(GL_ANY_SAMPLES_PASSED, query->id);
     }
 }
 
-void OpenGLRHI::EndQuery(Handle queryHandle) {
+void GraphicsOpenGL::EndQuery(Handle queryHandle) {
     const GLQuery *query = queryList[queryHandle];
 
-    if (query->queryType == RHI::QueryType::Occlusion) {
+    if (query->queryType == Graphics::QueryType::Occlusion) {
         gglEndQuery(GL_ANY_SAMPLES_PASSED);
     }
 }
 
-void OpenGLRHI::QueryTimestamp(Handle queryHandle) {
+void GraphicsOpenGL::QueryTimestamp(Handle queryHandle) {
     const GLQuery *query = queryList[queryHandle];
 
-    if (OpenGL::SupportsTimestampQueries() && query->queryType == RHI::QueryType::Timestamp) {
+    if (OpenGL::SupportsTimestampQueries() && query->queryType == Graphics::QueryType::Timestamp) {
         OpenGL::QueryTimestampCounter(query->id);
     }
 }
 
-bool OpenGLRHI::QueryResultAvailable(Handle queryHandle) const {
+bool GraphicsOpenGL::QueryResultAvailable(Handle queryHandle) const {
     const GLQuery *query = queryList[queryHandle];
 
     GLuint available;
@@ -77,7 +77,7 @@ bool OpenGLRHI::QueryResultAvailable(Handle queryHandle) const {
     return available ? true : false;
 }
 
-uint64_t OpenGLRHI::QueryResult(Handle queryHandle) const {
+uint64_t GraphicsOpenGL::QueryResult(Handle queryHandle) const {
     const GLQuery *query = queryList[queryHandle];
 
     uint64_t result;

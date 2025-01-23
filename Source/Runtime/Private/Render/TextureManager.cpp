@@ -22,14 +22,14 @@ BE_NAMESPACE_BEGIN
 
 static const struct {
     const char *name;
-    RHI::TextureFilter::Enum filter;
+    Graphics::TextureFilter::Enum filter;
 } textureFilterNames[] = {
-    { "Nearest", RHI::TextureFilter::Nearest },
-    { "Linear", RHI::TextureFilter::Linear },
-    { "NearestMipmapNearest", RHI::TextureFilter::NearestMipmapNearest },
-    { "LinearMipmapNearest", RHI::TextureFilter::LinearMipmapNearest },
-    { "NearestMipmapLinear", RHI::TextureFilter::NearestMipmapLinear },
-    { "LinearMipmapLinear", RHI::TextureFilter::LinearMipmapLinear },
+    { "Nearest", Graphics::TextureFilter::Nearest },
+    { "Linear", Graphics::TextureFilter::Linear },
+    { "NearestMipmapNearest", Graphics::TextureFilter::NearestMipmapNearest },
+    { "LinearMipmapNearest", Graphics::TextureFilter::LinearMipmapNearest },
+    { "NearestMipmapLinear", Graphics::TextureFilter::NearestMipmapLinear },
+    { "LinearMipmapLinear", Graphics::TextureFilter::LinearMipmapLinear },
 };
 
 TextureManager textureManager;
@@ -93,21 +93,21 @@ void TextureManager::CreateEngineTextures() {
     data = image.GetPixels();
     memset(data, 0xFF, 8 * 8);
     whiteTexture = AllocTexture("_whiteTexture");
-    whiteTexture->Create(RHI::TextureType::Texture2D, image, Texture::Flag::Permanence | Texture::Flag::NoScaleDown);
+    whiteTexture->Create(Graphics::TextureType::Texture2D, image, Texture::Flag::Permanence | Texture::Flag::NoScaleDown);
 
     // Create black texture.
     image.Create2D(8, 8, 1, Image::Format::L_8, Image::GammaSpace::sRGB, nullptr, 0);
     data = image.GetPixels();
     memset(data, 0, 8 * 8);
     blackTexture = AllocTexture("_blackTexture");
-    blackTexture->Create(RHI::TextureType::Texture2D, image, Texture::Flag::Permanence | Texture::Flag::NoScaleDown);
+    blackTexture->Create(Graphics::TextureType::Texture2D, image, Texture::Flag::Permanence | Texture::Flag::NoScaleDown);
 
     // Create grey texture.
     image.Create2D(8, 8, 1, Image::Format::L_8, Image::GammaSpace::sRGB, nullptr, 0);
     data = image.GetPixels();
     memset(data, 0x80, 8 * 8);
     greyTexture = AllocTexture("_greyTexture");
-    greyTexture->Create(RHI::TextureType::Texture2D, image, Texture::Flag::Permanence | Texture::Flag::NoScaleDown);
+    greyTexture->Create(Graphics::TextureType::Texture2D, image, Texture::Flag::Permanence | Texture::Flag::NoScaleDown);
 
     // Create flatNormal texture.
     flatNormalTexture = AllocTexture("_flatNormalTexture");
@@ -177,8 +177,8 @@ void TextureManager::SetFilter(const char *filterName) {
         Texture *texture = entry.second;
 
         if (texture->hasMipmaps && !(texture->flags & Texture::Flag::Nearest)) {
-            rhi.BindTexture(texture->textureHandle);
-            rhi.SetTextureFilter(textureFilter);
+            graphics.BindTexture(texture->textureHandle);
+            graphics.SetTextureFilter(textureFilter);
         }
     }
 }
@@ -190,16 +190,16 @@ void TextureManager::SetAnisotropy(float degree) {
         Texture *texture = entry.second;
         
         if (texture->hasMipmaps && !(texture->flags & Texture::Flag::Nearest)) {
-            rhi.BindTexture(texture->textureHandle);
-            rhi.SetTextureAnisotropy(degree);
+            graphics.BindTexture(texture->textureHandle);
+            graphics.SetTextureAnisotropy(degree);
         }
     }
 }
 
 void TextureManager::SetLodBias(float lodBias) const {
-    /*for (int i = 0; i < rhi.hwLimits.maxTextureImageUnits; i++) {
-        rhi.SelectTextureUnit(i);
-        rhi.SetTextureLODBias(lodBias);
+    /*for (int i = 0; i < graphics.hwLimits.maxTextureImageUnits; i++) {
+        graphics.SelectTextureUnit(i);
+        graphics.SetTextureLODBias(lodBias);
     }
 
     SelectTextureUnit(0);*/
@@ -427,21 +427,21 @@ void TextureManager::Cmd_ListTextures(const CmdArgs &args) {
         Texture *texture = entry->second;
 
         switch (texture->type) {
-        case RHI::TextureType::Texture2D:           type = "2D  "; break;
-        case RHI::TextureType::Texture3D:           type = "3D  "; break;
-        case RHI::TextureType::TextureCubeMap:      type = "Cube"; break;
-        case RHI::TextureType::TextureRectangle:    type = "Rect"; break;
-        case RHI::TextureType::Texture2DArray:      type = "2DAr"; break;
-        case RHI::TextureType::TextureBuffer:       type = "Buff"; break;
+        case Graphics::TextureType::Texture2D:           type = "2D  "; break;
+        case Graphics::TextureType::Texture3D:           type = "3D  "; break;
+        case Graphics::TextureType::TextureCubeMap:      type = "Cube"; break;
+        case Graphics::TextureType::TextureRectangle:    type = "Rect"; break;
+        case Graphics::TextureType::Texture2DArray:      type = "2DAr"; break;
+        case Graphics::TextureType::TextureBuffer:       type = "Buff"; break;
         }
 
         const char *internalFormatName = Image::FormatName(texture->format);
         
         switch (texture->addressMode) {
-        case RHI::AddressMode::Repeat:              addr = "R   "; break;
-        case RHI::AddressMode::Clamp:               addr = "C   "; break;
-        case RHI::AddressMode::ClampToBorder:       addr = "CB  "; break;
-        case RHI::AddressMode::MirroredRepeat:      addr = "MR  "; break;
+        case Graphics::AddressMode::Repeat:              addr = "R   "; break;
+        case Graphics::AddressMode::Clamp:               addr = "C   "; break;
+        case Graphics::AddressMode::ClampToBorder:       addr = "CB  "; break;
+        case Graphics::AddressMode::MirroredRepeat:      addr = "MR  "; break;
         }
 
         int bytes = texture->MemRequired(true);
@@ -508,10 +508,10 @@ void TextureManager::Cmd_DumpTexture(const CmdArgs &args) {
     const auto *entry = textureManager.textureHashMap.GetByIndex(index);
     Texture *texture = entry->second;
 
-    if (texture->type != RHI::TextureType::Texture2D &&
-        texture->type != RHI::TextureType::Texture3D &&
-        texture->type != RHI::TextureType::TextureCubeMap &&
-        texture->type != RHI::TextureType::TextureRectangle) {
+    if (texture->type != Graphics::TextureType::Texture2D &&
+        texture->type != Graphics::TextureType::Texture3D &&
+        texture->type != Graphics::TextureType::TextureCubeMap &&
+        texture->type != Graphics::TextureType::TextureRectangle) {
         BE_WARNLOG("Not supported type\n");
         return;
     }
@@ -523,18 +523,18 @@ void TextureManager::Cmd_DumpTexture(const CmdArgs &args) {
     texture->Bind();
 
     switch (texture->type) {
-    case RHI::TextureType::Texture2D:
+    case Graphics::TextureType::Texture2D:
         texture->GetTexels2D(0, texture->GetFormat(), bitmapImage.GetPixels(0));
         break;
-    case RHI::TextureType::Texture3D:
+    case Graphics::TextureType::Texture3D:
         texture->GetTexels3D(0, texture->GetFormat(), bitmapImage.GetPixels(0));
         break;
-    case RHI::TextureType::TextureCubeMap:
+    case Graphics::TextureType::TextureCubeMap:
         for (int faceIndex = 0; faceIndex < 6; faceIndex++) {
             texture->GetTexelsCubemap(faceIndex, 0, texture->GetFormat(), bitmapImage.GetPixels(0, faceIndex, 0));
         }
         break;
-    case RHI::TextureType::TextureRectangle:
+    case Graphics::TextureType::TextureRectangle:
         texture->GetTexelsRect(texture->GetFormat(), bitmapImage.GetPixels(0));
         break;
     default:
@@ -545,7 +545,7 @@ void TextureManager::Cmd_DumpTexture(const CmdArgs &args) {
     Str filename = "DumpTextures";
     filename.AppendPath(texture->GetName());
 
-    if (texture->type == RHI::TextureType::Texture2D || texture->type == RHI::TextureType::TextureRectangle) {
+    if (texture->type == Graphics::TextureType::Texture2D || texture->type == Graphics::TextureType::TextureRectangle) {
         filename.Append(".png");
         bitmapImage.WritePNG(filename);
     } else {

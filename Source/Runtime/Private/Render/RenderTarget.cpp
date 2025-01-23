@@ -43,51 +43,51 @@ int RenderTarget::GetHeight() const {
 }
 
 void RenderTarget::Begin(int level, int sliceIndex) const {
-    rhi.BeginRenderTarget(rtHandle, level, sliceIndex);
+    graphics.BeginRenderTarget(rtHandle, level, sliceIndex);
 }
 
 void RenderTarget::End() const {
-    rhi.EndRenderTarget();
+    graphics.EndRenderTarget();
 }
 
 void RenderTarget::SetMRTMask(unsigned int mrtBitMask) const {
-    rhi.SetDrawBuffersMask(mrtBitMask);
+    graphics.SetDrawBuffersMask(mrtBitMask);
 }
 
 void RenderTarget::Discard(bool depth, bool stencil, int colorBitMask) const {
-    rhi.DiscardRenderTarget(depth, stencil, colorBitMask);
+    graphics.DiscardRenderTarget(depth, stencil, colorBitMask);
 }
 
 void RenderTarget::Clear(const Color4 &clearColor, float clearDepth, int clearStencil) const {
     Begin();
 
-    rhi.SetViewport(Rect(0, 0, GetWidth(), GetHeight()));
+    graphics.SetViewport(Rect(0, 0, GetWidth(), GetHeight()));
 
     int writeBits = 0;
     int clearBits = 0;
 
     if (colorTextures[0]) {
-        writeBits |= RHI::ColorWrite | RHI::AlphaWrite;
-        clearBits |= RHI::ClearBit::Color;
+        writeBits |= Graphics::ColorWrite | Graphics::AlphaWrite;
+        clearBits |= Graphics::ClearBit::Color;
     }
 
-    if (depthStencilTexture || flags & RHI::RenderTargetFlag::HasDepthBuffer) {
-        writeBits |= RHI::DepthWrite;
-        clearBits |= RHI::ClearBit::Depth;
+    if (depthStencilTexture || flags & Graphics::RenderTargetFlag::HasDepthBuffer) {
+        writeBits |= Graphics::DepthWrite;
+        clearBits |= Graphics::ClearBit::Depth;
     }
 
-    if ((depthStencilTexture && Image::IsDepthStencilFormat(depthStencilTexture->GetFormat())) || flags & RHI::RenderTargetFlag::HasStencilBuffer) {
-        clearBits |= RHI::ClearBit::Stencil;
+    if ((depthStencilTexture && Image::IsDepthStencilFormat(depthStencilTexture->GetFormat())) || flags & Graphics::RenderTargetFlag::HasStencilBuffer) {
+        clearBits |= Graphics::ClearBit::Stencil;
     }
 
-    rhi.SetStateBits(writeBits);
-    rhi.Clear(clearBits, clearColor, clearDepth, clearStencil);
+    graphics.SetStateBits(writeBits);
+    graphics.Clear(clearBits, clearColor, clearDepth, clearStencil);
 
     End();
 }
 
 void RenderTarget::Blit(const Rect &srcRect, const Rect &dstRect, RenderTarget *target, int mask, int filter) const {
-    rhi.BlitRenderTarget(rtHandle, srcRect, target->rtHandle, dstRect, mask, (RHI::BlitFilter::Enum)filter);
+    graphics.BlitRenderTarget(rtHandle, srcRect, target->rtHandle, dstRect, mask, (Graphics::BlitFilter::Enum)filter);
 }
 
 RenderTarget *RenderTarget::Create(const Texture *colorTexture, const Texture *depthStencilTexture, int flags) {
@@ -99,9 +99,9 @@ RenderTarget *RenderTarget::Create(const Texture *colorTexture, const Texture *d
 }
 
 RenderTarget *RenderTarget::Create(int numColorTextures, const Texture **colorTextures, const Texture *depthStencilTexture, int flags) {
-    RHI::Handle colorTextureHandles[MaxMultipleColorTextures] = { RHI::NullTexture, };
-    RHI::Handle depthStencilTextureHandle = RHI::NullTexture;
-    RHI::TextureType::Enum textureType;
+    Graphics::Handle colorTextureHandles[MaxMultipleColorTextures] = { Graphics::NullTexture, };
+    Graphics::Handle depthStencilTextureHandle = Graphics::NullTexture;
+    Graphics::TextureType::Enum textureType;
     int width;
     int height;
     bool colorMipmaps = false;
@@ -131,25 +131,25 @@ RenderTarget *RenderTarget::Create(int numColorTextures, const Texture **colorTe
         depthStencilTextureHandle = depthStencilTexture->textureHandle;
     }
 
-    RHI::RenderTargetType::Enum rtType;
+    Graphics::RenderTargetType::Enum rtType;
     switch (textureType) {
-    case RHI::TextureType::Texture2D:
-        rtType = RHI::RenderTargetType::RT2D;
+    case Graphics::TextureType::Texture2D:
+        rtType = Graphics::RenderTargetType::RT2D;
         break;
-    case RHI::TextureType::TextureCubeMap:
-        rtType = RHI::RenderTargetType::RTCubeMap;
+    case Graphics::TextureType::TextureCubeMap:
+        rtType = Graphics::RenderTargetType::RTCubeMap;
         break;
-    case RHI::TextureType::Texture2DArray:
-        rtType = RHI::RenderTargetType::RT2DArray;
+    case Graphics::TextureType::Texture2DArray:
+        rtType = Graphics::RenderTargetType::RT2DArray;
         break;
     default:
-        rtType = RHI::RenderTargetType::RT2D; // to suppress a warning
+        rtType = Graphics::RenderTargetType::RT2D; // to suppress a warning
         BE_FATALERROR("RenderTarget::Create: invalid texture for render target");
         break;
     }
     
     RenderTarget *rt = new RenderTarget;
-    rt->rtHandle = rhi.CreateRenderTarget(rtType, width, height, numColorTextures, colorTextureHandles, depthStencilTextureHandle, flags);
+    rt->rtHandle = graphics.CreateRenderTarget(rtType, width, height, numColorTextures, colorTextureHandles, depthStencilTextureHandle, flags);
 
     int i = 0;
     for (; i < numColorTextures; i++) {
@@ -184,7 +184,7 @@ void RenderTarget::Delete(RenderTarget *renderTarget) {
         renderTarget->depthStencilTexture->renderTarget = nullptr;
     }
 
-    rhi.DestroyRenderTarget(renderTarget->rtHandle);
+    graphics.DestroyRenderTarget(renderTarget->rtHandle);
     rts.RemoveIndex(rts.FindIndex(renderTarget));
     delete renderTarget;
 }

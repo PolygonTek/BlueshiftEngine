@@ -24,7 +24,7 @@
 
 #include "Containers/Array.h"
 #include "Image/Image.h"
-#include "RHI.h"
+#include "Graphics.h"
 
 BE_NAMESPACE_BEGIN
 
@@ -47,9 +47,9 @@ struct GLRenderTarget;
 struct GLQuery;
 struct GLSync;
 
-class OpenGLRHI : public RHI {
+class GraphicsOpenGL : public Graphics {
 public:
-    OpenGLRHI();
+    GraphicsOpenGL();
 
     void                    Init(WindowHandle windowHandle, const Settings *settings);
     void                    Shutdown();
@@ -376,7 +376,7 @@ protected:
     int                     multiSamples;
     bool                    linearFrameBuffer;
 
-    RHI::HWLimit            hwLimit;
+    Graphics::HWLimit       hwLimit;
 
     GLContext *             mainContext;
     Array<GLContext *>      contextList;
@@ -392,6 +392,6 @@ protected:
     Array<GLQuery *>        queryList;
 };
 
-extern OpenGLRHI            rhi;
+extern GraphicsOpenGL       graphics;
 
 BE_NAMESPACE_END

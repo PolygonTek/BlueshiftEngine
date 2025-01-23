@@ -54,7 +54,7 @@ BE_NAMESPACE_BEGIN
 #define BUFFER_OFFSET(i)    ((byte *)nullptr + (i))
 
 struct GLVertexAttrib {
-    RHI::Handle             vertexBufferHandle;
+    Graphics::Handle        vertexBufferHandle;
     GLint                   components;
     GLenum                  type;
     GLboolean               normalize;
@@ -62,21 +62,21 @@ struct GLVertexAttrib {
     const void *            ptr;
     GLuint                  divisor;
 
-    GLVertexAttrib() : vertexBufferHandle(RHI::NullBuffer), components(0), type(0), normalize(false), stride(-1), ptr(nullptr), divisor(-1) {}
+    GLVertexAttrib() : vertexBufferHandle(Graphics::NullBuffer), components(0), type(0), normalize(false), stride(-1), ptr(nullptr), divisor(-1) {}
 };
 
 struct GLState {
     int                     tmu; // current texture map unit
-    RHI::Handle             textureHandles[RHI::MaxTMU];
-    RHI::Handle             shaderHandle;
-    RHI::Handle             bufferHandles[RHI::BufferType::Count];
-    RHI::Handle             indexedBufferHandles[2]; // 0: UniformBuffer, 1: TransformFeedbackBuffer
-    RHI::Handle             vertexFormatHandle;
-    GLVertexAttrib          vertexAttribs[RHI::VertexElement::Usage::Count];
-    RHI::Handle             renderTargetHandle;
-    RHI::Handle             renderTargetHandleStack[16];
+    Graphics::Handle        textureHandles[Graphics::MaxTMU];
+    Graphics::Handle        shaderHandle;
+    Graphics::Handle        bufferHandles[Graphics::BufferType::Count];
+    Graphics::Handle        indexedBufferHandles[2]; // 0: UniformBuffer, 1: TransformFeedbackBuffer
+    Graphics::Handle        vertexFormatHandle;
+    GLVertexAttrib          vertexAttribs[Graphics::VertexElement::Usage::Count];
+    Graphics::Handle        renderTargetHandle;
+    Graphics::Handle        renderTargetHandleStack[16];
     int                     renderTargetHandleStackDepth;
-    RHI::Handle             stencilStateHandle;
+    Graphics::Handle        stencilStateHandle;
 
     unsigned int            renderState;
     int                     cull;
@@ -87,8 +87,8 @@ struct GLState {
     bool                    sRGBWriteEnabled;
 
     GLState() : tmu(0), 
-        shaderHandle(RHI::NullShader), vertexFormatHandle(RHI::NullVertexFormat), renderTargetHandle(RHI::NullRenderTarget), renderTargetHandleStackDepth(0), stencilStateHandle(RHI::NullStencilState), 
-        renderState(0), cull(RHI::CullType::Back), viewportRect(Rect::zero), scissorRect(Rect::zero), oldUnpackAlignment(0), newUnpackAlignment(0), sRGBWriteEnabled(true) {
+        shaderHandle(Graphics::NullShader), vertexFormatHandle(Graphics::NullVertexFormat), renderTargetHandle(Graphics::NullRenderTarget), renderTargetHandleStackDepth(0), stencilStateHandle(Graphics::NullStencilState), 
+        renderState(0), cull(Graphics::CullType::Back), viewportRect(Rect::zero), scissorRect(Rect::zero), oldUnpackAlignment(0), newUnpackAlignment(0), sRGBWriteEnabled(true) {
         memset(textureHandles, 0, sizeof(textureHandles));
         memset(bufferHandles, 0, sizeof(textureHandles));
         memset(indexedBufferHandles, 0, sizeof(indexedBufferHandles));
@@ -96,8 +96,8 @@ struct GLState {
 };
 
 struct GLContext {
-    RHI::Handle             handle;
-    RHI::DisplayContextFunc displayFunc;
+    Graphics::Handle        handle;
+    Graphics::DisplayContextFunc displayFunc;
     void *                  displayFuncDataPtr;
     bool                    onDemandDrawing;
 #if defined(__WIN32__)
@@ -147,13 +147,13 @@ struct GLStencilState {
 };
 
 struct GLTexture {
-    RHI::TextureType::Enum  type;
+    Graphics::TextureType::Enum type;
     GLenum                  target;
     GLuint                  object;
 };
 
 struct GLBuffer {
-    RHI::BufferType::Enum   type;
+    Graphics::BufferType::Enum type;
     GLenum                  target;
     GLenum                  usage;
     GLuint                  object;
@@ -225,23 +225,23 @@ struct GLVertexElementInternal {
 };
 
 struct GLVertexFormat {
-    int                     vertexSize[RHI::MaxVertexStream];
-    GLVertexElementInternal vertexElements[RHI::VertexElement::Usage::Count];
+    int                     vertexSize[Graphics::MaxVertexStream];
+    GLVertexElementInternal vertexElements[Graphics::VertexElement::Usage::Count];
 };
 
 struct GLRenderTarget {
     int                     type;
     int                     flags;
     int                     numColorTextures;
-    RHI::Handle             colorTextureHandles[16];
-    RHI::Handle             depthTextureHandle;
+    Graphics::Handle        colorTextureHandles[16];
+    Graphics::Handle        depthTextureHandle;
     GLuint                  fbo;
     GLuint                  depthRenderBuffer;      // depth render buffer or depth/stencil render buffer
     GLuint                  stencilRenderBuffer;    // just stencil render buffer
 };
 
 struct GLQuery {
-    RHI::QueryType::Enum    queryType;
+    Graphics::QueryType::Enum queryType;
     GLuint                  id;
 };
 

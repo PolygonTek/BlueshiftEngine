@@ -13,7 +13,7 @@
 // limitations under the License.
 
 #include "Precompiled.h"
-#include "RHI/RHIOpenGL.h"
+#include "Graphics/GraphicsOpenGL.h"
 #include "RGLInternal.h"
 #include "Platform/PlatformTime.h"
 #include "Profiler/Profiler.h"
@@ -748,7 +748,7 @@ static void GetGLVersion(int *major, int *minor) {
 #endif
 }
 
-void OpenGLRHI::InitMainContext(WindowHandle windowHandle, const Settings *settings) {
+void GraphicsOpenGL::InitMainContext(WindowHandle windowHandle, const Settings *settings) {
     availVRAM = MacOS_QueryVideoMemory();
 
     mainContext = new GLContext;
@@ -820,7 +820,7 @@ void OpenGLRHI::InitMainContext(WindowHandle windowHandle, const Settings *setti
 #endif
 }
 
-void OpenGLRHI::FreeMainContext() {
+void GraphicsOpenGL::FreeMainContext() {
 #ifdef ENABLE_IMGUI
     ImGuiDestroyContext(mainContext);
 #endif
@@ -845,7 +845,7 @@ void OpenGLRHI::FreeMainContext() {
     SAFE_DELETE(mainContext);
 }
 
-RHI::Handle OpenGLRHI::CreateContext(RHI::WindowHandle windowHandle, bool useSharedContext) {
+Graphics::Handle GraphicsOpenGL::CreateContext(Graphics::WindowHandle windowHandle, bool useSharedContext) {
     GLContext *ctx = new GLContext;
 
     int handle = contextList.FindNull();
@@ -942,7 +942,7 @@ RHI::Handle OpenGLRHI::CreateContext(RHI::WindowHandle windowHandle, bool useSha
     return (Handle)handle;
 }
 
-void OpenGLRHI::DestroyContext(Handle ctxHandle) {
+void GraphicsOpenGL::DestroyContext(Handle ctxHandle) {
     GLContext *ctx = contextList[ctxHandle];
 
     if (ctx->nsglContext != mainContext->nsglContext) {
@@ -968,15 +968,15 @@ void OpenGLRHI::DestroyContext(Handle ctxHandle) {
     contextList[ctxHandle] = nullptr;
 }
 
-void OpenGLRHI::ActivateSurface(Handle ctxHandle, WindowHandle windowHandle) {
+void GraphicsOpenGL::ActivateSurface(Handle ctxHandle, WindowHandle windowHandle) {
     GLContext *ctx = ctxHandle == NullContext ? mainContext : contextList[ctxHandle];
 }
 
-void OpenGLRHI::DeactivateSurface(Handle ctxHandle) {
+void GraphicsOpenGL::DeactivateSurface(Handle ctxHandle) {
     GLContext *ctx = ctxHandle == NullContext ? mainContext : contextList[ctxHandle];
 }
 
-void OpenGLRHI::SetContext(Handle ctxHandle) {
+void GraphicsOpenGL::SetContext(Handle ctxHandle) {
     NSOpenGLContext *currentContext = [NSOpenGLContext currentContext];
     GLContext *ctx = ctxHandle == NullContext ? mainContext : contextList[ctxHandle];
 
@@ -996,7 +996,7 @@ void OpenGLRHI::SetContext(Handle ctxHandle) {
 #endif
 }
 
-void OpenGLRHI::SetContextDisplayFunc(Handle ctxHandle, DisplayContextFunc displayFunc, void *dataPtr, bool onDemandDrawing) {
+void GraphicsOpenGL::SetContextDisplayFunc(Handle ctxHandle, DisplayContextFunc displayFunc, void *dataPtr, bool onDemandDrawing) {
     GLContext *ctx = ctxHandle == NullContext ? mainContext : contextList[ctxHandle];
 
     ctx->displayFunc = displayFunc;
@@ -1008,19 +1008,19 @@ void OpenGLRHI::SetContextDisplayFunc(Handle ctxHandle, DisplayContextFunc displ
 #endif
 }
 
-void OpenGLRHI::DisplayContext(Handle ctxHandle) {
+void GraphicsOpenGL::DisplayContext(Handle ctxHandle) {
     GLContext *ctx = ctxHandle == NullContext ? mainContext : contextList[ctxHandle];
 
     [ctx->glView drawView];
 }
 
-RHI::WindowHandle OpenGLRHI::GetWindowHandleFromContext(Handle ctxHandle) {
+Graphics::WindowHandle GraphicsOpenGL::GetWindowHandleFromContext(Handle ctxHandle) {
     const GLContext *ctx = ctxHandle == NullContext ? mainContext : contextList[ctxHandle];
 
     return (__bridge WindowHandle)ctx->contentView;
 }
 
-void OpenGLRHI::GetDisplayMetrics(Handle ctxHandle, DisplayMetrics *displayMetrics) const {
+void GraphicsOpenGL::GetDisplayMetrics(Handle ctxHandle, DisplayMetrics *displayMetrics) const {
     const GLContext *ctx = ctxHandle == NullContext ? mainContext : contextList[ctxHandle];
 
     CGSize windowSize = [ctx->glView bounds].size;
@@ -1034,11 +1034,11 @@ void OpenGLRHI::GetDisplayMetrics(Handle ctxHandle, DisplayMetrics *displayMetri
     displayMetrics->safeAreaInsets.Set(0, 0, 0, 0);
 }
 
-bool OpenGLRHI::IsFullscreen() const {
+bool GraphicsOpenGL::IsFullscreen() const {
     return desktopDisplayMode != nullptr ? true : false;
 }
 
-bool OpenGLRHI::SetFullscreen(Handle ctxHandle, int width, int height) {
+bool GraphicsOpenGL::SetFullscreen(Handle ctxHandle, int width, int height) {
     GLContext *ctx = ctxHandle == NullContext ? mainContext : contextList[ctxHandle];
 
     GLint dim[2] = { width, height };
@@ -1058,7 +1058,7 @@ bool OpenGLRHI::SetFullscreen(Handle ctxHandle, int width, int height) {
     return true;
 }
 
-void OpenGLRHI::ResetFullscreen(Handle ctxHandle) {
+void GraphicsOpenGL::ResetFullscreen(Handle ctxHandle) {
     GLContext *ctx = ctxHandle == NullContext ? mainContext : contextList[ctxHandle];
 
     CGLDisable(ctx->cglContext, kCGLCESurfaceBackingSize);
@@ -1080,7 +1080,7 @@ void OpenGLRHI::ResetFullscreen(Handle ctxHandle) {
     [window setFrameOrigin:newPos];*/
 }
 
-void OpenGLRHI::GetGammaRamp(unsigned short ramp[768]) const {
+void GraphicsOpenGL::GetGammaRamp(unsigned short ramp[768]) const {
     uint32_t tableSize = 256;
     CGGammaValue *values = (CGGammaValue *)calloc(tableSize * 3, sizeof(CGGammaValue));
 
@@ -1095,7 +1095,7 @@ void OpenGLRHI::GetGammaRamp(unsigned short ramp[768]) const {
     free(values);
 }
 
-void OpenGLRHI::SetGammaRamp(unsigned short ramp[768]) const {
+void GraphicsOpenGL::SetGammaRamp(unsigned short ramp[768]) const {
     CGGammaValue *values = (CGGammaValue *)calloc(768, sizeof(CGGammaValue));
 
     for (int i = 0; i < 256;  i++) {
@@ -1109,7 +1109,7 @@ void OpenGLRHI::SetGammaRamp(unsigned short ramp[768]) const {
     free(values);
 }
 
-bool OpenGLRHI::SwapBuffers() {
+bool GraphicsOpenGL::SwapBuffers() {
     if (!gl_ignoreError.GetBool()) {
         CheckError("GLRenderer::SwapBuffers");
     }
@@ -1141,11 +1141,11 @@ bool OpenGLRHI::SwapBuffers() {
     return true;
 }
 
-void OpenGLRHI::SwapInterval(int interval) const {
+void GraphicsOpenGL::SwapInterval(int interval) const {
     [currentContext->nsglContext setValues: &interval forParameter: NSOpenGLCPSwapInterval];
 }
 
-void OpenGLRHI::ImGuiCreateContext(GLContext *ctx) {
+void GraphicsOpenGL::ImGuiCreateContext(GLContext *ctx) {
     // Setup Dear ImGui context.
     ctx->imGuiContext = ImGui::CreateContext();
     ImGui::SetCurrentContext(ctx->imGuiContext);
@@ -1162,7 +1162,7 @@ void OpenGLRHI::ImGuiCreateContext(GLContext *ctx) {
     //io.BackendFlags |= ImGuiBackendFlags_HasSetMousePos;          // We can honor io.WantSetMousePos requests (optional, rarely used)
     //io.BackendFlags |= ImGuiBackendFlags_PlatformHasViewports;    // We can create multi-viewports on the Platform side (optional)
     //io.BackendFlags |= ImGuiBackendFlags_HasMouseHoveredViewport; // We can set io.MouseHoveredViewport correctly (optional, not easy)
-    io.BackendPlatformName = "OpenGLRHI-MacOS";
+    io.BackendPlatformName = "GraphicsOpenGL-MacOS";
 
     // Keyboard mapping. Dear ImGui will use those indices to peek into the io.KeyDown[] array.
     const int offset_for_function_keys = 256 - 0xF700;
@@ -1233,14 +1233,14 @@ void OpenGLRHI::ImGuiCreateContext(GLContext *ctx) {
     ImGui_ImplOpenGL_Init("#version 150");
 }
 
-void OpenGLRHI::ImGuiDestroyContext(GLContext *ctx) {
+void GraphicsOpenGL::ImGuiDestroyContext(GLContext *ctx) {
     ImGui_ImplOpenGL_Shutdown();
 
     ImGui::DestroyContext(ctx->imGuiContext);
 }
 
-void OpenGLRHI::ImGuiBeginFrame(Handle ctxHandle) {
-    BE_PROFILE_CPU_SCOPE_STATIC("OpenGLRHI::ImGuiBeginFrame");
+void GraphicsOpenGL::ImGuiBeginFrame(Handle ctxHandle) {
+    BE_PROFILE_CPU_SCOPE_STATIC("GraphicsOpenGL::ImGuiBeginFrame");
 
     ImGui_ImplOpenGL_ValidateFrame();
 
@@ -1264,9 +1264,9 @@ void OpenGLRHI::ImGuiBeginFrame(Handle ctxHandle) {
     ImGui::NewFrame();
 }
 
-void OpenGLRHI::ImGuiRender() {
-    BE_PROFILE_CPU_SCOPE_STATIC("OpenGLRHI::ImGuiRender");
-    BE_PROFILE_GPU_SCOPE_STATIC("OpenGLRHI::ImGuiRender");
+void GraphicsOpenGL::ImGuiRender() {
+    BE_PROFILE_CPU_SCOPE_STATIC("GraphicsOpenGL::ImGuiRender");
+    BE_PROFILE_GPU_SCOPE_STATIC("GraphicsOpenGL::ImGuiRender");
 
     ImGui::Render();
 
@@ -1282,8 +1282,8 @@ void OpenGLRHI::ImGuiRender() {
     }
 }
 
-void OpenGLRHI::ImGuiEndFrame() {
-    BE_PROFILE_CPU_SCOPE_STATIC("OpenGLRHI::ImGuiEndFrame");
+void GraphicsOpenGL::ImGuiEndFrame() {
+    BE_PROFILE_CPU_SCOPE_STATIC("GraphicsOpenGL::ImGuiEndFrame");
 
     ImGui::EndFrame();
 }

@@ -91,28 +91,22 @@ public:
         };
     };
 
-    VertexFormat();
-
     static void             Init();
     static void             Shutdown();
 
-    Array<RHI::VertexElement> elements;
-    RHI::Handle             vertexFormatHandle;
+    Array<Graphics::VertexElement> elements;
+    Graphics::Handle        vertexFormatHandle = Graphics::NullVertexFormat;
 
 private:
     static void             CreateSkinningVertexFormats(int stream, int originalIndex, int skinning1Index, int skinning4Index, int skinning8Index);
     static void             CreateInstancingVertexFormats(int stream, int originalIndex, int instancingIndex, bool useVtfSkinning);
 
-    void                    Append(int stream, int offset, RHI::VertexElement::Usage::Enum usage, int components, RHI::VertexElement::Type::Enum type, bool normalize, int divisor);
+    void                    Append(int stream, int offset, Graphics::VertexElement::Usage::Enum usage, int components, Graphics::VertexElement::Type::Enum type, bool normalize, int divisor);
     void                    CopyFrom(const VertexFormat &other);
 
     void                    Create();
     void                    Delete();
 };
-
-BE_INLINE VertexFormat::VertexFormat() {
-    vertexFormatHandle = RHI::NullVertexFormat;
-}
 
 extern VertexFormat         vertexFormats[VertexFormat::Type::Count];
 

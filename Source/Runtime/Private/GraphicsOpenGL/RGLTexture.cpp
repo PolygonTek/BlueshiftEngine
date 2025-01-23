@@ -13,27 +13,27 @@
 // limitations under the License.
 
 #include "Precompiled.h"
-#include "RHI/RHIOpenGL.h"
+#include "Graphics/GraphicsOpenGL.h"
 #include "RGLInternal.h"
 
 BE_NAMESPACE_BEGIN
 
-static const GLenum ToGLTextureTarget(RHI::TextureType::Enum type) {
+static const GLenum ToGLTextureTarget(Graphics::TextureType::Enum type) {
     switch (type) {
-    case RHI::TextureType::Texture2D:
+    case Graphics::TextureType::Texture2D:
         return GL_TEXTURE_2D;
-    case RHI::TextureType::TextureRectangle:
+    case Graphics::TextureType::TextureRectangle:
         if (OpenGL::SupportsTextureRectangle()) {
             return GL_TEXTURE_RECTANGLE;
         }
         return GL_TEXTURE_2D;
-    case RHI::TextureType::Texture3D:
+    case Graphics::TextureType::Texture3D:
         return GL_TEXTURE_3D;
-    case RHI::TextureType::TextureCubeMap:
+    case Graphics::TextureType::TextureCubeMap:
         return GL_TEXTURE_CUBE_MAP;
-    case RHI::TextureType::Texture2DArray:
+    case Graphics::TextureType::Texture2DArray:
         return GL_TEXTURE_2D_ARRAY;
-    case RHI::TextureType::TextureBuffer:
+    case Graphics::TextureType::TextureBuffer:
         return GL_TEXTURE_BUFFER;
     default:
         assert(0);
@@ -41,19 +41,19 @@ static const GLenum ToGLTextureTarget(RHI::TextureType::Enum type) {
     }
 }
 
-static const GLenum ToGLTextureMinFilter(RHI::TextureFilter::Enum filter) {
+static const GLenum ToGLTextureMinFilter(Graphics::TextureFilter::Enum filter) {
     switch (filter) {
-    case RHI::TextureFilter::Nearest:
+    case Graphics::TextureFilter::Nearest:
         return GL_NEAREST;
-    case RHI::TextureFilter::Linear:
+    case Graphics::TextureFilter::Linear:
         return GL_LINEAR;
-    case RHI::TextureFilter::NearestMipmapNearest:
+    case Graphics::TextureFilter::NearestMipmapNearest:
         return GL_NEAREST_MIPMAP_NEAREST;
-    case RHI::TextureFilter::LinearMipmapNearest:
+    case Graphics::TextureFilter::LinearMipmapNearest:
         return GL_LINEAR_MIPMAP_NEAREST;
-    case RHI::TextureFilter::NearestMipmapLinear:
+    case Graphics::TextureFilter::NearestMipmapLinear:
         return GL_NEAREST_MIPMAP_LINEAR;
-    case RHI::TextureFilter::LinearMipmapLinear:
+    case Graphics::TextureFilter::LinearMipmapLinear:
         return GL_LINEAR_MIPMAP_LINEAR;
     default:
         assert(0);
@@ -61,19 +61,19 @@ static const GLenum ToGLTextureMinFilter(RHI::TextureFilter::Enum filter) {
     }
 }
 
-static const GLenum ToGLTextureMagFilter(RHI::TextureFilter::Enum filter) {
+static const GLenum ToGLTextureMagFilter(Graphics::TextureFilter::Enum filter) {
     switch (filter) {
-    case RHI::TextureFilter::Nearest:
+    case Graphics::TextureFilter::Nearest:
         return GL_NEAREST;
-    case RHI::TextureFilter::Linear:
+    case Graphics::TextureFilter::Linear:
         return GL_LINEAR;
-    case RHI::TextureFilter::NearestMipmapNearest:
+    case Graphics::TextureFilter::NearestMipmapNearest:
         return GL_NEAREST;
-    case RHI::TextureFilter::LinearMipmapNearest:
+    case Graphics::TextureFilter::LinearMipmapNearest:
         return GL_LINEAR;
-    case RHI::TextureFilter::NearestMipmapLinear:
+    case Graphics::TextureFilter::NearestMipmapLinear:
         return GL_NEAREST;
-    case RHI::TextureFilter::LinearMipmapLinear:
+    case Graphics::TextureFilter::LinearMipmapLinear:
         return GL_LINEAR;
     default:
         assert(0);
@@ -81,15 +81,15 @@ static const GLenum ToGLTextureMagFilter(RHI::TextureFilter::Enum filter) {
     }
 }
 
-static const GLint ToGLAddressMode(RHI::AddressMode::Enum mode) {
+static const GLint ToGLAddressMode(Graphics::AddressMode::Enum mode) {
     switch (mode) {
-    case RHI::AddressMode::Repeat:
+    case Graphics::AddressMode::Repeat:
         return GL_REPEAT;
-    case RHI::AddressMode::MirroredRepeat:
+    case Graphics::AddressMode::MirroredRepeat:
         return GL_MIRRORED_REPEAT;
-    case RHI::AddressMode::Clamp:
+    case Graphics::AddressMode::Clamp:
         return GL_CLAMP_TO_EDGE;
-    case RHI::AddressMode::ClampToBorder:
+    case Graphics::AddressMode::ClampToBorder:
         if (OpenGL::SupportsTextureBorderColor()) {
             return GL_CLAMP_TO_BORDER;
         }
@@ -100,7 +100,7 @@ static const GLint ToGLAddressMode(RHI::AddressMode::Enum mode) {
     }
 }
 
-RHI::Handle OpenGLRHI::CreateTexture(TextureType::Enum type) {
+Graphics::Handle GraphicsOpenGL::CreateTexture(TextureType::Enum type) {
     GLuint object;
     gglGenTextures(1, &object);
 
@@ -119,7 +119,7 @@ RHI::Handle OpenGLRHI::CreateTexture(TextureType::Enum type) {
     return (Handle)handle;
 }
 
-void OpenGLRHI::DestroyTexture(Handle textureHandle) {
+void GraphicsOpenGL::DestroyTexture(Handle textureHandle) {
     GLTexture *texture = textureList[textureHandle];
     assert(texture);
 
@@ -139,7 +139,7 @@ void OpenGLRHI::DestroyTexture(Handle textureHandle) {
     SelectTextureUnit(currentTmu);
 }
 
-void OpenGLRHI::SelectTextureUnit(unsigned int unit) {
+void GraphicsOpenGL::SelectTextureUnit(unsigned int unit) {
     assert(unit >= 0 && unit < MaxTMU);
 
     if (currentContext->state->tmu != unit) {
@@ -148,7 +148,7 @@ void OpenGLRHI::SelectTextureUnit(unsigned int unit) {
     }
 }
 
-void OpenGLRHI::BindTexture(Handle textureHandle) {
+void GraphicsOpenGL::BindTexture(Handle textureHandle) {
     Handle oldTextureHandle = currentContext->state->textureHandles[currentContext->state->tmu];
     if (oldTextureHandle != textureHandle) {
         const GLTexture *texture = textureList[textureHandle];
@@ -161,12 +161,12 @@ void OpenGLRHI::BindTexture(Handle textureHandle) {
     }
 }
 
-void OpenGLRHI::SetTexture(int textureUnit, Handle textureHandle) {
+void GraphicsOpenGL::SetTexture(int textureUnit, Handle textureHandle) {
     SelectTextureUnit(textureUnit);
     BindTexture(textureHandle);
 }
 
-void OpenGLRHI::SetTextureAddressMode(AddressMode::Enum addressMode) {
+void GraphicsOpenGL::SetTextureAddressMode(AddressMode::Enum addressMode) {
     const GLTexture *texture = textureList[currentContext->state->textureHandles[currentContext->state->tmu]];
     assert(texture);
 
@@ -189,7 +189,7 @@ void OpenGLRHI::SetTextureAddressMode(AddressMode::Enum addressMode) {
     }
 }
 
-void OpenGLRHI::SetTextureFilter(TextureFilter::Enum filter) {
+void GraphicsOpenGL::SetTextureFilter(TextureFilter::Enum filter) {
     const GLTexture *texture = textureList[currentContext->state->textureHandles[currentContext->state->tmu]];
     assert(texture);
 
@@ -200,7 +200,7 @@ void OpenGLRHI::SetTextureFilter(TextureFilter::Enum filter) {
     gglTexParameterf(texture->target, GL_TEXTURE_MAG_FILTER, magFilter);
 }
 
-void OpenGLRHI::SetTextureAnisotropy(int aniso) {
+void GraphicsOpenGL::SetTextureAnisotropy(int aniso) {
     if (OpenGL::SupportsTextureFilterAnisotropic()) {
         const GLTexture *texture = textureList[currentContext->state->textureHandles[currentContext->state->tmu]];
         assert(texture);
@@ -210,7 +210,7 @@ void OpenGLRHI::SetTextureAnisotropy(int aniso) {
     }
 }
 
-void OpenGLRHI::SetTextureBorderColor(const Color4 &rgba) {
+void GraphicsOpenGL::SetTextureBorderColor(const Color4 &rgba) {
     if (OpenGL::SupportsTextureBorderColor()) {
         const GLTexture *texture = textureList[currentContext->state->textureHandles[currentContext->state->tmu]];
         assert(texture);
@@ -219,7 +219,7 @@ void OpenGLRHI::SetTextureBorderColor(const Color4 &rgba) {
     }
 }
 
-void OpenGLRHI::SetTextureShadowFunc(bool set) {
+void GraphicsOpenGL::SetTextureShadowFunc(bool set) {
     const GLTexture *texture = textureList[currentContext->state->textureHandles[currentContext->state->tmu]];
     assert(texture);
 
@@ -234,7 +234,7 @@ void OpenGLRHI::SetTextureShadowFunc(bool set) {
     }	
 }
 
-void OpenGLRHI::SetTextureLODBias(float bias) {
+void GraphicsOpenGL::SetTextureLODBias(float bias) {
     const GLTexture *texture = textureList[currentContext->state->textureHandles[currentContext->state->tmu]];
     assert(texture);
 
@@ -243,7 +243,7 @@ void OpenGLRHI::SetTextureLODBias(float bias) {
     }
 }
 
-void OpenGLRHI::SetTextureLevel(int baseLevel, int maxLevel) {
+void GraphicsOpenGL::SetTextureLevel(int baseLevel, int maxLevel) {
     const GLTexture *texture = textureList[currentContext->state->textureHandles[currentContext->state->tmu]];
     assert(texture);
 
@@ -251,7 +251,7 @@ void OpenGLRHI::SetTextureLevel(int baseLevel, int maxLevel) {
     gglTexParameteri(texture->target, GL_TEXTURE_MAX_LEVEL, maxLevel);
 }
 
-void OpenGLRHI::GenerateMipmap() {
+void GraphicsOpenGL::GenerateMipmap() {
     const GLTexture *texture = textureList[currentContext->state->textureHandles[currentContext->state->tmu]];
     assert(texture);
 
@@ -259,7 +259,7 @@ void OpenGLRHI::GenerateMipmap() {
     gglGenerateMipmap(texture->target);
 }
 
-void OpenGLRHI::AdjustTextureSize(TextureType::Enum type, bool useNPOT, int inWidth, int inHeight, int inDepth, int *outWidth, int *outHeight, int *outDepth) {
+void GraphicsOpenGL::AdjustTextureSize(TextureType::Enum type, bool useNPOT, int inWidth, int inHeight, int inDepth, int *outWidth, int *outHeight, int *outDepth) {
     int w, h, d;
 
     // NOTE: Without the GL_ARB_texture_non_power_of_two extension string,
@@ -311,7 +311,7 @@ void OpenGLRHI::AdjustTextureSize(TextureType::Enum type, bool useNPOT, int inWi
     if (outDepth) *outDepth = d;
 }
 
-void OpenGLRHI::AdjustTextureFormat(TextureType::Enum type, bool useCompression, bool useNormalMap, Image::Format::Enum inFormat, Image::Format::Enum *outFormat) {
+void GraphicsOpenGL::AdjustTextureFormat(TextureType::Enum type, bool useCompression, bool useNormalMap, Image::Format::Enum inFormat, Image::Format::Enum *outFormat) {
     if (Image::IsDepthFormat(inFormat) || Image::IsDepthStencilFormat(inFormat)) {
         *outFormat = inFormat;
         return;
@@ -329,7 +329,7 @@ void OpenGLRHI::AdjustTextureFormat(TextureType::Enum type, bool useCompression,
     *outFormat = useCompression ? OpenGL::ToCompressedImageFormat(inFormat, useNormalMap) : inFormat;
 }
 
-void OpenGLRHI::BeginUnpackAlignment(int pitch) {
+void GraphicsOpenGL::BeginUnpackAlignment(int pitch) {
     int mask = pitch & 3;
     currentContext->state->newUnpackAlignment = mask & 1 ? 1 : (mask & 2 ? 2 : 4);
 
@@ -339,13 +339,13 @@ void OpenGLRHI::BeginUnpackAlignment(int pitch) {
     }
 }
 
-void OpenGLRHI::EndUnpackAlignment() {
+void GraphicsOpenGL::EndUnpackAlignment() {
     if (currentContext->state->oldUnpackAlignment != currentContext->state->newUnpackAlignment) {
         gglPixelStorei(GL_UNPACK_ALIGNMENT, currentContext->state->oldUnpackAlignment);
     }
 }
 
-void OpenGLRHI::SetTextureImage(TextureType::Enum textureType, const Image *srcImage, Image::Format::Enum dstFormat, bool useMipmaps, bool isSRGB) {
+void GraphicsOpenGL::SetTextureImage(TextureType::Enum textureType, const Image *srcImage, Image::Format::Enum dstFormat, bool useMipmaps, bool isSRGB) {
     GLenum format;
     GLenum type;
     GLenum internalFormat;
@@ -544,7 +544,7 @@ void OpenGLRHI::SetTextureImage(TextureType::Enum textureType, const Image *srcI
     EndUnpackAlignment();
 }
 
-void OpenGLRHI::SetTextureImageBuffer(Image::Format::Enum dstFormat, bool isSRGB, int bufferHandle) {
+void GraphicsOpenGL::SetTextureImageBuffer(Image::Format::Enum dstFormat, bool isSRGB, int bufferHandle) {
     GLenum internalFormat;
 
     bool dstFormatSupported = OpenGL::ImageFormatToGLFormat(dstFormat, isSRGB, nullptr, nullptr, &internalFormat);
@@ -560,7 +560,7 @@ void OpenGLRHI::SetTextureImageBuffer(Image::Format::Enum dstFormat, bool isSRGB
     OpenGL::SetTextureSwizzling(GL_TEXTURE_BUFFER, dstFormat);
 }
 
-void OpenGLRHI::SetTextureSubImage2D(int level, int xoffset, int yoffset, int width, int height, Image::Format::Enum srcFormat, const void *pixels) {
+void GraphicsOpenGL::SetTextureSubImage2D(int level, int xoffset, int yoffset, int width, int height, Image::Format::Enum srcFormat, const void *pixels) {
     GLenum format;
     GLenum type;
 
@@ -584,7 +584,7 @@ void OpenGLRHI::SetTextureSubImage2D(int level, int xoffset, int yoffset, int wi
     EndUnpackAlignment();
 }
 
-void OpenGLRHI::SetTextureSubImage3D(int level, int xoffset, int yoffset, int zoffset, int width, int height, int depth, Image::Format::Enum srcFormat, const void *pixels) {
+void GraphicsOpenGL::SetTextureSubImage3D(int level, int xoffset, int yoffset, int zoffset, int width, int height, int depth, Image::Format::Enum srcFormat, const void *pixels) {
     GLenum format;
     GLenum type;
 
@@ -608,7 +608,7 @@ void OpenGLRHI::SetTextureSubImage3D(int level, int xoffset, int yoffset, int zo
     EndUnpackAlignment();
 }
 
-void OpenGLRHI::SetTextureSubImage2DArray(int level, int xoffset, int yoffset, int zoffset, int width, int height, int arrays, Image::Format::Enum srcFormat, const void *pixels) {
+void GraphicsOpenGL::SetTextureSubImage2DArray(int level, int xoffset, int yoffset, int zoffset, int width, int height, int arrays, Image::Format::Enum srcFormat, const void *pixels) {
     GLenum format;
     GLenum type;
 
@@ -632,7 +632,7 @@ void OpenGLRHI::SetTextureSubImage2DArray(int level, int xoffset, int yoffset, i
     EndUnpackAlignment();
 }
 
-void OpenGLRHI::SetTextureSubImageCube(CubeMapFace::Enum face, int level, int xoffset, int yoffset, int width, int height, Image::Format::Enum srcFormat, const void *pixels) {
+void GraphicsOpenGL::SetTextureSubImageCube(CubeMapFace::Enum face, int level, int xoffset, int yoffset, int width, int height, Image::Format::Enum srcFormat, const void *pixels) {
     GLenum format;
     GLenum type;
 
@@ -656,7 +656,7 @@ void OpenGLRHI::SetTextureSubImageCube(CubeMapFace::Enum face, int level, int xo
     EndUnpackAlignment();
 }
 
-void OpenGLRHI::SetTextureSubImageRect(int xoffset, int yoffset, int width, int height, Image::Format::Enum srcFormat, const void *pixels) {
+void GraphicsOpenGL::SetTextureSubImageRect(int xoffset, int yoffset, int width, int height, Image::Format::Enum srcFormat, const void *pixels) {
     GLenum format;
     GLenum type;
 
@@ -680,7 +680,7 @@ void OpenGLRHI::SetTextureSubImageRect(int xoffset, int yoffset, int width, int 
     EndUnpackAlignment();
 }
 
-void OpenGLRHI::CopyTextureSubImage2D(int xoffset, int yoffset, int x, int y, int width, int height) {
+void GraphicsOpenGL::CopyTextureSubImage2D(int xoffset, int yoffset, int x, int y, int width, int height) {
     GLTexture *texture = textureList[currentContext->state->textureHandles[currentContext->state->tmu]];
     assert(texture);
 
@@ -688,7 +688,7 @@ void OpenGLRHI::CopyTextureSubImage2D(int xoffset, int yoffset, int x, int y, in
     gglCopyTexSubImage2D(texture->target, 0, xoffset, yoffset, x, y, width, height);
 }
 
-void OpenGLRHI::CopyImageSubData(Handle srcTextureHandle, int srcLevel, int srcX, int srcY, int srcZ, Handle dstTextureHandle, int dstLevel, int dstX, int dstY, int dstZ, int width, int height, int depth) {
+void GraphicsOpenGL::CopyImageSubData(Handle srcTextureHandle, int srcLevel, int srcX, int srcY, int srcZ, Handle dstTextureHandle, int dstLevel, int dstX, int dstY, int dstZ, int width, int height, int depth) {
     GLTexture *srcTexture = textureList[srcTextureHandle];
     GLTexture *dstTexture = textureList[dstTextureHandle];
     assert(srcTexture);
@@ -699,7 +699,7 @@ void OpenGLRHI::CopyImageSubData(Handle srcTextureHandle, int srcLevel, int srcX
     }
 }
 
-void OpenGLRHI::GetTextureImage2D(int level, Image::Format::Enum dstFormat, void *pixels) {
+void GraphicsOpenGL::GetTextureImage2D(int level, Image::Format::Enum dstFormat, void *pixels) {
 #ifdef GL_VERSION_1_0
     GLenum format;
     GLenum type;
@@ -715,7 +715,7 @@ void OpenGLRHI::GetTextureImage2D(int level, Image::Format::Enum dstFormat, void
 #endif
 }
 
-void OpenGLRHI::GetTextureImage3D(int level, Image::Format::Enum dstFormat, void *pixels) {
+void GraphicsOpenGL::GetTextureImage3D(int level, Image::Format::Enum dstFormat, void *pixels) {
 #ifdef GL_VERSION_1_0
     GLenum format;
     GLenum type;
@@ -731,7 +731,7 @@ void OpenGLRHI::GetTextureImage3D(int level, Image::Format::Enum dstFormat, void
 #endif
 }
 
-void OpenGLRHI::GetTextureImageCube(CubeMapFace::Enum face, int level, Image::Format::Enum dstFormat, void *pixels) {
+void GraphicsOpenGL::GetTextureImageCube(CubeMapFace::Enum face, int level, Image::Format::Enum dstFormat, void *pixels) {
 #ifdef GL_VERSION_1_0
     GLenum format;
     GLenum type;
@@ -747,7 +747,7 @@ void OpenGLRHI::GetTextureImageCube(CubeMapFace::Enum face, int level, Image::Fo
 #endif
 }
 
-void OpenGLRHI::GetTextureImageRect(Image::Format::Enum dstFormat, void *pixels) {
+void GraphicsOpenGL::GetTextureImageRect(Image::Format::Enum dstFormat, void *pixels) {
 #ifdef GL_VERSION_1_0
     GLenum format;
     GLenum type;

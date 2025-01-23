@@ -66,7 +66,7 @@ class RenderSystem {
 public:
     RenderSystem();
 
-    void                    InitRHI(void *windowHandle);
+    void                    InitGraphics(void *windowHandle);
 
     void                    Init();
     void                    Shutdown();

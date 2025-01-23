@@ -26,7 +26,7 @@
 #include "Containers/HashMap.h"
 #include "Core/CVars.h"
 #include "Image/Image.h"
-#include "RHI/RHI.h"
+#include "Graphics/Graphics.h"
 
 BE_NAMESPACE_BEGIN
 
@@ -70,7 +70,7 @@ public:
     const char *            GetName() const { return name; }
     const char *            GetHashName() const { return hashName; }
 
-    RHI::TextureType::Enum  GetType() const { return type; }
+    Graphics::TextureType::Enum GetType() const { return type; }
     int                     GetWidth() const { return width; }
     int                     GetHeight() const { return height; }
     int                     GetDepth() const { return depth; }
@@ -84,9 +84,9 @@ public:
 
     RenderTarget *          GetRenderTarget() const { return renderTarget; }
 
-    void                    Create(RHI::TextureType::Enum type, const Image &srcImage, int flags);
-    void                    CreateEmpty(RHI::TextureType::Enum type, int width, int height, int depth, int numSlices, int numMipmaps, Image::Format::Enum format, int flags);
-    void                    CreateFromBuffer(Image::Format::Enum format, RHI::Handle bufferHandle);
+    void                    Create(Graphics::TextureType::Enum type, const Image &srcImage, int flags);
+    void                    CreateEmpty(Graphics::TextureType::Enum type, int width, int height, int depth, int numSlices, int numMipmaps, Image::Format::Enum format, int flags);
+    void                    CreateFromBuffer(Image::Format::Enum format, Graphics::Handle bufferHandle);
 
                             /// Create indirection cubemap
                             /// @param size         size of indirection cubemap
@@ -142,9 +142,9 @@ private:
     int                     frameCount;
     uint32_t                flags = 0;                  // texture load flags
 
-    RHI::Handle             textureHandle = RHI::NullTexture; // texture handle
-    RHI::TextureType::Enum  type = RHI::TextureType::Texture2D;
-    RHI::AddressMode::Enum  addressMode = RHI::AddressMode::Repeat;
+    Graphics::Handle        textureHandle = Graphics::NullTexture; // texture handle
+    Graphics::TextureType::Enum type = Graphics::TextureType::Texture2D;
+    Graphics::AddressMode::Enum addressMode = Graphics::AddressMode::Repeat;
 
     Image::Format::Enum     format = Image::Format::Unknown;    // internal image format
 
@@ -250,7 +250,7 @@ private:
 
     StrIHashMap<Texture *>  textureHashMap;
 
-    RHI::TextureFilter::Enum textureFilter;
+    Graphics::TextureFilter::Enum textureFilter;
     int                     textureAnisotropy;
 };
 

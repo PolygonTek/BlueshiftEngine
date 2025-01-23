@@ -74,11 +74,11 @@ bool SkinningJointCache::CapableGPUJointSkinning(SkinningMethod::Enum skinningMe
         return true;
     } else if (skinningMethod == SkinningJointCache::SkinningMethod::VertexShader) {
         if (numJoints <= 74) {
-            if (rhi.HWLimit().maxVertexUniformComponents >= 256) {
+            if (graphics.HWLimit().maxVertexUniformComponents >= 256) {
                 return true;
             }
         } else if (numJoints <= 256) {
-            if (rhi.HWLimit().maxVertexUniformComponents >= 2048) {
+            if (graphics.HWLimit().maxVertexUniformComponents >= 2048) {
                 return true;
             }
         }

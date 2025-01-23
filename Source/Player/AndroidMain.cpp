@@ -43,7 +43,7 @@ static const ASensor *      accelerometerSensor = nullptr;
 static const ASensor *      gyroscopeSensor = nullptr;
 static ASensorEventQueue *  sensorEventQueue = nullptr;
 
-static BE1::RHI::DisplayMetrics displayMetrics;
+static BE1::Graphics::DisplayMetrics displayMetrics;
 
 struct RenderQuality {
     enum Enum {
@@ -143,19 +143,19 @@ static RenderQuality::Enum DetermineRenderQuality() {
     return renderQuality;
 }
 
-static void DisplayContext(BE1::RHI::Handle context, void *dataPtr) {
+static void DisplayContext(BE1::Graphics::Handle context, void *dataPtr) {
     app.Draw();
 }
 
 static void InitDisplay(ANativeWindow *window) {
     if (appInitialized) {
-        BE1::rhi.ActivateSurface(app.mainRenderContext->GetContextHandle(), window);
+        BE1::graphics.ActivateSurface(app.mainRenderContext->GetContextHandle(), window);
         return;
     }
 
     appInitialized = true;
 
-    BE1::renderSystem.InitRHI(window);
+    BE1::renderSystem.InitGraphics(window);
 
     RenderQuality::Enum renderQuality = DetermineRenderQuality();
 
@@ -211,7 +211,7 @@ static void InitDisplay(ANativeWindow *window) {
 
     app.OnApplicationResize(renderWidth, renderHeight);
 
-    BE1::rhi.GetDisplayMetrics(app.mainRenderContext->GetContextHandle(), &displayMetrics);
+    BE1::graphics.GetDisplayMetrics(app.mainRenderContext->GetContextHandle(), &displayMetrics);
 
     app.Init();
 
@@ -383,7 +383,7 @@ static void HandleCmd(android_app *appState, int32_t cmd) {
          * it will be set to NULL.
          */
         if (surfaceCreated) {
-            BE1::rhi.DeactivateSurface(app.mainRenderContext->GetContextHandle());
+            BE1::graphics.DeactivateSurface(app.mainRenderContext->GetContextHandle());
             surfaceCreated = false;
         }
         break;
@@ -649,7 +649,7 @@ void android_main(android_app *appState) {
         }
 
         if (surfaceCreated && !suspended) {
-            BE1::rhi.GetDisplayMetrics(app.mainRenderContext->GetContextHandle(), &displayMetrics);
+            BE1::graphics.GetDisplayMetrics(app.mainRenderContext->GetContextHandle(), &displayMetrics);
 
             if (displayMetrics.backingWidth != currentWindowWidth || displayMetrics.backingHeight != currentWindowHeight) {
                 WindowSizeChanged(displayMetrics.backingWidth, displayMetrics.backingHeight);

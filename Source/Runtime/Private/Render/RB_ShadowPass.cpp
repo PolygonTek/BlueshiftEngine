@@ -274,12 +274,12 @@ static bool RB_ShadowCubeMapFacePass(const VisLight *visLight, const Mat4 &light
             faceRect.w = vscmFaceWidth;
             faceRect.h = vscmFaceHeight;
 
-            rhi.SetViewport(faceRect);
-            rhi.SetScissor(faceRect);
+            graphics.SetViewport(faceRect);
+            graphics.SetScissor(faceRect);
 
             if (!backEnd.ctx->vscmCleared[cubeMapFace]) {
-                rhi.SetStateBits(RHI::DepthWrite);
-                rhi.Clear(RHI::ClearBit::Depth, Color4::black, 1.0f, 0);
+                graphics.SetStateBits(Graphics::DepthWrite);
+                graphics.Clear(Graphics::ClearBit::Depth, Color4::black, 1.0f, 0);
             } else {
                 backEnd.ctx->vscmCleared[cubeMapFace] = false;
             }
@@ -317,11 +317,11 @@ static bool RB_ShadowCubeMapFacePass(const VisLight *visLight, const Mat4 &light
         faceRect.w = vscmFaceWidth;
         faceRect.h = vscmFaceHeight;
 
-        rhi.SetViewport(faceRect);
-        rhi.SetScissor(faceRect);
+        graphics.SetViewport(faceRect);
+        graphics.SetScissor(faceRect);
                 
-        rhi.SetStateBits(RHI::DepthWrite);
-        rhi.Clear(RHI::ClearBit::Depth, Color4::black, 1.0f, 0);
+        graphics.SetStateBits(Graphics::DepthWrite);
+        graphics.Clear(Graphics::ClearBit::Depth, Color4::black, 1.0f, 0);
 
         backEnd.ctx->vscmRT->End();
 
@@ -352,13 +352,13 @@ static void RB_ShadowCubeMapPass(const VisLight *visLight, const Frustum &viewFr
 
     Mat3 axis;
 
-    Rect prevScissorRect = rhi.GetScissor();
+    Rect prevScissorRect = graphics.GetScissor();
     ALIGN_AS32 Mat4 prevProjMatrix = backEnd.projMatrix;
     ALIGN_AS32 Mat4 prevViewProjMatrix = backEnd.viewProjMatrix;
     backEnd.projMatrix = backEnd.shadowProjectionMatrix;
 
-    for (int faceIndex = RHI::CubeMapFace::PositiveX; faceIndex <= RHI::CubeMapFace::NegativeZ; faceIndex++) {
-        R_EnvCubeMapFaceToOpenGLAxis((RHI::CubeMapFace::Enum)faceIndex, axis);
+    for (int faceIndex = Graphics::CubeMapFace::PositiveX; faceIndex <= Graphics::CubeMapFace::NegativeZ; faceIndex++) {
+        R_EnvCubeMapFaceToOpenGLAxis((Graphics::CubeMapFace::Enum)faceIndex, axis);
 
         lightFrustum.SetAxis(axis);
 
@@ -374,20 +374,20 @@ static void RB_ShadowCubeMapPass(const VisLight *visLight, const Frustum &viewFr
         backEnd.shadowMapOffsetFactor = visLight->def->GetState().shadowOffsetFactor;
         backEnd.shadowMapOffsetUnits = visLight->def->GetState().shadowOffsetUnits;
 
-        rhi.SetDepthBias(backEnd.shadowMapOffsetFactor, backEnd.shadowMapOffsetUnits);
+        graphics.SetDepthBias(backEnd.shadowMapOffsetFactor, backEnd.shadowMapOffsetUnits);
 
         if (RB_ShadowCubeMapFacePass(visLight, lightViewMatrix, lightFrustum, viewFrustum, true, faceIndex)) {
             shadowMapDraw++;
         }
 
-        rhi.SetDepthBias(0.0f, 0.0f);
+        graphics.SetDepthBias(0.0f, 0.0f);
     }
 
     backEnd.projMatrix = prevProjMatrix;
     backEnd.viewProjMatrix = prevViewProjMatrix;
 
-    rhi.SetScissor(prevScissorRect);
-    rhi.SetViewport(backEnd.renderRect);
+    graphics.SetScissor(prevScissorRect);
+    graphics.SetViewport(backEnd.renderRect);
 
     backEnd.ctx->GetRenderCounter().numShadowMapDraw += shadowMapDraw;
 }
@@ -403,10 +403,10 @@ static bool RB_ShadowMapPass(const VisLight *visLight, const Frustum &viewFrustu
     backEnd.batch.SetCurrentLight(visLight);
 
     if (r_CSM_pancaking.GetBool()) {
-        rhi.SetDepthClamp(true);
+        graphics.SetDepthClamp(true);
     }
 
-    rhi.SetDepthBias(backEnd.shadowMapOffsetFactor, backEnd.shadowMapOffsetUnits);
+    graphics.SetDepthBias(backEnd.shadowMapOffsetFactor, backEnd.shadowMapOffsetUnits);
 
     ALIGN_AS32 Mat4 prevProjMatrix = backEnd.projMatrix;
     ALIGN_AS32 Mat4 prevViewProjMatrix = backEnd.viewProjMatrix;
@@ -431,12 +431,12 @@ static bool RB_ShadowMapPass(const VisLight *visLight, const Frustum &viewFrustu
 
             backEnd.ctx->shadowMapRT->Begin(0, cascadeIndex);
 
-            rhi.SetViewport(Rect(0, 0, backEnd.ctx->shadowMapRT->GetWidth(), backEnd.ctx->shadowMapRT->GetHeight()));
+            graphics.SetViewport(Rect(0, 0, backEnd.ctx->shadowMapRT->GetWidth(), backEnd.ctx->shadowMapRT->GetHeight()));
 
-            prevScissorRect = rhi.GetScissor();
-            rhi.SetScissor(Rect::zero);
-            rhi.SetStateBits(RHI::DepthWrite);
-            rhi.Clear(RHI::ClearBit::Depth, Color4::black, 1.0f, 0);
+            prevScissorRect = graphics.GetScissor();
+            graphics.SetScissor(Rect::zero);
+            graphics.SetStateBits(Graphics::DepthWrite);
+            graphics.Clear(Graphics::ClearBit::Depth, Color4::black, 1.0f, 0);
         }
 
         bool isDifferentObject = drawSurf->space != prevSpace;
@@ -477,33 +477,33 @@ static bool RB_ShadowMapPass(const VisLight *visLight, const Frustum &viewFrustu
 
         backEnd.ctx->shadowMapRT->End();
 
-        rhi.SetScissor(prevScissorRect);
-        rhi.SetViewport(backEnd.renderRect);
+        graphics.SetScissor(prevScissorRect);
+        graphics.SetViewport(backEnd.renderRect);
     } else if (forceClear) {
         firstDraw = false;
 
         backEnd.ctx->shadowMapRT->Begin(0, cascadeIndex);
 
-        rhi.SetViewport(Rect(0, 0, backEnd.ctx->shadowMapRT->GetWidth(), backEnd.ctx->shadowMapRT->GetHeight()));
-        prevScissorRect = rhi.GetScissor();
-        rhi.SetScissor(Rect::zero);
+        graphics.SetViewport(Rect(0, 0, backEnd.ctx->shadowMapRT->GetWidth(), backEnd.ctx->shadowMapRT->GetHeight()));
+        prevScissorRect = graphics.GetScissor();
+        graphics.SetScissor(Rect::zero);
         
-        rhi.SetStateBits(RHI::DepthWrite);
-        rhi.Clear(RHI::ClearBit::Depth, Color4::black, 1.0f, 0);
+        graphics.SetStateBits(Graphics::DepthWrite);
+        graphics.Clear(Graphics::ClearBit::Depth, Color4::black, 1.0f, 0);
 
         backEnd.ctx->shadowMapRT->End();
 
-        rhi.SetScissor(prevScissorRect);
-        rhi.SetViewport(backEnd.renderRect);
+        graphics.SetScissor(prevScissorRect);
+        graphics.SetViewport(backEnd.renderRect);
     }
 
     backEnd.projMatrix = prevProjMatrix;
     backEnd.viewProjMatrix = prevViewProjMatrix;
 
-    rhi.SetDepthBias(0.0f, 0.0f);
+    graphics.SetDepthBias(0.0f, 0.0f);
 
     if (r_CSM_pancaking.GetBool()) {
-        rhi.SetDepthClamp(false);
+        graphics.SetDepthClamp(false);
     }
 
     return !firstDraw;

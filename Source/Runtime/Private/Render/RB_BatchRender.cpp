@@ -21,14 +21,14 @@
 BE_NAMESPACE_BEGIN
 
 void Batch::DrawPrimitives() const {
-    rhi.BindBuffer(RHI::BufferType::Index, indexBuffer);
+    graphics.BindBuffer(Graphics::BufferType::Index, indexBuffer);
 
     if (numIndirectCommands > 0) {
-        rhi.MultiDrawElementsIndirect(RHI::Topology::TriangleList, sizeof(VertIndex), 0, numIndirectCommands, sizeof(RHI::DrawElementsIndirectCommand));
+        graphics.MultiDrawElementsIndirect(Graphics::Topology::TriangleList, sizeof(VertIndex), 0, numIndirectCommands, sizeof(Graphics::DrawElementsIndirectCommand));
     } else if (numInstances > 0) {
-        rhi.DrawElementsInstanced(RHI::Topology::TriangleList, startIndex, r_singleTriangle.GetBool() ? 3 : numIndexes, sizeof(VertIndex), nullptr, numInstances);
+        graphics.DrawElementsInstanced(Graphics::Topology::TriangleList, startIndex, r_singleTriangle.GetBool() ? 3 : numIndexes, sizeof(VertIndex), nullptr, numInstances);
     } else {
-        rhi.DrawElements(RHI::Topology::TriangleList, startIndex, r_singleTriangle.GetBool() ? 3 : numIndexes, sizeof(VertIndex), nullptr);
+        graphics.DrawElements(Graphics::Topology::TriangleList, startIndex, r_singleTriangle.GetBool() ? 3 : numIndexes, sizeof(VertIndex), nullptr);
     }
 
     int instanceCount = Max(numInstances, 1);
@@ -93,10 +93,10 @@ void Batch::SetShaderProperties(const Shader *shader, const StrHashMap<Shader::P
             shader->SetConstant4f(key, prop.data.As<Vec4>());
             break;
         case Variant::Type::Color3:
-            shader->SetConstant3f(key, rhi.IsSRGBWriteEnabled() ? prop.data.As<Color3>().SRGBToLinear() : prop.data.As<Color3>());
+            shader->SetConstant3f(key, graphics.IsSRGBWriteEnabled() ? prop.data.As<Color3>().SRGBToLinear() : prop.data.As<Color3>());
             break;
         case Variant::Type::Color4:
-            shader->SetConstant4f(key, rhi.IsSRGBWriteEnabled() ? prop.data.As<Color4>().SRGBToLinear() : prop.data.As<Color4>());
+            shader->SetConstant4f(key, graphics.IsSRGBWriteEnabled() ? prop.data.As<Color4>().SRGBToLinear() : prop.data.As<Color4>());
             break;
         case Variant::Type::Mat2:
             shader->SetConstant2x2f(key, true, prop.data.As<Mat2>());
@@ -229,14 +229,14 @@ void Batch::SetEntityConstants(const Material::ShaderPass *mtrlPass, const Shade
     }
 
     if (numIndirectCommands > 0) {
-        rhi.BindBuffer(RHI::BufferType::DrawIndirect, indirectBuffer);
-        rhi.BufferDiscardWrite(indirectBuffer, numIndirectCommands * sizeof(indirectCommands[0]), indirectCommands);
+        graphics.BindBuffer(Graphics::BufferType::DrawIndirect, indirectBuffer);
+        graphics.BufferDiscardWrite(indirectBuffer, numIndirectCommands * sizeof(indirectCommands[0]), indirectCommands);
     } else if (numInstances > 0) {
-        int bufferOffset = backEnd.instanceBufferCache->offset + instanceStartIndex * rhi.HWLimit().uniformBufferOffsetAlignment;
-        int bufferSize = (instanceEndIndex - instanceStartIndex + 1) * rhi.HWLimit().uniformBufferOffsetAlignment;
+        int bufferOffset = backEnd.instanceBufferCache->offset + instanceStartIndex * graphics.HWLimit().uniformBufferOffsetAlignment;
+        int bufferSize = (instanceEndIndex - instanceStartIndex + 1) * graphics.HWLimit().uniformBufferOffsetAlignment;
 
         // 0-indexed buffer for instance buffer
-        rhi.BindIndexedBufferRange(RHI::BufferType::Uniform, 0, backEnd.instanceBufferCache->buffer, bufferOffset, bufferSize);
+        graphics.BindIndexedBufferRange(Graphics::BufferType::Uniform, 0, backEnd.instanceBufferCache->buffer, bufferOffset, bufferSize);
         shader->SetConstantBuffer(shader->builtInConstantIndices[Shader::BuiltInConstant::InstanceDataBuffer], 0);
 
         shader->SetConstantArray1i(shader->builtInConstantIndices[Shader::BuiltInConstant::InstanceIndexes], numInstances, instanceLocalIndexes);
@@ -1029,7 +1029,7 @@ void Batch::RenderBlendLightInteraction(const Material::ShaderPass *mtrlPass) co
 
     Color3 blendColor(&surfLight->def->GetState().materialParms[RenderObject::MaterialParm::Red]);
 
-    if (rhi.IsSRGBWriteEnabled()) {
+    if (graphics.IsSRGBWriteEnabled()) {
         blendColor = blendColor.SRGBToLinear();
     }
 

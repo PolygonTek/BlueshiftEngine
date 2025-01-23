@@ -45,7 +45,7 @@ static void Atlas_Add(int textureSize) {
     memset(image.GetPixels(), 0, image.SizeInBytes());
 
     atlas.texture = textureManager.AllocTexture(va("_glyph_cache_%i", atlasArray.Count() - 1));
-    atlas.texture->Create(RHI::TextureType::Texture2D, image, Texture::Flag::Clamp | Texture::Flag::HighQuality | Texture::Flag::NoMipmaps);
+    atlas.texture->Create(Graphics::TextureType::Texture2D, image, Texture::Flag::Clamp | Texture::Flag::HighQuality | Texture::Flag::NoMipmaps);
 
     // 대략 16x16 조각의 glyph 들을 하나의 텍스쳐에 packing 했을 경우 개수 만큼 할당..
     // 2048*2048 / 16*16 = 16384
@@ -207,7 +207,7 @@ FontGlyph *FontFaceFreeType::CacheGlyph(char32_t unicodeChar, Font::RenderMode::
         return nullptr;
     }
 
-    rhi.SelectTextureUnit(0);
+    graphics.SelectTextureUnit(0);
 
     texture->Bind();
     texture->Update2D(0, glyphX, glyphY, glyphWidth, glyphHeight, GLYPH_CACHE_TEXTURE_FORMAT, glyphBuffer);

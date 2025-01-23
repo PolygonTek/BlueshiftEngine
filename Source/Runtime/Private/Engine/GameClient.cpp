@@ -477,7 +477,7 @@ void GameClient::DrawStatistics(const RenderContext *renderContext) {
             ImGui::EndGroup();
         }
 
-        if (rhi.SupportsTimestampQueries() && ImGui::CollapsingHeader("GPU", ImGuiTreeNodeFlags_DefaultOpen)) {
+        if (graphics.SupportsTimestampQueries() && ImGui::CollapsingHeader("GPU", ImGuiTreeNodeFlags_DefaultOpen)) {
             int lastStackDepth = 0;
 
             ImGui::BeginGroup();

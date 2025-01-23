@@ -26,7 +26,7 @@
 #include "Math/Math.h"
 #include "Core/CmdArgs.h"
 #include "Core/Property.h"
-#include "RHI/RHI.h"
+#include "Graphics/Graphics.h"
 
 BE_NAMESPACE_BEGIN
 
@@ -359,7 +359,7 @@ private:
     bool                        permanence = false;
     int                         frameCount = 0;
 
-    RHI::Handle                 shaderHandle = RHI::NullShader;
+    Graphics::Handle            shaderHandle = Graphics::NullShader;
     Str                         vsText; ///< Vertex shader souce code text
     Str                         fsText; ///< Fragment shader source code text
     int                         builtInConstantIndices[BuiltInConstant::Count];

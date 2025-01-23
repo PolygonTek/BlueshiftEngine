@@ -117,9 +117,9 @@ private:
     const VisObject *       surfSpace;
     const VisLight *        surfLight;
 
-    RHI::Handle             vertexBuffer;
-    RHI::Handle             indexBuffer;
-    RHI::Handle             indirectBuffer;
+    Graphics::Handle        vertexBuffer;
+    Graphics::Handle        indexBuffer;
+    Graphics::Handle        indirectBuffer;
 
     int                     startIndex;
     int                     numVerts;
@@ -134,7 +134,7 @@ private:
     int *                   instanceLocalIndexes;
 
     // variables for instancing with instanced array
-    RHI::DrawElementsIndirectCommand *indirectCommands;
+    Graphics::DrawElementsIndirectCommand *indirectCommands;
     int                     numIndirectCommands;
 };
 
@@ -148,7 +148,7 @@ private:
 
 struct LightQuery {
     const VisLight *        light;
-    RHI::Handle             queryHandle;
+    Graphics::Handle        queryHandle;
     unsigned int            resultSamples;
     int                     frameCount;
 };
@@ -165,7 +165,7 @@ struct RenderBackEnd {
     };
 
     bool                    initialized;
-    RHI::Handle             stencilStates[PreDefinedStencilState::Count];
+    Graphics::Handle        stencilStates[PreDefinedStencilState::Count];
     //LightQuery            lightQueries[MAX_LIGHTS];
 
     float                   time;

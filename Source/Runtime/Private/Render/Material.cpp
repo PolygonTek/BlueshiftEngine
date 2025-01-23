@@ -103,13 +103,13 @@ bool Material::Create(const char *text) {
 bool Material::ParsePass(Lexer &lexer, ShaderPass *pass) {
     int blendSrc = 0;
     int blendDst = 0;
-    int colorWrite = RHI::RedWrite | RHI::GreenWrite | RHI::BlueWrite;
-    int depthWrite = RHI::DepthWrite;
-    int depthTestBits = RHI::DF_LEqual;
+    int colorWrite = Graphics::RedWrite | Graphics::GreenWrite | Graphics::BlueWrite;
+    int depthWrite = Graphics::DepthWrite;
+    int depthTestBits = Graphics::DF_LEqual;
 
     pass->renderingMode     = RenderingMode::Opaque;
     pass->transparency      = Transparency::Default;
-    pass->cullType          = RHI::CullType::Back;
+    pass->cullType          = Graphics::CullType::Back;
     pass->stateBits         = 0;
     pass->cutoffAlpha       = 0.004f;
     pass->vertexColorMode   = VertexColorMode::VertexColorMode::Ignore;
@@ -141,11 +141,11 @@ bool Material::ParsePass(Lexer &lexer, ShaderPass *pass) {
         } else if (!token.Icmp("cull")) {
             if (lexer.ReadToken(&token, false)) {
                 if (!token.Icmp("none") || !token.Icmp("disable") || !token.Icmp("twoSided")) {
-                    pass->cullType = RHI::CullType::None;
+                    pass->cullType = Graphics::CullType::None;
                 } else if (!token.Icmp("back") || !token.Icmp("backSide") || !token.Icmp("backSided")) {
-                    pass->cullType = RHI::CullType::Back;
+                    pass->cullType = Graphics::CullType::Back;
                 } else if (!token.Icmp("front") || !token.Icmp("frontSide") || !token.Icmp("frontSided")) {
-                    pass->cullType = RHI::CullType::Front;
+                    pass->cullType = Graphics::CullType::Front;
                 } else {
                     BE_WARNLOG("invalid cull parm '%s' in material '%s'\n", token.c_str(), hashName.c_str());
                 }
@@ -209,16 +209,16 @@ bool Material::ParsePass(Lexer &lexer, ShaderPass *pass) {
                 for (int i = 0; i < token.Length(); i++) {
                     switch (token[i]) {
                     case 'R':
-                        colorWrite |= RHI::RedWrite;
+                        colorWrite |= Graphics::RedWrite;
                         break;
                     case 'G':
-                        colorWrite |= RHI::GreenWrite;
+                        colorWrite |= Graphics::GreenWrite;
                         break;
                     case 'B':
-                        colorWrite |= RHI::BlueWrite;
+                        colorWrite |= Graphics::BlueWrite;
                         break;
                     case 'A':
-                        colorWrite |= RHI::AlphaWrite;
+                        colorWrite |= Graphics::AlphaWrite;
                         break;
                     }
                 }
@@ -290,12 +290,12 @@ bool Material::ParsePass(Lexer &lexer, ShaderPass *pass) {
     }
 
     // We don't use DST_ALPHA
-    if (blendSrc == RHI::BS_OneMinusDstAlpha) {
-        blendSrc = RHI::BS_Zero;
+    if (blendSrc == Graphics::BS_OneMinusDstAlpha) {
+        blendSrc = Graphics::BS_Zero;
     }
 
-    if (blendDst == RHI::BD_OneMinusDstAlpha) {
-        blendDst = RHI::BD_Zero;
+    if (blendDst == Graphics::BD_OneMinusDstAlpha) {
+        blendDst = Graphics::BD_Zero;
     }
 
     pass->stateBits = blendSrc | blendDst | colorWrite | depthWrite;
@@ -440,23 +440,23 @@ bool Material::ParseDepthTest(Lexer &lexer, int *depthTest) const {
 
     if (lexer.ReadToken(&token, false)) {
         if (!token.Icmp("none")) {
-            *depthTest = RHI::DF_None;
+            *depthTest = Graphics::DF_None;
         } else if (!token.Icmp("less")) {
-            *depthTest = RHI::DF_Less;
+            *depthTest = Graphics::DF_Less;
         } else if (!token.Icmp("greater")) {
-            *depthTest = RHI::DF_Greater;
+            *depthTest = Graphics::DF_Greater;
         } else if (!token.Icmp("lequal")) {
-            *depthTest = RHI::DF_LEqual;
+            *depthTest = Graphics::DF_LEqual;
         } else if (!token.Icmp("gequal")) {
-            *depthTest = RHI::DF_GEqual;
+            *depthTest = Graphics::DF_GEqual;
         } else if (!token.Icmp("equal")) {
-            *depthTest = RHI::DF_Equal;
+            *depthTest = Graphics::DF_Equal;
         } else if (!token.Icmp("notequal")) {
-            *depthTest = RHI::DF_NotEqual;
+            *depthTest = Graphics::DF_NotEqual;
         } else if (!token.Icmp("always")) {
-            *depthTest = RHI::DF_Always;
+            *depthTest = Graphics::DF_Always;
         } else {
-            *depthTest = RHI::DF_LEqual;
+            *depthTest = Graphics::DF_LEqual;
             BE_WARNLOG("unknown depthTest '%s' in material '%s', substituting LEQUAL\n", token.c_str(), hashName.c_str());
         }
 
@@ -574,63 +574,63 @@ bool Material::ParseBlendFunc(Lexer &lexer, int *blendSrc, int *blendDst) const 
 
     if (lexer.ReadToken(&token, false)) {
         if (!token.Icmp("add")) {
-            *blendSrc = RHI::BS_One;
-            *blendDst = RHI::BD_One;
+            *blendSrc = Graphics::BS_One;
+            *blendDst = Graphics::BD_One;
         } else if (!token.Icmp("addBlended")) {
-            *blendSrc = RHI::BS_SrcAlpha;
-            *blendDst = RHI::BD_One;
+            *blendSrc = Graphics::BS_SrcAlpha;
+            *blendDst = Graphics::BD_One;
         } else if (!token.Icmp("blend")) {
-            *blendSrc = RHI::BS_SrcAlpha;
-            *blendDst = RHI::BD_OneMinusSrcAlpha;
+            *blendSrc = Graphics::BS_SrcAlpha;
+            *blendDst = Graphics::BD_OneMinusSrcAlpha;
         } else if (!token.Icmp("filter") || !token.Icmp("modulate")) {
-            *blendSrc = RHI::BS_DstColor;
-            *blendDst = RHI::BD_Zero;
+            *blendSrc = Graphics::BS_DstColor;
+            *blendDst = Graphics::BD_Zero;
         } else if (!token.Icmp("modulate2x")) {
-            *blendSrc = RHI::BS_DstColor;
-            *blendDst = RHI::BD_SrcColor;
+            *blendSrc = Graphics::BS_DstColor;
+            *blendDst = Graphics::BD_SrcColor;
         } else {
             if (!token.Icmp("ZERO") || !token.Icmp("GL_ZERO")) {
-                *blendSrc = RHI::BS_Zero;
+                *blendSrc = Graphics::BS_Zero;
             } else if (!token.Icmp("ONE") || !token.Icmp("GL_ONE")) {
-                *blendSrc = RHI::BS_One;
+                *blendSrc = Graphics::BS_One;
             } else if (!token.Icmp("DST_COLOR") || !token.Icmp("GL_DST_COLOR")) {
-                *blendSrc = RHI::BS_DstColor;
+                *blendSrc = Graphics::BS_DstColor;
             } else if (!token.Icmp("ONE_MINUS_DST_COLOR") || !token.Icmp("GL_ONE_MINUS_DST_COLOR")) {
-                *blendSrc = RHI::BS_OneMinusDstColor;
+                *blendSrc = Graphics::BS_OneMinusDstColor;
             } else if (!token.Icmp("SRC_ALPHA") || !token.Icmp("GL_SRC_ALPHA")) {
-                *blendSrc = RHI::BS_SrcAlpha;
+                *blendSrc = Graphics::BS_SrcAlpha;
             } else if (!token.Icmp("ONE_MINUS_SRC_ALPHA") || !token.Icmp("GL_ONE_MINUS_SRC_ALPHA")) {
-                *blendSrc = RHI::BS_OneMinusSrcAlpha;
+                *blendSrc = Graphics::BS_OneMinusSrcAlpha;
             } else if (!token.Icmp("DST_ALPHA") || !token.Icmp("GL_DST_ALPHA")) {
-                *blendSrc = RHI::BS_DstAlpha;
+                *blendSrc = Graphics::BS_DstAlpha;
             } else if (!token.Icmp("ONE_MINUS_DST_ALPHA") || !token.Icmp("GL_ONE_MINUS_DST_ALPHA")) {
-                *blendSrc = RHI::BS_OneMinusDstAlpha;
+                *blendSrc = Graphics::BS_OneMinusDstAlpha;
             } else if (!token.Icmp("SRC_ALPHA_SATURATE") || !token.Icmp("GL_SRC_ALPHA_SATURATE")) {
-                *blendSrc = RHI::BS_SrcAlphaSaturate;
+                *blendSrc = Graphics::BS_SrcAlphaSaturate;
             } else {
-                *blendSrc = RHI::BS_One;
+                *blendSrc = Graphics::BS_One;
                 BE_WARNLOG("unknown blend mode '%s' in material '%s', \nsubstituting GL_ONE\n", token.c_str(), hashName.c_str());
             }
 
             if (lexer.ReadToken(&token, false)) {
                 if (!token.Icmp("ZERO") || !token.Icmp("GL_ZERO")) {
-                    *blendDst = RHI::BD_Zero;
+                    *blendDst = Graphics::BD_Zero;
                 } else if (!token.Icmp("ONE") || !token.Icmp("GL_ONE")) {
-                    *blendDst = RHI::BD_One;
+                    *blendDst = Graphics::BD_One;
                 } else if (!token.Icmp("SRC_COLOR") || !token.Icmp("GL_SRC_COLOR")) {
-                    *blendDst = RHI::BD_SrcColor;
+                    *blendDst = Graphics::BD_SrcColor;
                 } else if (!token.Icmp("ONE_MINUS_SRC_COLOR") || !token.Icmp("GL_ONE_MINUS_SRC_COLOR")) {
-                    *blendDst = RHI::BD_OneMinusSrcColor;
+                    *blendDst = Graphics::BD_OneMinusSrcColor;
                 } else if (!token.Icmp("SRC_ALPHA") || !token.Icmp("GL_SRC_ALPHA")) {
-                    *blendDst = RHI::BD_SrcAlpha;
+                    *blendDst = Graphics::BD_SrcAlpha;
                 } else if (!token.Icmp("ONE_MINUS_SRC_ALPHA") || !token.Icmp("GL_ONE_MINUS_SRC_ALPHA")) {
-                    *blendDst = RHI::BD_OneMinusSrcAlpha;
+                    *blendDst = Graphics::BD_OneMinusSrcAlpha;
                 } else if (!token.Icmp("DST_ALPHA") || !token.Icmp("GL_DST_ALPHA")) {
-                    *blendDst = RHI::BD_DstAlpha;
+                    *blendDst = Graphics::BD_DstAlpha;
                 } else if (!token.Icmp("ONE_MINUS_DST_ALPHA") || !token.Icmp("GL_ONE_MINUS_DST_ALPHA")) {
-                    *blendDst = RHI::BD_OneMinusDstAlpha;
+                    *blendDst = Graphics::BD_OneMinusDstAlpha;
                 } else {
-                    *blendDst = RHI::BD_One;
+                    *blendDst = Graphics::BD_One;
                     BE_WARNLOG("unknown blend mode '%s' in material '%s', substituting GL_ONE\n", token.c_str(), hashName.c_str());
                 }
             } else {
@@ -737,13 +737,13 @@ void Material::Write(const char *filename) {
 
     Str cullStr;
     switch (pass->cullType) {
-    case RHI::CullType::Back:
+    case Graphics::CullType::Back:
         cullStr = "back";
         break;
-    case RHI::CullType::Front:
+    case Graphics::CullType::Front:
         cullStr = "front";
         break;
-    case RHI::CullType::None:
+    case Graphics::CullType::None:
     default: 
         cullStr = "none";
         break;
@@ -839,19 +839,19 @@ void Material::Write(const char *filename) {
 
     fp->Printf("%simageBorders %i %i %i %i\n", indentSpace.c_str(), pass->imageBorderLT.x, pass->imageBorderLT.y, pass->imageBorderRB.x, pass->imageBorderRB.y);
 
-    int colorMask = pass->stateBits & RHI::MaskColor;
+    int colorMask = pass->stateBits & Graphics::MaskColor;
     if (colorMask) {
         Str colorMaskStr;
-        if (colorMask & RHI::RedWrite) {
+        if (colorMask & Graphics::RedWrite) {
             colorMaskStr += "R";
         }
-        if (colorMask & RHI::GreenWrite) {
+        if (colorMask & Graphics::GreenWrite) {
             colorMaskStr += "G";
         }
-        if (colorMask & RHI::BlueWrite) {
+        if (colorMask & Graphics::BlueWrite) {
             colorMaskStr += "B";
         }
-        if (colorMask & RHI::AlphaWrite) {
+        if (colorMask & Graphics::AlphaWrite) {
             colorMaskStr += "A";
         }        
         fp->Printf("%scolorMask %s\n", indentSpace.c_str(), colorMaskStr.c_str());
@@ -861,50 +861,50 @@ void Material::Write(const char *filename) {
         fp->Printf("%scutoffAlpha %.3f\n", indentSpace.c_str(), pass->cutoffAlpha);
     }
 
-    if (pass->depthTestBits != RHI::DF_LEqual) {
+    if (pass->depthTestBits != Graphics::DF_LEqual) {
         Str depthTestStr;
         switch (pass->depthTestBits) {
-        case RHI::DF_None: depthTestStr = "NONE"; break;
-        case RHI::DF_Always: depthTestStr = "ALWAYS"; break;
-        case RHI::DF_Less: depthTestStr = "LESS"; break;
-        case RHI::DF_Greater: depthTestStr = "GREATER"; break;
-        case RHI::DF_LEqual: depthTestStr = "LEQUAL"; break;
-        case RHI::DF_GEqual: depthTestStr = "GEQUAL"; break;
-        case RHI::DF_Equal: depthTestStr = "EQUAL"; break;
-        case RHI::DF_NotEqual: depthTestStr = "NOTEQUAL"; break;
+        case Graphics::DF_None: depthTestStr = "NONE"; break;
+        case Graphics::DF_Always: depthTestStr = "ALWAYS"; break;
+        case Graphics::DF_Less: depthTestStr = "LESS"; break;
+        case Graphics::DF_Greater: depthTestStr = "GREATER"; break;
+        case Graphics::DF_LEqual: depthTestStr = "LEQUAL"; break;
+        case Graphics::DF_GEqual: depthTestStr = "GEQUAL"; break;
+        case Graphics::DF_Equal: depthTestStr = "EQUAL"; break;
+        case Graphics::DF_NotEqual: depthTestStr = "NOTEQUAL"; break;
         }
 
         fp->Printf("%sdepthTest %s\n", indentSpace.c_str(), depthTestStr.c_str());
     }
 
-    int blendFuncMask = pass->stateBits & RHI::MaskBF;
+    int blendFuncMask = pass->stateBits & Graphics::MaskBF;
     if (blendFuncMask) {
-        int blendSrc = blendFuncMask & RHI::MaskBS;
-        int blendDst = blendFuncMask & RHI::MaskBD;
+        int blendSrc = blendFuncMask & Graphics::MaskBS;
+        int blendDst = blendFuncMask & Graphics::MaskBD;
 
         Str blendSrcStr;
         switch (blendSrc) {
-        case RHI::BS_Zero: blendSrcStr = "ZERO"; break;
-        case RHI::BS_One: blendSrcStr = "ONE"; break;
-        case RHI::BS_DstColor: blendSrcStr = "DST_COLOR"; break;
-        case RHI::BS_OneMinusDstColor: blendSrcStr = "ONE_MINUS_DST_COLOR"; break;
-        case RHI::BS_SrcAlpha: blendSrcStr = "SRC_ALPHA"; break;
-        case RHI::BS_OneMinusSrcAlpha: blendSrcStr = "ONE_MINUS_SRC_ALPHA"; break;
-        case RHI::BS_DstAlpha: blendSrcStr = "DST_ALPHA"; break;
-        case RHI::BS_OneMinusDstAlpha: blendSrcStr = "ONE_MINUS_DST_ALPHA"; break;
-        case RHI::BS_SrcAlphaSaturate: blendSrcStr = "SRC_ALPHA_SATURATE"; break;
+        case Graphics::BS_Zero: blendSrcStr = "ZERO"; break;
+        case Graphics::BS_One: blendSrcStr = "ONE"; break;
+        case Graphics::BS_DstColor: blendSrcStr = "DST_COLOR"; break;
+        case Graphics::BS_OneMinusDstColor: blendSrcStr = "ONE_MINUS_DST_COLOR"; break;
+        case Graphics::BS_SrcAlpha: blendSrcStr = "SRC_ALPHA"; break;
+        case Graphics::BS_OneMinusSrcAlpha: blendSrcStr = "ONE_MINUS_SRC_ALPHA"; break;
+        case Graphics::BS_DstAlpha: blendSrcStr = "DST_ALPHA"; break;
+        case Graphics::BS_OneMinusDstAlpha: blendSrcStr = "ONE_MINUS_DST_ALPHA"; break;
+        case Graphics::BS_SrcAlphaSaturate: blendSrcStr = "SRC_ALPHA_SATURATE"; break;
         }
 
         Str blendDstStr;
         switch (blendDst) {
-        case RHI::BD_Zero: blendDstStr = "ZERO"; break;
-        case RHI::BD_One: blendDstStr = "ONE"; break;
-        case RHI::BD_SrcColor: blendDstStr = "SRC_COLOR"; break;
-        case RHI::BD_OneMinusSrcColor: blendDstStr = "ONE_MINUS_SRC_COLOR"; break;
-        case RHI::BD_SrcAlpha: blendDstStr = "SRC_ALPHA"; break;
-        case RHI::BD_OneMinusSrcAlpha: blendDstStr = "ONE_MINUS_SRC_ALPHA"; break;
-        case RHI::BD_DstAlpha: blendDstStr = "DST_ALPHA"; break;
-        case RHI::BD_OneMinusDstAlpha: blendDstStr = "ONE_MINUS_DST_ALPHA"; break;
+        case Graphics::BD_Zero: blendDstStr = "ZERO"; break;
+        case Graphics::BD_One: blendDstStr = "ONE"; break;
+        case Graphics::BD_SrcColor: blendDstStr = "SRC_COLOR"; break;
+        case Graphics::BD_OneMinusSrcColor: blendDstStr = "ONE_MINUS_SRC_COLOR"; break;
+        case Graphics::BD_SrcAlpha: blendDstStr = "SRC_ALPHA"; break;
+        case Graphics::BD_OneMinusSrcAlpha: blendDstStr = "ONE_MINUS_SRC_ALPHA"; break;
+        case Graphics::BD_DstAlpha: blendDstStr = "DST_ALPHA"; break;
+        case Graphics::BD_OneMinusDstAlpha: blendDstStr = "ONE_MINUS_DST_ALPHA"; break;
         }
 
         fp->Printf("%sblendFunc %s %s\n", indentSpace.c_str(), blendSrcStr.c_str(), blendDstStr.c_str());

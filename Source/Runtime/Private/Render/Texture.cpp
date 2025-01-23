@@ -27,55 +27,55 @@ bool Texture::IsDefaultTexture() const {
 
 int Texture::MemRequired(bool includingMipmaps) const {
     int numMipmaps = includingMipmaps ? Image::MaxMipMapLevels(width, height, depth) : 1;
-    int numFaces = type == RHI::TextureType::TextureCubeMap ? 6 : 1;
+    int numFaces = type == Graphics::TextureType::TextureCubeMap ? 6 : 1;
     int size = Image::MemRequired(width, height, depth, numMipmaps, format) * numFaces * numSlices;
     return size;
 }
 
-void Texture::Create(RHI::TextureType::Enum type, const Image &srcImage, int flags) {
+void Texture::Create(Graphics::TextureType::Enum type, const Image &srcImage, int flags) {
     Purge();
 
     this->type = type;
-    this->textureHandle = rhi.CreateTexture(type);
+    this->textureHandle = graphics.CreateTexture(type);
     this->flags = flags;
 
     /*if (flags & HighPriority) {
-        rhi.PrioritizeTexture(texture, 1.0f);
+        graphics.PrioritizeTexture(texture, 1.0f);
     } else if (flags & LowPriority) {
-        rhi.PrioritizeTexture(texture, 0.0f);
+        graphics.PrioritizeTexture(texture, 0.0f);
     }*/
 
     Upload(&srcImage);
 }
 
-void Texture::CreateEmpty(RHI::TextureType::Enum type, int width, int height, int depth, int numSlices, int numMipmaps, Image::Format::Enum format, int flags) {
+void Texture::CreateEmpty(Graphics::TextureType::Enum type, int width, int height, int depth, int numSlices, int numMipmaps, Image::Format::Enum format, int flags) {
     Purge();
 
     this->type = type;
-    this->textureHandle = rhi.CreateTexture(type);
+    this->textureHandle = graphics.CreateTexture(type);
     this->flags = flags;
 
     Image image;
     Image::GammaSpace::Enum gammaSpace = (flags & Texture::Flag::SRGBColorSpace) ? Image::GammaSpace::sRGB : Image::GammaSpace::Linear;
-    image.InitFromMemory(width, height, depth, (type == RHI::TextureType::TextureCubeMap ? 6 : numSlices), numMipmaps, format, gammaSpace, nullptr, 0);
+    image.InitFromMemory(width, height, depth, (type == Graphics::TextureType::TextureCubeMap ? 6 : numSlices), numMipmaps, format, gammaSpace, nullptr, 0);
     Upload(&image);
 }
 
-void Texture::CreateFromBuffer(Image::Format::Enum format, RHI::Handle bufferHandle) {
+void Texture::CreateFromBuffer(Image::Format::Enum format, Graphics::Handle bufferHandle) {
     Purge();
 
-    this->type = RHI::TextureType::TextureBuffer;
-    this->textureHandle = rhi.CreateTexture(RHI::TextureType::TextureBuffer);
+    this->type = Graphics::TextureType::TextureBuffer;
+    this->textureHandle = graphics.CreateTexture(Graphics::TextureType::TextureBuffer);
     this->flags = 0;
     this->format = format;
 
-    rhi.BindBuffer(RHI::BufferType::Texel, bufferHandle);
+    graphics.BindBuffer(Graphics::BufferType::Texel, bufferHandle);
 
-    rhi.SelectTextureUnit(0);
-    rhi.BindTexture(textureHandle);
-    rhi.SetTextureImageBuffer(format, false, bufferHandle);
+    graphics.SelectTextureUnit(0);
+    graphics.BindTexture(textureHandle);
+    graphics.SetTextureImageBuffer(format, false, bufferHandle);
 
-    rhi.BindBuffer(RHI::BufferType::Texel, RHI::NullBuffer);
+    graphics.BindBuffer(Graphics::BufferType::Texel, Graphics::NullBuffer);
 }
 
 // Indirection cubemap : Converts cubic coords to VCM coords.
@@ -97,7 +97,7 @@ void Texture::CreateIndirectionCubemap(int size, int vcmWidth, int vcmHeight, in
     // ----------------
     //     vcmWidth
 
-    for (int i = RHI::CubeMapFace::PositiveX; i <= RHI::CubeMapFace::NegativeZ; i++) {
+    for (int i = Graphics::CubeMapFace::PositiveX; i <= Graphics::CubeMapFace::NegativeZ; i++) {
         for (int y = 0; y < size; y++) {
             Vec2 vcmSt;
             vcmSt.y = ((float)y / (float)(size - 1)) * vcmFaceHeight;
@@ -113,7 +113,7 @@ void Texture::CreateIndirectionCubemap(int size, int vcmWidth, int vcmHeight, in
         }
     }
 
-    Create(RHI::TextureType::TextureCubeMap, cubeImage, Flag::Clamp | Flag::NoMipmaps | Flag::HighQuality | flags);
+    Create(Graphics::TextureType::TextureCubeMap, cubeImage, Flag::Clamp | Flag::NoMipmaps | Flag::HighQuality | flags);
 }
 
 /*
@@ -143,7 +143,7 @@ void Texture::CreateDefaultTexture(int size, int flags) {
         }
     }
 
-    Create(RHI::TextureType::Texture2D, image, Texture::Flag::HighQuality | flags);
+    Create(Graphics::TextureType::Texture2D, image, Texture::Flag::HighQuality | flags);
 }
 
 /*
@@ -167,7 +167,7 @@ void Texture::CreateZeroClampTexture(int size, int flags) {
         }
     }
 
-    Create(RHI::TextureType::Texture2D, image, Texture::Flag::ZeroClamp | Texture::Flag::HighQuality | flags);
+    Create(Graphics::TextureType::Texture2D, image, Texture::Flag::ZeroClamp | Texture::Flag::HighQuality | flags);
 }
 
 /*
@@ -191,7 +191,7 @@ void Texture::CreateFlatNormalTexture(int size, int flags) {
         }
     }
 
-    Create(RHI::TextureType::Texture2D, image, Texture::Flag::NormalMap | Texture::Flag::NoScaleDown | flags);
+    Create(Graphics::TextureType::Texture2D, image, Texture::Flag::NormalMap | Texture::Flag::NoScaleDown | flags);
 }
 
 /*
@@ -219,7 +219,7 @@ void Texture::CreateDefaultCubeMapTexture(int size, int flags) {
         dst += faceSize;
     }
 
-    Create(RHI::TextureType::TextureCubeMap, image, Texture::Flag::Clamp | Texture::Flag::NoCompression | Texture::Flag::NoScaleDown | flags);
+    Create(Graphics::TextureType::TextureCubeMap, image, Texture::Flag::Clamp | Texture::Flag::NoCompression | Texture::Flag::NoScaleDown | flags);
 }
 
 /*
@@ -242,7 +242,7 @@ void Texture::CreateBlackCubeMapTexture(int size, int flags) {
         dst += faceSize;
     }
 
-    Create(RHI::TextureType::TextureCubeMap, image, Texture::Flag::Clamp | Texture::Flag::NoCompression | Texture::Flag::NoScaleDown | flags);
+    Create(Graphics::TextureType::TextureCubeMap, image, Texture::Flag::Clamp | Texture::Flag::NoCompression | Texture::Flag::NoScaleDown | flags);
 }
 
 /*
@@ -282,7 +282,7 @@ void Texture::CreateNormalizationCubeMapTexture(int size, int flags) {
         dst += sliceSize;
     }
 
-    Create(RHI::TextureType::TextureCubeMap, image, Texture::Flag::Clamp | Texture::Flag::NoMipmaps | Texture::Flag::NoCompression | Texture::Flag::NoScaleDown | flags);
+    Create(Graphics::TextureType::TextureCubeMap, image, Texture::Flag::Clamp | Texture::Flag::NoMipmaps | Texture::Flag::NoCompression | Texture::Flag::NoScaleDown | flags);
 }
 
 /*
@@ -338,7 +338,7 @@ void Texture::CreateCubicNormalCubeMapTexture(int size, int flags) {
         dst += facesize;
     }
 
-    Create(RHI::TextureType::TextureCubeMap, image, Texture::Flag::Nearest | Texture::Flag::Clamp | Texture::Flag::NoMipmaps | Texture::Flag::NoCompression | Texture::Flag::NoScaleDown | flags);
+    Create(Graphics::TextureType::TextureCubeMap, image, Texture::Flag::Nearest | Texture::Flag::Clamp | Texture::Flag::NoMipmaps | Texture::Flag::NoCompression | Texture::Flag::NoScaleDown | flags);
 }
 
 /*
@@ -373,7 +373,7 @@ void Texture::CreateAttenuationTexture(int size, int flags) {
         }
     }
 
-    Create(RHI::TextureType::Texture2D, image, Texture::Flag::Clamp | Texture::Flag::NoMipmaps | Texture::Flag::NoCompression | Texture::Flag::NoScaleDown | flags);
+    Create(Graphics::TextureType::Texture2D, image, Texture::Flag::Clamp | Texture::Flag::NoMipmaps | Texture::Flag::NoCompression | Texture::Flag::NoScaleDown | flags);
 }
 
 /*
@@ -394,7 +394,7 @@ void Texture::CreateFogTexture(int flags) {
         dst[s] = Min(c, 255);
     }
 
-    Create(RHI::TextureType::Texture2D, image, Texture::Flag::NoMipmaps | Texture::Flag::Clamp | Texture::Flag::HighQuality | flags);
+    Create(Graphics::TextureType::Texture2D, image, Texture::Flag::NoMipmaps | Texture::Flag::Clamp | Texture::Flag::HighQuality | flags);
 }
 
 /*
@@ -415,7 +415,7 @@ void Texture::CreateFogEnterTexture(int flags) {
         dst[s] = Min(c, 255);
     }
 
-    Create(RHI::TextureType::Texture2D, image, Texture::Flag::NoMipmaps | Texture::Flag::Clamp | Texture::Flag::HighQuality | flags);
+    Create(Graphics::TextureType::Texture2D, image, Texture::Flag::NoMipmaps | Texture::Flag::Clamp | Texture::Flag::HighQuality | flags);
 }
 
 /*
@@ -446,7 +446,7 @@ void Texture::CreateRandomRotMatTexture(int size, int flags) {
         }
     }
 
-    Create(RHI::TextureType::Texture2D, image, Texture::Flag::Nearest | Texture::Flag::Repeat | Texture::Flag::NoMipmaps | Texture::Flag::NoCompression | Texture::Flag::NoScaleDown | flags);
+    Create(Graphics::TextureType::Texture2D, image, Texture::Flag::Nearest | Texture::Flag::Repeat | Texture::Flag::NoMipmaps | Texture::Flag::NoCompression | Texture::Flag::NoScaleDown | flags);
 }
 
 /*
@@ -481,18 +481,18 @@ void Texture::CreateRandomDir4x4Texture(int flags) {
         }
     }
 
-    Create(RHI::TextureType::Texture2D, image, Texture::Flag::Nearest | Texture::Flag::Repeat | Texture::Flag::NoMipmaps | Texture::Flag::NoCompression | Texture::Flag::NoScaleDown | flags);
+    Create(Graphics::TextureType::Texture2D, image, Texture::Flag::Nearest | Texture::Flag::Repeat | Texture::Flag::NoMipmaps | Texture::Flag::NoCompression | Texture::Flag::NoScaleDown | flags);
 }
 
-static RHI::AddressMode::Enum TextureFlagsToAddressMode(int flags) {
+static Graphics::AddressMode::Enum TextureFlagsToAddressMode(int flags) {
     if (flags & (Texture::Flag::ClampToBorder | Texture::Flag::ZeroClamp)) {
-        return RHI::AddressMode::ClampToBorder;
+        return Graphics::AddressMode::ClampToBorder;
     } else if (flags & Texture::Flag::Clamp) {
-        return RHI::AddressMode::Clamp;
+        return Graphics::AddressMode::Clamp;
     } else if (flags & Texture::Flag::MirroredRepeat) {
-        return RHI::AddressMode::MirroredRepeat;
+        return Graphics::AddressMode::MirroredRepeat;
     } else {
-        return RHI::AddressMode::Repeat;
+        return Graphics::AddressMode::Repeat;
     }
 }
 
@@ -501,7 +501,7 @@ void Texture::Upload(const Image *srcImage) {
     Image::Format::Enum forceFormat = Image::Format::Unknown;
     Image tmpImage;
 
-    if (type == RHI::TextureType::TextureRectangle) {
+    if (type == Graphics::TextureType::TextureRectangle) {
         flags |= (Flag::NoMipmaps | Flag::Clamp | Flag::NoScaleDown);
     }
 
@@ -523,7 +523,7 @@ void Texture::Upload(const Image *srcImage) {
     if (forceFormat != Image::Format::Unknown) {
         dstFormat = forceFormat;
     } else {
-        rhi.AdjustTextureFormat(type, useCompression, useNormalMap, srcImage->GetFormat(), &dstFormat);
+        graphics.AdjustTextureFormat(type, useCompression, useNormalMap, srcImage->GetFormat(), &dstFormat);
     }
 
     this->srcWidth = srcImage->GetWidth();
@@ -532,7 +532,7 @@ void Texture::Upload(const Image *srcImage) {
     this->numSlices = srcImage->NumSlices();
 
     int dstWidth, dstHeight, dstDepth;
-    rhi.AdjustTextureSize(type, useNPOT, srcWidth, srcHeight, srcDepth, &dstWidth, &dstHeight, &dstDepth);
+    graphics.AdjustTextureSize(type, useNPOT, srcWidth, srcHeight, srcDepth, &dstWidth, &dstHeight, &dstDepth);
 
     // Apply scale down mip level
     int mipLevel = !(flags & Flag::NoScaleDown) ? TextureManager::texture_mipLevel.GetInteger() : 0;
@@ -565,77 +565,77 @@ void Texture::Upload(const Image *srcImage) {
     this->permanence = !!(flags & Flag::Permanence);
     this->addressMode = TextureFlagsToAddressMode(flags);
 
-    rhi.BindTexture(textureHandle);
+    graphics.BindTexture(textureHandle);
 
     if (flags & Flag::ZeroClamp) {
-        rhi.SetTextureBorderColor(Color4(0.0f, 0.0f, 0.0f, 0.0f));
+        graphics.SetTextureBorderColor(Color4(0.0f, 0.0f, 0.0f, 0.0f));
     }
 
     if (flags & Flag::Shadow) {
-        rhi.SetTextureBorderColor(Color4(1.0f, 1.0f, 1.0f, 1.0f));
-        rhi.SetTextureShadowFunc(true);
+        graphics.SetTextureBorderColor(Color4(1.0f, 1.0f, 1.0f, 1.0f));
+        graphics.SetTextureShadowFunc(true);
     }
 
-    rhi.SetTextureImage(type, srcImage, dstFormat, hasMipmaps, sRGB);
+    graphics.SetTextureImage(type, srcImage, dstFormat, hasMipmaps, sRGB);
 
-    rhi.SetTextureAddressMode(addressMode);
+    graphics.SetTextureAddressMode(addressMode);
 
     if (hasMipmaps) {
-        rhi.SetTextureFilter((flags & Flag::Nearest) ? RHI::TextureFilter::NearestMipmapNearest : ((flags & Flag::Trilinear) ? RHI::TextureFilter::LinearMipmapLinear : textureManager.textureFilter));
+        graphics.SetTextureFilter((flags & Flag::Nearest) ? Graphics::TextureFilter::NearestMipmapNearest : ((flags & Flag::Trilinear) ? Graphics::TextureFilter::LinearMipmapLinear : textureManager.textureFilter));
     } else {
-        rhi.SetTextureFilter((flags & Flag::Nearest) ? RHI::TextureFilter::Nearest : RHI::TextureFilter::Linear);
+        graphics.SetTextureFilter((flags & Flag::Nearest) ? Graphics::TextureFilter::Nearest : Graphics::TextureFilter::Linear);
     }
 
     if (hasMipmaps && !(flags & Flag::Nearest)) {
-        rhi.SetTextureAnisotropy(textureManager.textureAnisotropy);
+        graphics.SetTextureAnisotropy(textureManager.textureAnisotropy);
     }
 }
 
 void Texture::Update2D(int mipLevel, int xoffset, int yoffset, int width, int height, Image::Format::Enum format, const byte *data) {
-    rhi.SetTextureSubImage2D(mipLevel, xoffset, yoffset, width, height, format, data);
+    graphics.SetTextureSubImage2D(mipLevel, xoffset, yoffset, width, height, format, data);
 }
 
 void Texture::Update3D(int mipLevel, int xoffset, int yoffset, int zoffset, int width, int height, int depth, Image::Format::Enum format, const byte *data) {
-    rhi.SetTextureSubImage3D(0, xoffset, yoffset, zoffset, width, height, depth, format, data);
+    graphics.SetTextureSubImage3D(0, xoffset, yoffset, zoffset, width, height, depth, format, data);
 }
 
 void Texture::UpdateCubemap(int face, int mipLevel, int xoffset, int yoffset, int width, int height, Image::Format::Enum format, const byte *data) {
-    rhi.SetTextureSubImageCube((RHI::CubeMapFace::Enum)face, mipLevel, xoffset, yoffset, width, height, format, data);
+    graphics.SetTextureSubImageCube((Graphics::CubeMapFace::Enum)face, mipLevel, xoffset, yoffset, width, height, format, data);
 }
 
 void Texture::UpdateRect(int xoffset, int yoffset, int width, int height, Image::Format::Enum format, const byte *data) {
-    rhi.SetTextureSubImageRect(xoffset, yoffset, width, height, format, data);
+    graphics.SetTextureSubImageRect(xoffset, yoffset, width, height, format, data);
 }
 
 void Texture::GetTexels2D(int mipLevel, Image::Format::Enum format, void *pixels) const {
-    rhi.GetTextureImage2D(mipLevel, format, pixels);
+    graphics.GetTextureImage2D(mipLevel, format, pixels);
 }
 
 void Texture::GetTexels3D(int mipLevel, Image::Format::Enum format, void *pixels) const {
-    rhi.GetTextureImage3D(mipLevel, format, pixels);
+    graphics.GetTextureImage3D(mipLevel, format, pixels);
 }
 
 void Texture::GetTexelsCubemap(int face, int mipLevel, Image::Format::Enum format, void *pixels) const {
-    rhi.GetTextureImageCube((RHI::CubeMapFace::Enum)face, mipLevel, format, pixels);
+    graphics.GetTextureImageCube((Graphics::CubeMapFace::Enum)face, mipLevel, format, pixels);
 }
 
 void Texture::GetTexelsRect(Image::Format::Enum format, void *pixels) const {
-    rhi.GetTextureImageRect(format, pixels);
+    graphics.GetTextureImageRect(format, pixels);
 }
 
 void Texture::CopyTo(int mipLevel, Texture *dstTexture) {
-    rhi.CopyImageSubData(textureHandle, mipLevel, 0, 0, 0, dstTexture->textureHandle, mipLevel, 0, 0, 0, width, height, type == RHI::TextureType::TextureCubeMap ? 6 : depth);
+    graphics.CopyImageSubData(textureHandle, mipLevel, 0, 0, 0, dstTexture->textureHandle, mipLevel, 0, 0, 0, width, height, type == Graphics::TextureType::TextureCubeMap ? 6 : depth);
 }
 
 void Texture::Purge() {
-    if (textureHandle != RHI::NullTexture) {
-        rhi.DestroyTexture(textureHandle);
+    if (textureHandle != Graphics::NullTexture) {
+        graphics.DestroyTexture(textureHandle);
 
         // Invalidates render target which is linked with this texture.
         renderTarget = nullptr;
     }
 
-    textureHandle = RHI::NullTexture;
+    textureHandle = Graphics::NullTexture;
 }
 
 bool Texture::Load(const char *filename, int flags) {
@@ -660,7 +660,7 @@ bool Texture::Load(const char *filename, int flags) {
 
         Image cubeImage;
         cubeImage.CreateCubeFrom6Faces(images);
-        Create(RHI::TextureType::TextureCubeMap, cubeImage, flags);
+        Create(Graphics::TextureType::TextureCubeMap, cubeImage, flags);
     } else {
         BE_LOG("Loading texture '%s'...\n", filename);
 
@@ -672,14 +672,14 @@ bool Texture::Load(const char *filename, int flags) {
             return false;
         }
 
-        RHI::TextureType::Enum textureType;
+        Graphics::TextureType::Enum textureType;
 
         if (image.GetDepth() > 1) {
-            textureType = RHI::TextureType::Texture3D;
+            textureType = Graphics::TextureType::Texture3D;
         } else if (image.IsCubeMap()) {
-            textureType = RHI::TextureType::TextureCubeMap;
+            textureType = Graphics::TextureType::TextureCubeMap;
         } else {
-            textureType = RHI::TextureType::Texture2D;
+            textureType = Graphics::TextureType::Texture2D;
         }
 
         Create(textureType, image, flags);
@@ -704,11 +704,11 @@ bool Texture::Reload() {
 }
 
 void Texture::Bind() const {
-    rhi.BindTexture(textureHandle);
+    graphics.BindTexture(textureHandle);
 }
 
 void Texture::GenerateMipmap() const {
-    rhi.GenerateMipmap();
+    graphics.GenerateMipmap();
 }
 
 void Texture::GetCubeImageFromCubeTexture(const Texture *cubeTexture, int numMipLevels, Image &cubeImage) {
@@ -732,14 +732,14 @@ void Texture::GetCubeImageFromCubeTexture(const Texture *cubeTexture, int numMip
 //--------------------------------------------------------------------------------------------------
 
 void TextureGenerator_CubicDiffuseIrradianceMap::Generate(Texture *texture) const {
-    if (texture->GetType() != RHI::TextureType::TextureCubeMap) {
+    if (texture->GetType() != Graphics::TextureType::TextureCubeMap) {
         BE_ERRLOG("TextureGenerator_CubicDiffuseIrradianceMap::Generate: src texture must be cube map\n");
         return;
     }
 }
 
 void TextureGenerator_CubicSpecularIrradianceMap::Generate(Texture *texture) const {
-    if (texture->GetType() != RHI::TextureType::TextureCubeMap) {
+    if (texture->GetType() != Graphics::TextureType::TextureCubeMap) {
         BE_ERRLOG("TextureGenerator_CubicSpecularIrradianceMap::Generate: src texture must be cube map\n");
         return;
     }

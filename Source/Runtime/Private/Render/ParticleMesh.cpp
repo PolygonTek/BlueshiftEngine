@@ -385,7 +385,7 @@ void ParticleMesh::CacheIndexes() {
         surf->indexCache = indexCache;
         surf->indexCache.offset = offset;
         surf->indexCache.bytes = sizeof(VertIndex) * surf->numIndexes;
-        // TODO: Prebuilt index cache in max batch size and just make use of base vertex index to use calling RHI::DrawElementsBaseVertex
+        // TODO: Prebuilt index cache in max batch size and just make use of base vertex index to use calling Graphics::DrawElementsBaseVertex
         //surf->indexCache.baseVertexIndex = surf->vertexCache.offset / sizeof(VertexGeneric);
 
         offset += surf->indexCache.bytes;
