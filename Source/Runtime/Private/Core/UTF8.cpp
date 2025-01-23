@@ -27,7 +27,7 @@ static const byte trailingBytes[64] = {
 
 static const uint32_t trailingMask[6] = { 0x0000007f, 0x0000001f, 0x0000000f, 0x00000007, 0x00000003, 0x00000001 };
 
-bool UTF8::IsValid(const char *s, const int maxLen, Encoding::Enum &encoding) {
+bool UTF8::IsValid(const char *s, const int maxLen, Encoding &encoding) {
     struct Local {
         static int GetNumEncodedUTF8Bytes(const uint8_t c) {
             if (c < 0x80) { // 0xxxxxxx
@@ -63,7 +63,7 @@ bool UTF8::IsValid(const char *s, const int maxLen, Encoding::Enum &encoding) {
 
     // check for byte-order-marker
     encoding = Encoding::PureASCII;
-    Encoding::Enum utf8Type = Encoding::EncodedNoBOM;
+    Encoding utf8Type = Encoding::EncodedNoBOM;
     if (maxLen > 3 && (byte)s[0] == 0xEF && (byte)s[1] == 0xBB && (byte)s[2] == 0xBF) {
         utf8Type = Encoding::EncodedBOM;
     }

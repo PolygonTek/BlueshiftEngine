@@ -32,7 +32,7 @@ BE_NAMESPACE_BEGIN
 class InputSystem {
 public:
     struct KeyEv {
-        KeyCode::Enum       keynum;
+        KeyCode             keynum;
         bool                down;
         Queue<KeyEv>        node;
     };
@@ -40,7 +40,11 @@ public:
     struct Touch {
         struct Phase {
             enum Enum {
-                NullPhase, Started, Moved, Ended, Canceled
+                NullPhase,
+                Started,
+                Moved,
+                Ended,
+                Canceled
             };
         };
         int32_t             id;
@@ -67,9 +71,9 @@ public:
     void                    ClearKeyEvents();
     void                    ClearTouches();
 
-    bool                    IsKeyDown(KeyCode::Enum keynum) const;
-    bool                    IsKeyUp(KeyCode::Enum keynum) const;
-    bool                    IsKeyPressed(KeyCode::Enum keynum) const;
+    bool                    IsKeyDown(KeyCode keynum) const;
+    bool                    IsKeyUp(KeyCode keynum) const;
+    bool                    IsKeyPressed(KeyCode keynum) const;
 
     int                     GetTouchCount() const;
     const Touch             GetTouch(int touchIndex) const;
@@ -79,7 +83,7 @@ public:
     Point                   GetMousePos() const;
     Point                   GetAxisDelta() const;
 
-    void                    KeyEvent(KeyCode::Enum key, bool down);
+    void                    KeyEvent(KeyCode key, bool down);
     void                    MouseMoveEvent(int x, int y, int time);
     void                    MouseDeltaEvent(int dx, int dy, int time);
     void                    JoyAxisEvent(int dx, int dy, int time);

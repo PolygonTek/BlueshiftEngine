@@ -72,7 +72,7 @@ void InputSystem::ClearKeyEvents() {
     }
 }
 
-void InputSystem::KeyEvent(KeyCode::Enum key, bool down) {
+void InputSystem::KeyEvent(KeyCode key, bool down) {
     keyCmdSystem.KeyEvent(key, down);
 
     KeyEv *newEvent = keyEventAllocator.Alloc();
@@ -126,7 +126,7 @@ bool InputSystem::IsMouseExist() const {
     return mouseExist;
 }
 
-bool InputSystem::IsKeyDown(KeyCode::Enum keynum) const {
+bool InputSystem::IsKeyDown(KeyCode keynum) const {
     int count = 0;
     for (Queue<KeyEv> *node = keyEventQueue.GetFirst(); node; node = node->GetNext()) {
         const KeyEv *keyEvent = node->Owner();
@@ -137,7 +137,7 @@ bool InputSystem::IsKeyDown(KeyCode::Enum keynum) const {
     return count > 0;
 }
 
-bool InputSystem::IsKeyUp(KeyCode::Enum keynum) const {
+bool InputSystem::IsKeyUp(KeyCode keynum) const {
     int count = 0;
     for (Queue<KeyEv> *node = keyEventQueue.GetFirst(); node; node = node->GetNext()) {
         const KeyEv *keyEvent = node->Owner();
@@ -175,7 +175,7 @@ const InputSystem::Touch InputSystem::GetTouch(int touchIndex) const {
     return nullTouch;
 }
 
-bool InputSystem::IsKeyPressed(KeyCode::Enum keynum) const {
+bool InputSystem::IsKeyPressed(KeyCode keynum) const {
     return keyCmdSystem.IsPressed(keynum);//
 }
 

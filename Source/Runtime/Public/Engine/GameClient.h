@@ -90,7 +90,7 @@ public:
     void                    DrawString(int x, int y, const Str &str, int size = -1, int flags = 0);
     void                    DrawStringInRect(const Rect &rect, int marginX, int marginY, const Str &str, int size = -1, int flags = 0);
 
-    void                    KeyEvent(KeyCode::Enum key, bool down);
+    void                    KeyEvent(KeyCode key, bool down);
     void                    CharEvent(char32_t unicodeChar);
     void                    CompositionEvent(char32_t unicodeChar);
     void                    MouseMoveEvent(int x, int y, int time);
@@ -112,7 +112,7 @@ public:
 
 private:
     void                    InitDefaultGuids();
-    void                    ConsoleKeyEvent(KeyCode::Enum key);
+    void                    ConsoleKeyEvent(KeyCode key);
     void                    ConsoleCharEvent(char32_t unicodeChar);
     void                    ConsoleCompositionEvent(char32_t ch);
     void                    UpdateConsole();

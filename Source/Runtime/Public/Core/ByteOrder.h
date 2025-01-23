@@ -18,17 +18,15 @@ BE_NAMESPACE_BEGIN
 
 class BE_API ByteOrder {
 public:
-    struct Endianness {
-        enum Enum {
-            Unknown,
-            LittleEndian,
-            BigEndian
-        };
+    enum class Endianness : uint8_t {
+        Unknown,
+        LittleEndian,
+        BigEndian
     };
 
     static void Init();
 
-    static Endianness::Enum GetEndianness() { return systemEndianness; }
+    static Endianness GetEndianness() { return systemEndianness; }
 
     template <typename T> static void SwapByteOrder(T &v) {
         if (sizeof(T) == 1) {
@@ -79,7 +77,7 @@ public:
     }
 
 private:
-    static Endianness::Enum systemEndianness;
+    static Endianness systemEndianness;
 };
 
 BE_NAMESPACE_END

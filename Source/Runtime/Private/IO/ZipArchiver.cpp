@@ -22,7 +22,7 @@ BE_NAMESPACE_BEGIN
 #define WRITEBUFFERSIZE (16384)
 #define MAXFILENAME (256)
 
-static int ToZCompressLevel(ZipArchiver::CompressionLevel::Enum compressionLevel) {
+static int ToZCompressLevel(ZipArchiver::CompressionLevel compressionLevel) {
     int ret;
 
     switch (compressionLevel) {
@@ -61,7 +61,7 @@ void ZipArchiver::Close() {
     }
 }
 
-bool ZipArchiver::AddFile(const char *filename, CompressionLevel::Enum compressionLevel) {
+bool ZipArchiver::AddFile(const char *filename, CompressionLevel compressionLevel) {
     zip_fileinfo zi;
     memset(&zi, 0, sizeof(zi));
 
@@ -69,8 +69,8 @@ bool ZipArchiver::AddFile(const char *filename, CompressionLevel::Enum compressi
     zi.tmz_date.tm_sec = timeStamp.Second();
     zi.tmz_date.tm_min = timeStamp.Minute();
     zi.tmz_date.tm_hour = timeStamp.Hour();
-    zi.tmz_date.tm_mday = timeStamp.Day();
-    zi.tmz_date.tm_year = timeStamp.Year();
+    zi.tmz_date.tm_mday = timeStamp.GetDay();
+    zi.tmz_date.tm_year = timeStamp.GetYear();
 
     int opt_compress_level = ToZCompressLevel(compressionLevel);
     bool largeFile = false;

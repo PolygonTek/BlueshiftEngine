@@ -22,7 +22,7 @@
 BE_NAMESPACE_BEGIN
 
 struct KeyName {
-    KeyCode::Enum   keynum;
+    KeyCode         keynum;
     const char *    name;
 };
 
@@ -229,7 +229,7 @@ static const KeyName keynames[] = {
 
 KeyCmdSystem    keyCmdSystem;
 
-KeyCode::Enum KeyCmdSystem::StringToKeynum(const char *str) {
+KeyCode KeyCmdSystem::StringToKeynum(const char *str) {
     if (!str || !str[0]) {
         return KeyCode::None;
     }
@@ -242,7 +242,7 @@ KeyCode::Enum KeyCmdSystem::StringToKeynum(const char *str) {
     return KeyCode::None;
 }
 
-const char *KeyCmdSystem::KeynumToString(KeyCode::Enum keynum) {
+const char *KeyCmdSystem::KeynumToString(KeyCode keynum) {
     if (keynum < KeyCode::None || keynum >= KeyCode::LastKey) {
         return "KEY_NOT_FOUND";
     }
@@ -286,7 +286,7 @@ void KeyCmdSystem::Shutdown() {
 void KeyCmdSystem::ClearStates() {
     for (int i = 0; i < COUNT_OF(keyList); i++) {
         if (keyList[i].isDown || keyList[i].count) {
-            KeyEvent((KeyCode::Enum)i, false);
+            KeyEvent((KeyCode)i, false);
         }
 
         keyList[i].isDown = false;
@@ -294,7 +294,7 @@ void KeyCmdSystem::ClearStates() {
     }
 }
 
-const char *KeyCmdSystem::GetBinding(KeyCode::Enum keynum) const {
+const char *KeyCmdSystem::GetBinding(KeyCode keynum) const {
     if (keynum < KeyCode::None || keynum >= KeyCode::LastKey) {
         return "";
     }
@@ -302,7 +302,7 @@ const char *KeyCmdSystem::GetBinding(KeyCode::Enum keynum) const {
     return keyList[(int)keynum].binding;
 }
 
-void KeyCmdSystem::SetBinding(KeyCode::Enum keynum, const char *cmd) {
+void KeyCmdSystem::SetBinding(KeyCode keynum, const char *cmd) {
     if (keynum < KeyCode::None || keynum >= KeyCode::LastKey) {
         return;
     }
@@ -323,12 +323,12 @@ void KeyCmdSystem::SetBinding(KeyCode::Enum keynum, const char *cmd) {
 void KeyCmdSystem::WriteBindings(File *fp) const {
     for (int i = 0; i < COUNT_OF(keyList); i++) {
         if (keyList[i].binding && *keyList[i].binding) {
-            fp->Printf("bind \"%s\" \"%s\"\n", KeyCmdSystem::KeynumToString((KeyCode::Enum)i), keyList[i].binding);
+            fp->Printf("bind \"%s\" \"%s\"\n", KeyCmdSystem::KeynumToString((KeyCode)i), keyList[i].binding);
         }
     }
 }
 
-bool KeyCmdSystem::IsPressed(KeyCode::Enum keynum) const {
+bool KeyCmdSystem::IsPressed(KeyCode keynum) const {
     if (keynum < KeyCode::None || keynum >= KeyCode::LastKey) {
         return false;
     }
@@ -350,7 +350,7 @@ bool KeyCmdSystem::IsPressedAnyKey() const {
     return false;
 }
 
-void KeyCmdSystem::KeyEvent(KeyCode::Enum keynum, bool down) {
+void KeyCmdSystem::KeyEvent(KeyCode keynum, bool down) {
     char cmd[1024];
     char *kb;
 
@@ -402,7 +402,7 @@ void KeyCmdSystem::Cmd_ListBinds(const CmdArgs &args) {
     int count = 0;
     for (int i = 0; i < 256; i++) {
         if (keyCmdSystem.keyList[i].binding) {
-            BE_LOG("%s \"%s\"\n", KeyCmdSystem::KeynumToString((KeyCode::Enum)i), keyCmdSystem.keyList[i].binding);
+            BE_LOG("%s \"%s\"\n", KeyCmdSystem::KeynumToString((KeyCode)i), keyCmdSystem.keyList[i].binding);
             count++;
         }
     }
@@ -410,7 +410,7 @@ void KeyCmdSystem::Cmd_ListBinds(const CmdArgs &args) {
 
 void KeyCmdSystem::Cmd_Bind(const CmdArgs &args) {
     int argc = args.Argc();
-    KeyCode::Enum keynum;
+    KeyCode keynum;
 
     if (argc >= 2) {
         keynum = KeyCmdSystem::StringToKeynum(args.Argv(1));
@@ -438,7 +438,7 @@ void KeyCmdSystem::Cmd_Unbind(const CmdArgs &args) {
         return;
     }
     
-    KeyCode::Enum keynum = KeyCmdSystem::StringToKeynum(args.Argv(1));
+    KeyCode keynum = KeyCmdSystem::StringToKeynum(args.Argv(1));
     if (keynum < KeyCode::None || keynum >= KeyCode::LastKey) {
         BE_WARNLOG("\"%s\" isn't a valid key\n", args.Argv(1));
         return;
@@ -450,7 +450,7 @@ void KeyCmdSystem::Cmd_Unbind(const CmdArgs &args) {
 void KeyCmdSystem::Cmd_UnbindAll(const CmdArgs &args) {
     for (int i = 0; i < 256; i++) {
         if (keyCmdSystem.keyList[i].binding) {
-            keyCmdSystem.SetBinding((KeyCode::Enum)i, nullptr);
+            keyCmdSystem.SetBinding((KeyCode)i, nullptr);
         }
     }
 }

@@ -108,7 +108,7 @@ Guid Guid::FromString(const char *s) {
     return guid;
 }
 
-const char *Guid::ToString(Format::Enum format) const {
+const char *Guid::ToString(Format format) const {
     switch (format) {
     case Format::DigitsWithHyphens:
         return va("%08X-%04X-%04X-%04X-%04X%08X", u1, u2 >> 16, u2 & 0xFFFF, u3 >> 16, u3 & 0xFFFF, u4);

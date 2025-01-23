@@ -101,7 +101,7 @@ void XInputInterface::SendControllerEvents() {
 
         for (int buttonIndex = 0; buttonIndex < GamePadButton::Count; buttonIndex++) {
             if (newButtonStates[buttonIndex] != controllerState.buttonStates[buttonIndex]) {
-                platform->QueEvent(Platform::EventType::Key, joyKeys[buttonIndex], newButtonStates[buttonIndex], controllerIndex, nullptr);
+                platform->QueEvent(Platform::EventType::Key, static_cast<uint64_t>(joyKeys[buttonIndex]), newButtonStates[buttonIndex], controllerIndex, nullptr);
             }
 
             controllerState.buttonStates[buttonIndex] = newButtonStates[buttonIndex];

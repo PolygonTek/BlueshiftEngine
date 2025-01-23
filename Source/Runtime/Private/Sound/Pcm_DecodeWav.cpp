@@ -1,4 +1,4 @@
-﻿// Copyright(c) 2017 POLYGONTEK
+// Copyright(c) 2017 POLYGONTEK
 // 
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -22,8 +22,18 @@ BE_NAMESPACE_BEGIN
 
 #pragma pack(push, 4)
 
+enum class WaveFormat : uint16_t {
+    PCM             = 0x1,
+    ADPCM           = 0x2,
+    IEEE_FLOAT      = 0x3,
+    ALAW            = 0x6,
+    MULAW           = 0x7,
+    DVI_ADPCM       = 0x11,
+    EXTENSIBLE      = 0xFFFE
+};
+
 struct WaveFormatEx {
-    uint16_t        format;
+    WaveFormat      format;
     uint16_t        channels;
     uint32_t        sampleRates;
     uint32_t        bytesPerSec;
@@ -33,7 +43,7 @@ struct WaveFormatEx {
 };
 
 struct WavePcmFormat {
-    uint16_t        format;
+    WaveFormat      format;
     uint16_t        channels;
     uint32_t        sampleRates;
     uint32_t        bytesPerSec;
@@ -42,7 +52,7 @@ struct WavePcmFormat {
 };
 
 struct WaveImaAdpcmFormat {
-    uint16_t        format;
+    WaveFormat      format;
     uint16_t        channels;
     uint32_t        sampleRates;
     uint32_t        bytesPerSec;
@@ -306,23 +316,23 @@ bool Pcm::BeginDecodeFile_Wav() {
 
     fp->Read(this->waveFormat, length);
 
-    if (waveFormat->format != Format::PCM && waveFormat->format != Format::DVI_ADPCM) {
+    if (waveFormat->format != WaveFormat::PCM && waveFormat->format != WaveFormat::DVI_ADPCM) {
         BE_WARNLOG("Unsupported wave format\n");
         return false;
     }
 
     this->channels = waveFormat->channels;
     this->sampleRates = waveFormat->sampleRates;
-    this->bitsWidth = waveFormat->format == Format::DVI_ADPCM ? 16 : waveFormat->bitsWidth;
+    this->bitsWidth = waveFormat->format == WaveFormat::DVI_ADPCM ? 16 : waveFormat->bitsWidth;
 
     if (!FindChunkInFile(fp, WAVE_FOURCC_data, &length)) {
         BE_WARNLOG("Missing data chunk\n");
         return false;
     }
 
-    if (waveFormat->format == Format::PCM) {
+    if (waveFormat->format == WaveFormat::PCM) {
         size = length;
-    } else if (waveFormat->format == Format::DVI_ADPCM) {
+    } else if (waveFormat->format == WaveFormat::DVI_ADPCM) {
         int numBlocks = (length + waveFormat->blockAlign - 1) / waveFormat->blockAlign;
         size = ((length - 4 * channels * numBlocks) * 2 + channels * numBlocks) * 2;
     }
@@ -340,9 +350,9 @@ void Pcm::EndDecodeFile_Wav() {
 }
 
 int Pcm::DecodeFile_Wav(byte *buffer, int len) {
-    if (waveFormat->format == Format::PCM) {
+    if (waveFormat->format == WaveFormat::PCM) {
         return DecodeFile_PcmWave(buffer, len);
-    } else if (waveFormat->format == Format::DVI_ADPCM) {
+    } else if (waveFormat->format == WaveFormat::DVI_ADPCM) {
         return DecodeFile_ImaAdpcmWave(buffer, len);
     }
 
@@ -350,9 +360,9 @@ int Pcm::DecodeFile_Wav(byte *buffer, int len) {
 }
 
 bool Pcm::SeekFile_Wav(int byteOffset) {
-    if (waveFormat->format == Format::PCM) {
+    if (waveFormat->format == WaveFormat::PCM) {
         fp->Seek(dataPos + AlignUp(byteOffset, bitsWidth));
-    } else if (waveFormat->format == Format::DVI_ADPCM) {
+    } else if (waveFormat->format == WaveFormat::DVI_ADPCM) {
         // TODO: IMPLEMENT THIS !
     }
     return true;
@@ -406,14 +416,14 @@ bool Pcm::DecodeMemory_Wav(byte *base, size_t fileSize) {
     }
 
     WaveFormatEx *fmt = (WaveFormatEx *)ptr;
-    if (fmt->format != Format::PCM && fmt->format != Format::DVI_ADPCM) {
+    if (fmt->format != WaveFormat::PCM && fmt->format != WaveFormat::DVI_ADPCM) {
         BE_WARNLOG("Unsupported wave format\n");
         return false;
     }
 
     this->channels = fmt->channels;
     this->sampleRates = fmt->sampleRates;
-    this->bitsWidth = fmt->format == Format::DVI_ADPCM ? 16 : fmt->bitsWidth;
+    this->bitsWidth = fmt->format == WaveFormat::DVI_ADPCM ? 16 : fmt->bitsWidth;
 
     ptr += length;
 
@@ -422,12 +432,12 @@ bool Pcm::DecodeMemory_Wav(byte *base, size_t fileSize) {
         return false;
     }
 
-    if (fmt->format == Format::PCM) {
+    if (fmt->format == WaveFormat::PCM) {
         size = length;
         data = (byte *)Mem_Alloc16(size);
 
         simdProcessor->Memcpy(data, ptr, size);
-    } else if (fmt->format == Format::DVI_ADPCM) {
+    } else if (fmt->format == WaveFormat::DVI_ADPCM) {
         int numBlocks = (length + fmt->blockAlign - 1) / fmt->blockAlign;
 
         size = ((length - 4 * channels * numBlocks) * 2 + channels * numBlocks) * 2;

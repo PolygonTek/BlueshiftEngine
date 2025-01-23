@@ -22,34 +22,30 @@ BE_NAMESPACE_BEGIN
 class BE_API DateTime {
 public:
     /// Days of the week in 7-day calendars.
-    struct DayOfWeek {
-        enum Enum {
-            Monday = 0,
-            Tuesday,
-            Wednesday,
-            Thursday,
-            Friday,
-            Saturday,
-            Sunday
-        };
+    enum class DayOfWeek : uint8_t {
+        Monday = 0,
+        Tuesday,
+        Wednesday,
+        Thursday,
+        Friday,
+        Saturday,
+        Sunday
     };
 
     /// Months of the year in 12-month calendars.
-    struct MonthOfYear {
-        enum Enum {
-            January = 1,
-            February,
-            March,
-            April,
-            May,
-            June,
-            July,
-            August,
-            September,
-            October,
-            November,
-            December
-        };
+    enum class MonthOfYear : uint8_t {
+        January = 1,
+        February,
+        March,
+        April,
+        May,
+        June,
+        July,
+        August,
+        September,
+        October,
+        November,
+        December
     };
 
     struct Date {
@@ -82,14 +78,15 @@ public:
     bool                operator<(const DateTime &rhs) const;
     bool                operator<=(const DateTime &rhs) const;
     
-    int32_t             Year() const { return ToDate().year; }
-    int32_t             Month() const { return ToDate().month; }
-    MonthOfYear::Enum   GetMonthOfYear() const { return static_cast<MonthOfYear::Enum>(Month()); }
-    int32_t             Day() const { return ToDate().day; }
-    double              JulianDay() const { return (double)(1721425.5 + ticks / Timespan::TicksPerDay); }
-    double              ModifiedJulianDay() const { return (JulianDay() - 2400000.5); }
-    DayOfWeek::Enum     DayOfWeek() const { return static_cast<DayOfWeek::Enum>((int)(ticks / Timespan::TicksPerDay) % 7); }
-    int32_t             DayOfYear() const;
+    int32_t             GetYear() const { return ToDate().year; }
+    int32_t             GetMonth() const { return ToDate().month; }
+    MonthOfYear         GetMonthOfYear() const { return static_cast<MonthOfYear>(GetMonth()); }
+    int32_t             GetDay() const { return ToDate().day; }
+    double              GetJulianDay() const { return (double)(1721425.5 + ticks / Timespan::TicksPerDay); }
+    double              GetModifiedJulianDay() const { return (GetJulianDay() - 2400000.5); }
+    DayOfWeek           GetDayOfWeek() const { return static_cast<DayOfWeek>((int)(ticks / Timespan::TicksPerDay) % 7); }
+    int32_t             GetDayOfYear() const;
+
     int32_t             Hour() const { return (int32_t)((ticks / Timespan::TicksPerHour) % 24); }
     int32_t             Hour12() const;
     bool                IsAM() const { return Hour() < 12; }

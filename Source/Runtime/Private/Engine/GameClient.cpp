@@ -941,7 +941,7 @@ void GameClient::DrawConsoleNotify() {
     }*/
 }
 
-void GameClient::ConsoleKeyEvent(KeyCode::Enum key) {
+void GameClient::ConsoleKeyEvent(KeyCode key) {
     char buffer[CommandLineSize];
     const char *cmd;
 
@@ -1173,7 +1173,7 @@ void GameClient::ConsoleCompositionEvent(char32_t unicodeChar) {
     compositionMode = true;
 }
 
-void GameClient::KeyEvent(KeyCode::Enum key, bool down) {
+void GameClient::KeyEvent(KeyCode key, bool down) {
     static bool cursorLocked = false;
 
     // Toggle console without key binding

@@ -31,12 +31,10 @@ public:
     enum { Size = 3 };
 
     /// Angles indexes
-    struct Index {
-        enum Enum {
-            Roll,       ///< Rotation angle around x-axis
-            Pitch,      ///< Rotation angle around y-axis
-            Yaw         ///< Rotation angle around z-axis
-        };
+    enum class Index : uint8_t {
+        Roll,           ///< Rotation angle around x-axis
+        Pitch,          ///< Rotation angle around y-axis
+        Yaw             ///< Rotation angle around z-axis
     };
 
     /// The default constructor does not initialize any members of this class.

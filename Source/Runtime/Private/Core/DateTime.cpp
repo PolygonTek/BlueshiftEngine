@@ -66,7 +66,7 @@ DateTime::Date DateTime::ToDate() const {
     
     int32_t i, j, k, l, n;
     
-    l = Math::Floor(JulianDay() + 0.5) + 68569;
+    l = Math::Floor(GetJulianDay() + 0.5) + 68569;
     n = 4 * l / 146097;
     l = l - (146097 * n + 3) / 4;
     i = 4000 * (l + 1) / 1461001;
@@ -96,11 +96,11 @@ DateTime::Time DateTime::ToTime() const {
 
 Str DateTime::ToString() const {
     Str str;
-    str.sPrintf("%04d.%02d.%02d-%02d.%02d.%02d", Year(), Month(), Day(), Hour(), Minute(), Second());
+    str.sPrintf("%04d.%02d.%02d-%02d.%02d.%02d", GetYear(), GetMonth(), GetDay(), Hour(), Minute(), Second());
     return str;
 }
 
-int32_t DateTime::DayOfYear() const {
+int32_t DateTime::GetDayOfYear() const {
     Date date = ToDate();
     int32_t day = date.day;
     
@@ -144,7 +144,7 @@ DateTime DateTime::UtcNow() {
 int32_t DateTime::DaysInMonth(int32_t year, int32_t month) {
     assert((month >= 1) && (month <= 12));
     
-    if ((month == MonthOfYear::February) && IsLeapYear(year)) {
+    if ((month == static_cast<int32_t>(MonthOfYear::February)) && IsLeapYear(year)) {
         return 29;
     }
     

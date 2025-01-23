@@ -35,17 +35,17 @@ public:
     void                    Shutdown();
 
     void                    ClearStates();
-    void                    KeyEvent(KeyCode::Enum keynum, bool down);
+    void                    KeyEvent(KeyCode keynum, bool down);
 
-    const char *            GetBinding(KeyCode::Enum keynum) const;
-    void                    SetBinding(KeyCode::Enum keynum, const char *cmd);
+    const char *            GetBinding(KeyCode keynum) const;
+    void                    SetBinding(KeyCode keynum, const char *cmd);
     void                    WriteBindings(File *fp) const;
 
-    bool                    IsPressed(KeyCode::Enum keynum) const;
+    bool                    IsPressed(KeyCode keynum) const;
     bool                    IsPressedAnyKey() const;
 
-    static KeyCode::Enum    StringToKeynum(const char *str);
-    static const char *     KeynumToString(KeyCode::Enum keynum);
+    static KeyCode          StringToKeynum(const char *str);
+    static const char *     KeynumToString(KeyCode keynum);
 
 private:
     struct Key {

@@ -15,6 +15,7 @@
 #pragma once
 
 #include <XInput.h>
+#include "Input/KeyCodes.h"
 
 BE_NAMESPACE_BEGIN
 
@@ -77,7 +78,7 @@ private:
     };
 
     ControllerState     controllerStates[XUSER_MAX_COUNT];
-    int                 joyKeys[GamePadButton::Count];
+    KeyCode             joyKeys[GamePadButton::Count];
 };
 
 BE_NAMESPACE_END

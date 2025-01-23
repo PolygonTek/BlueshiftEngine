@@ -40,17 +40,15 @@ class BE_API CVar {
     friend class CVarSystem;
 
 public:
-    struct Flag {
-        enum Enum {
-            All             = -1,
-            Modified        = BIT(0),
-            Static          = BIT(1),
-            ReadOnly        = BIT(2),
-            Integer         = BIT(3),
-            Float           = BIT(4),
-            Bool            = BIT(5),
-            Archive         = BIT(6),
-        };
+    enum Flag {
+        All             = -1,
+        Modified        = BIT(0),
+        Static          = BIT(1),
+        ReadOnly        = BIT(2),
+        Integer         = BIT(3),
+        Float           = BIT(4),
+        Bool            = BIT(5),
+        Archive         = BIT(6),
     };
     
     // do not use default ctor

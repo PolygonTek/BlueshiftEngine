@@ -1,4 +1,4 @@
-﻿// Copyright(c) 2017 POLYGONTEK
+// Copyright(c) 2017 POLYGONTEK
 // 
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -21,24 +21,10 @@ struct WaveFormatEx;
 
 class Pcm {
 public:
-    struct FileType {
-        enum Enum {
-            Unknown,
-            Wav,
-            Ogg
-        };
-    };
-
-    struct Format {
-        enum Enum {
-            PCM         = 0x1,
-            ADPCM       = 0x2,
-            IEEE_FLOAT  = 0x3,
-            ALAW        = 0x6,
-            MULAW       = 0x7,
-            DVI_ADPCM   = 0x11,
-            EXTENSIBLE  = 0xFFFE
-        };
+    enum class FileType : uint8_t {
+        Unknown,
+        Wav,
+        Ogg
     };
 
     Pcm();
@@ -47,7 +33,7 @@ public:
     bool                IsOpened() const;
     bool                IsLoaded() const;
 
-    Pcm::FileType::Enum GetFileType() const { return fileType; }
+    Pcm::FileType       GetFileType() const { return fileType; }
     int                 NumChannels() const { return channels; }
     int                 SampleRates() const { return sampleRates; }
     int                 BitsWidth() const { return bitsWidth; }
@@ -88,7 +74,7 @@ private:
                         // decode Ogg memory
     bool                DecodeMemory_OggVorbis(byte *base, size_t fileSize);
 
-    FileType::Enum      fileType;
+    FileType            fileType;
     WaveFormatEx *      waveFormat;         ///< Used only for wave file type
     int                 channels;           ///< Number of channels
     int                 sampleRates;        ///< Samples per second

@@ -36,7 +36,7 @@ void LuaVM::RegisterInput(LuaCpp::Module &module) {
     LuaCpp::Selector _Input_KeyCode = _Input["KeyCode"];
     _Input_KeyCode.SetClass<KeyCode>();
     for (int i = (int)KeyCode::None + 1; i < (int)KeyCode::LastKey; i++) {
-        _Input_KeyCode[keyCmdSystem.KeynumToString((KeyCode::Enum)i)] = i;
+        _Input_KeyCode[keyCmdSystem.KeynumToString((KeyCode)i)] = i;
     }
 
     LuaCpp::Selector _Input_Touch = _Input["Touch"];

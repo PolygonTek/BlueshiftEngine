@@ -132,7 +132,7 @@ void CmdSystem::RemoveCommand(const char *name) {
     }
 }
 
-void CmdSystem::BufferCommandText(Execution::Enum exec, const char *text) {
+void CmdSystem::BufferCommandText(Execution exec, const char *text) {
     if (exec == Execution::Now) {
         BufferCommandText(Execution::Insert, text);
         ExecuteCommandBuffer();

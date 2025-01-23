@@ -26,14 +26,12 @@ BE_NAMESPACE_BEGIN
 
 class UTF8 {
 public:
-    struct Encoding {
-        enum Enum {
-            PureASCII,          ///< no characters with values > 127
-            EncodedBOM,         ///< characters > 128 encoded with UTF8, with a byte-order-marker at the beginning
-            EncodedNoBOM,       ///< characters > 128 encoded with UTF8, but no byte-order-marker at the beginning
-            Invalid,            ///< has values > 127 but isn't valid UTF8 
-            InvalidBOM          ///< has a byte-order-marker at the beginning, but isn't valid UTF8 -- it's messed up
-        };
+    enum class Encoding : uint8_t {
+        PureASCII,      ///< no characters with values > 127
+        EncodedBOM,     ///< characters > 128 encoded with UTF8, with a byte-order-marker at the beginning
+        EncodedNoBOM,   ///< characters > 128 encoded with UTF8, but no byte-order-marker at the beginning
+        Invalid,        ///< has values > 127 but isn't valid UTF8 
+        InvalidBOM      ///< has a byte-order-marker at the beginning, but isn't valid UTF8 -- it's messed up
     };
 
                         /// Encode Unicode character to UTF8. Pointer will be incremented.
@@ -57,8 +55,8 @@ public:
                         /// Decrease byte offset by the amount of previous character bytes.
     static bool         Previous(const char *s, int &offset);
 
-    static bool         IsValid(const char *s, const int maxLen, Encoding::Enum &encoding);
-    static bool         IsValid(const char *s, const int maxLen) { Encoding::Enum encoding; return IsValid(s, maxLen, encoding); }
+    static bool         IsValid(const char *s, const int maxLen, Encoding &encoding);
+    static bool         IsValid(const char *s, const int maxLen) { Encoding encoding; return IsValid(s, maxLen, encoding); }
 };
 
 /*

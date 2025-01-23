@@ -220,7 +220,7 @@ int Common::ProcessPlatformEvent() {
 
         switch (ev.type) {
         case Platform::EventType::Key:
-            gameClient.KeyEvent((KeyCode::Enum)ev.value, ev.value2 ? true : false);
+            gameClient.KeyEvent((KeyCode)ev.value, ev.value2 ? true : false);
             break;
         case Platform::EventType::Char:
             gameClient.CharEvent((char32_t)ev.value);

@@ -18,13 +18,11 @@ BE_NAMESPACE_BEGIN
 
 class BE_API ZipArchiver {
 public:
-    struct CompressionLevel {
-        enum Enum {
-            NoCompression,
-            Default,
-            BestCompression,
-            BestSpeed
-        };
+    enum class CompressionLevel : uint8_t {
+        NoCompression,
+        Default,
+        BestCompression,
+        BestSpeed
     };
 
     ZipArchiver();
@@ -34,7 +32,7 @@ public:
     bool            Open(const char *filename);
     void            Close();
 
-    bool            AddFile(const char *filename, CompressionLevel::Enum compressionLevel = CompressionLevel::Default);
+    bool            AddFile(const char *filename, CompressionLevel compressionLevel = CompressionLevel::Default);
 
     static bool     Archive(const char *zipFilename, const char *archiveDirectory, const char *filter, const char *baseDir = "", ProgressCallback *progress = nullptr);
 
