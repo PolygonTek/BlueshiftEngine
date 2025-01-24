@@ -36,7 +36,7 @@ struct D3D12PendingResource {
 
 class D3D12Renderer : public RHI::Renderer {
 public:
-    virtual void                        Init(void *mainWindowHandle) override;
+    virtual void                        Init(const void *mainWindowHandle) override;
     virtual void                        Shutdown() override;
 
     RHI::ShaderFormat                   GetShaderFormat() const;
@@ -64,13 +64,13 @@ public:
     virtual RHI::Buffer *               CreateBuffer(RHI::BufferUsage usage, RHI::ResourceFlag flags, uint64_t size, BE1::Image::Format format, uint32_t stride, const void *data) override;
     virtual void                        DestroyBuffer(RHI::Buffer *buffer, bool immediate = false) override;
 
-    virtual RHI::VertexBuffer *         CreateVertexBuffer(RHI::BufferUsage usage, uint32_t vertexSize, uint32_t numVerts, void *data) override;
+    virtual RHI::VertexBuffer *         CreateVertexBuffer(RHI::BufferUsage usage, uint32_t vertexSize, uint32_t numVerts, const void *data) override;
     virtual void                        DestroyVertexBuffer(RHI::VertexBuffer *vertexBuffer, bool immediate = false) override;
 
-    virtual RHI::IndexBuffer *          CreateIndexBuffer(RHI::BufferUsage usage, uint32_t indexSize, uint32_t numIndexes, void *data) override;
+    virtual RHI::IndexBuffer *          CreateIndexBuffer(RHI::BufferUsage usage, uint32_t indexSize, uint32_t numIndexes, const void *data) override;
     virtual void                        DestroyIndexBuffer(RHI::IndexBuffer *indexBuffer, bool immediate = false) override;
 
-    virtual RHI::ConstantBuffer *       CreateConstantBuffer(RHI::BufferUsage usage, uint32_t size, void *data) override;
+    virtual RHI::ConstantBuffer *       CreateConstantBuffer(RHI::BufferUsage usage, uint32_t size, const void *data) override;
     virtual void                        DestroyConstantBuffer(RHI::ConstantBuffer *constantBuffer, bool immediate = false) override;
 
     virtual RHI::Texture *              CreateTexture(RHI::TextureType textureType, RHI::ResourceFlag flags, const BE1::Image *image, RHI::ClearValue &clearValue, uint32_t sampleCount = 1, RHI::GPUResourceState initialState = RHI::GPUResourceState::Undefined) override;

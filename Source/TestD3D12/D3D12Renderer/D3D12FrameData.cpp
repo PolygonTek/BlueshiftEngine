@@ -122,11 +122,11 @@ void D3D12FrameThreadData::Reset() {
 RHI::ConstantBuffer *D3D12FrameThreadData::AllocConstant(uint32_t size) {
     D3D12DynamicAllocation *currentDynamicAllocation = dynamicAllocations.Last();
 
-    // 상수 버퍼의 오프셋 & 크기는 256 바이트 단위로 정렬
+    // 하나의 상수 버퍼 뷰의 오프셋 & 크기는 256 바이트 단위로 정렬되어야 한다.
     uint32_t alignedOffset = BE1::AlignUp(currentDynamicAllocation->usedBytes, D3D12_CONSTANT_BUFFER_DATA_PLACEMENT_ALIGNMENT);
     uint32_t alignedSize = BE1::AlignUp(size, D3D12_CONSTANT_BUFFER_DATA_PLACEMENT_ALIGNMENT);
 
-    // 상수 버퍼의 크기는 64kb 를 넘길 수 없다
+    // 상수 버퍼 뷰의 최대 크기는 64kb 이다.
     if (alignedSize > D3D12_REQ_CONSTANT_BUFFER_ELEMENT_COUNT * 16) {
         BE_WARNLOG("Constant buffer view size cannot exceeds 64KB limit\n");
         return nullptr;

@@ -24,7 +24,7 @@ void D3D12VertexBuffer::Release() {
     }
 }
 
-RHI::VertexBuffer* D3D12Renderer::CreateVertexBuffer(RHI::BufferUsage usage, uint32_t vertexSize, uint32_t numVerts, void *data) {
+RHI::VertexBuffer* D3D12Renderer::CreateVertexBuffer(RHI::BufferUsage usage, uint32_t vertexSize, uint32_t numVerts, const void *data) {
     UINT size = vertexSize * numVerts;
     D3D12Buffer *buffer = static_cast<D3D12Buffer *>(CreateBuffer(usage, RHI::ResourceFlag::VertexBuffer, size, BE1::Image::Format::Unknown, 0, data));
     if (!buffer) {

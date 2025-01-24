@@ -23,7 +23,7 @@ void D3D12IndexBuffer::Release() {
     }
 }
 
-RHI::IndexBuffer *D3D12Renderer::CreateIndexBuffer(RHI::BufferUsage usage, uint32_t indexSize, uint32_t numIndexes, void *data) {
+RHI::IndexBuffer *D3D12Renderer::CreateIndexBuffer(RHI::BufferUsage usage, uint32_t indexSize, uint32_t numIndexes, const void *data) {
     assert(indexSize == 2 || indexSize == 4);
 
     UINT size = indexSize * numIndexes;

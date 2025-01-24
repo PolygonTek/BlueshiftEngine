@@ -747,7 +747,7 @@ namespace RHI {
     public:
         virtual ~Renderer() = 0 {}
 
-        virtual void                    Init(void *mainWindowHandle);
+        virtual void                    Init(const void *mainWindowHandle);
         virtual void                    Shutdown();
 
         bool                            IsInitialized() const { return initialized; }
@@ -774,15 +774,17 @@ namespace RHI {
         virtual void                    DestroySwapChain(SwapChain *swapChain) = 0;
 
         virtual Buffer *                CreateBuffer(BufferUsage usage, ResourceFlag flags, uint64_t size, BE1::Image::Format format, uint32_t stride, const void *data) = 0;
+        Buffer *                        CreateStructuredBuffer(BufferUsage usage, ResourceFlag flags, uint64_t size, uint32_t stride, const void *data) { return CreateBuffer(usage, flags, size, BE1::Image::Format::Unknown, stride, data); }
+        Buffer *                        CreateRawBuffer(BufferUsage usage, ResourceFlag flags, uint64_t size, const void *data) { return CreateBuffer(usage, flags, size, BE1::Image::Format::R_32_TYPELESS, 0, data); }
         virtual void                    DestroyBuffer(Buffer *buffer, bool immediate = false) = 0;
 
-        virtual VertexBuffer *          CreateVertexBuffer(BufferUsage usage, uint32_t vertexSize, uint32_t numVerts, void *data) = 0;
+        virtual VertexBuffer *          CreateVertexBuffer(BufferUsage usage, uint32_t vertexSize, uint32_t numVerts, const void *data) = 0;
         virtual void                    DestroyVertexBuffer(VertexBuffer *vertexBuffer, bool immediate = false) = 0;
 
-        virtual IndexBuffer *           CreateIndexBuffer(BufferUsage usage, uint32_t indexSize, uint32_t numIndexes, void *data) = 0;
+        virtual IndexBuffer *           CreateIndexBuffer(BufferUsage usage, uint32_t indexSize, uint32_t numIndexes, const void *data) = 0;
         virtual void                    DestroyIndexBuffer(IndexBuffer *indexBuffer, bool immediate = false) = 0;
 
-        virtual ConstantBuffer *        CreateConstantBuffer(BufferUsage usage, uint32_t size, void *data) = 0;
+        virtual ConstantBuffer *        CreateConstantBuffer(BufferUsage usage, uint32_t size, const void *data) = 0;
         virtual void                    DestroyConstantBuffer(ConstantBuffer *constantBuffer, bool immediate = false) = 0;
 
         void                            AdjustTextureFormat(bool useCompression, bool useNormalMap, BE1::Image::Format inFormat, BE1::Image::Format *outFormat);

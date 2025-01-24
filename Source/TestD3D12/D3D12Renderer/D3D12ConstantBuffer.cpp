@@ -36,7 +36,7 @@ ID3D12Resource *D3D12ConstantBuffer::GetResource() const {
     return buffer->GetResource();
 }
 
-RHI::ConstantBuffer* D3D12Renderer::CreateConstantBuffer(RHI::BufferUsage usage, uint32_t size, void *data) {
+RHI::ConstantBuffer* D3D12Renderer::CreateConstantBuffer(RHI::BufferUsage usage, uint32_t size, const void *data) {
     D3D12Buffer *buffer = static_cast<D3D12Buffer *>(CreateBuffer(usage, RHI::ResourceFlag::ConstantBuffer, size, BE1::Image::Format::Unknown, 0, data));
     if (!buffer) {
         return nullptr;
@@ -44,16 +44,20 @@ RHI::ConstantBuffer* D3D12Renderer::CreateConstantBuffer(RHI::BufferUsage usage,
 
     D3D12_CPU_DESCRIPTOR_HANDLE descriptorHandle = {};
 
-    if (usage == RHI::BufferUsage::Default) {
-        D3D12_CONSTANT_BUFFER_VIEW_DESC cbvDesc = {};
-        cbvDesc.BufferLocation = buffer->GetResource()->GetGPUVirtualAddress();
-        cbvDesc.SizeInBytes = size;
-
-        if (!resCpuDescriptorPool->Alloc(&descriptorHandle, nullptr)) {
-            return nullptr;
-        }
-        device->CreateConstantBufferView(&cbvDesc, descriptorHandle);
+    // 상수 버퍼 뷰의 최대 크기는 64kb 이다.
+    if (size > D3D12_REQ_CONSTANT_BUFFER_ELEMENT_COUNT * 16) {
+        BE_ERRLOG("D3D12Renderer::CreateConstantBuffer: The requested size of %i bytes exceeds the maximum limit of 64Kb\n", size);
+        return nullptr;
     }
+
+    D3D12_CONSTANT_BUFFER_VIEW_DESC cbvDesc = {};
+    cbvDesc.BufferLocation = buffer->GetResource()->GetGPUVirtualAddress();
+    cbvDesc.SizeInBytes = size;
+
+    if (!resCpuDescriptorPool->Alloc(&descriptorHandle, nullptr)) {
+        return nullptr;
+    }
+    device->CreateConstantBufferView(&cbvDesc, descriptorHandle);
 
     D3D12ConstantBuffer* constantBuffer = new D3D12ConstantBuffer;
     constantBuffer->bufferUsage = usage;

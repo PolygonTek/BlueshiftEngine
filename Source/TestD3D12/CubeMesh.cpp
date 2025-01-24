@@ -24,11 +24,12 @@ struct CubeVertex {
     BE1::float16_t  texCoord[2];
 };
 
-struct CubeConstantData {
+// 상수 버퍼는 16 바이트 정렬을 요구한다.
+struct ALIGN_AS16 CubeConstantData {
     BE1::Mat4       modelViewProjMatrix;
 };
 
-struct CubeInstancedConstantData {
+struct ALIGN_AS16 CubeInstancedConstantData {
     BE1::Mat4       viewProjMatrix;
     BE1::Mat3x4     worldMatrix[1024];
 };

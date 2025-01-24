@@ -54,29 +54,32 @@ uint64_t D3D12Buffer::GetSize() {
 #endif
 }
 
-RHI::Buffer *D3D12Renderer::CreateBuffer(RHI::BufferUsage usage, RHI::ResourceFlag flags, uint64_t size, BE1::Image::Format format, uint32_t stride, const void *data) {
+RHI::Buffer *D3D12Renderer::CreateBuffer(RHI::BufferUsage usage, RHI::ResourceFlag flags, uint64_t size, BE1::Image::Format format, uint32_t structuredStride, const void *data) {
     D3D12_HEAP_TYPE heapType;
     D3D12_RESOURCE_STATES initialState;
-    D3D12_RESOURCE_FLAGS resourceFlags = D3D12_RESOURCE_FLAG_NONE;
+    D3D12_RESOURCE_FLAGS resourceFlags;
 
     switch (usage) {
     case RHI::BufferUsage::Default:
         heapType = D3D12_HEAP_TYPE_DEFAULT;
         // NOTE: 텍스처와 달리 D3D12_RESOURCE_DIMENSION_BUFFER 리소스의 initialState 는 항상 D3D12_RESOURCE_STATE_COMMON 로 설정된다.
         initialState = D3D12_RESOURCE_STATE_COMMON;
+        resourceFlags = D3D12_RESOURCE_FLAG_NONE;
         break;
     case RHI::BufferUsage::Upload:
         heapType = D3D12_HEAP_TYPE_UPLOAD;
         // NOTE: 리소스가 업로드 힙인 경우 initialState 는 다른 값으로 설정해도 무시되며, 항상 D3D12_RESOURCE_STATE_GENERIC_READ 로 설정된다.
         initialState = D3D12_RESOURCE_STATE_GENERIC_READ;
+        resourceFlags = D3D12_RESOURCE_FLAG_NONE;
         break;
     case RHI::BufferUsage::Readback:
         heapType = D3D12_HEAP_TYPE_READBACK;
         // NOTE: 리소스가 리드백 힙인 경우 initialState 는 다른 값으로 설정해도 무시되며, 항상 D3D12_RESOURCE_STATE_COPY_DEST 로 설정된다.
         initialState = D3D12_RESOURCE_STATE_COPY_DEST;
-        resourceFlags |= D3D12_RESOURCE_FLAG_DENY_SHADER_RESOURCE;
+        resourceFlags = D3D12_RESOURCE_FLAG_DENY_SHADER_RESOURCE;
         break;
     default:
+        BE_ERRLOG("D3D12Renderer::CreateBuffer: Invalid buffer usage (%i)\n", static_cast<int>(usage));
         return nullptr;
     }
 
@@ -89,7 +92,7 @@ RHI::Buffer *D3D12Renderer::CreateBuffer(RHI::BufferUsage usage, RHI::ResourceFl
     uint32_t bufferSize = size;
 
     if (BE1::HasFlag(flags, RHI::ResourceFlag::ConstantBuffer)) {
-        // 상수 버퍼는 어차피 GPU 에 요청하면 256 바이트로 주소 & 사이즈가 정렬된다.
+        // 상수 버퍼를 생성하면 내부적으로 GPU 에서 어차피 256 바이트로 사이즈가 정렬된다.
         bufferSize = BE1::AlignUp(bufferSize, D3D12_CONSTANT_BUFFER_DATA_PLACEMENT_ALIGNMENT);
     }
 
@@ -153,10 +156,12 @@ RHI::Buffer *D3D12Renderer::CreateBuffer(RHI::BufferUsage usage, RHI::ResourceFl
 #endif
 
     buffer->size = size;
-    // format == Image::Format::Unknown 일 경우 structured buffer 이거나 raw buffer 이다.
+    // buffer view 가 SRV 이거나 UAV 일 경우..
+    // 1) format == Image::Format::Unknown 라면, structured buffer 다.
+    // 2) format == Image::Format::R_32_TYPELESS 라면, raw buffer 다.
     buffer->format = format;
-    // stride 는 structured buffer 에서만 사용된다.
-    buffer->stride = stride;
+    // structuredStride 는 structured buffer 에서만 사용된다.
+    buffer->structuredStride = structuredStride;
 
     ID3D12Resource *uploadBuffer = nullptr;
 
@@ -264,18 +269,23 @@ int D3D12Renderer::CreateSubresourceSRV(D3D12Buffer *buffer, uint64_t offset, ui
     srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
     ImageFormatToDXGIFormat(buffer->format, false, &srvDesc.Format);
 
-    uint32_t stride = buffer->format == BE1::Image::Format::Unknown ? buffer->stride : BE1::Image::BytesPerPixel(buffer->format);
+    uint32_t byteStride = 0;
 
     if (buffer->format == BE1::Image::Format::Unknown) {
         // Structured buffer
-        srvDesc.Buffer.StructureByteStride = stride;
-    } else if (buffer->format == BE1::Image::Format::R_32_TYPELESS) {
-        // Raw buffer
-        srvDesc.Buffer.Flags = D3D12_BUFFER_SRV_FLAG_RAW;
+        byteStride = buffer->structuredStride;
+        srvDesc.Buffer.StructureByteStride = byteStride;
+    } else {
+        byteStride = BE1::Image::BytesPerPixel(buffer->format);
+
+        if (buffer->format == BE1::Image::Format::R_32_TYPELESS) {
+            // Raw buffer (4 바이트 정렬된, 바이트 단위 접근이 가능한 버퍼)
+            srvDesc.Buffer.Flags = D3D12_BUFFER_SRV_FLAG_RAW;
+        }
     }
 
-    srvDesc.Buffer.FirstElement = offset / stride;
-    srvDesc.Buffer.NumElements = BE1::Min(size, buffer->size - offset) / stride;
+    srvDesc.Buffer.FirstElement = offset / byteStride;
+    srvDesc.Buffer.NumElements = BE1::Min(size, buffer->size - offset) / byteStride;
 
     D3D12_CPU_DESCRIPTOR_HANDLE srvCpuDescriptorHandle;
     if (!resCpuDescriptorPool->Alloc(&srvCpuDescriptorHandle, nullptr)) {
@@ -294,18 +304,23 @@ int D3D12Renderer::CreateSubresourceUAV(D3D12Buffer *buffer, uint64_t offset, ui
     uavDesc.ViewDimension = D3D12_UAV_DIMENSION_BUFFER;
     ImageFormatToDXGIFormat(buffer->format, false, &uavDesc.Format);
 
-    uint32_t stride = buffer->format == BE1::Image::Format::Unknown ? buffer->stride : BE1::Image::BytesPerPixel(buffer->format);
+    uint32_t byteStride = 0;
 
     if (buffer->format == BE1::Image::Format::Unknown) {
         // Structured buffer
-        uavDesc.Buffer.StructureByteStride = stride;
-    } else if (buffer->format == BE1::Image::Format::R_32_TYPELESS) {
-        // Raw buffer
-        uavDesc.Buffer.Flags = D3D12_BUFFER_UAV_FLAG_RAW;
+        byteStride = buffer->structuredStride;
+        uavDesc.Buffer.StructureByteStride = byteStride;
+    } else {
+        byteStride = BE1::Image::BytesPerPixel(buffer->format);
+
+        if (buffer->format == BE1::Image::Format::R_32_TYPELESS) {
+            // Raw buffer (4 바이트 정렬된, 바이트 단위 접근이 가능한 버퍼)
+            uavDesc.Buffer.Flags = D3D12_BUFFER_UAV_FLAG_RAW;
+        }
     }
 
-    uavDesc.Buffer.FirstElement = offset / stride;
-    uavDesc.Buffer.NumElements = BE1::Min(size, buffer->size - offset) / stride;
+    uavDesc.Buffer.FirstElement = offset / byteStride;
+    uavDesc.Buffer.NumElements = BE1::Min(size, buffer->size - offset) / byteStride;
 
     // UAV 는 GPU 디스크립터도 같이 할당한다.
     D3D12_CPU_DESCRIPTOR_HANDLE uavCpuDescriptorHandle;

@@ -20,6 +20,9 @@
 class D3D12Renderer;
 class D3D12FrameThreadData;
 
+// 상수 버퍼의 각 변수는 16 바이트 경계에 맞춰야 한다.
+// 상수 버퍼 뷰의 GPU 주소와 크기는 256 바이트의 배수로 제한되어 있다.
+// 상수 버퍼 뷰의 최대 크기는 64KB 이다.
 class D3D12ConstantBuffer : public RHI::ConstantBuffer {
     friend class D3D12Renderer;
     friend class D3D12FrameThreadData;

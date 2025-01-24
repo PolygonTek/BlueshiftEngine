@@ -46,7 +46,7 @@ private:
     ID3D12Resource *                bufferResource = nullptr;
 #endif
     BE1::Image::Format              format = BE1::Image::Format::Unknown;
-    uint32_t                        stride = 0;
+    uint32_t                        structuredStride = 0;
     uint64_t                        size = 0;
     BE1::Array<D3D12SRVDescriptor>  srvDescriptors = (8);
     BE1::Array<D3D12UAVDescriptor>  uavDescriptors = (8);
