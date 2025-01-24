@@ -107,11 +107,10 @@ private:
     int                     tailTaskIndex = 0;
 
     int32_t                 activeTaskCount = 0;             ///< Number of tasks in active state.
-    bool                    stopping = false;
+    HashTable<int32_t, int32_t> groupActiveTaskCount;       ///< Tracks how many tasks are active in each group.
     int32_t                 nextTaskId = 0;
     int32_t                 nextGroupId = 0;
-
-    HashTable<int32_t, int32_t> groupActiveTaskCount;       ///< Tracks how many tasks are active in each group.
+    bool                    stopping = false;
 
     Array<PlatformThread *> threads;
 

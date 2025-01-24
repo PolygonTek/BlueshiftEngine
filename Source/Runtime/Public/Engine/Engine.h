@@ -25,7 +25,7 @@ BE_NAMESPACE_BEGIN
 class Engine {
 public:
     struct InitParms {
-        uint32_t                maxTasks = 256;
+        uint32_t                maxTasks = 4096;
         CmdArgs                 args;
         Str                     baseDir;
         Str                     searchPath;
