@@ -715,7 +715,10 @@ namespace RHI {
         virtual ConstantBuffer *        AllocConstant(uint32_t size) = 0;
         virtual VertexBuffer *          AllocVertex(uint32_t vertexSize, uint32_t count) = 0;
         virtual IndexBuffer *           AllocIndex(uint32_t indexSize, uint32_t count) = 0;
-        virtual Buffer *                AllocBuffer(bool shaderStorage, BE1::Image::Format format, uint32_t structureByteStride, uint32_t count) = 0;
+        virtual Buffer *                AllocBuffer(bool shaderStorage, BE1::Image::Format format, uint32_t stride, uint32_t count) = 0;
+        Buffer *                        AllocTypeddBuffer(bool shaderStorage, BE1::Image::Format format, uint32_t count) { return AllocBuffer(shaderStorage, format, 0, count); }
+        Buffer *                        AllocRawdBuffer(bool shaderStorage, uint32_t count) { return AllocBuffer(shaderStorage, BE1::Image::Format::R_32_TYPELESS, 0, count); }
+        Buffer *                        AllocStructuredBuffer(bool shaderStorage, uint32_t stride, uint32_t count) { return AllocBuffer(shaderStorage, BE1::Image::Format::Unknown, stride, count); }
 
         virtual CommandList *           AllocGraphicsCommandList(RHI::CommandListType type = RHI::CommandListType::Primary) = 0;
 
@@ -774,8 +777,9 @@ namespace RHI {
         virtual void                    DestroySwapChain(SwapChain *swapChain) = 0;
 
         virtual Buffer *                CreateBuffer(BufferUsage usage, ResourceFlag flags, uint64_t size, BE1::Image::Format format, uint32_t stride, const void *data) = 0;
-        Buffer *                        CreateStructuredBuffer(BufferUsage usage, ResourceFlag flags, uint64_t size, uint32_t stride, const void *data) { return CreateBuffer(usage, flags, size, BE1::Image::Format::Unknown, stride, data); }
+        Buffer *                        CreateTypedBuffer(BufferUsage usage, ResourceFlag flags, uint64_t size, BE1::Image::Format format, const void *data) { return CreateBuffer(usage, flags, size, format, 0, data); }
         Buffer *                        CreateRawBuffer(BufferUsage usage, ResourceFlag flags, uint64_t size, const void *data) { return CreateBuffer(usage, flags, size, BE1::Image::Format::R_32_TYPELESS, 0, data); }
+        Buffer *                        CreateStructuredBuffer(BufferUsage usage, ResourceFlag flags, uint64_t size, uint32_t stride, const void *data) { return CreateBuffer(usage, flags, size, BE1::Image::Format::Unknown, stride, data); }
         virtual void                    DestroyBuffer(Buffer *buffer, bool immediate = false) = 0;
 
         virtual VertexBuffer *          CreateVertexBuffer(BufferUsage usage, uint32_t vertexSize, uint32_t numVerts, const void *data) = 0;

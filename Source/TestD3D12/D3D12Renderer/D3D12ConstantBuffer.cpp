@@ -42,21 +42,22 @@ RHI::ConstantBuffer* D3D12Renderer::CreateConstantBuffer(RHI::BufferUsage usage,
         return nullptr;
     }
 
-    D3D12_CPU_DESCRIPTOR_HANDLE descriptorHandle = {};
-
     // 상수 버퍼 뷰의 최대 크기는 64kb 이다.
-    if (size > D3D12_REQ_CONSTANT_BUFFER_ELEMENT_COUNT * 16) {
-        BE_ERRLOG("D3D12Renderer::CreateConstantBuffer: The requested size of %i bytes exceeds the maximum limit of 64Kb\n", size);
+    if (buffer->size > D3D12_REQ_CONSTANT_BUFFER_ELEMENT_COUNT * 16) {
+        BE_ERRLOG("D3D12Renderer::CreateConstantBuffer: The requested size of %i bytes exceeds the constant buffer maximum limit of 64Kb\n", buffer->size);
+        DestroyBuffer(buffer);
+        return nullptr;
+    }
+
+    D3D12_CPU_DESCRIPTOR_HANDLE descriptorHandle = {};
+    if (!resCpuDescriptorPool->Alloc(&descriptorHandle, nullptr)) {
+        DestroyBuffer(buffer);
         return nullptr;
     }
 
     D3D12_CONSTANT_BUFFER_VIEW_DESC cbvDesc = {};
     cbvDesc.BufferLocation = buffer->GetResource()->GetGPUVirtualAddress();
-    cbvDesc.SizeInBytes = size;
-
-    if (!resCpuDescriptorPool->Alloc(&descriptorHandle, nullptr)) {
-        return nullptr;
-    }
+    cbvDesc.SizeInBytes = size; // FIXME: alignedSize
     device->CreateConstantBufferView(&cbvDesc, descriptorHandle);
 
     D3D12ConstantBuffer* constantBuffer = new D3D12ConstantBuffer;

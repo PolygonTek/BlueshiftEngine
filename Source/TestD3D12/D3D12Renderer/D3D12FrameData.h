@@ -42,6 +42,7 @@ public:
     virtual void                        Reset() override;
 
                                         // 프레임 별로 임시로 할당하는 다이나믹 버퍼
+                                        // RTV/DSV 는 지원하지 않음
     virtual RHI::ConstantBuffer *       AllocConstant(uint32_t size) override;
     virtual RHI::VertexBuffer *         AllocVertex(uint32_t vertexSize, uint32_t count) override;
     virtual RHI::IndexBuffer *          AllocIndex(uint32_t indexSize, uint32_t count) override;

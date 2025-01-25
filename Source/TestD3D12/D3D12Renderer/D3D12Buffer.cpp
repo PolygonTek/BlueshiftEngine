@@ -41,19 +41,6 @@ void D3D12Buffer::Release() {
 #endif
 }
 
-uint64_t D3D12Buffer::GetSize() {
-#ifdef USE_D3D12_MEMALLOC
-    return bufferAllocation->GetSize();
-#else
-    D3D12_RESOURCE_DESC resourceDesc = bufferResource->GetDesc();
-    BE1::Image::Format imageFormat;
-    if (D3D12Renderer::DXGIFormatToImageFormat(resourceDesc.Format, &imageFormat, nullptr)) {
-        return BE1::Image::MemRequired(resourceDesc.Width, resourceDesc.Height, resourceDesc.DepthOrArraySize, resourceDesc.MipLevels, imageFormat);
-    }
-    return resourceDesc.Width;
-#endif
-}
-
 RHI::Buffer *D3D12Renderer::CreateBuffer(RHI::BufferUsage usage, RHI::ResourceFlag flags, uint64_t size, BE1::Image::Format format, uint32_t structuredStride, const void *data) {
     D3D12_HEAP_TYPE heapType;
     D3D12_RESOURCE_STATES initialState;
@@ -89,17 +76,17 @@ RHI::Buffer *D3D12Renderer::CreateBuffer(RHI::BufferUsage usage, RHI::ResourceFl
         resourceFlags |= D3D12_RESOURCE_FLAG_DENY_SHADER_RESOURCE;
     }
 
-    uint32_t bufferSize = size;
+    uint32_t alignedSize = size;
 
     if (BE1::HasFlag(flags, RHI::ResourceFlag::ConstantBuffer)) {
         // 상수 버퍼를 생성하면 내부적으로 GPU 에서 어차피 256 바이트로 사이즈가 정렬된다.
-        bufferSize = BE1::AlignUp(bufferSize, D3D12_CONSTANT_BUFFER_DATA_PLACEMENT_ALIGNMENT);
+        alignedSize = BE1::AlignUp(alignedSize, D3D12_CONSTANT_BUFFER_DATA_PLACEMENT_ALIGNMENT);
     }
 
     D3D12_RESOURCE_DESC bufferDesc = {};
     bufferDesc.Dimension = D3D12_RESOURCE_DIMENSION_BUFFER;
     bufferDesc.Alignment = 0;
-    bufferDesc.Width = bufferSize;
+    bufferDesc.Width = alignedSize;
     bufferDesc.Height = 1;
     bufferDesc.DepthOrArraySize = 1;
     bufferDesc.MipLevels = 1;
@@ -115,6 +102,8 @@ RHI::Buffer *D3D12Renderer::CreateBuffer(RHI::BufferUsage usage, RHI::ResourceFl
     allocationDesc.Flags |= D3D12MA::ALLOCATION_FLAG_STRATEGY_MIN_TIME;
     allocationDesc.HeapType = heapType;
 
+    // NOTE: 내부적으로 Placed Resource 를 생성할 때, UAV/RTV/DSV 이거나 크기가 64kb 를 넘어간다면,
+    // 오프셋을 64kb 에 정렬하고, 그게 아니면 4kb 에 정렬한다.
     D3D12MA::Allocation *bufferAllocation;
     if (FAILED(allocator->CreateResource(
         &allocationDesc,
@@ -155,12 +144,15 @@ RHI::Buffer *D3D12Renderer::CreateBuffer(RHI::BufferUsage usage, RHI::ResourceFl
     buffer->bufferResource = bufferResource;
 #endif
 
-    buffer->size = size;
+    buffer->size = alignedSize;
+
     // buffer view 가 SRV 이거나 UAV 일 경우..
     // 1) format == Image::Format::Unknown 라면, structured buffer 다.
     // 2) format == Image::Format::R_32_TYPELESS 라면, raw buffer 다.
     buffer->format = format;
-    // structuredStride 는 structured buffer 에서만 사용된다.
+
+    // structuredStride 는 structured buffer 에서만 사용된다. (4 의 배수 정렬 & 2048 보다 작아야 함)
+    assert(IsAligned(structuredStride, 4) && structuredStride < 2048);
     buffer->structuredStride = structuredStride;
 
     ID3D12Resource *uploadBuffer = nullptr;
@@ -170,7 +162,7 @@ RHI::Buffer *D3D12Renderer::CreateBuffer(RHI::BufferUsage usage, RHI::ResourceFl
             D3D12_RESOURCE_DESC uploadBufferDesc;
             uploadBufferDesc.Dimension = D3D12_RESOURCE_DIMENSION_BUFFER;
             uploadBufferDesc.Alignment = 0;
-            uploadBufferDesc.Width = bufferSize;
+            uploadBufferDesc.Width = alignedSize;
             uploadBufferDesc.Height = 1;
             uploadBufferDesc.DepthOrArraySize = 1;
             uploadBufferDesc.MipLevels = 1;

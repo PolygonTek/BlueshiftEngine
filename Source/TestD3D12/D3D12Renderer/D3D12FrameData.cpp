@@ -122,9 +122,10 @@ void D3D12FrameThreadData::Reset() {
 RHI::ConstantBuffer *D3D12FrameThreadData::AllocConstant(uint32_t size) {
     D3D12DynamicAllocation *currentDynamicAllocation = dynamicAllocations.Last();
 
-    // 하나의 상수 버퍼 뷰의 오프셋 & 크기는 256 바이트 단위로 정렬되어야 한다.
-    uint32_t alignedOffset = BE1::AlignUp(currentDynamicAllocation->usedBytes, D3D12_CONSTANT_BUFFER_DATA_PLACEMENT_ALIGNMENT);
+    // 상수 버퍼 뷰의 사이즈는 D3D12_CONSTANT_BUFFER_DATA_PLACEMENT_ALIGNMENT (256) 로 정렬되어야 한다.
     uint32_t alignedSize = BE1::AlignUp(size, D3D12_CONSTANT_BUFFER_DATA_PLACEMENT_ALIGNMENT);
+    // 상수 버퍼 뷰의 오프셋은 D3D12_CONSTANT_BUFFER_DATA_PLACEMENT_ALIGNMENT (256) 로 정렬되어야 한다.
+    uint32_t alignedOffset = BE1::AlignUp(currentDynamicAllocation->usedBytes, D3D12_CONSTANT_BUFFER_DATA_PLACEMENT_ALIGNMENT);
 
     // 상수 버퍼 뷰의 최대 크기는 64kb 이다.
     if (alignedSize > D3D12_REQ_CONSTANT_BUFFER_ELEMENT_COUNT * 16) {
@@ -133,7 +134,7 @@ RHI::ConstantBuffer *D3D12FrameThreadData::AllocConstant(uint32_t size) {
     }
 
     // 필요한 데이터의 크기가 다이나믹 버퍼의 크기를 넘어간다면 추가로 다이나믹 버퍼를 생성한다.
-    if (currentDynamicAllocation->usedBytes + alignedSize > currentDynamicAllocation->buffer->GetSize()) {
+    if (alignedOffset + alignedSize > currentDynamicAllocation->buffer->GetSize()) {
         currentDynamicAllocation = new D3D12DynamicAllocation(DynamicAllocationBlockSize);
         dynamicAllocations.Append(currentDynamicAllocation);
     }
@@ -164,9 +165,8 @@ RHI::ConstantBuffer *D3D12FrameThreadData::AllocConstant(uint32_t size) {
 RHI::VertexBuffer *D3D12FrameThreadData::AllocVertex(uint32_t vertexSize, uint32_t count) {
     D3D12DynamicAllocation *currentDynamicAllocation = dynamicAllocations.Last();
 
-    // 버텍스 버퍼의 오프셋은 4 바이트 단위로 정렬
-    uint32_t alignedOffset = BE1::AlignUp(currentDynamicAllocation->usedBytes, 4);
     uint32_t size = vertexSize * count;
+    uint32_t alignedOffset = BE1::AlignUp(currentDynamicAllocation->usedBytes, vertexSize);
 
     // 필요한 데이터의 크기가 다이나믹 버퍼의 크기를 넘어간다면 추가로 다이나믹 버퍼를 생성한다.
     if (alignedOffset + size > currentDynamicAllocation->buffer->GetSize()) {
@@ -189,9 +189,8 @@ RHI::VertexBuffer *D3D12FrameThreadData::AllocVertex(uint32_t vertexSize, uint32
 RHI::IndexBuffer *D3D12FrameThreadData::AllocIndex(uint32_t indexSize, uint32_t count) {
     D3D12DynamicAllocation *currentDynamicAllocation = dynamicAllocations.Last();
 
-    // 인덱스 버퍼의 오프셋은 4 바이트 단위로 정렬
-    uint32_t alignedOffset = BE1::AlignUp(currentDynamicAllocation->usedBytes, 4);
     uint32_t size = indexSize * count;
+    uint32_t alignedOffset = BE1::AlignUp(currentDynamicAllocation->usedBytes, indexSize);
 
     // 필요한 데이터의 크기가 다이나믹 버퍼의 크기를 넘어간다면 추가로 다이나믹 버퍼를 생성한다.
     if (alignedOffset + size > currentDynamicAllocation->buffer->GetSize()) {
@@ -214,10 +213,9 @@ RHI::IndexBuffer *D3D12FrameThreadData::AllocIndex(uint32_t indexSize, uint32_t 
 RHI::Buffer *D3D12FrameThreadData::AllocBuffer(bool shaderWritable, BE1::Image::Format format, uint32_t structureByteStride, uint32_t count) {
     D3D12DynamicAllocation *currentDynamicAllocation = dynamicAllocations.Last();
 
-    // 버퍼의 오프셋은 stride 단위로 정렬
     uint32_t stride = format == BE1::Image::Format::Unknown ? structureByteStride : BE1::Image::BytesPerPixel(format);
-    uint32_t alignedOffset = BE1::AlignUp(currentDynamicAllocation->usedBytes, stride);
     uint32_t size = stride * count;
+    uint32_t alignedOffset = BE1::AlignUp(currentDynamicAllocation->usedBytes, stride);
 
     // 필요한 데이터의 크기가 다이나믹 버퍼의 크기를 넘어간다면 추가로 다이나믹 버퍼를 생성한다.
     if (alignedOffset + size > currentDynamicAllocation->buffer->GetSize()) {
