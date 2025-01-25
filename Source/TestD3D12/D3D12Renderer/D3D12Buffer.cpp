@@ -152,7 +152,7 @@ RHI::Buffer *D3D12Renderer::CreateBuffer(RHI::BufferUsage usage, RHI::ResourceFl
     buffer->format = format;
 
     // structuredStride 는 structured buffer 에서만 사용된다. (4 의 배수 정렬 & 2048 보다 작아야 함)
-    assert(IsAligned(structuredStride, 4) && structuredStride < 2048);
+    assert(BE1::IsAligned(structuredStride, 4) && structuredStride < 2048);
     buffer->structuredStride = structuredStride;
 
     ID3D12Resource *uploadBuffer = nullptr;
