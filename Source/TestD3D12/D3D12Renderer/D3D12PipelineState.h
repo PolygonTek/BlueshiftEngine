@@ -98,7 +98,7 @@ private:
 };
 
 BE_INLINE void D3D12PipelineState::Binder::Init(const D3D12_ROOT_SIGNATURE_DESC1 &desc) {
-    // 레지스터 인덱스 별 디스크립터 테이블 인덱스와 루트 파라미터 인덱스를 미리 계산한다.
+    // 레지스터 인덱스 별 루트 파라미터 인덱스와 디스크립터 테이블 인덱스를 미리 계산한다.
     for (int rootParameterIndex = 0; rootParameterIndex < desc.NumParameters; ++rootParameterIndex) {
         const D3D12_ROOT_PARAMETER1 *rootParameter = &desc.pParameters[rootParameterIndex];
 

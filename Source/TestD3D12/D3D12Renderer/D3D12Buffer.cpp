@@ -353,11 +353,12 @@ void D3D12Renderer::SetBuffer(RHI::CommandList *commandList, int slot, bool shad
     // 슬롯 (레지스터) 에 대한 루트 파라미터 인덱스를 얻고, 디스크립터 테이블일 경우 테이블 인덱스도 얻어온다.
     const D3D12PipelineState::Binder &binder = d3d12CommandList->currentPSO->binder;
     uint8_t rootParameterIndex = 0xFF;
+    uint8_t descriptorIndex = 0xFF;
 
     if (shaderWritable) {
         // UAV
         rootParameterIndex = binder.rootParameterBinder.uav[slot];
-        uint8_t descriptorIndex = binder.descriptorTableBinder.uav[slot];
+        descriptorIndex = binder.descriptorTableBinder.uav[slot];
         if (descriptorIndex != 0xFF) {
             threadData->tableCpuDescriptorHandles[rootParameterIndex][descriptorIndex] = d3d12Buffer->uavDescriptors[subresourceIndex].cpuDescriptorHandle;
             if (threadData->tableCpuDescriptorHandles[rootParameterIndex][descriptorIndex].ptr == 0) {
@@ -369,7 +370,7 @@ void D3D12Renderer::SetBuffer(RHI::CommandList *commandList, int slot, bool shad
     } else {
         // SRV
         rootParameterIndex = binder.rootParameterBinder.srv[slot];
-        uint8_t descriptorIndex = binder.descriptorTableBinder.srv[slot];
+        descriptorIndex = binder.descriptorTableBinder.srv[slot];
         if (descriptorIndex != 0xFF) {
             threadData->tableCpuDescriptorHandles[rootParameterIndex][descriptorIndex] = d3d12Buffer->srvDescriptors[subresourceIndex].cpuDescriptorHandle;
             if (threadData->tableCpuDescriptorHandles[rootParameterIndex][descriptorIndex].ptr == 0) {

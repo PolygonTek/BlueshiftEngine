@@ -482,7 +482,9 @@ RHI::PipelineState *D3D12Renderer::CreateGraphicsPSO(const RHI::PipelineStateDes
 
     // RootSignature
     if (rootSignature) {
+        // rootSignature 를 유지하기 위해 레퍼런스 카운트를 증가시킨다.
         rootSignature->AddRef();
+        // rootSignatureDesc 를 유지하기 위해 rootSignatureDeserializer 의 레퍼런스 카운트를 증가시킨다.
         rootSignatureDeserializer->AddRef();
 
         pipelineState->rootSignature = rootSignature;
@@ -490,6 +492,7 @@ RHI::PipelineState *D3D12Renderer::CreateGraphicsPSO(const RHI::PipelineStateDes
 
         stream1->rootSignature = pipelineState->rootSignature;
 
+        // 레지스터 인덱스 별 루트 파라미터 인덱스와 디스크립터 테이블 인덱스를 미리 계산한다.
         pipelineState->binder.Init(rootSignatureDesc->Desc_1_1);
     }
 
@@ -631,7 +634,7 @@ RHI::PipelineState *D3D12Renderer::CreateGraphicsPSO(const RHI::PipelineStateDes
     }
 
     if (FAILED(hr)) {
-        BE_WARNLOG("device->CreatePipelineState() failed, ERROR: 0x%x\n", hr);
+        BE_WARNLOG("D3D12Renderer::CreateGraphicsPSO: CreatePipelineState() failed, ERROR: 0x%x\n", hr);
         delete pipelineState;
         return nullptr;
     }
@@ -659,7 +662,8 @@ RHI::PipelineState *D3D12Renderer::CreateGraphicsPSO(const RHI::PipelineStateDes
 
 RHI::PipelineState *D3D12Renderer::CreateComputePSO(const RHI::Shader *computeShader) {
     const D3D12Shader *cs = static_cast<const D3D12Shader *>(computeShader);
-    // compute shader 외에 다른 상태가 없으므로 compute shader hash 값을 PSO hash 값으로 사용한다.
+
+    // compute shader 외에는 다른 상태가 없으므로 compute shader hash 값을 PSO hash 값으로 사용한다.
     const uint64_t psoHash = cs->hash; 
     const auto *psoEntry = computePsoMap.Get(psoHash);
     if (psoEntry) {
@@ -670,8 +674,13 @@ RHI::PipelineState *D3D12Renderer::CreateComputePSO(const RHI::Shader *computeSh
     pipelineState->hash = psoHash;
     pipelineState->graphics = false;
 
+    // rootSignature 를 유지하기 위해 레퍼런스 카운트를 증가시킨다.
     cs->rootSignature->AddRef();
+    // rootSignatureDesc 를 유지하기 위해 rootSignatureDeserializer 의 레퍼런스 카운트를 증가시킨다.
     cs->rootSignatureDeserializer->AddRef();
+
+    pipelineState->rootSignature = cs->rootSignature;
+    pipelineState->rootSignatureDesc = cs->rootSignatureDesc;
 
     D3D12PipelineState::ComputePSStream stream = {};
     stream.cs = { cs->compiledShaderData, cs->compiledShaderDataSize };
@@ -682,9 +691,10 @@ RHI::PipelineState *D3D12Renderer::CreateComputePSO(const RHI::Shader *computeSh
     streamDesc.pPipelineStateSubobjectStream = &stream;
     streamDesc.SizeInBytes = sizeof(stream);
 
+    // streamDesc 를 통해 PSO 를 생성한다.
     HRESULT hr = device->CreatePipelineState(&streamDesc, IID_PPV_ARGS(&pipelineState->pso));
     if (FAILED(hr)) {
-        BE_WARNLOG("device->CreatePipelineState() failed, ERROR: 0x%x\n", hr);
+        BE_WARNLOG("D3D12Renderer::CreateGraphicsPSO: CreatePipelineState() failed, ERROR: 0x%x\n", hr);
         delete pipelineState;
         return nullptr;
     }
@@ -877,6 +887,9 @@ void D3D12Renderer::SetPSO(RHI::CommandList *commandList, const RHI::PipelineSta
 void D3D12Renderer::BindRootParameters(D3D12CommandList *commandList, bool graphics) {
     D3D12FrameThreadData *threadData = static_cast<D3D12FrameThreadData *>(commandList->GetFrameThreadData());
     D3D12RootDescriptorPool *rootDescriptorPool = threadData->rootDescriptorPool;
+
+    // NOTE: dirty mask 를 이용하여, 바뀐 루트 파라미터들만 바인딩한다.
+    // 전체 리소스 바인딩 중 일부만 바꾸는 경우 안바뀐 부분의 리소스 바인딩을 생략할 수 있다.
     uint64_t &rootParameterDirtyMask = graphics ? commandList->graphicsRootParametersDirtyMask : commandList->computeRootParametersDirtyMask;
     if (rootParameterDirtyMask == 0) {
         return;
@@ -885,8 +898,9 @@ void D3D12Renderer::BindRootParameters(D3D12CommandList *commandList, bool graph
     const D3D12_ROOT_SIGNATURE_DESC1 &rootSignatureDesc = commandList->currentPSO->rootSignatureDesc->Desc_1_1;
 
     for (int rootParameterIndex = 0; rootParameterIndex < rootSignatureDesc.NumParameters; ++rootParameterIndex) {
-        // NOTE: dirty mask 를 이용하여, 바뀐 루트 파라미터들만 바인딩한다.
-        // 전체 리소스 바인딩 중 일부만 바꾸는 경우 안바뀐 부분의 리소스 바인딩을 생략할 수 있다.
+        // NOTE: 모든 루트 파라미터가 디스크립터 테이블이라면 이론상 최대 64개까지 사용할 수 있다.
+        // 하지만 실질적으로는 루트 파라미터 개수에 대한 제한은 없고, 각 파라미터 타입에 따라 소비하는 슬롯 수가 있고, 이 슬롯 수에 대한 제한이 있다.
+        // 결과적으로 디스크립터 테이블이 소비하는 슬롯 수가 가장 적으므로, 사용할 수 있는 루트 파라미터 개수는 64개 보다 적으면 적었지, 많아질 일은 없다.
         const uint64_t rootParameterBitMask = BIT64(rootParameterIndex);
         if (!(rootParameterDirtyMask & rootParameterBitMask)) {
             continue;
@@ -895,47 +909,58 @@ void D3D12Renderer::BindRootParameters(D3D12CommandList *commandList, bool graph
 
         const D3D12_ROOT_PARAMETER1 *rootParameter = &rootSignatureDesc.pParameters[rootParameterIndex];
 
+        // 루트 파라미터가 디스크립터 테이블인 경우
         if (rootParameter->ParameterType == D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE) {
+            const D3D12_ROOT_DESCRIPTOR_TABLE1 &descriptorTable = rootParameter->DescriptorTable;
             int numDescriptors = 0;
 
-            // 디스크립터 테이블이 사용하는 전체 디스크립터 개수 계산
-            for (int rangeIndex = 0; rangeIndex < rootParameter->DescriptorTable.NumDescriptorRanges; ++rangeIndex) {
-                const D3D12_DESCRIPTOR_RANGE1 &descriptorRange = rootParameter->DescriptorTable.pDescriptorRanges[rangeIndex];
+            // 이 디스크립터 테이블이 사용하는 전체 디스크립터 개수 계산
+            for (int rangeIndex = 0; rangeIndex < descriptorTable.NumDescriptorRanges; ++rangeIndex) {
+                // DescriptorRanges 는 같은 종류의 디스크립터들을 나타낸다.
+                const D3D12_DESCRIPTOR_RANGE1 &descriptorRange = descriptorTable.pDescriptorRanges[rangeIndex];
 
                 numDescriptors += descriptorRange.NumDescriptors;
             }
 
-            // 디스크립터 풀에서 디스크립터 테이블 할당
+            // 루트 디스크립터 풀에서 연속된 디스크립터들 (디스크립터 테이블) 을 할당
             D3D12_CPU_DESCRIPTOR_HANDLE cpuRootDescriptorStart;
             D3D12_GPU_DESCRIPTOR_HANDLE gpuRootDescriptorStart;
             if (!rootDescriptorPool->AllocRange(numDescriptors, &cpuRootDescriptorStart, &gpuRootDescriptorStart)) {
                 return;
             }
 
+            // 디스크립터 테이블 내에서의 디스크립터 오프셋
             int descriptorOffset = 0;
 
-            // 필요한 디스크립터들을 GPU 측 디스크립터 테이블에 복사
-            for (int rangeIndex = 0; rangeIndex < rootParameter->DescriptorTable.NumDescriptorRanges; ++rangeIndex) {
-                const D3D12_DESCRIPTOR_RANGE1 &descriptorRange = rootParameter->DescriptorTable.pDescriptorRanges[rangeIndex];
-                CD3DX12_CPU_DESCRIPTOR_HANDLE destDescriptorHandle(cpuRootDescriptorStart, descriptorOffset, rootDescriptorPool->descriptorHandleSize);
+            // 필요한 디스크립터들을 루트 디스크립터 테이블에 복사한다.
+            // 내부적으로 CopyDescriptorSimple 함수 호출 시 CPU 디스크립터는 곧바로 갱신되고, GPU 디스크립터는 나중에 참조되는 시점에서 자동으로 갱신된다.
+            // 루트 디스크립터는 항상 새로 할당하므로, 동기화 이슈는 없다.
+            for (int rangeIndex = 0; rangeIndex < descriptorTable.NumDescriptorRanges; ++rangeIndex) {
+                const D3D12_DESCRIPTOR_RANGE1 &descriptorRange = descriptorTable.pDescriptorRanges[rangeIndex];
 
                 assert(descriptorOffset < COUNT_OF(threadData->tableCpuDescriptorHandles[rootParameterIndex]));
+
+                const D3D12_CPU_DESCRIPTOR_HANDLE &srcDescriptorHandle = threadData->tableCpuDescriptorHandles[rootParameterIndex][descriptorOffset];
+                CD3DX12_CPU_DESCRIPTOR_HANDLE destDescriptorHandle(cpuRootDescriptorStart, descriptorOffset, rootDescriptorPool->descriptorHandleSize);
 
                 switch (descriptorRange.RangeType) {
                 case D3D12_DESCRIPTOR_RANGE_TYPE_CBV:
                 case D3D12_DESCRIPTOR_RANGE_TYPE_SRV:
                 case D3D12_DESCRIPTOR_RANGE_TYPE_UAV:
-                    device->CopyDescriptorsSimple(descriptorRange.NumDescriptors, destDescriptorHandle, threadData->tableCpuDescriptorHandles[rootParameterIndex][descriptorOffset], D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+                    device->CopyDescriptorsSimple(descriptorRange.NumDescriptors, destDescriptorHandle, srcDescriptorHandle, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
                     break;
                 case D3D12_DESCRIPTOR_RANGE_TYPE_SAMPLER:
-                    device->CopyDescriptorsSimple(descriptorRange.NumDescriptors, destDescriptorHandle, threadData->tableCpuDescriptorHandles[rootParameterIndex][descriptorOffset], D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER);
+                    device->CopyDescriptorsSimple(descriptorRange.NumDescriptors, destDescriptorHandle, srcDescriptorHandle, D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER);
+                    break;
+                default:
+                    BE_ERRLOG("Invalid descriptor range type: 0x%x\n", descriptorRange.RangeType);
                     break;
                 }
 
                 descriptorOffset += descriptorRange.NumDescriptors;
             }
 
-            // 루트 파라미터 별 GPU 디스크립터 테이블을 기록
+            // 루트 파라미터에 대한 GPU 디스크립터 시작 주소를 나중을 위해 기록한다.
             threadData->tableGpuDescriptorStarts[rootParameterIndex] = gpuRootDescriptorStart;
 
             // 사용할 디스크립터 테이블 설정
@@ -945,16 +970,16 @@ void D3D12Renderer::BindRootParameters(D3D12CommandList *commandList, bool graph
                 commandList->GetGraphicsCommandList()->SetComputeRootDescriptorTable(rootParameterIndex, gpuRootDescriptorStart);
             }
         } else if (rootParameter->ParameterType == D3D12_ROOT_PARAMETER_TYPE_32BIT_CONSTANTS) {
-            // 루트 상수 설정
+            // 루트 상수 설정 : 연속된 32비트 상수 값을 바인딩한다.
             UINT num32BitValues = rootParameter->Constants.Num32BitValues;
-            // NOTE: 현재는 일부만 세팅하는 경우는 없다고 가정한다.
+            // NOTE: 현재는 offset 을 통해 상수 값들을 일부만 세팅하는 경우는 없다고 가정한다. (전체 상수를 세팅해야 함)
             if (graphics) {
                 commandList->GetGraphicsCommandList()->SetGraphicsRoot32BitConstants(rootParameterIndex, num32BitValues, threadData->rootConstants, 0);
             } else {
                 commandList->GetGraphicsCommandList()->SetComputeRoot32BitConstants(rootParameterIndex, num32BitValues, threadData->rootConstants, 0);
             }
         } else if (rootParameter->ParameterType == D3D12_ROOT_PARAMETER_TYPE_CBV) {
-            // 루트 레벨 CBV 설정
+            // 루트 레벨 CBV 설정 : 디스크립터 핸들없이 곧바로 CBV 의 GPU 주소를 바인딩한다.
             UINT shaderRegister = rootParameter->Descriptor.ShaderRegister;
             const RHI::GPUResource *cbvResource = threadData->cbvResources[shaderRegister];
             if (cbvResource) {
@@ -966,7 +991,7 @@ void D3D12Renderer::BindRootParameters(D3D12CommandList *commandList, bool graph
                 }
             }
         } else if (rootParameter->ParameterType == D3D12_ROOT_PARAMETER_TYPE_SRV) {
-            // 루트 레벨 SRV 설정
+            // 루트 레벨 SRV 설정 : 디스크립터 핸들없이 곧바로 SRV 의 GPU 주소를 바인딩한다.
             UINT shaderRegister = rootParameter->Descriptor.ShaderRegister;
             const RHI::GPUResource *srvResource = threadData->srvResources[shaderRegister];
             if (srvResource) {
@@ -978,7 +1003,7 @@ void D3D12Renderer::BindRootParameters(D3D12CommandList *commandList, bool graph
                 }
             }
         } else if (rootParameter->ParameterType == D3D12_ROOT_PARAMETER_TYPE_UAV) {
-            // 루트 레벨 UAV 설정
+            // 루트 레벨 UAV 설정 : 디스크립터 핸들없이 곧바로 UAV 의 GPU 주소를 바인딩한다.
             UINT shaderRegister = rootParameter->Descriptor.ShaderRegister;
             const RHI::GPUResource *uavResource = threadData->uavResources[shaderRegister];
             if (uavResource) {

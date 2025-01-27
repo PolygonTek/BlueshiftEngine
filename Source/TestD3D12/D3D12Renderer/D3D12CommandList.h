@@ -139,6 +139,7 @@ BE_INLINE void D3D12CommandList::SetGraphicsRootSignature(ID3D12RootSignature *g
     cachedGraphicsRootSignature = graphicsRootSignature;
 #endif
     GetGraphicsCommandList()->SetGraphicsRootSignature(graphicsRootSignature);
+    graphicsRootParametersDirtyMask = 0;
 }
 
 BE_INLINE void D3D12CommandList::SetComputeRootSignature(ID3D12RootSignature *computeRootSignature) {
@@ -149,6 +150,7 @@ BE_INLINE void D3D12CommandList::SetComputeRootSignature(ID3D12RootSignature *co
     cachedComputeRootSignature = computeRootSignature;
 #endif
     GetGraphicsCommandList()->SetComputeRootSignature(computeRootSignature);
+    computeRootParametersDirtyMask = 0;
 }
 
 BE_INLINE void D3D12CommandList::SetPipelineState(const RHI::PipelineState *pipelineState) {
@@ -172,8 +174,10 @@ BE_INLINE void D3D12CommandList::SetPipelineState(const RHI::PipelineState *pipe
     if (pipelineState->graphics) {
         GetGraphicsCommandList()->SetGraphicsRootSignature(d3d12PipelineState->rootSignature);
         GetGraphicsCommandList()->IASetPrimitiveTopology(d3d12PipelineState->primitiveTopology);
+        graphicsRootParametersDirtyMask = 0;
     } else {
         GetGraphicsCommandList()->SetComputeRootSignature(d3d12PipelineState->rootSignature);
+        computeRootParametersDirtyMask = 0;
     }
     currentPSO = d3d12PipelineState;
 #endif

@@ -76,8 +76,6 @@ void D3D12CommandList::Reset(bool resetCacheStates, const RHI::CommandList *prim
     GetGraphicsCommandList()->Reset(commandAllocator, nullptr);
 
     currentPSO = nullptr;
-    graphicsRootParametersDirtyMask = 0;
-    computeRootParametersDirtyMask = 0;
 
     // BeginRenderPass/EndRenderPass 중간에 Reset 하면 assert 가 발생한다
     assert(endRenderPassBarriers.Count() == 0);

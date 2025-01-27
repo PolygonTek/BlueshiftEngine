@@ -53,6 +53,7 @@ public:
     virtual RHI::CommandList *          BeginSecondaryCommandList(const RHI::CommandList *primaryCommandList) override;
 
     static constexpr uint32_t           MaxRootParameters = 64;
+    static constexpr uint32_t           MaxDescriptorsInDescriptorTable = 64;
 
     D3D12CommandListPool *              graphicsCommandListPool = nullptr;
     D3D12CommandListPool *              computeCommandListPool = nullptr;
@@ -66,7 +67,7 @@ public:
     BE1::Array<D3D12_CPU_DESCRIPTOR_HANDLE> dynamicDescriptorHandles;
 
     D3D12RootDescriptorPool *           rootDescriptorPool = nullptr;
-    D3D12_CPU_DESCRIPTOR_HANDLE         tableCpuDescriptorHandles[MaxRootParameters][64] = { CD3DX12_CPU_DESCRIPTOR_HANDLE() };
+    D3D12_CPU_DESCRIPTOR_HANDLE         tableCpuDescriptorHandles[MaxRootParameters][MaxDescriptorsInDescriptorTable] = { CD3DX12_CPU_DESCRIPTOR_HANDLE() };
     D3D12_GPU_DESCRIPTOR_HANDLE         tableGpuDescriptorStarts[MaxRootParameters] = { CD3DX12_GPU_DESCRIPTOR_HANDLE() };
     const RHI::GPUResource *            cbvResources[16] = {};
     const RHI::GPUResource *            srvResources[128] = {};
