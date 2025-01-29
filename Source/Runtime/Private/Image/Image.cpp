@@ -724,7 +724,7 @@ uint64_t Image::MemRequired(int width, int height, int depth, int numMipmaps, Im
     return size;
 }
 
-int Image::MaxMipMapLevels(int width, int height, int depth) {
+int Image::MaxMipLevels(int width, int height, int depth) {
     int m = Max3(width, height, depth);
 
     int numMipLevels = 0;

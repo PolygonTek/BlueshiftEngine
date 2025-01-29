@@ -419,7 +419,7 @@ void GraphicsOpenGL::SetTextureImage(TextureType::Enum textureType, const Image 
             int w = srcImage->GetWidth();
             int h = srcImage->GetHeight();
             int d = srcImage->GetDepth();
-            int maxGenLevels = Image::MaxMipMapLevels(w, h, d);
+            int maxGenLevels = Image::MaxMipLevels(w, h, d);
 
             if (srcImage->IsPacked() || (srcImage->IsCompressed() && OpenGL::SupportsCompressedGenMipmaps())) {
                 generateMipmaps = true;

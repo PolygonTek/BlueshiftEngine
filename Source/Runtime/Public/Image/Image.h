@@ -384,7 +384,7 @@ public:
     static bool         IsDepthStencilFormat(Format imageFormat);
     static bool         NeedFloatConversion(Format imageFormat);
     static uint64_t     MemRequired(int width, int height, int depth, int numMipmaps, Format imageFormat);
-    static int          MaxMipMapLevels(int width, int height, int depth);
+    static int          MaxMipLevels(int width, int height, int depth);
 
                         /// Converts an sRGB value in the range [0, 1] to a linear value in the range [0, 1].
     static float        GammaToLinear(float value);
@@ -400,9 +400,9 @@ public:
                         /// Convert RGB to luminance with RGB in linear space with sRGB primaries and D65 white point.
     static float        GetLuminance(const Color3 &linearColor);
 
-                        /// Converts 2D face coordinates to cubemap coordinates.
+                        /// Converts 2D face coordinates to cube map coordinates.
     static Vec3         FaceToCubeMapCoords(CubeMapFace cubeMapFace, float s, float t);
-                        /// Converts cubemap coordinates to 2D face coordinates.
+                        /// Converts cube map coordinates to 2D face coordinates.
     static CubeMapFace  CubeMapToFaceCoords(const Vec3 &cubeMapCoords, float &s, float &t);
 
     static float        CubeMapTexelSolidAngle(float x, float y, int size);

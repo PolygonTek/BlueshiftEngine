@@ -239,7 +239,7 @@ bool Image::ConvertFormat(Image::Format dstFormat, Image &dstImage, GammaSpace d
     const Image *srcImage = this;
 
     // Calculate the mipmap count for the destination image.
-    int numDstMipmaps = regenerateMipmaps ? MaxMipMapLevels(width, height, depth) : numMipmaps;
+    int numDstMipmaps = regenerateMipmaps ? MaxMipLevels(width, height, depth) : numMipmaps;
 
     // Create a destination image based on the source (this) image.
     dstImage.Create(srcImage->width, srcImage->height, srcImage->depth, srcImage->numSlices, numDstMipmaps, dstFormat, dstGammaSpace, nullptr, srcImage->flags);

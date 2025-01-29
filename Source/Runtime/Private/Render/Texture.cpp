@@ -26,7 +26,7 @@ bool Texture::IsDefaultTexture() const {
 }
 
 int Texture::MemRequired(bool includingMipmaps) const {
-    int numMipmaps = includingMipmaps ? Image::MaxMipMapLevels(width, height, depth) : 1;
+    int numMipmaps = includingMipmaps ? Image::MaxMipLevels(width, height, depth) : 1;
     int numFaces = type == Graphics::TextureType::TextureCubeMap ? 6 : 1;
     int size = Image::MemRequired(width, height, depth, numMipmaps, format) * numFaces * numSlices;
     return size;
