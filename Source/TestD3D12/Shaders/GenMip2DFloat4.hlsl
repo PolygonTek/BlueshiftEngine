@@ -20,22 +20,22 @@ SamplerState pointSampler : register(s0);
 [RootSignature(COMMON_ROOT_SIGNATURE)]
 [numthreads(GENMIP_2D_BLOCK_SIZE, GENMIP_2D_BLOCK_SIZE, 1)]
 void CSMain(uint3 dispatchThreadId : SV_DispatchThreadID) {
-    // Ãâ·Â ÅØ¼¿ÀÇ ÁÂÇ¥
+    // ì¶œë ¥ í…ì…€ì˜ ì¢Œí‘œ
     uint2 dstCoord = dispatchThreadId.xy;
 
-    // Ãâ·Â ÁÂÇ¥°¡ Ãâ·Â Å©±â¸¦ ³Ñ¾î°¡¸é Á¶±â Á¾·á
+    // ì¶œë ¥ ì¢Œí‘œê°€ ì¶œë ¥ í¬ê¸°ë¥¼ ë„˜ì–´ê°€ë©´ ì¡°ê¸° ì¢…ë£Œ
     if (dstCoord.x >= mipGenParams.dstSize.x || dstCoord.y >= mipGenParams.dstSize.y)
     {
         return;
     }
 
-    // »óÀ§ Mip ·¹º§¿¡¼­ÀÇ ÇÈ¼¿ÀÇ Æò±Õ°ªÀ» °è»êÇÑ´Ù.
+    // ìƒìœ„ Mip ë ˆë²¨ì—ì„œì˜ í”½ì…€ì˜ í‰ê· ê°’ì„ ê³„ì‚°í•œë‹¤.
 #ifdef GEN_MIP_WITH_GATHER
-    // UV ÁÂÇ¥ °è»ê (ÇÈ¼¿ Áß¾Ó°ª)
+    // UV ì¢Œí‘œ ê³„ì‚° (í”½ì…€ ì¤‘ì•™ê°’)
     float2 uv = ((float2)dstCoord.xy + 0.5) * mipGenParams.dstSizeRcp.xy;
 
-    // Gather ¸¦ ÀÌ¿ëÇØ¼­ 2x2 ºí·Ï ÇÈ¼¿ÀÇ Ã¤³Î °ª »ùÇÃ¸µ
-    // Gather ´Â ÇÑ¹ø¿¡ ÀÎÁ¢ 2x2 ÇÈ¼¿ µ¥ÀÌÅÍ¸¦ ÀĞ¾î¿Ã ¶§ Ä³½Ã¸¦ ÀÌ¿ëÇÏ±â ¶§¹®¿¡ Load º¸´Ù È¿À²ÀûÀÌ´Ù.
+    // Gather ë¥¼ ì´ìš©í•´ì„œ 2x2 ë¸”ë¡ í”½ì…€ì˜ ì±„ë„ ê°’ ìƒ˜í”Œë§
+    // Gather ëŠ” í•œë²ˆì— ì¸ì ‘ 2x2 í”½ì…€ ë°ì´í„°ë¥¼ ì½ì–´ì˜¬ ë•Œ ìºì‹œë¥¼ ì´ìš©í•˜ê¸° ë•Œë¬¸ì— Load ë³´ë‹¤ íš¨ìœ¨ì ì´ë‹¤.
     float4 rrrr = inputTexture.GatherRed(pointSampler, uv);
     float4 gggg = inputTexture.GatherGreen(pointSampler, uv);
     float4 bbbb = inputTexture.GatherBlue(pointSampler, uv);
@@ -48,7 +48,7 @@ void CSMain(uint3 dispatchThreadId : SV_DispatchThreadID) {
 #else
     uint2 srcCoord = dstCoord * 2;
 
-    // Load ¸¦ ÀÌ¿ëÇØ¼­ 2x2 ºí·Ï ÇÈ¼¿ »ùÇÃ¸µ
+    // Load ë¥¼ ì´ìš©í•´ì„œ 2x2 ë¸”ë¡ í”½ì…€ ìƒ˜í”Œë§
     float4 color0 = inputTexture.Load(int3(srcCoord, 0));
     float4 color1 = inputTexture.Load(int3(srcCoord + uint2(1, 0), 0));
     float4 color2 = inputTexture.Load(int3(srcCoord + uint2(0, 1), 0));
@@ -68,6 +68,6 @@ void CSMain(uint3 dispatchThreadId : SV_DispatchThreadID) {
         color.rgb = ApplySRGBCurve_Fast(color.rgb);
     }
 
-    // Ãâ·Â ÅØ½ºÃÄ¿¡ ÀúÀå
+    // ì¶œë ¥ í…ìŠ¤ì³ì— ì €ì¥
     outputTexture[dstCoord] = color;
 }
