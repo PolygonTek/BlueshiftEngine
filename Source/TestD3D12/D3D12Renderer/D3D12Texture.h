@@ -49,10 +49,10 @@ private:
     D3D12UAVDescriptor              uavDescriptor;
     D3D12RTVDescriptor              rtvDescriptor;
     D3D12DSVDescriptor              dsvDescriptor;
-    BE1::Array<D3D12SRVDescriptor>  subresourceSrvDescriptors = (8);
-    BE1::Array<D3D12UAVDescriptor>  subresourceUavDescriptors = (8);
-    BE1::Array<D3D12RTVDescriptor>  subresourceRtvDescriptors = (8);
-    BE1::Array<D3D12DSVDescriptor>  subresourceDsvDescriptors = (8);
+    BE1::Array<D3D12SRVDescriptor>  subresourceSrvDescriptors = (16);
+    BE1::Array<D3D12UAVDescriptor>  subresourceUavDescriptors = (16);
+    BE1::Array<D3D12RTVDescriptor>  subresourceRtvDescriptors = (16);
+    BE1::Array<D3D12DSVDescriptor>  subresourceDsvDescriptors = (16);
 };
 
 BE_INLINE ID3D12Resource *D3D12Texture::GetResource() const {

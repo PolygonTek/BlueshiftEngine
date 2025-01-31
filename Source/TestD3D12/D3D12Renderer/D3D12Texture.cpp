@@ -1000,6 +1000,14 @@ void D3D12Renderer::GenerateMipmaps(RHI::CommandList *commandList, const RHI::Te
     const D3D12Texture *d3d12Texture = static_cast<const D3D12Texture *>(texture);
     uint32_t numMipmaps = d3d12Texture->textureDesc.MipLevels;
     if (numMipmaps <= 1) {
+        BE_WARNLOG("D3D12Renderer::GenerateMipmaps: texture has no mipmaps allocations\n");
+        return;
+    }
+
+    // mip 레벨 개수만큼 SRV 와 UAV 가 생성되어 있지 않다면, 진행할 수 없다.
+    if (d3d12Texture->subresourceSrvDescriptors.Count() < numMipmaps ||
+        d3d12Texture->subresourceUavDescriptors.Count() < numMipmaps) {
+        BE_WARNLOG("D3D12Renderer::GenerateMipmaps: Not enough SRV or UAV descriptors\n");
         return;
     }
 

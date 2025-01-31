@@ -62,8 +62,8 @@ private:
     BE1::Image::Format              format = BE1::Image::Format::Unknown;
     D3D12SRVDescriptor              srvDescriptor;
     D3D12UAVDescriptor              uavDescriptor;
-    BE1::Array<D3D12SRVDescriptor>  subresourceSrvDescriptors = (8);
-    BE1::Array<D3D12UAVDescriptor>  subresourceUavDescriptors = (8);
+    BE1::Array<D3D12SRVDescriptor>  subresourceSrvDescriptors = (16);
+    BE1::Array<D3D12UAVDescriptor>  subresourceUavDescriptors = (16);
 };
 
 BE_INLINE ID3D12Resource *D3D12Buffer::GetResource() const {

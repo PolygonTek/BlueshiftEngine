@@ -32,6 +32,9 @@ using uint2 = DirectX::XMUINT2;
 using uint3 = DirectX::XMUINT3;
 using uint4 = DirectX::XMUINT4;
 
+#define column_major
+#define row_major
+
 #endif // __cplusplus
 
 static const uint GENMIP_2D_BLOCK_SIZE = 16;
