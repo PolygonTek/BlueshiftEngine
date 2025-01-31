@@ -291,6 +291,22 @@ bool D3D12Renderer::CompileShaderDXC(const RHI::ShaderCompileInput *compileInput
         return false;
     }
 
+    // 상대 경로 추가
+    for (const BE1::Str &includeDir : compileInput->includeDirs) {
+        args.push_back(L"-I");
+        wchar_t wIncludeDir[1024];
+        BE1::PlatformWinUtils::UTF8ToUCS2(includeDir, wIncludeDir, COUNT_OF(wIncludeDir));
+        args.push_back(wIncludeDir);
+    }
+
+    // 디파인 추가
+    for (const BE1::Str &define : compileInput->defines) {
+        args.push_back(L"-D");
+        wchar_t wDefine[256];
+        BE1::PlatformWinUtils::UTF8ToUCS2(define, wDefine, COUNT_OF(wDefine));
+        args.push_back(wDefine);
+    }
+
     // 엔트리 포인트 이름
     args.push_back(L"-E");
     wchar_t wEntryPoint[256];
@@ -309,13 +325,80 @@ bool D3D12Renderer::CompileShaderDXC(const RHI::ShaderCompileInput *compileInput
         argv.push_back(arg.c_str());
     }
 
+    // 커스텀 인클루드 핸들러 클래스
+    struct CustomIncludeHandler : public IDxcIncludeHandler {
+        IFACEMETHODIMP QueryInterface(REFIID riid, void **ppv) override {
+            if (riid == __uuidof(IDxcIncludeHandler) || riid == __uuidof(IUnknown)) {
+                *ppv = static_cast<IDxcIncludeHandler *>(this);
+                AddRef();
+                return S_OK;
+            }
+            *ppv = nullptr;
+            return E_NOINTERFACE;
+        }
+
+        IFACEMETHODIMP_(ULONG) AddRef() override {
+            return InterlockedIncrement(&refCount);
+        }
+
+        IFACEMETHODIMP_(ULONG) Release() override {
+            ULONG res = InterlockedDecrement(&refCount);
+            if (res == 0) {
+                delete this;
+            }
+            return res;
+        }
+
+        IFACEMETHODIMP LoadSource(_In_z_ LPCWSTR pFilename, _COM_Outptr_result_maybenull_ IDxcBlob **ppIncludeSource) override {
+            char filename[1024];
+            BE1::PlatformWinUtils::UCS2ToUTF8(pFilename, filename, COUNT_OF(filename));
+
+            char *shaderText;
+            int shaderTextSize = BE1::fileSystem.LoadFile(filename, true, (void **)&shaderText);
+            if (!shaderText) {
+                // Could not open include file filename
+                return E_FAIL;
+            }
+
+            // shaderText 를 IDxcBlob 으로 변환
+            Microsoft::WRL::ComPtr<IDxcBlobEncoding> blobEncoding;
+            HRESULT hr = D3D12Renderer::GetRenderer()->dxcLibrary->CreateBlobWithEncodingFromPinned(
+                reinterpret_cast<LPBYTE>(const_cast<char *>(shaderText)),
+                static_cast<UINT32>(shaderTextSize), CP_UTF8, &blobEncoding
+            );
+            if (FAILED(hr)) {
+                return hr;
+            }
+
+            shaderTextPtrs.push_back(shaderText);
+
+            *ppIncludeSource = blobEncoding.Detach();
+            return S_OK;
+        }
+
+        ~CustomIncludeHandler() {
+            for (void *ptr : shaderTextPtrs) {
+                BE1::fileSystem.FreeFile(ptr);
+            }
+            shaderTextPtrs.clear();
+        }
+
+        ULONG refCount = 1;
+        std::vector<void *> shaderTextPtrs;
+    };
+
+    // Custom include 핸들러 생성
+    Microsoft::WRL::ComPtr<CustomIncludeHandler> customIncludeHandler;
+    customIncludeHandler.Attach(new CustomIncludeHandler);
+
     DxcBuffer source;
     source.Ptr = compileInput->shaderText;
     source.Size = compileInput->shaderTextSize;
-    source.Encoding = DXC_CP_ACP;
+    source.Encoding = DXC_CP_UTF8;
 
-    IDxcResult *dxcResult = nullptr;
-    dxcCompiler->Compile(&source, argv.data(), (UINT32)args.size(), nullptr, IID_PPV_ARGS(&dxcResult));
+    // Shader 컴파일
+    Microsoft::WRL::ComPtr<IDxcResult> dxcResult;
+    dxcCompiler->Compile(&source, argv.data(), (UINT32)args.size(), customIncludeHandler.Get(), IID_PPV_ARGS(&dxcResult));
 
     // 경고 & 에러 메시지를 받아온다.
     IDxcBlobUtf8 *dxcErrorBlob = nullptr;
