@@ -246,7 +246,7 @@ RHI::Buffer *D3D12FrameThreadData::AllocBuffer(bool shaderWritable, BE1::Image::
 
         D3D12Buffer dynamicBuffer;
         dynamicBuffer.writePtr = (byte *)currentDynamicAllocation->mappedBase + alignedOffset;
-        dynamicBuffer.uavDescriptors.Append(uavDescriptor);
+        dynamicBuffer.uavDescriptor = uavDescriptor;
         dynamicBuffers.Append(dynamicBuffer);
     } else {
         D3D12SRVDescriptor srvDescriptor;
@@ -267,7 +267,7 @@ RHI::Buffer *D3D12FrameThreadData::AllocBuffer(bool shaderWritable, BE1::Image::
 
         D3D12Buffer dynamicBuffer;
         dynamicBuffer.writePtr = (byte *)currentDynamicAllocation->mappedBase + alignedOffset;
-        dynamicBuffer.srvDescriptors.Append(srvDescriptor);
+        dynamicBuffer.srvDescriptor = srvDescriptor;
         dynamicBuffers.Append(dynamicBuffer);
     }
 

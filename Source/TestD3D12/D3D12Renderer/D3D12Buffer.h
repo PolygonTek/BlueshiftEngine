@@ -60,8 +60,10 @@ private:
     uint64_t                        size = 0;
     uint32_t                        structuredStride = 0;
     BE1::Image::Format              format = BE1::Image::Format::Unknown;
-    BE1::Array<D3D12SRVDescriptor>  srvDescriptors = (8);
-    BE1::Array<D3D12UAVDescriptor>  uavDescriptors = (8);
+    D3D12SRVDescriptor              srvDescriptor;
+    D3D12UAVDescriptor              uavDescriptor;
+    BE1::Array<D3D12SRVDescriptor>  subresourceSrvDescriptors = (8);
+    BE1::Array<D3D12UAVDescriptor>  subresourceUavDescriptors = (8);
 };
 
 BE_INLINE ID3D12Resource *D3D12Buffer::GetResource() const {

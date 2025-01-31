@@ -255,6 +255,8 @@ namespace RHI {
         const char *                    sourceName;
         const char *                    shaderText;
         const char *                    entryPoint;
+        BE1::StrArray                   includeDirs;
+        BE1::StrArray                   defines;
     };
 
     struct ShaderCompileOutput {
@@ -481,7 +483,7 @@ namespace RHI {
         };
 
         struct ImageBarrier {
-            const Texture *texture;
+            const Texture *             texture;
             GPUResourceState            stateBefore;
             GPUResourceState            stateAfter;
             int                         slice;
@@ -589,8 +591,8 @@ namespace RHI {
             Max
         };
 
-        const Texture *texture = nullptr;
-        int                             subresourceIndex = 0;
+        const Texture *                 texture = nullptr;
+        int                             subresourceIndex = -1;
         int                             resolveSourceIndex = 0;
         Type                            type = Type::Color;
         LoadAction                      loadAction = LoadAction::Load;
@@ -600,7 +602,7 @@ namespace RHI {
         GPUResourceState                duringState = GPUResourceState::Undefined;
         GPUResourceState                afterState = GPUResourceState::Undefined;
 
-        static RenderPassImage Color(const Texture *texture, int subresourceIndex = 0, LoadAction loadAction = LoadAction::Load, StoreAction storeAction = StoreAction::Store,
+        static RenderPassImage Color(const Texture *texture, int subresourceIndex = -1, LoadAction loadAction = LoadAction::Load, StoreAction storeAction = StoreAction::Store,
             GPUResourceState beforeState = GPUResourceState::ShaderResource, GPUResourceState afterState = GPUResourceState::ShaderResource) {
             RenderPassImage image;
             image.texture = texture;
@@ -614,7 +616,7 @@ namespace RHI {
             return image;
         }
 
-        static RenderPassImage DepthStencil(const Texture *texture, int subresourceIndex = 0, LoadAction loadAction = LoadAction::Load, StoreAction storeAction = StoreAction::Store,
+        static RenderPassImage DepthStencil(const Texture *texture, int subresourceIndex = -1, LoadAction loadAction = LoadAction::Load, StoreAction storeAction = StoreAction::Store,
             GPUResourceState beforeState = GPUResourceState::DepthWrite, GPUResourceState duringState = GPUResourceState::DepthWrite, GPUResourceState afterState = GPUResourceState::DepthWrite) {
             RenderPassImage image;
             image.texture = texture;
@@ -628,7 +630,7 @@ namespace RHI {
             return image;
         }
 
-        static RenderPassImage ResolveColor(const Texture *texture, int subresourceIndex = 0, int resolveSourceIndex = 0,
+        static RenderPassImage ResolveColor(const Texture *texture, int subresourceIndex = -1, int resolveSourceIndex = 0,
             GPUResourceState beforeState = GPUResourceState::ShaderResource, GPUResourceState afterState = GPUResourceState::ShaderResource) {
             RenderPassImage image;
             image.texture = texture;
@@ -641,7 +643,7 @@ namespace RHI {
             return image;
         }
 
-        static RenderPassImage ResolveDepth(const Texture *texture, int subresourceIndex = 0, DepthResolveMode depthResolveMode = DepthResolveMode::Min,
+        static RenderPassImage ResolveDepth(const Texture *texture, int subresourceIndex = -1, DepthResolveMode depthResolveMode = DepthResolveMode::Min,
             GPUResourceState beforeState = GPUResourceState::ShaderResource, GPUResourceState afterState = GPUResourceState::ShaderResource) {
             RenderPassImage image;
             image.texture = texture;
@@ -793,8 +795,8 @@ namespace RHI {
 
         void                            AdjustTextureFormat(bool useCompression, bool useNormalMap, BE1::Image::Format inFormat, BE1::Image::Format *outFormat);
 
-        virtual Texture *               CreateTexture(TextureType textureType, ResourceFlag flags, const BE1::Image *image, ClearValue &clearValue, uint32_t sampleCount = 1, GPUResourceState initialState = GPUResourceState::Undefined) = 0;
-        virtual Texture *               CreateTexture(TextureType textureType, ResourceFlag flags, const BE1::Image *image, BE1::Image::Format dstFormat, bool useMipmaps) = 0;
+        virtual Texture *               CreateTexture(TextureType textureType, ResourceFlag flags, const BE1::Image *image, bool allocateEmptyMipmaps, const ClearValue &clearValue = {}, uint32_t sampleCount = 1, GPUResourceState initialState = GPUResourceState::Undefined) = 0;
+        virtual Texture *               CreateTexture(TextureType textureType, ResourceFlag flags, const BE1::Image *image, BE1::Image::Format dstFormat, bool generateMipmaps) = 0;
         virtual Texture *               CreateTextureFromFile(TextureType textureType, ResourceFlag flags, const char *filename, bool useCompression = true, bool useNormalMap = false);
         virtual void                    DestroyTexture(Texture *texture, bool immediate = false) = 0;
         virtual void                    GetTextureImage2D(Texture *texture, int level, BE1::Image::Format imageFormat, void *outPixels) = 0;
@@ -803,6 +805,9 @@ namespace RHI {
 
         virtual int                     CreateSubresource(Buffer *buffer, SubresourceType subresourceType, uint64_t offset = 0, uint64_t size = ~0) = 0;
         virtual int                     CreateSubresource(Texture *texture, SubresourceType type, uint32_t firstSlice = 0, uint32_t sliceCount = ~0, uint32_t firstMipLevel = 0, uint32_t mipCount = ~0) = 0;
+
+        virtual void                    DestroySubresource(RHI::Buffer *buffer, RHI::SubresourceType type, int index) = 0;
+        virtual void                    DestroySubresource(RHI::Texture *textgure, RHI::SubresourceType type, int index) = 0;
 
         virtual Shader *                CreateShader(ShaderModel shaderModel, ShaderStage shaderStage, const char *sourceName, const char *shaderText, int shaderTextSize, const char *entryPoint) = 0;
         virtual Shader *                CreateShaderFromFile(ShaderModel shaderModel, ShaderStage shaderStage, const char *filename, const char *entryPoint) = 0;
@@ -822,8 +827,8 @@ namespace RHI {
         virtual void                    SetIndexBuffer(CommandList *commandList, const IndexBuffer *indexBuffer) = 0;
         virtual void                    SetConstantBuffer(CommandList *commandList, int slot, const ConstantBuffer *constantBuffer) = 0;
         virtual void                    SetConstants(CommandList *commandList, const void *data, uint32_t size, uint32_t offset) = 0;
-        virtual void                    SetTexture(CommandList *commandList, int slot, bool shaderWritable, const Texture *texture, int subresourceIndex = 0) = 0;
-        virtual void                    SetBuffer(CommandList *commandList, int slot, bool shaderWritable, const Buffer *buffer, int subresourceIndex = 0) = 0;
+        virtual void                    SetTexture(CommandList *commandList, int slot, bool shaderWritable, const Texture *texture, int subresourceIndex = -1) = 0;
+        virtual void                    SetBuffer(CommandList *commandList, int slot, bool shaderWritable, const Buffer *buffer, int subresourceIndex = -1) = 0;
         virtual void                    SetSampler(CommandList *commandList, int slot, Sampler *sampler) = 0;
         virtual void                    SetPSO(CommandList *commandList, const PipelineState *pipelineState) = 0;
         virtual void                    SetBlendFactor(CommandList *commandList, const BE1::Color4 &rgba) = 0;
@@ -839,6 +844,7 @@ namespace RHI {
         virtual void                    ClearUAV(CommandList *commandList, const GPUResource *resource, uint32_t value) = 0;
         virtual void                    CopyBuffer(CommandList *commandList, const Buffer *dstBuffer, uint32_t dstOffset, const Buffer *srcBuffer, uint32_t srcOffset, uint32_t size) = 0;
         virtual void                    CopyTexture(CommandList *commandList, const Texture *dstTexture, uint32_t dstSlice, uint32_t dstMipLevel, uint32_t dstX, uint32_t dstY, uint32_t dstZ, const Texture *srcTexture, uint32_t srcSlice, uint32_t srcMipLevel, uint32_t srcX, uint32_t srcY, uint32_t srcZ, uint32_t width, uint32_t height, uint32_t depth) = 0;
+        virtual void                    GenerateMipmaps(CommandList *commandList, const Texture *texture) = 0;
         virtual void                    Barrier(CommandList *commandList, const GPUBarrier *barriers, uint32_t barrierCount) = 0;
         void                            Barrier(CommandList *commandList, const GPUBarrier &barrier) { Barrier(commandList, &barrier, 1); }
         virtual void                    ReadPixels(RHI::CommandList *commandList, const RHI::SwapChain *swapChain, int x, int y, int width, int height, BE1::Image::Format dstFormat, void *outPixels) = 0;

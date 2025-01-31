@@ -73,8 +73,8 @@ public:
     virtual RHI::ConstantBuffer *       CreateConstantBuffer(RHI::BufferUsage usage, uint32_t size, const void *data) override;
     virtual void                        DestroyConstantBuffer(RHI::ConstantBuffer *constantBuffer, bool immediate = false) override;
 
-    virtual RHI::Texture *              CreateTexture(RHI::TextureType textureType, RHI::ResourceFlag flags, const BE1::Image *image, RHI::ClearValue &clearValue, uint32_t sampleCount = 1, RHI::GPUResourceState initialState = RHI::GPUResourceState::Undefined) override;
-    virtual RHI::Texture *              CreateTexture(RHI::TextureType textureType, RHI::ResourceFlag flags, const BE1::Image *image, BE1::Image::Format dstFormat, bool useMipmaps) override;
+    virtual RHI::Texture *              CreateTexture(RHI::TextureType textureType, RHI::ResourceFlag flags, const BE1::Image *image, bool allocateEmptyMipmaps, const RHI::ClearValue &clearValue = {}, uint32_t sampleCount = 1, RHI::GPUResourceState initialState = RHI::GPUResourceState::Undefined) override;
+    virtual RHI::Texture *              CreateTexture(RHI::TextureType textureType, RHI::ResourceFlag flags, const BE1::Image *image, BE1::Image::Format dstFormat, bool generateMipmaps) override;
     virtual void                        DestroyTexture(RHI::Texture *texture, bool immediate = false) override;
     virtual void                        GetTextureImage2D(RHI::Texture *texture, int level, BE1::Image::Format imageFormat, void *outPixels) override;
     virtual bool                        SetTextureSubImage2D(RHI::Texture *texture, int level, int x, int y, int width, int height, BE1::Image::Format imageFormat, const void *pixels) override;
@@ -82,6 +82,9 @@ public:
 
     virtual int                         CreateSubresource(RHI::Buffer *buffer, RHI::SubresourceType type, uint64_t offset = 0, uint64_t size = ~0) override;
     virtual int                         CreateSubresource(RHI::Texture *texture, RHI::SubresourceType type, uint32_t firstSlice = 0, uint32_t sliceCount = ~0, uint32_t firstMipLevel = 0, uint32_t mipCount = ~0) override;
+
+    virtual void                        DestroySubresource(RHI::Buffer *buffer, RHI::SubresourceType type, int index) override;
+    virtual void                        DestroySubresource(RHI::Texture *textgure, RHI::SubresourceType type, int index) override;
 
     int                                 CreateSubresourceSRV(D3D12Buffer *buffer, uint64_t offset = 0, uint64_t size = ~0);
     int                                 CreateSubresourceUAV(D3D12Buffer *buffer, uint64_t offset = 0, uint64_t size = ~0);
@@ -108,9 +111,9 @@ public:
     virtual void                        SetVertexBuffer(RHI::CommandList *commandList, int slot, const RHI::VertexBuffer *vertexBuffer) override;
     virtual void                        SetIndexBuffer(RHI::CommandList *commandList, const RHI::IndexBuffer *indexBuffer) override;
     virtual void                        SetConstantBuffer(RHI::CommandList *commandList, int slot, const RHI::ConstantBuffer *constantBuffer) override;
-    virtual void                        SetConstants(RHI::CommandList *commandList, const void *data, uint32_t size, uint32_t offset) override;
-    virtual void                        SetTexture(RHI::CommandList *commandList, int slot, bool shaderWritable, const RHI::Texture *texture, int subresourceIndex = 0) override;
-    virtual void                        SetBuffer(RHI::CommandList *commandList, int slot, bool shaderWritable, const RHI::Buffer *buffer, int subresourceIndex = 0) override;
+    virtual void                        SetConstants(RHI::CommandList *commandList, const void *data, uint32_t size, uint32_t offset = 0) override;
+    virtual void                        SetTexture(RHI::CommandList *commandList, int slot, bool shaderWritable, const RHI::Texture *texture, int subresourceIndex = -1) override;
+    virtual void                        SetBuffer(RHI::CommandList *commandList, int slot, bool shaderWritable, const RHI::Buffer *buffer, int subresourceIndex = -1) override;
     virtual void                        SetSampler(RHI::CommandList *commandList, int slot, RHI::Sampler *sampler) override;
     virtual void                        SetPSO(RHI::CommandList *commandList, const RHI::PipelineState *pipelineState) override;
     virtual void                        SetBlendFactor(RHI::CommandList *commandList, const BE1::Color4 &rgba) override;
@@ -126,6 +129,7 @@ public:
     virtual void                        ClearUAV(RHI::CommandList *commandList, const RHI::GPUResource *resource, uint32_t value) override;
     virtual void                        CopyBuffer(RHI::CommandList *commandList, const RHI::Buffer *dstBuffer, uint32_t dstOffset, const RHI::Buffer *srcBuffer, uint32_t srcOffset, uint32_t size) override;
     virtual void                        CopyTexture(RHI::CommandList *commandList, const RHI::Texture *dstTexture, uint32_t dstSlice, uint32_t dstMipLevel, uint32_t dstX, uint32_t dstY, uint32_t dstZ, const RHI::Texture *srcTexture, uint32_t srcSlice, uint32_t srcMipLevel, uint32_t srcX, uint32_t srcY, uint32_t srcZ, uint32_t width, uint32_t height, uint32_t depth) override;
+    virtual void                        GenerateMipmaps(RHI::CommandList *commandList, const RHI::Texture *texture) override;
     virtual void                        Barrier(RHI::CommandList *commandList, const RHI::GPUBarrier *barriers, uint32_t barrierCount) override;
     virtual void                        ReadPixels(RHI::CommandList *commandList, const RHI::SwapChain *swapChain, int x, int y, int width, int height, BE1::Image::Format dstFormat, void *outPixels) override;
     virtual void                        BeginRenderPass(RHI::CommandList *commandList, const RHI::SwapChain *swapChain, const RHI::Texture *depthStencilTexture, const BE1::Color4 &clearColor = {}, float clearDepth = 0, uint8_t clearStencil = 0, RHI::ClearFlag clearFlags = RHI::ClearFlag::None) override;
@@ -149,6 +153,8 @@ public:
     virtual void                        SetMarker(RHI::CommandList *commandList, const char *string, uint8_t colorIndex) override;
     virtual void                        BeginEvent(RHI::CommandList *commandList, const char *string, uint8_t colorIndex) override;
     virtual void                        EndEvent(RHI::CommandList *commandList) override;
+
+    void                                InitGenMipmapsPSO();
 
     RHI::PipelineState *                CreateBasicPSO(ID3D12RootSignature *rootSignature, const D3D12_SHADER_BYTECODE &byteCodeVS, const D3D12_SHADER_BYTECODE &byteCodePS, const D3D12_INPUT_LAYOUT_DESC &inputLayout);
     RHI::PipelineState *                CreateBasicPSO(ID3D12RootSignature *rootSignature, const char *shaderFilename, const D3D12_INPUT_LAYOUT_DESC &inputLayout);
@@ -235,4 +241,7 @@ public:
     int                                 maxPendingResources = 0;
     int                                 headPendingIndex = 0;
     int                                 tailPendingIndex = 0;
+
+    RHI::PipelineState *                genMipmaps2DFloat4PSO = nullptr;
+    RHI::PipelineState *                genMipmaps2DUNorm4PSO = nullptr;
 };

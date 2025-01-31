@@ -311,13 +311,39 @@ void D3D12Renderer::Init(const void *mainWindowHandle) {
 
     maxPendingResources = 1024;
     pendingResourceBuffer = new D3D12PendingResource[maxPendingResources];
+
+    InitGenMipmapsPSO();
+}
+
+void D3D12Renderer::InitGenMipmapsPSO() {
+    {
+        RHI::Shader *cs = static_cast<RHI::Shader *>(CreateShaderFromFile(RHI::ShaderModel::SM_6_0, RHI::ShaderStage::Compute, "Source/TestD3D12/Shaders/GenMip2DFloat4.hlsl", "CSMain"));
+        if (cs) {
+            genMipmaps2DFloat4PSO = CreateComputePSO(cs);
+            DestroyShader(cs, true);
+        }
+    }
+    {
+        RHI::Shader *cs = static_cast<RHI::Shader *>(CreateShaderFromFile(RHI::ShaderModel::SM_6_0, RHI::ShaderStage::Compute, "Source/TestD3D12/Shaders/GenMip2DUNorm4.hlsl", "CSMain"));
+        if (cs) {
+            genMipmaps2DUNorm4PSO = CreateComputePSO(cs);
+            DestroyShader(cs, true);
+        }
+    }
 }
 
 void D3D12Renderer::Shutdown() {
-    RHI::Renderer::Shutdown();
-
     Finish(RHI::CommandQueueType::Graphics);
     Finish(RHI::CommandQueueType::Compute);
+
+    if (genMipmaps2DFloat4PSO) {
+        DestroyPSO(genMipmaps2DFloat4PSO, true);
+        genMipmaps2DFloat4PSO = nullptr;
+    }
+    if (genMipmaps2DUNorm4PSO) {
+        DestroyPSO(genMipmaps2DUNorm4PSO, true);
+        genMipmaps2DUNorm4PSO = nullptr;
+    }
 
     FreePendingResources(true);
     SAFE_DELETE(pendingResourceBuffer);
@@ -368,6 +394,8 @@ void D3D12Renderer::Shutdown() {
         }
         BE1::PlatformSystem::DebugBreak();
     }
+
+    RHI::Renderer::Shutdown();
 }
 
 uint64_t D3D12Renderer::SignalFence(RHI::CommandQueueType queueType) {
@@ -495,6 +523,9 @@ void D3D12Renderer::FreePendingResources(bool waitPendings) {
 }
 
 void D3D12Renderer::SetConstants(RHI::CommandList *commandList, const void *data, uint32_t size, uint32_t offset) {
+    assert(size % sizeof(uint32_t) == 0);
+    assert(offset % sizeof(uint32_t) == 0);
+
     D3D12CommandList *d3d12CommandList = static_cast<D3D12CommandList *>(commandList);
     D3D12FrameThreadData *threadData = static_cast<D3D12FrameThreadData *>(d3d12CommandList->GetFrameThreadData());
 
@@ -623,29 +654,38 @@ void D3D12Renderer::SetDepthBounds(RHI::CommandList *commandList, float depthMin
 
 void D3D12Renderer::ClearUAV(RHI::CommandList *commandList, const RHI::GPUResource *resource, uint32_t value) {
     const UINT values[4] = { value, value, value, value };
-    const BE1::Array<D3D12UAVDescriptor> *uavDescriptors = nullptr;
+    const D3D12UAVDescriptor *uavDescriptor = nullptr;
+    const BE1::Array<D3D12UAVDescriptor> *subresourceUavDescriptors = nullptr;
 
     const D3D12Buffer *buffer = reinterpret_cast<const D3D12Buffer *>(resource->GetNativeBufferObject());
     if (buffer) {
-        uavDescriptors = &buffer->uavDescriptors;
+        uavDescriptor = &buffer->uavDescriptor;
+        subresourceUavDescriptors = &buffer->subresourceUavDescriptors;
     } else {
         const D3D12Texture *texture = reinterpret_cast<const D3D12Texture *>(resource->GetNativeTextureObject());
         if (texture) {
-            uavDescriptors = &texture->uavDescriptors;
+            uavDescriptor = &texture->uavDescriptor;
+            subresourceUavDescriptors = &texture->subresourceUavDescriptors;
         }
     }
 
-    if (!uavDescriptors) {
-        BE_ERRLOG("D3D12Renderer::ClearUAV: Invalid UAV descriptors\n");
-        return;
-    }
     D3D12CommandList *d3d12CommandList = static_cast<D3D12CommandList *>(commandList);
-    for (int i = 0; i < uavDescriptors->Count(); ++i) {
-        D3D12_CPU_DESCRIPTOR_HANDLE cpuDescriptorHandle = (*uavDescriptors)[i].cpuDescriptorHandle;
+
+    if (subresourceUavDescriptors->IsEmpty()) {
+        D3D12_CPU_DESCRIPTOR_HANDLE cpuDescriptorHandle = (*uavDescriptor).cpuDescriptorHandle;
         int descriptorIndex = uavCpuDescriptorPool->GetIndexFromCPUDescriptorHandle(cpuDescriptorHandle);
         D3D12_GPU_DESCRIPTOR_HANDLE gpuDescriptorHandle = uavGpuDescriptorPool->GetGPUDescriptorHandleFromIndex(descriptorIndex);
 
         d3d12CommandList->GetGraphicsCommandList()->ClearUnorderedAccessViewUint(gpuDescriptorHandle, cpuDescriptorHandle, reinterpret_cast<ID3D12Resource *>(resource->GetNativeResource()), values, 0, nullptr);
+    } else {
+        // 모든 서브 리소스 UAV 를 clear
+        for (int i = 0; i < subresourceUavDescriptors->Count(); ++i) {
+            D3D12_CPU_DESCRIPTOR_HANDLE cpuDescriptorHandle = (*subresourceUavDescriptors)[i].cpuDescriptorHandle;
+            int descriptorIndex = uavCpuDescriptorPool->GetIndexFromCPUDescriptorHandle(cpuDescriptorHandle);
+            D3D12_GPU_DESCRIPTOR_HANDLE gpuDescriptorHandle = uavGpuDescriptorPool->GetGPUDescriptorHandleFromIndex(descriptorIndex);
+
+            d3d12CommandList->GetGraphicsCommandList()->ClearUnorderedAccessViewUint(gpuDescriptorHandle, cpuDescriptorHandle, reinterpret_cast<ID3D12Resource *>(resource->GetNativeResource()), values, 0, nullptr);
+        }
     }
 }
 
@@ -901,7 +941,7 @@ void D3D12Renderer::BeginRenderPass(RHI::CommandList *commandList, const RHI::Sw
     D3D12_RENDER_PASS_DEPTH_STENCIL_DESC dsDesc = {};
     D3D12_RENDER_PASS_DEPTH_STENCIL_DESC *dsDescPtr = nullptr;
     if (depthStencilTexture) {
-        dsDesc.cpuDescriptor = static_cast<const D3D12Texture *>(depthStencilTexture)->dsvDescriptors[0].cpuDescriptorHandle;
+        dsDesc.cpuDescriptor = static_cast<const D3D12Texture *>(depthStencilTexture)->dsvDescriptor.cpuDescriptorHandle;
         if (BE1::HasFlag(clearFlags, RHI::ClearFlag::Depth)) {
             dsDesc.DepthBeginningAccess.Type = D3D12_RENDER_PASS_BEGINNING_ACCESS_TYPE_CLEAR;
             dsDesc.DepthBeginningAccess.Clear.ClearValue.DepthStencil.Depth = clearDepth;
@@ -1042,7 +1082,6 @@ void D3D12Renderer::BeginRenderPass(RHI::CommandList *commandList, const RHI::Re
     for (int i = 0; i < numRenderPassImages; ++i) {
         const RHI::RenderPassImage &renderPassImage = renderPassImages[i];
         const D3D12Texture *texture = static_cast<const D3D12Texture *>(renderPassImage.texture);
-        bool useEntireSubresources = true;
         UINT destMipSlice = 0;
         UINT destFirstArraySlice = 0;
         UINT destArraySize = 1;
@@ -1062,8 +1101,7 @@ void D3D12Renderer::BeginRenderPass(RHI::CommandList *commandList, const RHI::Re
         case RHI::RenderPassImage::Type::Color:
         {
             // 사용할 Color 렌더타겟 정보를 기록한다.
-            const D3D12RTVDescriptor &rtvDescriptor = texture->rtvDescriptors[renderPassImage.subresourceIndex];
-            useEntireSubresources = texture->rtvDescriptors.Count() == 1;
+            const D3D12RTVDescriptor &rtvDescriptor = renderPassImage.subresourceIndex < 0 ? texture->rtvDescriptor : texture->subresourceRtvDescriptors[renderPassImage.subresourceIndex];
             D3D12_RENDER_PASS_RENDER_TARGET_DESC &rtDesc = rtDescs[rtCount];
             rtDesc.cpuDescriptor = rtvDescriptor.cpuDescriptorHandle;
             rtDesc.BeginningAccess.Type = beginningAccessType;
@@ -1088,8 +1126,7 @@ void D3D12Renderer::BeginRenderPass(RHI::CommandList *commandList, const RHI::Re
         case RHI::RenderPassImage::Type::DepthStencil:
         {
             // 사용할 Depth/Stencil 정보를 기록한다.
-            const D3D12DSVDescriptor &dsvDescriptor = texture->dsvDescriptors[renderPassImage.subresourceIndex];
-            useEntireSubresources = texture->dsvDescriptors.Count() == 1;
+            const D3D12DSVDescriptor &dsvDescriptor = renderPassImage.subresourceIndex < 0 ? texture->dsvDescriptor : texture->subresourceDsvDescriptors[renderPassImage.subresourceIndex];
             dsDesc.cpuDescriptor = dsvDescriptor.cpuDescriptorHandle;
             dsDesc.DepthBeginningAccess.Type = beginningAccessType;
             dsDesc.DepthBeginningAccess.Clear.ClearValue = texture->clearValue;
@@ -1116,8 +1153,7 @@ void D3D12Renderer::BeginRenderPass(RHI::CommandList *commandList, const RHI::Re
         case RHI::RenderPassImage::Type::ResolveColor:
         {
             // 지정한 Color 렌더타겟의 Resolve 정보를 기록한다.
-            const D3D12RTVDescriptor &rtvDescriptor = texture->rtvDescriptors[renderPassImage.subresourceIndex];
-            useEntireSubresources = texture->rtvDescriptors.Count() == 1;
+            const D3D12RTVDescriptor &rtvDescriptor = renderPassImage.subresourceIndex < 0 ? texture->rtvDescriptor : texture->subresourceRtvDescriptors[renderPassImage.subresourceIndex];
             const ResolveSource &resolveSource = rtResolveSources[renderPassImage.resolveSourceIndex];
             D3D12_RENDER_PASS_RENDER_TARGET_DESC &rtDesc = rtDescs[renderPassImage.resolveSourceIndex];
             rtDesc.EndingAccess.Type = D3D12_RENDER_PASS_ENDING_ACCESS_TYPE_RESOLVE;
@@ -1155,8 +1191,7 @@ void D3D12Renderer::BeginRenderPass(RHI::CommandList *commandList, const RHI::Re
         case RHI::RenderPassImage::Type::ResolveDepth:
         {
             // Depth/Stencil 의 Resolve 정보를 기록한다.
-            const D3D12DSVDescriptor &dsvDescriptor = texture->dsvDescriptors[renderPassImage.subresourceIndex];
-            useEntireSubresources = texture->dsvDescriptors.Count() == 1;
+            const D3D12DSVDescriptor &dsvDescriptor = renderPassImage.subresourceIndex < 0 ? texture->dsvDescriptor : texture->subresourceDsvDescriptors[renderPassImage.subresourceIndex];
             dsDesc.DepthEndingAccess.Type = D3D12_RENDER_PASS_ENDING_ACCESS_TYPE_RESOLVE;
             dsDesc.DepthEndingAccess.Resolve.Format = texture->textureDesc.Format;
             switch (renderPassImage.depthResolveMode) {
@@ -1224,7 +1259,7 @@ void D3D12Renderer::BeginRenderPass(RHI::CommandList *commandList, const RHI::Re
                 barrier.Transition.StateBefore = beforeState;
                 barrier.Transition.StateAfter = afterState;
 
-                if (useEntireSubresources) {
+                if (renderPassImage.subresourceIndex < 0) {
                     barrier.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
                     barriers.Append(barrier);
                 } else {
@@ -1252,7 +1287,7 @@ void D3D12Renderer::BeginRenderPass(RHI::CommandList *commandList, const RHI::Re
                 barrier.Transition.StateBefore = beforeState;
                 barrier.Transition.StateAfter = afterState;
 
-                if (useEntireSubresources) {
+                if (renderPassImage.subresourceIndex < 0) {
                     barrier.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
                     d3d12CommandList->endRenderPassBarriers.Append(barrier);
                 } else {

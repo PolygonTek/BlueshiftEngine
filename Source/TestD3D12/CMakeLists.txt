@@ -40,6 +40,7 @@ set(SRC_FILES
     D3D12Renderer/D3D12CommandListPool.cpp
     D3D12Renderer/D3D12FrameData.h
     D3D12Renderer/D3D12FrameData.cpp
+    Shaders/ShaderInterop.h
     App.h
     App.cpp
     RenderContext.h
