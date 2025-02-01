@@ -225,7 +225,7 @@ static GammaConversionFunc GetGammaConversionFunc(Image::GammaSpace srcGammaSpac
     return Pow22ToSRGB;
 }
 
-bool Image::ConvertFormat(Image::Format dstFormat, Image &dstImage, GammaSpace dstGammaSpace, bool regenerateMipmaps, Image::CompressionQuality compressionQuality) const {
+bool Image::ConvertFormat(Format dstFormat, Image &dstImage, GammaSpace dstGammaSpace, MipmapGenerationMode mipmapRegenerationMode, CompressionQuality compressionQuality) const {
     if (dstGammaSpace == GammaSpace::DontCare) {
         dstGammaSpace = gammaSpace;
     }
@@ -239,7 +239,7 @@ bool Image::ConvertFormat(Image::Format dstFormat, Image &dstImage, GammaSpace d
     const Image *srcImage = this;
 
     // Calculate the mipmap count for the destination image.
-    int numDstMipmaps = regenerateMipmaps ? MaxMipLevels(width, height, depth) : numMipmaps;
+    int numDstMipmaps = mipmapRegenerationMode != MipmapGenerationMode::NoMipmaps ? MaxMipLevels(width, height, depth) : numMipmaps;
 
     // Create a destination image based on the source (this) image.
     dstImage.Create(srcImage->width, srcImage->height, srcImage->depth, srcImage->numSlices, numDstMipmaps, dstFormat, dstGammaSpace, nullptr, srcImage->flags);
@@ -253,12 +253,12 @@ bool Image::ConvertFormat(Image::Format dstFormat, Image &dstImage, GammaSpace d
 
         DecompressImage(*this, unpackedSrcImage);
 
-        if (regenerateMipmaps) {
-            unpackedSrcImage.GenerateMipmaps();
+        if (mipmapRegenerationMode != MipmapGenerationMode::NoMipmaps) {
+            unpackedSrcImage.GenerateMipmaps(mipmapRegenerationMode == MipmapGenerationMode::MipmapsWithAlphaCoverage);
         }
 
         srcImage = &unpackedSrcImage;
-    } else if (regenerateMipmaps) {
+    } else if (mipmapRegenerationMode != MipmapGenerationMode::NoMipmaps) {
         if (!srcImage->IsPacked()) {
             unpackedSrcImage.Create(srcImage->width, srcImage->height, srcImage->depth, srcImage->numSlices, numDstMipmaps,
                 srcImage->format, srcImage->gammaSpace, nullptr, srcImage->flags);
@@ -270,7 +270,7 @@ bool Image::ConvertFormat(Image::Format dstFormat, Image &dstImage, GammaSpace d
             srcImage->ConvertFormat(Format::RGBA_8_8_8_8, unpackedSrcImage, dstGammaSpace);
         }
 
-        unpackedSrcImage.GenerateMipmaps();
+        unpackedSrcImage.GenerateMipmaps(mipmapRegenerationMode == MipmapGenerationMode::MipmapsWithAlphaCoverage);
 
         srcImage = &unpackedSrcImage;
     }
@@ -360,9 +360,9 @@ bool Image::ConvertFormat(Image::Format dstFormat, Image &dstImage, GammaSpace d
     return true;
 }
 
-bool Image::ConvertFormatSelf(Image::Format dstFormat, GammaSpace dstGammaSpace, bool regenerateMipmaps, Image::CompressionQuality compressionQuality) {
+bool Image::ConvertFormatSelf(Format dstFormat, GammaSpace dstGammaSpace, MipmapGenerationMode mipmapRegenerationMode, CompressionQuality compressionQuality) {
     Image dstImage;
-    bool ret = ConvertFormat(dstFormat, dstImage, dstGammaSpace, regenerateMipmaps, compressionQuality);
+    bool ret = ConvertFormat(dstFormat, dstImage, dstGammaSpace, mipmapRegenerationMode, compressionQuality);
     if (ret) {
         *this = dstImage;
     }

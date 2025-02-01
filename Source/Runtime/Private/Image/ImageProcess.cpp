@@ -394,66 +394,130 @@ Image &Image::AddNormalMapRGBA8888(const Image &normalMap) {
 }
 
 template <typename T>
-void BuildMipMap1D(T *dst, const T *src, const int width, const int components) {
-    int xOff = (width  < 2) ? 0 : components;
+void BuildMipMap1D(T *dst, const T *src, int width, int numComponents, int alphaComponentIndex, bool preserveCoverage) {
+    int xOff = (width < 2) ? 0 : numComponents;
 
     for (int x = 0; x < width; x += 2) {
-        for (int i = 0; i < components; i++) {
-            T p0 = src[0];
-            T p1 = src[xOff];
-            T po = (p0 + p1) / 2;
+        float a0 = src[alphaComponentIndex];
+        float a1 = src[alphaComponentIndex + xOff];
+        float alphaSum = a0 + a1;
 
-            *dst++ = po;
-            src++;
-        }
-        src += xOff;
-    }
-}
-
-template <typename T>
-void BuildMipMap2D(T *dst, const T *src, const int width, const int height, const int components) {
-    int xOff = (width  < 2) ? 0 : components;
-    int yOff = (height < 2) ? 0 : components * width;
-
-    for (int y = 0; y < height; y += 2) {
-        for (int x = 0; x < width; x += 2) {
-            for (int i = 0; i < components; i++) {
-                T p0 = src[0];
-                T p1 = src[xOff];
-                T p2 = src[yOff];
-                T p3 = src[yOff + xOff];
-                T po = (p0 + p1 + p2 + p3) / 4;
-
-                *dst++ = po;
-                src++;
-            }
-            src += xOff;
-        }
-        src += yOff;
-    }
-}
-
-template <typename T>
-void BuildMipMap3D(T *dst, const T *src, const int width, const int height, const int depth, const int components) {
-    int xOff = (width  < 2) ? 0 : components;
-    int yOff = (height < 2) ? 0 : components * width;
-    int zOff = (depth  < 2) ? 0 : components * width * height;
-
-    for (int z = 0; z < depth; z += 2) {
-        for (int y = 0; y < height; y += 2) {
-            for (int x = 0; x < width; x += 2) {
-                for (int i = 0; i < components; i++) {
+        for (int i = 0; i < numComponents; i++) {
+            if (preserveCoverage && alphaSum > 0) {
+                if (i != alphaComponentIndex) {
+                    float p0 = src[0] * a0;
+                    float p1 = src[xOff] * a1;
+                    *dst++ = (p0 + p1) / alphaSum;
+                } else {
+                    *dst++ = Max(a0, a1);
+                }
+            } else {
+                if (i != alphaComponentIndex) {
                     T p0 = src[0];
                     T p1 = src[xOff];
-                    T p2 = src[yOff];
-                    T p3 = src[yOff + xOff];
-                    T p4 = src[zOff];
-                    T p5 = src[zOff + xOff];
-                    T p6 = src[zOff + yOff];
-                    T p7 = src[zOff + yOff + xOff];
-                    T po = (p0 + p1 + p2 + p3 + p4 + p5 + p6 + p7) / 8;
+                    *dst++ = (p0 + p1) / 2;
+                } else {
+                    *dst++ = (a0 + a1) / 2;
+                }
+            }
+            src++;
+        }
+        src += xOff;
+    }
+}
 
-                    *dst++ = po;
+template <typename T>
+void BuildMipMap2D(T *dst, const T *src, int width, int height, int numComponents, int alphaComponentIndex, bool preserveCoverage) {
+    int xOff = (width  < 2) ? 0 : numComponents;
+    int yOff = (height < 2) ? 0 : numComponents * width;
+
+    for (int y = 0; y < height; y += 2) {
+        for (int x = 0; x < width; x += 2) {
+            float a0 = src[alphaComponentIndex];
+            float a1 = src[alphaComponentIndex + xOff];
+            float a2 = src[alphaComponentIndex + yOff];
+            float a3 = src[alphaComponentIndex + yOff + xOff];
+            float alphaSum = a0 + a1 + a2 + a3;
+
+            for (int i = 0; i < numComponents; i++) {
+                if (preserveCoverage && alphaSum > 0) {
+                    if (i != alphaComponentIndex) {
+                        float p0 = src[0] * a0;
+                        float p1 = src[xOff] * a1;
+                        float p2 = src[yOff] * a2;
+                        float p3 = src[yOff + xOff] * a3;
+                        *dst++ = (p0 + p1 + p2 + p3) / alphaSum;
+                    } else {
+                        *dst++ = Max(a0, Max(a1, Max(a2, a3)));
+                    }
+                } else {
+                    if (i != alphaComponentIndex) {
+                        T p0 = src[0];
+                        T p1 = src[xOff];
+                        T p2 = src[yOff];
+                        T p3 = src[yOff + xOff];
+                        *dst++ = (p0 + p1 + p2 + p3) / 4;
+                    } else {
+                        *dst++ = (a0 + a1 + a2 + a3) / 4;
+                    }
+                }
+                src++;
+            }
+            src += xOff;
+        }
+        src += yOff;
+    }
+}
+
+template <typename T>
+void BuildMipMap3D(T *dst, const T *src, int width, int height, int depth, int numComponents, int alphaComponentIndex, bool preserveCoverage) {
+    int xOff = (width  < 2) ? 0 : numComponents;
+    int yOff = (height < 2) ? 0 : numComponents * width;
+    int zOff = (depth  < 2) ? 0 : numComponents * width * height;
+
+    for (int z = 0; z < depth; z += 2) {
+        for (int y = 0; y < height; y += 2) {
+            for (int x = 0; x < width; x += 2) {
+                float a0 = src[alphaComponentIndex];
+                float a1 = src[alphaComponentIndex + xOff];
+                float a2 = src[alphaComponentIndex + yOff];
+                float a3 = src[alphaComponentIndex + yOff + xOff];
+                float a4 = src[alphaComponentIndex + zOff];
+                float a5 = src[alphaComponentIndex + zOff + xOff];
+                float a6 = src[alphaComponentIndex + zOff + yOff];
+                float a7 = src[alphaComponentIndex + zOff + yOff + xOff];
+                float alphaSum = a0 + a1 + a2 + a3 + a4 + a5 + a6 + a7;
+
+                for (int i = 0; i < numComponents; i++) {
+                    if (preserveCoverage && alphaSum > 0) {
+                        if (i != alphaComponentIndex) {
+                            float p0 = src[0] * a0;
+                            float p1 = src[xOff] * a1;
+                            float p2 = src[yOff] * a2;
+                            float p3 = src[yOff + xOff] * a3;
+                            float p4 = src[zOff] * a4;
+                            float p5 = src[zOff + xOff] * a5;
+                            float p6 = src[zOff + yOff] * a6;
+                            float p7 = src[zOff + yOff + xOff] * a7;
+                            *dst++ = (p0 + p1 + p2 + p3 + p4 + p5 + p6 + p7) / alphaSum;
+                        } else {
+                            *dst++ = Max(a0, Max(a1, Max(a2, Max(a3, Max(a4, Max(a5, Max(a6, a7)))))));
+                        }
+                    } else {
+                        if (i != alphaComponentIndex) {
+                            T p0 = src[0];
+                            T p1 = src[xOff];
+                            T p2 = src[yOff];
+                            T p3 = src[yOff + xOff];
+                            T p4 = src[zOff];
+                            T p5 = src[zOff + xOff];
+                            T p6 = src[zOff + yOff];
+                            T p7 = src[zOff + yOff + xOff];
+                            *dst++ = (p0 + p1 + p2 + p3 + p4 + p5 + p6 + p7) / 8;
+                        } else {
+                            *dst++ = (a0 + a1 + a2 + a3 + a4 + a5 + a6 + a7) * 0.125f;
+                        }
+                    }
                     src++;
                 }
                 src += xOff;
@@ -465,46 +529,82 @@ void BuildMipMap3D(T *dst, const T *src, const int width, const int height, cons
 }
 
 template <typename T>
-void BuildMipMap(T *dst, const T *src, const int width, const int height, const int depth, const int components) {
+void BuildMipMap(T *dst, const T *src, int width, int height, int depth, int numComponents, int alphaComponentIndex, bool preserveCoverage) {
     if (depth > 1) {
-        BuildMipMap3D(dst, src, width, height, depth, components);
+        BuildMipMap3D(dst, src, width, height, depth, numComponents, alphaComponentIndex, preserveCoverage);
     } else if (height > 1) {
-        BuildMipMap2D(dst, src, width, height, components);
+        BuildMipMap2D(dst, src, width, height, numComponents, alphaComponentIndex, preserveCoverage);
     } else {
-        BuildMipMap1D(dst, src, width, components);
+        BuildMipMap1D(dst, src, width, numComponents, alphaComponentIndex, preserveCoverage);
     }
 }
 
-static void BuildMipMap1DWithGamma(byte *dst, const byte *src, const int width, const int components, const float (&gammaToLinear)[256], float (*linearToGamma)(float)) {
-    int xOff = (width < 2) ? 0 : components;
+static void BuildMipMap1DWithGamma(byte *dst, const byte *src, int width, int numComponents, int alphaComponentIndex, bool preserveCoverage, const float (&gammaToLinear)[256], float (*linearToGamma)(float)) {
+    int xOff = (width < 2) ? 0 : numComponents;
 
     for (int x = 0; x < width; x += 2) {
-        for (int i = 0; i < components; i++) {
-            float p0 = gammaToLinear[src[0]];
-            float p1 = gammaToLinear[src[xOff]];
-            float po = linearToGamma((p0 + p1) * 0.5f);
+        float a0 = src[alphaComponentIndex];
+        float a1 = src[alphaComponentIndex + xOff];
+        float alphaSum = a0 + a1;
 
-            *dst++ = Math::Ftob(255.0f * po);
+        for (int i = 0; i < numComponents; i++) {
+            if (preserveCoverage && alphaSum > 0) {
+                if (i != alphaComponentIndex) {
+                    float p0 = gammaToLinear[src[0]] * a0;
+                    float p1 = gammaToLinear[src[xOff]] * a1;
+                    *dst++ = Math::Ftob(255.0f * linearToGamma((p0 + p1) / alphaSum));
+                } else {
+                    *dst++ = Max(a0, a1);
+                }
+            } else {
+                if (i != alphaComponentIndex) {
+                    float p0 = gammaToLinear[src[0]];
+                    float p1 = gammaToLinear[src[xOff]];
+                    *dst++ = Math::Ftob(255.0f * linearToGamma((p0 + p1) * 0.5f));
+                } else {
+                    *dst++ = (a0 + a1) * 0.5f;
+                }
+            }
             src++;
         }
         src += xOff;
     }
 }
 
-static void BuildMipMap2DWithGamma(byte *dst, const byte *src, const int width, const int height, const int components, const float (&gammaToLinear)[256], float (*linearToGamma)(float)) {
-    int xOff = (width < 2) ? 0 : components;
-    int yOff = (height < 2) ? 0 : components * width;
+static void BuildMipMap2DWithGamma(byte *dst, const byte *src, int width, int height, int numComponents, int alphaComponentIndex, bool preserveCoverage, const float (&gammaToLinear)[256], float (*linearToGamma)(float)) {
+    int xOff = (width < 2) ? 0 : numComponents;
+    int yOff = (height < 2) ? 0 : numComponents * width;
 
     for (int y = 0; y < height; y += 2) {
         for (int x = 0; x < width; x += 2) {
-            for (int i = 0; i < components; i++) {
-                float p0 = gammaToLinear[src[0]];
-                float p1 = gammaToLinear[src[xOff]];
-                float p2 = gammaToLinear[src[yOff]];
-                float p3 = gammaToLinear[src[yOff + xOff]];
-                float po = linearToGamma((p0 + p1 + p2 + p3) * 0.25f);
+            float a0 = src[alphaComponentIndex];
+            float a1 = src[alphaComponentIndex + xOff];
+            float a2 = src[alphaComponentIndex + yOff];
+            float a3 = src[alphaComponentIndex + yOff + xOff];
+            float alphaSum = a0 + a1 + a2 + a3;
 
-                *dst++ = Math::Ftob(255.0f * po);
+            for (int i = 0; i < numComponents; i++) {
+                if (preserveCoverage && alphaSum > 0) {
+                    if (i != alphaComponentIndex) {
+                        float p0 = gammaToLinear[src[0]] * a0;
+                        float p1 = gammaToLinear[src[xOff]] * a1;
+                        float p2 = gammaToLinear[src[yOff]] * a2;
+                        float p3 = gammaToLinear[src[yOff + xOff]] * a3;
+                        *dst++ = Math::Ftob(255.0f * linearToGamma((p0 + p1 + p2 + p3) / alphaSum));
+                    } else {
+                        *dst++ = Max(a0, Max(a1, Max(a2, a3)));
+                    }
+                } else {
+                    if (i != alphaComponentIndex) {
+                        float p0 = gammaToLinear[src[0]];
+                        float p1 = gammaToLinear[src[xOff]];
+                        float p2 = gammaToLinear[src[yOff]];
+                        float p3 = gammaToLinear[src[yOff + xOff]];
+                        *dst++ = Math::Ftob(255.0f * linearToGamma((p0 + p1 + p2 + p3) * 0.25f));
+                    } else {
+                        *dst++ = (a0 + a1 + a2 + a3) * 0.25f;
+                    }
+                }
                 src++;
             }
             src += xOff;
@@ -513,26 +613,54 @@ static void BuildMipMap2DWithGamma(byte *dst, const byte *src, const int width, 
     }
 }
 
-static void BuildMipMap3DWithGamma(byte *dst, const byte *src, const int width, const int height, const int depth, const int components, const float (&gammaToLinear)[256], float (*linearToGamma)(float)) {
-    int xOff = (width < 2) ? 0 : components;
-    int yOff = (height < 2) ? 0 : components * width;
-    int zOff = (depth < 2) ? 0 : components * width * height;
+static void BuildMipMap3DWithGamma(byte *dst, const byte *src, int width, int height, int depth, int numComponents, int alphaComponentIndex, bool preserveCoverage, const float (&gammaToLinear)[256], float (*linearToGamma)(float)) {
+    int xOff = (width < 2) ? 0 : numComponents;
+    int yOff = (height < 2) ? 0 : numComponents * width;
+    int zOff = (depth < 2) ? 0 : numComponents * width * height;
 
     for (int z = 0; z < depth; z += 2) {
         for (int y = 0; y < height; y += 2) {
             for (int x = 0; x < width; x += 2) {
-                for (int i = 0; i < components; i++) {
-                    float p0 = gammaToLinear[src[0]];
-                    float p1 = gammaToLinear[src[xOff]];
-                    float p2 = gammaToLinear[src[yOff]];
-                    float p3 = gammaToLinear[src[yOff + xOff]];
-                    float p4 = gammaToLinear[src[zOff]];
-                    float p5 = gammaToLinear[src[zOff + xOff]];
-                    float p6 = gammaToLinear[src[zOff + yOff]];
-                    float p7 = gammaToLinear[src[zOff + yOff + xOff]];
-                    float po = linearToGamma(0.125f * (p0 + p1 + p2 + p3 + p4 + p5 + p6 + p7));
+                float a0 = src[alphaComponentIndex];
+                float a1 = src[alphaComponentIndex + xOff];
+                float a2 = src[alphaComponentIndex + yOff];
+                float a3 = src[alphaComponentIndex + yOff + xOff];
+                float a4 = src[alphaComponentIndex + zOff];
+                float a5 = src[alphaComponentIndex + zOff + xOff];
+                float a6 = src[alphaComponentIndex + zOff + yOff];
+                float a7 = src[alphaComponentIndex + zOff + yOff + xOff];
+                float alphaSum = a0 + a1 + a2 + a3 + a4 + a5 + a6 + a7;
 
-                    *dst++ = Math::Ftob(255.0f * po);
+                for (int i = 0; i < numComponents; i++) {
+                    if (preserveCoverage && alphaSum > 0) {
+                        if (i != alphaComponentIndex) {
+                            float p0 = gammaToLinear[src[0]] * a0;
+                            float p1 = gammaToLinear[src[xOff]] * a1;
+                            float p2 = gammaToLinear[src[yOff]] * a2;
+                            float p3 = gammaToLinear[src[yOff + xOff]] * a3;
+                            float p4 = gammaToLinear[src[zOff]] * a4;
+                            float p5 = gammaToLinear[src[zOff + xOff]] * a5;
+                            float p6 = gammaToLinear[src[zOff + yOff]] * a6;
+                            float p7 = gammaToLinear[src[zOff + yOff + xOff]] * a7;
+                            *dst++ = Math::Ftob(255.0f * linearToGamma((p0 + p1 + p2 + p3 + p4 + p5 + p6 + p7) / alphaSum));
+                        } else {
+                            *dst++ = Max(a0, Max(a1, Max(a2, Max(a3, Max(a4, Max(a5, Max(a6, a7)))))));
+                        }
+                    } else {
+                        if (i != alphaComponentIndex) {
+                            float p0 = gammaToLinear[src[0]];
+                            float p1 = gammaToLinear[src[xOff]];
+                            float p2 = gammaToLinear[src[yOff]];
+                            float p3 = gammaToLinear[src[yOff + xOff]];
+                            float p4 = gammaToLinear[src[zOff]];
+                            float p5 = gammaToLinear[src[zOff + xOff]];
+                            float p6 = gammaToLinear[src[zOff + yOff]];
+                            float p7 = gammaToLinear[src[zOff + yOff + xOff]];
+                            *dst++ = Math::Ftob(255.0f * linearToGamma((p0 + p1 + p2 + p3 + p4 + p5 + p6 + p7) * 0.125f));
+                        } else {
+                            *dst++ = (a0 + a1 + a2 + a3 + a4 + a5 + a6 + a7) * 0.125f;
+                        }
+                    }
                     src++;
                 }
                 src += xOff;
@@ -543,17 +671,39 @@ static void BuildMipMap3DWithGamma(byte *dst, const byte *src, const int width, 
     }
 }
 
-static void BuildMipMapWithGamma(byte *dst, const byte *src, const int width, const int height, const int depth, const int components, const float (&gammaToLinear)[256], float (*linearToGamma)(float)) {
+static void BuildMipMapWithGamma(byte *dst, const byte *src, int width, int height, int depth, int numComponents, int alphaComponentIndex, bool preserveCoverage, const float (&gammaToLinear)[256], float (*linearToGamma)(float)) {
     if (depth > 1) {
-        BuildMipMap3DWithGamma(dst, src, width, height, depth, components, gammaToLinear, linearToGamma);
+        BuildMipMap3DWithGamma(dst, src, width, height, depth, numComponents, alphaComponentIndex, preserveCoverage, gammaToLinear, linearToGamma);
     } else if (height > 1) {
-        BuildMipMap2DWithGamma(dst, src, width, height, components, gammaToLinear, linearToGamma);
+        BuildMipMap2DWithGamma(dst, src, width, height, numComponents, alphaComponentIndex, preserveCoverage, gammaToLinear, linearToGamma);
     } else {
-        BuildMipMap1DWithGamma(dst, src, width, components, gammaToLinear, linearToGamma);
+        BuildMipMap1DWithGamma(dst, src, width, numComponents, alphaComponentIndex, preserveCoverage, gammaToLinear, linearToGamma);
     }
 }
 
-Image &Image::GenerateMipmaps() {
+static int GetAlphaComponentIndex(Image::Format format) {
+    switch (format) {
+    case Image::Format::A_8:
+    case Image::Format::A_16F:
+    case Image::Format::A_32F:
+    case Image::Format::ABGR_8_8_8_8:
+    case Image::Format::ARGB_8_8_8_8:
+        return 0;
+    case Image::Format::LA_8_8:
+    case Image::Format::LA_16F_16F:
+    case Image::Format::LA_32F_32F:
+        return 1;
+    case Image::Format::RGBA_8_8_8_8:
+    case Image::Format::BGRA_8_8_8_8:
+    case Image::Format::RGBA_8_8_8_8_SNORM:
+    case Image::Format::RGBA_16F_16F_16F_16F:
+    case Image::Format::RGBA_32F_32F_32F_32F:
+        return 3;
+    }
+    return -1;
+}
+
+Image &Image::GenerateMipmaps(bool preserveAlphaCoverage) {
     if (IsCompressed()) {
         BE_WARNLOG("Couldn't generate mipmaps for a compressed image.\n");
         return *this;
@@ -564,6 +714,9 @@ Image &Image::GenerateMipmaps() {
         return *this;
     }
 
+    preserveAlphaCoverage = preserveAlphaCoverage && HasAlpha();
+
+    int alphaComponentIndex = GetAlphaComponentIndex(format);
     int numComponents = NumComponents();
     int numFaces = NumFaces();
 
@@ -575,26 +728,25 @@ Image &Image::GenerateMipmaps() {
                 int h = GetHeight(srcMipLevel);
                 int d = GetDepth(srcMipLevel);
 
-                byte *src = GetPixels(srcMipLevel, faceIndex, sliceIndex);
+                const byte *src = GetPixels(srcMipLevel, faceIndex, sliceIndex);
                 byte *dst = GetPixels(mipLevel, faceIndex, sliceIndex);
 
                 if (IsFloatFormat()) {
-                    BuildMipMap<float>((float *)dst, (float *)src, w, h, d, numComponents);
+                    BuildMipMap<float>((float *)dst, (float *)src, w, h, d, numComponents, alphaComponentIndex, preserveAlphaCoverage);
                 } else if (IsHalfFormat()) {
-                    BuildMipMap<half>((half *)dst, (half *)src, w, h, d, numComponents);
+                    BuildMipMap<half>((half *)dst, (half *)src, w, h, d, numComponents, alphaComponentIndex, preserveAlphaCoverage);
                 } else {
                     if (gammaSpace == GammaSpace::sRGB) {
-                        BuildMipMapWithGamma(dst, src, w, h, d, numComponents, Image::sRGBToLinearTable, Image::LinearToGammaApprox);
+                        BuildMipMapWithGamma(dst, src, w, h, d, numComponents, alphaComponentIndex, preserveAlphaCoverage, Image::sRGBToLinearTable, Image::LinearToGammaApprox);
                     } else if (gammaSpace == GammaSpace::Pow22) {
-                        BuildMipMapWithGamma(dst, src, w, h, d, numComponents, Image::pow22ToLinearTable, Image::LinearToGammaFast);
+                        BuildMipMapWithGamma(dst, src, w, h, d, numComponents, alphaComponentIndex, preserveAlphaCoverage, Image::pow22ToLinearTable, Image::LinearToGammaFast);
                     } else {
-                        BuildMipMap(dst, src, w, h, d, numComponents);
+                        BuildMipMap<byte>(dst, src, w, h, d, numComponents, alphaComponentIndex, preserveAlphaCoverage);
                     }
                 }
             }
         }
     }
-
     return *this;
 }
 

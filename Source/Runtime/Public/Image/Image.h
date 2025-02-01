@@ -177,6 +177,13 @@ public:
         HighQuality
     };
 
+    /// Mipmap generation mode
+    enum class MipmapGenerationMode : uint8_t {
+        NoMipmaps,
+        Mipmaps,
+        MipmapsWithAlphaCoverage
+    };
+
     /// Default constructor.
     Image();
 
@@ -310,14 +317,14 @@ public:
     void                Update2D(int level, int x, int y, int width, int height, const byte *data);
     
                         /// Generates all mipmaps this image has.
-    Image &             GenerateMipmaps();
+    Image &             GenerateMipmaps(bool preserveAlphaCoverage = false);
 
                         /// Converts this image to the given target image.
     bool                ConvertFormat(Format dstFormat, Image &dstImage, 
-                            GammaSpace dstGammaSpace = GammaSpace::DontCare, bool regenerateMipmaps = false, CompressionQuality compressionQuality = CompressionQuality::Normal) const;
+                            GammaSpace dstGammaSpace = GammaSpace::DontCare, MipmapGenerationMode regenerateMipmaps = MipmapGenerationMode::NoMipmaps, CompressionQuality compressionQuality = CompressionQuality::Normal) const;
                         /// Converts this image in-place.
     bool                ConvertFormatSelf(Format dstFormat, 
-                            GammaSpace dstGammaSpace = GammaSpace::DontCare, bool regenerateMipmaps = false, CompressionQuality compressionQuality = CompressionQuality::Normal);
+                            GammaSpace dstGammaSpace = GammaSpace::DontCare, MipmapGenerationMode regenerateMipmaps = MipmapGenerationMode::NoMipmaps, CompressionQuality compressionQuality = CompressionQuality::Normal);
 
                         /// Resizes this image to the given target image.
     bool                Resize(int width, int height, ResampleFilter resampleFilter, Image &dstImage) const;
