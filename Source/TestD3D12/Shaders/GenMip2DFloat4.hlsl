@@ -61,8 +61,20 @@ void CSMain(uint3 dispatchThreadId : SV_DispatchThreadID) {
         color2.rgb = RemoveSRGBCurve_Fast(color2.rgb);
         color3.rgb = RemoveSRGBCurve_Fast(color3.rgb);
     }
-    
-    float4 color = (color0 + color1 + color2 + color3) * 0.25;
+
+    float4 color = 0;
+    float alphaSum = color0.a + color1.a + color2.a + color3.a;
+
+    if (mipGenParams.flags & MIPGEN_OPTION_BIT_PRESERVE_COVERAGE && alphaSum > 0) {
+        color.rgb += color0.rgb * color0.a;
+        color.rgb += color1.rgb * color1.a;
+        color.rgb += color2.rgb * color2.a;
+        color.rgb += color3.rgb * color3.a;
+        color.rgb /= alphaSum;
+        color.a = max(color0.a, max(color1.a, max(color2.a, color3.a)));
+    } else {
+        color = (color0 + color1 + color2 + color3) * 0.25;
+    }
 
     if (mipGenParams.flags & MIPGEN_OPTION_BIT_SRGB) {
         color.rgb = ApplySRGBCurve_Fast(color.rgb);
