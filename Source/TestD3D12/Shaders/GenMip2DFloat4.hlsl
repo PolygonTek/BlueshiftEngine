@@ -18,14 +18,13 @@ Texture2D<MIP_OUTPUT_FORMAT> inputTexture : register(t0);
 SamplerState pointSampler : register(s0);
 
 [RootSignature(COMMON_ROOT_SIGNATURE)]
-[numthreads(GENMIP_2D_BLOCK_SIZE, GENMIP_2D_BLOCK_SIZE, 1)]
+[numthreads(GENMIP_2D_BLOCK_SIZE_X, GENMIP_2D_BLOCK_SIZE_Y, 1)]
 void CSMain(uint3 dispatchThreadId : SV_DispatchThreadID) {
     // 출력 텍셀의 좌표
     uint2 dstCoord = dispatchThreadId.xy;
 
     // 출력 좌표가 출력 크기를 넘어가면 조기 종료
-    if (dstCoord.x >= mipGenParams.dstSize.x || dstCoord.y >= mipGenParams.dstSize.y)
-    {
+    if (dstCoord.x >= mipGenParams.dstSize.x || dstCoord.y >= mipGenParams.dstSize.y) {
         return;
     }
 

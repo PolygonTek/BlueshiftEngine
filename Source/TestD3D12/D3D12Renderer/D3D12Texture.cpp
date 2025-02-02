@@ -1028,17 +1028,110 @@ void D3D12Renderer::GenerateMipmaps(RHI::CommandList *commandList, const RHI::Te
     }
 
     if (d3d12Texture->textureDesc.Dimension == D3D12_RESOURCE_DIMENSION_TEXTURE2D) {
-        SetPSO(commandList, BE1::Image::IsFloatFormat(imageFormat) ? genMipmaps2DFloat4PSO : genMipmaps2DUNorm4PSO);
+        if (d3d12Texture->textureDesc.DepthOrArraySize > 1) {
+            // Cubemap
+            SetPSO(commandList, BE1::Image::IsFloatFormat(imageFormat) ? genMipmapsCubeFloat4PSO : genMipmapsCubeUNorm4PSO);
+
+            for (uint32_t mipLevel = 0; mipLevel < numMipmaps - 1; ++mipLevel) {
+                uint32_t destMipLevel = mipLevel + 1;
+                uint32_t destW = d3d12Texture->textureDesc.Width >> destMipLevel;
+                uint32_t destH = d3d12Texture->textureDesc.Height >> destMipLevel;
+
+                mipGenParams.dstSize.x = destW;
+                mipGenParams.dstSize.y = destH;
+                mipGenParams.dstSizeRcp.x = 1.0f / destW;
+                mipGenParams.dstSizeRcp.y = 1.0f / destH;
+
+                uint32_t threadGroupCountX = (destW + GENMIP_2D_BLOCK_SIZE_X - 1) / GENMIP_2D_BLOCK_SIZE_X;
+                uint32_t threadGroupCountY = (destH + GENMIP_2D_BLOCK_SIZE_Y - 1) / GENMIP_2D_BLOCK_SIZE_Y;
+                uint32_t threadGroupCountZ = 6;
+
+                // Set mipmap generation constants
+                SetConstants(commandList, &mipGenParams, sizeof(mipGenParams));
+                // Set output texture
+                SetTexture(commandList, 0, true, texture, destMipLevel);
+                // Set input texture
+                SetTexture(commandList, 0, false, texture, mipLevel);
+
+                RHI::GPUBarrier startBarriers[] = {
+                    RHI::Renderer::MakeImageBarrier(texture, d3d12Texture->initialState, RHI::GPUResourceState::UnorderedAccess, 0, destMipLevel),
+                    RHI::Renderer::MakeImageBarrier(texture, d3d12Texture->initialState, RHI::GPUResourceState::UnorderedAccess, 1, destMipLevel),
+                    RHI::Renderer::MakeImageBarrier(texture, d3d12Texture->initialState, RHI::GPUResourceState::UnorderedAccess, 2, destMipLevel),
+                    RHI::Renderer::MakeImageBarrier(texture, d3d12Texture->initialState, RHI::GPUResourceState::UnorderedAccess, 3, destMipLevel),
+                    RHI::Renderer::MakeImageBarrier(texture, d3d12Texture->initialState, RHI::GPUResourceState::UnorderedAccess, 4, destMipLevel),
+                    RHI::Renderer::MakeImageBarrier(texture, d3d12Texture->initialState, RHI::GPUResourceState::UnorderedAccess, 5, destMipLevel)
+                };
+                Barrier(commandList, startBarriers, COUNT_OF(startBarriers));
+
+                Dispatch(commandList, threadGroupCountX, threadGroupCountY, threadGroupCountZ);
+
+                RHI::GPUBarrier endBarriers[] = {
+                    RHI::Renderer::MakeImageBarrier(texture, RHI::GPUResourceState::UnorderedAccess, d3d12Texture->initialState, 0, destMipLevel),
+                    RHI::Renderer::MakeImageBarrier(texture, RHI::GPUResourceState::UnorderedAccess, d3d12Texture->initialState, 1, destMipLevel),
+                    RHI::Renderer::MakeImageBarrier(texture, RHI::GPUResourceState::UnorderedAccess, d3d12Texture->initialState, 2, destMipLevel),
+                    RHI::Renderer::MakeImageBarrier(texture, RHI::GPUResourceState::UnorderedAccess, d3d12Texture->initialState, 3, destMipLevel),
+                    RHI::Renderer::MakeImageBarrier(texture, RHI::GPUResourceState::UnorderedAccess, d3d12Texture->initialState, 4, destMipLevel),
+                    RHI::Renderer::MakeImageBarrier(texture, RHI::GPUResourceState::UnorderedAccess, d3d12Texture->initialState, 5, destMipLevel)
+                };
+                Barrier(commandList, endBarriers, COUNT_OF(endBarriers));
+            }
+        } else {
+            // 2D
+            SetPSO(commandList, BE1::Image::IsFloatFormat(imageFormat) ? genMipmaps2DFloat4PSO : genMipmaps2DUNorm4PSO);
+
+            for (uint32_t mipLevel = 0; mipLevel < numMipmaps - 1; ++mipLevel) {
+                uint32_t destMipLevel = mipLevel + 1;
+                uint32_t destW = d3d12Texture->textureDesc.Width >> destMipLevel;
+                uint32_t destH = d3d12Texture->textureDesc.Height >> destMipLevel;
+
+                mipGenParams.dstSize.x = destW;
+                mipGenParams.dstSize.y = destH;
+                mipGenParams.dstSizeRcp.x = 1.0f / destW;
+                mipGenParams.dstSizeRcp.y = 1.0f / destH;
+
+                uint32_t threadGroupCountX = (destW + GENMIP_2D_BLOCK_SIZE_X - 1) / GENMIP_2D_BLOCK_SIZE_X;
+                uint32_t threadGroupCountY = (destH + GENMIP_2D_BLOCK_SIZE_Y - 1) / GENMIP_2D_BLOCK_SIZE_Y;
+
+                // Set mipmap generation constants
+                SetConstants(commandList, &mipGenParams, sizeof(mipGenParams));
+                // Set output texture
+                SetTexture(commandList, 0, true, texture, destMipLevel);
+                // Set input texture
+                SetTexture(commandList, 0, false, texture, mipLevel);
+
+                RHI::GPUBarrier startBarriers[] = {
+                    RHI::Renderer::MakeImageBarrier(texture, d3d12Texture->initialState, RHI::GPUResourceState::UnorderedAccess, 0, destMipLevel)
+                };
+                Barrier(commandList, startBarriers, COUNT_OF(startBarriers));
+
+                Dispatch(commandList, threadGroupCountX, threadGroupCountY, 1);
+
+                RHI::GPUBarrier endBarriers[] = {
+                    RHI::Renderer::MakeImageBarrier(texture, RHI::GPUResourceState::UnorderedAccess, d3d12Texture->initialState, 0, destMipLevel)
+                };
+                Barrier(commandList, endBarriers, COUNT_OF(endBarriers));
+            }
+        }
+    } else if (d3d12Texture->textureDesc.Dimension == D3D12_RESOURCE_DIMENSION_TEXTURE3D) {
+        // 3D
+        SetPSO(commandList, BE1::Image::IsFloatFormat(imageFormat) ? genMipmaps3DFloat4PSO : genMipmaps3DUNorm4PSO);
 
         for (uint32_t mipLevel = 0; mipLevel < numMipmaps - 1; ++mipLevel) {
             uint32_t destMipLevel = mipLevel + 1;
             uint32_t destW = d3d12Texture->textureDesc.Width >> destMipLevel;
             uint32_t destH = d3d12Texture->textureDesc.Height >> destMipLevel;
+            uint32_t destD = d3d12Texture->textureDesc.DepthOrArraySize >> destMipLevel;
 
             mipGenParams.dstSize.x = destW;
             mipGenParams.dstSize.y = destH;
+            mipGenParams.dstSize.z = destD;
             mipGenParams.dstSizeRcp.x = 1.0f / destW;
             mipGenParams.dstSizeRcp.y = 1.0f / destH;
+            mipGenParams.dstSizeRcp.z = 1.0f / destD;
+
+            uint32_t threadGroupCountX = (destW + GENMIP_3D_BLOCK_SIZE_X - 1) / GENMIP_3D_BLOCK_SIZE_X;
+            uint32_t threadGroupCountY = (destH + GENMIP_3D_BLOCK_SIZE_Y - 1) / GENMIP_3D_BLOCK_SIZE_Y;
+            uint32_t threadGroupCountZ = (destD + GENMIP_3D_BLOCK_SIZE_Z - 1) / GENMIP_3D_BLOCK_SIZE_Z;
 
             // Set mipmap generation constants
             SetConstants(commandList, &mipGenParams, sizeof(mipGenParams));
@@ -1052,9 +1145,7 @@ void D3D12Renderer::GenerateMipmaps(RHI::CommandList *commandList, const RHI::Te
             };
             Barrier(commandList, startBarriers, COUNT_OF(startBarriers));
 
-            Dispatch(commandList,
-                (destW + GENMIP_2D_BLOCK_SIZE - 1) / GENMIP_2D_BLOCK_SIZE,
-                (destH + GENMIP_2D_BLOCK_SIZE - 1) / GENMIP_2D_BLOCK_SIZE, 1);
+            Dispatch(commandList, threadGroupCountX, threadGroupCountY, threadGroupCountZ);
 
             RHI::GPUBarrier endBarriers[] = {
                 RHI::Renderer::MakeImageBarrier(texture, RHI::GPUResourceState::UnorderedAccess, d3d12Texture->initialState, 0, destMipLevel)

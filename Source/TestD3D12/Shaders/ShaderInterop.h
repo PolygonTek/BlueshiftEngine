@@ -37,13 +37,17 @@ using uint4 = DirectX::XMUINT4;
 
 #endif // __cplusplus
 
-static const uint GENMIP_2D_BLOCK_SIZE = 16;
+static const uint GENMIP_2D_BLOCK_SIZE_X = 32;
+static const uint GENMIP_2D_BLOCK_SIZE_Y = 32;
+static const uint GENMIP_3D_BLOCK_SIZE_X = 8;
+static const uint GENMIP_3D_BLOCK_SIZE_Y = 8;
+static const uint GENMIP_3D_BLOCK_SIZE_Z = 8;
 static const uint MIPGEN_OPTION_BIT_PRESERVE_COVERAGE = 1 << 0;
 static const uint MIPGEN_OPTION_BIT_SRGB = 1 << 1;
 
 struct MipGenParams {
-    uint2 dstSize;
-    float2 dstSizeRcp;
+    uint3 dstSize;
+    float3 dstSizeRcp;
     uint flags;
 };
 

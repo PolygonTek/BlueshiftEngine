@@ -244,4 +244,8 @@ public:
 
     RHI::PipelineState *                genMipmaps2DFloat4PSO = nullptr;
     RHI::PipelineState *                genMipmaps2DUNorm4PSO = nullptr;
+    RHI::PipelineState *                genMipmapsCubeFloat4PSO = nullptr;
+    RHI::PipelineState *                genMipmapsCubeUNorm4PSO = nullptr;
+    RHI::PipelineState *                genMipmaps3DFloat4PSO = nullptr;
+    RHI::PipelineState *                genMipmaps3DUNorm4PSO = nullptr;
 };

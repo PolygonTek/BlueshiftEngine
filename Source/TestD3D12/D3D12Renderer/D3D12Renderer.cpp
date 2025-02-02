@@ -330,6 +330,34 @@ void D3D12Renderer::InitGenMipmapsPSO() {
             DestroyShader(cs, true);
         }
     }
+    {
+        RHI::Shader *cs = static_cast<RHI::Shader *>(CreateShaderFromFile(RHI::ShaderModel::SM_6_0, RHI::ShaderStage::Compute, "Source/TestD3D12/Shaders/GenMipCubeFloat4.hlsl", "CSMain"));
+        if (cs) {
+            genMipmapsCubeFloat4PSO = CreateComputePSO(cs);
+            DestroyShader(cs, true);
+        }
+    }
+    {
+        RHI::Shader *cs = static_cast<RHI::Shader *>(CreateShaderFromFile(RHI::ShaderModel::SM_6_0, RHI::ShaderStage::Compute, "Source/TestD3D12/Shaders/GenMipCubeUNorm4.hlsl", "CSMain"));
+        if (cs) {
+            genMipmapsCubeUNorm4PSO = CreateComputePSO(cs);
+            DestroyShader(cs, true);
+        }
+    }
+    {
+        RHI::Shader *cs = static_cast<RHI::Shader *>(CreateShaderFromFile(RHI::ShaderModel::SM_6_0, RHI::ShaderStage::Compute, "Source/TestD3D12/Shaders/GenMip3DFloat4.hlsl", "CSMain"));
+        if (cs) {
+            genMipmaps3DFloat4PSO = CreateComputePSO(cs);
+            DestroyShader(cs, true);
+        }
+    }
+    {
+        RHI::Shader *cs = static_cast<RHI::Shader *>(CreateShaderFromFile(RHI::ShaderModel::SM_6_0, RHI::ShaderStage::Compute, "Source/TestD3D12/Shaders/GenMip3DUNorm4.hlsl", "CSMain"));
+        if (cs) {
+            genMipmaps3DUNorm4PSO = CreateComputePSO(cs);
+            DestroyShader(cs, true);
+        }
+    }
 }
 
 void D3D12Renderer::Shutdown() {
@@ -343,6 +371,22 @@ void D3D12Renderer::Shutdown() {
     if (genMipmaps2DUNorm4PSO) {
         DestroyPSO(genMipmaps2DUNorm4PSO, true);
         genMipmaps2DUNorm4PSO = nullptr;
+    }
+    if (genMipmapsCubeFloat4PSO) {
+        DestroyPSO(genMipmapsCubeFloat4PSO, true);
+        genMipmapsCubeFloat4PSO = nullptr;
+    }
+    if (genMipmapsCubeUNorm4PSO) {
+        DestroyPSO(genMipmapsCubeUNorm4PSO, true);
+        genMipmapsCubeUNorm4PSO = nullptr;
+    }
+    if (genMipmaps3DFloat4PSO) {
+        DestroyPSO(genMipmaps3DFloat4PSO, true);
+        genMipmaps3DFloat4PSO = nullptr;
+    }
+    if (genMipmaps3DUNorm4PSO) {
+        DestroyPSO(genMipmaps3DUNorm4PSO, true);
+        genMipmaps3DUNorm4PSO = nullptr;
     }
 
     FreePendingResources(true);
