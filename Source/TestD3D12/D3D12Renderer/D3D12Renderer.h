@@ -100,6 +100,7 @@ public:
 
     virtual RHI::Sampler *              CreateSampler(const RHI::SamplerDesc *desc) override;
     virtual void                        DestroySampler(RHI::Sampler *sampler, bool immediate = false) override;
+    virtual void                        RecreateSampler(RHI::Sampler *sampler, const RHI::SamplerDesc *desc) override;
 
     virtual RHI::PipelineState *        CreateGraphicsPSO(const RHI::PipelineStateDesc *desc) override;
     virtual RHI::PipelineState *        CreateComputePSO(const RHI::Shader *computeShader) override;

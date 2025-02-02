@@ -85,6 +85,24 @@ void D3D12Sampler::Release() {
 }
 
 RHI::Sampler *D3D12Renderer::CreateSampler(const RHI::SamplerDesc *desc) {
+    D3D12_CPU_DESCRIPTOR_HANDLE descriptorHandle = {};
+    if (samCpuDescriptorPool->Alloc(&descriptorHandle, nullptr)) {
+        return nullptr;
+    }
+
+    D3D12Sampler *sampler = new D3D12Sampler;
+    sampler->desc = *desc;
+    sampler->descriptorHandle = descriptorHandle;
+
+    RecreateSampler(sampler, desc);
+    return sampler;
+}
+
+void D3D12Renderer::DestroySampler(RHI::Sampler *sampler, bool immediate) {
+    delete sampler;
+}
+
+void D3D12Renderer::RecreateSampler(RHI::Sampler* sampler, const RHI::SamplerDesc *desc) {
     D3D12_SAMPLER_DESC samplerDesc;
     samplerDesc.Filter = ToD3D12TextureFilter(desc->filter);
     samplerDesc.AddressU = ToD3D12TextureAddressMode(desc->addressModeU);
@@ -94,23 +112,10 @@ RHI::Sampler *D3D12Renderer::CreateSampler(const RHI::SamplerDesc *desc) {
     samplerDesc.MaxAnisotropy = desc->maxAnisotropy;
     ToD3D12TextureBorderColor(desc->borderColor, samplerDesc.BorderColor);
     samplerDesc.MinLOD = desc->minLod;
-    samplerDesc.MinLOD = desc->maxLod;
+    samplerDesc.MaxLOD = desc->maxLod;
 
-    D3D12_CPU_DESCRIPTOR_HANDLE descriptorHandle = {};
-    if (samCpuDescriptorPool->Alloc(&descriptorHandle, nullptr)) {
-        return nullptr;
-    }
-
-    device->CreateSampler(&samplerDesc, descriptorHandle);
-
-    D3D12Sampler *sampler = new D3D12Sampler;
-    sampler->desc = *desc;
-    sampler->descriptorHandle = descriptorHandle;
-    return sampler;
-}
-
-void D3D12Renderer::DestroySampler(RHI::Sampler *sampler, bool immediate) {
-    delete sampler;
+    D3D12Sampler *d3d12Sampler = static_cast<D3D12Sampler *>(sampler);
+    device->CreateSampler(&samplerDesc, d3d12Sampler->descriptorHandle);
 }
 
 void D3D12Renderer::SetSampler(RHI::CommandList *commandList, int slot, RHI::Sampler *sampler) {

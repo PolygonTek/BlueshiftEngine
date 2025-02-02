@@ -241,9 +241,9 @@ namespace RHI {
         TextureAddressMode              addressModeU = TextureAddressMode::Clamp;
         TextureAddressMode              addressModeV = TextureAddressMode::Clamp;
         TextureAddressMode              addressModeW = TextureAddressMode::Clamp;
-        float                           mipLodBias = 0.0f;
-        uint32_t                        maxAnisotropy = 0;
+        uint8_t                         maxAnisotropy = 1;
         TextureBorderColor              borderColor = TextureBorderColor::OpaqueBlack;
+        float                           mipLodBias = 0.0f;
         float                           minLod = 0.0f;
         float                           maxLod = std::numeric_limits<float>::max();
     };
@@ -824,6 +824,7 @@ namespace RHI {
 
         virtual Sampler *               CreateSampler(const SamplerDesc *desc) = 0;
         virtual void                    DestroySampler(Sampler *sampler, bool immediate = false) = 0;
+        virtual void                    RecreateSampler(Sampler *sampler, const SamplerDesc *desc) = 0;
 
         virtual PipelineState *         CreateGraphicsPSO(const PipelineStateDesc *desc) = 0;
         virtual PipelineState *         CreateComputePSO(const Shader *computeShader) = 0;
