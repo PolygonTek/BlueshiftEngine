@@ -63,6 +63,8 @@ set(SRC_FILES
     Mesh.cpp
     CubeMesh.h
     CubeMesh.cpp
+    Sampler.h
+    Sampler.cpp
     GameObject.h
     GameObject.cpp
     WinMain.cpp

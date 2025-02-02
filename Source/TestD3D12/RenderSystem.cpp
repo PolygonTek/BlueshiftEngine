@@ -17,6 +17,7 @@
 #include "RenderContext.h"
 #include "RenderBackEnd.h"
 #include "D3D12Renderer/D3D12Renderer.h"
+#include "Sampler.h"
 
 RenderSystem *      renderSystem = nullptr;
 
@@ -25,6 +26,8 @@ void RenderSystem::Init(void *mainWindowHandle) {
 
     RHI::renderer = new D3D12Renderer;
     RHI::renderer->Init(mainWindowHandle);
+
+    samplerManager.Init();
 
     backEnd = new RenderBackEnd;
     backEnd->Init();
@@ -35,6 +38,8 @@ void RenderSystem::Shutdown() {
 
     backEnd->Shutdown();
     SAFE_DELETE(backEnd);
+
+    samplerManager.Shutdown();
 
     RHI::renderer->Shutdown();
     SAFE_DELETE(RHI::renderer);
