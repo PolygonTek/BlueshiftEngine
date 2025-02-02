@@ -155,6 +155,7 @@ public:
     virtual void                        EndEvent(RHI::CommandList *commandList) override;
 
     void                                InitGenMipmapsPSO();
+    void                                FreeGenMipmapsPSO();
 
     RHI::PipelineState *                CreateBasicPSO(ID3D12RootSignature *rootSignature, const D3D12_SHADER_BYTECODE &byteCodeVS, const D3D12_SHADER_BYTECODE &byteCodePS, const D3D12_INPUT_LAYOUT_DESC &inputLayout);
     RHI::PipelineState *                CreateBasicPSO(ID3D12RootSignature *rootSignature, const char *shaderFilename, const D3D12_INPUT_LAYOUT_DESC &inputLayout);

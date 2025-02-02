@@ -40,10 +40,12 @@ static constexpr D3D12_TEXTURE_ADDRESS_MODE ToD3D12TextureAddressMode(RHI::Textu
     switch (addressMode) {
     case RHI::TextureAddressMode::Repeat:
         return D3D12_TEXTURE_ADDRESS_MODE_WRAP;
-    case RHI::TextureAddressMode::MirroredRepeat:
-        return D3D12_TEXTURE_ADDRESS_MODE_MIRROR;
     case RHI::TextureAddressMode::Clamp:
         return D3D12_TEXTURE_ADDRESS_MODE_CLAMP;
+    case RHI::TextureAddressMode::MirroredRepeat:
+        return D3D12_TEXTURE_ADDRESS_MODE_MIRROR;
+    case RHI::TextureAddressMode::MirroredClamp:
+        return D3D12_TEXTURE_ADDRESS_MODE_MIRROR_ONCE;
     case RHI::TextureAddressMode::ClampToBorder:
         return D3D12_TEXTURE_ADDRESS_MODE_BORDER;
     }

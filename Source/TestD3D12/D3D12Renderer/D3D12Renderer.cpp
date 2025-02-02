@@ -312,6 +312,8 @@ void D3D12Renderer::Init(const void *mainWindowHandle) {
     maxPendingResources = 1024;
     pendingResourceBuffer = new D3D12PendingResource[maxPendingResources];
 
+    InitDefaultStates();
+
     InitGenMipmapsPSO();
 }
 
@@ -360,10 +362,7 @@ void D3D12Renderer::InitGenMipmapsPSO() {
     }
 }
 
-void D3D12Renderer::Shutdown() {
-    Finish(RHI::CommandQueueType::Graphics);
-    Finish(RHI::CommandQueueType::Compute);
-
+void D3D12Renderer::FreeGenMipmapsPSO() {
     if (genMipmaps2DFloat4PSO) {
         DestroyPSO(genMipmaps2DFloat4PSO, true);
         genMipmaps2DFloat4PSO = nullptr;
@@ -388,6 +387,15 @@ void D3D12Renderer::Shutdown() {
         DestroyPSO(genMipmaps3DUNorm4PSO, true);
         genMipmaps3DUNorm4PSO = nullptr;
     }
+}
+
+void D3D12Renderer::Shutdown() {
+    Finish(RHI::CommandQueueType::Graphics);
+    Finish(RHI::CommandQueueType::Compute);
+
+    FreeGenMipmapsPSO();
+
+    FreeDefaultStates();
 
     FreePendingResources(true);
     SAFE_DELETE(pendingResourceBuffer);

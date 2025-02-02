@@ -132,8 +132,9 @@ namespace RHI {
 
     enum class TextureAddressMode : uint8_t {
         Repeat,
-        MirroredRepeat,
         Clamp,
+        MirroredRepeat,
+        MirroredClamp,
         ClampToBorder
     };
 
@@ -748,6 +749,14 @@ namespace RHI {
         Count
     };
 
+    enum class SamplerType {
+        ClampLinear,
+        ClampNearest,
+        RepeatLinear,
+        RepeatNearest,
+        Count
+    };
+
     class Renderer {
     public:
         virtual ~Renderer() = 0 {}
@@ -876,11 +885,13 @@ namespace RHI {
         static GPUBarrier               MakeAliasingBarrier(const GPUResource *resourceBefore, const GPUResource *resourceAfter);
 
     protected:
-        void                            SetupStates();
+        void                            InitDefaultStates();
+        void                            FreeDefaultStates();
 
         RasterizerState                 rasterizerStates[to_int(RasterizerStateType::Count)];
         DepthStencilState               depthStencilStates[to_int(DepthStencilStateType::Count)];
         BlendState                      blendStates[to_int(BlendStateType::Count)];
+        Sampler *                       samplers[to_int(SamplerType::Count)];
         bool                            initialized = false;
     };
 
