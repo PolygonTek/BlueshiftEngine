@@ -113,7 +113,7 @@ public:
     const char &        operator[](int index) const;
                         /// Returns a reference to the character at index.
     char &              operator[](int index);
-                        /// Returns a const refernece to the character at index.
+                        /// Returns a const reference to the character at index.
     const char &        At(int index) const { return (*this)[index]; }
                         /// Returns a reference to the character at index.
     char &              At(int index) { return (*this)[index]; }

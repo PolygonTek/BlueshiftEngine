@@ -67,7 +67,7 @@ void Str::FreeData() {
 
 Str &Str::operator=(const char *text) {
     if (!text) {
-        // safe behaviour if nullptr
+        // safe behavior if nullptr
         EnsureAlloced(1, false);
         data[0] = '\0';
         len = 0;
