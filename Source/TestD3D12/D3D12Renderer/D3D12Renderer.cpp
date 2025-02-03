@@ -165,6 +165,15 @@ void D3D12Renderer::Init(const void *mainWindowHandle) {
 
     adapter1->Release();
 
+    // 텍스쳐의 최대 크기
+    max1DTextureSize = D3D12_REQ_TEXTURE1D_U_DIMENSION;
+    max2DTextureSize = D3D12_REQ_TEXTURE2D_U_OR_V_DIMENSION;
+    max3DTextureSize = D3D12_REQ_TEXTURE3D_U_V_OR_W_DIMENSION;
+    maxCubeTextureSize = D3D12_REQ_TEXTURECUBE_DIMENSION;
+    max1DTextureArraySize = D3D12_REQ_TEXTURE1D_ARRAY_AXIS_DIMENSION;
+    max2DTextureArraySize = D3D12_REQ_TEXTURE2D_ARRAY_AXIS_DIMENSION;
+    maxCubeTextureArraySize = D3D12_REQ_TEXTURE2D_ARRAY_AXIS_DIMENSION / 6;
+
     // Init feature check (https://devblogs.microsoft.com/directx/introducing-a-new-api-for-checking-feature-support-in-direct3d-12/)
     CD3DX12FeatureSupport features;
     hr = features.Init(device);
@@ -1760,6 +1769,7 @@ BE1::Image::Format D3D12Renderer::ToUncompressedImageFormat(BE1::Image::Format i
         break;
     case BE1::Image::Format::LA_8_8:
     case BE1::Image::Format::RGBA_4_4_4_4:
+    case BE1::Image::Format::RGBA_8_8_8_8:
     case BE1::Image::Format::RGBA_5_5_5_1:
     case BE1::Image::Format::BGRA_4_4_4_4:
     case BE1::Image::Format::BGRA_5_5_5_1:
@@ -1769,7 +1779,7 @@ BE1::Image::Format D3D12Renderer::ToUncompressedImageFormat(BE1::Image::Format i
     case BE1::Image::Format::ARGB_4_4_4_4:
     case BE1::Image::Format::ARGB_1_5_5_5:
     case BE1::Image::Format::ARGB_8_8_8_8:
-        outFormat = BE1::Image::Format::BGRA_8_8_8_8;
+        outFormat = BE1::Image::Format::RGBA_8_8_8_8;
         break;
     case BE1::Image::Format::RGB_8_8_8_SNORM:
         outFormat = BE1::Image::Format::RGBA_8_8_8_8_SNORM;

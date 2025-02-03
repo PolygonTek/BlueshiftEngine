@@ -322,7 +322,7 @@ RHI::Texture *D3D12Renderer::CreateTexture(RHI::TextureType textureType, RHI::Re
     return texture;
 }
 
-RHI::Texture *D3D12Renderer::CreateTexture(RHI::TextureType textureType, RHI::ResourceFlag flags, const BE1::Image *srcImage, BE1::Image::Format dstFormat, bool generateMipmaps) {
+RHI::Texture *D3D12Renderer::CreateTexture(RHI::TextureType textureType, RHI::ResourceFlag flags, const BE1::Image *srcImage, BE1::Image::Format dstFormat, bool useMipmaps) {
     BE1::Image::Format srcFormat = srcImage->GetFormat();
 
     bool srcCompressed = BE1::Image::IsCompressed(srcFormat);
@@ -336,42 +336,43 @@ RHI::Texture *D3D12Renderer::CreateTexture(RHI::TextureType textureType, RHI::Re
 
     BE1::Image uncompressedImage;
     BE1::Image mipmapedImage;
-
-    // 필요하다면 밉맵을 생성한다.
-    if (generateMipmaps) {
-        int w = srcImage->GetWidth();
-        int h = srcImage->GetHeight();
-        int d = srcImage->GetDepth();
-        int maxMipLevels = BE1::Image::MaxMipLevels(w, h, d);
-
-        // srcImage 가 이미 밉맵을 포함하고 있으면 무시된다.
-        if (srcImage->NumMipmaps() < maxMipLevels) {
-            if (srcImage->IsPacked() || srcImage->IsCompressed()) {
-                // 밉맵을 생성해야 한다면, 지원되는 가장 비슷한 무압축 포맷으로 컨버팅한다.
-                BE1::Image::Format supportedUncompressedFormat = ToUncompressedImageFormat(srcFormat);
-
-                srcImage->ConvertFormat(supportedUncompressedFormat, uncompressedImage);
-                srcImage = &uncompressedImage;
-
-                srcFormat = supportedUncompressedFormat;
-                srcFormatSupported = IsSupportedImageFormat(srcFormat);
-                srcCompressed = false;
-            }
-
-            // CPU 에서 밉맵을 직접 생성한다.
-            mipmapedImage.Create(w, h, d, srcImage->NumSlices(), maxMipLevels, srcImage->GetFormat(), srcImage->GetGammaSpace(), nullptr, srcImage->GetFlags());
-            mipmapedImage.CopyFrom(*srcImage, 0, 1);
-            mipmapedImage.GenerateMipmaps();
-            srcImage = &mipmapedImage;
-        }
-    }
-
     BE1::Image dstImage;
 
-    // dstFormat 으로 컨버팅
-    if (srcFormat != dstFormat) {
-        srcImage->ConvertFormat(dstFormat, dstImage);
-        srcImage = &dstImage;
+    if (!srcImage->IsEmpty()) {
+        // 필요하다면 밉맵을 생성한다.
+        if (useMipmaps) {
+            int w = srcImage->GetWidth();
+            int h = srcImage->GetHeight();
+            int d = srcImage->GetDepth();
+            int maxMipLevels = BE1::Image::MaxMipLevels(w, h, d);
+
+            // srcImage 가 이미 밉맵을 포함하고 있으면 무시된다.
+            if (srcImage->NumMipmaps() < maxMipLevels) {
+                if (srcImage->IsPacked() || srcImage->IsCompressed()) {
+                    // 밉맵을 생성해야 한다면, 지원되는 가장 비슷한 무압축 포맷으로 컨버팅한다.
+                    BE1::Image::Format supportedUncompressedFormat = ToUncompressedImageFormat(srcFormat);
+
+                    srcImage->ConvertFormat(supportedUncompressedFormat, uncompressedImage);
+                    srcImage = &uncompressedImage;
+
+                    srcFormat = supportedUncompressedFormat;
+                    srcFormatSupported = IsSupportedImageFormat(srcFormat);
+                    srcCompressed = false;
+                }
+
+                // CPU 에서 밉맵을 직접 생성한다.
+                mipmapedImage.Create(w, h, d, srcImage->NumSlices(), maxMipLevels, srcImage->GetFormat(), srcImage->GetGammaSpace(), nullptr, srcImage->GetFlags());
+                mipmapedImage.CopyFrom(*srcImage, 0, 1);
+                mipmapedImage.GenerateMipmaps();
+                srcImage = &mipmapedImage;
+            }
+        }
+
+        // dstFormat 으로 컨버팅
+        if (srcFormat != dstFormat) {
+            srcImage->ConvertFormat(dstFormat, dstImage);
+            srcImage = &dstImage;
+        }
     }
 
     return CreateTexture(textureType, flags, srcImage, false);
@@ -727,7 +728,7 @@ int D3D12Renderer::CreateSubresourceUAV(D3D12Texture *texture, uint32_t firstSli
     return texture->subresourceUavDescriptors.Append(uavDescriptor);
 }
 
-void D3D12Renderer::GetTextureImage2D(RHI::Texture *texture, int level, BE1::Image::Format dstFormat, void *outPixels) {
+void D3D12Renderer::GetTextureImage(RHI::Texture *texture, int mipLevel, int sliceIndex, BE1::Image::Format dstFormat, void *outPixels) {
     D3D12Texture *d3d12Texture = static_cast<D3D12Texture *>(texture);
     assert(d3d12Texture);
 
@@ -738,13 +739,16 @@ void D3D12Renderer::GetTextureImage2D(RHI::Texture *texture, int level, BE1::Ima
         return;
     }
 
-    // 텍스쳐 리소스의 특정 밉레벨 (서브 리소스) 의 메모리 정보를 얻어온다.
-    D3D12_PLACED_SUBRESOURCE_FOOTPRINT mipLevelFootprint;
-    UINT64 mipLevelSize;
-    device->GetCopyableFootprints(&d3d12Texture->textureDesc, level, 1, 0, &mipLevelFootprint, nullptr, nullptr, &mipLevelSize);
+    // 서브 리소스 인덱스를 계산한다.
+    int subresourceIndex = D3D12CalcSubresource(mipLevel, sliceIndex, 0, d3d12Texture->textureDesc.MipLevels, d3d12Texture->textureDesc.DepthOrArraySize);
+
+    // 서브 리소스의 메모리 정보를 얻어온다.
+    D3D12_PLACED_SUBRESOURCE_FOOTPRINT subresourceFootprint;
+    UINT64 subresourceSize;
+    device->GetCopyableFootprints(&d3d12Texture->textureDesc, subresourceIndex, 1, 0, &subresourceFootprint, nullptr, nullptr, &subresourceSize);
 
     // 리드백 버퍼를 생성한다.
-    D3D12Buffer *readbackBuffer = static_cast<D3D12Buffer *>(CreateBuffer(RHI::BufferUsage::Readback, RHI::ResourceFlag::None, mipLevelSize, textureImageFormat, 0, nullptr));
+    D3D12Buffer *readbackBuffer = static_cast<D3D12Buffer *>(CreateBuffer(RHI::BufferUsage::Readback, RHI::ResourceFlag::None, subresourceSize, textureImageFormat, 0, nullptr));
     if (!readbackBuffer) {
         BE_WARNLOG("D3D12Texture::GetTextureImage2D: Failed to create readback buffer\n");
         return;
@@ -756,12 +760,12 @@ void D3D12Renderer::GetTextureImage2D(RHI::Texture *texture, int level, BE1::Ima
     D3D12_TEXTURE_COPY_LOCATION srcLocation = {};
     srcLocation.pResource = textureResource;
     srcLocation.Type = D3D12_TEXTURE_COPY_TYPE_SUBRESOURCE_INDEX;
-    srcLocation.SubresourceIndex = 0;
+    srcLocation.SubresourceIndex = subresourceIndex;
 
     D3D12_TEXTURE_COPY_LOCATION dstLocation = {};
     dstLocation.pResource = readbackBuffer->GetResource();
     dstLocation.Type = D3D12_TEXTURE_COPY_TYPE_PLACED_FOOTPRINT;
-    dstLocation.PlacedFootprint = mipLevelFootprint;
+    dstLocation.PlacedFootprint = subresourceFootprint;
 
     resourceCommandList->Reset();
     resourceCommandList->ResourceBarrier(textureResource, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_COPY_SOURCE);
@@ -774,7 +778,7 @@ void D3D12Renderer::GetTextureImage2D(RHI::Texture *texture, int level, BE1::Ima
 
     // 리드백 버퍼를 Map 하여 내용을 메모리로 읽어온다.
     void *mappedPtr = nullptr;
-    D3D12_RANGE readRange = { 0, mipLevelSize };
+    D3D12_RANGE readRange = { 0, subresourceSize };
     readbackBuffer->GetResource()->Map(0, &readRange, &mappedPtr);
 
     const byte *srcPtr = (byte *)mappedPtr;
@@ -783,20 +787,23 @@ void D3D12Renderer::GetTextureImage2D(RHI::Texture *texture, int level, BE1::Ima
     BE1::Image tempImage;
     if (textureImageFormat != dstFormat) {
         // 컨버팅이 필요하다면, 리드백 버퍼의 내용을 tempImage 에 카피할 준비를 한다.
-        tempImage.Create2D(d3d12Texture->textureDesc.Width, d3d12Texture->textureDesc.Height, 1, textureImageFormat, isSRGB ? BE1::Image::GammaSpace::sRGB : BE1::Image::GammaSpace::Linear, nullptr, BE1::Image::Flag::None);
+        tempImage.Create2D(subresourceFootprint.Footprint.Width, subresourceFootprint.Footprint.Height, subresourceFootprint.Footprint.Depth,
+            textureImageFormat, isSRGB ? BE1::Image::GammaSpace::sRGB : BE1::Image::GammaSpace::Linear, nullptr, BE1::Image::Flag::None);
         dstPtr = tempImage.GetPixels();
     } else {
         // 컨버팅할 필요가 없다면, 리드백 버퍼의 내용을 그대로 outPixels 로 카피할 준비를 한다.
         dstPtr = (byte *)outPixels;
     }
 
-    int srcPitch = mipLevelFootprint.Footprint.RowPitch;
-    int dstPitch = BE1::Image::MemRequired(d3d12Texture->textureDesc.Width, 1, 1, 1, textureImageFormat);
+    int srcPitch = subresourceFootprint.Footprint.RowPitch;
+    int dstPitch = BE1::Image::MemRequired(subresourceFootprint.Footprint.Width, 1, 1, 1, textureImageFormat);
 
-    for (UINT y = 0; y < d3d12Texture->textureDesc.Height; ++y) {
-        BE1::simdProcessor->Memcpy(dstPtr, srcPtr, srcPitch);
-        srcPtr += srcPitch;
-        dstPtr += dstPitch;
+    for (UINT z = 0; z < subresourceFootprint.Footprint.Depth; ++z) {
+        for (UINT y = 0; y < subresourceFootprint.Footprint.Height; ++y) {
+            BE1::simdProcessor->Memcpy(dstPtr, srcPtr, dstPitch);
+            srcPtr += srcPitch;
+            dstPtr += dstPitch;
+        }
     }
 
     D3D12_RANGE writtenRange = { 0, 0 };
@@ -814,107 +821,32 @@ void D3D12Renderer::GetTextureImage2D(RHI::Texture *texture, int level, BE1::Ima
     }
 }
 
-bool D3D12Renderer::SetTextureSubImage2D(RHI::Texture *texture, int level, int x, int y, int width, int height, BE1::Image::Format srcFormat, const void *pixels) {
-    D3D12Texture *d3d12Texture = static_cast<D3D12Texture *>(texture);
-    assert(d3d12Texture);
-
-    // 텍스쳐 리소스의 특정 mipLevel 에 대한 메모리 정보를 얻어온다.
-    D3D12_PLACED_SUBRESOURCE_FOOTPRINT mipLevelFootprint;
-    device->GetCopyableFootprints(&d3d12Texture->textureDesc, level, 1, 0, &mipLevelFootprint, nullptr, nullptr, nullptr);
-
-    int srcPitch = BE1::Image::MemRequired(width, 1, 1, 1, srcFormat);
-    int dstPitch = mipLevelFootprint.Footprint.RowPitch;
-    int uploadBufferSize = BE1::Image::MemRequired(dstPitch, height, 1, 1, srcFormat);
-
-    D3D12_RESOURCE_DESC uploadBufferDesc;
-    uploadBufferDesc.Dimension = D3D12_RESOURCE_DIMENSION_BUFFER;
-    uploadBufferDesc.Alignment = 0;
-    uploadBufferDesc.Width = uploadBufferSize;
-    uploadBufferDesc.Height = 1;
-    uploadBufferDesc.DepthOrArraySize = 1;
-    uploadBufferDesc.MipLevels = 1;
-    uploadBufferDesc.Format = DXGI_FORMAT_UNKNOWN;
-    uploadBufferDesc.SampleDesc.Count = 1;
-    uploadBufferDesc.SampleDesc.Quality = 0;
-    uploadBufferDesc.Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
-    uploadBufferDesc.Flags = D3D12_RESOURCE_FLAG_NONE;
-
-    D3D12_HEAP_PROPERTIES heapProperties;
-    heapProperties.Type = D3D12_HEAP_TYPE_UPLOAD;
-    heapProperties.CPUPageProperty = D3D12_CPU_PAGE_PROPERTY_UNKNOWN;
-    heapProperties.MemoryPoolPreference = D3D12_MEMORY_POOL_UNKNOWN;
-    heapProperties.CreationNodeMask = 1;
-    heapProperties.VisibleNodeMask = 1;
-
-    // 업로드 버퍼 생성 (pitch 를 타겟 텍스쳐와 동일하게 잡는다)
-    ID3D12Resource *uploadBuffer = nullptr;
-    if (FAILED(device->CreateCommittedResource(
-        &heapProperties,
-        D3D12_HEAP_FLAG_NONE,
-        &uploadBufferDesc,
-        D3D12_RESOURCE_STATE_GENERIC_READ,
-        nullptr, IID_PPV_ARGS(&uploadBuffer)))) {
-        return false;
-    }
-
-    // 이미지 데이터를 업로드 버퍼에 write
-    UINT8 *mappedPtr = nullptr;
-    uploadBuffer->Map(0, nullptr, reinterpret_cast<void **>(&mappedPtr));
-
-    byte *dstPtr = mappedPtr;
-    const byte *srcPtr = (byte *)pixels;
-
-    for (UINT y = 0; y < height; ++y) {
-        BE1::simdProcessor->MemcpyStream(dstPtr, srcPtr, srcPitch);
-        srcPtr += srcPitch;
-        dstPtr += dstPitch;
-    }
-
-    CD3DX12_RANGE writtenRange(0, uploadBufferSize);
-    uploadBuffer->Unmap(0, &writtenRange);
-
-    ID3D12Resource *textureResource = d3d12Texture->GetResource();
-
-    // 업로드 버퍼에서 텍스쳐로 데이터 카피
-    resourceCommandList->Reset();
-    resourceCommandList->ResourceBarrier(textureResource, D3D12_RESOURCE_STATE_ALL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_COPY_DEST);
-
-    D3D12_TEXTURE_COPY_LOCATION srcLocation = {};
-    srcLocation.PlacedFootprint = mipLevelFootprint;
-    srcLocation.PlacedFootprint.Footprint.Width = width;
-    srcLocation.PlacedFootprint.Footprint.Height = height;
-    srcLocation.PlacedFootprint.Footprint.Depth = 1;
-    srcLocation.pResource = uploadBuffer;
-    srcLocation.Type = D3D12_TEXTURE_COPY_TYPE_PLACED_FOOTPRINT;
-
-    D3D12_TEXTURE_COPY_LOCATION dstLocation = {};
-    dstLocation.PlacedFootprint = mipLevelFootprint;
-    dstLocation.pResource = textureResource;
-    dstLocation.Type = D3D12_TEXTURE_COPY_TYPE_SUBRESOURCE_INDEX;
-    dstLocation.SubresourceIndex = level;
-
-    D3D12_BOX srcBox = { 0, 0, 0, (UINT)width, (UINT)height, 1 };
-    resourceCommandList->GetGraphicsCommandList()->CopyTextureRegion(&dstLocation, x, y, 0, &srcLocation, &srcBox);
-
-    resourceCommandList->ResourceBarrier(textureResource, D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_ALL_SHADER_RESOURCE);
-    resourceCommandList->CloseAndExecute(RHI::CommandQueueType::Graphics);
-
-    MarkForRelease(uploadBuffer);
-
-    return true;
+void D3D12Renderer::GetTextureImage2D(RHI::Texture *texture, int mipLevel, BE1::Image::Format imageFormat, void *outPixels) {
+    GetTextureImage(texture, mipLevel, 0, imageFormat, outPixels);
 }
 
-bool D3D12Renderer::SetTextureSubImage3D(RHI::Texture *texture, int level, int x, int y, int z, int width, int height, int depth, BE1::Image::Format srcFormat, const void *pixels) {
+void D3D12Renderer::GetTextureImage3D(RHI::Texture *texture, int mipLevel, BE1::Image::Format imageFormat, void *outPixels) {
+    GetTextureImage(texture, mipLevel, 0, imageFormat, outPixels);
+}
+
+void D3D12Renderer::GetTextureImageCubeFace(RHI::Texture *texture, RHI::CubemapFace face, int mipLevel, BE1::Image::Format imageFormat, void *outPixels) {
+    GetTextureImage(texture, mipLevel, to_int(face), imageFormat, outPixels);
+}
+
+bool D3D12Renderer::SetTextureSubImage(RHI::Texture *texture, int mipLevel, int sliceIndex, int x, int y, int z, int width, int height, int depth, BE1::Image::Format imageFormat, const void *pixels) {
     D3D12Texture *d3d12Texture = static_cast<D3D12Texture *>(texture);
     assert(d3d12Texture);
 
-    // 텍스쳐 리소스의 특정 mipLevel 에 대한 메모리 정보를 얻어온다.
-    D3D12_PLACED_SUBRESOURCE_FOOTPRINT mipLevelFootprint;
-    device->GetCopyableFootprints(&d3d12Texture->textureDesc, level, 1, 0, &mipLevelFootprint, nullptr, nullptr, nullptr);
+    // 서브 리소스 인덱스를 계산한다.
+    int subresourceIndex = D3D12CalcSubresource(mipLevel, sliceIndex, 0, d3d12Texture->textureDesc.MipLevels, d3d12Texture->textureDesc.DepthOrArraySize);
 
-    int srcPitch = BE1::Image::MemRequired(width, 1, 1, 1, srcFormat);
-    int dstPitch = mipLevelFootprint.Footprint.RowPitch;
-    int uploadBufferSize = BE1::Image::MemRequired(dstPitch, height, depth, 1, srcFormat);
+    // 서브 리소스의 메모리 정보를 얻어온다.
+    D3D12_PLACED_SUBRESOURCE_FOOTPRINT subresourceFootprint;
+    device->GetCopyableFootprints(&d3d12Texture->textureDesc, subresourceIndex, 1, 0, &subresourceFootprint, nullptr, nullptr, nullptr);
+
+    int srcPitch = BE1::Image::MemRequired(width, 1, 1, 1, imageFormat);
+    int dstPitch = subresourceFootprint.Footprint.RowPitch;
+    int uploadBufferSize = BE1::Image::MemRequired(dstPitch, height, depth, 1, imageFormat);
 
     D3D12_RESOURCE_DESC uploadBufferDesc;
     uploadBufferDesc.Dimension = D3D12_RESOURCE_DIMENSION_BUFFER;
@@ -972,7 +904,7 @@ bool D3D12Renderer::SetTextureSubImage3D(RHI::Texture *texture, int level, int x
     resourceCommandList->ResourceBarrier(textureResource, D3D12_RESOURCE_STATE_ALL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_COPY_DEST);
 
     D3D12_TEXTURE_COPY_LOCATION srcLocation = {};
-    srcLocation.PlacedFootprint = mipLevelFootprint;
+    srcLocation.PlacedFootprint = subresourceFootprint;
     srcLocation.PlacedFootprint.Footprint.Width = width;
     srcLocation.PlacedFootprint.Footprint.Height = height;
     srcLocation.PlacedFootprint.Footprint.Depth = depth;
@@ -980,10 +912,10 @@ bool D3D12Renderer::SetTextureSubImage3D(RHI::Texture *texture, int level, int x
     srcLocation.Type = D3D12_TEXTURE_COPY_TYPE_PLACED_FOOTPRINT;
 
     D3D12_TEXTURE_COPY_LOCATION dstLocation = {};
-    dstLocation.PlacedFootprint = mipLevelFootprint;
+    dstLocation.PlacedFootprint = subresourceFootprint;
     dstLocation.pResource = textureResource;
     dstLocation.Type = D3D12_TEXTURE_COPY_TYPE_SUBRESOURCE_INDEX;
-    dstLocation.SubresourceIndex = level;
+    dstLocation.SubresourceIndex = subresourceIndex;
 
     D3D12_BOX srcBox = { 0, 0, 0, (UINT)width, (UINT)height, (UINT)depth };
     resourceCommandList->GetGraphicsCommandList()->CopyTextureRegion(&dstLocation, x, y, z, &srcLocation, &srcBox);
@@ -994,6 +926,18 @@ bool D3D12Renderer::SetTextureSubImage3D(RHI::Texture *texture, int level, int x
     MarkForRelease(uploadBuffer);
 
     return true;
+}
+
+bool D3D12Renderer::SetTextureSubImage2D(RHI::Texture *texture, int mipLevel, int x, int y, int width, int height, BE1::Image::Format imageFormat, const void *pixels) {
+    return SetTextureSubImage(texture, mipLevel, 0, x, y, 0, width, height, 1, imageFormat, pixels);
+}
+
+bool D3D12Renderer::SetTextureSubImage3D(RHI::Texture *texture, int mipLevel, int x, int y, int z, int width, int height, int depth, BE1::Image::Format imageFormat, const void *pixels) {
+    return SetTextureSubImage(texture, mipLevel, 0, x, y, z, width, height, depth, imageFormat, pixels);
+}
+
+bool D3D12Renderer::SetTextureSubImageCubeFace(RHI::Texture *texture, RHI::CubemapFace face, int mipLevel, int x, int y, int width, int height, BE1::Image::Format imageFormat, const void *pixels) {
+    return SetTextureSubImage(texture, mipLevel, to_int(face), x, y, 0, width, height, 1, imageFormat, pixels);
 }
 
 void D3D12Renderer::GenerateMipmaps(RHI::CommandList *commandList, const RHI::Texture *texture) {

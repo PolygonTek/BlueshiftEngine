@@ -161,14 +161,69 @@ void RHI::Renderer::AdjustTextureFormat(bool useCompression, bool useNormalMap, 
         return;
     }
 
-    if (BE1::Image::IsCompressed(inFormat)) {
-        if (IsSupportedImageFormat(inFormat)) {
-            *outFormat = inFormat;
-            return;
-        }
-
-        inFormat = ToUncompressedImageFormat(inFormat);
+    if (IsSupportedImageFormat(inFormat)) {
+        *outFormat = inFormat;
+        return;
     }
 
-    *outFormat = useCompression ? ToCompressedImageFormat(inFormat, useNormalMap) : ToUncompressedImageFormat(inFormat);
+    inFormat = ToUncompressedImageFormat(inFormat);
+
+    *outFormat = useCompression ? ToCompressedImageFormat(inFormat, useNormalMap) : inFormat;
+}
+
+void RHI::Renderer::AdjustTextureSize(TextureType textureType, bool useNPOT, uint32_t inWidth, uint32_t inHeight, uint32_t inDepth, uint32_t *outWidth, uint32_t *outHeight, uint32_t *outDepth) {
+    uint32_t w, h, d;
+
+    if (useNPOT) {
+        w = inWidth;
+        h = inHeight;
+        d = inDepth;
+    } else {
+        // Fit multiplier size of 2.
+        w = BE1::Math::RoundUpPowerOfTwo(inWidth);
+        h = BE1::Math::RoundUpPowerOfTwo(inHeight);
+        d = BE1::Math::RoundUpPowerOfTwo(inDepth);
+    }
+
+    switch (textureType) {
+    case TextureType::Texture1D:
+    case TextureType::Texture1DArray:
+        if (w > max1DTextureSize) w = max1DTextureSize;
+        break;
+    case TextureType::Texture2D:
+    case TextureType::Texture2DArray:
+        if (w > max2DTextureSize) w = max2DTextureSize;
+        if (h > max2DTextureSize) h = max2DTextureSize;
+        break;
+    case TextureType::Texture3D:
+        if (w > max3DTextureSize) w = max3DTextureSize;
+        if (h > max3DTextureSize) h = max3DTextureSize;
+        if (d > max3DTextureSize) d = max3DTextureSize;
+        break;
+    case TextureType::TextureCube:
+    case TextureType::TextureCubeArray:
+        if (w > maxCubeTextureSize) w = maxCubeTextureSize;
+        if (h > maxCubeTextureSize) h = maxCubeTextureSize;
+
+        // For cubemaps, set the width and height equally.
+        if (w < h) {
+            h = w;
+        } else {
+            w = h;
+        }
+        break;
+    default:
+        assert(0);
+        break;
+    }
+
+    if (outWidth) {
+        *outWidth = w;
+    }
+    if (outHeight) {
+        *outHeight = h;
+    }
+    if (outDepth) {
+        *outDepth = d;
+    }
 }

@@ -65,6 +65,9 @@ set(SRC_FILES
     CubeMesh.cpp
     Sampler.h
     Sampler.cpp
+    Texture.h
+    Texture.cpp
+    TextureManager.cpp
     GameObject.h
     GameObject.cpp
     WinMain.cpp

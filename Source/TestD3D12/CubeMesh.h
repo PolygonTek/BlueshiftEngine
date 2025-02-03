@@ -16,6 +16,7 @@
 
 #include "RHI.h"
 #include "Mesh.h"
+#include "Texture.h"
 
 class RenderContext;
 class VisCamera;
@@ -35,7 +36,7 @@ public:
     void                        DrawMesh(RHI::CommandList *commandList, const VisCamera *visCamera, const BE1::Mat3x4 &worldMatrix);
     void                        DrawMeshInstanced(RHI::CommandList *commandList, const VisCamera *visCamera, const BE1::Mat3x4 *instanceData, int instanceCount);
 
-    RHI::Texture *              texture = nullptr;
+    Texture *                   texture = nullptr;
     RHI::VertexBuffer *         vertexBuffer = nullptr;
     RHI::IndexBuffer *          indexBuffer = nullptr; 
     RHI::PipelineState *        singlePSO = nullptr;

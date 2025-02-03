@@ -189,6 +189,15 @@ namespace RHI {
         Texture3D,
     };
 
+    enum class CubemapFace : uint8_t {
+        PositiveX,
+        NegativeX,
+        PositiveY,
+        NegativeY,
+        PositiveZ,
+        NegativeZ
+    };
+
     enum class SubresourceType : uint8_t {
         SRV,        // Shader Resource View
         UAV,        // Unordered Access View
@@ -560,10 +569,10 @@ namespace RHI {
     };
 
     enum class RenderPassFlag : uint8_t {
-        None = 0,
-        AllowUAVWrites = BIT(0),
-        Suspending = BIT(1),
-        Resuming = BIT(2)
+        None                            = 0,
+        AllowUAVWrites                  = BIT(0),
+        Suspending                      = BIT(1),
+        Resuming                        = BIT(2)
     };
 
     struct RenderPassImage {
@@ -803,14 +812,18 @@ namespace RHI {
         virtual void                    DestroyConstantBuffer(ConstantBuffer *constantBuffer, bool immediate = false) = 0;
 
         void                            AdjustTextureFormat(bool useCompression, bool useNormalMap, BE1::Image::Format inFormat, BE1::Image::Format *outFormat);
+        void                            AdjustTextureSize(TextureType textureType, bool useNPOT, uint32_t inWidth, uint32_t inHeight, uint32_t inDepth, uint32_t *outWidth, uint32_t *outHeight, uint32_t *outDepth);
 
         virtual Texture *               CreateTexture(TextureType textureType, ResourceFlag flags, const BE1::Image *image, bool allocateEmptyMipmaps, const ClearValue &clearValue = {}, uint32_t sampleCount = 1, GPUResourceState initialState = GPUResourceState::Undefined) = 0;
-        virtual Texture *               CreateTexture(TextureType textureType, ResourceFlag flags, const BE1::Image *image, BE1::Image::Format dstFormat, bool generateMipmaps) = 0;
+        virtual Texture *               CreateTexture(TextureType textureType, ResourceFlag flags, const BE1::Image *image, BE1::Image::Format dstFormat, bool useMipmaps) = 0;
         virtual Texture *               CreateTextureFromFile(TextureType textureType, ResourceFlag flags, const char *filename, bool useCompression = true, bool useNormalMap = false);
         virtual void                    DestroyTexture(Texture *texture, bool immediate = false) = 0;
-        virtual void                    GetTextureImage2D(Texture *texture, int level, BE1::Image::Format imageFormat, void *outPixels) = 0;
-        virtual bool                    SetTextureSubImage2D(Texture *texture, int level, int x, int y, int width, int height, BE1::Image::Format imageFormat, const void *pixels) = 0;
-        virtual bool                    SetTextureSubImage3D(Texture *texture, int level, int x, int y, int z, int width, int height, int depth, BE1::Image::Format imageFormat, const void *pixels) = 0;
+        virtual void                    GetTextureImage2D(Texture *texture, int mipLevel, BE1::Image::Format imageFormat, void *outPixels) = 0;
+        virtual void                    GetTextureImage3D(Texture *texture, int mipLevel, BE1::Image::Format imageFormat, void *outPixels) = 0;
+        virtual void                    GetTextureImageCubeFace(Texture *texture, CubemapFace face, int mipLevel, BE1::Image::Format imageFormat, void *outPixels) = 0;
+        virtual bool                    SetTextureSubImage2D(Texture *texture, int mipLevel, int x, int y, int width, int height, BE1::Image::Format imageFormat, const void *pixels) = 0;
+        virtual bool                    SetTextureSubImage3D(Texture *texture, int mipLevel, int x, int y, int z, int width, int height, int depth, BE1::Image::Format imageFormat, const void *pixels) = 0;
+        virtual bool                    SetTextureSubImageCubeFace(RHI::Texture *texture, RHI::CubemapFace face, int mipLevel, int x, int y, int width, int height, BE1::Image::Format imageFormat, const void *pixels) = 0;
 
         virtual int                     CreateSubresource(Buffer *buffer, SubresourceType subresourceType, uint64_t offset = 0, uint64_t size = ~0) = 0;
         virtual int                     CreateSubresource(Texture *texture, SubresourceType type, uint32_t firstSlice = 0, uint32_t sliceCount = ~0, uint32_t firstMipLevel = 0, uint32_t mipCount = ~0) = 0;
@@ -893,6 +906,13 @@ namespace RHI {
         DepthStencilState               depthStencilStates[to_int(DepthStencilStateType::Count)];
         BlendState                      blendStates[to_int(BlendStateType::Count)];
         Sampler *                       samplers[to_int(SamplerType::Count)];
+        uint32_t                        max1DTextureSize = 0;
+        uint32_t                        max2DTextureSize = 0;
+        uint32_t                        max3DTextureSize = 0;
+        uint32_t                        maxCubeTextureSize = 0;
+        uint32_t                        max1DTextureArraySize = 0;
+        uint32_t                        max2DTextureArraySize = 0;
+        uint32_t                        maxCubeTextureArraySize = 0;
         bool                            initialized = false;
     };
 
