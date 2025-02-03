@@ -254,8 +254,6 @@ public:
     int                 GetDepth(int mipMapLevel) const;
                         /// Returns number of mip levels.
     int                 NumMipmaps() const { return numMipmaps; }
-                        /// Returns number of faces.
-    int                 NumFaces() const { return IsCubeMap() ? 6 : 1; }
                         /// Returns number of slices.
     int                 NumSlices() const { return numSlices; }
                         /// Returns image flags.
@@ -271,8 +269,8 @@ public:
     byte *              GetPixels() const { return pic; }
                         /// Returns pixel data pointer with the given mip level.
     byte *              GetPixels(int level) const;
-                        /// Returns pixel data pointer with the given mip level and face index and slice index.
-    byte *              GetPixels(int level, int faceIndex, int sliceIndex) const;
+                        /// Returns pixel data pointer with the given mip level and slice index.
+    byte *              GetPixels(int level, int sliceIndex) const;
 
                         /// Returns linearly interpolated Color4 sample with the given 2D coordinates.
     Color4              Sample2D(const Vec2 &st, SampleWrapMode wrapModeS = SampleWrapMode::Clamp, SampleWrapMode wrapModeT = SampleWrapMode::Clamp, SampleFilter filter = SampleFilter::Bilinear, int level = 0) const;
@@ -285,7 +283,7 @@ public:
                         /// Returns number of bytes with the given mipmap levels.
     int                 SizeInBytes(int firstLevel = 0, int numLevels = 1) const;
                         /// Returns number of bytes of single cubemap face with the given mipmap levels.
-    int                 SizeInBytesForFace(int firstLevel = 0, int numLevels = 1) const;
+    int                 SizeInBytesForSlice(int firstLevel = 0, int numLevels = 1) const;
                         
                         /// Clears allocated pixel data.
     void                Clear();
@@ -390,7 +388,7 @@ public:
     static bool         IsDepthFormat(Format imageFormat);
     static bool         IsDepthStencilFormat(Format imageFormat);
     static bool         NeedFloatConversion(Format imageFormat);
-    static uint64_t     MemRequired(int width, int height, int depth, int numMipmaps, Format imageFormat);
+    static uint64_t     MemRequired(int width, int height, int depth, int numMipmaps, int numSlices, Format imageFormat);
     static int          MaxMipLevels(int width, int height, int depth);
 
                         /// Converts an sRGB value in the range [0, 1] to a linear value in the range [0, 1].
@@ -519,12 +517,15 @@ BE_INLINE byte *Image::GetPixels(int level) const {
     return (level < numMipmaps) ? pic + SizeInBytes(0, level) : nullptr;
 }
 
-BE_INLINE byte *Image::GetPixels(int level, int faceIndex, int sliceIndex) const {
-    if (level >= numMipmaps || faceIndex >= NumFaces() || sliceIndex >= numSlices) {
+BE_INLINE byte *Image::GetPixels(int level, int sliceIndex) const {
+    if (level >= numMipmaps || sliceIndex >= numSlices) {
         return nullptr;
     }
-    int offset = SizeInBytesForFace(0, numMipmaps) * (NumFaces() * sliceIndex + faceIndex) + SizeInBytesForFace(0, level);
-    return pic + offset;
+    // Image 의 데이터는 Slice 우선순으로 저장되어 있다.
+    // Slice0: Mip0, Mip1, Mip2, ...
+    // Slice1: Mip0, Mip1, Mip2, ...
+    // ...
+    return pic + SizeInBytesForSlice(0, numMipmaps) * sliceIndex + SizeInBytesForSlice(0, level);
 }
 
 BE_INLINE Image &Image::Create2D(int width, int height, int numMipmaps, Format format, GammaSpace gammaSpace, const byte *data, Flag flags) {

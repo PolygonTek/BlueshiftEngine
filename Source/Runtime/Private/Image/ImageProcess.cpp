@@ -27,7 +27,7 @@ Image &Image::FlipY() {
         return *this;
     }
 
-    byte *tmp = (byte *)Mem_Alloc16(Image::MemRequired(width, 1, 1, 1, format));
+    byte *tmp = (byte *)Mem_Alloc16(Image::MemRequired(width, 1, 1, 1, 1, format));
     byte *src = pic;
 
     for (int mipLevel = 0; mipLevel < numMipmaps; mipLevel++) {
@@ -36,7 +36,7 @@ Image &Image::FlipY() {
         int sliceSize = SizeInBytes(mipLevel);
 
         int h2 = h / 2;
-        int pitch = Image::MemRequired(w, 1, 1, 1, format);
+        int pitch = Image::MemRequired(w, 1, 1, 1, 1, format);
 
         for (int y = 0; y < h2; y++) {
             simdProcessor->Memcpy(tmp, src + y*pitch, pitch);
@@ -718,31 +718,29 @@ Image &Image::GenerateMipmaps(bool preserveAlphaCoverage) {
 
     int alphaComponentIndex = GetAlphaComponentIndex(format);
     int numComponents = NumComponents();
-    int numFaces = NumFaces();
+    int numSlices = NumSlices();
 
     for (int sliceIndex = 0; sliceIndex < numSlices; sliceIndex++) {
-        for (int faceIndex = 0; faceIndex < numFaces; faceIndex++) {
-            for (int mipLevel = 1; mipLevel < numMipmaps; mipLevel++) {
-                int srcMipLevel = mipLevel - 1;
-                int w = GetWidth(srcMipLevel);
-                int h = GetHeight(srcMipLevel);
-                int d = GetDepth(srcMipLevel);
+        for (int mipLevel = 1; mipLevel < numMipmaps; mipLevel++) {
+            int srcMipLevel = mipLevel - 1;
+            int w = GetWidth(srcMipLevel);
+            int h = GetHeight(srcMipLevel);
+            int d = GetDepth(srcMipLevel);
 
-                const byte *src = GetPixels(srcMipLevel, faceIndex, sliceIndex);
-                byte *dst = GetPixels(mipLevel, faceIndex, sliceIndex);
+            const byte *src = GetPixels(srcMipLevel, sliceIndex);
+            byte *dst = GetPixels(mipLevel, sliceIndex);
 
-                if (IsFloatFormat()) {
-                    BuildMipMap<float>((float *)dst, (float *)src, w, h, d, numComponents, alphaComponentIndex, preserveAlphaCoverage);
-                } else if (IsHalfFormat()) {
-                    BuildMipMap<half>((half *)dst, (half *)src, w, h, d, numComponents, alphaComponentIndex, preserveAlphaCoverage);
+            if (IsFloatFormat()) {
+                BuildMipMap<float>((float *)dst, (float *)src, w, h, d, numComponents, alphaComponentIndex, preserveAlphaCoverage);
+            } else if (IsHalfFormat()) {
+                BuildMipMap<half>((half *)dst, (half *)src, w, h, d, numComponents, alphaComponentIndex, preserveAlphaCoverage);
+            } else {
+                if (gammaSpace == GammaSpace::sRGB) {
+                    BuildMipMapWithGamma(dst, src, w, h, d, numComponents, alphaComponentIndex, preserveAlphaCoverage, Image::sRGBToLinearTable, Image::LinearToGammaApprox);
+                } else if (gammaSpace == GammaSpace::Pow22) {
+                    BuildMipMapWithGamma(dst, src, w, h, d, numComponents, alphaComponentIndex, preserveAlphaCoverage, Image::pow22ToLinearTable, Image::LinearToGammaFast);
                 } else {
-                    if (gammaSpace == GammaSpace::sRGB) {
-                        BuildMipMapWithGamma(dst, src, w, h, d, numComponents, alphaComponentIndex, preserveAlphaCoverage, Image::sRGBToLinearTable, Image::LinearToGammaApprox);
-                    } else if (gammaSpace == GammaSpace::Pow22) {
-                        BuildMipMapWithGamma(dst, src, w, h, d, numComponents, alphaComponentIndex, preserveAlphaCoverage, Image::pow22ToLinearTable, Image::LinearToGammaFast);
-                    } else {
-                        BuildMipMap<byte>(dst, src, w, h, d, numComponents, alphaComponentIndex, preserveAlphaCoverage);
-                    }
+                    BuildMipMap<byte>(dst, src, w, h, d, numComponents, alphaComponentIndex, preserveAlphaCoverage);
                 }
             }
         }

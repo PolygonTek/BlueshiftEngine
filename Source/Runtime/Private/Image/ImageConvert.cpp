@@ -329,28 +329,26 @@ bool Image::ConvertFormat(Format dstFormat, Image &dstImage, GammaSpace dstGamma
     byte *dstPtr = dstImage.GetPixels();
 
     for (int sliceIndex = 0; sliceIndex < srcImage->numSlices; sliceIndex++) {
-        for (int faceIndex = 0; faceIndex < srcImage->NumFaces(); faceIndex++) {
-            for (int mipLevel = 0; mipLevel < srcImage->numMipmaps; mipLevel++) {
-                int w = srcImage->GetWidth(mipLevel);
-                int h = srcImage->GetHeight(mipLevel);
-                int d = srcImage->GetDepth(mipLevel);
+        for (int mipLevel = 0; mipLevel < srcImage->numMipmaps; mipLevel++) {
+            int w = srcImage->GetWidth(mipLevel);
+            int h = srcImage->GetHeight(mipLevel);
+            int d = srcImage->GetDepth(mipLevel);
 
-                int srcPitch = srcImage->BytesPerPixel() * w;
-                int dstPitch = dstImage.BytesPerPixel() * w;
+            int srcPitch = srcImage->BytesPerPixel() * w;
+            int dstPitch = dstImage.BytesPerPixel() * w;
 
-                for (int z = 0; z < d; z++) {
-                    for (int y = 0; y < h; y++) {
-                        unpackFunc(srcPtr, unpackedBuffer, w);
+            for (int z = 0; z < d; z++) {
+                for (int y = 0; y < h; y++) {
+                    unpackFunc(srcPtr, unpackedBuffer, w);
 
-                        if (gammaConversionFunc) {
-                            gammaConversionFunc((float *)unpackedBuffer, 4 * w);
-                        }
-
-                        packFunc(unpackedBuffer, dstPtr, w);
-
-                        srcPtr += srcPitch;
-                        dstPtr += dstPitch;
+                    if (gammaConversionFunc) {
+                        gammaConversionFunc((float *)unpackedBuffer, 4 * w);
                     }
+
+                    packFunc(unpackedBuffer, dstPtr, w);
+
+                    srcPtr += srcPitch;
+                    dstPtr += dstPitch;
                 }
             }
         }

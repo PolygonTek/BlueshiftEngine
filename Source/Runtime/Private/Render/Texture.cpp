@@ -27,8 +27,7 @@ bool Texture::IsDefaultTexture() const {
 
 int Texture::MemRequired(bool includingMipmaps) const {
     int numMipmaps = includingMipmaps ? Image::MaxMipLevels(width, height, depth) : 1;
-    int numFaces = type == Graphics::TextureType::TextureCubeMap ? 6 : 1;
-    int size = Image::MemRequired(width, height, depth, numMipmaps, format) * numFaces * numSlices;
+    int size = Image::MemRequired(width, height, depth, numMipmaps, numSlices, format);
     return size;
 }
 
@@ -207,7 +206,7 @@ void Texture::CreateDefaultCubeMapTexture(int size, int flags) {
     image.CreateCube(size, 1, Image::Format::L_8, Image::GammaSpace::sRGB, nullptr, Image::Flag::None);
     byte *dst = image.GetPixels();
 
-    int faceSize = image.SizeInBytesForFace();
+    int faceSize = image.SizeInBytesForSlice();
 
     for (int i = 0; i < 6; i++) {
         for (int y = 0; y < size; y++) {
@@ -235,7 +234,7 @@ void Texture::CreateBlackCubeMapTexture(int size, int flags) {
     image.CreateCube(size, 1, Image::Format::L_8, Image::GammaSpace::sRGB, nullptr, Image::Flag::None);
     byte *dst = image.GetPixels();
 
-    int faceSize = image.SizeInBytesForFace();
+    int faceSize = image.SizeInBytesForSlice();
 
     for (int i = 0; i < 6; i++) {
         memset(dst, 0, faceSize);
@@ -258,7 +257,7 @@ void Texture::CreateNormalizationCubeMapTexture(int size, int flags) {
     image.CreateCube(size, 1, Image::Format::RGB_8_8_8, Image::GammaSpace::Linear, nullptr, Image::Flag::None);
     byte *dst = image.GetPixels();
 
-    int sliceSize = image.SizeInBytesForFace();
+    int sliceSize = image.SizeInBytesForSlice();
     float invSize = 1.0f / (size - 1);
     Vec3 dir;
 
@@ -324,7 +323,7 @@ void Texture::CreateCubicNormalCubeMapTexture(int size, int flags) {
     image.CreateCube(size, 1, Image::Format::RGB_8_8_8_SNORM, Image::GammaSpace::Linear, nullptr, Image::Flag::None);
     int8_t *dst = (int8_t *)image.GetPixels();
 
-    int facesize = image.SizeInBytesForFace();
+    int facesize = image.SizeInBytesForSlice();
 
     for (int i = 0; i < 6; i++) {
         for (int y = 0; y < size; y++) {

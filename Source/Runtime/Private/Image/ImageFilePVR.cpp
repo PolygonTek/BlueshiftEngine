@@ -292,8 +292,7 @@ bool Image::LoadPVR3FromMemory(const char *name, const byte *data, size_t fileSi
     this->depth = header->u32Depth;
     this->gammaSpace = header->u32ColourSpace == ePVRTCSpacelRGB ? GammaSpace::Linear : GammaSpace::sRGB;
     this->numMipmaps = Max(1, (int)header->u32MIPMapCount);
-    //Max(1, (int)header->u32NumSurfaces);
-    this->numSlices = Max(1, (int)header->u32NumSurfaces);
+    this->numSlices = header->u32NumFaces * Max(1, (int)header->u32NumSurfaces);
     this->flags = header->u32NumFaces == 6 ? Flag::CubeMap : Flag::None;
     
     size_t dataSize = fileSize - (ptr - data);

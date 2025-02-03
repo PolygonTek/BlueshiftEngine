@@ -17,7 +17,7 @@
 
 int Texture::MemRequired(bool includingMipmaps) const {
     int numMipmaps = includingMipmaps ? BE1::Image::MaxMipLevels(width, height, depth) : 1;
-    int size = BE1::Image::MemRequired(width, height, depth, numMipmaps, format) * numSlices;
+    int size = BE1::Image::MemRequired(width, height, depth, numMipmaps, numSlices, format);
     return size;
 }
 

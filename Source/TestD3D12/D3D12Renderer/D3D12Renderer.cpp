@@ -937,7 +937,7 @@ void D3D12Renderer::ReadPixels(RHI::CommandList *commandList, const RHI::SwapCha
     }
 
     int srcPitch = mipLevelFootprint.Footprint.RowPitch;
-    int dstPitch = BE1::Image::MemRequired(width, 1, 1, 1, backBufferFormat);
+    int dstPitch = BE1::Image::MemRequired(width, 1, 1, 1, 1, backBufferFormat);
 
     for (UINT y = 0; y < height; ++y) {
         BE1::simdProcessor->Memcpy(dstPtr, srcPtr, srcPitch);

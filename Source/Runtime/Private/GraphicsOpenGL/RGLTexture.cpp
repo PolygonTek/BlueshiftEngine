@@ -507,7 +507,7 @@ void GraphicsOpenGL::SetTextureImage(TextureType::Enum textureType, const Image 
             for (int faceIndex = 0; faceIndex < 6; faceIndex++) {
                 for (int level = 0; level < maxLevel; level++) {
                     int w = srcImage->GetWidth(level);
-                    int size = srcImage->SizeInBytesForFace(level);
+                    int size = srcImage->SizeInBytesForSlice(level);
                     if (srcCompressed) {
                         gglCompressedTexSubImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + faceIndex, level, 0, 0, w, w, format, size, pic);
                     } else {
@@ -575,7 +575,7 @@ void GraphicsOpenGL::SetTextureSubImage2D(int level, int xoffset, int yoffset, i
     BeginUnpackAlignment(Image::BytesPerPixel(srcFormat) * width);
 
     if (srcCompressed) {
-        int size = Image::MemRequired(width, height, 1, 1, srcFormat);
+        int size = Image::MemRequired(width, height, 1, 1, 1, srcFormat);
         gglCompressedTexSubImage2D(GL_TEXTURE_2D, level, xoffset, yoffset, width, height, format, size, pixels);
     } else {
         gglTexSubImage2D(GL_TEXTURE_2D, level, xoffset, yoffset, width, height, format, type, pixels);
@@ -599,7 +599,7 @@ void GraphicsOpenGL::SetTextureSubImage3D(int level, int xoffset, int yoffset, i
     BeginUnpackAlignment(Image::BytesPerPixel(srcFormat) * width);
 
     if (srcCompressed) {
-        int size = Image::MemRequired(width, height, depth, 1, srcFormat);
+        int size = Image::MemRequired(width, height, depth, 1, 1, srcFormat);
         gglCompressedTexSubImage3D(GL_TEXTURE_3D, level, xoffset, yoffset, zoffset, width, height, depth, format, size, pixels);
     } else {
         gglTexSubImage3D(GL_TEXTURE_3D, level, xoffset, yoffset, zoffset, width, height, depth, format, type, pixels);
@@ -623,7 +623,7 @@ void GraphicsOpenGL::SetTextureSubImage2DArray(int level, int xoffset, int yoffs
     BeginUnpackAlignment(Image::BytesPerPixel(srcFormat) * width);
 
     if (srcCompressed) {
-        int size = Image::MemRequired(width, height, arrays, 1, srcFormat);
+        int size = Image::MemRequired(width, height, 1, 1, arrays, srcFormat);
         gglCompressedTexSubImage3D(GL_TEXTURE_2D_ARRAY, level, xoffset, yoffset, zoffset, width, height, arrays, format, size, pixels);
     } else {
         gglTexSubImage3D(GL_TEXTURE_2D_ARRAY, level, xoffset, yoffset, zoffset, width, height, arrays, format, type, pixels);
@@ -647,7 +647,7 @@ void GraphicsOpenGL::SetTextureSubImageCube(CubeMapFace::Enum face, int level, i
     BeginUnpackAlignment(Image::BytesPerPixel(srcFormat) * width);
 
     if (srcCompressed) {
-        int size = Image::MemRequired(width, height, 1, 1, srcFormat);
+        int size = Image::MemRequired(width, height, 1, 1, 1, srcFormat);
         gglCompressedTexSubImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + face, level, xoffset, yoffset, width, height, format, size, pixels);
     } else {
         gglTexSubImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + face, level, xoffset, yoffset, width, height, format, type, pixels);
@@ -666,12 +666,12 @@ void GraphicsOpenGL::SetTextureSubImageRect(int xoffset, int yoffset, int width,
         return;
     }
     
-    bool srcCompressed = Image::IsCompressed(srcFormat);	
+    bool srcCompressed = Image::IsCompressed(srcFormat);
 
     BeginUnpackAlignment(Image::BytesPerPixel(srcFormat) * width);
 
     if (srcCompressed) {
-        int size = Image::MemRequired(width, height, 1, 1, srcFormat);
+        int size = Image::MemRequired(width, height, 1, 1, 1, srcFormat);
         gglCompressedTexSubImage2D(GL_TEXTURE_RECTANGLE, 0, xoffset, yoffset, width, height, format, size, pixels);
     } else {
         gglTexSubImage2D(GL_TEXTURE_RECTANGLE, 0, xoffset, yoffset, width, height, format, type, pixels);

@@ -531,7 +531,7 @@ void TextureManager::Cmd_DumpTexture(const CmdArgs &args) {
         break;
     case Graphics::TextureType::TextureCubeMap:
         for (int faceIndex = 0; faceIndex < 6; faceIndex++) {
-            texture->GetTexelsCubemap(faceIndex, 0, texture->GetFormat(), bitmapImage.GetPixels(0, faceIndex, 0));
+            texture->GetTexelsCubemap(faceIndex, 0, texture->GetFormat(), bitmapImage.GetPixels(0, faceIndex));
         }
         break;
     case Graphics::TextureType::TextureRectangle:

@@ -234,24 +234,21 @@ RHI::Texture *D3D12Renderer::CreateTexture(RHI::TextureType textureType, RHI::Re
         byte *dstPtr = mappedPtr;
         int bpp = srcImage->IsCompressed() ? srcImage->BytesPerBlock() : srcImage->BytesPerPixel();
         int numSlices = srcImage->NumSlices();
-        int numFaces = srcImage->NumFaces();
 
         for (int sliceIndex = 0; sliceIndex < numSlices; ++sliceIndex) {
-            for (int faceIndex = 0; faceIndex < numFaces; ++faceIndex) {
-                for (int mipLevel = 0; mipLevel < maxSrcMipLevels; ++mipLevel) {
-                    int srcWidth = srcImage->GetWidth(mipLevel);
-                    int srcHeight = srcImage->GetHeight(mipLevel);
-                    int srcDepth = srcImage->GetDepth(mipLevel);
-                    int srcPitch = (srcImage->IsCompressed() ? (srcWidth >> 2) : srcWidth) * bpp;
-                    int srcRows = srcImage->IsCompressed() ? (srcHeight >> 2) : srcHeight;
-                    const byte *srcPtr = srcImage->GetPixels(mipLevel);
+            for (int mipLevel = 0; mipLevel < maxSrcMipLevels; ++mipLevel) {
+                int srcWidth = srcImage->GetWidth(mipLevel);
+                int srcHeight = srcImage->GetHeight(mipLevel);
+                int srcDepth = srcImage->GetDepth(mipLevel);
+                int srcPitch = (srcImage->IsCompressed() ? (srcWidth >> 2) : srcWidth) * bpp;
+                int srcRows = srcImage->IsCompressed() ? (srcHeight >> 2) : srcHeight;
+                const byte *srcPtr = srcImage->GetPixels(mipLevel);
 
-                    for (int z = 0; z < srcDepth; ++z) {
-                        for (int r = 0; r < srcRows; ++r) {
-                            BE1::simdProcessor->Memcpy(dstPtr, srcPtr, srcPitch);
-                            srcPtr += srcPitch;
-                            dstPtr += mipLevelFootprints[mipLevel].Footprint.RowPitch;
-                        }
+                for (int z = 0; z < srcDepth; ++z) {
+                    for (int r = 0; r < srcRows; ++r) {
+                        BE1::simdProcessor->Memcpy(dstPtr, srcPtr, srcPitch);
+                        srcPtr += srcPitch;
+                        dstPtr += mipLevelFootprints[mipLevel].Footprint.RowPitch;
                     }
                 }
             }
@@ -265,23 +262,21 @@ RHI::Texture *D3D12Renderer::CreateTexture(RHI::TextureType textureType, RHI::Re
         resourceCommandList->ResourceBarrier(textureResource, D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_COPY_DEST);
 
         for (int sliceIndex = 0; sliceIndex < numSlices; ++sliceIndex) {
-            for (int faceIndex = 0; faceIndex < numFaces; ++faceIndex) {
-                for (int mipLevel = 0; mipLevel < maxSrcMipLevels; ++mipLevel) {
-                    int subresourceIndex = maxSrcMipLevels * (numFaces * sliceIndex + faceIndex) + mipLevel;
+            for (int mipLevel = 0; mipLevel < maxSrcMipLevels; ++mipLevel) {
+                int subresourceIndex = maxSrcMipLevels * sliceIndex + mipLevel;
 
-                    D3D12_TEXTURE_COPY_LOCATION srcLocation = {};
-                    srcLocation.PlacedFootprint = mipLevelFootprints[mipLevel];
-                    srcLocation.pResource = uploadBuffer;
-                    srcLocation.Type = D3D12_TEXTURE_COPY_TYPE_PLACED_FOOTPRINT;
+                D3D12_TEXTURE_COPY_LOCATION srcLocation = {};
+                srcLocation.PlacedFootprint = mipLevelFootprints[mipLevel];
+                srcLocation.pResource = uploadBuffer;
+                srcLocation.Type = D3D12_TEXTURE_COPY_TYPE_PLACED_FOOTPRINT;
 
-                    D3D12_TEXTURE_COPY_LOCATION dstLocation = {};
-                    dstLocation.PlacedFootprint = mipLevelFootprints[mipLevel];
-                    dstLocation.pResource = textureResource;
-                    dstLocation.Type = D3D12_TEXTURE_COPY_TYPE_SUBRESOURCE_INDEX;
-                    dstLocation.SubresourceIndex = subresourceIndex;
+                D3D12_TEXTURE_COPY_LOCATION dstLocation = {};
+                dstLocation.PlacedFootprint = mipLevelFootprints[mipLevel];
+                dstLocation.pResource = textureResource;
+                dstLocation.Type = D3D12_TEXTURE_COPY_TYPE_SUBRESOURCE_INDEX;
+                dstLocation.SubresourceIndex = subresourceIndex;
 
-                    resourceCommandList->GetGraphicsCommandList()->CopyTextureRegion(&dstLocation, 0, 0, 0, &srcLocation, nullptr);
-                }
+                resourceCommandList->GetGraphicsCommandList()->CopyTextureRegion(&dstLocation, 0, 0, 0, &srcLocation, nullptr);
             }
         }
 
@@ -796,7 +791,7 @@ void D3D12Renderer::GetTextureImage(RHI::Texture *texture, int mipLevel, int sli
     }
 
     int srcPitch = subresourceFootprint.Footprint.RowPitch;
-    int dstPitch = BE1::Image::MemRequired(subresourceFootprint.Footprint.Width, 1, 1, 1, textureImageFormat);
+    int dstPitch = BE1::Image::MemRequired(subresourceFootprint.Footprint.Width, 1, 1, 1, 1, textureImageFormat);
 
     for (UINT z = 0; z < subresourceFootprint.Footprint.Depth; ++z) {
         for (UINT y = 0; y < subresourceFootprint.Footprint.Height; ++y) {
@@ -844,9 +839,9 @@ bool D3D12Renderer::SetTextureSubImage(RHI::Texture *texture, int mipLevel, int 
     D3D12_PLACED_SUBRESOURCE_FOOTPRINT subresourceFootprint;
     device->GetCopyableFootprints(&d3d12Texture->textureDesc, subresourceIndex, 1, 0, &subresourceFootprint, nullptr, nullptr, nullptr);
 
-    int srcPitch = BE1::Image::MemRequired(width, 1, 1, 1, imageFormat);
+    int srcPitch = BE1::Image::MemRequired(width, 1, 1, 1, 1, imageFormat);
     int dstPitch = subresourceFootprint.Footprint.RowPitch;
-    int uploadBufferSize = BE1::Image::MemRequired(dstPitch, height, depth, 1, imageFormat);
+    int uploadBufferSize = BE1::Image::MemRequired(dstPitch, height, depth, 1, 1, imageFormat);
 
     D3D12_RESOURCE_DESC uploadBufferDesc;
     uploadBufferDesc.Dimension = D3D12_RESOURCE_DIMENSION_BUFFER;

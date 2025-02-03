@@ -1182,21 +1182,18 @@ void DecompressETC2_RGB8(const Image &srcImage, Image &dstImage) {
     assert(dstImage.GetFormat() == Image::Format::RGBA_8_8_8_8);
 
     int numMipmaps = srcImage.NumMipmaps();
-    int numFaces = srcImage.NumFaces();
     int numSlices = srcImage.NumSlices();
 
     for (int sliceIndex = 0; sliceIndex < numSlices; sliceIndex++) {
-        for (int faceIndex = 0; faceIndex < numFaces; faceIndex++) {
-            for (int mipLevel = 0; mipLevel < numMipmaps; mipLevel++) {
-                int w = srcImage.GetWidth(mipLevel);
-                int h = srcImage.GetHeight(mipLevel);
-                int d = srcImage.GetDepth(mipLevel);
+        for (int mipLevel = 0; mipLevel < numMipmaps; mipLevel++) {
+            int w = srcImage.GetWidth(mipLevel);
+            int h = srcImage.GetHeight(mipLevel);
+            int d = srcImage.GetDepth(mipLevel);
 
-                const byte *src = srcImage.GetPixels(mipLevel, faceIndex, sliceIndex);
-                byte *dst = dstImage.GetPixels(mipLevel, faceIndex, sliceIndex);
+            const byte *src = srcImage.GetPixels(mipLevel, sliceIndex);
+            byte *dst = dstImage.GetPixels(mipLevel, sliceIndex);
 
-                DecodeETC2_RGB8ToRGBA8(src, w, h, d, dst);
-            }
+            DecodeETC2_RGB8ToRGBA8(src, w, h, d, dst);
         }
     }
 }
@@ -1205,21 +1202,18 @@ void DecompressETC2_RGB8A1(const Image &srcImage, Image &dstImage) {
     assert(dstImage.GetFormat() == Image::Format::RGBA_8_8_8_8);
 
     int numMipmaps = srcImage.NumMipmaps();
-    int numFaces = srcImage.NumFaces();
     int numSlices = srcImage.NumSlices();
 
     for (int sliceIndex = 0; sliceIndex < numSlices; sliceIndex++) {
-        for (int faceIndex = 0; faceIndex < numFaces; faceIndex++) {
-            for (int mipLevel = 0; mipLevel < numMipmaps; mipLevel++) {
-                int w = srcImage.GetWidth(mipLevel);
-                int h = srcImage.GetHeight(mipLevel);
-                int d = srcImage.GetDepth(mipLevel);
+        for (int mipLevel = 0; mipLevel < numMipmaps; mipLevel++) {
+            int w = srcImage.GetWidth(mipLevel);
+            int h = srcImage.GetHeight(mipLevel);
+            int d = srcImage.GetDepth(mipLevel);
 
-                const byte *src = srcImage.GetPixels(mipLevel, faceIndex, sliceIndex);
-                byte *dst = dstImage.GetPixels(mipLevel, faceIndex, sliceIndex);
+            const byte *src = srcImage.GetPixels(mipLevel, sliceIndex);
+            byte *dst = dstImage.GetPixels(mipLevel, sliceIndex);
 
-                DecodeETC2_RGB8A1ToRGBA8(src, w, h, d, dst);
-            }
+            DecodeETC2_RGB8A1ToRGBA8(src, w, h, d, dst);
         }
     }
 }
@@ -1228,21 +1222,18 @@ void DecompressETC2_RGBA8(const Image &srcImage, Image &dstImage) {
     assert(dstImage.GetFormat() == Image::Format::RGBA_8_8_8_8);
 
     int numMipmaps = srcImage.NumMipmaps();
-    int numFaces = srcImage.NumFaces();
     int numSlices = srcImage.NumSlices();
 
     for (int sliceIndex = 0; sliceIndex < numSlices; sliceIndex++) {
-        for (int faceIndex = 0; faceIndex < numFaces; faceIndex++) {
-            for (int mipLevel = 0; mipLevel < numMipmaps; mipLevel++) {
-                int w = srcImage.GetWidth(mipLevel);
-                int h = srcImage.GetHeight(mipLevel);
-                int d = srcImage.GetDepth(mipLevel);
+        for (int mipLevel = 0; mipLevel < numMipmaps; mipLevel++) {
+            int w = srcImage.GetWidth(mipLevel);
+            int h = srcImage.GetHeight(mipLevel);
+            int d = srcImage.GetDepth(mipLevel);
 
-                const byte *src = srcImage.GetPixels(mipLevel, faceIndex, sliceIndex);
-                byte *dst = dstImage.GetPixels(mipLevel, faceIndex, sliceIndex);
+            const byte *src = srcImage.GetPixels(mipLevel, sliceIndex);
+            byte *dst = dstImage.GetPixels(mipLevel, sliceIndex);
 
-                DecodeETC2_RGBA8ToRGBA8(src, w, h, d, dst);
-            }
+            DecodeETC2_RGBA8ToRGBA8(src, w, h, d, dst);
         }
     }
 }
@@ -1251,21 +1242,18 @@ void DecompressEAC_R11(const Image &srcImage, Image &dstImage, bool signedFormat
     assert(dstImage.GetFormat() == Image::Format::RGBA_32F_32F_32F_32F);
 
     int numMipmaps = srcImage.NumMipmaps();
-    int numFaces = srcImage.NumFaces();
     int numSlices = srcImage.NumSlices();
 
     for (int sliceIndex = 0; sliceIndex < numSlices; sliceIndex++) {
-        for (int faceIndex = 0; faceIndex < numFaces; faceIndex++) {
-            for (int mipLevel = 0; mipLevel < numMipmaps; mipLevel++) {
-                int w = srcImage.GetWidth(mipLevel);
-                int h = srcImage.GetHeight(mipLevel);
-                int d = srcImage.GetDepth(mipLevel);
+        for (int mipLevel = 0; mipLevel < numMipmaps; mipLevel++) {
+            int w = srcImage.GetWidth(mipLevel);
+            int h = srcImage.GetHeight(mipLevel);
+            int d = srcImage.GetDepth(mipLevel);
 
-                const byte *src = srcImage.GetPixels(mipLevel, faceIndex, sliceIndex);
-                byte *dst = dstImage.GetPixels(mipLevel, faceIndex, sliceIndex);
+            const byte *src = srcImage.GetPixels(mipLevel, sliceIndex);
+            byte *dst = dstImage.GetPixels(mipLevel, sliceIndex);
 
-                DecodeEAC_R11ToRGBA32F(src, w, h, d, signedFormat, (float *)dst);
-            }
+            DecodeEAC_R11ToRGBA32F(src, w, h, d, signedFormat, (float *)dst);
         }
     }
 }
@@ -1274,21 +1262,18 @@ void DecompressEAC_RG11(const Image &srcImage, Image &dstImage, bool signedForma
     assert(dstImage.GetFormat() == Image::Format::RGBA_32F_32F_32F_32F);
 
     int numMipmaps = srcImage.NumMipmaps();
-    int numFaces = srcImage.NumFaces();
     int numSlices = srcImage.NumSlices();
 
     for (int sliceIndex = 0; sliceIndex < numSlices; sliceIndex++) {
-        for (int faceIndex = 0; faceIndex < numFaces; faceIndex++) {
-            for (int mipLevel = 0; mipLevel < numMipmaps; mipLevel++) {
-                int w = srcImage.GetWidth(mipLevel);
-                int h = srcImage.GetHeight(mipLevel);
-                int d = srcImage.GetDepth(mipLevel);
+        for (int mipLevel = 0; mipLevel < numMipmaps; mipLevel++) {
+            int w = srcImage.GetWidth(mipLevel);
+            int h = srcImage.GetHeight(mipLevel);
+            int d = srcImage.GetDepth(mipLevel);
 
-                const byte *src = srcImage.GetPixels(mipLevel, faceIndex, sliceIndex);
-                byte *dst = dstImage.GetPixels(mipLevel, faceIndex, sliceIndex);
+            const byte *src = srcImage.GetPixels(mipLevel, sliceIndex);
+            byte *dst = dstImage.GetPixels(mipLevel, sliceIndex);
 
-                DecodeEAC_RG11ToRGBA32F(src, w, h, d, signedFormat, normal, (float *)dst);
-            }
+            DecodeEAC_RG11ToRGBA32F(src, w, h, d, signedFormat, normal, (float *)dst);
         }
     }
 }
