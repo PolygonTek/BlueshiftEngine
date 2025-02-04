@@ -32,7 +32,8 @@ public:
         NoMipmaps               = BIT(3),   ///< 밉맵을 사용하지 않는다. 
         NormalMap               = BIT(4),   ///< 노말맵
         NonePowerOfTwo          = BIT(5),   ///< 2 의 승수 사이즈가 아님
-        LoadedFromFile          = BIT(6)    ///< 파일로부터 읽어들인 텍스쳐인지 여부 (내부적으로 사용됨)
+        UnorderedAccess         = BIT(6),
+        LoadedFromFile          = BIT(7)    ///< 파일로부터 읽어들인 텍스쳐인지 여부 (내부적으로 사용됨)
     };
 
     enum class SamplerParamsType : uint8_t {

@@ -224,6 +224,8 @@ public:
     bool                                supportsMeshShader = false;
     bool                                supportsDepthBoundsTest = false;
     bool                                supportsCastingFullyTypedFormat = false;
+    bool                                supportsUAVFormatCommon = false;
+    bool                                supportsUAVFormatRGB_11F_11F_10F = false;
 
     D3D12DescriptorPool *               resCpuDescriptorPool = nullptr;
     D3D12DescriptorPool *               uavCpuDescriptorPool = nullptr;

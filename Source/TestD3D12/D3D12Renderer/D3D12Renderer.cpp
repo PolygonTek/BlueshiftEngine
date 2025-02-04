@@ -193,12 +193,71 @@ void D3D12Renderer::Init(const void *mainWindowHandle) {
     if (features.MeshShaderTier() >= D3D12_MESH_SHADER_TIER_1) {
         supportsMeshShader = true;
     }
-    if (features.DepthBoundsTestSupported() == TRUE) {
+    if (features.DepthBoundsTestSupported()) {
         supportsDepthBoundsTest = true;
     }
-    if (features.CastingFullyTypedFormatSupported() == TRUE) {
+    if (features.CastingFullyTypedFormatSupported()) {
         // https://microsoft.github.io/DirectX-Specs/d3d/RelaxedCasting.html#casting-rules-for-rs2-drivers
         supportsCastingFullyTypedFormat = true;
+    }
+    if (features.TypedUAVLoadAdditionalFormats()) {
+        // More info about UAV format load support: https://docs.microsoft.com/en-us/windows/win32/direct3d12/typed-unordered-access-view-loads
+        // UAV 포맷은 어떤 포맷도 sRGB 를 지원하지 않는다.
+        // 
+        // Common UAV Formats:
+        // R32_FLOAT
+        // R32_UINT
+        // R32_SINT
+        // R32G32B32A32_FLOAT
+        // R32G32B32A32_UINT
+        // R32G32B32A32_SINT
+        // R16G16B16A16_FLOAT
+        // R16G16B16A16_UINT
+        // R16G16B16A16_SINT
+        // R8G8B8A8_UNORM
+        // R8G8B8A8_UINT
+        // R8G8B8A8_SINT
+        // R16_FLOAT
+        // R16_UINT
+        // R16_SINT
+        // R8_UNORM
+        // R8_UINT
+        // R8_SINT
+        supportsUAVFormatCommon = true;
+
+        // Optional UAV Formats:
+        // R16G16B16A16_UNORM
+        // R16G16B16A16_SNORM
+        // R32G32_FLOAT
+        // R32G32_UINT
+        // R32G32_SINT
+        // R10G10B10A2_UNORM
+        // R10G10B10A2_UINT
+        // R11G11B10_FLOAT
+        // R8G8B8A8_SNORM
+        // R16G16_FLOAT
+        // R16G16_UNORM
+        // R16G16_UINT
+        // R16G16_SNORM
+        // R16G16_SINT
+        // R8G8_UNORM
+        // R8G8_UINT
+        // R8G8_SNORM
+        // R8G8_SINT
+        // R16_UNORM
+        // R16_SNORM
+        // R8_SNORM
+        // A8_UNORM
+        // B5G6R5_UNORM
+        // B5G5R5A1_UNORM
+        // B4G4R4A4_UNORM
+        D3D12_FORMAT_SUPPORT1 formatSupport1 = D3D12_FORMAT_SUPPORT1_NONE;
+        D3D12_FORMAT_SUPPORT2 formatSupport2 = D3D12_FORMAT_SUPPORT2_NONE;
+
+        hr = features.FormatSupport(DXGI_FORMAT_R11G11B10_FLOAT, formatSupport1, formatSupport2);
+        if (SUCCEEDED(hr) && (formatSupport2 & D3D12_FORMAT_SUPPORT2_UAV_TYPED_LOAD) != 0) {
+            supportsUAVFormatRGB_11F_11F_10F = true;
+        }
     }
 
     // Fence 객체 생성

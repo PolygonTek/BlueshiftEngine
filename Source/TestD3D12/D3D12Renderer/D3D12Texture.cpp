@@ -112,6 +112,8 @@ RHI::Texture *D3D12Renderer::CreateTexture(RHI::TextureType textureType, RHI::Re
         resourceFlags |= D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL;
     }
     if (BE1::HasFlag(flags, RHI::ResourceFlag::UnorderedAccess)) {
+        // DSV 와 UAV 는 같은 리소스로 사용할 수 없다.
+        assert(!(resourceFlags & D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL));
         resourceFlags |= D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS;
     }
 

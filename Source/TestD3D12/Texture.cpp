@@ -79,12 +79,17 @@ void Texture::Create(RHI::TextureType textureType, const BE1::Image *srcImage, T
         }
     }
 
+    RHI::ResourceFlag resourceFlags = RHI::ResourceFlag::ShaderResource;
+    if (BE1::HasFlag(flags, Texture::Flag::UnorderedAccess)) {
+        resourceFlags |= RHI::ResourceFlag::UnorderedAccess;
+    }
+
     this->format = dstFormat;
     this->width = dstWidth;
     this->height = dstHeight;
     this->depth = dstDepth;
     this->flags = flags;
-    this->texture = RHI::renderer->CreateTexture(textureType, RHI::ResourceFlag::ShaderResource, srcImage, dstFormat, useMipmaps);
+    this->texture = RHI::renderer->CreateTexture(textureType, resourceFlags, srcImage, dstFormat, useMipmaps);
 }
 
 void Texture::SetSamplerParameters(const SamplerParams &samplerParams) {
