@@ -15,6 +15,7 @@
 #pragma once
 
 #include "RHI.h"
+#include "Sampler.h"
 
 class TextureManager;
 
@@ -34,6 +35,25 @@ public:
         LoadedFromFile          = BIT(6)    ///< 파일로부터 읽어들인 텍스쳐인지 여부 (내부적으로 사용됨)
     };
 
+    enum class SamplerParamsType : uint8_t {
+        NearestRepeat,
+        NearestClamp,
+        NearestClampToBorder,
+        LinearRepeat,
+        LinearClamp,
+        LinearClampToBorder,
+        Count
+    };
+
+    struct SamplerParams {
+        RHI::TextureFilter      filter = RHI::TextureFilter::LinearMipmapLinear;
+        RHI::TextureAddressMode addressModeU = RHI::TextureAddressMode::Clamp;
+        RHI::TextureAddressMode addressModeV = RHI::TextureAddressMode::Clamp;
+        RHI::TextureAddressMode addressModeW = RHI::TextureAddressMode::Clamp;
+        uint32_t                maxAnisotropy = 1;
+        RHI::TextureBorderColor borderColor = RHI::TextureBorderColor::OpaqueBlack;
+    };
+
     Texture() = default;
     ~Texture();
 
@@ -46,6 +66,7 @@ public:
     uint32_t                    NumSlices() const { return numSlices; }
     BE1::Image::Format          GetFormat() const { return format; }
     RHI::Texture *              GetRHITexture() const { return texture; }
+    RHI::Sampler *              GetRHISampler() const { return sampler ? sampler->GetRHISampler() : nullptr; }
 
     int                         MemRequired(bool includingMipmaps) const;
 
@@ -60,10 +81,14 @@ public:
     void                        Purge();
 
     void                        Create(RHI::TextureType textureType, const BE1::Image *srcImage, Texture::Flag flags);
+    void                        SetSamplerParameters(const SamplerParams &samplerParams);
+    void                        SetSamplerParameters(SamplerParamsType samplerParamsType);
 
     bool                        Load(const char *filename, Texture::Flag flags);
 
     static void                 GetCubeImageFromCubeTexture(const Texture *cubeTexture, int numMipLevels, BE1::Image &outCubeImage);
+
+    static SamplerParams        samplerParams[to_int(SamplerParamsType::Count)];
 
 private:
     void                        CreateDefaultTexture(int size, Texture::Flag flags);
@@ -75,6 +100,7 @@ private:
     mutable int                 refCount = 0;
     RHI::TextureType            type;
     RHI::Texture *              texture = nullptr;
+    Sampler *                   sampler = nullptr;
     uint32_t                    srcWidth;       ///< Original width
     uint32_t                    srcHeight;      ///< Original height
     uint32_t                    srcDepth;       ///< Original depth

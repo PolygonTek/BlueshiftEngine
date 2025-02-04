@@ -886,7 +886,8 @@ void D3D12Renderer::SetPSO(RHI::CommandList *commandList, const RHI::PipelineSta
 
 void D3D12Renderer::BindRootParameters(D3D12CommandList *commandList, bool graphics) {
     D3D12FrameThreadData *threadData = static_cast<D3D12FrameThreadData *>(commandList->GetFrameThreadData());
-    D3D12RootDescriptorPool *rootDescriptorPool = threadData->rootDescriptorPool;
+    D3D12RootDescriptorPool *resRootDescriptorPool = threadData->resRootDescriptorPool;
+    D3D12RootDescriptorPool *samRootDescriptorPool = threadData->samRootDescriptorPool;
 
     // NOTE: dirty mask 를 이용하여, 바뀐 루트 파라미터들만 바인딩한다.
     // 전체 리소스 바인딩 중 일부만 바꾸는 경우 안바뀐 부분의 리소스 바인딩을 생략할 수 있다.
@@ -912,6 +913,12 @@ void D3D12Renderer::BindRootParameters(D3D12CommandList *commandList, bool graph
         // 루트 파라미터가 디스크립터 테이블인 경우
         if (rootParameter->ParameterType == D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE) {
             const D3D12_ROOT_DESCRIPTOR_TABLE1 &descriptorTable = rootParameter->DescriptorTable;
+            assert(descriptorTable.NumDescriptorRanges > 0);
+
+            // 디스크립터 테이블은 CBV/SRV/UAV 타입과 Sampler 타입이 나누어져 있어야 한다. (타입에 따라 디스크립터 힙의 종류가 다르다)
+            // 디스크립터 테이블의 타입에 따라 루트 디스크립터 풀을 다르게 사용한다.
+            D3D12RootDescriptorPool *rootDescriptorPool = descriptorTable.pDescriptorRanges[0].RangeType == D3D12_DESCRIPTOR_RANGE_TYPE_SAMPLER ? samRootDescriptorPool : resRootDescriptorPool;
+
             int numDescriptors = 0;
 
             // 이 디스크립터 테이블이 사용하는 전체 디스크립터 개수 계산
@@ -922,9 +929,13 @@ void D3D12Renderer::BindRootParameters(D3D12CommandList *commandList, bool graph
                 numDescriptors += descriptorRange.NumDescriptors;
             }
 
-            // 루트 디스크립터 풀에서 연속된 디스크립터들 (디스크립터 테이블) 을 할당
+            // 디스크립터 테이블에 디스크립터가 하나도 없다?
+            assert(numDescriptors > 0);
+
             D3D12_CPU_DESCRIPTOR_HANDLE cpuRootDescriptorStart;
             D3D12_GPU_DESCRIPTOR_HANDLE gpuRootDescriptorStart;
+
+            // 루트 디스크립터 풀에서 연속된 디스크립터들 (디스크립터 테이블) 을 할당
             if (!rootDescriptorPool->AllocRange(numDescriptors, &cpuRootDescriptorStart, &gpuRootDescriptorStart)) {
                 return;
             }

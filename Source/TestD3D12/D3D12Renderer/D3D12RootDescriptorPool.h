@@ -22,13 +22,19 @@ class D3D12RootDescriptorPool {
     friend class D3D12Renderer;
 
 public:
+    enum class Type : byte {
+        CBV_SRV_UAV,
+        Sampler
+    };
+
     D3D12RootDescriptorPool() = default;
-    D3D12RootDescriptorPool(ID3D12Device *device, UINT maxCount) { Init(device, maxCount); }
+    D3D12RootDescriptorPool(ID3D12Device *device, Type type, UINT maxCount) { Init(device, type, maxCount); }
     ~D3D12RootDescriptorPool() { Shutdown(); }
 
-    void                            Init(ID3D12Device *device, UINT maxCount);
+    void                            Init(ID3D12Device *device, Type type, UINT maxCount);
     void                            Shutdown();
 
+    UINT                            IsEmpty() const { return usedCount == 0; }
     void                            Reset() { usedCount = 0; }
     bool                            AllocRange(UINT count, D3D12_CPU_DESCRIPTOR_HANDLE *outCpuDescriptorHandle, D3D12_GPU_DESCRIPTOR_HANDLE *outGpuDescriptorHandle);
 

@@ -58,7 +58,8 @@ void D3D12FrameThreadData::Init() {
     computeCommandListPool = new D3D12CommandListPool(this, D3D12_COMMAND_LIST_TYPE_COMPUTE, 8);
 
     // 쉐이더에서 사용할 디스크립터 힙을 생성한다.
-    rootDescriptorPool = new D3D12RootDescriptorPool(D3D12Renderer::GetRenderer()->device, 16384);
+    resRootDescriptorPool = new D3D12RootDescriptorPool(D3D12Renderer::GetRenderer()->device, D3D12RootDescriptorPool::Type::CBV_SRV_UAV, 16384);
+    samRootDescriptorPool = new D3D12RootDescriptorPool(D3D12Renderer::GetRenderer()->device, D3D12RootDescriptorPool::Type::Sampler, 64);
 
     // 미리 다이나믹 버퍼 블럭을 1개 생성한다.
     D3D12DynamicAllocation *dynamicAllocation = new D3D12DynamicAllocation(DynamicAllocationBlockSize);
@@ -91,7 +92,8 @@ void D3D12FrameThreadData::Shutdown() {
     dynamicDescriptorHandles.SetCount(0, false);
 
     SAFE_DELETE(dynamicDescriptorPool);
-    SAFE_DELETE(rootDescriptorPool);
+    SAFE_DELETE(resRootDescriptorPool);
+    SAFE_DELETE(samRootDescriptorPool);
     SAFE_DELETE(graphicsCommandListPool);
     SAFE_DELETE(computeCommandListPool);
 }
@@ -113,7 +115,8 @@ void D3D12FrameThreadData::Reset() {
     dynamicBuffers.SetCount(0, false);
 
     // 루트 디스크립터 풀을 비운다.
-    rootDescriptorPool->Reset();
+    resRootDescriptorPool->Reset();
+    samRootDescriptorPool->Reset();
 
     // 커맨드 리스트 풀을 비운다.
     graphicsCommandListPool->Clear();
@@ -283,7 +286,10 @@ RHI::CommandList *D3D12FrameThreadData::BeginSecondaryCommandList(const RHI::Com
 
     // Secondary CommandList 의 루트 디스크립터 힙을 지정한다.
     // 반드시 Primary CommandList 와 동일한 디스크립터 힙을 사용해야 한다.
-    ID3D12DescriptorHeap *descriptorHeaps[] = { rootDescriptorPool->GetDescriptorHeap()};
+    ID3D12DescriptorHeap *descriptorHeaps[] = {
+        resRootDescriptorPool->GetDescriptorHeap(),
+        samRootDescriptorPool->GetDescriptorHeap()
+    };
     commandList->SetDescriptorHeaps(COUNT_OF(descriptorHeaps), descriptorHeaps);
 
     return commandList;

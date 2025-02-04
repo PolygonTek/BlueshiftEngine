@@ -758,14 +758,6 @@ namespace RHI {
         Count
     };
 
-    enum class SamplerType {
-        ClampLinear,
-        ClampNearest,
-        RepeatLinear,
-        RepeatNearest,
-        Count
-    };
-
     class Renderer {
     public:
         virtual ~Renderer() = 0 {}
@@ -905,7 +897,6 @@ namespace RHI {
         RasterizerState                 rasterizerStates[to_int(RasterizerStateType::Count)];
         DepthStencilState               depthStencilStates[to_int(DepthStencilStateType::Count)];
         BlendState                      blendStates[to_int(BlendStateType::Count)];
-        Sampler *                       samplers[to_int(SamplerType::Count)];
         uint32_t                        max1DTextureSize = 0;
         uint32_t                        max2DTextureSize = 0;
         uint32_t                        max3DTextureSize = 0;

@@ -72,37 +72,9 @@ void RHI::Renderer::InitDefaultStates() {
     bs->renderTargets[0].srcFactorAlpha = RHI::Blend::One;
     bs->renderTargets[0].destFactorAlpha = RHI::Blend::Zero;
     bs->renderTargets[0].blendOpAlpha = RHI::BlendOp::Add;
-
-    RHI::SamplerDesc samplerDesc;
-    samplerDesc.addressModeU = TextureAddressMode::Clamp;
-    samplerDesc.addressModeV = TextureAddressMode::Clamp;
-    samplerDesc.addressModeW = TextureAddressMode::Clamp;
-    samplerDesc.filter = TextureFilter::NearestMipmapNearest;
-    samplers[to_int(RHI::SamplerType::ClampNearest)] = CreateSampler(&samplerDesc);
-
-    samplerDesc.addressModeU = TextureAddressMode::Clamp;
-    samplerDesc.addressModeV = TextureAddressMode::Clamp;
-    samplerDesc.addressModeW = TextureAddressMode::Clamp;
-    samplerDesc.filter = TextureFilter::LinearMipmapLinear;
-    samplers[to_int(RHI::SamplerType::ClampLinear)] = CreateSampler(&samplerDesc);
-
-    samplerDesc.addressModeU = TextureAddressMode::Repeat;
-    samplerDesc.addressModeV = TextureAddressMode::Repeat;
-    samplerDesc.addressModeW = TextureAddressMode::Repeat;
-    samplerDesc.filter = TextureFilter::LinearMipmapLinear;
-    samplers[to_int(RHI::SamplerType::RepeatLinear)] = CreateSampler(&samplerDesc);
-
-    samplerDesc.addressModeU = TextureAddressMode::Repeat;
-    samplerDesc.addressModeV = TextureAddressMode::Repeat;
-    samplerDesc.addressModeW = TextureAddressMode::Repeat;
-    samplerDesc.filter = TextureFilter::NearestMipmapNearest;
-    samplers[to_int(RHI::SamplerType::RepeatNearest)] = CreateSampler(&samplerDesc);
 }
 
 void RHI::Renderer::FreeDefaultStates() {
-    for (RHI::Sampler *sampler : samplers) {
-        DestroySampler(sampler);
-    }
 }
 
 RHI::GPUBarrier RHI::Renderer::MakeMemoryBarrier(const RHI::GPUResource *resource) {

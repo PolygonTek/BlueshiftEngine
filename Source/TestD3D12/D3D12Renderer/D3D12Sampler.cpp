@@ -86,7 +86,7 @@ void D3D12Sampler::Release() {
 
 RHI::Sampler *D3D12Renderer::CreateSampler(const RHI::SamplerDesc *desc) {
     D3D12_CPU_DESCRIPTOR_HANDLE descriptorHandle = {};
-    if (samCpuDescriptorPool->Alloc(&descriptorHandle, nullptr)) {
+    if (!samCpuDescriptorPool->Alloc(&descriptorHandle, nullptr)) {
         return nullptr;
     }
 

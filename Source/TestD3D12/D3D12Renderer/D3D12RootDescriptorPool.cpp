@@ -15,11 +15,22 @@
 #include "Precompiled.h"
 #include "D3D12RootDescriptorPool.h"
 
-void D3D12RootDescriptorPool::Init(ID3D12Device *device, UINT maxDescriptorCount) {
+void D3D12RootDescriptorPool::Init(ID3D12Device *device, Type type, UINT maxDescriptorCount) {
     this->maxDescriptorCount = maxDescriptorCount;
     this->usedCount = 0;
 
-    D3D12_DESCRIPTOR_HEAP_TYPE descriptorHeapType = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
+    D3D12_DESCRIPTOR_HEAP_TYPE descriptorHeapType;
+    switch (type) {
+    case Type::CBV_SRV_UAV:
+        descriptorHeapType = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
+        break;
+    case Type::Sampler:
+        descriptorHeapType = D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER;
+        break;
+    default:
+        assert(0);
+        break;
+    }
 
     descriptorHandleSize = device->GetDescriptorHandleIncrementSize(descriptorHeapType);
 

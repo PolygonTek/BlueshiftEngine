@@ -66,7 +66,8 @@ public:
     D3D12DescriptorPool *               dynamicDescriptorPool = nullptr;
     BE1::Array<D3D12_CPU_DESCRIPTOR_HANDLE> dynamicDescriptorHandles;
 
-    D3D12RootDescriptorPool *           rootDescriptorPool = nullptr;
+    D3D12RootDescriptorPool *           resRootDescriptorPool = nullptr;
+    D3D12RootDescriptorPool *           samRootDescriptorPool = nullptr;
     D3D12_CPU_DESCRIPTOR_HANDLE         tableCpuDescriptorHandles[MaxRootParameters][MaxDescriptorsInDescriptorTable] = { CD3DX12_CPU_DESCRIPTOR_HANDLE() };
     D3D12_GPU_DESCRIPTOR_HANDLE         tableGpuDescriptorStarts[MaxRootParameters] = { CD3DX12_GPU_DESCRIPTOR_HANDLE() };
     const RHI::GPUResource *            cbvResources[16] = {};

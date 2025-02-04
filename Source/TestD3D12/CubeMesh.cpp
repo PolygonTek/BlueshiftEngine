@@ -93,6 +93,7 @@ void CubeMesh::InitMesh() {
     vertexBuffer = RHI::renderer->CreateVertexBuffer(RHI::BufferUsage::Default, sizeof(verts[0]), COUNT_OF(verts), (void *)verts);
     indexBuffer = RHI::renderer->CreateIndexBuffer(RHI::BufferUsage::Default, sizeof(indexes[0]), COUNT_OF(indexes), (void *)indexes);
     texture = textureManager.GetTexture("Data/EngineTextures/a.bmp", Texture::Flag::NoCompression);
+    texture->SetSamplerParameters(Texture::SamplerParamsType::LinearClamp);
 
     InitPipelineState();
 }
@@ -188,6 +189,7 @@ void CubeMesh::DrawMesh(RHI::CommandList* commandList, const VisCamera *visCamer
 
     RHI::renderer->SetPSO(commandList, singlePSO);
     RHI::renderer->SetTexture(commandList, 0, false, texture->GetRHITexture());
+    RHI::renderer->SetSampler(commandList, 0, texture->GetRHISampler());
     RHI::renderer->SetConstantBuffer(commandList, 0, constantBuffer);
 
     RHI::renderer->DrawIndexed(commandList, 36, 0, 0);
@@ -216,6 +218,7 @@ void CubeMesh::DrawMeshInstanced(RHI::CommandList *commandList, const VisCamera 
 
     RHI::renderer->SetPSO(commandList, instancingPSO);
     RHI::renderer->SetTexture(commandList, 0, false, texture->GetRHITexture());
+    RHI::renderer->SetSampler(commandList, 0, texture->GetRHISampler());
     RHI::renderer->SetConstantBuffer(commandList, 0, constantBuffer);
 
     RHI::renderer->DrawIndexedInstanced(commandList, 36, instanceCount, 0, 0, 0);

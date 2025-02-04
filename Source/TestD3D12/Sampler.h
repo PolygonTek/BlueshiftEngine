@@ -40,6 +40,7 @@ public:
     RHI::TextureAddressMode     GetAddressModeW() const { return (RHI::TextureAddressMode)hash.bits.addressModeW; }
     uint32_t                    GetMaxAnisotropy() const { return hash.bits.maxAnisotropy; }
     RHI::TextureBorderColor     GetBorderColor() const { return (RHI::TextureBorderColor)hash.bits.borderColor; }
+    RHI::Sampler *              GetRHISampler() const { return sampler; }
 
 private:
     Hasher                      hash;

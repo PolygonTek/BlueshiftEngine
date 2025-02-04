@@ -1,6 +1,5 @@
 #define COMMON_ROOT_SIGNATURE "RootFlags(ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT), " \
-    "DescriptorTable(CBV(b0), SRV(t0)), " \
-    "StaticSampler(s0, FILTER = FILTER_MIN_MAG_MIP_LINEAR, ADDRESSU = TEXTURE_ADDRESS_CLAMP, ADDRESSV = TEXTURE_ADDRESS_CLAMP, ADDRESSW = TEXTURE_ADDRESS_CLAMP)"
+    "DescriptorTable(CBV(b0), SRV(t0)), DescriptorTable(Sampler(s0))"
 
 struct VSInput {
     float4 position : POSITION;

@@ -14,6 +14,16 @@
 
 #include "Precompiled.h"
 #include "Texture.h"
+#include "Sampler.h"
+
+Texture::SamplerParams  Texture::samplerParams[to_int(Texture::SamplerParamsType::Count)] = {
+    { RHI::TextureFilter::NearestMipmapNearest, RHI::TextureAddressMode::Repeat, RHI::TextureAddressMode::Repeat, RHI::TextureAddressMode::Repeat, 1, RHI::TextureBorderColor::OpaqueBlack },
+    { RHI::TextureFilter::NearestMipmapNearest, RHI::TextureAddressMode::Clamp, RHI::TextureAddressMode::Clamp, RHI::TextureAddressMode::Clamp, 1, RHI::TextureBorderColor::OpaqueBlack },
+    { RHI::TextureFilter::NearestMipmapNearest, RHI::TextureAddressMode::ClampToBorder, RHI::TextureAddressMode::ClampToBorder, RHI::TextureAddressMode::ClampToBorder, 1, RHI::TextureBorderColor::OpaqueBlack },
+    { RHI::TextureFilter::LinearMipmapLinear, RHI::TextureAddressMode::Repeat, RHI::TextureAddressMode::Repeat, RHI::TextureAddressMode::Repeat, 1, RHI::TextureBorderColor::OpaqueBlack },
+    { RHI::TextureFilter::LinearMipmapLinear, RHI::TextureAddressMode::Clamp, RHI::TextureAddressMode::Clamp, RHI::TextureAddressMode::Clamp, 1, RHI::TextureBorderColor::OpaqueBlack },
+    { RHI::TextureFilter::LinearMipmapLinear, RHI::TextureAddressMode::ClampToBorder, RHI::TextureAddressMode::ClampToBorder, RHI::TextureAddressMode::ClampToBorder, 1, RHI::TextureBorderColor::OpaqueBlack },
+};
 
 int Texture::MemRequired(bool includingMipmaps) const {
     int numMipmaps = includingMipmaps ? BE1::Image::MaxMipLevels(width, height, depth) : 1;
@@ -25,6 +35,10 @@ void Texture::Purge() {
     if (texture) {
         RHI::renderer->DestroyTexture(texture);
         texture = nullptr;
+    }
+    if (sampler) {
+        samplerManager.ReleaseSampler(sampler);
+        sampler = nullptr;
     }
 }
 
@@ -73,6 +87,19 @@ void Texture::Create(RHI::TextureType textureType, const BE1::Image *srcImage, T
     this->texture = RHI::renderer->CreateTexture(textureType, RHI::ResourceFlag::ShaderResource, srcImage, dstFormat, useMipmaps);
 }
 
+void Texture::SetSamplerParameters(const SamplerParams &samplerParams) {
+    if (sampler) {
+        samplerManager.ReleaseSampler(sampler);
+    }
+    sampler = samplerManager.GetSampler(samplerParams.filter, samplerParams.addressModeU, samplerParams.addressModeV, samplerParams.addressModeW, samplerParams.maxAnisotropy, samplerParams.borderColor);
+}
+
+void Texture::SetSamplerParameters(SamplerParamsType samplerParamsType) {
+    int samplerParamsTypeIndex = to_int(samplerParamsType);
+    assert(samplerParamsTypeIndex >= 0 && samplerParamsTypeIndex < to_int(SamplerParamsType::Count));
+    SetSamplerParameters(Texture::samplerParams[samplerParamsTypeIndex]);
+}
+
 void Texture::CreateDefaultTexture(int size, Texture::Flag flags) {
     BE1::Image image;
     image.Create2D(size, size, 1, BE1::Image::Format::RGBA_8_8_8_8, BE1::Image::GammaSpace::sRGB, nullptr, BE1::Image::Flag::None);
@@ -96,6 +123,12 @@ void Texture::CreateDefaultTexture(int size, Texture::Flag flags) {
     }
 
     Create(RHI::TextureType::Texture2D, &image, Texture::Flag::HighQuality | flags);
+
+    SamplerParams samplerParams;
+    samplerParams.filter = RHI::TextureFilter::LinearMipmapLinear;
+    samplerParams.addressModeU = RHI::TextureAddressMode::Clamp;
+    samplerParams.addressModeV = RHI::TextureAddressMode::Clamp;
+    SetSamplerParameters(samplerParams);
 }
 
 void Texture::CreateColorTexture(int size, const BE1::Color4 &color, Flag flags) {
@@ -111,6 +144,12 @@ void Texture::CreateColorTexture(int size, const BE1::Color4 &color, Flag flags)
     }
 
     Create(RHI::TextureType::Texture2D, &image, Texture::Flag::HighQuality | flags);
+
+    SamplerParams samplerParams;
+    samplerParams.filter = RHI::TextureFilter::LinearMipmapLinear;
+    samplerParams.addressModeU = RHI::TextureAddressMode::Clamp;
+    samplerParams.addressModeV = RHI::TextureAddressMode::Clamp;
+    SetSamplerParameters(samplerParams);
 }
 
 void Texture::CreateFlatNormalTexture(int size, Texture::Flag flags) {
@@ -128,6 +167,12 @@ void Texture::CreateFlatNormalTexture(int size, Texture::Flag flags) {
     }
 
     Create(RHI::TextureType::Texture2D, &image, Texture::Flag::NormalMap | Texture::Flag::NoScaleDown | flags);
+
+    SamplerParams samplerParams;
+    samplerParams.filter = RHI::TextureFilter::LinearMipmapLinear;
+    samplerParams.addressModeU = RHI::TextureAddressMode::Clamp;
+    samplerParams.addressModeV = RHI::TextureAddressMode::Clamp;
+    SetSamplerParameters(samplerParams);
 }
 
 bool Texture::Load(const char *filename, Texture::Flag flags) {
