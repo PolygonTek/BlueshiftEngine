@@ -46,7 +46,7 @@ public:
 
 private:
     IDXGISwapChain3 *               dxgiSwapChain = nullptr;
-    DXGI_FORMAT                     dxgiFormat = DXGI_FORMAT::DXGI_FORMAT_UNKNOWN;
+    DXGI_FORMAT                     dxgiFormat = DXGI_FORMAT_UNKNOWN;
     ID3D12Resource *                backBuffers[NumSwapChainBuffers] = {};
     D3D12_CPU_DESCRIPTOR_HANDLE     backBufferRTVs[NumSwapChainBuffers] = {};
     uint32_t                        currentBackBufferIndex = 0;

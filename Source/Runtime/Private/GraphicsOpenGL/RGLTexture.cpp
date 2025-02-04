@@ -424,7 +424,7 @@ void GraphicsOpenGL::SetTextureImage(TextureType::Enum textureType, const Image 
             if (srcImage->IsPacked() || (srcImage->IsCompressed() && OpenGL::SupportsCompressedGenMipmaps())) {
                 generateMipmaps = true;
             } else {
-                mipmapedImage.Create(w, h, d, srcImage->NumSlices(), maxGenLevels, srcImage->GetFormat(), srcImage->GetGammaSpace(), nullptr, srcImage->GetFlags());
+                mipmapedImage.Create(w, h, d, srcImage->GetArraySize(), maxGenLevels, srcImage->GetFormat(), srcImage->GetGammaSpace(), nullptr, srcImage->GetFlags());
                 mipmapedImage.CopyFrom(*srcImage, 0, 1);
                 mipmapedImage.GenerateMipmaps();
                 srcImage = &mipmapedImage;
@@ -482,16 +482,16 @@ void GraphicsOpenGL::SetTextureImage(TextureType::Enum textureType, const Image 
         OpenGL::SetTextureSwizzling(GL_TEXTURE_3D, srcFormat);
         break;
     case TextureType::Texture2DArray:
-        gglTexStorage3D(GL_TEXTURE_2D_ARRAY, maxLevelAlloc, internalFormat, srcImage->GetWidth(), srcImage->GetHeight(), srcImage->NumSlices());
+        gglTexStorage3D(GL_TEXTURE_2D_ARRAY, maxLevelAlloc, internalFormat, srcImage->GetWidth(), srcImage->GetHeight(), srcImage->GetArraySize());
         if (pic) {
             for (int level = 0; level < maxLevel; level++) {
                 int w = srcImage->GetWidth(level);
                 int h = srcImage->GetHeight(level);
                 int size = srcImage->SizeInBytes(level);
                 if (srcCompressed) {
-                    gglCompressedTexSubImage3D(GL_TEXTURE_2D_ARRAY, level, 0, 0, 0, w, h, srcImage->NumSlices(), format, size, pic);
+                    gglCompressedTexSubImage3D(GL_TEXTURE_2D_ARRAY, level, 0, 0, 0, w, h, srcImage->GetArraySize(), format, size, pic);
                 } else {
-                    gglTexSubImage3D(GL_TEXTURE_2D_ARRAY, level, 0, 0, 0, w, h, srcImage->NumSlices(), format, type, pic);
+                    gglTexSubImage3D(GL_TEXTURE_2D_ARRAY, level, 0, 0, 0, w, h, srcImage->GetArraySize(), format, type, pic);
                 }
                 pic += size;
             }

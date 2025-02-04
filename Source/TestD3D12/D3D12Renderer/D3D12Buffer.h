@@ -47,6 +47,7 @@ public:
 
     virtual void *                  GetNativeResource() const override { return GetResource(); }
     virtual const void *            GetNativeBufferObject() const override { return this; }
+    virtual bool                    IsValidSubresource(RHI::SubresourceType type, int subresourceIndex) const override;
 
     ID3D12Resource *                GetResource() const;
     uint64_t                        GetSize();

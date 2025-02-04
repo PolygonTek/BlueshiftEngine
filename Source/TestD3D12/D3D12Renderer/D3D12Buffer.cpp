@@ -51,6 +51,22 @@ void D3D12Buffer::Release() {
 #endif
 }
 
+bool D3D12Buffer::IsValidSubresource(RHI::SubresourceType type, int subresourceIndex) const {
+    if (type == RHI::SubresourceType::SRV) {
+        if (subresourceIndex == -1) {
+            return !!srvDescriptor.cpuDescriptorHandle.ptr;
+        }
+        return subresourceSrvDescriptors.IsValidIndex(subresourceIndex);
+    }
+    if (type == RHI::SubresourceType::UAV) {
+        if (subresourceIndex == -1) {
+            return !!uavDescriptor.cpuDescriptorHandle.ptr;
+        }
+        return subresourceUavDescriptors.IsValidIndex(subresourceIndex);
+    }
+    return false;
+}
+
 RHI::Buffer *D3D12Renderer::CreateBuffer(RHI::BufferUsage usage, RHI::ResourceFlag flags, uint64_t size, BE1::Image::Format format, uint32_t structuredStride, const void *data) {
     D3D12_HEAP_TYPE heapType;
     D3D12_RESOURCE_STATES initialState;
@@ -100,7 +116,7 @@ RHI::Buffer *D3D12Renderer::CreateBuffer(RHI::BufferUsage usage, RHI::ResourceFl
     bufferDesc.Height = 1;
     bufferDesc.DepthOrArraySize = 1;
     bufferDesc.MipLevels = 1;
-    bufferDesc.Format = DXGI_FORMAT_UNKNOWN;
+    bufferDesc.Format = DXGI_FORMAT_UNKNOWN; // 버퍼 리소스는 항상 DXGI_FORMAT_UNKNOWN 으로 생성한다.
     bufferDesc.SampleDesc.Count = 1;
     bufferDesc.SampleDesc.Quality = 0;
     bufferDesc.Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
@@ -306,6 +322,7 @@ int D3D12Renderer::CreateSubresourceSRV(D3D12Buffer *buffer, uint64_t offset, ui
     D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
     srvDesc.ViewDimension = D3D12_SRV_DIMENSION_BUFFER;
     srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+
     ImageFormatToDXGIFormat(buffer->format, false, &srvDesc.Format);
 
     uint32_t byteStride = 0;
@@ -346,6 +363,7 @@ int D3D12Renderer::CreateSubresourceSRV(D3D12Buffer *buffer, uint64_t offset, ui
 int D3D12Renderer::CreateSubresourceUAV(D3D12Buffer *buffer, uint64_t offset, uint64_t size) {
     D3D12_UNORDERED_ACCESS_VIEW_DESC uavDesc = {};
     uavDesc.ViewDimension = D3D12_UAV_DIMENSION_BUFFER;
+
     ImageFormatToDXGIFormat(buffer->format, false, &uavDesc.Format);
 
     uint32_t byteStride = 0;

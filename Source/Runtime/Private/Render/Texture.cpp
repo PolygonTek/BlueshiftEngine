@@ -528,7 +528,7 @@ void Texture::Upload(const Image *srcImage) {
     this->srcWidth = srcImage->GetWidth();
     this->srcHeight = srcImage->GetHeight();
     this->srcDepth = srcImage->GetDepth();
-    this->numSlices = srcImage->NumSlices();
+    this->numSlices = srcImage->GetArraySize();
 
     int dstWidth, dstHeight, dstDepth;
     graphics.AdjustTextureSize(type, useNPOT, srcWidth, srcHeight, srcDepth, &dstWidth, &dstHeight, &dstDepth);

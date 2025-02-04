@@ -16,7 +16,7 @@
 #include "Texture.h"
 #include "Sampler.h"
 
-Texture::SamplerParams  Texture::samplerParams[to_int(Texture::SamplerParamsType::Count)] = {
+Texture::SamplerParams  Texture::defaultSamplerParams[to_int(Texture::SamplerParamsType::Count)] = {
     { RHI::TextureFilter::NearestMipmapNearest, RHI::TextureAddressMode::Repeat, RHI::TextureAddressMode::Repeat, RHI::TextureAddressMode::Repeat, 1, RHI::TextureBorderColor::OpaqueBlack },
     { RHI::TextureFilter::NearestMipmapNearest, RHI::TextureAddressMode::Clamp, RHI::TextureAddressMode::Clamp, RHI::TextureAddressMode::Clamp, 1, RHI::TextureBorderColor::OpaqueBlack },
     { RHI::TextureFilter::NearestMipmapNearest, RHI::TextureAddressMode::ClampToBorder, RHI::TextureAddressMode::ClampToBorder, RHI::TextureAddressMode::ClampToBorder, 1, RHI::TextureBorderColor::OpaqueBlack },
@@ -26,8 +26,12 @@ Texture::SamplerParams  Texture::samplerParams[to_int(Texture::SamplerParamsType
 };
 
 int Texture::MemRequired(bool includingMipmaps) const {
-    int numMipmaps = includingMipmaps ? BE1::Image::MaxMipLevels(width, height, depth) : 1;
-    int size = BE1::Image::MemRequired(width, height, depth, numMipmaps, numSlices, format);
+    uint32_t w = GetWidth();
+    uint32_t h = GetHeight();
+    uint32_t d = GetDepth();
+    uint32_t numSlices = GetArraySize();
+    uint32_t numMipmaps = includingMipmaps ? BE1::Image::MaxMipLevels(w, h, d) : 1;
+    uint32_t size = BE1::Image::MemRequired(w, h, d, numMipmaps, numSlices, format);
     return size;
 }
 
@@ -64,7 +68,6 @@ void Texture::Create(RHI::TextureType textureType, const BE1::Image *srcImage, T
     this->srcWidth = srcImage->GetWidth();
     this->srcHeight = srcImage->GetHeight();
     this->srcDepth = srcImage->GetDepth();
-    this->numSlices = srcImage->NumSlices();
 
     uint32_t dstWidth, dstHeight, dstDepth;
     RHI::renderer->AdjustTextureSize(textureType, useNPOT, srcWidth, srcHeight, srcDepth, &dstWidth, &dstHeight, &dstDepth);
@@ -85,9 +88,6 @@ void Texture::Create(RHI::TextureType textureType, const BE1::Image *srcImage, T
     }
 
     this->format = dstFormat;
-    this->width = dstWidth;
-    this->height = dstHeight;
-    this->depth = dstDepth;
     this->flags = flags;
     this->texture = RHI::renderer->CreateTexture(textureType, resourceFlags, srcImage, dstFormat, useMipmaps);
 }
@@ -102,7 +102,33 @@ void Texture::SetSamplerParameters(const SamplerParams &samplerParams) {
 void Texture::SetSamplerParameters(SamplerParamsType samplerParamsType) {
     int samplerParamsTypeIndex = to_int(samplerParamsType);
     assert(samplerParamsTypeIndex >= 0 && samplerParamsTypeIndex < to_int(SamplerParamsType::Count));
-    SetSamplerParameters(Texture::samplerParams[samplerParamsTypeIndex]);
+    SetSamplerParameters(Texture::defaultSamplerParams[samplerParamsTypeIndex]);
+}
+
+// NOTE: UAV 가 지원하지 않는 포맷 (NoAlpha, sRGB, ...) 은 컴퓨트 쉐이더를 이용한 밉맵 생성을 지원하지 않는다.
+// sRGB 텍스쳐의 경우에는 CreateTexture 함수에서 미리 Typeless 텍스쳐로 만들어야 한다.
+// 그래야 SRV 는 sRGB 포맷으로, UAV 는 Linear 포맷으로 생성할 수 있다.
+void Texture::PrepareGPUMipmapGeneration() {
+    // 전체 텍스쳐 리소스에 대한 SRV 가 생성되어 있는지 확인
+    if (!texture->IsValidSubresource(RHI::SubresourceType::SRV, -1)) {
+        RHI::renderer->CreateSubresource(texture, RHI::SubresourceType::SRV);
+    }
+    // 전체 텍스쳐 리소스에 대한 UAV 가 생성되어 있는지 확인
+    if (!texture->IsValidSubresource(RHI::SubresourceType::UAV, -1)) {
+        RHI::renderer->CreateSubresource(texture, RHI::SubresourceType::UAV);
+    }
+
+    // 각 Slice 와 Mip Level 별로 SRV/UAV 를 생성한다.
+    // FIXME: 이미 subresource 가 생성되어 있는 경우에 대한 에러 처리가 필요하다.
+    for (int sliceIndex = 0; sliceIndex < GetArraySize(); ++sliceIndex) {
+        for (int mipLevel = 0; mipLevel < GetMipLevelCount(); ++mipLevel) {
+            int subresourceIndex = sliceIndex * GetMipLevelCount() + mipLevel;
+            subresourceIndex = RHI::renderer->CreateSubresource(texture, RHI::SubresourceType::SRV, sliceIndex, 1, mipLevel, 1);
+            assert(subresourceIndex >= 0);
+            subresourceIndex = RHI::renderer->CreateSubresource(texture, RHI::SubresourceType::UAV, sliceIndex, 1, mipLevel, 1);
+            assert(subresourceIndex >= 0);
+        }
+    }
 }
 
 void Texture::CreateDefaultTexture(int size, Texture::Flag flags) {

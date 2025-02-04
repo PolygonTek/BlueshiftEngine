@@ -31,7 +31,7 @@ void CompressDXT1(const Image &srcImage, Image &dstImage, Image::CompressionQual
     }
 
     int numMipmaps = srcImage.NumMipmaps();
-    int numSlices = srcImage.NumSlices();
+    int numSlices = srcImage.GetArraySize();
 
     for (int sliceIndex = 0; sliceIndex < numSlices; sliceIndex++) {
         for (int mipLevel = 0; mipLevel < numMipmaps; mipLevel++) {
@@ -59,7 +59,7 @@ void CompressDXT3(const Image &srcImage, Image &dstImage, Image::CompressionQual
     }
 
     int numMipmaps = srcImage.NumMipmaps();
-    int numSlices = srcImage.NumSlices();
+    int numSlices = srcImage.GetArraySize();
 
     for (int sliceIndex = 0; sliceIndex < numSlices; sliceIndex++) {
         for (int mipLevel = 0; mipLevel < numMipmaps; mipLevel++) {
@@ -87,7 +87,7 @@ void CompressDXT5(const Image &srcImage, Image &dstImage, Image::CompressionQual
     }
 
     int numMipmaps = srcImage.NumMipmaps();
-    int numSlices = srcImage.NumSlices();
+    int numSlices = srcImage.GetArraySize();
 
     for (int sliceIndex = 0; sliceIndex < numSlices; sliceIndex++) {
         for (int mipLevel = 0; mipLevel < numMipmaps; mipLevel++) {
@@ -115,7 +115,7 @@ void CompressDXN2(const Image &srcImage, Image &dstImage, Image::CompressionQual
     }
 
     int numMipmaps = srcImage.NumMipmaps();
-    int numSlices = srcImage.NumSlices();
+    int numSlices = srcImage.GetArraySize();
 
     for (int sliceIndex = 0; sliceIndex < numSlices; sliceIndex++) {
         for (int mipLevel = 0; mipLevel < numMipmaps; mipLevel++) {

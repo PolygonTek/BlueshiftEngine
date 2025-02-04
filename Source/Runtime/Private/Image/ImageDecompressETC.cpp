@@ -1182,7 +1182,7 @@ void DecompressETC2_RGB8(const Image &srcImage, Image &dstImage) {
     assert(dstImage.GetFormat() == Image::Format::RGBA_8_8_8_8);
 
     int numMipmaps = srcImage.NumMipmaps();
-    int numSlices = srcImage.NumSlices();
+    int numSlices = srcImage.GetArraySize();
 
     for (int sliceIndex = 0; sliceIndex < numSlices; sliceIndex++) {
         for (int mipLevel = 0; mipLevel < numMipmaps; mipLevel++) {
@@ -1202,7 +1202,7 @@ void DecompressETC2_RGB8A1(const Image &srcImage, Image &dstImage) {
     assert(dstImage.GetFormat() == Image::Format::RGBA_8_8_8_8);
 
     int numMipmaps = srcImage.NumMipmaps();
-    int numSlices = srcImage.NumSlices();
+    int numSlices = srcImage.GetArraySize();
 
     for (int sliceIndex = 0; sliceIndex < numSlices; sliceIndex++) {
         for (int mipLevel = 0; mipLevel < numMipmaps; mipLevel++) {
@@ -1222,7 +1222,7 @@ void DecompressETC2_RGBA8(const Image &srcImage, Image &dstImage) {
     assert(dstImage.GetFormat() == Image::Format::RGBA_8_8_8_8);
 
     int numMipmaps = srcImage.NumMipmaps();
-    int numSlices = srcImage.NumSlices();
+    int numSlices = srcImage.GetArraySize();
 
     for (int sliceIndex = 0; sliceIndex < numSlices; sliceIndex++) {
         for (int mipLevel = 0; mipLevel < numMipmaps; mipLevel++) {
@@ -1242,7 +1242,7 @@ void DecompressEAC_R11(const Image &srcImage, Image &dstImage, bool signedFormat
     assert(dstImage.GetFormat() == Image::Format::RGBA_32F_32F_32F_32F);
 
     int numMipmaps = srcImage.NumMipmaps();
-    int numSlices = srcImage.NumSlices();
+    int numSlices = srcImage.GetArraySize();
 
     for (int sliceIndex = 0; sliceIndex < numSlices; sliceIndex++) {
         for (int mipLevel = 0; mipLevel < numMipmaps; mipLevel++) {
@@ -1262,7 +1262,7 @@ void DecompressEAC_RG11(const Image &srcImage, Image &dstImage, bool signedForma
     assert(dstImage.GetFormat() == Image::Format::RGBA_32F_32F_32F_32F);
 
     int numMipmaps = srcImage.NumMipmaps();
-    int numSlices = srcImage.NumSlices();
+    int numSlices = srcImage.GetArraySize();
 
     for (int sliceIndex = 0; sliceIndex < numSlices; sliceIndex++) {
         for (int mipLevel = 0; mipLevel < numMipmaps; mipLevel++) {

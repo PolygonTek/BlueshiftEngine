@@ -27,12 +27,12 @@ public:
         None                    = 0,
         Permanence              = BIT(0),   ///< 영원히 사용됨 (해제되지 않는다)
         NoCompression           = BIT(1),   ///< 압축을 사용하지 않는다. (원본 포맷이 압축되어 있다면 소용없다)
-        NoScaleDown             = BIT(2),
+        NoScaleDown             = BIT(2),   ///< 
         HighQuality             = NoCompression | NoScaleDown,
         NoMipmaps               = BIT(3),   ///< 밉맵을 사용하지 않는다. 
         NormalMap               = BIT(4),   ///< 노말맵
         NonePowerOfTwo          = BIT(5),   ///< 2 의 승수 사이즈가 아님
-        UnorderedAccess         = BIT(6),
+        UnorderedAccess         = BIT(6),   ///< UAV 로 접근 가능한 텍스쳐
         LoadedFromFile          = BIT(7)    ///< 파일로부터 읽어들인 텍스쳐인지 여부 (내부적으로 사용됨)
     };
 
@@ -61,10 +61,11 @@ public:
     const char *                GetName() const { return name.c_str(); }
     const char *                GetHashName() const { return hashName.c_str(); }
     RHI::TextureType            GetType() const { return type; }
-    uint32_t                    GetWidth() const { return width; }
-    uint32_t                    GetHeight() const { return height; }
-    uint32_t                    GetDepth() const { return depth; }
-    uint32_t                    NumSlices() const { return numSlices; }
+    uint32_t                    GetWidth() const { return texture->GetWidth(); }
+    uint32_t                    GetHeight() const { return texture->GetHeight(); }
+    uint32_t                    GetDepth() const { return texture->GetDepth(); }
+    uint32_t                    GetArraySize() const { return texture->GetArraySize(); }
+    uint32_t                    GetMipLevelCount() const { return texture->GetMipLevelCount(); }
     BE1::Image::Format          GetFormat() const { return format; }
     RHI::Texture *              GetRHITexture() const { return texture; }
     RHI::Sampler *              GetRHISampler() const { return sampler ? sampler->GetRHISampler() : nullptr; }
@@ -84,12 +85,11 @@ public:
     void                        Create(RHI::TextureType textureType, const BE1::Image *srcImage, Texture::Flag flags);
     void                        SetSamplerParameters(const SamplerParams &samplerParams);
     void                        SetSamplerParameters(SamplerParamsType samplerParamsType);
+    void                        PrepareGPUMipmapGeneration();
 
     bool                        Load(const char *filename, Texture::Flag flags);
 
     static void                 GetCubeImageFromCubeTexture(const Texture *cubeTexture, int numMipLevels, BE1::Image &outCubeImage);
-
-    static SamplerParams        samplerParams[to_int(SamplerParamsType::Count)];
 
 private:
     void                        CreateDefaultTexture(int size, Texture::Flag flags);
@@ -105,12 +105,10 @@ private:
     uint32_t                    srcWidth;       ///< Original width
     uint32_t                    srcHeight;      ///< Original height
     uint32_t                    srcDepth;       ///< Original depth
-    uint32_t                    numSlices;
-    uint32_t                    width;          ///< Uploaded width
-    uint32_t                    height;         ///< Uploaded height
-    uint32_t                    depth;          ///< Uploaded depth
-    BE1::Image::Format          format;         ///< Uploaded format
+    BE1::Image::Format          format;
     Texture::Flag               flags;
+
+    static SamplerParams        defaultSamplerParams[to_int(SamplerParamsType::Count)];
 };
 
 BE_INLINE Texture::~Texture() {

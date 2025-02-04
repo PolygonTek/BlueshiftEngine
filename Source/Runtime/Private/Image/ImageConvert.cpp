@@ -239,16 +239,16 @@ bool Image::ConvertFormat(Format dstFormat, Image &dstImage, GammaSpace dstGamma
     const Image *srcImage = this;
 
     // Calculate the mipmap count for the destination image.
-    int numDstMipmaps = mipmapRegenerationMode != MipmapGenerationMode::NoMipmaps ? MaxMipLevels(width, height, depth) : numMipmaps;
+    int numDstMipmaps = mipmapRegenerationMode != MipmapGenerationMode::NoMipmaps ? MaxMipLevels(width, height, depth) : numMipLevels;
 
     // Create a destination image based on the source (this) image.
-    dstImage.Create(srcImage->width, srcImage->height, srcImage->depth, srcImage->numSlices, numDstMipmaps, dstFormat, dstGammaSpace, nullptr, srcImage->flags);
+    dstImage.Create(srcImage->width, srcImage->height, srcImage->depth, srcImage->arraySize, numDstMipmaps, dstFormat, dstGammaSpace, nullptr, srcImage->flags);
 
     Image unpackedSrcImage;
 
     if (srcImage->IsCompressed()) {
         // If the source image is compressed, decompress it first.
-        unpackedSrcImage.Create(srcImage->width, srcImage->height, srcImage->depth, srcImage->numSlices, numDstMipmaps,
+        unpackedSrcImage.Create(srcImage->width, srcImage->height, srcImage->depth, srcImage->arraySize, numDstMipmaps,
             srcImage->NeedFloatConversion() ? Format::RGBA_32F_32F_32F_32F : Format::RGBA_8_8_8_8, srcImage->gammaSpace, nullptr, srcImage->flags);
 
         DecompressImage(*this, unpackedSrcImage);
@@ -260,7 +260,7 @@ bool Image::ConvertFormat(Format dstFormat, Image &dstImage, GammaSpace dstGamma
         srcImage = &unpackedSrcImage;
     } else if (mipmapRegenerationMode != MipmapGenerationMode::NoMipmaps) {
         if (!srcImage->IsPacked()) {
-            unpackedSrcImage.Create(srcImage->width, srcImage->height, srcImage->depth, srcImage->numSlices, numDstMipmaps,
+            unpackedSrcImage.Create(srcImage->width, srcImage->height, srcImage->depth, srcImage->arraySize, numDstMipmaps,
                 srcImage->format, srcImage->gammaSpace, nullptr, srcImage->flags);
 
             // Copy only the first level of the source image for mipmap generation.
@@ -328,8 +328,8 @@ bool Image::ConvertFormat(Format dstFormat, Image &dstImage, GammaSpace dstGamma
     byte *srcPtr = srcImage->GetPixels();
     byte *dstPtr = dstImage.GetPixels();
 
-    for (int sliceIndex = 0; sliceIndex < srcImage->numSlices; sliceIndex++) {
-        for (int mipLevel = 0; mipLevel < srcImage->numMipmaps; mipLevel++) {
+    for (int sliceIndex = 0; sliceIndex < srcImage->arraySize; sliceIndex++) {
+        for (int mipLevel = 0; mipLevel < srcImage->numMipLevels; mipLevel++) {
             int w = srcImage->GetWidth(mipLevel);
             int h = srcImage->GetHeight(mipLevel);
             int d = srcImage->GetDepth(mipLevel);

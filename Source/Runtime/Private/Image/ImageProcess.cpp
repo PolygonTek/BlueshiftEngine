@@ -30,7 +30,7 @@ Image &Image::FlipY() {
     byte *tmp = (byte *)Mem_Alloc16(Image::MemRequired(width, 1, 1, 1, 1, format));
     byte *src = pic;
 
-    for (int mipLevel = 0; mipLevel < numMipmaps; mipLevel++) {
+    for (int mipLevel = 0; mipLevel < numMipLevels; mipLevel++) {
         int w = GetWidth(mipLevel);
         int h = GetHeight(mipLevel);
         int sliceSize = SizeInBytes(mipLevel);
@@ -59,7 +59,7 @@ Image &Image::FlipX() {
     byte *tmp = (byte *)Mem_Alloc16(bpp);
     byte *src = pic;
 
-    for (int mipLevel = 0; mipLevel < numMipmaps; mipLevel++) {
+    for (int mipLevel = 0; mipLevel < numMipLevels; mipLevel++) {
         int w = GetWidth(mipLevel);
         int h = GetHeight(mipLevel);
         int sliceSize = SizeInBytes(mipLevel);
@@ -88,7 +88,7 @@ Image &Image::AdjustBrightness(float factor) {
     }
 
     int bpp = Image::BytesPerPixel(format);
-    int numPixels = NumPixels(0, numMipmaps);
+    int numPixels = NumPixels(0, numMipLevels);
 
     byte *ptr = pic;
 
@@ -144,7 +144,7 @@ Image &Image::ApplyGammaRampTableRGB888(const uint16_t table[768]) {
         return *this;
     }
 
-    int numPixels = NumPixels(0, numMipmaps);
+    int numPixels = NumPixels(0, numMipLevels);
 
     for (int i = 0; i < numPixels; i++) {
         uint16_t r = table[pic[0] + 0];
@@ -296,7 +296,7 @@ Image Image::MakeSDF(int spread) const {
 }
 
 Image &Image::SwapRedAlphaRGBA8888() {
-    int numPixels = NumPixels(0, numMipmaps);
+    int numPixels = NumPixels(0, numMipLevels);
 
     for (int i = 0; i < numPixels; i++) {
         pic[3] = pic[0];
@@ -718,10 +718,10 @@ Image &Image::GenerateMipmaps(bool preserveAlphaCoverage) {
 
     int alphaComponentIndex = GetAlphaComponentIndex(format);
     int numComponents = NumComponents();
-    int numSlices = NumSlices();
+    int numSlices = GetArraySize();
 
     for (int sliceIndex = 0; sliceIndex < numSlices; sliceIndex++) {
-        for (int mipLevel = 1; mipLevel < numMipmaps; mipLevel++) {
+        for (int mipLevel = 1; mipLevel < numMipLevels; mipLevel++) {
             int srcMipLevel = mipLevel - 1;
             int w = GetWidth(srcMipLevel);
             int h = GetHeight(srcMipLevel);

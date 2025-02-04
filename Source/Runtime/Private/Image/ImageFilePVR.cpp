@@ -80,8 +80,8 @@ bool Image::LoadPVR2FromMemory(const char *name, const byte *data, size_t fileSi
     this->width = header->dwWidth;
     this->height = header->dwHeight;
     this->depth = 1;
-    this->numMipmaps = Max(1, (int)header->dwMipMapCount);
-    this->numSlices = Max(1, (int)header->dwNumSurfs);
+    this->numMipLevels = Max(1, (int)header->dwMipMapCount);
+    this->arraySize = Max(1, (int)header->dwNumSurfs);
     
     this->pic = (byte *)Mem_Alloc256(header->dwTextureDataSize);
     simdProcessor->Memcpy(this->pic, ptr, header->dwTextureDataSize);
@@ -291,8 +291,8 @@ bool Image::LoadPVR3FromMemory(const char *name, const byte *data, size_t fileSi
     this->height = header->u32Height;
     this->depth = header->u32Depth;
     this->gammaSpace = header->u32ColourSpace == ePVRTCSpacelRGB ? GammaSpace::Linear : GammaSpace::sRGB;
-    this->numMipmaps = Max(1, (int)header->u32MIPMapCount);
-    this->numSlices = header->u32NumFaces * Max(1, (int)header->u32NumSurfaces);
+    this->numMipLevels = Max(1, (int)header->u32MIPMapCount);
+    this->arraySize = header->u32NumFaces * Max(1, (int)header->u32NumSurfaces);
     this->flags = header->u32NumFaces == 6 ? Flag::CubeMap : Flag::None;
     
     size_t dataSize = fileSize - (ptr - data);
@@ -332,7 +332,7 @@ bool Image::WritePVR(const char *filename) const {
     header.u32Depth = 1;
     header.u32NumSurfaces = 1;
     header.u32NumFaces = HasFlag(flags, Flag::CubeMap) ?  6 : 1;
-    header.u32MIPMapCount = numMipmaps;
+    header.u32MIPMapCount = numMipLevels;
 
     switch (format) {
     case Format::RGB_PVRTC_2BPPV1:
@@ -634,7 +634,7 @@ bool Image::WritePVR(const char *filename) const {
     fp->Write(&header, sizeof(header));
 #endif
     
-    fp->Write(pic, SizeInBytes(0, numMipmaps));
+    fp->Write(pic, SizeInBytes(0, numMipLevels));
 
     fileSystem.CloseFile(fp);
 

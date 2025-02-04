@@ -404,6 +404,8 @@ namespace RHI {
 
     class Buffer : public GPUResource {
     public:
+        virtual bool                    IsValidSubresource(RHI::SubresourceType type, int subresourceIndex) const = 0;
+
         void *                          writePtr = nullptr;
         BufferUsage                     bufferUsage;
         ResourceFlag                    flags = ResourceFlag::None;
@@ -429,6 +431,14 @@ namespace RHI {
 
     class Texture : public GPUResource {
     public:
+        virtual bool                    IsValidSubresource(RHI::SubresourceType type, int subresourceIndex) const = 0;
+
+        virtual uint32_t                GetWidth() const = 0;
+        virtual uint32_t                GetHeight() const = 0;
+        virtual uint32_t                GetDepth() const = 0;
+        virtual uint32_t                GetArraySize() const = 0;
+        virtual uint32_t                GetMipLevelCount() const = 0;
+
         TextureType                     textureType;
     };
 
@@ -810,18 +820,20 @@ namespace RHI {
         virtual Texture *               CreateTexture(TextureType textureType, ResourceFlag flags, const BE1::Image *image, BE1::Image::Format dstFormat, bool useMipmaps) = 0;
         virtual Texture *               CreateTextureFromFile(TextureType textureType, ResourceFlag flags, const char *filename, bool useCompression = true, bool useNormalMap = false);
         virtual void                    DestroyTexture(Texture *texture, bool immediate = false) = 0;
+
         virtual void                    GetTextureImage2D(Texture *texture, int mipLevel, BE1::Image::Format imageFormat, void *outPixels) = 0;
         virtual void                    GetTextureImage3D(Texture *texture, int mipLevel, BE1::Image::Format imageFormat, void *outPixels) = 0;
         virtual void                    GetTextureImageCubeFace(Texture *texture, CubemapFace face, int mipLevel, BE1::Image::Format imageFormat, void *outPixels) = 0;
+
         virtual bool                    SetTextureSubImage2D(Texture *texture, int mipLevel, int x, int y, int width, int height, BE1::Image::Format imageFormat, const void *pixels) = 0;
         virtual bool                    SetTextureSubImage3D(Texture *texture, int mipLevel, int x, int y, int z, int width, int height, int depth, BE1::Image::Format imageFormat, const void *pixels) = 0;
         virtual bool                    SetTextureSubImageCubeFace(RHI::Texture *texture, RHI::CubemapFace face, int mipLevel, int x, int y, int width, int height, BE1::Image::Format imageFormat, const void *pixels) = 0;
 
         virtual int                     CreateSubresource(Buffer *buffer, SubresourceType subresourceType, uint64_t offset = 0, uint64_t size = ~0) = 0;
-        virtual int                     CreateSubresource(Texture *texture, SubresourceType type, uint32_t firstSlice = 0, uint32_t sliceCount = ~0, uint32_t firstMipLevel = 0, uint32_t mipCount = ~0) = 0;
+        virtual int                     CreateSubresource(Texture *texture, SubresourceType type, uint32_t firstSlice = 0, uint32_t sliceCount = ~0, uint32_t firstMipLevel = 0, uint32_t mipCount = ~0, const BE1::Image::Format *typelessCompatibleFormat = nullptr) = 0;
 
-        virtual void                    DestroySubresource(RHI::Buffer *buffer, RHI::SubresourceType type, int index) = 0;
-        virtual void                    DestroySubresource(RHI::Texture *textgure, RHI::SubresourceType type, int index) = 0;
+        virtual void                    DestroySubresource(RHI::Buffer *buffer, RHI::SubresourceType type, int subresourceIndex) = 0;
+        virtual void                    DestroySubresource(RHI::Texture *texture, RHI::SubresourceType type, int subresourceIndex) = 0;
 
         virtual Shader *                CreateShader(ShaderModel shaderModel, ShaderStage shaderStage, const char *sourceName, const char *shaderText, int shaderTextSize, const char *entryPoint) = 0;
         virtual Shader *                CreateShaderFromFile(ShaderModel shaderModel, ShaderStage shaderStage, const char *filename, const char *entryPoint) = 0;
