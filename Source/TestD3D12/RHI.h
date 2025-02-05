@@ -829,11 +829,11 @@ namespace RHI {
         virtual bool                    SetTextureSubImage3D(Texture *texture, int mipLevel, int x, int y, int z, int width, int height, int depth, BE1::Image::Format imageFormat, const void *pixels) = 0;
         virtual bool                    SetTextureSubImageCubeFace(RHI::Texture *texture, RHI::CubemapFace face, int mipLevel, int x, int y, int width, int height, BE1::Image::Format imageFormat, const void *pixels) = 0;
 
-        virtual int                     CreateSubresource(Buffer *buffer, SubresourceType subresourceType, uint64_t offset = 0, uint64_t size = ~0) = 0;
+        virtual int                     CreateSubresource(Buffer *buffer, SubresourceType subresourceType, uint64_t offset = 0, uint64_t size = ~0, const BE1::Image::Format *newFormat = nullptr) = 0;
         virtual int                     CreateSubresource(Texture *texture, SubresourceType type, uint32_t firstSlice = 0, uint32_t sliceCount = ~0, uint32_t firstMipLevel = 0, uint32_t mipCount = ~0, const BE1::Image::Format *typelessCompatibleFormat = nullptr, bool isSRGB = false) = 0;
 
-        virtual void                    DestroySubresource(RHI::Buffer *buffer, RHI::SubresourceType type, int subresourceIndex) = 0;
-        virtual void                    DestroySubresource(RHI::Texture *texture, RHI::SubresourceType type, int subresourceIndex) = 0;
+        virtual void                    DestroySubresource(RHI::Buffer *buffer, RHI::SubresourceType type, int subresourceIndex = -1) = 0;
+        virtual void                    DestroySubresource(RHI::Texture *texture, RHI::SubresourceType type, int subresourceIndex = -1) = 0;
 
         virtual Shader *                CreateShader(ShaderModel shaderModel, ShaderStage shaderStage, const char *sourceName, const char *shaderText, int shaderTextSize, const char *entryPoint) = 0;
         virtual Shader *                CreateShaderFromFile(ShaderModel shaderModel, ShaderStage shaderStage, const char *filename, const char *entryPoint) = 0;

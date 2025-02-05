@@ -268,14 +268,14 @@ RHI::Buffer *D3D12Renderer::CreateBuffer(RHI::BufferUsage usage, RHI::ResourceFl
     return buffer;
 }
 
-int D3D12Renderer::CreateSubresource(RHI::Buffer *buffer, RHI::SubresourceType type, uint64_t offset, uint64_t size) {
+int D3D12Renderer::CreateSubresource(RHI::Buffer *buffer, RHI::SubresourceType type, uint64_t offset, uint64_t size, const BE1::Image::Format *newFormat) {
     D3D12Buffer *d3d12Buffer = static_cast<D3D12Buffer *>(buffer);
 
     if (type == RHI::SubresourceType::SRV) {
-        return CreateSubresourceSRV(d3d12Buffer, offset, size);
+        return CreateSubresourceSRV(d3d12Buffer, offset, size, newFormat);
     }
     if (type == RHI::SubresourceType::UAV) {
-        return CreateSubresourceUAV(d3d12Buffer, offset, size);
+        return CreateSubresourceUAV(d3d12Buffer, offset, size, newFormat);
     }
     return -1;
 }
@@ -317,14 +317,20 @@ void D3D12Renderer::DestroySubresource(RHI::Buffer *buffer, RHI::SubresourceType
     }
 }
 
-int D3D12Renderer::CreateSubresourceSRV(D3D12Buffer *buffer, uint64_t offset, uint64_t size) {
+int D3D12Renderer::CreateSubresourceSRV(D3D12Buffer *buffer, uint64_t offset, uint64_t size, const BE1::Image::Format *newFormat) {
     D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
     srvDesc.ViewDimension = D3D12_SRV_DIMENSION_BUFFER;
     srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
 
+    BE1::Image::Format subresourceFormat = buffer->format;
+    if (newFormat) {
+        // NOTE: 반드시 다른 서브 리소스의 포맷과 호환되어야 한다.
+        subresourceFormat = *newFormat;
+    }
+
     uint32_t byteStride = 0;
 
-    if (buffer->format == BE1::Image::Format::Unknown) {
+    if (subresourceFormat == BE1::Image::Format::Unknown) {
         if (buffer->structureByteStride == 0) {
             // Raw buffer (4 바이트 정렬된, 바이트 단위 접근이 가능한 버퍼)
             byteStride = 4;
@@ -337,9 +343,9 @@ int D3D12Renderer::CreateSubresourceSRV(D3D12Buffer *buffer, uint64_t offset, ui
             srvDesc.Buffer.StructureByteStride = byteStride;
         }
     } else {
-        ImageFormatToDXGIFormat(buffer->format, false, &srvDesc.Format);
+        ImageFormatToDXGIFormat(subresourceFormat, false, &srvDesc.Format);
 
-        byteStride = BE1::Image::BytesPerPixel(buffer->format);
+        byteStride = BE1::Image::BytesPerPixel(subresourceFormat);
     }
 
     srvDesc.Buffer.FirstElement = offset / byteStride;
@@ -362,13 +368,19 @@ int D3D12Renderer::CreateSubresourceSRV(D3D12Buffer *buffer, uint64_t offset, ui
     return buffer->subresourceSrvDescriptors.Append(srvDescriptor);
 }
 
-int D3D12Renderer::CreateSubresourceUAV(D3D12Buffer *buffer, uint64_t offset, uint64_t size) {
+int D3D12Renderer::CreateSubresourceUAV(D3D12Buffer *buffer, uint64_t offset, uint64_t size, const BE1::Image::Format *newFormat) {
     D3D12_UNORDERED_ACCESS_VIEW_DESC uavDesc = {};
     uavDesc.ViewDimension = D3D12_UAV_DIMENSION_BUFFER;
 
+    BE1::Image::Format subresourceFormat = buffer->format;
+    if (newFormat) {
+        // NOTE: 반드시 다른 서브 리소스의 포맷과 호환되어야 한다.
+        subresourceFormat = *newFormat;
+    }
+
     uint32_t byteStride = 0;
 
-    if (buffer->format == BE1::Image::Format::Unknown) {
+    if (subresourceFormat == BE1::Image::Format::Unknown) {
         if (buffer->structureByteStride == 0) {
             // Raw buffer (4 바이트 정렬된, 바이트 단위 접근이 가능한 버퍼)
             byteStride = 4;
@@ -381,9 +393,9 @@ int D3D12Renderer::CreateSubresourceUAV(D3D12Buffer *buffer, uint64_t offset, ui
             uavDesc.Buffer.StructureByteStride = byteStride;
         }
     } else {
-        ImageFormatToDXGIFormat(buffer->format, false, &uavDesc.Format);
+        ImageFormatToDXGIFormat(subresourceFormat, false, &uavDesc.Format);
 
-        byteStride = BE1::Image::BytesPerPixel(buffer->format);
+        byteStride = BE1::Image::BytesPerPixel(subresourceFormat);
     }
 
     uavDesc.Buffer.FirstElement = offset / byteStride;
