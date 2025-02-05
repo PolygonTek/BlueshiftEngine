@@ -195,6 +195,7 @@ public:
     static bool                         IsStencilFormat(DXGI_FORMAT format);
     static bool                         IsTypelessFormat(DXGI_FORMAT format);
     static DXGI_FORMAT                  ToTypelessFormat(DXGI_FORMAT format);
+    static UINT                         GetComponentSwizzling(BE1::Image::Format format);
     static D3D12_RESOURCE_STATES        ToD3D12ResourceState(RHI::GPUResourceState resourceState);
 
     static D3D12Renderer *              GetRenderer() { return static_cast<D3D12Renderer *>(RHI::renderer); }

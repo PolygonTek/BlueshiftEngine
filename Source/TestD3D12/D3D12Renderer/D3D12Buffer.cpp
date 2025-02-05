@@ -343,9 +343,12 @@ int D3D12Renderer::CreateSubresourceSRV(D3D12Buffer *buffer, uint64_t offset, ui
             srvDesc.Buffer.StructureByteStride = byteStride;
         }
     } else {
-        ImageFormatToDXGIFormat(subresourceFormat, false, &srvDesc.Format);
+        // 버퍼의 Image::Format 에 따라 swizzling 이 필요할 수도 있다.
+        srvDesc.Shader4ComponentMapping = GetComponentSwizzling(subresourceFormat);
 
         byteStride = BE1::Image::BytesPerPixel(subresourceFormat);
+
+        ImageFormatToDXGIFormat(subresourceFormat, false, &srvDesc.Format);
     }
 
     srvDesc.Buffer.FirstElement = offset / byteStride;
@@ -393,9 +396,9 @@ int D3D12Renderer::CreateSubresourceUAV(D3D12Buffer *buffer, uint64_t offset, ui
             uavDesc.Buffer.StructureByteStride = byteStride;
         }
     } else {
-        ImageFormatToDXGIFormat(subresourceFormat, false, &uavDesc.Format);
-
         byteStride = BE1::Image::BytesPerPixel(subresourceFormat);
+
+        ImageFormatToDXGIFormat(subresourceFormat, false, &uavDesc.Format);
     }
 
     uavDesc.Buffer.FirstElement = offset / byteStride;

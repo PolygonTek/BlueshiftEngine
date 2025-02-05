@@ -326,6 +326,7 @@ RHI::Texture *D3D12Renderer::CreateTexture(RHI::TextureType textureType, RHI::Re
 
     D3D12Texture *texture = new D3D12Texture;
     texture->textureType = textureType;
+    texture->format = srcFormat;
 #ifdef USE_D3D12_MEMALLOC
     texture->textureAllocation = allocation;
 #else
@@ -508,12 +509,19 @@ int D3D12Renderer::CreateSubresourceSRV(D3D12Texture *texture, uint32_t firstSli
     D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
     srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
 
+    BE1::Image::Format subresourceFormat = texture->format;
+
     if (typelessCompatibleFormat) {
         assert(IsTypelessFormat(texture->textureDesc.Format));
-        ImageFormatToDXGIFormat(*typelessCompatibleFormat, isSRGB, &srvDesc.Format);
+        subresourceFormat = *typelessCompatibleFormat;
+
+        ImageFormatToDXGIFormat(subresourceFormat, isSRGB, &srvDesc.Format);
     } else {
         srvDesc.Format = texture->textureDesc.Format;
     }
+
+    // 텍스쳐의 Image::Format 에 따라 swizzling 이 필요할 수도 있다.
+    srvDesc.Shader4ComponentMapping = GetComponentSwizzling(subresourceFormat);
 
     switch (texture->textureType) {
     case RHI::TextureType::Texture1D:
