@@ -83,18 +83,18 @@ void RenderContext::Shutdown() {
 
 static Image::Format GetScreenImageFormat() {
     if (r_HDR.GetInteger() == 0) {
-        return Image::Format::RGBA_8_8_8_8;
+        return Image::Format::R8G8B8A8;
     }
     
     if (r_HDR.GetInteger() == 1 && graphics.SupportsPackedFloat()) {
-        return Image::Format::RGB_11F_11F_10F;
+        return Image::Format::R11G11B10_FLOAT;
     }
     
     if (r_HDR.GetInteger() == 3) {
-        return Image::Format::RGBA_32F_32F_32F_32F;
+        return Image::Format::R32G32B32A32_FLOAT;
     }
 
-    return Image::Format::RGBA_16F_16F_16F_16F;
+    return Image::Format::R16G16B16A16_FLOAT;
 }
 
 void RenderContext::InitScreenMapRT() {
@@ -112,11 +112,11 @@ void RenderContext::InitScreenMapRT() {
     screenColorTexture->CreateEmpty(Graphics::TextureType::Texture2D, renderingWidth, renderingHeight, 1, 1, 1, screenImageFormat, screenTextureFlags | Texture::Flag::SRGBColorSpace);
 
     screenDepthTexture = textureManager.AllocTexture(va("_%i_screenDepthStencil", (int)contextHandle));
-    screenDepthTexture->CreateEmpty(Graphics::TextureType::Texture2D, renderingWidth, renderingHeight, 1, 1, 1, Image::Format::Depth_24, screenTextureFlags | Texture::Flag::Nearest);
+    screenDepthTexture->CreateEmpty(Graphics::TextureType::Texture2D, renderingWidth, renderingHeight, 1, 1, 1, Image::Format::D24, screenTextureFlags | Texture::Flag::Nearest);
 
     if (r_useDeferredLighting.GetBool()) {
         screenNormalTexture = textureManager.AllocTexture(va("_%i_screenNormal", (int)contextHandle));
-        screenNormalTexture->CreateEmpty(Graphics::TextureType::Texture2D, renderingWidth, renderingHeight, 1, 1, 1, Image::Format::RG_16F_16F, screenTextureFlags | Texture::Flag::Nearest);
+        screenNormalTexture->CreateEmpty(Graphics::TextureType::Texture2D, renderingWidth, renderingHeight, 1, 1, 1, Image::Format::R16G16_FLOAT, screenTextureFlags | Texture::Flag::Nearest);
 
         Texture *mrtTextures[2];
         mrtTextures[0] = screenColorTexture;
@@ -128,7 +128,7 @@ void RenderContext::InitScreenMapRT() {
         screenLitAccRT = RenderTarget::Create(screenLitAccTexture, nullptr, Graphics::RenderTargetFlag::SRGBWrite);
     } else if (r_usePostProcessing.GetBool() && r_SSAO.GetBool()) {
         screenNormalTexture = textureManager.AllocTexture(va("_%i_screenNormal", (int)contextHandle));
-        screenNormalTexture->CreateEmpty(Graphics::TextureType::Texture2D, renderingWidth, renderingHeight, 1, 1, 1, Image::Format::RGBA_8_8_8_8, screenTextureFlags | Texture::Flag::Nearest);
+        screenNormalTexture->CreateEmpty(Graphics::TextureType::Texture2D, renderingWidth, renderingHeight, 1, 1, 1, Image::Format::R8G8B8A8, screenTextureFlags | Texture::Flag::Nearest);
 
         Texture *mrtTextures[2];
         mrtTextures[0] = screenColorTexture;
@@ -142,7 +142,7 @@ void RenderContext::InitScreenMapRT() {
 
     if (flags & Flag::UseSelectionBuffer) {
         screenSelectionTexture = textureManager.AllocTexture(va("_%i_screenSelection", (int)contextHandle));
-        screenSelectionTexture->CreateEmpty(Graphics::TextureType::Texture2D, renderingWidth * screenSelectionScale, renderingHeight * screenSelectionScale, 1, 1, 1, Image::Format::RGBA_8_8_8_8, screenTextureFlags);
+        screenSelectionTexture->CreateEmpty(Graphics::TextureType::Texture2D, renderingWidth * screenSelectionScale, renderingHeight * screenSelectionScale, 1, 1, 1, Image::Format::R8G8B8A8, screenTextureFlags);
     
         screenSelectionRT = RenderTarget::Create(screenSelectionTexture, nullptr, Graphics::RenderTargetFlag::HasDepthBuffer);
     }
@@ -152,7 +152,7 @@ void RenderContext::InitScreenMapRT() {
         int h = Math::RoundDownPowerOfTwo(renderingHeight >> 1);
 
         homTexture = textureManager.AllocTexture(va("_%i_hom", (int)contextHandle));
-        homTexture->CreateEmpty(Graphics::TextureType::Texture2D, w, h, 1, 1, 1, Image::Format::Depth_32F, Texture::Flag::Clamp | Texture::Flag::HighQuality | Texture::Flag::HighPriority | Texture::Flag::Nearest);
+        homTexture->CreateEmpty(Graphics::TextureType::Texture2D, w, h, 1, 1, 1, Image::Format::D32_FLOAT, Texture::Flag::Clamp | Texture::Flag::HighQuality | Texture::Flag::HighPriority | Texture::Flag::Nearest);
         homTexture->Bind();
         homTexture->GenerateMipmap();
         homRT = RenderTarget::Create(nullptr, (const Texture *)homTexture, 0);
@@ -192,31 +192,31 @@ void RenderContext::InitScreenMapRT() {
     //ppRTs[PP_RT_BLUR] = RenderTarget::Create(ppTextures[PP_TEXTURE_COLOR_TEMP_4X], nullptr, Graphics::SRGBWrite);
 
     ppTextures[PP_TEXTURE_LINEAR_DEPTH] = textureManager.AllocTexture(va("_%i_screenLinearDepth", (int)contextHandle));
-    ppTextures[PP_TEXTURE_LINEAR_DEPTH]->CreateEmpty(Graphics::TextureType::Texture2D, renderingWidth, renderingHeight, 1, 1, 1, Image::Format::L_16F, screenTextureFlags);
+    ppTextures[PP_TEXTURE_LINEAR_DEPTH]->CreateEmpty(Graphics::TextureType::Texture2D, renderingWidth, renderingHeight, 1, 1, 1, Image::Format::L16_FLOAT, screenTextureFlags);
     ppRTs[PP_RT_LINEAR_DEPTH] = RenderTarget::Create(ppTextures[PP_TEXTURE_LINEAR_DEPTH], nullptr, 0);
 
     ppTextures[PP_TEXTURE_DEPTH_2X] = textureManager.AllocTexture(va("_%i_screenDepthD2x", (int)contextHandle));
-    ppTextures[PP_TEXTURE_DEPTH_2X]->CreateEmpty(Graphics::TextureType::Texture2D, halfWidth, halfHeight, 1, 1, 1, Image::Format::L_16F, screenTextureFlags);
+    ppTextures[PP_TEXTURE_DEPTH_2X]->CreateEmpty(Graphics::TextureType::Texture2D, halfWidth, halfHeight, 1, 1, 1, Image::Format::L16_FLOAT, screenTextureFlags);
     ppRTs[PP_RT_DEPTH_2X] = RenderTarget::Create(ppTextures[PP_TEXTURE_DEPTH_2X], nullptr, 0);
 
     ppTextures[PP_TEXTURE_DEPTH_4X] = textureManager.AllocTexture(va("_%i_screenDepthD4x", (int)contextHandle));
-    ppTextures[PP_TEXTURE_DEPTH_4X]->CreateEmpty(Graphics::TextureType::Texture2D, quarterWidth, quarterHeight, 1, 1, 1, Image::Format::L_16F, screenTextureFlags);
+    ppTextures[PP_TEXTURE_DEPTH_4X]->CreateEmpty(Graphics::TextureType::Texture2D, quarterWidth, quarterHeight, 1, 1, 1, Image::Format::L16_FLOAT, screenTextureFlags);
     ppRTs[PP_RT_DEPTH_4X] = RenderTarget::Create(ppTextures[PP_TEXTURE_DEPTH_4X], nullptr, 0);
 
     ppTextures[PP_TEXTURE_DEPTH_TEMP_4X] = textureManager.AllocTexture(va("_%i_screenDepthTempD4x", (int)contextHandle));
-    ppTextures[PP_TEXTURE_DEPTH_TEMP_4X]->CreateEmpty(Graphics::TextureType::Texture2D, quarterWidth, quarterHeight, 1, 1, 1, Image::Format::L_16F, screenTextureFlags);
+    ppTextures[PP_TEXTURE_DEPTH_TEMP_4X]->CreateEmpty(Graphics::TextureType::Texture2D, quarterWidth, quarterHeight, 1, 1, 1, Image::Format::L16_FLOAT, screenTextureFlags);
     ppRTs[PP_RT_DEPTH_TEMP_4X] = RenderTarget::Create(ppTextures[PP_TEXTURE_DEPTH_TEMP_4X], nullptr, 0);
 
     ppTextures[PP_TEXTURE_VEL] = textureManager.AllocTexture(va("_%i_screenVelocity", (int)contextHandle));
-    ppTextures[PP_TEXTURE_VEL]->CreateEmpty(Graphics::TextureType::Texture2D, halfWidth, halfHeight, 1, 1, 1, Image::Format::RGBA_8_8_8_8, screenTextureFlags);
+    ppTextures[PP_TEXTURE_VEL]->CreateEmpty(Graphics::TextureType::Texture2D, halfWidth, halfHeight, 1, 1, 1, Image::Format::R8G8B8A8, screenTextureFlags);
     ppRTs[PP_RT_VEL] = RenderTarget::Create(ppTextures[PP_TEXTURE_VEL], nullptr, 0);
 
     ppTextures[PP_TEXTURE_AO] = textureManager.AllocTexture(va("_%i_screenAo", (int)contextHandle));
-    ppTextures[PP_TEXTURE_AO]->CreateEmpty(Graphics::TextureType::Texture2D, renderingWidth, renderingHeight, 1, 1, 1, Image::Format::RGBA_8_8_8_8, screenTextureFlags);
+    ppTextures[PP_TEXTURE_AO]->CreateEmpty(Graphics::TextureType::Texture2D, renderingWidth, renderingHeight, 1, 1, 1, Image::Format::R8G8B8A8, screenTextureFlags);
     ppRTs[PP_RT_AO] = RenderTarget::Create(ppTextures[PP_TEXTURE_AO], nullptr, 0);
 
     ppTextures[PP_TEXTURE_AO_TEMP] = textureManager.AllocTexture(va("_%i_screenAoTemp", (int)contextHandle));
-    ppTextures[PP_TEXTURE_AO_TEMP]->CreateEmpty(Graphics::TextureType::Texture2D, renderingWidth, renderingHeight, 1, 1, 1, Image::Format::RGBA_8_8_8_8, screenTextureFlags);
+    ppTextures[PP_TEXTURE_AO_TEMP]->CreateEmpty(Graphics::TextureType::Texture2D, renderingWidth, renderingHeight, 1, 1, 1, Image::Format::R8G8B8A8, screenTextureFlags);
     ppRTs[PP_RT_AO_TEMP] = RenderTarget::Create(ppTextures[PP_TEXTURE_AO_TEMP], nullptr, 0);
 
     //--------------------------------------
@@ -325,9 +325,9 @@ void RenderContext::InitHdrMapRT() {
         hdrBloomRT[i] = RenderTarget::Create(hdrBloomTexture[i], nullptr, 0);
     }
 
-    Image::Format lumImageFormat = Image::Format::L_16F;
+    Image::Format lumImageFormat = Image::Format::L16_FLOAT;
     if (r_HDR.GetInteger() == 3) {
-        lumImageFormat = Image::Format::L_32F;
+        lumImageFormat = Image::Format::L32_FLOAT;
     }
 
     int size = Min(Math::RoundUpPowerOfTwo(Max(quarterWidth, quarterHeight)) >> 2, 1024);
@@ -396,8 +396,8 @@ void RenderContext::InitShadowMapRT() {
         return;
     }
 
-    Image::Format shadowImageFormat = Image::Format::Depth_24;
-    Image::Format shadowCubeImageFormat = (r_shadowCubeMapFloat.GetBool() && graphics.SupportsDepthBufferFloat()) ? Image::Format::Depth_32F : Image::Format::Depth_24;
+    Image::Format shadowImageFormat = Image::Format::D24;
+    Image::Format shadowCubeImageFormat = (r_shadowCubeMapFloat.GetBool() && graphics.SupportsDepthBufferFloat()) ? Image::Format::D32_FLOAT : Image::Format::D24;
 
     Graphics::TextureType::Enum textureType = Graphics::TextureType::Texture2DArray;
 
@@ -617,7 +617,7 @@ float RenderContext::QueryDepth(const Point &point) {
     screenSelectionRT->Begin();
 
     // FIXME: is depth format confirmed ?
-    graphics.ReadPixels(scaledReadPoint.x, scaledReadPoint.y, 1, 1, Image::Format::Depth_24, depthData);
+    graphics.ReadPixels(scaledReadPoint.x, scaledReadPoint.y, 1, 1, Image::Format::D24, depthData);
     screenSelectionRT->End();
 
     float depth = (float)MAKE_FOURCC(depthData[2], depthData[1], depthData[0], 0) / (float)(BIT(24) - 1);

@@ -609,14 +609,14 @@ bool Image::HasAlpha(Image::Format imageFormat) {
         case Format::DXT1: // TODO: check 1-bit-alpha is used
         case Format::DXT3:
         case Format::DXT5:
-        case Format::RGBA_PVRTC_2BPPV1:
-        case Format::RGBA_PVRTC_4BPPV1:
-        case Format::RGBA_PVRTC_2BPPV2:
-        case Format::RGBA_PVRTC_4BPPV2:
-        case Format::RGBA_8_1_ETC2:
-        case Format::RGBA_8_8_ETC2:
-        case Format::RGBA_EA_ATC:
-        case Format::RGBA_IA_ATC:
+        case Format::PVRTC12A:
+        case Format::PVRTC14A:
+        case Format::PVRTC22A:
+        case Format::PVRTC24A:
+        case Format::ETC2A1:
+        case Format::ETC2A:
+        case Format::ATCE:
+        case Format::ATCI:
             return true;
         default:
             return false;
@@ -631,7 +631,7 @@ bool Image::HasOneBitAlpha(Image::Format imageFormat) {
     if (HasFlag(formatInfo->type, FormatType::Compressed)) {
         switch (imageFormat) {
         case Format::DXT1: // TODO: check 1-bit-alpha is used
-        case Format::RGBA_8_1_ETC2:
+        case Format::ETC2A1:
             return true;
         default:
             return false;
@@ -653,7 +653,11 @@ bool Image::IsFloatFormat(Image::Format imageFormat) {
 }
 
 bool Image::IsHalfFormat(Image::Format imageFormat) {
-    return HasFlag(GetImageFormatInfo(imageFormat)->type, FormatType::Half);
+    const ImageFormatInfo *formatInfo = GetImageFormatInfo(imageFormat);
+    if (!HasFlag(formatInfo->type, FormatType::Float)) {
+        return false;
+    }
+    return formatInfo->redBits <= 16 && formatInfo->greenBits <= 16 && formatInfo->blueBits <= 16 && formatInfo->alphaBits <= 16;
 }
 
 bool Image::IsDepthFormat(Image::Format imageFormat) {
@@ -666,16 +670,19 @@ bool Image::IsDepthStencilFormat(Image::Format imageFormat) {
 
 bool Image::NeedFloatConversion(Image::Format imageFormat) {
     const ImageFormatInfo *formatInfo = GetImageFormatInfo(imageFormat);
-    if (HasFlag(formatInfo->type, FormatType::Float) || HasFlag(formatInfo->type, FormatType::SNorm)) {
+    if (HasFlag(formatInfo->type, FormatType::Float) ||
+        HasFlag(formatInfo->type, FormatType::SNorm) ||
+        HasFlag(formatInfo->type, FormatType::SInt) ||
+        HasFlag(formatInfo->type, FormatType::UInt)) {
         return true;
     }
     if (formatInfo->redBits > 8 || formatInfo->greenBits > 8 || formatInfo->blueBits > 8 || formatInfo->alphaBits > 8) {
         return true;
     }
-    if (imageFormat == Format::R_11_EAC ||
-        imageFormat == Format::RG_11_11_EAC ||
-        imageFormat == Format::SignedR_11_EAC ||
-        imageFormat == Format::SignedRG_11_11_EAC) {
+    if (imageFormat == Format::EACR11 ||
+        imageFormat == Format::EACRG11 ||
+        imageFormat == Format::EACR11_SNORM ||
+        imageFormat == Format::EACRG11_SNORM) {
         return true;
     }
     return false;

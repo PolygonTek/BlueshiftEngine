@@ -130,33 +130,33 @@ Image::Format OpenGLBase::ToUncompressedImageFormat(Image::Format inFormat) {
     switch (inFormat) {
     case Image::Format::DXN1:
     case Image::Format::DXN2:
-    case Image::Format::RGB_PVRTC_2BPPV1:
-    case Image::Format::RGB_PVRTC_4BPPV1:
-    case Image::Format::RGB_8_ETC1:
-    case Image::Format::RGB_8_ETC2:
-    case Image::Format::RGB_ATC:
-        outFormat = Image::Format::RGB_8_8_8;
+    case Image::Format::PVRTC12:
+    case Image::Format::PVRTC14:
+    case Image::Format::ETC1:
+    case Image::Format::ETC2:
+    case Image::Format::ATC:
+        outFormat = Image::Format::R8G8B8;
         break;
     case Image::Format::DXT1:
     case Image::Format::DXT3:
     case Image::Format::DXT5:
-    case Image::Format::RGBA_PVRTC_2BPPV1:
-    case Image::Format::RGBA_PVRTC_4BPPV1:
-    case Image::Format::RGBA_PVRTC_2BPPV2:
-    case Image::Format::RGBA_PVRTC_4BPPV2:
-    case Image::Format::RGBA_8_1_ETC2:
-    case Image::Format::RGBA_8_8_ETC2:
-    case Image::Format::RGBA_EA_ATC:
-    case Image::Format::RGBA_IA_ATC:
-        outFormat = Image::Format::RGBA_8_8_8_8;
+    case Image::Format::PVRTC12A:
+    case Image::Format::PVRTC14A:
+    case Image::Format::PVRTC22A:
+    case Image::Format::PVRTC24A:
+    case Image::Format::ETC2A1:
+    case Image::Format::ETC2A:
+    case Image::Format::ATCE:
+    case Image::Format::ATCI:
+        outFormat = Image::Format::R8G8B8A8;
         break;
-    case Image::Format::R_11_EAC:
-    case Image::Format::SignedR_11_EAC:
-        outFormat = Image::Format::R_8;
+    case Image::Format::EACR11:
+    case Image::Format::EACR11_SNORM:
+        outFormat = Image::Format::R8;
         break;
-    case Image::Format::RG_11_11_EAC:
-    case Image::Format::SignedRG_11_11_EAC:
-        outFormat = Image::Format::RGB_8_8_8;
+    case Image::Format::EACRG11:
+    case Image::Format::EACRG11_SNORM:
+        outFormat = Image::Format::R8G8B8;
         break;
     default:
         assert(0);

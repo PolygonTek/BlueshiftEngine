@@ -36,7 +36,7 @@ static float QualityToEffort(Image::CompressionQuality compressionQuality) {
 }
 
 static void EncodeETC(const Image &srcImage, Image &dstImage, Image::CompressionQuality compressionQuality, Etc::Image::Format format, Etc::ErrorMetric errorMetric) {
-    assert(srcImage.GetFormat() == Image::Format::RGBA_8_8_8_8 || srcImage.GetFormat() == Image::Format::RGBA_32F_32F_32F_32F);
+    assert(srcImage.GetFormat() == Image::Format::R8G8B8A8 || srcImage.GetFormat() == Image::Format::R32G32B32A32_FLOAT);
 
     Etc::ColorFloatRGBA *temp = nullptr;
 

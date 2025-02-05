@@ -88,7 +88,7 @@ void RB_Init() {
         // TODO: create one for each context
         backEnd.homCullingOutputTexture = textureManager.AllocTexture("_homCullingOutput");
         backEnd.homCullingOutputTexture->CreateEmpty(Graphics::TextureType::Texture2D, HOM_CULL_TEXTURE_WIDTH, HOM_CULL_TEXTURE_HEIGHT, 1, 1, 1,
-            Image::Format::RGBA_8_8_8_8, Texture::Flag::Clamp | Texture::Flag::Nearest | Texture::Flag::NoMipmaps | Texture::Flag::HighQuality);
+            Image::Format::R8G8B8A8, Texture::Flag::Clamp | Texture::Flag::Nearest | Texture::Flag::NoMipmaps | Texture::Flag::HighQuality);
         backEnd.homCullingOutputRT = RenderTarget::Create(backEnd.homCullingOutputTexture, nullptr, 0);
     }
 
@@ -442,7 +442,7 @@ static void RB_MarkOccludeeVisibility(int numAmbientOccludees, const int *occlud
     int size = backEnd.homCullingOutputTexture->MemRequired(false);
     byte *visibilityBuffer = (byte *)_alloca(size);
     backEnd.homCullingOutputTexture->Bind();
-    backEnd.homCullingOutputTexture->GetTexels2D(0, Image::Format::RGBA_8_8_8_8, visibilityBuffer);
+    backEnd.homCullingOutputTexture->GetTexels2D(0, Image::Format::R8G8B8A8, visibilityBuffer);
     byte *visibilityPtr = visibilityBuffer;
 
     for (int i = 0; i < numAmbientOccludees; i++) {
@@ -977,8 +977,8 @@ static const void *RB_ExecuteScreenshot(const void *data) {
     }
     
     Image screenImage;
-    screenImage.Create2D(captureRect.w, captureRect.h, 1, Image::Format::BGR_8_8_8, Image::GammaSpace::sRGB, nullptr, Image::Flag::None);
-    graphics.ReadPixels(captureRect.x, captureRect.y, captureRect.w, captureRect.h, Image::Format::BGR_8_8_8, screenImage.GetPixels());
+    screenImage.Create2D(captureRect.w, captureRect.h, 1, Image::Format::B8G8R8, Image::GammaSpace::sRGB, nullptr, Image::Flag::None);
+    graphics.ReadPixels(captureRect.x, captureRect.y, captureRect.w, captureRect.h, Image::Format::B8G8R8, screenImage.GetPixels());
     screenImage.FlipY();
 
     // Apply gamma ramp table

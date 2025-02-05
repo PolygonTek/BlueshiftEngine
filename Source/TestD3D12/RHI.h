@@ -199,17 +199,17 @@ namespace RHI {
     };
 
     enum class SubresourceType : uint8_t {
-        SRV,        // Shader Resource View
-        UAV,        // Unordered Access View
-        RTV,        // Render Target View
-        DSV         // Depth Stencil View
+        SRV,                    // Shader Resource View
+        UAV,                    // Unordered Access View
+        RTV,                    // Render Target View
+        DSV                     // Depth Stencil View
     };
 
     enum class ShaderFormat : uint8_t {
         None,
-        HLSL5,      // DXBC (Shader Model 5.0)
-        HLSL6,      // DXIL (Shader Model 5.1 이상)
-        SPIRV       // SPIR-V
+        HLSL5,                  // DXBC (Shader Model 5.0)
+        HLSL6,                  // DXIL (Shader Model 5.1 이상)
+        SPIRV                   // SPIR-V
     };
 
     enum class ShaderModel : uint8_t {
@@ -738,8 +738,8 @@ namespace RHI {
         virtual VertexBuffer *          AllocVertex(uint32_t vertexSize, uint32_t count) = 0;
         virtual IndexBuffer *           AllocIndex(uint32_t indexSize, uint32_t count) = 0;
         virtual Buffer *                AllocBuffer(bool shaderStorage, BE1::Image::Format format, uint32_t stride, uint32_t count) = 0;
-        Buffer *                        AllocTypeddBuffer(bool shaderStorage, BE1::Image::Format format, uint32_t count) { return AllocBuffer(shaderStorage, format, 0, count); }
-        Buffer *                        AllocRawdBuffer(bool shaderStorage, uint32_t count) { return AllocBuffer(shaderStorage, BE1::Image::Format::R_32_TYPELESS, 0, count); }
+        Buffer *                        AllocTypedBuffer(bool shaderStorage, BE1::Image::Format format, uint32_t count) { return AllocBuffer(shaderStorage, format, 0, count); }
+        Buffer *                        AllocRawBuffer(bool shaderStorage, uint32_t count) { return AllocBuffer(shaderStorage, BE1::Image::Format::Unknown, 0, count); }
         Buffer *                        AllocStructuredBuffer(bool shaderStorage, uint32_t stride, uint32_t count) { return AllocBuffer(shaderStorage, BE1::Image::Format::Unknown, stride, count); }
 
         virtual CommandList *           AllocGraphicsCommandList(RHI::CommandListType type = RHI::CommandListType::Primary) = 0;
@@ -800,7 +800,7 @@ namespace RHI {
 
         virtual Buffer *                CreateBuffer(BufferUsage usage, ResourceFlag flags, uint64_t size, BE1::Image::Format format, uint32_t stride, const void *data) = 0;
         Buffer *                        CreateTypedBuffer(BufferUsage usage, ResourceFlag flags, uint64_t size, BE1::Image::Format format, const void *data) { return CreateBuffer(usage, flags, size, format, 0, data); }
-        Buffer *                        CreateRawBuffer(BufferUsage usage, ResourceFlag flags, uint64_t size, const void *data) { return CreateBuffer(usage, flags, size, BE1::Image::Format::R_32_TYPELESS, 0, data); }
+        Buffer *                        CreateRawBuffer(BufferUsage usage, ResourceFlag flags, uint64_t size, const void *data) { return CreateBuffer(usage, flags, size, BE1::Image::Format::Unknown, 0, data); }
         Buffer *                        CreateStructuredBuffer(BufferUsage usage, ResourceFlag flags, uint64_t size, uint32_t stride, const void *data) { return CreateBuffer(usage, flags, size, BE1::Image::Format::Unknown, stride, data); }
         virtual void                    DestroyBuffer(Buffer *buffer, bool immediate = false) = 0;
 
@@ -830,7 +830,7 @@ namespace RHI {
         virtual bool                    SetTextureSubImageCubeFace(RHI::Texture *texture, RHI::CubemapFace face, int mipLevel, int x, int y, int width, int height, BE1::Image::Format imageFormat, const void *pixels) = 0;
 
         virtual int                     CreateSubresource(Buffer *buffer, SubresourceType subresourceType, uint64_t offset = 0, uint64_t size = ~0) = 0;
-        virtual int                     CreateSubresource(Texture *texture, SubresourceType type, uint32_t firstSlice = 0, uint32_t sliceCount = ~0, uint32_t firstMipLevel = 0, uint32_t mipCount = ~0, const BE1::Image::Format *typelessCompatibleFormat = nullptr) = 0;
+        virtual int                     CreateSubresource(Texture *texture, SubresourceType type, uint32_t firstSlice = 0, uint32_t sliceCount = ~0, uint32_t firstMipLevel = 0, uint32_t mipCount = ~0, const BE1::Image::Format *typelessCompatibleFormat = nullptr, bool isSRGB = false) = 0;
 
         virtual void                    DestroySubresource(RHI::Buffer *buffer, RHI::SubresourceType type, int subresourceIndex) = 0;
         virtual void                    DestroySubresource(RHI::Texture *texture, RHI::SubresourceType type, int subresourceIndex) = 0;

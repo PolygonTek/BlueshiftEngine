@@ -50,7 +50,7 @@ bool Image::LoadPCXFromMemory(const char *name, const byte *data, size_t size) {
         return false;
     }
     
-    Create2D(header->xmax - header->xmin + 1, header->ymax - header->ymin + 1, 1, Format::RGB_8_8_8, GammaSpace::sRGB, nullptr, Flag::None);
+    Create2D(header->xmax - header->xmin + 1, header->ymax - header->ymin + 1, 1, Format::R8G8B8, GammaSpace::sRGB, nullptr, Flag::None);
 
     if (header->planes == 1) { // 8 bits paletted color
         const byte *palette = data + size - 768;
@@ -112,8 +112,8 @@ bool Image::WritePCX(const char *filename) const {
 
     Image convertedImage;
     byte *src = pic;
-    if (format != Format::BGR_8_8_8) {
-        if (!ConvertFormat(Format::BGR_8_8_8, convertedImage)) {
+    if (format != Format::B8G8R8) {
+        if (!ConvertFormat(Format::B8G8R8, convertedImage)) {
             fileSystem.CloseFile(fp);
             return false;
         }

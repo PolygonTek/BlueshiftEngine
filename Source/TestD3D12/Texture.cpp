@@ -133,7 +133,7 @@ void Texture::PrepareGPUMipmapGeneration() {
 
 void Texture::CreateDefaultTexture(int size, Texture::Flag flags) {
     BE1::Image image;
-    image.Create2D(size, size, 1, BE1::Image::Format::RGBA_8_8_8_8, BE1::Image::GammaSpace::sRGB, nullptr, BE1::Image::Flag::None);
+    image.Create2D(size, size, 1, BE1::Image::Format::R8G8B8A8, BE1::Image::GammaSpace::sRGB, nullptr, BE1::Image::Flag::None);
     byte *dstPtr = image.GetPixels();
 
     for (int y = 0; y < size; y++) {
@@ -164,7 +164,7 @@ void Texture::CreateDefaultTexture(int size, Texture::Flag flags) {
 
 void Texture::CreateColorTexture(int size, const BE1::Color4 &color, Flag flags) {
     BE1::Image image;
-    image.Create2D(size, size, 1, BE1::Image::Format::RGBA_8_8_8_8, BE1::Image::GammaSpace::sRGB, nullptr, BE1::Image::Flag::None);
+    image.Create2D(size, size, 1, BE1::Image::Format::R8G8B8A8, BE1::Image::GammaSpace::sRGB, nullptr, BE1::Image::Flag::None);
     uint32_t *dstPtr = (uint32_t *)image.GetPixels();
     uint32_t c = color.ToUInt32();
 
@@ -185,7 +185,7 @@ void Texture::CreateColorTexture(int size, const BE1::Color4 &color, Flag flags)
 
 void Texture::CreateFlatNormalTexture(int size, Texture::Flag flags) {
     BE1::Image image;
-    image.Create2D(size, size, 1, BE1::Image::Format::RGB_8_8_8, BE1::Image::GammaSpace::Linear, nullptr, BE1::Image::Flag::None);
+    image.Create2D(size, size, 1, BE1::Image::Format::R8G8B8, BE1::Image::GammaSpace::Linear, nullptr, BE1::Image::Flag::None);
     byte *dstPtr = image.GetPixels();
 
     for (int y = 0; y < size; y++) {

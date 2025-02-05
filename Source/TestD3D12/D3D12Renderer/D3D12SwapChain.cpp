@@ -19,7 +19,9 @@
 
 RHI::SwapChain *D3D12Renderer::CreateSwapChain(HWND hwnd, uint32_t width, uint32_t height, BE1::Image::Format format) {
     DXGI_FORMAT dxgiFormat;
-    ImageFormatToDXGIFormat(format, false, &dxgiFormat);
+    if (!ImageFormatToDXGIFormat(format, false, &dxgiFormat)) {
+        return nullptr;
+    }
 
     DXGI_SWAP_CHAIN_DESC1 swapChainDesc = {};
     swapChainDesc.Width = (UINT)width;

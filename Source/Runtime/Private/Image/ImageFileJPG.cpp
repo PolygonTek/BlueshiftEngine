@@ -155,16 +155,16 @@ bool Image::LoadJPGFromMemory(const char *name, const byte *data, size_t size) {
   Image::Format imageFormat;
   switch (cinfo.output_components) {
   case 1:
-    imageFormat = Format::L_8;
+    imageFormat = Format::L8;
     break;
   case 2:
-    imageFormat = Format::RG_8_8;
+    imageFormat = Format::R8G8;
     break;
   case 3:
-    imageFormat = Format::RGB_8_8_8;
+    imageFormat = Format::R8G8B8;
     break;
   case 4:
-    imageFormat = Format::RGBX_8_8_8_8;
+    imageFormat = Format::R8G8B8X8;
     break;
   }
 
@@ -292,8 +292,8 @@ bool Image::WriteJPG(const char *filename, int quality) const {
 
   Image convertedImage;
   byte *src = pic;
-  if (format != Format::RGB_8_8_8) {
-    if (!ConvertFormat(Format::RGB_8_8_8, convertedImage)) {
+  if (format != Format::R8G8B8) {
+    if (!ConvertFormat(Format::R8G8B8, convertedImage)) {
       fclose(outfile);
       return false;
     }

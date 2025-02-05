@@ -22,95 +22,117 @@ BE_NAMESPACE_BEGIN
 class Image {
 public:
     /// Various image format type
-    /// Channels (RGBALX) are described by little-endian format (as opposed to D3DFMT_XXX)
     enum class Format : uint8_t {
         Unknown,
-        R_32_TYPELESS,
-        // Plain bytes formats
-        L_8,
-        A_8,
-        LA_8_8,
-        R_8,
-        RG_8_8,
-        RGB_8_8_8,
-        BGR_8_8_8,
-        RGBX_8_8_8_8,
-        BGRX_8_8_8_8,
-        RGBA_8_8_8_8,
-        BGRA_8_8_8_8,
-        ABGR_8_8_8_8,
-        ARGB_8_8_8_8,
-        // Signed norm formats
-        R_8_SNORM,
-        RG_8_8_SNORM,
-        RGB_8_8_8_SNORM,
-        RGBA_8_8_8_8_SNORM,
-        // Packed formats
-        RGBX_4_4_4_4,
-        BGRX_4_4_4_4,
-        RGBA_4_4_4_4,
-        BGRA_4_4_4_4,
-        ABGR_4_4_4_4,
-        ARGB_4_4_4_4,
-        RGBX_5_5_5_1,
-        BGRX_5_5_5_1,
-        RGBA_5_5_5_1,
-        BGRA_5_5_5_1,
-        ABGR_1_5_5_5,
-        ARGB_1_5_5_5,
-        RGB_5_6_5,
-        BGR_5_6_5,
-        RGBA_10_10_10_2,
-        // Float formats
-        L_16F,
-        A_16F,
-        LA_16F_16F,
-        R_16F,
-        RG_16F_16F,
-        RGB_16F_16F_16F,
-        RGBA_16F_16F_16F_16F,
-        L_32F,
-        A_32F,
-        LA_32F_32F,
-        R_32F,
-        RG_32F_32F,
-        RGB_32F_32F_32F,
-        RGBA_32F_32F_32F_32F,
-        RGBE_9_9_9_5,
-        RGB_11F_11F_10F,
-        // Depth formats
-        Depth_16,
-        Depth_24,
-        Depth_32F,
-        DepthStencil_24_8,
-        DepthStencil_32F_8,
+        R32_FLOAT,
+        R32_SINT,
+        R32_UINT,
+        R32G32_FLOAT,
+        R32G32_SINT,
+        R32G32_UINT,
+        R32G32B32_FLOAT,
+        R32G32B32_SINT,
+        R32G32B32_UINT,
+        R32G32B32A32_FLOAT,
+        R32G32B32A32_SINT,
+        R32G32B32A32_UINT,
+        R16_FLOAT,
+        R16G16_FLOAT,
+        R16G16B16_FLOAT,
+        R16G16B16A16_FLOAT,
+        R9G9B9E5_FLOAT,
+        R11G11B10_FLOAT,
+        R8G8B8X8,
+        B8G8R8X8,
+        R8G8B8A8,
+        R8G8B8A8_SNORM,
+        R8G8B8A8_SINT,
+        R8G8B8A8_UINT,
+        B8G8R8A8,
+        A8B8G8R8,
+        A8R8G8B8,
+        R8G8B8,
+        R8G8B8_SNORM,
+        R8G8B8_SINT,
+        R8G8B8_UINT,
+        B8G8R8,
+        R8G8,
+        R8G8_SNORM,
+        R8G8_SINT,
+        R8G8_UINT,
+        R8,
+        R8_SNORM,
+        R8_SINT,
+        R8_UINT,
+
+        R10G10B10A2,
+        R10G10B10A2_UINT,
+        R4G4B4X4,
+        B4G4R4X4,
+        R4G4B4A4,
+        B4G4R4A4,
+        A4B4G4R4,
+        A4R4G4B4,
+        R5G5B5X1,
+        B5G5R5X1,
+        R5G5B5A1,
+        B5G5R5A1,
+        A1B5G5R5,
+        A1R5G5B5,
+        R5G6B5,
+        B5G6R5,
+
+        // Depth/Stencil formats
+        D16,                // depth (16-bit)
+        D24,                // depth (24-bit)
+        D32_FLOAT,          // depth (32-bit)
+        D24S8,              // depth (24-bit) + stencil (8-bit)
+        D32_FLOAT_S8X24,    // depth (32-bit) + stencil (8-bit)
+
+        // Luminance/Alpha
+        L32_FLOAT,
+        A32_FLOAT,
+        L32A32_FLOAT,
+        L16_FLOAT,
+        A16_FLOAT,
+        L16A16_FLOAT,
+        L8,
+        A8,
+        L8A8,
+
         // Compressed (DXT) formats
-        DXT1, // BC1
-        DXT3, // BC2
-        DXT5, // BC3
-        XGBR_DXT5,
-        DXN1, // BC4
-        DXN2, // BC5
+        DXT1,               // BC1: Three color channels (5 bits:6 bits:5 bits), with 0 or 1 bit(s) of alpha
+        DXT3,               // BC2: Three color channels (5 bits:6 bits:5 bits), with 4 bits of alpha
+        DXT5,               // BC3: Three color channels (5 bits:6 bits:5 bits) with 8 bits of alpha
+        DXT5XGBR,           // BC3: Three color channels (5 bits:6 bits:5 bits) with 8 bits of alpha (XGBR)
+        DXN1,               // BC4: One color channel (8 bits)
+        DXN2,               // BC5: Two color channels (8 bits:8 bits)
+        BC6H_UF16,          // BC6: Three color channels (16 bits:16 bits:16 bits) in "half" floating point
+        BC6H_SF16,          // BC6: Three color channels (16 bits:16 bits:16 bits) in "half" floating point
+        BC7,                // BC7: Three color channels (4 to 7 bits per channel) with 0 to 8 bits of alpha
+
         // Compressed (PVRTC) formats
-        RGB_PVRTC_2BPPV1,
-        RGB_PVRTC_4BPPV1,
-        RGBA_PVRTC_2BPPV1,
-        RGBA_PVRTC_4BPPV1,
-        RGBA_PVRTC_2BPPV2,
-        RGBA_PVRTC_4BPPV2,
+        PVRTC12,            // PVRTC1 RGB 2BPP
+        PVRTC14,            // PVRTC1 RGB 4BPP
+        PVRTC12A,           // PVRTC1 RGBA 2BPP
+        PVRTC14A,           // PVRTC1 RGBA 4BPP
+        PVRTC22A,           // PVRTC2 RGBA 2BPP
+        PVRTC24A,           // PVRTC2 RGBA 4BPP
+
         // Compressed (ETC1/ETC2/EAC) formats
-        RGB_8_ETC1,
-        RGB_8_ETC2,
-        RGBA_8_1_ETC2,
-        RGBA_8_8_ETC2,
-        R_11_EAC,
-        RG_11_11_EAC,
-        SignedR_11_EAC,
-        SignedRG_11_11_EAC,
+        ETC1,               // ETC1 RGB8
+        ETC2,               // ETC2 RGB8
+        ETC2A1,             // ETC2 RGB8A1
+        ETC2A,              // ETC2 RGBA8
+        EACR11,             // EAC R11
+        EACRG11,            // EAC RG11
+        EACR11_SNORM,       // EAC R11 SNROM
+        EACRG11_SNORM,      // EAC RG11 SNORM
+
         // Compressed (ATC) formats
-        RGB_ATC,
-        RGBA_EA_ATC, // Explicit alpha
-        RGBA_IA_ATC, // Interpolated alpha
+        ATC,                // ATC RGB 4BPP
+        ATCE,               // ATCE RGBA 8BPP explicit alpha
+        ATCI,               // ATCI RGBA 8BPP interpolated alpha
         Count
     };
 
@@ -119,12 +141,13 @@ public:
         None                = 0,
         Packed              = BIT(0),
         SNorm               = BIT(1),
-        Float               = BIT(2),
-        Half                = Float | BIT(3),
-        Depth               = BIT(4),
-        Stencil             = BIT(5),
+        UInt                = BIT(2),
+        SInt                = BIT(3),
+        Float               = BIT(4),
+        Depth               = BIT(5),
+        Stencil             = BIT(6),
         DepthStencil        = Depth | Stencil,
-        Compressed          = BIT(6)
+        Compressed          = BIT(7)
     };
 
     /// Enum for the different kinds of gamma spaces we expect to need to convert from/to.

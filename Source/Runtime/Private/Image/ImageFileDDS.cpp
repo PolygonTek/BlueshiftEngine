@@ -357,27 +357,41 @@ bool Image::LoadDDSFromMemory(const char *name, const byte *data, size_t size) {
         ddsArraySize = dx10Header->arraySize;
 
         switch (dx10Header->dxgiFormat) {
-        case DX10_FORMAT_R8_UNORM: format = Format::R_8; break;
-        case DX10_FORMAT_R8_SNORM: format = Format::R_8_SNORM; break;
-        case DX10_FORMAT_R8G8_UNORM: format = Format::RG_8_8; break;
-        case DX10_FORMAT_R8G8_SNORM: format = Format::RG_8_8_SNORM; break;
+        case DX10_FORMAT_R8_UNORM: format = Format::R8; break;
+        case DX10_FORMAT_R8_SNORM: format = Format::R8_SNORM; break;
+        case DX10_FORMAT_R8_UINT: format = Format::R8_UINT; break;
+        case DX10_FORMAT_R8_SINT: format = Format::R8_SINT; break;
+        case DX10_FORMAT_R8G8_UNORM: format = Format::R8G8; break;
+        case DX10_FORMAT_R8G8_SNORM: format = Format::R8G8_SNORM; break;
+        case DX10_FORMAT_R8G8_UINT: format = Format::R8G8_UINT; break;
+        case DX10_FORMAT_R8G8_SINT: format = Format::R8G8_SINT; break;
         case DX10_FORMAT_R8G8B8A8_UNORM:
-        case DX10_FORMAT_R8G8B8A8_UNORM_SRGB: format = Format::RGBA_8_8_8_8; break;
-        case DX10_FORMAT_R8G8B8A8_SNORM: format = Format::RGBA_8_8_8_8_SNORM; break;
+        case DX10_FORMAT_R8G8B8A8_UNORM_SRGB: format = Format::R8G8B8A8; break;
+        case DX10_FORMAT_R8G8B8A8_SNORM: format = Format::R8G8B8A8_SNORM; break;
+        case DX10_FORMAT_R8G8B8A8_UINT: format = Format::R8G8B8A8_UINT; break;
+        case DX10_FORMAT_R8G8B8A8_SINT: format = Format::R8G8B8A8_SINT; break;
         case DX10_FORMAT_B8G8R8A8_UNORM:
-        case DX10_FORMAT_B8G8R8A8_UNORM_SRGB: format = Format::BGRA_8_8_8_8; break;
+        case DX10_FORMAT_B8G8R8A8_UNORM_SRGB: format = Format::B8G8R8A8; break;
         case DX10_FORMAT_B8G8R8X8_UNORM:
-        case DX10_FORMAT_B8G8R8X8_UNORM_SRGB: format = Format::BGRX_8_8_8_8; break;
-        case DX10_FORMAT_R16_FLOAT: format = Format::R_16F; break;
-        case DX10_FORMAT_R16G16_FLOAT: format = Format::RG_16F_16F; break;
-        case DX10_FORMAT_R16G16B16A16_FLOAT: format = Format::RGBA_16F_16F_16F_16F; break;
-        case DX10_FORMAT_R32_FLOAT: format = Format::R_32F; break;
-        case DX10_FORMAT_R32G32_FLOAT: format = Format::RG_32F_32F; break;
-        case DX10_FORMAT_R32G32B32_FLOAT: format = Format::RGB_32F_32F_32F; break;
-        case DX10_FORMAT_R32G32B32A32_FLOAT: format = Format::RGBA_32F_32F_32F_32F; break;
-        case DX10_FORMAT_R9G9B9E5_SHAREDEXP: format = Format::RGBE_9_9_9_5; break;
-        case DX10_FORMAT_R11G11B10_FLOAT: format = Format::RGB_11F_11F_10F; break;
-        case DX10_FORMAT_R10G10B10A2_UNORM: format = Format::RGBA_10_10_10_2; break;
+        case DX10_FORMAT_B8G8R8X8_UNORM_SRGB: format = Format::B8G8R8X8; break;
+        case DX10_FORMAT_R16_FLOAT: format = Format::R16_FLOAT; break;
+        case DX10_FORMAT_R16G16_FLOAT: format = Format::R16G16_FLOAT; break;
+        case DX10_FORMAT_R16G16B16A16_FLOAT: format = Format::R16G16B16A16_FLOAT; break;
+        case DX10_FORMAT_R32_FLOAT: format = Format::R32_FLOAT; break;
+        case DX10_FORMAT_R32_SINT: format = Format::R32_SINT; break;
+        case DX10_FORMAT_R32_UINT: format = Format::R32_UINT; break;
+        case DX10_FORMAT_R32G32_FLOAT: format = Format::R32G32_FLOAT; break;
+        case DX10_FORMAT_R32G32_UINT: format = Format::R32G32_UINT; break;
+        case DX10_FORMAT_R32G32_SINT: format = Format::R32G32_SINT; break;
+        case DX10_FORMAT_R32G32B32_FLOAT: format = Format::R32G32B32_FLOAT; break;
+        case DX10_FORMAT_R32G32B32_UINT: format = Format::R32G32B32_UINT; break;
+        case DX10_FORMAT_R32G32B32_SINT: format = Format::R32G32B32_SINT; break;
+        case DX10_FORMAT_R32G32B32A32_FLOAT: format = Format::R32G32B32A32_FLOAT; break;
+        case DX10_FORMAT_R32G32B32A32_UINT: format = Format::R32G32B32A32_UINT; break;
+        case DX10_FORMAT_R32G32B32A32_SINT: format = Format::R32G32B32A32_SINT; break;
+        case DX10_FORMAT_R9G9B9E5_SHAREDEXP: format = Format::R9G9B9E5_FLOAT; break;
+        case DX10_FORMAT_R11G11B10_FLOAT: format = Format::R11G11B10_FLOAT; break;
+        case DX10_FORMAT_R10G10B10A2_UNORM: format = Format::R10G10B10A2; break;
         case DX10_FORMAT_BC1_UNORM:
         case DX10_FORMAT_BC1_UNORM_SRGB: format = Format::DXT1; break;
         case DX10_FORMAT_BC2_UNORM:
@@ -416,76 +430,76 @@ bool Image::LoadDDSFromMemory(const char *name, const byte *data, size_t size) {
             case 4:
                 if (header->ddsPixelFormat.ABitMask == 0x000000ff) {
                     if (header->ddsPixelFormat.RBitMask == 0xff000000) {
-                        this->format = Format::ABGR_8_8_8_8;
+                        this->format = Format::A8B8G8R8;
                     } else {
-                        this->format = Format::ARGB_8_8_8_8;
+                        this->format = Format::A8R8G8B8;
                     }
                 } else if (header->ddsPixelFormat.ABitMask == 0xff00000) {
                     if (header->ddsPixelFormat.RBitMask == 0x00ff0000) {
-                        this->format = Format::BGRA_8_8_8_8;
+                        this->format = Format::B8G8R8A8;
                     } else {
-                        this->format = Format::RGBA_8_8_8_8;
+                        this->format = Format::R8G8B8A8;
                     }
                 } else {
                     if (header->ddsPixelFormat.RBitMask == 0x00ff0000) {
-                        this->format = Format::BGRX_8_8_8_8;
+                        this->format = Format::B8G8R8X8;
                     } else {
-                        this->format = Format::RGBX_8_8_8_8;
+                        this->format = Format::R8G8B8X8;
                     }
                 }
                 break;
             case 3:
                 if (header->ddsPixelFormat.RBitMask == 0x00ff0000) {
-                    this->format = Format::BGR_8_8_8;
+                    this->format = Format::B8G8R8;
                 } else {
-                    this->format = Format::RGB_8_8_8;
+                    this->format = Format::R8G8B8;
                 }
                 break;
             case 2:
                 if (header->ddsPixelFormat.ABitMask == 0x0000000f) {
                     if (header->ddsPixelFormat.RBitMask == 0x0000f000) {
-                        this->format = Format::ABGR_4_4_4_4;
+                        this->format = Format::A4B4G4R4;
                     } else {
-                        this->format = Format::ARGB_4_4_4_4;
+                        this->format = Format::A4R4G4B4;
                     }
                 } else if (header->ddsPixelFormat.ABitMask == 0x0000f000) {
                     if (header->ddsPixelFormat.RBitMask == 0x00000f00) {
-                        this->format = Format::BGRA_4_4_4_4;
+                        this->format = Format::B4G4R4A4;
                     } else {
-                        this->format = Format::RGBA_4_4_4_4;
+                        this->format = Format::R4G4B4A4;
                     }
                 } else if (header->ddsPixelFormat.ABitMask == 0x00008000) {
                     if (header->ddsPixelFormat.RBitMask == 0x00007c00) {
-                        this->format = Format::BGRA_5_5_5_1;
+                        this->format = Format::B5G5R5A1;
                     } else {
-                        this->format = Format::RGBA_5_5_5_1;
+                        this->format = Format::R5G5B5A1;
                     }
                 } else if (header->ddsPixelFormat.ABitMask == 0x00000001) {
                     if (header->ddsPixelFormat.RBitMask == 0x0000f800) {
-                        this->format = Format::ABGR_1_5_5_5;
+                        this->format = Format::A1B5G5R5;
                     } else {
-                        this->format = Format::ARGB_1_5_5_5;
+                        this->format = Format::A1R5G5B5;
                     }
                 } else if (header->ddsPixelFormat.ABitMask == 0x0000ff00) {
-                    this->format = Format::LA_8_8;
+                    this->format = Format::L8A8;
                 } else {
                     if (header->ddsPixelFormat.GBitMask == 0x000000f0) {
                         if (header->ddsPixelFormat.RBitMask == 0x00000f00) {
-                            this->format = Format::BGRX_4_4_4_4;
+                            this->format = Format::B4G4R4X4;
                         } else {
-                            this->format = Format::RGBX_4_4_4_4;
+                            this->format = Format::R4G4B4X4;
                         }
                     } else if (header->ddsPixelFormat.GBitMask == 0x000003e0) {
                         if (header->ddsPixelFormat.RBitMask == 0x00007c00) {
-                            this->format = Format::BGRX_5_5_5_1;
+                            this->format = Format::B5G5R5X1;
                         } else {
-                            this->format = Format::RGBX_5_5_5_1;
+                            this->format = Format::R5G5B5X1;
                         }
                     } else if (header->ddsPixelFormat.GBitMask == 0x000007e0) {
                         if (header->ddsPixelFormat.RBitMask == 0x0000f800) {
-                            this->format = Format::BGR_5_6_5;
+                            this->format = Format::B5G6R5;
                         } else {
-                            this->format = Format::RGB_5_6_5;
+                            this->format = Format::R5G6B5;
                         }
                     } else {
                         //this->format = Format::L_16;
@@ -495,9 +509,9 @@ bool Image::LoadDDSFromMemory(const char *name, const byte *data, size_t size) {
                 break;
             case 1:
                 if (header->ddsPixelFormat.ABitMask == 0x000000ff) {
-                    this->format = Format::A_8;
+                    this->format = Format::A8;
                 } else {
-                    this->format = Format::L_8;
+                    this->format = Format::L8;
                 }
                 break;
             default:
@@ -506,64 +520,64 @@ bool Image::LoadDDSFromMemory(const char *name, const byte *data, size_t size) {
             }
             break;
         case DDS_FORMAT_R8G8B8:
-            this->format = Format::BGR_8_8_8;
+            this->format = Format::B8G8R8;
             break;
         case DDS_FORMAT_A8R8G8B8:
-            this->format = Format::BGRA_8_8_8_8;
+            this->format = Format::B8G8R8A8;
             break;
         case DDS_FORMAT_A2B10G10R10:
-            this->format = Format::RGBA_10_10_10_2;
+            this->format = Format::R10G10B10A2;
             break;
         case DDS_FORMAT_X8R8G8B8:
-            this->format = Format::BGRX_8_8_8_8;
+            this->format = Format::B8G8R8X8;
             break;
         case DDS_FORMAT_R5G6B5:
-            this->format = Format::BGR_5_6_5;
+            this->format = Format::B5G6R5;
             break;
         case DDS_FORMAT_X1R5G5B5:
-            this->format = Format::BGRX_5_5_5_1;
+            this->format = Format::B5G5R5X1;
             break;
         case DDS_FORMAT_A1R5G5B5:
-            this->format = Format::BGRA_5_5_5_1;
+            this->format = Format::B5G5R5A1;
             break;
         case DDS_FORMAT_A4R4G4B4:
-            this->format = Format::BGRA_4_4_4_4;
+            this->format = Format::B4G4R4A4;
             break;
         case DDS_FORMAT_X4R4G4B4:
-            this->format = Format::BGRX_4_4_4_4;
+            this->format = Format::B4G4R4X4;
             break;
         case DDS_FORMAT_A8B8G8R8:
-            this->format = Format::RGBA_8_8_8_8;
+            this->format = Format::R8G8B8A8;
             break;
         case DDS_FORMAT_X8B8G8R8:
-            this->format = Format::RGBX_8_8_8_8;
+            this->format = Format::R8G8B8X8;
             break;
         case DDS_FORMAT_L8:
-            this->format = Format::L_8;
+            this->format = Format::L8;
             break;
         case DDS_FORMAT_A8:
-            this->format = Format::A_8;
+            this->format = Format::A8;
             break;
         case DDS_FORMAT_A8L8:
-            this->format = Format::LA_8_8;
+            this->format = Format::L8A8;
             break;
         case DDS_FORMAT_R16F:
-            this->format = Format::R_16F;
+            this->format = Format::R16_FLOAT;
             break;
         case DDS_FORMAT_G16R16F:
-            this->format = Format::RG_16F_16F;
+            this->format = Format::R16G16_FLOAT;
             break;
         case DDS_FORMAT_A16B16G16R16F:
-            this->format = Format::RGBA_16F_16F_16F_16F;
+            this->format = Format::R16G16B16A16_FLOAT;
             break;
         case DDS_FORMAT_R32F:
-            this->format = Format::R_32F;
+            this->format = Format::R32_FLOAT;
             break;
         case DDS_FORMAT_G32R32F:
-            this->format = Format::RG_32F_32F;
+            this->format = Format::R32G32_FLOAT;
             break;
         case DDS_FORMAT_A32B32G32R32F:
-            this->format = Format::RGBA_32F_32F_32F_32F;
+            this->format = Format::R32G32B32A32_FLOAT;
             break;
         case DDS_FORMAT_DXT1:
             this->format = Format::DXT1;
@@ -573,13 +587,13 @@ bool Image::LoadDDSFromMemory(const char *name, const byte *data, size_t size) {
             break;
         case DDS_FORMAT_DXT5:
             if (header->ddsPixelFormat.RGBBitCount == MAKE_FOURCC('x', 'G', 'B', 'R')) {
-                this->format = Format::XGBR_DXT5;
+                this->format = Format::DXT5XGBR;
             } else {
                 this->format = Format::DXT5;
             }
             break;
         case MAKE_FOURCC('R', 'X', 'G', 'B'):   // doom3 RXGB
-            this->format = Format::XGBR_DXT5;
+            this->format = Format::DXT5XGBR;
             break;
         case MAKE_FOURCC('A', 'T', 'I', '1'):
             this->format = Format::DXN1;
@@ -685,7 +699,7 @@ bool Image::WriteDDS(const char *filename) const {
     dx10Header.miscFlag2 = DX10_RESOURCE_MISC2_UNKNOWN;
 
     switch (format) {
-    case Format::ABGR_8_8_8_8:
+    case Format::A8B8G8R8:
         header.ddsPixelFormat.flags = DDSPF_RGBA;
         header.ddsPixelFormat.fourCC = 0;
         header.ddsPixelFormat.RGBBitCount = 32;
@@ -694,7 +708,7 @@ bool Image::WriteDDS(const char *filename) const {
         header.ddsPixelFormat.BBitMask = 0x0000FF00;
         header.ddsPixelFormat.ABitMask = 0x000000FF;
         break;
-    case Format::ARGB_8_8_8_8:
+    case Format::A8R8G8B8:
         header.ddsPixelFormat.flags = DDSPF_RGBA;
         header.ddsPixelFormat.fourCC = 0;
         header.ddsPixelFormat.RGBBitCount = 32;
@@ -703,7 +717,7 @@ bool Image::WriteDDS(const char *filename) const {
         header.ddsPixelFormat.BBitMask = 0xFF000000;
         header.ddsPixelFormat.ABitMask = 0x000000FF;
         break;
-    case Format::BGRA_8_8_8_8:
+    case Format::B8G8R8A8:
         header.ddsPixelFormat.flags = DDSPF_RGBA;
         header.ddsPixelFormat.fourCC = 0;
         header.ddsPixelFormat.RGBBitCount = 32;
@@ -712,7 +726,7 @@ bool Image::WriteDDS(const char *filename) const {
         header.ddsPixelFormat.BBitMask = 0x000000FF;
         header.ddsPixelFormat.ABitMask = 0xFF000000;
         break;
-    case Format::RGBA_8_8_8_8:
+    case Format::R8G8B8A8:
         header.ddsPixelFormat.flags = DDSPF_RGBA;
         header.ddsPixelFormat.fourCC = 0;
         header.ddsPixelFormat.RGBBitCount = 32;
@@ -721,7 +735,7 @@ bool Image::WriteDDS(const char *filename) const {
         header.ddsPixelFormat.BBitMask = 0x00FF0000;
         header.ddsPixelFormat.ABitMask = 0xFF000000;
         break;
-    case Format::BGRX_8_8_8_8:
+    case Format::B8G8R8X8:
         header.ddsPixelFormat.flags = DDSPF_RGB;
         header.ddsPixelFormat.fourCC = 0;
         header.ddsPixelFormat.RGBBitCount = 32;
@@ -730,7 +744,7 @@ bool Image::WriteDDS(const char *filename) const {
         header.ddsPixelFormat.BBitMask = 0x000000FF;
         header.ddsPixelFormat.ABitMask = 0x00000000;
         break;
-    case Format::RGBX_8_8_8_8:
+    case Format::R8G8B8X8:
         header.ddsPixelFormat.flags = DDSPF_RGB;
         header.ddsPixelFormat.fourCC = 0;
         header.ddsPixelFormat.RGBBitCount = 32;
@@ -739,7 +753,7 @@ bool Image::WriteDDS(const char *filename) const {
         header.ddsPixelFormat.BBitMask = 0x00FF0000;
         header.ddsPixelFormat.ABitMask = 0x00000000;
         break;
-    case Format::BGR_8_8_8:
+    case Format::B8G8R8:
         header.ddsPixelFormat.flags = DDSPF_RGB;
         header.ddsPixelFormat.fourCC = 0;
         header.ddsPixelFormat.RGBBitCount = 24;
@@ -748,7 +762,7 @@ bool Image::WriteDDS(const char *filename) const {
         header.ddsPixelFormat.BBitMask = 0x000000FF;
         header.ddsPixelFormat.ABitMask = 0x00000000;
         break;
-    case Format::RGB_8_8_8:
+    case Format::R8G8B8:
         header.ddsPixelFormat.flags = DDSPF_RGB;
         header.ddsPixelFormat.fourCC = 0;
         header.ddsPixelFormat.RGBBitCount = 24;
@@ -757,7 +771,7 @@ bool Image::WriteDDS(const char *filename) const {
         header.ddsPixelFormat.BBitMask = 0x00FF0000;
         header.ddsPixelFormat.ABitMask = 0x00000000;
         break;
-    case Format::ABGR_4_4_4_4:
+    case Format::A4B4G4R4:
         header.ddsPixelFormat.flags = DDSPF_RGBA;
         header.ddsPixelFormat.fourCC = 0;
         header.ddsPixelFormat.RGBBitCount = 16;
@@ -766,7 +780,7 @@ bool Image::WriteDDS(const char *filename) const {
         header.ddsPixelFormat.BBitMask = 0x000000F0;
         header.ddsPixelFormat.ABitMask = 0x0000000F;
         break;
-    case Format::ARGB_4_4_4_4:
+    case Format::A4R4G4B4:
         header.ddsPixelFormat.flags = DDSPF_RGBA;
         header.ddsPixelFormat.fourCC = 0;
         header.ddsPixelFormat.RGBBitCount = 16;
@@ -775,7 +789,7 @@ bool Image::WriteDDS(const char *filename) const {
         header.ddsPixelFormat.BBitMask = 0x0000F000;
         header.ddsPixelFormat.ABitMask = 0x0000000F;
         break;
-    case Format::BGRA_4_4_4_4:
+    case Format::B4G4R4A4:
         header.ddsPixelFormat.flags = DDSPF_RGBA;
         header.ddsPixelFormat.fourCC = 0;
         header.ddsPixelFormat.RGBBitCount = 16;
@@ -784,7 +798,7 @@ bool Image::WriteDDS(const char *filename) const {
         header.ddsPixelFormat.BBitMask = 0x0000000F;
         header.ddsPixelFormat.ABitMask = 0x0000F000;
         break;
-    case Format::RGBA_4_4_4_4:
+    case Format::R4G4B4A4:
         header.ddsPixelFormat.flags = DDSPF_RGBA;
         header.ddsPixelFormat.fourCC = 0;
         header.ddsPixelFormat.RGBBitCount = 16;
@@ -793,7 +807,7 @@ bool Image::WriteDDS(const char *filename) const {
         header.ddsPixelFormat.BBitMask = 0x00000F00;
         header.ddsPixelFormat.ABitMask = 0x0000F000;
         break;
-    case Format::BGRA_5_5_5_1:
+    case Format::B5G5R5A1:
         header.ddsPixelFormat.flags = DDSPF_RGBA;
         header.ddsPixelFormat.fourCC = 0;
         header.ddsPixelFormat.RGBBitCount = 16;
@@ -802,7 +816,7 @@ bool Image::WriteDDS(const char *filename) const {
         header.ddsPixelFormat.BBitMask = 0x0000001F;
         header.ddsPixelFormat.ABitMask = 0x00008000;
         break;
-    case Format::RGBA_5_5_5_1:
+    case Format::R5G5B5A1:
         header.ddsPixelFormat.flags = DDSPF_RGBA;
         header.ddsPixelFormat.fourCC = 0;
         header.ddsPixelFormat.RGBBitCount = 16;
@@ -811,7 +825,7 @@ bool Image::WriteDDS(const char *filename) const {
         header.ddsPixelFormat.BBitMask = 0x00007C00;
         header.ddsPixelFormat.ABitMask = 0x00008000;
         break;
-    case Format::ABGR_1_5_5_5:
+    case Format::A1B5G5R5:
         header.ddsPixelFormat.flags = DDSPF_RGBA;
         header.ddsPixelFormat.fourCC = 0;
         header.ddsPixelFormat.RGBBitCount = 16;
@@ -820,7 +834,7 @@ bool Image::WriteDDS(const char *filename) const {
         header.ddsPixelFormat.BBitMask = 0x0000003E;
         header.ddsPixelFormat.ABitMask = 0x00000001;
         break;
-    case Format::ARGB_1_5_5_5:
+    case Format::A1R5G5B5:
         header.ddsPixelFormat.flags = DDSPF_RGBA;
         header.ddsPixelFormat.fourCC = 0;
         header.ddsPixelFormat.RGBBitCount = 16;
@@ -829,7 +843,7 @@ bool Image::WriteDDS(const char *filename) const {
         header.ddsPixelFormat.BBitMask = 0x0000F800;
         header.ddsPixelFormat.ABitMask = 0x00000001;
         break;
-    case Format::LA_8_8:
+    case Format::L8A8:
         header.ddsPixelFormat.flags = DDSPF_LUMINANCE | DDSPF_ALPHAPIXELS;
         header.ddsPixelFormat.fourCC = 0;
         header.ddsPixelFormat.RGBBitCount = 16;
@@ -838,7 +852,7 @@ bool Image::WriteDDS(const char *filename) const {
         header.ddsPixelFormat.BBitMask = 0x00000000;
         header.ddsPixelFormat.ABitMask = 0x0000FF00;
         break;
-    case Format::BGRX_4_4_4_4:
+    case Format::B4G4R4X4:
         header.ddsPixelFormat.flags = DDSPF_RGB;
         header.ddsPixelFormat.fourCC = 0;
         header.ddsPixelFormat.RGBBitCount = 16;
@@ -847,7 +861,7 @@ bool Image::WriteDDS(const char *filename) const {
         header.ddsPixelFormat.BBitMask = 0x0000000F;
         header.ddsPixelFormat.ABitMask = 0x00000000;
         break;
-    case Format::RGBX_4_4_4_4:
+    case Format::R4G4B4X4:
         header.ddsPixelFormat.flags = DDSPF_RGB;
         header.ddsPixelFormat.fourCC = 0;
         header.ddsPixelFormat.RGBBitCount = 16;
@@ -856,7 +870,7 @@ bool Image::WriteDDS(const char *filename) const {
         header.ddsPixelFormat.BBitMask = 0x00000F00;
         header.ddsPixelFormat.ABitMask = 0x00000000;
         break;
-    case Format::BGRX_5_5_5_1:
+    case Format::B5G5R5X1:
         header.ddsPixelFormat.flags = DDSPF_RGB;
         header.ddsPixelFormat.fourCC = 0;
         header.ddsPixelFormat.RGBBitCount = 16;
@@ -865,7 +879,7 @@ bool Image::WriteDDS(const char *filename) const {
         header.ddsPixelFormat.BBitMask = 0x0000001F;
         header.ddsPixelFormat.ABitMask = 0x00000000;
         break;
-    case Format::RGBX_5_5_5_1:
+    case Format::R5G5B5X1:
         header.ddsPixelFormat.flags = DDSPF_RGB;
         header.ddsPixelFormat.fourCC = 0;
         header.ddsPixelFormat.RGBBitCount = 16;
@@ -874,7 +888,7 @@ bool Image::WriteDDS(const char *filename) const {
         header.ddsPixelFormat.BBitMask = 0x00007C00;
         header.ddsPixelFormat.ABitMask = 0x00000000;
         break;
-    case Format::BGR_5_6_5:
+    case Format::B5G6R5:
         header.ddsPixelFormat.flags = DDSPF_RGB;
         header.ddsPixelFormat.fourCC = 0;
         header.ddsPixelFormat.RGBBitCount = 16;
@@ -883,7 +897,7 @@ bool Image::WriteDDS(const char *filename) const {
         header.ddsPixelFormat.BBitMask = 0x0000001F;
         header.ddsPixelFormat.ABitMask = 0x00000000;
         break;
-    case Format::RGB_5_6_5:
+    case Format::R5G6B5:
         header.ddsPixelFormat.flags = DDSPF_RGB;
         header.ddsPixelFormat.fourCC = 0;
         header.ddsPixelFormat.RGBBitCount = 16;
@@ -892,7 +906,7 @@ bool Image::WriteDDS(const char *filename) const {
         header.ddsPixelFormat.BBitMask = 0x0000F800;
         header.ddsPixelFormat.ABitMask = 0x00000000;
         break;
-    case Format::L_8:
+    case Format::L8:
         header.ddsPixelFormat.flags = DDSPF_LUMINANCE;
         header.ddsPixelFormat.fourCC = 0;
         header.ddsPixelFormat.RGBBitCount = 8;
@@ -901,7 +915,7 @@ bool Image::WriteDDS(const char *filename) const {
         header.ddsPixelFormat.BBitMask = 0x00000000;
         header.ddsPixelFormat.ABitMask = 0x00000000;
         break;
-    case Format::A_8:
+    case Format::A8:
         header.ddsPixelFormat.flags = DDSPF_ALPHA;
         header.ddsPixelFormat.fourCC = 0;
         header.ddsPixelFormat.RGBBitCount = 8;
@@ -922,7 +936,7 @@ bool Image::WriteDDS(const char *filename) const {
         header.ddsPixelFormat.flags = DDSPF_FOURCC;
         header.ddsPixelFormat.fourCC = MAKE_FOURCC('D', 'X', 'T', '5');
         break;
-    case Format::XGBR_DXT5:
+    case Format::DXT5XGBR:
         header.ddsPixelFormat.flags = DDSPF_FOURCC;
         header.ddsPixelFormat.fourCC = MAKE_FOURCC('D', 'X', 'T', '5');
         header.ddsPixelFormat.RGBBitCount = MAKE_FOURCC('x', 'G', 'B', 'R');
@@ -935,57 +949,57 @@ bool Image::WriteDDS(const char *filename) const {
         header.ddsPixelFormat.flags = DDSPF_FOURCC;
         header.ddsPixelFormat.fourCC = MAKE_FOURCC('A', 'T', 'I', '2'); // ATI 3DTc
         break;
-    case Format::R_8:
+    case Format::R8:
         header.ddsPixelFormat.flags = DDSPF_FOURCC;
         header.ddsPixelFormat.fourCC = MAKE_FOURCC('D', 'X', '1', '0');
         dx10Header.dxgiFormat = DX10_FORMAT_R8_UNORM;
         break;
-    case Format::RG_8_8:
+    case Format::R8G8:
         header.ddsPixelFormat.flags = DDSPF_FOURCC;
         header.ddsPixelFormat.fourCC = MAKE_FOURCC('D', 'X', '1', '0');
         dx10Header.dxgiFormat = DX10_FORMAT_R8G8_UNORM;
         break;
-    case Format::R_16F:
+    case Format::R16_FLOAT:
         header.ddsPixelFormat.flags = DDSPF_FOURCC;
         header.ddsPixelFormat.fourCC = MAKE_FOURCC('D', 'X', '1', '0');
         dx10Header.dxgiFormat = DX10_FORMAT_R16_FLOAT;
         break;
-    case Format::RG_16F_16F:
+    case Format::R16G16_FLOAT:
         header.ddsPixelFormat.flags = DDSPF_FOURCC;
         header.ddsPixelFormat.fourCC = MAKE_FOURCC('D', 'X', '1', '0');
         dx10Header.dxgiFormat = DX10_FORMAT_R16G16_FLOAT;
         break;
-    case Format::RGBA_16F_16F_16F_16F:
+    case Format::R16G16B16A16_FLOAT:
         header.ddsPixelFormat.flags = DDSPF_FOURCC;
         header.ddsPixelFormat.fourCC = MAKE_FOURCC('D', 'X', '1', '0');
         dx10Header.dxgiFormat = DX10_FORMAT_R16G16B16A16_FLOAT;
         break;
-    case Format::R_32F:
+    case Format::R32_FLOAT:
         header.ddsPixelFormat.flags = DDSPF_FOURCC;
         header.ddsPixelFormat.fourCC = MAKE_FOURCC('D', 'X', '1', '0');
         dx10Header.dxgiFormat = DX10_FORMAT_R32_FLOAT;
         break;
-    case Format::RG_32F_32F:
+    case Format::R32G32_FLOAT:
         header.ddsPixelFormat.flags = DDSPF_FOURCC;
         header.ddsPixelFormat.fourCC = MAKE_FOURCC('D', 'X', '1', '0');
         dx10Header.dxgiFormat = DX10_FORMAT_R32G32_FLOAT;
         break;
-    case Format::RGB_32F_32F_32F:
+    case Format::R32G32B32_FLOAT:
         header.ddsPixelFormat.flags = DDSPF_FOURCC;
         header.ddsPixelFormat.fourCC = MAKE_FOURCC('D', 'X', '1', '0');
         dx10Header.dxgiFormat = DX10_FORMAT_R32G32B32_FLOAT;
         break;
-    case Format::RGBA_32F_32F_32F_32F:
+    case Format::R32G32B32A32_FLOAT:
         header.ddsPixelFormat.flags = DDSPF_FOURCC;
         header.ddsPixelFormat.fourCC = MAKE_FOURCC('D', 'X', '1', '0');
         dx10Header.dxgiFormat = DX10_FORMAT_R32G32B32A32_FLOAT;
         break;
-    case Format::RGBE_9_9_9_5:
+    case Format::R9G9B9E5_FLOAT:
         header.ddsPixelFormat.flags = DDSPF_FOURCC;
         header.ddsPixelFormat.fourCC = MAKE_FOURCC('D', 'X', '1', '0');
         dx10Header.dxgiFormat = DX10_FORMAT_R9G9B9E5_SHAREDEXP;
         break;
-    case Format::RGB_11F_11F_10F:
+    case Format::R11G11B10_FLOAT:
         header.ddsPixelFormat.flags = DDSPF_FOURCC;
         header.ddsPixelFormat.fourCC = MAKE_FOURCC('D', 'X', '1', '0');
         dx10Header.dxgiFormat = DX10_FORMAT_R11G11B10_FLOAT;

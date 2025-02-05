@@ -76,7 +76,7 @@ bool Image::LoadBMPFromMemory(const char *name, const byte *data, size_t size) {
         h = -h;
     }
 
-    Create2D(w, h, 1, Image::Format::BGR_8_8_8, Image::GammaSpace::sRGB, nullptr, Flag::None);
+    Create2D(w, h, 1, Image::Format::B8G8R8, Image::GammaSpace::sRGB, nullptr, Flag::None);
 
     int padbytes = (((bmih->bpp * w + 31) & ~31) - (bmih->bpp * w)) >> 3;
     const byte *palette;
@@ -184,8 +184,8 @@ bool Image::WriteBMP(const char *filename) const {
 
     Image convertedImage;
     byte *src = pic;
-    if (format != Image::Format::BGR_8_8_8) {
-        if (!ConvertFormat(Image::Format::BGR_8_8_8, convertedImage)) {
+    if (format != Image::Format::B8G8R8) {
+        if (!ConvertFormat(Image::Format::B8G8R8, convertedImage)) {
             fileSystem.CloseFile(fp);
             return false;
         }

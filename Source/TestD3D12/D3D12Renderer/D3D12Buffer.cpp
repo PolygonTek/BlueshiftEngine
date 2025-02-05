@@ -67,7 +67,7 @@ bool D3D12Buffer::IsValidSubresource(RHI::SubresourceType type, int subresourceI
     return false;
 }
 
-RHI::Buffer *D3D12Renderer::CreateBuffer(RHI::BufferUsage usage, RHI::ResourceFlag flags, uint64_t size, BE1::Image::Format format, uint32_t structuredStride, const void *data) {
+RHI::Buffer *D3D12Renderer::CreateBuffer(RHI::BufferUsage usage, RHI::ResourceFlag flags, uint64_t size, BE1::Image::Format format, uint32_t structureByteStride, const void *data) {
     D3D12_HEAP_TYPE heapType;
     D3D12_RESOURCE_STATES initialState;
     D3D12_RESOURCE_FLAGS resourceFlags;
@@ -172,14 +172,13 @@ RHI::Buffer *D3D12Renderer::CreateBuffer(RHI::BufferUsage usage, RHI::ResourceFl
 
     buffer->size = alignedSize;
 
-    // buffer view 가 SRV 이거나 UAV 일 경우..
-    // 1) format == Image::Format::Unknown 라면, structured buffer 다.
-    // 2) format == Image::Format::R_32_TYPELESS 라면, raw buffer 다.
+    // format == Image::Format::Unknown 이고, structureByteStride > 0 이면 structured buffer 다.
+    // format == Image::Format::Unknown 이고, structureByteStride == 0 이면 raw buffer 다.
     buffer->format = format;
 
-    // structuredStride 는 structured buffer 에서만 사용된다. (4 의 배수 정렬 & 2048 보다 작아야 함)
-    assert(BE1::IsAligned(structuredStride, 4) && structuredStride < 2048);
-    buffer->structuredStride = structuredStride;
+    // structureByteStride 는 4 의 배수 정렬 & 2048 보다 작아야 한다.
+    assert(BE1::IsAligned(structureByteStride, 4) && structureByteStride < 2048);
+    buffer->structureByteStride = structureByteStride;
 
     ID3D12Resource *uploadBuffer = nullptr;
 
@@ -323,21 +322,24 @@ int D3D12Renderer::CreateSubresourceSRV(D3D12Buffer *buffer, uint64_t offset, ui
     srvDesc.ViewDimension = D3D12_SRV_DIMENSION_BUFFER;
     srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
 
-    ImageFormatToDXGIFormat(buffer->format, false, &srvDesc.Format);
-
     uint32_t byteStride = 0;
 
     if (buffer->format == BE1::Image::Format::Unknown) {
-        // Structured buffer
-        byteStride = buffer->structuredStride;
-        srvDesc.Buffer.StructureByteStride = byteStride;
-    } else {
-        byteStride = BE1::Image::BytesPerPixel(buffer->format);
-
-        if (buffer->format == BE1::Image::Format::R_32_TYPELESS) {
+        if (buffer->structureByteStride == 0) {
             // Raw buffer (4 바이트 정렬된, 바이트 단위 접근이 가능한 버퍼)
+            byteStride = 4;
+            srvDesc.Format = DXGI_FORMAT_R32_TYPELESS;
             srvDesc.Buffer.Flags = D3D12_BUFFER_SRV_FLAG_RAW;
+        } else {
+            // Structured buffer
+            byteStride = buffer->structureByteStride;
+            srvDesc.Format = DXGI_FORMAT_UNKNOWN;
+            srvDesc.Buffer.StructureByteStride = byteStride;
         }
+    } else {
+        ImageFormatToDXGIFormat(buffer->format, false, &srvDesc.Format);
+
+        byteStride = BE1::Image::BytesPerPixel(buffer->format);
     }
 
     srvDesc.Buffer.FirstElement = offset / byteStride;
@@ -364,21 +366,24 @@ int D3D12Renderer::CreateSubresourceUAV(D3D12Buffer *buffer, uint64_t offset, ui
     D3D12_UNORDERED_ACCESS_VIEW_DESC uavDesc = {};
     uavDesc.ViewDimension = D3D12_UAV_DIMENSION_BUFFER;
 
-    ImageFormatToDXGIFormat(buffer->format, false, &uavDesc.Format);
-
     uint32_t byteStride = 0;
 
     if (buffer->format == BE1::Image::Format::Unknown) {
-        // Structured buffer
-        byteStride = buffer->structuredStride;
-        uavDesc.Buffer.StructureByteStride = byteStride;
-    } else {
-        byteStride = BE1::Image::BytesPerPixel(buffer->format);
-
-        if (buffer->format == BE1::Image::Format::R_32_TYPELESS) {
+        if (buffer->structureByteStride == 0) {
             // Raw buffer (4 바이트 정렬된, 바이트 단위 접근이 가능한 버퍼)
+            byteStride = 4;
+            uavDesc.Format = DXGI_FORMAT_R32_TYPELESS;
             uavDesc.Buffer.Flags = D3D12_BUFFER_UAV_FLAG_RAW;
+        } else {
+            // Structured buffer
+            byteStride = buffer->structureByteStride;
+            uavDesc.Format = DXGI_FORMAT_UNKNOWN;
+            uavDesc.Buffer.StructureByteStride = byteStride;
         }
+    } else {
+        ImageFormatToDXGIFormat(buffer->format, false, &uavDesc.Format);
+
+        byteStride = BE1::Image::BytesPerPixel(buffer->format);
     }
 
     uavDesc.Buffer.FirstElement = offset / byteStride;

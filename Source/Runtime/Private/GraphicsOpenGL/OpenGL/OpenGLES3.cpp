@@ -125,25 +125,25 @@ void OpenGLES3::TexBuffer(GLenum internalFormat, GLuint buffer) {
 
 void OpenGLES3::SetTextureSwizzling(GLenum target, Image::Format format) {
     switch (format) {
-    case Image::Format::L_8:
-    case Image::Format::L_16F:
-    case Image::Format::L_32F:
+    case Image::Format::L8:
+    case Image::Format::L16_FLOAT:
+    case Image::Format::L32_FLOAT:
         gglTexParameteri(target, GL_TEXTURE_SWIZZLE_R, GL_RED);
         gglTexParameteri(target, GL_TEXTURE_SWIZZLE_G, GL_RED);
         gglTexParameteri(target, GL_TEXTURE_SWIZZLE_B, GL_RED);
         gglTexParameteri(target, GL_TEXTURE_SWIZZLE_A, GL_ONE);
         break;
-    case Image::Format::A_8:
-    case Image::Format::A_16F:
-    case Image::Format::A_32F:
+    case Image::Format::A8:
+    case Image::Format::A16_FLOAT:
+    case Image::Format::A32_FLOAT:
         gglTexParameteri(target, GL_TEXTURE_SWIZZLE_R, GL_ONE);
         gglTexParameteri(target, GL_TEXTURE_SWIZZLE_G, GL_ONE);
         gglTexParameteri(target, GL_TEXTURE_SWIZZLE_B, GL_ONE);
         gglTexParameteri(target, GL_TEXTURE_SWIZZLE_A, GL_RED);
         break;
-    case Image::Format::LA_8_8:
-    case Image::Format::LA_16F_16F:
-    case Image::Format::LA_32F_32F:
+    case Image::Format::L8A8:
+    case Image::Format::L16A16_FLOAT:
+    case Image::Format::L32A32_FLOAT:
     case Image::Format::DXN1:
     case Image::Format::DXN2:
         gglTexParameteri(target, GL_TEXTURE_SWIZZLE_R, GL_RED);
@@ -151,26 +151,26 @@ void OpenGLES3::SetTextureSwizzling(GLenum target, Image::Format format) {
         gglTexParameteri(target, GL_TEXTURE_SWIZZLE_B, GL_RED);
         gglTexParameteri(target, GL_TEXTURE_SWIZZLE_A, GL_GREEN);
         break;
-    case Image::Format::BGRX_4_4_4_4:
-    case Image::Format::BGRX_5_5_5_1:
-    case Image::Format::BGRA_4_4_4_4:
-    case Image::Format::BGRA_5_5_5_1:
-    case Image::Format::ARGB_4_4_4_4:
-    case Image::Format::ARGB_1_5_5_5:
-    case Image::Format::RGB_5_6_5:
-    case Image::Format::BGR_8_8_8:
-    case Image::Format::BGRX_8_8_8_8:
-    case Image::Format::BGRA_8_8_8_8:
+    case Image::Format::B4G4R4X4:
+    case Image::Format::B5G5R5X1:
+    case Image::Format::B4G4R4A4:
+    case Image::Format::B5G5R5A1:
+    case Image::Format::A4R4G4B4:
+    case Image::Format::A1R5G5B5:
+    case Image::Format::R5G6B5:
+    case Image::Format::B8G8R8:
+    case Image::Format::B8G8R8X8:
+    case Image::Format::B8G8R8A8:
         gglTexParameteri(target, GL_TEXTURE_SWIZZLE_R, GL_BLUE);
         gglTexParameteri(target, GL_TEXTURE_SWIZZLE_B, GL_RED);
         break;
-    case Image::Format::ABGR_8_8_8_8:
+    case Image::Format::A8B8G8R8:
         gglTexParameteri(target, GL_TEXTURE_SWIZZLE_R, GL_ALPHA);
         gglTexParameteri(target, GL_TEXTURE_SWIZZLE_G, GL_BLUE);
         gglTexParameteri(target, GL_TEXTURE_SWIZZLE_B, GL_GREEN);
         gglTexParameteri(target, GL_TEXTURE_SWIZZLE_A, GL_RED);
         break;
-    case Image::Format::ARGB_8_8_8_8:
+    case Image::Format::A8R8G8B8:
         gglTexParameteri(target, GL_TEXTURE_SWIZZLE_R, GL_ALPHA);
         gglTexParameteri(target, GL_TEXTURE_SWIZZLE_G, GL_RED);
         gglTexParameteri(target, GL_TEXTURE_SWIZZLE_B, GL_GREEN);
@@ -180,11 +180,11 @@ void OpenGLES3::SetTextureSwizzling(GLenum target, Image::Format format) {
     }
     
     switch (format) {
-    case Image::Format::RGBX_4_4_4_4:
-    case Image::Format::RGBX_5_5_5_1:
-    case Image::Format::BGRX_4_4_4_4:
-    case Image::Format::BGRX_5_5_5_1:
-    case Image::Format::BGRX_8_8_8_8:
+    case Image::Format::R4G4B4X4:
+    case Image::Format::R5G5B5X1:
+    case Image::Format::B4G4R4X4:
+    case Image::Format::B5G5R5X1:
+    case Image::Format::B8G8R8X8:
         gglTexParameteri(target, GL_TEXTURE_SWIZZLE_A, GL_ONE);
         break;
     default:
@@ -194,13 +194,13 @@ void OpenGLES3::SetTextureSwizzling(GLenum target, Image::Format format) {
 
 bool OpenGLES3::ImageFormatToGLFormat(Image::Format imageFormat, bool isSRGB, GLenum *glFormat, GLenum *glType, GLenum *glInternal) {
     switch (imageFormat) {
-    case Image::Format::L_8:
-    case Image::Format::A_8:
+    case Image::Format::L8:
+    case Image::Format::A8:
         if (glFormat)   *glFormat = GL_RED;
         if (glType)     *glType = GL_UNSIGNED_BYTE;
         if (glInternal) *glInternal = GL_R8;
         return true;
-    case Image::Format::R_8:
+    case Image::Format::R8:
         if (glFormat)   *glFormat = GL_RED;
         if (glType)     *glType = GL_UNSIGNED_BYTE;
 #ifdef GL_EXT_texture_sRGB_R8
@@ -209,17 +209,27 @@ bool OpenGLES3::ImageFormatToGLFormat(Image::Format imageFormat, bool isSRGB, GL
         if (glInternal) *glInternal = GL_R8;
 #endif
         return true;
-    case Image::Format::R_8_SNORM:
+    case Image::Format::R8_SNORM:
         if (glFormat)   *glFormat = GL_RED;
         if (glType)     *glType = GL_BYTE;
         if (glInternal) *glInternal = GL_R8_SNORM;
         return true;
-    case Image::Format::LA_8_8:
+    case Image::Format::R8_SINT:
+        if (glFormat)   *glFormat = GL_RED;
+        if (glType)     *glType = GL_BYTE;
+        if (glInternal) *glInternal = GL_R8I;
+        return true;
+    case Image::Format::R8_UINT:
+        if (glFormat)   *glFormat = GL_RED;
+        if (glType)     *glType = GL_BYTE;
+        if (glInternal) *glInternal = GL_R8UI;
+        return true;
+    case Image::Format::L8A8:
         if (glFormat)   *glFormat = GL_RG;
         if (glType)     *glType = GL_UNSIGNED_BYTE;
         if (glInternal) *glInternal = GL_RG8;
         return true;
-    case Image::Format::RG_8_8:
+    case Image::Format::R8G8:
         if (glFormat)   *glFormat = GL_RG;
         if (glType)     *glType = GL_UNSIGNED_BYTE;
 #ifdef GL_EXT_texture_sRGB_RG8
@@ -228,174 +238,204 @@ bool OpenGLES3::ImageFormatToGLFormat(Image::Format imageFormat, bool isSRGB, GL
         if (glInternal) *glInternal = GL_RG8;
 #endif
         return true;
-    case Image::Format::RG_8_8_SNORM:
+    case Image::Format::R8G8_SNORM:
         if (glFormat)   *glFormat = GL_RG;
         if (glType)     *glType = GL_BYTE;
         if (glInternal) *glInternal = GL_RG8_SNORM;
         return true;
-    case Image::Format::RGB_8_8_8:
+    case Image::Format::R8G8_SINT:
+        if (glFormat)   *glFormat = GL_RG;
+        if (glType)     *glType = GL_BYTE;
+        if (glInternal) *glInternal = GL_RG8I;
+        return true;
+    case Image::Format::R8G8_UINT:
+        if (glFormat)   *glFormat = GL_RG;
+        if (glType)     *glType = GL_BYTE;
+        if (glInternal) *glInternal = GL_RG8UI;
+        return true;
+    case Image::Format::R8G8B8:
         if (glFormat)   *glFormat = GL_RGB;
         if (glType)     *glType = GL_UNSIGNED_BYTE;
         if (glInternal) *glInternal = isSRGB ? GL_SRGB8 : GL_RGB8;
         return true;
-    case Image::Format::RGB_8_8_8_SNORM:
+    case Image::Format::R8G8B8_SNORM:
         if (glFormat)   *glFormat = GL_RGB;
         if (glType)     *glType = GL_BYTE;
         if (glInternal) *glInternal = GL_RGB8_SNORM;
         return true;
-    case Image::Format::RGBX_8_8_8_8:
+    case Image::Format::R8G8B8_SINT:
+        if (glFormat)   *glFormat = GL_RGB;
+        if (glType)     *glType = GL_BYTE;
+        if (glInternal) *glInternal = GL_RGB8I;
+        return true;
+    case Image::Format::R8G8B8_UINT:
+        if (glFormat)   *glFormat = GL_RGB;
+        if (glType)     *glType = GL_BYTE;
+        if (glInternal) *glInternal = GL_RGB8UI;
+        return true;
+    case Image::Format::R8G8B8X8:
         if (glFormat)   *glFormat = GL_RGBA;
         if (glType)     *glType = GL_UNSIGNED_BYTE;
         if (glInternal) *glInternal = isSRGB ? GL_SRGB8 : GL_RGB8;
         return true;
-    case Image::Format::BGRX_8_8_8_8:
+    case Image::Format::B8G8R8X8:
         if (!gglext._GL_EXT_texture_format_BGRA8888) return false;
         if (glFormat)   *glFormat = GL_BGRA_EXT;
         if (glType)     *glType = GL_UNSIGNED_BYTE;
         if (glInternal) *glInternal = isSRGB ? GL_SRGB8 : GL_RGB8;
         return true;
-    case Image::Format::RGBA_8_8_8_8:
+    case Image::Format::R8G8B8A8:
         if (glFormat)   *glFormat = GL_RGBA;
         if (glType)     *glType = GL_UNSIGNED_BYTE;
         if (glInternal) *glInternal = isSRGB ? GL_SRGB8_ALPHA8 : GL_RGBA8;
         return true;
-    case Image::Format::RGBA_8_8_8_8_SNORM:
+    case Image::Format::R8G8B8A8_SNORM:
         if (glFormat)   *glFormat = GL_RGBA;
         if (glType)     *glType = GL_BYTE;
         if (glInternal) *glInternal = GL_RGBA8_SNORM;
         return true;
-    case Image::Format::BGRA_8_8_8_8:
+    case Image::Format::R8G8B8A8_SINT:
+        if (glFormat)   *glFormat = GL_RGBA;
+        if (glType)     *glType = GL_BYTE;
+        if (glInternal) *glInternal = GL_RGBA8I;
+        return true;
+    case Image::Format::R8G8B8A8_UINT:
+        if (glFormat)   *glFormat = GL_RGBA;
+        if (glType)     *glType = GL_BYTE;
+        if (glInternal) *glInternal = GL_RGBA8UI;
+        return true;
+    case Image::Format::B8G8R8A8:
         if (!gglext._GL_EXT_texture_format_BGRA8888) return false;
         if (glFormat)   *glFormat = GL_BGRA_EXT;
         if (glType)     *glType = GL_UNSIGNED_BYTE;
         if (glInternal) *glInternal = isSRGB ? GL_SRGB8_ALPHA8 : GL_RGBA8;
         return true;
 #ifdef GL_EXT_read_format_bgra
-    case Image::Format::RGBX_4_4_4_4:
+    case Image::Format::R4G4B4X4:
         if (glFormat)   *glFormat = GL_RGBA;
         if (glType)     *glType = GL_UNSIGNED_SHORT_4_4_4_4_REV_EXT;
         if (glInternal) *glInternal = GL_RGBA4;
         return true;
-    case Image::Format::BGRX_4_4_4_4:
+    case Image::Format::B4G4R4X4:
         if (glFormat)   *glFormat = GL_RGBA;
         if (glType)     *glType = GL_UNSIGNED_SHORT_4_4_4_4_REV_EXT;
         if (glInternal) *glInternal = GL_RGBA4;
         return true;
-    case Image::Format::RGBA_4_4_4_4:
+    case Image::Format::R4G4B4A4:
         if (glFormat)   *glFormat = GL_RGBA;
         if (glType)     *glType = GL_UNSIGNED_SHORT_4_4_4_4_REV_EXT;
         if (glInternal) *glInternal = GL_RGBA4;
         return true;
-    case Image::Format::BGRA_4_4_4_4:
+    case Image::Format::B4G4R4A4:
         if (glFormat)   *glFormat = GL_RGBA;
         if (glType)     *glType = GL_UNSIGNED_SHORT_4_4_4_4_REV_EXT;
         if (glInternal) *glInternal = GL_RGBA4;
         return true;
 #endif
-    case Image::Format::ABGR_4_4_4_4:
+    case Image::Format::A4B4G4R4:
         if (glFormat)   *glFormat = GL_RGBA;
         if (glType)     *glType = GL_UNSIGNED_SHORT_4_4_4_4;
         if (glInternal) *glInternal = GL_RGBA4;
         return true;
-    case Image::Format::ARGB_4_4_4_4:
+    case Image::Format::A4R4G4B4:
         if (glFormat)   *glFormat = GL_RGBA;
         if (glType)     *glType = GL_UNSIGNED_SHORT_4_4_4_4;
         if (glInternal) *glInternal = GL_RGBA4;
         return true;
 #ifdef GL_EXT_read_format_bgra
-    case Image::Format::RGBX_5_5_5_1:
+    case Image::Format::R5G5B5X1:
         if (glFormat)   *glFormat = GL_RGBA;
         if (glType)     *glType = GL_UNSIGNED_SHORT_1_5_5_5_REV_EXT;
         if (glInternal) *glInternal = GL_RGBA;
         return true;
-    case Image::Format::BGRX_5_5_5_1:
+    case Image::Format::B5G5R5X1:
         if (glFormat)   *glFormat = GL_RGBA;
         if (glType)     *glType = GL_UNSIGNED_SHORT_1_5_5_5_REV_EXT;
         if (glInternal) *glInternal = GL_RGBA;
         return true;
-    case Image::Format::RGBA_5_5_5_1:
+    case Image::Format::R5G5B5A1:
         if (glFormat)   *glFormat = GL_RGBA;
         if (glType)     *glType = GL_UNSIGNED_SHORT_1_5_5_5_REV_EXT;
         if (glInternal) *glInternal = GL_RGB5_A1;
         return true;
-    case Image::Format::BGRA_5_5_5_1:
+    case Image::Format::B5G5R5A1:
         if (glFormat)   *glFormat = GL_RGB;
         if (glType)     *glType = GL_UNSIGNED_SHORT_1_5_5_5_REV_EXT;
         if (glInternal) *glInternal = GL_RGB5_A1;
         return true;
 #endif
-    case Image::Format::ABGR_1_5_5_5:
+    case Image::Format::A1B5G5R5:
         if (glFormat)   *glFormat = GL_RGBA;
         if (glType)     *glType = GL_UNSIGNED_SHORT_5_5_5_1;
         if (glInternal) *glInternal = GL_RGB5_A1;
         return true;
-    case Image::Format::ARGB_1_5_5_5:
+    case Image::Format::A1R5G5B5:
         if (glFormat)   *glFormat = GL_RGBA;
         if (glType)     *glType = GL_UNSIGNED_SHORT_5_5_5_1;
         if (glInternal) *glInternal = GL_RGB5_A1;
         return true;
-    case Image::Format::RGB_5_6_5:
+    case Image::Format::R5G6B5:
         if (glFormat)   *glFormat = GL_RGB;
         if (glType)     *glType = GL_UNSIGNED_SHORT_5_6_5;
         if (glInternal) *glInternal = GL_RGB8;
         return true;
-    case Image::Format::BGR_5_6_5:
+    case Image::Format::B5G6R5:
         if (glFormat)   *glFormat = GL_RGB;
         if (glType)     *glType = GL_UNSIGNED_SHORT_5_6_5;
         if (glInternal) *glInternal = GL_RGB8;
         return true;
-    case Image::Format::RGBE_9_9_9_5:
+    case Image::Format::R9G9B9E5_FLOAT:
         if (glFormat)   *glFormat = GL_RGB;
         if (glType)     *glType = GL_UNSIGNED_INT_5_9_9_9_REV;
         if (glInternal) *glInternal = GL_RGB9_E5;
         return true;
-    case Image::Format::L_16F:
-    case Image::Format::A_16F:
-    case Image::Format::R_16F:
+    case Image::Format::L16_FLOAT:
+    case Image::Format::A16_FLOAT:
+    case Image::Format::R16_FLOAT:
         if (glFormat)   *glFormat = GL_RED;
         if (glType)     *glType = GL_HALF_FLOAT;
         if (glInternal) *glInternal = GL_R16F;
         return true;
-    case Image::Format::L_32F:
-    case Image::Format::A_32F:
-    case Image::Format::R_32F:
+    case Image::Format::L32_FLOAT:
+    case Image::Format::A32_FLOAT:
+    case Image::Format::R32_FLOAT:
         if (glFormat)   *glFormat = GL_RED;
         if (glType)     *glType = GL_FLOAT;
         if (glInternal) *glInternal = GL_R32F;
         return true;
-    case Image::Format::LA_16F_16F:
-    case Image::Format::RG_16F_16F:
+    case Image::Format::L16A16_FLOAT:
+    case Image::Format::R16G16_FLOAT:
         if (glFormat)   *glFormat = GL_RG;
         if (glType)     *glType = GL_HALF_FLOAT;
         if (glInternal) *glInternal = GL_RG16F;
         return true;
-    case Image::Format::LA_32F_32F:
-    case Image::Format::RG_32F_32F:
+    case Image::Format::L32A32_FLOAT:
+    case Image::Format::R32G32_FLOAT:
         if (glFormat)   *glFormat = GL_RG;
         if (glType)     *glType = GL_FLOAT;
         if (glInternal) *glInternal = GL_RG32F;
         return true;
-    case Image::Format::RGB_11F_11F_10F:
+    case Image::Format::R11G11B10_FLOAT:
         if (glFormat)   *glFormat = GL_RGB;
         if (glType)     *glType = GL_UNSIGNED_INT_10F_11F_11F_REV;
         if (glInternal) *glInternal = GL_R11F_G11F_B10F;
         return true;
-    case Image::Format::RGB_16F_16F_16F:
+    case Image::Format::R16G16B16_FLOAT:
         if (glFormat)   *glFormat = GL_RGB;
         if (glType)     *glType = GL_HALF_FLOAT;
         if (glInternal) *glInternal = GL_RGB16F;
         return true;
-    case Image::Format::RGB_32F_32F_32F:
+    case Image::Format::R32G32B32_FLOAT:
         if (glFormat)   *glFormat = GL_RGB;
         if (glType)     *glType = GL_FLOAT;
         if (glInternal) *glInternal = GL_RGB32F;
         return true;
-    case Image::Format::RGBA_16F_16F_16F_16F:
+    case Image::Format::R16G16B16A16_FLOAT:
         if (glFormat)   *glFormat = GL_RGBA;
         if (glType)     *glType = GL_HALF_FLOAT;
         if (glInternal) *glInternal = GL_RGBA16F;
         return true;
-    case Image::Format::RGBA_32F_32F_32F_32F:
+    case Image::Format::R32G32B32A32_FLOAT:
         if (glFormat)   *glFormat = GL_RGBA;
         if (glType)     *glType = GL_FLOAT;
         if (glInternal) *glInternal = GL_RGBA32F;
@@ -421,7 +461,7 @@ bool OpenGLES3::ImageFormatToGLFormat(Image::Format imageFormat, bool isSRGB, GL
         return false;
 #endif
     case Image::Format::DXT5:
-    case Image::Format::XGBR_DXT5:
+    case Image::Format::DXT5XGBR:
 #ifdef GL_EXT_texture_compression_s3tc
         if (!gglext._GL_EXT_texture_compression_s3tc) return false;
         if (glFormat)   *glFormat = GL_COMPRESSED_RGBA_S3TC_DXT5_EXT;
@@ -451,31 +491,31 @@ bool OpenGLES3::ImageFormatToGLFormat(Image::Format imageFormat, bool isSRGB, GL
 #else
         return false;
 #endif
-    case Image::Format::RGB_PVRTC_2BPPV1:
+    case Image::Format::PVRTC12:
         if (!gglext._GL_IMG_texture_compression_pvrtc) return false;
         if (glFormat)   *glFormat = (isSRGB && gglext._GL_EXT_pvrtc_sRGB) ? GL_COMPRESSED_SRGB_PVRTC_2BPPV1_EXT : GL_COMPRESSED_RGB_PVRTC_2BPPV1_IMG;
         if (glType)     *glType = 0;
         if (glInternal) *glInternal = (isSRGB && gglext._GL_EXT_pvrtc_sRGB) ? GL_COMPRESSED_SRGB_PVRTC_2BPPV1_EXT : GL_COMPRESSED_RGB_PVRTC_2BPPV1_IMG;
         return true;
-    case Image::Format::RGB_PVRTC_4BPPV1:
+    case Image::Format::PVRTC14:
         if (!gglext._GL_IMG_texture_compression_pvrtc) return false;
         if (glFormat)   *glFormat = (isSRGB && gglext._GL_EXT_pvrtc_sRGB) ? GL_COMPRESSED_SRGB_PVRTC_4BPPV1_EXT : GL_COMPRESSED_RGB_PVRTC_4BPPV1_IMG;
         if (glType)     *glType = 0;
         if (glInternal) *glInternal = (isSRGB && gglext._GL_EXT_pvrtc_sRGB) ? GL_COMPRESSED_SRGB_PVRTC_4BPPV1_EXT : GL_COMPRESSED_RGB_PVRTC_4BPPV1_IMG;
         return true;
-    case Image::Format::RGBA_PVRTC_2BPPV1:
+    case Image::Format::PVRTC12A:
         if (!gglext._GL_IMG_texture_compression_pvrtc) return false;
         if (glFormat)   *glFormat = (isSRGB && gglext._GL_EXT_pvrtc_sRGB) ? GL_COMPRESSED_SRGB_ALPHA_PVRTC_2BPPV1_EXT : GL_COMPRESSED_RGBA_PVRTC_2BPPV1_IMG;
         if (glType)     *glType = 0;
         if (glInternal) *glInternal = (isSRGB && gglext._GL_EXT_pvrtc_sRGB) ? GL_COMPRESSED_SRGB_ALPHA_PVRTC_2BPPV1_EXT : GL_COMPRESSED_RGBA_PVRTC_2BPPV1_IMG;
         return true;
-    case Image::Format::RGBA_PVRTC_4BPPV1:
+    case Image::Format::PVRTC14A:
         if (!gglext._GL_IMG_texture_compression_pvrtc) return false;
         if (glFormat)   *glFormat = (isSRGB && gglext._GL_EXT_pvrtc_sRGB) ? GL_COMPRESSED_SRGB_ALPHA_PVRTC_4BPPV1_EXT : GL_COMPRESSED_RGBA_PVRTC_4BPPV1_IMG;
         if (glType)     *glType = 0;
         if (glInternal) *glInternal = (isSRGB && gglext._GL_EXT_pvrtc_sRGB) ? GL_COMPRESSED_SRGB_ALPHA_PVRTC_4BPPV1_EXT : GL_COMPRESSED_RGBA_PVRTC_4BPPV1_IMG;
         return true;
-    case Image::Format::RGBA_PVRTC_2BPPV2:
+    case Image::Format::PVRTC22A:
 #ifdef GL_IMG_texture_compression_pvrtc2
         if (!gglext._GL_IMG_texture_compression_pvrtc2) return false;
         if (glFormat)   *glFormat = GL_COMPRESSED_RGBA_PVRTC_2BPPV2_IMG;
@@ -485,7 +525,7 @@ bool OpenGLES3::ImageFormatToGLFormat(Image::Format imageFormat, bool isSRGB, GL
 #else
         return false;
 #endif
-    case Image::Format::RGBA_PVRTC_4BPPV2:
+    case Image::Format::PVRTC24A:
 #ifdef GL_IMG_texture_compression_pvrtc2
         if (!gglext._GL_IMG_texture_compression_pvrtc2) return false;
         if (glFormat)   *glFormat = GL_COMPRESSED_RGBA_PVRTC_4BPPV2_IMG;
@@ -495,7 +535,7 @@ bool OpenGLES3::ImageFormatToGLFormat(Image::Format imageFormat, bool isSRGB, GL
 #else
         return false;
 #endif
-    case Image::Format::RGB_8_ETC1:
+    case Image::Format::ETC1:
 #ifdef GL_OES_compressed_ETC1_RGB8_texture
         if (!gglext._GL_OES_compressed_ETC1_RGB8_texture) return false;
         if (glFormat)   *glFormat = GL_ETC1_RGB8_OES;
@@ -505,42 +545,42 @@ bool OpenGLES3::ImageFormatToGLFormat(Image::Format imageFormat, bool isSRGB, GL
 #else
         return false;
 #endif
-    case Image::Format::RGB_8_ETC2:
+    case Image::Format::ETC2:
         if (glFormat)   *glFormat = isSRGB ? GL_COMPRESSED_SRGB8_ETC2 : GL_COMPRESSED_RGB8_ETC2;
         if (glType)     *glType = 0;
         if (glInternal) *glInternal = isSRGB ? GL_COMPRESSED_SRGB8_ETC2 : GL_COMPRESSED_RGB8_ETC2;
         return true;
-    case Image::Format::RGBA_8_1_ETC2:
+    case Image::Format::ETC2A1:
         if (glFormat)   *glFormat = isSRGB ? GL_COMPRESSED_SRGB8_PUNCHTHROUGH_ALPHA1_ETC2 : GL_COMPRESSED_RGB8_PUNCHTHROUGH_ALPHA1_ETC2;
         if (glType)     *glType = 0;
         if (glInternal) *glInternal = isSRGB ? GL_COMPRESSED_SRGB8_PUNCHTHROUGH_ALPHA1_ETC2 : GL_COMPRESSED_RGB8_PUNCHTHROUGH_ALPHA1_ETC2;
         return true;
-    case Image::Format::RGBA_8_8_ETC2:
+    case Image::Format::ETC2A:
         if (glFormat)   *glFormat = isSRGB ? GL_COMPRESSED_SRGB8_ALPHA8_ETC2_EAC : GL_COMPRESSED_RGBA8_ETC2_EAC;
         if (glType)     *glType = 0;
         if (glInternal) *glInternal = isSRGB ? GL_COMPRESSED_SRGB8_ALPHA8_ETC2_EAC : GL_COMPRESSED_RGBA8_ETC2_EAC;
         return true;
-    case Image::Format::R_11_EAC:
+    case Image::Format::EACR11:
         if (glFormat)   *glFormat = GL_COMPRESSED_R11_EAC;
         if (glType)     *glType = 0;
         if (glInternal) *glInternal = GL_COMPRESSED_R11_EAC;
         return true;
-    case Image::Format::SignedR_11_EAC:
+    case Image::Format::EACR11_SNORM:
         if (glFormat)   *glFormat = GL_COMPRESSED_SIGNED_R11_EAC;
         if (glType)     *glType = 0;
         if (glInternal) *glInternal = GL_COMPRESSED_SIGNED_R11_EAC;
         return true;
-    case Image::Format::RG_11_11_EAC:
+    case Image::Format::EACRG11:
         if (glFormat)   *glFormat = GL_COMPRESSED_RG11_EAC;
         if (glType)     *glType = 0;
         if (glInternal) *glInternal = GL_COMPRESSED_RG11_EAC;
         return true;
-    case Image::Format::SignedRG_11_11_EAC:
+    case Image::Format::EACRG11_SNORM:
         if (glFormat)   *glFormat = GL_COMPRESSED_SIGNED_RG11_EAC;
         if (glType)     *glType = 0;
         if (glInternal) *glInternal = GL_COMPRESSED_SIGNED_RG11_EAC;
         return true;
-    case Image::Format::RGB_ATC:
+    case Image::Format::ATC:
 #ifdef GL_AMD_compressed_ATC_texture
         if (!gglext._GL_AMD_compressed_ATC_texture) return false;
         if (glFormat)   *glFormat = GL_ATC_RGB_AMD;
@@ -550,7 +590,7 @@ bool OpenGLES3::ImageFormatToGLFormat(Image::Format imageFormat, bool isSRGB, GL
 #else
         return false;
 #endif
-    case Image::Format::RGBA_EA_ATC:
+    case Image::Format::ATCE:
 #ifdef GL_AMD_compressed_ATC_texture
         if (!gglext._GL_AMD_compressed_ATC_texture) return false;
         if (glFormat)   *glFormat = GL_ATC_RGBA_EXPLICIT_ALPHA_AMD;
@@ -560,7 +600,7 @@ bool OpenGLES3::ImageFormatToGLFormat(Image::Format imageFormat, bool isSRGB, GL
 #else
         return false;
 #endif
-    case Image::Format::RGBA_IA_ATC:
+    case Image::Format::ATCI:
 #ifdef GL_AMD_compressed_ATC_texture
         if (!gglext._GL_AMD_compressed_ATC_texture) return false;
         if (glFormat)   *glFormat = GL_ATC_RGBA_INTERPOLATED_ALPHA_AMD;
@@ -570,27 +610,27 @@ bool OpenGLES3::ImageFormatToGLFormat(Image::Format imageFormat, bool isSRGB, GL
 #else
         return false;
 #endif
-    case Image::Format::Depth_16:
+    case Image::Format::D16:
         if (glFormat)   *glFormat = GL_DEPTH_COMPONENT;
         if (glType)     *glType = GL_UNSIGNED_SHORT;
         if (glInternal) *glInternal = GL_DEPTH_COMPONENT16;
         return true;
-    case Image::Format::Depth_24:
+    case Image::Format::D24:
         if (glFormat)   *glFormat = GL_DEPTH_COMPONENT;
         if (glType)     *glType = GL_UNSIGNED_INT;
         if (glInternal) *glInternal = GL_DEPTH_COMPONENT24;
         return true;
-    case Image::Format::Depth_32F:
+    case Image::Format::D32_FLOAT:
         if (glFormat)   *glFormat = GL_DEPTH_COMPONENT;
         if (glType)     *glType = GL_FLOAT;
         if (glInternal) *glInternal = GL_DEPTH_COMPONENT32F;
         return true;
-    case Image::Format::DepthStencil_24_8:
+    case Image::Format::D24S8:
         if (glFormat)   *glFormat = GL_DEPTH_STENCIL;
         if (glType)     *glType = GL_UNSIGNED_INT_24_8;
         if (glInternal) *glInternal = GL_DEPTH24_STENCIL8;
         return true;
-    case Image::Format::DepthStencil_32F_8:
+    case Image::Format::D32_FLOAT_S8X24:
         if (glFormat)   *glFormat = GL_DEPTH_STENCIL;
         if (glType)     *glType = GL_FLOAT_32_UNSIGNED_INT_24_8_REV;
         if (glInternal) *glInternal = GL_DEPTH32F_STENCIL8;
@@ -618,15 +658,15 @@ Image::Format OpenGLES3::ToCompressedImageFormat(Image::Format inFormat, bool us
     if (redBits > 0 && greenBits > 0 && blueBits > 0) {
         if (Image::IsFloatFormat(inFormat) || Image::IsHalfFormat(inFormat)) {
             if (alphaBits == 0) {
-                outFormat = Image::Format::RGBE_9_9_9_5;
+                outFormat = Image::Format::R9G9B9E5_FLOAT;
             }
         } else {
             if (alphaBits == 0) {
-                outFormat = Image::Format::RGB_8_ETC1;
+                outFormat = Image::Format::ETC1;
             } else if (alphaBits == 1) {
-                outFormat = Image::Format::RGBA_8_1_ETC2;
+                outFormat = Image::Format::ETC2A1;
             } else {
-                outFormat = Image::Format::RGBA_8_8_ETC2;
+                outFormat = Image::Format::ETC2A;
             }
         }
     }

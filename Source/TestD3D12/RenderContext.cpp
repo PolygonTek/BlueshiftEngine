@@ -42,7 +42,7 @@ void RenderContext::Init(void *windowHandle, bool useRenderThread) {
     uint32_t backBufferHeight = rc.bottom;
 
     // 스왑 체인 (백버퍼) 생성
-    swapChain = RHI::renderer->CreateSwapChain(hwnd, backBufferWidth, backBufferHeight, BE1::Image::Format::RGBA_8_8_8_8);
+    swapChain = RHI::renderer->CreateSwapChain(hwnd, backBufferWidth, backBufferHeight, BE1::Image::Format::R8G8B8A8);
 
     // 렌더 타겟 텍스쳐 & 뎁스 텍스쳐 생성
     CreateMainRenderTextures(backBufferWidth, backBufferHeight);

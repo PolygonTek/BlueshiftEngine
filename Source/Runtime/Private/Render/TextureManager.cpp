@@ -89,21 +89,21 @@ void TextureManager::CreateEngineTextures() {
     blackCubeMapTexture->CreateBlackCubeMapTexture(8, Texture::Flag::Permanence);
 
     // Create white texture.
-    image.Create2D(8, 8, 1, Image::Format::L_8, Image::GammaSpace::sRGB, nullptr, Image::Flag::None);
+    image.Create2D(8, 8, 1, Image::Format::L8, Image::GammaSpace::sRGB, nullptr, Image::Flag::None);
     data = image.GetPixels();
     memset(data, 0xFF, 8 * 8);
     whiteTexture = AllocTexture("_whiteTexture");
     whiteTexture->Create(Graphics::TextureType::Texture2D, image, Texture::Flag::Permanence | Texture::Flag::NoScaleDown);
 
     // Create black texture.
-    image.Create2D(8, 8, 1, Image::Format::L_8, Image::GammaSpace::sRGB, nullptr, Image::Flag::None);
+    image.Create2D(8, 8, 1, Image::Format::L8, Image::GammaSpace::sRGB, nullptr, Image::Flag::None);
     data = image.GetPixels();
     memset(data, 0, 8 * 8);
     blackTexture = AllocTexture("_blackTexture");
     blackTexture->Create(Graphics::TextureType::Texture2D, image, Texture::Flag::Permanence | Texture::Flag::NoScaleDown);
 
     // Create grey texture.
-    image.Create2D(8, 8, 1, Image::Format::L_8, Image::GammaSpace::sRGB, nullptr, Image::Flag::None);
+    image.Create2D(8, 8, 1, Image::Format::L8, Image::GammaSpace::sRGB, nullptr, Image::Flag::None);
     data = image.GetPixels();
     memset(data, 0x80, 8 * 8);
     greyTexture = AllocTexture("_greyTexture");
@@ -582,11 +582,11 @@ void TextureManager::Cmd_ConvertNormalAR2RGB(const CmdArgs &args) {
 
         BE_LOG("Converting '%s'\n", path);
 
-        if (image1.GetFormat() != Image::Format::RGBA_8_8_8_8) {
-            image1.ConvertFormatSelf(Image::Format::RGBA_8_8_8_8);
+        if (image1.GetFormat() != Image::Format::R8G8B8A8) {
+            image1.ConvertFormatSelf(Image::Format::R8G8B8A8);
         }
 
-        image2.Create2D(image1.GetWidth(), image1.GetHeight(), 1, Image::Format::RGB_8_8_8, Image::GammaSpace::Linear, nullptr, Image::Flag::None);
+        image2.Create2D(image1.GetWidth(), image1.GetHeight(), 1, Image::Format::R8G8B8, Image::GammaSpace::Linear, nullptr, Image::Flag::None);
         byte *data2Ptr = image2.GetPixels();
         byte *data1Ptr = image1.GetPixels();
         byte *endData1 = data1Ptr + image1.GetWidth() * image1.GetHeight() * 4;

@@ -25,7 +25,7 @@
 
 BE_NAMESPACE_BEGIN
 
-#define GLYPH_CACHE_TEXTURE_FORMAT  Image::Format::A_8
+#define GLYPH_CACHE_TEXTURE_FORMAT  Image::Format::A8
 #define GLYPH_CACHE_TEXTURE_SIZE    2048
 #define GLYPH_COORD_OFFSET          1
 
@@ -115,7 +115,7 @@ bool FontFaceFreeType::Load(const char *filename, int fontSize) {
         return false;
     }
 
-    // Calcualte font height in pixels.
+    // Calculate font height in pixels.
     const FT_Size_Metrics &metrics = freeTypeFont->GetFtFace()->size->metrics;
     fontHeight = (int)((metrics.ascender - metrics.descender) >> 6);
 

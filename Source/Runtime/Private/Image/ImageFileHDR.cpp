@@ -139,7 +139,7 @@ bool Image::LoadHDRFromMemory(const char *name, const byte *data, size_t size) {
         return false;
     }
 
-    Create2D(headerInfo.width, headerInfo.height, 1, Format::RGB_16F_16F_16F, GammaSpace::Linear, nullptr, Flag::None);
+    Create2D(headerInfo.width, headerInfo.height, 1, Format::R16G16B16_FLOAT, GammaSpace::Linear, nullptr, Flag::None);
 
     float16_t *dest = (float16_t *)this->pic;
 

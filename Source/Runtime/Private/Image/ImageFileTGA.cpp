@@ -151,7 +151,7 @@ bool Image::LoadTGAFromMemory(const char *name, const byte *data, size_t size) {
         }
     }
 
-    Create2D(header->width, header->height, 1, header->bpp == 32 ? Format::BGRA_8_8_8_8 : Format::BGR_8_8_8, GammaSpace::sRGB, nullptr, Flag::None);
+    Create2D(header->width, header->height, 1, header->bpp == 32 ? Format::B8G8R8A8 : Format::B8G8R8, GammaSpace::sRGB, nullptr, Flag::None);
 
     int byte_per_pixel = BytesPerPixel();
         
@@ -267,13 +267,13 @@ bool Image::WriteTGA(const char *filename) const {
     Image convertedImage;
     byte *src = this->pic;
     
-    if (format == Format::BGR_8_8_8) {
+    if (format == Format::B8G8R8) {
         bpp = 24;
-    } else if (format == Format::BGRA_8_8_8_8) {
+    } else if (format == Format::B8G8R8A8) {
         bpp = 32;
     } else {
         bpp = 24;
-        if (!ConvertFormat(Format::BGR_8_8_8, convertedImage)) {
+        if (!ConvertFormat(Format::B8G8R8, convertedImage)) {
             fileSystem.CloseFile(fp);
             return false;
         }

@@ -417,20 +417,20 @@ void D3D12Renderer::DestroyTexture(RHI::Texture *texture, bool immediate) {
     }
 }
 
-int D3D12Renderer::CreateSubresource(RHI::Texture *texture, RHI::SubresourceType type, uint32_t firstSlice, uint32_t sliceCount, uint32_t firstMipLevel, uint32_t mipCount, const BE1::Image::Format *typelessCompatibleFormat) {
+int D3D12Renderer::CreateSubresource(RHI::Texture *texture, RHI::SubresourceType type, uint32_t firstSlice, uint32_t sliceCount, uint32_t firstMipLevel, uint32_t mipCount, const BE1::Image::Format *typelessCompatibleFormat, bool isSRGB) {
     D3D12Texture *d3d12Texture = static_cast<D3D12Texture *>(texture);
 
     if (type == RHI::SubresourceType::SRV) {
-        return CreateSubresourceSRV(d3d12Texture, firstSlice, sliceCount, firstMipLevel, mipCount, typelessCompatibleFormat);
+        return CreateSubresourceSRV(d3d12Texture, firstSlice, sliceCount, firstMipLevel, mipCount, typelessCompatibleFormat, isSRGB);
     }
     if (type == RHI::SubresourceType::RTV) {
-        return CreateSubresourceRTV(d3d12Texture, firstSlice, sliceCount, firstMipLevel, typelessCompatibleFormat);
+        return CreateSubresourceRTV(d3d12Texture, firstSlice, sliceCount, firstMipLevel, typelessCompatibleFormat, isSRGB);
     }
     if (type == RHI::SubresourceType::DSV) {
-        return CreateSubresourceDSV(d3d12Texture, firstSlice, sliceCount, firstMipLevel, typelessCompatibleFormat);
+        return CreateSubresourceDSV(d3d12Texture, firstSlice, sliceCount, firstMipLevel, typelessCompatibleFormat, isSRGB);
     }
     if (type == RHI::SubresourceType::UAV) {
-        return CreateSubresourceUAV(d3d12Texture, firstSlice, sliceCount, firstMipLevel, typelessCompatibleFormat);
+        return CreateSubresourceUAV(d3d12Texture, firstSlice, sliceCount, firstMipLevel, typelessCompatibleFormat, isSRGB);
     }
     return -1;
 }
@@ -504,13 +504,13 @@ void D3D12Renderer::DestroySubresource(RHI::Texture *texture, RHI::SubresourceTy
     }
 }
 
-int D3D12Renderer::CreateSubresourceSRV(D3D12Texture *texture, uint32_t firstSlice, uint32_t sliceCount, uint32_t firstMipLevel, uint32_t mipCount, const BE1::Image::Format *typelessCompatibleFormat) {
+int D3D12Renderer::CreateSubresourceSRV(D3D12Texture *texture, uint32_t firstSlice, uint32_t sliceCount, uint32_t firstMipLevel, uint32_t mipCount, const BE1::Image::Format *typelessCompatibleFormat, bool isSRGB) {
     D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
     srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
 
     if (typelessCompatibleFormat) {
         assert(IsTypelessFormat(texture->textureDesc.Format));
-        ImageFormatToDXGIFormat(*typelessCompatibleFormat, false, &srvDesc.Format);
+        ImageFormatToDXGIFormat(*typelessCompatibleFormat, isSRGB, &srvDesc.Format);
     } else {
         srvDesc.Format = texture->textureDesc.Format;
     }
@@ -586,12 +586,12 @@ int D3D12Renderer::CreateSubresourceSRV(D3D12Texture *texture, uint32_t firstSli
     return texture->subresourceSrvDescriptors.Append(srvDescriptor);
 }
 
-int D3D12Renderer::CreateSubresourceRTV(D3D12Texture *texture, uint32_t firstSlice, uint32_t sliceCount, uint32_t firstMipLevel, const BE1::Image::Format *typelessCompatibleFormat) {
+int D3D12Renderer::CreateSubresourceRTV(D3D12Texture *texture, uint32_t firstSlice, uint32_t sliceCount, uint32_t firstMipLevel, const BE1::Image::Format *typelessCompatibleFormat, bool isSRGB) {
     D3D12_RENDER_TARGET_VIEW_DESC rtvDesc = {};
 
     if (typelessCompatibleFormat) {
         assert(IsTypelessFormat(texture->textureDesc.Format));
-        ImageFormatToDXGIFormat(*typelessCompatibleFormat, false, &rtvDesc.Format);
+        ImageFormatToDXGIFormat(*typelessCompatibleFormat, isSRGB, &rtvDesc.Format);
     } else {
         rtvDesc.Format = texture->textureDesc.Format;
     }
@@ -655,12 +655,12 @@ int D3D12Renderer::CreateSubresourceRTV(D3D12Texture *texture, uint32_t firstSli
     return texture->subresourceRtvDescriptors.Append(rtvDescriptor);
 }
 
-int D3D12Renderer::CreateSubresourceDSV(D3D12Texture *texture, uint32_t firstSlice, uint32_t sliceCount, uint32_t firstMipLevel, const BE1::Image::Format *typelessCompatibleFormat) {
+int D3D12Renderer::CreateSubresourceDSV(D3D12Texture *texture, uint32_t firstSlice, uint32_t sliceCount, uint32_t firstMipLevel, const BE1::Image::Format *typelessCompatibleFormat, bool isSRGB) {
     D3D12_DEPTH_STENCIL_VIEW_DESC dsvDesc = {};
 
     if (typelessCompatibleFormat) {
         assert(IsTypelessFormat(texture->textureDesc.Format));
-        ImageFormatToDXGIFormat(*typelessCompatibleFormat, false, &dsvDesc.Format);
+        ImageFormatToDXGIFormat(*typelessCompatibleFormat, isSRGB, &dsvDesc.Format);
     } else {
         dsvDesc.Format = texture->textureDesc.Format;
     }
@@ -717,13 +717,13 @@ int D3D12Renderer::CreateSubresourceDSV(D3D12Texture *texture, uint32_t firstSli
     return texture->subresourceDsvDescriptors.Append(dsvDescriptor);
 }
 
-int D3D12Renderer::CreateSubresourceUAV(D3D12Texture *texture, uint32_t firstSlice, uint32_t sliceCount, uint32_t firstMipLevel, const BE1::Image::Format *typelessCompatibleFormat) {
+int D3D12Renderer::CreateSubresourceUAV(D3D12Texture *texture, uint32_t firstSlice, uint32_t sliceCount, uint32_t firstMipLevel, const BE1::Image::Format *typelessCompatibleFormat, bool isSRGB) {
     D3D12_UNORDERED_ACCESS_VIEW_DESC uavDesc = {};
     uavDesc.ViewDimension = D3D12_UAV_DIMENSION_BUFFER;
 
     if (typelessCompatibleFormat) {
         assert(IsTypelessFormat(texture->textureDesc.Format));
-        ImageFormatToDXGIFormat(*typelessCompatibleFormat, false, &uavDesc.Format);
+        ImageFormatToDXGIFormat(*typelessCompatibleFormat, isSRGB, &uavDesc.Format);
     } else {
         uavDesc.Format = texture->textureDesc.Format;
     }

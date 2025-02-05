@@ -61,7 +61,7 @@ public:
     virtual RHI::SwapChain *            CreateSwapChain(HWND hwnd, uint32_t width, uint32_t height, BE1::Image::Format format) override;
     virtual void                        DestroySwapChain(RHI::SwapChain *swapChain) override;
 
-    virtual RHI::Buffer *               CreateBuffer(RHI::BufferUsage usage, RHI::ResourceFlag flags, uint64_t size, BE1::Image::Format format, uint32_t stride, const void *data) override;
+    virtual RHI::Buffer *               CreateBuffer(RHI::BufferUsage usage, RHI::ResourceFlag flags, uint64_t size, BE1::Image::Format format, uint32_t structuredStride, const void *data) override;
     virtual void                        DestroyBuffer(RHI::Buffer *buffer, bool immediate = false) override;
 
     virtual RHI::VertexBuffer *         CreateVertexBuffer(RHI::BufferUsage usage, uint32_t vertexSize, uint32_t numVerts, const void *data) override;
@@ -89,7 +89,7 @@ public:
     bool                                SetTextureSubImage(RHI::Texture *texture, int mipLevel, int sliceIndex, int x, int y, int z, int width, int height, int depth, BE1::Image::Format imageFormat, const void *pixels);
 
     virtual int                         CreateSubresource(RHI::Buffer *buffer, RHI::SubresourceType type, uint64_t offset = 0, uint64_t size = ~0) override;
-    virtual int                         CreateSubresource(RHI::Texture *texture, RHI::SubresourceType type, uint32_t firstSlice = 0, uint32_t sliceCount = ~0, uint32_t firstMipLevel = 0, uint32_t mipCount = ~0, const BE1::Image::Format *typelessCompatibleFormat = nullptr) override;
+    virtual int                         CreateSubresource(RHI::Texture *texture, RHI::SubresourceType type, uint32_t firstSlice = 0, uint32_t sliceCount = ~0, uint32_t firstMipLevel = 0, uint32_t mipCount = ~0, const BE1::Image::Format *typelessCompatibleFormat = nullptr, bool isSRGB = false) override;
 
     virtual void                        DestroySubresource(RHI::Buffer *buffer, RHI::SubresourceType type, int subresourceIndex) override;
     virtual void                        DestroySubresource(RHI::Texture *texture, RHI::SubresourceType type, int subresourceIndex) override;
@@ -97,10 +97,10 @@ public:
     int                                 CreateSubresourceSRV(D3D12Buffer *buffer, uint64_t offset = 0, uint64_t size = ~0);
     int                                 CreateSubresourceUAV(D3D12Buffer *buffer, uint64_t offset = 0, uint64_t size = ~0);
 
-    int                                 CreateSubresourceSRV(D3D12Texture *texture, uint32_t firstSlice = 0, uint32_t sliceCount = ~0, uint32_t firstMipLevel = 0, uint32_t mipCount = ~0, const BE1::Image::Format *typelessCompatibleFormat = nullptr);
-    int                                 CreateSubresourceRTV(D3D12Texture *texture, uint32_t firstSlice = 0, uint32_t sliceCount = ~0, uint32_t firstMipLevel = 0, const BE1::Image::Format *typelessCompatibleFormat = nullptr);
-    int                                 CreateSubresourceDSV(D3D12Texture *texture, uint32_t firstSlice = 0, uint32_t sliceCount = ~0, uint32_t firstMipLevel = 0, const BE1::Image::Format *typelessCompatibleFormat = nullptr);
-    int                                 CreateSubresourceUAV(D3D12Texture *texture, uint32_t firstSlice = 0, uint32_t sliceCount = ~0, uint32_t firstMipLevel = 0, const BE1::Image::Format *typelessCompatibleFormat = nullptr);
+    int                                 CreateSubresourceSRV(D3D12Texture *texture, uint32_t firstSlice = 0, uint32_t sliceCount = ~0, uint32_t firstMipLevel = 0, uint32_t mipCount = ~0, const BE1::Image::Format *typelessCompatibleFormat = nullptr, bool isSRGB = false);
+    int                                 CreateSubresourceRTV(D3D12Texture *texture, uint32_t firstSlice = 0, uint32_t sliceCount = ~0, uint32_t firstMipLevel = 0, const BE1::Image::Format *typelessCompatibleFormat = nullptr, bool isSRGB = false);
+    int                                 CreateSubresourceDSV(D3D12Texture *texture, uint32_t firstSlice = 0, uint32_t sliceCount = ~0, uint32_t firstMipLevel = 0, const BE1::Image::Format *typelessCompatibleFormat = nullptr, bool isSRGB = false);
+    int                                 CreateSubresourceUAV(D3D12Texture *texture, uint32_t firstSlice = 0, uint32_t sliceCount = ~0, uint32_t firstMipLevel = 0, const BE1::Image::Format *typelessCompatibleFormat = nullptr, bool isSRGB = false);
 
     virtual RHI::Shader *               CreateShader(RHI::ShaderModel shaderModel, RHI::ShaderStage shaderStage, const char *sourceName, const char *shaderText, int shaderTextSize, const char *entryPoint) override;
     virtual RHI::Shader *               CreateShaderFromFile(RHI::ShaderModel shaderModel, RHI::ShaderStage shaderStage, const char *filename, const char *entryPoint) override;

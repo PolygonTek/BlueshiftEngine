@@ -37,40 +37,40 @@ bool Image::LoadPVR2FromMemory(const char *name, const byte *data, size_t fileSi
     uint32_t pixelType = header->dwpfFlags & PVRTEX_PIXELTYPE;
     switch (pixelType) {
         case OGL_RGBA_4444:
-            this->format = Format::ABGR_4_4_4_4;
+            this->format = Format::A4B4G4R4;
             break;
         case OGL_RGBA_5551:
-            this->format = Format::ABGR_1_5_5_5;
+            this->format = Format::A1B5G5R5;
             break;
         case OGL_RGBA_8888:
-            this->format = Format::RGBA_8_8_8_8;
+            this->format = Format::R8G8B8A8;
             break;
         case OGL_RGB_565:
-            this->format = Format::BGR_5_6_5;
+            this->format = Format::B5G6R5;
             break;
         case OGL_RGB_555:
-            this->format = Format::BGRX_5_5_5_1;
+            this->format = Format::B5G5R5X1;
             break;
         case OGL_RGB_888:
-            this->format = Format::RGB_8_8_8;
+            this->format = Format::R8G8B8;
             break;
         case OGL_I_8:
-            this->format = Format::L_8;
+            this->format = Format::L8;
             break;
         case OGL_AI_88:
-            this->format = Format::LA_8_8;
+            this->format = Format::L8A8;
             break;
         case OGL_BGRA_8888:
-            this->format = Format::BGRA_8_8_8_8;
+            this->format = Format::B8G8R8A8;
             break;
         case OGL_A_8:
-            this->format = Format::A_8;
+            this->format = Format::A8;
             break;
         case OGL_PVRTC2:
-            this->format = Format::RGBA_PVRTC_2BPPV1;
+            this->format = Format::PVRTC12A;
             break;
         case OGL_PVRTC4:
-            this->format = Format::RGBA_PVRTC_4BPPV1;
+            this->format = Format::PVRTC14A;
             break;
         default:
             BE_WARNLOG("invalid PVR pixel format %i in %s\n", pixelType, name);
@@ -115,43 +115,43 @@ bool Image::LoadPVR3FromMemory(const char *name, const byte *data, size_t fileSi
     if (pixelFormatPartHigh == 0) {
         switch (header->u64PixelFormat) {
         case ePVRTPF_PVRTCI_2bpp_RGB:
-            this->format = Format::RGB_PVRTC_2BPPV1;
+            this->format = Format::PVRTC12;
             break;
         case ePVRTPF_PVRTCI_2bpp_RGBA:
-            this->format = Format::RGBA_PVRTC_2BPPV1;
+            this->format = Format::PVRTC12A;
             break;
         case ePVRTPF_PVRTCI_4bpp_RGB:
-            this->format = Format::RGB_PVRTC_4BPPV1;
+            this->format = Format::PVRTC14;
             break;
         case ePVRTPF_PVRTCI_4bpp_RGBA:
-            this->format = Format::RGBA_PVRTC_4BPPV1;
+            this->format = Format::PVRTC14A;
             break;
         case ePVRTPF_PVRTCII_2bpp:
-            this->format = Format::RGBA_PVRTC_2BPPV2;
+            this->format = Format::PVRTC22A;
             break;
         case ePVRTPF_PVRTCII_4bpp:
-            this->format = Format::RGBA_PVRTC_4BPPV2;
+            this->format = Format::PVRTC24A;
             break;
         case ePVRTPF_ETC1:
-            this->format = Format::RGB_8_ETC1;
+            this->format = Format::ETC1;
             break;
         case ePVRTPF_ETC2_RGB:
-            this->format = Format::RGB_8_ETC2;
+            this->format = Format::ETC2;
             break;
         case ePVRTPF_ETC2_RGBA:
-            this->format = Format::RGBA_8_8_ETC2;
+            this->format = Format::ETC2A;
             break;
         case ePVRTPF_ETC2_RGB_A1:
-            this->format = Format::RGBA_8_1_ETC2;
+            this->format = Format::ETC2A1;
             break;
         case ePVRTPF_EAC_R11:
-            this->format = IsSignedChannelType(header->u32ChannelType) ? Format::SignedR_11_EAC : Format::R_11_EAC;
+            this->format = IsSignedChannelType(header->u32ChannelType) ? Format::EACR11_SNORM : Format::EACR11;
             break;
         case ePVRTPF_EAC_RG11:
-            this->format = IsSignedChannelType(header->u32ChannelType) ? Format::SignedRG_11_11_EAC : Format::RG_11_11_EAC;
+            this->format = IsSignedChannelType(header->u32ChannelType) ? Format::EACRG11_SNORM : Format::EACRG11;
             break;
         case ePVRTPF_SharedExponentR9G9B9E5:
-            this->format = Format::RGBE_9_9_9_5;
+            this->format = Format::R9G9B9E5_FLOAT;
             break;
         default:
             BE_WARNLOG("Image::LoadPVR3FromMemory: Unsupported pixel format %s\n", name);
@@ -160,124 +160,124 @@ bool Image::LoadPVR3FromMemory(const char *name, const byte *data, size_t fileSi
     } else {
         switch (header->u64PixelFormat) {
         case PVRTGENPIXELID4('r', 'g', 'b', 'a', 8, 8, 8, 8):
-            this->format = Format::RGBA_8_8_8_8;
+            this->format = Format::R8G8B8A8;
             break;
         case PVRTGENPIXELID4('b', 'g', 'r', 'a', 8, 8, 8, 8):
-            this->format = Format::BGRA_8_8_8_8;
+            this->format = Format::B8G8R8A8;
             break;
         case PVRTGENPIXELID4('a', 'r', 'g', 'b', 8, 8, 8, 8):
-            this->format = Format::ARGB_8_8_8_8;
+            this->format = Format::A8R8G8B8;
             break;
         case PVRTGENPIXELID4('a', 'b', 'g', 'r', 8, 8, 8, 8):
-            this->format = Format::ABGR_8_8_8_8;
+            this->format = Format::A8B8G8R8;
             break;
         case PVRTGENPIXELID4('r', 'g', 'b', 'x', 8, 8, 8, 8):
-            this->format = Format::RGBX_8_8_8_8;
+            this->format = Format::R8G8B8X8;
             break;
         case PVRTGENPIXELID4('b', 'g', 'r', 'x', 8, 8, 8, 8):
-            this->format = Format::BGRX_8_8_8_8;
+            this->format = Format::B8G8R8X8;
             break;
         case PVRTGENPIXELID3('r', 'g', 'b', 8, 8, 8):
-            this->format = Format::RGB_8_8_8;
+            this->format = Format::R8G8B8;
             break;
         case PVRTGENPIXELID2('r', 'g', 8, 8):
-            this->format = Format::RG_8_8;
+            this->format = Format::R8G8;
             break;
         case PVRTGENPIXELID1('r', 8):
-            this->format = Format::R_8;
+            this->format = Format::R8;
             break;
         case PVRTGENPIXELID2('l', 'a', 8, 8):
-            this->format = Format::LA_8_8;
+            this->format = Format::L8A8;
             break;
         case PVRTGENPIXELID1('l', 8):
-            this->format = Format::L_8;
+            this->format = Format::L8;
             break;
         case PVRTGENPIXELID1('a', 8):
-            this->format = Format::A_8;
+            this->format = Format::A8;
             break;
         case PVRTGENPIXELID4('r', 'g', 'b', 'a', 4, 4, 4, 4):
-            this->format = Format::RGBA_4_4_4_4;
+            this->format = Format::R4G4B4A4;
             break;
         case PVRTGENPIXELID4('b', 'g', 'r', 'a', 4, 4, 4, 4):
-            this->format = Format::BGRA_4_4_4_4;
+            this->format = Format::B4G4R4A4;
             break;
         case PVRTGENPIXELID4('a', 'r', 'g', 'b', 4, 4, 4, 4):
-            this->format = Format::ARGB_4_4_4_4;
+            this->format = Format::A4R4G4B4;
             break;
         case PVRTGENPIXELID4('a', 'b', 'g', 'r', 4, 4, 4, 4):
-            this->format = Format::ABGR_4_4_4_4;
+            this->format = Format::A4B4G4R4;
             break;
         case PVRTGENPIXELID4('r', 'g', 'b', 'x', 4, 4, 4, 4):
-            this->format = Format::RGBX_4_4_4_4;
+            this->format = Format::R4G4B4X4;
             break;
         case PVRTGENPIXELID4('b', 'g', 'r', 'x', 4, 4, 4, 4):
-            this->format = Format::BGRX_4_4_4_4;
+            this->format = Format::B4G4R4X4;
             break;
         case PVRTGENPIXELID4('r', 'g', 'b', 'a', 5, 5, 5, 1):
-            this->format = Format::RGBA_5_5_5_1;
+            this->format = Format::R5G5B5A1;
             break;
         case PVRTGENPIXELID4('b', 'g', 'r', 'a', 5, 5, 5, 1):
-            this->format = Format::BGRA_5_5_5_1;
+            this->format = Format::B5G5R5A1;
             break;
         case PVRTGENPIXELID4('r', 'g', 'b', 'x', 5, 5, 5, 1):
-            this->format = Format::RGBX_5_5_5_1;
+            this->format = Format::R5G5B5X1;
             break;
         case PVRTGENPIXELID4('a', 'r', 'g', 'b', 1, 5, 5, 5):
-            this->format = Format::ARGB_1_5_5_5;
+            this->format = Format::A1R5G5B5;
             break;
         case PVRTGENPIXELID4('a', 'b', 'g', 'r', 1, 5, 5, 5):
-            this->format = Format::ABGR_1_5_5_5;
+            this->format = Format::A1B5G5R5;
             break;
         case PVRTGENPIXELID3('r', 'g', 'b', 5, 6, 5):
-            this->format = Format::RGB_5_6_5;
+            this->format = Format::R5G6B5;
             break;
         case PVRTGENPIXELID3('b', 'g', 'r', 5, 6, 5):
-            this->format = Format::BGR_5_6_5;
+            this->format = Format::B5G6R5;
             break;
         case PVRTGENPIXELID3('r', 'g', 'b', 11, 11, 10):
-            this->format = Format::RGB_11F_11F_10F;
+            this->format = Format::R11G11B10_FLOAT;
             break;
         case PVRTGENPIXELID4('r', 'g', 'b', 'a', 16, 16, 16, 16):
-            this->format = Format::RGBA_16F_16F_16F_16F;
+            this->format = Format::R16G16B16A16_FLOAT;
             break;
         case PVRTGENPIXELID3('r', 'g', 'b', 16, 16, 16):
-            this->format = Format::RGB_16F_16F_16F;
+            this->format = Format::R16G16B16_FLOAT;
             break;
         case PVRTGENPIXELID2('r', 'g', 16, 16):
-            this->format = Format::RG_16F_16F;
+            this->format = Format::R16G16_FLOAT;
             break;
         case PVRTGENPIXELID1('r', 16):
-            this->format = Format::R_16F;
+            this->format = Format::R16_FLOAT;
             break;
         case PVRTGENPIXELID2('l', 'a', 16, 16):
-            this->format = Format::LA_16F_16F;
+            this->format = Format::L16A16_FLOAT;
             break;
         case PVRTGENPIXELID1('l', 16):
-            this->format = Format::L_16F;
+            this->format = Format::L16_FLOAT;
             break;
         case PVRTGENPIXELID1('a', 16):
-            this->format = Format::A_16F;
+            this->format = Format::A16_FLOAT;
             break;
         case PVRTGENPIXELID4('r', 'g', 'b', 'a', 32, 32, 32, 32):
-            this->format = Format::RGBA_32F_32F_32F_32F;
+            this->format = Format::R32G32B32A32_FLOAT;
             break;
         case PVRTGENPIXELID3('r', 'g', 'b', 32, 32, 32):
-            this->format = Format::RGB_32F_32F_32F;
+            this->format = Format::R32G32B32_FLOAT;
             break;
         case PVRTGENPIXELID2('r', 'g', 32, 32):
-            this->format = Format::RG_32F_32F;
+            this->format = Format::R32G32_FLOAT;
             break;
         case PVRTGENPIXELID1('r', 32):
-            this->format = Format::R_32F;
+            this->format = Format::R32_FLOAT;
             break;
         case PVRTGENPIXELID2('l', 'a', 32, 32):
-            this->format = Format::LA_32F_32F;
+            this->format = Format::L32A32_FLOAT;
             break;
         case PVRTGENPIXELID1('l', 32):
-            this->format = Format::L_32F;
+            this->format = Format::L32_FLOAT;
             break;
         case PVRTGENPIXELID1('a', 32):
-            this->format = Format::A_32F;
+            this->format = Format::A32_FLOAT;
             break;
         default:
             BE_WARNLOG("Image::LoadPVR3FromMemory: Unsupported pixel format %s\n", name);
@@ -335,267 +335,267 @@ bool Image::WritePVR(const char *filename) const {
     header.u32MIPMapCount = numMipLevels;
 
     switch (format) {
-    case Format::RGB_PVRTC_2BPPV1:
+    case Format::PVRTC12:
         header.u64PixelFormat = ePVRTPF_PVRTCI_2bpp_RGB;
         header.u32ColourSpace = ePVRTCSpacesRGB;
         header.u32ChannelType = ePVRTVarTypeUnsignedByteNorm;
         break;
-    case Format::RGBA_PVRTC_2BPPV1:
+    case Format::PVRTC12A:
         header.u64PixelFormat = ePVRTPF_PVRTCI_2bpp_RGBA;
         header.u32ColourSpace = ePVRTCSpacesRGB;
         header.u32ChannelType = ePVRTVarTypeUnsignedByteNorm;
         break;
-    case Format::RGB_PVRTC_4BPPV1:
+    case Format::PVRTC14:
         header.u64PixelFormat = ePVRTPF_PVRTCI_4bpp_RGB;
         header.u32ColourSpace = ePVRTCSpacesRGB;
         header.u32ChannelType = ePVRTVarTypeUnsignedByteNorm;
         break;
-    case Format::RGBA_PVRTC_4BPPV1:
+    case Format::PVRTC14A:
         header.u64PixelFormat = ePVRTPF_PVRTCI_4bpp_RGBA;
         header.u32ColourSpace = ePVRTCSpacesRGB;
         header.u32ChannelType = ePVRTVarTypeUnsignedByteNorm;
         break;
-    case Format::RGBA_PVRTC_2BPPV2:
+    case Format::PVRTC22A:
         header.u64PixelFormat = ePVRTPF_PVRTCII_2bpp;
         header.u32ColourSpace = ePVRTCSpacesRGB;
         header.u32ChannelType = ePVRTVarTypeUnsignedByteNorm;
         break;
-    case Format::RGBA_PVRTC_4BPPV2:
+    case Format::PVRTC24A:
         header.u64PixelFormat = ePVRTPF_PVRTCII_4bpp;
         header.u32ColourSpace = ePVRTCSpacesRGB;
         header.u32ChannelType = ePVRTVarTypeUnsignedByteNorm;
         break;
-    case Format::RGB_8_ETC1:
+    case Format::ETC1:
         header.u64PixelFormat = ePVRTPF_ETC1;
         header.u32ColourSpace = ePVRTCSpacesRGB;
         header.u32ChannelType = ePVRTVarTypeUnsignedByteNorm;
         break;
-    case Format::RGB_8_ETC2:
+    case Format::ETC2:
         header.u64PixelFormat = ePVRTPF_ETC2_RGB;
         header.u32ColourSpace = ePVRTCSpacesRGB;
         header.u32ChannelType = ePVRTVarTypeUnsignedByteNorm;
         break;
-    case Format::RGBA_8_1_ETC2:
+    case Format::ETC2A1:
         header.u64PixelFormat = ePVRTPF_ETC2_RGB_A1;
         header.u32ColourSpace = ePVRTCSpacesRGB;
         header.u32ChannelType = ePVRTVarTypeUnsignedByteNorm;
         break;
-    case Format::RGBA_8_8_ETC2:
+    case Format::ETC2A:
         header.u64PixelFormat = ePVRTPF_ETC2_RGBA;
         header.u32ColourSpace = ePVRTCSpacesRGB;
         header.u32ChannelType = ePVRTVarTypeUnsignedByteNorm;
         break;
-    case Format::RG_11_11_EAC:
+    case Format::EACRG11:
         header.u64PixelFormat = ePVRTPF_EAC_RG11;
         header.u32ColourSpace = ePVRTCSpacelRGB;
         header.u32ChannelType = ePVRTVarTypeUnsignedShortNorm;
         break;
-    case Format::SignedRG_11_11_EAC:
+    case Format::EACRG11_SNORM:
         header.u64PixelFormat = ePVRTPF_EAC_RG11;
         header.u32ColourSpace = ePVRTCSpacelRGB;
         header.u32ChannelType = ePVRTVarTypeSignedShortNorm;
         break;
-    case Format::RGBA_8_8_8_8:
+    case Format::R8G8B8A8:
         header.u64PixelFormat = PVRTGENPIXELID4('r', 'g', 'b', 'a', 8, 8, 8, 8);
         header.u32ColourSpace = ePVRTCSpacesRGB;
         header.u32ChannelType = ePVRTVarTypeUnsignedByteNorm;
         break;
-    case Format::BGRA_8_8_8_8:
+    case Format::B8G8R8A8:
         header.u64PixelFormat = PVRTGENPIXELID4('b', 'g', 'r', 'a', 8, 8, 8, 8);
         header.u32ColourSpace = ePVRTCSpacesRGB;
         header.u32ChannelType = ePVRTVarTypeUnsignedByteNorm;
         break;
-    case Format::ARGB_8_8_8_8:
+    case Format::A8R8G8B8:
         header.u64PixelFormat = PVRTGENPIXELID4('a', 'r', 'g', 'b', 8, 8, 8, 8);
         header.u32ColourSpace = ePVRTCSpacesRGB;
         header.u32ChannelType = ePVRTVarTypeUnsignedByteNorm;
         break;
-    case Format::ABGR_8_8_8_8:
+    case Format::A8B8G8R8:
         header.u64PixelFormat = PVRTGENPIXELID4('a', 'b', 'g', 'r', 8, 8, 8, 8);
         header.u32ColourSpace = ePVRTCSpacesRGB;
         header.u32ChannelType = ePVRTVarTypeUnsignedByteNorm;
         break;
-    case Format::RGBX_8_8_8_8:
+    case Format::R8G8B8X8:
         header.u64PixelFormat = PVRTGENPIXELID4('r', 'g', 'b', 'x', 8, 8, 8, 8);
         header.u32ColourSpace = ePVRTCSpacesRGB;
         header.u32ChannelType = ePVRTVarTypeUnsignedByteNorm;
         break;
-    case Format::BGRX_8_8_8_8:
+    case Format::B8G8R8X8:
         header.u64PixelFormat = PVRTGENPIXELID4('b', 'g', 'r', 'x', 8, 8, 8, 8);
         header.u32ColourSpace = ePVRTCSpacesRGB;
         header.u32ChannelType = ePVRTVarTypeUnsignedByteNorm;
         break;
-    case Format::RGB_8_8_8:
+    case Format::R8G8B8:
         header.u64PixelFormat = PVRTGENPIXELID3('r', 'g', 'b', 8, 8, 8);
         header.u32ColourSpace = ePVRTCSpacesRGB;
         header.u32ChannelType = ePVRTVarTypeUnsignedByteNorm;
         break;
-    case Format::RG_8_8:
+    case Format::R8G8:
         header.u64PixelFormat = PVRTGENPIXELID2('r', 'g', 8, 8);
         header.u32ColourSpace = ePVRTCSpacesRGB;
         header.u32ChannelType = ePVRTVarTypeUnsignedByteNorm;
         break;
-    case Format::R_8:
+    case Format::R8:
         header.u64PixelFormat = PVRTGENPIXELID1('r', 8);
         header.u32ColourSpace = ePVRTCSpacesRGB;
         header.u32ChannelType = ePVRTVarTypeUnsignedByteNorm;
         break;
-    case Format::LA_8_8:
+    case Format::L8A8:
         header.u64PixelFormat = PVRTGENPIXELID2('l', 'a', 8, 8);
         header.u32ColourSpace = ePVRTCSpacesRGB;
         header.u32ChannelType = ePVRTVarTypeUnsignedByteNorm;
         break;
-    case Format::L_8:
+    case Format::L8:
         header.u64PixelFormat = PVRTGENPIXELID1('l', 8);
         header.u32ColourSpace = ePVRTCSpacesRGB;
         header.u32ChannelType = ePVRTVarTypeUnsignedByteNorm;
         break;
-    case Format::A_8:
+    case Format::A8:
         header.u64PixelFormat = PVRTGENPIXELID1('a', 8);
         header.u32ColourSpace = ePVRTCSpacesRGB;
         header.u32ChannelType = ePVRTVarTypeUnsignedByteNorm;
         break;
-    case Format::RGBA_4_4_4_4:
+    case Format::R4G4B4A4:
         header.u64PixelFormat = PVRTGENPIXELID4('r', 'g', 'b', 'a', 4, 4, 4, 4);
         header.u32ColourSpace = ePVRTCSpacesRGB;
         header.u32ChannelType = ePVRTVarTypeUnsignedShortNorm;
         break;
-    case Format::BGRA_4_4_4_4:
+    case Format::B4G4R4A4:
         header.u64PixelFormat = PVRTGENPIXELID4('b', 'g', 'r', 'a', 4, 4, 4, 4);
         header.u32ColourSpace = ePVRTCSpacesRGB;
         header.u32ChannelType = ePVRTVarTypeUnsignedShortNorm;
         break;
-    case Format::ARGB_4_4_4_4:
+    case Format::A4R4G4B4:
         header.u64PixelFormat = PVRTGENPIXELID4('a', 'r', 'g', 'b', 4, 4, 4, 4);
         header.u32ColourSpace = ePVRTCSpacesRGB;
         header.u32ChannelType = ePVRTVarTypeUnsignedShortNorm;
         break;
-    case Format::ABGR_4_4_4_4:
+    case Format::A4B4G4R4:
         header.u64PixelFormat = PVRTGENPIXELID4('a', 'b', 'g', 'r', 4, 4, 4, 4);
         header.u32ColourSpace = ePVRTCSpacesRGB;
         header.u32ChannelType = ePVRTVarTypeUnsignedShortNorm;
         break;
-    case Format::RGBX_4_4_4_4:
+    case Format::R4G4B4X4:
         header.u64PixelFormat = PVRTGENPIXELID4('b', 'g', 'r', 'x', 4, 4, 4, 4);
         header.u32ColourSpace = ePVRTCSpacesRGB;
         header.u32ChannelType = ePVRTVarTypeUnsignedShortNorm;
         break;
-    case Format::BGRX_4_4_4_4:
+    case Format::B4G4R4X4:
         header.u64PixelFormat = PVRTGENPIXELID4('b', 'g', 'r', 'x', 4, 4, 4, 4);
         header.u32ColourSpace = ePVRTCSpacesRGB;
         header.u32ChannelType = ePVRTVarTypeUnsignedShortNorm;
         break;
-    case Format::RGBA_5_5_5_1:
+    case Format::R5G5B5A1:
         header.u64PixelFormat = PVRTGENPIXELID4('r', 'g', 'b', 'a', 5, 5, 5, 1);
         header.u32ColourSpace = ePVRTCSpacesRGB;
         header.u32ChannelType = ePVRTVarTypeUnsignedShortNorm;
         break;
-    case Format::BGRA_5_5_5_1:
+    case Format::B5G5R5A1:
         header.u64PixelFormat = PVRTGENPIXELID4('b', 'g', 'r', 'a', 5, 5, 5, 1);
         header.u32ColourSpace = ePVRTCSpacesRGB;
         header.u32ChannelType = ePVRTVarTypeUnsignedShortNorm;
         break;    
-    case Format::RGBX_5_5_5_1:
+    case Format::R5G5B5X1:
         header.u64PixelFormat = PVRTGENPIXELID4('r', 'g', 'b', 'x', 5, 5, 5, 1);
         header.u32ColourSpace = ePVRTCSpacesRGB;
         header.u32ChannelType = ePVRTVarTypeUnsignedShortNorm;
         break;
-    case Format::ARGB_1_5_5_5:
+    case Format::A1R5G5B5:
         header.u64PixelFormat = PVRTGENPIXELID4('a', 'r', 'g', 'b', 1, 5, 5, 5);
         header.u32ColourSpace = ePVRTCSpacesRGB;
         header.u32ChannelType = ePVRTVarTypeUnsignedShortNorm;
         break;
-    case Format::ABGR_1_5_5_5:
+    case Format::A1B5G5R5:
         header.u64PixelFormat = PVRTGENPIXELID4('a', 'b', 'g', 'r', 1, 5, 5, 5);
         header.u32ColourSpace = ePVRTCSpacesRGB;
         header.u32ChannelType = ePVRTVarTypeUnsignedShortNorm;
         break;
-    case Format::RGB_5_6_5:
+    case Format::R5G6B5:
         header.u64PixelFormat = PVRTGENPIXELID3('r', 'g', 'b', 5, 6, 5);
         header.u32ColourSpace = ePVRTCSpacesRGB;
         header.u32ChannelType = ePVRTVarTypeUnsignedShortNorm;
         break;
-    case Format::BGR_5_6_5:
+    case Format::B5G6R5:
         header.u64PixelFormat = PVRTGENPIXELID3('b', 'g', 'r', 5, 6, 5);
         header.u32ColourSpace = ePVRTCSpacesRGB;
         header.u32ChannelType = ePVRTVarTypeUnsignedShortNorm;
         break;
-    case Format::RGB_11F_11F_10F:
+    case Format::R11G11B10_FLOAT:
         header.u64PixelFormat = PVRTGENPIXELID3('r', 'g', 'b', 11, 11, 10);
         header.u32ColourSpace = ePVRTCSpacelRGB;
         header.u32ChannelType = ePVRTVarTypeUnsignedFloat;
         break;
-    case Format::RGBE_9_9_9_5:
+    case Format::R9G9B9E5_FLOAT:
         header.u64PixelFormat = ePVRTPF_SharedExponentR9G9B9E5;
         header.u32ColourSpace = ePVRTCSpacelRGB;
         header.u32ChannelType = ePVRTVarTypeUnsignedFloat;
         break;
-    case Format::RGBA_16F_16F_16F_16F:
+    case Format::R16G16B16A16_FLOAT:
         header.u64PixelFormat = PVRTGENPIXELID4('r', 'g', 'b', 'a', 16, 16, 16, 16);
         header.u32ColourSpace = ePVRTCSpacelRGB;
         header.u32ChannelType = ePVRTVarTypeSignedFloat;
         break;
-    case Format::RGB_16F_16F_16F:
+    case Format::R16G16B16_FLOAT:
         header.u64PixelFormat = PVRTGENPIXELID3('r', 'g', 'b', 16, 16, 16);
         header.u32ColourSpace = ePVRTCSpacelRGB;
         header.u32ChannelType = ePVRTVarTypeSignedFloat;
         break;
-    case Format::RG_16F_16F:
+    case Format::R16G16_FLOAT:
         header.u64PixelFormat = PVRTGENPIXELID2('r', 'g', 16, 16);
         header.u32ColourSpace = ePVRTCSpacelRGB;
         header.u32ChannelType = ePVRTVarTypeSignedFloat;
         break;
-    case Format::R_16F:
+    case Format::R16_FLOAT:
         header.u64PixelFormat = PVRTGENPIXELID1('r', 16);
         header.u32ColourSpace = ePVRTCSpacelRGB;
         header.u32ChannelType = ePVRTVarTypeSignedFloat;
         break;
-    case Format::LA_16F_16F:
+    case Format::L16A16_FLOAT:
         header.u64PixelFormat = PVRTGENPIXELID2('l', 'a', 16, 16);
         header.u32ColourSpace = ePVRTCSpacelRGB;
         header.u32ChannelType = ePVRTVarTypeSignedFloat;
         break;
-    case Format::L_16F:
+    case Format::L16_FLOAT:
         header.u64PixelFormat = PVRTGENPIXELID1('l', 16);
         header.u32ColourSpace = ePVRTCSpacelRGB;
         header.u32ChannelType = ePVRTVarTypeSignedFloat;
         break;
-    case Format::A_16F:
+    case Format::A16_FLOAT:
         header.u64PixelFormat = PVRTGENPIXELID1('a', 16);
         header.u32ColourSpace = ePVRTCSpacelRGB;
         header.u32ChannelType = ePVRTVarTypeSignedFloat;
         break;
-    case Format::RGBA_32F_32F_32F_32F:
+    case Format::R32G32B32A32_FLOAT:
         header.u64PixelFormat = PVRTGENPIXELID4('r', 'g', 'b', 'a', 32, 32, 32, 32);
         header.u32ColourSpace = ePVRTCSpacelRGB;
         header.u32ChannelType = ePVRTVarTypeSignedFloat;
         break;
-    case Format::RGB_32F_32F_32F:
+    case Format::R32G32B32_FLOAT:
         header.u64PixelFormat = PVRTGENPIXELID3('r', 'g', 'b', 32, 32, 32);
         header.u32ColourSpace = ePVRTCSpacelRGB;
         header.u32ChannelType = ePVRTVarTypeSignedFloat;
         break;
-    case Format::RG_32F_32F:
+    case Format::R32G32_FLOAT:
         header.u64PixelFormat = PVRTGENPIXELID2('r', 'g', 32, 32);
         header.u32ColourSpace = ePVRTCSpacelRGB;
         header.u32ChannelType = ePVRTVarTypeSignedFloat;
         break;
-    case Format::R_32F:
+    case Format::R32_FLOAT:
         header.u64PixelFormat = PVRTGENPIXELID1('r', 32);
         header.u32ColourSpace = ePVRTCSpacelRGB;
         header.u32ChannelType = ePVRTVarTypeSignedFloat;
         break;
-    case Format::LA_32F_32F:
+    case Format::L32A32_FLOAT:
         header.u64PixelFormat = PVRTGENPIXELID4('r', 'g', 'b', 'a', 32, 32, 32, 32);
         header.u32ColourSpace = ePVRTCSpacelRGB;
         header.u32ChannelType = ePVRTVarTypeSignedFloat;
         break;
-    case Format::L_32F:
+    case Format::L32_FLOAT:
         header.u64PixelFormat = PVRTGENPIXELID2('l', 'a', 32, 32);
         header.u32ColourSpace = ePVRTCSpacelRGB;
         header.u32ChannelType = ePVRTVarTypeSignedFloat;
         break;
-    case Format::A_32F:
+    case Format::A32_FLOAT:
         header.u64PixelFormat = PVRTGENPIXELID1('l', 32);
         header.u32ColourSpace = ePVRTCSpacelRGB;
         header.u32ChannelType = ePVRTVarTypeSignedFloat;

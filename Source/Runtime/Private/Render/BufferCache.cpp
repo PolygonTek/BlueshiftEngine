@@ -53,7 +53,7 @@ void BufferCacheManager::Init() {
             bufferSet->texelBufferType = Graphics::BufferType::Texel;
             bufferSet->texelBuffer = graphics.CreateBuffer(bufferSet->texelBufferType, Graphics::BufferUsage::Dynamic, TB_BYTES, 0, nullptr);
             bufferSet->texture = textureManager.AllocTexture(va("_tbTexture%i", frameDataIndex));
-            bufferSet->texture->CreateFromBuffer(Image::Format::RGBA_32F_32F_32F_32F, bufferSet->texelBuffer);
+            bufferSet->texture->CreateFromBuffer(Image::Format::R32G32B32A32_FLOAT, bufferSet->texelBuffer);
         } else if (renderGlobal.vertexTextureMethod == BufferCacheManager::VertexTextureMethod::Pbo) {
             // Create unpack buffer to translate data from PBO to VTF texture.
             // See below link if you want to know what PBO is.
@@ -63,7 +63,7 @@ void BufferCacheManager::Init() {
             if (frameDataIndex == 0) {
                 bufferSet->texture = textureManager.AllocTexture("_tbTexture");
                 bufferSet->texture->CreateEmpty(Graphics::TextureType::Texture2D, TB_WIDTH, TB_HEIGHT, 1, 1, 1,
-                    Image::Format::RGBA_32F_32F_32F_32F, Texture::Flag::Clamp | Texture::Flag::Nearest | Texture::Flag::NoMipmaps | Texture::Flag::HighQuality | Texture::Flag::HighPriority);
+                    Image::Format::R32G32B32A32_FLOAT, Texture::Flag::Clamp | Texture::Flag::Nearest | Texture::Flag::NoMipmaps | Texture::Flag::HighQuality | Texture::Flag::HighPriority);
             }
         }
 
@@ -623,7 +623,7 @@ void BufferCacheManager::UpdatePBOTexture() {
 
         const double startUpdatePBO = PlatformTime::Seconds();
 
-        frameData[0].texture->Update2D(0, 0, 0, updateW, updateH, Image::Format::RGBA_32F_32F_32F_32F, nullptr);
+        frameData[0].texture->Update2D(0, 0, 0, updateW, updateH, Image::Format::R32G32B32A32_FLOAT, nullptr);
 
         const double endUpdatePBO = PlatformTime::Seconds();
         if (endUpdatePBO - startUpdatePBO > 1) {

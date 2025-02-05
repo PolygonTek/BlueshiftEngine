@@ -142,7 +142,7 @@ void DXTDecoder::DecompressImageDXT1(const DXTBlock *dxtBlock, const int width, 
                 DXTDecoder::DecodeColorBlock(&dxtBlock->colorBlock, unpackedBlock, true);
                 dxtBlock++;
 
-                byte *srcPtr = unpackedBlock;
+                const byte *srcPtr = unpackedBlock;
 
                 int dstBlockWidth = Min(4, width - x);
 
@@ -171,7 +171,7 @@ void DXTDecoder::DecompressImageDXT3(const DXTBlock *dxtBlock, const int width, 
                 DXTDecoder::DecodeColorBlock(&dxtBlock->colorBlock, unpackedBlock, false);
                 dxtBlock++;
 
-                byte *srcPtr = unpackedBlock;
+                const byte *srcPtr = unpackedBlock;
 
                 int dstBlockWidth = Min(4, width - x);
 
@@ -200,7 +200,7 @@ void DXTDecoder::DecompressImageDXT5(const DXTBlock *dxtBlock, const int width, 
                 DXTDecoder::DecodeColorBlock(&dxtBlock->colorBlock, unpackedBlock, false);
                 dxtBlock++;
 
-                byte *srcPtr = unpackedBlock;
+                const byte *srcPtr = unpackedBlock;
 
                 int dstBlockWidth = Min(4, width - x);
 
@@ -250,7 +250,7 @@ void DXTDecoder::DecompressImageDXN2(const DXTBlock *dxtBlock, const int width, 
                     unpackedBlock[i * 4 + 3] = 255;
                 }
 
-                byte *srcPtr = unpackedBlock;
+                const byte *srcPtr = unpackedBlock;
 
                 int dstBlockWidth = Min(4, width - x); 
 

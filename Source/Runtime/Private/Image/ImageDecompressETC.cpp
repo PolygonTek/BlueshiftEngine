@@ -185,7 +185,7 @@ static int ETCTextureDecompress(const void * const pSrcData, const int &x, const
 @Description	Decompresses ETC to RGBA 8888
 *************************************************************************/
 void DecompressETC1(const Image &srcImage, Image &dstImage) {
-    assert(dstImage.GetFormat() == Image::Format::RGBA_8_8_8_8);
+    assert(dstImage.GetFormat() == Image::Format::R8G8B8A8);
     assert(dstImage.GetPixels());
 
     int x = srcImage.GetWidth();
@@ -1179,7 +1179,7 @@ static void DecodeEAC_RG11ToRGBA32F(const byte *src, const int width, const int 
 }
 
 void DecompressETC2_RGB8(const Image &srcImage, Image &dstImage) {
-    assert(dstImage.GetFormat() == Image::Format::RGBA_8_8_8_8);
+    assert(dstImage.GetFormat() == Image::Format::R8G8B8A8);
 
     int numMipmaps = srcImage.NumMipmaps();
     int numSlices = srcImage.GetArraySize();
@@ -1199,7 +1199,7 @@ void DecompressETC2_RGB8(const Image &srcImage, Image &dstImage) {
 }
 
 void DecompressETC2_RGB8A1(const Image &srcImage, Image &dstImage) {
-    assert(dstImage.GetFormat() == Image::Format::RGBA_8_8_8_8);
+    assert(dstImage.GetFormat() == Image::Format::R8G8B8A8);
 
     int numMipmaps = srcImage.NumMipmaps();
     int numSlices = srcImage.GetArraySize();
@@ -1219,7 +1219,7 @@ void DecompressETC2_RGB8A1(const Image &srcImage, Image &dstImage) {
 }
 
 void DecompressETC2_RGBA8(const Image &srcImage, Image &dstImage) {
-    assert(dstImage.GetFormat() == Image::Format::RGBA_8_8_8_8);
+    assert(dstImage.GetFormat() == Image::Format::R8G8B8A8);
 
     int numMipmaps = srcImage.NumMipmaps();
     int numSlices = srcImage.GetArraySize();
@@ -1239,7 +1239,7 @@ void DecompressETC2_RGBA8(const Image &srcImage, Image &dstImage) {
 }
 
 void DecompressEAC_R11(const Image &srcImage, Image &dstImage, bool signedFormat) {
-    assert(dstImage.GetFormat() == Image::Format::RGBA_32F_32F_32F_32F);
+    assert(dstImage.GetFormat() == Image::Format::R32G32B32A32_FLOAT);
 
     int numMipmaps = srcImage.NumMipmaps();
     int numSlices = srcImage.GetArraySize();
@@ -1259,7 +1259,7 @@ void DecompressEAC_R11(const Image &srcImage, Image &dstImage, bool signedFormat
 }
 
 void DecompressEAC_RG11(const Image &srcImage, Image &dstImage, bool signedFormat, bool normal) {
-    assert(dstImage.GetFormat() == Image::Format::RGBA_32F_32F_32F_32F);
+    assert(dstImage.GetFormat() == Image::Format::R32G32B32A32_FLOAT);
 
     int numMipmaps = srcImage.NumMipmaps();
     int numSlices = srcImage.GetArraySize();

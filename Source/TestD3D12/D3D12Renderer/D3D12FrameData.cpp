@@ -25,8 +25,8 @@ static constexpr uint32_t DynamicAllocationBlockSize = 65536 * 64;
 D3D12DynamicAllocation::D3D12DynamicAllocation(uint64_t size) {
     // 업로드 버퍼 생성
     buffer = static_cast<D3D12Buffer *>(RHI::renderer->CreateBuffer(RHI::BufferUsage::Upload,
-        RHI::ResourceFlag::ConstantBuffer | RHI::ResourceFlag::VertexBuffer | RHI::ResourceFlag::IndexBuffer | RHI::ResourceFlag::ShaderResource,
-        size, BE1::Image::Format::R_32_TYPELESS, 0, nullptr));
+        RHI::ResourceFlag::ConstantBuffer | RHI::ResourceFlag::VertexBuffer | RHI::ResourceFlag::IndexBuffer | RHI::ResourceFlag::ShaderResource | RHI::ResourceFlag::Typeless,
+        size, BE1::Image::Format::Unknown, 0, nullptr));
 
     // 버퍼를 프로그램이 끝날 때 까지 Map 해놓고 쓴다. (Pinned) 
     buffer->GetResource()->Map(0, nullptr, reinterpret_cast<void **>(&mappedBase));
@@ -216,7 +216,7 @@ RHI::IndexBuffer *D3D12FrameThreadData::AllocIndex(uint32_t indexSize, uint32_t 
 RHI::Buffer *D3D12FrameThreadData::AllocBuffer(bool shaderWritable, BE1::Image::Format format, uint32_t structureByteStride, uint32_t count) {
     D3D12DynamicAllocation *currentDynamicAllocation = dynamicAllocations.Last();
 
-    uint32_t stride = format == BE1::Image::Format::Unknown ? structureByteStride : BE1::Image::BytesPerPixel(format);
+    uint32_t stride = format == BE1::Image::Format::Unknown ? (structureByteStride == 0 ? 4 : structureByteStride) : BE1::Image::BytesPerPixel(format);
     uint32_t size = stride * count;
     uint32_t alignedOffset = BE1::AlignUp(currentDynamicAllocation->usedBytes, stride);
 
@@ -240,8 +240,10 @@ RHI::Buffer *D3D12FrameThreadData::AllocBuffer(bool shaderWritable, BE1::Image::
 
         if (uavDescriptor.uavDesc.Format == DXGI_FORMAT_UNKNOWN) {
             uavDescriptor.uavDesc.Buffer.StructureByteStride = structureByteStride;
-        } else if (uavDescriptor.uavDesc.Format == DXGI_FORMAT_R32_TYPELESS) {
-            uavDescriptor.uavDesc.Buffer.Flags = D3D12_BUFFER_UAV_FLAG_RAW;
+
+            if (structureByteStride == 0) {
+                uavDescriptor.uavDesc.Buffer.Flags = D3D12_BUFFER_UAV_FLAG_RAW;
+            }
         }
 
         D3D12Renderer::GetRenderer()->device->CreateUnorderedAccessView(currentDynamicAllocation->buffer->GetResource(), nullptr, &uavDescriptor.uavDesc, uavDescriptor.cpuDescriptorHandle);
@@ -261,8 +263,10 @@ RHI::Buffer *D3D12FrameThreadData::AllocBuffer(bool shaderWritable, BE1::Image::
 
         if (srvDescriptor.srvDesc.Format == DXGI_FORMAT_UNKNOWN) {
             srvDescriptor.srvDesc.Buffer.StructureByteStride = structureByteStride;
-        } else if (srvDescriptor.srvDesc.Format == DXGI_FORMAT_R32_TYPELESS) {
-            srvDescriptor.srvDesc.Buffer.Flags = D3D12_BUFFER_SRV_FLAG_RAW;
+
+            if (structureByteStride == 0) {
+                srvDescriptor.srvDesc.Buffer.Flags = D3D12_BUFFER_SRV_FLAG_RAW;
+            }
         }
 
         D3D12Renderer::GetRenderer()->device->CreateShaderResourceView(currentDynamicAllocation->buffer->GetResource(), &srvDescriptor.srvDesc, srvDescriptor.cpuDescriptorHandle);

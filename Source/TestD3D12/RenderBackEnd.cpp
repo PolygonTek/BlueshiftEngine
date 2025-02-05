@@ -157,7 +157,7 @@ const void *RenderBackEnd::ExecuteScreenshot(const void *data) {
 
     // SwapChain 백버퍼를 캡쳐해서 저장할 빈 이미지 (메모리) 를 생성한다.
     BE1::Image screenImage;
-    screenImage.Create2D(captureRect.w, captureRect.h, 1, BE1::Image::Format::BGR_8_8_8, BE1::Image::GammaSpace::sRGB, nullptr, BE1::Image::Flag::None);
+    screenImage.Create2D(captureRect.w, captureRect.h, 1, BE1::Image::Format::B8G8R8, BE1::Image::GammaSpace::sRGB, nullptr, BE1::Image::Flag::None);
 
     RenderFrameData *currentFrameData = currentContext->GetCurrentFrameData();
     RHI::FrameThreadData *frameThreadData = currentFrameData->GetThreadData(0);
@@ -166,7 +166,7 @@ const void *RenderBackEnd::ExecuteScreenshot(const void *data) {
     commandList->Reset(true);
 
     // 백버퍼의 내용을 (필요하다면 지정된 포맷으로 컨버팅하여) screenImage 에 저장한다.
-    RHI::renderer->ReadPixels(commandList, currentContext->GetSwapChain(), captureRect.x, captureRect.y, captureRect.w, captureRect.h, BE1::Image::Format::BGR_8_8_8, screenImage.GetPixels());
+    RHI::renderer->ReadPixels(commandList, currentContext->GetSwapChain(), captureRect.x, captureRect.y, captureRect.w, captureRect.h, BE1::Image::Format::B8G8R8, screenImage.GetPixels());
 
     // 이제 이미지 파일로 저장한다.
     BE1::Str filename = cmd->filename;

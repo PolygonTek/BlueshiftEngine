@@ -74,8 +74,8 @@ private:
     void                                InitRenderThread();
     void                                ShutdownRenderThread();
 
-    BE1::Image::Format                  mainRTColorFormat = BE1::Image::Format::RGBA_8_8_8_8;
-    BE1::Image::Format                  mainRTDepthFormat = BE1::Image::Format::Depth_32F;
+    BE1::Image::Format                  mainRTColorFormat = BE1::Image::Format::R8G8B8A8;
+    BE1::Image::Format                  mainRTDepthFormat = BE1::Image::Format::D32_FLOAT;
     uint32_t                            mainRTSampleCount = 1;
 
     RHI::SwapChain *                    swapChain = nullptr;

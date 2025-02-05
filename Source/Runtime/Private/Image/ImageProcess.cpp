@@ -139,7 +139,7 @@ Image &Image::AdjustBrightness(float factor) {
 }
 
 Image &Image::ApplyGammaRampTableRGB888(const uint16_t table[768]) {
-    if (format != Format::RGB_8_8_8) {
+    if (format != Format::R8G8B8) {
         assert(0);
         return *this;
     }
@@ -259,7 +259,7 @@ Image Image::MakeErosion() const {
 
 Image Image::MakeSDF(int spread) const {
     Image image;
-    image.Create2D(width, height, 1, Format::A_8, GammaSpace::Linear, nullptr, Flag::None);
+    image.Create2D(width, height, 1, Format::A8, GammaSpace::Linear, nullptr, Flag::None);
 
     for (int centerY = 0; centerY < height; centerY++) {
         for (int centerX = 0; centerX < width; centerX++) {
@@ -309,7 +309,7 @@ Image &Image::SwapRedAlphaRGBA8888() {
 
 Image Image::MakeNormalMapRGBA8888(float bumpiness) const {
     Image image;
-    image.Create2D(width, height, 1, Image::Format::RGBA_8_8_8_8, GammaSpace::Linear, nullptr, Flag::None);
+    image.Create2D(width, height, 1, Image::Format::R8G8B8A8, GammaSpace::Linear, nullptr, Flag::None);
 
     byte *dstPtr = image.pic;
 
@@ -683,21 +683,21 @@ static void BuildMipMapWithGamma(byte *dst, const byte *src, int width, int heig
 
 static int GetAlphaComponentIndex(Image::Format format) {
     switch (format) {
-    case Image::Format::A_8:
-    case Image::Format::A_16F:
-    case Image::Format::A_32F:
-    case Image::Format::ABGR_8_8_8_8:
-    case Image::Format::ARGB_8_8_8_8:
+    case Image::Format::A8:
+    case Image::Format::A16_FLOAT:
+    case Image::Format::A32_FLOAT:
+    case Image::Format::A8B8G8R8:
+    case Image::Format::A8R8G8B8:
         return 0;
-    case Image::Format::LA_8_8:
-    case Image::Format::LA_16F_16F:
-    case Image::Format::LA_32F_32F:
+    case Image::Format::L8A8:
+    case Image::Format::L16A16_FLOAT:
+    case Image::Format::L32A32_FLOAT:
         return 1;
-    case Image::Format::RGBA_8_8_8_8:
-    case Image::Format::BGRA_8_8_8_8:
-    case Image::Format::RGBA_8_8_8_8_SNORM:
-    case Image::Format::RGBA_16F_16F_16F_16F:
-    case Image::Format::RGBA_32F_32F_32F_32F:
+    case Image::Format::R8G8B8A8:
+    case Image::Format::B8G8R8A8:
+    case Image::Format::R8G8B8A8_SNORM:
+    case Image::Format::R16G16B16A16_FLOAT:
+    case Image::Format::R32G32B32A32_FLOAT:
         return 3;
     }
     return -1;

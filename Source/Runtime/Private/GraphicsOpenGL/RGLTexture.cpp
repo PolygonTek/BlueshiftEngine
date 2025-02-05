@@ -381,12 +381,12 @@ void GraphicsOpenGL::SetTextureImage(TextureType::Enum textureType, const Image 
 
                 srcFormat = Image::Format::DXN2;
                 srcCompressed = true;
-            } else if (dstFormat == Image::Format::XGBR_DXT5 && srcFormat != Image::Format::XGBR_DXT5) {
-                srcImage->ConvertFormat(Image::Format::RGBA_8_8_8_8, tmpImage, Image::GammaSpace::Linear);
+            } else if (dstFormat == Image::Format::DXT5XGBR && srcFormat != Image::Format::DXT5XGBR) {
+                srcImage->ConvertFormat(Image::Format::R8G8B8A8, tmpImage, Image::GammaSpace::Linear);
                 tmpImage.SwapRedAlphaRGBA8888();
                 srcImage = &tmpImage;
 
-                srcFormat = Image::Format::RGBA_8_8_8_8;
+                srcFormat = Image::Format::R8G8B8A8;
                 srcCompressed = false;
             }
         }
