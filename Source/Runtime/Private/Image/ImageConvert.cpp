@@ -267,7 +267,7 @@ bool Image::ConvertFormat(Format dstFormat, Image &dstImage, GammaSpace dstGamma
             unpackedSrcImage.CopyFrom(*srcImage, 0, 1);
         } else {
             // Packed format can't generate mipmaps directly, so we need to unpack it.
-            srcImage->ConvertFormat(Format::R8G8B8A8, unpackedSrcImage, dstGammaSpace);
+            srcImage->ConvertFormat(srcImage->NeedFloatConversion() ? Format::R32G32B32A32_FLOAT : Format::R8G8B8A8, unpackedSrcImage, dstGammaSpace);
         }
 
         unpackedSrcImage.GenerateMipmaps(mipmapRegenerationMode == MipmapGenerationMode::MipmapsWithAlphaCoverage);
