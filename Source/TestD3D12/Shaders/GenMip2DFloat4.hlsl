@@ -35,6 +35,7 @@ void CSMain(uint3 dispatchThreadId : SV_DispatchThreadID) {
 
     // Gather 를 이용해서 2x2 블록 픽셀의 채널 값 샘플링
     // Gather 는 한번에 인접 2x2 픽셀 데이터를 읽어올 때 캐시를 이용하기 때문에 Load 보다 효율적이다.
+    // inputTexture 가 sRGB 포맷이라면 읽어올 때 자동으로 선형화된다.
     float4 rrrr = inputTexture.GatherRed(pointSampler, uv);
     float4 gggg = inputTexture.GatherGreen(pointSampler, uv);
     float4 bbbb = inputTexture.GatherBlue(pointSampler, uv);
@@ -54,13 +55,6 @@ void CSMain(uint3 dispatchThreadId : SV_DispatchThreadID) {
     float4 color3 = inputTexture.Load(int3(srcCoord + uint2(1, 1), 0));
 #endif
 
-    if (mipGenParams.flags & MIPGEN_OPTION_BIT_SRGB) {
-        color0.rgb = RemoveSRGBCurve_Fast(color0.rgb);
-        color1.rgb = RemoveSRGBCurve_Fast(color1.rgb);
-        color2.rgb = RemoveSRGBCurve_Fast(color2.rgb);
-        color3.rgb = RemoveSRGBCurve_Fast(color3.rgb);
-    }
-
     float4 color = 0;
     float alphaSum = color0.a + color1.a + color2.a + color3.a;
 
@@ -75,6 +69,7 @@ void CSMain(uint3 dispatchThreadId : SV_DispatchThreadID) {
         color = (color0 + color1 + color2 + color3) * 0.25;
     }
 
+    // 텍스쳐가 sRGB 포맷이라면 sRGB 값으로 변환한다.
     if (mipGenParams.flags & MIPGEN_OPTION_BIT_SRGB) {
         color.rgb = ApplySRGBCurve_Fast(color.rgb);
     }
