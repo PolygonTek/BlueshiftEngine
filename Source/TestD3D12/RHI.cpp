@@ -112,7 +112,7 @@ RHI::GPUBarrier RHI::Renderer::MakeAliasingBarrier(const RHI::GPUResource *resou
     return barrier;
 }
 
-RHI::Texture *RHI::Renderer::CreateTextureFromFile(RHI::TextureType textureType, RHI::ResourceFlag flags, const char *filename, bool useCompression, bool useNormalMap) {
+RHI::Texture *RHI::Renderer::CreateTextureFromFile(RHI::TextureType textureType, RHI::ResourceFlag flags, const char *filename, bool useCompression, bool useNormalMap, bool useMipmaps) {
     BE1::Image *image = BE1::Image::NewImageFromFile(filename);
     if (!image) {
         return nullptr;
@@ -121,7 +121,7 @@ RHI::Texture *RHI::Renderer::CreateTextureFromFile(RHI::TextureType textureType,
     BE1::Image::Format dstFormat;
     AdjustTextureFormat(useCompression, useNormalMap, image->GetFormat(), &dstFormat);
 
-    RHI::Texture *texture = CreateTexture(textureType, flags, image, dstFormat, true);
+    RHI::Texture *texture = CreateTexture(textureType, flags, image, dstFormat, useMipmaps);
     delete image;
 
     return texture;

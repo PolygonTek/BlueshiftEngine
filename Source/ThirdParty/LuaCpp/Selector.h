@@ -48,7 +48,7 @@ public:
             ResetStackOnScopeExit save(_l);
             _traverse_full();
 
-            if (std::uncaught_exception()) {
+            if (std::uncaught_exceptions() > 0) {
                 try {
                     _call_functor(0);
                 } catch (...) {
