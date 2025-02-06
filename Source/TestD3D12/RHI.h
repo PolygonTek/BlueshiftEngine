@@ -535,15 +535,15 @@ namespace RHI {
         constexpr uint64_t              GetHash() const {
             union Hasher {
                 struct {
-                    uint64_t renderTargetFormat_0 : 6;
-                    uint64_t renderTargetFormat_1 : 6;
-                    uint64_t renderTargetFormat_2 : 6;
-                    uint64_t renderTargetFormat_3 : 6;
-                    uint64_t renderTargetFormat_4 : 6;
-                    uint64_t renderTargetFormat_5 : 6;
-                    uint64_t renderTargetFormat_6 : 6;
-                    uint64_t renderTargetFormat_7 : 6;
-                    uint64_t depthStencilFormat : 6;
+                    uint64_t renderTargetFormat_0 : 7;
+                    uint64_t renderTargetFormat_1 : 7;
+                    uint64_t renderTargetFormat_2 : 7;
+                    uint64_t renderTargetFormat_3 : 7;
+                    uint64_t renderTargetFormat_4 : 7;
+                    uint64_t renderTargetFormat_5 : 7;
+                    uint64_t renderTargetFormat_6 : 7;
+                    uint64_t renderTargetFormat_7 : 7;
+                    uint64_t depthStencilFormat : 4;
                     uint64_t sampleCount : 4;
                 } bits;
                 uint64_t value;
@@ -557,7 +557,7 @@ namespace RHI {
             hasher.bits.renderTargetFormat_5 = (uint64_t)renderTargetFormats[5];
             hasher.bits.renderTargetFormat_6 = (uint64_t)renderTargetFormats[6];
             hasher.bits.renderTargetFormat_7 = (uint64_t)renderTargetFormats[7];
-            hasher.bits.depthStencilFormat = (uint64_t)depthStencilFormat;
+            hasher.bits.depthStencilFormat = (uint64_t)depthStencilFormat - (uint64_t)BE1::Image::Format::D16;
             hasher.bits.sampleCount = (uint64_t)sampleCount;
             return hasher.value;
         }
@@ -791,6 +791,7 @@ namespace RHI {
         virtual bool                    IsSupportedImageFormat(BE1::Image::Format imageFormat) const = 0;
         virtual BE1::Image::Format      ToUncompressedImageFormat(BE1::Image::Format imageFormat) const = 0;
         virtual BE1::Image::Format      ToCompressedImageFormat(BE1::Image::Format inFormat, bool useNormalMap) const = 0;
+        virtual BE1::Image::Format      ToUAVImageFormat(BE1::Image::Format inFormat) const = 0;
 
         virtual RHI::FrameThreadData *  CreateFrameThreadData() = 0;
         virtual void                    DestroyFrameThreadData(FrameThreadData *frameThreadData) = 0;
@@ -813,7 +814,7 @@ namespace RHI {
         virtual ConstantBuffer *        CreateConstantBuffer(BufferUsage usage, uint32_t size, const void *data) = 0;
         virtual void                    DestroyConstantBuffer(ConstantBuffer *constantBuffer, bool immediate = false) = 0;
 
-        void                            AdjustTextureFormat(bool useCompression, bool useNormalMap, BE1::Image::Format inFormat, BE1::Image::Format *outFormat);
+        void                            AdjustTextureFormat(bool useCompression, bool useNormalMap, bool useUAV, BE1::Image::Format inFormat, BE1::Image::Format *outFormat);
         void                            AdjustTextureSize(TextureType textureType, bool useNPOT, uint32_t inWidth, uint32_t inHeight, uint32_t inDepth, uint32_t *outWidth, uint32_t *outHeight, uint32_t *outDepth);
 
         virtual Texture *               CreateTexture(TextureType textureType, ResourceFlag flags, const BE1::Image *image, bool allocateEmptyMipmaps, const ClearValue &clearValue = {}, uint32_t sampleCount = 1, GPUResourceState initialState = GPUResourceState::Undefined) = 0;

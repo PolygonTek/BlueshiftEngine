@@ -326,7 +326,8 @@ RHI::Texture *D3D12Renderer::CreateTexture(RHI::TextureType textureType, RHI::Re
 
     D3D12Texture *texture = new D3D12Texture;
     texture->textureType = textureType;
-    texture->format = srcFormat;
+    texture->srcFormat = srcFormat;
+    texture->srcSRGB = !isLinearSpace;
 #ifdef USE_D3D12_MEMALLOC
     texture->textureAllocation = allocation;
 #else
@@ -424,14 +425,14 @@ int D3D12Renderer::CreateSubresource(RHI::Texture *texture, RHI::SubresourceType
     if (type == RHI::SubresourceType::SRV) {
         return CreateSubresourceSRV(d3d12Texture, firstSlice, sliceCount, firstMipLevel, mipCount, typelessCompatibleFormat, isSRGB);
     }
+    if (type == RHI::SubresourceType::UAV) {
+        return CreateSubresourceUAV(d3d12Texture, firstSlice, sliceCount, firstMipLevel, typelessCompatibleFormat, isSRGB);
+    }
     if (type == RHI::SubresourceType::RTV) {
         return CreateSubresourceRTV(d3d12Texture, firstSlice, sliceCount, firstMipLevel, typelessCompatibleFormat, isSRGB);
     }
     if (type == RHI::SubresourceType::DSV) {
         return CreateSubresourceDSV(d3d12Texture, firstSlice, sliceCount, firstMipLevel, typelessCompatibleFormat, isSRGB);
-    }
-    if (type == RHI::SubresourceType::UAV) {
-        return CreateSubresourceUAV(d3d12Texture, firstSlice, sliceCount, firstMipLevel, typelessCompatibleFormat, isSRGB);
     }
     return -1;
 }
@@ -452,6 +453,22 @@ void D3D12Renderer::DestroySubresource(RHI::Texture *texture, RHI::SubresourceTy
             }
             resCpuDescriptorPool->Free(d3d12Texture->subresourceSrvDescriptors[subresourceIndex].cpuDescriptorHandle);
             d3d12Texture->subresourceSrvDescriptors.RemoveIndexFast(subresourceIndex);
+        }
+        return;
+    }
+    if (type == RHI::SubresourceType::UAV) {
+        if (subresourceIndex < 0) {
+            if (d3d12Texture->uavDescriptor.cpuDescriptorHandle.ptr) {
+                uavCpuDescriptorPool->Free(d3d12Texture->uavDescriptor.cpuDescriptorHandle);
+                d3d12Texture->uavDescriptor = {};
+            }
+        } else {
+            if (!d3d12Texture->subresourceUavDescriptors.IsValidIndex(subresourceIndex)) {
+                BE_ERRLOG("D3D12Renderer::DestroySubresource: Invalid UAV subresource index (%i)\n", subresourceIndex);
+                return;
+            }
+            uavCpuDescriptorPool->Free(d3d12Texture->subresourceUavDescriptors[subresourceIndex].cpuDescriptorHandle);
+            d3d12Texture->subresourceUavDescriptors.RemoveIndexFast(subresourceIndex);
         }
         return;
     }
@@ -487,29 +504,13 @@ void D3D12Renderer::DestroySubresource(RHI::Texture *texture, RHI::SubresourceTy
         }
         return;
     }
-    if (type == RHI::SubresourceType::UAV) {
-        if (subresourceIndex < 0) {
-            if (d3d12Texture->uavDescriptor.cpuDescriptorHandle.ptr) {
-                uavCpuDescriptorPool->Free(d3d12Texture->uavDescriptor.cpuDescriptorHandle);
-                d3d12Texture->uavDescriptor = {};
-            }
-        } else {
-            if (!d3d12Texture->subresourceUavDescriptors.IsValidIndex(subresourceIndex)) {
-                BE_ERRLOG("D3D12Renderer::DestroySubresource: Invalid UAV subresource index (%i)\n", subresourceIndex);
-                return;
-            }
-            uavCpuDescriptorPool->Free(d3d12Texture->subresourceUavDescriptors[subresourceIndex].cpuDescriptorHandle);
-            d3d12Texture->subresourceUavDescriptors.RemoveIndexFast(subresourceIndex);
-        }
-        return;
-    }
 }
 
 int D3D12Renderer::CreateSubresourceSRV(D3D12Texture *texture, uint32_t firstSlice, uint32_t sliceCount, uint32_t firstMipLevel, uint32_t mipCount, const BE1::Image::Format *typelessCompatibleFormat, bool isSRGB) {
     D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
     srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
 
-    BE1::Image::Format subresourceFormat = texture->format;
+    BE1::Image::Format subresourceFormat;
 
     if (typelessCompatibleFormat) {
         assert(IsTypelessFormat(texture->textureDesc.Format));
@@ -517,7 +518,25 @@ int D3D12Renderer::CreateSubresourceSRV(D3D12Texture *texture, uint32_t firstSli
 
         ImageFormatToDXGIFormat(subresourceFormat, isSRGB, &srvDesc.Format);
     } else {
-        srvDesc.Format = texture->textureDesc.Format;
+        subresourceFormat = texture->srcFormat;
+
+        switch (texture->srcFormat) {
+        case BE1::Image::Format::D16:
+            srvDesc.Format = DXGI_FORMAT_R16_UNORM;
+            break;
+        case BE1::Image::Format::D24S8:
+            srvDesc.Format = DXGI_FORMAT_R24_UNORM_X8_TYPELESS;
+            break;
+        case BE1::Image::Format::D32_FLOAT:
+            srvDesc.Format = DXGI_FORMAT_R32_FLOAT;
+            break;
+        case BE1::Image::Format::D32_FLOAT_S8X24:
+            srvDesc.Format = DXGI_FORMAT_R32_FLOAT_X8X24_TYPELESS;
+            break;
+        default:
+            ImageFormatToDXGIFormat(texture->srcFormat, texture->srcSRGB, &srvDesc.Format);
+            break;
+        }
     }
 
     // 텍스쳐의 Image::Format 에 따라 swizzling 이 필요할 수도 있다.
@@ -594,6 +613,79 @@ int D3D12Renderer::CreateSubresourceSRV(D3D12Texture *texture, uint32_t firstSli
     return texture->subresourceSrvDescriptors.Append(srvDescriptor);
 }
 
+int D3D12Renderer::CreateSubresourceUAV(D3D12Texture *texture, uint32_t firstSlice, uint32_t sliceCount, uint32_t firstMipLevel, const BE1::Image::Format *typelessCompatibleFormat, bool isSRGB) {
+    D3D12_UNORDERED_ACCESS_VIEW_DESC uavDesc = {};
+    uavDesc.ViewDimension = D3D12_UAV_DIMENSION_BUFFER;
+
+    if (typelessCompatibleFormat) {
+        assert(IsTypelessFormat(texture->textureDesc.Format));
+        ImageFormatToDXGIFormat(*typelessCompatibleFormat, isSRGB, &uavDesc.Format);
+    } else {
+        // UAV 는 sRGB 포맷으로 생성할 수 없다.
+        ImageFormatToDXGIFormat(texture->srcFormat, false, &uavDesc.Format);
+    }
+
+    // UAV 호환 포맷인지 검사 필요
+    if (!IsSupportedUAVFormat(uavDesc.Format)) {
+        BE_ERRLOG("Unsupported UAV format (0x%x)\n", uavDesc.Format);
+        return -1;
+    }
+
+    switch (texture->textureType) {
+    case RHI::TextureType::Texture1D:
+        uavDesc.ViewDimension = D3D12_UAV_DIMENSION_TEXTURE1D;
+        uavDesc.Texture1D.MipSlice = firstMipLevel;
+        break;
+    case RHI::TextureType::Texture1DArray:
+        uavDesc.ViewDimension = D3D12_UAV_DIMENSION_TEXTURE1DARRAY;
+        uavDesc.Texture1DArray.MipSlice = firstMipLevel;
+        uavDesc.Texture1DArray.FirstArraySlice = firstSlice;
+        uavDesc.Texture1DArray.ArraySize = BE1::Min(sliceCount, texture->textureDesc.DepthOrArraySize - firstSlice);
+        break;
+    case RHI::TextureType::Texture2D:
+        uavDesc.ViewDimension = D3D12_UAV_DIMENSION_TEXTURE2D;
+        uavDesc.Texture2D.MipSlice = firstMipLevel;
+        break;
+    case RHI::TextureType::Texture2DArray:
+        uavDesc.ViewDimension = D3D12_UAV_DIMENSION_TEXTURE2DARRAY;
+        uavDesc.Texture2DArray.MipSlice = firstMipLevel;
+        uavDesc.Texture2DArray.FirstArraySlice = firstSlice;
+        uavDesc.Texture2DArray.ArraySize = BE1::Min(sliceCount, texture->textureDesc.DepthOrArraySize - firstSlice);
+        break;
+    case RHI::TextureType::Texture3D:
+        uavDesc.ViewDimension = D3D12_UAV_DIMENSION_TEXTURE3D;
+        uavDesc.Texture3D.MipSlice = firstMipLevel;
+        uavDesc.Texture3D.FirstWSlice = 0;
+        uavDesc.Texture3D.WSize = -1;
+        break;
+    }
+
+    D3D12_CPU_DESCRIPTOR_HANDLE uavCpuDescriptorHandle;
+    D3D12_CPU_DESCRIPTOR_HANDLE destCpuDescriptorHandle;
+    D3D12_GPU_DESCRIPTOR_HANDLE destGpuDescriptorHandle;
+
+    if (!uavCpuDescriptorPool->Alloc(&uavCpuDescriptorHandle, nullptr)) {
+        return -1;
+    }
+    if (!uavGpuDescriptorPool->Alloc(&destCpuDescriptorHandle, &destGpuDescriptorHandle)) {
+        return -1;
+    }
+    device->CreateUnorderedAccessView(texture->GetResource(), nullptr, &uavDesc, uavCpuDescriptorHandle);
+
+    // 만들어진 UAV 디스크립터를 shader visible 한 디스크립터에 복사 (CPU + GPU)
+    device->CopyDescriptorsSimple(1, destCpuDescriptorHandle, uavCpuDescriptorHandle, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+
+    D3D12UAVDescriptor uavDescriptor;
+    uavDescriptor.uavDesc = uavDesc;
+    uavDescriptor.cpuDescriptorHandle = uavCpuDescriptorHandle;
+
+    if (!texture->uavDescriptor.cpuDescriptorHandle.ptr) {
+        texture->uavDescriptor = uavDescriptor;
+        return -1;
+    }
+    return texture->subresourceUavDescriptors.Append(uavDescriptor);
+}
+
 int D3D12Renderer::CreateSubresourceRTV(D3D12Texture *texture, uint32_t firstSlice, uint32_t sliceCount, uint32_t firstMipLevel, const BE1::Image::Format *typelessCompatibleFormat, bool isSRGB) {
     D3D12_RENDER_TARGET_VIEW_DESC rtvDesc = {};
 
@@ -601,7 +693,7 @@ int D3D12Renderer::CreateSubresourceRTV(D3D12Texture *texture, uint32_t firstSli
         assert(IsTypelessFormat(texture->textureDesc.Format));
         ImageFormatToDXGIFormat(*typelessCompatibleFormat, isSRGB, &rtvDesc.Format);
     } else {
-        rtvDesc.Format = texture->textureDesc.Format;
+        ImageFormatToDXGIFormat(texture->srcFormat, texture->srcSRGB, &rtvDesc.Format);
     }
 
     switch (texture->textureType) {
@@ -670,7 +762,7 @@ int D3D12Renderer::CreateSubresourceDSV(D3D12Texture *texture, uint32_t firstSli
         assert(IsTypelessFormat(texture->textureDesc.Format));
         ImageFormatToDXGIFormat(*typelessCompatibleFormat, isSRGB, &dsvDesc.Format);
     } else {
-        dsvDesc.Format = texture->textureDesc.Format;
+        ImageFormatToDXGIFormat(texture->srcFormat, texture->srcSRGB, &dsvDesc.Format);
     }
 
     switch (texture->textureType) {
@@ -723,72 +815,6 @@ int D3D12Renderer::CreateSubresourceDSV(D3D12Texture *texture, uint32_t firstSli
         return -1;
     }
     return texture->subresourceDsvDescriptors.Append(dsvDescriptor);
-}
-
-int D3D12Renderer::CreateSubresourceUAV(D3D12Texture *texture, uint32_t firstSlice, uint32_t sliceCount, uint32_t firstMipLevel, const BE1::Image::Format *typelessCompatibleFormat, bool isSRGB) {
-    D3D12_UNORDERED_ACCESS_VIEW_DESC uavDesc = {};
-    uavDesc.ViewDimension = D3D12_UAV_DIMENSION_BUFFER;
-
-    if (typelessCompatibleFormat) {
-        assert(IsTypelessFormat(texture->textureDesc.Format));
-        ImageFormatToDXGIFormat(*typelessCompatibleFormat, isSRGB, &uavDesc.Format);
-    } else {
-        uavDesc.Format = texture->textureDesc.Format;
-    }
-
-    switch (texture->textureType) {
-    case RHI::TextureType::Texture1D:
-        uavDesc.ViewDimension = D3D12_UAV_DIMENSION_TEXTURE1D;
-        uavDesc.Texture1D.MipSlice = firstMipLevel;
-        break;
-    case RHI::TextureType::Texture1DArray:
-        uavDesc.ViewDimension = D3D12_UAV_DIMENSION_TEXTURE1DARRAY;
-        uavDesc.Texture1DArray.MipSlice = firstMipLevel;
-        uavDesc.Texture1DArray.FirstArraySlice = firstSlice;
-        uavDesc.Texture1DArray.ArraySize = BE1::Min(sliceCount, texture->textureDesc.DepthOrArraySize - firstSlice);
-        break;
-    case RHI::TextureType::Texture2D:
-        uavDesc.ViewDimension = D3D12_UAV_DIMENSION_TEXTURE2D;
-        uavDesc.Texture2D.MipSlice = firstMipLevel;
-        break;
-    case RHI::TextureType::Texture2DArray:
-        uavDesc.ViewDimension = D3D12_UAV_DIMENSION_TEXTURE2DARRAY;
-        uavDesc.Texture2DArray.MipSlice = firstMipLevel;
-        uavDesc.Texture2DArray.FirstArraySlice = firstSlice;
-        uavDesc.Texture2DArray.ArraySize = BE1::Min(sliceCount, texture->textureDesc.DepthOrArraySize - firstSlice);
-        break;
-    case RHI::TextureType::Texture3D:
-        uavDesc.ViewDimension = D3D12_UAV_DIMENSION_TEXTURE3D;
-        uavDesc.Texture3D.MipSlice = firstMipLevel;
-        uavDesc.Texture3D.FirstWSlice = 0;
-        uavDesc.Texture3D.WSize = -1;
-        break;
-    }
-
-    D3D12_CPU_DESCRIPTOR_HANDLE uavCpuDescriptorHandle;
-    D3D12_CPU_DESCRIPTOR_HANDLE destCpuDescriptorHandle;
-    D3D12_GPU_DESCRIPTOR_HANDLE destGpuDescriptorHandle;
-
-    if (!uavCpuDescriptorPool->Alloc(&uavCpuDescriptorHandle, nullptr)) {
-        return -1;
-    }
-    if (!uavGpuDescriptorPool->Alloc(&destCpuDescriptorHandle, &destGpuDescriptorHandle)) {
-        return -1;
-    }
-    device->CreateUnorderedAccessView(texture->GetResource(), nullptr, &uavDesc, uavCpuDescriptorHandle);
-
-    // 만들어진 UAV 디스크립터를 shader visible 한 디스크립터에 복사 (CPU + GPU)
-    device->CopyDescriptorsSimple(1, destCpuDescriptorHandle, uavCpuDescriptorHandle, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
-
-    D3D12UAVDescriptor uavDescriptor;
-    uavDescriptor.uavDesc = uavDesc;
-    uavDescriptor.cpuDescriptorHandle = uavCpuDescriptorHandle;
-
-    if (!texture->uavDescriptor.cpuDescriptorHandle.ptr) {
-        texture->uavDescriptor = uavDescriptor;
-        return -1;
-    }
-    return texture->subresourceUavDescriptors.Append(uavDescriptor);
 }
 
 void D3D12Renderer::GetTextureImage(RHI::Texture *texture, int mipLevel, int sliceIndex, BE1::Image::Format dstFormat, void *outPixels) {

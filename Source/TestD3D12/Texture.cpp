@@ -56,12 +56,13 @@ void Texture::Create(RHI::TextureType textureType, const BE1::Image *srcImage, T
     bool useCompression = !BE1::HasFlag(flags, Texture::Flag::NoCompression);
     bool useMipmaps = !BE1::HasFlag(flags, Texture::Flag::NoMipmaps);
     bool useNPOT = BE1::HasFlag(flags, Texture::Flag::NonePowerOfTwo);
+    bool useUAV = BE1::HasFlag(flags, Texture::Flag::UnorderedAccess);
 
     BE1::Image::Format dstFormat;
     if (forceFormat != BE1::Image::Format::Unknown) {
         dstFormat = forceFormat;
     } else {
-        RHI::renderer->AdjustTextureFormat(useCompression, useNormalMap, srcImage->GetFormat(), &dstFormat);
+        RHI::renderer->AdjustTextureFormat(useCompression, useNormalMap, useUAV, srcImage->GetFormat(), &dstFormat);
     }
 
     type = textureType;
@@ -83,8 +84,19 @@ void Texture::Create(RHI::TextureType textureType, const BE1::Image *srcImage, T
     }
 
     RHI::ResourceFlag resourceFlags = RHI::ResourceFlag::ShaderResource;
-    if (BE1::HasFlag(flags, Texture::Flag::UnorderedAccess)) {
+    if (useUAV) {
         resourceFlags |= RHI::ResourceFlag::UnorderedAccess;
+
+        // UAV 가 필요하다면, sRGB 포맷은 UAV 로 만들 수 없기 때문에 Typeless 텍스쳐로 만든다.
+        if (srcImage->GetGammaSpace() != BE1::Image::GammaSpace::Linear) {
+            resourceFlags |= RHI::ResourceFlag::Typeless;
+        }
+    }
+
+    // Depth 포맷은 Typeless 텍스쳐로 생성한다.
+    // SRV 에서 Depth 포맷을 사용할 수는 없고, 그와 호환되는 포맷을 사용해야 한다.
+    if (srcImage->IsDepthFormat()) {
+        resourceFlags |= RHI::ResourceFlag::Typeless;
     }
 
     this->format = dstFormat;

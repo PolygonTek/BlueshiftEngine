@@ -696,7 +696,7 @@ static void RGBA8888ToBGR565(const byte *src, byte *dst, int numPixels) {
 }
 
 static void RGBA8888ToRGBA32F(const byte *src, byte *dst, int numPixels) {
-    const float invNorm = 1.0f / 255.0f;
+    const float invNorm = 1.0f / UINT8_MAX;
     const byte *srcPtr = src;
     const byte *srcEnd = srcPtr + numPixels * 4;
     float *dstPtr = reinterpret_cast<float *>(dst);
@@ -716,7 +716,7 @@ static void RGBA8888ToRGBA32F(const byte *src, byte *dst, int numPixels) {
 //--------------------------------------------------------------------------------------------------
 
 static void L8ToRGBA32F(const byte *src, byte *dst, int numPixels) {
-    const float invNorm = 1.0f / 255.0f;
+    const float invNorm = 1.0f / UINT8_MAX;
     const byte *srcPtr = src;
     const byte *srcEnd = srcPtr + numPixels;
     float *dstPtr = reinterpret_cast<float *>(dst);
@@ -728,7 +728,7 @@ static void L8ToRGBA32F(const byte *src, byte *dst, int numPixels) {
 }
 
 static void A8ToRGBA32F(const byte *src, byte *dst, int numPixels) {
-    const float invNorm = 1.0f / 255.0f;
+    const float invNorm = 1.0f / UINT8_MAX;
     const byte *srcPtr = src;
     const byte *srcEnd = srcPtr + numPixels;
     float *dstPtr = reinterpret_cast<float *>(dst);
@@ -740,7 +740,7 @@ static void A8ToRGBA32F(const byte *src, byte *dst, int numPixels) {
 }
 
 static void LA88ToRGBA32F(const byte *src, byte *dst, int numPixels) {
-    const float invNorm = 1.0f / 255.0f;
+    const float invNorm = 1.0f / UINT8_MAX;
     const byte *srcPtr = src;
     const byte *srcEnd = srcPtr + numPixels * 2;
     float *dstPtr = reinterpret_cast<float *>(dst);
@@ -752,7 +752,7 @@ static void LA88ToRGBA32F(const byte *src, byte *dst, int numPixels) {
 }
 
 static void L16ToRGBA32F(const byte *src, byte *dst, int numPixels) {
-    const float invNorm = 1.0f / 65535.0f;
+    const float invNorm = 1.0f / UINT16_MAX;
     const uint16_t *srcPtr = reinterpret_cast<const uint16_t *>(src);
     const uint16_t *srcEnd = srcPtr + numPixels;
     float *dstPtr = reinterpret_cast<float *>(dst);
@@ -767,8 +767,24 @@ static void L16ToRGBA32F(const byte *src, byte *dst, int numPixels) {
     }
 }
 
+static void L24X8ToRGBA32F(const byte *src, byte *dst, int numPixels) {
+    const float invNorm = 1.0f / 0x00FFFFFF;
+    const uint32_t *srcPtr = reinterpret_cast<const uint32_t *>(src);
+    const uint32_t *srcEnd = srcPtr + numPixels;
+    float *dstPtr = reinterpret_cast<float *>(dst);
+    float l;
+
+    for (; srcPtr < srcEnd; srcPtr += 1, dstPtr += 4) {
+        l = (srcPtr[0] & 0x00FFFFFF) * invNorm;
+        dstPtr[0] = l;
+        dstPtr[1] = l;
+        dstPtr[2] = l;
+        dstPtr[3] = 1.0f;
+    }
+}
+
 static void LA1616ToRGBA32F(const byte *src, byte *dst, int numPixels) {
-    const float invNorm = 1.0f / 65535.0f;
+    const float invNorm = 1.0f / UINT16_MAX;
     const uint16_t *srcPtr = reinterpret_cast<const uint16_t *>(src);
     const uint16_t *srcEnd = srcPtr + numPixels * 2;
     float *dstPtr = reinterpret_cast<float *>(dst);
@@ -785,7 +801,7 @@ static void LA1616ToRGBA32F(const byte *src, byte *dst, int numPixels) {
 }
 
 static void R8ToRGBA32F(const byte *src, byte *dst, int numPixels) {
-    const float invNorm = 1.0f / 255.0f;
+    const float invNorm = 1.0f / UINT8_MAX;
     const byte *srcPtr = src;
     const byte *srcEnd = srcPtr + numPixels;
     float *dstPtr = reinterpret_cast<float *>(dst);
@@ -799,14 +815,14 @@ static void R8ToRGBA32F(const byte *src, byte *dst, int numPixels) {
 }
 
 static void R8SNormToRGBA32F(const byte *src, byte *dst, int numPixels) {
-    const float inv127 = 1.0f / 127.0f;
-    const float inv128 = 1.0f / 128.0f;
+    const float invPosNorm = 1.0f / 127.0f;
+    const float invNegNorm = 1.0f / 128.0f;
     const int8_t *srcPtr = reinterpret_cast<const int8_t *>(src);
     const int8_t *srcEnd = srcPtr + numPixels;
     float *dstPtr = reinterpret_cast<float *>(dst);
 
     for (; srcPtr < srcEnd; srcPtr += 1, dstPtr += 4) {
-        dstPtr[0] = srcPtr[0] < 0 ? Max(srcPtr[0] * inv128, -1.0f) : srcPtr[0] * inv127;
+        dstPtr[0] = srcPtr[0] < 0 ? Max(srcPtr[0] * invNegNorm, -1.0f) : srcPtr[0] * invPosNorm;
         dstPtr[1] = 0;
         dstPtr[2] = 0;
         dstPtr[3] = 1.0f;
@@ -840,7 +856,7 @@ static void R8UIntToRGBA32F(const byte *src, byte *dst, int numPixels) {
 }
 
 static void RG88ToRGBA32F(const byte *src, byte *dst, int numPixels) {
-    float invNorm = 1.0f / 255.0f;
+    float invNorm = 1.0f / UINT8_MAX;
     const byte *srcPtr = src;
     const byte *srcEnd = srcPtr + numPixels * 2;
     float *dstPtr = reinterpret_cast<float *>(dst);
@@ -854,15 +870,15 @@ static void RG88ToRGBA32F(const byte *src, byte *dst, int numPixels) {
 }
 
 static void RG88SNormToRGBA32F(const byte *src, byte *dst, int numPixels) {
-    const float inv127 = 1.0f / 127.0f;
-    const float inv128 = 1.0f / 128.0f;
+    const float invPosNorm = 1.0f / 127.0f;
+    const float invNegNorm = 1.0f / 128.0f;
     const int8_t *srcPtr = reinterpret_cast<const int8_t *>(src);
     const int8_t *srcEnd = srcPtr + numPixels * 2;
     float *dstPtr = reinterpret_cast<float *>(dst);
 
     for (; srcPtr < srcEnd; srcPtr += 2, dstPtr += 4) {
-        dstPtr[0] = srcPtr[0] < 0 ? Max(srcPtr[0] * inv128, -1.0f) : srcPtr[0] * inv127;
-        dstPtr[1] = srcPtr[1] < 0 ? Max(srcPtr[1] * inv128, -1.0f) : srcPtr[1] * inv127;
+        dstPtr[0] = srcPtr[0] < 0 ? Max(srcPtr[0] * invNegNorm, -1.0f) : srcPtr[0] * invPosNorm;
+        dstPtr[1] = srcPtr[1] < 0 ? Max(srcPtr[1] * invNegNorm, -1.0f) : srcPtr[1] * invPosNorm;
         dstPtr[2] = 0;
         dstPtr[3] = 1.0f;
     }
@@ -895,7 +911,7 @@ static void RG88UIntToRGBA32F(const byte *src, byte *dst, int numPixels) {
 }
 
 static void RGB888ToRGBA32F(const byte *src, byte *dst, int numPixels) {
-    const float invNorm = 1.0f / 255.0f;
+    const float invNorm = 1.0f / UINT8_MAX;
     const byte *srcPtr = src;
     const byte *srcEnd = srcPtr + numPixels * 3;
     float *dstPtr = reinterpret_cast<float *>(dst);
@@ -909,16 +925,16 @@ static void RGB888ToRGBA32F(const byte *src, byte *dst, int numPixels) {
 }
 
 static void RGB888SNormToRGBA32F(const byte *src, byte *dst, int numPixels) {
-    const float inv127 = 1.0f / 127.0f;
-    const float inv128 = 1.0f / 128.0f;
+    const float invPosNorm = 1.0f / 127.0f;
+    const float invNegNorm = 1.0f / 128.0f;
     const int8_t *srcPtr = reinterpret_cast<const int8_t *>(src);
     const int8_t *srcEnd = srcPtr + numPixels * 3;
     float *dstPtr = reinterpret_cast<float *>(dst);
 
     for (; srcPtr < srcEnd; srcPtr += 3, dstPtr += 4) {
-        dstPtr[0] = srcPtr[0] < 0 ? Max(srcPtr[0] * inv128, -1.0f) : srcPtr[0] * inv127;
-        dstPtr[1] = srcPtr[1] < 0 ? Max(srcPtr[1] * inv128, -1.0f) : srcPtr[1] * inv127;
-        dstPtr[2] = srcPtr[2] < 0 ? Max(srcPtr[2] * inv128, -1.0f) : srcPtr[2] * inv127;
+        dstPtr[0] = srcPtr[0] < 0 ? Max(srcPtr[0] * invNegNorm, -1.0f) : srcPtr[0] * invPosNorm;
+        dstPtr[1] = srcPtr[1] < 0 ? Max(srcPtr[1] * invNegNorm, -1.0f) : srcPtr[1] * invPosNorm;
+        dstPtr[2] = srcPtr[2] < 0 ? Max(srcPtr[2] * invNegNorm, -1.0f) : srcPtr[2] * invPosNorm;
         dstPtr[3] = 1.0f;
     }
 }
@@ -950,7 +966,7 @@ static void RGB888UIntToRGBA32F(const byte *src, byte *dst, int numPixels) {
 }
 
 static void BGR888ToRGBA32F(const byte *src, byte *dst, int numPixels) {
-    const float invNorm = 1.0f / 255.0f;
+    const float invNorm = 1.0f / UINT8_MAX;
     const byte *srcPtr = src;
     const byte *srcEnd = srcPtr + numPixels * 3;
     float *dstPtr = reinterpret_cast<float *>(dst);
@@ -964,7 +980,7 @@ static void BGR888ToRGBA32F(const byte *src, byte *dst, int numPixels) {
 }
 
 static void BGRX8888ToRGBA32F(const byte *src, byte *dst, int numPixels) {
-    const float invNorm = 1.0f / 255.0f;
+    const float invNorm = 1.0f / UINT8_MAX;
     const byte *srcPtr = src;
     const byte *srcEnd = srcPtr + numPixels * 4;
     float *dstPtr = reinterpret_cast<float *>(dst);
@@ -978,7 +994,7 @@ static void BGRX8888ToRGBA32F(const byte *src, byte *dst, int numPixels) {
 }
 
 static void BGRA8888ToRGBA32F(const byte *src, byte *dst, int numPixels) {
-    const float invNorm = 1.0f / 255.0f;
+    const float invNorm = 1.0f / UINT8_MAX;
     const byte *srcPtr = src;
     const byte *srcEnd = srcPtr + numPixels * 4;
     float *dstPtr = reinterpret_cast<float *>(dst);
@@ -992,7 +1008,7 @@ static void BGRA8888ToRGBA32F(const byte *src, byte *dst, int numPixels) {
 }
 
 static void ABGR8888ToRGBA32F(const byte *src, byte *dst, int numPixels) {
-    const float invNorm = 1.0f / 255.0f;
+    const float invNorm = 1.0f / UINT8_MAX;
     const byte *srcPtr = src;
     const byte *srcEnd = srcPtr + numPixels * 4;
     float *dstPtr = reinterpret_cast<float *>(dst);
@@ -1006,7 +1022,7 @@ static void ABGR8888ToRGBA32F(const byte *src, byte *dst, int numPixels) {
 }
 
 static void ARGB8888ToRGBA32F(const byte *src, byte *dst, int numPixels) {
-    const float invNorm = 1.0f / 255.0f;
+    const float invNorm = 1.0f / UINT8_MAX;
     const byte *srcPtr = src;
     const byte *srcEnd = srcPtr + numPixels * 4;
     float *dstPtr = reinterpret_cast<float *>(dst);
@@ -1048,17 +1064,17 @@ static void RGBA1010102UIntToRGBA32F(const byte *src, byte *dst, int numPixels) 
 }
 
 static void RGBA8888SNormToRGBA32F(const byte *src, byte *dst, int numPixels) {
-    const float inv127 = 1.0f / 127.0f;
-    const float inv128 = 1.0f / 128.0f;
+    const float invPosNorm = 1.0f / 127.0f;
+    const float invNegNorm = 1.0f / 128.0f;
     const int8_t *srcPtr = reinterpret_cast<const int8_t *>(src);
     const int8_t *srcEnd = srcPtr + numPixels * 4;
     float *dstPtr = reinterpret_cast<float *>(dst);
 
     for (; srcPtr < srcEnd; srcPtr += 4, dstPtr += 4) {
-        dstPtr[0] = srcPtr[0] < 0 ? Max(srcPtr[0] * inv128, -1.0f) : srcPtr[0] * inv127;
-        dstPtr[1] = srcPtr[1] < 0 ? Max(srcPtr[1] * inv128, -1.0f) : srcPtr[1] * inv127;
-        dstPtr[2] = srcPtr[2] < 0 ? Max(srcPtr[2] * inv128, -1.0f) : srcPtr[2] * inv127;
-        dstPtr[3] = srcPtr[3] < 0 ? Max(srcPtr[3] * inv128, -1.0f) : srcPtr[3] * inv127;
+        dstPtr[0] = srcPtr[0] < 0 ? Max(srcPtr[0] * invNegNorm, -1.0f) : srcPtr[0] * invPosNorm;
+        dstPtr[1] = srcPtr[1] < 0 ? Max(srcPtr[1] * invNegNorm, -1.0f) : srcPtr[1] * invPosNorm;
+        dstPtr[2] = srcPtr[2] < 0 ? Max(srcPtr[2] * invNegNorm, -1.0f) : srcPtr[2] * invPosNorm;
+        dstPtr[3] = srcPtr[3] < 0 ? Max(srcPtr[3] * invNegNorm, -1.0f) : srcPtr[3] * invPosNorm;
     }
 }
 
@@ -1089,7 +1105,7 @@ static void RGBA8888UIntToRGBA32F(const byte *src, byte *dst, int numPixels) {
 }
 
 static void RGBX8888ToRGBA32F(const byte *src, byte *dst, int numPixels) {
-    const float invNorm = 1.0f / 255.0f;
+    const float invNorm = 1.0f / UINT8_MAX;
     const byte *srcPtr = src;
     const byte *srcEnd = srcPtr + numPixels * 4;
     float *dstPtr = reinterpret_cast<float *>(dst);
@@ -1363,6 +1379,61 @@ static void R16FToRGBA32F(const byte *src, byte *dst, int numPixels) {
     }
 }
 
+static void R16ToRGBA32F(const byte *src, byte *dst, int numPixels) {
+    const float invNorm = 1.0f / UINT16_MAX;
+    const uint16_t *srcPtr = reinterpret_cast<const uint16_t *>(src);
+    const uint16_t *srcEnd = srcPtr + numPixels;
+    float *dstPtr = reinterpret_cast<float *>(dst);
+
+    for (; srcPtr < srcEnd; srcPtr += 1, dstPtr += 4) {
+        dstPtr[0] = srcPtr[0] * invNorm;
+        dstPtr[1] = 0;
+        dstPtr[2] = 0;
+        dstPtr[3] = 1.0f;
+    }
+}
+
+static void R16SNormToRGBA32F(const byte *src, byte *dst, int numPixels) {
+    const float invPosNorm = 1.0f / INT16_MAX;
+    const float invNegNorm = 1.0f / -INT16_MIN;
+    const int16_t *srcPtr = reinterpret_cast<const int16_t *>(src);
+    const int16_t *srcEnd = srcPtr + numPixels;
+    float *dstPtr = reinterpret_cast<float *>(dst);
+
+    for (; srcPtr < srcEnd; srcPtr += 1, dstPtr += 4) {
+        dstPtr[0] = srcPtr[0] < 0 ? Max(srcPtr[0] * invNegNorm, -1.0f) : srcPtr[0] * invPosNorm;
+        dstPtr[1] = 0;
+        dstPtr[2] = 0;
+        dstPtr[3] = 1.0f;
+    }
+}
+
+static void R16SIntToRGBA32F(const byte *src, byte *dst, int numPixels) {
+    const int16_t *srcPtr = reinterpret_cast<const int16_t *>(src);
+    const int16_t *srcEnd = srcPtr + numPixels;
+    float *dstPtr = reinterpret_cast<float *>(dst);
+
+    for (; srcPtr < srcEnd; srcPtr += 1, dstPtr += 4) {
+        dstPtr[0] = srcPtr[0];
+        dstPtr[1] = 0;
+        dstPtr[2] = 0;
+        dstPtr[3] = 1.0f;
+    }
+}
+
+static void R16UIntToRGBA32F(const byte *src, byte *dst, int numPixels) {
+    const uint16_t *srcPtr = reinterpret_cast<const uint16_t *>(src);
+    const uint16_t *srcEnd = srcPtr + numPixels;
+    float *dstPtr = reinterpret_cast<float *>(dst);
+
+    for (; srcPtr < srcEnd; srcPtr += 1, dstPtr += 4) {
+        dstPtr[0] = srcPtr[0];
+        dstPtr[1] = 0;
+        dstPtr[2] = 0;
+        dstPtr[3] = 1.0f;
+    }
+}
+
 static void RG16FToRGBA32F(const byte *src, byte *dst, int numPixels) {
     const float16_t *srcPtr = reinterpret_cast<const float16_t *>(src);
     const float16_t *srcEnd = srcPtr + numPixels * 2;
@@ -1371,6 +1442,61 @@ static void RG16FToRGBA32F(const byte *src, byte *dst, int numPixels) {
     for (; srcPtr < srcEnd; srcPtr += 2, dstPtr += 4) {
         dstPtr[0] = F16Converter::ToF32(srcPtr[0]);
         dstPtr[1] = F16Converter::ToF32(srcPtr[1]);
+        dstPtr[2] = 0;
+        dstPtr[3] = 1.0f;
+    }
+}
+
+static void RG16ToRGBA32F(const byte *src, byte *dst, int numPixels) {
+    const float invNorm = 1.0f / UINT16_MAX;
+    const uint16_t *srcPtr = reinterpret_cast<const uint16_t *>(src);
+    const uint16_t *srcEnd = srcPtr + numPixels * 2;
+    float *dstPtr = reinterpret_cast<float *>(dst);
+
+    for (; srcPtr < srcEnd; srcPtr += 2, dstPtr += 4) {
+        dstPtr[0] = srcPtr[0] * invNorm;
+        dstPtr[1] = srcPtr[1] * invNorm;
+        dstPtr[2] = 0;
+        dstPtr[3] = 1.0f;
+    }
+}
+
+static void RG16SNormToRGBA32F(const byte *src, byte *dst, int numPixels) {
+    const float invPosNorm = 1.0f / INT16_MAX;
+    const float invNegNorm = 1.0f / -INT16_MIN;
+    const int16_t *srcPtr = reinterpret_cast<const int16_t *>(src);
+    const int16_t *srcEnd = srcPtr + numPixels;
+    float *dstPtr = reinterpret_cast<float *>(dst);
+
+    for (; srcPtr < srcEnd; srcPtr += 2, dstPtr += 4) {
+        dstPtr[0] = srcPtr[0] < 0 ? Max(srcPtr[0] * invNegNorm, -1.0f) : srcPtr[0] * invPosNorm;
+        dstPtr[1] = srcPtr[1] < 0 ? Max(srcPtr[1] * invNegNorm, -1.0f) : srcPtr[1] * invPosNorm;
+        dstPtr[2] = 0;
+        dstPtr[3] = 1.0f;
+    }
+}
+
+static void RG16SIntToRGBA32F(const byte *src, byte *dst, int numPixels) {
+    const int16_t *srcPtr = reinterpret_cast<const int16_t *>(src);
+    const int16_t *srcEnd = srcPtr + numPixels;
+    float *dstPtr = reinterpret_cast<float *>(dst);
+
+    for (; srcPtr < srcEnd; srcPtr += 2, dstPtr += 4) {
+        dstPtr[0] = srcPtr[0];
+        dstPtr[1] = srcPtr[1];
+        dstPtr[2] = 0;
+        dstPtr[3] = 1.0f;
+    }
+}
+
+static void RG16UIntToRGBA32F(const byte *src, byte *dst, int numPixels) {
+    const uint16_t *srcPtr = reinterpret_cast<const uint16_t *>(src);
+    const uint16_t *srcEnd = srcPtr + numPixels;
+    float *dstPtr = reinterpret_cast<float *>(dst);
+
+    for (; srcPtr < srcEnd; srcPtr += 2, dstPtr += 4) {
+        dstPtr[0] = srcPtr[0];
+        dstPtr[1] = srcPtr[1];
         dstPtr[2] = 0;
         dstPtr[3] = 1.0f;
     }
@@ -1389,6 +1515,61 @@ static void RGB16FToRGBA32F(const byte *src, byte *dst, int numPixels) {
     }
 }
 
+static void RGB16ToRGBA32F(const byte *src, byte *dst, int numPixels) {
+    const float invNorm = 1.0f / UINT16_MAX;
+    const uint16_t *srcPtr = reinterpret_cast<const uint16_t *>(src);
+    const uint16_t *srcEnd = srcPtr + numPixels * 3;
+    float *dstPtr = reinterpret_cast<float *>(dst);
+
+    for (; srcPtr < srcEnd; srcPtr += 3, dstPtr += 4) {
+        dstPtr[0] = srcPtr[0] * invNorm;
+        dstPtr[1] = srcPtr[1] * invNorm;
+        dstPtr[2] = srcPtr[2] * invNorm;
+        dstPtr[3] = 1.0f;
+    }
+}
+
+static void RGB16SNormToRGBA32F(const byte *src, byte *dst, int numPixels) {
+    const float invPosNorm = 1.0f / INT16_MAX;
+    const float invNegNorm = 1.0f / -INT16_MIN;
+    const int16_t *srcPtr = reinterpret_cast<const int16_t *>(src);
+    const int16_t *srcEnd = srcPtr + numPixels;
+    float *dstPtr = reinterpret_cast<float *>(dst);
+
+    for (; srcPtr < srcEnd; srcPtr += 3, dstPtr += 4) {
+        dstPtr[0] = srcPtr[0] < 0 ? Max(srcPtr[0] * invNegNorm, -1.0f) : srcPtr[0] * invPosNorm;
+        dstPtr[1] = srcPtr[1] < 0 ? Max(srcPtr[1] * invNegNorm, -1.0f) : srcPtr[1] * invPosNorm;
+        dstPtr[2] = srcPtr[2] < 0 ? Max(srcPtr[2] * invNegNorm, -1.0f) : srcPtr[2] * invPosNorm;
+        dstPtr[3] = 1.0f;
+    }
+}
+
+static void RGB16SIntToRGBA32F(const byte *src, byte *dst, int numPixels) {
+    const int16_t *srcPtr = reinterpret_cast<const int16_t *>(src);
+    const int16_t *srcEnd = srcPtr + numPixels;
+    float *dstPtr = reinterpret_cast<float *>(dst);
+
+    for (; srcPtr < srcEnd; srcPtr += 3, dstPtr += 4) {
+        dstPtr[0] = srcPtr[0];
+        dstPtr[1] = srcPtr[1];
+        dstPtr[2] = srcPtr[2];
+        dstPtr[3] = 1.0f;
+    }
+}
+
+static void RGB16UIntToRGBA32F(const byte *src, byte *dst, int numPixels) {
+    const uint16_t *srcPtr = reinterpret_cast<const uint16_t *>(src);
+    const uint16_t *srcEnd = srcPtr + numPixels;
+    float *dstPtr = reinterpret_cast<float *>(dst);
+
+    for (; srcPtr < srcEnd; srcPtr += 3, dstPtr += 4) {
+        dstPtr[0] = srcPtr[0];
+        dstPtr[1] = srcPtr[1];
+        dstPtr[2] = srcPtr[2];
+        dstPtr[3] = 1.0f;
+    }
+}
+
 static void RGBA16FToRGBA32F(const byte *src, byte *dst, int numPixels) {
     const float16_t *srcPtr = reinterpret_cast<const float16_t *>(src);
     const float16_t *srcEnd = srcPtr + numPixels * 4;
@@ -1402,12 +1583,78 @@ static void RGBA16FToRGBA32F(const byte *src, byte *dst, int numPixels) {
     }
 }
 
+static void RGBA16ToRGBA32F(const byte *src, byte *dst, int numPixels) {
+    const float invNorm = 1.0f / UINT16_MAX;
+    const uint16_t *srcPtr = reinterpret_cast<const uint16_t *>(src);
+    const uint16_t *srcEnd = srcPtr + numPixels * 4;
+    float *dstPtr = reinterpret_cast<float *>(dst);
+
+    for (; srcPtr < srcEnd; srcPtr += 4, dstPtr += 4) {
+        dstPtr[0] = srcPtr[0] * invNorm;
+        dstPtr[1] = srcPtr[1] * invNorm;
+        dstPtr[2] = srcPtr[2] * invNorm;
+        dstPtr[3] = srcPtr[3] * invNorm;
+    }
+}
+
+static void RGBA16SNormToRGBA32F(const byte *src, byte *dst, int numPixels) {
+    const float invPosNorm = 1.0f / INT16_MAX;
+    const float invNegNorm = 1.0f / -INT16_MIN;
+    const int16_t *srcPtr = reinterpret_cast<const int16_t *>(src);
+    const int16_t *srcEnd = srcPtr + numPixels;
+    float *dstPtr = reinterpret_cast<float *>(dst);
+
+    for (; srcPtr < srcEnd; srcPtr += 4, dstPtr += 4) {
+        dstPtr[0] = srcPtr[0] < 0 ? Max(srcPtr[0] * invNegNorm, -1.0f) : srcPtr[0] * invPosNorm;
+        dstPtr[1] = srcPtr[1] < 0 ? Max(srcPtr[1] * invNegNorm, -1.0f) : srcPtr[1] * invPosNorm;
+        dstPtr[2] = srcPtr[2] < 0 ? Max(srcPtr[2] * invNegNorm, -1.0f) : srcPtr[2] * invPosNorm;
+        dstPtr[3] = srcPtr[3] < 0 ? Max(srcPtr[3] * invNegNorm, -1.0f) : srcPtr[3] * invPosNorm;
+    }
+}
+
+static void RGBA16SIntToRGBA32F(const byte *src, byte *dst, int numPixels) {
+    const int16_t *srcPtr = reinterpret_cast<const int16_t *>(src);
+    const int16_t *srcEnd = srcPtr + numPixels;
+    float *dstPtr = reinterpret_cast<float *>(dst);
+
+    for (; srcPtr < srcEnd; srcPtr += 4, dstPtr += 4) {
+        dstPtr[0] = srcPtr[0];
+        dstPtr[1] = srcPtr[1];
+        dstPtr[2] = srcPtr[2];
+        dstPtr[3] = srcPtr[3];
+    }
+}
+
+static void RGBA16UIntToRGBA32F(const byte *src, byte *dst, int numPixels) {
+    const uint16_t *srcPtr = reinterpret_cast<const uint16_t *>(src);
+    const uint16_t *srcEnd = srcPtr + numPixels;
+    float *dstPtr = reinterpret_cast<float *>(dst);
+
+    for (; srcPtr < srcEnd; srcPtr += 4, dstPtr += 4) {
+        dstPtr[0] = srcPtr[0];
+        dstPtr[1] = srcPtr[1];
+        dstPtr[2] = srcPtr[2];
+        dstPtr[3] = srcPtr[3];
+    }
+}
+
 static void L32FToRGBA32F(const byte *src, byte *dst, int numPixels) {
     const float *srcPtr = reinterpret_cast<const float *>(src);
     const float *srcEnd = srcPtr + numPixels;
     float *dstPtr = reinterpret_cast<float *>(dst);
 
     for (; srcPtr < srcEnd; srcPtr += 1, dstPtr += 4) {
+        dstPtr[0] = dstPtr[1] = dstPtr[2] = srcPtr[0];
+        dstPtr[3] = 1.0f;
+    }
+}
+
+static void L32FX32ToRGBA32F(const byte *src, byte *dst, int numPixels) {
+    const float *srcPtr = reinterpret_cast<const float *>(src);
+    const float *srcEnd = srcPtr + numPixels * 2;
+    float *dstPtr = reinterpret_cast<float *>(dst);
+
+    for (; srcPtr < srcEnd; srcPtr += 2, dstPtr += 4) {
         dstPtr[0] = dstPtr[1] = dstPtr[2] = srcPtr[0];
         dstPtr[3] = 1.0f;
     }
@@ -1670,6 +1917,16 @@ static void RGBA32FToL16(const byte *src, byte *dst, int numPixels) {
     }
 }
 
+static void RGBA32FToL24X8(const byte *src, byte *dst, int numPixels) {
+    const float *srcPtr = reinterpret_cast<const float *>(src);
+    const float *srcEnd = srcPtr + numPixels * 4;
+    uint32_t *dstPtr = reinterpret_cast<uint32_t *>(dst);
+
+    for (; srcPtr < srcEnd; srcPtr += 4, dstPtr += 1) {
+        dstPtr[0] = Clamp<int>((0.299f * srcPtr[0] + 0.587f * srcPtr[1] + 0.114f * srcPtr[2]) * 0x00FFFFFF, 0, 0x00FFFFFF);
+    }
+}
+
 static void RGBA32FToLA1616(const byte *src, byte *dst, int numPixels) {
     const float *srcPtr = reinterpret_cast<const float *>(src);
     const float *srcEnd = srcPtr + numPixels * 4;
@@ -1827,7 +2084,7 @@ static void RGBA32FToR8SInt(const byte *src, byte *dst, int numPixels) {
     int8_t *dstPtr = reinterpret_cast<int8_t *>(dst);
 
     for (; srcPtr < srcEnd; srcPtr += 4, dstPtr += 1) {
-        dstPtr[0] = Math::Ftoi8(Clamp(Math::Round(srcPtr[0]), -128.0f, 127.0f));
+        dstPtr[0] = Math::Ftoi8(Clamp<float>(Math::Round(srcPtr[0]), INT8_MIN, INT8_MAX));
     }
 }
 
@@ -1837,7 +2094,7 @@ static void RGBA32FToR8UInt(const byte *src, byte *dst, int numPixels) {
     uint8_t *dstPtr = reinterpret_cast<uint8_t *>(dst);
 
     for (; srcPtr < srcEnd; srcPtr += 4, dstPtr += 1) {
-        dstPtr[0] = Math::Ftob(Clamp(Math::Round(srcPtr[0]), 0.0f, 255.0f));
+        dstPtr[0] = Math::Ftob(Clamp<float>(Math::Round(srcPtr[0]), 0, UINT8_MAX));
     }
 }
 
@@ -2140,6 +2397,46 @@ static void RGBA32FToR16F(const byte *src, byte *dst, int numPixels) {
     }
 }
 
+static void RGBA32FToR16(const byte *src, byte *dst, int numPixels) {
+    const float *srcPtr = reinterpret_cast<const float *>(src);
+    const float *srcEnd = srcPtr + numPixels * 4;
+    byte *dstPtr = dst;
+
+    for (; srcPtr < srcEnd; srcPtr += 4, dstPtr += 1) {
+        dstPtr[0] = Math::Ftoui16(UINT16_MAX * Clamp01(srcPtr[0]));
+    }
+}
+
+static void RGBA32FToR16SNorm(const byte *src, byte *dst, int numPixels) {
+    const float *srcPtr = reinterpret_cast<const float *>(src);
+    const float *srcEnd = srcPtr + numPixels * 4;
+    int16_t *dstPtr = reinterpret_cast<int16_t *>(dst);
+
+    for (; srcPtr < srcEnd; srcPtr += 4, dstPtr += 1) {
+        dstPtr[0] = Math::Ftoi16(Math::Floor((UINT16_MAX / 2.0f) * Clamp(srcPtr[0], -1.0f, 1.0f)));
+    }
+}
+
+static void RGBA32FToR16SInt(const byte *src, byte *dst, int numPixels) {
+    const float *srcPtr = reinterpret_cast<const float *>(src);
+    const float *srcEnd = srcPtr + numPixels * 4;
+    int16_t *dstPtr = reinterpret_cast<int16_t *>(dst);
+
+    for (; srcPtr < srcEnd; srcPtr += 4, dstPtr += 1) {
+        dstPtr[0] = Math::Ftoi16(Clamp<float>(Math::Round(srcPtr[0]), INT16_MIN, INT16_MAX));
+    }
+}
+
+static void RGBA32FToR16UInt(const byte *src, byte *dst, int numPixels) {
+    const float *srcPtr = reinterpret_cast<const float *>(src);
+    const float *srcEnd = srcPtr + numPixels * 4;
+    uint16_t *dstPtr = reinterpret_cast<uint16_t *>(dst);
+
+    for (; srcPtr < srcEnd; srcPtr += 4, dstPtr += 1) {
+        dstPtr[0] = Math::Ftoui16(Clamp<float>(Math::Round(srcPtr[0]), 0, UINT16_MAX));
+    }
+}
+
 static void RGBA32FToRG16F(const byte *src, byte *dst, int numPixels) {
     const float *srcPtr = reinterpret_cast<const float *>(src);
     const float *srcEnd = srcPtr + numPixels * 4;
@@ -2148,6 +2445,50 @@ static void RGBA32FToRG16F(const byte *src, byte *dst, int numPixels) {
     for (; srcPtr < srcEnd; srcPtr += 4, dstPtr += 2) {
         dstPtr[0] = F16Converter::FromF32(srcPtr[0]);
         dstPtr[1] = F16Converter::FromF32(srcPtr[1]);
+    }
+}
+
+static void RGBA32FToRG16(const byte *src, byte *dst, int numPixels) {
+    const float *srcPtr = reinterpret_cast<const float *>(src);
+    const float *srcEnd = srcPtr + numPixels * 4;
+    byte *dstPtr = dst;
+
+    for (; srcPtr < srcEnd; srcPtr += 4, dstPtr += 2) {
+        dstPtr[0] = Math::Ftoui16(UINT16_MAX * Clamp01(srcPtr[0]));
+        dstPtr[1] = Math::Ftoui16(UINT16_MAX * Clamp01(srcPtr[1]));
+    }
+}
+
+static void RGBA32FToRG16SNorm(const byte *src, byte *dst, int numPixels) {
+    const float *srcPtr = reinterpret_cast<const float *>(src);
+    const float *srcEnd = srcPtr + numPixels * 4;
+    int16_t *dstPtr = reinterpret_cast<int16_t *>(dst);
+
+    for (; srcPtr < srcEnd; srcPtr += 4, dstPtr += 2) {
+        dstPtr[0] = Math::Ftoi16(Math::Floor((UINT16_MAX / 2.0f) * Clamp(srcPtr[0], -1.0f, 1.0f)));
+        dstPtr[1] = Math::Ftoi16(Math::Floor((UINT16_MAX / 2.0f) * Clamp(srcPtr[1], -1.0f, 1.0f)));
+    }
+}
+
+static void RGBA32FToRG16SInt(const byte *src, byte *dst, int numPixels) {
+    const float *srcPtr = reinterpret_cast<const float *>(src);
+    const float *srcEnd = srcPtr + numPixels * 4;
+    int16_t *dstPtr = reinterpret_cast<int16_t *>(dst);
+
+    for (; srcPtr < srcEnd; srcPtr += 4, dstPtr += 2) {
+        dstPtr[0] = Math::Ftoi16(Clamp<float>(Math::Round(srcPtr[0]), INT16_MIN, INT16_MAX));
+        dstPtr[1] = Math::Ftoi16(Clamp<float>(Math::Round(srcPtr[1]), INT16_MIN, INT16_MAX));
+    }
+}
+
+static void RGBA32FToRG16UInt(const byte *src, byte *dst, int numPixels) {
+    const float *srcPtr = reinterpret_cast<const float *>(src);
+    const float *srcEnd = srcPtr + numPixels * 4;
+    uint16_t *dstPtr = reinterpret_cast<uint16_t *>(dst);
+
+    for (; srcPtr < srcEnd; srcPtr += 4, dstPtr += 2) {
+        dstPtr[0] = Math::Ftoui16(Clamp<float>(Math::Round(srcPtr[0]), 0, UINT16_MAX));
+        dstPtr[1] = Math::Ftoui16(Clamp<float>(Math::Round(srcPtr[1]), 0, UINT16_MAX));
     }
 }
 
@@ -2160,6 +2501,54 @@ static void RGBA32FToRGB16F(const byte *src, byte *dst, int numPixels) {
         dstPtr[0] = F16Converter::FromF32(srcPtr[0]);
         dstPtr[1] = F16Converter::FromF32(srcPtr[1]);
         dstPtr[2] = F16Converter::FromF32(srcPtr[2]);
+    }
+}
+
+static void RGBA32FToRGB16(const byte *src, byte *dst, int numPixels) {
+    const float *srcPtr = reinterpret_cast<const float *>(src);
+    const float *srcEnd = srcPtr + numPixels * 4;
+    byte *dstPtr = dst;
+
+    for (; srcPtr < srcEnd; srcPtr += 4, dstPtr += 3) {
+        dstPtr[0] = Math::Ftoui16(UINT16_MAX * Clamp01(srcPtr[0]));
+        dstPtr[1] = Math::Ftoui16(UINT16_MAX * Clamp01(srcPtr[1]));
+        dstPtr[2] = Math::Ftoui16(UINT16_MAX * Clamp01(srcPtr[2]));
+    }
+}
+
+static void RGBA32FToRGB16SNorm(const byte *src, byte *dst, int numPixels) {
+    const float *srcPtr = reinterpret_cast<const float *>(src);
+    const float *srcEnd = srcPtr + numPixels * 4;
+    int16_t *dstPtr = reinterpret_cast<int16_t *>(dst);
+
+    for (; srcPtr < srcEnd; srcPtr += 4, dstPtr += 3) {
+        dstPtr[0] = Math::Ftoi16(Math::Floor((UINT16_MAX / 2.0f) * Clamp(srcPtr[0], -1.0f, 1.0f)));
+        dstPtr[1] = Math::Ftoi16(Math::Floor((UINT16_MAX / 2.0f) * Clamp(srcPtr[1], -1.0f, 1.0f)));
+        dstPtr[2] = Math::Ftoi16(Math::Floor((UINT16_MAX / 2.0f) * Clamp(srcPtr[2], -1.0f, 1.0f)));
+    }
+}
+
+static void RGBA32FToRGB16SInt(const byte *src, byte *dst, int numPixels) {
+    const float *srcPtr = reinterpret_cast<const float *>(src);
+    const float *srcEnd = srcPtr + numPixels * 4;
+    int16_t *dstPtr = reinterpret_cast<int16_t *>(dst);
+
+    for (; srcPtr < srcEnd; srcPtr += 4, dstPtr += 3) {
+        dstPtr[0] = Math::Ftoi16(Clamp<float>(Math::Round(srcPtr[0]), INT16_MIN, INT16_MAX));
+        dstPtr[1] = Math::Ftoi16(Clamp<float>(Math::Round(srcPtr[1]), INT16_MIN, INT16_MAX));
+        dstPtr[2] = Math::Ftoi16(Clamp<float>(Math::Round(srcPtr[2]), INT16_MIN, INT16_MAX));
+    }
+}
+
+static void RGBA32FToRGB16UInt(const byte *src, byte *dst, int numPixels) {
+    const float *srcPtr = reinterpret_cast<const float *>(src);
+    const float *srcEnd = srcPtr + numPixels * 4;
+    uint16_t *dstPtr = reinterpret_cast<uint16_t *>(dst);
+
+    for (; srcPtr < srcEnd; srcPtr += 4, dstPtr += 3) {
+        dstPtr[0] = Math::Ftoui16(Clamp<float>(Math::Round(srcPtr[0]), 0, UINT16_MAX));
+        dstPtr[1] = Math::Ftoui16(Clamp<float>(Math::Round(srcPtr[1]), 0, UINT16_MAX));
+        dstPtr[2] = Math::Ftoui16(Clamp<float>(Math::Round(srcPtr[2]), 0, UINT16_MAX));
     }
 }
 
@@ -2176,12 +2565,74 @@ static void RGBA32FToRGBA16F(const byte *src, byte *dst, int numPixels) {
     }
 }
 
+static void RGBA32FToRGBA16(const byte *src, byte *dst, int numPixels) {
+    const float *srcPtr = reinterpret_cast<const float *>(src);
+    const float *srcEnd = srcPtr + numPixels * 4;
+    byte *dstPtr = dst;
+
+    for (; srcPtr < srcEnd; srcPtr += 4, dstPtr += 4) {
+        dstPtr[0] = Math::Ftoui16(UINT16_MAX * Clamp01(srcPtr[0]));
+        dstPtr[1] = Math::Ftoui16(UINT16_MAX * Clamp01(srcPtr[1]));
+        dstPtr[2] = Math::Ftoui16(UINT16_MAX * Clamp01(srcPtr[2]));
+        dstPtr[3] = Math::Ftoui16(UINT16_MAX * Clamp01(srcPtr[3]));
+    }
+}
+
+static void RGBA32FToRGBA16SNorm(const byte *src, byte *dst, int numPixels) {
+    const float *srcPtr = reinterpret_cast<const float *>(src);
+    const float *srcEnd = srcPtr + numPixels * 4;
+    int16_t *dstPtr = reinterpret_cast<int16_t *>(dst);
+
+    for (; srcPtr < srcEnd; srcPtr += 4, dstPtr += 4) {
+        dstPtr[0] = Math::Ftoi16(Math::Floor((UINT16_MAX / 2.0f) * Clamp(srcPtr[0], -1.0f, 1.0f)));
+        dstPtr[1] = Math::Ftoi16(Math::Floor((UINT16_MAX / 2.0f) * Clamp(srcPtr[1], -1.0f, 1.0f)));
+        dstPtr[2] = Math::Ftoi16(Math::Floor((UINT16_MAX / 2.0f) * Clamp(srcPtr[2], -1.0f, 1.0f)));
+        dstPtr[3] = Math::Ftoi16(Math::Floor((UINT16_MAX / 2.0f) * Clamp(srcPtr[3], -1.0f, 1.0f)));
+    }
+}
+
+static void RGBA32FToRGBA16SInt(const byte *src, byte *dst, int numPixels) {
+    const float *srcPtr = reinterpret_cast<const float *>(src);
+    const float *srcEnd = srcPtr + numPixels * 4;
+    int16_t *dstPtr = reinterpret_cast<int16_t *>(dst);
+
+    for (; srcPtr < srcEnd; srcPtr += 4, dstPtr += 4) {
+        dstPtr[0] = Math::Ftoi16(Clamp<float>(Math::Round(srcPtr[0]), INT16_MIN, INT16_MAX));
+        dstPtr[1] = Math::Ftoi16(Clamp<float>(Math::Round(srcPtr[1]), INT16_MIN, INT16_MAX));
+        dstPtr[2] = Math::Ftoi16(Clamp<float>(Math::Round(srcPtr[2]), INT16_MIN, INT16_MAX));
+        dstPtr[3] = Math::Ftoi16(Clamp<float>(Math::Round(srcPtr[3]), INT16_MIN, INT16_MAX));
+    }
+}
+
+static void RGBA32FToRGBA16UInt(const byte *src, byte *dst, int numPixels) {
+    const float *srcPtr = reinterpret_cast<const float *>(src);
+    const float *srcEnd = srcPtr + numPixels * 4;
+    uint16_t *dstPtr = reinterpret_cast<uint16_t *>(dst);
+
+    for (; srcPtr < srcEnd; srcPtr += 4, dstPtr += 4) {
+        dstPtr[0] = Math::Ftoui16(Clamp<float>(Math::Round(srcPtr[0]), 0, UINT16_MAX));
+        dstPtr[1] = Math::Ftoui16(Clamp<float>(Math::Round(srcPtr[1]), 0, UINT16_MAX));
+        dstPtr[2] = Math::Ftoui16(Clamp<float>(Math::Round(srcPtr[2]), 0, UINT16_MAX));
+        dstPtr[3] = Math::Ftoui16(Clamp<float>(Math::Round(srcPtr[3]), 0, UINT16_MAX));
+    }
+}
+
 static void RGBA32FToL32F(const byte *src, byte *dst, int numPixels) {
     const float *srcPtr = reinterpret_cast<const float *>(src);
     const float *srcEnd = srcPtr + numPixels * 4;
     float *dstPtr = reinterpret_cast<float *>(dst);
 
     for (; srcPtr < srcEnd; srcPtr += 4, dstPtr += 1) {
+        dstPtr[0] = 0.299f * srcPtr[0] + 0.587f * srcPtr[1] + 0.114f * srcPtr[2];
+    }
+}
+
+static void RGBA32FToL32FX32(const byte *src, byte *dst, int numPixels) {
+    const float *srcPtr = reinterpret_cast<const float *>(src);
+    const float *srcEnd = srcPtr + numPixels * 4;
+    float *dstPtr = reinterpret_cast<float *>(dst);
+
+    for (; srcPtr < srcEnd; srcPtr += 4, dstPtr += 2) {
         dstPtr[0] = 0.299f * srcPtr[0] + 0.587f * srcPtr[1] + 0.114f * srcPtr[2];
     }
 }
@@ -2347,57 +2798,73 @@ static const ImageFormatInfo imageFormatInfo[] = {
     { "R32G32B32A32_SINT",      16, 4,  32, 32, 32, 32, Image::FormatType::SInt, nullptr, nullptr, RGBA32SIntToRGBA32F, RGBA32FToRGBA32SInt },
     { "R32G32B32A32_UINT",      16, 4,  32, 32, 32, 32, Image::FormatType::UInt, nullptr, nullptr, RGBA32UIntToRGBA32F, RGBA32FToRGBA32UInt },
     { "R16_FLOAT",              2,  1,  16, 0,  0,  0,  Image::FormatType::Float, nullptr, nullptr, R16FToRGBA32F, RGBA32FToR16F },
+    { "R16",                    2,  1,  16, 0,  0,  0,  Image::FormatType::UNorm, nullptr, nullptr, R16ToRGBA32F, RGBA32FToR16 },
+    { "R16_SNORM",              2,  1,  16, 0,  0,  0,  Image::FormatType::SNorm, nullptr, nullptr, R16SNormToRGBA32F, RGBA32FToR16SNorm },
+    { "R16_SINT",               2,  1,  16, 0,  0,  0,  Image::FormatType::SInt, nullptr, nullptr, R16SIntToRGBA32F, RGBA32FToR16SInt },
+    { "R16_UINT",               2,  1,  16, 0,  0,  0,  Image::FormatType::UInt, nullptr, nullptr, R16UIntToRGBA32F, RGBA32FToR16UInt },
     { "R16G16_FLOAT",           4,  2,  16, 16, 0,  0,  Image::FormatType::Float, nullptr, nullptr, RG16FToRGBA32F, RGBA32FToRG16F },
+    { "R16G16",                 4,  2,  16, 16, 0,  0,  Image::FormatType::UNorm, nullptr, nullptr, RG16ToRGBA32F, RGBA32FToRG16 },
+    { "R16G16_SNORM",           4,  2,  16, 16, 0,  0,  Image::FormatType::SNorm, nullptr, nullptr, RG16SNormToRGBA32F, RGBA32FToRG16SNorm },
+    { "R16G16_SINT",            4,  2,  16, 16, 0,  0,  Image::FormatType::SInt, nullptr, nullptr, RG16SIntToRGBA32F, RGBA32FToRG16SInt },
+    { "R16G16_UINT",            4,  2,  16, 16, 0,  0,  Image::FormatType::UInt, nullptr, nullptr, RG16UIntToRGBA32F, RGBA32FToRG16UInt },
     { "R16G16B16_FLOAT",        6,  3,  16, 16, 16, 0,  Image::FormatType::Float, nullptr, nullptr, RGB16FToRGBA32F, RGBA32FToRGB16F },
+    { "R16G16B16",              6,  3,  16, 16, 16, 0,  Image::FormatType::UNorm, nullptr, nullptr, RGB16ToRGBA32F, RGBA32FToRGB16 },
+    { "R16G16B16_SNORM",        6,  3,  16, 16, 16, 0,  Image::FormatType::SNorm, nullptr, nullptr, RGB16SNormToRGBA32F, RGBA32FToRGB16SNorm },
+    { "R16G16B16_SINT",         6,  3,  16, 16, 16, 0,  Image::FormatType::SInt, nullptr, nullptr, RGB16SIntToRGBA32F, RGBA32FToRGB16SInt },
+    { "R16G16B16_UINT",         6,  3,  16, 16, 16, 0,  Image::FormatType::UInt, nullptr, nullptr, RGB16UIntToRGBA32F, RGBA32FToRGB16UInt },
     { "R16G16B16A16_FLOAT",     8,  4,  16, 16, 16, 16, Image::FormatType::Float, nullptr, nullptr, RGBA16FToRGBA32F, RGBA32FToRGBA16F },
+    { "R16G16B16A16",           8,  4,  16, 16, 16, 16, Image::FormatType::UNorm, nullptr, nullptr, RGBA16ToRGBA32F, RGBA32FToRGBA16 },
+    { "R16G16B16A16_SNORM",     8,  4,  16, 16, 16, 16, Image::FormatType::SNorm, nullptr, nullptr, RGBA16SNormToRGBA32F, RGBA32FToRGBA16SNorm },
+    { "R16G16B16A16_SINT",      8,  4,  16, 16, 16, 16, Image::FormatType::SInt, nullptr, nullptr, RGBA16SIntToRGBA32F, RGBA32FToRGBA16SInt },
+    { "R16G16B16A16_UINT",      8,  4,  16, 16, 16, 16, Image::FormatType::UInt, nullptr, nullptr, RGBA16UIntToRGBA32F, RGBA32FToRGBA16UInt },
     { "R9G9B9E5_FLOAT",         4,  3,  9,  9,  9,  0,  Image::FormatType::Float | Image::FormatType::Packed, nullptr, nullptr, RGBE9995ToRGBA32F, RGBA32FToRGBE9995 },
     { "R11G11B10_FLOAT",        4,  3,  11, 11, 10, 0,  Image::FormatType::Float | Image::FormatType::Packed, nullptr, nullptr, RGB11F11F10FToRGBA32F, RGBA32FToRGB11F11F10F },
-    { "R8G8B8X8",               4,  4,  8,  8,  8,  0,  Image::FormatType::None, RGBX8888ToRGBA8888, RGBA8888ToRGBX8888, RGBX8888ToRGBA32F, RGBA32FToRGBX8888 },
-    { "B8G8R8X8",               4,  4,  8,  8,  8,  0,  Image::FormatType::None, BGRX8888ToRGBA8888, RGBA8888ToBGRX8888, BGRX8888ToRGBA32F, RGBA32FToBGRX8888 },
-    { "R8G8B8A8",               4,  4,  8,  8,  8,  8,  Image::FormatType::None, RGBA8888ToRGBA8888, RGBA8888ToRGBA8888, RGBA8888ToRGBA32F, RGBA32FToRGBA8888 },
-    { "R8G8B8A8_SNORM",         3,  4,  8,  8,  8,  8,  Image::FormatType::SNorm, nullptr, nullptr, RGBA8888SNormToRGBA32F, RGBA32FToRGBA8888SNorm },
-    { "R8G8B8A8_SINT",          3,  4,  8,  8,  8,  8,  Image::FormatType::SInt, nullptr, nullptr, RGBA8888SIntToRGBA32F, RGBA32FToRGBA8888SInt },
-    { "R8G8B8A8_UINT",          3,  4,  8,  8,  8,  8,  Image::FormatType::UInt, nullptr, nullptr, RGBA8888UIntToRGBA32F, RGBA32FToRGBA8888UInt },
-    { "B8G8R8A8",               4,  4,  8,  8,  8,  8,  Image::FormatType::None, BGRA8888ToRGBA8888, RGBA8888ToBGRA8888, BGRA8888ToRGBA32F, RGBA32FToBGRA8888 },
-    { "A8B8G8R8",               4,  4,  8,  8,  8,  8,  Image::FormatType::None, ABGR8888ToRGBA8888, RGBA8888ToABGR8888, ABGR8888ToRGBA32F, RGBA32FToABGR8888 },
-    { "A8R8G8B8",               4,  4,  8,  8,  8,  8,  Image::FormatType::None, ARGB8888ToRGBA8888, RGBA8888ToARGB8888, ARGB8888ToRGBA32F, RGBA32FToARGB8888 },
-    { "R8G8B8"   ,              3,  3,  8,  8,  8,  0,  Image::FormatType::None, RGB888ToRGBA8888, RGBA8888ToRGB888, RGB888ToRGBA32F, RGBA32FToRGB888 },
-    { "R8G8B8_SNORM",           3,  3,  8,  8,  8,  0,  Image::FormatType::SNorm, nullptr, nullptr, RGB888SNormToRGBA32F, RGBA32FToRGB888SNorm },
-    { "R8G8B8_SINT",            3,  3,  8,  8,  8,  0,  Image::FormatType::SInt, nullptr, nullptr, RGB888SIntToRGBA32F, RGBA32FToRGB888SInt },
-    { "R8G8B8_UINT",            3,  3,  8,  8,  8,  0,  Image::FormatType::UInt, nullptr, nullptr, RGB888UIntToRGBA32F, RGBA32FToRGB888UInt },
-    { "B8G8R8",                 3,  3,  8,  8,  8,  0,  Image::FormatType::None, BGR888ToRGBA8888, RGBA8888ToBGR888, BGR888ToRGBA32F, RGBA32FToBGR888 },
-    { "R8G8",                   2,  2,  8,  8,  0,  0,  Image::FormatType::None, RG88ToRGBA8888, RGBA8888ToRG88, RG88ToRGBA32F, RGBA32FToRG88 },
-    { "R8G8_SNORM",             2,  2,  8,  8,  0,  0,  Image::FormatType::SNorm, nullptr, nullptr, RG88SNormToRGBA32F, RGBA32FToRG88SNorm },
-    { "R8G8_SINT",              2,  2,  8,  8,  0,  0,  Image::FormatType::SInt, nullptr, nullptr, RG88SIntToRGBA32F, RGBA32FToRG88SInt },
-    { "R8G8_UINT",              2,  2,  8,  8,  0,  0,  Image::FormatType::UInt, nullptr, nullptr, RG88UIntToRGBA32F, RGBA32FToRG88UInt },
-    { "R8",                     1,  1,  8,  0,  0,  0,  Image::FormatType::None, R8ToRGBA8888, RGBA8888ToR8, R8ToRGBA32F, RGBA32FToR8 },
+    { "R8",                     1,  1,  8,  0,  0,  0,  Image::FormatType::UNorm, R8ToRGBA8888, RGBA8888ToR8, R8ToRGBA32F, RGBA32FToR8 },
     { "R8_SNORM",               1,  1,  8,  0,  0,  0,  Image::FormatType::SNorm, nullptr, nullptr, R8SNormToRGBA32F, RGBA32FToR8SNorm },
     { "R8_SINT",                1,  1,  8,  0,  0,  0,  Image::FormatType::SInt, nullptr, nullptr, R8SIntToRGBA32F, RGBA32FToR8SInt },
     { "R8_UINT",                1,  1,  8,  0,  0,  0,  Image::FormatType::UInt, nullptr, nullptr, R8UIntToRGBA32F, RGBA32FToR8UInt },
+    { "R8G8",                   2,  2,  8,  8,  0,  0,  Image::FormatType::UNorm, RG88ToRGBA8888, RGBA8888ToRG88, RG88ToRGBA32F, RGBA32FToRG88 },
+    { "R8G8_SNORM",             2,  2,  8,  8,  0,  0,  Image::FormatType::SNorm, nullptr, nullptr, RG88SNormToRGBA32F, RGBA32FToRG88SNorm },
+    { "R8G8_SINT",              2,  2,  8,  8,  0,  0,  Image::FormatType::SInt, nullptr, nullptr, RG88SIntToRGBA32F, RGBA32FToRG88SInt },
+    { "R8G8_UINT",              2,  2,  8,  8,  0,  0,  Image::FormatType::UInt, nullptr, nullptr, RG88UIntToRGBA32F, RGBA32FToRG88UInt },
+    { "R8G8B8"   ,              3,  3,  8,  8,  8,  0,  Image::FormatType::UNorm, RGB888ToRGBA8888, RGBA8888ToRGB888, RGB888ToRGBA32F, RGBA32FToRGB888 },
+    { "R8G8B8_SNORM",           3,  3,  8,  8,  8,  0,  Image::FormatType::SNorm, nullptr, nullptr, RGB888SNormToRGBA32F, RGBA32FToRGB888SNorm },
+    { "R8G8B8_SINT",            3,  3,  8,  8,  8,  0,  Image::FormatType::SInt, nullptr, nullptr, RGB888SIntToRGBA32F, RGBA32FToRGB888SInt },
+    { "R8G8B8_UINT",            3,  3,  8,  8,  8,  0,  Image::FormatType::UInt, nullptr, nullptr, RGB888UIntToRGBA32F, RGBA32FToRGB888UInt },
+    { "B8G8R8",                 3,  3,  8,  8,  8,  0,  Image::FormatType::UNorm, BGR888ToRGBA8888, RGBA8888ToBGR888, BGR888ToRGBA32F, RGBA32FToBGR888 },
+    { "R8G8B8A8",               4,  4,  8,  8,  8,  8,  Image::FormatType::UNorm, RGBA8888ToRGBA8888, RGBA8888ToRGBA8888, RGBA8888ToRGBA32F, RGBA32FToRGBA8888 },
+    { "R8G8B8A8_SNORM",         3,  4,  8,  8,  8,  8,  Image::FormatType::SNorm, nullptr, nullptr, RGBA8888SNormToRGBA32F, RGBA32FToRGBA8888SNorm },
+    { "R8G8B8A8_SINT",          3,  4,  8,  8,  8,  8,  Image::FormatType::SInt, nullptr, nullptr, RGBA8888SIntToRGBA32F, RGBA32FToRGBA8888SInt },
+    { "R8G8B8A8_UINT",          3,  4,  8,  8,  8,  8,  Image::FormatType::UInt, nullptr, nullptr, RGBA8888UIntToRGBA32F, RGBA32FToRGBA8888UInt },
+    { "B8G8R8A8",               4,  4,  8,  8,  8,  8,  Image::FormatType::UNorm, BGRA8888ToRGBA8888, RGBA8888ToBGRA8888, BGRA8888ToRGBA32F, RGBA32FToBGRA8888 },
+    { "A8B8G8R8",               4,  4,  8,  8,  8,  8,  Image::FormatType::UNorm, ABGR8888ToRGBA8888, RGBA8888ToABGR8888, ABGR8888ToRGBA32F, RGBA32FToABGR8888 },
+    { "A8R8G8B8",               4,  4,  8,  8,  8,  8,  Image::FormatType::UNorm, ARGB8888ToRGBA8888, RGBA8888ToARGB8888, ARGB8888ToRGBA32F, RGBA32FToARGB8888 },
+    { "R8G8B8X8",               4,  4,  8,  8,  8,  0,  Image::FormatType::UNorm, RGBX8888ToRGBA8888, RGBA8888ToRGBX8888, RGBX8888ToRGBA32F, RGBA32FToRGBX8888 },
+    { "B8G8R8X8",               4,  4,  8,  8,  8,  0,  Image::FormatType::UNorm, BGRX8888ToRGBA8888, RGBA8888ToBGRX8888, BGRX8888ToRGBA32F, RGBA32FToBGRX8888 },
 
-    { "R10G10B10A2",            4,  4, 10, 10, 10,  2,  Image::FormatType::Packed, nullptr, nullptr, RGBA1010102ToRGBA32F, RGBA32FToRGBA1010102 },
-    { "R10G10B10A2_UINT",       4,  4, 10, 10, 10,  2,  Image::FormatType::Packed | Image::FormatType::UInt, nullptr, nullptr, RGBA1010102UIntToRGBA32F, RGBA32FToRGBA1010102UInt },
-    { "R4G4B4X4",               2,  4,  4,  4,  4,  0,  Image::FormatType::Packed, RGBX4444ToRGBA8888, RGBA8888ToRGBX4444, RGBX4444ToRGBA32F, RGBA32FToRGBX4444 },
-    { "B4G4R4X4",               2,  4,  4,  4,  4,  0,  Image::FormatType::Packed, BGRX4444ToRGBA8888, RGBA8888ToBGRX4444, BGRX4444ToRGBA32F, RGBA32FToBGRX4444 },
-    { "R4G4B4A4",               2,  4,  4,  4,  4,  4,  Image::FormatType::Packed, RGBA4444ToRGBA8888, RGBA8888ToRGBA4444, RGBA4444ToRGBA32F, RGBA32FToRGBA4444 },
-    { "B4G4R4A4",               2,  4,  4,  4,  4,  4,  Image::FormatType::Packed, BGRA4444ToRGBA8888, RGBA8888ToBGRA4444, BGRA4444ToRGBA32F, RGBA32FToBGRA4444 },
-    { "A4B4G4R4",               2,  4,  4,  4,  4,  4,  Image::FormatType::Packed, ABGR4444ToRGBA8888, RGBA8888ToABGR4444, ABGR4444ToRGBA32F, RGBA32FToABGR4444 },
-    { "A4R4G4B4",               2,  4,  4,  4,  4,  4,  Image::FormatType::Packed, ARGB4444ToRGBA8888, RGBA8888ToARGB4444, ARGB4444ToRGBA32F, RGBA32FToARGB4444 },
-    { "R5G5B5X1",               2,  4,  5,  5,  5,  0,  Image::FormatType::Packed, RGBX5551ToRGBA8888, RGBA8888ToRGBX5551, RGBX5551ToRGBA32F, RGBA32FToRGBX5551 },
-    { "B5G5R5X1",               2,  4,  5,  5,  5,  0,  Image::FormatType::Packed, BGRX5551ToRGBA8888, RGBA8888ToBGRX5551, BGRX5551ToRGBA32F, RGBA32FToBGRX5551 },
-    { "R5G5B5A1",               2,  4,  5,  5,  5,  1,  Image::FormatType::Packed, RGBA5551ToRGBA8888, RGBA8888ToRGBA5551, RGBA5551ToRGBA32F, RGBA32FToRGBA5551 },
-    { "B5G5R5A1",               2,  4,  5,  5,  5,  1,  Image::FormatType::Packed, BGRA5551ToRGBA8888, RGBA8888ToBGRA5551, BGRA5551ToRGBA32F, RGBA32FToBGRA5551 },
-    { "A1B5G5R5",               2,  4,  5,  5,  5,  1,  Image::FormatType::Packed, ABGR1555ToRGBA8888, RGBA8888ToABGR1555, ABGR1555ToRGBA32F, RGBA32FToABGR1555 },
-    { "A1R5G5B5",               2,  4,  5,  5,  5,  1,  Image::FormatType::Packed, ARGB1555ToRGBA8888, RGBA8888ToARGB1555, ARGB1555ToRGBA32F, RGBA32FToARGB1555 },
-    { "R5G6B5",                 2,  3,  5,  6,  5,  0,  Image::FormatType::Packed, RGB565ToRGBA8888, RGBA8888ToRGB565, RGB565ToRGBA32F, RGBA32FToRGB565 },
-    { "B5G6R5",                 2,  3,  5,  6,  5,  0,  Image::FormatType::Packed, BGR565ToRGBA8888, RGBA8888ToBGR565, BGR565ToRGBA32F, RGBA32FToBGR565 },
+    { "R10G10B10A2",            4,  4, 10, 10, 10,  2,  Image::FormatType::UNorm | Image::FormatType::Packed, nullptr, nullptr, RGBA1010102ToRGBA32F, RGBA32FToRGBA1010102 },
+    { "R10G10B10A2_UINT",       4,  4, 10, 10, 10,  2,  Image::FormatType::UInt | Image::FormatType::Packed, nullptr, nullptr, RGBA1010102UIntToRGBA32F, RGBA32FToRGBA1010102UInt },
+    { "R4G4B4X4",               2,  4,  4,  4,  4,  0,  Image::FormatType::UNorm | Image::FormatType::Packed, RGBX4444ToRGBA8888, RGBA8888ToRGBX4444, RGBX4444ToRGBA32F, RGBA32FToRGBX4444 },
+    { "B4G4R4X4",               2,  4,  4,  4,  4,  0,  Image::FormatType::UNorm | Image::FormatType::Packed, BGRX4444ToRGBA8888, RGBA8888ToBGRX4444, BGRX4444ToRGBA32F, RGBA32FToBGRX4444 },
+    { "R4G4B4A4",               2,  4,  4,  4,  4,  4,  Image::FormatType::UNorm | Image::FormatType::Packed, RGBA4444ToRGBA8888, RGBA8888ToRGBA4444, RGBA4444ToRGBA32F, RGBA32FToRGBA4444 },
+    { "B4G4R4A4",               2,  4,  4,  4,  4,  4,  Image::FormatType::UNorm | Image::FormatType::Packed, BGRA4444ToRGBA8888, RGBA8888ToBGRA4444, BGRA4444ToRGBA32F, RGBA32FToBGRA4444 },
+    { "A4B4G4R4",               2,  4,  4,  4,  4,  4,  Image::FormatType::UNorm | Image::FormatType::Packed, ABGR4444ToRGBA8888, RGBA8888ToABGR4444, ABGR4444ToRGBA32F, RGBA32FToABGR4444 },
+    { "A4R4G4B4",               2,  4,  4,  4,  4,  4,  Image::FormatType::UNorm | Image::FormatType::Packed, ARGB4444ToRGBA8888, RGBA8888ToARGB4444, ARGB4444ToRGBA32F, RGBA32FToARGB4444 },
+    { "R5G5B5X1",               2,  4,  5,  5,  5,  0,  Image::FormatType::UNorm | Image::FormatType::Packed, RGBX5551ToRGBA8888, RGBA8888ToRGBX5551, RGBX5551ToRGBA32F, RGBA32FToRGBX5551 },
+    { "B5G5R5X1",               2,  4,  5,  5,  5,  0,  Image::FormatType::UNorm | Image::FormatType::Packed, BGRX5551ToRGBA8888, RGBA8888ToBGRX5551, BGRX5551ToRGBA32F, RGBA32FToBGRX5551 },
+    { "R5G5B5A1",               2,  4,  5,  5,  5,  1,  Image::FormatType::UNorm | Image::FormatType::Packed, RGBA5551ToRGBA8888, RGBA8888ToRGBA5551, RGBA5551ToRGBA32F, RGBA32FToRGBA5551 },
+    { "B5G5R5A1",               2,  4,  5,  5,  5,  1,  Image::FormatType::UNorm | Image::FormatType::Packed, BGRA5551ToRGBA8888, RGBA8888ToBGRA5551, BGRA5551ToRGBA32F, RGBA32FToBGRA5551 },
+    { "A1B5G5R5",               2,  4,  5,  5,  5,  1,  Image::FormatType::UNorm | Image::FormatType::Packed, ABGR1555ToRGBA8888, RGBA8888ToABGR1555, ABGR1555ToRGBA32F, RGBA32FToABGR1555 },
+    { "A1R5G5B5",               2,  4,  5,  5,  5,  1,  Image::FormatType::UNorm | Image::FormatType::Packed, ARGB1555ToRGBA8888, RGBA8888ToARGB1555, ARGB1555ToRGBA32F, RGBA32FToARGB1555 },
+    { "R5G6B5",                 2,  3,  5,  6,  5,  0,  Image::FormatType::UNorm | Image::FormatType::Packed, RGB565ToRGBA8888, RGBA8888ToRGB565, RGB565ToRGBA32F, RGBA32FToRGB565 },
+    { "B5G6R5",                 2,  3,  5,  6,  5,  0,  Image::FormatType::UNorm | Image::FormatType::Packed, BGR565ToRGBA8888, RGBA8888ToBGR565, BGR565ToRGBA32F, RGBA32FToBGR565 },
 
     // depth/stencil ------------------------------------------------------------------------------
-    { "D16",                    2,  1,  0,  0,  0,  0,  Image::FormatType::Depth, nullptr, nullptr, L16ToRGBA32F, RGBA32FToL16 },
-    { "D24",                    3,  1,  0,  0,  0,  0,  Image::FormatType::Depth, nullptr, nullptr, nullptr, nullptr },
-    { "D32_FLOAT",              4,  1,  0,  0,  0,  0,  Image::FormatType::Depth | Image::FormatType::Float, nullptr, nullptr, L32FToRGBA32F, RGBA32FToL32F },
-    { "D24S8",                  4,  2,  0,  0,  0,  0,  Image::FormatType::DepthStencil, nullptr, nullptr, nullptr, nullptr },
-    { "D32_FLOAT_S8X24",        8,  3,  0,  0,  0,  0,  Image::FormatType::DepthStencil | Image::FormatType::Float, nullptr, nullptr, nullptr, nullptr },
+    { "D16",                    2,  1,  0,  0,  0,  0,  Image::FormatType::UNorm | Image::FormatType::Depth, nullptr, nullptr, L16ToRGBA32F, RGBA32FToL16 },
+    { "D24X8",                  3,  1,  0,  0,  0,  0,  Image::FormatType::UNorm | Image::FormatType::Depth, nullptr, nullptr, L24X8ToRGBA32F, RGBA32FToL24X8 },
+    { "D24S8",                  4,  2,  0,  0,  0,  0,  Image::FormatType::UNorm | Image::FormatType::DepthStencil, nullptr, nullptr, L24X8ToRGBA32F, RGBA32FToL24X8 },
+    { "D32_FLOAT",              4,  1,  0,  0,  0,  0,  Image::FormatType::Float | Image::FormatType::Depth, nullptr, nullptr, L32FToRGBA32F, RGBA32FToL32F },
+    { "D32_FLOAT_S8X24",        8,  3,  0,  0,  0,  0,  Image::FormatType::Float | Image::FormatType::DepthStencil, nullptr, nullptr, L32FX32ToRGBA32F, RGBA32FToL32FX32 },
 
     // Luminance/Alpha
     { "L32_FLOAT",              4,  1,  32, 0,  0,  0,  Image::FormatType::Float, nullptr, nullptr, L32FToRGBA32F, RGBA32FToL32F },
@@ -2406,43 +2873,43 @@ static const ImageFormatInfo imageFormatInfo[] = {
     { "L16_FLOAT",              2,  1,  16, 0,  0,  0,  Image::FormatType::Float, nullptr, nullptr, L16FToRGBA32F, RGBA32FToL16F },
     { "A16_FLOAT",              2,  1,  0,  0,  0,  16, Image::FormatType::Float, nullptr, nullptr, A16FToRGBA32F, RGBA32FToA16F },
     { "L16A16_FLOAT",           4,  2,  16, 0,  0,  16, Image::FormatType::Float, nullptr, nullptr, LA16FToRGBA32F, RGBA32FToLA16F },
-    { "L8",                     1,  1,  8,  0,  0,  0,  Image::FormatType::None, L8ToRGBA8888, RGBA8888ToL8, L8ToRGBA32F, RGBA32FToL8 },
-    { "A8" ,                    1,  1,  0,  0,  0,  8,  Image::FormatType::None, A8ToRGBA8888, RGBA8888ToA8, A8ToRGBA32F, RGBA32FToA8 },
-    { "L8A8"  ,                 2,  2,  8,  0,  0,  8,  Image::FormatType::None, LA88ToRGBA8888, RGBA8888ToLA88, LA88ToRGBA32F, RGBA32FToLA88 },
+    { "L8",                     1,  1,  8,  0,  0,  0,  Image::FormatType::UNorm, L8ToRGBA8888, RGBA8888ToL8, L8ToRGBA32F, RGBA32FToL8 },
+    { "A8" ,                    1,  1,  0,  0,  0,  8,  Image::FormatType::UNorm, A8ToRGBA8888, RGBA8888ToA8, A8ToRGBA32F, RGBA32FToA8 },
+    { "L8A8"  ,                 2,  2,  8,  0,  0,  8,  Image::FormatType::UNorm, LA88ToRGBA8888, RGBA8888ToLA88, LA88ToRGBA32F, RGBA32FToLA88 },
 
     // DXT (BTC) ----------------------------------------------------------------------------------
-    { "DXT1",                   8,  4,  0,  0,  0,  0,  Image::FormatType::Compressed, nullptr, nullptr, nullptr, nullptr },
-    { "DXT3",                   16, 4,  0,  0,  0,  0,  Image::FormatType::Compressed, nullptr, nullptr, nullptr, nullptr },
-    { "DXT5",                   16, 4,  0,  0,  0,  0,  Image::FormatType::Compressed, nullptr, nullptr, nullptr, nullptr },
-    { "DXT5_XGBR",              16, 4,  0,  0,  0,  0,  Image::FormatType::Compressed, nullptr, nullptr, nullptr, nullptr },
-    { "DXN1",                   8,  2,  0,  0,  0,  0,  Image::FormatType::Compressed, nullptr, nullptr, nullptr, nullptr },
-    { "DXN2",                   16, 2,  0,  0,  0,  0,  Image::FormatType::Compressed, nullptr, nullptr, nullptr, nullptr },
+    { "DXT1",                   8,  4,  0,  0,  0,  0,  Image::FormatType::UNorm | Image::FormatType::Compressed, nullptr, nullptr, nullptr, nullptr },
+    { "DXT3",                   16, 4,  0,  0,  0,  0,  Image::FormatType::UNorm | Image::FormatType::Compressed, nullptr, nullptr, nullptr, nullptr },
+    { "DXT5",                   16, 4,  0,  0,  0,  0,  Image::FormatType::UNorm | Image::FormatType::Compressed, nullptr, nullptr, nullptr, nullptr },
+    { "DXT5_XGBR",              16, 4,  0,  0,  0,  0,  Image::FormatType::UNorm | Image::FormatType::Compressed, nullptr, nullptr, nullptr, nullptr },
+    { "DXN1",                   8,  2,  0,  0,  0,  0,  Image::FormatType::UNorm | Image::FormatType::Compressed, nullptr, nullptr, nullptr, nullptr },
+    { "DXN2",                   16, 2,  0,  0,  0,  0,  Image::FormatType::UNorm | Image::FormatType::Compressed, nullptr, nullptr, nullptr, nullptr },
     { "BC6H_UF16",              16, 3,  0,  0,  0,  0,  Image::FormatType::Compressed, nullptr, nullptr, nullptr, nullptr },
     { "BC6H_SF16",              16, 3,  0,  0,  0,  0,  Image::FormatType::Compressed, nullptr, nullptr, nullptr, nullptr },
-    { "BC7",                    16, 4,  0,  0,  0,  0,  Image::FormatType::Compressed, nullptr, nullptr, nullptr, nullptr },
+    { "BC7",                    16, 4,  0,  0,  0,  0,  Image::FormatType::UNorm | Image::FormatType::Compressed, nullptr, nullptr, nullptr, nullptr },
 
     // PVRTC --------------------------------------------------------------------------------------
-    { "PVRTC12",                8,  3,  0,  0,  0,  0,  Image::FormatType::Compressed, nullptr, nullptr, nullptr, nullptr },
-    { "PVRTC14",                8,  3,  0,  0,  0,  0,  Image::FormatType::Compressed, nullptr, nullptr, nullptr, nullptr },
-    { "PVRTC12A",               8,  4,  0,  0,  0,  0,  Image::FormatType::Compressed, nullptr, nullptr, nullptr, nullptr },
-    { "PVRTC14A",               8,  4,  0,  0,  0,  0,  Image::FormatType::Compressed, nullptr, nullptr, nullptr, nullptr },
-    { "PVRTC22A",               8,  4,  0,  0,  0,  0,  Image::FormatType::Compressed, nullptr, nullptr, nullptr, nullptr },
-    { "PVRTC24A",               8,  4,  0,  0,  0,  0,  Image::FormatType::Compressed, nullptr, nullptr, nullptr, nullptr },
+    { "PVRTC12",                8,  3,  0,  0,  0,  0,  Image::FormatType::UNorm | Image::FormatType::Compressed, nullptr, nullptr, nullptr, nullptr },
+    { "PVRTC14",                8,  3,  0,  0,  0,  0,  Image::FormatType::UNorm | Image::FormatType::Compressed, nullptr, nullptr, nullptr, nullptr },
+    { "PVRTC12A",               8,  4,  0,  0,  0,  0,  Image::FormatType::UNorm | Image::FormatType::Compressed, nullptr, nullptr, nullptr, nullptr },
+    { "PVRTC14A",               8,  4,  0,  0,  0,  0,  Image::FormatType::UNorm | Image::FormatType::Compressed, nullptr, nullptr, nullptr, nullptr },
+    { "PVRTC22A",               8,  4,  0,  0,  0,  0,  Image::FormatType::UNorm | Image::FormatType::Compressed, nullptr, nullptr, nullptr, nullptr },
+    { "PVRTC24A",               8,  4,  0,  0,  0,  0,  Image::FormatType::UNorm | Image::FormatType::Compressed, nullptr, nullptr, nullptr, nullptr },
 
     // ETC ----------------------------------------------------------------------------------------
-    { "ETC1",                   8,  3,  0,  0,  0,  0,  Image::FormatType::Compressed, nullptr, nullptr, nullptr, nullptr },
-    { "ETC2",                   8,  3,  0,  0,  0,  0,  Image::FormatType::Compressed, nullptr, nullptr, nullptr, nullptr },
-    { "ETC2A1",                 8,  4,  0,  0,  0,  0,  Image::FormatType::Compressed, nullptr, nullptr, nullptr, nullptr },
-    { "ETC2A",                  16, 4,  0,  0,  0,  0,  Image::FormatType::Compressed, nullptr, nullptr, nullptr, nullptr },
-    { "EACR11",                 8,  1,  0,  0,  0,  0,  Image::FormatType::Compressed, nullptr, nullptr, nullptr, nullptr },
-    { "EACRG11",                16, 2,  0,  0,  0,  0,  Image::FormatType::Compressed, nullptr, nullptr, nullptr, nullptr },
-    { "EACR11_SNORM",           8,  1,  0,  0,  0,  0,  Image::FormatType::Compressed, nullptr, nullptr, nullptr, nullptr },
-    { "EACRG11_SNORM",          16, 2,  0,  0,  0,  0,  Image::FormatType::Compressed, nullptr, nullptr, nullptr, nullptr },
+    { "ETC1",                   8,  3,  0,  0,  0,  0,  Image::FormatType::UNorm | Image::FormatType::Compressed, nullptr, nullptr, nullptr, nullptr },
+    { "ETC2",                   8,  3,  0,  0,  0,  0,  Image::FormatType::UNorm | Image::FormatType::Compressed, nullptr, nullptr, nullptr, nullptr },
+    { "ETC2A1",                 8,  4,  0,  0,  0,  0,  Image::FormatType::UNorm | Image::FormatType::Compressed, nullptr, nullptr, nullptr, nullptr },
+    { "ETC2A",                  16, 4,  0,  0,  0,  0,  Image::FormatType::UNorm | Image::FormatType::Compressed, nullptr, nullptr, nullptr, nullptr },
+    { "EACR11",                 8,  1,  0,  0,  0,  0,  Image::FormatType::UNorm | Image::FormatType::Compressed, nullptr, nullptr, nullptr, nullptr },
+    { "EACRG11",                16, 2,  0,  0,  0,  0,  Image::FormatType::UNorm | Image::FormatType::Compressed, nullptr, nullptr, nullptr, nullptr },
+    { "EACR11_SNORM",           8,  1,  0,  0,  0,  0,  Image::FormatType::SNorm | Image::FormatType::Compressed, nullptr, nullptr, nullptr, nullptr },
+    { "EACRG11_SNORM",          16, 2,  0,  0,  0,  0,  Image::FormatType::SNorm | Image::FormatType::Compressed, nullptr, nullptr, nullptr, nullptr },
 
     // ATC ----------------------------------------------------------------------------------------
-    { "ATC",                    8,  3,  0,  0,  0,  0,  Image::FormatType::Compressed, nullptr, nullptr, nullptr, nullptr },
-    { "ATCE",                   16, 4,  0,  0,  0,  0,  Image::FormatType::Compressed, nullptr, nullptr, nullptr, nullptr },
-    { "ATCI",                   16, 4,  0,  0,  0,  0,  Image::FormatType::Compressed, nullptr, nullptr, nullptr, nullptr },
+    { "ATC",                    8,  3,  0,  0,  0,  0,  Image::FormatType::UNorm | Image::FormatType::Compressed, nullptr, nullptr, nullptr, nullptr },
+    { "ATCE",                   16, 4,  0,  0,  0,  0,  Image::FormatType::UNorm | Image::FormatType::Compressed, nullptr, nullptr, nullptr, nullptr },
+    { "ATCI",                   16, 4,  0,  0,  0,  0,  Image::FormatType::UNorm | Image::FormatType::Compressed, nullptr, nullptr, nullptr, nullptr },
 };
 
 const ImageFormatInfo *GetImageFormatInfo(Image::Format imageFormat) {

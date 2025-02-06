@@ -50,7 +50,8 @@ private:
 #else
     ID3D12Resource *                textureResource = nullptr;
 #endif
-    BE1::Image::Format              format = BE1::Image::Format::Unknown;
+    BE1::Image::Format              srcFormat = BE1::Image::Format::Unknown;
+    bool                            srcSRGB = false;
     D3D12_RESOURCE_DESC             textureDesc;
     D3D12_CLEAR_VALUE               clearValue;
     RHI::GPUResourceState           initialState = RHI::GPUResourceState::Undefined;

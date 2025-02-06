@@ -112,7 +112,7 @@ void RenderContext::InitScreenMapRT() {
     screenColorTexture->CreateEmpty(Graphics::TextureType::Texture2D, renderingWidth, renderingHeight, 1, 1, 1, screenImageFormat, screenTextureFlags | Texture::Flag::SRGBColorSpace);
 
     screenDepthTexture = textureManager.AllocTexture(va("_%i_screenDepthStencil", (int)contextHandle));
-    screenDepthTexture->CreateEmpty(Graphics::TextureType::Texture2D, renderingWidth, renderingHeight, 1, 1, 1, Image::Format::D24, screenTextureFlags | Texture::Flag::Nearest);
+    screenDepthTexture->CreateEmpty(Graphics::TextureType::Texture2D, renderingWidth, renderingHeight, 1, 1, 1, Image::Format::D24X8, screenTextureFlags | Texture::Flag::Nearest);
 
     if (r_useDeferredLighting.GetBool()) {
         screenNormalTexture = textureManager.AllocTexture(va("_%i_screenNormal", (int)contextHandle));
@@ -396,8 +396,8 @@ void RenderContext::InitShadowMapRT() {
         return;
     }
 
-    Image::Format shadowImageFormat = Image::Format::D24;
-    Image::Format shadowCubeImageFormat = (r_shadowCubeMapFloat.GetBool() && graphics.SupportsDepthBufferFloat()) ? Image::Format::D32_FLOAT : Image::Format::D24;
+    Image::Format shadowImageFormat = Image::Format::D24X8;
+    Image::Format shadowCubeImageFormat = (r_shadowCubeMapFloat.GetBool() && graphics.SupportsDepthBufferFloat()) ? Image::Format::D32_FLOAT : Image::Format::D24X8;
 
     Graphics::TextureType::Enum textureType = Graphics::TextureType::Texture2DArray;
 
@@ -617,7 +617,7 @@ float RenderContext::QueryDepth(const Point &point) {
     screenSelectionRT->Begin();
 
     // FIXME: is depth format confirmed ?
-    graphics.ReadPixels(scaledReadPoint.x, scaledReadPoint.y, 1, 1, Image::Format::D24, depthData);
+    graphics.ReadPixels(scaledReadPoint.x, scaledReadPoint.y, 1, 1, Image::Format::D24X8, depthData);
     screenSelectionRT->End();
 
     float depth = (float)MAKE_FOURCC(depthData[2], depthData[1], depthData[0], 0) / (float)(BIT(24) - 1);

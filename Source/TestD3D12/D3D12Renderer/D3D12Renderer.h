@@ -54,6 +54,8 @@ public:
     virtual bool                        IsSupportedImageFormat(BE1::Image::Format imageFormat) const override { return ImageFormatToDXGIFormat(imageFormat, false, nullptr); }
     virtual BE1::Image::Format          ToUncompressedImageFormat(BE1::Image::Format imageFormat) const override;
     virtual BE1::Image::Format          ToCompressedImageFormat(BE1::Image::Format inFormat, bool useNormalMap) const override;
+    virtual BE1::Image::Format          ToUAVImageFormat(BE1::Image::Format inFormat) const override;
+    bool                                IsSupportedUAVFormat(DXGI_FORMAT format) const;
 
     virtual RHI::FrameThreadData *      CreateFrameThreadData() override;
     virtual void                        DestroyFrameThreadData(RHI::FrameThreadData *frameThreadData) override;
@@ -98,9 +100,9 @@ public:
     int                                 CreateSubresourceUAV(D3D12Buffer *buffer, uint64_t offset = 0, uint64_t size = ~0, const BE1::Image::Format *newFormat = nullptr);
 
     int                                 CreateSubresourceSRV(D3D12Texture *texture, uint32_t firstSlice = 0, uint32_t sliceCount = ~0, uint32_t firstMipLevel = 0, uint32_t mipCount = ~0, const BE1::Image::Format *typelessCompatibleFormat = nullptr, bool isSRGB = false);
+    int                                 CreateSubresourceUAV(D3D12Texture *texture, uint32_t firstSlice = 0, uint32_t sliceCount = ~0, uint32_t firstMipLevel = 0, const BE1::Image::Format *typelessCompatibleFormat = nullptr, bool isSRGB = false);
     int                                 CreateSubresourceRTV(D3D12Texture *texture, uint32_t firstSlice = 0, uint32_t sliceCount = ~0, uint32_t firstMipLevel = 0, const BE1::Image::Format *typelessCompatibleFormat = nullptr, bool isSRGB = false);
     int                                 CreateSubresourceDSV(D3D12Texture *texture, uint32_t firstSlice = 0, uint32_t sliceCount = ~0, uint32_t firstMipLevel = 0, const BE1::Image::Format *typelessCompatibleFormat = nullptr, bool isSRGB = false);
-    int                                 CreateSubresourceUAV(D3D12Texture *texture, uint32_t firstSlice = 0, uint32_t sliceCount = ~0, uint32_t firstMipLevel = 0, const BE1::Image::Format *typelessCompatibleFormat = nullptr, bool isSRGB = false);
 
     virtual RHI::Shader *               CreateShader(RHI::ShaderModel shaderModel, RHI::ShaderStage shaderStage, const char *sourceName, const char *shaderText, int shaderTextSize, const char *entryPoint) override;
     virtual RHI::Shader *               CreateShaderFromFile(RHI::ShaderModel shaderModel, RHI::ShaderStage shaderStage, const char *filename, const char *entryPoint) override;
@@ -194,6 +196,7 @@ public:
     static bool                         IsDepthFormat(DXGI_FORMAT format);
     static bool                         IsStencilFormat(DXGI_FORMAT format);
     static bool                         IsTypelessFormat(DXGI_FORMAT format);
+    static DXGI_FORMAT                  ToNonSRGBFormat(DXGI_FORMAT format);
     static DXGI_FORMAT                  ToTypelessFormat(DXGI_FORMAT format);
     static UINT                         GetComponentSwizzling(BE1::Image::Format format);
     static D3D12_RESOURCE_STATES        ToD3D12ResourceState(RHI::GPUResourceState resourceState);
@@ -231,7 +234,7 @@ public:
     bool                                supportsDepthBoundsTest = false;
     bool                                supportsCastingFullyTypedFormat = false;
     bool                                supportsUAVFormatCommon = false;
-    bool                                supportsUAVFormatRGB_11F_11F_10F = false;
+    std::unordered_set<DXGI_FORMAT>     optionalUAVFormatMap;
 
     D3D12DescriptorPool *               resCpuDescriptorPool = nullptr;
     D3D12DescriptorPool *               uavCpuDescriptorPool = nullptr;

@@ -119,7 +119,7 @@ RHI::Texture *RHI::Renderer::CreateTextureFromFile(RHI::TextureType textureType,
     }
 
     BE1::Image::Format dstFormat;
-    AdjustTextureFormat(useCompression, useNormalMap, image->GetFormat(), &dstFormat);
+    AdjustTextureFormat(useCompression, useNormalMap, BE1::HasFlag(flags, RHI::ResourceFlag::UnorderedAccess), image->GetFormat(), &dstFormat);
 
     RHI::Texture *texture = CreateTexture(textureType, flags, image, dstFormat, useMipmaps);
     delete image;
@@ -127,7 +127,12 @@ RHI::Texture *RHI::Renderer::CreateTextureFromFile(RHI::TextureType textureType,
     return texture;
 }
 
-void RHI::Renderer::AdjustTextureFormat(bool useCompression, bool useNormalMap, BE1::Image::Format inFormat, BE1::Image::Format *outFormat) {
+void RHI::Renderer::AdjustTextureFormat(bool useCompression, bool useNormalMap, bool useUAV, BE1::Image::Format inFormat, BE1::Image::Format *outFormat) {
+    if (useUAV) {
+        *outFormat = ToUAVImageFormat(inFormat);
+        return;
+    }
+
     if (BE1::Image::IsDepthFormat(inFormat) || BE1::Image::IsDepthStencilFormat(inFormat)) {
         *outFormat = inFormat;
         return;
@@ -138,6 +143,7 @@ void RHI::Renderer::AdjustTextureFormat(bool useCompression, bool useNormalMap, 
         return;
     }
 
+    // 지원되지 않는 압축 포맷일 경우, 무압축 포맷으로 변환한다.
     inFormat = ToUncompressedImageFormat(inFormat);
 
     *outFormat = useCompression ? ToCompressedImageFormat(inFormat, useNormalMap) : inFormat;

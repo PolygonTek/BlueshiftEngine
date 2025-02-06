@@ -204,7 +204,7 @@ void D3D12Renderer::Init(const void *mainWindowHandle) {
         // More info about UAV format load support: https://docs.microsoft.com/en-us/windows/win32/direct3d12/typed-unordered-access-view-loads
         // UAV 포맷은 어떤 포맷도 sRGB 를 지원하지 않는다.
         // 
-        // Common UAV Formats:
+        // Common (D3D11.3) UAV Formats:
         // R32_FLOAT
         // R32_UINT
         // R32_SINT
@@ -225,38 +225,42 @@ void D3D12Renderer::Init(const void *mainWindowHandle) {
         // R8_SINT
         supportsUAVFormatCommon = true;
 
-        // Optional UAV Formats:
-        // R16G16B16A16_UNORM
-        // R16G16B16A16_SNORM
-        // R32G32_FLOAT
-        // R32G32_UINT
-        // R32G32_SINT
-        // R10G10B10A2_UNORM
-        // R10G10B10A2_UINT
-        // R11G11B10_FLOAT
-        // R8G8B8A8_SNORM
-        // R16G16_FLOAT
-        // R16G16_UNORM
-        // R16G16_UINT
-        // R16G16_SNORM
-        // R16G16_SINT
-        // R8G8_UNORM
-        // R8G8_UINT
-        // R8G8_SNORM
-        // R8G8_SINT
-        // R16_UNORM
-        // R16_SNORM
-        // R8_SNORM
-        // A8_UNORM
-        // B5G6R5_UNORM
-        // B5G5R5A1_UNORM
-        // B4G4R4A4_UNORM
-        D3D12_FORMAT_SUPPORT1 formatSupport1 = D3D12_FORMAT_SUPPORT1_NONE;
-        D3D12_FORMAT_SUPPORT2 formatSupport2 = D3D12_FORMAT_SUPPORT2_NONE;
+        const DXGI_FORMAT optionalUAVFormats[] = {
+            DXGI_FORMAT_R16G16B16A16_UNORM,
+            DXGI_FORMAT_R16G16B16A16_SNORM,
+            DXGI_FORMAT_R32G32_FLOAT,
+            DXGI_FORMAT_R32G32_UINT,
+            DXGI_FORMAT_R32G32_SINT,
+            DXGI_FORMAT_R10G10B10A2_UNORM,
+            DXGI_FORMAT_R10G10B10A2_UINT,
+            DXGI_FORMAT_R11G11B10_FLOAT,
+            DXGI_FORMAT_R8G8B8A8_SNORM,
+            DXGI_FORMAT_R16G16_FLOAT,
+            DXGI_FORMAT_R16G16_UNORM,
+            DXGI_FORMAT_R16G16_UINT,
+            DXGI_FORMAT_R16G16_SNORM,
+            DXGI_FORMAT_R16G16_SINT,
+            DXGI_FORMAT_R8G8_UNORM,
+            DXGI_FORMAT_R8G8_UINT,
+            DXGI_FORMAT_R8G8_SNORM,
+            DXGI_FORMAT_R8G8_SINT,
+            DXGI_FORMAT_R16_UNORM,
+            DXGI_FORMAT_R16_SNORM,
+            DXGI_FORMAT_R8_SNORM,
+            DXGI_FORMAT_A8_UNORM,
+            DXGI_FORMAT_B5G6R5_UNORM,
+            DXGI_FORMAT_B5G5R5A1_UNORM,
+            DXGI_FORMAT_B4G4R4A4_UNORM
+        };
 
-        hr = features.FormatSupport(DXGI_FORMAT_R11G11B10_FLOAT, formatSupport1, formatSupport2);
-        if (SUCCEEDED(hr) && (formatSupport2 & D3D12_FORMAT_SUPPORT2_UAV_TYPED_LOAD) != 0) {
-            supportsUAVFormatRGB_11F_11F_10F = true;
+        for (DXGI_FORMAT uavFormat : optionalUAVFormats) {
+            D3D12_FORMAT_SUPPORT1 formatSupport1 = D3D12_FORMAT_SUPPORT1_NONE;
+            D3D12_FORMAT_SUPPORT2 formatSupport2 = D3D12_FORMAT_SUPPORT2_NONE;
+
+            hr = features.FormatSupport(uavFormat, formatSupport1, formatSupport2);
+            if (SUCCEEDED(hr) && (formatSupport2 & D3D12_FORMAT_SUPPORT2_UAV_TYPED_LOAD) != 0) {
+                optionalUAVFormatMap.insert(uavFormat);
+            }
         }
     }
 
@@ -1566,65 +1570,6 @@ bool D3D12Renderer::ImageFormatToDXGIFormat(BE1::Image::Format imageFormat, bool
     case BE1::Image::Format::Unknown:
         if (dxgiFormat) *dxgiFormat = DXGI_FORMAT_UNKNOWN;
         return true;
-    case BE1::Image::Format::L8:
-    case BE1::Image::Format::R8:
-        if (dxgiFormat) *dxgiFormat = DXGI_FORMAT_R8_UNORM;
-        return true;
-    case BE1::Image::Format::A8:
-        if (dxgiFormat) *dxgiFormat = DXGI_FORMAT_A8_UNORM;
-        return true;
-    case BE1::Image::Format::R8G8:
-        if (dxgiFormat) *dxgiFormat = DXGI_FORMAT_R8G8_UNORM;
-        return true;
-    case BE1::Image::Format::R8G8B8A8:
-        if (dxgiFormat) *dxgiFormat = isSRGB ? DXGI_FORMAT_R8G8B8A8_UNORM_SRGB : DXGI_FORMAT_R8G8B8A8_UNORM;
-        return true;
-    case BE1::Image::Format::B8G8R8A8:
-        if (dxgiFormat) *dxgiFormat = isSRGB ? DXGI_FORMAT_B8G8R8A8_UNORM_SRGB : DXGI_FORMAT_B8G8R8A8_UNORM;
-        return true;
-    case BE1::Image::Format::B8G8R8X8:
-        if (dxgiFormat) *dxgiFormat = isSRGB ? DXGI_FORMAT_B8G8R8X8_UNORM_SRGB : DXGI_FORMAT_B8G8R8X8_UNORM;
-        return true;
-    case BE1::Image::Format::R8_SNORM:
-        if (dxgiFormat) *dxgiFormat = DXGI_FORMAT_R8_SNORM;
-        return true;
-    case BE1::Image::Format::R8_SINT:
-        if (dxgiFormat) *dxgiFormat = DXGI_FORMAT_R8_SINT;
-        return true;
-    case BE1::Image::Format::R8_UINT:
-        if (dxgiFormat) *dxgiFormat = DXGI_FORMAT_R8_UINT;
-        return true;
-    case BE1::Image::Format::R8G8_SNORM:
-        if (dxgiFormat) *dxgiFormat = DXGI_FORMAT_R8G8_SNORM;
-        return true;
-    case BE1::Image::Format::R8G8B8A8_SNORM:
-        if (dxgiFormat) *dxgiFormat = DXGI_FORMAT_R8G8B8A8_SNORM;
-        return true;
-    case BE1::Image::Format::B5G6R5:
-        if (dxgiFormat) *dxgiFormat = DXGI_FORMAT_B5G6R5_UNORM;
-        return true;
-    case BE1::Image::Format::B4G4R4A4:
-        if (dxgiFormat) *dxgiFormat = DXGI_FORMAT_B4G4R4A4_UNORM;
-        return true;
-    case BE1::Image::Format::A4B4G4R4:
-        if (dxgiFormat) *dxgiFormat = DXGI_FORMAT_A4B4G4R4_UNORM;
-        return true;
-    case BE1::Image::Format::B5G5R5A1:
-        if (dxgiFormat) *dxgiFormat = DXGI_FORMAT_B5G5R5A1_UNORM;
-        return true;
-    case BE1::Image::Format::R10G10B10A2:
-        if (dxgiFormat) *dxgiFormat = DXGI_FORMAT_R10G10B10A2_UNORM;
-        return true;
-    case BE1::Image::Format::L16_FLOAT:
-    case BE1::Image::Format::R16_FLOAT:
-        if (dxgiFormat) *dxgiFormat = DXGI_FORMAT_R16_FLOAT;
-        return true;
-    case BE1::Image::Format::R16G16_FLOAT:
-        if (dxgiFormat) *dxgiFormat = DXGI_FORMAT_R16G16_FLOAT;
-        return true;
-    case BE1::Image::Format::R16G16B16A16_FLOAT:
-        if (dxgiFormat) *dxgiFormat = DXGI_FORMAT_R16G16B16A16_FLOAT;
-        return true;
     case BE1::Image::Format::R32_FLOAT:
         if (dxgiFormat) *dxgiFormat = DXGI_FORMAT_R32_FLOAT;
         return true;
@@ -1661,11 +1606,85 @@ bool D3D12Renderer::ImageFormatToDXGIFormat(BE1::Image::Format imageFormat, bool
     case BE1::Image::Format::R32G32B32A32_UINT:
         if (dxgiFormat) *dxgiFormat = DXGI_FORMAT_R32G32B32A32_UINT;
         return true;
+    case BE1::Image::Format::R16_FLOAT:
+    case BE1::Image::Format::L16_FLOAT:
+        if (dxgiFormat) *dxgiFormat = DXGI_FORMAT_R16_FLOAT;
+        return true;
+    case BE1::Image::Format::R16G16_FLOAT:
+        if (dxgiFormat) *dxgiFormat = DXGI_FORMAT_R16G16_FLOAT;
+        return true;
+    case BE1::Image::Format::R16G16B16A16_FLOAT:
+        if (dxgiFormat) *dxgiFormat = DXGI_FORMAT_R16G16B16A16_FLOAT;
+        return true;
     case BE1::Image::Format::R9G9B9E5_FLOAT:
         if (dxgiFormat) *dxgiFormat = DXGI_FORMAT_R9G9B9E5_SHAREDEXP;
         return true;
     case BE1::Image::Format::R11G11B10_FLOAT:
         if (dxgiFormat) *dxgiFormat = DXGI_FORMAT_R11G11B10_FLOAT;
+        return true;
+    case BE1::Image::Format::R8:
+    case BE1::Image::Format::L8:
+        if (dxgiFormat) *dxgiFormat = DXGI_FORMAT_R8_UNORM;
+        return true;
+    case BE1::Image::Format::R8_SNORM:
+        if (dxgiFormat) *dxgiFormat = DXGI_FORMAT_R8_SNORM;
+        return true;
+    case BE1::Image::Format::R8_SINT:
+        if (dxgiFormat) *dxgiFormat = DXGI_FORMAT_R8_SINT;
+        return true;
+    case BE1::Image::Format::R8_UINT:
+        if (dxgiFormat) *dxgiFormat = DXGI_FORMAT_R8_UINT;
+        return true;
+    case BE1::Image::Format::A8:
+        if (dxgiFormat) *dxgiFormat = DXGI_FORMAT_A8_UNORM;
+        return true;
+    case BE1::Image::Format::R8G8:
+        if (dxgiFormat) *dxgiFormat = DXGI_FORMAT_R8G8_UNORM;
+        return true;
+    case BE1::Image::Format::R8G8_SNORM:
+        if (dxgiFormat) *dxgiFormat = DXGI_FORMAT_R8G8_SNORM;
+        return true;
+    case BE1::Image::Format::R8G8_SINT:
+        if (dxgiFormat) *dxgiFormat = DXGI_FORMAT_R8G8_SINT;
+        return true;
+    case BE1::Image::Format::R8G8_UINT:
+        if (dxgiFormat) *dxgiFormat = DXGI_FORMAT_R8G8_UINT;
+        return true;
+    case BE1::Image::Format::R8G8B8A8:
+        if (dxgiFormat) *dxgiFormat = isSRGB ? DXGI_FORMAT_R8G8B8A8_UNORM_SRGB : DXGI_FORMAT_R8G8B8A8_UNORM;
+        return true;
+    case BE1::Image::Format::R8G8B8A8_SNORM:
+        if (dxgiFormat) *dxgiFormat = DXGI_FORMAT_R8G8B8A8_SNORM;
+        return true;
+    case BE1::Image::Format::R8G8B8A8_SINT:
+        if (dxgiFormat) *dxgiFormat = DXGI_FORMAT_R8G8B8A8_SINT;
+        return true;
+    case BE1::Image::Format::R8G8B8A8_UINT:
+        if (dxgiFormat) *dxgiFormat = DXGI_FORMAT_R8G8B8A8_UINT;
+        return true;
+    case BE1::Image::Format::B8G8R8A8:
+        if (dxgiFormat) *dxgiFormat = isSRGB ? DXGI_FORMAT_B8G8R8A8_UNORM_SRGB : DXGI_FORMAT_B8G8R8A8_UNORM;
+        return true;
+    case BE1::Image::Format::B8G8R8X8:
+        if (dxgiFormat) *dxgiFormat = isSRGB ? DXGI_FORMAT_B8G8R8X8_UNORM_SRGB : DXGI_FORMAT_B8G8R8X8_UNORM;
+        return true;
+    case BE1::Image::Format::B5G6R5:
+        if (dxgiFormat) *dxgiFormat = DXGI_FORMAT_B5G6R5_UNORM;
+        return true;
+    case BE1::Image::Format::B4G4R4A4:
+        if (dxgiFormat) *dxgiFormat = DXGI_FORMAT_B4G4R4A4_UNORM;
+        return true;
+    case BE1::Image::Format::A4B4G4R4:
+        if (dxgiFormat) *dxgiFormat = DXGI_FORMAT_A4B4G4R4_UNORM;
+        return true;
+    case BE1::Image::Format::B5G5R5A1:
+        if (dxgiFormat) *dxgiFormat = DXGI_FORMAT_B5G5R5A1_UNORM;
+        return true;
+    case BE1::Image::Format::R10G10B10A2:
+        if (dxgiFormat) *dxgiFormat = DXGI_FORMAT_R10G10B10A2_UNORM;
+        return true;
+    case BE1::Image::Format::R10G10B10A2_UINT:
+        if (dxgiFormat) *dxgiFormat = DXGI_FORMAT_R10G10B10A2_UINT;
         return true;
     case BE1::Image::Format::DXT1: // BC1
         if (dxgiFormat) *dxgiFormat = isSRGB ? DXGI_FORMAT_BC1_UNORM_SRGB : DXGI_FORMAT_BC1_UNORM;
@@ -1685,14 +1704,14 @@ bool D3D12Renderer::ImageFormatToDXGIFormat(BE1::Image::Format imageFormat, bool
     case BE1::Image::Format::D16:
         if (dxgiFormat) *dxgiFormat = DXGI_FORMAT_D16_UNORM;
         return true;
-    case BE1::Image::Format::D24:
-        if (dxgiFormat) *dxgiFormat = DXGI_FORMAT_R24_UNORM_X8_TYPELESS;
+    case BE1::Image::Format::D24S8:
+        if (dxgiFormat) *dxgiFormat = DXGI_FORMAT_D24_UNORM_S8_UINT;
         return true;
     case BE1::Image::Format::D32_FLOAT:
         if (dxgiFormat) *dxgiFormat = DXGI_FORMAT_D32_FLOAT;
         return true;
-    case BE1::Image::Format::D24S8:
-        if (dxgiFormat) *dxgiFormat = DXGI_FORMAT_D24_UNORM_S8_UINT;
+    case BE1::Image::Format::D32_FLOAT_S8X24:
+        if (dxgiFormat) *dxgiFormat = DXGI_FORMAT_D32_FLOAT_S8X24_UINT;
         return true;
     }
     return false;
@@ -1708,84 +1727,13 @@ bool D3D12Renderer::DXGIFormatToImageFormat(DXGI_FORMAT dxgiFormat, BE1::Image::
         case DXGI_FORMAT_BC1_UNORM_SRGB:
         case DXGI_FORMAT_BC2_UNORM_SRGB:
         case DXGI_FORMAT_BC3_UNORM_SRGB:
+        case DXGI_FORMAT_BC7_UNORM_SRGB:
             *isSRGB = true;
             break;
         }
     }
 
     switch (dxgiFormat) {
-    case DXGI_FORMAT_R8_UNORM:
-        if (imageFormat) *imageFormat = BE1::Image::Format::R8;
-        return true;
-    case DXGI_FORMAT_A8_UNORM:
-        if (imageFormat) *imageFormat = BE1::Image::Format::A8;
-        return true;
-    case DXGI_FORMAT_R8G8_UNORM:
-        if (imageFormat) *imageFormat = BE1::Image::Format::R8G8;
-        return true;
-    case DXGI_FORMAT_R8G8B8A8_UNORM:
-    case DXGI_FORMAT_R8G8B8A8_UNORM_SRGB:
-        if (imageFormat) *imageFormat = BE1::Image::Format::R8G8B8A8;
-        return true;
-    case DXGI_FORMAT_B8G8R8A8_UNORM:
-    case DXGI_FORMAT_B8G8R8A8_UNORM_SRGB:
-        if (imageFormat) *imageFormat = BE1::Image::Format::B8G8R8A8;
-        return true;
-    case DXGI_FORMAT_B8G8R8X8_UNORM:
-    case DXGI_FORMAT_B8G8R8X8_UNORM_SRGB:
-        if (imageFormat) *imageFormat = BE1::Image::Format::B8G8R8X8;
-        return true;
-    case DXGI_FORMAT_R8_SNORM:
-        if (imageFormat) *imageFormat = BE1::Image::Format::R8_SNORM;
-        return true;
-    case DXGI_FORMAT_R8_SINT:
-        if (imageFormat) *imageFormat = BE1::Image::Format::R8_SINT;
-        return true;
-    case DXGI_FORMAT_R8_UINT:
-        if (imageFormat) *imageFormat = BE1::Image::Format::R8_UINT;
-        return true;
-    case DXGI_FORMAT_R8G8_SNORM:
-        if (imageFormat) *imageFormat = BE1::Image::Format::R8G8_SNORM;
-        return true;
-    case DXGI_FORMAT_R8G8_SINT:
-        if (imageFormat) *imageFormat = BE1::Image::Format::R8G8_SINT;
-        return true;
-    case DXGI_FORMAT_R8G8_UINT:
-        if (imageFormat) *imageFormat = BE1::Image::Format::R8G8_UINT;
-        return true;
-    case DXGI_FORMAT_R8G8B8A8_SNORM:
-        if (imageFormat) *imageFormat = BE1::Image::Format::R8G8B8A8_SNORM;
-        return true;
-    case DXGI_FORMAT_R8G8B8A8_SINT:
-        if (imageFormat) *imageFormat = BE1::Image::Format::R8G8B8A8_SINT;
-        return true;
-    case DXGI_FORMAT_R8G8B8A8_UINT:
-        if (imageFormat) *imageFormat = BE1::Image::Format::R8G8B8A8_UINT;
-        return true;
-    case DXGI_FORMAT_B5G6R5_UNORM:
-        if (imageFormat) *imageFormat = BE1::Image::Format::B5G6R5;
-        return true;
-    case DXGI_FORMAT_B4G4R4A4_UNORM:
-        if (imageFormat) *imageFormat = BE1::Image::Format::B4G4R4A4;
-        return true;
-    case DXGI_FORMAT_A4B4G4R4_UNORM:
-        if (imageFormat) *imageFormat = BE1::Image::Format::A4B4G4R4;
-        return true;
-    case DXGI_FORMAT_B5G5R5A1_UNORM:
-        if (imageFormat) *imageFormat = BE1::Image::Format::B5G5R5A1;
-        return true;
-    case DXGI_FORMAT_R10G10B10A2_UNORM:
-        if (imageFormat) *imageFormat = BE1::Image::Format::R10G10B10A2;
-        return true;
-    case DXGI_FORMAT_R16_FLOAT:
-        if (imageFormat) *imageFormat = BE1::Image::Format::R16_FLOAT;
-        return true;
-    case DXGI_FORMAT_R16G16_FLOAT:
-        if (imageFormat) *imageFormat = BE1::Image::Format::R16G16_FLOAT;
-        return true;
-    case DXGI_FORMAT_R16G16B16A16_FLOAT:
-        if (imageFormat) *imageFormat = BE1::Image::Format::R16G16B16A16_FLOAT;
-        return true;
     case DXGI_FORMAT_R32_FLOAT:
         if (imageFormat) *imageFormat = BE1::Image::Format::R32_FLOAT;
         return true;
@@ -1822,11 +1770,98 @@ bool D3D12Renderer::DXGIFormatToImageFormat(DXGI_FORMAT dxgiFormat, BE1::Image::
     case DXGI_FORMAT_R32G32B32A32_UINT:
         if (imageFormat) *imageFormat = BE1::Image::Format::R32G32B32A32_UINT;
         return true;
+    case DXGI_FORMAT_R16_FLOAT:
+        if (imageFormat) *imageFormat = BE1::Image::Format::R16_FLOAT;
+        return true;
+    case DXGI_FORMAT_R16G16_FLOAT:
+        if (imageFormat) *imageFormat = BE1::Image::Format::R16G16_FLOAT;
+        return true;
+    case DXGI_FORMAT_R16G16B16A16_FLOAT:
+        if (imageFormat) *imageFormat = BE1::Image::Format::R16G16B16A16_FLOAT;
+        return true;
     case DXGI_FORMAT_R9G9B9E5_SHAREDEXP:
         if (imageFormat) *imageFormat = BE1::Image::Format::R9G9B9E5_FLOAT;
         return true;
     case DXGI_FORMAT_R11G11B10_FLOAT:
         if (imageFormat) *imageFormat = BE1::Image::Format::R11G11B10_FLOAT;
+        return true;
+    case DXGI_FORMAT_R8_UNORM:
+        if (imageFormat) *imageFormat = BE1::Image::Format::R8;
+        return true;
+    case DXGI_FORMAT_R8_SNORM:
+        if (imageFormat) *imageFormat = BE1::Image::Format::R8_SNORM;
+        return true;
+    case DXGI_FORMAT_R8_SINT:
+        if (imageFormat) *imageFormat = BE1::Image::Format::R8_SINT;
+        return true;
+    case DXGI_FORMAT_R8_UINT:
+        if (imageFormat) *imageFormat = BE1::Image::Format::R8_UINT;
+        return true;
+    case DXGI_FORMAT_A8_UNORM:
+        if (imageFormat) *imageFormat = BE1::Image::Format::A8;
+        return true;
+    case DXGI_FORMAT_R8G8_UNORM:
+        if (imageFormat) *imageFormat = BE1::Image::Format::R8G8;
+        return true;
+    case DXGI_FORMAT_R8G8_SNORM:
+        if (imageFormat) *imageFormat = BE1::Image::Format::R8G8_SNORM;
+        return true;
+    case DXGI_FORMAT_R8G8_SINT:
+        if (imageFormat) *imageFormat = BE1::Image::Format::R8G8_SINT;
+        return true;
+    case DXGI_FORMAT_R8G8_UINT:
+        if (imageFormat) *imageFormat = BE1::Image::Format::R8G8_UINT;
+        return true;
+    case DXGI_FORMAT_R8G8B8A8_UNORM:
+    case DXGI_FORMAT_R8G8B8A8_UNORM_SRGB:
+        if (imageFormat) *imageFormat = BE1::Image::Format::R8G8B8A8;
+        return true;
+    case DXGI_FORMAT_R8G8B8A8_SNORM:
+        if (imageFormat) *imageFormat = BE1::Image::Format::R8G8B8A8_SNORM;
+        return true;
+    case DXGI_FORMAT_R8G8B8A8_SINT:
+        if (imageFormat) *imageFormat = BE1::Image::Format::R8G8B8A8_SINT;
+        return true;
+    case DXGI_FORMAT_R8G8B8A8_UINT:
+        if (imageFormat) *imageFormat = BE1::Image::Format::R8G8B8A8_UINT;
+        return true;
+    case DXGI_FORMAT_B8G8R8A8_UNORM:
+    case DXGI_FORMAT_B8G8R8A8_UNORM_SRGB:
+        if (imageFormat) *imageFormat = BE1::Image::Format::B8G8R8A8;
+        return true;
+    case DXGI_FORMAT_B8G8R8X8_UNORM:
+    case DXGI_FORMAT_B8G8R8X8_UNORM_SRGB:
+        if (imageFormat) *imageFormat = BE1::Image::Format::B8G8R8X8;
+        return true;
+    case DXGI_FORMAT_R10G10B10A2_UNORM:
+        if (imageFormat) *imageFormat = BE1::Image::Format::R10G10B10A2;
+        return true;
+    case DXGI_FORMAT_R10G10B10A2_UINT:
+        if (imageFormat) *imageFormat = BE1::Image::Format::R10G10B10A2_UINT;
+        return true;
+    case DXGI_FORMAT_B5G6R5_UNORM:
+        if (imageFormat) *imageFormat = BE1::Image::Format::B5G6R5;
+        return true;
+    case DXGI_FORMAT_B4G4R4A4_UNORM:
+        if (imageFormat) *imageFormat = BE1::Image::Format::B4G4R4A4;
+        return true;
+    case DXGI_FORMAT_A4B4G4R4_UNORM:
+        if (imageFormat) *imageFormat = BE1::Image::Format::A4B4G4R4;
+        return true;
+    case DXGI_FORMAT_B5G5R5A1_UNORM:
+        if (imageFormat) *imageFormat = BE1::Image::Format::B5G5R5A1;
+        return true;
+    case DXGI_FORMAT_D16_UNORM:
+        if (imageFormat) *imageFormat = BE1::Image::Format::D16;
+        return true;
+    case DXGI_FORMAT_D32_FLOAT:
+        if (imageFormat) *imageFormat = BE1::Image::Format::D32_FLOAT;
+        return true;
+    case DXGI_FORMAT_D24_UNORM_S8_UINT:
+        if (imageFormat) *imageFormat = BE1::Image::Format::D24S8;
+        return true;
+    case DXGI_FORMAT_D32_FLOAT_S8X24_UINT:
+        if (imageFormat) *imageFormat = BE1::Image::Format::D32_FLOAT_S8X24;
         return true;
     case DXGI_FORMAT_BC1_UNORM:
     case DXGI_FORMAT_BC1_UNORM_SRGB:
@@ -1846,17 +1881,15 @@ bool D3D12Renderer::DXGIFormatToImageFormat(DXGI_FORMAT dxgiFormat, BE1::Image::
     case DXGI_FORMAT_BC5_UNORM:
         if (imageFormat) *imageFormat = BE1::Image::Format::DXN2;
         return true;
-    case DXGI_FORMAT_D16_UNORM:
-        if (imageFormat) *imageFormat = BE1::Image::Format::D16;
+    case DXGI_FORMAT_BC6H_UF16:
+        if (imageFormat) *imageFormat = BE1::Image::Format::BC6H_UF16;
         return true;
-    case DXGI_FORMAT_D32_FLOAT:
-        if (imageFormat) *imageFormat = BE1::Image::Format::D32_FLOAT;
+    case DXGI_FORMAT_BC6H_SF16:
+        if (imageFormat) *imageFormat = BE1::Image::Format::BC6H_SF16;
         return true;
-    case DXGI_FORMAT_D24_UNORM_S8_UINT:
-        if (imageFormat) *imageFormat = BE1::Image::Format::D24S8;
-        return true;
-    case DXGI_FORMAT_D32_FLOAT_S8X24_UINT:
-        if (imageFormat) *imageFormat = BE1::Image::Format::D32_FLOAT_S8X24;
+    case DXGI_FORMAT_BC7_UNORM:
+    case DXGI_FORMAT_BC7_UNORM_SRGB:
+        if (imageFormat) *imageFormat = BE1::Image::Format::BC7;
         return true;
     }
     return false;
@@ -1908,6 +1941,26 @@ bool D3D12Renderer::IsTypelessFormat(DXGI_FORMAT format) {
         return true;
     }
     return false;
+}
+
+DXGI_FORMAT D3D12Renderer::ToNonSRGBFormat(DXGI_FORMAT format) {
+    switch (format) {
+    case DXGI_FORMAT_R8G8B8A8_UNORM_SRGB:
+        return DXGI_FORMAT_R8G8B8A8_UNORM;
+    case DXGI_FORMAT_B8G8R8A8_UNORM_SRGB:
+        return DXGI_FORMAT_B8G8R8A8_UNORM;
+    case DXGI_FORMAT_B8G8R8X8_UNORM_SRGB:
+        return DXGI_FORMAT_B8G8R8X8_UNORM;
+    case DXGI_FORMAT_BC1_UNORM_SRGB:
+        return DXGI_FORMAT_BC1_UNORM;
+    case DXGI_FORMAT_BC2_UNORM_SRGB:
+        return DXGI_FORMAT_BC2_UNORM;
+    case DXGI_FORMAT_BC3_UNORM_SRGB:
+        return DXGI_FORMAT_BC3_UNORM;
+    case DXGI_FORMAT_BC7_UNORM_SRGB:
+        return DXGI_FORMAT_BC7_UNORM;
+    }
+    return format;
 }
 
 DXGI_FORMAT D3D12Renderer::ToTypelessFormat(DXGI_FORMAT format) {
@@ -2029,6 +2082,26 @@ DXGI_FORMAT D3D12Renderer::ToTypelessFormat(DXGI_FORMAT format) {
     }
 }
 
+UINT D3D12Renderer::GetComponentSwizzling(BE1::Image::Format format) {
+    switch (format) {
+    case BE1::Image::Format::L8:
+    case BE1::Image::Format::L16_FLOAT:
+    case BE1::Image::Format::L32_FLOAT:
+        return D3D12_ENCODE_SHADER_4_COMPONENT_MAPPING(D3D12_SHADER_COMPONENT_MAPPING_FROM_MEMORY_COMPONENT_0, D3D12_SHADER_COMPONENT_MAPPING_FROM_MEMORY_COMPONENT_0, D3D12_SHADER_COMPONENT_MAPPING_FROM_MEMORY_COMPONENT_0, D3D12_SHADER_COMPONENT_MAPPING_FORCE_VALUE_1);
+    case BE1::Image::Format::A8:
+    case BE1::Image::Format::A16_FLOAT:
+    case BE1::Image::Format::A32_FLOAT:
+        return D3D12_ENCODE_SHADER_4_COMPONENT_MAPPING(D3D12_SHADER_COMPONENT_MAPPING_FORCE_VALUE_1, D3D12_SHADER_COMPONENT_MAPPING_FORCE_VALUE_1, D3D12_SHADER_COMPONENT_MAPPING_FORCE_VALUE_1, D3D12_SHADER_COMPONENT_MAPPING_FROM_MEMORY_COMPONENT_0);
+    case BE1::Image::Format::L8A8:
+    case BE1::Image::Format::L16A16_FLOAT:
+    case BE1::Image::Format::L32A32_FLOAT:
+    case BE1::Image::Format::DXN1:
+    case BE1::Image::Format::DXN2:
+        return D3D12_ENCODE_SHADER_4_COMPONENT_MAPPING(D3D12_SHADER_COMPONENT_MAPPING_FROM_MEMORY_COMPONENT_0, D3D12_SHADER_COMPONENT_MAPPING_FROM_MEMORY_COMPONENT_0, D3D12_SHADER_COMPONENT_MAPPING_FROM_MEMORY_COMPONENT_0, D3D12_SHADER_COMPONENT_MAPPING_FROM_MEMORY_COMPONENT_1);
+    }
+    return D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+}
+
 BE1::Image::Format D3D12Renderer::ToUncompressedImageFormat(BE1::Image::Format inFormat) const {
     BE1::Image::Format outFormat;
 
@@ -2056,16 +2129,8 @@ BE1::Image::Format D3D12Renderer::ToUncompressedImageFormat(BE1::Image::Format i
     case BE1::Image::Format::A4R4G4B4:
     case BE1::Image::Format::A1R5G5B5:
     case BE1::Image::Format::A8R8G8B8:
+    case BE1::Image::Format::R10G10B10A2:
         outFormat = BE1::Image::Format::R8G8B8A8;
-        break;
-    case BE1::Image::Format::R8G8B8_SNORM:
-        outFormat = BE1::Image::Format::R8G8B8A8_SNORM;
-        break;
-    case BE1::Image::Format::R16G16B16_FLOAT:
-        outFormat = BE1::Image::Format::R16G16B16A16_FLOAT;
-        break;
-    case BE1::Image::Format::R32G32B32_FLOAT:
-        outFormat = BE1::Image::Format::R32G32B32A32_FLOAT;
         break;
     case BE1::Image::Format::DXN1:
     case BE1::Image::Format::DXN2:
@@ -2098,31 +2163,10 @@ BE1::Image::Format D3D12Renderer::ToUncompressedImageFormat(BE1::Image::Format i
         outFormat = BE1::Image::Format::R16G16_FLOAT;
         break;
     default:
-        assert(0);
         outFormat = inFormat;
         break;
     }
     return outFormat;
-}
-
-UINT D3D12Renderer::GetComponentSwizzling(BE1::Image::Format format) {
-    switch (format) {
-    case BE1::Image::Format::L8:
-    case BE1::Image::Format::L16_FLOAT:
-    case BE1::Image::Format::L32_FLOAT:
-        return D3D12_ENCODE_SHADER_4_COMPONENT_MAPPING(D3D12_SHADER_COMPONENT_MAPPING_FROM_MEMORY_COMPONENT_0, D3D12_SHADER_COMPONENT_MAPPING_FROM_MEMORY_COMPONENT_0, D3D12_SHADER_COMPONENT_MAPPING_FROM_MEMORY_COMPONENT_0, D3D12_SHADER_COMPONENT_MAPPING_FORCE_VALUE_1);
-    case BE1::Image::Format::A8:
-    case BE1::Image::Format::A16_FLOAT:
-    case BE1::Image::Format::A32_FLOAT:
-        return D3D12_ENCODE_SHADER_4_COMPONENT_MAPPING(D3D12_SHADER_COMPONENT_MAPPING_FORCE_VALUE_1, D3D12_SHADER_COMPONENT_MAPPING_FORCE_VALUE_1, D3D12_SHADER_COMPONENT_MAPPING_FORCE_VALUE_1, D3D12_SHADER_COMPONENT_MAPPING_FROM_MEMORY_COMPONENT_0);
-    case BE1::Image::Format::L8A8:
-    case BE1::Image::Format::L16A16_FLOAT:
-    case BE1::Image::Format::L32A32_FLOAT:
-    case BE1::Image::Format::DXN1:
-    case BE1::Image::Format::DXN2:
-        return D3D12_ENCODE_SHADER_4_COMPONENT_MAPPING(D3D12_SHADER_COMPONENT_MAPPING_FROM_MEMORY_COMPONENT_0, D3D12_SHADER_COMPONENT_MAPPING_FROM_MEMORY_COMPONENT_0, D3D12_SHADER_COMPONENT_MAPPING_FROM_MEMORY_COMPONENT_0, D3D12_SHADER_COMPONENT_MAPPING_FROM_MEMORY_COMPONENT_1);
-    }
-    return D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
 }
 
 BE1::Image::Format D3D12Renderer::ToCompressedImageFormat(BE1::Image::Format inFormat, bool useNormalMap) const {
@@ -2155,4 +2199,121 @@ BE1::Image::Format D3D12Renderer::ToCompressedImageFormat(BE1::Image::Format inF
     }
 
     return outFormat;
+}
+
+BE1::Image::Format D3D12Renderer::ToUAVImageFormat(BE1::Image::Format format) const {
+    DXGI_FORMAT dxgiFormat;
+    ImageFormatToDXGIFormat(format, false, &dxgiFormat);
+
+    if (IsSupportedUAVFormat(dxgiFormat)) {
+        return format;
+    }
+
+    if (BE1::Image::IsCompressed(format) || BE1::Image::IsPacked(format)) {
+        format = ToUncompressedImageFormat(format);
+    }
+
+    switch (format) {
+    case BE1::Image::Format::R32G32_FLOAT:
+    case BE1::Image::Format::R32G32B32_FLOAT:
+        return BE1::Image::Format::R32G32B32A32_FLOAT;
+    case BE1::Image::Format::R32G32_UINT:
+    case BE1::Image::Format::R32G32B32_UINT:
+        return BE1::Image::Format::R32G32B32A32_UINT;
+    case BE1::Image::Format::R32G32_SINT:
+    case BE1::Image::Format::R32G32B32_SINT:
+        return BE1::Image::Format::R32G32B32A32_SINT;
+    case BE1::Image::Format::R16:
+        return BE1::Image::Format::R16_FLOAT;
+    case BE1::Image::Format::R16G16_FLOAT:
+    case BE1::Image::Format::R16G16B16_FLOAT:
+        return BE1::Image::Format::R16G16B16A16_FLOAT;
+    case BE1::Image::Format::R16G16_UINT:
+    case BE1::Image::Format::R16G16B16_UINT:
+        return BE1::Image::Format::R16G16B16A16_UINT;
+    case BE1::Image::Format::R16G16_SINT:
+    case BE1::Image::Format::R16G16B16_SINT:
+        return BE1::Image::Format::R16G16B16A16_SINT;
+    case BE1::Image::Format::A8:
+    case BE1::Image::Format::R8G8:
+    case BE1::Image::Format::R8G8B8:
+    case BE1::Image::Format::B8G8R8:
+    case BE1::Image::Format::R8G8B8X8:
+    case BE1::Image::Format::B8G8R8X8:
+    case BE1::Image::Format::B8G8R8A8:
+    case BE1::Image::Format::A8B8G8R8:
+    case BE1::Image::Format::A8R8G8B8:
+    case BE1::Image::Format::R10G10B10A2:
+        return BE1::Image::Format::R8G8B8A8;
+    case BE1::Image::Format::R8G8_UINT:
+    case BE1::Image::Format::R8G8B8_UINT:
+    case BE1::Image::Format::R10G10B10A2_UINT:
+        return BE1::Image::Format::R8G8B8A8_UINT;
+    case BE1::Image::Format::R8G8_SINT:
+    case BE1::Image::Format::R8G8B8_SINT:
+        return BE1::Image::Format::R8G8B8A8_SINT;
+    }
+    return format;
+}
+
+bool D3D12Renderer::IsSupportedUAVFormat(DXGI_FORMAT format) const {
+    // D3D11.0 부터 지원하는 포맷
+    if (format == DXGI_FORMAT_R32_FLOAT ||
+        format == DXGI_FORMAT_R32_UINT ||
+        format == DXGI_FORMAT_R32_SINT) {
+        return true;
+    }
+
+    if (supportsUAVFormatCommon) {
+        // D3D11.3 부터 지원하는 포맷
+        if (format == DXGI_FORMAT_R32G32B32A32_FLOAT ||
+            format == DXGI_FORMAT_R32G32B32A32_UINT ||
+            format == DXGI_FORMAT_R32G32B32A32_SINT ||
+            format == DXGI_FORMAT_R16G16B16A16_FLOAT ||
+            format == DXGI_FORMAT_R16G16B16A16_UINT ||
+            format == DXGI_FORMAT_R16G16B16A16_SINT ||
+            format == DXGI_FORMAT_R8G8B8A8_UNORM ||
+            format == DXGI_FORMAT_R8G8B8A8_UINT ||
+            format == DXGI_FORMAT_R8G8B8A8_SINT ||
+            format == DXGI_FORMAT_R16_FLOAT ||
+            format == DXGI_FORMAT_R16_UINT ||
+            format == DXGI_FORMAT_R16_SINT ||
+            format == DXGI_FORMAT_R8_UNORM ||
+            format == DXGI_FORMAT_R8_UINT ||
+            format == DXGI_FORMAT_R8_SINT) {
+            return true;
+        }
+    }
+
+    // Optional UAV formats:
+    // DXGI_FORMAT_R16G16B16A16_UNORM,
+    // DXGI_FORMAT_R16G16B16A16_SNORM,
+    // DXGI_FORMAT_R32G32_FLOAT,
+    // DXGI_FORMAT_R32G32_UINT,
+    // DXGI_FORMAT_R32G32_SINT,
+    // DXGI_FORMAT_R10G10B10A2_UNORM,
+    // DXGI_FORMAT_R10G10B10A2_UINT,
+    // DXGI_FORMAT_R11G11B10_FLOAT,
+    // DXGI_FORMAT_R8G8B8A8_SNORM,
+    // DXGI_FORMAT_R16G16_FLOAT,
+    // DXGI_FORMAT_R16G16_UNORM,
+    // DXGI_FORMAT_R16G16_UINT,
+    // DXGI_FORMAT_R16G16_SNORM,
+    // DXGI_FORMAT_R16G16_SINT,
+    // DXGI_FORMAT_R8G8_UNORM,
+    // DXGI_FORMAT_R8G8_UINT,
+    // DXGI_FORMAT_R8G8_SNORM,
+    // DXGI_FORMAT_R8G8_SINT,
+    // DXGI_FORMAT_R16_UNORM,
+    // DXGI_FORMAT_R16_SNORM,
+    // DXGI_FORMAT_R8_SNORM,
+    // DXGI_FORMAT_A8_UNORM,
+    // DXGI_FORMAT_B5G6R5_UNORM,
+    // DXGI_FORMAT_B5G5R5A1_UNORM,
+    // DXGI_FORMAT_B4G4R4A4_UNORM
+    if (optionalUAVFormatMap.find(format) != optionalUAVFormatMap.end()) {
+        return true;
+    }
+
+    return false;
 }

@@ -467,7 +467,7 @@ bool OpenGL3::ImageFormatToGLFormat(Image::Format imageFormat, bool isSRGB, GLen
         if (glType)     *glType = GL_UNSIGNED_SHORT;
         if (glInternal) *glInternal = GL_DEPTH_COMPONENT16;
         return true;
-    case Image::Format::D24:
+    case Image::Format::D24X8:
         if (glFormat)   *glFormat = GL_DEPTH_COMPONENT;
         if (glType)     *glType = GL_UNSIGNED_INT;
         if (glInternal) *glInternal = GL_DEPTH_COMPONENT24;

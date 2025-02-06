@@ -37,13 +37,40 @@ public:
         R32G32B32A32_SINT,
         R32G32B32A32_UINT,
         R16_FLOAT,
+        R16,
+        R16_SNORM,
+        R16_SINT,
+        R16_UINT,
         R16G16_FLOAT,
+        R16G16,
+        R16G16_SNORM,
+        R16G16_SINT,
+        R16G16_UINT,
         R16G16B16_FLOAT,
+        R16G16B16,
+        R16G16B16_SNORM,
+        R16G16B16_SINT,
+        R16G16B16_UINT,
         R16G16B16A16_FLOAT,
+        R16G16B16A16,
+        R16G16B16A16_SNORM,
+        R16G16B16A16_SINT,
+        R16G16B16A16_UINT,
         R9G9B9E5_FLOAT,
         R11G11B10_FLOAT,
-        R8G8B8X8,
-        B8G8R8X8,
+        R8,
+        R8_SNORM,
+        R8_SINT,
+        R8_UINT,
+        R8G8,
+        R8G8_SNORM,
+        R8G8_SINT,
+        R8G8_UINT,
+        R8G8B8,
+        R8G8B8_SNORM,
+        R8G8B8_SINT,
+        R8G8B8_UINT,
+        B8G8R8,
         R8G8B8A8,
         R8G8B8A8_SNORM,
         R8G8B8A8_SINT,
@@ -51,19 +78,8 @@ public:
         B8G8R8A8,
         A8B8G8R8,
         A8R8G8B8,
-        R8G8B8,
-        R8G8B8_SNORM,
-        R8G8B8_SINT,
-        R8G8B8_UINT,
-        B8G8R8,
-        R8G8,
-        R8G8_SNORM,
-        R8G8_SINT,
-        R8G8_UINT,
-        R8,
-        R8_SNORM,
-        R8_SINT,
-        R8_UINT,
+        R8G8B8X8,
+        B8G8R8X8,
 
         R10G10B10A2,
         R10G10B10A2_UINT,
@@ -84,9 +100,9 @@ public:
 
         // Depth/Stencil formats
         D16,                // depth (16-bit)
-        D24,                // depth (24-bit)
-        D32_FLOAT,          // depth (32-bit)
+        D24X8,              // depth (24-bit)
         D24S8,              // depth (24-bit) + stencil (8-bit)
+        D32_FLOAT,          // depth (32-bit)
         D32_FLOAT_S8X24,    // depth (32-bit) + stencil (8-bit)
 
         // Luminance/Alpha
@@ -137,9 +153,9 @@ public:
     };
 
     /// Format type
-    enum class FormatType : uint8_t {
+    enum class FormatType : uint16_t {
         None                = 0,
-        Packed              = BIT(0),
+        UNorm               = BIT(0),
         SNorm               = BIT(1),
         UInt                = BIT(2),
         SInt                = BIT(3),
@@ -147,7 +163,8 @@ public:
         Depth               = BIT(5),
         Stencil             = BIT(6),
         DepthStencil        = Depth | Stencil,
-        Compressed          = BIT(7)
+        Packed              = BIT(7),
+        Compressed          = BIT(8)
     };
 
     /// Enum for the different kinds of gamma spaces we expect to need to convert from/to.
