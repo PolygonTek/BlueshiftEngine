@@ -24,7 +24,9 @@ void RenderFrameData::Init() {
     InitMemBlocks();
 
 #ifdef USE_RENDER_TASK
-    // 최대 렌더 태스크 쓰레드 개수는 태스크 매니져의 쓰레드 개수를 넘을 수 없다.
+    // 렌더 태스크 스레드 별 데이터를 준비한다.
+    // 렌더 태스크 스레드는 태스크 매니져의 스레드 개수를 넘을 수 없다.
+    // 태스크 매니져의 스레드는 물리 코어 개수만큼 미리 생성된다.
     numRenderTaskThreads = BE1::Min(BE1::Engine::taskManager->NumThreads(), MaxRenderTaskThreads);
 #else
     numRenderTaskThreads = 1;
@@ -81,6 +83,24 @@ RenderFrameData::MemBlock *RenderFrameData::AllocMemBlock() {
     return block;
 }
 
+void RenderFrameData::BeginFrameMemAllocs() {
+    FreeVisCameras();
+
+    FreeVisObjects();
+
+    // Reset the mem allocation to the first block.
+    currentBlock = headBlock;
+
+    // Clear all the blocks.
+    for (MemBlock *block = headBlock; block; block = block->next) {
+        block->used = 0;
+    }
+
+    InitVisCameras(16);
+
+    InitVisObjects(16384);
+}
+
 void *RenderFrameData::MemAlloc(int size) {
     size = BE1::AlignUp(size, MemAlignSize);
     if (size > MaxMemSizePerBlock) {
@@ -108,26 +128,6 @@ void *RenderFrameData::ClearedMemAlloc(int size) {
     void *mem = MemAlloc(size);
     BE1::simdProcessor->Memset(mem, 0, size);
     return mem;
-}
-
-void RenderFrameData::BeginFrameMemAllocs() {
-    InitVisCameras(16);
-
-    InitVisObjects(16384);
-}
-
-void RenderFrameData::EndFrameMemAllocs() {
-    FreeVisCameras();
-
-    FreeVisObjects();
-
-    // Reset the mem allocation to the first block.
-    currentBlock = headBlock;
-
-    // Clear all the blocks.
-    for (MemBlock *block = headBlock; block; block = block->next) {
-        block->used = 0;
-    }
 }
 
 void RenderFrameData::InitVisCameras(uint32_t maxVisCameras) {

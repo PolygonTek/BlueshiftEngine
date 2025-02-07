@@ -21,20 +21,27 @@
 #include "D3D12CommandList.h"
 #include "D3D12CommandListPool.h"
 
+class D3D12Renderer;
 class D3D12DescriptorPool;
 class D3D12RootDescriptorPool;
 
-class D3D12DynamicAllocation {
-public:
-    D3D12DynamicAllocation(uint64_t size);
-    ~D3D12DynamicAllocation();
+/*
+-------------------------------------------------------------------------------
+    프레임 스레드 데이터
 
-    D3D12Buffer *                       buffer = nullptr;
-    void *                              mappedBase = nullptr;
-    UINT                                usedBytes = 0;
-};
+    프레임의 렌더 태스크 스레드 별로 필요한 데이터를 관리한다.
+    스레드 동기화를 피하기 위해 태스크 스레드 당 하나씩 생성된다.
+
+    1. 다이나믹 버퍼
+    2. 커맨드 리스트 풀
+    3. 루트 시그니쳐의 데이터
+-------------------------------------------------------------------------------
+*/
 
 class D3D12FrameThreadData : public RHI::FrameThreadData {
+    friend class D3D12Renderer;
+    friend class D3D12CommandList;
+
 public:
     void                                Init();
     void                                Shutdown();
@@ -42,15 +49,32 @@ public:
     virtual void                        Reset() override;
 
                                         // 프레임 별로 임시로 할당하는 다이나믹 버퍼
-                                        // RTV/DSV 는 지원하지 않음
+                                        // UAV/RTV/DSV 는 지원하지 않음
     virtual RHI::ConstantBuffer *       AllocConstant(uint32_t size) override;
     virtual RHI::VertexBuffer *         AllocVertex(uint32_t vertexSize, uint32_t count) override;
     virtual RHI::IndexBuffer *          AllocIndex(uint32_t indexSize, uint32_t count) override;
-    virtual RHI::Buffer *               AllocBuffer(bool shaderStorage, BE1::Image::Format format, uint32_t structureByteStride, uint32_t count) override;
+    virtual RHI::Buffer *               AllocBuffer(BE1::Image::Format format, uint32_t structureByteStride, uint32_t count) override;
 
     virtual RHI::CommandList *          AllocGraphicsCommandList(RHI::CommandListType type = RHI::CommandListType::Primary) override;
+    virtual RHI::CommandList *          AllocComputeCommandList() override;
 
+    virtual RHI::CommandList *          BeginCommandList(RHI::CommandQueueType queueType) override;
     virtual RHI::CommandList *          BeginSecondaryCommandList(const RHI::CommandList *primaryCommandList) override;
+
+private:
+    // 다이나믹 버퍼 블럭
+    class DynamicBlock {
+    public:
+        DynamicBlock() = delete;
+        DynamicBlock(uint64_t size);
+        ~DynamicBlock();
+
+        D3D12Buffer *                   buffer = nullptr;
+        void *                          mappedBase = nullptr;
+        UINT                            usedBytes = 0;
+    };
+
+    DynamicBlock *                      FindFreeDynamicBlock(uint32_t size, uint32_t alignSize, uint32_t *outAlignedOffset) const;
 
     static constexpr uint32_t           MaxRootParameters = 64;
     static constexpr uint32_t           MaxDescriptorsInDescriptorTable = 64;
@@ -58,7 +82,7 @@ public:
     D3D12CommandListPool *              graphicsCommandListPool = nullptr;
     D3D12CommandListPool *              computeCommandListPool = nullptr;
 
-    BE1::Array<D3D12DynamicAllocation *> dynamicAllocations;
+    BE1::Array<DynamicBlock *>          dynamicBlocks;
     BE1::Array<D3D12ConstantBuffer>     dynamicConstantBuffers;
     BE1::Array<D3D12VertexBuffer>       dynamicVertexBuffers;
     BE1::Array<D3D12IndexBuffer>        dynamicIndexBuffers;
@@ -77,5 +101,11 @@ public:
 };
 
 BE_INLINE RHI::CommandList *D3D12FrameThreadData::AllocGraphicsCommandList(RHI::CommandListType type) {
-    return graphicsCommandListPool->Alloc(type);
+    RHI::CommandList *commandList = graphicsCommandListPool->Alloc(type);
+    return commandList;
+}
+
+BE_INLINE RHI::CommandList *D3D12FrameThreadData::AllocComputeCommandList() {
+    RHI::CommandList *commandList = computeCommandListPool->Alloc();
+    return commandList;
 }

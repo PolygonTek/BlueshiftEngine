@@ -146,16 +146,16 @@ RHI::Texture *D3D12Renderer::CreateTexture(RHI::TextureType textureType, RHI::Re
     }
 
     int maxSrcMipLevels;
-    int maxAllocationMipLevels;
+    int maxAllocMipLevels;
 
     if (allocateEmptyMipmaps) {
         // 0 mip 레벨의 src 이미지만 사용하고, 나머지 서브 mip 레벨은 빈 공간으로 채운다.
         maxSrcMipLevels = 1;
-        maxAllocationMipLevels = BE1::Image::MaxMipLevels(srcImage->GetWidth(), srcImage->GetHeight(), srcImage->GetDepth());
+        maxAllocMipLevels = BE1::Image::MaxMipLevels(srcImage->GetWidth(), srcImage->GetHeight(), srcImage->GetDepth());
     } else {
         // src 이미지의 mip 레벨을 모두 사용한다.
         maxSrcMipLevels = srcImage->NumMipmaps();
-        maxAllocationMipLevels = maxSrcMipLevels;
+        maxAllocMipLevels = maxSrcMipLevels;
     }
 
     D3D12_RESOURCE_DESC textureDesc = {};
@@ -163,7 +163,7 @@ RHI::Texture *D3D12Renderer::CreateTexture(RHI::TextureType textureType, RHI::Re
     textureDesc.Width = static_cast<UINT>(srcImage->GetWidth());
     textureDesc.Height = static_cast<UINT>(srcImage->GetHeight());
     textureDesc.DepthOrArraySize = static_cast<UINT>(textureDimension == D3D12_RESOURCE_DIMENSION_TEXTURE3D ? srcImage->GetDepth() : srcImage->GetArraySize());
-    textureDesc.MipLevels = static_cast<UINT16>(maxAllocationMipLevels);
+    textureDesc.MipLevels = static_cast<UINT16>(maxAllocMipLevels);
     textureDesc.Format = dxgiFormat;
     textureDesc.SampleDesc.Count = sampleCount;
     textureDesc.SampleDesc.Quality = 0;
@@ -191,10 +191,10 @@ RHI::Texture *D3D12Renderer::CreateTexture(RHI::TextureType textureType, RHI::Re
         textureDesc.Format = ToTypelessFormat(textureDesc.Format);
     }
 
-    D3D12_RESOURCE_STATES d3d12InitialState = ToD3D12ResourceState(initialState);
     if (!srcImage->IsEmpty()) {
-        d3d12InitialState = D3D12_RESOURCE_STATE_COMMON;
+        initialState = RHI::GPUResourceState::Undefined;
     }
+    D3D12_RESOURCE_STATES d3d12InitialState = ToD3D12ResourceState(initialState);
 
 #ifdef USE_D3D12_MEMALLOC
     D3D12MA::ALLOCATION_DESC allocationDesc = {};
@@ -294,8 +294,8 @@ RHI::Texture *D3D12Renderer::CreateTexture(RHI::TextureType textureType, RHI::Re
         uploadBuffer->Unmap(0, &writtenRange);
 
         // 업로드 버퍼에서 텍스쳐로 데이터 카피
-        resourceCommandList->Reset();
-        resourceCommandList->ResourceBarrier(textureResource, D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_COPY_DEST);
+        D3D12CommandList *commandList = static_cast<D3D12CommandList *>(BeginCommandList(RHI::CommandQueueType::Graphics));
+        commandList->ResourceBarrier(textureResource, d3d12InitialState, D3D12_RESOURCE_STATE_COPY_DEST);
 
         for (int sliceIndex = 0; sliceIndex < numSlices; ++sliceIndex) {
             for (int mipLevel = 0; mipLevel < maxSrcMipLevels; ++mipLevel) {
@@ -312,12 +312,15 @@ RHI::Texture *D3D12Renderer::CreateTexture(RHI::TextureType textureType, RHI::Re
                 dstLocation.Type = D3D12_TEXTURE_COPY_TYPE_SUBRESOURCE_INDEX;
                 dstLocation.SubresourceIndex = subresourceIndex;
 
-                resourceCommandList->GetGraphicsCommandList()->CopyTextureRegion(&dstLocation, 0, 0, 0, &srcLocation, nullptr);
+                commandList->GetGraphicsCommandList()->CopyTextureRegion(&dstLocation, 0, 0, 0, &srcLocation, nullptr);
             }
         }
 
-        resourceCommandList->ResourceBarrier(textureResource, D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_ALL_SHADER_RESOURCE);
-        resourceCommandList->CloseAndExecute(RHI::CommandQueueType::Graphics);
+        commandList->ResourceBarrier(textureResource, D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_ALL_SHADER_RESOURCE);
+        commandList->CloseAndExecute(RHI::CommandQueueType::Graphics);
+        EndCommandList(commandList);
+
+        initialState = RHI::GPUResourceState::ShaderResource;
 
         if (uploadBuffer) {
             MarkForRelease(uploadBuffer);
@@ -355,7 +358,7 @@ RHI::Texture *D3D12Renderer::CreateTexture(RHI::TextureType textureType, RHI::Re
     return texture;
 }
 
-RHI::Texture *D3D12Renderer::CreateTexture(RHI::TextureType textureType, RHI::ResourceFlag flags, const BE1::Image *srcImage, BE1::Image::Format dstFormat, bool useMipmaps) {
+RHI::Texture *D3D12Renderer::CreateTexture(RHI::TextureType textureType, RHI::ResourceFlag flags, const BE1::Image *srcImage, BE1::Image::Format dstFormat, bool generateMipmaps, bool allocateEmptyMipmaps) {
     BE1::Image::Format srcFormat = srcImage->GetFormat();
 
     bool srcCompressed = BE1::Image::IsCompressed(srcFormat);
@@ -373,7 +376,7 @@ RHI::Texture *D3D12Renderer::CreateTexture(RHI::TextureType textureType, RHI::Re
 
     if (!srcImage->IsEmpty()) {
         // 필요하다면 밉맵을 생성한다.
-        if (useMipmaps) {
+        if (generateMipmaps) {
             int w = srcImage->GetWidth();
             int h = srcImage->GetHeight();
             int d = srcImage->GetDepth();
@@ -408,7 +411,7 @@ RHI::Texture *D3D12Renderer::CreateTexture(RHI::TextureType textureType, RHI::Re
         }
     }
 
-    return CreateTexture(textureType, flags, srcImage, false);
+    return CreateTexture(textureType, flags, srcImage, allocateEmptyMipmaps);
 }
 
 void D3D12Renderer::DestroyTexture(RHI::Texture *texture, bool immediate) {
@@ -507,8 +510,12 @@ void D3D12Renderer::DestroySubresource(RHI::Texture *texture, RHI::SubresourceTy
 }
 
 int D3D12Renderer::CreateSubresourceSRV(D3D12Texture *texture, uint32_t firstSlice, uint32_t sliceCount, uint32_t firstMipLevel, uint32_t mipCount, const BE1::Image::Format *typelessCompatibleFormat, bool isSRGB) {
-    D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
-    srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+    D3D12SRVDescriptor srvDescriptor;
+    if (!resCpuDescriptorPool->Alloc(&srvDescriptor.cpuDescriptorHandle, nullptr)) {
+        return -1;
+    }
+
+    srvDescriptor.srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
 
     BE1::Image::Format subresourceFormat;
 
@@ -516,96 +523,89 @@ int D3D12Renderer::CreateSubresourceSRV(D3D12Texture *texture, uint32_t firstSli
         assert(IsTypelessFormat(texture->textureDesc.Format));
         subresourceFormat = *typelessCompatibleFormat;
 
-        ImageFormatToDXGIFormat(subresourceFormat, isSRGB, &srvDesc.Format);
+        ImageFormatToDXGIFormat(subresourceFormat, isSRGB, &srvDescriptor.srvDesc.Format);
     } else {
         subresourceFormat = texture->srcFormat;
 
         switch (texture->srcFormat) {
         case BE1::Image::Format::D16:
-            srvDesc.Format = DXGI_FORMAT_R16_UNORM;
+            srvDescriptor.srvDesc.Format = DXGI_FORMAT_R16_UNORM;
             break;
         case BE1::Image::Format::D24S8:
-            srvDesc.Format = DXGI_FORMAT_R24_UNORM_X8_TYPELESS;
+            srvDescriptor.srvDesc.Format = DXGI_FORMAT_R24_UNORM_X8_TYPELESS;
             break;
         case BE1::Image::Format::D32_FLOAT:
-            srvDesc.Format = DXGI_FORMAT_R32_FLOAT;
+            srvDescriptor.srvDesc.Format = DXGI_FORMAT_R32_FLOAT;
             break;
         case BE1::Image::Format::D32_FLOAT_S8X24:
-            srvDesc.Format = DXGI_FORMAT_R32_FLOAT_X8X24_TYPELESS;
+            srvDescriptor.srvDesc.Format = DXGI_FORMAT_R32_FLOAT_X8X24_TYPELESS;
             break;
         default:
-            ImageFormatToDXGIFormat(texture->srcFormat, texture->srcSRGB, &srvDesc.Format);
+            ImageFormatToDXGIFormat(texture->srcFormat, texture->srcSRGB, &srvDescriptor.srvDesc.Format);
             break;
         }
     }
 
     // 텍스쳐의 Image::Format 에 따라 swizzling 이 필요할 수도 있다.
-    srvDesc.Shader4ComponentMapping = GetComponentSwizzling(subresourceFormat);
+    srvDescriptor.srvDesc.Shader4ComponentMapping = GetComponentSwizzling(subresourceFormat);
 
     switch (texture->textureType) {
     case RHI::TextureType::Texture1D:
-        srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE1D;
-        srvDesc.Texture1D.MostDetailedMip = firstMipLevel;
-        srvDesc.Texture1D.MipLevels = BE1::Min(mipCount, texture->textureDesc.MipLevels - firstMipLevel);
+        srvDescriptor.srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE1D;
+        srvDescriptor.srvDesc.Texture1D.MostDetailedMip = firstMipLevel;
+        srvDescriptor.srvDesc.Texture1D.MipLevels = BE1::Min(mipCount, texture->textureDesc.MipLevels - firstMipLevel);
         break;
     case RHI::TextureType::Texture1DArray:
-        srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE1DARRAY;
-        srvDesc.Texture1DArray.FirstArraySlice = firstSlice;
-        srvDesc.Texture1DArray.ArraySize = BE1::Min(sliceCount, texture->textureDesc.DepthOrArraySize - firstSlice);
-        srvDesc.Texture1DArray.MostDetailedMip = firstMipLevel;
-        srvDesc.Texture1DArray.MipLevels = BE1::Min(mipCount, texture->textureDesc.MipLevels - firstMipLevel);
+        srvDescriptor.srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE1DARRAY;
+        srvDescriptor.srvDesc.Texture1DArray.FirstArraySlice = firstSlice;
+        srvDescriptor.srvDesc.Texture1DArray.ArraySize = BE1::Min(sliceCount, texture->textureDesc.DepthOrArraySize - firstSlice);
+        srvDescriptor.srvDesc.Texture1DArray.MostDetailedMip = firstMipLevel;
+        srvDescriptor.srvDesc.Texture1DArray.MipLevels = BE1::Min(mipCount, texture->textureDesc.MipLevels - firstMipLevel);
         break;
     case RHI::TextureType::Texture2D:
         if (texture->textureDesc.SampleDesc.Count > 1) {
-            srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2DMS;
+            srvDescriptor.srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2DMS;
         } else {
-            srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
-            srvDesc.Texture2D.MostDetailedMip = firstMipLevel;
-            srvDesc.Texture2D.MipLevels = BE1::Min(mipCount, texture->textureDesc.MipLevels - firstMipLevel);
+            srvDescriptor.srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
+            srvDescriptor.srvDesc.Texture2D.MostDetailedMip = firstMipLevel;
+            srvDescriptor.srvDesc.Texture2D.MipLevels = BE1::Min(mipCount, texture->textureDesc.MipLevels - firstMipLevel);
         }
         break;
     case RHI::TextureType::Texture2DArray:
         if (texture->textureDesc.SampleDesc.Count > 1) {
-            srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2DMSARRAY;
-            srvDesc.Texture2DMSArray.FirstArraySlice = firstSlice;
-            srvDesc.Texture2DMSArray.ArraySize = BE1::Min(sliceCount, texture->textureDesc.DepthOrArraySize - firstSlice);
+            srvDescriptor.srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2DMSARRAY;
+            srvDescriptor.srvDesc.Texture2DMSArray.FirstArraySlice = firstSlice;
+            srvDescriptor.srvDesc.Texture2DMSArray.ArraySize = BE1::Min(sliceCount, texture->textureDesc.DepthOrArraySize - firstSlice);
         } else {
-            srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2DARRAY;
-            srvDesc.Texture2DArray.FirstArraySlice = firstSlice;
-            srvDesc.Texture2DArray.ArraySize = BE1::Min(sliceCount, texture->textureDesc.DepthOrArraySize - firstSlice);
-            srvDesc.Texture2DArray.MostDetailedMip = firstMipLevel;
-            srvDesc.Texture2DArray.MipLevels = BE1::Min(mipCount, texture->textureDesc.MipLevels - firstMipLevel);
+            srvDescriptor.srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2DARRAY;
+            srvDescriptor.srvDesc.Texture2DArray.FirstArraySlice = firstSlice;
+            srvDescriptor.srvDesc.Texture2DArray.ArraySize = BE1::Min(sliceCount, texture->textureDesc.DepthOrArraySize - firstSlice);
+            srvDescriptor.srvDesc.Texture2DArray.MostDetailedMip = firstMipLevel;
+            srvDescriptor.srvDesc.Texture2DArray.MipLevels = BE1::Min(mipCount, texture->textureDesc.MipLevels - firstMipLevel);
         }
         break;
     case RHI::TextureType::TextureCube:
-        srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURECUBE;
-        srvDesc.TextureCube.MostDetailedMip = firstMipLevel;
-        srvDesc.TextureCube.MipLevels = BE1::Min(mipCount, texture->textureDesc.MipLevels - firstMipLevel);
+        srvDescriptor.srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURECUBE;
+        srvDescriptor.srvDesc.TextureCube.MostDetailedMip = firstMipLevel;
+        srvDescriptor.srvDesc.TextureCube.MipLevels = BE1::Min(mipCount, texture->textureDesc.MipLevels - firstMipLevel);
         break;
     case RHI::TextureType::TextureCubeArray:
-        srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURECUBEARRAY;
-        srvDesc.TextureCubeArray.First2DArrayFace = firstSlice;
-        srvDesc.TextureCubeArray.NumCubes = BE1::Min(sliceCount, texture->textureDesc.DepthOrArraySize - firstSlice);
-        srvDesc.TextureCubeArray.MostDetailedMip = firstMipLevel;
-        srvDesc.TextureCubeArray.MipLevels = BE1::Min(mipCount, texture->textureDesc.MipLevels - firstMipLevel);
+        srvDescriptor.srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURECUBEARRAY;
+        srvDescriptor.srvDesc.TextureCubeArray.First2DArrayFace = firstSlice;
+        srvDescriptor.srvDesc.TextureCubeArray.NumCubes = BE1::Min(sliceCount, texture->textureDesc.DepthOrArraySize - firstSlice);
+        srvDescriptor.srvDesc.TextureCubeArray.MostDetailedMip = firstMipLevel;
+        srvDescriptor.srvDesc.TextureCubeArray.MipLevels = BE1::Min(mipCount, texture->textureDesc.MipLevels - firstMipLevel);
         break;
     case RHI::TextureType::Texture3D:
-        srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE3D;
-        srvDesc.Texture3D.MostDetailedMip = firstMipLevel;
-        srvDesc.Texture3D.MipLevels = BE1::Min(mipCount, texture->textureDesc.MipLevels - firstMipLevel);
+        srvDescriptor.srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE3D;
+        srvDescriptor.srvDesc.Texture3D.MostDetailedMip = firstMipLevel;
+        srvDescriptor.srvDesc.Texture3D.MipLevels = BE1::Min(mipCount, texture->textureDesc.MipLevels - firstMipLevel);
         break;
     }
 
-    D3D12_CPU_DESCRIPTOR_HANDLE srvCpuDescriptorHandle;
-    if (!resCpuDescriptorPool->Alloc(&srvCpuDescriptorHandle, nullptr)) {
-        return -1;
-    }
-    device->CreateShaderResourceView(texture->GetResource(), &srvDesc, srvCpuDescriptorHandle);
+    device->CreateShaderResourceView(texture->GetResource(), &srvDescriptor.srvDesc, srvDescriptor.cpuDescriptorHandle);
 
-    D3D12SRVDescriptor srvDescriptor;
-    srvDescriptor.srvDesc = srvDesc;
-    srvDescriptor.cpuDescriptorHandle = srvCpuDescriptorHandle;
-
+    // 전체 리소스에 대한 SRV
     if (!texture->srvDescriptor.cpuDescriptorHandle.ptr) {
         texture->srvDescriptor = srvDescriptor;
         return -1;
@@ -614,71 +614,69 @@ int D3D12Renderer::CreateSubresourceSRV(D3D12Texture *texture, uint32_t firstSli
 }
 
 int D3D12Renderer::CreateSubresourceUAV(D3D12Texture *texture, uint32_t firstSlice, uint32_t sliceCount, uint32_t firstMipLevel, const BE1::Image::Format *typelessCompatibleFormat, bool isSRGB) {
-    D3D12_UNORDERED_ACCESS_VIEW_DESC uavDesc = {};
-    uavDesc.ViewDimension = D3D12_UAV_DIMENSION_BUFFER;
+    D3D12UAVDescriptor uavDescriptor;
+    if (!uavCpuDescriptorPool->Alloc(&uavDescriptor.cpuDescriptorHandle, nullptr)) {
+        return -1;
+    }
+
+    D3D12_CPU_DESCRIPTOR_HANDLE destCpuDescriptorHandle;
+    D3D12_GPU_DESCRIPTOR_HANDLE destGpuDescriptorHandle;
+
+    if (!uavGpuDescriptorPool->Alloc(&destCpuDescriptorHandle, &destGpuDescriptorHandle)) {
+        return -1;
+    }
+
+    uavDescriptor.uavDesc.ViewDimension = D3D12_UAV_DIMENSION_BUFFER;
 
     if (typelessCompatibleFormat) {
         assert(IsTypelessFormat(texture->textureDesc.Format));
-        ImageFormatToDXGIFormat(*typelessCompatibleFormat, isSRGB, &uavDesc.Format);
+        ImageFormatToDXGIFormat(*typelessCompatibleFormat, isSRGB, &uavDescriptor.uavDesc.Format);
     } else {
         // UAV 는 sRGB 포맷으로 생성할 수 없다.
-        ImageFormatToDXGIFormat(texture->srcFormat, false, &uavDesc.Format);
+        ImageFormatToDXGIFormat(texture->srcFormat, false, &uavDescriptor.uavDesc.Format);
     }
 
     // UAV 호환 포맷인지 검사 필요
-    if (!IsSupportedUAVFormat(uavDesc.Format)) {
-        BE_ERRLOG("Unsupported UAV format (0x%x)\n", uavDesc.Format);
+    if (!IsSupportedUAVFormat(uavDescriptor.uavDesc.Format)) {
+        BE_ERRLOG("Unsupported UAV format (0x%x)\n", uavDescriptor.uavDesc.Format);
         return -1;
     }
 
     switch (texture->textureType) {
     case RHI::TextureType::Texture1D:
-        uavDesc.ViewDimension = D3D12_UAV_DIMENSION_TEXTURE1D;
-        uavDesc.Texture1D.MipSlice = firstMipLevel;
+        uavDescriptor.uavDesc.ViewDimension = D3D12_UAV_DIMENSION_TEXTURE1D;
+        uavDescriptor.uavDesc.Texture1D.MipSlice = firstMipLevel;
         break;
     case RHI::TextureType::Texture1DArray:
-        uavDesc.ViewDimension = D3D12_UAV_DIMENSION_TEXTURE1DARRAY;
-        uavDesc.Texture1DArray.MipSlice = firstMipLevel;
-        uavDesc.Texture1DArray.FirstArraySlice = firstSlice;
-        uavDesc.Texture1DArray.ArraySize = BE1::Min(sliceCount, texture->textureDesc.DepthOrArraySize - firstSlice);
+        uavDescriptor.uavDesc.ViewDimension = D3D12_UAV_DIMENSION_TEXTURE1DARRAY;
+        uavDescriptor.uavDesc.Texture1DArray.MipSlice = firstMipLevel;
+        uavDescriptor.uavDesc.Texture1DArray.FirstArraySlice = firstSlice;
+        uavDescriptor.uavDesc.Texture1DArray.ArraySize = BE1::Min(sliceCount, texture->textureDesc.DepthOrArraySize - firstSlice);
         break;
     case RHI::TextureType::Texture2D:
-        uavDesc.ViewDimension = D3D12_UAV_DIMENSION_TEXTURE2D;
-        uavDesc.Texture2D.MipSlice = firstMipLevel;
+        uavDescriptor.uavDesc.ViewDimension = D3D12_UAV_DIMENSION_TEXTURE2D;
+        uavDescriptor.uavDesc.Texture2D.MipSlice = firstMipLevel;
         break;
     case RHI::TextureType::Texture2DArray:
-        uavDesc.ViewDimension = D3D12_UAV_DIMENSION_TEXTURE2DARRAY;
-        uavDesc.Texture2DArray.MipSlice = firstMipLevel;
-        uavDesc.Texture2DArray.FirstArraySlice = firstSlice;
-        uavDesc.Texture2DArray.ArraySize = BE1::Min(sliceCount, texture->textureDesc.DepthOrArraySize - firstSlice);
+        uavDescriptor.uavDesc.ViewDimension = D3D12_UAV_DIMENSION_TEXTURE2DARRAY;
+        uavDescriptor.uavDesc.Texture2DArray.MipSlice = firstMipLevel;
+        uavDescriptor.uavDesc.Texture2DArray.FirstArraySlice = firstSlice;
+        uavDescriptor.uavDesc.Texture2DArray.ArraySize = BE1::Min(sliceCount, texture->textureDesc.DepthOrArraySize - firstSlice);
         break;
     case RHI::TextureType::Texture3D:
-        uavDesc.ViewDimension = D3D12_UAV_DIMENSION_TEXTURE3D;
-        uavDesc.Texture3D.MipSlice = firstMipLevel;
-        uavDesc.Texture3D.FirstWSlice = 0;
-        uavDesc.Texture3D.WSize = -1;
+        uavDescriptor.uavDesc.ViewDimension = D3D12_UAV_DIMENSION_TEXTURE3D;
+        uavDescriptor.uavDesc.Texture3D.MipSlice = firstMipLevel;
+        uavDescriptor.uavDesc.Texture3D.FirstWSlice = 0;
+        uavDescriptor.uavDesc.Texture3D.WSize = -1;
         break;
     }
 
-    D3D12_CPU_DESCRIPTOR_HANDLE uavCpuDescriptorHandle;
-    D3D12_CPU_DESCRIPTOR_HANDLE destCpuDescriptorHandle;
-    D3D12_GPU_DESCRIPTOR_HANDLE destGpuDescriptorHandle;
-
-    if (!uavCpuDescriptorPool->Alloc(&uavCpuDescriptorHandle, nullptr)) {
-        return -1;
-    }
-    if (!uavGpuDescriptorPool->Alloc(&destCpuDescriptorHandle, &destGpuDescriptorHandle)) {
-        return -1;
-    }
-    device->CreateUnorderedAccessView(texture->GetResource(), nullptr, &uavDesc, uavCpuDescriptorHandle);
+    device->CreateUnorderedAccessView(texture->GetResource(), nullptr, &uavDescriptor.uavDesc, uavDescriptor.cpuDescriptorHandle);
 
     // 만들어진 UAV 디스크립터를 shader visible 한 디스크립터에 복사 (CPU + GPU)
-    device->CopyDescriptorsSimple(1, destCpuDescriptorHandle, uavCpuDescriptorHandle, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+    device->CopyDescriptorsSimple(1, destCpuDescriptorHandle, uavDescriptor.cpuDescriptorHandle, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
 
-    D3D12UAVDescriptor uavDescriptor;
-    uavDescriptor.uavDesc = uavDesc;
-    uavDescriptor.cpuDescriptorHandle = uavCpuDescriptorHandle;
-
+    // 전체 리소스에 대한 UAV
     if (!texture->uavDescriptor.cpuDescriptorHandle.ptr) {
         texture->uavDescriptor = uavDescriptor;
         return -1;
@@ -687,67 +685,63 @@ int D3D12Renderer::CreateSubresourceUAV(D3D12Texture *texture, uint32_t firstSli
 }
 
 int D3D12Renderer::CreateSubresourceRTV(D3D12Texture *texture, uint32_t firstSlice, uint32_t sliceCount, uint32_t firstMipLevel, const BE1::Image::Format *typelessCompatibleFormat, bool isSRGB) {
-    D3D12_RENDER_TARGET_VIEW_DESC rtvDesc = {};
+    D3D12RTVDescriptor rtvDescriptor;
+    if (!rtvCpuDescriptorPool->Alloc(&rtvDescriptor.cpuDescriptorHandle, nullptr)) {
+        return -1;
+    }
 
     if (typelessCompatibleFormat) {
         assert(IsTypelessFormat(texture->textureDesc.Format));
-        ImageFormatToDXGIFormat(*typelessCompatibleFormat, isSRGB, &rtvDesc.Format);
+        ImageFormatToDXGIFormat(*typelessCompatibleFormat, isSRGB, &rtvDescriptor.rtvDesc.Format);
     } else {
-        ImageFormatToDXGIFormat(texture->srcFormat, texture->srcSRGB, &rtvDesc.Format);
+        ImageFormatToDXGIFormat(texture->srcFormat, texture->srcSRGB, &rtvDescriptor.rtvDesc.Format);
     }
 
     switch (texture->textureType) {
     case RHI::TextureType::Texture1D:
-        rtvDesc.ViewDimension = D3D12_RTV_DIMENSION_TEXTURE1D;
-        rtvDesc.Texture1D.MipSlice = firstMipLevel;
+        rtvDescriptor.rtvDesc.ViewDimension = D3D12_RTV_DIMENSION_TEXTURE1D;
+        rtvDescriptor.rtvDesc.Texture1D.MipSlice = firstMipLevel;
         break;
     case RHI::TextureType::Texture1DArray:
-        rtvDesc.ViewDimension = D3D12_RTV_DIMENSION_TEXTURE1DARRAY;
-        rtvDesc.Texture1DArray.MipSlice = firstMipLevel;
-        rtvDesc.Texture1DArray.FirstArraySlice = firstSlice;
-        rtvDesc.Texture1DArray.ArraySize = BE1::Min(sliceCount, texture->textureDesc.DepthOrArraySize - firstSlice);
+        rtvDescriptor.rtvDesc.ViewDimension = D3D12_RTV_DIMENSION_TEXTURE1DARRAY;
+        rtvDescriptor.rtvDesc.Texture1DArray.MipSlice = firstMipLevel;
+        rtvDescriptor.rtvDesc.Texture1DArray.FirstArraySlice = firstSlice;
+        rtvDescriptor.rtvDesc.Texture1DArray.ArraySize = BE1::Min(sliceCount, texture->textureDesc.DepthOrArraySize - firstSlice);
         break;
     case RHI::TextureType::Texture2D:
         if (texture->textureDesc.SampleDesc.Count > 1) {
-            rtvDesc.ViewDimension = D3D12_RTV_DIMENSION_TEXTURE2DMS;
+            rtvDescriptor.rtvDesc.ViewDimension = D3D12_RTV_DIMENSION_TEXTURE2DMS;
         } else {
-            rtvDesc.ViewDimension = D3D12_RTV_DIMENSION_TEXTURE2D;
-            rtvDesc.Texture2D.MipSlice = firstMipLevel;
+            rtvDescriptor.rtvDesc.ViewDimension = D3D12_RTV_DIMENSION_TEXTURE2D;
+            rtvDescriptor.rtvDesc.Texture2D.MipSlice = firstMipLevel;
         }
         break;
     case RHI::TextureType::Texture2DArray:
     case RHI::TextureType::TextureCube:
     case RHI::TextureType::TextureCubeArray:
         if (texture->textureDesc.SampleDesc.Count > 1) {
-            rtvDesc.ViewDimension = D3D12_RTV_DIMENSION_TEXTURE2DMSARRAY;
-            rtvDesc.Texture2DMSArray.FirstArraySlice = firstSlice;
-            rtvDesc.Texture2DMSArray.ArraySize = BE1::Min(sliceCount, texture->textureDesc.DepthOrArraySize - firstSlice);
+            rtvDescriptor.rtvDesc.ViewDimension = D3D12_RTV_DIMENSION_TEXTURE2DMSARRAY;
+            rtvDescriptor.rtvDesc.Texture2DMSArray.FirstArraySlice = firstSlice;
+            rtvDescriptor.rtvDesc.Texture2DMSArray.ArraySize = BE1::Min(sliceCount, texture->textureDesc.DepthOrArraySize - firstSlice);
         } else {
-            rtvDesc.ViewDimension = D3D12_RTV_DIMENSION_TEXTURE2DARRAY;
-            rtvDesc.Texture2DArray.MipSlice = firstMipLevel;
-            rtvDesc.Texture2DArray.FirstArraySlice = firstSlice;
-            rtvDesc.Texture2DArray.ArraySize = BE1::Min(sliceCount, texture->textureDesc.DepthOrArraySize - firstSlice);
+            rtvDescriptor.rtvDesc.ViewDimension = D3D12_RTV_DIMENSION_TEXTURE2DARRAY;
+            rtvDescriptor.rtvDesc.Texture2DArray.MipSlice = firstMipLevel;
+            rtvDescriptor.rtvDesc.Texture2DArray.FirstArraySlice = firstSlice;
+            rtvDescriptor.rtvDesc.Texture2DArray.ArraySize = BE1::Min(sliceCount, texture->textureDesc.DepthOrArraySize - firstSlice);
         }
         break;
     case RHI::TextureType::Texture3D:
         // TODO: 정말 가능한지 실험해 볼 것
-        rtvDesc.ViewDimension = D3D12_RTV_DIMENSION_TEXTURE3D;
-        rtvDesc.Texture3D.MipSlice = firstMipLevel;
-        rtvDesc.Texture3D.FirstWSlice = 0;
-        rtvDesc.Texture3D.WSize = -1;
+        rtvDescriptor.rtvDesc.ViewDimension = D3D12_RTV_DIMENSION_TEXTURE3D;
+        rtvDescriptor.rtvDesc.Texture3D.MipSlice = firstMipLevel;
+        rtvDescriptor.rtvDesc.Texture3D.FirstWSlice = 0;
+        rtvDescriptor.rtvDesc.Texture3D.WSize = -1;
         break;
     }
 
-    D3D12_CPU_DESCRIPTOR_HANDLE rtvCpuDescriptorHandle;
-    if (!rtvCpuDescriptorPool->Alloc(&rtvCpuDescriptorHandle, nullptr)) {
-        return -1;
-    }
-    device->CreateRenderTargetView(texture->GetResource(), &rtvDesc, rtvCpuDescriptorHandle);
+    device->CreateRenderTargetView(texture->GetResource(), &rtvDescriptor.rtvDesc, rtvDescriptor.cpuDescriptorHandle);
 
-    D3D12RTVDescriptor rtvDescriptor;
-    rtvDescriptor.rtvDesc = rtvDesc;
-    rtvDescriptor.cpuDescriptorHandle = rtvCpuDescriptorHandle;
-
+    // 전체 리소스에 대한 RTV
     if (!texture->rtvDescriptor.cpuDescriptorHandle.ptr) {
         texture->rtvDescriptor = rtvDescriptor;
         return -1;
@@ -756,60 +750,57 @@ int D3D12Renderer::CreateSubresourceRTV(D3D12Texture *texture, uint32_t firstSli
 }
 
 int D3D12Renderer::CreateSubresourceDSV(D3D12Texture *texture, uint32_t firstSlice, uint32_t sliceCount, uint32_t firstMipLevel, const BE1::Image::Format *typelessCompatibleFormat, bool isSRGB) {
-    D3D12_DEPTH_STENCIL_VIEW_DESC dsvDesc = {};
+    D3D12DSVDescriptor dsvDescriptor;
+    if (!dsvCpuDescriptorPool->Alloc(&dsvDescriptor.cpuDescriptorHandle, nullptr)) {
+        return -1;
+    }
 
     if (typelessCompatibleFormat) {
         assert(IsTypelessFormat(texture->textureDesc.Format));
-        ImageFormatToDXGIFormat(*typelessCompatibleFormat, isSRGB, &dsvDesc.Format);
+        ImageFormatToDXGIFormat(*typelessCompatibleFormat, isSRGB, &dsvDescriptor.dsvDesc.Format);
     } else {
-        ImageFormatToDXGIFormat(texture->srcFormat, texture->srcSRGB, &dsvDesc.Format);
+        ImageFormatToDXGIFormat(texture->srcFormat, texture->srcSRGB, &dsvDescriptor.dsvDesc.Format);
     }
 
     switch (texture->textureType) {
     case RHI::TextureType::Texture1D:
-        dsvDesc.ViewDimension = D3D12_DSV_DIMENSION_TEXTURE1D;
-        dsvDesc.Texture1D.MipSlice = firstMipLevel;
+        dsvDescriptor.dsvDesc.ViewDimension = D3D12_DSV_DIMENSION_TEXTURE1D;
+        dsvDescriptor.dsvDesc.Texture1D.MipSlice = firstMipLevel;
         break;
     case RHI::TextureType::Texture1DArray:
-        dsvDesc.ViewDimension = D3D12_DSV_DIMENSION_TEXTURE1DARRAY;
-        dsvDesc.Texture1DArray.MipSlice = firstMipLevel;
-        dsvDesc.Texture1DArray.FirstArraySlice = firstSlice;
-        dsvDesc.Texture1DArray.ArraySize = BE1::Min(sliceCount, texture->textureDesc.DepthOrArraySize - firstSlice);
+        dsvDescriptor.dsvDesc.ViewDimension = D3D12_DSV_DIMENSION_TEXTURE1DARRAY;
+        dsvDescriptor.dsvDesc.Texture1DArray.MipSlice = firstMipLevel;
+        dsvDescriptor.dsvDesc.Texture1DArray.FirstArraySlice = firstSlice;
+        dsvDescriptor.dsvDesc.Texture1DArray.ArraySize = BE1::Min(sliceCount, texture->textureDesc.DepthOrArraySize - firstSlice);
         break;
     case RHI::TextureType::Texture2D:
         if (texture->textureDesc.SampleDesc.Count > 1) {
-            dsvDesc.ViewDimension = D3D12_DSV_DIMENSION_TEXTURE2DMS;
+            dsvDescriptor.dsvDesc.ViewDimension = D3D12_DSV_DIMENSION_TEXTURE2DMS;
         } else {
-            dsvDesc.ViewDimension = D3D12_DSV_DIMENSION_TEXTURE2D;
-            dsvDesc.Texture2D.MipSlice = firstMipLevel;
+            dsvDescriptor.dsvDesc.ViewDimension = D3D12_DSV_DIMENSION_TEXTURE2D;
+            dsvDescriptor.dsvDesc.Texture2D.MipSlice = firstMipLevel;
         }
         break;
     case RHI::TextureType::Texture2DArray:
     case RHI::TextureType::TextureCube:
     case RHI::TextureType::TextureCubeArray:
         if (texture->textureDesc.SampleDesc.Count > 1) {
-            dsvDesc.ViewDimension = D3D12_DSV_DIMENSION_TEXTURE2DMSARRAY;
-            dsvDesc.Texture2DMSArray.FirstArraySlice = firstSlice;
-            dsvDesc.Texture2DMSArray.ArraySize = BE1::Min(sliceCount, texture->textureDesc.DepthOrArraySize - firstSlice);
+            dsvDescriptor.dsvDesc.ViewDimension = D3D12_DSV_DIMENSION_TEXTURE2DMSARRAY;
+            dsvDescriptor.dsvDesc.Texture2DMSArray.FirstArraySlice = firstSlice;
+            dsvDescriptor.dsvDesc.Texture2DMSArray.ArraySize = BE1::Min(sliceCount, texture->textureDesc.DepthOrArraySize - firstSlice);
         } else {
-            dsvDesc.ViewDimension = D3D12_DSV_DIMENSION_TEXTURE2DARRAY;
-            dsvDesc.Texture2DArray.MipSlice = firstMipLevel;
-            dsvDesc.Texture2DArray.FirstArraySlice = firstSlice;
-            dsvDesc.Texture2DArray.ArraySize = BE1::Min(sliceCount, texture->textureDesc.DepthOrArraySize - firstSlice);
+            dsvDescriptor.dsvDesc.ViewDimension = D3D12_DSV_DIMENSION_TEXTURE2DARRAY;
+            dsvDescriptor.dsvDesc.Texture2DArray.MipSlice = firstMipLevel;
+            dsvDescriptor.dsvDesc.Texture2DArray.FirstArraySlice = firstSlice;
+            dsvDescriptor.dsvDesc.Texture2DArray.ArraySize = BE1::Min(sliceCount, texture->textureDesc.DepthOrArraySize - firstSlice);
         }
         break;
     }
 
-    D3D12_CPU_DESCRIPTOR_HANDLE dsvCpuDescriptorHandle;
-    if (!dsvCpuDescriptorPool->Alloc(&dsvCpuDescriptorHandle, nullptr)) {
-        return -1;
-    }
-    device->CreateDepthStencilView(texture->GetResource(), &dsvDesc, dsvCpuDescriptorHandle);
 
-    D3D12DSVDescriptor dsvDescriptor;
-    dsvDescriptor.dsvDesc = dsvDesc;
-    dsvDescriptor.cpuDescriptorHandle = dsvCpuDescriptorHandle;
+    device->CreateDepthStencilView(texture->GetResource(), &dsvDescriptor.dsvDesc, dsvDescriptor.cpuDescriptorHandle);
 
+    // 전체 리소스에 대한 DSV
     if (!texture->dsvDescriptor.cpuDescriptorHandle.ptr) {
         texture->dsvDescriptor = dsvDescriptor;
         return -1;
@@ -821,13 +812,6 @@ void D3D12Renderer::GetTextureImage(RHI::Texture *texture, int mipLevel, int sli
     D3D12Texture *d3d12Texture = static_cast<D3D12Texture *>(texture);
     assert(d3d12Texture);
 
-    BE1::Image::Format textureImageFormat;
-    bool isSRGB;
-    if (!D3D12Renderer::DXGIFormatToImageFormat(d3d12Texture->textureDesc.Format, &textureImageFormat, &isSRGB)) {
-        BE_WARNLOG("D3D12Texture::GetTexture2D: Unsupported DXGI format %i\n", d3d12Texture->textureDesc.Format);
-        return;
-    }
-
     // 서브 리소스 인덱스를 계산한다.
     int subresourceIndex = D3D12CalcSubresource(mipLevel, sliceIndex, 0, d3d12Texture->textureDesc.MipLevels, d3d12Texture->textureDesc.DepthOrArraySize);
 
@@ -837,7 +821,7 @@ void D3D12Renderer::GetTextureImage(RHI::Texture *texture, int mipLevel, int sli
     device->GetCopyableFootprints(&d3d12Texture->textureDesc, subresourceIndex, 1, 0, &subresourceFootprint, nullptr, nullptr, &subresourceSize);
 
     // 리드백 버퍼를 생성한다.
-    D3D12Buffer *readbackBuffer = static_cast<D3D12Buffer *>(CreateBuffer(RHI::BufferUsage::Readback, RHI::ResourceFlag::None, subresourceSize, textureImageFormat, 0, nullptr));
+    D3D12Buffer *readbackBuffer = static_cast<D3D12Buffer *>(CreateBuffer(RHI::BufferUsage::Readback, RHI::ResourceFlag::None, subresourceSize, d3d12Texture->srcFormat, 0, nullptr));
     if (!readbackBuffer) {
         BE_WARNLOG("D3D12Texture::GetTextureImage2D: Failed to create readback buffer\n");
         return;
@@ -856,11 +840,12 @@ void D3D12Renderer::GetTextureImage(RHI::Texture *texture, int mipLevel, int sli
     dstLocation.Type = D3D12_TEXTURE_COPY_TYPE_PLACED_FOOTPRINT;
     dstLocation.PlacedFootprint = subresourceFootprint;
 
-    resourceCommandList->Reset();
-    resourceCommandList->ResourceBarrier(textureResource, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_COPY_SOURCE);
-    resourceCommandList->GetGraphicsCommandList()->CopyTextureRegion(&dstLocation, 0, 0, 0, &srcLocation, nullptr);
-    resourceCommandList->ResourceBarrier(textureResource, D3D12_RESOURCE_STATE_COPY_SOURCE, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
-    resourceCommandList->CloseAndExecute(RHI::CommandQueueType::Graphics);
+    D3D12CommandList *commandList = static_cast<D3D12CommandList *>(BeginCommandList(RHI::CommandQueueType::Graphics));
+    commandList->ResourceBarrier(textureResource, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_COPY_SOURCE);
+    commandList->GetGraphicsCommandList()->CopyTextureRegion(&dstLocation, 0, 0, 0, &srcLocation, nullptr);
+    commandList->ResourceBarrier(textureResource, D3D12_RESOURCE_STATE_COPY_SOURCE, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
+    commandList->CloseAndExecute(RHI::CommandQueueType::Graphics);
+    EndCommandList(commandList);
 
     // GPU 에서 복사가 끝날 때까지 기다린다.
     Finish(RHI::CommandQueueType::Graphics);
@@ -874,10 +859,10 @@ void D3D12Renderer::GetTextureImage(RHI::Texture *texture, int mipLevel, int sli
     byte *dstPtr = nullptr;
 
     BE1::Image tempImage;
-    if (textureImageFormat != dstFormat) {
+    if (d3d12Texture->srcFormat != dstFormat) {
         // 컨버팅이 필요하다면, 리드백 버퍼의 내용을 tempImage 에 카피할 준비를 한다.
         tempImage.Create2D(subresourceFootprint.Footprint.Width, subresourceFootprint.Footprint.Height, subresourceFootprint.Footprint.Depth,
-            textureImageFormat, isSRGB ? BE1::Image::GammaSpace::sRGB : BE1::Image::GammaSpace::Linear, nullptr, BE1::Image::Flag::None);
+            d3d12Texture->srcFormat, d3d12Texture->srcSRGB ? BE1::Image::GammaSpace::sRGB : BE1::Image::GammaSpace::Linear, nullptr, BE1::Image::Flag::None);
         dstPtr = tempImage.GetPixels();
     } else {
         // 컨버팅할 필요가 없다면, 리드백 버퍼의 내용을 그대로 outPixels 로 카피할 준비를 한다.
@@ -885,7 +870,7 @@ void D3D12Renderer::GetTextureImage(RHI::Texture *texture, int mipLevel, int sli
     }
 
     int srcPitch = subresourceFootprint.Footprint.RowPitch;
-    int dstPitch = BE1::Image::MemRequired(subresourceFootprint.Footprint.Width, 1, 1, 1, 1, textureImageFormat);
+    int dstPitch = BE1::Image::MemRequired(subresourceFootprint.Footprint.Width, 1, 1, 1, 1, d3d12Texture->srcFormat);
 
     for (UINT z = 0; z < subresourceFootprint.Footprint.Depth; ++z) {
         for (UINT y = 0; y < subresourceFootprint.Footprint.Height; ++y) {
@@ -902,7 +887,7 @@ void D3D12Renderer::GetTextureImage(RHI::Texture *texture, int mipLevel, int sli
     DestroyBuffer(readbackBuffer, true);
 
     // 필요하다면 컨버팅한다.
-    if (textureImageFormat != dstFormat) {
+    if (d3d12Texture->srcFormat != dstFormat) {
         BE1::Image dstImage;
         if (tempImage.ConvertFormat(dstFormat, dstImage)) {
             BE1::simdProcessor->Memcpy(outPixels, dstImage.GetPixels(), dstImage.SizeInBytes());
@@ -989,8 +974,8 @@ bool D3D12Renderer::SetTextureSubImage(RHI::Texture *texture, int mipLevel, int 
     ID3D12Resource *textureResource = d3d12Texture->GetResource();
 
     // 업로드 버퍼에서 텍스쳐로 데이터 카피
-    resourceCommandList->Reset();
-    resourceCommandList->ResourceBarrier(textureResource, D3D12_RESOURCE_STATE_ALL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_COPY_DEST);
+    D3D12CommandList *commandList = static_cast<D3D12CommandList *>(BeginCommandList(RHI::CommandQueueType::Graphics));
+    commandList->ResourceBarrier(textureResource, D3D12_RESOURCE_STATE_ALL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_COPY_DEST);
 
     D3D12_TEXTURE_COPY_LOCATION srcLocation = {};
     srcLocation.PlacedFootprint = subresourceFootprint;
@@ -1007,10 +992,11 @@ bool D3D12Renderer::SetTextureSubImage(RHI::Texture *texture, int mipLevel, int 
     dstLocation.SubresourceIndex = subresourceIndex;
 
     D3D12_BOX srcBox = { 0, 0, 0, (UINT)width, (UINT)height, (UINT)depth };
-    resourceCommandList->GetGraphicsCommandList()->CopyTextureRegion(&dstLocation, x, y, z, &srcLocation, &srcBox);
+    commandList->GetGraphicsCommandList()->CopyTextureRegion(&dstLocation, x, y, z, &srcLocation, &srcBox);
 
-    resourceCommandList->ResourceBarrier(textureResource, D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_ALL_SHADER_RESOURCE);
-    resourceCommandList->CloseAndExecute(RHI::CommandQueueType::Graphics);
+    commandList->ResourceBarrier(textureResource, D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_ALL_SHADER_RESOURCE);
+    commandList->CloseAndExecute(RHI::CommandQueueType::Graphics);
+    EndCommandList(commandList);
 
     MarkForRelease(uploadBuffer);
 
@@ -1044,26 +1030,24 @@ void D3D12Renderer::GenerateMipmaps(RHI::CommandList *commandList, const RHI::Te
         return;
     }
 
-    BE1::Image::Format imageFormat;
-    bool isSRGB = false;
-    DXGIFormatToImageFormat(d3d12Texture->textureDesc.Format, &imageFormat, &isSRGB);
-
     // packed 포맷이나 압축 포맷은 지원하지 않는다.
-    if (BE1::Image::IsPacked(imageFormat) || BE1::Image::IsCompressed(imageFormat)) {
+    if (BE1::Image::IsPacked(d3d12Texture->srcFormat) || BE1::Image::IsCompressed(d3d12Texture->srcFormat)) {
         return;
     }
 
     MipGenParams mipGenParams;
     mipGenParams.flags = 0;
 
-    if (isSRGB) {
+    if (d3d12Texture->srcSRGB) {
         mipGenParams.flags |= MIPGEN_OPTION_BIT_SRGB;
     }
+
+    //mipGenParams.flags |= MIPGEN_OPTION_BIT_PRESERVE_COVERAGE;
 
     if (d3d12Texture->textureDesc.Dimension == D3D12_RESOURCE_DIMENSION_TEXTURE2D) {
         if (d3d12Texture->textureDesc.DepthOrArraySize > 1) {
             // Cubemap
-            SetPSO(commandList, BE1::Image::IsFloatFormat(imageFormat) ? genMipmapsCubeFloat4PSO : genMipmapsCubeUNorm4PSO);
+            SetPSO(commandList, BE1::Image::IsFloatFormat(d3d12Texture->srcFormat) ? genMipmapsCubeFloat4PSO : genMipmapsCubeUNorm4PSO);
 
             for (uint32_t mipLevel = 0; mipLevel < numMipmaps - 1; ++mipLevel) {
                 uint32_t destMipLevel = mipLevel + 1;
@@ -1072,8 +1056,10 @@ void D3D12Renderer::GenerateMipmaps(RHI::CommandList *commandList, const RHI::Te
 
                 mipGenParams.dstSize.x = destW;
                 mipGenParams.dstSize.y = destH;
+                mipGenParams.dstSize.z = 0;
                 mipGenParams.dstSizeRcp.x = 1.0f / destW;
                 mipGenParams.dstSizeRcp.y = 1.0f / destH;
+                mipGenParams.dstSizeRcp.z = 0;
 
                 uint32_t threadGroupCountX = (destW + GENMIP_2D_BLOCK_SIZE_X - 1) / GENMIP_2D_BLOCK_SIZE_X;
                 uint32_t threadGroupCountY = (destH + GENMIP_2D_BLOCK_SIZE_Y - 1) / GENMIP_2D_BLOCK_SIZE_Y;
@@ -1081,9 +1067,9 @@ void D3D12Renderer::GenerateMipmaps(RHI::CommandList *commandList, const RHI::Te
 
                 // Set mipmap generation constants
                 SetConstants(commandList, &mipGenParams, sizeof(mipGenParams));
-                // Set output texture
+                // Set output texture (UAV)
                 SetTexture(commandList, 0, true, texture, destMipLevel);
-                // Set input texture
+                // Set input texture (SRV)
                 SetTexture(commandList, 0, false, texture, mipLevel);
 
                 RHI::GPUBarrier startBarriers[] = {
@@ -1110,7 +1096,7 @@ void D3D12Renderer::GenerateMipmaps(RHI::CommandList *commandList, const RHI::Te
             }
         } else {
             // 2D
-            SetPSO(commandList, BE1::Image::IsFloatFormat(imageFormat) ? genMipmaps2DFloat4PSO : genMipmaps2DUNorm4PSO);
+            SetPSO(commandList, BE1::Image::IsFloatFormat(d3d12Texture->srcFormat) ? genMipmaps2DFloat4PSO : genMipmaps2DUNorm4PSO);
 
             for (uint32_t mipLevel = 0; mipLevel < numMipmaps - 1; ++mipLevel) {
                 uint32_t destMipLevel = mipLevel + 1;
@@ -1119,17 +1105,19 @@ void D3D12Renderer::GenerateMipmaps(RHI::CommandList *commandList, const RHI::Te
 
                 mipGenParams.dstSize.x = destW;
                 mipGenParams.dstSize.y = destH;
+                mipGenParams.dstSize.z = 0;
                 mipGenParams.dstSizeRcp.x = 1.0f / destW;
                 mipGenParams.dstSizeRcp.y = 1.0f / destH;
+                mipGenParams.dstSizeRcp.z = 0;
 
                 uint32_t threadGroupCountX = (destW + GENMIP_2D_BLOCK_SIZE_X - 1) / GENMIP_2D_BLOCK_SIZE_X;
                 uint32_t threadGroupCountY = (destH + GENMIP_2D_BLOCK_SIZE_Y - 1) / GENMIP_2D_BLOCK_SIZE_Y;
 
                 // Set mipmap generation constants
                 SetConstants(commandList, &mipGenParams, sizeof(mipGenParams));
-                // Set output texture
+                // Set output texture (UAV)
                 SetTexture(commandList, 0, true, texture, destMipLevel);
-                // Set input texture
+                // Set input texture (SRV)
                 SetTexture(commandList, 0, false, texture, mipLevel);
 
                 RHI::GPUBarrier startBarriers[] = {
@@ -1147,7 +1135,7 @@ void D3D12Renderer::GenerateMipmaps(RHI::CommandList *commandList, const RHI::Te
         }
     } else if (d3d12Texture->textureDesc.Dimension == D3D12_RESOURCE_DIMENSION_TEXTURE3D) {
         // 3D
-        SetPSO(commandList, BE1::Image::IsFloatFormat(imageFormat) ? genMipmaps3DFloat4PSO : genMipmaps3DUNorm4PSO);
+        SetPSO(commandList, BE1::Image::IsFloatFormat(d3d12Texture->srcFormat) ? genMipmaps3DFloat4PSO : genMipmaps3DUNorm4PSO);
 
         for (uint32_t mipLevel = 0; mipLevel < numMipmaps - 1; ++mipLevel) {
             uint32_t destMipLevel = mipLevel + 1;
@@ -1168,9 +1156,9 @@ void D3D12Renderer::GenerateMipmaps(RHI::CommandList *commandList, const RHI::Te
 
             // Set mipmap generation constants
             SetConstants(commandList, &mipGenParams, sizeof(mipGenParams));
-            // Set output texture
+            // Set output texture (UAV)
             SetTexture(commandList, 0, true, texture, destMipLevel);
-            // Set input texture
+            // Set input texture (SRV)
             SetTexture(commandList, 0, false, texture, mipLevel);
 
             RHI::GPUBarrier startBarriers[] = {
@@ -1233,9 +1221,9 @@ void D3D12Renderer::SetTexture(RHI::CommandList *commandList, int slot, bool sha
         return;
     }
 
-    if (d3d12CommandList->GetCommandListType() == D3D12_COMMAND_LIST_TYPE_COMPUTE) {
-        d3d12CommandList->computeRootParametersDirtyMask |= BIT64(rootParameterIndex);
-    } else {
+    if (d3d12CommandList->currentPSO->graphics) {
         d3d12CommandList->graphicsRootParametersDirtyMask |= BIT64(rootParameterIndex);
+    } else {
+        d3d12CommandList->computeRootParametersDirtyMask |= BIT64(rootParameterIndex);
     }
 }

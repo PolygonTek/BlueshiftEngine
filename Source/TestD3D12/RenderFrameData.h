@@ -62,17 +62,29 @@ struct EndRenderCommand {
     RenderCommandId                 commandId;
 };
 
+/*
+-------------------------------------------------------------------------------
+    RenderFrameData
+
+    프레임에 필요한 렌더링 데이터들을 관리한다.
+
+    1. 프레임 임시 메모리
+    2. 렌더 커맨더 버퍼
+    3. 렌더 태스크 스레드 데이터
+-------------------------------------------------------------------------------
+*/
+
 class RenderFrameData {
 public:
     void                            Init();
     void                            Shutdown();
 
-                                    // 임시로 할당하는 메모리 (not thread-safe)
+                                    // 이번 프레임의 임시 메모리 할당 초기화 (메인 스레드에서 호출됨)
+    void                            BeginFrameMemAllocs();
+
+                                    // 프레임에 필요한 임시 메모리 할당 (not thread-safe), 이번 프레임이 끝나면 자동으로 해제된다.
     void *                          MemAlloc(int size);
     void *                          ClearedMemAlloc(int size);
-
-    void                            BeginFrameMemAllocs();
-    void                            EndFrameMemAllocs();
 
     uint32_t                        NumVisCameras() const { return numVisCameras; }
     VisCamera *                     GetVisCameras() const { return visCameras; }
@@ -82,6 +94,7 @@ public:
     VisObject *                     GetVisObjects() const { return visObjects; }
     VisObject *                     AllocVisObject();
 
+                                    // 렌더 커맨드 버퍼 리턴
     RenderCommandBuffer *           GetCommands() { return &commands; }
 
     void                            CmdBeginContext(RenderContext *context);
@@ -89,8 +102,8 @@ public:
     void                            CmdSwapBuffers();
     void                            CmdScreenshot(int x, int y, int width, int height, const char *filename);
 
-                                    // 스레드 별 프레임 데이터 얻기
-    RHI::FrameThreadData *          GetThreadData(int threadIndex) { assert(threadIndex >= 0 && threadIndex < COUNT_OF(threadData)); return threadData[threadIndex]; }
+                                    // 프레임의 렌더 태스크 스레드 별 데이터 얻기
+    RHI::FrameThreadData *          GetThreadData(int threadIndex) { assert(threadIndex >= 0 && threadIndex < numRenderTaskThreads); return threadData[threadIndex]; }
 
     void                            BeginFrame();
     void                            EndFrame();
@@ -137,7 +150,7 @@ private:
 };
 
 BE_INLINE void RenderFrameData::BeginFrame() {
-    // 쓰레드 별로 사용할 자원을 Reset 한다.
+    // 스레드 별로 사용할 자원을 Reset 한다.
     for (int threadIndex = 0; threadIndex < numRenderTaskThreads; ++threadIndex) {
         threadData[threadIndex]->Reset();
     }

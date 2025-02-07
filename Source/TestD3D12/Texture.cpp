@@ -54,9 +54,10 @@ void Texture::Create(RHI::TextureType textureType, const BE1::Image *srcImage, T
 
     bool useNormalMap = BE1::HasFlag(flags, Texture::Flag::NormalMap);
     bool useCompression = !BE1::HasFlag(flags, Texture::Flag::NoCompression);
-    bool useMipmaps = !BE1::HasFlag(flags, Texture::Flag::NoMipmaps);
     bool useNPOT = BE1::HasFlag(flags, Texture::Flag::NonePowerOfTwo);
     bool useUAV = BE1::HasFlag(flags, Texture::Flag::UnorderedAccess);
+    bool allocateEmptyMipmaps = BE1::HasFlag(flags, Texture::Flag::AllocateEmptyMipmaps);
+    bool generateMipmaps = !allocateEmptyMipmaps && !BE1::HasFlag(flags, Texture::Flag::NoMipmaps);
 
     BE1::Image::Format dstFormat;
     if (forceFormat != BE1::Image::Format::Unknown) {
@@ -101,7 +102,7 @@ void Texture::Create(RHI::TextureType textureType, const BE1::Image *srcImage, T
 
     this->format = dstFormat;
     this->flags = flags;
-    this->texture = RHI::renderer->CreateTexture(textureType, resourceFlags, srcImage, dstFormat, useMipmaps);
+    this->texture = RHI::renderer->CreateTexture(textureType, resourceFlags, srcImage, dstFormat, generateMipmaps, allocateEmptyMipmaps);
 }
 
 void Texture::SetSamplerParameters(const SamplerParams &samplerParams) {

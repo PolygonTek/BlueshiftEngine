@@ -682,6 +682,9 @@ RHI::PipelineState *D3D12Renderer::CreateComputePSO(const RHI::Shader *computeSh
     pipelineState->rootSignature = cs->rootSignature;
     pipelineState->rootSignatureDesc = cs->rootSignatureDesc;
 
+    // 레지스터 인덱스 별 루트 파라미터 인덱스와 디스크립터 테이블 인덱스를 미리 계산한다.
+    pipelineState->binder.Init(cs->rootSignatureDesc->Desc_1_1);
+
     D3D12PipelineState::ComputePSStream stream = {};
     stream.cs = { cs->compiledShaderData, cs->compiledShaderDataSize };
     stream.flags = CD3DX12_PIPELINE_STATE_STREAM_FLAGS(D3D12_PIPELINE_STATE_FLAG_NONE);
@@ -880,18 +883,20 @@ ID3D12PipelineState *D3D12Renderer::CreatePSOFromLibrary(const D3D12_PIPELINE_ST
 }
 
 void D3D12Renderer::SetPSO(RHI::CommandList *commandList, const RHI::PipelineState *pipelineState) {
+    assert(pipelineState);
     D3D12CommandList *d3d12CommandList = static_cast<D3D12CommandList *>(commandList);
     d3d12CommandList->SetPipelineState(pipelineState);
 }
 
-void D3D12Renderer::BindRootParameters(D3D12CommandList *commandList, bool graphics) {
+void D3D12Renderer::BindRootParameters(D3D12CommandList *commandList) {
     D3D12FrameThreadData *threadData = static_cast<D3D12FrameThreadData *>(commandList->GetFrameThreadData());
     D3D12RootDescriptorPool *resRootDescriptorPool = threadData->resRootDescriptorPool;
     D3D12RootDescriptorPool *samRootDescriptorPool = threadData->samRootDescriptorPool;
 
     // NOTE: dirty mask 를 이용하여, 바뀐 루트 파라미터들만 바인딩한다.
     // 전체 리소스 바인딩 중 일부만 바꾸는 경우 안바뀐 부분의 리소스 바인딩을 생략할 수 있다.
-    uint64_t &rootParameterDirtyMask = graphics ? commandList->graphicsRootParametersDirtyMask : commandList->computeRootParametersDirtyMask;
+    bool isGraphicsPSO = commandList->currentPSO->graphics;
+    uint64_t &rootParameterDirtyMask = isGraphicsPSO ? commandList->graphicsRootParametersDirtyMask : commandList->computeRootParametersDirtyMask;
     if (rootParameterDirtyMask == 0) {
         return;
     }
@@ -975,7 +980,7 @@ void D3D12Renderer::BindRootParameters(D3D12CommandList *commandList, bool graph
             threadData->tableGpuDescriptorStarts[rootParameterIndex] = gpuRootDescriptorStart;
 
             // 사용할 디스크립터 테이블 설정
-            if (graphics) {
+            if (isGraphicsPSO) {
                 commandList->GetGraphicsCommandList()->SetGraphicsRootDescriptorTable(rootParameterIndex, gpuRootDescriptorStart);
             } else {
                 commandList->GetGraphicsCommandList()->SetComputeRootDescriptorTable(rootParameterIndex, gpuRootDescriptorStart);
@@ -984,42 +989,42 @@ void D3D12Renderer::BindRootParameters(D3D12CommandList *commandList, bool graph
             // 루트 상수 설정 : 연속된 32비트 상수 값을 바인딩한다.
             UINT num32BitValues = rootParameter->Constants.Num32BitValues;
             // NOTE: 현재는 offset 을 통해 상수 값들을 일부만 세팅하는 경우는 없다고 가정한다. (전체 상수를 세팅해야 함)
-            if (graphics) {
+            if (isGraphicsPSO) {
                 commandList->GetGraphicsCommandList()->SetGraphicsRoot32BitConstants(rootParameterIndex, num32BitValues, threadData->rootConstants, 0);
             } else {
                 commandList->GetGraphicsCommandList()->SetComputeRoot32BitConstants(rootParameterIndex, num32BitValues, threadData->rootConstants, 0);
             }
         } else if (rootParameter->ParameterType == D3D12_ROOT_PARAMETER_TYPE_CBV) {
-            // 루트 레벨 CBV 설정 : 디스크립터 핸들없이 곧바로 CBV 의 GPU 주소를 바인딩한다.
+            // 루트 레벨 CBV 설정 : 디스크립터 테이블을 사용하지 않고, 곧바로 CBV 의 GPU 주소를 바인딩한다.
             UINT shaderRegister = rootParameter->Descriptor.ShaderRegister;
             const RHI::GPUResource *cbvResource = threadData->cbvResources[shaderRegister];
             if (cbvResource) {
                 D3D12_GPU_VIRTUAL_ADDRESS gpuAddress = reinterpret_cast<ID3D12Resource *>(cbvResource->GetNativeResource())->GetGPUVirtualAddress();
-                if (graphics) {
+                if (isGraphicsPSO) {
                     commandList->GetGraphicsCommandList()->SetGraphicsRootConstantBufferView(rootParameterIndex, gpuAddress);
                 } else {
                     commandList->GetGraphicsCommandList()->SetComputeRootConstantBufferView(rootParameterIndex, gpuAddress);
                 }
             }
         } else if (rootParameter->ParameterType == D3D12_ROOT_PARAMETER_TYPE_SRV) {
-            // 루트 레벨 SRV 설정 : 디스크립터 핸들없이 곧바로 SRV 의 GPU 주소를 바인딩한다.
+            // 루트 레벨 SRV 설정 : 디스크립터 테이블을 사용하지 않고, 곧바로 SRV 의 GPU 주소를 바인딩한다.
             UINT shaderRegister = rootParameter->Descriptor.ShaderRegister;
             const RHI::GPUResource *srvResource = threadData->srvResources[shaderRegister];
             if (srvResource) {
                 D3D12_GPU_VIRTUAL_ADDRESS gpuAddress = reinterpret_cast<ID3D12Resource *>(srvResource->GetNativeResource())->GetGPUVirtualAddress();
-                if (graphics) {
+                if (isGraphicsPSO) {
                     commandList->GetGraphicsCommandList()->SetGraphicsRootShaderResourceView(rootParameterIndex, gpuAddress);
                 } else {
                     commandList->GetGraphicsCommandList()->SetComputeRootShaderResourceView(rootParameterIndex, gpuAddress);
                 }
             }
         } else if (rootParameter->ParameterType == D3D12_ROOT_PARAMETER_TYPE_UAV) {
-            // 루트 레벨 UAV 설정 : 디스크립터 핸들없이 곧바로 UAV 의 GPU 주소를 바인딩한다.
+            // 루트 레벨 UAV 설정 : 디스크립터 테이블을 사용하지 않고, 곧바로 UAV 의 GPU 주소를 바인딩한다.
             UINT shaderRegister = rootParameter->Descriptor.ShaderRegister;
             const RHI::GPUResource *uavResource = threadData->uavResources[shaderRegister];
             if (uavResource) {
                 D3D12_GPU_VIRTUAL_ADDRESS gpuAddress = reinterpret_cast<ID3D12Resource *>(uavResource->GetNativeResource())->GetGPUVirtualAddress();
-                if (graphics) {
+                if (isGraphicsPSO) {
                     commandList->GetGraphicsCommandList()->SetGraphicsRootUnorderedAccessView(rootParameterIndex, gpuAddress);
                 } else {
                     commandList->GetGraphicsCommandList()->SetComputeRootUnorderedAccessView(rootParameterIndex, gpuAddress);

@@ -76,7 +76,7 @@ public:
     virtual void                        DestroyConstantBuffer(RHI::ConstantBuffer *constantBuffer, bool immediate = false) override;
 
     virtual RHI::Texture *              CreateTexture(RHI::TextureType textureType, RHI::ResourceFlag flags, const BE1::Image *image, bool allocateEmptyMipmaps, const RHI::ClearValue &clearValue = {}, uint32_t sampleCount = 1, RHI::GPUResourceState initialState = RHI::GPUResourceState::Undefined) override;
-    virtual RHI::Texture *              CreateTexture(RHI::TextureType textureType, RHI::ResourceFlag flags, const BE1::Image *image, BE1::Image::Format dstFormat, bool useMipmaps) override;
+    virtual RHI::Texture *              CreateTexture(RHI::TextureType textureType, RHI::ResourceFlag flags, const BE1::Image *image, BE1::Image::Format dstFormat, bool generateMipmaps = true, bool allocateEmptyMipmaps = false) override;
     virtual void                        DestroyTexture(RHI::Texture *texture, bool immediate = false) override;
 
     virtual void                        GetTextureImage2D(RHI::Texture *texture, int mipLevel, BE1::Image::Format imageFormat, void *outPixels) override;
@@ -118,6 +118,9 @@ public:
 
     virtual RHI::QueryHeap *            CreateQueryHeap(const RHI::QueryHeapDesc *desc) override;
     virtual void                        DestroyQueryHeap(RHI::QueryHeap *queryHeap, bool immediate = false) override;
+
+    virtual RHI::CommandList *          BeginCommandList(RHI::CommandQueueType queueType) override;
+    virtual void                        EndCommandList(RHI::CommandList *commandList) override;
 
     virtual void                        SetVertexBuffer(RHI::CommandList *commandList, int slot, const RHI::VertexBuffer *vertexBuffer) override;
     virtual void                        SetIndexBuffer(RHI::CommandList *commandList, const RHI::IndexBuffer *indexBuffer) override;
@@ -182,7 +185,7 @@ public:
     bool                                LoadCompiledShader(const char *name, const uint64_t hash, byte **compiledShaderDataPtr, uint32_t *compiledShaderDataSizePtr);
     void                                WriteCompiledShader(const char *name, const uint64_t hash, const byte *compiledShaderData, uint32_t compiledShaderDataSize);
 
-    void                                BindRootParameters(D3D12CommandList *commandList, bool graphics);
+    void                                BindRootParameters(D3D12CommandList *commandList);
 
     void                                CreateDevice(IDXGIAdapter1 **adapterPtr);
     void                                CreateShaderCompiler();
@@ -209,8 +212,7 @@ public:
     uint64_t                            fenceValue = 0;
     HANDLE                              fenceEventHandle = nullptr;
     ID3D12CommandQueue *                commandQueues[to_int(RHI::CommandQueueType::Count)] = {};
-    D3D12CommandListPool *              graphicsCommandListPool = nullptr;
-    D3D12CommandList *                  resourceCommandList = nullptr;
+    RHI::FrameThreadData *              initFrameData = nullptr;
     ID3D12CommandSignature *            drawInstancedIndirectCommandSignature = nullptr;
     ID3D12CommandSignature *            drawIndexedInstancedIndirectCommandSignature = nullptr;
     ID3D12CommandSignature *            dispatchIndirectCommandSignature = nullptr;

@@ -4,7 +4,8 @@
 #define GEN_MIP_WITH_GATHER
 
 #define COMMON_ROOT_SIGNATURE "RootFlags(0), " \
-    "DescriptorTable(CBV(b0), SRV(t0), UAV(u0)), " \
+    "DescriptorTable(SRV(t0), UAV(u0)), " \
+    "RootConstants(num32BitConstants=8, b0), " \
     "StaticSampler(s0, FILTER = FILTER_MIN_MAG_MIP_POINT, ADDRESSU = TEXTURE_ADDRESS_CLAMP, ADDRESSV = TEXTURE_ADDRESS_CLAMP, ADDRESSW = TEXTURE_ADDRESS_CLAMP)"
 
 MipGenParams mipGenParams : register(b0);
@@ -58,7 +59,7 @@ void CSMain(uint3 dispatchThreadId : SV_DispatchThreadID) {
     float4 color = 0;
     float alphaSum = color0.a + color1.a + color2.a + color3.a;
 
-    if (mipGenParams.flags & MIPGEN_OPTION_BIT_PRESERVE_COVERAGE && alphaSum > 0) {
+    if ((mipGenParams.flags & MIPGEN_OPTION_BIT_PRESERVE_COVERAGE) && alphaSum > 0) {
         color.rgb += color0.rgb * color0.a;
         color.rgb += color1.rgb * color1.a;
         color.rgb += color2.rgb * color2.a;

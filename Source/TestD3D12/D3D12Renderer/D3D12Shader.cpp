@@ -520,8 +520,10 @@ RHI::Shader *D3D12Renderer::CreateShader(RHI::ShaderModel shaderModel, RHI::Shad
     byte *compiledShaderData = nullptr;
     uint32_t compiledShaderDataSize = 0;
 
-    // 이미 컴파일된 cso 파일을 로드해본다.
+    // shaderText 로 hash 값을 만든다.
+    // FIXME: 컴파일할 때 include 문을 처리하므로, 텍스트만 가지고는 include 소스 파일이 바뀌어도 감지할 수 없는 문제가 있다.
     const uint64_t shaderTextHash = BE1::CityHash64(shaderText, shaderTextSize);
+    // 이미 컴파일된 cso 파일을 로드해본다.
 #ifndef _DEBUG
     bool shouldCompileShader = !LoadCompiledShader(fileName, shaderTextHash, &compiledShaderData, &compiledShaderDataSize);
 #else

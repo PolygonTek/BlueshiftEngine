@@ -190,10 +190,7 @@ const void *RenderBackEnd::ExecuteSwapBuffers(const void *data) {
 
     frameCount++;
 
-    // 이번 프레임을 위해 메인 스레드에서 할당했던 메모리를 해제한다.
-    currentContext->GetCurrentFrameData()->EndFrameMemAllocs();
-
-    currentContext->currentFrameIndex = frameCount % NumFrameResources;
+    currentContext->currentFrameIndex = frameCount % COUNT_OF(currentContext->frames);
 
     return (const void *)(cmd + 1);
 }

@@ -96,9 +96,9 @@ void D3D12Renderer::SetConstantBuffer(RHI::CommandList *commandList, int slot, c
         return;
     }
 
-    if (d3d12CommandList->GetCommandListType() == D3D12_COMMAND_LIST_TYPE_COMPUTE) {
-        d3d12CommandList->computeRootParametersDirtyMask |= BIT64(rootParameterIndex);
-    } else {
+    if (d3d12CommandList->currentPSO->graphics) {
         d3d12CommandList->graphicsRootParametersDirtyMask |= BIT64(rootParameterIndex);
+    } else {
+        d3d12CommandList->computeRootParametersDirtyMask |= BIT64(rootParameterIndex);
     }
 }

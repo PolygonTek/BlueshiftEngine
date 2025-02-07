@@ -23,18 +23,25 @@
 
 class D3D12FrameThreadData;
 
-// 버퍼 리소스의 정렬에 대한 규칙은 크게 3가지로 분류할 수 있다.
-//
-// 1. 리소스 힙에 배치 단계 (Placed Resource or Committed Resource) 에서의 오프셋 정렬
-//    대부분 D3D12_DEFAULT_RESOURCE_PLACEMENT_ALIGNMENT (64KB) 로 정렬해야 한다.
-//    만약 리소스 크기 <= 64KB 이고, UAV/RTV/DSV 가 아니라면 D3D12_SMALL_RESOURCE_PLACEMENT_ALIGNMENT (4KB) 로 정렬 가능하다.
-// 2. 뷰 생성 단계에서의 오프셋/사이즈 정렬
-//    * CBV 는 오프셋/사이즈 D3D12_CONSTANT_BUFFER_DATA_PLACEMENT_ALIGNMENT (256B) 정렬을 요구한다.
-//    * Byte Address Buffer SRV/UAV 는 4B 정렬을 요구한다.
-//    * Structured Buffer SRV/UAV 는 구조체의 크기가 4의 배수여야 한다. (최대 2048B)
-//    * VBV/IBV 는 특별한 정렬을 요구하지 않는다.
-// 3. cbuffer/struct 내부의 변수 pack 정렬
-//    내부의 변수는 16B 정렬된다.
+/*
+-------------------------------------------------------------------------------
+    버퍼 리소스의 정렬에 대한 규칙
+
+    1. 리소스 힙에 배치 단계 (Placed Resource or Committed Resource) 에서의 오프셋 정렬.
+       대부분 D3D12_DEFAULT_RESOURCE_PLACEMENT_ALIGNMENT (64KB) 로 정렬해야 한다.
+       만약 리소스 크기 <= 64KB 이고, UAV/RTV/DSV 가 아니라면 D3D12_SMALL_RESOURCE_PLACEMENT_ALIGNMENT (4KB) 로 정렬 가능하다.
+
+    2. 뷰 생성 단계에서의 오프셋/사이즈 정렬
+       * CBV 는 오프셋/사이즈 D3D12_CONSTANT_BUFFER_DATA_PLACEMENT_ALIGNMENT (256B) 정렬을 요구한다.
+       * Byte Address Buffer SRV/UAV 는 4B 정렬을 요구한다.
+       * Structured Buffer SRV/UAV 는 구조체의 크기가 4의 배수여야 한다. (최대 2048B)
+       * VBV/IBV 는 특별한 정렬을 요구하지 않는다.
+
+    3. cbuffer/struct 내부의 변수 pack 정렬
+       내부의 변수는 16B 정렬된다.
+-------------------------------------------------------------------------------
+*/
+
 class D3D12Buffer : public RHI::Buffer {
     friend class D3D12Renderer;
     friend class D3D12FrameThreadData;

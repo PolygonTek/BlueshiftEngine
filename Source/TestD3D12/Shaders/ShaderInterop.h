@@ -15,7 +15,7 @@
 #ifndef SHADERINTEROP_H
 #define SHADERINTEROP_H
 
-#ifdef __cplusplus // not invoking shader compiler, but included in engine source
+#ifdef __cplusplus
 
 #include <DirectXMath.h>
 
@@ -35,6 +35,8 @@ using uint4 = DirectX::XMUINT4;
 #define column_major
 #define row_major
 
+#else
+
 #endif // __cplusplus
 
 static const uint GENMIP_2D_BLOCK_SIZE_X = 32;
@@ -47,6 +49,7 @@ static const uint MIPGEN_OPTION_BIT_SRGB = 1 << 1;
 
 struct MipGenParams {
     uint3 dstSize;
+    uint padding;
     float3 dstSizeRcp;
     uint flags;
 };

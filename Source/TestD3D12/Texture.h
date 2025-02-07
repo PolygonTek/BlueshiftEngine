@@ -29,11 +29,12 @@ public:
         NoCompression           = BIT(1),   ///< 압축을 사용하지 않는다. (원본 포맷이 압축되어 있다면 소용없다)
         NoScaleDown             = BIT(2),   ///< 
         HighQuality             = NoCompression | NoScaleDown,
-        NoMipmaps               = BIT(3),   ///< 밉맵을 사용하지 않는다. 
-        NormalMap               = BIT(4),   ///< 노말맵
-        NonePowerOfTwo          = BIT(5),   ///< 2 의 승수 사이즈가 아님
-        UnorderedAccess         = BIT(6),   ///< UAV 로 접근 가능한 텍스쳐
-        LoadedFromFile          = BIT(7)    ///< 파일로부터 읽어들인 텍스쳐인지 여부 (내부적으로 사용됨)
+        NoMipmaps               = BIT(3),   ///< 밉맵을 사용하지 않는다.
+        AllocateEmptyMipmaps    = BIT(4),
+        NormalMap               = BIT(5),   ///< 노말맵
+        NonePowerOfTwo          = BIT(6),   ///< 2 의 승수 사이즈가 아님
+        UnorderedAccess         = BIT(7),   ///< UAV 로 접근 가능한 텍스쳐
+        LoadedFromFile          = BIT(8)    ///< 파일로부터 읽어들인 텍스쳐인지 여부 (내부적으로 사용됨)
     };
 
     enum class SamplerParamsType : uint8_t {

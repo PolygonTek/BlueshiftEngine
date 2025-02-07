@@ -21,13 +21,13 @@
 void RenderContext::Init(void *windowHandle, bool useRenderThread) {
     // 렌더링 프레임 별로 사용할 프레임 데이터들을 초기화한다.
     // 프레임 데이터 : 임시 메모리, 커맨드 리스트 풀, 루트 디스크립터 힙, 다이나믹 버퍼와 그 디스크립터 풀
-    for (int frameIndex = 0; frameIndex < NumFrameResources; ++frameIndex) {
-        frameData[frameIndex].Init();
+    for (RenderFrameData &frameData : frames) {
+        frameData.Init();
     }
 
     // 렌더 스레드에서 이전 프레임의 프레임 데이터 사용이 완료되었는지 체크하기 위해 펜스를 친다.
     currentFrameIndex = 0;
-    frameData[currentFrameIndex].SetFenceValue(RHI::renderer->SignalFence(RHI::CommandQueueType::Graphics));
+    frames[currentFrameIndex].SetFenceValue(RHI::renderer->SignalFence(RHI::CommandQueueType::Graphics));
 
     // 렌더 스레드 초기화
     if (useRenderThread) {
@@ -64,8 +64,8 @@ void RenderContext::Shutdown() {
 
     DestroyMainRenderTextures();
 
-    for (int frameIndex = 0; frameIndex < NumFrameResources; ++frameIndex) {
-        frameData[frameIndex].Shutdown();
+    for (RenderFrameData &frame : frames) {
+        frame.Shutdown();
     }
 
     RHI::renderer->DestroySwapChain(swapChain);
@@ -155,8 +155,8 @@ void RenderContext::InitFullScreenTrianglePSO() {
 }
 
 void RenderContext::WaitAllFrameFences() {
-    for (int frameIndex = 0; frameIndex < NumFrameResources; ++frameIndex) {
-        RHI::renderer->WaitFence(frameData[frameIndex].GetFenceValue());
+    for (const RenderFrameData &frame : frames) {
+        RHI::renderer->WaitFence(frame.GetFenceValue());
     }
 }
 
@@ -255,7 +255,8 @@ void RenderContext::BeginFrame() {
 
     RenderFrameData *frameData = GetCurrentFrameData();
 
-    // 이번 프레임에서 사용할 임시 메모리를 미리 할당한다.
+    // 이전 프레임에서 할당했던 메모리를 해제하고,
+    // 이번 프레임에서 사용할 임시 메모리를 초기화한다.
     frameData->BeginFrameMemAllocs();
 
     frameData->CmdBeginContext(this);

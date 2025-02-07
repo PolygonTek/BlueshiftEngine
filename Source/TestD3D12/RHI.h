@@ -737,13 +737,15 @@ namespace RHI {
         virtual ConstantBuffer *        AllocConstant(uint32_t size) = 0;
         virtual VertexBuffer *          AllocVertex(uint32_t vertexSize, uint32_t count) = 0;
         virtual IndexBuffer *           AllocIndex(uint32_t indexSize, uint32_t count) = 0;
-        virtual Buffer *                AllocBuffer(bool shaderStorage, BE1::Image::Format format, uint32_t stride, uint32_t count) = 0;
-        Buffer *                        AllocTypedBuffer(bool shaderStorage, BE1::Image::Format format, uint32_t count) { return AllocBuffer(shaderStorage, format, 0, count); }
-        Buffer *                        AllocRawBuffer(bool shaderStorage, uint32_t count) { return AllocBuffer(shaderStorage, BE1::Image::Format::Unknown, 0, count); }
-        Buffer *                        AllocStructuredBuffer(bool shaderStorage, uint32_t stride, uint32_t count) { return AllocBuffer(shaderStorage, BE1::Image::Format::Unknown, stride, count); }
+        virtual Buffer *                AllocBuffer(BE1::Image::Format format, uint32_t stride, uint32_t count) = 0;
+        Buffer *                        AllocTypedBuffer(BE1::Image::Format format, uint32_t count) { return AllocBuffer(format, 0, count); }
+        Buffer *                        AllocRawBuffer(uint32_t count) { return AllocBuffer(BE1::Image::Format::Unknown, 0, count); }
+        Buffer *                        AllocStructuredBuffer(uint32_t stride, uint32_t count) { return AllocBuffer(BE1::Image::Format::Unknown, stride, count); }
 
         virtual CommandList *           AllocGraphicsCommandList(RHI::CommandListType type = RHI::CommandListType::Primary) = 0;
+        virtual CommandList *           AllocComputeCommandList() = 0;
 
+        virtual CommandList *           BeginCommandList(RHI::CommandQueueType queueType) = 0;
         virtual CommandList *           BeginSecondaryCommandList(const RHI::CommandList *primaryCommandList) = 0;
     };
 
@@ -818,8 +820,8 @@ namespace RHI {
         void                            AdjustTextureSize(TextureType textureType, bool useNPOT, uint32_t inWidth, uint32_t inHeight, uint32_t inDepth, uint32_t *outWidth, uint32_t *outHeight, uint32_t *outDepth);
 
         virtual Texture *               CreateTexture(TextureType textureType, ResourceFlag flags, const BE1::Image *image, bool allocateEmptyMipmaps, const ClearValue &clearValue = {}, uint32_t sampleCount = 1, GPUResourceState initialState = GPUResourceState::Undefined) = 0;
-        virtual Texture *               CreateTexture(TextureType textureType, ResourceFlag flags, const BE1::Image *image, BE1::Image::Format dstFormat, bool useMipmaps) = 0;
-        virtual Texture *               CreateTextureFromFile(TextureType textureType, ResourceFlag flags, const char *filename, bool useCompression = true, bool useNormalMap = false, bool useMipmaps = true);
+        virtual Texture *               CreateTexture(TextureType textureType, ResourceFlag flags, const BE1::Image *image, BE1::Image::Format dstFormat, bool generateMipmaps = true, bool allocateEmptyMipmaps = false) = 0;
+        virtual Texture *               CreateTextureFromFile(TextureType textureType, ResourceFlag flags, const char *filename, bool useCompression = true, bool useNormalMap = false, bool generateMipmaps = true, bool allocateEmptyMipmaps = false);
         virtual void                    DestroyTexture(Texture *texture, bool immediate = false) = 0;
 
         virtual void                    GetTextureImage2D(Texture *texture, int mipLevel, BE1::Image::Format imageFormat, void *outPixels) = 0;
@@ -850,6 +852,9 @@ namespace RHI {
 
         virtual QueryHeap *             CreateQueryHeap(const QueryHeapDesc *desc) = 0;
         virtual void                    DestroyQueryHeap(QueryHeap *queryHeap, bool immediate = false) = 0;
+
+        virtual RHI::CommandList *      BeginCommandList(RHI::CommandQueueType queueType) = 0;
+        virtual void                    EndCommandList(RHI::CommandList *commandList) = 0;
 
         virtual void                    SetVertexBuffer(CommandList *commandList, int slot, const VertexBuffer *vertexBuffer) = 0;
         virtual void                    SetIndexBuffer(CommandList *commandList, const IndexBuffer *indexBuffer) = 0;

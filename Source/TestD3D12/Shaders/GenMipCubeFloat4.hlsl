@@ -1,7 +1,8 @@
 #include "ShaderInterop.h"
 
 #define COMMON_ROOT_SIGNATURE "RootFlags(0), " \
-    "DescriptorTable(CBV(b0), SRV(t0), UAV(u0)), " \
+    "DescriptorTable(SRV(t0), UAV(u0)), " \
+    "RootConstants(num32BitConstants=8, b0), " \
     "StaticSampler(s0, FILTER = FILTER_MIN_MAG_MIP_LINEAR, ADDRESSU = TEXTURE_ADDRESS_CLAMP, ADDRESSV = TEXTURE_ADDRESS_CLAMP, ADDRESSW = TEXTURE_ADDRESS_CLAMP)"
 
 MipGenParams mipGenParams : register(b0);
