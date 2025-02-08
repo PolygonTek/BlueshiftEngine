@@ -935,6 +935,7 @@ void D3D12Renderer::Barrier(RHI::CommandList *commandList, const RHI::GPUBarrier
         }
     }
 
+    // NOTE: Compute 커맨드 리스트라면, ResourceState 에 D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE 를 지정할 수 없음에 주의한다.
     D3D12CommandList *d3d12CommandList = static_cast<D3D12CommandList *>(commandList);
     d3d12CommandList->GetGraphicsCommandList()->ResourceBarrier(barrierCount, barrierDescs.Ptr());
 }
@@ -984,7 +985,7 @@ void D3D12Renderer::ReadPixels(RHI::CommandList *commandList, const RHI::SwapCha
     commandListInternal->ResourceBarrier(backBufferResource, D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_COPY_SOURCE);
     commandListInternal->GetGraphicsCommandList()->CopyTextureRegion(&dstLocation, 0, 0, 0, &srcLocation, &srcBox);
     commandListInternal->ResourceBarrier(backBufferResource, D3D12_RESOURCE_STATE_COPY_SOURCE, D3D12_RESOURCE_STATE_PRESENT);
-    commandListInternal->CloseAndExecute(RHI::CommandQueueType::Graphics);
+    commandListInternal->CloseAndExecute();
 
     // GPU 에서 복사가 끝날 때까지 기다린다.
     Finish(RHI::CommandQueueType::Graphics);

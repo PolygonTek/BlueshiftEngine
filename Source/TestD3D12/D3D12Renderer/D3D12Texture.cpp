@@ -317,7 +317,7 @@ RHI::Texture *D3D12Renderer::CreateTexture(RHI::TextureType textureType, RHI::Re
         }
 
         commandList->ResourceBarrier(textureResource, D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_ALL_SHADER_RESOURCE);
-        commandList->CloseAndExecute(RHI::CommandQueueType::Graphics);
+        commandList->CloseAndExecute();
         EndCommandList(commandList);
 
         initialState = RHI::GPUResourceState::ShaderResource;
@@ -844,7 +844,7 @@ void D3D12Renderer::GetTextureImage(RHI::Texture *texture, int mipLevel, int sli
     commandList->ResourceBarrier(textureResource, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_COPY_SOURCE);
     commandList->GetGraphicsCommandList()->CopyTextureRegion(&dstLocation, 0, 0, 0, &srcLocation, nullptr);
     commandList->ResourceBarrier(textureResource, D3D12_RESOURCE_STATE_COPY_SOURCE, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
-    commandList->CloseAndExecute(RHI::CommandQueueType::Graphics);
+    commandList->CloseAndExecute();
     EndCommandList(commandList);
 
     // GPU 에서 복사가 끝날 때까지 기다린다.
@@ -995,7 +995,7 @@ bool D3D12Renderer::SetTextureSubImage(RHI::Texture *texture, int mipLevel, int 
     commandList->GetGraphicsCommandList()->CopyTextureRegion(&dstLocation, x, y, z, &srcLocation, &srcBox);
 
     commandList->ResourceBarrier(textureResource, D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_ALL_SHADER_RESOURCE);
-    commandList->CloseAndExecute(RHI::CommandQueueType::Graphics);
+    commandList->CloseAndExecute();
     EndCommandList(commandList);
 
     MarkForRelease(uploadBuffer);

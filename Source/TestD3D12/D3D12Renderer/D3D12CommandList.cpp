@@ -115,10 +115,10 @@ void D3D12CommandList::Reset(bool resetCacheStates, const RHI::CommandList *prim
 #endif
 }
 
-void D3D12CommandList::Execute(RHI::CommandQueueType queueType) {
-    assert(queueType < RHI::CommandQueueType::Count);
-    ID3D12CommandList *execCommandLists[] = { commandList };
+void D3D12CommandList::Execute() {
+    RHI::CommandQueueType queueType = parentPool->commandListType == D3D12_COMMAND_LIST_TYPE_COMPUTE ? RHI::CommandQueueType::Compute : RHI::CommandQueueType::Graphics;
 
+    ID3D12CommandList *execCommandLists[] = { commandList };
     D3D12Renderer::GetRenderer()->commandQueues[to_int(queueType)]->ExecuteCommandLists(COUNT_OF(execCommandLists), execCommandLists);
 }
 
@@ -134,11 +134,12 @@ void D3D12CommandList::ExecuteSecondary(RHI::CommandList *primaryCommandList, co
     d3d12PrimaryCommandList->GetGraphicsCommandList()->ExecuteBundle(GetGraphicsCommandList());
 }
 
-void D3D12CommandList::CloseAndExecute(RHI::CommandQueueType queueType) {
+void D3D12CommandList::CloseAndExecute() {
     HRESULT hr = GetGraphicsCommandList()->Close();
     assert(SUCCEEDED(hr));
 
-    assert(queueType < RHI::CommandQueueType::Count);
+    RHI::CommandQueueType queueType = parentPool->commandListType == D3D12_COMMAND_LIST_TYPE_COMPUTE ? RHI::CommandQueueType::Compute : RHI::CommandQueueType::Graphics;
+
     ID3D12CommandList *execCommandLists[] = { commandList };
     D3D12Renderer::GetRenderer()->commandQueues[to_int(queueType)]->ExecuteCommandLists(COUNT_OF(execCommandLists), execCommandLists);
 }

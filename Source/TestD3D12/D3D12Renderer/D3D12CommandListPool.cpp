@@ -37,35 +37,26 @@ void D3D12CommandListPool::Init(D3D12FrameThreadData *frameThreadData, D3D12_COM
             BE_FATALERROR("CreateCommandAllocator : failed, ERROR: 0x%x", hr);
         }
 
-        if (commandListType == D3D12_COMMAND_LIST_TYPE_DIRECT) {
-            // 그래픽스 CommandList 생성
-            ID3D12GraphicsCommandList6 *graphicsCommandList = nullptr;
-            hr = device->CreateCommandList(0, commandListType, commandList->commandAllocator, nullptr, IID_PPV_ARGS(&graphicsCommandList));
-            graphicsCommandList->Close();
-            commandList->commandList = graphicsCommandList;
-        } else if (commandListType == D3D12_COMMAND_LIST_TYPE_COPY) {
+        if (commandListType == D3D12_COMMAND_LIST_TYPE_COPY) {
             // 카피 CommandList 생성
             ID3D12GraphicsCommandList1 *copyCommandList = nullptr;
-            hr = device->CreateCommandList(0, commandListType, commandList->commandAllocator, nullptr, IID_PPV_ARGS(&copyCommandList));
-            copyCommandList->Close();
+            hr = device->CreateCommandList1(0, commandListType, D3D12_COMMAND_LIST_FLAG_NONE, IID_PPV_ARGS(&copyCommandList));
             commandList->commandList = copyCommandList;
         } else if (commandListType == D3D12_COMMAND_LIST_TYPE_VIDEO_DECODE) {
             // 비디오 디코딩 CommandList 생성
             ID3D12VideoDecodeCommandList *videoDecodeCommandList = nullptr;
-            hr = device->CreateCommandList(0, commandListType, commandList->commandAllocator, nullptr, IID_PPV_ARGS(&videoDecodeCommandList));
-            videoDecodeCommandList->Close();
+            hr = device->CreateCommandList1(0, commandListType, D3D12_COMMAND_LIST_FLAG_NONE, IID_PPV_ARGS(&videoDecodeCommandList));
             commandList->commandList = videoDecodeCommandList;
         } else if (commandListType == D3D12_COMMAND_LIST_TYPE_VIDEO_ENCODE) {
             // 비디오 인코딩 CommandList 생성
             ID3D12VideoEncodeCommandList *videoEncodeCommandList = nullptr;
-            hr = device->CreateCommandList(0, commandListType, commandList->commandAllocator, nullptr, IID_PPV_ARGS(&videoEncodeCommandList));
-            videoEncodeCommandList->Close();
+            hr = device->CreateCommandList1(0, commandListType, D3D12_COMMAND_LIST_FLAG_NONE, IID_PPV_ARGS(&videoEncodeCommandList));
             commandList->commandList = videoEncodeCommandList;
-        } else if (commandListType == D3D12_COMMAND_LIST_TYPE_COMPUTE) {
-            // 컴퓨트 CommandList 생성
-            ID3D12CommandList *computeCommandList = nullptr;
-            hr = device->CreateCommandList(0, commandListType, commandList->commandAllocator, nullptr, IID_PPV_ARGS(&computeCommandList));
-            commandList->commandList = computeCommandList;
+        } else if (commandListType == D3D12_COMMAND_LIST_TYPE_DIRECT || commandListType == D3D12_COMMAND_LIST_TYPE_COMPUTE) {
+            // 그래픽스 or 컴퓨트 CommandList 생성
+            ID3D12GraphicsCommandList6 *graphicsCommandList = nullptr;
+            hr = device->CreateCommandList1(0, commandListType, D3D12_COMMAND_LIST_FLAG_NONE, IID_PPV_ARGS(&graphicsCommandList));
+            commandList->commandList = graphicsCommandList;
         } else {
             BE_FATALERROR("Invalid D3D12_COMMAND_LIST_TYPE: 0x%x", commandListType);
         }

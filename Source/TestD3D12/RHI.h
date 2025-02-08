@@ -720,9 +720,9 @@ namespace RHI {
         virtual void                    Reset(bool resetCacheStates = true, const CommandList *primaryCommandList = nullptr) = 0;
 
         virtual void                    Close() = 0;
-        virtual void                    Execute(RHI::CommandQueueType queueType) = 0;
+        virtual void                    Execute() = 0;
         virtual void                    ExecuteSecondary(RHI::CommandList *primaryCommandList, const RHI::FrameThreadData *frameThreadData) = 0;
-        virtual void                    CloseAndExecute(RHI::CommandQueueType queueType) = 0;
+        virtual void                    CloseAndExecute() = 0;
         virtual void                    CloseAndExecuteSecondary(RHI::CommandList *primaryCommandList, const RHI::FrameThreadData *frameThreadData) = 0;
 
         virtual FrameThreadData *       GetFrameThreadData() const = 0;

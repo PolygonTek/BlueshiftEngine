@@ -118,30 +118,40 @@ void Texture::SetSamplerParameters(SamplerParamsType samplerParamsType) {
     SetSamplerParameters(Texture::defaultSamplerParams[samplerParamsTypeIndex]);
 }
 
-// NOTE: UAV 가 지원하지 않는 포맷 (NoAlpha, sRGB, ...) 은 컴퓨트 쉐이더를 이용한 밉맵 생성을 지원하지 않는다.
-// sRGB 텍스쳐의 경우에는 CreateTexture 함수에서 미리 Typeless 텍스쳐로 만들어야 한다.
-// 그래야 SRV 는 sRGB 포맷으로, UAV 는 Linear 포맷으로 생성할 수 있다.
-void Texture::PrepareGPUMipmapGeneration() {
-    // 전체 텍스쳐 리소스에 대한 SRV 가 생성되어 있는지 확인
+void Texture::GenerationMipmaps() {
+    // 전체 텍스쳐 리소스에 대한 SRV 생성
     if (!texture->IsValidSubresource(RHI::SubresourceType::SRV, -1)) {
         RHI::renderer->CreateSubresource(texture, RHI::SubresourceType::SRV);
     }
-    // 전체 텍스쳐 리소스에 대한 UAV 가 생성되어 있는지 확인
+    // 전체 텍스쳐 리소스에 대한 UAV 생성
     if (!texture->IsValidSubresource(RHI::SubresourceType::UAV, -1)) {
         RHI::renderer->CreateSubresource(texture, RHI::SubresourceType::UAV);
     }
 
-    // 각 Slice 와 Mip Level 별로 SRV/UAV 를 생성한다.
-    // FIXME: 이미 subresource 가 생성되어 있는 경우에 대한 에러 처리가 필요하다.
+    // 각 Slice 와 Mip Level 별로 SRV/UAV 를 생성
+    // NOTE: 이미 Mipmap 용이 아닌 Subresource 를 이전에 생성한 경우 문제가 될 수 있음
     for (int sliceIndex = 0; sliceIndex < GetArraySize(); ++sliceIndex) {
         for (int mipLevel = 0; mipLevel < GetMipLevelCount(); ++mipLevel) {
-            int subresourceIndex = sliceIndex * GetMipLevelCount() + mipLevel;
-            subresourceIndex = RHI::renderer->CreateSubresource(texture, RHI::SubresourceType::SRV, sliceIndex, 1, mipLevel, 1);
-            assert(subresourceIndex >= 0);
-            subresourceIndex = RHI::renderer->CreateSubresource(texture, RHI::SubresourceType::UAV, sliceIndex, 1, mipLevel, 1);
-            assert(subresourceIndex >= 0);
+            const int subresourceIndex = GetMipLevelCount() * sliceIndex + mipLevel;
+
+            if (!texture->IsValidSubresource(RHI::SubresourceType::SRV, subresourceIndex)) {
+                RHI::renderer->CreateSubresource(texture, RHI::SubresourceType::SRV, sliceIndex, 1, mipLevel, 1);
+            }
+            if (!texture->IsValidSubresource(RHI::SubresourceType::UAV, subresourceIndex)) {
+                RHI::renderer->CreateSubresource(texture, RHI::SubresourceType::UAV, sliceIndex, 1, mipLevel, 1);
+            }
         }
     }
+
+    // 컴퓨트 쉐이더를 이용해서 밉맵 생성
+    RHI::CommandList *commandList = RHI::renderer->BeginCommandList(RHI::CommandQueueType::Graphics);
+    RHI::renderer->GenerateMipmaps(commandList, GetRHITexture());
+    commandList->CloseAndExecute();
+    RHI::renderer->EndCommandList(commandList);
+
+    // TODO:
+    // 컴퓨트 커맨드 리스트/큐를 이용하려면, 텍스쳐를 만들 때 non-pixel shader resource 로 상태 전이가 이루어져야 한다.
+    // 이후에 렌더링에 사용할 것이므로, 다이렉트 커맨드 리스트/큐를 통해 다시 pixel shader resource 로 상태 전이를 해야 한다.
 }
 
 void Texture::CreateDefaultTexture(int size, Texture::Flag flags) {

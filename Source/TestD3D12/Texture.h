@@ -86,7 +86,8 @@ public:
     void                        Create(RHI::TextureType textureType, const BE1::Image *srcImage, Texture::Flag flags);
     void                        SetSamplerParameters(const SamplerParams &samplerParams);
     void                        SetSamplerParameters(SamplerParamsType samplerParamsType);
-    void                        PrepareGPUMipmapGeneration();
+
+    void                        GenerationMipmaps();
 
     bool                        Load(const char *filename, Texture::Flag flags);
 

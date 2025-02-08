@@ -238,7 +238,7 @@ RHI::Buffer *D3D12Renderer::CreateBuffer(RHI::BufferUsage usage, RHI::ResourceFl
             commandList->ResourceBarrier(bufferResource, D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_COPY_DEST);
             commandList->GetGraphicsCommandList()->CopyBufferRegion(bufferResource, 0, uploadBuffer, 0, size);
             commandList->ResourceBarrier(bufferResource, D3D12_RESOURCE_STATE_COPY_DEST, afterResourceState);
-            commandList->CloseAndExecute(RHI::CommandQueueType::Graphics);
+            commandList->CloseAndExecute();
             EndCommandList(commandList);
         } else if (heapType == D3D12_HEAP_TYPE_UPLOAD) {
             UINT8 *mappedPtr = nullptr;

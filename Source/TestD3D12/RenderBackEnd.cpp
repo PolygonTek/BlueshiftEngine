@@ -142,7 +142,7 @@ const void *RenderBackEnd::ExecuteDrawCamera(const void *data) {
 #endif
 
     // CommandList 에 기록을 마치고 실행
-    mainCommandList->CloseAndExecute(RHI::CommandQueueType::Graphics);
+    mainCommandList->CloseAndExecute();
 
     return (const void *)(cmd + 1);
 }

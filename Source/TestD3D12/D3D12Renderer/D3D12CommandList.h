@@ -30,9 +30,9 @@ public:
     virtual void                    Reset(bool resetCacheStates = true, const RHI::CommandList *primaryCommandList = nullptr) override;
 
     virtual void                    Close() override;
-    virtual void                    Execute(RHI::CommandQueueType queueType) override;
+    virtual void                    Execute() override;
     virtual void                    ExecuteSecondary(RHI::CommandList *primaryCommandList, const RHI::FrameThreadData *frameThreadData) override;
-    virtual void                    CloseAndExecute(RHI::CommandQueueType queueType) override;
+    virtual void                    CloseAndExecute() override;
     virtual void                    CloseAndExecuteSecondary(RHI::CommandList *primaryCommandList, const RHI::FrameThreadData *frameThreadData) override;
 
     virtual RHI::FrameThreadData *  GetFrameThreadData() const override;
