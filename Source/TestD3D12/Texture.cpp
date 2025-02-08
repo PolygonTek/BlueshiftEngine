@@ -100,9 +100,11 @@ void Texture::Create(RHI::TextureType textureType, const BE1::Image *srcImage, T
         resourceFlags |= RHI::ResourceFlag::Typeless;
     }
 
+    RHI::GPUResourceState initialState = BE1::HasFlag(flags, Texture::Flag::Compute) ? RHI::GPUResourceState::ShaderResourceCompute : RHI::GPUResourceState::ShaderResource;
+
     this->format = dstFormat;
     this->flags = flags;
-    this->texture = RHI::renderer->CreateTexture(textureType, resourceFlags, srcImage, dstFormat, generateMipmaps, allocateEmptyMipmaps);
+    this->texture = RHI::renderer->CreateTexture(textureType, resourceFlags, srcImage, dstFormat, generateMipmaps, allocateEmptyMipmaps, initialState);
 }
 
 void Texture::SetSamplerParameters(const SamplerParams &samplerParams) {

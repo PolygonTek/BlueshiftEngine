@@ -93,13 +93,13 @@ void CubeMesh::InitMesh() {
     vertexBuffer = RHI::renderer->CreateVertexBuffer(RHI::BufferUsage::Default, sizeof(verts[0]), COUNT_OF(verts), (void *)verts);
     indexBuffer = RHI::renderer->CreateIndexBuffer(RHI::BufferUsage::Default, sizeof(indexes[0]), COUNT_OF(indexes), (void *)indexes);
 
-    // UAV 가 가능하고, 하위 mip level 들이 비어있는 텍스쳐를 만든다.
-    // sRGB 텍스쳐의 경우에는 Typeless 텍스쳐로 만들어야 한다.
-    // 그래야 SRV 는 sRGB 포맷으로, UAV 는 Linear 포맷으로 생성할 수 있다.
     texture = textureManager.GetTexture("Data/EngineTextures/a.bmp", Texture::Flag::NoCompression | Texture::Flag::UnorderedAccess | Texture::Flag::NoMipmaps | Texture::Flag::AllocateEmptyMipmaps);
     texture->SetSamplerParameters(Texture::SamplerParamsType::LinearClamp);
 
     // 컴퓨트 쉐이더를 통해 밉맵 생성
+    // 컴퓨트 쉐이더로 밉맵을 생성하기 위해서는 대상 텍스쳐를 만들 때 하위 mip level 들이 존재해야 하고, UAV 도 만들어야 한다.
+    // UAV 로 만들 sRGB 텍스쳐의 경우에는 텍스쳐 생성 함수에서 자동으로 Typeless 텍스쳐로 만들어 진다.
+    // sRGB 텍스쳐를 생성할 때 Typeless 로 만들어야 SRV 는 sRGB 포맷으로, UAV 는 Linear 포맷으로 생성된다.
     texture->GenerationMipmaps();
 
     InitPipelineState();

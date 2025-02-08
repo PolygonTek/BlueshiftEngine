@@ -191,9 +191,6 @@ RHI::Texture *D3D12Renderer::CreateTexture(RHI::TextureType textureType, RHI::Re
         textureDesc.Format = ToTypelessFormat(textureDesc.Format);
     }
 
-    if (!srcImage->IsEmpty()) {
-        initialState = RHI::GPUResourceState::Undefined;
-    }
     D3D12_RESOURCE_STATES d3d12InitialState = ToD3D12ResourceState(initialState);
 
 #ifdef USE_D3D12_MEMALLOC
@@ -316,11 +313,9 @@ RHI::Texture *D3D12Renderer::CreateTexture(RHI::TextureType textureType, RHI::Re
             }
         }
 
-        commandList->ResourceBarrier(textureResource, D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_ALL_SHADER_RESOURCE);
+        commandList->ResourceBarrier(textureResource, D3D12_RESOURCE_STATE_COPY_DEST, d3d12InitialState);
         commandList->CloseAndExecute();
         EndCommandList(commandList);
-
-        initialState = RHI::GPUResourceState::ShaderResource;
 
         if (uploadBuffer) {
             MarkForRelease(uploadBuffer);
@@ -344,21 +339,21 @@ RHI::Texture *D3D12Renderer::CreateTexture(RHI::TextureType textureType, RHI::Re
         if (BE1::HasFlag(flags, RHI::ResourceFlag::ShaderResource)) {
             CreateSubresourceSRV(texture);
         }
+        if (BE1::HasFlag(flags, RHI::ResourceFlag::UnorderedAccess)) {
+            CreateSubresourceUAV(texture);
+        }
         if (BE1::HasFlag(flags, RHI::ResourceFlag::RenderTarget)) {
             CreateSubresourceRTV(texture);
         }
         if (BE1::HasFlag(flags, RHI::ResourceFlag::DepthStencil)) {
             CreateSubresourceDSV(texture);
         }
-        if (BE1::HasFlag(flags, RHI::ResourceFlag::UnorderedAccess)) {
-            CreateSubresourceUAV(texture);
-        }
     }
 
     return texture;
 }
 
-RHI::Texture *D3D12Renderer::CreateTexture(RHI::TextureType textureType, RHI::ResourceFlag flags, const BE1::Image *srcImage, BE1::Image::Format dstFormat, bool generateMipmaps, bool allocateEmptyMipmaps) {
+RHI::Texture *D3D12Renderer::CreateTexture(RHI::TextureType textureType, RHI::ResourceFlag flags, const BE1::Image *srcImage, BE1::Image::Format dstFormat, bool generateMipmaps, bool allocateEmptyMipmaps, RHI::GPUResourceState initialState) {
     BE1::Image::Format srcFormat = srcImage->GetFormat();
 
     bool srcCompressed = BE1::Image::IsCompressed(srcFormat);
@@ -411,7 +406,7 @@ RHI::Texture *D3D12Renderer::CreateTexture(RHI::TextureType textureType, RHI::Re
         }
     }
 
-    return CreateTexture(textureType, flags, srcImage, allocateEmptyMipmaps);
+    return CreateTexture(textureType, flags, srcImage, allocateEmptyMipmaps, {}, 1, initialState);
 }
 
 void D3D12Renderer::DestroyTexture(RHI::Texture *texture, bool immediate) {

@@ -33,12 +33,12 @@ class D3D12FrameThreadData;
 
     2. 뷰 생성 단계에서의 오프셋/사이즈 정렬
        * CBV 는 오프셋/사이즈 D3D12_CONSTANT_BUFFER_DATA_PLACEMENT_ALIGNMENT (256B) 정렬을 요구한다.
-       * Byte Address Buffer SRV/UAV 는 4B 정렬을 요구한다.
-       * Structured Buffer SRV/UAV 는 구조체의 크기가 4의 배수여야 한다. (최대 2048B)
+       * Byte Address Buffer SRV/UAV 는 4 바이트 정렬을 요구한다.
+       * Structured Buffer SRV/UAV 는 구조체의 크기가 4 의 배수여야 한다. (최대 2048B)
        * VBV/IBV 는 특별한 정렬을 요구하지 않는다.
 
-    3. cbuffer/struct 내부의 변수 pack 정렬
-       내부의 변수는 16B 정렬된다.
+    3. cbuffer/struct 의 멤버 변수 pack 정렬
+       멤버 변수는 16 바이트 정렬된다.
 -------------------------------------------------------------------------------
 */
 
