@@ -333,7 +333,7 @@ RHI::Texture *D3D12Renderer::CreateTexture(RHI::TextureType textureType, RHI::Re
 #endif
     texture->textureDesc = textureResource->GetDesc();
     texture->clearValue = optimizedClearValue;
-    texture->initialState = initialState;
+    texture->currentState = initialState;
 
     if (!BE1::HasFlag(flags, RHI::ResourceFlag::SkipDefaultViews)) {
         if (BE1::HasFlag(flags, RHI::ResourceFlag::ShaderResource)) {
@@ -823,6 +823,7 @@ void D3D12Renderer::GetTextureImage(RHI::Texture *texture, int mipLevel, int sli
     }
 
     ID3D12Resource *textureResource = d3d12Texture->GetResource();
+    D3D12_RESOURCE_STATES currentState = ToD3D12ResourceState(d3d12Texture->currentState);
 
     // 텍스쳐에서 리드백 버퍼로 복사한다.
     D3D12_TEXTURE_COPY_LOCATION srcLocation = {};
@@ -836,9 +837,9 @@ void D3D12Renderer::GetTextureImage(RHI::Texture *texture, int mipLevel, int sli
     dstLocation.PlacedFootprint = subresourceFootprint;
 
     D3D12CommandList *commandList = static_cast<D3D12CommandList *>(BeginCommandList(RHI::CommandQueueType::Graphics));
-    commandList->ResourceBarrier(textureResource, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_COPY_SOURCE);
+    commandList->ResourceBarrier(textureResource, currentState, D3D12_RESOURCE_STATE_COPY_SOURCE);
     commandList->GetGraphicsCommandList()->CopyTextureRegion(&dstLocation, 0, 0, 0, &srcLocation, nullptr);
-    commandList->ResourceBarrier(textureResource, D3D12_RESOURCE_STATE_COPY_SOURCE, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
+    commandList->ResourceBarrier(textureResource, D3D12_RESOURCE_STATE_COPY_SOURCE, currentState);
     commandList->CloseAndExecute();
     EndCommandList(commandList);
 
@@ -967,10 +968,11 @@ bool D3D12Renderer::SetTextureSubImage(RHI::Texture *texture, int mipLevel, int 
     uploadBuffer->Unmap(0, &writtenRange);
 
     ID3D12Resource *textureResource = d3d12Texture->GetResource();
+    D3D12_RESOURCE_STATES currentState = ToD3D12ResourceState(d3d12Texture->currentState);
 
     // 업로드 버퍼에서 텍스쳐로 데이터 카피
     D3D12CommandList *commandList = static_cast<D3D12CommandList *>(BeginCommandList(RHI::CommandQueueType::Graphics));
-    commandList->ResourceBarrier(textureResource, D3D12_RESOURCE_STATE_ALL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_COPY_DEST);
+    commandList->ResourceBarrier(textureResource, currentState, D3D12_RESOURCE_STATE_COPY_DEST);
 
     D3D12_TEXTURE_COPY_LOCATION srcLocation = {};
     srcLocation.PlacedFootprint = subresourceFootprint;
@@ -989,7 +991,7 @@ bool D3D12Renderer::SetTextureSubImage(RHI::Texture *texture, int mipLevel, int 
     D3D12_BOX srcBox = { 0, 0, 0, (UINT)width, (UINT)height, (UINT)depth };
     commandList->GetGraphicsCommandList()->CopyTextureRegion(&dstLocation, x, y, z, &srcLocation, &srcBox);
 
-    commandList->ResourceBarrier(textureResource, D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_ALL_SHADER_RESOURCE);
+    commandList->ResourceBarrier(textureResource, D3D12_RESOURCE_STATE_COPY_DEST, currentState);
     commandList->CloseAndExecute();
     EndCommandList(commandList);
 
@@ -1068,24 +1070,24 @@ void D3D12Renderer::GenerateMipmaps(RHI::CommandList *commandList, const RHI::Te
                 SetTexture(commandList, 0, false, texture, mipLevel);
 
                 RHI::GPUBarrier startBarriers[] = {
-                    RHI::Renderer::MakeImageBarrier(texture, d3d12Texture->initialState, RHI::GPUResourceState::UnorderedAccess, 0, destMipLevel),
-                    RHI::Renderer::MakeImageBarrier(texture, d3d12Texture->initialState, RHI::GPUResourceState::UnorderedAccess, 1, destMipLevel),
-                    RHI::Renderer::MakeImageBarrier(texture, d3d12Texture->initialState, RHI::GPUResourceState::UnorderedAccess, 2, destMipLevel),
-                    RHI::Renderer::MakeImageBarrier(texture, d3d12Texture->initialState, RHI::GPUResourceState::UnorderedAccess, 3, destMipLevel),
-                    RHI::Renderer::MakeImageBarrier(texture, d3d12Texture->initialState, RHI::GPUResourceState::UnorderedAccess, 4, destMipLevel),
-                    RHI::Renderer::MakeImageBarrier(texture, d3d12Texture->initialState, RHI::GPUResourceState::UnorderedAccess, 5, destMipLevel)
+                    RHI::Renderer::MakeImageBarrier(texture, d3d12Texture->currentState, RHI::GPUResourceState::UnorderedAccess, 0, destMipLevel),
+                    RHI::Renderer::MakeImageBarrier(texture, d3d12Texture->currentState, RHI::GPUResourceState::UnorderedAccess, 1, destMipLevel),
+                    RHI::Renderer::MakeImageBarrier(texture, d3d12Texture->currentState, RHI::GPUResourceState::UnorderedAccess, 2, destMipLevel),
+                    RHI::Renderer::MakeImageBarrier(texture, d3d12Texture->currentState, RHI::GPUResourceState::UnorderedAccess, 3, destMipLevel),
+                    RHI::Renderer::MakeImageBarrier(texture, d3d12Texture->currentState, RHI::GPUResourceState::UnorderedAccess, 4, destMipLevel),
+                    RHI::Renderer::MakeImageBarrier(texture, d3d12Texture->currentState, RHI::GPUResourceState::UnorderedAccess, 5, destMipLevel)
                 };
                 Barrier(commandList, startBarriers, COUNT_OF(startBarriers));
 
                 Dispatch(commandList, threadGroupCountX, threadGroupCountY, threadGroupCountZ);
 
                 RHI::GPUBarrier endBarriers[] = {
-                    RHI::Renderer::MakeImageBarrier(texture, RHI::GPUResourceState::UnorderedAccess, d3d12Texture->initialState, 0, destMipLevel),
-                    RHI::Renderer::MakeImageBarrier(texture, RHI::GPUResourceState::UnorderedAccess, d3d12Texture->initialState, 1, destMipLevel),
-                    RHI::Renderer::MakeImageBarrier(texture, RHI::GPUResourceState::UnorderedAccess, d3d12Texture->initialState, 2, destMipLevel),
-                    RHI::Renderer::MakeImageBarrier(texture, RHI::GPUResourceState::UnorderedAccess, d3d12Texture->initialState, 3, destMipLevel),
-                    RHI::Renderer::MakeImageBarrier(texture, RHI::GPUResourceState::UnorderedAccess, d3d12Texture->initialState, 4, destMipLevel),
-                    RHI::Renderer::MakeImageBarrier(texture, RHI::GPUResourceState::UnorderedAccess, d3d12Texture->initialState, 5, destMipLevel)
+                    RHI::Renderer::MakeImageBarrier(texture, RHI::GPUResourceState::UnorderedAccess, d3d12Texture->currentState, 0, destMipLevel),
+                    RHI::Renderer::MakeImageBarrier(texture, RHI::GPUResourceState::UnorderedAccess, d3d12Texture->currentState, 1, destMipLevel),
+                    RHI::Renderer::MakeImageBarrier(texture, RHI::GPUResourceState::UnorderedAccess, d3d12Texture->currentState, 2, destMipLevel),
+                    RHI::Renderer::MakeImageBarrier(texture, RHI::GPUResourceState::UnorderedAccess, d3d12Texture->currentState, 3, destMipLevel),
+                    RHI::Renderer::MakeImageBarrier(texture, RHI::GPUResourceState::UnorderedAccess, d3d12Texture->currentState, 4, destMipLevel),
+                    RHI::Renderer::MakeImageBarrier(texture, RHI::GPUResourceState::UnorderedAccess, d3d12Texture->currentState, 5, destMipLevel)
                 };
                 Barrier(commandList, endBarriers, COUNT_OF(endBarriers));
             }
@@ -1116,14 +1118,14 @@ void D3D12Renderer::GenerateMipmaps(RHI::CommandList *commandList, const RHI::Te
                 SetTexture(commandList, 0, false, texture, mipLevel);
 
                 RHI::GPUBarrier startBarriers[] = {
-                    RHI::Renderer::MakeImageBarrier(texture, d3d12Texture->initialState, RHI::GPUResourceState::UnorderedAccess, 0, destMipLevel)
+                    RHI::Renderer::MakeImageBarrier(texture, d3d12Texture->currentState, RHI::GPUResourceState::UnorderedAccess, 0, destMipLevel)
                 };
                 Barrier(commandList, startBarriers, COUNT_OF(startBarriers));
 
                 Dispatch(commandList, threadGroupCountX, threadGroupCountY, 1);
 
                 RHI::GPUBarrier endBarriers[] = {
-                    RHI::Renderer::MakeImageBarrier(texture, RHI::GPUResourceState::UnorderedAccess, d3d12Texture->initialState, 0, destMipLevel)
+                    RHI::Renderer::MakeImageBarrier(texture, RHI::GPUResourceState::UnorderedAccess, d3d12Texture->currentState, 0, destMipLevel)
                 };
                 Barrier(commandList, endBarriers, COUNT_OF(endBarriers));
             }
@@ -1157,14 +1159,14 @@ void D3D12Renderer::GenerateMipmaps(RHI::CommandList *commandList, const RHI::Te
             SetTexture(commandList, 0, false, texture, mipLevel);
 
             RHI::GPUBarrier startBarriers[] = {
-                RHI::Renderer::MakeImageBarrier(texture, d3d12Texture->initialState, RHI::GPUResourceState::UnorderedAccess, 0, destMipLevel)
+                RHI::Renderer::MakeImageBarrier(texture, d3d12Texture->currentState, RHI::GPUResourceState::UnorderedAccess, 0, destMipLevel)
             };
             Barrier(commandList, startBarriers, COUNT_OF(startBarriers));
 
             Dispatch(commandList, threadGroupCountX, threadGroupCountY, threadGroupCountZ);
 
             RHI::GPUBarrier endBarriers[] = {
-                RHI::Renderer::MakeImageBarrier(texture, RHI::GPUResourceState::UnorderedAccess, d3d12Texture->initialState, 0, destMipLevel)
+                RHI::Renderer::MakeImageBarrier(texture, RHI::GPUResourceState::UnorderedAccess, d3d12Texture->currentState, 0, destMipLevel)
             };
             Barrier(commandList, endBarriers, COUNT_OF(endBarriers));
         }

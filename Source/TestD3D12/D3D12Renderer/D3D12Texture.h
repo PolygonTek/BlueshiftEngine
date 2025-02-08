@@ -54,7 +54,7 @@ private:
     bool                            srcSRGB = false;
     D3D12_RESOURCE_DESC             textureDesc;
     D3D12_CLEAR_VALUE               clearValue;
-    RHI::GPUResourceState           initialState = RHI::GPUResourceState::Undefined;
+    RHI::GPUResourceState           currentState = RHI::GPUResourceState::Undefined;
     D3D12SRVDescriptor              srvDescriptor;
     D3D12UAVDescriptor              uavDescriptor;
     D3D12RTVDescriptor              rtvDescriptor;
