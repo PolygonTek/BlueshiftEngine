@@ -55,6 +55,9 @@ public:
     virtual RHI::IndexBuffer *          AllocIndex(uint32_t indexSize, uint32_t count, const void *data = nullptr) override;
     virtual RHI::Buffer *               AllocBuffer(BE1::Image::Format format, uint32_t structureByteStride, uint32_t count, const void *data = nullptr) override;
 
+    virtual bool                        AppendVertex(RHI::VertexBuffer *vertexBuffer, uint32_t vertexSize, uint32_t count, const void *data = nullptr) override;
+    virtual bool                        AppendIndex(RHI::IndexBuffer *indexBuffer, uint32_t indexSize, uint32_t count, const void *data = nullptr) override;
+
     virtual RHI::CommandList *          AllocGraphicsCommandList(RHI::CommandListType type = RHI::CommandListType::Primary) override;
     virtual RHI::CommandList *          AllocComputeCommandList() override;
 
@@ -72,6 +75,7 @@ private:
         D3D12Buffer *                   buffer = nullptr;
         void *                          mappedBase = nullptr;
         UINT                            usedBytes = 0;
+        int                             blockIndex = -1;
     };
 
     DynamicBlock *                      FindFreeDynamicBlock(uint32_t size, uint32_t alignSize, uint32_t *outAlignedOffset) const;

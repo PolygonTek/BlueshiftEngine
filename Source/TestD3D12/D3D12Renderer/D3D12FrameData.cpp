@@ -67,10 +67,10 @@ void D3D12FrameThreadData::Init() {
     resRootDescriptorPool = new D3D12RootDescriptorPool(D3D12Renderer::GetRenderer()->device, D3D12RootDescriptorPool::Type::CBV_SRV_UAV, 16384);
     samRootDescriptorPool = new D3D12RootDescriptorPool(D3D12Renderer::GetRenderer()->device, D3D12RootDescriptorPool::Type::Sampler, 64);
 
-    // 미리 다이나믹 버퍼 블럭을 1개 생성한다.
-    DynamicBlock *dynamicBlock = new DynamicBlock(DynamicBufferBlockSize);
     dynamicBlocks.SetGranularity(16);
-    dynamicBlocks.Append(dynamicBlock);
+    // 미리 다이나믹 버퍼 블럭을 미리 1개 생성한다.
+    DynamicBlock *dynamicBlock = new DynamicBlock(DynamicBufferBlockSize);
+    dynamicBlock->blockIndex = dynamicBlocks.Append(dynamicBlock);
 
     // 다이나믹 버퍼에서 사용할 (CBV, SRV) 디스크립터 풀을 생성한다.
     dynamicDescriptorPool = new D3D12DescriptorPool(D3D12Renderer::GetRenderer()->device, D3D12DescriptorPool::Type::CBV_SRV_UAV, 8192, false);
@@ -166,7 +166,7 @@ RHI::ConstantBuffer *D3D12FrameThreadData::AllocConstant(uint32_t size, const vo
     DynamicBlock *currentBlock = FindFreeDynamicBlock(alignedSize, D3D12_CONSTANT_BUFFER_DATA_PLACEMENT_ALIGNMENT, &offset);
     if (!currentBlock) {
         currentBlock = new DynamicBlock(BE1::Max(alignedSize, DynamicBufferBlockSize));
-        dynamicBlocks.Append(currentBlock);
+        currentBlock->blockIndex = dynamicBlocks.Append(currentBlock);
 
         offset = 0;
     }
@@ -180,7 +180,7 @@ RHI::ConstantBuffer *D3D12FrameThreadData::AllocConstant(uint32_t size, const vo
     dynamicDescriptorHandles.Append(descriptorHandle);
 
     D3D12ConstantBuffer dynamicConstantBuffer;
-    dynamicConstantBuffer.writePtr = (byte *)currentBlock->mappedBase + offset;
+    dynamicConstantBuffer.writePtr = reinterpret_cast<byte *>(currentBlock->mappedBase) + offset;
     dynamicConstantBuffer.descriptorHandle = descriptorHandle;
     dynamicConstantBuffers.Append(dynamicConstantBuffer);
 
@@ -200,14 +200,14 @@ RHI::VertexBuffer *D3D12FrameThreadData::AllocVertex(uint32_t vertexSize, uint32
     DynamicBlock *currentBlock = FindFreeDynamicBlock(size, vertexSize, &alignedOffset);
     if (!currentBlock) {
         currentBlock = new DynamicBlock(BE1::Max(size, DynamicBufferBlockSize));
-        dynamicBlocks.Append(currentBlock);
+        currentBlock->blockIndex = dynamicBlocks.Append(currentBlock);
 
         alignedOffset = 0;
     }
 
     // 버퍼 리소스를 쪼개서 VBV 를 만들어 사용한다.
     D3D12VertexBuffer dynamicVertexBuffer;
-    dynamicVertexBuffer.writePtr = (byte *)currentBlock->mappedBase + alignedOffset;
+    dynamicVertexBuffer.writePtr = reinterpret_cast<byte *>(currentBlock->mappedBase) + alignedOffset;
     dynamicVertexBuffer.vbv.BufferLocation = currentBlock->buffer->GetResource()->GetGPUVirtualAddress() + alignedOffset;
     dynamicVertexBuffer.vbv.SizeInBytes = size;
     dynamicVertexBuffer.vbv.StrideInBytes = vertexSize;
@@ -229,14 +229,14 @@ RHI::IndexBuffer *D3D12FrameThreadData::AllocIndex(uint32_t indexSize, uint32_t 
     DynamicBlock *currentBlock = FindFreeDynamicBlock(size, indexSize, &offset);
     if (!currentBlock) {
         currentBlock = new DynamicBlock(BE1::Max(size, DynamicBufferBlockSize));
-        dynamicBlocks.Append(currentBlock);
+        currentBlock->blockIndex = dynamicBlocks.Append(currentBlock);
 
         offset = 0;
     }
 
     // 버퍼 리소스를 쪼개서 IBV 를 만들어 사용한다.
     D3D12IndexBuffer dynamicIndexBuffer;
-    dynamicIndexBuffer.writePtr = (byte *)currentBlock->mappedBase + offset;
+    dynamicIndexBuffer.writePtr = reinterpret_cast<byte *>(currentBlock->mappedBase) + offset;
     dynamicIndexBuffer.ibv.BufferLocation = currentBlock->buffer->GetResource()->GetGPUVirtualAddress() + offset;
     dynamicIndexBuffer.ibv.SizeInBytes = size;
     dynamicIndexBuffer.ibv.Format = (indexSize == sizeof(uint16_t) ? DXGI_FORMAT_R16_UINT : DXGI_FORMAT_R32_UINT);
@@ -267,7 +267,7 @@ RHI::Buffer *D3D12FrameThreadData::AllocBuffer(BE1::Image::Format format, uint32
     DynamicBlock *currentBlock = FindFreeDynamicBlock(size, stride, &offset);
     if (!currentBlock) {
         currentBlock = new DynamicBlock(BE1::Max(size, DynamicBufferBlockSize));
-        dynamicBlocks.Append(currentBlock);
+        currentBlock->blockIndex = dynamicBlocks.Append(currentBlock);
 
         offset = 0;
     }
@@ -302,7 +302,7 @@ RHI::Buffer *D3D12FrameThreadData::AllocBuffer(BE1::Image::Format format, uint32
     dynamicDescriptorHandles.Append(descriptorHandle);
 
     D3D12Buffer dynamicBuffer;
-    dynamicBuffer.writePtr = (byte *)currentBlock->mappedBase + offset;
+    dynamicBuffer.writePtr = reinterpret_cast<byte *>(currentBlock->mappedBase) + offset;
     dynamicBuffer.srvDescriptor = srvDescriptor;
     dynamicBuffer.size = size;
     dynamicBuffer.structureByteStride = structureByteStride;
@@ -316,6 +316,66 @@ RHI::Buffer *D3D12FrameThreadData::AllocBuffer(BE1::Image::Format format, uint32
     }
 
     return &dynamicBuffers.Last();
+}
+
+bool D3D12FrameThreadData::AppendVertex(RHI::VertexBuffer *vertexBuffer, uint32_t vertexSize, uint32_t count, const void *data) {
+    D3D12VertexBuffer *d3d12VertexBuffer = static_cast<D3D12VertexBuffer *>(vertexBuffer);
+    if (d3d12VertexBuffer->dynamicBlockIndex == -1) {
+        return false;
+    }
+
+    DynamicBlock *block = dynamicBlocks[d3d12VertexBuffer->dynamicBlockIndex];
+    if (!block) {
+        return false;
+    }
+
+    uint32_t alignedOffset = BE1::AlignUp(block->usedBytes, vertexSize);
+    uint32_t size = vertexSize * count;
+
+    // 버퍼의 전체 크기와 비교하여, 추가 데이터를 수용할 수 있는지 검사
+    if (alignedOffset + size > block->buffer->GetSize()) {
+        return false;
+    }
+
+    d3d12VertexBuffer->vbv.SizeInBytes += size;
+
+    block->usedBytes = alignedOffset + size;
+
+    byte *destPtr = reinterpret_cast<byte *>(block->mappedBase) + alignedOffset;
+    if (destPtr) {
+        BE1::simdProcessor->MemcpyStream(destPtr, data, size);
+    }
+    return true;
+}
+
+bool D3D12FrameThreadData::AppendIndex(RHI::IndexBuffer *indexBuffer, uint32_t indexSize, uint32_t count, const void *data) {
+    D3D12IndexBuffer *d3d12IndexBuffer = static_cast<D3D12IndexBuffer *>(indexBuffer);
+    if (d3d12IndexBuffer->dynamicBlockIndex == -1) {
+        return false;
+    }
+
+    DynamicBlock *block = dynamicBlocks[d3d12IndexBuffer->dynamicBlockIndex];
+    if (!block) {
+        return false;
+    }
+
+    uint32_t alignedOffset = BE1::AlignUp(block->usedBytes, indexSize);
+    uint32_t size = indexSize * count;
+
+    // 버퍼의 전체 크기와 비교하여, 추가 데이터를 수용할 수 있는지 검사
+    if (alignedOffset + size > block->buffer->GetSize()) {
+        return false;
+    }
+
+    d3d12IndexBuffer->ibv.SizeInBytes += size;
+
+    block->usedBytes = alignedOffset + size;
+
+    byte *destPtr = reinterpret_cast<byte *>(block->mappedBase) + alignedOffset;
+    if (destPtr) {
+        BE1::simdProcessor->MemcpyStream(destPtr, data, size);
+    }
+    return true;
 }
 
 RHI::CommandList *D3D12FrameThreadData::BeginCommandList(RHI::CommandQueueType queueType) {

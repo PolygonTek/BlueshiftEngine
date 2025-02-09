@@ -37,4 +37,5 @@ public:
 private:
     D3D12Buffer *                   buffer = nullptr;
     D3D12_CPU_DESCRIPTOR_HANDLE     descriptorHandle = {};
+    int                             dynamicBlockIndex = -1;
 };

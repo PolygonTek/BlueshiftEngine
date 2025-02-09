@@ -37,4 +37,5 @@ public:
 private:
     D3D12Buffer *                   buffer = nullptr;
     D3D12_VERTEX_BUFFER_VIEW        vbv = {};
+    int                             dynamicBlockIndex = -1;
 };

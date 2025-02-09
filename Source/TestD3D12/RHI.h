@@ -738,6 +738,9 @@ namespace RHI {
         Buffer *                        AllocRawBuffer(uint32_t count, const void *data = nullptr) { return AllocBuffer(BE1::Image::Format::Unknown, 0, count, data); }
         Buffer *                        AllocStructuredBuffer(uint32_t stride, uint32_t count, const void *data = nullptr) { return AllocBuffer(BE1::Image::Format::Unknown, stride, count, data); }
 
+        virtual bool                    AppendVertex(RHI::VertexBuffer *vertexBuffer, uint32_t vertexSize, uint32_t count, const void *data = nullptr) = 0;
+        virtual bool                    AppendIndex(RHI::IndexBuffer *indexBuffer, uint32_t indexSize, uint32_t count, const void *data = nullptr) = 0;
+
         virtual CommandList *           AllocGraphicsCommandList(RHI::CommandListType type = RHI::CommandListType::Primary) = 0;
         virtual CommandList *           AllocComputeCommandList() = 0;
 

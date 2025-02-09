@@ -72,6 +72,7 @@ private:
     D3D12UAVDescriptor              uavDescriptor;
     BE1::Array<D3D12SRVDescriptor>  subresourceSrvDescriptors = (16);
     BE1::Array<D3D12UAVDescriptor>  subresourceUavDescriptors = (16);
+    int                             dynamicBlockIndex = -1;
 };
 
 BE_INLINE ID3D12Resource *D3D12Buffer::GetResource() const {
