@@ -32,7 +32,6 @@ RHI::VertexBuffer* D3D12Renderer::CreateVertexBuffer(RHI::BufferUsage usage, uin
     }
 
     D3D12VertexBuffer* vertexBuffer = new D3D12VertexBuffer;
-    vertexBuffer->bufferUsage = usage;
     vertexBuffer->buffer = buffer;
     vertexBuffer->vbv.BufferLocation = buffer->GetResource()->GetGPUVirtualAddress();
     vertexBuffer->vbv.StrideInBytes = vertexSize;

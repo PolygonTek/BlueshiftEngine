@@ -61,7 +61,6 @@ RHI::ConstantBuffer* D3D12Renderer::CreateConstantBuffer(RHI::BufferUsage usage,
     device->CreateConstantBufferView(&cbvDesc, descriptorHandle);
 
     D3D12ConstantBuffer* constantBuffer = new D3D12ConstantBuffer;
-    constantBuffer->bufferUsage = usage;
     constantBuffer->buffer = buffer;
     constantBuffer->descriptorHandle = descriptorHandle;
 

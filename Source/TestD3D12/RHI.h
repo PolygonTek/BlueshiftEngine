@@ -407,26 +407,22 @@ namespace RHI {
         virtual bool                    IsValidSubresource(RHI::SubresourceType type, int subresourceIndex) const = 0;
 
         void *                          writePtr = nullptr;
-        BufferUsage                     bufferUsage;
         ResourceFlag                    flags = ResourceFlag::None;
     };
 
     class VertexBuffer : public GPUResource {
     public:
         void *                          writePtr = nullptr;
-        BufferUsage                     bufferUsage;
     };
 
     class IndexBuffer : public GPUResource {
     public:
         void *                          writePtr = nullptr;
-        BufferUsage                     bufferUsage;
     };
 
     class ConstantBuffer : public GPUResource {
     public:
         void *                          writePtr = nullptr;
-        BufferUsage                     bufferUsage;
     };
 
     class Texture : public GPUResource {
@@ -734,13 +730,13 @@ namespace RHI {
 
         virtual void                    Reset() = 0;
 
-        virtual ConstantBuffer *        AllocConstant(uint32_t size) = 0;
-        virtual VertexBuffer *          AllocVertex(uint32_t vertexSize, uint32_t count) = 0;
-        virtual IndexBuffer *           AllocIndex(uint32_t indexSize, uint32_t count) = 0;
-        virtual Buffer *                AllocBuffer(BE1::Image::Format format, uint32_t stride, uint32_t count) = 0;
-        Buffer *                        AllocTypedBuffer(BE1::Image::Format format, uint32_t count) { return AllocBuffer(format, 0, count); }
-        Buffer *                        AllocRawBuffer(uint32_t count) { return AllocBuffer(BE1::Image::Format::Unknown, 0, count); }
-        Buffer *                        AllocStructuredBuffer(uint32_t stride, uint32_t count) { return AllocBuffer(BE1::Image::Format::Unknown, stride, count); }
+        virtual ConstantBuffer *        AllocConstant(uint32_t size, const void *data = nullptr) = 0;
+        virtual VertexBuffer *          AllocVertex(uint32_t vertexSize, uint32_t count, const void *data = nullptr) = 0;
+        virtual IndexBuffer *           AllocIndex(uint32_t indexSize, uint32_t count, const void *data = nullptr) = 0;
+        virtual Buffer *                AllocBuffer(BE1::Image::Format format, uint32_t stride, uint32_t count, const void *data = nullptr) = 0;
+        Buffer *                        AllocTypedBuffer(BE1::Image::Format format, uint32_t count, const void *data = nullptr) { return AllocBuffer(format, 0, count, data); }
+        Buffer *                        AllocRawBuffer(uint32_t count, const void *data = nullptr) { return AllocBuffer(BE1::Image::Format::Unknown, 0, count, data); }
+        Buffer *                        AllocStructuredBuffer(uint32_t stride, uint32_t count, const void *data = nullptr) { return AllocBuffer(BE1::Image::Format::Unknown, stride, count, data); }
 
         virtual CommandList *           AllocGraphicsCommandList(RHI::CommandListType type = RHI::CommandListType::Primary) = 0;
         virtual CommandList *           AllocComputeCommandList() = 0;
@@ -877,7 +873,7 @@ namespace RHI {
         virtual void                    ClearUAV(CommandList *commandList, const GPUResource *resource, uint32_t value) = 0;
         virtual void                    CopyBuffer(CommandList *commandList, const Buffer *dstBuffer, uint32_t dstOffset, const Buffer *srcBuffer, uint32_t srcOffset, uint32_t size) = 0;
         virtual void                    CopyTexture(CommandList *commandList, const Texture *dstTexture, uint32_t dstSlice, uint32_t dstMipLevel, uint32_t dstX, uint32_t dstY, uint32_t dstZ, const Texture *srcTexture, uint32_t srcSlice, uint32_t srcMipLevel, uint32_t srcX, uint32_t srcY, uint32_t srcZ, uint32_t width, uint32_t height, uint32_t depth) = 0;
-        virtual void                    GenerateMipmaps(CommandList *commandList, const Texture *texture) = 0;
+        virtual void                    GenerateMipmaps(CommandList *commandList, const Texture *texture, bool preserveCoverage) = 0;
         virtual void                    Barrier(CommandList *commandList, const GPUBarrier *barriers, uint32_t barrierCount) = 0;
         void                            Barrier(CommandList *commandList, const GPUBarrier &barrier) { Barrier(commandList, &barrier, 1); }
         virtual void                    ReadPixels(RHI::CommandList *commandList, const RHI::SwapChain *swapChain, int x, int y, int width, int height, BE1::Image::Format dstFormat, void *outPixels) = 0;

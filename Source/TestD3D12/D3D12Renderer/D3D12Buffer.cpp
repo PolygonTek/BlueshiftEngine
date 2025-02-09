@@ -164,7 +164,6 @@ RHI::Buffer *D3D12Renderer::CreateBuffer(RHI::BufferUsage usage, RHI::ResourceFl
 #endif
 
     D3D12Buffer *buffer = new D3D12Buffer;
-    buffer->bufferUsage = usage;
     buffer->flags = flags;
 
 #ifdef USE_D3D12_MEMALLOC

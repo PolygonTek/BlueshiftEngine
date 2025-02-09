@@ -147,7 +147,7 @@ D3D12FrameThreadData::DynamicBlock *D3D12FrameThreadData::FindFreeDynamicBlock(u
     return nullptr;
 }
 
-RHI::ConstantBuffer *D3D12FrameThreadData::AllocConstant(uint32_t size) {
+RHI::ConstantBuffer *D3D12FrameThreadData::AllocConstant(uint32_t size, const void *data) {
     // 상수 버퍼 뷰의 사이즈는 D3D12_CONSTANT_BUFFER_DATA_PLACEMENT_ALIGNMENT (256) 로 정렬되어야 한다.
     uint32_t alignedSize = BE1::AlignUp(size, D3D12_CONSTANT_BUFFER_DATA_PLACEMENT_ALIGNMENT);
     // 상수 버퍼 뷰의 최대 크기는 64kb 이다.
@@ -186,10 +186,14 @@ RHI::ConstantBuffer *D3D12FrameThreadData::AllocConstant(uint32_t size) {
 
     currentBlock->usedBytes = offset + alignedSize;
 
+    if (data) {
+        BE1::simdProcessor->MemcpyStream(dynamicConstantBuffer.writePtr, data, size);
+    }
+
     return &dynamicConstantBuffers.Last();
 }
 
-RHI::VertexBuffer *D3D12FrameThreadData::AllocVertex(uint32_t vertexSize, uint32_t count) {
+RHI::VertexBuffer *D3D12FrameThreadData::AllocVertex(uint32_t vertexSize, uint32_t count, const void *data) {
     uint32_t size = vertexSize * count;
 
     uint32_t alignedOffset;
@@ -211,10 +215,14 @@ RHI::VertexBuffer *D3D12FrameThreadData::AllocVertex(uint32_t vertexSize, uint32
 
     currentBlock->usedBytes = alignedOffset + size;
 
+    if (data) {
+        BE1::simdProcessor->MemcpyStream(dynamicVertexBuffer.writePtr, data, size);
+    }
+
     return &dynamicVertexBuffers.Last();
 }
 
-RHI::IndexBuffer *D3D12FrameThreadData::AllocIndex(uint32_t indexSize, uint32_t count) {
+RHI::IndexBuffer *D3D12FrameThreadData::AllocIndex(uint32_t indexSize, uint32_t count, const void *data) {
     uint32_t size = indexSize * count;
 
     uint32_t offset;
@@ -236,10 +244,14 @@ RHI::IndexBuffer *D3D12FrameThreadData::AllocIndex(uint32_t indexSize, uint32_t 
 
     currentBlock->usedBytes = offset + size;
 
+    if (data) {
+        BE1::simdProcessor->MemcpyStream(dynamicIndexBuffer.writePtr, data, size);
+    }
+
     return &dynamicIndexBuffers.Last();
 }
 
-RHI::Buffer *D3D12FrameThreadData::AllocBuffer(BE1::Image::Format format, uint32_t structureByteStride, uint32_t count) {
+RHI::Buffer *D3D12FrameThreadData::AllocBuffer(BE1::Image::Format format, uint32_t structureByteStride, uint32_t count, const void *data) {
     // structureByteStride 는 4 의 배수 정렬 & 2048 보다 작아야 한다.
     assert(BE1::IsAligned(structureByteStride, 4) && structureByteStride < 2048);
 
@@ -291,7 +303,6 @@ RHI::Buffer *D3D12FrameThreadData::AllocBuffer(BE1::Image::Format format, uint32
 
     D3D12Buffer dynamicBuffer;
     dynamicBuffer.writePtr = (byte *)currentBlock->mappedBase + offset;
-    dynamicBuffer.bufferUsage = RHI::BufferUsage::Upload;
     dynamicBuffer.srvDescriptor = srvDescriptor;
     dynamicBuffer.size = size;
     dynamicBuffer.structureByteStride = structureByteStride;
@@ -299,6 +310,10 @@ RHI::Buffer *D3D12FrameThreadData::AllocBuffer(BE1::Image::Format format, uint32
     dynamicBuffers.Append(dynamicBuffer);
 
     currentBlock->usedBytes = offset + size;
+
+    if (data) {
+        BE1::simdProcessor->MemcpyStream(dynamicBuffer.writePtr, data, size);
+    }
 
     return &dynamicBuffers.Last();
 }

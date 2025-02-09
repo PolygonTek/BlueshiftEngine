@@ -33,7 +33,6 @@ RHI::IndexBuffer *D3D12Renderer::CreateIndexBuffer(RHI::BufferUsage usage, uint3
     }
 
     D3D12IndexBuffer *indexBuffer = new D3D12IndexBuffer;
-    indexBuffer->bufferUsage = usage;
     indexBuffer->buffer = buffer;
     indexBuffer->ibv.BufferLocation = buffer->GetResource()->GetGPUVirtualAddress();
     indexBuffer->ibv.Format = (indexSize == sizeof(uint16_t) ? DXGI_FORMAT_R16_UINT : DXGI_FORMAT_R32_UINT);

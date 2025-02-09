@@ -147,7 +147,7 @@ void Texture::GenerationMipmaps() {
 
     // 컴퓨트 쉐이더를 이용해서 밉맵 생성
     RHI::CommandList *commandList = RHI::renderer->BeginCommandList(RHI::CommandQueueType::Graphics);
-    RHI::renderer->GenerateMipmaps(commandList, GetRHITexture());
+    RHI::renderer->GenerateMipmaps(commandList, GetRHITexture(), true);
     commandList->CloseAndExecute();
     RHI::renderer->EndCommandList(commandList);
 

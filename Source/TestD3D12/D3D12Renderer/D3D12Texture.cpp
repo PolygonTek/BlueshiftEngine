@@ -1012,7 +1012,7 @@ bool D3D12Renderer::SetTextureSubImageCubeFace(RHI::Texture *texture, RHI::Cubem
     return SetTextureSubImage(texture, mipLevel, to_int(face), x, y, 0, width, height, 1, imageFormat, pixels);
 }
 
-void D3D12Renderer::GenerateMipmaps(RHI::CommandList *commandList, const RHI::Texture *texture) {
+void D3D12Renderer::GenerateMipmaps(RHI::CommandList *commandList, const RHI::Texture *texture, bool preserveCoverage) {
     const D3D12Texture *d3d12Texture = static_cast<const D3D12Texture *>(texture);
     uint32_t numMipmaps = d3d12Texture->textureDesc.MipLevels;
     if (numMipmaps <= 1) {
@@ -1039,10 +1039,12 @@ void D3D12Renderer::GenerateMipmaps(RHI::CommandList *commandList, const RHI::Te
         mipGenParams.flags |= MIPGEN_OPTION_BIT_SRGB;
     }
 
-    //mipGenParams.flags |= MIPGEN_OPTION_BIT_PRESERVE_COVERAGE;
+    if (preserveCoverage) {
+        mipGenParams.flags |= MIPGEN_OPTION_BIT_PRESERVE_COVERAGE;
+    }
 
     if (d3d12Texture->textureDesc.Dimension == D3D12_RESOURCE_DIMENSION_TEXTURE2D) {
-        if (d3d12Texture->textureDesc.DepthOrArraySize > 1) {
+        if (d3d12Texture->textureDesc.DepthOrArraySize == 6) {
             // Cubemap
             SetPSO(commandList, BE1::Image::IsFloatFormat(d3d12Texture->srcFormat) ? genMipmapsCubeFloat4PSO : genMipmapsCubeUNorm4PSO);
 
