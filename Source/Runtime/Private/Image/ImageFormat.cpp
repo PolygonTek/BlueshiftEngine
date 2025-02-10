@@ -815,14 +815,13 @@ static void R8ToRGBA32F(const byte *src, byte *dst, int numPixels) {
 }
 
 static void R8SNormToRGBA32F(const byte *src, byte *dst, int numPixels) {
-    const float invPosNorm = 1.0f / 127.0f;
-    const float invNegNorm = 1.0f / 128.0f;
+    const float invNorm = 1.0f / INT8_MAX;
     const int8_t *srcPtr = reinterpret_cast<const int8_t *>(src);
     const int8_t *srcEnd = srcPtr + numPixels;
     float *dstPtr = reinterpret_cast<float *>(dst);
 
     for (; srcPtr < srcEnd; srcPtr += 1, dstPtr += 4) {
-        dstPtr[0] = srcPtr[0] < 0 ? Max(srcPtr[0] * invNegNorm, -1.0f) : srcPtr[0] * invPosNorm;
+        dstPtr[0] = Max(srcPtr[0] * invNorm, -1.0f);
         dstPtr[1] = 0;
         dstPtr[2] = 0;
         dstPtr[3] = 1.0f;
@@ -870,15 +869,14 @@ static void RG88ToRGBA32F(const byte *src, byte *dst, int numPixels) {
 }
 
 static void RG88SNormToRGBA32F(const byte *src, byte *dst, int numPixels) {
-    const float invPosNorm = 1.0f / 127.0f;
-    const float invNegNorm = 1.0f / 128.0f;
+    const float invNorm = 1.0f / INT8_MAX;
     const int8_t *srcPtr = reinterpret_cast<const int8_t *>(src);
     const int8_t *srcEnd = srcPtr + numPixels * 2;
     float *dstPtr = reinterpret_cast<float *>(dst);
 
     for (; srcPtr < srcEnd; srcPtr += 2, dstPtr += 4) {
-        dstPtr[0] = srcPtr[0] < 0 ? Max(srcPtr[0] * invNegNorm, -1.0f) : srcPtr[0] * invPosNorm;
-        dstPtr[1] = srcPtr[1] < 0 ? Max(srcPtr[1] * invNegNorm, -1.0f) : srcPtr[1] * invPosNorm;
+        dstPtr[0] = Max(srcPtr[0] * invNorm, -1.0f);
+        dstPtr[1] = Max(srcPtr[1] * invNorm, -1.0f);
         dstPtr[2] = 0;
         dstPtr[3] = 1.0f;
     }
@@ -925,16 +923,15 @@ static void RGB888ToRGBA32F(const byte *src, byte *dst, int numPixels) {
 }
 
 static void RGB888SNormToRGBA32F(const byte *src, byte *dst, int numPixels) {
-    const float invPosNorm = 1.0f / 127.0f;
-    const float invNegNorm = 1.0f / 128.0f;
+    const float invNorm = 1.0f / INT8_MAX;
     const int8_t *srcPtr = reinterpret_cast<const int8_t *>(src);
     const int8_t *srcEnd = srcPtr + numPixels * 3;
     float *dstPtr = reinterpret_cast<float *>(dst);
 
     for (; srcPtr < srcEnd; srcPtr += 3, dstPtr += 4) {
-        dstPtr[0] = srcPtr[0] < 0 ? Max(srcPtr[0] * invNegNorm, -1.0f) : srcPtr[0] * invPosNorm;
-        dstPtr[1] = srcPtr[1] < 0 ? Max(srcPtr[1] * invNegNorm, -1.0f) : srcPtr[1] * invPosNorm;
-        dstPtr[2] = srcPtr[2] < 0 ? Max(srcPtr[2] * invNegNorm, -1.0f) : srcPtr[2] * invPosNorm;
+        dstPtr[0] = Max(srcPtr[0] * invNorm, -1.0f);
+        dstPtr[1] = Max(srcPtr[1] * invNorm, -1.0f);
+        dstPtr[2] = Max(srcPtr[2] * invNorm, -1.0f);
         dstPtr[3] = 1.0f;
     }
 }
@@ -1064,17 +1061,16 @@ static void RGBA1010102UIntToRGBA32F(const byte *src, byte *dst, int numPixels) 
 }
 
 static void RGBA8888SNormToRGBA32F(const byte *src, byte *dst, int numPixels) {
-    const float invPosNorm = 1.0f / 127.0f;
-    const float invNegNorm = 1.0f / 128.0f;
+    const float invNorm = 1.0f / INT8_MAX;
     const int8_t *srcPtr = reinterpret_cast<const int8_t *>(src);
     const int8_t *srcEnd = srcPtr + numPixels * 4;
     float *dstPtr = reinterpret_cast<float *>(dst);
 
     for (; srcPtr < srcEnd; srcPtr += 4, dstPtr += 4) {
-        dstPtr[0] = srcPtr[0] < 0 ? Max(srcPtr[0] * invNegNorm, -1.0f) : srcPtr[0] * invPosNorm;
-        dstPtr[1] = srcPtr[1] < 0 ? Max(srcPtr[1] * invNegNorm, -1.0f) : srcPtr[1] * invPosNorm;
-        dstPtr[2] = srcPtr[2] < 0 ? Max(srcPtr[2] * invNegNorm, -1.0f) : srcPtr[2] * invPosNorm;
-        dstPtr[3] = srcPtr[3] < 0 ? Max(srcPtr[3] * invNegNorm, -1.0f) : srcPtr[3] * invPosNorm;
+        dstPtr[0] = Max(srcPtr[0] * invNorm, -1.0f);
+        dstPtr[1] = Max(srcPtr[1] * invNorm, -1.0f);
+        dstPtr[2] = Max(srcPtr[2] * invNorm, -1.0f);
+        dstPtr[3] = Max(srcPtr[3] * invNorm, -1.0f);
     }
 }
 
@@ -1394,14 +1390,13 @@ static void R16ToRGBA32F(const byte *src, byte *dst, int numPixels) {
 }
 
 static void R16SNormToRGBA32F(const byte *src, byte *dst, int numPixels) {
-    const float invPosNorm = 1.0f / INT16_MAX;
-    const float invNegNorm = 1.0f / -INT16_MIN;
+    const float invNorm = 1.0f / INT16_MAX;
     const int16_t *srcPtr = reinterpret_cast<const int16_t *>(src);
     const int16_t *srcEnd = srcPtr + numPixels;
     float *dstPtr = reinterpret_cast<float *>(dst);
 
     for (; srcPtr < srcEnd; srcPtr += 1, dstPtr += 4) {
-        dstPtr[0] = srcPtr[0] < 0 ? Max(srcPtr[0] * invNegNorm, -1.0f) : srcPtr[0] * invPosNorm;
+        dstPtr[0] = Max(srcPtr[0] * invNorm, -1.0f);
         dstPtr[1] = 0;
         dstPtr[2] = 0;
         dstPtr[3] = 1.0f;
@@ -1462,15 +1457,14 @@ static void RG16ToRGBA32F(const byte *src, byte *dst, int numPixels) {
 }
 
 static void RG16SNormToRGBA32F(const byte *src, byte *dst, int numPixels) {
-    const float invPosNorm = 1.0f / INT16_MAX;
-    const float invNegNorm = 1.0f / -INT16_MIN;
+    const float invNorm = 1.0f / INT16_MAX;
     const int16_t *srcPtr = reinterpret_cast<const int16_t *>(src);
     const int16_t *srcEnd = srcPtr + numPixels;
     float *dstPtr = reinterpret_cast<float *>(dst);
 
     for (; srcPtr < srcEnd; srcPtr += 2, dstPtr += 4) {
-        dstPtr[0] = srcPtr[0] < 0 ? Max(srcPtr[0] * invNegNorm, -1.0f) : srcPtr[0] * invPosNorm;
-        dstPtr[1] = srcPtr[1] < 0 ? Max(srcPtr[1] * invNegNorm, -1.0f) : srcPtr[1] * invPosNorm;
+        dstPtr[0] = Max(srcPtr[0] * invNorm, -1.0f);
+        dstPtr[1] = Max(srcPtr[1] * invNorm, -1.0f);
         dstPtr[2] = 0;
         dstPtr[3] = 1.0f;
     }
@@ -1530,16 +1524,15 @@ static void RGB16ToRGBA32F(const byte *src, byte *dst, int numPixels) {
 }
 
 static void RGB16SNormToRGBA32F(const byte *src, byte *dst, int numPixels) {
-    const float invPosNorm = 1.0f / INT16_MAX;
-    const float invNegNorm = 1.0f / -INT16_MIN;
+    const float invNorm = 1.0f / INT16_MAX;
     const int16_t *srcPtr = reinterpret_cast<const int16_t *>(src);
     const int16_t *srcEnd = srcPtr + numPixels;
     float *dstPtr = reinterpret_cast<float *>(dst);
 
     for (; srcPtr < srcEnd; srcPtr += 3, dstPtr += 4) {
-        dstPtr[0] = srcPtr[0] < 0 ? Max(srcPtr[0] * invNegNorm, -1.0f) : srcPtr[0] * invPosNorm;
-        dstPtr[1] = srcPtr[1] < 0 ? Max(srcPtr[1] * invNegNorm, -1.0f) : srcPtr[1] * invPosNorm;
-        dstPtr[2] = srcPtr[2] < 0 ? Max(srcPtr[2] * invNegNorm, -1.0f) : srcPtr[2] * invPosNorm;
+        dstPtr[0] = Max(srcPtr[0] * invNorm, -1.0f);
+        dstPtr[1] = Max(srcPtr[1] * invNorm, -1.0f);
+        dstPtr[2] = Max(srcPtr[2] * invNorm, -1.0f);
         dstPtr[3] = 1.0f;
     }
 }
@@ -1598,17 +1591,16 @@ static void RGBA16ToRGBA32F(const byte *src, byte *dst, int numPixels) {
 }
 
 static void RGBA16SNormToRGBA32F(const byte *src, byte *dst, int numPixels) {
-    const float invPosNorm = 1.0f / INT16_MAX;
-    const float invNegNorm = 1.0f / -INT16_MIN;
+    const float invNorm = 1.0f / INT16_MAX;
     const int16_t *srcPtr = reinterpret_cast<const int16_t *>(src);
     const int16_t *srcEnd = srcPtr + numPixels;
     float *dstPtr = reinterpret_cast<float *>(dst);
 
     for (; srcPtr < srcEnd; srcPtr += 4, dstPtr += 4) {
-        dstPtr[0] = srcPtr[0] < 0 ? Max(srcPtr[0] * invNegNorm, -1.0f) : srcPtr[0] * invPosNorm;
-        dstPtr[1] = srcPtr[1] < 0 ? Max(srcPtr[1] * invNegNorm, -1.0f) : srcPtr[1] * invPosNorm;
-        dstPtr[2] = srcPtr[2] < 0 ? Max(srcPtr[2] * invNegNorm, -1.0f) : srcPtr[2] * invPosNorm;
-        dstPtr[3] = srcPtr[3] < 0 ? Max(srcPtr[3] * invNegNorm, -1.0f) : srcPtr[3] * invPosNorm;
+        dstPtr[0] = Max(srcPtr[0] * invNorm, -1.0f);
+        dstPtr[1] = Max(srcPtr[1] * invNorm, -1.0f);
+        dstPtr[2] = Max(srcPtr[2] * invNorm, -1.0f);
+        dstPtr[3] = Max(srcPtr[3] * invNorm, -1.0f);
     }
 }
 
