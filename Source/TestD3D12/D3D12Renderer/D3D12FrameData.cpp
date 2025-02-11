@@ -4,7 +4,7 @@
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 // 
-// http ://www.apache.org/licenses/LICENSE-2.0
+// http://www.apache.org/licenses/LICENSE-2.0
 // 
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
@@ -15,8 +15,6 @@
 #include "Precompiled.h"
 #include "D3D12Renderer.h"
 #include "D3D12FrameData.h"
-#include "D3D12CommandList.h"
-#include "D3D12CommandListPool.h"
 #include "D3D12DescriptorPool.h"
 #include "D3D12RootDescriptorPool.h"
 
@@ -38,7 +36,6 @@ D3D12FrameThreadData::DynamicBlock::DynamicBlock(uint64_t size) {
 }
 
 D3D12FrameThreadData::DynamicBlock::~DynamicBlock() {
-    assert(buffer);
     RHI::renderer->DestroyBuffer(buffer);
 }
 
@@ -63,8 +60,12 @@ void D3D12FrameThreadData::Init() {
     // 컴퓨트 커맨드 리스트 풀을 생성한다.
     computeCommandListPool = new D3D12CommandListPool(this, D3D12_COMMAND_LIST_TYPE_COMPUTE, 8);
 
-    // 쉐이더에서 사용할 디스크립터 힙을 생성한다.
-    resRootDescriptorPool = new D3D12RootDescriptorPool(D3D12Renderer::GetRenderer()->device, D3D12RootDescriptorPool::Type::CBV_SRV_UAV, 16384);
+    // Shader-visible CBV/SRV/UAV 디스크립터 힙을 생성한다.
+    // 공식 문서에 따르면, CBV/SRV/UAV 의 디스크립터 개수는 HW Tier 2+ 에서 100 만개로 되어있다. 32 스레드 기준 스레드 당 약 31250 개가 된다.
+    // https://learn.microsoft.com/en-us/windows/win32/direct3d12/hardware-support
+    resRootDescriptorPool = new D3D12RootDescriptorPool(D3D12Renderer::GetRenderer()->device, D3D12RootDescriptorPool::Type::CBV_SRV_UAV, 30000);
+    // Shader-visible sampler 디스크립터 힙을 생성한다.
+    // 공식 문서에 따르면, Sampler 의 디스크립터 개수는 HW Tier 2+ 에서 2048 개로 되어있다. 32 스레드 기중 스레드 당 약 64 개가 된다.
     samRootDescriptorPool = new D3D12RootDescriptorPool(D3D12Renderer::GetRenderer()->device, D3D12RootDescriptorPool::Type::Sampler, 64);
 
     dynamicBlocks.SetGranularity(16);
@@ -208,9 +209,11 @@ RHI::VertexBuffer *D3D12FrameThreadData::AllocVertex(uint32_t vertexSize, uint32
     // 버퍼 리소스를 쪼개서 VBV 를 만들어 사용한다.
     D3D12VertexBuffer dynamicVertexBuffer;
     dynamicVertexBuffer.writePtr = reinterpret_cast<byte *>(currentBlock->mappedBase) + alignedOffset;
+    dynamicVertexBuffer.buffer = currentBlock->buffer;
     dynamicVertexBuffer.vbv.BufferLocation = currentBlock->buffer->GetResource()->GetGPUVirtualAddress() + alignedOffset;
     dynamicVertexBuffer.vbv.SizeInBytes = size;
     dynamicVertexBuffer.vbv.StrideInBytes = vertexSize;
+    dynamicVertexBuffer.dynamicBlockIndex = currentBlock->blockIndex;
     dynamicVertexBuffers.Append(dynamicVertexBuffer);
 
     currentBlock->usedBytes = alignedOffset + size;
@@ -237,9 +240,11 @@ RHI::IndexBuffer *D3D12FrameThreadData::AllocIndex(uint32_t indexSize, uint32_t 
     // 버퍼 리소스를 쪼개서 IBV 를 만들어 사용한다.
     D3D12IndexBuffer dynamicIndexBuffer;
     dynamicIndexBuffer.writePtr = reinterpret_cast<byte *>(currentBlock->mappedBase) + offset;
+    dynamicIndexBuffer.buffer = currentBlock->buffer;
     dynamicIndexBuffer.ibv.BufferLocation = currentBlock->buffer->GetResource()->GetGPUVirtualAddress() + offset;
     dynamicIndexBuffer.ibv.SizeInBytes = size;
     dynamicIndexBuffer.ibv.Format = (indexSize == sizeof(uint16_t) ? DXGI_FORMAT_R16_UINT : DXGI_FORMAT_R32_UINT);
+    dynamicIndexBuffer.dynamicBlockIndex = currentBlock->blockIndex;
     dynamicIndexBuffers.Append(dynamicIndexBuffer);
 
     currentBlock->usedBytes = offset + size;
@@ -307,6 +312,7 @@ RHI::Buffer *D3D12FrameThreadData::AllocBuffer(BE1::Image::Format format, uint32
     dynamicBuffer.size = size;
     dynamicBuffer.structureByteStride = structureByteStride;
     dynamicBuffer.format = format;
+    dynamicBuffer.dynamicBlockIndex = currentBlock->blockIndex;
     dynamicBuffers.Append(dynamicBuffer);
 
     currentBlock->usedBytes = offset + size;
@@ -318,15 +324,15 @@ RHI::Buffer *D3D12FrameThreadData::AllocBuffer(BE1::Image::Format format, uint32
     return &dynamicBuffers.Last();
 }
 
-bool D3D12FrameThreadData::AppendVertex(RHI::VertexBuffer *vertexBuffer, uint32_t vertexSize, uint32_t count, const void *data) {
+void *D3D12FrameThreadData::AppendVertex(RHI::VertexBuffer *vertexBuffer, uint32_t vertexSize, uint32_t count, const void *data) {
     D3D12VertexBuffer *d3d12VertexBuffer = static_cast<D3D12VertexBuffer *>(vertexBuffer);
     if (d3d12VertexBuffer->dynamicBlockIndex == -1) {
-        return false;
+        return nullptr;
     }
 
     DynamicBlock *block = dynamicBlocks[d3d12VertexBuffer->dynamicBlockIndex];
     if (!block) {
-        return false;
+        return nullptr;
     }
 
     uint32_t alignedOffset = BE1::AlignUp(block->usedBytes, vertexSize);
@@ -334,7 +340,7 @@ bool D3D12FrameThreadData::AppendVertex(RHI::VertexBuffer *vertexBuffer, uint32_
 
     // 버퍼의 전체 크기와 비교하여, 추가 데이터를 수용할 수 있는지 검사
     if (alignedOffset + size > block->buffer->GetSize()) {
-        return false;
+        return nullptr;
     }
 
     d3d12VertexBuffer->vbv.SizeInBytes += size;
@@ -345,18 +351,18 @@ bool D3D12FrameThreadData::AppendVertex(RHI::VertexBuffer *vertexBuffer, uint32_
     if (destPtr) {
         BE1::simdProcessor->MemcpyStream(destPtr, data, size);
     }
-    return true;
+    return destPtr;
 }
 
-bool D3D12FrameThreadData::AppendIndex(RHI::IndexBuffer *indexBuffer, uint32_t indexSize, uint32_t count, const void *data) {
+void *D3D12FrameThreadData::AppendIndex(RHI::IndexBuffer *indexBuffer, uint32_t indexSize, uint32_t count, const void *data) {
     D3D12IndexBuffer *d3d12IndexBuffer = static_cast<D3D12IndexBuffer *>(indexBuffer);
     if (d3d12IndexBuffer->dynamicBlockIndex == -1) {
-        return false;
+        return nullptr;
     }
 
     DynamicBlock *block = dynamicBlocks[d3d12IndexBuffer->dynamicBlockIndex];
     if (!block) {
-        return false;
+        return nullptr;
     }
 
     uint32_t alignedOffset = BE1::AlignUp(block->usedBytes, indexSize);
@@ -364,7 +370,7 @@ bool D3D12FrameThreadData::AppendIndex(RHI::IndexBuffer *indexBuffer, uint32_t i
 
     // 버퍼의 전체 크기와 비교하여, 추가 데이터를 수용할 수 있는지 검사
     if (alignedOffset + size > block->buffer->GetSize()) {
-        return false;
+        return nullptr;
     }
 
     d3d12IndexBuffer->ibv.SizeInBytes += size;
@@ -375,7 +381,7 @@ bool D3D12FrameThreadData::AppendIndex(RHI::IndexBuffer *indexBuffer, uint32_t i
     if (destPtr) {
         BE1::simdProcessor->MemcpyStream(destPtr, data, size);
     }
-    return true;
+    return destPtr;
 }
 
 RHI::CommandList *D3D12FrameThreadData::BeginCommandList(RHI::CommandQueueType queueType) {

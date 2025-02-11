@@ -4,7 +4,7 @@
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 // 
-// http ://www.apache.org/licenses/LICENSE-2.0
+// http://www.apache.org/licenses/LICENSE-2.0
 // 
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
@@ -181,9 +181,12 @@ VisCamera *RenderFrameData::AllocVisCamera() {
     }
 
     // placement new 생성자 호출
-    new (visCameras + numVisCameras) VisCamera();
+    VisCamera *newVisCamera = &visCameras[numVisCameras];
+    new (newVisCamera) VisCamera();
 
-    return &visCameras[numVisCameras++];
+    newVisCamera->index = numVisCameras++;
+
+    return newVisCamera;
 }
 
 VisObject *RenderFrameData::AllocVisObject() {
@@ -192,9 +195,12 @@ VisObject *RenderFrameData::AllocVisObject() {
     }
 
     // placement new 생성자 호출
-    new (visObjects + numVisObjects) VisObject();
+    VisObject *newVisObject = &visObjects[numVisObjects];
+    new (newVisObject) VisObject();
+    
+    newVisObject->index = numVisObjects++;
 
-    return &visObjects[numVisObjects++];
+    return newVisObject;
 }
 
 void *RenderFrameData::GetCommandBuffer(uint32_t bytes) {

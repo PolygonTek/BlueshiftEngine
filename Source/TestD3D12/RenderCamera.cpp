@@ -40,24 +40,23 @@ static void SetViewMatrix(const BE1::Mat3 &viewAxis, const BE1::Vec3 &viewOrigin
     rowMajor4x4ViewMatrix[15] = 1.0f;
 }
 
-void RenderCamera::Update() {
-    zNear = decl.zNear;
-    zFar = decl.zFar;
+void RenderCamera::Update(const RenderCameraDesc &desc) {
+    this->desc = desc;
 
-    if (decl.orthogonal) {
+    if (desc.orthogonal) {
         // Set bounding volume for orthogonal view.
-        BE1::Vec3 extents((zFar - zNear) * 0.5f, decl.sizeX, decl.sizeY);
-        box.SetCenter(decl.origin + decl.axis[0] * (zNear + extents[0]));
+        BE1::Vec3 extents((desc.zFar - desc.zNear) * 0.5f, desc.sizeX, desc.sizeY);
+        box.SetCenter(desc.origin + desc.axis[0] * (desc.zNear + extents[0]));
         box.SetExtents(extents);
-        box.SetAxis(decl.axis);
+        box.SetAxis(desc.axis);
 
         // Calculate orthogonal projection matrix.
-        projMatrix.SetOrthoRH(-decl.sizeX, decl.sizeX, -decl.sizeY, decl.sizeY, zNear, zFar, false);
+        projMatrix.SetOrthoRH(-desc.sizeX, desc.sizeX, -desc.sizeY, desc.sizeY, desc.zNear, desc.zFar, false);
     } else {
         // Set bounding frustum for perspective view.
-        frustum.SetOrigin(decl.origin);
-        frustum.SetAxis(decl.axis);
-        frustum.SetSize(zNear, zFar, zFar * BE1::Math::Tan(DEG2RAD(decl.fovX) * 0.5f), zFar * BE1::Math::Tan(DEG2RAD(decl.fovY) * 0.5f));
+        frustum.SetOrigin(desc.origin);
+        frustum.SetAxis(desc.axis);
+        frustum.SetSize(desc.zNear, desc.zFar, desc.zFar * BE1::Math::Tan(DEG2RAD(desc.fovX) * 0.5f), desc.zFar * BE1::Math::Tan(DEG2RAD(desc.fovY) * 0.5f));
 
         // Calculate view frustum planes.
         frustum.ToPlanes(frustumPlanes);
@@ -66,11 +65,11 @@ void RenderCamera::Update() {
         frustum.ToPoints(frustumPoints);
 
         // Calculate perspective projection matrix.
-        projMatrix.SetPerspectiveRH(decl.fovY, decl.fovX / decl.fovY, zNear, zFar, false);
+        projMatrix.SetPerspectiveRH(desc.fovY, desc.fovX / desc.fovY, desc.zNear, desc.zFar, false);
     }
 
     // Calculate view matrix.
-    SetViewMatrix(decl.axis, decl.origin, viewMatrix);
+    SetViewMatrix(desc.axis, desc.origin, viewMatrix);
 
     // Calculate view projection matrix.
     viewProjMatrix = projMatrix * viewMatrix;
@@ -94,8 +93,8 @@ void RenderCamera::TransformNDCToPixel(const BE1::Vec3 &normalizedDeviceCoords, 
     float fy = 1.0f - (normalizedDeviceCoords.y + 1.0f) * 0.5f; // Valid range is [0, 1]
     float fz = (normalizedDeviceCoords.z + 1.0f) * 0.5f; // Valid range is [0, 1]
 
-    pixelCoords.x = fx * (decl.renderRect.x + decl.renderRect.w);
-    pixelCoords.y = fy * (decl.renderRect.y + decl.renderRect.h);
+    pixelCoords.x = fx * (desc.renderRect.x + desc.renderRect.w);
+    pixelCoords.y = fy * (desc.renderRect.y + desc.renderRect.h);
     pixelCoords.z = fz; // depth value
 }
 
@@ -110,8 +109,8 @@ bool RenderCamera::TransformWorldToPixel(const BE1::Vec3 &worldPosition, BE1::Ve
 }
 
 void RenderCamera::UntransformPixelToNDC(const BE1::Vec3 &pixelCoords, BE1::Vec3 &normalizedDeviceCoords) const {
-    float fx = pixelCoords.x / (decl.renderRect.x + decl.renderRect.w);
-    float fy = 1.0f - pixelCoords.y / (decl.renderRect.y + decl.renderRect.h);
+    float fx = pixelCoords.x / (desc.renderRect.x + desc.renderRect.w);
+    float fy = 1.0f - pixelCoords.y / (desc.renderRect.y + desc.renderRect.h);
     float fz = pixelCoords.z; // depth value
 
     normalizedDeviceCoords.x = (fx * 2.0f) - 1.0f;
@@ -150,13 +149,13 @@ bool RenderCamera::CalcClipRectFromSphere(const BE1::Sphere &sphere, BE1::Rect &
     float r2 = sphere.radius * sphere.radius;
 
     // in case camera in in sphere.
-    if (decl.origin.DistanceSqr(sphere.center) < r2) {
-        clipRect = decl.renderRect;
+    if (desc.origin.DistanceSqr(sphere.center) < r2) {
+        clipRect = desc.renderRect;
         return true;
     }
 
     // sphere 의 중심좌표(L) 를 카메라 로컬좌표계(X, Y, Z = FORWARD, LEFT, UP) 로 변환.
-    BE1::Vec3 localOrigin = decl.axis.TransposedMulVec(sphere.center - decl.origin);
+    BE1::Vec3 localOrigin = desc.axis.TransposedMulVec(sphere.center - desc.origin);
 
     float x2 = localOrigin.x * localOrigin.x;
     float y2 = localOrigin.y * localOrigin.y;
@@ -173,8 +172,8 @@ bool RenderCamera::CalcClipRectFromSphere(const BE1::Sphere &sphere, BE1::Rect &
     float d = r2 * y2 - (y2 + x2) * (r2 - x2);
 
     if (d <= 0.001f) {
-        xmin = decl.renderRect.x;
-        xmax = decl.renderRect.x + decl.renderRect.w;
+        xmin = desc.renderRect.x;
+        xmax = desc.renderRect.x + desc.renderRect.w;
     } else {
         d = BE1::Math::Sqrt(d);
 
@@ -200,26 +199,26 @@ bool RenderCamera::CalcClipRectFromSphere(const BE1::Sphere &sphere, BE1::Rect &
             return false;
         }
 
-        float e = BE1::Math::Tan(DEG2RAD(decl.fovX * 0.5f));
+        float e = BE1::Math::Tan(DEG2RAD(desc.fovX * 0.5f));
 
         if (pz1 < 0) {
             x = planeNormal1.y / (planeNormal1.x * e);
             BE1::Clamp(x, -1.0f, 1.0f);
-            int vx = decl.renderRect.x + (x + 1.0f) * decl.renderRect.w * 0.5f;
+            int vx = desc.renderRect.x + (x + 1.0f) * desc.renderRect.w * 0.5f;
 
-            xmin = BE1::Max(decl.renderRect.x, vx);
+            xmin = BE1::Max(desc.renderRect.x, vx);
         } else {
-            xmin = decl.renderRect.x;
+            xmin = desc.renderRect.x;
         }
 
         if (pz2 < 0) {
             x = planeNormal2.y / (planeNormal2.x * e);
             BE1::Clamp(x, -1.0f, 1.0f);
-            int vx = decl.renderRect.x + (x + 1.0f) * decl.renderRect.w * 0.5f;
+            int vx = desc.renderRect.x + (x + 1.0f) * desc.renderRect.w * 0.5f;
 
-            xmax = BE1::Min(decl.renderRect.x + decl.renderRect.w, vx);
+            xmax = BE1::Min(desc.renderRect.x + desc.renderRect.w, vx);
         } else {
-            xmax = decl.renderRect.x + decl.renderRect.w;
+            xmax = desc.renderRect.x + desc.renderRect.w;
         }
 
         if (xmax - xmin <= 0) {
@@ -237,8 +236,8 @@ bool RenderCamera::CalcClipRectFromSphere(const BE1::Sphere &sphere, BE1::Rect &
     d = r2 * z2 - (z2 + x2) * (r2 - x2);
 
     if (d <= 0.001f) {
-        ymin = decl.renderRect.y;
-        ymax = decl.renderRect.y + decl.renderRect.h;
+        ymin = desc.renderRect.y;
+        ymax = desc.renderRect.y + desc.renderRect.h;
     } else {
         d = BE1::Math::Sqrt(d);
 
@@ -264,26 +263,26 @@ bool RenderCamera::CalcClipRectFromSphere(const BE1::Sphere &sphere, BE1::Rect &
             return false;
         }
 
-        float e = BE1::Math::Tan(DEG2RAD(decl.fovY * 0.5f));
+        float e = BE1::Math::Tan(DEG2RAD(desc.fovY * 0.5f));
 
         if (pz1 < 0) {
             y = planeNormal1.x / (planeNormal1.z * e);
             BE1::Clamp(y, -1.0f, 1.0f);
-            int vy = decl.renderRect.y + (1.0f - y) * decl.renderRect.h * 0.5f;
+            int vy = desc.renderRect.y + (1.0f - y) * desc.renderRect.h * 0.5f;
 
-            ymin = BE1::Max(decl.renderRect.y, vy);
+            ymin = BE1::Max(desc.renderRect.y, vy);
         } else {
-            ymin = decl.renderRect.y;
+            ymin = desc.renderRect.y;
         }
 
         if (pz2 < 0) {
             y = planeNormal2.x / (planeNormal2.z * e);
             BE1::Clamp(y, -1.0f, 1.0f);
-            int vy = decl.renderRect.y + (1.0f - y) * decl.renderRect.h * 0.5f;
+            int vy = desc.renderRect.y + (1.0f - y) * desc.renderRect.h * 0.5f;
 
-            ymax = BE1::Min(decl.renderRect.y + decl.renderRect.h, vy);
+            ymax = BE1::Min(desc.renderRect.y + desc.renderRect.h, vy);
         } else {
-            ymax = decl.renderRect.y + decl.renderRect.h;
+            ymax = desc.renderRect.y + desc.renderRect.h;
         }
 
         if (ymax - ymin <= 0) {
@@ -306,7 +305,7 @@ bool RenderCamera::CalcClipRectFromAABB(const BE1::AABB &aabb, BE1::Rect &clipRe
 bool RenderCamera::CalcClipRectFromOBB(const BE1::OBB &obb, BE1::Rect &clipRect) const {
     BE1::AABB bounds;
 
-    if (decl.orthogonal) {
+    if (desc.orthogonal) {
         if (!box.ProjectionBounds(obb, bounds)) {
             return false;
         }
@@ -324,10 +323,10 @@ bool RenderCamera::CalcClipRectFromOBB(const BE1::OBB &obb, BE1::Rect &clipRect)
         return false;
     }
 
-    clipRect.x = decl.renderRect.x + (-bounds[1][1] + 1) * decl.renderRect.w * 0.5f;
-    clipRect.y = decl.renderRect.y + (-bounds[1][2] + 1) * decl.renderRect.h * 0.5f;
-    clipRect.w = decl.renderRect.w * 0.5f * (bounds[1][1] - bounds[0][1]);
-    clipRect.h = decl.renderRect.h * 0.5f * (bounds[1][2] - bounds[0][2]);
+    clipRect.x = desc.renderRect.x + (-bounds[1][1] + 1) * desc.renderRect.w * 0.5f;
+    clipRect.y = desc.renderRect.y + (-bounds[1][2] + 1) * desc.renderRect.h * 0.5f;
+    clipRect.w = desc.renderRect.w * 0.5f * (bounds[1][1] - bounds[0][1]);
+    clipRect.h = desc.renderRect.h * 0.5f * (bounds[1][2] - bounds[0][2]);
 
     return true;
 }
@@ -335,7 +334,7 @@ bool RenderCamera::CalcClipRectFromOBB(const BE1::OBB &obb, BE1::Rect &clipRect)
 bool RenderCamera::CalcClipRectFromFrustum(const BE1::Frustum &frustum, BE1::Rect &clipRect) const {
     BE1::AABB bounds;
 
-    if (decl.orthogonal) {
+    if (desc.orthogonal) {
         if (!this->box.ProjectionBounds(frustum, bounds)) {
             return false;
         }
@@ -354,10 +353,10 @@ bool RenderCamera::CalcClipRectFromFrustum(const BE1::Frustum &frustum, BE1::Rec
         return false;
     }
 
-    clipRect.x = decl.renderRect.x + (-bounds[1][1] + 1) * decl.renderRect.w * 0.5f;
-    clipRect.y = decl.renderRect.y + (-bounds[1][2] + 1) * decl.renderRect.h * 0.5f;
-    clipRect.w = decl.renderRect.w * 0.5f * (bounds[1][1] - bounds[0][1]);
-    clipRect.h = decl.renderRect.h * 0.5f * (bounds[1][2] - bounds[0][2]);
+    clipRect.x = desc.renderRect.x + (-bounds[1][1] + 1) * desc.renderRect.w * 0.5f;
+    clipRect.y = desc.renderRect.y + (-bounds[1][2] + 1) * desc.renderRect.h * 0.5f;
+    clipRect.w = desc.renderRect.w * 0.5f * (bounds[1][1] - bounds[0][1]);
+    clipRect.h = desc.renderRect.h * 0.5f * (bounds[1][2] - bounds[0][2]);
 
     return true;
 }
@@ -393,8 +392,8 @@ bool RenderCamera::CalcDepthBoundsFromPoints(int numPoints, const BE1::Vec3 *poi
 
 bool RenderCamera::CalcDepthBoundsFromSphere(const BE1::Sphere &sphere, const BE1::Mat4 &mvp, float *depthMin, float *depthMax) const {
     BE1::Vec3 points[2];
-    points[0] = sphere.center + decl.axis[0] * sphere.radius;
-    points[1] = sphere.center - decl.axis[0] * sphere.radius;
+    points[0] = sphere.center + desc.axis[0] * sphere.radius;
+    points[1] = sphere.center - desc.axis[0] * sphere.radius;
     return CalcDepthBoundsFromPoints(2, points, mvp, depthMin, depthMax);
 }
 

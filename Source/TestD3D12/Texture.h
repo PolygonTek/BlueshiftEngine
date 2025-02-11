@@ -4,7 +4,7 @@
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 // 
-// http ://www.apache.org/licenses/LICENSE-2.0
+// http://www.apache.org/licenses/LICENSE-2.0
 // 
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
@@ -15,7 +15,6 @@
 #pragma once
 
 #include "RHI.h"
-#include "Sampler.h"
 
 class TextureManager;
 
@@ -25,27 +24,17 @@ class Texture {
 public:
     enum class Flag : uint32_t {
         None                    = 0,
-        Permanence              = BIT(0),   ///< 영원히 사용됨 (해제되지 않는다)
-        NoCompression           = BIT(1),   ///< 압축을 사용하지 않는다. (원본 포맷이 압축되어 있다면 소용없다)
-        NoScaleDown             = BIT(2),   ///< 
-        HighQuality             = NoCompression | NoScaleDown,
-        NoMipmaps               = BIT(3),   ///< 밉맵을 사용하지 않는다.
-        AllocateEmptyMipmaps    = BIT(4),
-        NormalMap               = BIT(5),   ///< 노말맵
-        NonePowerOfTwo          = BIT(6),   ///< 2 의 승수 사이즈가 아님
-        UnorderedAccess         = BIT(7),   ///< UAV 로 접근 가능한 텍스쳐
-        Compute                 = BIT(8),   ///< 초기 상태를 컴퓨트 리소스로 생성
-        LoadedFromFile          = BIT(9)    ///< 파일로부터 읽어들인 텍스쳐인지 여부 (내부적으로 사용됨)
-    };
-
-    enum class SamplerParamsType : uint8_t {
-        NearestRepeat,
-        NearestClamp,
-        NearestClampToBorder,
-        LinearRepeat,
-        LinearClamp,
-        LinearClampToBorder,
-        Count
+        Permanent               = BIT(0),   ///< Permanently used (never released)
+        NoCompression           = BIT(1),   ///< Do not use compression (ineffective if the source format is already compressed)
+        NoScaleDown             = BIT(2),   ///< Do not scale down
+        HighQuality             = NoCompression | NoScaleDown, ///< High quality settings (disable compression and scaling down)
+        NoMipmaps               = BIT(3),   ///< Do not use mipmaps
+        AllocateEmptyMipmaps    = BIT(4),   ///< Allocate mipmap levels without initial data
+        NormalMap               = BIT(5),   ///< Normal map
+        NonePowerOfTwo          = BIT(6),   ///< Texture dimensions are not power-of-two
+        UnorderedAccess         = BIT(7),   ///< Texture accessible via UAV
+        Compute                 = BIT(8),   ///< Create as a compute resource in its initial update
+        LoadedFromFile          = BIT(9)    ///< Indicates the texture was loaded from a file (used internally)
     };
 
     struct SamplerParams {
@@ -62,7 +51,12 @@ public:
 
     const char *                GetName() const { return name.c_str(); }
     const char *                GetHashName() const { return hashName.c_str(); }
+
+    const Texture *             AddRefCount() const { refCount++; return this; }
+    int                         GetRefCount() const { return refCount; }
+
     RHI::TextureType            GetType() const { return type; }
+    uint32_t                    GetIndex() const { return index; }
     uint32_t                    GetWidth() const { return texture->GetWidth(); }
     uint32_t                    GetHeight() const { return texture->GetHeight(); }
     uint32_t                    GetDepth() const { return texture->GetDepth(); }
@@ -70,7 +64,6 @@ public:
     uint32_t                    GetMipLevelCount() const { return texture->GetMipLevelCount(); }
     BE1::Image::Format          GetFormat() const { return format; }
     RHI::Texture *              GetRHITexture() const { return texture; }
-    RHI::Sampler *              GetRHISampler() const { return sampler ? sampler->GetRHISampler() : nullptr; }
 
     int                         MemRequired(bool includingMipmaps) const;
 
@@ -85,9 +78,8 @@ public:
     void                        Purge();
 
     void                        Create(RHI::TextureType textureType, const BE1::Image *srcImage, Texture::Flag flags);
-    void                        SetSamplerParameters(const SamplerParams &samplerParams);
-    void                        SetSamplerParameters(SamplerParamsType samplerParamsType);
 
+                                /// Generate mipmaps using compute shader.
     void                        GenerationMipmaps();
 
     bool                        Load(const char *filename, Texture::Flag flags);
@@ -101,17 +93,15 @@ private:
 
     BE1::Str                    hashName;
     BE1::Str                    name;
-    mutable int                 refCount = 0;
+    uint32_t                    index = 0;
+    mutable int32_t             refCount = 0;
     RHI::TextureType            type;
     RHI::Texture *              texture = nullptr;
-    Sampler *                   sampler = nullptr;
-    uint32_t                    srcWidth;       ///< Original width
-    uint32_t                    srcHeight;      ///< Original height
-    uint32_t                    srcDepth;       ///< Original depth
+    uint32_t                    srcWidth;           ///< Original width
+    uint32_t                    srcHeight;          ///< Original height
+    uint32_t                    srcDepth;           ///< Original depth
     BE1::Image::Format          format;
     Texture::Flag               flags;
-
-    static SamplerParams        defaultSamplerParams[to_int(SamplerParamsType::Count)];
 };
 
 BE_INLINE Texture::~Texture() {
@@ -136,9 +126,12 @@ public:
     void                        ReleaseTexture(Texture *texture);
     void                        DestroyTexture(Texture *texture);
 
-    Texture *                   defaultTexture;
-    Texture *                   whiteTexture;
-    Texture *                   flatNormalTexture;
+                                /// Destroy textures that zero reference counted.
+    void                        DestroyUnusedTextures();
+
+    Texture *                   defaultTexture = nullptr;
+    Texture *                   whiteTexture = nullptr;
+    Texture *                   flatNormalTexture = nullptr;
 
 private:
     void                        CreateEngineTextures();

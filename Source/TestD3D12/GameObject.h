@@ -18,6 +18,6 @@
 
 class GameObject {
 public:
-    RenderObject::Decl      renderObjectDecl;            // RenderObject 를 정의
+    RenderObjectDesc        renderObjectDesc;
     int                     renderObjectHandle = -1;
 };

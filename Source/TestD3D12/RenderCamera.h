@@ -16,34 +16,37 @@
 
 class RenderWorld;
 
+enum class RenderCameraClearMethod : uint8_t {
+    NoClear,
+    DepthOnly,
+    Color,
+    Skybox
+};
+
+struct RenderCameraDesc {
+    int                     time = 0;               ///< Time in milliseconds for shader effects and other time dependent rendering issues
+
+    BE1::Rect               renderRect;
+    BE1::Vec3               origin;                 ///< View origin
+    BE1::Mat3               axis;                   ///< View axis [FORWARD, LEFT, UP]
+
+    RenderCameraClearMethod clearMethod = RenderCameraClearMethod::NoClear;  ///< Clearing method before rendering view
+    BE1::Color4             clearColor;             ///< Clearing color is needed if clearing method is set to 'ColorClear'
+
+    float                   fovX;                   ///< Perspective projection FOV in horizontal axis
+    float                   fovY;                   ///< Perspective projection FOV in vertical axis
+    float                   sizeX;                  ///< Orthogonal projection size in horizontal axis
+    float                   sizeY;                  ///< Orthogonal projection size in vertical axis
+    float                   zNear;                  ///< Near distance in z axis
+    float                   zFar;                   ///< Far distance in z axis
+    bool                    orthogonal = false;     ///< True for orthogonal projection or false for perspective projection
+};
+
 class RenderCamera {
     friend class RenderWorld;
 
 public:
-    struct Decl {
-        int                 time = 0;               ///< Time in milliseconds for shader effects and other time dependent rendering issues
-
-        BE1::Rect           renderRect;
-        BE1::Vec3           origin;                 ///< View origin
-        BE1::Mat3           axis;                   ///< View axis [FORWARD, LEFT, UP]
-
-        float               fovX;                   ///< Perspective projection FOV in horizontal axis
-        float               fovY;                   ///< Perspective projection FOV in vertical axis
-        float               sizeX;                  ///< Orthogonal projection size in horizontal axis
-        float               sizeY;                  ///< Orthogonal projection size in vertical axis
-        float               zNear;                  ///< Near distance in z axis
-        float               zFar;                   ///< Far distance in z axis
-        bool                orthogonal = false;     ///< True for orthogonal projection or false for perspective projection
-    };
-
-    void                    Update();
-
-                            /// Returns camera input definition.
-    Decl &                  GetDecl() { return decl; }
-    const Decl &            GetDecl() const { return decl; }
-
-    float                   GetZNear() const { return zNear; }
-    float                   GetZFar() const { return zFar; }
+    const RenderCameraDesc &GetDesc() const { return desc; }
 
     const BE1::OBB          GetBox() const { return box; }
 
@@ -90,18 +93,14 @@ public:
     bool                    CalcDepthBoundsFromOBB(const BE1::OBB &box, const BE1::Mat4 &mvp, float *depthMin, float *depthMax) const;
     bool                    CalcDepthBoundsFromFrustum(const BE1::Frustum &frustum, const BE1::Mat4 &mvp, float *depthMin, float *depthMax) const;
 
+    void                    Update(const RenderCameraDesc &desc);
+
 private:
-    Decl                    decl;
-
-    BE1::OBB                box;
-
+    RenderCameraDesc        desc;
     BE1::Frustum            frustum;
     BE1::Plane              frustumPlanes[6];
     BE1::Vec3               frustumPoints[8];
-
-    float                   zNear;
-    float                   zFar;
-
+    BE1::OBB                box;
     ALIGN_AS32 BE1::Mat4    viewMatrix;
     ALIGN_AS32 BE1::Mat4    projMatrix;
     ALIGN_AS32 BE1::Mat4    viewProjMatrix;

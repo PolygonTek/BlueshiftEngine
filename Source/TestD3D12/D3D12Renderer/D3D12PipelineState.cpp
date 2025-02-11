@@ -888,6 +888,7 @@ void D3D12Renderer::SetPSO(RHI::CommandList *commandList, const RHI::PipelineSta
     d3d12CommandList->SetPipelineState(pipelineState);
 }
 
+// Draw 나 Dispatch 직전에 호출된다.
 void D3D12Renderer::BindRootParameters(D3D12CommandList *commandList) {
     D3D12FrameThreadData *threadData = static_cast<D3D12FrameThreadData *>(commandList->GetFrameThreadData());
     D3D12RootDescriptorPool *resRootDescriptorPool = threadData->resRootDescriptorPool;
@@ -921,7 +922,7 @@ void D3D12Renderer::BindRootParameters(D3D12CommandList *commandList) {
             assert(descriptorTable.NumDescriptorRanges > 0);
 
             // 디스크립터 테이블은 CBV/SRV/UAV 타입과 Sampler 타입이 나누어져 있어야 한다. (타입에 따라 디스크립터 힙의 종류가 다르다)
-            // 디스크립터 테이블의 타입에 따라 루트 디스크립터 풀을 다르게 사용한다.
+            // 루트 디스크립터 풀도 디스크립터 테이블의 타입에 따라 구별하여 사용한다.
             D3D12RootDescriptorPool *rootDescriptorPool = descriptorTable.pDescriptorRanges[0].RangeType == D3D12_DESCRIPTOR_RANGE_TYPE_SAMPLER ? samRootDescriptorPool : resRootDescriptorPool;
 
             int numDescriptors = 0;
@@ -979,7 +980,7 @@ void D3D12Renderer::BindRootParameters(D3D12CommandList *commandList) {
             // 루트 파라미터에 대한 GPU 디스크립터 시작 주소를 나중을 위해 기록한다.
             threadData->tableGpuDescriptorStarts[rootParameterIndex] = gpuRootDescriptorStart;
 
-            // 사용할 디스크립터 테이블 설정
+            // 루트 파라미터에 대한 디스크립터 테이블을 설정
             if (isGraphicsPSO) {
                 commandList->GetGraphicsCommandList()->SetGraphicsRootDescriptorTable(rootParameterIndex, gpuRootDescriptorStart);
             } else {

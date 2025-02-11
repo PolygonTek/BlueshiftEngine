@@ -123,14 +123,7 @@ void D3D12CommandList::Execute() {
 }
 
 void D3D12CommandList::ExecuteSecondary(RHI::CommandList *primaryCommandList, const RHI::FrameThreadData *frameThreadData) {
-    // ExecuteBundle 을 실행하기 전에 Primary CommandList 의 루트 디스크립터 힙을 지정한다.
-    const D3D12FrameThreadData *d3d12FrameThreadData = static_cast<const D3D12FrameThreadData *>(frameThreadData);
-    ID3D12DescriptorHeap *descriptorHeaps[] = {
-        d3d12FrameThreadData->resRootDescriptorPool->GetDescriptorHeap(),
-        d3d12FrameThreadData->samRootDescriptorPool->GetDescriptorHeap()
-    };
     D3D12CommandList *d3d12PrimaryCommandList = static_cast<D3D12CommandList *>(primaryCommandList);
-    d3d12PrimaryCommandList->SetDescriptorHeaps(COUNT_OF(descriptorHeaps), descriptorHeaps);
     d3d12PrimaryCommandList->GetGraphicsCommandList()->ExecuteBundle(GetGraphicsCommandList());
 }
 
@@ -148,14 +141,7 @@ void D3D12CommandList::CloseAndExecuteSecondary(RHI::CommandList *primaryCommand
     HRESULT hr = GetGraphicsCommandList()->Close();
     assert(SUCCEEDED(hr));
 
-    // ExecuteBundle 을 실행하기 전에 Primary CommandList 의 루트 디스크립터 힙을 지정한다.
-    const D3D12FrameThreadData *d3d12FrameThreadData = static_cast<const D3D12FrameThreadData *>(frameThreadData);
-    ID3D12DescriptorHeap *descriptorHeaps[] = {
-        d3d12FrameThreadData->resRootDescriptorPool->GetDescriptorHeap(),
-        d3d12FrameThreadData->samRootDescriptorPool->GetDescriptorHeap()
-    };
     D3D12CommandList *d3d12PrimaryCommandList = static_cast<D3D12CommandList *>(primaryCommandList);
-    d3d12PrimaryCommandList->SetDescriptorHeaps(COUNT_OF(descriptorHeaps), descriptorHeaps);
     d3d12PrimaryCommandList->GetGraphicsCommandList()->ExecuteBundle(GetGraphicsCommandList());
 }
 

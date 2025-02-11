@@ -44,7 +44,7 @@ public:
 
 private:
     Hasher                      hash;
-    mutable int                 refCount = 0;
+    mutable int32_t             refCount = 0;
     RHI::Sampler *              sampler = nullptr;
 };
 

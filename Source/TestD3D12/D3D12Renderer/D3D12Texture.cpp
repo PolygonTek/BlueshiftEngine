@@ -143,6 +143,8 @@ RHI::Texture *D3D12Renderer::CreateTexture(RHI::TextureType textureType, RHI::Re
         // DSV 와 UAV 는 같은 리소스로 사용할 수 없다.
         assert(!(resourceFlags & D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL));
         resourceFlags |= D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS;
+    } else if (!BE1::HasFlag(flags, RHI::ResourceFlag::ShaderResource)) {
+        resourceFlags |= D3D12_RESOURCE_FLAG_DENY_SHADER_RESOURCE;
     }
 
     int maxSrcMipLevels;

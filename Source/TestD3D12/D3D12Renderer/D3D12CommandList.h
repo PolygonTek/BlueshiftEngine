@@ -209,42 +209,44 @@ BE_INLINE void D3D12CommandList::SetVertexBuffers(int startSlot, int numViews, c
             cachedVertexBufferViews[slot].StrideInBytes != vbv[i].StrideInBytes) {
             cachedVertexBufferViews[slot] = vbv[i];
             needsUpdate = true;
-            break;
         }
     }
-    if (!needsUpdate) {
-        return;
+    if (needsUpdate) {
+        GetGraphicsCommandList()->IASetVertexBuffers(startSlot, numViews, vbv);
     }
-#endif
+#else
     GetGraphicsCommandList()->IASetVertexBuffers(startSlot, numViews, vbv);
+#endif
 }
 
 BE_INLINE void D3D12CommandList::SetVertexBuffer(int slot, const RHI::VertexBuffer *vertexBuffer) {
     const D3D12_VERTEX_BUFFER_VIEW &vbv = static_cast<const D3D12VertexBuffer *>(vertexBuffer)->vbv;
 
 #ifdef USE_STATE_CACHE_FOR_COMMAND_LIST
-    if (!(cachedVertexBufferViews[slot].BufferLocation != vbv.BufferLocation ||
+    if (cachedVertexBufferViews[slot].BufferLocation != vbv.BufferLocation ||
         cachedVertexBufferViews[slot].SizeInBytes != vbv.SizeInBytes ||
-        cachedVertexBufferViews[slot].StrideInBytes != vbv.StrideInBytes)) {
+        cachedVertexBufferViews[slot].StrideInBytes != vbv.StrideInBytes) {
         cachedVertexBufferViews[slot] = vbv;
-        return;
+        GetGraphicsCommandList()->IASetVertexBuffers(slot, 1, &vbv);
     }
-#endif
+#else
     GetGraphicsCommandList()->IASetVertexBuffers(slot, 1, &vbv);
+#endif
 }
 
 BE_INLINE void D3D12CommandList::SetIndexBuffer(const RHI::IndexBuffer *indexBuffer) {
-    const D3D12IndexBuffer *d3d12IndexBuffer = static_cast<const D3D12IndexBuffer *>(indexBuffer);
+    const D3D12_INDEX_BUFFER_VIEW &ibv = static_cast<const D3D12IndexBuffer *>(indexBuffer)->ibv;
 
 #ifdef USE_STATE_CACHE_FOR_COMMAND_LIST
-    if (!(cachedIndexBufferView.BufferLocation != d3d12IndexBuffer->ibv.BufferLocation ||
-        cachedIndexBufferView.SizeInBytes != d3d12IndexBuffer->ibv.SizeInBytes ||
-        cachedIndexBufferView.Format != d3d12IndexBuffer->ibv.Format)) {
-        return;
+    if (cachedIndexBufferView.BufferLocation != ibv.BufferLocation ||
+        cachedIndexBufferView.SizeInBytes != ibv.SizeInBytes ||
+        cachedIndexBufferView.Format != ibv.Format) {
+        cachedIndexBufferView = ibv;
+        GetGraphicsCommandList()->IASetIndexBuffer(&ibv);
     }
-    cachedIndexBufferView = d3d12IndexBuffer->ibv;
+#else
+    GetGraphicsCommandList()->IASetIndexBuffer(&ibv);
 #endif
-    GetGraphicsCommandList()->IASetIndexBuffer(&d3d12IndexBuffer->ibv);
 }
 
 BE_INLINE void D3D12CommandList::SetBlendFactor(const BE1::Color4 &rgba) {

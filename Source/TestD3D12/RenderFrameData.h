@@ -17,6 +17,7 @@
 #include "RHI.h"
 
 class RenderContext;
+class Texture;
 class VisCamera;
 class VisObject;
 
@@ -24,6 +25,7 @@ enum class RenderCommandId : uint32_t {
     End,
     BeginContext,
     DrawCamera,
+    DrawPic,
     ScreenShot,
     SwapBuffers
 };
@@ -43,6 +45,20 @@ struct BeginContextRenderCommand {
 struct DrawCameraRenderCommand {
     RenderCommandId                 commandId;
     const VisCamera *               visCamera;
+};
+
+struct DrawPicRenderCommand {
+    RenderCommandId                 commandId;
+    float                           x;
+    float                           y;
+    float                           w;
+    float                           h;
+    float                           s1;
+    float                           t1;
+    float                           s2;
+    float                           t2;
+    const Texture *                 texture;
+    uint32_t                        color;
 };
 
 struct ScreenShotRenderCommand {
@@ -99,8 +115,10 @@ public:
 
     void                            CmdBeginContext(RenderContext *context);
     void                            CmdDrawCamera(const VisCamera *camera);
+    void                            CmdDrawPic(float x, float y, float w, float h, float s1, float t1, float s2, float t2, const Texture *texture, uint32_t color);
     void                            CmdSwapBuffers();
     void                            CmdScreenshot(int x, int y, int width, int height, const char *filename);
+    void                            CmdEnd();
 
                                     // 프레임의 렌더 태스크 스레드 별 데이터 얻기
     RHI::FrameThreadData *          GetThreadData(int threadIndex) { assert(threadIndex >= 0 && threadIndex < numRenderTaskThreads); return threadData[threadIndex]; }
@@ -183,6 +201,25 @@ BE_INLINE void RenderFrameData::CmdDrawCamera(const VisCamera *camera) {
     cmd->visCamera = camera;
 }
 
+BE_INLINE void RenderFrameData::CmdDrawPic(float x, float y, float w, float h, float s1, float t1, float s2, float t2, const Texture *texture, uint32_t color) {
+    DrawPicRenderCommand *cmd = (DrawPicRenderCommand *)GetCommandBuffer(sizeof(DrawPicRenderCommand));
+    if (!cmd) {
+        return;
+    }
+
+    cmd->commandId = RenderCommandId::DrawPic;
+    cmd->x = x;
+    cmd->y = y;
+    cmd->w = w;
+    cmd->h = h;
+    cmd->s1 = s1;
+    cmd->t1 = t1;
+    cmd->s2 = s2;
+    cmd->t2 = t2;
+    cmd->texture = texture;
+    cmd->color = color;
+}
+
 BE_INLINE void RenderFrameData::CmdSwapBuffers() {
     SwapBuffersRenderCommand *cmd = (SwapBuffersRenderCommand *)GetCommandBuffer(sizeof(SwapBuffersRenderCommand));
     if (!cmd) {
@@ -204,4 +241,13 @@ BE_INLINE void RenderFrameData::CmdScreenshot(int x, int y, int width, int heigh
     cmd->width = width;
     cmd->height = height;
     BE1::Str::Copynz(cmd->filename, filename, COUNT_OF(cmd->filename));
+}
+
+BE_INLINE void RenderFrameData::CmdEnd() {
+    EndRenderCommand *cmd = (EndRenderCommand *)GetCommandBuffer(sizeof(EndRenderCommand));
+    if (!cmd) {
+        return;
+    }
+
+    cmd->commandId = RenderCommandId::End;
 }

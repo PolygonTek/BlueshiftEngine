@@ -18,9 +18,11 @@
 #include "D3D12CommandList.h"
 
 void D3D12VertexBuffer::Release() {
-    if (buffer) {
-        RHI::renderer->DestroyBuffer(buffer, true);
-        buffer = nullptr;
+    if (dynamicBlockIndex == -1) {
+        if (buffer) {
+            RHI::renderer->DestroyBuffer(buffer, true);
+            buffer = nullptr;
+        }
     }
 }
 

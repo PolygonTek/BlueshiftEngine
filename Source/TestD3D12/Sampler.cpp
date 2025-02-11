@@ -66,7 +66,7 @@ Sampler *SamplerManager::GetSampler(RHI::TextureFilter filter,
         return sampler;
     }
 
-    RHI::SamplerDesc samplerDesc;
+    RHI::SamplerDesc samplerDesc = {};
     samplerDesc.filter = filter;
     samplerDesc.addressModeU = addressModeU;
     samplerDesc.addressModeV = addressModeV;
@@ -107,11 +107,11 @@ void SamplerManager::DestroySampler(Sampler *sampler) {
     delete sampler;
 }
 
-void SamplerManager::SetMipLODBias(float bias) {
-    if (mipLodBias == bias) {
+void SamplerManager::SetMipLODBias(float mipLodBias) {
+    if (this->mipLodBias == mipLodBias) {
         return;
     }
-    mipLodBias = bias;
+    this->mipLodBias = mipLodBias;
     needUpdateSamplers = true;
 }
 

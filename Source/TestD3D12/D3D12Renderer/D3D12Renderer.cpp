@@ -348,7 +348,7 @@ void D3D12Renderer::Init(const void *mainWindowHandle) {
     }
 
     // CPU 디스크립터 풀 생성
-    resCpuDescriptorPool = new D3D12DescriptorPool(device, D3D12DescriptorPool::Type::CBV_SRV_UAV, 1000000, false);
+    resCpuDescriptorPool = new D3D12DescriptorPool(device, D3D12DescriptorPool::Type::CBV_SRV_UAV, 900000, false);
     rtvCpuDescriptorPool = new D3D12DescriptorPool(device, D3D12DescriptorPool::Type::RTV, 16, false);
     dsvCpuDescriptorPool = new D3D12DescriptorPool(device, D3D12DescriptorPool::Type::DSV, 16, false);
     samCpuDescriptorPool = new D3D12DescriptorPool(device, D3D12DescriptorPool::Type::Sampler, 2048, false);
@@ -1064,7 +1064,7 @@ void D3D12Renderer::BeginRenderPass(RHI::CommandList *commandList, const RHI::Sw
             rtDesc.BeginningAccess.Clear.ClearValue.Color[2] = clearColor[2];
             rtDesc.BeginningAccess.Clear.ClearValue.Color[3] = clearColor[3];
         } else {
-            rtDesc.BeginningAccess.Type = D3D12_RENDER_PASS_BEGINNING_ACCESS_TYPE_DISCARD;
+            rtDesc.BeginningAccess.Type = D3D12_RENDER_PASS_BEGINNING_ACCESS_TYPE_PRESERVE;
         }
         rtDesc.EndingAccess.Type = D3D12_RENDER_PASS_ENDING_ACCESS_TYPE_PRESERVE;
         rtDescPtr = &rtDesc;

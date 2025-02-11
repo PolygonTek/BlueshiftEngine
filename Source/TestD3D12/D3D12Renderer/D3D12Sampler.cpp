@@ -103,13 +103,14 @@ void D3D12Renderer::DestroySampler(RHI::Sampler *sampler, bool immediate) {
 }
 
 void D3D12Renderer::RecreateSampler(RHI::Sampler* sampler, const RHI::SamplerDesc *desc) {
-    D3D12_SAMPLER_DESC samplerDesc;
+    D3D12_SAMPLER_DESC samplerDesc = {};
     samplerDesc.Filter = ToD3D12TextureFilter(desc->filter);
     samplerDesc.AddressU = ToD3D12TextureAddressMode(desc->addressModeU);
     samplerDesc.AddressV = ToD3D12TextureAddressMode(desc->addressModeV);
     samplerDesc.AddressW = ToD3D12TextureAddressMode(desc->addressModeW);
     samplerDesc.MipLODBias = desc->mipLodBias;
     samplerDesc.MaxAnisotropy = desc->maxAnisotropy;
+    samplerDesc.ComparisonFunc = D3D12_COMPARISON_FUNC_NONE;
     ToD3D12TextureBorderColor(desc->borderColor, samplerDesc.BorderColor);
     samplerDesc.MinLOD = desc->minLod;
     samplerDesc.MaxLOD = desc->maxLod;

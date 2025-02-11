@@ -21,7 +21,7 @@ class RenderWorld;
 class RenderCamera;
 class GameObject;
 class TriangleMesh;
-class CubeMesh;
+class Mesh;
 
 class App {
 public:
@@ -49,8 +49,6 @@ private:
     RenderWorld *                   renderWorld = nullptr;
 
     BE1::Array<GameObject *>        gameObjects;
-
-    std::shared_ptr<CubeMesh>       cubeMesh;
 
     int                             elapsedMsec = 0;
 };

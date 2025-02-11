@@ -69,7 +69,7 @@ private:
     struct Binder {
         void                                Init(const D3D12_ROOT_SIGNATURE_DESC1 &desc);
 
-        // 슬롯에 대한 디스크립터 테이블 인덱스
+        // 각 바인딩 리소스의 레지스터 슬롯에 대응되는 디스크립터 테이블 인덱스들
         struct DescriptorTableBinder {
             uint8_t                         cbv[64] = {};
             uint8_t                         srv[64] = {};
@@ -77,10 +77,10 @@ private:
             uint8_t                         samplers[64] = {};
         };
 
-        // 슬롯에 대한 루트 파라미터 인덱스
+        // 각 바인딩 리소스의 레지스터 슬롯에 대응되는 루트 파라미터 인덱스들
         struct RootParameterBinder {
             uint8_t                         cbv[16] = {};
-            uint8_t                         srv[128] = {};
+            uint8_t                         srv[64] = {};
             uint8_t                         uav[8] = {};
             uint8_t                         samplers[16] = {};
             uint8_t                         constants = {};
@@ -97,11 +97,13 @@ private:
     D3D12_PRIMITIVE_TOPOLOGY                primitiveTopology = D3D_PRIMITIVE_TOPOLOGY_UNDEFINED;
 };
 
+// PSO 생성 단계에서 호출된다.
 BE_INLINE void D3D12PipelineState::Binder::Init(const D3D12_ROOT_SIGNATURE_DESC1 &desc) {
-    // 레지스터 인덱스 별 루트 파라미터 인덱스와 디스크립터 테이블 인덱스를 미리 계산한다.
+    // 레지스터 슬롯 별 루트 파라미터 인덱스와 디스크립터 테이블 인덱스를 미리 계산한다.
     for (int rootParameterIndex = 0; rootParameterIndex < desc.NumParameters; ++rootParameterIndex) {
         const D3D12_ROOT_PARAMETER1 *rootParameter = &desc.pParameters[rootParameterIndex];
 
+        // 루트 파라미터가 디스크립터 테이블이다.
         if (rootParameter->ParameterType == D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE) {
             int descriptorOffset = 0;
 
@@ -153,7 +155,7 @@ BE_INLINE void D3D12PipelineState::Binder::Init(const D3D12_ROOT_SIGNATURE_DESC1
             UINT shaderRegister = rootParameter->Descriptor.ShaderRegister;
 
             if (rootParameter->ParameterType == D3D12_ROOT_PARAMETER_TYPE_32BIT_CONSTANTS) {
-                // NOTE: 현재 구현에서는 32bit 상수를 한개의 루트 파라미터만 지원한다.
+                // NOTE: 현재 구현에서는 루트 시그니쳐에서 루트 레벨 파라미터로 1개의 32bit 상수만 지원한다.
                 rootParameterBinder.constants = rootParameterIndex;
             } else if (rootParameter->ParameterType == D3D12_ROOT_PARAMETER_TYPE_CBV) {
                 assert(shaderRegister < COUNT_OF(rootParameterBinder.cbv));

@@ -49,15 +49,15 @@ void RenderContext::Init(Graphics::WindowHandle hwnd, int renderingWidth, int re
     // This is device resolution in pixels.
     this->deviceWidth = displayMetrics.backingWidth;
     this->deviceHeight = displayMetrics.backingHeight;
-    
+
     // This is actual rendering resolution that will be upscaled if it is smaller than device resolution.
     this->renderingWidth = renderingWidth;
     this->renderingHeight = renderingHeight;
-    
+
     this->guiMesh.Clear();
     this->guiMesh.SetCoordFrame(GuiMesh::CoordFrame::CoordFrame2D);
     this->guiMesh.SetClipRect(Rect(0, 0, renderingWidth, renderingHeight));
-    
+
     graphics.SetContextDisplayFunc(contextHandle, displayFunc, displayFuncDataPtr, (flags & Flag::OnDemandDrawing) ? true : false);
 
     InitScreenMapRT();

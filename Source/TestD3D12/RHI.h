@@ -4,7 +4,7 @@
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 // 
-// http ://www.apache.org/licenses/LICENSE-2.0
+// http://www.apache.org/licenses/LICENSE-2.0
 // 
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
@@ -412,11 +412,17 @@ namespace RHI {
 
     class VertexBuffer : public GPUResource {
     public:
+        virtual uint32_t                GetOffset() const = 0;
+        virtual uint32_t                GetSizeInBytes() const = 0;
+
         void *                          writePtr = nullptr;
     };
 
     class IndexBuffer : public GPUResource {
     public:
+        virtual uint32_t                GetOffset() const = 0;
+        virtual uint32_t                GetSizeInBytes() const = 0;
+
         void *                          writePtr = nullptr;
     };
 
@@ -738,8 +744,8 @@ namespace RHI {
         Buffer *                        AllocRawBuffer(uint32_t count, const void *data = nullptr) { return AllocBuffer(BE1::Image::Format::Unknown, 0, count, data); }
         Buffer *                        AllocStructuredBuffer(uint32_t stride, uint32_t count, const void *data = nullptr) { return AllocBuffer(BE1::Image::Format::Unknown, stride, count, data); }
 
-        virtual bool                    AppendVertex(RHI::VertexBuffer *vertexBuffer, uint32_t vertexSize, uint32_t count, const void *data = nullptr) = 0;
-        virtual bool                    AppendIndex(RHI::IndexBuffer *indexBuffer, uint32_t indexSize, uint32_t count, const void *data = nullptr) = 0;
+        virtual void *                  AppendVertex(RHI::VertexBuffer *vertexBuffer, uint32_t vertexSize, uint32_t count, const void *data = nullptr) = 0;
+        virtual void *                  AppendIndex(RHI::IndexBuffer *indexBuffer, uint32_t indexSize, uint32_t count, const void *data = nullptr) = 0;
 
         virtual CommandList *           AllocGraphicsCommandList(RHI::CommandListType type = RHI::CommandListType::Primary) = 0;
         virtual CommandList *           AllocComputeCommandList() = 0;

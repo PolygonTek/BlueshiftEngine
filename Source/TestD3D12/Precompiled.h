@@ -28,7 +28,7 @@
 #define USE_RENDER_FRAME_RESOURCES
 
 // 인스턴싱 사용 여부
-#define USE_RENDEROBJECT_INSTANCING
+#define USE_RENDER_INSTANCED
 
 // 프로파일러 사용 여부 (D3D12 의 경우엔 PIX, Release 모드에서는 무시됨)
 #define USE_PROFILER

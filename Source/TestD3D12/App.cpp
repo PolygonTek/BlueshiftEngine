@@ -4,7 +4,7 @@
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 // 
-// http ://www.apache.org/licenses/LICENSE-2.0
+// http://www.apache.org/licenses/LICENSE-2.0
 // 
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
@@ -20,12 +20,13 @@
 #include "RenderWorld.h"
 #include "RenderCamera.h"
 #include "GameObject.h"
-#include "CubeMesh.h"
+#include "Mesh.h"
+#include "Texture.h"
 
-static constexpr int        CubeDimensionX = 64;
-static constexpr int        CubeDimensionY = 64;
+static constexpr int        CubeDimensionX = 64;//92;
+static constexpr int        CubeDimensionY = 64;//68;
 static constexpr int        CubeCount = CubeDimensionX * CubeDimensionY;
-static constexpr float      CubeSpacing = 2.82842712f;
+static constexpr float      CubeSpacing = 1.5538;
 static constexpr float      CubeStartX = -CubeSpacing * (CubeDimensionX - 1) * 0.5f;
 static constexpr float      CubeStartY = -CubeSpacing * (CubeDimensionY - 1) * 0.5f;
 
@@ -76,22 +77,30 @@ void App::Render() {
     float h = mainRenderContext->GetHeight();
     float aspectRatio = w / h;
 
-    RenderCamera::Decl &cameraInput = renderCamera->GetDecl();
-    cameraInput.orthogonal = false;
-    cameraInput.renderRect.Set(0, 0, w, h);
-    cameraInput.origin.Set(12 + (BE1::Math::Sin(MILLI2SEC(elapsedMsec) * 0.5f) + 1.0f) * 0.5f * 210, 0, 0);
-    cameraInput.axis[0].Set(-1, 0, 0);
-    cameraInput.axis[1].Set(0, -1, 0);
-    cameraInput.axis[2].Set(0, 0, 1);
-    cameraInput.fovY = 45;
-    cameraInput.fovX = cameraInput.fovY * aspectRatio;
-    cameraInput.zNear = BE1::CmToUnit(10.0f);
-    cameraInput.zFar = BE1::MeterToUnit(1000.0f);
-    renderCamera->Update();
+    RenderCameraDesc cameraDesc;
+    cameraDesc.orthogonal = false;
+    cameraDesc.renderRect.Set(0, 0, w, h);
+    cameraDesc.origin.Set(30 + (BE1::Math::Sin(MILLI2SEC(elapsedMsec) * 0.5f) + 1.0f) * 0.5f * 100, 0, 0);
+    cameraDesc.axis[0].Set(-1, 0, 0);
+    cameraDesc.axis[1].Set(0, -1, 0);
+    cameraDesc.axis[2].Set(0, 0, 1);
+    cameraDesc.fovY = 45;
+    cameraDesc.fovX = cameraDesc.fovY * aspectRatio;
+    cameraDesc.zNear = BE1::CmToUnit(10.0f);
+    cameraDesc.zFar = BE1::MeterToUnit(1000.0f);
+    renderCamera->Update(cameraDesc);
 
     mainRenderContext->BeginFrame();
 
-    renderWorld->RenderScene(mainRenderContext, renderCamera);
+    renderWorld->RenderScene(renderCamera);
+
+    renderWorld->SetColor(BE1::Color4::brown);
+    renderWorld->DrawBar(0, 0, 100, 100);
+    renderWorld->SetColor(BE1::Color4::lightSkyBlue);
+    renderWorld->DrawBar(100, 0, 100, 100);
+    renderWorld->SetColor(BE1::Color4::green);
+    renderWorld->DrawBar(200, 0, 100, 100);
+    renderWorld->RenderGUI();
 
     mainRenderContext->EndFrame();
 }
@@ -104,12 +113,10 @@ void App::InitGameObjects() {
 
 void App::ClearGameObjects() {
     for (GameObject *gameObject : gameObjects) {
-        gameObject->renderObjectDecl.mesh.reset();
-
         renderWorld->RemoveRenderObject(gameObject->renderObjectHandle);
-    }
 
-    CubeMesh::DestroyMesh(cubeMesh);
+        meshManager.ReleaseMesh(gameObject->renderObjectDesc.mesh);
+    }
 
     gameObjects.DeleteContents(true);
 }
@@ -125,20 +132,20 @@ void App::TakeScreenshot() {
 }
 
 void App::InitCubes() {
-    cubeMesh = CubeMesh::CreateMesh();
-
     gameObjects.Reserve(CubeCount);
 
     for (int i = 0; i < CubeCount; ++i) {
         GameObject *gameObject = new GameObject;
         gameObjects.Append(gameObject);
 
-        gameObject->renderObjectDecl.aabb = cubeMesh->GetAABB();
-        gameObject->renderObjectDecl.worldMatrix.SetIdentity();
-        gameObject->renderObjectDecl.meshType = MeshType::CubeMesh;
-        gameObject->renderObjectDecl.mesh = cubeMesh;
+        RenderObjectDesc &desc = gameObject->renderObjectDesc;
+        desc.worldMatrix.SetIdentity();
+        desc.mesh = meshManager.GetMesh("_defaultBoxMesh");
+        desc.aabb = desc.mesh->GetAABB();
+        desc.textures.SetCount(1);
+        desc.textures[0] = textureManager.defaultTexture;
 
-        gameObject->renderObjectHandle = renderWorld->AddRenderObject(gameObject->renderObjectDecl);
+        gameObject->renderObjectHandle = renderWorld->AddRenderObject(gameObject->renderObjectDesc);
     }
 }
 
@@ -152,9 +159,9 @@ void App::UpdateCubes() {
             float t = elapsedSeconds + index * 0.1f;
 
             GameObject *gameObject = gameObjects[index];
-            gameObject->renderObjectDecl.worldMatrix.SetTranslationRotation(BE1::Vec3(0, CubeStartX + CubeSpacing * x, CubeStartY + CubeSpacing * y), BE1::Mat3::FromRotationZYX(t * 1.0f, 0, t * 0.25f), false);
+            gameObject->renderObjectDesc.worldMatrix.SetTranslationRotation(BE1::Vec3(0, CubeStartX + CubeSpacing * x, CubeStartY + CubeSpacing * y), BE1::Mat3::FromRotationZYX(t * 1.0f, 0, t * 0.25f), false);
 
-            renderWorld->UpdateRenderObject(gameObject->renderObjectHandle, gameObject->renderObjectDecl);
+            renderWorld->UpdateRenderObject(gameObject->renderObjectHandle, gameObject->renderObjectDesc);
         }
     }
 }

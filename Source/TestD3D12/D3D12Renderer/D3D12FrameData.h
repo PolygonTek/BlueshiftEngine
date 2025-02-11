@@ -4,7 +4,7 @@
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 // 
-// http ://www.apache.org/licenses/LICENSE-2.0
+// http://www.apache.org/licenses/LICENSE-2.0
 // 
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
@@ -55,8 +55,8 @@ public:
     virtual RHI::IndexBuffer *          AllocIndex(uint32_t indexSize, uint32_t count, const void *data = nullptr) override;
     virtual RHI::Buffer *               AllocBuffer(BE1::Image::Format format, uint32_t structureByteStride, uint32_t count, const void *data = nullptr) override;
 
-    virtual bool                        AppendVertex(RHI::VertexBuffer *vertexBuffer, uint32_t vertexSize, uint32_t count, const void *data = nullptr) override;
-    virtual bool                        AppendIndex(RHI::IndexBuffer *indexBuffer, uint32_t indexSize, uint32_t count, const void *data = nullptr) override;
+    virtual void *                      AppendVertex(RHI::VertexBuffer *vertexBuffer, uint32_t vertexSize, uint32_t count, const void *data = nullptr) override;
+    virtual void *                      AppendIndex(RHI::IndexBuffer *indexBuffer, uint32_t indexSize, uint32_t count, const void *data = nullptr) override;
 
     virtual RHI::CommandList *          AllocGraphicsCommandList(RHI::CommandListType type = RHI::CommandListType::Primary) override;
     virtual RHI::CommandList *          AllocComputeCommandList() override;
@@ -94,14 +94,14 @@ private:
     D3D12DescriptorPool *               dynamicDescriptorPool = nullptr;
     BE1::Array<D3D12_CPU_DESCRIPTOR_HANDLE> dynamicDescriptorHandles;
 
-    D3D12RootDescriptorPool *           resRootDescriptorPool = nullptr;
-    D3D12RootDescriptorPool *           samRootDescriptorPool = nullptr;
-    D3D12_CPU_DESCRIPTOR_HANDLE         tableCpuDescriptorHandles[MaxRootParameters][MaxDescriptorsInDescriptorTable] = { CD3DX12_CPU_DESCRIPTOR_HANDLE() };
-    D3D12_GPU_DESCRIPTOR_HANDLE         tableGpuDescriptorStarts[MaxRootParameters] = { CD3DX12_GPU_DESCRIPTOR_HANDLE() };
-    const RHI::GPUResource *            cbvResources[16] = {};
-    const RHI::GPUResource *            srvResources[128] = {};
-    const RHI::GPUResource *            uavResources[8] = {};
-    uint32_t                            rootConstants[64] = {};
+    D3D12RootDescriptorPool *           resRootDescriptorPool = nullptr; // CBV/SRV/UAV 루트 디스크립터 풀
+    D3D12RootDescriptorPool *           samRootDescriptorPool = nullptr; // 샘플러 루트 디스크립터 풀
+    D3D12_CPU_DESCRIPTOR_HANDLE         tableCpuDescriptorHandles[MaxRootParameters][MaxDescriptorsInDescriptorTable] = { CD3DX12_CPU_DESCRIPTOR_HANDLE() }; // 루트 디스크립터 테이블의 각 디스크립터에 대한 CPU 디스크립터 핸들
+    D3D12_GPU_DESCRIPTOR_HANDLE         tableGpuDescriptorStarts[MaxRootParameters] = { CD3DX12_GPU_DESCRIPTOR_HANDLE() }; // 루트 디스크립터 테이블에 대한 GPU 디스크립터 핸들
+    const RHI::GPUResource *            cbvResources[16] = {}; // 루트 레벨 CBV 의 슬롯 별 GPUResource 포인터
+    const RHI::GPUResource *            srvResources[128] = {}; // 루트 레벨 SRV 의 슬롯 별 GPUResource 포인터
+    const RHI::GPUResource *            uavResources[8] = {}; // 루트 레벨 UAV 의 슬롯 별 GPUResource 포인터
+    uint32_t                            rootConstants[64] = {}; // 루트 레벨 상수의 슬롯 별 32 비트 값
 };
 
 BE_INLINE RHI::CommandList *D3D12FrameThreadData::AllocGraphicsCommandList(RHI::CommandListType type) {

@@ -58,11 +58,16 @@ set(SRC_FILES
     RenderCamera.h
     RenderCamera.cpp
     RenderInternal.h
-    VisObject.cpp
+    DrawSurf.h
     Mesh.h
     Mesh.cpp
-    CubeMesh.h
-    CubeMesh.cpp
+    Mesh_CreateMesh.cpp
+    Mesh_SortAndMerge.cpp
+    MeshManager.cpp
+    SubMesh.h
+    SubMesh.cpp
+    GuiMesh.h
+    GuiMesh.cpp
     Sampler.h
     Sampler.cpp
     Texture.h

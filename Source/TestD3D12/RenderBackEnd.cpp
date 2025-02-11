@@ -20,8 +20,21 @@
 
 // 태스크 당 처리할 최대 Draw Call 횟수
 static constexpr uint32_t   MaxDrawCallsPerTask = 512;
+static constexpr uint32_t   MaxInstancedDrawCount = 1024;
+
+// 상수 버퍼는 16 바이트 정렬을 요구한다.
+struct ALIGN_AS16 UnlitConstantData {
+    BE1::Mat4       modelViewProjMatrix;
+};
+
+struct ALIGN_AS16 UnlitInstancedConstantData {
+    BE1::Mat4       viewProjMatrix;
+    BE1::Mat3x4     worldMatrix[MaxInstancedDrawCount];
+};
 
 void RenderBackEnd::Init() {
+    guiMesh.SetCoordFrame(GuiMesh::CoordFrame::CoordFrame2D);
+
 #ifdef USE_RENDER_TASK
     drawGroupId = BE1::Engine::taskManager->CreateGroupId();
 #endif
@@ -40,6 +53,9 @@ void RenderBackEnd::Execute(const void *data) {
         case RenderCommandId::DrawCamera:
             data = ExecuteDrawCamera(data);
             continue;
+        case RenderCommandId::DrawPic:
+            data = ExecuteDrawPic(data);
+            continue;
         case RenderCommandId::ScreenShot:
             data = ExecuteScreenshot(data);
             continue;
@@ -56,7 +72,7 @@ void RenderBackEnd::Execute(const void *data) {
 }
 
 const void *RenderBackEnd::ExecuteBeginContext(const void *data) {
-    PROFILER_CPU_SCOPED_EVENT("RenderBackEnd::ExecuteBeginContext", 0);
+    PROFILER_CPU_SCOPED_EVENT("RenderBackEnd::ExecuteBeginContext", 8);
 
     const BeginContextRenderCommand *cmd = reinterpret_cast<const BeginContextRenderCommand *>(data);
 
@@ -70,27 +86,38 @@ const void *RenderBackEnd::ExecuteBeginContext(const void *data) {
 }
 
 const void *RenderBackEnd::ExecuteDrawCamera(const void *data) {
-    PROFILER_CPU_SCOPED_EVENT("RenderBackEnd::ExecuteDrawCamera", 0);
+    PROFILER_CPU_SCOPED_EVENT("RenderBackEnd::ExecuteDrawCamera", 8);
 
     const DrawCameraRenderCommand *cmd = reinterpret_cast<const DrawCameraRenderCommand *>(data);
 
-    const VisCamera *visCamera = cmd->visCamera;
+    currentVisCamera = cmd->visCamera;
 
     RenderFrameData *currentFrameData = currentContext->GetCurrentFrameData();
     RHI::FrameThreadData *frameThreadData = currentFrameData->GetThreadData(0);
 
     // 커맨드 리스트 풀에서 새로운 커맨드 리스트를 얻어온다.
-    mainCommandList = frameThreadData->AllocGraphicsCommandList();
+    mainCommandList = frameThreadData->BeginCommandList(RHI::CommandQueueType::Graphics);
 
     // CommandAllocator 를 재사용하도록 리셋하고, CommandList 를 CommandAllocator 를 이용하여 초기 상태로 리셋
     mainCommandList->Reset();
 
     // 뷰포트 & ScissorRect 의 초기값 설정
-    RHI::renderer->SetViewport(mainCommandList, visCamera->decl.renderRect);
-    RHI::renderer->SetScissorRect(mainCommandList, visCamera->decl.renderRect);
+    RHI::renderer->SetViewport(mainCommandList, currentVisCamera->renderRect);
+    RHI::renderer->SetScissorRect(mainCommandList, currentVisCamera->renderRect);
+
+    RHI::ClearFlag clearFlags = RHI::ClearFlag::None;
+    BE1::Color4 clearColor = BE1::Color4::black;
+    float clearDepth = 1.0f;
+
+    if (currentVisCamera->clearMethod == RenderCameraClearMethod::Color) {
+        clearFlags |= (RHI::ClearFlag::Color | RHI::ClearFlag::Depth);
+        clearColor = currentVisCamera->clearColor;
+    } else if (currentVisCamera->clearMethod == RenderCameraClearMethod::DepthOnly || currentVisCamera->clearMethod == RenderCameraClearMethod::Skybox) {
+        clearFlags |= RHI::ClearFlag::Depth;
+    }
 
 #if 1
-    RHI::renderer->BeginRenderPass(mainCommandList, currentContext->swapChain, currentContext->mainRTDepthTexture, BE1::Color4::blue, 1.0f, 0, RHI::ClearFlag::Color | RHI::ClearFlag::Depth);
+    RHI::renderer->BeginRenderPass(mainCommandList, currentContext->swapChain, currentContext->mainRTDepthTexture, clearColor, clearDepth, 0, clearFlags);
 #else
     if (mainRTSampleCount > 1) {
         RHI::RenderPassImage renderPassImages[] = {
@@ -108,25 +135,12 @@ const void *RenderBackEnd::ExecuteDrawCamera(const void *data) {
     }
 #endif
 
-    uint32_t numVisObjects = visCamera->NumVisObjects();
-    if (numVisObjects > 0) {
-#ifdef USE_RENDER_TASK
-#ifdef USE_RENDEROBJECT_INSTANCING
-        uint32_t numDrawCalls = (uint32_t)BE1::Math::Ceil((float)numVisObjects / 1024);
-#else
-        uint32_t numDrawCalls = numVisObjects;
-#endif
+    guiMesh.SetClipRect(currentVisCamera->renderRect);
 
-        uint32_t numTasks = (uint32_t)BE1::Math::Ceil((float)numDrawCalls / MaxDrawCallsPerTask);
-        numTasks = BE1::Min(BE1::Engine::taskManager->NumThreads(), numTasks);
-        if (numTasks > 1) {
-            DrawVisObjectsWithTask(visCamera, numTasks);
-        } else {
-            DrawVisObjectsWithoutTask(visCamera);
-        }
-#else
-        DrawVisObjectsWithoutTask(visCamera);
-#endif
+    if (currentVisCamera->is2D) {
+        DrawCamera2D();
+    } else {
+        DrawCamera3D();
     }
 
 #if 1
@@ -147,8 +161,19 @@ const void *RenderBackEnd::ExecuteDrawCamera(const void *data) {
     return (const void *)(cmd + 1);
 }
 
+const void *RenderBackEnd::ExecuteDrawPic(const void *data) {
+    const DrawPicRenderCommand *cmd = reinterpret_cast<const DrawPicRenderCommand *>(data);
+
+    RenderFrameData *currentFrameData = currentContext->GetCurrentFrameData();
+    RHI::FrameThreadData *frameThreadData = currentFrameData->GetThreadData(0);
+
+    guiMesh.DrawPic(frameThreadData, cmd->x, cmd->y, cmd->w, cmd->h, cmd->s1, cmd->t1, cmd->s2, cmd->t2, cmd->texture, cmd->color);
+
+    return (const void *)(cmd + 1);
+}
+
 const void *RenderBackEnd::ExecuteScreenshot(const void *data) {
-    PROFILER_CPU_SCOPED_EVENT("RenderBackEnd::ExecuteScreenshot", 0);
+    PROFILER_CPU_SCOPED_EVENT("RenderBackEnd::ExecuteScreenshot", 10);
 
     const ScreenShotRenderCommand *cmd = reinterpret_cast<const ScreenShotRenderCommand *>(data);
 
@@ -177,7 +202,7 @@ const void *RenderBackEnd::ExecuteScreenshot(const void *data) {
 }
 
 const void *RenderBackEnd::ExecuteSwapBuffers(const void *data) {
-    PROFILER_CPU_SCOPED_EVENT("RenderBackEnd::ExecuteSwapBuffers", 0);
+    PROFILER_CPU_SCOPED_EVENT("RenderBackEnd::ExecuteSwapBuffers", 10);
 
     const SwapBuffersRenderCommand *cmd = reinterpret_cast<const SwapBuffersRenderCommand *>(data);
 
@@ -188,6 +213,8 @@ const void *RenderBackEnd::ExecuteSwapBuffers(const void *data) {
     // 백버퍼를 전면버퍼와 교환한다.
     currentContext->GetSwapChain()->SwapBuffers(false);
 
+    guiMesh.Clear();
+
     frameCount++;
 
     currentContext->currentFrameIndex = frameCount % COUNT_OF(currentContext->frames);
@@ -195,54 +222,120 @@ const void *RenderBackEnd::ExecuteSwapBuffers(const void *data) {
     return (const void *)(cmd + 1);
 }
 
-// visCamera 에 등록된 특정 인덱스 범위의 visObjects 들을 그린다.
-void RenderBackEnd::DrawVisObjects(RHI::CommandList *commandList, const VisCamera *visCamera, uint32_t startIndex, uint32_t endIndex) {
-    PROFILER_SCOPED_EVENT(commandList, "RenderBackEnd::DrawVisObjects", 1);
+void RenderBackEnd::DrawCamera3D() {
+    PROFILER_CPU_SCOPED_EVENT("RenderBackEnd::DrawCamera3D", 9);
 
-    const RenderFrameData *currentFrameData = currentContext->GetCurrentFrameData();
-    const VisObject *visObjects = currentFrameData->GetVisObjects();
-    uint32_t index = startIndex;
+    constexpr uint32_t MaxActualDrawSurfs = 65536;
+    const DrawSurf **actualDrawSurfs = (const DrawSurf **)_alloca(sizeof(DrawSurf *) * MaxActualDrawSurfs);
+    uint32_t actualDrawSurfIndex = 0;
+    uint32_t drawSurfIndex = 0;
 
-    while (index <= endIndex) {
-        const VisObject *currentVisObjectPtr = &visObjects[index];
+    while (drawSurfIndex < currentVisCamera->numDrawSurfs) {
+        const DrawSurf *drawSurf = currentVisCamera->drawSurfs[drawSurfIndex];
 
-#ifdef USE_RENDEROBJECT_INSTANCING
-        uint32_t instanceCount = BE1::Min(1024u, endIndex - index + 1);
-        if (instanceCount > 1) {
-            VisObject::DrawInstanced(commandList, visCamera, currentVisObjectPtr, instanceCount);
-            index += instanceCount;
-        } else {
-            VisObject::Draw(commandList, visCamera, &currentVisObjectPtr[0]);
-            ++index;
+        if (!drawSurf->subMesh->vertexBuffer) {
+            drawSurf->subMesh->UploadStaticDataToGPU();
         }
-#else
-        VisObject::Draw(commandList, visCamera, &currentVisObjectPtr[0]);
-        ++index;
+
+#ifdef USE_RENDER_INSTANCED
+        if (BE1::HasFlag(drawSurf->flags, DrawSurf::Flag::UseInstancing)) {
+            uint32_t instanceStartIndex = drawSurfIndex;
+
+            while (drawSurfIndex < currentVisCamera->numDrawSurfs &&
+                currentVisCamera->drawSurfs[drawSurfIndex]->subMesh == drawSurf->subMesh &&
+                currentVisCamera->drawSurfs[drawSurfIndex]->texture == drawSurf->texture) {
+                drawSurfIndex++;
+            }
+
+            uint32_t instanceCount = drawSurfIndex - instanceStartIndex;
+            if (instanceCount > 1) {
+                // 인스턴스 개수가 2 개 이상이어야 인스턴스드 렌더링을 수행한다.
+                DrawInstancedSurface(&currentVisCamera->drawSurfs[instanceStartIndex], instanceCount);
+                continue;
+            } else {
+                drawSurfIndex = instanceStartIndex;
+            }
+        }
 #endif
+        if (actualDrawSurfIndex >= MaxActualDrawSurfs) {
+            DrawSurfaces(actualDrawSurfs, actualDrawSurfIndex);
+            actualDrawSurfIndex = 0;
+        }
+
+        actualDrawSurfs[actualDrawSurfIndex++] = drawSurf;
+        drawSurfIndex++;
+    }
+
+    if (actualDrawSurfIndex > 0) {
+        DrawSurfaces(actualDrawSurfs, actualDrawSurfIndex);
     }
 }
 
-// visCamera 에 등록된 전체 visObjects 들을 task 없이 한번에 그린다.
-void RenderBackEnd::DrawVisObjectsWithoutTask(const VisCamera *visCamera) {
-    PROFILER_CPU_SCOPED_EVENT("RenderBackEnd::DrawVisObjectsWithoutTask", 2);
+void RenderBackEnd::DrawCamera2D() {
+    PROFILER_CPU_SCOPED_EVENT("RenderBackEnd::DrawCamera2D", 9);
 
     RenderFrameData *currentFrameData = currentContext->GetCurrentFrameData();
     RHI::FrameThreadData *currentFrameThreadData = currentFrameData->GetThreadData(0);
 
-    // Secondary CommandList 를 시작한다.
-    RHI::CommandList *commandList = currentFrameThreadData->BeginSecondaryCommandList(mainCommandList);
+    // GuiMesh 의 다이나믹 인덱스 버퍼를 업로드한다.
+    guiMesh.CacheIndexes(currentFrameThreadData);
 
-    // visObjects 들을 인덱스 범위 만큼 그린다.
-    DrawVisObjects(commandList, visCamera, visCamera->visObjectStartIndex, visCamera->visObjectEndIndex);
+    for (int surfaceIndex = 0; surfaceIndex < guiMesh.NumSurfaces(); surfaceIndex++) {
+        const GuiMesh::Surface *guiSurf = guiMesh.GetSurface(surfaceIndex);
 
-    // Secondary CommandList 를 닫고 메인 CommandList 에 등록한다.
-    commandList->CloseAndExecuteSecondary(mainCommandList, currentFrameThreadData);
+        DrawGuiSurface(mainCommandList, guiSurf);
+    }
+}
+
+void RenderBackEnd::DrawSurfaces(const DrawSurf **drawSurfs, uint32_t numDrawSurfs) {
+    assert(numDrawSurfs > 0);
+
+#ifdef USE_RENDER_TASK
+    uint32_t numTasks = (uint32_t)BE1::Math::Ceil((float)numDrawSurfs / MaxDrawCallsPerTask);
+    numTasks = BE1::Min(BE1::Engine::taskManager->NumThreads(), numTasks);
+
+    if (numTasks > 1) {
+        DrawSurfacesWithTask(drawSurfs, numDrawSurfs, numTasks);
+    } else {
+        DrawSurfacesWithoutTask(drawSurfs, numDrawSurfs);
+    }
+#else
+    DrawSurfacesWithoutTask(drawSurfs, numDrawSurfs);
+#endif
+}
+
+void RenderBackEnd::DrawInstancedSurface(const DrawSurf **drawSurfs, uint32_t instanceCount) {
+    assert(instanceCount > 0);
+
+    RenderFrameData *currentFrameData = currentContext->GetCurrentFrameData();
+    RHI::FrameThreadData *currentFrameThreadData = currentFrameData->GetThreadData(0);
+
+    do {
+        uint32_t currentInstanceCount = BE1::Min(instanceCount, MaxInstancedDrawCount);
+
+        DrawInstancedSurface(mainCommandList, drawSurfs, currentInstanceCount);
+
+        drawSurfs += currentInstanceCount;
+        instanceCount -= currentInstanceCount;
+    } while (instanceCount > 0);
+}
+
+void RenderBackEnd::DrawSurfacesWithoutTask(const DrawSurf **drawSurfs, uint32_t numDrawSurfs) {
+    PROFILER_CPU_SCOPED_EVENT("RenderBackEnd::DrawSurfacesWithoutTask", 10);
+
+    RenderFrameData *currentFrameData = currentContext->GetCurrentFrameData();
+    RHI::FrameThreadData *currentFrameThreadData = currentFrameData->GetThreadData(0);
+
+    for (int drawSurfIndex = 0; drawSurfIndex < numDrawSurfs; ++drawSurfIndex) {
+        const DrawSurf *drawSurf = drawSurfs[drawSurfIndex];
+
+        DrawSurface(mainCommandList, drawSurf);
+    }
 }
 
 #ifdef USE_RENDER_TASK
-// taskDesc 에 담겨있는 정보를 기반으로 visCamera 에 등록된 visObjects 들을 그린다.
-void RenderBackEnd::DrawVisObjectsByTask(RenderBackEnd::DrawObjectTaskDesc *taskDesc) {
-    PROFILER_CPU_SCOPED_EVENT("RenderBackEnd::DrawVisObjectsByTask", 3);
+void RenderBackEnd::DrawSurfacesByTask(RenderBackEnd::DrawObjectTaskDesc *taskDesc) {
+    PROFILER_CPU_SCOPED_EVENT("RenderBackEnd::DrawSurfacesByTask", 10);
 
     RenderFrameData *currentFrameData = currentContext->GetCurrentFrameData();
     RHI::FrameThreadData *currentFrameThreadData = currentFrameData->GetThreadData(taskDesc->threadIndex);
@@ -250,8 +343,11 @@ void RenderBackEnd::DrawVisObjectsByTask(RenderBackEnd::DrawObjectTaskDesc *task
     // Secondary CommandList 를 시작한다.
     RHI::CommandList *commandList = currentFrameThreadData->BeginSecondaryCommandList(mainCommandList);
 
-    // visObjects 들을 인덱스 범위 만큼 그린다.
-    DrawVisObjects(commandList, taskDesc->visCamera, taskDesc->visObjectStartIndex, taskDesc->visObjectEndIndex);
+    for (int drawSurfIndex = 0; drawSurfIndex < taskDesc->numDrawSurfs; ++drawSurfIndex) {
+        const DrawSurf *drawSurf = taskDesc->drawSurfs[drawSurfIndex];
+
+        DrawSurface(commandList, drawSurf);
+    }
 
     // CommandList 기록을 마친다.
     commandList->Close();
@@ -260,19 +356,18 @@ void RenderBackEnd::DrawVisObjectsByTask(RenderBackEnd::DrawObjectTaskDesc *task
     taskDesc->activeCommandList = commandList;
 }
 
-void RenderBackEnd::DrawVisObjectsByTaskFunction(void *data) {
+void RenderBackEnd::DrawSurfacesByTaskFunction(void *data) {
     RenderBackEnd::DrawObjectTaskDesc *taskDesc = reinterpret_cast<RenderBackEnd::DrawObjectTaskDesc *>(data);
-    renderSystem->GetBackEnd()->DrawVisObjectsByTask(taskDesc);
+    renderSystem->GetBackEnd()->DrawSurfacesByTask(taskDesc);
 }
 
-// visCamera 에 등록된 visObjects 들을 task 로 나눠서 그린다.
-void RenderBackEnd::DrawVisObjectsWithTask(const VisCamera *visCamera, uint32_t numTasks) {
-    PROFILER_CPU_SCOPED_EVENT("RenderBackEnd::DrawVisObjectsWithTask", 4);
+// drawSurfs 를 numTasks 만큼 task 로 나눠서 그린다.
+void RenderBackEnd::DrawSurfacesWithTask(const DrawSurf **drawSurfs, uint32_t numDrawSurfs, uint32_t numTasks) {
+    PROFILER_CPU_SCOPED_EVENT("RenderBackEnd::DrawSurfacesWithTask", 10);
 
     RenderFrameData *currentFrameData = currentContext->GetCurrentFrameData();
-    uint32_t numVisObjects = visCamera->NumVisObjects();
-    uint32_t numVisObjectsPerTasks = (uint32_t)BE1::Math::Ceil((float)numVisObjects / numTasks);
-    uint32_t nextStartIndex = visCamera->visObjectStartIndex;
+    uint32_t numDrawSurfsPerTasks = (uint32_t)BE1::Math::Ceil((float)numDrawSurfs / numTasks);
+    uint32_t startIndex = 0;
     int threadIndex = 0;
 
     // 태스크 정보 초기화
@@ -280,16 +375,15 @@ void RenderBackEnd::DrawVisObjectsWithTask(const VisCamera *visCamera, uint32_t 
     objectDrawingTaskDescs.SetCount(0, false);
 
     // numTask 개수만큼 task 를 실행한다.
-    while (nextStartIndex <= visCamera->visObjectEndIndex) {
+    while (startIndex < numDrawSurfs) {
         DrawObjectTaskDesc &currentThreadDesc = objectDrawingTaskDescs.Alloc();
 
-        currentThreadDesc.visCamera = visCamera;
         currentThreadDesc.threadIndex = threadIndex++;
-        currentThreadDesc.visObjectStartIndex = nextStartIndex;
-        currentThreadDesc.visObjectEndIndex = BE1::Min(nextStartIndex + numVisObjectsPerTasks - 1, visCamera->visObjectEndIndex);
-        BE1::Engine::taskManager->AddTask(RenderBackEnd::DrawVisObjectsByTaskFunction, &currentThreadDesc, drawGroupId, false);
+        currentThreadDesc.drawSurfs = &drawSurfs[startIndex];
+        currentThreadDesc.numDrawSurfs = BE1::Min(startIndex + numDrawSurfsPerTasks, numDrawSurfs) - startIndex;
+        BE1::Engine::taskManager->AddTask(RenderBackEnd::DrawSurfacesByTaskFunction, &currentThreadDesc, drawGroupId, false);
 
-        nextStartIndex = currentThreadDesc.visObjectEndIndex + 1;
+        startIndex += currentThreadDesc.numDrawSurfs;
     }
 
     BE1::Engine::taskManager->WaitFinish(drawGroupId, true);
@@ -303,3 +397,77 @@ void RenderBackEnd::DrawVisObjectsWithTask(const VisCamera *visCamera, uint32_t 
     }
 }
 #endif // USE_RENDER_TASK
+
+void RenderBackEnd::DrawSurface(RHI::CommandList *commandList, const DrawSurf *drawSurf) {
+    RHI::FrameThreadData *frameThreadData = commandList->GetFrameThreadData();
+
+    RHI::ConstantBuffer *constantBuffer = frameThreadData->AllocConstant(sizeof(UnlitConstantData));
+    if (!constantBuffer) {
+        return;
+    }
+
+    UnlitConstantData *constantDataPtr = reinterpret_cast<UnlitConstantData *>(constantBuffer->writePtr);
+
+    // 오브젝트의 MVP 행렬을 기록
+    constantDataPtr->modelViewProjMatrix = drawSurf->space->modelViewProjMatrix;
+
+    RHI::renderer->SetVertexBuffer(commandList, 0, drawSurf->subMesh->vertexBuffer);
+    RHI::renderer->SetIndexBuffer(commandList, drawSurf->subMesh->indexBuffer);
+
+    RHI::renderer->SetPSO(commandList, currentContext->singlePSO);
+    RHI::renderer->SetTexture(commandList, 0, false, drawSurf->texture->GetRHITexture());
+    RHI::renderer->SetConstantBuffer(commandList, 0, constantBuffer);
+
+    RHI::renderer->DrawIndexed(commandList, drawSurf->subMesh->numIndexes, 0, 0);
+}
+
+void RenderBackEnd::DrawInstancedSurface(RHI::CommandList *commandList, const DrawSurf **instanceSurfs, int instanceCount) {
+    RHI::FrameThreadData *frameThreadData = commandList->GetFrameThreadData();
+
+    RHI::ConstantBuffer *constantBuffer = frameThreadData->AllocConstant(sizeof(UnlitInstancedConstantData));
+    if (!constantBuffer) {
+        return;
+    }
+
+    UnlitInstancedConstantData *constantDataPtr = reinterpret_cast<UnlitInstancedConstantData *>(constantBuffer->writePtr);
+
+    // 카메라의 뷰-프로젝션 행렬을 기록
+    constantDataPtr->viewProjMatrix = currentVisCamera->viewProjMatrix;
+
+    // 오브젝트 인스턴스들의 월드 행렬을 기록
+    for (int i = 0; i < instanceCount; ++i) {
+        constantDataPtr->worldMatrix[i] = instanceSurfs[i]->space->worldMatrix;
+    }
+
+    RHI::renderer->SetVertexBuffer(commandList, 0, instanceSurfs[0]->subMesh->vertexBuffer);
+    RHI::renderer->SetIndexBuffer(commandList, instanceSurfs[0]->subMesh->indexBuffer);
+
+    RHI::renderer->SetPSO(commandList, currentContext->instancingPSO);
+    RHI::renderer->SetTexture(commandList, 0, false, instanceSurfs[0]->texture->GetRHITexture());
+    RHI::renderer->SetConstantBuffer(commandList, 0, constantBuffer);
+
+    RHI::renderer->DrawIndexedInstanced(commandList, instanceSurfs[0]->subMesh->numIndexes, instanceCount, 0, 0, 0);
+}
+
+void RenderBackEnd::DrawGuiSurface(RHI::CommandList *commandList, const GuiMesh::Surface *guiSurf) {
+    RHI::FrameThreadData *frameThreadData = commandList->GetFrameThreadData();
+
+    RHI::ConstantBuffer *constantBuffer = frameThreadData->AllocConstant(sizeof(UnlitConstantData));
+    if (!constantBuffer) {
+        return;
+    }
+
+    UnlitConstantData *constantDataPtr = reinterpret_cast<UnlitConstantData *>(constantBuffer->writePtr);
+
+    // 카메라의 View-Projection 행렬을 기록
+    constantDataPtr->modelViewProjMatrix = currentVisCamera->viewProjMatrix;
+
+    RHI::renderer->SetVertexBuffer(commandList, 0, guiSurf->vertexBuffer);
+    RHI::renderer->SetIndexBuffer(commandList, guiSurf->indexBuffer);
+
+    RHI::renderer->SetPSO(commandList, currentContext->singlePSO);
+    RHI::renderer->SetTexture(commandList, 0, false, guiSurf->texture->GetRHITexture());
+    RHI::renderer->SetConstantBuffer(commandList, 0, constantBuffer);
+
+    RHI::renderer->DrawIndexed(commandList, guiSurf->numIndexes, 0, 0);
+}

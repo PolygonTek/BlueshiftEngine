@@ -14,9 +14,14 @@
 
 #include "Precompiled.h"
 #include "RHI.h"
+#include "GuiMesh.h"
 
 class RenderContext;
 class VisCamera;
+class VisObject;
+class Texture;
+class SubMesh;
+class DrawSurf;
 
 class RenderBackEnd {
 public:
@@ -27,30 +32,43 @@ public:
 
 private:
     struct DrawObjectTaskDesc {
-        const VisCamera *           visCamera = nullptr;
         int                         threadIndex = -1;
-        uint32_t                    visObjectStartIndex = 0;
-        uint32_t                    visObjectEndIndex = -1;
+        const DrawSurf **           drawSurfs = nullptr;
+        uint32_t                    numDrawSurfs = 0;
         RHI::CommandList *          activeCommandList = nullptr;
     };
 
     const void *                    ExecuteBeginContext(const void *data);
     const void *                    ExecuteDrawCamera(const void *data);
+    const void *                    ExecuteDrawPic(const void *data);
     const void *                    ExecuteScreenshot(const void *data);
     const void *                    ExecuteSwapBuffers(const void *data);
 
-    void                            DrawVisObjects(RHI::CommandList *commandList, const VisCamera *visCamera, uint32_t startIndex, uint32_t endIndex);
-    void                            DrawVisObjectsWithoutTask(const VisCamera *visCamera);
+    void                            DrawCamera3D();
+    void                            DrawCamera2D();
+
+    void                            DrawSurfaces(const DrawSurf **drawSurfs, uint32_t numDrawSurfs);
+    void                            DrawInstancedSurface(const DrawSurf **instanceSurfs, uint32_t instanceCount);
+
+    void                            DrawSurfacesWithoutTask(const DrawSurf **drawSurfs, uint32_t numDrawSurfs);
 #ifdef USE_RENDER_TASK
-    void                            DrawVisObjectsWithTask(const VisCamera *visCamera, uint32_t numTasks);
-    void                            DrawVisObjectsByTask(RenderBackEnd::DrawObjectTaskDesc *taskDesc);
-    static void                     DrawVisObjectsByTaskFunction(void *data);
+    void                            DrawSurfacesWithTask(const DrawSurf **drawSurfs, uint32_t numDrawSurfs, uint32_t numTasks);
+    void                            DrawSurfacesByTask(RenderBackEnd::DrawObjectTaskDesc *taskDesc);
+    static void                     DrawSurfacesByTaskFunction(void *data);
 #endif
+
+    void                            DrawSurface(RHI::CommandList *commandList, const DrawSurf *drawSurf);
+    void                            DrawInstancedSurface(RHI::CommandList *commandList, const DrawSurf **instanceSurfs, int instanceCount);
+    void                            DrawGuiSurface(RHI::CommandList *commandList, const GuiMesh::Surface *guiSurf);
 
     RenderContext *                 currentContext = nullptr;
     RHI::CommandList *              mainCommandList = nullptr;
     uint32_t                        frameCount = 0;
 
+    const VisCamera *               currentVisCamera = nullptr;
+
     BE1::Array<DrawObjectTaskDesc>  objectDrawingTaskDescs;
     uint32_t                        drawGroupId = -1;
+
+    GuiMesh                         guiMesh;
 };

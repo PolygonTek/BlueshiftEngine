@@ -4,7 +4,7 @@
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 // 
-// http ://www.apache.org/licenses/LICENSE-2.0
+// http://www.apache.org/licenses/LICENSE-2.0
 // 
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
@@ -16,6 +16,7 @@
 
 #include "RHI.h"
 #include "RenderFrameData.h"
+#include "GuiMesh.h"
 
 class RenderBackEnd;
 
@@ -53,6 +54,8 @@ public:
     void                                WaitRenderCompleted();
     void                                MarkUpdateCompleted();
 
+    static RenderContext *              activeContext;
+
 private:
     enum class FrameSyncState : uint8_t {
         WaitingForUpdateCompleted,      // (렌더 스레드가 렌더링이 완료되어) 메인 스레드의 다음 업데이트 작업이 완료되기를 기다리는 상태
@@ -61,6 +64,7 @@ private:
 
     void                                CreateMainRenderTextures(uint32_t width, uint32_t height);
     void                                DestroyMainRenderTextures();
+    void                                InitPSO();
     void                                InitFullScreenTrianglePSO();
 
     static unsigned int                 RenderThreadProc(void *param);
@@ -68,15 +72,13 @@ private:
     void                                InitRenderThread();
     void                                ShutdownRenderThread();
 
-    BE1::Image::Format                  mainRTColorFormat = BE1::Image::Format::R8G8B8A8;
-    BE1::Image::Format                  mainRTDepthFormat = BE1::Image::Format::D32_FLOAT;
-    uint32_t                            mainRTSampleCount = 1;
-
     RHI::SwapChain *                    swapChain = nullptr;
     RHI::Texture *                      mainRTColorMSAATexture = nullptr;
     RHI::Texture *                      mainRTColorTexture = nullptr;
     RHI::Texture *                      mainRTDepthTexture = nullptr;
     RHI::PipelineState *                imagePSO = nullptr;
+    RHI::PipelineState *                singlePSO = nullptr;
+    RHI::PipelineState *                instancingPSO = nullptr;
 
 #ifdef USE_RENDER_FRAME_RESOURCES
     static constexpr int                NumFrameResources = 2;
@@ -93,4 +95,8 @@ private:
     BE1::PlatformThread *               renderThread = nullptr;
     bool                                isStoppingRenderThread = false;
     FrameSyncState                      frameSyncState = FrameSyncState::WaitingForUpdateCompleted;
+
+    BE1::Image::Format                  mainRTColorFormat = BE1::Image::Format::R8G8B8A8;
+    BE1::Image::Format                  mainRTDepthFormat = BE1::Image::Format::D32_FLOAT;
+    uint32_t                            mainRTSampleCount = 1;
 };

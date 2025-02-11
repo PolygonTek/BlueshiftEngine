@@ -4,7 +4,7 @@
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 // 
-// http ://www.apache.org/licenses/LICENSE-2.0
+// http://www.apache.org/licenses/LICENSE-2.0
 // 
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
@@ -17,6 +17,8 @@
 #include "RenderContext.h"
 #include "RenderBackEnd.h"
 #include "RenderInternal.h"
+
+RenderContext *     RenderContext::activeContext = nullptr;
 
 void RenderContext::Init(void *windowHandle, bool useRenderThread) {
     // 렌더링 프레임 별로 사용할 프레임 데이터들을 초기화한다.
@@ -48,6 +50,8 @@ void RenderContext::Init(void *windowHandle, bool useRenderThread) {
     CreateMainRenderTextures(backBufferWidth, backBufferHeight);
 
     InitFullScreenTrianglePSO();
+
+    InitPSO();
 }
 
 void RenderContext::Shutdown() {
@@ -61,11 +65,13 @@ void RenderContext::Shutdown() {
     RHI::renderer->Finish(RHI::CommandQueueType::Compute);
 
     RHI::renderer->DestroyPSO(imagePSO);
+    RHI::renderer->DestroyPSO(singlePSO);
+    RHI::renderer->DestroyPSO(instancingPSO);
 
     DestroyMainRenderTextures();
 
-    for (RenderFrameData &frame : frames) {
-        frame.Shutdown();
+    for (RenderFrameData &frameData : frames) {
+        frameData.Shutdown();
     }
 
     RHI::renderer->DestroySwapChain(swapChain);
@@ -121,6 +127,69 @@ void RenderContext::DestroyMainRenderTextures() {
     }
 }
 
+void RenderContext::InitPSO() {
+    RHI::InputLayout inputLayout;
+    inputLayout.elements = {
+        { "POSITION", 0, OFFSET_OF(BE1::VertexGenericLit, xyz), 0, RHI::InputLayoutElement::Format::Float3 },
+        { "TEXCOORD", 0, OFFSET_OF(BE1::VertexGenericLit, st), 0, RHI::InputLayoutElement::Format::Half2 },
+        { "COLOR", 0, OFFSET_OF(BE1::VertexGenericLit, color), 0, RHI::InputLayoutElement::Format::UByte4N },
+        { "NORMAL", 0, OFFSET_OF(BE1::VertexGenericLit, normal), 0, RHI::InputLayoutElement::Format::UByte4N },
+        { "TEXCOORD", 1, OFFSET_OF(BE1::VertexGenericLit, tangent), 0, RHI::InputLayoutElement::Format::UByte4N },
+    };
+
+    RHI::RenderDest renderDest;
+    renderDest.renderTargetCount = 1;
+    renderDest.renderTargetFormats[0] = GetMainRTColorFormat();
+    renderDest.depthStencilFormat = GetMainRTDepthFormat();
+    renderDest.sampleCount = GetMainRTSampleCount();
+
+    RHI::Shader *unlitVS = static_cast<RHI::Shader *>(RHI::renderer->CreateShaderFromFile(RHI::ShaderModel::SM_6_0, RHI::ShaderStage::Vertex, "Source/TestD3D12/Shaders/Unlit.hlsl", "VSMain"));
+    RHI::Shader *unlitPS = static_cast<RHI::Shader *>(RHI::renderer->CreateShaderFromFile(RHI::ShaderModel::SM_6_0, RHI::ShaderStage::Fragment, "Source/TestD3D12/Shaders/Unlit.hlsl", "PSMain"));
+
+    if (unlitVS && unlitPS) {
+        RHI::PipelineStateDesc psoDesc;
+        psoDesc.vs = unlitVS;
+        psoDesc.ps = unlitPS;
+        psoDesc.rasterizerState = RHI::renderer->GetRasterizerState(RHI::RasterizerStateType::SolidFrontSided);
+        psoDesc.depthStencilState = RHI::renderer->GetDepthStencilState(RHI::DepthStencilStateType::Default);
+        psoDesc.blendState = RHI::renderer->GetBlendState(RHI::BlendStateType::Opaque);
+        psoDesc.inputLayout = &inputLayout;
+        psoDesc.primitiveTopology = RHI::PrimitiveTopology::TriangleList;
+        psoDesc.renderDest = &renderDest;
+        singlePSO = RHI::renderer->CreateGraphicsPSO(&psoDesc);
+    }
+
+    if (unlitVS) {
+        RHI::renderer->DestroyShader(unlitVS, true);
+    }
+    if (unlitPS) {
+        RHI::renderer->DestroyShader(unlitPS, true);
+    }
+
+    RHI::Shader *unlitInstancingVS = static_cast<RHI::Shader *>(RHI::renderer->CreateShaderFromFile(RHI::ShaderModel::SM_6_0, RHI::ShaderStage::Vertex, "Source/TestD3D12/Shaders/UnlitInstancing.hlsl", "VSMain"));
+    RHI::Shader *unlitInstancingPS = static_cast<RHI::Shader *>(RHI::renderer->CreateShaderFromFile(RHI::ShaderModel::SM_6_0, RHI::ShaderStage::Fragment, "Source/TestD3D12/Shaders/UnlitInstancing.hlsl", "PSMain"));
+
+    if (unlitInstancingVS && unlitInstancingPS) {
+        RHI::PipelineStateDesc psoDesc;
+        psoDesc.vs = unlitInstancingVS;
+        psoDesc.ps = unlitInstancingPS;
+        psoDesc.rasterizerState = RHI::renderer->GetRasterizerState(RHI::RasterizerStateType::SolidFrontSided);
+        psoDesc.depthStencilState = RHI::renderer->GetDepthStencilState(RHI::DepthStencilStateType::Default);
+        psoDesc.blendState = RHI::renderer->GetBlendState(RHI::BlendStateType::Opaque);
+        psoDesc.inputLayout = &inputLayout;
+        psoDesc.primitiveTopology = RHI::PrimitiveTopology::TriangleList;
+        psoDesc.renderDest = &renderDest;
+        instancingPSO = RHI::renderer->CreateGraphicsPSO(&psoDesc);
+    }
+
+    if (unlitInstancingVS) {
+        RHI::renderer->DestroyShader(unlitInstancingVS, true);
+    }
+    if (unlitInstancingPS) {
+        RHI::renderer->DestroyShader(unlitInstancingPS, true);
+    }
+}
+
 void RenderContext::InitFullScreenTrianglePSO() {
     BE1::Image::Format imageFormat = BE1::Image::Format::Unknown;
     bool isSRGB = false;
@@ -155,8 +224,8 @@ void RenderContext::InitFullScreenTrianglePSO() {
 }
 
 void RenderContext::WaitAllFrameFences() {
-    for (const RenderFrameData &frame : frames) {
-        RHI::renderer->WaitFence(frame.GetFenceValue());
+    for (const RenderFrameData &frameData : frames) {
+        RHI::renderer->WaitFence(frameData.GetFenceValue());
     }
 }
 
@@ -260,12 +329,16 @@ void RenderContext::BeginFrame() {
     frameData->BeginFrameMemAllocs();
 
     frameData->CmdBeginContext(this);
+
+    RenderContext::activeContext = this;
 }
 
 void RenderContext::EndFrame() {
     PROFILER_CPU_SCOPED_EVENT("RenderContext::EndFrame", 10);
 
     assert(BE1::Engine::IsInMainThread());
+
+    RenderContext::activeContext = nullptr;
 
     RenderFrameData *frameData = GetCurrentFrameData();
     frameData->CmdSwapBuffers();

@@ -4,7 +4,7 @@
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 // 
-// http ://www.apache.org/licenses/LICENSE-2.0
+// http://www.apache.org/licenses/LICENSE-2.0
 // 
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
@@ -37,6 +37,7 @@ Texture *TextureManager::AllocTexture(const char *hashName) {
     texture->name = hashName;
     texture->name.StripPath();
     texture->name.StripFileExtension();
+    texture->index = textureHashMap.Count();
     texture->refCount = 1;
 
     textureHashMap.Set(texture->hashName, texture);
@@ -73,17 +74,17 @@ Texture *TextureManager::GetTexture(const char *hashName, Texture::Flag flags) {
 }
 
 void TextureManager::ReleaseTexture(Texture *texture) {
-    if (BE1::HasFlag(texture->flags, Texture::Flag::Permanence)) {
+    if (texture->refCount > 0) {
+        if (--texture->refCount > 0) {
+            return;
+        }
+    }
+
+    if (BE1::HasFlag(texture->flags, Texture::Flag::Permanent)) {
         return;
     }
 
-    if (texture->refCount > 0) {
-        texture->refCount--;
-    }
-
-    if (texture->refCount == 0) {
-        DestroyTexture(texture);
-    }
+    DestroyTexture(texture);
 }
 
 void TextureManager::DestroyTexture(Texture *texture) {
@@ -96,16 +97,35 @@ void TextureManager::DestroyTexture(Texture *texture) {
     delete texture;
 }
 
+void TextureManager::DestroyUnusedTextures() {
+    BE1::Array<Texture *> removeArray;
+
+    for (const auto &entry : textureHashMap) {
+        Texture *texture = entry.second;
+        if (!texture) {
+            continue;
+        }
+
+        if (!BE1::HasFlag(texture->flags, Texture::Flag::Permanent) && texture->refCount == 0) {
+            removeArray.Append(texture);
+        }
+    }
+
+    for (Texture *texture : removeArray) {
+        DestroyTexture(texture);
+    }
+}
+
 void TextureManager::CreateEngineTextures() {
     // Create default texture.
     defaultTexture = AllocTexture("_defaultTexture");
-    defaultTexture->CreateDefaultTexture(16, Texture::Flag::Permanence);
+    defaultTexture->CreateDefaultTexture(16, Texture::Flag::Permanent);
 
     // Create white texture.
     whiteTexture = AllocTexture("_whiteTexture");
-    whiteTexture->CreateColorTexture(8, BE1::Color4::white, Texture::Flag::Permanence);
+    whiteTexture->CreateColorTexture(8, BE1::Color4::white, Texture::Flag::Permanent);
 
     // Create flatNormal texture.
     flatNormalTexture = AllocTexture("_flatNormalTexture");
-    flatNormalTexture->CreateFlatNormalTexture(16, Texture::Flag::Permanence);
+    flatNormalTexture->CreateFlatNormalTexture(16, Texture::Flag::Permanent);
 }
