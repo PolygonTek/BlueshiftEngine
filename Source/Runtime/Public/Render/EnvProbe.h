@@ -182,8 +182,8 @@ private:
     int                     bounces = 0;
     bool                    needToRefresh = false;
 
-    DbvtProxy *             proxy;
-    RenderWorld *           renderWorld;
+    DbvtProxy *             proxy = nullptr;
+    RenderWorld *           renderWorld = nullptr;
     int                     index;              // index of probe list in RenderWorld
 };
 

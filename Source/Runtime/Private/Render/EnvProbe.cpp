@@ -16,6 +16,7 @@
 #include "Render/Render.h"
 #include "RenderInternal.h"
 #include "Asset/GuidMapper.h"
+#include "Core/Heap.h"
 
 BE_NAMESPACE_BEGIN
 
@@ -42,6 +43,9 @@ EnvProbe::~EnvProbe() {
     }
     if (specularProbeRT) {
         RenderTarget::Delete(specularProbeRT);
+    }
+    if (proxy) {
+        Mem_Free(proxy);
     }
 }
 
