@@ -41,7 +41,7 @@ void GuiMesh::Clear() {
 }
 
 void GuiMesh::PrepareNextSurf() {
-    GuiMeshSurf newSurf;
+    Surface newSurf;
 
     newSurf.numVerts = 0;
     newSurf.numIndexes = 0;
@@ -116,7 +116,7 @@ void GuiMesh::CacheIndexes() {
     VertIndex *indexPointer = (VertIndex *)bufferCacheManager.MapIndexBuffer(&indexCache);
 
     for (int surfaceIndex = 0; surfaceIndex < surfaces.Count(); surfaceIndex++) {
-        GuiMeshSurf *surf = &surfaces[surfaceIndex];
+        Surface *surf = &surfaces[surfaceIndex];
 
         int baseVertexIndex = surf->vertexCache.offset / sizeof(VertexGeneric);
 
@@ -136,7 +136,7 @@ void GuiMesh::CacheIndexes() {
     // Set index cache info for each surfaces.
     int offset = indexCache.offset;
     for (int surfaceIndex = 0; surfaceIndex < surfaces.Count(); surfaceIndex++) {
-        GuiMeshSurf *surf = &surfaces[surfaceIndex];
+        Surface *surf = &surfaces[surfaceIndex];
     
         surf->indexCache = indexCache;
         surf->indexCache.offset = offset;

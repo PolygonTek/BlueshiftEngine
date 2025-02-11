@@ -23,17 +23,6 @@ BE_NAMESPACE_BEGIN
 
 class Material;
 
-struct GuiMeshSurf {
-    const Material *        material;
-    uint32_t                color;
-
-    int                     numVerts;
-    int                     numIndexes;
-    
-    BufferCache             vertexCache;
-    BufferCache             indexCache;
-};
-
 class GuiMesh {
 public:
     struct CoordFrame {
@@ -43,13 +32,24 @@ public:
         };
     };
 
+    struct Surface {
+        const Material *    material;
+        uint32_t            color;
+
+        int                 numVerts;
+        int                 numIndexes;
+
+        BufferCache         vertexCache;
+        BufferCache         indexCache;
+    };
+
     GuiMesh();
 
     CoordFrame::Enum        GetCoordFrame() const { return coordFrame; }
     void                    SetCoordFrame(CoordFrame::Enum frame) { coordFrame = frame; }
 
     int                     NumSurfaces() const { return surfaces.Count(); }
-    const GuiMeshSurf *     Surface(int surfaceIndex) const { return &surfaces[surfaceIndex]; }
+    const Surface *         GetSurface(int surfaceIndex) const { return &surfaces[surfaceIndex]; }
 
     void                    Clear();
 
@@ -79,8 +79,8 @@ private:
     void                    PrepareNextSurf();
     void                    DrawQuad(const VertexGeneric *verts, const Material *material);
     
-    Array<GuiMeshSurf>      surfaces;
-    GuiMeshSurf *           currentSurf;
+    Array<Surface>          surfaces;
+    Surface *               currentSurf;
     uint32_t                currentColor;
     uint32_t                currentTextBorderColor;
 

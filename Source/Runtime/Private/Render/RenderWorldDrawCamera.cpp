@@ -496,7 +496,7 @@ void RenderWorld::AddTextMeshes(VisCamera *camera) {
         textMesh.CacheIndexes();
 
         for (int surfaceIndex = 0; surfaceIndex < textMesh.NumSurfaces(); surfaceIndex++) {
-            const GuiMeshSurf *guiMeshSurf = textMesh.Surface(surfaceIndex);
+            const GuiMesh::Surface *guiMeshSurf = textMesh.GetSurface(surfaceIndex);
             if (!guiMeshSurf->numIndexes) {
                 break;
             }

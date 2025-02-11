@@ -615,7 +615,7 @@ void RenderWorld::DrawGUICamera(GuiMesh &guiMesh) {
     guiMesh.CacheIndexes();
 
     for (int surfaceIndex = 0; surfaceIndex < guiMesh.NumSurfaces(); surfaceIndex++) {
-        const GuiMeshSurf *guiSurf = guiMesh.Surface(surfaceIndex);
+        const GuiMesh::Surface *guiSurf = guiMesh.GetSurface(surfaceIndex);
         if (!guiSurf->numIndexes) {
             break;
         }
