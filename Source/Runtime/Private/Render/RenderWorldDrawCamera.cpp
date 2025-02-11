@@ -244,7 +244,7 @@ void RenderWorld::AddStaticMeshes(VisCamera *camera) {
     // Returns true if it want to proceed next query.
     auto addStaticMeshSurfs = [this, camera](int32_t proxyId) -> bool {
         const DbvtProxy *proxy = (const DbvtProxy *)staticMeshDbvt.GetUserData(proxyId);
-        MeshSurf *surf = proxy->mesh->GetSurface(proxy->meshSurfIndex);
+        Mesh::Surface *surf = proxy->mesh->GetSurface(proxy->meshSurfIndex);
 
         // surf 가 없다면 static mesh 가 아님
         if (!surf) {
@@ -329,7 +329,7 @@ void RenderWorld::AddDynamicAndSkinnedMeshes(VisCamera *camera) {
         }
 
         for (int surfaceIndex = 0; surfaceIndex < renderObjectDef.mesh->NumSurfaces(); surfaceIndex++) {
-            MeshSurf *surf = renderObjectDef.mesh->GetSurface(surfaceIndex);
+            Mesh::Surface *surf = renderObjectDef.mesh->GetSurface(surfaceIndex);
 
             AddDrawSurf(camera, nullptr, visObject, renderObjectDef.materials[surf->materialIndex], surf->subMesh, flags);
 
@@ -559,7 +559,7 @@ void RenderWorld::AddSkyBoxMeshes(VisCamera *camera) {
         visObject->modelViewProjMatrix = camera->def->viewProjMatrix * renderObject.GetWorldMatrix();
     }
 
-    MeshSurf *meshSurf = meshManager.defaultBoxMesh->GetSurface(0);
+    Mesh::Surface *meshSurf = meshManager.defaultBoxMesh->GetSurface(0);
     AddDrawSurf(camera, nullptr, visObject, skyboxMaterial, meshSurf->subMesh, DrawSurf::Flag::Visible);
 
     camera->numAmbientSurfs++;
@@ -577,7 +577,7 @@ void RenderWorld::AddStaticMeshesForLights(VisCamera *camera) {
         const DbvtProxy *proxy = (const DbvtProxy *)staticMeshDbvt.GetUserData(proxyId);
         RenderObject *renderObject = proxy->renderObject;
 
-        MeshSurf *surf = proxy->mesh->GetSurface(proxy->meshSurfIndex);
+        Mesh::Surface *surf = proxy->mesh->GetSurface(proxy->meshSurfIndex);
 
         if (!surf) {
             return true;
@@ -740,7 +740,7 @@ void RenderWorld::AddDynamicAndSkinnedMeshesForLights(VisCamera *camera) {
         VisObject *shadowCasterObject = nullptr;
 
         for (int surfaceIndex = 0; surfaceIndex < renderObject->state.mesh->NumSurfaces(); surfaceIndex++) {
-            MeshSurf *surf = renderObject->state.mesh->GetSurface(surfaceIndex);
+            Mesh::Surface *surf = renderObject->state.mesh->GetSurface(surfaceIndex);
 
             const Material *material = renderObject->state.materials[surf->materialIndex];
 
@@ -829,7 +829,7 @@ void RenderWorld::CacheInstanceBuffer(VisCamera *camera) {
         }
 
         for (int surfaceIndex = 0; surfaceIndex < renderObject->state.mesh->NumSurfaces(); surfaceIndex++) {
-            const MeshSurf *surf = renderObject->state.mesh->GetSurface(surfaceIndex);
+            const Mesh::Surface *surf = renderObject->state.mesh->GetSurface(surfaceIndex);
 
             if (surf->viewCount != viewCount) {
                 continue;

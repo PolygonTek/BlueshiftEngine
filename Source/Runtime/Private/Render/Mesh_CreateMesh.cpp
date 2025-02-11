@@ -26,7 +26,7 @@ BE_NAMESPACE_BEGIN
 void Mesh::CreateDefaultBox() {
     Purge();
 
-    MeshSurf *surf = AllocSurface(24, 36);
+    Surface *surf = Mesh::AllocSurface(24, 36);
     surf->materialIndex = 0;
     surfaces.Append(surf);
 
@@ -94,7 +94,7 @@ void Mesh::CreatePlane(const Vec3 &origin, const Mat3 &axis, float size, int num
     int numVerts = (numSegments + 1) * (numSegments + 1);
     int numIndexes = 6 * numSegments * numSegments;
 
-    MeshSurf *surf = AllocSurface(numVerts, numIndexes);
+    Surface *surf = Mesh::AllocSurface(numVerts, numIndexes);
     surf->materialIndex = 0;
     surfaces.Append(surf);
 
@@ -146,7 +146,7 @@ void Mesh::CreatePlane(const Vec3 &origin, const Mat3 &axis, float size, int num
 void Mesh::CreateBox(const Vec3 &origin, const Mat3 &axis, const Vec3 &extents) {
     Purge();
 
-    MeshSurf *surf = AllocSurface(24, 36);
+    Surface *surf = Mesh::AllocSurface(24, 36);
     surf->materialIndex = 0;
     surfaces.Append(surf);
 
@@ -235,7 +235,7 @@ void Mesh::CreateGeosphere(const Vec3 &origin, float radius, int numSubdivisions
 
     // TODO: subdivision
 
-    MeshSurf *surf = AllocSurface(12, 60);
+    Surface *surf = Mesh::AllocSurface(12, 60);
     surf->materialIndex = 0;
     surfaces.Append(surf);
 
@@ -285,7 +285,7 @@ void Mesh::CreateRoundedBox(const Vec3 &origin, const Mat3 &axis, const Vec3 ext
     uint32_t num_vertices;
     par_octasphere_get_counts(&cfg, &num_indices, &num_vertices);
 
-    MeshSurf *surf = AllocSurface(num_vertices, num_indices);
+    Surface *surf = Mesh::AllocSurface(num_vertices, num_indices);
     surf->materialIndex = 0;
     surfaces.Append(surf);
 
@@ -335,7 +335,7 @@ void Mesh::CreateCylinder(const Vec3 &origin, const Mat3 &axis, float radius, fl
     int numVerts = 2 + numSegments * 2 + numSideSegments * 2;
     int numIndexes = numSegments * 3 * 2 + numSideSegments * 3 * 2;
 
-    MeshSurf *surf = AllocSurface(numVerts, numIndexes);
+    Surface *surf = Mesh::AllocSurface(numVerts, numIndexes);
     surf->materialIndex = 0;
     surfaces.Append(surf);
 
@@ -446,7 +446,7 @@ void Mesh::CreateCapsule(const Vec3 &origin, const Mat3 &axis, float radius, flo
     int numVerts = numLat * 2 * numLng;
     int numIndexes = (6 * (numLat * 2 - 1) * (numLng - 1)) - (2 * 3 * (numLng - 1));
 
-    MeshSurf *surf = AllocSurface(numVerts, numIndexes);
+    Surface *surf = Mesh::AllocSurface(numVerts, numIndexes);
     surf->materialIndex = 0;
     surfaces.Append(surf);
 
@@ -547,12 +547,12 @@ bool Mesh::TrySliceMesh(const Mesh &srcMesh, const Plane &slicePlane, bool gener
     }
 
     for (int surfaceIndex = 0; surfaceIndex < srcMesh.surfaces.Count(); surfaceIndex++) {
-        const MeshSurf *srcSurf = srcMesh.surfaces[surfaceIndex];
+        const Surface *srcSurf = srcMesh.surfaces[surfaceIndex];
 
         int planeSide = srcSurf->subMesh->aabb.PlaneSide(slicePlane);
         if (planeSide == Plane::Side::Back) {
             // SubMesh is totally below the plane. just copy it from the source mesh.
-            MeshSurf* surf = outBelowMesh->AllocSurface(srcSurf->subMesh->numVerts, srcSurf->subMesh->numIndexes);
+            Surface * surf = Mesh::AllocSurface(srcSurf->subMesh->numVerts, srcSurf->subMesh->numIndexes);
             surf->materialIndex = srcSurf->materialIndex;
             outBelowMesh->surfaces.Append(surf);
             surf->subMesh->CopyFrom(srcSurf->subMesh);
@@ -562,7 +562,7 @@ bool Mesh::TrySliceMesh(const Mesh &srcMesh, const Plane &slicePlane, bool gener
         if (planeSide == Plane::Side::Front) {
             // SubMesh totally is above the plane.
             if (generateAboveMesh) {
-                MeshSurf *surf = outAboveMesh->AllocSurface(srcSurf->subMesh->numVerts, srcSurf->subMesh->numIndexes);
+                Surface *surf = Mesh::AllocSurface(srcSurf->subMesh->numVerts, srcSurf->subMesh->numIndexes);
                 surf->materialIndex = srcSurf->materialIndex;
                 outAboveMesh->surfaces.Append(surf);
                 surf->subMesh->CopyFrom(srcSurf->subMesh);
@@ -807,7 +807,7 @@ bool Mesh::TrySliceMesh(const Mesh &srcMesh, const Plane &slicePlane, bool gener
         }
 
         if (tempBelowVerts.Count() > 0 && tempBelowIndexes.Count() > 0) {
-            MeshSurf *surf = outBelowMesh->AllocSurface(tempBelowVerts.Count(), tempBelowIndexes.Count());
+            Surface *surf = Mesh::AllocSurface(tempBelowVerts.Count(), tempBelowIndexes.Count());
             surf->materialIndex = srcSurf->materialIndex;
             outBelowMesh->surfaces.Append(surf);
 
@@ -816,7 +816,7 @@ bool Mesh::TrySliceMesh(const Mesh &srcMesh, const Plane &slicePlane, bool gener
         }
 
         if (tempAboveVerts.Count() > 0 && tempAboveIndexes.Count() > 0) {
-            MeshSurf *surf = outAboveMesh->AllocSurface(tempAboveVerts.Count(), tempAboveIndexes.Count());
+            Surface *surf = Mesh::AllocSurface(tempAboveVerts.Count(), tempAboveIndexes.Count());
             surf->materialIndex = srcSurf->materialIndex;
             outAboveMesh->surfaces.Append(surf);
 
@@ -826,7 +826,7 @@ bool Mesh::TrySliceMesh(const Mesh &srcMesh, const Plane &slicePlane, bool gener
 
         if (generateCap) {
             if (tempBelowCapVerts.Count() > 0 && tempBelowCapIndexes.Count() > 0) {
-                MeshSurf *surf = outBelowMesh->AllocSurface(tempBelowCapVerts.Count(), tempBelowCapIndexes.Count());
+                Surface *surf = Mesh::AllocSurface(tempBelowCapVerts.Count(), tempBelowCapIndexes.Count());
                 surf->materialIndex = srcSurf->materialIndex;
                 outBelowMesh->surfaces.Append(surf);
 
@@ -835,7 +835,7 @@ bool Mesh::TrySliceMesh(const Mesh &srcMesh, const Plane &slicePlane, bool gener
             }
 
             if (tempAboveCapVerts.Count() > 0 && tempAboveCapIndexes.Count() > 0) {
-                MeshSurf *surf = outAboveMesh->AllocSurface(tempAboveCapVerts.Count(), tempAboveCapIndexes.Count());
+                Surface *surf = Mesh::AllocSurface(tempAboveCapVerts.Count(), tempAboveCapIndexes.Count());
                 surf->materialIndex = srcSurf->materialIndex;
                 outAboveMesh->surfaces.Append(surf);
 

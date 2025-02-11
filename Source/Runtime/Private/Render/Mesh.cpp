@@ -26,10 +26,7 @@ bool Mesh::IsDefaultMesh() const {
 }
 
 void Mesh::Purge() {
-    for (int surfaceIndex = 0; surfaceIndex < surfaces.Count(); surfaceIndex++) {
-        FreeSurface(surfaces[surfaceIndex]);
-    }
-    surfaces.Clear();
+    surfaces.DeleteContents(true);
 
     if (IsInstantiatedMesh()) {
         SAFE_DELETE(skinningJointCache);
@@ -43,8 +40,8 @@ void Mesh::Purge() {
     }
 }
 
-MeshSurf *Mesh::AllocSurface(int numVerts, int numIndexes) const {
-    MeshSurf *surf = new MeshSurf;
+Mesh::Surface *Mesh::AllocSurface(int numVerts, int numIndexes) {
+    Surface *surf = new Surface;
     surf->materialIndex = 0;
     surf->subMesh       = new SubMesh;
     surf->drawSurf      = nullptr;
@@ -55,14 +52,8 @@ MeshSurf *Mesh::AllocSurface(int numVerts, int numIndexes) const {
     return surf;
 }
 
-void Mesh::FreeSurface(MeshSurf *surf) const {
-    delete surf->subMesh;
-
-    SAFE_DELETE(surf);
-}
-
-MeshSurf *Mesh::AllocInstantiatedSurface(const MeshSurf *refSurf, int meshType) const {
-    MeshSurf *surf = new MeshSurf;
+Mesh::Surface *Mesh::AllocInstantiatedSurface(const Surface *refSurf, int meshType) {
+    Surface *surf = new Surface;
     surf->materialIndex = refSurf->materialIndex;
     surf->subMesh       = new SubMesh;
     surf->drawSurf      = nullptr;
@@ -75,10 +66,9 @@ MeshSurf *Mesh::AllocInstantiatedSurface(const MeshSurf *refSurf, int meshType) 
 
 Mesh *Mesh::InstantiateMesh(Type::Enum meshType) {
     Mesh *mesh = meshManager.AllocInstantiatedMesh(this);
+    mesh->Instantiate(meshType);
 
     instantiatedMeshes.Append(mesh);
-
-    mesh->Instantiate(meshType);
 
     return mesh;
 }
@@ -92,9 +82,6 @@ void Mesh::Instantiate(Type::Enum meshType) {
         flags |= Flag::IsStaticMesh;
     }
 
-    // Free previously allocated skinning joint cache
-    SAFE_DELETE(skinningJointCache);
-
     if (flags & Flag::IsSkinnedMesh) {
         gpuSkinningEnabled = SkinningJointCache::CapableGPUJointSkinning((SkinningJointCache::SkinningMethod::Enum)renderGlobal.skinningMethod, numJoints);
 
@@ -103,21 +90,19 @@ void Mesh::Instantiate(Type::Enum meshType) {
         }
     }
 
-    // Free previously allocated surfaces
-    if (surfaces.Count() > 0) {
-        for (int i = 0; i < surfaces.Count(); i++) {
-            FreeSurface(surfaces[i]);
-        }
-        surfaces.Clear();
-    }
-
     for (int surfaceIndex = 0; surfaceIndex < originalMesh->surfaces.Count(); surfaceIndex++) {
-        MeshSurf *surf = AllocInstantiatedSurface(originalMesh->surfaces[surfaceIndex], meshType);
+        Surface *surf = Mesh::AllocInstantiatedSurface(originalMesh->surfaces[surfaceIndex], meshType);
         surfaces.Append(surf);
     }
 }
 
 void Mesh::Reinstantiate() {
+    // Delete previously allocated skinning joint cache.
+    SAFE_DELETE(skinningJointCache);
+
+    // Delete previously allocated surfaces.
+    surfaces.DeleteContents(true);
+
     Type::Enum meshType;
     if (flags & Flag::IsSkinnedMesh) {
         meshType = Type::Skinned;
@@ -163,7 +148,7 @@ void Mesh::FinishSurfaces(int flags) {
     }
 }
 
-void Mesh::TransformVerts(const Mat3 &rotation, const Vec3 &scale, const Vec3 &translation) {
+void Mesh::TransformVerts(const Mat3 &rotation, const Vec3 &scale, const Vec3 &translation, bool recomputeAABB) {
     for (int surfaceIndex = 0; surfaceIndex < surfaces.Count(); surfaceIndex++) {
         SubMesh *subMesh = surfaces[surfaceIndex]->subMesh;
 
@@ -172,7 +157,9 @@ void Mesh::TransformVerts(const Mat3 &rotation, const Vec3 &scale, const Vec3 &t
         }
     }
 
-    ComputeAABB();
+    if (recomputeAABB) {
+        ComputeAABB();
+    }
 }
 
 void Mesh::GetJointAABBs(const Mat3x4 *invBindPoseMats, Array<AABB> &jointAabbs) const {
@@ -245,7 +232,7 @@ void Mesh::Voxelize() {
 
 bool Mesh::IsIntersectLine(const Vec3 &start, const Vec3 &end, bool backFaceCull) const {
     for (int surfaceIndex = 0; surfaceIndex < surfaces.Count(); surfaceIndex++) {
-        MeshSurf *surf = surfaces[surfaceIndex];
+        Surface *surf = surfaces[surfaceIndex];
         if (surf->subMesh->IsIntersectLine(start, end, backFaceCull)) {
             return true;
         }
@@ -259,7 +246,7 @@ bool Mesh::IntersectRay(const Ray &ray, bool ignoreBackFace, float *hitDist, Vec
     Vec3 minDistNormal = Vec3::unitX;
 
     for (int surfaceIndex = 0; surfaceIndex < surfaces.Count(); surfaceIndex++) {
-        MeshSurf *surf = surfaces[surfaceIndex];
+        Surface *surf = surfaces[surfaceIndex];
 
         float dist;
         Vec3 normal;
@@ -326,7 +313,7 @@ void Mesh::ComputeNormals() {
 
 void Mesh::ComputeTangents(bool includeNormals, bool useUnsmoothedTangents) {
     for (int surfaceIndex = 0; surfaceIndex < surfaces.Count(); surfaceIndex++) {
-        MeshSurf *surf = surfaces[surfaceIndex];
+        Surface *surf = surfaces[surfaceIndex];
 
         surf->subMesh->ComputeTangents(includeNormals, useUnsmoothedTangents);
     }
@@ -385,15 +372,15 @@ void Mesh::UpdateSkinningJointCache(const Skeleton *skeleton, const Mat3x4 *join
     renderSystem.GetCurrentRenderContext()->GetRenderCounter().numSkinningEntities++;
 }
 
-float Mesh::ComputeVolume() const {
+float Mesh::CalculateVolume() const {
     float totalVolume = 0;
 
     for (int i = 0; i < NumSurfaces(); i++) {
-        const MeshSurf *surf = GetSurface(i);
+        const Surface *surf = GetSurface(i);
         const SubMesh *subMesh = surf->subMesh;
 
         if (subMesh->IsClosed()) {
-            totalVolume += subMesh->ComputeVolume();
+            totalVolume += subMesh->CalculateVolume();
         } else {
             // Compute volume using AABB
             totalVolume = subMesh->GetAABB().Volume();
@@ -403,25 +390,25 @@ float Mesh::ComputeVolume() const {
     return totalVolume;
 }
 
-const Vec3 Mesh::ComputeCentroid() const {
+const Vec3 Mesh::CalculateCentroid() const {
     Vec3 centroid;
-    ComputeVolumeAndCentroid(centroid);
+    CalculateVolumeAndCentroid(centroid);
     return centroid;
 }
 
-float Mesh::ComputeVolumeAndCentroid(Vec3 &outCentroid) const {
+float Mesh::CalculateVolumeAndCentroid(Vec3 &outCentroid) const {
     float   totalVolume = 0;
     Vec3    totalVolumeCentroid(0.0f);
     float   volume;
     Vec3    centroid;
 
     for (int i = 0; i < NumSurfaces(); i++) {
-        const MeshSurf *surf = GetSurface(i);
+        const Surface *surf = GetSurface(i);
         const SubMesh *subMesh = surf->subMesh;
 
         if (subMesh->IsClosed()) {
-            volume = subMesh->ComputeVolume();
-            centroid = subMesh->ComputeCentroid();
+            volume = subMesh->CalculateVolume();
+            centroid = subMesh->CalculateCentroid();
         } else {
             // Compute volume and centroid using AABB
             volume = subMesh->GetAABB().Volume();
@@ -442,7 +429,7 @@ float Mesh::ComputeVolumeAndCentroid(Vec3 &outCentroid) const {
 
 void Mesh::RecomputeTangents() {
     for (int surfaceIndex = 0; surfaceIndex < surfaces.Count(); surfaceIndex++) {
-        MeshSurf *surf = surfaces[surfaceIndex];
+        Surface *surf = surfaces[surfaceIndex];
 
         surf->subMesh->tangentsCalculated = false;
         surf->subMesh->ComputeTangents(false, false);

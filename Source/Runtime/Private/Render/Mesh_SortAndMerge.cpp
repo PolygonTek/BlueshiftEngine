@@ -21,7 +21,7 @@ BE_NAMESPACE_BEGIN
 
 static AABB mergeAABB;
 
-using MeshSurfPtr = MeshSurf *;
+using MeshSurfPtr = Mesh::Surface *;
 template <typename MeshSurfPtr>
 static bool ListSortCompareMeshMaterials(const MeshSurfPtr &a, const MeshSurfPtr &b) {
     int index_a = (a)->materialIndex;
@@ -30,7 +30,7 @@ static bool ListSortCompareMeshMaterials(const MeshSurfPtr &a, const MeshSurfPtr
     return index_a < index_b;
 }
 
-using MeshSurfPtr = MeshSurf *;
+using MeshSurfPtr = Mesh::Surface *;
 template <typename MeshSurfPtr>
 static bool ListSortCompareMergedAABBArea(const MeshSurfPtr &a, const MeshSurfPtr &b) {
     const AABB &aAABB = (a)->subMesh->GetAABB();
@@ -50,9 +50,6 @@ static bool ListSortCompareMergedAABBArea(const MeshSurfPtr &a, const MeshSurfPt
 }
 
 void Mesh::SortAndMerge() {
-    int     numNewVerts;
-    int     numNewIndexes;
-
     ComputeAABB();
 
     if (numJoints > 1) {
@@ -69,6 +66,8 @@ void Mesh::SortAndMerge() {
     int m1 = 0;
 
     int numNewSurfs = 0;
+    int numNewVerts;
+    int numNewIndexes;
 
     while (m1 < surfaces.Count()) {
         if (m1 + 1 < surfaces.Count()) {
@@ -117,7 +116,7 @@ void Mesh::SortAndMerge() {
             numNewVerts += surfaces[m0]->subMesh->numVerts;
             numNewIndexes += surfaces[m0]->subMesh->numIndexes;
 
-            MeshSurf *newSurf = AllocSurface(numNewVerts, numNewIndexes);
+            Surface *newSurf = Mesh::AllocSurface(numNewVerts, numNewIndexes);
             newSurf->materialIndex = surfaces[m0]->materialIndex;
 
             VertexGenericLit *vp = newSurf->subMesh->verts;
@@ -126,7 +125,7 @@ void Mesh::SortAndMerge() {
             int filledVertexCount = 0;
 
             for (int i = m0; i <= m1; i++) {
-                MeshSurf *surf = surfaces[i];
+                Surface *surf = surfaces[i];
 
                 simdProcessor->Memcpy(vp, surf->subMesh->verts, sizeof(VertexGenericLit) * surf->subMesh->numVerts);
                 vp += surf->subMesh->numVerts;
@@ -138,7 +137,7 @@ void Mesh::SortAndMerge() {
 
                 filledVertexCount += surf->subMesh->numVerts;
 
-                FreeSurface(surf);
+                delete surf;
                 surfaces[i] = nullptr;
             }
 

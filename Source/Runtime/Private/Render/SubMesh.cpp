@@ -1149,7 +1149,7 @@ bool SubMesh::IntersectRay(const Ray &ray, bool ignoreBackFace, float *hitDist, 
     return true;
 }
 
-float SubMesh::ComputeVolume() const {
+float SubMesh::CalculateVolume() const {
     float intg = 0;
 
     for (int i = 0; i < numIndexes; i += 3) {
@@ -1176,7 +1176,7 @@ static void Moment01SubExpressions(float w0, float w1, float w2, float &f1, floa
     f2 = temp2 + w2 * f1;
 }
 
-const Vec3 SubMesh::ComputeCentroid() const {
+const Vec3 SubMesh::CalculateCentroid() const {
 #if defined(ENABLE_SIMD4_INTRIN)
     const simd4f multipliers = { 1.0f / 6.0f, 1.0f / 24.0f, 1.0f / 24.0f, 1.0f / 24.0f };
     const simd4b mask = { false, true, true, true };
@@ -1272,7 +1272,7 @@ static void Moment012SubExpressions(float w0, float w1, float w2, float &f1, flo
     g2 = f2 + w2 * (f1 + w2);
 }
 
-const Mat3 SubMesh::ComputeInertiaTensor(const Vec3 &centroid, float mass) const {
+const Mat3 SubMesh::CalculateInertiaTensor(const Vec3 &centroid, float mass) const {
 #if defined(ENABLE_SIMD4_INTRIN)
     const simd4f multipliers1 = { 1.0f / 60.0f, 1.0f / 60.0f, 1.0f / 60.0f, 0.0f };
     const simd4f multipliers2 = { 1.0f / 120.0f, 1.0f / 120.0f, 1.0f / 120.0f, 0.0f };

@@ -259,7 +259,7 @@ Mesh *MeshManager::CreateCombinedMesh(const char *hashName, const Array<BatchSub
 
     // Allocates a combiend mesh.
     Mesh *mesh = AllocMesh(hashName);
-    MeshSurf *surf = mesh->AllocSurface(numTotalVerts, numTotalIndexes);
+    Mesh::Surface *surf = Mesh::AllocSurface(numTotalVerts, numTotalIndexes);
     mesh->surfaces.Append(surf);
 
     VertexGenericLit *dstVertPtr = surf->subMesh->verts;

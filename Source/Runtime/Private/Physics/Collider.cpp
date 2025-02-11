@@ -221,7 +221,7 @@ void Collider::CreateConvexHull(const Mesh *mesh, const Vec3 &scale, float margi
     Purge();
 
     this->modelScale = scale;
-    this->volume = mesh->ComputeVolumeAndCentroid(this->centroid);
+    this->volume = mesh->CalculateVolumeAndCentroid(this->centroid);
     this->volume *= scale.x * scale.y * scale.z;
     this->centroid *= scale;
 
@@ -242,7 +242,7 @@ void Collider::CreateConvexHull(const Mesh *mesh, const Vec3 &scale, float margi
     Vec3 *inputVertexPtr = (Vec3 *)inputVertices.Ptr();
 
     for (int surfaceIndex = 0; surfaceIndex < mesh->NumSurfaces(); surfaceIndex++) {
-        const MeshSurf *surf = mesh->GetSurface(surfaceIndex);
+        const Mesh::Surface *surf = mesh->GetSurface(surfaceIndex);
         const SubMesh *subMesh = surf->subMesh;
         const VertexGenericLit *verts = subMesh->Verts();
 
@@ -277,7 +277,7 @@ void Collider::CreateConvexDecomp(const Mesh *mesh, const Vec3 &scale, float mar
     Purge();
 
     this->modelScale = scale;
-    this->volume = mesh->ComputeVolumeAndCentroid(this->centroid);
+    this->volume = mesh->CalculateVolumeAndCentroid(this->centroid);
     this->volume *= scale.x * scale.y * scale.z;
     this->centroid *= scale;
 
@@ -286,7 +286,7 @@ void Collider::CreateConvexDecomp(const Mesh *mesh, const Vec3 &scale, float mar
     int	indexOffset = 0;
 
     for (int i = 0; i < mesh->NumSurfaces(); i++) {
-        const MeshSurf *surf = mesh->GetSurface(i);
+        const Mesh::Surface *surf = mesh->GetSurface(i);
         const SubMesh *subMesh = surf->subMesh;
 
         for (int i = 0; i < subMesh->NumOriginalVerts(); i++) {
@@ -401,7 +401,7 @@ void Collider::CreateBVH(const Mesh *mesh, bool multiMaterials, const Vec3 &scal
 
 void Collider::CreateBVHCMSingleMaterial(const Mesh *mesh, const Vec3 &scale) {
     for (int i = 0; i < mesh->NumSurfaces(); i++) {
-        const MeshSurf *surf = mesh->GetSurface(i);
+        const Mesh::Surface *surf = mesh->GetSurface(i);
         const SubMesh *subMesh = surf->subMesh;
 
         CollisionMesh *collisionMesh = AllocCollisionMesh(subMesh->NumVerts(), subMesh->NumIndexes());
@@ -443,7 +443,7 @@ void Collider::CreateBVHCMSingleMaterial(const Mesh *mesh, const Vec3 &scale) {
 
 void Collider::CreateBVHCMMultiMaterials(const Mesh *mesh, const Vec3 &scale) {
     for (int i = 0; i < mesh->NumSurfaces(); i++) {
-        const MeshSurf *surf = mesh->GetSurface(i);
+        const Mesh::Surface *surf = mesh->GetSurface(i);
         const SubMesh *subMesh = surf->subMesh;
 
         CollisionMesh *collisionMesh = AllocCollisionMesh(subMesh->NumVerts(), subMesh->NumIndexes(), true);

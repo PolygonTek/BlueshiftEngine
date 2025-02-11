@@ -58,7 +58,7 @@ bool Mesh::LoadBinaryMesh(const char *filename) {
         const BMeshSurf *bMeshSurf = (const BMeshSurf *)ptr;
         ptr += sizeof(BMeshSurf);
 
-        MeshSurf *meshSurf = AllocSurface(bMeshSurf->numVerts, bMeshSurf->numIndexes);
+        Surface *meshSurf = Mesh::AllocSurface(bMeshSurf->numVerts, bMeshSurf->numIndexes);
         surfaces.Append(meshSurf);
         SubMesh *subMesh = meshSurf->subMesh;
         subMesh->aabb = AABB(bMeshSurf->aabbMin, bMeshSurf->aabbMax);
@@ -196,7 +196,7 @@ void Mesh::WriteBinaryMesh(const char *filename) {
 
     // --- surfaces ---
     for (int surfaceIndex = 0; surfaceIndex < bMeshHeader.numSurfs; surfaceIndex++) {
-        const MeshSurf *meshSurf = GetSurface(surfaceIndex);
+        const Surface *meshSurf = GetSurface(surfaceIndex);
         const SubMesh *subMesh = meshSurf->subMesh;
 
         BMeshSurf bMeshSurf;

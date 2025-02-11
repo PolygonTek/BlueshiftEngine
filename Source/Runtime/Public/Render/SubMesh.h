@@ -111,9 +111,9 @@ public:
     const AABB &            GetAABB() const { return aabb; }
 
                             /// Compute mass properties (useful only for closed mesh)
-    float                   ComputeVolume() const;
-    const Vec3              ComputeCentroid() const;
-    const Mat3              ComputeInertiaTensor(const Vec3 &centroid, float mass) const;
+    float                   CalculateVolume() const;
+    const Vec3              CalculateCentroid() const;
+    const Mat3              CalculateInertiaTensor(const Vec3 &centroid, float mass) const;
 
     void                    OptimizeIndexedTriangles();
 

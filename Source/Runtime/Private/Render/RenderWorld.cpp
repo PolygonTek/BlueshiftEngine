@@ -118,7 +118,7 @@ void RenderWorld::UpdateRenderObject(int handle, const RenderObject::State *def)
             renderObject->meshSurfProxies = (DbvtProxy *)Mem_ClearedAlloc(def->mesh->NumSurfaces() * sizeof(DbvtProxy));
 
             for (int surfaceIndex = 0; surfaceIndex < def->mesh->NumSurfaces(); surfaceIndex++) {
-                const MeshSurf *meshSurf = def->mesh->GetSurface(surfaceIndex);
+                const Mesh::Surface *meshSurf = def->mesh->GetSurface(surfaceIndex);
 
                 DbvtProxy *meshSurfProxy = &renderObject->meshSurfProxies[surfaceIndex];
                 meshSurfProxy->renderObject = renderObject;
@@ -153,7 +153,7 @@ void RenderWorld::UpdateRenderObject(int handle, const RenderObject::State *def)
                     renderObject->meshSurfProxies = (DbvtProxy *)Mem_ClearedAlloc(renderObject->numMeshSurfProxies * sizeof(DbvtProxy));
 
                     for (int surfaceIndex = 0; surfaceIndex < def->mesh->NumSurfaces(); surfaceIndex++) {
-                        const MeshSurf *meshSurf = def->mesh->GetSurface(surfaceIndex);
+                        const Mesh::Surface *meshSurf = def->mesh->GetSurface(surfaceIndex);
 
                         staticMeshDbvt.DestroyProxy(renderObject->meshSurfProxies[surfaceIndex].id);
 

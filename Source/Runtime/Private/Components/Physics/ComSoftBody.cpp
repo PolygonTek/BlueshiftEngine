@@ -100,7 +100,7 @@ void ComSoftBody::ResetPoints() {
     int numTotalIndexes = 0;
 
     for (int surfaceIndex = 0; surfaceIndex < mesh->NumSurfaces(); surfaceIndex++) {
-        const MeshSurf *meshSurf = mesh->GetSurface(surfaceIndex);
+        const Mesh::Surface *meshSurf = mesh->GetSurface(surfaceIndex);
         numTotalVerts += meshSurf->subMesh->NumVerts();
         numTotalIndexes += meshSurf->subMesh->NumIndexes();
     }
@@ -116,7 +116,7 @@ void ComSoftBody::ResetPoints() {
     int baseGraphicsIndex = 0;
 
     for (int surfaceIndex = 0; surfaceIndex < mesh->NumSurfaces(); surfaceIndex++) {
-        const MeshSurf *meshSurf = mesh->GetSurface(surfaceIndex);
+        const Mesh::Surface *meshSurf = mesh->GetSurface(surfaceIndex);
         const SubMesh *subMesh = meshSurf->subMesh;
 
         const VertexGenericLit *verts = subMesh->Verts();
@@ -153,7 +153,7 @@ void ComSoftBody::ResetPoints() {
     baseGraphicsIndex = 0;
 
     for (int surfaceIndex = 0; surfaceIndex < mesh->NumSurfaces(); surfaceIndex++) {
-        const MeshSurf *meshSurf = mesh->GetSurface(surfaceIndex);
+        const Mesh::Surface *meshSurf = mesh->GetSurface(surfaceIndex);
         const SubMesh *subMesh = meshSurf->subMesh;
 
         const VertIndex *indexes = subMesh->Indexes();
@@ -220,7 +220,7 @@ void ComSoftBody::UpdateMeshVertsFromPoints() {
     int baseGraphicsIndex = 0;
 
     for (int surfaceIndex = 0; surfaceIndex < mesh->NumSurfaces(); surfaceIndex++) {
-        const MeshSurf *meshSurf = mesh->GetSurface(surfaceIndex);
+        const Mesh::Surface *meshSurf = mesh->GetSurface(surfaceIndex);
         const SubMesh *subMesh = meshSurf->subMesh;
 
         VertexGenericLit *verts = subMesh->Verts();

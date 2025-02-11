@@ -25,6 +25,7 @@
 #include "Math/Math.h"
 #include "Containers/Array.h"
 #include "Containers/HashMap.h"
+#include "SubMesh.h"
 
 class MeshImporter;
 
@@ -36,16 +37,7 @@ class Joint;
 class Mat3x4;
 class SkinningJointCache;
 class DrawSurf;
-class SubMesh;
 class Ray;
-
-class MeshSurf {
-public:
-    SubMesh *               subMesh;
-    DrawSurf *              drawSurf;
-    int32_t                 materialIndex;
-    int32_t                 viewCount;
-};
 
 struct BatchSubMesh {
     SubMesh *               subMesh;
@@ -97,11 +89,25 @@ public:
         };
     };
 
+    class Surface {
+    public:
+        Surface() = default;
+        ~Surface() { SAFE_DELETE(subMesh); }
+
+        SubMesh *           subMesh = nullptr;
+        DrawSurf *          drawSurf = nullptr;
+        int32_t             materialIndex;
+        int32_t             viewCount = 0;
+    };
+
     Mesh();
     ~Mesh();
 
     const char *            GetName() const { return name; }
     const char *            GetHashName() const { return hashName; }
+
+    const Mesh *            AddRefCount() const { refCount++; return this; }
+    int                     GetRefCount() const { return refCount; }
 
     const AABB &            GetAABB() const { return aabb; }
 
@@ -114,7 +120,7 @@ public:
     bool                    IsCompatibleSkeleton(const Skeleton *skeleton) const;
 
     int                     NumSurfaces() const { return surfaces.Count(); }
-    MeshSurf *              GetSurface(int index) const { assert(index >= 0 && index < surfaces.Count()); return surfaces[index]; }
+    Surface *               GetSurface(int index) const { return surfaces[index]; }
 
     int                     NumJoints() const { return numJoints; }
     const Joint *           GetJoints() const { return joints; }
@@ -125,10 +131,10 @@ public:
                             // Reinstantiate itself.
     void                    Reinstantiate();
 
-    MeshSurf *              AllocSurface(int numVerts, int numIndexes) const;
+    static Surface *        AllocSurface(int numVerts, int numIndexes);
     void                    FinishSurfaces(int finishFlags = 0);
 
-    void                    TransformVerts(const Mat3 &rotation, const Vec3 &scale, const Vec3 &translation);
+    void                    TransformVerts(const Mat3 &rotation, const Vec3 &scale, const Vec3 &translation, bool recomputeAABB = true);
 
                             /// Get local bind-pose AABBs for all joints.
     void                    GetJointAABBs(const Mat3x4 *invBindPoseMats, Array<AABB> &jointAabbs) const;
@@ -148,12 +154,12 @@ public:
 
                             /// Returns volume of solid mesh.
                             /// Should be a closed polytope to calculate exactly. If not AABB approximation will be used.
-    float                   ComputeVolume() const;
+    float                   CalculateVolume() const;
                             /// Returns centroid of solid mesh.
                             /// Should be a closed polytope to calculate exactly. If not AABB approximation will be used.
-    const Vec3              ComputeCentroid() const;
+    const Vec3              CalculateCentroid() const;
 
-    float                   ComputeVolumeAndCentroid(Vec3 &outCentroid) const;
+    float                   CalculateVolumeAndCentroid(Vec3 &outCentroid) const;
 
     void                    RecomputeTangents();
 
@@ -175,12 +181,8 @@ public:
 
     void                    Write(const char *filename);
 
-    const Mesh *            AddRefCount() const { refCount++; return this; }
-    int                     GetRefCount() const { return refCount; }
-
 private:
-    void                    FreeSurface(MeshSurf *surf) const;
-    MeshSurf *              AllocInstantiatedSurface(const MeshSurf *refSurf, int meshType) const;
+    static Surface *        AllocInstantiatedSurface(const Surface *refSurf, int meshType);
 
     void                    Instantiate(Type::Enum meshType);
 
@@ -205,7 +207,7 @@ private:
 
     int                     flags = 0;
     AABB                    aabb = AABB::empty;
-    Array<MeshSurf *>       surfaces;
+    Array<Surface *>        surfaces;
 
     bool                    gpuSkinningEnabled = false;
     SkinningJointCache *    skinningJointCache = nullptr;   // joint cache for HW skinning

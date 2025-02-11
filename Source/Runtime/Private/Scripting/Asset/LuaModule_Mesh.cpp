@@ -29,8 +29,8 @@ void LuaVM::RegisterMesh(LuaCpp::Module &module) {
         "aabb", &Mesh::GetAABB,
         "is_static_mesh", &Mesh::IsStaticMesh,
         "is_skinned_mesh", &Mesh::IsSkinnedMesh,
-        "compute_volume", &Mesh::ComputeVolume,
-        "compute_centroid", &Mesh::ComputeCentroid);
+        "compute_volume", &Mesh::CalculateVolume,
+        "compute_centroid", &Mesh::CalculateCentroid);
 
     _Mesh["new"].SetFunc([]() {
         Guid newGuid = Guid::CreateGuid();
