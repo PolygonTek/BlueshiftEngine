@@ -52,6 +52,7 @@ public:
     const char *                GetName() const { return name.c_str(); }
     const char *                GetHashName() const { return hashName.c_str(); }
 
+    Texture *                   AddRefCount() { refCount++; return this; }
     const Texture *             AddRefCount() const { refCount++; return this; }
     int                         GetRefCount() const { return refCount; }
 

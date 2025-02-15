@@ -76,6 +76,7 @@ public:
 
     void                Write(const char *filename);
 
+    AnimClip *          AddRefCount() { refCount++; return this; }
     const AnimClip *    AddRefCount() const { refCount++; return this; }
     int                 GetRefCount() const { return refCount; }
     

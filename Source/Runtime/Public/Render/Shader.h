@@ -327,6 +327,7 @@ public:
 
     bool                        Create(const char *text, const char *baseDir);
 
+    Shader *                    AddRefCount() { refCount++; return this; }
     const Shader *              AddRefCount() const { refCount++; return this; }
     int                         GetRefCount() const { return refCount; }
 

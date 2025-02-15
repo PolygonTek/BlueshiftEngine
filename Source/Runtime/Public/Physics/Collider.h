@@ -106,6 +106,7 @@ public:
     bool                    Reload();
     void                    Write(const char *filename);
 
+    Collider *              AddRefCount() { refCount++; return this; }
     const Collider *        AddRefCount() const { refCount++; return this; }
     int                     GetRefCount() const { return refCount; }
 

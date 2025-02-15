@@ -48,6 +48,7 @@ public:
     bool                    Reload();
     void                    Write(const char *filename);
 
+    Skin *                  AddRefCount() { refCount++; return this; }
     const Skin *            AddRefCount() const { refCount++; return this; }
     int                     GetRefCount() const { return refCount; }
 

@@ -125,6 +125,7 @@ public:
     bool                    Load(const char *filename, int flags);
     bool                    Reload();
 
+    Texture *               AddRefCount() { refCount++; return this; }
     const Texture *         AddRefCount() const { refCount++; return this; }
     int                     GetRefCount() const { return refCount; }
 

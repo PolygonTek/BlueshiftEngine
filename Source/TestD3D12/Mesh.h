@@ -59,6 +59,7 @@ public:
     const char *                GetName() const { return name; }
     const char *                GetHashName() const { return hashName; }
 
+    Mesh *                      AddRefCount() { refCount++; return this; }
     const Mesh *                AddRefCount() const { refCount++; return this; }
     int                         GetRefCount() const { return refCount; }
 
