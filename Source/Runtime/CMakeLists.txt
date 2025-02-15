@@ -178,7 +178,7 @@ set(COMMON_ENGINE_FILES
     Public/Render/SkinningJointCache.h
     Public/Render/Font.h
     Public/Render/FontFile.h
-    Public/Render/FreeTypeFont.h
+    Public/Render/TrueTypeFont.h
     Public/Render/ParticleMesh.h
     Public/Render/GuiMesh.h
     Public/Render/Material.h
@@ -494,12 +494,12 @@ set(COMMON_ENGINE_FILES
     Private/Render/SubMesh.cpp
     Private/Render/Texture.cpp
     Private/Render/TextureManager.cpp
-    Private/Render/FreeTypeFont.cpp
+    Private/Render/TrueTypeFont.cpp
     Private/Render/FontFace.h
     Private/Render/Font.cpp
     Private/Render/FontManager.cpp
     Private/Render/FontFaceBitmap.cpp
-    Private/Render/FontFaceFreeType.cpp
+    Private/Render/FontFaceTrueType.cpp
     Private/Render/DrawSurf.h
     Private/Render/FrameData.h
     Private/Render/RBackEnd.h

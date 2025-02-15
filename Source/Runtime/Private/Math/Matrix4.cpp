@@ -1258,10 +1258,10 @@ void Mat4::SetPerspectiveRH(float fovy, float aspect, float zNear, float zFar, b
 }
 
 void Mat4::SetPerspectiveLH(float fovy, float aspect, float zNear, float zFar, bool zNegativeOneToOne) {
-    float top = zNear * Math::Tan(DEG2RAD(fovy * 0.5f));
-    float bottom = -top;
-    float right = top * aspect;
-    float left = -right;
+    float top       = zNear * Math::Tan(DEG2RAD(fovy * 0.5f));
+    float bottom    = -top;
+    float right     = top * aspect;
+    float left      = -right;
 
     SetFrustumLH(left, right, bottom, top, zNear, zFar, zNegativeOneToOne);
 }

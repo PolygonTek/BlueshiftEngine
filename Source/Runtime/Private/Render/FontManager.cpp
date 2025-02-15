@@ -16,7 +16,7 @@
 #include "Render/Render.h"
 #include "Core/StrColor.h"
 #include "Render/Font.h"
-#include "Render/FreeTypeFont.h"
+#include "Render/TrueTypeFont.h"
 #include "FontFace.h"
 
 BE_NAMESPACE_BEGIN
@@ -26,9 +26,8 @@ Font *          FontManager::defaultFont;
 FontManager     fontManager;
 
 void FontManager::Init() {
-    FreeTypeFont::Init();
-
-    FontFaceFreeType::InitAtlas();
+    TrueTypeFont::Init();
+    TrueTypeFontFace::InitAtlas();
 
     fontHashMap.Init(1024, 64, 64);
 
@@ -42,16 +41,16 @@ void FontManager::Init() {
 void FontManager::Shutdown() {
     fontHashMap.DeleteContents(true);
 
-    FontFaceFreeType::FreeAtlas();
+    TrueTypeFontFace::FreeAtlas();
 
-    FreeTypeFont::Shutdown();
+    TrueTypeFont::Shutdown();
 }
 
 void FontManager::ClearAtlasTextures() {
-    //FontFaceFreeType::FreeAtlas();
+    //TrueTypeFontFace::FreeAtlas();
 }
 
-Font *FontManager::AllocFont(const char *hashName, int fontSize) {
+Font *FontManager::AllocFont(const char *hashName, uint32_t fontSize) {
     if (fontHashMap.Get(FontHashKey(hashName, fontSize))) {
         BE_FATALERROR("%s font already allocated", hashName);
     }
@@ -78,15 +77,17 @@ void FontManager::DestroyFont(Font *font) {
 }
 
 void FontManager::ReleaseFont(Font *font, bool immediateDestroy) {
+    if (font->refCount > 0) {
+        if (--font->refCount > 0) {
+            return;
+        }
+    }
+
     if (font->permanence) {
         return;
     }
 
-    if (font->refCount > 0) {
-        font->refCount--;
-    }
-
-    if (immediateDestroy && font->refCount == 0) {
+    if (immediateDestroy) {
         DestroyFont(font);
     }
 }
@@ -96,8 +97,11 @@ void FontManager::DestroyUnusedFonts() {
 
     for (const auto &entry : fontHashMap) {
         Font *font = entry.second;
+        if (!font) {
+            continue;
+        }
 
-        if (font && !font->permanence && font->refCount == 0) {
+        if (!font->permanence && font->refCount == 0) {
             removeArray.Append(font);
         }
     }
@@ -107,7 +111,7 @@ void FontManager::DestroyUnusedFonts() {
     }
 }
 
-Font *FontManager::FindFont(const char *hashName, int fontSize) const {
+Font *FontManager::FindFont(const char *hashName, uint32_t fontSize) const {
     const auto *entry = fontHashMap.Get(FontHashKey(hashName, fontSize));
     if (entry) {
         return entry->second;
@@ -115,7 +119,7 @@ Font *FontManager::FindFont(const char *hashName, int fontSize) const {
     return nullptr;
 }
 
-Font *FontManager::GetFont(const char *hashName, int fontSize) {
+Font *FontManager::GetFont(const char *hashName, uint32_t fontSize) {
     if (!hashName || !hashName[0]) {
         return defaultFont;
     }

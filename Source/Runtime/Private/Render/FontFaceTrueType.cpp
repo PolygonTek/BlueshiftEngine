@@ -15,7 +15,7 @@
 #include "Precompiled.h"
 #include "Render/Render.h"
 #include "RenderInternal.h"
-#include "Render/FreeTypeFont.h"
+#include "Render/TrueTypeFont.h"
 #include "Render/FontFile.h"
 #include "SIMD/SIMD.h"
 #include "Core/Heap.h"
@@ -74,11 +74,11 @@ static Texture *Atlas_AddRect(int inWidth, int inHeight, int &outX, int &outY) {
     return atlasArray[atlasIndex].texture;
 }
 
-void FontFaceFreeType::InitAtlas() {
+void TrueTypeFontFace::InitAtlas() {
     Atlas_Add(GLYPH_CACHE_TEXTURE_SIZE);
 }
 
-void FontFaceFreeType::FreeAtlas() {
+void TrueTypeFontFace::FreeAtlas() {
     for (int atlasIndex = 0; atlasIndex < atlasArray.Count(); atlasIndex++) {
         textureManager.DestroyTexture(atlasArray[atlasIndex].texture);
     }
@@ -86,8 +86,8 @@ void FontFaceFreeType::FreeAtlas() {
     atlasArray.Clear();
 }
 
-void FontFaceFreeType::Purge() {
-    SAFE_DELETE(freeTypeFont);
+void TrueTypeFontFace::Purge() {
+    SAFE_DELETE(trueTypeFont);
 
     if (glyphBuffer) {
         Mem_AlignedFree(glyphBuffer);
@@ -97,7 +97,7 @@ void FontFaceFreeType::Purge() {
     ClearGlyphCaches();
 }
 
-void FontFaceFreeType::ClearGlyphCaches() {
+void TrueTypeFontFace::ClearGlyphCaches() {
     for (const auto &entry : glyphHashMap) {
         FontGlyph *glyph = entry.second;
 
@@ -107,16 +107,16 @@ void FontFaceFreeType::ClearGlyphCaches() {
     glyphHashMap.DeleteContents(true);
 }
 
-bool FontFaceFreeType::Load(const char *filename, int fontSize) {
+bool TrueTypeFontFace::Load(const char *filename, int fontSize) {
     Purge();
 
-    freeTypeFont = new FreeTypeFont;
-    if (!freeTypeFont->Load(filename, fontSize)) {
+    trueTypeFont = new TrueTypeFont;
+    if (!trueTypeFont->Load(filename, fontSize)) {
         return false;
     }
 
     // Calculate font height in pixels.
-    const FT_Size_Metrics &metrics = freeTypeFont->GetFtFace()->size->metrics;
+    const FT_Size_Metrics &metrics = trueTypeFont->GetFtFace()->size->metrics;
     fontHeight = (int)((metrics.ascender - metrics.descender) >> 6);
 
     // Allocate temporary buffer for drawing glyphs.
@@ -129,16 +129,16 @@ bool FontFaceFreeType::Load(const char *filename, int fontSize) {
     return true;
 }
 
-Texture *FontFaceFreeType::RenderGlyphToAtlasTexture(char32_t unicodeChar, Font::RenderMode::Enum renderMode, int glyphPadding, int &bitmapLeft, int &bitmapTop, int &glyphX, int &glyphY, int &glyphWidth, int &glyphHeight) {
+Texture *TrueTypeFontFace::RenderGlyphToAtlasTexture(char32_t unicodeChar, Font::RenderMode renderMode, int glyphPadding, int &bitmapLeft, int &bitmapTop, int &glyphX, int &glyphY, int &glyphWidth, int &glyphHeight) {
     FT_Glyph glyph = nullptr;
     const FT_Bitmap *bitmap;
 
-    if (!freeTypeFont->LoadGlyph(unicodeChar)) {
+    if (!trueTypeFont->LoadGlyph(unicodeChar)) {
         return nullptr;
     }
 
-    if (renderMode == Font::RenderMode::Enum::Border) {
-        glyph = freeTypeFont->RenderGlyphWithBorder(FT_RENDER_MODE_NORMAL, 1.5f); // Fixed ?
+    if (renderMode == Font::RenderMode::Border) {
+        glyph = trueTypeFont->RenderGlyphWithBorder(FT_RENDER_MODE_NORMAL, 1.5f); // Fixed ?
         if (!glyph) {
             return nullptr;
         }
@@ -150,7 +150,7 @@ Texture *FontFaceFreeType::RenderGlyphToAtlasTexture(char32_t unicodeChar, Font:
         bitmapLeft = bitmapGlyph->left;
         bitmapTop = bitmapGlyph->top;
     } else {
-        const FT_GlyphSlot slot = freeTypeFont->RenderGlyph(FT_RENDER_MODE_NORMAL);
+        const FT_GlyphSlot slot = trueTypeFont->RenderGlyph(FT_RENDER_MODE_NORMAL);
 
         bitmap = &slot->bitmap;
 
@@ -167,7 +167,7 @@ Texture *FontFaceFreeType::RenderGlyphToAtlasTexture(char32_t unicodeChar, Font:
         memset(glyphBuffer, 0, glyphWidth * glyphHeight);
     }
 
-    freeTypeFont->BakeGlyphBitmap(bitmap, glyphWidth, glyphBuffer + glyphWidth * fxPadding + fxPadding);
+    trueTypeFont->BakeGlyphBitmap(bitmap, glyphWidth, glyphBuffer + glyphWidth * fxPadding + fxPadding);
 
     //Image image = Image(glyphWidth, glyphHeight, 1, 1, 1, Image::Format::A_8, glyphBuffer, 0).MakeSDF(8);
     //memcpy(glyphBuffer, image.GetPixels(), image.GetSize());
@@ -188,7 +188,7 @@ Texture *FontFaceFreeType::RenderGlyphToAtlasTexture(char32_t unicodeChar, Font:
     return texture;
 }
 
-FontGlyph *FontFaceFreeType::CacheGlyph(char32_t unicodeChar, Font::RenderMode::Enum renderMode, int atlasPadding) {
+FontGlyph *TrueTypeFontFace::CacheGlyph(char32_t unicodeChar, Font::RenderMode renderMode, int atlasPadding) {
     int64_t hashKey = (((int64_t)renderMode) << 32) | unicodeChar;
     const auto *entry = glyphHashMap.Get(hashKey);
     if (entry) {
@@ -221,7 +221,7 @@ FontGlyph *FontFaceFreeType::CacheGlyph(char32_t unicodeChar, Font::RenderMode::
     // for others it is the ascent of the highest accented character, and finally, 
     // other formats define it as being equal to global_bbox.yMax.
     int ascender;
-    FT_Face ftFace = freeTypeFont->GetFtFace();
+    FT_Face ftFace = trueTypeFont->GetFtFace();
 
     if (FT_IS_SCALABLE(ftFace)) {
         ascender = (int)FT_MulFix(ftFace->ascender, ftFace->size->metrics.y_scale);
@@ -250,11 +250,11 @@ FontGlyph *FontFaceFreeType::CacheGlyph(char32_t unicodeChar, Font::RenderMode::
     return gl;
 }
 
-FontGlyph *FontFaceFreeType::GetGlyph(char32_t unicodeChar, Font::RenderMode::Enum renderMode) {
+FontGlyph *TrueTypeFontFace::GetGlyph(char32_t unicodeChar, Font::RenderMode renderMode) {
     return CacheGlyph(unicodeChar, renderMode, 2);
 }
 
-int FontFaceFreeType::GetGlyphAdvanceX(char32_t unicodeChar) const {
+int32_t TrueTypeFontFace::GetGlyphAdvanceX(char32_t unicodeChar) const {
     // Return previously obtained advanceX if it is in the glyph cache.
     const auto *entry = glyphHashMap.Get((int64_t)unicodeChar);
     if (entry) {
@@ -262,13 +262,13 @@ int FontFaceFreeType::GetGlyphAdvanceX(char32_t unicodeChar) const {
     }
 
     // If glyph is not in cache, load glyph to compute advance.
-    if (freeTypeFont->LoadGlyph(unicodeChar)) {
-        return (((int)freeTypeFont->GetFtFace()->glyph->advance.x) >> 6) - (GLYPH_COORD_OFFSET << 1);
+    if (trueTypeFont->LoadGlyph(unicodeChar)) {
+        return (((int32_t)trueTypeFont->GetFtFace()->glyph->advance.x) >> 6) - (GLYPH_COORD_OFFSET << 1);
     }
     return 0;
 }
 
-int FontFaceFreeType::GetGlyphAdvanceY(char32_t unicodeChar) const {
+int32_t TrueTypeFontFace::GetGlyphAdvanceY(char32_t unicodeChar) const {
     // Return previously obtained advanceY if it is in the glyph cache.
     const auto *entry = glyphHashMap.Get((int64_t)unicodeChar);
     if (entry) {
@@ -276,16 +276,16 @@ int FontFaceFreeType::GetGlyphAdvanceY(char32_t unicodeChar) const {
     }
 
     // If glyph is not in cache, load glyph to compute advance.
-    if (freeTypeFont->LoadGlyph(unicodeChar)) {
-        return (((int)freeTypeFont->GetFtFace()->glyph->advance.y) >> 6) - (GLYPH_COORD_OFFSET << 1);
+    if (trueTypeFont->LoadGlyph(unicodeChar)) {
+        return (((int32_t)trueTypeFont->GetFtFace()->glyph->advance.y) >> 6) - (GLYPH_COORD_OFFSET << 1);
     }
     return 0;
 }
 
-bool FontFaceFreeType::Write(const char *filename) {
+bool TrueTypeFontFace::Write(const char *filename) {
     File *fp = fileSystem.OpenFile(filename, File::Mode::Write);
     if (!fp) {
-        BE_WARNLOG("FontFaceFreeType::Save: file open error\n");
+        BE_WARNLOG("TrueTypeFontFace::Write: file open error\n");
         return false;
     }
 
@@ -333,7 +333,7 @@ bool FontFaceFreeType::Write(const char *filename) {
     return true;
 }
 
-void FontFaceFreeType::WriteBitmapFiles(const char *fontFilename) {
+void TrueTypeFontFace::WriteBitmapFiles(const char *fontFilename) {
     Str bitmapBasename = fontFilename;
     bitmapBasename.StripFileExtension();
 

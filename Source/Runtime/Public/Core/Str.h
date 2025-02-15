@@ -102,373 +102,373 @@ public:
     /// Destructs.
     ~Str();
 
-                        /// Returns the const C string.
-    const char *        c_str() const { return data; }
-                        /// Returns the const C string.
-                        operator const char *() const { return data; }
-                        /// Returns the C string.
-                        operator char *() const { return data; }
+                            /// Returns the const C string.
+    const char *            c_str() const { return data; }
+                            /// Returns the const C string.
+                            operator const char *() const { return data; }
+                            /// Returns the C string.
+                            operator char *() const { return data; }
 
-                        /// Returns a const reference to the character at index.
-    const char &        operator[](int index) const;
-                        /// Returns a reference to the character at index.
-    char &              operator[](int index);
-                        /// Returns a const reference to the character at index.
-    const char &        At(int index) const { return (*this)[index]; }
-                        /// Returns a reference to the character at index.
-    char &              At(int index) { return (*this)[index]; }
-                        /// Returns the first character in the string.
-    const char          FirstChar() const { return (*this)[0]; }
-                        /// Returns a reference to the first character in the string.
-    char &              FirstChar() { return (*this)[0]; }
-                        /// Returns the last character in the string.
-    const char          LastChar() const { return (*this)[len - 1]; }
-                        /// Returns a reference to the last character in the string.
-    char &              LastChar() { return (*this)[len - 1]; }
+                            /// Returns a const reference to the character at index.
+    const char &            operator[](int index) const;
+                            /// Returns a reference to the character at index.
+    char &                  operator[](int index);
+                            /// Returns a const reference to the character at index.
+    const char &            At(int index) const { return (*this)[index]; }
+                            /// Returns a reference to the character at index.
+    char &                  At(int index) { return (*this)[index]; }
+                            /// Returns the first character in the string.
+    const char              FirstChar() const { return (*this)[0]; }
+                            /// Returns a reference to the first character in the string.
+    char &                  FirstChar() { return (*this)[0]; }
+                            /// Returns the last character in the string.
+    const char              LastChar() const { return (*this)[len - 1]; }
+                            /// Returns a reference to the last character in the string.
+    char &                  LastChar() { return (*this)[len - 1]; }
 
-                        /// Returns the number of characters in this string.
-    int                 Length() const { return len; }
-                        /// Returns total size of allocated memory.
-    size_t              Allocated() const;
-                        /// Returns total size of allocated memory including size of this type.
-    size_t              Size() const;
-                        /// Clears the contents of the string and makes it null.
-    void                Clear();
-                        /// Return whether the string is empty.
-    bool                IsEmpty() const;
+                            /// Returns the number of characters in this string.
+    int                     Length() const { return len; }
+                            /// Returns total size of allocated memory.
+    size_t                  Allocated() const;
+                            /// Returns total size of allocated memory including size of this type.
+    size_t                  Size() const;
+                            /// Clears the contents of the string and makes it null.
+    void                    Clear();
+                            /// Return whether the string is empty.
+    bool                    IsEmpty() const;
     
-                        /// Test for equality of two strings.
-    friend bool         operator==(const Str &lhs, const Str &rhs) { return !Str::Cmp(lhs.data, rhs.data); }
-                        /// Test for equality of two strings.
-    friend bool         operator==(const Str &lhs, const char *rhs) { return !Str::Cmp(lhs.data, rhs); }
-                        /// Test for equality of two strings.
-    friend bool         operator==(const char *lhs, const Str &rhs) { return !Str::Cmp(lhs, rhs.data); }
-                        /// Test for inequality of two strings.
-    friend bool         operator!=(const Str &lhs, const Str &rhs) { return !!Str::Cmp(lhs.data, rhs.data); }
-                        /// Test for inequality of two strings.
-    friend bool         operator!=(const Str &lhs, const char *rhs) { return !!Str::Cmp(lhs.data, rhs); }
-                        /// Test for inequality of two strings.
-    friend bool         operator!=(const char *lhs, const Str &rhs) { return !!Str::Cmp(lhs, rhs.data); }
-                        /// Test if string is less than another string.
-    friend bool         operator<(const Str &lhs, const Str &rhs) { return Str::Cmp(lhs.data, rhs.data) < 0; }
-                        /// Test if string is less than another string.
-    friend bool         operator<(const Str &lhs, const char *rhs) { return Str::Cmp(lhs.data, rhs) < 0; }
-                        /// Test if string is less than another string.
-    friend bool         operator<(const char *lhs, const Str &rhs) { return Str::Cmp(lhs, rhs.data) < 0; }
-                        /// Test if string is greater than another string.
-    friend bool         operator>(const Str &lhs, const Str &rhs) { return Str::Cmp(lhs.data, rhs.data) > 0; }
-                        /// Test if string is greater than another string.
-    friend bool         operator>(const Str &lhs, const char *rhs) { return Str::Cmp(lhs.data, rhs) > 0; }
-                        /// Test if string is greater than another string.
-    friend bool         operator>(const char *lhs, const Str &rhs) { return Str::Cmp(lhs, rhs.data) > 0; }
+                            /// Test for equality of two strings.
+    friend bool             operator==(const Str &lhs, const Str &rhs) { return !Str::Cmp(lhs.data, rhs.data); }
+                            /// Test for equality of two strings.
+    friend bool             operator==(const Str &lhs, const char *rhs) { return !Str::Cmp(lhs.data, rhs); }
+                            /// Test for equality of two strings.
+    friend bool             operator==(const char *lhs, const Str &rhs) { return !Str::Cmp(lhs, rhs.data); }
+                            /// Test for inequality of two strings.
+    friend bool             operator!=(const Str &lhs, const Str &rhs) { return !!Str::Cmp(lhs.data, rhs.data); }
+                            /// Test for inequality of two strings.
+    friend bool             operator!=(const Str &lhs, const char *rhs) { return !!Str::Cmp(lhs.data, rhs); }
+                            /// Test for inequality of two strings.
+    friend bool             operator!=(const char *lhs, const Str &rhs) { return !!Str::Cmp(lhs, rhs.data); }
+                            /// Test if string is less than another string.
+    friend bool             operator<(const Str &lhs, const Str &rhs) { return Str::Cmp(lhs.data, rhs.data) < 0; }
+                            /// Test if string is less than another string.
+    friend bool             operator<(const Str &lhs, const char *rhs) { return Str::Cmp(lhs.data, rhs) < 0; }
+                            /// Test if string is less than another string.
+    friend bool             operator<(const char *lhs, const Str &rhs) { return Str::Cmp(lhs, rhs.data) < 0; }
+                            /// Test if string is greater than another string.
+    friend bool             operator>(const Str &lhs, const Str &rhs) { return Str::Cmp(lhs.data, rhs.data) > 0; }
+                            /// Test if string is greater than another string.
+    friend bool             operator>(const Str &lhs, const char *rhs) { return Str::Cmp(lhs.data, rhs) > 0; }
+                            /// Test if string is greater than another string.
+    friend bool             operator>(const char *lhs, const Str &rhs) { return Str::Cmp(lhs, rhs.data) > 0; }
 
-                        /// Returns case sensitive comparison result with a string.
-    int                 Cmp(const char *text) const;
-                        /// Returns case sensitive comparison result with a string up to num characters.
-    int                 Cmpn(const char *text, int n) const;
-                        /// Returns case sensitive natural order comparison result with a string.
-    int                 CmpNat(const char *text) const;
+                            /// Returns case sensitive comparison result with a string.
+    int                     Cmp(const char *text) const;
+                            /// Returns case sensitive comparison result with a string up to num characters.
+    int                     Cmpn(const char *text, int n) const;
+                            /// Returns case sensitive natural order comparison result with a string.
+    int                     CmpNat(const char *text) const;
 
-                        /// Returns case insensitive comparison result with a string.
-    int                 Icmp(const char *text) const;
-                        /// Returns case insensitive comparison result with a string up to num characters.
-    int                 Icmpn(const char *text, int n) const;
-                        /// Returns case insensitive path comparison result with a string.
-    int                 IcmpPath(const char *text) const;
-                        /// Returns case insensitive path comparison result with a string up to num characters.
-    int                 IcmpnPath(const char *text, int n) const;
-                        /// Returns case insensitive natural order comparison result with a string.
-    int                 IcmpNat(const char *text) const;
+                            /// Returns case insensitive comparison result with a string.
+    int                     Icmp(const char *text) const;
+                            /// Returns case insensitive comparison result with a string up to num characters.
+    int                     Icmpn(const char *text, int n) const;
+                            /// Returns case insensitive path comparison result with a string.
+    int                     IcmpPath(const char *text) const;
+                            /// Returns case insensitive path comparison result with a string up to num characters.
+    int                     IcmpnPath(const char *text, int n) const;
+                            /// Returns case insensitive natural order comparison result with a string.
+    int                     IcmpNat(const char *text) const;
 
-                        /// string ranking algorithm that produced a number between 0 and 1 representing the similarity between two strings.
-    float               FuzzyScore(const char *text, float fuzziness = 0.0f) const;
+                            /// string ranking algorithm that produced a number between 0 and 1 representing the similarity between two strings.
+    float                   FuzzyScore(const char *text, float fuzziness = 0.0f) const;
 
-                        /// Add-assign a string.
-    Str &               operator+=(const Str &rhs);
-                        /// Add-assign a C string.
-    Str &               operator+=(const char *rhs);
-                        /// Add-assign (concatenate as string) a float.
-    Str &               operator+=(const float rhs);
-                        /// Add-assign a character.
-    Str &               operator+=(const char rhs);
-                        /// Add-assign (concatenate as string) an integer.
-    Str &               operator+=(const int rhs);
-                        /// Add-assign (concatenate as string) an unsigned integer.
-    Str &               operator+=(const unsigned rhs);
-                        /// Add-assign (concatenate as string) a bool.
-    Str &               operator+=(const bool rhs);
+                            /// Add-assign a string.
+    Str &                   operator+=(const Str &rhs);
+                            /// Add-assign a C string.
+    Str &                   operator+=(const char *rhs);
+                            /// Add-assign (concatenate as string) a float.
+    Str &                   operator+=(const float rhs);
+                            /// Add-assign a character.
+    Str &                   operator+=(const char rhs);
+                            /// Add-assign (concatenate as string) an integer.
+    Str &                   operator+=(const int rhs);
+                            /// Add-assign (concatenate as string) an unsigned integer.
+    Str &                   operator+=(const unsigned rhs);
+                            /// Add-assign (concatenate as string) a bool.
+    Str &                   operator+=(const bool rhs);
     
-                        /// Returns a string which is the result of concatenating lhs and rhs.
-    friend Str          operator+(const Str &lhs, const Str &rhs);
-    friend Str &&       operator+(Str &&lhs, const Str &rhs);
-                        /// Returns a string which is the result of concatenating lhs and rhs.
-    friend Str          operator+(const Str &lhs, const char *rhs);
-    friend Str &&       operator+(Str &&lhs, const char *rhs);
-                        /// Returns a string which is the result of concatenating lhs and rhs.
-    friend Str          operator+(const char *lhs, const Str &rhs);
-                        /// Returns a string which is the result of concatenating the string lhs and the float rhs.
-    friend Str          operator+(const Str &lhs, const float rhs);
-    friend Str &&       operator+(Str &&lhs, const float rhs);
-                        /// Returns a string which is the result of concatenating the string lhs and the int rhs.
-    friend Str          operator+(const Str &lhs, const int rhs);
-    friend Str &&       operator+(Str &&lhs, const int rhs);
-                        /// Returns a string which is the result of concatenating the string lhs and the unsigned int rhs.
-    friend Str          operator+(const Str &lhs, const unsigned rhs);
-    friend Str &&       operator+(Str &&lhs, const unsigned rhs);
-                        /// Returns a string which is the result of concatenating the string lhs and the character rhs.
-    friend Str          operator+(const Str &lhs, const char rhs);
-    friend Str &&       operator+(Str &&lhs, const char rhs);
-                        /// Returns a string which is the result of concatenating the string lhs and the bool rhs.
-    friend Str          operator+(const Str &lhs, const bool rhs);
-    friend Str &&       operator+(Str &&lhs, const bool rhs);
+                            /// Returns a string which is the result of concatenating lhs and rhs.
+    friend Str              operator+(const Str &lhs, const Str &rhs);
+    friend Str &&           operator+(Str &&lhs, const Str &rhs);
+                            /// Returns a string which is the result of concatenating lhs and rhs.
+    friend Str              operator+(const Str &lhs, const char *rhs);
+    friend Str &&           operator+(Str &&lhs, const char *rhs);
+                            /// Returns a string which is the result of concatenating lhs and rhs.
+    friend Str              operator+(const char *lhs, const Str &rhs);
+                            /// Returns a string which is the result of concatenating the string lhs and the float rhs.
+    friend Str              operator+(const Str &lhs, const float rhs);
+    friend Str &&           operator+(Str &&lhs, const float rhs);
+                            /// Returns a string which is the result of concatenating the string lhs and the int rhs.
+    friend Str              operator+(const Str &lhs, const int rhs);
+    friend Str &&           operator+(Str &&lhs, const int rhs);
+                            /// Returns a string which is the result of concatenating the string lhs and the unsigned int rhs.
+    friend Str              operator+(const Str &lhs, const unsigned rhs);
+    friend Str &&           operator+(Str &&lhs, const unsigned rhs);
+                            /// Returns a string which is the result of concatenating the string lhs and the character rhs.
+    friend Str              operator+(const Str &lhs, const char rhs);
+    friend Str &&           operator+(Str &&lhs, const char rhs);
+                            /// Returns a string which is the result of concatenating the string lhs and the bool rhs.
+    friend Str              operator+(const Str &lhs, const bool rhs);
+    friend Str &&           operator+(Str &&lhs, const bool rhs);
 
-                        /// Make string in lowercase.
-    void                ToLower();
-                        /// Make string in uppercase.
-    void                ToUpper();
-                        /// Is this string contains only numeric characters ?
-    bool                IsNumeric();
-                        /// Is this string contains only alphabetical characters ?
-    bool                IsAlpha();
-                        /// Append a character.
-    void                Append(const char ch);
-                        /// Append a string.
-    void                Append(const Str &text);
-                        /// Append a C string.
-    void                Append(const char *text);
-                        /// Append a C string with the given length.
-    void                Append(const char *text, int len);
-                        /// Insert a character at the given index.
-    void                Insert(const char a, int index);
-                        /// Insert a C string at the given index.
-    void                Insert(const char *text, int index);
-                        /// Truncates the string at the given index.
-                        /// If the specified position index is beyond the end of the string, nothing happens.
-    void                Truncate(int position);
-                        /// Removes n characters from the end of the string.
-    void                Chop(int n);
+                            /// Make string in lowercase.
+    void                    ToLower();
+                            /// Make string in uppercase.
+    void                    ToUpper();
+                            /// Is this string contains only numeric characters ?
+    bool                    IsNumeric();
+                            /// Is this string contains only alphabetical characters ?
+    bool                    IsAlpha();
+                            /// Append a character.
+    void                    Append(const char ch);
+                            /// Append a string.
+    void                    Append(const Str &text);
+                            /// Append a C string.
+    void                    Append(const char *text);
+                            /// Append a C string with the given length.
+    void                    Append(const char *text, int len);
+                            /// Insert a character at the given index.
+    void                    Insert(const char a, int index);
+                            /// Insert a C string at the given index.
+    void                    Insert(const char *text, int index);
+                            /// Truncates the string at the given index.
+                            /// If the specified position index is beyond the end of the string, nothing happens.
+    void                    Truncate(int position);
+                            /// Removes n characters from the end of the string.
+    void                    Chop(int n);
 
-                        /// Fills with a character with the given length.
-    void                Fill(const char ch, int newLen);
+                            /// Fills with a character with the given length.
+    void                    Fill(const char ch, int newLen);
 
-                        /// Returns number of characters in UTF8 content.
-    int                 UTF8Length() const { return UTF8::Length(data); }
+                            /// Returns number of characters in UTF8 content.
+    int                     UTF8Length() const { return UTF8::Length(data); }
 
-                        /// Increase byte offset by the amount of current character bytes.
-    bool                UTF8Advance(int &offset) const { return UTF8::Advance(data, offset); }
-                        /// Decrease byte offset by the amount of previous character bytes.
-    bool                UTF8Previous(int &offset) const { return UTF8::Previous(data, offset); }
+                            /// Increase byte offset by the amount of current character bytes.
+    bool                    UTF8Advance(int &offset) const { return UTF8::Advance(data, offset); }
+                            /// Decrease byte offset by the amount of previous character bytes.
+    bool                    UTF8Previous(int &offset) const { return UTF8::Previous(data, offset); }
 
-                        /// Returns Unicode character with the given byte offset.
-    char32_t            UTF8Char(int offset) const { return UTF8::Char(data, offset); }
-                        /// Returns Unicode character with the given byte offset.
-                        /// The offset will be increased by the amount of current character bytes.
-    char32_t            UTF8CharAdvance(int &offset) const { return UTF8::CharAdvance(data, offset); }
-                        /// Returns Unicode character with the given byte offset.
-                        /// The offset will be decreased by the amount of previous character bytes.
-    char32_t            UTF8CharPrevious(int &offset) const { return UTF8::CharPrevious(data, offset); }
+                            /// Returns Unicode character with the given byte offset.
+    char32_t                UTF8Char(int offset) const { return UTF8::Char(data, offset); }
+                            /// Returns Unicode character with the given byte offset.
+                            /// The offset will be increased by the amount of current character bytes.
+    char32_t                UTF8CharAdvance(int &offset) const { return UTF8::CharAdvance(data, offset); }
+                            /// Returns Unicode character with the given byte offset.
+                            /// The offset will be decreased by the amount of previous character bytes.
+    char32_t                UTF8CharPrevious(int &offset) const { return UTF8::CharPrevious(data, offset); }
 
-                        /// Appends Unicode character at the end as UTF8.
-    void                AppendUTF8Char(char32_t unicodeChar);
+                            /// Appends Unicode character at the end as UTF8.
+    void                    AppendUTF8Char(char32_t unicodeChar);
 
-                        /// Sets UTF8 content from Latin1 string.
-    void                SetUTF8FromLatin1(const char *str);
-                        /// Sets UTF8 content from wide character string.
-    void                SetUTF8FromWCharString(const wchar_t *str);
-                        /// Returns UTF8 string from wide character string.
-    static Str          UTF8StrFromWCharString(const wchar_t *str);
+                            /// Sets UTF8 content from Latin1 string.
+    void                    SetUTF8FromLatin1(const char *str);
+                            /// Sets UTF8 content from wide character string.
+    void                    SetUTF8FromWCharString(const wchar_t *str);
+                            /// Returns UTF8 string from wide character string.
+    static Str              UTF8StrFromWCharString(const wchar_t *str);
 
-                        /// Returns index to the first occurrence of a character, or -1 if not found.
-    int                 Find(const char ch, int start = 0, int end = -1) const;
-                        /// Returns index to the first occurrence of a string, or -1 if not found.
-    int                 Find(const char *text, bool caseSensitive = true, int start = 0, int end = -1) const;
-                        /// Returns index to the last occurrence of a character, or -1 if not found.
-    int                 FindLast(const char c, int start = 0, int end = -1) const;
-                        /// Returns index to the last occurrence of a string, or -1 if not found.
-    int                 FindLast(const char *text, bool caseSensitive = true, int start = 0, int end = -1) const;
+                            /// Returns index to the first occurrence of a character, or -1 if not found.
+    int                     Find(const char ch, int start = 0, int end = -1) const;
+                            /// Returns index to the first occurrence of a string, or -1 if not found.
+    int                     Find(const char *text, bool caseSensitive = true, int start = 0, int end = -1) const;
+                            /// Returns index to the last occurrence of a character, or -1 if not found.
+    int                     FindLast(const char c, int start = 0, int end = -1) const;
+                            /// Returns index to the last occurrence of a string, or -1 if not found.
+    int                     FindLast(const char *text, bool caseSensitive = true, int start = 0, int end = -1) const;
 
-                        /// Returns true if the string conforms the given filter.
-                        /// Several metacharacter may be used in the filter.
-                        ///
-                        /// *          match any string of zero or more characters
-                        /// ?          match any single character
-                        /// [abc...]   match any of the enclosed characters; a hyphen can
-                        ///            be used to specify a range (e.g. a-z, A-Z, 0-9)
-    bool                Filter(const char *filter, bool caseSensitive = true) const;
-                        /// Strip whole quoted string to unquoted string.
-    Str &               StripQuotes();
+                            /// Returns true if the string conforms the given filter.
+                            /// Several metacharacter may be used in the filter.
+                            ///
+                            /// *          match any string of zero or more characters
+                            /// ?          match any single character
+                            /// [abc...]   match any of the enclosed characters; a hyphen can
+                            ///            be used to specify a range (e.g. a-z, A-Z, 0-9)
+    bool                    Filter(const char *filter, bool caseSensitive = true) const;
+                            /// Strip whole quoted string to unquoted string.
+    Str &                   StripQuotes();
 
-                        /// Replaces 'n' characters beginning at index position with the string after and returns a reference to this string.
-    Str &               Replace(int index, int n, const char *after);
-                        /// Replaces first occurrence of the string 'before' with the string 'after' and returns a reference to this string.
-    Str &               Replace(const char *before, const char *after, bool caseSensitive = true);
-                        /// Replaces every occurrence of the string 'before' with the string 'after' and returns a reference to this string.
-    Str &               ReplaceAll(const char *before, const char *after, bool caseSensitive = true);
+                            /// Replaces 'n' characters beginning at index position with the string after and returns a reference to this string.
+    Str &                   Replace(int index, int n, const char *after);
+                            /// Replaces first occurrence of the string 'before' with the string 'after' and returns a reference to this string.
+    Str &                   Replace(const char *before, const char *after, bool caseSensitive = true);
+                            /// Replaces every occurrence of the string 'before' with the string 'after' and returns a reference to this string.
+    Str &                   ReplaceAll(const char *before, const char *after, bool caseSensitive = true);
 
-                        /// Stores a substring that contains the 'n' leftmost characters of the string.
-    const char *        Left(int n, Str &result) const;
-                        /// Stores a substring that contains the n rightmost characters of the string.
-    const char *        Right(int n, Str &result) const;
-                        /// Stores a string that contains 'n' characters of this string, starting at the specified 'position' index.
-    const char *        Mid(int position, int n, Str &result) const;
+                            /// Stores a substring that contains the 'n' leftmost characters of the string.
+    const char *            Left(int n, Str &result) const;
+                            /// Stores a substring that contains the n rightmost characters of the string.
+    const char *            Right(int n, Str &result) const;
+                            /// Stores a string that contains 'n' characters of this string, starting at the specified 'position' index.
+    const char *            Mid(int position, int n, Str &result) const;
 
-                        /// Returns a substring that contains the 'n' leftmost characters of the string.
-    Str                 Left(int n) const;
-                        /// Returns a substring that contains the n rightmost characters of the string.
-    Str                 Right(int n) const;
-                        /// Returns a string that contains 'n' characters of this string, starting at the specified 'position' index.
-    Str                 Mid(int start, int n) const;
+                            /// Returns a substring that contains the 'n' leftmost characters of the string.
+    Str                     Left(int n) const;
+                            /// Returns a substring that contains the n rightmost characters of the string.
+    Str                     Right(int n) const;
+                            /// Returns a string that contains 'n' characters of this string, starting at the specified 'position' index.
+    Str                     Mid(int start, int n) const;
 
-                        /// Returns comma added string. ex) 10000 -> 10,000.
-    Str                 Commafy() const;
+                            /// Returns comma added string. ex) 10000 -> 10,000.
+    Str                     Commafy() const;
 
-    Str                 NumberedName(int *number) const;
+    Str                     NumberedName(int *number) const;
     
-                        /// Set formatted string.
-    int BE_CDECL        sPrintf(const char *formatString, ...);
+                            /// Set formatted string.
+    int BE_CDECL            sPrintf(const char *formatString, ...);
     
-                        /// Hash key for the filename (skips extension).
-    int                 FileNameHash() const;
-                        /// Converts '\' to '/'.
-    Str &               BackSlashesToSlashes();
-                        /// Converts '/' to '\'.
-    Str &               SlashesToBackSlashes();
-                        /// Converts absolute path to relative path.
-    Str                 ToRelativePath(const char *basePath) const;
-                        /// Converts relative path to absolute path.
-    Str                 ToAbsolutePath(const char *basePath) const;
-                        /// Removes any file extension.
-    Str &               StripFileExtension();
-                        /// Removes the filename from a path.
-    Str &               StripFileName();
-                        /// Removes the path from the filename.
-    Str &               StripPath();
-                        /// Sets the given file extension.
-    Str &               SetFileExtension(const char *extension);
-                        /// If there's no file extension use the default.
-    Str &               DefaultFileExtension(const char *extension);
-                        /// If there's no path use the default.
-    Str &               DefaultPath(const char *basepath);
-                        /// Appends path string separated by directory separator.
-    Str &               AppendPath(const char *path, char pathSeparator = PATHSEPERATOR_CHAR);
-                        /// Removes all multiple directory separators and resolves any "."s or ".."s.
-    Str &               CleanPath(char pathSeparator = PATHSEPERATOR_CHAR);
-                        /// Copy the file path to another string.
-    void                ExtractFilePath(Str &dest) const;
-                        /// Copy the filename to another string.
-    void                ExtractFileName(Str &dest) const;
-                        /// Copy the filename minus the extension to another string.
-    void                ExtractFileBase(Str &dest) const;
-                        /// Copy the file extension to another string.
-    void                ExtractFileExtension(Str &dest) const;
-                        /// Test if extension matched with.
-    bool                CheckExtension(const char *extension) const;
+                            /// Hash key for the filename (skips extension).
+    int                     FileNameHash() const;
+                            /// Converts '\' to '/'.
+    Str &                   BackSlashesToSlashes();
+                            /// Converts '/' to '\'.
+    Str &                   SlashesToBackSlashes();
+                            /// Converts absolute path to relative path.
+    Str                     ToRelativePath(const char *basePath) const;
+                            /// Converts relative path to absolute path.
+    Str                     ToAbsolutePath(const char *basePath) const;
+                            /// Removes any file extension.
+    Str &                   StripFileExtension();
+                            /// Removes the filename from a path.
+    Str &                   StripFileName();
+                            /// Removes the path from the filename.
+    Str &                   StripPath();
+                            /// Sets the given file extension.
+    Str &                   SetFileExtension(const char *extension);
+                            /// If there's no file extension use the default.
+    Str &                   DefaultFileExtension(const char *extension);
+                            /// If there's no path use the default.
+    Str &                   DefaultPath(const char *basepath);
+                            /// Appends path string separated by directory separator.
+    Str &                   AppendPath(const char *path, char pathSeparator = PATHSEPERATOR_CHAR);
+                            /// Removes all multiple directory separators and resolves any "."s or ".."s.
+    Str &                   CleanPath(char pathSeparator = PATHSEPERATOR_CHAR);
+                            /// Copy the file path to another string.
+    void                    ExtractFilePath(Str &dest) const;
+                            /// Copy the filename to another string.
+    void                    ExtractFileName(Str &dest) const;
+                            /// Copy the filename minus the extension to another string.
+    void                    ExtractFileBase(Str &dest) const;
+                            /// Copy the file extension to another string.
+    void                    ExtractFileExtension(Str &dest) const;
+                            /// Test if extension matched with.
+    bool                    CheckExtension(const char *extension) const;
 
-    static int          Length(const char *s);
-    static int          LineCount(const char *s);
-    static char *       ToLower(char *s);
-    static char *       ToUpper(char *s);
-    static bool         IsNumeric(const char *s);
-    static bool         IsAlpha(const char *s);
-    static int32_t      ToI32(const char *s);
-    static uint32_t     ToUI32(const char *s);
-    static int64_t      ToI64(const char *s);
-    static uint64_t     ToUI64(const char *s);
-    static Str          FormatBytes(uint64_t bytes);
+    static int              Length(const char *s);
+    static int              LineCount(const char *s);
+    static char *           ToLower(char *s);
+    static char *           ToUpper(char *s);
+    static bool             IsNumeric(const char *s);
+    static bool             IsAlpha(const char *s);
+    static int32_t          ToI32(const char *s);
+    static uint32_t         ToUI32(const char *s);
+    static int64_t          ToI64(const char *s);
+    static uint64_t         ToUI64(const char *s);
+    static Str              FormatBytes(uint64_t bytes);
 
-    static int          Cmp(const char *s1, const char *s2);
-    static int          Cmpn(const char *s1, const char *s2, int n);
-    static int          Icmp(const char *s1, const char *s2);
-    static int          Icmpn(const char *s1, const char *s2, int n);
-    static int          IcmpPath(const char *s1, const char *s2);
-    static int          IcmpnPath(const char *s1, const char *s2, int n);
-    static int          CmpNat(const char *s1, const char *s2);
-    static int          IcmpNat(const char *s1, const char *s2);
+    static int              Cmp(const char *s1, const char *s2);
+    static int              Cmpn(const char *s1, const char *s2, int n);
+    static int              Icmp(const char *s1, const char *s2);
+    static int              Icmpn(const char *s1, const char *s2, int n);
+    static int              IcmpPath(const char *s1, const char *s2);
+    static int              IcmpnPath(const char *s1, const char *s2, int n);
+    static int              CmpNat(const char *s1, const char *s2);
+    static int              IcmpNat(const char *s1, const char *s2);
 
-    static float        FuzzyScore(const char *s1, const char *s2, float fuzziness = 0.0f);
+    static float            FuzzyScore(const char *s1, const char *s2, float fuzziness = 0.0f);
 
-    static void         Append(char *dest, int n, const char *src);
-    static void         Copynz(char *dest, const char *src, int n);
-    static int          FindChar(const char *str, const char c, int start = 0, int end = -1);
-    static int          FindLastChar(const char *str, const char c, int start = 0, int end = -1);
-    static int          FindText(const char *str, const char *text, bool caseSensitive = true, int start = 0, int end = -1);
-    static int          FindLastText(const char *str, const char *text, bool caseSensitive = true, int start = 0, int end = -1);
-    static bool         Filter(const char *filter, const char *name, bool caseSensitive = true);
-    static bool         CheckExtension(const char *name, const char *ext);
-    static void         ConvertPathSeperator(char *path, char separator);
+    static void             Append(char *dest, int n, const char *src);
+    static void             Copynz(char *dest, const char *src, int n);
+    static int              FindChar(const char *str, const char c, int start = 0, int end = -1);
+    static int              FindLastChar(const char *str, const char c, int start = 0, int end = -1);
+    static int              FindText(const char *str, const char *text, bool caseSensitive = true, int start = 0, int end = -1);
+    static int              FindLastText(const char *str, const char *text, bool caseSensitive = true, int start = 0, int end = -1);
+    static bool             Filter(const char *filter, const char *name, bool caseSensitive = true);
+    static bool             CheckExtension(const char *name, const char *ext);
+    static void             ConvertPathSeperator(char *path, char separator);
 
-    static const char * IntegerArrayToString(const int *array, const int length);
-    static const char * FloatArrayToString(const float *array, const int length, const int precision);
+    static const char *     IntegerArrayToString(const int *array, const int length);
+    static const char *     FloatArrayToString(const float *array, const int length, const int precision);
 
-    static int BE_CDECL snPrintf(char *dest, int size, const char *fmt, ...);
-    static int BE_CDECL vsnPrintf(char *dest, int size, const char *fmt, va_list argptr);
+    static int BE_CDECL     snPrintf(char *dest, int size, const char *fmt, ...);
+    static int BE_CDECL     vsnPrintf(char *dest, int size, const char *fmt, va_list argptr);
     
-    friend int BE_CDECL sprintf(Str &dest, const char *fmt, ...);
-    friend int BE_CDECL vsprintf(Str &dest, const char *fmt, va_list ap);
+    friend int BE_CDECL     sprintf(Str &dest, const char *fmt, ...);
+    friend int BE_CDECL     vsprintf(Str &dest, const char *fmt, va_list ap);
 
-    uint32_t            ToHash() const { return Hash32(data); }
-    uint32_t            ToHash32() const { return Hash32(data); }
-    uint64_t            ToHash64() const { return Hash64(data); }
+    uint32_t                ToHash() const { return Hash32(data); }
+    uint32_t                ToHash32() const { return Hash32(data); }
+    uint64_t                ToHash64() const { return Hash64(data); }
  
-    static uint32_t     Hash32(const char *string);
-    static uint32_t     Hash32(const char *string, int length);
-    static uint32_t     IHash32(const char *string);
-    static uint32_t     IHash32(const char *string, int length);
+    static uint32_t         Hash32(const char *string);
+    static uint32_t         Hash32(const char *string, int length);
+    static uint32_t         IHash32(const char *string);
+    static uint32_t         IHash32(const char *string, int length);
 
-    static uint64_t     Hash64(const char *string);
-    static uint64_t     Hash64(const char *string, int length);
-    static uint64_t     IHash64(const char *string);
-    static uint64_t     IHash64(const char *string, int length);
+    static uint64_t         Hash64(const char *string);
+    static uint64_t         Hash64(const char *string, int length);
+    static uint64_t         IHash64(const char *string);
+    static uint64_t         IHash64(const char *string, int length);
 
-    static char         ToLower(int c);
-    static char         ToUpper(int c);
-    static bool         CharIsNumeric(int c);
-    static bool         CharIsAlpha(int c);
-    static bool         CharIsLower(int c);
-    static bool         CharIsUpper(int c);
-    static bool         CharIsNewLine(int c);
-    static bool         CharIsTab(int c);
-    static int          ColorIndex(int c);
+    static char             ToLower(int c);
+    static char             ToUpper(int c);
+    static bool             CharIsNumeric(int c);
+    static bool             CharIsAlpha(int c);
+    static bool             CharIsLower(int c);
+    static bool             CharIsUpper(int c);
+    static bool             CharIsNewLine(int c);
+    static bool             CharIsTab(int c);
+    static int              ColorIndex(int c);
 
 #if __OBJC__
-                        /// Convert Str to Objective-C NSString.
-    NSString *          ToNSString() const {
+                            /// Convert Str to Objective-C NSString.
+    NSString *              ToNSString() const {
         return [[NSString alloc] initWithBytes:data length:Length() encoding:NSUTF8StringEncoding];
     }
 #endif
 
 #ifdef QSTRING_H
-                        /// Convert Str to QString.
-    QString             ToQString() const {
+                            /// Convert Str to QString.
+    QString                 ToQString() const {
         return QString::fromUtf8(data, len);
     }
 #endif
 
 #ifdef __ANDROID__
-                        /// Convert Str to jstring.
-    jstring             ToJavaString(JNIEnv *env) const {
+                            /// Convert Str to jstring.
+    jstring                 ToJavaString(JNIEnv *env) const {
         jstring javaString = env->NewStringUTF(data);
         return javaString;
     }
 #endif
 
-                        /// Ensures string data buffer is large enough.
-    void                EnsureAlloced(int amount, bool keepOld = true);
+                            /// Ensures string data buffer is large enough.
+    void                    EnsureAlloced(int amount, bool keepOld = true);
 
-    void                ReAllocate(int amount, bool keepOld);
-    void                FreeData();
+    void                    ReAllocate(int amount, bool keepOld);
+    void                    FreeData();
 
-    static Str          empty;
+    static Str              empty;
 
 private:
-    static constexpr int BaseLength = 20;
-    static constexpr int AllocGranularity = 32;
-    static constexpr int FileNameHashSize = 1024;
+    static constexpr int    BaseLength = 24;
+    static constexpr int    AllocGranularity = 32;
+    static constexpr int    FileNameHashSize = 1024;
  
-    char *              data;                       ///< Data pointer
-    size_t              alloced;                    ///< Allocated data size
-    int                 len;                        ///< String length
-    char                baseBuffer[BaseLength];     ///< Default base buffer
+    char *                  data;                       ///< Data pointer
+    uint32_t                alloced;                    ///< Allocated data size
+    int                     len;                        ///< String length
+    char                    baseBuffer[BaseLength];     ///< Default base buffer
 };
 
 char * BE_CDECL         va(const char *format, ...);

@@ -20,9 +20,9 @@
 
 BE_NAMESPACE_BEGIN
 
-class FreeTypeFont {
+class TrueTypeFont {
 public:
-    ~FreeTypeFont();
+    ~TrueTypeFont() { Purge(); }
 
     static void             Init();
     static void             Shutdown();
@@ -41,13 +41,9 @@ public:
     FT_Face                 GetFtFace() const { return ftFace; }
 
 private:
-    FT_Byte *               ftFontFileData = nullptr;       ///< FreeType font flie data.
+    FT_Byte *               ftFontFileData = nullptr;       ///< FreeType font file data.
     FT_Face                 ftFace = nullptr;               ///< FreeType font face object.
     FT_Long                 ftFaceIndex = 0;
 };
-
-BE_INLINE FreeTypeFont::~FreeTypeFont() {
-    Purge();
-}
 
 BE_NAMESPACE_END

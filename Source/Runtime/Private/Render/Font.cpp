@@ -13,8 +13,8 @@
 // limitations under the License.
 
 #include "Precompiled.h"
-#include "Render/Render.h"
 #include "Core/StrColor.h"
+#include "Render/Font.h"
 #include "FontFace.h"
 
 BE_NAMESPACE_BEGIN
@@ -27,23 +27,21 @@ bool Font::Load(const char *filename) {
     Purge();
 
     if (Str::CheckExtension(filename, ".font")) {
-        fontFace = new FontFaceBitmap;
-
+        fontFace = new BitmapFontFace;
         if (!fontFace->Load(filename, 0/*fontSize*/)) {
             delete fontFace;
             return false;
         }
-        fontType = FontType::Bitmap;
-    } else {
-        fontFace = new FontFaceFreeType;
-
-        if (!fontFace->Load(filename, fontSize)) {
-            delete fontFace;
-            return false;
-        }
-        fontType = FontType::FreeType;
+        fontType = Type::Bitmap;
+        return true;
     }
 
+    fontFace = new TrueTypeFontFace;
+    if (!fontFace->Load(filename, fontSize)) {
+        delete fontFace;
+        return false;
+    }
+    fontType = Type::TrueType;
     return true;
 }
 
@@ -54,7 +52,7 @@ int Font::GetFontHeight() const {
     return 0;
 }
 
-FontGlyph *Font::GetGlyph(char32_t unicodeChar, RenderMode::Enum renderMode) {
+FontGlyph *Font::GetGlyph(char32_t unicodeChar, RenderMode renderMode) {
     if (fontFace) {
         return fontFace->GetGlyph(unicodeChar, renderMode);
     }

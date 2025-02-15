@@ -14,26 +14,24 @@
 
 #include "Precompiled.h"
 #include "IO/FileSystem.h"
-#include "Render/FreeTypeFont.h"
+#include "Render/TrueTypeFont.h"
 #include "freetype/ftstroke.h"
 
 BE_NAMESPACE_BEGIN
 
 static FT_Library ftLibrary;
 
-void FreeTypeFont::Init() {
-    // Initialize FreeType library.
+void TrueTypeFont::Init() {
     if (FT_Init_FreeType(&ftLibrary) != 0) {
         BE_FATALERROR("FT_Init_FreeType() failed");
     }
 }
 
-void FreeTypeFont::Shutdown() {
-    // Destroy FreeType library object.
+void TrueTypeFont::Shutdown() {
     FT_Done_FreeType(ftLibrary);
 }
 
-void FreeTypeFont::Purge() {
+void TrueTypeFont::Purge() {
     if (ftFace) {
         FT_Done_Face(ftFace);
         ftFace = nullptr;
@@ -46,7 +44,7 @@ void FreeTypeFont::Purge() {
     }
 }
 
-bool FreeTypeFont::Load(const char *filename, int fontSize) {
+bool TrueTypeFont::Load(const char *filename, int fontSize) {
     Purge();
 
     size_t dataSize = fileSystem.LoadFile(filename, true, (void **)&ftFontFileData);
@@ -58,7 +56,7 @@ bool FreeTypeFont::Load(const char *filename, int fontSize) {
     // Certain font formats allow several font faces to be embedded in a single file.
     // faceIndex tells which face you want to load.
     if (FT_New_Memory_Face(ftLibrary, ftFontFileData, dataSize, ftFaceIndex, &ftFace) != 0) {
-        BE_ERRLOG("FontFaceFreeType::Create: FT_New_Memory_Face failed\n");
+        BE_ERRLOG("TrueTypeFont::Load: FT_New_Memory_Face failed\n");
         fileSystem.FreeFile(ftFontFileData);
         ftFontFileData = nullptr;
         return false;
@@ -69,7 +67,7 @@ bool FreeTypeFont::Load(const char *filename, int fontSize) {
 
     // We use only unicode charmap.
     if (FT_Select_Charmap(ftFace, FT_ENCODING_UNICODE) != 0) {
-        BE_ERRLOG("FontFaceFreeType::Create: %s font file doesn't contain unicode charmap\n", filename);
+        BE_ERRLOG("TrueTypeFont::Load: %s font file doesn't contain unicode charmap\n", filename);
         FT_Done_Face(ftFace);
         ftFace = nullptr;
         fileSystem.FreeFile(ftFontFileData);
@@ -79,7 +77,7 @@ bool FreeTypeFont::Load(const char *filename, int fontSize) {
 
     // NOTE: fontSize means EM. Not the bitmap size of the actual font.
     if (FT_Set_Pixel_Sizes(ftFace, fontSize, fontSize) != 0) {
-        BE_ERRLOG("FontFaceFreeType::Create: FT_Set_Pixel_Sizes failed\n");
+        BE_ERRLOG("TrueTypeFont::Load: FT_Set_Pixel_Sizes failed\n");
         FT_Done_Face(ftFace);
         ftFace = nullptr;
         fileSystem.FreeFile(ftFontFileData);
@@ -91,7 +89,7 @@ bool FreeTypeFont::Load(const char *filename, int fontSize) {
 }
 
 // Load glyph into glyph slot to get the bitmap.
-bool FreeTypeFont::LoadGlyph(char32_t unicodeChar) const {
+bool TrueTypeFont::LoadGlyph(char32_t unicodeChar) const {
     unsigned int glyphIndex = FT_Get_Char_Index(ftFace, unicodeChar);
 
     if (glyphIndex == 0) {
@@ -107,13 +105,13 @@ bool FreeTypeFont::LoadGlyph(char32_t unicodeChar) const {
     return true;
 }
 
-FT_GlyphSlot FreeTypeFont::RenderGlyph(FT_Render_Mode renderMode) {
+FT_GlyphSlot TrueTypeFont::RenderGlyph(FT_Render_Mode renderMode) {
     FT_Render_Glyph(ftFace->glyph, renderMode);
 
     return ftFace->glyph;
 }
 
-FT_Glyph FreeTypeFont::RenderGlyphWithBorder(FT_Render_Mode renderMode, float borderThickness) {
+FT_Glyph TrueTypeFont::RenderGlyphWithBorder(FT_Render_Mode renderMode, float borderThickness) {
     FT_Stroker stroker;
     if (FT_Stroker_New(ftLibrary, &stroker) != 0) {
         return nullptr;
@@ -139,8 +137,8 @@ FT_Glyph FreeTypeFont::RenderGlyphWithBorder(FT_Render_Mode renderMode, float bo
     return glyph;
 }
 
-// Draw pixels using the Freetype bitmap information.
-void FreeTypeFont::BakeGlyphBitmap(const FT_Bitmap *bitmap, int dstPitch, byte *dstPtr) {
+// Draw pixels using the FreeType bitmap information.
+void TrueTypeFont::BakeGlyphBitmap(const FT_Bitmap *bitmap, int dstPitch, byte *dstPtr) {
     const byte *srcPtr = bitmap->buffer;
 
     switch (bitmap->pixel_mode) {

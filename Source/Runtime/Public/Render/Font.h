@@ -32,9 +32,9 @@ class Material;
 // Font glyph information.
 struct FontGlyph {
     char32_t                charCode;
-    int                     width, height;
-    int                     offsetX, offsetY;
-    int                     advanceX, advanceY;
+    int32_t                 width, height;
+    int32_t                 offsetX, offsetY;
+    int32_t                 advanceX, advanceY;
     float                   s, t, s2, t2;
     Material *              material;
 };
@@ -43,32 +43,28 @@ class Font {
     friend class FontManager;
 
 public:
-    struct FontType {
-        enum Enum {
-            None,
-            Bitmap,
-            FreeType
-        };
+    enum class Type : uint8_t {
+        None,
+        Bitmap,
+        TrueType
     };
 
-    struct RenderMode {
-        enum Enum {
-            Normal          = 0,
-            Border          = 1
-        };
+    enum class RenderMode : uint8_t {
+        Normal,
+        Border
     };
 
     Font() = default;
-    ~Font();
+    ~Font() { Purge(); }
 
     const char *            GetName() const { return name; }
     const char *            GetHashName() const { return hashName; }
 
                             /// Returns font type.
-    FontType::Enum          GetFontType() const { return fontType; }
+    Type                    GetFontType() const { return fontType; }
 
-                            /// Returns pointer to the glyph structure corresponding to a character. Return null if no glyphs are found.
-    FontGlyph *             GetGlyph(char32_t unicodeChar, RenderMode::Enum renderMode = RenderMode::Normal);
+                            /// Returns pointer to the glyph structure corresponding to a character. Return nullptr if no glyphs are found.
+    FontGlyph *             GetGlyph(char32_t unicodeChar, RenderMode renderMode = RenderMode::Normal);
 
                             /// Returns a offset for the next character.
     int                     GetGlyphAdvanceX(char32_t unicodeChar) const;
@@ -77,7 +73,7 @@ public:
                             /// Returns font height in pixels.
     int                     GetFontHeight() const;
 
-                            /// Computes text width.
+                            /// Calculates text width.
     float                   TextWidth(const Str &text, int maxLen, bool allowLineBreak = false, bool allowColoredText = false, float xScale = 1.0f) const;
 
     void                    Purge();
@@ -86,26 +82,22 @@ public:
 private:
     Str                     hashName;
     Str                     name;
-    mutable int             refCount = 0;
+    mutable int32_t         refCount = 0;
     bool                    permanence = false;
 
-    FontType::Enum          fontType = FontType::None;
-    int                     fontSize = 0;
+    Type                    fontType = Type::None;
+    uint32_t                fontSize = 0;
     FontFace *              fontFace = nullptr;
 };
-
-BE_INLINE Font::~Font() {
-    Purge();
-}
 
 class FontManager {
 public:
     void                    Init();
     void                    Shutdown();
 
-    Font *                  AllocFont(const char *name, int fontSize);
-    Font *                  FindFont(const char *name, int fontSize) const;
-    Font *                  GetFont(const char *name, int fontSize);
+    Font *                  AllocFont(const char *name, uint32_t fontSize);
+    Font *                  FindFont(const char *name, uint32_t fontSize) const;
+    Font *                  GetFont(const char *name, uint32_t fontSize);
 
     void                    ReleaseFont(Font *font, bool immediateDestroy = false);
     void                    DestroyFont(Font *font);
@@ -119,10 +111,10 @@ public:
 private:
     struct FontHashKey {
         FontHashKey() {}
-        FontHashKey(const Str &name, int fontSize) : name(name), fontSize(fontSize) {}
+        FontHashKey(const Str &name, uint32_t fontSize) : name(name), fontSize(fontSize) {}
 
         Str                 name;
-        int                 fontSize;
+        uint32_t            fontSize;
     };
 
     struct FontHashCompare {

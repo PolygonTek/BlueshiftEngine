@@ -20,18 +20,11 @@
 
 BE_NAMESPACE_BEGIN
 
-FontFaceBitmap::FontFaceBitmap() {
-}
-
-FontFaceBitmap::~FontFaceBitmap() {
-    Purge();
-}
-
-void FontFaceBitmap::Purge() {
-    for (Material *material : materialArray) {
+void BitmapFontFace::Purge() {
+    for (Material *material : materials) {
         materialManager.ReleaseMaterial(material);
     }
-    materialArray.Clear();
+    materials.Clear();
 
     for (const auto &entry : glyphHashMap) {
         FontGlyph *glyph = entry.second;
@@ -41,19 +34,17 @@ void FontFaceBitmap::Purge() {
     glyphHashMap.DeleteContents(true);
 }
 
-Texture *FontFaceBitmap::AddBitmap(const char *filename) {
+Texture *BitmapFontFace::AddBitmap(const char *filename) {
     Texture *texture = textureManager.GetTextureWithoutTextureInfo(filename, Texture::Flag::Clamp | Texture::Flag::HighQuality | Texture::Flag::NoMipmaps);
-
     Material *material = materialManager.GetSingleTextureMaterial(texture, Material::TextureHint::Overlay);
-
     textureManager.ReleaseTexture(texture);
 
-    materialArray.Append(material);
+    materials.Append(material);
 
     return texture;
 }
 
-FontGlyph *FontFaceBitmap::AddGlyph(char32_t charCode, int width, int height, int offsetX, int offsetY, int advanceX, int advanceY, float s, float t, float s2, float t2, int materialIndex) {
+FontGlyph *BitmapFontFace::AddGlyph(char32_t charCode, int width, int height, int offsetX, int offsetY, int advanceX, int advanceY, float s, float t, float s2, float t2, int materialIndex) {
     FontGlyph *glyph = new FontGlyph;
 
     glyph->charCode = charCode;
@@ -68,14 +59,14 @@ FontGlyph *FontFaceBitmap::AddGlyph(char32_t charCode, int width, int height, in
     glyph->s2 = s2;
     glyph->t2 = t2;
 
-    glyph->material = materialArray[materialIndex];
+    glyph->material = materials[materialIndex];
 
     glyphHashMap.Set(glyph->charCode, glyph);
 
     return glyph;
 }
 
-bool FontFaceBitmap::Load(const char *filename, int fontSize) {
+bool BitmapFontFace::Load(const char *filename, int fontSize) {
     Purge();
 
     byte *data;
@@ -128,7 +119,7 @@ bool FontFaceBitmap::Load(const char *filename, int fontSize) {
     return true;
 }
 
-void FontFaceBitmap::Write(const char *filename) {
+void BitmapFontFace::Write(const char *filename) {
     File *fp = fileSystem.OpenFile(filename, File::Mode::Write);
     if (!fp) {
         BE_WARNLOG("FontFileBitmap::Write: file open error\n");
@@ -136,14 +127,14 @@ void FontFaceBitmap::Write(const char *filename) {
     }
 
     FontFileHeader header;
-    header.numBitmaps = materialArray.Count();
+    header.numBitmaps = materials.Count();
     header.numGlyphs = glyphHashMap.Count();
     header.ofsBitmaps = sizeof(header);
     header.ofsGlyphs = header.ofsBitmaps + header.numBitmaps * sizeof(FontFileBitmap);
 
     fp->Write(&header, sizeof(header));
 
-    for (int bitmapIndex = 0; bitmapIndex < materialArray.Count(); bitmapIndex++) {
+    for (int bitmapIndex = 0; bitmapIndex < materials.Count(); bitmapIndex++) {
         FontFileBitmap bitmap;
         Str::Copynz(bitmap.name, bitmapNames[bitmapIndex].c_str(), sizeof(bitmap.name));
 
@@ -165,7 +156,7 @@ void FontFaceBitmap::Write(const char *filename) {
         glyph.t             = gl->t;
         glyph.s2            = gl->s2;
         glyph.t2            = gl->t2;
-        glyph.bitmapIndex   = materialArray.FindIndex(gl->material);
+        glyph.bitmapIndex   = materials.FindIndex(gl->material);
 
         fp->Write(&glyph, sizeof(glyph));
     }
@@ -173,11 +164,7 @@ void FontFaceBitmap::Write(const char *filename) {
     fileSystem.CloseFile(fp);
 }
 
-int FontFaceBitmap::GetFontHeight() const {
-    return fontHeight;
-}
-
-FontGlyph *FontFaceBitmap::GetGlyph(char32_t unicodeChar, Font::RenderMode::Enum renderMode) {
+FontGlyph *BitmapFontFace::GetGlyph(char32_t unicodeChar, Font::RenderMode renderMode) {
     const auto *entry = glyphHashMap.Get(unicodeChar);
     if (entry) {
         return entry->second;
@@ -185,7 +172,7 @@ FontGlyph *FontFaceBitmap::GetGlyph(char32_t unicodeChar, Font::RenderMode::Enum
     return nullptr;
 }
 
-int FontFaceBitmap::GetGlyphAdvanceX(char32_t unicodeChar) const {
+int32_t BitmapFontFace::GetGlyphAdvanceX(char32_t unicodeChar) const {
     const auto *entry = glyphHashMap.Get(unicodeChar);
     if (entry) {
         return entry->second->advanceX;
@@ -193,7 +180,7 @@ int FontFaceBitmap::GetGlyphAdvanceX(char32_t unicodeChar) const {
     return 0;
 }
 
-int FontFaceBitmap::GetGlyphAdvanceY(char32_t unicodeChar) const {
+int32_t BitmapFontFace::GetGlyphAdvanceY(char32_t unicodeChar) const {
     const auto *entry = glyphHashMap.Get(unicodeChar);
     if (entry) {
         return entry->second->advanceY;
