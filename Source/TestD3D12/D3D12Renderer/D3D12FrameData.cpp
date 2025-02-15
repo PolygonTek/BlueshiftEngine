@@ -391,6 +391,8 @@ RHI::CommandList *D3D12FrameThreadData::BeginCommandList(RHI::CommandQueueType q
     } else {
         commandList = static_cast<D3D12CommandList *>(AllocComputeCommandList());
     }
+
+    // CommandAllocator 를 재사용하도록 리셋하고, CommandList 를 CommandAllocator 를 이용하여 초기 상태로 리셋
     commandList->Reset();
 
     ID3D12DescriptorHeap *descriptorHeaps[] = {
@@ -405,6 +407,8 @@ RHI::CommandList *D3D12FrameThreadData::BeginCommandList(RHI::CommandQueueType q
 RHI::CommandList *D3D12FrameThreadData::BeginSecondaryCommandList(const RHI::CommandList *primaryCommandList) {
     // Secondary CommandList 를 얻어온다.
     D3D12CommandList *commandList = static_cast<D3D12CommandList *>(AllocGraphicsCommandList(RHI::CommandListType::Secondary));
+
+    // CommandAllocator 를 재사용하도록 리셋하고, CommandList 를 CommandAllocator 를 이용하여 초기 상태로 리셋
     commandList->Reset(true, primaryCommandList);
 
     // Secondary CommandList 의 루트 디스크립터 힙을 지정한다.

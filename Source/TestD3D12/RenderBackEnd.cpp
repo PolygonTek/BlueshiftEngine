@@ -98,9 +98,6 @@ const void *RenderBackEnd::ExecuteDrawCamera(const void *data) {
     // 커맨드 리스트 풀에서 새로운 커맨드 리스트를 얻어온다.
     mainCommandList = frameThreadData->BeginCommandList(RHI::CommandQueueType::Graphics);
 
-    // CommandAllocator 를 재사용하도록 리셋하고, CommandList 를 CommandAllocator 를 이용하여 초기 상태로 리셋
-    mainCommandList->Reset();
-
     // 뷰포트 & ScissorRect 의 초기값 설정
     RHI::renderer->SetViewport(mainCommandList, currentVisCamera->renderRect);
     RHI::renderer->SetScissorRect(mainCommandList, currentVisCamera->renderRect);
