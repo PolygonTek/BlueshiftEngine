@@ -56,6 +56,12 @@ void RenderBackEnd::Execute(const void *data) {
         case RenderCommandId::DrawPic:
             data = ExecuteDrawPic(data);
             continue;
+        case RenderCommandId::SetTextStyle:
+            data = ExecuteSetTextStyle(data);
+            continue;
+        case RenderCommandId::DrawText:
+            data = ExecuteDrawText(data);
+            continue;
         case RenderCommandId::ScreenShot:
             data = ExecuteScreenshot(data);
             continue;
@@ -164,7 +170,26 @@ const void *RenderBackEnd::ExecuteDrawPic(const void *data) {
     RenderFrameData *currentFrameData = currentContext->GetCurrentFrameData();
     RHI::FrameThreadData *frameThreadData = currentFrameData->GetThreadData(0);
 
-    guiMesh.DrawPic(frameThreadData, cmd->x, cmd->y, cmd->w, cmd->h, cmd->s1, cmd->t1, cmd->s2, cmd->t2, cmd->texture, cmd->color);
+    guiMesh.DrawPic(frameThreadData, cmd->x, cmd->y, cmd->w, cmd->h, cmd->s1, cmd->t1, cmd->s2, cmd->t2, cmd->color, cmd->texture);
+
+    return (const void *)(cmd + 1);
+}
+
+const void *RenderBackEnd::ExecuteSetTextStyle(const void *data) {
+    const SetTextStyleRenderCommand *cmd = reinterpret_cast<const SetTextStyleRenderCommand *>(data);
+
+    guiMesh.SetTextStyle(cmd->font, cmd->scaleX, cmd->scaleY, cmd->color, cmd->shadowOffsetX, cmd->shadowOffsetY, cmd->shadowColor);
+
+    return (const void *)(cmd + 1);
+}
+
+const void *RenderBackEnd::ExecuteDrawText(const void *data) {
+    const DrawTextRenderCommand *cmd = reinterpret_cast<const DrawTextRenderCommand *>(data);
+
+    RenderFrameData *currentFrameData = currentContext->GetCurrentFrameData();
+    RHI::FrameThreadData *frameThreadData = currentFrameData->GetThreadData(0);
+
+    guiMesh.DrawTextInRect(frameThreadData, cmd->rect, cmd->x, cmd->y, cmd->text, -1, cmd->flags);
 
     return (const void *)(cmd + 1);
 }
@@ -411,7 +436,7 @@ void RenderBackEnd::DrawSurface(RHI::CommandList *commandList, const DrawSurf *d
     RHI::renderer->SetVertexBuffer(commandList, 0, drawSurf->subMesh->vertexBuffer);
     RHI::renderer->SetIndexBuffer(commandList, drawSurf->subMesh->indexBuffer);
 
-    RHI::renderer->SetPSO(commandList, currentContext->singlePSO);
+    RHI::renderer->SetPSO(commandList, currentContext->unlitPSO);
     RHI::renderer->SetTexture(commandList, 0, false, drawSurf->texture->GetRHITexture());
     RHI::renderer->SetConstantBuffer(commandList, 0, constantBuffer);
 
@@ -439,7 +464,7 @@ void RenderBackEnd::DrawInstancedSurface(RHI::CommandList *commandList, const Dr
     RHI::renderer->SetVertexBuffer(commandList, 0, instanceSurfs[0]->subMesh->vertexBuffer);
     RHI::renderer->SetIndexBuffer(commandList, instanceSurfs[0]->subMesh->indexBuffer);
 
-    RHI::renderer->SetPSO(commandList, currentContext->instancingPSO);
+    RHI::renderer->SetPSO(commandList, currentContext->unlitInstancedPSO);
     RHI::renderer->SetTexture(commandList, 0, false, instanceSurfs[0]->texture->GetRHITexture());
     RHI::renderer->SetConstantBuffer(commandList, 0, constantBuffer);
 
@@ -462,7 +487,7 @@ void RenderBackEnd::DrawGuiSurface(RHI::CommandList *commandList, const GuiMesh:
     RHI::renderer->SetVertexBuffer(commandList, 0, guiSurf->vertexBuffer);
     RHI::renderer->SetIndexBuffer(commandList, guiSurf->indexBuffer);
 
-    RHI::renderer->SetPSO(commandList, currentContext->singlePSO);
+    RHI::renderer->SetPSO(commandList, currentContext->unlitAlphaBlendPSO);
     RHI::renderer->SetTexture(commandList, 0, false, guiSurf->texture->GetRHITexture());
     RHI::renderer->SetConstantBuffer(commandList, 0, constantBuffer);
 

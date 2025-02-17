@@ -18,6 +18,7 @@
 #include "RenderContext.h"
 #include "RenderCamera.h"
 #include "RenderInternal.h"
+#include "Font.h"
 
 RenderWorld::RenderWorld() {
     renderObjects.Reserve(16384);
@@ -454,4 +455,43 @@ void RenderWorld::DrawRect(float x, float y, float w, float h) {
             DrawBar(x + w - 1, y + 1, 1, h - 2);
         }
     }
+}
+
+void RenderWorld::SetFont(Font *font) {
+    if (!font) {
+        currentFont = fontManager.defaultFont;
+        return;
+    }
+    currentFont = font;
+}
+
+void RenderWorld::SetTextScale(float scaleX, float scaleY) {
+    currentTextScale.x = scaleX;
+    currentTextScale.y = scaleY;
+}
+
+void RenderWorld::SetTextShadow(const BE1::Color4 &shadowColor, float shadowOffsetX, float shadowOffsetY) {
+    currentTextShadowOffset.x = shadowOffsetX;
+    currentTextShadowOffset.y = shadowOffsetY;
+    currentTextShadowColor = shadowColor;
+}
+
+void RenderWorld::DrawTextInRect(const BE1::Rect &textRect, float marginX, float marginY, const BE1::Str &text, DrawTextFlag flags) {
+    RenderFrameData *frameData = RenderContext::activeContext->GetCurrentFrameData();
+
+    char *textMemPtr = (char *)frameData->MemAlloc(text.Length() + 1);
+    text.Copynz(textMemPtr, text.c_str(), text.Length() + 1);
+
+    frameData->CmdSetTextStyle(currentFont, currentTextScale, currentColor.ToUInt32(), currentTextShadowOffset, currentTextShadowColor.ToUInt32());
+    frameData->CmdDrawText(textRect, marginX, marginY, textMemPtr, flags);
+}
+
+void RenderWorld::DrawString(float x, float y, const BE1::Str &string, DrawTextFlag flags) {
+    BE1::Rect textRect;
+    textRect.x = 0;
+    textRect.y = 0;
+    textRect.w = RenderContext::activeContext->GetWidth();
+    textRect.h = RenderContext::activeContext->GetHeight();
+
+    DrawTextInRect(textRect, x, y, string, flags);
 }

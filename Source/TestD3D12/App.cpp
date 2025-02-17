@@ -14,14 +14,15 @@
 
 #include "Precompiled.h"
 #include "Platform/PlatformSystem.h"
-#include "App.h"
-#include "RenderSystem.h"
-#include "RenderContext.h"
-#include "RenderWorld.h"
-#include "RenderCamera.h"
+#include "Render/RenderSystem.h"
+#include "Render/RenderContext.h"
+#include "Render/RenderWorld.h"
+#include "Render/RenderCamera.h"
+#include "Render/Mesh.h"
+#include "Render/Texture.h"
+#include "Render/Font.h"
 #include "GameObject.h"
-#include "Mesh.h"
-#include "Texture.h"
+#include "App.h"
 
 static constexpr int        CubeDimensionX = 64;//92;
 static constexpr int        CubeDimensionY = 64;//68;
@@ -35,6 +36,8 @@ App                         app;
 void App::Init(void *mainWindowHandle) {
     renderSystem = new RenderSystem;
     renderSystem->Init(mainWindowHandle);
+
+    mainFont = fontManager.GetFont("Data/EngineFonts/FredokaOne-Regular.ttf", 19);
 
     mainRenderContext = renderSystem->CreateRenderContext(mainWindowHandle, true);
 
@@ -54,12 +57,26 @@ void App::Shutdown() {
 
     renderSystem->DestroyRenderContext(mainRenderContext);
 
+    fontManager.ReleaseFont(mainFont);
+
     renderSystem->Shutdown();
     delete renderSystem;
 }
 
 void App::RunFrame(int frameMsec) {
     PROFILER_CPU_SCOPED_EVENT("App::RunFrame", 0);
+
+    static int fpsElapsedMsec = 0;
+    static int fpsFrames = 0;
+
+    fpsElapsedMsec += frameMsec;
+    fpsFrames++;
+
+    if (fpsElapsedMsec >= 1000) {
+        fps = fpsFrames / MILLI2SEC(fpsElapsedMsec);
+        fpsFrames = 0;
+        fpsElapsedMsec = 0;
+    }
 
     elapsedMsec += frameMsec;
 
@@ -80,12 +97,11 @@ void App::Render() {
     RenderCameraDesc cameraDesc;
     cameraDesc.orthogonal = false;
     cameraDesc.renderRect.Set(0, 0, w, h);
-    cameraDesc.origin.Set(30 + (BE1::Math::Sin(MILLI2SEC(elapsedMsec) * 0.5f) + 1.0f) * 0.5f * 100, 0, 0);
+    cameraDesc.origin.Set(20 + (BE1::Math::Sin(MILLI2SEC(elapsedMsec) * 0.5f) + 1.0f) * 0.5f * 150, 0, 0);
     cameraDesc.axis[0].Set(-1, 0, 0);
     cameraDesc.axis[1].Set(0, -1, 0);
     cameraDesc.axis[2].Set(0, 0, 1);
-    cameraDesc.fovY = 45;
-    cameraDesc.fovX = cameraDesc.fovY * aspectRatio;
+    RenderCamera::CalculateFov(60, 1.7778f, aspectRatio, &cameraDesc.fovX, &cameraDesc.fovY);
     cameraDesc.zNear = BE1::CmToUnit(10.0f);
     cameraDesc.zFar = BE1::MeterToUnit(1000.0f);
     renderCamera->Update(cameraDesc);
@@ -94,15 +110,21 @@ void App::Render() {
 
     renderWorld->RenderScene(renderCamera);
 
-    renderWorld->SetColor(BE1::Color4::brown);
-    renderWorld->DrawBar(0, 0, 100, 100);
-    renderWorld->SetColor(BE1::Color4::lightSkyBlue);
-    renderWorld->DrawBar(100, 0, 100, 100);
-    renderWorld->SetColor(BE1::Color4::green);
-    renderWorld->DrawBar(200, 0, 100, 100);
+    renderWorld->SetFont(mainFont);
+    renderWorld->SetColor(BE1::Color4::white);
+    renderWorld->SetTextShadow(BE1::Color4::black, 1, 1);
+    renderWorld->DrawString(0, 0, BE1::va("FPS: %i (%f ms)", fps, 1000.0f / fps), DrawTextFlag::Right);
+    renderWorld->DrawString(0, 10, "Test D3D12 Renderer", DrawTextFlag::Center | DrawTextFlag::DrawBorder);
+
     renderWorld->RenderGUI();
 
     mainRenderContext->EndFrame();
+}
+
+void App::OnResize(int width, int height) {
+    if (mainRenderContext) {
+        mainRenderContext->OnResize(width, height);
+    }
 }
 
 void App::InitGameObjects() {

@@ -32,6 +32,46 @@ class RenderObject {
     friend class RenderWorld;
 
 public:
+    enum class TextDrawMode : uint8_t {
+        Normal,
+        DropShadows,
+        AddOutlines
+    };
+
+    enum class TextAnchor : uint8_t {
+        UpperLeft,
+        UpperCenter,
+        UpperRight,
+        MiddleLeft,
+        MiddleCenter,
+        MiddleRight,
+        LowerLeft,
+        LowerCenter,
+        LowerRight
+    };
+
+    enum class TextHorzAlignment : uint8_t {
+        Left,
+        Center,
+        Right
+    };
+
+    enum class TextVertAlignment : uint8_t {
+        Top,
+        Middle,
+        Bottom
+    };
+
+    enum class TextHorzOverflow : uint8_t {
+        Wrap,
+        Overflow
+    };
+
+    enum class TextVertOverflow : uint8_t {
+        Truncate,
+        Overflow
+    };
+
     RenderObject() = default;
     ~RenderObject();
 

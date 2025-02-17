@@ -414,3 +414,11 @@ bool RenderCamera::CalcDepthBoundsFromFrustum(const BE1::Frustum &frustum, const
     frustum.ToPoints(points);
     return CalcDepthBoundsFromPoints(8, points, mvp, depthMin, depthMax);
 }
+
+void RenderCamera::CalculateFov(float fromFovX, float fromAspectRatio, float toAspectRatio, float *toFovX, float *toFovY) {
+    float tanFovX = BE1::Math::Tan(DEG2RAD(fromFovX * 0.5f));
+    float tanFovY = tanFovX / fromAspectRatio;
+
+    *toFovX = RAD2DEG(BE1::Math::ATan(tanFovY * toAspectRatio) * 2.0f);
+    *toFovY = RAD2DEG(BE1::Math::ATan(tanFovY) * 2.0f);
+}

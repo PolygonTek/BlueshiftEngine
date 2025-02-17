@@ -1,0 +1,135 @@
+// Copyright(c) 2017 POLYGONTEK
+// 
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+// 
+// http://www.apache.org/licenses/LICENSE-2.0
+// 
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+#include "Precompiled.h"
+#include "Font.h"
+#include "TrueTypeFont.h"
+#include "FontFace.h"
+
+const char *    FontManager::defaultFontFilename = "Data/EngineFonts/consola.ttf";//"Data/EngineFonts/Lucida Console12.font"
+Font *          FontManager::defaultFont;
+FontManager     fontManager;
+
+void FontManager::Init() {
+    TrueTypeFont::Init();
+    TrueTypeFontFace::InitAtlas();
+
+    fontHashMap.Init(1024, 64, 64);
+
+    defaultFont = AllocFont(defaultFontFilename, 18);
+    if (!defaultFont->Load(defaultFontFilename)) {
+        BE_FATALERROR("Couldn't load default font!");
+    }
+    defaultFont->permanence = true;
+}
+
+void FontManager::Shutdown() {
+    fontHashMap.DeleteContents(true);
+
+    TrueTypeFontFace::FreeAtlas();
+
+    TrueTypeFont::Shutdown();
+}
+
+void FontManager::ClearAtlasTextures() {
+    //TrueTypeFontFace::FreeAtlas();
+}
+
+Font *FontManager::AllocFont(const char *hashName, uint32_t fontSize) {
+    if (fontHashMap.Get(FontHashKey(hashName, fontSize))) {
+        BE_FATALERROR("%s font already allocated", hashName);
+    }
+
+    Font *font = new Font;
+    font->hashName = hashName;
+    font->name = hashName;
+    font->name.StripPath();
+    font->name.StripFileExtension();
+    font->refCount = 1;
+    font->fontSize = fontSize;
+    fontHashMap.Set(FontHashKey(hashName, fontSize), font);
+
+    return font;
+}
+
+void FontManager::DestroyFont(Font *font) {
+    if (font->refCount > 1) {
+        BE_WARNLOG("FontManager::DestroyFont: font '%s' has %i reference count\n", font->name.c_str(), font->refCount);
+    }
+
+    fontHashMap.Remove(FontHashKey(font->hashName, font->fontSize));
+    delete font;
+}
+
+void FontManager::ReleaseFont(Font *font, bool immediateDestroy) {
+    if (font->refCount > 0) {
+        if (--font->refCount > 0) {
+            return;
+        }
+    }
+
+    if (font->permanence) {
+        return;
+    }
+
+    if (immediateDestroy) {
+        DestroyFont(font);
+    }
+}
+
+void FontManager::DestroyUnusedFonts() {
+    BE1::Array<Font *> removeArray;
+
+    for (const auto &entry : fontHashMap) {
+        Font *font = entry.second;
+        if (!font) {
+            continue;
+        }
+
+        if (!font->permanence && font->refCount == 0) {
+            removeArray.Append(font);
+        }
+    }
+
+    for (Font *font : removeArray) {
+        DestroyFont(font);
+    }
+}
+
+Font *FontManager::FindFont(const char *hashName, uint32_t fontSize) const {
+    const auto *entry = fontHashMap.Get(FontHashKey(hashName, fontSize));
+    if (entry) {
+        return entry->second;
+    }
+    return nullptr;
+}
+
+Font *FontManager::GetFont(const char *hashName, uint32_t fontSize) {
+    if (!hashName || !hashName[0]) {
+        return defaultFont;
+    }
+
+    Font *font = FindFont(hashName, fontSize);
+    if (font) {
+        font->refCount++;
+        return font;
+    }
+
+    font = AllocFont(hashName, fontSize);
+    if (!font->Load(hashName)) {
+        DestroyFont(font);
+        return defaultFont;
+    }
+    return font;
+}

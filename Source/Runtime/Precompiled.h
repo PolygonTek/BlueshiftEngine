@@ -713,6 +713,10 @@ BE_FORCE_INLINE constexpr bool BE_API       IsPowerOf2(int x) { return x && ((x 
 template<typename E>
 constexpr bool HasFlag(E lhs, E rhs) { return (lhs & rhs) == rhs; }
 
+/// Checks if any bits in the specified flag(s) (rhs) are set in the target flags (lhs).
+template<typename E>
+constexpr bool HasAnyFlag(E lhs, E rhs) { return std::underlying_type_t<E>(lhs & rhs) != 0; }
+
 /// Tests if the value is aligned.
 template <typename T>
 constexpr bool IsAligned(const T &x, int n) { return IsPowerOf2(n) ? ((x & (n - 1)) == 0) : ((x % n) == 0); }

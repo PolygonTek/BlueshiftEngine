@@ -20,8 +20,8 @@ class RenderContext;
 class RenderWorld;
 class RenderCamera;
 class GameObject;
-class TriangleMesh;
 class Mesh;
+class Font;
 
 class App {
 public:
@@ -30,6 +30,8 @@ public:
 
     void                            RunFrame(int frameMsec);
     void                            Render();
+
+    void                            OnResize(int width, int height);
 
     void                            InitGameObjects();
     void                            ClearGameObjects();
@@ -45,12 +47,14 @@ private:
     void                            UpdateCubes();
 
     RenderContext *                 mainRenderContext = nullptr;
+    Font *                          mainFont = nullptr;
     RenderCamera *                  renderCamera = nullptr;
     RenderWorld *                   renderWorld = nullptr;
 
     BE1::Array<GameObject *>        gameObjects;
 
     int                             elapsedMsec = 0;
+    int                             fps = 0;
 };
 
 extern App                          app;

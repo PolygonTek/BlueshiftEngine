@@ -17,6 +17,8 @@
 #include "RHI.h"
 
 class Texture;
+class Font;
+enum class DrawTextFlag : uint16_t;
 
 class GuiMesh {
 public:
@@ -45,7 +47,11 @@ public:
 
     void                    SetClipRect(const BE1::Rect &clipRect) { this->clipRect = clipRect; }
 
-    void                    DrawPic(RHI::FrameThreadData *frameThreadData, float x, float y, float w, float h, float s1, float t1, float s2, float t2, const Texture *texture, uint32_t color);
+    void                    SetTextStyle(const Font *font, float scaleX, float scaleY, uint32_t color, float shadowOffsetX, float shadowOffsetY, uint32_t shadowColor);
+
+    void                    DrawPic(RHI::FrameThreadData *frameThreadData, float x, float y, float w, float h, float s1, float t1, float s2, float t2, uint32_t color, const Texture *texture);
+    float                   DrawChar(RHI::FrameThreadData *frameThreadData, float x, float y, char32_t unicodeChar, DrawTextFlag flags);
+    void                    DrawTextInRect(RHI::FrameThreadData *frameThreadData, const BE1::Rect &rect, int marginX, int marginY, const BE1::Str &text, int textLength, DrawTextFlag flags);
 
     void                    CacheIndexes(RHI::FrameThreadData *frameThreadData);
 
@@ -58,4 +64,12 @@ private:
 
     CoordFrame              coordFrame = CoordFrame::CoordFrame2D;
     BE1::Rect               clipRect = BE1::Rect::zero;
+
+    const Font *            currentFont = nullptr;
+    float                   currentTextScaleX = 1.0f;
+    float                   currentTextScaleY = 1.0f;
+    uint32_t                currentTextColor = 0xFFFFFFFF;
+    uint32_t                currentTextShadowColor = 0;
+    float                   currentTextShadowOffsetX = 0;
+    float                   currentTextShadowOffsetY = 0;
 };

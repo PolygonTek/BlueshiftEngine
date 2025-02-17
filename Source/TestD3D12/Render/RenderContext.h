@@ -77,8 +77,10 @@ private:
     RHI::Texture *                      mainRTColorTexture = nullptr;
     RHI::Texture *                      mainRTDepthTexture = nullptr;
     RHI::PipelineState *                imagePSO = nullptr;
-    RHI::PipelineState *                singlePSO = nullptr;
-    RHI::PipelineState *                instancingPSO = nullptr;
+    RHI::PipelineState *                unlitPSO = nullptr;
+    RHI::PipelineState *                unlitAlphaBlendPSO = nullptr;
+    RHI::PipelineState *                unlitInstancedPSO = nullptr;
+    RHI::PipelineState *                unlitInstancedAlphaBlendPSO = nullptr;
 
 #ifdef USE_RENDER_FRAME_RESOURCES
     static constexpr int                NumFrameResources = 2;

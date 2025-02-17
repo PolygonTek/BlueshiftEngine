@@ -24,6 +24,7 @@ class VisCamera;
 class VisLight;
 class VisObject;
 class Texture;
+class Font;
 class Mesh;
 class SubMesh;
 class GuiMesh;
@@ -35,6 +36,24 @@ struct DbvtProxy {
     Mesh *                      staticMesh;             ///< Static mesh.
     int32_t                     staticMeshSurfIndex;    ///< Index into the mesh's surface array.
     int32_t                     id;                     ///< Proxy id.
+};
+
+enum class DrawTextFlag : uint16_t {
+    None                        = 0,
+    Right                       = BIT(0),
+    Center                      = BIT(1),
+    Bottom                      = BIT(2),
+    VCenter                     = BIT(3),
+    MultiLines                  = BIT(5),
+    WordWrap                    = BIT(6),
+    Truncate                    = BIT(7),
+    DrawBorder                  = BIT(8),
+    DrawShadow                  = BIT(9)
+};
+
+template<>
+struct enable_bitmask_operators<DrawTextFlag> {
+    static const bool enable = true;
 };
 
 /// RenderWorld is the central manager for scene objects.
@@ -51,10 +70,15 @@ public:
     void                        RemoveRenderObject(int index);
 
     void                        SetColor(const BE1::Color4 &color) { currentColor = color; }
+    void                        SetFont(Font *font);
+    void                        SetTextScale(float scaleX, float scaleY);
+    void                        SetTextShadow(const BE1::Color4 &shadowColor, float shadowOffsetX, float shadowOffsetY);
     void                        DrawPic(float x, float y, float w, float h, const Texture *texture);
     void                        DrawStretchPic(float x, float y, float w, float h, float s1, float t1, float s2, float t2, const Texture *texture);
     void                        DrawBar(float x, float y, float w, float h);
     void                        DrawRect(float x, float y, float w, float h);
+    void                        DrawTextInRect(const BE1::Rect &textRect, float marginX, float marginY, const BE1::Str &text, DrawTextFlag flags);
+    void                        DrawString(float x, float y, const BE1::Str &string, DrawTextFlag flags);
 
     void                        RenderScene(const RenderCamera *renderCamera);
     void                        RenderGUI();
@@ -78,5 +102,9 @@ private:
     BE1::DynamicAABBTree        staticMeshDbvt;     ///< Dynamic bounding volume tree (DBVT) for static meshes.
 #endif
 
-    BE1::Color4                 currentColor;
+    BE1::Color4                 currentColor = BE1::Color4(1, 1, 1, 1);
+    BE1::Color4                 currentTextShadowColor = BE1::Color4(0, 0, 0, 0);
+    BE1::Vec2                   currentTextScale = BE1::Vec2::one;
+    BE1::Vec2                   currentTextShadowOffset = BE1::Vec2::zero;
+    Font *                      currentFont = nullptr;
 };

@@ -41,6 +41,8 @@ private:
     const void *                    ExecuteBeginContext(const void *data);
     const void *                    ExecuteDrawCamera(const void *data);
     const void *                    ExecuteDrawPic(const void *data);
+    const void *                    ExecuteSetTextStyle(const void *data);
+    const void *                    ExecuteDrawText(const void *data);
     const void *                    ExecuteScreenshot(const void *data);
     const void *                    ExecuteSwapBuffers(const void *data);
 

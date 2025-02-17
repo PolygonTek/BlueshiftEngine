@@ -19,6 +19,7 @@
 #include "D3D12Renderer/D3D12Renderer.h"
 #include "Sampler.h"
 #include "Texture.h"
+#include "Font.h"
 #include "Mesh.h"
 
 RenderSystem *      renderSystem = nullptr;
@@ -33,6 +34,8 @@ void RenderSystem::Init(void *mainWindowHandle) {
 
     textureManager.Init();
 
+    fontManager.Init();
+
     meshManager.Init();
 
     backEnd = new RenderBackEnd;
@@ -46,6 +49,8 @@ void RenderSystem::Shutdown() {
     SAFE_DELETE(backEnd);
 
     meshManager.Shutdown();
+
+    fontManager.Shutdown();
 
     textureManager.Shutdown();
 

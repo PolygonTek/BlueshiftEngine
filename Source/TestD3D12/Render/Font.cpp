@@ -1,0 +1,113 @@
+// Copyright(c) 2017 POLYGONTEK
+// 
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+// 
+// http://www.apache.org/licenses/LICENSE-2.0
+// 
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+#include "Precompiled.h"
+#include "Core/StrColor.h"
+#include "Render/Font.h"
+#include "FontFace.h"
+
+void Font::Purge() {
+    SAFE_DELETE(fontFace);
+}
+
+bool Font::Load(const char *filename) {
+    Purge();
+
+    if (BE1::Str::CheckExtension(filename, ".font")) {
+        fontFace = new BitmapFontFace;
+        if (!fontFace->Load(filename, 0/*fontSize*/)) {
+            delete fontFace;
+            return false;
+        }
+        fontType = Type::Bitmap;
+        return true;
+    }
+
+    fontFace = new TrueTypeFontFace;
+    if (!fontFace->Load(filename, fontSize)) {
+        delete fontFace;
+        return false;
+    }
+    fontType = Type::TrueType;
+    return true;
+}
+
+int Font::GetFontHeight() const {
+    if (fontFace) {
+        return fontFace->GetFontHeight();
+    }
+    return 0;
+}
+
+FontGlyph *Font::GetGlyph(char32_t unicodeChar, RenderMode renderMode) const {
+    if (fontFace) {
+        return fontFace->GetGlyph(unicodeChar, renderMode);
+    }
+    return nullptr;
+}
+
+int Font::GetGlyphAdvanceX(char32_t unicodeChar) const {
+    if (fontFace) {
+        return fontFace->GetGlyphAdvanceX(unicodeChar);
+    }
+    return 0;
+}
+
+int Font::GetGlyphAdvanceY(char32_t unicodeChar) const {
+    if (fontFace) {
+        return fontFace->GetGlyphAdvanceY(unicodeChar);
+    }
+    return 0;
+}
+
+float Font::TextWidth(const BE1::Str &text, int maxLength, bool allowLineBreak, bool allowColoredText, float xScale) const {
+    float maxWidth = 0;
+    float width = 0;
+    int offset = 0;
+    char32_t unicodeChar;
+
+    while ((unicodeChar = text.UTF8CharAdvance(offset)) && maxLength != 0) {
+        if (allowLineBreak && unicodeChar == U'\n') {
+            if (width > maxWidth) {
+                maxWidth = width;
+            }
+
+            maxLength--;
+            continue;
+        }
+
+        if (allowColoredText) {
+            if (unicodeChar == BE1::UC_COLOR_ESCAPE) {
+                int prevOffset = offset;
+                uint32_t nextUnicodeChar = text.UTF8CharAdvance(offset);
+
+                if (nextUnicodeChar != 0 && nextUnicodeChar != BE1::UC_COLOR_ESCAPE) {
+                    maxLength -= 2;
+                    continue;
+                } else {
+                    offset = prevOffset;
+                }
+            }
+        }
+
+        width += GetGlyphAdvanceX(unicodeChar) * xScale;
+        maxLength--;
+    }
+
+    if (width > maxWidth) {
+        maxWidth = width;
+    }
+
+    return maxWidth;
+}

@@ -5,6 +5,15 @@ project(TestD3D12)
 set(SRC_FILES
     Precompiled.h
     Precompiled.cpp
+    App.h
+    App.cpp
+    GameObject.h
+    GameObject.cpp
+    WinMain.cpp
+    WinResource.h
+    WinRes/small.ico
+    WinRes/TestD3D12.ico
+    WinRes/TestD3D12.rc
     RHI.h
     RHI.cpp
     D3D12Renderer/D3D12Common.h
@@ -41,45 +50,45 @@ set(SRC_FILES
     D3D12Renderer/D3D12FrameData.h
     D3D12Renderer/D3D12FrameData.cpp
     Shaders/ShaderInterop.h
-    App.h
-    App.cpp
-    RenderContext.h
-    RenderContext.cpp
-    RenderFrameData.h
-    RenderFrameData.cpp
-    RenderSystem.h
-    RenderSystem.cpp
-    RenderBackEnd.h
-    RenderBackEnd.cpp
-    RenderObject.h
-    RenderObject.cpp
-    RenderWorld.h
-    RenderWorld.cpp
-    RenderCamera.h
-    RenderCamera.cpp
-    RenderInternal.h
-    DrawSurf.h
-    Mesh.h
-    Mesh.cpp
-    Mesh_CreateMesh.cpp
-    Mesh_SortAndMerge.cpp
-    MeshManager.cpp
-    SubMesh.h
-    SubMesh.cpp
-    GuiMesh.h
-    GuiMesh.cpp
-    Sampler.h
-    Sampler.cpp
-    Texture.h
-    Texture.cpp
-    TextureManager.cpp
-    GameObject.h
-    GameObject.cpp
-    WinMain.cpp
-    WinResource.h
-    WinRes/small.ico
-    WinRes/TestD3D12.ico
-    WinRes/TestD3D12.rc)
+    Render/RenderContext.h
+    Render/RenderContext.cpp
+    Render/RenderFrameData.h
+    Render/RenderFrameData.cpp
+    Render/RenderSystem.h
+    Render/RenderSystem.cpp
+    Render/RenderBackEnd.h
+    Render/RenderBackEnd.cpp
+    Render/RenderObject.h
+    Render/RenderObject.cpp
+    Render/RenderWorld.h
+    Render/RenderWorld.cpp
+    Render/RenderCamera.h
+    Render/RenderCamera.cpp
+    Render/RenderInternal.h
+    Render/DrawSurf.h
+    Render/Mesh.h
+    Render/Mesh.cpp
+    Render/Mesh_CreateMesh.cpp
+    Render/Mesh_SortAndMerge.cpp
+    Render/MeshManager.cpp
+    Render/SubMesh.h
+    Render/SubMesh.cpp
+    Render/GuiMesh.h
+    Render/GuiMesh.cpp
+    Render/Font.h
+    Render/Font.cpp
+    Render/FontFace.h
+    Render/FontFaceBitmap.cpp
+    Render/FontFaceTrueType.cpp
+    Render/FontManager.cpp
+    Render/FontFile.h
+    Render/TrueTypeFont.h
+    Render/TrueTypeFont.cpp
+    Render/Sampler.h
+    Render/Sampler.cpp
+    Render/Texture.h
+    Render/Texture.cpp
+    Render/TextureManager.cpp)
 
 file(GLOB_RECURSE SHADER_FILES RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/Shaders/**.hlsl*)
 

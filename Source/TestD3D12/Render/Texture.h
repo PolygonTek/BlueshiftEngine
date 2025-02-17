@@ -47,7 +47,7 @@ public:
     };
 
     Texture() = default;
-    ~Texture();
+    ~Texture() { Purge(); }
 
     const char *                GetName() const { return name.c_str(); }
     const char *                GetHashName() const { return hashName.c_str(); }
@@ -104,10 +104,6 @@ private:
     BE1::Image::Format          format;
     Texture::Flag               flags;
 };
-
-BE_INLINE Texture::~Texture() {
-    Purge();
-}
 
 template<>
 struct enable_bitmask_operators<Texture::Flag> {

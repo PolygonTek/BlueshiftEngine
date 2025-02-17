@@ -95,6 +95,8 @@ public:
 
     void                    Update(const RenderCameraDesc &desc);
 
+    static void             CalculateFov(float fromFovX, float fromAspectRatio, float toAspectRatio, float *toFovX, float *toFovY);
+
 private:
     RenderCameraDesc        desc;
     BE1::Frustum            frustum;

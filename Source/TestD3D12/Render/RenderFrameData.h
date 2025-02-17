@@ -18,14 +18,18 @@
 
 class RenderContext;
 class Texture;
+class Font;
 class VisCamera;
 class VisObject;
+enum class DrawTextFlag : uint16_t;
 
-enum class RenderCommandId : uint32_t {
+enum class RenderCommandId : uint8_t {
     End,
     BeginContext,
     DrawCamera,
     DrawPic,
+    SetTextStyle,
+    DrawText,
     ScreenShot,
     SwapBuffers
 };
@@ -59,6 +63,26 @@ struct DrawPicRenderCommand {
     float                           t2;
     const Texture *                 texture;
     uint32_t                        color;
+};
+
+struct SetTextStyleRenderCommand {
+    RenderCommandId                 commandId;
+    const Font *                    font;
+    float                           scaleX;
+    float                           scaleY;
+    uint32_t                        color;
+    uint32_t                        shadowColor;
+    float                           shadowOffsetX;
+    float                           shadowOffsetY;
+};
+
+struct DrawTextRenderCommand {
+    RenderCommandId                 commandId;
+    BE1::Rect                       rect;
+    float                           x;
+    float                           y;
+    const char *                    text;
+    DrawTextFlag                    flags;
 };
 
 struct ScreenShotRenderCommand {
@@ -116,6 +140,8 @@ public:
     void                            CmdBeginContext(RenderContext *context);
     void                            CmdDrawCamera(const VisCamera *camera);
     void                            CmdDrawPic(float x, float y, float w, float h, float s1, float t1, float s2, float t2, const Texture *texture, uint32_t color);
+    void                            CmdSetTextStyle(const Font *font, const BE1::Vec2 &scale, uint32_t color, BE1::Vec2 &shadowOffset, uint32_t shadowColor);
+    void                            CmdDrawText(const BE1::Rect &textRect, float x, float y, const char *text, DrawTextFlag flags);
     void                            CmdSwapBuffers();
     void                            CmdScreenshot(int x, int y, int width, int height, const char *filename);
     void                            CmdEnd();
@@ -218,6 +244,36 @@ BE_INLINE void RenderFrameData::CmdDrawPic(float x, float y, float w, float h, f
     cmd->t2 = t2;
     cmd->texture = texture;
     cmd->color = color;
+}
+
+BE_INLINE void RenderFrameData::CmdSetTextStyle(const Font *font, const BE1::Vec2 &scale, uint32_t color, BE1::Vec2 &shadowOffset, uint32_t shadowColor) {
+    SetTextStyleRenderCommand *cmd = (SetTextStyleRenderCommand *)GetCommandBuffer(sizeof(SetTextStyleRenderCommand));
+    if (!cmd) {
+        return;
+    }
+
+    cmd->commandId = RenderCommandId::SetTextStyle;
+    cmd->font = font;
+    cmd->scaleX = scale.x;
+    cmd->scaleY = scale.y;
+    cmd->color = color;
+    cmd->shadowOffsetX = shadowOffset.x;
+    cmd->shadowOffsetY = shadowOffset.y;
+    cmd->shadowColor = shadowColor;
+}
+
+BE_INLINE void RenderFrameData::CmdDrawText(const BE1::Rect &textRect, float x, float y, const char *text, DrawTextFlag flags) {
+    DrawTextRenderCommand *cmd = (DrawTextRenderCommand *)GetCommandBuffer(sizeof(DrawTextRenderCommand));
+    if (!cmd) {
+        return;
+    }
+
+    cmd->commandId = RenderCommandId::DrawText;
+    cmd->rect = textRect;
+    cmd->x = x;
+    cmd->y = y;
+    cmd->text = text;
+    cmd->flags = flags;
 }
 
 BE_INLINE void RenderFrameData::CmdSwapBuffers() {

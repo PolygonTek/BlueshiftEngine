@@ -14,10 +14,26 @@
 
 #pragma once
 
-#include "Render/RenderObject.h"
+#pragma pack(1)
 
-class GameObject {
-public:
-    RenderObjectDesc        renderObjectDesc;
-    int                     renderObjectHandle = -1;
+struct FontFileHeader {
+    uint32_t        ofsBitmaps;     // byte offset of bitmaps
+    uint32_t        numBitmaps;     // a number of bitmaps
+    uint32_t        ofsGlyphs;      // byte offset of glyphs
+    uint32_t        numGlyphs;      // a number of glyphs
 };
+
+struct FontFileBitmap {
+    char            name[256];
+};
+
+struct FontFileGlyph {
+    char32_t        charCode;
+    int32_t         width, height;
+    int32_t         offsetX, offsetY;
+    int32_t         advanceX, advanceY;
+    float           s, t, s2, t2;
+    uint32_t        bitmapIndex;
+};
+
+#pragma pack()

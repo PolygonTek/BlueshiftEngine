@@ -64,9 +64,21 @@ void RenderContext::Shutdown() {
     RHI::renderer->Finish(RHI::CommandQueueType::Graphics);
     RHI::renderer->Finish(RHI::CommandQueueType::Compute);
 
-    RHI::renderer->DestroyPSO(imagePSO);
-    RHI::renderer->DestroyPSO(singlePSO);
-    RHI::renderer->DestroyPSO(instancingPSO);
+    if (imagePSO) {
+        RHI::renderer->DestroyPSO(imagePSO);
+    }
+    if (unlitPSO) {
+        RHI::renderer->DestroyPSO(unlitPSO);
+    }
+    if (unlitAlphaBlendPSO) {
+        RHI::renderer->DestroyPSO(unlitAlphaBlendPSO);
+    }
+    if (unlitInstancedPSO) {
+        RHI::renderer->DestroyPSO(unlitInstancedPSO);
+    }
+    if (unlitInstancedAlphaBlendPSO) {
+        RHI::renderer->DestroyPSO(unlitInstancedAlphaBlendPSO);
+    }
 
     DestroyMainRenderTextures();
 
@@ -156,7 +168,10 @@ void RenderContext::InitPSO() {
         psoDesc.inputLayout = &inputLayout;
         psoDesc.primitiveTopology = RHI::PrimitiveTopology::TriangleList;
         psoDesc.renderDest = &renderDest;
-        singlePSO = RHI::renderer->CreateGraphicsPSO(&psoDesc);
+        unlitPSO = RHI::renderer->CreateGraphicsPSO(&psoDesc);
+
+        psoDesc.blendState = RHI::renderer->GetBlendState(RHI::BlendStateType::AlphaBlend);
+        unlitAlphaBlendPSO = RHI::renderer->CreateGraphicsPSO(&psoDesc);
     }
 
     if (unlitVS) {
@@ -179,7 +194,10 @@ void RenderContext::InitPSO() {
         psoDesc.inputLayout = &inputLayout;
         psoDesc.primitiveTopology = RHI::PrimitiveTopology::TriangleList;
         psoDesc.renderDest = &renderDest;
-        instancingPSO = RHI::renderer->CreateGraphicsPSO(&psoDesc);
+        unlitInstancedPSO = RHI::renderer->CreateGraphicsPSO(&psoDesc);
+
+        psoDesc.blendState = RHI::renderer->GetBlendState(RHI::BlendStateType::AlphaBlend);
+        unlitInstancedAlphaBlendPSO = RHI::renderer->CreateGraphicsPSO(&psoDesc);
     }
 
     if (unlitInstancingVS) {

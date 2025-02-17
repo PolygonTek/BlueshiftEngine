@@ -17,7 +17,6 @@
 #include "Platform/Windows/PlatformWinUtils.h"
 #include "WinResource.h"
 #include "App.h"
-#include "RenderContext.h"
 #include <tchar.h>
 
 static const TCHAR *        mainWindowClassName  = _T("BLUESHIFT_MAIN_WINDOW");
@@ -179,7 +178,7 @@ static BOOL InitInstance(int nCmdShow) {
     wchar_t title[128];
     BE1::PlatformWinUtils::UTF8ToUCS2(szFullTitle, title, COUNT_OF(title));
 
-    hwndMain = CreateMainWindow(title, 1024, 768);
+    hwndMain = CreateMainWindow(title, 1280, 720);
 
     app.Init(hwndMain);
 
@@ -210,23 +209,6 @@ static bool ProcessEventLoop() {
 }
 
 static bool RunFrameInstance(int frameMsec) {
-    static int fpsElapsedMsec = 0;
-    static int fpsFrames = 0;
-    static int fps = 0;
-
-    fpsElapsedMsec += frameMsec;
-    fpsFrames++;
-
-    if (fpsElapsedMsec >= 1000) {
-        fps = fpsFrames / MILLI2SEC(fpsElapsedMsec);
-        fpsFrames = 0;
-        fpsElapsedMsec = 0;
-
-        WCHAR windowText[256];
-        swprintf_s(windowText, L"%s - FPS: %i (%f ms)", windowTitleString, fps, 1000.0f / fps);
-        SetWindowText(hwndMain, windowText);
-    }
-
     if (!ProcessEventLoop()) {
         return false;
     }
@@ -298,9 +280,7 @@ LRESULT CALLBACK MainWndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lPar
         break;
     case WM_SIZE:
         if (wParam != SIZE_MINIMIZED) {
-            if (app.GetMainRenderContext()) {
-                app.GetMainRenderContext()->OnResize(LOWORD(lParam), HIWORD(lParam));
-            }
+            app.OnResize(LOWORD(lParam), HIWORD(lParam));
         }
         return 0;
     case WM_TIMER:
