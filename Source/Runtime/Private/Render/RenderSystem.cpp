@@ -689,7 +689,7 @@ void RenderSystem::CaptureScreenRT(RenderWorld *renderWorld, int layerMask,
     }
     cameraDef.zNear = CmToUnit(5.0f);
 
-    RenderCamera::ComputeFov(fov, 1.25f, (float)width / height, &cameraDef.fovX, &cameraDef.fovY);
+    RenderCamera::CalculateFov(fov, 1.25f, (float)width / height, &cameraDef.fovX, &cameraDef.fovY);
 
     // Use any render context.
     RenderContext *renderContext = renderSystem.renderContexts[0];

@@ -769,7 +769,7 @@ void RenderContext::TakeScreenShot(const char *filename, RenderWorld *renderWorl
     }
     cameraDef.zNear = CmToUnit(5.0f);
 
-    RenderCamera::ComputeFov(fov, 1.25f, (float)width / height, &cameraDef.fovX, &cameraDef.fovY);
+    RenderCamera::CalculateFov(fov, 1.25f, (float)width / height, &cameraDef.fovX, &cameraDef.fovY);
 
     renderCamera.Update(&cameraDef);
 

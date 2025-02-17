@@ -229,7 +229,7 @@ void ComCamera::DrawGizmos(const RenderCamera *camera, bool selected, bool selec
             float h = screenHeight * nh;
             float aspectRatio = w / h;
 
-            RenderCamera::ComputeFov(fov, 1.25f, aspectRatio, &this->renderCameraDef.fovX, &this->renderCameraDef.fovY);
+            RenderCamera::CalculateFov(fov, 1.25f, aspectRatio, &this->renderCameraDef.fovX, &this->renderCameraDef.fovY);
 
             Frustum cameraFrustum;
             cameraFrustum.SetOrigin(this->renderCameraDef.origin);
@@ -359,7 +359,7 @@ const Ray ComCamera::ScreenPointToRay(const Point &screenPoint) {
     } else {
         float aspectRatio = (float)screenWidth / screenHeight;
 
-         RenderCamera::ComputeFov(fov, 1.25f, aspectRatio, &renderCameraDef.fovX, &renderCameraDef.fovY);
+         RenderCamera::CalculateFov(fov, 1.25f, aspectRatio, &renderCameraDef.fovX, &renderCameraDef.fovY);
     }
 
     Rect screenRect;
@@ -422,7 +422,7 @@ void ComCamera::Render() {
         float aspectRatio = screenWidth / screenHeight;
 
         // Compute fovX, fovY with the given fov and aspect ratio.
-        RenderCamera::ComputeFov(fov, 1.25f, aspectRatio, &renderCameraDef.fovX, &renderCameraDef.fovY);
+        RenderCamera::CalculateFov(fov, 1.25f, aspectRatio, &renderCameraDef.fovX, &renderCameraDef.fovY);
     }
 
     // Update render camera with the given parameters.

@@ -121,14 +121,17 @@ FT_Glyph TrueTypeFont::RenderGlyphWithBorder(FT_Render_Mode renderMode, float bo
 
     FT_Glyph glyph;
     if (FT_Get_Glyph(ftFace->glyph, &glyph) != 0) {
+        FT_Stroker_Done(stroker);
         return nullptr;
     }
 
-    if (FT_Glyph_Stroke(&glyph, stroker, 1) != 0) {
+    if (FT_Glyph_Stroke(&glyph, stroker, true) != 0) {
+        FT_Stroker_Done(stroker);
         return nullptr;
     }
 
-    if (FT_Glyph_To_Bitmap(&glyph, renderMode, nullptr, false) != 0) {
+    if (FT_Glyph_To_Bitmap(&glyph, renderMode, nullptr, true) != 0) {
+        FT_Stroker_Done(stroker);
         return nullptr;
     }
 

@@ -141,7 +141,7 @@ public:
     float                   CalcViewScale(const Vec3 &position) const;
     float                   CalcClampedViewScale(const Vec3 &position, float viewScaleMin = 0.001f, float viewScaleMax = 0.01f) const { return Clamp(CalcViewScale(position), viewScaleMin, viewScaleMax); }
 
-    static void             ComputeFov(float fromFovX, float fromAspectRatio, float toAspectRatio, float *toFovX, float *toFovY);
+    static void             CalculateFov(float fromFovX, float fromAspectRatio, float toAspectRatio, float *toFovX, float *toFovY);
 
     static const Ray        RayFromScreenPoint(const RenderCamera::State &sceneView, const Rect &screenRect, const Point &screenPoint);
 

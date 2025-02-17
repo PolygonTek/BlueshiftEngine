@@ -474,7 +474,7 @@ float RenderCamera::CalcViewScale(const Vec3 &position) const {
     return 2.0f / Max(pixelDist, 0.0001f);
 }
 
-void RenderCamera::ComputeFov(float fromFovX, float fromAspectRatio, float toAspectRatio, float *toFovX, float *toFovY) {
+void RenderCamera::CalculateFov(float fromFovX, float fromAspectRatio, float toAspectRatio, float *toFovX, float *toFovY) {
     float tanFovX = Math::Tan(DEG2RAD(fromFovX * 0.5f));
     float tanFovY = tanFovX / fromAspectRatio;
 

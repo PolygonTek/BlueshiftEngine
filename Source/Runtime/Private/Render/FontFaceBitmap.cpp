@@ -100,7 +100,7 @@ bool BitmapFontFace::Load(const char *filename, int fontSize) {
 
     int maxHeight = 0;
 
-    glyphHashMap.Init(header->numGlyphs, header->numGlyphs, 0);
+    glyphHashMap.Init(header->numGlyphs, header->numGlyphs, header->numGlyphs);
 
     const FontFileGlyph *gl = (FontFileGlyph *)(data + header->ofsGlyphs);
 
