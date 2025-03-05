@@ -178,8 +178,8 @@ void Application::DrawClipRect(float s1, float t1, float s2, float t2) {
     } verts[] = { 
         { BE1::Vec2(-1, -1), BE1::Vec2(s1, t1) },
         { BE1::Vec2(+1, -1), BE1::Vec2(s2, t1) },
-        { BE1::Vec2(+1, +1), BE1::Vec2(s2, t2) },
-        { BE1::Vec2(-1, +1), BE1::Vec2(s1, t2) }
+        { BE1::Vec2(-1, +1), BE1::Vec2(s1, t2) },
+        { BE1::Vec2(+1, +1), BE1::Vec2(s2, t2) }
     };
         
     BE1::graphics.BindBuffer(BE1::Graphics::BufferType::Vertex, streamBuffer);
@@ -187,7 +187,7 @@ void Application::DrawClipRect(float s1, float t1, float s2, float t2) {
 
     BE1::graphics.SetVertexFormat(vertex2DFormat);
     BE1::graphics.SetStreamSource(0, streamBuffer, 0, sizeof(verts[0]));
-    BE1::graphics.DrawArrays(BE1::Graphics::Topology::TriangleFan, 0, 4);
+    BE1::graphics.DrawArrays(BE1::Graphics::Topology::TriangleStrip, 0, 4);
 }
 
 void Application::DrawToRenderTarget(BE1::Graphics::Handle renderTargetHandle, float t) {
