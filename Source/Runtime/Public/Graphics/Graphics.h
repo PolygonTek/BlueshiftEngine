@@ -291,11 +291,10 @@ public:
     struct Topology {
         enum Enum {
             TriangleList                    = 0,
-            TriangleFan                     = 1,
-            TriangleStrip                   = 2,
-            LineList                        = 3,
-            LineStrip                       = 4,
-            PointList                       = 5,
+            TriangleStrip                   = 1,
+            LineList                        = 2,
+            LineStrip                       = 3,
+            PointList                       = 4,
         };
     };
 

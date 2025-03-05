@@ -61,12 +61,12 @@ void RenderWorld::DebugQuad(const Vec3 &origin, const Vec3 &right, const Vec3 &u
     v[3] = origin + sr + su;
 
     if (debugFillColor.a > 0) {
-        Vec3 *fv = RB_ReserveDebugPrimsVerts(Graphics::Topology::TriangleFan, 4, debugFillColor, 0, twoSided, depthTest, lifeTime);
+        Vec3 *fv = RB_ReserveDebugPrimsVerts(Graphics::Topology::TriangleStrip, 4, debugFillColor, 0, twoSided, depthTest, lifeTime);
         if (fv) {
             fv[0] = v[0];
             fv[1] = v[1];
-            fv[2] = v[2];
-            fv[3] = v[3];
+            fv[2] = v[3];
+            fv[3] = v[2];
         }
     }
 
@@ -88,13 +88,12 @@ void RenderWorld::DebugCircle(const Vec3 &origin, const Vec3 &dir, const float r
     up *= radius;
 
     if (debugFillColor.a > 0) {
-        Vec3 *fvptr = RB_ReserveDebugPrimsVerts(Graphics::Topology::TriangleFan, numSteps + 2, debugFillColor, 0, twoSided, depthTest, lifeTime);
+        Vec3 *fvptr = RB_ReserveDebugPrimsVerts(Graphics::Topology::TriangleStrip, (numSteps + 1) * 2, debugFillColor, 0, twoSided, depthTest, lifeTime);
         if (fvptr) {
-            *fvptr++ = origin;
-
             for (int i = 0; i <= numSteps; i++) {
                 float a = Math::TwoPi * i / numSteps;
                 Math::SinCos16(a, s, c);
+                *fvptr++ = origin;
                 *fvptr++ = origin + c * left + s * up;
             }
         }
@@ -169,13 +168,12 @@ void RenderWorld::DebugArc(const Vec3 &origin, const Vec3 &right, const Vec3 &up
     Vec3 ry = radius * up;
 
     if (drawSector && debugFillColor.a > 0) {
-        Vec3 *fvptr = RB_ReserveDebugPrimsVerts(Graphics::Topology::TriangleFan, numSteps + 2, debugFillColor, 0, twoSided, depthTest, lifeTime);
+        Vec3 *fvptr = RB_ReserveDebugPrimsVerts(Graphics::Topology::TriangleStrip, (numSteps + 1) * 2, debugFillColor, 0, twoSided, depthTest, lifeTime);
         if (fvptr) {
-            *fvptr++ = origin;
-
             for (int i = 0; i <= numSteps; i++) {
                 float a = theta1 + delta * i / numSteps;
                 Math::SinCos16(a, s, c);
+                *fvptr++ = origin;
                 *fvptr++ = origin + c * rx + s * ry;
             }
         }
@@ -212,13 +210,12 @@ void RenderWorld::DebugEllipse(const Vec3 &origin, const Vec3 &right, const Vec3
     Vec3 ry = up * radius2;
 
     if (debugFillColor.a > 0) {
-        Vec3 *fvptr = RB_ReserveDebugPrimsVerts(Graphics::Topology::TriangleFan, numSteps + 2, debugFillColor, 0, twoSided, depthTest, lifeTime);
+        Vec3 *fvptr = RB_ReserveDebugPrimsVerts(Graphics::Topology::TriangleStrip, (numSteps + 1) * 2, debugFillColor, 0, twoSided, depthTest, lifeTime);
         if (fvptr) {
-            *fvptr++ = origin;
-
             for (int i = 0; i <= numSteps; i++) {
                 float a = Math::TwoPi * i / numSteps;
                 Math::SinCos16(a, s, c);
+                *fvptr++ = origin;
                 *fvptr++ = origin + c * rx + s * ry;
             }
         }
@@ -525,23 +522,23 @@ void RenderWorld::DebugCone(const Vec3 &origin, const Mat3 &axis, float height, 
 
     if (radius1 == 0.0f) {
         if (debugFillColor.a > 0) {
-            fvptr = RB_ReserveDebugPrimsVerts(Graphics::Topology::TriangleFan, (360 / 15) + 2, debugFillColor, 0, twoSided, depthTest, lifeTime);
+            fvptr = RB_ReserveDebugPrimsVerts(Graphics::Topology::TriangleStrip, ((360 / 15) + 1) * 2, debugFillColor, 0, twoSided, depthTest, lifeTime);
             if (fvptr) {
-                *fvptr++ = apex;
 
                 for (int i = 0; i <= 360; i += 15) {
                     Math::SinCos16(DEG2RAD(i), s, c);
                     d = c * axis[0] + s * axis[1];
+                    *fvptr++ = apex;
                     *fvptr++ = origin + d * radius2;
                 }
 
                 if (drawCap) {
-                    fvptr = RB_ReserveDebugPrimsVerts(Graphics::Topology::TriangleFan, (360 / 15) + 2, debugFillColor, 0, twoSided, depthTest, lifeTime);
-                    *fvptr++ = origin;
+                    fvptr = RB_ReserveDebugPrimsVerts(Graphics::Topology::TriangleStrip, ((360 / 15) + 1) * 2, debugFillColor, 0, twoSided, depthTest, lifeTime);
 
                     for (int i = 0; i <= 360; i += 15) {
                         Math::SinCos16(DEG2RAD(i), s, c);
                         d = c * axis[0] - s * axis[1];
+                        *fvptr++ = origin;
                         *fvptr++ = origin + d * radius2;
                     }
                 }
@@ -577,21 +574,21 @@ void RenderWorld::DebugCone(const Vec3 &origin, const Mat3 &axis, float height, 
                 }
 
                 if (drawCap) {
-                    fvptr = RB_ReserveDebugPrimsVerts(Graphics::Topology::TriangleFan, (360 / 15) + 2, debugFillColor, 0, twoSided, depthTest, lifeTime);
-                    *fvptr++ = apex;
+                    fvptr = RB_ReserveDebugPrimsVerts(Graphics::Topology::TriangleStrip, ((360 / 15) + 1) * 2, debugFillColor, 0, twoSided, depthTest, lifeTime);
 
                     for (int i = 0; i <= 360; i += 15) {
                         Math::SinCos16(DEG2RAD(i), s, c);
                         d = c * axis[0] - s * axis[1];
+                        *fvptr++ = apex;
                         *fvptr++ = apex + d * radius1;
                     }
 
-                    fvptr = RB_ReserveDebugPrimsVerts(Graphics::Topology::TriangleFan, (360 / 15) + 2, debugFillColor, 0, twoSided, depthTest, lifeTime);
-                    *fvptr++ = origin;
+                    fvptr = RB_ReserveDebugPrimsVerts(Graphics::Topology::TriangleStrip, ((360 / 15) + 1) * 2, debugFillColor, 0, twoSided, depthTest, lifeTime);
 
                     for (int i = 0; i <= 360; i += 15) {
                         Math::SinCos16(DEG2RAD(i), s, c);
                         d = c * axis[0] - s * axis[1];
+                        *fvptr++ = origin;
                         *fvptr++ = origin + d * radius2;
                     }
                 }
