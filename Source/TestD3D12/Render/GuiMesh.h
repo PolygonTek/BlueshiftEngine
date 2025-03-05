@@ -15,6 +15,7 @@
 #pragma once
 
 #include "RHI.h"
+#include "RenderObject.h"
 
 class Texture;
 class Font;
@@ -47,11 +48,18 @@ public:
 
     void                    SetClipRect(const BE1::Rect &clipRect) { this->clipRect = clipRect; }
 
-    void                    SetTextStyle(const Font *font, float scaleX, float scaleY, uint32_t color, float shadowOffsetX, float shadowOffsetY, uint32_t shadowColor);
-
     void                    DrawPic(RHI::FrameThreadData *frameThreadData, float x, float y, float w, float h, float s1, float t1, float s2, float t2, uint32_t color, const Texture *texture);
-    float                   DrawChar(RHI::FrameThreadData *frameThreadData, float x, float y, char32_t unicodeChar, DrawTextFlag flags);
-    void                    DrawTextInRect(RHI::FrameThreadData *frameThreadData, const BE1::Rect &rect, int marginX, int marginY, const BE1::Str &text, int textLength, DrawTextFlag flags);
+    float                   DrawChar(RHI::FrameThreadData *frameThreadData, float x, float y, char32_t unicodeChar);
+
+    void                    DrawText2D(RHI::FrameThreadData *frameThreadData, const BE1::Rect &rect, int x, int y, int lineSpacing, float textScale,
+                                uint32_t color, uint32_t shadowColor, const BE1::Vec2 &shadowOffset, const Font *font, const BE1::Str &text, DrawTextFlag flags);
+
+    void                    DrawText3D(RHI::FrameThreadData *frameThreadData, RenderObject::TextDrawMode drawMode, RenderObject::TextAnchor anchor, RenderObject::TextHorzAlignment horzAlignment, float lineSpacing, float textScale,
+                                uint32_t color, uint32_t shadowColor, const BE1::Vec2 &shadowOffset, const Font *font, const BE1::Str &text);
+
+    void                    DrawText3D(RHI::FrameThreadData *frameThreadData, RenderObject::TextDrawMode drawMode, const BE1::RectF &rect, RenderObject::TextHorzAlignment horzAlignment, RenderObject::TextVertAlignment vertAlignment,
+                                RenderObject::TextHorzOverflow horzOverflow, RenderObject::TextVertOverflow vertOverflow, float lineSpacing, float textScale,
+                                uint32_t color, uint32_t shadowColor, const BE1::Vec2 &shadowOffset, const Font *font, const BE1::Str &text);
 
     void                    CacheIndexes(RHI::FrameThreadData *frameThreadData);
 
@@ -66,9 +74,10 @@ private:
     BE1::Rect               clipRect = BE1::Rect::zero;
 
     const Font *            currentFont = nullptr;
-    float                   currentTextScaleX = 1.0f;
-    float                   currentTextScaleY = 1.0f;
+    float                   currentTextScale = 1.0f;
     uint32_t                currentTextColor = 0xFFFFFFFF;
+    bool                    currentTextDropShadows = false;
+    bool                    currentTextAddOutlines = false;
     uint32_t                currentTextShadowColor = 0;
     float                   currentTextShadowOffsetX = 0;
     float                   currentTextShadowOffsetY = 0;

@@ -19,8 +19,6 @@
 #include "Core/Vec4Color.h"
 #include "RenderWorld.h"
 
-static constexpr int    TextLineSpacing = 4;
-
 void GuiMesh::Clear() {
     surfaces.SetCount(0, false);
 
@@ -36,16 +34,6 @@ void GuiMesh::PrepareNewSurf() {
     newSurf.indexBuffer = nullptr;
 
     currentSurf = &newSurf;
-}
-
-void GuiMesh::SetTextStyle(const Font *font, float scaleX, float scaleY, uint32_t color, float shadowOffsetX, float shadowOffsetY, uint32_t shadowColor) {
-    currentFont = font;
-    currentTextScaleX = scaleX;
-    currentTextScaleY = scaleY;
-    currentTextColor = color;
-    currentTextShadowOffsetX = shadowOffsetX;
-    currentTextShadowOffsetY = shadowOffsetY;
-    currentTextShadowColor = shadowColor;
 }
 
 void GuiMesh::DrawPic(RHI::FrameThreadData *frameThreadData, float x, float y, float w, float h, float s1, float t1, float s2, float t2, uint32_t color, const Texture *texture) {
@@ -138,17 +126,16 @@ void GuiMesh::DrawQuad(RHI::FrameThreadData *frameThreadData, const BE1::VertexG
 
     // 다이나믹 버텍스 버퍼에 Quad 버텍스 데이터를 복사하기만 하고, 실제로 draw 하지는 않는다.
     // 다이나믹 인덱스 버퍼는 CacheIndexes() 에서 모든 Quad 에 대한 인덱스 데이터가 한꺼번에 만들어진다.
-    if (!currentSurf || texture != currentSurf->texture) {
-        PrepareNewSurf();
-    } else {
+    if (currentSurf && texture == currentSurf->texture) {
         assert(currentSurf->vertexBuffer);
         if (frameThreadData->AppendVertex(currentSurf->vertexBuffer, sizeof(BE1::VertexGeneric), 4, verts)) {
             currentSurf->numVerts += 4;
             currentSurf->numIndexes += 6;
             return;
         }
-        PrepareNewSurf();
     }
+
+    PrepareNewSurf();
 
     currentSurf->texture = texture;
     currentSurf->vertexBuffer = frameThreadData->AllocVertex(sizeof(BE1::VertexGeneric), 4, verts);
@@ -156,9 +143,9 @@ void GuiMesh::DrawQuad(RHI::FrameThreadData *frameThreadData, const BE1::VertexG
     currentSurf->numIndexes += 6;
 }
 
-float GuiMesh::DrawChar(RHI::FrameThreadData *frameThreadData, float x, float y, char32_t unicodeChar, DrawTextFlag flags) {
+float GuiMesh::DrawChar(RHI::FrameThreadData *frameThreadData, float x, float y, char32_t unicodeChar) {
     if (unicodeChar == U' ') {
-        return currentFont->GetGlyphAdvanceX(unicodeChar) * currentTextScaleX;
+        return currentFont->GetGlyphAdvanceX(unicodeChar) * currentTextScale;
     }
 
     // Clip away before accessing to the font glyph.
@@ -168,20 +155,20 @@ float GuiMesh::DrawChar(RHI::FrameThreadData *frameThreadData, float x, float y,
         }
     }
 
-    if (BE1::HasAnyFlag(flags, DrawTextFlag::DrawShadow | DrawTextFlag::DrawBorder)) {
-        FontGlyph *glyph = currentFont->GetGlyph(unicodeChar, BE1::HasFlag(flags, DrawTextFlag::DrawBorder) ? Font::RenderMode::Border : Font::RenderMode::Normal);
+    if (currentTextDropShadows || currentTextAddOutlines) {
+        FontGlyph *glyph = currentFont->GetGlyph(unicodeChar, currentTextAddOutlines ? Font::RenderMode::Border : Font::RenderMode::Normal);
         if (!glyph) {
             return 0;
         }
 
-        float charX = x + glyph->offsetX * currentTextScaleX;
-        float charY = y + glyph->offsetY * currentTextScaleY;
-        float charW = glyph->width * currentTextScaleX;
-        float charH = glyph->height * currentTextScaleY;
+        float charX = x + glyph->offsetX * currentTextScale;
+        float charY = y + glyph->offsetY * currentTextScale;
+        float charW = glyph->width * currentTextScale;
+        float charH = glyph->height * currentTextScale;
 
-        if (BE1::HasFlag(flags, DrawTextFlag::DrawShadow)) {
-            charX += currentTextShadowOffsetX * currentTextScaleX;
-            charY += currentTextShadowOffsetY * currentTextScaleY;
+        if (currentTextDropShadows) {
+            charX += currentTextShadowOffsetX * currentTextScale;
+            charY += currentTextShadowOffsetY * currentTextScale;
         }
 
         DrawPic(frameThreadData, charX, charY, charW, charH, glyph->s, glyph->t, glyph->s2, glyph->t2, currentTextShadowColor, glyph->texture);
@@ -192,18 +179,19 @@ float GuiMesh::DrawChar(RHI::FrameThreadData *frameThreadData, float x, float y,
         return 0;
     }
 
-    float charX = x + glyph->offsetX * currentTextScaleX;
-    float charY = y + glyph->offsetY * currentTextScaleY;
-    float charW = glyph->width * currentTextScaleX;
-    float charH = glyph->height * currentTextScaleY;
+    float charX = x + glyph->offsetX * currentTextScale;
+    float charY = y + glyph->offsetY * currentTextScale;
+    float charW = glyph->width * currentTextScale;
+    float charH = glyph->height * currentTextScale;
 
     DrawPic(frameThreadData, charX, charY, charW, charH, glyph->s, glyph->t, glyph->s2, glyph->t2, currentTextColor, glyph->texture);
 
-    float pitch = glyph->advanceX * currentTextScaleX;
+    float pitch = glyph->advanceX * currentTextScale;
     return pitch;
 }
 
-void GuiMesh::DrawTextInRect(RHI::FrameThreadData *frameThreadData, const BE1::Rect &rect, int marginX, int marginY, const BE1::Str &text, int textLength, DrawTextFlag flags) {
+void GuiMesh::DrawText2D(RHI::FrameThreadData *frameThreadData, const BE1::Rect &rect, int marginX, int marginY, int lineSpacing, float textScale,
+    uint32_t color, uint32_t shadowColor, const BE1::Vec2 &shadowOffset, const Font *font, const BE1::Str &text, DrawTextFlag flags) {
     static const int MaxTextLines = 256;
     int lineOffsets[MaxTextLines];
     int lineLen[MaxTextLines];
@@ -213,13 +201,20 @@ void GuiMesh::DrawTextInRect(RHI::FrameThreadData *frameThreadData, const BE1::R
     int offset = 0;
     bool truncated = false;
 
-    if (textLength == -1) {
-        textLength = text.Length();
-    }
+    assert(coordFrame == CoordFrame::CoordFrame2D);
+
+    currentFont = font;
+    currentTextScale = textScale;
+    currentTextColor = color;
+    currentTextDropShadows = BE1::HasFlag(flags, DrawTextFlag::DropShadows);
+    currentTextAddOutlines = BE1::HasFlag(flags, DrawTextFlag::AddOutlines);
+    currentTextShadowOffsetX = shadowOffset.x;
+    currentTextShadowOffsetY = shadowOffset.y;
+    currentTextShadowColor = shadowColor;
 
     lineOffsets[0] = 0;
 
-    while (offset < textLength) {
+    while (offset < text.Length()) {
         char32_t unicodeChar = text.UTF8CharAdvance(offset);
         if (!unicodeChar) {
             break;
@@ -247,7 +242,7 @@ void GuiMesh::DrawTextInRect(RHI::FrameThreadData *frameThreadData, const BE1::R
             // Save next line offset
             lineOffsets[numLines] = offset;
         } else {
-            int charWidth = currentFont->GetGlyphAdvanceX(unicodeChar) * currentTextScaleX;
+            int charWidth = currentFont->GetGlyphAdvanceX(unicodeChar) * currentTextScale;
 
             if (BE1::HasFlag(flags, DrawTextFlag::WordWrap)) {
                 if (currentLineWidth + charWidth > rect.w - marginX) {
@@ -264,10 +259,10 @@ void GuiMesh::DrawTextInRect(RHI::FrameThreadData *frameThreadData, const BE1::R
             } else if (currentLineWidth + charWidth > rect.w - marginX) {
                 if (BE1::HasFlag(flags, DrawTextFlag::Truncate)) {
                     if (currentLineWidth > 0) {
-                        int dotdotdotWidth = currentFont->GetGlyphAdvanceX(U'.') * currentTextScaleX * 3;
+                        int dotdotdotWidth = currentFont->GetGlyphAdvanceX(U'.') * currentTextScale * 3;
 
                         do {
-                            dotdotdotWidth -= currentFont->GetGlyphAdvanceX(unicodeChar) * currentTextScaleX;
+                            dotdotdotWidth -= currentFont->GetGlyphAdvanceX(unicodeChar) * currentTextScale;
                             unicodeChar = text.UTF8CharPrevious(offset);
                         } while (dotdotdotWidth > 0 && unicodeChar);
 
@@ -287,79 +282,287 @@ void GuiMesh::DrawTextInRect(RHI::FrameThreadData *frameThreadData, const BE1::R
         lineLen[numLines++] = currentLineLength;
     }
 
-    // Calculate the y-coordinate
-    int y;
+    // Calculate the y-coordinate.
+    int y = rect.y;
     if (BE1::HasAnyFlag(flags, DrawTextFlag::Bottom | DrawTextFlag::VCenter)) {
-        int height = currentFont->GetFontHeight() * currentTextScaleY * numLines + TextLineSpacing * (numLines - 1);
+        int height = currentFont->GetFontHeight() * currentTextScale * numLines + lineSpacing * (numLines - 1);
 
         if (BE1::HasFlag(flags, DrawTextFlag::Bottom)) {
-            y = rect.y + rect.h - height - marginY;
+            y += (rect.h - height) - marginY;
         } else if (BE1::HasFlag(flags, DrawTextFlag::VCenter)) {
-            y = rect.y + (rect.h - height) / 2 + marginY;
+            y += (rect.h - height) / 2 + marginY;
         }
     } else {
-        y = rect.y + marginY;
+        y += marginY;
     }
 
     for (int lineIndex = 0; lineIndex < numLines; lineIndex++) {
-        offset = lineOffsets[lineIndex];
+        int offset = lineOffsets[lineIndex];
 
-        // Calculate the x-coordinate
-        int x;
+        // Calculate the x-coordinate.
+        int x = rect.x;
         if (BE1::HasAnyFlag(flags, DrawTextFlag::Right | DrawTextFlag::Center)) {
-            int width = currentFont->TextWidth(&text[offset], lineLen[lineIndex], false, true, currentTextScaleX);
+            int width = currentFont->TextWidth(&text[offset], lineLen[lineIndex], false, true, currentTextScale);
 
             if (BE1::HasFlag(flags, DrawTextFlag::Right)) {
-                x = rect.x + rect.w - width - marginX;
+                x += (rect.w - width) - marginX;
             } else if (BE1::HasFlag(flags, DrawTextFlag::Center)) {
-                x = rect.x + (rect.w - width) / 2 + marginX;
+                x += (rect.w - width) / 2 + marginX;
             }
         } else {
-            x = rect.x + marginX;
+            x += marginX;
         }
 
         for (int lineTextIndex = 0; lineTextIndex < lineLen[lineIndex]; lineTextIndex++) {
             char32_t unicodeChar = text.UTF8CharAdvance(offset);
 
-            int colorIndex = -1;
-
             if (unicodeChar == BE1::UC_COLOR_ESCAPE) {
                 int prevOffset = offset;
                 uint32_t nextUnicodeChar = text.UTF8CharAdvance(offset);
 
-                if (nextUnicodeChar != 0 && nextUnicodeChar != BE1::UC_COLOR_ESCAPE) {
-                    colorIndex = UC_COLOR_INDEX(nextUnicodeChar);
-                } else {
+                if (nextUnicodeChar == 0 || nextUnicodeChar == BE1::UC_COLOR_ESCAPE) {
                     offset = prevOffset;
+                } else {
+                    int colorIndex = UC_COLOR_INDEX(nextUnicodeChar) % COUNT_OF(BE1::Vec4Color::table);
+
+                    currentTextColor = (0xFF000000 & currentTextColor) | (0x00FFFFFF & BE1::Vec4Color::table[colorIndex].ToUInt32());
+
+                    lineTextIndex++;
+                    continue;
                 }
             }
 
-            if (colorIndex >= 0) {
-                BE1::Clamp(colorIndex, 0, (int)COUNT_OF(BE1::Vec4Color::table) - 1);
-                currentTextColor = (0xFF000000 & currentTextColor) | (0x00FFFFFF & BE1::Vec4Color::table[colorIndex].ToUInt32());
-
-                lineTextIndex++;
-                continue;
-            }
-
-            x += DrawChar(frameThreadData, x, y, unicodeChar, flags);
+            x += DrawChar(frameThreadData, x, y, unicodeChar);
         }
 
         if (truncated && lineIndex == numLines - 1) {
-            x += DrawChar(frameThreadData, x, y, U'.', flags);
-            x += DrawChar(frameThreadData, x, y, U'.', flags);
-            x += DrawChar(frameThreadData, x, y, U'.', flags);
+            x += DrawChar(frameThreadData, x, y, U'.');
+            x += DrawChar(frameThreadData, x, y, U'.');
+            x += DrawChar(frameThreadData, x, y, U'.');
         }
 
-        y += (currentFont->GetFontHeight() + TextLineSpacing) * currentTextScaleY;
+        y += (currentFont->GetFontHeight() + lineSpacing) * currentTextScale;
+    }
+}
+
+void GuiMesh::DrawText3D(RHI::FrameThreadData *frameThreadData, RenderObject::TextDrawMode drawMode, RenderObject::TextAnchor anchor, RenderObject::TextHorzAlignment horzAlignment, float lineSpacing, float textScale,
+    uint32_t color, uint32_t shadowColor, const BE1::Vec2 &shadowOffset, const Font *font, const BE1::Str &text) {
+    static constexpr int MaxTextLines = 256;
+    int lineCharOffsets[MaxTextLines];
+    int lineLengths[MaxTextLines];
+    int numLines = 0;
+    float maxWidth = 0;
+    float currentLineWidth = 0;
+    int currentLineLength = 0;
+    int charOffset = 0;
+    char32_t unicodeChar;
+
+    assert(coordFrame == CoordFrame::CoordFrame3D);
+
+    currentFont = font;
+    currentTextScale = textScale;
+    currentTextColor = color;
+    currentTextDropShadows = drawMode == RenderObject::TextDrawMode::DropShadows;
+    currentTextAddOutlines = drawMode == RenderObject::TextDrawMode::AddOutlines;
+    currentTextShadowOffsetX = shadowOffset.x;
+    currentTextShadowOffsetY = shadowOffset.y;
+    currentTextShadowColor = shadowColor;
+
+    lineCharOffsets[0] = 0;
+
+    while ((unicodeChar = text.UTF8CharAdvance(charOffset))) {
+        if (unicodeChar == U'\n') {
+            // Save current line length.
+            lineLengths[numLines++] = currentLineLength;
+
+            if (currentLineWidth > maxWidth) {
+                maxWidth = currentLineWidth;
+            }
+
+            currentLineWidth = 0;
+            currentLineLength = 0;
+
+            // Save next line offset.
+            lineCharOffsets[numLines] = charOffset;
+        } else {
+            float charWidth = font->GetGlyphAdvanceX(unicodeChar) * textScale;
+            currentLineWidth += charWidth;
+            currentLineLength++;
+        }
+    }
+
+    if (currentLineLength > 0) {
+        lineLengths[numLines++] = currentLineLength;
+
+        if (currentLineWidth > maxWidth) {
+            maxWidth = currentLineWidth;
+        }
+    }
+
+    // Calculate the y coordinate.
+    float y = 0;
+    if (anchor != RenderObject::TextAnchor::UpperLeft &&
+        anchor != RenderObject::TextAnchor::UpperCenter &&
+        anchor != RenderObject::TextAnchor::UpperRight) {
+        float totalHeight = textScale * (font->GetFontHeight() * numLines + lineSpacing * (numLines - 1));
+
+        if (anchor == RenderObject::TextAnchor::LowerLeft ||
+            anchor == RenderObject::TextAnchor::LowerCenter ||
+            anchor == RenderObject::TextAnchor::LowerRight) {
+            y = -totalHeight;
+        } else if (
+            anchor == RenderObject::TextAnchor::MiddleLeft ||
+            anchor == RenderObject::TextAnchor::MiddleCenter ||
+            anchor == RenderObject::TextAnchor::MiddleRight) {
+            y = -totalHeight * 0.5f;
+        }
+    }
+
+    for (int lineIndex = 0; lineIndex < numLines; lineIndex++) {
+        int offset = lineCharOffsets[lineIndex];
+
+        // Calculate the x coordinate.
+        float x = 0;
+        if (anchor == RenderObject::TextAnchor::UpperRight ||
+            anchor == RenderObject::TextAnchor::MiddleRight ||
+            anchor == RenderObject::TextAnchor::LowerRight) {
+            x = -maxWidth;
+        } else if (
+            anchor == RenderObject::TextAnchor::UpperCenter ||
+            anchor == RenderObject::TextAnchor::MiddleCenter ||
+            anchor == RenderObject::TextAnchor::LowerCenter) {
+            x = -maxWidth * 0.5f;
+        }
+
+        if (horzAlignment != RenderObject::TextHorzAlignment::Left) {
+            float lineWidth = font->TextWidth(&text[offset], lineLengths[lineIndex], false, false, textScale);
+
+            if (horzAlignment == RenderObject::TextHorzAlignment::Right) {
+                x += maxWidth - lineWidth;
+            } else if (horzAlignment == RenderObject::TextHorzAlignment::Center) {
+                x += (maxWidth - lineWidth) * 0.5f;
+            }
+        }
+
+        for (int lineTextIndex = 0; lineTextIndex < lineLengths[lineIndex]; lineTextIndex++) {
+            x += DrawChar(frameThreadData, x, y, text.UTF8CharAdvance(offset));
+        }
+
+        y += (font->GetFontHeight() + lineSpacing) * textScale;
+    }
+}
+
+void GuiMesh::DrawText3D(RHI::FrameThreadData *frameThreadData, RenderObject::TextDrawMode drawMode, const BE1::RectF &rect, RenderObject::TextHorzAlignment horzAlignment, RenderObject::TextVertAlignment vertAlignment,
+    RenderObject::TextHorzOverflow horzOverflow, RenderObject::TextVertOverflow vertOverflow, float lineSpacing, float textScale,
+    uint32_t color, uint32_t shadowColor, const BE1::Vec2 &shadowOffset, const Font *font, const BE1::Str &text) {
+    static constexpr int MaxTextLines = 256;
+    int lineCharOffsets[MaxTextLines];
+    int lineLengths[MaxTextLines];
+    int numLines = 0;
+    float currentLineWidth = 0;
+    int currentLineLength = 0;
+    int charOffset = 0;
+    char32_t unicodeChar;
+
+    assert(coordFrame == CoordFrame::CoordFrame3D);
+
+    currentFont = font;
+    currentTextScale = textScale;
+    currentTextColor = color;
+    currentTextDropShadows = drawMode == RenderObject::TextDrawMode::DropShadows;
+    currentTextAddOutlines = drawMode == RenderObject::TextDrawMode::AddOutlines;
+    currentTextShadowOffsetX = shadowOffset.x;
+    currentTextShadowOffsetY = shadowOffset.y;
+    currentTextShadowColor = shadowColor;
+
+    lineCharOffsets[0] = 0;
+
+    auto PrepareNextLine = [&]() -> bool {
+        // Save current line length.
+        lineLengths[numLines++] = currentLineLength;
+
+        currentLineWidth = 0;
+        currentLineLength = 0;
+
+        if (vertOverflow == RenderObject::TextVertOverflow::Truncate) {
+            int currentTextHeight = textScale * (font->GetFontHeight() * numLines + lineSpacing * (numLines - 1));
+
+            if (currentTextHeight > rect.h) {
+                numLines--;
+                return false;
+            }
+        }
+
+        // Save next line offset.
+        lineCharOffsets[numLines] = charOffset;
+        return true;
+        };
+
+    int charPrevOffset = 0;
+
+    while (unicodeChar = text.UTF8CharAdvance(charOffset)) {
+        if (unicodeChar == U'\n') {
+            if (!PrepareNextLine()) {
+                break;
+            }
+        } else {
+            float charWidth = font->GetGlyphAdvanceX(unicodeChar) * textScale;
+
+            if (horzOverflow == RenderObject::TextHorzOverflow::Wrap && currentLineWidth + charWidth > rect.w) {
+                charOffset = charPrevOffset;
+
+                if (!PrepareNextLine()) {
+                    break;
+                }
+            } else {
+                currentLineWidth += charWidth;
+                currentLineLength++;
+            }
+        }
+
+        charPrevOffset = charOffset;
+    }
+
+    if (currentLineLength > 0) {
+        PrepareNextLine();
+    }
+
+    // Calculate the y coordinate.
+    float y = -rect.Y2();
+    if (vertAlignment != RenderObject::TextVertAlignment::Top) {
+        float totalHeight = textScale * (font->GetFontHeight() * numLines + lineSpacing * (numLines - 1));
+
+        if (vertAlignment == RenderObject::TextVertAlignment::Bottom) {
+            y += (rect.h - totalHeight);
+        } else if (vertAlignment == RenderObject::TextVertAlignment::Middle) {
+            y += (rect.h - totalHeight) * 0.5f;
+        }
+    }
+
+    for (int lineIndex = 0; lineIndex < numLines; lineIndex++) {
+        int offset = lineCharOffsets[lineIndex];
+
+        // Calculate the x coordinate.
+        float x = rect.x;
+        if (horzAlignment != RenderObject::TextHorzAlignment::Left) {
+            float lineWidth = font->TextWidth(&text[offset], lineLengths[lineIndex], false, false, textScale);
+
+            if (horzAlignment == RenderObject::TextHorzAlignment::Right) {
+                x += rect.w - lineWidth;
+            } else if (horzAlignment == RenderObject::TextHorzAlignment::Center) {
+                x += (rect.w - lineWidth) * 0.5f;
+            }
+        }
+
+        for (int lineTextIndex = 0; lineTextIndex < lineLengths[lineIndex]; lineTextIndex++) {
+            x += DrawChar(frameThreadData, x, y, text.UTF8CharAdvance(offset));
+        }
+
+        y += (font->GetFontHeight() + lineSpacing) * textScale;
     }
 }
 
 void GuiMesh::CacheIndexes(RHI::FrameThreadData *frameThreadData) {
-    if (surfaces.Count() == 0) {
-        return;
-    }
-
     constexpr BE1::VertIndex quadTrisIndexes[6] = { 0, 1, 2, 0, 2, 3 };
 
     // 모든 surf 에 대해서 index buffer 를 채운다.
@@ -372,7 +575,7 @@ void GuiMesh::CacheIndexes(RHI::FrameThreadData *frameThreadData) {
             BE1::VertIndex *indexPtr = reinterpret_cast<BE1::VertIndex *>(surf->indexBuffer->writePtr);
 
             // 현재 surf 의 첫번째 버텍스가 위치한 곳을 index 로 나타낸 값
-            int baseVertexIndex = 0;//surf->vertexBuffer->GetOffset() / sizeof(BE1::VertexGeneric);
+            int baseVertexIndex = 0;
 
             for (int index = 0; index < surf->numIndexes; index += 6) {
                 *indexPtr++ = baseVertexIndex + quadTrisIndexes[0];

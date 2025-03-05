@@ -62,6 +62,7 @@ set(SRC_FILES
     Render/RenderObject.cpp
     Render/RenderWorld.h
     Render/RenderWorld.cpp
+    Render/RenderWorldDraw.cpp
     Render/RenderCamera.h
     Render/RenderCamera.cpp
     Render/RenderInternal.h

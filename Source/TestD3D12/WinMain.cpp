@@ -178,7 +178,7 @@ static BOOL InitInstance(int nCmdShow) {
     wchar_t title[128];
     BE1::PlatformWinUtils::UTF8ToUCS2(szFullTitle, title, COUNT_OF(title));
 
-    hwndMain = CreateMainWindow(title, 1280, 720);
+    hwndMain = CreateMainWindow(title, 1280, 800);
 
     app.Init(hwndMain);
 

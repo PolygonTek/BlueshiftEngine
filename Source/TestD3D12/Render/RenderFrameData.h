@@ -27,9 +27,6 @@ enum class RenderCommandId : uint8_t {
     End,
     BeginContext,
     DrawCamera,
-    DrawPic,
-    SetTextStyle,
-    DrawText,
     ScreenShot,
     SwapBuffers
 };
@@ -49,40 +46,6 @@ struct BeginContextRenderCommand {
 struct DrawCameraRenderCommand {
     RenderCommandId                 commandId;
     const VisCamera *               visCamera;
-};
-
-struct DrawPicRenderCommand {
-    RenderCommandId                 commandId;
-    float                           x;
-    float                           y;
-    float                           w;
-    float                           h;
-    float                           s1;
-    float                           t1;
-    float                           s2;
-    float                           t2;
-    const Texture *                 texture;
-    uint32_t                        color;
-};
-
-struct SetTextStyleRenderCommand {
-    RenderCommandId                 commandId;
-    const Font *                    font;
-    float                           scaleX;
-    float                           scaleY;
-    uint32_t                        color;
-    uint32_t                        shadowColor;
-    float                           shadowOffsetX;
-    float                           shadowOffsetY;
-};
-
-struct DrawTextRenderCommand {
-    RenderCommandId                 commandId;
-    BE1::Rect                       rect;
-    float                           x;
-    float                           y;
-    const char *                    text;
-    DrawTextFlag                    flags;
 };
 
 struct ScreenShotRenderCommand {
@@ -139,9 +102,6 @@ public:
 
     void                            CmdBeginContext(RenderContext *context);
     void                            CmdDrawCamera(const VisCamera *camera);
-    void                            CmdDrawPic(float x, float y, float w, float h, float s1, float t1, float s2, float t2, const Texture *texture, uint32_t color);
-    void                            CmdSetTextStyle(const Font *font, const BE1::Vec2 &scale, uint32_t color, BE1::Vec2 &shadowOffset, uint32_t shadowColor);
-    void                            CmdDrawText(const BE1::Rect &textRect, float x, float y, const char *text, DrawTextFlag flags);
     void                            CmdSwapBuffers();
     void                            CmdScreenshot(int x, int y, int width, int height, const char *filename);
     void                            CmdEnd();
@@ -194,17 +154,24 @@ private:
 };
 
 BE_INLINE void RenderFrameData::BeginFrame() {
-    // 스레드 별로 사용할 자원을 Reset 한다.
+    // 프론트 엔드에서 이번 프레임의 프레임 데이터를 사용하기 위해서는, 백엔드에서의 사용이 완료되야 한다.
+    RHI::renderer->WaitFence(fenceValue);
+
+    // 스레드 별로 사용할 자원을 초기화한다.
     for (int threadIndex = 0; threadIndex < numRenderTaskThreads; ++threadIndex) {
         threadData[threadIndex]->Reset();
     }
 
-    // 이번 프레임에 사용할 프레임 데이터를 사용하기 위해서는, GPU 에서 이전 프레임에 대한 렌더링이 완료되야 한다.
-    RHI::renderer->WaitFence(fenceValue);
+    // 프레임 메모리를 초기화한다.
+    BeginFrameMemAllocs();
 }
 
 BE_INLINE void RenderFrameData::EndFrame() {
-    fenceValue = RHI::renderer->SignalFence(RHI::CommandQueueType::Graphics);
+    // 커맨드 버퍼에 커맨드의 끝을 기록.
+    *(uint32_t *)(commands.buffer + commands.used) = static_cast<uint32_t>(RenderCommandId::End);
+
+    // 커맨드 버퍼 비우기.
+    commands.used = 0;
 }
 
 BE_INLINE void RenderFrameData::CmdBeginContext(RenderContext *context) {
@@ -225,55 +192,6 @@ BE_INLINE void RenderFrameData::CmdDrawCamera(const VisCamera *camera) {
 
     cmd->commandId = RenderCommandId::DrawCamera;
     cmd->visCamera = camera;
-}
-
-BE_INLINE void RenderFrameData::CmdDrawPic(float x, float y, float w, float h, float s1, float t1, float s2, float t2, const Texture *texture, uint32_t color) {
-    DrawPicRenderCommand *cmd = (DrawPicRenderCommand *)GetCommandBuffer(sizeof(DrawPicRenderCommand));
-    if (!cmd) {
-        return;
-    }
-
-    cmd->commandId = RenderCommandId::DrawPic;
-    cmd->x = x;
-    cmd->y = y;
-    cmd->w = w;
-    cmd->h = h;
-    cmd->s1 = s1;
-    cmd->t1 = t1;
-    cmd->s2 = s2;
-    cmd->t2 = t2;
-    cmd->texture = texture;
-    cmd->color = color;
-}
-
-BE_INLINE void RenderFrameData::CmdSetTextStyle(const Font *font, const BE1::Vec2 &scale, uint32_t color, BE1::Vec2 &shadowOffset, uint32_t shadowColor) {
-    SetTextStyleRenderCommand *cmd = (SetTextStyleRenderCommand *)GetCommandBuffer(sizeof(SetTextStyleRenderCommand));
-    if (!cmd) {
-        return;
-    }
-
-    cmd->commandId = RenderCommandId::SetTextStyle;
-    cmd->font = font;
-    cmd->scaleX = scale.x;
-    cmd->scaleY = scale.y;
-    cmd->color = color;
-    cmd->shadowOffsetX = shadowOffset.x;
-    cmd->shadowOffsetY = shadowOffset.y;
-    cmd->shadowColor = shadowColor;
-}
-
-BE_INLINE void RenderFrameData::CmdDrawText(const BE1::Rect &textRect, float x, float y, const char *text, DrawTextFlag flags) {
-    DrawTextRenderCommand *cmd = (DrawTextRenderCommand *)GetCommandBuffer(sizeof(DrawTextRenderCommand));
-    if (!cmd) {
-        return;
-    }
-
-    cmd->commandId = RenderCommandId::DrawText;
-    cmd->rect = textRect;
-    cmd->x = x;
-    cmd->y = y;
-    cmd->text = text;
-    cmd->flags = flags;
 }
 
 BE_INLINE void RenderFrameData::CmdSwapBuffers() {

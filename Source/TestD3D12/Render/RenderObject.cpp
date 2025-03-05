@@ -26,7 +26,7 @@ RenderObject::~RenderObject() {
 #endif
 }
 
-void RenderObject::Update(const RenderObjectDesc &desc) {
+void RenderObject::Update(const RenderObject::Desc &desc) {
     this->desc = desc;
 
     worldAABB.SetFromTransformedAABBFast(desc.aabb, desc.worldMatrix);

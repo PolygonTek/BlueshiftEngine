@@ -18,6 +18,6 @@
 
 class GameObject {
 public:
-    RenderObjectDesc        renderObjectDesc;
+    RenderObject::Desc      renderObjectDesc;
     int                     renderObjectHandle = -1;
 };

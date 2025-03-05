@@ -35,6 +35,8 @@ public:
 
     RHI::SwapChain *                    GetSwapChain() const { return swapChain; }
 
+    GuiMesh &                           GetGuiMesh() { return guiMesh; }
+
     uint32_t                            GetWidth() const { return swapChain->GetWidth(); }
     uint32_t                            GetHeight() const { return swapChain->GetHeight(); }
 
@@ -47,8 +49,24 @@ public:
     const RenderFrameData *             GetCurrentFrameData() const { return &frames[currentFrameIndex]; }
     RenderFrameData *                   GetCurrentFrameData() { return &frames[currentFrameIndex]; }
 
+                                        // 모든 렌더링 명령이 수행이 완료될 때 까지 대기한다.
     void                                WaitAllFrameFences();
 
+                                        // 컨텍스트의 GUI 그리기 함수들
+    void                                SetColor(const BE1::Color4 &color);
+    void                                SetFont(Font *font);
+    void                                SetTextScale(float scale);
+    void                                SetTextLineSpacing(float lineSpacing);
+    void                                SetTextShadowColor(const BE1::Color4 &shadowColor);
+    void                                SetTextShadowOffset(float shadowOffsetX, float shadowOffsetY);
+    void                                DrawPic(float x, float y, float w, float h, const Texture *texture);
+    void                                DrawStretchPic(float x, float y, float w, float h, float s1, float t1, float s2, float t2, const Texture *texture);
+    void                                DrawBar(float x, float y, float w, float h);
+    void                                DrawRect(float x, float y, float w, float h);
+    void                                DrawText(const BE1::Rect &rect, float x, float y, const char *text, DrawTextFlag flags);
+    void                                DrawString(float x, float y, const BE1::Str &string, DrawTextFlag flags);
+
+                                        // 렌더 스레드 사용 여부 리턴
     bool                                IsUsingRenderThread() const { return !!renderThread; }
 
     void                                WaitRenderCompleted();
@@ -101,4 +119,13 @@ private:
     BE1::Image::Format                  mainRTColorFormat = BE1::Image::Format::R8G8B8A8;
     BE1::Image::Format                  mainRTDepthFormat = BE1::Image::Format::D32_FLOAT;
     uint32_t                            mainRTSampleCount = 1;
+
+    GuiMesh                             guiMesh;            ///< System GUI mesh
+
+    BE1::Color4                         currentColor = BE1::Color4(1, 1, 1, 1);
+    BE1::Color4                         currentTextShadowColor = BE1::Color4(0, 0, 0, 0);
+    float                               currentTextScale = 1.0f;
+    float                               currentTextLineSpacing = 2;
+    BE1::Vec2                           currentTextShadowOffset = BE1::Vec2::zero;
+    Font *                              currentFont = nullptr;
 };

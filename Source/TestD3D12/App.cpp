@@ -72,7 +72,7 @@ void App::RunFrame(int frameMsec) {
     fpsElapsedMsec += frameMsec;
     fpsFrames++;
 
-    if (fpsElapsedMsec >= 1000) {
+    if (fpsElapsedMsec >= 250) {
         fps = fpsFrames / MILLI2SEC(fpsElapsedMsec);
         fpsFrames = 0;
         fpsElapsedMsec = 0;
@@ -90,6 +90,8 @@ void App::RunFrame(int frameMsec) {
 void App::Render() {
     PROFILER_CPU_SCOPED_EVENT("App::Render", 1);
 
+    mainRenderContext->BeginFrame();
+
     float w = mainRenderContext->GetWidth();
     float h = mainRenderContext->GetHeight();
     float aspectRatio = w / h;
@@ -102,21 +104,20 @@ void App::Render() {
     cameraDesc.axis[1].Set(0, -1, 0);
     cameraDesc.axis[2].Set(0, 0, 1);
     RenderCamera::CalculateFov(60, 1.7778f, aspectRatio, &cameraDesc.fovX, &cameraDesc.fovY);
-    cameraDesc.zNear = BE1::CmToUnit(10.0f);
+    cameraDesc.zNear = BE1::MeterToUnit(0.5f);
     cameraDesc.zFar = BE1::MeterToUnit(1000.0f);
     renderCamera->Update(cameraDesc);
 
-    mainRenderContext->BeginFrame();
-
     renderWorld->RenderScene(renderCamera);
 
-    renderWorld->SetFont(mainFont);
-    renderWorld->SetColor(BE1::Color4::white);
-    renderWorld->SetTextShadow(BE1::Color4::black, 1, 1);
-    renderWorld->DrawString(0, 0, BE1::va("FPS: %i (%f ms)", fps, 1000.0f / fps), DrawTextFlag::Right);
-    renderWorld->DrawString(0, 10, "Test D3D12 Renderer", DrawTextFlag::Center | DrawTextFlag::DrawBorder);
+    mainRenderContext->SetFont(mainFont);
+    mainRenderContext->SetColor(BE1::Color4::white);
+    mainRenderContext->SetTextShadowColor(BE1::Color4::black);
+    mainRenderContext->SetTextShadowOffset(1, 1);
+    mainRenderContext->DrawString(0, 0, BE1::va("FPS: %i (%f ms)", fps, 1000.0f / fps), DrawTextFlag::Right);
+    mainRenderContext->DrawString(0, 10, "Test D3D12 Renderer", DrawTextFlag::Center | DrawTextFlag::AddOutlines);
 
-    renderWorld->RenderGUI();
+    renderWorld->RenderGUI(mainRenderContext->GetGuiMesh());
 
     mainRenderContext->EndFrame();
 }
@@ -128,7 +129,34 @@ void App::OnResize(int width, int height) {
 }
 
 void App::InitGameObjects() {
-    InitCubes();
+    gameObjects.Reserve(CubeCount);
+
+    // 큐브
+    for (int i = 0; i < CubeCount; ++i) {
+        GameObject *gameObject = new GameObject;
+        gameObjects.Append(gameObject);
+
+        RenderObject::Desc &desc = gameObject->renderObjectDesc;
+        desc.worldMatrix.SetIdentity();
+        desc.mesh = meshManager.GetMesh("_defaultBoxMesh");
+        desc.aabb = desc.mesh->GetAABB();
+        desc.textures.SetCount(1);
+        desc.textures[0] = textureManager.defaultTexture;
+
+        gameObject->renderObjectHandle = renderWorld->AddRenderObject(gameObject->renderObjectDesc);
+    }
+
+    // Text 오브젝트
+    /*GameObject *gameObject = new GameObject;
+    gameObjects.Append(gameObject);
+
+    RenderObject::Desc &desc = gameObject->renderObjectDesc;
+    desc.worldMatrix.SetTRS(BE1::Vec3(-10, 0, 0), BE1::Mat3::identity, BE1::Vec3::one);
+    desc.font = mainFont->AddRefCount();
+    desc.text = "Hello World";
+    desc.textParams.bits.textAnchor = (uint16_t)RenderObject::TextAnchor::MiddleCenter;
+
+    gameObject->renderObjectHandle = renderWorld->AddRenderObject(gameObject->renderObjectDesc);*/
 
     UpdateCubes();
 }
@@ -137,7 +165,12 @@ void App::ClearGameObjects() {
     for (GameObject *gameObject : gameObjects) {
         renderWorld->RemoveRenderObject(gameObject->renderObjectHandle);
 
-        meshManager.ReleaseMesh(gameObject->renderObjectDesc.mesh);
+        if (gameObject->renderObjectDesc.mesh) {
+            meshManager.ReleaseMesh(gameObject->renderObjectDesc.mesh);
+        }
+        if (gameObject->renderObjectDesc.font) {
+            fontManager.ReleaseFont(gameObject->renderObjectDesc.font);
+        }
     }
 
     gameObjects.DeleteContents(true);
@@ -151,24 +184,6 @@ void App::UpdateGameObjects() {
 
 void App::TakeScreenshot() {
     BE1::cmdSystem.BufferCommandText(BE1::CmdSystem::Execution::Now, "screenshot");
-}
-
-void App::InitCubes() {
-    gameObjects.Reserve(CubeCount);
-
-    for (int i = 0; i < CubeCount; ++i) {
-        GameObject *gameObject = new GameObject;
-        gameObjects.Append(gameObject);
-
-        RenderObjectDesc &desc = gameObject->renderObjectDesc;
-        desc.worldMatrix.SetIdentity();
-        desc.mesh = meshManager.GetMesh("_defaultBoxMesh");
-        desc.aabb = desc.mesh->GetAABB();
-        desc.textures.SetCount(1);
-        desc.textures[0] = textureManager.defaultTexture;
-
-        gameObject->renderObjectHandle = renderWorld->AddRenderObject(gameObject->renderObjectDesc);
-    }
 }
 
 void App::UpdateCubes() {

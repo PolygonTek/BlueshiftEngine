@@ -47,6 +47,7 @@ struct Edge {
 enum class MeshType : uint8_t {
     Dummy,
     Static,         ///< Mesh data in a static vertex/index buffer.
+    Dynamic,        ///< Mesh data in a dynamic vertex/index buffer.
     Skinned         ///< Mesh data used for skinning.
 };
 

@@ -52,6 +52,9 @@ void RenderContext::Init(void *windowHandle, bool useRenderThread) {
     InitFullScreenTrianglePSO();
 
     InitPSO();
+
+    guiMesh.SetCoordFrame(GuiMesh::CoordFrame::CoordFrame2D);
+    guiMesh.SetClipRect(BE1::Rect(0, 0, backBufferWidth, backBufferHeight));
 }
 
 void RenderContext::Shutdown() {
@@ -101,6 +104,8 @@ void RenderContext::OnResize(int width, int height) {
 
     // 스왑 체인의 크기 조정
     swapChain->Resize(width, height);
+
+    guiMesh.SetClipRect(BE1::Rect(0, 0, width, height));
 
     // 렌더 타겟 텍스쳐 & 뎁스 텍스쳐 재생성
     DestroyMainRenderTextures();
@@ -341,11 +346,7 @@ void RenderContext::BeginFrame() {
     }
 
     RenderFrameData *frameData = GetCurrentFrameData();
-
-    // 이전 프레임에서 할당했던 메모리를 해제하고,
-    // 이번 프레임에서 사용할 임시 메모리를 초기화한다.
-    frameData->BeginFrameMemAllocs();
-
+    frameData->BeginFrame();
     frameData->CmdBeginContext(this);
 
     RenderContext::activeContext = this;
@@ -360,19 +361,97 @@ void RenderContext::EndFrame() {
 
     RenderFrameData *frameData = GetCurrentFrameData();
     frameData->CmdSwapBuffers();
-
-    RenderCommandBuffer *cmds = frameData->GetCommands();
-    // 커맨드의 끝을 기록
-    *(uint32_t *)(cmds->buffer + cmds->used) = static_cast<uint32_t>(RenderCommandId::End);
-
-    // 커맨드 버퍼 비우기
-    cmds->used = 0;
+    frameData->EndFrame();
 
     if (IsUsingRenderThread()) {
         // 렌더 스레드를 깨운다.
         MarkUpdateCompleted();
     } else {
         // 렌더 스레드를 사용하지 않을 경우 직접 백엔드를 실행
-        renderSystem->GetBackEnd()->Execute(cmds);
+        renderSystem->GetBackEnd()->Execute(frameData->GetCommands());
     }
+}
+
+void RenderContext::DrawPic(float x, float y, float w, float h, const Texture *texture) {
+    RenderFrameData *frameData = GetCurrentFrameData();
+
+    guiMesh.DrawPic(frameData->GetThreadData(0), x, y, w, h, 0.0f, 0.0f, 1.0f, 1.0f, currentColor.ToUInt32(), texture);
+}
+
+void RenderContext::DrawStretchPic(float x, float y, float w, float h, float s1, float t1, float s2, float t2, const Texture *texture) {
+    RenderFrameData *frameData = GetCurrentFrameData();
+
+    guiMesh.DrawPic(frameData->GetThreadData(0), x, y, w, h, s1, t1, s2, t2, currentColor.ToUInt32(), texture);
+}
+
+void RenderContext::DrawBar(float x, float y, float w, float h) {
+    RenderFrameData *frameData = GetCurrentFrameData();
+
+    guiMesh.DrawPic(frameData->GetThreadData(0), x, y, w, h, 0.0f, 0.0f, 1.0f, 1.0f, currentColor.ToUInt32(), textureManager.whiteTexture);
+}
+
+void RenderContext::DrawRect(float x, float y, float w, float h) {
+    if (w > 1) {
+        DrawBar(x, y, w, 1);
+        if (h > 1) {
+            DrawBar(x, y + h - 1, w, 1);
+        }
+    }
+
+    if (h > 2) {
+        DrawBar(x, y + 1, 1, h - 2);
+        if (w > 2) {
+            DrawBar(x + w - 1, y + 1, 1, h - 2);
+        }
+    }
+}
+
+void RenderContext::SetColor(const BE1::Color4 &color) {
+    currentColor = color;
+}
+
+void RenderContext::SetFont(Font *font) {
+    if (!font) {
+        currentFont = fontManager.defaultFont;
+        return;
+    }
+    currentFont = font;
+}
+
+void RenderContext::SetTextScale(float scale) {
+    currentTextScale = scale;
+}
+
+void RenderContext::SetTextLineSpacing(float lineSpacing) {
+    currentTextLineSpacing = lineSpacing;
+}
+
+void RenderContext::SetTextShadowColor(const BE1::Color4 &shadowColor) {
+    currentTextShadowColor = shadowColor;
+}
+
+void RenderContext::SetTextShadowOffset(float shadowOffsetX, float shadowOffsetY) {
+    currentTextShadowOffset.x = shadowOffsetX;
+    currentTextShadowOffset.y = shadowOffsetY;
+}
+
+void RenderContext::DrawText(const BE1::Rect &rect, float x, float y, const char *text, DrawTextFlag flags) {
+    RenderFrameData *frameData = GetCurrentFrameData();
+
+    // 프레임 메모리에 텍스트 내용을 복사
+    int size = BE1::Str::Length(text) + 1;
+    char *frameTextPtr = (char *)frameData->MemAlloc(size);
+    BE1::Str::Copynz(frameTextPtr, text, size);
+
+    guiMesh.DrawText2D(frameData->GetThreadData(0), rect, x, y, currentTextLineSpacing, currentTextScale, currentColor.ToUInt32(), currentTextShadowColor.ToUInt32(), currentTextShadowOffset, currentFont, frameTextPtr, flags);
+}
+
+void RenderContext::DrawString(float x, float y, const BE1::Str &string, DrawTextFlag flags) {
+    BE1::Rect textRect;
+    textRect.x = 0;
+    textRect.y = 0;
+    textRect.w = GetWidth();
+    textRect.h = GetHeight();
+
+    DrawText(textRect, x, y, string, flags);
 }

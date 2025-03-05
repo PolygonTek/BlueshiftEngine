@@ -40,15 +40,13 @@ private:
 
     const void *                    ExecuteBeginContext(const void *data);
     const void *                    ExecuteDrawCamera(const void *data);
-    const void *                    ExecuteDrawPic(const void *data);
-    const void *                    ExecuteSetTextStyle(const void *data);
-    const void *                    ExecuteDrawText(const void *data);
     const void *                    ExecuteScreenshot(const void *data);
     const void *                    ExecuteSwapBuffers(const void *data);
 
     void                            DrawCamera3D();
     void                            DrawCamera2D();
 
+    void                            DrawAllSurfaces(const DrawSurf **drawSurfs, uint32_t numDrawSurfs);
     void                            DrawSurfaces(const DrawSurf **drawSurfs, uint32_t numDrawSurfs);
     void                            DrawInstancedSurface(const DrawSurf **instanceSurfs, uint32_t instanceCount);
 
@@ -61,7 +59,7 @@ private:
 
     void                            DrawSurface(RHI::CommandList *commandList, const DrawSurf *drawSurf);
     void                            DrawInstancedSurface(RHI::CommandList *commandList, const DrawSurf **instanceSurfs, int instanceCount);
-    void                            DrawGuiSurface(RHI::CommandList *commandList, const GuiMesh::Surface *guiSurf);
+    void                            DrawGuiSurface(RHI::CommandList *commandList, const DrawSurf *drawSurf);
 
     RenderContext *                 currentContext = nullptr;
     RHI::CommandList *              mainCommandList = nullptr;
@@ -71,6 +69,4 @@ private:
 
     BE1::Array<DrawObjectTaskDesc>  objectDrawingTaskDescs;
     uint32_t                        drawGroupId = -1;
-
-    GuiMesh                         guiMesh;
 };

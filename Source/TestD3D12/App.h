@@ -42,8 +42,6 @@ public:
     void                            TakeScreenshot();
 
 private:
-    void                            InitCubes();
-
     void                            UpdateCubes();
 
     RenderContext *                 mainRenderContext = nullptr;

@@ -411,7 +411,7 @@ RHI::CommandList *D3D12FrameThreadData::BeginSecondaryCommandList(const RHI::Com
     // CommandAllocator 를 재사용하도록 리셋하고, CommandList 를 CommandAllocator 를 이용하여 초기 상태로 리셋
     commandList->Reset(true, primaryCommandList);
 
-    // Secondary CommandList 의 루트 디스크립터 힙을 지정한다.
+    // Secondary CommandList 의 루트 디스크립터 힙을 지정한다. (디스크립터 힙의 지정 상태는 Primary CommandList 에서 자동으로 이어지지 않음)
     // 반드시 Primary CommandList 와 동일한 디스크립터 힙을 사용해야 한다.
     ID3D12DescriptorHeap *descriptorHeaps[] = {
         resRootDescriptorPool->GetDescriptorHeap(),

@@ -33,8 +33,6 @@ struct ALIGN_AS16 UnlitInstancedConstantData {
 };
 
 void RenderBackEnd::Init() {
-    guiMesh.SetCoordFrame(GuiMesh::CoordFrame::CoordFrame2D);
-
 #ifdef USE_RENDER_TASK
     drawGroupId = BE1::Engine::taskManager->CreateGroupId();
 #endif
@@ -52,15 +50,6 @@ void RenderBackEnd::Execute(const void *data) {
             continue;
         case RenderCommandId::DrawCamera:
             data = ExecuteDrawCamera(data);
-            continue;
-        case RenderCommandId::DrawPic:
-            data = ExecuteDrawPic(data);
-            continue;
-        case RenderCommandId::SetTextStyle:
-            data = ExecuteSetTextStyle(data);
-            continue;
-        case RenderCommandId::DrawText:
-            data = ExecuteDrawText(data);
             continue;
         case RenderCommandId::ScreenShot:
             data = ExecuteScreenshot(data);
@@ -85,8 +74,8 @@ const void *RenderBackEnd::ExecuteBeginContext(const void *data) {
     currentContext = cmd->renderContext;
 
     // 프레임 데이터를 초기화하고, 이전 프레임에 대한 펜스를 기다린다.
-    RenderFrameData *currentFrameData = currentContext->GetCurrentFrameData();
-    currentFrameData->BeginFrame();
+    //RenderFrameData *currentFrameData = currentContext->GetCurrentFrameData();
+    //currentFrameData->BeginFrame();
 
     return (const void *)(cmd + 1);
 }
@@ -138,8 +127,6 @@ const void *RenderBackEnd::ExecuteDrawCamera(const void *data) {
     }
 #endif
 
-    guiMesh.SetClipRect(currentVisCamera->renderRect);
-
     if (currentVisCamera->is2D) {
         DrawCamera2D();
     } else {
@@ -160,36 +147,6 @@ const void *RenderBackEnd::ExecuteDrawCamera(const void *data) {
 
     // CommandList 에 기록을 마치고 실행
     mainCommandList->CloseAndExecute();
-
-    return (const void *)(cmd + 1);
-}
-
-const void *RenderBackEnd::ExecuteDrawPic(const void *data) {
-    const DrawPicRenderCommand *cmd = reinterpret_cast<const DrawPicRenderCommand *>(data);
-
-    RenderFrameData *currentFrameData = currentContext->GetCurrentFrameData();
-    RHI::FrameThreadData *frameThreadData = currentFrameData->GetThreadData(0);
-
-    guiMesh.DrawPic(frameThreadData, cmd->x, cmd->y, cmd->w, cmd->h, cmd->s1, cmd->t1, cmd->s2, cmd->t2, cmd->color, cmd->texture);
-
-    return (const void *)(cmd + 1);
-}
-
-const void *RenderBackEnd::ExecuteSetTextStyle(const void *data) {
-    const SetTextStyleRenderCommand *cmd = reinterpret_cast<const SetTextStyleRenderCommand *>(data);
-
-    guiMesh.SetTextStyle(cmd->font, cmd->scaleX, cmd->scaleY, cmd->color, cmd->shadowOffsetX, cmd->shadowOffsetY, cmd->shadowColor);
-
-    return (const void *)(cmd + 1);
-}
-
-const void *RenderBackEnd::ExecuteDrawText(const void *data) {
-    const DrawTextRenderCommand *cmd = reinterpret_cast<const DrawTextRenderCommand *>(data);
-
-    RenderFrameData *currentFrameData = currentContext->GetCurrentFrameData();
-    RHI::FrameThreadData *frameThreadData = currentFrameData->GetThreadData(0);
-
-    guiMesh.DrawTextInRect(frameThreadData, cmd->rect, cmd->x, cmd->y, cmd->text, -1, cmd->flags);
 
     return (const void *)(cmd + 1);
 }
@@ -230,12 +187,10 @@ const void *RenderBackEnd::ExecuteSwapBuffers(const void *data) {
 
     // 이번 프레임에서 수행하는 렌더링 커맨드들에 대한 펜스를 친다.
     RenderFrameData *currentFrameData = currentContext->GetCurrentFrameData();
-    currentFrameData->EndFrame();
+    currentFrameData->SetFenceValue(RHI::renderer->SignalFence(RHI::CommandQueueType::Graphics));
 
     // 백버퍼를 전면버퍼와 교환한다.
     currentContext->GetSwapChain()->SwapBuffers(false);
-
-    guiMesh.Clear();
 
     frameCount++;
 
@@ -247,13 +202,33 @@ const void *RenderBackEnd::ExecuteSwapBuffers(const void *data) {
 void RenderBackEnd::DrawCamera3D() {
     PROFILER_CPU_SCOPED_EVENT("RenderBackEnd::DrawCamera3D", 9);
 
+    RenderFrameData *currentFrameData = currentContext->GetCurrentFrameData();
+    RHI::FrameThreadData *currentFrameThreadData = currentFrameData->GetThreadData(0);
+
+    DrawAllSurfaces(currentVisCamera->drawSurfs, currentVisCamera->numDrawSurfs);
+}
+
+void RenderBackEnd::DrawCamera2D() {
+    PROFILER_CPU_SCOPED_EVENT("RenderBackEnd::DrawCamera2D", 9);
+
+    RenderFrameData *currentFrameData = currentContext->GetCurrentFrameData();
+    RHI::FrameThreadData *currentFrameThreadData = currentFrameData->GetThreadData(0);
+
+    for (int drawSurfIndex = 0; drawSurfIndex < currentVisCamera->numDrawSurfs; ++drawSurfIndex) {
+        const DrawSurf *drawSurf = currentVisCamera->drawSurfs[drawSurfIndex];
+
+        DrawGuiSurface(mainCommandList, drawSurf);
+    }
+}
+
+void RenderBackEnd::DrawAllSurfaces(const DrawSurf **drawSurfs, uint32_t numDrawSurfs) {
     constexpr uint32_t MaxActualDrawSurfs = 65536;
     const DrawSurf **actualDrawSurfs = (const DrawSurf **)_alloca(sizeof(DrawSurf *) * MaxActualDrawSurfs);
     uint32_t actualDrawSurfIndex = 0;
     uint32_t drawSurfIndex = 0;
 
-    while (drawSurfIndex < currentVisCamera->numDrawSurfs) {
-        const DrawSurf *drawSurf = currentVisCamera->drawSurfs[drawSurfIndex];
+    while (drawSurfIndex < numDrawSurfs) {
+        const DrawSurf *drawSurf = drawSurfs[drawSurfIndex];
 
         if (!drawSurf->subMesh->vertexBuffer) {
             drawSurf->subMesh->UploadStaticDataToGPU();
@@ -263,16 +238,16 @@ void RenderBackEnd::DrawCamera3D() {
         if (BE1::HasFlag(drawSurf->flags, DrawSurf::Flag::UseInstancing)) {
             uint32_t instanceStartIndex = drawSurfIndex;
 
-            while (drawSurfIndex < currentVisCamera->numDrawSurfs &&
-                currentVisCamera->drawSurfs[drawSurfIndex]->subMesh == drawSurf->subMesh &&
-                currentVisCamera->drawSurfs[drawSurfIndex]->texture == drawSurf->texture) {
+            while (drawSurfIndex < numDrawSurfs &&
+                drawSurfs[drawSurfIndex]->subMesh == drawSurf->subMesh &&
+                drawSurfs[drawSurfIndex]->texture == drawSurf->texture) {
                 drawSurfIndex++;
             }
 
             uint32_t instanceCount = drawSurfIndex - instanceStartIndex;
             if (instanceCount > 1) {
                 // 인스턴스 개수가 2 개 이상이어야 인스턴스드 렌더링을 수행한다.
-                DrawInstancedSurface(&currentVisCamera->drawSurfs[instanceStartIndex], instanceCount);
+                DrawInstancedSurface(&drawSurfs[instanceStartIndex], instanceCount);
                 continue;
             } else {
                 drawSurfIndex = instanceStartIndex;
@@ -290,22 +265,6 @@ void RenderBackEnd::DrawCamera3D() {
 
     if (actualDrawSurfIndex > 0) {
         DrawSurfaces(actualDrawSurfs, actualDrawSurfIndex);
-    }
-}
-
-void RenderBackEnd::DrawCamera2D() {
-    PROFILER_CPU_SCOPED_EVENT("RenderBackEnd::DrawCamera2D", 9);
-
-    RenderFrameData *currentFrameData = currentContext->GetCurrentFrameData();
-    RHI::FrameThreadData *currentFrameThreadData = currentFrameData->GetThreadData(0);
-
-    // GuiMesh 의 다이나믹 인덱스 버퍼를 업로드한다.
-    guiMesh.CacheIndexes(currentFrameThreadData);
-
-    for (int surfaceIndex = 0; surfaceIndex < guiMesh.NumSurfaces(); surfaceIndex++) {
-        const GuiMesh::Surface *guiSurf = guiMesh.GetSurface(surfaceIndex);
-
-        DrawGuiSurface(mainCommandList, guiSurf);
     }
 }
 
@@ -471,7 +430,7 @@ void RenderBackEnd::DrawInstancedSurface(RHI::CommandList *commandList, const Dr
     RHI::renderer->DrawIndexedInstanced(commandList, instanceSurfs[0]->subMesh->numIndexes, instanceCount, 0, 0, 0);
 }
 
-void RenderBackEnd::DrawGuiSurface(RHI::CommandList *commandList, const GuiMesh::Surface *guiSurf) {
+void RenderBackEnd::DrawGuiSurface(RHI::CommandList *commandList, const DrawSurf *drawSurf) {
     RHI::FrameThreadData *frameThreadData = commandList->GetFrameThreadData();
 
     RHI::ConstantBuffer *constantBuffer = frameThreadData->AllocConstant(sizeof(UnlitConstantData));
@@ -481,15 +440,14 @@ void RenderBackEnd::DrawGuiSurface(RHI::CommandList *commandList, const GuiMesh:
 
     UnlitConstantData *constantDataPtr = reinterpret_cast<UnlitConstantData *>(constantBuffer->writePtr);
 
-    // 카메라의 View-Projection 행렬을 기록
-    constantDataPtr->modelViewProjMatrix = currentVisCamera->viewProjMatrix;
+    constantDataPtr->modelViewProjMatrix = drawSurf->space->modelViewProjMatrix;
 
-    RHI::renderer->SetVertexBuffer(commandList, 0, guiSurf->vertexBuffer);
-    RHI::renderer->SetIndexBuffer(commandList, guiSurf->indexBuffer);
+    RHI::renderer->SetVertexBuffer(commandList, 0, drawSurf->subMesh->vertexBuffer);
+    RHI::renderer->SetIndexBuffer(commandList, drawSurf->subMesh->indexBuffer);
 
     RHI::renderer->SetPSO(commandList, currentContext->unlitAlphaBlendPSO);
-    RHI::renderer->SetTexture(commandList, 0, false, guiSurf->texture->GetRHITexture());
+    RHI::renderer->SetTexture(commandList, 0, false, drawSurf->texture->GetRHITexture());
     RHI::renderer->SetConstantBuffer(commandList, 0, constantBuffer);
 
-    RHI::renderer->DrawIndexed(commandList, guiSurf->numIndexes, 0, 0);
+    RHI::renderer->DrawIndexed(commandList, drawSurf->subMesh->numIndexes, 0, 0);
 }
