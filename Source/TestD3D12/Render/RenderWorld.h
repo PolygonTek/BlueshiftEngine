@@ -71,6 +71,8 @@ public:
     void                        RenderScene(const RenderCamera *renderCamera);
     void                        RenderGUI(GuiMesh &guiMesh);
 
+    void                        DebugLine(const BE1::Vec3 &start, const BE1::Vec3 &end, bool depthTest = false, int lifeTime = 0);
+
 private:
     bool                        IsVisObjectRegistered(const RenderObject *renderObject) const;
     VisObject *                 RegisterVisObject(RenderFrameData *frameData, const RenderObject *renderObject);
@@ -94,4 +96,7 @@ private:
 #endif
 
     GuiMesh                     textMesh;           ///< 3D text mesh
+
+    BE1::Color4                 debugLineColor;
+    BE1::Color4                 debugFillColor;
 };

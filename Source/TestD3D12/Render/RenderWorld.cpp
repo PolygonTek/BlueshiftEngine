@@ -21,6 +21,9 @@ RenderWorld::RenderWorld() {
     renderObjects.SetGranularity(4096);
 
     textMesh.SetCoordFrame(GuiMesh::CoordFrame::CoordFrame3D);
+
+    debugLineColor.Set(0, 0, 0, 0);
+    debugFillColor.Set(0, 0, 0, 0);
 }
 
 void RenderWorld::ClearScene() {

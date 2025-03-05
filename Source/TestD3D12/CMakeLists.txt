@@ -56,13 +56,15 @@ set(SRC_FILES
     Render/RenderFrameData.cpp
     Render/RenderSystem.h
     Render/RenderSystem.cpp
-    Render/RenderBackEnd.h
-    Render/RenderBackEnd.cpp
+    Render/RenderBackend.h
+    Render/RenderBackend.cpp
+    Render/RenderBackend_DrawSurface.cpp
     Render/RenderObject.h
     Render/RenderObject.cpp
     Render/RenderWorld.h
     Render/RenderWorld.cpp
-    Render/RenderWorldDraw.cpp
+    Render/RenderWorld_Draw.cpp
+    Render/RenderWorld_DebugTools.cpp
     Render/RenderCamera.h
     Render/RenderCamera.cpp
     Render/RenderInternal.h

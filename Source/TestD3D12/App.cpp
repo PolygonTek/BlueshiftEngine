@@ -92,6 +92,8 @@ void App::Render() {
 
     mainRenderContext->BeginFrame();
 
+    //renderWorld->ClearDebugLines();
+
     float w = mainRenderContext->GetWidth();
     float h = mainRenderContext->GetHeight();
     float aspectRatio = w / h;

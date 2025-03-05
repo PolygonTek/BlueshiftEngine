@@ -18,7 +18,7 @@
 
 class Mesh;
 class RenderWorld;
-class RenderBackEnd;
+class RenderBackend;
 enum class MeshType : uint8_t;
 
 /*
@@ -55,7 +55,7 @@ class SubMesh {
     friend class Mesh;
     friend class MeshManager;
     friend class RenderWorld;
-    friend class RenderBackEnd;
+    friend class RenderBackend;
 
 public:
     enum class Flag : uint8_t {

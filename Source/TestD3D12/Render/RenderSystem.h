@@ -15,7 +15,7 @@
 #include "Precompiled.h"
 
 class RenderContext;
-class RenderBackEnd;
+class RenderBackend;
 
 class RenderSystem {
 public:
@@ -25,13 +25,13 @@ public:
     RenderContext *             CreateRenderContext(void *windowHandle, bool isMain = false);
     void                        DestroyRenderContext(RenderContext *renderContext);
 
-    RenderBackEnd *             GetBackEnd() const { return backEnd; }
+    RenderBackend *             GetBackend() const { return backEnd; }
 
 private:
     static void                 Cmd_ScreenShot(const BE1::CmdArgs &args);
 
     RenderContext *             mainRenderContext = nullptr;
-    RenderBackEnd *             backEnd = nullptr;
+    RenderBackend *             backEnd = nullptr;
 };
 
 extern RenderSystem *           renderSystem;

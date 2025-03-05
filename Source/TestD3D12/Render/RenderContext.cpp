@@ -15,7 +15,7 @@
 #include "Precompiled.h"
 #include "RenderSystem.h"
 #include "RenderContext.h"
-#include "RenderBackEnd.h"
+#include "RenderBackend.h"
 #include "RenderInternal.h"
 
 RenderContext *     RenderContext::activeContext = nullptr;
@@ -321,7 +321,7 @@ unsigned int RenderContext::RenderThreadProc(void *param) {
 
         // 렌더링 백엔드를 실행한다.
         // 업데이트 (프론트 엔드) 단에서 현재 프레임에 대한 커맨드들이 준비되어 있어야 한다.
-        renderSystem->GetBackEnd()->Execute(context->GetCurrentFrameData()->GetCommands()->buffer);
+        renderSystem->GetBackend()->Execute(context->GetCurrentFrameData()->GetCommands()->buffer);
 
         {
             BE1::ScopedWriteLock lock(context->smpLock);
@@ -368,7 +368,7 @@ void RenderContext::EndFrame() {
         MarkUpdateCompleted();
     } else {
         // 렌더 스레드를 사용하지 않을 경우 직접 백엔드를 실행
-        renderSystem->GetBackEnd()->Execute(frameData->GetCommands());
+        renderSystem->GetBackend()->Execute(frameData->GetCommands());
     }
 }
 

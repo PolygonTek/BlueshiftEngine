@@ -13,7 +13,7 @@
 // limitations under the License.
 
 #include "Precompiled.h"
-#include "RenderBackEnd.h"
+#include "RenderBackend.h"
 #include "RenderSystem.h"
 #include "RenderContext.h"
 #include "RenderInternal.h"
@@ -32,196 +32,7 @@ struct ALIGN_AS16 UnlitInstancedConstantData {
     BE1::Mat3x4     worldMatrix[MaxInstancedDrawCount];
 };
 
-void RenderBackEnd::Init() {
-#ifdef USE_RENDER_TASK
-    drawGroupId = BE1::Engine::taskManager->CreateGroupId();
-#endif
-}
-
-void RenderBackEnd::Shutdown() {
-}
-
-void RenderBackEnd::Execute(const void *data) {
-    while (1) {
-        RenderCommandId cmdId = *reinterpret_cast<const RenderCommandId *>(data);
-        switch (cmdId) {
-        case RenderCommandId::BeginContext:
-            data = ExecuteBeginContext(data);
-            continue;
-        case RenderCommandId::DrawCamera:
-            data = ExecuteDrawCamera(data);
-            continue;
-        case RenderCommandId::ScreenShot:
-            data = ExecuteScreenshot(data);
-            continue;
-        case RenderCommandId::SwapBuffers:
-            data = ExecuteSwapBuffers(data);
-            continue;
-        case RenderCommandId::End:
-            return;
-        default:
-            BE_ERRLOG("RenderBackEnd::Execute: invalid render command ID (%i)\n", cmdId);
-            return;
-        }
-    }
-}
-
-const void *RenderBackEnd::ExecuteBeginContext(const void *data) {
-    PROFILER_CPU_SCOPED_EVENT("RenderBackEnd::ExecuteBeginContext", 8);
-
-    const BeginContextRenderCommand *cmd = reinterpret_cast<const BeginContextRenderCommand *>(data);
-
-    currentContext = cmd->renderContext;
-
-    // 프레임 데이터를 초기화하고, 이전 프레임에 대한 펜스를 기다린다.
-    //RenderFrameData *currentFrameData = currentContext->GetCurrentFrameData();
-    //currentFrameData->BeginFrame();
-
-    return (const void *)(cmd + 1);
-}
-
-const void *RenderBackEnd::ExecuteDrawCamera(const void *data) {
-    PROFILER_CPU_SCOPED_EVENT("RenderBackEnd::ExecuteDrawCamera", 8);
-
-    const DrawCameraRenderCommand *cmd = reinterpret_cast<const DrawCameraRenderCommand *>(data);
-
-    currentVisCamera = cmd->visCamera;
-
-    RenderFrameData *currentFrameData = currentContext->GetCurrentFrameData();
-    RHI::FrameThreadData *frameThreadData = currentFrameData->GetThreadData(0);
-
-    // 커맨드 리스트 풀에서 새로운 커맨드 리스트를 얻어온다.
-    mainCommandList = frameThreadData->BeginCommandList(RHI::CommandQueueType::Graphics);
-
-    // 뷰포트 & ScissorRect 의 초기값 설정
-    RHI::renderer->SetViewport(mainCommandList, currentVisCamera->renderRect);
-    RHI::renderer->SetScissorRect(mainCommandList, currentVisCamera->renderRect);
-
-    RHI::ClearFlag clearFlags = RHI::ClearFlag::None;
-    BE1::Color4 clearColor = BE1::Color4::black;
-    float clearDepth = 1.0f;
-
-    if (currentVisCamera->clearMethod == RenderCameraClearMethod::Color) {
-        clearFlags |= (RHI::ClearFlag::Color | RHI::ClearFlag::Depth);
-        clearColor = currentVisCamera->clearColor;
-    } else if (currentVisCamera->clearMethod == RenderCameraClearMethod::DepthOnly || currentVisCamera->clearMethod == RenderCameraClearMethod::Skybox) {
-        clearFlags |= RHI::ClearFlag::Depth;
-    }
-
-#if 1
-    RHI::renderer->BeginRenderPass(mainCommandList, currentContext->swapChain, currentContext->mainRTDepthTexture, clearColor, clearDepth, 0, clearFlags);
-#else
-    if (mainRTSampleCount > 1) {
-        RHI::RenderPassImage renderPassImages[] = {
-            RHI::RenderPassImage::Color(currentContext->mainRTColorMSAATexture, 0, RHI::RenderPassImage::LoadAction::Clear),
-            RHI::RenderPassImage::DepthStencil(currentContext->mainRTDepthTexture, 0, RHI::RenderPassImage::LoadAction::Clear),
-            RHI::RenderPassImage::ResolveColor(currentContext->mainRTColorTexture, 0, 0)
-        };
-        RHI::renderer->BeginRenderPass(mainCommandList, renderPassImages, COUNT_OF(renderPassImages));
-    } else {
-        RHI::RenderPassImage renderPassImages[] = {
-            RHI::RenderPassImage::Color(currentContext->mainRTColorTexture, 0, RHI::RenderPassImage::LoadAction::Clear),
-            RHI::RenderPassImage::DepthStencil(currentContext->mainRTDepthTexture, 0, RHI::RenderPassImage::LoadAction::Clear)
-        };
-        RHI::renderer->BeginRenderPass(mainCommandList, renderPassImages, COUNT_OF(renderPassImages));
-    }
-#endif
-
-    if (currentVisCamera->is2D) {
-        DrawCamera2D();
-    } else {
-        DrawCamera3D();
-    }
-
-#if 1
-    RHI::renderer->EndRenderPass(mainCommandList);
-#else
-    RHI::renderer->EndRenderPass(mainCommandList);
-
-    RHI::renderer->BeginRenderPass(mainCommandList, swapChain, nullptr);
-    RHI::renderer->SetPSO(mainCommandList, imagePSO);
-    RHI::renderer->SetTexture(mainCommandList, 0, false, mainRTColorTexture);
-    RHI::renderer->Draw(mainCommandList, 3, 0);
-    RHI::renderer->EndRenderPass(mainCommandList);
-#endif
-
-    // CommandList 에 기록을 마치고 실행
-    mainCommandList->CloseAndExecute();
-
-    return (const void *)(cmd + 1);
-}
-
-const void *RenderBackEnd::ExecuteScreenshot(const void *data) {
-    PROFILER_CPU_SCOPED_EVENT("RenderBackEnd::ExecuteScreenshot", 10);
-
-    const ScreenShotRenderCommand *cmd = reinterpret_cast<const ScreenShotRenderCommand *>(data);
-
-    // 캡쳐 영역 Rect
-    BE1::Rect captureRect(cmd->x, cmd->y, cmd->width, cmd->height);
-
-    // SwapChain 백버퍼를 캡쳐해서 저장할 빈 이미지 (메모리) 를 생성한다.
-    BE1::Image screenImage;
-    screenImage.Create2D(captureRect.w, captureRect.h, 1, BE1::Image::Format::B8G8R8, BE1::Image::GammaSpace::sRGB, nullptr, BE1::Image::Flag::None);
-
-    RenderFrameData *currentFrameData = currentContext->GetCurrentFrameData();
-    RHI::FrameThreadData *frameThreadData = currentFrameData->GetThreadData(0);
-
-    RHI::CommandList *commandList = frameThreadData->AllocGraphicsCommandList();
-    commandList->Reset(true);
-
-    // 백버퍼의 내용을 (필요하다면 지정된 포맷으로 컨버팅하여) screenImage 에 저장한다.
-    RHI::renderer->ReadPixels(commandList, currentContext->GetSwapChain(), captureRect.x, captureRect.y, captureRect.w, captureRect.h, BE1::Image::Format::B8G8R8, screenImage.GetPixels());
-
-    // 이제 이미지 파일로 저장한다.
-    BE1::Str filename = cmd->filename;
-    filename.DefaultFileExtension(".png");
-    screenImage.Write(filename);
-
-    return (const void *)(cmd + 1);
-}
-
-const void *RenderBackEnd::ExecuteSwapBuffers(const void *data) {
-    PROFILER_CPU_SCOPED_EVENT("RenderBackEnd::ExecuteSwapBuffers", 10);
-
-    const SwapBuffersRenderCommand *cmd = reinterpret_cast<const SwapBuffersRenderCommand *>(data);
-
-    // 이번 프레임에서 수행하는 렌더링 커맨드들에 대한 펜스를 친다.
-    RenderFrameData *currentFrameData = currentContext->GetCurrentFrameData();
-    currentFrameData->SetFenceValue(RHI::renderer->SignalFence(RHI::CommandQueueType::Graphics));
-
-    // 백버퍼를 전면버퍼와 교환한다.
-    currentContext->GetSwapChain()->SwapBuffers(false);
-
-    frameCount++;
-
-    currentContext->currentFrameIndex = frameCount % COUNT_OF(currentContext->frames);
-
-    return (const void *)(cmd + 1);
-}
-
-void RenderBackEnd::DrawCamera3D() {
-    PROFILER_CPU_SCOPED_EVENT("RenderBackEnd::DrawCamera3D", 9);
-
-    RenderFrameData *currentFrameData = currentContext->GetCurrentFrameData();
-    RHI::FrameThreadData *currentFrameThreadData = currentFrameData->GetThreadData(0);
-
-    DrawAllSurfaces(currentVisCamera->drawSurfs, currentVisCamera->numDrawSurfs);
-}
-
-void RenderBackEnd::DrawCamera2D() {
-    PROFILER_CPU_SCOPED_EVENT("RenderBackEnd::DrawCamera2D", 9);
-
-    RenderFrameData *currentFrameData = currentContext->GetCurrentFrameData();
-    RHI::FrameThreadData *currentFrameThreadData = currentFrameData->GetThreadData(0);
-
-    for (int drawSurfIndex = 0; drawSurfIndex < currentVisCamera->numDrawSurfs; ++drawSurfIndex) {
-        const DrawSurf *drawSurf = currentVisCamera->drawSurfs[drawSurfIndex];
-
-        DrawGuiSurface(mainCommandList, drawSurf);
-    }
-}
-
-void RenderBackEnd::DrawAllSurfaces(const DrawSurf **drawSurfs, uint32_t numDrawSurfs) {
+void RenderBackend::DrawAllSurfaces(const DrawSurf **drawSurfs, uint32_t numDrawSurfs) {
     constexpr uint32_t MaxActualDrawSurfs = 65536;
     const DrawSurf **actualDrawSurfs = (const DrawSurf **)_alloca(sizeof(DrawSurf *) * MaxActualDrawSurfs);
     uint32_t actualDrawSurfIndex = 0;
@@ -268,7 +79,7 @@ void RenderBackEnd::DrawAllSurfaces(const DrawSurf **drawSurfs, uint32_t numDraw
     }
 }
 
-void RenderBackEnd::DrawSurfaces(const DrawSurf **drawSurfs, uint32_t numDrawSurfs) {
+void RenderBackend::DrawSurfaces(const DrawSurf **drawSurfs, uint32_t numDrawSurfs) {
     assert(numDrawSurfs > 0);
 
 #ifdef USE_RENDER_TASK
@@ -285,7 +96,7 @@ void RenderBackEnd::DrawSurfaces(const DrawSurf **drawSurfs, uint32_t numDrawSur
 #endif
 }
 
-void RenderBackEnd::DrawInstancedSurface(const DrawSurf **drawSurfs, uint32_t instanceCount) {
+void RenderBackend::DrawInstancedSurface(const DrawSurf **drawSurfs, uint32_t instanceCount) {
     assert(instanceCount > 0);
 
     RenderFrameData *currentFrameData = currentContext->GetCurrentFrameData();
@@ -301,8 +112,8 @@ void RenderBackEnd::DrawInstancedSurface(const DrawSurf **drawSurfs, uint32_t in
     } while (instanceCount > 0);
 }
 
-void RenderBackEnd::DrawSurfacesWithoutTask(const DrawSurf **drawSurfs, uint32_t numDrawSurfs) {
-    PROFILER_CPU_SCOPED_EVENT("RenderBackEnd::DrawSurfacesWithoutTask", 10);
+void RenderBackend::DrawSurfacesWithoutTask(const DrawSurf **drawSurfs, uint32_t numDrawSurfs) {
+    PROFILER_CPU_SCOPED_EVENT("RenderBackend::DrawSurfacesWithoutTask", 10);
 
     RenderFrameData *currentFrameData = currentContext->GetCurrentFrameData();
     RHI::FrameThreadData *currentFrameThreadData = currentFrameData->GetThreadData(0);
@@ -315,8 +126,8 @@ void RenderBackEnd::DrawSurfacesWithoutTask(const DrawSurf **drawSurfs, uint32_t
 }
 
 #ifdef USE_RENDER_TASK
-void RenderBackEnd::DrawSurfacesByTask(RenderBackEnd::DrawObjectTaskDesc *taskDesc) {
-    PROFILER_CPU_SCOPED_EVENT("RenderBackEnd::DrawSurfacesByTask", 10);
+void RenderBackend::DrawSurfacesByTask(RenderBackend::DrawObjectTaskDesc *taskDesc) {
+    PROFILER_CPU_SCOPED_EVENT("RenderBackend::DrawSurfacesByTask", 10);
 
     RenderFrameData *currentFrameData = currentContext->GetCurrentFrameData();
     RHI::FrameThreadData *currentFrameThreadData = currentFrameData->GetThreadData(taskDesc->threadIndex);
@@ -337,14 +148,14 @@ void RenderBackEnd::DrawSurfacesByTask(RenderBackEnd::DrawObjectTaskDesc *taskDe
     taskDesc->activeCommandList = commandList;
 }
 
-void RenderBackEnd::DrawSurfacesByTaskFunction(void *data) {
-    RenderBackEnd::DrawObjectTaskDesc *taskDesc = reinterpret_cast<RenderBackEnd::DrawObjectTaskDesc *>(data);
-    renderSystem->GetBackEnd()->DrawSurfacesByTask(taskDesc);
+void RenderBackend::DrawSurfacesByTaskFunction(void *data) {
+    RenderBackend::DrawObjectTaskDesc *taskDesc = reinterpret_cast<RenderBackend::DrawObjectTaskDesc *>(data);
+    renderSystem->GetBackend()->DrawSurfacesByTask(taskDesc);
 }
 
 // drawSurfs 를 numTasks 만큼 task 로 나눠서 그린다.
-void RenderBackEnd::DrawSurfacesWithTask(const DrawSurf **drawSurfs, uint32_t numDrawSurfs, uint32_t numTasks) {
-    PROFILER_CPU_SCOPED_EVENT("RenderBackEnd::DrawSurfacesWithTask", 10);
+void RenderBackend::DrawSurfacesWithTask(const DrawSurf **drawSurfs, uint32_t numDrawSurfs, uint32_t numTasks) {
+    PROFILER_CPU_SCOPED_EVENT("RenderBackend::DrawSurfacesWithTask", 10);
 
     RenderFrameData *currentFrameData = currentContext->GetCurrentFrameData();
     uint32_t numDrawSurfsPerTasks = (uint32_t)BE1::Math::Ceil((float)numDrawSurfs / numTasks);
@@ -362,7 +173,7 @@ void RenderBackEnd::DrawSurfacesWithTask(const DrawSurf **drawSurfs, uint32_t nu
         currentThreadDesc.threadIndex = threadIndex++;
         currentThreadDesc.drawSurfs = &drawSurfs[startIndex];
         currentThreadDesc.numDrawSurfs = BE1::Min(startIndex + numDrawSurfsPerTasks, numDrawSurfs) - startIndex;
-        BE1::Engine::taskManager->AddTask(RenderBackEnd::DrawSurfacesByTaskFunction, &currentThreadDesc, drawGroupId, false);
+        BE1::Engine::taskManager->AddTask(RenderBackend::DrawSurfacesByTaskFunction, &currentThreadDesc, drawGroupId, false);
 
         startIndex += currentThreadDesc.numDrawSurfs;
     }
@@ -379,7 +190,7 @@ void RenderBackEnd::DrawSurfacesWithTask(const DrawSurf **drawSurfs, uint32_t nu
 }
 #endif // USE_RENDER_TASK
 
-void RenderBackEnd::DrawSurface(RHI::CommandList *commandList, const DrawSurf *drawSurf) {
+void RenderBackend::DrawSurface(RHI::CommandList *commandList, const DrawSurf *drawSurf) {
     RHI::FrameThreadData *frameThreadData = commandList->GetFrameThreadData();
 
     RHI::ConstantBuffer *constantBuffer = frameThreadData->AllocConstant(sizeof(UnlitConstantData));
@@ -402,7 +213,7 @@ void RenderBackEnd::DrawSurface(RHI::CommandList *commandList, const DrawSurf *d
     RHI::renderer->DrawIndexed(commandList, drawSurf->subMesh->numIndexes, 0, 0);
 }
 
-void RenderBackEnd::DrawInstancedSurface(RHI::CommandList *commandList, const DrawSurf **instanceSurfs, int instanceCount) {
+void RenderBackend::DrawInstancedSurface(RHI::CommandList *commandList, const DrawSurf **instanceSurfs, int instanceCount) {
     RHI::FrameThreadData *frameThreadData = commandList->GetFrameThreadData();
 
     RHI::ConstantBuffer *constantBuffer = frameThreadData->AllocConstant(sizeof(UnlitInstancedConstantData));
@@ -430,7 +241,7 @@ void RenderBackEnd::DrawInstancedSurface(RHI::CommandList *commandList, const Dr
     RHI::renderer->DrawIndexedInstanced(commandList, instanceSurfs[0]->subMesh->numIndexes, instanceCount, 0, 0, 0);
 }
 
-void RenderBackEnd::DrawGuiSurface(RHI::CommandList *commandList, const DrawSurf *drawSurf) {
+void RenderBackend::DrawGuiSurface(RHI::CommandList *commandList, const DrawSurf *drawSurf) {
     RHI::FrameThreadData *frameThreadData = commandList->GetFrameThreadData();
 
     RHI::ConstantBuffer *constantBuffer = frameThreadData->AllocConstant(sizeof(UnlitConstantData));

@@ -15,7 +15,7 @@
 #include "Precompiled.h"
 #include "RenderSystem.h"
 #include "RenderContext.h"
-#include "RenderBackEnd.h"
+#include "RenderBackend.h"
 #include "D3D12Renderer/D3D12Renderer.h"
 #include "Sampler.h"
 #include "Texture.h"
@@ -38,7 +38,7 @@ void RenderSystem::Init(void *mainWindowHandle) {
 
     meshManager.Init();
 
-    backEnd = new RenderBackEnd;
+    backEnd = new RenderBackend;
     backEnd->Init();
 }
 

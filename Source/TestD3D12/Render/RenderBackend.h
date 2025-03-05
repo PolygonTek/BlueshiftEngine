@@ -14,16 +14,12 @@
 
 #include "Precompiled.h"
 #include "RHI.h"
-#include "GuiMesh.h"
 
 class RenderContext;
 class VisCamera;
-class VisObject;
-class Texture;
-class SubMesh;
 class DrawSurf;
 
-class RenderBackEnd {
+class RenderBackend {
 public:
     void                            Init();
     void                            Shutdown();
@@ -53,7 +49,7 @@ private:
     void                            DrawSurfacesWithoutTask(const DrawSurf **drawSurfs, uint32_t numDrawSurfs);
 #ifdef USE_RENDER_TASK
     void                            DrawSurfacesWithTask(const DrawSurf **drawSurfs, uint32_t numDrawSurfs, uint32_t numTasks);
-    void                            DrawSurfacesByTask(RenderBackEnd::DrawObjectTaskDesc *taskDesc);
+    void                            DrawSurfacesByTask(RenderBackend::DrawObjectTaskDesc *taskDesc);
     static void                     DrawSurfacesByTaskFunction(void *data);
 #endif
 

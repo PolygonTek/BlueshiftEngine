@@ -18,11 +18,11 @@
 #include "RenderFrameData.h"
 #include "GuiMesh.h"
 
-class RenderBackEnd;
+class RenderBackend;
 
 // 하나의 윈도우 (SwapChain) 와 연결된 렌더링 컨텍스트
 class RenderContext {
-    friend class RenderBackEnd;
+    friend class RenderBackend;
 
 public:
     RenderContext() = default;

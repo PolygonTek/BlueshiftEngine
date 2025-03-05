@@ -232,7 +232,7 @@ void RenderWorld::AddStaticMeshes(RenderFrameData *frameData, const RenderCamera
         }
 
         // FIXME: 일단 무조건 인스턴싱을 켠다. 나중에 texture 가 아닌 material 로 변경하면 거기에 옵션을 넣자
-        DrawSurf::Flag flags = DrawSurf::Flag::Visible;// | DrawSurf::Flag::UseInstancing;
+        DrawSurf::Flag flags = DrawSurf::Flag::Visible | DrawSurf::Flag::UseInstancing;
 
         VisObject *visObject = proxy->renderObject->visObject;
         AddDrawSurf(frameData, visCamera, nullptr, visObject, visObject->textures[meshSurf->materialIndex], meshSurf->subMesh, flags);
