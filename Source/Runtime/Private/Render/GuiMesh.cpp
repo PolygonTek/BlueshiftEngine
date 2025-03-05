@@ -420,7 +420,7 @@ void GuiMesh::DrawTextRect(Font *font, RenderObject::TextDrawMode::Enum drawMode
 
     int charPrevOffset = 0;
 
-    while ((unicodeChar = text.UTF8CharAdvance(charOffset))) {
+    while (unicodeChar = text.UTF8CharAdvance(charOffset)) {
         if (unicodeChar == U'\n') {
             if (!PrepareNextLine()) {
                 break;

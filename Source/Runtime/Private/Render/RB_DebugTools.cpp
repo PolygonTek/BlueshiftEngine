@@ -145,7 +145,7 @@ static void RB_DrawDebugPrimsElements(int numElements, const int *elements, int 
         }
     }
 
-    if (topology >= Graphics::Topology::LineList && topology <= Graphics::Topology::LineLoop) {
+    if (topology == Graphics::Topology::LineList || topology == Graphics::Topology::LineStrip) {
         if (useSmoothLine) {
             graphics.EnableLineSmooth(true);
         }
@@ -180,7 +180,7 @@ static void RB_DrawDebugPrimsElements(int numElements, const int *elements, int 
     graphics.SetCullFace(cullMode);
     graphics.DrawArrays((Graphics::Topology::Enum)topology, 0, numVerts);
 
-    if (topology >= Graphics::Topology::LineList && topology <= Graphics::Topology::LineLoop) {
+    if (topology == Graphics::Topology::LineList || topology == Graphics::Topology::LineStrip) {
         if (useSmoothLine) {
             graphics.EnableLineSmooth(false);
         }
