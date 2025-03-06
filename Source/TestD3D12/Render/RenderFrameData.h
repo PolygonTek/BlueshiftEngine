@@ -23,6 +23,11 @@ class VisCamera;
 class VisObject;
 enum class DrawTextFlag : uint16_t;
 
+enum class FrameSyncState : uint8_t {
+    WaitingForUpdateCompleted,      // (렌더 스레드가 렌더링이 완료되어) 메인 스레드의 다음 업데이트 작업이 완료되기를 기다리는 상태
+    WaitingForRenderCompleted       // (메인 스레드가 업데이트가 완료되어) 렌더 스레드의 다음 렌더링 작업이 완료되기를 기다리는 상태
+};
+
 enum class RenderCommandId : uint8_t {
     End,
     BeginContext,
@@ -78,6 +83,8 @@ struct EndRenderCommand {
 */
 
 class RenderFrameData {
+    friend class RenderContext;
+
 public:
     void                            Init();
     void                            Shutdown();
@@ -146,6 +153,8 @@ private:
     VisObject *                     visObjects = nullptr;
 
     RenderCommandBuffer             commands;
+
+    FrameSyncState                  frameSyncState = FrameSyncState::WaitingForUpdateCompleted;
 
     RHI::FrameThreadData **         threadData = nullptr;
     int                             numRenderTaskThreads = 0;

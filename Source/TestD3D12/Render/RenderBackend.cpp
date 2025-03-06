@@ -26,7 +26,10 @@ void RenderBackend::Init() {
 void RenderBackend::Shutdown() {
 }
 
-void RenderBackend::Execute(const void *data) {
+void RenderBackend::Execute(RenderFrameData *frameData) {
+    this->frameData = frameData;
+    const void *data = frameData->GetCommands()->buffer;
+
     while (1) {
         RenderCommandId cmdId = *reinterpret_cast<const RenderCommandId *>(data);
         switch (cmdId) {
@@ -52,28 +55,23 @@ void RenderBackend::Execute(const void *data) {
 }
 
 const void *RenderBackend::ExecuteBeginContext(const void *data) {
-    PROFILER_CPU_SCOPED_EVENT("RenderBackend::ExecuteBeginContext", 8);
+    PROFILER_CPU_SCOPED_EVENT("RenderBackend::ExecuteBeginContext");
 
     const BeginContextRenderCommand *cmd = reinterpret_cast<const BeginContextRenderCommand *>(data);
 
     currentContext = cmd->renderContext;
 
-    // 프레임 데이터를 초기화하고, 이전 프레임에 대한 펜스를 기다린다.
-    //RenderFrameData *currentFrameData = currentContext->GetCurrentFrameData();
-    //currentFrameData->BeginFrame();
-
     return (const void *)(cmd + 1);
 }
 
 const void *RenderBackend::ExecuteDrawCamera(const void *data) {
-    PROFILER_CPU_SCOPED_EVENT("RenderBackend::ExecuteDrawCamera", 8);
+    PROFILER_CPU_SCOPED_EVENT("RenderBackend::ExecuteDrawCamera");
 
     const DrawCameraRenderCommand *cmd = reinterpret_cast<const DrawCameraRenderCommand *>(data);
 
     currentVisCamera = cmd->visCamera;
 
-    RenderFrameData *currentFrameData = currentContext->GetCurrentFrameData();
-    RHI::FrameThreadData *frameThreadData = currentFrameData->GetThreadData(0);
+    RHI::FrameThreadData *frameThreadData = frameData->GetThreadData(0);
 
     // 커맨드 리스트 풀에서 새로운 커맨드 리스트를 얻어온다.
     mainCommandList = frameThreadData->BeginCommandList(RHI::CommandQueueType::Graphics);
@@ -137,7 +135,7 @@ const void *RenderBackend::ExecuteDrawCamera(const void *data) {
 }
 
 const void *RenderBackend::ExecuteScreenshot(const void *data) {
-    PROFILER_CPU_SCOPED_EVENT("RenderBackend::ExecuteScreenshot", 10);
+    PROFILER_CPU_SCOPED_EVENT("RenderBackend::ExecuteScreenshot");
 
     const ScreenShotRenderCommand *cmd = reinterpret_cast<const ScreenShotRenderCommand *>(data);
 
@@ -148,9 +146,7 @@ const void *RenderBackend::ExecuteScreenshot(const void *data) {
     BE1::Image screenImage;
     screenImage.Create2D(captureRect.w, captureRect.h, 1, BE1::Image::Format::B8G8R8, BE1::Image::GammaSpace::sRGB, nullptr, BE1::Image::Flag::None);
 
-    RenderFrameData *currentFrameData = currentContext->GetCurrentFrameData();
-    RHI::FrameThreadData *frameThreadData = currentFrameData->GetThreadData(0);
-
+    RHI::FrameThreadData *frameThreadData = frameData->GetThreadData(0);
     RHI::CommandList *commandList = frameThreadData->AllocGraphicsCommandList();
     commandList->Reset(true);
 
@@ -166,38 +162,29 @@ const void *RenderBackend::ExecuteScreenshot(const void *data) {
 }
 
 const void *RenderBackend::ExecuteSwapBuffers(const void *data) {
-    PROFILER_CPU_SCOPED_EVENT("RenderBackend::ExecuteSwapBuffers", 10);
+    PROFILER_CPU_SCOPED_EVENT("RenderBackend::ExecuteSwapBuffers");
 
     const SwapBuffersRenderCommand *cmd = reinterpret_cast<const SwapBuffersRenderCommand *>(data);
 
-    // 이번 프레임에서 수행하는 렌더링 커맨드들에 대한 펜스를 친다.
-    RenderFrameData *currentFrameData = currentContext->GetCurrentFrameData();
-    currentFrameData->SetFenceValue(RHI::renderer->SignalFence(RHI::CommandQueueType::Graphics));
+    // 이번 백엔드 프레임에서 수행하는 렌더링 커맨드들에 대한 펜스를 친다.
+    frameData->SetFenceValue(RHI::renderer->SignalFence(RHI::CommandQueueType::Graphics));
 
     // 백버퍼를 전면버퍼와 교환한다.
     currentContext->GetSwapChain()->SwapBuffers(false);
 
     frameCount++;
 
-    currentContext->currentFrameIndex = frameCount % COUNT_OF(currentContext->frames);
-
     return (const void *)(cmd + 1);
 }
 
 void RenderBackend::DrawCamera3D() {
-    PROFILER_CPU_SCOPED_EVENT("RenderBackend::DrawCamera3D", 9);
-
-    RenderFrameData *currentFrameData = currentContext->GetCurrentFrameData();
-    RHI::FrameThreadData *currentFrameThreadData = currentFrameData->GetThreadData(0);
+    PROFILER_CPU_SCOPED_EVENT("RenderBackend::DrawCamera3D");
 
     DrawAllSurfaces(currentVisCamera->drawSurfs, currentVisCamera->numDrawSurfs);
 }
 
 void RenderBackend::DrawCamera2D() {
-    PROFILER_CPU_SCOPED_EVENT("RenderBackend::DrawCamera2D", 9);
-
-    RenderFrameData *currentFrameData = currentContext->GetCurrentFrameData();
-    RHI::FrameThreadData *currentFrameThreadData = currentFrameData->GetThreadData(0);
+    PROFILER_CPU_SCOPED_EVENT("RenderBackend::DrawCamera2D");
 
     for (int drawSurfIndex = 0; drawSurfIndex < currentVisCamera->numDrawSurfs; ++drawSurfIndex) {
         const DrawSurf *drawSurf = currentVisCamera->drawSurfs[drawSurfIndex];

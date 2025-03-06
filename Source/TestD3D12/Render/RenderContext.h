@@ -46,8 +46,11 @@ public:
     BE1::Image::Format                  GetMainRTDepthFormat() const { return mainRTDepthFormat; }
     uint32_t                            GetMainRTSampleCount() const { return mainRTSampleCount; }
 
-    const RenderFrameData *             GetCurrentFrameData() const { return &frames[currentFrameIndex]; }
-    RenderFrameData *                   GetCurrentFrameData() { return &frames[currentFrameIndex]; }
+    const RenderFrameData *             GetCurrentFrontendFrameData() const { return &frames[currentFrontendFrameIndex]; }
+    RenderFrameData *                   GetCurrentFrontendFrameData() { return &frames[currentFrontendFrameIndex]; }
+
+    const RenderFrameData *             GetCurrentBackendFrameData() const { return &frames[currentBackendFrameIndex]; }
+    RenderFrameData *                   GetCurrentBackendFrameData() { return &frames[currentBackendFrameIndex]; }
 
                                         // 모든 렌더링 명령이 수행이 완료될 때 까지 대기한다.
     void                                WaitAllFrameFences();
@@ -69,17 +72,12 @@ public:
                                         // 렌더 스레드 사용 여부 리턴
     bool                                IsUsingRenderThread() const { return !!renderThread; }
 
-    void                                WaitRenderCompleted();
-    void                                MarkUpdateCompleted();
+    void                                WaitRenderCompleted(const RenderFrameData *frameData);
+    void                                MarkUpdateCompleted(RenderFrameData *frameData);
 
     static RenderContext *              activeContext;
 
 private:
-    enum class FrameSyncState : uint8_t {
-        WaitingForUpdateCompleted,      // (렌더 스레드가 렌더링이 완료되어) 메인 스레드의 다음 업데이트 작업이 완료되기를 기다리는 상태
-        WaitingForRenderCompleted       // (메인 스레드가 업데이트가 완료되어) 렌더 스레드의 다음 렌더링 작업이 완료되기를 기다리는 상태
-    };
-
     void                                CreateMainRenderTextures(uint32_t width, uint32_t height);
     void                                DestroyMainRenderTextures();
     void                                InitPSO();
@@ -107,14 +105,15 @@ private:
 #endif
 
     RenderFrameData                     frames[NumFrameResources] = {};
-    uint32_t                            currentFrameIndex = 0;
+    uint32_t                            currentFrontendFrameIndex = 0;
+    uint32_t                            currentBackendFrameIndex = 0;
+    uint32_t                            frameCount = 0;
 
     BE1::PlatformSRWLock *              smpLock = nullptr;
     BE1::PlatformCondition *            renderCompletedCondition = nullptr;
     BE1::PlatformCondition *            updateCompletedCondition = nullptr;
     BE1::PlatformThread *               renderThread = nullptr;
     bool                                isStoppingRenderThread = false;
-    FrameSyncState                      frameSyncState = FrameSyncState::WaitingForUpdateCompleted;
 
     BE1::Image::Format                  mainRTColorFormat = BE1::Image::Format::R8G8B8A8;
     BE1::Image::Format                  mainRTDepthFormat = BE1::Image::Format::D32_FLOAT;

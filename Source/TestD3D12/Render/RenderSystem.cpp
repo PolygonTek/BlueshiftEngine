@@ -79,6 +79,7 @@ RenderContext *RenderSystem::CreateRenderContext(void *windowHandle, bool isMain
 
 void RenderSystem::DestroyRenderContext(RenderContext *renderContext) {
     renderContext->Shutdown();
+
     delete renderContext;
 }
 
@@ -111,10 +112,10 @@ void RenderSystem::Cmd_ScreenShot(const BE1::CmdArgs &args) {
     }
 
     RenderContext *renderContext = renderSystem->mainRenderContext;
-    if (renderContext->IsUsingRenderThread()) {
-        renderContext->WaitRenderCompleted();
-    }
+    RenderFrameData *frameData = renderContext->GetCurrentFrontendFrameData();
 
-    RenderFrameData *currentFrameData = renderContext->GetCurrentFrameData();
-    currentFrameData->CmdScreenshot(0, 0, renderContext->GetSwapChain()->GetWidth(), renderContext->GetSwapChain()->GetHeight(), path);
+    if (renderContext->IsUsingRenderThread()) {
+        renderContext->WaitRenderCompleted(frameData);
+    }
+    frameData->CmdScreenshot(0, 0, renderContext->GetSwapChain()->GetWidth(), renderContext->GetSwapChain()->GetHeight(), path);
 }

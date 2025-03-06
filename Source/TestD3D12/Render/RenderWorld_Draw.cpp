@@ -62,18 +62,18 @@ static int BE_CDECL _CompareDrawSurf(const void *elem1, const void *elem2) {
 }
 
 void RenderWorld::SortDrawSurfs(VisCamera *visCamera) {
-    PROFILER_CPU_SCOPED_EVENT("RenderWorld::SortDrawSurfs", 1);
+    PROFILER_CPU_SCOPED_EVENT("RenderWorld::SortDrawSurfs");
 
     // FIXME: Use radix sort to boost up speed.
     qsort(visCamera->drawSurfs, visCamera->numDrawSurfs, sizeof(DrawSurf *), _CompareDrawSurf);
 }
 
 void RenderWorld::RenderScene(const RenderCamera *renderCamera) {
-    PROFILER_CPU_SCOPED_EVENT("RenderWorld::RenderScene", 1);
+    PROFILER_CPU_SCOPED_EVENT("RenderWorld::RenderScene");
 
     assert(BE1::Engine::IsInMainThread());
 
-    RenderFrameData *frameData = RenderContext::activeContext->GetCurrentFrameData();
+    RenderFrameData *frameData = RenderContext::activeContext->GetCurrentFrontendFrameData();
 
     // RenderCamera 정보를 기반으로 프레임 데이터에 필요한 VisCamera 를 구성한다.
     VisCamera *visCamera = frameData->AllocVisCamera();
@@ -94,7 +94,7 @@ void RenderWorld::RenderScene(const RenderCamera *renderCamera) {
 }
 
 void RenderWorld::DrawCamera(RenderFrameData *frameData, const RenderCamera *renderCamera, VisCamera *visCamera) {
-    PROFILER_CPU_SCOPED_EVENT("RenderWorld::DrawCamera", 1);
+    PROFILER_CPU_SCOPED_EVENT("RenderWorld::DrawCamera");
 
     // objectDbvt 에서 카메라 frustum 으로 쿼리해서 보이는 RenderObject 들을 찾아낸다.
     // 보이는 RenderObject 들로 프레임 데이터에 VisObject 들을 등록한다.
@@ -160,7 +160,7 @@ VisObject *RenderWorld::RegisterVisObject(RenderFrameData *frameData, const Rend
 }
 
 void RenderWorld::FindVisObjects(RenderFrameData *frameData, const RenderCamera *renderCamera, VisCamera *visCamera) {
-    PROFILER_CPU_SCOPED_EVENT("RenderWorld::FindVisObjects", 4);
+    PROFILER_CPU_SCOPED_EVENT("RenderWorld::FindVisObjects");
 
     visCamera->worldAABB.Clear();
 
@@ -214,7 +214,7 @@ void RenderWorld::FindVisObjects(RenderFrameData *frameData, const RenderCamera 
 }
 
 void RenderWorld::AddStaticMeshes(RenderFrameData *frameData, const RenderCamera *renderCamera, VisCamera *visCamera) {
-    PROFILER_CPU_SCOPED_EVENT("RenderWorld::AddStaticMeshes", 5);
+    PROFILER_CPU_SCOPED_EVENT("RenderWorld::AddStaticMeshes");
 
 #ifdef USE_DBVT
     // Called for each static mesh surfaces intersecting with camera frustum.
@@ -306,7 +306,7 @@ void RenderWorld::AddTextMeshes(RenderFrameData *frameData, const RenderCamera *
 }
 
 void RenderWorld::RenderGUI(GuiMesh &guiMesh) {
-    PROFILER_CPU_SCOPED_EVENT("RenderWorld::RenderGUI", 2);
+    PROFILER_CPU_SCOPED_EVENT("RenderWorld::RenderGUI");
 
     assert(BE1::Engine::IsInMainThread());
 
@@ -314,7 +314,7 @@ void RenderWorld::RenderGUI(GuiMesh &guiMesh) {
         return;
     }
 
-    RenderFrameData *frameData = RenderContext::activeContext->GetCurrentFrameData();
+    RenderFrameData *frameData = RenderContext::activeContext->GetCurrentFrontendFrameData();
 
     uint32_t screenWidth = RenderContext::activeContext->GetWidth();
     uint32_t screenHeight = RenderContext::activeContext->GetHeight();
@@ -324,7 +324,7 @@ void RenderWorld::RenderGUI(GuiMesh &guiMesh) {
 }
 
 void RenderWorld::DrawGUICamera(RenderFrameData *frameData, uint32_t screenWidth, uint32_t screenHeight, GuiMesh &guiMesh) {
-    PROFILER_CPU_SCOPED_EVENT("RenderWorld::DrawGUICamera", 1);
+    PROFILER_CPU_SCOPED_EVENT("RenderWorld::DrawGUICamera");
 
     VisCamera *visCamera = frameData->AllocVisCamera();
     visCamera->maxDrawSurfs = guiMesh.NumSurfaces();

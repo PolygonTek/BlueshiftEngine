@@ -24,7 +24,7 @@
 #include "GameObject.h"
 #include "App.h"
 
-static constexpr int        CubeDimensionX = 64;//92;
+static constexpr int        CubeDimensionX = 64;//105;
 static constexpr int        CubeDimensionY = 64;//68;
 static constexpr int        CubeCount = CubeDimensionX * CubeDimensionY;
 static constexpr float      CubeSpacing = 1.5538;
@@ -64,7 +64,7 @@ void App::Shutdown() {
 }
 
 void App::RunFrame(int frameMsec) {
-    PROFILER_CPU_SCOPED_EVENT("App::RunFrame", 0);
+    PROFILER_CPU_SCOPED_EVENT("App::RunFrame");
 
     static int fpsElapsedMsec = 0;
     static int fpsFrames = 0;
@@ -88,7 +88,7 @@ void App::RunFrame(int frameMsec) {
 }
 
 void App::Render() {
-    PROFILER_CPU_SCOPED_EVENT("App::Render", 1);
+    PROFILER_CPU_SCOPED_EVENT("App::Render");
 
     mainRenderContext->BeginFrame();
 
@@ -101,7 +101,7 @@ void App::Render() {
     RenderCameraDesc cameraDesc;
     cameraDesc.orthogonal = false;
     cameraDesc.renderRect.Set(0, 0, w, h);
-    cameraDesc.origin.Set(20 + (BE1::Math::Sin(MILLI2SEC(elapsedMsec) * 0.5f) + 1.0f) * 0.5f * 150, 0, 0);
+    cameraDesc.origin.Set(20 + (BE1::Math::Sin(MILLI2SEC(elapsedMsec) * 0.5f) + 1.0f) * 0.5f * 146, 0, 0);
     cameraDesc.axis[0].Set(-1, 0, 0);
     cameraDesc.axis[1].Set(0, -1, 0);
     cameraDesc.axis[2].Set(0, 0, 1);
@@ -179,7 +179,7 @@ void App::ClearGameObjects() {
 }
 
 void App::UpdateGameObjects() {
-    PROFILER_CPU_SCOPED_EVENT("App::UpdateGameObjects", 1);
+    PROFILER_CPU_SCOPED_EVENT("App::UpdateGameObjects");
 
     UpdateCubes();
 }

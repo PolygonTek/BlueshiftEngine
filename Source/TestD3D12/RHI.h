@@ -944,23 +944,24 @@ namespace RHI {
 };
 
 #if defined(USE_PROFILER) && (defined(_DEBUG) || defined(_DEVELOPMENT))
-#define PROFILER_CPU_BEGIN_EVENT(string, colorIndex) RHI::renderer->BeginEvent(nullptr, string, colorIndex)
+#define PROFILER_STRING_TO_COLOR_INDEX(str) (fnv1a_hash(str) % 8)
+#define PROFILER_CPU_BEGIN_EVENT(str) RHI::renderer->BeginEvent(nullptr, str, PROFILER_STRING_TO_COLOR_INDEX(str))
 #define PROFILER_CPU_END_EVENT() RHI::renderer->EndEvent(nullptr);
-#define PROFILER_CPU_SCOPED_EVENT(string, colorIndex) RHI::ScopedEventObject _scopedEventObject(nullptr, string, colorIndex)
-#define PROFILER_CPU_MARKER(string, colorIndex) RHI::renderer->SetMarker(nullptr, string, colorIndex)
-#define PROFILER_BEGIN_EVENT(commandList, string, colorIndex) RHI::renderer->BeginEvent(commandList, string, colorIndex)
+#define PROFILER_CPU_SCOPED_EVENT(str) RHI::ScopedEventObject _scopedEventObject(nullptr, str, PROFILER_STRING_TO_COLOR_INDEX(str))
+#define PROFILER_CPU_MARKER(str) RHI::renderer->SetMarker(nullptr, str, PROFILER_STRING_TO_COLOR_INDEX(str))
+#define PROFILER_BEGIN_EVENT(commandList, str) RHI::renderer->BeginEvent(commandList, str, PROFILER_STRING_TO_COLOR_INDEX(str))
 #define PROFILER_END_EVENT(commandList) RHI::renderer->EndEvent(commandList)
-#define PROFILER_SCOPED_EVENT(commandList, string, colorIndex) RHI::ScopedEventObject _scopedEventObject(commandList, string, colorIndex)
-#define PROFILER_MARKER(commandList, string, colorIndex) RHI::renderer->SetMarker(commandList, string, colorIndex)
+#define PROFILER_SCOPED_EVENT(commandList, str) RHI::ScopedEventObject _scopedEventObject(commandList, str, PROFILER_STRING_TO_COLOR_INDEX(str))
+#define PROFILER_MARKER(commandList, str) RHI::renderer->SetMarker(commandList, str, PROFILER_STRING_TO_COLOR_INDEX(str))
 #else
-#define PROFILER_CPU_BEGIN_EVENT(string, colorIndex)
+#define PROFILER_CPU_BEGIN_EVENT(str)
 #define PROFILER_CPU_END_EVENT()
-#define PROFILER_CPU_SCOPED_EVENT(string, colorIndex)
-#define PROFILER_CPU_MARKER(string, colorIndex)
-#define PROFILER_BEGIN_EVENT(commandList, string, colorIndex)
+#define PROFILER_CPU_SCOPED_EVENT(str)
+#define PROFILER_CPU_MARKER(str)
+#define PROFILER_BEGIN_EVENT(commandList, str)
 #define PROFILER_END_EVENT(commandList)
-#define PROFILER_SCOPED_EVENT(commandList, string, colorIndex)
-#define PROFILER_MARKER(commandList, string, colorIndex)
+#define PROFILER_SCOPED_EVENT(commandList, str)
+#define PROFILER_MARKER(commandList, str)
 #endif
 
 template<>

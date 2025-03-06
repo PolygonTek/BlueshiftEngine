@@ -28,8 +28,8 @@ void RenderContext::Init(void *windowHandle, bool useRenderThread) {
     }
 
     // 렌더 스레드에서 이전 프레임의 프레임 데이터 사용이 완료되었는지 체크하기 위해 펜스를 친다.
-    currentFrameIndex = 0;
-    frames[currentFrameIndex].SetFenceValue(RHI::renderer->SignalFence(RHI::CommandQueueType::Graphics));
+    currentFrontendFrameIndex = 0;
+    frames[currentFrontendFrameIndex].SetFenceValue(RHI::renderer->SignalFence(RHI::CommandQueueType::Graphics));
 
     // 렌더 스레드 초기화
     if (useRenderThread) {
@@ -93,9 +93,11 @@ void RenderContext::Shutdown() {
 }
 
 void RenderContext::OnResize(int width, int height) {
-    // 렌더 스레드가 렌더링을 완료할 때까지 기다린다.
+    // 모든 프레임에 대해서 렌더 스레드가 렌더링을 완료할 때까지 기다린다.
     if (IsUsingRenderThread()) {
-        WaitRenderCompleted();
+        for (RenderFrameData &frameData : frames) {
+            WaitRenderCompleted(&frameData);
+        }
     }
 
     // GPU 명령들이 완료될 때까지 기다린다.
@@ -274,24 +276,24 @@ void RenderContext::ShutdownRenderThread() {
     BE1::PlatformSRWLock::Destroy(smpLock);
 }
 
-void RenderContext::WaitRenderCompleted() {
+void RenderContext::WaitRenderCompleted(const RenderFrameData *frameData) {
     assert(BE1::Engine::IsInMainThread());
 
     BE1::ScopedReadLock lock(smpLock);
 
-    // 렌더 스레드가 렌더링이 완료되어 (다음) 업데이트를 기다리는 상태가 될 때까지 기다린다.
-    BE1::PlatformCondition::Wait(renderCompletedCondition, smpLock, false, [this] {
-        return frameSyncState == FrameSyncState::WaitingForUpdateCompleted;
+    // 주어진 프레임에 대한 (렌더 스레드의) 렌더링이 완료되어 (다음) 업데이트를 기다리는 상태가 될 때까지 기다린다.
+    BE1::PlatformCondition::Wait(renderCompletedCondition, smpLock, false, [frameData] {
+        return frameData->frameSyncState == FrameSyncState::WaitingForUpdateCompleted;
     });
 }
 
-void RenderContext::MarkUpdateCompleted() {
+void RenderContext::MarkUpdateCompleted(RenderFrameData *frameData) {
     assert(BE1::Engine::IsInMainThread());
 
     BE1::ScopedWriteLock lock(smpLock);
 
-    // (렌더 스레드의) 다음 렌더링이 끝나기를 기다리는 상태로 변경
-    frameSyncState = FrameSyncState::WaitingForRenderCompleted;
+    // 주어진 프레임에 대한 (렌더 스레드의) 다음 렌더링이 끝나기를 기다리는 상태로 변경
+    frameData->frameSyncState = FrameSyncState::WaitingForRenderCompleted;
 
     // 렌더 스레드에게 업데이트가 완료되었다고 신호를 보낸다.
     BE1::PlatformCondition::Signal(updateCompletedCondition);
@@ -305,13 +307,15 @@ unsigned int RenderContext::RenderThreadProc(void *param) {
     RenderContext *context = reinterpret_cast<RenderContext *>(param);
 
     while (1) {
-        PROFILER_CPU_SCOPED_EVENT("RenderThreadProcLoop", 0);
+        PROFILER_CPU_SCOPED_EVENT("RenderThreadProcLoop");
+
+        RenderFrameData *backendFrameData = context->GetCurrentBackendFrameData();
         {
             BE1::ScopedReadLock lock(context->smpLock);
 
-            // 메인 스레드가 업데이트가 완료되어 (다음) 렌더링을 기다리는 상태가 될 때까지 기다린다.
+            // 현재 백엔드 프레임에 대한 (메인 스레드의) 업데이트가 완료되어 (다음) 렌더링을 기다리는 상태가 될 때까지 기다린다.
             BE1::PlatformCondition::Wait(context->updateCompletedCondition, context->smpLock, false, [context] {
-                return context->frameSyncState == FrameSyncState::WaitingForRenderCompleted || context->isStoppingRenderThread;
+                return context->GetCurrentBackendFrameData()->frameSyncState == FrameSyncState::WaitingForRenderCompleted || context->isStoppingRenderThread;
             });
 
             if (context->isStoppingRenderThread) {
@@ -320,32 +324,41 @@ unsigned int RenderContext::RenderThreadProc(void *param) {
         }
 
         // 렌더링 백엔드를 실행한다.
-        // 업데이트 (프론트 엔드) 단에서 현재 프레임에 대한 커맨드들이 준비되어 있어야 한다.
-        renderSystem->GetBackend()->Execute(context->GetCurrentFrameData()->GetCommands()->buffer);
+        // 현재 백엔드 프레임에 대한 커맨드들을 메인 스레드에서 준비해 놓아야 한다.
+        renderSystem->GetBackend()->Execute(backendFrameData);
 
         {
             BE1::ScopedWriteLock lock(context->smpLock);
 
-            // (메인 스레드의) 다음 업데이트가 끝나기를 기다리는 상태로 변경
-            context->frameSyncState = FrameSyncState::WaitingForUpdateCompleted;
+            // 현재 백엔드 프레임에 대한 (메인 스레드의) 다음 업데이트가 끝나기를 기다리는 상태로 변경
+            backendFrameData->frameSyncState = FrameSyncState::WaitingForUpdateCompleted;
 
             BE1::PlatformCondition::Signal(context->renderCompletedCondition);
         }
+
+        context->currentBackendFrameIndex = (context->currentBackendFrameIndex + 1) % COUNT_OF(context->frames);
     }
     return 0;
 }
 
 void RenderContext::BeginFrame() {
-    PROFILER_CPU_SCOPED_EVENT("RenderContext::BeginFrame", 10);
+    PROFILER_CPU_SCOPED_EVENT("RenderContext::BeginFrame");
 
     assert(BE1::Engine::IsInMainThread());
 
-    if (IsUsingRenderThread()) {
-        // 렌더 스레드 작업이 끝날 때까지 기다린다.
-        WaitRenderCompleted();
+    if (RenderContext::activeContext) {
+        BE_ERRLOG("Make sure to call EndFrame() before calling BeginFrame again\n");
+        return;
     }
 
-    RenderFrameData *frameData = GetCurrentFrameData();
+    currentFrontendFrameIndex = frameCount % COUNT_OF(frames);
+    RenderFrameData *frameData = GetCurrentFrontendFrameData();
+
+    if (IsUsingRenderThread()) {
+        // 현재 프론트엔드 프레임의 렌더 스레드 작업이 끝날 때까지 기다린다.
+        WaitRenderCompleted(frameData);
+    }
+
     frameData->BeginFrame();
     frameData->CmdBeginContext(this);
 
@@ -353,39 +366,41 @@ void RenderContext::BeginFrame() {
 }
 
 void RenderContext::EndFrame() {
-    PROFILER_CPU_SCOPED_EVENT("RenderContext::EndFrame", 10);
+    PROFILER_CPU_SCOPED_EVENT("RenderContext::EndFrame");
 
     assert(BE1::Engine::IsInMainThread());
 
     RenderContext::activeContext = nullptr;
 
-    RenderFrameData *frameData = GetCurrentFrameData();
+    RenderFrameData *frameData = GetCurrentFrontendFrameData();
     frameData->CmdSwapBuffers();
     frameData->EndFrame();
 
+    frameCount++;
+
     if (IsUsingRenderThread()) {
-        // 렌더 스레드를 깨운다.
-        MarkUpdateCompleted();
+        // 렌더 스레드에게 프론트엔드 프레임이 준비되었음을 알린다.
+        MarkUpdateCompleted(frameData);
     } else {
         // 렌더 스레드를 사용하지 않을 경우 직접 백엔드를 실행
-        renderSystem->GetBackend()->Execute(frameData->GetCommands());
+        renderSystem->GetBackend()->Execute(frameData);
     }
 }
 
 void RenderContext::DrawPic(float x, float y, float w, float h, const Texture *texture) {
-    RenderFrameData *frameData = GetCurrentFrameData();
+    RenderFrameData *frameData = GetCurrentFrontendFrameData();
 
     guiMesh.DrawPic(frameData->GetThreadData(0), x, y, w, h, 0.0f, 0.0f, 1.0f, 1.0f, currentColor.ToUInt32(), texture);
 }
 
 void RenderContext::DrawStretchPic(float x, float y, float w, float h, float s1, float t1, float s2, float t2, const Texture *texture) {
-    RenderFrameData *frameData = GetCurrentFrameData();
+    RenderFrameData *frameData = GetCurrentFrontendFrameData();
 
     guiMesh.DrawPic(frameData->GetThreadData(0), x, y, w, h, s1, t1, s2, t2, currentColor.ToUInt32(), texture);
 }
 
 void RenderContext::DrawBar(float x, float y, float w, float h) {
-    RenderFrameData *frameData = GetCurrentFrameData();
+    RenderFrameData *frameData = GetCurrentFrontendFrameData();
 
     guiMesh.DrawPic(frameData->GetThreadData(0), x, y, w, h, 0.0f, 0.0f, 1.0f, 1.0f, currentColor.ToUInt32(), textureManager.whiteTexture);
 }
@@ -436,7 +451,7 @@ void RenderContext::SetTextShadowOffset(float shadowOffsetX, float shadowOffsetY
 }
 
 void RenderContext::DrawText(const BE1::Rect &rect, float x, float y, const char *text, DrawTextFlag flags) {
-    RenderFrameData *frameData = GetCurrentFrameData();
+    RenderFrameData *frameData = GetCurrentFrontendFrameData();
 
     // 프레임 메모리에 텍스트 내용을 복사
     int size = BE1::Str::Length(text) + 1;

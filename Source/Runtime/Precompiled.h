@@ -230,6 +230,20 @@ constexpr size_t hash_combine(size_t &seed, const T &v) {
     return seed ^ hasher(v) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
 }
 
+// FNV-1a hash function
+constexpr uint32_t fnv1a_32(const char *str, size_t len, uint32_t hash = 0x811C9DC5u) {
+    return (len == 0) ? hash
+        : fnv1a_32(str + 1, len - 1, (hash ^ static_cast<uint8_t>(*str)) * 16777619u);
+}
+
+// A helper function that takes a string literal and infers its length at compile time.
+// It assumes str[N-1] is the null terminator (as is the case for string literals).
+// The actual hash computation excludes the terminating null character.
+template <size_t N>
+constexpr uint32_t fnv1a_hash(const char(&str)[N]) {
+    return fnv1a_32(str, N - 1);
+}
+
 template <typename T>
 struct return_type;
 

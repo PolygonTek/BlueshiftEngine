@@ -15,6 +15,7 @@
 #include "Precompiled.h"
 #include "RHI.h"
 
+class RenderFrameData;
 class RenderContext;
 class VisCamera;
 class DrawSurf;
@@ -24,7 +25,7 @@ public:
     void                            Init();
     void                            Shutdown();
 
-    void                            Execute(const void *data);
+    void                            Execute(RenderFrameData *frameData);
 
 private:
     struct DrawObjectTaskDesc {
@@ -57,6 +58,7 @@ private:
     void                            DrawInstancedSurface(RHI::CommandList *commandList, const DrawSurf **instanceSurfs, int instanceCount);
     void                            DrawGuiSurface(RHI::CommandList *commandList, const DrawSurf *drawSurf);
 
+    RenderFrameData *               frameData = nullptr;
     RenderContext *                 currentContext = nullptr;
     RHI::CommandList *              mainCommandList = nullptr;
     uint32_t                        frameCount = 0;

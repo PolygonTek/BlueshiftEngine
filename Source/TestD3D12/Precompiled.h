@@ -37,4 +37,4 @@
 #define USE_RENDERER_DEBUG_LAYER
 
 // DBVT 사용 여부
-#define USE_DBVT
+//#define USE_DBVT

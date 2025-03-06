@@ -71,7 +71,30 @@ public:
     void                        RenderScene(const RenderCamera *renderCamera);
     void                        RenderGUI(GuiMesh &guiMesh);
 
-    void                        DebugLine(const BE1::Vec3 &start, const BE1::Vec3 &end, bool depthTest = false, int lifeTime = 0);
+    void                        DrawDebugLine(const BE1::Vec3 &start, const BE1::Vec3 &end, bool depthTest = false, int lifeTime = 0);
+    void                        DrawDebugTriangle(const BE1::Vec3 &a, const BE1::Vec3 &b, const BE1::Vec3 &c, bool twoSided = true, bool depthTest = false, int lifeTime = 0);
+    void                        DrawDebugQuad(const BE1::Vec3 &origin, const BE1::Vec3 &right, const BE1::Vec3 &up, float size, bool twoSided = true, bool depthTest = false, int lifeTime = 0);
+    void                        DrawDebugCircle(const BE1::Vec3 &origin, const BE1::Vec3 &dir, const float radius, bool twoSided = true, bool depthTest = false, int lifeTime = 0);
+    void                        DrawDebugHollowCircle(const BE1::Vec3 &origin, const BE1::Vec3 &dir, const float radius1, const float radius2, bool twoSided = true, bool depthTest = false, int lifeTime = 0);
+    void                        DrawDebugArc(const BE1::Vec3 &origin, const BE1::Vec3 &right, const BE1::Vec3 &up, const float radius, float angle1, float angle2, bool drawSector, bool twoSided = true, bool depthTest = false, int lifeTime = 0);
+    void                        DrawDebugEllipse(const BE1::Vec3 &origin, const BE1::Vec3 &right, const BE1::Vec3 &up, const float radius1, const float radius2, bool twoSided = true, bool depthTest = false, int lifeTime = 0);
+    void                        DrawDebugHemisphere(const BE1::Vec3 &origin, const BE1::Mat3 &axis, float radius, bool twoSided = true, bool depthTest = false, int lifeTime = 0);
+    void                        DrawDebugHemisphereSimple(const BE1::Vec3 &origin, const BE1::Mat3 &axis, float radius, bool depthTest = false, int lifeTime = 0);
+    void                        DrawDebugSphere(const BE1::Vec3 &origin, const BE1::Mat3 &axis, float radius, bool twoSided = true, bool depthTest = false, int lifeTime = 0);
+    void                        DrawDebugSphereSimple(const BE1::Vec3 &origin, const BE1::Mat3 &axis, float radius, bool depthTest = false, int lifeTime = 0);
+    void                        DrawDebugAABB(const BE1::AABB &aabb, bool twoSided = true, bool depthTest = false, int lifeTime = 0);
+    void                        DrawDebugOBB(const BE1::OBB &obb, bool twoSided = true, bool depthTest = false, int lifeTime = 0);
+    void                        DrawDebugFrustum(const BE1::Frustum &frustum, bool showFromOrigin, bool twoSided = true, bool depthTest = false, int lifeTime = 0);
+    void                        DrawDebugCone(const BE1::Vec3 &origin, const BE1::Mat3 &axis, float height, float radius1, float radius2, bool drawCap, bool twoSided = true, bool depthTest = false, int lifeTime = 0);
+    void                        DrawDebugCone(const BE1::Vec3 &apex, const BE1::Vec3 &bottom, float radius1, float radius2, bool drawCap, bool twoSided = true, bool depthTest = false, int lifeTime = 0);
+    void                        DrawDebugConeSimple(const BE1::Vec3 &origin, const BE1::Mat3 &axis, float height, float radius1, float radius2, bool drawCap, bool twoSided = true, bool depthTest = false, int lifeTime = 0);
+    void                        DrawDebugCylinder(const BE1::Vec3 &center, const BE1::Mat3 &axis, float height, float radius, bool twoSided = true, bool depthTest = false, int lifeTime = 0);
+    void                        DrawDebugCylinder(const BE1::Vec3 &top, const BE1::Vec3 &bottom, float radius, bool twoSided = true, bool depthTest = false, int lifeTime = 0);
+    void                        DrawDebugCylinderSimple(const BE1::Vec3 &center, const BE1::Mat3 &axis, float height, float radius, bool depthTest = false, int lifeTime = 0);
+    void                        DrawDebugCapsule(const BE1::Vec3 &center, const BE1::Mat3 &axis, float height, float radius, bool twoSided = true, bool depthTest = false, int lifeTime = 0);
+    void                        DrawDebugCapsule(const BE1::Vec3 &a, const BE1::Vec3 &b, float radius, bool twoSided = true, bool depthTest = false, int lifeTime = 0);
+    void                        DrawDebugCapsuleSimple(const BE1::Vec3 &center, const BE1::Mat3 &axis, float height, float radius, bool depthTest = false, int lifeTime = 0);
+    void                        DrawDebugArrow(const BE1::Vec3 &start, const BE1::Vec3 &end, float coneSize, float coneRadius, bool depthTest = false, int lifeTime = 0);
 
 private:
     bool                        IsVisObjectRegistered(const RenderObject *renderObject) const;
