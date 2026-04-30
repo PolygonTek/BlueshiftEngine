@@ -106,14 +106,14 @@ void Engine::ShutdownBase() {
 #endif
 }
 
-void Engine::Init(const InitParms *initParms) {
-    Engine::baseDir = initParms->baseDir;
-    Engine::searchPath = initParms->searchPath;
-    Engine::args = initParms->args;
+void Engine::Init(const InitParams *initParams) {
+    Engine::baseDir = initParams->baseDir;
+    Engine::searchPath = initParams->searchPath;
+    Engine::args = initParams->args;
 
     Platform::Init();
 
-    common.Init(initParms->maxTasks, Engine::baseDir);
+    common.Init(initParams->maxTasks, Engine::baseDir);
 
     if (!Engine::searchPath.IsEmpty()) {
         fileSystem.SetSearchPath(Engine::searchPath);

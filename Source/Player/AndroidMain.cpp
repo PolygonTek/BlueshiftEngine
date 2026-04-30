@@ -536,19 +536,19 @@ static void InitInstance(android_app *appState) {
     BE1::AndroidJNI::Init(appState->activity);
 
     // ----- Core initialization -----
-    BE1::Engine::InitParms initParms;
+    BE1::Engine::InitParams initParams;
 
     BE1::Str appDir = appState->activity->externalDataPath;
-    initParms.baseDir = appDir;
+    initParams.baseDir = appDir;
 
     BE1::Str dataDir = appDir + "/Data";
 
     BE1::Str assetDir = dataDir;
     assetDir.AppendPath("Contents", '/');
 
-    initParms.searchPath = assetDir + ";" + dataDir;
+    initParams.searchPath = assetDir + ";" + dataDir;
 
-    BE1::Engine::Init(&initParms);
+    BE1::Engine::Init(&initParams);
     // -------------------------------
 
     BE1::resourceGuidMapper.Read("Data/guidmap");

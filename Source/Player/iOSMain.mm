@@ -393,10 +393,10 @@ static void DisplayContext(BE1::Graphics::Handle context, void *dataPtr) {
     BE1::Str dataDir = appDir + "/Data";
     BE1::Str assetDir = dataDir + "/Contents";
 
-    BE1::Engine::InitParms initParms;
-    initParms.baseDir = appDir;
-    initParms.searchPath = assetDir + ";" + dataDir;
-    BE1::Engine::Init(&initParms);
+    BE1::Engine::InitParms initParams;
+    initParams.baseDir = appDir;
+    initParams.searchPath = assetDir + ";" + dataDir;
+    BE1::Engine::Init(&initParams);
     // -------------------------------
 
     BE1::resourceGuidMapper.Read("Data/guidmap");

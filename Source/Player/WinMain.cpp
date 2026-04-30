@@ -151,10 +151,10 @@ static void DisplayContext(BE1::Graphics::Handle context, void *dataPtr) {
 }
 
 static void InitInstance(HINSTANCE hInstance, LPCTSTR lpCmdLine, int nCmdShow) {
-    BE1::Engine::InitParms initParms;
+    BE1::Engine::InitParams initParams;
 
     //BE1::Str cmdLine = Str::UTF8StrFromWCharString(lpCmdLine);
-    //initParms.args.TokenizeString(cmdLine, false);
+    //initParams.args.TokenizeString(cmdLine, false);
 
     BE1::Str playerDir;
 #if 0
@@ -169,16 +169,16 @@ static void InitInstance(HINSTANCE hInstance, LPCTSTR lpCmdLine, int nCmdShow) {
         playerDir = lpCmdLine;
     }
 
-    initParms.baseDir = playerDir;
+    initParams.baseDir = playerDir;
 
     BE1::Str dataDir = playerDir + "\\Data";
 
     BE1::Str assetDir = dataDir;
     assetDir.AppendPath("Contents", '/');
 
-    initParms.searchPath = assetDir + ";" + dataDir;
+    initParams.searchPath = assetDir + ";" + dataDir;
 
-    BE1::Engine::Init(&initParms);
+    BE1::Engine::Init(&initParams);
 
     if (!BE1::resourceGuidMapper.Read("Data\\guidmap")) {
         BE_FATALERROR("Couldn't open guidmap !");

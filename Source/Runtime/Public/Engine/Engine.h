@@ -24,14 +24,14 @@ BE_NAMESPACE_BEGIN
 
 class Engine {
 public:
-    struct InitParms {
+    struct InitParams {
         uint32_t                maxTasks = 4096;
         CmdArgs                 args;
         Str                     baseDir;
         Str                     searchPath;
     };
 
-    static void                 Init(const InitParms *initParms);
+    static void                 Init(const InitParams *initParams);
     static void                 Shutdown();
 
     static void                 InitBase(uint32_t maxTasks, const char *path, const streamOutFunc_t logFunc, const streamOutFunc_t errorFunc);

@@ -227,7 +227,7 @@ int GraphicsOpenGL::BufferDiscardWrite(Handle bufferHandle, int size, const void
         // NOTE: glMapBufferRange() function causes GL_INVALID_VALUE error if buffer is not alloced.
         gglBufferData(buffer->target, size, nullptr, buffer->usage);
         byte *dest = (byte *)gglMapBufferRange(buffer->target, 0, size, GL_MAP_WRITE_BIT | GL_MAP_INVALIDATE_BUFFER_BIT | GL_MAP_UNSYNCHRONIZED_BIT);
-        simdProcessor->MemcpyStream(dest, (const byte *)data, size);
+        simdProcessor->Memcpy(dest, (const byte *)data, size);
         gglUnmapBuffer(buffer->target);
     } else {
         // Do buffer respecification using glBufferData().

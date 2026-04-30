@@ -418,18 +418,18 @@ static void DisplayContext(BE1::Graphics::Handle contextHandle, void *dataPtr) {
     BE1::Str dataDir = playerDir + "/Data";
     BE1::Str assetDir = dataDir + "/Contents";
 
-    BE1::Engine::InitParms initParms;
+    BE1::Engine::InitParms initParams;
 
     const NSArray *arguments = [[NSProcessInfo processInfo] arguments];
     for (int i = 1; i < arguments.count; i++) { // skip executable path
         const char *str = (const char *)[arguments[i] cStringUsingEncoding:NSUTF8StringEncoding];
-        initParms.args.AppendArg(str);
+        initParams.args.AppendArg(str);
     }
 
-    initParms.baseDir = playerDir;
-    initParms.searchPath = assetDir + ";" + dataDir;
+    initParams.baseDir = playerDir;
+    initParams.searchPath = assetDir + ";" + dataDir;
 
-    BE1::Engine::Init(&initParms);
+    BE1::Engine::Init(&initParams);
 
     BE1::resourceGuidMapper.Read("Data/guidmap");
 

@@ -225,9 +225,9 @@ constexpr std::size_t count_of(T(&)[N]) {
 }
 
 template <class T>
-constexpr size_t hash_combine(size_t &seed, const T &v) {
+constexpr size_t hash_combine(size_t seed, const T &v) {
     std::hash<T> hasher;
-    return seed ^ hasher(v) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
+    return seed ^ (hasher(v) + 0x9e3779b9 + (seed << 6) + (seed >> 2));
 }
 
 // FNV-1a hash function

@@ -213,8 +213,8 @@ void SubMesh::CacheStaticDataToGpu() {
             graphics.BindBuffer(Graphics::BufferType::Vertex, vertexCache->buffer);
             byte *ptr = (byte *)graphics.MapBuffer(vertexCache->buffer, Graphics::BufferLockMode::WriteOnly);
 
-            simdProcessor->MemcpyStream(ptr, (const byte *)verts, sizeVerts);
-            simdProcessor->MemcpyStream(ptr + sizeVertsAligned, (const byte *)vertWeights, sizeWeights);
+            simdProcessor->Memcpy(ptr, (const byte *)verts, sizeVerts);
+            simdProcessor->Memcpy(ptr + sizeVertsAligned, (const byte *)vertWeights, sizeWeights);
 
             if (!graphics.UnmapBuffer(vertexCache->buffer)) {
                 BE_WARNLOG("Error unmapping buffer\n");

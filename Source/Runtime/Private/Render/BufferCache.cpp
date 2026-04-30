@@ -358,12 +358,12 @@ bool BufferCacheManager::AllocVertex(int numVertexes, int vertexSize, const void
     if (data) {
 #if USE_PINNED_MEMORY
         assert(currentBufferSet->mappedVertexBase);
-        simdProcessor->MemcpyStream((byte *)currentBufferSet->mappedVertexBase + offset, (byte *)data, bytes);
+        simdProcessor->Memcpy((byte *)currentBufferSet->mappedVertexBase + offset, (byte *)data, bytes);
 #else
         graphics.BindBuffer(Graphics::BufferType::Vertex, currentBufferSet->vertexBuffer);
         void *base = graphics.MapBufferRange(currentBufferSet->vertexBuffer, Graphics::BufferLockMode::WriteOnly, offset, bytes);
 
-        simdProcessor->MemcpyStream((byte *)base, (byte *)data, bytes);
+        simdProcessor->Memcpy((byte *)base, (byte *)data, bytes);
         
         graphics.UnmapBuffer(currentBufferSet->vertexBuffer);
         graphics.BindBuffer(Graphics::BufferType::Vertex, Graphics::NullBuffer);
@@ -395,12 +395,12 @@ bool BufferCacheManager::AllocIndex(int numIndexes, int indexSize, const void *d
     if (data) {
 #if USE_PINNED_MEMORY
         assert(currentBufferSet->mappedIndexBase);
-        simdProcessor->MemcpyStream((byte *)currentBufferSet->mappedIndexBase + offset, (byte *)data, bytes);
+        simdProcessor->Memcpy((byte *)currentBufferSet->mappedIndexBase + offset, (byte *)data, bytes);
 #else
         graphics.BindBuffer(Graphics::BufferType::Index, currentBufferSet->indexBuffer);
         void *base = graphics.MapBufferRange(currentBufferSet->indexBuffer, Graphics::BufferLockMode::WriteOnly, offset, bytes);
 
-        simdProcessor->MemcpyStream((byte *)base, (byte *)data, bytes);
+        simdProcessor->Memcpy((byte *)base, (byte *)data, bytes);
 
         graphics.UnmapBuffer(currentBufferSet->indexBuffer);
         graphics.BindBuffer(Graphics::BufferType::Index, Graphics::NullBuffer);
@@ -430,12 +430,12 @@ bool BufferCacheManager::AllocUniform(int bytes, const void *data, BufferCache *
     if (data) {
 #if USE_PINNED_MEMORY
         assert(currentBufferSet->mappedUniformBase);
-        simdProcessor->MemcpyStream((byte *)currentBufferSet->mappedUniformBase + offset, (byte *)data, bytes);
+        simdProcessor->Memcpy((byte *)currentBufferSet->mappedUniformBase + offset, (byte *)data, bytes);
 #else
         graphics.BindBuffer(Graphics::BufferType::Uniform, currentBufferSet->uniformBuffer);
         void *base = graphics.MapBufferRange(currentBufferSet->uniformBuffer, Graphics::BufferLockMode::WriteOnly, offset, bytes);
 
-        simdProcessor->MemcpyStream((byte *)base, (byte *)data, bytes);
+        simdProcessor->Memcpy((byte *)base, (byte *)data, bytes);
 
         graphics.UnmapBuffer(currentBufferSet->uniformBuffer);
         graphics.BindBuffer(Graphics::BufferType::Uniform, Graphics::NullBuffer);
@@ -466,12 +466,12 @@ bool BufferCacheManager::AllocTexel(int bytes, const void *data, BufferCache *bc
     if (data) {
 #if USE_PINNED_MEMORY
         assert(currentBufferSet->mappedTexelBase);
-        simdProcessor->MemcpyStream((byte *)currentBufferSet->mappedTexelBase + offset, (byte *)data, bytes);
+        simdProcessor->Memcpy((byte *)currentBufferSet->mappedTexelBase + offset, (byte *)data, bytes);
 #else
         graphics.BindBuffer(currentBufferSet->texelBufferType, currentBufferSet->texelBuffer);
         void *base = graphics.MapBufferRange(currentBufferSet->texelBuffer, Graphics::BufferLockMode::WriteOnly, offset, bytes);
 
-        simdProcessor->MemcpyStream((byte *)base, (byte *)data, bytes);
+        simdProcessor->Memcpy((byte *)base, (byte *)data, bytes);
 
         graphics.UnmapBuffer(currentBufferSet->texelBuffer);
         graphics.BindBuffer(currentBufferSet->texelBufferType, Graphics::NullBuffer);
