@@ -78,16 +78,18 @@ public:
 
     void                        Purge();
 
-    void                        Create(RHI::TextureType textureType, const BE1::Image *srcImage, Texture::Flag flags);
+    void                        Create(RHI::TextureType textureType, std::shared_ptr<const BE1::Image> srcImage, Texture::Flag flags);
 
                                 /// Generate mipmaps using compute shader.
-    void                        GenerationMipmaps();
+    void                        GenerateMipmaps();
 
     bool                        Load(const char *filename, Texture::Flag flags);
 
     static void                 GetCubeImageFromCubeTexture(const Texture *cubeTexture, int numMipLevels, BE1::Image &outCubeImage);
 
 private:
+    RHI::Texture *              PrepareTextureImage(RHI::TextureType textureType, RHI::TextureFlag flags, std::shared_ptr<const BE1::Image> srcImage, BE1::Image::Format dstFormat, bool generateMipmaps, bool allocateEmptyMipmaps, RHI::GPUResourceState initialState);
+
     void                        CreateDefaultTexture(int size, Texture::Flag flags);
     void                        CreateColorTexture(int size, const BE1::Color4 &color, Texture::Flag flags);
     void                        CreateFlatNormalTexture(int size, Texture::Flag flags);

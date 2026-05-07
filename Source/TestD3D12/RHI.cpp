@@ -17,6 +17,9 @@
 
 namespace RHI {
     Renderer *renderer = nullptr;
+
+    const ViewID ViewID::InvalidID = { ViewID::InvalidValue };
+    const ViewID ViewID::PrimaryID = { ViewID::PrimaryValue };
 }
 
 void RHI::Renderer::Init(const void *mainWindowHandle) {
@@ -110,21 +113,6 @@ RHI::GPUBarrier RHI::Renderer::MakeAliasingBarrier(const RHI::GPUResource *resou
     barrier.aliasingBarrier.resourceBefore = resourceBefore;
     barrier.aliasingBarrier.resourceAfter = resourceAfter;
     return barrier;
-}
-
-RHI::Texture *RHI::Renderer::CreateTextureFromFile(RHI::TextureType textureType, RHI::ResourceFlag flags, const char *filename, bool useCompression, bool useNormalMap, bool generateMipmaps, bool allocateEmptyMipmaps) {
-    BE1::Image *image = BE1::Image::NewImageFromFile(filename);
-    if (!image) {
-        return nullptr;
-    }
-
-    BE1::Image::Format dstFormat;
-    AdjustTextureFormat(useCompression, useNormalMap, BE1::HasFlag(flags, RHI::ResourceFlag::UnorderedAccess), image->GetFormat(), &dstFormat);
-
-    RHI::Texture *texture = CreateTexture(textureType, flags, image, dstFormat, generateMipmaps, allocateEmptyMipmaps);
-    delete image;
-
-    return texture;
 }
 
 void RHI::Renderer::AdjustTextureFormat(bool useCompression, bool useNormalMap, bool useUAV, BE1::Image::Format inFormat, BE1::Image::Format *outFormat) {

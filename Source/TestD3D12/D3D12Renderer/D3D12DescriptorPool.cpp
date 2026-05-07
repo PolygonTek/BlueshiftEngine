@@ -1,11 +1,11 @@
 // Copyright(c) 2017 POLYGONTEK
-// 
+//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
-// 
+//
 // http://www.apache.org/licenses/LICENSE-2.0
-// 
+//
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -19,7 +19,7 @@
 void D3D12DescriptorPool::Init(ID3D12Device *device, D3D12DescriptorPool::Type type, UINT maxDescriptorCount, bool isGpuHeap) {
     this->maxDescriptorCount = maxDescriptorCount;
 
-    D3D12_DESCRIPTOR_HEAP_TYPE descriptorHeapType;
+    D3D12_DESCRIPTOR_HEAP_TYPE descriptorHeapType = {};
     switch (type) {
     case Type::CBV_SRV_UAV:
         descriptorHeapType = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
@@ -38,7 +38,8 @@ void D3D12DescriptorPool::Init(ID3D12Device *device, D3D12DescriptorPool::Type t
         break;
     }
 
-    // 디스크립터 힙 타입에 대한 디스크립터 핸들 사이즈 정보 얻기 (보통은 32바이트를 차지)
+    // 디스크립터 힙 타입에 대한 디스크립터 엔트리의 간격 (stride) 얻기 (보통은 32 바이트)
+    // 디스크립터 핸들은 디스크립터 엔트리의 주소처럼 동작하는 값 (상대 주소 같은 개념, 역참조는 불가능) 을 가지고 있다.
     descriptorHandleSize = device->GetDescriptorHandleIncrementSize(descriptorHeapType);
 
     D3D12_DESCRIPTOR_HEAP_DESC descriptorHeapDesc = {};
@@ -47,11 +48,13 @@ void D3D12DescriptorPool::Init(ID3D12Device *device, D3D12DescriptorPool::Type t
     descriptorHeapDesc.Flags = isGpuHeap ? D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE : D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
     device->CreateDescriptorHeap(&descriptorHeapDesc, IID_PPV_ARGS(&descriptorHeap));
 
-    // NOTE: 내부적으로 D3D12_DESCRIPTOR_HEAP_FLAG_NONE 타입은 CPU 쪽에만 힙을 만든다.
-    // descriptorHeap->GetGPUDescriptorHandleForHeapStart() 를 호출하면 크래시 발생함
+    // 디스크립터 힙을 만들 때 D3D12_DESCRIPTOR_HEAP_FLAG_NONE 이라면, 디스크립터 핸들은 CPU 에서만 접근 가능하게 된다.
     baseCpuDescriptorHandle = descriptorHeap->GetCPUDescriptorHandleForHeapStart();
 
     if (isGpuHeap) {
+        // GPU 에서 접근 가능한 힙일 때는 디스크립터의 GPU 핸들도 얻을 수 있다.
+        // 힙은 하나지만, 접근할 때 CPU 에서 사용하는 핸들과 GPU 에서 사용하는 핸들로 나뉜다.
+        // NOTE: CPU 접근 전용 힙일 때 GPU 핸들을 얻으려고 하면 즉, descriptorHeap->GetGPUDescriptorHandleForHeapStart() 를 호출하면 크래시 발생함.
         baseGpuDescriptorHandle = descriptorHeap->GetGPUDescriptorHandleForHeapStart();
     }
 
@@ -74,7 +77,7 @@ uint32_t D3D12DescriptorPool::AllocIndex() {
     uint32_t newIndex = static_cast<uint32_t>(-1);
     {
         BE1::ScopedLock lock(mutex);
-        
+
         if (!idAllocator.AllocateID(newIndex)) {
             // TODO: 확장 가능하도록 수정할 것
             BE_WARNLOG("D3D12DescriptorPool::AllocIndex: no usable descriptors\n");
@@ -84,11 +87,9 @@ uint32_t D3D12DescriptorPool::AllocIndex() {
 }
 
 void D3D12DescriptorPool::FreeIndex(uint32_t descriptorIndex) {
-    {
-        BE1::ScopedLock lock(mutex);
+    BE1::ScopedLock lock(mutex);
 
-        idAllocator.FreeID(descriptorIndex);
-    }
+    idAllocator.FreeID(descriptorIndex);
 }
 
 bool D3D12DescriptorPool::Alloc(D3D12_CPU_DESCRIPTOR_HANDLE *outCpuDescriptorHandle, D3D12_GPU_DESCRIPTOR_HANDLE *outGpuDescriptorHandle) {
@@ -114,39 +115,12 @@ void D3D12DescriptorPool::Free(D3D12_CPU_DESCRIPTOR_HANDLE cpuDescriptorHandle) 
     FreeIndex(descriptorIndex);
 }
 
-uint32_t D3D12DescriptorPool::GetIndexFromCPUDescriptorHandle(D3D12_CPU_DESCRIPTOR_HANDLE descriptorHandle) const {
-    assert(baseCpuDescriptorHandle.ptr);
-    assert(baseCpuDescriptorHandle.ptr <= descriptorHandle.ptr);
-    uint32_t descriptorIndex = (uint32_t)(descriptorHandle.ptr - baseCpuDescriptorHandle.ptr) / descriptorHandleSize;
-    return descriptorIndex;
-}
-
-uint32_t D3D12DescriptorPool::GetIndexFromGPUDescriptorHandle(D3D12_GPU_DESCRIPTOR_HANDLE descriptorHandle) const {
-    assert(baseGpuDescriptorHandle.ptr);
-    assert(baseGpuDescriptorHandle.ptr <= descriptorHandle.ptr);
-    uint32_t descriptorIndex = (uint32_t)(descriptorHandle.ptr - baseGpuDescriptorHandle.ptr) / descriptorHandleSize;
-    return descriptorIndex;
-}
-
-D3D12_CPU_DESCRIPTOR_HANDLE D3D12DescriptorPool::GetCPUDescriptorHandleFromIndex(uint32_t descriptorIndex) const {
-    assert(baseCpuDescriptorHandle.ptr);
-    assert(descriptorIndex < maxDescriptorCount);
-
-    return CD3DX12_CPU_DESCRIPTOR_HANDLE(baseCpuDescriptorHandle, descriptorIndex, descriptorHandleSize);
-}
-
-D3D12_GPU_DESCRIPTOR_HANDLE D3D12DescriptorPool::GetGPUDescriptorHandleFromIndex(uint32_t descriptorIndex) const {
-    assert(baseGpuDescriptorHandle.ptr);
-    assert(descriptorIndex < maxDescriptorCount);
-
-    return CD3DX12_GPU_DESCRIPTOR_HANDLE(baseGpuDescriptorHandle, descriptorIndex, descriptorHandleSize);
-}
-
 D3D12_CPU_DESCRIPTOR_HANDLE D3D12DescriptorPool::AllocRange(int count) {
     D3D12_CPU_DESCRIPTOR_HANDLE descriptorHandle = {};
     uint32_t newId = static_cast<uint32_t>(-1);
     {
         BE1::ScopedLock lock(mutex);
+
         if (!idAllocator.AllocateRange(newId, count)) {
             BE_WARNLOG("D3D12DescriptorPool::AllocRange: no usable consecutive descriptors\n");
             return descriptorHandle;
@@ -164,4 +138,32 @@ void D3D12DescriptorPool::FreeRange(const D3D12_CPU_DESCRIPTOR_HANDLE &descripto
 
         idAllocator.FreeRange(freeId, count);
     }
+}
+
+uint32_t D3D12DescriptorPool::GetIndexFromCPUDescriptorHandle(D3D12_CPU_DESCRIPTOR_HANDLE handle) const {
+    assert(baseCpuDescriptorHandle.ptr);
+    assert(baseCpuDescriptorHandle.ptr <= handle.ptr);
+    uint32_t descriptorIndex = (uint32_t)(handle.ptr - baseCpuDescriptorHandle.ptr) / descriptorHandleSize;
+    return descriptorIndex;
+}
+
+uint32_t D3D12DescriptorPool::GetIndexFromGPUDescriptorHandle(D3D12_GPU_DESCRIPTOR_HANDLE handle) const {
+    assert(baseGpuDescriptorHandle.ptr);
+    assert(baseGpuDescriptorHandle.ptr <= handle.ptr);
+    uint32_t descriptorIndex = (uint32_t)(handle.ptr - baseGpuDescriptorHandle.ptr) / descriptorHandleSize;
+    return descriptorIndex;
+}
+
+D3D12_CPU_DESCRIPTOR_HANDLE D3D12DescriptorPool::GetCPUDescriptorHandleFromIndex(uint32_t index) const {
+    assert(baseCpuDescriptorHandle.ptr);
+    assert(index < maxDescriptorCount);
+
+    return CD3DX12_CPU_DESCRIPTOR_HANDLE(baseCpuDescriptorHandle, index, descriptorHandleSize);
+}
+
+D3D12_GPU_DESCRIPTOR_HANDLE D3D12DescriptorPool::GetGPUDescriptorHandleFromIndex(uint32_t index) const {
+    assert(baseGpuDescriptorHandle.ptr);
+    assert(index < maxDescriptorCount);
+
+    return CD3DX12_GPU_DESCRIPTOR_HANDLE(baseGpuDescriptorHandle, index, descriptorHandleSize);
 }

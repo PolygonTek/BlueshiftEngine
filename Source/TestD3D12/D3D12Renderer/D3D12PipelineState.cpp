@@ -1,11 +1,11 @@
 // Copyright(c) 2017 POLYGONTEK
-// 
+//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
-// 
+//
 // http://www.apache.org/licenses/LICENSE-2.0
-// 
+//
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -19,8 +19,8 @@
 #include "D3D12Texture.h"
 #include "D3D12ConstantBuffer.h"
 #include "D3D12CommandList.h"
-#include "D3D12RootDescriptorPool.h"
-#include "D3D12FrameData.h"
+#include "D3D12DescriptorTablePool.h"
+#include "D3D12FrameThreadData.h"
 
 static constexpr D3D12_FILL_MODE ToD3D12FillMode(RHI::FillMode fillMode) {
     switch (fillMode) {
@@ -303,7 +303,7 @@ void D3D12PipelineState::Release() {
     SAFE_RELEASE(rootSignature);
 }
 
-RHI::PipelineState *D3D12Renderer::CreateGraphicsPSO(const RHI::PipelineStateDesc *desc) {
+RHI::PipelineState *D3D12Renderer::CreateGraphicsPSO(const RHI::PipelineStateDesc *psDesc) {
     struct PSOHashData {
         struct ShaderHashData {
             uint64_t vsHash = 0;
@@ -324,8 +324,8 @@ RHI::PipelineState *D3D12Renderer::CreateGraphicsPSO(const RHI::PipelineStateDes
     ID3D12VersionedRootSignatureDeserializer *rootSignatureDeserializer = nullptr;
     const D3D12_VERSIONED_ROOT_SIGNATURE_DESC *rootSignatureDesc = nullptr;
 
-    if (desc->vs) {
-        const D3D12Shader *vs = static_cast<const D3D12Shader *>(desc->vs);
+    if (psDesc->vs) {
+        const D3D12Shader *vs = static_cast<const D3D12Shader *>(psDesc->vs);
         psoHashData.shaderHashData.vsHash = vs->hash;
         if (!rootSignature && vs->rootSignature) {
             rootSignature = vs->rootSignature;
@@ -334,8 +334,8 @@ RHI::PipelineState *D3D12Renderer::CreateGraphicsPSO(const RHI::PipelineStateDes
         }
     }
 
-    if (desc->gs) {
-        const D3D12Shader *gs = static_cast<const D3D12Shader *>(desc->gs);
+    if (psDesc->gs) {
+        const D3D12Shader *gs = static_cast<const D3D12Shader *>(psDesc->gs);
         psoHashData.shaderHashData.gsHash = gs->hash;
         if (!rootSignature && gs->rootSignature) {
             rootSignature = gs->rootSignature;
@@ -344,8 +344,8 @@ RHI::PipelineState *D3D12Renderer::CreateGraphicsPSO(const RHI::PipelineStateDes
         }
     }
 
-    if (desc->hs) {
-        const D3D12Shader *hs = static_cast<const D3D12Shader *>(desc->hs);
+    if (psDesc->hs) {
+        const D3D12Shader *hs = static_cast<const D3D12Shader *>(psDesc->hs);
         psoHashData.shaderHashData.hsHash = hs->hash;
         if (!rootSignature && hs->rootSignature) {
             rootSignature = hs->rootSignature;
@@ -354,8 +354,8 @@ RHI::PipelineState *D3D12Renderer::CreateGraphicsPSO(const RHI::PipelineStateDes
         }
     }
 
-    if (desc->ds) {
-        const D3D12Shader *ds = static_cast<const D3D12Shader *>(desc->ds);
+    if (psDesc->ds) {
+        const D3D12Shader *ds = static_cast<const D3D12Shader *>(psDesc->ds);
         psoHashData.shaderHashData.dsHash = ds->hash;
         if (!rootSignature && ds->rootSignature) {
             rootSignature = ds->rootSignature;
@@ -364,8 +364,8 @@ RHI::PipelineState *D3D12Renderer::CreateGraphicsPSO(const RHI::PipelineStateDes
         }
     }
 
-    if (desc->ps) {
-        const D3D12Shader *ps = static_cast<const D3D12Shader *>(desc->ps);
+    if (psDesc->ps) {
+        const D3D12Shader *ps = static_cast<const D3D12Shader *>(psDesc->ps);
         psoHashData.shaderHashData.psHash = ps->hash;
         if (!rootSignature && ps->rootSignature) {
             rootSignature = ps->rootSignature;
@@ -374,34 +374,34 @@ RHI::PipelineState *D3D12Renderer::CreateGraphicsPSO(const RHI::PipelineStateDes
         }
     }
 
-    D3D12_PRIMITIVE_TOPOLOGY_TYPE primitiveTopologyType = ToD3D12TopologyType(desc->primitiveTopology);
+    D3D12_PRIMITIVE_TOPOLOGY_TYPE primitiveTopologyType = ToD3D12TopologyType(psDesc->primitiveTopology);
     psoHashData.primitiveTopologyType = primitiveTopologyType;
 
-    if (desc->inputLayout) {
+    if (psDesc->inputLayout) {
         size_t hash = 0;
-        for (const RHI::InputLayoutElement &element : desc->inputLayout->elements) {
-            hash = hash_combine(hash, std::hash<RHI::InputLayoutElement>()(element));
+        for (const RHI::InputLayoutElement &element : psDesc->inputLayout->elements) {
+            hash = hash_combine(hash, element);
         }
         psoHashData.inputLayoutHash = static_cast<uint64_t>(hash);
     }
 
-    if (desc->blendState) {
+    if (psDesc->blendState) {
         std::hash<RHI::BlendState> hasher;
-        psoHashData.blendHash = static_cast<uint64_t>(hasher(*desc->blendState));
+        psoHashData.blendHash = static_cast<uint64_t>(hasher(*psDesc->blendState));
     }
 
-    if (desc->depthStencilState) {
+    if (psDesc->depthStencilState) {
         std::hash<RHI::DepthStencilState> hasher;
-        psoHashData.depthStencilHash = static_cast<uint64_t>(hasher(*desc->depthStencilState));
+        psoHashData.depthStencilHash = static_cast<uint64_t>(hasher(*psDesc->depthStencilState));
     }
 
-    if (desc->rasterizerState) {
+    if (psDesc->rasterizerState) {
         std::hash<RHI::RasterizerState> hasher;
-        psoHashData.rasterizerHash = static_cast<uint64_t>(hasher(*desc->rasterizerState));
+        psoHashData.rasterizerHash = static_cast<uint64_t>(hasher(*psDesc->rasterizerState));
     }
 
-    if (desc->renderDest) {
-        psoHashData.renderDestHash = desc->renderDest->GetHash();
+    if (psDesc->renderDest) {
+        psoHashData.renderDestHash = psDesc->renderDest->GetHash();
     }
 
     // 전체 hash 값으로 완전히 동일한 PSO 가 존재하는지 찾아본다.
@@ -414,27 +414,13 @@ RHI::PipelineState *D3D12Renderer::CreateGraphicsPSO(const RHI::PipelineStateDes
         return pso;
     }
 
-    // 없다면 새로 만든다.
+    // 없다면 PSO 객체를 새로 만든다.
     D3D12PipelineState *pipelineState = new D3D12PipelineState;
     pipelineState->hash = psoHash;
-    pipelineState->graphics = true;
+    pipelineState->isGraphics = true;
 
-    // PSO hash 값으로 동일한 cached PSO 가 존재하는지 찾아보고, 찾았다면 재활용한다.
-    const auto *cachedPsoBlobEntry = cachedPsoBlobMap.Get(psoHash);
-
-    ID3DBlob *cachedPsoBlob = nullptr;
-    if (cachedPsoBlobEntry) {
-        cachedPsoBlob = cachedPsoBlobEntry->second;
-    }
-
-#ifndef _DEBUG
-    // 없다면 cached PSO 파일을 로딩해본다.
-    // NOTE: hash 값 충돌로 엉뚱한 cached PSO 파일을 읽어오지는 않는지 체크 필요
-    if (!cachedPsoBlob) {
-        LoadCachedPSO(psoHash, &cachedPsoBlob);
-    }
-#endif
-
+    // PSO 객체를 만들려면 PSO 스트림을 구성해야 한다.
+    // PSO 스트림이란, PSO 객체를 생성하는데 필요한 모든 정보를 담은 구조체로, D3D12PipelineState::GraphicsPSStream 구조체로 정의되어 있다.
     uint32_t psoStreamSize = 0;
     void *psoStream = nullptr;
     D3D12PipelineState::GraphicsPSStream1 *stream1 = nullptr;
@@ -448,32 +434,51 @@ RHI::PipelineState *D3D12Renderer::CreateGraphicsPSO(const RHI::PipelineStateDes
     stream1 = &stream->stream1;
     stream2 = &stream->stream2;
 
+#ifdef USE_CACHED_PSO_BLOB
+    // PSO hash 값으로 동일한 cached PSO 가 존재하는지 찾아보고, 찾았다면 재활용한다.
+    const auto *cachedPsoBlobEntry = cachedPsoBlobMap.Get(psoHash);
+
+    // cachedPsoBlob 은 미리 컴파일된 cached PSO 정보가 담긴 ID3DBlob 객체이다.
+    ID3DBlob *cachedPsoBlob = nullptr;
+    if (cachedPsoBlobEntry) {
+        cachedPsoBlob = cachedPsoBlobEntry->second;
+    }
+
+    // cached PSO 가 없다면 파일로 저장된 cached PSO 파일을 로딩해본다.
+    // NOTE: hash 값 충돌로 엉뚱한 cached PSO 파일을 읽어오지는 않는지 체크 필요
+    if (!cachedPsoBlob) {
+        LoadCachedPSO(psoHash, &cachedPsoBlob);
+    }
+
+    // PSO 스트림에 cached PSO blob 정보를 담아서 PSO 를 생성하면, D3D12 디바이스가 cached PSO blob 정보를 이용해서 PSO 객체를 빠르게 생성할 수 있다.
+    // cached PSO blob 이 있어도 동일한 PSO 를 설명하는 stream 정보는 다시 구성해야 한다.
     if (cachedPsoBlob) {
         stream->cachedPSO = { cachedPsoBlob->GetBufferPointer(), cachedPsoBlob->GetBufferSize() };
     }
+#endif
 
-    if (desc->vs) {
-        const D3D12Shader *vs = static_cast<const D3D12Shader *>(desc->vs);
+    if (psDesc->vs) {
+        const D3D12Shader *vs = static_cast<const D3D12Shader *>(psDesc->vs);
         stream->vs = { vs->compiledShaderData, vs->compiledShaderDataSize };
     }
 
-    if (desc->gs) {
-        const D3D12Shader *gs = static_cast<const D3D12Shader *>(desc->gs);
+    if (psDesc->gs) {
+        const D3D12Shader *gs = static_cast<const D3D12Shader *>(psDesc->gs);
         stream->gs = { gs->compiledShaderData, gs->compiledShaderDataSize };
     }
 
-    if (desc->hs) {
-        const D3D12Shader *hs = static_cast<const D3D12Shader *>(desc->hs);
+    if (psDesc->hs) {
+        const D3D12Shader *hs = static_cast<const D3D12Shader *>(psDesc->hs);
         stream->hs = { hs->compiledShaderData, hs->compiledShaderDataSize };
     }
 
-    if (desc->ds) {
-        const D3D12Shader *ds = static_cast<const D3D12Shader *>(desc->ds);
+    if (psDesc->ds) {
+        const D3D12Shader *ds = static_cast<const D3D12Shader *>(psDesc->ds);
         stream->ds = { ds->compiledShaderData, ds->compiledShaderDataSize };
     }
 
-    if (desc->ps) {
-        const D3D12Shader *ps = static_cast<const D3D12Shader *>(desc->ps);
+    if (psDesc->ps) {
+        const D3D12Shader *ps = static_cast<const D3D12Shader *>(psDesc->ps);
         stream->ps = { ps->compiledShaderData, ps->compiledShaderDataSize };
     }
 
@@ -492,7 +497,7 @@ RHI::PipelineState *D3D12Renderer::CreateGraphicsPSO(const RHI::PipelineStateDes
 
         stream1->rootSignature = pipelineState->rootSignature;
 
-        // 레지스터 인덱스 별 루트 파라미터 인덱스와 디스크립터 테이블 인덱스를 미리 계산한다.
+        // 루트 시그니쳐의 모든 리소스에 대한 바인딩 정보를 미리 계산한다.
         pipelineState->binder.Init(rootSignatureDesc->Desc_1_1);
     }
 
@@ -500,12 +505,12 @@ RHI::PipelineState *D3D12Renderer::CreateGraphicsPSO(const RHI::PipelineStateDes
     D3D12_INPUT_LAYOUT_DESC inputLayoutDesc = {};
     BE1::Array<D3D12_INPUT_ELEMENT_DESC> inputElementDescs;
 
-    if (desc->inputLayout) {
-        int numElements = desc->inputLayout->elements.Count();
+    if (psDesc->inputLayout) {
+        int numElements = psDesc->inputLayout->elements.Count();
         inputElementDescs.SetCount(numElements);
 
         for (int i = 0; i < numElements; ++i) {
-            const RHI::InputLayoutElement *element = &desc->inputLayout->elements[i];
+            const RHI::InputLayoutElement *element = &psDesc->inputLayout->elements[i];
             D3D12_INPUT_ELEMENT_DESC *elementDesc = &inputElementDescs[i];
 
             elementDesc->SemanticName = element->semanticName.c_str();
@@ -524,16 +529,16 @@ RHI::PipelineState *D3D12Renderer::CreateGraphicsPSO(const RHI::PipelineStateDes
 
     // PrimitiveTopology
     stream1->primitiveTopologyType = primitiveTopologyType;
-    pipelineState->primitiveTopology = ToD3DPrimitiveTopology(desc->primitiveTopology);
+    pipelineState->primitiveTopology = ToD3DPrimitiveTopology(psDesc->primitiveTopology);
 
     // BlendState
-    if (desc->blendState) {
+    if (psDesc->blendState) {
         CD3DX12_BLEND_DESC blendDesc = {};
-        blendDesc.AlphaToCoverageEnable = desc->blendState->alphaToCoverageEnabled;
-        blendDesc.IndependentBlendEnable = desc->blendState->independentBlendEnabled;
+        blendDesc.AlphaToCoverageEnable = psDesc->blendState->alphaToCoverageEnabled;
+        blendDesc.IndependentBlendEnable = psDesc->blendState->independentBlendEnabled;
 
         for (int i = 0; i < COUNT_OF(blendDesc.RenderTarget); ++i) {
-            const RHI::RenderTargetBlendState *renderTargetBlendState = &desc->blendState->renderTargets[i];
+            const RHI::RenderTargetBlendState *renderTargetBlendState = &psDesc->blendState->renderTargets[i];
             D3D12_RENDER_TARGET_BLEND_DESC *renderTargetBlendDesc = &blendDesc.RenderTarget[i];
 
             renderTargetBlendDesc->BlendEnable = renderTargetBlendState->blendEnabled;
@@ -549,61 +554,61 @@ RHI::PipelineState *D3D12Renderer::CreateGraphicsPSO(const RHI::PipelineStateDes
     }
 
     // DepthStencilState
-    if (desc->depthStencilState) {
+    if (psDesc->depthStencilState) {
         CD3DX12_DEPTH_STENCIL_DESC1 depthStencilDesc = {};
-        depthStencilDesc.DepthEnable = desc->depthStencilState->depthTestEnabled;
-        depthStencilDesc.DepthWriteMask = ToD3D12DepthWriteMask(desc->depthStencilState->depthWriteMask);
-        depthStencilDesc.DepthFunc = ToD3D12ComparisonFunc(desc->depthStencilState->depthFunc);
-        depthStencilDesc.StencilEnable = desc->depthStencilState->stencilTestEnabled;
-        depthStencilDesc.StencilReadMask = desc->depthStencilState->stencilReadMask;
-        depthStencilDesc.StencilWriteMask = desc->depthStencilState->stencilWriteMask;
-        depthStencilDesc.FrontFace.StencilFailOp = ToD3D12StencilOp(desc->depthStencilState->frontFace.failOp);
-        depthStencilDesc.FrontFace.StencilDepthFailOp = ToD3D12StencilOp(desc->depthStencilState->frontFace.depthFailOp);
-        depthStencilDesc.FrontFace.StencilPassOp = ToD3D12StencilOp(desc->depthStencilState->frontFace.passOp);
-        depthStencilDesc.FrontFace.StencilFunc = ToD3D12ComparisonFunc(desc->depthStencilState->frontFace.stencilFunc);
-        depthStencilDesc.BackFace.StencilFailOp = ToD3D12StencilOp(desc->depthStencilState->backFace.failOp);
-        depthStencilDesc.BackFace.StencilDepthFailOp = ToD3D12StencilOp(desc->depthStencilState->backFace.depthFailOp);
-        depthStencilDesc.BackFace.StencilPassOp = ToD3D12StencilOp(desc->depthStencilState->backFace.passOp);
-        depthStencilDesc.BackFace.StencilFunc = ToD3D12ComparisonFunc(desc->depthStencilState->backFace.stencilFunc);
-        depthStencilDesc.DepthBoundsTestEnable = (supportsDepthBoundsTest && desc->depthStencilState->depthBoundTestEnabled) ? TRUE : FALSE;
+        depthStencilDesc.DepthEnable = psDesc->depthStencilState->depthTestEnabled;
+        depthStencilDesc.DepthWriteMask = ToD3D12DepthWriteMask(psDesc->depthStencilState->depthWriteMask);
+        depthStencilDesc.DepthFunc = ToD3D12ComparisonFunc(psDesc->depthStencilState->depthFunc);
+        depthStencilDesc.StencilEnable = psDesc->depthStencilState->stencilTestEnabled;
+        depthStencilDesc.StencilReadMask = psDesc->depthStencilState->stencilReadMask;
+        depthStencilDesc.StencilWriteMask = psDesc->depthStencilState->stencilWriteMask;
+        depthStencilDesc.FrontFace.StencilFailOp = ToD3D12StencilOp(psDesc->depthStencilState->frontFace.failOp);
+        depthStencilDesc.FrontFace.StencilDepthFailOp = ToD3D12StencilOp(psDesc->depthStencilState->frontFace.depthFailOp);
+        depthStencilDesc.FrontFace.StencilPassOp = ToD3D12StencilOp(psDesc->depthStencilState->frontFace.passOp);
+        depthStencilDesc.FrontFace.StencilFunc = ToD3D12ComparisonFunc(psDesc->depthStencilState->frontFace.stencilFunc);
+        depthStencilDesc.BackFace.StencilFailOp = ToD3D12StencilOp(psDesc->depthStencilState->backFace.failOp);
+        depthStencilDesc.BackFace.StencilDepthFailOp = ToD3D12StencilOp(psDesc->depthStencilState->backFace.depthFailOp);
+        depthStencilDesc.BackFace.StencilPassOp = ToD3D12StencilOp(psDesc->depthStencilState->backFace.passOp);
+        depthStencilDesc.BackFace.StencilFunc = ToD3D12ComparisonFunc(psDesc->depthStencilState->backFace.stencilFunc);
+        depthStencilDesc.DepthBoundsTestEnable = (supportsDepthBoundsTest && psDesc->depthStencilState->depthBoundTestEnabled) ? TRUE : FALSE;
 
         stream2->depthStencil = depthStencilDesc;
     }
 
     // RasterizeState
-    if (desc->rasterizerState) {
+    if (psDesc->rasterizerState) {
         CD3DX12_RASTERIZER_DESC rasterizerDesc = {};
-        rasterizerDesc.FillMode = ToD3D12FillMode(desc->rasterizerState->fillMode);
-        rasterizerDesc.CullMode = ToD3D12CullMode(desc->rasterizerState->cullMode);
+        rasterizerDesc.FillMode = ToD3D12FillMode(psDesc->rasterizerState->fillMode);
+        rasterizerDesc.CullMode = ToD3D12CullMode(psDesc->rasterizerState->cullMode);
         rasterizerDesc.FrontCounterClockwise = TRUE;
-        rasterizerDesc.DepthBias = desc->rasterizerState->depthBias;
-        rasterizerDesc.DepthBiasClamp = desc->rasterizerState->depthBiasClamp;
-        rasterizerDesc.SlopeScaledDepthBias = desc->rasterizerState->slopeScaledDepthBias;
-        rasterizerDesc.DepthClipEnable = desc->rasterizerState->depthClipEnabled;
+        rasterizerDesc.DepthBias = psDesc->rasterizerState->depthBias;
+        rasterizerDesc.DepthBiasClamp = psDesc->rasterizerState->depthBiasClamp;
+        rasterizerDesc.SlopeScaledDepthBias = psDesc->rasterizerState->slopeScaledDepthBias;
+        rasterizerDesc.DepthClipEnable = psDesc->rasterizerState->depthClipEnabled;
         rasterizerDesc.MultisampleEnable = FALSE;
-        rasterizerDesc.AntialiasedLineEnable = desc->rasterizerState->smoothLineEnabled;
+        rasterizerDesc.AntialiasedLineEnable = psDesc->rasterizerState->smoothLineEnabled;
         rasterizerDesc.ForcedSampleCount = 0;
-        rasterizerDesc.ConservativeRaster = (supportsConservativeRasterization && desc->rasterizerState->conservativeRasterization) ? D3D12_CONSERVATIVE_RASTERIZATION_MODE_ON : D3D12_CONSERVATIVE_RASTERIZATION_MODE_OFF;
+        rasterizerDesc.ConservativeRaster = (supportsConservativeRasterization && psDesc->rasterizerState->conservativeRasterization) ? D3D12_CONSERVATIVE_RASTERIZATION_MODE_ON : D3D12_CONSERVATIVE_RASTERIZATION_MODE_OFF;
 
         stream2->rasterizer = rasterizerDesc;
     }
 
     // RenderPass
-    if (desc->renderDest) {
+    if (psDesc->renderDest) {
         D3D12_RT_FORMAT_ARRAY renderTargetFormatArray = {};
-        renderTargetFormatArray.NumRenderTargets = desc->renderDest->renderTargetCount;
+        renderTargetFormatArray.NumRenderTargets = psDesc->renderDest->renderTargetCount;
 
         for (int i = 0; i < renderTargetFormatArray.NumRenderTargets; ++i) {
             DXGI_FORMAT renderTargetFormat;
-            ImageFormatToDXGIFormat(desc->renderDest->renderTargetFormats[i], desc->renderDest->renderTargetForematSRGBs[i], &renderTargetFormat);
+            ImageFormatToDXGIFormat(psDesc->renderDest->renderTargetFormats[i], psDesc->renderDest->renderTargetForematSRGBs[i], &renderTargetFormat);
             renderTargetFormatArray.RTFormats[i] = renderTargetFormat;
         }
         DXGI_FORMAT depthStencilFormat;
-        ImageFormatToDXGIFormat(desc->renderDest->depthStencilFormat, false, &depthStencilFormat);
+        ImageFormatToDXGIFormat(psDesc->renderDest->depthStencilFormat, false, &depthStencilFormat);
 
         DXGI_SAMPLE_DESC sampleDesc = {};
-        sampleDesc.Count = desc->renderDest->sampleCount;
-        sampleDesc.Quality = desc->renderDest->sampleQuality;
+        sampleDesc.Count = psDesc->renderDest->sampleCount;
+        sampleDesc.Quality = psDesc->renderDest->sampleQuality;
 
         stream2->depthStencilFormat = depthStencilFormat;
         stream2->renderTargetFormats = renderTargetFormatArray;
@@ -611,17 +616,18 @@ RHI::PipelineState *D3D12Renderer::CreateGraphicsPSO(const RHI::PipelineStateDes
     }
 
     // SampleMask
-    stream2->sampleMask = desc->sampleMask;
+    stream2->sampleMask = psDesc->sampleMask;
 
-    // 최종 PSO stream 작성
+    // streamDesc 에 담아서 최종 PSO stream 완성
     D3D12_PIPELINE_STATE_STREAM_DESC streamDesc = {};
     streamDesc.pPipelineStateSubobjectStream = psoStream;
     streamDesc.SizeInBytes = psoStreamSize;
 
     // streamDesc 를 통해 PSO 를 생성한다.
     HRESULT hr = device->CreatePipelineState(&streamDesc, IID_PPV_ARGS(&pipelineState->pso));
+#ifdef USE_CACHED_PSO_BLOB
     if (hr == D3D12_ERROR_DRIVER_VERSION_MISMATCH) {
-        // cached PSO 버젼이 맞지 않는다면, cached PSO 없이 PSO 를 새로 생성한다.
+        // cached PSO 버젼이 맞지 않는다면, 스트림에서 cached PSO 를 제거하고 다시 생성해본다.
         stream->cachedPSO = CD3DX12_PIPELINE_STATE_STREAM_CACHED_PSO();
         // cached PSO 를 릴리즈한다.
         SAFE_RELEASE(cachedPsoBlob);
@@ -632,6 +638,7 @@ RHI::PipelineState *D3D12Renderer::CreateGraphicsPSO(const RHI::PipelineStateDes
 
         hr = device->CreatePipelineState(&streamDesc, IID_PPV_ARGS(&pipelineState->pso));
     }
+#endif
 
     if (FAILED(hr)) {
         BE_WARNLOG("D3D12Renderer::CreateGraphicsPSO: CreatePipelineState() failed, ERROR: 0x%x\n", hr);
@@ -641,7 +648,7 @@ RHI::PipelineState *D3D12Renderer::CreateGraphicsPSO(const RHI::PipelineStateDes
 
     graphicsPsoMap.Set(psoHash, pipelineState);
 
-#ifndef _DEBUG
+#ifdef USE_CACHED_PSO_BLOB
     if (!cachedPsoBlobEntry) {
         if (!cachedPsoBlob) {
             // cached PSO 가 없었다면 PSO 로부터 가져와서 파일에 저장한다.
@@ -664,7 +671,7 @@ RHI::PipelineState *D3D12Renderer::CreateComputePSO(const RHI::Shader *computeSh
     const D3D12Shader *cs = static_cast<const D3D12Shader *>(computeShader);
 
     // compute shader 외에는 다른 상태가 없으므로 compute shader hash 값을 PSO hash 값으로 사용한다.
-    const uint64_t psoHash = cs->hash; 
+    const uint64_t psoHash = cs->hash;
     const auto *psoEntry = computePsoMap.Get(psoHash);
     if (psoEntry) {
         return psoEntry->second;
@@ -672,7 +679,7 @@ RHI::PipelineState *D3D12Renderer::CreateComputePSO(const RHI::Shader *computeSh
 
     D3D12PipelineState *pipelineState = new D3D12PipelineState;
     pipelineState->hash = psoHash;
-    pipelineState->graphics = false;
+    pipelineState->isGraphics = false;
 
     // rootSignature 를 유지하기 위해 레퍼런스 카운트를 증가시킨다.
     cs->rootSignature->AddRef();
@@ -682,7 +689,7 @@ RHI::PipelineState *D3D12Renderer::CreateComputePSO(const RHI::Shader *computeSh
     pipelineState->rootSignature = cs->rootSignature;
     pipelineState->rootSignatureDesc = cs->rootSignatureDesc;
 
-    // 레지스터 인덱스 별 루트 파라미터 인덱스와 디스크립터 테이블 인덱스를 미리 계산한다.
+    // 루트 시그니쳐의 모든 리소스에 대한 바인딩 정보를 미리 계산한다.
     pipelineState->binder.Init(cs->rootSignatureDesc->Desc_1_1);
 
     D3D12PipelineState::ComputePSStream stream = {};
@@ -697,7 +704,7 @@ RHI::PipelineState *D3D12Renderer::CreateComputePSO(const RHI::Shader *computeSh
     // streamDesc 를 통해 PSO 를 생성한다.
     HRESULT hr = device->CreatePipelineState(&streamDesc, IID_PPV_ARGS(&pipelineState->pso));
     if (FAILED(hr)) {
-        BE_WARNLOG("D3D12Renderer::CreateGraphicsPSO: CreatePipelineState() failed, ERROR: 0x%x\n", hr);
+        BE_WARNLOG("D3D12Renderer::CreateComputePSO: CreatePipelineState() failed, ERROR: 0x%x\n", hr);
         delete pipelineState;
         return nullptr;
     }
@@ -713,7 +720,7 @@ void D3D12Renderer::DestroyPSO(RHI::PipelineState *pipelineState, bool immediate
         return;
     }
 
-    if (pipelineState->graphics) {
+    if (pipelineState->isGraphics) {
         graphicsPsoMap.Remove(pipelineState->hash);
     } else {
         computePsoMap.Remove(pipelineState->hash);
@@ -722,7 +729,7 @@ void D3D12Renderer::DestroyPSO(RHI::PipelineState *pipelineState, bool immediate
     if (immediate) {
         delete pipelineState;
     } else {
-        MarkForDelete(pipelineState);
+        DeleteGPUObject(pipelineState);
     }
 }
 
@@ -884,30 +891,31 @@ ID3D12PipelineState *D3D12Renderer::CreatePSOFromLibrary(const D3D12_PIPELINE_ST
 
 void D3D12Renderer::SetPSO(RHI::CommandList *commandList, const RHI::PipelineState *pipelineState) {
     assert(pipelineState);
-    D3D12CommandList *d3d12CommandList = static_cast<D3D12CommandList *>(commandList);
-    d3d12CommandList->SetPipelineState(pipelineState);
+    D3D12CommandList *_commandList = static_cast<D3D12CommandList *>(commandList);
+    _commandList->SetPipelineState(pipelineState);
 }
 
 // Draw 나 Dispatch 직전에 호출된다.
 void D3D12Renderer::BindRootParameters(D3D12CommandList *commandList) {
-    D3D12FrameThreadData *threadData = static_cast<D3D12FrameThreadData *>(commandList->GetFrameThreadData());
-    D3D12RootDescriptorPool *resRootDescriptorPool = threadData->resRootDescriptorPool;
-    D3D12RootDescriptorPool *samRootDescriptorPool = threadData->samRootDescriptorPool;
+    bool isGraphicsPSO = commandList->currentPSO->isGraphics;
 
-    // NOTE: dirty mask 를 이용하여, 바뀐 루트 파라미터들만 바인딩한다.
+    // NOTE: 64 bit dirty mask 를 이용해서 바뀐 루트 파라미터들만 바인딩한다.
     // 전체 리소스 바인딩 중 일부만 바꾸는 경우 안바뀐 부분의 리소스 바인딩을 생략할 수 있다.
-    bool isGraphicsPSO = commandList->currentPSO->graphics;
     uint64_t &rootParameterDirtyMask = isGraphicsPSO ? commandList->graphicsRootParametersDirtyMask : commandList->computeRootParametersDirtyMask;
     if (rootParameterDirtyMask == 0) {
         return;
     }
 
+    D3D12RootBindingData *rootBindingData = commandList->GetRootBindingData();
+    D3D12DescriptorTablePool *resDescriptorTablePool = commandList->resDescriptorTablePool;
+    D3D12DescriptorTablePool *samDescriptorTablePool = commandList->samDescriptorTablePool;
+
     const D3D12_ROOT_SIGNATURE_DESC1 &rootSignatureDesc = commandList->currentPSO->rootSignatureDesc->Desc_1_1;
 
     for (int rootParameterIndex = 0; rootParameterIndex < rootSignatureDesc.NumParameters; ++rootParameterIndex) {
-        // NOTE: 모든 루트 파라미터가 디스크립터 테이블이라면 이론상 최대 64개까지 사용할 수 있다.
+        // NOTE: 모든 루트 파라미터가 디스크립터 테이블이라면 이론상 최대 64개를 사용할 수 있다.
         // 하지만 실질적으로는 루트 파라미터 개수에 대한 제한은 없고, 각 파라미터 타입에 따라 소비하는 슬롯 수가 있고, 이 슬롯 수에 대한 제한이 있다.
-        // 결과적으로 디스크립터 테이블이 소비하는 슬롯 수가 가장 적으므로, 사용할 수 있는 루트 파라미터 개수는 64개 보다 적으면 적었지, 많아질 일은 없다.
+        // 결과적으로 디스크립터 테이블이 소비하는 슬롯 수가 가장 적으므로, 사용할 수 있는 루트 파라미터 개수는 64개 보다 적으면 적었지 많아질 일은 없다.
         const uint64_t rootParameterBitMask = BIT64(rootParameterIndex);
         if (!(rootParameterDirtyMask & rootParameterBitMask)) {
             continue;
@@ -916,89 +924,92 @@ void D3D12Renderer::BindRootParameters(D3D12CommandList *commandList) {
 
         const D3D12_ROOT_PARAMETER1 *rootParameter = &rootSignatureDesc.pParameters[rootParameterIndex];
 
-        // 루트 파라미터가 디스크립터 테이블인 경우
+        // 현재 루트 파라미터가 디스크립터 테이블인 경우
         if (rootParameter->ParameterType == D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE) {
             const D3D12_ROOT_DESCRIPTOR_TABLE1 &descriptorTable = rootParameter->DescriptorTable;
             assert(descriptorTable.NumDescriptorRanges > 0);
 
-            // 디스크립터 테이블은 CBV/SRV/UAV 타입과 Sampler 타입이 나누어져 있어야 한다. (타입에 따라 디스크립터 힙의 종류가 다르다)
-            // 루트 디스크립터 풀도 디스크립터 테이블의 타입에 따라 구별하여 사용한다.
-            D3D12RootDescriptorPool *rootDescriptorPool = descriptorTable.pDescriptorRanges[0].RangeType == D3D12_DESCRIPTOR_RANGE_TYPE_SAMPLER ? samRootDescriptorPool : resRootDescriptorPool;
-
-            int numDescriptors = 0;
-
             // 이 디스크립터 테이블이 사용하는 전체 디스크립터 개수 계산
+            int numDescriptors = 0;
             for (int rangeIndex = 0; rangeIndex < descriptorTable.NumDescriptorRanges; ++rangeIndex) {
-                // DescriptorRanges 는 같은 종류의 디스크립터들을 나타낸다.
+                // DescriptorRanges 는 같은 타입의 디스크립터들의 묶음을 나타낸다.
                 const D3D12_DESCRIPTOR_RANGE1 &descriptorRange = descriptorTable.pDescriptorRanges[rangeIndex];
 
                 numDescriptors += descriptorRange.NumDescriptors;
             }
 
             // 디스크립터 테이블에 디스크립터가 하나도 없다?
-            assert(numDescriptors > 0);
+            if (numDescriptors <= 0) {
+                assert(0);
+                continue;
+            }
 
-            D3D12_CPU_DESCRIPTOR_HANDLE cpuRootDescriptorStart;
-            D3D12_GPU_DESCRIPTOR_HANDLE gpuRootDescriptorStart;
+            // 디스크립터 테이블 풀을 레인지의 타입에 따라 구별하여 사용한다.
+            // NOTE: 하나의 디스크립터 테이블 내에서는 Sampler or CBV/SRV/UAV 타입의 디스크립터들만 존재할 수 있다.
+            D3D12DescriptorTablePool *descriptorTablePool = descriptorTable.pDescriptorRanges[0].RangeType == D3D12_DESCRIPTOR_RANGE_TYPE_SAMPLER ? samDescriptorTablePool : resDescriptorTablePool;
 
-            // 루트 디스크립터 풀에서 연속된 디스크립터들 (디스크립터 테이블) 을 할당
-            if (!rootDescriptorPool->AllocRange(numDescriptors, &cpuRootDescriptorStart, &gpuRootDescriptorStart)) {
+            D3D12_CPU_DESCRIPTOR_HANDLE cpuDescriptorTableStart;
+            D3D12_GPU_DESCRIPTOR_HANDLE gpuDescriptorTableStart;
+
+            // 풀에서 연속된 디스크립터 테이블을 할당
+            if (!descriptorTablePool->AllocRange(numDescriptors, &cpuDescriptorTableStart, &gpuDescriptorTableStart)) {
                 return;
             }
 
             // 디스크립터 테이블 내에서의 디스크립터 오프셋
-            int descriptorOffset = 0;
+            int tableOffset = 0;
 
-            // 필요한 디스크립터들을 루트 디스크립터 테이블에 복사한다.
-            // 내부적으로 CopyDescriptorSimple 함수 호출 시 CPU 디스크립터는 곧바로 갱신되고, GPU 디스크립터는 나중에 참조되는 시점에서 자동으로 갱신된다.
-            // 루트 디스크립터는 항상 새로 할당하므로, 동기화 이슈는 없다.
+            // 필요한 디스크립터들을 바인딩 용 디스크립터 테이블에 복사한다.
+            // 디스크립터 테이블들은 항상 새로 할당하므로, 동기화 이슈는 없다.
+            // NOTE: 만약 디스크립터 테이블의 일부만 세팅한다면, 이전에 남아있던 테이블의 내용이 이어질 수 있음에 주의해야 한다.
             for (int rangeIndex = 0; rangeIndex < descriptorTable.NumDescriptorRanges; ++rangeIndex) {
                 const D3D12_DESCRIPTOR_RANGE1 &descriptorRange = descriptorTable.pDescriptorRanges[rangeIndex];
 
-                assert(descriptorOffset < COUNT_OF(threadData->tableCpuDescriptorHandles[rootParameterIndex]));
+                assert(tableOffset < COUNT_OF(rootBindingData->descriptorTableHandles[rootParameterIndex]));
 
-                const D3D12_CPU_DESCRIPTOR_HANDLE &srcDescriptorHandle = threadData->tableCpuDescriptorHandles[rootParameterIndex][descriptorOffset];
-                CD3DX12_CPU_DESCRIPTOR_HANDLE destDescriptorHandle(cpuRootDescriptorStart, descriptorOffset, rootDescriptorPool->descriptorHandleSize);
+                const D3D12_CPU_DESCRIPTOR_HANDLE &srcCpuDescriptorHandle = rootBindingData->descriptorTableHandles[rootParameterIndex][tableOffset];
+                CD3DX12_CPU_DESCRIPTOR_HANDLE destCpuDescriptorHandle(cpuDescriptorTableStart, tableOffset, descriptorTablePool->descriptorHandleSize);
 
+                // CopyDescriptorsSimple 함수는 원본 디스크립터와 대상 디스크립터 핸들이 모두 CPU 핸들이어야 한다.
+                // source 디스크립터는 스테이징 용도로서 항상 non shader-visible 힙에 존재해야 한다.
+                // destination 이 shader-visible 힙이면, 그 결과는 이후 내부적으로 GPU 가 참조 가능한 형태로 준비된다.
                 switch (descriptorRange.RangeType) {
                 case D3D12_DESCRIPTOR_RANGE_TYPE_CBV:
                 case D3D12_DESCRIPTOR_RANGE_TYPE_SRV:
                 case D3D12_DESCRIPTOR_RANGE_TYPE_UAV:
-                    device->CopyDescriptorsSimple(descriptorRange.NumDescriptors, destDescriptorHandle, srcDescriptorHandle, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+                    device->CopyDescriptorsSimple(descriptorRange.NumDescriptors, destCpuDescriptorHandle, srcCpuDescriptorHandle, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
                     break;
                 case D3D12_DESCRIPTOR_RANGE_TYPE_SAMPLER:
-                    device->CopyDescriptorsSimple(descriptorRange.NumDescriptors, destDescriptorHandle, srcDescriptorHandle, D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER);
+                    device->CopyDescriptorsSimple(descriptorRange.NumDescriptors, destCpuDescriptorHandle, srcCpuDescriptorHandle, D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER);
                     break;
                 default:
                     BE_ERRLOG("Invalid descriptor range type: 0x%x\n", descriptorRange.RangeType);
                     break;
                 }
 
-                descriptorOffset += descriptorRange.NumDescriptors;
+                tableOffset += descriptorRange.NumDescriptors;
             }
 
-            // 루트 파라미터에 대한 GPU 디스크립터 시작 주소를 나중을 위해 기록한다.
-            threadData->tableGpuDescriptorStarts[rootParameterIndex] = gpuRootDescriptorStart;
-
-            // 루트 파라미터에 대한 디스크립터 테이블을 설정
+            // 루트 파라미터에 디스크립터 테이블을 세팅한다.
             if (isGraphicsPSO) {
-                commandList->GetGraphicsCommandList()->SetGraphicsRootDescriptorTable(rootParameterIndex, gpuRootDescriptorStart);
+                commandList->GetGraphicsCommandList()->SetGraphicsRootDescriptorTable(rootParameterIndex, gpuDescriptorTableStart);
             } else {
-                commandList->GetGraphicsCommandList()->SetComputeRootDescriptorTable(rootParameterIndex, gpuRootDescriptorStart);
+                commandList->GetGraphicsCommandList()->SetComputeRootDescriptorTable(rootParameterIndex, gpuDescriptorTableStart);
             }
         } else if (rootParameter->ParameterType == D3D12_ROOT_PARAMETER_TYPE_32BIT_CONSTANTS) {
-            // 루트 상수 설정 : 연속된 32비트 상수 값을 바인딩한다.
-            UINT num32BitValues = rootParameter->Constants.Num32BitValues;
-            // NOTE: 현재는 offset 을 통해 상수 값들을 일부만 세팅하는 경우는 없다고 가정한다. (전체 상수를 세팅해야 함)
+            // 루트 상수 설정 : 루트 파라미터에 연속된 32비트 상수 값을 세팅한다.
+            // NOTE: offset 을 통해 상수 값들을 일부만 세팅하는 경우는 없다고 가정한다. (전체 상수를 세팅해야 함)
+            UINT shaderRegister = rootParameter->Constants.ShaderRegister;
+            const uint32_t* rootConstants = rootBindingData->rootConstants[shaderRegister];
             if (isGraphicsPSO) {
-                commandList->GetGraphicsCommandList()->SetGraphicsRoot32BitConstants(rootParameterIndex, num32BitValues, threadData->rootConstants, 0);
+                commandList->GetGraphicsCommandList()->SetGraphicsRoot32BitConstants(rootParameterIndex, rootParameter->Constants.Num32BitValues, rootConstants, 0);
             } else {
-                commandList->GetGraphicsCommandList()->SetComputeRoot32BitConstants(rootParameterIndex, num32BitValues, threadData->rootConstants, 0);
+                commandList->GetGraphicsCommandList()->SetComputeRoot32BitConstants(rootParameterIndex, rootParameter->Constants.Num32BitValues, rootConstants, 0);
             }
         } else if (rootParameter->ParameterType == D3D12_ROOT_PARAMETER_TYPE_CBV) {
-            // 루트 레벨 CBV 설정 : 디스크립터 테이블을 사용하지 않고, 곧바로 CBV 의 GPU 주소를 바인딩한다.
+            // 루트 CBV 설정 : 루트 파라미터에 CBV 로 사용할 버퍼의 GPU 주소를 직접 세팅한다.
             UINT shaderRegister = rootParameter->Descriptor.ShaderRegister;
-            const RHI::GPUResource *cbvResource = threadData->cbvResources[shaderRegister];
+            const RHI::GPUResource *cbvResource = rootBindingData->cbvResources[shaderRegister];
             if (cbvResource) {
                 D3D12_GPU_VIRTUAL_ADDRESS gpuAddress = reinterpret_cast<ID3D12Resource *>(cbvResource->GetNativeResource())->GetGPUVirtualAddress();
                 if (isGraphicsPSO) {
@@ -1008,9 +1019,9 @@ void D3D12Renderer::BindRootParameters(D3D12CommandList *commandList) {
                 }
             }
         } else if (rootParameter->ParameterType == D3D12_ROOT_PARAMETER_TYPE_SRV) {
-            // 루트 레벨 SRV 설정 : 디스크립터 테이블을 사용하지 않고, 곧바로 SRV 의 GPU 주소를 바인딩한다.
+            // 루트 SRV 설정 : 루트 파라미터에 SRV 로 사용할 버퍼의 GPU 주소를 직접 세팅한다.
             UINT shaderRegister = rootParameter->Descriptor.ShaderRegister;
-            const RHI::GPUResource *srvResource = threadData->srvResources[shaderRegister];
+            const RHI::GPUResource *srvResource = rootBindingData->srvResources[shaderRegister];
             if (srvResource) {
                 D3D12_GPU_VIRTUAL_ADDRESS gpuAddress = reinterpret_cast<ID3D12Resource *>(srvResource->GetNativeResource())->GetGPUVirtualAddress();
                 if (isGraphicsPSO) {
@@ -1020,9 +1031,9 @@ void D3D12Renderer::BindRootParameters(D3D12CommandList *commandList) {
                 }
             }
         } else if (rootParameter->ParameterType == D3D12_ROOT_PARAMETER_TYPE_UAV) {
-            // 루트 레벨 UAV 설정 : 디스크립터 테이블을 사용하지 않고, 곧바로 UAV 의 GPU 주소를 바인딩한다.
+            // 루트 UAV 설정 : 루트 파라미터에 UAV 로 사용할 버퍼의 GPU 주소를 직접 세팅한다.
             UINT shaderRegister = rootParameter->Descriptor.ShaderRegister;
-            const RHI::GPUResource *uavResource = threadData->uavResources[shaderRegister];
+            const RHI::GPUResource *uavResource = rootBindingData->uavResources[shaderRegister];
             if (uavResource) {
                 D3D12_GPU_VIRTUAL_ADDRESS gpuAddress = reinterpret_cast<ID3D12Resource *>(uavResource->GetNativeResource())->GetGPUVirtualAddress();
                 if (isGraphicsPSO) {

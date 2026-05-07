@@ -21,10 +21,10 @@ set(SRC_FILES
     D3D12Renderer/D3D12Renderer.cpp
     D3D12Renderer/D3D12SwapChain.h
     D3D12Renderer/D3D12SwapChain.cpp
-    D3D12Renderer/D3D12RootDescriptorPool.h
-    D3D12Renderer/D3D12RootDescriptorPool.cpp
     D3D12Renderer/D3D12DescriptorPool.h
     D3D12Renderer/D3D12DescriptorPool.cpp
+    D3D12Renderer/D3D12DescriptorTablePool.h
+    D3D12Renderer/D3D12DescriptorTablePool.cpp
     D3D12Renderer/D3D12Buffer.h
     D3D12Renderer/D3D12Buffer.cpp
     D3D12Renderer/D3D12Shader.h
@@ -41,14 +41,18 @@ set(SRC_FILES
     D3D12Renderer/D3D12ConstantBuffer.cpp
     D3D12Renderer/D3D12PipelineState.h
     D3D12Renderer/D3D12PipelineState.cpp
+    D3D12Renderer/D3D12RootBindingData.h
+    D3D12Renderer/D3D12RootBindingData.cpp
+    D3D12Renderer/D3D12ResourceRequest.h
+    D3D12Renderer/D3D12ResourceRequest.cpp
     D3D12Renderer/D3D12Query.h
     D3D12Renderer/D3D12Query.cpp
     D3D12Renderer/D3D12CommandList.h
     D3D12Renderer/D3D12CommandList.cpp
     D3D12Renderer/D3D12CommandListPool.h
     D3D12Renderer/D3D12CommandListPool.cpp
-    D3D12Renderer/D3D12FrameData.h
-    D3D12Renderer/D3D12FrameData.cpp
+    D3D12Renderer/D3D12FrameThreadData.h
+    D3D12Renderer/D3D12FrameThreadData.cpp
     Shaders/ShaderInterop.h
     Render/RenderContext.h
     Render/RenderContext.cpp

@@ -82,8 +82,6 @@ void App::RunFrame(int frameMsec) {
 
     UpdateGameObjects();
 
-    RHI::renderer->FreePendingResources();
-
     BE1::cmdSystem.ExecuteCommandBuffer();
 }
 
@@ -97,17 +95,22 @@ void App::Render() {
     float w = mainRenderContext->GetWidth();
     float h = mainRenderContext->GetHeight();
     float aspectRatio = w / h;
+    float cameraX = 20 + (BE1::Math::Sin(MILLI2SEC(elapsedMsec) * 0.5f) + 1.0f) * 0.5f * 146;
 
     RenderCameraDesc cameraDesc;
     cameraDesc.orthogonal = false;
     cameraDesc.renderRect.Set(0, 0, w, h);
-    cameraDesc.origin.Set(20 + (BE1::Math::Sin(MILLI2SEC(elapsedMsec) * 0.5f) + 1.0f) * 0.5f * 146, 0, 0);
+    cameraDesc.origin.Set(cameraX, 0, 0);
     cameraDesc.axis[0].Set(-1, 0, 0);
     cameraDesc.axis[1].Set(0, -1, 0);
     cameraDesc.axis[2].Set(0, 0, 1);
     RenderCamera::CalculateFov(60, 1.7778f, aspectRatio, &cameraDesc.fovX, &cameraDesc.fovY);
     cameraDesc.zNear = BE1::MeterToUnit(0.5f);
     cameraDesc.zFar = BE1::MeterToUnit(1000.0f);
+    if (cameraDesc.orthogonal) {
+        cameraDesc.sizeX = cameraX * BE1::Math::Tan(cameraDesc.fovX * 0.5f) * 0.5f;
+        cameraDesc.sizeY = cameraDesc.sizeX / aspectRatio;
+    }
     renderCamera->Update(cameraDesc);
 
     renderWorld->RenderScene(renderCamera);

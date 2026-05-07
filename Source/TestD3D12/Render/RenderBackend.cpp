@@ -1,11 +1,11 @@
 // Copyright(c) 2017 POLYGONTEK
-// 
+//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
-// 
+//
 // http://www.apache.org/licenses/LICENSE-2.0
-// 
+//
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -27,7 +27,9 @@ void RenderBackend::Shutdown() {
 }
 
 void RenderBackend::Execute(RenderFrameData *frameData) {
+    // 백엔드가 처리할 프레임 데이터
     this->frameData = frameData;
+
     const void *data = frameData->GetCommands()->buffer;
 
     while (1) {
@@ -71,10 +73,8 @@ const void *RenderBackend::ExecuteDrawCamera(const void *data) {
 
     currentVisCamera = cmd->visCamera;
 
-    RHI::FrameThreadData *frameThreadData = frameData->GetThreadData(0);
-
     // 커맨드 리스트 풀에서 새로운 커맨드 리스트를 얻어온다.
-    mainCommandList = frameThreadData->BeginCommandList(RHI::CommandQueueType::Graphics);
+    mainCommandList = frameData->GetThreadData(0)->BeginCommandList(RHI::CommandQueueType::Graphics);
 
     // 뷰포트 & ScissorRect 의 초기값 설정
     RHI::renderer->SetViewport(mainCommandList, currentVisCamera->renderRect);
@@ -128,7 +128,7 @@ const void *RenderBackend::ExecuteDrawCamera(const void *data) {
     RHI::renderer->EndRenderPass(mainCommandList);
 #endif
 
-    // CommandList 에 기록을 마치고 실행
+    // command list 에 기록을 마치고 실행
     mainCommandList->CloseAndExecute();
 
     return (const void *)(cmd + 1);
@@ -146,8 +146,7 @@ const void *RenderBackend::ExecuteScreenshot(const void *data) {
     BE1::Image screenImage;
     screenImage.Create2D(captureRect.w, captureRect.h, 1, BE1::Image::Format::B8G8R8, BE1::Image::GammaSpace::sRGB, nullptr, BE1::Image::Flag::None);
 
-    RHI::FrameThreadData *frameThreadData = frameData->GetThreadData(0);
-    RHI::CommandList *commandList = frameThreadData->AllocGraphicsCommandList();
+    RHI::CommandList *commandList = frameData->GetThreadData(0)->AllocGraphicsCommandList();
     commandList->Reset(true);
 
     // 백버퍼의 내용을 (필요하다면 지정된 포맷으로 컨버팅하여) screenImage 에 저장한다.
@@ -167,7 +166,7 @@ const void *RenderBackend::ExecuteSwapBuffers(const void *data) {
     const SwapBuffersRenderCommand *cmd = reinterpret_cast<const SwapBuffersRenderCommand *>(data);
 
     // 이번 백엔드 프레임에서 수행하는 렌더링 커맨드들에 대한 펜스를 친다.
-    frameData->SetFenceValue(RHI::renderer->SignalFence(RHI::CommandQueueType::Graphics));
+    frameData->SetFrameFenceValue(RHI::renderer->SignalFence(RHI::CommandQueueType::Graphics));
 
     // 백버퍼를 전면버퍼와 교환한다.
     currentContext->GetSwapChain()->SwapBuffers(false);
@@ -189,6 +188,6 @@ void RenderBackend::DrawCamera2D() {
     for (int drawSurfIndex = 0; drawSurfIndex < currentVisCamera->numDrawSurfs; ++drawSurfIndex) {
         const DrawSurf *drawSurf = currentVisCamera->drawSurfs[drawSurfIndex];
 
-        DrawGuiSurface(mainCommandList, drawSurf);
+        DrawGuiSurface(frameData->GetThreadData(0), mainCommandList, drawSurf);
     }
 }

@@ -33,6 +33,19 @@
 // D3D12 Memory Allocator 사용 여부
 #define USE_D3D12_MEMALLOC
 
+// 셰이더 디버깅 기능 사용 여부 (셰이더 컴파일 시 디버깅 정보 포함 여부)
+//#define USE_SHADER_DEBUG
+
+// D3D12 셰이더 캐싱 시, 컴파일된 셰이더 (DXIL) 을 파일로 저장하여 다음 실행 시 로드하는 기능 사용 여부
+#ifndef USE_SHADER_DEBUG
+#define USE_COMPILED_SHADER
+#endif
+
+// D3D12 PSO 캐싱 시, PSO 블롭 (직렬화된 PSO 데이터) 을 파일로 저장하여 다음 실행 시 로드하는 기능 사용 여부
+#ifndef USE_SHADER_DEBUG
+#define USE_CACHED_PSO_BLOB
+#endif
+
 // 스테이트 캐싱 사용 여부
 #define USE_STATE_CACHE_FOR_COMMAND_LIST
 
@@ -41,22 +54,22 @@ T *NormalizePointer(T *&ptr) noexcept {
     return ptr;
 }
 
-struct D3D12SRVDescriptor {
-    D3D12_SHADER_RESOURCE_VIEW_DESC     srvDesc = {};
+struct D3D12SRVEntry {
+    D3D12_SHADER_RESOURCE_VIEW_DESC     viewDesc = {};
     D3D12_CPU_DESCRIPTOR_HANDLE         cpuDescriptorHandle = {};
 };
 
-struct D3D12RTVDescriptor {
-    D3D12_RENDER_TARGET_VIEW_DESC       rtvDesc = {};
+struct D3D12RTVEntry {
+    D3D12_RENDER_TARGET_VIEW_DESC       viewDesc = {};
     D3D12_CPU_DESCRIPTOR_HANDLE         cpuDescriptorHandle = {};
 };
 
-struct D3D12DSVDescriptor {
-    D3D12_DEPTH_STENCIL_VIEW_DESC       dsvDesc = {};
+struct D3D12DSVEntry {
+    D3D12_DEPTH_STENCIL_VIEW_DESC       viewDesc = {};
     D3D12_CPU_DESCRIPTOR_HANDLE         cpuDescriptorHandle = {};
 };
 
-struct D3D12UAVDescriptor {
-    D3D12_UNORDERED_ACCESS_VIEW_DESC    uavDesc = {};
+struct D3D12UAVEntry {
+    D3D12_UNORDERED_ACCESS_VIEW_DESC    viewDesc = {};
     D3D12_CPU_DESCRIPTOR_HANDLE         cpuDescriptorHandle = {};
 };

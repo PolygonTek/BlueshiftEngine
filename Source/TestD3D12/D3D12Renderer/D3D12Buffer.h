@@ -24,8 +24,14 @@
 class D3D12FrameThreadData;
 
 /*
--------------------------------------------------------------------------------
-    버퍼 리소스의 정렬에 대한 규칙
+---------------------------------------------------------------------------------------------------
+
+    D3D12 Buffer
+
+    Texture 를 제외한 모든 Buffer 류는 이 클래스를 기반으로 만들어진다.
+    ex. VertexBuffer, IndexBuffer, ConstantBuffer, StructuredBuffer, ByteAddressBuffer 등
+
+    * 버퍼 리소스의 정렬에 대한 규칙
 
     1. 리소스 힙에 배치 단계 (Placed Resource or Committed Resource) 에서의 오프셋 정렬.
        대부분 D3D12_DEFAULT_RESOURCE_PLACEMENT_ALIGNMENT (64KB) 로 정렬해야 한다.
@@ -39,7 +45,8 @@ class D3D12FrameThreadData;
 
     3. cbuffer/struct 의 멤버 변수 pack 정렬
        멤버 변수는 16 바이트 정렬된다.
--------------------------------------------------------------------------------
+
+---------------------------------------------------------------------------------------------------
 */
 
 class D3D12Buffer : public RHI::Buffer {
@@ -52,9 +59,14 @@ public:
 
     void                            Release();
 
+                                    // D3D12 리소스 포인터 (ID3D12Resource*) 를 리턴한다
     virtual void *                  GetNativeResource() const override { return GetResource(); }
+
+                                    // D3D12Buffer 포인터를 리턴한다.
     virtual const void *            GetNativeBufferObject() const override { return this; }
-    virtual bool                    IsValidSubresource(RHI::SubresourceType type, int subresourceIndex) const override;
+
+                                    // View 가 유효한지 여부를 리턴한다.
+    virtual bool                    HasValidView(RHI::ViewType viewType, RHI::ViewID viewID = RHI::ViewID::PrimaryID) const override;
 
     ID3D12Resource *                GetResource() const;
     uint64_t                        GetSize();
@@ -66,13 +78,9 @@ private:
     ID3D12Resource *                bufferResource = nullptr;
 #endif
     uint64_t                        size = 0;
-    uint32_t                        structureByteStride = 0;
-    BE1::Image::Format              format = BE1::Image::Format::Unknown;
-    D3D12SRVDescriptor              srvDescriptor;
-    D3D12UAVDescriptor              uavDescriptor;
-    BE1::Array<D3D12SRVDescriptor>  subresourceSrvDescriptors = (16);
-    BE1::Array<D3D12UAVDescriptor>  subresourceUavDescriptors = (16);
-    int                             dynamicBlockIndex = -1;
+
+    BE1::Array<D3D12SRVEntry>       srvEntries = (16);
+    BE1::Array<D3D12UAVEntry>       uavEntries = (16);
 };
 
 BE_INLINE ID3D12Resource *D3D12Buffer::GetResource() const {

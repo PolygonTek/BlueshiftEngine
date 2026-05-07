@@ -33,7 +33,7 @@ void Texture::Purge() {
     }
 }
 
-void Texture::Create(RHI::TextureType textureType, const BE1::Image *srcImage, Texture::Flag flags) {
+void Texture::Create(RHI::TextureType textureType, std::shared_ptr<const BE1::Image> srcImage, Texture::Flag flags) {
     Purge();
 
     BE1::Image::Format srcFormat = srcImage->GetFormat();
@@ -62,78 +62,100 @@ void Texture::Create(RHI::TextureType textureType, const BE1::Image *srcImage, T
     RHI::renderer->AdjustTextureSize(textureType, useNPOT, srcWidth, srcHeight, srcDepth, &dstWidth, &dstHeight, &dstDepth);
     assert(srcDepth == dstDepth);
 
-    BE1::Image scaledImage;
-
     if (!srcImage->IsEmpty()) {
         if (srcWidth != dstWidth || srcHeight != dstHeight) {
-            srcImage->Resize(dstWidth, dstHeight, BE1::Image::ResampleFilter::Bicubic, scaledImage);
-            srcImage = &scaledImage;
+            std::shared_ptr<BE1::Image> scaledImage = std::make_shared<BE1::Image>();
+            srcImage->Resize(dstWidth, dstHeight, BE1::Image::ResampleFilter::Bicubic, *scaledImage);
+            srcImage = scaledImage;
         }
     }
 
-    RHI::ResourceFlag resourceFlags = RHI::ResourceFlag::ShaderResource;
+    RHI::TextureFlag resourceFlags = RHI::TextureFlag::ShaderResource;
     if (useUAV) {
-        resourceFlags |= RHI::ResourceFlag::UnorderedAccess;
+        resourceFlags |= RHI::TextureFlag::UnorderedAccess;
 
         // UAV 가 필요하다면, sRGB 포맷은 UAV 로 만들 수 없기 때문에 Typeless 텍스쳐로 만든다.
         if (srcImage->GetGammaSpace() != BE1::Image::GammaSpace::Linear) {
-            resourceFlags |= RHI::ResourceFlag::Typeless;
+            resourceFlags |= RHI::TextureFlag::Typeless;
         }
     }
 
     // Depth 포맷은 Typeless 텍스쳐로 생성한다.
     // SRV 에서 Depth 포맷을 사용할 수는 없고, 그와 호환되는 포맷을 사용해야 한다.
     if (srcImage->IsDepthFormat()) {
-        resourceFlags |= RHI::ResourceFlag::Typeless;
+        resourceFlags |= RHI::TextureFlag::Typeless;
     }
 
     RHI::GPUResourceState initialState = BE1::HasFlag(flags, Texture::Flag::Compute) ? RHI::GPUResourceState::ShaderResourceCompute : RHI::GPUResourceState::ShaderResource;
 
     this->format = dstFormat;
     this->flags = flags;
-    this->texture = RHI::renderer->CreateTexture(textureType, resourceFlags, srcImage, dstFormat, generateMipmaps, allocateEmptyMipmaps, initialState);
+    this->texture = PrepareTextureImage(textureType, resourceFlags, srcImage, dstFormat, generateMipmaps, allocateEmptyMipmaps, initialState);
 }
 
-void Texture::GenerationMipmaps() {
-    // 전체 텍스쳐 리소스에 대한 SRV 생성
-    if (!texture->IsValidSubresource(RHI::SubresourceType::SRV, -1)) {
-        RHI::renderer->CreateSubresource(texture, RHI::SubresourceType::SRV);
-    }
-    // 전체 텍스쳐 리소스에 대한 UAV 생성
-    if (!texture->IsValidSubresource(RHI::SubresourceType::UAV, -1)) {
-        RHI::renderer->CreateSubresource(texture, RHI::SubresourceType::UAV);
-    }
+RHI::Texture *Texture::PrepareTextureImage(RHI::TextureType textureType, RHI::TextureFlag flags, std::shared_ptr<const BE1::Image> srcImage, BE1::Image::Format dstFormat, bool generateMipmaps, bool allocateEmptyMipmaps, RHI::GPUResourceState initialState) {
+    BE1::Image::Format srcFormat = srcImage->GetFormat();
+    bool srcCompressed = BE1::Image::IsCompressed(srcFormat);
+    bool srcFormatSupported = RHI::renderer->IsSupportedImageFormat(srcFormat);
 
-    // 각 Slice 와 Mip Level 별로 SRV/UAV 를 생성
-    // NOTE: 이미 Mipmap 용이 아닌 Subresource 를 이전에 생성한 경우 문제가 될 수 있음
-    for (int sliceIndex = 0; sliceIndex < GetArraySize(); ++sliceIndex) {
-        for (int mipLevel = 0; mipLevel < GetMipLevelCount(); ++mipLevel) {
-            const int subresourceIndex = GetMipLevelCount() * sliceIndex + mipLevel;
+    if (!srcImage->IsEmpty()) {
+        bool dstFormatSupported = RHI::renderer->IsSupportedImageFormat(dstFormat);
 
-            if (!texture->IsValidSubresource(RHI::SubresourceType::SRV, subresourceIndex)) {
-                RHI::renderer->CreateSubresource(texture, RHI::SubresourceType::SRV, sliceIndex, 1, mipLevel, 1);
+        if (!dstFormatSupported) {
+            BE_WARNLOG("Texture::PrepareTextureImage: Unsupported internal image format %s\n", BE1::Image::FormatName(dstFormat));
+            return nullptr;
+        }
+
+        // 필요하다면 밉맵을 생성한다.
+        if (generateMipmaps) {
+            int w = srcImage->GetWidth();
+            int h = srcImage->GetHeight();
+            int d = srcImage->GetDepth();
+            int maxMipLevels = BE1::Image::MaxMipLevels(w, h, d);
+
+            // srcImage 가 이미 밉맵을 포함하고 있으면 무시된다.
+            if (srcImage->NumMipmaps() < maxMipLevels) {
+                if (srcImage->IsPacked() || srcImage->IsCompressed()) {
+                    // 밉맵을 생성해야 한다면, 지원되는 가장 비슷한 무압축 포맷으로 컨버팅한다.
+                    BE1::Image::Format supportedUncompressedFormat = RHI::renderer->ToUncompressedImageFormat(srcFormat);
+
+                    std::shared_ptr<BE1::Image> uncompressedImage = std::make_shared<BE1::Image>();
+                    srcImage->ConvertFormat(supportedUncompressedFormat, *uncompressedImage);
+                    srcImage = uncompressedImage;
+
+                    srcFormat = supportedUncompressedFormat;
+                    srcFormatSupported = RHI::renderer->IsSupportedImageFormat(srcFormat);
+                    srcCompressed = false;
+                }
+
+                // CPU 에서 밉맵을 직접 생성한다.
+                std::shared_ptr<BE1::Image> mipmappedImage = std::make_shared<BE1::Image>();
+                mipmappedImage->Create(w, h, d, srcImage->GetArraySize(), maxMipLevels, srcImage->GetFormat(), srcImage->GetGammaSpace(), nullptr, srcImage->GetFlags());
+                mipmappedImage->CopyFrom(*srcImage, 0, 1);
+                mipmappedImage->GenerateMipmaps();
+                srcImage = mipmappedImage;
             }
-            if (!texture->IsValidSubresource(RHI::SubresourceType::UAV, subresourceIndex)) {
-                RHI::renderer->CreateSubresource(texture, RHI::SubresourceType::UAV, sliceIndex, 1, mipLevel, 1);
-            }
+        }
+
+        // dstFormat 으로 컨버팅
+        if (srcFormat != dstFormat) {
+            std::shared_ptr<BE1::Image> dstImage = std::make_shared<BE1::Image>();
+            srcImage->ConvertFormat(dstFormat, *dstImage);
+            srcImage = dstImage;
         }
     }
 
-    // 컴퓨트 쉐이더를 이용해서 밉맵 생성
-    RHI::CommandList *commandList = RHI::renderer->BeginCommandList(RHI::CommandQueueType::Graphics);
-    RHI::renderer->GenerateMipmaps(commandList, GetRHITexture(), true);
-    commandList->CloseAndExecute();
-    RHI::renderer->EndCommandList(commandList);
+    return RHI::renderer->CreateTexture(textureType, flags, srcImage, allocateEmptyMipmaps, {}, 1, initialState);
+}
 
-    // TODO:
-    // 컴퓨트 커맨드 리스트/큐를 이용하려면, 텍스쳐를 만들 때 non-pixel shader resource 로 상태 전이가 이루어져야 한다.
-    // 이후에 렌더링에 사용할 것이므로, 다이렉트 커맨드 리스트/큐를 통해 다시 pixel shader resource 로 상태 전이를 해야 한다.
+void Texture::GenerateMipmaps() {
+    RHI::renderer->GenerateMipmaps(texture);
 }
 
 void Texture::CreateDefaultTexture(int size, Texture::Flag flags) {
-    BE1::Image image;
-    image.Create2D(size, size, 1, BE1::Image::Format::R8G8B8A8, BE1::Image::GammaSpace::sRGB, nullptr, BE1::Image::Flag::None);
-    byte *dstPtr = image.GetPixels();
+    std::shared_ptr<BE1::Image> image = std::make_shared<BE1::Image>();
+    image->Create2D(size, size, 1, BE1::Image::Format::R8G8B8A8, BE1::Image::GammaSpace::sRGB, nullptr, BE1::Image::Flag::None);
+    byte *dstPtr = image->GetPixels();
 
     for (int y = 0; y < size; y++) {
         for (int x = 0; x < size; x++) {
@@ -153,19 +175,19 @@ void Texture::CreateDefaultTexture(int size, Texture::Flag flags) {
     }
 
     flags |= Texture::Flag::HighQuality | Texture::Flag::NoCompression | Texture::Flag::UnorderedAccess | Texture::Flag::NoMipmaps | Texture::Flag::AllocateEmptyMipmaps;
-    Create(RHI::TextureType::Texture2D, &image, flags);
+    Create(RHI::TextureType::Texture2D, image, flags);
 
     // 컴퓨트 쉐이더를 통해 밉맵 생성
     // 컴퓨트 쉐이더로 밉맵을 생성하기 위해서는 대상 텍스쳐를 만들 때 하위 mip level 들이 존재해야 하고, UAV 도 만들어야 한다.
     // UAV 로 만들 sRGB 텍스쳐의 경우에는 텍스쳐 생성 함수에서 자동으로 Typeless 텍스쳐로 만들어 진다.
     // sRGB 텍스쳐를 생성할 때 Typeless 로 만들어야 SRV 는 sRGB 포맷으로, UAV 는 Linear 포맷으로 생성된다.
-    GenerationMipmaps();
+    GenerateMipmaps();
 }
 
 void Texture::CreateColorTexture(int size, const BE1::Color4 &color, Flag flags) {
-    BE1::Image image;
-    image.Create2D(size, size, 1, BE1::Image::Format::R8G8B8A8, BE1::Image::GammaSpace::sRGB, nullptr, BE1::Image::Flag::None);
-    uint32_t *dstPtr = (uint32_t *)image.GetPixels();
+    std::shared_ptr<BE1::Image> image = std::make_shared<BE1::Image>();
+    image->Create2D(size, size, 1, BE1::Image::Format::R8G8B8A8, BE1::Image::GammaSpace::sRGB, nullptr, BE1::Image::Flag::None);
+    uint32_t *dstPtr = (uint32_t *)image->GetPixels();
     uint32_t c = color.ToUInt32();
 
     for (int y = 0; y < size; y++) {
@@ -174,13 +196,13 @@ void Texture::CreateColorTexture(int size, const BE1::Color4 &color, Flag flags)
         }
     }
 
-    Create(RHI::TextureType::Texture2D, &image, Texture::Flag::HighQuality | flags);
+    Create(RHI::TextureType::Texture2D, image, Texture::Flag::HighQuality | flags);
 }
 
 void Texture::CreateFlatNormalTexture(int size, Texture::Flag flags) {
-    BE1::Image image;
-    image.Create2D(size, size, 1, BE1::Image::Format::R8G8B8, BE1::Image::GammaSpace::Linear, nullptr, BE1::Image::Flag::None);
-    byte *dstPtr = image.GetPixels();
+    std::shared_ptr<BE1::Image> image = std::make_shared<BE1::Image>();
+    image->Create2D(size, size, 1, BE1::Image::Format::R8G8B8, BE1::Image::GammaSpace::Linear, nullptr, BE1::Image::Flag::None);
+    byte *dstPtr = image->GetPixels();
 
     for (int y = 0; y < size; y++) {
         for (int x = 0; x < size; x++) {
@@ -191,7 +213,7 @@ void Texture::CreateFlatNormalTexture(int size, Texture::Flag flags) {
         }
     }
 
-    Create(RHI::TextureType::Texture2D, &image, Texture::Flag::NormalMap | Texture::Flag::NoScaleDown | flags);
+    Create(RHI::TextureType::Texture2D, image, Texture::Flag::NormalMap | Texture::Flag::NoScaleDown | flags);
 }
 
 bool Texture::Load(const char *filename, Texture::Flag flags) {
@@ -199,25 +221,25 @@ bool Texture::Load(const char *filename, Texture::Flag flags) {
 
     BE_LOG("Loading texture '%s'...\n", filename);
 
-    BE1::Image image;
-    image.Load(filename);
+    std::shared_ptr<BE1::Image> image = std::make_shared<BE1::Image>();
+    image->Load(filename);
 
-    if (image.IsEmpty()) {
+    if (image->IsEmpty()) {
         BE_WARNLOG("Couldn't load texture \"%s\"\n", filename);
         return false;
     }
 
     RHI::TextureType textureType;
 
-    if (image.GetDepth() > 1) {
+    if (image->GetDepth() > 1) {
         textureType = RHI::TextureType::Texture3D;
-    } else if (image.IsCubeMap()) {
+    } else if (image->IsCubeMap()) {
         textureType = RHI::TextureType::TextureCube;
     } else {
         textureType = RHI::TextureType::Texture2D;
     }
 
-    Create(textureType, &image, flags);
+    Create(textureType, image, flags);
     return true;
 }
 

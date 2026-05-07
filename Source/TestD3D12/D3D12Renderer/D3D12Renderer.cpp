@@ -1,11 +1,11 @@
 // Copyright(c) 2017 POLYGONTEK
-// 
+//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
-// 
+//
 // http://www.apache.org/licenses/LICENSE-2.0
-// 
+//
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -19,10 +19,11 @@
 #include "D3D12SwapChain.h"
 #include "D3D12CommandList.h"
 #include "D3D12CommandListPool.h"
-#include "D3D12RootDescriptorPool.h"
+#include "D3D12DescriptorTablePool.h"
 #include "D3D12DescriptorPool.h"
 #include "D3D12Texture.h"
-#include "D3D12FrameData.h"
+#include "D3D12FrameThreadData.h"
+#include "D3D12ResourceRequest.h"
 
 // D3D12.dll 이 D3D12Core.dll 을 찾기 위한 설정
 extern "C" { __declspec(dllexport) extern const UINT D3D12SDKVersion = 614; }
@@ -74,7 +75,7 @@ void D3D12Renderer::Init(const void *mainWindowHandle) {
         }
     }
 
-    // Factory 생성
+    // DXGI Factory 생성
     hr = CreateDXGIFactory2(enableDebugLayer ? DXGI_CREATE_FACTORY_DEBUG : 0, IID_PPV_ARGS(&dxgiFactory));
     if (FAILED(hr)) {
         BE_FATALERROR("CreateDXGIFactory2 failed, ERROR: 0x%x", hr);
@@ -82,10 +83,10 @@ void D3D12Renderer::Init(const void *mainWindowHandle) {
 
     IDXGIFactory5 *dxgiFactory5 = nullptr;
     if (SUCCEEDED(dxgiFactory->QueryInterface(IID_PPV_ARGS(&dxgiFactory5)))) {
-        // VRR (Variable Refresh Rate) 지원 여부 체크
+        // VSync 를 끈 상태로 Present 가능한지 체크
+        // VRR (Variable Refresh Rate): G-SYNC / FreeSync 계열 지원을 위한 체크
         BOOL allowTearing = FALSE;
         hr = dxgiFactory5->CheckFeatureSupport(DXGI_FEATURE_PRESENT_ALLOW_TEARING, &allowTearing, sizeof(allowTearing));
-
         if (FAILED(hr) || !allowTearing) {
             supportsTearing = false;
 
@@ -99,7 +100,7 @@ void D3D12Renderer::Init(const void *mainWindowHandle) {
     IDXGIAdapter1 *adapter1 = nullptr;
     CreateDevice(&adapter1);
 
-    // 어댑터 정보 얻어오기
+    // 어댑터 (그래픽 카드) 정보 얻어오기
     DXGI_ADAPTER_DESC1 dxgiAdapterDesc;
     adapter1->GetDesc1(&dxgiAdapterDesc);
     vendorId = dxgiAdapterDesc.VendorId;
@@ -165,7 +166,9 @@ void D3D12Renderer::Init(const void *mainWindowHandle) {
 
     adapter1->Release();
 
-    // 텍스쳐의 최대 크기
+    // 텍스쳐의 최대 크기 정보
+    // Vulkan 이나 OpenGL 에서는 최소 크기에 대한 스펙만 정해져있고, 실제 최대 크기는 쿼리하는 형식이지만,
+    // D3D12 에서는 스펙상 최대 크기가 정해져 있음
     max1DTextureSize = D3D12_REQ_TEXTURE1D_U_DIMENSION;
     max2DTextureSize = D3D12_REQ_TEXTURE2D_U_OR_V_DIMENSION;
     max3DTextureSize = D3D12_REQ_TEXTURE3D_U_V_OR_W_DIMENSION;
@@ -174,9 +177,133 @@ void D3D12Renderer::Init(const void *mainWindowHandle) {
     max2DTextureArraySize = D3D12_REQ_TEXTURE2D_ARRAY_AXIS_DIMENSION;
     maxCubeTextureArraySize = D3D12_REQ_TEXTURE2D_ARRAY_AXIS_DIMENSION / 6;
 
+    CheckFeatures();
+
+    // Fence 객체 생성
+    hr = device->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&fence));
+    if (FAILED(hr)) {
+        BE_FATALERROR("CreateFence failed, ERROR: 0x%x", hr);
+    }
+    // Fence 초기값
+    fenceValue = 0;
+
+    // Fence 를 대기하기 위한 이벤트 객체 생성
+    fenceEventHandle = CreateEvent(nullptr, FALSE, FALSE, nullptr);
+
+    // Graphics CommandQueue 생성
+    D3D12_COMMAND_QUEUE_DESC queueDesc = {};
+    queueDesc.Flags = D3D12_COMMAND_QUEUE_FLAG_NONE;
+    queueDesc.Priority = D3D12_COMMAND_QUEUE_PRIORITY_NORMAL;
+    queueDesc.Type = D3D12_COMMAND_LIST_TYPE_DIRECT;
+
+    hr = device->CreateCommandQueue(&queueDesc, IID_PPV_ARGS(&commandQueues[to_int(RHI::CommandQueueType::Graphics)]));
+    if (FAILED(hr)) {
+        BE_FATALERROR("CreateCommandQueue (Graphics) failed, ERROR: 0x%x", hr);
+    }
+    commandQueues[to_int(RHI::CommandQueueType::Graphics)]->SetName(L"GraphicsCommandQueue");
+
+    // Compute CommandQueue 생성
+    queueDesc = {};
+    queueDesc.Flags = D3D12_COMMAND_QUEUE_FLAG_NONE;
+    queueDesc.Priority = D3D12_COMMAND_QUEUE_PRIORITY_NORMAL;
+    queueDesc.Type = D3D12_COMMAND_LIST_TYPE_COMPUTE;
+
+    hr = device->CreateCommandQueue(&queueDesc, IID_PPV_ARGS(&commandQueues[to_int(RHI::CommandQueueType::Compute)]));
+    if (FAILED(hr)) {
+        BE_FATALERROR("CreateCommandQueue (Compute) failed, ERROR: 0x%x", hr);
+    }
+    commandQueues[to_int(RHI::CommandQueueType::Compute)]->SetName(L"ComputeCommandQueue");
+
+    // Command Signature 생성
+    D3D12_COMMAND_SIGNATURE_DESC commandSignatureDesc = {};
+
+    D3D12_INDIRECT_ARGUMENT_DESC drawInstancedArgs[1];
+    drawInstancedArgs[0].Type = D3D12_INDIRECT_ARGUMENT_TYPE_DRAW;
+
+    commandSignatureDesc.ByteStride = sizeof(D3D12_DRAW_ARGUMENTS);
+    commandSignatureDesc.NumArgumentDescs = 1;
+    commandSignatureDesc.pArgumentDescs = drawInstancedArgs;
+    hr = device->CreateCommandSignature(&commandSignatureDesc, nullptr, IID_PPV_ARGS(&drawInstancedIndirectCommandSignature));
+    if (FAILED(hr)) {
+        BE_FATALERROR("CreateCommandSignature(D3D12_INDIRECT_ARGUMENT_TYPE_DRAW) failed, ERROR: 0x%x", hr);
+    }
+
+    D3D12_INDIRECT_ARGUMENT_DESC drawIndexedInstancedArgs[1];
+    drawIndexedInstancedArgs[0].Type = D3D12_INDIRECT_ARGUMENT_TYPE_DRAW_INDEXED;
+
+    commandSignatureDesc.ByteStride = sizeof(D3D12_DRAW_INDEXED_ARGUMENTS);
+    commandSignatureDesc.NumArgumentDescs = 1;
+    commandSignatureDesc.pArgumentDescs = drawIndexedInstancedArgs;
+    hr = device->CreateCommandSignature(&commandSignatureDesc, nullptr, IID_PPV_ARGS(&drawIndexedInstancedIndirectCommandSignature));
+    if (FAILED(hr)) {
+        BE_FATALERROR("CreateCommandSignature(D3D12_INDIRECT_ARGUMENT_TYPE_DRAW_INDEXED) failed, ERROR: 0x%x", hr);
+    }
+
+    D3D12_INDIRECT_ARGUMENT_DESC dispatchArgs[1];
+    dispatchArgs[0].Type = D3D12_INDIRECT_ARGUMENT_TYPE_DISPATCH;
+
+    commandSignatureDesc.ByteStride = sizeof(D3D12_DISPATCH_ARGUMENTS);
+    commandSignatureDesc.NumArgumentDescs = 1;
+    commandSignatureDesc.pArgumentDescs = dispatchArgs;
+    hr = device->CreateCommandSignature(&commandSignatureDesc, nullptr, IID_PPV_ARGS(&dispatchIndirectCommandSignature));
+    if (FAILED(hr)) {
+        BE_FATALERROR("CreateCommandSignature(D3D12_INDIRECT_ARGUMENT_TYPE_DISPATCH) failed, ERROR: 0x%x", hr);
+    }
+
+    if (supportsMeshShader) {
+        D3D12_INDIRECT_ARGUMENT_DESC dispatchMeshArgs[1];
+        dispatchMeshArgs[0].Type = D3D12_INDIRECT_ARGUMENT_TYPE_DISPATCH_MESH;
+
+        commandSignatureDesc.ByteStride = sizeof(D3D12_DISPATCH_ARGUMENTS);
+        commandSignatureDesc.NumArgumentDescs = 1;
+        commandSignatureDesc.pArgumentDescs = dispatchMeshArgs;
+        hr = device->CreateCommandSignature(&commandSignatureDesc, nullptr, IID_PPV_ARGS(&dispatchMeshIndirectCommandSignature));
+        if (FAILED(hr)) {
+            BE_FATALERROR("CreateCommandSignature(D3D12_INDIRECT_ARGUMENT_TYPE_DISPATCH_MESH) failed, ERROR: 0x%x", hr);
+        }
+    }
+
+    // CPU 접근 전용 디스크립터 풀 생성
+    resCpuDescriptorPool = new D3D12DescriptorPool(device, D3D12DescriptorPool::Type::CBV_SRV_UAV, 900000, false);
+    rtvCpuDescriptorPool = new D3D12DescriptorPool(device, D3D12DescriptorPool::Type::RTV, 16, false);
+    dsvCpuDescriptorPool = new D3D12DescriptorPool(device, D3D12DescriptorPool::Type::DSV, 16, false);
+    samCpuDescriptorPool = new D3D12DescriptorPool(device, D3D12DescriptorPool::Type::Sampler, 2048, false);
+
+    // shader cache 디렉토리 초기화
+    shaderCacheDir = "Cache/D3D12CompiledShaderCache";
+    if (!BE1::PlatformFile::DirectoryExists(shaderCacheDir)) {
+        BE1::PlatformFile::CreateDirectoryTree(shaderCacheDir);
+    }
+
+    // PSO cache 디렉토리 초기화
+    psoCacheDir = "Cache/D3D12PSOCache";
+    if (!BE1::PlatformFile::DirectoryExists(psoCacheDir)) {
+        BE1::PlatformFile::CreateDirectoryTree(psoCacheDir);
+    }
+
+    CreateShaderCompiler();
+
+    releaseRequestMutex = BE1::PlatformMutex::Create();
+    resourceRequestMutex = BE1::PlatformMutex::Create();
+
+    InitDefaultStates();
+
+    utilGraphicsCommandListMutex = BE1::PlatformMutex::Create();
+    utilComputeCommandListMutex = BE1::PlatformMutex::Create();
+
+    // 메인 스레드의 그래픽스 (Direct) 커맨드 리스트 풀을 생성한다.
+    utilGraphicsCommandListPool = new D3D12CommandListPool(nullptr, D3D12_COMMAND_LIST_TYPE_DIRECT, 8, 0);
+
+    // 메인 스레드의 컴퓨트 커맨드 리스트 풀을 생성한다.
+    utilComputeCommandListPool = new D3D12CommandListPool(nullptr, D3D12_COMMAND_LIST_TYPE_COMPUTE, 8);
+
+    InitGenMipmapsPSO();
+}
+
+void D3D12Renderer::CheckFeatures() {
     // Init feature check (https://devblogs.microsoft.com/directx/introducing-a-new-api-for-checking-feature-support-in-direct3d-12/)
     CD3DX12FeatureSupport features;
-    hr = features.Init(device);
+    HRESULT hr = features.Init(device);
     assert(SUCCEEDED(hr));
 
     resourceHeapTier = features.ResourceHeapTier();
@@ -203,7 +330,7 @@ void D3D12Renderer::Init(const void *mainWindowHandle) {
     if (features.TypedUAVLoadAdditionalFormats()) {
         // More info about UAV format load support: https://docs.microsoft.com/en-us/windows/win32/direct3d12/typed-unordered-access-view-loads
         // UAV 포맷은 어떤 포맷도 sRGB 를 지원하지 않는다.
-        // 
+        //
         // Common (D3D11.3) UAV Formats:
         // R32_FLOAT
         // R32_UINT
@@ -263,129 +390,10 @@ void D3D12Renderer::Init(const void *mainWindowHandle) {
             }
         }
     }
-
-    // Fence 객체 생성
-    hr = device->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&fence));
-    if (FAILED(hr)) {
-        BE_FATALERROR("CreateFence failed, ERROR: 0x%x", hr);
-    }
-    // Fence 초기값
-    fenceValue = 0;
-
-    // Fence 를 대기하기 위한 이벤트 객체 생성
-    fenceEventHandle = CreateEvent(nullptr, FALSE, FALSE, nullptr);
-
-    // Graphics CommandQueue 생성
-    D3D12_COMMAND_QUEUE_DESC queueDesc = {};
-    queueDesc.Flags = D3D12_COMMAND_QUEUE_FLAG_NONE;
-    queueDesc.Priority = D3D12_COMMAND_QUEUE_PRIORITY_NORMAL;
-    queueDesc.Type = D3D12_COMMAND_LIST_TYPE_DIRECT;
-
-    hr = device->CreateCommandQueue(&queueDesc, IID_PPV_ARGS(&commandQueues[to_int(RHI::CommandQueueType::Graphics)]));
-    if (FAILED(hr)) {
-        BE_FATALERROR("CreateCommandQueue (Graphics) failed, ERROR: 0x%x", hr);
-    }
-    commandQueues[to_int(RHI::CommandQueueType::Graphics)]->SetName(L"GraphicsCommandQueue");
-
-    // Compute CommandQueue 생성
-    queueDesc = {};
-    queueDesc.Flags = D3D12_COMMAND_QUEUE_FLAG_NONE;
-    queueDesc.Priority = D3D12_COMMAND_QUEUE_PRIORITY_NORMAL;
-    queueDesc.Type = D3D12_COMMAND_LIST_TYPE_COMPUTE;
-
-    hr = device->CreateCommandQueue(&queueDesc, IID_PPV_ARGS(&commandQueues[to_int(RHI::CommandQueueType::Compute)]));
-    if (FAILED(hr)) {
-        BE_FATALERROR("CreateCommandQueue (Compute) failed, ERROR: 0x%x", hr);
-    }
-    commandQueues[to_int(RHI::CommandQueueType::Compute)]->SetName(L"ComputeCommandQueue");
-
-    D3D12_COMMAND_SIGNATURE_DESC commandSignatureDesc = {};
-
-    D3D12_INDIRECT_ARGUMENT_DESC drawInstancedArgs[1];
-    drawInstancedArgs[0].Type = D3D12_INDIRECT_ARGUMENT_TYPE_DRAW;
-
-    commandSignatureDesc.ByteStride = sizeof(D3D12_DRAW_ARGUMENTS);
-    commandSignatureDesc.NumArgumentDescs = 1;
-    commandSignatureDesc.pArgumentDescs = drawInstancedArgs;
-    hr = device->CreateCommandSignature(&commandSignatureDesc, nullptr, IID_PPV_ARGS(&drawInstancedIndirectCommandSignature));
-    if (FAILED(hr)) {
-        BE_FATALERROR("CreateCommandSignature(D3D12_INDIRECT_ARGUMENT_TYPE_DRAW) failed, ERROR: 0x%x", hr);
-    }
-
-    D3D12_INDIRECT_ARGUMENT_DESC drawIndexedInstancedArgs[1];
-    drawIndexedInstancedArgs[0].Type = D3D12_INDIRECT_ARGUMENT_TYPE_DRAW_INDEXED;
-
-    commandSignatureDesc.ByteStride = sizeof(D3D12_DRAW_INDEXED_ARGUMENTS);
-    commandSignatureDesc.NumArgumentDescs = 1;
-    commandSignatureDesc.pArgumentDescs = drawIndexedInstancedArgs;
-    hr = device->CreateCommandSignature(&commandSignatureDesc, nullptr, IID_PPV_ARGS(&drawIndexedInstancedIndirectCommandSignature));
-    if (FAILED(hr)) {
-        BE_FATALERROR("CreateCommandSignature(D3D12_INDIRECT_ARGUMENT_TYPE_DRAW_INDEXED) failed, ERROR: 0x%x", hr);
-    }
-
-    D3D12_INDIRECT_ARGUMENT_DESC dispatchArgs[1];
-    dispatchArgs[0].Type = D3D12_INDIRECT_ARGUMENT_TYPE_DISPATCH;
-
-    commandSignatureDesc.ByteStride = sizeof(D3D12_DISPATCH_ARGUMENTS);
-    commandSignatureDesc.NumArgumentDescs = 1;
-    commandSignatureDesc.pArgumentDescs = dispatchArgs;
-    hr = device->CreateCommandSignature(&commandSignatureDesc, nullptr, IID_PPV_ARGS(&dispatchIndirectCommandSignature));
-    if (FAILED(hr)) {
-        BE_FATALERROR("CreateCommandSignature(D3D12_INDIRECT_ARGUMENT_TYPE_DISPATCH) failed, ERROR: 0x%x", hr);
-    }
-
-    if (supportsMeshShader) {
-        D3D12_INDIRECT_ARGUMENT_DESC dispatchMeshArgs[1];
-        dispatchMeshArgs[0].Type = D3D12_INDIRECT_ARGUMENT_TYPE_DISPATCH_MESH;
-
-        commandSignatureDesc.ByteStride = sizeof(D3D12_DISPATCH_ARGUMENTS);
-        commandSignatureDesc.NumArgumentDescs = 1;
-        commandSignatureDesc.pArgumentDescs = dispatchMeshArgs;
-        hr = device->CreateCommandSignature(&commandSignatureDesc, nullptr, IID_PPV_ARGS(&dispatchMeshIndirectCommandSignature));
-        if (FAILED(hr)) {
-            BE_FATALERROR("CreateCommandSignature(D3D12_INDIRECT_ARGUMENT_TYPE_DISPATCH_MESH) failed, ERROR: 0x%x", hr);
-        }
-    }
-
-    // CPU 디스크립터 풀 생성
-    resCpuDescriptorPool = new D3D12DescriptorPool(device, D3D12DescriptorPool::Type::CBV_SRV_UAV, 900000, false);
-    rtvCpuDescriptorPool = new D3D12DescriptorPool(device, D3D12DescriptorPool::Type::RTV, 16, false);
-    dsvCpuDescriptorPool = new D3D12DescriptorPool(device, D3D12DescriptorPool::Type::DSV, 16, false);
-    samCpuDescriptorPool = new D3D12DescriptorPool(device, D3D12DescriptorPool::Type::Sampler, 2048, false);
-
-    // UAV 의 경우에만 CPU & GPU 디스크립터가 필요하다.
-    // ClearUnorderedAccessViewUint 함수에서 CPU (원본) 디스크립터와 GPU 디스크립터가 모두 필요하기 때문에..
-    uavCpuDescriptorPool = new D3D12DescriptorPool(device, D3D12DescriptorPool::Type::CBV_SRV_UAV, 4096, false);
-    uavGpuDescriptorPool = new D3D12DescriptorPool(device, D3D12DescriptorPool::Type::CBV_SRV_UAV, 4096, true);
-
-    // shader cache 디렉토리 초기화
-    shaderCacheDir = "Cache/D3D12CompiledShaderCache";
-
-    if (!BE1::PlatformFile::DirectoryExists(shaderCacheDir)) {
-        BE1::PlatformFile::CreateDirectoryTree(shaderCacheDir);
-    }
-
-    // PSO cache 디렉토리 초기화
-    psoCacheDir = "Cache/D3D12PSOCache";
-
-    if (!BE1::PlatformFile::DirectoryExists(psoCacheDir)) {
-        BE1::PlatformFile::CreateDirectoryTree(psoCacheDir);
-    }
-
-    CreateShaderCompiler();
-
-    maxPendingResources = 1024;
-    pendingResourceBuffer = new D3D12PendingResource[maxPendingResources];
-
-    InitDefaultStates();
-
-    // 기본 프레임 데이터 생성
-    initFrameData = static_cast<D3D12FrameThreadData *>(CreateFrameThreadData());
-
-    InitGenMipmapsPSO();
 }
 
 void D3D12Renderer::InitGenMipmapsPSO() {
+    // 2D 텍스쳐 용 밉맵 생성 컴퓨트 셰이더 PSO 생성
     {
         RHI::Shader *cs = static_cast<RHI::Shader *>(CreateShaderFromFile(RHI::ShaderModel::SM_6_0, RHI::ShaderStage::Compute, "Source/TestD3D12/Shaders/GenMip2DFloat4.hlsl", "CSMain"));
         if (cs) {
@@ -400,6 +408,7 @@ void D3D12Renderer::InitGenMipmapsPSO() {
             DestroyShader(cs, true);
         }
     }
+    // 큐브맵 텍스쳐 용 밉맵 생성 컴퓨트 셰이더 PSO 생성
     {
         RHI::Shader *cs = static_cast<RHI::Shader *>(CreateShaderFromFile(RHI::ShaderModel::SM_6_0, RHI::ShaderStage::Compute, "Source/TestD3D12/Shaders/GenMipCubeFloat4.hlsl", "CSMain"));
         if (cs) {
@@ -414,6 +423,7 @@ void D3D12Renderer::InitGenMipmapsPSO() {
             DestroyShader(cs, true);
         }
     }
+    // 3D 텍스쳐 용 밉맵 생성 컴퓨트 셰이더 PSO 생성
     {
         RHI::Shader *cs = static_cast<RHI::Shader *>(CreateShaderFromFile(RHI::ShaderModel::SM_6_0, RHI::ShaderStage::Compute, "Source/TestD3D12/Shaders/GenMip3DFloat4.hlsl", "CSMain"));
         if (cs) {
@@ -458,32 +468,46 @@ void D3D12Renderer::FreeGenMipmapsPSO() {
 }
 
 void D3D12Renderer::Shutdown() {
+    ProcessResourceRequests(nullptr);
+
+    DrainReleaseRequestsToRetireList();
+
     Finish(RHI::CommandQueueType::Graphics);
     Finish(RHI::CommandQueueType::Compute);
+
+    // 렌더 스레드 종료 후에도 삭제 대기중인 리소스가 있을 수 있기 때문에 여기서 한번 더 정리한다.
+    FreeRetiredResources(true);
+
+    BE1::PlatformMutex::Destroy(utilGraphicsCommandListMutex);
+    utilGraphicsCommandListMutex = nullptr;
+
+    BE1::PlatformMutex::Destroy(utilComputeCommandListMutex);
+    utilComputeCommandListMutex = nullptr;
+
+    BE1::PlatformMutex::Destroy(releaseRequestMutex);
+    releaseRequestMutex = nullptr;
+
+    BE1::PlatformMutex::Destroy(resourceRequestMutex);
+    resourceRequestMutex = nullptr;
 
     FreeGenMipmapsPSO();
 
     FreeDefaultStates();
 
-    if (initFrameData) {
-        DestroyFrameThreadData(initFrameData);
-    }
-
-    FreePendingResources(true);
-    SAFE_DELETE(pendingResourceBuffer);
-    maxPendingResources = 0;
+    SAFE_DELETE(utilGraphicsCommandListPool);
+    SAFE_DELETE(utilComputeCommandListPool);
 
     graphicsPsoMap.DeleteContents(true);
     computePsoMap.DeleteContents(true);
 
+#ifdef USE_CACHED_PSO_BLOB
     for (auto &entry : cachedPsoBlobMap) {
         ID3DBlob *blob = entry.second;
         SAFE_RELEASE(blob);
     }
+#endif
 
     SAFE_DELETE(resCpuDescriptorPool);
-    SAFE_DELETE(uavCpuDescriptorPool);
-    SAFE_DELETE(uavGpuDescriptorPool);
     SAFE_DELETE(rtvCpuDescriptorPool);
     SAFE_DELETE(dsvCpuDescriptorPool);
     SAFE_DELETE(samCpuDescriptorPool);
@@ -512,7 +536,7 @@ void D3D12Renderer::Shutdown() {
     if (refCount > 0) {
         IDXGIDebug1 *pDebug = nullptr;
         if (SUCCEEDED(DXGIGetDebugInterface1(0, IID_PPV_ARGS(&pDebug)))) {
-            pDebug->ReportLiveObjects(DXGI_DEBUG_ALL, DXGI_DEBUG_RLO_SUMMARY);
+            pDebug->ReportLiveObjects(DXGI_DEBUG_ALL, static_cast<DXGI_DEBUG_RLO_FLAGS>(DXGI_DEBUG_RLO_DETAIL | DXGI_DEBUG_RLO_IGNORE_INTERNAL));
             pDebug->Release();
         }
         BE1::PlatformSystem::DebugBreak();
@@ -591,84 +615,129 @@ RHI::ShaderFormat D3D12Renderer::GetShaderFormat() const {
     return RHI::ShaderFormat::HLSL6;
 }
 
-void D3D12Renderer::MarkForDelete(RHI::GPUObject *object) {
-    D3D12PendingResource *newPendingResource = &pendingResourceBuffer[headPendingIndex];
-    newPendingResource->fenceValue = SignalFence(RHI::CommandQueueType::Graphics);
-    newPendingResource->objectToDelete = object;
+void D3D12Renderer::RequestRelease(ID3D12Resource *resource) {
+    BE1::ScopedLock lock(releaseRequestMutex);
 
-    OnPendingResourceAdded();
+    releaseRequests.Append(D3D12ReleaseRequest{ resource, nullptr });
 }
 
-void D3D12Renderer::MarkForRelease(ID3D12Resource *resource) {
-    D3D12PendingResource *newPendingResource = &pendingResourceBuffer[headPendingIndex];
-    newPendingResource->fenceValue = SignalFence(RHI::CommandQueueType::Graphics);
-    newPendingResource->resourceToRelease = resource;
-
-    OnPendingResourceAdded();
-}
-
-void D3D12Renderer::OnPendingResourceAdded() {
-    headPendingIndex = headPendingIndex + 1;
-
-    // 버퍼가 꽉 찼다면, 가장 오래된 pending resource 를 기다린 후 Release 한다.
-    if (headPendingIndex % maxPendingResources == tailPendingIndex) {
-        D3D12PendingResource *oldestPendingResource = &pendingResourceBuffer[tailPendingIndex];
-
-        WaitFence(oldestPendingResource->fenceValue);
-
-        SAFE_RELEASE(oldestPendingResource->resourceToRelease);
-        SAFE_DELETE(oldestPendingResource->objectToDelete)
-
-        oldestPendingResource->fenceValue = 0;
-
-        tailPendingIndex = (tailPendingIndex + 1) % maxPendingResources;
+void D3D12Renderer::DrainReleaseRequestsToRetireList() {
+    BE1::Array<D3D12ReleaseRequest> localRequests;
+    {
+        BE1::ScopedLock lock(releaseRequestMutex);
+        localRequests.Swap(releaseRequests);
     }
 
-    headPendingIndex = headPendingIndex % maxPendingResources;
+    if (localRequests.IsEmpty()) {
+        return;
+    }
+
+    uint64_t graphicsFenceValue = SignalFence(RHI::CommandQueueType::Graphics);
+    uint64_t computeFenceValue = SignalFence(RHI::CommandQueueType::Compute);
+
+    for (D3D12ReleaseRequest &request : localRequests) {
+        retiredResources.Append(D3D12RetiredResource{ request.resourceToRelease, request.objectToDelete, graphicsFenceValue, computeFenceValue});
+    }
 }
 
-void D3D12Renderer::FreePendingResources(bool waitPendings) {
-    while (headPendingIndex != tailPendingIndex) {
-        D3D12PendingResource *pendingResource = &pendingResourceBuffer[tailPendingIndex];
+void D3D12Renderer::FreeRetiredResources(bool waitPendings) {
+    int retiredIndex = 0;
+
+    for (retiredIndex = 0; retiredIndex < retiredResources.Count(); ++retiredIndex) {
+        D3D12RetiredResource &retiredResource = retiredResources[retiredIndex];
         if (waitPendings) {
-            WaitFence(pendingResource->fenceValue);
+            WaitFence(retiredResource.graphicsFenceValue);
+            WaitFence(retiredResource.computeFenceValue);
+
+            retiredResource.graphicsFenceValue = 0;
+            retiredResource.computeFenceValue = 0;
         } else {
-            if (!IsFenceComplete(pendingResource->fenceValue)) {
-                continue;
+            if (!IsFenceComplete(retiredResource.graphicsFenceValue) || !IsFenceComplete(retiredResource.computeFenceValue)) {
+                break;
             }
         }
+        SAFE_RELEASE(retiredResource.resourceToRelease);
+        SAFE_DELETE(retiredResource.objectToDelete)
+    }
 
-        SAFE_RELEASE(pendingResource->resourceToRelease);
-        SAFE_DELETE(pendingResource->objectToDelete)
-
-        tailPendingIndex = (tailPendingIndex + 1) % maxPendingResources;
+    if (retiredIndex > 0) {
+        // 아직 fence 가 완료되지 않은 리소스들을 앞으로 당긴다.
+        int remainingCount = retiredResources.Count() - retiredIndex;
+        for (int i = 0; i < remainingCount; ++i) {
+            retiredResources[i] = retiredResources[retiredIndex + i];
+        }
+        retiredResources.SetCount(remainingCount, false);
     }
 }
 
-RHI::CommandList *D3D12Renderer::BeginCommandList(RHI::CommandQueueType queueType) {
-    return initFrameData->BeginCommandList(queueType);
+RHI::CommandList *D3D12Renderer::BeginUtilityCommandList(RHI::CommandQueueType queueType) {
+    D3D12CommandListPool *commandListPool = nullptr;
+    D3D12CommandList *commandList = nullptr;
+    BE1::PlatformMutex *mutex = nullptr;
+
+    if (queueType == RHI::CommandQueueType::Graphics) {
+        mutex = utilGraphicsCommandListMutex;
+        commandListPool = utilGraphicsCommandListPool;
+    } else {
+        mutex = utilComputeCommandListMutex;
+        commandListPool = utilComputeCommandListPool;
+    }
+
+    BE1::PlatformMutex::Lock(mutex);
+
+    commandList = static_cast<D3D12CommandList *>(commandListPool->Alloc());
+    if (!commandList) {
+        BE1::PlatformMutex::Unlock(mutex);
+        return nullptr;
+    }
+
+    // command allocator 를 재사용하도록 리셋하고, command list 를 command allocator 를 이용하여 초기 상태로 리셋
+    commandList->Reset();
+
+    return commandList;
 }
 
-void D3D12Renderer::EndCommandList(RHI::CommandList *commandList) {
-    D3D12CommandListPool *parentPool = static_cast<D3D12CommandList *>(commandList)->GetParentPool();
-    parentPool->Free(static_cast<D3D12CommandList *>(commandList));
+void D3D12Renderer::EndUtilityCommandList(RHI::CommandList *commandList) {
+    D3D12CommandList* _commandList = static_cast<D3D12CommandList *>(commandList);
+    D3D12CommandListPool *commandListPool = _commandList->GetParentPool();
+    BE1::PlatformMutex *mutex = nullptr;
+
+    if (commandListPool == utilGraphicsCommandListPool) {
+        mutex = utilGraphicsCommandListMutex;
+    } else if (commandListPool == utilComputeCommandListPool) {
+        mutex = utilComputeCommandListMutex;
+    } else {
+        BE_ERRLOG("D3D12Renderer::EndCommandList: invalid command list pool\n");
+        return;
+    }
+
+    commandListPool->Free(static_cast<D3D12CommandList *>(commandList));
+
+    BE1::PlatformMutex::Unlock(mutex);
 }
 
-void D3D12Renderer::SetConstants(RHI::CommandList *commandList, const void *data, uint32_t size, uint32_t offset) {
-    assert(size % (sizeof(uint32_t) * 4) == 0);
+void D3D12Renderer::SetConstants(RHI::CommandList *commandList, int shaderRegister, const void *data, uint32_t size, uint32_t offset) {
+    assert(size % sizeof(uint32_t) == 0);
     assert(offset % sizeof(uint32_t) == 0);
 
-    D3D12CommandList *d3d12CommandList = static_cast<D3D12CommandList *>(commandList);
-    D3D12FrameThreadData *threadData = static_cast<D3D12FrameThreadData *>(d3d12CommandList->GetFrameThreadData());
+    D3D12CommandList *_commandList = static_cast<D3D12CommandList *>(commandList);
 
-    memcpy(threadData->rootConstants + offset / sizeof(uint32_t), data, size);
+    const D3D12PipelineState::RegisterBinder &binder = _commandList->currentPSO->binder;
+    assert(shaderRegister < COUNT_OF(binder.rootParameterIndexLUT.constants));
+    int rootParameterIndex = binder.rootParameterIndexLUT.constants[shaderRegister];
+    if (rootParameterIndex >= 64) {
+        BE_ERRLOG("D3D12Renderer::SetConstants: Invalid root parameter index\n");
+        return;
+    }
 
-    int rootParameterIndex = d3d12CommandList->currentPSO->binder.rootParameterBinder.constants;
+    D3D12RootBindingData *rootBindingData = _commandList->GetRootBindingData();
+    assert(shaderRegister < COUNT_OF(rootBindingData->rootConstants));
+    memcpy(rootBindingData->rootConstants[shaderRegister] + offset / sizeof(uint32_t), data, size);
 
-    if (d3d12CommandList->currentPSO->graphics) {
-        d3d12CommandList->graphicsRootParametersDirtyMask |= BIT64(rootParameterIndex);
+    if (_commandList->currentPSO->isGraphics) {
+        _commandList->graphicsRootParametersDirtyMask |= BIT64(rootParameterIndex);
     } else {
-        d3d12CommandList->computeRootParametersDirtyMask |= BIT64(rootParameterIndex);
+        _commandList->computeRootParametersDirtyMask |= BIT64(rootParameterIndex);
     }
 }
 
@@ -735,21 +804,21 @@ void D3D12Renderer::PrintMemoryAllocatorStats() {
 #endif
 
 void D3D12Renderer::SetBlendFactor(RHI::CommandList *commandList, const BE1::Color4 &rgba) {
-    D3D12CommandList *d3d12CommandList = static_cast<D3D12CommandList *>(commandList);
-    d3d12CommandList->SetBlendFactor(rgba);
+    D3D12CommandList *_commandList = static_cast<D3D12CommandList *>(commandList);
+    _commandList->SetBlendFactor(rgba);
 }
 
 void D3D12Renderer::SetStencilRef(RHI::CommandList *commandList, uint32_t value) {
-    D3D12CommandList *d3d12CommandList = static_cast<D3D12CommandList *>(commandList);
-    d3d12CommandList->SetStencilRef(value);
+    D3D12CommandList *_commandList = static_cast<D3D12CommandList *>(commandList);
+    _commandList->SetStencilRef(value);
 }
 
 void D3D12Renderer::SetShadingRate(RHI::CommandList *commandList, RHI::ShadingRate shadingRate) {
     if (!supportsVRS) {
         return;
     }
-    D3D12CommandList *d3d12CommandList = static_cast<D3D12CommandList *>(commandList);
-    d3d12CommandList->SetShadingRate(shadingRate);
+    D3D12CommandList *_commandList = static_cast<D3D12CommandList *>(commandList);
+    _commandList->SetShadingRate(shadingRate);
 }
 
 void D3D12Renderer::SetViewport(RHI::CommandList *commandList, const BE1::Rect &viewportRect) {
@@ -761,8 +830,8 @@ void D3D12Renderer::SetViewport(RHI::CommandList *commandList, const BE1::Rect &
     viewport.MinDepth = 0.0f;
     viewport.MaxDepth = 1.0f;
 
-    D3D12CommandList *d3d12CommandList = static_cast<D3D12CommandList *>(commandList);
-    d3d12CommandList->GetGraphicsCommandList()->RSSetViewports(1, &viewport);
+    D3D12CommandList *_commandList = static_cast<D3D12CommandList *>(commandList);
+    _commandList->GetGraphicsCommandList()->RSSetViewports(1, &viewport);
 }
 
 void D3D12Renderer::SetScissorRect(RHI::CommandList *commandList, const BE1::Rect &scissorRect) {
@@ -772,74 +841,83 @@ void D3D12Renderer::SetScissorRect(RHI::CommandList *commandList, const BE1::Rec
     static_assert(offsetof(BE1::Rect, w) == offsetof(D3D12_RECT, right));
     static_assert(offsetof(BE1::Rect, h) == offsetof(D3D12_RECT, bottom));
 
-    D3D12CommandList *d3d12CommandList = static_cast<D3D12CommandList *>(commandList);
-    d3d12CommandList->GetGraphicsCommandList()->RSSetScissorRects(1, (D3D12_RECT *)&scissorRect);
+    D3D12CommandList *_commandList = static_cast<D3D12CommandList *>(commandList);
+    _commandList->GetGraphicsCommandList()->RSSetScissorRects(1, (D3D12_RECT *)&scissorRect);
 }
 
 void D3D12Renderer::SetDepthBounds(RHI::CommandList *commandList, float depthMin, float depthMax) {
     if (!supportsDepthBoundsTest) {
         return;
     }
-    D3D12CommandList *d3d12CommandList = static_cast<D3D12CommandList *>(commandList);
-    d3d12CommandList->GetGraphicsCommandList()->OMSetDepthBounds(depthMin, depthMax);
+    D3D12CommandList *_commandList = static_cast<D3D12CommandList *>(commandList);
+    _commandList->GetGraphicsCommandList()->OMSetDepthBounds(depthMin, depthMax);
 }
 
-void D3D12Renderer::ClearUAV(RHI::CommandList *commandList, const RHI::GPUResource *resource, uint32_t value) {
-    const UINT values[4] = { value, value, value, value };
-    const D3D12UAVDescriptor *uavDescriptor = nullptr;
-    const BE1::Array<D3D12UAVDescriptor> *subresourceUavDescriptors = nullptr;
+void D3D12Renderer::ClearUAV(RHI::CommandList *commandList, const RHI::GPUResource *resource, RHI::ViewID viewID, uint32_t value) {
+    const D3D12UAVEntry *uavEntry = nullptr;
 
     const D3D12Buffer *buffer = reinterpret_cast<const D3D12Buffer *>(resource->GetNativeBufferObject());
     if (buffer) {
-        uavDescriptor = &buffer->uavDescriptor;
-        subresourceUavDescriptors = &buffer->subresourceUavDescriptors;
+        if (buffer->HasValidView(RHI::ViewType::UAV, viewID)) {
+            uavEntry = &buffer->uavEntries[viewID.value];
+        }
     } else {
         const D3D12Texture *texture = reinterpret_cast<const D3D12Texture *>(resource->GetNativeTextureObject());
         if (texture) {
-            uavDescriptor = &texture->uavDescriptor;
-            subresourceUavDescriptors = &texture->subresourceUavDescriptors;
+            if (texture->HasValidView(RHI::ViewType::UAV, viewID)) {
+                uavEntry = &texture->uavEntries[viewID.value];
+            }
+            
         }
     }
 
-    D3D12CommandList *d3d12CommandList = static_cast<D3D12CommandList *>(commandList);
+    if (!uavEntry) {
+        BE_ERRLOG("D3D12Renderer::ClearUAV: Couldn't find valid UAV entry\n");
+        return;
+    }
 
-    if (subresourceUavDescriptors->IsEmpty()) {
-        D3D12_CPU_DESCRIPTOR_HANDLE cpuDescriptorHandle = (*uavDescriptor).cpuDescriptorHandle;
-        int descriptorIndex = uavCpuDescriptorPool->GetIndexFromCPUDescriptorHandle(cpuDescriptorHandle);
-        D3D12_GPU_DESCRIPTOR_HANDLE gpuDescriptorHandle = uavGpuDescriptorPool->GetGPUDescriptorHandleFromIndex(descriptorIndex);
+    if ((*uavEntry).cpuDescriptorHandle.ptr == 0) {
+        BE_ERRLOG("D3D12Renderer::ClearUAV: Invalid descriptor handle\n");
+        return;
+    }
 
-        d3d12CommandList->GetGraphicsCommandList()->ClearUnorderedAccessViewUint(gpuDescriptorHandle, cpuDescriptorHandle, reinterpret_cast<ID3D12Resource *>(resource->GetNativeResource()), values, 0, nullptr);
-    } else {
-        // 모든 서브 리소스 UAV 를 clear
-        for (int i = 0; i < subresourceUavDescriptors->Count(); ++i) {
-            D3D12_CPU_DESCRIPTOR_HANDLE cpuDescriptorHandle = (*subresourceUavDescriptors)[i].cpuDescriptorHandle;
-            int descriptorIndex = uavCpuDescriptorPool->GetIndexFromCPUDescriptorHandle(cpuDescriptorHandle);
-            D3D12_GPU_DESCRIPTOR_HANDLE gpuDescriptorHandle = uavGpuDescriptorPool->GetGPUDescriptorHandleFromIndex(descriptorIndex);
+    D3D12CommandList *_commandList = static_cast<D3D12CommandList *>(commandList);
+    D3D12DescriptorTablePool *descriptorTablePool = _commandList->resDescriptorTablePool;
 
-            d3d12CommandList->GetGraphicsCommandList()->ClearUnorderedAccessViewUint(gpuDescriptorHandle, cpuDescriptorHandle, reinterpret_cast<ID3D12Resource *>(resource->GetNativeResource()), values, 0, nullptr);
-        }
+    D3D12_CPU_DESCRIPTOR_HANDLE cpuDescriptorTableStart;
+    D3D12_GPU_DESCRIPTOR_HANDLE gpuDescriptorTableStart;
+
+    if (descriptorTablePool->AllocRange(1, &cpuDescriptorTableStart, &gpuDescriptorTableStart)) {
+        const D3D12_CPU_DESCRIPTOR_HANDLE &srcDescriptorHandle = (*uavEntry).cpuDescriptorHandle;
+        CD3DX12_CPU_DESCRIPTOR_HANDLE destCpuDescriptorHandle(cpuDescriptorTableStart, 0, descriptorTablePool->descriptorHandleSize);
+        CD3DX12_GPU_DESCRIPTOR_HANDLE destGpuDescriptorHandle(gpuDescriptorTableStart, 0, descriptorTablePool->descriptorHandleSize);
+
+        device->CopyDescriptorsSimple(1, destCpuDescriptorHandle, srcDescriptorHandle, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+
+        const UINT values[4] = { value, value, value, value };
+        _commandList->GetGraphicsCommandList()->ClearUnorderedAccessViewUint(destGpuDescriptorHandle, srcDescriptorHandle, reinterpret_cast<ID3D12Resource *>(resource->GetNativeResource()), values, 0, nullptr);
     }
 }
 
 void D3D12Renderer::CopyBuffer(RHI::CommandList *commandList, const RHI::Buffer *dstBuffer, uint32_t dstOffset, const RHI::Buffer *srcBuffer, uint32_t srcOffset, uint32_t size) {
-    const D3D12Buffer *d3d12DstBuffer = static_cast<const D3D12Buffer *>(dstBuffer);
-    const D3D12Buffer *d3d12SrcBuffer = static_cast<const D3D12Buffer *>(srcBuffer);
+    const D3D12Buffer *_dstBuffer = static_cast<const D3D12Buffer *>(dstBuffer);
+    const D3D12Buffer *_srcBuffer = static_cast<const D3D12Buffer *>(srcBuffer);
 
-    D3D12CommandList *d3d12CommandList = static_cast<D3D12CommandList *>(commandList);
-    d3d12CommandList->GetGraphicsCommandList()->CopyBufferRegion(d3d12DstBuffer->GetResource(), dstOffset, d3d12SrcBuffer->GetResource(), srcOffset, size);
+    D3D12CommandList *_commandList = static_cast<D3D12CommandList *>(commandList);
+    _commandList->GetGraphicsCommandList()->CopyBufferRegion(_dstBuffer->GetResource(), dstOffset, _srcBuffer->GetResource(), srcOffset, size);
 }
 
 void D3D12Renderer::CopyTexture(RHI::CommandList *commandList, const RHI::Texture *dstTexture, uint32_t dstSlice, uint32_t dstMipLevel, uint32_t dstX, uint32_t dstY, uint32_t dstZ,
     const RHI::Texture *srcTexture, uint32_t srcSlice, uint32_t srcMipLevel, uint32_t srcX, uint32_t srcY, uint32_t srcZ, uint32_t width, uint32_t height, uint32_t depth) {
-    const D3D12Texture *d3d12DstTexture = static_cast<const D3D12Texture *>(dstTexture);
-    const D3D12Texture *d3d12SrcTexture = static_cast<const D3D12Texture *>(srcTexture);
+    const D3D12Texture *_dstTexture = static_cast<const D3D12Texture *>(dstTexture);
+    const D3D12Texture *_srcTexture = static_cast<const D3D12Texture *>(srcTexture);
 
-    CD3DX12_TEXTURE_COPY_LOCATION dstLocation(d3d12DstTexture->GetResource(), D3D12CalcSubresource(dstMipLevel, dstSlice, 0, d3d12DstTexture->textureDesc.MipLevels, d3d12DstTexture->textureDesc.DepthOrArraySize));
-    CD3DX12_TEXTURE_COPY_LOCATION srcLocation(d3d12SrcTexture->GetResource(), D3D12CalcSubresource(srcMipLevel, srcSlice, 0, d3d12SrcTexture->textureDesc.MipLevels, d3d12SrcTexture->textureDesc.DepthOrArraySize));
+    CD3DX12_TEXTURE_COPY_LOCATION dstLocation(_dstTexture->GetResource(), D3D12CalcSubresource(dstMipLevel, dstSlice, 0, _dstTexture->textureDesc.MipLevels, _dstTexture->textureDesc.DepthOrArraySize));
+    CD3DX12_TEXTURE_COPY_LOCATION srcLocation(_srcTexture->GetResource(), D3D12CalcSubresource(srcMipLevel, srcSlice, 0, _srcTexture->textureDesc.MipLevels, _srcTexture->textureDesc.DepthOrArraySize));
 
     D3D12_BOX srcBox = { srcX, srcY, srcZ, (UINT)width, (UINT)height, (UINT)depth };
-    D3D12CommandList *d3d12CommandList = static_cast<D3D12CommandList *>(commandList);
-    d3d12CommandList->GetGraphicsCommandList()->CopyTextureRegion(&dstLocation, dstX, dstY, dstZ, &srcLocation, &srcBox);
+    D3D12CommandList *_commandList = static_cast<D3D12CommandList *>(commandList);
+    _commandList->GetGraphicsCommandList()->CopyTextureRegion(&dstLocation, dstX, dstY, dstZ, &srcLocation, &srcBox);
 }
 
 D3D12_RESOURCE_STATES D3D12Renderer::ToD3D12ResourceState(RHI::GPUResourceState resourceState) {
@@ -871,7 +949,7 @@ D3D12_RESOURCE_STATES D3D12Renderer::ToD3D12ResourceState(RHI::GPUResourceState 
     if (BE1::HasFlag(resourceState, RHI::GPUResourceState::ShadingRateSource)) {
         ret |= D3D12_RESOURCE_STATE_SHADING_RATE_SOURCE;
     }
-    if (BE1::HasFlag(resourceState, RHI::GPUResourceState::VertexBuffer | RHI::GPUResourceState::ConstantBuffer)) {
+    if (BE1::HasAnyFlag(resourceState, RHI::GPUResourceState::VertexBuffer | RHI::GPUResourceState::ConstantBuffer)) {
         ret |= D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER;
     }
     if (BE1::HasFlag(resourceState, RHI::GPUResourceState::IndexBuffer)) {
@@ -920,8 +998,8 @@ void D3D12Renderer::Barrier(RHI::CommandList *commandList, const RHI::GPUBarrier
             barrierDesc.Transition.StateAfter = ToD3D12ResourceState(barrier->imageBarrier.stateAfter);
 
             if (barrier->imageBarrier.slice >= 0 || barrier->imageBarrier.mipLevel >= 0) {
-                const D3D12Texture *d3d12Texture = static_cast<const D3D12Texture *>(barrier->imageBarrier.texture);
-                barrierDesc.Transition.Subresource = D3D12CalcSubresource(barrier->imageBarrier.mipLevel, barrier->imageBarrier.slice, 0, d3d12Texture->textureDesc.MipLevels, d3d12Texture->textureDesc.DepthOrArraySize);
+                const D3D12Texture *_texture = static_cast<const D3D12Texture *>(barrier->imageBarrier.texture);
+                barrierDesc.Transition.Subresource = D3D12CalcSubresource(barrier->imageBarrier.mipLevel, barrier->imageBarrier.slice, 0, _texture->textureDesc.MipLevels, _texture->textureDesc.DepthOrArraySize);
             } else {
                 barrierDesc.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
             }
@@ -936,8 +1014,8 @@ void D3D12Renderer::Barrier(RHI::CommandList *commandList, const RHI::GPUBarrier
     }
 
     // NOTE: Compute 커맨드 리스트라면, ResourceState 에 D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE 를 지정할 수 없음에 주의한다.
-    D3D12CommandList *d3d12CommandList = static_cast<D3D12CommandList *>(commandList);
-    d3d12CommandList->GetGraphicsCommandList()->ResourceBarrier(barrierCount, barrierDescs.Ptr());
+    D3D12CommandList *_commandList = static_cast<D3D12CommandList *>(commandList);
+    _commandList->GetGraphicsCommandList()->ResourceBarrier(barrierCount, barrierDescs.Ptr());
 }
 
 void D3D12Renderer::ReadPixels(RHI::CommandList *commandList, const RHI::SwapChain *swapChain, int x, int y, int width, int height, BE1::Image::Format dstFormat, void *outPixels) {
@@ -960,7 +1038,7 @@ void D3D12Renderer::ReadPixels(RHI::CommandList *commandList, const RHI::SwapCha
     BE1::Image::Format backBufferFormat;
     bool isSRGB;
     D3D12Renderer::DXGIFormatToImageFormat(backBufferDesc.Format, &backBufferFormat, &isSRGB);
-    D3D12Buffer *readbackBuffer = static_cast<D3D12Buffer *>(D3D12Renderer::GetRenderer()->CreateBuffer(RHI::BufferUsage::Readback, RHI::ResourceFlag::None, readBufferSize, backBufferFormat, 0, nullptr));
+    D3D12Buffer *readbackBuffer = static_cast<D3D12Buffer *>(D3D12Renderer::GetRenderer()->CreateBuffer(RHI::BufferUsage::Readback, RHI::BufferFlag::None, readBufferSize, nullptr));
 
     // 백버퍼에서 리드백 버퍼로 복사한다.
     D3D12_TEXTURE_COPY_LOCATION srcLocation = {};
@@ -981,11 +1059,11 @@ void D3D12Renderer::ReadPixels(RHI::CommandList *commandList, const RHI::SwapCha
     dstLocation.Type = D3D12_TEXTURE_COPY_TYPE_PLACED_FOOTPRINT;
     dstLocation.PlacedFootprint = mipLevelFootprint;
 
-    D3D12CommandList *commandListInternal = static_cast<D3D12CommandList *>(commandList);
-    commandListInternal->ResourceBarrier(backBufferResource, D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_COPY_SOURCE);
-    commandListInternal->GetGraphicsCommandList()->CopyTextureRegion(&dstLocation, 0, 0, 0, &srcLocation, &srcBox);
-    commandListInternal->ResourceBarrier(backBufferResource, D3D12_RESOURCE_STATE_COPY_SOURCE, D3D12_RESOURCE_STATE_PRESENT);
-    commandListInternal->CloseAndExecute();
+    D3D12CommandList *_commandList = static_cast<D3D12CommandList *>(commandList);
+    _commandList->ResourceBarrier(backBufferResource, D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_COPY_SOURCE);
+    _commandList->GetGraphicsCommandList()->CopyTextureRegion(&dstLocation, 0, 0, 0, &srcLocation, &srcBox);
+    _commandList->ResourceBarrier(backBufferResource, D3D12_RESOURCE_STATE_COPY_SOURCE, D3D12_RESOURCE_STATE_PRESENT);
+    _commandList->CloseAndExecute();
 
     // GPU 에서 복사가 끝날 때까지 기다린다.
     Finish(RHI::CommandQueueType::Graphics);
@@ -1033,10 +1111,10 @@ void D3D12Renderer::ReadPixels(RHI::CommandList *commandList, const RHI::SwapCha
 }
 
 void D3D12Renderer::BeginRenderPass(RHI::CommandList *commandList, const RHI::SwapChain *swapChain, const RHI::Texture *depthStencilTexture, const BE1::Color4 &clearColor, float clearDepth, uint8_t clearStencil, RHI::ClearFlag clearFlags) {
-    D3D12CommandList *d3d12CommandList = static_cast<D3D12CommandList *>(commandList);
+    D3D12CommandList *_commandList = static_cast<D3D12CommandList *>(commandList);
 
     if (swapChain) {
-        // 백버퍼를 렌더 타겟 상태로 전환
+        // 백버퍼를 렌더 타겟 상태로 전환하는 Barrier
         D3D12_RESOURCE_BARRIER barrier;
         barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
         barrier.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
@@ -1044,17 +1122,17 @@ void D3D12Renderer::BeginRenderPass(RHI::CommandList *commandList, const RHI::Sw
         barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_PRESENT;
         barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_RENDER_TARGET;
         barrier.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
-        d3d12CommandList->GetGraphicsCommandList()->ResourceBarrier(1, &barrier);
+        _commandList->GetGraphicsCommandList()->ResourceBarrier(1, &barrier);
 
-        // EndRenderPass 에서 사용할 Barrier 를 미리 등록
+        // EndRenderPass 에서 자동으로 실행될 Barrier 를 미리 등록
         barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_RENDER_TARGET;
         barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_PRESENT;
-        d3d12CommandList->endRenderPassBarriers.Append(barrier);
+        _commandList->endRenderPassBarriers.Append(barrier);
     }
 #if 1
     // 렌더 타겟
-    D3D12_RENDER_PASS_RENDER_TARGET_DESC rtDesc = {};
     D3D12_RENDER_PASS_RENDER_TARGET_DESC *rtDescPtr = nullptr;
+    D3D12_RENDER_PASS_RENDER_TARGET_DESC rtDesc = {};
     if (swapChain) {
         rtDesc.cpuDescriptor = static_cast<const D3D12SwapChain *>(swapChain)->GetCurrentBackBufferRTVDescriptorHandle();
         if (BE1::HasFlag(clearFlags, RHI::ClearFlag::Color)) {
@@ -1071,33 +1149,41 @@ void D3D12Renderer::BeginRenderPass(RHI::CommandList *commandList, const RHI::Sw
     }
 
     // 뎁스/스텐실
-    D3D12_RENDER_PASS_DEPTH_STENCIL_DESC dsDesc = {};
     D3D12_RENDER_PASS_DEPTH_STENCIL_DESC *dsDescPtr = nullptr;
+    D3D12_RENDER_PASS_DEPTH_STENCIL_DESC dsDesc = {};
     if (depthStencilTexture) {
-        dsDesc.cpuDescriptor = static_cast<const D3D12Texture *>(depthStencilTexture)->dsvDescriptor.cpuDescriptorHandle;
+        const D3D12Texture *_depthStencilTexture = static_cast<const D3D12Texture *>(depthStencilTexture);
+        dsDesc.cpuDescriptor = _depthStencilTexture->dsvEntries[0].cpuDescriptorHandle;
         if (BE1::HasFlag(clearFlags, RHI::ClearFlag::Depth)) {
             dsDesc.DepthBeginningAccess.Type = D3D12_RENDER_PASS_BEGINNING_ACCESS_TYPE_CLEAR;
             dsDesc.DepthBeginningAccess.Clear.ClearValue.DepthStencil.Depth = clearDepth;
         } else {
             dsDesc.DepthBeginningAccess.Type = D3D12_RENDER_PASS_BEGINNING_ACCESS_TYPE_DISCARD;
         }
+        // depth 를 나중에 후처리할 일이 없다면 preserve 대신 discard 해도 된다.
         dsDesc.DepthEndingAccess.Type = D3D12_RENDER_PASS_ENDING_ACCESS_TYPE_PRESERVE;
-        if (BE1::HasFlag(clearFlags, RHI::ClearFlag::Stencil)) {
-            dsDesc.StencilBeginningAccess.Type = D3D12_RENDER_PASS_BEGINNING_ACCESS_TYPE_CLEAR;
-            dsDesc.StencilBeginningAccess.Clear.ClearValue.DepthStencil.Stencil = clearStencil;
+
+        if (IsStencilFormat(_depthStencilTexture->textureDesc.Format)) {
+            if (BE1::HasFlag(clearFlags, RHI::ClearFlag::Stencil)) {
+                dsDesc.StencilBeginningAccess.Type = D3D12_RENDER_PASS_BEGINNING_ACCESS_TYPE_CLEAR;
+                dsDesc.StencilBeginningAccess.Clear.ClearValue.DepthStencil.Stencil = clearStencil;
+            } else {
+                dsDesc.StencilBeginningAccess.Type = D3D12_RENDER_PASS_BEGINNING_ACCESS_TYPE_DISCARD;
+            }
+            dsDesc.StencilEndingAccess.Type = D3D12_RENDER_PASS_ENDING_ACCESS_TYPE_DISCARD;
         } else {
-            dsDesc.StencilBeginningAccess.Type = D3D12_RENDER_PASS_BEGINNING_ACCESS_TYPE_DISCARD;
+            dsDesc.StencilBeginningAccess.Type = D3D12_RENDER_PASS_BEGINNING_ACCESS_TYPE_NO_ACCESS;
+            dsDesc.StencilEndingAccess.Type = D3D12_RENDER_PASS_ENDING_ACCESS_TYPE_NO_ACCESS;
         }
-        dsDesc.StencilEndingAccess.Type = D3D12_RENDER_PASS_ENDING_ACCESS_TYPE_DISCARD;
         dsDescPtr = &dsDesc;
     }
 
-    d3d12CommandList->GetGraphicsCommandList()->BeginRenderPass(1, rtDescPtr, dsDescPtr, D3D12_RENDER_PASS_FLAG_ALLOW_UAV_WRITES);
+    _commandList->GetGraphicsCommandList()->BeginRenderPass(1, rtDescPtr, dsDescPtr, D3D12_RENDER_PASS_FLAG_ALLOW_UAV_WRITES);
 #else
     if (BE1::HasFlag(clearFlags, RHI::ClearFlag::Color)) {
-        d3d12CommandList->GetGraphicsCommandList()->ClearRenderTargetView(d3d12SwapChain->GetCurrentBackBufferDescriptorHandle(), clearColor, 0, nullptr);
+        _commandList->GetGraphicsCommandList()->ClearRenderTargetView(d3d12SwapChain->GetCurrentBackBufferDescriptorHandle(), clearColor, 0, nullptr);
     }
-    if (BE1::HasFlag(clearFlags, RHI::ClearFlag::Depth | RHI::ClearFlag::Stencil)) {
+    if (BE1::HasAnyFlag(clearFlags, RHI::ClearFlag::Depth | RHI::ClearFlag::Stencil)) {
         D3D12_CLEAR_FLAGS clearDepthStencilFlags = 0;
         if (BE1::HasFlag(clearFlags, RHI::ClearFlag::Depth)) {
             clearDepthStencilFlags |= D3D12_CLEAR_FLAG_DEPTH;
@@ -1105,9 +1191,9 @@ void D3D12Renderer::BeginRenderPass(RHI::CommandList *commandList, const RHI::Sw
         if (BE1::HasFlag(clearFlags, RHI::ClearFlag::Stencil)) {
             clearDepthStencilFlags |= D3D12_CLEAR_FLAG_STENCIL;
         }
-        d3d12CommandList->GetGraphicsCommandList()->ClearDepthStencilView(dsvDescriptorHandle, clearDepthStencilFlags, clearDepth, clearStencil, 0, nullptr);
+        _commandList->GetGraphicsCommandList()->ClearDepthStencilView(dsvDescriptorHandle, clearDepthStencilFlags, clearDepth, clearStencil, 0, nullptr);
     }
-    d3d12CommandList->GetGraphicsCommandList()->OMSetRenderTargets(1, &d3d12SwapChain->GetCurrentBackBufferDescriptorHandle(), FALSE, &dsvDescriptorHandle);
+    _commandList->GetGraphicsCommandList()->OMSetRenderTargets(1, &d3d12SwapChain->GetCurrentBackBufferDescriptorHandle(), FALSE, &dsvDescriptorHandle);
 #endif
 }
 
@@ -1193,7 +1279,7 @@ static void GetInfoFromDSVDesc(const D3D12_DEPTH_STENCIL_VIEW_DESC &dsvDesc, UIN
 }
 
 void D3D12Renderer::BeginRenderPass(RHI::CommandList *commandList, const RHI::RenderPassImage renderPassImages[], int numRenderPassImages, RHI::RenderPassFlag flags) {
-    D3D12CommandList *d3d12CommandList = static_cast<D3D12CommandList *>(commandList);
+    D3D12CommandList *_commandList = static_cast<D3D12CommandList *>(commandList);
 
     struct ResolveSource {
         ID3D12Resource *resource = nullptr;
@@ -1234,15 +1320,16 @@ void D3D12Renderer::BeginRenderPass(RHI::CommandList *commandList, const RHI::Re
         case RHI::RenderPassImage::Type::Color:
         {
             // 사용할 Color 렌더타겟 정보를 기록한다.
-            const D3D12RTVDescriptor &rtvDescriptor = renderPassImage.subresourceIndex < 0 ? texture->rtvDescriptor : texture->subresourceRtvDescriptors[renderPassImage.subresourceIndex];
+            assert(texture->HasValidView(RHI::ViewType::RTV, renderPassImage.viewID));
+            const D3D12RTVEntry &rtvEntry = texture->rtvEntries[renderPassImage.viewID.value];
             D3D12_RENDER_PASS_RENDER_TARGET_DESC &rtDesc = rtDescs[rtCount];
-            rtDesc.cpuDescriptor = rtvDescriptor.cpuDescriptorHandle;
+            rtDesc.cpuDescriptor = rtvEntry.cpuDescriptorHandle;
             rtDesc.BeginningAccess.Type = beginningAccessType;
             rtDesc.BeginningAccess.Clear.ClearValue = texture->clearValue;
             rtDesc.EndingAccess.Type = endingAccessType;
 
             // 텍스쳐의 RTV 정보를 가져온다.
-            GetInfoFromRTVDesc(rtvDescriptor.rtvDesc, destMipSlice, destFirstArraySlice, destArraySize);
+            GetInfoFromRTVDesc(rtvEntry.viewDesc, destMipSlice, destFirstArraySlice, destArraySize);
 
             // Resolve 가능하도록 미리 정보를 기록한다.
             ResolveSource &rtResolveSource = rtResolveSources[rtCount];
@@ -1259,8 +1346,9 @@ void D3D12Renderer::BeginRenderPass(RHI::CommandList *commandList, const RHI::Re
         case RHI::RenderPassImage::Type::DepthStencil:
         {
             // 사용할 Depth/Stencil 정보를 기록한다.
-            const D3D12DSVDescriptor &dsvDescriptor = renderPassImage.subresourceIndex < 0 ? texture->dsvDescriptor : texture->subresourceDsvDescriptors[renderPassImage.subresourceIndex];
-            dsDesc.cpuDescriptor = dsvDescriptor.cpuDescriptorHandle;
+            assert(texture->HasValidView(RHI::ViewType::DSV, renderPassImage.viewID));
+            const D3D12DSVEntry &dsvEntry = texture->dsvEntries[renderPassImage.viewID.value];
+            dsDesc.cpuDescriptor = dsvEntry.cpuDescriptorHandle;
             dsDesc.DepthBeginningAccess.Type = beginningAccessType;
             dsDesc.DepthBeginningAccess.Clear.ClearValue = texture->clearValue;
             dsDesc.DepthEndingAccess.Type = endingAccessType;
@@ -1271,7 +1359,7 @@ void D3D12Renderer::BeginRenderPass(RHI::CommandList *commandList, const RHI::Re
             }
 
             // 텍스쳐의 DSV 정보를 가져온다.
-            GetInfoFromDSVDesc(dsvDescriptor.dsvDesc, destMipSlice, destFirstArraySlice, destArraySize);
+            GetInfoFromDSVDesc(dsvEntry.viewDesc, destMipSlice, destFirstArraySlice, destArraySize);
 
             // Resolve 가능하도록 미리 정보를 기록한다.
             dsResolveSource.resource = reinterpret_cast<ID3D12Resource *>(texture->GetNativeResource());
@@ -1286,7 +1374,8 @@ void D3D12Renderer::BeginRenderPass(RHI::CommandList *commandList, const RHI::Re
         case RHI::RenderPassImage::Type::ResolveColor:
         {
             // 지정한 Color 렌더타겟의 Resolve 정보를 기록한다.
-            const D3D12RTVDescriptor &rtvDescriptor = renderPassImage.subresourceIndex < 0 ? texture->rtvDescriptor : texture->subresourceRtvDescriptors[renderPassImage.subresourceIndex];
+            assert(texture->HasValidView(RHI::ViewType::RTV, renderPassImage.viewID));
+            const D3D12RTVEntry &rtvEntry = texture->rtvEntries[renderPassImage.viewID.value];
             const ResolveSource &resolveSource = rtResolveSources[renderPassImage.resolveSourceIndex];
             D3D12_RENDER_PASS_RENDER_TARGET_DESC &rtDesc = rtDescs[renderPassImage.resolveSourceIndex];
             rtDesc.EndingAccess.Type = D3D12_RENDER_PASS_ENDING_ACCESS_TYPE_RESOLVE;
@@ -1297,7 +1386,7 @@ void D3D12Renderer::BeginRenderPass(RHI::CommandList *commandList, const RHI::Re
             rtDesc.EndingAccess.Resolve.PreserveResolveSource = resolveSource.preserve;
 
             // 텍스쳐의 RTV 정보를 가져온다.
-            GetInfoFromRTVDesc(rtvDescriptor.rtvDesc, destMipSlice, destFirstArraySlice, destArraySize);
+            GetInfoFromRTVDesc(rtvEntry.viewDesc, destMipSlice, destFirstArraySlice, destArraySize);
 
             UINT destWidth = BE1::Max((int)(texture->textureDesc.Width >> destMipSlice), 1);
             UINT destHeight = BE1::Max((int)(texture->textureDesc.Height >> destMipSlice), 1);
@@ -1324,7 +1413,8 @@ void D3D12Renderer::BeginRenderPass(RHI::CommandList *commandList, const RHI::Re
         case RHI::RenderPassImage::Type::ResolveDepth:
         {
             // Depth/Stencil 의 Resolve 정보를 기록한다.
-            const D3D12DSVDescriptor &dsvDescriptor = renderPassImage.subresourceIndex < 0 ? texture->dsvDescriptor : texture->subresourceDsvDescriptors[renderPassImage.subresourceIndex];
+            assert(texture->HasValidView(RHI::ViewType::DSV, renderPassImage.viewID));
+            const D3D12DSVEntry &dsvEntry = texture->dsvEntries[renderPassImage.viewID.value];
             dsDesc.DepthEndingAccess.Type = D3D12_RENDER_PASS_ENDING_ACCESS_TYPE_RESOLVE;
             dsDesc.DepthEndingAccess.Resolve.Format = texture->textureDesc.Format;
             switch (renderPassImage.depthResolveMode) {
@@ -1340,7 +1430,7 @@ void D3D12Renderer::BeginRenderPass(RHI::CommandList *commandList, const RHI::Re
             dsDesc.DepthEndingAccess.Resolve.PreserveResolveSource = dsResolveSource.preserve;
 
             // 텍스쳐의 DSV 정보를 가져온다.
-            GetInfoFromDSVDesc(dsvDescriptor.dsvDesc, destMipSlice, destFirstArraySlice, destArraySize);
+            GetInfoFromDSVDesc(dsvEntry.viewDesc, destMipSlice, destFirstArraySlice, destArraySize);
 
             UINT destWidth = BE1::Max((int)(texture->textureDesc.Width >> destMipSlice), 1);
             UINT destHeight = BE1::Max((int)(texture->textureDesc.Height >> destMipSlice), 1);
@@ -1369,14 +1459,14 @@ void D3D12Renderer::BeginRenderPass(RHI::CommandList *commandList, const RHI::Re
             break;
         }
         case RHI::RenderPassImage::Type::ShadingRateSource:
-            d3d12CommandList->shadingRateImage = reinterpret_cast<ID3D12Resource *>(texture->GetNativeResource());
+            _commandList->shadingRateImage = reinterpret_cast<ID3D12Resource *>(texture->GetNativeResource());
             break;
         default:
             assert(0);
             break;
         }
 
-        // RenderPass 시작 배리어
+        // RenderPass 시작 배리어를 barriers 에 모은다.
         {
             D3D12_RESOURCE_STATES beforeState = ToD3D12ResourceState(renderPassImage.beforeState);
             D3D12_RESOURCE_STATES afterState = ToD3D12ResourceState(renderPassImage.duringState);
@@ -1392,7 +1482,8 @@ void D3D12Renderer::BeginRenderPass(RHI::CommandList *commandList, const RHI::Re
                 barrier.Transition.StateBefore = beforeState;
                 barrier.Transition.StateAfter = afterState;
 
-                if (renderPassImage.subresourceIndex < 0) {
+                if (renderPassImage.viewID.IsPrimary()) {
+                    // NOTE: viewID 가 Primary 라는 게 절대적으로 텍스쳐 전체 View 를 가리키는 게 아닌데 일단은 그렇게 가정한다.
                     barrier.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
                     barriers.Append(barrier);
                 } else {
@@ -1404,7 +1495,7 @@ void D3D12Renderer::BeginRenderPass(RHI::CommandList *commandList, const RHI::Re
             }
         }
 
-        // RenderPass 종료 배리어
+        // RenderPass 종료 배리어를 _commandList->endRenderPassBarriers 에 모은다. 추후에 EndRenderPass 에서 자동으로 실행된다.
         {
             D3D12_RESOURCE_STATES beforeState = ToD3D12ResourceState(renderPassImage.duringState);
             D3D12_RESOURCE_STATES afterState = ToD3D12ResourceState(renderPassImage.afterState);
@@ -1420,13 +1511,14 @@ void D3D12Renderer::BeginRenderPass(RHI::CommandList *commandList, const RHI::Re
                 barrier.Transition.StateBefore = beforeState;
                 barrier.Transition.StateAfter = afterState;
 
-                if (renderPassImage.subresourceIndex < 0) {
+                if (renderPassImage.viewID.IsPrimary()) {
+                    // NOTE: viewID 가 Primary 라는 게 절대적으로 텍스쳐 전체 View 를 가리키는 게 아닌데 일단은 그렇게 가정한다.
                     barrier.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
-                    d3d12CommandList->endRenderPassBarriers.Append(barrier);
+                    _commandList->endRenderPassBarriers.Append(barrier);
                 } else {
                     for (UINT slice = 0; slice < destArraySize; ++slice) {
                         barrier.Transition.Subresource = D3D12CalcSubresource(destMipSlice, destFirstArraySlice + slice, 0, texture->textureDesc.MipLevels, texture->textureDesc.DepthOrArraySize);
-                        d3d12CommandList->endRenderPassBarriers.Append(barrier);
+                        _commandList->endRenderPassBarriers.Append(barrier);
                     }
                 }
             }
@@ -1434,11 +1526,11 @@ void D3D12Renderer::BeginRenderPass(RHI::CommandList *commandList, const RHI::Re
     }
 
     if (!barriers.IsEmpty()) {
-        d3d12CommandList->GetGraphicsCommandList()->ResourceBarrier(barriers.Count(), barriers.Ptr());
+        _commandList->GetGraphicsCommandList()->ResourceBarrier(barriers.Count(), barriers.Ptr());
     }
 
-    if (d3d12CommandList->shadingRateImage) {
-        d3d12CommandList->GetGraphicsCommandList()->RSSetShadingRateImage(d3d12CommandList->shadingRateImage);
+    if (_commandList->shadingRateImage) {
+        _commandList->GetGraphicsCommandList()->RSSetShadingRateImage(_commandList->shadingRateImage);
     }
 
     D3D12_RENDER_PASS_FLAGS renderPassFlags = D3D12_RENDER_PASS_FLAG_NONE;
@@ -1452,96 +1544,96 @@ void D3D12Renderer::BeginRenderPass(RHI::CommandList *commandList, const RHI::Re
         renderPassFlags |= D3D12_RENDER_PASS_FLAG_RESUMING_PASS;
     }
 
-    d3d12CommandList->GetGraphicsCommandList()->BeginRenderPass(rtCount, rtDescs, dsDesc.cpuDescriptor.ptr == 0 ? nullptr : &dsDesc, renderPassFlags);
+    _commandList->GetGraphicsCommandList()->BeginRenderPass(rtCount, rtDescs, dsDesc.cpuDescriptor.ptr == 0 ? nullptr : &dsDesc, renderPassFlags);
 }
 
 void D3D12Renderer::EndRenderPass(RHI::CommandList *commandList) {
-    D3D12CommandList *d3d12CommandList = static_cast<D3D12CommandList *>(commandList);
+    D3D12CommandList *_commandList = static_cast<D3D12CommandList *>(commandList);
 
-    d3d12CommandList->GetGraphicsCommandList()->EndRenderPass();
+    _commandList->GetGraphicsCommandList()->EndRenderPass();
 
-    if (d3d12CommandList->shadingRateImage) {
-        d3d12CommandList->GetGraphicsCommandList()->RSSetShadingRateImage(nullptr);
-        d3d12CommandList->shadingRateImage = nullptr;
+    if (_commandList->shadingRateImage) {
+        _commandList->GetGraphicsCommandList()->RSSetShadingRateImage(nullptr);
+        _commandList->shadingRateImage = nullptr;
     }
 
-    if (!d3d12CommandList->endRenderPassBarriers.IsEmpty()) {
-        d3d12CommandList->GetGraphicsCommandList()->ResourceBarrier((UINT)d3d12CommandList->endRenderPassBarriers.Count(), d3d12CommandList->endRenderPassBarriers.Ptr());
+    // BeginRenderPass 미리 등록한 Barrier 를 실행한다.
+    if (!_commandList->endRenderPassBarriers.IsEmpty()) {
+        _commandList->GetGraphicsCommandList()->ResourceBarrier((UINT)_commandList->endRenderPassBarriers.Count(), _commandList->endRenderPassBarriers.Ptr());
     }
-
-    d3d12CommandList->endRenderPassBarriers.SetCount(0, false);
+    _commandList->endRenderPassBarriers.SetCount(0, false);
 }
 
 void D3D12Renderer::Draw(RHI::CommandList *commandList, uint32_t vertexCount, uint32_t startVertexLocation) {
-    D3D12CommandList *d3d12CommandList = static_cast<D3D12CommandList *>(commandList);
-    BindRootParameters(d3d12CommandList);
-    d3d12CommandList->GetGraphicsCommandList()->DrawInstanced(vertexCount, 1, startVertexLocation, 0);
+    D3D12CommandList *_commandList = static_cast<D3D12CommandList *>(commandList);
+    BindRootParameters(_commandList);
+    _commandList->GetGraphicsCommandList()->DrawInstanced(vertexCount, 1, startVertexLocation, 0);
 }
 
 void D3D12Renderer::DrawIndexed(RHI::CommandList *commandList, uint32_t indexCount, uint32_t startIndexLocation, uint32_t baseVertexLocation) {
-    D3D12CommandList *d3d12CommandList = static_cast<D3D12CommandList *>(commandList);
-    BindRootParameters(d3d12CommandList);
-    d3d12CommandList->GetGraphicsCommandList()->DrawIndexedInstanced(indexCount, 1, startIndexLocation, baseVertexLocation, 0);
+    D3D12CommandList *_commandList = static_cast<D3D12CommandList *>(commandList);
+    BindRootParameters(_commandList);
+    _commandList->GetGraphicsCommandList()->DrawIndexedInstanced(indexCount, 1, startIndexLocation, baseVertexLocation, 0);
 }
 
 void D3D12Renderer::DrawInstanced(RHI::CommandList *commandList, uint32_t vertexCount, uint32_t instanceCount, uint32_t startVertexLocation, uint32_t startInstanceLocation) {
-    D3D12CommandList *d3d12CommandList = static_cast<D3D12CommandList *>(commandList);
-    BindRootParameters(d3d12CommandList);
-    d3d12CommandList->GetGraphicsCommandList()->DrawInstanced(vertexCount, instanceCount, startVertexLocation, startInstanceLocation);
+    D3D12CommandList *_commandList = static_cast<D3D12CommandList *>(commandList);
+    BindRootParameters(_commandList);
+    _commandList->GetGraphicsCommandList()->DrawInstanced(vertexCount, instanceCount, startVertexLocation, startInstanceLocation);
 }
 
 void D3D12Renderer::DrawInstancedIndirect(RHI::CommandList *commandList, const RHI::Buffer *argsBuffer, uint32_t argsOffset) {
-    D3D12CommandList *d3d12CommandList = static_cast<D3D12CommandList *>(commandList);
-    BindRootParameters(d3d12CommandList);
-    d3d12CommandList->GetGraphicsCommandList()->ExecuteIndirect(drawInstancedIndirectCommandSignature, 1, static_cast<const D3D12Buffer *>(argsBuffer)->GetResource(), argsOffset, nullptr, 0);
+    D3D12CommandList *_commandList = static_cast<D3D12CommandList *>(commandList);
+    BindRootParameters(_commandList);
+    _commandList->GetGraphicsCommandList()->ExecuteIndirect(drawInstancedIndirectCommandSignature, 1, static_cast<const D3D12Buffer *>(argsBuffer)->GetResource(), argsOffset, nullptr, 0);
 }
 
 void D3D12Renderer::DrawInstancedIndirectCount(RHI::CommandList *commandList, const RHI::Buffer *argsBuffer, uint32_t argsOffset, const RHI::Buffer *countBuffer, uint32_t countOffset, uint32_t maxCount) {
-    D3D12CommandList *d3d12CommandList = static_cast<D3D12CommandList *>(commandList);
-    BindRootParameters(d3d12CommandList);
-    d3d12CommandList->GetGraphicsCommandList()->ExecuteIndirect(drawInstancedIndirectCommandSignature, maxCount, static_cast<const D3D12Buffer *>(argsBuffer)->GetResource(), argsOffset, static_cast<const D3D12Buffer *>(countBuffer)->GetResource(), countOffset);
+    D3D12CommandList *_commandList = static_cast<D3D12CommandList *>(commandList);
+    BindRootParameters(_commandList);
+    _commandList->GetGraphicsCommandList()->ExecuteIndirect(drawInstancedIndirectCommandSignature, maxCount, static_cast<const D3D12Buffer *>(argsBuffer)->GetResource(), argsOffset, static_cast<const D3D12Buffer *>(countBuffer)->GetResource(), countOffset);
 }
 
 void D3D12Renderer::DrawIndexedInstanced(RHI::CommandList *commandList, uint32_t indexCount, uint32_t instanceCount, uint32_t startIndexLocation, uint32_t baseVertexLocation, uint32_t startInstanceLocation) {
-    D3D12CommandList *d3d12CommandList = static_cast<D3D12CommandList *>(commandList);
-    BindRootParameters(d3d12CommandList);
-    d3d12CommandList->GetGraphicsCommandList()->DrawIndexedInstanced(indexCount, instanceCount, startIndexLocation, baseVertexLocation, startInstanceLocation);
+    D3D12CommandList *_commandList = static_cast<D3D12CommandList *>(commandList);
+    BindRootParameters(_commandList);
+    _commandList->GetGraphicsCommandList()->DrawIndexedInstanced(indexCount, instanceCount, startIndexLocation, baseVertexLocation, startInstanceLocation);
 }
 
 void D3D12Renderer::DrawIndexedInstancedIndirect(RHI::CommandList *commandList, const RHI::Buffer *argsBuffer, uint32_t argsOffset) {
-    D3D12CommandList *d3d12CommandList = static_cast<D3D12CommandList *>(commandList);
-    BindRootParameters(d3d12CommandList);
-    d3d12CommandList->GetGraphicsCommandList()->ExecuteIndirect(drawIndexedInstancedIndirectCommandSignature, 1, static_cast<const D3D12Buffer *>(argsBuffer)->GetResource(), argsOffset, nullptr, 0);
+    D3D12CommandList *_commandList = static_cast<D3D12CommandList *>(commandList);
+    BindRootParameters(_commandList);
+    _commandList->GetGraphicsCommandList()->ExecuteIndirect(drawIndexedInstancedIndirectCommandSignature, 1, static_cast<const D3D12Buffer *>(argsBuffer)->GetResource(), argsOffset, nullptr, 0);
 }
 
 void D3D12Renderer::DrawIndexedInstancedIndirectCount(RHI::CommandList *commandList, const RHI::Buffer *argsBuffer, uint32_t argsOffset, const RHI::Buffer *countBuffer, uint32_t countOffset, uint32_t maxCount) {
-    D3D12CommandList *d3d12CommandList = static_cast<D3D12CommandList *>(commandList);
-    BindRootParameters(d3d12CommandList);
-    d3d12CommandList->GetGraphicsCommandList()->ExecuteIndirect(drawIndexedInstancedIndirectCommandSignature, maxCount, static_cast<const D3D12Buffer *>(argsBuffer)->GetResource(), argsOffset, static_cast<const D3D12Buffer *>(countBuffer)->GetResource(), countOffset);
+    D3D12CommandList *_commandList = static_cast<D3D12CommandList *>(commandList);
+    BindRootParameters(_commandList);
+    _commandList->GetGraphicsCommandList()->ExecuteIndirect(drawIndexedInstancedIndirectCommandSignature, maxCount, static_cast<const D3D12Buffer *>(argsBuffer)->GetResource(), argsOffset, static_cast<const D3D12Buffer *>(countBuffer)->GetResource(), countOffset);
 }
 
 void D3D12Renderer::Dispatch(RHI::CommandList *commandList, uint32_t threadGroupCountX, uint32_t threadGroupCountY, uint32_t threadGroupCountZ) {
-    D3D12CommandList *d3d12CommandList = static_cast<D3D12CommandList *>(commandList);
-    BindRootParameters(d3d12CommandList);
-    d3d12CommandList->GetGraphicsCommandList()->Dispatch(threadGroupCountX, threadGroupCountY, threadGroupCountZ);
+    D3D12CommandList *_commandList = static_cast<D3D12CommandList *>(commandList);
+    BindRootParameters(_commandList);
+    _commandList->GetGraphicsCommandList()->Dispatch(threadGroupCountX, threadGroupCountY, threadGroupCountZ);
 }
 
 void D3D12Renderer::DispatchIndirect(RHI::CommandList *commandList, const RHI::Buffer *argsBuffer, uint32_t argsOffset) {
-    D3D12CommandList *d3d12CommandList = static_cast<D3D12CommandList *>(commandList);
-    BindRootParameters(d3d12CommandList);
-    d3d12CommandList->GetGraphicsCommandList()->ExecuteIndirect(dispatchIndirectCommandSignature, 1, static_cast<const D3D12Buffer *>(argsBuffer)->GetResource(), argsOffset, nullptr, 0);
+    D3D12CommandList *_commandList = static_cast<D3D12CommandList *>(commandList);
+    BindRootParameters(_commandList);
+    _commandList->GetGraphicsCommandList()->ExecuteIndirect(dispatchIndirectCommandSignature, 1, static_cast<const D3D12Buffer *>(argsBuffer)->GetResource(), argsOffset, nullptr, 0);
 }
 
 void D3D12Renderer::DispatchMesh(RHI::CommandList *commandList, uint32_t threadGroupCountX, uint32_t threadGroupCountY, uint32_t threadGroupCountZ) {
-    D3D12CommandList *d3d12CommandList = static_cast<D3D12CommandList *>(commandList);
-    BindRootParameters(d3d12CommandList);
-    d3d12CommandList->GetGraphicsCommandList()->DispatchMesh(threadGroupCountX, threadGroupCountY, threadGroupCountZ);
+    D3D12CommandList *_commandList = static_cast<D3D12CommandList *>(commandList);
+    BindRootParameters(_commandList);
+    _commandList->GetGraphicsCommandList()->DispatchMesh(threadGroupCountX, threadGroupCountY, threadGroupCountZ);
 }
 
 void D3D12Renderer::DispatchMeshIndirect(RHI::CommandList *commandList, const RHI::Buffer *argsBuffer, uint32_t argsOffset) {
-    D3D12CommandList *d3d12CommandList = static_cast<D3D12CommandList *>(commandList);
-    BindRootParameters(d3d12CommandList);
-    d3d12CommandList->GetGraphicsCommandList()->ExecuteIndirect(dispatchMeshIndirectCommandSignature, 1, static_cast<const D3D12Buffer *>(argsBuffer)->GetResource(), argsOffset, nullptr, 0);
+    D3D12CommandList *_commandList = static_cast<D3D12CommandList *>(commandList);
+    BindRootParameters(_commandList);
+    _commandList->GetGraphicsCommandList()->ExecuteIndirect(dispatchMeshIndirectCommandSignature, 1, static_cast<const D3D12Buffer *>(argsBuffer)->GetResource(), argsOffset, nullptr, 0);
 }
 
 void D3D12Renderer::SetMarker(RHI::CommandList *commandList, const char *string, uint8_t colorIndex) {
@@ -1904,6 +1996,154 @@ bool D3D12Renderer::DXGIFormatToImageFormat(DXGI_FORMAT dxgiFormat, BE1::Image::
     return false;
 }
 
+DXGI_FORMAT D3D12Renderer::RHIFormatToDXGIFormat(RHI::Format rhiFormat) {
+    switch (rhiFormat) {
+    case RHI::Format::R32G32B32A32_FLOAT:
+        return DXGI_FORMAT_R32G32B32A32_FLOAT;
+    case RHI::Format::R32G32B32A32_UINT:
+        return DXGI_FORMAT_R32G32B32A32_UINT;
+    case RHI::Format::R32G32B32A32_SINT:
+        return DXGI_FORMAT_R32G32B32A32_SINT;
+    case RHI::Format::R32G32B32_FLOAT:
+        return DXGI_FORMAT_R32G32B32_FLOAT;
+    case RHI::Format::R32G32B32_UINT:
+        return DXGI_FORMAT_R32G32B32_UINT;
+    case RHI::Format::R32G32B32_SINT:
+        return DXGI_FORMAT_R32G32B32_SINT;
+    case RHI::Format::R16G16B16A16_FLOAT:
+        return DXGI_FORMAT_R16G16B16A16_FLOAT;
+    case RHI::Format::R16G16B16A16_UNORM:
+        return DXGI_FORMAT_R16G16B16A16_UNORM;
+    case RHI::Format::R16G16B16A16_UINT:
+        return DXGI_FORMAT_R16G16B16A16_UINT;
+    case RHI::Format::R16G16B16A16_SNORM:
+        return DXGI_FORMAT_R16G16B16A16_SNORM;
+    case RHI::Format::R16G16B16A16_SINT:
+        return DXGI_FORMAT_R16G16B16A16_SINT;
+    case RHI::Format::R32G32_FLOAT:
+        return DXGI_FORMAT_R32G32_FLOAT;
+    case RHI::Format::R32G32_UINT:
+        return DXGI_FORMAT_R32G32_UINT;
+    case RHI::Format::R32G32_SINT:
+        return DXGI_FORMAT_R32G32_SINT;
+    case RHI::Format::D32_FLOAT_S8X24_UINT:
+        return DXGI_FORMAT_D32_FLOAT_S8X24_UINT;
+    case RHI::Format::R32_FLOAT_X8X24_TYPELESS:
+        return DXGI_FORMAT_R32_FLOAT_X8X24_TYPELESS;
+    case RHI::Format::X32_TYPELESS_G8X24_UINT:
+        return DXGI_FORMAT_X32_TYPELESS_G8X24_UINT;
+    case RHI::Format::R10G10B10A2_UNORM:
+        return DXGI_FORMAT_R10G10B10A2_UNORM;
+    case RHI::Format::R10G10B10A2_UINT:
+        return DXGI_FORMAT_R10G10B10A2_UINT;
+    case RHI::Format::R11G11B10_FLOAT:
+        return DXGI_FORMAT_R11G11B10_FLOAT;
+    case RHI::Format::R8G8B8A8_UNORM:
+        return DXGI_FORMAT_R8G8B8A8_UNORM;
+    case RHI::Format::R8G8B8A8_UNORM_SRGB:
+        return DXGI_FORMAT_R8G8B8A8_UNORM_SRGB;
+    case RHI::Format::R8G8B8A8_UINT:
+        return DXGI_FORMAT_R8G8B8A8_UINT;
+    case RHI::Format::R8G8B8A8_SNORM:
+        return DXGI_FORMAT_R8G8B8A8_SNORM;
+    case RHI::Format::R8G8B8A8_SINT:
+        return DXGI_FORMAT_R8G8B8A8_SINT;
+    case RHI::Format::R16G16_FLOAT:
+        return DXGI_FORMAT_R16G16_FLOAT;
+    case RHI::Format::R16G16_UNORM:
+        return DXGI_FORMAT_R16G16_UNORM;
+    case RHI::Format::R16G16_UINT:
+        return DXGI_FORMAT_R16G16_UINT;
+    case RHI::Format::R16G16_SNORM:
+        return DXGI_FORMAT_R16G16_SNORM;
+    case RHI::Format::R16G16_SINT:
+        return DXGI_FORMAT_R16G16_SINT;
+    case RHI::Format::R32_FLOAT:
+        return DXGI_FORMAT_R32_FLOAT;
+    case RHI::Format::D32_FLOAT:
+        return DXGI_FORMAT_D32_FLOAT;
+    case RHI::Format::R32_UINT:
+        return DXGI_FORMAT_R32_UINT;
+    case RHI::Format::R32_SINT:
+        return DXGI_FORMAT_R32_SINT;
+    case RHI::Format::D24_UNORM_S8_UINT:
+        return DXGI_FORMAT_D24_UNORM_S8_UINT;
+    case RHI::Format::R24_UNORM_X8_TYPELESS:
+        return DXGI_FORMAT_R24_UNORM_X8_TYPELESS;
+    case RHI::Format::X24_TYPELESS_G8_UINT:
+        return DXGI_FORMAT_X24_TYPELESS_G8_UINT;
+    case RHI::Format::R8G8_UNORM:
+        return DXGI_FORMAT_R8G8_UNORM;
+    case RHI::Format::R8G8_UINT:
+        return DXGI_FORMAT_R8G8_UINT;
+    case RHI::Format::R8G8_SNORM:
+        return DXGI_FORMAT_R8G8_SNORM;
+    case RHI::Format::R8G8_SINT:
+        return DXGI_FORMAT_R8G8_SINT;
+    case RHI::Format::R16_FLOAT:
+        return DXGI_FORMAT_R16_FLOAT;
+    case RHI::Format::D16_UNORM:
+        return DXGI_FORMAT_D16_UNORM;
+    case RHI::Format::R16_UNORM:
+        return DXGI_FORMAT_R16_UNORM;
+    case RHI::Format::R16_UINT:
+        return DXGI_FORMAT_R16_UINT;
+    case RHI::Format::R16_SNORM:
+        return DXGI_FORMAT_R16_SNORM;
+    case RHI::Format::R16_SINT:
+        return DXGI_FORMAT_R16_SINT;
+    case RHI::Format::R8_UNORM:
+        return DXGI_FORMAT_R8_UNORM;
+    case RHI::Format::R8_UINT:
+        return DXGI_FORMAT_R8_UINT;
+    case RHI::Format::R8_SNORM:
+        return DXGI_FORMAT_R8_SNORM;
+    case RHI::Format::R8_SINT:
+        return DXGI_FORMAT_R8_SINT;
+    case RHI::Format::A8_UNORM:
+        return DXGI_FORMAT_A8_UNORM;
+    case RHI::Format::R9G9B9E5_SHAREDEXP:
+        return DXGI_FORMAT_R9G9B9E5_SHAREDEXP;
+    case RHI::Format::BC1_UNORM:
+        return DXGI_FORMAT_BC1_UNORM;
+    case RHI::Format::BC1_UNORM_SRGB:
+        return DXGI_FORMAT_BC1_UNORM_SRGB;
+    case RHI::Format::BC2_UNORM:
+        return DXGI_FORMAT_BC2_UNORM;
+    case RHI::Format::BC2_UNORM_SRGB:
+        return DXGI_FORMAT_BC2_UNORM_SRGB;
+    case RHI::Format::BC3_UNORM:
+        return DXGI_FORMAT_BC3_UNORM;
+    case RHI::Format::BC3_UNORM_SRGB:
+        return DXGI_FORMAT_BC3_UNORM_SRGB;
+    case RHI::Format::BC4_UNORM:
+        return DXGI_FORMAT_BC4_UNORM;
+    case RHI::Format::BC4_SNORM:
+        return DXGI_FORMAT_BC4_SNORM;
+    case RHI::Format::BC5_UNORM:
+        return DXGI_FORMAT_BC5_UNORM;
+    case RHI::Format::BC5_SNORM:
+        return DXGI_FORMAT_BC5_SNORM;
+    case RHI::Format::B8G8R8A8_UNORM:
+        return DXGI_FORMAT_B8G8R8A8_UNORM;
+    case RHI::Format::B8G8R8A8_UNORM_SRGB:
+        return DXGI_FORMAT_B8G8R8A8_UNORM_SRGB;
+    case RHI::Format::B8G8R8X8_UNORM:
+        return DXGI_FORMAT_B8G8R8X8_UNORM;
+    case RHI::Format::B8G8R8X8_UNORM_SRGB:
+        return DXGI_FORMAT_B8G8R8X8_UNORM_SRGB;
+    case RHI::Format::BC6H_UF16:
+        return DXGI_FORMAT_BC6H_UF16;
+    case RHI::Format::BC6H_SF16:
+        return DXGI_FORMAT_BC6H_SF16;
+    case RHI::Format::BC7_UNORM:
+        return DXGI_FORMAT_BC7_UNORM;
+    case RHI::Format::BC7_UNORM_SRGB:
+        return DXGI_FORMAT_BC7_UNORM_SRGB;
+    }
+    return DXGI_FORMAT_UNKNOWN;
+}
+
 bool D3D12Renderer::IsDepthFormat(DXGI_FORMAT format) {
     if (format == DXGI_FORMAT_D16_UNORM ||
         format == DXGI_FORMAT_D32_FLOAT ||
@@ -1952,24 +2192,166 @@ bool D3D12Renderer::IsTypelessFormat(DXGI_FORMAT format) {
     return false;
 }
 
-DXGI_FORMAT D3D12Renderer::ToNonSRGBFormat(DXGI_FORMAT format) {
-    switch (format) {
-    case DXGI_FORMAT_R8G8B8A8_UNORM_SRGB:
-        return DXGI_FORMAT_R8G8B8A8_UNORM;
-    case DXGI_FORMAT_B8G8R8A8_UNORM_SRGB:
-        return DXGI_FORMAT_B8G8R8A8_UNORM;
-    case DXGI_FORMAT_B8G8R8X8_UNORM_SRGB:
-        return DXGI_FORMAT_B8G8R8X8_UNORM;
-    case DXGI_FORMAT_BC1_UNORM_SRGB:
-        return DXGI_FORMAT_BC1_UNORM;
-    case DXGI_FORMAT_BC2_UNORM_SRGB:
-        return DXGI_FORMAT_BC2_UNORM;
-    case DXGI_FORMAT_BC3_UNORM_SRGB:
-        return DXGI_FORMAT_BC3_UNORM;
-    case DXGI_FORMAT_BC7_UNORM_SRGB:
-        return DXGI_FORMAT_BC7_UNORM;
+bool D3D12Renderer::IsTypelessCompatibleFormat(DXGI_FORMAT typelessFormat, DXGI_FORMAT viewFormat) {
+    switch (typelessFormat) {
+    case DXGI_FORMAT_R32G32B32A32_TYPELESS:
+        if (viewFormat == DXGI_FORMAT_R32G32B32A32_FLOAT ||
+            viewFormat == DXGI_FORMAT_R32G32B32A32_UINT ||
+            viewFormat == DXGI_FORMAT_R32G32B32A32_SINT) {
+            return true;
+        }
+        break;
+    case DXGI_FORMAT_R32G32B32_TYPELESS:
+        if (viewFormat == DXGI_FORMAT_R32G32B32_FLOAT ||
+            viewFormat == DXGI_FORMAT_R32G32B32_UINT ||
+            viewFormat == DXGI_FORMAT_R32G32B32_SINT) {
+            return true;
+        }
+        break;
+    case DXGI_FORMAT_R16G16B16A16_TYPELESS:
+        if (viewFormat == DXGI_FORMAT_R16G16B16A16_FLOAT ||
+            viewFormat == DXGI_FORMAT_R16G16B16A16_UNORM ||
+            viewFormat == DXGI_FORMAT_R16G16B16A16_UINT ||
+            viewFormat == DXGI_FORMAT_R16G16B16A16_SNORM ||
+            viewFormat == DXGI_FORMAT_R16G16B16A16_SINT) {
+            return true;
+        }
+        break;
+    case DXGI_FORMAT_R32G32_TYPELESS:
+        if (viewFormat == DXGI_FORMAT_R32G32_FLOAT ||
+            viewFormat == DXGI_FORMAT_R32G32_UINT ||
+            viewFormat == DXGI_FORMAT_R32G32_SINT) {
+            return true;
+        }
+        break;
+    case DXGI_FORMAT_R32G8X24_TYPELESS:
+        if (viewFormat == DXGI_FORMAT_D32_FLOAT_S8X24_UINT || // DSV
+            viewFormat == DXGI_FORMAT_R32_FLOAT_X8X24_TYPELESS || // SRV for depth
+            viewFormat == DXGI_FORMAT_X32_TYPELESS_G8X24_UINT) { // SRV for stencil
+            return true;
+        }
+        break;
+    case DXGI_FORMAT_R10G10B10A2_TYPELESS:
+        if (viewFormat == DXGI_FORMAT_R10G10B10A2_UNORM ||
+            viewFormat == DXGI_FORMAT_R10G10B10A2_UINT) {
+            return true;
+        }
+        break;
+    case DXGI_FORMAT_R8G8B8A8_TYPELESS:
+        if (viewFormat == DXGI_FORMAT_R8G8B8A8_UNORM ||
+            viewFormat == DXGI_FORMAT_R8G8B8A8_UNORM_SRGB ||
+            viewFormat == DXGI_FORMAT_R8G8B8A8_UINT ||
+            viewFormat == DXGI_FORMAT_R8G8B8A8_SNORM ||
+            viewFormat == DXGI_FORMAT_R8G8B8A8_SINT) {
+            return true;
+        }
+        break;
+    case DXGI_FORMAT_R16G16_TYPELESS:
+        if (viewFormat == DXGI_FORMAT_R16G16_FLOAT ||
+            viewFormat == DXGI_FORMAT_R16G16_UNORM ||
+            viewFormat == DXGI_FORMAT_R16G16_UINT ||
+            viewFormat == DXGI_FORMAT_R16G16_SNORM ||
+            viewFormat == DXGI_FORMAT_R16G16_SINT) {
+            return true;
+        }
+        break;
+    case DXGI_FORMAT_R32_TYPELESS:
+        if (viewFormat == DXGI_FORMAT_D32_FLOAT ||
+            viewFormat == DXGI_FORMAT_R32_FLOAT ||
+            viewFormat == DXGI_FORMAT_R32_UINT ||
+            viewFormat == DXGI_FORMAT_R32_SINT) {
+            return true;
+        }
+        break;
+    case DXGI_FORMAT_R24G8_TYPELESS:
+        if (viewFormat == DXGI_FORMAT_D24_UNORM_S8_UINT || // DSV
+            viewFormat == DXGI_FORMAT_R24_UNORM_X8_TYPELESS || // SRV for depth
+            viewFormat == DXGI_FORMAT_X24_TYPELESS_G8_UINT) { // SRV for stencil
+            return true;
+        }
+        break;
+    case DXGI_FORMAT_R8G8_TYPELESS:
+        if (viewFormat == DXGI_FORMAT_R8G8_UNORM ||
+            viewFormat == DXGI_FORMAT_R8G8_UINT ||
+            viewFormat == DXGI_FORMAT_R8G8_SNORM ||
+            viewFormat == DXGI_FORMAT_R8G8_SINT) {
+            return true;
+        }
+        break;
+    case DXGI_FORMAT_R16_TYPELESS:
+        if (viewFormat == DXGI_FORMAT_R16_FLOAT ||
+            viewFormat == DXGI_FORMAT_D16_UNORM ||
+            viewFormat == DXGI_FORMAT_R16_UNORM ||
+            viewFormat == DXGI_FORMAT_R16_UINT ||
+            viewFormat == DXGI_FORMAT_R16_SNORM ||
+            viewFormat == DXGI_FORMAT_R16_SINT) {
+            return true;
+        }
+        break;
+    case DXGI_FORMAT_R8_TYPELESS:
+        if (viewFormat == DXGI_FORMAT_R8_UNORM ||
+            viewFormat == DXGI_FORMAT_R8_UINT ||
+            viewFormat == DXGI_FORMAT_R8_SNORM ||
+            viewFormat == DXGI_FORMAT_R8_SINT) {
+            return true;
+        }
+        break;
+    case DXGI_FORMAT_BC1_TYPELESS:
+        if (viewFormat == DXGI_FORMAT_BC1_UNORM ||
+            viewFormat == DXGI_FORMAT_BC1_UNORM_SRGB) {
+            return true;
+        }
+        break;
+    case DXGI_FORMAT_BC2_TYPELESS:
+        if (viewFormat == DXGI_FORMAT_BC2_UNORM ||
+            viewFormat == DXGI_FORMAT_BC2_UNORM_SRGB) {
+            return true;
+        }
+        break;
+    case DXGI_FORMAT_BC3_TYPELESS:
+        if (viewFormat == DXGI_FORMAT_BC3_UNORM ||
+            viewFormat == DXGI_FORMAT_BC3_UNORM_SRGB) {
+            return true;
+        }
+        break;
+    case DXGI_FORMAT_BC4_TYPELESS:
+        if (viewFormat == DXGI_FORMAT_BC4_UNORM ||
+            viewFormat == DXGI_FORMAT_BC4_SNORM) {
+            return true;
+        }
+        break;
+    case DXGI_FORMAT_BC5_TYPELESS:
+        if (viewFormat == DXGI_FORMAT_BC5_UNORM ||
+            viewFormat == DXGI_FORMAT_BC5_SNORM) {
+            return true;
+        }
+        break;
+    case DXGI_FORMAT_B8G8R8A8_TYPELESS:
+        if (viewFormat == DXGI_FORMAT_B8G8R8A8_UNORM ||
+            viewFormat == DXGI_FORMAT_B8G8R8A8_UNORM_SRGB) {
+            return true;
+        }
+        break;
+    case DXGI_FORMAT_B8G8R8X8_TYPELESS:
+        if (viewFormat == DXGI_FORMAT_B8G8R8X8_UNORM ||
+            viewFormat == DXGI_FORMAT_B8G8R8X8_UNORM_SRGB) {
+            return true;
+        }
+        break;
+    case DXGI_FORMAT_BC6H_TYPELESS:
+        if (viewFormat == DXGI_FORMAT_BC6H_UF16 ||
+            viewFormat == DXGI_FORMAT_BC6H_SF16) {
+            return true;
+        }
+        break;
+    case DXGI_FORMAT_BC7_TYPELESS:
+        if (viewFormat == DXGI_FORMAT_BC7_UNORM ||
+            viewFormat == DXGI_FORMAT_BC7_UNORM_SRGB) {
+            return true;
+        }
+        break;
     }
-    return format;
+    return false;
 }
 
 DXGI_FORMAT D3D12Renderer::ToTypelessFormat(DXGI_FORMAT format) {
@@ -1997,11 +2379,10 @@ DXGI_FORMAT D3D12Renderer::ToTypelessFormat(DXGI_FORMAT format) {
     case DXGI_FORMAT_R32G32_SINT:
         return DXGI_FORMAT_R32G32_TYPELESS;
     case DXGI_FORMAT_R32G8X24_TYPELESS:
-    case DXGI_FORMAT_D32_FLOAT_S8X24_UINT:
-    case DXGI_FORMAT_R32_FLOAT_X8X24_TYPELESS:
+    case DXGI_FORMAT_D32_FLOAT_S8X24_UINT: // DSV
+    case DXGI_FORMAT_R32_FLOAT_X8X24_TYPELESS: // SRV for depth
+    case DXGI_FORMAT_X32_TYPELESS_G8X24_UINT: // SRV for stencil
         return DXGI_FORMAT_R32G8X24_TYPELESS;
-    case DXGI_FORMAT_X32_TYPELESS_G8X24_UINT:
-        return DXGI_FORMAT_X32_TYPELESS_G8X24_UINT;
     case DXGI_FORMAT_R10G10B10A2_TYPELESS:
     case DXGI_FORMAT_R10G10B10A2_UNORM:
     case DXGI_FORMAT_R10G10B10A2_UINT:
@@ -2027,11 +2408,10 @@ DXGI_FORMAT D3D12Renderer::ToTypelessFormat(DXGI_FORMAT format) {
     case DXGI_FORMAT_R32_SINT:
         return DXGI_FORMAT_R32_TYPELESS;
     case DXGI_FORMAT_R24G8_TYPELESS:
-    case DXGI_FORMAT_D24_UNORM_S8_UINT:
-    case DXGI_FORMAT_R24_UNORM_X8_TYPELESS:
-        return DXGI_FORMAT_R24_UNORM_X8_TYPELESS;
-    case DXGI_FORMAT_X24_TYPELESS_G8_UINT:
-        return DXGI_FORMAT_X24_TYPELESS_G8_UINT;
+    case DXGI_FORMAT_D24_UNORM_S8_UINT: // DSV
+    case DXGI_FORMAT_R24_UNORM_X8_TYPELESS: // SRV for depth
+    case DXGI_FORMAT_X24_TYPELESS_G8_UINT: // SRV for stencil
+        return DXGI_FORMAT_R24G8_TYPELESS;
     case DXGI_FORMAT_R8G8_TYPELESS:
     case DXGI_FORMAT_R8G8_UNORM:
     case DXGI_FORMAT_R8G8_UINT:
@@ -2073,9 +2453,11 @@ DXGI_FORMAT D3D12Renderer::ToTypelessFormat(DXGI_FORMAT format) {
     case DXGI_FORMAT_BC5_SNORM:
         return DXGI_FORMAT_BC5_TYPELESS;
     case DXGI_FORMAT_B8G8R8A8_TYPELESS:
+    case DXGI_FORMAT_B8G8R8A8_UNORM:
     case DXGI_FORMAT_B8G8R8A8_UNORM_SRGB:
         return DXGI_FORMAT_B8G8R8A8_TYPELESS;
     case DXGI_FORMAT_B8G8R8X8_TYPELESS:
+    case DXGI_FORMAT_B8G8R8X8_UNORM:
     case DXGI_FORMAT_B8G8R8X8_UNORM_SRGB:
         return DXGI_FORMAT_B8G8R8X8_TYPELESS;
     case DXGI_FORMAT_BC6H_TYPELESS:
@@ -2089,6 +2471,26 @@ DXGI_FORMAT D3D12Renderer::ToTypelessFormat(DXGI_FORMAT format) {
     default:
         return DXGI_FORMAT_UNKNOWN;
     }
+}
+
+DXGI_FORMAT D3D12Renderer::ToLinearFormat(DXGI_FORMAT format) {
+    switch (format) {
+    case DXGI_FORMAT_R8G8B8A8_UNORM_SRGB:
+        return DXGI_FORMAT_R8G8B8A8_UNORM;
+    case DXGI_FORMAT_B8G8R8A8_UNORM_SRGB:
+        return DXGI_FORMAT_B8G8R8A8_UNORM;
+    case DXGI_FORMAT_B8G8R8X8_UNORM_SRGB:
+        return DXGI_FORMAT_B8G8R8X8_UNORM;
+    case DXGI_FORMAT_BC1_UNORM_SRGB:
+        return DXGI_FORMAT_BC1_UNORM;
+    case DXGI_FORMAT_BC2_UNORM_SRGB:
+        return DXGI_FORMAT_BC2_UNORM;
+    case DXGI_FORMAT_BC3_UNORM_SRGB:
+        return DXGI_FORMAT_BC3_UNORM;
+    case DXGI_FORMAT_BC7_UNORM_SRGB:
+        return DXGI_FORMAT_BC7_UNORM;
+    }
+    return format;
 }
 
 UINT D3D12Renderer::GetComponentSwizzling(BE1::Image::Format format) {

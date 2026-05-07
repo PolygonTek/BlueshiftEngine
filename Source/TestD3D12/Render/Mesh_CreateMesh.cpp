@@ -97,8 +97,8 @@ void Mesh::CreatePlane(const BE1::Vec3 &origin, const BE1::Mat3 &axis, float siz
 
     BE1::VertexGenericLit *v = surf->subMesh->verts;
 
-    for (int i = 0; i < numSegments + 1; i++) { // y
-        for (int j = 0; j < numSegments + 1; j++) { // x
+    for (int i = 0; i < numSegments + 1; ++i) { // y
+        for (int j = 0; j < numSegments + 1; ++j) { // x
             float y = size * ((float)i / numSegments - 0.5f);
             float x = size * ((float)j / numSegments - 0.5f);
             float s = (float)i / numSegments;
@@ -116,10 +116,10 @@ void Mesh::CreatePlane(const BE1::Vec3 &origin, const BE1::Mat3 &axis, float siz
 
     BE1::VertIndex *idx = surf->subMesh->indexes;
 
-    for (int i = 0; i < numSegments; i++) { // y
+    for (int i = 0; i < numSegments; ++i) { // y
         int a = (numSegments + 1) * i;
 
-        for (int j = 0; j < numSegments; j++) { // x
+        for (int j = 0; j < numSegments; ++j) { // x
             int b = a + j;
             int c = b + numSegments + 1;
 
@@ -232,14 +232,14 @@ void Mesh::CreateCylinder(const BE1::Vec3 &origin, const BE1::Mat3 &axis, float 
     BE1::VertexGenericLit *v = surf->subMesh->verts;
 
     // top cap, bottom cap verts
-    for (int i = 0; i < 2; i++) {
+    for (int i = 0; i < 2; ++i) {
         v->SetPosition(n[i] * half_height);
         v->SetNormal(n[i]);
         v->SetTexCoord(0.5f, 0.5f);
         v->SetColor(0xffffffff);
         v++;
 
-        for (int j = 0; j < numSegments; j++) {
+        for (int j = 0; j < numSegments; ++j) {
             float theta = BE1::Math::TwoPi * j / numSegments; // 0 ~ 2pi
             float st, ct;
             BE1::Math::SinCos(theta, st, ct);
@@ -257,7 +257,7 @@ void Mesh::CreateCylinder(const BE1::Vec3 &origin, const BE1::Mat3 &axis, float 
     }
 
     // sides verts
-    for (int i = 0; i < numSideSegments; i++) {
+    for (int i = 0; i < numSideSegments; ++i) {
         float theta = BE1::Math::TwoPi * i / (numSideSegments - 1); // 0 ~ 2pi
         float st, ct;
         BE1::Math::SinCos(theta + BE1::Math::HalfPi, st, ct);
@@ -282,7 +282,7 @@ void Mesh::CreateCylinder(const BE1::Vec3 &origin, const BE1::Mat3 &axis, float 
     BE1::VertIndex *idx = surf->subMesh->indexes;
 
     // top cap indexes
-    for (int j = 0; j < numSegments; j++) {
+    for (int j = 0; j < numSegments; ++j) {
         *idx++ = 0;
         *idx++ = 1 + j;
         *idx++ = 1 + (j + 1) % numSegments;
@@ -291,7 +291,7 @@ void Mesh::CreateCylinder(const BE1::Vec3 &origin, const BE1::Mat3 &axis, float 
     int offset = numSegments + 1;
 
     // bottom cap indexes
-    for (int j = 0; j < numSegments; j++) {
+    for (int j = 0; j < numSegments; ++j) {
         *idx++ = offset;
         *idx++ = offset + 1 + (j + 1) % numSegments;
         *idx++ = offset + 1 + j;
@@ -300,7 +300,7 @@ void Mesh::CreateCylinder(const BE1::Vec3 &origin, const BE1::Mat3 &axis, float 
     offset += numSegments + 1;
 
     // sides indexes
-    for (int i = 0; i < numSideSegments; i++) {
+    for (int i = 0; i < numSideSegments; ++i) {
         int a = i * 2;
         int b = ((i + 1) % numSideSegments) * 2;
 
@@ -344,7 +344,7 @@ void Mesh::CreateCapsule(const BE1::Vec3 &origin, const BE1::Mat3 &axis, float r
 
     BE1::VertexGenericLit *v = surf->subMesh->verts;
 
-    for (int i = 0; i < numLat; i++) {
+    for (int i = 0; i < numLat; ++i) {
         float phi = BE1::Math::HalfPi * i / (numLat - 1); // 0 ~ pi/2
         float sp, cp;
         BE1::Math::SinCos(phi, sp, cp);
@@ -352,7 +352,7 @@ void Mesh::CreateCapsule(const BE1::Vec3 &origin, const BE1::Mat3 &axis, float r
         float zr = sp * radius;
         float t = 1.0f - (z + radius + height) / real_height;
 
-        for (int j = 0; j < numLng; j++) {
+        for (int j = 0; j < numLng; ++j) {
             float theta = BE1::Math::TwoPi * j / (numLng - 1); // 0 ~ 2pi
             float st, ct;
             BE1::Math::SinCos(theta - BE1::Math::HalfPi, st, ct);
@@ -370,7 +370,7 @@ void Mesh::CreateCapsule(const BE1::Vec3 &origin, const BE1::Mat3 &axis, float r
         }
     }
 
-    for (int i = 0; i < numLat; i++) {
+    for (int i = 0; i < numLat; ++i) {
         float phi = BE1::Math::HalfPi + BE1::Math::HalfPi * i / (numLat - 1); // pi/2 ~ pi
         float sp, cp;
         BE1::Math::SinCos(phi, sp, cp);
@@ -378,7 +378,7 @@ void Mesh::CreateCapsule(const BE1::Vec3 &origin, const BE1::Mat3 &axis, float r
         float zr = sp * radius;
         float t = 1.0f - (z + radius) / real_height;
 
-        for (int j = 0; j < numLng; j++) {
+        for (int j = 0; j < numLng; ++j) {
             float theta = BE1::Math::TwoPi * j / (numLng - 1); // 0 ~ 2pi
             float st, ct;
             BE1::Math::SinCos(theta - BE1::Math::HalfPi, st, ct);
@@ -398,10 +398,10 @@ void Mesh::CreateCapsule(const BE1::Vec3 &origin, const BE1::Mat3 &axis, float r
 
     BE1::VertIndex *idx = surf->subMesh->indexes;
 
-    for (int i = 0; i < numLat * 2 - 1; i++) {
+    for (int i = 0; i < numLat * 2 - 1; ++i) {
         int a = numLng * i;
 
-        for (int j = 0; j < numLng - 1; j++) {
+        for (int j = 0; j < numLng - 1; ++j) {
             if (i > 0) {
                 int b = a + j;
                 *idx++ = a + (j + 1) % numLng;

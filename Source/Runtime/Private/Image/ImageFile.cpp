@@ -135,4 +135,10 @@ Image *Image::NewImageFromFile(const char *filename) {
     return image;
 }
 
+std::shared_ptr<Image> Image::NewSharedImageFromFile(const char *filename) {
+    std::shared_ptr<Image> image = std::make_shared<Image>();
+    image->Load(filename);
+    return image;
+}
+
 BE_NAMESPACE_END

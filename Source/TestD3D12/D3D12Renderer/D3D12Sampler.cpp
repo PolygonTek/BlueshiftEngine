@@ -1,11 +1,11 @@
 // Copyright(c) 2017 POLYGONTEK
-// 
+//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
-// 
+//
 // http://www.apache.org/licenses/LICENSE-2.0
-// 
+//
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -17,7 +17,7 @@
 #include "D3D12Sampler.h"
 #include "D3D12DescriptorPool.h"
 #include "D3D12CommandList.h"
-#include "D3D12FrameData.h"
+#include "D3D12FrameThreadData.h"
 
 static constexpr D3D12_FILTER ToD3D12TextureFilter(RHI::TextureFilter filter) {
     switch (filter) {
@@ -115,25 +115,37 @@ void D3D12Renderer::RecreateSampler(RHI::Sampler* sampler, const RHI::SamplerDes
     samplerDesc.MinLOD = desc->minLod;
     samplerDesc.MaxLOD = desc->maxLod;
 
-    D3D12Sampler *d3d12Sampler = static_cast<D3D12Sampler *>(sampler);
-    device->CreateSampler(&samplerDesc, d3d12Sampler->descriptorHandle);
+    D3D12Sampler *_sampler = static_cast<D3D12Sampler *>(sampler);
+    device->CreateSampler(&samplerDesc, _sampler->descriptorHandle);
 }
 
-void D3D12Renderer::SetSampler(RHI::CommandList *commandList, int slot, RHI::Sampler *sampler) {
-    D3D12CommandList *d3d12CommandList = static_cast<D3D12CommandList *>(commandList);
-    D3D12FrameThreadData *threadData = static_cast<D3D12FrameThreadData *>(d3d12CommandList->GetFrameThreadData());
+void D3D12Renderer::SetSampler(RHI::CommandList *commandList, int shaderRegister, RHI::Sampler *sampler) {
+    D3D12CommandList *_commandList = static_cast<D3D12CommandList *>(commandList);
 
-    // 슬롯 (레지스터) 에 대한 루트 파라미터 인덱스를 얻고, 디스크립터 테이블일 경우 테이블 인덱스도 얻어온다.
-    const D3D12PipelineState::Binder &binder = d3d12CommandList->currentPSO->binder;
-    int rootParameterIndex = binder.rootParameterBinder.samplers[slot];
-    int descriptorIndex = binder.descriptorTableBinder.samplers[slot];
+    // 셰이더 레지스터에 대한 루트 파라미터 인덱스를 얻는다.
+    const D3D12PipelineState::RegisterBinder &binder = _commandList->currentPSO->binder;
+    assert(shaderRegister < COUNT_OF(binder.rootParameterIndexLUT.samplers));
+    uint8_t rootParameterIndex = binder.rootParameterIndexLUT.samplers[shaderRegister];
+    if (rootParameterIndex >= 64) {
+        BE_ERRLOG("D3D12Renderer::SetSampler: Invalid root parameter index\n");
+        return;
+    }
 
-    const D3D12Sampler *d3d12Sampler = static_cast<const D3D12Sampler *>(sampler);
-    threadData->tableCpuDescriptorHandles[rootParameterIndex][descriptorIndex] = d3d12Sampler->descriptorHandle;
+    // 일반 Sampler 는 디스크립터 테이블로만 전달될 수 있으므로, 디스크립터 테이블 내의 인덱스를 얻어온다.
+    int indexInTable = binder.descriptorTableIndexLUT.samplers[shaderRegister];
+    if (indexInTable == 0xFF) {
+        BE_ERRLOG("D3D12Renderer::SetSampler: Invalid descriptor index in descriptor table\n");
+        return;
+    }
 
-    if (d3d12CommandList->currentPSO->graphics) {
-        d3d12CommandList->graphicsRootParametersDirtyMask |= BIT64(rootParameterIndex);
+    // 사용할 디스크립터 테이블 변수에 디스크립터 핸들을 채워 넣는다.
+    const D3D12Sampler *_sampler = static_cast<const D3D12Sampler *>(sampler);
+    _commandList->GetRootBindingData()->descriptorTableHandles[rootParameterIndex][indexInTable] = _sampler->descriptorHandle;
+
+    // 변경할 루트 파라미터 인덱스에 대한 dirty mask 를 설정한다.
+    if (_commandList->currentPSO->isGraphics) {
+        _commandList->graphicsRootParametersDirtyMask |= BIT64(rootParameterIndex);
     } else {
-        d3d12CommandList->computeRootParametersDirtyMask |= BIT64(rootParameterIndex);
+        _commandList->computeRootParametersDirtyMask |= BIT64(rootParameterIndex);
     }
 }

@@ -28,7 +28,7 @@ void Mesh::FinishSurfaces(FinishFlag finishFlags) {
         SortAndMerge();
     }
 
-    if (BE1::HasFlag(finishFlags, FinishFlag::SortAndMerge) || BE1::HasFlag(finishFlags, FinishFlag::ComputeAABB)) {
+    if (BE1::HasAnyFlag(finishFlags, FinishFlag::SortAndMerge | FinishFlag::ComputeAABB)) {
         ComputeAABB();
     }
 

@@ -213,6 +213,8 @@ static bool RunFrameInstance(int frameMsec) {
         return false;
     }
 
+    BE1::cmdSystem.ExecuteCommandBuffer();
+
     app.RunFrame(frameMsec);
 
     app.Render();

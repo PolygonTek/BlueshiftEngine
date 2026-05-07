@@ -365,7 +365,7 @@ bool RenderCamera::CalcDepthBoundsFromPoints(int numPoints, const BE1::Vec3 *poi
     float localMin = BE1::Math::Infinity;
     float localMax = -BE1::Math::Infinity;
 
-    for (int i = 0; i < numPoints; i++) {
+    for (int i = 0; i < numPoints; ++i) {
         const BE1::Vec3 &v = points[i];
 
         float cz = v[0] * mvp[2][0] + v[1] * mvp[2][1] + v[2] * mvp[2][2] + mvp[2][3];

@@ -24,8 +24,8 @@ class VisObject;
 enum class DrawTextFlag : uint16_t;
 
 enum class FrameSyncState : uint8_t {
-    WaitingForUpdateCompleted,      // (렌더 스레드가 렌더링이 완료되어) 메인 스레드의 다음 업데이트 작업이 완료되기를 기다리는 상태
-    WaitingForRenderCompleted       // (메인 스레드가 업데이트가 완료되어) 렌더 스레드의 다음 렌더링 작업이 완료되기를 기다리는 상태
+    RenderCompleted,        // (렌더 스레드의 렌더링이 완료되어) 메인 스레드의 다음 업데이트 작업이 완료되기를 기다리는 상태
+    UpdateCompleted         // (메인 스레드의 업데이트가 완료되어) 렌더 스레드의 다음 렌더링 작업이 완료되기를 기다리는 상태
 };
 
 enum class RenderCommandId : uint8_t {
@@ -71,15 +71,21 @@ struct EndRenderCommand {
 };
 
 /*
--------------------------------------------------------------------------------
+---------------------------------------------------------------------------------------------------
+
     RenderFrameData
 
-    프레임에 필요한 렌더링 데이터들을 관리한다.
+    한 프레임의 렌더링에 필요한 데이터들을 관리한다.
 
-    1. 프레임 임시 메모리
-    2. 렌더 커맨더 버퍼
-    3. 렌더 태스크 스레드 데이터
--------------------------------------------------------------------------------
+    1. 한 프레임 임시 시스템 메모리
+    2. 렌더 커맨드 버퍼 (한 프레임에 쌓여진 렌더링 명령)
+    3. 프레임의 스레드 별 렌더 태스크 데이터 (RHI::FrameThreadData 배열)
+        - 렌더링에 필요한 자원/데이터를 스레드 별로 분배한 것
+        - 렌더 태스크의 최대 스레드 수만큼 미리 생성된다.
+        - 스레드를 사용하지 않는 프론트엔드/백엔드 코드에서는 그냥 0 번째 요소를 사용한다.
+        - 스레드간 자원/데이터가 독립적이므로 동기화가 필요없다.
+
+---------------------------------------------------------------------------------------------------
 */
 
 class RenderFrameData {
@@ -89,10 +95,13 @@ public:
     void                            Init();
     void                            Shutdown();
 
-                                    // 이번 프레임의 임시 메모리 할당 초기화 (메인 스레드에서 호출됨)
+                                    // 이번 프레임의 임시 시스템 메모리 할당 초기화 (메인 스레드에서 호출됨)
     void                            BeginFrameMemAllocs();
 
-                                    // 프레임에 필요한 임시 메모리 할당 (not thread-safe), 이번 프레임이 끝나면 자동으로 해제된다.
+                                    // 이번 프레임 동안 사용할 임시 시스템 메모리를 할당한다.
+                                    // 할당된 메모리는 다음 프레임에서 재사용될 때 일괄적으로 해제된다.
+                                    // 현재는 프론트엔드에서 이번 프레임의 렌더 데이터를 구성하는 동안에만 사용한다.
+                                    // 프론트엔드/백엔드 또는 여러 스레드에서 동시에 할당하려면 별도의 동기화가 필요하다.
     void *                          MemAlloc(int size);
     void *                          ClearedMemAlloc(int size);
 
@@ -107,20 +116,24 @@ public:
                                     // 렌더 커맨드 버퍼 리턴
     RenderCommandBuffer *           GetCommands() { return &commands; }
 
+                                    // 렌더 커맨드들..
     void                            CmdBeginContext(RenderContext *context);
     void                            CmdDrawCamera(const VisCamera *camera);
     void                            CmdSwapBuffers();
     void                            CmdScreenshot(int x, int y, int width, int height, const char *filename);
     void                            CmdEnd();
 
-                                    // 프레임의 렌더 태스크 스레드 별 데이터 얻기
-    RHI::FrameThreadData *          GetThreadData(int threadIndex) { assert(threadIndex >= 0 && threadIndex < numRenderTaskThreads); return threadData[threadIndex]; }
+                                    // 렌더 태스크의 스레드 별 데이터 얻기
+    RHI::FrameThreadData *          GetThreadData(int32_t threadIndex) { assert(threadIndex >= 0 && threadIndex < numRenderTaskThreads); return threadData[threadIndex]; }
 
+                                    // 프론트 엔드에서 프레임 데이터의 사용을 시작
     void                            BeginFrame();
+
+                                    // 프론트 엔드에서 프레임 데이터의 사용을 종료
     void                            EndFrame();
 
-    uint64_t                        GetFenceValue() const { return fenceValue; }
-    void                            SetFenceValue(uint64_t fenceValue) { this->fenceValue = fenceValue; }
+    void                            SetFrameFenceValue(uint64_t fenceValue) { this->frameFenceValue = fenceValue; }
+    void                            WaitFrameFence() const { RHI::renderer->WaitFence(frameFenceValue); }
 
 private:
     struct MemBlock {
@@ -154,20 +167,19 @@ private:
 
     RenderCommandBuffer             commands;
 
-    FrameSyncState                  frameSyncState = FrameSyncState::WaitingForUpdateCompleted;
+    FrameSyncState                  frameSyncState = FrameSyncState::RenderCompleted;
+    uint64_t                        frameFenceValue = 0;
 
     RHI::FrameThreadData **         threadData = nullptr;
     int                             numRenderTaskThreads = 0;
-
-    uint64_t                        fenceValue = 0;
 };
 
 BE_INLINE void RenderFrameData::BeginFrame() {
     // 프론트 엔드에서 이번 프레임의 프레임 데이터를 사용하기 위해서는, 백엔드에서의 사용이 완료되야 한다.
-    RHI::renderer->WaitFence(fenceValue);
+    WaitFrameFence();
 
     // 스레드 별로 사용할 자원을 초기화한다.
-    for (int threadIndex = 0; threadIndex < numRenderTaskThreads; ++threadIndex) {
+    for (int32_t threadIndex = 0; threadIndex < numRenderTaskThreads; ++threadIndex) {
         threadData[threadIndex]->Reset();
     }
 

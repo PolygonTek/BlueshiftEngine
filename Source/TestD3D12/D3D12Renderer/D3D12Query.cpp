@@ -60,30 +60,30 @@ void D3D12Renderer::DestroyQueryHeap(RHI::QueryHeap *queryHeap, bool immediate) 
     if (immediate) {
         delete queryHeap;
     } else {
-        MarkForDelete(queryHeap);
+        DeleteGPUObject(queryHeap);
     }
 }
 
 void D3D12Renderer::BeginQuery(RHI::CommandList *commandList, const RHI::QueryHeap *queryHeap, uint32_t index) {
-    D3D12CommandList *d3d12CommandList = static_cast<D3D12CommandList *>(commandList);
-    const D3D12QueryHeap *d3d12QueryHeap = static_cast<const D3D12QueryHeap *>(queryHeap);
+    D3D12CommandList *_commandList = static_cast<D3D12CommandList *>(commandList);
+    const D3D12QueryHeap *_queryHeap = static_cast<const D3D12QueryHeap *>(queryHeap);
 
-    d3d12CommandList->GetGraphicsCommandList()->BeginQuery(d3d12QueryHeap->queryHeap, ToD3D12QueryType(queryHeap->desc.type), index);
+    _commandList->GetGraphicsCommandList()->BeginQuery(_queryHeap->queryHeap, ToD3D12QueryType(queryHeap->desc.type), index);
 }
 
 void D3D12Renderer::EndQuery(RHI::CommandList *commandList, const RHI::QueryHeap *queryHeap, uint32_t index) {
-    D3D12CommandList *d3d12CommandList = static_cast<D3D12CommandList *>(commandList);
-    const D3D12QueryHeap *d3d12QueryHeap = static_cast<const D3D12QueryHeap *>(queryHeap);
+    D3D12CommandList *_commandList = static_cast<D3D12CommandList *>(commandList);
+    const D3D12QueryHeap *_queryHeap = static_cast<const D3D12QueryHeap *>(queryHeap);
 
-    d3d12CommandList->GetGraphicsCommandList()->EndQuery(d3d12QueryHeap->queryHeap, ToD3D12QueryType(queryHeap->desc.type), index);
+    _commandList->GetGraphicsCommandList()->EndQuery(_queryHeap->queryHeap, ToD3D12QueryType(queryHeap->desc.type), index);
 }
 
 void D3D12Renderer::ResolveQuery(RHI::CommandList *commandList, const RHI::QueryHeap *queryHeap, uint32_t index, uint32_t count, const RHI::Buffer *destBuffer, uint64_t destOffset) {
-    D3D12CommandList *d3d12CommandList = static_cast<D3D12CommandList *>(commandList);
-    const D3D12QueryHeap *d3d12QueryHeap = static_cast<const D3D12QueryHeap *>(queryHeap);
-    const D3D12Buffer *d3d12Buffer = static_cast<const D3D12Buffer *>(destBuffer);
+    D3D12CommandList *_commandList = static_cast<D3D12CommandList *>(commandList);
+    const D3D12QueryHeap *_queryHeap = static_cast<const D3D12QueryHeap *>(queryHeap);
+    const D3D12Buffer *_buffer = static_cast<const D3D12Buffer *>(destBuffer);
 
-    d3d12CommandList->GetGraphicsCommandList()->ResolveQueryData(d3d12QueryHeap->queryHeap, ToD3D12QueryType(queryHeap->desc.type), index, count, d3d12Buffer->GetResource(), destOffset);
+    _commandList->GetGraphicsCommandList()->ResolveQueryData(_queryHeap->queryHeap, ToD3D12QueryType(queryHeap->desc.type), index, count, _buffer->GetResource(), destOffset);
 }
 
 void D3D12Renderer::ResetQuery(RHI::CommandList *commandList, const RHI::QueryHeap *queryHeap, uint32_t index, uint32_t count) {

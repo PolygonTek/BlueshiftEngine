@@ -181,14 +181,14 @@ Mesh *MeshManager::CreateCombinedMesh(const char *hashName, const BE1::Array<Bat
     for (int subMeshIndex = 0; subMeshIndex < batchSubMeshes.Count(); subMeshIndex++) {
         const SubMesh *srcSubMesh = batchSubMeshes[subMeshIndex].subMesh;
 
-        for (int i = 0; i < srcSubMesh->numVerts; i++) {
+        for (int i = 0; i < srcSubMesh->numVerts; ++i) {
             *dstVertPtr = srcSubMesh->verts[i];
 
             dstVertPtr->Transform(batchSubMeshes[subMeshIndex].localTransform);
             dstVertPtr++;
         }
 
-        for (int i = 0; i < srcSubMesh->numIndexes; i++) {
+        for (int i = 0; i < srcSubMesh->numIndexes; ++i) {
             *dstIndexPtr = srcSubMesh->indexes[i] + baseVertex;
             dstIndexPtr++;
         }

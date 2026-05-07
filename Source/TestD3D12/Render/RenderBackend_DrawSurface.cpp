@@ -83,9 +83,11 @@ void RenderBackend::DrawSurfaces(const DrawSurf **drawSurfs, uint32_t numDrawSur
     assert(numDrawSurfs > 0);
 
 #ifdef USE_RENDER_TASK
-    uint32_t numTasks = (uint32_t)BE1::Math::Ceil((float)numDrawSurfs / MaxDrawCallsPerTask);
+    // numDrawSurfs 에 따라 numTasks 를 계산한다.
+    uint32_t numTasks = (numDrawSurfs + MaxDrawCallsPerTask - 1) / MaxDrawCallsPerTask;
     numTasks = BE1::Min(BE1::Engine::taskManager->NumThreads(), numTasks);
 
+    // numDrawSurfs 가 많으면 태스크로 나눠서 그릴 수 있다.
     if (numTasks > 1) {
         DrawSurfacesWithTask(drawSurfs, numDrawSurfs, numTasks);
     } else {
@@ -102,7 +104,7 @@ void RenderBackend::DrawInstancedSurface(const DrawSurf **drawSurfs, uint32_t in
     do {
         uint32_t currentInstanceCount = BE1::Min(instanceCount, MaxInstancedDrawCount);
 
-        DrawInstancedSurface(mainCommandList, drawSurfs, currentInstanceCount);
+        DrawInstancedSurface(frameData->GetThreadData(0), mainCommandList, drawSurfs, currentInstanceCount);
 
         drawSurfs += currentInstanceCount;
         instanceCount -= currentInstanceCount;
@@ -115,7 +117,7 @@ void RenderBackend::DrawSurfacesWithoutTask(const DrawSurf **drawSurfs, uint32_t
     for (int drawSurfIndex = 0; drawSurfIndex < numDrawSurfs; ++drawSurfIndex) {
         const DrawSurf *drawSurf = drawSurfs[drawSurfIndex];
 
-        DrawSurface(mainCommandList, drawSurf);
+        DrawSurface(frameData->GetThreadData(0), mainCommandList, drawSurf);
     }
 }
 
@@ -123,21 +125,21 @@ void RenderBackend::DrawSurfacesWithoutTask(const DrawSurf **drawSurfs, uint32_t
 void RenderBackend::DrawSurfacesByTask(RenderBackend::DrawObjectTaskDesc *taskDesc) {
     PROFILER_CPU_SCOPED_EVENT("RenderBackend::DrawSurfacesByTask");
 
-    // Secondary CommandList 를 시작한다.
+    // 세컨더리 커맨드 리스트를 시작한다.
     RHI::FrameThreadData *frameThreadData = frameData->GetThreadData(taskDesc->threadIndex);
     RHI::CommandList *commandList = frameThreadData->BeginSecondaryCommandList(mainCommandList);
 
     for (int drawSurfIndex = 0; drawSurfIndex < taskDesc->numDrawSurfs; ++drawSurfIndex) {
         const DrawSurf *drawSurf = taskDesc->drawSurfs[drawSurfIndex];
 
-        DrawSurface(commandList, drawSurf);
+        DrawSurface(frameThreadData, commandList, drawSurf);
     }
 
-    // CommandList 기록을 마친다.
+    // 세컨더리 커맨드 리스트의 기록을 마친다.
     commandList->Close();
 
-    // 사용 중인 커맨드 리스트를 나중에 실행하기 위해 저장한다.
-    taskDesc->activeCommandList = commandList;
+    // 세컨더리 커맨드 리스트를 나중에 실행하기 위해 저장한다.
+    taskDesc->commandList = commandList;
 }
 
 void RenderBackend::DrawSurfacesByTaskFunction(void *data) {
@@ -149,41 +151,37 @@ void RenderBackend::DrawSurfacesByTaskFunction(void *data) {
 void RenderBackend::DrawSurfacesWithTask(const DrawSurf **drawSurfs, uint32_t numDrawSurfs, uint32_t numTasks) {
     PROFILER_CPU_SCOPED_EVENT("RenderBackend::DrawSurfacesWithTask");
 
-    uint32_t numDrawSurfsPerTasks = (uint32_t)BE1::Math::Ceil((float)numDrawSurfs / numTasks);
+    uint32_t numDrawSurfsPerTask = (numDrawSurfs + numTasks - 1) / numTasks;
     uint32_t startIndex = 0;
-    int threadIndex = 0;
+    int32_t threadIndex = 0;
 
     // 태스크 정보 초기화
     objectDrawingTaskDescs.Reserve(numTasks);
     objectDrawingTaskDescs.SetCount(0, false);
 
-    // numTask 개수만큼 task 를 실행한다.
+    // numTask 개수만큼 태스크를 추가한다.
     while (startIndex < numDrawSurfs) {
         DrawObjectTaskDesc &currentThreadDesc = objectDrawingTaskDescs.Alloc();
 
         currentThreadDesc.threadIndex = threadIndex++;
         currentThreadDesc.drawSurfs = &drawSurfs[startIndex];
-        currentThreadDesc.numDrawSurfs = BE1::Min(startIndex + numDrawSurfsPerTasks, numDrawSurfs) - startIndex;
+        currentThreadDesc.numDrawSurfs = BE1::Min(startIndex + numDrawSurfsPerTask, numDrawSurfs) - startIndex;
         BE1::Engine::taskManager->AddTask(RenderBackend::DrawSurfacesByTaskFunction, &currentThreadDesc, drawGroupId, false);
 
         startIndex += currentThreadDesc.numDrawSurfs;
     }
 
+    // 모든 태스크가 끝날 때까지 기다린다.
     BE1::Engine::taskManager->WaitFinish(drawGroupId, true);
 
-    // Main CommandList 에 모든 태스크의 Secondary CommandList 들을 기록한다.
-    int renderTaskCount = objectDrawingTaskDescs.Count();
-    for (int threadIndex = 0; threadIndex < renderTaskCount; ++threadIndex) {
-        const RHI::FrameThreadData *frameThreadData = frameData->GetThreadData(threadIndex);
-
-        objectDrawingTaskDescs[threadIndex].activeCommandList->ExecuteSecondary(mainCommandList, frameThreadData);
+    // 메인 커맨드 리스트에 모든 태스크의 세컨더리 커맨드 리스트들을 기록한다.
+    for (int32_t threadIndex = 0; threadIndex < objectDrawingTaskDescs.Count(); ++threadIndex) {
+        mainCommandList->ExecuteSecondary(objectDrawingTaskDescs[threadIndex].commandList);
     }
 }
 #endif // USE_RENDER_TASK
 
-void RenderBackend::DrawSurface(RHI::CommandList *commandList, const DrawSurf *drawSurf) {
-    RHI::FrameThreadData *frameThreadData = commandList->GetFrameThreadData();
-
+void RenderBackend::DrawSurface(RHI::FrameThreadData *frameThreadData, RHI::CommandList *commandList, const DrawSurf *drawSurf) {
     RHI::ConstantBuffer *constantBuffer = frameThreadData->AllocConstant(sizeof(UnlitConstantData));
     if (!constantBuffer) {
         return;
@@ -204,9 +202,7 @@ void RenderBackend::DrawSurface(RHI::CommandList *commandList, const DrawSurf *d
     RHI::renderer->DrawIndexed(commandList, drawSurf->subMesh->numIndexes, 0, 0);
 }
 
-void RenderBackend::DrawInstancedSurface(RHI::CommandList *commandList, const DrawSurf **instanceSurfs, int instanceCount) {
-    RHI::FrameThreadData *frameThreadData = commandList->GetFrameThreadData();
-
+void RenderBackend::DrawInstancedSurface(RHI::FrameThreadData *frameThreadData, RHI::CommandList *commandList, const DrawSurf **instanceSurfs, int instanceCount) {
     RHI::ConstantBuffer *constantBuffer = frameThreadData->AllocConstant(sizeof(UnlitInstancedConstantData));
     if (!constantBuffer) {
         return;
@@ -232,9 +228,7 @@ void RenderBackend::DrawInstancedSurface(RHI::CommandList *commandList, const Dr
     RHI::renderer->DrawIndexedInstanced(commandList, instanceSurfs[0]->subMesh->numIndexes, instanceCount, 0, 0, 0);
 }
 
-void RenderBackend::DrawGuiSurface(RHI::CommandList *commandList, const DrawSurf *drawSurf) {
-    RHI::FrameThreadData *frameThreadData = commandList->GetFrameThreadData();
-
+void RenderBackend::DrawGuiSurface(RHI::FrameThreadData *frameThreadData, RHI::CommandList *commandList, const DrawSurf *drawSurf) {
     RHI::ConstantBuffer *constantBuffer = frameThreadData->AllocConstant(sizeof(UnlitConstantData));
     if (!constantBuffer) {
         return;

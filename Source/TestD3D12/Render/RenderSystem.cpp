@@ -1,11 +1,11 @@
 // Copyright(c) 2017 POLYGONTEK
-// 
+//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
-// 
+//
 // http://www.apache.org/licenses/LICENSE-2.0
-// 
+//
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -78,15 +78,47 @@ RenderContext *RenderSystem::CreateRenderContext(void *windowHandle, bool isMain
 }
 
 void RenderSystem::DestroyRenderContext(RenderContext *renderContext) {
+    if (renderContext == mainRenderContext) {
+        mainRenderContext = nullptr;
+    }
+
+    // RenderContext 가 파괴될 때 요청한 스크린샷이 남아있다면 관련 변수를 정리해준다.
+    if (pendingScreenshot.renderContext == renderContext) {
+        pendingScreenshot.renderContext = nullptr;
+        pendingScreenshot.filename[0] = '\0';
+    }
+
     renderContext->Shutdown();
 
     delete renderContext;
+}
+
+void RenderSystem::FlushPendingScreenshot(RenderContext *renderContext, RenderFrameData *frameData) {
+    if (pendingScreenshot.renderContext != renderContext) {
+        return;
+    }
+
+    frameData->CmdScreenshot(0, 0, renderContext->GetSwapChain()->GetWidth(), renderContext->GetSwapChain()->GetHeight(), pendingScreenshot.filename);
+
+    pendingScreenshot.renderContext = nullptr;
+    pendingScreenshot.filename[0] = '\0';
+}
+
+void RenderSystem::RequestScreenshot(RenderContext *renderContext, const char *filename) {
+    pendingScreenshot.renderContext = renderContext;
+    BE1::Str::Copynz(pendingScreenshot.filename, filename, COUNT_OF(pendingScreenshot.filename));
 }
 
 void RenderSystem::Cmd_ScreenShot(const BE1::CmdArgs &args) {
     char path[1024];
 
     BE1::Str documentDir = BE1::fileSystem.GetUserDocumentDir();
+    RenderContext *renderContext = renderSystem->mainRenderContext;
+
+    if (!renderContext) {
+        BE_WARNLOG("screenshot: main render context is not available\n");
+        return;
+    }
 
     if (args.Argc() > 1) {
         BE1::Str::snPrintf(path, sizeof(path), "%s/Screenshots/%s", documentDir.c_str(), args.Argv(1));
@@ -106,16 +138,10 @@ void RenderSystem::Cmd_ScreenShot(const BE1::CmdArgs &args) {
         }
 
         if (index == 1000) {
-            BE_WARNLOG("too many screenshot exist\n");
+            BE_WARNLOG("too many screenshots exist\n");
             return;
         }
     }
 
-    RenderContext *renderContext = renderSystem->mainRenderContext;
-    RenderFrameData *frameData = renderContext->GetCurrentFrontendFrameData();
-
-    if (renderContext->IsUsingRenderThread()) {
-        renderContext->WaitRenderCompleted(frameData);
-    }
-    frameData->CmdScreenshot(0, 0, renderContext->GetSwapChain()->GetWidth(), renderContext->GetSwapChain()->GetHeight(), path);
+    renderSystem->RequestScreenshot(renderContext, path);
 }

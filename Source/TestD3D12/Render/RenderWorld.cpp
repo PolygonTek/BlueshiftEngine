@@ -166,7 +166,7 @@ void RenderWorld::RemoveRenderObject(int index) {
 #ifdef USE_DBVT
     objectDbvt.DestroyProxy(renderObject->proxy->id);
 
-    for (int i = 0; i < renderObject->numMeshSurfProxies; i++) {
+    for (int i = 0; i < renderObject->numMeshSurfProxies; ++i) {
         staticMeshDbvt.DestroyProxy(renderObject->meshSurfProxies[i].id);
     }
 #endif

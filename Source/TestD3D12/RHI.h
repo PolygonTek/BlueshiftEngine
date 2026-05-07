@@ -154,24 +154,37 @@ namespace RHI {
         PatchList
     };
 
+    enum class GPUResourceStatus : uint8_t {
+        Pending,
+        Ready,
+        Failed,
+        Cancelled
+    };
+
     enum class BufferUsage : uint8_t {
         Default,
         Upload,
         Readback
     };
 
-    enum class ResourceFlag : uint32_t {
+    enum class BufferFlag : uint32_t {
         None = 0,
         ConstantBuffer                  = BIT(0),
         VertexBuffer                    = BIT(1),
         IndexBuffer                     = BIT(2),
         IndirectBuffer                  = BIT(3),
-        ShaderResource                  = BIT(4),
-        RenderTarget                    = BIT(5),
-        DepthStencil                    = BIT(6),
-        UnorderedAccess                 = BIT(7),
-        Typeless                        = BIT(8),
-        SkipDefaultViews                = BIT(9)
+        ShaderResource                  = BIT(10),
+        UnorderedAccess                 = BIT(11)
+    };
+
+    enum class TextureFlag : uint32_t {
+        None = 0,
+        RenderTarget                    = BIT(0),
+        DepthStencil                    = BIT(1),
+        Typeless                        = BIT(2),
+        ShaderResource                  = BIT(10),
+        UnorderedAccess                 = BIT(11),
+        SkipDefaultViews                = BIT(12)
     };
 
     enum class BufferType : uint8_t {
@@ -198,7 +211,7 @@ namespace RHI {
         NegativeZ
     };
 
-    enum class SubresourceType : uint8_t {
+    enum class ViewType : uint8_t {
         SRV,                    // Shader Resource View
         UAV,                    // Unordered Access View
         RTV,                    // Render Target View
@@ -243,6 +256,100 @@ namespace RHI {
         Rate2X4,
         Rate4X2,
         Rate4X4
+    };
+
+    enum class Format : uint8_t {
+        Unknown,
+        Auto,
+
+        R32G32B32A32_FLOAT,
+        R32G32B32A32_UINT,
+        R32G32B32A32_SINT,
+
+        R32G32B32_FLOAT,
+        R32G32B32_UINT,
+        R32G32B32_SINT,
+
+        R16G16B16A16_FLOAT,
+        R16G16B16A16_UNORM,
+        R16G16B16A16_UINT,
+        R16G16B16A16_SNORM,
+        R16G16B16A16_SINT,
+
+        R32G32_FLOAT,
+        R32G32_UINT,
+        R32G32_SINT,
+
+        D32_FLOAT_S8X24_UINT,       // DSV (Depth 32-bit, Stencil 8-bit, Unused 24-bit)
+        R32_FLOAT_X8X24_TYPELESS,   // SRV (Red 32-bit, Unused 8-bit, Unused 24-bit)
+        X32_TYPELESS_G8X24_UINT,    // SRV (Unused 32-bit, Green 8-bit, Unused 24-bit)
+
+        R10G10B10A2_UNORM,
+        R10G10B10A2_UINT,
+
+        R11G11B10_FLOAT,
+
+        R8G8B8A8_UNORM,
+        R8G8B8A8_UNORM_SRGB,
+        R8G8B8A8_UINT,
+        R8G8B8A8_SNORM,
+        R8G8B8A8_SINT,
+
+        R16G16_FLOAT,
+        R16G16_UNORM,
+        R16G16_UINT,
+        R16G16_SNORM,
+        R16G16_SINT,
+
+        R32_FLOAT,
+        D32_FLOAT,
+        R32_UINT,
+        R32_SINT,
+
+        D24_UNORM_S8_UINT,          // DSV (Depth 24-bit, Stencil 8-bit)
+        R24_UNORM_X8_TYPELESS,      // SRV (Red 24-bit, Unused 8-bit)
+        X24_TYPELESS_G8_UINT,       // SRV (Unused 24-bit, Green 8-bit)
+
+        R8G8_UNORM,
+        R8G8_UINT,
+        R8G8_SNORM,
+        R8G8_SINT,
+
+        R16_FLOAT,
+        D16_UNORM,
+        R16_UNORM,
+        R16_UINT,
+        R16_SNORM,
+        R16_SINT,
+
+        R8_UNORM,
+        R8_UINT,
+        R8_SNORM,
+        R8_SINT,
+        A8_UNORM,
+
+        R9G9B9E5_SHAREDEXP,
+
+        BC1_UNORM,
+        BC1_UNORM_SRGB,
+        BC2_UNORM,
+        BC2_UNORM_SRGB,
+        BC3_UNORM,
+        BC3_UNORM_SRGB,
+        BC4_UNORM,
+        BC4_SNORM,
+        BC5_UNORM,
+        BC5_SNORM,
+
+        B8G8R8A8_UNORM,
+        B8G8R8A8_UNORM_SRGB,
+        B8G8R8X8_UNORM,
+        B8G8R8X8_UNORM_SRGB,
+
+        BC6H_UF16,
+        BC6H_SF16,
+        BC7_UNORM,
+        BC7_UNORM_SRGB
     };
 
     struct SamplerDesc {
@@ -388,6 +495,19 @@ namespace RHI {
         uint32_t                        queryCount = 0;
     };
 
+    struct ViewID {
+        uint32_t                        value = InvalidValue;
+
+        static constexpr uint32_t       InvalidValue = UINT32_MAX;
+        static constexpr uint32_t       PrimaryValue = 0;
+
+        static const ViewID             InvalidID;
+        static const ViewID             PrimaryID;
+
+        constexpr bool IsValid() const { return value != InvalidValue; }
+        constexpr bool IsPrimary() const { return value == PrimaryValue; }
+    };
+
     class GPUObject {
     public:
         virtual ~GPUObject() = 0 {}
@@ -400,14 +520,21 @@ namespace RHI {
         virtual void *                  GetNativeResource() const = 0;
         virtual const void *            GetNativeBufferObject() const { return nullptr; }
         virtual const void *            GetNativeTextureObject() const { return nullptr; }
+
+        GPUResourceStatus               GetStatus() const { return status.load(); }
+        void                            SetStatus(GPUResourceStatus newStatus) { status.store(newStatus); }
+
+        GPUResource &                   operator=(const GPUResource &rhs) { status.store(rhs.status.load()); return *this; }
+
+    protected:
+        std::atomic<GPUResourceStatus>  status = GPUResourceStatus::Ready;
     };
 
     class Buffer : public GPUResource {
     public:
-        virtual bool                    IsValidSubresource(RHI::SubresourceType type, int subresourceIndex) const = 0;
+        virtual bool                    HasValidView(RHI::ViewType viewType, RHI::ViewID viewID = RHI::ViewID::PrimaryID) const = 0;
 
-        void *                          writePtr = nullptr;
-        ResourceFlag                    flags = ResourceFlag::None;
+        BufferFlag                      flags = BufferFlag::None;
     };
 
     class VertexBuffer : public GPUResource {
@@ -433,7 +560,7 @@ namespace RHI {
 
     class Texture : public GPUResource {
     public:
-        virtual bool                    IsValidSubresource(RHI::SubresourceType type, int subresourceIndex) const = 0;
+        virtual bool                    HasValidView(RHI::ViewType viewType, RHI::ViewID viewID = RHI::ViewID::PrimaryID) const = 0;
 
         virtual uint32_t                GetWidth() const = 0;
         virtual uint32_t                GetHeight() const = 0;
@@ -441,7 +568,8 @@ namespace RHI {
         virtual uint32_t                GetArraySize() const = 0;
         virtual uint32_t                GetMipLevelCount() const = 0;
 
-        TextureType                     textureType;
+        TextureType                     type;
+        TextureFlag                     flags = TextureFlag::None;
     };
 
     class Shader : public GPUObject {
@@ -457,7 +585,7 @@ namespace RHI {
     class PipelineState : public GPUObject {
     public:
         uint64_t                        hash = 0;
-        bool                            graphics;
+        bool                            isGraphics;
         std::atomic_int                 refCount = 1;
     };
 
@@ -614,7 +742,7 @@ namespace RHI {
         };
 
         const Texture *                 texture = nullptr;
-        int                             subresourceIndex = -1;
+        RHI::ViewID                     viewID = RHI::ViewID::PrimaryID;
         int                             resolveSourceIndex = 0;
         Type                            type = Type::Color;
         LoadAction                      loadAction = LoadAction::Load;
@@ -624,11 +752,11 @@ namespace RHI {
         GPUResourceState                duringState = GPUResourceState::Undefined;
         GPUResourceState                afterState = GPUResourceState::Undefined;
 
-        static RenderPassImage Color(const Texture *texture, int subresourceIndex = -1, LoadAction loadAction = LoadAction::Load, StoreAction storeAction = StoreAction::Store,
+        static RenderPassImage Color(const Texture *texture, RHI::ViewID viewID = RHI::ViewID::PrimaryID, LoadAction loadAction = LoadAction::Load, StoreAction storeAction = StoreAction::Store,
             GPUResourceState beforeState = GPUResourceState::ShaderResource, GPUResourceState afterState = GPUResourceState::ShaderResource) {
             RenderPassImage image;
             image.texture = texture;
-            image.subresourceIndex = subresourceIndex;
+            image.viewID = viewID;
             image.type = Type::Color;
             image.loadAction = loadAction;
             image.storeAction = storeAction;
@@ -638,11 +766,11 @@ namespace RHI {
             return image;
         }
 
-        static RenderPassImage DepthStencil(const Texture *texture, int subresourceIndex = -1, LoadAction loadAction = LoadAction::Load, StoreAction storeAction = StoreAction::Store,
+        static RenderPassImage DepthStencil(const Texture *texture, RHI::ViewID viewID = RHI::ViewID::PrimaryID, LoadAction loadAction = LoadAction::Load, StoreAction storeAction = StoreAction::Store,
             GPUResourceState beforeState = GPUResourceState::DepthWrite, GPUResourceState duringState = GPUResourceState::DepthWrite, GPUResourceState afterState = GPUResourceState::DepthWrite) {
             RenderPassImage image;
             image.texture = texture;
-            image.subresourceIndex = subresourceIndex;
+            image.viewID = viewID;
             image.type = Type::DepthStencil;
             image.loadAction = loadAction;
             image.storeAction = storeAction;
@@ -652,11 +780,11 @@ namespace RHI {
             return image;
         }
 
-        static RenderPassImage ResolveColor(const Texture *texture, int subresourceIndex = -1, int resolveSourceIndex = 0,
+        static RenderPassImage ResolveColor(const Texture *texture, RHI::ViewID viewID = RHI::ViewID::PrimaryID, int resolveSourceIndex = 0,
             GPUResourceState beforeState = GPUResourceState::ShaderResource, GPUResourceState afterState = GPUResourceState::ShaderResource) {
             RenderPassImage image;
             image.texture = texture;
-            image.subresourceIndex = subresourceIndex;
+            image.viewID = viewID;
             image.resolveSourceIndex = resolveSourceIndex;
             image.type = Type::ResolveColor;
             image.beforeState = beforeState;
@@ -665,11 +793,11 @@ namespace RHI {
             return image;
         }
 
-        static RenderPassImage ResolveDepth(const Texture *texture, int subresourceIndex = -1, DepthResolveMode depthResolveMode = DepthResolveMode::Min,
+        static RenderPassImage ResolveDepth(const Texture *texture, RHI::ViewID viewID = RHI::ViewID::PrimaryID, DepthResolveMode depthResolveMode = DepthResolveMode::Min,
             GPUResourceState beforeState = GPUResourceState::ShaderResource, GPUResourceState afterState = GPUResourceState::ShaderResource) {
             RenderPassImage image;
             image.texture = texture;
-            image.subresourceIndex = subresourceIndex;
+            image.viewID = viewID;
             image.type = Type::ResolveDepth;
             image.beforeState = beforeState;
             image.duringState = GPUResourceState::CopyDst;
@@ -708,7 +836,7 @@ namespace RHI {
         Count
     };
 
-    enum class CommandListType : uint8_t {
+    enum class CommandListKind : uint8_t {
         Primary,
         Secondary,
         Count
@@ -719,15 +847,13 @@ namespace RHI {
     public:
         virtual ~CommandList() = 0 {}
 
+                                        // 커맨드 리스트를 재사용하기 위해 Reset() 함수를 호출하여 초기화한다.
         virtual void                    Reset(bool resetCacheStates = true, const CommandList *primaryCommandList = nullptr) = 0;
 
         virtual void                    Close() = 0;
         virtual void                    Execute() = 0;
-        virtual void                    ExecuteSecondary(RHI::CommandList *primaryCommandList, const RHI::FrameThreadData *frameThreadData) = 0;
         virtual void                    CloseAndExecute() = 0;
-        virtual void                    CloseAndExecuteSecondary(RHI::CommandList *primaryCommandList, const RHI::FrameThreadData *frameThreadData) = 0;
-
-        virtual FrameThreadData *       GetFrameThreadData() const = 0;
+        virtual void                    ExecuteSecondary(RHI::CommandList *secondaryCommandList) = 0;
     };
 
     class FrameThreadData {
@@ -736,18 +862,14 @@ namespace RHI {
 
         virtual void                    Reset() = 0;
 
-        virtual ConstantBuffer *        AllocConstant(uint32_t size, const void *data = nullptr) = 0;
         virtual VertexBuffer *          AllocVertex(uint32_t vertexSize, uint32_t count, const void *data = nullptr) = 0;
         virtual IndexBuffer *           AllocIndex(uint32_t indexSize, uint32_t count, const void *data = nullptr) = 0;
-        virtual Buffer *                AllocBuffer(BE1::Image::Format format, uint32_t stride, uint32_t count, const void *data = nullptr) = 0;
-        Buffer *                        AllocTypedBuffer(BE1::Image::Format format, uint32_t count, const void *data = nullptr) { return AllocBuffer(format, 0, count, data); }
-        Buffer *                        AllocRawBuffer(uint32_t count, const void *data = nullptr) { return AllocBuffer(BE1::Image::Format::Unknown, 0, count, data); }
-        Buffer *                        AllocStructuredBuffer(uint32_t stride, uint32_t count, const void *data = nullptr) { return AllocBuffer(BE1::Image::Format::Unknown, stride, count, data); }
+        virtual ConstantBuffer *        AllocConstant(uint32_t size, const void *data = nullptr) = 0;
 
         virtual void *                  AppendVertex(RHI::VertexBuffer *vertexBuffer, uint32_t vertexSize, uint32_t count, const void *data = nullptr) = 0;
         virtual void *                  AppendIndex(RHI::IndexBuffer *indexBuffer, uint32_t indexSize, uint32_t count, const void *data = nullptr) = 0;
 
-        virtual CommandList *           AllocGraphicsCommandList(RHI::CommandListType type = RHI::CommandListType::Primary) = 0;
+        virtual CommandList *           AllocGraphicsCommandList(RHI::CommandListKind kind = RHI::CommandListKind::Primary) = 0;
         virtual CommandList *           AllocComputeCommandList() = 0;
 
         virtual CommandList *           BeginCommandList(RHI::CommandQueueType queueType) = 0;
@@ -789,27 +911,26 @@ namespace RHI {
         virtual void                    WaitFence(uint64_t expectedFenceValue) = 0;
         virtual void                    Finish(CommandQueueType queueType) = 0;
 
-        virtual void                    FreePendingResources(bool waitPendings = false) = 0;
-
-        const RasterizerState *         GetRasterizerState(RasterizerStateType type) const { return &rasterizerStates[to_int(type)]; }
-        const DepthStencilState *       GetDepthStencilState(DepthStencilStateType type) const { return &depthStencilStates[to_int(type)]; }
-        const BlendState *              GetBlendState(BlendStateType type) const { return &blendStates[to_int(type)]; }
-
         virtual bool                    IsSupportedImageFormat(BE1::Image::Format imageFormat) const = 0;
         virtual BE1::Image::Format      ToUncompressedImageFormat(BE1::Image::Format imageFormat) const = 0;
         virtual BE1::Image::Format      ToCompressedImageFormat(BE1::Image::Format inFormat, bool useNormalMap) const = 0;
         virtual BE1::Image::Format      ToUAVImageFormat(BE1::Image::Format inFormat) const = 0;
 
-        virtual RHI::FrameThreadData *  CreateFrameThreadData() = 0;
-        virtual void                    DestroyFrameThreadData(FrameThreadData *frameThreadData) = 0;
-
         virtual SwapChain *             CreateSwapChain(HWND hwnd, uint32_t width, uint32_t height, BE1::Image::Format format) = 0;
         virtual void                    DestroySwapChain(SwapChain *swapChain) = 0;
 
-        virtual Buffer *                CreateBuffer(BufferUsage usage, ResourceFlag flags, uint64_t size, BE1::Image::Format format, uint32_t stride, const void *data) = 0;
-        Buffer *                        CreateTypedBuffer(BufferUsage usage, ResourceFlag flags, uint64_t size, BE1::Image::Format format, const void *data) { return CreateBuffer(usage, flags, size, format, 0, data); }
-        Buffer *                        CreateRawBuffer(BufferUsage usage, ResourceFlag flags, uint64_t size, const void *data) { return CreateBuffer(usage, flags, size, BE1::Image::Format::Unknown, 0, data); }
-        Buffer *                        CreateStructuredBuffer(BufferUsage usage, ResourceFlag flags, uint64_t size, uint32_t stride, const void *data) { return CreateBuffer(usage, flags, size, BE1::Image::Format::Unknown, stride, data); }
+        virtual RHI::FrameThreadData *  CreateFrameThreadData(int32_t threadIndex) = 0;
+        virtual void                    DestroyFrameThreadData(FrameThreadData *frameThreadData) = 0;
+
+        virtual void                    DrainReleaseRequestsToRetireList() = 0;
+        virtual void                    FreeRetiredResources(bool waitPendings = false) = 0;
+        virtual void                    ProcessResourceRequests(RHI::FrameThreadData *frameThreadData) = 0;
+
+        const RasterizerState *         GetRasterizerState(RasterizerStateType type) const { return &rasterizerStates[to_int(type)]; }
+        const DepthStencilState *       GetDepthStencilState(DepthStencilStateType type) const { return &depthStencilStates[to_int(type)]; }
+        const BlendState *              GetBlendState(BlendStateType type) const { return &blendStates[to_int(type)]; }
+
+        virtual Buffer *                CreateBuffer(BufferUsage usage, BufferFlag flags, uint64_t size, const void *data) = 0;
         virtual void                    DestroyBuffer(Buffer *buffer, bool immediate = false) = 0;
 
         virtual VertexBuffer *          CreateVertexBuffer(BufferUsage usage, uint32_t vertexSize, uint32_t numVerts, const void *data) = 0;
@@ -824,10 +945,10 @@ namespace RHI {
         void                            AdjustTextureFormat(bool useCompression, bool useNormalMap, bool useUAV, BE1::Image::Format inFormat, BE1::Image::Format *outFormat);
         void                            AdjustTextureSize(TextureType textureType, bool useNPOT, uint32_t inWidth, uint32_t inHeight, uint32_t inDepth, uint32_t *outWidth, uint32_t *outHeight, uint32_t *outDepth);
 
-        virtual Texture *               CreateTexture(TextureType textureType, ResourceFlag flags, const BE1::Image *image, bool allocateEmptyMipmaps, const ClearValue &clearValue = {}, uint32_t sampleCount = 1, GPUResourceState initialState = GPUResourceState::Undefined) = 0;
-        virtual Texture *               CreateTexture(TextureType textureType, ResourceFlag flags, const BE1::Image *image, BE1::Image::Format dstFormat, bool generateMipmaps = true, bool allocateEmptyMipmaps = false, RHI::GPUResourceState initialState = RHI::GPUResourceState::Undefined) = 0;
-        virtual Texture *               CreateTextureFromFile(TextureType textureType, ResourceFlag flags, const char *filename, bool useCompression = true, bool useNormalMap = false, bool generateMipmaps = true, bool allocateEmptyMipmaps = false);
+        virtual Texture *               CreateTexture(TextureType textureType, TextureFlag flags, std::shared_ptr<const BE1::Image> image, bool allocateEmptyMipmaps, const ClearValue &clearValue = {}, uint32_t sampleCount = 1, GPUResourceState initialState = GPUResourceState::Undefined) = 0;
         virtual void                    DestroyTexture(Texture *texture, bool immediate = false) = 0;
+
+        virtual void                    GenerateMipmaps(Texture *texture) = 0;
 
         virtual void                    GetTextureImage2D(Texture *texture, int mipLevel, BE1::Image::Format imageFormat, void *outPixels) = 0;
         virtual void                    GetTextureImage3D(Texture *texture, int mipLevel, BE1::Image::Format imageFormat, void *outPixels) = 0;
@@ -835,13 +956,13 @@ namespace RHI {
 
         virtual bool                    SetTextureSubImage2D(Texture *texture, int mipLevel, int x, int y, int width, int height, BE1::Image::Format imageFormat, const void *pixels) = 0;
         virtual bool                    SetTextureSubImage3D(Texture *texture, int mipLevel, int x, int y, int z, int width, int height, int depth, BE1::Image::Format imageFormat, const void *pixels) = 0;
-        virtual bool                    SetTextureSubImageCubeFace(RHI::Texture *texture, RHI::CubemapFace face, int mipLevel, int x, int y, int width, int height, BE1::Image::Format imageFormat, const void *pixels) = 0;
+        virtual bool                    SetTextureSubImageCubeFace(Texture *texture, CubemapFace face, int mipLevel, int x, int y, int width, int height, BE1::Image::Format imageFormat, const void *pixels) = 0;
 
-        virtual int                     CreateSubresource(Buffer *buffer, SubresourceType subresourceType, uint64_t offset = 0, uint64_t size = ~0, const BE1::Image::Format *newFormat = nullptr) = 0;
-        virtual int                     CreateSubresource(Texture *texture, SubresourceType type, uint32_t firstSlice = 0, uint32_t sliceCount = ~0, uint32_t firstMipLevel = 0, uint32_t mipCount = ~0, const BE1::Image::Format *typelessCompatibleFormat = nullptr, bool isSRGB = false) = 0;
+        virtual ViewID                  CreateView(Buffer *buffer, ViewType subresourceType, BE1::Image::Format format, uint32_t structuredStride, uint64_t offset = 0, uint64_t size = ~0) = 0;
+        virtual ViewID                  CreateView(Texture *texture, ViewType type, Format typelessCompatibleFormat = Format::Auto, uint32_t firstSlice = 0, uint32_t sliceCount = ~0, uint32_t firstMipLevel = 0, uint32_t mipCount = ~0) = 0;
 
-        virtual void                    DestroySubresource(RHI::Buffer *buffer, RHI::SubresourceType type, int subresourceIndex = -1) = 0;
-        virtual void                    DestroySubresource(RHI::Texture *texture, RHI::SubresourceType type, int subresourceIndex = -1) = 0;
+        virtual void                    DestroyView(Buffer *buffer, ViewType viewType, ViewID viewID) = 0;
+        virtual void                    DestroyView(Texture *texture, ViewType viewType, ViewID viewID) = 0;
 
         virtual Shader *                CreateShader(ShaderModel shaderModel, ShaderStage shaderStage, const char *sourceName, const char *shaderText, int shaderTextSize, const char *entryPoint) = 0;
         virtual Shader *                CreateShaderFromFile(ShaderModel shaderModel, ShaderStage shaderStage, const char *filename, const char *entryPoint) = 0;
@@ -858,16 +979,13 @@ namespace RHI {
         virtual QueryHeap *             CreateQueryHeap(const QueryHeapDesc *desc) = 0;
         virtual void                    DestroyQueryHeap(QueryHeap *queryHeap, bool immediate = false) = 0;
 
-        virtual RHI::CommandList *      BeginCommandList(RHI::CommandQueueType queueType) = 0;
-        virtual void                    EndCommandList(RHI::CommandList *commandList) = 0;
-
         virtual void                    SetVertexBuffer(CommandList *commandList, int slot, const VertexBuffer *vertexBuffer) = 0;
         virtual void                    SetIndexBuffer(CommandList *commandList, const IndexBuffer *indexBuffer) = 0;
-        virtual void                    SetConstantBuffer(CommandList *commandList, int slot, const ConstantBuffer *constantBuffer) = 0;
-        virtual void                    SetConstants(CommandList *commandList, const void *data, uint32_t size, uint32_t offset) = 0;
-        virtual void                    SetTexture(CommandList *commandList, int slot, bool shaderWritable, const Texture *texture, int subresourceIndex = -1) = 0;
-        virtual void                    SetBuffer(CommandList *commandList, int slot, bool shaderWritable, const Buffer *buffer, int subresourceIndex = -1) = 0;
-        virtual void                    SetSampler(CommandList *commandList, int slot, Sampler *sampler) = 0;
+        virtual void                    SetConstantBuffer(CommandList *commandList, int shaderRegister, const ConstantBuffer *constantBuffer) = 0;
+        virtual void                    SetConstants(CommandList *commandList, int shaderRegister, const void *data, uint32_t size, uint32_t offset) = 0;
+        virtual void                    SetTexture(CommandList *commandList, int shaderRegister, bool shaderWritable, const Texture *texture, ViewID viewID = ViewID::PrimaryID) = 0;
+        virtual void                    SetBuffer(CommandList *commandList, int shaderRegister, bool shaderWritable, const Buffer *buffer, ViewID viewID = ViewID::PrimaryID) = 0;
+        virtual void                    SetSampler(CommandList *commandList, int shaderRegister, Sampler *sampler) = 0;
         virtual void                    SetPSO(CommandList *commandList, const PipelineState *pipelineState) = 0;
         virtual void                    SetBlendFactor(CommandList *commandList, const BE1::Color4 &rgba) = 0;
         virtual void                    SetStencilRef(CommandList *commandList, uint32_t value) = 0;
@@ -879,13 +997,13 @@ namespace RHI {
         virtual void                    EndQuery(CommandList *commandList, const QueryHeap *queryHeap, uint32_t index) = 0;
         virtual void                    ResolveQuery(CommandList *commandList, const QueryHeap *queryHeap, uint32_t index, uint32_t count, const Buffer *destBuffer, uint64_t destOffset) = 0;
         virtual void                    ResetQuery(CommandList *commandList, const QueryHeap *queryHeap, uint32_t index, uint32_t count) = 0;
-        virtual void                    ClearUAV(CommandList *commandList, const GPUResource *resource, uint32_t value) = 0;
+        virtual void                    ClearUAV(CommandList *commandList, const GPUResource *resource, ViewID viewID, uint32_t value) = 0;
         virtual void                    CopyBuffer(CommandList *commandList, const Buffer *dstBuffer, uint32_t dstOffset, const Buffer *srcBuffer, uint32_t srcOffset, uint32_t size) = 0;
         virtual void                    CopyTexture(CommandList *commandList, const Texture *dstTexture, uint32_t dstSlice, uint32_t dstMipLevel, uint32_t dstX, uint32_t dstY, uint32_t dstZ, const Texture *srcTexture, uint32_t srcSlice, uint32_t srcMipLevel, uint32_t srcX, uint32_t srcY, uint32_t srcZ, uint32_t width, uint32_t height, uint32_t depth) = 0;
-        virtual void                    GenerateMipmaps(CommandList *commandList, const Texture *texture, bool preserveCoverage) = 0;
+        virtual void                    GenerateMipmaps(CommandList *commandList, const Texture *texture, const ViewID *srvMipSubresourceIDs, const ViewID *uavMipSubresourceIDs, bool preserveCoverage) = 0;
         virtual void                    Barrier(CommandList *commandList, const GPUBarrier *barriers, uint32_t barrierCount) = 0;
         void                            Barrier(CommandList *commandList, const GPUBarrier &barrier) { Barrier(commandList, &barrier, 1); }
-        virtual void                    ReadPixels(RHI::CommandList *commandList, const RHI::SwapChain *swapChain, int x, int y, int width, int height, BE1::Image::Format dstFormat, void *outPixels) = 0;
+        virtual void                    ReadPixels(CommandList *commandList, const SwapChain *swapChain, int x, int y, int width, int height, BE1::Image::Format dstFormat, void *outPixels) = 0;
         virtual void                    BeginRenderPass(CommandList *commandList, const SwapChain *swapChain, const Texture *depthStencilTexture, const BE1::Color4 &clearColor = {}, float clearDepth = 0, uint8_t clearStencil = 0, ClearFlag clearFlags = ClearFlag::None) = 0;
         virtual void                    BeginRenderPass(CommandList *commandList, const RenderPassImage renderPassImages[], int numRenderPassImages, RenderPassFlag flags = RenderPassFlag::None) = 0;
         virtual void                    EndRenderPass(CommandList *commandList) = 0;
@@ -975,7 +1093,12 @@ struct enable_bitmask_operators<RHI::ColorWriteMask> {
 };
 
 template<>
-struct enable_bitmask_operators<RHI::ResourceFlag> {
+struct enable_bitmask_operators<RHI::BufferFlag> {
+    static const bool enable = true;
+};
+
+template<>
+struct enable_bitmask_operators<RHI::TextureFlag> {
     static const bool enable = true;
 };
 
@@ -994,10 +1117,10 @@ namespace std {
     struct hash<RHI::InputLayoutElement> {
         size_t operator()(const RHI::InputLayoutElement &element) const {
             size_t hash = element.semanticName.ToHash64();
-            hash = hash_combine(hash, std::hash<uint32_t>()(element.semanticIndex));
-            hash = hash_combine(hash, std::hash<uint32_t>()(element.offset));
-            hash = hash_combine(hash, std::hash<uint32_t>()(element.inputSlot));
-            hash = hash_combine(hash, std::hash<uint8_t>()(static_cast<uint8_t>(element.format)));
+            hash = hash_combine(hash, element.semanticIndex);
+            hash = hash_combine(hash, element.offset);
+            hash = hash_combine(hash, element.inputSlot);
+            hash = hash_combine(hash, element.format);
             return hash;
         }
     };
@@ -1006,13 +1129,13 @@ namespace std {
     struct hash<RHI::RasterizerState> {
         size_t operator()(const RHI::RasterizerState &state) const {
             size_t hash = std::hash<uint8_t>()(static_cast<uint8_t>(state.fillMode));
-            hash = hash_combine(hash, std::hash<uint8_t>()(static_cast<uint8_t>(state.cullMode)));
-            hash = hash_combine(hash, std::hash<int32_t>()(state.depthBias));
-            hash = hash_combine(hash, std::hash<float>()(state.depthBiasClamp));
-            hash = hash_combine(hash, std::hash<float>()(state.slopeScaledDepthBias));
-            hash = hash_combine(hash, std::hash<bool>()(state.depthClipEnabled));
-            hash = hash_combine(hash, std::hash<bool>()(state.smoothLineEnabled));
-            hash = hash_combine(hash, std::hash<bool>()(state.conservativeRasterization));
+            hash = hash_combine(hash, state.cullMode);
+            hash = hash_combine(hash, state.depthBias);
+            hash = hash_combine(hash, state.depthBiasClamp);
+            hash = hash_combine(hash, state.slopeScaledDepthBias);
+            hash = hash_combine(hash, state.depthClipEnabled);
+            hash = hash_combine(hash, state.smoothLineEnabled);
+            hash = hash_combine(hash, state.conservativeRasterization);
             return hash;
         }
     };
@@ -1021,9 +1144,9 @@ namespace std {
     struct hash<RHI::DepthStencilOp> {
         size_t operator()(const RHI::DepthStencilOp &op) const {
             size_t hash = std::hash<uint8_t>()(static_cast<uint8_t>(op.failOp));
-            hash = hash_combine(hash, std::hash<uint8_t>()(static_cast<uint8_t>(op.depthFailOp)));
-            hash = hash_combine(hash, std::hash<uint8_t>()(static_cast<uint8_t>(op.passOp)));
-            hash = hash_combine(hash, std::hash<uint8_t>()(static_cast<uint8_t>(op.stencilFunc)));
+            hash = hash_combine(hash, op.depthFailOp);
+            hash = hash_combine(hash, op.passOp);
+            hash = hash_combine(hash, op.stencilFunc);
             return hash;
         }
     };
@@ -1032,14 +1155,14 @@ namespace std {
     struct hash<RHI::DepthStencilState> {
         size_t operator()(const RHI::DepthStencilState &state) const {
             size_t hash = std::hash<uint8_t>()(static_cast<uint8_t>(state.depthWriteMask));
-            hash = hash_combine(hash, std::hash<uint8_t>()(static_cast<uint8_t>(state.depthFunc)));
-            hash = hash_combine(hash, std::hash<uint8_t>()(state.stencilReadMask));
-            hash = hash_combine(hash, std::hash<uint8_t>()(state.stencilWriteMask));
-            hash = hash_combine(hash, std::hash<RHI::DepthStencilOp>()(state.frontFace));
-            hash = hash_combine(hash, std::hash<RHI::DepthStencilOp>()(state.backFace));
-            hash = hash_combine(hash, std::hash<bool>()(state.depthTestEnabled));
-            hash = hash_combine(hash, std::hash<bool>()(state.stencilTestEnabled));
-            hash = hash_combine(hash, std::hash<bool>()(state.depthBoundTestEnabled));
+            hash = hash_combine(hash, state.depthFunc);
+            hash = hash_combine(hash, state.stencilReadMask);
+            hash = hash_combine(hash, state.stencilWriteMask);
+            hash = hash_combine(hash, state.frontFace);
+            hash = hash_combine(hash, state.backFace);
+            hash = hash_combine(hash, state.depthTestEnabled);
+            hash = hash_combine(hash, state.stencilTestEnabled);
+            hash = hash_combine(hash, state.depthBoundTestEnabled);
             return hash;
         }
     };
@@ -1048,13 +1171,13 @@ namespace std {
     struct hash<RHI::RenderTargetBlendState> {
         size_t operator()(const RHI::RenderTargetBlendState &state) const {
             size_t hash = std::hash<uint8_t>()(static_cast<uint8_t>(state.srcFactorColor));
-            hash = hash_combine(hash, std::hash<uint8_t>()(static_cast<uint8_t>(state.destFactorColor)));
-            hash = hash_combine(hash, std::hash<uint8_t>()(static_cast<uint8_t>(state.blendOpColor)));
-            hash = hash_combine(hash, std::hash<uint8_t>()(static_cast<uint8_t>(state.srcFactorAlpha)));
-            hash = hash_combine(hash, std::hash<uint8_t>()(static_cast<uint8_t>(state.destFactorAlpha)));
-            hash = hash_combine(hash, std::hash<uint8_t>()(static_cast<uint8_t>(state.blendOpAlpha)));
-            hash = hash_combine(hash, std::hash<uint8_t>()(static_cast<uint8_t>(state.colorWriteMask)));
-            hash = hash_combine(hash, std::hash<bool>()(state.blendEnabled));
+            hash = hash_combine(hash, state.destFactorColor);
+            hash = hash_combine(hash, state.blendOpColor);
+            hash = hash_combine(hash, state.srcFactorAlpha);
+            hash = hash_combine(hash, state.destFactorAlpha);
+            hash = hash_combine(hash, state.blendOpAlpha);
+            hash = hash_combine(hash, state.colorWriteMask);
+            hash = hash_combine(hash, state.blendEnabled);
             return hash;
         }
     };
@@ -1063,9 +1186,9 @@ namespace std {
     struct hash<RHI::BlendState> {
         size_t operator()(const RHI::BlendState &state) const {
             size_t hash = std::hash<bool>()(static_cast<bool>(state.alphaToCoverageEnabled));
-            hash = hash_combine(hash, std::hash<bool>()(static_cast<bool>(state.independentBlendEnabled)));
+            hash = hash_combine(hash, state.independentBlendEnabled);
             for (int i = 0; i < COUNT_OF(state.renderTargets); ++i) {
-                hash = hash_combine(hash, std::hash<RHI::RenderTargetBlendState>()(static_cast<RHI::RenderTargetBlendState>(state.renderTargets[i])));
+                hash = hash_combine(hash, state.renderTargets[i]);
             }
             return hash;
         }

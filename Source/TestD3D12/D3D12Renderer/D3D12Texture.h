@@ -34,7 +34,7 @@ public:
     virtual void *                  GetNativeResource() const override { return GetResource(); }
     virtual const void *            GetNativeTextureObject() const override { return this; }
 
-    virtual bool                    IsValidSubresource(RHI::SubresourceType type, int subresourceIndex) const override;
+    virtual bool                    HasValidView(RHI::ViewType viewType, RHI::ViewID viewID = RHI::ViewID::PrimaryID) const override;
 
     virtual uint32_t                GetWidth() const override { return textureDesc.Width; }
     virtual uint32_t                GetHeight() const override { return textureDesc.Height; }
@@ -55,14 +55,14 @@ private:
     D3D12_RESOURCE_DESC             textureDesc;
     D3D12_CLEAR_VALUE               clearValue;
     RHI::GPUResourceState           currentState = RHI::GPUResourceState::Undefined;
-    D3D12SRVDescriptor              srvDescriptor;
-    D3D12UAVDescriptor              uavDescriptor;
-    D3D12RTVDescriptor              rtvDescriptor;
-    D3D12DSVDescriptor              dsvDescriptor;
-    BE1::Array<D3D12SRVDescriptor>  subresourceSrvDescriptors = (16);
-    BE1::Array<D3D12UAVDescriptor>  subresourceUavDescriptors = (16);
-    BE1::Array<D3D12RTVDescriptor>  subresourceRtvDescriptors = (16);
-    BE1::Array<D3D12DSVDescriptor>  subresourceDsvDescriptors = (16);
+    BE1::Array<D3D12SRVEntry>       srvEntries = (16);
+    BE1::Array<D3D12UAVEntry>       uavEntries = (16);
+    BE1::Array<D3D12RTVEntry>       rtvEntries = (16);
+    BE1::Array<D3D12DSVEntry>       dsvEntries = (16);
+    bool                            hasDefaultSRV = false;
+    bool                            hasDefaultUAV = false;
+    bool                            hasDefaultRTV = false;
+    bool                            hasDefaultDSV = false;
 };
 
 BE_INLINE ID3D12Resource *D3D12Texture::GetResource() const {

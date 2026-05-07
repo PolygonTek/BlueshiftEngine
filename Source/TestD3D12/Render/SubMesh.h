@@ -22,7 +22,8 @@ class RenderBackend;
 enum class MeshType : uint8_t;
 
 /*
--------------------------------------------------------------------------------
+---------------------------------------------------------------------------------------------------
+
     Edge
 
     Represents an edge of a triangle, defined by two vertices.
@@ -37,8 +38,10 @@ enum class MeshType : uint8_t;
         \    /   t0  \
          \  /         \
           v1 ---------
--------------------------------------------------------------------------------
+
+---------------------------------------------------------------------------------------------------
 */
+
 struct Edge {
     int32_t                 v[2];       ///< Vertex indices defining an edge. v[0] is always less than v[1]; the reverse edge is not stored.
     int32_t                 t[2];       ///< Indices of adjacent triangle. t[0] represents the CCW triangle.

@@ -1,11 +1,11 @@
 // Copyright(c) 2017 POLYGONTEK
-// 
+//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
-// 
+//
 // http://www.apache.org/licenses/LICENSE-2.0
-// 
+//
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -85,7 +85,7 @@ void SubMesh::CopyFrom(const SubMesh *other) {
 
 void SubMesh::ComputeAABB() {
     aabb.Clear();
-    for (int i = 0; i < numVerts; i++) {
+    for (int i = 0; i < numVerts; ++i) {
         aabb.AddPoint(verts[i].xyz);
     }
 }
@@ -97,7 +97,7 @@ void SubMesh::ComputeNormals() {
 
     BE1::Vec3 *tempNormals = (BE1::Vec3 *)Mem_Alloc16(numVerts * sizeof(BE1::Vec3));
 
-    for (int i = 0; i < numVerts; i++) {
+    for (int i = 0; i < numVerts; ++i) {
         tempNormals[i] = BE1::Vec3::zero;
     }
 
@@ -120,7 +120,7 @@ void SubMesh::ComputeNormals() {
         tempNormals[i2] += faceNormal;
     }
 
-    for (int i = 0; i < numVerts; i++) {
+    for (int i = 0; i < numVerts; ++i) {
         tempNormals[i].Normalize();
         verts[i].SetNormal(tempNormals[i]);
     }
@@ -201,7 +201,7 @@ static void R_DeriveTangentsWithoutNormals(BE1::VertexGenericLit *verts, const i
     BE1::Vec3 *vertexBitangents = (BE1::Vec3 *)Mem_Alloc16(numVerts * sizeof(BE1::Vec3));
 
     // Clear the tangents
-    for (int i = 0; i < numVerts; i++) {
+    for (int i = 0; i < numVerts; ++i) {
         vertexTangents[i] = BE1::Vec3::zero;
         vertexBitangents[i] = BE1::Vec3::zero;
     }
@@ -211,7 +211,7 @@ static void R_DeriveTangentsWithoutNormals(BE1::VertexGenericLit *verts, const i
         int triIndex = i / 3;
 
         // For each vertex on this face
-        for (int j = 0; j < 3; j++) {
+        for (int j = 0; j < 3; ++j) {
             int index = indexes[i + j];
 
             vertexTangents[index] += triangleTangents[triIndex];
@@ -222,7 +222,7 @@ static void R_DeriveTangentsWithoutNormals(BE1::VertexGenericLit *verts, const i
     // Project the summed vectors onto the normal plane and normalize.
     // The tangent vectors will not necessarily be orthogonal to each
     // other, but they will be orthogonal to the surface normal.
-    for (int i = 0; i < numVerts; i++) {
+    for (int i = 0; i < numVerts; ++i) {
         BE1::Vec3 normal = verts[i].GetNormal();
         normal.Normalize();
 
@@ -233,7 +233,7 @@ static void R_DeriveTangentsWithoutNormals(BE1::VertexGenericLit *verts, const i
         vertexBitangents[i].Normalize();
     }
 
-    for (int i = 0; i < numVerts; i++) {
+    for (int i = 0; i < numVerts; ++i) {
         verts[i].SetTangent(vertexTangents[i]);
         verts[i].SetBiTangent(vertexBitangents[i]);
     }
@@ -342,7 +342,7 @@ static void R_DeriveNormalsAndTangents(BE1::VertexGenericLit *verts, const int n
     // Project the summed vectors onto the normal plane and normalize.
     // The tangent vectors will not necessarily be orthogonal to each
     // other, but they will be orthogonal to the surface normal.
-    for (int i = 0; i < numVerts; i++) {
+    for (int i = 0; i < numVerts; ++i) {
         const float normalScale = BE1::Math::InvSqrt(vertexNormals[i].LengthSqr());
         vertexNormals[i].x *= normalScale;
         vertexNormals[i].y *= normalScale;
@@ -363,7 +363,7 @@ static void R_DeriveNormalsAndTangents(BE1::VertexGenericLit *verts, const int n
     }
 
     // compress the normals and tangents
-    for (int i = 0; i < numVerts; i++) {
+    for (int i = 0; i < numVerts; ++i) {
         verts[i].SetNormal(vertexNormals[i]);
         verts[i].SetTangent(vertexTangents[i]);
         verts[i].SetBiTangent(vertexBitangents[i]);
@@ -379,7 +379,7 @@ static void R_DeriveNormalsAndTangents(BE1::VertexGenericLit *verts, const int n
 //#define DERIVE_UNSMOOTHED_BITANGENT
 
 static void R_DeriveUnsmoothedNormalsAndTangents(BE1::VertexGenericLit *verts, const BE1::DominantTri *dominantTris, const int numVerts) {
-    for (int i = 0; i < numVerts; i++) {
+    for (int i = 0; i < numVerts; ++i) {
         float d0, d1, d2, d3, d4;
         float d5, d6, d7, d8, d9;
         float s0, s1, s2;
@@ -442,9 +442,9 @@ void SubMesh::ComputeDominantTris() {
         dominantTris = (BE1::DominantTri *)Mem_Alloc16(sizeof(BE1::DominantTri) * numVerts);
     }
 
-    // Compute the dominant triangles for each vertices
+    // Compute the dominant triangles for each vertex
     // The dominant triangle should have most larger surface area among the adjacent triangles of a vertex
-    for (int i = 0; i < numVerts; i++) {
+    for (int i = 0; i < numVerts; ++i) {
         float dominantTriArea = -1.0f;
         BE1::VertIndex dominantTriVertex2 = -1;
         BE1::VertIndex dominantTriVertex3 = -1;
@@ -477,7 +477,7 @@ void SubMesh::ComputeDominantTris() {
 
         // Now dominantTri is [i, dominantTriVertex2, dominantTriVertex3]
         if (dominantTriVertex2 == -1 || dominantTriVertex3 == -1) {
-            BE_FATALERROR("SubMesh::ComputeDominantTris: dominant triangle is not exist");
+            BE_FATALERROR("SubMesh::ComputeDominantTris: dominant triangle does not exist");
         }
 
         dominantTris[i].v2 = dominantTriVertex2;
@@ -603,7 +603,7 @@ void SubMesh::ComputeEdges() {
         triEdges[2].v[0] = indexesForTri[s];
         triEdges[2].v[1] = indexesForTri[s ^ 2];
 
-        for (int j = 0; j < 3; j++) {
+        for (int j = 0; j < 3; ++j) {
             Edge &edge = triEdges[j];
 
             const int32_t v0 = edge.v[0]; // current edge's smaller vertex index

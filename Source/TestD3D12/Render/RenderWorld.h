@@ -19,7 +19,6 @@
 #include "GuiMesh.h"
 
 class RenderFrameData;
-class RenderContext;
 class RenderCamera;
 class VisCamera;
 class VisLight;

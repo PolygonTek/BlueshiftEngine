@@ -1,11 +1,11 @@
 // Copyright(c) 2017 POLYGONTEK
-// 
+//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
-// 
+//
 // http://www.apache.org/licenses/LICENSE-2.0
-// 
+//
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -99,7 +99,7 @@ bool BitmapFontFace::Load(const char *filename, int fontSize) {
 
     for (int glyphIndex = 0; glyphIndex < header->numGlyphs; glyphIndex++, gl++) {
         FontGlyph *glyph = AddGlyph(gl->charCode, gl->width, gl->height, gl->offsetX, gl->offsetY, gl->advanceX, gl->advanceY, gl->s, gl->t, gl->s2, gl->t2, gl->bitmapIndex);
-        
+
         if (glyph->height > maxHeight) {
             maxHeight = glyph->height;
         }
@@ -115,7 +115,7 @@ bool BitmapFontFace::Load(const char *filename, int fontSize) {
 void BitmapFontFace::Write(const char *filename) {
     BE1::File *fp = BE1::fileSystem.OpenFile(filename, BE1::File::Mode::Write);
     if (!fp) {
-        BE_WARNLOG("FontFileBitmap::Write: file open error\n");
+        BE_WARNLOG("BitmapFontFace::Write: file open error\n");
         return;
     }
 
@@ -136,7 +136,7 @@ void BitmapFontFace::Write(const char *filename) {
 
     for (const auto &entry : glyphHashMap) {
         const FontGlyph *gl = entry.second;
-        
+
         FontFileGlyph glyph;
         glyph.charCode      = gl->charCode;
         glyph.width         = gl->width;

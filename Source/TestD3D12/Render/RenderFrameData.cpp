@@ -24,9 +24,8 @@ void RenderFrameData::Init() {
     InitMemBlocks();
 
 #ifdef USE_RENDER_TASK
-    // 렌더 태스크 스레드 별 데이터를 준비한다.
-    // 렌더 태스크 스레드는 태스크 매니져의 스레드 개수를 넘을 수 없다.
-    // 태스크 매니져의 스레드는 물리 코어 개수만큼 미리 생성된다.
+    // 렌더 태스크 스레드 개수는 태스크 매니져의 스레드 개수를 넘을 수 없다.
+    // 태스크 매니져의 스레드는 엔진에서 물리 코어 개수만큼 미리 생성된다.
     numRenderTaskThreads = BE1::Min(BE1::Engine::taskManager->NumThreads(), MaxRenderTaskThreads);
 #else
     numRenderTaskThreads = 1;
@@ -34,13 +33,14 @@ void RenderFrameData::Init() {
 
     threadData = new RHI::FrameThreadData *[numRenderTaskThreads];
 
-    for (int threadIndex = 0; threadIndex < numRenderTaskThreads; ++threadIndex) {
-        threadData[threadIndex] = RHI::renderer->CreateFrameThreadData();
+    // 필요한 만큼 렌더 태스크 스레드 데이터를 준비한다.
+    for (int32_t threadIndex = 0; threadIndex < numRenderTaskThreads; ++threadIndex) {
+        threadData[threadIndex] = RHI::renderer->CreateFrameThreadData(threadIndex);
     }
 }
 
 void RenderFrameData::Shutdown() {
-    for (int threadIndex = 0; threadIndex < numRenderTaskThreads; ++threadIndex) {
+    for (int32_t threadIndex = 0; threadIndex < numRenderTaskThreads; ++threadIndex) {
         RHI::renderer->DestroyFrameThreadData(threadData[threadIndex]);
     }
 

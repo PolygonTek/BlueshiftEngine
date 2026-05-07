@@ -453,6 +453,7 @@ public:
     static float        CubeMapTexelSolidAngle(float x, float y, int size);
 
     static Image *      NewImageFromFile(const char *filename);
+    static std::shared_ptr<Image> NewSharedImageFromFile(const char *filename);
 
     static float        pow22ToLinearTable[256];
     static float        sRGBToLinearTable[256];

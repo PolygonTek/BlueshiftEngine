@@ -16,6 +16,7 @@
 
 class RenderContext;
 class RenderBackend;
+class RenderFrameData;
 
 class RenderSystem {
 public:
@@ -27,11 +28,21 @@ public:
 
     RenderBackend *             GetBackend() const { return backEnd; }
 
+    void                        FlushPendingScreenshot(RenderContext *renderContext, RenderFrameData *frameData);
+
 private:
+    struct PendingScreenshot {
+        RenderContext *         renderContext = nullptr;
+        char                    filename[BE1::MaxAbsolutePath] = {};
+    };
+
+    void                        RequestScreenshot(RenderContext *renderContext, const char *filename);
+
     static void                 Cmd_ScreenShot(const BE1::CmdArgs &args);
 
     RenderContext *             mainRenderContext = nullptr;
     RenderBackend *             backEnd = nullptr;
+    PendingScreenshot           pendingScreenshot;
 };
 
 extern RenderSystem *           renderSystem;

@@ -116,7 +116,7 @@ void Mesh::SortAndMerge() {
 
             int filledVertexCount = 0;
 
-            for (int i = m0; i <= m1; i++) {
+            for (int i = m0; i <= m1; ++i) {
                 Mesh::Surface *surf = surfaces[i];
 
                 BE1::simdProcessor->Memcpy(vp, surf->subMesh->verts, sizeof(BE1::VertexGenericLit) * surf->subMesh->numVerts);

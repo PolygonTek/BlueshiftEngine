@@ -61,7 +61,7 @@ bool D3D12Renderer::CompileShaderD3D(const RHI::ShaderCompileInput *compileInput
     }
 
     UINT compileFlags = 0;
-#if defined(_DEBUG)
+#ifdef USE_SHADER_DEBUG
     compileFlags |= (D3DCOMPILE_DEBUG | D3DCOMPILE_SKIP_OPTIMIZATION | D3DCOMPILE_ENABLE_STRICTNESS);
 #endif
     ID3DBlob *errorBlob = nullptr;
@@ -99,7 +99,7 @@ bool D3D12Renderer::CompileShaderDXC(const RHI::ShaderCompileInput *compileInput
         L"-Wno-conversion",
     };
 
-#if defined(_DEBUG)
+#ifdef USE_SHADER_DEBUG
     // Disable optimization
     args.push_back(L"-Od");
 #endif
@@ -364,8 +364,7 @@ bool D3D12Renderer::CompileShaderDXC(const RHI::ShaderCompileInput *compileInput
             Microsoft::WRL::ComPtr<IDxcBlobEncoding> blobEncoding;
             HRESULT hr = D3D12Renderer::GetRenderer()->dxcLibrary->CreateBlobWithEncodingFromPinned(
                 reinterpret_cast<LPBYTE>(const_cast<char *>(shaderText)),
-                static_cast<UINT32>(shaderTextSize), CP_UTF8, &blobEncoding
-            );
+                static_cast<UINT32>(shaderTextSize), CP_UTF8, &blobEncoding);
             if (FAILED(hr)) {
                 return hr;
             }
@@ -451,6 +450,8 @@ bool D3D12Renderer::LoadCompiledShader(const char *name, const uint64_t hash, by
     *compiledShaderDataSizePtr = fileMapping->GetSize() - sizeof(uint64_t);
     *compiledShaderDataPtr = (byte *)Mem_Alloc(*compiledShaderDataSizePtr);
     memcpy(*compiledShaderDataPtr, fileData, *compiledShaderDataSizePtr);
+
+    delete fileMapping;
     return true;
 }
 
@@ -523,8 +524,8 @@ RHI::Shader *D3D12Renderer::CreateShader(RHI::ShaderModel shaderModel, RHI::Shad
     // shaderText 로 hash 값을 만든다.
     // FIXME: 컴파일할 때 include 문을 처리하므로, 텍스트만 가지고는 include 소스 파일이 바뀌어도 감지할 수 없는 문제가 있다.
     const uint64_t shaderTextHash = BE1::CityHash64(shaderText, shaderTextSize);
+#ifdef USE_COMPILED_SHADER
     // 이미 컴파일된 cso 파일을 로드해본다.
-#ifndef _DEBUG
     bool shouldCompileShader = !LoadCompiledShader(fileName, shaderTextHash, &compiledShaderData, &compiledShaderDataSize);
 #else
     bool shouldCompileShader = true;
@@ -553,7 +554,7 @@ RHI::Shader *D3D12Renderer::CreateShader(RHI::ShaderModel shaderModel, RHI::Shad
         compiledShaderData = compileOutput.compiledShaderData;
         compiledShaderDataSize = compileOutput.compiledShaderDataSize;
 
-#ifndef _DEBUG
+#ifdef USE_COMPILED_SHADER
         // 컴파일했으므로 cso 파일을 저장한다.
         WriteCompiledShader(fileName, shaderTextHash, compiledShaderData, compiledShaderDataSize);
 #endif
@@ -569,6 +570,7 @@ RHI::Shader *D3D12Renderer::CreateShader(RHI::ShaderModel shaderModel, RHI::Shad
         assert(rootSignatureDesc->Version == D3D_ROOT_SIGNATURE_VERSION_1_1);
     }
 
+    // 컴파일된 쉐이더 바이너리로부터 루트 시그니쳐 객체를 생성한다.
     ID3D12RootSignature *rootSignature = nullptr;
     if (FAILED(device->CreateRootSignature(0, compiledShaderData, compiledShaderDataSize, IID_PPV_ARGS(&rootSignature)))) {
         rootSignatureDeserializer->Release();
@@ -607,6 +609,6 @@ void D3D12Renderer::DestroyShader(RHI::Shader *shader, bool immediate) {
     if (immediate) {
         delete shader;
     } else {
-        MarkForDelete(shader);
+        DeleteGPUObject(shader);
     }
 }

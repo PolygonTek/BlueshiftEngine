@@ -1,11 +1,11 @@
 // Copyright(c) 2017 POLYGONTEK
-// 
+//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
-// 
+//
 // http://www.apache.org/licenses/LICENSE-2.0
-// 
+//
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -13,13 +13,13 @@
 // limitations under the License.
 
 #include "Precompiled.h"
-#include "D3D12RootDescriptorPool.h"
+#include "D3D12DescriptorTablePool.h"
 
-void D3D12RootDescriptorPool::Init(ID3D12Device *device, Type type, UINT maxDescriptorCount) {
-    this->maxDescriptorCount = maxDescriptorCount;
+void D3D12DescriptorTablePool::Init(ID3D12Device *device, Type type, UINT maxCount) {
+    this->maxDescriptorCount = maxCount;
     this->usedCount = 0;
 
-    D3D12_DESCRIPTOR_HEAP_TYPE descriptorHeapType;
+    D3D12_DESCRIPTOR_HEAP_TYPE descriptorHeapType = {};
     switch (type) {
     case Type::CBV_SRV_UAV:
         descriptorHeapType = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
@@ -34,7 +34,7 @@ void D3D12RootDescriptorPool::Init(ID3D12Device *device, Type type, UINT maxDesc
 
     descriptorHandleSize = device->GetDescriptorHandleIncrementSize(descriptorHeapType);
 
-    // 미리 크게 할당해 놓고, 순차적으로 사용할 예정
+    // 미리 크게 할당해 놓고, 선형적으로 사용할 예정
     D3D12_DESCRIPTOR_HEAP_DESC descriptorHeapDesc = {};
     descriptorHeapDesc.NumDescriptors = maxDescriptorCount;
     descriptorHeapDesc.Type = descriptorHeapType;
@@ -45,15 +45,14 @@ void D3D12RootDescriptorPool::Init(ID3D12Device *device, Type type, UINT maxDesc
     baseGpuDescriptorHandle = descriptorHeap->GetGPUDescriptorHandleForHeapStart();
 }
 
-void D3D12RootDescriptorPool::Shutdown() {
+void D3D12DescriptorTablePool::Shutdown() {
     SAFE_RELEASE(descriptorHeap);
 }
 
-// 중간에 디스크립터를 반납할 일이 없으므로 IDAllocator 를 안쓰고, 통으로 사용한다.
 // 한 프레임이 끝나면 풀에 있는 전체 디스크립터 핸들을 지운다.
-bool D3D12RootDescriptorPool::AllocRange(UINT count, D3D12_CPU_DESCRIPTOR_HANDLE *outCpuDescriptorHandle, D3D12_GPU_DESCRIPTOR_HANDLE *outGpuDescriptorHandle) {
+bool D3D12DescriptorTablePool::AllocRange(UINT count, D3D12_CPU_DESCRIPTOR_HANDLE *outCpuDescriptorHandle, D3D12_GPU_DESCRIPTOR_HANDLE *outGpuDescriptorHandle) {
     if (usedCount + count > maxDescriptorCount) {
-        BE_WARNLOG("D3D12RootDescriptorPool::AllocRange: exceeds max descriptor count\n");
+        BE_WARNLOG("D3D12DescriptorTablePool::AllocRange: exceeds the maximum descriptor count\n");
         return false;
     }
 

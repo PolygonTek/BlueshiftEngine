@@ -29,10 +29,10 @@ public:
 
 private:
     struct DrawObjectTaskDesc {
-        int                         threadIndex = -1;
+        int32_t                     threadIndex = -1;
         const DrawSurf **           drawSurfs = nullptr;
         uint32_t                    numDrawSurfs = 0;
-        RHI::CommandList *          activeCommandList = nullptr;
+        RHI::CommandList *          commandList = nullptr;
     };
 
     const void *                    ExecuteBeginContext(const void *data);
@@ -54,11 +54,11 @@ private:
     static void                     DrawSurfacesByTaskFunction(void *data);
 #endif
 
-    void                            DrawSurface(RHI::CommandList *commandList, const DrawSurf *drawSurf);
-    void                            DrawInstancedSurface(RHI::CommandList *commandList, const DrawSurf **instanceSurfs, int instanceCount);
-    void                            DrawGuiSurface(RHI::CommandList *commandList, const DrawSurf *drawSurf);
+    void                            DrawSurface(RHI::FrameThreadData *frameThreadData, RHI::CommandList *commandList, const DrawSurf *drawSurf);
+    void                            DrawInstancedSurface(RHI::FrameThreadData *frameThreadData, RHI::CommandList *commandList, const DrawSurf **instanceSurfs, int instanceCount);
+    void                            DrawGuiSurface(RHI::FrameThreadData *frameThreadData, RHI::CommandList *commandList, const DrawSurf *drawSurf);
 
-    RenderFrameData *               frameData = nullptr;
+    RenderFrameData *               frameData = nullptr; // 현재 백엔드가 처리할 프레임 데이터
     RenderContext *                 currentContext = nullptr;
     RHI::CommandList *              mainCommandList = nullptr;
     uint32_t                        frameCount = 0;

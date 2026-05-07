@@ -1,11 +1,11 @@
 // Copyright(c) 2017 POLYGONTEK
-// 
+//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
-// 
+//
 // http://www.apache.org/licenses/LICENSE-2.0
-// 
+//
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -21,39 +21,63 @@
 
 class D3D12Renderer;
 class D3D12CommandListPool;
+class D3D12RootBindingData;
+class D3D12DescriptorTablePool;
+
+/*
+---------------------------------------------------------------------------------------------------
+
+    Command List
+
+    - D3D12CommandList 객체는 D3D12CommandListPool 객체에서 할당되고 관리된다.
+    - 커맨드 리스트는 Reset() 함수로 초기화한 후, 커맨드를 기록하고 Close() 함수로 닫는다.
+    - 닫힌 커맨드 리스트는 Execute() 함수를 호출하여 실행할 수 있다.
+    - 각종 상태 변수들은 커맨드 리스트 단위로 캐싱한다. (같은 상태로 중복 세팅 코드가 호출되는 것을 방지를 위함)
+    - 커맨드 리스트는 부모 (커맨드 리스트 풀) 의 D3D12BindingData 객체를 참조하여, 같은 풀에서 할당한 커맨드 리스트들이 동일한 바인딩 데이터를 공유하도록 한다.
+    - dirtyMask 의 각 비트는 루트 파라미터 하나에 대응하며, 그래픽스/컴퓨트 루트 시그니쳐 설정 이후 해당 루트 파라미터의 바인딩 상태가 변경되어 현재 command list 에 commit 되어야 함을 나타낸다.
+
+---------------------------------------------------------------------------------------------------
+*/
 
 class D3D12CommandList : public RHI::CommandList {
     friend class D3D12Renderer;
     friend class D3D12CommandListPool;
 
 public:
+
+                                    // command list 를 재사용하기 위해 초기화한다.
+                                    // secondary (bundle) command list 의 경우 primaryCommandList 를 전달받아 primary 와 동일한 캐시 상태를 기준으로 초기화한다.
     virtual void                    Reset(bool resetCacheStates = true, const RHI::CommandList *primaryCommandList = nullptr) override;
 
     virtual void                    Close() override;
     virtual void                    Execute() override;
-    virtual void                    ExecuteSecondary(RHI::CommandList *primaryCommandList, const RHI::FrameThreadData *frameThreadData) override;
     virtual void                    CloseAndExecute() override;
-    virtual void                    CloseAndExecuteSecondary(RHI::CommandList *primaryCommandList, const RHI::FrameThreadData *frameThreadData) override;
 
-    virtual RHI::FrameThreadData *  GetFrameThreadData() const override;
+                                    // secondary (bundle) command list 를 현재 primary command list 에 기록한다.
+    virtual void                    ExecuteSecondary(RHI::CommandList *secondaryCommandList) override;
 
     D3D12_COMMAND_LIST_TYPE         GetCommandListType() const;
 
+                                    // 부모 (커맨드 리스트 풀) 객체를 리턴한다.
     D3D12CommandListPool *          GetParentPool() const { return parentPool; }
+
+    D3D12RootBindingData *          GetRootBindingData() const;
+
+    void                            SetDescriptorTablePools(D3D12DescriptorTablePool *resDescriptorTablePool, D3D12DescriptorTablePool *samDescriptorTablePool);
+    D3D12DescriptorTablePool *      GetResDescriptorTablePool() const { return resDescriptorTablePool; }
+    D3D12DescriptorTablePool *      GetSamDescriptorTablePool() const { return samDescriptorTablePool; }
 
                                     // NOTE: PIX_SCOPED_EVENT 매크로에서 사용하기 위해, 포인터가 아닌 포인터 참조를 리턴하도록 한다.
     ID3D12CommandList *&            GetCommandList() { return commandList; }
     ID3D12GraphicsCommandList6 *&   GetGraphicsCommandList() { return reinterpret_cast<ID3D12GraphicsCommandList6 *&>(commandList); }
 
     void                            ResourceBarrier(ID3D12Resource *resource, D3D12_RESOURCE_STATES stateBefore, D3D12_RESOURCE_STATES stateAfter);
-
     void                            SetDescriptorHeaps(int numDescriptorHeaps, ID3D12DescriptorHeap *descriptorHeaps[]);
     void                            SetGraphicsRootSignature(ID3D12RootSignature *graphicsRootSignature);
     void                            SetComputeRootSignature(ID3D12RootSignature *computeRootSignature);
-
     void                            SetPipelineState(const RHI::PipelineState *pipelineState);
     void                            SetPrimitiveTopology(D3D12_PRIMITIVE_TOPOLOGY primitiveTopology);
-    void                            SetVertexBuffers(int startSlot, int numViews, const RHI::VertexBuffer *vertexBuffers[]);
+    void                            SetVertexBuffers(int startSlot, int count, const RHI::VertexBuffer *vertexBuffers[]);
     void                            SetVertexBuffer(int slot, const RHI::VertexBuffer *vertexBuffer);
     void                            SetIndexBuffer(const RHI::IndexBuffer *indexBuffer);
     void                            SetBlendFactor(const BE1::Color4 &rgba);
@@ -61,15 +85,18 @@ public:
     void                            SetShadingRate(RHI::ShadingRate shadingRate);
 
 private:
+    BE1::LinkList<D3D12CommandList> node;
+    D3D12CommandListPool *          parentPool = nullptr;
     ID3D12CommandAllocator *        commandAllocator = nullptr;
     ID3D12CommandList *             commandList = nullptr;
-    D3D12CommandListPool *          parentPool = nullptr;
-    BE1::LinkList<D3D12CommandList> node;
+
     const D3D12PipelineState *      currentPSO = nullptr;
     uint64_t                        graphicsRootParametersDirtyMask = 0;
     uint64_t                        computeRootParametersDirtyMask = 0;
-    BE1::Array<D3D12_RESOURCE_BARRIER> endRenderPassBarriers;
+    D3D12DescriptorTablePool *      resDescriptorTablePool = nullptr;
+    D3D12DescriptorTablePool *      samDescriptorTablePool = nullptr;
     ID3D12Resource *                shadingRateImage = nullptr;
+    BE1::Array<D3D12_RESOURCE_BARRIER> endRenderPassBarriers;
 
 #ifdef USE_STATE_CACHE_FOR_COMMAND_LIST
     bool                            IsSameDescriptorHeaps(int numDescriptorHeaps, ID3D12DescriptorHeap *descriptorHeaps[]);
@@ -85,12 +112,17 @@ private:
     D3D12_SHADING_RATE              cachedShadingRate = D3D12_SHADING_RATE::D3D12_SHADING_RATE_1X1;
 #endif
 
-    bool                            secondary = false;
+    bool                            isSecondary = false;
 };
 
 BE_INLINE void D3D12CommandList::Close() {
     HRESULT hr = GetGraphicsCommandList()->Close();
     assert(SUCCEEDED(hr));
+}
+
+BE_INLINE void D3D12CommandList::SetDescriptorTablePools(D3D12DescriptorTablePool *resDescriptorTablePool, D3D12DescriptorTablePool *samDescriptorTablePool) {
+    this->resDescriptorTablePool = resDescriptorTablePool;
+    this->samDescriptorTablePool = samDescriptorTablePool;
 }
 
 BE_INLINE void D3D12CommandList::ResourceBarrier(ID3D12Resource *resource, D3D12_RESOURCE_STATES stateBefore, D3D12_RESOURCE_STATES stateAfter) {
@@ -139,7 +171,7 @@ BE_INLINE void D3D12CommandList::SetGraphicsRootSignature(ID3D12RootSignature *g
     cachedGraphicsRootSignature = graphicsRootSignature;
 #endif
     GetGraphicsCommandList()->SetGraphicsRootSignature(graphicsRootSignature);
-    graphicsRootParametersDirtyMask = 0;
+    graphicsRootParametersDirtyMask = 0; // 루트 시그니쳐를 바꿀 때 마다 리셋
 }
 
 BE_INLINE void D3D12CommandList::SetComputeRootSignature(ID3D12RootSignature *computeRootSignature) {
@@ -150,36 +182,36 @@ BE_INLINE void D3D12CommandList::SetComputeRootSignature(ID3D12RootSignature *co
     cachedComputeRootSignature = computeRootSignature;
 #endif
     GetGraphicsCommandList()->SetComputeRootSignature(computeRootSignature);
-    computeRootParametersDirtyMask = 0;
+    computeRootParametersDirtyMask = 0; // 루트 시그니쳐를 바꿀 때 마다 리셋
 }
 
 BE_INLINE void D3D12CommandList::SetPipelineState(const RHI::PipelineState *pipelineState) {
-    const D3D12PipelineState *d3d12PipelineState = static_cast<const D3D12PipelineState *>(pipelineState);
+    const D3D12PipelineState *_pipelineState = static_cast<const D3D12PipelineState *>(pipelineState);
 
 #ifdef USE_STATE_CACHE_FOR_COMMAND_LIST
-    if (d3d12PipelineState != currentPSO) {
-        GetGraphicsCommandList()->SetPipelineState(d3d12PipelineState->pso);
+    if (_pipelineState != currentPSO) {
+        GetGraphicsCommandList()->SetPipelineState(_pipelineState->pso);
 
-        if (pipelineState->graphics) {
-            SetGraphicsRootSignature(d3d12PipelineState->rootSignature);
-            SetPrimitiveTopology(d3d12PipelineState->primitiveTopology);
+        if (pipelineState->isGraphics) {
+            SetGraphicsRootSignature(_pipelineState->rootSignature);
+            SetPrimitiveTopology(_pipelineState->primitiveTopology);
         } else {
-            SetComputeRootSignature(d3d12PipelineState->rootSignature);
+            SetComputeRootSignature(_pipelineState->rootSignature);
         }
-        currentPSO = d3d12PipelineState;
+        currentPSO = _pipelineState;
     }
 #else
-    GetGraphicsCommandList()->SetPipelineState(d3d12PipelineState->pso);
+    GetGraphicsCommandList()->SetPipelineState(_pipelineState->pso);
 
-    if (pipelineState->graphics) {
-        GetGraphicsCommandList()->SetGraphicsRootSignature(d3d12PipelineState->rootSignature);
-        GetGraphicsCommandList()->IASetPrimitiveTopology(d3d12PipelineState->primitiveTopology);
-        graphicsRootParametersDirtyMask = 0;
+    if (pipelineState->isGraphics) {
+        GetGraphicsCommandList()->SetGraphicsRootSignature(_pipelineState->rootSignature);
+        GetGraphicsCommandList()->IASetPrimitiveTopology(_pipelineState->primitiveTopology);
+        graphicsRootParametersDirtyMask = 0; // 루트 시그니쳐를 바꿀 때 마다 리셋
     } else {
-        GetGraphicsCommandList()->SetComputeRootSignature(d3d12PipelineState->rootSignature);
-        computeRootParametersDirtyMask = 0;
+        GetGraphicsCommandList()->SetComputeRootSignature(_pipelineState->rootSignature);
+        computeRootParametersDirtyMask = 0; // 루트 시그니쳐를 바꿀 때 마다 리셋
     }
-    currentPSO = d3d12PipelineState;
+    currentPSO = _pipelineState;
 #endif
 }
 
@@ -193,15 +225,15 @@ BE_INLINE void D3D12CommandList::SetPrimitiveTopology(D3D12_PRIMITIVE_TOPOLOGY p
     GetGraphicsCommandList()->IASetPrimitiveTopology(primitiveTopology);
 }
 
-BE_INLINE void D3D12CommandList::SetVertexBuffers(int startSlot, int numViews, const RHI::VertexBuffer *vertexBuffers[]) {
+BE_INLINE void D3D12CommandList::SetVertexBuffers(int startSlot, int count, const RHI::VertexBuffer *vertexBuffers[]) {
     D3D12_VERTEX_BUFFER_VIEW vbv[8];
-    for (int i = 0; i < numViews; ++i) {
+    for (int i = 0; i < count; ++i) {
         vbv[i] = static_cast<const D3D12VertexBuffer *>(vertexBuffers[i])->vbv;
     }
 
 #ifdef USE_STATE_CACHE_FOR_COMMAND_LIST
     bool needsUpdate = false;
-    for (int i = 0; i < numViews; ++i) {
+    for (int i = 0; i < count; ++i) {
         int slot = startSlot + i;
 
         if (cachedVertexBufferViews[slot].BufferLocation != vbv[i].BufferLocation ||
@@ -212,10 +244,10 @@ BE_INLINE void D3D12CommandList::SetVertexBuffers(int startSlot, int numViews, c
         }
     }
     if (needsUpdate) {
-        GetGraphicsCommandList()->IASetVertexBuffers(startSlot, numViews, vbv);
+        GetGraphicsCommandList()->IASetVertexBuffers(startSlot, count, vbv);
     }
 #else
-    GetGraphicsCommandList()->IASetVertexBuffers(startSlot, numViews, vbv);
+    GetGraphicsCommandList()->IASetVertexBuffers(startSlot, count, vbv);
 #endif
 }
 
@@ -267,4 +299,11 @@ BE_INLINE void D3D12CommandList::SetStencilRef(uint32_t value) {
     cachedStencilRef = value;
 #endif
     GetGraphicsCommandList()->OMSetStencilRef(value);
+}
+
+BE_INLINE void D3D12CommandList::CloseAndExecute() {
+    HRESULT hr = GetGraphicsCommandList()->Close();
+    assert(SUCCEEDED(hr));
+
+    Execute();
 }

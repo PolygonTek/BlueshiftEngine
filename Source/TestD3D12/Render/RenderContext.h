@@ -20,7 +20,24 @@
 
 class RenderBackend;
 
-// 하나의 윈도우 (SwapChain) 와 연결된 렌더링 컨텍스트
+/*
+---------------------------------------------------------------------------------------------------
+
+    RenderContext
+
+    하나의 윈도우 (SwapChain) 에 대응되는 렌더링 객체
+
+    - 스왑 체인
+    - 화면 렌더 타겟 텍스쳐
+    - 프레임 데이터 배열
+        - 요소 하나는 한 프레임 렌더링에 필요한 데이터를 관리한다.
+        - 배열로 이루어져 프론트엔드 (메인 스레드) 와 백엔드 (렌더 스레드) 가 생산자/소비자로 나눠서 처리한다.
+        - 메인 스레드가 프레임 데이터를 쓰고 나면 렌더 스레드가 읽어서 처리하는 식이므로, 동시에 같은 프레임
+          데이터를 읽거나 쓰지 않도록 하기 위해 동기화가 필요하다.
+
+---------------------------------------------------------------------------------------------------
+*/
+
 class RenderContext {
     friend class RenderBackend;
 
@@ -52,7 +69,7 @@ public:
     const RenderFrameData *             GetCurrentBackendFrameData() const { return &frames[currentBackendFrameIndex]; }
     RenderFrameData *                   GetCurrentBackendFrameData() { return &frames[currentBackendFrameIndex]; }
 
-                                        // 모든 렌더링 명령이 수행이 완료될 때 까지 대기한다.
+                                        // 모든 렌더링 명령이 수행이 완료될 때까지 대기한다.
     void                                WaitAllFrameFences();
 
                                         // 컨텍스트의 GUI 그리기 함수들
@@ -72,8 +89,11 @@ public:
                                         // 렌더 스레드 사용 여부 리턴
     bool                                IsUsingRenderThread() const { return !!renderThread; }
 
-    void                                WaitRenderCompleted(const RenderFrameData *frameData);
     void                                MarkUpdateCompleted(RenderFrameData *frameData);
+    bool                                WaitRenderCompleted(const RenderFrameData *frameData);
+
+    void                                MarkRenderCompleted(RenderFrameData *frameData);
+    bool                                WaitUpdateCompleted(const RenderFrameData *frameData);
 
     static RenderContext *              activeContext;
 
@@ -98,18 +118,18 @@ private:
     RHI::PipelineState *                unlitInstancedPSO = nullptr;
     RHI::PipelineState *                unlitInstancedAlphaBlendPSO = nullptr;
 
-#ifdef USE_RENDER_FRAME_RESOURCES
-    static constexpr int                NumFrameResources = 2;
+#ifdef USE_RENDER_FRAME_BUFFERING
+    static constexpr int                NumFrames = 2;
 #else
-    static constexpr int                NumFrameResources = 1;
+    static constexpr int                NumFrames = 1;
 #endif
 
-    RenderFrameData                     frames[NumFrameResources] = {};
+    RenderFrameData                     frames[NumFrames] = {};
     uint32_t                            currentFrontendFrameIndex = 0;
     uint32_t                            currentBackendFrameIndex = 0;
     uint32_t                            frameCount = 0;
 
-    BE1::PlatformSRWLock *              smpLock = nullptr;
+    BE1::PlatformSRWLock *              frameSyncLock = nullptr;
     BE1::PlatformCondition *            renderCompletedCondition = nullptr;
     BE1::PlatformCondition *            updateCompletedCondition = nullptr;
     BE1::PlatformThread *               renderThread = nullptr;

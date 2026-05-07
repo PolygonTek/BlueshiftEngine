@@ -32,10 +32,9 @@ public:
     virtual void *                  GetNativeResource() const override { return GetResource(); }
     virtual const void *            GetNativeBufferObject() const override { return buffer; }
 
-    ID3D12Resource *                GetResource() const;
+    ID3D12Resource *                GetResource() const { return buffer->GetResource(); }
 
 private:
     D3D12Buffer *                   buffer = nullptr;
     D3D12_CPU_DESCRIPTOR_HANDLE     descriptorHandle = {};
-    int                             dynamicBlockIndex = -1;
 };
