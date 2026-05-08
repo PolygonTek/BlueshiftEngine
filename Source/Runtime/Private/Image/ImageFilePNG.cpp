@@ -19,16 +19,21 @@
 #include "Image/Image.h"
 #include "ImageInternal.h"
 #define Z_SOLO
+//#include "libpng/pngstruct.h"
 #include "libpng/png.h"
-#include "libpng/pngstruct.h"
 
 BE_NAMESPACE_BEGIN
 
 static size_t png_compressed_size;
 
+struct PNGReadContext {
+    const byte *current;
+};
+
 static void png_read_data(png_structp png, png_bytep data, png_size_t length) {
-    memcpy(data, png->io_ptr, length);
-    png->io_ptr = (byte *)png->io_ptr + length;
+    PNGReadContext *ctx = static_cast<PNGReadContext *>(png_get_io_ptr(png));
+    memcpy(data, ctx->current, length);
+    ctx->current += length;
 }
 
 bool Image::LoadPNGFromMemory(const char *name, const byte *data, size_t size) {
@@ -48,7 +53,9 @@ bool Image::LoadPNGFromMemory(const char *name, const byte *data, size_t size) {
         return false;
     }
 
-    png_set_read_fn(png, const_cast<byte *>(data), png_read_data);
+    PNGReadContext ctx;
+    ctx.current = data;
+    png_set_read_fn(png, &ctx, png_read_data);
 
     png_read_info(png, info);
 
@@ -67,15 +74,19 @@ bool Image::LoadPNGFromMemory(const char *name, const byte *data, size_t size) {
         png_set_expand(png);
     }
 
+    if (png_get_valid(png, info, PNG_INFO_tRNS)) {
+        png_set_tRNS_to_alpha(png);
+    }
+
     // expand gray-scaled images to RGB triplets
     if (!(color_type & PNG_COLOR_MASK_COLOR)) {
         png_set_gray_to_rgb(png);
     }
 
     // if there is no alpha information, fill with 255
-//	if (!(color_type & PNG_COLOR_MASK_ALPHA)) {
-//		png_set_filler(png, 255, PNG_FILLER_AFTER);
-    //}
+    /*if (!(color_type & PNG_COLOR_MASK_ALPHA)) {
+        png_set_filler(png, 255, PNG_FILLER_AFTER);
+    }*/
 
     // expand pictures with less than 8bpp to 8bpp
     if (bit_depth < 8) {
@@ -85,8 +96,10 @@ bool Image::LoadPNGFromMemory(const char *name, const byte *data, size_t size) {
     // update structure with the above settings
     png_read_update_info(png, info);
 
+    png_get_IHDR(png, info, (png_uint_32 *)&w, (png_uint_32 *)&h, &bit_depth, &color_type, nullptr, nullptr, nullptr);
+
     // allocate the memory to hold the image
-    Create2D(w, h, 1, color_type & PNG_COLOR_MASK_ALPHA ? Format::R8G8B8A8 : Format::R8G8B8, GammaSpace::sRGB, nullptr, Flag::None);
+    Create2D(w, h, 1, (color_type & PNG_COLOR_MASK_ALPHA) ? Format::R8G8B8A8 : Format::R8G8B8, GammaSpace::sRGB, nullptr, Flag::None);
     
     png_bytep *row_pointers = (png_bytep *)Mem_Alloc16(sizeof(png_bytep) * h);
 
@@ -117,11 +130,22 @@ bool Image::LoadPNGFromMemory(const char *name, const byte *data, size_t size) {
     return true;
 }
 
+struct PNGWriteContext {
+    byte *current;
+    byte *end;
+    size_t written = 0;
+};
+
 static void png_write_data(png_structp png, png_bytep data, png_size_t length) {
-    //simdProcessor->Memcpy(png->io_ptr, data, length);
-    memcpy(png->io_ptr, data, length);
-    png->io_ptr = (byte *)png->io_ptr + length;
-    png_compressed_size += length;
+    auto *ctx = static_cast<PNGWriteContext *>(png_get_io_ptr(png));
+    if (!ctx || ctx->current + length > ctx->end) {
+        png_error(png, "PNG write overflow");
+        return;
+    }
+
+    memcpy(ctx->current, data, length);
+    ctx->current += length;
+    ctx->written += length;
 }
 
 static void png_flush_data(png_structp png) {
@@ -171,7 +195,8 @@ bool Image::WritePNG(const char *filename) const {
     }
 
     png_compressed_size = 0;
-    byte *buffer = (byte *)Mem_Alloc16(width * height * bpp);
+    int size = width * height * bpp;
+    byte *buffer = (byte *)Mem_Alloc16(size);
 
     // Set error handling.
     if (setjmp(png_jmpbuf(png))) {
@@ -180,7 +205,10 @@ bool Image::WritePNG(const char *filename) const {
         return false;
     }
 
-    png_set_write_fn(png, buffer, png_write_data, png_flush_data);
+    PNGWriteContext ctx;
+    ctx.current = buffer;
+    ctx.end = buffer + size;
+    png_set_write_fn(png, &ctx, png_write_data, png_flush_data);
     png_set_IHDR(png, info, width, height, 8, colorType, PNG_INTERLACE_NONE, PNG_COMPRESSION_TYPE_DEFAULT, PNG_FILTER_TYPE_DEFAULT);
 
     // Write the file header information.
