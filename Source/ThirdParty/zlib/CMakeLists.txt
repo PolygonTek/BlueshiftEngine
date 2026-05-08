@@ -4,10 +4,11 @@ set(CMAKE_ALLOW_LOOSE_LOOP_CONSTRUCTS ON)
 
 project(zlib C)
 
-set(VERSION "1.2.11")
+set(VERSION "1.3.2")
 
 option(ASM686 "Enable building i686 assembly implementation")
 option(AMD64 "Enable building amd64 assembly implementation")
+mark_as_advanced(ZLIB_PREFIX)
 
 set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -DZLIB_DEBUG")
 
@@ -68,22 +69,37 @@ if(MSVC)
     include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 endif()
 
-if(NOT CMAKE_CURRENT_SOURCE_DIR STREQUAL CMAKE_CURRENT_BINARY_DIR)
-    # If we're doing an out of source build and the user has a zconf.h
-    # in their source tree...
-    if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/zconf.h)
-        message(STATUS "Renaming")
-        message(STATUS "    ${CMAKE_CURRENT_SOURCE_DIR}/zconf.h")
-        message(STATUS "to 'zconf.h.included' because this file is included with zlib")
-        message(STATUS "but CMake generates it automatically in the build directory.")
-        file(RENAME ${CMAKE_CURRENT_SOURCE_DIR}/zconf.h ${CMAKE_CURRENT_SOURCE_DIR}/zconf.h.included)
-  endif()
-endif()
+if(NOT ZLIB_CONF_WRITTEN)
+    set(Z_PREFIX ${ZLIB_PREFIX})
+    set(CONF_OUT_FILE ${CMAKE_CURRENT_BINARY_DIR}/zconf.h.cmakein)
+    file(READ ${CMAKE_CURRENT_SOURCE_DIR}/zconf.h ZCONF_CONTENT LIMIT 245)
+    file(WRITE ${CONF_OUT_FILE} ${ZCONF_CONTENT})
+    file(APPEND ${CONF_OUT_FILE} "#cmakedefine Z_PREFIX 1\n")
+    file(APPEND ${CONF_OUT_FILE} "#cmakedefine HAVE_STDARG_H 1\n")
+    file(APPEND ${CONF_OUT_FILE} "#cmakedefine HAVE_UNISTD_H 1\n")
+    file(READ ${CMAKE_CURRENT_SOURCE_DIR}/zconf.h ZCONF_CONTENT OFFSET 244)
+    set(FIRST_ITEM TRUE)
+
+    foreach(item IN LISTS ZCONF_CONTENT)
+        if(FIRST_ITEM)
+            string(APPEND OUT_CONTENT ${item})
+            set(FIRST_ITEM FALSE)
+        else(FIRST_ITEM)
+            string(APPEND OUT_CONTENT "\;" ${item})
+        endif(FIRST_ITEM)
+    endforeach(item IN LISTS ${ZCONF_CONTENT})
+
+    file(APPEND ${CONF_OUT_FILE} ${OUT_CONTENT})
+    set(ZLIB_CONF_WRITTEN
+        TRUE
+        CACHE BOOL "zconf.h.cmakein was created")
+    mark_as_advanced(ZLIB_CONF_WRITTEN)
+endif(NOT ZLIB_CONF_WRITTEN)
 
 set(ZLIB_PC ${CMAKE_CURRENT_BINARY_DIR}/zlib.pc)
 
 configure_file( ${CMAKE_CURRENT_SOURCE_DIR}/zlib.pc.cmakein ${ZLIB_PC} @ONLY)
-configure_file(	${CMAKE_CURRENT_SOURCE_DIR}/zconf.h.cmakein ${CMAKE_CURRENT_BINARY_DIR}/zconf.h @ONLY)
+configure_file(	${CMAKE_CURRENT_BINARY_DIR}/zconf.h.cmakein ${CMAKE_CURRENT_BINARY_DIR}/zconf.h @ONLY)
 
 include_directories(${CMAKE_CURRENT_BINARY_DIR} ${CMAKE_SOURCE_DIR})
 
