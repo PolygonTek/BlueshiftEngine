@@ -599,12 +599,9 @@ RHI::PipelineState *D3D12Renderer::CreateGraphicsPSO(const RHI::PipelineStateDes
         renderTargetFormatArray.NumRenderTargets = psDesc->renderDest->renderTargetCount;
 
         for (int i = 0; i < renderTargetFormatArray.NumRenderTargets; ++i) {
-            DXGI_FORMAT renderTargetFormat;
-            ImageFormatToDXGIFormat(psDesc->renderDest->renderTargetFormats[i], psDesc->renderDest->renderTargetForematSRGBs[i], &renderTargetFormat);
-            renderTargetFormatArray.RTFormats[i] = renderTargetFormat;
+            renderTargetFormatArray.RTFormats[i] = RHIFormatToDXGIFormat(psDesc->renderDest->renderTargetFormats[i]);
         }
-        DXGI_FORMAT depthStencilFormat;
-        ImageFormatToDXGIFormat(psDesc->renderDest->depthStencilFormat, false, &depthStencilFormat);
+        DXGI_FORMAT depthStencilFormat = RHIFormatToDXGIFormat(psDesc->renderDest->depthStencilFormat);
 
         DXGI_SAMPLE_DESC sampleDesc = {};
         sampleDesc.Count = psDesc->renderDest->sampleCount;

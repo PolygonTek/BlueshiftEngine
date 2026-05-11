@@ -193,3 +193,334 @@ void RHI::Renderer::AdjustTextureSize(TextureType textureType, bool useNPOT, uin
         *outDepth = d;
     }
 }
+
+
+bool RHI::Renderer::ImageFormatToRHIFormat(BE1::Image::Format imageFormat, bool isSRGB, RHI::Format *rhiFormat) {
+    switch (imageFormat) {
+    case BE1::Image::Format::Unknown:
+        if (rhiFormat) *rhiFormat = RHI::Format::Unknown;
+        return true;
+    case BE1::Image::Format::R32_FLOAT:
+        if (rhiFormat) *rhiFormat = RHI::Format::R32_FLOAT;
+        return true;
+    case BE1::Image::Format::R32_SINT:
+        if (rhiFormat) *rhiFormat = RHI::Format::R32_SINT;
+        return true;
+    case BE1::Image::Format::R32_UINT:
+        if (rhiFormat) *rhiFormat = RHI::Format::R32_UINT;
+        return true;
+    case BE1::Image::Format::R32G32_FLOAT:
+        if (rhiFormat) *rhiFormat = RHI::Format::R32G32_FLOAT;
+        return true;
+    case BE1::Image::Format::R32G32_SINT:
+        if (rhiFormat) *rhiFormat = RHI::Format::R32G32_SINT;
+        return true;
+    case BE1::Image::Format::R32G32_UINT:
+        if (rhiFormat) *rhiFormat = RHI::Format::R32G32_UINT;
+        return true;
+    case BE1::Image::Format::R32G32B32_FLOAT:
+        if (rhiFormat) *rhiFormat = RHI::Format::R32G32B32_FLOAT;
+        return true;
+    case BE1::Image::Format::R32G32B32_SINT:
+        if (rhiFormat) *rhiFormat = RHI::Format::R32G32B32_SINT;
+        return true;
+    case BE1::Image::Format::R32G32B32_UINT:
+        if (rhiFormat) *rhiFormat = RHI::Format::R32G32B32_UINT;
+        return true;
+    case BE1::Image::Format::R32G32B32A32_FLOAT:
+        if (rhiFormat) *rhiFormat = RHI::Format::R32G32B32A32_FLOAT;
+        return true;
+    case BE1::Image::Format::R32G32B32A32_SINT:
+        if (rhiFormat) *rhiFormat = RHI::Format::R32G32B32A32_SINT;
+        return true;
+    case BE1::Image::Format::R32G32B32A32_UINT:
+        if (rhiFormat) *rhiFormat = RHI::Format::R32G32B32A32_UINT;
+        return true;
+    case BE1::Image::Format::R16_FLOAT:
+    case BE1::Image::Format::L16_FLOAT:
+        if (rhiFormat) *rhiFormat = RHI::Format::R16_FLOAT;
+        return true;
+    case BE1::Image::Format::R16G16_FLOAT:
+        if (rhiFormat) *rhiFormat = RHI::Format::R16G16_FLOAT;
+        return true;
+    case BE1::Image::Format::R16G16B16A16_FLOAT:
+        if (rhiFormat) *rhiFormat = RHI::Format::R16G16B16A16_FLOAT;
+        return true;
+    case BE1::Image::Format::R9G9B9E5_FLOAT:
+        if (rhiFormat) *rhiFormat = RHI::Format::R9G9B9E5_SHAREDEXP;
+        return true;
+    case BE1::Image::Format::R11G11B10_FLOAT:
+        if (rhiFormat) *rhiFormat = RHI::Format::R11G11B10_FLOAT;
+        return true;
+    case BE1::Image::Format::R8:
+    case BE1::Image::Format::L8:
+        if (rhiFormat) *rhiFormat = RHI::Format::R8_UNORM;
+        return true;
+    case BE1::Image::Format::R8_SNORM:
+        if (rhiFormat) *rhiFormat = RHI::Format::R8_SNORM;
+        return true;
+    case BE1::Image::Format::R8_SINT:
+        if (rhiFormat) *rhiFormat = RHI::Format::R8_SINT;
+        return true;
+    case BE1::Image::Format::R8_UINT:
+        if (rhiFormat) *rhiFormat = RHI::Format::R8_UINT;
+        return true;
+    case BE1::Image::Format::A8:
+        if (rhiFormat) *rhiFormat = RHI::Format::A8_UNORM;
+        return true;
+    case BE1::Image::Format::R8G8:
+        if (rhiFormat) *rhiFormat = RHI::Format::R8G8_UNORM;
+        return true;
+    case BE1::Image::Format::R8G8_SNORM:
+        if (rhiFormat) *rhiFormat = RHI::Format::R8G8_SNORM;
+        return true;
+    case BE1::Image::Format::R8G8_SINT:
+        if (rhiFormat) *rhiFormat = RHI::Format::R8G8_SINT;
+        return true;
+    case BE1::Image::Format::R8G8_UINT:
+        if (rhiFormat) *rhiFormat = RHI::Format::R8G8_UINT;
+        return true;
+    case BE1::Image::Format::R8G8B8A8:
+        if (rhiFormat) *rhiFormat = isSRGB ? RHI::Format::R8G8B8A8_UNORM_SRGB : RHI::Format::R8G8B8A8_UNORM;
+        return true;
+    case BE1::Image::Format::R8G8B8A8_SNORM:
+        if (rhiFormat) *rhiFormat = RHI::Format::R8G8B8A8_SNORM;
+        return true;
+    case BE1::Image::Format::R8G8B8A8_SINT:
+        if (rhiFormat) *rhiFormat = RHI::Format::R8G8B8A8_SINT;
+        return true;
+    case BE1::Image::Format::R8G8B8A8_UINT:
+        if (rhiFormat) *rhiFormat = RHI::Format::R8G8B8A8_UINT;
+        return true;
+    case BE1::Image::Format::B8G8R8A8:
+        if (rhiFormat) *rhiFormat = isSRGB ? RHI::Format::B8G8R8A8_UNORM_SRGB : RHI::Format::B8G8R8A8_UNORM;
+        return true;
+    case BE1::Image::Format::B8G8R8X8:
+        if (rhiFormat) *rhiFormat = isSRGB ? RHI::Format::B8G8R8X8_UNORM_SRGB : RHI::Format::B8G8R8X8_UNORM;
+        return true;
+    case BE1::Image::Format::B5G6R5:
+        if (rhiFormat) *rhiFormat = RHI::Format::B5G6R5_UNORM;
+        return true;
+    case BE1::Image::Format::B5G5R5A1:
+        if (rhiFormat) *rhiFormat = RHI::Format::B5G5R5A1_UNORM;
+        return true;
+    case BE1::Image::Format::B4G4R4A4:
+        if (rhiFormat) *rhiFormat = RHI::Format::B4G4R4A4_UNORM;
+        return true;
+    case BE1::Image::Format::A4B4G4R4:
+        if (rhiFormat) *rhiFormat = RHI::Format::A4B4G4R4_UNORM;
+        return true;
+    case BE1::Image::Format::R10G10B10A2:
+        if (rhiFormat) *rhiFormat = RHI::Format::R10G10B10A2_UNORM;
+        return true;
+    case BE1::Image::Format::R10G10B10A2_UINT:
+        if (rhiFormat) *rhiFormat = RHI::Format::R10G10B10A2_UINT;
+        return true;
+    case BE1::Image::Format::DXT1: // BC1
+        if (rhiFormat) *rhiFormat = isSRGB ? RHI::Format::BC1_UNORM_SRGB : RHI::Format::BC1_UNORM;
+        return true;
+    case BE1::Image::Format::DXT3: // BC2
+        if (rhiFormat) *rhiFormat = isSRGB ? RHI::Format::BC2_UNORM_SRGB : RHI::Format::BC2_UNORM;
+        return true;
+    case BE1::Image::Format::DXT5: // BC3
+        if (rhiFormat) *rhiFormat = isSRGB ? RHI::Format::BC3_UNORM_SRGB : RHI::Format::BC3_UNORM;
+        return true;
+    case BE1::Image::Format::DXN1: // BC4
+        if (rhiFormat) *rhiFormat = RHI::Format::BC4_UNORM;
+        return true;
+    case BE1::Image::Format::DXN2: // BC5
+        if (rhiFormat) *rhiFormat = RHI::Format::BC5_UNORM;
+        return true;
+    case BE1::Image::Format::D16:
+        if (rhiFormat) *rhiFormat = RHI::Format::D16_UNORM;
+        return true;
+    case BE1::Image::Format::D24S8:
+        if (rhiFormat) *rhiFormat = RHI::Format::D24_UNORM_S8_UINT;
+        return true;
+    case BE1::Image::Format::D32_FLOAT:
+        if (rhiFormat) *rhiFormat = RHI::Format::D32_FLOAT;
+        return true;
+    case BE1::Image::Format::D32_FLOAT_S8X24:
+        if (rhiFormat) *rhiFormat = RHI::Format::D32_FLOAT_S8X24_UINT;
+        return true;
+    }
+    return false;
+}
+
+bool RHI::Renderer::RHIFormatToImageFormat(RHI::Format rhiFormat, BE1::Image::Format *imageFormat, bool *isSRGB) {
+    if (isSRGB) {
+        *isSRGB = false;
+        switch (rhiFormat) {
+        case RHI::Format::R8G8B8A8_UNORM_SRGB:
+        case RHI::Format::B8G8R8A8_UNORM_SRGB:
+        case RHI::Format::B8G8R8X8_UNORM_SRGB:
+        case RHI::Format::BC1_UNORM_SRGB:
+        case RHI::Format::BC2_UNORM_SRGB:
+        case RHI::Format::BC3_UNORM_SRGB:
+        case RHI::Format::BC7_UNORM_SRGB:
+            *isSRGB = true;
+            break;
+        }
+    }
+
+    switch (rhiFormat) {
+    case RHI::Format::R32_FLOAT:
+        if (imageFormat) *imageFormat = BE1::Image::Format::R32_FLOAT;
+        return true;
+    case RHI::Format::R32_SINT:
+        if (imageFormat) *imageFormat = BE1::Image::Format::R32_SINT;
+        return true;
+    case RHI::Format::R32_UINT:
+        if (imageFormat) *imageFormat = BE1::Image::Format::R32_UINT;
+        return true;
+    case RHI::Format::R32G32_FLOAT:
+        if (imageFormat) *imageFormat = BE1::Image::Format::R32G32_FLOAT;
+        return true;
+    case RHI::Format::R32G32_SINT:
+        if (imageFormat) *imageFormat = BE1::Image::Format::R32G32_SINT;
+        return true;
+    case RHI::Format::R32G32_UINT:
+        if (imageFormat) *imageFormat = BE1::Image::Format::R32G32_UINT;
+        return true;
+    case RHI::Format::R32G32B32_FLOAT:
+        if (imageFormat) *imageFormat = BE1::Image::Format::R32G32B32_FLOAT;
+        return true;
+    case RHI::Format::R32G32B32_SINT:
+        if (imageFormat) *imageFormat = BE1::Image::Format::R32G32B32_SINT;
+        return true;
+    case RHI::Format::R32G32B32_UINT:
+        if (imageFormat) *imageFormat = BE1::Image::Format::R32G32B32_UINT;
+        return true;
+    case RHI::Format::R32G32B32A32_FLOAT:
+        if (imageFormat) *imageFormat = BE1::Image::Format::R32G32B32A32_FLOAT;
+        return true;
+    case RHI::Format::R32G32B32A32_SINT:
+        if (imageFormat) *imageFormat = BE1::Image::Format::R32G32B32A32_SINT;
+        return true;
+    case RHI::Format::R32G32B32A32_UINT:
+        if (imageFormat) *imageFormat = BE1::Image::Format::R32G32B32A32_UINT;
+        return true;
+    case RHI::Format::R16_FLOAT:
+        if (imageFormat) *imageFormat = BE1::Image::Format::R16_FLOAT;
+        return true;
+    case RHI::Format::R16G16_FLOAT:
+        if (imageFormat) *imageFormat = BE1::Image::Format::R16G16_FLOAT;
+        return true;
+    case RHI::Format::R16G16B16A16_FLOAT:
+        if (imageFormat) *imageFormat = BE1::Image::Format::R16G16B16A16_FLOAT;
+        return true;
+    case RHI::Format::R9G9B9E5_SHAREDEXP:
+        if (imageFormat) *imageFormat = BE1::Image::Format::R9G9B9E5_FLOAT;
+        return true;
+    case RHI::Format::R11G11B10_FLOAT:
+        if (imageFormat) *imageFormat = BE1::Image::Format::R11G11B10_FLOAT;
+        return true;
+    case RHI::Format::R8_UNORM:
+        if (imageFormat) *imageFormat = BE1::Image::Format::R8;
+        return true;
+    case RHI::Format::R8_SNORM:
+        if (imageFormat) *imageFormat = BE1::Image::Format::R8_SNORM;
+        return true;
+    case RHI::Format::R8_SINT:
+        if (imageFormat) *imageFormat = BE1::Image::Format::R8_SINT;
+        return true;
+    case RHI::Format::R8_UINT:
+        if (imageFormat) *imageFormat = BE1::Image::Format::R8_UINT;
+        return true;
+    case RHI::Format::A8_UNORM:
+        if (imageFormat) *imageFormat = BE1::Image::Format::A8;
+        return true;
+    case RHI::Format::R8G8_UNORM:
+        if (imageFormat) *imageFormat = BE1::Image::Format::R8G8;
+        return true;
+    case RHI::Format::R8G8_SNORM:
+        if (imageFormat) *imageFormat = BE1::Image::Format::R8G8_SNORM;
+        return true;
+    case RHI::Format::R8G8_SINT:
+        if (imageFormat) *imageFormat = BE1::Image::Format::R8G8_SINT;
+        return true;
+    case RHI::Format::R8G8_UINT:
+        if (imageFormat) *imageFormat = BE1::Image::Format::R8G8_UINT;
+        return true;
+    case RHI::Format::R8G8B8A8_UNORM:
+    case RHI::Format::R8G8B8A8_UNORM_SRGB:
+        if (imageFormat) *imageFormat = BE1::Image::Format::R8G8B8A8;
+        return true;
+    case RHI::Format::R8G8B8A8_SNORM:
+        if (imageFormat) *imageFormat = BE1::Image::Format::R8G8B8A8_SNORM;
+        return true;
+    case RHI::Format::R8G8B8A8_SINT:
+        if (imageFormat) *imageFormat = BE1::Image::Format::R8G8B8A8_SINT;
+        return true;
+    case RHI::Format::R8G8B8A8_UINT:
+        if (imageFormat) *imageFormat = BE1::Image::Format::R8G8B8A8_UINT;
+        return true;
+    case RHI::Format::B8G8R8A8_UNORM:
+    case RHI::Format::B8G8R8A8_UNORM_SRGB:
+        if (imageFormat) *imageFormat = BE1::Image::Format::B8G8R8A8;
+        return true;
+    case RHI::Format::B8G8R8X8_UNORM:
+    case RHI::Format::B8G8R8X8_UNORM_SRGB:
+        if (imageFormat) *imageFormat = BE1::Image::Format::B8G8R8X8;
+        return true;
+    case RHI::Format::R10G10B10A2_UNORM:
+        if (imageFormat) *imageFormat = BE1::Image::Format::R10G10B10A2;
+        return true;
+    case RHI::Format::R10G10B10A2_UINT:
+        if (imageFormat) *imageFormat = BE1::Image::Format::R10G10B10A2_UINT;
+        return true;
+    case RHI::Format::B5G6R5_UNORM:
+        if (imageFormat) *imageFormat = BE1::Image::Format::B5G6R5;
+        return true;
+    case RHI::Format::B5G5R5A1_UNORM:
+        if (imageFormat) *imageFormat = BE1::Image::Format::B5G5R5A1;
+        return true;
+    case RHI::Format::B4G4R4A4_UNORM:
+        if (imageFormat) *imageFormat = BE1::Image::Format::B4G4R4A4;
+        return true;
+    case RHI::Format::A4B4G4R4_UNORM:
+        if (imageFormat) *imageFormat = BE1::Image::Format::A4B4G4R4;
+        return true;
+    case RHI::Format::D16_UNORM:
+        if (imageFormat) *imageFormat = BE1::Image::Format::D16;
+        return true;
+    case RHI::Format::D32_FLOAT:
+        if (imageFormat) *imageFormat = BE1::Image::Format::D32_FLOAT;
+        return true;
+    case RHI::Format::D24_UNORM_S8_UINT:
+        if (imageFormat) *imageFormat = BE1::Image::Format::D24S8;
+        return true;
+    case RHI::Format::D32_FLOAT_S8X24_UINT:
+        if (imageFormat) *imageFormat = BE1::Image::Format::D32_FLOAT_S8X24;
+        return true;
+    case RHI::Format::BC1_UNORM:
+    case RHI::Format::BC1_UNORM_SRGB:
+        if (imageFormat) *imageFormat = BE1::Image::Format::DXT1;
+        return true;
+    case RHI::Format::BC2_UNORM:
+    case RHI::Format::BC2_UNORM_SRGB:
+        if (imageFormat) *imageFormat = BE1::Image::Format::DXT3;
+        return true;
+    case RHI::Format::BC3_UNORM:
+    case RHI::Format::BC3_UNORM_SRGB:
+        if (imageFormat) *imageFormat = BE1::Image::Format::DXT5;
+        return true;
+    case RHI::Format::BC4_UNORM:
+        if (imageFormat) *imageFormat = BE1::Image::Format::DXN1;
+        return true;
+    case RHI::Format::BC5_UNORM:
+        if (imageFormat) *imageFormat = BE1::Image::Format::DXN2;
+        return true;
+    case RHI::Format::BC6H_UF16:
+        if (imageFormat) *imageFormat = BE1::Image::Format::BC6H_UF16;
+        return true;
+    case RHI::Format::BC6H_SF16:
+        if (imageFormat) *imageFormat = BE1::Image::Format::BC6H_SF16;
+        return true;
+    case RHI::Format::BC7_UNORM:
+    case RHI::Format::BC7_UNORM_SRGB:
+        if (imageFormat) *imageFormat = BE1::Image::Format::BC7;
+        return true;
+    }
+    return false;
+}

@@ -61,7 +61,7 @@ public:
     virtual BE1::Image::Format          ToUAVImageFormat(BE1::Image::Format inFormat) const override;
     bool                                IsSupportedUAVFormat(DXGI_FORMAT format) const;
 
-    virtual RHI::SwapChain *            CreateSwapChain(HWND hwnd, uint32_t width, uint32_t height, BE1::Image::Format format) override;
+    virtual RHI::SwapChain *            CreateSwapChain(HWND hwnd, uint32_t width, uint32_t height, RHI::Format format) override;
     virtual void                        DestroySwapChain(RHI::SwapChain *swapChain) override;
 
     virtual RHI::FrameThreadData *      CreateFrameThreadData(int32_t threadIndex) override;
@@ -109,14 +109,14 @@ public:
     bool                                GetTextureImage(RHI::Texture *texture, int mipLevel, int sliceIndex, BE1::Image::Format imageFormat, void *outPixels);
     bool                                SetTextureSubImage(RHI::Texture *texture, int mipLevel, int sliceIndex, int x, int y, int z, int width, int height, int depth, BE1::Image::Format imageFormat, const void *pixels);
 
-    virtual RHI::ViewID                 CreateView(RHI::Buffer *buffer, RHI::ViewType viewType, BE1::Image::Format format, uint32_t structuredStride, uint64_t offset = 0, uint64_t size = ~0) override;
+    virtual RHI::ViewID                 CreateView(RHI::Buffer *buffer, RHI::ViewType viewType, RHI::Format format, uint32_t structuredStride, uint64_t offset = 0, uint64_t size = ~0) override;
     virtual RHI::ViewID                 CreateView(RHI::Texture *texture, RHI::ViewType viewType, RHI::Format typelessCompatibleFormat = RHI::Format::Auto, uint32_t firstSlice = 0, uint32_t sliceCount = ~0, uint32_t firstMipLevel = 0, uint32_t mipCount = ~0) override;
 
     virtual void                        DestroyView(RHI::Buffer *buffer, RHI::ViewType viewType, RHI::ViewID viewID) override;
     virtual void                        DestroyView(RHI::Texture *texture, RHI::ViewType viewType, RHI::ViewID viewID) override;
 
-    RHI::ViewID                         CreateSRV(D3D12Buffer *buffer, BE1::Image::Format format, uint32_t structureByteStride, uint64_t offset = 0, uint64_t size = ~0);
-    RHI::ViewID                         CreateUAV(D3D12Buffer *buffer, BE1::Image::Format format, uint32_t structureByteStride, uint64_t offset = 0, uint64_t size = ~0);
+    RHI::ViewID                         CreateSRV(D3D12Buffer *buffer, RHI::Format format, uint32_t structureByteStride, uint64_t offset = 0, uint64_t size = ~0);
+    RHI::ViewID                         CreateUAV(D3D12Buffer *buffer, RHI::Format format, uint32_t structureByteStride, uint64_t offset = 0, uint64_t size = ~0);
 
     RHI::ViewID                         CreateSRV(D3D12Texture *texture, RHI::Format typelessCompatibleFormat, uint32_t firstSlice = 0, uint32_t sliceCount = ~0, uint32_t firstMipLevel = 0, uint32_t mipCount = ~0);
     RHI::ViewID                         CreateUAV(D3D12Texture *texture, RHI::Format typelessCompatibleFormat, uint32_t firstSlice = 0, uint32_t sliceCount = ~0, uint32_t firstMipLevel = 0);
@@ -217,14 +217,18 @@ public:
     void                                PrintMemoryAllocatorStats();
 #endif
 
+    static DXGI_FORMAT                  RHIFormatToDXGIFormat(RHI::Format rhiFormat);
+    static RHI::Format                  DXGIFormatToRHIFormat(DXGI_FORMAT dxgiFormat);
     static bool                         ImageFormatToDXGIFormat(BE1::Image::Format imageFormat, bool isSRGB, DXGI_FORMAT *dxgiFormat);
     static bool                         DXGIFormatToImageFormat(DXGI_FORMAT dxgiFormat, BE1::Image::Format *imageFormat, bool *isSRGB);
-    static DXGI_FORMAT                  RHIFormatToDXGIFormat(RHI::Format rhiFormat);
+
     static bool                         IsDepthFormat(DXGI_FORMAT format);
     static bool                         IsStencilFormat(DXGI_FORMAT format);
     static bool                         IsTypelessFormat(DXGI_FORMAT format);
     static bool                         IsTypelessCompatibleFormat(DXGI_FORMAT typelessFormat, DXGI_FORMAT viewFormat);
+    static bool                         IsHDRSwapChainFormat(DXGI_FORMAT format);
     static DXGI_FORMAT                  ToLinearFormat(DXGI_FORMAT format);
+    static DXGI_FORMAT                  ToSRGBFormat(DXGI_FORMAT format);
     static DXGI_FORMAT                  ToTypelessFormat(DXGI_FORMAT format);
     static UINT                         GetComponentSwizzling(BE1::Image::Format format);
     static D3D12_RESOURCE_STATES        ToD3D12ResourceState(RHI::GPUResourceState resourceState);

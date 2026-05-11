@@ -30,6 +30,9 @@
 // 인스턴싱 사용 여부
 #define USE_RENDER_INSTANCED
 
+// 렌더타겟 텍스쳐 사용 여부
+//#define USE_OFFSCREEN_MAIN_RENDER_TARGET
+
 // 프로파일러 사용 여부 (D3D12 의 경우엔 PIX, Release 모드에서는 무시됨)
 #define USE_PROFILER
 

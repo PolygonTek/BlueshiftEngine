@@ -17,11 +17,8 @@
 #include "D3D12DescriptorPool.h"
 #include "D3D12SwapChain.h"
 
-RHI::SwapChain *D3D12Renderer::CreateSwapChain(HWND hwnd, uint32_t width, uint32_t height, BE1::Image::Format format) {
-    DXGI_FORMAT dxgiFormat;
-    if (!ImageFormatToDXGIFormat(format, false, &dxgiFormat)) {
-        return nullptr;
-    }
+RHI::SwapChain *D3D12Renderer::CreateSwapChain(HWND hwnd, uint32_t width, uint32_t height, RHI::Format format) {
+    DXGI_FORMAT dxgiFormat = RHIFormatToDXGIFormat(format);
 
     DXGI_SWAP_CHAIN_DESC1 swapChainDesc = {};
     swapChainDesc.Width = (UINT)width;
@@ -66,7 +63,7 @@ RHI::SwapChain *D3D12Renderer::CreateSwapChain(HWND hwnd, uint32_t width, uint32
     //hr = dxgiSwapChain3->GetContainingOutput(&dxgiOutput);
 
     D3D12SwapChain *swapChain = new D3D12SwapChain;
-    swapChain->dxgiFormat = dxgiFormat;
+    swapChain->swapChainFormat = dxgiFormat;
     swapChain->width = width;
     swapChain->height = height;
     swapChain->dxgiSwapChain = dxgiSwapChain3;
@@ -87,6 +84,14 @@ void D3D12SwapChain::Release() {
 }
 
 void D3D12SwapChain::CreateRTVs() {
+    // 각 백버퍼의 RTV 를 생성한다.
+    if (D3D12Renderer::IsHDRSwapChainFormat(swapChainFormat)) {
+        rtvFormat = swapChainFormat;
+    } else {
+        // sRGB 포맷으로 변환
+        rtvFormat = D3D12Renderer::ToSRGBFormat(swapChainFormat);
+    }
+
     for (int bufferIndex = 0; bufferIndex < COUNT_OF(backBuffers); ++bufferIndex) {
         if (backBufferRTVs[bufferIndex].ptr != 0) {
             D3D12Renderer::GetRenderer()->rtvCpuDescriptorPool->Free(backBufferRTVs[bufferIndex]);
@@ -96,8 +101,13 @@ void D3D12SwapChain::CreateRTVs() {
         // 스왑 체인의 백버퍼 리소스를 가져온다.
         dxgiSwapChain->GetBuffer(bufferIndex, IID_PPV_ARGS(&backBuffers[bufferIndex]));
 
-        // 각 백버퍼의 RTV 를 생성한다.
-        D3D12Renderer::GetRenderer()->device->CreateRenderTargetView(backBuffers[bufferIndex], nullptr, backBufferRTVs[bufferIndex]);
+        D3D12_RENDER_TARGET_VIEW_DESC rtvDesc = {};
+        rtvDesc.Format = rtvFormat;
+        rtvDesc.ViewDimension = D3D12_RTV_DIMENSION_TEXTURE2D;
+        rtvDesc.Texture2D.MipSlice = 0;
+        rtvDesc.Texture2D.PlaneSlice = 0;
+
+        D3D12Renderer::GetRenderer()->device->CreateRenderTargetView(backBuffers[bufferIndex], &rtvDesc, backBufferRTVs[bufferIndex]);
     }
 
     currentBackBufferIndex = dxgiSwapChain->GetCurrentBackBufferIndex();
@@ -118,7 +128,7 @@ void D3D12SwapChain::Resize(uint32_t width, uint32_t height) {
     this->height = height;
 
     // 스왑 체인 백버퍼의 사이즈를 조정한다.
-    dxgiSwapChain->ResizeBuffers(D3D12SwapChain::NumSwapChainBuffers, width, height, dxgiFormat, swapChainFlags);
+    dxgiSwapChain->ResizeBuffers(D3D12SwapChain::NumSwapChainBuffers, width, height, swapChainFormat, swapChainFlags);
 
     // 백버퍼 리소스를 다시 가져오고 RTV 를 다시 생성한다.
     CreateRTVs();
@@ -150,6 +160,10 @@ bool D3D12SwapChain::IsSupportsHDR() const {
     return false;
 }
 
-bool D3D12SwapChain::GetFormat(BE1::Image::Format *imageFormat, bool *isSRGB) const {
-    return D3D12Renderer::DXGIFormatToImageFormat(dxgiFormat, imageFormat, isSRGB);
+RHI::Format D3D12SwapChain::GetFormat() const {
+    return D3D12Renderer::DXGIFormatToRHIFormat(swapChainFormat);
+}
+
+RHI::Format D3D12SwapChain::GetRTVFormat() const {
+    return D3D12Renderer::DXGIFormatToRHIFormat(rtvFormat);
 }

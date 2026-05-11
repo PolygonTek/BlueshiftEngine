@@ -30,7 +30,8 @@ public:
     void                            CreateRTVs();
 
     virtual bool                    IsSupportsHDR() const override;
-    virtual bool                    GetFormat(BE1::Image::Format *imageFormat, bool *isSRGB) const override;
+    virtual RHI::Format             GetFormat() const override;
+    virtual RHI::Format             GetRTVFormat() const override;
     virtual uint32_t                GetWidth() const override { return width; }
     virtual uint32_t                GetHeight() const override { return height; }
 
@@ -40,13 +41,12 @@ public:
     ID3D12Resource *                GetCurrentBackBuffer() const { return backBuffers[currentBackBufferIndex]; }
     const D3D12_CPU_DESCRIPTOR_HANDLE &GetCurrentBackBufferRTVDescriptorHandle() const { return backBufferRTVs[currentBackBufferIndex]; }
 
-    DXGI_FORMAT                     GetDXGIFormat() const { return dxgiFormat; }
-
     static constexpr int            NumSwapChainBuffers = 3;
 
 private:
     IDXGISwapChain3 *               dxgiSwapChain = nullptr;
-    DXGI_FORMAT                     dxgiFormat = DXGI_FORMAT_UNKNOWN;
+    DXGI_FORMAT                     swapChainFormat = DXGI_FORMAT_UNKNOWN;
+    DXGI_FORMAT                     rtvFormat = DXGI_FORMAT_UNKNOWN;
     ID3D12Resource *                backBuffers[NumSwapChainBuffers] = {};
     D3D12_CPU_DESCRIPTOR_HANDLE     backBufferRTVs[NumSwapChainBuffers] = {};
     uint32_t                        currentBackBufferIndex = 0;

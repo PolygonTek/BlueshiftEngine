@@ -91,20 +91,23 @@ const void *RenderBackend::ExecuteDrawCamera(const void *data) {
         clearFlags |= RHI::ClearFlag::Depth;
     }
 
-#if 1
+#ifndef USE_OFFSCREEN_MAIN_RENDER_TARGET
     RHI::renderer->BeginRenderPass(mainCommandList, currentContext->swapChain, currentContext->mainRTDepthTexture, clearColor, clearDepth, 0, clearFlags);
 #else
-    if (mainRTSampleCount > 1) {
+    RHI::RenderPassImage::LoadAction colorLoadAction = BE1::HasFlag(clearFlags, RHI::ClearFlag::Color) ? RHI::RenderPassImage::LoadAction::Clear : RHI::RenderPassImage::LoadAction::Load;
+    RHI::RenderPassImage::LoadAction depthLoadAction = BE1::HasFlag(clearFlags, RHI::ClearFlag::Depth) ? RHI::RenderPassImage::LoadAction::Clear : RHI::RenderPassImage::LoadAction::Load;
+
+    if (currentContext->mainRTSampleCount > 1) {
         RHI::RenderPassImage renderPassImages[] = {
-            RHI::RenderPassImage::Color(currentContext->mainRTColorMSAATexture, 0, RHI::RenderPassImage::LoadAction::Clear),
-            RHI::RenderPassImage::DepthStencil(currentContext->mainRTDepthTexture, 0, RHI::RenderPassImage::LoadAction::Clear),
-            RHI::RenderPassImage::ResolveColor(currentContext->mainRTColorTexture, 0, 0)
+            RHI::RenderPassImage::Color(currentContext->mainRTColorMSAATexture, RHI::ViewID::PrimaryID, colorLoadAction),
+            RHI::RenderPassImage::DepthStencil(currentContext->mainRTDepthTexture, RHI::ViewID::PrimaryID, depthLoadAction),
+            RHI::RenderPassImage::ResolveColor(currentContext->mainRTColorTexture, RHI::ViewID::PrimaryID, 0)
         };
         RHI::renderer->BeginRenderPass(mainCommandList, renderPassImages, COUNT_OF(renderPassImages));
     } else {
         RHI::RenderPassImage renderPassImages[] = {
-            RHI::RenderPassImage::Color(currentContext->mainRTColorTexture, 0, RHI::RenderPassImage::LoadAction::Clear),
-            RHI::RenderPassImage::DepthStencil(currentContext->mainRTDepthTexture, 0, RHI::RenderPassImage::LoadAction::Clear)
+            RHI::RenderPassImage::Color(currentContext->mainRTColorTexture, RHI::ViewID::PrimaryID, colorLoadAction),
+            RHI::RenderPassImage::DepthStencil(currentContext->mainRTDepthTexture, RHI::ViewID::PrimaryID, depthLoadAction)
         };
         RHI::renderer->BeginRenderPass(mainCommandList, renderPassImages, COUNT_OF(renderPassImages));
     }
@@ -116,17 +119,7 @@ const void *RenderBackend::ExecuteDrawCamera(const void *data) {
         DrawCamera3D();
     }
 
-#if 1
     RHI::renderer->EndRenderPass(mainCommandList);
-#else
-    RHI::renderer->EndRenderPass(mainCommandList);
-
-    RHI::renderer->BeginRenderPass(mainCommandList, swapChain, nullptr);
-    RHI::renderer->SetPSO(mainCommandList, imagePSO);
-    RHI::renderer->SetTexture(mainCommandList, 0, false, mainRTColorTexture);
-    RHI::renderer->Draw(mainCommandList, 3, 0);
-    RHI::renderer->EndRenderPass(mainCommandList);
-#endif
 
     // command list 에 기록을 마치고 실행
     mainCommandList->CloseAndExecute();
@@ -167,6 +160,23 @@ const void *RenderBackend::ExecuteSwapBuffers(const void *data) {
 
     // 이번 백엔드 프레임에서 수행하는 렌더링 커맨드들에 대한 펜스를 친다.
     frameData->SetFrameFenceValue(RHI::renderer->SignalFence(RHI::CommandQueueType::Graphics));
+
+#ifdef USE_OFFSCREEN_MAIN_RENDER_TARGET
+    // 커맨드 리스트 풀에서 새로운 커맨드 리스트를 얻어온다.
+    mainCommandList = frameData->GetThreadData(0)->BeginCommandList(RHI::CommandQueueType::Graphics);
+
+    // 뷰포트 & ScissorRect 의 초기값 설정
+    RHI::renderer->SetViewport(mainCommandList, currentVisCamera->renderRect);
+    RHI::renderer->SetScissorRect(mainCommandList, currentVisCamera->renderRect);
+
+    RHI::renderer->BeginRenderPass(mainCommandList, currentContext->swapChain, nullptr);
+    RHI::renderer->SetPSO(mainCommandList, currentContext->imagePSO);
+    RHI::renderer->SetTexture(mainCommandList, 0, false, currentContext->mainRTColorTexture);
+    RHI::renderer->Draw(mainCommandList, 3, 0);
+    RHI::renderer->EndRenderPass(mainCommandList);
+
+    mainCommandList->CloseAndExecute();
+#endif
 
     // 백버퍼를 전면버퍼와 교환한다.
     currentContext->GetSwapChain()->SwapBuffers(false);

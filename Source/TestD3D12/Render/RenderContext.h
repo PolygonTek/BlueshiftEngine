@@ -59,8 +59,8 @@ public:
 
     void                                OnResize(int width, int height);
 
-    BE1::Image::Format                  GetMainRTColorFormat() const { return mainRTColorFormat; }
-    BE1::Image::Format                  GetMainRTDepthFormat() const { return mainRTDepthFormat; }
+    RHI::Format                         GetMainRTColorFormat() const { return mainRTColorFormat; }
+    RHI::Format                         GetMainRTDepthFormat() const { return mainRTDepthFormat; }
     uint32_t                            GetMainRTSampleCount() const { return mainRTSampleCount; }
 
     const RenderFrameData *             GetCurrentFrontendFrameData() const { return &frames[currentFrontendFrameIndex]; }
@@ -135,8 +135,8 @@ private:
     BE1::PlatformThread *               renderThread = nullptr;
     bool                                isStoppingRenderThread = false;
 
-    BE1::Image::Format                  mainRTColorFormat = BE1::Image::Format::R8G8B8A8;
-    BE1::Image::Format                  mainRTDepthFormat = BE1::Image::Format::D32_FLOAT;
+    RHI::Format                         mainRTColorFormat = RHI::Format::R8G8B8A8_UNORM;
+    RHI::Format                         mainRTDepthFormat = RHI::Format::D24_UNORM_S8_UINT;
     uint32_t                            mainRTSampleCount = 1;
 
     GuiMesh                             guiMesh;            ///< System GUI mesh

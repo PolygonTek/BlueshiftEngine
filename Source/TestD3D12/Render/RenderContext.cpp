@@ -43,7 +43,7 @@ void RenderContext::Init(void *windowHandle, bool useRenderThread) {
     uint32_t backBufferHeight = rc.bottom;
 
     // 스왑 체인 (백버퍼) 생성
-    swapChain = RHI::renderer->CreateSwapChain(hwnd, backBufferWidth, backBufferHeight, BE1::Image::Format::R8G8B8A8);
+    swapChain = RHI::renderer->CreateSwapChain(hwnd, backBufferWidth, backBufferHeight, RHI::Format::R8G8B8A8_UNORM);
 
     // 렌더 타겟 텍스쳐 & 뎁스 텍스쳐 생성
     CreateMainRenderTextures(backBufferWidth, backBufferHeight);
@@ -114,18 +114,24 @@ void RenderContext::OnResize(int width, int height) {
 }
 
 void RenderContext::CreateMainRenderTextures(uint32_t width, uint32_t height) {
+    BE1::Image::Format colorImageFormat = BE1::Image::Format::Unknown;
+    RHI::Renderer::RHIFormatToImageFormat(mainRTColorFormat, &colorImageFormat, nullptr);
+
     std::shared_ptr<BE1::Image> colorImage = std::make_shared<BE1::Image>();
-    colorImage->InitFromMemory(width, height, 1, 1, 1, mainRTColorFormat, BE1::Image::GammaSpace::Linear, nullptr, BE1::Image::Flag::None);
+    colorImage->InitFromMemory(width, height, 1, 1, 1, colorImageFormat, BE1::Image::GammaSpace::Linear, nullptr, BE1::Image::Flag::None);
     mainRTColorTexture = RHI::renderer->CreateTexture(RHI::TextureType::Texture2D, RHI::TextureFlag::RenderTarget | RHI::TextureFlag::ShaderResource | RHI::TextureFlag::UnorderedAccess,
-        colorImage, false, RHI::ClearValue::Color(0.0f, 0.0f, 1.0f, 0.0f), 1);
+        colorImage, false, RHI::ClearValue::Color(0.0f, 0.0f, 0.5f, 0.0f), 1);
 
     if (mainRTSampleCount > 1) {
         mainRTColorMSAATexture = RHI::renderer->CreateTexture(RHI::TextureType::Texture2D, RHI::TextureFlag::RenderTarget | RHI::TextureFlag::ShaderResource,
-            colorImage, false, RHI::ClearValue::Color(0.0f, 0.0f, 1.0f, 0.0f), mainRTSampleCount);
+            colorImage, false, RHI::ClearValue::Color(0.0f, 0.0f, 5.0f, 0.0f), mainRTSampleCount);
     }
 
+    BE1::Image::Format depthImageFormat = BE1::Image::Format::Unknown;
+    RHI::Renderer::RHIFormatToImageFormat(mainRTDepthFormat, &depthImageFormat, nullptr);
+
     std::shared_ptr<BE1::Image> depthStencilImage = std::make_shared<BE1::Image>();
-    depthStencilImage->InitFromMemory(width, height, 1, 1, 1, mainRTDepthFormat, BE1::Image::GammaSpace::Linear, nullptr, BE1::Image::Flag::None);
+    depthStencilImage->InitFromMemory(width, height, 1, 1, 1, depthImageFormat, BE1::Image::GammaSpace::Linear, nullptr, BE1::Image::Flag::None);
     mainRTDepthTexture = RHI::renderer->CreateTexture(RHI::TextureType::Texture2D, RHI::TextureFlag::DepthStencil,
         depthStencilImage, false, RHI::ClearValue::DepthStencil(1.0f, 0), mainRTSampleCount, RHI::GPUResourceState::DepthWrite);
 }
@@ -157,9 +163,15 @@ void RenderContext::InitPSO() {
 
     RHI::RenderDest renderDest;
     renderDest.renderTargetCount = 1;
-    renderDest.renderTargetFormats[0] = GetMainRTColorFormat();
     renderDest.depthStencilFormat = GetMainRTDepthFormat();
+
+#ifdef USE_OFFSCREEN_MAIN_RENDER_TARGET
+    renderDest.renderTargetFormats[0] = GetMainRTColorFormat();
     renderDest.sampleCount = GetMainRTSampleCount();
+#else
+    renderDest.renderTargetFormats[0] = swapChain->GetRTVFormat();
+    renderDest.sampleCount = 1;
+#endif
 
     RHI::Shader *unlitVS = static_cast<RHI::Shader *>(RHI::renderer->CreateShaderFromFile(RHI::ShaderModel::SM_6_0, RHI::ShaderStage::Vertex, "Source/TestD3D12/Shaders/Unlit.hlsl", "VSMain"));
     RHI::Shader *unlitPS = static_cast<RHI::Shader *>(RHI::renderer->CreateShaderFromFile(RHI::ShaderModel::SM_6_0, RHI::ShaderStage::Fragment, "Source/TestD3D12/Shaders/Unlit.hlsl", "PSMain"));
@@ -215,14 +227,10 @@ void RenderContext::InitPSO() {
 }
 
 void RenderContext::InitFullScreenTrianglePSO() {
-    BE1::Image::Format imageFormat = BE1::Image::Format::Unknown;
-    bool isSRGB = false;
-    swapChain->GetFormat(&imageFormat, &isSRGB);
-
     RHI::RenderDest renderDest;
     renderDest.renderTargetCount = 1;
-    renderDest.renderTargetFormats[0] = imageFormat;
-    renderDest.renderTargetForematSRGBs[0] = isSRGB;
+    renderDest.renderTargetFormats[0] = swapChain->GetRTVFormat();
+    renderDest.sampleCount = 1;
 
     RHI::Shader *vs = static_cast<RHI::Shader *>(RHI::renderer->CreateShaderFromFile(RHI::ShaderModel::SM_6_0, RHI::ShaderStage::Vertex, "Source/TestD3D12/Shaders/FullScreenTriangle.hlsl", "VSMain"));
     RHI::Shader *ps = static_cast<RHI::Shader *>(RHI::renderer->CreateShaderFromFile(RHI::ShaderModel::SM_6_0, RHI::ShaderStage::Fragment, "Source/TestD3D12/Shaders/FullScreenTriangle.hlsl", "PSMain"));

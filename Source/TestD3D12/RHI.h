@@ -328,6 +328,16 @@ namespace RHI {
         R8_SINT,
         A8_UNORM,
 
+        B5G6R5_UNORM,
+        B5G5R5A1_UNORM,
+        B8G8R8A8_UNORM,
+        B8G8R8A8_UNORM_SRGB,
+        B8G8R8X8_UNORM,
+        B8G8R8X8_UNORM_SRGB,
+
+        B4G4R4A4_UNORM,
+        A4B4G4R4_UNORM,
+
         R9G9B9E5_SHAREDEXP,
 
         BC1_UNORM,
@@ -340,11 +350,6 @@ namespace RHI {
         BC4_SNORM,
         BC5_UNORM,
         BC5_SNORM,
-
-        B8G8R8A8_UNORM,
-        B8G8R8A8_UNORM_SRGB,
-        B8G8R8X8_UNORM,
-        B8G8R8X8_UNORM_SRGB,
 
         BC6H_UF16,
         BC6H_SF16,
@@ -656,25 +661,25 @@ namespace RHI {
 
     struct RenderDest {
         uint32_t                        renderTargetCount = 0;
-        BE1::Image::Format              renderTargetFormats[8] = {};
-        bool                            renderTargetForematSRGBs[8] = {};
-        BE1::Image::Format              depthStencilFormat = BE1::Image::Format::Unknown;
+        Format                          renderTargetFormats[8] = {};
+        Format                          depthStencilFormat = Format::Unknown;
         uint32_t                        sampleCount = 1;
         uint32_t                        sampleQuality = 0;
 
         constexpr uint64_t              GetHash() const {
             union Hasher {
                 struct {
-                    uint64_t renderTargetFormat_0 : 7;
-                    uint64_t renderTargetFormat_1 : 7;
-                    uint64_t renderTargetFormat_2 : 7;
-                    uint64_t renderTargetFormat_3 : 7;
-                    uint64_t renderTargetFormat_4 : 7;
-                    uint64_t renderTargetFormat_5 : 7;
-                    uint64_t renderTargetFormat_6 : 7;
-                    uint64_t renderTargetFormat_7 : 7;
-                    uint64_t depthStencilFormat : 4;
-                    uint64_t sampleCount : 4;
+                    uint64_t renderTargetFormat_0 : 6;
+                    uint64_t renderTargetFormat_1 : 6;
+                    uint64_t renderTargetFormat_2 : 6;
+                    uint64_t renderTargetFormat_3 : 6;
+                    uint64_t renderTargetFormat_4 : 6;
+                    uint64_t renderTargetFormat_5 : 6;
+                    uint64_t renderTargetFormat_6 : 6;
+                    uint64_t renderTargetFormat_7 : 6;
+                    uint64_t depthStencilFormat : 6;
+                    uint64_t sampleCount : 4; // 5?
+                    uint64_t sampleQuality : 4; // 5?
                 } bits;
                 uint64_t value;
             } hasher = {};
@@ -687,8 +692,9 @@ namespace RHI {
             hasher.bits.renderTargetFormat_5 = (uint64_t)renderTargetFormats[5];
             hasher.bits.renderTargetFormat_6 = (uint64_t)renderTargetFormats[6];
             hasher.bits.renderTargetFormat_7 = (uint64_t)renderTargetFormats[7];
-            hasher.bits.depthStencilFormat = (uint64_t)depthStencilFormat - (uint64_t)BE1::Image::Format::D16;
+            hasher.bits.depthStencilFormat = (uint64_t)depthStencilFormat;
             hasher.bits.sampleCount = (uint64_t)sampleCount;
+            hasher.bits.sampleQuality = (uint64_t)sampleQuality;
             return hasher.value;
         }
     };
@@ -822,7 +828,8 @@ namespace RHI {
         virtual ~SwapChain() = 0 {}
 
         virtual bool                    IsSupportsHDR() const = 0;
-        virtual bool                    GetFormat(BE1::Image::Format *imageFormat, bool *isSRGB) const = 0;
+        virtual Format                  GetFormat() const = 0;
+        virtual Format                  GetRTVFormat() const = 0;
         virtual uint32_t                GetWidth() const = 0;
         virtual uint32_t                GetHeight() const = 0;
 
@@ -911,12 +918,15 @@ namespace RHI {
         virtual void                    WaitFence(uint64_t expectedFenceValue) = 0;
         virtual void                    Finish(CommandQueueType queueType) = 0;
 
+        static bool                     ImageFormatToRHIFormat(BE1::Image::Format imageFormat, bool isSRGB, RHI::Format *rhiFormat);
+        static bool                     RHIFormatToImageFormat(RHI::Format rhiFormat, BE1::Image::Format *imageFormat, bool *isSRGB);
+
         virtual bool                    IsSupportedImageFormat(BE1::Image::Format imageFormat) const = 0;
         virtual BE1::Image::Format      ToUncompressedImageFormat(BE1::Image::Format imageFormat) const = 0;
         virtual BE1::Image::Format      ToCompressedImageFormat(BE1::Image::Format inFormat, bool useNormalMap) const = 0;
         virtual BE1::Image::Format      ToUAVImageFormat(BE1::Image::Format inFormat) const = 0;
 
-        virtual SwapChain *             CreateSwapChain(HWND hwnd, uint32_t width, uint32_t height, BE1::Image::Format format) = 0;
+        virtual SwapChain *             CreateSwapChain(HWND hwnd, uint32_t width, uint32_t height, RHI::Format format) = 0;
         virtual void                    DestroySwapChain(SwapChain *swapChain) = 0;
 
         virtual RHI::FrameThreadData *  CreateFrameThreadData(int32_t threadIndex) = 0;
@@ -958,7 +968,7 @@ namespace RHI {
         virtual bool                    SetTextureSubImage3D(Texture *texture, int mipLevel, int x, int y, int z, int width, int height, int depth, BE1::Image::Format imageFormat, const void *pixels) = 0;
         virtual bool                    SetTextureSubImageCubeFace(Texture *texture, CubemapFace face, int mipLevel, int x, int y, int width, int height, BE1::Image::Format imageFormat, const void *pixels) = 0;
 
-        virtual ViewID                  CreateView(Buffer *buffer, ViewType subresourceType, BE1::Image::Format format, uint32_t structuredStride, uint64_t offset = 0, uint64_t size = ~0) = 0;
+        virtual ViewID                  CreateView(Buffer *buffer, ViewType subresourceType, RHI::Format format, uint32_t structuredStride, uint64_t offset = 0, uint64_t size = ~0) = 0;
         virtual ViewID                  CreateView(Texture *texture, ViewType type, Format typelessCompatibleFormat = Format::Auto, uint32_t firstSlice = 0, uint32_t sliceCount = ~0, uint32_t firstMipLevel = 0, uint32_t mipCount = ~0) = 0;
 
         virtual void                    DestroyView(Buffer *buffer, ViewType viewType, ViewID viewID) = 0;

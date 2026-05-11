@@ -256,7 +256,7 @@ bool D3D12Renderer::ExecuteUploadBuffer(D3D12ResourceCommandContext &commandCont
     return true;
 }
 
-RHI::ViewID D3D12Renderer::CreateView(RHI::Buffer *buffer, RHI::ViewType viewType, BE1::Image::Format format, uint32_t structuredStride, uint64_t offset, uint64_t size) {
+RHI::ViewID D3D12Renderer::CreateView(RHI::Buffer *buffer, RHI::ViewType viewType, RHI::Format format, uint32_t structuredStride, uint64_t offset, uint64_t size) {
     D3D12Buffer *_buffer = static_cast<D3D12Buffer *>(buffer);
 
     if (viewType == RHI::ViewType::SRV) {
@@ -297,26 +297,23 @@ void D3D12Renderer::DestroyView(RHI::Buffer *buffer, RHI::ViewType viewType, RHI
     }
 }
 
-RHI::ViewID D3D12Renderer::CreateSRV(D3D12Buffer *buffer, BE1::Image::Format format, uint32_t structureByteStride, uint64_t offset, uint64_t size) {
+RHI::ViewID D3D12Renderer::CreateSRV(D3D12Buffer *buffer, RHI::Format format, uint32_t structureByteStride, uint64_t offset, uint64_t size) {
     assert(offset < buffer->size);
 
     D3D12SRVEntry newSrvEntry;
     newSrvEntry.viewDesc.ViewDimension = D3D12_SRV_DIMENSION_BUFFER;
+    newSrvEntry.viewDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
 
     uint32_t byteStride = 0;
 
-    if (format != BE1::Image::Format::Unknown) {
+    if (format != RHI::Format::Unknown) {
         // Typed buffer
-        // SRV 는 셰이더에서 .rgba 를 어떻게 보이게 할지 정할 수 있다.
-        // 셰이더에서 .rgba 로 올바른 값으로 읽어오려면, 버퍼의 format 에 따라 swizzling 이 필요할 수 있다.
-        newSrvEntry.viewDesc.Shader4ComponentMapping = GetComponentSwizzling(format);
+        BE1::Image::Format imageFormat;
+        RHIFormatToImageFormat(format, &imageFormat, nullptr);
+        byteStride = BE1::Image::BytesPerPixel(imageFormat);
 
-        byteStride = BE1::Image::BytesPerPixel(format);
-
-        ImageFormatToDXGIFormat(format, false, &newSrvEntry.viewDesc.Format);
+        newSrvEntry.viewDesc.Format = RHIFormatToDXGIFormat(format);
     } else {
-        newSrvEntry.viewDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
-
         // format == Image::Format::Unknown 이고 structureByteStride == 0 이면, raw buffer 다.
         // format == Image::Format::Unknown 이고 structureByteStride > 0 이면, structured buffer 다.
         if (structureByteStride == 0) {
@@ -369,7 +366,7 @@ RHI::ViewID D3D12Renderer::CreateSRV(D3D12Buffer *buffer, BE1::Image::Format for
     return viewID;
 }
 
-RHI::ViewID D3D12Renderer::CreateUAV(D3D12Buffer *buffer, BE1::Image::Format format, uint32_t structureByteStride, uint64_t offset, uint64_t size) {
+RHI::ViewID D3D12Renderer::CreateUAV(D3D12Buffer *buffer, RHI::Format format, uint32_t structureByteStride, uint64_t offset, uint64_t size) {
     assert(offset < buffer->size);
 
     D3D12UAVEntry newUavEntry;
@@ -377,11 +374,13 @@ RHI::ViewID D3D12Renderer::CreateUAV(D3D12Buffer *buffer, BE1::Image::Format for
 
     uint32_t byteStride = 0;
 
-    if (format != BE1::Image::Format::Unknown) {
+    if (format != RHI::Format::Unknown) {
         // Typed buffer
-        byteStride = BE1::Image::BytesPerPixel(format);
+        BE1::Image::Format imageFormat;
+        RHIFormatToImageFormat(format, &imageFormat, nullptr);
+        byteStride = BE1::Image::BytesPerPixel(imageFormat);
 
-        ImageFormatToDXGIFormat(format, false, &newUavEntry.viewDesc.Format);
+        newUavEntry.viewDesc.Format = RHIFormatToDXGIFormat(format);
     } else {
         // format == Image::Format::Unknown 이고 structureByteStride == 0 이면, raw buffer 다.
         // format == Image::Format::Unknown 이고 structureByteStride > 0 이면, structured buffer 다.
