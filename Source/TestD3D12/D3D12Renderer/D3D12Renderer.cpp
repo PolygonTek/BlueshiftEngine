@@ -179,16 +179,29 @@ void D3D12Renderer::Init(const void *mainWindowHandle) {
 
     CheckFeatures();
 
+    // Graphics 커맨드 큐용 Fence
+    D3D12QueueFence &graphicsQueueFence = queueFences[to_int(RHI::CommandQueueType::Graphics)];
+
     // Fence 객체 생성
-    hr = device->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&fence));
+    hr = device->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&graphicsQueueFence.fence));
     if (FAILED(hr)) {
         BE_FATALERROR("CreateFence failed, ERROR: 0x%x", hr);
     }
-    // Fence 초기값
-    fenceValue = 0;
 
     // Fence 를 대기하기 위한 이벤트 객체 생성
-    fenceEventHandle = CreateEvent(nullptr, FALSE, FALSE, nullptr);
+    graphicsQueueFence.eventHandle = CreateEvent(nullptr, FALSE, FALSE, nullptr);
+
+    // Compute 커맨드 큐용 Fence
+    D3D12QueueFence &computeQueueFence = queueFences[to_int(RHI::CommandQueueType::Compute)];
+
+    // Fence 객체 생성
+    hr = device->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&computeQueueFence.fence));
+    if (FAILED(hr)) {
+        BE_FATALERROR("CreateFence failed, ERROR: 0x%x", hr);
+    }
+
+    // Fence 를 대기하기 위한 이벤트 객체 생성
+    computeQueueFence.eventHandle = CreateEvent(nullptr, FALSE, FALSE, nullptr);
 
     // Graphics CommandQueue 생성
     D3D12_COMMAND_QUEUE_DESC queueDesc = {};
@@ -521,7 +534,8 @@ void D3D12Renderer::Shutdown() {
     SAFE_RELEASE(dispatchMeshIndirectCommandSignature);
     SAFE_RELEASE(commandQueues[to_int(RHI::CommandQueueType::Graphics)]);
     SAFE_RELEASE(commandQueues[to_int(RHI::CommandQueueType::Compute)]);
-    SAFE_RELEASE(fence);
+    SAFE_RELEASE(queueFences[to_int(RHI::CommandQueueType::Graphics)].fence);
+    SAFE_RELEASE(queueFences[to_int(RHI::CommandQueueType::Compute)].fence);
     SAFE_RELEASE(dxgiFactory);
 
 #ifdef USE_D3D12_MEMALLOC
@@ -546,28 +560,30 @@ void D3D12Renderer::Shutdown() {
 }
 
 uint64_t D3D12Renderer::SignalFence(RHI::CommandQueueType queueType) {
-    fenceValue++;
-    commandQueues[to_int(queueType)]->Signal(fence, fenceValue);
+    D3D12QueueFence &queueFence = queueFences[to_int(queueType)];
 
-    return fenceValue;
+    queueFence.value++;
+    commandQueues[to_int(queueType)]->Signal(queueFence.fence, queueFence.value);
+
+    return queueFence.value;
 }
 
-bool D3D12Renderer::IsFenceComplete(uint64_t checkFenceValue) {
-    UINT64 completedFenceValue = fence->GetCompletedValue();
-    return completedFenceValue < checkFenceValue ? false : true;
+bool D3D12Renderer::IsFenceComplete(RHI::CommandQueueType queueType, uint64_t checkFenceValue) {
+    D3D12QueueFence &queueFence = queueFences[to_int(queueType)];
+    return queueFence.fence->GetCompletedValue() >= checkFenceValue;
 }
 
-void D3D12Renderer::WaitFence(uint64_t expectedFenceValue) {
-    UINT64 completedFenceValue = fence->GetCompletedValue();
+void D3D12Renderer::WaitFence(RHI::CommandQueueType queueType, uint64_t expectedFenceValue) {
+    D3D12QueueFence &queueFence = queueFences[to_int(queueType)];
 
-    if (completedFenceValue < expectedFenceValue) {
-        fence->SetEventOnCompletion(expectedFenceValue, fenceEventHandle);
-        WaitForSingleObject(fenceEventHandle, INFINITE);
+    if (queueFence.fence->GetCompletedValue() < expectedFenceValue) {
+        queueFence.fence->SetEventOnCompletion(expectedFenceValue, queueFence.eventHandle);
+        WaitForSingleObject(queueFence.eventHandle, INFINITE);
     }
 }
 
 void D3D12Renderer::Finish(RHI::CommandQueueType queueType) {
-    WaitFence(SignalFence(queueType));
+    WaitFence(queueType, SignalFence(queueType));
 }
 
 void D3D12Renderer::CreateShaderCompiler() {
@@ -646,13 +662,14 @@ void D3D12Renderer::FreeRetiredResources(bool waitPendings) {
     for (retiredIndex = 0; retiredIndex < retiredResources.Count(); ++retiredIndex) {
         D3D12RetiredResource &retiredResource = retiredResources[retiredIndex];
         if (waitPendings) {
-            WaitFence(retiredResource.graphicsFenceValue);
-            WaitFence(retiredResource.computeFenceValue);
+            WaitFence(RHI::CommandQueueType::Graphics, retiredResource.graphicsFenceValue);
+            WaitFence(RHI::CommandQueueType::Compute, retiredResource.computeFenceValue);
 
             retiredResource.graphicsFenceValue = 0;
             retiredResource.computeFenceValue = 0;
         } else {
-            if (!IsFenceComplete(retiredResource.graphicsFenceValue) || !IsFenceComplete(retiredResource.computeFenceValue)) {
+            if (!IsFenceComplete(RHI::CommandQueueType::Graphics, retiredResource.graphicsFenceValue) ||
+                !IsFenceComplete(RHI::CommandQueueType::Compute, retiredResource.computeFenceValue)) {
                 break;
             }
         }

@@ -65,7 +65,11 @@ Texture *TextureManager::GetTexture(const char *hashName, Texture::Flag flags) {
     }
 
     texture = AllocTexture(hashName);
+#ifdef USE_ASYNC_LOADING
+    if (!texture->LoadAsync(hashName, flags)) {
+#else
     if (!texture->Load(hashName, flags)) {
+#endif
         DestroyTexture(texture);
         return defaultTexture;
     }
@@ -84,6 +88,16 @@ void TextureManager::ReleaseTexture(Texture *texture) {
         return;
     }
 
+#ifdef USE_ASYNC_LOADING
+    if (texture->GetState() == Texture::State::Loading) {
+        texture->SetState(Texture::State::DestroyPending);
+        texture->BumpLoadSerial(); // 진행 중인 completion 무효화
+
+        textureHashMap.Remove(texture->hashName);
+        return;
+    }
+#endif
+
     DestroyTexture(texture);
 }
 
@@ -95,25 +109,6 @@ void TextureManager::DestroyTexture(Texture *texture) {
     textureHashMap.Remove(texture->hashName);
 
     delete texture;
-}
-
-void TextureManager::DestroyUnusedTextures() {
-    BE1::Array<Texture *> removeArray;
-
-    for (const auto &entry : textureHashMap) {
-        Texture *texture = entry.second;
-        if (!texture) {
-            continue;
-        }
-
-        if (!BE1::HasFlag(texture->flags, Texture::Flag::Permanent) && texture->refCount == 0) {
-            removeArray.Append(texture);
-        }
-    }
-
-    for (Texture *texture : removeArray) {
-        DestroyTexture(texture);
-    }
 }
 
 void TextureManager::CreateEngineTextures() {

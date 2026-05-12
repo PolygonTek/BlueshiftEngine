@@ -133,7 +133,7 @@ public:
     void                            EndFrame();
 
     void                            SetFrameFenceValue(uint64_t fenceValue) { this->frameFenceValue = fenceValue; }
-    void                            WaitFrameFence() const { RHI::renderer->WaitFence(frameFenceValue); }
+    void                            WaitFrameFence() const { RHI::renderer->WaitFence(RHI::CommandQueueType::Graphics, frameFenceValue); }
 
 private:
     struct MemBlock {

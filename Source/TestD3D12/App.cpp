@@ -21,6 +21,7 @@
 #include "Render/Mesh.h"
 #include "Render/Texture.h"
 #include "Render/Font.h"
+#include "LoadingSystem.h"
 #include "GameObject.h"
 #include "App.h"
 
@@ -37,6 +38,8 @@ void App::Init(void *mainWindowHandle) {
     renderSystem = new RenderSystem;
     renderSystem->Init(mainWindowHandle);
 
+    loadingSystem.Init();
+
     mainFont = fontManager.GetFont("Data/EngineFonts/FredokaOne-Regular.ttf", 19);
 
     mainRenderContext = renderSystem->CreateRenderContext(mainWindowHandle, true);
@@ -49,6 +52,8 @@ void App::Init(void *mainWindowHandle) {
 
 void App::Shutdown() {
     RHI::renderer->Finish(RHI::CommandQueueType::Graphics);
+
+    loadingSystem.Shutdown();
 
     ClearGameObjects();
 
@@ -65,6 +70,8 @@ void App::Shutdown() {
 
 void App::RunFrame(int frameMsec) {
     PROFILER_CPU_SCOPED_EVENT("App::RunFrame");
+
+    loadingSystem.ProcessCompletions();
 
     static int fpsElapsedMsec = 0;
     static int fpsFrames = 0;
@@ -134,6 +141,24 @@ void App::OnResize(int width, int height) {
 }
 
 void App::InitGameObjects() {
+    // 2048x2048 텍스쳐 파일들
+    BE1::Str textureFilenames[] = {
+        "Data/Textures/bamboo_block.png",
+        "Data/Textures/bedrock.png",
+        "Data/Textures/bricks.png",
+        "Data/Textures/copper_block.png",
+        "Data/Textures/granite.png",
+        "Data/Textures/ice.png",
+        "Data/Textures/mossy_stone_bricks.png",
+        "Data/Textures/raw_iron_block.png",
+        "Data/Textures/sand.png",
+        "Data/Textures/smooth_stone_slab_side.png",
+        "Data/Textures/sponge.png",
+        "Data/Textures/spruce_planks.png",
+        "Data/Textures/stone.png",
+        "Data/Textures/wool.png"
+    };
+
     gameObjects.Reserve(CubeCount);
 
     // 큐브
@@ -146,7 +171,7 @@ void App::InitGameObjects() {
         desc.mesh = meshManager.GetMesh("_defaultBoxMesh");
         desc.aabb = desc.mesh->GetAABB();
         desc.textures.SetCount(1);
-        desc.textures[0] = textureManager.defaultTexture;
+        desc.textures[0] = textureManager.GetTexture(textureFilenames[BE1::Math::RandomRange(0, COUNT_OF(textureFilenames) - 1)], Texture::Flag::None);
 
         gameObject->renderObjectHandle = renderWorld->AddRenderObject(gameObject->renderObjectDesc);
     }
@@ -172,6 +197,9 @@ void App::ClearGameObjects() {
 
         if (gameObject->renderObjectDesc.mesh) {
             meshManager.ReleaseMesh(gameObject->renderObjectDesc.mesh);
+        }
+        for (int i = 0; i < gameObject->renderObjectDesc.textures.Count(); ++i) {
+            textureManager.ReleaseTexture(gameObject->renderObjectDesc.textures[i]);
         }
         if (gameObject->renderObjectDesc.font) {
             fontManager.ReleaseFont(gameObject->renderObjectDesc.font);
@@ -200,8 +228,13 @@ void App::UpdateCubes() {
 
             float t = elapsedSeconds + index * 0.1f;
 
+            float s, c;
+            BE1::Math::SinCos(t * 5, s, c);
+            s *= 0.25f;
+            c *= 0.25f;
+
             GameObject *gameObject = gameObjects[index];
-            gameObject->renderObjectDesc.worldMatrix.SetTranslationRotation(BE1::Vec3(0, CubeStartX + CubeSpacing * x, CubeStartY + CubeSpacing * y), BE1::Mat3::FromRotationZYX(t * 1.0f, 0, t * 0.25f), false);
+            gameObject->renderObjectDesc.worldMatrix.SetTRS(BE1::Vec3(0, CubeStartX + CubeSpacing * x, CubeStartY + CubeSpacing * y), BE1::Mat3::FromRotationZYX(t * 1.0f, 0, t * 0.25f), BE1::Vec3(1.0f + c, 1.0f + s, 1.0f + c));
 
             renderWorld->UpdateRenderObject(gameObject->renderObjectHandle, gameObject->renderObjectDesc);
         }

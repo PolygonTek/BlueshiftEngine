@@ -44,6 +44,14 @@ public:
         SortAndMerge            = BIT(5)
     };
 
+    enum class State : uint8_t {
+        Empty,
+        Loading,
+        DestroyPending,
+        Ready,
+        Failed
+    };
+
     class Surface {
     public:
         Surface() = default;
@@ -63,6 +71,12 @@ public:
     const Mesh *                AddRefCount() const { refCount++; return this; }
     int                         GetRefCount() const { return refCount; }
 
+    State                       GetState() const { return state.load(); }
+    void                        SetState(State newState) { state.store(newState); }
+
+    uint32_t                    GetLoadSerial() const { return loadSerial.load(); }
+    uint32_t                    BumpLoadSerial() { return loadSerial.fetch_add(1) + 1; }
+
     bool                        IsPermanentMesh() const { return BE1::HasFlag(flags, Flag::Permanent); }
     bool                        IsStaticMesh() const { return type == MeshType::Static; }
     bool                        IsSkinnedMesh() const { return type == MeshType::Skinned; }
@@ -73,9 +87,11 @@ public:
                                 /// Returns the volume of the solid mesh.
                                 /// NOTE: For an exact calculation the mesh must form a closed polytope. Otherwise, an approximation based on the AABB is used.
     float                       CalculateVolume() const;
+
                                 /// Returns centroid of solid mesh.
                                 /// NOTE: For an exact calculation the mesh must form a closed polytope. Otherwise, an approximation based on the AABB is used.
     const BE1::Vec3             CalculateCentroid() const;
+
                                 /// Returns volume and centroid of solid mesh.
                                 /// NOTE: For an exact calculation the mesh must form a closed polytope. Otherwise, an approximation based on the AABB is used.
     float                       CalculateVolumeAndCentroid(BE1::Vec3 &outCentroid) const;
@@ -94,6 +110,7 @@ public:
     void                        Purge() { surfaces.DeleteContents(true); }
 
     bool                        Load(const char *filename);
+    bool                        LoadAsync(const char *filename);
     bool                        Reload();
 
     void                        Write(const char *filename);
@@ -122,6 +139,8 @@ private:
     BE1::Array<Surface *>       surfaces;
     MeshType                    type = MeshType::Dummy;
     Flag                        flags = Flag::None;
+    std::atomic<State>          state = State::Empty;
+    std::atomic<uint32_t>       loadSerial = 0;
 };
 
 template<>
@@ -135,6 +154,8 @@ struct enable_bitmask_operators<Mesh::FinishFlag> {
 };
 
 class MeshManager {
+    friend class LoadingSystem;
+
 public:
     void                        Init();
     void                        Shutdown();
@@ -142,10 +163,7 @@ public:
     Mesh *                      AllocMesh(const char *name);
     Mesh *                      FindMesh(const char *name) const;
     Mesh *                      GetMesh(const char *name);
-    void                        ReleaseMesh(Mesh *mesh, bool immediateDestroy = false);
-    void                        DestroyMesh(Mesh *mesh);
-
-    void                        DestroyUnusedMeshes();
+    void                        ReleaseMesh(Mesh *mesh);
 
     Mesh *                      CreateCombinedMesh(const char *name, const BE1::Array<BatchSubMesh> &batchSubMeshes);
 
@@ -161,6 +179,7 @@ public:
 
 private:
     void                        CreateEngineMeshes();
+    void                        DestroyMesh(Mesh *mesh);
 
     BE1::StrIHashMap<Mesh *>    meshHashMap;
 };

@@ -14,6 +14,7 @@
 
 #include "Precompiled.h"
 #include "Mesh.h"
+#include "LoadingSystem.h"
 
 Mesh::Surface *Mesh::AllocSurface(int numVerts, int numIndexes) {
     Surface *surf = new Surface;
@@ -153,6 +154,16 @@ bool Mesh::Load(const char *filename) {
 
     BE_LOG("Loading mesh '%s'...\n", binaryMeshFilename.c_str());
     return LoadBinaryMesh(binaryMeshFilename);
+}
+
+bool Mesh::LoadAsync(const char *filename) {
+    state = State::Loading;
+    uint32_t newSerial = BumpLoadSerial();
+    if (!loadingSystem.EnqueueMeshLoad(this, filename, newSerial)) {
+        state = State::Failed;
+        return false;
+    }
+    return true;
 }
 
 bool Mesh::Reload() {

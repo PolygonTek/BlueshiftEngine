@@ -39,5 +39,8 @@
 // 디버그 레이어 사용 여부 (Release 모드에서는 무시됨)
 #define USE_RENDERER_DEBUG_LAYER
 
+// 스레드 로딩 시스템 사용 여부
+#define USE_ASYNC_LOADING
+
 // DBVT 사용 여부
 //#define USE_DBVT

@@ -15,6 +15,13 @@
 #include "Precompiled.h"
 #include "Texture.h"
 #include "Sampler.h"
+#include "LoadingSystem.h"
+
+bool Texture::IsReadyForRendering() const {
+    // 2026.05.12: 현재 코드 경로 상 State::Ready 만 체크해도 문제는 없지만,
+    // 혹시 나중에 문제가 될 수도 있으니 GPUResourceStatus::Ready 까지 체크하자.
+    return state == State::Ready && texture && texture->GetStatus() == RHI::GPUResourceStatus::Ready;
+}
 
 int Texture::MemRequired(bool includingMipmaps) const {
     uint32_t w = GetWidth();
@@ -27,6 +34,13 @@ int Texture::MemRequired(bool includingMipmaps) const {
 }
 
 void Texture::Purge() {
+    BumpLoadSerial(); // 진행 중인 로딩 무효화
+
+    if (state == State::Empty) {
+        return;
+    }
+    state = State::Empty;
+
     if (texture) {
         RHI::renderer->DestroyTexture(texture);
         texture = nullptr;
@@ -35,6 +49,35 @@ void Texture::Purge() {
 
 void Texture::Create(RHI::TextureType textureType, std::shared_ptr<const BE1::Image> srcImage, Texture::Flag flags) {
     Purge();
+
+    Prepared prepared;
+    if (!Texture::Prepare(textureType, srcImage, flags, prepared)) {
+        return;
+    }
+
+    ApplyPrepared(prepared);
+
+    state = texture ? State::Ready : State::Failed;
+}
+
+void Texture::ApplyPrepared(const Prepared &prepared) {
+    if (texture && texture != prepared.texture) {
+        RHI::renderer->DestroyTexture(texture);
+    }
+
+    textureType = prepared.textureType;
+    srcWidth = prepared.srcWidth;
+    srcHeight = prepared.srcHeight;
+    srcDepth = prepared.srcDepth;
+    format = prepared.format;
+    flags = prepared.flags;
+    texture = prepared.texture;
+}
+
+bool Texture::Prepare(RHI::TextureType textureType, std::shared_ptr<const BE1::Image> srcImage, Flag flags, Prepared &outPrepared) {
+    if (!srcImage) {
+        return false;
+    }
 
     BE1::Image::Format srcFormat = srcImage->GetFormat();
     BE1::Image::Format forceFormat = BE1::Image::Format::Unknown;
@@ -53,17 +96,17 @@ void Texture::Create(RHI::TextureType textureType, std::shared_ptr<const BE1::Im
         RHI::renderer->AdjustTextureFormat(useCompression, useNormalMap, useUAV, srcImage->GetFormat(), &dstFormat);
     }
 
-    type = textureType;
-    this->srcWidth = srcImage->GetWidth();
-    this->srcHeight = srcImage->GetHeight();
-    this->srcDepth = srcImage->GetDepth();
+    outPrepared.textureType = textureType;
+    outPrepared.srcWidth = srcImage->GetWidth();
+    outPrepared.srcHeight = srcImage->GetHeight();
+    outPrepared.srcDepth = srcImage->GetDepth();
 
     uint32_t dstWidth, dstHeight, dstDepth;
-    RHI::renderer->AdjustTextureSize(textureType, useNPOT, srcWidth, srcHeight, srcDepth, &dstWidth, &dstHeight, &dstDepth);
-    assert(srcDepth == dstDepth);
+    RHI::renderer->AdjustTextureSize(textureType, useNPOT, outPrepared.srcWidth, outPrepared.srcHeight, outPrepared.srcDepth, &dstWidth, &dstHeight, &dstDepth);
+    assert(outPrepared.srcDepth == dstDepth);
 
     if (!srcImage->IsEmpty()) {
-        if (srcWidth != dstWidth || srcHeight != dstHeight) {
+        if (outPrepared.srcWidth != dstWidth || outPrepared.srcHeight != dstHeight) {
             std::shared_ptr<BE1::Image> scaledImage = std::make_shared<BE1::Image>();
             srcImage->Resize(dstWidth, dstHeight, BE1::Image::ResampleFilter::Bicubic, *scaledImage);
             srcImage = scaledImage;
@@ -88,12 +131,13 @@ void Texture::Create(RHI::TextureType textureType, std::shared_ptr<const BE1::Im
 
     RHI::GPUResourceState initialState = BE1::HasFlag(flags, Texture::Flag::Compute) ? RHI::GPUResourceState::ShaderResourceCompute : RHI::GPUResourceState::ShaderResource;
 
-    this->format = dstFormat;
-    this->flags = flags;
-    this->texture = PrepareTextureImage(textureType, resourceFlags, srcImage, dstFormat, generateMipmaps, allocateEmptyMipmaps, initialState);
+    outPrepared.format = dstFormat;
+    outPrepared.flags = flags;
+    outPrepared.texture = Texture::PrepareRHITexture(textureType, resourceFlags, srcImage, dstFormat, generateMipmaps, allocateEmptyMipmaps, initialState);
+    return outPrepared.texture != nullptr;
 }
 
-RHI::Texture *Texture::PrepareTextureImage(RHI::TextureType textureType, RHI::TextureFlag flags, std::shared_ptr<const BE1::Image> srcImage, BE1::Image::Format dstFormat, bool generateMipmaps, bool allocateEmptyMipmaps, RHI::GPUResourceState initialState) {
+RHI::Texture *Texture::PrepareRHITexture(RHI::TextureType textureType, RHI::TextureFlag flags, std::shared_ptr<const BE1::Image> srcImage, BE1::Image::Format dstFormat, bool generateMipmaps, bool allocateEmptyMipmaps, RHI::GPUResourceState initialState) {
     BE1::Image::Format srcFormat = srcImage->GetFormat();
     bool srcCompressed = BE1::Image::IsCompressed(srcFormat);
     bool srcFormatSupported = RHI::renderer->IsSupportedImageFormat(srcFormat);
@@ -217,8 +261,6 @@ void Texture::CreateFlatNormalTexture(int size, Texture::Flag flags) {
 }
 
 bool Texture::Load(const char *filename, Texture::Flag flags) {
-    flags |= Texture::Flag::LoadedFromFile;
-
     BE_LOG("Loading texture '%s'...\n", filename);
 
     std::shared_ptr<BE1::Image> image = std::make_shared<BE1::Image>();
@@ -239,35 +281,69 @@ bool Texture::Load(const char *filename, Texture::Flag flags) {
         textureType = RHI::TextureType::Texture2D;
     }
 
-    Create(textureType, image, flags);
+    Create(textureType, image, flags | Texture::Flag::LoadedFromFile);
     return true;
 }
 
-void Texture::Update2D(int mipLevel, int xoffset, int yoffset, int width, int height, BE1::Image::Format format, const byte *data) {
-    RHI::renderer->SetTextureSubImage2D(texture, mipLevel, xoffset, yoffset, width, height, format, data);
+bool Texture::LoadAsync(const char *filename, Flag flags) {
+    state = State::Loading;
+    uint32_t newSerial = BumpLoadSerial();
+    if (!loadingSystem.EnqueueTextureLoad(this, filename, flags, newSerial)) {
+        state = State::Failed;
+        return false;
+    }
+    return true;
 }
 
-void Texture::Update3D(int mipLevel, int xoffset, int yoffset, int zoffset, int width, int height, int depth, BE1::Image::Format format, const byte *data) {
-    RHI::renderer->SetTextureSubImage3D(texture, mipLevel, xoffset, yoffset, zoffset, width, height, depth, format, data);
+bool Texture::Update2D(int mipLevel, int xoffset, int yoffset, int width, int height, BE1::Image::Format format, const byte *data) {
+    if (state != State::Ready) {
+        BE_WARNLOG("Texture::Update2D: texture '%s' is not ready\n", GetHashName());
+        return false;
+    }
+    return RHI::renderer->SetTextureSubImage2D(texture, mipLevel, xoffset, yoffset, width, height, format, data);
 }
 
-void Texture::UpdateCubeFace(RHI::CubemapFace face, int mipLevel, int xoffset, int yoffset, int width, int height, BE1::Image::Format format, const byte *data) {
-    RHI::renderer->SetTextureSubImageCubeFace(texture, face, mipLevel, xoffset, yoffset, width, height, format, data);
+bool Texture::Update3D(int mipLevel, int xoffset, int yoffset, int zoffset, int width, int height, int depth, BE1::Image::Format format, const byte *data) {
+    if (state != State::Ready) {
+        BE_WARNLOG("Texture::Update3D: texture '%s' is not ready\n", GetHashName());
+        return false;
+    }
+    return RHI::renderer->SetTextureSubImage3D(texture, mipLevel, xoffset, yoffset, zoffset, width, height, depth, format, data);
 }
 
-void Texture::GetTexels2D(int mipLevel, BE1::Image::Format format, void *pixels) const {
-    RHI::renderer->GetTextureImage2D(texture, mipLevel, format, pixels);
+bool Texture::UpdateCubeFace(RHI::CubemapFace face, int mipLevel, int xoffset, int yoffset, int width, int height, BE1::Image::Format format, const byte *data) {
+    if (state != State::Ready) {
+        BE_WARNLOG("Texture::UpdateCubeFace: texture '%s' is not ready\n", GetHashName());
+        return false;
+    }
+    return RHI::renderer->SetTextureSubImageCubeFace(texture, face, mipLevel, xoffset, yoffset, width, height, format, data);
 }
 
-void Texture::GetTexels3D(int mipLevel, BE1::Image::Format format, void *pixels) const {
-    RHI::renderer->GetTextureImage3D(texture, mipLevel, format, pixels);
+bool Texture::GetTexels2D(int mipLevel, BE1::Image::Format format, void *pixels) const {
+    if (state != State::Ready) {
+        BE_WARNLOG("Texture::GetTexels2D: texture '%s' is not ready\n", GetHashName());
+        return false;
+    }
+    return RHI::renderer->GetTextureImage2D(texture, mipLevel, format, pixels);
 }
 
-void Texture::GetTexelsCubeFace(RHI::CubemapFace face, int mipLevel, BE1::Image::Format format, void *pixels) const {
-    RHI::renderer->GetTextureImageCubeFace(texture, face, mipLevel, format, pixels);
+bool Texture::GetTexels3D(int mipLevel, BE1::Image::Format format, void *pixels) const {
+    if (state != State::Ready) {
+        BE_WARNLOG("Texture::GetTexels3D: texture '%s' is not ready\n", GetHashName());
+        return false;
+    }
+    return RHI::renderer->GetTextureImage3D(texture, mipLevel, format, pixels);
 }
 
-void Texture::GetCubeImageFromCubeTexture(const Texture *cubeTexture, int numMipLevels, BE1::Image &outCubeImage) {
+bool Texture::GetTexelsCubeFace(RHI::CubemapFace face, int mipLevel, BE1::Image::Format format, void *pixels) const {
+    if (state != State::Ready) {
+        BE_WARNLOG("Texture::GetTexelsCubeFace: texture '%s' is not ready\n", GetHashName());
+        return false;
+    }
+    return RHI::renderer->GetTextureImageCubeFace(texture, face, mipLevel, format, pixels);
+}
+
+bool Texture::GetCubeImageFromCubeTexture(const Texture *cubeTexture, int numMipLevels, BE1::Image &outCubeImage) {
     BE1::Image::GammaSpace gammaSpace = BE1::Image::NeedFloatConversion(cubeTexture->format) ? BE1::Image::GammaSpace::Linear : BE1::Image::GammaSpace::sRGB;
     BE1::Image faceImages[6];
 
@@ -275,9 +351,12 @@ void Texture::GetCubeImageFromCubeTexture(const Texture *cubeTexture, int numMip
         faceImages[faceIndex].Create2D(cubeTexture->GetWidth(), cubeTexture->GetWidth(), numMipLevels, cubeTexture->GetFormat(), gammaSpace, nullptr, BE1::Image::Flag::None);
 
         for (int mipLevel = 0; mipLevel < numMipLevels; mipLevel++) {
-            cubeTexture->GetTexelsCubeFace((RHI::CubemapFace)faceIndex, mipLevel, cubeTexture->GetFormat(), faceImages[faceIndex].GetPixels(mipLevel));
+            if (!cubeTexture->GetTexelsCubeFace((RHI::CubemapFace)faceIndex, mipLevel, cubeTexture->GetFormat(), faceImages[faceIndex].GetPixels(mipLevel))) {
+                return false;
+            }
         }
     }
 
     outCubeImage.CreateCubeFrom6Faces(faceImages);
+    return true;
 }

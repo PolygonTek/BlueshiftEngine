@@ -914,12 +914,12 @@ namespace RHI {
         bool                            IsInitialized() const { return initialized; }
 
         virtual uint64_t                SignalFence(CommandQueueType queueType) = 0;
-        virtual bool                    IsFenceComplete(uint64_t checkFenceValue) = 0;
-        virtual void                    WaitFence(uint64_t expectedFenceValue) = 0;
+        virtual bool                    IsFenceComplete(CommandQueueType queueType, uint64_t checkFenceValue) = 0;
+        virtual void                    WaitFence(CommandQueueType queueType, uint64_t expectedFenceValue) = 0;
         virtual void                    Finish(CommandQueueType queueType) = 0;
 
-        static bool                     ImageFormatToRHIFormat(BE1::Image::Format imageFormat, bool isSRGB, RHI::Format *rhiFormat);
-        static bool                     RHIFormatToImageFormat(RHI::Format rhiFormat, BE1::Image::Format *imageFormat, bool *isSRGB);
+        static bool                     ImageFormatToRHIFormat(BE1::Image::Format imageFormat, bool isSRGB, Format *rhiFormat);
+        static bool                     RHIFormatToImageFormat(Format rhiFormat, BE1::Image::Format *imageFormat, bool *isSRGB);
 
         virtual bool                    IsSupportedImageFormat(BE1::Image::Format imageFormat) const = 0;
         virtual BE1::Image::Format      ToUncompressedImageFormat(BE1::Image::Format imageFormat) const = 0;
@@ -960,9 +960,9 @@ namespace RHI {
 
         virtual void                    GenerateMipmaps(Texture *texture) = 0;
 
-        virtual void                    GetTextureImage2D(Texture *texture, int mipLevel, BE1::Image::Format imageFormat, void *outPixels) = 0;
-        virtual void                    GetTextureImage3D(Texture *texture, int mipLevel, BE1::Image::Format imageFormat, void *outPixels) = 0;
-        virtual void                    GetTextureImageCubeFace(Texture *texture, CubemapFace face, int mipLevel, BE1::Image::Format imageFormat, void *outPixels) = 0;
+        virtual bool                    GetTextureImage2D(Texture *texture, int mipLevel, BE1::Image::Format imageFormat, void *outPixels) = 0;
+        virtual bool                    GetTextureImage3D(Texture *texture, int mipLevel, BE1::Image::Format imageFormat, void *outPixels) = 0;
+        virtual bool                    GetTextureImageCubeFace(Texture *texture, CubemapFace face, int mipLevel, BE1::Image::Format imageFormat, void *outPixels) = 0;
 
         virtual bool                    SetTextureSubImage2D(Texture *texture, int mipLevel, int x, int y, int width, int height, BE1::Image::Format imageFormat, const void *pixels) = 0;
         virtual bool                    SetTextureSubImage3D(Texture *texture, int mipLevel, int x, int y, int z, int width, int height, int depth, BE1::Image::Format imageFormat, const void *pixels) = 0;

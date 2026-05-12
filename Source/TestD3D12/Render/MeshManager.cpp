@@ -104,7 +104,11 @@ Mesh *MeshManager::GetMesh(const char *hashName) {
     }
 
     mesh = AllocMesh(hashName);
+/*#ifdef USE_ASYNC_LOADING
+    if (!mesh->LoadAsync(hashName)) {
+#else*/
     if (!mesh->Load(hashName)) {
+//#endif
         BE_WARNLOG("Couldn't load mesh '%s'\n", hashName);
         DestroyMesh(mesh);
         return defaultMesh;
@@ -112,7 +116,7 @@ Mesh *MeshManager::GetMesh(const char *hashName) {
     return mesh;
 }
 
-void MeshManager::ReleaseMesh(Mesh *mesh, bool immediateDestroy) {
+void MeshManager::ReleaseMesh(Mesh *mesh) {
     if (mesh->refCount > 0) {
         if (--mesh->refCount > 0) {
             return;
@@ -123,9 +127,17 @@ void MeshManager::ReleaseMesh(Mesh *mesh, bool immediateDestroy) {
         return;
     }
 
-    if (immediateDestroy) {
-        DestroyMesh(mesh);
+/*#ifdef USE_ASYNC_LOADING
+    if (mesh->GetState() == Mesh::State::Loading) {
+        mesh->SetState(Mesh::State::DestroyPending);
+        mesh->BumpLoadSerial(); // 진행 중인 completion 무효화
+
+        meshHashMap.Remove(mesh->hashName);
+        return;
     }
+#endif*/
+
+    DestroyMesh(mesh);
 }
 
 void MeshManager::DestroyMesh(Mesh *mesh) {
@@ -135,25 +147,6 @@ void MeshManager::DestroyMesh(Mesh *mesh) {
     meshHashMap.Remove(mesh->hashName);
 
     delete mesh;
-}
-
-void MeshManager::DestroyUnusedMeshes() {
-    BE1::Array<Mesh *> removeArray;
-
-    for (const auto &entry : meshHashMap) {
-        Mesh *mesh = entry.second;
-        if (!mesh) {
-            continue;
-        }
-
-        if (!BE1::HasFlag(mesh->flags, Mesh::Flag::Permanent) && mesh->refCount == 0) {
-            removeArray.Append(mesh);
-        }
-    }
-
-    for (Mesh *mesh : removeArray) {
-        DestroyMesh(mesh);
-    }
 }
 
 Mesh *MeshManager::CreateCombinedMesh(const char *hashName, const BE1::Array<BatchSubMesh> &batchSubMeshes) {

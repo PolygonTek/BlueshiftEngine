@@ -7,6 +7,8 @@ set(SRC_FILES
     Precompiled.cpp
     App.h
     App.cpp
+    LoadingSystem.h
+    LoadingSystem.cpp
     GameObject.h
     GameObject.cpp
     WinMain.cpp

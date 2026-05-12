@@ -182,6 +182,8 @@ void RenderBackend::DrawSurfacesWithTask(const DrawSurf **drawSurfs, uint32_t nu
 #endif // USE_RENDER_TASK
 
 void RenderBackend::DrawSurface(RHI::FrameThreadData *frameThreadData, RHI::CommandList *commandList, const DrawSurf *drawSurf) {
+    const Texture *texture = drawSurf->texture->IsReadyForRendering() ? drawSurf->texture : textureManager.defaultTexture;
+
     RHI::ConstantBuffer *constantBuffer = frameThreadData->AllocConstant(sizeof(UnlitConstantData));
     if (!constantBuffer) {
         return;
@@ -196,13 +198,15 @@ void RenderBackend::DrawSurface(RHI::FrameThreadData *frameThreadData, RHI::Comm
     RHI::renderer->SetIndexBuffer(commandList, drawSurf->subMesh->indexBuffer);
 
     RHI::renderer->SetPSO(commandList, currentContext->unlitPSO);
-    RHI::renderer->SetTexture(commandList, 0, false, drawSurf->texture->GetRHITexture());
+    RHI::renderer->SetTexture(commandList, 0, false, texture->GetRHITexture());
     RHI::renderer->SetConstantBuffer(commandList, 0, constantBuffer);
 
     RHI::renderer->DrawIndexed(commandList, drawSurf->subMesh->numIndexes, 0, 0);
 }
 
 void RenderBackend::DrawInstancedSurface(RHI::FrameThreadData *frameThreadData, RHI::CommandList *commandList, const DrawSurf **instanceSurfs, int instanceCount) {
+    const Texture *texture = instanceSurfs[0]->texture->IsReadyForRendering() ? instanceSurfs[0]->texture : textureManager.defaultTexture;
+
     RHI::ConstantBuffer *constantBuffer = frameThreadData->AllocConstant(sizeof(UnlitInstancedConstantData));
     if (!constantBuffer) {
         return;
@@ -222,13 +226,17 @@ void RenderBackend::DrawInstancedSurface(RHI::FrameThreadData *frameThreadData, 
     RHI::renderer->SetIndexBuffer(commandList, instanceSurfs[0]->subMesh->indexBuffer);
 
     RHI::renderer->SetPSO(commandList, currentContext->unlitInstancedPSO);
-    RHI::renderer->SetTexture(commandList, 0, false, instanceSurfs[0]->texture->GetRHITexture());
+    RHI::renderer->SetTexture(commandList, 0, false, texture->GetRHITexture());
     RHI::renderer->SetConstantBuffer(commandList, 0, constantBuffer);
 
     RHI::renderer->DrawIndexedInstanced(commandList, instanceSurfs[0]->subMesh->numIndexes, instanceCount, 0, 0, 0);
 }
 
 void RenderBackend::DrawGuiSurface(RHI::FrameThreadData *frameThreadData, RHI::CommandList *commandList, const DrawSurf *drawSurf) {
+    if (!drawSurf->texture->IsReadyForRendering()) {
+        return;
+    }
+
     RHI::ConstantBuffer *constantBuffer = frameThreadData->AllocConstant(sizeof(UnlitConstantData));
     if (!constantBuffer) {
         return;

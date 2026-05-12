@@ -1066,16 +1066,16 @@ bool D3D12Renderer::GetTextureImage(RHI::Texture *texture, int mipLevel, int sli
     return true;
 }
 
-void D3D12Renderer::GetTextureImage2D(RHI::Texture *texture, int mipLevel, BE1::Image::Format imageFormat, void *outPixels) {
-    GetTextureImage(texture, mipLevel, 0, imageFormat, outPixels);
+bool D3D12Renderer::GetTextureImage2D(RHI::Texture *texture, int mipLevel, BE1::Image::Format imageFormat, void *outPixels) {
+    return GetTextureImage(texture, mipLevel, 0, imageFormat, outPixels);
 }
 
-void D3D12Renderer::GetTextureImage3D(RHI::Texture *texture, int mipLevel, BE1::Image::Format imageFormat, void *outPixels) {
-    GetTextureImage(texture, mipLevel, 0, imageFormat, outPixels);
+bool D3D12Renderer::GetTextureImage3D(RHI::Texture *texture, int mipLevel, BE1::Image::Format imageFormat, void *outPixels) {
+    return GetTextureImage(texture, mipLevel, 0, imageFormat, outPixels);
 }
 
-void D3D12Renderer::GetTextureImageCubeFace(RHI::Texture *texture, RHI::CubemapFace face, int mipLevel, BE1::Image::Format imageFormat, void *outPixels) {
-    GetTextureImage(texture, mipLevel, to_int(face), imageFormat, outPixels);
+bool D3D12Renderer::GetTextureImageCubeFace(RHI::Texture *texture, RHI::CubemapFace face, int mipLevel, BE1::Image::Format imageFormat, void *outPixels) {
+    return GetTextureImage(texture, mipLevel, to_int(face), imageFormat, outPixels);
 }
 
 bool D3D12Renderer::SetTextureSubImage(RHI::Texture *texture, int mipLevel, int sliceIndex, int x, int y, int z, int width, int height, int depth, BE1::Image::Format imageFormat, const void *pixels) {

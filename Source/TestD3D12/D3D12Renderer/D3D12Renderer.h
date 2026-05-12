@@ -51,8 +51,8 @@ public:
     RHI::ShaderFormat                   GetShaderFormat() const;
 
     virtual uint64_t                    SignalFence(RHI::CommandQueueType queueType) override;
-    virtual bool                        IsFenceComplete(uint64_t checkFenceValue) override;
-    virtual void                        WaitFence(uint64_t expectedFenceValue) override;
+    virtual bool                        IsFenceComplete(RHI::CommandQueueType queueType, uint64_t checkFenceValue) override;
+    virtual void                        WaitFence(RHI::CommandQueueType queueType, uint64_t expectedFenceValue) override;
     virtual void                        Finish(RHI::CommandQueueType queueType) override;
 
     virtual bool                        IsSupportedImageFormat(BE1::Image::Format imageFormat) const override { return ImageFormatToDXGIFormat(imageFormat, false, nullptr); }
@@ -98,9 +98,9 @@ public:
 
     virtual void                        GenerateMipmaps(RHI::Texture *texture) override;
 
-    virtual void                        GetTextureImage2D(RHI::Texture *texture, int mipLevel, BE1::Image::Format imageFormat, void *outPixels) override;
-    virtual void                        GetTextureImage3D(RHI::Texture *texture, int mipLevel, BE1::Image::Format imageFormat, void *outPixels) override;
-    virtual void                        GetTextureImageCubeFace(RHI::Texture *texture, RHI::CubemapFace face, int mipLevel, BE1::Image::Format imageFormat, void *outPixels) override;
+    virtual bool                        GetTextureImage2D(RHI::Texture *texture, int mipLevel, BE1::Image::Format imageFormat, void *outPixels) override;
+    virtual bool                        GetTextureImage3D(RHI::Texture *texture, int mipLevel, BE1::Image::Format imageFormat, void *outPixels) override;
+    virtual bool                        GetTextureImageCubeFace(RHI::Texture *texture, RHI::CubemapFace face, int mipLevel, BE1::Image::Format imageFormat, void *outPixels) override;
 
     virtual bool                        SetTextureSubImage2D(RHI::Texture *texture, int mipLevel, int x, int y, int width, int height, BE1::Image::Format imageFormat, const void *pixels) override;
     virtual bool                        SetTextureSubImage3D(RHI::Texture *texture, int mipLevel, int x, int y, int z, int width, int height, int depth, BE1::Image::Format imageFormat, const void *pixels) override;
@@ -235,11 +235,15 @@ public:
 
     static D3D12Renderer *              GetRenderer() { return static_cast<D3D12Renderer *>(RHI::renderer); }
 
+    struct D3D12QueueFence {
+        ID3D12Fence *                   fence = nullptr;
+        uint64_t                        value = 0;
+        HANDLE                          eventHandle = nullptr;
+    };
+
     ID3D12Device5 *                     device = nullptr;
     IDXGIFactory4 *                     dxgiFactory = nullptr;
-    ID3D12Fence *                       fence = nullptr;
-    uint64_t                            fenceValue = 0;
-    HANDLE                              fenceEventHandle = nullptr;
+    D3D12QueueFence                     queueFences[to_int(RHI::CommandQueueType::Count)];
     ID3D12CommandQueue *                commandQueues[to_int(RHI::CommandQueueType::Count)] = {};
 
     D3D12CommandListPool *              utilGraphicsCommandListPool = nullptr;

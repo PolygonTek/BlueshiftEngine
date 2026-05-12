@@ -638,8 +638,6 @@ void Texture::Purge() {
 }
 
 bool Texture::Load(const char *filename, int flags) {
-    flags |= Flag::LoadedFromFile;
-
     if (flags & (Flag::CubeMap | Flag::CameraCubeMap)) {
         Str name = filename;
         name.StripFileExtension();
@@ -659,7 +657,7 @@ bool Texture::Load(const char *filename, int flags) {
 
         Image cubeImage;
         cubeImage.CreateCubeFrom6Faces(images);
-        Create(Graphics::TextureType::TextureCubeMap, cubeImage, flags);
+        Create(Graphics::TextureType::TextureCubeMap, cubeImage, flags | Flag::LoadedFromFile);
     } else {
         BE_LOG("Loading texture '%s'...\n", filename);
 
@@ -681,7 +679,7 @@ bool Texture::Load(const char *filename, int flags) {
             textureType = Graphics::TextureType::Texture2D;
         }
 
-        Create(textureType, image, flags);
+        Create(textureType, image, flags | Flag::LoadedFromFile);
     }
 
     return true;

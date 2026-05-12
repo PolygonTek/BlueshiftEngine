@@ -74,7 +74,7 @@ void TrueTypeFontFace::InitAtlas() {
 
 void TrueTypeFontFace::FreeAtlas() {
     for (int atlasIndex = 0; atlasIndex < atlasArray.Count(); atlasIndex++) {
-        textureManager.DestroyTexture(atlasArray[atlasIndex].texture);
+        textureManager.ReleaseTexture(atlasArray[atlasIndex].texture);
     }
 
     atlasArray.Clear();
@@ -331,11 +331,11 @@ void TrueTypeFontFace::WriteBitmapFiles(const char *fontFilename) {
         BE1::Image bitmapImage;
         bitmapImage.Create2D(texture->GetWidth(), texture->GetHeight(), 1, texture->GetFormat(), BE1::Image::GammaSpace::DontCare, nullptr, BE1::Image::Flag::None);
 
-        texture->GetTexels2D(0, texture->GetFormat(), bitmapImage.GetPixels(0));
-
-        BE1::Str filename = bitmapBasename;
-        filename += i;
-        filename.Append(".png");
-        bitmapImage.WritePNG(filename);
+        if (texture->GetTexels2D(0, texture->GetFormat(), bitmapImage.GetPixels())) {
+            BE1::Str filename = bitmapBasename;
+            filename += i;
+            filename.Append(".png");
+            bitmapImage.WritePNG(filename);
+        }
     }
 }
