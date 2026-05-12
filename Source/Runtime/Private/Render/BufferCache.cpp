@@ -130,7 +130,7 @@ void BufferCacheManager::Shutdown() {
         }
         
         if (frameData[i].texture) {
-            textureManager.DestroyTexture(frameData[i].texture);
+            textureManager.ReleaseTexture(frameData[i].texture);
         }
     }
 }

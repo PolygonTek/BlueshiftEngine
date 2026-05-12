@@ -644,7 +644,7 @@ void RenderSystem::ScheduleToRefreshEnvProbe(RenderWorld *renderWorld, int probe
     job.envProbe = renderWorld->GetEnvProbe(probeHandle);
     job.specularProbeCubemapMaxLevel = Math::Log(2, job.envProbe->GetSize());
 
-    envProbeJobs.Append(job);
+    envProbeJobs.Append(std::move(job));
 }
 
 void RenderSystem::ForceToRefreshEnvProbe(RenderWorld *renderWorld, int probeHandle) {

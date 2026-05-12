@@ -80,7 +80,7 @@ void TrueTypeFontFace::InitAtlas() {
 
 void TrueTypeFontFace::FreeAtlas() {
     for (int atlasIndex = 0; atlasIndex < atlasArray.Count(); atlasIndex++) {
-        textureManager.DestroyTexture(atlasArray[atlasIndex].texture);
+        textureManager.ReleaseTexture(atlasArray[atlasIndex].texture);
     }
 
     atlasArray.Clear();

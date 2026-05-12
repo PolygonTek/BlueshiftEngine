@@ -498,7 +498,7 @@ static void ListFilesRecursive(const char *directory, const char *subdir, const 
             fileInfo.isSubDir = true;
             if (includeSubDir) {
                 fileInfo.filename = subpath;
-                files.Append(fileInfo);
+                files.Append(std::move(fileInfo));
             }
 
             ListFilesRecursive(directory, subpath, nameFilter, includeSubDir, files);
@@ -517,7 +517,7 @@ static void ListFilesRecursive(const char *directory, const char *subdir, const 
             }
 
             fileInfo.filename = filename;
-            files.Append(fileInfo);
+            files.Append(std::move(fileInfo));
         }
     } while (_wfindnext(handle, &finddata) != -1);
 
@@ -565,7 +565,7 @@ int PlatformWinFile::ListFiles(const char *directory, const char *nameFilter, bo
             //fileInfo.size = finddata.size;
             fileInfo.filename = name;
 
-            files.Append(fileInfo);
+            files.Append(std::move(fileInfo));
         } while (_wfindnext(handle, &finddata) != -1);
 
         _findclose(handle);

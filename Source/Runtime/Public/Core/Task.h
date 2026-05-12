@@ -101,6 +101,9 @@ public:
 
 private:
     Task *                  GetTaskInternal();
+    void                    Run();
+
+    static unsigned int     ThreadProc(void *param);
 
     Array<Task>             taskRingBuffer;                 ///< Ring buffer of task list.
     int                     headTaskIndex = 0;
@@ -118,8 +121,6 @@ private:
     PlatformCondition *     taskCondition = nullptr;        ///< Condition variable for task execution.
     PlatformCondition *     finishCondition = nullptr;      ///< Condition variable for finishing task list.
     PlatformCondition *     groupFinishCondition = nullptr; ///< Condition variable for group finishing task list.
-
-    friend unsigned int     TaskThreadProc(void *param);
 };
 
 template <typename Lambda>

@@ -21,8 +21,6 @@
 
 BE_NAMESPACE_BEGIN
 
-unsigned int TaskThreadProc(void *param);
-
 TaskManager::TaskManager(int maxTasks) {
     taskRingBuffer.SetCount(maxTasks);
 
@@ -63,7 +61,7 @@ void TaskManager::Start(int numThreads, bool useAffinity) {
     for (int i = 0; i < numThreads; i++) {
         uint64_t affinityMask = useAffinity ? (1ULL << (i % numLogicalProcessors)) : 0xFFFFFFFFFFFFFFFF;
 
-        threads.Append(PlatformThread::Start(TaskThreadProc, (void *)this, 0, ThreadPriority::Normal, affinityMask));
+        threads.Append(PlatformThread::Start(TaskManager::ThreadProc, (void *)this, 0, ThreadPriority::Normal, affinityMask));
     }
 }
 
@@ -273,31 +271,26 @@ Task *TaskManager::GetTaskInternal() {
     return task;
 }
 
-unsigned int TaskThreadProc(void *param) {
-    PlatformThread::SetCurrentThreadName("TaskThreadProc");
-
-    SIMD::SetDenormalFlushMode(true);
-
-    TaskManager *taskManager = reinterpret_cast<TaskManager *>(param);
-    Task *task;
+void TaskManager::Run() {
+    Task *task = nullptr;
 
     while (1) {
         // Lock to get the task.
         {
-            ScopedLock lock(taskManager->taskMutex);
+            ScopedLock lock(taskMutex);
 
             // Wait for task condition variable.
-            PlatformCondition::Wait(taskManager->taskCondition, taskManager->taskMutex, [taskManager] {
-                return !taskManager->IsTaskEmpty() || taskManager->stopping;
-            });
+            PlatformCondition::Wait(taskCondition, taskMutex, [this] {
+                return !IsTaskEmpty() || stopping;
+                });
 
-            if (taskManager->stopping) {
+            if (stopping) {
                 // Exit loop when stopping condition is met.
                 break;
             }
 
             // Get the task from the ring buffer.
-            task = taskManager->GetTaskInternal();
+            task = GetTaskInternal();
         }
 
         task->state = TaskState::Running;
@@ -313,30 +306,39 @@ unsigned int TaskThreadProc(void *param) {
 
         // Handle task completion
         {
-            ScopedLock lock(taskManager->taskMutex);
+            ScopedLock lock(taskMutex);
 
             // Decrease active task count after finishing a task function.
-            --taskManager->activeTaskCount;
+            --activeTaskCount;
 
             // Decrease active task count in the given group.
             if (task->groupId >= 0) {
                 int32_t *groupTaskCountPtr;
-                if (taskManager->groupActiveTaskCount.Get(task->groupId, &groupTaskCountPtr)) {
+                if (groupActiveTaskCount.Get(task->groupId, &groupTaskCountPtr)) {
                     --(*groupTaskCountPtr);
 
                     if (*groupTaskCountPtr <= 0) {
                         // Wake the group finish condition variable when there are no active tasks left in this group.
-                        PlatformCondition::Broadcast(taskManager->groupFinishCondition);
+                        PlatformCondition::Broadcast(groupFinishCondition);
                     }
                 }
             }
 
             // Wake the finish condition variable when there are no active tasks remaining.
-            if (taskManager->activeTaskCount == 0 && taskManager->IsTaskEmpty()) {
-                PlatformCondition::Signal(taskManager->finishCondition);
+            if (activeTaskCount == 0 && IsTaskEmpty()) {
+                PlatformCondition::Signal(finishCondition);
             }
         }
     }
+}
+
+unsigned int TaskManager::ThreadProc(void *param) {
+    PlatformThread::SetCurrentThreadName("TaskManager::ThreadProc");
+
+    SIMD::SetDenormalFlushMode(true);
+
+    TaskManager *taskManager = reinterpret_cast<TaskManager *>(param);
+    taskManager->Run();
     return 0;
 }
 

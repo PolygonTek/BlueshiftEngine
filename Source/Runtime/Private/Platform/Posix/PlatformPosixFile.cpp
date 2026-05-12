@@ -388,7 +388,7 @@ static void ListFilesRecursive(const char *directory, const char *subdir, const 
             if (includeSubDir) {
                 fileInfo.isSubDir = true;
                 fileInfo.filename = subpath;
-                files.Append(fileInfo);
+                files.Append(std::move(fileInfo));
             }
             
             ListFilesRecursive(directory, subpath, nameFilter, includeSubDir, files);
@@ -401,7 +401,7 @@ static void ListFilesRecursive(const char *directory, const char *subdir, const 
             
             fileInfo.isSubDir = false;
             fileInfo.filename = filename;
-            files.Append(fileInfo);
+            files.Append(std::move(fileInfo));
         }
     }
     
@@ -441,7 +441,7 @@ int PlatformPosixFile::ListFiles(const char *directory, const char *nameFilter, 
             
             fileInfo.filename = dent->d_name;
             
-            files.Append(fileInfo);
+            files.Append(std::move(fileInfo));
         }
         
         closedir(dp);
