@@ -79,6 +79,7 @@ public:
     bool                                ExecuteUploadBuffer(D3D12ResourceCommandContext &commandContext, D3D12Buffer *buffer, const D3D12UploadBufferRequest &request);
     bool                                ExecuteUploadTexture(D3D12ResourceCommandContext &commandContext, D3D12Texture *texture, const D3D12UploadTextureRequest &request);
     bool                                ExecuteUploadTextureSubImage(D3D12ResourceCommandContext &commandContext, D3D12Texture *texture, const D3D12UploadTextureSubImageRequest &request);
+    bool                                ExecuteUpdateTextureViewMipRange(D3D12ResourceCommandContext &commandContext, D3D12Texture *texture, const D3D12UpdateTextureViewMipRangeRequest &request);
     bool                                ExecuteGenerateMipmaps(D3D12ResourceCommandContext &commandContext, D3D12Texture *texture);
 
     virtual RHI::Buffer *               CreateBuffer(RHI::BufferUsage usage, RHI::BufferFlag flags, uint64_t size, const void *data) override;
@@ -95,6 +96,8 @@ public:
 
     virtual RHI::Texture *              CreateTexture(RHI::TextureType textureType, RHI::TextureFlag flags, std::shared_ptr<const BE1::Image> image, bool allocateEmptyMipmaps, const RHI::ClearValue &clearValue = {}, uint32_t sampleCount = 1, RHI::GPUResourceState initialState = RHI::GPUResourceState::Undefined) override;
     virtual void                        DestroyTexture(RHI::Texture *texture, bool immediate = false) override;
+
+    virtual bool                        UploadTextureMipRange(RHI::Texture *texture, std::shared_ptr<const BE1::Image> image, int firstMip) override;
 
     virtual void                        GenerateMipmaps(RHI::Texture *texture) override;
 
@@ -122,6 +125,8 @@ public:
     RHI::ViewID                         CreateUAV(D3D12Texture *texture, RHI::Format typelessCompatibleFormat, uint32_t firstSlice = 0, uint32_t sliceCount = ~0, uint32_t firstMipLevel = 0);
     RHI::ViewID                         CreateRTV(D3D12Texture *texture, RHI::Format typelessCompatibleFormat, uint32_t firstSlice = 0, uint32_t sliceCount = ~0, uint32_t firstMipLevel = 0);
     RHI::ViewID                         CreateDSV(D3D12Texture *texture, RHI::Format typelessCompatibleFormat, uint32_t firstSlice = 0, uint32_t sliceCount = ~0, uint32_t firstMipLevel = 0);
+
+    virtual bool                        UpdateTextureViewMipRange(RHI::Texture *texture, RHI::ViewID viewID, uint32_t mostDetailedMip, uint32_t mipLevels) override;
 
     virtual RHI::Shader *               CreateShader(RHI::ShaderModel shaderModel, RHI::ShaderStage shaderStage, const char *sourceName, const char *shaderText, int shaderTextSize, const char *entryPoint) override;
     virtual RHI::Shader *               CreateShaderFromFile(RHI::ShaderModel shaderModel, RHI::ShaderStage shaderStage, const char *filename, const char *entryPoint) override;

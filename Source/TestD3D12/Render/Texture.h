@@ -32,9 +32,10 @@ public:
         AllocateEmptyMipmaps    = BIT(4),   ///< Allocate mipmap levels without initial data
         NormalMap               = BIT(5),   ///< Normal map
         NonePowerOfTwo          = BIT(6),   ///< Texture dimensions are not power-of-two
-        UnorderedAccess         = BIT(7),   ///< Texture accessible via UAV
-        Compute                 = BIT(8),   ///< Create as a compute resource in its initial update
-        LoadedFromFile          = BIT(9)    ///< Indicates the texture was loaded from a file (used internally)
+        Streaming               = BIT(7),   ///< Texture streaming loading (DDS file)
+        UnorderedAccess         = BIT(8),   ///< Texture accessible via UAV
+        Compute                 = BIT(9),   ///< Create as a compute resource in its initial update
+        LoadedFromFile          = BIT(10)   ///< Indicates the texture was loaded from a file (used internally)
     };
 
     enum class State : uint8_t {
@@ -52,6 +53,16 @@ public:
         RHI::TextureAddressMode addressModeW = RHI::TextureAddressMode::Clamp;
         uint32_t                maxAnisotropy = 1;
         RHI::TextureBorderColor borderColor = RHI::TextureBorderColor::OpaqueBlack;
+    };
+
+    struct StreamingState {
+        int                     streamingListIndex = -1;
+        int                     originalMipLevels = 0;
+        int                     residentFirstMip = 0;
+        int                     residentMipCount = 0;
+        int                     requestedFirstMip = 0;
+        int                     requestedMipCount = 0;
+        bool                    pending = false;        // 추가 mip 로딩 요청이 진행 중인지 여부
     };
 
     struct Prepared {
@@ -108,7 +119,8 @@ public:
 
     void                        ApplyPrepared(const Prepared &prepared);
 
-    static bool                 Prepare(RHI::TextureType textureType, std::shared_ptr<const BE1::Image> srcImage, Texture::Flag flags, Prepared &outPrepared);
+    static bool                 PrepareNew(RHI::TextureType textureType, std::shared_ptr<const BE1::Image> srcImage, Texture::Flag flags, Prepared &outPrepared);
+    static bool                 PrepareMipRangeNew(RHI::TextureType textureType, std::shared_ptr<const BE1::Image> srcImage, BE1::Image::MipRange &mipRange, Texture::Flag flags, Prepared &outPrepared);
 
                                 /// Generate mipmaps using compute shader.
     void                        GenerateMipmaps();
@@ -136,6 +148,7 @@ private:
     uint32_t                    srcDepth;           ///< Original depth
     BE1::Image::Format          format;
     Texture::Flag               flags;
+    StreamingState              streaming;
     std::atomic<State>          state = State::Empty;
     std::atomic<uint32_t>       loadSerial = 0;
 };
@@ -158,6 +171,11 @@ public:
     Texture *                   GetTexture(const char *hashName, Texture::Flag flags);
     void                        ReleaseTexture(Texture *texture);
 
+    void                        RegisterStreamingTexture(Texture *texture, const BE1::Image::MipRange &mipRange);
+    void                        UnregisterStreamingTexture(Texture *texture);
+    void                        UpdateStreamingTextures(int frameMsec);
+    bool                        CompleteStreamingTextureRequest(Texture *texture, const BE1::Image::MipRange &loadedMipRange, uint32_t *outResidentFirstMip, uint32_t *outResidentMipCount);
+
     Texture *                   defaultTexture = nullptr;
     Texture *                   whiteTexture = nullptr;
     Texture *                   flatNormalTexture = nullptr;
@@ -167,6 +185,7 @@ private:
     void                        DestroyTexture(Texture *texture);
 
     BE1::StrIHashMap<Texture *> textureHashMap;
+    BE1::Array<Texture *>       streamingTextures;
 };
 
 extern TextureManager           textureManager;

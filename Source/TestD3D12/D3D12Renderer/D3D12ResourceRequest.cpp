@@ -92,6 +92,11 @@ void D3D12Renderer::ProcessResourceRequests(RHI::FrameThreadData *frameThreadDat
                 RequestRelease(request.uploadTextureSubImageRequest.uploadBuffer);
             }
             break;
+        case D3D12ResourceRequest::Type::UpdateTextureViewMipRange:
+            if (frameThreadData) {
+                ExecuteUpdateTextureViewMipRange(commandContext, static_cast<D3D12Texture *>(request.object), request.updateTextureViewMipRangeRequest);
+            }
+            break;
         case D3D12ResourceRequest::Type::GenerateMipmaps:
             if (frameThreadData) {
                 ExecuteGenerateMipmaps(commandContext, static_cast<D3D12Texture *>(request.object));

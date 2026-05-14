@@ -26,14 +26,13 @@ struct D3D12UploadBufferRequest {
     uint64_t                            dataSize = 0;
     D3D12_HEAP_TYPE                     heapType;
     D3D12_RESOURCE_DESC                 resourceDesc = {};
-    D3D12_RESOURCE_STATES               initialState = D3D12_RESOURCE_STATE_COMMON;
 };
 
 struct D3D12UploadTextureRequest {
     std::shared_ptr<const BE1::Image>   srcImage;
     D3D12_RESOURCE_DESC                 resourceDesc = {};
-    D3D12_RESOURCE_STATES               initialState = D3D12_RESOURCE_STATE_COMMON;
-    bool                                allocateEmptyMipmaps = false;
+    int                                 dstFirstMip = 0;
+    int                                 mipCount = 0;
 };
 
 struct D3D12UploadTextureSubImageRequest {
@@ -47,6 +46,12 @@ struct D3D12UploadTextureSubImageRequest {
     int                                 depth = 0;
 };
 
+struct D3D12UpdateTextureViewMipRangeRequest {
+    RHI::ViewID                         viewID;
+    int                                 firstMip = 0;
+    int                                 mipCount = 0;
+};
+
 struct D3D12ResourceRequest {
     enum class Type : uint8_t {
         None,
@@ -54,6 +59,7 @@ struct D3D12ResourceRequest {
         UploadBuffer,
         UploadTexture,
         UploadTextureSubImage,
+        UpdateTextureViewMipRange,
         GenerateMipmaps
     };
 
@@ -62,6 +68,7 @@ struct D3D12ResourceRequest {
     D3D12UploadBufferRequest            uploadBufferRequest;
     D3D12UploadTextureRequest           uploadTextureRequest;
     D3D12UploadTextureSubImageRequest   uploadTextureSubImageRequest;
+    D3D12UpdateTextureViewMipRangeRequest updateTextureViewMipRangeRequest;
 };
 
 struct D3D12ResourceCommandContext {

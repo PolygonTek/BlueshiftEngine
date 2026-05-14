@@ -18,6 +18,8 @@
 
 BE_NAMESPACE_BEGIN
 
+class File;
+
 /// Image representation
 class Image {
 public:
@@ -224,6 +226,16 @@ public:
         MipmapsWithAlphaCoverage
     };
 
+    /// Describes the original image dimensions and the loaded mip range.
+    struct MipRange {
+        int             originalWidth = 0;
+        int             originalHeight = 0;
+        int             originalDepth = 0;
+        int             originalMipLevels = 0;
+        int             firstMip = 0;
+        int             mipCount = 0;
+    };
+
     /// Default constructor.
     Image() = default;
 
@@ -400,6 +412,12 @@ public:
                         /// Loads image from the file.
     bool                Load(const char *filename);
 
+                        /// Loads the specified DDS mip range from a file.
+    bool                LoadDDSMipRange(const char *filename, int firstMip, int mipCount, MipRange *outInfo);
+
+                        /// Loads the DDS mip range whose largest dimension is at most maxDimension.
+    bool                LoadDDSMipRangeForMaxDimension(const char *filename, int maxDimension, MipRange *outInfo);
+
                         /// Writes image to the file.
     bool                Write(const char *filename) const;
 
@@ -430,6 +448,7 @@ public:
     static bool         NeedFloatConversion(Format imageFormat);
     static uint64_t     MemRequired(int width, int height, int depth, int numMipmaps, int numSlices, Format imageFormat);
     static int          MaxMipLevels(int width, int height, int depth);
+    static int          ComputeFirstMipForMaxDimension(int width, int height, int depth, int numMipLevels, int maxDimension);
 
                         /// Converts an sRGB value in the range [0, 1] to a linear value in the range [0, 1].
     static float        GammaToLinear(float value);
@@ -459,6 +478,8 @@ public:
     static float        sRGBToLinearTable[256];
 
 private:
+    bool                LoadDDSMipRange(File *fp, int headerWidth, int headerHeight, int headerDepth, int headerArraySize, int headerMipmapCount, bool isCubemap, int firstMip, int mipCount, MipRange *outInfo);
+
     template <typename T>
     T                   WrapCoord(T coord, T maxCoord, SampleWrapMode wrapMode) const;
 

@@ -51,7 +51,7 @@ void Texture::Create(RHI::TextureType textureType, std::shared_ptr<const BE1::Im
     Purge();
 
     Prepared prepared;
-    if (!Texture::Prepare(textureType, srcImage, flags, prepared)) {
+    if (!Texture::PrepareNew(textureType, srcImage, flags, prepared)) {
         return;
     }
 
@@ -74,21 +74,19 @@ void Texture::ApplyPrepared(const Prepared &prepared) {
     texture = prepared.texture;
 }
 
-bool Texture::Prepare(RHI::TextureType textureType, std::shared_ptr<const BE1::Image> srcImage, Flag flags, Prepared &outPrepared) {
+bool Texture::PrepareNew(RHI::TextureType textureType, std::shared_ptr<const BE1::Image> srcImage, Flag flags, Prepared &outPrepared) {
     if (!srcImage) {
         return false;
     }
 
-    BE1::Image::Format srcFormat = srcImage->GetFormat();
-    BE1::Image::Format forceFormat = BE1::Image::Format::Unknown;
-
+    bool useUAV = BE1::HasFlag(flags, Texture::Flag::UnorderedAccess);
     bool useNormalMap = BE1::HasFlag(flags, Texture::Flag::NormalMap);
     bool useCompression = !BE1::HasFlag(flags, Texture::Flag::NoCompression);
     bool useNPOT = BE1::HasFlag(flags, Texture::Flag::NonePowerOfTwo);
-    bool useUAV = BE1::HasFlag(flags, Texture::Flag::UnorderedAccess);
     bool allocateEmptyMipmaps = BE1::HasFlag(flags, Texture::Flag::AllocateEmptyMipmaps);
     bool generateMipmaps = !allocateEmptyMipmaps && !BE1::HasFlag(flags, Texture::Flag::NoMipmaps);
 
+    BE1::Image::Format forceFormat = BE1::Image::Format::Unknown;
     BE1::Image::Format dstFormat;
     if (forceFormat != BE1::Image::Format::Unknown) {
         dstFormat = forceFormat;
@@ -96,17 +94,12 @@ bool Texture::Prepare(RHI::TextureType textureType, std::shared_ptr<const BE1::I
         RHI::renderer->AdjustTextureFormat(useCompression, useNormalMap, useUAV, srcImage->GetFormat(), &dstFormat);
     }
 
-    outPrepared.textureType = textureType;
-    outPrepared.srcWidth = srcImage->GetWidth();
-    outPrepared.srcHeight = srcImage->GetHeight();
-    outPrepared.srcDepth = srcImage->GetDepth();
-
     uint32_t dstWidth, dstHeight, dstDepth;
-    RHI::renderer->AdjustTextureSize(textureType, useNPOT, outPrepared.srcWidth, outPrepared.srcHeight, outPrepared.srcDepth, &dstWidth, &dstHeight, &dstDepth);
-    assert(outPrepared.srcDepth == dstDepth);
+    RHI::renderer->AdjustTextureSize(textureType, useNPOT, srcImage->GetWidth(), srcImage->GetHeight(), srcImage->GetDepth(), &dstWidth, &dstHeight, &dstDepth);
+    assert(srcImage->GetDepth() == dstDepth);
 
     if (!srcImage->IsEmpty()) {
-        if (outPrepared.srcWidth != dstWidth || outPrepared.srcHeight != dstHeight) {
+        if (srcImage->GetWidth() != dstWidth || srcImage->GetHeight() != dstHeight) {
             std::shared_ptr<BE1::Image> scaledImage = std::make_shared<BE1::Image>();
             srcImage->Resize(dstWidth, dstHeight, BE1::Image::ResampleFilter::Bicubic, *scaledImage);
             srcImage = scaledImage;
@@ -131,9 +124,14 @@ bool Texture::Prepare(RHI::TextureType textureType, std::shared_ptr<const BE1::I
 
     RHI::GPUResourceState initialState = BE1::HasFlag(flags, Texture::Flag::Compute) ? RHI::GPUResourceState::ShaderResourceCompute : RHI::GPUResourceState::ShaderResource;
 
+    outPrepared.textureType = textureType;
+    outPrepared.srcWidth = srcImage->GetWidth();
+    outPrepared.srcHeight = srcImage->GetHeight();
+    outPrepared.srcDepth = srcImage->GetDepth();
     outPrepared.format = dstFormat;
     outPrepared.flags = flags;
     outPrepared.texture = Texture::PrepareRHITexture(textureType, resourceFlags, srcImage, dstFormat, generateMipmaps, allocateEmptyMipmaps, initialState);
+
     return outPrepared.texture != nullptr;
 }
 
@@ -190,6 +188,50 @@ RHI::Texture *Texture::PrepareRHITexture(RHI::TextureType textureType, RHI::Text
     }
 
     return RHI::renderer->CreateTexture(textureType, flags, srcImage, allocateEmptyMipmaps, {}, 1, initialState);
+}
+
+bool Texture::PrepareMipRangeNew(RHI::TextureType textureType, std::shared_ptr<const BE1::Image> srcImage, BE1::Image::MipRange &mipRange, Flag flags, Prepared &outPrepared) {
+    if (!srcImage) {
+        return false;
+    }
+
+    RHI::TextureFlag resourceFlags = RHI::TextureFlag::ShaderResource;
+    if (BE1::HasFlag(flags, Texture::Flag::UnorderedAccess)) {
+        resourceFlags |= RHI::TextureFlag::UnorderedAccess;
+
+        // UAV 가 필요하다면, sRGB 포맷은 UAV 로 만들 수 없기 때문에 Typeless 텍스쳐로 만든다.
+        if (srcImage->GetGammaSpace() != BE1::Image::GammaSpace::Linear) {
+            resourceFlags |= RHI::TextureFlag::Typeless;
+        }
+    }
+
+    // Depth 포맷은 Typeless 텍스쳐로 생성한다.
+    // SRV 에서 Depth 포맷을 사용할 수는 없고, 그와 호환되는 포맷을 사용해야 한다.
+    if (srcImage->IsDepthFormat()) {
+        resourceFlags |= RHI::TextureFlag::Typeless;
+    }
+
+    RHI::GPUResourceState initialState = BE1::HasFlag(flags, Texture::Flag::Compute) ? RHI::GPUResourceState::ShaderResourceCompute : RHI::GPUResourceState::ShaderResource;
+
+    // 비어있는 텍스쳐를 생성한다.
+    std::shared_ptr<BE1::Image> emptyImage = std::make_shared<BE1::Image>();
+    emptyImage->InitFromMemory(mipRange.originalWidth, mipRange.originalHeight, mipRange.originalDepth, srcImage->GetArraySize(), mipRange.originalMipLevels, srcImage->GetFormat(), srcImage->GetGammaSpace(), nullptr, srcImage->GetFlags());
+    RHI::Texture *texture = RHI::renderer->CreateTexture(textureType, resourceFlags, emptyImage, false, {}, 1, initialState);
+    if (!texture) {
+        return false;
+    }
+
+    texture->SetStatus(RHI::GPUResourceStatus::Pending);
+
+    outPrepared.textureType = textureType;
+    outPrepared.srcWidth = mipRange.originalWidth;
+    outPrepared.srcHeight = mipRange.originalHeight;
+    outPrepared.srcDepth = mipRange.originalDepth;
+    outPrepared.format = srcImage->GetFormat();
+    outPrepared.flags = flags;
+    outPrepared.texture = texture;
+
+    return outPrepared.texture != nullptr;
 }
 
 void Texture::GenerateMipmaps() {
@@ -288,7 +330,7 @@ bool Texture::Load(const char *filename, Texture::Flag flags) {
 bool Texture::LoadAsync(const char *filename, Flag flags) {
     state = State::Loading;
     uint32_t newSerial = BumpLoadSerial();
-    if (!loadingSystem.EnqueueTextureLoad(this, filename, flags, newSerial)) {
+    if (!loadingSystem.EnqueueTextureLoad(newSerial, this, filename, flags)) {
         state = State::Failed;
         return false;
     }

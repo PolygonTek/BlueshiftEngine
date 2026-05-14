@@ -159,7 +159,7 @@ bool Mesh::Load(const char *filename) {
 bool Mesh::LoadAsync(const char *filename) {
     state = State::Loading;
     uint32_t newSerial = BumpLoadSerial();
-    if (!loadingSystem.EnqueueMeshLoad(this, filename, newSerial)) {
+    if (!loadingSystem.EnqueueMeshLoad(newSerial, this, filename)) {
         state = State::Failed;
         return false;
     }

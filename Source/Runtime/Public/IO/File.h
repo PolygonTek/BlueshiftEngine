@@ -35,7 +35,7 @@ public:
     
     virtual ~File() = 0;
 
-    virtual const char *    GetFilePath() const = 0;
+    virtual const char *    GetFilename() const = 0;
 
                             /// Returns size of a file.
     virtual size_t          Size() const = 0;
@@ -96,7 +96,7 @@ public:
     FileReal(const char *filename, PlatformFile *pf);
     virtual ~FileReal();
     
-    virtual const char *    GetFilePath() const override { return filename; }
+    virtual const char *    GetFilename() const override { return filename; }
     
                             /// Returns size of a file.
     virtual size_t          Size() const override;
@@ -127,7 +127,7 @@ public:
     FileInZip(const char *filename, void *pointer);
     virtual ~FileInZip();
     
-    virtual const char *    GetFilePath() const override { return filename; }
+    virtual const char *    GetFilename() const override { return filename; }
     
                             /// Returns size of a file.
     virtual size_t          Size() const override;

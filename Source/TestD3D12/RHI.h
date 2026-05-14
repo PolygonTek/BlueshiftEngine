@@ -958,6 +958,8 @@ namespace RHI {
         virtual Texture *               CreateTexture(TextureType textureType, TextureFlag flags, std::shared_ptr<const BE1::Image> image, bool allocateEmptyMipmaps, const ClearValue &clearValue = {}, uint32_t sampleCount = 1, GPUResourceState initialState = GPUResourceState::Undefined) = 0;
         virtual void                    DestroyTexture(Texture *texture, bool immediate = false) = 0;
 
+        virtual bool                    UploadTextureMipRange(Texture *texture, std::shared_ptr<const BE1::Image> image, int firstMip) = 0;
+
         virtual void                    GenerateMipmaps(Texture *texture) = 0;
 
         virtual bool                    GetTextureImage2D(Texture *texture, int mipLevel, BE1::Image::Format imageFormat, void *outPixels) = 0;
@@ -973,6 +975,8 @@ namespace RHI {
 
         virtual void                    DestroyView(Buffer *buffer, ViewType viewType, ViewID viewID) = 0;
         virtual void                    DestroyView(Texture *texture, ViewType viewType, ViewID viewID) = 0;
+
+        virtual bool                    UpdateTextureViewMipRange(RHI::Texture *texture, RHI::ViewID viewID, uint32_t mostDetailedMip, uint32_t mipLevels) = 0;
 
         virtual Shader *                CreateShader(ShaderModel shaderModel, ShaderStage shaderStage, const char *sourceName, const char *shaderText, int shaderTextSize, const char *entryPoint) = 0;
         virtual Shader *                CreateShaderFromFile(ShaderModel shaderModel, ShaderStage shaderStage, const char *filename, const char *entryPoint) = 0;

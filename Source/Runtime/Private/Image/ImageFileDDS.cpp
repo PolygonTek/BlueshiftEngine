@@ -295,7 +295,7 @@ struct DdsFileHeader {
     uint32_t width;
     uint32_t pitchOrLinearSize;
     uint32_t depth;
-    uint32_t mipMapCount;
+    uint32_t mipmapCount;
     uint32_t reserved1[11];
     struct {
         uint32_t size;
@@ -306,7 +306,7 @@ struct DdsFileHeader {
         uint32_t GBitMask;
         uint32_t BBitMask;
         uint32_t ABitMask;
-    } ddsPixelFormat;    
+    } ddsPixelFormat;
     struct {
         uint32_t caps1;
         uint32_t caps2;
@@ -324,9 +324,265 @@ struct DdsFileHeaderDX10 {
     uint32_t miscFlag2;
 };
 
+static bool ParseDDSFormat(const DdsFileHeader &ddsHeader, Image::Format &format) {
+    switch (ddsHeader.ddsPixelFormat.fourCC) {
+    case 0:
+        switch (ddsHeader.ddsPixelFormat.RGBBitCount >> 3) {
+        case 4:
+            if (ddsHeader.ddsPixelFormat.ABitMask == 0x000000ff) {
+                if (ddsHeader.ddsPixelFormat.RBitMask == 0xff000000) {
+                    format = Image::Format::A8B8G8R8;
+                } else {
+                    format = Image::Format::A8R8G8B8;
+                }
+            } else if (ddsHeader.ddsPixelFormat.ABitMask == 0xff00000) {
+                if (ddsHeader.ddsPixelFormat.RBitMask == 0x00ff0000) {
+                    format = Image::Format::B8G8R8A8;
+                } else {
+                    format = Image::Format::R8G8B8A8;
+                }
+            } else {
+                if (ddsHeader.ddsPixelFormat.RBitMask == 0x00ff0000) {
+                    format = Image::Format::B8G8R8X8;
+                } else {
+                    format = Image::Format::R8G8B8X8;
+                }
+            }
+            break;
+        case 3:
+            if (ddsHeader.ddsPixelFormat.RBitMask == 0x00ff0000) {
+                format = Image::Format::B8G8R8;
+            } else {
+                format = Image::Format::R8G8B8;
+            }
+            break;
+        case 2:
+            if (ddsHeader.ddsPixelFormat.ABitMask == 0x0000000f) {
+                if (ddsHeader.ddsPixelFormat.RBitMask == 0x0000f000) {
+                    format = Image::Format::A4B4G4R4;
+                } else {
+                    format = Image::Format::A4R4G4B4;
+                }
+            } else if (ddsHeader.ddsPixelFormat.ABitMask == 0x0000f000) {
+                if (ddsHeader.ddsPixelFormat.RBitMask == 0x00000f00) {
+                    format = Image::Format::B4G4R4A4;
+                } else {
+                    format = Image::Format::R4G4B4A4;
+                }
+            } else if (ddsHeader.ddsPixelFormat.ABitMask == 0x00008000) {
+                if (ddsHeader.ddsPixelFormat.RBitMask == 0x00007c00) {
+                    format = Image::Format::B5G5R5A1;
+                } else {
+                    format = Image::Format::R5G5B5A1;
+                }
+            } else if (ddsHeader.ddsPixelFormat.ABitMask == 0x00000001) {
+                if (ddsHeader.ddsPixelFormat.RBitMask == 0x0000f800) {
+                    format = Image::Format::A1B5G5R5;
+                } else {
+                    format = Image::Format::A1R5G5B5;
+                }
+            } else if (ddsHeader.ddsPixelFormat.ABitMask == 0x0000ff00) {
+                format = Image::Format::L8A8;
+            } else {
+                if (ddsHeader.ddsPixelFormat.GBitMask == 0x000000f0) {
+                    if (ddsHeader.ddsPixelFormat.RBitMask == 0x00000f00) {
+                        format = Image::Format::B4G4R4X4;
+                    } else {
+                        format = Image::Format::R4G4B4X4;
+                    }
+                } else if (ddsHeader.ddsPixelFormat.GBitMask == 0x000003e0) {
+                    if (ddsHeader.ddsPixelFormat.RBitMask == 0x00007c00) {
+                        format = Image::Format::B5G5R5X1;
+                    } else {
+                        format = Image::Format::R5G5B5X1;
+                    }
+                } else if (ddsHeader.ddsPixelFormat.GBitMask == 0x000007e0) {
+                    if (ddsHeader.ddsPixelFormat.RBitMask == 0x0000f800) {
+                        format = Image::Format::B5G6R5;
+                    } else {
+                        format = Image::Format::R5G6B5;
+                    }
+                } else {
+                    //format = Image::Format::L_16;
+                    assert(0);
+                }
+            }
+            break;
+        case 1:
+            if (ddsHeader.ddsPixelFormat.ABitMask == 0x000000ff) {
+                format = Image::Format::A8;
+            } else {
+                format = Image::Format::L8;
+            }
+            break;
+        default:
+            format = Image::Format::Unknown;
+            return false;
+        }
+        break;
+    case DDS_FORMAT_R8G8B8:
+        format = Image::Format::B8G8R8;
+        break;
+    case DDS_FORMAT_A8R8G8B8:
+        format = Image::Format::B8G8R8A8;
+        break;
+    case DDS_FORMAT_A2B10G10R10:
+        format = Image::Format::R10G10B10A2;
+        break;
+    case DDS_FORMAT_X8R8G8B8:
+        format = Image::Format::B8G8R8X8;
+        break;
+    case DDS_FORMAT_R5G6B5:
+        format = Image::Format::B5G6R5;
+        break;
+    case DDS_FORMAT_X1R5G5B5:
+        format = Image::Format::B5G5R5X1;
+        break;
+    case DDS_FORMAT_A1R5G5B5:
+        format = Image::Format::B5G5R5A1;
+        break;
+    case DDS_FORMAT_A4R4G4B4:
+        format = Image::Format::B4G4R4A4;
+        break;
+    case DDS_FORMAT_X4R4G4B4:
+        format = Image::Format::B4G4R4X4;
+        break;
+    case DDS_FORMAT_A8B8G8R8:
+        format = Image::Format::R8G8B8A8;
+        break;
+    case DDS_FORMAT_X8B8G8R8:
+        format = Image::Format::R8G8B8X8;
+        break;
+    case DDS_FORMAT_L8:
+        format = Image::Format::L8;
+        break;
+    case DDS_FORMAT_A8:
+        format = Image::Format::A8;
+        break;
+    case DDS_FORMAT_A8L8:
+        format = Image::Format::L8A8;
+        break;
+    case DDS_FORMAT_R16F:
+        format = Image::Format::R16_FLOAT;
+        break;
+    case DDS_FORMAT_G16R16F:
+        format = Image::Format::R16G16_FLOAT;
+        break;
+    case DDS_FORMAT_A16B16G16R16F:
+        format = Image::Format::R16G16B16A16_FLOAT;
+        break;
+    case DDS_FORMAT_R32F:
+        format = Image::Format::R32_FLOAT;
+        break;
+    case DDS_FORMAT_G32R32F:
+        format = Image::Format::R32G32_FLOAT;
+        break;
+    case DDS_FORMAT_A32B32G32R32F:
+        format = Image::Format::R32G32B32A32_FLOAT;
+        break;
+    case DDS_FORMAT_DXT1:
+        format = Image::Format::DXT1;
+        break;
+    case DDS_FORMAT_DXT3:
+        format = Image::Format::DXT3;
+        break;
+    case DDS_FORMAT_DXT5:
+        if (ddsHeader.ddsPixelFormat.RGBBitCount == MAKE_FOURCC('x', 'G', 'B', 'R')) {
+            format = Image::Format::DXT5XGBR;
+        } else {
+            format = Image::Format::DXT5;
+        }
+        break;
+    case MAKE_FOURCC('R', 'X', 'G', 'B'):   // doom3 RXGB
+        format = Image::Format::DXT5XGBR;
+        break;
+    case MAKE_FOURCC('A', 'T', 'I', '1'):
+        format = Image::Format::DXN1;
+        break;
+    case MAKE_FOURCC('A', 'T', 'I', '2'):   // ATI 3DTc
+        format = Image::Format::DXN2;
+        break;
+    default:
+        format = Image::Format::Unknown;
+        return false;
+    }
+    return true;
+}
+
+static bool ParseDX10Format(const DdsFileHeaderDX10 &dx10Header, Image::Format &format, Image::GammaSpace &gammaSpace) {
+    switch (dx10Header.dxgiFormat) {
+    case DX10_FORMAT_R8_UNORM: format = Image::Format::R8; break;
+    case DX10_FORMAT_R8_SNORM: format = Image::Format::R8_SNORM; break;
+    case DX10_FORMAT_R8_UINT: format = Image::Format::R8_UINT; break;
+    case DX10_FORMAT_R8_SINT: format = Image::Format::R8_SINT; break;
+    case DX10_FORMAT_R8G8_UNORM: format = Image::Format::R8G8; break;
+    case DX10_FORMAT_R8G8_SNORM: format = Image::Format::R8G8_SNORM; break;
+    case DX10_FORMAT_R8G8_UINT: format = Image::Format::R8G8_UINT; break;
+    case DX10_FORMAT_R8G8_SINT: format = Image::Format::R8G8_SINT; break;
+    case DX10_FORMAT_R8G8B8A8_UNORM:
+    case DX10_FORMAT_R8G8B8A8_UNORM_SRGB: format = Image::Format::R8G8B8A8; break;
+    case DX10_FORMAT_R8G8B8A8_SNORM: format = Image::Format::R8G8B8A8_SNORM; break;
+    case DX10_FORMAT_R8G8B8A8_UINT: format = Image::Format::R8G8B8A8_UINT; break;
+    case DX10_FORMAT_R8G8B8A8_SINT: format = Image::Format::R8G8B8A8_SINT; break;
+    case DX10_FORMAT_B8G8R8A8_UNORM:
+    case DX10_FORMAT_B8G8R8A8_UNORM_SRGB: format = Image::Format::B8G8R8A8; break;
+    case DX10_FORMAT_B8G8R8X8_UNORM:
+    case DX10_FORMAT_B8G8R8X8_UNORM_SRGB: format = Image::Format::B8G8R8X8; break;
+    case DX10_FORMAT_R16_FLOAT: format = Image::Format::R16_FLOAT; break;
+    case DX10_FORMAT_R16G16_FLOAT: format = Image::Format::R16G16_FLOAT; break;
+    case DX10_FORMAT_R16G16B16A16_FLOAT: format = Image::Format::R16G16B16A16_FLOAT; break;
+    case DX10_FORMAT_R32_FLOAT: format = Image::Format::R32_FLOAT; break;
+    case DX10_FORMAT_R32_SINT: format = Image::Format::R32_SINT; break;
+    case DX10_FORMAT_R32_UINT: format = Image::Format::R32_UINT; break;
+    case DX10_FORMAT_R32G32_FLOAT: format = Image::Format::R32G32_FLOAT; break;
+    case DX10_FORMAT_R32G32_UINT: format = Image::Format::R32G32_UINT; break;
+    case DX10_FORMAT_R32G32_SINT: format = Image::Format::R32G32_SINT; break;
+    case DX10_FORMAT_R32G32B32_FLOAT: format = Image::Format::R32G32B32_FLOAT; break;
+    case DX10_FORMAT_R32G32B32_UINT: format = Image::Format::R32G32B32_UINT; break;
+    case DX10_FORMAT_R32G32B32_SINT: format = Image::Format::R32G32B32_SINT; break;
+    case DX10_FORMAT_R32G32B32A32_FLOAT: format = Image::Format::R32G32B32A32_FLOAT; break;
+    case DX10_FORMAT_R32G32B32A32_UINT: format = Image::Format::R32G32B32A32_UINT; break;
+    case DX10_FORMAT_R32G32B32A32_SINT: format = Image::Format::R32G32B32A32_SINT; break;
+    case DX10_FORMAT_R9G9B9E5_SHAREDEXP: format = Image::Format::R9G9B9E5_FLOAT; break;
+    case DX10_FORMAT_R11G11B10_FLOAT: format = Image::Format::R11G11B10_FLOAT; break;
+    case DX10_FORMAT_R10G10B10A2_UNORM: format = Image::Format::R10G10B10A2; break;
+    case DX10_FORMAT_BC1_UNORM:
+    case DX10_FORMAT_BC1_UNORM_SRGB: format = Image::Format::DXT1; break;
+    case DX10_FORMAT_BC2_UNORM:
+    case DX10_FORMAT_BC2_UNORM_SRGB: format = Image::Format::DXT3; break;
+    case DX10_FORMAT_BC3_UNORM:
+    case DX10_FORMAT_BC3_UNORM_SRGB: format = Image::Format::DXT5; break;
+    case DX10_FORMAT_BC4_UNORM: format = Image::Format::DXN1; break;
+    case DX10_FORMAT_BC5_UNORM: format = Image::Format::DXN2; break;
+    default:
+        format = Image::Format::Unknown;
+        return false;
+    }
+
+    if (dx10Header.dxgiFormat == DX10_FORMAT_R8G8B8A8_UNORM_SRGB ||
+        dx10Header.dxgiFormat == DX10_FORMAT_B8G8R8A8_UNORM_SRGB ||
+        dx10Header.dxgiFormat == DX10_FORMAT_B8G8R8X8_UNORM_SRGB ||
+        dx10Header.dxgiFormat == DX10_FORMAT_BC1_UNORM_SRGB ||
+        dx10Header.dxgiFormat == DX10_FORMAT_BC2_UNORM_SRGB ||
+        dx10Header.dxgiFormat == DX10_FORMAT_BC3_UNORM_SRGB) {
+        gammaSpace = Image::GammaSpace::sRGB;
+    } else if (
+        dx10Header.dxgiFormat == DX10_FORMAT_R8_UNORM ||
+        dx10Header.dxgiFormat == DX10_FORMAT_R8G8_UNORM ||
+        dx10Header.dxgiFormat == DX10_FORMAT_R8G8B8A8_UNORM ||
+        dx10Header.dxgiFormat == DX10_FORMAT_B8G8R8A8_UNORM ||
+        dx10Header.dxgiFormat == DX10_FORMAT_B8G8R8X8_UNORM ||
+        dx10Header.dxgiFormat == DX10_FORMAT_BC1_UNORM ||
+        dx10Header.dxgiFormat == DX10_FORMAT_BC2_UNORM ||
+        dx10Header.dxgiFormat == DX10_FORMAT_BC3_UNORM) {
+        gammaSpace = Image::GammaSpace::Linear;
+    }
+    return true;
+}
+
 bool Image::LoadDDSFromMemory(const char *name, const byte *data, size_t size) {
     const byte *ptr = data;
-    uint32_t fourcc = *(uint32_t *)ptr;
+    const uint32_t fourcc = *(uint32_t *)ptr;
     ptr += sizeof(uint32_t);
     
     if (fourcc != DDS_MAGIC) {
@@ -337,7 +593,7 @@ bool Image::LoadDDSFromMemory(const char *name, const byte *data, size_t size) {
     DdsFileHeader *header = (DdsFileHeader *)ptr;
     ptr += sizeof(DdsFileHeader);
 
-    int essentialFlags = DDSD_PIXELFORMAT | DDSD_WIDTH | DDSD_HEIGHT;
+    constexpr int essentialFlags = DDSD_PIXELFORMAT | DDSD_WIDTH | DDSD_HEIGHT;
     
     if (header->size != sizeof(DdsFileHeader) || (header->flags & essentialFlags) != essentialFlags) {
         BE_WARNLOG("Image::LoadDDSFromMemory: bad DDS format %s\n", name);
@@ -352,258 +608,25 @@ bool Image::LoadDDSFromMemory(const char *name, const byte *data, size_t size) {
         DdsFileHeaderDX10 *dx10Header = (DdsFileHeaderDX10 *)ptr;
         ptr += sizeof(DdsFileHeaderDX10);
 
-        // Note: arraySize is independent of the cubemap face count.
-        // Each cubemap always has 6 faces; arraySize specifies the number of cubemaps in the array.
+        // NOTE: arraySize is independent of the cubemap face count.
+        // each cubemap always has 6 faces. dx10Header->arraySize specifies the number of cubemaps in the array.
         ddsArraySize = dx10Header->arraySize;
 
-        switch (dx10Header->dxgiFormat) {
-        case DX10_FORMAT_R8_UNORM: format = Format::R8; break;
-        case DX10_FORMAT_R8_SNORM: format = Format::R8_SNORM; break;
-        case DX10_FORMAT_R8_UINT: format = Format::R8_UINT; break;
-        case DX10_FORMAT_R8_SINT: format = Format::R8_SINT; break;
-        case DX10_FORMAT_R8G8_UNORM: format = Format::R8G8; break;
-        case DX10_FORMAT_R8G8_SNORM: format = Format::R8G8_SNORM; break;
-        case DX10_FORMAT_R8G8_UINT: format = Format::R8G8_UINT; break;
-        case DX10_FORMAT_R8G8_SINT: format = Format::R8G8_SINT; break;
-        case DX10_FORMAT_R8G8B8A8_UNORM:
-        case DX10_FORMAT_R8G8B8A8_UNORM_SRGB: format = Format::R8G8B8A8; break;
-        case DX10_FORMAT_R8G8B8A8_SNORM: format = Format::R8G8B8A8_SNORM; break;
-        case DX10_FORMAT_R8G8B8A8_UINT: format = Format::R8G8B8A8_UINT; break;
-        case DX10_FORMAT_R8G8B8A8_SINT: format = Format::R8G8B8A8_SINT; break;
-        case DX10_FORMAT_B8G8R8A8_UNORM:
-        case DX10_FORMAT_B8G8R8A8_UNORM_SRGB: format = Format::B8G8R8A8; break;
-        case DX10_FORMAT_B8G8R8X8_UNORM:
-        case DX10_FORMAT_B8G8R8X8_UNORM_SRGB: format = Format::B8G8R8X8; break;
-        case DX10_FORMAT_R16_FLOAT: format = Format::R16_FLOAT; break;
-        case DX10_FORMAT_R16G16_FLOAT: format = Format::R16G16_FLOAT; break;
-        case DX10_FORMAT_R16G16B16A16_FLOAT: format = Format::R16G16B16A16_FLOAT; break;
-        case DX10_FORMAT_R32_FLOAT: format = Format::R32_FLOAT; break;
-        case DX10_FORMAT_R32_SINT: format = Format::R32_SINT; break;
-        case DX10_FORMAT_R32_UINT: format = Format::R32_UINT; break;
-        case DX10_FORMAT_R32G32_FLOAT: format = Format::R32G32_FLOAT; break;
-        case DX10_FORMAT_R32G32_UINT: format = Format::R32G32_UINT; break;
-        case DX10_FORMAT_R32G32_SINT: format = Format::R32G32_SINT; break;
-        case DX10_FORMAT_R32G32B32_FLOAT: format = Format::R32G32B32_FLOAT; break;
-        case DX10_FORMAT_R32G32B32_UINT: format = Format::R32G32B32_UINT; break;
-        case DX10_FORMAT_R32G32B32_SINT: format = Format::R32G32B32_SINT; break;
-        case DX10_FORMAT_R32G32B32A32_FLOAT: format = Format::R32G32B32A32_FLOAT; break;
-        case DX10_FORMAT_R32G32B32A32_UINT: format = Format::R32G32B32A32_UINT; break;
-        case DX10_FORMAT_R32G32B32A32_SINT: format = Format::R32G32B32A32_SINT; break;
-        case DX10_FORMAT_R9G9B9E5_SHAREDEXP: format = Format::R9G9B9E5_FLOAT; break;
-        case DX10_FORMAT_R11G11B10_FLOAT: format = Format::R11G11B10_FLOAT; break;
-        case DX10_FORMAT_R10G10B10A2_UNORM: format = Format::R10G10B10A2; break;
-        case DX10_FORMAT_BC1_UNORM:
-        case DX10_FORMAT_BC1_UNORM_SRGB: format = Format::DXT1; break;
-        case DX10_FORMAT_BC2_UNORM:
-        case DX10_FORMAT_BC2_UNORM_SRGB: format = Format::DXT3; break;
-        case DX10_FORMAT_BC3_UNORM:
-        case DX10_FORMAT_BC3_UNORM_SRGB: format = Format::DXT5; break;
-        case DX10_FORMAT_BC4_UNORM: format = Format::DXN1; break;
-        case DX10_FORMAT_BC5_UNORM: format = Format::DXN2; break;
-        default:
-            BE_WARNLOG("Image::LoadDDSFromMemory: Unsupported pixel format %s\n", name);
-            return false;
-        }
-
-        if (dx10Header->dxgiFormat == DX10_FORMAT_R8G8B8A8_UNORM_SRGB ||
-            dx10Header->dxgiFormat == DX10_FORMAT_B8G8R8A8_UNORM_SRGB ||
-            dx10Header->dxgiFormat == DX10_FORMAT_B8G8R8X8_UNORM_SRGB ||
-            dx10Header->dxgiFormat == DX10_FORMAT_BC1_UNORM_SRGB ||
-            dx10Header->dxgiFormat == DX10_FORMAT_BC2_UNORM_SRGB ||
-            dx10Header->dxgiFormat == DX10_FORMAT_BC3_UNORM_SRGB) {
-            gammaSpace = Image::GammaSpace::sRGB;
-        } else if (
-            dx10Header->dxgiFormat == DX10_FORMAT_R8_UNORM ||
-            dx10Header->dxgiFormat == DX10_FORMAT_R8G8_UNORM ||
-            dx10Header->dxgiFormat == DX10_FORMAT_R8G8B8A8_UNORM ||
-            dx10Header->dxgiFormat == DX10_FORMAT_B8G8R8A8_UNORM ||
-            dx10Header->dxgiFormat == DX10_FORMAT_B8G8R8X8_UNORM ||
-            dx10Header->dxgiFormat == DX10_FORMAT_BC1_UNORM ||
-            dx10Header->dxgiFormat == DX10_FORMAT_BC2_UNORM ||
-            dx10Header->dxgiFormat == DX10_FORMAT_BC3_UNORM) {
-            gammaSpace = Image::GammaSpace::Linear;
-        }
+        ParseDX10Format(*dx10Header, format, gammaSpace);
     } else {
-        switch (header->ddsPixelFormat.fourCC) {
-        case 0:
-            switch (header->ddsPixelFormat.RGBBitCount >> 3) {
-            case 4:
-                if (header->ddsPixelFormat.ABitMask == 0x000000ff) {
-                    if (header->ddsPixelFormat.RBitMask == 0xff000000) {
-                        this->format = Format::A8B8G8R8;
-                    } else {
-                        this->format = Format::A8R8G8B8;
-                    }
-                } else if (header->ddsPixelFormat.ABitMask == 0xff00000) {
-                    if (header->ddsPixelFormat.RBitMask == 0x00ff0000) {
-                        this->format = Format::B8G8R8A8;
-                    } else {
-                        this->format = Format::R8G8B8A8;
-                    }
-                } else {
-                    if (header->ddsPixelFormat.RBitMask == 0x00ff0000) {
-                        this->format = Format::B8G8R8X8;
-                    } else {
-                        this->format = Format::R8G8B8X8;
-                    }
-                }
-                break;
-            case 3:
-                if (header->ddsPixelFormat.RBitMask == 0x00ff0000) {
-                    this->format = Format::B8G8R8;
-                } else {
-                    this->format = Format::R8G8B8;
-                }
-                break;
-            case 2:
-                if (header->ddsPixelFormat.ABitMask == 0x0000000f) {
-                    if (header->ddsPixelFormat.RBitMask == 0x0000f000) {
-                        this->format = Format::A4B4G4R4;
-                    } else {
-                        this->format = Format::A4R4G4B4;
-                    }
-                } else if (header->ddsPixelFormat.ABitMask == 0x0000f000) {
-                    if (header->ddsPixelFormat.RBitMask == 0x00000f00) {
-                        this->format = Format::B4G4R4A4;
-                    } else {
-                        this->format = Format::R4G4B4A4;
-                    }
-                } else if (header->ddsPixelFormat.ABitMask == 0x00008000) {
-                    if (header->ddsPixelFormat.RBitMask == 0x00007c00) {
-                        this->format = Format::B5G5R5A1;
-                    } else {
-                        this->format = Format::R5G5B5A1;
-                    }
-                } else if (header->ddsPixelFormat.ABitMask == 0x00000001) {
-                    if (header->ddsPixelFormat.RBitMask == 0x0000f800) {
-                        this->format = Format::A1B5G5R5;
-                    } else {
-                        this->format = Format::A1R5G5B5;
-                    }
-                } else if (header->ddsPixelFormat.ABitMask == 0x0000ff00) {
-                    this->format = Format::L8A8;
-                } else {
-                    if (header->ddsPixelFormat.GBitMask == 0x000000f0) {
-                        if (header->ddsPixelFormat.RBitMask == 0x00000f00) {
-                            this->format = Format::B4G4R4X4;
-                        } else {
-                            this->format = Format::R4G4B4X4;
-                        }
-                    } else if (header->ddsPixelFormat.GBitMask == 0x000003e0) {
-                        if (header->ddsPixelFormat.RBitMask == 0x00007c00) {
-                            this->format = Format::B5G5R5X1;
-                        } else {
-                            this->format = Format::R5G5B5X1;
-                        }
-                    } else if (header->ddsPixelFormat.GBitMask == 0x000007e0) {
-                        if (header->ddsPixelFormat.RBitMask == 0x0000f800) {
-                            this->format = Format::B5G6R5;
-                        } else {
-                            this->format = Format::R5G6B5;
-                        }
-                    } else {
-                        //this->format = Format::L_16;
-                        assert(0);
-                    }
-                }
-                break;
-            case 1:
-                if (header->ddsPixelFormat.ABitMask == 0x000000ff) {
-                    this->format = Format::A8;
-                } else {
-                    this->format = Format::L8;
-                }
-                break;
-            default:
-                BE_WARNLOG("Image::LoadDDSFromMemory: Unsupported pixel format %s\n", name);
-                return false;
-            }
-            break;
-        case DDS_FORMAT_R8G8B8:
-            this->format = Format::B8G8R8;
-            break;
-        case DDS_FORMAT_A8R8G8B8:
-            this->format = Format::B8G8R8A8;
-            break;
-        case DDS_FORMAT_A2B10G10R10:
-            this->format = Format::R10G10B10A2;
-            break;
-        case DDS_FORMAT_X8R8G8B8:
-            this->format = Format::B8G8R8X8;
-            break;
-        case DDS_FORMAT_R5G6B5:
-            this->format = Format::B5G6R5;
-            break;
-        case DDS_FORMAT_X1R5G5B5:
-            this->format = Format::B5G5R5X1;
-            break;
-        case DDS_FORMAT_A1R5G5B5:
-            this->format = Format::B5G5R5A1;
-            break;
-        case DDS_FORMAT_A4R4G4B4:
-            this->format = Format::B4G4R4A4;
-            break;
-        case DDS_FORMAT_X4R4G4B4:
-            this->format = Format::B4G4R4X4;
-            break;
-        case DDS_FORMAT_A8B8G8R8:
-            this->format = Format::R8G8B8A8;
-            break;
-        case DDS_FORMAT_X8B8G8R8:
-            this->format = Format::R8G8B8X8;
-            break;
-        case DDS_FORMAT_L8:
-            this->format = Format::L8;
-            break;
-        case DDS_FORMAT_A8:
-            this->format = Format::A8;
-            break;
-        case DDS_FORMAT_A8L8:
-            this->format = Format::L8A8;
-            break;
-        case DDS_FORMAT_R16F:
-            this->format = Format::R16_FLOAT;
-            break;
-        case DDS_FORMAT_G16R16F:
-            this->format = Format::R16G16_FLOAT;
-            break;
-        case DDS_FORMAT_A16B16G16R16F:
-            this->format = Format::R16G16B16A16_FLOAT;
-            break;
-        case DDS_FORMAT_R32F:
-            this->format = Format::R32_FLOAT;
-            break;
-        case DDS_FORMAT_G32R32F:
-            this->format = Format::R32G32_FLOAT;
-            break;
-        case DDS_FORMAT_A32B32G32R32F:
-            this->format = Format::R32G32B32A32_FLOAT;
-            break;
-        case DDS_FORMAT_DXT1:
-            this->format = Format::DXT1;
-            break;
-        case DDS_FORMAT_DXT3:
-            this->format = Format::DXT3;
-            break;
-        case DDS_FORMAT_DXT5:
-            if (header->ddsPixelFormat.RGBBitCount == MAKE_FOURCC('x', 'G', 'B', 'R')) {
-                this->format = Format::DXT5XGBR;
-            } else {
-                this->format = Format::DXT5;
-            }
-            break;
-        case MAKE_FOURCC('R', 'X', 'G', 'B'):   // doom3 RXGB
-            this->format = Format::DXT5XGBR;
-            break;
-        case MAKE_FOURCC('A', 'T', 'I', '1'):
-            this->format = Format::DXN1;
-            break;
-        case MAKE_FOURCC('A', 'T', 'I', '2'):   // ATI 3DTc
-            this->format = Format::DXN2;
-            break;
-        default:
-            BE_WARNLOG("Image::LoadDDSFromMemory: Unsupported pixel format %s\n", name);
-            return false;
+        ParseDDSFormat(*header, format);
+    }
+
+    if (format == Format::Unknown) {
+        BE_WARNLOG("Image::LoadDDSFromMemory: Unknown pixel format %s\n", name);
+        return false;
+    }
+
+    if (this->gammaSpace == Image::GammaSpace::DontCare) {
+        if (Image::NeedFloatConversion(format) || format == Format::DXN1 || format == Format::DXN2) {
+            this->gammaSpace = Image::GammaSpace::Linear;
+        } else {
+            this->gammaSpace = Image::GammaSpace::sRGB;
         }
     }
 
@@ -611,18 +634,10 @@ bool Image::LoadDDSFromMemory(const char *name, const byte *data, size_t size) {
 
     this->width = header->width;
     this->height = header->height;
-    this->depth = Max((int)header->depth, 1);
-    this->numMipLevels = Max((int)header->mipMapCount, 1);
+    this->depth = BE1::Max((int)header->depth, 1);
+    this->numMipLevels = BE1::Max((int)header->mipmapCount, 1);
     this->arraySize = ddsArraySize * (isCube ? 6 : 1);
     this->flags = isCube ? Flag::CubeMap : Flag::None;
-
-    if (this->gammaSpace == Image::GammaSpace::DontCare) {
-        if (NeedFloatConversion() || format == Format::DXN1 || format == Format::DXN2) {
-            this->gammaSpace = Image::GammaSpace::Linear;
-        } else {
-            this->gammaSpace = Image::GammaSpace::sRGB;
-        }
-    }
 
     int bufSize = SizeInBytes(0, numMipLevels);
     this->pic = (byte *)Mem_Alloc256(bufSize);
@@ -643,6 +658,188 @@ bool Image::LoadDDSFromMemory(const char *name, const byte *data, size_t size) {
         simdProcessor->Memcpy(this->pic, ptr, bufSize);
     }
 
+    return true;
+}
+
+static bool LoadDDSInfo(File *fp, DdsFileHeader &header, Image::Format &format, Image::GammaSpace &gammaSpace, int &arraySize) {
+    uint32_t fourcc;
+    fp->ReadUInt32(fourcc);
+    if (fourcc != DDS_MAGIC) {
+        BE_WARNLOG("LoadDDSInfo: bad DDS format %s\n", fp->GetFilename());
+        return false;
+    }
+
+    fp->Read(&header, sizeof(header));
+
+    constexpr int essentialFlags = DDSD_PIXELFORMAT | DDSD_WIDTH | DDSD_HEIGHT;
+
+    if (header.size != sizeof(DdsFileHeader) || (header.flags & essentialFlags) != essentialFlags) {
+        BE_WARNLOG("LoadDDSInfo: bad DDS format %s\n", fp->GetFilename());
+        return false;
+    }
+
+    gammaSpace = Image::GammaSpace::DontCare;
+
+    arraySize = 1;
+
+    if (header.ddsPixelFormat.fourCC == MAKE_FOURCC('D', 'X', '1', '0')) {
+        DdsFileHeaderDX10 dx10Header;
+        fp->Read(&dx10Header, sizeof(dx10Header));
+
+        // NOTE: arraySize is independent of the cubemap face count.
+        // each cubemap always has 6 faces. dx10Header->arraySize specifies the number of cubemaps in the array.
+        arraySize = dx10Header.arraySize;
+
+        ParseDX10Format(dx10Header, format, gammaSpace);
+    } else {
+        ParseDDSFormat(header, format);
+    }
+
+    if (format == Image::Format::Unknown) {
+        BE_WARNLOG("LoadDDSInfo: Unknown pixel format %s\n", fp->GetFilename());
+        return false;
+    }
+
+    if (gammaSpace == Image::GammaSpace::DontCare) {
+        if (Image::NeedFloatConversion(format) || format == Image::Format::DXN1 || format == Image::Format::DXN2) {
+            gammaSpace = Image::GammaSpace::Linear;
+        } else {
+            gammaSpace = Image::GammaSpace::sRGB;
+        }
+    }
+
+    return true;
+}
+
+bool Image::LoadDDSMipRange(File *fp, int headerWidth, int headerHeight, int headerDepth, int headerArraySize, int headerMipmapCount, bool isCubemap, int firstMip, int mipCount, MipRange *outInfo) {
+    // headerDepth 와 headerMipmapCount 는 0 일 수 있기 때문에 여기서 최소 1 로 변경해준다.
+    headerDepth = Max(1, headerDepth);
+    headerMipmapCount = Max(1, headerMipmapCount);
+
+    Clamp(firstMip, 0, headerMipmapCount - 1);
+    Clamp(mipCount, 1, headerMipmapCount - firstMip);
+
+    this->width = BE1::Max(1, headerWidth >> firstMip);
+    this->height = BE1::Max(1, headerHeight >> firstMip);
+    this->depth = BE1::Max(1, headerDepth >> firstMip);
+    this->numMipLevels = mipCount;
+    this->arraySize = headerArraySize * (isCubemap ? 6 : 1);
+    this->flags = isCubemap ? Flag::CubeMap : Flag::None;
+
+    int bufSize = SizeInBytes(0, numMipLevels);
+    this->pic = (byte *)Mem_Alloc256(bufSize);
+    this->alloced = true;
+
+    int seekStart = fp->Tell();
+    int seekOffset = Image::MemRequired(headerWidth, headerHeight, headerDepth, firstMip, arraySize, format);
+
+    // NOTE: fp 가 zip 으로 압축된 파일인 경우 Seek 을 사용할 수 없음에 주의
+    fp->Seek(seekStart + seekOffset);
+
+    // NOTE: DDS 는 mip-major order 로 저장되고, Image 는 slice-major order 로 저장된다.
+    for (int mipLevel = 0; mipLevel < numMipLevels; mipLevel++) {
+        int sliceSize = SizeInBytesForSlice(mipLevel);
+
+        for (int sliceIndex = 0; sliceIndex < arraySize; sliceIndex++) {
+            byte *dest = GetPixels(mipLevel, sliceIndex);
+            int readSize = fp->Read(dest, sliceSize);
+            if (readSize != sliceSize) {
+                Mem_AlignedFree(this->pic);
+                this->pic = nullptr;
+                this->alloced = false;
+                return false;
+            }
+        }
+    }
+
+    if (outInfo) {
+        outInfo->originalWidth = headerWidth;
+        outInfo->originalHeight = headerHeight;
+        outInfo->originalDepth = headerDepth;
+        outInfo->originalMipLevels = headerMipmapCount;
+        outInfo->firstMip = firstMip;
+        outInfo->mipCount = mipCount;
+    }
+    return true;
+}
+
+bool Image::LoadDDSMipRange(const char *filename, int firstMip, int mipCount, MipRange *outInfo) {
+    if (!filename || filename[0] == 0) {
+        return false;
+    }
+
+    File *fp = fileSystem.OpenFileRead(filename, false);
+    if (!fp) {
+        return false;
+    }
+
+    DdsFileHeader header;
+    int ddsArraySize;
+    if (!LoadDDSInfo(fp, header, format, gammaSpace, ddsArraySize)) {
+        fileSystem.CloseFile(fp);
+        return false;
+    }
+
+    bool isCubemap = (header.ddsCaps.caps2 & DDSCAPS2_CUBEMAP) ? true : false;
+
+    if (!LoadDDSMipRange(fp, header.width, header.height, header.depth, ddsArraySize, header.mipmapCount, isCubemap, firstMip, mipCount, outInfo)) {
+        fileSystem.CloseFile(fp);
+        return false;
+    }
+
+    fileSystem.CloseFile(fp);
+    return true;
+}
+
+// Returns the first mip level whose largest dimension is less than or equal to maxDimension.
+int Image::ComputeFirstMipForMaxDimension(int width, int height, int depth, int numMipLevels, int maxDimension) {
+    if (maxDimension <= 0) {
+        return 0;
+    }
+
+    for (int mipLevel = 0; mipLevel < numMipLevels; ++mipLevel) {
+        int mipWidth = BE1::Max(1, width >> mipLevel);
+        int mipHeight = BE1::Max(1, height >> mipLevel);
+        int mipDepth = BE1::Max(1, depth >> mipLevel);
+
+        int mipMaxDimension = BE1::Max(mipWidth, BE1::Max(mipHeight, mipDepth));
+        if (mipMaxDimension <= maxDimension) {
+            return mipLevel;
+        }
+    }
+
+    return BE1::Max(0, numMipLevels - 1);
+}
+
+bool Image::LoadDDSMipRangeForMaxDimension(const char *filename, int maxDimension, MipRange *outInfo) {
+    if (!filename || filename[0] == 0) {
+        return false;
+    }
+
+    size_t fileSize;
+    File *fp = fileSystem.OpenFileRead(filename, false, &fileSize);
+    if (!fp) {
+        return false;
+    }
+
+    DdsFileHeader header;
+    int ddsArraySize;
+    if (!LoadDDSInfo(fp, header, format, gammaSpace, ddsArraySize)) {
+        fileSystem.CloseFile(fp);
+        return false;
+    }
+
+    bool isCubemap = (header.ddsCaps.caps2 & DDSCAPS2_CUBEMAP) ? true : false;
+
+    int firstMip = Image::ComputeFirstMipForMaxDimension(header.width, header.height, header.depth, header.mipmapCount, maxDimension);
+    int mipCount = header.mipmapCount - firstMip;
+
+    if (!LoadDDSMipRange(fp, header.width, header.height, header.depth, ddsArraySize, header.mipmapCount, isCubemap, firstMip, mipCount, outInfo)) {
+        fileSystem.CloseFile(fp);
+        return false;
+    }
+
+    fileSystem.CloseFile(fp);
     return true;
 }
 
@@ -667,7 +864,7 @@ bool Image::WriteDDS(const char *filename) const {
     if (numMipLevels > 1) {
         header.flags |= DDSD_MIPMAPCOUNT;
         header.ddsCaps.caps1 |= DDSCAPS_MIPMAP | DDSCAPS_COMPLEX;
-        header.mipMapCount = numMipLevels;
+        header.mipmapCount = numMipLevels;
     }
 
     if (depth > 1) {

@@ -128,17 +128,14 @@ RHI::Texture *D3D12Renderer::CreateTexture(RHI::TextureType textureType, RHI::Te
         resourceFlags |= D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS;
     }
 
-    int maxSrcMipLevels;
-    int maxDstMipLevels;
+    int maxDstMipLevels = 0;
 
     if (allocateEmptyMipmaps) {
         // srcImage 의 mipmap level 0 만 사용하고, 나머지 서브 mipmap levels 는 빈 공간으로 채운다.
-        maxSrcMipLevels = 1;
         maxDstMipLevels = BE1::Image::MaxMipLevels(srcImage->GetWidth(), srcImage->GetHeight(), srcImage->GetDepth());
     } else {
         // srcImage 의 모든 mipmap levels 를 사용한다.
-        maxSrcMipLevels = srcImage->NumMipmaps();
-        maxDstMipLevels = maxSrcMipLevels;
+        maxDstMipLevels = srcImage->NumMipmaps();
     }
 
     D3D12_RESOURCE_DESC textureDesc = {};
@@ -256,12 +253,49 @@ RHI::Texture *D3D12Renderer::CreateTexture(RHI::TextureType textureType, RHI::Te
         request.object = texture;
         request.uploadTextureRequest.srcImage = srcImage;
         request.uploadTextureRequest.resourceDesc = textureDesc;
-        request.uploadTextureRequest.initialState = d3d12InitialState;
-        request.uploadTextureRequest.allocateEmptyMipmaps = allocateEmptyMipmaps;
+        request.uploadTextureRequest.dstFirstMip = 0;
+        // allocateEmptyMipmaps == true 라면, srcImage 의 mipmap level 0 만 사용하고, 나머지 서브 mipmap levels 는 빈 공간으로 채운다.
+        request.uploadTextureRequest.mipCount = allocateEmptyMipmaps ? 1 : srcImage->NumMipmaps();
         EnqueueResourceRequest(std::move(request));
     }
 
     return texture;
+}
+
+bool D3D12Renderer::UploadTextureMipRange(RHI::Texture *texture, std::shared_ptr<const BE1::Image> srcImage, int firstMip) {
+    assert(texture);
+    const D3D12Texture *_texture = static_cast<D3D12Texture *>(texture);
+
+    if (!srcImage) {
+        BE_ERRLOG("D3D12Renderer::UploadTextureMipRange: srcImage is null\n");
+        return false;
+    }
+
+    if (srcImage->IsEmpty()) {
+        BE_ERRLOG("D3D12Renderer::UploadTextureMipRange: srcImage is empty\n");
+        return false;
+    }
+
+    if (firstMip < 0 || firstMip + srcImage->NumMipmaps() > _texture->textureDesc.MipLevels) {
+        BE_ERRLOG("D3D12Renderer::UploadTextureMipRange: invalid mip range\n");
+        return false;
+    }
+
+    UINT dstArraySize = _texture->textureDesc.Dimension == D3D12_RESOURCE_DIMENSION_TEXTURE3D ? 1 : _texture->textureDesc.DepthOrArraySize;
+    if (srcImage->GetArraySize() != dstArraySize) {
+        BE_ERRLOG("D3D12Renderer::UploadTextureMipRange: source array size mismatch\n");
+        return false;
+    }
+
+    D3D12ResourceRequest request;
+    request.type = D3D12ResourceRequest::Type::UploadTexture;
+    request.object = texture;
+    request.uploadTextureRequest.srcImage = srcImage;
+    request.uploadTextureRequest.resourceDesc = _texture->textureDesc;
+    request.uploadTextureRequest.dstFirstMip = firstMip;
+    request.uploadTextureRequest.mipCount = srcImage->NumMipmaps();
+    EnqueueResourceRequest(std::move(request));
+    return true;
 }
 
 bool D3D12Renderer::ExecuteUploadTexture(D3D12ResourceCommandContext &commandContext, D3D12Texture *texture, const D3D12UploadTextureRequest &request) {
@@ -280,9 +314,9 @@ bool D3D12Renderer::ExecuteUploadTexture(D3D12ResourceCommandContext &commandCon
         // 텍스쳐의 전체 사이즈와 서브 리소스 별 메모리 정보를 얻어온다.
         device->GetCopyableFootprints(&request.resourceDesc, 0, numSubresources, 0, subresourceFootprints, nullptr, nullptr, &size);
 
-        // NOTE: size 는 srcMipLevels 가 아닌 dstMipLevels 기준으로 계산된 값이다.
+        // NOTE: size 는 텍스쳐 전체를 기준으로 계산된 값이다.
         // 만약 allocateEmptyMipmaps 가 true 라면, srcImage 의 mipmap level 0 만 사용하기 때문에 업로드 버퍼가 실제로 필요한 데이터보다 더 큰 사이즈가 될 수 있다.
-        // 약간의 낭비는 있으나 문제가 되지는 않는다.
+        // 업로드 버퍼 할당에 약간의 낭비는 있으나 필요한 부분만 사용할 것이므로 문제가 되지는 않는다.
         D3D12_RESOURCE_DESC uploadBufferDesc;
         uploadBufferDesc.Dimension = D3D12_RESOURCE_DIMENSION_BUFFER;
         uploadBufferDesc.Alignment = 0;
@@ -317,30 +351,22 @@ bool D3D12Renderer::ExecuteUploadTexture(D3D12ResourceCommandContext &commandCon
         // bpp means bytes per pixel or bytes per block for compressed formats
         int bpp = request.srcImage->IsCompressed() ? request.srcImage->BytesPerBlock() : request.srcImage->BytesPerPixel();
         int numSlices = request.srcImage->GetArraySize();
-        int maxSrcMipLevels;
-
-        if (request.allocateEmptyMipmaps) {
-            // srcImage 의 mipmap level 0 만 사용하고, 나머지 서브 mipmap levels 는 빈 공간으로 채운다.
-            maxSrcMipLevels = 1;
-        } else {
-            // srcImage 의 모든 mipmap levels 를 사용한다.
-            maxSrcMipLevels = request.srcImage->NumMipmaps();
-        }
 
         // 이미지 데이터를 업로드 버퍼에 write
         UINT8 *mappedPtr = nullptr;
         uploadBuffer->Map(0, nullptr, reinterpret_cast<void **>(&mappedPtr));
 
         for (int sliceIndex = 0; sliceIndex < numSlices; ++sliceIndex) {
-            for (int mipLevel = 0; mipLevel < maxSrcMipLevels; ++mipLevel) {
-                int srcWidth = request.srcImage->GetWidth(mipLevel);
-                int srcHeight = request.srcImage->GetHeight(mipLevel);
-                int srcDepth = request.srcImage->GetDepth(mipLevel);
+            for (int srcMipLevel = 0; srcMipLevel < request.mipCount; ++srcMipLevel) {
+                int srcWidth = request.srcImage->GetWidth(srcMipLevel);
+                int srcHeight = request.srcImage->GetHeight(srcMipLevel);
+                int srcDepth = request.srcImage->GetDepth(srcMipLevel);
                 int srcPitch = bpp * (request.srcImage->IsCompressed() ? ((srcWidth + 3) / 4) : srcWidth);
                 int srcRows = request.srcImage->IsCompressed() ? ((srcHeight + 3) / 4) : srcHeight;
-                const byte *srcPtr = request.srcImage->GetPixels(mipLevel, sliceIndex);
+                const byte *srcPtr = request.srcImage->GetPixels(srcMipLevel, sliceIndex);
 
-                UINT subresourceIndex = D3D12CalcSubresource(mipLevel, sliceIndex, 0, request.resourceDesc.MipLevels, arraySize);
+                int dstMipLevel = request.dstFirstMip + srcMipLevel;
+                UINT subresourceIndex = D3D12CalcSubresource(dstMipLevel, sliceIndex, 0, request.resourceDesc.MipLevels, arraySize);
                 const D3D12_PLACED_SUBRESOURCE_FOOTPRINT &footprint = subresourceFootprints[subresourceIndex];
                 byte *dstPtr = mappedPtr + footprint.Offset;
 
@@ -359,11 +385,13 @@ bool D3D12Renderer::ExecuteUploadTexture(D3D12ResourceCommandContext &commandCon
 
         // 업로드 버퍼에서 디바이스 텍스쳐 (VRAM) 로 GPU 에 복사 요청
         D3D12CommandList *commandList = commandContext.GetGraphicsCommandList();
-        commandList->ResourceBarrier(textureResource, request.initialState, D3D12_RESOURCE_STATE_COPY_DEST);
+        commandList->ResourceBarrier(textureResource, ToD3D12ResourceState(texture->currentState), D3D12_RESOURCE_STATE_COPY_DEST);
 
         for (int sliceIndex = 0; sliceIndex < numSlices; ++sliceIndex) {
-            for (int mipLevel = 0; mipLevel < maxSrcMipLevels; ++mipLevel) {
-                UINT subresourceIndex = D3D12CalcSubresource(mipLevel, sliceIndex, 0, request.resourceDesc.MipLevels, arraySize);
+            for (int srcMipLevel = 0; srcMipLevel < request.mipCount; ++srcMipLevel) {
+                int dstMipLevel = request.dstFirstMip + srcMipLevel;
+
+                UINT subresourceIndex = D3D12CalcSubresource(dstMipLevel, sliceIndex, 0, request.resourceDesc.MipLevels, arraySize);
 
                 D3D12_TEXTURE_COPY_LOCATION srcLocation = {};
                 srcLocation.pResource = uploadBuffer;
@@ -379,7 +407,7 @@ bool D3D12Renderer::ExecuteUploadTexture(D3D12ResourceCommandContext &commandCon
             }
         }
 
-        commandList->ResourceBarrier(textureResource, D3D12_RESOURCE_STATE_COPY_DEST, request.initialState);
+        commandList->ResourceBarrier(textureResource, D3D12_RESOURCE_STATE_COPY_DEST, ToD3D12ResourceState(texture->currentState));
 
         if (uploadBuffer) {
             RequestRelease(uploadBuffer);
@@ -963,6 +991,78 @@ RHI::ViewID D3D12Renderer::CreateDSV(D3D12Texture *texture, RHI::Format typeless
     }
     viewID.value = texture->dsvEntries.Append(newDsvEntry);
     return viewID;
+}
+
+bool D3D12Renderer::UpdateTextureViewMipRange(RHI::Texture *texture, RHI::ViewID viewID, uint32_t mostDetailedMip, uint32_t mipLevels) {
+    D3D12Texture *_texture = static_cast<D3D12Texture *>(texture);
+    assert(_texture);
+
+    if (!_texture->srvEntries.IsValidIndex(viewID.value)) {
+        return false;
+    }
+
+    if (mostDetailedMip >= _texture->textureDesc.MipLevels || mipLevels == 0) {
+        return false;
+    }
+
+    D3D12SRVEntry &entry = _texture->srvEntries[viewID.value];
+    if (entry.cpuDescriptorHandle.ptr == 0) {
+        return false;
+    }
+
+    D3D12ResourceRequest request;
+    request.type = D3D12ResourceRequest::Type::UpdateTextureViewMipRange;
+    request.object = texture;
+    request.updateTextureViewMipRangeRequest.viewID = viewID;
+    request.updateTextureViewMipRangeRequest.firstMip = mostDetailedMip;
+    request.updateTextureViewMipRangeRequest.mipCount = mipLevels;
+    EnqueueResourceRequest(std::move(request));
+    return true;
+}
+
+bool D3D12Renderer::ExecuteUpdateTextureViewMipRange(D3D12ResourceCommandContext &commandContext, D3D12Texture *texture, const D3D12UpdateTextureViewMipRangeRequest &request) {
+    D3D12SRVEntry &entry = texture->srvEntries[request.viewID.value];
+    if (entry.cpuDescriptorHandle.ptr == 0) {
+        return false;
+    }
+
+    uint32_t clampedMipLevels = BE1::Min(request.mipCount, texture->textureDesc.MipLevels - request.firstMip);
+
+    switch (entry.viewDesc.ViewDimension) {
+    case D3D12_SRV_DIMENSION_TEXTURE1D:
+        entry.viewDesc.Texture1D.MostDetailedMip = request.firstMip;
+        entry.viewDesc.Texture1D.MipLevels = clampedMipLevels;
+        break;
+    case D3D12_SRV_DIMENSION_TEXTURE1DARRAY:
+        entry.viewDesc.Texture1DArray.MostDetailedMip = request.firstMip;
+        entry.viewDesc.Texture1DArray.MipLevels = clampedMipLevels;
+        break;
+    case D3D12_SRV_DIMENSION_TEXTURE2D:
+        entry.viewDesc.Texture2D.MostDetailedMip = request.firstMip;
+        entry.viewDesc.Texture2D.MipLevels = clampedMipLevels;
+        break;
+    case D3D12_SRV_DIMENSION_TEXTURE2DARRAY:
+        entry.viewDesc.Texture2DArray.MostDetailedMip = request.firstMip;
+        entry.viewDesc.Texture2DArray.MipLevels = clampedMipLevels;
+        break;
+    case D3D12_SRV_DIMENSION_TEXTURECUBE:
+        entry.viewDesc.TextureCube.MostDetailedMip = request.firstMip;
+        entry.viewDesc.TextureCube.MipLevels = clampedMipLevels;
+        break;
+    case D3D12_SRV_DIMENSION_TEXTURECUBEARRAY:
+        entry.viewDesc.TextureCubeArray.MostDetailedMip = request.firstMip;
+        entry.viewDesc.TextureCubeArray.MipLevels = clampedMipLevels;
+        break;
+    case D3D12_SRV_DIMENSION_TEXTURE3D:
+        entry.viewDesc.Texture3D.MostDetailedMip = request.firstMip;
+        entry.viewDesc.Texture3D.MipLevels = clampedMipLevels;
+        break;
+    default:
+        return false;
+    }
+
+    device->CreateShaderResourceView(texture->GetResource(), &entry.viewDesc, entry.cpuDescriptorHandle);
+    return true;
 }
 
 bool D3D12Renderer::GetTextureImage(RHI::Texture *texture, int mipLevel, int sliceIndex, BE1::Image::Format dstFormat, void *outPixels) {

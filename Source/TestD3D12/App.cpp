@@ -71,7 +71,9 @@ void App::Shutdown() {
 void App::RunFrame(int frameMsec) {
     PROFILER_CPU_SCOPED_EVENT("App::RunFrame");
 
-    loadingSystem.ProcessCompletions();
+    loadingSystem.ProcessLoadCompletions();
+
+    textureManager.UpdateStreamingTextures(frameMsec);
 
     static int fpsElapsedMsec = 0;
     static int fpsFrames = 0;
@@ -141,22 +143,21 @@ void App::OnResize(int width, int height) {
 }
 
 void App::InitGameObjects() {
-    // 2048x2048 텍스쳐 파일들
+    // 텍스쳐 파일들
     BE1::Str textureFilenames[] = {
-        "Data/Textures/bamboo_block.png",
-        "Data/Textures/bedrock.png",
-        "Data/Textures/bricks.png",
-        "Data/Textures/copper_block.png",
-        "Data/Textures/granite.png",
-        "Data/Textures/ice.png",
-        "Data/Textures/mossy_stone_bricks.png",
-        "Data/Textures/raw_iron_block.png",
-        "Data/Textures/sand.png",
-        "Data/Textures/smooth_stone_slab_side.png",
-        "Data/Textures/sponge.png",
-        "Data/Textures/spruce_planks.png",
-        "Data/Textures/stone.png",
-        "Data/Textures/wool.png"
+        "Data/Textures/Brick_Wall_Worn.dds",
+        "Data/Textures/Construction_Gravel.dds",
+        "Data/Textures/Dry_Cracked_Mud.dds",
+        "Data/Textures/Flagstone_Wall.dds",
+        "Data/Textures/Lawn_Grass.dds",
+        "Data/Textures/Roman_Stone_Floor.dds",
+        "Data/Textures/Stone_Floor.dds",
+        "Data/Textures/Stone_Tiles_Facade.dds",
+        "Data/Textures/Arid_Gravel_Ground.dds",
+        "Data/Textures/yd0kejgga.dds",
+        "Data/Textures/T_sc2nbisc.dds",
+        "Data/Textures/Gouged_Rock_Cliff.dds",
+        "Data/Textures/Scratched_Polypropylene_Plastic.dds"
     };
 
     gameObjects.Reserve(CubeCount);
@@ -171,7 +172,7 @@ void App::InitGameObjects() {
         desc.mesh = meshManager.GetMesh("_defaultBoxMesh");
         desc.aabb = desc.mesh->GetAABB();
         desc.textures.SetCount(1);
-        desc.textures[0] = textureManager.GetTexture(textureFilenames[BE1::Math::RandomRange(0, COUNT_OF(textureFilenames) - 1)], Texture::Flag::None);
+        desc.textures[0] = textureManager.GetTexture(textureFilenames[BE1::Math::RandomRange(0, COUNT_OF(textureFilenames) - 1)], Texture::Flag::Streaming);
 
         gameObject->renderObjectHandle = renderWorld->AddRenderObject(gameObject->renderObjectDesc);
     }
@@ -228,13 +229,8 @@ void App::UpdateCubes() {
 
             float t = elapsedSeconds + index * 0.1f;
 
-            float s, c;
-            BE1::Math::SinCos(t * 5, s, c);
-            s *= 0.25f;
-            c *= 0.25f;
-
             GameObject *gameObject = gameObjects[index];
-            gameObject->renderObjectDesc.worldMatrix.SetTRS(BE1::Vec3(0, CubeStartX + CubeSpacing * x, CubeStartY + CubeSpacing * y), BE1::Mat3::FromRotationZYX(t * 1.0f, 0, t * 0.25f), BE1::Vec3(1.0f + c, 1.0f + s, 1.0f + c));
+            gameObject->renderObjectDesc.worldMatrix.SetTranslationRotation(BE1::Vec3(0, CubeStartX + CubeSpacing * x, CubeStartY + CubeSpacing * y), BE1::Mat3::FromRotationZYX(t * 1.0f, 0, t * 0.25f), false);
 
             renderWorld->UpdateRenderObject(gameObject->renderObjectHandle, gameObject->renderObjectDesc);
         }

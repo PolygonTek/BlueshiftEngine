@@ -166,7 +166,6 @@ RHI::Buffer *D3D12Renderer::CreateBuffer(RHI::BufferUsage usage, RHI::BufferFlag
         request.uploadBufferRequest.dataSize = size;
         request.uploadBufferRequest.heapType = heapType;
         request.uploadBufferRequest.resourceDesc = bufferDesc;
-        request.uploadBufferRequest.initialState = initialState;
         EnqueueResourceRequest(std::move(request));
     }
 

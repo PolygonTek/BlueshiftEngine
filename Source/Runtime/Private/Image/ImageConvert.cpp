@@ -275,7 +275,7 @@ bool Image::ConvertFormat(Format dstFormat, Image &dstImage, GammaSpace dstGamma
         srcImage = &unpackedSrcImage;
     }
 
-    // If the destination format is compressed, we need to convert source image to RGBA_8_8_8_8 or RGBA_32F_32F_32F_32F first.
+    // If the destination format is compressed, we need to convert source image to R8G8B8A8 or R32G32B32A32_FLOAT first.
     if (Image::IsCompressed(dstFormat)) {
         Image tempImage;
 
