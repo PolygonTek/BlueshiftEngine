@@ -371,6 +371,8 @@ unsigned int RenderContext::RenderThreadProc(void *param) {
         // 리소스 요청 처리
         RHI::renderer->ProcessResourceRequests(backendFrameData->GetThreadData(0));
 
+        
+
         // 현재 백엔드 프레임 데이터로 렌더링 백엔드를 실행한다.
         renderSystem->GetBackend()->Execute(backendFrameData);
 
@@ -444,22 +446,24 @@ void RenderContext::EndFrame() {
     }
 }
 
-void RenderContext::DrawPic(float x, float y, float w, float h, const Texture *texture) {
+void RenderContext::DrawPic(float x, float y, float w, float h, const std::shared_ptr<Texture> &texture) {
     RenderFrameData *frameData = GetCurrentFrontendFrameData();
 
-    guiMesh.DrawPic(frameData->GetThreadData(0), x, y, w, h, 0.0f, 0.0f, 1.0f, 1.0f, currentColor.ToUInt32(), texture);
+    frameData->RetainTexture(texture);
+    guiMesh.DrawPic(frameData->GetThreadData(0), x, y, w, h, 0.0f, 0.0f, 1.0f, 1.0f, currentColor.ToUInt32(), texture ? texture.get() : nullptr);
 }
 
-void RenderContext::DrawStretchPic(float x, float y, float w, float h, float s1, float t1, float s2, float t2, const Texture *texture) {
+void RenderContext::DrawStretchPic(float x, float y, float w, float h, float s1, float t1, float s2, float t2, const std::shared_ptr<Texture> &texture) {
     RenderFrameData *frameData = GetCurrentFrontendFrameData();
 
-    guiMesh.DrawPic(frameData->GetThreadData(0), x, y, w, h, s1, t1, s2, t2, currentColor.ToUInt32(), texture);
+    frameData->RetainTexture(texture);
+    guiMesh.DrawPic(frameData->GetThreadData(0), x, y, w, h, s1, t1, s2, t2, currentColor.ToUInt32(), texture ? texture.get() : nullptr);
 }
 
 void RenderContext::DrawBar(float x, float y, float w, float h) {
     RenderFrameData *frameData = GetCurrentFrontendFrameData();
 
-    guiMesh.DrawPic(frameData->GetThreadData(0), x, y, w, h, 0.0f, 0.0f, 1.0f, 1.0f, currentColor.ToUInt32(), textureManager.whiteTexture);
+    guiMesh.DrawPic(frameData->GetThreadData(0), x, y, w, h, 0.0f, 0.0f, 1.0f, 1.0f, currentColor.ToUInt32(), textureManager.whiteTexture.get());
 }
 
 void RenderContext::DrawRect(float x, float y, float w, float h) {
@@ -482,7 +486,7 @@ void RenderContext::SetColor(const BE1::Color4 &color) {
     currentColor = color;
 }
 
-void RenderContext::SetFont(Font *font) {
+void RenderContext::SetFont(std::shared_ptr<Font> font) {
     if (!font) {
         currentFont = fontManager.defaultFont;
         return;
@@ -515,7 +519,9 @@ void RenderContext::DrawText(const BE1::Rect &rect, float x, float y, const char
     char *frameTextPtr = (char *)frameData->MemAlloc(size);
     BE1::Str::Copynz(frameTextPtr, text, size);
 
-    guiMesh.DrawText2D(frameData->GetThreadData(0), rect, x, y, currentTextLineSpacing, currentTextScale, currentColor.ToUInt32(), currentTextShadowColor.ToUInt32(), currentTextShadowOffset, currentFont, frameTextPtr, flags);
+    frameData->RetainFont(currentFont);
+
+    guiMesh.DrawText2D(frameData->GetThreadData(0), rect, x, y, currentTextLineSpacing, currentTextScale, currentColor.ToUInt32(), currentTextShadowColor.ToUInt32(), currentTextShadowOffset, currentFont.get(), frameTextPtr, flags);
 }
 
 void RenderContext::DrawString(float x, float y, const BE1::Str &string, DrawTextFlag flags) {

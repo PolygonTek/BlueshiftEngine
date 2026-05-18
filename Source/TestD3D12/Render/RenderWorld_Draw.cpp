@@ -24,9 +24,12 @@ void RenderWorld::AddDrawSurf(RenderFrameData *frameData, VisCamera *visCamera, 
         return;
     }
 
+    assert(texture);
+
     DrawSurf *drawSurf = (DrawSurf *)frameData->ClearedMemAlloc(sizeof(DrawSurf));
     drawSurf->space = visObject;
     drawSurf->texture = texture;
+    drawSurf->rhiTexture = texture->GetRHITexture();
     drawSurf->subMesh = subMesh;
     drawSurf->flags = flags;
 
@@ -134,14 +137,17 @@ VisObject *RenderWorld::RegisterVisObject(RenderFrameData *frameData, const Rend
     renderObject->viewCount = viewCount;
 
     if (renderObject->desc.mesh) {
-        visObject->mesh = renderObject->desc.mesh->AddRefCount();
+        frameData->RetainMesh(renderObject->desc.mesh);
+        visObject->mesh = renderObject->desc.mesh.get();
     }
     visObject->numTextures = renderObject->desc.textures.Count();
     for (int i = 0; i < visObject->numTextures; ++i) {
-        visObject->textures[i] = renderObject->desc.textures[i]->AddRefCount();
+        frameData->RetainTexture(renderObject->desc.textures[i]);
+        visObject->textures[i] = renderObject->desc.textures[i].get();
     }
     if (renderObject->desc.font) {
-        visObject->font = renderObject->desc.font->AddRefCount();
+        frameData->RetainFont(renderObject->desc.font);
+        visObject->font = renderObject->desc.font.get();
     }
     if (!renderObject->desc.text.IsEmpty()) {
         int size = renderObject->desc.text.Length() + 1;
@@ -244,6 +250,9 @@ void RenderWorld::AddStaticMeshes(RenderFrameData *frameData, const RenderCamera
 #else
     for (int i = 0; i < frameData->NumVisObjects(); ++i) {
         VisObject *visObject = frameData->GetVisObjects() + i;
+        if (!visObject->mesh) {
+            continue;
+        }
 
         for (int meshSurfIndex = 0; meshSurfIndex < visObject->mesh->NumSurfaces(); ++meshSurfIndex) {
             const Mesh::Surface *meshSurf = visObject->mesh->GetSurface(meshSurfIndex);

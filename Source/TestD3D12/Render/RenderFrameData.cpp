@@ -50,6 +50,12 @@ void RenderFrameData::Shutdown() {
 
     FreeVisCameras();
 
+    ClearRetainedTextures();
+
+    ClearRetainedMeshes();
+
+    ClearRetainedFonts();
+
     ClearMemBlocks();
 }
 
@@ -87,6 +93,12 @@ void RenderFrameData::BeginFrameMemAllocs() {
     FreeVisCameras();
 
     FreeVisObjects();
+
+    ClearRetainedTextures();
+
+    ClearRetainedMeshes();
+
+    ClearRetainedFonts();
 
     // Reset the mem allocation to the first block.
     currentBlock = headBlock;
@@ -173,6 +185,72 @@ void RenderFrameData::FreeVisObjects() {
 
     visObjects = nullptr;
     numVisObjects = 0;
+}
+
+void RenderFrameData::ClearRetainedTextures() {
+    for (int i = 0; i < retainedTextures.Count(); ++i) {
+        retainedTextures[i].reset();
+    }
+    retainedTextures.SetCount(0, false);
+}
+
+void RenderFrameData::ClearRetainedMeshes() {
+    for (int i = 0; i < retainedMeshes.Count(); ++i) {
+        retainedMeshes[i].reset();
+    }
+    retainedMeshes.SetCount(0, false);
+}
+
+void RenderFrameData::ClearRetainedFonts() {
+    for (int i = 0; i < retainedFonts.Count(); ++i) {
+        retainedFonts[i].reset();
+    }
+    retainedFonts.SetCount(0, false);
+}
+
+void RenderFrameData::RetainTexture(const std::shared_ptr<Texture> &texture) {
+    if (!texture) {
+        return;
+    }
+
+    Texture *texturePtr = texture.get();
+    for (int i = 0; i < retainedTextures.Count(); ++i) {
+        if (retainedTextures[i].get() == texturePtr) {
+            return;
+        }
+    }
+
+    retainedTextures.Append(texture);
+}
+
+void RenderFrameData::RetainMesh(const std::shared_ptr<Mesh> &mesh) {
+    if (!mesh) {
+        return;
+    }
+
+    Mesh *meshPtr = mesh.get();
+    for (int i = 0; i < retainedMeshes.Count(); ++i) {
+        if (retainedMeshes[i].get() == meshPtr) {
+            return;
+        }
+    }
+
+    retainedMeshes.Append(mesh);
+}
+
+void RenderFrameData::RetainFont(const std::shared_ptr<Font> &font) {
+    if (!font) {
+        return;
+    }
+
+    Font *fontPtr = font.get();
+    for (int i = 0; i < retainedFonts.Count(); ++i) {
+        if (retainedFonts[i].get() == fontPtr) {
+            return;
+        }
+    }
+
+    retainedFonts.Append(font);
 }
 
 VisCamera *RenderFrameData::AllocVisCamera() {

@@ -49,17 +49,7 @@ public:
 // 따라서 공유 자윈이 파괴되는 걸 방지하기 위해, 한 프레임 렌더링이 끝난 후 릴리즈하는 구조로 되어있다.
 class VisObject {
 public:
-    ~VisObject() {
-        if (mesh) {
-            meshManager.ReleaseMesh(mesh);
-        }
-        for (int i = 0; i < numTextures; ++i) {
-            textureManager.ReleaseTexture(textures[i]);
-        }
-        if (font) {
-            fontManager.ReleaseFont(font);
-        }
-    }
+    ~VisObject() {}
 
     uint32_t                    index = ~0;
 
@@ -69,7 +59,7 @@ public:
 
     Mesh *                      mesh = nullptr;
     uint32_t                    numTextures = 0;
-    Texture *                   textures[32] = {};
+    const Texture *             textures[32] = {};
 
     Font *                      font = nullptr;
     const char *                text = nullptr;

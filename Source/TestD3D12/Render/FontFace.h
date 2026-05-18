@@ -77,7 +77,7 @@ private:
     GlyphHashMap            glyphHashMap;
 
     BE1::Array<BE1::Str>    bitmapNames;
-    BE1::Array<Texture *>   textures;
+    BE1::Array<std::shared_ptr<Texture>> textures;
     uint32_t                fontHeight;
 };
 
@@ -116,7 +116,7 @@ private:
     void                    Purge();
 
     FontGlyph *             CacheGlyph(char32_t unicodeChar, Font::RenderMode renderMode, int atlasPadding) const;
-    Texture *               RenderGlyphToAtlasTexture(char32_t unicodeChar, Font::RenderMode renderMode, int atlasPadding, int &bitmapLeft, int &bitmapTop, int &glyphX, int &glyphY, int &glyphWidth, int &glyphHeight) const;
+    int                     RenderGlyphToAtlasTexture(char32_t unicodeChar, Font::RenderMode renderMode, int atlasPadding, int &bitmapLeft, int &bitmapTop, int &glyphX, int &glyphY, int &glyphWidth, int &glyphHeight) const;
 
     void                    WriteBitmapFiles(const char *fontFilename);
 

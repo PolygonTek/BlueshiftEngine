@@ -18,9 +18,7 @@
 #include "LoadingSystem.h"
 
 bool Texture::IsReadyForRendering() const {
-    // 2026.05.12: 현재 코드 경로 상 State::Ready 만 체크해도 문제는 없지만,
-    // 혹시 나중에 문제가 될 수도 있으니 GPUResourceStatus::Ready 까지 체크하자.
-    return state == State::Ready && texture && texture->GetStatus() == RHI::GPUResourceStatus::Ready;
+    return state == State::Ready && rhiTexture && rhiTexture->GetStatus() == RHI::GPUResourceStatus::Ready;
 }
 
 int Texture::MemRequired(bool includingMipmaps) const {
@@ -34,16 +32,21 @@ int Texture::MemRequired(bool includingMipmaps) const {
 }
 
 void Texture::Purge() {
-    BumpLoadSerial(); // 진행 중인 로딩 무효화
-
     if (state == State::Empty) {
         return;
     }
     state = State::Empty;
 
-    if (texture) {
-        RHI::renderer->DestroyTexture(texture);
-        texture = nullptr;
+    BumpLoadSerial(); // 진행 중인 로딩 completion 무효화
+
+    if (streaming.pendingReplacementTexture) {
+        RHI::renderer->DestroyTexture(streaming.pendingReplacementTexture);
+        streaming.pendingReplacementTexture = nullptr;
+    }
+
+    if (rhiTexture) {
+        RHI::renderer->DestroyTexture(rhiTexture);
+        rhiTexture = nullptr;
     }
 }
 
@@ -51,30 +54,29 @@ void Texture::Create(RHI::TextureType textureType, std::shared_ptr<const BE1::Im
     Purge();
 
     Prepared prepared;
-    if (!Texture::PrepareNew(textureType, srcImage, flags, prepared)) {
+    if (!Texture::Prepare(textureType, srcImage, flags, prepared)) {
         return;
     }
 
     ApplyPrepared(prepared);
 
-    state = texture ? State::Ready : State::Failed;
+    state = rhiTexture ? State::Ready : State::Failed;
 }
 
 void Texture::ApplyPrepared(const Prepared &prepared) {
-    if (texture && texture != prepared.texture) {
-        RHI::renderer->DestroyTexture(texture);
+    assert(state == State::Empty || state == State::Loading);
+
+    if (rhiTexture && rhiTexture != prepared.texture) {
+        RHI::renderer->DestroyTexture(rhiTexture);
     }
 
-    textureType = prepared.textureType;
-    srcWidth = prepared.srcWidth;
-    srcHeight = prepared.srcHeight;
-    srcDepth = prepared.srcDepth;
+    rhiTextureType = prepared.textureType;
     format = prepared.format;
     flags = prepared.flags;
-    texture = prepared.texture;
+    rhiTexture = prepared.texture;
 }
 
-bool Texture::PrepareNew(RHI::TextureType textureType, std::shared_ptr<const BE1::Image> srcImage, Flag flags, Prepared &outPrepared) {
+bool Texture::Prepare(RHI::TextureType textureType, std::shared_ptr<const BE1::Image> srcImage, Flag flags, Prepared &outPrepared) {
     if (!srcImage) {
         return false;
     }
@@ -125,9 +127,6 @@ bool Texture::PrepareNew(RHI::TextureType textureType, std::shared_ptr<const BE1
     RHI::GPUResourceState initialState = BE1::HasFlag(flags, Texture::Flag::Compute) ? RHI::GPUResourceState::ShaderResourceCompute : RHI::GPUResourceState::ShaderResource;
 
     outPrepared.textureType = textureType;
-    outPrepared.srcWidth = srcImage->GetWidth();
-    outPrepared.srcHeight = srcImage->GetHeight();
-    outPrepared.srcDepth = srcImage->GetDepth();
     outPrepared.format = dstFormat;
     outPrepared.flags = flags;
     outPrepared.texture = Texture::PrepareRHITexture(textureType, resourceFlags, srcImage, dstFormat, generateMipmaps, allocateEmptyMipmaps, initialState);
@@ -190,7 +189,7 @@ RHI::Texture *Texture::PrepareRHITexture(RHI::TextureType textureType, RHI::Text
     return RHI::renderer->CreateTexture(textureType, flags, srcImage, allocateEmptyMipmaps, {}, 1, initialState);
 }
 
-bool Texture::PrepareMipRangeNew(RHI::TextureType textureType, std::shared_ptr<const BE1::Image> srcImage, BE1::Image::MipRange &mipRange, Flag flags, Prepared &outPrepared) {
+bool Texture::PrepareDirect(RHI::TextureType textureType, std::shared_ptr<const BE1::Image> srcImage, Flag flags, Prepared &outPrepared) {
     if (!srcImage) {
         return false;
     }
@@ -213,20 +212,12 @@ bool Texture::PrepareMipRangeNew(RHI::TextureType textureType, std::shared_ptr<c
 
     RHI::GPUResourceState initialState = BE1::HasFlag(flags, Texture::Flag::Compute) ? RHI::GPUResourceState::ShaderResourceCompute : RHI::GPUResourceState::ShaderResource;
 
-    // 비어있는 텍스쳐를 생성한다.
-    std::shared_ptr<BE1::Image> emptyImage = std::make_shared<BE1::Image>();
-    emptyImage->InitFromMemory(mipRange.originalWidth, mipRange.originalHeight, mipRange.originalDepth, srcImage->GetArraySize(), mipRange.originalMipLevels, srcImage->GetFormat(), srcImage->GetGammaSpace(), nullptr, srcImage->GetFlags());
-    RHI::Texture *texture = RHI::renderer->CreateTexture(textureType, resourceFlags, emptyImage, false, {}, 1, initialState);
+    RHI::Texture *texture = RHI::renderer->CreateTexture(textureType, resourceFlags, srcImage, false, {}, 1, initialState);
     if (!texture) {
         return false;
     }
 
-    texture->SetStatus(RHI::GPUResourceStatus::Pending);
-
     outPrepared.textureType = textureType;
-    outPrepared.srcWidth = mipRange.originalWidth;
-    outPrepared.srcHeight = mipRange.originalHeight;
-    outPrepared.srcDepth = mipRange.originalDepth;
     outPrepared.format = srcImage->GetFormat();
     outPrepared.flags = flags;
     outPrepared.texture = texture;
@@ -235,7 +226,7 @@ bool Texture::PrepareMipRangeNew(RHI::TextureType textureType, std::shared_ptr<c
 }
 
 void Texture::GenerateMipmaps() {
-    RHI::renderer->GenerateMipmaps(texture);
+    RHI::renderer->GenerateMipmaps(rhiTexture);
 }
 
 void Texture::CreateDefaultTexture(int size, Texture::Flag flags) {
@@ -330,11 +321,15 @@ bool Texture::Load(const char *filename, Texture::Flag flags) {
 bool Texture::LoadAsync(const char *filename, Flag flags) {
     state = State::Loading;
     uint32_t newSerial = BumpLoadSerial();
-    if (!loadingSystem.EnqueueTextureLoad(newSerial, this, filename, flags)) {
+    if (!loadingSystem.EnqueueTextureLoad(shared_from_this(), filename, flags, newSerial)) {
         state = State::Failed;
         return false;
     }
     return true;
+}
+
+void Texture::RequestStreamingMaxDimension(uint32_t requestedMaxDimension) {
+    streaming.requestedMaxDimension = BE1::Max(streaming.requestedMaxDimension, requestedMaxDimension);
 }
 
 bool Texture::Update2D(int mipLevel, int xoffset, int yoffset, int width, int height, BE1::Image::Format format, const byte *data) {
@@ -342,7 +337,7 @@ bool Texture::Update2D(int mipLevel, int xoffset, int yoffset, int width, int he
         BE_WARNLOG("Texture::Update2D: texture '%s' is not ready\n", GetHashName());
         return false;
     }
-    return RHI::renderer->SetTextureSubImage2D(texture, mipLevel, xoffset, yoffset, width, height, format, data);
+    return RHI::renderer->SetTextureSubImage2D(rhiTexture, mipLevel, xoffset, yoffset, width, height, format, data);
 }
 
 bool Texture::Update3D(int mipLevel, int xoffset, int yoffset, int zoffset, int width, int height, int depth, BE1::Image::Format format, const byte *data) {
@@ -350,7 +345,7 @@ bool Texture::Update3D(int mipLevel, int xoffset, int yoffset, int zoffset, int 
         BE_WARNLOG("Texture::Update3D: texture '%s' is not ready\n", GetHashName());
         return false;
     }
-    return RHI::renderer->SetTextureSubImage3D(texture, mipLevel, xoffset, yoffset, zoffset, width, height, depth, format, data);
+    return RHI::renderer->SetTextureSubImage3D(rhiTexture, mipLevel, xoffset, yoffset, zoffset, width, height, depth, format, data);
 }
 
 bool Texture::UpdateCubeFace(RHI::CubemapFace face, int mipLevel, int xoffset, int yoffset, int width, int height, BE1::Image::Format format, const byte *data) {
@@ -358,7 +353,7 @@ bool Texture::UpdateCubeFace(RHI::CubemapFace face, int mipLevel, int xoffset, i
         BE_WARNLOG("Texture::UpdateCubeFace: texture '%s' is not ready\n", GetHashName());
         return false;
     }
-    return RHI::renderer->SetTextureSubImageCubeFace(texture, face, mipLevel, xoffset, yoffset, width, height, format, data);
+    return RHI::renderer->SetTextureSubImageCubeFace(rhiTexture, face, mipLevel, xoffset, yoffset, width, height, format, data);
 }
 
 bool Texture::GetTexels2D(int mipLevel, BE1::Image::Format format, void *pixels) const {
@@ -366,7 +361,7 @@ bool Texture::GetTexels2D(int mipLevel, BE1::Image::Format format, void *pixels)
         BE_WARNLOG("Texture::GetTexels2D: texture '%s' is not ready\n", GetHashName());
         return false;
     }
-    return RHI::renderer->GetTextureImage2D(texture, mipLevel, format, pixels);
+    return RHI::renderer->GetTextureImage2D(rhiTexture, mipLevel, format, pixels);
 }
 
 bool Texture::GetTexels3D(int mipLevel, BE1::Image::Format format, void *pixels) const {
@@ -374,7 +369,7 @@ bool Texture::GetTexels3D(int mipLevel, BE1::Image::Format format, void *pixels)
         BE_WARNLOG("Texture::GetTexels3D: texture '%s' is not ready\n", GetHashName());
         return false;
     }
-    return RHI::renderer->GetTextureImage3D(texture, mipLevel, format, pixels);
+    return RHI::renderer->GetTextureImage3D(rhiTexture, mipLevel, format, pixels);
 }
 
 bool Texture::GetTexelsCubeFace(RHI::CubemapFace face, int mipLevel, BE1::Image::Format format, void *pixels) const {
@@ -382,7 +377,7 @@ bool Texture::GetTexelsCubeFace(RHI::CubemapFace face, int mipLevel, BE1::Image:
         BE_WARNLOG("Texture::GetTexelsCubeFace: texture '%s' is not ready\n", GetHashName());
         return false;
     }
-    return RHI::renderer->GetTextureImageCubeFace(texture, face, mipLevel, format, pixels);
+    return RHI::renderer->GetTextureImageCubeFace(rhiTexture, face, mipLevel, format, pixels);
 }
 
 bool Texture::GetCubeImageFromCubeTexture(const Texture *cubeTexture, int numMipLevels, BE1::Image &outCubeImage) {

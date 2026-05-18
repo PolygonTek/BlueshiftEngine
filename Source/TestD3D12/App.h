@@ -45,7 +45,7 @@ private:
     void                            UpdateCubes();
 
     RenderContext *                 mainRenderContext = nullptr;
-    Font *                          mainFont = nullptr;
+    std::shared_ptr<Font>           mainFont;
     RenderCamera *                  renderCamera = nullptr;
     RenderWorld *                   renderWorld = nullptr;
 

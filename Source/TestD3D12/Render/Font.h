@@ -26,6 +26,7 @@
 
 class Texture;
 class FontFace;
+struct GlyphAtlas;
 
 // Font glyph information.
 struct FontGlyph {
@@ -34,7 +35,7 @@ struct FontGlyph {
     int32_t                 offsetX, offsetY;
     int32_t                 advanceX, advanceY;
     float                   s, t, s2, t2;
-    Texture *               texture;
+    Texture *               texture = nullptr;
 };
 
 class Font {
@@ -58,10 +59,6 @@ public:
     const char *            GetName() const { return name; }
     const char *            GetHashName() const { return hashName; }
 
-    Font *                  AddRefCount() { refCount++; return this; }
-    const Font*             AddRefCount() const { refCount++; return this; }
-    int                     GetRefCount() const { return refCount; }
-
                             /// Returns font type.
     Type                    GetFontType() const { return fontType; }
 
@@ -84,8 +81,6 @@ public:
 private:
     BE1::Str                hashName;
     BE1::Str                name;
-    mutable int32_t         refCount = 0;
-    bool                    permanence = false;
 
     Type                    fontType = Type::None;
     uint32_t                fontSize = 0;
@@ -97,20 +92,17 @@ public:
     void                    Init();
     void                    Shutdown();
 
-    Font *                  AllocFont(const char *name, uint32_t fontSize);
-    Font *                  FindFont(const char *name, uint32_t fontSize) const;
-    Font *                  GetFont(const char *name, uint32_t fontSize);
+    void                    UpdateFrame();
 
-    void                    ReleaseFont(Font *font, bool immediateDestroy = false);
-    void                    DestroyFont(Font *font);
-    void                    DestroyUnusedFonts();
+    std::shared_ptr<Font>   AllocFont(const char *name, uint32_t fontSize);
+    std::shared_ptr<Font>   FindFont(const char *name, uint32_t fontSize) const;
+    std::shared_ptr<Font>   GetFont(const char *name, uint32_t fontSize);
 
-    void                    ClearAtlasTextures();
-
-    static const char *     defaultFontFilename;
-    static Font *           defaultFont;
+    std::shared_ptr<Font>   defaultFont;
 
 private:
+    void                    CleanExpiredFonts();
+
     struct FontHashKey {
         FontHashKey() {}
         FontHashKey(const BE1::Str &name, uint32_t fontSize) : name(name), fontSize(fontSize) {}
@@ -133,8 +125,9 @@ private:
         }
     };
 
-    using FontHashMap       = BE1::HashMap<FontHashKey, Font *, FontHashCompare, FontHashGenerator>;
+    using FontHashMap       = BE1::HashMap<FontHashKey, std::weak_ptr<Font>, FontHashCompare, FontHashGenerator>;
     FontHashMap             fontHashMap;
+    int                     expiredFontHashMapCursor = 0;
 };
 
 extern FontManager          fontManager;

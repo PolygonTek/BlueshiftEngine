@@ -182,7 +182,13 @@ void RenderBackend::DrawSurfacesWithTask(const DrawSurf **drawSurfs, uint32_t nu
 #endif // USE_RENDER_TASK
 
 void RenderBackend::DrawSurface(RHI::FrameThreadData *frameThreadData, RHI::CommandList *commandList, const DrawSurf *drawSurf) {
-    const Texture *texture = drawSurf->texture->IsReadyForRendering() ? drawSurf->texture : textureManager.defaultTexture;
+    const RHI::Texture *rhiTexture = nullptr;
+    if (drawSurf->rhiTexture) {
+        rhiTexture = drawSurf->rhiTexture;
+    }
+    if (!rhiTexture || rhiTexture->GetStatus() != RHI::GPUResourceStatus::Ready) {
+        rhiTexture = textureManager.defaultTexture->GetRHITexture();
+    }
 
     RHI::ConstantBuffer *constantBuffer = frameThreadData->AllocConstant(sizeof(UnlitConstantData));
     if (!constantBuffer) {
@@ -198,14 +204,20 @@ void RenderBackend::DrawSurface(RHI::FrameThreadData *frameThreadData, RHI::Comm
     RHI::renderer->SetIndexBuffer(commandList, drawSurf->subMesh->indexBuffer);
 
     RHI::renderer->SetPSO(commandList, currentContext->unlitPSO);
-    RHI::renderer->SetTexture(commandList, 0, false, texture->GetRHITexture());
+    RHI::renderer->SetTexture(commandList, 0, false, rhiTexture);
     RHI::renderer->SetConstantBuffer(commandList, 0, constantBuffer);
 
     RHI::renderer->DrawIndexed(commandList, drawSurf->subMesh->numIndexes, 0, 0);
 }
 
 void RenderBackend::DrawInstancedSurface(RHI::FrameThreadData *frameThreadData, RHI::CommandList *commandList, const DrawSurf **instanceSurfs, int instanceCount) {
-    const Texture *texture = instanceSurfs[0]->texture->IsReadyForRendering() ? instanceSurfs[0]->texture : textureManager.defaultTexture;
+    const RHI::Texture *rhiTexture = nullptr;
+    if (instanceSurfs[0]->rhiTexture) {
+        rhiTexture = instanceSurfs[0]->rhiTexture;
+    }
+    if (!rhiTexture || rhiTexture->GetStatus() != RHI::GPUResourceStatus::Ready) {
+        rhiTexture = textureManager.defaultTexture->GetRHITexture();
+    }
 
     RHI::ConstantBuffer *constantBuffer = frameThreadData->AllocConstant(sizeof(UnlitInstancedConstantData));
     if (!constantBuffer) {
@@ -226,15 +238,19 @@ void RenderBackend::DrawInstancedSurface(RHI::FrameThreadData *frameThreadData, 
     RHI::renderer->SetIndexBuffer(commandList, instanceSurfs[0]->subMesh->indexBuffer);
 
     RHI::renderer->SetPSO(commandList, currentContext->unlitInstancedPSO);
-    RHI::renderer->SetTexture(commandList, 0, false, texture->GetRHITexture());
+    RHI::renderer->SetTexture(commandList, 0, false, rhiTexture);
     RHI::renderer->SetConstantBuffer(commandList, 0, constantBuffer);
 
     RHI::renderer->DrawIndexedInstanced(commandList, instanceSurfs[0]->subMesh->numIndexes, instanceCount, 0, 0, 0);
 }
 
 void RenderBackend::DrawGuiSurface(RHI::FrameThreadData *frameThreadData, RHI::CommandList *commandList, const DrawSurf *drawSurf) {
-    if (!drawSurf->texture->IsReadyForRendering()) {
-        return;
+    const RHI::Texture *rhiTexture = nullptr;
+    if (drawSurf->rhiTexture) {
+        rhiTexture = drawSurf->rhiTexture;
+    }
+    if (!rhiTexture || rhiTexture->GetStatus() != RHI::GPUResourceStatus::Ready) {
+        rhiTexture = textureManager.defaultTexture->GetRHITexture();
     }
 
     RHI::ConstantBuffer *constantBuffer = frameThreadData->AllocConstant(sizeof(UnlitConstantData));
@@ -250,7 +266,7 @@ void RenderBackend::DrawGuiSurface(RHI::FrameThreadData *frameThreadData, RHI::C
     RHI::renderer->SetIndexBuffer(commandList, drawSurf->subMesh->indexBuffer);
 
     RHI::renderer->SetPSO(commandList, currentContext->unlitAlphaBlendPSO);
-    RHI::renderer->SetTexture(commandList, 0, false, drawSurf->texture->GetRHITexture());
+    RHI::renderer->SetTexture(commandList, 0, false, rhiTexture);
     RHI::renderer->SetConstantBuffer(commandList, 0, constantBuffer);
 
     RHI::renderer->DrawIndexed(commandList, drawSurf->subMesh->numIndexes, 0, 0);

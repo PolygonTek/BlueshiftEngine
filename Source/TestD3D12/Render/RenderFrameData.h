@@ -18,6 +18,7 @@
 
 class RenderContext;
 class Texture;
+class Mesh;
 class Font;
 class VisCamera;
 class VisObject;
@@ -126,6 +127,10 @@ public:
                                     // 렌더 태스크의 스레드 별 데이터 얻기
     RHI::FrameThreadData *          GetThreadData(int32_t threadIndex) { assert(threadIndex >= 0 && threadIndex < numRenderTaskThreads); return threadData[threadIndex]; }
 
+    void                            RetainTexture(const std::shared_ptr<Texture> &texture);
+    void                            RetainMesh(const std::shared_ptr<Mesh> &mesh);
+    void                            RetainFont(const std::shared_ptr<Font> &font);
+
                                     // 프론트 엔드에서 프레임 데이터의 사용을 시작
     void                            BeginFrame();
 
@@ -153,6 +158,10 @@ private:
     void                            InitVisObjects(int maxVisObjects);
     void                            FreeVisObjects();
 
+    void                            ClearRetainedTextures();
+    void                            ClearRetainedMeshes();
+    void                            ClearRetainedFonts();
+
     void *                          GetCommandBuffer(uint32_t bytes);
 
     MemBlock *                      headBlock = nullptr;
@@ -172,6 +181,10 @@ private:
 
     RHI::FrameThreadData **         threadData = nullptr;
     int                             numRenderTaskThreads = 0;
+
+    BE1::Array<std::shared_ptr<Texture>> retainedTextures;
+    BE1::Array<std::shared_ptr<Mesh>> retainedMeshes;
+    BE1::Array<std::shared_ptr<Font>> retainedFonts;
 };
 
 BE_INLINE void RenderFrameData::BeginFrame() {

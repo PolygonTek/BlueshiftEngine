@@ -21,47 +21,69 @@ TextureManager      textureManager;
 void TextureManager::Init() {
     textureHashMap.Init(1024, 1024, 1024);
 
+    expiredTextureHashMapCursor = 0;
+
+    nextTextureIndex = 0;
+
     CreateEngineTextures();
 }
 
 void TextureManager::Shutdown() {
-    textureHashMap.DeleteContents(true);
+    DestroyEngineTextures();
+
+    textureHashMap.Clear();
+
+    streamingTextures.Clear();
 }
 
-Texture *TextureManager::AllocTexture(const char *hashName) {
-    if (textureHashMap.Get(hashName)) {
-        BE_FATALERROR("%s texture already allocated", hashName);
+void TextureManager::UpdateFrame() {
+    UpdateStreamingTextures();
+
+    CleanExpiredTextures();
+}
+
+std::shared_ptr<Texture> TextureManager::AllocTexture(const char *hashName) {
+    if (!hashName || !hashName[0]) {
+        BE_FATALERROR("TextureManager::AllocTexture: empty texture name");
+    }
+    if (const auto *entry = textureHashMap.Get(hashName)) {
+        if (!entry->second.expired()) {
+            BE_FATALERROR("TextureManager::AllocTexture: %s texture already allocated", hashName);
+        }
+        textureHashMap.Remove(hashName);
     }
 
-    Texture *texture = new Texture;
+    std::shared_ptr<Texture> texture = std::make_shared<Texture>();
     texture->hashName = hashName;
     texture->name = hashName;
     texture->name.StripPath();
     texture->name.StripFileExtension();
-    texture->index = textureHashMap.Count();
-    texture->refCount = 1;
-
+    texture->index = nextTextureIndex++;
     textureHashMap.Set(texture->hashName, texture);
 
     return texture;
 }
 
-Texture *TextureManager::FindTexture(const char *hashName) const {
-    const auto *entry = textureHashMap.Get(BE1::Str(hashName));
-    if (entry) {
-        return entry->second;
+std::shared_ptr<Texture> TextureManager::FindTexture(const char *hashName) const {
+    if (!hashName || !hashName[0]) {
+        return nullptr;
     }
-    return nullptr;
+
+    const auto *entry = textureHashMap.Get(hashName);
+    if (!entry) {
+        return nullptr;
+    }
+
+    return entry->second.lock();
 }
 
-Texture *TextureManager::GetTexture(const char *hashName, Texture::Flag flags) {
+std::shared_ptr<Texture> TextureManager::GetTexture(const char *hashName, Texture::Flag flags) {
     if (!hashName || !hashName[0]) {
         return defaultTexture;
     }
 
-    Texture *texture = FindTexture(hashName);
+    std::shared_ptr<Texture> texture = FindTexture(hashName);
     if (texture) {
-        texture->refCount++;
         return texture;
     }
 
@@ -71,181 +93,183 @@ Texture *TextureManager::GetTexture(const char *hashName, Texture::Flag flags) {
 #else
     if (!texture->Load(hashName, flags)) {
 #endif
-        DestroyTexture(texture);
+        textureHashMap.Remove(texture->hashName);
         return defaultTexture;
     }
 
     return texture;
 }
 
-void TextureManager::ReleaseTexture(Texture *texture) {
-    if (texture->refCount > 0) {
-        if (--texture->refCount > 0) {
-            return;
+void TextureManager::CleanExpiredTextures() {
+    constexpr int ExpiredTextureHashMapScanBudget = 32;
+    int scansLeft = ExpiredTextureHashMapScanBudget;
+
+    while (scansLeft-- > 0 && textureHashMap.Count() > 0) {
+        if (expiredTextureHashMapCursor >= textureHashMap.Count()) {
+            expiredTextureHashMapCursor = 0;
         }
+
+        const auto *entry = textureHashMap.GetByIndex(expiredTextureHashMapCursor);
+        assert(entry);
+
+        if (entry->second.expired()) {
+            textureHashMap.Remove(entry->first);
+            continue;
+        }
+
+        expiredTextureHashMapCursor++;
     }
-
-    if (BE1::HasFlag(texture->flags, Texture::Flag::Permanent)) {
-        return;
-    }
-
-#ifdef USE_ASYNC_LOADING
-    if (texture->GetState() == Texture::State::Loading || (texture->streaming.streamingListIndex >= 0 && texture->streaming.pending)) {
-        texture->SetState(Texture::State::DestroyPending);
-        texture->BumpLoadSerial(); // 진행 중인 completion 무효화
-
-        textureHashMap.Remove(texture->hashName);
-        return;
-    }
-#endif
-
-    DestroyTexture(texture);
-}
-
-void TextureManager::DestroyTexture(Texture *texture) {
-    if (texture->refCount > 1) {
-        BE_WARNLOG("TextureManager::DestroyTexture: texture '%s' has %i reference count\n", texture->hashName.c_str(), texture->refCount);
-    }
-
-    textureHashMap.Remove(texture->hashName);
-
-    // Texture::Flag::Streaming 가 켜져있다고 해서 항상 streaming texture 로 등록되진 않는다.
-    if (BE1::HasFlag(texture->flags, Texture::Flag::Streaming)) {
-        UnregisterStreamingTexture(texture);
-    }
-
-    delete texture;
 }
 
 void TextureManager::CreateEngineTextures() {
     // Create default texture.
     defaultTexture = AllocTexture("_defaultTexture");
-    defaultTexture->CreateDefaultTexture(16, Texture::Flag::Permanent);
+    defaultTexture->CreateDefaultTexture(16);
 
     // Create white texture.
     whiteTexture = AllocTexture("_whiteTexture");
-    whiteTexture->CreateColorTexture(8, BE1::Color4::white, Texture::Flag::Permanent);
+    whiteTexture->CreateColorTexture(8, BE1::Color4::white);
 
     // Create flatNormal texture.
     flatNormalTexture = AllocTexture("_flatNormalTexture");
-    flatNormalTexture->CreateFlatNormalTexture(16, Texture::Flag::Permanent);
+    flatNormalTexture->CreateFlatNormalTexture(16);
 }
 
-void TextureManager::RegisterStreamingTexture(Texture *texture, const BE1::Image::MipRange &mipRange) {
-    if (streamingTextures.Find(texture)) {
+void TextureManager::DestroyEngineTextures() {
+    if (defaultTexture) {
+        defaultTexture.reset();
+    }
+    if (whiteTexture) {
+        whiteTexture.reset();
+    }
+    if (flatNormalTexture) {
+        flatNormalTexture.reset();
+    }
+}
+
+void TextureManager::RegisterStreamingTexture(const std::shared_ptr<Texture> &texture, const BE1::Image::MipRange &mipRange) {
+    if (!texture) {
+        return;
+    }
+
+    Texture::Streaming &streaming = texture->streaming;
+    if (streaming.streamingListIndex >= 0) {
         BE_WARNLOG("TextureManager::RegisterStreamingTexture: texture '%s' has already registered\n", texture->hashName.c_str());
         return;
     }
 
-    int index = streamingTextures.Append(texture);
+    int index = streamingTextures.Append(std::weak_ptr<Texture>(texture));
 
-    texture->streaming.streamingListIndex = index;
-    texture->streaming.originalMipLevels = mipRange.originalMipLevels;
-    texture->streaming.residentFirstMip = mipRange.firstMip;
-    texture->streaming.residentMipCount = mipRange.mipCount;
-    texture->streaming.requestedFirstMip = -1;
-    texture->streaming.requestedMipCount = 0;
-    texture->streaming.pending = false;
+    streaming.streamingListIndex = index;
+    streaming.originalWidth = mipRange.originalWidth;
+    streaming.originalHeight = mipRange.originalHeight;
+    streaming.originalDepth = mipRange.originalDepth;
+    streaming.originalMipLevels = mipRange.originalMipLevels;
+    streaming.residentFirstMip = mipRange.firstMip;
+    streaming.requestedFirstMip = -1;
+    streaming.requestedMaxDimension = 0;
+    streaming.pendingReplacement = false;
+    streaming.pendingReplacementTexture = nullptr;
 }
 
 void TextureManager::UnregisterStreamingTexture(Texture *texture) {
-    int index = texture->streaming.streamingListIndex;
-    if (index < 0) {
+    if (!texture) {
         return;
     }
 
-    int lastIndex = streamingTextures.Count() - 1;
-    Texture *lastTexture = streamingTextures[lastIndex];
+    Texture::Streaming &streaming = texture->streaming;
+    int index = streaming.streamingListIndex;
 
-    streamingTextures[index] = lastTexture;
-    lastTexture->streaming.streamingListIndex = index;
+    // 교체 예정이었던 텍스쳐 파괴
+    if (streaming.pendingReplacementTexture) {
+        RHI::renderer->DestroyTexture(streaming.pendingReplacementTexture);
+        streaming.pendingReplacementTexture = nullptr;
+    }
+
+    // 스트리밍 텍스쳐 목록에서 제거
+    if (index >= 0 && index < streamingTextures.Count()) {
+        RemoveStreamingTextureAt(index);
+    }
+
+    streaming = {};
+}
+
+void TextureManager::RemoveStreamingTextureAt(int index) {
+    int lastIndex = streamingTextures.Count() - 1;
+    if (index != lastIndex) {
+        streamingTextures[index] = streamingTextures[lastIndex];
+
+        if (auto movedTexture = streamingTextures[index].lock()) {
+            movedTexture->streaming.streamingListIndex = index;
+        }
+    }
 
     streamingTextures.RemoveIndexFast(lastIndex);
-
-    texture->streaming = {};
 }
 
-void TextureManager::UpdateStreamingTextures(int frameMsec) {
-    BE1::Array<Texture *> unregisterTextures;
-
-    for (int i = 0; i < streamingTextures.Count(); ++i) {
-        Texture *texture = streamingTextures[i];
-        Texture::StreamingState &streaming = texture->streaming;
-
-        if (streaming.pending) {
+void TextureManager::UpdateStreamingTextures() {
+    int streamingTextureIndex = 0;
+    while (streamingTextureIndex < streamingTextures.Count()) {
+        std::shared_ptr<Texture> texture = streamingTextures[streamingTextureIndex].lock();
+        if (!texture) {
+            RemoveStreamingTextureAt(streamingTextureIndex);
             continue;
         }
 
-        // ProcessResourceRequests (렌더 스레드) 에서 업로드가 실패할 가능성도 있기 때문에 여기서 스트리밍 목록에서 제거한다.
-        if (texture->GetRHITexture()->GetStatus() == RHI::GPUResourceStatus::Failed) {
-            unregisterTextures.Append(texture);
+        Texture::Streaming &streaming = texture->streaming;
+
+        // 교체할 텍스쳐가 준비되었다면..
+        if (streaming.pendingReplacementTexture) {
+            RHI::GPUResourceStatus status = streaming.pendingReplacementTexture->GetStatus();
+            if (status == RHI::GPUResourceStatus::Ready) {
+                // 기존 텍스쳐를 파괴하고, 새로 로딩된 텍스쳐로 교체한다.
+                RHI::renderer->DestroyTexture(texture->rhiTexture);
+                texture->rhiTexture = streaming.pendingReplacementTexture;
+
+                streaming.residentFirstMip = streaming.requestedFirstMip;
+                streaming.requestedFirstMip = -1;
+
+                streaming.pendingReplacementTexture = nullptr;
+                streaming.pendingReplacement = false;
+            } else if (status == RHI::GPUResourceStatus::Failed) {
+                // 업로드를 실패했다면 교체하지 않고, 새로 로딩된 텍스쳐를 파괴한다. (나중에 재요청될 것이다)
+                RHI::renderer->DestroyTexture(streaming.pendingReplacementTexture);
+
+                streaming.requestedFirstMip = -1;
+
+                streaming.pendingReplacementTexture = nullptr;
+                streaming.pendingReplacement = false;
+            }
+        }
+
+        if (streaming.pendingReplacement) {
+            streamingTextureIndex++;
             continue;
         }
 
-        // 로딩이 완전히 끝난 상태인데 여기에 들어오면 안된다.
-        assert(streaming.residentFirstMip > 0);
+        if (streaming.requestedMaxDimension > 0) {
+            uint32_t requestedMaxDimension = BE1::Max(streaming.requestedMaxDimension, TextureManager::MinResidentStreamingTextureMaxDimension);
 
-        int residentMaxDimension = BE1::Max3(
-            BE1::Max(1u, texture->GetWidth() >> streaming.residentFirstMip),
-            BE1::Max(1u, texture->GetHeight() >> streaming.residentFirstMip),
-            BE1::Max(1u, texture->GetDepth() >> streaming.residentFirstMip));
+            // 요청되었던 최대 크기로 원하는 first mip 을 구한다.
+            int desiredFirstMip = BE1::Image::ComputeFirstMipForMaxDimension(streaming.originalWidth, streaming.originalHeight, streaming.originalDepth, streaming.originalMipLevels, requestedMaxDimension);
+            if (desiredFirstMip != streaming.residentFirstMip) {
+                if (desiredFirstMip < streaming.residentFirstMip) {
+                    // 부드러운 스트리밍을 원하면 한 단계만 낮춘다.
+                    desiredFirstMip = BE1::Max(desiredFirstMip, streaming.residentFirstMip - 1);
+                }
 
-        // 1024 까지는 한번에 요청하고, 그 이상부터는 한 레벨씩 요청한다.
-        int targetMaxDimension = residentMaxDimension < 1048 ? 1048 : (residentMaxDimension << 1);
-        
-        int desiredFirstMip = BE1::Image::ComputeFirstMipForMaxDimension(texture->GetWidth(), texture->GetHeight(), texture->GetDepth(), streaming.originalMipLevels, targetMaxDimension);
-        desiredFirstMip = BE1::Min(desiredFirstMip, streaming.residentFirstMip - 1);
+                // 디버깅을 위해 텍스쳐에 현재 요청하는 first mip 을 기록한다.
+                streaming.requestedFirstMip = desiredFirstMip;
 
-        streaming.requestedFirstMip = desiredFirstMip;
-        streaming.requestedMipCount = streaming.residentFirstMip - desiredFirstMip;
+                if (loadingSystem.EnqueueTextureLoadAndReplace(texture, texture->hashName, streaming.requestedFirstMip)) {
+                    streaming.pendingReplacement = true;
+                }
+            }
 
-        if (!loadingSystem.EnqueueTextureMipRangeLoad(texture, texture->hashName, streaming.requestedFirstMip, streaming.requestedMipCount)) {
-            unregisterTextures.Append(texture);
-            continue;
+            // TODO: 바로 죽이지 않고, 일정 시간 유지는 해야함.
+            streaming.requestedMaxDimension = 0;
         }
 
-        streaming.pending = true;
+        streamingTextureIndex++;
     }
-
-    for (int i = 0; i < unregisterTextures.Count(); ++i) {
-        UnregisterStreamingTexture(unregisterTextures[i]);
-    }
-}
-
-bool TextureManager::CompleteStreamingTextureRequest(Texture *texture, const BE1::Image::MipRange &loadedMipRange, uint32_t *outResidentFirstMip, uint32_t *outResidentMipCount) {
-    if (texture->streaming.streamingListIndex < 0) {
-        return false;
-    }
-
-    Texture::StreamingState &streaming = texture->streaming;
-    streaming.pending = false;
-
-    if (loadedMipRange.firstMip < streaming.residentFirstMip) {
-        if (loadedMipRange.firstMip + loadedMipRange.mipCount != streaming.residentFirstMip) {
-            BE_ERRLOG("TextureManager::CompleteStreamingTextureRequest: non-contiguous mip range for texture '%s' (loaded [%i, %i], resident [%i, %i])\n",
-                texture->GetHashName(),
-                loadedMipRange.firstMip,
-                loadedMipRange.firstMip + loadedMipRange.mipCount - 1,
-                streaming.residentFirstMip,
-                streaming.residentFirstMip + streaming.residentMipCount - 1);
-            return false;
-        }
-
-        int oldResidentLastMip = streaming.residentFirstMip + streaming.residentMipCount;
-        streaming.residentFirstMip = loadedMipRange.firstMip;
-        streaming.residentMipCount = oldResidentLastMip - streaming.residentFirstMip;
-    }
-
-    streaming.requestedFirstMip = -1;
-    streaming.requestedMipCount = 0;
-
-    *outResidentFirstMip = streaming.residentFirstMip;
-    *outResidentMipCount = streaming.residentMipCount;
-
-    // 완전히 로딩이 끝났다면 등록된 스트리밍 텍스쳐 목록에서 제거한다.
-    bool fullyResident = streaming.residentFirstMip == 0 && streaming.residentMipCount == streaming.originalMipLevels;
-    if (fullyResident) {
-        UnregisterStreamingTexture(texture);
-    }
-    return true;
 }

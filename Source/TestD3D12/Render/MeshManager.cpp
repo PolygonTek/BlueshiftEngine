@@ -20,61 +20,87 @@ MeshManager     meshManager;
 void MeshManager::Init() {
     meshHashMap.Init(1024, 64, 64);
 
+    expiredMeshHashMapCursor = 0;
+
     CreateEngineMeshes();
+}
+
+void MeshManager::Shutdown() {
+    DestroyEngineMeshes();
+
+    meshHashMap.Clear();
+}
+
+void MeshManager::UpdateFrame() {
+    CleanExpiredMeshes();
 }
 
 void MeshManager::CreateEngineMeshes() {
     // Create default (box shape) mesh
     defaultMesh = AllocMesh("_defaultMesh");
-    defaultMesh->flags |= Mesh::Flag::Permanent;
     defaultMesh->CreateDefaultBox();
 
     // Create default quad mesh
     defaultQuadMesh = AllocMesh("_defaultQuadMesh");
-    defaultQuadMesh->flags |= Mesh::Flag::Permanent;
     defaultQuadMesh->CreatePlane(BE1::Vec3::origin, BE1::Angles(0, 90, 0).ToMat3(), BE1::MeterToUnit(1.0f), 1);
 
     // Create default plane mesh
     defaultPlaneMesh = AllocMesh("_defaultPlaneMesh");
-    defaultPlaneMesh->flags |= Mesh::Flag::Permanent;
     defaultPlaneMesh->CreatePlane(BE1::Vec3::origin, BE1::Mat3::identity, BE1::MeterToUnit(10.0f), 10);
 
     // Create default box mesh
     defaultBoxMesh = AllocMesh("_defaultBoxMesh");
-    defaultBoxMesh->flags |= Mesh::Flag::Permanent;
     defaultBoxMesh->CreateBox(BE1::Vec3::origin, BE1::Mat3::identity, BE1::Vec3(BE1::MeterToUnit(0.5f)));
 
     // Create default sphere mesh
     defaultSphereMesh = AllocMesh("_defaultSphereMesh");
-    defaultSphereMesh->flags |= Mesh::Flag::Permanent;
     defaultSphereMesh->CreateSphere(BE1::Vec3::origin, BE1::Mat3::identity, BE1::MeterToUnit(0.5f), 32);
 
     // Create default cylinder mesh
     defaultCylinderMesh = AllocMesh("_defaultCylinderMesh");
-    defaultCylinderMesh->flags |= Mesh::Flag::Permanent;
     defaultCylinderMesh->CreateCylinder(BE1::Vec3::origin, BE1::Mat3::identity, BE1::MeterToUnit(0.5f), BE1::MeterToUnit(2.0f), 32);
 
     // Create default capsule mesh
     defaultCapsuleMesh = AllocMesh("_defaultCapsuleMesh");
-    defaultCapsuleMesh->flags |= Mesh::Flag::Permanent;
     defaultCapsuleMesh->CreateCapsule(BE1::Vec3::origin, BE1::Mat3::identity, BE1::MeterToUnit(0.5f), BE1::MeterToUnit(1.0f), 32);
 }
 
-void MeshManager::Shutdown() {
-    for (const auto &entry : meshHashMap) {
-        Mesh *mesh = entry.second;
-        delete mesh;
+void MeshManager::DestroyEngineMeshes() {
+    if (defaultMesh) {
+        defaultMesh.reset();
     }
-    meshHashMap.Clear();
+    if (defaultQuadMesh) {
+        defaultQuadMesh.reset();
+    }
+    if (defaultPlaneMesh) {
+        defaultPlaneMesh.reset();
+    }
+    if (defaultBoxMesh) {
+        defaultBoxMesh.reset();
+    }
+    if (defaultSphereMesh) {
+        defaultSphereMesh.reset();
+    }
+    if (defaultCylinderMesh) {
+        defaultCylinderMesh.reset();
+    }
+    if (defaultCapsuleMesh) {
+        defaultCapsuleMesh.reset();
+    }
 }
 
-Mesh *MeshManager::AllocMesh(const char *hashName) {
-    if (meshHashMap.Get(hashName)) {
-        BE_FATALERROR("%s mesh already allocated", hashName);
+std::shared_ptr<Mesh> MeshManager::AllocMesh(const char *hashName) {
+    if (!hashName || !hashName[0]) {
+        BE_FATALERROR("MeshManager::AllocMesh: empty mesh name");
+    }
+    if (const auto *entry = meshHashMap.Get(hashName)) {
+        if (!entry->second.expired()) {
+            BE_FATALERROR("MeshManager::AllocMesh: %s mesh already allocated", hashName);
+        }
+        meshHashMap.Remove(hashName);
     }
 
-    Mesh *mesh = new Mesh;
-    mesh->refCount = 1;
+    std::shared_ptr<Mesh> mesh = std::make_shared<Mesh>();
     mesh->hashName = hashName;
     mesh->name = hashName;
     mesh->name.StripPath();
@@ -84,22 +110,26 @@ Mesh *MeshManager::AllocMesh(const char *hashName) {
     return mesh;
 }
 
-Mesh *MeshManager::FindMesh(const char *hashName) const {
-    const auto *entry = meshHashMap.Get(BE1::Str(hashName));
-    if (entry) {
-        return entry->second;
+std::shared_ptr<Mesh> MeshManager::FindMesh(const char *hashName) const {
+    if (!hashName || !hashName[0]) {
+        return nullptr;
     }
-    return nullptr;
+
+    const auto *entry = meshHashMap.Get(hashName);
+    if (!entry) {
+        return nullptr;
+    }
+
+    return entry->second.lock();
 }
 
-Mesh *MeshManager::GetMesh(const char *hashName) {
+std::shared_ptr<Mesh> MeshManager::GetMesh(const char *hashName) {
     if (!hashName || !hashName[0]) {
         return defaultMesh;
     }
 
-    Mesh *mesh = FindMesh(hashName);
+    std::shared_ptr<Mesh> mesh = FindMesh(hashName);
     if (mesh) {
-        mesh->refCount++;
         return mesh;
     }
 
@@ -110,46 +140,14 @@ Mesh *MeshManager::GetMesh(const char *hashName) {
     if (!mesh->Load(hashName)) {
 //#endif
         BE_WARNLOG("Couldn't load mesh '%s'\n", hashName);
-        DestroyMesh(mesh);
+
+        meshHashMap.Remove(mesh->hashName);
         return defaultMesh;
     }
     return mesh;
 }
 
-void MeshManager::ReleaseMesh(Mesh *mesh) {
-    if (mesh->refCount > 0) {
-        if (--mesh->refCount > 0) {
-            return;
-        }
-    }
-
-    if (BE1::HasFlag(mesh->flags, Mesh::Flag::Permanent)) {
-        return;
-    }
-
-/*#ifdef USE_ASYNC_LOADING
-    if (mesh->GetState() == Mesh::State::Loading) {
-        mesh->SetState(Mesh::State::DestroyPending);
-        mesh->BumpLoadSerial(); // 진행 중인 completion 무효화
-
-        meshHashMap.Remove(mesh->hashName);
-        return;
-    }
-#endif*/
-
-    DestroyMesh(mesh);
-}
-
-void MeshManager::DestroyMesh(Mesh *mesh) {
-    if (mesh->refCount > 1) {
-        BE_WARNLOG("MeshManager::DestroyMesh: mesh '%s' has %i reference count\n", mesh->name.c_str(), mesh->refCount);
-    }
-    meshHashMap.Remove(mesh->hashName);
-
-    delete mesh;
-}
-
-Mesh *MeshManager::CreateCombinedMesh(const char *hashName, const BE1::Array<BatchSubMesh> &batchSubMeshes) {
+std::shared_ptr<Mesh> MeshManager::CreateCombinedMesh(const char *hashName, const BE1::Array<BatchSubMesh> &batchSubMeshes) {
     // Counts total verts/indices for combined mesh.
     int numTotalVerts = 0;
     int numTotalIndexes = 0;
@@ -162,7 +160,7 @@ Mesh *MeshManager::CreateCombinedMesh(const char *hashName, const BE1::Array<Bat
     }
 
     // Allocates a combined mesh.
-    Mesh *mesh = AllocMesh(hashName);
+    std::shared_ptr<Mesh> mesh = AllocMesh(hashName);
     mesh->type = MeshType::Static;
     Mesh::Surface *surf = mesh->AllocSurface(numTotalVerts, numTotalIndexes);
     mesh->surfaces.Append(surf);
@@ -192,4 +190,25 @@ Mesh *MeshManager::CreateCombinedMesh(const char *hashName, const BE1::Array<Bat
     mesh->FinishSurfaces(Mesh::FinishFlag::ComputeAABB);
 
     return mesh;
+}
+
+void MeshManager::CleanExpiredMeshes() {
+    constexpr int ExpiredMeshHashMapScanBudget = 32;
+    int scansLeft = ExpiredMeshHashMapScanBudget;
+
+    while (scansLeft-- > 0 && meshHashMap.Count() > 0) {
+        if (expiredMeshHashMapCursor >= meshHashMap.Count()) {
+            expiredMeshHashMapCursor = 0;
+        }
+
+        const auto *entry = meshHashMap.GetByIndex(expiredMeshHashMapCursor);
+        assert(entry);
+
+        if (entry->second.expired()) {
+            meshHashMap.Remove(entry->first);
+            continue;
+        }
+
+        expiredMeshHashMapCursor++;
+    }
 }

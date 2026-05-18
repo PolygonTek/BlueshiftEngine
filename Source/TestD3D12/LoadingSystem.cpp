@@ -66,7 +66,7 @@ void LoadingSystem::Stop() {
     }
 }
 
-bool LoadingSystem::EnqueueTextureLoad(uint32_t serial, Texture *texture, const char *filename, Texture::Flag flags) {
+bool LoadingSystem::EnqueueTextureLoad(std::shared_ptr<Texture> texture, const char *filename, Texture::Flag flags, uint32_t serial) {
     if (!texture || !filename || !filename[0]) {
         return false;
     }
@@ -92,11 +92,15 @@ bool LoadingSystem::EnqueueTextureLoad(uint32_t serial, Texture *texture, const 
     return true;
 }
 
-bool LoadingSystem::EnqueueTextureMipRangeLoad(Texture *texture, const char *filename, int firstMip, int mipCount) {
+bool LoadingSystem::EnqueueTextureLoadAndReplace(std::shared_ptr<Texture> texture, const char *filename, int firstMip) {
     if (!texture || !filename || !filename[0]) {
         return false;
     }
+    // 텍스쳐를 교체할 것이므로 이미 생성되어 있어야 한다.
     if (!texture->GetRHITexture()) {
+        return false;
+    }
+    if (firstMip < 0 || firstMip >= texture->GetStreaming()->originalMipLevels) {
         return false;
     }
 
@@ -110,9 +114,10 @@ bool LoadingSystem::EnqueueTextureMipRangeLoad(Texture *texture, const char *fil
         LoadRequest request;
         request.texture = texture;
         request.filename = filename;
-        request.partialMipLoading = true;
+        request.textureFlags = texture->GetFlags();
+        request.replacement = true;
+        request.originalMipLevels = texture->GetStreaming()->originalMipLevels;
         request.firstMip = firstMip;
-        request.mipCount = mipCount;
         request.serial = texture->GetLoadSerial();
         requests.Append(std::move(request));
 
@@ -150,45 +155,39 @@ bool LoadingSystem::EnqueueMeshLoad(uint32_t serial, Mesh *mesh, const char *fil
 
 void LoadingSystem::Run() {
     while (1) {
-        LoadRequest request;
-        if (!PopRequest(request)) {
-            break;
+        BE1::Array<LoadRequest> localRequests;
+        {
+            BE1::ScopedLock lock(requestMutex);
+
+            BE1::PlatformCondition::Wait(requestCondition, requestMutex, [this] {
+                return requests.Count() > 0 || stopping;
+            });
+
+            if (stopping) {
+                break;
+            }
+
+            localRequests.Swap(requests);
         }
 
-        // 로딩 요청을 처리한다.
-        if (request.texture) {
-            if (!request.partialMipLoading) {
-                if (!ProcessTextureLoadRequest(request)) {
-                    continue;
+        for (LoadRequest &request : localRequests) {
+            if (request.texture) {
+                if (request.replacement) {
+                    if (!ProcessTextureLoadAndReplaceRequest(request)) {
+                        continue;
+                    }
+                } else {
+                    if (!ProcessTextureLoadRequest(request)) {
+                        continue;
+                    }
                 }
-            } else {
-                if (!ProcessTextureMipRangeLoadRequest(request)) {
+            } else if (request.mesh) {
+                if (!ProcessMeshLoadRequest(request)) {
                     continue;
                 }
             }
-        } else if (request.mesh) {
-            if (!ProcessMeshLoadRequest(request)) {
-                continue;
-            }
         }
     }
-}
-
-bool LoadingSystem::PopRequest(LoadRequest &outRequest) {
-    BE1::ScopedLock lock(requestMutex);
-
-    BE1::PlatformCondition::Wait(requestCondition, requestMutex, [this] {
-        return requests.Count() > 0 || stopping;
-        });
-
-    if (stopping) {
-        return false;
-    }
-
-    outRequest = std::move(requests[0]);
-    requests.RemoveIndex(0); //
-
-    return true;
 }
 
 bool LoadingSystem::ProcessTextureLoadRequest(const LoadRequest &request) {
@@ -196,22 +195,21 @@ bool LoadingSystem::ProcessTextureLoadRequest(const LoadRequest &request) {
     completion.texture = request.texture;
     completion.serial = request.serial;
 
-    BE_LOG("Loading texture '%s'...\n", request.filename.c_str());
-
     std::shared_ptr<BE1::Image> image = std::make_shared<BE1::Image>();
     BE1::Image::MipRange mipRange;
+    bool useMipRange = false;
+
+    BE_LOG("Loading texture '%s'...\n", request.filename.c_str());
 
     // Texture::Flag::Streaming 이 켜져있고 DDS 파일이면 스트리밍 로딩을 시도한다.
-    bool useInitialMipRange = BE1::HasFlag(request.textureFlags, Texture::Flag::Streaming) && request.filename.CheckExtension(".dds");
-    if (!useInitialMipRange) {
+    if (BE1::HasFlag(request.textureFlags, Texture::Flag::Streaming) && request.filename.CheckExtension(".dds")) {
+        // 이미지 파일에서 MinResidentStreamingTextureMaxDimension 이하의 크기까지의 mip 레벨만 initial loading
+        if (image->LoadDDSMipRangeForMaxDimension(request.filename.c_str(), TextureManager::MinResidentStreamingTextureMaxDimension, &mipRange)) {
+            useMipRange = mipRange.mipCount < mipRange.originalMipLevels;
+        }
+    } else {
         // 이미지 파일 full loading
         image->Load(request.filename.c_str());
-    } else {
-        // 이미지 파일에서 256x256 이하의 크기까지의 mip 레벨만 initial loading
-        if (image->LoadDDSMipRangeForMaxDimension(request.filename.c_str(), 256, &mipRange)) {
-            // 이미지 자체가 256x256 이하라면 스트리밍을 그만둔다.
-            useInitialMipRange = mipRange.mipCount == mipRange.originalMipLevels ? false : true;
-        }
     }
 
     if (image->IsEmpty()) {
@@ -220,7 +218,7 @@ bool LoadingSystem::ProcessTextureLoadRequest(const LoadRequest &request) {
         return false;
     }
 
-    int textureDepth = useInitialMipRange ? mipRange.originalDepth : image->GetDepth();
+    int textureDepth = useMipRange ? mipRange.originalDepth : image->GetDepth();
 
     RHI::TextureType textureType;
     if (textureDepth > 1) {
@@ -231,12 +229,11 @@ bool LoadingSystem::ProcessTextureLoadRequest(const LoadRequest &request) {
         textureType = RHI::TextureType::Texture2D;
     }
 
-    if (!useInitialMipRange) {
-        completion.success = Texture::PrepareNew(textureType, image, request.textureFlags | Texture::Flag::LoadedFromFile, completion.texturePrepared);
-    } else {
-        completion.image = image;
+    if (useMipRange) {
         completion.mipRange = mipRange;
-        completion.success = Texture::PrepareMipRangeNew(textureType, image, mipRange, request.textureFlags | Texture::Flag::LoadedFromFile, completion.texturePrepared);
+        completion.success = Texture::PrepareDirect(textureType, image, request.textureFlags | Texture::Flag::LoadedFromFile, completion.texturePrepared);
+    } else {
+        completion.success = Texture::Prepare(textureType, image, request.textureFlags | Texture::Flag::LoadedFromFile, completion.texturePrepared);
     }
 
     // 완료 큐에 집어넣는다.
@@ -244,27 +241,42 @@ bool LoadingSystem::ProcessTextureLoadRequest(const LoadRequest &request) {
     return true;
 }
 
-bool LoadingSystem::ProcessTextureMipRangeLoadRequest(const LoadRequest &request) {
+bool LoadingSystem::ProcessTextureLoadAndReplaceRequest(const LoadRequest &request) {
     LoadCompletion completion;
     completion.texture = request.texture;
     completion.serial = request.serial;
-    completion.streaming = true;
 
-    BE_LOG("Loading texture '%s' mip [%i, %i]...\n", request.filename.c_str(), request.firstMip, request.firstMip + request.mipCount);
+    // 기존 텍스쳐의 교체 요청을 받았다고 표시
+    completion.requestedReplacement = true;
 
-    BE1::Image::MipRange mipRange;
+    uint32_t mipCount = request.originalMipLevels - request.firstMip;
+
     std::shared_ptr<BE1::Image> image = std::make_shared<BE1::Image>();
-    image->LoadDDSMipRange(request.filename.c_str(), request.firstMip, request.mipCount, &mipRange);
+    BE1::Image::MipRange mipRange;
 
+    BE_LOG("Loading texture '%s' [%i, %i]...\n", request.filename.c_str(), request.firstMip, request.firstMip + mipCount - 1);
+
+    image->LoadDDSMipRange(request.filename.c_str(), request.firstMip, mipCount, &mipRange);
+    
     if (image->IsEmpty()) {
-        BE_WARNLOG("LoadingSystem::ProcessTextureMipRangeLoadRequest: couldn't load texture \"%s\"\n", request.filename.c_str());
+        BE_WARNLOG("LoadingSystem::ProcessTextureLoadAndReplaceRequest: couldn't load texture \"%s\"\n", request.filename.c_str());
         PushCompletion(std::move(completion));
         return false;
     }
 
-    completion.success = true;
-    completion.image = image;
+    int textureDepth = mipRange.originalDepth;
+
+    RHI::TextureType textureType;
+    if (textureDepth > 1) {
+        textureType = RHI::TextureType::Texture3D;
+    } else if (image->IsCubeMap()) {
+        textureType = RHI::TextureType::TextureCube;
+    } else {
+        textureType = RHI::TextureType::Texture2D;
+    }
+
     completion.mipRange = mipRange;
+    completion.success = Texture::PrepareDirect(textureType, image, request.textureFlags | Texture::Flag::LoadedFromFile, completion.texturePrepared);
 
     // 완료 큐에 집어넣는다.
     PushCompletion(std::move(completion));
@@ -299,48 +311,29 @@ void LoadingSystem::ProcessLoadCompletions() {
 }
 
 bool LoadingSystem::ProcessTextureLoadCompletion(LoadCompletion &completion) {
-    Texture *texture = completion.texture;
+    std::shared_ptr<Texture> texture = completion.texture;
 
-    // 파괴 대기 중인 경우
-    if (texture->GetState() == Texture::State::DestroyPending) {
-        DiscardCompletion(completion);
-        textureManager.DestroyTexture(texture);
-        return false;
-    }
-
-    // 로딩 요청 이후 시리얼이 변경된 경우 : 다시 로딩 요청했거나 요청 처리 전에 Purge or DestroyTexture 가 호출된 상황
+    // 로딩 요청 이후 시리얼이 변경된 경우
     if (completion.serial != texture->GetLoadSerial()) {
+        // 새로 만든 텍스쳐를 폐기한다.
         DiscardCompletion(completion);
         return false;
     }
 
-    // 스트리밍인 경우
-    if (completion.streaming) {
-        // 로딩이 실패한 경우
-        if (!completion.success) {
-            textureManager.UnregisterStreamingTexture(texture);
+    // 교체 요청을 받았을 경우
+    if (completion.requestedReplacement) {
+        // 교체할 텍스쳐를 로딩하지 못했을 경우
+        if (!completion.success || !completion.texturePrepared.texture) {
+            BE_ERRLOG("Texture streaming replacement failed: texture '%s', requested first mip %i\n", texture->GetHashName(), texture->GetStreaming()->requestedFirstMip);
+
+            // 스트리밍 중단
+            textureManager.UnregisterStreamingTexture(texture.get());
             return true;
         }
 
-        // 부분 데이터 업로드
-        if (!RHI::renderer->UploadTextureMipRange(texture->GetRHITexture(), completion.image, completion.mipRange.firstMip)) {
-            textureManager.UnregisterStreamingTexture(texture);
-            return true;
-        }
-
-        // 로딩한 mipRange 로 residentFirstMip 과 residentMipCount 를 업데이트 한다.
-        uint32_t residentFirstMip;
-        uint32_t residentMipCount;
-        if (!textureManager.CompleteStreamingTextureRequest(texture, completion.mipRange, &residentFirstMip, &residentMipCount)) {
-            textureManager.UnregisterStreamingTexture(texture);
-            return true;
-        }
-
-        // resident SRV 를 업데이트 한다.
-        if (!RHI::renderer->UpdateTextureViewMipRange(texture->GetRHITexture(), RHI::ViewID::PrimaryID, residentFirstMip, residentMipCount)) {
-            textureManager.UnregisterStreamingTexture(texture);
-            return true;
-        }
+        // 교체할 RHI 텍스쳐 포인터를 담아 놓는다. (RHI::GPUResourceStatus::Ready 상태가 되고 나서 교체를 수행해야 한다)
+        texture->GetStreaming()->pendingReplacementTexture = completion.texturePrepared.texture;
+        completion.texturePrepared.texture = nullptr;
         return true;
     }
 
@@ -350,22 +343,12 @@ bool LoadingSystem::ProcessTextureLoadCompletion(LoadCompletion &completion) {
         return false;
     }
 
+    // 준비된 텍스쳐로 세팅한다.
     texture->ApplyPrepared(completion.texturePrepared);
 
-    // 스트리밍 초기 데이터인 경우 업로드
+    // 스트리밍 초기 데이터인 경우
     if (completion.mipRange.mipCount > 0) {
-        if (!RHI::renderer->UploadTextureMipRange(texture->GetRHITexture(), completion.image, completion.mipRange.firstMip)) {
-            texture->SetState(Texture::State::Failed);
-            return false;
-        }
-
-        // mip range 로 SRV 를 업데이트 한다.
-        if (!RHI::renderer->UpdateTextureViewMipRange(texture->GetRHITexture(), RHI::ViewID::PrimaryID, completion.mipRange.firstMip, completion.mipRange.mipCount)) {
-            texture->SetState(Texture::State::Failed);
-            return false;
-        }
-
-        // 텍스쳐 스트리밍 시스템에 등록한다.
+        // 스트리밍 텍스쳐로 등록한다.
         textureManager.RegisterStreamingTexture(texture, completion.mipRange);
     }
 
@@ -376,17 +359,11 @@ bool LoadingSystem::ProcessTextureLoadCompletion(LoadCompletion &completion) {
 }
 
 bool LoadingSystem::ProcessMeshLoadCompletion(LoadCompletion &completion) {
-    /*Mesh *mesh = completion.mesh;
+    /*std::shared_ptr<Mesh> mesh = completion.mesh;
 
-    // 파괴 대기 중인 경우
-    if (mesh->GetState() == Mesh::State::DestroyPending) {
-        DiscardCompletion(completion);
-        meshManager.DestroyMesh(mesh);
-        return false;
-    }
-
-    // 로딩 요청 이후 시리얼이 변경된 경우 : 다시 로딩 요청했거나 요청 처리 전에 Purge or DestroyTexture 가 호출된 상황
+    // 로딩 요청 이후 시리얼이 변경된 경우
     if (completion.serial != mesh->GetLoadSerial()) {
+        // 새로 만든 메시를 폐기한다.
         DiscardCompletion(completion);
         return false;
     }
@@ -397,10 +374,11 @@ bool LoadingSystem::ProcessMeshLoadCompletion(LoadCompletion &completion) {
         return false;
     }
 
-    // 로딩이 성공한 경우 Ready 상태로 바꿔준다.
+    // 준비된 메시로 세팅한다.
     mesh->ApplyPrepared(completion.meshPrepared);
+
+    // 로딩이 성공했으므로 Ready 상태로 바꿔준다.
     mesh->SetState(Mesh::State::Ready);
-    completion.meshPrepared.mesh = nullptr;
 
     return true;*/
     return false;

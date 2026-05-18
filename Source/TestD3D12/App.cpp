@@ -38,11 +38,11 @@ void App::Init(void *mainWindowHandle) {
     renderSystem = new RenderSystem;
     renderSystem->Init(mainWindowHandle);
 
+    mainRenderContext = renderSystem->CreateRenderContext(mainWindowHandle, true);
+
     loadingSystem.Init();
 
     mainFont = fontManager.GetFont("Data/EngineFonts/FredokaOne-Regular.ttf", 19);
-
-    mainRenderContext = renderSystem->CreateRenderContext(mainWindowHandle, true);
 
     renderWorld = new RenderWorld;
     renderCamera = new RenderCamera;
@@ -51,18 +51,16 @@ void App::Init(void *mainWindowHandle) {
 }
 
 void App::Shutdown() {
-    RHI::renderer->Finish(RHI::CommandQueueType::Graphics);
-
-    loadingSystem.Shutdown();
-
     ClearGameObjects();
 
     SAFE_DELETE(renderCamera);
     SAFE_DELETE(renderWorld);
 
-    renderSystem->DestroyRenderContext(mainRenderContext);
+    mainFont.reset();
 
-    fontManager.ReleaseFont(mainFont);
+    loadingSystem.Shutdown();
+
+    renderSystem->DestroyRenderContext(mainRenderContext);
 
     renderSystem->Shutdown();
     delete renderSystem;
@@ -72,8 +70,6 @@ void App::RunFrame(int frameMsec) {
     PROFILER_CPU_SCOPED_EVENT("App::RunFrame");
 
     loadingSystem.ProcessLoadCompletions();
-
-    textureManager.UpdateStreamingTextures(frameMsec);
 
     static int fpsElapsedMsec = 0;
     static int fpsFrames = 0;
@@ -104,7 +100,7 @@ void App::Render() {
     float w = mainRenderContext->GetWidth();
     float h = mainRenderContext->GetHeight();
     float aspectRatio = w / h;
-    float cameraX = 20 + (BE1::Math::Sin(MILLI2SEC(elapsedMsec) * 0.5f) + 1.0f) * 0.5f * 146;
+    float cameraX = 4 + (BE1::Math::Sin(MILLI2SEC(elapsedMsec) * 0.5f) + 1.0f) * 0.5f * 162;
 
     RenderCameraDesc cameraDesc;
     cameraDesc.orthogonal = false;
@@ -121,6 +117,12 @@ void App::Render() {
         cameraDesc.sizeY = cameraDesc.sizeX / aspectRatio;
     }
     renderCamera->Update(cameraDesc);
+
+    textureManager.UpdateFrame();
+
+    meshManager.UpdateFrame();
+
+    fontManager.UpdateFrame();
 
     renderWorld->RenderScene(renderCamera);
 
@@ -195,18 +197,7 @@ void App::InitGameObjects() {
 void App::ClearGameObjects() {
     for (GameObject *gameObject : gameObjects) {
         renderWorld->RemoveRenderObject(gameObject->renderObjectHandle);
-
-        if (gameObject->renderObjectDesc.mesh) {
-            meshManager.ReleaseMesh(gameObject->renderObjectDesc.mesh);
-        }
-        for (int i = 0; i < gameObject->renderObjectDesc.textures.Count(); ++i) {
-            textureManager.ReleaseTexture(gameObject->renderObjectDesc.textures[i]);
-        }
-        if (gameObject->renderObjectDesc.font) {
-            fontManager.ReleaseFont(gameObject->renderObjectDesc.font);
-        }
     }
-
     gameObjects.DeleteContents(true);
 }
 
@@ -232,7 +223,7 @@ void App::UpdateCubes() {
             GameObject *gameObject = gameObjects[index];
             gameObject->renderObjectDesc.worldMatrix.SetTranslationRotation(BE1::Vec3(0, CubeStartX + CubeSpacing * x, CubeStartY + CubeSpacing * y), BE1::Mat3::FromRotationZYX(t * 1.0f, 0, t * 0.25f), false);
 
-            renderWorld->UpdateRenderObject(gameObject->renderObjectHandle, gameObject->renderObjectDesc);
+            renderWorld->UpdateRenderObject(gameObject->renderObjectHandle, gameObject->renderObjectDesc, RenderObject::Desc::UpdateFlag::Transform);
         }
     }
 }

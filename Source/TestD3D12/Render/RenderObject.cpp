@@ -26,8 +26,41 @@ RenderObject::~RenderObject() {
 #endif
 }
 
-void RenderObject::Update(const RenderObject::Desc &desc) {
-    this->desc = desc;
+void RenderObject::Update(const RenderObject::Desc &src, RenderObject::Desc::UpdateFlag flags) {
+    if (BE1::HasFlag(flags, Desc::UpdateFlag::Transform)) {
+        desc.worldMatrix = src.worldMatrix;
+    }
 
-    worldAABB.SetFromTransformedAABBFast(desc.aabb, desc.worldMatrix);
+    if (BE1::HasFlag(flags, Desc::UpdateFlag::AABB)) {
+        desc.aabb = src.aabb;
+    }
+
+    if (BE1::HasFlag(flags, Desc::UpdateFlag::Mesh)) {
+        desc.mesh = src.mesh;
+    }
+
+    if (BE1::HasFlag(flags, Desc::UpdateFlag::Textures)) {
+        desc.textures = src.textures;
+    }
+
+    if (BE1::HasFlag(flags, Desc::UpdateFlag::Font)) {
+        desc.font = src.font;
+    }
+
+    if (BE1::HasFlag(flags, Desc::UpdateFlag::Text)) {
+        desc.text = src.text;
+    }
+
+    if (BE1::HasFlag(flags, Desc::UpdateFlag::TextStyle)) {
+        desc.textRect = src.textRect;
+        desc.textShadowOffset = src.textShadowOffset;
+        desc.textShadowColor = src.textShadowColor;
+        desc.textParams = src.textParams;
+        desc.textScale = src.textScale;
+        desc.textLineSpacing = src.textLineSpacing;
+    }
+
+    if (BE1::HasAnyFlag(flags, Desc::UpdateFlag::Transform | Desc::UpdateFlag::AABB)) {
+        worldAABB.SetFromTransformedAABBFast(desc.aabb, desc.worldMatrix);
+    }
 }

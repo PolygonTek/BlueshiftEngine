@@ -24,7 +24,7 @@
 #define GLYPH_COORD_OFFSET          1
 
 struct GlyphAtlas {
-    Texture *                       texture;
+    std::shared_ptr<Texture>        texture;
     stbrp_context                   context;
     BE1::Array<stbrp_node>          nodes;
 };
@@ -47,7 +47,7 @@ static void Atlas_Add(int textureSize) {
     stbrp_init_target(&atlas.context, textureSize, textureSize, atlas.nodes.Ptr(), atlas.nodes.Count());
 }
 
-static Texture *Atlas_AddRect(int inWidth, int inHeight, int &outX, int &outY) {
+static int Atlas_AddRect(int inWidth, int inHeight, int &outX, int &outY) {
     stbrp_rect rect;
     rect.w = (uint16_t)inWidth;
     rect.h = (uint16_t)inHeight;
@@ -65,7 +65,7 @@ static Texture *Atlas_AddRect(int inWidth, int inHeight, int &outX, int &outY) {
     outX = rect.x;
     outY = rect.y;
 
-    return atlasArray[atlasIndex].texture;
+    return atlasIndex;
 }
 
 void TrueTypeFontFace::InitAtlas() {
@@ -73,10 +73,6 @@ void TrueTypeFontFace::InitAtlas() {
 }
 
 void TrueTypeFontFace::FreeAtlas() {
-    for (int atlasIndex = 0; atlasIndex < atlasArray.Count(); atlasIndex++) {
-        textureManager.ReleaseTexture(atlasArray[atlasIndex].texture);
-    }
-
     atlasArray.Clear();
 }
 
@@ -92,12 +88,6 @@ void TrueTypeFontFace::Purge() {
 }
 
 void TrueTypeFontFace::ClearGlyphCaches() {
-    for (const auto &entry : glyphHashMap) {
-        FontGlyph *glyph = entry.second;
-
-        textureManager.ReleaseTexture(glyph->texture);
-    }
-
     glyphHashMap.DeleteContents(true);
 }
 
@@ -123,18 +113,18 @@ bool TrueTypeFontFace::Load(const char *filename, int fontSize) {
     return true;
 }
 
-Texture *TrueTypeFontFace::RenderGlyphToAtlasTexture(char32_t unicodeChar, Font::RenderMode renderMode, int glyphPadding, int &bitmapLeft, int &bitmapTop, int &glyphX, int &glyphY, int &glyphWidth, int &glyphHeight) const {
+int TrueTypeFontFace::RenderGlyphToAtlasTexture(char32_t unicodeChar, Font::RenderMode renderMode, int glyphPadding, int &bitmapLeft, int &bitmapTop, int &glyphX, int &glyphY, int &glyphWidth, int &glyphHeight) const {
     const FT_Bitmap *bitmap;
     FT_Glyph glyph = nullptr;
 
     if (!trueTypeFont->LoadGlyph(unicodeChar)) {
-        return nullptr;
+        return -1;
     }
 
     if (renderMode == Font::RenderMode::Border) {
         glyph = trueTypeFont->RenderGlyphWithBorder(FT_RENDER_MODE_NORMAL, 1.5f); // Fixed ?
         if (!glyph) {
-            return nullptr;
+            return -1;
         }
 
         const FT_BitmapGlyph bitmapGlyph = (FT_BitmapGlyph)glyph;
@@ -168,7 +158,7 @@ Texture *TrueTypeFontFace::RenderGlyphToAtlasTexture(char32_t unicodeChar, Font:
     int actualHeight = glyphHeight + (glyphPadding << 1);
     int x, y;
 
-    Texture *texture = Atlas_AddRect(actualWidth, actualHeight, x, y);
+    int atlasIndex = Atlas_AddRect(actualWidth, actualHeight, x, y);
 
     glyphX = x + glyphPadding;
     glyphY = y + glyphPadding;
@@ -176,7 +166,7 @@ Texture *TrueTypeFontFace::RenderGlyphToAtlasTexture(char32_t unicodeChar, Font:
     if (glyph) {
         FT_Done_Glyph(glyph);
     }
-    return texture;
+    return atlasIndex;
 }
 
 FontGlyph *TrueTypeFontFace::CacheGlyph(char32_t unicodeChar, Font::RenderMode renderMode, int atlasPadding) const {
@@ -193,12 +183,13 @@ FontGlyph *TrueTypeFontFace::CacheGlyph(char32_t unicodeChar, Font::RenderMode r
     int glyphWidth;
     int glyphHeight;
 
-    Texture *texture = RenderGlyphToAtlasTexture(unicodeChar, renderMode, atlasPadding, bitmapLeft, bitmapTop, glyphX, glyphY, glyphWidth, glyphHeight);
-    if (!texture) {
+    int atlasIndex = RenderGlyphToAtlasTexture(unicodeChar, renderMode, atlasPadding, bitmapLeft, bitmapTop, glyphX, glyphY, glyphWidth, glyphHeight);
+    if (atlasIndex < 0) {
         return nullptr;
     }
 
-    texture->Update2D(0, glyphX, glyphY, glyphWidth, glyphHeight, GLYPH_CACHE_TEXTURE_FORMAT, glyphBuffer);
+    Texture *atlasTexture = atlasArray[atlasIndex].texture.get();
+    atlasTexture->Update2D(0, glyphX, glyphY, glyphWidth, glyphHeight, GLYPH_CACHE_TEXTURE_FORMAT, glyphBuffer);
 
     // NOTE: ascender 의 의미가 폰트 포맷마다 해석이 좀 다양하다
     // (base line 에서부터 위쪽으로 top bearing 을 포함해서 그 위쪽까지의 거리가 필요함)
@@ -227,11 +218,11 @@ FontGlyph *TrueTypeFontFace::CacheGlyph(char32_t unicodeChar, Font::RenderMode r
     gl->offsetY     = ascender - bitmapTop - GLYPH_COORD_OFFSET;
     gl->advanceX    = (((int)ftFace->glyph->advance.x) >> 6) - (GLYPH_COORD_OFFSET << 1);
     gl->advanceY    = (((int)ftFace->glyph->advance.y) >> 6) - (GLYPH_COORD_OFFSET << 1);
-    gl->s           = (float)(glyphX - GLYPH_COORD_OFFSET) / texture->GetWidth();
-    gl->t           = (float)(glyphY - GLYPH_COORD_OFFSET) / texture->GetHeight();
-    gl->s2          = (float)(glyphX + glyphWidth + GLYPH_COORD_OFFSET) / texture->GetWidth();
-    gl->t2          = (float)(glyphY + glyphHeight + GLYPH_COORD_OFFSET) / texture->GetHeight();
-    gl->texture     = texture->AddRefCount();
+    gl->s           = (float)(glyphX - GLYPH_COORD_OFFSET) / atlasTexture->GetWidth();
+    gl->t           = (float)(glyphY - GLYPH_COORD_OFFSET) / atlasTexture->GetHeight();
+    gl->s2          = (float)(glyphX + glyphWidth + GLYPH_COORD_OFFSET) / atlasTexture->GetWidth();
+    gl->t2          = (float)(glyphY + glyphHeight + GLYPH_COORD_OFFSET) / atlasTexture->GetHeight();
+    gl->texture     = atlasTexture;
 
     glyphHashMap.Set(hashKey, gl);
 
@@ -326,7 +317,7 @@ void TrueTypeFontFace::WriteBitmapFiles(const char *fontFilename) {
     bitmapBasename.StripFileExtension();
 
     for (int i = 0; i < atlasArray.Count(); ++i) {
-        const Texture *texture = atlasArray[i].texture;
+        const Texture *texture = atlasArray[i].texture.get();
 
         BE1::Image bitmapImage;
         bitmapImage.Create2D(texture->GetWidth(), texture->GetHeight(), 1, texture->GetFormat(), BE1::Image::GammaSpace::DontCare, nullptr, BE1::Image::Flag::None);

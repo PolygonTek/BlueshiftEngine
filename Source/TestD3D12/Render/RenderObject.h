@@ -78,13 +78,24 @@ public:
     };
 
     struct Desc {
+        enum class UpdateFlag : uint32_t {
+            All                 = 0xFFFFFFFF,
+            Transform           = BIT(0),
+            AABB                = BIT(1),
+            Mesh                = BIT(2),
+            Textures            = BIT(3),
+            Font                = BIT(4),
+            Text                = BIT(5),
+            TextStyle           = BIT(6)
+        };
+
         BE1::Mat3x4             worldMatrix = BE1::Mat3x4::identity;
         BE1::AABB               aabb = BE1::AABB::empty; ///< non-scaled AABB in local space
 
-        Mesh *                  mesh = nullptr;
-        BE1::Array<Texture *>   textures;
+        std::shared_ptr<Mesh>   mesh;
+        BE1::Array<std::shared_ptr<Texture>> textures;
 
-        Font *                  font = nullptr;
+        std::shared_ptr<Font>   font;
         BE1::Str                text; ///< UTF8 encoded string
         BE1::RectF              textRect = BE1::RectF::zero;
         BE1::Vec2               textShadowOffset = BE1::Vec2(1, 1);
@@ -107,7 +118,7 @@ public:
     const BE1::AABB &           GetWorldAABB() const { return worldAABB; }
 
                                 /// Update this render object.
-    void                        Update(const Desc &desc);
+    void                        Update(const Desc &desc, Desc::UpdateFlag flags);
 
 private:
     Desc                        desc;
@@ -123,4 +134,9 @@ private:
 
     mutable uint32_t            viewCount = 0;              // 현재 실행 중인 DrawCamera or DrawGUICamera 함수의 실행 카운터
     mutable VisObject *         visObject = nullptr;        // viewCount 가 현재 RenderWorld::viewCount 와 같아야 valid 하다.
+};
+
+template<>
+struct enable_bitmask_operators<RenderObject::Desc::UpdateFlag> {
+    static const bool enable = true;
 };

@@ -64,7 +64,7 @@ public:
 
     RenderObject *              GetRenderObject(int index) const;
     int                         AddRenderObject(const RenderObject::Desc &desc);
-    void                        UpdateRenderObject(int index, const RenderObject::Desc &desc);
+    void                        UpdateRenderObject(int index, const RenderObject::Desc &desc, RenderObject::Desc::UpdateFlag updateFlags);
     void                        RemoveRenderObject(int index);
 
     void                        RenderScene(const RenderCamera *renderCamera);

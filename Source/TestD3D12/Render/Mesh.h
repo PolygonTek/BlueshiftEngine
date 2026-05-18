@@ -29,11 +29,6 @@ class Mesh {
     friend class MeshManager;
 
 public:
-    enum class Flag : uint8_t {
-        None                    = 0,
-        Permanent               = BIT(0),
-    };
-
     enum class FinishFlag : uint8_t {
         None                    = 0,
         ComputeAABB             = BIT(0),
@@ -67,17 +62,12 @@ public:
     const char *                GetName() const { return name; }
     const char *                GetHashName() const { return hashName; }
 
-    Mesh *                      AddRefCount() { refCount++; return this; }
-    const Mesh *                AddRefCount() const { refCount++; return this; }
-    int                         GetRefCount() const { return refCount; }
-
     State                       GetState() const { return state.load(); }
     void                        SetState(State newState) { state.store(newState); }
 
     uint32_t                    GetLoadSerial() const { return loadSerial.load(); }
     uint32_t                    BumpLoadSerial() { return loadSerial.fetch_add(1) + 1; }
 
-    bool                        IsPermanentMesh() const { return BE1::HasFlag(flags, Flag::Permanent); }
     bool                        IsStaticMesh() const { return type == MeshType::Static; }
     bool                        IsSkinnedMesh() const { return type == MeshType::Skinned; }
 
@@ -107,8 +97,6 @@ public:
                                 /// Applies a transformation to all vertices and optionally recomputes the AABB.
     void                        TransformVerts(const BE1::Mat3 &rotation, const BE1::Vec3 &scale, const BE1::Vec3 &translation, bool recomputeAABB = true);
 
-    void                        Purge() { surfaces.DeleteContents(true); }
-
     bool                        Load(const char *filename);
     bool                        LoadAsync(const char *filename);
     bool                        Reload();
@@ -116,6 +104,8 @@ public:
     void                        Write(const char *filename);
 
 private:
+    void                        Purge() { surfaces.DeleteContents(true); }
+
     void                        CreateDefaultBox();
     void                        CreatePlane(const BE1::Vec3 &origin, const BE1::Mat3 &axis, float size, int numSegments);
     void                        CreateBox(const BE1::Vec3 &origin, const BE1::Mat3 &axis, const BE1::Vec3 &extents);
@@ -134,18 +124,11 @@ private:
 
     BE1::Str                    hashName;
     BE1::Str                    name;
-    mutable int32_t             refCount = 0;
     BE1::AABB                   aabb = BE1::AABB::empty;
     BE1::Array<Surface *>       surfaces;
     MeshType                    type = MeshType::Dummy;
-    Flag                        flags = Flag::None;
     std::atomic<State>          state = State::Empty;
     std::atomic<uint32_t>       loadSerial = 0;
-};
-
-template<>
-struct enable_bitmask_operators<Mesh::Flag> {
-    static const bool enable = true;
 };
 
 template<>
@@ -160,28 +143,32 @@ public:
     void                        Init();
     void                        Shutdown();
 
-    Mesh *                      AllocMesh(const char *name);
-    Mesh *                      FindMesh(const char *name) const;
-    Mesh *                      GetMesh(const char *name);
-    void                        ReleaseMesh(Mesh *mesh);
+    void                        UpdateFrame();
 
-    Mesh *                      CreateCombinedMesh(const char *name, const BE1::Array<BatchSubMesh> &batchSubMeshes);
+    std::shared_ptr<Mesh>       AllocMesh(const char *name);
+    std::shared_ptr<Mesh>       FindMesh(const char *name) const;
+    std::shared_ptr<Mesh>       GetMesh(const char *name);
+
+    std::shared_ptr<Mesh>       CreateCombinedMesh(const char *name, const BE1::Array<BatchSubMesh> &batchSubMeshes);
 
     void                        RenameMesh(Mesh *mesh, const BE1::Str &newName);
 
-    Mesh *                      defaultMesh = nullptr;
-    Mesh *                      defaultQuadMesh = nullptr;
-    Mesh *                      defaultPlaneMesh = nullptr;
-    Mesh *                      defaultBoxMesh = nullptr;
-    Mesh *                      defaultSphereMesh = nullptr;
-    Mesh *                      defaultCylinderMesh = nullptr;
-    Mesh *                      defaultCapsuleMesh = nullptr;
+    std::shared_ptr<Mesh>       defaultMesh;
+    std::shared_ptr<Mesh>       defaultQuadMesh;
+    std::shared_ptr<Mesh>       defaultPlaneMesh;
+    std::shared_ptr<Mesh>       defaultBoxMesh;
+    std::shared_ptr<Mesh>       defaultSphereMesh;
+    std::shared_ptr<Mesh>       defaultCylinderMesh;
+    std::shared_ptr<Mesh>       defaultCapsuleMesh;
 
 private:
+    void                        CleanExpiredMeshes();
     void                        CreateEngineMeshes();
+    void                        DestroyEngineMeshes();
     void                        DestroyMesh(Mesh *mesh);
 
-    BE1::StrIHashMap<Mesh *>    meshHashMap;
+    BE1::StrIHashMap<std::weak_ptr<Mesh>> meshHashMap;
+    int                         expiredMeshHashMapCursor = 0;
 };
 
 extern MeshManager              meshManager;

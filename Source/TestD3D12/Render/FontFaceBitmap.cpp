@@ -18,24 +18,19 @@
 #include "Texture.h"
 
 void BitmapFontFace::Purge() {
-    for (Texture *texture : textures) {
-        textureManager.ReleaseTexture(texture);
-    }
     textures.Clear();
 
-    for (const auto &entry : glyphHashMap) {
-        FontGlyph *glyph = entry.second;
-
-        textureManager.ReleaseTexture(glyph->texture);
-    }
     glyphHashMap.DeleteContents(true);
 }
 
 Texture *BitmapFontFace::AddBitmap(const char *filename) {
-    Texture *texture = textureManager.GetTexture(filename, Texture::Flag::HighQuality | Texture::Flag::NoMipmaps);
-    textures.Append(texture);
+    std::shared_ptr<Texture> texture = textureManager.GetTexture(filename, Texture::Flag::HighQuality | Texture::Flag::NoMipmaps);
+    if (!texture) {
+        return nullptr;
+    }
 
-    return texture;
+    textures.Append(texture);
+    return texture.get();
 }
 
 FontGlyph *BitmapFontFace::AddGlyph(char32_t charCode, int width, int height, int offsetX, int offsetY, int advanceX, int advanceY, float s, float t, float s2, float t2, int materialIndex) {
@@ -52,7 +47,7 @@ FontGlyph *BitmapFontFace::AddGlyph(char32_t charCode, int width, int height, in
     glyph->t = t;
     glyph->s2 = s2;
     glyph->t2 = t2;
-    glyph->texture = textures[materialIndex];
+    glyph->texture = textures[materialIndex].get();
 
     glyphHashMap.Set(glyph->charCode, glyph);
 
@@ -149,7 +144,9 @@ void BitmapFontFace::Write(const char *filename) {
         glyph.t             = gl->t;
         glyph.s2            = gl->s2;
         glyph.t2            = gl->t2;
-        glyph.bitmapIndex   = textures.FindIndex(gl->texture);
+        glyph.bitmapIndex   = textures.FindIndexIf([gl](const std::shared_ptr<Texture> &texture) {
+            return texture.get() == gl->texture;
+        });
 
         fp->Write(&glyph, sizeof(glyph));
     }

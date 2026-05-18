@@ -27,7 +27,7 @@ void GuiMesh::Clear() {
 
 void GuiMesh::PrepareNewSurf() {
     Surface &newSurf = surfaces.Alloc();
-    newSurf.texture = currentSurf ? currentSurf->texture : textureManager.defaultTexture;
+    newSurf.texture = currentSurf ? currentSurf->texture : textureManager.defaultTexture.get();
     newSurf.numVerts = 0;
     newSurf.numIndexes = 0;
     newSurf.vertexBuffer = nullptr;
@@ -37,6 +37,10 @@ void GuiMesh::PrepareNewSurf() {
 }
 
 void GuiMesh::DrawPic(RHI::FrameThreadData *frameThreadData, float x, float y, float w, float h, float s1, float t1, float s2, float t2, uint32_t color, const Texture *texture) {
+    if (!texture) {
+        texture = textureManager.defaultTexture.get();
+    }
+
     if (coordFrame == CoordFrame::CoordFrame2D && !clipRect.IsEmpty()) {
         const float cx = clipRect.x - x;
         if (cx > 0) {

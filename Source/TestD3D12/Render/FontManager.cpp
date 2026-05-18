@@ -17,9 +17,8 @@
 #include "TrueTypeFont.h"
 #include "FontFace.h"
 
-const char *    FontManager::defaultFontFilename = "Data/EngineFonts/consola.ttf";//"Data/EngineFonts/Lucida Console12.font"
-Font *          FontManager::defaultFont;
-FontManager     fontManager;
+static const char * defaultFontFilename = "Data/EngineFonts/consola.ttf";//"Data/EngineFonts/Lucida Console12.font"
+FontManager         fontManager;
 
 void FontManager::Init() {
     TrueTypeFont::Init();
@@ -27,109 +26,100 @@ void FontManager::Init() {
 
     fontHashMap.Init(1024, 64, 64);
 
+    expiredFontHashMapCursor = 0;
+
     defaultFont = AllocFont(defaultFontFilename, 18);
     if (!defaultFont->Load(defaultFontFilename)) {
         BE_FATALERROR("Couldn't load default font!");
     }
-    defaultFont->permanence = true;
 }
 
 void FontManager::Shutdown() {
-    fontHashMap.DeleteContents(true);
+    if (defaultFont) {
+        defaultFont.reset();
+    }
+
+    fontHashMap.Clear();
 
     TrueTypeFontFace::FreeAtlas();
 
     TrueTypeFont::Shutdown();
 }
 
-void FontManager::ClearAtlasTextures() {
-    //TrueTypeFontFace::FreeAtlas();
+void FontManager::UpdateFrame() {
+    CleanExpiredFonts();
 }
 
-Font *FontManager::AllocFont(const char *hashName, uint32_t fontSize) {
-    if (fontHashMap.Get(FontHashKey(hashName, fontSize))) {
-        BE_FATALERROR("%s font already allocated", hashName);
+std::shared_ptr<Font> FontManager::AllocFont(const char *hashName, uint32_t fontSize) {
+    if (!hashName || !hashName[0]) {
+        BE_FATALERROR("FontManager::AllocFont: empty font name");
+    }
+    if (const auto *entry = fontHashMap.Get(FontHashKey(hashName, fontSize))) {
+        if (!entry->second.expired()) {
+            BE_FATALERROR("FontManager::AllocFont: %s (size = %i) font already allocated", hashName, fontSize);
+        }
+        fontHashMap.Remove(FontHashKey(hashName, fontSize));
     }
 
-    Font *font = new Font;
+    std::shared_ptr<Font> font = std::make_shared<Font>();
     font->hashName = hashName;
     font->name = hashName;
     font->name.StripPath();
     font->name.StripFileExtension();
-    font->refCount = 1;
     font->fontSize = fontSize;
     fontHashMap.Set(FontHashKey(hashName, fontSize), font);
 
     return font;
 }
 
-void FontManager::DestroyFont(Font *font) {
-    if (font->refCount > 1) {
-        BE_WARNLOG("FontManager::DestroyFont: font '%s' has %i reference count\n", font->name.c_str(), font->refCount);
+std::shared_ptr<Font> FontManager::FindFont(const char *hashName, uint32_t fontSize) const {
+    if (!hashName || !hashName[0]) {
+        return nullptr;
     }
 
-    fontHashMap.Remove(FontHashKey(font->hashName, font->fontSize));
-    delete font;
-}
-
-void FontManager::ReleaseFont(Font *font, bool immediateDestroy) {
-    if (font->refCount > 0) {
-        if (--font->refCount > 0) {
-            return;
-        }
-    }
-
-    if (font->permanence) {
-        return;
-    }
-
-    if (immediateDestroy) {
-        DestroyFont(font);
-    }
-}
-
-void FontManager::DestroyUnusedFonts() {
-    BE1::Array<Font *> removeArray;
-
-    for (const auto &entry : fontHashMap) {
-        Font *font = entry.second;
-        if (!font) {
-            continue;
-        }
-
-        if (!font->permanence && font->refCount == 0) {
-            removeArray.Append(font);
-        }
-    }
-
-    for (Font *font : removeArray) {
-        DestroyFont(font);
-    }
-}
-
-Font *FontManager::FindFont(const char *hashName, uint32_t fontSize) const {
     const auto *entry = fontHashMap.Get(FontHashKey(hashName, fontSize));
-    if (entry) {
-        return entry->second;
+    if (!entry) {
+        return nullptr;
     }
-    return nullptr;
+
+    return entry->second.lock();
 }
 
-Font *FontManager::GetFont(const char *hashName, uint32_t fontSize) {
+std::shared_ptr<Font> FontManager::GetFont(const char *hashName, uint32_t fontSize) {
     if (!hashName || !hashName[0]) {
         return defaultFont;
     }
 
-    Font *font = FindFont(hashName, fontSize);
+    std::shared_ptr<Font> font = FindFont(hashName, fontSize);
     if (font) {
-        font->refCount++;
         return font;
     }
 
     font = AllocFont(hashName, fontSize);
     if (!font->Load(hashName)) {
-        DestroyFont(font);
+        fontHashMap.Remove(FontHashKey(font->hashName, fontSize));
         return defaultFont;
     }
     return font;
+}
+
+void FontManager::CleanExpiredFonts() {
+    constexpr int ExpiredFontHashMapScanBudget = 1;
+    int scansLeft = ExpiredFontHashMapScanBudget;
+
+    while (scansLeft-- > 0 && fontHashMap.Count() > 0) {
+        if (expiredFontHashMapCursor >= fontHashMap.Count()) {
+            expiredFontHashMapCursor = 0;
+        }
+
+        const auto *entry = fontHashMap.GetByIndex(expiredFontHashMapCursor);
+        assert(entry);
+
+        if (entry->second.expired()) {
+            fontHashMap.Remove(entry->first);
+            continue;
+        }
+
+        expiredFontHashMapCursor++;
+    }
 }

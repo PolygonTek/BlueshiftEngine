@@ -14,6 +14,8 @@
 
 #pragma once
 
+#include "RHI.h"
+
 class SubMesh;
 class VisObject;
 class Texture;
@@ -33,6 +35,7 @@ public:
     SubMesh *               subMesh = nullptr;
     const VisObject *       space = nullptr;
     const Texture *         texture = nullptr;
+    const RHI::Texture *    rhiTexture = nullptr;
     Flag                    flags = Flag::None;
 };
 

@@ -74,13 +74,13 @@ public:
 
                                         // 컨텍스트의 GUI 그리기 함수들
     void                                SetColor(const BE1::Color4 &color);
-    void                                SetFont(Font *font);
+    void                                SetFont(std::shared_ptr<Font> font);
     void                                SetTextScale(float scale);
     void                                SetTextLineSpacing(float lineSpacing);
     void                                SetTextShadowColor(const BE1::Color4 &shadowColor);
     void                                SetTextShadowOffset(float shadowOffsetX, float shadowOffsetY);
-    void                                DrawPic(float x, float y, float w, float h, const Texture *texture);
-    void                                DrawStretchPic(float x, float y, float w, float h, float s1, float t1, float s2, float t2, const Texture *texture);
+    void                                DrawPic(float x, float y, float w, float h, const std::shared_ptr<Texture> &texture);
+    void                                DrawStretchPic(float x, float y, float w, float h, float s1, float t1, float s2, float t2, const std::shared_ptr<Texture> &texture);
     void                                DrawBar(float x, float y, float w, float h);
     void                                DrawRect(float x, float y, float w, float h);
     void                                DrawText(const BE1::Rect &rect, float x, float y, const char *text, DrawTextFlag flags);
@@ -146,5 +146,5 @@ private:
     float                               currentTextScale = 1.0f;
     float                               currentTextLineSpacing = 2;
     BE1::Vec2                           currentTextShadowOffset = BE1::Vec2::zero;
-    Font *                              currentFont = nullptr;
+    std::shared_ptr<Font>               currentFont;
 };
