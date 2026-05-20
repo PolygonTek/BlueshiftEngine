@@ -59,11 +59,11 @@ public:
         uint32_t                    originalHeight = 0;
         uint32_t                    originalDepth = 0;
         int                         originalMipLevels = 0;
-        int                         residentFirstMip = 0;
-        int                         requestedFirstMip = 0;
+        int                         residentFirstMip = -1;
+        int                         requestedFirstMip = -1;
         uint32_t                    requestedMaxDimension = 0;
+        uint32_t                    unloadDelay = 0;
         RHI::Texture *              pendingReplacementTexture = nullptr;
-        bool                        pendingReplacement = false;             // 교체 요청이 진행 중인지 여부
     };
 
     struct Prepared {
@@ -180,16 +180,15 @@ public:
 
 private:
     void                            CleanExpiredTextures();
-    void                            RemoveStreamingTextureAt(int index);
     void                            CreateEngineTextures();
     void                            DestroyEngineTextures();
+    void                            RemoveStreamingTextureAt(int index);
     void                            UpdateStreamingTextures();
 
     BE1::StrIHashMap<std::weak_ptr<Texture>> textureHashMap;
     int                             expiredTextureHashMapCursor = 0;
-    BE1::Array<std::weak_ptr<Texture>> streamingTextures;
     uint32_t                        nextTextureIndex = 0;
-    
+    BE1::Array<std::weak_ptr<Texture>> streamingTextures;
 };
 
 extern TextureManager               textureManager;

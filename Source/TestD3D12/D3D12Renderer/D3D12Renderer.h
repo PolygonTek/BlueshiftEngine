@@ -48,6 +48,8 @@ public:
     virtual void                        Init(const void *mainWindowHandle) override;
     virtual void                        Shutdown() override;
 
+    virtual void                        GetMemoryUsage(RHI::MemoryUsage &memoryUsage) const override;
+
     RHI::ShaderFormat                   GetShaderFormat() const;
 
     virtual uint64_t                    SignalFence(RHI::CommandQueueType queueType) override;
@@ -81,6 +83,8 @@ public:
     bool                                ExecuteUploadTextureSubImage(D3D12ResourceCommandContext &commandContext, D3D12Texture *texture, const D3D12UploadTextureSubImageRequest &request);
     bool                                ExecuteUpdateTextureViewMipRange(D3D12ResourceCommandContext &commandContext, D3D12Texture *texture, const D3D12UpdateTextureViewMipRangeRequest &request);
     bool                                ExecuteGenerateMipmaps(D3D12ResourceCommandContext &commandContext, D3D12Texture *texture);
+
+    virtual void                        SetName(RHI::GPUResource *resource, const char *name) const override;
 
     virtual RHI::Buffer *               CreateBuffer(RHI::BufferUsage usage, RHI::BufferFlag flags, uint64_t size, const void *data) override;
     virtual void                        DestroyBuffer(RHI::Buffer *buffer, bool immediate = false) override;
@@ -248,6 +252,7 @@ public:
 
     ID3D12Device5 *                     device = nullptr;
     IDXGIFactory4 *                     dxgiFactory = nullptr;
+    IDXGIAdapter3 *                     dxgiAdapter3 = nullptr;
     D3D12QueueFence                     queueFences[to_int(RHI::CommandQueueType::Count)];
     ID3D12CommandQueue *                commandQueues[to_int(RHI::CommandQueueType::Count)] = {};
 

@@ -60,6 +60,11 @@ void RenderSystem::Shutdown() {
     SAFE_DELETE(RHI::renderer);
 }
 
+void RenderSystem::UpdateFrame() {
+    RHI::renderer->GetMemoryUsage(videoMemoryUsage);
+    assert(videoMemoryUsage.budgetBytes > 0);
+}
+
 RenderContext *RenderSystem::CreateRenderContext(void *windowHandle, bool isMain) {
     RenderContext *renderContext = new RenderContext;
 #ifdef USE_RENDER_THREAD

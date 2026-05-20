@@ -15,6 +15,7 @@
 #include "Precompiled.h"
 #include "Texture.h"
 #include "LoadingSystem.h"
+#include "RenderSystem.h"
 
 TextureManager      textureManager;
 
@@ -168,7 +169,6 @@ void TextureManager::RegisterStreamingTexture(const std::shared_ptr<Texture> &te
     streaming.residentFirstMip = mipRange.firstMip;
     streaming.requestedFirstMip = -1;
     streaming.requestedMaxDimension = 0;
-    streaming.pendingReplacement = false;
     streaming.pendingReplacementTexture = nullptr;
 }
 
@@ -178,7 +178,6 @@ void TextureManager::UnregisterStreamingTexture(Texture *texture) {
     }
 
     Texture::Streaming &streaming = texture->streaming;
-    int index = streaming.streamingListIndex;
 
     // 교체 예정이었던 텍스쳐 파괴
     if (streaming.pendingReplacementTexture) {
@@ -187,6 +186,7 @@ void TextureManager::UnregisterStreamingTexture(Texture *texture) {
     }
 
     // 스트리밍 텍스쳐 목록에서 제거
+    int index = streaming.streamingListIndex;
     if (index >= 0 && index < streamingTextures.Count()) {
         RemoveStreamingTextureAt(index);
     }
@@ -208,68 +208,76 @@ void TextureManager::RemoveStreamingTextureAt(int index) {
 }
 
 void TextureManager::UpdateStreamingTextures() {
-    int streamingTextureIndex = 0;
-    while (streamingTextureIndex < streamingTextures.Count()) {
+    for (int streamingTextureIndex = 0; streamingTextureIndex < streamingTextures.Count(); ++streamingTextureIndex) {
         std::shared_ptr<Texture> texture = streamingTextures[streamingTextureIndex].lock();
         if (!texture) {
             RemoveStreamingTextureAt(streamingTextureIndex);
+            --streamingTextureIndex;
             continue;
         }
 
         Texture::Streaming &streaming = texture->streaming;
 
-        // 교체할 텍스쳐가 준비되었다면..
+        // 교체할 텍스쳐가 존재한다면..
         if (streaming.pendingReplacementTexture) {
             RHI::GPUResourceStatus status = streaming.pendingReplacementTexture->GetStatus();
-            if (status == RHI::GPUResourceStatus::Ready) {
-                // 기존 텍스쳐를 파괴하고, 새로 로딩된 텍스쳐로 교체한다.
-                RHI::renderer->DestroyTexture(texture->rhiTexture);
-                texture->rhiTexture = streaming.pendingReplacementTexture;
 
-                streaming.residentFirstMip = streaming.requestedFirstMip;
-                streaming.requestedFirstMip = -1;
+            if (status == RHI::GPUResourceStatus::Ready || status == RHI::GPUResourceStatus::Failed) {
+                if (status == RHI::GPUResourceStatus::Ready) {
+                    // 기존 텍스쳐를 파괴하고, 새로 로딩된 텍스쳐로 교체한다.
+                    RHI::renderer->DestroyTexture(texture->rhiTexture);
+                    texture->rhiTexture = streaming.pendingReplacementTexture;
 
-                streaming.pendingReplacementTexture = nullptr;
-                streaming.pendingReplacement = false;
-            } else if (status == RHI::GPUResourceStatus::Failed) {
-                // 업로드를 실패했다면 교체하지 않고, 새로 로딩된 텍스쳐를 파괴한다. (나중에 재요청될 것이다)
-                RHI::renderer->DestroyTexture(streaming.pendingReplacementTexture);
-
-                streaming.requestedFirstMip = -1;
+                    streaming.residentFirstMip = streaming.requestedFirstMip;
+                } else if (status == RHI::GPUResourceStatus::Failed) {
+                    // 업로드를 실패했다면 교체하지 않고, 새로 로딩된 텍스쳐를 파괴한다. (나중에 재요청될 것이다)
+                    RHI::renderer->DestroyTexture(streaming.pendingReplacementTexture);
+                }
 
                 streaming.pendingReplacementTexture = nullptr;
-                streaming.pendingReplacement = false;
+                streaming.requestedFirstMip = -1;
             }
         }
 
-        if (streaming.pendingReplacement) {
-            streamingTextureIndex++;
+        // 아직 교체가 완료되지 않았다면..
+        if (streaming.requestedFirstMip >= 0) {
             continue;
         }
 
-        if (streaming.requestedMaxDimension > 0) {
-            uint32_t requestedMaxDimension = BE1::Max(streaming.requestedMaxDimension, TextureManager::MinResidentStreamingTextureMaxDimension);
+        // 요청된 텍스쳐 해상도를 계산한다. (최소 크기는 TextureManager::MinResidentStreamingTextureMaxDimension 로 제한한다)
+        uint32_t requestedMaxDimension = BE1::Max(streaming.requestedMaxDimension, TextureManager::MinResidentStreamingTextureMaxDimension);
+        streaming.requestedMaxDimension = 0;
 
-            // 요청되었던 최대 크기로 원하는 first mip 을 구한다.
-            int desiredFirstMip = BE1::Image::ComputeFirstMipForMaxDimension(streaming.originalWidth, streaming.originalHeight, streaming.originalDepth, streaming.originalMipLevels, requestedMaxDimension);
-            if (desiredFirstMip != streaming.residentFirstMip) {
-                if (desiredFirstMip < streaming.residentFirstMip) {
-                    // 부드러운 스트리밍을 원하면 한 단계만 낮춘다.
-                    desiredFirstMip = BE1::Max(desiredFirstMip, streaming.residentFirstMip - 1);
-                }
+        // 요청되었던 최대 크기로 원하는 first mip 레벨을 구한다.
+        int desiredFirstMip = BE1::Image::ComputeFirstMipForMaxDimension(streaming.originalWidth, streaming.originalHeight, streaming.originalDepth, streaming.originalMipLevels, requestedMaxDimension);
+        if (desiredFirstMip <= streaming.residentFirstMip) {
+            // 같거나 더 높은 해상도가 필요한 경우, 딜레이를 초기화한다.
+            streaming.unloadDelay = 0;
 
-                // 디버깅을 위해 텍스쳐에 현재 요청하는 first mip 을 기록한다.
-                streaming.requestedFirstMip = desiredFirstMip;
-
-                if (loadingSystem.EnqueueTextureLoadAndReplace(texture, texture->hashName, streaming.requestedFirstMip)) {
-                    streaming.pendingReplacement = true;
-                }
+            if (desiredFirstMip < streaming.residentFirstMip) {
+                // 더 높은 해상도가 필요한 경우, 부드러운 스트리밍을 원한다면 한번에 한 단계만 낮춘다.
+                desiredFirstMip = BE1::Max(desiredFirstMip, streaming.residentFirstMip - 1);
+            } else {
+                continue;
             }
+        } else {
+            // 더 낮은 해상도가 필요한 경우, 바로 낮추지 않고 일정 프레임 딜레이를 준다.
+            streaming.unloadDelay++;
 
-            // TODO: 바로 죽이지 않고, 일정 시간 유지는 해야함.
-            streaming.requestedMaxDimension = 0;
+            // 비디오 메모리 사용량이 75% 이상이라면 더 빠르게 낮추도록 한다.
+            float videoMemoryUsageRatio = (float)(renderSystem->GetVideoMemoryUsage().usageBytes) / (float)(renderSystem->GetVideoMemoryUsage().budgetBytes);
+            uint32_t targetUnloadDelay = videoMemoryUsageRatio >= 0.75f ? 5 : 300;
+
+            if (streaming.unloadDelay < targetUnloadDelay) {
+                continue;
+            }
         }
 
-        streamingTextureIndex++;
+        // 현재 요청하는 first mip 레벨을 기록한다.
+        streaming.requestedFirstMip = desiredFirstMip;
+
+        if (!loadingSystem.EnqueueTextureLoadAndReplace(texture, texture->hashName, streaming.requestedFirstMip)) {
+            streaming.requestedFirstMip = -1;
+        }
     }
 }

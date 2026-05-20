@@ -39,7 +39,7 @@ private:
         BE1::Str                    filename;
         Texture::Flag               textureFlags = Texture::Flag::None;
         std::shared_ptr<BE1::Image> image;
-        bool                        replacement = false;
+        bool                        isReplacement = false;
         int                         originalMipLevels = 0;
         int                         firstMip = -1;
         int                         mipCount = -1;
@@ -49,11 +49,11 @@ private:
     struct LoadCompletion {
         std::shared_ptr<Texture>    texture = nullptr;
         Mesh *                      mesh = nullptr;
-        BE1::Image::MipRange        mipRange;
         Texture::Prepared           texturePrepared;
+        BE1::Image::MipRange        mipRange;
         //Mesh::Prepared            meshPrepared;
         uint32_t                    serial = 0;
-        bool                        requestedReplacement = false;
+        bool                        isReplacement = false;
         bool                        success = false;
     };
 

@@ -115,7 +115,7 @@ bool LoadingSystem::EnqueueTextureLoadAndReplace(std::shared_ptr<Texture> textur
         request.texture = texture;
         request.filename = filename;
         request.textureFlags = texture->GetFlags();
-        request.replacement = true;
+        request.isReplacement = true;
         request.originalMipLevels = texture->GetStreaming()->originalMipLevels;
         request.firstMip = firstMip;
         request.serial = texture->GetLoadSerial();
@@ -172,7 +172,7 @@ void LoadingSystem::Run() {
 
         for (LoadRequest &request : localRequests) {
             if (request.texture) {
-                if (request.replacement) {
+                if (request.isReplacement) {
                     if (!ProcessTextureLoadAndReplaceRequest(request)) {
                         continue;
                     }
@@ -236,6 +236,8 @@ bool LoadingSystem::ProcessTextureLoadRequest(const LoadRequest &request) {
         completion.success = Texture::Prepare(textureType, image, request.textureFlags | Texture::Flag::LoadedFromFile, completion.texturePrepared);
     }
 
+    RHI::renderer->SetName(completion.texturePrepared.texture, request.filename);
+
     // 완료 큐에 집어넣는다.
     PushCompletion(std::move(completion));
     return true;
@@ -247,7 +249,7 @@ bool LoadingSystem::ProcessTextureLoadAndReplaceRequest(const LoadRequest &reque
     completion.serial = request.serial;
 
     // 기존 텍스쳐의 교체 요청을 받았다고 표시
-    completion.requestedReplacement = true;
+    completion.isReplacement = true;
 
     uint32_t mipCount = request.originalMipLevels - request.firstMip;
 
@@ -321,7 +323,7 @@ bool LoadingSystem::ProcessTextureLoadCompletion(LoadCompletion &completion) {
     }
 
     // 교체 요청을 받았을 경우
-    if (completion.requestedReplacement) {
+    if (completion.isReplacement) {
         // 교체할 텍스쳐를 로딩하지 못했을 경우
         if (!completion.success || !completion.texturePrepared.texture) {
             BE_ERRLOG("Texture streaming replacement failed: texture '%s', requested first mip %i\n", texture->GetHashName(), texture->GetStreaming()->requestedFirstMip);
@@ -331,7 +333,7 @@ bool LoadingSystem::ProcessTextureLoadCompletion(LoadCompletion &completion) {
             return true;
         }
 
-        // 교체할 RHI 텍스쳐 포인터를 담아 놓는다. (RHI::GPUResourceStatus::Ready 상태가 되고 나서 교체를 수행해야 한다)
+        // 교체할 RHI::Texture 포인터를 담아 놓는다.
         texture->GetStreaming()->pendingReplacementTexture = completion.texturePrepared.texture;
         completion.texturePrepared.texture = nullptr;
         return true;

@@ -489,6 +489,11 @@ namespace RHI {
         BE1::Array<InputLayoutElement>  elements;
     };
 
+    struct MemoryUsage {
+        uint64_t                        budgetBytes = 0;    // total video memory available for use by the current application
+        uint64_t                        usageBytes = 0;     // used video memory by the current application
+    };
+
     enum class QueryType : uint8_t {
         TimeStamp,
         Occlusion,
@@ -913,6 +918,8 @@ namespace RHI {
 
         bool                            IsInitialized() const { return initialized; }
 
+        virtual void                    GetMemoryUsage(MemoryUsage &memoryUsage) const = 0;
+
         virtual uint64_t                SignalFence(CommandQueueType queueType) = 0;
         virtual bool                    IsFenceComplete(CommandQueueType queueType, uint64_t checkFenceValue) = 0;
         virtual void                    WaitFence(CommandQueueType queueType, uint64_t expectedFenceValue) = 0;
@@ -926,7 +933,7 @@ namespace RHI {
         virtual BE1::Image::Format      ToCompressedImageFormat(BE1::Image::Format inFormat, bool useNormalMap) const = 0;
         virtual BE1::Image::Format      ToUAVImageFormat(BE1::Image::Format inFormat) const = 0;
 
-        virtual SwapChain *             CreateSwapChain(HWND hwnd, uint32_t width, uint32_t height, RHI::Format format) = 0;
+        virtual SwapChain *             CreateSwapChain(HWND hwnd, uint32_t width, uint32_t height, Format format) = 0;
         virtual void                    DestroySwapChain(SwapChain *swapChain) = 0;
 
         virtual RHI::FrameThreadData *  CreateFrameThreadData(int32_t threadIndex) = 0;
@@ -934,11 +941,13 @@ namespace RHI {
 
         virtual void                    DrainReleaseRequestsToRetireList() = 0;
         virtual void                    FreeRetiredResources(bool waitPendings = false) = 0;
-        virtual void                    ProcessResourceRequests(RHI::FrameThreadData *frameThreadData) = 0;
+        virtual void                    ProcessResourceRequests(FrameThreadData *frameThreadData) = 0;
 
         const RasterizerState *         GetRasterizerState(RasterizerStateType type) const { return &rasterizerStates[to_int(type)]; }
         const DepthStencilState *       GetDepthStencilState(DepthStencilStateType type) const { return &depthStencilStates[to_int(type)]; }
         const BlendState *              GetBlendState(BlendStateType type) const { return &blendStates[to_int(type)]; }
+
+        virtual void                    SetName(GPUResource *resource, const char *name) const {}
 
         virtual Buffer *                CreateBuffer(BufferUsage usage, BufferFlag flags, uint64_t size, const void *data) = 0;
         virtual void                    DestroyBuffer(Buffer *buffer, bool immediate = false) = 0;
@@ -970,13 +979,13 @@ namespace RHI {
         virtual bool                    SetTextureSubImage3D(Texture *texture, int mipLevel, int x, int y, int z, int width, int height, int depth, BE1::Image::Format imageFormat, const void *pixels) = 0;
         virtual bool                    SetTextureSubImageCubeFace(Texture *texture, CubemapFace face, int mipLevel, int x, int y, int width, int height, BE1::Image::Format imageFormat, const void *pixels) = 0;
 
-        virtual ViewID                  CreateView(Buffer *buffer, ViewType subresourceType, RHI::Format format, uint32_t structuredStride, uint64_t offset = 0, uint64_t size = ~0) = 0;
+        virtual ViewID                  CreateView(Buffer *buffer, ViewType subresourceType, Format format, uint32_t structuredStride, uint64_t offset = 0, uint64_t size = ~0) = 0;
         virtual ViewID                  CreateView(Texture *texture, ViewType type, Format typelessCompatibleFormat = Format::Auto, uint32_t firstSlice = 0, uint32_t sliceCount = ~0, uint32_t firstMipLevel = 0, uint32_t mipCount = ~0) = 0;
 
         virtual void                    DestroyView(Buffer *buffer, ViewType viewType, ViewID viewID) = 0;
         virtual void                    DestroyView(Texture *texture, ViewType viewType, ViewID viewID) = 0;
 
-        virtual bool                    UpdateTextureViewMipRange(RHI::Texture *texture, RHI::ViewID viewID, uint32_t mostDetailedMip, uint32_t mipLevels) = 0;
+        virtual bool                    UpdateTextureViewMipRange(Texture *texture, ViewID viewID, uint32_t mostDetailedMip, uint32_t mipLevels) = 0;
 
         virtual Shader *                CreateShader(ShaderModel shaderModel, ShaderStage shaderStage, const char *sourceName, const char *shaderText, int shaderTextSize, const char *entryPoint) = 0;
         virtual Shader *                CreateShaderFromFile(ShaderModel shaderModel, ShaderStage shaderStage, const char *filename, const char *entryPoint) = 0;

@@ -95,6 +95,8 @@ void App::Render() {
 
     mainRenderContext->BeginFrame();
 
+    renderSystem->UpdateFrame();
+
     //renderWorld->ClearDebugLines();
 
     float w = mainRenderContext->GetWidth();

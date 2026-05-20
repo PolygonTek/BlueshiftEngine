@@ -164,6 +164,9 @@ void D3D12Renderer::Init(const void *mainWindowHandle) {
     }
 #endif
 
+    // IDXGIAdapter3 인터페이스 쿼리해서 얻어오기
+    adapter1->QueryInterface(IID_PPV_ARGS(&dxgiAdapter3));
+
     adapter1->Release();
 
     // 텍스쳐의 최대 크기 정보
@@ -536,6 +539,7 @@ void D3D12Renderer::Shutdown() {
     SAFE_RELEASE(commandQueues[to_int(RHI::CommandQueueType::Compute)]);
     SAFE_RELEASE(queueFences[to_int(RHI::CommandQueueType::Graphics)].fence);
     SAFE_RELEASE(queueFences[to_int(RHI::CommandQueueType::Compute)].fence);
+    SAFE_RELEASE(dxgiAdapter3);
     SAFE_RELEASE(dxgiFactory);
 
 #ifdef USE_D3D12_MEMALLOC
@@ -557,6 +561,27 @@ void D3D12Renderer::Shutdown() {
     }
 
     RHI::Renderer::Shutdown();
+}
+
+void D3D12Renderer::GetMemoryUsage(RHI::MemoryUsage &memoryUsage) const {
+#ifdef USE_D3D12_MEMALLOC
+    D3D12MA::Budget localBudget;
+    D3D12MA::Budget nonLocalBudget;
+    allocator->GetBudget(&localBudget, &nonLocalBudget);
+
+    memoryUsage.budgetBytes = localBudget.BudgetBytes;
+    memoryUsage.usageBytes = localBudget.UsageBytes;
+#else
+    if (!dxgiAdapter3) {
+        memoryUsage = {};
+        return;
+    }
+    DXGI_QUERY_VIDEO_MEMORY_INFO localInfo = {};
+    if (SUCCEEDED(dxgiAdapter3->QueryVideoMemoryInfo(0, DXGI_MEMORY_SEGMENT_GROUP_LOCAL, &localInfo))) {
+        memoryUsage.budgetBytes = localInfo.Budget;
+        memoryUsage.usageBytes = localInfo.CurrentUsage;
+    }
+#endif
 }
 
 uint64_t D3D12Renderer::SignalFence(RHI::CommandQueueType queueType) {
@@ -819,6 +844,15 @@ void D3D12Renderer::PrintMemoryAllocatorStats() {
     BE_LOG("GPU memory currently has %u allocations taking %s\n", localBudget.Stats.AllocationCount, BE1::Str::FormatBytes(localBudget.Stats.AllocationBytes).c_str());
 }
 #endif
+
+void D3D12Renderer::SetName(RHI::GPUResource *resource, const char *name) const {
+    ID3D12Resource *_resource = reinterpret_cast<ID3D12Resource *>(resource->GetNativeResource());
+    if (_resource) {
+        wchar_t wName[1024];
+        BE1::PlatformWinUtils::UTF8ToUCS2(name, wName, COUNT_OF(wName));
+        _resource->SetName(wName);
+    }
+}
 
 void D3D12Renderer::SetBlendFactor(RHI::CommandList *commandList, const BE1::Color4 &rgba) {
     D3D12CommandList *_commandList = static_cast<D3D12CommandList *>(commandList);

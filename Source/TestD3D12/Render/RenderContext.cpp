@@ -121,10 +121,12 @@ void RenderContext::CreateMainRenderTextures(uint32_t width, uint32_t height) {
     colorImage->InitFromMemory(width, height, 1, 1, 1, colorImageFormat, BE1::Image::GammaSpace::Linear, nullptr, BE1::Image::Flag::None);
     mainRTColorTexture = RHI::renderer->CreateTexture(RHI::TextureType::Texture2D, RHI::TextureFlag::RenderTarget | RHI::TextureFlag::ShaderResource | RHI::TextureFlag::UnorderedAccess,
         colorImage, false, RHI::ClearValue::Color(0.0f, 0.0f, 0.5f, 0.0f), 1);
+    RHI::renderer->SetName(mainRTColorTexture, "mainRTColorTexture");
 
     if (mainRTSampleCount > 1) {
         mainRTColorMSAATexture = RHI::renderer->CreateTexture(RHI::TextureType::Texture2D, RHI::TextureFlag::RenderTarget | RHI::TextureFlag::ShaderResource,
             colorImage, false, RHI::ClearValue::Color(0.0f, 0.0f, 5.0f, 0.0f), mainRTSampleCount);
+        RHI::renderer->SetName(mainRTColorMSAATexture, "mainRTColorMSAATexture");
     }
 
     BE1::Image::Format depthImageFormat = BE1::Image::Format::Unknown;
@@ -134,6 +136,7 @@ void RenderContext::CreateMainRenderTextures(uint32_t width, uint32_t height) {
     depthStencilImage->InitFromMemory(width, height, 1, 1, 1, depthImageFormat, BE1::Image::GammaSpace::Linear, nullptr, BE1::Image::Flag::None);
     mainRTDepthTexture = RHI::renderer->CreateTexture(RHI::TextureType::Texture2D, RHI::TextureFlag::DepthStencil,
         depthStencilImage, false, RHI::ClearValue::DepthStencil(1.0f, 0), mainRTSampleCount, RHI::GPUResourceState::DepthWrite);
+    RHI::renderer->SetName(mainRTColorTexture, "mainRTDepthTexture");
 }
 
 void RenderContext::DestroyMainRenderTextures() {
@@ -370,8 +373,6 @@ unsigned int RenderContext::RenderThreadProc(void *param) {
 
         // 리소스 요청 처리
         RHI::renderer->ProcessResourceRequests(backendFrameData->GetThreadData(0));
-
-        
 
         // 현재 백엔드 프레임 데이터로 렌더링 백엔드를 실행한다.
         renderSystem->GetBackend()->Execute(backendFrameData);

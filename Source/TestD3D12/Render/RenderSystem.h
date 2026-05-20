@@ -13,6 +13,7 @@
 // limitations under the License.
 
 #include "Precompiled.h"
+#include "RHI.h"
 
 class RenderContext;
 class RenderBackend;
@@ -22,6 +23,10 @@ class RenderSystem {
 public:
     void                        Init(void *mainWindowHandle);
     void                        Shutdown();
+
+    void                        UpdateFrame();
+
+    const RHI::MemoryUsage &    GetVideoMemoryUsage() const { return videoMemoryUsage; }
 
     RenderContext *             CreateRenderContext(void *windowHandle, bool isMain = false);
     void                        DestroyRenderContext(RenderContext *renderContext);
@@ -43,6 +48,7 @@ private:
     RenderContext *             mainRenderContext = nullptr;
     RenderBackend *             backEnd = nullptr;
     PendingScreenshot           pendingScreenshot;
+    RHI::MemoryUsage            videoMemoryUsage = {};
 };
 
 extern RenderSystem *           renderSystem;
