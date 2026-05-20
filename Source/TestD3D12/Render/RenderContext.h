@@ -31,120 +31,105 @@ class RenderBackend;
     - 화면 렌더 타겟 텍스쳐
     - 프레임 데이터 배열
         - 요소 하나는 한 프레임 렌더링에 필요한 데이터를 관리한다.
-        - 배열로 이루어져 프론트엔드 (메인 스레드) 와 백엔드 (렌더 스레드) 가 생산자/소비자로 나눠서 처리한다.
-        - 메인 스레드가 프레임 데이터를 쓰고 나면 렌더 스레드가 읽어서 처리하는 식이므로, 동시에 같은 프레임
-          데이터를 읽거나 쓰지 않도록 하기 위해 동기화가 필요하다.
+        - 프론트엔드 (메인 스레드) 는 프레임 데이터를 작성하고, RenderSystem 에 제출한다.
+        - 백엔드 (렌더 스레드) 는 RenderSystem 이 관리하며, 제출된 프레임 데이터를 읽어서 처리한다.
+        - 동시에 같은 프레임 데이터를 읽거나 쓰지 않도록 하기 위한 동기화도 RenderSystem 이 담당한다.
 
 ---------------------------------------------------------------------------------------------------
 */
 
 class RenderContext {
+    friend class RenderSystem;
     friend class RenderBackend;
 
 public:
     RenderContext() = default;
 
-    void                                Init(void *windowHandle, bool useRenderThread);
-    void                                Shutdown();
+    void                            Init(void *windowHandle);
+    void                            Shutdown();
 
-    void                                BeginFrame();
-    void                                EndFrame();
+    void                            BeginFrame();
+    void                            EndFrame();
 
-    RHI::SwapChain *                    GetSwapChain() const { return swapChain; }
+    RHI::SwapChain *                GetSwapChain() const { return swapChain; }
 
-    GuiMesh &                           GetGuiMesh() { return guiMesh; }
+    GuiMesh &                       GetGuiMesh() { return guiMesh; }
 
-    uint32_t                            GetWidth() const { return swapChain->GetWidth(); }
-    uint32_t                            GetHeight() const { return swapChain->GetHeight(); }
+    uint32_t                        GetWidth() const { return swapChain->GetWidth(); }
+    uint32_t                        GetHeight() const { return swapChain->GetHeight(); }
 
-    void                                OnResize(int width, int height);
+    void                            OnResize(int width, int height);
 
-    RHI::Format                         GetMainRTColorFormat() const { return mainRTColorFormat; }
-    RHI::Format                         GetMainRTDepthFormat() const { return mainRTDepthFormat; }
-    uint32_t                            GetMainRTSampleCount() const { return mainRTSampleCount; }
+    void                            RequestScreenshot(const char *filename);
 
-    const RenderFrameData *             GetCurrentFrontendFrameData() const { return &frames[currentFrontendFrameIndex]; }
-    RenderFrameData *                   GetCurrentFrontendFrameData() { return &frames[currentFrontendFrameIndex]; }
+    RHI::Format                     GetMainRTColorFormat() const { return mainRTColorFormat; }
+    RHI::Format                     GetMainRTDepthFormat() const { return mainRTDepthFormat; }
+    uint32_t                        GetMainRTSampleCount() const { return mainRTSampleCount; }
 
-    const RenderFrameData *             GetCurrentBackendFrameData() const { return &frames[currentBackendFrameIndex]; }
-    RenderFrameData *                   GetCurrentBackendFrameData() { return &frames[currentBackendFrameIndex]; }
+    const RenderFrameData *         GetCurrentFrontendFrameData() const { return &frames[currentFrontendFrameIndex]; }
+    RenderFrameData *               GetCurrentFrontendFrameData() { return &frames[currentFrontendFrameIndex]; }
 
-                                        // 모든 렌더링 명령이 수행이 완료될 때까지 대기한다.
-    void                                WaitAllFrameFences();
+                                    // 모든 렌더링 명령이 수행이 완료될 때까지 대기한다.
+    void                            WaitAllFrameFences();
 
-                                        // 컨텍스트의 GUI 그리기 함수들
-    void                                SetColor(const BE1::Color4 &color);
-    void                                SetFont(std::shared_ptr<Font> font);
-    void                                SetTextScale(float scale);
-    void                                SetTextLineSpacing(float lineSpacing);
-    void                                SetTextShadowColor(const BE1::Color4 &shadowColor);
-    void                                SetTextShadowOffset(float shadowOffsetX, float shadowOffsetY);
-    void                                DrawPic(float x, float y, float w, float h, const std::shared_ptr<Texture> &texture);
-    void                                DrawStretchPic(float x, float y, float w, float h, float s1, float t1, float s2, float t2, const std::shared_ptr<Texture> &texture);
-    void                                DrawBar(float x, float y, float w, float h);
-    void                                DrawRect(float x, float y, float w, float h);
-    void                                DrawText(const BE1::Rect &rect, float x, float y, const char *text, DrawTextFlag flags);
-    void                                DrawString(float x, float y, const BE1::Str &string, DrawTextFlag flags);
+                                    // 컨텍스트의 GUI 그리기 함수들
+    void                            SetColor(const BE1::Color4 &color);
+    void                            SetFont(std::shared_ptr<Font> font);
+    void                            SetTextScale(float scale);
+    void                            SetTextLineSpacing(float lineSpacing);
+    void                            SetTextShadowColor(const BE1::Color4 &shadowColor);
+    void                            SetTextShadowOffset(float shadowOffsetX, float shadowOffsetY);
+    void                            DrawPic(float x, float y, float w, float h, const std::shared_ptr<Texture> &texture);
+    void                            DrawStretchPic(float x, float y, float w, float h, float s1, float t1, float s2, float t2, const std::shared_ptr<Texture> &texture);
+    void                            DrawBar(float x, float y, float w, float h);
+    void                            DrawRect(float x, float y, float w, float h);
+    void                            DrawText(const BE1::Rect &rect, float x, float y, const char *text, DrawTextFlag flags);
+    void                            DrawString(float x, float y, const BE1::Str &string, DrawTextFlag flags);
 
-                                        // 렌더 스레드 사용 여부 리턴
-    bool                                IsUsingRenderThread() const { return !!renderThread; }
-
-    void                                MarkUpdateCompleted(RenderFrameData *frameData);
-    bool                                WaitRenderCompleted(const RenderFrameData *frameData);
-
-    void                                MarkRenderCompleted(RenderFrameData *frameData);
-    bool                                WaitUpdateCompleted(const RenderFrameData *frameData);
-
-    static RenderContext *              activeContext;
+    static RenderContext *          activeContext;
 
 private:
-    void                                CreateMainRenderTextures(uint32_t width, uint32_t height);
-    void                                DestroyMainRenderTextures();
-    void                                InitPSO();
-    void                                InitFullScreenTrianglePSO();
+    struct PendingScreenshot {
+        char                        filename[BE1::MaxAbsolutePath] = {};
+    };
 
-    static unsigned int                 RenderThreadProc(void *param);
+    void                            CreateMainRenderTextures(uint32_t width, uint32_t height);
+    void                            DestroyMainRenderTextures();
+    void                            InitPSO();
+    void                            InitFullScreenTrianglePSO();
+    void                            FlushPendingScreenshots(RenderFrameData *frameData);
 
-    void                                InitRenderThread();
-    void                                ShutdownRenderThread();
-
-    RHI::SwapChain *                    swapChain = nullptr;
-    RHI::Texture *                      mainRTColorMSAATexture = nullptr;
-    RHI::Texture *                      mainRTColorTexture = nullptr;
-    RHI::Texture *                      mainRTDepthTexture = nullptr;
-    RHI::PipelineState *                imagePSO = nullptr;
-    RHI::PipelineState *                unlitPSO = nullptr;
-    RHI::PipelineState *                unlitAlphaBlendPSO = nullptr;
-    RHI::PipelineState *                unlitInstancedPSO = nullptr;
-    RHI::PipelineState *                unlitInstancedAlphaBlendPSO = nullptr;
+    RHI::SwapChain *                swapChain = nullptr;
+    RHI::Texture *                  mainRTColorMSAATexture = nullptr;
+    RHI::Texture *                  mainRTColorTexture = nullptr;
+    RHI::Texture *                  mainRTDepthTexture = nullptr;
+    RHI::PipelineState *            imagePSO = nullptr;
+    RHI::PipelineState *            unlitPSO = nullptr;
+    RHI::PipelineState *            unlitAlphaBlendPSO = nullptr;
+    RHI::PipelineState *            unlitInstancedPSO = nullptr;
+    RHI::PipelineState *            unlitInstancedAlphaBlendPSO = nullptr;
 
 #ifdef USE_RENDER_FRAME_BUFFERING
-    static constexpr int                NumFrames = 2;
+    static constexpr int            NumFrames = 2;
 #else
-    static constexpr int                NumFrames = 1;
+    static constexpr int            NumFrames = 1;
 #endif
 
-    RenderFrameData                     frames[NumFrames] = {};
-    uint32_t                            currentFrontendFrameIndex = 0;
-    uint32_t                            currentBackendFrameIndex = 0;
-    uint32_t                            frameCount = 0;
+    RenderFrameData                 frames[NumFrames] = {};
+    uint32_t                        currentFrontendFrameIndex = 0;
+    uint32_t                        frameCount = 0;
+    BE1::Array<PendingScreenshot>   pendingScreenshots;
 
-    BE1::PlatformSRWLock *              frameSyncLock = nullptr;
-    BE1::PlatformCondition *            renderCompletedCondition = nullptr;
-    BE1::PlatformCondition *            updateCompletedCondition = nullptr;
-    BE1::PlatformThread *               renderThread = nullptr;
-    bool                                isStoppingRenderThread = false;
+    RHI::Format                     mainRTColorFormat = RHI::Format::R8G8B8A8_UNORM;
+    RHI::Format                     mainRTDepthFormat = RHI::Format::D24_UNORM_S8_UINT;
+    uint32_t                        mainRTSampleCount = 1;
 
-    RHI::Format                         mainRTColorFormat = RHI::Format::R8G8B8A8_UNORM;
-    RHI::Format                         mainRTDepthFormat = RHI::Format::D24_UNORM_S8_UINT;
-    uint32_t                            mainRTSampleCount = 1;
+    GuiMesh                         guiMesh;            ///< System GUI mesh
 
-    GuiMesh                             guiMesh;            ///< System GUI mesh
-
-    BE1::Color4                         currentColor = BE1::Color4(1, 1, 1, 1);
-    BE1::Color4                         currentTextShadowColor = BE1::Color4(0, 0, 0, 0);
-    float                               currentTextScale = 1.0f;
-    float                               currentTextLineSpacing = 2;
-    BE1::Vec2                           currentTextShadowOffset = BE1::Vec2::zero;
-    std::shared_ptr<Font>               currentFont;
+    BE1::Color4                     currentColor = BE1::Color4(1, 1, 1, 1);
+    BE1::Color4                     currentTextShadowColor = BE1::Color4(0, 0, 0, 0);
+    float                           currentTextScale = 1.0f;
+    float                           currentTextLineSpacing = 2;
+    BE1::Vec2                       currentTextShadowOffset = BE1::Vec2::zero;
+    std::shared_ptr<Font>           currentFont;
 };

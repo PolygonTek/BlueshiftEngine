@@ -90,6 +90,7 @@ struct EndRenderCommand {
 */
 
 class RenderFrameData {
+    friend class RenderSystem;
     friend class RenderContext;
 
 public:

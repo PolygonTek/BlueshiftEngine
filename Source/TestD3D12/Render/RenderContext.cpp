@@ -20,7 +20,7 @@
 
 RenderContext *     RenderContext::activeContext = nullptr;
 
-void RenderContext::Init(void *windowHandle, bool useRenderThread) {
+void RenderContext::Init(void *windowHandle) {
     // 프레임 별로 사용할 프레임 데이터들을 초기화한다.
     // 프레임 데이터: 임시 메모리, 커맨드 리스트 풀, 디스크립터 힙, 다이나믹 버퍼와 그 디스크립터 풀
     for (RenderFrameData &frameData : frames) {
@@ -28,11 +28,6 @@ void RenderContext::Init(void *windowHandle, bool useRenderThread) {
     }
 
     currentFrontendFrameIndex = 0;
-
-    // 렌더 스레드 초기화
-    if (useRenderThread) {
-        InitRenderThread();
-    }
 
     // 윈도우 크기 얻기
     // TODO: 윈도우 크기를 얻는 부분은 플랫폼 별로 분리하자.
@@ -57,11 +52,6 @@ void RenderContext::Init(void *windowHandle, bool useRenderThread) {
 }
 
 void RenderContext::Shutdown() {
-    // 렌더 스레드 종료
-    if (renderThread) {
-        ShutdownRenderThread();
-    }
-
     // GPU 명령들이 완료될 때까지 기다린다.
     RHI::renderer->Finish(RHI::CommandQueueType::Graphics);
     RHI::renderer->Finish(RHI::CommandQueueType::Compute);
@@ -93,9 +83,9 @@ void RenderContext::Shutdown() {
 
 void RenderContext::OnResize(int width, int height) {
     // 모든 프레임에 대해서 렌더 스레드가 렌더링을 완료할 때까지 기다린다.
-    if (IsUsingRenderThread()) {
+    if (renderSystem->IsUsingRenderThread()) {
         for (RenderFrameData &frameData : frames) {
-            WaitRenderCompleted(&frameData);
+            renderSystem->WaitRenderCompleted(&frameData);
         }
     }
 
@@ -264,129 +254,27 @@ void RenderContext::WaitAllFrameFences() {
     }
 }
 
-void RenderContext::InitRenderThread() {
-    frameSyncLock = BE1::PlatformSRWLock::Create();
-    renderCompletedCondition = BE1::PlatformCondition::Create();
-    updateCompletedCondition = BE1::PlatformCondition::Create();
-
-    renderThread = BE1::PlatformThread::Start(RenderContext::RenderThreadProc, this);
-}
-
-void RenderContext::ShutdownRenderThread() {
-    {
-        BE1::ScopedWriteLock lock(frameSyncLock);
-        isStoppingRenderThread = true;
-        BE1::PlatformCondition::Signal(updateCompletedCondition);
+void RenderContext::RequestScreenshot(const char *filename) {
+    if (!filename || !filename[0]) {
+        return;
     }
 
-    BE1::PlatformThread::Join(renderThread);
-    renderThread = nullptr;
-
-    BE1::PlatformCondition::Destroy(renderCompletedCondition);
-    BE1::PlatformCondition::Destroy(updateCompletedCondition);
-    BE1::PlatformSRWLock::Destroy(frameSyncLock);
-}
-
-void RenderContext::MarkUpdateCompleted(RenderFrameData *frameData) {
-    assert(BE1::Engine::IsInMainThread());
-
-    {
-        BE1::ScopedWriteLock lock(frameSyncLock);
-
-        // 주어진 프레임에 대한 (메인 스레드의) 업데이트가 완료되어,
-        // (렌더 스레드의) 렌더링이 완료되기를 기다리는 상태로 변경.
-        assert(frameData->frameSyncState == FrameSyncState::RenderCompleted);
-        frameData->frameSyncState = FrameSyncState::UpdateCompleted;
-
-        // 렌더 스레드에게 업데이트가 완료되었다고 신호를 보낸다.
-        BE1::PlatformCondition::Signal(updateCompletedCondition);
-    }
-}
-
-bool RenderContext::WaitRenderCompleted(const RenderFrameData *frameData) {
-    assert(BE1::Engine::IsInMainThread());
-
-    {
-        BE1::ScopedReadLock lock(frameSyncLock);
-
-        // 주어진 프레임에 대한 (렌더 스레드의) 렌더링이 완료되기를 기다린다.
-        BE1::PlatformCondition::Wait(renderCompletedCondition, frameSyncLock, false, [frameData] {
-            return frameData->frameSyncState == FrameSyncState::RenderCompleted;
-        });
-    }
-    return true;
-}
-
-void RenderContext::MarkRenderCompleted(RenderFrameData *frameData) {
-    //assert(BE1::Engine::IsInRenderThread());
-
-    {
-        BE1::ScopedWriteLock lock(frameSyncLock);
-
-        // 주어진 프레임에 대한 (렌더 스레드의) 렌더링이 완료되어,
-        // (메인 스레드의) 업데이트가 완료되기를 기다리는 상태로 변경.
-        assert(frameData->frameSyncState == FrameSyncState::UpdateCompleted);
-        frameData->frameSyncState = FrameSyncState::RenderCompleted;
-
-        // 메인 스레드에게 렌더링이 완료되었다고 신호를 보낸다.
-        BE1::PlatformCondition::Signal(renderCompletedCondition);
-    }
-}
-
-bool RenderContext::WaitUpdateCompleted(const RenderFrameData *frameData) {
-    //assert(BE1::Engine::IsInRenderThread());
-
-    {
-        BE1::ScopedReadLock lock(frameSyncLock);
-
-        // 주어진 프레임에 대한 (메인 스레드의) 업데이트가 완료되기를 기다린다.
-        BE1::PlatformCondition::Wait(updateCompletedCondition, frameSyncLock, false, [frameData, this] {
-            return frameData->frameSyncState == FrameSyncState::UpdateCompleted || isStoppingRenderThread;
-        });
-
-        if (isStoppingRenderThread) {
-            return false;
+    for (const PendingScreenshot &pendingScreenshot : pendingScreenshots) {
+        if (!BE1::Str::Cmp(pendingScreenshot.filename, filename)) {
+            return;
         }
     }
-    return true;
+
+    PendingScreenshot &pendingScreenshot = pendingScreenshots.Alloc();
+    BE1::Str::Copynz(pendingScreenshot.filename, filename, COUNT_OF(pendingScreenshot.filename));
 }
 
-unsigned int RenderContext::RenderThreadProc(void *param) {
-    BE1::PlatformThread::SetCurrentThreadName("RenderContext::RenderThreadProc");
-
-    BE1::SIMD::SetDenormalFlushMode(true);
-
-    RenderContext *context = reinterpret_cast<RenderContext *>(param);
-
-    while (1) {
-        PROFILER_CPU_SCOPED_EVENT("RenderThreadProcLoop");
-
-        // 이전에 사용이 완료된 리소스들을 해제한다.
-        RHI::renderer->FreeRetiredResources(false);
-
-        RenderFrameData *backendFrameData = context->GetCurrentBackendFrameData();
-
-        // 현재 백엔드 프레임에 대한 메인 스레드의 업데이트가 완료될 때까지 기다린다.
-        if (!context->WaitUpdateCompleted(backendFrameData)) {
-            break;
-        }
-
-        // 리소스 요청 처리
-        RHI::renderer->ProcessResourceRequests(backendFrameData->GetThreadData(0));
-
-        // 현재 백엔드 프레임 데이터로 렌더링 백엔드를 실행한다.
-        renderSystem->GetBackend()->Execute(backendFrameData);
-
-        // 이번 프레임에 Release/Delete 를 요청한 리소스들을 retiredResources 목록에 추가한다.
-        RHI::renderer->DrainReleaseRequestsToRetireList();
-
-        // 메인 스레드에게 렌더링이 완료되었음을 알린다.
-        context->MarkRenderCompleted(backendFrameData);
-
-        context->currentBackendFrameIndex = (context->currentBackendFrameIndex + 1) % COUNT_OF(context->frames);
+void RenderContext::FlushPendingScreenshots(RenderFrameData *frameData) {
+    for (const PendingScreenshot &pendingScreenshot : pendingScreenshots) {
+        frameData->CmdScreenshot(0, 0, swapChain->GetWidth(), swapChain->GetHeight(), pendingScreenshot.filename);
     }
 
-    return 0;
+    pendingScreenshots.SetCount(0, false);
 }
 
 void RenderContext::BeginFrame() {
@@ -402,9 +290,9 @@ void RenderContext::BeginFrame() {
     currentFrontendFrameIndex = frameCount % COUNT_OF(frames);
     RenderFrameData *frameData = GetCurrentFrontendFrameData();
 
-    if (IsUsingRenderThread()) {
+    if (renderSystem->IsUsingRenderThread()) {
         // 현재 프론트엔드 프레임의 렌더 스레드 작업이 끝날 때까지 기다린다.
-        WaitRenderCompleted(frameData);
+        renderSystem->WaitRenderCompleted(frameData);
     }
 
     frameData->BeginFrame();
@@ -422,29 +310,14 @@ void RenderContext::EndFrame() {
 
     RenderFrameData *frameData = GetCurrentFrontendFrameData();
 
-    renderSystem->FlushPendingScreenshot(this, frameData);
+    FlushPendingScreenshots(frameData);
 
     frameData->CmdSwapBuffers();
     frameData->EndFrame();
 
     frameCount++;
 
-    if (IsUsingRenderThread()) {
-        // 렌더 스레드에게 프론트엔드 프레임이 준비되었음을 알린다.
-        MarkUpdateCompleted(frameData);
-    } else {
-        // 이전에 사용이 완료된 리소스들을 해제한다.
-        RHI::renderer->FreeRetiredResources(false);
-
-        // 리소스 요청 처리
-        RHI::renderer->ProcessResourceRequests(frameData->GetThreadData(0));
-
-        // 렌더 스레드를 사용하지 않을 경우 직접 백엔드를 실행
-        renderSystem->GetBackend()->Execute(frameData);
-
-        // 이번 프레임에 Release/Delete 를 요청한 리소스들을 retiredResources 목록에 추가한다.
-        RHI::renderer->DrainReleaseRequestsToRetireList();
-    }
+    renderSystem->SubmitFrame(this, frameData);
 }
 
 void RenderContext::DrawPic(float x, float y, float w, float h, const std::shared_ptr<Texture> &texture) {

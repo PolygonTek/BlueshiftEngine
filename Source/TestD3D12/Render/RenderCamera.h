@@ -24,86 +24,86 @@ enum class RenderCameraClearMethod : uint8_t {
 };
 
 struct RenderCameraDesc {
-    int                     time = 0;               ///< Time in milliseconds for shader effects and other time dependent rendering issues
+    int                         time = 0;               ///< Time in milliseconds for shader effects and other time dependent rendering issues
 
-    BE1::Rect               renderRect;
-    BE1::Vec3               origin;                 ///< View origin
-    BE1::Mat3               axis;                   ///< View axis [FORWARD, LEFT, UP]
+    BE1::Rect                   renderRect;
+    BE1::Vec3                   origin;                 ///< View origin
+    BE1::Mat3                   axis;                   ///< View axis [FORWARD, LEFT, UP]
 
-    RenderCameraClearMethod clearMethod = RenderCameraClearMethod::NoClear;  ///< Clearing method before rendering view
-    BE1::Color4             clearColor;             ///< Clearing color is needed if clearing method is set to 'ColorClear'
+    RenderCameraClearMethod     clearMethod = RenderCameraClearMethod::NoClear; ///< Clearing method before rendering view
+    BE1::Color4                 clearColor;             ///< Clearing color is needed if clearing method is set to 'ColorClear'
 
-    float                   fovX;                   ///< Perspective projection FOV in horizontal axis
-    float                   fovY;                   ///< Perspective projection FOV in vertical axis
-    float                   sizeX;                  ///< Orthogonal projection size in horizontal axis
-    float                   sizeY;                  ///< Orthogonal projection size in vertical axis
-    float                   zNear;                  ///< Near distance in z axis
-    float                   zFar;                   ///< Far distance in z axis
-    bool                    orthogonal = false;     ///< True for orthogonal projection or false for perspective projection
+    float                       fovX;                   ///< Perspective projection FOV in horizontal axis
+    float                       fovY;                   ///< Perspective projection FOV in vertical axis
+    float                       sizeX;                  ///< Orthogonal projection size in horizontal axis
+    float                       sizeY;                  ///< Orthogonal projection size in vertical axis
+    float                       zNear;                  ///< Near distance in z axis
+    float                       zFar;                   ///< Far distance in z axis
+    bool                        orthogonal = false;     ///< True for orthogonal projection or false for perspective projection
 };
 
 class RenderCamera {
     friend class RenderWorld;
 
 public:
-    const RenderCameraDesc &GetDesc() const { return desc; }
+    const RenderCameraDesc &    GetDesc() const { return desc; }
 
-    const BE1::OBB          GetBox() const { return box; }
+    const BE1::OBB              GetBox() const { return box; }
 
-    const BE1::Frustum &    GetFrustum() const { return frustum; }
-    const BE1::Plane &      GetFrustumPlane(int index) const { return frustumPlanes[index]; }
+    const BE1::Frustum &        GetFrustum() const { return frustum; }
+    const BE1::Plane &          GetFrustumPlane(int index) const { return frustumPlanes[index]; }
 
-    const BE1::Mat4 &       GetViewMatrix() const { return viewMatrix; }
-    const BE1::Mat4 &       GetProjMatrix() const { return projMatrix; }
-    const BE1::Mat4 &       GetViewProjMatrix() const { return viewProjMatrix; }
+    const BE1::Mat4 &           GetViewMatrix() const { return viewMatrix; }
+    const BE1::Mat4 &           GetProjMatrix() const { return projMatrix; }
+    const BE1::Mat4 &           GetViewProjMatrix() const { return viewProjMatrix; }
 
-                            /// Transforms world coordinates to normalized device coordinates.
-    bool                    TransformWorldToNDC(const BE1::Vec3 &worldCoords, BE1::Vec3 &normalizedDeviceCoords) const;
+                                /// Transforms world coordinates to normalized device coordinates.
+    bool                        TransformWorldToNDC(const BE1::Vec3 &worldCoords, BE1::Vec3 &normalizedDeviceCoords) const;
 
-                            /// Transform normalized device coordinates to pixel coordinates.
-    void                    TransformNDCToPixel(const BE1::Vec3 &normalizedDeviceCoords, BE1::Vec3 &pixelCoords) const;
+                                /// Transform normalized device coordinates to pixel coordinates.
+    void                        TransformNDCToPixel(const BE1::Vec3 &normalizedDeviceCoords, BE1::Vec3 &pixelCoords) const;
 
-                            /// Transforms world coordinates to pixel coordinates.
-    bool                    TransformWorldToPixel(const BE1::Vec3 &worldCoords, BE1::Vec3 &pixelCoords) const;
+                                /// Transforms world coordinates to pixel coordinates.
+    bool                        TransformWorldToPixel(const BE1::Vec3 &worldCoords, BE1::Vec3 &pixelCoords) const;
 
-                            /// Un-transform pixel coordinates to normalized device coordinates.
-    void                    UntransformPixelToNDC(const BE1::Vec3 &pixelCoords, BE1::Vec3 &normalizedDeviceCoords) const;
+                                /// Un-transform pixel coordinates to normalized device coordinates.
+    void                        UntransformPixelToNDC(const BE1::Vec3 &pixelCoords, BE1::Vec3 &normalizedDeviceCoords) const;
 
-                            /// Un-transform normalized device coordinates to world coordinates.
-    bool                    UntransformNDCToWorld(const BE1::Vec3 &normalizedDeviceCoords, BE1::Vec3 &worldCoords) const;
+                                /// Un-transform normalized device coordinates to world coordinates.
+    bool                        UntransformNDCToWorld(const BE1::Vec3 &normalizedDeviceCoords, BE1::Vec3 &worldCoords) const;
 
-                            /// Un-transforms pixel coordinates to world coordinates.
-    bool                    UntransformPixelToWorld(const BE1::Vec3 &pixelCoords, BE1::Vec3 &worldCoords) const;
+                                /// Un-transforms pixel coordinates to world coordinates.
+    bool                        UntransformPixelToWorld(const BE1::Vec3 &pixelCoords, BE1::Vec3 &worldCoords) const;
 
-                            /// Calculates clipping rectangle from bounding sphere (Different camera axis with Eric Lengyel's method)
-    bool                    CalcClipRectFromSphere(const BE1::Sphere &sphere, BE1::Rect &clipRect) const;
+                                /// Calculates clipping rectangle from bounding sphere (Different camera axis with Eric Lengyel's method)
+    bool                        CalcClipRectFromSphere(const BE1::Sphere &sphere, BE1::Rect &clipRect) const;
 
-                            /// Calculates clipping rectangle from axis-aligned bounding box.
-    bool                    CalcClipRectFromAABB(const BE1::AABB &aabb, BE1::Rect &clipRect) const;
+                                /// Calculates clipping rectangle from axis-aligned bounding box.
+    bool                        CalcClipRectFromAABB(const BE1::AABB &aabb, BE1::Rect &clipRect) const;
     
-                            /// Calculates clipping rectangle from oriented bounding box.
-    bool                    CalcClipRectFromOBB(const BE1::OBB &obb, BE1::Rect &clipRect) const;
+                                /// Calculates clipping rectangle from oriented bounding box.
+    bool                        CalcClipRectFromOBB(const BE1::OBB &obb, BE1::Rect &clipRect) const;
     
-                            /// Calculates clipping rectangle from bounding frustum.
-    bool                    CalcClipRectFromFrustum(const BE1::Frustum &frustum, BE1::Rect &clipRect) const;
+                                /// Calculates clipping rectangle from bounding frustum.
+    bool                        CalcClipRectFromFrustum(const BE1::Frustum &frustum, BE1::Rect &clipRect) const;
 
-    bool                    CalcDepthBoundsFromPoints(int numPoints, const BE1::Vec3 *points, const BE1::Mat4 &mvp, float *depthMin, float *depthMax) const;
-    bool                    CalcDepthBoundsFromSphere(const BE1::Sphere &sphere, const BE1::Mat4 &mvp, float *depthMin, float *depthMax) const;
-    bool                    CalcDepthBoundsFromAABB(const BE1::AABB &bounds, const BE1::Mat4 &mvp, float *depthMin, float *depthMax) const;
-    bool                    CalcDepthBoundsFromOBB(const BE1::OBB &box, const BE1::Mat4 &mvp, float *depthMin, float *depthMax) const;
-    bool                    CalcDepthBoundsFromFrustum(const BE1::Frustum &frustum, const BE1::Mat4 &mvp, float *depthMin, float *depthMax) const;
+    bool                        CalcDepthBoundsFromPoints(int numPoints, const BE1::Vec3 *points, const BE1::Mat4 &mvp, float *depthMin, float *depthMax) const;
+    bool                        CalcDepthBoundsFromSphere(const BE1::Sphere &sphere, const BE1::Mat4 &mvp, float *depthMin, float *depthMax) const;
+    bool                        CalcDepthBoundsFromAABB(const BE1::AABB &bounds, const BE1::Mat4 &mvp, float *depthMin, float *depthMax) const;
+    bool                        CalcDepthBoundsFromOBB(const BE1::OBB &box, const BE1::Mat4 &mvp, float *depthMin, float *depthMax) const;
+    bool                        CalcDepthBoundsFromFrustum(const BE1::Frustum &frustum, const BE1::Mat4 &mvp, float *depthMin, float *depthMax) const;
 
-    void                    Update(const RenderCameraDesc &desc);
+    void                        Update(const RenderCameraDesc &desc);
 
-    static void             CalculateFov(float fromFovX, float fromAspectRatio, float toAspectRatio, float *toFovX, float *toFovY);
+    static void                 CalculateFov(float fromFovX, float fromAspectRatio, float toAspectRatio, float *toFovX, float *toFovY);
 
 private:
-    RenderCameraDesc        desc;
-    BE1::Frustum            frustum;
-    BE1::Plane              frustumPlanes[6];
-    BE1::Vec3               frustumPoints[8];
-    BE1::OBB                box;
-    ALIGN_AS32 BE1::Mat4    viewMatrix;
-    ALIGN_AS32 BE1::Mat4    projMatrix;
-    ALIGN_AS32 BE1::Mat4    viewProjMatrix;
+    RenderCameraDesc            desc;
+    BE1::Frustum                frustum;
+    BE1::Plane                  frustumPlanes[6];
+    BE1::Vec3                   frustumPoints[8];
+    BE1::OBB                    box;
+    ALIGN_AS32 BE1::Mat4        viewMatrix;
+    ALIGN_AS32 BE1::Mat4        projMatrix;
+    ALIGN_AS32 BE1::Mat4        viewProjMatrix;
 };

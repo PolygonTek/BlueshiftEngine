@@ -19,36 +19,71 @@ class RenderContext;
 class RenderBackend;
 class RenderFrameData;
 
+/*
+---------------------------------------------------------------------------------------------------
+
+    RenderSystem
+
+    렌더러 전역 상태와 렌더 스레드를 관리한다.
+
+    - RenderContext 생성/파괴
+    - 렌더 스레드와 프레임 동기화
+    - 제출된 프레임 데이터를 제출 순서대로 백엔드에서 실행
+    - 백엔드 실행과 지연 해제 리소스 정리
+
+---------------------------------------------------------------------------------------------------
+*/
+
 class RenderSystem {
 public:
-    void                        Init(void *mainWindowHandle);
-    void                        Shutdown();
+    void                            Init(void *mainWindowHandle);
+    void                            Shutdown();
 
-    void                        UpdateFrame();
+    void                            UpdateFrame();
 
-    const RHI::MemoryUsage &    GetVideoMemoryUsage() const { return videoMemoryUsage; }
+    const RHI::MemoryUsage &        GetVideoMemoryUsage() const { return videoMemoryUsage; }
+    bool                            IsUsingRenderThread() const { return !!renderThread; }
 
-    RenderContext *             CreateRenderContext(void *windowHandle, bool isMain = false);
-    void                        DestroyRenderContext(RenderContext *renderContext);
+    RenderContext *                 CreateRenderContext(void *windowHandle, bool isMain = false);
+    void                            DestroyRenderContext(RenderContext *renderContext);
 
-    RenderBackend *             GetBackend() const { return backEnd; }
+                                    // 프레임 데이터를 렌더 스레드에 제출한다. 제출된 프레임 데이터는 렌더 스레드에서 순서대로 처리된다.
+    void                            SubmitFrame(RenderContext *renderContext, RenderFrameData *frameData);
 
-    void                        FlushPendingScreenshot(RenderContext *renderContext, RenderFrameData *frameData);
+    bool                            WaitRenderCompleted(const RenderFrameData *frameData);
+
+    void                            RequestScreenshot(RenderContext *renderContext, const char *filename);
+
+    RenderBackend *                 GetBackend() const { return backEnd; }
 
 private:
-    struct PendingScreenshot {
-        RenderContext *         renderContext = nullptr;
-        char                    filename[BE1::MaxAbsolutePath] = {};
+    struct SubmittedFrame {
+        RenderContext *             renderContext = nullptr;
+        RenderFrameData *           frameData = nullptr;
     };
 
-    void                        RequestScreenshot(RenderContext *renderContext, const char *filename);
+    void                            InitRenderThread();
+    void                            ShutdownRenderThread();
 
-    static void                 Cmd_ScreenShot(const BE1::CmdArgs &args);
+    void                            MarkRenderCompleted(RenderFrameData *frameData);
+    bool                            WaitSubmittedFrame(SubmittedFrame &submittedFrame);
 
-    RenderContext *             mainRenderContext = nullptr;
-    RenderBackend *             backEnd = nullptr;
-    PendingScreenshot           pendingScreenshot;
-    RHI::MemoryUsage            videoMemoryUsage = {};
+    static unsigned int             RenderThreadProc(void *param);
+
+    static void                     Cmd_ScreenShot(const BE1::CmdArgs &args);
+
+    RenderContext *                 mainRenderContext = nullptr;
+    RenderBackend *                 backEnd = nullptr;
+    RHI::MemoryUsage                videoMemoryUsage = {};
+
+    BE1::Array<SubmittedFrame>      submittedFrames;
+    int                             submittedFrameReadIndex = 0;
+
+    BE1::PlatformSRWLock *          frameSyncLock = nullptr;
+    BE1::PlatformCondition *        renderCompletedCondition = nullptr;
+    BE1::PlatformCondition *        updateCompletedCondition = nullptr;
+    BE1::PlatformThread *           renderThread = nullptr;
+    bool                            isStoppingRenderThread = false;
 };
 
-extern RenderSystem *           renderSystem;
+extern RenderSystem *               renderSystem;
