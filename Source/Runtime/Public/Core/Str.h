@@ -31,12 +31,16 @@ class BE_API Str {
 public:
     /// Constructs empty string.
     Str();
+
     /// Constructs from another string.
     Str(const Str &str);
+
     /// Constructs from rvalue string.
     Str(Str &&str) noexcept;
+
     /// Constructs from a null-terminated C string.
     Str(const char *text);
+
     /// Constructs from a null-terminated wide character string.
     Str(const wchar_t *text);
 
@@ -93,6 +97,7 @@ public:
     explicit Str(const float f);
     /// Constructs from a double.
     explicit Str(const double d);
+
     /// Assign a string.
     Str &operator=(const Str &rhs);
     /// Move a string.
@@ -465,9 +470,9 @@ private:
     static constexpr int    AllocGranularity = 32;
     static constexpr int    FileNameHashSize = 1024;
  
-    char *                  data;                       ///< Data pointer
-    uint32_t                alloced;                    ///< Allocated data size
-    int                     len;                        ///< String length
+    char *                  data = baseBuffer;          ///< Data pointer
+    uint32_t                alloced = BaseLength;       ///< Allocated data size
+    int                     len = 0;                    ///< String length
     char                    baseBuffer[BaseLength];     ///< Default base buffer
 };
 
@@ -480,9 +485,6 @@ BE_INLINE void Str::EnsureAlloced(int amount, bool keepOld) {
 }
 
 BE_INLINE Str::Str() {
-    len = 0;
-    alloced = BaseLength;
-    data = baseBuffer;
     data[0] = '\0';
 }
 
@@ -587,15 +589,17 @@ BE_INLINE Str &Str::operator=(const Str &rhs) {
 }
 
 BE_INLINE Str &Str::operator=(Str &&rhs) noexcept {
-    BE1::Swap(len, rhs.len);
-    BE1::Swap(alloced, rhs.alloced);
-    BE1::Swap(data, rhs.data);
-    if (data == rhs.baseBuffer) {
-        strcpy(baseBuffer, rhs.baseBuffer);
-        data = baseBuffer;
-    }
-    if (rhs.data == baseBuffer) {
-        rhs.data = rhs.baseBuffer;
+    if (this != &rhs) {
+        BE1::Swap(len, rhs.len);
+        BE1::Swap(alloced, rhs.alloced);
+        BE1::Swap(data, rhs.data);
+        if (data == rhs.baseBuffer) {
+            strcpy(baseBuffer, rhs.baseBuffer);
+            data = baseBuffer;
+        }
+        if (rhs.data == baseBuffer) {
+            rhs.data = rhs.baseBuffer;
+        }
     }
     return *this;
 }

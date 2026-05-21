@@ -133,7 +133,7 @@ public:
 public:
     Str                     key;
     ValueT                  value;
-    HashBucket<Str, ValueT> *next;
+    HashBucket<const char *, ValueT> *next;
 };
 
 /// HashBucket class template specialization with hash key type is pointer type.
@@ -174,7 +174,16 @@ public:
     HashTable(int newTableSize = 256);
 
     /// Copy constructs
-    HashTable(const HashTable<KeyT, ValueT> &other);
+    HashTable(const HashTable<KeyT, ValueT, BucketGranularity> &rhs) = delete;
+
+    /// Copy from another hash table.
+    HashTable &operator=(const HashTable<KeyT, ValueT, BucketGranularity> &rhs) = delete;
+
+    /// Constructs from rvalue hash table.
+    HashTable(HashTable &&rhs) noexcept = delete;
+
+    /// Move from another hash table.
+    HashTable &operator=(HashTable &&rhs) noexcept = delete;
 
     /// Destructs
     ~HashTable();
@@ -183,10 +192,10 @@ public:
     int                     Count() const { return numEntries; }
     
                             /// Returns total size of allocated memory.
-    size_t                  Allocated() const { return sizeof(heads) * tableSize + sizeof(*heads) * numEntries + blockAllocator.Allocated(); }
+    size_t                  Allocated() const { return sizeof(*heads) * tableSize + blockAllocator.Allocated(); }
 
                             /// Returns total size of allocated memory including size of this type.
-    size_t                  Size() const { return sizeof(heads) * tableSize + sizeof(*heads) * numEntries + blockAllocator.Allocated() + sizeof(*this); }
+    size_t                  Size() const { return Allocated() + sizeof(*this); }
 
                             /// Searches the entire hash bucket in order and return the value pointer of the entry that matches the given index.
                             /// You can iterate entire buckets with an index, but when a bucket is added or removed, the existing index may no longer be valid.
@@ -224,8 +233,6 @@ public:
     float                   GetVariance() const;
 
 private:
-    void                    Copy(const HashTable<KeyT, ValueT> &other);
-
     BlockAllocator<THashBucket, BucketGranularity> blockAllocator;
 
     THashBucket **          heads;              // hash table
@@ -249,11 +256,6 @@ BE_INLINE HashTable<KeyT, ValueT, BucketGranularity>::HashTable(int newTableSize
 }
 
 template <typename KeyT, typename ValueT, int BucketGranularity>
-BE_INLINE HashTable<KeyT, ValueT, BucketGranularity>::HashTable(const HashTable<KeyT, ValueT> &other) {
-    Copy(other);
-}
-
-template <typename KeyT, typename ValueT, int BucketGranularity>
 BE_INLINE HashTable<KeyT, ValueT, BucketGranularity>::~HashTable() {
     Clear();
     delete [] heads;
@@ -261,7 +263,7 @@ BE_INLINE HashTable<KeyT, ValueT, BucketGranularity>::~HashTable() {
 
 template <typename KeyT, typename ValueT, int BucketGranularity>
 BE_INLINE ValueT *HashTable<KeyT, ValueT, BucketGranularity>::GetByIndex(int index) const {
-    if ((index < 0) || (index > numEntries)) {
+    if ((index < 0) || (index >= numEntries)) {
         assert(0);
         return nullptr;
     }
@@ -282,7 +284,7 @@ BE_INLINE ValueT *HashTable<KeyT, ValueT, BucketGranularity>::GetByIndex(int ind
 
 template <typename KeyT, typename ValueT, int BucketGranularity>
 BE_INLINE bool HashTable<KeyT, ValueT, BucketGranularity>::GetKeyByIndex(int index, KeyT &key) const {
-    if ((index < 0) || (index > numEntries)) {
+    if ((index < 0) || (index >= numEntries)) {
         assert(0);
         return false;
     }
@@ -389,7 +391,9 @@ BE_INLINE void HashTable<KeyT, ValueT, BucketGranularity>::Set(const KeyT &key, 
     }
 
     THashBucket *newBucket = blockAllocator.Alloc();
-    new (newBucket) THashBucket(key, value, node);
+    newBucket->key = key;
+    newBucket->value = value;
+    newBucket->next = node;
     *nextPtr = newBucket;
 
     numEntries++;
@@ -415,7 +419,9 @@ BE_INLINE ValueT &HashTable<KeyT, ValueT, BucketGranularity>::operator[](const K
     }
 
     THashBucket *newBucket = blockAllocator.Alloc();
-    new (newBucket) THashBucket(key, {}, node);
+    newBucket->key = key;
+    newBucket->value = {};
+    newBucket->next = node;
     *nextPtr = newBucket;
 
     numEntries++;
@@ -482,37 +488,6 @@ BE_INLINE void HashTable<KeyT, ValueT, BucketGranularity>::DeleteContents() {
     }
 
     numEntries = 0;
-}
-
-template <typename KeyT, typename ValueT, int BucketGranularity>
-BE_INLINE void HashTable<KeyT, ValueT, BucketGranularity>::Copy(const HashTable<KeyT, ValueT> &other) {
-    if (&other == this) {
-        return;
-    }
-    assert(other.tableSize > 0);
-
-    tableSize       = other.tableSize;
-    heads           = new THashBucket *[tableSize];
-    numEntries      = other.numEntries;
-    tableSizeMask   = other.tableSizeMask;
-
-    for (int i = 0; i < tableSize; i++) {
-        if (!other.heads[i]) {
-            heads[i] = nullptr;
-            continue;
-        }
-
-        THashBucket **prev = &heads[i];
-        for (THashBucket *node = other.heads[i]; node != nullptr; node = node->next) {
-            THashBucket *newBucket = blockAllocator.Alloc();
-            newBucket->key = node->key;
-            newBucket->value = node->value;
-            newBucket->next = nullptr;
-            
-            *prev = newBucket;
-            prev = &(*prev)->next;
-        }
-    }
 }
 
 template <typename KeyT, typename ValueT, int BucketGranularity>

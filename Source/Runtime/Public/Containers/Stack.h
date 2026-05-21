@@ -36,6 +36,18 @@ public:
 
     /// Constructs stack with the given stack size and granularity.
     Stack(int size, int granularity);
+
+    /// Copy constructor.
+    Stack(const Stack &rhs) = default;
+
+    /// Copy from another stack.
+    Stack &operator=(const Stack &rhs) = default;
+
+    /// Constructs from rvalue stack.
+    Stack(Stack &&rhs) noexcept = default;
+
+    /// Move from another stack.
+    Stack &operator=(Stack &&rhs) noexcept = default;
     
     const T &           operator[](int index) const;
     T &                 operator[](int index);
@@ -46,7 +58,8 @@ public:
 
     T &                 Push();
     T &                 Push(const T &element);
-    const T             Pop();
+    T &                 Push(T &&element);
+    T                   Pop();
 
     const T &           Top() const;
     T &                 Top();
@@ -105,7 +118,14 @@ BE_INLINE T &Stack<T>::Push(const T &element) {
 }
 
 template <typename T>
-BE_INLINE const T Stack<T>::Pop() {
+BE_INLINE T &Stack<T>::Push(T &&element) {
+    T &ref = stack.Alloc();
+    ref = std::move(element);
+    return ref;
+}
+
+template <typename T>
+BE_INLINE T Stack<T>::Pop() {
     T val = stack.TakeLast();
     return val;
 }

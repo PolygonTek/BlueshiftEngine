@@ -28,6 +28,19 @@ template <typename T>
 class Hierarchy {
 public:
     Hierarchy();
+
+    /// Copy constructor.
+    Hierarchy(const Hierarchy &rhs) = delete;
+
+    /// Copy from another hierarchy.
+    Hierarchy &operator=(const Hierarchy &rhs) = delete;
+
+    /// Constructs from rvalue hierarchy.
+    Hierarchy(Hierarchy &&rhs) noexcept = delete;
+
+    /// Move from another hierarchy
+    Hierarchy &operator=(Hierarchy &&rhs) noexcept = delete;
+
     ~Hierarchy();
 
                         /// Returns the object that is associated with this node.

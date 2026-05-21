@@ -48,7 +48,7 @@ struct BeginContextRenderCommand {
 
 struct DrawCameraRenderCommand {
     int             commandId;
-    VisCamera       camera;
+    const VisCamera *camera;
 };
 
 struct ScreenShotRenderCommand {

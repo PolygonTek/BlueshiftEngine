@@ -55,6 +55,12 @@ class BE_API StrPool {
 public:
     StrPool();
 
+    /// Copy constructor.
+    StrPool(const StrPool &rhs) = delete;
+
+    /// Copy from another pool.
+    StrPool &operator=(const StrPool &rhs) = delete;
+
     void                SetCaseSensitive(bool caseSensitive) { this->caseSensitive = caseSensitive; }
 
                         /// Returns number of strings.

@@ -50,13 +50,19 @@ public:
     Array(int newGranularity = DefaultGranularity);
 
     /// Constructs from another array.
-    Array(const Array<T> &array);
+    Array(const Array<T> &rhs);
 
     /// Assigns from another array, replacing its current contents.
     Array<T> &operator=(const Array<T> &rhs);
+
+    /// Constructs from rvalue array.
+    Array(Array &&rhs) noexcept;
+
+    /// Move from another array.
+    Array<T> &operator=(Array<T> &&rhs) noexcept;
     
     /// Aggregates initialization constructor.
-    Array(const std::initializer_list<T> &array);
+    Array(const std::initializer_list<T> &rhs);
     
     /// Destructs.
     ~Array();
@@ -293,9 +299,8 @@ BE_INLINE Array<T>::Array(int newGranularity) {
 }
 
 template <typename T>
-BE_INLINE Array<T>::Array(const Array<T> &array) {
-    elements = nullptr;
-    *this = array;
+BE_INLINE Array<T>::Array(const Array<T> &rhs) : Array(rhs.granularity) {
+    *this = rhs;
 }
 
 template <typename T>
@@ -317,15 +322,31 @@ BE_INLINE Array<T> &Array<T>::operator=(const Array<T> &rhs) {
             elements[i] = rhs.elements[i];
         }
     }
-
     return *this;
 }
 
 template <typename T>
-BE_INLINE Array<T>::Array(const std::initializer_list<T> &array) : Array() {
-    Reserve(array.size());
+BE_INLINE Array<T>::Array(Array<T> &&rhs) noexcept : Array() {
+    // just call move assignment operator
+    *this = std::move(rhs);
+}
 
-    for (auto it = array.begin(); it != array.end(); ++it) {
+template <typename T>
+BE_INLINE Array<T> &Array<T>::operator=(Array<T> &&rhs) noexcept {
+    if (this != &rhs) {
+        BE1::Swap(count, rhs.count);
+        BE1::Swap(capacity, rhs.capacity);
+        BE1::Swap(granularity, rhs.granularity);
+        BE1::Swap(elements, rhs.elements);
+    }
+    return *this;
+}
+
+template <typename T>
+BE_INLINE Array<T>::Array(const std::initializer_list<T> &rhs) : Array() {
+    Reserve(rhs.size());
+
+    for (auto it = rhs.begin(); it != rhs.end(); ++it) {
         Append(*it);
     }
 }
@@ -440,7 +461,7 @@ BE_INLINE void Array<T>::Resize(int newCapacity) {
 
     elements = new T[capacity];
     for (int i = 0; i < count; i++) {
-        elements[i] = temp[i];
+        elements[i] = std::move(temp[i]);
     }
 
     if (temp) {
@@ -468,7 +489,7 @@ BE_INLINE void Array<T>::Resize(int newCapacity, int newGranularity) {
 
     elements = new T[capacity];
     for (int i = 0; i < count; i++) {
-        elements[i] = temp[i];
+        elements[i] = std::move(temp[i]);
     }
 
     if (temp) {
@@ -558,7 +579,7 @@ BE_INLINE int Array<T>::Insert(CompatibleT &&value, int index) {
     }
 
     for (int i = count; i > index; --i) {
-        elements[i] = elements[i - 1];
+        elements[i] = std::move(elements[i - 1]);
     }
     elements[index] = std::forward<CompatibleT>(value);
     count++;
@@ -568,7 +589,12 @@ BE_INLINE int Array<T>::Insert(CompatibleT &&value, int index) {
 
 template <typename T>
 BE_INLINE int Array<T>::InsertArray(const Array<T> &array, int index) {
+    assert(&array != this);
     assert(index >= 0 && index <= count);
+
+    if (array.count <= 0) {
+        return index - 1;
+    }
 
     if (!elements) {
         Resize(granularity);
@@ -584,9 +610,8 @@ BE_INLINE int Array<T>::InsertArray(const Array<T> &array, int index) {
     }
 
     for (int i = count - 1; i >= index; --i) {
-        elements[i + array.count] = elements[i];
+        elements[i + array.count] = std::move(elements[i]);
     }
-
     for (int i = 0; i < array.count; i++) {
         elements[index + i] = array.elements[i];
     }
@@ -712,7 +737,7 @@ BE_INLINE bool Array<T>::RemoveIndex(int index) {
 
     count--;
     for (int i = index; i < count; i++) {
-        elements[i] = elements[i + 1];
+        elements[i] = std::move(elements[i + 1]);
     }
 
     return true;
@@ -726,7 +751,7 @@ BE_INLINE bool Array<T>::RemoveIndexFast(int index) {
 
     count--;
     if (index != count) {
-        elements[index] = elements[count];
+        elements[index] = std::move(elements[count]);
     }
 
     return true;
@@ -787,7 +812,7 @@ BE_INLINE T Array<T>::TakeAt(int index) {
         return T();
     }
 
-    T value = (*this)[index];
+    T value = std::move((*this)[index]);
     RemoveIndex(index);
     return value;
 }

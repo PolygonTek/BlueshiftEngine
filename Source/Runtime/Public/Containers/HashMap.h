@@ -84,7 +84,16 @@ public:
     HashMap() {}
 
     /// Constructs from other hash map
-    HashMap(const HASH_MAP_TEMPLATE &other);
+    HashMap(const HashMap &rhs);
+
+    /// Copy from another hash map.
+    HashMap &operator=(const HashMap &rhs);
+
+    /// Constructs from rvalue hash map.
+    HashMap(HashMap &&rhs) noexcept;
+
+    /// Move from another hash map.
+    HashMap &operator=(HashMap &&rhs) noexcept;
     
     /// Destructs
     ~HashMap();
@@ -121,6 +130,7 @@ public:
 
                             /// Adds key / value. If the key already exists, only the value will be changed.
     KV *                    Set(const KeyT &key, const ValueT &value);
+    KV *                    Set(const KeyT &key, ValueT &&value);
 
                             /// Searches by key and return value reference. If not, add a new bucket and return a reference
     ValueT &                operator[](const KeyT &key);
@@ -157,9 +167,30 @@ class StrIHashMap : public HashMap<Str, ValueT, HashCompareStrIcmp, HashGenerato
 };
 
 template <typename KeyT, typename ValueT, typename HashCompareT, typename HashGeneratorT>
-BE_INLINE HASH_MAP_TEMPLATE::HashMap(const HASH_MAP_TEMPLATE &other) {
-    pairs = other.pairs;
-    hashIndex = other.hashIndex;
+BE_INLINE HASH_MAP_TEMPLATE::HashMap(const HASH_MAP_TEMPLATE &rhs) : HashMap() {
+    *this = rhs;
+}
+
+template <typename KeyT, typename ValueT, typename HashCompareT, typename HashGeneratorT>
+BE_INLINE HASH_MAP_TEMPLATE &HASH_MAP_TEMPLATE::operator=(const HASH_MAP_TEMPLATE &rhs) {
+    pairs = rhs.pairs;
+    hashIndex = rhs.hashIndex;
+    return *this;
+}
+
+template <typename KeyT, typename ValueT, typename HashCompareT, typename HashGeneratorT>
+BE_INLINE HASH_MAP_TEMPLATE::HashMap(HASH_MAP_TEMPLATE &&rhs) noexcept : HashMap() {
+    // just call move assignment operator
+    *this = std::move(rhs);
+}
+
+template <typename KeyT, typename ValueT, typename HashCompareT, typename HashGeneratorT>
+BE_INLINE HASH_MAP_TEMPLATE &HASH_MAP_TEMPLATE::operator=(HASH_MAP_TEMPLATE &&rhs) noexcept {
+    if (this != &rhs) {
+        pairs.Swap(rhs.pairs);
+        hashIndex.Swap(rhs.hashIndex);
+    }
+    return *this;
 }
 
 template <typename KeyT, typename ValueT, typename HashCompareT, typename HashGeneratorT>
@@ -225,6 +256,21 @@ BE_INLINE typename HASH_MAP_TEMPLATE::KV *HASH_MAP_TEMPLATE::Set(const KeyT &key
     Pair<KeyT, ValueT> &pair = pairs.Alloc();
     pair.first = key;
     pair.second = value;
+    hashIndex.Add(HashGeneratorT::Hash(hashIndex, key), pairs.Count() - 1);
+    return &pair;
+}
+
+template <typename KeyT, typename ValueT, typename HashCompareT, typename HashGeneratorT>
+BE_INLINE typename HASH_MAP_TEMPLATE::KV *HASH_MAP_TEMPLATE::Set(const KeyT &key, ValueT &&value) {
+    KV *existingEntry = Get(key);
+    if (existingEntry) {
+        existingEntry->second = std::move(value);
+        return existingEntry;
+    }
+
+    Pair<KeyT, ValueT> &pair = pairs.Alloc();
+    pair.first = key;
+    pair.second = std::move(value);
     hashIndex.Add(HashGeneratorT::Hash(hashIndex, key), pairs.Count() - 1);
     return &pair;
 }

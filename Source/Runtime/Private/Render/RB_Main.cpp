@@ -938,19 +938,19 @@ static void RB_DrawCamera2D() {
 static const void *RB_ExecuteDrawCamera(const void *data) {
     DrawCameraRenderCommand *cmd = (DrawCameraRenderCommand *)data;
 
-    backEnd.camera              = &cmd->camera;
-    backEnd.time                = MILLI2SEC(cmd->camera.def->GetState().time);
-    backEnd.visObjects          = &cmd->camera.visObjects;
-    backEnd.visLights           = &cmd->camera.visLights;
-    backEnd.primaryLight        = cmd->camera.primaryLight;
-    backEnd.numDrawSurfs        = cmd->camera.numDrawSurfs;
-    backEnd.numAmbientSurfs     = cmd->camera.numAmbientSurfs;
-    backEnd.drawSurfs           = cmd->camera.drawSurfs;
-    backEnd.instanceBufferCache = cmd->camera.instanceBufferCache;
-    backEnd.projMatrix          = cmd->camera.def->GetProjMatrix();
-    backEnd.viewMatrix          = cmd->camera.def->GetViewMatrix();
-    backEnd.viewProjMatrix      = cmd->camera.def->GetViewProjMatrix();
-    backEnd.renderRect          = cmd->camera.def->GetState().renderRect;
+    backEnd.camera              = cmd->camera;
+    backEnd.time                = MILLI2SEC(cmd->camera->def->GetState().time);
+    backEnd.visObjects          = &cmd->camera->visObjects;
+    backEnd.visLights           = &cmd->camera->visLights;
+    backEnd.primaryLight        = cmd->camera->primaryLight;
+    backEnd.numDrawSurfs        = cmd->camera->numDrawSurfs;
+    backEnd.numAmbientSurfs     = cmd->camera->numAmbientSurfs;
+    backEnd.drawSurfs           = cmd->camera->drawSurfs;
+    backEnd.instanceBufferCache = cmd->camera->instanceBufferCache;
+    backEnd.projMatrix          = cmd->camera->def->GetProjMatrix();
+    backEnd.viewMatrix          = cmd->camera->def->GetViewMatrix();
+    backEnd.viewProjMatrix      = cmd->camera->def->GetViewProjMatrix();
+    backEnd.renderRect          = cmd->camera->def->GetState().renderRect;
     backEnd.upscaleFactor       = Vec2(backEnd.ctx->GetUpscaleFactorX(), backEnd.ctx->GetUpscaleFactorY());
     backEnd.useDepthPrePass     = r_useDepthPrePass.GetBool() &&
         (backEnd.camera->def->GetState().clearMethod == RenderCamera::ClearMethod::Color || backEnd.camera->def->GetState().clearMethod == RenderCamera::ClearMethod::Skybox);

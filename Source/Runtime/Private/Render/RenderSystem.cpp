@@ -272,7 +272,7 @@ void RenderSystem::CmdDrawCamera(const VisCamera *camera) {
     }
 
     cmd->commandId      = RenderCommand::DrawCamera;
-    cmd->camera         = *camera;
+    cmd->camera         = camera;
 }
 
 void RenderSystem::CmdScreenshot(int x, int y, int width, int height, const char *filename) {

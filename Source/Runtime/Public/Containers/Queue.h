@@ -1,4 +1,4 @@
-﻿// Copyright(c) 2017 POLYGONTEK
+// Copyright(c) 2017 POLYGONTEK
 // 
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -29,6 +29,18 @@ class Queue {
 public:
     /// Constructs empty queue.
     Queue();
+
+    /// Copy constructor.
+    Queue(const Queue &rhs) = delete;
+
+    /// Copy from another queue.
+    Queue &operator=(const Queue &rhs) = delete;
+
+    /// Constructs from rvalue queue.
+    Queue(Queue &&rhs) noexcept = delete;
+
+    /// Move from another queue
+    Queue &operator=(Queue &&rhs) noexcept = delete;
 
     void            Clear();
 

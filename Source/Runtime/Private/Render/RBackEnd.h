@@ -177,10 +177,10 @@ struct RenderBackEnd {
     int                     numAmbientSurfs;
     DrawSurf **             drawSurfs;
     BufferCache *           instanceBufferCache;
-    LinkList<VisObject> *   visObjects;
-    LinkList<VisLight> *    visLights;
+    const LinkList<VisObject> *visObjects;
+    const LinkList<VisLight> *visLights;
     VisLight *              primaryLight;
-    VisCamera *             camera;
+    const VisCamera *       camera;
 
     Rect                    renderRect;
     Vec2                    upscaleFactor;

@@ -249,8 +249,6 @@ BE_INLINE StaticArray<T, capacity> &StaticArray<T, capacity>::operator=(const St
 
 template <typename T, int capacity>
 BE_INLINE StaticArray<T, capacity>::StaticArray(const std::initializer_list<T> &array) : StaticArray() {
-    Reserve(array.size());
-
     for (auto it = array.begin(); it != array.end(); ++it) {
         Append(*it);
     }
@@ -334,21 +332,21 @@ BE_INLINE T *StaticArray<T, capacity>::Alloc() {
         return nullptr;
     }
 
-    return elements[count++];
+    return &elements[count++];
 }
 
 template <typename T, int capacity>
 template <typename CompatibleT>
 BE_INLINE int StaticArray<T, capacity>::Insert(CompatibleT &&value, int index) {
-    assert(count < capacity);
     assert(index >= 0 && index <= count);
+    assert(count + 1 <= capacity);
 
     if (count >= capacity) {
         return -1;
     }
 
     for (int i = count; i > index; --i) {
-        elements[i] = elements[i - 1];
+        elements[i] = std::move(elements[i - 1]);
     }
 
     elements[index] = std::forward<CompatibleT>(value);
@@ -359,12 +357,17 @@ BE_INLINE int StaticArray<T, capacity>::Insert(CompatibleT &&value, int index) {
 
 template <typename T, int capacity>
 BE_INLINE int StaticArray<T, capacity>::InsertArray(const StaticArray<T, capacity> &array, int index) {
-    assert(index >= 0 && index + array.count <= count);
+    assert(&array != this);
+    assert(index >= 0 && index <= count);
+    assert(count + array.count <= capacity);
 
-    for (int i = count - 1; i >= index; --i) {
-        elements[i + array.count] = elements[i];
+    if (array.count <= 0) {
+        return index - 1;
     }
 
+    for (int i = count - 1; i >= index; --i) {
+        elements[i + array.count] = std::move(elements[i]);
+    }
     for (int i = 0; i < array.count; i++) {
         elements[index + i] = array.elements[i];
     }
@@ -417,7 +420,7 @@ BE_INLINE int StaticArray<T, capacity>::FindIndexIf(Functor &&finder, int from) 
 
     T *e = std::find_if(first, last, std::forward<Functor>(finder));
     if (e != last) {
-        return (e - elements) / sizeof(T);
+        return (e - elements);
     }
     return -1;
 }
@@ -489,7 +492,7 @@ BE_INLINE bool StaticArray<T, capacity>::RemoveIndex(int index) {
 
     count--;
     for (int i = index; i < count; i++) {
-        elements[i] = elements[i + 1];
+        elements[i] = std::move(elements[i + 1]);
     }
 
     return true;
@@ -503,7 +506,7 @@ BE_INLINE bool StaticArray<T, capacity>::RemoveIndexFast(int index) {
 
     count--;
     if (index != count) {
-        elements[index] = elements[count];
+        elements[index] = std::move(elements[count]);
     }
 
     return true;
@@ -575,9 +578,15 @@ BE_INLINE void StaticArray<T, capacity>::SortSubSection(int startIndex, int endI
 
 template <typename T, int capacity>
 BE_INLINE void StaticArray<T, capacity>::Swap(StaticArray<T, capacity> &array) {
-    StaticArray<T, capacity> temp = *this;
-    *this = array;
-    array = temp;
+    if (this == &array) {
+        return;
+    }
+
+    int swapCount = BE1::Max(count, array.count);
+    for (int i = 0; i < swapCount; i++) {
+        BE1::Swap(elements[i], array.elements[i]);
+    }
+    BE1::Swap(count, array.count);
 }
 
 BE_NAMESPACE_END

@@ -40,12 +40,18 @@ public:
 
     /// Constructs hash index with initial size.
     HashIndex(const int initialHashSize = DefaultHashSize, const int initialIndexSize = DefaultHashSize);
-    
+
     /// Copy constructor.
     HashIndex(const HashIndex &rhs);
 
     /// Copy from another hash index.
     HashIndex &operator=(const HashIndex &rhs);
+
+    /// Constructs from rvalue hash index.
+    HashIndex(HashIndex &&rhs) noexcept;
+
+    /// Move from another hash index.
+    HashIndex &operator=(HashIndex &&rhs) noexcept;
     
     /// Destructs.
     ~HashIndex();
@@ -132,6 +138,15 @@ private:
     int             hashMask;           ///< hashSize - 1
     int             lookUpMask;         ///< 0 means initial state, -1 is not
 };
+
+BE_INLINE HashIndex::HashIndex(const HashIndex &rhs) : HashIndex(rhs.hashSize, rhs.indexSize) {
+    *this = rhs;
+}
+
+BE_INLINE HashIndex::HashIndex(HashIndex &&rhs) noexcept : HashIndex() {
+    // just call move assignment operator
+    *this = std::move(rhs);
+}
 
 BE_INLINE HashIndex::~HashIndex() {
     Free();

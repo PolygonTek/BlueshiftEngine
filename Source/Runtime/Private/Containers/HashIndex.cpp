@@ -36,10 +36,6 @@ HashIndex::HashIndex(const int initialHashSize, const int initialIndexSize) {
     lookUpMask = 0;
 }
 
-HashIndex::HashIndex(const HashIndex &other) {
-    *this = other;
-}
-
 void HashIndex::Allocate(const int newHashSize, const int newIndexSize) {
     assert(Math::IsPowerOfTwo(newHashSize));
 
@@ -71,36 +67,50 @@ void HashIndex::Free() {
 }
 
 HashIndex &HashIndex::operator=(const HashIndex &rhs) {
-    granularity = rhs.granularity;
-    hashMask = rhs.hashMask;
-    lookUpMask = rhs.lookUpMask;
+    if (this != &rhs) {
+        granularity = rhs.granularity;
+        hashMask = rhs.hashMask;
+        lookUpMask = rhs.lookUpMask;
 
-    if (rhs.lookUpMask == 0) {
-        hashSize = rhs.hashSize;
-        indexSize = rhs.indexSize;
-        Free();
-    } else {
-        if (rhs.hashSize != hashSize || hashTable == EmptyTable) {
-            if (hashTable != EmptyTable) {
-                delete[] hashTable;
-            }
-
+        if (rhs.lookUpMask == 0) {
             hashSize = rhs.hashSize;
-            hashTable = new int[hashSize];
-        }
+            indexSize = rhs.indexSize;
+            Free();
+        } else {
+            if (rhs.hashSize != hashSize || hashTable == EmptyTable) {
+                if (hashTable != EmptyTable) {
+                    delete[] hashTable;
+                }
 
-        if (rhs.indexSize != indexSize || indexChain == EmptyTable) {
-            if (indexChain != EmptyTable) {
-                delete[] indexChain;
+                hashSize = rhs.hashSize;
+                hashTable = new int[hashSize];
             }
 
-            indexSize = rhs.indexSize;
-            indexChain = new int[indexSize];
-        }
-        memcpy(hashTable, rhs.hashTable, hashSize * sizeof(hashTable[0]));
-        memcpy(indexChain, rhs.indexChain, indexSize * sizeof(indexChain[0]));
-    }
+            if (rhs.indexSize != indexSize || indexChain == EmptyTable) {
+                if (indexChain != EmptyTable) {
+                    delete[] indexChain;
+                }
 
+                indexSize = rhs.indexSize;
+                indexChain = new int[indexSize];
+            }
+            memcpy(hashTable, rhs.hashTable, hashSize * sizeof(hashTable[0]));
+            memcpy(indexChain, rhs.indexChain, indexSize * sizeof(indexChain[0]));
+        }
+    }
+    return *this;
+}
+
+HashIndex &HashIndex::operator=(HashIndex &&rhs) noexcept {
+    if (this != &rhs) {
+        BE1::Swap(hashTable, rhs.hashTable);
+        BE1::Swap(indexChain, rhs.indexChain);
+        BE1::Swap(hashSize, rhs.hashSize);
+        BE1::Swap(indexSize, rhs.indexSize);
+        BE1::Swap(granularity, rhs.granularity);
+        BE1::Swap(hashMask, rhs.hashMask);
+        BE1::Swap(lookUpMask, rhs.lookUpMask);
+    }
     return *this;
 }
 

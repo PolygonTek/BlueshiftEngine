@@ -32,6 +32,18 @@ public:
     /// Constructs emtpy link list.
     LinkList();
 
+    /// Copy constructor.
+    LinkList(const LinkList &rhs) = delete;
+
+    /// Copy from another link list.
+    LinkList &operator=(const LinkList &rhs) = delete;
+
+    /// Constructs from rvalue link list.
+    LinkList(LinkList &&rhs) noexcept = delete;
+
+    /// Move from another link list.
+    LinkList &operator=(LinkList &&rhs) noexcept = delete;
+
     /// Destructs
     ~LinkList();
 
