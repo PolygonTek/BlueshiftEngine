@@ -289,9 +289,17 @@ void TextureManager::UpdateStreamingTextures() {
 
             if (desiredFirstMip <= streaming.residentFirstMip) {
                 // 같거나 더 낮은 레벨 (높은 해상도) 이 필요한 경우, 딜레이를 초기화한다.
-                streaming.unloadDelay = 0;
+                streaming.streamOutFrameCount = 0;
 
                 if (desiredFirstMip < streaming.residentFirstMip) {
+                    streaming.streamInFrameCount++;
+
+                    if (streaming.streamInFrameCount < TextureManager::StreamInDelay) {
+                        continue;
+                    }
+
+                    streaming.streamInFrameCount = 0;
+
                     // 더 낮은 레벨 (높은 해상도) 이 필요한 경우, 부드러운 스트리밍을 위해 한번에 한 단계만 낮춘다.
                     desiredFirstMip = BE1::Max(desiredFirstMip, streaming.residentFirstMip - 1);
                 } else {
@@ -299,13 +307,14 @@ void TextureManager::UpdateStreamingTextures() {
                 }
             } else {
                 // 더 높은 레벨 (낮은 해상도) 이 필요한 경우, 바로 낮추지 않고 일정 프레임 딜레이를 준다.
-                streaming.unloadDelay++;
+                streaming.streamOutFrameCount++;
+                streaming.streamInFrameCount = 0;
 
                 // budget 사용량에 따라 더 빠르게 낮추도록 한다.
                 float videoMemoryUsageRatio = streamingTextureMemoryBudgetBytes > 0 ? (float)(streamingTextureMemoryUsageBytes) / (float)(streamingTextureMemoryBudgetBytes) : 0.0f;
-                int targetUnloadDelay = budgetDebtBytes > 0 ? 0 : (videoMemoryUsageRatio >= 0.75f ? 5 : 300);
+                int targetUnloadFrameCount = budgetDebtBytes > 0 ? 0 : (videoMemoryUsageRatio >= 0.75f ? 5 : 300);
 
-                if (streaming.unloadDelay < targetUnloadDelay) {
+                if (streaming.streamOutFrameCount < targetUnloadFrameCount) {
                     continue;
                 }
             }

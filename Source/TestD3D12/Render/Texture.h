@@ -63,7 +63,8 @@ public:
         int                         residentFirstMip = -1;
         int                         requestedFirstMip = -1;
         uint32_t                    requestedMaxDimension = 0;
-        uint32_t                    unloadDelay = 0;
+        uint32_t                    streamInFrameCount = 0;
+        uint32_t                    streamOutFrameCount = 0;
         RHI::Texture *              pendingReplacementTexture = nullptr;
     };
 
@@ -185,6 +186,7 @@ public:
     std::shared_ptr<Texture>        whiteTexture;
     std::shared_ptr<Texture>        flatNormalTexture;
 
+    static constexpr uint32_t       StreamInDelay = 0;
     static constexpr uint32_t       MaxStreamingRequests = 256;
     static constexpr uint32_t       MaxStreamingLevelReduction = 6;
     static constexpr uint32_t       MinResidentStreamingTextureMaxDimension = 32;
