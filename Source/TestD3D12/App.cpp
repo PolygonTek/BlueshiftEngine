@@ -28,7 +28,7 @@
 static constexpr int        CubeDimensionX = 64;//105;
 static constexpr int        CubeDimensionY = 64;//68;
 static constexpr int        CubeCount = CubeDimensionX * CubeDimensionY;
-static constexpr float      CubeSpacing = 1.5538;
+static constexpr float      CubeSpacing = 1.414214f;
 static constexpr float      CubeStartX = -CubeSpacing * (CubeDimensionX - 1) * 0.5f;
 static constexpr float      CubeStartY = -CubeSpacing * (CubeDimensionY - 1) * 0.5f;
 
@@ -142,8 +142,8 @@ void App::Render() {
     mainRenderContext->SetTextShadowColor(BE1::Color4::black);
     mainRenderContext->SetTextShadowOffset(1, 1);
     mainRenderContext->DrawString(0, 5, BE1::va("FPS: %i (%f ms)", fps, 1000.0f / fps), DrawTextFlag::Right | DrawTextFlag::AddOutlines);
-    mainRenderContext->DrawString(0, 25, BE1::va("Video Memory: %s / %s", BE1::Str::FormatBytes(videoMemUsageBytes).c_str(), BE1::Str::FormatBytes(videoMemBudgetBytes).c_str()), DrawTextFlag::Right | DrawTextFlag::AddOutlines);
-    mainRenderContext->DrawString(0, 45, BE1::va("Mipmap Streaming: %s / %s", BE1::Str::FormatBytes(textureStreamingUsageBytes).c_str(), BE1::Str::FormatBytes(textureStreamingBudgetBytes).c_str()), DrawTextFlag::Right | DrawTextFlag::AddOutlines);
+    mainRenderContext->DrawString(0, 30, BE1::va("Video Memory: %s / %s", BE1::Str::FormatBytes(videoMemUsageBytes).c_str(), BE1::Str::FormatBytes(videoMemBudgetBytes).c_str()), DrawTextFlag::Right | DrawTextFlag::AddOutlines);
+    mainRenderContext->DrawString(0, 55, BE1::va("Mipmap Streaming: %s / %s", BE1::Str::FormatBytes(textureStreamingUsageBytes).c_str(), BE1::Str::FormatBytes(textureStreamingBudgetBytes).c_str()), DrawTextFlag::Right | DrawTextFlag::AddOutlines);
 
     renderWorld->RenderGUI(mainRenderContext->GetGuiMesh());
 
@@ -171,7 +171,10 @@ void App::InitGameObjects() {
         "Data/Textures/yd0kejgga.dds",
         "Data/Textures/T_sc2nbisc.dds",
         "Data/Textures/Gouged_Rock_Cliff.dds",
-        "Data/Textures/Scratched_Polypropylene_Plastic.dds"
+        "Data/Textures/Scratched_Polypropylene_Plastic.dds",
+        "Data/Textures/Rippled_Sand.dds",
+        "Data/Textures/Dirty_Sidewalk_Tiles.dds",
+        "Data/Textures/Curated_Stone_Facade.dds",
     };
 
     gameObjects.Reserve(CubeCount);
@@ -255,7 +258,7 @@ void App::UpdateCubes() {
     float elapsedSeconds = MILLI2SEC(elapsedMsec);
 
     float zRotationSpeed = 0.25f;
-    float xRotationSpeed = 0.05f;
+    float xRotationSpeed = 0.00f;
 
     for (int y = 0; y < CubeDimensionY; ++y) {
         for (int x = 0; x < CubeDimensionX; ++x) {

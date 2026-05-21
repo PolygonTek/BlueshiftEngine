@@ -60,7 +60,7 @@ private:
 
     float                           targetCameraYaw = 0.0f;
     float                           targetCameraPitch = 45.0f;
-    float                           targetCameraDistance = 150.0f;
+    float                           targetCameraDistance = 132.0f;
 
     float                           cameraYaw;
     float                           cameraPitch;
