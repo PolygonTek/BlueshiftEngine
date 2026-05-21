@@ -277,6 +277,10 @@ INT_PTR CALLBACK About(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam) {
 }
 
 LRESULT CALLBACK MainWndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam) {
+    static bool mouseLook = false;
+    static int lastMouseX = 0;
+    static int lastMouseY = 0;
+
     switch (message) {
     case WM_CLOSE:
         break;
@@ -292,6 +296,35 @@ LRESULT CALLBACK MainWndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lPar
             app.TakeScreenshot();
         }
         break;
+    case WM_LBUTTONDOWN:
+        {
+            POINTS p = MAKEPOINTS(lParam);
+            lastMouseX = p.x;
+            lastMouseY = p.y;
+            mouseLook = true;
+            SetCapture(hwnd);
+        }
+        return 0;
+    case WM_LBUTTONUP:
+        mouseLook = false;
+        ReleaseCapture();
+        return 0;
+    case WM_MOUSEMOVE:
+        if (mouseLook) {
+            POINTS p = MAKEPOINTS(lParam);
+            int deltaX = p.x - lastMouseX;
+            int deltaY = p.y - lastMouseY;
+            app.AddCameraMouseDelta(deltaX, deltaY);
+            lastMouseX = p.x;
+            lastMouseY = p.y;
+        }
+        return 0;
+    case WM_MOUSEWHEEL:
+        {
+            int delta = GET_WHEEL_DELTA_WPARAM(wParam);
+            app.AddCameraDistance(delta);
+        }
+        return 0;
     case WM_COMMAND: {
         int wmId = LOWORD(wParam);
         int wmEvent = HIWORD(wParam);

@@ -36,8 +36,12 @@ public:
     void                            InitGameObjects();
     void                            ClearGameObjects();
     void                            UpdateGameObjects();
+    void                            UpdateCamera(int frameMsec);
 
     RenderContext *                 GetMainRenderContext() const { return mainRenderContext; }
+
+    void                            AddCameraMouseDelta(int deltaX, int deltaY);
+    void                            AddCameraDistance(int delta);
 
     void                            TakeScreenshot();
 
@@ -53,6 +57,14 @@ private:
 
     int                             elapsedMsec = 0;
     int                             fps = 0;
+
+    float                           targetCameraYaw = 0.0f;
+    float                           targetCameraPitch = 45.0f;
+    float                           targetCameraDistance = 150.0f;
+
+    float                           cameraYaw;
+    float                           cameraPitch;
+    float                           cameraDistance;
 };
 
 extern App                          app;

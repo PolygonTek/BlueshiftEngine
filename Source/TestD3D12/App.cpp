@@ -48,6 +48,10 @@ void App::Init(void *mainWindowHandle) {
     renderCamera = new RenderCamera;
 
     InitGameObjects();
+
+    cameraYaw = targetCameraYaw;
+    cameraPitch = targetCameraPitch;
+    cameraDistance = targetCameraDistance;
 }
 
 void App::Shutdown() {
@@ -87,6 +91,8 @@ void App::RunFrame(int frameMsec) {
 
     UpdateGameObjects();
 
+    UpdateCamera(frameMsec);
+
     BE1::cmdSystem.ExecuteCommandBuffer();
 }
 
@@ -102,20 +108,17 @@ void App::Render() {
     float w = mainRenderContext->GetWidth();
     float h = mainRenderContext->GetHeight();
     float aspectRatio = w / h;
-    float cameraX = 4 + (BE1::Math::Sin(MILLI2SEC(elapsedMsec) * 0.5f) + 1.0f) * 0.5f * 162;
 
     RenderCameraDesc cameraDesc;
     cameraDesc.orthogonal = false;
     cameraDesc.renderRect.Set(0, 0, w, h);
-    cameraDesc.origin.Set(cameraX, 0, 0);
-    cameraDesc.axis[0].Set(-1, 0, 0);
-    cameraDesc.axis[1].Set(0, -1, 0);
-    cameraDesc.axis[2].Set(0, 0, 1);
+    cameraDesc.axis = BE1::Angles(0.0f, cameraPitch, cameraYaw).ToMat3();
+    cameraDesc.origin = BE1::Vec3::origin - cameraDesc.axis[0] * cameraDistance;
     RenderCamera::CalculateFov(60, 1.7778f, aspectRatio, &cameraDesc.fovX, &cameraDesc.fovY);
     cameraDesc.zNear = BE1::MeterToUnit(0.5f);
     cameraDesc.zFar = BE1::MeterToUnit(1000.0f);
     if (cameraDesc.orthogonal) {
-        cameraDesc.sizeX = cameraX * BE1::Math::Tan(cameraDesc.fovX * 0.5f) * 0.5f;
+        cameraDesc.sizeX = cameraDistance * BE1::Math::Tan(cameraDesc.fovX * 0.5f) * 0.5f;
         cameraDesc.sizeY = cameraDesc.sizeX / aspectRatio;
     }
     renderCamera->Update(cameraDesc);
@@ -216,12 +219,43 @@ void App::UpdateGameObjects() {
     UpdateCubes();
 }
 
+void App::UpdateCamera(int frameMsec) {
+    constexpr float CameraSmoothingSpeed = 18.0f;
+
+    float dt = MILLI2SEC(frameMsec);
+    float alpha = 1.0f - BE1::Math::Exp(-CameraSmoothingSpeed * dt);
+
+    cameraYaw += (targetCameraYaw - cameraYaw) * alpha;
+    cameraPitch += (targetCameraPitch - cameraPitch) * alpha;
+    cameraDistance += (targetCameraDistance - cameraDistance) * alpha;
+}
+
+void App::AddCameraMouseDelta(int deltaX, int deltaY) {
+    constexpr float MouseSensitivity = 0.18f;
+
+    targetCameraYaw -= deltaX * MouseSensitivity;
+    targetCameraPitch += deltaY * MouseSensitivity;
+    BE1::Clamp(targetCameraPitch, -90.0f, 90.0f);
+}
+
+void App::AddCameraDistance(int delta) {
+    constexpr float MouseWheelDelta = 120.0f;
+    constexpr float MouseWheelZoomRatio = 0.12f;
+
+    float wheelSteps = (float)delta / MouseWheelDelta;
+    targetCameraDistance *= BE1::Math::Pow(1.0f - MouseWheelZoomRatio, wheelSteps);
+    BE1::Clamp(targetCameraDistance, 1.0f, 1000.0f);
+}
+
 void App::TakeScreenshot() {
     BE1::cmdSystem.BufferCommandText(BE1::CmdSystem::Execution::Now, "screenshot");
 }
 
 void App::UpdateCubes() {
     float elapsedSeconds = MILLI2SEC(elapsedMsec);
+
+    float zRotationSpeed = 0.25f;
+    float xRotationSpeed = 0.05f;
 
     for (int y = 0; y < CubeDimensionY; ++y) {
         for (int x = 0; x < CubeDimensionX; ++x) {
@@ -230,7 +264,7 @@ void App::UpdateCubes() {
             float t = elapsedSeconds + index * 0.1f;
 
             GameObject *gameObject = gameObjects[index];
-            gameObject->renderObjectDesc.worldMatrix.SetTranslationRotation(BE1::Vec3(0, CubeStartX + CubeSpacing * x, CubeStartY + CubeSpacing * y), BE1::Mat3::FromRotationZYX(t * 1.0f, 0, t * 0.25f), false);
+            gameObject->renderObjectDesc.worldMatrix.SetTranslationRotation(BE1::Vec3(CubeStartX + CubeSpacing * x, CubeStartY + CubeSpacing * y, 0), BE1::Mat3::FromRotationZYX(t * zRotationSpeed, 0, t * xRotationSpeed), false);
 
             renderWorld->UpdateRenderObject(gameObject->renderObjectHandle, gameObject->renderObjectDesc, RenderObject::Desc::UpdateFlag::Transform);
         }
