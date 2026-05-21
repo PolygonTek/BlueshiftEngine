@@ -1019,54 +1019,58 @@ D3D12_RESOURCE_STATES D3D12Renderer::ToD3D12ResourceState(RHI::GPUResourceState 
 }
 
 void D3D12Renderer::Barrier(RHI::CommandList *commandList, const RHI::GPUBarrier *barriers, uint32_t barrierCount) {
-    BE1::Array<D3D12_RESOURCE_BARRIER> barrierDescs;
-    barrierDescs.Reserve(barrierCount);
+    D3D12_RESOURCE_BARRIER *actualBarriers = (D3D12_RESOURCE_BARRIER *)_alloca(sizeof(D3D12_RESOURCE_BARRIER) * barrierCount);
+    int actualBarrierCount = 0;
 
     for (uint32_t barrierIndex = 0; barrierIndex < barrierCount; ++barrierIndex) {
         const RHI::GPUBarrier *barrier = &barriers[barrierIndex];
-        D3D12_RESOURCE_BARRIER &barrierDesc = barrierDescs.Alloc();
 
-        switch (barrier->type) {
-        case RHI::GPUBarrier::Type::Memory:
-            barrierDesc.Type = D3D12_RESOURCE_BARRIER_TYPE_UAV;
-            barrierDesc.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
+        if (barrier->type == RHI::GPUBarrier::Type::Memory) {
+            D3D12_RESOURCE_BARRIER &actualBarrier = actualBarriers[actualBarrierCount++];
+            actualBarrier.Type = D3D12_RESOURCE_BARRIER_TYPE_UAV;
+            actualBarrier.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
             // UAV.pResource == nullptr 일 때는 특정 UAV 가 아닌 모든 UAV 에 대한 메모리 배리어가 된다.
-            barrierDesc.UAV.pResource = !barrier->memoryBarrier.resource ? nullptr : reinterpret_cast<ID3D12Resource *>(barrier->memoryBarrier.resource->GetNativeResource());
-            break;
-        case RHI::GPUBarrier::Type::Buffer:
-            barrierDesc.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
-            barrierDesc.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
-            barrierDesc.Transition.pResource = reinterpret_cast<ID3D12Resource *>(barrier->bufferBarrier.buffer->GetNativeResource());
-            barrierDesc.Transition.StateBefore = ToD3D12ResourceState(barrier->bufferBarrier.stateBefore);
-            barrierDesc.Transition.StateAfter = ToD3D12ResourceState(barrier->bufferBarrier.stateAfter);
-            barrierDesc.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
-            break;
-        case RHI::GPUBarrier::Type::Image:
-            barrierDesc.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
-            barrierDesc.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
-            barrierDesc.Transition.pResource = reinterpret_cast<ID3D12Resource *>(barrier->imageBarrier.texture->GetNativeResource());
-            barrierDesc.Transition.StateBefore = ToD3D12ResourceState(barrier->imageBarrier.stateBefore);
-            barrierDesc.Transition.StateAfter = ToD3D12ResourceState(barrier->imageBarrier.stateAfter);
-
-            if (barrier->imageBarrier.slice >= 0 || barrier->imageBarrier.mipLevel >= 0) {
-                const D3D12Texture *_texture = static_cast<const D3D12Texture *>(barrier->imageBarrier.texture);
-                barrierDesc.Transition.Subresource = D3D12CalcSubresource(barrier->imageBarrier.mipLevel, barrier->imageBarrier.slice, 0, _texture->textureDesc.MipLevels, _texture->textureDesc.DepthOrArraySize);
-            } else {
-                barrierDesc.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
+            actualBarrier.UAV.pResource = !barrier->memoryBarrier.resource ? nullptr : reinterpret_cast<ID3D12Resource *>(barrier->memoryBarrier.resource->GetNativeResource());
+        } else if (barrier->type == RHI::GPUBarrier::Type::Buffer) {
+            if (barrier->bufferBarrier.stateBefore != barrier->bufferBarrier.stateAfter) {
+                D3D12_RESOURCE_BARRIER &actualBarrier = actualBarriers[actualBarrierCount++];
+                actualBarrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
+                actualBarrier.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
+                actualBarrier.Transition.pResource = reinterpret_cast<ID3D12Resource *>(barrier->bufferBarrier.buffer->GetNativeResource());
+                actualBarrier.Transition.StateBefore = ToD3D12ResourceState(barrier->bufferBarrier.stateBefore);
+                actualBarrier.Transition.StateAfter = ToD3D12ResourceState(barrier->bufferBarrier.stateAfter);
+                actualBarrier.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
             }
-            break;
-        case RHI::GPUBarrier::Type::Aliasing:
-            barrierDesc.Type = D3D12_RESOURCE_BARRIER_TYPE_ALIASING;
-            barrierDesc.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
-            barrierDesc.Aliasing.pResourceBefore = reinterpret_cast<ID3D12Resource *>(barrier->aliasingBarrier.resourceBefore->GetNativeResource());
-            barrierDesc.Aliasing.pResourceAfter = reinterpret_cast<ID3D12Resource *>(barrier->aliasingBarrier.resourceAfter->GetNativeResource());
-            break;
+        } else if (barrier->type == RHI::GPUBarrier::Type::Image) {
+            if (barrier->imageBarrier.stateBefore != barrier->imageBarrier.stateAfter) {
+                D3D12_RESOURCE_BARRIER &actualBarrier = actualBarriers[actualBarrierCount++];
+                actualBarrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
+                actualBarrier.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
+                actualBarrier.Transition.pResource = reinterpret_cast<ID3D12Resource *>(barrier->imageBarrier.texture->GetNativeResource());
+                actualBarrier.Transition.StateBefore = ToD3D12ResourceState(barrier->imageBarrier.stateBefore);
+                actualBarrier.Transition.StateAfter = ToD3D12ResourceState(barrier->imageBarrier.stateAfter);
+
+                if (barrier->imageBarrier.slice >= 0 || barrier->imageBarrier.mipLevel >= 0) {
+                    const D3D12Texture *_texture = static_cast<const D3D12Texture *>(barrier->imageBarrier.texture);
+                    actualBarrier.Transition.Subresource = D3D12CalcSubresource(barrier->imageBarrier.mipLevel, barrier->imageBarrier.slice, 0, _texture->textureDesc.MipLevels, _texture->textureDesc.DepthOrArraySize);
+                } else {
+                    actualBarrier.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
+                }
+            }
+        } else if (barrier->type == RHI::GPUBarrier::Type::Aliasing) {
+            D3D12_RESOURCE_BARRIER &actualBarrier = actualBarriers[actualBarrierCount++];
+            actualBarrier.Type = D3D12_RESOURCE_BARRIER_TYPE_ALIASING;
+            actualBarrier.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
+            actualBarrier.Aliasing.pResourceBefore = reinterpret_cast<ID3D12Resource *>(barrier->aliasingBarrier.resourceBefore->GetNativeResource());
+            actualBarrier.Aliasing.pResourceAfter = reinterpret_cast<ID3D12Resource *>(barrier->aliasingBarrier.resourceAfter->GetNativeResource());
         }
     }
 
-    // NOTE: Compute 커맨드 리스트라면, ResourceState 에 D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE 를 지정할 수 없음에 주의한다.
-    D3D12CommandList *_commandList = static_cast<D3D12CommandList *>(commandList);
-    _commandList->GetGraphicsCommandList()->ResourceBarrier(barrierCount, barrierDescs.Ptr());
+    if (actualBarrierCount > 0) {
+        // NOTE: Compute 커맨드 리스트라면, ResourceState 에 D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE 를 지정할 수 없음에 주의한다.
+        D3D12CommandList *_commandList = static_cast<D3D12CommandList *>(commandList);
+        _commandList->GetGraphicsCommandList()->ResourceBarrier(actualBarrierCount, actualBarriers);
+    }
 }
 
 void D3D12Renderer::ReadPixels(RHI::CommandList *commandList, const RHI::SwapChain *swapChain, int x, int y, int width, int height, BE1::Image::Format dstFormat, void *outPixels) {
@@ -1119,12 +1123,8 @@ void D3D12Renderer::ReadPixels(RHI::CommandList *commandList, const RHI::SwapCha
     // GPU 에서 복사가 끝날 때까지 기다린다.
     Finish(RHI::CommandQueueType::Graphics);
 
-    // 리드백 버퍼를 Map 하여 내용을 메모리로 읽어온다.
-    void *mappedPtr = nullptr;
-    D3D12_RANGE readRange = { 0, readBufferSize };
-    readbackBuffer->GetResource()->Map(0, &readRange, &mappedPtr);
-
-    const byte *srcPtr = (byte *)mappedPtr;
+    // 리드백 버퍼의 내용을 메모리로 읽어온다.
+    const byte *srcPtr = (byte *)readbackBuffer->GetMappedPtr();
     byte *dstPtr = nullptr;
 
     BE1::Image tempImage;
@@ -1145,9 +1145,6 @@ void D3D12Renderer::ReadPixels(RHI::CommandList *commandList, const RHI::SwapCha
         srcPtr += srcPitch;
         dstPtr += dstPitch;
     }
-
-    D3D12_RANGE writtenRange = { 0, 0 };
-    readbackBuffer->GetResource()->Unmap(0, &writtenRange);
 
     // 리드백 버퍼 삭제
     DestroyBuffer(readbackBuffer, true);

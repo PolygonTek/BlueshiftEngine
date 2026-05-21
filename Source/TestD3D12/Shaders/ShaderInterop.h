@@ -12,8 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef SHADERINTEROP_H
-#define SHADERINTEROP_H
+#ifndef _SHADERINTEROP_H_
+#define _SHADERINTEROP_H_
 
 #ifdef __cplusplus
 
@@ -37,33 +37,11 @@ using uint4 = DirectX::XMUINT4;
 
 #else
 
-inline float computeTextureLod(in uint2 textureSize, in float2 dFdx_uv, in float2 dFdy_uv, uint anisotropy = 0) {
-    // Isotropic:
-    if (anisotropy == 0) {
-        return log2(max(length(dFdx_uv * textureSize), length(dFdy_uv * textureSize)));
-    }
-
-    // Anisotropic:
-    dFdx_uv *= textureSize;
-    dFdy_uv *= textureSize;
-    float squaredLengthX = dot(dFdx_uv, dFdx_uv);
-    float squaredLengthY = dot(dFdy_uv, dFdy_uv);
-    float determinant = abs(dFdx_uv.x * dFdy_uv.y - dFdx_uv.y * dFdy_uv.x);
-    float squaredLengthMajor = squaredLengthX > squaredLengthY ? squaredLengthX : squaredLengthY;
-    float lengthMajor = sqrt(squaredLengthMajor);
-    float ratioOfAnisotropy = squaredLengthMajor / determinant;
-    float lengthMinor = 0;
-    if (ratioOfAnisotropy > anisotropy) {
-        // ratio is clamped - LOD is based on ratio (preserves area)
-        lengthMinor = lengthMajor / anisotropy;
-    } else {
-        // ratio not clamped - LOD is based on area
-        lengthMinor = determinant / lengthMajor;
-    }
-    return log2(lengthMinor);
-}
-
 #endif // __cplusplus
+
+static const uint TEXTURE_STREAMING_FEEDBACK_RESOLUTION = 16384;
+static const uint TEXTURE_STREAMING_FEEDBACK_MAX_LOD = 14;
+static const uint TEXTURE_STREAMING_INVALID_INDEX = 0xFFFFFFFF;
 
 static const uint GENMIP_2D_BLOCK_SIZE_X = 32;
 static const uint GENMIP_2D_BLOCK_SIZE_Y = 32;

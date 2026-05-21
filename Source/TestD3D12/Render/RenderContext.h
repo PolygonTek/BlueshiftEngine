@@ -16,6 +16,7 @@
 
 #include "RHI.h"
 #include "RenderFrameData.h"
+#include "TextureStreamingFeedback.h"
 #include "GuiMesh.h"
 
 class RenderBackend;
@@ -98,6 +99,7 @@ private:
     void                            InitPSO();
     void                            InitFullScreenTrianglePSO();
     void                            FlushPendingScreenshots(RenderFrameData *frameData);
+    void                            EnsureTextureStreamingFeedbackCapacity(uint32_t requiredCapacity);
 
     RHI::SwapChain *                swapChain = nullptr;
     RHI::Texture *                  mainRTColorMSAATexture = nullptr;
@@ -108,6 +110,8 @@ private:
     RHI::PipelineState *            unlitAlphaBlendPSO = nullptr;
     RHI::PipelineState *            unlitInstancedPSO = nullptr;
     RHI::PipelineState *            unlitInstancedAlphaBlendPSO = nullptr;
+    RHI::PipelineState *            litPSO = nullptr;
+    RHI::PipelineState *            litInstancedPSO = nullptr;
 
 #ifdef USE_RENDER_FRAME_BUFFERING
     static constexpr int            NumFrames = 2;
@@ -123,6 +127,8 @@ private:
     RHI::Format                     mainRTColorFormat = RHI::Format::R8G8B8A8_UNORM;
     RHI::Format                     mainRTDepthFormat = RHI::Format::D24_UNORM_S8_UINT;
     uint32_t                        mainRTSampleCount = 1;
+
+    TextureStreamingFeedback        textureStreamingFeedback;
 
     GuiMesh                         guiMesh;            ///< System GUI mesh
 

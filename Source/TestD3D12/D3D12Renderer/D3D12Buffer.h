@@ -68,6 +68,9 @@ public:
                                     // View 가 유효한지 여부를 리턴한다.
     virtual bool                    HasValidView(RHI::ViewType viewType, RHI::ViewID viewID = RHI::ViewID::PrimaryID) const override;
 
+                                    // Unload/Readback 버퍼는 CPU 가 접근할 수 있도록 매핑된 포인터를 리턴한다. (매핑이 해제된 경우 nullptr)
+    virtual void *                  GetMappedPtr() const override { return mappedPtr; }
+
     ID3D12Resource *                GetResource() const;
     uint64_t                        GetSize();
 
@@ -77,6 +80,7 @@ private:
 #else
     ID3D12Resource *                bufferResource = nullptr;
 #endif
+    void *                          mappedPtr = nullptr;
     uint64_t                        size = 0;
 
     BE1::Array<D3D12SRVEntry>       srvEntries = (16);

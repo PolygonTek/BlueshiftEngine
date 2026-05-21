@@ -21,14 +21,29 @@ bool Texture::IsReadyForRendering() const {
     return state == State::Ready && rhiTexture && rhiTexture->GetStatus() == RHI::GPUResourceStatus::Ready;
 }
 
-int Texture::MemRequired(bool includingMipmaps) const {
+uint64_t Texture::MemRequired(bool includingMipmaps) const {
     uint32_t w = GetWidth();
     uint32_t h = GetHeight();
     uint32_t d = GetDepth();
-    uint32_t numSlices = GetArraySize();
     uint32_t numMipmaps = includingMipmaps ? BE1::Image::MaxMipLevels(w, h, d) : 1;
-    uint32_t size = BE1::Image::MemRequired(w, h, d, numMipmaps, numSlices, format);
-    return size;
+    uint32_t numSlices = GetArraySize();
+
+    return BE1::Image::MemRequired(w, h, d, numMipmaps, numSlices, format);
+}
+
+uint64_t Texture::MemRequiredStreaming(int firstMip) const {
+    if (streaming.originalMipLevels <= 0) {
+        return 0;
+    }
+
+    firstMip = BE1::Max(0, BE1::Min(firstMip, streaming.originalMipLevels - 1));
+    uint32_t w = BE1::Max(1, (int)(streaming.originalWidth >> firstMip));
+    uint32_t h = BE1::Max(1, (int)(streaming.originalHeight >> firstMip));
+    uint32_t d = BE1::Max(1, (int)(streaming.originalDepth >> firstMip));
+    uint32_t numMipmaps = streaming.originalMipLevels - firstMip;
+    uint32_t numSlices = GetArraySize();
+
+    return BE1::Image::MemRequired(w, h, d, numMipmaps, numSlices, format);
 }
 
 void Texture::Purge() {

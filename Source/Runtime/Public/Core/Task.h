@@ -22,7 +22,7 @@ BE_NAMESPACE_BEGIN
 
 class BE_API TaskWorker {
 public:
-    virtual void            DoWork() = 0;
+    virtual void                DoWork() = 0;
 };
 
 enum class TaskState : uint8_t {
@@ -34,11 +34,11 @@ enum class TaskState : uint8_t {
 using TaskFunc = void (*)(void *data);
 
 struct Task {
-    TaskFunc                function;
-    void *                  data;
-    int32_t                 id;
-    int32_t                 groupId = -1;
-    TaskState               state;
+    TaskFunc                    function;
+    void *                      data;
+    int32_t                     id;
+    int32_t                     groupId = -1;
+    TaskState                   state;
 };
 
 class BE_API TaskManager {
@@ -48,79 +48,79 @@ public:
     TaskManager &operator=(const TaskManager &) = delete;
     ~TaskManager();
 
-                            /// Returns number of threads.
-    uint32_t                NumThreads() const { return threads.Count(); }
+                                /// Returns number of threads.
+    uint32_t                    NumThreads() const { return threads.Count(); }
 
-                            /// Is task list empty ?
-    bool                    IsTaskEmpty() const { return headTaskIndex == tailTaskIndex; }
+                                /// Is task list empty ?
+    bool                        IsTaskEmpty() const { return headTaskIndex == tailTaskIndex; }
 
-                            /// Is stopping now ?
-    bool                    IsStopping() const { return (bool)stopping; }
+                                /// Is stopping now ?
+    bool                        IsStopping() const { return (bool)stopping; }
 
-                            /// Returns number of active tasks.
-    int64_t                 NumActiveTasks() const { return activeTaskCount; }
+                                /// Returns number of active tasks.
+    int64_t                     NumActiveTasks() const { return activeTaskCount; }
 
-                            /// Starts task threads.
-    void                    Start(int numThreads = 0, bool useAffinity = false);
+                                /// Starts task threads.
+    void                        Start(int numThreads = 0, bool useAffinity = false);
 
-                            /// Stops all the tasks.
-    void                    Stop();
+                                /// Stops all the tasks.
+    void                        Stop();
 
-                            /// Creates a new group ID.
-    int32_t                 CreateGroupId();
+                                /// Creates a new group ID.
+    int32_t                     CreateGroupId();
 
-                            /// Adds a task with the given task worker object.
-    int32_t                 AddTask(TaskWorker *taskWorker, int32_t groupId = -1, bool withWake = true);
+                                /// Adds a task with the given task worker object.
+    int32_t                     AddTask(TaskWorker *taskWorker, int32_t groupId = -1, bool withWake = true);
 
-                            /// Adds a task with the given task function.
-    int32_t                 AddTask(TaskFunc function, void *data, int32_t groupId = -1, bool withWake = true);
+                                /// Adds a task with the given task function.
+    int32_t                     AddTask(TaskFunc function, void *data, int32_t groupId = -1, bool withWake = true);
 
-                            /// Adds a task with a lambda function.
+                                /// Adds a task with a lambda function.
     template <typename Lambda>
-    int32_t                 AddTask(Lambda &&lambda, int32_t groupId = -1, bool withWake = true);
+    int32_t                     AddTask(Lambda &&lambda, int32_t groupId = -1, bool withWake = true);
 
                             /// Waits until finishing all tasks in the given group.
-    void                    WaitFinish(int32_t groupId, bool withWake = false);
+    void                        WaitFinish(int32_t groupId, bool withWake = false);
     
-                            /// Waits until finishing all tasks.
-    void                    WaitFinishAll(bool withWake = false);
+                                /// Waits until finishing all tasks.
+    void                        WaitFinishAll(bool withWake = false);
 
-                            /// Waits given time (milliseconds) for finishing all tasks in the given group.
-                            /// Returns true if it finished in given time.
-                            /// Returns false if a timeout occurs.
-    bool                    TimedWaitFinish(int msec, int32_t groupId, bool withWake = false);
+                                /// Waits given time (milliseconds) for finishing all tasks in the given group.
+                                /// Returns true if it finished in given time.
+                                /// Returns false if a timeout occurs.
+    bool                        TimedWaitFinish(int msec, int32_t groupId, bool withWake = false);
 
-                            /// Waits given time (milliseconds) for finishing all tasks.
-                            /// Returns true if it finished in given time.
-                            /// Returns false if a timeout occurs.
-    bool                    TimedWaitFinishAll(int msec, bool withWake = false);
+                                /// Waits given time (milliseconds) for finishing all tasks.
+                                /// Returns true if it finished in given time.
+                                /// Returns false if a timeout occurs.
+    bool                        TimedWaitFinishAll(int msec, bool withWake = false);
 
-                            /// Check if task is running with the given task id.
-    bool                    IsTaskRunning(int32_t taskId) const;
-    bool                    IsTaskRunning(const Array<int32_t> &taskIds) const;
+                                /// Check if task is running with the given task id.
+    bool                        IsTaskRunning(int32_t taskId) const;
+    bool                        IsTaskRunning(const Array<int32_t> &taskIds) const;
 
 private:
-    Task *                  GetTaskInternal();
-    void                    Run();
+    Task *                      GetTaskInternal();
+    void                        Run();
 
-    static unsigned int     ThreadProc(void *param);
+    static unsigned int         ThreadProc(void *param);
 
-    Array<Task>             taskRingBuffer;                 ///< Ring buffer of task list.
-    int                     headTaskIndex = 0;
-    int                     tailTaskIndex = 0;
+    Array<Task>                 taskRingBuffer;                 ///< Ring buffer of task list.
+    int                         headTaskIndex = 0;
+    int                         tailTaskIndex = 0;
 
-    int32_t                 activeTaskCount = 0;             ///< Number of tasks in active state.
+    int32_t                     activeTaskCount = 0;             ///< Number of tasks in active state.
     HashTable<int32_t, int32_t> groupActiveTaskCount;       ///< Tracks how many tasks are active in each group.
-    int32_t                 nextTaskId = 0;
-    int32_t                 nextGroupId = 0;
-    bool                    stopping = false;
+    int32_t                     nextTaskId = 0;
+    int32_t                     nextGroupId = 0;
+    bool                        stopping = false;
 
-    Array<PlatformThread *> threads;
+    Array<PlatformThread *>     threads;
 
-    PlatformMutex *         taskMutex = nullptr;            ///< Mutex for accessing task list and execution.
-    PlatformCondition *     taskCondition = nullptr;        ///< Condition variable for task execution.
-    PlatformCondition *     finishCondition = nullptr;      ///< Condition variable for finishing task list.
-    PlatformCondition *     groupFinishCondition = nullptr; ///< Condition variable for group finishing task list.
+    PlatformMutex *             taskMutex = nullptr;            ///< Mutex for accessing task list and execution.
+    PlatformCondition *         taskCondition = nullptr;        ///< Condition variable for task execution.
+    PlatformCondition *         finishCondition = nullptr;      ///< Condition variable for finishing task list.
+    PlatformCondition *         groupFinishCondition = nullptr; ///< Condition variable for group finishing task list.
 };
 
 template <typename Lambda>

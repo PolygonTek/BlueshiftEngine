@@ -71,6 +71,12 @@ void RenderSystem::Shutdown() {
 void RenderSystem::UpdateFrame() {
     RHI::renderer->GetMemoryUsage(videoMemoryUsage);
     assert(videoMemoryUsage.budgetBytes > 0);
+
+    for (RenderContext *renderContext : renderContexts) {
+        renderContext->textureStreamingFeedback.ConsumeCompletedReadbacks([](const uint32_t *feedbackData, uint32_t capacity) {
+            textureManager.ApplyStreamingFeedback(feedbackData, capacity);
+        });
+    }
 }
 
 void RenderSystem::SubmitFrame(RenderContext *renderContext, RenderFrameData *frameData) {
@@ -239,6 +245,8 @@ unsigned int RenderSystem::RenderThreadProc(void *param) {
 
 RenderContext *RenderSystem::CreateRenderContext(void *windowHandle, bool isMain) {
     RenderContext *renderContext = new RenderContext;
+    renderContexts.Append(renderContext);
+
     renderContext->Init(windowHandle);
 
     if (isMain) {
@@ -262,6 +270,7 @@ void RenderSystem::DestroyRenderContext(RenderContext *renderContext) {
 
     renderContext->Shutdown();
 
+    renderContexts.Remove(renderContext);
     delete renderContext;
 }
 

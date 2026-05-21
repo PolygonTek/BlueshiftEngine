@@ -29,8 +29,7 @@ D3D12FrameThreadData::DynamicBufferBlock::DynamicBufferBlock(uint64_t size) {
         RHI::BufferFlag::IndexBuffer,
         size, nullptr));
 
-    // 다이나믹 버퍼는 항상 Map 해놓고 쓴다. (Pinned Memory)
-    buffer->GetResource()->Map(0, nullptr, reinterpret_cast<void **>(&mappedBase));
+    mappedBase = buffer->GetMappedPtr();
 }
 
 D3D12FrameThreadData::DynamicBufferBlock::~DynamicBufferBlock() {

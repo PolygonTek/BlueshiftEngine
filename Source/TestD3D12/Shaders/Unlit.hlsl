@@ -1,3 +1,5 @@
+#include "Common.hlsli"
+
 #define COMMON_ROOT_SIGNATURE "RootFlags(ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT), " \
     "DescriptorTable(CBV(b0), SRV(t0)), " \
     "StaticSampler(s100, addressU = TEXTURE_ADDRESS_CLAMP, addressV = TEXTURE_ADDRESS_CLAMP, addressW = TEXTURE_ADDRESS_CLAMP, filter = FILTER_MIN_MAG_MIP_LINEAR)," \

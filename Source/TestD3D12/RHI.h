@@ -544,6 +544,8 @@ namespace RHI {
     public:
         virtual bool                    HasValidView(RHI::ViewType viewType, RHI::ViewID viewID = RHI::ViewID::PrimaryID) const = 0;
 
+        virtual void *                  GetMappedPtr() const { return nullptr; }
+
         BufferFlag                      flags = BufferFlag::None;
     };
 

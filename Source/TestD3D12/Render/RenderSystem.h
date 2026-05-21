@@ -72,6 +72,7 @@ private:
 
     static void                     Cmd_ScreenShot(const BE1::CmdArgs &args);
 
+    BE1::Array<RenderContext *>     renderContexts;
     RenderContext *                 mainRenderContext = nullptr;
     RenderBackend *                 backEnd = nullptr;
     RHI::MemoryUsage                videoMemoryUsage = {};

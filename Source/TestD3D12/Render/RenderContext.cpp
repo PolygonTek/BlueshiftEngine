@@ -47,6 +47,10 @@ void RenderContext::Init(void *windowHandle) {
 
     InitPSO();
 
+#ifdef USE_MIPMAP_STREAMING
+    textureStreamingFeedback.Init();
+#endif
+
     guiMesh.SetCoordFrame(GuiMesh::CoordFrame::CoordFrame2D);
     guiMesh.SetClipRect(BE1::Rect(0, 0, backBufferWidth, backBufferHeight));
 }
@@ -55,6 +59,10 @@ void RenderContext::Shutdown() {
     // GPU 명령들이 완료될 때까지 기다린다.
     RHI::renderer->Finish(RHI::CommandQueueType::Graphics);
     RHI::renderer->Finish(RHI::CommandQueueType::Compute);
+
+#ifdef USE_MIPMAP_STREAMING
+    textureStreamingFeedback.Shutdown();
+#endif
 
     if (imagePSO) {
         RHI::renderer->DestroyPSO(imagePSO);
@@ -70,6 +78,12 @@ void RenderContext::Shutdown() {
     }
     if (unlitInstancedAlphaBlendPSO) {
         RHI::renderer->DestroyPSO(unlitInstancedAlphaBlendPSO);
+    }
+    if (litPSO) {
+        RHI::renderer->DestroyPSO(litPSO);
+    }
+    if (litInstancedPSO) {
+        RHI::renderer->DestroyPSO(litInstancedPSO);
     }
 
     DestroyMainRenderTextures();
@@ -217,6 +231,52 @@ void RenderContext::InitPSO() {
     if (unlitInstancingPS) {
         RHI::renderer->DestroyShader(unlitInstancingPS, true);
     }
+
+    RHI::Shader *litVS = static_cast<RHI::Shader *>(RHI::renderer->CreateShaderFromFile(RHI::ShaderModel::SM_6_0, RHI::ShaderStage::Vertex, "Source/TestD3D12/Shaders/Lit.hlsl", "VSMain"));
+    RHI::Shader *litPS = static_cast<RHI::Shader *>(RHI::renderer->CreateShaderFromFile(RHI::ShaderModel::SM_6_0, RHI::ShaderStage::Fragment, "Source/TestD3D12/Shaders/Lit.hlsl", "PSMain"));
+
+    if (litVS && litPS) {
+        RHI::PipelineStateDesc psoDesc;
+        psoDesc.vs = litVS;
+        psoDesc.ps = litPS;
+        psoDesc.rasterizerState = RHI::renderer->GetRasterizerState(RHI::RasterizerStateType::SolidFrontSided);
+        psoDesc.depthStencilState = RHI::renderer->GetDepthStencilState(RHI::DepthStencilStateType::Default);
+        psoDesc.blendState = RHI::renderer->GetBlendState(RHI::BlendStateType::Opaque);
+        psoDesc.inputLayout = &inputLayout;
+        psoDesc.primitiveTopology = RHI::PrimitiveTopology::TriangleList;
+        psoDesc.renderDest = &renderDest;
+        litPSO = RHI::renderer->CreateGraphicsPSO(&psoDesc);
+    }
+
+    if (litVS) {
+        RHI::renderer->DestroyShader(litVS, true);
+    }
+    if (litPS) {
+        RHI::renderer->DestroyShader(litPS, true);
+    }
+
+    RHI::Shader *litInstancingVS = static_cast<RHI::Shader *>(RHI::renderer->CreateShaderFromFile(RHI::ShaderModel::SM_6_0, RHI::ShaderStage::Vertex, "Source/TestD3D12/Shaders/LitInstancing.hlsl", "VSMain"));
+    RHI::Shader *litInstancingPS = static_cast<RHI::Shader *>(RHI::renderer->CreateShaderFromFile(RHI::ShaderModel::SM_6_0, RHI::ShaderStage::Fragment, "Source/TestD3D12/Shaders/LitInstancing.hlsl", "PSMain"));
+
+    if (litInstancingVS && litInstancingPS) {
+        RHI::PipelineStateDesc psoDesc;
+        psoDesc.vs = litInstancingVS;
+        psoDesc.ps = litInstancingPS;
+        psoDesc.rasterizerState = RHI::renderer->GetRasterizerState(RHI::RasterizerStateType::SolidFrontSided);
+        psoDesc.depthStencilState = RHI::renderer->GetDepthStencilState(RHI::DepthStencilStateType::Default);
+        psoDesc.blendState = RHI::renderer->GetBlendState(RHI::BlendStateType::Opaque);
+        psoDesc.inputLayout = &inputLayout;
+        psoDesc.primitiveTopology = RHI::PrimitiveTopology::TriangleList;
+        psoDesc.renderDest = &renderDest;
+        litInstancedPSO = RHI::renderer->CreateGraphicsPSO(&psoDesc);
+    }
+
+    if (litInstancingVS) {
+        RHI::renderer->DestroyShader(litInstancingVS, true);
+    }
+    if (litInstancingPS) {
+        RHI::renderer->DestroyShader(litInstancingPS, true);
+    }
 }
 
 void RenderContext::InitFullScreenTrianglePSO() {
@@ -277,6 +337,22 @@ void RenderContext::FlushPendingScreenshots(RenderFrameData *frameData) {
     pendingScreenshots.SetCount(0, false);
 }
 
+void RenderContext::EnsureTextureStreamingFeedbackCapacity(uint32_t requiredCapacity) {
+    if (!textureStreamingFeedback.NeedsGrowCapacity(requiredCapacity)) {
+        return;
+    }
+
+    if (renderSystem->IsUsingRenderThread()) {
+        for (RenderFrameData &frameData : frames) {
+            renderSystem->WaitRenderCompleted(&frameData);
+        }
+    }
+
+    WaitAllFrameFences();
+
+    textureStreamingFeedback.EnsureCapacity(requiredCapacity);
+}
+
 void RenderContext::BeginFrame() {
     PROFILER_CPU_SCOPED_EVENT("RenderContext::BeginFrame");
 
@@ -311,6 +387,10 @@ void RenderContext::EndFrame() {
     RenderFrameData *frameData = GetCurrentFrontendFrameData();
 
     FlushPendingScreenshots(frameData);
+
+#ifdef USE_MIPMAP_STREAMING
+    EnsureTextureStreamingFeedbackCapacity(textureManager.GetStreamingTextureCount());
+#endif
 
     frameData->CmdSwapBuffers();
     frameData->EndFrame();

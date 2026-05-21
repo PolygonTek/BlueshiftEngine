@@ -63,6 +63,14 @@ const void *RenderBackend::ExecuteBeginContext(const void *data) {
 
     currentContext = cmd->renderContext;
 
+#ifdef USE_MIPMAP_STREAMING
+    mainCommandList = frameData->GetThreadData(0)->BeginCommandList(RHI::CommandQueueType::Graphics);
+
+    currentContext->textureStreamingFeedback.Clear(mainCommandList);
+
+    mainCommandList->CloseAndExecute();
+#endif
+
     return (const void *)(cmd + 1);
 }
 
@@ -158,13 +166,13 @@ const void *RenderBackend::ExecuteSwapBuffers(const void *data) {
 
     const SwapBuffersRenderCommand *cmd = reinterpret_cast<const SwapBuffersRenderCommand *>(data);
 
-    // 이번 백엔드 프레임에서 수행하는 렌더링 커맨드들에 대한 펜스를 친다.
-    frameData->SetFrameFenceValue(RHI::renderer->SignalFence(RHI::CommandQueueType::Graphics));
-
-#ifdef USE_OFFSCREEN_MAIN_RENDER_TARGET
-    // 커맨드 리스트 풀에서 새로운 커맨드 리스트를 얻어온다.
     mainCommandList = frameData->GetThreadData(0)->BeginCommandList(RHI::CommandQueueType::Graphics);
 
+#ifdef USE_MIPMAP_STREAMING
+    TextureStreamingFeedback::ReadbackFrame *readbackFrame = currentContext->textureStreamingFeedback.Resolve(mainCommandList);
+#endif
+
+#ifdef USE_OFFSCREEN_MAIN_RENDER_TARGET
     // 뷰포트 & ScissorRect 의 초기값 설정
     RHI::renderer->SetViewport(mainCommandList, currentVisCamera->renderRect);
     RHI::renderer->SetScissorRect(mainCommandList, currentVisCamera->renderRect);
@@ -174,8 +182,18 @@ const void *RenderBackend::ExecuteSwapBuffers(const void *data) {
     RHI::renderer->SetTexture(mainCommandList, 0, false, currentContext->mainRTColorTexture);
     RHI::renderer->Draw(mainCommandList, 3, 0);
     RHI::renderer->EndRenderPass(mainCommandList);
+#endif
 
     mainCommandList->CloseAndExecute();
+
+    // 이번 백엔드 프레임에서 수행하는 렌더링 커맨드들에 대한 펜스를 친다.
+    uint64_t fenceValue = RHI::renderer->SignalFence(RHI::CommandQueueType::Graphics);
+    frameData->SetFrameFenceValue(fenceValue);
+
+#ifdef USE_MIPMAP_STREAMING
+    if (readbackFrame) {
+        currentContext->textureStreamingFeedback.SetReadbackFenceValue(readbackFrame, fenceValue);
+    }
 #endif
 
     // 백버퍼를 전면버퍼와 교환한다.

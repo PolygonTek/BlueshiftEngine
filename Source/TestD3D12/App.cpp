@@ -42,7 +42,7 @@ void App::Init(void *mainWindowHandle) {
 
     loadingSystem.Init();
 
-    mainFont = fontManager.GetFont("Data/EngineFonts/FredokaOne-Regular.ttf", 19);
+    mainFont = fontManager.GetFont("Data/EngineFonts/Galmuri11-Bold.ttf", 20);
 
     renderWorld = new RenderWorld;
     renderCamera = new RenderCamera;
@@ -128,12 +128,19 @@ void App::Render() {
 
     renderWorld->RenderScene(renderCamera);
 
+    const uint64_t videoMemBudgetBytes = renderSystem->GetVideoMemoryUsage().budgetBytes;
+    const uint64_t videoMemUsageBytes = renderSystem->GetVideoMemoryUsage().usageBytes;
+
+    const uint64_t textureStreamingBudgetBytes = textureManager.GetStreamingTextureMemoryBudgetBytes();
+    const uint64_t textureStreamingUsageBytes = textureManager.GetStreamingTextureMemoryUsageBytes();
+
     mainRenderContext->SetFont(mainFont);
     mainRenderContext->SetColor(BE1::Color4::white);
     mainRenderContext->SetTextShadowColor(BE1::Color4::black);
     mainRenderContext->SetTextShadowOffset(1, 1);
-    mainRenderContext->DrawString(0, 0, BE1::va("FPS: %i (%f ms)", fps, 1000.0f / fps), DrawTextFlag::Right);
-    mainRenderContext->DrawString(0, 10, "Test D3D12 Renderer", DrawTextFlag::Center | DrawTextFlag::AddOutlines);
+    mainRenderContext->DrawString(0, 5, BE1::va("FPS: %i (%f ms)", fps, 1000.0f / fps), DrawTextFlag::Right | DrawTextFlag::AddOutlines);
+    mainRenderContext->DrawString(0, 25, BE1::va("Video Memory: %s / %s", BE1::Str::FormatBytes(videoMemUsageBytes).c_str(), BE1::Str::FormatBytes(videoMemBudgetBytes).c_str()), DrawTextFlag::Right | DrawTextFlag::AddOutlines);
+    mainRenderContext->DrawString(0, 45, BE1::va("Mipmap Streaming: %s / %s", BE1::Str::FormatBytes(textureStreamingUsageBytes).c_str(), BE1::Str::FormatBytes(textureStreamingBudgetBytes).c_str()), DrawTextFlag::Right | DrawTextFlag::AddOutlines);
 
     renderWorld->RenderGUI(mainRenderContext->GetGuiMesh());
 

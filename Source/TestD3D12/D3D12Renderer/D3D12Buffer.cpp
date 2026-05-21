@@ -20,6 +20,11 @@
 #include "D3D12FrameThreadData.h"
 
 void D3D12Buffer::Release() {
+    if (mappedPtr) {
+        GetResource()->Unmap(0, nullptr);
+        mappedPtr = nullptr;
+    }
+
     for (const D3D12SRVEntry &srvEntry : srvEntries) {
         if (srvEntry.cpuDescriptorHandle.ptr != 0) {
             D3D12Renderer::GetRenderer()->resCpuDescriptorPool->Free(srvEntry.cpuDescriptorHandle);
@@ -155,18 +160,33 @@ RHI::Buffer *D3D12Renderer::CreateBuffer(RHI::BufferUsage usage, RHI::BufferFlag
     buffer->bufferResource = bufferResource;
 #endif
 
-    // 업로드 요청을 등록한다.
-    if (data) {
-        buffer->SetStatus(RHI::GPUResourceStatus::Pending);
+    if (heapType == D3D12_HEAP_TYPE_DEFAULT) {
+        if (data) {
+            buffer->SetStatus(RHI::GPUResourceStatus::Pending);
 
-        D3D12ResourceRequest request;
-        request.type = D3D12ResourceRequest::Type::UploadBuffer;
-        request.object = buffer;
-        request.uploadBufferRequest.data = data;
-        request.uploadBufferRequest.dataSize = size;
-        request.uploadBufferRequest.heapType = heapType;
-        request.uploadBufferRequest.resourceDesc = bufferDesc;
-        EnqueueResourceRequest(std::move(request));
+            // 업로드 요청을 등록한다.
+            D3D12ResourceRequest request;
+            request.type = D3D12ResourceRequest::Type::UploadBuffer;
+            request.object = buffer;
+            request.uploadBufferRequest.data = data;
+            request.uploadBufferRequest.dataSize = size;
+            request.uploadBufferRequest.heapType = heapType;
+            request.uploadBufferRequest.resourceDesc = bufferDesc;
+            EnqueueResourceRequest(std::move(request));
+        }
+    } else if (heapType == D3D12_HEAP_TYPE_UPLOAD) {
+        bufferResource->Map(0, nullptr, reinterpret_cast<void **>(&buffer->mappedPtr));
+
+        if (data) {
+            BE1::simdProcessor->Memcpy(buffer->mappedPtr, data, size);
+        }
+    } else if (heapType == D3D12_HEAP_TYPE_READBACK) {
+        bufferResource->Map(0, nullptr, reinterpret_cast<void **>(&buffer->mappedPtr));
+
+        // 리드백 버퍼는 CPU 에서 GPU 로 데이터를 업로드할 수 없으므로, 업로드 요청이 등록되어 있다면 경고 로그를 출력한다.
+        if (data) {
+            BE_WARNLOG("D3D12Renderer::CreateBuffer: Data upload is not supported for readback buffers. Buffer creation succeeded, but data was not uploaded.\n");
+        }
     }
 
     return buffer;
@@ -218,7 +238,7 @@ bool D3D12Renderer::ExecuteUploadBuffer(D3D12ResourceCommandContext &commandCont
 
             BE1::simdProcessor->Memcpy(mappedPtr, request.data, request.dataSize);
 
-            CD3DX12_RANGE writtenRange(0, request.dataSize);
+            D3D12_RANGE writtenRange = { 0, request.dataSize };
             uploadBuffer->Unmap(0, &writtenRange);
 
             D3D12_RESOURCE_STATES afterResourceState = D3D12_RESOURCE_STATE_COMMON;
@@ -235,14 +255,6 @@ bool D3D12Renderer::ExecuteUploadBuffer(D3D12ResourceCommandContext &commandCont
             commandList->ResourceBarrier(bufferResource, D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_COPY_DEST);
             commandList->GetGraphicsCommandList()->CopyBufferRegion(bufferResource, 0, uploadBuffer, 0, request.dataSize);
             commandList->ResourceBarrier(bufferResource, D3D12_RESOURCE_STATE_COPY_DEST, afterResourceState);
-        } else if (request.heapType == D3D12_HEAP_TYPE_UPLOAD) {
-            UINT8 *mappedPtr = nullptr;
-            bufferResource->Map(0, nullptr, reinterpret_cast<void **>(&mappedPtr));
-
-            BE1::simdProcessor->Memcpy(mappedPtr, request.data, request.dataSize);
-
-            CD3DX12_RANGE writtenRange(0, request.dataSize);
-            bufferResource->Unmap(0, &writtenRange);
         } else {
             return nullptr;
         }

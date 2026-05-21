@@ -15,6 +15,7 @@
 #pragma once
 
 #include "RHI.h"
+#include "Shaders/ShaderInterop.h"
 
 class TextureManager;
 
@@ -54,7 +55,7 @@ public:
     };
 
     struct Streaming {
-        int                         streamingListIndex = -1;
+        uint32_t                    streamingListIndex = TEXTURE_STREAMING_INVALID_INDEX;
         uint32_t                    originalWidth = 0;
         uint32_t                    originalHeight = 0;
         uint32_t                    originalDepth = 0;
@@ -89,6 +90,7 @@ public:
     Flag                            GetFlags() const { return flags; }
     RHI::Texture *                  GetRHITexture() const { return rhiTexture; }
     uint32_t                        GetIndex() const { return index; }
+    const Streaming *               GetStreaming() const { return &streaming; }
     Streaming *                     GetStreaming() { return &streaming; }
 
     State                           GetState() const { return state.load(); }
@@ -99,7 +101,8 @@ public:
     uint32_t                        GetLoadSerial() const { return loadSerial.load(); }
     uint32_t                        BumpLoadSerial() { return loadSerial.fetch_add(1) + 1; }
 
-    int                             MemRequired(bool includingMipmaps) const;
+    uint64_t                        MemRequired(bool includingMipmaps) const;
+    uint64_t                        MemRequiredStreaming(int firstMip) const;
 
     bool                            Update2D(int mipLevel, int xoffset, int yoffset, int width, int height, BE1::Image::Format format, const byte *data);
     bool                            Update3D(int mipLevel, int xoffset, int yoffset, int zoffset, int width, int height, int depth, BE1::Image::Format format, const byte *data);
@@ -171,24 +174,34 @@ public:
 
     void                            RegisterStreamingTexture(const std::shared_ptr<Texture> &texture, const BE1::Image::MipRange &mipRange);
     void                            UnregisterStreamingTexture(Texture *texture);
+    uint32_t                        GetStreamingTextureCount() const { return streamingTextures.Count(); }
+    uint64_t                        GetStreamingTextureMemoryUsageBytes() const { return streamingTextureMemoryUsageBytes; }
+    uint64_t                        GetStreamingTextureMemoryBudgetBytes() const { return streamingTextureMemoryBudgetBytes; }
+    void                            SetStreamingTextureMemoryBudgetBytes(uint64_t budget) { streamingTextureMemoryBudgetBytes = budget; }
+
+    void                            ApplyStreamingFeedback(const uint32_t *feedbackData, uint32_t feedbackCapacity);
 
     std::shared_ptr<Texture>        defaultTexture;
     std::shared_ptr<Texture>        whiteTexture;
     std::shared_ptr<Texture>        flatNormalTexture;
 
-    static constexpr uint32_t       MinResidentStreamingTextureMaxDimension = 64;
+    static constexpr uint32_t       MaxStreamingRequests = 256;
+    static constexpr uint32_t       MaxStreamingLevelReduction = 6;
+    static constexpr uint32_t       MinResidentStreamingTextureMaxDimension = 32;
 
 private:
     void                            CleanExpiredTextures();
     void                            CreateEngineTextures();
     void                            DestroyEngineTextures();
-    void                            RemoveStreamingTextureAt(int index);
     void                            UpdateStreamingTextures();
+    void                            ComputeStreamingTextureMemoryUsage();
 
     BE1::StrIHashMap<std::weak_ptr<Texture>> textureHashMap;
     int                             expiredTextureHashMapCursor = 0;
     uint32_t                        nextTextureIndex = 0;
     BE1::Array<std::weak_ptr<Texture>> streamingTextures;
+    uint64_t                        streamingTextureMemoryUsageBytes = 0;
+    uint64_t                        streamingTextureMemoryBudgetBytes = 256 * (1024 * 1024);
 };
 
 extern TextureManager               textureManager;

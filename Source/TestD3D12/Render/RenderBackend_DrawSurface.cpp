@@ -32,6 +32,19 @@ struct ALIGN_AS16 UnlitInstancedConstantData {
     BE1::Mat3x4     worldMatrix[MaxInstancedDrawCount];
 };
 
+struct ALIGN_AS16 LitConstantData {
+    BE1::Mat4       modelViewProjMatrix;
+    uint32_t        textureIndex;
+    uint32_t        padding[3];
+};
+
+struct ALIGN_AS16 LitInstancedConstantData {
+    BE1::Mat4       viewProjMatrix;
+    BE1::Mat3x4     worldMatrix[MaxInstancedDrawCount];
+    uint32_t        textureIndex;
+    uint32_t        padding[3];
+};
+
 void RenderBackend::DrawAllSurfaces(const DrawSurf **drawSurfs, uint32_t numDrawSurfs) {
     constexpr uint32_t MaxActualDrawSurfs = 65536;
     const DrawSurf **actualDrawSurfs = (const DrawSurf **)_alloca(sizeof(DrawSurf *) * MaxActualDrawSurfs);
@@ -190,22 +203,26 @@ void RenderBackend::DrawSurface(RHI::FrameThreadData *frameThreadData, RHI::Comm
         rhiTexture = textureManager.defaultTexture->GetRHITexture();
     }
 
-    RHI::ConstantBuffer *constantBuffer = frameThreadData->AllocConstant(sizeof(UnlitConstantData));
+    RHI::ConstantBuffer *constantBuffer = frameThreadData->AllocConstant(sizeof(LitConstantData));
     if (!constantBuffer) {
         return;
     }
 
-    UnlitConstantData *constantDataPtr = reinterpret_cast<UnlitConstantData *>(constantBuffer->writePtr);
+    LitConstantData *constantDataPtr = reinterpret_cast<LitConstantData *>(constantBuffer->writePtr);
 
     // 오브젝트의 MVP 행렬을 기록
     constantDataPtr->modelViewProjMatrix = drawSurf->space->modelViewProjMatrix;
 
+    // 오브젝트의 텍스처 인덱스를 기록
+    constantDataPtr->textureIndex = drawSurf->texture->GetStreaming()->streamingListIndex;
+
     RHI::renderer->SetVertexBuffer(commandList, 0, drawSurf->subMesh->vertexBuffer);
     RHI::renderer->SetIndexBuffer(commandList, drawSurf->subMesh->indexBuffer);
 
-    RHI::renderer->SetPSO(commandList, currentContext->unlitPSO);
+    RHI::renderer->SetPSO(commandList, currentContext->litPSO);
     RHI::renderer->SetTexture(commandList, 0, false, rhiTexture);
     RHI::renderer->SetConstantBuffer(commandList, 0, constantBuffer);
+    RHI::renderer->SetBuffer(commandList, 0, true, currentContext->textureStreamingFeedback.buffer);
 
     RHI::renderer->DrawIndexed(commandList, drawSurf->subMesh->numIndexes, 0, 0);
 }
@@ -219,15 +236,18 @@ void RenderBackend::DrawInstancedSurface(RHI::FrameThreadData *frameThreadData, 
         rhiTexture = textureManager.defaultTexture->GetRHITexture();
     }
 
-    RHI::ConstantBuffer *constantBuffer = frameThreadData->AllocConstant(sizeof(UnlitInstancedConstantData));
+    RHI::ConstantBuffer *constantBuffer = frameThreadData->AllocConstant(sizeof(LitInstancedConstantData));
     if (!constantBuffer) {
         return;
     }
 
-    UnlitInstancedConstantData *constantDataPtr = reinterpret_cast<UnlitInstancedConstantData *>(constantBuffer->writePtr);
+    LitInstancedConstantData *constantDataPtr = reinterpret_cast<LitInstancedConstantData *>(constantBuffer->writePtr);
 
     // 카메라의 뷰-프로젝션 행렬을 기록
     constantDataPtr->viewProjMatrix = currentVisCamera->viewProjMatrix;
+
+    // 인스턴스의 텍스처 인덱스를 기록
+    constantDataPtr->textureIndex = instanceSurfs[0]->texture->GetStreaming()->streamingListIndex;
 
     // 오브젝트 인스턴스들의 월드 행렬을 기록
     for (int i = 0; i < instanceCount; ++i) {
@@ -237,9 +257,10 @@ void RenderBackend::DrawInstancedSurface(RHI::FrameThreadData *frameThreadData, 
     RHI::renderer->SetVertexBuffer(commandList, 0, instanceSurfs[0]->subMesh->vertexBuffer);
     RHI::renderer->SetIndexBuffer(commandList, instanceSurfs[0]->subMesh->indexBuffer);
 
-    RHI::renderer->SetPSO(commandList, currentContext->unlitInstancedPSO);
+    RHI::renderer->SetPSO(commandList, currentContext->litInstancedPSO);
     RHI::renderer->SetTexture(commandList, 0, false, rhiTexture);
     RHI::renderer->SetConstantBuffer(commandList, 0, constantBuffer);
+    RHI::renderer->SetBuffer(commandList, 0, true, currentContext->textureStreamingFeedback.buffer);
 
     RHI::renderer->DrawIndexedInstanced(commandList, instanceSurfs[0]->subMesh->numIndexes, instanceCount, 0, 0, 0);
 }

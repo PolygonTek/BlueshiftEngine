@@ -15,7 +15,6 @@
 #include "Precompiled.h"
 #include "Texture.h"
 #include "LoadingSystem.h"
-#include "RenderSystem.h"
 
 TextureManager      textureManager;
 
@@ -38,7 +37,9 @@ void TextureManager::Shutdown() {
 }
 
 void TextureManager::UpdateFrame() {
+#ifdef USE_MIPMAP_STREAMING
     UpdateStreamingTextures();
+#endif
 
     CleanExpiredTextures();
 }
@@ -154,14 +155,12 @@ void TextureManager::RegisterStreamingTexture(const std::shared_ptr<Texture> &te
     }
 
     Texture::Streaming &streaming = texture->streaming;
-    if (streaming.streamingListIndex >= 0) {
+    if (streaming.streamingListIndex != TEXTURE_STREAMING_INVALID_INDEX) {
         BE_WARNLOG("TextureManager::RegisterStreamingTexture: texture '%s' has already registered\n", texture->hashName.c_str());
         return;
     }
 
-    int index = streamingTextures.Append(std::weak_ptr<Texture>(texture));
-
-    streaming.streamingListIndex = index;
+    streaming.streamingListIndex = streamingTextures.Append(std::weak_ptr<Texture>(texture));
     streaming.originalWidth = mipRange.originalWidth;
     streaming.originalHeight = mipRange.originalHeight;
     streaming.originalDepth = mipRange.originalDepth;
@@ -186,33 +185,57 @@ void TextureManager::UnregisterStreamingTexture(Texture *texture) {
     }
 
     // 스트리밍 텍스쳐 목록에서 제거
-    int index = streaming.streamingListIndex;
+    uint32_t index = streaming.streamingListIndex;
     if (index >= 0 && index < streamingTextures.Count()) {
-        RemoveStreamingTextureAt(index);
+        streamingTextures[index].reset();
     }
 
     streaming = {};
 }
 
-void TextureManager::RemoveStreamingTextureAt(int index) {
-    int lastIndex = streamingTextures.Count() - 1;
-    if (index != lastIndex) {
-        streamingTextures[index] = streamingTextures[lastIndex];
-
-        if (auto movedTexture = streamingTextures[index].lock()) {
-            movedTexture->streaming.streamingListIndex = index;
+void TextureManager::ApplyStreamingFeedback(const uint32_t *feedbackData, uint32_t feedbackCapacity) {
+    for (int i = 0; i < streamingTextures.Count(); ++i) {
+        std::shared_ptr<Texture> texture = streamingTextures[i].lock();
+        if (!texture) {
+            continue;
         }
-    }
 
-    streamingTextures.RemoveIndexFast(lastIndex);
+        uint32_t streamingListIndex = texture->GetStreaming()->streamingListIndex;
+        if (streamingListIndex >= feedbackCapacity) {
+            continue;
+        }
+
+        uint32_t feedbackMask = feedbackData[streamingListIndex];
+        if (!feedbackMask) {
+            continue;
+        }
+
+        // 요청된 해상도
+        uint32_t feedbackMaxDimension = 1u << FloorLog2(feedbackMask);
+
+        // 실제 원본 텍스쳐의 최대 축 크기
+        uint32_t originalMaxDimension = BE1::Max3(texture->streaming.originalWidth, texture->streaming.originalHeight, texture->streaming.originalDepth);
+
+        // 요청된 해상도와 원본 텍스쳐의 최대 축 크기를 비교하여, 스트리밍 시스템에 요청할 최대 해상도를 결정한다.
+        uint32_t requestedMaxDimension = BE1::Min(feedbackMaxDimension, originalMaxDimension);
+        texture->RequestStreamingMaxDimension(requestedMaxDimension);
+    }
 }
 
 void TextureManager::UpdateStreamingTextures() {
+    int requestedStreamingTextureCount = 0;
+
+    ComputeStreamingTextureMemoryUsage();
+
+    uint64_t budgetDebtBytes = 0;
+    if (streamingTextureMemoryBudgetBytes > 0) {
+        // budget 이 부족하다면 얼마나 부족한지 계산한다.
+        budgetDebtBytes = streamingTextureMemoryUsageBytes > streamingTextureMemoryBudgetBytes ? streamingTextureMemoryUsageBytes - streamingTextureMemoryBudgetBytes : 0;
+    }
+
     for (int streamingTextureIndex = 0; streamingTextureIndex < streamingTextures.Count(); ++streamingTextureIndex) {
         std::shared_ptr<Texture> texture = streamingTextures[streamingTextureIndex].lock();
         if (!texture) {
-            RemoveStreamingTextureAt(streamingTextureIndex);
-            --streamingTextureIndex;
             continue;
         }
 
@@ -244,40 +267,96 @@ void TextureManager::UpdateStreamingTextures() {
             continue;
         }
 
-        // 요청된 텍스쳐 해상도를 계산한다. (최소 크기는 TextureManager::MinResidentStreamingTextureMaxDimension 로 제한한다)
-        uint32_t requestedMaxDimension = BE1::Max(streaming.requestedMaxDimension, TextureManager::MinResidentStreamingTextureMaxDimension);
-        streaming.requestedMaxDimension = 0;
+        // 한 프레임에 스트리밍 텍스쳐가 너무 많이 요청되는 것을 방지하기 위해, 최대 개수까지만 요청한다.
+        if (requestedStreamingTextureCount < TextureManager::MaxStreamingRequests) {
+            // 요청된 텍스쳐 해상도를 계산한다. (최소 크기는 TextureManager::MinResidentStreamingTextureMaxDimension 로 제한한다)
+            uint32_t requestedMaxDimension = BE1::Max(streaming.requestedMaxDimension, TextureManager::MinResidentStreamingTextureMaxDimension);
+            streaming.requestedMaxDimension = 0;
 
-        // 요청되었던 최대 크기로 원하는 first mip 레벨을 구한다.
-        int desiredFirstMip = BE1::Image::ComputeFirstMipForMaxDimension(streaming.originalWidth, streaming.originalHeight, streaming.originalDepth, streaming.originalMipLevels, requestedMaxDimension);
-        if (desiredFirstMip <= streaming.residentFirstMip) {
-            // 같거나 더 높은 해상도가 필요한 경우, 딜레이를 초기화한다.
-            streaming.unloadDelay = 0;
+            // 요청되었던 최대 크기로 원하는 first mip 레벨을 구한다.
+            int desiredFirstMip = BE1::Image::ComputeFirstMipForMaxDimension(streaming.originalWidth, streaming.originalHeight, streaming.originalDepth, streaming.originalMipLevels, requestedMaxDimension);
 
-            if (desiredFirstMip < streaming.residentFirstMip) {
-                // 더 높은 해상도가 필요한 경우, 부드러운 스트리밍을 원한다면 한번에 한 단계만 낮춘다.
-                desiredFirstMip = BE1::Max(desiredFirstMip, streaming.residentFirstMip - 1);
+            // 너무 높은 레벨 (낮은 해상도) 로 스트리밍되는 것을 방지하기 위해, 최대 레벨 감소량을 TextureManager::MaxStreamingLevelReduction 로 제한한다.
+            int maxLevelReduction = BE1::Min((int)TextureManager::MaxStreamingLevelReduction, streaming.originalMipLevels - 1);
+            desiredFirstMip = BE1::Min(desiredFirstMip, maxLevelReduction);
+
+            // budget 이 부족하다면, 레벨을 높인다. (해상도를 낮춘다)
+            if (budgetDebtBytes > 0) {
+                if (streaming.residentFirstMip >= 0 && streaming.residentFirstMip < maxLevelReduction) {
+                    desiredFirstMip = BE1::Max(desiredFirstMip, streaming.residentFirstMip + 1);
+                }
+            }
+
+            if (desiredFirstMip <= streaming.residentFirstMip) {
+                // 같거나 더 낮은 레벨 (높은 해상도) 이 필요한 경우, 딜레이를 초기화한다.
+                streaming.unloadDelay = 0;
+
+                if (desiredFirstMip < streaming.residentFirstMip) {
+                    // 더 낮은 레벨 (높은 해상도) 이 필요한 경우, 부드러운 스트리밍을 위해 한번에 한 단계만 낮춘다.
+                    desiredFirstMip = BE1::Max(desiredFirstMip, streaming.residentFirstMip - 1);
+                } else {
+                    continue;
+                }
             } else {
-                continue;
+                // 더 높은 레벨 (낮은 해상도) 이 필요한 경우, 바로 낮추지 않고 일정 프레임 딜레이를 준다.
+                streaming.unloadDelay++;
+
+                // budget 사용량에 따라 더 빠르게 낮추도록 한다.
+                float videoMemoryUsageRatio = streamingTextureMemoryBudgetBytes > 0 ? (float)(streamingTextureMemoryUsageBytes) / (float)(streamingTextureMemoryBudgetBytes) : 0.0f;
+                int targetUnloadDelay = budgetDebtBytes > 0 ? 0 : (videoMemoryUsageRatio >= 0.75f ? 5 : 300);
+
+                if (streaming.unloadDelay < targetUnloadDelay) {
+                    continue;
+                }
             }
-        } else {
-            // 더 낮은 해상도가 필요한 경우, 바로 낮추지 않고 일정 프레임 딜레이를 준다.
-            streaming.unloadDelay++;
 
-            // 비디오 메모리 사용량이 75% 이상이라면 더 빠르게 낮추도록 한다.
-            float videoMemoryUsageRatio = (float)(renderSystem->GetVideoMemoryUsage().usageBytes) / (float)(renderSystem->GetVideoMemoryUsage().budgetBytes);
-            uint32_t targetUnloadDelay = videoMemoryUsageRatio >= 0.75f ? 5 : 300;
+            uint64_t budgetSavedBytes = 0;
 
-            if (streaming.unloadDelay < targetUnloadDelay) {
-                continue;
+            // budget 이 부족하다면, 레벨을 높이기 전에 현재 레벨과 원하는 레벨의 메모리 사용량 차이를 계산하여, 얼마나 budget 을 절약할 수 있는지 계산한다.
+            if (budgetDebtBytes > 0) {
+                if (desiredFirstMip > streaming.residentFirstMip) {
+                    uint64_t residentBytes = texture->MemRequiredStreaming(streaming.residentFirstMip);
+                    uint64_t desiredBytes = texture->MemRequiredStreaming(desiredFirstMip);
+
+                    if (residentBytes > desiredBytes) {
+                        budgetSavedBytes = residentBytes - desiredBytes;
+                    }
+                }
             }
-        }
 
-        // 현재 요청하는 first mip 레벨을 기록한다.
-        streaming.requestedFirstMip = desiredFirstMip;
+            // 현재 요청하는 first mip 레벨을 기록한다.
+            streaming.requestedFirstMip = desiredFirstMip;
 
-        if (!loadingSystem.EnqueueTextureLoadAndReplace(texture, texture->hashName, streaming.requestedFirstMip)) {
-            streaming.requestedFirstMip = -1;
+            if (loadingSystem.EnqueueTextureLoadAndReplace(texture, texture->hashName, streaming.requestedFirstMip)) {
+                if (budgetSavedBytes > 0) {
+                    budgetDebtBytes = budgetDebtBytes > budgetSavedBytes ? budgetDebtBytes - budgetSavedBytes : 0;
+                }
+            } else {
+                streaming.requestedFirstMip = -1;
+            }
+
+            requestedStreamingTextureCount++;
         }
     }
+}
+
+void TextureManager::ComputeStreamingTextureMemoryUsage() {
+    uint64_t totalBytes = 0;
+
+    for (int i = 0; i < streamingTextures.Count(); ++i) {
+        std::shared_ptr<Texture> texture = streamingTextures[i].lock();
+        if (!texture || !texture->GetRHITexture()) {
+            continue;
+        }
+
+        totalBytes += BE1::Image::MemRequired(
+            texture->GetWidth(),
+            texture->GetHeight(),
+            texture->GetDepth(),
+            texture->GetMipLevelCount(),
+            texture->GetArraySize(),
+            texture->GetFormat());
+    }
+
+    streamingTextureMemoryUsageBytes = totalBytes;
 }

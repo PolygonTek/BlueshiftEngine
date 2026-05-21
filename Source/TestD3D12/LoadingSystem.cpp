@@ -236,7 +236,9 @@ bool LoadingSystem::ProcessTextureLoadRequest(const LoadRequest &request) {
         completion.success = Texture::Prepare(textureType, image, request.textureFlags | Texture::Flag::LoadedFromFile, completion.texturePrepared);
     }
 
-    RHI::renderer->SetName(completion.texturePrepared.texture, request.filename);
+    if (completion.texturePrepared.texture) {
+        RHI::renderer->SetName(completion.texturePrepared.texture, request.filename);
+    }
 
     // 완료 큐에 집어넣는다.
     PushCompletion(std::move(completion));
@@ -322,6 +324,7 @@ bool LoadingSystem::ProcessTextureLoadCompletion(LoadCompletion &completion) {
         return false;
     }
 
+#ifdef USE_MIPMAP_STREAMING
     // 교체 요청을 받았을 경우
     if (completion.isReplacement) {
         // 교체할 텍스쳐를 로딩하지 못했을 경우
@@ -338,6 +341,7 @@ bool LoadingSystem::ProcessTextureLoadCompletion(LoadCompletion &completion) {
         completion.texturePrepared.texture = nullptr;
         return true;
     }
+#endif
 
     // 로딩이 실패한 경우
     if (!completion.success) {
@@ -348,11 +352,13 @@ bool LoadingSystem::ProcessTextureLoadCompletion(LoadCompletion &completion) {
     // 준비된 텍스쳐로 세팅한다.
     texture->ApplyPrepared(completion.texturePrepared);
 
+#ifdef USE_MIPMAP_STREAMING
     // 스트리밍 초기 데이터인 경우
     if (completion.mipRange.mipCount > 0) {
         // 스트리밍 텍스쳐로 등록한다.
         textureManager.RegisterStreamingTexture(texture, completion.mipRange);
     }
+#endif
 
     // 로딩이 성공했으므로 Ready 상태로 바꿔준다.
     texture->SetState(Texture::State::Ready);

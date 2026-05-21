@@ -54,7 +54,7 @@ private:
     bool                            srcSRGB = false;
     D3D12_RESOURCE_DESC             textureDesc;
     D3D12_CLEAR_VALUE               clearValue;
-    RHI::GPUResourceState           currentState = RHI::GPUResourceState::Undefined;
+    RHI::GPUResourceState           defaultState = RHI::GPUResourceState::Undefined;
     BE1::Array<D3D12SRVEntry>       srvEntries = (16);
     BE1::Array<D3D12UAVEntry>       uavEntries = (16);
     BE1::Array<D3D12RTVEntry>       rtvEntries = (16);
