@@ -657,7 +657,10 @@ bool Image::IsHalfFormat(Image::Format imageFormat) {
     if (!HasFlag(formatInfo->type, FormatType::Float)) {
         return false;
     }
-    return formatInfo->redBits <= 16 && formatInfo->greenBits <= 16 && formatInfo->blueBits <= 16 && formatInfo->alphaBits <= 16;
+    return (formatInfo->redBits == 16 || formatInfo->redBits == 0) &&
+           (formatInfo->greenBits == 16 || formatInfo->greenBits == 0) &&
+           (formatInfo->blueBits == 16 || formatInfo->blueBits == 0) &&
+           (formatInfo->alphaBits == 16 || formatInfo->alphaBits == 0);
 }
 
 bool Image::IsDepthFormat(Image::Format imageFormat) {

@@ -396,11 +396,16 @@ Image &Image::AddNormalMapRGBA8888(const Image &normalMap) {
 template <typename T>
 void BuildMipMap1D(T *dst, const T *src, int width, int numComponents, int alphaComponentIndex, bool preserveCoverage) {
     int xOff = (width < 2) ? 0 : numComponents;
+    float a0 = 0;
+    float a1 = 0;
+    float alphaSum = 0;
 
     for (int x = 0; x < width; x += 2) {
-        float a0 = src[alphaComponentIndex];
-        float a1 = src[alphaComponentIndex + xOff];
-        float alphaSum = a0 + a1;
+        if (alphaComponentIndex >= 0) {
+            a0 = src[alphaComponentIndex];
+            a1 = src[alphaComponentIndex + xOff];
+            alphaSum = a0 + a1;
+        }
 
         for (int i = 0; i < numComponents; i++) {
             if (preserveCoverage && alphaSum > 0) {
@@ -430,14 +435,21 @@ template <typename T>
 void BuildMipMap2D(T *dst, const T *src, int width, int height, int numComponents, int alphaComponentIndex, bool preserveCoverage) {
     int xOff = (width  < 2) ? 0 : numComponents;
     int yOff = (height < 2) ? 0 : numComponents * width;
+    float a0 = 0;
+    float a1 = 0;
+    float a2 = 0;
+    float a3 = 0;
+    float alphaSum = 0;
 
     for (int y = 0; y < height; y += 2) {
         for (int x = 0; x < width; x += 2) {
-            float a0 = src[alphaComponentIndex];
-            float a1 = src[alphaComponentIndex + xOff];
-            float a2 = src[alphaComponentIndex + yOff];
-            float a3 = src[alphaComponentIndex + yOff + xOff];
-            float alphaSum = a0 + a1 + a2 + a3;
+            if (alphaComponentIndex >= 0) {
+                a0 = src[alphaComponentIndex];
+                a1 = src[alphaComponentIndex + xOff];
+                a2 = src[alphaComponentIndex + yOff];
+                a3 = src[alphaComponentIndex + yOff + xOff];
+                alphaSum = a0 + a1 + a2 + a3;
+            }
 
             for (int i = 0; i < numComponents; i++) {
                 if (preserveCoverage && alphaSum > 0) {
@@ -474,19 +486,30 @@ void BuildMipMap3D(T *dst, const T *src, int width, int height, int depth, int n
     int xOff = (width  < 2) ? 0 : numComponents;
     int yOff = (height < 2) ? 0 : numComponents * width;
     int zOff = (depth  < 2) ? 0 : numComponents * width * height;
+    float a0 = 0;
+    float a1 = 0;
+    float a2 = 0;
+    float a3 = 0;
+    float a4 = 0;
+    float a5 = 0;
+    float a6 = 0;
+    float a7 = 0;
+    float alphaSum = 0;
 
     for (int z = 0; z < depth; z += 2) {
         for (int y = 0; y < height; y += 2) {
             for (int x = 0; x < width; x += 2) {
-                float a0 = src[alphaComponentIndex];
-                float a1 = src[alphaComponentIndex + xOff];
-                float a2 = src[alphaComponentIndex + yOff];
-                float a3 = src[alphaComponentIndex + yOff + xOff];
-                float a4 = src[alphaComponentIndex + zOff];
-                float a5 = src[alphaComponentIndex + zOff + xOff];
-                float a6 = src[alphaComponentIndex + zOff + yOff];
-                float a7 = src[alphaComponentIndex + zOff + yOff + xOff];
-                float alphaSum = a0 + a1 + a2 + a3 + a4 + a5 + a6 + a7;
+                if (alphaComponentIndex >= 0) {
+                    a0 = src[alphaComponentIndex];
+                    a1 = src[alphaComponentIndex + xOff];
+                    a2 = src[alphaComponentIndex + yOff];
+                    a3 = src[alphaComponentIndex + yOff + xOff];
+                    a4 = src[alphaComponentIndex + zOff];
+                    a5 = src[alphaComponentIndex + zOff + xOff];
+                    a6 = src[alphaComponentIndex + zOff + yOff];
+                    a7 = src[alphaComponentIndex + zOff + yOff + xOff];
+                    alphaSum = a0 + a1 + a2 + a3 + a4 + a5 + a6 + a7;
+                }
 
                 for (int i = 0; i < numComponents; i++) {
                     if (preserveCoverage && alphaSum > 0) {
@@ -541,11 +564,16 @@ void BuildMipMap(T *dst, const T *src, int width, int height, int depth, int num
 
 static void BuildMipMap1DWithGamma(byte *dst, const byte *src, int width, int numComponents, int alphaComponentIndex, bool preserveCoverage, const float (&gammaToLinear)[256], float (*linearToGamma)(float)) {
     int xOff = (width < 2) ? 0 : numComponents;
+    float a0 = 0;
+    float a1 = 0;
+    float alphaSum = 0;
 
     for (int x = 0; x < width; x += 2) {
-        float a0 = src[alphaComponentIndex];
-        float a1 = src[alphaComponentIndex + xOff];
-        float alphaSum = a0 + a1;
+        if (alphaComponentIndex >= 0) {
+            a0 = src[alphaComponentIndex];
+            a1 = src[alphaComponentIndex + xOff];
+            alphaSum = a0 + a1;
+        }
 
         for (int i = 0; i < numComponents; i++) {
             if (preserveCoverage && alphaSum > 0) {
@@ -574,14 +602,21 @@ static void BuildMipMap1DWithGamma(byte *dst, const byte *src, int width, int nu
 static void BuildMipMap2DWithGamma(byte *dst, const byte *src, int width, int height, int numComponents, int alphaComponentIndex, bool preserveCoverage, const float (&gammaToLinear)[256], float (*linearToGamma)(float)) {
     int xOff = (width < 2) ? 0 : numComponents;
     int yOff = (height < 2) ? 0 : numComponents * width;
+    float a0 = 0;
+    float a1 = 0;
+    float a2 = 0;
+    float a3 = 0;
+    float alphaSum = 0;
 
     for (int y = 0; y < height; y += 2) {
         for (int x = 0; x < width; x += 2) {
-            float a0 = src[alphaComponentIndex];
-            float a1 = src[alphaComponentIndex + xOff];
-            float a2 = src[alphaComponentIndex + yOff];
-            float a3 = src[alphaComponentIndex + yOff + xOff];
-            float alphaSum = a0 + a1 + a2 + a3;
+            if (alphaComponentIndex >= 0) {
+                a0 = src[alphaComponentIndex];
+                a1 = src[alphaComponentIndex + xOff];
+                a2 = src[alphaComponentIndex + yOff];
+                a3 = src[alphaComponentIndex + yOff + xOff];
+                alphaSum = a0 + a1 + a2 + a3;
+            }
 
             for (int i = 0; i < numComponents; i++) {
                 if (preserveCoverage && alphaSum > 0) {
@@ -617,19 +652,30 @@ static void BuildMipMap3DWithGamma(byte *dst, const byte *src, int width, int he
     int xOff = (width < 2) ? 0 : numComponents;
     int yOff = (height < 2) ? 0 : numComponents * width;
     int zOff = (depth < 2) ? 0 : numComponents * width * height;
+    float a0 = 0;
+    float a1 = 0;
+    float a2 = 0;
+    float a3 = 0;
+    float a4 = 0;
+    float a5 = 0;
+    float a6 = 0;
+    float a7 = 0;
+    float alphaSum = 0;
 
     for (int z = 0; z < depth; z += 2) {
         for (int y = 0; y < height; y += 2) {
             for (int x = 0; x < width; x += 2) {
-                float a0 = src[alphaComponentIndex];
-                float a1 = src[alphaComponentIndex + xOff];
-                float a2 = src[alphaComponentIndex + yOff];
-                float a3 = src[alphaComponentIndex + yOff + xOff];
-                float a4 = src[alphaComponentIndex + zOff];
-                float a5 = src[alphaComponentIndex + zOff + xOff];
-                float a6 = src[alphaComponentIndex + zOff + yOff];
-                float a7 = src[alphaComponentIndex + zOff + yOff + xOff];
-                float alphaSum = a0 + a1 + a2 + a3 + a4 + a5 + a6 + a7;
+                if (alphaComponentIndex >= 0) {
+                    a0 = src[alphaComponentIndex];
+                    a1 = src[alphaComponentIndex + xOff];
+                    a2 = src[alphaComponentIndex + yOff];
+                    a3 = src[alphaComponentIndex + yOff + xOff];
+                    a4 = src[alphaComponentIndex + zOff];
+                    a5 = src[alphaComponentIndex + zOff + xOff];
+                    a6 = src[alphaComponentIndex + zOff + yOff];
+                    a7 = src[alphaComponentIndex + zOff + yOff + xOff];
+                    alphaSum = a0 + a1 + a2 + a3 + a4 + a5 + a6 + a7;
+                }
 
                 for (int i = 0; i < numComponents; i++) {
                     if (preserveCoverage && alphaSum > 0) {
@@ -731,9 +777,11 @@ Image &Image::GenerateMipmaps(bool preserveAlphaCoverage) {
             byte *dst = GetPixels(mipLevel, sliceIndex);
 
             if (IsFloatFormat()) {
-                BuildMipMap<float>((float *)dst, (float *)src, w, h, d, numComponents, alphaComponentIndex, preserveAlphaCoverage);
-            } else if (IsHalfFormat()) {
-                BuildMipMap<half>((half *)dst, (half *)src, w, h, d, numComponents, alphaComponentIndex, preserveAlphaCoverage);
+                if (IsHalfFormat()) {
+                    BuildMipMap<half>((half *)dst, (half *)src, w, h, d, numComponents, alphaComponentIndex, preserveAlphaCoverage);
+                } else {
+                    BuildMipMap<float>((float *)dst, (float *)src, w, h, d, numComponents, alphaComponentIndex, preserveAlphaCoverage);
+                }
             } else {
                 if (gammaSpace == GammaSpace::sRGB) {
                     BuildMipMapWithGamma(dst, src, w, h, d, numComponents, alphaComponentIndex, preserveAlphaCoverage, Image::sRGBToLinearTable, Image::LinearToGammaApprox);
