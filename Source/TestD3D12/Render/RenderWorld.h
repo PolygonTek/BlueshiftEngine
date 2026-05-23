@@ -106,7 +106,7 @@ private:
     void                        DrawGUICamera(RenderFrameData *frameData, uint32_t screenWidth, uint32_t screenHeight, GuiMesh &guiMesh);
 
     void                        AddDrawSurf(RenderFrameData *frameData, VisCamera *visCamera, VisLight *visLight, VisObject *visObject, const Texture *texture, SubMesh *subMesh, DrawSurf::Flag flags);
-    void                        SortDrawSurfs(VisCamera *visCamera);
+    void                        SortDrawSurfs(RenderFrameData *frameData, VisCamera *visCamera);
 
     BE1::Array<RenderObject *>  renderObjects;      /// The array of pointers to all render objects managed by the world.
 

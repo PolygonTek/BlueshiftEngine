@@ -51,24 +51,61 @@ void RenderWorld::AddDrawSurf(RenderFrameData *frameData, VisCamera *visCamera, 
     visCamera->drawSurfs[visCamera->numDrawSurfs++] = drawSurf;
 }
 
-static int BE_CDECL _CompareDrawSurf(const void *elem1, const void *elem2) {
-    const uint64_t sortKey1 = (*(DrawSurf **)elem1)->sortKey;
-    const uint64_t sortKey2 = (*(DrawSurf **)elem2)->sortKey;
+static void RadixSortDrawSurfs(const DrawSurf **drawSurfs, uint32_t numDrawSurfs, const DrawSurf **tempDrawSurfs) {
+    constexpr uint32_t NumBuckets = 256;
+    constexpr uint32_t NumPasses = 8;
 
-    if (sortKey1 < sortKey2) {
-        return -1;
+    const DrawSurf **src = drawSurfs;
+    const DrawSurf **dst = tempDrawSurfs;
+
+    for (uint32_t pass = 0; pass < NumPasses; pass++) {
+        const uint32_t shift = pass * 8;
+
+        uint32_t counts[NumBuckets] = {};
+
+        for (uint32_t i = 0; i < numDrawSurfs; i++) {
+            const uint32_t bucket = (src[i]->sortKey >> shift) & 0xFF;
+            counts[bucket]++;
+        }
+
+        uint32_t offsets[NumBuckets];
+        uint32_t sum = 0;
+
+        for (uint32_t i = 0; i < NumBuckets; i++) {
+            offsets[i] = sum;
+            sum += counts[i];
+        }
+
+        for (uint32_t i = 0; i < numDrawSurfs; i++) {
+            const DrawSurf *drawSurf = src[i];
+            const uint32_t bucket = (drawSurf->sortKey >> shift) & 0xFF;
+            dst[offsets[bucket]++] = drawSurf;
+        }
+
+        const DrawSurf **swap = src;
+        src = dst;
+        dst = swap;
     }
-    if (sortKey1 > sortKey2) {
-        return 1;
+
+    // 8 passes라 짝수 번 swap되므로 보통 src == drawSurfs 이지만,
+    // pass 수가 바뀌어도 안전하게 유지.
+    if (src != drawSurfs) {
+        memcpy(drawSurfs, src, numDrawSurfs * sizeof(drawSurfs[0]));
     }
-    return 0;
 }
 
-void RenderWorld::SortDrawSurfs(VisCamera *visCamera) {
+void RenderWorld::SortDrawSurfs(RenderFrameData *frameData, VisCamera *visCamera) {
     PROFILER_CPU_SCOPED_EVENT("RenderWorld::SortDrawSurfs");
 
-    // FIXME: Use radix sort to boost up speed.
-    qsort(visCamera->drawSurfs, visCamera->numDrawSurfs, sizeof(DrawSurf *), _CompareDrawSurf);
+    if (visCamera->numDrawSurfs < 128) {
+        std::sort(visCamera->drawSurfs, visCamera->drawSurfs + visCamera->numDrawSurfs, [](const DrawSurf *lhs, const DrawSurf *rhs) {
+            return lhs->sortKey < rhs->sortKey;
+        });
+        return;
+    }
+
+    const DrawSurf **tempDrawSurfs = (const DrawSurf **)frameData->MemAlloc(visCamera->numDrawSurfs * sizeof(tempDrawSurfs[0]));
+    RadixSortDrawSurfs(visCamera->drawSurfs, visCamera->numDrawSurfs, tempDrawSurfs);
 }
 
 void RenderWorld::RenderScene(const RenderCamera *renderCamera) {
@@ -111,7 +148,7 @@ void RenderWorld::DrawCamera(RenderFrameData *frameData, const RenderCamera *ren
     AddTextMeshes(frameData, renderCamera, visCamera);
 
     // 모든 visCamera->drawSurfs 를 소팅한다.
-    SortDrawSurfs(visCamera);
+    SortDrawSurfs(frameData, visCamera);
 
     // 렌더링 커맨드에 visCamera 를 기록한다.
     frameData->CmdDrawCamera(visCamera);
@@ -197,9 +234,7 @@ void RenderWorld::FindVisObjects(RenderFrameData *frameData, const RenderCamera 
     objectDbvt.QueryFrustum(renderCamera->frustum, addVisibleObjects);
 #else
     // 등록된 모든 RenderObject 들을 개별 Culling 해서 프레임 데이터에 VisObject 로 등록한다.
-    for (int i = 0; i < renderObjects.Count(); ++i) {
-        const RenderObject *renderObject = renderObjects[i];
-
+    for (const RenderObject *renderObject : renderObjects) {
         /*if (renderCamera->frustum.CullAABB(renderObject->worldAABB)) {
             continue;
         }*/

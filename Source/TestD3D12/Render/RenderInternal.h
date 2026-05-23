@@ -26,7 +26,7 @@
 // 매 프레임 생성되고, 생성될 때 어떠한 힙 할당도 일어나지 않는다.
 class VisCamera {
 public:
-    static constexpr int        MaxDrawSurfs = 0x4000;
+    static constexpr int        MaxDrawSurfs = 0x10000;
 
     uint32_t                    index = ~0;
 
