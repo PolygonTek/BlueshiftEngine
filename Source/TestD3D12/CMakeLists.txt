@@ -80,9 +80,9 @@ set(SRC_FILES
     Render/DrawSurf.h
     Render/Mesh.h
     Render/Mesh.cpp
+    Render/Mesh_InternalData.cpp
     Render/par_octasphere.h
-    Render/Mesh_CreateMesh.cpp
-    Render/Mesh_SortAndMerge.cpp
+    Render/Mesh_Create.cpp
     Render/MeshInstance.h
     Render/MeshInstance.cpp
     Render/SkinningJointCache.h

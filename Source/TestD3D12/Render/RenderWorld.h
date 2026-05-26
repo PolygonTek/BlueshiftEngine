@@ -24,6 +24,7 @@ class VisCamera;
 class VisLight;
 class VisObject;
 class Texture;
+class Material;
 class Mesh;
 class SubMesh;
 
@@ -101,6 +102,7 @@ private:
     void                        FindVisObjects(RenderFrameData *frameData, const RenderCamera *renderCamera, VisCamera *visCamera);
     void                        AddStaticMeshes(RenderFrameData *frameData, const RenderCamera *renderCamera, VisCamera *visCamera);
     void                        AddTextMeshes(RenderFrameData *frameData, const RenderCamera *renderCamera, VisCamera *visCamera);
+    void                        AddSkyBoxMeshes(RenderFrameData *frameData, const RenderCamera *renderCamera, VisCamera *visCamera);
 
 #ifdef USE_DBVT
     void                        CreateObjectProxy(RenderObject *renderObject);
@@ -129,6 +131,7 @@ private:
 #endif
 
     GuiMesh                     textMesh;           ///< 3D text mesh
+    std::shared_ptr<Material>   skyboxMaterial;
 
     BE1::Color4                 debugLineColor;
     BE1::Color4                 debugFillColor;

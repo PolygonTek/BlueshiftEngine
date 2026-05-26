@@ -151,6 +151,9 @@ void RenderWorld::DrawCamera(RenderFrameData *frameData, const RenderCamera *ren
     // 보이는 visObjects 중에 text mesh 를 visCamera->drawSurfs 에 추가한다.
     AddTextMeshes(frameData, renderCamera, visCamera);
 
+    // Add drawing surface of skybox.
+    AddSkyBoxMeshes(frameData, renderCamera, visCamera);
+
     // 모든 visCamera->drawSurfs 를 소팅한다.
     SortDrawSurfs(frameData, visCamera);
 
@@ -315,6 +318,8 @@ void RenderWorld::AddStaticMeshes(RenderFrameData *frameData, const RenderCamera
 }
 
 void RenderWorld::AddTextMeshes(RenderFrameData *frameData, const RenderCamera *renderCamera, VisCamera *visCamera) {
+    PROFILER_CPU_SCOPED_EVENT("RenderWorld::AddTextMeshes");
+
     for (int i = 0; i < frameData->NumVisObjects(); ++i) {
         VisObject *visObject = frameData->GetVisObjects() + i;
         if (!visObject->text) {
@@ -352,6 +357,12 @@ void RenderWorld::AddTextMeshes(RenderFrameData *frameData, const RenderCamera *
 
             AddDrawSurf(frameData, visCamera, nullptr, visObject, guiSurf->texture, subMesh, DrawSurf::Flag::None);
         }
+    }
+}
+
+void RenderWorld::AddSkyBoxMeshes(RenderFrameData *frameData, const RenderCamera *renderCamera, VisCamera *visCamera) {
+    if (renderCamera->GetDesc().clearMethod != RenderCameraClearMethod::Skybox) {
+        return;
     }
 }
 

@@ -212,7 +212,7 @@ public:
     static constexpr uint32_t       StreamInDelay = 0;
     static constexpr uint32_t       MaxStreamingRequests = 256;
     static constexpr uint32_t       MaxStreamingLevelReduction = 6;
-    static constexpr uint32_t       MinResidentStreamingTextureMaxDimension = 32;
+    static constexpr uint32_t       MinResidentStreamingTextureMaxDimension = 64;
 
 private:
     void                            CleanExpiredTextures();
