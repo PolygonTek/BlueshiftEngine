@@ -53,7 +53,7 @@ private:
     RenderCamera *                  renderCamera = nullptr;
     RenderWorld *                   renderWorld = nullptr;
 
-    std::shared_ptr<Mesh>           boxMesh;
+    std::shared_ptr<Mesh>           testMesh;
 
     BE1::Array<GameObject *>        gameObjects;
 

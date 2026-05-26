@@ -82,18 +82,20 @@ void RenderWorld::UpdateRenderObject(int index, const RenderObject::Desc &desc, 
         renderObject->proxy->id = objectDbvt.CreateProxy(renderObject->proxy->worldAABB, BE1::MeterToUnit(0.0f), renderObject->proxy);
 
         if (desc.meshInstance && desc.meshInstance->IsStatic()) {
-            renderObject->numMeshSurfProxies = desc.meshInstance->NumSurfaces();
-            renderObject->meshSurfProxies = (DbvtProxy *)Mem_Alloc(desc.meshInstance->NumSurfaces() * sizeof(DbvtProxy));
+            if (desc.meshInstance->NumSurfaces() > 0) {
+                renderObject->numMeshSurfProxies = desc.meshInstance->NumSurfaces();
+                renderObject->meshSurfProxies = (DbvtProxy *)Mem_Alloc(desc.meshInstance->NumSurfaces() * sizeof(DbvtProxy));
 
-            for (int surfaceIndex = 0; surfaceIndex < desc.meshInstance->NumSurfaces(); ++surfaceIndex) {
-                const Mesh::Surface *meshSurf = desc.meshInstance->GetSurface(surfaceIndex);
+                for (int surfaceIndex = 0; surfaceIndex < desc.meshInstance->NumSurfaces(); ++surfaceIndex) {
+                    const Mesh::Surface *meshSurf = desc.meshInstance->GetSurface(surfaceIndex);
 
-                DbvtProxy *meshSurfProxy = &renderObject->meshSurfProxies[surfaceIndex];
-                meshSurfProxy->renderObject = renderObject;
-                meshSurfProxy->staticMeshInstance = desc.meshInstance.get();
-                meshSurfProxy->worldAABB.SetFromTransformedAABBFast(meshSurf->subMesh->GetAABB(), desc.worldMatrix);
-                meshSurfProxy->staticMeshSurfIndex = surfaceIndex;
-                meshSurfProxy->id = staticMeshDbvt.CreateProxy(renderObject->meshSurfProxies[surfaceIndex].worldAABB, BE1::MeterToUnit(0.0f), &renderObject->meshSurfProxies[surfaceIndex]);
+                    DbvtProxy *meshSurfProxy = &renderObject->meshSurfProxies[surfaceIndex];
+                    meshSurfProxy->renderObject = renderObject;
+                    meshSurfProxy->staticMeshInstance = desc.meshInstance.get();
+                    meshSurfProxy->worldAABB.SetFromTransformedAABBFast(meshSurf->subMesh->GetAABB(), desc.worldMatrix);
+                    meshSurfProxy->staticMeshSurfIndex = surfaceIndex;
+                    meshSurfProxy->id = staticMeshDbvt.CreateProxy(renderObject->meshSurfProxies[surfaceIndex].worldAABB, BE1::MeterToUnit(0.0f), &renderObject->meshSurfProxies[surfaceIndex]);
+                }
             }
         }
 #endif

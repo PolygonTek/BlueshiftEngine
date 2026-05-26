@@ -81,7 +81,7 @@ set(SRC_FILES
     Render/Mesh.h
     Render/Mesh.cpp
     Render/par_octasphere.h
-    Render/Mesh_EngineMesh.cpp
+    Render/Mesh_CreateMesh.cpp
     Render/Mesh_SortAndMerge.cpp
     Render/MeshInstance.h
     Render/MeshInstance.cpp

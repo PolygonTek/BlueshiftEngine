@@ -164,27 +164,27 @@ void App::OnResize(int width, int height) {
 void App::InitGameObjects() {
     // 텍스쳐 파일들
     BE1::Str textureFilenames[] = {
-        "Data/Textures/Brick_Wall_Worn.dds",
-        "Data/Textures/Construction_Gravel.dds",
-        "Data/Textures/Dry_Cracked_Mud.dds",
-        "Data/Textures/Flagstone_Wall.dds",
-        "Data/Textures/Lawn_Grass.dds",
-        "Data/Textures/Roman_Stone_Floor.dds",
-        "Data/Textures/Stone_Floor.dds",
-        "Data/Textures/Stone_Tiles_Facade.dds",
-        "Data/Textures/Arid_Gravel_Ground.dds",
-        "Data/Textures/yd0kejgga.dds",
-        "Data/Textures/T_sc2nbisc.dds",
-        "Data/Textures/Gouged_Rock_Cliff.dds",
-        "Data/Textures/Scratched_Polypropylene_Plastic.dds",
-        "Data/Textures/Rippled_Sand.dds",
-        "Data/Textures/Dirty_Sidewalk_Tiles.dds",
-        "Data/Textures/Curated_Stone_Facade.dds",
+        "Data/Test/Brick_Wall_Worn.dds",
+        "Data/Test/Construction_Gravel.dds",
+        "Data/Test/Dry_Cracked_Mud.dds",
+        "Data/Test/Flagstone_Wall.dds",
+        "Data/Test/Lawn_Grass.dds",
+        "Data/Test/Roman_Stone_Floor.dds",
+        "Data/Test/Stone_Floor.dds",
+        "Data/Test/Stone_Tiles_Facade.dds",
+        "Data/Test/Arid_Gravel_Ground.dds",
+        "Data/Test/yd0kejgga.dds",
+        "Data/Test/T_sc2nbisc.dds",
+        "Data/Test/Gouged_Rock_Cliff.dds",
+        "Data/Test/Scratched_Polypropylene_Plastic.dds",
+        "Data/Test/Rippled_Sand.dds",
+        "Data/Test/Dirty_Sidewalk_Tiles.dds",
+        "Data/Test/Curated_Stone_Facade.dds",
     };
 
     gameObjects.Reserve(CubeCount);
 
-    boxMesh = meshManager.GetMesh("_defaultBoxMesh");
+    testMesh = meshManager.GetMesh("Data/Test/Box001.bmesh");
 
     // 큐브
     for (int i = 0; i < CubeCount; ++i) {
@@ -193,8 +193,8 @@ void App::InitGameObjects() {
 
         RenderObject::Desc &desc = gameObject->renderObjectDesc;
         desc.worldMatrix.SetIdentity();
-        desc.meshInstance = boxMesh->GetStaticInstance();
-        desc.aabb = boxMesh->GetAABB();
+        desc.meshInstance = testMesh->GetStaticInstance();
+        desc.aabb = testMesh->GetAABB();
         desc.textures.SetCount(1);
         desc.textures[0] = textureManager.GetTexture(textureFilenames[BE1::Math::RandomRange(0, COUNT_OF(textureFilenames) - 1)], Texture::Flag::Streaming);
 
@@ -223,7 +223,7 @@ void App::ClearGameObjects() {
     }
     gameObjects.DeleteContents(true);
 
-    boxMesh.reset();
+    testMesh.reset();
 }
 
 void App::UpdateGameObjects() {

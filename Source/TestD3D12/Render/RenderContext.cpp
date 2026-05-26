@@ -47,9 +47,7 @@ void RenderContext::Init(void *windowHandle) {
 
     InitPSO();
 
-#ifdef USE_MIPMAP_STREAMING
     textureStreamingFeedback.Init();
-#endif
 
     guiMesh.SetCoordFrame(GuiMesh::CoordFrame::CoordFrame2D);
     guiMesh.SetClipRect(BE1::Rect(0, 0, backBufferWidth, backBufferHeight));
@@ -60,9 +58,7 @@ void RenderContext::Shutdown() {
     RHI::renderer->Finish(RHI::CommandQueueType::Graphics);
     RHI::renderer->Finish(RHI::CommandQueueType::Compute);
 
-#ifdef USE_MIPMAP_STREAMING
     textureStreamingFeedback.Shutdown();
-#endif
 
     if (imagePSO) {
         RHI::renderer->DestroyPSO(imagePSO);
