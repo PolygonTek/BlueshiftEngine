@@ -102,6 +102,16 @@ private:
     void                        AddStaticMeshes(RenderFrameData *frameData, const RenderCamera *renderCamera, VisCamera *visCamera);
     void                        AddTextMeshes(RenderFrameData *frameData, const RenderCamera *renderCamera, VisCamera *visCamera);
 
+#ifdef USE_DBVT
+    void                        CreateObjectProxy(RenderObject *renderObject);
+    void                        UpdateObjectProxy(RenderObject *renderObject, const BE1::Mat3x4 &worldMatrix, const BE1::Vec3 &displacementVector);
+    void                        RegisterPendingStaticMeshProxy(RenderObject *renderObject);
+    void                        UnregisterPendingStaticMeshProxy(RenderObject *renderObject);
+    void                        DestroyStaticMeshSurfProxies(RenderObject *renderObject);
+    bool                        TryUpdateStaticMeshSurfProxies(RenderObject *renderObject, const BE1::Mat3x4 &worldMatrix, const BE1::Vec3 &displacementVector, bool forceRebuild, bool proxyMoved);
+    void                        UpdatePendingStaticMeshSurfProxies();
+#endif
+
     void                        DrawCamera(RenderFrameData *frameData, const RenderCamera *renderCamera, VisCamera *visCamera);
     void                        DrawGUICamera(RenderFrameData *frameData, uint32_t screenWidth, uint32_t screenHeight, GuiMesh &guiMesh);
 
@@ -115,6 +125,7 @@ private:
 #ifdef USE_DBVT
     BE1::DynamicAABBTree        objectDbvt;         ///< Dynamic bounding volume tree (DBVT) for render objects.
     BE1::DynamicAABBTree        staticMeshDbvt;     ///< Dynamic bounding volume tree (DBVT) for static meshes.
+    BE1::Array<int>             pendingStaticMeshProxyObjects;
 #endif
 
     GuiMesh                     textMesh;           ///< 3D text mesh

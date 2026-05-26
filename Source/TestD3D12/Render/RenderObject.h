@@ -130,16 +130,19 @@ private:
     Desc                            desc;
     BE1::AABB                       worldAABB = BE1::AABB::empty;
 
-    int                             index = -1;                 // RenderWorld::renderObjects 의 인덱스
-#ifdef USE_DBVT
-    DbvtProxy *                     proxy = nullptr;            // proxy for render object
+    int                             index = -1;                     // RenderWorld::renderObjects 의 인덱스
 
-    int                             numMeshSurfProxies = 0;     // number of proxies for static sub mesh
-    DbvtProxy *                     meshSurfProxies = nullptr;  // proxies for static sub mesh
+#ifdef USE_DBVT
+    DbvtProxy *                     proxy = nullptr;                // proxy for render object
+
+    int                             numMeshSurfProxies = 0;         // number of proxies for static sub mesh
+    DbvtProxy *                     meshSurfProxies = nullptr;      // proxies for static sub mesh
+    uint32_t                        meshSurfProxyDataSerial = ~0u;
+    bool                            meshSurfProxyPending = false;
 #endif
 
-    mutable uint32_t                viewCount = 0;              // 현재 실행 중인 DrawCamera or DrawGUICamera 함수의 실행 카운터
-    mutable VisObject *             visObject = nullptr;        // viewCount 가 현재 RenderWorld::viewCount 와 같아야 valid 하다.
+    mutable uint32_t                viewCount = 0;                  // 현재 실행 중인 DrawCamera or DrawGUICamera 함수의 실행 카운터
+    mutable VisObject *             visObject = nullptr;            // viewCount 가 현재 RenderWorld::viewCount 와 같아야 valid 하다.
 };
 
 BE_INLINE RenderObject::TextDesc &RenderObject::Desc::GetTextDesc() {

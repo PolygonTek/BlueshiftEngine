@@ -184,7 +184,7 @@ void App::InitGameObjects() {
 
     gameObjects.Reserve(CubeCount);
 
-    testMesh = meshManager.GetMesh("Data/Test/Box001.bmesh");
+    testMesh = meshManager.GetMesh("_defaultBoxMesh");
 
     // 큐브
     for (int i = 0; i < CubeCount; ++i) {

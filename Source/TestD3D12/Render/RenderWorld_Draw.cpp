@@ -136,6 +136,10 @@ void RenderWorld::RenderScene(const RenderCamera *renderCamera) {
 void RenderWorld::DrawCamera(RenderFrameData *frameData, const RenderCamera *renderCamera, VisCamera *visCamera) {
     PROFILER_CPU_SCOPED_EVENT("RenderWorld::DrawCamera");
 
+#ifdef USE_DBVT
+    UpdatePendingStaticMeshSurfProxies();
+#endif
+
     // objectDbvt 에서 카메라 frustum 으로 쿼리해서 보이는 RenderObject 들을 찾아낸다.
     // 보이는 RenderObject 들로 프레임 데이터에 VisObject 들을 등록한다.
     FindVisObjects(frameData, renderCamera, visCamera);

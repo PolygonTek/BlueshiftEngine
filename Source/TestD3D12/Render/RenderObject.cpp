@@ -14,6 +14,17 @@
 
 #include "Precompiled.h"
 #include "RenderObject.h"
+#include "MeshInstance.h"
+
+static const BE1::AABB &GetEffectiveLocalAABB(const RenderObject::Desc &desc) {
+    if (!desc.aabb.IsCleared()) {
+        return desc.aabb;
+    }
+    if (desc.meshInstance && desc.meshInstance->IsSourceReady()) {
+        return desc.meshInstance->GetAABB();
+    }
+    return desc.aabb;
+}
 
 RenderObject::~RenderObject() {
 #ifdef USE_DBVT
@@ -65,7 +76,12 @@ void RenderObject::Update(const RenderObject::Desc &src, RenderObject::Desc::Upd
         }
     }
 
-    if (BE1::HasAnyFlag(flags, Desc::UpdateFlag::Transform | Desc::UpdateFlag::AABB)) {
-        worldAABB.SetFromTransformedAABBFast(desc.aabb, desc.worldMatrix);
+    if (BE1::HasAnyFlag(flags, Desc::UpdateFlag::Transform | Desc::UpdateFlag::AABB | Desc::UpdateFlag::Mesh)) {
+        const BE1::AABB &localAABB = GetEffectiveLocalAABB(desc);
+        if (localAABB.IsCleared()) {
+            worldAABB = BE1::AABB::empty;
+        } else {
+            worldAABB.SetFromTransformedAABBFast(localAABB, desc.worldMatrix);
+        }
     }
 }
