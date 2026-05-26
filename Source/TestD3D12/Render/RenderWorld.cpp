@@ -14,7 +14,7 @@
 
 #include "Precompiled.h"
 #include "RenderWorld.h"
-#include "Mesh.h"
+#include "MeshInstance.h"
 
 RenderWorld::RenderWorld() {
     renderObjects.Reserve(16384);
@@ -76,21 +76,21 @@ void RenderWorld::UpdateRenderObject(int index, const RenderObject::Desc &desc, 
         // Add proxy node in the DBVT for the renderObjects
         renderObject->proxy = (DbvtProxy *)Mem_Alloc(sizeof(DbvtProxy));
         renderObject->proxy->renderObject = renderObject;
-        renderObject->proxy->staticMesh = nullptr;
+        renderObject->proxy->staticMeshInstance = nullptr;
         renderObject->proxy->worldAABB = renderObject->GetWorldAABB();
         renderObject->proxy->staticMeshSurfIndex = -1;
         renderObject->proxy->id = objectDbvt.CreateProxy(renderObject->proxy->worldAABB, BE1::MeterToUnit(0.0f), renderObject->proxy);
 
-        if (desc.mesh && desc.mesh->IsStaticMesh()) {
-            renderObject->numMeshSurfProxies = desc.mesh->NumSurfaces();
-            renderObject->meshSurfProxies = (DbvtProxy *)Mem_Alloc(desc.mesh->NumSurfaces() * sizeof(DbvtProxy));
+        if (desc.meshInstance && desc.meshInstance->IsStatic()) {
+            renderObject->numMeshSurfProxies = desc.meshInstance->NumSurfaces();
+            renderObject->meshSurfProxies = (DbvtProxy *)Mem_Alloc(desc.meshInstance->NumSurfaces() * sizeof(DbvtProxy));
 
-            for (int surfaceIndex = 0; surfaceIndex < desc.mesh->NumSurfaces(); ++surfaceIndex) {
-                const Mesh::Surface *meshSurf = desc.mesh->GetSurface(surfaceIndex);
+            for (int surfaceIndex = 0; surfaceIndex < desc.meshInstance->NumSurfaces(); ++surfaceIndex) {
+                const Mesh::Surface *meshSurf = desc.meshInstance->GetSurface(surfaceIndex);
 
                 DbvtProxy *meshSurfProxy = &renderObject->meshSurfProxies[surfaceIndex];
                 meshSurfProxy->renderObject = renderObject;
-                meshSurfProxy->staticMesh = desc.mesh.get();
+                meshSurfProxy->staticMeshInstance = desc.meshInstance.get();
                 meshSurfProxy->worldAABB.SetFromTransformedAABBFast(meshSurf->subMesh->GetAABB(), desc.worldMatrix);
                 meshSurfProxy->staticMeshSurfIndex = surfaceIndex;
                 meshSurfProxy->id = staticMeshDbvt.CreateProxy(renderObject->meshSurfProxies[surfaceIndex].worldAABB, BE1::MeterToUnit(0.0f), &renderObject->meshSurfProxies[surfaceIndex]);
@@ -124,25 +124,25 @@ void RenderWorld::UpdateRenderObject(int index, const RenderObject::Desc &desc, 
             renderObject->meshSurfProxies = nullptr;
             renderObject->numMeshSurfProxies = 0;
 
-            if (desc.mesh && desc.mesh->IsStaticMesh()) {
-                renderObject->numMeshSurfProxies = desc.mesh->NumSurfaces();
+            if (desc.meshInstance && desc.meshInstance->IsStatic()) {
+                renderObject->numMeshSurfProxies = desc.meshInstance->NumSurfaces();
                 renderObject->meshSurfProxies = (DbvtProxy *)Mem_ClearedAlloc(renderObject->numMeshSurfProxies * sizeof(DbvtProxy));
 
-                for (int surfaceIndex = 0; surfaceIndex < desc.mesh->NumSurfaces(); surfaceIndex++) {
-                    const Mesh::Surface *meshSurf = desc.mesh->GetSurface(surfaceIndex);
+                for (int surfaceIndex = 0; surfaceIndex < desc.meshInstance->NumSurfaces(); surfaceIndex++) {
+                    const Mesh::Surface *meshSurf = desc.meshInstance->GetSurface(surfaceIndex);
 
                     DbvtProxy *meshSurfProxy = &renderObject->meshSurfProxies[surfaceIndex];
                     meshSurfProxy->renderObject = renderObject;
-                    meshSurfProxy->staticMesh = desc.mesh.get();
+                    meshSurfProxy->staticMeshInstance = desc.meshInstance.get();
                     meshSurfProxy->worldAABB.SetFromTransformedAABBFast(meshSurf->subMesh->GetAABB(), newWorldMatrix);
                     meshSurfProxy->staticMeshSurfIndex = surfaceIndex;
                     meshSurfProxy->id = staticMeshDbvt.CreateProxy(renderObject->meshSurfProxies[surfaceIndex].worldAABB, BE1::MeterToUnit(0.0f), &renderObject->meshSurfProxies[surfaceIndex]);
                 }
             }
         } else if (proxyMoved) {
-            if (renderObject->desc.mesh && renderObject->meshSurfProxies) {
-                for (int surfaceIndex = 0; surfaceIndex < renderObject->desc.mesh->NumSurfaces(); surfaceIndex++) {
-                    renderObject->meshSurfProxies[surfaceIndex].worldAABB.SetFromTransformedAABBFast(renderObject->desc.mesh->GetSurface(surfaceIndex)->subMesh->GetAABB(), newWorldMatrix);
+            if (renderObject->desc.meshInstance && renderObject->meshSurfProxies) {
+                for (int surfaceIndex = 0; surfaceIndex < renderObject->desc.meshInstance->NumSurfaces(); surfaceIndex++) {
+                    renderObject->meshSurfProxies[surfaceIndex].worldAABB.SetFromTransformedAABBFast(renderObject->desc.meshInstance->GetSurface(surfaceIndex)->subMesh->GetAABB(), newWorldMatrix);
                     staticMeshDbvt.MoveProxy(renderObject->meshSurfProxies[surfaceIndex].id, renderObject->meshSurfProxies[surfaceIndex].worldAABB, BE1::MeterToUnit(0.5f), displacementVector);
                 }
             }

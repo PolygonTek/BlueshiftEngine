@@ -36,28 +36,33 @@ void RenderObject::Update(const RenderObject::Desc &src, RenderObject::Desc::Upd
     }
 
     if (BE1::HasFlag(flags, Desc::UpdateFlag::Mesh)) {
-        desc.mesh = src.mesh;
+        desc.meshInstance = src.meshInstance;
     }
 
     if (BE1::HasFlag(flags, Desc::UpdateFlag::Textures)) {
         desc.textures = src.textures;
     }
 
-    if (BE1::HasFlag(flags, Desc::UpdateFlag::Font)) {
-        desc.font = src.font;
-    }
+    if (src.text) {
+        if (BE1::HasFlag(flags, Desc::UpdateFlag::Font)) {
+            RenderObject::TextDesc &textDesc = desc.GetTextDesc();
+            textDesc.font = src.text->font;
+        }
 
-    if (BE1::HasFlag(flags, Desc::UpdateFlag::Text)) {
-        desc.text = src.text;
-    }
+        if (BE1::HasFlag(flags, Desc::UpdateFlag::Text)) {
+            RenderObject::TextDesc &textDesc = desc.GetTextDesc();
+            textDesc.text = src.text->text;
+        }
 
-    if (BE1::HasFlag(flags, Desc::UpdateFlag::TextStyle)) {
-        desc.textRect = src.textRect;
-        desc.textShadowOffset = src.textShadowOffset;
-        desc.textShadowColor = src.textShadowColor;
-        desc.textParams = src.textParams;
-        desc.textScale = src.textScale;
-        desc.textLineSpacing = src.textLineSpacing;
+        if (BE1::HasFlag(flags, Desc::UpdateFlag::TextStyle)) {
+            RenderObject::TextDesc &textDesc = desc.GetTextDesc();
+            textDesc.textRect = src.text->textRect;
+            textDesc.textShadowOffset = src.text->textShadowOffset;
+            textDesc.textShadowColor = src.text->textShadowColor;
+            textDesc.textParams = src.text->textParams;
+            textDesc.textScale = src.text->textScale;
+            textDesc.textLineSpacing = src.text->textLineSpacing;
+        }
     }
 
     if (BE1::HasAnyFlag(flags, Desc::UpdateFlag::Transform | Desc::UpdateFlag::AABB)) {

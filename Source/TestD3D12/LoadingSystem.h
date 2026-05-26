@@ -16,6 +16,7 @@
 
 #include "Render/Texture.h"
 #include "Render/Mesh.h"
+#include "Render/Skeleton.h"
 
 class LoadingSystem {
 public:
@@ -25,47 +26,54 @@ public:
     void                            Start();
     void                            Stop();
 
-    bool                            EnqueueTextureLoad(std::shared_ptr<Texture> texture, const char *filename, Texture::Flag flags, uint32_t serial);
-    bool                            EnqueueTextureLoadAndReplace(std::shared_ptr<Texture> texture, const char *filename, int firstMip);
-    bool                            EnqueueMeshLoad(uint32_t serial, Mesh *mesh, const char *filename);
+    bool                            EnqueueTextureLoad(std::shared_ptr<Texture> texture, const char *filename, Texture::Flag flags, bool isReload, uint32_t serial);
+    bool                            EnqueueTextureStreamingReplacement(std::shared_ptr<Texture> texture, const char *filename, int firstMip);
+    bool                            EnqueueMeshLoad(std::shared_ptr<Mesh> mesh, const char *filename, bool isReload, uint32_t serial);
+    bool                            EnqueueSkeletonLoad(std::shared_ptr<Skeleton> skeleton, const char *filename, bool isReload, uint32_t serial);
 
                                     /// Applies completed load requests on the main thread.
     void                            ProcessLoadCompletions();
 
 private:
     struct LoadRequest {
-        std::shared_ptr<Texture>    texture = nullptr;
-        Mesh *                      mesh = nullptr;
+        std::shared_ptr<Texture>    texture;
+        std::shared_ptr<Mesh>       mesh;
+        std::shared_ptr<Skeleton>   skeleton;
         BE1::Str                    filename;
         Texture::Flag               textureFlags = Texture::Flag::None;
         std::shared_ptr<BE1::Image> image;
-        bool                        isReplacement = false;
         int                         originalMipLevels = 0;
         int                         firstMip = -1;
-        int                         mipCount = -1;
         uint32_t                    serial = 0;
+        bool                        isReload = false;
+        bool                        isStreamingReplacement = false;
     };
 
     struct LoadCompletion {
-        std::shared_ptr<Texture>    texture = nullptr;
-        Mesh *                      mesh = nullptr;
-        Texture::Prepared           texturePrepared;
+        std::shared_ptr<Texture>    texture;
+        std::shared_ptr<Mesh>       mesh;
+        std::shared_ptr<Skeleton>   skeleton;
+        Texture::InternalData       textureData;
         BE1::Image::MipRange        mipRange;
-        //Mesh::Prepared            meshPrepared;
+        Mesh::InternalData          meshData;
+        Skeleton::InternalData      skeletonData;
         uint32_t                    serial = 0;
-        bool                        isReplacement = false;
+        bool                        isReload = false;
+        bool                        isStreamingReplacement = false;
         bool                        success = false;
     };
 
     void                            Run();
     bool                            ProcessTextureLoadRequest(const LoadRequest &request);
-    bool                            ProcessTextureLoadAndReplaceRequest(const LoadRequest &request);
+    bool                            ProcessTextureStreamingReplacementRequest(const LoadRequest &request);
     bool                            ProcessMeshLoadRequest(const LoadRequest &request);
+    bool                            ProcessSkeletonLoadRequest(const LoadRequest &request);
 
     void                            PushCompletion(LoadCompletion &&completion);
     void                            DiscardCompletion(LoadCompletion &completion);
     bool                            ProcessTextureLoadCompletion(LoadCompletion &completion);
     bool                            ProcessMeshLoadCompletion(LoadCompletion &completion);
+    bool                            ProcessSkeletonLoadCompletion(LoadCompletion &completion);
 
     static unsigned int             ThreadProc(void *param);
 

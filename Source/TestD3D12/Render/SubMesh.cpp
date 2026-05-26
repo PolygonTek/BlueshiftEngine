@@ -15,11 +15,9 @@
 #include "Precompiled.h"
 #include "SubMesh.h"
 
-void SubMesh::Alloc(MeshType newType, uint32_t numNewVerts, uint32_t numNewIndexes) {
+void SubMesh::Alloc(uint32_t numNewVerts, uint32_t numNewIndexes) {
     static int32_t subMeshIdCounter = 0;
 
-    assert(newType != MeshType::Dummy);
-    type = newType;
     subMeshId = subMeshIdCounter++;
 
     numVerts = numNewVerts;
@@ -30,10 +28,6 @@ void SubMesh::Alloc(MeshType newType, uint32_t numNewVerts, uint32_t numNewIndex
 }
 
 void SubMesh::Purge() {
-    if (type == MeshType::Dummy) {
-        return;
-    }
-
     if (vertexBuffer) {
         RHI::renderer->DestroyVertexBuffer(vertexBuffer);
         vertexBuffer = nullptr;
@@ -62,6 +56,10 @@ void SubMesh::Purge() {
     if (edgeIndexes) {
         Mem_AlignedFree(edgeIndexes);
         edgeIndexes = nullptr;
+    }
+    if (vertWeights) {
+        Mem_AlignedFree(vertWeights);
+        vertWeights = nullptr;
     }
 }
 
@@ -97,9 +95,7 @@ void SubMesh::ComputeNormals() {
 
     BE1::Vec3 *tempNormals = (BE1::Vec3 *)Mem_Alloc16(numVerts * sizeof(BE1::Vec3));
 
-    for (int i = 0; i < numVerts; ++i) {
-        tempNormals[i] = BE1::Vec3::zero;
-    }
+    memset(tempNormals, 0, numVerts * sizeof(BE1::Vec3));
 
     for (int i = 0; i < numIndexes; i += 3) {
         int i0 = indexes[i];
@@ -684,7 +680,7 @@ int SubMesh::FindEdge(int32_t v1, int32_t v2) const {
 
         if (edge->v[0] == minVertexIndex &&
             edge->v[1] == maxVertexIndex) {
-            // Returns negative edge index if and if only first vertex index is larger than second one.
+            // Returns negative edge index if and only if first vertex index is larger than second one.
             return ascendingOrder ? edgeIndex : -edgeIndex;
         }
     }
@@ -704,6 +700,95 @@ bool SubMesh::IsClosed() const {
             edge->t[1] < 0) {
             return false;
         }
+    }
+    return true;
+}
+
+bool SubMesh::IsIntersectLine(const BE1::Vec3 &start, const BE1::Vec3 &end, bool ignoreBackFace) const {
+    if (!BE1::HasFlag(flags, Flag::EdgesCalculated)) {
+        return false;
+    }
+
+    BE1::Ray ray;
+    ray.origin = start;
+    ray.dir = end - start;
+    ray.dir.Normalize();
+
+    return IntersectRay(ray, ignoreBackFace);
+}
+
+bool SubMesh::IntersectRay(const BE1::Ray &ray, bool ignoreBackFace, float *hitDist, BE1::Vec3 *hitNormal) const {
+    if (!BE1::HasFlag(flags, Flag::EdgesCalculated)) {
+        return false;
+    }
+
+    float minDist = BE1::Math::Infinity;
+    BE1::Vec3 minDistNormal = BE1::Vec3::unitX;
+
+    byte *sidedness = (byte *)_alloca(numEdges * sizeof(byte));
+
+    BE1::Pluecker rayPl, pl;
+    rayPl.SetFromRay(ray.origin, ray.dir);
+
+    // ray sidedness for edges
+    for (int i = 0; i < numEdges; i++) {
+        const BE1::Vec3 &p0 = verts[edges[i].v[1]].xyz;
+        const BE1::Vec3 &p1 = verts[edges[i].v[0]].xyz;
+        pl.SetFromLine(p0, p1);
+        float d = pl.PermutedInnerProduct(rayPl);
+        sidedness[i] = (byte)IEEE_FLT_SIGNBITSET(d);
+    }
+
+    BE1::Plane plane;
+
+    // test triangles
+    for (int i = 0; i < numIndexes; i += 3) {
+#if 0
+        const int32_t i0 = indexes[i + 0];
+        const int32_t i1 = indexes[i + 1];
+        const int32_t i2 = indexes[i + 2];
+
+        const int32_t e0 = FindEdge(i0, i1);
+        const int32_t e1 = FindEdge(i1, i2);
+        const int32_t e2 = FindEdge(i2, i0);
+#else
+        const int32_t e0 = edgeIndexes[i + 0];
+        const int32_t e1 = edgeIndexes[i + 1];
+        const int32_t e2 = edgeIndexes[i + 2];
+#endif
+        const int32_t s0 = sidedness[BE1::Math::Abs(e0)] ^ INT32_SIGNBITSET(e0);
+        const int32_t s1 = sidedness[BE1::Math::Abs(e1)] ^ INT32_SIGNBITSET(e1);
+        const int32_t s2 = sidedness[BE1::Math::Abs(e2)] ^ INT32_SIGNBITSET(e2);
+
+        if ((s0 & s1 & s2) || (!ignoreBackFace && !(s0 | s1 | s2))) {
+            const BE1::Vec3 &v0 = verts[indexes[i + 0]].xyz;
+            const BE1::Vec3 &v1 = verts[indexes[i + 1]].xyz;
+            const BE1::Vec3 &v2 = verts[indexes[i + 2]].xyz;
+            plane.SetFromPoints(v0, v1, v2);
+
+            float d;
+            if (plane.IntersectRay(ray, false, &d)) {
+                if (!hitDist && !hitNormal) {
+                    return true;
+                }
+
+                if (d < minDist) {
+                    minDist = d;
+                    minDistNormal = plane.normal;
+                }
+            }
+        }
+    }
+
+    if (minDist == BE1::Math::Infinity) {
+        return false;
+    }
+
+    if (hitDist) {
+        *hitDist = minDist;
+    }
+    if (hitNormal) {
+        *hitNormal = minDistNormal;
     }
     return true;
 }

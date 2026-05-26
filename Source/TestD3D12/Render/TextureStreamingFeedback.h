@@ -30,7 +30,6 @@ public:
         };
 
         RHI::Buffer *           buffer = nullptr;
-        void *                  mappedData = nullptr;
         std::atomic<uint64_t>   fenceValue = 0;
         std::atomic<State>      state = State::Idle;
     };

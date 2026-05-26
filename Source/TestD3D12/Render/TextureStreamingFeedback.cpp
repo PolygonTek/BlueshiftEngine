@@ -26,7 +26,6 @@ void TextureStreamingFeedback::Init() {
         ReadbackFrame &readbackFrame = readbackFrames[i];
 
         readbackFrame.buffer = RHI::renderer->CreateBuffer(RHI::BufferUsage::Readback, RHI::BufferFlag::None, capacity * sizeof(uint32_t), nullptr);
-        readbackFrame.mappedData = readbackFrame.buffer->GetMappedPtr();
         readbackFrame.fenceValue.store(0);
         readbackFrame.state.store(ReadbackFrame::State::Idle);
 
@@ -97,7 +96,7 @@ void TextureStreamingFeedback::ConsumeCompletedReadbacks(ConsumeCallback callbac
             continue;
         }
 
-        callback(static_cast<const uint32_t *>(readbackFrame.mappedData), capacity);
+        callback(static_cast<const uint32_t *>(readbackFrame.buffer->mappedPtr), capacity);
 
         readbackFrame.fenceValue.store(0);
         readbackFrame.state.store(ReadbackFrame::State::Idle);

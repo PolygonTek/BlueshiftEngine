@@ -193,6 +193,7 @@ namespace RHI {
     };
 
     enum class TextureType : uint8_t {
+        Unknown,
         Texture1D,
         Texture1DArray,
         Texture2D,
@@ -544,9 +545,7 @@ namespace RHI {
     public:
         virtual bool                    HasValidView(RHI::ViewType viewType, RHI::ViewID viewID = RHI::ViewID::PrimaryID) const = 0;
 
-        virtual void *                  GetMappedPtr() const { return nullptr; }
-
-        BufferFlag                      flags = BufferFlag::None;
+        void *                          mappedPtr = nullptr; // Upload or Readback or Dynamic (Upload) 버퍼는 CPU 가 접근할 수 있도록 매핑된 포인터를 갖는다.
     };
 
     class VertexBuffer : public GPUResource {
@@ -554,7 +553,7 @@ namespace RHI {
         virtual uint32_t                GetOffset() const = 0;
         virtual uint32_t                GetSizeInBytes() const = 0;
 
-        void *                          writePtr = nullptr;
+        void *                          mappedPtr = nullptr; // Dynamic (Upload) 버퍼는 CPU 가 접근할 수 있도록 매핑된 포인터를 갖는다.
     };
 
     class IndexBuffer : public GPUResource {
@@ -562,12 +561,12 @@ namespace RHI {
         virtual uint32_t                GetOffset() const = 0;
         virtual uint32_t                GetSizeInBytes() const = 0;
 
-        void *                          writePtr = nullptr;
+        void *                          mappedPtr = nullptr; // Dynamic (Upload) 버퍼는 CPU 가 접근할 수 있도록 매핑된 포인터를 갖는다.
     };
 
     class ConstantBuffer : public GPUResource {
     public:
-        void *                          writePtr = nullptr;
+        void *                          mappedPtr = nullptr; // Dynamic (Upload) 버퍼는 CPU 가 접근할 수 있도록 매핑된 포인터를 갖는다.
     };
 
     class Texture : public GPUResource {
@@ -879,6 +878,8 @@ namespace RHI {
         virtual VertexBuffer *          AllocVertex(uint32_t vertexSize, uint32_t count, const void *data = nullptr) = 0;
         virtual IndexBuffer *           AllocIndex(uint32_t indexSize, uint32_t count, const void *data = nullptr) = 0;
         virtual ConstantBuffer *        AllocConstant(uint32_t size, const void *data = nullptr) = 0;
+        virtual Buffer *                AllocBuffer(uint32_t size, uint32_t alignSize, const void *data = nullptr) = 0;
+        virtual Buffer *                AllocStructuredBuffer(uint32_t stride, uint32_t count, const void *data = nullptr) = 0;
 
         virtual void *                  AppendVertex(RHI::VertexBuffer *vertexBuffer, uint32_t vertexSize, uint32_t count, const void *data = nullptr) = 0;
         virtual void *                  AppendIndex(RHI::IndexBuffer *indexBuffer, uint32_t indexSize, uint32_t count, const void *data = nullptr) = 0;

@@ -39,5 +39,5 @@ public:
 private:
     D3D12Buffer *                   buffer = nullptr;
     D3D12_INDEX_BUFFER_VIEW         ibv = {};
-    int                             dynamicBlockIndex = -1;
+    int32_t                         dynamicBlockIndex = -1;
 };

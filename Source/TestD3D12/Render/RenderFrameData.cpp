@@ -17,7 +17,7 @@
 #include "RenderInternal.h"
 
 static constexpr uint32_t   MaxRenderTaskThreads = 32;
-static constexpr uint32_t   MaxMemSizePerBlock = 0x1000000;
+static constexpr uint32_t   MaxMemSizePerBlock = 0x4000000;
 static constexpr uint32_t   MemAlignSize = 32;
 
 void RenderFrameData::Init() {
@@ -52,7 +52,7 @@ void RenderFrameData::Shutdown() {
 
     ClearRetainedTextures();
 
-    ClearRetainedMeshes();
+    ClearRetainedMeshInstances();
 
     ClearRetainedFonts();
 
@@ -96,7 +96,7 @@ void RenderFrameData::BeginFrameMemAllocs() {
 
     ClearRetainedTextures();
 
-    ClearRetainedMeshes();
+    ClearRetainedMeshInstances();
 
     ClearRetainedFonts();
 
@@ -110,7 +110,7 @@ void RenderFrameData::BeginFrameMemAllocs() {
 
     InitVisCameras(16);
 
-    InitVisObjects(16384);
+    InitVisObjects(65536);
 }
 
 void *RenderFrameData::MemAlloc(int size) {
@@ -192,13 +192,15 @@ void RenderFrameData::ClearRetainedTextures() {
         retainedTextures[i].reset();
     }
     retainedTextures.SetCount(0, false);
+    retainedTextureHash.Clear();
 }
 
-void RenderFrameData::ClearRetainedMeshes() {
-    for (int i = 0; i < retainedMeshes.Count(); ++i) {
-        retainedMeshes[i].reset();
+void RenderFrameData::ClearRetainedMeshInstances() {
+    for (int i = 0; i < retainedMeshInstances.Count(); ++i) {
+        retainedMeshInstances[i].reset();
     }
-    retainedMeshes.SetCount(0, false);
+    retainedMeshInstances.SetCount(0, false);
+    retainedMeshInstanceHash.Clear();
 }
 
 void RenderFrameData::ClearRetainedFonts() {
@@ -206,6 +208,7 @@ void RenderFrameData::ClearRetainedFonts() {
         retainedFonts[i].reset();
     }
     retainedFonts.SetCount(0, false);
+    retainedFontHash.Clear();
 }
 
 void RenderFrameData::RetainTexture(const std::shared_ptr<Texture> &texture) {
@@ -214,28 +217,34 @@ void RenderFrameData::RetainTexture(const std::shared_ptr<Texture> &texture) {
     }
 
     Texture *texturePtr = texture.get();
-    for (int i = 0; i < retainedTextures.Count(); ++i) {
+    int hash = retainedTextureHash.GenerateHash(texturePtr);
+
+    for (int i = retainedTextureHash.First(hash); i != -1; i = retainedTextureHash.Next(i)) {
         if (retainedTextures[i].get() == texturePtr) {
             return;
         }
     }
 
-    retainedTextures.Append(texture);
+    int index = retainedTextures.Append(texture);
+    retainedTextureHash.Add(hash, index);
 }
 
-void RenderFrameData::RetainMesh(const std::shared_ptr<Mesh> &mesh) {
-    if (!mesh) {
+void RenderFrameData::RetainMeshInstance(const std::shared_ptr<MeshInstance> &meshInstance) {
+    if (!meshInstance) {
         return;
     }
 
-    Mesh *meshPtr = mesh.get();
-    for (int i = 0; i < retainedMeshes.Count(); ++i) {
-        if (retainedMeshes[i].get() == meshPtr) {
+    MeshInstance *meshInstancePtr = meshInstance.get();
+    int hash = retainedMeshInstanceHash.GenerateHash(meshInstancePtr);
+
+    for (int i = retainedMeshInstanceHash.First(hash); i != -1; i = retainedMeshInstanceHash.Next(i)) {
+        if (retainedMeshInstances[i].get() == meshInstancePtr) {
             return;
         }
     }
 
-    retainedMeshes.Append(mesh);
+    int index = retainedMeshInstances.Append(meshInstance);
+    retainedMeshInstanceHash.Add(hash, index);
 }
 
 void RenderFrameData::RetainFont(const std::shared_ptr<Font> &font) {
@@ -244,13 +253,16 @@ void RenderFrameData::RetainFont(const std::shared_ptr<Font> &font) {
     }
 
     Font *fontPtr = font.get();
-    for (int i = 0; i < retainedFonts.Count(); ++i) {
+    int hash = retainedFontHash.GenerateHash(fontPtr);
+
+    for (int i = retainedFontHash.First(hash); i != -1; i = retainedFontHash.Next(i)) {
         if (retainedFonts[i].get() == fontPtr) {
             return;
         }
     }
 
-    retainedFonts.Append(font);
+    int index = retainedFonts.Append(font);
+    retainedFontHash.Add(hash, index);
 }
 
 VisCamera *RenderFrameData::AllocVisCamera() {

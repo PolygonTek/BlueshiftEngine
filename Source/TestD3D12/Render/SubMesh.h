@@ -47,13 +47,6 @@ struct Edge {
     int32_t                 t[2];       ///< Indices of adjacent triangle. t[0] represents the CCW triangle.
 };
 
-enum class MeshType : uint8_t {
-    Dummy,
-    Static,         ///< Mesh data in a static vertex/index buffer.
-    Dynamic,        ///< Mesh data in a dynamic vertex/index buffer.
-    Skinned         ///< Mesh data used for skinning.
-};
-
 class SubMesh {
     friend class Mesh;
     friend class MeshManager;
@@ -70,13 +63,15 @@ public:
 
     ~SubMesh() { Purge(); }
 
-    MeshType                GetType() const { return type; }
-
     uint32_t                NumVerts() const { return numVerts; }
     BE1::VertexGenericLit * Verts() const { return verts; }
 
     uint32_t                NumIndexes() const { return numIndexes; }
     BE1::VertIndex *        Indexes() const { return indexes; }
+
+    int                     VertexWeightSize() const;
+    int                     MaxVertexWeights() const;
+    void *                  VertexWeights() const { return vertWeights; }
 
     const BE1::AABB &       GetAABB() const { return aabb; }
 
@@ -91,6 +86,14 @@ public:
                             /// NOTE: Edge data must be precomputed before calling this function.
     bool                    IsClosed() const;
 
+                            /// Tests if this sub mesh intersect with the given line segment.
+                            /// To use this function, edge information must be pre-calculated.
+    bool                    IsIntersectLine(const BE1::Vec3 &p1, const BE1::Vec3 &p2, bool ignoreBackFace) const;
+
+                            /// Ray intersection.
+                            /// To use this function, edge information must be pre-calculated.
+    bool                    IntersectRay(const BE1::Ray &ray, bool ignoreBackFace, float *hitDist = nullptr, BE1::Vec3 *hitNormal = nullptr) const;
+
                             /// Calculates the volume of the sub-mesh.
     float                   CalculateVolume() const;
 
@@ -103,7 +106,7 @@ public:
     void                    UploadStaticDataToGPU();
 
 private:
-    void                    Alloc(MeshType meshType, uint32_t numVerts, uint32_t numIndexes);
+    void                    Alloc(uint32_t numVerts, uint32_t numIndexes);
     void                    Purge();
 
                             /// Copies sub-mesh data from another sub-mesh. The destination should already be allocated.
@@ -132,11 +135,12 @@ private:
     Edge *                  edges = nullptr;            ///< Pointer to edges (shared edges are not stored explicitly).
     int32_t *               edgeIndexes = nullptr;      ///< Mapping from triangle edge indices to edge indices (negative values indicate shared edges).
     BE1::AABB               aabb = BE1::AABB::empty;    ///< Local axis-aligned bounding box (AABB) for this sub-mesh.
+    void *                  vertWeights = nullptr;      ///< vertex weights for GPU skinning (numVerts * sizeof(VertexWeightX))
+    int                     gpuSkinningVersionIndex;    ///< 0: VertexWeight1, 1: VertexWeight4, 2: VertexWeight8
 
-    RHI::VertexBuffer *     vertexBuffer = nullptr;     ///< GPU vertex buffer.
-    RHI::IndexBuffer *      indexBuffer = nullptr;      ///< GPU index buffer.
+    RHI::VertexBuffer *     vertexBuffer = nullptr;     ///< RHI vertex buffer.
+    RHI::IndexBuffer *      indexBuffer = nullptr;      ///< RHI index buffer.
 
-    MeshType                type = MeshType::Dummy;
     Flag                    flags = Flag::None;
 };
 
@@ -144,3 +148,18 @@ template<>
 struct enable_bitmask_operators<SubMesh::Flag> {
     static const bool enable = true;
 };
+
+BE_INLINE int SubMesh::VertexWeightSize() const {
+    if (!vertWeights) {
+        return 0;
+    }
+    return gpuSkinningVersionIndex == 2 ? sizeof(BE1::VertexWeight8) : (gpuSkinningVersionIndex == 1 ? sizeof(BE1::VertexWeight4) : sizeof(BE1::VertexWeight1));
+}
+
+BE_INLINE int SubMesh::MaxVertexWeights() const {
+    int size = VertexWeightSize();
+    if (size == 0) {
+        return 0;
+    }
+    return size == sizeof(BE1::VertexWeight8) ? 8 : (size == sizeof(BE1::VertexWeight4) ? 4 : 1);
+}

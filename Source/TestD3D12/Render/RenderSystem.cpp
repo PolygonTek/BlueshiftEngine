@@ -21,6 +21,7 @@
 #include "Texture.h"
 #include "Font.h"
 #include "Mesh.h"
+#include "Skeleton.h"
 
 RenderSystem *      renderSystem = nullptr;
 
@@ -35,6 +36,8 @@ void RenderSystem::Init(void *mainWindowHandle) {
     textureManager.Init();
 
     fontManager.Init();
+
+    skeletonManager.Init();
 
     meshManager.Init();
 
@@ -57,6 +60,8 @@ void RenderSystem::Shutdown() {
     SAFE_DELETE(backEnd);
 
     meshManager.Shutdown();
+
+    skeletonManager.Shutdown();
 
     fontManager.Shutdown();
 
@@ -181,6 +186,8 @@ void RenderSystem::MarkRenderCompleted(RenderFrameData *frameData) {
 }
 
 bool RenderSystem::WaitSubmittedFrame(SubmittedFrame &submittedFrame) {
+    PROFILER_CPU_SCOPED_EVENT("RenderSystem::WaitSubmittedFrame");
+
     {
         BE1::ScopedWriteLock lock(frameSyncLock);
 

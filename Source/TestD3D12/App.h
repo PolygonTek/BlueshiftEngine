@@ -53,6 +53,8 @@ private:
     RenderCamera *                  renderCamera = nullptr;
     RenderWorld *                   renderWorld = nullptr;
 
+    std::shared_ptr<Mesh>           cubeMesh;
+
     BE1::Array<GameObject *>        gameObjects;
 
     int                             elapsedMsec = 0;
@@ -60,7 +62,7 @@ private:
 
     float                           targetCameraYaw = 0.0f;
     float                           targetCameraPitch = 45.0f;
-    float                           targetCameraDistance = 132.0f;
+    float                           targetCameraDistance = 205.0f;
 
     float                           cameraYaw;
     float                           cameraPitch;

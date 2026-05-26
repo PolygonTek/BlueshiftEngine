@@ -66,7 +66,7 @@ void LoadingSystem::Stop() {
     }
 }
 
-bool LoadingSystem::EnqueueTextureLoad(std::shared_ptr<Texture> texture, const char *filename, Texture::Flag flags, uint32_t serial) {
+bool LoadingSystem::EnqueueTextureLoad(std::shared_ptr<Texture> texture, const char *filename, Texture::Flag flags, bool isReload, uint32_t serial) {
     if (!texture || !filename || !filename[0]) {
         return false;
     }
@@ -82,6 +82,7 @@ bool LoadingSystem::EnqueueTextureLoad(std::shared_ptr<Texture> texture, const c
         request.texture = texture;
         request.filename = filename;
         request.textureFlags = flags;
+        request.isReload = isReload;
         request.serial = serial;
         requests.Append(std::move(request));
 
@@ -92,7 +93,7 @@ bool LoadingSystem::EnqueueTextureLoad(std::shared_ptr<Texture> texture, const c
     return true;
 }
 
-bool LoadingSystem::EnqueueTextureLoadAndReplace(std::shared_ptr<Texture> texture, const char *filename, int firstMip) {
+bool LoadingSystem::EnqueueTextureStreamingReplacement(std::shared_ptr<Texture> texture, const char *filename, int firstMip) {
     if (!texture || !filename || !filename[0]) {
         return false;
     }
@@ -115,7 +116,7 @@ bool LoadingSystem::EnqueueTextureLoadAndReplace(std::shared_ptr<Texture> textur
         request.texture = texture;
         request.filename = filename;
         request.textureFlags = texture->GetFlags();
-        request.isReplacement = true;
+        request.isStreamingReplacement = true;
         request.originalMipLevels = texture->GetStreaming()->originalMipLevels;
         request.firstMip = firstMip;
         request.serial = texture->GetLoadSerial();
@@ -128,7 +129,7 @@ bool LoadingSystem::EnqueueTextureLoadAndReplace(std::shared_ptr<Texture> textur
     return true;
 }
 
-bool LoadingSystem::EnqueueMeshLoad(uint32_t serial, Mesh *mesh, const char *filename) {
+bool LoadingSystem::EnqueueMeshLoad(std::shared_ptr<Mesh> mesh, const char *filename, bool isReload, uint32_t serial) {
     if (!mesh || !filename || !filename[0]) {
         return false;
     }
@@ -143,6 +144,33 @@ bool LoadingSystem::EnqueueMeshLoad(uint32_t serial, Mesh *mesh, const char *fil
         LoadRequest request;
         request.mesh = mesh;
         request.filename = filename;
+        request.isReload = isReload;
+        request.serial = serial;
+        requests.Append(std::move(request));
+
+        // 로딩 요청 큐에 집어넣는다.
+        BE1::PlatformCondition::Signal(requestCondition);
+    }
+
+    return true;
+}
+
+bool LoadingSystem::EnqueueSkeletonLoad(std::shared_ptr<Skeleton> skeleton, const char *filename, bool isReload, uint32_t serial) {
+    if (!skeleton || !filename || !filename[0]) {
+        return false;
+    }
+
+    {
+        BE1::ScopedLock lock(requestMutex);
+
+        if (stopping) {
+            return false;
+        }
+
+        LoadRequest request;
+        request.skeleton = skeleton;
+        request.filename = filename;
+        request.isReload = isReload;
         request.serial = serial;
         requests.Append(std::move(request));
 
@@ -155,6 +183,8 @@ bool LoadingSystem::EnqueueMeshLoad(uint32_t serial, Mesh *mesh, const char *fil
 
 void LoadingSystem::Run() {
     while (1) {
+        PROFILER_CPU_SCOPED_EVENT("LoadingSystem::Run");
+
         BE1::Array<LoadRequest> localRequests;
         {
             BE1::ScopedLock lock(requestMutex);
@@ -172,8 +202,8 @@ void LoadingSystem::Run() {
 
         for (LoadRequest &request : localRequests) {
             if (request.texture) {
-                if (request.isReplacement) {
-                    if (!ProcessTextureLoadAndReplaceRequest(request)) {
+                if (request.isStreamingReplacement) {
+                    if (!ProcessTextureStreamingReplacementRequest(request)) {
                         continue;
                     }
                 } else {
@@ -185,14 +215,21 @@ void LoadingSystem::Run() {
                 if (!ProcessMeshLoadRequest(request)) {
                     continue;
                 }
+            } else if (request.skeleton) {
+                if (!ProcessSkeletonLoadRequest(request)) {
+                    continue;
+                }
             }
         }
     }
 }
 
 bool LoadingSystem::ProcessTextureLoadRequest(const LoadRequest &request) {
+    PROFILER_CPU_SCOPED_EVENT("LoadingSystem::ProcessTextureLoadRequest");
+
     LoadCompletion completion;
     completion.texture = request.texture;
+    completion.isReload = request.isReload;
     completion.serial = request.serial;
 
     std::shared_ptr<BE1::Image> image = std::make_shared<BE1::Image>();
@@ -231,13 +268,13 @@ bool LoadingSystem::ProcessTextureLoadRequest(const LoadRequest &request) {
 
     if (useMipRange) {
         completion.mipRange = mipRange;
-        completion.success = Texture::PrepareDirect(textureType, image, request.textureFlags | Texture::Flag::LoadedFromFile, completion.texturePrepared);
+        completion.success = Texture::PrepareDirect(textureType, image, request.textureFlags | Texture::Flag::LoadedFromFile, completion.textureData);
     } else {
-        completion.success = Texture::Prepare(textureType, image, request.textureFlags | Texture::Flag::LoadedFromFile, completion.texturePrepared);
+        completion.success = Texture::Prepare(textureType, image, request.textureFlags | Texture::Flag::LoadedFromFile, completion.textureData);
     }
 
-    if (completion.texturePrepared.texture) {
-        RHI::renderer->SetName(completion.texturePrepared.texture, request.filename);
+    if (completion.textureData.rhiTexture) {
+        RHI::renderer->SetName(completion.textureData.rhiTexture, request.filename);
     }
 
     // 완료 큐에 집어넣는다.
@@ -245,13 +282,15 @@ bool LoadingSystem::ProcessTextureLoadRequest(const LoadRequest &request) {
     return true;
 }
 
-bool LoadingSystem::ProcessTextureLoadAndReplaceRequest(const LoadRequest &request) {
+bool LoadingSystem::ProcessTextureStreamingReplacementRequest(const LoadRequest &request) {
+    PROFILER_CPU_SCOPED_EVENT("LoadingSystem::ProcessTextureStreamingReplacementRequest");
+
     LoadCompletion completion;
     completion.texture = request.texture;
     completion.serial = request.serial;
 
     // 기존 텍스쳐의 교체 요청을 받았다고 표시
-    completion.isReplacement = true;
+    completion.isStreamingReplacement = true;
 
     uint32_t mipCount = request.originalMipLevels - request.firstMip;
 
@@ -263,7 +302,7 @@ bool LoadingSystem::ProcessTextureLoadAndReplaceRequest(const LoadRequest &reque
     image->LoadDDSMipRange(request.filename.c_str(), request.firstMip, mipCount, &mipRange);
     
     if (image->IsEmpty()) {
-        BE_WARNLOG("LoadingSystem::ProcessTextureLoadAndReplaceRequest: couldn't load texture \"%s\"\n", request.filename.c_str());
+        BE_WARNLOG("LoadingSystem::ProcessTextureStreamingReplacementRequest: couldn't load texture \"%s\"\n", request.filename.c_str());
         PushCompletion(std::move(completion));
         return false;
     }
@@ -280,7 +319,7 @@ bool LoadingSystem::ProcessTextureLoadAndReplaceRequest(const LoadRequest &reque
     }
 
     completion.mipRange = mipRange;
-    completion.success = Texture::PrepareDirect(textureType, image, request.textureFlags | Texture::Flag::LoadedFromFile, completion.texturePrepared);
+    completion.success = Texture::PrepareDirect(textureType, image, request.textureFlags | Texture::Flag::LoadedFromFile, completion.textureData);
 
     // 완료 큐에 집어넣는다.
     PushCompletion(std::move(completion));
@@ -288,7 +327,31 @@ bool LoadingSystem::ProcessTextureLoadAndReplaceRequest(const LoadRequest &reque
 }
 
 bool LoadingSystem::ProcessMeshLoadRequest(const LoadRequest &request) {
-    return false;
+    PROFILER_CPU_SCOPED_EVENT("LoadingSystem::ProcessMeshLoadRequest");
+
+    LoadCompletion completion;
+    completion.mesh = request.mesh;
+    completion.isReload = request.isReload;
+    completion.serial = request.serial;
+    completion.success = Mesh::Prepare(request.filename, completion.meshData);
+
+    // 완료 큐에 집어넣는다.
+    PushCompletion(std::move(completion));
+    return true;
+}
+
+bool LoadingSystem::ProcessSkeletonLoadRequest(const LoadRequest &request) {
+    PROFILER_CPU_SCOPED_EVENT("LoadingSystem::ProcessSkeletonLoadRequest");
+
+    LoadCompletion completion;
+    completion.skeleton = request.skeleton;
+    completion.isReload = request.isReload;
+    completion.serial = request.serial;
+    completion.success = Skeleton::Prepare(request.filename, completion.skeletonData);
+
+    // 완료 큐에 집어넣는다.
+    PushCompletion(std::move(completion));
+    return true;
 }
 
 // 로딩 요청 처리가 완료된 것들은 최종적으로 메인 스레드에서 처리한다.
@@ -310,6 +373,10 @@ void LoadingSystem::ProcessLoadCompletions() {
             if (!ProcessMeshLoadCompletion(completion)) {
                 continue;
             }
+        } else if (completion.skeleton) {
+            if (!ProcessSkeletonLoadCompletion(completion)) {
+                continue;
+            }
         }
     }
 }
@@ -326,9 +393,9 @@ bool LoadingSystem::ProcessTextureLoadCompletion(LoadCompletion &completion) {
 
 #ifdef USE_MIPMAP_STREAMING
     // 교체 요청을 받았을 경우
-    if (completion.isReplacement) {
+    if (completion.isStreamingReplacement) {
         // 교체할 텍스쳐를 로딩하지 못했을 경우
-        if (!completion.success || !completion.texturePrepared.texture) {
+        if (!completion.success || !completion.textureData.rhiTexture) {
             BE_ERRLOG("Texture streaming replacement failed: texture '%s', requested first mip %i\n", texture->GetHashName(), texture->GetStreaming()->requestedFirstMip);
 
             // 스트리밍 중단
@@ -337,8 +404,8 @@ bool LoadingSystem::ProcessTextureLoadCompletion(LoadCompletion &completion) {
         }
 
         // 교체할 RHI::Texture 포인터를 담아 놓는다.
-        texture->GetStreaming()->pendingReplacementTexture = completion.texturePrepared.texture;
-        completion.texturePrepared.texture = nullptr;
+        texture->GetStreaming()->pendingReplacementTexture = completion.textureData.rhiTexture;
+        completion.textureData.rhiTexture = nullptr;
         return true;
     }
 #endif
@@ -346,11 +413,15 @@ bool LoadingSystem::ProcessTextureLoadCompletion(LoadCompletion &completion) {
     // 로딩이 실패한 경우
     if (!completion.success) {
         texture->SetState(Texture::State::Failed);
+
+        if (completion.isReload) {
+            texture->Purge();
+        }
         return false;
     }
 
     // 준비된 텍스쳐로 세팅한다.
-    texture->ApplyPrepared(completion.texturePrepared);
+    texture->ApplyPrepared(completion.textureData);
 
 #ifdef USE_MIPMAP_STREAMING
     // 스트리밍 초기 데이터인 경우
@@ -367,7 +438,7 @@ bool LoadingSystem::ProcessTextureLoadCompletion(LoadCompletion &completion) {
 }
 
 bool LoadingSystem::ProcessMeshLoadCompletion(LoadCompletion &completion) {
-    /*std::shared_ptr<Mesh> mesh = completion.mesh;
+    std::shared_ptr<Mesh> mesh = completion.mesh;
 
     // 로딩 요청 이후 시리얼이 변경된 경우
     if (completion.serial != mesh->GetLoadSerial()) {
@@ -379,17 +450,47 @@ bool LoadingSystem::ProcessMeshLoadCompletion(LoadCompletion &completion) {
     // 로딩이 실패한 경우
     if (!completion.success) {
         mesh->SetState(Mesh::State::Failed);
+
+        if (completion.isReload) {
+            mesh->Purge();
+        }
         return false;
     }
 
     // 준비된 메시로 세팅한다.
-    mesh->ApplyPrepared(completion.meshPrepared);
+    mesh->ApplyPrepared(completion.meshData);
 
     // 로딩이 성공했으므로 Ready 상태로 바꿔준다.
     mesh->SetState(Mesh::State::Ready);
+    return true;
+}
 
-    return true;*/
-    return false;
+bool LoadingSystem::ProcessSkeletonLoadCompletion(LoadCompletion &completion) {
+    std::shared_ptr<Skeleton> skeleton = completion.skeleton;
+
+    // 로딩 요청 이후 시리얼이 변경된 경우
+    if (completion.serial != skeleton->GetLoadSerial()) {
+        // 새로 만든 스켈레톤을 폐기한다.
+        DiscardCompletion(completion);
+        return false;
+    }
+
+    // 로딩이 실패한 경우
+    if (!completion.success) {
+        skeleton->SetState(Skeleton::State::Failed);
+
+        if (completion.isReload) {
+            skeleton->Purge();
+        }
+        return false;
+    }
+
+    // 준비된 스켈레톤으로 세팅한다.
+    skeleton->ApplyPrepared(completion.skeletonData);
+
+    // 로딩이 성공했으므로 Ready 상태로 바꿔준다.
+    skeleton->SetState(Skeleton::State::Ready);
+    return true;
 }
 
 void LoadingSystem::PushCompletion(LoadCompletion &&completion) {
@@ -398,13 +499,13 @@ void LoadingSystem::PushCompletion(LoadCompletion &&completion) {
 }
 
 void LoadingSystem::DiscardCompletion(LoadCompletion &completion) {
-    if (completion.texturePrepared.texture) {
-        RHI::renderer->DestroyTexture(completion.texturePrepared.texture);
-        completion.texturePrepared.texture = nullptr;
-    }/*else if (completion.meshPrepared.mesh) {
-        RHI::renderer->DestroyMesh(completion.meshPrepared.mesh);
-        completion.meshPrepared.mesh = nullptr;
-    }*/
+    if (completion.texture) {
+        completion.textureData.Purge();
+    } else if (completion.mesh) {
+        completion.meshData.Purge();
+    } else if (completion.skeleton) {
+        completion.skeletonData.Purge();
+    }
 }
 
 unsigned int LoadingSystem::ThreadProc(void *param) {

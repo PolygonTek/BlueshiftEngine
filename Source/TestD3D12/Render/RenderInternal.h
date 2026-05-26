@@ -20,6 +20,7 @@
 #include "Texture.h"
 #include "Font.h"
 #include "Mesh.h"
+#include "MeshInstance.h"
 #include "DrawSurf.h"
 
 // 한 프레임 렌더링에서만 유효한 렌더링 카메라
@@ -27,6 +28,9 @@
 class VisCamera {
 public:
     static constexpr int        MaxDrawSurfs = 0x10000;
+
+    ALIGN_AS32 BE1::Mat4        viewProjMatrix;
+    ALIGN_AS32 BE1::AABB        worldAABB;
 
     uint32_t                    index = ~0;
 
@@ -37,8 +41,6 @@ public:
     BE1::Rect                   renderRect;
     RenderCameraClearMethod     clearMethod;
     BE1::Color4                 clearColor;
-    ALIGN_AS32 BE1::Mat4        viewProjMatrix;
-    ALIGN_AS32 BE1::AABB        worldAABB;
 
     bool                        is2D;
 };
@@ -49,22 +51,20 @@ public:
 // 따라서 공유 자윈이 파괴되는 걸 방지하기 위해, 한 프레임 렌더링이 끝난 후 릴리즈하는 구조로 되어있다.
 class VisObject {
 public:
-    ~VisObject() {}
-
-    uint32_t                    index = ~0;
-
     ALIGN_AS32 BE1::Mat3x4      worldMatrix;
     ALIGN_AS32 BE1::Mat3x4      modelViewMatrix;
     ALIGN_AS32 BE1::Mat4        modelViewProjMatrix;
 
-    Mesh *                      mesh = nullptr;
+    uint32_t                    index = ~0;
+
+    MeshInstance *              meshInstance = nullptr;
     uint32_t                    numTextures = 0;
     const Texture *             textures[32] = {};
 
     Font *                      font = nullptr;
     const char *                text = nullptr;
     BE1::RectF                  textRect;
-    BE1::Color4                 textShadowColor;
+    uint32_t                    textShadowColor;
     BE1::Vec2                   textShadowOffset;
     RenderObject::TextParams    textParams;
     float                       textScale;

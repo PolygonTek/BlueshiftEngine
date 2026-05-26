@@ -173,30 +173,33 @@ VisObject *RenderWorld::RegisterVisObject(RenderFrameData *frameData, const Rend
     renderObject->visObject = visObject;
     renderObject->viewCount = viewCount;
 
-    if (renderObject->desc.mesh) {
-        frameData->RetainMesh(renderObject->desc.mesh);
-        visObject->mesh = renderObject->desc.mesh.get();
+    if (renderObject->desc.meshInstance) {
+        frameData->RetainMeshInstance(renderObject->desc.meshInstance);
+        visObject->meshInstance = renderObject->desc.meshInstance.get();
     }
     visObject->numTextures = renderObject->desc.textures.Count();
     for (int i = 0; i < visObject->numTextures; ++i) {
         frameData->RetainTexture(renderObject->desc.textures[i]);
         visObject->textures[i] = renderObject->desc.textures[i].get();
     }
-    if (renderObject->desc.font) {
-        frameData->RetainFont(renderObject->desc.font);
-        visObject->font = renderObject->desc.font.get();
-    }
-    if (!renderObject->desc.text.IsEmpty()) {
-        int size = renderObject->desc.text.Length() + 1;
-        char *textMemPtr = (char *)frameData->MemAlloc(size);
-        BE1::Str::Copynz(textMemPtr, renderObject->desc.text.c_str(), size);
-        visObject->text = textMemPtr;
-        visObject->textRect = renderObject->desc.textRect;
-        visObject->textShadowOffset = renderObject->desc.textShadowOffset;
-        visObject->textShadowColor = renderObject->desc.textShadowColor;
-        visObject->textParams = renderObject->desc.textParams;
-        visObject->textScale = renderObject->desc.textScale;
-        visObject->textLineSpacing = renderObject->desc.textLineSpacing;
+    if (renderObject->desc.text) {
+        RenderObject::TextDesc &textDesc = *(renderObject->desc.text);
+        if (textDesc.font) {
+            frameData->RetainFont(textDesc.font);
+            visObject->font = textDesc.font.get();
+        }
+        if (!textDesc.text.IsEmpty()) {
+            int size = textDesc.text.Length() + 1;
+            char *textMemPtr = (char *)frameData->MemAlloc(size);
+            BE1::Str::Copynz(textMemPtr, textDesc.text.c_str(), size);
+            visObject->text = textMemPtr;
+            visObject->textRect = textDesc.textRect;
+            visObject->textShadowOffset = textDesc.textShadowOffset;
+            visObject->textShadowColor = textDesc.textShadowColor;
+            visObject->textParams = textDesc.textParams;
+            visObject->textScale = textDesc.textScale;
+            visObject->textLineSpacing = textDesc.textLineSpacing;
+        }
     }
 
     return visObject;
@@ -259,10 +262,10 @@ void RenderWorld::AddStaticMeshes(RenderFrameData *frameData, const RenderCamera
 
 #ifdef USE_DBVT
     // Called for each static mesh surfaces intersecting with camera frustum.
-    // Returns true if it want to proceed next query.
+    // Returns true if it wants to proceed next query.
     auto addStaticMeshSurfs = [this, frameData, visCamera](int32_t proxyId) -> bool {
         const DbvtProxy *proxy = (const DbvtProxy *)staticMeshDbvt.GetUserData(proxyId);
-        const Mesh::Surface *meshSurf = proxy->staticMesh->GetSurface(proxy->staticMeshSurfIndex);
+        const Mesh::Surface *meshSurf = proxy->staticMeshInstance->GetSurface(proxy->staticMeshSurfIndex);
         if (!meshSurf) {
             return true;
         }
@@ -285,12 +288,12 @@ void RenderWorld::AddStaticMeshes(RenderFrameData *frameData, const RenderCamera
 #else
     for (int i = 0; i < frameData->NumVisObjects(); ++i) {
         VisObject *visObject = frameData->GetVisObjects() + i;
-        if (!visObject->mesh) {
+        if (!visObject->meshInstance) {
             continue;
         }
 
-        for (int meshSurfIndex = 0; meshSurfIndex < visObject->mesh->NumSurfaces(); ++meshSurfIndex) {
-            const Mesh::Surface *meshSurf = visObject->mesh->GetSurface(meshSurfIndex);
+        for (int meshSurfIndex = 0; meshSurfIndex < visObject->meshInstance->NumSurfaces(); ++meshSurfIndex) {
+            const Mesh::Surface *meshSurf = visObject->meshInstance->GetSurface(meshSurfIndex);
 
             /*BE1::AABB worldAABB;
             worldAABB.SetFromTransformedAABBFast(meshSurf->subMesh->GetAABB(), visObject->worldMatrix);
@@ -319,12 +322,12 @@ void RenderWorld::AddTextMeshes(RenderFrameData *frameData, const RenderCamera *
         if (visObject->textRect.IsEmpty()) {
             textMesh.DrawText3D(frameData->GetThreadData(0), (RenderObject::TextDrawMode)visObject->textParams.bits.textDrawMode,
                 (RenderObject::TextAnchor)visObject->textParams.bits.textAnchor, (RenderObject::TextHorzAlignment)visObject->textParams.bits.textHorzAlignment,
-                visObject->textLineSpacing, visObject->textScale, BE1::Color4::white.ToUInt32(), visObject->textShadowColor.ToUInt32(), visObject->textShadowOffset, visObject->font, visObject->text);
+                visObject->textLineSpacing, visObject->textScale, BE1::Color4::white.ToUInt32(), visObject->textShadowColor, visObject->textShadowOffset, visObject->font, visObject->text);
         } else {
             textMesh.DrawText3D(frameData->GetThreadData(0), (RenderObject::TextDrawMode)visObject->textParams.bits.textDrawMode, visObject->textRect,
                 (RenderObject::TextHorzAlignment)visObject->textParams.bits.textHorzAlignment, (RenderObject::TextVertAlignment)visObject->textParams.bits.textVertAlignment,
                 (RenderObject::TextHorzOverflow)visObject->textParams.bits.textHorzOverflow, (RenderObject::TextVertOverflow)visObject->textParams.bits.textVertOverflow,
-                visObject->textLineSpacing, visObject->textScale, BE1::Color4::white.ToUInt32(), visObject->textShadowColor.ToUInt32(), visObject->textShadowOffset, visObject->font, visObject->text);
+                visObject->textLineSpacing, visObject->textScale, BE1::Color4::white.ToUInt32(), visObject->textShadowColor, visObject->textShadowOffset, visObject->font, visObject->text);
         }
 
         textMesh.CacheIndexes(frameData->GetThreadData(0));
@@ -338,7 +341,6 @@ void RenderWorld::AddTextMeshes(RenderFrameData *frameData, const RenderCamera *
             SubMesh *subMesh = (SubMesh *)frameData->ClearedMemAlloc(sizeof(SubMesh));
             new (subMesh) SubMesh();
 
-            subMesh->type = MeshType::Dynamic;
             subMesh->numIndexes = guiSurf->numIndexes;
             subMesh->numVerts = guiSurf->numVerts;
             subMesh->vertexBuffer = guiSurf->vertexBuffer;
@@ -398,7 +400,6 @@ void RenderWorld::DrawGUICamera(RenderFrameData *frameData, uint32_t screenWidth
         SubMesh *subMesh = (SubMesh *)frameData->ClearedMemAlloc(sizeof(SubMesh));
         new (subMesh) SubMesh();
 
-        subMesh->type = MeshType::Dynamic;
         subMesh->numIndexes = guiSurf->numIndexes;
         subMesh->numVerts = guiSurf->numVerts;
         subMesh->vertexBuffer = guiSurf->vertexBuffer;

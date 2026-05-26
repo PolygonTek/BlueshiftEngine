@@ -63,6 +63,10 @@ void MeshManager::CreateEngineMeshes() {
     // Create default capsule mesh
     defaultCapsuleMesh = AllocMesh("_defaultCapsuleMesh");
     defaultCapsuleMesh->CreateCapsule(BE1::Vec3::origin, BE1::Mat3::identity, BE1::MeterToUnit(0.5f), BE1::MeterToUnit(1.0f), 32);
+
+    // Create default rounded box mesh
+    defaultRoundedBoxMesh = AllocMesh("_defaultRoundedBoxMesh");
+    defaultRoundedBoxMesh->CreateRoundedBox(BE1::Vec3::origin, BE1::Mat3::identity, BE1::Vec3(BE1::MeterToUnit(0.5f) - BE1::MeterToUnit(0.05f)), BE1::MeterToUnit(0.05f), 2);
 }
 
 void MeshManager::DestroyEngineMeshes() {
@@ -134,11 +138,11 @@ std::shared_ptr<Mesh> MeshManager::GetMesh(const char *hashName) {
     }
 
     mesh = AllocMesh(hashName);
-/*#ifdef USE_ASYNC_LOADING
+#ifdef USE_ASYNC_LOADING
     if (!mesh->LoadAsync(hashName)) {
-#else*/
+#else
     if (!mesh->Load(hashName)) {
-//#endif
+#endif
         BE_WARNLOG("Couldn't load mesh '%s'\n", hashName);
 
         meshHashMap.Remove(mesh->hashName);
@@ -161,9 +165,8 @@ std::shared_ptr<Mesh> MeshManager::CreateCombinedMesh(const char *hashName, cons
 
     // Allocates a combined mesh.
     std::shared_ptr<Mesh> mesh = AllocMesh(hashName);
-    mesh->type = MeshType::Static;
     Mesh::Surface *surf = mesh->AllocSurface(numTotalVerts, numTotalIndexes);
-    mesh->surfaces.Append(surf);
+    mesh->internalData.surfaces.Append(surf);
 
     BE1::VertexGenericLit *dstVertPtr = surf->subMesh->verts;
     BE1::VertIndex *dstIndexPtr = surf->subMesh->indexes;
@@ -187,7 +190,9 @@ std::shared_ptr<Mesh> MeshManager::CreateCombinedMesh(const char *hashName, cons
         baseVertex += srcSubMesh->numVerts;
     }
 
-    mesh->FinishSurfaces(Mesh::FinishFlag::ComputeAABB);
+    mesh->internalData.FinishSurfaces(Mesh::FinishFlag::ComputeAABB);
+    mesh->BumpDataSerial();
+    mesh->SetState(Mesh::State::Ready);
 
     return mesh;
 }

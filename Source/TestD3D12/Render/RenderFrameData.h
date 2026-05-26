@@ -14,11 +14,12 @@
 
 #pragma once
 
+#include "Containers/HashIndex.h"
 #include "RHI.h"
 
 class RenderContext;
 class Texture;
-class Mesh;
+class MeshInstance;
 class Font;
 class VisCamera;
 class VisObject;
@@ -129,7 +130,7 @@ public:
     RHI::FrameThreadData *          GetThreadData(int32_t threadIndex) { assert(threadIndex >= 0 && threadIndex < numRenderTaskThreads); return threadData[threadIndex]; }
 
     void                            RetainTexture(const std::shared_ptr<Texture> &texture);
-    void                            RetainMesh(const std::shared_ptr<Mesh> &mesh);
+    void                            RetainMeshInstance(const std::shared_ptr<MeshInstance> &meshInstance);
     void                            RetainFont(const std::shared_ptr<Font> &font);
 
                                     // 프론트 엔드에서 프레임 데이터의 사용을 시작
@@ -160,7 +161,7 @@ private:
     void                            FreeVisObjects();
 
     void                            ClearRetainedTextures();
-    void                            ClearRetainedMeshes();
+    void                            ClearRetainedMeshInstances();
     void                            ClearRetainedFonts();
 
     void *                          GetCommandBuffer(uint32_t bytes);
@@ -184,8 +185,11 @@ private:
     int                             numRenderTaskThreads = 0;
 
     BE1::Array<std::shared_ptr<Texture>> retainedTextures;
-    BE1::Array<std::shared_ptr<Mesh>> retainedMeshes;
+    BE1::HashIndex                  retainedTextureHash { 4096, 4096 };
+    BE1::Array<std::shared_ptr<MeshInstance>> retainedMeshInstances;
+    BE1::HashIndex                  retainedMeshInstanceHash { 16384, 16384 };
     BE1::Array<std::shared_ptr<Font>> retainedFonts;
+    BE1::HashIndex                  retainedFontHash { 64, 64 };
 };
 
 BE_INLINE void RenderFrameData::BeginFrame() {

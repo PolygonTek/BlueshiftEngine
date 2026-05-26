@@ -65,7 +65,7 @@ public:
                             /// Returns pointer to the glyph structure corresponding to a character. Return nullptr if no glyphs are found.
     FontGlyph *             GetGlyph(char32_t unicodeChar, RenderMode renderMode = RenderMode::Normal) const;
 
-                            /// Returns a offset for the next character.
+                            /// Returns an offset for the next character.
     int                     GetGlyphAdvanceX(char32_t unicodeChar) const;
     int                     GetGlyphAdvanceY(char32_t unicodeChar) const;
 

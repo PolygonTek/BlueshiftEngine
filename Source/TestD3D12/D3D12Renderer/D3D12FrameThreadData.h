@@ -58,6 +58,12 @@ public:
                                         // 다이나믹 컨스턴트 버퍼를 할당한다. Reset 이 호출되면 할당된 버퍼는 모두 해제된다.
     virtual RHI::ConstantBuffer *       AllocConstant(uint32_t size, const void *data = nullptr) override;
 
+                                        // 다이나믹 (raw) 버퍼를 할당한다. Reset 이 호출되면 할당된 버퍼는 모두 해제된다.
+    virtual RHI::Buffer *               AllocBuffer(uint32_t size, uint32_t alignSize, const void *data = nullptr) override;
+
+                                        // 다이나믹 (structured) 버퍼를 할당한다. Reset 이 호출되면 할당된 버퍼는 모두 해제된다.
+    virtual RHI::Buffer *               AllocStructuredBuffer(uint32_t stride, uint32_t count, const void *data = nullptr) override;
+
                                         // 마지막에 할당했던 다이나믹 버텍스 버퍼에 데이터를 추가한다. 블럭의 크기가 부족하지 않은 이상 추가는 성공한다.
     virtual void *                      AppendVertex(RHI::VertexBuffer *vertexBuffer, uint32_t vertexSize, uint32_t count, const void *data = nullptr) override;
 
@@ -79,17 +85,18 @@ private:
         ~DynamicBufferBlock();
 
         D3D12Buffer *                   buffer = nullptr;
-        void *                          mappedBase = nullptr;
         UINT                            usedBytes = 0;
         int                             blockIndex = -1;
     };
 
+    RHI::Buffer *                       AllocShaderResourceBuffer(uint32_t size, uint32_t alignSize, uint32_t structuredStride, const void *data = nullptr);
     DynamicBufferBlock *                FindFreeDynamicBufferBlock(uint32_t size, uint32_t alignSize, uint32_t *outAlignedOffset) const;
 
     BE1::Array<DynamicBufferBlock *>    dynamicBufferBlocks;
     BE1::Array<D3D12ConstantBuffer>     dynamicConstantBuffers;
     BE1::Array<D3D12VertexBuffer>       dynamicVertexBuffers;
     BE1::Array<D3D12IndexBuffer>        dynamicIndexBuffers;
+    BE1::Array<D3D12Buffer>             dynamicBuffers;
     D3D12DescriptorPool *               dynamicResDescriptorPool = nullptr;
 
     D3D12CommandListPool *              graphicsCommandListPool = nullptr;

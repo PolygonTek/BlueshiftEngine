@@ -1124,7 +1124,7 @@ void D3D12Renderer::ReadPixels(RHI::CommandList *commandList, const RHI::SwapCha
     Finish(RHI::CommandQueueType::Graphics);
 
     // 리드백 버퍼의 내용을 메모리로 읽어온다.
-    const byte *srcPtr = (byte *)readbackBuffer->GetMappedPtr();
+    const byte *srcPtr = (byte *)readbackBuffer->mappedPtr;
     byte *dstPtr = nullptr;
 
     BE1::Image tempImage;

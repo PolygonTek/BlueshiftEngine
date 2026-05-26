@@ -111,7 +111,9 @@ private:
     RHI::PipelineState *            unlitInstancedPSO = nullptr;
     RHI::PipelineState *            unlitInstancedAlphaBlendPSO = nullptr;
     RHI::PipelineState *            litPSO = nullptr;
+    RHI::PipelineState *            litAlphaBlendPSO = nullptr;
     RHI::PipelineState *            litInstancedPSO = nullptr;
+    RHI::PipelineState *            litInstancedAlphaBlendPSO = nullptr;
 
 #ifdef USE_RENDER_FRAME_BUFFERING
     static constexpr int            NumFrames = 2;

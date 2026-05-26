@@ -67,7 +67,7 @@ private:
 
 BE_INLINE ID3D12Resource *D3D12Texture::GetResource() const {
 #ifdef USE_D3D12_MEMALLOC
-    return textureAllocation->GetResource();
+    return textureAllocation ? textureAllocation->GetResource() : nullptr;
 #else
     return textureResource;
 #endif

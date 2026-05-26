@@ -20,12 +20,13 @@
 #include "D3D12FrameThreadData.h"
 
 void D3D12ConstantBuffer::Release() {
-    if (!writePtr) {
+    if (dynamicBlockIndex == -1) {
         if (descriptorHandle.ptr != 0) {
             D3D12Renderer::GetRenderer()->resCpuDescriptorPool->Free(descriptorHandle);
             descriptorHandle.ptr = 0;
         }
     }
+
     if (buffer) {
         RHI::renderer->DestroyBuffer(buffer, true);
         buffer = nullptr;

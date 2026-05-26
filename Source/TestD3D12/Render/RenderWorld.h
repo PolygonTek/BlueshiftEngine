@@ -31,7 +31,7 @@ class SubMesh;
 struct DbvtProxy {
     BE1::AABB                   worldAABB;              ///< World bounding volume for this proxy node.
     RenderObject *              renderObject;           ///< Associated render object.
-    Mesh *                      staticMesh;             ///< Static mesh.
+    MeshInstance *              staticMeshInstance;     ///< Static mesh instance.
     int32_t                     staticMeshSurfIndex;    ///< Index into the mesh's surface array.
     int32_t                     id;                     ///< Proxy id.
 };

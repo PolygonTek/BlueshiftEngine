@@ -45,8 +45,12 @@ static bool ListSortCompareMergedAABBArea(const MeshSurfPtr &a, const MeshSurfPt
     return aArea < bArea;
 }
 
-void Mesh::SortAndMerge() {
+void Mesh::InternalData::SortAndMerge() {
     ComputeAABB();
+
+    if (numJoints > 1) {
+        return;
+    }
 
     if (surfaces.Count() <= 1) {
         return;

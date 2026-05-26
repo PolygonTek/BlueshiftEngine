@@ -208,7 +208,7 @@ void RenderBackend::DrawSurface(RHI::FrameThreadData *frameThreadData, RHI::Comm
         return;
     }
 
-    LitConstantData *constantDataPtr = reinterpret_cast<LitConstantData *>(constantBuffer->writePtr);
+    LitConstantData *constantDataPtr = reinterpret_cast<LitConstantData *>(constantBuffer->mappedPtr);
 
     // 오브젝트의 MVP 행렬을 기록
     constantDataPtr->modelViewProjMatrix = drawSurf->space->modelViewProjMatrix;
@@ -241,7 +241,7 @@ void RenderBackend::DrawInstancedSurface(RHI::FrameThreadData *frameThreadData, 
         return;
     }
 
-    LitInstancedConstantData *constantDataPtr = reinterpret_cast<LitInstancedConstantData *>(constantBuffer->writePtr);
+    LitInstancedConstantData *constantDataPtr = reinterpret_cast<LitInstancedConstantData *>(constantBuffer->mappedPtr);
 
     // 카메라의 뷰-프로젝션 행렬을 기록
     constantDataPtr->viewProjMatrix = currentVisCamera->viewProjMatrix;
@@ -279,7 +279,7 @@ void RenderBackend::DrawGuiSurface(RHI::FrameThreadData *frameThreadData, RHI::C
         return;
     }
 
-    UnlitConstantData *constantDataPtr = reinterpret_cast<UnlitConstantData *>(constantBuffer->writePtr);
+    UnlitConstantData *constantDataPtr = reinterpret_cast<UnlitConstantData *>(constantBuffer->mappedPtr);
 
     constantDataPtr->modelViewProjMatrix = drawSurf->space->modelViewProjMatrix;
 

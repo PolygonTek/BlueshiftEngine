@@ -26,27 +26,28 @@ void D3D12Texture::Release() {
             D3D12Renderer::GetRenderer()->resCpuDescriptorPool->Free(srvEntry.cpuDescriptorHandle);
         }
     }
-    srvEntries.Clear();
 
     for (const D3D12UAVEntry &uavEntry : uavEntries) {
         if (uavEntry.cpuDescriptorHandle.ptr != 0) {
             D3D12Renderer::GetRenderer()->resCpuDescriptorPool->Free(uavEntry.cpuDescriptorHandle);
         }
     }
-    uavEntries.Clear();
 
     for (const D3D12RTVEntry &rtvEntry : rtvEntries) {
         if (rtvEntry.cpuDescriptorHandle.ptr != 0) {
             D3D12Renderer::GetRenderer()->rtvCpuDescriptorPool->Free(rtvEntry.cpuDescriptorHandle);
         }
     }
-    rtvEntries.Clear();
 
     for (const D3D12DSVEntry &dsvEntry : dsvEntries) {
         if (dsvEntry.cpuDescriptorHandle.ptr != 0) {
             D3D12Renderer::GetRenderer()->dsvCpuDescriptorPool->Free(dsvEntry.cpuDescriptorHandle);
         }
     }
+
+    srvEntries.Clear();
+    uavEntries.Clear();
+    rtvEntries.Clear();
     dsvEntries.Clear();
 
 #ifdef USE_D3D12_MEMALLOC
@@ -106,6 +107,9 @@ RHI::Texture *D3D12Renderer::CreateTexture(RHI::TextureType textureType, RHI::Te
     case RHI::TextureType::Texture3D:
         textureDimension = D3D12_RESOURCE_DIMENSION_TEXTURE3D;
         break;
+    default:
+        BE_ERRLOG("D3D12Renderer::CreateTexture: unknown texture type\n");
+        return nullptr;
     }
 
     D3D12_RESOURCE_FLAGS resourceFlags = D3D12_RESOURCE_FLAG_NONE;
@@ -1121,7 +1125,7 @@ bool D3D12Renderer::GetTextureImage(RHI::Texture *texture, int mipLevel, int sli
     EndUtilityCommandList(commandList);
 
     // 리드백 버퍼의 내용을 메모리로 읽어온다.
-    const byte *srcPtr = (byte *)readbackBuffer->GetMappedPtr();
+    const byte *srcPtr = (byte *)readbackBuffer->mappedPtr;
     byte *dstPtr = nullptr;
 
     BE1::Image tempImage;

@@ -20,23 +20,26 @@
 #include "D3D12FrameThreadData.h"
 
 void D3D12Buffer::Release() {
-    if (mappedPtr) {
-        GetResource()->Unmap(0, nullptr);
-        mappedPtr = nullptr;
-    }
+    if (dynamicBlockIndex == -1) {
+        if (mappedPtr) {
+            GetResource()->Unmap(0, nullptr);
+            mappedPtr = nullptr;
+        }
 
-    for (const D3D12SRVEntry &srvEntry : srvEntries) {
-        if (srvEntry.cpuDescriptorHandle.ptr != 0) {
-            D3D12Renderer::GetRenderer()->resCpuDescriptorPool->Free(srvEntry.cpuDescriptorHandle);
+        for (const D3D12SRVEntry &srvEntry : srvEntries) {
+            if (srvEntry.cpuDescriptorHandle.ptr != 0) {
+                D3D12Renderer::GetRenderer()->resCpuDescriptorPool->Free(srvEntry.cpuDescriptorHandle);
+            }
+        }
+
+        for (const D3D12UAVEntry &uavEntry : uavEntries) {
+            if (uavEntry.cpuDescriptorHandle.ptr != 0) {
+                D3D12Renderer::GetRenderer()->resCpuDescriptorPool->Free(uavEntry.cpuDescriptorHandle);
+            }
         }
     }
+
     srvEntries.Clear();
-
-    for (const D3D12UAVEntry &uavEntry : uavEntries) {
-        if (uavEntry.cpuDescriptorHandle.ptr != 0) {
-            D3D12Renderer::GetRenderer()->resCpuDescriptorPool->Free(uavEntry.cpuDescriptorHandle);
-        }
-    }
     uavEntries.Clear();
 
 #ifdef USE_D3D12_MEMALLOC
@@ -488,8 +491,14 @@ void D3D12Renderer::SetBuffer(RHI::CommandList *commandList, int shaderRegister,
                 BE_ERRLOG("D3D12Renderer::SetBuffer: Buffer has no valid UAV descriptor handle\n");
                 return;
             }
+        } else {
+            if (!_buffer->GetResource()) {
+                BE_ERRLOG("D3D12Renderer::SetBuffer: Dynamic buffer cannot be bound as root UAV\n");
+                return;
+            }
+
+            rootBindingData->uavResources[shaderRegister] = _buffer;
         }
-        rootBindingData->uavResources[shaderRegister] = _buffer;
     } else {
         // SRV
         assert(shaderRegister < COUNT_OF(binder.rootParameterIndexLUT.srv));
@@ -514,8 +523,14 @@ void D3D12Renderer::SetBuffer(RHI::CommandList *commandList, int shaderRegister,
                 BE_ERRLOG("D3D12Renderer::SetBuffer: Buffer has no valid SRV descriptor handle\n");
                 return;
             }
+        } else {
+            if (!_buffer->GetResource()) {
+                BE_ERRLOG("D3D12Renderer::SetBuffer: Dynamic buffer cannot be bound as root SRV\n");
+                return;
+            }
+
+            rootBindingData->srvResources[shaderRegister] = _buffer;
         }
-        rootBindingData->srvResources[shaderRegister] = _buffer;
     }
 
     // 변경할 루트 파라미터 인덱스에 대한 dirty mask 를 설정한다.

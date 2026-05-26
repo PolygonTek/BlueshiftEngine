@@ -16,17 +16,25 @@
 
 #include "SubMesh.h"
 
+class Joint;
+class MeshInstance;
 class MeshManager;
+class LoadingSystem;
 
-struct BatchSubMesh {
-    SubMesh *                   subMesh = nullptr;
-    ALIGN_AS16 BE1::Mat3x4      localTransform;
-};
+/*
+-------------------------------------------------------------------------------
 
-// A class for managing 3D mesh data.
-// A mesh consists of one or more surfaces, each containing its own sub-mesh and material information.
-class Mesh {
+    Mesh
+
+    A class for managing 3D mesh data.
+    A mesh consists of one or more surfaces, each containing its own sub-mesh and material information.
+
+-------------------------------------------------------------------------------
+*/
+
+class Mesh : public std::enable_shared_from_this<Mesh> {
     friend class MeshManager;
+    friend class LoadingSystem;
 
 public:
     enum class FinishFlag : uint8_t {
@@ -42,9 +50,13 @@ public:
     enum class State : uint8_t {
         Empty,
         Loading,
-        DestroyPending,
         Ready,
         Failed
+    };
+
+    enum class InstanceType : uint8_t {
+        Static,
+        Skinned
     };
 
     class Surface {
@@ -56,7 +68,45 @@ public:
         int32_t                 materialIndex = -1;
     };
 
-    Mesh() : surfaces(16) {}
+    struct InternalData {
+        InternalData() = default;
+        InternalData(const InternalData &rhs) = delete;
+        InternalData &operator=(const InternalData &rhs) = delete;
+        InternalData(InternalData &&rhs) noexcept { Swap(rhs); }
+        InternalData &operator=(InternalData &&rhs) noexcept;
+        ~InternalData() { Purge(); }
+
+        void                    Purge();
+        void                    Swap(InternalData &rhs);
+
+        bool                    LoadBinaryMesh(const char *filename);
+        void                    WriteBinaryMesh(const char *filename);
+
+                                /// Finalizes all surfaces by performing post-processing operations.
+        void                    FinishSurfaces(FinishFlag finishFlags = FinishFlag::None);
+
+                                /// Applies a transformation to all vertices and optionally recomputes the AABB.
+        void                    TransformVerts(const BE1::Mat3 &rotation, const BE1::Vec3 &scale, const BE1::Vec3 &translation, bool recomputeAABB = true);
+
+        void                    RecomputeTangents();
+
+        void                    GetJointAABBs(const BE1::Mat3x4 *invBindPoseMats, BE1::Array<BE1::AABB> &jointAabbs) const;
+
+        void                    SortAndMerge();
+        void                    ComputeAABB();
+        void                    ComputeNormals();
+        void                    ComputeTangents(bool includeNormals, bool useUnsmoothedTangents);
+        void                    ComputeEdges();
+
+        BE1::Array<Surface *>   surfaces = BE1::Array<Surface *>(16);
+        int32_t                 numJoints = 0;
+        Joint *                 joints = nullptr;
+        BE1::AABB               aabb = BE1::AABB::empty;
+    };
+
+    Mesh() = default;
+    Mesh(const Mesh &rhs) = delete;
+    Mesh &operator=(const Mesh &rhs) = delete;
     ~Mesh() { Purge(); }
 
     const char *                GetName() const { return name; }
@@ -68,11 +118,34 @@ public:
     uint32_t                    GetLoadSerial() const { return loadSerial.load(); }
     uint32_t                    BumpLoadSerial() { return loadSerial.fetch_add(1) + 1; }
 
-    bool                        IsStaticMesh() const { return type == MeshType::Static; }
-    bool                        IsSkinnedMesh() const { return type == MeshType::Skinned; }
+    uint32_t                    GetDataSerial() const { return dataSerial.load(); }
+
+    int                         NumSurfaces() const { return internalData.surfaces.Count(); }
+    Surface *                   GetSurface(int index) const { return internalData.surfaces[index]; }
+
+    int                         NumJoints() const { return internalData.numJoints; }
+    const Joint *               GetJoints() const { return internalData.joints; }
 
                                 /// Returns local axis-aligned bounding box (AABB).
-    const BE1::AABB &           GetAABB() const { return aabb; }
+    const BE1::AABB &           GetAABB() const { return internalData.aabb; }
+
+    static Surface *            AllocSurface(int numVerts, int numIndexes);
+
+    void                        Reset();
+
+    static bool                 Prepare(const char *filename, InternalData &outInternalData);
+    void                        ApplyPrepared(InternalData &newInternalData);
+
+    bool                        Load(const char *filename);
+    bool                        LoadAsync(const char *filename);
+
+    bool                        Reload();
+    bool                        ReloadAsync();
+
+    void                        Write(const char *filename);
+
+    std::shared_ptr<MeshInstance> GetStaticInstance();
+    std::shared_ptr<MeshInstance> InstantiateSkinned();
 
                                 /// Returns the volume of the solid mesh.
                                 /// NOTE: For an exact calculation the mesh must form a closed polytope. Otherwise, an approximation based on the AABB is used.
@@ -86,54 +159,38 @@ public:
                                 /// NOTE: For an exact calculation the mesh must form a closed polytope. Otherwise, an approximation based on the AABB is used.
     float                       CalculateVolumeAndCentroid(BE1::Vec3 &outCentroid) const;
 
-    int                         NumSurfaces() const { return surfaces.Count(); }
-    Surface *                   GetSurface(int index) const { return surfaces[index]; }
-
-    Surface *                   AllocSurface(int numVerts, int numIndexes);
-
-                                /// Finalizes all surfaces by performing post-processing operations.
-    void                        FinishSurfaces(FinishFlag finishFlags = FinishFlag::None);
-
-                                /// Applies a transformation to all vertices and optionally recomputes the AABB.
-    void                        TransformVerts(const BE1::Mat3 &rotation, const BE1::Vec3 &scale, const BE1::Vec3 &translation, bool recomputeAABB = true);
-
-    bool                        Load(const char *filename);
-    bool                        LoadAsync(const char *filename);
-    bool                        Reload();
-
-    void                        Write(const char *filename);
+    static bool                 TrySliceMesh(const Mesh &srcMesh, const BE1::Plane &slicePlane, bool generateCap, float capTextureScale, bool generateAboveMesh, std::shared_ptr<Mesh> &outBelowMesh, std::shared_ptr<Mesh> &outAboveMesh);
 
 private:
-    void                        Purge() { surfaces.DeleteContents(true); }
+    void                        Purge();
+    uint32_t                    BumpDataSerial() { return dataSerial.fetch_add(1) + 1; }
 
     void                        CreateDefaultBox();
     void                        CreatePlane(const BE1::Vec3 &origin, const BE1::Mat3 &axis, float size, int numSegments);
     void                        CreateBox(const BE1::Vec3 &origin, const BE1::Mat3 &axis, const BE1::Vec3 &extents);
     void                        CreateSphere(const BE1::Vec3 &origin, const BE1::Mat3 &axis, float radius, int numSegments);
+    void                        CreateGeosphere(const BE1::Vec3 &origin, float radius, int numSubdivisions);
     void                        CreateCylinder(const BE1::Vec3 &origin, const BE1::Mat3 &axis, float radius, float height, int numSegments);
     void                        CreateCapsule(const BE1::Vec3 &origin, const BE1::Mat3 &axis, float radius, float height, int numSegments);
-        
-    void                        SortAndMerge();
-    void                        ComputeAABB();
-    void                        ComputeNormals();
-    void                        ComputeTangents(bool includeNormals, bool useUnsmoothedTangents);
-    void                        ComputeEdges();
-
-    bool                        LoadBinaryMesh(const char *filename);
-    void                        WriteBinaryMesh(const char *filename);
+    void                        CreateRoundedBox(const BE1::Vec3 &origin, const BE1::Mat3 &axis, const BE1::Vec3 extents, float radius, int numSubdivisions);
 
     BE1::Str                    hashName;
     BE1::Str                    name;
-    BE1::AABB                   aabb = BE1::AABB::empty;
-    BE1::Array<Surface *>       surfaces;
-    MeshType                    type = MeshType::Dummy;
     std::atomic<State>          state = State::Empty;
     std::atomic<uint32_t>       loadSerial = 0;
+    std::atomic<uint32_t>       dataSerial = 0;
+    InternalData                internalData;
+    std::weak_ptr<MeshInstance> staticMeshInstance;
 };
 
 template<>
 struct enable_bitmask_operators<Mesh::FinishFlag> {
     static const bool enable = true;
+};
+
+struct BatchSubMesh {
+    SubMesh *                   subMesh = nullptr;
+    ALIGN_AS16 BE1::Mat3x4      localTransform;
 };
 
 class MeshManager {
@@ -160,6 +217,7 @@ public:
     std::shared_ptr<Mesh>       defaultSphereMesh;
     std::shared_ptr<Mesh>       defaultCylinderMesh;
     std::shared_ptr<Mesh>       defaultCapsuleMesh;
+    std::shared_ptr<Mesh>       defaultRoundedBoxMesh;
 
 private:
     void                        CleanExpiredMeshes();

@@ -569,19 +569,18 @@ void GuiMesh::DrawText3D(RHI::FrameThreadData *frameThreadData, RenderObject::Te
 void GuiMesh::CacheIndexes(RHI::FrameThreadData *frameThreadData) {
     constexpr BE1::VertIndex quadTrisIndexes[6] = { 0, 1, 2, 0, 2, 3 };
 
-    // 모든 surf 에 대해서 index buffer 를 채운다.
-    for (int surfaceIndex = 0; surfaceIndex < surfaces.Count(); surfaceIndex++) {
-        Surface *surf = &surfaces[surfaceIndex];
-        assert(surf->numIndexes % 6 == 0);
+    // 모든 surface 에 대해서 index buffer 를 채운다.
+    for (Surface &surface : surfaces) {
+        assert(surface.numIndexes % 6 == 0);
 
-        if (!surf->indexBuffer) {
-            surf->indexBuffer = frameThreadData->AllocIndex(sizeof(quadTrisIndexes[0]), surf->numIndexes);
-            BE1::VertIndex *indexPtr = reinterpret_cast<BE1::VertIndex *>(surf->indexBuffer->writePtr);
+        if (!surface.indexBuffer) {
+            surface.indexBuffer = frameThreadData->AllocIndex(sizeof(quadTrisIndexes[0]), surface.numIndexes);
+            BE1::VertIndex *indexPtr = reinterpret_cast<BE1::VertIndex *>(surface.indexBuffer->mappedPtr);
 
             // 현재 surf 의 첫번째 버텍스가 위치한 곳을 index 로 나타낸 값
             int baseVertexIndex = 0;
 
-            for (int index = 0; index < surf->numIndexes; index += 6) {
+            for (int index = 0; index < surface.numIndexes; index += 6) {
                 *indexPtr++ = baseVertexIndex + quadTrisIndexes[0];
                 *indexPtr++ = baseVertexIndex + quadTrisIndexes[1];
                 *indexPtr++ = baseVertexIndex + quadTrisIndexes[2];

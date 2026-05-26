@@ -121,6 +121,9 @@ public:
     int             GenerateHash(const char *string, bool caseSensitive = true) const;
     int             GenerateHash(const int n1, const int n2) const;
 
+                    /// Generate hash value for pointer type.
+    int             GenerateHash(const void *ptr) const;
+
                     /// Swaps hash index 'other' with this hash index.
     void            Swap(HashIndex &other);
 
@@ -292,6 +295,16 @@ BE_INLINE int HashIndex::GenerateHash(const uint64_t &value) const {
 
 BE_INLINE int HashIndex::GenerateHash(const int n1, const int n2) const {
     return ((n1 + n2) & hashMask);
+}
+
+BE_INLINE int HashIndex::GenerateHash(const void *ptr) const {
+    uint64_t value = static_cast<uint64_t>(reinterpret_cast<uintptr_t>(ptr));
+
+    value ^= value >> 4;
+    value ^= value >> 9;
+    value ^= value >> 32;
+
+    return static_cast<int>(value & hashMask);
 }
 
 BE_INLINE void HashIndex::Swap(HashIndex &other) {

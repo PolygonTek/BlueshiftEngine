@@ -18,19 +18,22 @@
 #include "Render/RenderContext.h"
 #include "Render/RenderWorld.h"
 #include "Render/RenderCamera.h"
-#include "Render/Mesh.h"
 #include "Render/Texture.h"
+#include "Render/MeshInstance.h"
+#include "Render/Skeleton.h"
 #include "Render/Font.h"
 #include "LoadingSystem.h"
 #include "GameObject.h"
 #include "App.h"
 
-static constexpr int        CubeDimensionX = 64;//105;
-static constexpr int        CubeDimensionY = 64;//68;
-static constexpr int        CubeCount = CubeDimensionX * CubeDimensionY;
+static constexpr int        CubeDimensionX = 100;//64;
+static constexpr int        CubeDimensionY = 100;//64;
+static constexpr int        CubeDimensionZ = 1;
+static constexpr int        CubeCount = CubeDimensionX * CubeDimensionY * CubeDimensionZ;
 static constexpr float      CubeSpacing = 1.414214f;
 static constexpr float      CubeStartX = -CubeSpacing * (CubeDimensionX - 1) * 0.5f;
 static constexpr float      CubeStartY = -CubeSpacing * (CubeDimensionY - 1) * 0.5f;
+static constexpr float      CubeStartZ = -CubeSpacing * (CubeDimensionZ - 1) * 0.5f;
 
 App                         app;
 
@@ -127,6 +130,8 @@ void App::Render() {
 
     meshManager.UpdateFrame();
 
+    skeletonManager.UpdateFrame();
+
     fontManager.UpdateFrame();
 
     renderWorld->RenderScene(renderCamera);
@@ -179,6 +184,8 @@ void App::InitGameObjects() {
 
     gameObjects.Reserve(CubeCount);
 
+    cubeMesh = meshManager.GetMesh("_defaultBoxMesh");
+
     // 큐브
     for (int i = 0; i < CubeCount; ++i) {
         GameObject *gameObject = new GameObject;
@@ -186,8 +193,8 @@ void App::InitGameObjects() {
 
         RenderObject::Desc &desc = gameObject->renderObjectDesc;
         desc.worldMatrix.SetIdentity();
-        desc.mesh = meshManager.GetMesh("_defaultBoxMesh");
-        desc.aabb = desc.mesh->GetAABB();
+        desc.meshInstance = cubeMesh->GetStaticInstance();
+        desc.aabb = cubeMesh->GetAABB();
         desc.textures.SetCount(1);
         desc.textures[0] = textureManager.GetTexture(textureFilenames[BE1::Math::RandomRange(0, COUNT_OF(textureFilenames) - 1)], Texture::Flag::Streaming);
 
@@ -199,10 +206,11 @@ void App::InitGameObjects() {
     gameObjects.Append(gameObject);
 
     RenderObject::Desc &desc = gameObject->renderObjectDesc;
-    desc.worldMatrix.SetTRS(BE1::Vec3(-10, 0, 0), BE1::Mat3::identity, BE1::Vec3::one);
-    desc.font = mainFont->AddRefCount();
-    desc.text = "Hello World";
-    desc.textParams.bits.textAnchor = (uint16_t)RenderObject::TextAnchor::MiddleCenter;
+    desc.worldMatrix.SetTRS(BE1::Vec3(0, 0, 10), BE1::Mat3::identity, BE1::Vec3::one);
+    RenderObject::TextDesc &textDesc = desc.GetTextDesc();
+    textDesc.font = mainFont;
+    textDesc.text = "Hello World";
+    textDesc.textParams.bits.textAnchor = (uint16_t)RenderObject::TextAnchor::MiddleCenter;
 
     gameObject->renderObjectHandle = renderWorld->AddRenderObject(gameObject->renderObjectDesc);*/
 
@@ -214,6 +222,8 @@ void App::ClearGameObjects() {
         renderWorld->RemoveRenderObject(gameObject->renderObjectHandle);
     }
     gameObjects.DeleteContents(true);
+
+    cubeMesh.reset();
 }
 
 void App::UpdateGameObjects() {
@@ -258,18 +268,19 @@ void App::UpdateCubes() {
     float elapsedSeconds = MILLI2SEC(elapsedMsec);
 
     float zRotationSpeed = 0.25f;
-    float xRotationSpeed = 0.00f;
 
-    for (int y = 0; y < CubeDimensionY; ++y) {
-        for (int x = 0; x < CubeDimensionX; ++x) {
-            int index = CubeDimensionX * y + x;
+    for (int z = 0; z < CubeDimensionZ; ++z) {
+        for (int y = 0; y < CubeDimensionY; ++y) {
+            for (int x = 0; x < CubeDimensionX; ++x) {
+                int index = CubeDimensionX * CubeDimensionY * z + CubeDimensionX * y + x;
 
-            float t = elapsedSeconds + index * 0.1f;
+                float t = elapsedSeconds + index * 0.1f;
 
-            GameObject *gameObject = gameObjects[index];
-            gameObject->renderObjectDesc.worldMatrix.SetTranslationRotation(BE1::Vec3(CubeStartX + CubeSpacing * x, CubeStartY + CubeSpacing * y, 0), BE1::Mat3::FromRotationZYX(t * zRotationSpeed, 0, t * xRotationSpeed), false);
+                GameObject *gameObject = gameObjects[index];
+                gameObject->renderObjectDesc.worldMatrix.SetTranslationRotation(BE1::Vec3(CubeStartX + CubeSpacing * x, CubeStartY + CubeSpacing * y, CubeStartZ + CubeSpacing * z), BE1::Mat3::FromRotationZ(t * zRotationSpeed), false);
 
-            renderWorld->UpdateRenderObject(gameObject->renderObjectHandle, gameObject->renderObjectDesc, RenderObject::Desc::UpdateFlag::Transform);
+                renderWorld->UpdateRenderObject(gameObject->renderObjectHandle, gameObject->renderObjectDesc, RenderObject::Desc::UpdateFlag::Transform);
+            }
         }
     }
 }

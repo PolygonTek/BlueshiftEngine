@@ -112,10 +112,10 @@ bool Skeleton::Load(const char *filename) {
         bSkelFilename.SetFileExtension(".bskel");
     }
 
-    BE_LOG("Loading skeleton '%s'...\n", filename);
+    BE_LOG("Loading skeleton '%s'...\n", bSkelFilename.c_str());
 
     byte *data;
-    fileSystem.LoadFile(filename, true, (void **)&data);
+    fileSystem.LoadFile(bSkelFilename, true, (void **)&data);
     if (!data) {
         return false;
     }
@@ -124,7 +124,7 @@ bool Skeleton::Load(const char *filename) {
     byte *ptr = data + sizeof(BSkelHeader);
 
     if (bSkelHeader->ident != BSKEL_IDENT) {
-        BE_WARNLOG("Skeleton::Load: bad format %s\n", filename);
+        BE_WARNLOG("Skeleton::Load: bad format %s\n", bSkelFilename.c_str());
         fileSystem.FreeFile(data);
         return false;
     }

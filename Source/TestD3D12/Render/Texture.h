@@ -18,9 +18,19 @@
 #include "Shaders/ShaderInterop.h"
 
 class TextureManager;
+class LoadingSystem;
+
+/*
+-------------------------------------------------------------------------------
+
+    Texture
+
+-------------------------------------------------------------------------------
+*/
 
 class Texture : public std::enable_shared_from_this<Texture> {
     friend class TextureManager;
+    friend class LoadingSystem;
 
 public:
     enum class Flag : uint16_t {
@@ -31,8 +41,8 @@ public:
         NoMipmaps                   = BIT(2),   ///< Do not use mipmaps
         AllocateEmptyMipmaps        = BIT(3),   ///< Allocate mipmap levels without initial data
         NormalMap                   = BIT(4),   ///< Normal map
-        NonePowerOfTwo              = BIT(5),   ///< Texture dimensions are not power-of-two
-        Streaming                   = BIT(6),   ///< Texture streaming loading (DDS file)
+        NonPowerOfTwo               = BIT(5),   ///< Texture dimensions are not power-of-two
+        Streaming                   = BIT(6),   ///< Texture streaming loading (only DDS file, with async loading)
         UnorderedAccess             = BIT(7),   ///< Texture accessible via UAV
         Compute                     = BIT(8),   ///< Create as a compute resource in its initial update
         LoadedFromFile              = BIT(9)   ///< Indicates the texture was loaded from a file (used internally)
@@ -68,39 +78,51 @@ public:
         RHI::Texture *              pendingReplacementTexture = nullptr;
     };
 
-    struct Prepared {
-        RHI::TextureType            textureType;
-        RHI::Texture *              texture = nullptr;
+    struct InternalData {
+        InternalData() = default;
+        InternalData(const InternalData &rhs) = delete;
+        InternalData &operator=(const InternalData &rhs) = delete;
+        InternalData(InternalData &&rhs) noexcept { Swap(rhs); }
+        InternalData &operator=(InternalData &&rhs) noexcept;
+        ~InternalData() { Purge(); }
+
+        void                        Purge();
+        void                        Swap(InternalData &rhs);
+
+        RHI::TextureType            rhiTextureType = RHI::TextureType::Unknown;
+        RHI::Texture *              rhiTexture = nullptr;
         BE1::Image::Format          format = BE1::Image::Format::Unknown;
         Texture::Flag               flags = Texture::Flag::None;
     };
 
     Texture() = default;
+    Texture(const Texture &rhs) = delete;
+    Texture &operator=(const Texture &rhs) = delete;
     ~Texture() { Purge(); }
 
     const char *                    GetName() const { return name.c_str(); }
     const char *                    GetHashName() const { return hashName.c_str(); }
 
-    RHI::TextureType                GetType() const { return rhiTextureType; }
-    uint32_t                        GetWidth() const { return rhiTexture->GetWidth(); }
-    uint32_t                        GetHeight() const { return rhiTexture->GetHeight(); }
-    uint32_t                        GetDepth() const { return rhiTexture->GetDepth(); }
-    uint32_t                        GetArraySize() const { return rhiTexture->GetArraySize(); }
-    uint32_t                        GetMipLevelCount() const { return rhiTexture->GetMipLevelCount(); }
-    BE1::Image::Format              GetFormat() const { return format; }
-    Flag                            GetFlags() const { return flags; }
-    RHI::Texture *                  GetRHITexture() const { return rhiTexture; }
+    State                           GetState() const { return state.load(); }
+    void                            SetState(State newState) { state.store(newState); }
+
+    uint32_t                        GetLoadSerial() const { return loadSerial.load(); }
+    uint32_t                        BumpLoadSerial() { return loadSerial.fetch_add(1) + 1; }
+
+    RHI::TextureType                GetType() const { return internalData.rhiTextureType; }
+    uint32_t                        GetWidth() const { return internalData.rhiTexture->GetWidth(); }
+    uint32_t                        GetHeight() const { return internalData.rhiTexture->GetHeight(); }
+    uint32_t                        GetDepth() const { return internalData.rhiTexture->GetDepth(); }
+    uint32_t                        GetArraySize() const { return internalData.rhiTexture->GetArraySize(); }
+    uint32_t                        GetMipLevelCount() const { return internalData.rhiTexture->GetMipLevelCount(); }
+    BE1::Image::Format              GetFormat() const { return internalData.format; }
+    Flag                            GetFlags() const { return internalData.flags; }
+    RHI::Texture *                  GetRHITexture() const { return internalData.rhiTexture; }
     uint32_t                        GetIndex() const { return index; }
     const Streaming *               GetStreaming() const { return &streaming; }
     Streaming *                     GetStreaming() { return &streaming; }
 
-    State                           GetState() const { return state.load(); }
-    void                            SetState(State newState) { state.store(newState); }
-
     bool                            IsReadyForRendering() const;
-
-    uint32_t                        GetLoadSerial() const { return loadSerial.load(); }
-    uint32_t                        BumpLoadSerial() { return loadSerial.fetch_add(1) + 1; }
 
     uint64_t                        MemRequired(bool includingMipmaps) const;
     uint64_t                        MemRequiredStreaming(int firstMip) const;
@@ -113,21 +135,24 @@ public:
     bool                            GetTexels3D(int mipLevel, BE1::Image::Format format, void *pixels) const;
     bool                            GetTexelsCubeFace(RHI::CubemapFace face, int mipLevel, BE1::Image::Format format, void *pixels) const;
 
-    void                            Create(RHI::TextureType textureType, std::shared_ptr<const BE1::Image> srcImage, Texture::Flag flags);
+    void                            Reset();
 
-    void                            ApplyPrepared(const Prepared &prepared);
+    bool                            Create(RHI::TextureType textureType, std::shared_ptr<const BE1::Image> srcImage, Texture::Flag flags);
 
                                     /// Prepares a texture from an image, applying the renderer's normal texture processing such as size adjustment, format conversion, and mipmap generation.
-    static bool                     Prepare(RHI::TextureType textureType, std::shared_ptr<const BE1::Image> srcImage, Texture::Flag flags, Prepared &outPrepared);
-
+    static bool                     Prepare(RHI::TextureType textureType, std::shared_ptr<const BE1::Image> srcImage, Texture::Flag flags, InternalData &outInternalData);
                                     /// Prepares a texture directly from an already-final image without resizing, format conversion, or mip generation.
-    static bool                     PrepareDirect(RHI::TextureType textureType, std::shared_ptr<const BE1::Image> srcImage, Texture::Flag flags, Prepared &outPrepared);
+    static bool                     PrepareDirect(RHI::TextureType textureType, std::shared_ptr<const BE1::Image> srcImage, Texture::Flag flags, InternalData &outInternalData);
+    void                            ApplyPrepared(InternalData &newInternalData);
 
                                     /// Generate mipmaps using compute shader.
     void                            GenerateMipmaps();
 
     bool                            Load(const char *filename, Texture::Flag flags);
     bool                            LoadAsync(const char *filename, Texture::Flag flags);
+
+    bool                            Reload();
+    bool                            ReloadAsync();
 
     void                            RequestStreamingMaxDimension(uint32_t requestedMaxDimension);
 
@@ -136,7 +161,7 @@ public:
 private:
     void                            Purge();
 
-    static RHI::Texture *           PrepareRHITexture(RHI::TextureType textureType, RHI::TextureFlag flags, std::shared_ptr<const BE1::Image> srcImage, BE1::Image::Format dstFormat, bool generateMipmaps, bool allocateEmptyMipmaps, RHI::GPUResourceState initialState);
+    static RHI::Texture *           CreateRHITexture(RHI::TextureType textureType, RHI::TextureFlag flags, std::shared_ptr<const BE1::Image> srcImage, BE1::Image::Format dstFormat, bool generateMipmaps, bool allocateEmptyMipmaps, RHI::GPUResourceState initialState);
 
     void                            CreateDefaultTexture(int size, Texture::Flag flags = Texture::Flag::None);
     void                            CreateColorTexture(int size, const BE1::Color4 &color, Texture::Flag flags = Texture::Flag::None);
@@ -144,14 +169,11 @@ private:
 
     BE1::Str                        hashName;
     BE1::Str                        name;
-    uint32_t                        index = 0;
-    RHI::TextureType                rhiTextureType;
-    RHI::Texture *                  rhiTexture = nullptr;
-    BE1::Image::Format              format;
-    Texture::Flag                   flags;
-    Streaming                       streaming;
     std::atomic<State>              state = State::Empty;
     std::atomic<uint32_t>           loadSerial = 0;
+    uint32_t                        index = 0;
+    Streaming                       streaming;
+    InternalData                    internalData;
 };
 
 template<>
@@ -173,6 +195,7 @@ public:
     std::shared_ptr<Texture>        FindTexture(const char *hashName) const;
     std::shared_ptr<Texture>        GetTexture(const char *hashName, Texture::Flag flags = Texture::Flag::None);
 
+    bool                            IsRegisteredStreamingTexture(const Texture *texture) const;
     void                            RegisterStreamingTexture(const std::shared_ptr<Texture> &texture, const BE1::Image::MipRange &mipRange);
     void                            UnregisterStreamingTexture(Texture *texture);
     uint32_t                        GetStreamingTextureCount() const { return streamingTextures.Count(); }

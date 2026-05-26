@@ -22,14 +22,13 @@ static constexpr uint32_t DynamicBufferBlockSize = 1 << 22; // 4MB
 
 D3D12FrameThreadData::DynamicBufferBlock::DynamicBufferBlock(uint64_t size) {
     // 블럭 단위로 관리할 다이나믹 버퍼 (업로드 버퍼) 를 생성한다.
-    // CB/VB/IB 용으로 사용할 수 있다.
+    // CB/VB/IB/SR 용으로 사용할 수 있다.
     buffer = static_cast<D3D12Buffer *>(RHI::renderer->CreateBuffer(RHI::BufferUsage::Upload,
         RHI::BufferFlag::ConstantBuffer |
         RHI::BufferFlag::VertexBuffer |
-        RHI::BufferFlag::IndexBuffer,
+        RHI::BufferFlag::IndexBuffer |
+        RHI::BufferFlag::ShaderResource,
         size, nullptr));
-
-    mappedBase = buffer->GetMappedPtr();
 }
 
 D3D12FrameThreadData::DynamicBufferBlock::~DynamicBufferBlock() {
@@ -74,7 +73,7 @@ void D3D12FrameThreadData::Init(int32_t threadIndex) {
     DynamicBufferBlock *dynamicBlock = new DynamicBufferBlock(DynamicBufferBlockSize);
     dynamicBlock->blockIndex = dynamicBufferBlocks.Append(dynamicBlock);
 
-    // 다이나믹 버퍼에서 사용할 (CBV) 디스크립터 풀을 생성한다.
+    // 다이나믹 버퍼에서 사용할 디스크립터 풀을 생성한다.
     dynamicResDescriptorPool = new D3D12DescriptorPool(D3D12Renderer::GetRenderer()->device, D3D12DescriptorPool::Type::CBV_SRV_UAV, 8192, false);
 
     dynamicConstantBuffers.SetGranularity(256);
@@ -85,6 +84,9 @@ void D3D12FrameThreadData::Init(int32_t threadIndex) {
 
     dynamicIndexBuffers.SetGranularity(256);
     dynamicIndexBuffers.Reserve(256);
+
+    dynamicBuffers.SetGranularity(256);
+    dynamicBuffers.Reserve(256);
 }
 
 void D3D12FrameThreadData::Shutdown() {
@@ -114,6 +116,7 @@ void D3D12FrameThreadData::Reset() {
     dynamicConstantBuffers.SetCount(0, false);
     dynamicVertexBuffers.SetCount(0, false);
     dynamicIndexBuffers.SetCount(0, false);
+    dynamicBuffers.SetCount(0, false);
 
     // 디스크립터 테이블 풀을 비운다.
     resDescriptorTablePool->Reset();
@@ -160,7 +163,7 @@ RHI::VertexBuffer *D3D12FrameThreadData::AllocVertex(uint32_t vertexSize, uint32
 
     // 현재 블럭의 버퍼 리소스를 쪼개서 VBV 를 만든다.
     D3D12VertexBuffer &dynamicVertexBuffer = dynamicVertexBuffers.Alloc();
-    dynamicVertexBuffer.writePtr = reinterpret_cast<byte *>(currentBlock->mappedBase) + offset;
+    dynamicVertexBuffer.mappedPtr = reinterpret_cast<byte *>(currentBlock->buffer->mappedPtr) + offset;
     dynamicVertexBuffer.buffer = currentBlock->buffer;
     dynamicVertexBuffer.vbv.BufferLocation = currentBlock->buffer->GetResource()->GetGPUVirtualAddress() + offset;
     dynamicVertexBuffer.vbv.SizeInBytes = size;
@@ -168,7 +171,7 @@ RHI::VertexBuffer *D3D12FrameThreadData::AllocVertex(uint32_t vertexSize, uint32
     dynamicVertexBuffer.dynamicBlockIndex = currentBlock->blockIndex;
 
     if (data) {
-        BE1::simdProcessor->Memcpy(dynamicVertexBuffer.writePtr, data, size);
+        BE1::simdProcessor->Memcpy(dynamicVertexBuffer.mappedPtr, data, size);
     }
 
     return &dynamicVertexBuffer;
@@ -190,7 +193,7 @@ RHI::IndexBuffer *D3D12FrameThreadData::AllocIndex(uint32_t indexSize, uint32_t 
 
     // 현재 블럭의 버퍼 리소스를 쪼개서 IBV 를 만든다.
     D3D12IndexBuffer &dynamicIndexBuffer = dynamicIndexBuffers.Alloc();
-    dynamicIndexBuffer.writePtr = reinterpret_cast<byte *>(currentBlock->mappedBase) + offset;
+    dynamicIndexBuffer.mappedPtr = reinterpret_cast<byte *>(currentBlock->buffer->mappedPtr) + offset;
     dynamicIndexBuffer.buffer = currentBlock->buffer;
     dynamicIndexBuffer.ibv.BufferLocation = currentBlock->buffer->GetResource()->GetGPUVirtualAddress() + offset;
     dynamicIndexBuffer.ibv.SizeInBytes = size;
@@ -198,7 +201,7 @@ RHI::IndexBuffer *D3D12FrameThreadData::AllocIndex(uint32_t indexSize, uint32_t 
     dynamicIndexBuffer.dynamicBlockIndex = currentBlock->blockIndex;
 
     if (data) {
-        BE1::simdProcessor->Memcpy(dynamicIndexBuffer.writePtr, data, size);
+        BE1::simdProcessor->Memcpy(dynamicIndexBuffer.mappedPtr, data, size);
     }
 
     return &dynamicIndexBuffer;
@@ -238,14 +241,91 @@ RHI::ConstantBuffer *D3D12FrameThreadData::AllocConstant(uint32_t size, const vo
     D3D12Renderer::GetRenderer()->device->CreateConstantBufferView(&cbvDesc, cpuDescriptorHandle);
 
     D3D12ConstantBuffer &dynamicConstantBuffer = dynamicConstantBuffers.Alloc();
-    dynamicConstantBuffer.writePtr = reinterpret_cast<byte *>(currentBlock->mappedBase) + offset;
+    dynamicConstantBuffer.mappedPtr = reinterpret_cast<byte *>(currentBlock->buffer->mappedPtr) + offset;
     dynamicConstantBuffer.descriptorHandle = cpuDescriptorHandle;
+    dynamicConstantBuffer.dynamicBlockIndex = currentBlock->blockIndex;
     
     if (data) {
-        BE1::simdProcessor->Memcpy(dynamicConstantBuffer.writePtr, data, size);
+        BE1::simdProcessor->Memcpy(dynamicConstantBuffer.mappedPtr, data, size);
     }
 
     return &dynamicConstantBuffer;
+}
+
+RHI::Buffer *D3D12FrameThreadData::AllocShaderResourceBuffer(uint32_t size, uint32_t alignSize, uint32_t structuredStride, const void *data) {
+    D3D12_CPU_DESCRIPTOR_HANDLE cpuDescriptorHandle = {};
+    if (!dynamicResDescriptorPool->Alloc(&cpuDescriptorHandle, nullptr)) {
+        return nullptr;
+    }
+
+    uint32_t offset;
+    DynamicBufferBlock *currentBlock = FindFreeDynamicBufferBlock(size, alignSize, &offset);
+    if (!currentBlock) {
+        currentBlock = new DynamicBufferBlock(BE1::Max(size, DynamicBufferBlockSize));
+        currentBlock->blockIndex = dynamicBufferBlocks.Append(currentBlock);
+
+        offset = 0;
+    }
+
+    currentBlock->usedBytes = offset + size;
+
+    const uint32_t elementStride = structuredStride ? structuredStride : 4;
+
+    D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
+    srvDesc.ViewDimension = D3D12_SRV_DIMENSION_BUFFER;
+    srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+    srvDesc.Buffer.FirstElement = offset / elementStride;
+    srvDesc.Buffer.NumElements = size / elementStride;
+
+    if (structuredStride) {
+        srvDesc.Format = DXGI_FORMAT_UNKNOWN;
+        srvDesc.Buffer.StructureByteStride = structuredStride;
+    } else {
+        srvDesc.Format = DXGI_FORMAT_R32_TYPELESS;
+        srvDesc.Buffer.Flags = D3D12_BUFFER_SRV_FLAG_RAW;
+    }
+
+    D3D12Renderer::GetRenderer()->device->CreateShaderResourceView(currentBlock->buffer->GetResource(), &srvDesc, cpuDescriptorHandle);
+
+    D3D12SRVEntry srvEntry = {};
+    srvEntry.viewDesc = srvDesc;
+    srvEntry.cpuDescriptorHandle = cpuDescriptorHandle;
+
+    D3D12Buffer &dynamicBuffer = dynamicBuffers.Alloc();
+    dynamicBuffer.srvEntries.SetCount(0, false);
+    dynamicBuffer.srvEntries.Append(srvEntry);
+    dynamicBuffer.uavEntries.SetCount(0, false);
+    dynamicBuffer.mappedPtr = reinterpret_cast<byte *>(currentBlock->buffer->mappedPtr) + offset;
+    dynamicBuffer.dynamicBlockIndex = currentBlock->blockIndex;
+    dynamicBuffer.size = size;
+    dynamicBuffer.flags = RHI::BufferFlag::ShaderResource;
+
+    if (data) {
+        BE1::simdProcessor->Memcpy(dynamicBuffer.mappedPtr, data, size);
+    }
+
+    return &dynamicBuffer;
+}
+
+RHI::Buffer *D3D12FrameThreadData::AllocStructuredBuffer(uint32_t stride, uint32_t count, const void *data) {
+    if (stride == 0 || count == 0 || count > UINT32_MAX / stride) {
+        return nullptr;
+    }
+    if (!BE1::IsAligned(stride, 4) || stride >= 2048) {
+        return nullptr;
+    }
+
+    return AllocShaderResourceBuffer(stride * count, stride, stride, data);
+}
+
+RHI::Buffer *D3D12FrameThreadData::AllocBuffer(uint32_t size, uint32_t alignSize, const void *data) {
+    assert(BE1::IsAligned(alignSize, 4));
+
+    if (size == 0 || !BE1::IsAligned(size, 4)) {
+        return nullptr;
+    }
+
+    return AllocShaderResourceBuffer(size, BE1::Max(alignSize, 4u), 0, data);
 }
 
 void *D3D12FrameThreadData::AppendVertex(RHI::VertexBuffer *vertexBuffer, uint32_t vertexSize, uint32_t count, const void *data) {
@@ -271,7 +351,7 @@ void *D3D12FrameThreadData::AppendVertex(RHI::VertexBuffer *vertexBuffer, uint32
 
     block->usedBytes = alignedOffset + size;
 
-    byte *destPtr = reinterpret_cast<byte *>(block->mappedBase) + alignedOffset;
+    byte *destPtr = reinterpret_cast<byte *>(block->buffer->mappedPtr) + alignedOffset;
     if (destPtr) {
         BE1::simdProcessor->Memcpy(destPtr, data, size);
     }
@@ -301,7 +381,7 @@ void *D3D12FrameThreadData::AppendIndex(RHI::IndexBuffer *indexBuffer, uint32_t 
 
     block->usedBytes = alignedOffset + size;
 
-    byte *destPtr = reinterpret_cast<byte *>(block->mappedBase) + alignedOffset;
+    byte *destPtr = reinterpret_cast<byte *>(block->buffer->mappedPtr) + alignedOffset;
     if (destPtr) {
         BE1::simdProcessor->Memcpy(destPtr, data, size);
     }

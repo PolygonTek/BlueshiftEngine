@@ -35,7 +35,7 @@ public:
 
     virtual FontGlyph *     GetGlyph(char32_t unicodeChar, Font::RenderMode renderMode) const = 0;
 
-                            /// Returns a offset for the next character.
+                            /// Returns an offset for the next character.
     virtual int32_t         GetGlyphAdvanceX(char32_t unicodeChar) const = 0;
     virtual int32_t         GetGlyphAdvanceY(char32_t unicodeChar) const = 0;
 

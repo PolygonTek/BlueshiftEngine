@@ -56,6 +56,7 @@ set(SRC_FILES
     D3D12Renderer/D3D12FrameThreadData.h
     D3D12Renderer/D3D12FrameThreadData.cpp
     Shaders/ShaderInterop.h
+    Render/BModel.h
     Render/TextureStreamingFeedback.h
     Render/TextureStreamingFeedback.cpp
     Render/RenderContext.h
@@ -79,13 +80,19 @@ set(SRC_FILES
     Render/DrawSurf.h
     Render/Mesh.h
     Render/Mesh.cpp
-    Render/Mesh_CreateMesh.cpp
+    Render/par_octasphere.h
+    Render/Mesh_EngineMesh.cpp
     Render/Mesh_SortAndMerge.cpp
+    Render/MeshInstance.h
+    Render/MeshInstance.cpp
     Render/MeshManager.cpp
     Render/SubMesh.h
     Render/SubMesh.cpp
     Render/GuiMesh.h
     Render/GuiMesh.cpp
+    Render/Skeleton.h
+    Render/Skeleton.cpp
+    Render/SkeletonManager.cpp
     Render/Font.h
     Render/Font.cpp
     Render/FontFace.h

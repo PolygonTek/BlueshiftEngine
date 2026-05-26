@@ -82,8 +82,14 @@ void RenderContext::Shutdown() {
     if (litPSO) {
         RHI::renderer->DestroyPSO(litPSO);
     }
+    if (litAlphaBlendPSO) {
+        RHI::renderer->DestroyPSO(litAlphaBlendPSO);
+    }
     if (litInstancedPSO) {
         RHI::renderer->DestroyPSO(litInstancedPSO);
+    }
+    if (litInstancedAlphaBlendPSO) {
+        RHI::renderer->DestroyPSO(litInstancedAlphaBlendPSO);
     }
 
     DestroyMainRenderTextures();
@@ -246,6 +252,9 @@ void RenderContext::InitPSO() {
         psoDesc.primitiveTopology = RHI::PrimitiveTopology::TriangleList;
         psoDesc.renderDest = &renderDest;
         litPSO = RHI::renderer->CreateGraphicsPSO(&psoDesc);
+
+        psoDesc.blendState = RHI::renderer->GetBlendState(RHI::BlendStateType::AlphaBlend);
+        litAlphaBlendPSO = RHI::renderer->CreateGraphicsPSO(&psoDesc);
     }
 
     if (litVS) {
@@ -269,6 +278,9 @@ void RenderContext::InitPSO() {
         psoDesc.primitiveTopology = RHI::PrimitiveTopology::TriangleList;
         psoDesc.renderDest = &renderDest;
         litInstancedPSO = RHI::renderer->CreateGraphicsPSO(&psoDesc);
+
+        psoDesc.blendState = RHI::renderer->GetBlendState(RHI::BlendStateType::AlphaBlend);
+        litInstancedAlphaBlendPSO = RHI::renderer->CreateGraphicsPSO(&psoDesc);
     }
 
     if (litInstancingVS) {

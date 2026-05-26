@@ -149,12 +149,21 @@ void TextureManager::DestroyEngineTextures() {
     }
 }
 
+bool TextureManager::IsRegisteredStreamingTexture(const Texture *texture) const {
+    if (!texture) {
+        return false;
+    }
+
+    return texture->streaming.streamingListIndex != TEXTURE_STREAMING_INVALID_INDEX;
+}
+
 void TextureManager::RegisterStreamingTexture(const std::shared_ptr<Texture> &texture, const BE1::Image::MipRange &mipRange) {
     if (!texture) {
         return;
     }
 
     Texture::Streaming &streaming = texture->streaming;
+
     if (streaming.streamingListIndex != TEXTURE_STREAMING_INVALID_INDEX) {
         BE_WARNLOG("TextureManager::RegisterStreamingTexture: texture '%s' has already registered\n", texture->hashName.c_str());
         return;
@@ -185,9 +194,8 @@ void TextureManager::UnregisterStreamingTexture(Texture *texture) {
     }
 
     // 스트리밍 텍스쳐 목록에서 제거
-    uint32_t index = streaming.streamingListIndex;
-    if (index >= 0 && index < streamingTextures.Count()) {
-        streamingTextures[index].reset();
+    if (streamingTextures.IsValidIndex(streaming.streamingListIndex)) {
+        streamingTextures[streaming.streamingListIndex].reset();
     }
 
     streaming = {};
@@ -248,8 +256,8 @@ void TextureManager::UpdateStreamingTextures() {
             if (status == RHI::GPUResourceStatus::Ready || status == RHI::GPUResourceStatus::Failed) {
                 if (status == RHI::GPUResourceStatus::Ready) {
                     // 기존 텍스쳐를 파괴하고, 새로 로딩된 텍스쳐로 교체한다.
-                    RHI::renderer->DestroyTexture(texture->rhiTexture);
-                    texture->rhiTexture = streaming.pendingReplacementTexture;
+                    RHI::renderer->DestroyTexture(texture->internalData.rhiTexture);
+                    texture->internalData.rhiTexture = streaming.pendingReplacementTexture;
 
                     streaming.residentFirstMip = streaming.requestedFirstMip;
                 } else if (status == RHI::GPUResourceStatus::Failed) {
@@ -336,7 +344,7 @@ void TextureManager::UpdateStreamingTextures() {
             // 현재 요청하는 first mip 레벨을 기록한다.
             streaming.requestedFirstMip = desiredFirstMip;
 
-            if (loadingSystem.EnqueueTextureLoadAndReplace(texture, texture->hashName, streaming.requestedFirstMip)) {
+            if (loadingSystem.EnqueueTextureStreamingReplacement(texture, texture->hashName, streaming.requestedFirstMip)) {
                 if (budgetSavedBytes > 0) {
                     budgetDebtBytes = budgetDebtBytes > budgetSavedBytes ? budgetDebtBytes - budgetSavedBytes : 0;
                 }
