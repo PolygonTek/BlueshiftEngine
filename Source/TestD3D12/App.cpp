@@ -184,7 +184,7 @@ void App::InitGameObjects() {
 
     gameObjects.Reserve(CubeCount);
 
-    cubeMesh = meshManager.GetMesh("_defaultBoxMesh");
+    boxMesh = meshManager.GetMesh("_defaultBoxMesh");
 
     // 큐브
     for (int i = 0; i < CubeCount; ++i) {
@@ -193,8 +193,8 @@ void App::InitGameObjects() {
 
         RenderObject::Desc &desc = gameObject->renderObjectDesc;
         desc.worldMatrix.SetIdentity();
-        desc.meshInstance = cubeMesh->GetStaticInstance();
-        desc.aabb = cubeMesh->GetAABB();
+        desc.meshInstance = boxMesh->GetStaticInstance();
+        desc.aabb = boxMesh->GetAABB();
         desc.textures.SetCount(1);
         desc.textures[0] = textureManager.GetTexture(textureFilenames[BE1::Math::RandomRange(0, COUNT_OF(textureFilenames) - 1)], Texture::Flag::Streaming);
 
@@ -223,7 +223,7 @@ void App::ClearGameObjects() {
     }
     gameObjects.DeleteContents(true);
 
-    cubeMesh.reset();
+    boxMesh.reset();
 }
 
 void App::UpdateGameObjects() {

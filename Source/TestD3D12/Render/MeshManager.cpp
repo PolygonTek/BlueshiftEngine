@@ -56,6 +56,10 @@ void MeshManager::CreateEngineMeshes() {
     defaultSphereMesh = AllocMesh("_defaultSphereMesh");
     defaultSphereMesh->CreateSphere(BE1::Vec3::origin, BE1::Mat3::identity, BE1::MeterToUnit(0.5f), 32);
 
+    // Create default geosphere mesh
+    defaultGeoSphereMesh = AllocMesh("_defaultGeoSphereMesh");
+    defaultGeoSphereMesh->CreateGeosphere(BE1::Vec3::origin, BE1::MeterToUnit(0.5f), 3);
+
     // Create default cylinder mesh
     defaultCylinderMesh = AllocMesh("_defaultCylinderMesh");
     defaultCylinderMesh->CreateCylinder(BE1::Vec3::origin, BE1::Mat3::identity, BE1::MeterToUnit(0.5f), BE1::MeterToUnit(2.0f), 32);
@@ -63,10 +67,6 @@ void MeshManager::CreateEngineMeshes() {
     // Create default capsule mesh
     defaultCapsuleMesh = AllocMesh("_defaultCapsuleMesh");
     defaultCapsuleMesh->CreateCapsule(BE1::Vec3::origin, BE1::Mat3::identity, BE1::MeterToUnit(0.5f), BE1::MeterToUnit(1.0f), 32);
-
-    // Create default rounded box mesh
-    defaultRoundedBoxMesh = AllocMesh("_defaultRoundedBoxMesh");
-    defaultRoundedBoxMesh->CreateRoundedBox(BE1::Vec3::origin, BE1::Mat3::identity, BE1::Vec3(BE1::MeterToUnit(0.5f) - BE1::MeterToUnit(0.05f)), BE1::MeterToUnit(0.05f), 2);
 }
 
 void MeshManager::DestroyEngineMeshes() {
@@ -84,6 +84,9 @@ void MeshManager::DestroyEngineMeshes() {
     }
     if (defaultSphereMesh) {
         defaultSphereMesh.reset();
+    }
+    if (defaultGeoSphereMesh) {
+        defaultGeoSphereMesh.reset();
     }
     if (defaultCylinderMesh) {
         defaultCylinderMesh.reset();

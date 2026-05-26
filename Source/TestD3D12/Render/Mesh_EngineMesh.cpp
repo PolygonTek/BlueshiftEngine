@@ -220,7 +220,62 @@ void Mesh::CreateSphere(const BE1::Vec3 &origin, const BE1::Mat3 &axis, float ra
 void Mesh::CreateGeosphere(const BE1::Vec3 &origin, float radius, int numSubdivisions) {
     assert(numSubdivisions >= 0);
 #if 1
-    CreateRoundedBox(origin, BE1::Mat3::identity, BE1::Vec3::zero, radius, numSubdivisions);
+    assert(numSubdivisions >= 0);
+
+    Purge();
+
+    par_octasphere_config cfg;
+    cfg.corner_radius = radius;
+    cfg.width = radius * 2;
+    cfg.height = radius * 2;
+    cfg.depth = radius * 2;
+    cfg.num_subdivisions = numSubdivisions;
+    cfg.uv_mode = PAR_OCTASPHERE_UV_LATLONG;
+    cfg.normals_mode = PAR_OCTASPHERE_NORMALS_SMOOTH;
+
+    uint32_t num_indices;
+    uint32_t num_vertices;
+    par_octasphere_get_counts(&cfg, &num_indices, &num_vertices);
+
+    Surface *surf = Mesh::AllocSurface(num_vertices, num_indices);
+    surf->materialIndex = 0;
+    internalData.surfaces.Append(surf);
+
+    par_octasphere_mesh mesh;
+    mesh.positions = (float *)Mem_Alloc(sizeof(float) * 3 * num_vertices);
+    mesh.normals = (float *)Mem_Alloc(sizeof(float) * 3 * num_vertices);
+    mesh.texcoords = (float *)Mem_Alloc(sizeof(float) * 2 * num_vertices);
+    mesh.indices = (uint16_t *)Mem_Alloc(sizeof(uint16_t) * num_indices);
+
+    par_octasphere_populate(&cfg, &mesh);
+
+    BE1::VertexGenericLit *vptr = surf->subMesh->verts;
+    for (int i = 0; i < surf->subMesh->numVerts; i++) {
+        vptr->SetPosition(mesh.positions[i * 3 + 0], mesh.positions[i * 3 + 1], mesh.positions[i * 3 + 2]);
+        vptr->SetNormal(mesh.normals[i * 3 + 0], mesh.normals[i * 3 + 1], mesh.normals[i * 3 + 2]);
+        vptr->SetTexCoord(mesh.texcoords[i * 2 + 0], mesh.texcoords[i * 2 + 1]);
+        vptr->SetColor(0xffffffff);
+        vptr++;
+    }
+
+    BE1::VertIndex *iptr = surf->subMesh->indexes;
+    for (int i = 0; i < surf->subMesh->numIndexes; i++) {
+        *iptr++ = (BE1::VertIndex)mesh.indices[i];
+    }
+
+    Mem_Free(mesh.positions);
+    Mem_Free(mesh.normals);
+    Mem_Free(mesh.texcoords);
+    Mem_Free(mesh.indices);
+
+    internalData.FinishSurfaces(FinishFlag::ComputeAABB | FinishFlag::ComputeEdges | FinishFlag::ComputeTangents);
+
+    if (!origin.IsZero()) {
+        internalData.TransformVerts(BE1::Mat3::identity, BE1::Vec3::one, origin);
+    }
+
+    BumpDataSerial();
+    state = State::Ready;
 #else
     static constexpr float x = 0.525731112119133606f;
     static constexpr float z = 0.850650808352039932f;
@@ -482,63 +537,6 @@ void Mesh::CreateCapsule(const BE1::Vec3 &origin, const BE1::Mat3 &axis, float r
             }
         }
     }
-
-    internalData.FinishSurfaces(FinishFlag::ComputeAABB | FinishFlag::ComputeEdges | FinishFlag::ComputeTangents);
-
-    if (!axis.IsIdentity() || !origin.IsZero()) {
-        internalData.TransformVerts(axis, BE1::Vec3::one, origin);
-    }
-
-    BumpDataSerial();
-    state = State::Ready;
-}
-
-void Mesh::CreateRoundedBox(const BE1::Vec3 &origin, const BE1::Mat3 &axis, const BE1::Vec3 extents, float radius, int numSubdivisions) {
-    assert(numSubdivisions >= 0);
-
-    par_octasphere_config cfg;
-    cfg.corner_radius = radius;
-    cfg.width = (extents[0] + radius) * 2;
-    cfg.height = (extents[1] + radius) * 2;
-    cfg.depth = (extents[2] + radius) * 2;
-    cfg.num_subdivisions = numSubdivisions;
-    cfg.uv_mode = PAR_OCTASPHERE_UV_LATLONG;
-    cfg.normals_mode = PAR_OCTASPHERE_NORMALS_SMOOTH;
-
-    uint32_t num_indices;
-    uint32_t num_vertices;
-    par_octasphere_get_counts(&cfg, &num_indices, &num_vertices);
-
-    Surface *surf = Mesh::AllocSurface(num_vertices, num_indices);
-    surf->materialIndex = 0;
-    internalData.surfaces.Append(surf);
-
-    par_octasphere_mesh mesh;
-    mesh.positions = (float *)Mem_Alloc(sizeof(float) * 3 * num_vertices);
-    mesh.normals = (float *)Mem_Alloc(sizeof(float) * 3 * num_vertices);
-    mesh.texcoords = (float *)Mem_Alloc(sizeof(float) * 2 * num_vertices);
-    mesh.indices = (uint16_t *)Mem_Alloc(sizeof(uint16_t) * num_indices);
-
-    par_octasphere_populate(&cfg, &mesh);
-
-    BE1::VertexGenericLit *vptr = surf->subMesh->verts;
-    for (int i = 0; i < surf->subMesh->numVerts; i++) {
-        vptr->SetPosition(mesh.positions[i * 3 + 0], mesh.positions[i * 3 + 1], mesh.positions[i * 3 + 2]);
-        vptr->SetNormal(mesh.normals[i * 3 + 0], mesh.normals[i * 3 + 1], mesh.normals[i * 3 + 2]);
-        vptr->SetTexCoord(mesh.texcoords[i * 2 + 0], mesh.texcoords[i * 2 + 1]);
-        vptr->SetColor(0xffffffff);
-        vptr++;
-    }
-
-    BE1::VertIndex *iptr = surf->subMesh->indexes;
-    for (int i = 0; i < surf->subMesh->numIndexes; i++) {
-        *iptr++ = (BE1::VertIndex)mesh.indices[i];
-    }
-
-    Mem_Free(mesh.positions);
-    Mem_Free(mesh.normals);
-    Mem_Free(mesh.texcoords);
-    Mem_Free(mesh.indices);
 
     internalData.FinishSurfaces(FinishFlag::ComputeAABB | FinishFlag::ComputeEdges | FinishFlag::ComputeTangents);
 

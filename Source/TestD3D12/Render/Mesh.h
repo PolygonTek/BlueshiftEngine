@@ -172,7 +172,6 @@ private:
     void                        CreateGeosphere(const BE1::Vec3 &origin, float radius, int numSubdivisions);
     void                        CreateCylinder(const BE1::Vec3 &origin, const BE1::Mat3 &axis, float radius, float height, int numSegments);
     void                        CreateCapsule(const BE1::Vec3 &origin, const BE1::Mat3 &axis, float radius, float height, int numSegments);
-    void                        CreateRoundedBox(const BE1::Vec3 &origin, const BE1::Mat3 &axis, const BE1::Vec3 extents, float radius, int numSubdivisions);
 
     BE1::Str                    hashName;
     BE1::Str                    name;
@@ -215,9 +214,9 @@ public:
     std::shared_ptr<Mesh>       defaultPlaneMesh;
     std::shared_ptr<Mesh>       defaultBoxMesh;
     std::shared_ptr<Mesh>       defaultSphereMesh;
+    std::shared_ptr<Mesh>       defaultGeoSphereMesh;
     std::shared_ptr<Mesh>       defaultCylinderMesh;
     std::shared_ptr<Mesh>       defaultCapsuleMesh;
-    std::shared_ptr<Mesh>       defaultRoundedBoxMesh;
 
 private:
     void                        CleanExpiredMeshes();
