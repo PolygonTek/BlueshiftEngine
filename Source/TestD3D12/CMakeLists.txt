@@ -85,6 +85,8 @@ set(SRC_FILES
     Render/Mesh_SortAndMerge.cpp
     Render/MeshInstance.h
     Render/MeshInstance.cpp
+    Render/SkinningJointCache.h
+    Render/SkinningJointCache.cpp
     Render/MeshManager.cpp
     Render/SubMesh.h
     Render/SubMesh.cpp

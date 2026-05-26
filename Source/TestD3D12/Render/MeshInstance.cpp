@@ -20,6 +20,7 @@ void MeshInstance::Reset() {
     sourceMesh.reset();
     sourceDataSerial = InvalidDataSerial;
     skinningMatrices.Clear();
+    skinningJointCache.reset();
 }
 
 bool MeshInstance::InitStatic(const std::shared_ptr<Mesh> &newSourceMesh) {
@@ -87,6 +88,7 @@ bool MeshInstance::RefreshFromSource() {
         ResizeSkinningMatrices(sourceMesh->NumJoints());
     } else {
         skinningMatrices.Clear();
+        skinningJointCache.reset();
     }
 
     sourceDataSerial = sourceMesh->GetDataSerial();
@@ -148,6 +150,9 @@ bool MeshInstance::HasSkinningData() const {
 void MeshInstance::ResizeSkinningMatrices(int numMatrices) {
     int oldCount = skinningMatrices.Count();
     if (oldCount == numMatrices) {
+        if (!skinningJointCache) {
+            skinningJointCache = numMatrices > 0 ? std::make_unique<SkinningJointCache>(numMatrices) : nullptr;
+        }
         return;
     }
 
@@ -156,6 +161,8 @@ void MeshInstance::ResizeSkinningMatrices(int numMatrices) {
     for (int i = oldCount; i < skinningMatrices.Count(); ++i) {
         skinningMatrices[i].SetIdentity();
     }
+
+    skinningJointCache = numMatrices > 0 ? std::make_unique<SkinningJointCache>(numMatrices) : nullptr;
 }
 
 bool MeshInstance::SetSkinningMatrices(const BE1::Mat3x4 *matrices, int numMatrices) {
@@ -165,4 +172,12 @@ bool MeshInstance::SetSkinningMatrices(const BE1::Mat3x4 *matrices, int numMatri
 
     BE1::simdProcessor->Memcpy(skinningMatrices.Ptr(), matrices, sizeof(BE1::Mat3x4) * numMatrices);
     return true;
+}
+
+bool MeshInstance::UpdateSkinningJointCache(RHI::FrameThreadData *frameThreadData, const Skeleton *skeleton) {
+    if (type != Type::Skinned || !skinningJointCache) {
+        return false;
+    }
+
+    return skinningJointCache->Update(frameThreadData, skeleton, skinningMatrices.Ptr());
 }

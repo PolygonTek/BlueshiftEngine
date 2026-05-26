@@ -15,6 +15,7 @@
 #pragma once
 
 #include "Mesh.h"
+#include "SkinningJointCache.h"
 
 /*
 -------------------------------------------------------------------------------
@@ -59,6 +60,12 @@ public:
     BE1::Mat3x4 *                   GetSkinningMatrices() { return skinningMatrices.Ptr(); }
     bool                            SetSkinningMatrices(const BE1::Mat3x4 *matrices, int numMatrices);
 
+    const SkinningJointCache *      GetSkinningJointCache() const { return skinningJointCache.get(); }
+    SkinningJointCache *            GetSkinningJointCache() { return skinningJointCache.get(); }
+    bool                            UpdateSkinningJointCache(RHI::FrameThreadData *frameThreadData, const Skeleton *skeleton);
+
+    RHI::Buffer *                   GetSkinningJointBuffer() const { return skinningJointCache ? skinningJointCache->GetJointBuffer() : nullptr; }
+
 private:
     bool                            RefreshFromSource();
     bool                            HasSkinningData() const;
@@ -70,4 +77,5 @@ private:
     std::shared_ptr<Mesh>           sourceMesh;
     uint32_t                        sourceDataSerial = InvalidDataSerial;
     BE1::Array<BE1::Mat3x4>         skinningMatrices = BE1::Array<BE1::Mat3x4>(64);
+    std::unique_ptr<SkinningJointCache> skinningJointCache;
 };
