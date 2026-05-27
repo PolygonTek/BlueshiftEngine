@@ -112,15 +112,15 @@ public:
     uint32_t                        GetLoadSerial() const { return loadSerial.load(); }
     uint32_t                        BumpLoadSerial() { return loadSerial.fetch_add(1) + 1; }
 
-    RHI::TextureType                GetType() const { return internalData.rhiTextureType; }
-    uint32_t                        GetWidth() const { return internalData.rhiTexture->GetWidth(); }
-    uint32_t                        GetHeight() const { return internalData.rhiTexture->GetHeight(); }
-    uint32_t                        GetDepth() const { return internalData.rhiTexture->GetDepth(); }
-    uint32_t                        GetArraySize() const { return internalData.rhiTexture->GetArraySize(); }
-    uint32_t                        GetMipLevelCount() const { return internalData.rhiTexture->GetMipLevelCount(); }
-    BE1::Image::Format              GetFormat() const { return internalData.format; }
-    Flag                            GetFlags() const { return internalData.flags; }
-    RHI::Texture *                  GetRHITexture() const { return internalData.rhiTexture; }
+    RHI::TextureType                GetType() const { assert(IsReady()); return internalData.rhiTextureType; }
+    uint32_t                        GetWidth() const { assert(IsReady()); return internalData.rhiTexture->GetWidth(); }
+    uint32_t                        GetHeight() const { assert(IsReady()); return internalData.rhiTexture->GetHeight(); }
+    uint32_t                        GetDepth() const { assert(IsReady()); return internalData.rhiTexture->GetDepth(); }
+    uint32_t                        GetArraySize() const { assert(IsReady()); return internalData.rhiTexture->GetArraySize(); }
+    uint32_t                        GetMipLevelCount() const { assert(IsReady()); return internalData.rhiTexture->GetMipLevelCount(); }
+    BE1::Image::Format              GetFormat() const { assert(IsReady()); return internalData.format; }
+    Flag                            GetFlags() const { assert(IsReady()); return internalData.flags; }
+    RHI::Texture *                  GetRHITexture() const { assert(IsReady()); return internalData.rhiTexture; }
     uint32_t                        GetIndex() const { return index; }
     const Streaming *               GetStreaming() const { return &streaming; }
     Streaming *                     GetStreaming() { return &streaming; }

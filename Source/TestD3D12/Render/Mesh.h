@@ -123,14 +123,14 @@ public:
 
     uint32_t                    GetDataSerial() const { return dataSerial.load(); }
 
-    int                         NumSurfaces() const { return internalData.surfaces.Count(); }
-    Surface *                   GetSurface(int index) const { return internalData.surfaces[index]; }
+    int                         NumSurfaces() const { assert(IsReady()); return internalData.surfaces.Count(); }
+    Surface *                   GetSurface(int index) const { assert(IsReady()); return internalData.surfaces[index]; }
 
-    int                         NumJoints() const { return internalData.numJoints; }
-    const Joint *               GetJoints() const { return internalData.joints; }
+    int                         NumJoints() const { assert(IsReady()); return internalData.numJoints; }
+    const Joint *               GetJoints() const { assert(IsReady()); return internalData.joints; }
 
                                 /// Returns local axis-aligned bounding box (AABB).
-    const BE1::AABB &           GetAABB() const { return internalData.aabb; }
+    const BE1::AABB &           GetAABB() const { assert(IsReady()); return internalData.aabb; }
 
     static Surface *            AllocSurface(int numVerts, int numIndexes);
 

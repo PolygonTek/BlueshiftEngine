@@ -136,6 +136,8 @@ void Mesh::Write(const char *filename) {
 }
 
 std::shared_ptr<MeshInstance> Mesh::GetStaticInstance() {
+    assert(IsReady());
+
     if (std::shared_ptr<MeshInstance> meshInstance = staticMeshInstance.lock()) {
         return meshInstance;
     }
@@ -150,6 +152,8 @@ std::shared_ptr<MeshInstance> Mesh::GetStaticInstance() {
 }
 
 std::shared_ptr<MeshInstance> Mesh::InstantiateSkinned() {
+    assert(IsReady());
+
     std::shared_ptr<MeshInstance> meshInstance = std::make_shared<MeshInstance>();
     if (!meshInstance->InitSkinned(shared_from_this())) {
         return nullptr;
@@ -159,6 +163,8 @@ std::shared_ptr<MeshInstance> Mesh::InstantiateSkinned() {
 }
 
 float Mesh::CalculateVolume() const {
+    assert(IsReady());
+
     float totalVolume = 0;
 
     for (const Mesh::Surface *surface : internalData.surfaces) {
@@ -175,12 +181,16 @@ float Mesh::CalculateVolume() const {
 }
 
 const BE1::Vec3 Mesh::CalculateCentroid() const {
+    assert(IsReady());
+
     BE1::Vec3 centroid;
     CalculateVolumeAndCentroid(centroid);
     return centroid;
 }
 
 float Mesh::CalculateVolumeAndCentroid(BE1::Vec3 &outCentroid) const {
+    assert(IsReady());
+
     BE1::Vec3 totalVolumeCentroid(0.0f);
     float totalVolume = 0;
 

@@ -91,6 +91,8 @@ void Anim::CreateDefaultAnim(const Skeleton *skeleton) {
 }
 
 std::shared_ptr<Anim> Anim::CreateAdditiveAnim(const char *hashName, const BE1::JointPose *firstFrame, int numJointIndexes, const int *jointIndexes) {
+    assert(IsReady());
+
     std::shared_ptr<Anim> additiveAnim = animManager.AllocAnim(hashName);
     additiveAnim->Copy(*this);
     additiveAnim->internalData.isAdditiveAnim = true;
@@ -166,6 +168,9 @@ std::shared_ptr<Anim> Anim::CreateAdditiveAnim(const char *hashName, const BE1::
 }
 
 std::shared_ptr<Anim> Anim::CreateAdditiveAnim(const Skeleton *skeleton, int numJointIndexes, const int *jointIndexes) {
+    assert(IsReady());
+    assert(skeleton && skeleton->IsReady());
+
     if (NumJoints() != skeleton->NumJoints()) {
         BE_WARNLOG("different joint count for creating additive anim\n");
         return nullptr;
@@ -181,6 +186,9 @@ std::shared_ptr<Anim> Anim::CreateAdditiveAnim(const Skeleton *skeleton, int num
 }
 
 std::shared_ptr<Anim> Anim::CreateAdditiveAnim(const Anim *refAnim, int numJointIndexes, const int *jointIndexes) {
+    assert(IsReady());
+    assert(refAnim && refAnim->IsReady());
+
     if (NumJoints() != refAnim->NumJoints()) {
         BE_WARNLOG("different joint count for creating additive anim\n");
         return nullptr;
@@ -307,6 +315,9 @@ void Anim::Write(const char *filename) {
 }
 
 bool Anim::CheckHierarchy(const Skeleton *skeleton) const {
+    assert(IsReady());
+    assert(skeleton && skeleton->IsReady());
+
     // Checks if both have the same number of joints.
     if (internalData.joints.Count() != skeleton->NumJoints()) {
         BE_ERRLOG("Mesh '%s' has different number of joints than anim '%s'", skeleton->GetHashName(), hashName.c_str());
@@ -375,6 +386,10 @@ void Anim::ComputeTotalDelta() {
 }
 
 void Anim::ComputeFrameAABBs(const Skeleton *skeleton, const Mesh *mesh, BE1::Array<BE1::AABB> &frameAABBs) const {
+    assert(IsReady());
+    assert(skeleton && skeleton->IsReady());
+    assert(mesh && mesh->IsReady());
+
     if (skeleton->NumJoints() == 0) {
         return;
     }
@@ -471,6 +486,8 @@ void Anim::ComputeFrameAABBs(const Skeleton *skeleton, const Mesh *mesh, BE1::Ar
 }
 
 void Anim::TimeToFrameInterpolation(int time, FrameInterpolation &frameInterpolation) const {
+    assert(IsReady());
+
     if (internalData.numFrames <= 1) {
         // only one frame exists
         frameInterpolation.frame1 = 0;
@@ -519,6 +536,8 @@ void Anim::TimeToFrameInterpolation(int time, FrameInterpolation &frameInterpola
 }
 
 void Anim::GetTranslation(BE1::Vec3 &outTranslation, int time, bool isCyclicTranslation) const {
+    assert(IsReady());
+
     //if (rootTranslationXY && rootTranslationZ) {
     //    outTranslation = baseFrame[0].t;
     //    return;
@@ -573,6 +592,8 @@ void Anim::GetTranslation(BE1::Vec3 &outTranslation, int time, bool isCyclicTran
 }
 
 void Anim::GetRotation(BE1::Quat &outRotation, int time) const {
+    assert(IsReady());
+
     if (internalData.rootRotation) {
         outRotation = internalData.baseFrame[0].q;
         return;
@@ -691,6 +712,8 @@ void Anim::GetRotation(BE1::Quat &outRotation, int time) const {
 }
 
 void Anim::GetScaling(BE1::Vec3 &outScaling, int time) const {
+    assert(IsReady());
+
     const JointInfo &rootJoint = internalData.joints[0];
 
     outScaling = internalData.baseFrame[0].s;
@@ -759,6 +782,8 @@ void Anim::GetScaling(BE1::Vec3 &outScaling, int time) const {
 }
 
 void Anim::GetAABB(BE1::AABB &outAabb, const BE1::Array<BE1::AABB> &frameAABBs, int time) const {
+    assert(IsReady());
+
     if (frameAABBs.Count() == 0) {
         return;
     }
@@ -846,6 +871,8 @@ static void DecodeSingleFrame(const Anim::JointInfo *joints, int numJointIndexes
 }
 
 void Anim::GetSingleFrame(int frameNum, int numJointIndexes, const int *jointIndexes, BE1::JointPose *frame) const {
+    assert(IsReady());
+
     // Copy the base frame
     BE1::simdProcessor->Memcpy(frame, internalData.baseFrame.Ptr(), internalData.baseFrame.Count() * sizeof(internalData.baseFrame[0]));
 
@@ -1098,6 +1125,8 @@ static int BE_FASTCALL DecodeInterpolatedFrame(const Anim::JointInfo *joints, in
 }
 
 void Anim::GetInterpolatedFrame(FrameInterpolation &frameInterpolation, int numJointIndexes, const int *jointIndexes, BE1::JointPose *frame) const {
+    assert(IsReady());
+
     // Copy the base frame
     BE1::simdProcessor->Memcpy(frame, internalData.baseFrame.Ptr(), internalData.baseFrame.Count() * sizeof(internalData.baseFrame[0]));
 

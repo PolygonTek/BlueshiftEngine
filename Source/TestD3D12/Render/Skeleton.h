@@ -79,14 +79,14 @@ public:
     uint32_t                        GetLoadSerial() const { return loadSerial.load(); }
     uint32_t                        BumpLoadSerial() { return loadSerial.fetch_add(1) + 1; }
 
-    int                             NumJoints() const { return internalData.numJoints; }
-    const Joint *                   GetJoints() const { return internalData.joints; }
-    const Joint *                   GetJoint(int index) const { return &internalData.joints[index]; }
+    int                             NumJoints() const { assert(IsReady()); return internalData.numJoints; }
+    const Joint *                   GetJoints() const { assert(IsReady()); return internalData.joints; }
+    const Joint *                   GetJoint(int index) const { assert(IsReady()); return &internalData.joints[index]; }
     int                             GetJointIndex(const char *name) const;
     const char *                    GetJointName(int jointIndex) const;
-    const int *                     GetJointParentIndexes() const { return internalData.jointParents; }
-    const BE1::JointPose *          GetBindPoses() const { return internalData.bindPoses; }
-    const BE1::Mat3x4 *             GetInvBindPoseMatrices() const { return internalData.invBindPoseMats; }
+    const int *                     GetJointParentIndexes() const { assert(IsReady()); return internalData.jointParents; }
+    const BE1::JointPose *          GetBindPoses() const { assert(IsReady()); return internalData.bindPoses; }
+    const BE1::Mat3x4 *             GetInvBindPoseMatrices() const { assert(IsReady()); return internalData.invBindPoseMats; }
 
     bool                            IsDefaultSkeleton() const;
 
@@ -120,6 +120,8 @@ private:
 };
 
 BE_INLINE int Skeleton::GetJointIndex(const char *name) const {
+    assert(IsReady());
+
     for (int i = 0; i < internalData.numJoints; i++) {
         if (!internalData.joints[i].name.Cmp(name)) {
             return i;
@@ -129,6 +131,8 @@ BE_INLINE int Skeleton::GetJointIndex(const char *name) const {
 }
 
 BE_INLINE const char *Skeleton::GetJointName(int jointIndex) const {
+    assert(IsReady());
+
     if (jointIndex >= 0 && jointIndex < internalData.numJoints) {
         return internalData.joints[jointIndex].name.c_str();
     }

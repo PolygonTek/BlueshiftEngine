@@ -138,22 +138,22 @@ public:
     bool                        IsAdditiveAnim() const { return internalData.isAdditiveAnim; }
 
                                 /// Returns number of frames.
-    int                         NumFrames() const { return internalData.numFrames; }
+    int                         NumFrames() const { assert(IsReady()); return internalData.numFrames; }
 
                                 /// Returns number of joints.
-    int                         NumJoints() const { return internalData.numJoints; }
+    int                         NumJoints() const { assert(IsReady()); return internalData.numJoints; }
 
                                 /// Returns joint info of animation.
-    const JointInfo &           GetJointInfo(int index) const { return internalData.joints[index]; }
+    const JointInfo &           GetJointInfo(int index) const { assert(IsReady()); return internalData.joints[index]; }
 
                                 /// Returns animation length by milliseconds.
-    uint32_t                    Length() const { return internalData.length; }
+    uint32_t                    Length() const { assert(IsReady()); return internalData.length; }
 
                                 /// Returns maximum cycle count. 0 means infinite cycle loop.
-    int                         MaxCycleCount() const { return internalData.maxCycleCount; }
+    int                         MaxCycleCount() const { assert(IsReady()); return internalData.maxCycleCount; }
 
                                 /// Returns movement delta of root joint.
-    const BE1::Vec3 &           TotalMovementDelta() const { return internalData.totalDelta; }
+    const BE1::Vec3 &           TotalMovementDelta() const { assert(IsReady()); return internalData.totalDelta; }
 
                                 /// Returns total size of allocated memory.
     size_t                      Allocated() const;

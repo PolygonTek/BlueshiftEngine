@@ -286,6 +286,7 @@ void Skeleton::Write(const char *filename) {
 
 bool Skeleton::CheckHierarchy(const Skeleton *otherSkeleton) const {
     assert(IsReady());
+    assert(otherSkeleton && otherSkeleton->IsReady());
 
     if (internalData.numJoints != otherSkeleton->NumJoints()) {
         return false;

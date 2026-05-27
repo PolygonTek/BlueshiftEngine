@@ -48,6 +48,8 @@ bool Texture::IsReadyForRendering() const {
 }
 
 uint64_t Texture::MemRequired(bool includingMipmaps) const {
+    assert(IsReady());
+
     uint32_t w = GetWidth();
     uint32_t h = GetHeight();
     uint32_t d = GetDepth();
@@ -58,6 +60,8 @@ uint64_t Texture::MemRequired(bool includingMipmaps) const {
 }
 
 uint64_t Texture::MemRequiredStreaming(int firstMip) const {
+    assert(IsReady());
+
     if (streaming.originalMipLevels <= 0) {
         return 0;
     }
@@ -460,7 +464,7 @@ bool Texture::UpdateCubeFace(RHI::CubemapFace face, int mipLevel, int xoffset, i
 }
 
 bool Texture::GetTexels2D(int mipLevel, BE1::Image::Format format, void *pixels) const {
-    if (state != State::Ready) {
+    if (!IsReady()) {
         BE_WARNLOG("Texture::GetTexels2D: texture '%s' is not ready\n", GetHashName());
         return false;
     }
@@ -468,7 +472,7 @@ bool Texture::GetTexels2D(int mipLevel, BE1::Image::Format format, void *pixels)
 }
 
 bool Texture::GetTexels3D(int mipLevel, BE1::Image::Format format, void *pixels) const {
-    if (state != State::Ready) {
+    if (!IsReady()) {
         BE_WARNLOG("Texture::GetTexels3D: texture '%s' is not ready\n", GetHashName());
         return false;
     }
@@ -476,7 +480,7 @@ bool Texture::GetTexels3D(int mipLevel, BE1::Image::Format format, void *pixels)
 }
 
 bool Texture::GetTexelsCubeFace(RHI::CubemapFace face, int mipLevel, BE1::Image::Format format, void *pixels) const {
-    if (state != State::Ready) {
+    if (!IsReady()) {
         BE_WARNLOG("Texture::GetTexelsCubeFace: texture '%s' is not ready\n", GetHashName());
         return false;
     }
@@ -484,6 +488,8 @@ bool Texture::GetTexelsCubeFace(RHI::CubemapFace face, int mipLevel, BE1::Image:
 }
 
 bool Texture::GetCubeImageFromCubeTexture(const Texture *cubeTexture, int numMipLevels, BE1::Image &outCubeImage) {
+    assert(cubeTexture && cubeTexture->IsReady());
+
     BE1::Image::GammaSpace gammaSpace = BE1::Image::NeedFloatConversion(cubeTexture->internalData.format) ? BE1::Image::GammaSpace::Linear : BE1::Image::GammaSpace::sRGB;
     BE1::Image faceImages[6];
 
