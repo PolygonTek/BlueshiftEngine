@@ -22,6 +22,7 @@
 #include "Font.h"
 #include "Mesh.h"
 #include "Skeleton.h"
+#include "Anim.h"
 
 RenderSystem *      renderSystem = nullptr;
 
@@ -38,6 +39,8 @@ void RenderSystem::Init(void *mainWindowHandle) {
     fontManager.Init();
 
     skeletonManager.Init();
+
+    animManager.Init();
 
     meshManager.Init();
 
@@ -60,6 +63,8 @@ void RenderSystem::Shutdown() {
     SAFE_DELETE(backEnd);
 
     meshManager.Shutdown();
+
+    animManager.Shutdown();
 
     skeletonManager.Shutdown();
 

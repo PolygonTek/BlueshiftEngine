@@ -17,6 +17,7 @@
 #include "Render/Texture.h"
 #include "Render/Mesh.h"
 #include "Render/Skeleton.h"
+#include "Render/Anim.h"
 
 class LoadingSystem {
 public:
@@ -30,6 +31,7 @@ public:
     bool                            EnqueueTextureStreamingReplacement(std::shared_ptr<Texture> texture, const char *filename, int firstMip);
     bool                            EnqueueMeshLoad(std::shared_ptr<Mesh> mesh, const char *filename, bool isReload, uint32_t serial);
     bool                            EnqueueSkeletonLoad(std::shared_ptr<Skeleton> skeleton, const char *filename, bool isReload, uint32_t serial);
+    bool                            EnqueueAnimLoad(std::shared_ptr<Anim> anim, const char *filename, bool isReload, uint32_t serial);
 
                                     /// Applies completed load requests on the main thread.
     void                            ProcessLoadCompletions();
@@ -39,6 +41,7 @@ private:
         std::shared_ptr<Texture>    texture;
         std::shared_ptr<Mesh>       mesh;
         std::shared_ptr<Skeleton>   skeleton;
+        std::shared_ptr<Anim>       anim;
         BE1::Str                    filename;
         Texture::Flag               textureFlags = Texture::Flag::None;
         std::shared_ptr<BE1::Image> image;
@@ -53,10 +56,12 @@ private:
         std::shared_ptr<Texture>    texture;
         std::shared_ptr<Mesh>       mesh;
         std::shared_ptr<Skeleton>   skeleton;
+        std::shared_ptr<Anim>       anim;
         Texture::InternalData       textureData;
         BE1::Image::MipRange        mipRange;
         Mesh::InternalData          meshData;
         Skeleton::InternalData      skeletonData;
+        Anim::InternalData          animData;
         uint32_t                    serial = 0;
         bool                        isReload = false;
         bool                        isStreamingReplacement = false;
@@ -68,12 +73,14 @@ private:
     bool                            ProcessTextureStreamingReplacementRequest(const LoadRequest &request);
     bool                            ProcessMeshLoadRequest(const LoadRequest &request);
     bool                            ProcessSkeletonLoadRequest(const LoadRequest &request);
+    bool                            ProcessAnimLoadRequest(const LoadRequest &request);
 
     void                            PushCompletion(LoadCompletion &&completion);
     void                            DiscardCompletion(LoadCompletion &completion);
     bool                            ProcessTextureLoadCompletion(LoadCompletion &completion);
     bool                            ProcessMeshLoadCompletion(LoadCompletion &completion);
     bool                            ProcessSkeletonLoadCompletion(LoadCompletion &completion);
+    bool                            ProcessAnimLoadCompletion(LoadCompletion &completion);
 
     static unsigned int             ThreadProc(void *param);
 

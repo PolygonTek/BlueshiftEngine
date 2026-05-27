@@ -181,6 +181,32 @@ bool LoadingSystem::EnqueueSkeletonLoad(std::shared_ptr<Skeleton> skeleton, cons
     return true;
 }
 
+bool LoadingSystem::EnqueueAnimLoad(std::shared_ptr<Anim> anim, const char *filename, bool isReload, uint32_t serial) {
+    if (!anim || !filename || !filename[0]) {
+        return false;
+    }
+
+    {
+        BE1::ScopedLock lock(requestMutex);
+
+        if (stopping) {
+            return false;
+        }
+
+        LoadRequest request;
+        request.anim = anim;
+        request.filename = filename;
+        request.isReload = isReload;
+        request.serial = serial;
+        requests.Append(std::move(request));
+
+        // 로딩 요청 큐에 집어넣는다.
+        BE1::PlatformCondition::Signal(requestCondition);
+    }
+
+    return true;
+}
+
 void LoadingSystem::Run() {
     while (1) {
         PROFILER_CPU_SCOPED_EVENT("LoadingSystem::Run");
@@ -217,6 +243,10 @@ void LoadingSystem::Run() {
                 }
             } else if (request.skeleton) {
                 if (!ProcessSkeletonLoadRequest(request)) {
+                    continue;
+                }
+            } else if (request.anim) {
+                if (!ProcessAnimLoadRequest(request)) {
                     continue;
                 }
             }
@@ -354,6 +384,20 @@ bool LoadingSystem::ProcessSkeletonLoadRequest(const LoadRequest &request) {
     return true;
 }
 
+bool LoadingSystem::ProcessAnimLoadRequest(const LoadRequest &request) {
+    PROFILER_CPU_SCOPED_EVENT("LoadingSystem::ProcessAnimLoadRequest");
+
+    LoadCompletion completion;
+    completion.anim = request.anim;
+    completion.isReload = request.isReload;
+    completion.serial = request.serial;
+    completion.success = Anim::Prepare(request.filename, completion.animData);
+
+    // 완료 큐에 집어넣는다.
+    PushCompletion(std::move(completion));
+    return true;
+}
+
 // 로딩 요청 처리가 완료된 것들은 최종적으로 메인 스레드에서 처리한다.
 void LoadingSystem::ProcessLoadCompletions() {
     assert(BE1::Engine::IsInMainThread());
@@ -375,6 +419,10 @@ void LoadingSystem::ProcessLoadCompletions() {
             }
         } else if (completion.skeleton) {
             if (!ProcessSkeletonLoadCompletion(completion)) {
+                continue;
+            }
+        } else if (completion.anim) {
+            if (!ProcessAnimLoadCompletion(completion)) {
                 continue;
             }
         }
@@ -493,6 +541,34 @@ bool LoadingSystem::ProcessSkeletonLoadCompletion(LoadCompletion &completion) {
     return true;
 }
 
+bool LoadingSystem::ProcessAnimLoadCompletion(LoadCompletion &completion) {
+    std::shared_ptr<Anim> anim = completion.anim;
+
+    // 로딩 요청 이후 시리얼이 변경된 경우
+    if (completion.serial != anim->GetLoadSerial()) {
+        // 새로 만든 스켈레톤을 폐기한다.
+        DiscardCompletion(completion);
+        return false;
+    }
+
+    // 로딩이 실패한 경우
+    if (!completion.success) {
+        if (completion.isReload) {
+            anim->SetState(Anim::State::Ready);
+        } else {
+            anim->SetState(Anim::State::Failed);
+        }
+        return false;
+    }
+
+    // 준비된 Anim 으로 세팅한다.
+    anim->ApplyPrepared(completion.animData);
+
+    // 로딩이 성공했으므로 Ready 상태로 바꿔준다.
+    anim->SetState(Anim::State::Ready);
+    return true;
+}
+
 void LoadingSystem::PushCompletion(LoadCompletion &&completion) {
     BE1::ScopedLock lock(completionMutex);
     completions.Append(std::move(completion));
@@ -505,6 +581,8 @@ void LoadingSystem::DiscardCompletion(LoadCompletion &completion) {
         completion.meshData.Purge();
     } else if (completion.skeleton) {
         completion.skeletonData.Purge();
+    } else if (completion.anim) {
+        completion.animData.Purge();
     }
 }
 

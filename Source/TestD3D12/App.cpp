@@ -21,6 +21,7 @@
 #include "Render/Texture.h"
 #include "Render/MeshInstance.h"
 #include "Render/Skeleton.h"
+#include "Render/Anim.h"
 #include "Render/Font.h"
 #include "LoadingSystem.h"
 #include "GameObject.h"
@@ -131,6 +132,8 @@ void App::Render() {
     meshManager.UpdateFrame();
 
     skeletonManager.UpdateFrame();
+
+    animManager.UpdateFrame();
 
     fontManager.UpdateFrame();
 

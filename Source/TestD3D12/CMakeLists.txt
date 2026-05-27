@@ -56,6 +56,10 @@ set(SRC_FILES
     D3D12Renderer/D3D12FrameThreadData.h
     D3D12Renderer/D3D12FrameThreadData.cpp
     Shaders/ShaderInterop.h
+    Render/Anim.h
+    Render/Anim.cpp
+    Render/Anim_InternalData.cpp
+    Render/AnimManager.cpp
     Render/BModel.h
     Render/TextureStreamingFeedback.h
     Render/TextureStreamingFeedback.cpp
