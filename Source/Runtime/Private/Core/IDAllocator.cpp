@@ -33,7 +33,7 @@ static int FindFirstZeroBit(uint64_t block) {
 }
 
 void IDAllocator::Init(size_t maxIdCount) {
-    maxId = maxIdCount - 1;
+    maxId = maxIdCount > 0 ? maxIdCount - 1 : 0;
     bitmap.SetCount((maxIdCount + 63) / 64);
     maxFreeBitsPerBlock.SetCount(bitmap.Count());
 
@@ -46,6 +46,22 @@ void IDAllocator::Clear() {
 
     // Initial value: all bits are 0
     maxFreeBitsPerBlock.Fill(64);
+
+    if (bitmap.Count() == 0) {
+        return;
+    }
+
+    const size_t maxIdCount = maxId + 1;
+    const size_t validBitsInLastBlock = maxIdCount & 63;
+
+    if (validBitsInLastBlock != 0) {
+        const size_t lastBlockIndex = bitmap.Count() - 1;
+        const uint64_t validMask = (1ULL << validBitsInLastBlock) - 1;
+
+        // Mark padding bits as occupied so they are never allocated.
+        bitmap[lastBlockIndex] = ~validMask;
+        maxFreeBitsPerBlock[lastBlockIndex] = validBitsInLastBlock;
+    }
 }
 
 bool IDAllocator::AllocateID(uint32_t &id) {
@@ -68,6 +84,15 @@ bool IDAllocator::AllocateID(uint32_t &id) {
 }
 
 bool IDAllocator::AllocateRange(uint32_t &startID, size_t count) {
+    if (count == 0 || bitmap.Count() == 0 || count > maxId + 1) {
+        return false;
+    }
+
+    // Current implementation searches only inside a single 64-bit block.
+    if (count > 64) {
+        return false;
+    }
+
     size_t blocksNeeded = (count + 63) / 64;
 
     for (size_t blockIndex = 0; blockIndex <= bitmap.Count() - blocksNeeded; ++blockIndex) {
@@ -145,7 +170,10 @@ size_t IDAllocator::FindConsecutiveZeroBits(size_t blockIndex, size_t count) con
 
 // Mark a specific range of bits as occupied (set to 1)
 void IDAllocator::SetBits(size_t blockIndex, size_t startBitIndex, size_t count) {
-    uint64_t mask = ((1ULL << count) - 1) << startBitIndex;
+    assert(count <= 64);
+    assert(count < 64 || startBitIndex == 0);
+
+    uint64_t mask = count == 64 ? ~0ULL : ((1ULL << count) - 1) << startBitIndex;
     // Set the range to 1
     bitmap[blockIndex] |= mask;
     // Decrease the count of consecutive free bits
