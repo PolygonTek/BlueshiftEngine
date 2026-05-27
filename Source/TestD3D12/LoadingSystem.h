@@ -21,17 +21,29 @@
 
 class LoadingSystem {
 public:
+    enum class LoadPriority : int8_t {
+        Background = 0,
+        Normal     = 10,
+        High       = 20,
+        Critical   = 30
+    };
+
     void                            Init();
     void                            Shutdown();
 
     void                            Start();
     void                            Stop();
 
-    bool                            EnqueueTextureLoad(std::shared_ptr<Texture> texture, const char *filename, Texture::Flag flags, bool isReload, uint32_t serial);
-    bool                            EnqueueTextureStreamingReplacement(std::shared_ptr<Texture> texture, const char *filename, int firstMip);
-    bool                            EnqueueMeshLoad(std::shared_ptr<Mesh> mesh, const char *filename, bool isReload, uint32_t serial);
-    bool                            EnqueueSkeletonLoad(std::shared_ptr<Skeleton> skeleton, const char *filename, bool isReload, uint32_t serial);
-    bool                            EnqueueAnimLoad(std::shared_ptr<Anim> anim, const char *filename, bool isReload, uint32_t serial);
+    bool                            EnqueueTextureLoad(std::shared_ptr<Texture> texture, const char *filename, Texture::Flag flags, bool isReload, uint32_t serial, LoadPriority priority = LoadPriority::Normal);
+    bool                            EnqueueTextureStreamingReplacement(std::shared_ptr<Texture> texture, const char *filename, int firstMip, LoadPriority priority = LoadPriority::Background);
+    bool                            EnqueueMeshLoad(std::shared_ptr<Mesh> mesh, const char *filename, bool isReload, uint32_t serial, LoadPriority priority = LoadPriority::Normal);
+    bool                            EnqueueSkeletonLoad(std::shared_ptr<Skeleton> skeleton, const char *filename, bool isReload, uint32_t serial, LoadPriority priority = LoadPriority::Normal);
+    bool                            EnqueueAnimLoad(std::shared_ptr<Anim> anim, const char *filename, bool isReload, uint32_t serial, LoadPriority priority = LoadPriority::Normal);
+
+    bool                            BoostTextureLoad(const Texture *texture, uint32_t serial, LoadPriority priority);
+    bool                            BoostMeshLoad(const Mesh *mesh, uint32_t serial, LoadPriority priority);
+    bool                            BoostSkeletonLoad(const Skeleton *skeleton, uint32_t serial, LoadPriority priority);
+    bool                            BoostAnimLoad(const Anim *anim, uint32_t serial, LoadPriority priority);
 
                                     /// Applies completed load requests on the main thread.
     void                            ProcessLoadCompletions();
@@ -48,6 +60,8 @@ private:
         int                         originalMipLevels = 0;
         int                         firstMip = -1;
         uint32_t                    serial = 0;
+        uint64_t                    sequence = 0;
+        LoadPriority                priority = LoadPriority::Normal;
         bool                        isReload = false;
         bool                        isStreamingReplacement = false;
     };
@@ -69,6 +83,7 @@ private:
     };
 
     void                            Run();
+    bool                            PopNextRequest(LoadRequest &outRequest);
     bool                            ProcessTextureLoadRequest(const LoadRequest &request);
     bool                            ProcessTextureStreamingReplacementRequest(const LoadRequest &request);
     bool                            ProcessMeshLoadRequest(const LoadRequest &request);
@@ -82,6 +97,7 @@ private:
     bool                            ProcessSkeletonLoadCompletion(LoadCompletion &completion);
     bool                            ProcessAnimLoadCompletion(LoadCompletion &completion);
 
+    static bool                     IsHigherPriority(const LoadRequest &lhs, const LoadRequest &rhs);
     static unsigned int             ThreadProc(void *param);
 
     BE1::PlatformThread *           thread = nullptr;
@@ -91,6 +107,7 @@ private:
 
     BE1::Array<LoadRequest>         requests;
     BE1::Array<LoadCompletion>      completions;
+    uint64_t                        nextRequestSequence = 0;
 
     bool                            stopping = false;
 };

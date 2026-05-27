@@ -108,6 +108,10 @@ bool Mesh::ReloadAsync() {
 bool Mesh::WaitReady() {
     assert(BE1::Engine::IsInMainThread());
 
+    if (GetState() == State::Loading) {
+        loadingSystem.BoostMeshLoad(this, GetLoadSerial(), LoadingSystem::LoadPriority::Critical);
+    }
+
     while (GetState() == State::Loading) {
         loadingSystem.ProcessLoadCompletions();
 
@@ -119,6 +123,10 @@ bool Mesh::WaitReady() {
 
 bool Mesh::WaitLoadComplete() {
     assert(BE1::Engine::IsInMainThread());
+
+    if (IsLoading()) {
+        loadingSystem.BoostMeshLoad(this, GetLoadSerial(), LoadingSystem::LoadPriority::Critical);
+    }
 
     while (IsLoading()) {
         loadingSystem.ProcessLoadCompletions();

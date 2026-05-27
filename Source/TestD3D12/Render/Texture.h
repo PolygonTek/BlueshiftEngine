@@ -142,12 +142,6 @@ public:
 
     bool                            Create(RHI::TextureType textureType, std::shared_ptr<const BE1::Image> srcImage, Texture::Flag flags);
 
-                                    /// Prepares a texture from an image, applying the renderer's normal texture processing such as size adjustment, format conversion, and mipmap generation.
-    static bool                     Prepare(RHI::TextureType textureType, std::shared_ptr<const BE1::Image> srcImage, Texture::Flag flags, InternalData &outInternalData);
-                                    /// Prepares a texture directly from an already-final image without resizing, format conversion, or mip generation.
-    static bool                     PrepareDirect(RHI::TextureType textureType, std::shared_ptr<const BE1::Image> srcImage, Texture::Flag flags, InternalData &outInternalData);
-    void                            ApplyPrepared(InternalData &newInternalData);
-
                                     /// Generate mipmaps using compute shader.
     void                            GenerateMipmaps();
 
@@ -166,6 +160,12 @@ public:
 
 private:
     void                            Purge();
+
+                                    /// Prepares a texture from an image, applying the renderer's normal texture processing such as size adjustment, format conversion, and mipmap generation.
+    static bool                     Prepare(RHI::TextureType textureType, std::shared_ptr<const BE1::Image> srcImage, Texture::Flag flags, InternalData &outInternalData);
+                                    /// Prepares a texture directly from an already-final image without resizing, format conversion, or mip generation.
+    static bool                     PrepareDirect(RHI::TextureType textureType, std::shared_ptr<const BE1::Image> srcImage, Texture::Flag flags, InternalData &outInternalData);
+    void                            ApplyPrepared(InternalData &newInternalData);
 
     static RHI::Texture *           CreateRHITexture(RHI::TextureType textureType, RHI::TextureFlag flags, std::shared_ptr<const BE1::Image> srcImage, BE1::Image::Format dstFormat, bool generateMipmaps, bool allocateEmptyMipmaps, RHI::GPUResourceState initialState);
 

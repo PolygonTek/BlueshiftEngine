@@ -287,6 +287,10 @@ bool Anim::ReloadAsync() {
 bool Anim::WaitReady() {
     assert(BE1::Engine::IsInMainThread());
 
+    if (GetState() == State::Loading) {
+        loadingSystem.BoostAnimLoad(this, GetLoadSerial(), LoadingSystem::LoadPriority::Critical);
+    }
+
     while (GetState() == State::Loading) {
         loadingSystem.ProcessLoadCompletions();
 
@@ -298,6 +302,10 @@ bool Anim::WaitReady() {
 
 bool Anim::WaitLoadComplete() {
     assert(BE1::Engine::IsInMainThread());
+
+    if (IsLoading()) {
+        loadingSystem.BoostAnimLoad(this, GetLoadSerial(), LoadingSystem::LoadPriority::Critical);
+    }
 
     while (IsLoading()) {
         loadingSystem.ProcessLoadCompletions();
@@ -594,7 +602,7 @@ void Anim::GetTranslation(BE1::Vec3 &outTranslation, int time, bool isCyclicTran
 void Anim::GetRotation(BE1::Quat &outRotation, int time) const {
     assert(IsReady());
 
-    if (internalData.rootRotation) {
+    if (internalData.hasRootRotation) {
         outRotation = internalData.baseFrame[0].q;
         return;
     }
@@ -885,16 +893,16 @@ void Anim::GetSingleFrame(int frameNum, int numJointIndexes, const int *jointInd
 
     DecodeSingleFrame(internalData.joints.Ptr(), numJointIndexes, jointIndexes, frameComponents, frame);
 
-    if (!internalData.rootTranslationXY) {
+    if (!internalData.hasRootTranslationXY) {
         frame[0].t.x = internalData.baseFrame[0].t.x;
         frame[0].t.y = internalData.baseFrame[0].t.y;
     }
 
-    if (!internalData.rootTranslationZ) {
+    if (!internalData.hasRootTranslationZ) {
         frame[0].t.z = internalData.baseFrame[0].t.z;
     }
 
-    if (!internalData.rootRotation) {
+    if (!internalData.hasRootRotation) {
         frame[0].q = internalData.baseFrame[0].q;
     }
 }
@@ -1151,16 +1159,16 @@ void Anim::GetInterpolatedFrame(FrameInterpolation &frameInterpolation, int numJ
     }
 #endif
 
-    if (!internalData.rootTranslationXY) {
+    if (!internalData.hasRootTranslationXY) {
         frame[0].t.x = internalData.baseFrame[0].t.x;
         frame[0].t.y = internalData.baseFrame[0].t.y;
     }
 
-    if (!internalData.rootTranslationZ) {
+    if (!internalData.hasRootTranslationZ) {
         frame[0].t.z = internalData.baseFrame[0].t.z;
     }
 
-    if (!internalData.rootRotation) {
+    if (!internalData.hasRootRotation) {
         frame[0].q = internalData.baseFrame[0].q;
     }
 }

@@ -31,9 +31,9 @@ void Anim::InternalData::Purge() {
     length = 0;
     maxCycleCount = 1;
 
-    rootRotation = false;
-    rootTranslationXY = false;
-    rootTranslationZ = false;
+    hasRootRotation = false;
+    hasRootTranslationXY = false;
+    hasRootTranslationZ = false;
     isDefaultAnim = false;
     isAdditiveAnim = false;
 
@@ -47,9 +47,9 @@ void Anim::InternalData::Purge() {
 }
 
 void Anim::InternalData::Swap(InternalData &rhs) {
-    BE1::Swap(rootRotation, rhs.rootRotation);
-    BE1::Swap(rootTranslationXY, rhs.rootTranslationXY);
-    BE1::Swap(rootTranslationZ, rhs.rootTranslationZ);
+    BE1::Swap(hasRootRotation, rhs.hasRootRotation);
+    BE1::Swap(hasRootTranslationXY, rhs.hasRootTranslationXY);
+    BE1::Swap(hasRootTranslationZ, rhs.hasRootTranslationZ);
     BE1::Swap(isDefaultAnim, rhs.isDefaultAnim);
     BE1::Swap(isAdditiveAnim, rhs.isAdditiveAnim);
     BE1::Swap(numJoints, rhs.numJoints);
@@ -71,9 +71,9 @@ size_t Anim::InternalData::Allocated() const {
 }
 
 void Anim::InternalData::CopyFrom(const InternalData &rhs) {
-    rootRotation = rhs.rootRotation;
-    rootTranslationXY = rhs.rootTranslationXY;
-    rootTranslationZ = rhs.rootTranslationZ;
+    hasRootRotation = rhs.hasRootRotation;
+    hasRootTranslationXY = rhs.hasRootTranslationXY;
+    hasRootTranslationZ = rhs.hasRootTranslationZ;
     isDefaultAnim = rhs.isDefaultAnim;
     isAdditiveAnim = rhs.isAdditiveAnim;
     numJoints = rhs.numJoints;
@@ -129,9 +129,9 @@ bool Anim::InternalData::LoadBinaryAnim(const char *filename) {
     numComponentsPerFrame = bAnimHeader->numComponentsPerFrame;
     length = bAnimHeader->length;
     maxCycleCount = bAnimHeader->maxCycleCount;
-    rootRotation = (bAnimHeader->flags & BAnimFlag::RootRotation) ? true : false;
-    rootTranslationXY = (bAnimHeader->flags & BAnimFlag::RootTranslationXY) ? true : false;
-    rootTranslationZ = (bAnimHeader->flags & BAnimFlag::RootTranslationZ) ? true : false;
+    hasRootRotation = (bAnimHeader->flags & BAnimFlag::RootRotation) ? true : false;
+    hasRootTranslationXY = (bAnimHeader->flags & BAnimFlag::RootTranslationXY) ? true : false;
+    hasRootTranslationZ = (bAnimHeader->flags & BAnimFlag::RootTranslationZ) ? true : false;
 
     // --- frame times ---
     int frameTimesCount = *(const int *)ptr;
@@ -205,9 +205,9 @@ void Anim::InternalData::WriteBinaryAnim(const char *filename) const {
     }
 
     int flags = 0;
-    flags |= rootTranslationXY ? BAnimFlag::RootTranslationXY : 0;
-    flags |= rootTranslationZ ? BAnimFlag::RootTranslationZ : 0;
-    flags |= rootRotation ? BAnimFlag::RootRotation : 0;
+    flags |= hasRootTranslationXY ? BAnimFlag::RootTranslationXY : 0;
+    flags |= hasRootTranslationZ ? BAnimFlag::RootTranslationZ : 0;
+    flags |= hasRootRotation ? BAnimFlag::RootRotation : 0;
 
     BAnimHeader bAnimHeader;
     bAnimHeader.ident = BANIM_IDENT;

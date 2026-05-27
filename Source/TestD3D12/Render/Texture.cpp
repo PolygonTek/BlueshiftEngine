@@ -414,6 +414,10 @@ bool Texture::ReloadAsync() {
 bool Texture::WaitReady() {
     assert(BE1::Engine::IsInMainThread());
 
+    if (GetState() == State::Loading) {
+        loadingSystem.BoostTextureLoad(this, GetLoadSerial(), LoadingSystem::LoadPriority::Critical);
+    }
+
     while (GetState() == State::Loading) {
         loadingSystem.ProcessLoadCompletions();
 
@@ -425,6 +429,10 @@ bool Texture::WaitReady() {
 
 bool Texture::WaitLoadComplete() {
     assert(BE1::Engine::IsInMainThread());
+
+    if (IsLoading()) {
+        loadingSystem.BoostTextureLoad(this, GetLoadSerial(), LoadingSystem::LoadPriority::Critical);
+    }
 
     while (IsLoading()) {
         loadingSystem.ProcessLoadCompletions();

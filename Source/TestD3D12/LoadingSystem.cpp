@@ -17,6 +17,13 @@
 
 LoadingSystem      loadingSystem;
 
+bool LoadingSystem::IsHigherPriority(const LoadRequest &lhs, const LoadRequest &rhs) {
+    if ((int)lhs.priority != (int)rhs.priority) {
+        return (int)lhs.priority > (int)rhs.priority;
+    }
+    return lhs.sequence < rhs.sequence;
+}
+
 void LoadingSystem::Init() {
     requestMutex = BE1::PlatformMutex::Create();
     completionMutex = BE1::PlatformMutex::Create();
@@ -66,7 +73,7 @@ void LoadingSystem::Stop() {
     }
 }
 
-bool LoadingSystem::EnqueueTextureLoad(std::shared_ptr<Texture> texture, const char *filename, Texture::Flag flags, bool isReload, uint32_t serial) {
+bool LoadingSystem::EnqueueTextureLoad(std::shared_ptr<Texture> texture, const char *filename, Texture::Flag flags, bool isReload, uint32_t serial, LoadPriority priority) {
     if (!texture || !filename || !filename[0]) {
         return false;
     }
@@ -84,6 +91,8 @@ bool LoadingSystem::EnqueueTextureLoad(std::shared_ptr<Texture> texture, const c
         request.textureFlags = flags;
         request.isReload = isReload;
         request.serial = serial;
+        request.priority = priority;
+        request.sequence = nextRequestSequence++;
         requests.Append(std::move(request));
 
         // 로딩 요청 큐에 집어넣는다.
@@ -93,7 +102,7 @@ bool LoadingSystem::EnqueueTextureLoad(std::shared_ptr<Texture> texture, const c
     return true;
 }
 
-bool LoadingSystem::EnqueueTextureStreamingReplacement(std::shared_ptr<Texture> texture, const char *filename, int firstMip) {
+bool LoadingSystem::EnqueueTextureStreamingReplacement(std::shared_ptr<Texture> texture, const char *filename, int firstMip, LoadPriority priority) {
     if (!texture || !filename || !filename[0]) {
         return false;
     }
@@ -120,6 +129,8 @@ bool LoadingSystem::EnqueueTextureStreamingReplacement(std::shared_ptr<Texture> 
         request.originalMipLevels = texture->GetStreaming()->originalMipLevels;
         request.firstMip = firstMip;
         request.serial = texture->GetLoadSerial();
+        request.priority = priority;
+        request.sequence = nextRequestSequence++;
         requests.Append(std::move(request));
 
         // 로딩 요청 큐에 집어넣는다.
@@ -129,7 +140,7 @@ bool LoadingSystem::EnqueueTextureStreamingReplacement(std::shared_ptr<Texture> 
     return true;
 }
 
-bool LoadingSystem::EnqueueMeshLoad(std::shared_ptr<Mesh> mesh, const char *filename, bool isReload, uint32_t serial) {
+bool LoadingSystem::EnqueueMeshLoad(std::shared_ptr<Mesh> mesh, const char *filename, bool isReload, uint32_t serial, LoadPriority priority) {
     if (!mesh || !filename || !filename[0]) {
         return false;
     }
@@ -146,6 +157,8 @@ bool LoadingSystem::EnqueueMeshLoad(std::shared_ptr<Mesh> mesh, const char *file
         request.filename = filename;
         request.isReload = isReload;
         request.serial = serial;
+        request.priority = priority;
+        request.sequence = nextRequestSequence++;
         requests.Append(std::move(request));
 
         // 로딩 요청 큐에 집어넣는다.
@@ -155,7 +168,7 @@ bool LoadingSystem::EnqueueMeshLoad(std::shared_ptr<Mesh> mesh, const char *file
     return true;
 }
 
-bool LoadingSystem::EnqueueSkeletonLoad(std::shared_ptr<Skeleton> skeleton, const char *filename, bool isReload, uint32_t serial) {
+bool LoadingSystem::EnqueueSkeletonLoad(std::shared_ptr<Skeleton> skeleton, const char *filename, bool isReload, uint32_t serial, LoadPriority priority) {
     if (!skeleton || !filename || !filename[0]) {
         return false;
     }
@@ -172,6 +185,8 @@ bool LoadingSystem::EnqueueSkeletonLoad(std::shared_ptr<Skeleton> skeleton, cons
         request.filename = filename;
         request.isReload = isReload;
         request.serial = serial;
+        request.priority = priority;
+        request.sequence = nextRequestSequence++;
         requests.Append(std::move(request));
 
         // 로딩 요청 큐에 집어넣는다.
@@ -181,7 +196,7 @@ bool LoadingSystem::EnqueueSkeletonLoad(std::shared_ptr<Skeleton> skeleton, cons
     return true;
 }
 
-bool LoadingSystem::EnqueueAnimLoad(std::shared_ptr<Anim> anim, const char *filename, bool isReload, uint32_t serial) {
+bool LoadingSystem::EnqueueAnimLoad(std::shared_ptr<Anim> anim, const char *filename, bool isReload, uint32_t serial, LoadPriority priority) {
     if (!anim || !filename || !filename[0]) {
         return false;
     }
@@ -198,6 +213,8 @@ bool LoadingSystem::EnqueueAnimLoad(std::shared_ptr<Anim> anim, const char *file
         request.filename = filename;
         request.isReload = isReload;
         request.serial = serial;
+        request.priority = priority;
+        request.sequence = nextRequestSequence++;
         requests.Append(std::move(request));
 
         // 로딩 요청 큐에 집어넣는다.
@@ -207,49 +224,150 @@ bool LoadingSystem::EnqueueAnimLoad(std::shared_ptr<Anim> anim, const char *file
     return true;
 }
 
+bool LoadingSystem::BoostTextureLoad(const Texture *texture, uint32_t serial, LoadPriority priority) {
+    if (!texture) {
+        return false;
+    }
+
+    BE1::ScopedLock lock(requestMutex);
+    bool boosted = false;
+
+    for (LoadRequest &request : requests) {
+        if (request.texture.get() != texture || request.serial != serial) {
+            continue;
+        }
+
+        if ((int)request.priority < (int)priority) {
+            request.priority = priority;
+            boosted = true;
+        }
+    }
+
+    if (boosted) {
+        BE1::PlatformCondition::Signal(requestCondition);
+    }
+    return boosted;
+}
+
+bool LoadingSystem::BoostMeshLoad(const Mesh *mesh, uint32_t serial, LoadPriority priority) {
+    if (!mesh) {
+        return false;
+    }
+
+    BE1::ScopedLock lock(requestMutex);
+    bool boosted = false;
+
+    for (LoadRequest &request : requests) {
+        if (request.mesh.get() != mesh || request.serial != serial) {
+            continue;
+        }
+
+        if ((int)request.priority < (int)priority) {
+            request.priority = priority;
+            boosted = true;
+        }
+    }
+
+    if (boosted) {
+        BE1::PlatformCondition::Signal(requestCondition);
+    }
+    return boosted;
+}
+
+bool LoadingSystem::BoostSkeletonLoad(const Skeleton *skeleton, uint32_t serial, LoadPriority priority) {
+    if (!skeleton) {
+        return false;
+    }
+
+    BE1::ScopedLock lock(requestMutex);
+    bool boosted = false;
+
+    for (LoadRequest &request : requests) {
+        if (request.skeleton.get() != skeleton || request.serial != serial) {
+            continue;
+        }
+
+        if ((int)request.priority < (int)priority) {
+            request.priority = priority;
+            boosted = true;
+        }
+    }
+
+    if (boosted) {
+        BE1::PlatformCondition::Signal(requestCondition);
+    }
+    return boosted;
+}
+
+bool LoadingSystem::BoostAnimLoad(const Anim *anim, uint32_t serial, LoadPriority priority) {
+    if (!anim) {
+        return false;
+    }
+
+    BE1::ScopedLock lock(requestMutex);
+    bool boosted = false;
+
+    for (LoadRequest &request : requests) {
+        if (request.anim.get() != anim || request.serial != serial) {
+            continue;
+        }
+
+        if ((int)request.priority < (int)priority) {
+            request.priority = priority;
+            boosted = true;
+        }
+    }
+
+    if (boosted) {
+        BE1::PlatformCondition::Signal(requestCondition);
+    }
+    return boosted;
+}
+
+bool LoadingSystem::PopNextRequest(LoadRequest &outRequest) {
+    BE1::ScopedLock lock(requestMutex);
+
+    BE1::PlatformCondition::Wait(requestCondition, requestMutex, [this] {
+        return requests.Count() > 0 || stopping;
+    });
+
+    if (stopping) {
+        return false;
+    }
+
+    int bestIndex = 0;
+    for (int i = 1; i < requests.Count(); i++) {
+        if (IsHigherPriority(requests[i], requests[bestIndex])) {
+            bestIndex = i;
+        }
+    }
+
+    outRequest = std::move(requests[bestIndex]);
+    requests.RemoveIndexFast(bestIndex);
+    return true;
+}
+
 void LoadingSystem::Run() {
     while (1) {
         PROFILER_CPU_SCOPED_EVENT("LoadingSystem::Run");
 
-        BE1::Array<LoadRequest> localRequests;
-        {
-            BE1::ScopedLock lock(requestMutex);
-
-            BE1::PlatformCondition::Wait(requestCondition, requestMutex, [this] {
-                return requests.Count() > 0 || stopping;
-            });
-
-            if (stopping) {
-                break;
-            }
-
-            localRequests.Swap(requests);
+        LoadRequest request;
+        if (!PopNextRequest(request)) {
+            break;
         }
 
-        for (LoadRequest &request : localRequests) {
-            if (request.texture) {
-                if (request.isStreamingReplacement) {
-                    if (!ProcessTextureStreamingReplacementRequest(request)) {
-                        continue;
-                    }
-                } else {
-                    if (!ProcessTextureLoadRequest(request)) {
-                        continue;
-                    }
-                }
-            } else if (request.mesh) {
-                if (!ProcessMeshLoadRequest(request)) {
-                    continue;
-                }
-            } else if (request.skeleton) {
-                if (!ProcessSkeletonLoadRequest(request)) {
-                    continue;
-                }
-            } else if (request.anim) {
-                if (!ProcessAnimLoadRequest(request)) {
-                    continue;
-                }
+        if (request.texture) {
+            if (request.isStreamingReplacement) {
+                ProcessTextureStreamingReplacementRequest(request);
+            } else {
+                ProcessTextureLoadRequest(request);
             }
+        } else if (request.mesh) {
+            ProcessMeshLoadRequest(request);
+        } else if (request.skeleton) {
+            ProcessSkeletonLoadRequest(request);
+        } else if (request.anim) {
+            ProcessAnimLoadRequest(request);
         }
     }
 }

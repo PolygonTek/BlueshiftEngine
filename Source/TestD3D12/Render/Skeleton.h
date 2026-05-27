@@ -17,6 +17,13 @@
 class SkeletonManager;
 class LoadingSystem;
 
+class Joint {
+public:
+    Joint() = default;
+    BE1::Str                        name;
+    Joint *                         parent = nullptr;
+};
+
 /*
 -------------------------------------------------------------------------------
 
@@ -24,13 +31,6 @@ class LoadingSystem;
 
 -------------------------------------------------------------------------------
 */
-
-class Joint {
-public:
-    Joint() = default;
-    BE1::Str                        name;
-    Joint *                         parent = nullptr;
-};
 
 class Skeleton : public std::enable_shared_from_this<Skeleton> {
     friend class SkeletonManager;
@@ -92,9 +92,6 @@ public:
 
     void                            Reset();
 
-    static bool                     Prepare(const char *filename, InternalData &outInternalData);
-    void                            ApplyPrepared(InternalData &newInternalData);
-
     bool                            Load(const char *filename);
     bool                            LoadAsync(const char *filename);
 
@@ -110,6 +107,10 @@ public:
 
 private:
     void                            Purge();
+
+    static bool                     Prepare(const char *filename, InternalData &outInternalData);
+    void                            ApplyPrepared(InternalData &newInternalData);
+
     void                            CreateDefaultSkeleton();
 
     BE1::Str                        hashName;

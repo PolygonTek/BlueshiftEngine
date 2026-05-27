@@ -14,14 +14,6 @@
 
 #pragma once
 
-/*
--------------------------------------------------------------------------------
-
-    Anim
-
--------------------------------------------------------------------------------
-*/
-
 #include "Core/Str.h"
 #include "Containers/Array.h"
 #include "Containers/StrArray.h"
@@ -33,6 +25,14 @@ class CmdArgs;
 class Mesh;
 class Skeleton;
 class LoadingSystem;
+
+/*
+-------------------------------------------------------------------------------
+
+    Anim
+
+-------------------------------------------------------------------------------
+*/
 
 class Anim : public std::enable_shared_from_this<Anim> {
     friend class AnimManager;
@@ -99,10 +99,9 @@ public:
         bool                    LoadBinaryAnim(const char *filename);
         void                    WriteBinaryAnim(const char *filename) const;
 
-        bool                    rootRotation = false;
-        bool                    rootTranslationXY = false;
-        bool                    rootTranslationZ = false;
-
+        bool                    hasRootRotation = false;
+        bool                    hasRootTranslationXY = false;
+        bool                    hasRootTranslationZ = false;
         bool                    isDefaultAnim = false;
         bool                    isAdditiveAnim = false;
 
@@ -171,9 +170,6 @@ public:
                                 // TODO: IMPLEMENT THIS
     std::shared_ptr<Anim>       CreateMirroredAnim(const int *jointMirrorTable);
 
-    static bool                 Prepare(const char *filename, InternalData &outInternalData);
-    void                        ApplyPrepared(InternalData &newInternalData);
-
     bool                        Load(const char *filename);
     bool                        LoadAsync(const char *filename);
 
@@ -214,6 +210,9 @@ public:
 
 private:
     void                        Purge();
+
+    static bool                 Prepare(const char *filename, InternalData &outInternalData);
+    void                        ApplyPrepared(InternalData &newInternalData);
 
     Anim &                      Copy(const Anim &other);
 
