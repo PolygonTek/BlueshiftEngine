@@ -37,7 +37,7 @@ Mesh::Surface *Mesh::AllocSurface(int numVerts, int numIndexes) {
 }
 
 void Mesh::ApplyPrepared(InternalData &newInternalData) {
-    assert(state == State::Empty || state == State::Loading || state == State::Ready);
+    assert(state == State::Empty || state == State::Loading || state == State::Ready || state == State::Reloading);
 
     Purge();
 
@@ -90,23 +90,47 @@ bool Mesh::Reload() {
 }
 
 bool Mesh::ReloadAsync() {
-    if (state != State::Ready) {
+    if (!IsReady()) {
         BE_WARNLOG("Mesh::ReloadAsync: mesh '%s' is not ready\n", GetHashName());
         return false;
     }
 
     uint32_t newSerial = BumpLoadSerial();
+    state = State::Reloading;
 
     if (!loadingSystem.EnqueueMeshLoad(shared_from_this(), hashName, true, newSerial)) {
-        state = State::Failed;
-        Purge();
+        state = State::Ready;
         return false;
     }
     return true;
 }
 
+bool Mesh::WaitReady() {
+    assert(BE1::Engine::IsInMainThread());
+
+    while (GetState() == State::Loading) {
+        loadingSystem.ProcessLoadCompletions();
+
+        BE1::PlatformThread::Yield();
+    }
+
+    return IsReady();
+}
+
+bool Mesh::WaitLoadComplete() {
+    assert(BE1::Engine::IsInMainThread());
+
+    while (IsLoading()) {
+        loadingSystem.ProcessLoadCompletions();
+
+        BE1::PlatformThread::Yield();
+    }
+
+    return GetState() == State::Ready;
+}
+
 void Mesh::Write(const char *filename) {
-    assert(state == State::Ready);
+    assert(IsReady());
 
     internalData.WriteBinaryMesh(filename);
 }

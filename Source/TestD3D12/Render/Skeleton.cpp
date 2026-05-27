@@ -164,7 +164,7 @@ bool Skeleton::Prepare(const char *filename, InternalData &outInternalData) {
 }
 
 void Skeleton::ApplyPrepared(InternalData &newInternalData) {
-    assert(state == State::Empty || state == State::Loading || state == State::Ready);
+    assert(state == State::Empty || state == State::Loading || state == State::Ready || state == State::Reloading);
 
     Purge();
 
@@ -206,23 +206,47 @@ bool Skeleton::Reload() {
 }
 
 bool Skeleton::ReloadAsync() {
-    if (state != State::Ready) {
+    if (!IsReady()) {
         BE_WARNLOG("Skeleton::ReloadAsync: skeleton '%s' is not ready\n", GetHashName());
         return false;
     }
 
     uint32_t newSerial = BumpLoadSerial();
+    state = State::Reloading;
 
     if (!loadingSystem.EnqueueSkeletonLoad(shared_from_this(), hashName, true, newSerial)) {
-        state = State::Failed;
-        Purge();
+        state = State::Ready;
         return false;
     }
     return true;
 }
 
+bool Skeleton::WaitReady() {
+    assert(BE1::Engine::IsInMainThread());
+
+    while (GetState() == State::Loading) {
+        loadingSystem.ProcessLoadCompletions();
+
+        BE1::PlatformThread::Yield();
+    }
+
+    return IsReady();
+}
+
+bool Skeleton::WaitLoadComplete() {
+    assert(BE1::Engine::IsInMainThread());
+
+    while (IsLoading()) {
+        loadingSystem.ProcessLoadCompletions();
+
+        BE1::PlatformThread::Yield();
+    }
+
+    return GetState() == State::Ready;
+}
+
 void Skeleton::Write(const char *filename) {
-    assert(state == State::Ready);
+    assert(IsReady());
 
     BE1::File *fp = BE1::fileSystem.OpenFile(filename, BE1::File::Mode::Write);
     if (!fp) {
@@ -261,7 +285,7 @@ void Skeleton::Write(const char *filename) {
 }
 
 bool Skeleton::CheckHierarchy(const Skeleton *otherSkeleton) const {
-    assert(state == State::Ready);
+    assert(IsReady());
 
     if (internalData.numJoints != otherSkeleton->NumJoints()) {
         return false;

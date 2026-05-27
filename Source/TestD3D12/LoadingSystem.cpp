@@ -460,10 +460,10 @@ bool LoadingSystem::ProcessTextureLoadCompletion(LoadCompletion &completion) {
 
     // 로딩이 실패한 경우
     if (!completion.success) {
-        texture->SetState(Texture::State::Failed);
-
         if (completion.isReload) {
-            texture->Purge();
+            texture->SetState(Texture::State::Ready);
+        } else {
+            texture->SetState(Texture::State::Failed);
         }
         return false;
     }
@@ -497,10 +497,10 @@ bool LoadingSystem::ProcessMeshLoadCompletion(LoadCompletion &completion) {
 
     // 로딩이 실패한 경우
     if (!completion.success) {
-        mesh->SetState(Mesh::State::Failed);
-
         if (completion.isReload) {
-            mesh->Purge();
+            mesh->SetState(Mesh::State::Ready);
+        } else {
+            mesh->SetState(Mesh::State::Failed);
         }
         return false;
     }
@@ -525,10 +525,10 @@ bool LoadingSystem::ProcessSkeletonLoadCompletion(LoadCompletion &completion) {
 
     // 로딩이 실패한 경우
     if (!completion.success) {
-        skeleton->SetState(Skeleton::State::Failed);
-
         if (completion.isReload) {
-            skeleton->Purge();
+            skeleton->SetState(Skeleton::State::Ready);
+        } else {
+            skeleton->SetState(Skeleton::State::Failed);
         }
         return false;
     }

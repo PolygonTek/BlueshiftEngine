@@ -130,22 +130,26 @@ std::shared_ptr<Mesh> MeshManager::FindMesh(const char *hashName) const {
     return entry->second.lock();
 }
 
-std::shared_ptr<Mesh> MeshManager::GetMesh(const char *hashName) {
+std::shared_ptr<Mesh> MeshManager::GetMesh(const char *hashName, bool async) {
     if (!hashName || !hashName[0]) {
         return defaultMesh;
     }
 
     std::shared_ptr<Mesh> mesh = FindMesh(hashName);
     if (mesh) {
+        if (!async && !mesh->WaitReady()) {
+            return defaultMesh;
+        }
         return mesh;
     }
 
     mesh = AllocMesh(hashName);
 #ifdef USE_ASYNC_LOADING
-    if (!mesh->LoadAsync(hashName)) {
+    bool loaded = async ? mesh->LoadAsync(hashName) : mesh->Load(hashName);
 #else
-    if (!mesh->Load(hashName)) {
+    bool loaded = mesh->Load(hashName);
 #endif
+    if (!loaded) {
         BE_WARNLOG("Couldn't load mesh '%s'\n", hashName);
 
         meshHashMap.Remove(mesh->hashName);

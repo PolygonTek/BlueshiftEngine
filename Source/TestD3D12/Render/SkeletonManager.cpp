@@ -75,22 +75,26 @@ std::shared_ptr<Skeleton> SkeletonManager::FindSkeleton(const char *hashName) co
     return entry->second.lock();
 }
 
-std::shared_ptr<Skeleton> SkeletonManager::GetSkeleton(const char *hashName) {
+std::shared_ptr<Skeleton> SkeletonManager::GetSkeleton(const char *hashName, bool async) {
     if (!hashName || !hashName[0]) {
         return defaultSkeleton;
     }
 
     std::shared_ptr<Skeleton> skeleton = FindSkeleton(hashName);
     if (skeleton) {
+        if (!async && !skeleton->WaitReady()) {
+            return defaultSkeleton;
+        }
         return skeleton;
     }
 
     skeleton = AllocSkeleton(hashName);
 #ifdef USE_ASYNC_LOADING
-    if (!skeleton->LoadAsync(hashName)) {
+    bool loaded = async ? skeleton->LoadAsync(hashName) : skeleton->Load(hashName);
 #else
-    if (!skeleton->Load(hashName)) {
+    bool loaded = skeleton->Load(hashName);
 #endif
+    if (!loaded) {
         skeletonHashMap.Remove(skeleton->hashName);
         return defaultSkeleton;
     }

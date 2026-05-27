@@ -52,6 +52,7 @@ public:
         Empty,
         Loading,
         Ready,
+        Reloading,
         Failed
     };
 
@@ -105,6 +106,8 @@ public:
 
     State                           GetState() const { return state.load(); }
     void                            SetState(State newState) { state.store(newState); }
+    bool                            IsReady() const { State s = GetState(); return s == State::Ready || s == State::Reloading; }
+    bool                            IsLoading() const { State s = GetState(); return s == State::Loading || s == State::Reloading; }
 
     uint32_t                        GetLoadSerial() const { return loadSerial.load(); }
     uint32_t                        BumpLoadSerial() { return loadSerial.fetch_add(1) + 1; }
@@ -154,6 +157,9 @@ public:
     bool                            Reload();
     bool                            ReloadAsync();
 
+    bool                            WaitReady();
+    bool                            WaitLoadComplete();
+
     void                            RequestStreamingMaxDimension(uint32_t requestedMaxDimension);
 
     static bool                     GetCubeImageFromCubeTexture(const Texture *cubeTexture, int numMipLevels, BE1::Image &outCubeImage);
@@ -193,7 +199,7 @@ public:
 
     std::shared_ptr<Texture>        AllocTexture(const char *hashName);
     std::shared_ptr<Texture>        FindTexture(const char *hashName) const;
-    std::shared_ptr<Texture>        GetTexture(const char *hashName, Texture::Flag flags = Texture::Flag::None);
+    std::shared_ptr<Texture>        GetTexture(const char *hashName, Texture::Flag flags = Texture::Flag::None, bool async = true);
 
     bool                            IsRegisteredStreamingTexture(const Texture *texture) const;
     void                            RegisterStreamingTexture(const std::shared_ptr<Texture> &texture, const BE1::Image::MipRange &mipRange);

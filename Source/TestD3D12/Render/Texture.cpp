@@ -44,7 +44,7 @@ void Texture::InternalData::Swap(InternalData &rhs) {
 }
 
 bool Texture::IsReadyForRendering() const {
-    return state == State::Ready && internalData.rhiTexture && internalData.rhiTexture->GetStatus() == RHI::GPUResourceStatus::Ready;
+    return IsReady() && internalData.rhiTexture && internalData.rhiTexture->GetStatus() == RHI::GPUResourceStatus::Ready;
 }
 
 uint64_t Texture::MemRequired(bool includingMipmaps) const {
@@ -323,7 +323,7 @@ bool Texture::PrepareDirect(RHI::TextureType textureType, std::shared_ptr<const 
 }
 
 void Texture::ApplyPrepared(InternalData &newInternalData) {
-    assert(state == State::Empty || state == State::Loading || state == State::Ready);
+    assert(state == State::Empty || state == State::Loading || state == State::Ready || state == State::Reloading);
     assert(internalData.rhiTexture != newInternalData.rhiTexture);
 
     Purge();
@@ -388,22 +388,47 @@ bool Texture::Reload() {
 }
 
 bool Texture::ReloadAsync() {
-    if (state != State::Ready) {
+    if (!IsReady()) {
         BE_WARNLOG("Texture::ReloadAsync: texture '%s' is not ready\n", GetHashName());
         return false;
     }
 
     uint32_t newSerial = BumpLoadSerial();
+    state = State::Reloading;
+
+    if (!loadingSystem.EnqueueTextureLoad(shared_from_this(), hashName, internalData.flags, true, newSerial)) {
+        state = State::Ready;
+        return false;
+    }
 
     // 스트리밍 텍스쳐인 경우, 스트리밍 시스템에서 제거한다.
     textureManager.UnregisterStreamingTexture(this);
 
-    if (!loadingSystem.EnqueueTextureLoad(shared_from_this(), hashName, internalData.flags, true, newSerial)) {
-        state = State::Failed;
-        Purge();
-        return false;
-    }
     return true;
+}
+
+bool Texture::WaitReady() {
+    assert(BE1::Engine::IsInMainThread());
+
+    while (GetState() == State::Loading) {
+        loadingSystem.ProcessLoadCompletions();
+
+        BE1::PlatformThread::Yield();
+    }
+
+    return IsReady();
+}
+
+bool Texture::WaitLoadComplete() {
+    assert(BE1::Engine::IsInMainThread());
+
+    while (IsLoading()) {
+        loadingSystem.ProcessLoadCompletions();
+
+        BE1::PlatformThread::Yield();
+    }
+
+    return GetState() == State::Ready;
 }
 
 void Texture::RequestStreamingMaxDimension(uint32_t requestedMaxDimension) {

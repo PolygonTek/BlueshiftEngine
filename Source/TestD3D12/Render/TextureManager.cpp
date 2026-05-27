@@ -79,22 +79,26 @@ std::shared_ptr<Texture> TextureManager::FindTexture(const char *hashName) const
     return entry->second.lock();
 }
 
-std::shared_ptr<Texture> TextureManager::GetTexture(const char *hashName, Texture::Flag flags) {
+std::shared_ptr<Texture> TextureManager::GetTexture(const char *hashName, Texture::Flag flags, bool async) {
     if (!hashName || !hashName[0]) {
         return defaultTexture;
     }
 
     std::shared_ptr<Texture> texture = FindTexture(hashName);
     if (texture) {
+        if (!async && !texture->WaitReady()) {
+            return defaultTexture;
+        }
         return texture;
     }
 
     texture = AllocTexture(hashName);
 #ifdef USE_ASYNC_LOADING
-    if (!texture->LoadAsync(hashName, flags)) {
+    bool loaded = async ? texture->LoadAsync(hashName, flags) : texture->Load(hashName, flags);
 #else
-    if (!texture->Load(hashName, flags)) {
+    bool loaded = texture->Load(hashName, flags);
 #endif
+    if (!loaded) {
         textureHashMap.Remove(texture->hashName);
         return defaultTexture;
     }

@@ -41,6 +41,7 @@ public:
         Empty,
         Loading,
         Ready,
+        Reloading,
         Failed
     };
 
@@ -72,6 +73,8 @@ public:
 
     State                           GetState() const { return state.load(); }
     void                            SetState(State newState) { state.store(newState); }
+    bool                            IsReady() const { State s = GetState(); return s == State::Ready || s == State::Reloading; }
+    bool                            IsLoading() const { State s = GetState(); return s == State::Loading || s == State::Reloading; }
 
     uint32_t                        GetLoadSerial() const { return loadSerial.load(); }
     uint32_t                        BumpLoadSerial() { return loadSerial.fetch_add(1) + 1; }
@@ -97,6 +100,9 @@ public:
 
     bool                            Reload();
     bool                            ReloadAsync();
+
+    bool                            WaitReady();
+    bool                            WaitLoadComplete();
 
     void                            Write(const char *filename);
 
@@ -140,7 +146,7 @@ public:
 
     std::shared_ptr<Skeleton>       AllocSkeleton(const char *name);
     std::shared_ptr<Skeleton>       FindSkeleton(const char *name) const;
-    std::shared_ptr<Skeleton>       GetSkeleton(const char *name);
+    std::shared_ptr<Skeleton>       GetSkeleton(const char *name, bool async = true);
 
     void                            RenameSkeleton(Skeleton *skeleton, const BE1::Str &newName);
 
