@@ -939,7 +939,7 @@ namespace RHI {
         virtual SwapChain *             CreateSwapChain(HWND hwnd, uint32_t width, uint32_t height, Format format) = 0;
         virtual void                    DestroySwapChain(SwapChain *swapChain) = 0;
 
-        virtual RHI::FrameThreadData *  CreateFrameThreadData(int32_t threadIndex) = 0;
+        virtual RHI::FrameThreadData *  CreateFrameThreadData(int32_t frameIndex, int32_t numFrames, int32_t threadIndex, int32_t numRenderTaskThreads) = 0;
         virtual void                    DestroyFrameThreadData(FrameThreadData *frameThreadData) = 0;
 
         virtual void                    DrainReleaseRequestsToRetireList() = 0;

@@ -95,7 +95,7 @@ class RenderFrameData {
     friend class RenderContext;
 
 public:
-    void                            Init();
+    void                            Init(int32_t frameIndex, int32_t numFrames);
     void                            Shutdown();
 
                                     // 이번 프레임의 임시 시스템 메모리 할당 초기화 (메인 스레드에서 호출됨)

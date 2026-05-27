@@ -25,8 +25,8 @@ set(SRC_FILES
     D3D12Renderer/D3D12SwapChain.cpp
     D3D12Renderer/D3D12DescriptorPool.h
     D3D12Renderer/D3D12DescriptorPool.cpp
-    D3D12Renderer/D3D12DescriptorTablePool.h
-    D3D12Renderer/D3D12DescriptorTablePool.cpp
+    D3D12Renderer/D3D12ShaderVisibleDescriptorHeap.h
+    D3D12Renderer/D3D12ShaderVisibleDescriptorHeap.cpp
     D3D12Renderer/D3D12Buffer.h
     D3D12Renderer/D3D12Buffer.cpp
     D3D12Renderer/D3D12Shader.h

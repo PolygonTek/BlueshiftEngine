@@ -16,6 +16,7 @@
 
 #include "../RHI.h"
 #include "D3D12Common.h"
+#include "D3D12ShaderVisibleDescriptorHeap.h"
 #include "D3D12RootBindingData.h"
 #include "D3D12ResourceRequest.h"
 
@@ -29,7 +30,6 @@ class D3D12PipelineState;
 class D3D12CommandList;
 class D3D12CommandListPool;
 class D3D12DescriptorPool;
-class D3D12DescriptorTablePool;
 
 struct D3D12ReleaseRequest {
     ID3D12Resource *                    resourceToRelease = nullptr;
@@ -66,7 +66,7 @@ public:
     virtual RHI::SwapChain *            CreateSwapChain(HWND hwnd, uint32_t width, uint32_t height, RHI::Format format) override;
     virtual void                        DestroySwapChain(RHI::SwapChain *swapChain) override;
 
-    virtual RHI::FrameThreadData *      CreateFrameThreadData(int32_t threadIndex) override;
+    virtual RHI::FrameThreadData *      CreateFrameThreadData(int32_t frameIndex, int32_t numFrames, int32_t threadIndex, int32_t numRenderTaskThreads) override;
     virtual void                        DestroyFrameThreadData(RHI::FrameThreadData *frameThreadData) override;
 
     void                                RequestRelease(ID3D12Resource *resource);
@@ -198,6 +198,12 @@ public:
     virtual void                        BeginEvent(RHI::CommandList *commandList, const char *string, uint8_t colorIndex) override;
     virtual void                        EndEvent(RHI::CommandList *commandList) override;
 
+    uint32_t                            AllocBindlessResourceDescriptor();
+    void                                FreeBindlessResourceDescriptor(uint32_t bindlessIndex);
+    D3D12_CPU_DESCRIPTOR_HANDLE         GetBindlessResourceCPUDescriptorHandle(uint32_t bindlessIndex) const;
+    D3D12_GPU_DESCRIPTOR_HANDLE         GetBindlessResourceGPUDescriptorHandle(uint32_t bindlessIndex) const;
+    D3D12_GPU_DESCRIPTOR_HANDLE         GetBindlessResourceBaseGPUDescriptorHandle() const;
+
     void                                CheckFeatures();
 
     void                                InitGenMipmapsPSO();
@@ -243,6 +249,13 @@ public:
     static D3D12_RESOURCE_STATES        ToD3D12ResourceState(RHI::GPUResourceState resourceState);
 
     static D3D12Renderer *              GetRenderer() { return static_cast<D3D12Renderer *>(RHI::renderer); }
+
+    static constexpr uint32_t           MaxShaderVisibleResourceDescriptors = 1000000; // Resource Binding Tier 1
+    static constexpr uint32_t           MaxBindlessResourceDescriptors = 500000;
+    static constexpr uint32_t           MaxTransientResourceDescriptors = MaxShaderVisibleResourceDescriptors - MaxBindlessResourceDescriptors;
+    static constexpr uint32_t           MaxShaderVisibleSamplerDescriptors = 2048;
+    static constexpr uint32_t           MaxBindlessSamplerDescriptors = 256;
+    static constexpr uint32_t           MaxTransientSamplerDescriptors = MaxShaderVisibleSamplerDescriptors - MaxBindlessSamplerDescriptors;
 
     struct D3D12QueueFence {
         ID3D12Fence *                   fence = nullptr;
@@ -291,6 +304,10 @@ public:
     D3D12DescriptorPool *               rtvCpuDescriptorPool = nullptr;
     D3D12DescriptorPool *               dsvCpuDescriptorPool = nullptr;
     D3D12DescriptorPool *               samCpuDescriptorPool = nullptr;
+
+    D3D12ShaderVisibleDescriptorHeap    resShaderVisibleDescriptorHeap;
+    D3D12ShaderVisibleDescriptorHeap    samShaderVisibleDescriptorHeap;
+    D3D12BindlessDescriptorAllocator    bindlessResDescriptorAllocator;
 
     BE1::SharedLib                      dxcompilerLibrary = nullptr;
     BE1::Str                            shaderCacheDir;

@@ -20,7 +20,7 @@ static constexpr uint32_t   MaxRenderTaskThreads = 32;
 static constexpr uint32_t   MaxMemSizePerBlock = 0x4000000;
 static constexpr uint32_t   MemAlignSize = 32;
 
-void RenderFrameData::Init() {
+void RenderFrameData::Init(int32_t frameIndex, int32_t numFrames) {
     InitMemBlocks();
 
 #ifdef USE_RENDER_TASK
@@ -35,7 +35,7 @@ void RenderFrameData::Init() {
 
     // 필요한 만큼 렌더 태스크 스레드 데이터를 준비한다.
     for (int32_t threadIndex = 0; threadIndex < numRenderTaskThreads; ++threadIndex) {
-        threadData[threadIndex] = RHI::renderer->CreateFrameThreadData(threadIndex);
+        threadData[threadIndex] = RHI::renderer->CreateFrameThreadData(frameIndex, numFrames, threadIndex, numRenderTaskThreads);
     }
 }
 
@@ -45,6 +45,7 @@ void RenderFrameData::Shutdown() {
     }
 
     delete [] threadData;
+    threadData = nullptr;
 
     FreeVisObjects();
 

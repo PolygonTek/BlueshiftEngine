@@ -16,7 +16,7 @@
 #include "D3D12Renderer.h"
 #include "D3D12CommandList.h"
 #include "D3D12CommandListPool.h"
-#include "D3D12DescriptorTablePool.h"
+#include "D3D12ShaderVisibleDescriptorHeap.h"
 #include "D3D12FrameThreadData.h"
 
 static constexpr D3D12_SHADING_RATE ToD3D12ShadingRate(RHI::ShadingRate shadingRate) {

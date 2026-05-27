@@ -19,7 +19,7 @@
 #include "D3D12Texture.h"
 #include "D3D12ConstantBuffer.h"
 #include "D3D12CommandList.h"
-#include "D3D12DescriptorTablePool.h"
+#include "D3D12ShaderVisibleDescriptorHeap.h"
 #include "D3D12FrameThreadData.h"
 
 static constexpr D3D12_FILL_MODE ToD3D12FillMode(RHI::FillMode fillMode) {
@@ -965,7 +965,7 @@ void D3D12Renderer::BindRootParameters(D3D12CommandList *commandList) {
                 assert(tableOffset < COUNT_OF(rootBindingData->descriptorTableHandles[rootParameterIndex]));
 
                 const D3D12_CPU_DESCRIPTOR_HANDLE &srcCpuDescriptorHandle = rootBindingData->descriptorTableHandles[rootParameterIndex][tableOffset];
-                CD3DX12_CPU_DESCRIPTOR_HANDLE destCpuDescriptorHandle(cpuDescriptorTableStart, tableOffset, descriptorTablePool->descriptorHandleSize);
+                CD3DX12_CPU_DESCRIPTOR_HANDLE destCpuDescriptorHandle(cpuDescriptorTableStart, tableOffset, descriptorTablePool->GetDescriptorHandleSize());
 
                 // CopyDescriptorsSimple 함수는 원본 디스크립터와 대상 디스크립터 핸들이 모두 CPU 핸들이어야 한다.
                 // source 디스크립터는 스테이징 용도로서 항상 non shader-visible 힙에 존재해야 한다.

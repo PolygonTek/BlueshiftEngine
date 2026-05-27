@@ -16,7 +16,7 @@
 #include "D3D12Renderer.h"
 #include "D3D12FrameThreadData.h"
 #include "D3D12DescriptorPool.h"
-#include "D3D12DescriptorTablePool.h"
+#include "D3D12ShaderVisibleDescriptorHeap.h"
 
 static constexpr uint32_t DynamicBufferBlockSize = 1 << 22; // 4MB
 
@@ -35,9 +35,9 @@ D3D12FrameThreadData::DynamicBufferBlock::~DynamicBufferBlock() {
     RHI::renderer->DestroyBuffer(buffer);
 }
 
-RHI::FrameThreadData *D3D12Renderer::CreateFrameThreadData(int32_t threadIndex) {
+RHI::FrameThreadData *D3D12Renderer::CreateFrameThreadData(int32_t frameIndex, int32_t numFrames, int32_t threadIndex, int32_t numRenderTaskThreads) {
     D3D12FrameThreadData *_frameThreadData = new D3D12FrameThreadData;
-    _frameThreadData->Init(threadIndex);
+    _frameThreadData->Init(this, frameIndex, numFrames, threadIndex, numRenderTaskThreads);
     return _frameThreadData;
 }
 
@@ -47,15 +47,38 @@ void D3D12Renderer::DestroyFrameThreadData(RHI::FrameThreadData *frameThreadData
     delete _frameThreadData;
 }
 
-void D3D12FrameThreadData::Init(int32_t threadIndex) {
+void D3D12FrameThreadData::Init(D3D12Renderer *renderer, int32_t frameIndex, int32_t numFrames, int32_t threadIndex, int32_t numThreads) {
+    assert(renderer);
+    assert(frameIndex >= 0 && frameIndex < numFrames);
+    assert(numFrames > 0);
+    assert(threadIndex >= 0 && threadIndex < numThreads);
+    assert(numThreads > 0);
+
     constexpr uint32_t maxPrimaryCommandLists = 8;
     constexpr uint32_t maxSecondaryCommandLists = 8;
 
-    // Shader-visible CBV/SRV/UAV 디스크립터 테이블 풀을 생성한다.
-    resDescriptorTablePool = new D3D12DescriptorTablePool(D3D12Renderer::GetRenderer()->device, D3D12DescriptorTablePool::Type::CBV_SRV_UAV, MaxResBindingDescriptors);
+    const uint32_t numResDescriptorsPerFrame = D3D12Renderer::MaxTransientResourceDescriptors / numFrames;
+    const uint32_t numSamDescriptorsPerFrame = D3D12Renderer::MaxTransientSamplerDescriptors / numFrames;
 
-    // Shader-visible sampler 디스크립터 테이블 풀을 생성한다.
-    samDescriptorTablePool = new D3D12DescriptorTablePool(D3D12Renderer::GetRenderer()->device, D3D12DescriptorTablePool::Type::Sampler, MaxSamBindingDescriptors);
+    const uint32_t numResDescriptorsPerThread = numResDescriptorsPerFrame / numThreads;
+    const uint32_t numSamDescriptorsPerThread = numSamDescriptorsPerFrame / numThreads;
+
+    assert(numResDescriptorsPerThread > 0);
+    assert(numSamDescriptorsPerThread > 0);
+
+    resDescriptorTablePool = new D3D12DescriptorTablePool;
+    resDescriptorTablePool->Init({
+        &renderer->resShaderVisibleDescriptorHeap,
+        D3D12Renderer::MaxBindlessResourceDescriptors + frameIndex * numResDescriptorsPerFrame + threadIndex * numResDescriptorsPerThread,
+        numResDescriptorsPerThread
+    });
+
+    samDescriptorTablePool = new D3D12DescriptorTablePool;
+    samDescriptorTablePool->Init({
+        &renderer->samShaderVisibleDescriptorHeap,
+        D3D12Renderer::MaxBindlessSamplerDescriptors + frameIndex * numSamDescriptorsPerFrame + threadIndex * numSamDescriptorsPerThread,
+        numSamDescriptorsPerThread
+    });
 
     if (threadIndex == 0) {
         // 그래픽스 (Direct) 커맨드 리스트 풀을 생성한다.
@@ -97,7 +120,6 @@ void D3D12FrameThreadData::Shutdown() {
     SAFE_DELETE(dynamicResDescriptorPool);
     SAFE_DELETE(graphicsCommandListPool);
     SAFE_DELETE(computeCommandListPool);
-
     SAFE_DELETE(resDescriptorTablePool);
     SAFE_DELETE(samDescriptorTablePool);
 }

@@ -23,8 +23,8 @@ RenderContext *     RenderContext::activeContext = nullptr;
 void RenderContext::Init(void *windowHandle) {
     // 프레임 별로 사용할 프레임 데이터들을 초기화한다.
     // 프레임 데이터: 임시 메모리, 커맨드 리스트 풀, 디스크립터 힙, 다이나믹 버퍼와 그 디스크립터 풀
-    for (RenderFrameData &frameData : frames) {
-        frameData.Init();
+    for (int32_t frameIndex = 0; frameIndex < NumFrames; ++frameIndex) {
+        frames[frameIndex].Init(frameIndex, NumFrames);
     }
 
     currentFrontendFrameIndex = 0;

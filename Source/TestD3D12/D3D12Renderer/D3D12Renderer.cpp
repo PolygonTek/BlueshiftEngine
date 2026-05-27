@@ -19,7 +19,7 @@
 #include "D3D12SwapChain.h"
 #include "D3D12CommandList.h"
 #include "D3D12CommandListPool.h"
-#include "D3D12DescriptorTablePool.h"
+#include "D3D12ShaderVisibleDescriptorHeap.h"
 #include "D3D12DescriptorPool.h"
 #include "D3D12Texture.h"
 #include "D3D12FrameThreadData.h"
@@ -280,10 +280,19 @@ void D3D12Renderer::Init(const void *mainWindowHandle) {
     }
 
     // CPU 접근 전용 디스크립터 풀 생성
-    resCpuDescriptorPool = new D3D12DescriptorPool(device, D3D12DescriptorPool::Type::CBV_SRV_UAV, 900000, false);
+    // NOTE: non-shader visible 디스크립터 힙은 개수 제한을 받지 않는다. 더 커도 상관이 없음.
+    resCpuDescriptorPool = new D3D12DescriptorPool(device, D3D12DescriptorPool::Type::CBV_SRV_UAV, 1000000, false);
     rtvCpuDescriptorPool = new D3D12DescriptorPool(device, D3D12DescriptorPool::Type::RTV, 16, false);
     dsvCpuDescriptorPool = new D3D12DescriptorPool(device, D3D12DescriptorPool::Type::DSV, 16, false);
     samCpuDescriptorPool = new D3D12DescriptorPool(device, D3D12DescriptorPool::Type::Sampler, 2048, false);
+
+    // shader-visible 디스크립터 힙 생성
+    resShaderVisibleDescriptorHeap.Init(device, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, MaxShaderVisibleResourceDescriptors);
+    samShaderVisibleDescriptorHeap.Init(device, D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER, MaxShaderVisibleSamplerDescriptors);
+
+    // shader-visible 리소스 디스크립터 힙의 [0, MaxBindlessResourceDescriptors) 영역은 bindless 디스크립터로 사용
+    // 0번 인덱스는 NullIndex로 예약한다.
+    bindlessResDescriptorAllocator.Init({ &resShaderVisibleDescriptorHeap, 0, MaxBindlessResourceDescriptors });
 
     // shader cache 디렉토리 초기화
     shaderCacheDir = "Cache/D3D12CompiledShaderCache";
@@ -323,6 +332,8 @@ void D3D12Renderer::CheckFeatures() {
     assert(SUCCEEDED(hr));
 
     resourceHeapTier = features.ResourceHeapTier();
+
+    //features.ResourceBindingTier();
 
     if (features.ConservativeRasterizationTier() >= D3D12_CONSERVATIVE_RASTERIZATION_TIER_1) {
         supportsConservativeRasterization = true;
@@ -528,6 +539,10 @@ void D3D12Renderer::Shutdown() {
     SAFE_DELETE(dsvCpuDescriptorPool);
     SAFE_DELETE(samCpuDescriptorPool);
 
+    bindlessResDescriptorAllocator.Shutdown();
+    samShaderVisibleDescriptorHeap.Shutdown();
+    resShaderVisibleDescriptorHeap.Shutdown();
+
     SAFE_RELEASE(dxcCompiler);
     SAFE_RELEASE(dxcUtils);
     SAFE_RELEASE(dxcLibrary);
@@ -654,6 +669,27 @@ void D3D12Renderer::CreateShaderCompiler() {
 
 RHI::ShaderFormat D3D12Renderer::GetShaderFormat() const {
     return RHI::ShaderFormat::HLSL6;
+}
+
+uint32_t D3D12Renderer::AllocBindlessResourceDescriptor() {
+    return bindlessResDescriptorAllocator.Alloc();
+}
+
+void D3D12Renderer::FreeBindlessResourceDescriptor(uint32_t bindlessIndex) {
+    // Bindless descriptor slots must be returned only after GPU work that can reference them is complete.
+    bindlessResDescriptorAllocator.Free(bindlessIndex);
+}
+
+D3D12_CPU_DESCRIPTOR_HANDLE D3D12Renderer::GetBindlessResourceCPUDescriptorHandle(uint32_t bindlessIndex) const {
+    return bindlessResDescriptorAllocator.GetCPUDescriptorHandleFromIndex(bindlessIndex);
+}
+
+D3D12_GPU_DESCRIPTOR_HANDLE D3D12Renderer::GetBindlessResourceGPUDescriptorHandle(uint32_t bindlessIndex) const {
+    return bindlessResDescriptorAllocator.GetGPUDescriptorHandleFromIndex(bindlessIndex);
+}
+
+D3D12_GPU_DESCRIPTOR_HANDLE D3D12Renderer::GetBindlessResourceBaseGPUDescriptorHandle() const {
+    return bindlessResDescriptorAllocator.GetBaseGPUDescriptorHandle();
 }
 
 void D3D12Renderer::RequestRelease(ID3D12Resource *resource) {
@@ -940,8 +976,8 @@ void D3D12Renderer::ClearUAV(RHI::CommandList *commandList, const RHI::GPUResour
 
     if (descriptorTablePool->AllocRange(1, &cpuDescriptorTableStart, &gpuDescriptorTableStart)) {
         const D3D12_CPU_DESCRIPTOR_HANDLE &srcDescriptorHandle = (*uavEntry).cpuDescriptorHandle;
-        CD3DX12_CPU_DESCRIPTOR_HANDLE destCpuDescriptorHandle(cpuDescriptorTableStart, 0, descriptorTablePool->descriptorHandleSize);
-        CD3DX12_GPU_DESCRIPTOR_HANDLE destGpuDescriptorHandle(gpuDescriptorTableStart, 0, descriptorTablePool->descriptorHandleSize);
+        CD3DX12_CPU_DESCRIPTOR_HANDLE destCpuDescriptorHandle(cpuDescriptorTableStart, 0, descriptorTablePool->GetDescriptorHandleSize());
+        CD3DX12_GPU_DESCRIPTOR_HANDLE destGpuDescriptorHandle(gpuDescriptorTableStart, 0, descriptorTablePool->GetDescriptorHandleSize());
 
         device->CopyDescriptorsSimple(1, destCpuDescriptorHandle, srcDescriptorHandle, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
 
