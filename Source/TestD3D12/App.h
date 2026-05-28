@@ -14,8 +14,6 @@
 
 #pragma once
 
-#include "RHI.h"
-
 class RenderContext;
 class RenderWorld;
 class RenderCamera;

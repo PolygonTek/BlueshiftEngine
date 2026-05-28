@@ -19,13 +19,21 @@
 #include "Render/Skeleton.h"
 #include "Render/Anim.h"
 
+/*
+-------------------------------------------------------------------------------
+
+    Loading System
+
+-------------------------------------------------------------------------------
+*/
+
 class LoadingSystem {
 public:
     enum class LoadPriority : int8_t {
-        Background = 0,
-        Normal     = 10,
-        High       = 20,
-        Critical   = 30
+        Background                  = 0,
+        Normal                      = 10,
+        High                        = 20,
+        Critical                    = 30
     };
 
     void                            Init();
@@ -72,10 +80,10 @@ private:
         std::shared_ptr<Skeleton>   skeleton;
         std::shared_ptr<Anim>       anim;
         Texture::InternalData       textureData;
-        BE1::Image::MipRange        mipRange;
         Mesh::InternalData          meshData;
         Skeleton::InternalData      skeletonData;
         Anim::InternalData          animData;
+        BE1::Image::MipRange        mipRange;
         uint32_t                    serial = 0;
         bool                        isReload = false;
         bool                        isStreamingReplacement = false;

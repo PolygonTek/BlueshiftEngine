@@ -79,7 +79,7 @@ public:
     template <typename Lambda>
     int32_t                     AddTask(Lambda &&lambda, int32_t groupId = -1, bool withWake = true);
 
-                            /// Waits until finishing all tasks in the given group.
+                                /// Waits until finishing all tasks in the given group.
     void                        WaitFinish(int32_t groupId, bool withWake = false);
     
                                 /// Waits until finishing all tasks.
@@ -109,8 +109,8 @@ private:
     int                         headTaskIndex = 0;
     int                         tailTaskIndex = 0;
 
-    int32_t                     activeTaskCount = 0;             ///< Number of tasks in active state.
-    HashTable<int32_t, int32_t> groupActiveTaskCount;       ///< Tracks how many tasks are active in each group.
+    int32_t                     activeTaskCount = 0;            ///< Number of tasks in active state.
+    HashTable<int32_t, int32_t> groupActiveTaskCount;           ///< Tracks how many tasks are active in each group.
     int32_t                     nextTaskId = 0;
     int32_t                     nextGroupId = 0;
     bool                        stopping = false;
