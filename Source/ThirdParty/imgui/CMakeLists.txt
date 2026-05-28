@@ -23,8 +23,6 @@ endif ()
 
 auto_source_group(${SRC_FILES})
 
-add_definitions(-DIMGUI_DISABLE_OBSOLETE_FUNCTIONS)
-
 add_library(${PROJECT_NAME} STATIC ${SRC_FILES})
 
 set_target_properties(${PROJECT_NAME} PROPERTIES 

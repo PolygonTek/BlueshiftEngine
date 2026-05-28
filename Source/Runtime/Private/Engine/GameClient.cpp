@@ -401,7 +401,7 @@ void GameClient::DrawMenuBar() {
         versionText += " (DEVELOPMENT)";
 #endif
 
-        ImGui::SameLine(ImGui::GetWindowContentRegionMax().x - ImGui::GetStyle().ItemSpacing.x - ImGui::CalcTextSize(versionText.c_str()).x);
+        ImGui::SameLine(ImGui::GetCursorPosX() + ImGui::GetContentRegionAvail().x - ImGui::GetStyle().ItemSpacing.x - ImGui::CalcTextSize(versionText.c_str()).x);
 
         ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.6f, 0.6f, 0.6f, 1.0f));
         ImGui::TextUnformatted(versionText.c_str());
@@ -429,7 +429,7 @@ void GameClient::DrawStatistics(const RenderContext *renderContext) {
 
     ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.8f, 0.8f, 0.8f, 1.0f));
     ImGui::Text("Render: %ims, FrontEnd: %ims, BackEnd: %ims", renderCounter.frameMsec, renderCounter.frontEndMsec, renderCounter.backEndMsec);
-    ImGui::SameLine(ImGui::GetWindowContentRegionMax().x - ImGui::GetStyle().ItemSpacing.x - ImGui::CalcTextSize(fpsText.c_str()).x);
+    ImGui::SameLine(ImGui::GetCursorPosX() + ImGui::GetContentRegionAvail().x - ImGui::GetStyle().ItemSpacing.x - ImGui::CalcTextSize(fpsText.c_str()).x);
     ImGui::TextUnformatted(fpsText.c_str());
     ImGui::Text("Draw: %i, Verts: %i, Tris: %i", renderCounter.drawCalls, renderCounter.drawVerts, renderCounter.drawIndexes / 3);
     ImGui::Text("Shadow Draw: %i, Verts: %i, Tris: %i", renderCounter.shadowDrawCalls, renderCounter.shadowDrawVerts, renderCounter.shadowDrawIndexes / 3);

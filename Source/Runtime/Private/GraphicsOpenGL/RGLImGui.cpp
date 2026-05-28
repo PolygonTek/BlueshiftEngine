@@ -31,7 +31,6 @@ BE_NAMESPACE_BEGIN
 
 static GLuint           g_GlVersion = 0;                // Extracted at runtime using GL_MAJOR_VERSION, GL_MINOR_VERSION queries.
 static char             g_GlslVersionString[32] = "";   // Specified by user or detected based on compile time GL settings.
-static GLuint           g_FontTexture = 0;
 static GLuint           g_ShaderHandle = 0, g_VertHandle = 0, g_FragHandle = 0;
 static int              g_AttribLocationTex = 0, g_AttribLocationProjMtx = 0;                                // Uniforms location
 static int              g_AttribLocationVtxPos = 0, g_AttribLocationVtxUV = 0, g_AttribLocationVtxColor = 0; // Vertex attributes location
@@ -77,9 +76,83 @@ static void ImGui_ImplOpenGL_SetupRenderState(ImDrawData *draw_data, int fb_widt
     gglEnableVertexAttribArray(g_AttribLocationVtxPos);
     gglEnableVertexAttribArray(g_AttribLocationVtxUV);
     gglEnableVertexAttribArray(g_AttribLocationVtxColor);
-    gglVertexAttribPointer(g_AttribLocationVtxPos, 2, GL_FLOAT, GL_FALSE, sizeof(ImDrawVert), (GLvoid*)IM_OFFSETOF(ImDrawVert, pos));
-    gglVertexAttribPointer(g_AttribLocationVtxUV, 2, GL_FLOAT, GL_FALSE, sizeof(ImDrawVert), (GLvoid*)IM_OFFSETOF(ImDrawVert, uv));
-    gglVertexAttribPointer(g_AttribLocationVtxColor, 4, GL_UNSIGNED_BYTE, GL_TRUE, sizeof(ImDrawVert), (GLvoid*)IM_OFFSETOF(ImDrawVert, col));
+    gglVertexAttribPointer(g_AttribLocationVtxPos, 2, GL_FLOAT, GL_FALSE, sizeof(ImDrawVert), (GLvoid*)offsetof(ImDrawVert, pos));
+    gglVertexAttribPointer(g_AttribLocationVtxUV, 2, GL_FLOAT, GL_FALSE, sizeof(ImDrawVert), (GLvoid*)offsetof(ImDrawVert, uv));
+    gglVertexAttribPointer(g_AttribLocationVtxColor, 4, GL_UNSIGNED_BYTE, GL_TRUE, sizeof(ImDrawVert), (GLvoid*)offsetof(ImDrawVert, col));
+}
+
+static void ImGui_ImplOpenGL_DestroyTexture(ImTextureData *tex) {
+    if (tex->TexID != ImTextureID_Invalid) {
+        GLuint gl_texture = (GLuint)(intptr_t)tex->GetTexID();
+        gglDeleteTextures(1, &gl_texture);
+        tex->SetTexID(ImTextureID_Invalid);
+    }
+    tex->BackendUserData = nullptr;
+    tex->SetStatus(ImTextureStatus_Destroyed);
+}
+
+static void ImGui_ImplOpenGL_UpdateTexture(ImTextureData *tex) {
+    if (tex->Status == ImTextureStatus_OK || tex->Status == ImTextureStatus_Destroyed) {
+        return;
+    }
+
+    if (tex->Status == ImTextureStatus_WantDestroy) {
+        ImGui_ImplOpenGL_DestroyTexture(tex);
+        return;
+    }
+
+    GLint last_texture;
+    gglGetIntegerv(GL_TEXTURE_BINDING_2D, &last_texture);
+
+    GLenum gl_format = tex->Format == ImTextureFormat_RGBA32 ? GL_RGBA : GL_RED;
+    GLint gl_internal_format = tex->Format == ImTextureFormat_RGBA32 ? GL_RGBA : GL_R8;
+
+    if (tex->Status == ImTextureStatus_WantCreate) {
+        GLuint gl_texture = 0;
+        gglGenTextures(1, &gl_texture);
+        gglBindTexture(GL_TEXTURE_2D, gl_texture);
+        gglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+        gglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+        if (tex->Format == ImTextureFormat_Alpha8) {
+#ifdef GL_VERSION_3_2
+            constexpr GLint swiz_a[4] = { GL_ONE, GL_ONE, GL_ONE, GL_RED };
+            gglTexParameteriv(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_RGBA, swiz_a);
+#else
+            gglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_R, GL_ONE);
+            gglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_G, GL_ONE);
+            gglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_B, GL_ONE);
+            gglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_A, GL_RED);
+#endif
+        }
+
+#ifdef GL_UNPACK_ROW_LENGTH
+        gglPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
+#endif
+        gglTexImage2D(GL_TEXTURE_2D, 0, gl_internal_format, tex->Width, tex->Height, 0, gl_format, GL_UNSIGNED_BYTE, tex->Pixels);
+        tex->SetTexID((ImTextureID)(intptr_t)gl_texture);
+        tex->SetStatus(ImTextureStatus_OK);
+    } else if (tex->Status == ImTextureStatus_WantUpdates) {
+        GLuint gl_texture = (GLuint)(intptr_t)tex->GetTexID();
+        gglBindTexture(GL_TEXTURE_2D, gl_texture);
+#ifdef GL_UNPACK_ROW_LENGTH
+        gglPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
+#endif
+        gglTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, tex->Width, tex->Height, gl_format, GL_UNSIGNED_BYTE, tex->Pixels);
+        tex->SetStatus(ImTextureStatus_OK);
+    }
+
+    gglBindTexture(GL_TEXTURE_2D, last_texture);
+}
+
+static void ImGui_ImplOpenGL_UpdateTextures(ImDrawData *draw_data) {
+    if (draw_data->Textures == nullptr) {
+        return;
+    }
+
+    for (ImTextureData *tex : *draw_data->Textures) {
+        ImGui_ImplOpenGL_UpdateTexture(tex);
+    }
 }
 
 // OpenGL3 Render function.
@@ -124,6 +197,8 @@ void ImGui_ImplOpenGL_RenderDrawData(ImDrawData *draw_data) {
     if (last_clip_origin == GL_UPPER_LEFT)
         clip_origin_lower_left = false;
 #endif
+
+    ImGui_ImplOpenGL_UpdateTextures(draw_data);
 
     // Setup desired GL state
     // Recreate the VAO every time (this is to easily allow multiple GL contexts to be rendered to. VAO are not shared among GL contexts)
@@ -171,7 +246,7 @@ void ImGui_ImplOpenGL_RenderDrawData(ImDrawData *draw_data) {
                     }
 
                     // Bind texture, Draw
-                    gglBindTexture(GL_TEXTURE_2D, (GLuint)(intptr_t)pcmd->TextureId);
+                    gglBindTexture(GL_TEXTURE_2D, (GLuint)(intptr_t)pcmd->GetTexID());
 #if IMGUI_IMPL_OPENGL_MAY_HAVE_VTX_OFFSET
                     if (g_GlVersion >= 3200) {
                         gglDrawElementsBaseVertex(GL_TRIANGLES, (GLsizei)pcmd->ElemCount, sizeof(ImDrawIdx) == 2 ? GL_UNSIGNED_SHORT : GL_UNSIGNED_INT, (void*)(intptr_t)(pcmd->IdxOffset * sizeof(ImDrawIdx)), (GLint)pcmd->VtxOffset);
@@ -208,56 +283,6 @@ void ImGui_ImplOpenGL_RenderDrawData(ImDrawData *draw_data) {
 #endif
     gglViewport(last_viewport[0], last_viewport[1], (GLsizei)last_viewport[2], (GLsizei)last_viewport[3]);
     gglScissor(last_scissor_box[0], last_scissor_box[1], (GLsizei)last_scissor_box[2], (GLsizei)last_scissor_box[3]);
-}
-
-static void ImGui_ImplOpenGL_DestroyFontsTexture() {
-    if (g_FontTexture) {
-        ImGuiIO &io = ImGui::GetIO();
-        gglDeleteTextures(1, &g_FontTexture);
-        io.Fonts->TexID = 0;
-        g_FontTexture = 0;
-    }
-}
-
-bool ImGui_ImplOpenGL_CreateFontsTexture() {
-    ImGui_ImplOpenGL_DestroyFontsTexture();
-
-    // Build texture atlas
-    ImGuiIO &io = ImGui::GetIO();
-    unsigned char *pixels;
-    int width, height;
-    io.Fonts->GetTexDataAsAlpha8(&pixels, &width, &height);
-
-    // Upload texture to graphics system
-    GLint last_texture;
-    gglGetIntegerv(GL_TEXTURE_BINDING_2D, &last_texture);
-    gglGenTextures(1, &g_FontTexture);
-    gglBindTexture(GL_TEXTURE_2D, g_FontTexture);
-    gglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    gglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-
-#ifdef GL_VERSION_3_2
-    constexpr GLint swiz_a[4] = { GL_ONE, GL_ONE, GL_ONE, GL_RED };
-    gglTexParameteriv(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_RGBA, swiz_a);
-#else
-    gglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_R, GL_ONE);
-    gglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_G, GL_ONE);
-    gglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_B, GL_ONE);
-    gglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_A, GL_RED);
-#endif
-
-#ifdef GL_UNPACK_ROW_LENGTH
-    gglPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
-#endif
-    gglTexImage2D(GL_TEXTURE_2D, 0, GL_R8, width, height, 0, GL_RED, GL_UNSIGNED_BYTE, pixels);
-
-    // Store our identifier
-    io.Fonts->TexID = (ImTextureID)(intptr_t)g_FontTexture;
-
-    // Restore state
-    gglBindTexture(GL_TEXTURE_2D, last_texture);
-
-    return true;
 }
 
 // If you get an error please report on github. You may try different GL context version or GLSL version. See GL<>GLSL version table at the top of this file.
@@ -490,7 +515,10 @@ static void ImGui_ImplOpenGL_DestroyDeviceObjects() {
         g_ShaderHandle = 0;
     }
 
-    ImGui_ImplOpenGL_DestroyFontsTexture();
+    ImGuiPlatformIO &platform_io = ImGui::GetPlatformIO();
+    for (ImTextureData *tex : platform_io.Textures) {
+        ImGui_ImplOpenGL_DestroyTexture(tex);
+    }
 }
 
 bool ImGui_ImplOpenGL_Init(const char *glsl_version) {
@@ -503,6 +531,7 @@ bool ImGui_ImplOpenGL_Init(const char *glsl_version) {
     // Setup back-end capabilities flags
     ImGuiIO &io = ImGui::GetIO();
     io.BackendRendererName = "imgui_impl_opengl3";
+    io.BackendFlags |= ImGuiBackendFlags_RendererHasTextures;
 #if IMGUI_IMPL_OPENGL_MAY_HAVE_VTX_OFFSET
     if (g_GlVersion >= 3200) {
         io.BackendFlags |= ImGuiBackendFlags_RendererHasVtxOffset;  // We can honor the ImDrawCmd::VtxOffset field, allowing for large meshes.
@@ -535,9 +564,6 @@ void ImGui_ImplOpenGL_Shutdown() {
 void ImGui_ImplOpenGL_ValidateFrame() {
     if (!g_ShaderHandle) {
         ImGui_ImplOpenGL_CreateDeviceObjects();
-    }
-    if (!ImGui::GetIO().Fonts->IsBuilt()) {
-        ImGui_ImplOpenGL_CreateFontsTexture();
     }
 }
 
