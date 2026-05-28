@@ -291,8 +291,9 @@ void D3D12Renderer::Init(const void *mainWindowHandle) {
     samShaderVisibleDescriptorHeap.Init(device, D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER, MaxShaderVisibleSamplerDescriptors);
 
     // shader-visible 리소스 디스크립터 힙의 [0, MaxBindlessResourceDescriptors) 영역은 bindless 디스크립터로 사용
-    // 0번 인덱스는 NullIndex로 예약한다.
+    // 0 번 인덱스는 NullIndex 로 예약한다.
     bindlessResDescriptorAllocator.Init({ &resShaderVisibleDescriptorHeap, 0, MaxBindlessResourceDescriptors });
+    bindlessSamDescriptorAllocator.Init({ &samShaderVisibleDescriptorHeap, 0, MaxBindlessSamplerDescriptors });
 
     // shader cache 디렉토리 초기화
     shaderCacheDir = "Cache/D3D12CompiledShaderCache";
@@ -539,7 +540,8 @@ void D3D12Renderer::Shutdown() {
     SAFE_DELETE(dsvCpuDescriptorPool);
     SAFE_DELETE(samCpuDescriptorPool);
 
-    bindlessResDescriptorAllocator.Shutdown();
+    bindlessSamDescriptorAllocator.Shutdown();
+    bindlessResDescriptorAllocator.Shutdown();    
     samShaderVisibleDescriptorHeap.Shutdown();
     resShaderVisibleDescriptorHeap.Shutdown();
 
@@ -692,6 +694,27 @@ D3D12_GPU_DESCRIPTOR_HANDLE D3D12Renderer::GetBindlessResourceBaseGPUDescriptorH
     return bindlessResDescriptorAllocator.GetBaseGPUDescriptorHandle();
 }
 
+uint32_t D3D12Renderer::AllocBindlessSamplerDescriptor() {
+    return bindlessSamDescriptorAllocator.Alloc();
+}
+
+void D3D12Renderer::FreeBindlessSamplerDescriptor(uint32_t bindlessIndex) {
+    // Bindless descriptor slots must be returned only after GPU work that can reference them is complete.
+    bindlessSamDescriptorAllocator.Free(bindlessIndex);
+}
+
+D3D12_CPU_DESCRIPTOR_HANDLE D3D12Renderer::GetBindlessSamplerCPUDescriptorHandle(uint32_t bindlessIndex) const {
+    return bindlessSamDescriptorAllocator.GetCPUDescriptorHandleFromIndex(bindlessIndex);
+}
+
+D3D12_GPU_DESCRIPTOR_HANDLE D3D12Renderer::GetBindlessSamplerGPUDescriptorHandle(uint32_t bindlessIndex) const {
+    return bindlessSamDescriptorAllocator.GetGPUDescriptorHandleFromIndex(bindlessIndex);
+}
+
+D3D12_GPU_DESCRIPTOR_HANDLE D3D12Renderer::GetBindlessSamplerBaseGPUDescriptorHandle() const {
+    return bindlessSamDescriptorAllocator.GetBaseGPUDescriptorHandle();
+}
+
 void D3D12Renderer::RequestRelease(ID3D12Resource *resource) {
     BE1::ScopedLock lock(releaseRequestMutex);
 
@@ -795,22 +818,32 @@ void D3D12Renderer::EndUtilityCommandList(RHI::CommandList *commandList) {
 }
 
 void D3D12Renderer::SetConstants(RHI::CommandList *commandList, int shaderRegister, const void *data, uint32_t size, uint32_t offset) {
-    assert(size % sizeof(uint32_t) == 0);
-    assert(offset % sizeof(uint32_t) == 0);
+    assert(size % sizeof(uint32_t) == 0 && offset % sizeof(uint32_t) == 0);
 
     D3D12CommandList *_commandList = static_cast<D3D12CommandList *>(commandList);
 
     const D3D12PipelineState::RegisterBinder &binder = _commandList->currentPSO->binder;
     assert(shaderRegister < COUNT_OF(binder.rootParameterIndexLUT.constants));
+
     int rootParameterIndex = binder.rootParameterIndexLUT.constants[shaderRegister];
     if (rootParameterIndex >= 64) {
         BE_ERRLOG("D3D12Renderer::SetConstants: Invalid root parameter index\n");
         return;
     }
 
+    const uint32_t write32BitIndex = offset / sizeof(uint32_t);
+
     D3D12RootBindingData *rootBindingData = _commandList->GetRootBindingData();
     assert(shaderRegister < COUNT_OF(rootBindingData->rootConstants));
-    memcpy(rootBindingData->rootConstants[shaderRegister] + offset / sizeof(uint32_t), data, size);
+    assert(write32BitIndex + size / sizeof(uint32_t) <= COUNT_OF(rootBindingData->rootConstants[shaderRegister]));
+
+    const D3D12_ROOT_PARAMETER1 &rootParameter = _commandList->currentPSO->rootSignatureDesc->Desc_1_1.pParameters[rootParameterIndex];
+    assert(rootParameter.ParameterType == D3D12_ROOT_PARAMETER_TYPE_32BIT_CONSTANTS);
+    assert(rootParameter.Constants.ShaderRegister == shaderRegister);
+    assert(rootParameter.Constants.RegisterSpace == 0);
+    assert(write32BitIndex + size / sizeof(uint32_t) <= rootParameter.Constants.Num32BitValues);
+
+    memcpy(rootBindingData->rootConstants[shaderRegister] + write32BitIndex, data, size);
 
     if (_commandList->currentPSO->isGraphics) {
         _commandList->graphicsRootParametersDirtyMask |= BIT64(rootParameterIndex);

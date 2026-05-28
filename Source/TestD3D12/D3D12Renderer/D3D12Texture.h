@@ -36,6 +36,9 @@ public:
 
     virtual bool                    HasValidView(RHI::ViewType viewType, RHI::ViewID viewID = RHI::ViewID::PrimaryID) const override;
 
+                                    // Bindless index 를 리턴한다.
+    virtual uint32_t                GetBindlessIndex(RHI::ViewType viewType, RHI::ViewID viewID = RHI::ViewID::PrimaryID) const override;
+
     virtual uint32_t                GetWidth() const override { return textureDesc.Width; }
     virtual uint32_t                GetHeight() const override { return textureDesc.Height; }
     virtual uint32_t                GetDepth() const override { return textureDesc.Dimension == D3D12_RESOURCE_DIMENSION_TEXTURE3D ? textureDesc.DepthOrArraySize : 1; }

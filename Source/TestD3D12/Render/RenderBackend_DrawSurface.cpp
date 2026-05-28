@@ -25,27 +25,33 @@ static constexpr uint32_t   MaxInstancedDrawCount = 1024;
 // 상수 버퍼는 16 바이트 정렬을 요구한다.
 struct ALIGN_AS16 UnlitConstantData {
     BE1::Mat4       modelViewProjMatrix;
+    uint32_t        baseColorTextureIndex;
+    uint32_t        padding[3];
 };
 
 struct ALIGN_AS16 UnlitInstancedConstantData {
     BE1::Mat4       viewProjMatrix;
     BE1::Mat3x4     worldMatrix[MaxInstancedDrawCount];
+    uint32_t        baseColorTextureIndex;
+    uint32_t        padding[3];
 };
 
 struct ALIGN_AS16 LitConstantData {
     BE1::Mat4       modelViewProjMatrix;
-    uint32_t        textureIndex;
-    uint32_t        padding[3];
+    uint32_t        baseColorTextureIndex;
+    uint32_t        streamingTextureIndex;
+    uint32_t        padding[2];
 };
 
 struct ALIGN_AS16 LitInstancedConstantData {
     BE1::Mat4       viewProjMatrix;
     BE1::Mat3x4     worldMatrix[MaxInstancedDrawCount];
-    uint32_t        textureIndex;
-    uint32_t        padding[3];
+    uint32_t        baseColorTextureIndex;
+    uint32_t        streamingTextureIndex;
+    uint32_t        padding[2];
 };
 
-void RenderBackend::DrawAllSurfaces(const DrawSurf **drawSurfs, uint32_t numDrawSurfs) {
+void RenderBackend::DrawAllLitSurfaces(const DrawSurf **drawSurfs, uint32_t numDrawSurfs) {
     constexpr uint32_t MaxActualDrawSurfs = 65536;
     const DrawSurf **actualDrawSurfs = (const DrawSurf **)_alloca(sizeof(DrawSurf *) * MaxActualDrawSurfs);
     uint32_t actualDrawSurfIndex = 0;
@@ -71,7 +77,7 @@ void RenderBackend::DrawAllSurfaces(const DrawSurf **drawSurfs, uint32_t numDraw
             uint32_t instanceCount = drawSurfIndex - instanceStartIndex;
             if (instanceCount > 1) {
                 // 인스턴스 개수가 2 개 이상이어야 인스턴스드 렌더링을 수행한다.
-                DrawInstancedSurface(&drawSurfs[instanceStartIndex], instanceCount);
+                DrawLitSurfacesInstanced(&drawSurfs[instanceStartIndex], instanceCount);
                 continue;
             } else {
                 drawSurfIndex = instanceStartIndex;
@@ -79,7 +85,7 @@ void RenderBackend::DrawAllSurfaces(const DrawSurf **drawSurfs, uint32_t numDraw
         }
 #endif
         if (actualDrawSurfIndex >= MaxActualDrawSurfs) {
-            DrawSurfaces(actualDrawSurfs, actualDrawSurfIndex);
+            DrawLitSurfaces(actualDrawSurfs, actualDrawSurfIndex);
             actualDrawSurfIndex = 0;
         }
 
@@ -88,11 +94,11 @@ void RenderBackend::DrawAllSurfaces(const DrawSurf **drawSurfs, uint32_t numDraw
     }
 
     if (actualDrawSurfIndex > 0) {
-        DrawSurfaces(actualDrawSurfs, actualDrawSurfIndex);
+        DrawLitSurfaces(actualDrawSurfs, actualDrawSurfIndex);
     }
 }
 
-void RenderBackend::DrawSurfaces(const DrawSurf **drawSurfs, uint32_t numDrawSurfs) {
+void RenderBackend::DrawLitSurfaces(const DrawSurf **drawSurfs, uint32_t numDrawSurfs) {
     assert(numDrawSurfs > 0);
 
 #ifdef USE_RENDER_TASK
@@ -102,50 +108,95 @@ void RenderBackend::DrawSurfaces(const DrawSurf **drawSurfs, uint32_t numDrawSur
 
     // numDrawSurfs 가 많으면 태스크로 나눠서 그릴 수 있다.
     if (numTasks > 1) {
-        DrawSurfacesWithTask(drawSurfs, numDrawSurfs, numTasks);
+        DrawLitSurfacesWithTask(drawSurfs, numDrawSurfs, numTasks);
     } else {
-        DrawSurfacesWithoutTask(drawSurfs, numDrawSurfs);
+        DrawLitSurfacesWithoutTask(drawSurfs, numDrawSurfs);
     }
 #else
-    DrawSurfacesWithoutTask(drawSurfs, numDrawSurfs);
+    DrawLitSurfacesWithoutTask(drawSurfs, numDrawSurfs);
 #endif
 }
 
-void RenderBackend::DrawInstancedSurface(const DrawSurf **drawSurfs, uint32_t instanceCount) {
+const RHI::Texture *RenderBackend::ResolveDrawSurfTexture(const DrawSurf *drawSurf) const {
+    const RHI::Texture *rhiTexture = nullptr;
+    if (drawSurf->rhiTexture) {
+        rhiTexture = drawSurf->rhiTexture;
+    }
+    if (!rhiTexture || rhiTexture->GetStatus() != RHI::GPUResourceStatus::Ready) {
+        rhiTexture = textureManager.defaultTexture->GetRHITexture();
+    }
+    return rhiTexture;
+}
+
+void RenderBackend::DrawLitSurfacesInstanced(const DrawSurf **drawSurfs, uint32_t instanceCount) {
     assert(instanceCount > 0);
+
+    RHI::renderer->SetPSO(mainCommandList, currentContext->litInstancedPSO);
+    RHI::renderer->SetVertexBuffer(mainCommandList, 0, drawSurfs[0]->subMesh->vertexBuffer);
+    RHI::renderer->SetIndexBuffer(mainCommandList, drawSurfs[0]->subMesh->indexBuffer);
+
+    uint32_t feedbackBufferIndex = currentContext->textureStreamingFeedback.buffer->GetBindlessIndex(RHI::ViewType::UAV);
+    RHI::renderer->SetConstants(mainCommandList, 1, &feedbackBufferIndex, sizeof(feedbackBufferIndex), 0);
 
     do {
         uint32_t currentInstanceCount = BE1::Min(instanceCount, MaxInstancedDrawCount);
 
-        DrawInstancedSurface(frameData->GetThreadData(0), mainCommandList, drawSurfs, currentInstanceCount);
+        DrawLitSurfaceInstanced(frameData->GetThreadData(0), mainCommandList, drawSurfs, currentInstanceCount);
 
         drawSurfs += currentInstanceCount;
         instanceCount -= currentInstanceCount;
     } while (instanceCount > 0);
 }
 
-void RenderBackend::DrawSurfacesWithoutTask(const DrawSurf **drawSurfs, uint32_t numDrawSurfs) {
+void RenderBackend::DrawLitSurfacesWithoutTask(const DrawSurf **drawSurfs, uint32_t numDrawSurfs) {
     PROFILER_CPU_SCOPED_EVENT("RenderBackend::DrawSurfacesWithoutTask");
+
+    RHI::renderer->SetPSO(mainCommandList, currentContext->litPSO);
+
+    uint32_t feedbackBufferIndex = currentContext->textureStreamingFeedback.buffer->GetBindlessIndex(RHI::ViewType::UAV);
+    RHI::renderer->SetConstants(mainCommandList, 1, &feedbackBufferIndex, sizeof(feedbackBufferIndex), 0);
+
+    const SubMesh *currentSubMesh = nullptr;
 
     for (int drawSurfIndex = 0; drawSurfIndex < numDrawSurfs; ++drawSurfIndex) {
         const DrawSurf *drawSurf = drawSurfs[drawSurfIndex];
 
-        DrawSurface(frameData->GetThreadData(0), mainCommandList, drawSurf);
+        if (currentSubMesh != drawSurf->subMesh) {
+            currentSubMesh = drawSurf->subMesh;
+            RHI::renderer->SetVertexBuffer(mainCommandList, 0, currentSubMesh->vertexBuffer);
+            RHI::renderer->SetIndexBuffer(mainCommandList, currentSubMesh->indexBuffer);
+        }
+
+        DrawLitSurface(frameData->GetThreadData(0), mainCommandList, drawSurf);
     }
 }
 
 #ifdef USE_RENDER_TASK
-void RenderBackend::DrawSurfacesByTask(RenderBackend::DrawObjectTaskDesc *taskDesc) {
+void RenderBackend::DrawLitSurfacesByTask(RenderBackend::DrawObjectTaskDesc *taskDesc) {
     PROFILER_CPU_SCOPED_EVENT("RenderBackend::DrawSurfacesByTask");
 
     // 세컨더리 커맨드 리스트를 시작한다.
     RHI::FrameThreadData *frameThreadData = frameData->GetThreadData(taskDesc->threadIndex);
     RHI::CommandList *commandList = frameThreadData->BeginSecondaryCommandList(mainCommandList);
 
+    RHI::renderer->SetPSO(commandList, currentContext->litPSO);
+
+    uint32_t feedbackBufferIndex = currentContext->textureStreamingFeedback.buffer->GetBindlessIndex(RHI::ViewType::UAV);
+    RHI::renderer->SetConstants(commandList, 1, &feedbackBufferIndex, sizeof(feedbackBufferIndex), 0);
+
+    const SubMesh *currentSubMesh = nullptr;
+    const RHI::Texture *currentTexture = nullptr;
+
     for (int drawSurfIndex = 0; drawSurfIndex < taskDesc->numDrawSurfs; ++drawSurfIndex) {
         const DrawSurf *drawSurf = taskDesc->drawSurfs[drawSurfIndex];
 
-        DrawSurface(frameThreadData, commandList, drawSurf);
+        if (currentSubMesh != drawSurf->subMesh) {
+            currentSubMesh = drawSurf->subMesh;
+            RHI::renderer->SetVertexBuffer(commandList, 0, currentSubMesh->vertexBuffer);
+            RHI::renderer->SetIndexBuffer(commandList, currentSubMesh->indexBuffer);
+        }
+
+        DrawLitSurface(frameThreadData, commandList, drawSurf);
     }
 
     // 세컨더리 커맨드 리스트의 기록을 마친다.
@@ -155,13 +206,13 @@ void RenderBackend::DrawSurfacesByTask(RenderBackend::DrawObjectTaskDesc *taskDe
     taskDesc->commandList = commandList;
 }
 
-void RenderBackend::DrawSurfacesByTaskFunction(void *data) {
+void RenderBackend::DrawLitSurfacesByTaskFunction(void *data) {
     RenderBackend::DrawObjectTaskDesc *taskDesc = reinterpret_cast<RenderBackend::DrawObjectTaskDesc *>(data);
-    renderSystem->GetBackend()->DrawSurfacesByTask(taskDesc);
+    renderSystem->GetBackend()->DrawLitSurfacesByTask(taskDesc);
 }
 
 // drawSurfs 를 numTasks 만큼 task 로 나눠서 그린다.
-void RenderBackend::DrawSurfacesWithTask(const DrawSurf **drawSurfs, uint32_t numDrawSurfs, uint32_t numTasks) {
+void RenderBackend::DrawLitSurfacesWithTask(const DrawSurf **drawSurfs, uint32_t numDrawSurfs, uint32_t numTasks) {
     PROFILER_CPU_SCOPED_EVENT("RenderBackend::DrawSurfacesWithTask");
 
     uint32_t numDrawSurfsPerTask = (numDrawSurfs + numTasks - 1) / numTasks;
@@ -179,7 +230,7 @@ void RenderBackend::DrawSurfacesWithTask(const DrawSurf **drawSurfs, uint32_t nu
         currentThreadDesc.threadIndex = threadIndex++;
         currentThreadDesc.drawSurfs = &drawSurfs[startIndex];
         currentThreadDesc.numDrawSurfs = BE1::Min(startIndex + numDrawSurfsPerTask, numDrawSurfs) - startIndex;
-        BE1::Engine::taskManager->AddTask(RenderBackend::DrawSurfacesByTaskFunction, &currentThreadDesc, drawGroupId, false);
+        BE1::Engine::taskManager->AddTask(RenderBackend::DrawLitSurfacesByTaskFunction, &currentThreadDesc, drawGroupId, false);
 
         startIndex += currentThreadDesc.numDrawSurfs;
     }
@@ -194,15 +245,7 @@ void RenderBackend::DrawSurfacesWithTask(const DrawSurf **drawSurfs, uint32_t nu
 }
 #endif // USE_RENDER_TASK
 
-void RenderBackend::DrawSurface(RHI::FrameThreadData *frameThreadData, RHI::CommandList *commandList, const DrawSurf *drawSurf) {
-    const RHI::Texture *rhiTexture = nullptr;
-    if (drawSurf->rhiTexture) {
-        rhiTexture = drawSurf->rhiTexture;
-    }
-    if (!rhiTexture || rhiTexture->GetStatus() != RHI::GPUResourceStatus::Ready) {
-        rhiTexture = textureManager.defaultTexture->GetRHITexture();
-    }
-
+void RenderBackend::DrawLitSurface(RHI::FrameThreadData *frameThreadData, RHI::CommandList *commandList, const DrawSurf *drawSurf) {
     RHI::ConstantBuffer *constantBuffer = frameThreadData->AllocConstant(sizeof(LitConstantData));
     if (!constantBuffer) {
         return;
@@ -213,29 +256,18 @@ void RenderBackend::DrawSurface(RHI::FrameThreadData *frameThreadData, RHI::Comm
     // 오브젝트의 MVP 행렬을 기록
     constantDataPtr->modelViewProjMatrix = drawSurf->space->modelViewProjMatrix;
 
+    // 오브젝트 텍스쳐의 바인드리스 인덱스 기록
+    constantDataPtr->baseColorTextureIndex = ResolveDrawSurfTexture(drawSurf)->GetBindlessIndex(RHI::ViewType::SRV);
+
     // 오브젝트의 텍스처 인덱스를 기록
-    constantDataPtr->textureIndex = drawSurf->texture->GetStreaming()->streamingListIndex;
+    constantDataPtr->streamingTextureIndex = drawSurf->texture->GetStreaming()->streamingListIndex;
 
-    RHI::renderer->SetVertexBuffer(commandList, 0, drawSurf->subMesh->vertexBuffer);
-    RHI::renderer->SetIndexBuffer(commandList, drawSurf->subMesh->indexBuffer);
-
-    RHI::renderer->SetPSO(commandList, currentContext->litPSO);
-    RHI::renderer->SetTexture(commandList, 0, false, rhiTexture);
     RHI::renderer->SetConstantBuffer(commandList, 0, constantBuffer);
-    RHI::renderer->SetBuffer(commandList, 0, true, currentContext->textureStreamingFeedback.buffer);
 
     RHI::renderer->DrawIndexed(commandList, drawSurf->subMesh->numIndexes, 0, 0);
 }
 
-void RenderBackend::DrawInstancedSurface(RHI::FrameThreadData *frameThreadData, RHI::CommandList *commandList, const DrawSurf **instanceSurfs, int instanceCount) {
-    const RHI::Texture *rhiTexture = nullptr;
-    if (instanceSurfs[0]->rhiTexture) {
-        rhiTexture = instanceSurfs[0]->rhiTexture;
-    }
-    if (!rhiTexture || rhiTexture->GetStatus() != RHI::GPUResourceStatus::Ready) {
-        rhiTexture = textureManager.defaultTexture->GetRHITexture();
-    }
-
+void RenderBackend::DrawLitSurfaceInstanced(RHI::FrameThreadData *frameThreadData, RHI::CommandList *commandList, const DrawSurf **instanceSurfs, int instanceCount) {
     RHI::ConstantBuffer *constantBuffer = frameThreadData->AllocConstant(sizeof(LitInstancedConstantData));
     if (!constantBuffer) {
         return;
@@ -246,34 +278,23 @@ void RenderBackend::DrawInstancedSurface(RHI::FrameThreadData *frameThreadData, 
     // 카메라의 뷰-프로젝션 행렬을 기록
     constantDataPtr->viewProjMatrix = currentVisCamera->viewProjMatrix;
 
+    // 인스턴스 텍스쳐의 바인드리스 인덱스 기록
+    constantDataPtr->baseColorTextureIndex = ResolveDrawSurfTexture(instanceSurfs[0])->GetBindlessIndex(RHI::ViewType::SRV);
+
     // 인스턴스의 텍스처 인덱스를 기록
-    constantDataPtr->textureIndex = instanceSurfs[0]->texture->GetStreaming()->streamingListIndex;
+    constantDataPtr->streamingTextureIndex = instanceSurfs[0]->texture->GetStreaming()->streamingListIndex;
 
     // 오브젝트 인스턴스들의 월드 행렬을 기록
     for (int i = 0; i < instanceCount; ++i) {
         constantDataPtr->worldMatrix[i] = instanceSurfs[i]->space->worldMatrix;
     }
 
-    RHI::renderer->SetVertexBuffer(commandList, 0, instanceSurfs[0]->subMesh->vertexBuffer);
-    RHI::renderer->SetIndexBuffer(commandList, instanceSurfs[0]->subMesh->indexBuffer);
-
-    RHI::renderer->SetPSO(commandList, currentContext->litInstancedPSO);
-    RHI::renderer->SetTexture(commandList, 0, false, rhiTexture);
     RHI::renderer->SetConstantBuffer(commandList, 0, constantBuffer);
-    RHI::renderer->SetBuffer(commandList, 0, true, currentContext->textureStreamingFeedback.buffer);
 
     RHI::renderer->DrawIndexedInstanced(commandList, instanceSurfs[0]->subMesh->numIndexes, instanceCount, 0, 0, 0);
 }
 
 void RenderBackend::DrawGuiSurface(RHI::FrameThreadData *frameThreadData, RHI::CommandList *commandList, const DrawSurf *drawSurf) {
-    const RHI::Texture *rhiTexture = nullptr;
-    if (drawSurf->rhiTexture) {
-        rhiTexture = drawSurf->rhiTexture;
-    }
-    if (!rhiTexture || rhiTexture->GetStatus() != RHI::GPUResourceStatus::Ready) {
-        rhiTexture = textureManager.defaultTexture->GetRHITexture();
-    }
-
     RHI::ConstantBuffer *constantBuffer = frameThreadData->AllocConstant(sizeof(UnlitConstantData));
     if (!constantBuffer) {
         return;
@@ -283,11 +304,8 @@ void RenderBackend::DrawGuiSurface(RHI::FrameThreadData *frameThreadData, RHI::C
 
     constantDataPtr->modelViewProjMatrix = drawSurf->space->modelViewProjMatrix;
 
-    RHI::renderer->SetVertexBuffer(commandList, 0, drawSurf->subMesh->vertexBuffer);
-    RHI::renderer->SetIndexBuffer(commandList, drawSurf->subMesh->indexBuffer);
+    constantDataPtr->baseColorTextureIndex = ResolveDrawSurfTexture(drawSurf)->GetBindlessIndex(RHI::ViewType::SRV);
 
-    RHI::renderer->SetPSO(commandList, currentContext->unlitAlphaBlendPSO);
-    RHI::renderer->SetTexture(commandList, 0, false, rhiTexture);
     RHI::renderer->SetConstantBuffer(commandList, 0, constantBuffer);
 
     RHI::renderer->DrawIndexed(commandList, drawSurf->subMesh->numIndexes, 0, 0);

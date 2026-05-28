@@ -1,16 +1,10 @@
 #include "Common.hlsli"
 
-#define COMMON_ROOT_SIGNATURE "RootFlags(ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT), " \
-    "DescriptorTable(CBV(b0), SRV(t0), UAV(u0)), " \
-    "StaticSampler(s100, addressU = TEXTURE_ADDRESS_CLAMP, addressV = TEXTURE_ADDRESS_CLAMP, addressW = TEXTURE_ADDRESS_CLAMP, filter = FILTER_MIN_MAG_MIP_LINEAR)," \
-    "StaticSampler(s101, addressU = TEXTURE_ADDRESS_WRAP, addressV = TEXTURE_ADDRESS_WRAP, addressW = TEXTURE_ADDRESS_WRAP, filter = FILTER_MIN_MAG_MIP_LINEAR)," \
-    "StaticSampler(s102, addressU = TEXTURE_ADDRESS_MIRROR, addressV = TEXTURE_ADDRESS_MIRROR, addressW = TEXTURE_ADDRESS_MIRROR, filter = FILTER_MIN_MAG_MIP_LINEAR)," \
-    "StaticSampler(s103, addressU = TEXTURE_ADDRESS_CLAMP, addressV = TEXTURE_ADDRESS_CLAMP, addressW = TEXTURE_ADDRESS_CLAMP, filter = FILTER_MIN_MAG_MIP_POINT)," \
-    "StaticSampler(s104, addressU = TEXTURE_ADDRESS_WRAP, addressV = TEXTURE_ADDRESS_WRAP, addressW = TEXTURE_ADDRESS_WRAP, filter = FILTER_MIN_MAG_MIP_POINT)," \
-    "StaticSampler(s105, addressU = TEXTURE_ADDRESS_MIRROR, addressV = TEXTURE_ADDRESS_MIRROR, addressW = TEXTURE_ADDRESS_MIRROR, filter = FILTER_MIN_MAG_MIP_POINT)," \
-    "StaticSampler(s106, addressU = TEXTURE_ADDRESS_CLAMP, addressV = TEXTURE_ADDRESS_CLAMP, addressW = TEXTURE_ADDRESS_CLAMP, filter = FILTER_ANISOTROPIC, maxAnisotropy = 16)," \
-    "StaticSampler(s107, addressU = TEXTURE_ADDRESS_WRAP, addressV = TEXTURE_ADDRESS_WRAP, addressW = TEXTURE_ADDRESS_WRAP, filter = FILTER_ANISOTROPIC, maxAnisotropy = 16)," \
-    "StaticSampler(s108, addressU = TEXTURE_ADDRESS_MIRROR, addressV = TEXTURE_ADDRESS_MIRROR, addressW = TEXTURE_ADDRESS_MIRROR, filter = FILTER_ANISOTROPIC, maxAnisotropy = 16)"
+#define COMMON_ROOT_SIGNATURE ROOT_SIGNATURE_GRAPHICS_ROOT_FLAGS \
+    "DescriptorTable(CBV(b0)), " \
+    "RootConstants(num32BitConstants=1, b1), " \
+    ROOT_SIGNATURE_BINDLESS_TABLES \
+    ROOT_SIGNATURE_STATIC_SAMPLERS
 
 SamplerState linearClampSampler : register(s100);
 SamplerState linearWrapSampler : register(s101);
@@ -36,13 +30,15 @@ struct PSInput {
     float2 texCoord : TEXCOORD0;
 };
 
-cbuffer DefaultCB : register(b0) {
+cbuffer ObjectCB : register(b0) {
     row_major float4x4 modelViewProjMatrix;
-    uint textureIndex;
+    uint baseColorTextureIndex;
+    uint streamingTextureIndex;
 };
 
-RWBuffer<uint> textureFeedbackBuffer : register(u0);
-Texture2D defaultTexture : register(t0);
+cbuffer LitPassCB : register(b1) {
+    uint feedbackBufferIndex;
+};
 
 [RootSignature(COMMON_ROOT_SIGNATURE)]
 PSInput VSMain(VSInput input) {
@@ -56,10 +52,10 @@ PSInput VSMain(VSInput input) {
 
 [RootSignature(COMMON_ROOT_SIGNATURE)]
 float4 PSMain(PSInput input) : SV_TARGET {
-    if (textureIndex != TEXTURE_STREAMING_INVALID_INDEX) {
-        WriteMipmapFeedback(textureFeedbackBuffer, textureIndex, ddx_coarse(input.texCoord.xy), ddy_coarse(input.texCoord.xy));
+    if (feedbackBufferIndex != 0 && streamingTextureIndex != TEXTURE_STREAMING_INVALID_INDEX) {
+        WriteMipmapFeedback(GetRWBufferUInt(feedbackBufferIndex), streamingTextureIndex, ddx_coarse(input.texCoord.xy), ddy_coarse(input.texCoord.xy));
     }
     
-    float4 color = defaultTexture.Sample(anisoClampSampler, input.texCoord);
+    float4 color = GetTexture2D(baseColorTextureIndex).Sample(anisoClampSampler, input.texCoord);
     return color * input.color;
 }

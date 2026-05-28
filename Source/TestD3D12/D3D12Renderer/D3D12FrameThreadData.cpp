@@ -92,12 +92,14 @@ void D3D12FrameThreadData::Init(D3D12Renderer *renderer, int32_t frameIndex, int
     }
 
     dynamicBufferBlocks.SetGranularity(16);
+
     // 미리 다이나믹 버퍼 블럭을 1개만 생성한다.
     DynamicBufferBlock *dynamicBlock = new DynamicBufferBlock(DynamicBufferBlockSize);
     dynamicBlock->blockIndex = dynamicBufferBlocks.Append(dynamicBlock);
 
     // 다이나믹 버퍼에서 사용할 디스크립터 풀을 생성한다.
-    dynamicResDescriptorPool = new D3D12DescriptorPool(D3D12Renderer::GetRenderer()->device, D3D12DescriptorPool::Type::CBV_SRV_UAV, 8192, false);
+    const uint32_t numDynamicResDescriptors = 32768 / numThreads;
+    dynamicResDescriptorPool = new D3D12DescriptorPool(D3D12Renderer::GetRenderer()->device, D3D12DescriptorPool::Type::CBV_SRV_UAV, numDynamicResDescriptors, false);
 
     dynamicConstantBuffers.SetGranularity(256);
     dynamicConstantBuffers.Reserve(256);

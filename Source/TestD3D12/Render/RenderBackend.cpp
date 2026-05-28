@@ -207,14 +207,25 @@ const void *RenderBackend::ExecuteSwapBuffers(const void *data) {
 void RenderBackend::DrawCamera3D() {
     PROFILER_CPU_SCOPED_EVENT("RenderBackend::DrawCamera3D");
 
-    DrawAllSurfaces(currentVisCamera->drawSurfs, currentVisCamera->numDrawSurfs);
+    DrawAllLitSurfaces(currentVisCamera->drawSurfs, currentVisCamera->numDrawSurfs);
 }
 
 void RenderBackend::DrawCamera2D() {
     PROFILER_CPU_SCOPED_EVENT("RenderBackend::DrawCamera2D");
 
+    RHI::renderer->SetPSO(mainCommandList, currentContext->unlitAlphaBlendPSO);
+
+    const SubMesh *currentSubMesh = nullptr;
+    const RHI::Texture *currentTexture = nullptr;
+
     for (int drawSurfIndex = 0; drawSurfIndex < currentVisCamera->numDrawSurfs; ++drawSurfIndex) {
         const DrawSurf *drawSurf = currentVisCamera->drawSurfs[drawSurfIndex];
+
+        if (currentSubMesh != drawSurf->subMesh) {
+            currentSubMesh = drawSurf->subMesh;
+            RHI::renderer->SetVertexBuffer(mainCommandList, 0, currentSubMesh->vertexBuffer);
+            RHI::renderer->SetIndexBuffer(mainCommandList, currentSubMesh->indexBuffer);
+        }
 
         DrawGuiSurface(frameData->GetThreadData(0), mainCommandList, drawSurf);
     }

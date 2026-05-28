@@ -76,6 +76,7 @@ public:
     void                            SetGraphicsRootSignature(ID3D12RootSignature *graphicsRootSignature);
     void                            SetComputeRootSignature(ID3D12RootSignature *computeRootSignature);
     void                            SetPipelineState(const RHI::PipelineState *pipelineState);
+    void                            SetBindlessRootDescriptorTables(D3D12_GPU_DESCRIPTOR_HANDLE resourceDescriptorBaseHandle, D3D12_GPU_DESCRIPTOR_HANDLE samplerDescriptorBaseHandle);
     void                            SetPrimitiveTopology(D3D12_PRIMITIVE_TOPOLOGY primitiveTopology);
     void                            SetVertexBuffers(int startSlot, int count, const RHI::VertexBuffer *vertexBuffers[]);
     void                            SetVertexBuffer(int slot, const RHI::VertexBuffer *vertexBuffer);
@@ -85,6 +86,8 @@ public:
     void                            SetShadingRate(RHI::ShadingRate shadingRate);
 
 private:
+    void                            InvalidateRootSignatureDependentBindings();
+
     BE1::LinkList<D3D12CommandList> node;
     D3D12CommandListPool *          parentPool = nullptr;
     ID3D12CommandAllocator *        commandAllocator = nullptr;
@@ -97,6 +100,9 @@ private:
     D3D12DescriptorTablePool *      samDescriptorTablePool = nullptr;
     ID3D12Resource *                shadingRateImage = nullptr;
     BE1::Array<D3D12_RESOURCE_BARRIER> endRenderPassBarriers;
+    ID3D12RootSignature *           bindlessRootSignature = nullptr;
+    D3D12_GPU_DESCRIPTOR_HANDLE     bindlessResourceDescriptorBaseHandle = {};
+    D3D12_GPU_DESCRIPTOR_HANDLE     bindlessSamplerDescriptorBaseHandle = {};
 
 #ifdef USE_STATE_CACHE_FOR_COMMAND_LIST
     bool                            IsSameDescriptorHeaps(int numDescriptorHeaps, ID3D12DescriptorHeap *descriptorHeaps[]);
@@ -123,6 +129,12 @@ BE_INLINE void D3D12CommandList::Close() {
 BE_INLINE void D3D12CommandList::SetDescriptorTablePools(D3D12DescriptorTablePool *resDescriptorTablePool, D3D12DescriptorTablePool *samDescriptorTablePool) {
     this->resDescriptorTablePool = resDescriptorTablePool;
     this->samDescriptorTablePool = samDescriptorTablePool;
+}
+
+BE_INLINE void D3D12CommandList::InvalidateRootSignatureDependentBindings() {
+    bindlessRootSignature = nullptr;
+    bindlessResourceDescriptorBaseHandle = {};
+    bindlessSamplerDescriptorBaseHandle = {};
 }
 
 BE_INLINE void D3D12CommandList::ResourceBarrier(ID3D12Resource *resource, D3D12_RESOURCE_STATES stateBefore, D3D12_RESOURCE_STATES stateAfter) {
@@ -171,6 +183,7 @@ BE_INLINE void D3D12CommandList::SetGraphicsRootSignature(ID3D12RootSignature *g
     cachedGraphicsRootSignature = graphicsRootSignature;
 #endif
     GetGraphicsCommandList()->SetGraphicsRootSignature(graphicsRootSignature);
+    InvalidateRootSignatureDependentBindings();
     graphicsRootParametersDirtyMask = 0; // 루트 시그니쳐를 바꿀 때 마다 리셋
 }
 
@@ -182,6 +195,7 @@ BE_INLINE void D3D12CommandList::SetComputeRootSignature(ID3D12RootSignature *co
     cachedComputeRootSignature = computeRootSignature;
 #endif
     GetGraphicsCommandList()->SetComputeRootSignature(computeRootSignature);
+    InvalidateRootSignatureDependentBindings();
     computeRootParametersDirtyMask = 0; // 루트 시그니쳐를 바꿀 때 마다 리셋
 }
 
@@ -205,10 +219,12 @@ BE_INLINE void D3D12CommandList::SetPipelineState(const RHI::PipelineState *pipe
 
     if (pipelineState->isGraphics) {
         GetGraphicsCommandList()->SetGraphicsRootSignature(_pipelineState->rootSignature);
+        InvalidateRootSignatureDependentBindings();
         GetGraphicsCommandList()->IASetPrimitiveTopology(_pipelineState->primitiveTopology);
         graphicsRootParametersDirtyMask = 0; // 루트 시그니쳐를 바꿀 때 마다 리셋
     } else {
         GetGraphicsCommandList()->SetComputeRootSignature(_pipelineState->rootSignature);
+        InvalidateRootSignatureDependentBindings();
         computeRootParametersDirtyMask = 0; // 루트 시그니쳐를 바꿀 때 마다 리셋
     }
     currentPSO = _pipelineState;

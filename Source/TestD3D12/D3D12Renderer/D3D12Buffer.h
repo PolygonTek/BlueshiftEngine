@@ -68,6 +68,9 @@ public:
                                     // View 가 유효한지 여부를 리턴한다.
     virtual bool                    HasValidView(RHI::ViewType viewType, RHI::ViewID viewID = RHI::ViewID::PrimaryID) const override;
 
+                                    // Bindless index 를 리턴한다.
+    virtual uint32_t                GetBindlessIndex(RHI::ViewType viewType, RHI::ViewID viewID = RHI::ViewID::PrimaryID) const override;
+
     ID3D12Resource *                GetResource() const;
     uint64_t                        GetSize();
 

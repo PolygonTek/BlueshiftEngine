@@ -545,6 +545,8 @@ namespace RHI {
     public:
         virtual bool                    HasValidView(RHI::ViewType viewType, RHI::ViewID viewID = RHI::ViewID::PrimaryID) const = 0;
 
+        virtual uint32_t                GetBindlessIndex(RHI::ViewType viewType, RHI::ViewID viewID = RHI::ViewID::PrimaryID) const = 0;
+
         void *                          mappedPtr = nullptr; // Upload or Readback or Dynamic (Upload) 버퍼는 CPU 가 접근할 수 있도록 매핑된 포인터를 갖는다.
     };
 
@@ -573,6 +575,8 @@ namespace RHI {
     public:
         virtual bool                    HasValidView(RHI::ViewType viewType, RHI::ViewID viewID = RHI::ViewID::PrimaryID) const = 0;
 
+        virtual uint32_t                GetBindlessIndex(RHI::ViewType viewType, RHI::ViewID viewID = RHI::ViewID::PrimaryID) const = 0;
+
         virtual uint32_t                GetWidth() const = 0;
         virtual uint32_t                GetHeight() const = 0;
         virtual uint32_t                GetDepth() const = 0;
@@ -590,6 +594,8 @@ namespace RHI {
 
     class Sampler : public GPUObject {
     public:
+        virtual uint32_t                GetBindlessIndex() const = 0;
+
         SamplerDesc                     desc = {};
     };
 
@@ -969,6 +975,8 @@ namespace RHI {
 
         virtual Texture *               CreateTexture(TextureType textureType, TextureFlag flags, std::shared_ptr<const BE1::Image> image, bool allocateEmptyMipmaps, const ClearValue &clearValue = {}, uint32_t sampleCount = 1, GPUResourceState initialState = GPUResourceState::Undefined) = 0;
         virtual void                    DestroyTexture(Texture *texture, bool immediate = false) = 0;
+
+        virtual bool                    SetBufferSubData(Buffer *buffer, uint64_t offset, uint64_t size, const void *data, GPUResourceState stateBefore, GPUResourceState stateAfter) = 0;
 
         virtual bool                    UploadTextureMipRange(Texture *texture, std::shared_ptr<const BE1::Image> image, int firstMip) = 0;
 

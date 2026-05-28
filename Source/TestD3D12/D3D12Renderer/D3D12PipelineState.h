@@ -81,25 +81,33 @@ private:
     struct RegisterBinder {
         void                        Init(const D3D12_ROOT_SIGNATURE_DESC1 &desc);
 
-        // 각 바인딩 리소스 (CBV/SRV/UAV/Sampler/RootConstants) 의 shader register 인덱스에 대한 루트 파라미터 인덱스들 Look-Up Table
+        // 각 바인딩 리소스 (CBV/SRV/UAV/Sampler/RootConstants) 의 shader register 인덱스에 대한 루트 파라미터 인덱스 Look-Up Table
         struct RootParameterIndexLUT {
-            uint8_t                 cbv[16] = { 0xFF, };
-            uint8_t                 srv[64] = { 0xFF, };
-            uint8_t                 uav[8] = { 0xFF, };
-            uint8_t                 samplers[16] = { 0xFF, };
-            uint8_t                 constants[4] = { 0xFF, };
+            RootParameterIndexLUT() { memset(this, 0xFF, sizeof(*this)); }
+
+            uint8_t                 cbv[16];
+            uint8_t                 srv[64];
+            uint8_t                 uav[8];
+            uint8_t                 samplers[32];
+            uint8_t                 constants[4];
         };
 
-        // 각 바인딩 리소스 (CBV/SRV/UAV/Sampler) 의 shader register 인덱스에 대한 테이블 내의 디스크립터 인덱스들 Look-Up Table
+        // 각 바인딩 리소스 (CBV/SRV/UAV/Sampler) 의 shader register 인덱스에 대한 테이블 내의 디스크립터 인덱스 Look-Up Table
         struct DescriptorTableIndexLUT {
-            uint8_t                 cbv[64] = { 0xFF, };
-            uint8_t                 srv[64] = { 0xFF, };
-            uint8_t                 uav[64] = { 0xFF, };
-            uint8_t                 samplers[64] = { 0xFF, };
+            DescriptorTableIndexLUT() { memset(this, 0xFF, sizeof(*this)); }
+
+            uint8_t                 cbv[16];
+            uint8_t                 srv[64];
+            uint8_t                 uav[8];
+            uint8_t                 samplers[32];
         };
 
         RootParameterIndexLUT       rootParameterIndexLUT;
         DescriptorTableIndexLUT     descriptorTableIndexLUT;
+
+                                    // 바인드리스를 지원하기 위한 fallback 디스크립터 테이블의 루트 파라미터 마스크
+        uint64_t                    bindlessResourceRootParameterMask = 0;
+        uint64_t                    bindlessSamplerRootParameterMask = 0;
     };
 
     ID3D12PipelineState *           pso = nullptr;
@@ -112,6 +120,9 @@ private:
 // 루트 시그니쳐 정보로 리소스 종류 별 shader register 인덱스에 해당하는 루트 파라미터 인덱스와 디스크립터 테이블 내의 인덱스를 미리 계산한다.
 // PSO 생성 단계에서 호출된다.
 BE_INLINE void D3D12PipelineState::RegisterBinder::Init(const D3D12_ROOT_SIGNATURE_DESC1 &desc) {
+    // 루트 파라미터 인덱스는 64 bit dirty mask 에 맞춰야 하므로 64 개를 넘을 수 없다.
+    assert(desc.NumParameters <= 64);
+
     for (int rootParameterIndex = 0; rootParameterIndex < desc.NumParameters; ++rootParameterIndex) {
         const D3D12_ROOT_PARAMETER1 *rootParameter = &desc.pParameters[rootParameterIndex];
 
@@ -124,68 +135,86 @@ BE_INLINE void D3D12PipelineState::RegisterBinder::Init(const D3D12_ROOT_SIGNATU
             for (UINT rangeIndex = 0; rangeIndex < rootParameter->DescriptorTable.NumDescriptorRanges; ++rangeIndex) {
                 const D3D12_DESCRIPTOR_RANGE1 &descriptorRange = rootParameter->DescriptorTable.pDescriptorRanges[rangeIndex];
 
-                switch (descriptorRange.RangeType) {
-                case D3D12_DESCRIPTOR_RANGE_TYPE_CBV:
-                    assert(descriptorRange.BaseShaderRegister + descriptorRange.NumDescriptors <= COUNT_OF(rootParameterIndexLUT.cbv));
-                    assert(descriptorRange.BaseShaderRegister + descriptorRange.NumDescriptors <= COUNT_OF(descriptorTableIndexLUT.cbv));
-                    for (UINT i = 0; i < descriptorRange.NumDescriptors; ++i) {
-                        UINT shaderRegister = descriptorRange.BaseShaderRegister + i;
-                        rootParameterIndexLUT.cbv[shaderRegister] = rootParameterIndex;
-                        descriptorTableIndexLUT.cbv[shaderRegister] = tableOffset + i;
+                // space=0 만 관리한다. (나머지는 bindless 용)
+                if (descriptorRange.RegisterSpace == 0) {
+                    switch (descriptorRange.RangeType) {
+                    case D3D12_DESCRIPTOR_RANGE_TYPE_CBV:
+                        assert(descriptorRange.BaseShaderRegister + descriptorRange.NumDescriptors <= COUNT_OF(rootParameterIndexLUT.cbv));
+                        assert(descriptorRange.BaseShaderRegister + descriptorRange.NumDescriptors <= COUNT_OF(descriptorTableIndexLUT.cbv));
+                        for (UINT i = 0; i < descriptorRange.NumDescriptors; ++i) {
+                            UINT shaderRegister = descriptorRange.BaseShaderRegister + i;
+                            rootParameterIndexLUT.cbv[shaderRegister] = rootParameterIndex;
+                            descriptorTableIndexLUT.cbv[shaderRegister] = tableOffset + i;
+                        }
+                        break;
+                    case D3D12_DESCRIPTOR_RANGE_TYPE_SRV:
+                        assert(descriptorRange.BaseShaderRegister + descriptorRange.NumDescriptors <= COUNT_OF(rootParameterIndexLUT.srv));
+                        assert(descriptorRange.BaseShaderRegister + descriptorRange.NumDescriptors <= COUNT_OF(descriptorTableIndexLUT.srv));
+                        for (UINT i = 0; i < descriptorRange.NumDescriptors; ++i) {
+                            UINT shaderRegister = descriptorRange.BaseShaderRegister + i;
+                            rootParameterIndexLUT.srv[shaderRegister] = rootParameterIndex;
+                            descriptorTableIndexLUT.srv[shaderRegister] = tableOffset + i;
+                        }
+                        break;
+                    case D3D12_DESCRIPTOR_RANGE_TYPE_UAV:
+                        assert(descriptorRange.BaseShaderRegister + descriptorRange.NumDescriptors <= COUNT_OF(rootParameterIndexLUT.uav));
+                        assert(descriptorRange.BaseShaderRegister + descriptorRange.NumDescriptors <= COUNT_OF(descriptorTableIndexLUT.uav));
+                        for (UINT i = 0; i < descriptorRange.NumDescriptors; ++i) {
+                            UINT shaderRegister = descriptorRange.BaseShaderRegister + i;
+                            rootParameterIndexLUT.uav[shaderRegister] = rootParameterIndex;
+                            descriptorTableIndexLUT.uav[shaderRegister] = tableOffset + i;
+                        }
+                        break;
+                    case D3D12_DESCRIPTOR_RANGE_TYPE_SAMPLER:
+                        assert(descriptorRange.BaseShaderRegister + descriptorRange.NumDescriptors <= COUNT_OF(rootParameterIndexLUT.samplers));
+                        assert(descriptorRange.BaseShaderRegister + descriptorRange.NumDescriptors <= COUNT_OF(descriptorTableIndexLUT.samplers));
+                        for (UINT i = 0; i < descriptorRange.NumDescriptors; ++i) {
+                            UINT shaderRegister = descriptorRange.BaseShaderRegister + i;
+                            rootParameterIndexLUT.samplers[shaderRegister] = rootParameterIndex;
+                            descriptorTableIndexLUT.samplers[shaderRegister] = tableOffset + i;
+                        }
+                        break;
                     }
-                    break;
-                case D3D12_DESCRIPTOR_RANGE_TYPE_SRV:
-                    assert(descriptorRange.BaseShaderRegister + descriptorRange.NumDescriptors <= COUNT_OF(rootParameterIndexLUT.srv));
-                    assert(descriptorRange.BaseShaderRegister + descriptorRange.NumDescriptors <= COUNT_OF(descriptorTableIndexLUT.srv));
-                    for (UINT i = 0; i < descriptorRange.NumDescriptors; ++i) {
-                        UINT shaderRegister = descriptorRange.BaseShaderRegister + i;
-                        rootParameterIndexLUT.srv[shaderRegister] = rootParameterIndex;
-                        descriptorTableIndexLUT.srv[shaderRegister] = tableOffset + i;
-                    }
-                    break;
-                case D3D12_DESCRIPTOR_RANGE_TYPE_UAV:
-                    assert(descriptorRange.BaseShaderRegister + descriptorRange.NumDescriptors <= COUNT_OF(rootParameterIndexLUT.uav));
-                    assert(descriptorRange.BaseShaderRegister + descriptorRange.NumDescriptors <= COUNT_OF(descriptorTableIndexLUT.uav));
-                    for (UINT i = 0; i < descriptorRange.NumDescriptors; ++i) {
-                        UINT shaderRegister = descriptorRange.BaseShaderRegister + i;
-                        rootParameterIndexLUT.uav[shaderRegister] = rootParameterIndex;
-                        descriptorTableIndexLUT.uav[shaderRegister] = tableOffset + i;
-                    }
-                    break;
-                case D3D12_DESCRIPTOR_RANGE_TYPE_SAMPLER:
-                    assert(descriptorRange.BaseShaderRegister + descriptorRange.NumDescriptors <= COUNT_OF(rootParameterIndexLUT.samplers));
-                    assert(descriptorRange.BaseShaderRegister + descriptorRange.NumDescriptors <= COUNT_OF(descriptorTableIndexLUT.samplers));
-                    for (UINT i = 0; i < descriptorRange.NumDescriptors; ++i) {
-                        UINT shaderRegister = descriptorRange.BaseShaderRegister + i;
-                        rootParameterIndexLUT.samplers[shaderRegister] = rootParameterIndex;
-                        descriptorTableIndexLUT.samplers[shaderRegister] = tableOffset + i;
-                    }
-                    break;
-                }
 
-                tableOffset += descriptorRange.NumDescriptors;
+                    tableOffset += descriptorRange.NumDescriptors;
+                } else {
+                    if (descriptorRange.RangeType == D3D12_DESCRIPTOR_RANGE_TYPE_SAMPLER) {
+                        bindlessSamplerRootParameterMask |= BIT64(rootParameterIndex);
+                    } else {
+                        bindlessResourceRootParameterMask |= BIT64(rootParameterIndex);
+                    }
+                }
             }
         } else {
             if (rootParameter->ParameterType == D3D12_ROOT_PARAMETER_TYPE_32BIT_CONSTANTS) {
                 // 루트 상수
-                UINT shaderRegister = rootParameter->Constants.ShaderRegister;
-                assert(shaderRegister < COUNT_OF(rootParameterIndexLUT.constants));
-                rootParameterIndexLUT.constants[shaderRegister] = rootParameterIndex;
+                if (rootParameter->Constants.RegisterSpace == 0) {
+                    UINT shaderRegister = rootParameter->Constants.ShaderRegister;
+                    assert(shaderRegister < COUNT_OF(rootParameterIndexLUT.constants));
+                    assert(rootParameter->Constants.Num32BitValues <= D3D12RootBindingData::MaxRootConstant32BitValues);
+                    rootParameterIndexLUT.constants[shaderRegister] = rootParameterIndex;
+                }
             } else if (rootParameter->ParameterType == D3D12_ROOT_PARAMETER_TYPE_CBV) {
                 // 루트 CBV
-                UINT shaderRegister = rootParameter->Descriptor.ShaderRegister;
-                assert(shaderRegister < COUNT_OF(rootParameterIndexLUT.cbv));
-                rootParameterIndexLUT.cbv[shaderRegister] = rootParameterIndex;
+                if (rootParameter->Descriptor.RegisterSpace == 0) {
+                    UINT shaderRegister = rootParameter->Descriptor.ShaderRegister;
+                    assert(shaderRegister < COUNT_OF(rootParameterIndexLUT.cbv));
+                    rootParameterIndexLUT.cbv[shaderRegister] = rootParameterIndex;
+                }
             } else if (rootParameter->ParameterType == D3D12_ROOT_PARAMETER_TYPE_SRV) {
                 // 루트 SRV
-                UINT shaderRegister = rootParameter->Descriptor.ShaderRegister;
-                assert(shaderRegister < COUNT_OF(rootParameterIndexLUT.srv));
-                rootParameterIndexLUT.srv[shaderRegister] = rootParameterIndex;
+                if (rootParameter->Descriptor.RegisterSpace == 0) {
+                    UINT shaderRegister = rootParameter->Descriptor.ShaderRegister;
+                    assert(shaderRegister < COUNT_OF(rootParameterIndexLUT.srv));
+                    rootParameterIndexLUT.srv[shaderRegister] = rootParameterIndex;
+                }
             } else if (rootParameter->ParameterType == D3D12_ROOT_PARAMETER_TYPE_UAV) {
                 // 루트 UAV
-                UINT shaderRegister = rootParameter->Descriptor.ShaderRegister;
-                assert(shaderRegister < COUNT_OF(rootParameterIndexLUT.uav));
-                rootParameterIndexLUT.uav[shaderRegister] = rootParameterIndex;
+                if (rootParameter->Descriptor.RegisterSpace == 0) {
+                    UINT shaderRegister = rootParameter->Descriptor.ShaderRegister;
+                    assert(shaderRegister < COUNT_OF(rootParameterIndexLUT.uav));
+                    rootParameterIndexLUT.uav[shaderRegister] = rootParameterIndex;
+                }
             }
         }
     }

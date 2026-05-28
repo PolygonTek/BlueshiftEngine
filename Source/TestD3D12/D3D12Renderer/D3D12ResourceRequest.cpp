@@ -85,6 +85,13 @@ void D3D12Renderer::ProcessResourceRequests(RHI::FrameThreadData *frameThreadDat
                 }
             }
             break;
+        case D3D12ResourceRequest::Type::UploadBufferSubData:
+            if (frameThreadData) {
+                ExecuteUploadBufferSubData(commandContext, static_cast<D3D12Buffer *>(request.object), request.uploadBufferSubDataRequest);
+            } else {
+                RequestRelease(request.uploadBufferSubDataRequest.uploadBuffer);
+            }
+            break;
         case D3D12ResourceRequest::Type::UploadTextureSubImage:
             if (frameThreadData) {
                 ExecuteUploadTextureSubImage(commandContext, static_cast<D3D12Texture *>(request.object), request.uploadTextureSubImageRequest);

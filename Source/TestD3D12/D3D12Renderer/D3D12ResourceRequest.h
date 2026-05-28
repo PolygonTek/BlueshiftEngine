@@ -28,6 +28,14 @@ struct D3D12UploadBufferRequest {
     D3D12_RESOURCE_DESC                 resourceDesc = {};
 };
 
+struct D3D12UploadBufferSubDataRequest {
+    ID3D12Resource *                    uploadBuffer = nullptr;
+    uint64_t                            dstOffset = 0;
+    uint64_t                            size = 0;
+    RHI::GPUResourceState               stateBefore = RHI::GPUResourceState::Undefined;
+    RHI::GPUResourceState               stateAfter = RHI::GPUResourceState::Undefined;
+};
+
 struct D3D12UploadTextureRequest {
     std::shared_ptr<const BE1::Image>   srcImage;
     D3D12_RESOURCE_DESC                 resourceDesc = {};
@@ -57,6 +65,7 @@ struct D3D12ResourceRequest {
         None,
         DeleteGPUObject,
         UploadBuffer,
+        UploadBufferSubData,
         UploadTexture,
         UploadTextureSubImage,
         UpdateTextureViewMipRange,
@@ -66,6 +75,7 @@ struct D3D12ResourceRequest {
     Type                                type = Type::None;
     RHI::GPUObject *                    object = nullptr;
     D3D12UploadBufferRequest            uploadBufferRequest;
+    D3D12UploadBufferSubDataRequest     uploadBufferSubDataRequest;
     D3D12UploadTextureRequest           uploadTextureRequest;
     D3D12UploadTextureSubImageRequest   uploadTextureSubImageRequest;
     D3D12UpdateTextureViewMipRangeRequest updateTextureViewMipRangeRequest;

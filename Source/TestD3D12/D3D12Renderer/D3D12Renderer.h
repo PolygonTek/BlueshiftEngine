@@ -79,6 +79,7 @@ public:
     void                                DeleteGPUObject(RHI::GPUObject *object);
 
     bool                                ExecuteUploadBuffer(D3D12ResourceCommandContext &commandContext, D3D12Buffer *buffer, const D3D12UploadBufferRequest &request);
+    bool                                ExecuteUploadBufferSubData(D3D12ResourceCommandContext &commandContext, D3D12Buffer *buffer, const D3D12UploadBufferSubDataRequest &request);
     bool                                ExecuteUploadTexture(D3D12ResourceCommandContext &commandContext, D3D12Texture *texture, const D3D12UploadTextureRequest &request);
     bool                                ExecuteUploadTextureSubImage(D3D12ResourceCommandContext &commandContext, D3D12Texture *texture, const D3D12UploadTextureSubImageRequest &request);
     bool                                ExecuteUpdateTextureViewMipRange(D3D12ResourceCommandContext &commandContext, D3D12Texture *texture, const D3D12UpdateTextureViewMipRangeRequest &request);
@@ -101,6 +102,8 @@ public:
     virtual RHI::Texture *              CreateTexture(RHI::TextureType textureType, RHI::TextureFlag flags, std::shared_ptr<const BE1::Image> image, bool allocateEmptyMipmaps, const RHI::ClearValue &clearValue = {}, uint32_t sampleCount = 1, RHI::GPUResourceState initialState = RHI::GPUResourceState::Undefined) override;
     virtual void                        DestroyTexture(RHI::Texture *texture, bool immediate = false) override;
 
+    virtual bool                        SetBufferSubData(RHI::Buffer *buffer, uint64_t offset, uint64_t size, const void *data, RHI::GPUResourceState stateBefore, RHI::GPUResourceState stateAfter) override;
+
     virtual bool                        UploadTextureMipRange(RHI::Texture *texture, std::shared_ptr<const BE1::Image> image, int firstMip) override;
 
     virtual void                        GenerateMipmaps(RHI::Texture *texture) override;
@@ -109,11 +112,12 @@ public:
     virtual bool                        GetTextureImage3D(RHI::Texture *texture, int mipLevel, BE1::Image::Format imageFormat, void *outPixels) override;
     virtual bool                        GetTextureImageCubeFace(RHI::Texture *texture, RHI::CubemapFace face, int mipLevel, BE1::Image::Format imageFormat, void *outPixels) override;
 
+    bool                                GetTextureImage(RHI::Texture *texture, int mipLevel, int sliceIndex, BE1::Image::Format imageFormat, void *outPixels);
+
     virtual bool                        SetTextureSubImage2D(RHI::Texture *texture, int mipLevel, int x, int y, int width, int height, BE1::Image::Format imageFormat, const void *pixels) override;
     virtual bool                        SetTextureSubImage3D(RHI::Texture *texture, int mipLevel, int x, int y, int z, int width, int height, int depth, BE1::Image::Format imageFormat, const void *pixels) override;
     virtual bool                        SetTextureSubImageCubeFace(RHI::Texture *texture, RHI::CubemapFace face, int mipLevel, int x, int y, int width, int height, BE1::Image::Format imageFormat, const void *pixels) override;
 
-    bool                                GetTextureImage(RHI::Texture *texture, int mipLevel, int sliceIndex, BE1::Image::Format imageFormat, void *outPixels);
     bool                                SetTextureSubImage(RHI::Texture *texture, int mipLevel, int sliceIndex, int x, int y, int z, int width, int height, int depth, BE1::Image::Format imageFormat, const void *pixels);
 
     virtual RHI::ViewID                 CreateView(RHI::Buffer *buffer, RHI::ViewType viewType, RHI::Format format, uint32_t structuredStride, uint64_t offset = 0, uint64_t size = ~0) override;
@@ -204,6 +208,12 @@ public:
     D3D12_GPU_DESCRIPTOR_HANDLE         GetBindlessResourceGPUDescriptorHandle(uint32_t bindlessIndex) const;
     D3D12_GPU_DESCRIPTOR_HANDLE         GetBindlessResourceBaseGPUDescriptorHandle() const;
 
+    uint32_t                            AllocBindlessSamplerDescriptor();
+    void                                FreeBindlessSamplerDescriptor(uint32_t bindlessIndex);
+    D3D12_CPU_DESCRIPTOR_HANDLE         GetBindlessSamplerCPUDescriptorHandle(uint32_t bindlessIndex) const;
+    D3D12_GPU_DESCRIPTOR_HANDLE         GetBindlessSamplerGPUDescriptorHandle(uint32_t bindlessIndex) const;
+    D3D12_GPU_DESCRIPTOR_HANDLE         GetBindlessSamplerBaseGPUDescriptorHandle() const;
+
     void                                CheckFeatures();
 
     void                                InitGenMipmapsPSO();
@@ -250,8 +260,8 @@ public:
 
     static D3D12Renderer *              GetRenderer() { return static_cast<D3D12Renderer *>(RHI::renderer); }
 
-    static constexpr uint32_t           MaxShaderVisibleResourceDescriptors = 1000000; // Resource Binding Tier 1
-    static constexpr uint32_t           MaxBindlessResourceDescriptors = 500000;
+    static constexpr uint32_t           MaxShaderVisibleResourceDescriptors = 1000000; // Resource Binding Tier 1 Limit
+    static constexpr uint32_t           MaxBindlessResourceDescriptors = 500000; // 앞부분 절반을 Bindless Resource 에 사용한다.
     static constexpr uint32_t           MaxTransientResourceDescriptors = MaxShaderVisibleResourceDescriptors - MaxBindlessResourceDescriptors;
     static constexpr uint32_t           MaxShaderVisibleSamplerDescriptors = 2048;
     static constexpr uint32_t           MaxBindlessSamplerDescriptors = 256;
@@ -308,6 +318,7 @@ public:
     D3D12ShaderVisibleDescriptorHeap    resShaderVisibleDescriptorHeap;
     D3D12ShaderVisibleDescriptorHeap    samShaderVisibleDescriptorHeap;
     D3D12BindlessDescriptorAllocator    bindlessResDescriptorAllocator;
+    D3D12BindlessDescriptorAllocator    bindlessSamDescriptorAllocator;
 
     BE1::SharedLib                      dxcompilerLibrary = nullptr;
     BE1::Str                            shaderCacheDir;

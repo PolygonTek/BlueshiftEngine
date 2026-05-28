@@ -50,6 +50,49 @@ D3D12RootBindingData *D3D12CommandList::GetRootBindingData() const {
     return parentPool->GetRootBindingData();
 }
 
+void D3D12CommandList::SetBindlessRootDescriptorTables(D3D12_GPU_DESCRIPTOR_HANDLE resourceDescriptorBaseHandle, D3D12_GPU_DESCRIPTOR_HANDLE samplerDescriptorBaseHandle) {
+    assert(currentPSO);
+
+    const D3D12PipelineState::RegisterBinder &binder = currentPSO->binder;
+    const uint64_t resRootParameterMask = binder.bindlessResourceRootParameterMask;
+    const uint64_t samRootParameterMask = binder.bindlessSamplerRootParameterMask;
+
+    if (resRootParameterMask == 0 && samRootParameterMask == 0) {
+        return;
+    }
+
+    // 루트 시그니쳐가 동일하면, fallback bindless 디스크립터 테이블을 중복 세팅하지 않도록 한다.
+    if (bindlessRootSignature == currentPSO->rootSignature &&
+        bindlessResourceDescriptorBaseHandle.ptr == resourceDescriptorBaseHandle.ptr &&
+        bindlessSamplerDescriptorBaseHandle.ptr == samplerDescriptorBaseHandle.ptr) {
+        return;
+    }
+
+    ID3D12GraphicsCommandList6 *cmd = GetGraphicsCommandList();
+
+    for (int rootParameterIndex = 0; rootParameterIndex < 64; ++rootParameterIndex) {
+        if (resRootParameterMask & BIT64(rootParameterIndex)) {
+            if (currentPSO->isGraphics) {
+                cmd->SetGraphicsRootDescriptorTable(rootParameterIndex, resourceDescriptorBaseHandle);
+            } else {
+                cmd->SetComputeRootDescriptorTable(rootParameterIndex, resourceDescriptorBaseHandle);
+            }
+        }
+
+        if (samRootParameterMask & BIT64(rootParameterIndex)) {
+            if (currentPSO->isGraphics) {
+                cmd->SetGraphicsRootDescriptorTable(rootParameterIndex, samplerDescriptorBaseHandle);
+            } else {
+                cmd->SetComputeRootDescriptorTable(rootParameterIndex, samplerDescriptorBaseHandle);
+            }
+        }
+    }
+
+    bindlessRootSignature = currentPSO->rootSignature;
+    bindlessResourceDescriptorBaseHandle = resourceDescriptorBaseHandle;
+    bindlessSamplerDescriptorBaseHandle = samplerDescriptorBaseHandle;
+}
+
 void D3D12CommandList::SetShadingRate(RHI::ShadingRate shadingRate) {
     D3D12_SHADING_RATE rate = ToD3D12ShadingRate(shadingRate);
 #ifdef USE_STATE_CACHE_FOR_COMMAND_LIST
@@ -80,6 +123,7 @@ void D3D12CommandList::Reset(bool resetCacheStates, const RHI::CommandList *prim
     GetGraphicsCommandList()->Reset(commandAllocator, nullptr);
 
     currentPSO = nullptr;
+    InvalidateRootSignatureDependentBindings();
 
 #ifdef USE_STATE_CACHE_FOR_COMMAND_LIST
     if (resetCacheStates) {

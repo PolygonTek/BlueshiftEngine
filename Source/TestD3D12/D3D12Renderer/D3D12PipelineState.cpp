@@ -890,6 +890,12 @@ void D3D12Renderer::SetPSO(RHI::CommandList *commandList, const RHI::PipelineSta
     assert(pipelineState);
     D3D12CommandList *_commandList = static_cast<D3D12CommandList *>(commandList);
     _commandList->SetPipelineState(pipelineState);
+
+    // direct descriptor heap 을 지원하지 않는다면 fallback 으로 모든 bindless 용 디스크립터 테이블을 세팅해줘야 한다.
+    // 지원한다면 결과적으로 내부에서 아무것도 안한다.
+    _commandList->SetBindlessRootDescriptorTables(
+        GetBindlessResourceBaseGPUDescriptorHandle(),
+        GetBindlessSamplerBaseGPUDescriptorHandle());
 }
 
 // Draw 나 Dispatch 직전에 호출된다.
@@ -906,13 +912,15 @@ void D3D12Renderer::BindRootParameters(D3D12CommandList *commandList) {
     D3D12RootBindingData *rootBindingData = commandList->GetRootBindingData();
     D3D12DescriptorTablePool *resDescriptorTablePool = commandList->resDescriptorTablePool;
     D3D12DescriptorTablePool *samDescriptorTablePool = commandList->samDescriptorTablePool;
+    ID3D12GraphicsCommandList6 *cmd = commandList->GetGraphicsCommandList();
 
     const D3D12_ROOT_SIGNATURE_DESC1 &rootSignatureDesc = commandList->currentPSO->rootSignatureDesc->Desc_1_1;
 
     for (int rootParameterIndex = 0; rootParameterIndex < rootSignatureDesc.NumParameters; ++rootParameterIndex) {
-        // NOTE: 모든 루트 파라미터가 디스크립터 테이블이라면 이론상 최대 64개를 사용할 수 있다.
-        // 하지만 실질적으로는 루트 파라미터 개수에 대한 제한은 없고, 각 파라미터 타입에 따라 소비하는 슬롯 수가 있고, 이 슬롯 수에 대한 제한이 있다.
-        // 결과적으로 디스크립터 테이블이 소비하는 슬롯 수가 가장 적으므로, 사용할 수 있는 루트 파라미터 개수는 64개 보다 적으면 적었지 많아질 일은 없다.
+        // 루트 시그니쳐는 최대 64 DWORD 비용을 가진다.
+        // 각 파라미터 타입에 따라 소비하는 DWORD 가 다르다.
+        // 디스크립터 테이블은 1 DWORD, CBV/SRV/UAV 루트 디스크립터는 2 DWORD, Root 상수는 32bit 값 하나당 1 DWORD.
+        // 결과적으로 모든 루트 파라미터가 디스크립터 테이블이라면 이론상 최대 64개를 사용할 수 있다.
         const uint64_t rootParameterBitMask = BIT64(rootParameterIndex);
         if (!(rootParameterDirtyMask & rootParameterBitMask)) {
             continue;
@@ -931,6 +939,9 @@ void D3D12Renderer::BindRootParameters(D3D12CommandList *commandList) {
             for (int rangeIndex = 0; rangeIndex < descriptorTable.NumDescriptorRanges; ++rangeIndex) {
                 // DescriptorRanges 는 같은 타입의 디스크립터들의 묶음을 나타낸다.
                 const D3D12_DESCRIPTOR_RANGE1 &descriptorRange = descriptorTable.pDescriptorRanges[rangeIndex];
+                if (descriptorRange.RegisterSpace != 0) {
+                    continue;
+                }
 
                 numDescriptors += descriptorRange.NumDescriptors;
             }
@@ -941,7 +952,7 @@ void D3D12Renderer::BindRootParameters(D3D12CommandList *commandList) {
                 continue;
             }
 
-            // 디스크립터 테이블 풀을 레인지의 타입에 따라 구별하여 사용한다.
+            // 디스크립터 테이블 풀을 타입에 따라 구별하여 사용한다.
             // NOTE: 하나의 디스크립터 테이블 내에서는 Sampler or CBV/SRV/UAV 타입의 디스크립터들만 존재할 수 있다.
             D3D12DescriptorTablePool *descriptorTablePool = descriptorTable.pDescriptorRanges[0].RangeType == D3D12_DESCRIPTOR_RANGE_TYPE_SAMPLER ? samDescriptorTablePool : resDescriptorTablePool;
 
@@ -961,6 +972,9 @@ void D3D12Renderer::BindRootParameters(D3D12CommandList *commandList) {
             // NOTE: 만약 디스크립터 테이블의 일부만 세팅한다면, 이전에 남아있던 테이블의 내용이 이어질 수 있음에 주의해야 한다.
             for (int rangeIndex = 0; rangeIndex < descriptorTable.NumDescriptorRanges; ++rangeIndex) {
                 const D3D12_DESCRIPTOR_RANGE1 &descriptorRange = descriptorTable.pDescriptorRanges[rangeIndex];
+                if (descriptorRange.RegisterSpace != 0) {
+                    continue;
+                }
 
                 assert(tableOffset < COUNT_OF(rootBindingData->descriptorTableHandles[rootParameterIndex]));
 
@@ -989,9 +1003,9 @@ void D3D12Renderer::BindRootParameters(D3D12CommandList *commandList) {
 
             // 루트 파라미터에 디스크립터 테이블을 세팅한다.
             if (isGraphicsPSO) {
-                commandList->GetGraphicsCommandList()->SetGraphicsRootDescriptorTable(rootParameterIndex, gpuDescriptorTableStart);
+                cmd->SetGraphicsRootDescriptorTable(rootParameterIndex, gpuDescriptorTableStart);
             } else {
-                commandList->GetGraphicsCommandList()->SetComputeRootDescriptorTable(rootParameterIndex, gpuDescriptorTableStart);
+                cmd->SetComputeRootDescriptorTable(rootParameterIndex, gpuDescriptorTableStart);
             }
         } else if (rootParameter->ParameterType == D3D12_ROOT_PARAMETER_TYPE_32BIT_CONSTANTS) {
             // 루트 상수 설정 : 루트 파라미터에 연속된 32비트 상수 값을 세팅한다.
@@ -999,9 +1013,9 @@ void D3D12Renderer::BindRootParameters(D3D12CommandList *commandList) {
             UINT shaderRegister = rootParameter->Constants.ShaderRegister;
             const uint32_t* rootConstants = rootBindingData->rootConstants[shaderRegister];
             if (isGraphicsPSO) {
-                commandList->GetGraphicsCommandList()->SetGraphicsRoot32BitConstants(rootParameterIndex, rootParameter->Constants.Num32BitValues, rootConstants, 0);
+                cmd->SetGraphicsRoot32BitConstants(rootParameterIndex, rootParameter->Constants.Num32BitValues, rootConstants, 0);
             } else {
-                commandList->GetGraphicsCommandList()->SetComputeRoot32BitConstants(rootParameterIndex, rootParameter->Constants.Num32BitValues, rootConstants, 0);
+                cmd->SetComputeRoot32BitConstants(rootParameterIndex, rootParameter->Constants.Num32BitValues, rootConstants, 0);
             }
         } else if (rootParameter->ParameterType == D3D12_ROOT_PARAMETER_TYPE_CBV) {
             // 루트 CBV 설정 : 루트 파라미터에 CBV 로 사용할 버퍼의 GPU 주소를 직접 세팅한다.
@@ -1010,9 +1024,9 @@ void D3D12Renderer::BindRootParameters(D3D12CommandList *commandList) {
             if (cbvResource) {
                 D3D12_GPU_VIRTUAL_ADDRESS gpuAddress = reinterpret_cast<ID3D12Resource *>(cbvResource->GetNativeResource())->GetGPUVirtualAddress();
                 if (isGraphicsPSO) {
-                    commandList->GetGraphicsCommandList()->SetGraphicsRootConstantBufferView(rootParameterIndex, gpuAddress);
+                    cmd->SetGraphicsRootConstantBufferView(rootParameterIndex, gpuAddress);
                 } else {
-                    commandList->GetGraphicsCommandList()->SetComputeRootConstantBufferView(rootParameterIndex, gpuAddress);
+                    cmd->SetComputeRootConstantBufferView(rootParameterIndex, gpuAddress);
                 }
             }
         } else if (rootParameter->ParameterType == D3D12_ROOT_PARAMETER_TYPE_SRV) {
@@ -1022,9 +1036,9 @@ void D3D12Renderer::BindRootParameters(D3D12CommandList *commandList) {
             if (srvResource) {
                 D3D12_GPU_VIRTUAL_ADDRESS gpuAddress = reinterpret_cast<ID3D12Resource *>(srvResource->GetNativeResource())->GetGPUVirtualAddress();
                 if (isGraphicsPSO) {
-                    commandList->GetGraphicsCommandList()->SetGraphicsRootShaderResourceView(rootParameterIndex, gpuAddress);
+                    cmd->SetGraphicsRootShaderResourceView(rootParameterIndex, gpuAddress);
                 } else {
-                    commandList->GetGraphicsCommandList()->SetComputeRootShaderResourceView(rootParameterIndex, gpuAddress);
+                    cmd->SetComputeRootShaderResourceView(rootParameterIndex, gpuAddress);
                 }
             }
         } else if (rootParameter->ParameterType == D3D12_ROOT_PARAMETER_TYPE_UAV) {
@@ -1034,9 +1048,9 @@ void D3D12Renderer::BindRootParameters(D3D12CommandList *commandList) {
             if (uavResource) {
                 D3D12_GPU_VIRTUAL_ADDRESS gpuAddress = reinterpret_cast<ID3D12Resource *>(uavResource->GetNativeResource())->GetGPUVirtualAddress();
                 if (isGraphicsPSO) {
-                    commandList->GetGraphicsCommandList()->SetGraphicsRootUnorderedAccessView(rootParameterIndex, gpuAddress);
+                    cmd->SetGraphicsRootUnorderedAccessView(rootParameterIndex, gpuAddress);
                 } else {
-                    commandList->GetGraphicsCommandList()->SetComputeRootUnorderedAccessView(rootParameterIndex, gpuAddress);
+                    cmd->SetComputeRootUnorderedAccessView(rootParameterIndex, gpuAddress);
                 }
             }
         }

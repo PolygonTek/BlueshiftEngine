@@ -25,11 +25,17 @@ void D3D12Texture::Release() {
         if (srvEntry.cpuDescriptorHandle.ptr != 0) {
             D3D12Renderer::GetRenderer()->resCpuDescriptorPool->Free(srvEntry.cpuDescriptorHandle);
         }
+        if (srvEntry.bindlessIndex != D3D12BindlessDescriptorAllocator::NullIndex) {
+            D3D12Renderer::GetRenderer()->FreeBindlessResourceDescriptor(srvEntry.bindlessIndex);
+        }
     }
 
     for (const D3D12UAVEntry &uavEntry : uavEntries) {
         if (uavEntry.cpuDescriptorHandle.ptr != 0) {
             D3D12Renderer::GetRenderer()->resCpuDescriptorPool->Free(uavEntry.cpuDescriptorHandle);
+        }
+        if (uavEntry.bindlessIndex != D3D12BindlessDescriptorAllocator::NullIndex) {
+            D3D12Renderer::GetRenderer()->FreeBindlessResourceDescriptor(uavEntry.bindlessIndex);
         }
     }
 
@@ -58,23 +64,33 @@ void D3D12Texture::Release() {
 }
 
 bool D3D12Texture::HasValidView(RHI::ViewType viewType, RHI::ViewID viewID) const {
-    if (!viewID.IsValid()) {
-        return false;
-    }
-
-    if (viewType == RHI::ViewType::SRV) {
-        return srvEntries.IsValidIndex(viewID.value) && srvEntries[viewID.value].cpuDescriptorHandle.ptr != 0;
-    }
-    if (viewType == RHI::ViewType::UAV) {
-        return uavEntries.IsValidIndex(viewID.value) && uavEntries[viewID.value].cpuDescriptorHandle.ptr != 0;
-    }
-    if (viewType == RHI::ViewType::RTV) {
-        return rtvEntries.IsValidIndex(viewID.value) && rtvEntries[viewID.value].cpuDescriptorHandle.ptr != 0;
-    }
-    if (viewType == RHI::ViewType::DSV) {
-        return dsvEntries.IsValidIndex(viewID.value) && dsvEntries[viewID.value].cpuDescriptorHandle.ptr != 0;
+    if (viewID.IsValid()) {
+        if (viewType == RHI::ViewType::SRV) {
+            return srvEntries.IsValidIndex(viewID.value) && srvEntries[viewID.value].cpuDescriptorHandle.ptr != 0;
+        }
+        if (viewType == RHI::ViewType::UAV) {
+            return uavEntries.IsValidIndex(viewID.value) && uavEntries[viewID.value].cpuDescriptorHandle.ptr != 0;
+        }
+        if (viewType == RHI::ViewType::RTV) {
+            return rtvEntries.IsValidIndex(viewID.value) && rtvEntries[viewID.value].cpuDescriptorHandle.ptr != 0;
+        }
+        if (viewType == RHI::ViewType::DSV) {
+            return dsvEntries.IsValidIndex(viewID.value) && dsvEntries[viewID.value].cpuDescriptorHandle.ptr != 0;
+        }
     }
     return false;
+}
+
+uint32_t D3D12Texture::GetBindlessIndex(RHI::ViewType viewType, RHI::ViewID viewID) const {
+    if (viewID.IsValid()) {
+        if (viewType == RHI::ViewType::SRV) {
+            return srvEntries.IsValidIndex(viewID.value) ? srvEntries[viewID.value].bindlessIndex : D3D12BindlessDescriptorAllocator::NullIndex;
+        }
+        if (viewType == RHI::ViewType::UAV) {
+            return uavEntries.IsValidIndex(viewID.value) ? uavEntries[viewID.value].bindlessIndex : D3D12BindlessDescriptorAllocator::NullIndex;
+        }
+    }
+    return D3D12BindlessDescriptorAllocator::NullIndex;
 }
 
 RHI::Texture *D3D12Renderer::CreateTexture(RHI::TextureType textureType, RHI::TextureFlag flags, std::shared_ptr<const BE1::Image> srcImage, bool allocateEmptyMipmaps, const RHI::ClearValue &clearValue, uint32_t sampleCount, RHI::GPUResourceState initialState) {
@@ -458,8 +474,11 @@ void D3D12Renderer::DestroyView(RHI::Texture *texture, RHI::ViewType viewType, R
         D3D12SRVEntry *srvEntryPtr = &_texture->srvEntries[viewID.value];
         if (srvEntryPtr->cpuDescriptorHandle.ptr != 0) {
             resCpuDescriptorPool->Free(srvEntryPtr->cpuDescriptorHandle);
-            *srvEntryPtr = {};
         }
+        if (srvEntryPtr->bindlessIndex != D3D12BindlessDescriptorAllocator::NullIndex) {
+            FreeBindlessResourceDescriptor(srvEntryPtr->bindlessIndex);
+        }
+        *srvEntryPtr = {};
         return;
     }
     if (viewType == RHI::ViewType::UAV) {
@@ -470,8 +489,11 @@ void D3D12Renderer::DestroyView(RHI::Texture *texture, RHI::ViewType viewType, R
         D3D12UAVEntry *uavEntryPtr = &_texture->uavEntries[viewID.value];
         if (uavEntryPtr->cpuDescriptorHandle.ptr != 0) {
             resCpuDescriptorPool->Free(uavEntryPtr->cpuDescriptorHandle);
-            *uavEntryPtr = {};
         }
+        if (uavEntryPtr->bindlessIndex != D3D12BindlessDescriptorAllocator::NullIndex) {
+            FreeBindlessResourceDescriptor(uavEntryPtr->bindlessIndex);
+        }
+        *uavEntryPtr = {};
         return;
     }
     if (viewType == RHI::ViewType::RTV) {
@@ -482,8 +504,8 @@ void D3D12Renderer::DestroyView(RHI::Texture *texture, RHI::ViewType viewType, R
         D3D12RTVEntry *rtvEntryPtr = &_texture->rtvEntries[viewID.value];
         if (rtvEntryPtr->cpuDescriptorHandle.ptr != 0) {
             rtvCpuDescriptorPool->Free(rtvEntryPtr->cpuDescriptorHandle);
-            *rtvEntryPtr = {};
         }
+        *rtvEntryPtr = {};
         return;
     }
     if (viewType == RHI::ViewType::DSV) {
@@ -494,8 +516,8 @@ void D3D12Renderer::DestroyView(RHI::Texture *texture, RHI::ViewType viewType, R
         D3D12DSVEntry *dsvEntryPtr = &_texture->dsvEntries[viewID.value];
         if (dsvEntryPtr->cpuDescriptorHandle.ptr != 0) {
             dsvCpuDescriptorPool->Free(dsvEntryPtr->cpuDescriptorHandle);
-            *dsvEntryPtr = {};
         }
+        *dsvEntryPtr = {};
         return;
     }
 }
@@ -656,6 +678,17 @@ RHI::ViewID D3D12Renderer::CreateSRV(D3D12Texture *texture, RHI::Format typeless
     // 디스크립터 슬롯에 SRV 를 기록
     device->CreateShaderResourceView(texture->GetResource(), &newSrvEntry.viewDesc, newSrvEntry.cpuDescriptorHandle);
 
+    // bindless index 할당
+    newSrvEntry.bindlessIndex = AllocBindlessResourceDescriptor();
+    if (newSrvEntry.bindlessIndex == D3D12BindlessDescriptorAllocator::NullIndex) {
+        resCpuDescriptorPool->Free(newSrvEntry.cpuDescriptorHandle);
+        return RHI::ViewID::InvalidID;
+    }
+
+    // shader-visible heap 의 bindless slot 으로 복사
+    D3D12_CPU_DESCRIPTOR_HANDLE bindlessCpuDescriptorHandle = GetBindlessResourceCPUDescriptorHandle(newSrvEntry.bindlessIndex);
+    device->CopyDescriptorsSimple(1, bindlessCpuDescriptorHandle, newSrvEntry.cpuDescriptorHandle, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+
     // SRV 추가 후 viewID 를 리턴
     RHI::ViewID viewID;
 
@@ -767,6 +800,17 @@ RHI::ViewID D3D12Renderer::CreateUAV(D3D12Texture *texture, RHI::Format typeless
 
     // 디스크립터 슬롯에 UAV 를 기록
     device->CreateUnorderedAccessView(texture->GetResource(), nullptr, &newUavEntry.viewDesc, newUavEntry.cpuDescriptorHandle);
+
+    // bindless index 할당
+    newUavEntry.bindlessIndex = AllocBindlessResourceDescriptor();
+    if (newUavEntry.bindlessIndex == D3D12BindlessDescriptorAllocator::NullIndex) {
+        resCpuDescriptorPool->Free(newUavEntry.cpuDescriptorHandle);
+        return RHI::ViewID::InvalidID;
+    }
+
+    // shader-visible heap 의 bindless slot 으로 복사
+    D3D12_CPU_DESCRIPTOR_HANDLE bindlessCpuDescriptorHandle = GetBindlessResourceCPUDescriptorHandle(newUavEntry.bindlessIndex);
+    device->CopyDescriptorsSimple(1, bindlessCpuDescriptorHandle, newUavEntry.cpuDescriptorHandle, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
 
     // UAV 추가 후 viewID 를 리턴
     RHI::ViewID viewID;
@@ -1066,6 +1110,11 @@ bool D3D12Renderer::ExecuteUpdateTextureViewMipRange(D3D12ResourceCommandContext
     }
 
     device->CreateShaderResourceView(texture->GetResource(), &entry.viewDesc, entry.cpuDescriptorHandle);
+
+    if (entry.bindlessIndex != D3D12BindlessDescriptorAllocator::NullIndex) {
+        D3D12_CPU_DESCRIPTOR_HANDLE bindlessCpuDescriptorHandle = GetBindlessResourceCPUDescriptorHandle(entry.bindlessIndex);
+        device->CopyDescriptorsSimple(1, bindlessCpuDescriptorHandle, entry.cpuDescriptorHandle, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+    }
     return true;
 }
 

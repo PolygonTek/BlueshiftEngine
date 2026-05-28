@@ -80,7 +80,12 @@ static void ToD3D12TextureBorderColor(RHI::TextureBorderColor borderColor, FLOAT
 void D3D12Sampler::Release() {
     if (descriptorHandle.ptr != 0) {
         D3D12Renderer::GetRenderer()->samCpuDescriptorPool->Free(descriptorHandle);
-        descriptorHandle.ptr = 0;
+        descriptorHandle = {};
+    }
+
+    if (bindlessIndex != D3D12BindlessDescriptorAllocator::NullIndex) {
+        D3D12Renderer::GetRenderer()->FreeBindlessSamplerDescriptor(bindlessIndex);
+        bindlessIndex = D3D12BindlessDescriptorAllocator::NullIndex;
     }
 }
 
@@ -93,6 +98,13 @@ RHI::Sampler *D3D12Renderer::CreateSampler(const RHI::SamplerDesc *desc) {
     D3D12Sampler *sampler = new D3D12Sampler;
     sampler->desc = *desc;
     sampler->descriptorHandle = descriptorHandle;
+    sampler->bindlessIndex = AllocBindlessSamplerDescriptor();
+    if (sampler->bindlessIndex == D3D12BindlessDescriptorAllocator::NullIndex) {
+        samCpuDescriptorPool->Free(descriptorHandle);
+        sampler->descriptorHandle = {};
+        delete sampler;
+        return nullptr;
+    }
 
     RecreateSampler(sampler, desc);
     return sampler;
@@ -117,6 +129,9 @@ void D3D12Renderer::RecreateSampler(RHI::Sampler* sampler, const RHI::SamplerDes
 
     D3D12Sampler *_sampler = static_cast<D3D12Sampler *>(sampler);
     device->CreateSampler(&samplerDesc, _sampler->descriptorHandle);
+
+    D3D12_CPU_DESCRIPTOR_HANDLE bindlessCpuDescriptorHandle = GetBindlessSamplerCPUDescriptorHandle(_sampler->bindlessIndex);
+    device->CopyDescriptorsSimple(1, bindlessCpuDescriptorHandle, _sampler->descriptorHandle, D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER);
 }
 
 void D3D12Renderer::SetSampler(RHI::CommandList *commandList, int shaderRegister, RHI::Sampler *sampler) {

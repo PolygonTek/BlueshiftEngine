@@ -27,6 +27,10 @@ public:
 
     void                            Release();
 
+                                    // Bindless index 를 리턴한다.
+    virtual uint32_t                GetBindlessIndex() const override { return bindlessIndex; }
+
 private:
     D3D12_CPU_DESCRIPTOR_HANDLE     descriptorHandle = {};
+    uint32_t                        bindlessIndex = 0;
 };

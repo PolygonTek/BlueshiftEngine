@@ -35,17 +35,19 @@ class D3D12RootBindingData {
 public:
     static constexpr uint32_t           MaxRootParameters = 64;
     static constexpr uint32_t           MaxDescriptorsInDescriptorTable = 64;
+    static constexpr uint32_t           MaxRootConstantRegisters = 4;
+    static constexpr uint32_t           MaxRootConstant32BitValues = 16;
 
                                         // 루트 파라미터 별 디스크립터 테이블에서 사용할 디스크립터들의 CPU 핸들
     D3D12_CPU_DESCRIPTOR_HANDLE         descriptorTableHandles[MaxRootParameters][MaxDescriptorsInDescriptorTable] = { CD3DX12_CPU_DESCRIPTOR_HANDLE() };
 
                                         // 루트 상수의 셰이더 레지스터 별 32 비트 값의 배열
-    uint32_t                            rootConstants[4][64] = {};
+    uint32_t                            rootConstants[MaxRootConstantRegisters][MaxRootConstant32BitValues] = {};
 
                                         // 셰이더 레지스터 별 CBV GPUResource 포인터
     const RHI::GPUResource *            cbvResources[16] = {};
                                         // 셰이더 레지스터 별 SRV GPUResource 포인터
-    const RHI::GPUResource *            srvResources[128] = {};
+    const RHI::GPUResource *            srvResources[64] = {};
                                         // 셰이더 레지스터 별 UAV GPUResource 포인터
     const RHI::GPUResource *            uavResources[8] = {};
 };

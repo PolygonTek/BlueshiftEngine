@@ -23,7 +23,7 @@ void D3D12ConstantBuffer::Release() {
     if (dynamicBlockIndex == -1) {
         if (descriptorHandle.ptr != 0) {
             D3D12Renderer::GetRenderer()->resCpuDescriptorPool->Free(descriptorHandle);
-            descriptorHandle.ptr = 0;
+            descriptorHandle = {};
         }
     }
 

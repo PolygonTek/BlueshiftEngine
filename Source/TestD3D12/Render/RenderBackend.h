@@ -45,20 +45,22 @@ private:
     void                            DrawCamera3D();
     void                            DrawCamera2D();
 
-    void                            DrawAllSurfaces(const DrawSurf **drawSurfs, uint32_t numDrawSurfs);
-    void                            DrawSurfaces(const DrawSurf **drawSurfs, uint32_t numDrawSurfs);
-    void                            DrawInstancedSurface(const DrawSurf **instanceSurfs, uint32_t instanceCount);
+    void                            DrawAllLitSurfaces(const DrawSurf **drawSurfs, uint32_t numDrawSurfs);
+    void                            DrawLitSurfaces(const DrawSurf **drawSurfs, uint32_t numDrawSurfs);
+    void                            DrawLitSurfacesInstanced(const DrawSurf **instanceSurfs, uint32_t instanceCount);
 
-    void                            DrawSurfacesWithoutTask(const DrawSurf **drawSurfs, uint32_t numDrawSurfs);
+    void                            DrawLitSurfacesWithoutTask(const DrawSurf **drawSurfs, uint32_t numDrawSurfs);
 #ifdef USE_RENDER_TASK
-    void                            DrawSurfacesWithTask(const DrawSurf **drawSurfs, uint32_t numDrawSurfs, uint32_t numTasks);
-    void                            DrawSurfacesByTask(RenderBackend::DrawObjectTaskDesc *taskDesc);
-    static void                     DrawSurfacesByTaskFunction(void *data);
+    void                            DrawLitSurfacesWithTask(const DrawSurf **drawSurfs, uint32_t numDrawSurfs, uint32_t numTasks);
+    void                            DrawLitSurfacesByTask(RenderBackend::DrawObjectTaskDesc *taskDesc);
+    static void                     DrawLitSurfacesByTaskFunction(void *data);
 #endif
 
-    void                            DrawSurface(RHI::FrameThreadData *frameThreadData, RHI::CommandList *commandList, const DrawSurf *drawSurf);
-    void                            DrawInstancedSurface(RHI::FrameThreadData *frameThreadData, RHI::CommandList *commandList, const DrawSurf **instanceSurfs, int instanceCount);
+    void                            DrawLitSurface(RHI::FrameThreadData *frameThreadData, RHI::CommandList *commandList, const DrawSurf *drawSurf);
+    void                            DrawLitSurfaceInstanced(RHI::FrameThreadData *frameThreadData, RHI::CommandList *commandList, const DrawSurf **instanceSurfs, int instanceCount);
     void                            DrawGuiSurface(RHI::FrameThreadData *frameThreadData, RHI::CommandList *commandList, const DrawSurf *drawSurf);
+
+    const RHI::Texture *            ResolveDrawSurfTexture(const DrawSurf *drawSurf) const;
 
     RenderFrameData *               frameData = nullptr; // 현재 백엔드가 처리할 프레임 데이터
     RenderContext *                 currentContext = nullptr;
