@@ -496,13 +496,13 @@ namespace RHI {
     };
 
     enum class QueryType : uint8_t {
-        TimeStamp,
+        Timestamp,
         Occlusion,
         OcclusionBinary
     };
 
     struct QueryHeapDesc {
-        QueryType                       type = QueryType::TimeStamp;
+        QueryType                       type = QueryType::Timestamp;
         uint32_t                        queryCount = 0;
     };
 
@@ -1031,6 +1031,7 @@ namespace RHI {
         virtual void                    EndQuery(CommandList *commandList, const QueryHeap *queryHeap, uint32_t index) = 0;
         virtual void                    ResolveQuery(CommandList *commandList, const QueryHeap *queryHeap, uint32_t index, uint32_t count, const Buffer *destBuffer, uint64_t destOffset) = 0;
         virtual void                    ResetQuery(CommandList *commandList, const QueryHeap *queryHeap, uint32_t index, uint32_t count) = 0;
+        virtual uint64_t                GetTimestampFrequency(CommandQueueType queueType) const = 0;
         virtual void                    ClearUAV(CommandList *commandList, const GPUResource *resource, ViewID viewID, uint32_t value) = 0;
         virtual void                    CopyBuffer(CommandList *commandList, const Buffer *dstBuffer, uint32_t dstOffset, const Buffer *srcBuffer, uint32_t srcOffset, uint32_t size) = 0;
         virtual void                    CopyTexture(CommandList *commandList, const Texture *dstTexture, uint32_t dstSlice, uint32_t dstMipLevel, uint32_t dstX, uint32_t dstY, uint32_t dstZ, const Texture *srcTexture, uint32_t srcSlice, uint32_t srcMipLevel, uint32_t srcX, uint32_t srcY, uint32_t srcZ, uint32_t width, uint32_t height, uint32_t depth) = 0;

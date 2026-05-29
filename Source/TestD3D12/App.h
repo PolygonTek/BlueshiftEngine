@@ -26,7 +26,8 @@ public:
     void                            Init(void *mainWindowHandle);
     void                            Shutdown();
 
-    void                            RunFrame(int frameMsec);
+    void                            UpdateFrameTime(int frameMsec);
+    void                            Update(int frameMsec);
     void                            Render();
 
     void                            OnResize(int width, int height);
@@ -44,6 +45,7 @@ public:
     void                            TakeScreenshot();
 
 private:
+    void                            UpdateGameFrameTime(uint64_t frameUsec);
     void                            UpdateCubes();
 
     RenderContext *                 mainRenderContext = nullptr;
@@ -56,7 +58,14 @@ private:
     BE1::Array<GameObject *>        gameObjects;
 
     int                             elapsedMsec = 0;
-    int                             fps = 0;
+
+    uint32_t                        statFrameElapsedMsec = 0;
+    uint32_t                        statFrameCount = 0;
+    float                           statFrameAverageMsec = 0;
+
+    uint64_t                        statGameElapsedUsec = 0;
+    uint32_t                        statGameFrameCount = 0;
+    float                           statGameAverageMsec = 0.0f;
 
     float                           targetCameraYaw = 0.0f;
     float                           targetCameraPitch = 45.0f;

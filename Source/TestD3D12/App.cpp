@@ -35,6 +35,11 @@ static constexpr float      CubeSpacing = 1.414214f;
 static constexpr float      CubeStartX = -CubeSpacing * (CubeDimensionX - 1) * 0.5f;
 static constexpr float      CubeStartY = -CubeSpacing * (CubeDimensionY - 1) * 0.5f;
 static constexpr float      CubeStartZ = -CubeSpacing * (CubeDimensionZ - 1) * 0.5f;
+static constexpr uint32_t   StatUpdateIntervalMsec = 500;
+static constexpr uint32_t   StatUpdateSampleCount = 60;
+
+static BE1::CVar            stat_fps("stat_fps", "1", BE1::CVar::Flag::Bool, "show FPS");
+static BE1::CVar            stat_unit("stat_unit", "1", BE1::CVar::Flag::Bool, "show frame/render/GPU timing statistics");
 
 App                         app;
 
@@ -46,7 +51,7 @@ void App::Init(void *mainWindowHandle) {
 
     loadingSystem.Init();
 
-    mainFont = fontManager.GetFont("Data/EngineFonts/Galmuri11-Bold.ttf", 20);
+    mainFont = fontManager.GetFont("Data/EngineFonts/Galmuri11-Bold.ttf", 22);
 
     renderWorld = new RenderWorld;
     renderCamera = new RenderCamera;
@@ -74,22 +79,36 @@ void App::Shutdown() {
     delete renderSystem;
 }
 
-void App::RunFrame(int frameMsec) {
-    PROFILER_CPU_SCOPED_EVENT("App::RunFrame");
+void App::UpdateFrameTime(int frameMsec) {
+    statFrameElapsedMsec += frameMsec;
+    statFrameCount++;
+
+    if (statFrameElapsedMsec >= StatUpdateIntervalMsec) {
+        statFrameAverageMsec = (float)statFrameElapsedMsec / statFrameCount;
+
+        statFrameCount = 0;
+        statFrameElapsedMsec = 0;
+    }
+}
+
+void App::UpdateGameFrameTime(uint64_t frameUsec) {
+    statGameElapsedUsec += frameUsec;
+    statGameFrameCount++;
+
+    if (statGameFrameCount >= StatUpdateSampleCount) {
+        statGameAverageMsec = (float)statGameElapsedUsec / statGameFrameCount * 0.001f;
+
+        statGameElapsedUsec = 0;
+        statGameFrameCount = 0;
+    }
+}
+
+void App::Update(int frameMsec) {
+    PROFILER_CPU_SCOPED_EVENT("App::Update");
+
+    uint64_t t0 = BE1::PlatformTime::Microseconds();
 
     loadingSystem.ProcessLoadCompletions();
-
-    static int fpsElapsedMsec = 0;
-    static int fpsFrames = 0;
-
-    fpsElapsedMsec += frameMsec;
-    fpsFrames++;
-
-    if (fpsElapsedMsec >= 250) {
-        fps = fpsFrames / MILLI2SEC(fpsElapsedMsec);
-        fpsFrames = 0;
-        fpsElapsedMsec = 0;
-    }
 
     elapsedMsec += frameMsec;
 
@@ -98,12 +117,17 @@ void App::RunFrame(int frameMsec) {
     UpdateCamera(frameMsec);
 
     BE1::cmdSystem.ExecuteCommandBuffer();
+
+    uint64_t t1 = BE1::PlatformTime::Microseconds();
+    UpdateGameFrameTime(t1 - t0);
 }
 
 void App::Render() {
     PROFILER_CPU_SCOPED_EVENT("App::Render");
 
-    mainRenderContext->BeginFrame();
+    const bool statEnabled = stat_unit.GetBool();
+
+    mainRenderContext->BeginFrame(statEnabled);
 
     renderSystem->UpdateFrame();
 
@@ -139,19 +163,36 @@ void App::Render() {
 
     renderWorld->RenderScene(renderCamera);
 
-    const uint64_t videoMemBudgetBytes = renderSystem->GetVideoMemoryUsage().budgetBytes;
-    const uint64_t videoMemUsageBytes = renderSystem->GetVideoMemoryUsage().usageBytes;
-
-    const uint64_t textureStreamingBudgetBytes = textureManager.GetStreamingTextureMemoryBudgetBytes();
-    const uint64_t textureStreamingUsageBytes = textureManager.GetStreamingTextureMemoryUsageBytes();
-
     mainRenderContext->SetFont(mainFont);
     mainRenderContext->SetColor(BE1::Color4::white);
     mainRenderContext->SetTextShadowColor(BE1::Color4::black);
     mainRenderContext->SetTextShadowOffset(1, 1);
-    mainRenderContext->DrawString(0, 5, BE1::va("FPS: %i (%f ms)", fps, 1000.0f / fps), DrawTextFlag::Right | DrawTextFlag::AddOutlines);
-    mainRenderContext->DrawString(0, 30, BE1::va("Video Memory: %s / %s", BE1::Str::FormatBytes(videoMemUsageBytes).c_str(), BE1::Str::FormatBytes(videoMemBudgetBytes).c_str()), DrawTextFlag::Right | DrawTextFlag::AddOutlines);
-    mainRenderContext->DrawString(0, 55, BE1::va("Mipmap Streaming: %s / %s", BE1::Str::FormatBytes(textureStreamingUsageBytes).c_str(), BE1::Str::FormatBytes(textureStreamingBudgetBytes).c_str()), DrawTextFlag::Right | DrawTextFlag::AddOutlines);
+
+    int y = 5;
+
+    if (stat_fps.GetBool()) {
+        const float statFps = statFrameAverageMsec > 0.0f ? 1000.0f / statFrameAverageMsec : 0.0f;
+
+        mainRenderContext->DrawString(0, y, BE1::va("FPS: %.1f", statFps), DrawTextFlag::Right | DrawTextFlag::AddOutlines); y += 26;
+    }
+
+    if (statEnabled) {
+        const uint64_t videoMemBudgetBytes = renderSystem->GetVideoMemoryUsage().budgetBytes;
+        const uint64_t videoMemUsageBytes = renderSystem->GetVideoMemoryUsage().usageBytes;
+
+        const uint64_t textureStreamingBudgetBytes = textureManager.GetStreamingTextureMemoryBudgetBytes();
+        const uint64_t textureStreamingUsageBytes = textureManager.GetStreamingTextureMemoryUsageBytes();
+
+        const float statRenderMsec = renderSystem->GetStatRenderAverageMsec();
+        const float statGpuMsec = mainRenderContext->GetStatGpuAverageMsec();
+
+        mainRenderContext->DrawString(0, y, BE1::va("Frame: %.2f ms", statFrameAverageMsec), DrawTextFlag::Right | DrawTextFlag::AddOutlines); y += 26;
+        mainRenderContext->DrawString(0, y, BE1::va("Game: %.2f ms", statGameAverageMsec), DrawTextFlag::Right | DrawTextFlag::AddOutlines); y += 26;
+        mainRenderContext->DrawString(0, y, BE1::va("Render: %.2f ms", statRenderMsec), DrawTextFlag::Right | DrawTextFlag::AddOutlines); y += 26;
+        mainRenderContext->DrawString(0, y, BE1::va("GPU: %.2f ms", statGpuMsec), DrawTextFlag::Right | DrawTextFlag::AddOutlines); y += 26;
+        mainRenderContext->DrawString(0, y, BE1::va("Video Memory: %s / %s", BE1::Str::FormatBytes(videoMemUsageBytes).c_str(), BE1::Str::FormatBytes(videoMemBudgetBytes).c_str()), DrawTextFlag::Right | DrawTextFlag::AddOutlines); y += 26;
+        mainRenderContext->DrawString(0, y, BE1::va("Mipmap Streaming: %s / %s", BE1::Str::FormatBytes(textureStreamingUsageBytes).c_str(), BE1::Str::FormatBytes(textureStreamingBudgetBytes).c_str()), DrawTextFlag::Right | DrawTextFlag::AddOutlines); y += 26;
+    }
 
     renderWorld->RenderGUI(mainRenderContext->GetGuiMesh());
 

@@ -49,7 +49,7 @@ public:
     void                            Init(void *windowHandle);
     void                            Shutdown();
 
-    void                            BeginFrame();
+    void                            BeginFrame(bool statEnabled);
     void                            EndFrame();
 
     RHI::SwapChain *                GetSwapChain() const { return swapChain; }
@@ -58,6 +58,8 @@ public:
 
     uint32_t                        GetWidth() const { return swapChain->GetWidth(); }
     uint32_t                        GetHeight() const { return swapChain->GetHeight(); }
+
+    float                           GetStatGpuAverageMsec() const { return statGpuAverageMsec.load(); }
 
     void                            OnResize(int width, int height);
 
@@ -100,6 +102,7 @@ private:
     void                            InitFullScreenTrianglePSO();
     void                            FlushPendingScreenshots(RenderFrameData *frameData);
     void                            EnsureTextureStreamingFeedbackCapacity(uint32_t requiredCapacity);
+    void                            UpdateGpuFrameTime(float frameMsec);
 
     RHI::SwapChain *                swapChain = nullptr;
     RHI::Texture *                  mainRTColorMSAATexture = nullptr;
@@ -125,6 +128,11 @@ private:
     uint32_t                        currentFrontendFrameIndex = 0;
     uint32_t                        frameCount = 0;
     BE1::Array<PendingScreenshot>   pendingScreenshots;
+
+    uint32_t                        gpuTimingSampleFrameCount = 0;
+    float                           statGpuElapsedMsec = 0.0f;
+    int                             statGpuSampleCount = 0;
+    std::atomic<float>              statGpuAverageMsec = 0.0f;
 
     RHI::Format                     mainRTColorFormat = RHI::Format::R8G8B8A8_UNORM;
     RHI::Format                     mainRTDepthFormat = RHI::Format::D24_UNORM_S8_UINT;

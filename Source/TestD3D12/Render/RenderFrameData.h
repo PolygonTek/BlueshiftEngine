@@ -129,6 +129,9 @@ public:
                                     // 렌더 태스크의 스레드 별 데이터 얻기
     RHI::FrameThreadData *          GetThreadData(int32_t threadIndex) { assert(threadIndex >= 0 && threadIndex < numRenderTaskThreads); return threadData[threadIndex]; }
 
+    bool                            IsStatEnabled() const { return statEnabled; }
+    void                            SetStatEnabled(bool enabled) { statEnabled = enabled; }
+
     void                            RetainTexture(const std::shared_ptr<Texture> &texture);
     void                            RetainMeshInstance(const std::shared_ptr<MeshInstance> &meshInstance);
     void                            RetainFont(const std::shared_ptr<Font> &font);
@@ -180,6 +183,7 @@ private:
 
     FrameSyncState                  frameSyncState = FrameSyncState::RenderCompleted;
     uint64_t                        frameFenceValue = 0;
+    bool                            statEnabled = false;
 
     RHI::FrameThreadData **         threadData = nullptr;
     int                             numRenderTaskThreads = 0;
@@ -195,6 +199,8 @@ private:
 BE_INLINE void RenderFrameData::BeginFrame() {
     // 프론트 엔드에서 이번 프레임의 프레임 데이터를 사용하기 위해서는, 백엔드에서의 사용이 완료되야 한다.
     WaitFrameFence();
+
+    statEnabled = false;
 
     // 스레드 별로 사용할 자원을 초기화한다.
     for (int32_t threadIndex = 0; threadIndex < numRenderTaskThreads; ++threadIndex) {

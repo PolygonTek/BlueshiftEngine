@@ -20,6 +20,8 @@
 
 RenderContext *     RenderContext::activeContext = nullptr;
 
+static constexpr int    GpuStatUpdateSampleCount = 16;
+
 void RenderContext::Init(void *windowHandle) {
     // 프레임 별로 사용할 프레임 데이터들을 초기화한다.
     // 프레임 데이터: 임시 메모리, 커맨드 리스트 풀, 디스크립터 힙, 다이나믹 버퍼와 그 디스크립터 풀
@@ -322,6 +324,18 @@ void RenderContext::WaitAllFrameFences() {
     }
 }
 
+void RenderContext::UpdateGpuFrameTime(float frameMsec) {
+    statGpuElapsedMsec += frameMsec;
+    statGpuSampleCount++;
+
+    if (statGpuSampleCount >= GpuStatUpdateSampleCount) {
+        statGpuAverageMsec.store(statGpuElapsedMsec / statGpuSampleCount);
+
+        statGpuElapsedMsec = 0.0f;
+        statGpuSampleCount = 0;
+    }
+}
+
 void RenderContext::RequestScreenshot(const char *filename) {
     if (!filename || !filename[0]) {
         return;
@@ -361,7 +375,7 @@ void RenderContext::EnsureTextureStreamingFeedbackCapacity(uint32_t requiredCapa
     textureStreamingFeedback.EnsureCapacity(requiredCapacity);
 }
 
-void RenderContext::BeginFrame() {
+void RenderContext::BeginFrame(bool statEnabled) {
     PROFILER_CPU_SCOPED_EVENT("RenderContext::BeginFrame");
 
     assert(BE1::Engine::IsInMainThread());
@@ -380,6 +394,7 @@ void RenderContext::BeginFrame() {
     }
 
     frameData->BeginFrame();
+    frameData->SetStatEnabled(statEnabled);
     frameData->CmdBeginContext(this);
 
     RenderContext::activeContext = this;

@@ -24,7 +24,9 @@
 #include "Skeleton.h"
 #include "Anim.h"
 
-RenderSystem *      renderSystem = nullptr;
+static constexpr int    StatUpdateSampleCount = 60;
+
+RenderSystem *          renderSystem = nullptr;
 
 void RenderSystem::Init(void *mainWindowHandle) {
     BE1::cmdSystem.AddCommand("screenshot", Cmd_ScreenShot);
@@ -217,6 +219,18 @@ bool RenderSystem::WaitSubmittedFrame(SubmittedFrame &submittedFrame) {
     return true;
 }
 
+void RenderSystem::UpdateRenderFrameTime(uint64_t frameUsec) {
+    statRenderElapsedUsec += frameUsec;
+    statRenderFrameCount++;
+
+    if (statRenderFrameCount >= StatUpdateSampleCount) {
+        statRenderAverageUsec.store((float)statRenderElapsedUsec / statRenderFrameCount);
+
+        statRenderElapsedUsec = 0;
+        statRenderFrameCount = 0;
+    }
+}
+
 unsigned int RenderSystem::RenderThreadProc(void *param) {
     BE1::PlatformThread::SetCurrentThreadName("RenderSystem::RenderThreadProc");
 
@@ -227,15 +241,17 @@ unsigned int RenderSystem::RenderThreadProc(void *param) {
     while (1) {
         PROFILER_CPU_SCOPED_EVENT("RenderThreadProcLoop");
 
-        // 이전에 사용이 완료된 리소스들을 해제한다.
-        RHI::renderer->FreeRetiredResources(false);
-
         SubmittedFrame submittedFrame;
 
         // 제출된 프레임 데이터가 생길 때까지 기다린다.
         if (!renderSystem->WaitSubmittedFrame(submittedFrame)) {
             break;
         }
+
+        uint64_t t0 = BE1::PlatformTime::Microseconds();
+
+        // 이전에 사용이 완료된 리소스들을 해제한다.
+        RHI::renderer->FreeRetiredResources(false);
 
         RenderFrameData *backendFrameData = submittedFrame.frameData;
 
@@ -247,6 +263,10 @@ unsigned int RenderSystem::RenderThreadProc(void *param) {
 
         // 이번 프레임에 Release/Delete 를 요청한 리소스들을 retiredResources 목록에 추가한다.
         RHI::renderer->DrainReleaseRequestsToRetireList();
+
+        uint64_t t1 = BE1::PlatformTime::Microseconds();
+
+        renderSystem->UpdateRenderFrameTime(t1 - t0);
 
         // 메인 스레드에게 렌더링이 완료되었음을 알린다.
         renderSystem->MarkRenderCompleted(backendFrameData);
@@ -281,6 +301,8 @@ void RenderSystem::DestroyRenderContext(RenderContext *renderContext) {
     }
 
     renderContext->Shutdown();
+
+    backEnd->DiscardGpuFrameTimings(renderContext);
 
     renderContexts.Remove(renderContext);
     delete renderContext;

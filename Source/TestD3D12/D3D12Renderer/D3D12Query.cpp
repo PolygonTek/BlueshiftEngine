@@ -19,7 +19,7 @@
 
 static constexpr D3D12_QUERY_TYPE ToD3D12QueryType(RHI::QueryType queryType) {
     switch (queryType) {
-    case RHI::QueryType::TimeStamp:
+    case RHI::QueryType::Timestamp:
         return D3D12_QUERY_TYPE_TIMESTAMP;
     case RHI::QueryType::OcclusionBinary:
         return D3D12_QUERY_TYPE_BINARY_OCCLUSION;
@@ -35,7 +35,7 @@ RHI::QueryHeap* D3D12Renderer::CreateQueryHeap(const RHI::QueryHeapDesc *desc) {
     queryHeapDesc.Count = desc->queryCount;
 
     switch (desc->type) {
-    case RHI::QueryType::TimeStamp:
+    case RHI::QueryType::Timestamp:
         queryHeapDesc.Type = D3D12_QUERY_HEAP_TYPE_TIMESTAMP;
         break;
     case RHI::QueryType::Occlusion:
@@ -68,6 +68,9 @@ void D3D12Renderer::BeginQuery(RHI::CommandList *commandList, const RHI::QueryHe
     D3D12CommandList *_commandList = static_cast<D3D12CommandList *>(commandList);
     const D3D12QueryHeap *_queryHeap = static_cast<const D3D12QueryHeap *>(queryHeap);
 
+    // Timestamp 는 BeginQuery 를 사용하지 않고, EndQuery 만 사용한다.
+    assert(queryHeap->desc.type != RHI::QueryType::Timestamp);
+
     _commandList->GetGraphicsCommandList()->BeginQuery(_queryHeap->queryHeap, ToD3D12QueryType(queryHeap->desc.type), index);
 }
 
@@ -87,4 +90,10 @@ void D3D12Renderer::ResolveQuery(RHI::CommandList *commandList, const RHI::Query
 }
 
 void D3D12Renderer::ResetQuery(RHI::CommandList *commandList, const RHI::QueryHeap *queryHeap, uint32_t index, uint32_t count) {
+}
+
+uint64_t D3D12Renderer::GetTimestampFrequency(RHI::CommandQueueType queueType) const {
+    UINT64 frequency = 0;
+    commandQueues[to_int(queueType)]->GetTimestampFrequency(&frequency);
+    return frequency;
 }

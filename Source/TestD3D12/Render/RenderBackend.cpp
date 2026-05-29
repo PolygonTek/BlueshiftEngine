@@ -21,9 +21,134 @@ void RenderBackend::Init() {
 #ifdef USE_RENDER_TASK
     drawGroupId = BE1::Engine::taskManager->CreateGroupId();
 #endif
+
+    // GPU 타임 스탬프가 초당 몇번 증가하는지를 얻어온다.
+    gpuTimestampFrequency = RHI::renderer->GetTimestampFrequency(RHI::CommandQueueType::Graphics);
+
+    // timestamp heap: Begin[0], End[0], Begin[1], End[1], Begin[2], End[2], ...
+    RHI::QueryHeapDesc queryHeapDesc;
+    queryHeapDesc.type = RHI::QueryType::Timestamp;
+    queryHeapDesc.queryCount = GpuTimingSlotCount << 1; // 슬롯 별로 Timestamp 두개 (시작/끝) 가 필요하므로 2 를 곱한다.
+    gpuTimestampQueryHeap = RHI::renderer->CreateQueryHeap(&queryHeapDesc);
+
+    gpuTimestampReadbackBuffer = RHI::renderer->CreateBuffer(RHI::BufferUsage::Readback, RHI::BufferFlag::None, sizeof(uint64_t) * queryHeapDesc.queryCount, nullptr);
 }
 
 void RenderBackend::Shutdown() {
+    if (gpuTimestampReadbackBuffer) {
+        RHI::renderer->DestroyBuffer(gpuTimestampReadbackBuffer);
+        gpuTimestampReadbackBuffer = nullptr;
+    }
+
+    if (gpuTimestampQueryHeap) {
+        RHI::renderer->DestroyQueryHeap(gpuTimestampQueryHeap);
+        gpuTimestampQueryHeap = nullptr;
+    }
+}
+
+void RenderBackend::BeginGpuFrameTiming(RHI::CommandList *commandList) {
+    if (!frameData->IsStatEnabled()) {
+        return;
+    }
+
+    if (gpuTimingCurrentSlot >= 0) {
+        // 이미 BeginGpuFrameTiming 이 호출되었다면, SetGpuFrameTimingFence 가 호출될 때까지 무시한다.
+        return;
+    }
+
+    // GpuTimingSampleInterval 에 따라 한번씩만 처리한다.
+    if ((currentContext->gpuTimingSampleFrameCount++ & (GpuTimingSampleInterval - 1)) != 0) {
+        return;
+    }
+
+    // 완료된 슬롯들의 타임스탬프를 읽어서 처리한다.
+    ReadCompletedGpuTimings();
+
+    for (int i = 0; i < GpuTimingSlotCount; ++i) {
+        int slotIndex = (gpuTimingNextSlot + i) % GpuTimingSlotCount;
+        GpuTimingSlot &slot = gpuTimingSlots[slotIndex];
+
+        if (!slot.pending) {
+            gpuTimingCurrentSlot = slotIndex;
+            gpuTimingNextSlot = (slotIndex + 1) % GpuTimingSlotCount;
+
+            slot.renderContext = currentContext;
+
+            // Begin Timestamp 찍기
+            uint32_t stampIndex = slotIndex << 1;
+            RHI::renderer->EndQuery(commandList, gpuTimestampQueryHeap, stampIndex);
+            return;
+        }
+    }
+}
+
+void RenderBackend::EndGpuFrameTiming(RHI::CommandList *commandList) {
+    if (gpuTimingCurrentSlot < 0) {
+        return;
+    }
+
+    uint32_t stampIndex = gpuTimingCurrentSlot << 1;
+
+    // End Timestamp 찍기
+    RHI::renderer->EndQuery(commandList, gpuTimestampQueryHeap, stampIndex + 1);
+
+    // 현재 슬롯의 Timestamp 2개를 Readback 버퍼로 읽어오기
+    RHI::renderer->ResolveQuery(commandList, gpuTimestampQueryHeap, stampIndex, 2, gpuTimestampReadbackBuffer, sizeof(uint64_t) * stampIndex);
+}
+
+void RenderBackend::SetGpuFrameTimingFence(uint64_t fenceValue) {
+    if (gpuTimingCurrentSlot < 0) {
+        return;
+    }
+
+    GpuTimingSlot &slot = gpuTimingSlots[gpuTimingCurrentSlot];
+    slot.fenceValue = fenceValue;
+    slot.pending = true;
+    gpuTimingCurrentSlot = -1;
+}
+
+void RenderBackend::ReadCompletedGpuTimings() {
+    const uint64_t *timestamps = static_cast<const uint64_t *>(gpuTimestampReadbackBuffer->mappedPtr);
+
+    for (int slotIndex = 0; slotIndex < GpuTimingSlotCount; ++slotIndex) {
+        GpuTimingSlot &slot = gpuTimingSlots[slotIndex];
+        if (!slot.pending) {
+            continue;
+        }
+        if (!RHI::renderer->IsFenceComplete(RHI::CommandQueueType::Graphics, slot.fenceValue)) {
+            continue;
+        }
+
+        uint64_t beginStamp = timestamps[(slotIndex << 1) + 0];
+        uint64_t endStamp = timestamps[(slotIndex << 1) + 1];
+
+        if (endStamp >= beginStamp && slot.renderContext) {
+            float frameMsec = 1000.0f * (float)(endStamp - beginStamp) / gpuTimestampFrequency;
+            slot.renderContext->UpdateGpuFrameTime(frameMsec);
+        }
+
+        slot.renderContext = nullptr;
+        slot.fenceValue = 0;
+        slot.pending = false;
+    }
+}
+
+void RenderBackend::DiscardGpuFrameTimings(const RenderContext *renderContext) {
+    for (int slotIndex = 0; slotIndex < GpuTimingSlotCount; ++slotIndex) {
+        GpuTimingSlot &slot = gpuTimingSlots[slotIndex];
+
+        if (slot.renderContext != renderContext) {
+            continue;
+        }
+
+        if (gpuTimingCurrentSlot == slotIndex) {
+            gpuTimingCurrentSlot = -1;
+        }
+
+        slot.renderContext = nullptr;
+        slot.fenceValue = 0;
+        slot.pending = false;
+    }
 }
 
 void RenderBackend::Execute(RenderFrameData *frameData) {
@@ -63,13 +188,15 @@ const void *RenderBackend::ExecuteBeginContext(const void *data) {
 
     currentContext = cmd->renderContext;
 
-#ifdef USE_MIPMAP_STREAMING
     mainCommandList = frameData->GetThreadData(0)->BeginCommandList(RHI::CommandQueueType::Graphics);
 
+    BeginGpuFrameTiming(mainCommandList);
+
+#ifdef USE_MIPMAP_STREAMING
     currentContext->textureStreamingFeedback.Clear(mainCommandList);
+#endif
 
     mainCommandList->CloseAndExecute();
-#endif
 
     return (const void *)(cmd + 1);
 }
@@ -184,11 +311,15 @@ const void *RenderBackend::ExecuteSwapBuffers(const void *data) {
     RHI::renderer->EndRenderPass(mainCommandList);
 #endif
 
+    EndGpuFrameTiming(mainCommandList);
+
     mainCommandList->CloseAndExecute();
 
     // 이번 백엔드 프레임에서 수행하는 렌더링 커맨드들에 대한 펜스를 친다.
     uint64_t fenceValue = RHI::renderer->SignalFence(RHI::CommandQueueType::Graphics);
     frameData->SetFrameFenceValue(fenceValue);
+
+    SetGpuFrameTimingFence(fenceValue);
 
 #ifdef USE_MIPMAP_STREAMING
     if (readbackFrame) {

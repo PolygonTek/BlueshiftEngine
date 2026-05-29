@@ -28,8 +28,18 @@ public:
     void                            Shutdown();
 
     void                            Execute(RenderFrameData *frameData);
+    void                            DiscardGpuFrameTimings(const RenderContext *renderContext);
 
 private:
+    static constexpr int            GpuTimingSlotCount = 8;
+    static constexpr int            GpuTimingSampleInterval = 4; // must be a power of two.
+
+    struct GpuTimingSlot {
+        RenderContext *             renderContext = nullptr;
+        uint64_t                    fenceValue = 0;
+        bool                        pending = false;
+    };
+
     struct DrawObjectTaskDesc {
         int32_t                     threadIndex = -1;
         const DrawSurf **           drawSurfs = nullptr;
@@ -62,6 +72,11 @@ private:
 
     const RHI::Texture *            ResolveDrawSurfTexture(const DrawSurf *drawSurf) const;
 
+    void                            BeginGpuFrameTiming(RHI::CommandList *commandList);
+    void                            EndGpuFrameTiming(RHI::CommandList *commandList);
+    void                            SetGpuFrameTimingFence(uint64_t fenceValue);
+    void                            ReadCompletedGpuTimings();
+
     RenderFrameData *               frameData = nullptr; // 현재 백엔드가 처리할 프레임 데이터
     RenderContext *                 currentContext = nullptr;
     RHI::CommandList *              mainCommandList = nullptr;
@@ -71,4 +86,11 @@ private:
 
     BE1::Array<DrawObjectTaskDesc>  objectDrawingTaskDescs;
     uint32_t                        drawGroupId = -1;
+
+    uint64_t                        gpuTimestampFrequency = 0;
+    RHI::QueryHeap *                gpuTimestampQueryHeap = nullptr;
+    RHI::Buffer *                   gpuTimestampReadbackBuffer = nullptr;
+    GpuTimingSlot                   gpuTimingSlots[GpuTimingSlotCount];
+    int                             gpuTimingNextSlot = 0;
+    int                             gpuTimingCurrentSlot = -1;
 };

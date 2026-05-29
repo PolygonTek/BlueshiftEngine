@@ -209,13 +209,15 @@ static bool ProcessEventLoop() {
 }
 
 static bool RunFrameInstance(int frameMsec) {
+    app.UpdateFrameTime(frameMsec);
+
     if (!ProcessEventLoop()) {
         return false;
     }
 
     BE1::cmdSystem.ExecuteCommandBuffer();
 
-    app.RunFrame(frameMsec);
+    app.Update(frameMsec);
 
     app.Render();
 
