@@ -16,6 +16,11 @@
 #include "Texture.h"
 #include "LoadingSystem.h"
 
+static BE1::CVar    r_textureStreamingStreamInDelay("r_textureStreamingStreamInDelay", "0", BE1::CVar::Flag::Integer, "texture streaming frame delay before loading higher-resolution mips");
+static BE1::CVar    r_textureStreamingMaxRequestsPerFrame("r_textureStreamingMaxRequestsPerFrame", "256", BE1::CVar::Flag::Integer, "maximum texture streaming requests per frame");
+static BE1::CVar    r_textureStreamingMaxLevelReduction("r_textureStreamingMaxLevelReduction", "6", BE1::CVar::Flag::Integer, "maximum mip level reduction for streaming textures");
+static BE1::CVar    r_textureStreamingMinResidentMaxDimension("r_textureStreamingMinResidentMaxDimension", "64", BE1::CVar::Flag::Integer, "minimum requested resident texture max dimension");
+
 TextureManager      textureManager;
 
 void TextureManager::Init() {
@@ -205,6 +210,10 @@ void TextureManager::UnregisterStreamingTexture(Texture *texture) {
     streaming = {};
 }
 
+uint32_t TextureManager::GetStreamingTextureMinResidentMaxDimension() const {
+    return static_cast<uint32_t>(BE1::Max(1, r_textureStreamingMinResidentMaxDimension.GetInteger()));
+}
+
 void TextureManager::ApplyStreamingFeedback(const uint32_t *feedbackData, uint32_t feedbackCapacity) {
     for (int i = 0; i < streamingTextures.Count(); ++i) {
         std::shared_ptr<Texture> texture = streamingTextures[i].lock();
@@ -236,6 +245,10 @@ void TextureManager::ApplyStreamingFeedback(const uint32_t *feedbackData, uint32
 
 void TextureManager::UpdateStreamingTextures() {
     int requestedStreamingTextureCount = 0;
+    const uint32_t streamInDelay = static_cast<uint32_t>(BE1::Max(0, r_textureStreamingStreamInDelay.GetInteger()));
+    const int maxStreamingRequests = BE1::Max(0, r_textureStreamingMaxRequestsPerFrame.GetInteger());
+    const int maxStreamingLevelReduction = BE1::Max(0, r_textureStreamingMaxLevelReduction.GetInteger());
+    const uint32_t minResidentStreamingTextureMaxDimension = GetStreamingTextureMinResidentMaxDimension();
 
     ComputeStreamingTextureMemoryUsage();
 
@@ -280,16 +293,16 @@ void TextureManager::UpdateStreamingTextures() {
         }
 
         // 한 프레임에 스트리밍 텍스쳐가 너무 많이 요청되는 것을 방지하기 위해, 최대 개수까지만 요청한다.
-        if (requestedStreamingTextureCount < TextureManager::MaxStreamingRequests) {
-            // 요청된 텍스쳐 해상도를 계산한다. (최소 크기는 TextureManager::MinResidentStreamingTextureMaxDimension 로 제한한다)
-            uint32_t requestedMaxDimension = BE1::Max(streaming.requestedMaxDimension, TextureManager::MinResidentStreamingTextureMaxDimension);
+        if (requestedStreamingTextureCount < maxStreamingRequests) {
+            // 요청된 텍스쳐 해상도를 계산한다. (최소 크기는 r_textureStreamingMinResidentMaxDimension 로 제한한다)
+            uint32_t requestedMaxDimension = BE1::Max(streaming.requestedMaxDimension, minResidentStreamingTextureMaxDimension);
             streaming.requestedMaxDimension = 0;
 
             // 요청되었던 최대 크기로 원하는 first mip 레벨을 구한다.
             int desiredFirstMip = BE1::Image::ComputeFirstMipForMaxDimension(streaming.originalWidth, streaming.originalHeight, streaming.originalDepth, streaming.originalMipLevels, requestedMaxDimension);
 
-            // 너무 높은 레벨 (낮은 해상도) 로 스트리밍되는 것을 방지하기 위해, 최대 레벨 감소량을 TextureManager::MaxStreamingLevelReduction 로 제한한다.
-            int maxLevelReduction = BE1::Min((int)TextureManager::MaxStreamingLevelReduction, streaming.originalMipLevels - 1);
+            // 너무 높은 레벨 (낮은 해상도) 로 스트리밍되는 것을 방지하기 위해, 최대 레벨 감소량을 r_textureStreamingMaxLevelReduction 로 제한한다.
+            int maxLevelReduction = BE1::Min(maxStreamingLevelReduction, streaming.originalMipLevels - 1);
             desiredFirstMip = BE1::Min(desiredFirstMip, maxLevelReduction);
 
             // budget 이 부족하다면, 레벨을 높인다. (해상도를 낮춘다)
@@ -306,7 +319,7 @@ void TextureManager::UpdateStreamingTextures() {
                 if (desiredFirstMip < streaming.residentFirstMip) {
                     streaming.streamInFrameCount++;
 
-                    if (streaming.streamInFrameCount < TextureManager::StreamInDelay) {
+                    if (streaming.streamInFrameCount < streamInDelay) {
                         continue;
                     }
 

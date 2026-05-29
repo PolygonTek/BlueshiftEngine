@@ -388,8 +388,8 @@ bool LoadingSystem::ProcessTextureLoadRequest(const LoadRequest &request) {
 
     // Texture::Flag::Streaming 이 켜져있고 DDS 파일이면 스트리밍 로딩을 시도한다.
     if (BE1::HasFlag(request.textureFlags, Texture::Flag::Streaming) && request.filename.CheckExtension(".dds")) {
-        // 이미지 파일에서 MinResidentStreamingTextureMaxDimension 이하의 크기까지의 mip 레벨만 initial loading
-        if (image->LoadDDSMipRangeForMaxDimension(request.filename.c_str(), TextureManager::MinResidentStreamingTextureMaxDimension, &mipRange)) {
+        // 이미지 파일에서 r_textureStreamingMinResidentMaxDimension 이하의 크기까지의 mip 레벨만 initial loading
+        if (image->LoadDDSMipRangeForMaxDimension(request.filename.c_str(), textureManager.GetStreamingTextureMinResidentMaxDimension(), &mipRange)) {
             useMipRange = mipRange.mipCount < mipRange.originalMipLevels;
         }
     } else {

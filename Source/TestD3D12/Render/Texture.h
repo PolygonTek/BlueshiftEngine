@@ -207,6 +207,7 @@ public:
     uint32_t                        GetStreamingTextureCount() const { return streamingTextures.Count(); }
     uint64_t                        GetStreamingTextureMemoryUsageBytes() const { return streamingTextureMemoryUsageBytes; }
     uint64_t                        GetStreamingTextureMemoryBudgetBytes() const { return streamingTextureMemoryBudgetBytes; }
+    uint32_t                        GetStreamingTextureMinResidentMaxDimension() const;
     void                            SetStreamingTextureMemoryBudgetBytes(uint64_t budget) { streamingTextureMemoryBudgetBytes = budget; }
 
     void                            ApplyStreamingFeedback(const uint32_t *feedbackData, uint32_t feedbackCapacity);
@@ -214,11 +215,6 @@ public:
     std::shared_ptr<Texture>        defaultTexture;
     std::shared_ptr<Texture>        whiteTexture;
     std::shared_ptr<Texture>        flatNormalTexture;
-
-    static constexpr uint32_t       StreamInDelay = 0;
-    static constexpr uint32_t       MaxStreamingRequests = 256;
-    static constexpr uint32_t       MaxStreamingLevelReduction = 6;
-    static constexpr uint32_t       MinResidentStreamingTextureMaxDimension = 64;
 
 private:
     void                            CleanExpiredTextures();
