@@ -103,6 +103,18 @@ void App::UpdateGameFrameTime(uint64_t frameUsec) {
     }
 }
 
+void App::UpdateRenderFrontendFrameTime(uint64_t frameUsec) {
+    statRenderFrontendElapsedUsec += frameUsec;
+    statRenderFrontendFrameCount++;
+
+    if (statRenderFrontendFrameCount >= StatUpdateSampleCount) {
+        statRenderFrontendAverageMsec = (float)statRenderFrontendElapsedUsec / statRenderFrontendFrameCount * 0.001f;
+
+        statRenderFrontendElapsedUsec = 0;
+        statRenderFrontendFrameCount = 0;
+    }
+}
+
 void App::Update(int frameMsec) {
     PROFILER_CPU_SCOPED_EVENT("App::Update");
 
@@ -128,6 +140,8 @@ void App::Render() {
     const bool statEnabled = stat_render.GetBool();
 
     mainRenderContext->BeginFrame(statEnabled);
+
+    uint64_t t0 = BE1::PlatformTime::Microseconds();
 
     renderSystem->UpdateFrame();
 
@@ -168,12 +182,13 @@ void App::Render() {
     mainRenderContext->SetTextShadowColor(BE1::Color4::black);
     mainRenderContext->SetTextShadowOffset(1, 1);
 
+    constexpr int textLineHeight = 28;
     int y = 5;
 
     if (stat_fps.GetBool()) {
         const float statFps = statFrameAverageMsec > 0.0f ? 1000.0f / statFrameAverageMsec : 0.0f;
 
-        mainRenderContext->DrawString(0, y, BE1::va("FPS: %.1f", statFps), DrawTextFlag::Right | DrawTextFlag::AddOutlines); y += 26;
+        mainRenderContext->DrawString(0, y, BE1::va("FPS: %.1f", statFps), DrawTextFlag::Right | DrawTextFlag::AddOutlines); y += textLineHeight;
     }
 
     if (statEnabled) {
@@ -183,23 +198,28 @@ void App::Render() {
         const uint64_t textureStreamingBudgetBytes = textureManager.GetStreamingTextureMemoryBudgetBytes();
         const uint64_t textureStreamingUsageBytes = textureManager.GetStreamingTextureMemoryUsageBytes();
 
-        const float statRenderMsec = renderSystem->GetStatRenderAverageMsec();
+        const float statRenderFrontendMsec = statRenderFrontendAverageMsec;
+        const float statRenderBackendMsec = renderSystem->GetStatRenderAverageMsec();
         const float statGpuMsec = mainRenderContext->GetStatGpuAverageMsec();
         const uint32_t statDrawCount = mainRenderContext->GetStatDrawCount();
         const uint64_t statTriangleCount = mainRenderContext->GetStatTriangleCount();
 
-        mainRenderContext->DrawString(0, y, BE1::va("Frame: %.2f ms", statFrameAverageMsec), DrawTextFlag::Right | DrawTextFlag::AddOutlines); y += 26;
-        mainRenderContext->DrawString(0, y, BE1::va("Game: %.2f ms", statGameAverageMsec), DrawTextFlag::Right | DrawTextFlag::AddOutlines); y += 26;
-        mainRenderContext->DrawString(0, y, BE1::va("Render: %.2f ms", statRenderMsec), DrawTextFlag::Right | DrawTextFlag::AddOutlines); y += 26;
-        mainRenderContext->DrawString(0, y, BE1::va("GPU: %.2f ms", statGpuMsec), DrawTextFlag::Right | DrawTextFlag::AddOutlines); y += 26;
-        mainRenderContext->DrawString(0, y, BE1::va("Draws: %u, Tris: %llu", statDrawCount, statTriangleCount), DrawTextFlag::Right | DrawTextFlag::AddOutlines); y += 26;
-        mainRenderContext->DrawString(0, y, BE1::va("Video Memory: %s / %s", BE1::Str::FormatBytes(videoMemUsageBytes).c_str(), BE1::Str::FormatBytes(videoMemBudgetBytes).c_str()), DrawTextFlag::Right | DrawTextFlag::AddOutlines); y += 26;
-        mainRenderContext->DrawString(0, y, BE1::va("Mipmap Streaming: %s / %s", BE1::Str::FormatBytes(textureStreamingUsageBytes).c_str(), BE1::Str::FormatBytes(textureStreamingBudgetBytes).c_str()), DrawTextFlag::Right | DrawTextFlag::AddOutlines); y += 26;
+        mainRenderContext->DrawString(0, y, BE1::va("Frame: %.2f ms", statFrameAverageMsec), DrawTextFlag::Right | DrawTextFlag::AddOutlines); y += textLineHeight;
+        mainRenderContext->DrawString(0, y, BE1::va("Game: %.2f ms", statGameAverageMsec), DrawTextFlag::Right | DrawTextFlag::AddOutlines); y += textLineHeight;
+        mainRenderContext->DrawString(0, y, BE1::va("Render Frontend: %.2f ms", statRenderFrontendMsec), DrawTextFlag::Right | DrawTextFlag::AddOutlines); y += textLineHeight;
+        mainRenderContext->DrawString(0, y, BE1::va("Render Backend: %.2f ms", statRenderBackendMsec), DrawTextFlag::Right | DrawTextFlag::AddOutlines); y += textLineHeight;
+        mainRenderContext->DrawString(0, y, BE1::va("GPU: %.2f ms", statGpuMsec), DrawTextFlag::Right | DrawTextFlag::AddOutlines); y += textLineHeight;
+        mainRenderContext->DrawString(0, y, BE1::va("Draws: %u, Tris: %llu", statDrawCount, statTriangleCount), DrawTextFlag::Right | DrawTextFlag::AddOutlines); y += textLineHeight;
+        mainRenderContext->DrawString(0, y, BE1::va("Video Memory: %s / %s", BE1::Str::FormatBytes(videoMemUsageBytes).c_str(), BE1::Str::FormatBytes(videoMemBudgetBytes).c_str()), DrawTextFlag::Right | DrawTextFlag::AddOutlines); y += textLineHeight;
+        mainRenderContext->DrawString(0, y, BE1::va("Mipmap Streaming: %s / %s", BE1::Str::FormatBytes(textureStreamingUsageBytes).c_str(), BE1::Str::FormatBytes(textureStreamingBudgetBytes).c_str()), DrawTextFlag::Right | DrawTextFlag::AddOutlines); y += textLineHeight;
     }
 
     renderWorld->RenderGUI(mainRenderContext->GetGuiMesh());
 
     mainRenderContext->EndFrame();
+
+    uint64_t t1 = BE1::PlatformTime::Microseconds();
+    UpdateRenderFrontendFrameTime(t1 - t0);
 }
 
 void App::OnResize(int width, int height) {

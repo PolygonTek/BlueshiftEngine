@@ -248,8 +248,6 @@ unsigned int RenderSystem::RenderThreadProc(void *param) {
             break;
         }
 
-        uint64_t t0 = BE1::PlatformTime::Microseconds();
-
         // 이전에 사용이 완료된 리소스들을 해제한다.
         RHI::renderer->FreeRetiredResources(false);
 
@@ -258,15 +256,16 @@ unsigned int RenderSystem::RenderThreadProc(void *param) {
         // 리소스 요청 처리
         RHI::renderer->ProcessResourceRequests(backendFrameData->GetThreadData(0));
 
+        uint64_t t0 = BE1::PlatformTime::Microseconds();
+
         // 현재 백엔드 프레임 데이터로 렌더링 백엔드를 실행한다.
         renderSystem->backEnd->Execute(backendFrameData);
 
+        uint64_t t1 = BE1::PlatformTime::Microseconds();
+        renderSystem->UpdateRenderFrameTime(t1 - t0);
+
         // 이번 프레임에 Release/Delete 를 요청한 리소스들을 retiredResources 목록에 추가한다.
         RHI::renderer->DrainReleaseRequestsToRetireList();
-
-        uint64_t t1 = BE1::PlatformTime::Microseconds();
-
-        renderSystem->UpdateRenderFrameTime(t1 - t0);
 
         // 메인 스레드에게 렌더링이 완료되었음을 알린다.
         renderSystem->MarkRenderCompleted(backendFrameData);

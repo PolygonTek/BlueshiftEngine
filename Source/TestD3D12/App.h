@@ -47,6 +47,7 @@ public:
 
 private:
     void                            UpdateGameFrameTime(uint64_t frameUsec);
+    void                            UpdateRenderFrontendFrameTime(uint64_t frameUsec);
     void                            UpdateCubes();
 
     RenderContext *                 mainRenderContext = nullptr;
@@ -67,6 +68,10 @@ private:
     uint64_t                        statGameElapsedUsec = 0;
     uint32_t                        statGameFrameCount = 0;
     float                           statGameAverageMsec = 0.0f;
+
+    uint64_t                        statRenderFrontendElapsedUsec = 0;
+    uint32_t                        statRenderFrontendFrameCount = 0;
+    float                           statRenderFrontendAverageMsec = 0.0f;
 
     float                           targetCameraYaw = 0.0f;
     float                           targetCameraPitch = 45.0f;
