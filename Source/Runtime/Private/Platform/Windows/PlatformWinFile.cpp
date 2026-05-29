@@ -298,7 +298,7 @@ void PlatformWinFile::SetFileMode(const char *filename, int fileMode) {
     _wchmod(wFilename, mode);
 }
 
-DateTime PlatformWinFile::GetTimeStamp(const char *filename) {
+DateTime PlatformWinFile::GetTimestamp(const char *filename) {
     static const DateTime epoch(1970, 1, 1);
     struct _stat fileInfo;
     wchar_t wFilename[1024];
@@ -311,7 +311,7 @@ DateTime PlatformWinFile::GetTimeStamp(const char *filename) {
     return epoch + timeSinceEpoch;
 }
 
-void PlatformWinFile::SetTimeStamp(const char *filename, const DateTime &timeStamp) {
+void PlatformWinFile::SetTimestamp(const char *filename, const DateTime &timeStamp) {
     static const DateTime epoch(1970, 1, 1);
     struct _stat fileInfo;
     wchar_t wFilename[1024];

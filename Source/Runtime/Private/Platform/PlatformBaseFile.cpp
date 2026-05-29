@@ -81,11 +81,11 @@ int PlatformBaseFile::GetFileMode(const char *filename) {
 void PlatformBaseFile::SetFileMode(const char *filename, int mode) {
 }
 
-DateTime PlatformBaseFile::GetTimeStamp(const char *filename) {
+DateTime PlatformBaseFile::GetTimestamp(const char *filename) {
     return DateTime(0);
 }
 
-void PlatformBaseFile::SetTimeStamp(const char *filename, const DateTime &timeStamp) {
+void PlatformBaseFile::SetTimestamp(const char *filename, const DateTime &timeStamp) {
 }
 
 bool PlatformBaseFile::DirectoryExists(const char *dirname) {

@@ -277,7 +277,7 @@ void PlatformPosixFile::SetFileMode(const char *filename, int fileMode) {
     chmod(NormalizeFilename(filename), mode);
 }
 
-DateTime PlatformPosixFile::GetTimeStamp(const char *filename) {
+DateTime PlatformPosixFile::GetTimestamp(const char *filename) {
     static const DateTime epoch(1970, 1, 1);
     struct stat fileInfo;
 
@@ -290,7 +290,7 @@ DateTime PlatformPosixFile::GetTimeStamp(const char *filename) {
     return epoch + timeSinceEpoch;
 }
 
-void PlatformPosixFile::SetTimeStamp(const char *filename, const DateTime &timeStamp) {
+void PlatformPosixFile::SetTimestamp(const char *filename, const DateTime &timeStamp) {
     static const DateTime epoch(1970, 1, 1);
     struct stat fileInfo;
 

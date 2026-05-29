@@ -65,7 +65,7 @@ bool ZipArchiver::AddFile(const char *filename, CompressionLevel compressionLeve
     zip_fileinfo zi;
     memset(&zi, 0, sizeof(zi));
 
-    DateTime timeStamp = fileSystem.GetTimeStamp(filename);
+    DateTime timeStamp = fileSystem.GetTimestamp(filename);
     zi.tmz_date.tm_sec = timeStamp.Second();
     zi.tmz_date.tm_min = timeStamp.Minute();
     zi.tmz_date.tm_hour = timeStamp.Hour();

@@ -337,7 +337,7 @@ void PlatformAndroidFile::SetFileMode(const char *filename, int fileMode) {
     chmod(NormalizeFilename(filename), mode);
 }
 
-DateTime PlatformAndroidFile::GetTimeStamp(const char *filename) {
+DateTime PlatformAndroidFile::GetTimestamp(const char *filename) {
     static const DateTime epoch(1970, 1, 1);
     struct stat fileInfo;
 
@@ -350,7 +350,7 @@ DateTime PlatformAndroidFile::GetTimeStamp(const char *filename) {
     return epoch + timeSinceEpoch;
 }
 
-void PlatformAndroidFile::SetTimeStamp(const char *filename, const DateTime &timeStamp) {
+void PlatformAndroidFile::SetTimestamp(const char *filename, const DateTime &timeStamp) {
 }
 
 bool PlatformAndroidFile::DirectoryExists(const char *dirname) {

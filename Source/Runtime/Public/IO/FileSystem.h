@@ -86,8 +86,8 @@ public:
     bool                IsReadOnly(const char *filename);
     bool                SetReadOnly(const char *filename, bool readOnly);
 
-    DateTime            GetTimeStamp(const char *filename) const;
-    void                SetTimeStamp(const char *filename, const DateTime &timeStamp);
+    DateTime            GetTimestamp(const char *filename) const;
+    void                SetTimestamp(const char *filename, const DateTime &timeStamp);
     
     bool                DirectoryExists(const char *dirname) const;
     bool                CreateDirectory(const char *dirname, bool tree) const;

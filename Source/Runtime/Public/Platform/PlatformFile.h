@@ -84,8 +84,8 @@ public:
     static int                  GetFileMode(const char *filename);
     static void                 SetFileMode(const char *filename, int mode);
     
-    static DateTime             GetTimeStamp(const char *filename);
-    static void                 SetTimeStamp(const char *filename, const DateTime &timeStamp);
+    static DateTime             GetTimestamp(const char *filename);
+    static void                 SetTimestamp(const char *filename, const DateTime &timeStamp);
     
     static bool                 DirectoryExists(const char *dirname);
     static bool                 CreateDirectory(const char *dirname);

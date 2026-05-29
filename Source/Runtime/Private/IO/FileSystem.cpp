@@ -550,12 +550,12 @@ bool FileSystem::SetReadOnly(const char *filename, bool readOnly) {
     return PlatformFile::SetReadOnly(filename, readOnly);
 }
 
-DateTime FileSystem::GetTimeStamp(const char *filename) const {
-    return PlatformFile::GetTimeStamp(filename);
+DateTime FileSystem::GetTimestamp(const char *filename) const {
+    return PlatformFile::GetTimestamp(filename);
 }
 
-void FileSystem::SetTimeStamp(const char *filename, const DateTime &timeStamp) {
-    PlatformFile::SetTimeStamp(filename, timeStamp);
+void FileSystem::SetTimestamp(const char *filename, const DateTime &timeStamp) {
+    PlatformFile::SetTimestamp(filename, timeStamp);
 }
 
 //-------------------------------------------------------------------------------
