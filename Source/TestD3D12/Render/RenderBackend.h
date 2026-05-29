@@ -71,6 +71,7 @@ private:
     void                            DrawGuiSurface(RHI::FrameThreadData *frameThreadData, RHI::CommandList *commandList, const DrawSurf *drawSurf);
 
     const RHI::Texture *            ResolveDrawSurfTexture(const DrawSurf *drawSurf) const;
+    void                            RecordDrawStats(uint32_t drawCount, uint64_t triangleCount);
 
     void                            BeginGpuFrameTiming(RHI::CommandList *commandList);
     void                            EndGpuFrameTiming(RHI::CommandList *commandList);

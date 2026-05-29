@@ -39,7 +39,7 @@ static constexpr uint32_t   StatUpdateIntervalMsec = 500;
 static constexpr uint32_t   StatUpdateSampleCount = 60;
 
 static BE1::CVar            stat_fps("stat_fps", "1", BE1::CVar::Flag::Bool, "show FPS");
-static BE1::CVar            stat_unit("stat_unit", "1", BE1::CVar::Flag::Bool, "show frame/render/GPU timing statistics");
+static BE1::CVar            stat_render("stat_render", "1", BE1::CVar::Flag::Bool, "show render statistics");
 
 App                         app;
 
@@ -125,7 +125,7 @@ void App::Update(int frameMsec) {
 void App::Render() {
     PROFILER_CPU_SCOPED_EVENT("App::Render");
 
-    const bool statEnabled = stat_unit.GetBool();
+    const bool statEnabled = stat_render.GetBool();
 
     mainRenderContext->BeginFrame(statEnabled);
 
@@ -185,11 +185,14 @@ void App::Render() {
 
         const float statRenderMsec = renderSystem->GetStatRenderAverageMsec();
         const float statGpuMsec = mainRenderContext->GetStatGpuAverageMsec();
+        const uint32_t statDrawCount = mainRenderContext->GetStatDrawCount();
+        const uint64_t statTriangleCount = mainRenderContext->GetStatTriangleCount();
 
         mainRenderContext->DrawString(0, y, BE1::va("Frame: %.2f ms", statFrameAverageMsec), DrawTextFlag::Right | DrawTextFlag::AddOutlines); y += 26;
         mainRenderContext->DrawString(0, y, BE1::va("Game: %.2f ms", statGameAverageMsec), DrawTextFlag::Right | DrawTextFlag::AddOutlines); y += 26;
         mainRenderContext->DrawString(0, y, BE1::va("Render: %.2f ms", statRenderMsec), DrawTextFlag::Right | DrawTextFlag::AddOutlines); y += 26;
         mainRenderContext->DrawString(0, y, BE1::va("GPU: %.2f ms", statGpuMsec), DrawTextFlag::Right | DrawTextFlag::AddOutlines); y += 26;
+        mainRenderContext->DrawString(0, y, BE1::va("Draws: %u, Tris: %llu", statDrawCount, statTriangleCount), DrawTextFlag::Right | DrawTextFlag::AddOutlines); y += 26;
         mainRenderContext->DrawString(0, y, BE1::va("Video Memory: %s / %s", BE1::Str::FormatBytes(videoMemUsageBytes).c_str(), BE1::Str::FormatBytes(videoMemBudgetBytes).c_str()), DrawTextFlag::Right | DrawTextFlag::AddOutlines); y += 26;
         mainRenderContext->DrawString(0, y, BE1::va("Mipmap Streaming: %s / %s", BE1::Str::FormatBytes(textureStreamingUsageBytes).c_str(), BE1::Str::FormatBytes(textureStreamingBudgetBytes).c_str()), DrawTextFlag::Right | DrawTextFlag::AddOutlines); y += 26;
     }

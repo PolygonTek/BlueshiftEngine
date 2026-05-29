@@ -181,12 +181,21 @@ void RenderBackend::Execute(RenderFrameData *frameData) {
     }
 }
 
+void RenderBackend::RecordDrawStats(uint32_t drawCount, uint64_t triangleCount) {
+    if (!frameData->IsStatEnabled() || !currentContext) {
+        return;
+    }
+
+    currentContext->AddRenderStats(drawCount, triangleCount);
+}
+
 const void *RenderBackend::ExecuteBeginContext(const void *data) {
     PROFILER_CPU_SCOPED_EVENT("RenderBackend::ExecuteBeginContext");
 
     const BeginContextRenderCommand *cmd = reinterpret_cast<const BeginContextRenderCommand *>(data);
 
     currentContext = cmd->renderContext;
+    currentContext->BeginRenderStatsFrame();
 
     mainCommandList = frameData->GetThreadData(0)->BeginCommandList(RHI::CommandQueueType::Graphics);
 
@@ -308,6 +317,7 @@ const void *RenderBackend::ExecuteSwapBuffers(const void *data) {
     RHI::renderer->SetPSO(mainCommandList, currentContext->imagePSO);
     RHI::renderer->SetTexture(mainCommandList, 0, false, currentContext->mainRTColorTexture);
     RHI::renderer->Draw(mainCommandList, 3, 0);
+    RecordDrawStats(1, 1);
     RHI::renderer->EndRenderPass(mainCommandList);
 #endif
 
@@ -320,6 +330,8 @@ const void *RenderBackend::ExecuteSwapBuffers(const void *data) {
     frameData->SetFrameFenceValue(fenceValue);
 
     SetGpuFrameTimingFence(fenceValue);
+
+    currentContext->EndRenderStatsFrame();
 
 #ifdef USE_MIPMAP_STREAMING
     if (readbackFrame) {

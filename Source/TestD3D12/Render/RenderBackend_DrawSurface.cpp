@@ -265,6 +265,7 @@ void RenderBackend::DrawLitSurface(RHI::FrameThreadData *frameThreadData, RHI::C
     RHI::renderer->SetConstantBuffer(commandList, 0, constantBuffer);
 
     RHI::renderer->DrawIndexed(commandList, drawSurf->subMesh->numIndexes, 0, 0);
+    RecordDrawStats(1, drawSurf->subMesh->numIndexes / 3);
 }
 
 void RenderBackend::DrawLitSurfaceInstanced(RHI::FrameThreadData *frameThreadData, RHI::CommandList *commandList, const DrawSurf **instanceSurfs, int instanceCount) {
@@ -292,6 +293,7 @@ void RenderBackend::DrawLitSurfaceInstanced(RHI::FrameThreadData *frameThreadDat
     RHI::renderer->SetConstantBuffer(commandList, 0, constantBuffer);
 
     RHI::renderer->DrawIndexedInstanced(commandList, instanceSurfs[0]->subMesh->numIndexes, instanceCount, 0, 0, 0);
+    RecordDrawStats(1, instanceSurfs[0]->subMesh->numIndexes / 3 * instanceCount);
 }
 
 void RenderBackend::DrawGuiSurface(RHI::FrameThreadData *frameThreadData, RHI::CommandList *commandList, const DrawSurf *drawSurf) {
@@ -309,4 +311,5 @@ void RenderBackend::DrawGuiSurface(RHI::FrameThreadData *frameThreadData, RHI::C
     RHI::renderer->SetConstantBuffer(commandList, 0, constantBuffer);
 
     RHI::renderer->DrawIndexed(commandList, drawSurf->subMesh->numIndexes, 0, 0);
+    RecordDrawStats(1, drawSurf->subMesh->numIndexes / 3);
 }

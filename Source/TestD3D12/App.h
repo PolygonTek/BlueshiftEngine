@@ -26,9 +26,10 @@ public:
     void                            Init(void *mainWindowHandle);
     void                            Shutdown();
 
-    void                            UpdateFrameTime(int frameMsec);
     void                            Update(int frameMsec);
     void                            Render();
+
+    void                            UpdateFrameTime(int frameMsec);
 
     void                            OnResize(int width, int height);
 

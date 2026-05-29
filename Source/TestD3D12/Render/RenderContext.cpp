@@ -336,6 +336,21 @@ void RenderContext::UpdateGpuFrameTime(float frameMsec) {
     }
 }
 
+void RenderContext::BeginRenderStatsFrame() {
+    statCurrentDrawCount.store(0);
+    statCurrentTriangleCount.store(0);
+}
+
+void RenderContext::AddRenderStats(uint32_t drawCount, uint64_t triangleCount) {
+    statCurrentDrawCount.fetch_add(drawCount);
+    statCurrentTriangleCount.fetch_add(triangleCount);
+}
+
+void RenderContext::EndRenderStatsFrame() {
+    statDrawCount.store(statCurrentDrawCount.load());
+    statTriangleCount.store(statCurrentTriangleCount.load());
+}
+
 void RenderContext::RequestScreenshot(const char *filename) {
     if (!filename || !filename[0]) {
         return;
