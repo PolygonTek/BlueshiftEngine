@@ -1205,9 +1205,10 @@ bool D3D12Renderer::GetTextureImage(RHI::Texture *texture, int mipLevel, int sli
     // 필요하다면 컨버팅한다.
     if (_texture->srcFormat != dstFormat) {
         BE1::Image dstImage;
-        if (tempImage.ConvertFormat(dstFormat, dstImage)) {
-            BE1::simdProcessor->Memcpy(outPixels, dstImage.GetPixels(), dstImage.SizeInBytes());
+        if (!tempImage.ConvertFormat(dstFormat, dstImage)) {
+            return false;
         }
+        BE1::simdProcessor->Memcpy(outPixels, dstImage.GetPixels(), dstImage.SizeInBytes());
     }
     return true;
 }
@@ -1237,6 +1238,11 @@ bool D3D12Renderer::SetTextureSubImage(RHI::Texture *texture, int mipLevel, int 
     D3D12Texture *_texture = static_cast<D3D12Texture *>(texture);
     assert(_texture);
 
+    if (BE1::Image::IsCompressed(imageFormat) || BE1::Image::IsCompressed(_texture->srcFormat)) {
+        BE_WARNLOG("D3D12Renderer::SetTextureSubImage: compressed sub-image update is not supported\n");
+        return false;
+    }
+
     // 서브 리소스 인덱스를 계산한다.
     int subresourceIndex = D3D12CalcSubresource(mipLevel, sliceIndex, 0, _texture->textureDesc.MipLevels, _texture->textureDesc.DepthOrArraySize);
 
@@ -1246,7 +1252,7 @@ bool D3D12Renderer::SetTextureSubImage(RHI::Texture *texture, int mipLevel, int 
 
     int srcPitch = BE1::Image::MemRequired(width, 1, 1, 1, 1, imageFormat);
     int dstPitch = subresourceFootprint.Footprint.RowPitch;
-    uint64_t uploadBufferSize = BE1::Image::MemRequired(dstPitch, height, depth, 1, 1, imageFormat);
+    uint64_t uploadBufferSize = dstPitch * height * depth;
 
     D3D12_RESOURCE_DESC uploadBufferDesc;
     uploadBufferDesc.Dimension = D3D12_RESOURCE_DIMENSION_BUFFER;

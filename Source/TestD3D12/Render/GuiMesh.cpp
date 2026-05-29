@@ -147,9 +147,13 @@ void GuiMesh::DrawQuad(RHI::FrameThreadData *frameThreadData, const BE1::VertexG
     currentSurf->numIndexes += 6;
 }
 
+float GuiMesh::GetTextCharAdvanceX(char32_t unicodeChar) const {
+    return currentFont->GetGlyphAdvanceX(unicodeChar) * currentTextScale + GetTextOutlineSpacing();
+}
+
 float GuiMesh::DrawChar(RHI::FrameThreadData *frameThreadData, float x, float y, char32_t unicodeChar) {
     if (unicodeChar == U' ') {
-        return currentFont->GetGlyphAdvanceX(unicodeChar) * currentTextScale;
+        return GetTextCharAdvanceX(unicodeChar);
     }
 
     // Clip away before accessing to the font glyph.
@@ -190,7 +194,7 @@ float GuiMesh::DrawChar(RHI::FrameThreadData *frameThreadData, float x, float y,
 
     DrawPic(frameThreadData, charX, charY, charW, charH, glyph->s, glyph->t, glyph->s2, glyph->t2, currentTextColor, glyph->texture);
 
-    float pitch = glyph->advanceX * currentTextScale;
+    float pitch = glyph->advanceX * currentTextScale + GetTextOutlineSpacing();
     return pitch;
 }
 
@@ -246,7 +250,7 @@ void GuiMesh::DrawText2D(RHI::FrameThreadData *frameThreadData, const BE1::Rect 
             // Save next line offset
             lineOffsets[numLines] = offset;
         } else {
-            int charWidth = currentFont->GetGlyphAdvanceX(unicodeChar) * currentTextScale;
+            int charWidth = GetTextCharAdvanceX(unicodeChar);
 
             if (BE1::HasFlag(flags, DrawTextFlag::WordWrap)) {
                 if (currentLineWidth + charWidth > rect.w - marginX) {
@@ -263,10 +267,10 @@ void GuiMesh::DrawText2D(RHI::FrameThreadData *frameThreadData, const BE1::Rect 
             } else if (currentLineWidth + charWidth > rect.w - marginX) {
                 if (BE1::HasFlag(flags, DrawTextFlag::Truncate)) {
                     if (currentLineWidth > 0) {
-                        int dotdotdotWidth = currentFont->GetGlyphAdvanceX(U'.') * currentTextScale * 3;
+                        int dotdotdotWidth = GetTextCharAdvanceX(U'.') * 3;
 
                         do {
-                            dotdotdotWidth -= currentFont->GetGlyphAdvanceX(unicodeChar) * currentTextScale;
+                            dotdotdotWidth -= GetTextCharAdvanceX(unicodeChar);
                             unicodeChar = text.UTF8CharPrevious(offset);
                         } while (dotdotdotWidth > 0 && unicodeChar);
 
@@ -306,7 +310,7 @@ void GuiMesh::DrawText2D(RHI::FrameThreadData *frameThreadData, const BE1::Rect 
         // Calculate the x-coordinate.
         int x = rect.x;
         if (BE1::HasAnyFlag(flags, DrawTextFlag::Right | DrawTextFlag::Center)) {
-            int width = currentFont->TextWidth(&text[offset], lineLen[lineIndex], false, true, currentTextScale);
+            int width = currentFont->TextWidth(&text[offset], lineLen[lineIndex], false, true, currentTextScale, GetTextOutlineSpacing());
 
             if (BE1::HasFlag(flags, DrawTextFlag::Right)) {
                 x += (rect.w - width) - marginX;
@@ -389,7 +393,7 @@ void GuiMesh::DrawText3D(RHI::FrameThreadData *frameThreadData, RenderObject::Te
             // Save next line offset.
             lineCharOffsets[numLines] = charOffset;
         } else {
-            float charWidth = font->GetGlyphAdvanceX(unicodeChar) * textScale;
+            float charWidth = GetTextCharAdvanceX(unicodeChar);
             currentLineWidth += charWidth;
             currentLineLength++;
         }
@@ -439,7 +443,7 @@ void GuiMesh::DrawText3D(RHI::FrameThreadData *frameThreadData, RenderObject::Te
         }
 
         if (horzAlignment != RenderObject::TextHorzAlignment::Left) {
-            float lineWidth = font->TextWidth(&text[offset], lineLengths[lineIndex], false, false, textScale);
+            float lineWidth = font->TextWidth(&text[offset], lineLengths[lineIndex], false, false, textScale, GetTextOutlineSpacing());
 
             if (horzAlignment == RenderObject::TextHorzAlignment::Right) {
                 x += maxWidth - lineWidth;
@@ -510,7 +514,7 @@ void GuiMesh::DrawText3D(RHI::FrameThreadData *frameThreadData, RenderObject::Te
                 break;
             }
         } else {
-            float charWidth = font->GetGlyphAdvanceX(unicodeChar) * textScale;
+            float charWidth = GetTextCharAdvanceX(unicodeChar);
 
             if (horzOverflow == RenderObject::TextHorzOverflow::Wrap && currentLineWidth + charWidth > rect.w) {
                 charOffset = charPrevOffset;
@@ -549,7 +553,7 @@ void GuiMesh::DrawText3D(RHI::FrameThreadData *frameThreadData, RenderObject::Te
         // Calculate the x coordinate.
         float x = rect.x;
         if (horzAlignment != RenderObject::TextHorzAlignment::Left) {
-            float lineWidth = font->TextWidth(&text[offset], lineLengths[lineIndex], false, false, textScale);
+            float lineWidth = font->TextWidth(&text[offset], lineLengths[lineIndex], false, false, textScale, GetTextOutlineSpacing());
 
             if (horzAlignment == RenderObject::TextHorzAlignment::Right) {
                 x += rect.w - lineWidth;

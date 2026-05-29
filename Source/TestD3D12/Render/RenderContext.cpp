@@ -142,7 +142,7 @@ void RenderContext::CreateMainRenderTextures(uint32_t width, uint32_t height) {
     depthStencilImage->InitFromMemory(width, height, 1, 1, 1, depthImageFormat, BE1::Image::GammaSpace::Linear, nullptr, BE1::Image::Flag::None);
     mainRTDepthTexture = RHI::renderer->CreateTexture(RHI::TextureType::Texture2D, RHI::TextureFlag::DepthStencil,
         depthStencilImage, false, RHI::ClearValue::DepthStencil(1.0f, 0), mainRTSampleCount, RHI::GPUResourceState::DepthWrite);
-    RHI::renderer->SetName(mainRTColorTexture, "mainRTDepthTexture");
+    RHI::renderer->SetName(mainRTDepthTexture, "mainRTDepthTexture");
 }
 
 void RenderContext::DestroyMainRenderTextures() {

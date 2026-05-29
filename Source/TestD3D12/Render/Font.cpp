@@ -71,7 +71,7 @@ int Font::GetGlyphAdvanceY(char32_t unicodeChar) const {
     return 0;
 }
 
-float Font::TextWidth(const BE1::Str &text, int maxLength, bool allowLineBreak, bool allowColoredText, float xScale) const {
+float Font::TextWidth(const BE1::Str &text, int maxLength, bool allowLineBreak, bool allowColoredText, float xScale, float charSpacing) const {
     float maxWidth = 0;
     float width = 0;
     int offset = 0;
@@ -101,7 +101,7 @@ float Font::TextWidth(const BE1::Str &text, int maxLength, bool allowLineBreak, 
             }
         }
 
-        width += GetGlyphAdvanceX(unicodeChar) * xScale;
+        width += GetGlyphAdvanceX(unicodeChar) * xScale + charSpacing;
         maxLength--;
     }
 

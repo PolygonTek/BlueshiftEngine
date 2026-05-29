@@ -66,6 +66,8 @@ public:
 private:
     void                    PrepareNewSurf();
     void                    DrawQuad(RHI::FrameThreadData *frameThreadData, const BE1::VertexGeneric *verts, const Texture *texture);
+    float                   GetTextOutlineSpacing() const { return currentTextAddOutlines ? currentTextScale : 0.0f; }
+    float                   GetTextCharAdvanceX(char32_t unicodeChar) const;
 
     BE1::Array<Surface>     surfaces;
     Surface *               currentSurf = nullptr;
