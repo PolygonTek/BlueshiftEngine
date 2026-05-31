@@ -24,8 +24,6 @@
 #include "Skeleton.h"
 #include "Anim.h"
 
-static constexpr int    StatUpdateSampleCount = 60;
-
 RenderSystem *          renderSystem = nullptr;
 
 void RenderSystem::Init(void *mainWindowHandle) {
@@ -219,18 +217,6 @@ bool RenderSystem::WaitSubmittedFrame(SubmittedFrame &submittedFrame) {
     return true;
 }
 
-void RenderSystem::UpdateRenderFrameTime(uint64_t frameUsec) {
-    statRenderElapsedUsec += frameUsec;
-    statRenderFrameCount++;
-
-    if (statRenderFrameCount >= StatUpdateSampleCount) {
-        statRenderAverageUsec.store((float)statRenderElapsedUsec / statRenderFrameCount);
-
-        statRenderElapsedUsec = 0;
-        statRenderFrameCount = 0;
-    }
-}
-
 unsigned int RenderSystem::RenderThreadProc(void *param) {
     BE1::PlatformThread::SetCurrentThreadName("RenderSystem::RenderThreadProc");
 
@@ -256,13 +242,8 @@ unsigned int RenderSystem::RenderThreadProc(void *param) {
         // 리소스 요청 처리
         RHI::renderer->ProcessResourceRequests(backendFrameData->GetThreadData(0));
 
-        uint64_t t0 = BE1::PlatformTime::Microseconds();
-
         // 현재 백엔드 프레임 데이터로 렌더링 백엔드를 실행한다.
         renderSystem->backEnd->Execute(backendFrameData);
-
-        uint64_t t1 = BE1::PlatformTime::Microseconds();
-        renderSystem->UpdateRenderFrameTime(t1 - t0);
 
         // 이번 프레임에 Release/Delete 를 요청한 리소스들을 retiredResources 목록에 추가한다.
         RHI::renderer->DrainReleaseRequestsToRetireList();

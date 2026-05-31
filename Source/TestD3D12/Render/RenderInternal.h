@@ -52,12 +52,14 @@ public:
 class VisObject {
 public:
     ALIGN_AS32 BE1::Mat3x4      worldMatrix;
-    ALIGN_AS32 BE1::Mat3x4      modelViewMatrix;
+    //ALIGN_AS32 BE1::Mat3x4      modelViewMatrix;
     ALIGN_AS32 BE1::Mat4        modelViewProjMatrix;
 
     uint32_t                    index = ~0;
 
-    MeshInstance *              meshInstance = nullptr;
+    MeshInstance *              meshInstance = nullptr;     ///< Mesh instance
+    const Skeleton *            skeleton = nullptr;         ///< Skeleton information for skeletal mesh
+
     uint32_t                    numTextures = 0;
     const Texture *             textures[32] = {};
 

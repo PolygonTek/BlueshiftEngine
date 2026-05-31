@@ -1029,7 +1029,7 @@ const BE1::Mat3 SubMesh::CalculateInertiaTensor(const BE1::Vec3 &centroid, float
 #endif
 }
 
-void SubMesh::UploadStaticDataToGPU() {
+void SubMesh::UploadStaticDataToGPU() const {
     if (!vertexBuffer) {
         vertexBuffer = RHI::renderer->CreateVertexBuffer(RHI::BufferUsage::Default, sizeof(verts[0]), numVerts, verts);
     }

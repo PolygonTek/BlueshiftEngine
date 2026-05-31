@@ -19,8 +19,7 @@
 #include "RenderInternal.h"
 
 // 태스크 당 처리할 최대 Draw Call 횟수
-static constexpr uint32_t   MaxDrawCallsPerTask = 512;
-static constexpr uint32_t   MaxInstancedDrawCount = 1024;
+static constexpr uint32_t   MaxDrawSurfsPerTask = 512;
 
 // 상수 버퍼는 16 바이트 정렬을 요구한다.
 struct ALIGN_AS16 UnlitConstantData {
@@ -31,7 +30,7 @@ struct ALIGN_AS16 UnlitConstantData {
 
 struct ALIGN_AS16 UnlitInstancedConstantData {
     BE1::Mat4       viewProjMatrix;
-    BE1::Mat3x4     worldMatrix[MaxInstancedDrawCount];
+    BE1::Mat3x4     worldMatrix[MAX_DRAW_INSTANCE_COUNT];
     uint32_t        baseColorTextureIndex;
     uint32_t        padding[3];
 };
@@ -45,7 +44,7 @@ struct ALIGN_AS16 LitConstantData {
 
 struct ALIGN_AS16 LitInstancedConstantData {
     BE1::Mat4       viewProjMatrix;
-    BE1::Mat3x4     worldMatrix[MaxInstancedDrawCount];
+    BE1::Mat3x4     worldMatrix[MAX_DRAW_INSTANCE_COUNT];
     uint32_t        baseColorTextureIndex;
     uint32_t        streamingTextureIndex;
     uint32_t        padding[2];
@@ -103,10 +102,10 @@ void RenderBackend::DrawLitSurfaces(const DrawSurf **drawSurfs, uint32_t numDraw
 
 #ifdef USE_RENDER_TASK
     // numDrawSurfs 에 따라 numTasks 를 계산한다.
-    uint32_t numTasks = (numDrawSurfs + MaxDrawCallsPerTask - 1) / MaxDrawCallsPerTask;
+    uint32_t numTasks = (numDrawSurfs + MaxDrawSurfsPerTask - 1) / MaxDrawSurfsPerTask;
     numTasks = BE1::Min(BE1::Engine::taskManager->NumThreads(), numTasks);
 
-    // numDrawSurfs 가 많으면 태스크로 나눠서 그릴 수 있다.
+    // numDrawSurfs 가 많으면 태스크로 나눠서 그린다.
     if (numTasks > 1) {
         DrawLitSurfacesWithTask(drawSurfs, numDrawSurfs, numTasks);
     } else {
@@ -119,8 +118,8 @@ void RenderBackend::DrawLitSurfaces(const DrawSurf **drawSurfs, uint32_t numDraw
 
 const RHI::Texture *RenderBackend::ResolveDrawSurfTexture(const DrawSurf *drawSurf) const {
     const RHI::Texture *rhiTexture = nullptr;
-    if (drawSurf->rhiTexture) {
-        rhiTexture = drawSurf->rhiTexture;
+    if (drawSurf->texture) {
+        rhiTexture = drawSurf->texture->GetRHITexture();
     }
     if (!rhiTexture || rhiTexture->GetStatus() != RHI::GPUResourceStatus::Ready) {
         rhiTexture = textureManager.defaultTexture->GetRHITexture();
@@ -139,7 +138,7 @@ void RenderBackend::DrawLitSurfacesInstanced(const DrawSurf **drawSurfs, uint32_
     RHI::renderer->SetConstants(mainCommandList, 1, &feedbackBufferIndex, sizeof(feedbackBufferIndex), 0);
 
     do {
-        uint32_t currentInstanceCount = BE1::Min(instanceCount, MaxInstancedDrawCount);
+        uint32_t currentInstanceCount = BE1::Min(instanceCount, MAX_DRAW_INSTANCE_COUNT);
 
         DrawLitSurfaceInstanced(frameData->GetThreadData(0), mainCommandList, drawSurfs, currentInstanceCount);
 
@@ -171,8 +170,7 @@ void RenderBackend::DrawLitSurfacesWithoutTask(const DrawSurf **drawSurfs, uint3
     }
 }
 
-#ifdef USE_RENDER_TASK
-void RenderBackend::DrawLitSurfacesByTask(RenderBackend::DrawObjectTaskDesc *taskDesc) {
+void RenderBackend::DrawLitSurfacesByTask(RenderBackend::DrawSurfsTaskDesc *taskDesc) {
     PROFILER_CPU_SCOPED_EVENT("RenderBackend::DrawSurfacesByTask");
 
     // 세컨더리 커맨드 리스트를 시작한다.
@@ -207,7 +205,7 @@ void RenderBackend::DrawLitSurfacesByTask(RenderBackend::DrawObjectTaskDesc *tas
 }
 
 void RenderBackend::DrawLitSurfacesByTaskFunction(void *data) {
-    RenderBackend::DrawObjectTaskDesc *taskDesc = reinterpret_cast<RenderBackend::DrawObjectTaskDesc *>(data);
+    RenderBackend::DrawSurfsTaskDesc *taskDesc = reinterpret_cast<RenderBackend::DrawSurfsTaskDesc *>(data);
     renderSystem->GetBackend()->DrawLitSurfacesByTask(taskDesc);
 }
 
@@ -220,12 +218,12 @@ void RenderBackend::DrawLitSurfacesWithTask(const DrawSurf **drawSurfs, uint32_t
     int32_t threadIndex = 0;
 
     // 태스크 정보 초기화
-    objectDrawingTaskDescs.Reserve(numTasks);
-    objectDrawingTaskDescs.SetCount(0, false);
+    drawSurfsTaskDescs.Reserve(numTasks);
+    drawSurfsTaskDescs.SetCount(0, false);
 
     // numTask 개수만큼 태스크를 추가한다.
     while (startIndex < numDrawSurfs) {
-        DrawObjectTaskDesc &currentThreadDesc = objectDrawingTaskDescs.Alloc();
+        DrawSurfsTaskDesc &currentThreadDesc = drawSurfsTaskDescs.Alloc();
 
         currentThreadDesc.threadIndex = threadIndex++;
         currentThreadDesc.drawSurfs = &drawSurfs[startIndex];
@@ -239,11 +237,10 @@ void RenderBackend::DrawLitSurfacesWithTask(const DrawSurf **drawSurfs, uint32_t
     BE1::Engine::taskManager->WaitFinish(drawGroupId, true);
 
     // 메인 커맨드 리스트에 모든 태스크의 세컨더리 커맨드 리스트들을 기록한다.
-    for (int32_t threadIndex = 0; threadIndex < objectDrawingTaskDescs.Count(); ++threadIndex) {
-        mainCommandList->ExecuteSecondary(objectDrawingTaskDescs[threadIndex].commandList);
+    for (int32_t threadIndex = 0; threadIndex < drawSurfsTaskDescs.Count(); ++threadIndex) {
+        mainCommandList->ExecuteSecondary(drawSurfsTaskDescs[threadIndex].commandList);
     }
 }
-#endif // USE_RENDER_TASK
 
 void RenderBackend::DrawLitSurface(RHI::FrameThreadData *frameThreadData, RHI::CommandList *commandList, const DrawSurf *drawSurf) {
     RHI::ConstantBuffer *constantBuffer = frameThreadData->AllocConstant(sizeof(LitConstantData));

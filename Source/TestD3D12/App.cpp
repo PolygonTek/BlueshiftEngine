@@ -16,6 +16,7 @@
 #include "Platform/PlatformSystem.h"
 #include "Render/RenderSystem.h"
 #include "Render/RenderContext.h"
+#include "Render/RenderBackend.h"
 #include "Render/RenderWorld.h"
 #include "Render/RenderCamera.h"
 #include "Render/Texture.h"
@@ -35,8 +36,6 @@ static constexpr float      CubeSpacing = 1.414214f;
 static constexpr float      CubeStartX = -CubeSpacing * (CubeDimensionX - 1) * 0.5f;
 static constexpr float      CubeStartY = -CubeSpacing * (CubeDimensionY - 1) * 0.5f;
 static constexpr float      CubeStartZ = -CubeSpacing * (CubeDimensionZ - 1) * 0.5f;
-static constexpr uint32_t   StatUpdateIntervalMsec = 500;
-static constexpr uint32_t   StatUpdateSampleCount = 60;
 
 static BE1::CVar            stat_fps("stat_fps", "1", BE1::CVar::Flag::Bool, "show FPS");
 static BE1::CVar            stat_render("stat_render", "1", BE1::CVar::Flag::Bool, "show render statistics");
@@ -77,42 +76,6 @@ void App::Shutdown() {
 
     renderSystem->Shutdown();
     delete renderSystem;
-}
-
-void App::UpdateFrameTime(int frameMsec) {
-    statFrameElapsedMsec += frameMsec;
-    statFrameCount++;
-
-    if (statFrameElapsedMsec >= StatUpdateIntervalMsec) {
-        statFrameAverageMsec = (float)statFrameElapsedMsec / statFrameCount;
-
-        statFrameCount = 0;
-        statFrameElapsedMsec = 0;
-    }
-}
-
-void App::UpdateGameFrameTime(uint64_t frameUsec) {
-    statGameElapsedUsec += frameUsec;
-    statGameFrameCount++;
-
-    if (statGameFrameCount >= StatUpdateSampleCount) {
-        statGameAverageMsec = (float)statGameElapsedUsec / statGameFrameCount * 0.001f;
-
-        statGameElapsedUsec = 0;
-        statGameFrameCount = 0;
-    }
-}
-
-void App::UpdateRenderFrontendFrameTime(uint64_t frameUsec) {
-    statRenderFrontendElapsedUsec += frameUsec;
-    statRenderFrontendFrameCount++;
-
-    if (statRenderFrontendFrameCount >= StatUpdateSampleCount) {
-        statRenderFrontendAverageMsec = (float)statRenderFrontendElapsedUsec / statRenderFrontendFrameCount * 0.001f;
-
-        statRenderFrontendElapsedUsec = 0;
-        statRenderFrontendFrameCount = 0;
-    }
 }
 
 void App::Update(int frameMsec) {
@@ -156,7 +119,7 @@ void App::Render() {
     cameraDesc.renderRect.Set(0, 0, w, h);
     cameraDesc.axis = BE1::Angles(0.0f, cameraPitch, cameraYaw).ToMat3();
     cameraDesc.origin = BE1::Vec3::origin - cameraDesc.axis[0] * cameraDistance;
-    RenderCamera::CalculateFov(60, 1.7778f, aspectRatio, &cameraDesc.fovX, &cameraDesc.fovY);
+    RenderCamera::CalculateFov(60, 16.0f / 9.0f, aspectRatio, &cameraDesc.fovX, &cameraDesc.fovY);
     cameraDesc.zNear = BE1::MeterToUnit(0.5f);
     cameraDesc.zFar = BE1::MeterToUnit(1000.0f);
     if (cameraDesc.orthogonal) {
@@ -199,7 +162,7 @@ void App::Render() {
         const uint64_t textureStreamingUsageBytes = textureManager.GetStreamingTextureMemoryUsageBytes();
 
         const float statRenderFrontendMsec = statRenderFrontendAverageMsec;
-        const float statRenderBackendMsec = renderSystem->GetStatRenderAverageMsec();
+        const float statRenderBackendMsec = renderSystem->GetBackend()->GetStatRenderAverageMsec();
         const float statGpuMsec = mainRenderContext->GetStatGpuAverageMsec();
         const uint32_t statDrawCount = mainRenderContext->GetStatDrawCount();
         const uint64_t statTriangleCount = mainRenderContext->GetStatTriangleCount();
@@ -225,6 +188,48 @@ void App::Render() {
 void App::OnResize(int width, int height) {
     if (mainRenderContext) {
         mainRenderContext->OnResize(width, height);
+    }
+}
+
+void App::UpdateFrameTime(int frameMsec) {
+    static constexpr uint32_t StatUpdateIntervalMsec = 500;
+
+    statFrameElapsedMsec += frameMsec;
+    statFrameCount++;
+
+    if (statFrameElapsedMsec >= StatUpdateIntervalMsec) {
+        statFrameAverageMsec = (float)statFrameElapsedMsec / statFrameCount;
+
+        statFrameCount = 0;
+        statFrameElapsedMsec = 0;
+    }
+}
+
+void App::UpdateGameFrameTime(uint64_t frameUsec) {
+    static constexpr uint32_t StatUpdateFrameCount = 60;
+
+    statGameElapsedUsec += frameUsec;
+    statGameFrameCount++;
+
+    if (statGameFrameCount >= StatUpdateFrameCount) {
+        statGameAverageMsec = (float)statGameElapsedUsec / statGameFrameCount * 0.001f;
+
+        statGameElapsedUsec = 0;
+        statGameFrameCount = 0;
+    }
+}
+
+void App::UpdateRenderFrontendFrameTime(uint64_t frameUsec) {
+    static constexpr uint32_t StatUpdateFrameCount = 60;
+
+    statRenderFrontendElapsedUsec += frameUsec;
+    statRenderFrontendFrameCount++;
+
+    if (statRenderFrontendFrameCount >= StatUpdateFrameCount) {
+        statRenderFrontendAverageMsec = (float)statRenderFrontendElapsedUsec / statRenderFrontendFrameCount * 0.001f;
+
+        statRenderFrontendElapsedUsec = 0;
+        statRenderFrontendFrameCount = 0;
     }
 }
 

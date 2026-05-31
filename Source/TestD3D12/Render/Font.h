@@ -40,6 +40,7 @@ struct FontGlyph {
 
 class Font {
     friend class FontManager;
+    friend class RenderFrameData;
 
 public:
     enum class Type : uint8_t {
@@ -84,6 +85,7 @@ private:
 
     Type                    fontType = Type::None;
     uint32_t                fontSize = 0;
+    uint64_t                retainedFrameSerial = 0;
     FontFace *              fontFace = nullptr;
 };
 

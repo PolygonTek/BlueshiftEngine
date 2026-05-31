@@ -28,6 +28,10 @@ public:
     void                            Shutdown();
 
     void                            Execute(RenderFrameData *frameData);
+
+    float                           GetStatRenderAverageMsec() const { return statRenderAverageUsec.load() * 0.001f; }
+    void                            UpdateRenderFrameTime(uint64_t frameUsec);
+
     void                            DiscardGpuFrameTimings(const RenderContext *renderContext);
 
 private:
@@ -40,7 +44,7 @@ private:
         bool                        pending = false;
     };
 
-    struct DrawObjectTaskDesc {
+    struct DrawSurfsTaskDesc {
         int32_t                     threadIndex = -1;
         const DrawSurf **           drawSurfs = nullptr;
         uint32_t                    numDrawSurfs = 0;
@@ -60,11 +64,9 @@ private:
     void                            DrawLitSurfacesInstanced(const DrawSurf **instanceSurfs, uint32_t instanceCount);
 
     void                            DrawLitSurfacesWithoutTask(const DrawSurf **drawSurfs, uint32_t numDrawSurfs);
-#ifdef USE_RENDER_TASK
     void                            DrawLitSurfacesWithTask(const DrawSurf **drawSurfs, uint32_t numDrawSurfs, uint32_t numTasks);
-    void                            DrawLitSurfacesByTask(RenderBackend::DrawObjectTaskDesc *taskDesc);
+    void                            DrawLitSurfacesByTask(RenderBackend::DrawSurfsTaskDesc *taskDesc);
     static void                     DrawLitSurfacesByTaskFunction(void *data);
-#endif
 
     void                            DrawLitSurface(RHI::FrameThreadData *frameThreadData, RHI::CommandList *commandList, const DrawSurf *drawSurf);
     void                            DrawLitSurfaceInstanced(RHI::FrameThreadData *frameThreadData, RHI::CommandList *commandList, const DrawSurf **instanceSurfs, int instanceCount);
@@ -85,8 +87,12 @@ private:
 
     const VisCamera *               currentVisCamera = nullptr;
 
-    BE1::Array<DrawObjectTaskDesc>  objectDrawingTaskDescs;
     uint32_t                        drawGroupId = -1;
+    BE1::Array<DrawSurfsTaskDesc>   drawSurfsTaskDescs;
+
+    uint64_t                        statRenderElapsedUsec = 0;
+    int                             statRenderFrameCount = 0;
+    std::atomic<float>              statRenderAverageUsec = 0;
 
     uint64_t                        gpuTimestampFrequency = 0;
     RHI::QueryHeap *                gpuTimestampQueryHeap = nullptr;

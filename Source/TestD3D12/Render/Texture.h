@@ -31,6 +31,7 @@ class LoadingSystem;
 class Texture : public std::enable_shared_from_this<Texture> {
     friend class TextureManager;
     friend class LoadingSystem;
+    friend class RenderFrameData;
 
 public:
     enum class Flag : uint16_t {
@@ -178,6 +179,7 @@ private:
     std::atomic<State>              state = State::Empty;
     std::atomic<uint32_t>           loadSerial = 0;
     uint32_t                        index = 0;
+    uint64_t                        retainedFrameSerial = 0;
     Streaming                       streaming;
     InternalData                    internalData;
 };

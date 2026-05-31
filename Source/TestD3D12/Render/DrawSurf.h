@@ -32,10 +32,9 @@ public:
     };
 
     uint64_t                sortKey;
-    SubMesh *               subMesh = nullptr;
     const VisObject *       space = nullptr;
+    const SubMesh *         subMesh = nullptr;
     const Texture *         texture = nullptr;
-    const RHI::Texture *    rhiTexture = nullptr;
     Flag                    flags = Flag::None;
 };
 

@@ -26,6 +26,8 @@
 */
 
 class MeshInstance {
+    friend class RenderFrameData;
+
 public:
     using Type = Mesh::InstanceType;
 
@@ -76,6 +78,7 @@ private:
     Type                            type = Type::Static;
     std::shared_ptr<Mesh>           sourceMesh;
     uint32_t                        sourceDataSerial = InvalidDataSerial;
+    uint64_t                        retainedFrameSerial = 0;
     BE1::Array<BE1::Mat3x4>         skinningMatrices = BE1::Array<BE1::Mat3x4>(64);
     std::unique_ptr<SkinningJointCache> skinningJointCache;
 };

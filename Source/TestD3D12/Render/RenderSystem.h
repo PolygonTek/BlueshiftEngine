@@ -44,8 +44,6 @@ public:
     const RHI::MemoryUsage &        GetVideoMemoryUsage() const { return videoMemoryUsage; }
     bool                            IsUsingRenderThread() const { return !!renderThread; }
 
-    float                           GetStatRenderAverageMsec() const { return statRenderAverageUsec.load() * 0.001f; }
-
     RenderContext *                 CreateRenderContext(void *windowHandle, bool isMain = false);
     void                            DestroyRenderContext(RenderContext *renderContext);
 
@@ -70,8 +68,6 @@ private:
     void                            MarkRenderCompleted(RenderFrameData *frameData);
     bool                            WaitSubmittedFrame(SubmittedFrame &submittedFrame);
 
-    void                            UpdateRenderFrameTime(uint64_t frameUsec);
-
     static unsigned int             RenderThreadProc(void *param);
 
     static void                     Cmd_ScreenShot(const BE1::CmdArgs &args);
@@ -80,10 +76,6 @@ private:
     RenderContext *                 mainRenderContext = nullptr;
     RenderBackend *                 backEnd = nullptr;
     RHI::MemoryUsage                videoMemoryUsage = {};
-
-    uint64_t                        statRenderElapsedUsec = 0;
-    int                             statRenderFrameCount = 0;
-    std::atomic<float>              statRenderAverageUsec = 0;
 
     BE1::Array<SubmittedFrame>      submittedFrames;
     int                             submittedFrameReadIndex = 0;

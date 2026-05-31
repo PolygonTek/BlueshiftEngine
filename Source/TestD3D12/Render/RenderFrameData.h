@@ -98,9 +98,6 @@ public:
     void                            Init(int32_t frameIndex, int32_t numFrames);
     void                            Shutdown();
 
-                                    // 이번 프레임의 임시 시스템 메모리 할당 초기화 (메인 스레드에서 호출됨)
-    void                            BeginFrameMemAllocs();
-
                                     // 이번 프레임 동안 사용할 임시 시스템 메모리를 할당한다.
                                     // 할당된 메모리는 다음 프레임에서 재사용될 때 일괄적으로 해제된다.
                                     // 현재는 프론트엔드에서 이번 프레임의 렌더 데이터를 구성하는 동안에만 사용한다.
@@ -132,9 +129,9 @@ public:
     bool                            IsStatEnabled() const { return statEnabled; }
     void                            SetStatEnabled(bool enabled) { statEnabled = enabled; }
 
-    void                            RetainTexture(const std::shared_ptr<Texture> &texture);
-    void                            RetainMeshInstance(const std::shared_ptr<MeshInstance> &meshInstance);
-    void                            RetainFont(const std::shared_ptr<Font> &font);
+    Texture *                       RetainTexture(const std::shared_ptr<Texture> &texture);
+    MeshInstance *                  RetainMeshInstance(const std::shared_ptr<MeshInstance> &meshInstance);
+    Font *                          RetainFont(const std::shared_ptr<Font> &font);
 
                                     // 프론트 엔드에서 프레임 데이터의 사용을 시작
     void                            BeginFrame();
@@ -156,6 +153,9 @@ private:
     void                            InitMemBlocks();
     void                            ClearMemBlocks();
     MemBlock *                      AllocMemBlock();
+
+                                    // 이번 프레임의 임시 시스템 메모리 할당 초기화 (메인 스레드에서 호출됨)
+    void                            BeginFrameMemAllocs();
 
     void                            InitVisCameras(uint32_t maxVisCameras);
     void                            FreeVisCameras();
@@ -183,17 +183,17 @@ private:
 
     FrameSyncState                  frameSyncState = FrameSyncState::RenderCompleted;
     uint64_t                        frameFenceValue = 0;
+    uint64_t                        frameSerial = 0;
+    static uint64_t                 globalFrameSerial;
+
     bool                            statEnabled = false;
 
     RHI::FrameThreadData **         threadData = nullptr;
     int                             numRenderTaskThreads = 0;
 
     BE1::Array<std::shared_ptr<Texture>> retainedTextures;
-    BE1::HashIndex                  retainedTextureHash { 4096, 4096 };
     BE1::Array<std::shared_ptr<MeshInstance>> retainedMeshInstances;
-    BE1::HashIndex                  retainedMeshInstanceHash { 16384, 16384 };
     BE1::Array<std::shared_ptr<Font>> retainedFonts;
-    BE1::HashIndex                  retainedFontHash { 64, 64 };
 };
 
 BE_INLINE void RenderFrameData::BeginFrame() {
@@ -206,6 +206,8 @@ BE_INLINE void RenderFrameData::BeginFrame() {
     for (int32_t threadIndex = 0; threadIndex < numRenderTaskThreads; ++threadIndex) {
         threadData[threadIndex]->Reset();
     }
+
+    frameSerial = ++globalFrameSerial;
 
     // 프레임 메모리를 초기화한다.
     BeginFrameMemAllocs();

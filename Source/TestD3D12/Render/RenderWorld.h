@@ -97,10 +97,24 @@ public:
     void                        DrawDebugArrow(const BE1::Vec3 &start, const BE1::Vec3 &end, float coneSize, float coneRadius, bool depthTest = false, int lifeTime = 0);
 
 private:
+    struct SkinningJointCacheTaskDesc {
+        int32_t                 threadIndex = -1;
+        RenderWorld *           renderWorld = nullptr;
+        RenderFrameData *       frameData = nullptr;
+        VisObject **            visObjects = nullptr;
+        uint32_t                numVisObjects = 0;
+    };
+
     bool                        IsVisObjectRegistered(const RenderObject *renderObject) const;
     VisObject *                 RegisterVisObject(RenderFrameData *frameData, const RenderObject *renderObject);
     void                        FindVisObjects(RenderFrameData *frameData, const RenderCamera *renderCamera, VisCamera *visCamera);
-    void                        AddStaticMeshes(RenderFrameData *frameData, const RenderCamera *renderCamera, VisCamera *visCamera);
+    void                        AddMeshes(RenderFrameData *frameData, const RenderCamera *renderCamera, VisCamera *visCamera);
+    void                        UpdateVisibleSkinningJointCaches(RenderFrameData *frameData);
+    void                        UpdateSkinningJointCaches(RenderFrameData *frameData, VisObject **visObjects, uint32_t numVisObjects, uint32_t numSkinningJoints);
+    void                        UpdateSkinningJointCachesWithoutTask(RenderFrameData *frameData, VisObject **visObjects, uint32_t numVisObjects);
+    void                        UpdateSkinningJointCachesWithTask(RenderFrameData *frameData, VisObject **visObjects, uint32_t numVisObjects, uint32_t numSkinningJoints, uint32_t numTasks);
+    void                        UpdateSkinningJointCachesByTask(RenderWorld::SkinningJointCacheTaskDesc *taskDesc);
+    static void                 UpdateSkinningJointCachesByTaskFunction(void *data);
     void                        AddTextMeshes(RenderFrameData *frameData, const RenderCamera *renderCamera, VisCamera *visCamera);
     void                        AddSkyBoxMeshes(RenderFrameData *frameData, const RenderCamera *renderCamera, VisCamera *visCamera);
 
@@ -129,6 +143,9 @@ private:
     BE1::DynamicAABBTree        staticMeshDbvt;     ///< Dynamic bounding volume tree (DBVT) for static meshes.
     BE1::Array<int>             pendingStaticMeshProxyObjects;
 #endif
+
+    uint32_t                    renderWorldGroupId = -1;
+    BE1::Array<SkinningJointCacheTaskDesc> skinningJointCacheTaskDescs;
 
     GuiMesh                     textMesh;           ///< 3D text mesh
     std::shared_ptr<Material>   skyboxMaterial;

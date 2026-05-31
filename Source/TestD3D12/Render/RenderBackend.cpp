@@ -46,6 +46,20 @@ void RenderBackend::Shutdown() {
     }
 }
 
+void RenderBackend::UpdateRenderFrameTime(uint64_t frameUsec) {
+    static constexpr int StatUpdateFrameCount = 60;
+
+    statRenderElapsedUsec += frameUsec;
+    statRenderFrameCount++;
+
+    if (statRenderFrameCount >= StatUpdateFrameCount) {
+        statRenderAverageUsec.store((float)statRenderElapsedUsec / statRenderFrameCount);
+
+        statRenderElapsedUsec = 0;
+        statRenderFrameCount = 0;
+    }
+}
+
 void RenderBackend::BeginGpuFrameTiming(RHI::CommandList *commandList) {
     if (!frameData->IsStatEnabled()) {
         return;
@@ -152,13 +166,17 @@ void RenderBackend::DiscardGpuFrameTimings(const RenderContext *renderContext) {
 }
 
 void RenderBackend::Execute(RenderFrameData *frameData) {
+    uint64_t t0 = BE1::PlatformTime::Microseconds();
+
     // 백엔드가 처리할 프레임 데이터
     this->frameData = frameData;
 
     const void *data = frameData->GetCommands()->buffer;
+    bool finished = false;
 
-    while (1) {
+    while (!finished) {
         RenderCommandId cmdId = *reinterpret_cast<const RenderCommandId *>(data);
+
         switch (cmdId) {
         case RenderCommandId::BeginContext:
             data = ExecuteBeginContext(data);
@@ -173,12 +191,17 @@ void RenderBackend::Execute(RenderFrameData *frameData) {
             data = ExecuteSwapBuffers(data);
             continue;
         case RenderCommandId::End:
-            return;
+            finished = true;
+            continue;
         default:
             BE_ERRLOG("RenderBackend::Execute: invalid render command ID (%i)\n", cmdId);
-            return;
+            finished = true;
+            continue;
         }
     }
+
+    uint64_t t1 = BE1::PlatformTime::Microseconds();
+    UpdateRenderFrameTime(t1 - t0);
 }
 
 void RenderBackend::RecordDrawStats(uint32_t drawCount, uint64_t triangleCount) {

@@ -39,6 +39,8 @@ using uint4 = DirectX::XMUINT4;
 
 #endif // __cplusplus
 
+static const uint MAX_DRAW_INSTANCE_COUNT = 1024;
+
 static const uint TEXTURE_STREAMING_FEEDBACK_RESOLUTION = 16384;
 static const uint TEXTURE_STREAMING_FEEDBACK_MAX_LOD = 14;
 static const uint TEXTURE_STREAMING_INVALID_INDEX = 0xFFFFFFFF;

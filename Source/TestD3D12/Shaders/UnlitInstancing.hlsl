@@ -32,7 +32,7 @@ struct PSInput {
 
 cbuffer InstancedObjectCB : register(b0) {
     row_major float4x4 viewProjMatrix;
-    row_major float3x4 worldMatrix[1024];
+    row_major float3x4 worldMatrix[MAX_DRAW_INSTANCE_COUNT];
     uint baseColorTextureIndex;
 };
 

@@ -16,6 +16,7 @@
 #include "RenderFrameData.h"
 #include "RenderInternal.h"
 
+uint64_t                    RenderFrameData::globalFrameSerial = 0;
 static constexpr uint32_t   MaxRenderTaskThreads = 32;
 static constexpr uint32_t   MaxMemSizePerBlock = 0x4000000;
 static constexpr uint32_t   MemAlignSize = 32;
@@ -193,7 +194,6 @@ void RenderFrameData::ClearRetainedTextures() {
         retainedTextures[i].reset();
     }
     retainedTextures.SetCount(0, false);
-    retainedTextureHash.Clear();
 }
 
 void RenderFrameData::ClearRetainedMeshInstances() {
@@ -201,7 +201,6 @@ void RenderFrameData::ClearRetainedMeshInstances() {
         retainedMeshInstances[i].reset();
     }
     retainedMeshInstances.SetCount(0, false);
-    retainedMeshInstanceHash.Clear();
 }
 
 void RenderFrameData::ClearRetainedFonts() {
@@ -209,61 +208,48 @@ void RenderFrameData::ClearRetainedFonts() {
         retainedFonts[i].reset();
     }
     retainedFonts.SetCount(0, false);
-    retainedFontHash.Clear();
 }
 
-void RenderFrameData::RetainTexture(const std::shared_ptr<Texture> &texture) {
+Texture *RenderFrameData::RetainTexture(const std::shared_ptr<Texture> &texture) {
     if (!texture) {
-        return;
+        return nullptr;
     }
 
     Texture *texturePtr = texture.get();
-    int hash = retainedTextureHash.GenerateHash(texturePtr);
-
-    for (int i = retainedTextureHash.First(hash); i != -1; i = retainedTextureHash.Next(i)) {
-        if (retainedTextures[i].get() == texturePtr) {
-            return;
-        }
+    if (texturePtr->retainedFrameSerial != frameSerial) {
+        texturePtr->retainedFrameSerial = frameSerial;
+        retainedTextures.Append(texture);
     }
 
-    int index = retainedTextures.Append(texture);
-    retainedTextureHash.Add(hash, index);
+    return texturePtr;
 }
 
-void RenderFrameData::RetainMeshInstance(const std::shared_ptr<MeshInstance> &meshInstance) {
+MeshInstance *RenderFrameData::RetainMeshInstance(const std::shared_ptr<MeshInstance> &meshInstance) {
     if (!meshInstance) {
-        return;
+        return nullptr;
     }
 
     MeshInstance *meshInstancePtr = meshInstance.get();
-    int hash = retainedMeshInstanceHash.GenerateHash(meshInstancePtr);
-
-    for (int i = retainedMeshInstanceHash.First(hash); i != -1; i = retainedMeshInstanceHash.Next(i)) {
-        if (retainedMeshInstances[i].get() == meshInstancePtr) {
-            return;
-        }
+    if (meshInstancePtr->retainedFrameSerial != frameSerial) {
+        meshInstancePtr->retainedFrameSerial = frameSerial;
+        retainedMeshInstances.Append(meshInstance);
     }
 
-    int index = retainedMeshInstances.Append(meshInstance);
-    retainedMeshInstanceHash.Add(hash, index);
+    return meshInstancePtr;
 }
 
-void RenderFrameData::RetainFont(const std::shared_ptr<Font> &font) {
+Font *RenderFrameData::RetainFont(const std::shared_ptr<Font> &font) {
     if (!font) {
-        return;
+        return nullptr;
     }
 
     Font *fontPtr = font.get();
-    int hash = retainedFontHash.GenerateHash(fontPtr);
-
-    for (int i = retainedFontHash.First(hash); i != -1; i = retainedFontHash.Next(i)) {
-        if (retainedFonts[i].get() == fontPtr) {
-            return;
-        }
+    if (fontPtr->retainedFrameSerial != frameSerial) {
+        fontPtr->retainedFrameSerial = frameSerial;
+        retainedFonts.Append(font);
     }
 
-    int index = retainedFonts.Append(font);
-    retainedFontHash.Add(hash, index);
+    return fontPtr;
 }
 
 VisCamera *RenderFrameData::AllocVisCamera() {

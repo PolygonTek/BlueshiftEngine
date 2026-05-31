@@ -24,6 +24,8 @@ RenderWorld::RenderWorld() {
 
     debugLineColor.Set(0, 0, 0, 0);
     debugFillColor.Set(0, 0, 0, 0);
+
+    renderWorldGroupId = BE1::Engine::taskManager->CreateGroupId();
 }
 
 void RenderWorld::ClearScene() {
