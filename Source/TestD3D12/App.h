@@ -46,6 +46,7 @@ public:
     void                            TakeScreenshot();
 
 private:
+    void                            RenderText();
     void                            UpdateGameFrameTime(uint64_t frameUsec);
     void                            UpdateRenderFrontendFrameTime(uint64_t frameUsec);
     void                            UpdateCubes();

@@ -19,6 +19,7 @@
 #include "D3D12Renderer/D3D12Renderer.h"
 #include "Sampler.h"
 #include "Texture.h"
+#include "Material.h"
 #include "Font.h"
 #include "Mesh.h"
 #include "Skeleton.h"
@@ -35,6 +36,8 @@ void RenderSystem::Init(void *mainWindowHandle) {
     samplerManager.Init();
 
     textureManager.Init();
+
+    materialManager.Init();
 
     fontManager.Init();
 
@@ -70,6 +73,8 @@ void RenderSystem::Shutdown() {
 
     fontManager.Shutdown();
 
+    materialManager.Shutdown();
+
     textureManager.Shutdown();
 
     samplerManager.Shutdown();
@@ -79,6 +84,18 @@ void RenderSystem::Shutdown() {
 }
 
 void RenderSystem::UpdateFrame() {
+    textureManager.UpdateFrame();
+
+    materialManager.UpdateFrame();
+
+    meshManager.UpdateFrame();
+
+    skeletonManager.UpdateFrame();
+
+    animManager.UpdateFrame();
+
+    fontManager.UpdateFrame();
+
     RHI::renderer->GetMemoryUsage(videoMemoryUsage);
     assert(videoMemoryUsage.budgetBytes > 0);
 

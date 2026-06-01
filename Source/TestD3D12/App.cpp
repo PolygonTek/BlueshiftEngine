@@ -20,6 +20,7 @@
 #include "Render/RenderWorld.h"
 #include "Render/RenderCamera.h"
 #include "Render/Texture.h"
+#include "Render/Material.h"
 #include "Render/MeshInstance.h"
 #include "Render/Skeleton.h"
 #include "Render/Anim.h"
@@ -100,9 +101,7 @@ void App::Update(int frameMsec) {
 void App::Render() {
     PROFILER_CPU_SCOPED_EVENT("App::Render");
 
-    const bool statEnabled = stat_render.GetBool();
-
-    mainRenderContext->BeginFrame(statEnabled);
+    mainRenderContext->BeginFrame(stat_render.GetBool());
 
     uint64_t t0 = BE1::PlatformTime::Microseconds();
 
@@ -128,18 +127,19 @@ void App::Render() {
     }
     renderCamera->Update(cameraDesc);
 
-    textureManager.UpdateFrame();
-
-    meshManager.UpdateFrame();
-
-    skeletonManager.UpdateFrame();
-
-    animManager.UpdateFrame();
-
-    fontManager.UpdateFrame();
-
     renderWorld->RenderScene(renderCamera);
 
+    RenderText();
+
+    renderWorld->RenderGUI(mainRenderContext->GetGuiMesh());
+
+    mainRenderContext->EndFrame();
+
+    uint64_t t1 = BE1::PlatformTime::Microseconds();
+    UpdateRenderFrontendFrameTime(t1 - t0);
+}
+
+void App::RenderText() {
     mainRenderContext->SetFont(mainFont);
     mainRenderContext->SetColor(BE1::Color4::white);
     mainRenderContext->SetTextShadowColor(BE1::Color4::black);
@@ -154,7 +154,7 @@ void App::Render() {
         mainRenderContext->DrawString(0, y, BE1::va("FPS: %.1f", statFps), DrawTextFlag::Right | DrawTextFlag::AddOutlines); y += textLineHeight;
     }
 
-    if (statEnabled) {
+    if (stat_render.GetBool()) {
         const uint64_t videoMemBudgetBytes = renderSystem->GetVideoMemoryUsage().budgetBytes;
         const uint64_t videoMemUsageBytes = renderSystem->GetVideoMemoryUsage().usageBytes;
 
@@ -176,13 +176,6 @@ void App::Render() {
         mainRenderContext->DrawString(0, y, BE1::va("Video Memory: %s / %s", BE1::Str::FormatBytes(videoMemUsageBytes).c_str(), BE1::Str::FormatBytes(videoMemBudgetBytes).c_str()), DrawTextFlag::Right | DrawTextFlag::AddOutlines); y += textLineHeight;
         mainRenderContext->DrawString(0, y, BE1::va("Mipmap Streaming: %s / %s", BE1::Str::FormatBytes(textureStreamingUsageBytes).c_str(), BE1::Str::FormatBytes(textureStreamingBudgetBytes).c_str()), DrawTextFlag::Right | DrawTextFlag::AddOutlines); y += textLineHeight;
     }
-
-    renderWorld->RenderGUI(mainRenderContext->GetGuiMesh());
-
-    mainRenderContext->EndFrame();
-
-    uint64_t t1 = BE1::PlatformTime::Microseconds();
-    UpdateRenderFrontendFrameTime(t1 - t0);
 }
 
 void App::OnResize(int width, int height) {

@@ -82,6 +82,9 @@ set(SRC_FILES
     Render/RenderCamera.cpp
     Render/RenderInternal.h
     Render/DrawSurf.h
+    Render/Material.h
+    Render/Material.cpp
+    Render/MaterialManager.cpp
     Render/Mesh.h
     Render/Mesh.cpp
     Render/Mesh_InternalData.cpp
