@@ -163,7 +163,7 @@ bool TextureManager::IsRegisteredStreamingTexture(const Texture *texture) const 
         return false;
     }
 
-    return texture->streaming.streamingListIndex != TEXTURE_STREAMING_INVALID_INDEX;
+    return texture->streaming.streamingListIndex != TextureStreamingInvalidIndex;
 }
 
 void TextureManager::RegisterStreamingTexture(const std::shared_ptr<Texture> &texture, const BE1::Image::MipRange &mipRange) {
@@ -173,7 +173,7 @@ void TextureManager::RegisterStreamingTexture(const std::shared_ptr<Texture> &te
 
     Texture::Streaming &streaming = texture->streaming;
 
-    if (streaming.streamingListIndex != TEXTURE_STREAMING_INVALID_INDEX) {
+    if (streaming.streamingListIndex != TextureStreamingInvalidIndex) {
         BE_WARNLOG("TextureManager::RegisterStreamingTexture: texture '%s' has already registered\n", texture->hashName.c_str());
         return;
     }

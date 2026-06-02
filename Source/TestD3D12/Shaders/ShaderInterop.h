@@ -39,19 +39,19 @@ using uint4 = DirectX::XMUINT4;
 
 #endif // __cplusplus
 
-static const uint MAX_DRAW_INSTANCE_COUNT = 1024;
+static const uint MaxDrawInstanceCount = 1024;
 
-static const uint TEXTURE_STREAMING_FEEDBACK_RESOLUTION = 16384;
-static const uint TEXTURE_STREAMING_FEEDBACK_MAX_LOD = 14;
-static const uint TEXTURE_STREAMING_INVALID_INDEX = 0xFFFFFFFF;
+static const uint TextureStreamingFeedbackResolution = 16384;
+static const uint TextureStreamingFeedbackMaxLOD = 14;
+static const uint TextureStreamingInvalidIndex = 0xFFFFFFFF;
 
-static const uint GENMIP_2D_BLOCK_SIZE_X = 32;
-static const uint GENMIP_2D_BLOCK_SIZE_Y = 32;
-static const uint GENMIP_3D_BLOCK_SIZE_X = 8;
-static const uint GENMIP_3D_BLOCK_SIZE_Y = 8;
-static const uint GENMIP_3D_BLOCK_SIZE_Z = 8;
-static const uint MIPGEN_OPTION_BIT_PRESERVE_COVERAGE = 1 << 0;
-static const uint MIPGEN_OPTION_BIT_SRGB = 1 << 1;
+static const uint GenMip2DBlockSizeX = 32;
+static const uint GenMip2DBlockSizeY = 32;
+static const uint GenMip3DBlockSizeX = 8;
+static const uint GenMip3DBlockSizeY = 8;
+static const uint GenMip3DBlockSizeZ = 8;
+static const uint MipGenOptionBitPreserveCoverage = 1 << 0;
+static const uint MipGenOptionBitSRGB = 1 << 1;
 
 struct MipGenParams {
     uint3 dstSize;

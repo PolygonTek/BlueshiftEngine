@@ -36,7 +36,7 @@ struct PSInput {
 #if USE_INSTANCING == 1
 cbuffer ObjectCB : register(b0) {
     row_major float4x4 viewProjMatrix;
-    row_major float3x4 worldMatrix[MAX_DRAW_INSTANCE_COUNT];
+    row_major float3x4 worldMatrix[MaxDrawInstanceCount];
     uint baseColorTextureIndex;
     uint streamingTextureIndex;
 };
@@ -69,7 +69,7 @@ PSInput VSMain(VSInput input) {
 
 [RootSignature(COMMON_ROOT_SIGNATURE)]
 float4 PSMain(PSInput input) : SV_TARGET {
-    if (feedbackBufferIndex != 0 && streamingTextureIndex != TEXTURE_STREAMING_INVALID_INDEX) {
+    if (feedbackBufferIndex != 0 && streamingTextureIndex != TextureStreamingInvalidIndex) {
         WriteMipmapFeedback(GetRWBufferUInt(feedbackBufferIndex), streamingTextureIndex, ddx_coarse(input.texCoord.xy), ddy_coarse(input.texCoord.xy));
     }
     

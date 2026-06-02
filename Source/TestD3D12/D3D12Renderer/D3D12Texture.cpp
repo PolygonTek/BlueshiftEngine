@@ -1396,11 +1396,11 @@ void D3D12Renderer::GenerateMipmaps(RHI::CommandList *commandList, const RHI::Te
     mipGenParams.flags = 0;
 
     if (_texture->srcSRGB) {
-        mipGenParams.flags |= MIPGEN_OPTION_BIT_SRGB;
+        mipGenParams.flags |= MipGenOptionBitSRGB;
     }
 
     if (preserveCoverage) {
-        mipGenParams.flags |= MIPGEN_OPTION_BIT_PRESERVE_COVERAGE;
+        mipGenParams.flags |= MipGenOptionBitPreserveCoverage;
     }
 
     if (_texture->textureDesc.Dimension == D3D12_RESOURCE_DIMENSION_TEXTURE2D) {
@@ -1421,8 +1421,8 @@ void D3D12Renderer::GenerateMipmaps(RHI::CommandList *commandList, const RHI::Te
                 mipGenParams.dstSizeRcp.y = 1.0f / destH;
                 mipGenParams.dstSizeRcp.z = 0;
 
-                uint32_t threadGroupCountX = (destW + GENMIP_2D_BLOCK_SIZE_X - 1) / GENMIP_2D_BLOCK_SIZE_X;
-                uint32_t threadGroupCountY = (destH + GENMIP_2D_BLOCK_SIZE_Y - 1) / GENMIP_2D_BLOCK_SIZE_Y;
+                uint32_t threadGroupCountX = (destW + GenMip2DBlockSizeX - 1) / GenMip2DBlockSizeX;
+                uint32_t threadGroupCountY = (destH + GenMip2DBlockSizeY - 1) / GenMip2DBlockSizeY;
                 uint32_t threadGroupCountZ = 6;
 
                 // Set mipmap generation constants
@@ -1470,8 +1470,8 @@ void D3D12Renderer::GenerateMipmaps(RHI::CommandList *commandList, const RHI::Te
                 mipGenParams.dstSizeRcp.y = 1.0f / destH;
                 mipGenParams.dstSizeRcp.z = 0;
 
-                uint32_t threadGroupCountX = (destW + GENMIP_2D_BLOCK_SIZE_X - 1) / GENMIP_2D_BLOCK_SIZE_X;
-                uint32_t threadGroupCountY = (destH + GENMIP_2D_BLOCK_SIZE_Y - 1) / GENMIP_2D_BLOCK_SIZE_Y;
+                uint32_t threadGroupCountX = (destW + GenMip2DBlockSizeX - 1) / GenMip2DBlockSizeX;
+                uint32_t threadGroupCountY = (destH + GenMip2DBlockSizeY - 1) / GenMip2DBlockSizeY;
 
                 // Set mipmap generation constants
                 SetConstants(commandList, 0, &mipGenParams, sizeof(mipGenParams));
@@ -1510,9 +1510,9 @@ void D3D12Renderer::GenerateMipmaps(RHI::CommandList *commandList, const RHI::Te
             mipGenParams.dstSizeRcp.y = 1.0f / destH;
             mipGenParams.dstSizeRcp.z = 1.0f / destD;
 
-            uint32_t threadGroupCountX = (destW + GENMIP_3D_BLOCK_SIZE_X - 1) / GENMIP_3D_BLOCK_SIZE_X;
-            uint32_t threadGroupCountY = (destH + GENMIP_3D_BLOCK_SIZE_Y - 1) / GENMIP_3D_BLOCK_SIZE_Y;
-            uint32_t threadGroupCountZ = (destD + GENMIP_3D_BLOCK_SIZE_Z - 1) / GENMIP_3D_BLOCK_SIZE_Z;
+            uint32_t threadGroupCountX = (destW + GenMip3DBlockSizeX - 1) / GenMip3DBlockSizeX;
+            uint32_t threadGroupCountY = (destH + GenMip3DBlockSizeY - 1) / GenMip3DBlockSizeY;
+            uint32_t threadGroupCountZ = (destD + GenMip3DBlockSizeZ - 1) / GenMip3DBlockSizeZ;
 
             // Set mipmap generation constants
             SetConstants(commandList, 0, &mipGenParams, sizeof(mipGenParams));

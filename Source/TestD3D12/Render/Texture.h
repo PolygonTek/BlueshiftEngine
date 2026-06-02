@@ -67,7 +67,7 @@ public:
     };
 
     struct Streaming {
-        uint32_t                    streamingListIndex = TEXTURE_STREAMING_INVALID_INDEX;
+        uint32_t                    streamingListIndex = TextureStreamingInvalidIndex;
         uint32_t                    originalWidth = 0;
         uint32_t                    originalHeight = 0;
         uint32_t                    originalDepth = 0;

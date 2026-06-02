@@ -30,7 +30,7 @@ struct ALIGN_AS16 UnlitConstantData {
 
 struct ALIGN_AS16 UnlitInstancedConstantData {
     BE1::Mat4       viewProjMatrix;
-    BE1::Mat3x4     worldMatrix[MAX_DRAW_INSTANCE_COUNT];
+    BE1::Mat3x4     worldMatrix[MaxDrawInstanceCount];
     uint32_t        baseColorTextureIndex;
     uint32_t        padding[3];
 };
@@ -44,7 +44,7 @@ struct ALIGN_AS16 LitConstantData {
 
 struct ALIGN_AS16 LitInstancedConstantData {
     BE1::Mat4       viewProjMatrix;
-    BE1::Mat3x4     worldMatrix[MAX_DRAW_INSTANCE_COUNT];
+    BE1::Mat3x4     worldMatrix[MaxDrawInstanceCount];
     uint32_t        baseColorTextureIndex;
     uint32_t        streamingTextureIndex;
     uint32_t        padding[2];
@@ -140,7 +140,7 @@ void RenderBackend::DrawLitSurfacesInstanced(const DrawSurf **drawSurfs, uint32_
     RHI::renderer->SetConstants(mainCommandList, 1, &feedbackBufferIndex, sizeof(feedbackBufferIndex), 0);
 
     do {
-        uint32_t currentInstanceCount = BE1::Min(instanceCount, MAX_DRAW_INSTANCE_COUNT);
+        uint32_t currentInstanceCount = BE1::Min(instanceCount, MaxDrawInstanceCount);
 
         DrawLitSurfaceInstanced(frameData->GetThreadData(0), mainCommandList, drawSurfs, currentInstanceCount);
 

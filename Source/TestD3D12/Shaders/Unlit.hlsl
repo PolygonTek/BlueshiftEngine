@@ -35,7 +35,7 @@ struct PSInput {
 #if USE_INSTANCING == 1
 cbuffer ObjectCB : register(b0) {
     row_major float4x4 viewProjMatrix;
-    row_major float3x4 worldMatrix[MAX_DRAW_INSTANCE_COUNT];
+    row_major float3x4 worldMatrix[MaxDrawInstanceCount];
     uint baseColorTextureIndex;
 };
 #else

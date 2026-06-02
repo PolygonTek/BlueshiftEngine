@@ -38,7 +38,7 @@ inline float3 ToCubeMapCoords(in uint faceIndex, in float2 uv) {
 }
 
 [RootSignature(COMMON_ROOT_SIGNATURE)]
-[numthreads(GENMIP_2D_BLOCK_SIZE_X, GENMIP_2D_BLOCK_SIZE_Y, 1)]
+[numthreads(GenMip2DBlockSizeX, GenMip2DBlockSizeY, 1)]
 void CSMain(uint3 dispatchThreadId : SV_DispatchThreadID) {
     // 출력 텍셀의 좌표 (z 는 큐브맵 페이스 인덱스)
     uint3 dstCoord = dispatchThreadId.xyz;

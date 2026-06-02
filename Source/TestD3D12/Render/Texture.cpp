@@ -77,7 +77,7 @@ uint64_t Texture::MemRequiredStreaming(int firstMip) const {
 }
 
 void Texture::Purge() {
-    if (streaming.streamingListIndex != TEXTURE_STREAMING_INVALID_INDEX) {
+    if (streaming.streamingListIndex != TextureStreamingInvalidIndex) {
         textureManager.UnregisterStreamingTexture(this);
     } else if (streaming.pendingReplacementTexture) {
         RHI::renderer->DestroyTexture(streaming.pendingReplacementTexture);

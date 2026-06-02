@@ -19,7 +19,7 @@ Texture2D<MIP_OUTPUT_FORMAT> inputTexture : register(t0);
 SamplerState pointSampler : register(s0);
 
 [RootSignature(COMMON_ROOT_SIGNATURE)]
-[numthreads(GENMIP_2D_BLOCK_SIZE_X, GENMIP_2D_BLOCK_SIZE_Y, 1)]
+[numthreads(GenMip2DBlockSizeX, GenMip2DBlockSizeY, 1)]
 void CSMain(uint3 dispatchThreadId : SV_DispatchThreadID) {
     // 출력 텍셀의 좌표
     uint2 dstCoord = dispatchThreadId.xy;
@@ -59,7 +59,7 @@ void CSMain(uint3 dispatchThreadId : SV_DispatchThreadID) {
     float4 color = 0;
     float alphaSum = color0.a + color1.a + color2.a + color3.a;
 
-    if ((mipGenParams.flags & MIPGEN_OPTION_BIT_PRESERVE_COVERAGE) && alphaSum > 0) {
+    if ((mipGenParams.flags & MipGenOptionBitPreserveCoverage) && alphaSum > 0) {
         color.rgb += color0.rgb * color0.a;
         color.rgb += color1.rgb * color1.a;
         color.rgb += color2.rgb * color2.a;
@@ -71,7 +71,7 @@ void CSMain(uint3 dispatchThreadId : SV_DispatchThreadID) {
     }
 
     // 텍스쳐가 sRGB 포맷이라면 sRGB 값으로 변환한다.
-    if (mipGenParams.flags & MIPGEN_OPTION_BIT_SRGB) {
+    if (mipGenParams.flags & MipGenOptionBitSRGB) {
         color.rgb = ApplySRGBCurve_Fast(color.rgb);
     }
 

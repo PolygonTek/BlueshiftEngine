@@ -16,7 +16,7 @@ Texture3D<MIP_OUTPUT_FORMAT> inputTexture : register(t0);
 SamplerState linearSampler : register(s0);
 
 [RootSignature(COMMON_ROOT_SIGNATURE)]
-[numthreads(GENMIP_3D_BLOCK_SIZE_X, GENMIP_3D_BLOCK_SIZE_Y, GENMIP_3D_BLOCK_SIZE_Z)]
+[numthreads(GenMip3DBlockSizeX, GenMip3DBlockSizeY, GenMip3DBlockSizeZ)]
 void CSMain(uint3 dispatchThreadId : SV_DispatchThreadID) {
     // 출력 텍셀의 좌표
     uint3 dstCoord = dispatchThreadId.xyz;
