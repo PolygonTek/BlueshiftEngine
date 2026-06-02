@@ -832,7 +832,6 @@ template <typename T>
 BE_INLINE void Array<T>::DeleteContents(bool clear) {
     for (int i = 0; i < count; i++) {
         delete elements[i];
-        elements[i] = nullptr;
     }
 
     if (clear) {

@@ -382,10 +382,16 @@ namespace RHI {
         BE1::StrArray                   defines;
     };
 
+    struct ShaderSourceDependency {
+        BE1::Str                        filename;
+        uint64_t                        contentHash = 0;
+    };
+
     struct ShaderCompileOutput {
         byte *                          compiledShaderData = nullptr;
         uint32_t                        compiledShaderDataSize = 0;
         BE1::Str                        errorMessage;
+        BE1::Array<ShaderSourceDependency> dependencies;
     };
 
     struct RasterizerState {
@@ -897,7 +903,7 @@ namespace RHI {
         virtual CommandList *           BeginSecondaryCommandList(const RHI::CommandList *primaryCommandList) = 0;
     };
 
-    enum class RasterizerStateType {
+    enum class RasterizerStateType : uint8_t {
         SolidFrontSided,
         SolidBackSided,
         Wire,
@@ -905,13 +911,13 @@ namespace RHI {
         Count
     };
 
-    enum class DepthStencilStateType {
+    enum class DepthStencilStateType : uint8_t {
         Default,
         Never,
         Count
     };
 
-    enum class BlendStateType {
+    enum class BlendStateType : uint8_t {
         Opaque,
         AlphaBlend,
         Add,
@@ -998,8 +1004,8 @@ namespace RHI {
 
         virtual bool                    UpdateTextureViewMipRange(Texture *texture, ViewID viewID, uint32_t mostDetailedMip, uint32_t mipLevels) = 0;
 
-        virtual Shader *                CreateShader(ShaderModel shaderModel, ShaderStage shaderStage, const char *sourceName, const char *shaderText, int shaderTextSize, const char *entryPoint) = 0;
-        virtual Shader *                CreateShaderFromFile(ShaderModel shaderModel, ShaderStage shaderStage, const char *filename, const char *entryPoint) = 0;
+        virtual Shader *                CreateShader(ShaderModel shaderModel, ShaderStage shaderStage, const char *sourceName, const char *shaderText, int shaderTextSize, const char *entryPoint, const BE1::StrArray *defines = nullptr) = 0;
+        virtual Shader *                CreateShaderFromFile(ShaderModel shaderModel, ShaderStage shaderStage, const char *filename, const char *entryPoint, const BE1::StrArray *defines = nullptr) = 0;
         virtual void                    DestroyShader(Shader *shader, bool immediate = false) = 0;
 
         virtual Sampler *               CreateSampler(const SamplerDesc *desc) = 0;

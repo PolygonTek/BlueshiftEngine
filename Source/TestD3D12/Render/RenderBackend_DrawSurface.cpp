@@ -130,7 +130,9 @@ const RHI::Texture *RenderBackend::ResolveDrawSurfTexture(const DrawSurf *drawSu
 void RenderBackend::DrawLitSurfacesInstanced(const DrawSurf **drawSurfs, uint32_t instanceCount) {
     assert(instanceCount > 0);
 
-    RHI::renderer->SetPSO(mainCommandList, currentContext->litInstancedPSO);
+    if (!SetPSO(mainCommandList, currentContext->litInstancedPSO)) {
+        return;
+    }
     RHI::renderer->SetVertexBuffer(mainCommandList, 0, drawSurfs[0]->subMesh->vertexBuffer);
     RHI::renderer->SetIndexBuffer(mainCommandList, drawSurfs[0]->subMesh->indexBuffer);
 
@@ -150,7 +152,9 @@ void RenderBackend::DrawLitSurfacesInstanced(const DrawSurf **drawSurfs, uint32_
 void RenderBackend::DrawLitSurfacesWithoutTask(const DrawSurf **drawSurfs, uint32_t numDrawSurfs) {
     PROFILER_CPU_SCOPED_EVENT("RenderBackend::DrawSurfacesWithoutTask");
 
-    RHI::renderer->SetPSO(mainCommandList, currentContext->litPSO);
+    if (!SetPSO(mainCommandList, currentContext->litPSO)) {
+        return;
+    }
 
     uint32_t feedbackBufferIndex = currentContext->textureStreamingFeedback.buffer->GetBindlessIndex(RHI::ViewType::UAV);
     RHI::renderer->SetConstants(mainCommandList, 1, &feedbackBufferIndex, sizeof(feedbackBufferIndex), 0);
@@ -177,7 +181,11 @@ void RenderBackend::DrawLitSurfacesByTask(RenderBackend::DrawSurfsTaskDesc *task
     RHI::FrameThreadData *frameThreadData = frameData->GetThreadData(taskDesc->threadIndex);
     RHI::CommandList *commandList = frameThreadData->BeginSecondaryCommandList(mainCommandList);
 
-    RHI::renderer->SetPSO(commandList, currentContext->litPSO);
+    if (!SetPSO(commandList, currentContext->litPSO)) {
+        commandList->Close();
+        taskDesc->commandList = commandList;
+        return;
+    }
 
     uint32_t feedbackBufferIndex = currentContext->textureStreamingFeedback.buffer->GetBindlessIndex(RHI::ViewType::UAV);
     RHI::renderer->SetConstants(commandList, 1, &feedbackBufferIndex, sizeof(feedbackBufferIndex), 0);

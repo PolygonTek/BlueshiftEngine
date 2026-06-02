@@ -377,6 +377,11 @@ bool Texture::LoadAsync(const char *filename, Flag flags) {
 }
 
 bool Texture::Reload() {
+    if (!BE1::HasFlag(internalData.flags, Flag::LoadedFromFile)) {
+        BE_WARNLOG("Texture::Reload: cannot reload texture '%s' because it was not loaded from a file\n", GetHashName());
+        return false;
+    }
+
     if (state != State::Ready) {
         BE_WARNLOG("Texture::Reload: texture '%s' is not ready\n", GetHashName());
         return false;
@@ -392,6 +397,11 @@ bool Texture::Reload() {
 }
 
 bool Texture::ReloadAsync() {
+    if (!BE1::HasFlag(internalData.flags, Flag::LoadedFromFile)) {
+        BE_WARNLOG("Texture::Reload: cannot reload texture '%s' because it was not loaded from a file\n", GetHashName());
+        return false;
+    }
+
     if (!IsReady()) {
         BE_WARNLOG("Texture::ReloadAsync: texture '%s' is not ready\n", GetHashName());
         return false;

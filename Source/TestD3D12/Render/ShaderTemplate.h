@@ -1,0 +1,224 @@
+// Copyright(c) 2017 POLYGONTEK
+// 
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+// 
+// http://www.apache.org/licenses/LICENSE-2.0
+// 
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+#pragma once
+
+#include "Core/Property.h"
+#include "ShaderPipelineState.h"
+
+class ShaderTemplateManager;
+class LoadingSystem;
+
+enum class ShaderTemplateId : uint8_t {
+    FullScreenImage,
+    Unlit,
+    Lit,
+    Count
+};
+
+struct ShaderPropertyInfo : public BE1::PropertyInfo {
+    enum class ShaderFlag : uint8_t {
+        None                        = 0,
+        ShaderDefine                = BIT(0),
+        Hidden                      = BIT(1),
+        Normal                      = BIT(2),
+        Linear                      = BIT(3)
+    };
+
+    struct Condition {
+        Condition() = default;
+        Condition(const char *name, const BE1::Array<int> &valueList) : name(name), valueList(valueList) {}
+
+        BE1::Str                    name;
+        BE1::Array<int>             valueList;
+    };
+
+    ShaderPropertyInfo() = default;
+    ShaderPropertyInfo(const char *name, const char *label, BE1::Variant::Type::Enum type, const BE1::Variant &defaultValue, const char *desc, int flags, ShaderFlag shaderFlags = ShaderFlag::None)
+        : BE1::PropertyInfo(name, label, type, intptr_t(0), defaultValue, desc, flags), shaderFlags(shaderFlags) {}
+
+    bool                            IsShaderDefine() const { return BE1::HasFlag(shaderFlags, ShaderFlag::ShaderDefine); }
+    bool                            IsHidden() const { return BE1::HasFlag(shaderFlags, ShaderFlag::Hidden); }
+    bool                            Parse(BE1::Lexer &lexer);
+
+    ShaderFlag                      shaderFlags = ShaderFlag::None;
+    BE1::Array<Condition>           conditions;
+};
+
+/*
+-------------------------------------------------------------------------------
+
+    ShaderTemplate
+
+-------------------------------------------------------------------------------
+*/
+
+class ShaderTemplate : public std::enable_shared_from_this<ShaderTemplate> {
+    friend class ShaderTemplateManager;
+    friend class ShaderPipelineState;
+
+public:
+    enum class Flag : uint8_t {
+        None                        = 0,
+        LoadedFromFile              = BIT(0)
+    };
+
+    using PropertyValue = BE1::Variant;
+
+    ShaderTemplate() = default;
+    ShaderTemplate(const ShaderTemplate &rhs) = delete;
+    ShaderTemplate &operator=(const ShaderTemplate &rhs) = delete;
+    ~ShaderTemplate() { Purge(); }
+
+    const char *                    GetName() const { return name.c_str(); }
+    const char *                    GetHashName() const { return hashName.c_str(); }
+    const BE1::Array<ShaderPropertyInfo> &GetProperties() const { return internalData.properties; }
+
+    const ShaderPropertyInfo *      FindProperty(const char *name) const;
+    bool                            AddProperty(const ShaderPropertyInfo &propertyInfo);
+    bool                            AddProperty(const char *name, const char *label, BE1::Variant::Type::Enum type, const BE1::Variant &defaultValue, const char *desc = "", int flags = BE1::PropertyInfo::Flag::Editor, ShaderPropertyInfo::ShaderFlag shaderFlags = ShaderPropertyInfo::ShaderFlag::None);
+    bool                            CopyPropertiesFrom(const ShaderTemplate &shaderTemplate);
+    void                            InitDefaultPropertyValues(BE1::Array<PropertyValue> &outPropertyValues) const;
+
+    void                            AddStage(RHI::ShaderStage shaderStage, RHI::ShaderModel shaderModel, const char *filename, const char *entryPoint);
+
+    ShaderPermutationKey            AddPermutation(std::initializer_list<const char *> defines);
+    ShaderPermutationKey            AddPermutation(const BE1::StrArray &defines);
+    ShaderPermutationKey            AddPermutation(const BE1::Array<PropertyValue> &propertyValues);
+    ShaderPermutationKey            AddPermutation(const BE1::Array<PropertyValue> &propertyValues, const BE1::StrArray &defines);
+
+    bool                            Create(const char *text, const char *baseDir);
+
+    bool                            Load(const char *filename);
+    bool                            Reload();
+
+    std::shared_ptr<ShaderPipelineState> GetGraphicsPipeline(const ShaderPipelineDesc &desc);
+    std::shared_ptr<ShaderPipelineState> GetComputePipeline(ShaderPermutationKey permutationKey);
+
+private:
+    struct StageSource {
+        RHI::ShaderStage            shaderStage = RHI::ShaderStage::Count;
+        RHI::ShaderModel            shaderModel = RHI::ShaderModel::SM_6_0;
+        BE1::Str                    filename;
+        BE1::Str                    entryPoint;
+    };
+
+    struct InternalData {
+        void                        Purge();
+        void                        Swap(InternalData &rhs);
+
+        const ShaderPropertyInfo *  FindProperty(const char *name) const;
+        bool                        AddProperty(const ShaderPropertyInfo &propertyInfo);
+        bool                        CopyPropertiesFrom(const InternalData &rhs, const char **duplicatedPropertyName = nullptr);
+        void                        AddStage(RHI::ShaderStage shaderStage, RHI::ShaderModel shaderModel, const char *filename, const char *entryPoint);
+
+        StageSource                 stageSources[to_int(RHI::ShaderStage::Count)] = {};
+        BE1::Array<ShaderPropertyInfo> properties;
+        Flag                        flags = Flag::None;
+    };
+
+    struct ShaderPermutation {
+        ShaderPermutationKey        key;
+        BE1::StrArray               defines;
+        uint32_t                    globalDefineModCount = 0;
+        RHI::Shader *               shaders[to_int(RHI::ShaderStage::Count)] = {};
+    };
+
+    struct CachedGraphicsPipeline {
+        uint64_t                    hash = 0;
+        std::shared_ptr<ShaderPipelineState> pipelineState;
+    };
+
+    struct CachedComputePipeline {
+        ShaderPermutationKey        permutationKey;
+        std::shared_ptr<ShaderPipelineState> pipelineState;
+    };
+
+    void                            Purge();
+    void                            ApplyPrepared(InternalData &newInternalData);
+    void                            ClearCachedPipelines();
+    void                            InvalidateCachedPipelines();
+    void                            ClearPermutationShaders(ShaderPermutation *permutation);
+    void                            ClearPermutationShaders();
+    void                            ClearPermutations();
+    bool                            Prepare(const char *text, const char *baseDir, InternalData &outInternalData);
+    bool                            ParseInheritProperties(BE1::Lexer &lexer, const char *baseDir, InternalData &outInternalData);
+    bool                            ParseStages(BE1::Lexer &lexer, const char *baseDir, InternalData &outInternalData);
+    bool                            ParseProperties(BE1::Lexer &lexer, InternalData &outInternalData);
+    ShaderPermutation *             FindPermutation(ShaderPermutationKey permutationKey) const;
+    ShaderPermutation *             FindOrCreatePermutation(ShaderPermutationKey permutationKey);
+    void                            MergePermutationDefines(const ShaderPermutation *permutation, const BE1::StrArray &globalDefines, BE1::StrArray &outDefines) const;
+    bool                            PreparePermutationShader(ShaderPermutation *permutation, RHI::ShaderStage shaderStage, const BE1::StrArray &compileDefines);
+    bool                            PreparePermutationGraphicsShaders(ShaderPermutation *permutation, const BE1::StrArray &globalDefines, uint32_t globalDefineModCount);
+    bool                            PreparePermutationComputeShader(ShaderPermutation *permutation, const BE1::StrArray &globalDefines, uint32_t globalDefineModCount);
+    std::shared_ptr<ShaderPipelineState> FindCachedGraphicsPipeline(const ShaderPipelineDesc &desc) const;
+    std::shared_ptr<ShaderPipelineState> FindCachedComputePipeline(ShaderPermutationKey permutationKey) const;
+    RHI::PipelineState *            CreateGraphicsPSO(const ShaderPipelineDesc &desc);
+    RHI::PipelineState *            CreateComputePSO(ShaderPermutationKey permutationKey);
+
+    static uint64_t                 GenerateInputLayoutHash(const RHI::InputLayout *inputLayout);
+    static uint64_t                 GenerateGraphicsPipelineDescHash(const ShaderPipelineDesc &desc);
+
+    BE1::Str                        hashName;
+    BE1::Str                        name;
+    InternalData                    internalData;
+
+    BE1::Array<ShaderPermutation *> permutations;
+    BE1::Array<CachedGraphicsPipeline> cachedGraphicsPipelines;
+    BE1::Array<CachedComputePipeline> cachedComputePipelines;
+};
+
+template<>
+struct enable_bitmask_operators<ShaderTemplate::Flag> {
+    static const bool enable = true;
+};
+
+template<>
+struct enable_bitmask_operators<ShaderPropertyInfo::ShaderFlag> {
+    static const bool enable = true;
+};
+
+class ShaderTemplateManager {
+    friend class ShaderTemplate;
+
+public:
+    void                            Init();
+    void                            Shutdown();
+
+    void                            UpdateFrame();
+
+    std::shared_ptr<ShaderTemplate> AllocShaderTemplate(const char *hashName);
+    std::shared_ptr<ShaderTemplate> FindShaderTemplate(const char *hashName) const;
+    std::shared_ptr<ShaderTemplate> GetShaderTemplate(const char *hashName);
+    std::shared_ptr<ShaderTemplate> GetBuiltInShaderTemplate(ShaderTemplateId id) const;
+
+    uint32_t                        CopyGlobalDefines(BE1::StrArray &outDefines) const;
+    bool                            FindGlobalDefine(const char *define) const;
+    void                            AddGlobalDefine(const char *define);
+    void                            RemoveGlobalDefine(const char *define);
+    void                            InvalidateShaderTemplateCaches();
+
+private:
+    void                            CleanExpiredShaderTemplates();
+    void                            CreateBuiltInShaderTemplates();
+
+    BE1::StrIHashMap<std::weak_ptr<ShaderTemplate>> shaderTemplateHashMap;
+    int                             expiredShaderTemplateHashMapCursor = 0;
+    BE1::StrArray                   globalDefines;
+    uint32_t                        globalDefineModCount = 0;
+    BE1::PlatformMutex *            globalDefinesMutex = nullptr;
+    std::shared_ptr<ShaderTemplate> builtInShaderTemplates[static_cast<int>(ShaderTemplateId::Count)];
+};
+
+extern ShaderTemplateManager        shaderTemplateManager;

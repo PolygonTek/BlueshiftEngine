@@ -19,6 +19,7 @@
 
 class RenderFrameData;
 class RenderContext;
+class ShaderPipelineState;
 class VisCamera;
 class DrawSurf;
 
@@ -73,6 +74,7 @@ private:
     void                            DrawGuiSurface(RHI::FrameThreadData *frameThreadData, RHI::CommandList *commandList, const DrawSurf *drawSurf);
 
     const RHI::Texture *            ResolveDrawSurfTexture(const DrawSurf *drawSurf) const;
+    bool                            SetPSO(RHI::CommandList *commandList, const std::shared_ptr<ShaderPipelineState> &pipelineState) const;
     void                            RecordDrawStats(uint32_t drawCount, uint64_t triangleCount);
 
     void                            BeginGpuFrameTiming(RHI::CommandList *commandList);

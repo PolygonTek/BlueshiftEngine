@@ -19,6 +19,9 @@
 #include "Render/Skeleton.h"
 #include "Render/Anim.h"
 
+class ShaderPipelineState;
+class ShaderTemplate;
+
 /*
 -------------------------------------------------------------------------------
 
@@ -47,6 +50,7 @@ public:
     bool                            EnqueueMeshLoad(std::shared_ptr<Mesh> mesh, const char *filename, bool isReload, uint32_t serial, LoadPriority priority = LoadPriority::Normal);
     bool                            EnqueueSkeletonLoad(std::shared_ptr<Skeleton> skeleton, const char *filename, bool isReload, uint32_t serial, LoadPriority priority = LoadPriority::Normal);
     bool                            EnqueueAnimLoad(std::shared_ptr<Anim> anim, const char *filename, bool isReload, uint32_t serial, LoadPriority priority = LoadPriority::Normal);
+    bool                            EnqueueShaderPipelineBuild(std::shared_ptr<ShaderTemplate> shaderTemplate, std::shared_ptr<ShaderPipelineState> pipelineState, uint32_t serial, LoadPriority priority = LoadPriority::High);
 
     bool                            BoostTextureLoad(const Texture *texture, uint32_t serial, LoadPriority priority);
     bool                            BoostMeshLoad(const Mesh *mesh, uint32_t serial, LoadPriority priority);
@@ -62,6 +66,8 @@ private:
         std::shared_ptr<Mesh>       mesh;
         std::shared_ptr<Skeleton>   skeleton;
         std::shared_ptr<Anim>       anim;
+        std::shared_ptr<ShaderTemplate> shaderTemplate;
+        std::shared_ptr<ShaderPipelineState> pipelineState;
         BE1::Str                    filename;
         Texture::Flag               textureFlags = Texture::Flag::None;
         std::shared_ptr<BE1::Image> image;
@@ -97,6 +103,7 @@ private:
     bool                            ProcessMeshLoadRequest(const LoadRequest &request);
     bool                            ProcessSkeletonLoadRequest(const LoadRequest &request);
     bool                            ProcessAnimLoadRequest(const LoadRequest &request);
+    bool                            ProcessShaderPipelineBuildRequest(const LoadRequest &request);
 
     void                            PushCompletion(LoadCompletion &&completion);
     void                            DiscardCompletion(LoadCompletion &completion);

@@ -17,6 +17,7 @@
 #include "RenderContext.h"
 #include "RenderBackend.h"
 #include "RenderInternal.h"
+#include "ShaderTemplate.h"
 
 RenderContext *     RenderContext::activeContext = nullptr;
 
@@ -62,33 +63,15 @@ void RenderContext::Shutdown() {
 
     textureStreamingFeedback.Shutdown();
 
-    if (imagePSO) {
-        RHI::renderer->DestroyPSO(imagePSO);
-    }
-    if (unlitPSO) {
-        RHI::renderer->DestroyPSO(unlitPSO);
-    }
-    if (unlitAlphaBlendPSO) {
-        RHI::renderer->DestroyPSO(unlitAlphaBlendPSO);
-    }
-    if (unlitInstancedPSO) {
-        RHI::renderer->DestroyPSO(unlitInstancedPSO);
-    }
-    if (unlitInstancedAlphaBlendPSO) {
-        RHI::renderer->DestroyPSO(unlitInstancedAlphaBlendPSO);
-    }
-    if (litPSO) {
-        RHI::renderer->DestroyPSO(litPSO);
-    }
-    if (litAlphaBlendPSO) {
-        RHI::renderer->DestroyPSO(litAlphaBlendPSO);
-    }
-    if (litInstancedPSO) {
-        RHI::renderer->DestroyPSO(litInstancedPSO);
-    }
-    if (litInstancedAlphaBlendPSO) {
-        RHI::renderer->DestroyPSO(litInstancedAlphaBlendPSO);
-    }
+    imagePSO = nullptr;
+    unlitPSO = nullptr;
+    unlitAlphaBlendPSO = nullptr;
+    unlitInstancedPSO = nullptr;
+    unlitInstancedAlphaBlendPSO = nullptr;
+    litPSO = nullptr;
+    litAlphaBlendPSO = nullptr;
+    litInstancedPSO = nullptr;
+    litInstancedAlphaBlendPSO = nullptr;
 
     DestroyMainRenderTextures();
 
@@ -184,109 +167,32 @@ void RenderContext::InitPSO() {
     renderDest.sampleCount = 1;
 #endif
 
-    RHI::Shader *unlitVS = static_cast<RHI::Shader *>(RHI::renderer->CreateShaderFromFile(RHI::ShaderModel::SM_6_0, RHI::ShaderStage::Vertex, "Source/TestD3D12/Shaders/Unlit.hlsl", "VSMain"));
-    RHI::Shader *unlitPS = static_cast<RHI::Shader *>(RHI::renderer->CreateShaderFromFile(RHI::ShaderModel::SM_6_0, RHI::ShaderStage::Fragment, "Source/TestD3D12/Shaders/Unlit.hlsl", "PSMain"));
+    std::shared_ptr<ShaderTemplate> unlitShaderTemplate = shaderTemplateManager.GetBuiltInShaderTemplate(ShaderTemplateId::Unlit);
+    std::shared_ptr<ShaderTemplate> litShaderTemplate = shaderTemplateManager.GetBuiltInShaderTemplate(ShaderTemplateId::Lit);
 
-    if (unlitVS && unlitPS) {
-        RHI::PipelineStateDesc psoDesc;
-        psoDesc.vs = unlitVS;
-        psoDesc.ps = unlitPS;
-        psoDesc.rasterizerState = RHI::renderer->GetRasterizerState(RHI::RasterizerStateType::SolidFrontSided);
-        psoDesc.depthStencilState = RHI::renderer->GetDepthStencilState(RHI::DepthStencilStateType::Default);
-        psoDesc.blendState = RHI::renderer->GetBlendState(RHI::BlendStateType::Opaque);
-        psoDesc.inputLayout = &inputLayout;
-        psoDesc.primitiveTopology = RHI::PrimitiveTopology::TriangleList;
-        psoDesc.renderDest = &renderDest;
-        unlitPSO = RHI::renderer->CreateGraphicsPSO(&psoDesc);
+    ShaderPipelineDesc pipelineDesc;
+    pipelineDesc.inputLayout = &inputLayout;
+    pipelineDesc.renderDest = renderDest;
 
-        psoDesc.blendState = RHI::renderer->GetBlendState(RHI::BlendStateType::AlphaBlend);
-        unlitAlphaBlendPSO = RHI::renderer->CreateGraphicsPSO(&psoDesc);
-    }
+    pipelineDesc.permutationKey = ShaderPermutationKey();
+    pipelineDesc.blendStateType = RHI::BlendStateType::Opaque;
+    unlitPSO = unlitShaderTemplate->GetGraphicsPipeline(pipelineDesc);
+    litPSO = litShaderTemplate->GetGraphicsPipeline(pipelineDesc);
 
-    if (unlitVS) {
-        RHI::renderer->DestroyShader(unlitVS, true);
-    }
-    if (unlitPS) {
-        RHI::renderer->DestroyShader(unlitPS, true);
-    }
+    pipelineDesc.permutationKey = ShaderPermutationKey();
+    pipelineDesc.blendStateType = RHI::BlendStateType::AlphaBlend;
+    unlitAlphaBlendPSO = unlitShaderTemplate->GetGraphicsPipeline(pipelineDesc);
+    litAlphaBlendPSO = litShaderTemplate->GetGraphicsPipeline(pipelineDesc);
 
-    RHI::Shader *unlitInstancingVS = static_cast<RHI::Shader *>(RHI::renderer->CreateShaderFromFile(RHI::ShaderModel::SM_6_0, RHI::ShaderStage::Vertex, "Source/TestD3D12/Shaders/UnlitInstancing.hlsl", "VSMain"));
-    RHI::Shader *unlitInstancingPS = static_cast<RHI::Shader *>(RHI::renderer->CreateShaderFromFile(RHI::ShaderModel::SM_6_0, RHI::ShaderStage::Fragment, "Source/TestD3D12/Shaders/UnlitInstancing.hlsl", "PSMain"));
+    pipelineDesc.permutationKey = ShaderPermutationKey::FromDefines({ "USE_INSTANCING=1" });
+    pipelineDesc.blendStateType = RHI::BlendStateType::Opaque;
+    unlitInstancedPSO = unlitShaderTemplate->GetGraphicsPipeline(pipelineDesc);
+    litInstancedPSO = litShaderTemplate->GetGraphicsPipeline(pipelineDesc);
 
-    if (unlitInstancingVS && unlitInstancingPS) {
-        RHI::PipelineStateDesc psoDesc;
-        psoDesc.vs = unlitInstancingVS;
-        psoDesc.ps = unlitInstancingPS;
-        psoDesc.rasterizerState = RHI::renderer->GetRasterizerState(RHI::RasterizerStateType::SolidFrontSided);
-        psoDesc.depthStencilState = RHI::renderer->GetDepthStencilState(RHI::DepthStencilStateType::Default);
-        psoDesc.blendState = RHI::renderer->GetBlendState(RHI::BlendStateType::Opaque);
-        psoDesc.inputLayout = &inputLayout;
-        psoDesc.primitiveTopology = RHI::PrimitiveTopology::TriangleList;
-        psoDesc.renderDest = &renderDest;
-        unlitInstancedPSO = RHI::renderer->CreateGraphicsPSO(&psoDesc);
-
-        psoDesc.blendState = RHI::renderer->GetBlendState(RHI::BlendStateType::AlphaBlend);
-        unlitInstancedAlphaBlendPSO = RHI::renderer->CreateGraphicsPSO(&psoDesc);
-    }
-
-    if (unlitInstancingVS) {
-        RHI::renderer->DestroyShader(unlitInstancingVS, true);
-    }
-    if (unlitInstancingPS) {
-        RHI::renderer->DestroyShader(unlitInstancingPS, true);
-    }
-
-    RHI::Shader *litVS = static_cast<RHI::Shader *>(RHI::renderer->CreateShaderFromFile(RHI::ShaderModel::SM_6_0, RHI::ShaderStage::Vertex, "Source/TestD3D12/Shaders/Lit.hlsl", "VSMain"));
-    RHI::Shader *litPS = static_cast<RHI::Shader *>(RHI::renderer->CreateShaderFromFile(RHI::ShaderModel::SM_6_0, RHI::ShaderStage::Fragment, "Source/TestD3D12/Shaders/Lit.hlsl", "PSMain"));
-
-    if (litVS && litPS) {
-        RHI::PipelineStateDesc psoDesc;
-        psoDesc.vs = litVS;
-        psoDesc.ps = litPS;
-        psoDesc.rasterizerState = RHI::renderer->GetRasterizerState(RHI::RasterizerStateType::SolidFrontSided);
-        psoDesc.depthStencilState = RHI::renderer->GetDepthStencilState(RHI::DepthStencilStateType::Default);
-        psoDesc.blendState = RHI::renderer->GetBlendState(RHI::BlendStateType::Opaque);
-        psoDesc.inputLayout = &inputLayout;
-        psoDesc.primitiveTopology = RHI::PrimitiveTopology::TriangleList;
-        psoDesc.renderDest = &renderDest;
-        litPSO = RHI::renderer->CreateGraphicsPSO(&psoDesc);
-
-        psoDesc.blendState = RHI::renderer->GetBlendState(RHI::BlendStateType::AlphaBlend);
-        litAlphaBlendPSO = RHI::renderer->CreateGraphicsPSO(&psoDesc);
-    }
-
-    if (litVS) {
-        RHI::renderer->DestroyShader(litVS, true);
-    }
-    if (litPS) {
-        RHI::renderer->DestroyShader(litPS, true);
-    }
-
-    RHI::Shader *litInstancingVS = static_cast<RHI::Shader *>(RHI::renderer->CreateShaderFromFile(RHI::ShaderModel::SM_6_0, RHI::ShaderStage::Vertex, "Source/TestD3D12/Shaders/LitInstancing.hlsl", "VSMain"));
-    RHI::Shader *litInstancingPS = static_cast<RHI::Shader *>(RHI::renderer->CreateShaderFromFile(RHI::ShaderModel::SM_6_0, RHI::ShaderStage::Fragment, "Source/TestD3D12/Shaders/LitInstancing.hlsl", "PSMain"));
-
-    if (litInstancingVS && litInstancingPS) {
-        RHI::PipelineStateDesc psoDesc;
-        psoDesc.vs = litInstancingVS;
-        psoDesc.ps = litInstancingPS;
-        psoDesc.rasterizerState = RHI::renderer->GetRasterizerState(RHI::RasterizerStateType::SolidFrontSided);
-        psoDesc.depthStencilState = RHI::renderer->GetDepthStencilState(RHI::DepthStencilStateType::Default);
-        psoDesc.blendState = RHI::renderer->GetBlendState(RHI::BlendStateType::Opaque);
-        psoDesc.inputLayout = &inputLayout;
-        psoDesc.primitiveTopology = RHI::PrimitiveTopology::TriangleList;
-        psoDesc.renderDest = &renderDest;
-        litInstancedPSO = RHI::renderer->CreateGraphicsPSO(&psoDesc);
-
-        psoDesc.blendState = RHI::renderer->GetBlendState(RHI::BlendStateType::AlphaBlend);
-        litInstancedAlphaBlendPSO = RHI::renderer->CreateGraphicsPSO(&psoDesc);
-    }
-
-    if (litInstancingVS) {
-        RHI::renderer->DestroyShader(litInstancingVS, true);
-    }
-    if (litInstancingPS) {
-        RHI::renderer->DestroyShader(litInstancingPS, true);
-    }
+    pipelineDesc.permutationKey = ShaderPermutationKey::FromDefines({ "USE_INSTANCING=1" });
+    pipelineDesc.blendStateType = RHI::BlendStateType::AlphaBlend;
+    unlitInstancedAlphaBlendPSO = unlitShaderTemplate->GetGraphicsPipeline(pipelineDesc);
+    litInstancedAlphaBlendPSO = litShaderTemplate->GetGraphicsPipeline(pipelineDesc);
 }
 
 void RenderContext::InitFullScreenTrianglePSO() {
@@ -295,27 +201,13 @@ void RenderContext::InitFullScreenTrianglePSO() {
     renderDest.renderTargetFormats[0] = swapChain->GetRTVFormat();
     renderDest.sampleCount = 1;
 
-    RHI::Shader *vs = static_cast<RHI::Shader *>(RHI::renderer->CreateShaderFromFile(RHI::ShaderModel::SM_6_0, RHI::ShaderStage::Vertex, "Source/TestD3D12/Shaders/FullScreenTriangle.hlsl", "VSMain"));
-    RHI::Shader *ps = static_cast<RHI::Shader *>(RHI::renderer->CreateShaderFromFile(RHI::ShaderModel::SM_6_0, RHI::ShaderStage::Fragment, "Source/TestD3D12/Shaders/FullScreenTriangle.hlsl", "PSMain"));
+    std::shared_ptr<ShaderTemplate> shaderTemplate = shaderTemplateManager.GetBuiltInShaderTemplate(ShaderTemplateId::FullScreenImage);
 
-    if (vs && ps) {
-        RHI::PipelineStateDesc psoDesc;
-        psoDesc.vs = vs;
-        psoDesc.ps = ps;
-        psoDesc.rasterizerState = RHI::renderer->GetRasterizerState(RHI::RasterizerStateType::SolidFrontSided);
-        psoDesc.depthStencilState = RHI::renderer->GetDepthStencilState(RHI::DepthStencilStateType::Never);
-        psoDesc.blendState = RHI::renderer->GetBlendState(RHI::BlendStateType::Opaque);
-        psoDesc.primitiveTopology = RHI::PrimitiveTopology::TriangleList;
-        psoDesc.renderDest = &renderDest;
-        imagePSO = RHI::renderer->CreateGraphicsPSO(&psoDesc);
-    }
-
-    if (vs) {
-        RHI::renderer->DestroyShader(vs, true);
-    }
-    if (ps) {
-        RHI::renderer->DestroyShader(ps, true);
-    }
+    ShaderPipelineDesc pipelineDesc;
+    pipelineDesc.renderDest = renderDest;
+    pipelineDesc.depthStencilStateType = RHI::DepthStencilStateType::Never;
+    pipelineDesc.blendStateType = RHI::BlendStateType::Opaque;
+    imagePSO = shaderTemplate->GetGraphicsPipeline(pipelineDesc);
 }
 
 void RenderContext::WaitAllFrameFences() {

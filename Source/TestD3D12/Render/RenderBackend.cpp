@@ -46,6 +46,20 @@ void RenderBackend::Shutdown() {
     }
 }
 
+bool RenderBackend::SetPSO(RHI::CommandList *commandList, const std::shared_ptr<ShaderPipelineState> &pipelineState) const {
+    if (!pipelineState || !pipelineState->IsReady()) {
+        return false;
+    }
+
+    RHI::PipelineState *pso = pipelineState->GetPSO();
+    if (!pso) {
+        return false;
+    }
+
+    RHI::renderer->SetPSO(commandList, pso);
+    return true;
+}
+
 void RenderBackend::UpdateRenderFrameTime(uint64_t frameUsec) {
     static constexpr int StatUpdateFrameCount = 60;
 
@@ -337,10 +351,11 @@ const void *RenderBackend::ExecuteSwapBuffers(const void *data) {
     RHI::renderer->SetScissorRect(mainCommandList, currentVisCamera->renderRect);
 
     RHI::renderer->BeginRenderPass(mainCommandList, currentContext->swapChain, nullptr);
-    RHI::renderer->SetPSO(mainCommandList, currentContext->imagePSO);
-    RHI::renderer->SetTexture(mainCommandList, 0, false, currentContext->mainRTColorTexture);
-    RHI::renderer->Draw(mainCommandList, 3, 0);
-    RecordDrawStats(1, 1);
+    if (SetPSO(mainCommandList, currentContext->imagePSO)) {
+        RHI::renderer->SetTexture(mainCommandList, 0, false, currentContext->mainRTColorTexture);
+        RHI::renderer->Draw(mainCommandList, 3, 0);
+        RecordDrawStats(1, 1);
+    }
     RHI::renderer->EndRenderPass(mainCommandList);
 #endif
 
@@ -379,7 +394,9 @@ void RenderBackend::DrawCamera3D() {
 void RenderBackend::DrawCamera2D() {
     PROFILER_CPU_SCOPED_EVENT("RenderBackend::DrawCamera2D");
 
-    RHI::renderer->SetPSO(mainCommandList, currentContext->unlitAlphaBlendPSO);
+    if (!SetPSO(mainCommandList, currentContext->unlitAlphaBlendPSO)) {
+        return;
+    }
 
     const SubMesh *currentSubMesh = nullptr;
     const RHI::Texture *currentTexture = nullptr;

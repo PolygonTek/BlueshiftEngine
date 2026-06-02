@@ -22,6 +22,9 @@ struct VSInput {
     float4 color : COLOR;
     float4 normal : NORMAL;
     float4 tangent : TEXCOORD1;
+#if USE_INSTANCING == 1
+    uint instanceID : SV_InstanceID;
+#endif
 };
 
 struct PSInput {
@@ -30,11 +33,20 @@ struct PSInput {
     float2 texCoord : TEXCOORD0;
 };
 
+#if USE_INSTANCING == 1
+cbuffer ObjectCB : register(b0) {
+    row_major float4x4 viewProjMatrix;
+    row_major float3x4 worldMatrix[MAX_DRAW_INSTANCE_COUNT];
+    uint baseColorTextureIndex;
+    uint streamingTextureIndex;
+};
+#else
 cbuffer ObjectCB : register(b0) {
     row_major float4x4 modelViewProjMatrix;
     uint baseColorTextureIndex;
     uint streamingTextureIndex;
 };
+#endif
 
 cbuffer LitPassCB : register(b1) {
     uint feedbackBufferIndex;
@@ -43,7 +55,12 @@ cbuffer LitPassCB : register(b1) {
 [RootSignature(COMMON_ROOT_SIGNATURE)]
 PSInput VSMain(VSInput input) {
     PSInput result;
+#if USE_INSTANCING == 1
+    float4 positionWS = float4(mul(worldMatrix[input.instanceID], input.position), 1.0);
+    result.position = mul(viewProjMatrix, positionWS);
+#else
     result.position = mul(modelViewProjMatrix, input.position);
+#endif
     result.color = input.color;
     result.texCoord = input.texCoord;
 

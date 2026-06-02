@@ -136,8 +136,8 @@ public:
 
     virtual bool                        UpdateTextureViewMipRange(RHI::Texture *texture, RHI::ViewID viewID, uint32_t mostDetailedMip, uint32_t mipLevels) override;
 
-    virtual RHI::Shader *               CreateShader(RHI::ShaderModel shaderModel, RHI::ShaderStage shaderStage, const char *sourceName, const char *shaderText, int shaderTextSize, const char *entryPoint) override;
-    virtual RHI::Shader *               CreateShaderFromFile(RHI::ShaderModel shaderModel, RHI::ShaderStage shaderStage, const char *filename, const char *entryPoint) override;
+    virtual RHI::Shader *               CreateShader(RHI::ShaderModel shaderModel, RHI::ShaderStage shaderStage, const char *sourceName, const char *shaderText, int shaderTextSize, const char *entryPoint, const BE1::StrArray *defines = nullptr) override;
+    virtual RHI::Shader *               CreateShaderFromFile(RHI::ShaderModel shaderModel, RHI::ShaderStage shaderStage, const char *filename, const char *entryPoint, const BE1::StrArray *defines = nullptr) override;
     virtual void                        DestroyShader(RHI::Shader *shader, bool immediate = false) override;
 
     virtual RHI::Sampler *              CreateSampler(const RHI::SamplerDesc *desc) override;
@@ -232,7 +232,7 @@ public:
     bool                                CompileShaderD3D(const RHI::ShaderCompileInput *compileInput, RHI::ShaderCompileOutput *compileOutput);
     bool                                CompileShaderDXC(const RHI::ShaderCompileInput *compileInput, RHI::ShaderCompileOutput *compileOutput);
     bool                                LoadCompiledShader(const char *name, const uint64_t hash, byte **compiledShaderDataPtr, uint32_t *compiledShaderDataSizePtr);
-    void                                WriteCompiledShader(const char *name, const uint64_t hash, const byte *compiledShaderData, uint32_t compiledShaderDataSize);
+    void                                WriteCompiledShader(const char *name, const uint64_t hash, const byte *compiledShaderData, uint32_t compiledShaderDataSize, const BE1::Array<RHI::ShaderSourceDependency> &dependencies);
 
     void                                BindRootParameters(D3D12CommandList *commandList);
 

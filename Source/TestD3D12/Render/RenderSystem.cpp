@@ -19,6 +19,7 @@
 #include "D3D12Renderer/D3D12Renderer.h"
 #include "Sampler.h"
 #include "Texture.h"
+#include "ShaderTemplate.h"
 #include "Material.h"
 #include "Font.h"
 #include "Mesh.h"
@@ -36,6 +37,8 @@ void RenderSystem::Init(void *mainWindowHandle) {
     samplerManager.Init();
 
     textureManager.Init();
+
+    shaderTemplateManager.Init();
 
     materialManager.Init();
 
@@ -75,6 +78,8 @@ void RenderSystem::Shutdown() {
 
     materialManager.Shutdown();
 
+    shaderTemplateManager.Shutdown();
+
     textureManager.Shutdown();
 
     samplerManager.Shutdown();
@@ -85,6 +90,8 @@ void RenderSystem::Shutdown() {
 
 void RenderSystem::UpdateFrame() {
     textureManager.UpdateFrame();
+
+    shaderTemplateManager.UpdateFrame();
 
     materialManager.UpdateFrame();
 

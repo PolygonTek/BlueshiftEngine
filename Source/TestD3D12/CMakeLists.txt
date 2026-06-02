@@ -85,6 +85,11 @@ set(SRC_FILES
     Render/Material.h
     Render/Material.cpp
     Render/MaterialManager.cpp
+    Render/ShaderPipelineState.h
+    Render/ShaderPipelineState.cpp
+    Render/ShaderTemplate.h
+    Render/ShaderTemplate.cpp
+    Render/ShaderTemplateManager.cpp
     Render/Mesh.h
     Render/Mesh.cpp
     Render/Mesh_InternalData.cpp

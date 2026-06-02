@@ -17,6 +17,22 @@
 #include "D3D12Renderer.h"
 #include "D3D12Shader.h"
 
+static constexpr uint32_t CompiledShaderIdent = MAKE_FOURCC('B', 'S', 'C', 'S');
+static constexpr uint32_t CompiledShaderVersion = 1;
+
+struct CompiledShaderHeader {
+    uint32_t    ident;
+    uint32_t    version;
+    uint64_t    hash = 0;
+    uint32_t    dependencyCount = 0;
+    uint32_t    byteCodeSize = 0;
+};
+
+struct CompiledShaderDependencyHeader {
+    uint64_t    contentHash = 0;
+    uint32_t    filenameLength = 0;
+};
+
 void D3D12Shader::Release() {
     SAFE_MEM_FREE(compiledShaderData);
     SAFE_RELEASE(rootSignatureDeserializer);
@@ -67,7 +83,33 @@ bool D3D12Renderer::CompileShaderD3D(const RHI::ShaderCompileInput *compileInput
     ID3DBlob *errorBlob = nullptr;
     ID3DBlob *compiledShaderBlob = nullptr;
 
-    HRESULT hr = D3DCompile(compileInput->shaderText, compileInput->shaderTextSize, compileInput->sourceName, nullptr, nullptr, compileInput->entryPoint, target, compileFlags, 0, &compiledShaderBlob, &errorBlob);
+    std::vector<BE1::Str> defineNames;
+    std::vector<BE1::Str> defineValues;
+    std::vector<D3D_SHADER_MACRO> macros;
+    if (compileInput->defines.Count() > 0) {
+        defineNames.reserve(compileInput->defines.Count());
+        defineValues.reserve(compileInput->defines.Count());
+        macros.reserve(compileInput->defines.Count() + 1);
+
+        for (const BE1::Str &define : compileInput->defines) {
+            int equalIndex = define.Find('=');
+            if (equalIndex >= 0) {
+                defineNames.push_back(define.Left(equalIndex));
+                defineValues.push_back(define.Mid(equalIndex + 1, define.Length() - equalIndex - 1));
+            } else {
+                defineNames.push_back(define);
+                defineValues.push_back("1");
+            }
+        }
+
+        for (int i = 0; i < static_cast<int>(defineNames.size()); ++i) {
+            macros.push_back({ defineNames[i].c_str(), defineValues[i].c_str() });
+        }
+        macros.push_back({ nullptr, nullptr });
+    }
+
+    const D3D_SHADER_MACRO *d3dDefines = macros.empty() ? nullptr : macros.data();
+    HRESULT hr = D3DCompile(compileInput->shaderText, compileInput->shaderTextSize, compileInput->sourceName, d3dDefines, nullptr, compileInput->entryPoint, target, compileFlags, 0, &compiledShaderBlob, &errorBlob);
     if (errorBlob && errorBlob->GetBufferSize() > 0) {
         compileOutput->errorMessage = static_cast<const char *>(errorBlob->GetBufferPointer());
         errorBlob->Release();
@@ -353,11 +395,27 @@ bool D3D12Renderer::CompileShaderDXC(const RHI::ShaderCompileInput *compileInput
             char filename[1024];
             BE1::PlatformWinUtils::UCS2ToUTF8(pFilename, filename, COUNT_OF(filename));
 
-            char *shaderText;
+            char *shaderText = nullptr;
             int shaderTextSize = BE1::fileSystem.LoadFile(filename, true, (void **)&shaderText);
             if (!shaderText) {
                 // Could not open include file filename
                 return E_FAIL;
+            }
+
+            if (dependencies) {
+                bool alreadyAdded = false;
+                for (const RHI::ShaderSourceDependency &dependency : *dependencies) {
+                    if (!BE1::Str::Cmp(dependency.filename.c_str(), filename)) {
+                        alreadyAdded = true;
+                        break;
+                    }
+                }
+
+                if (!alreadyAdded) {
+                    RHI::ShaderSourceDependency &dependency = dependencies->Alloc();
+                    dependency.filename = filename;
+                    dependency.contentHash = BE1::CityHash64(shaderText, shaderTextSize);
+                }
             }
 
             // shaderText 를 IDxcBlob 으로 변환
@@ -366,6 +424,7 @@ bool D3D12Renderer::CompileShaderDXC(const RHI::ShaderCompileInput *compileInput
                 reinterpret_cast<LPBYTE>(const_cast<char *>(shaderText)),
                 static_cast<UINT32>(shaderTextSize), CP_UTF8, &blobEncoding);
             if (FAILED(hr)) {
+                BE1::fileSystem.FreeFile(shaderText);
                 return hr;
             }
 
@@ -383,12 +442,14 @@ bool D3D12Renderer::CompileShaderDXC(const RHI::ShaderCompileInput *compileInput
         }
 
         ULONG refCount = 1;
+        BE1::Array<RHI::ShaderSourceDependency> *dependencies = nullptr;
         std::vector<void *> shaderTextPtrs;
     };
 
     // Custom include 핸들러 생성
     Microsoft::WRL::ComPtr<CustomIncludeHandler> customIncludeHandler;
     customIncludeHandler.Attach(new CustomIncludeHandler);
+    customIncludeHandler->dependencies = &compileOutput->dependencies;
 
     DxcBuffer source;
     source.Ptr = compileInput->shaderText;
@@ -427,6 +488,18 @@ bool D3D12Renderer::CompileShaderDXC(const RHI::ShaderCompileInput *compileInput
     return true;
 }
 
+static bool GenerateFileContentHash(const char *filename, uint64_t *contentHash) {
+    char *fileData = nullptr;
+    const int fileDataSize = BE1::fileSystem.LoadFile(filename, true, (void **)&fileData);
+    if (!fileData) {
+        return false;
+    }
+
+    *contentHash = BE1::CityHash64(fileData, fileDataSize);
+    BE1::fileSystem.FreeFile(fileData);
+    return true;
+}
+
 bool D3D12Renderer::LoadCompiledShader(const char *name, const uint64_t hash, byte **compiledShaderDataPtr, uint32_t *compiledShaderDataSizePtr) {
     BE1::Str filename;// = shaderCacheDir;
     filename.AppendPath(name);
@@ -437,25 +510,62 @@ bool D3D12Renderer::LoadCompiledShader(const char *name, const uint64_t hash, by
         return false;
     }
 
-    const byte *fileData = (const byte *)fileMapping->GetData();
-    // 저장된 cso 파일과 hash 값이 같은지 비교한다.
-    if (*(uint64_t *)fileData != hash) {
+    const byte *filePtr = (const byte *)fileMapping->GetData();
+    const byte *fileEnd = filePtr + fileMapping->GetSize();
+
+    if (static_cast<size_t>(fileEnd - filePtr) < sizeof(CompiledShaderHeader)) {
         delete fileMapping;
         return false;
     }
 
-    // 해시값 스킵
-    fileData += sizeof(uint64_t);
+    const CompiledShaderHeader *header = (const CompiledShaderHeader *)filePtr;
+    filePtr += sizeof(CompiledShaderHeader);
 
-    *compiledShaderDataSizePtr = fileMapping->GetSize() - sizeof(uint64_t);
-    *compiledShaderDataPtr = (byte *)Mem_Alloc(*compiledShaderDataSizePtr);
-    memcpy(*compiledShaderDataPtr, fileData, *compiledShaderDataSizePtr);
+    if (header->ident != CompiledShaderIdent || header->version != CompiledShaderVersion || header->hash != hash) {
+        delete fileMapping;
+        return false;
+    }
+
+    for (uint32_t i = 0; i < header->dependencyCount; i++) {
+        if (static_cast<size_t>(fileEnd - filePtr) < sizeof(CompiledShaderDependencyHeader)) {
+            delete fileMapping;
+            return false;
+        }
+
+        const CompiledShaderDependencyHeader *dependencyHeader = (const CompiledShaderDependencyHeader *)filePtr;
+        filePtr += sizeof(CompiledShaderDependencyHeader);
+
+        if (static_cast<size_t>(fileEnd - filePtr) < dependencyHeader->filenameLength) {
+            delete fileMapping;
+            return false;
+        }
+
+        BE1::Str dependencyFilename;
+        dependencyFilename.Append((const char *)filePtr, dependencyHeader->filenameLength);
+        filePtr += dependencyHeader->filenameLength;
+
+        // cso 파일에 저장된 include 파일 hash (이전 컴파일) 와 실제 파일의 hash 를 비교한다.
+        uint64_t dependencyContentHash = 0;
+        if (!GenerateFileContentHash(dependencyFilename, &dependencyContentHash) || dependencyContentHash != dependencyHeader->contentHash) {
+            delete fileMapping;
+            return false;
+        }
+    }
+
+    if (static_cast<size_t>(fileEnd - filePtr) < header->byteCodeSize) {
+        delete fileMapping;
+        return false;
+    }
+
+    *compiledShaderDataSizePtr = header->byteCodeSize;
+    *compiledShaderDataPtr = (byte *)Mem_Alloc(header->byteCodeSize);
+    memcpy(*compiledShaderDataPtr, filePtr, header->byteCodeSize);
 
     delete fileMapping;
     return true;
 }
 
-void D3D12Renderer::WriteCompiledShader(const char *name, const uint64_t hash, const byte *compiledShaderData, uint32_t compiledShaderDataSize) {
+void D3D12Renderer::WriteCompiledShader(const char *name, const uint64_t hash, const byte *compiledShaderData, uint32_t compiledShaderDataSize, const BE1::Array<RHI::ShaderSourceDependency> &dependencies) {
     if (!compiledShaderData || compiledShaderDataSize == 0) {
         return;
     }
@@ -468,20 +578,29 @@ void D3D12Renderer::WriteCompiledShader(const char *name, const uint64_t hash, c
         return;
     }
 
-    int fileDataSize = compiledShaderDataSize + sizeof(uint64_t);
-    byte *fileData = (byte *)Mem_Alloc32(fileDataSize);
+    CompiledShaderHeader header = {};
+    header.ident = CompiledShaderIdent;
+    header.version = CompiledShaderVersion;
+    header.hash = hash;
+    header.dependencyCount = static_cast<uint32_t>(dependencies.Count());
+    header.byteCodeSize = compiledShaderDataSize;
 
-    // 캐싱된 cso 파일의 첫 64 비트는 hash 값을 저장한다.
-    *(uint64_t *)fileData = hash;
-    memcpy(fileData + sizeof(uint64_t), compiledShaderData, compiledShaderDataSize);
+    file->Write(&header, sizeof(header));
 
-    file->Write(fileData, fileDataSize);
+    for (const RHI::ShaderSourceDependency &dependency : dependencies) {
+        CompiledShaderDependencyHeader dependencyHeader = {};
+        dependencyHeader.contentHash = dependency.contentHash;
+        dependencyHeader.filenameLength = static_cast<uint32_t>(dependency.filename.Length());
 
-    Mem_AlignedFree(fileData);
+        file->Write(&dependencyHeader, sizeof(dependencyHeader));
+        file->Write(dependency.filename.c_str(), dependencyHeader.filenameLength);
+    }
+
+    file->Write(compiledShaderData, compiledShaderDataSize);
     delete file;
 }
 
-RHI::Shader *D3D12Renderer::CreateShader(RHI::ShaderModel shaderModel, RHI::ShaderStage shaderStage, const char *sourceName, const char *shaderText, int shaderTextSize, const char *entryPoint) {
+RHI::Shader *D3D12Renderer::CreateShader(RHI::ShaderModel shaderModel, RHI::ShaderStage shaderStage, const char *sourceName, const char *shaderText, int shaderTextSize, const char *entryPoint, const BE1::StrArray *defines) {
     const char *shaderStageName = nullptr;
     switch (shaderStage) {
     case RHI::ShaderStage::Vertex:
@@ -506,11 +625,56 @@ RHI::Shader *D3D12Renderer::CreateShader(RHI::ShaderModel shaderModel, RHI::Shad
         return nullptr;
     }
 
+    const char *shaderModelName = nullptr;
+    switch (shaderModel) {
+    case RHI::ShaderModel::SM_5_0:
+        shaderModelName = "SM50";
+        break;
+    case RHI::ShaderModel::SM_6_0:
+        shaderModelName = "SM60";
+        break;
+    case RHI::ShaderModel::SM_6_1:
+        shaderModelName = "SM61";
+        break;
+    case RHI::ShaderModel::SM_6_2:
+        shaderModelName = "SM62";
+        break;
+    case RHI::ShaderModel::SM_6_3:
+        shaderModelName = "SM63";
+        break;
+    case RHI::ShaderModel::SM_6_4:
+        shaderModelName = "SM64";
+        break;
+    case RHI::ShaderModel::SM_6_5:
+        shaderModelName = "SM65";
+        break;
+    case RHI::ShaderModel::SM_6_6:
+        shaderModelName = "SM66";
+        break;
+    case RHI::ShaderModel::SM_6_7:
+        shaderModelName = "SM67";
+        break;
+    default:
+        return nullptr;
+    }
+
+    uint64_t definesHash = 0;
+    if (defines && defines->Count() > 0) {
+        definesHash = 1469598103934665603ull;
+        for (const BE1::Str &define : *defines) {
+            definesHash = hash_combine(definesHash, define.ToHash64());
+        }
+    }
+
     BE1::Str fileName = sourceName;
     BE1::Str fileBase;
     fileName.ExtractFileBase(fileBase);
     char mangledFilename[256];
-    BE1::Str::snPrintf(mangledFilename, sizeof(mangledFilename), "%s-%s-%s", fileBase.c_str(), entryPoint, shaderStageName);
+    if (definesHash != 0) {
+        BE1::Str::snPrintf(mangledFilename, sizeof(mangledFilename), "%s-%s-%s-%s-%016llx", fileBase.c_str(), entryPoint, shaderStageName, shaderModelName, definesHash);
+    } else {
+        BE1::Str::snPrintf(mangledFilename, sizeof(mangledFilename), "%s-%s-%s-%s", fileBase.c_str(), entryPoint, shaderStageName, shaderModelName);
+    }
 
     BE1::Str extension;
     fileName.ExtractFileExtension(extension);
@@ -521,12 +685,12 @@ RHI::Shader *D3D12Renderer::CreateShader(RHI::ShaderModel shaderModel, RHI::Shad
     byte *compiledShaderData = nullptr;
     uint32_t compiledShaderDataSize = 0;
 
-    // shaderText 로 hash 값을 만든다.
-    // FIXME: 컴파일할 때 include 문을 처리하므로, 텍스트만 가지고는 include 소스 파일이 바뀌어도 감지할 수 없는 문제가 있다.
-    const uint64_t shaderTextHash = BE1::CityHash64(shaderText, shaderTextSize);
+    // Include files are validated from the dependency table stored in the cso cache.
+    uint64_t shaderHash = BE1::CityHash64(shaderText, shaderTextSize);
+    shaderHash = hash_combine(shaderHash, definesHash);
 #ifdef USE_COMPILED_SHADER
     // 이미 컴파일된 cso 파일을 로드해본다.
-    bool shouldCompileShader = !LoadCompiledShader(fileName, shaderTextHash, &compiledShaderData, &compiledShaderDataSize);
+    bool shouldCompileShader = !LoadCompiledShader(fileName, shaderHash, &compiledShaderData, &compiledShaderDataSize);
 #else
     bool shouldCompileShader = true;
 #endif
@@ -541,6 +705,9 @@ RHI::Shader *D3D12Renderer::CreateShader(RHI::ShaderModel shaderModel, RHI::Shad
         compileInput.shaderText = shaderText;
         compileInput.shaderTextSize = shaderTextSize;
         compileInput.entryPoint = entryPoint;
+        if (defines) {
+            compileInput.defines = *defines;
+        }
 
         RHI::ShaderCompileOutput compileOutput = {};
         bool compileSucceeded = CompileShader(&compileInput, &compileOutput);
@@ -556,7 +723,7 @@ RHI::Shader *D3D12Renderer::CreateShader(RHI::ShaderModel shaderModel, RHI::Shad
 
 #ifdef USE_COMPILED_SHADER
         // 컴파일했으므로 cso 파일을 저장한다.
-        WriteCompiledShader(fileName, shaderTextHash, compiledShaderData, compiledShaderDataSize);
+        WriteCompiledShader(fileName, shaderHash, compiledShaderData, compiledShaderDataSize, compileOutput.dependencies);
 #endif
     }
 
@@ -579,7 +746,7 @@ RHI::Shader *D3D12Renderer::CreateShader(RHI::ShaderModel shaderModel, RHI::Shad
 
     D3D12Shader *shader = new D3D12Shader;
     shader->shaderStage = shaderStage;
-    shader->hash = shaderTextHash;
+    shader->hash = shaderHash;
     shader->compiledShaderData = compiledShaderData;
     shader->compiledShaderDataSize = compiledShaderDataSize;
     shader->rootSignature = rootSignature;
@@ -588,14 +755,14 @@ RHI::Shader *D3D12Renderer::CreateShader(RHI::ShaderModel shaderModel, RHI::Shad
     return shader;
 }
 
-RHI::Shader *D3D12Renderer::CreateShaderFromFile(RHI::ShaderModel shaderModel, RHI::ShaderStage shaderStage, const char *filename, const char *entryPoint) {
+RHI::Shader *D3D12Renderer::CreateShaderFromFile(RHI::ShaderModel shaderModel, RHI::ShaderStage shaderStage, const char *filename, const char *entryPoint, const BE1::StrArray *defines) {
     char *shaderText;
     int shaderTextSize = BE1::fileSystem.LoadFile(filename, true, (void **)&shaderText);
     if (!shaderText) {
         return nullptr;
     }
 
-    RHI::Shader *shader = CreateShader(shaderModel, shaderStage, filename, shaderText, shaderTextSize, entryPoint);
+    RHI::Shader *shader = CreateShader(shaderModel, shaderStage, filename, shaderText, shaderTextSize, entryPoint, defines);
     if (!shader) {
         BE1::fileSystem.FreeFile(shaderText);
         return nullptr;

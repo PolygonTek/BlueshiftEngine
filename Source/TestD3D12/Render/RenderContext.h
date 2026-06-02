@@ -16,6 +16,7 @@
 
 #include "RHI.h"
 #include "RenderFrameData.h"
+#include "ShaderPipelineState.h"
 #include "TextureStreamingFeedback.h"
 #include "GuiMesh.h"
 
@@ -113,15 +114,15 @@ private:
     RHI::Texture *                  mainRTColorMSAATexture = nullptr;
     RHI::Texture *                  mainRTColorTexture = nullptr;
     RHI::Texture *                  mainRTDepthTexture = nullptr;
-    RHI::PipelineState *            imagePSO = nullptr;
-    RHI::PipelineState *            unlitPSO = nullptr;
-    RHI::PipelineState *            unlitAlphaBlendPSO = nullptr;
-    RHI::PipelineState *            unlitInstancedPSO = nullptr;
-    RHI::PipelineState *            unlitInstancedAlphaBlendPSO = nullptr;
-    RHI::PipelineState *            litPSO = nullptr;
-    RHI::PipelineState *            litAlphaBlendPSO = nullptr;
-    RHI::PipelineState *            litInstancedPSO = nullptr;
-    RHI::PipelineState *            litInstancedAlphaBlendPSO = nullptr;
+    std::shared_ptr<ShaderPipelineState> imagePSO;
+    std::shared_ptr<ShaderPipelineState> unlitPSO;
+    std::shared_ptr<ShaderPipelineState> unlitAlphaBlendPSO;
+    std::shared_ptr<ShaderPipelineState> unlitInstancedPSO;
+    std::shared_ptr<ShaderPipelineState> unlitInstancedAlphaBlendPSO;
+    std::shared_ptr<ShaderPipelineState> litPSO;
+    std::shared_ptr<ShaderPipelineState> litAlphaBlendPSO;
+    std::shared_ptr<ShaderPipelineState> litInstancedPSO;
+    std::shared_ptr<ShaderPipelineState> litInstancedAlphaBlendPSO;
 
 #ifdef USE_RENDER_FRAME_BUFFERING
     static constexpr int            NumFrames = 2;

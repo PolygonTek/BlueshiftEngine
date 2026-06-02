@@ -47,9 +47,9 @@ void App::Init(void *mainWindowHandle) {
     renderSystem = new RenderSystem;
     renderSystem->Init(mainWindowHandle);
 
-    mainRenderContext = renderSystem->CreateRenderContext(mainWindowHandle, true);
-
     loadingSystem.Init();
+
+    mainRenderContext = renderSystem->CreateRenderContext(mainWindowHandle, true);
 
     mainFont = fontManager.GetFont("Data/EngineFonts/Galmuri11-Bold.ttf", 22);
 

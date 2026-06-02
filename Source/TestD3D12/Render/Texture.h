@@ -46,7 +46,7 @@ public:
         Streaming                   = BIT(6),   ///< Texture streaming loading (only DDS file, with async loading)
         UnorderedAccess             = BIT(7),   ///< Texture accessible via UAV
         Compute                     = BIT(8),   ///< Create as a compute resource in its initial update
-        LoadedFromFile              = BIT(9)   ///< Indicates the texture was loaded from a file (used internally)
+        LoadedFromFile              = BIT(9)    ///< Indicates the texture was loaded from a file (used internally)
     };
 
     enum class State : uint8_t {
@@ -121,7 +121,7 @@ public:
     uint32_t                        GetMipLevelCount() const { assert(IsReady()); return internalData.rhiTexture->GetMipLevelCount(); }
     BE1::Image::Format              GetFormat() const { assert(IsReady()); return internalData.format; }
     Flag                            GetFlags() const { assert(IsReady()); return internalData.flags; }
-    RHI::Texture *                  GetRHITexture() const { assert(IsReady()); return internalData.rhiTexture; }
+    RHI::Texture *                  GetRHITexture() const { return internalData.rhiTexture; }
     uint32_t                        GetIndex() const { return index; }
     const Streaming *               GetStreaming() const { return &streaming; }
     Streaming *                     GetStreaming() { return &streaming; }

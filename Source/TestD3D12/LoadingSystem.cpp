@@ -14,6 +14,7 @@
 
 #include "Precompiled.h"
 #include "LoadingSystem.h"
+#include "Render/ShaderTemplate.h"
 
 LoadingSystem      loadingSystem;
 
@@ -224,6 +225,33 @@ bool LoadingSystem::EnqueueAnimLoad(std::shared_ptr<Anim> anim, const char *file
     return true;
 }
 
+bool LoadingSystem::EnqueueShaderPipelineBuild(std::shared_ptr<ShaderTemplate> shaderTemplate, std::shared_ptr<ShaderPipelineState> pipelineState, uint32_t serial, LoadPriority priority) {
+    if (!shaderTemplate || !pipelineState) {
+        return false;
+    }
+
+    {
+        BE1::ScopedLock lock(requestMutex);
+
+        if (stopping) {
+            return false;
+        }
+
+        LoadRequest request;
+        request.shaderTemplate = shaderTemplate;
+        request.pipelineState = pipelineState;
+        request.serial = serial;
+        request.priority = priority;
+        request.sequence = nextRequestSequence++;
+        requests.Append(std::move(request));
+
+        // 로딩 요청 큐에 집어넣는다.
+        BE1::PlatformCondition::Signal(requestCondition);
+    }
+
+    return true;
+}
+
 bool LoadingSystem::BoostTextureLoad(const Texture *texture, uint32_t serial, LoadPriority priority) {
     if (!texture) {
         return false;
@@ -368,6 +396,8 @@ void LoadingSystem::Run() {
             ProcessSkeletonLoadRequest(request);
         } else if (request.anim) {
             ProcessAnimLoadRequest(request);
+        } else if (request.shaderTemplate && request.pipelineState) {
+            ProcessShaderPipelineBuildRequest(request);
         }
     }
 }
@@ -516,7 +546,12 @@ bool LoadingSystem::ProcessAnimLoadRequest(const LoadRequest &request) {
     return true;
 }
 
-// 로딩 요청 처리가 완료된 것들은 최종적으로 메인 스레드에서 처리한다.
+bool LoadingSystem::ProcessShaderPipelineBuildRequest(const LoadRequest &request) {
+    PROFILER_CPU_SCOPED_EVENT("LoadingSystem::ProcessShaderPipelineBuildRequest");
+
+    return request.pipelineState->Build(*request.shaderTemplate, request.serial);
+}
+
 void LoadingSystem::ProcessLoadCompletions() {
     assert(BE1::Engine::IsInMainThread());
 
