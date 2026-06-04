@@ -167,32 +167,25 @@ void RenderContext::InitPSO() {
     renderDest.sampleCount = 1;
 #endif
 
-    std::shared_ptr<ShaderTemplate> unlitShaderTemplate = shaderTemplateManager.GetBuiltInShaderTemplate(ShaderTemplateId::Unlit);
-    std::shared_ptr<ShaderTemplate> litShaderTemplate = shaderTemplateManager.GetBuiltInShaderTemplate(ShaderTemplateId::Lit);
-
     ShaderPipelineDesc pipelineDesc;
     pipelineDesc.inputLayout = &inputLayout;
     pipelineDesc.renderDest = renderDest;
 
-    pipelineDesc.permutationKey = ShaderPermutationKey();
     pipelineDesc.blendStateType = RHI::BlendStateType::Opaque;
-    unlitPSO = unlitShaderTemplate->GetGraphicsPipeline(pipelineDesc);
-    litPSO = litShaderTemplate->GetGraphicsPipeline(pipelineDesc);
+    unlitPSO = shaderTemplateManager.unlitShaderTemplate->GetGraphicsPipeline(ShaderPermutationKey(), pipelineDesc);
+    litPSO = shaderTemplateManager.litShaderTemplate->GetGraphicsPipeline(ShaderPermutationKey(), pipelineDesc);
 
-    pipelineDesc.permutationKey = ShaderPermutationKey();
     pipelineDesc.blendStateType = RHI::BlendStateType::AlphaBlend;
-    unlitAlphaBlendPSO = unlitShaderTemplate->GetGraphicsPipeline(pipelineDesc);
-    litAlphaBlendPSO = litShaderTemplate->GetGraphicsPipeline(pipelineDesc);
+    unlitAlphaBlendPSO = shaderTemplateManager.unlitShaderTemplate->GetGraphicsPipeline(ShaderPermutationKey(), pipelineDesc);
+    litAlphaBlendPSO = shaderTemplateManager.litShaderTemplate->GetGraphicsPipeline(ShaderPermutationKey(), pipelineDesc);
 
-    pipelineDesc.permutationKey = ShaderPermutationKey::FromDefines({ "USE_INSTANCING=1" });
     pipelineDesc.blendStateType = RHI::BlendStateType::Opaque;
-    unlitInstancedPSO = unlitShaderTemplate->GetGraphicsPipeline(pipelineDesc);
-    litInstancedPSO = litShaderTemplate->GetGraphicsPipeline(pipelineDesc);
+    unlitInstancedPSO = shaderTemplateManager.unlitShaderTemplate->GetGraphicsPipeline(ShaderPermutationKey::FromDefines({ "USE_INSTANCING=1" }), pipelineDesc);
+    litInstancedPSO = shaderTemplateManager.litShaderTemplate->GetGraphicsPipeline(ShaderPermutationKey::FromDefines({ "USE_INSTANCING=1" }), pipelineDesc);
 
-    pipelineDesc.permutationKey = ShaderPermutationKey::FromDefines({ "USE_INSTANCING=1" });
     pipelineDesc.blendStateType = RHI::BlendStateType::AlphaBlend;
-    unlitInstancedAlphaBlendPSO = unlitShaderTemplate->GetGraphicsPipeline(pipelineDesc);
-    litInstancedAlphaBlendPSO = litShaderTemplate->GetGraphicsPipeline(pipelineDesc);
+    unlitInstancedAlphaBlendPSO = shaderTemplateManager.unlitShaderTemplate->GetGraphicsPipeline(ShaderPermutationKey::FromDefines({ "USE_INSTANCING=1" }), pipelineDesc);
+    litInstancedAlphaBlendPSO = shaderTemplateManager.litShaderTemplate->GetGraphicsPipeline(ShaderPermutationKey::FromDefines({ "USE_INSTANCING=1" }), pipelineDesc);
 }
 
 void RenderContext::InitFullScreenTrianglePSO() {
@@ -201,13 +194,11 @@ void RenderContext::InitFullScreenTrianglePSO() {
     renderDest.renderTargetFormats[0] = swapChain->GetRTVFormat();
     renderDest.sampleCount = 1;
 
-    std::shared_ptr<ShaderTemplate> shaderTemplate = shaderTemplateManager.GetBuiltInShaderTemplate(ShaderTemplateId::FullScreenImage);
-
     ShaderPipelineDesc pipelineDesc;
     pipelineDesc.renderDest = renderDest;
     pipelineDesc.depthStencilStateType = RHI::DepthStencilStateType::Never;
     pipelineDesc.blendStateType = RHI::BlendStateType::Opaque;
-    imagePSO = shaderTemplate->GetGraphicsPipeline(pipelineDesc);
+    imagePSO = shaderTemplateManager.fullscreenImageShaderTemplate->GetGraphicsPipeline(ShaderPermutationKey(), pipelineDesc);
 }
 
 void RenderContext::WaitAllFrameFences() {

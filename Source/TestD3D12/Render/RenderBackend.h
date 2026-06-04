@@ -16,6 +16,7 @@
 
 #include "Precompiled.h"
 #include "RHI.h"
+#include "RenderFrameData.h"
 
 class RenderFrameData;
 class RenderContext;
@@ -73,8 +74,8 @@ private:
     void                            DrawLitSurfaceInstanced(RHI::FrameThreadData *frameThreadData, RHI::CommandList *commandList, const DrawSurf **instanceSurfs, int instanceCount);
     void                            DrawGuiSurface(RHI::FrameThreadData *frameThreadData, RHI::CommandList *commandList, const DrawSurf *drawSurf);
 
-    const RHI::Texture *            ResolveDrawSurfTexture(const DrawSurf *drawSurf) const;
-    bool                            SetPSO(RHI::CommandList *commandList, const std::shared_ptr<ShaderPipelineState> &pipelineState) const;
+    const RHI::Texture *            ResolveDrawSurfTexture(const DrawSurf *drawSurf, bool useDefaultTexture) const;
+    uint32_t                        ResolveDrawSurfTextureBindlessIndex(const DrawSurf *drawSurf, bool useDefaultTexture, RHI::ViewType viewType, RHI::ViewID viewID = RHI::ViewID::PrimaryID) const;
     void                            RecordDrawStats(uint32_t drawCount, uint64_t triangleCount);
 
     void                            BeginGpuFrameTiming(RHI::CommandList *commandList);
@@ -86,6 +87,7 @@ private:
     RenderContext *                 currentContext = nullptr;
     RHI::CommandList *              mainCommandList = nullptr;
     uint32_t                        frameCount = 0;
+    RenderContextPipelineSnapshot   currentPipelines;
 
     const VisCamera *               currentVisCamera = nullptr;
 

@@ -46,20 +46,6 @@ void RenderBackend::Shutdown() {
     }
 }
 
-bool RenderBackend::SetPSO(RHI::CommandList *commandList, const std::shared_ptr<ShaderPipelineState> &pipelineState) const {
-    if (!pipelineState || !pipelineState->IsReady()) {
-        return false;
-    }
-
-    RHI::PipelineState *pso = pipelineState->GetPSO();
-    if (!pso) {
-        return false;
-    }
-
-    RHI::renderer->SetPSO(commandList, pso);
-    return true;
-}
-
 void RenderBackend::UpdateRenderFrameTime(uint64_t frameUsec) {
     static constexpr int StatUpdateFrameCount = 60;
 
@@ -232,6 +218,7 @@ const void *RenderBackend::ExecuteBeginContext(const void *data) {
     const BeginContextRenderCommand *cmd = reinterpret_cast<const BeginContextRenderCommand *>(data);
 
     currentContext = cmd->renderContext;
+    currentPipelines = cmd->pipelines;
     currentContext->BeginRenderStatsFrame();
 
     mainCommandList = frameData->GetThreadData(0)->BeginCommandList(RHI::CommandQueueType::Graphics);
@@ -351,11 +338,13 @@ const void *RenderBackend::ExecuteSwapBuffers(const void *data) {
     RHI::renderer->SetScissorRect(mainCommandList, currentVisCamera->renderRect);
 
     RHI::renderer->BeginRenderPass(mainCommandList, currentContext->swapChain, nullptr);
-    if (SetPSO(mainCommandList, currentContext->imagePSO)) {
+    if (currentPipelines.imagePSO) {
+        RHI::renderer->SetPSO(mainCommandList, currentPipelines.imagePSO);
         RHI::renderer->SetTexture(mainCommandList, 0, false, currentContext->mainRTColorTexture);
         RHI::renderer->Draw(mainCommandList, 3, 0);
         RecordDrawStats(1, 1);
     }
+
     RHI::renderer->EndRenderPass(mainCommandList);
 #endif
 
@@ -394,9 +383,11 @@ void RenderBackend::DrawCamera3D() {
 void RenderBackend::DrawCamera2D() {
     PROFILER_CPU_SCOPED_EVENT("RenderBackend::DrawCamera2D");
 
-    if (!SetPSO(mainCommandList, currentContext->unlitAlphaBlendPSO)) {
+    if (!currentPipelines.unlitAlphaBlendPSO) {
         return;
     }
+
+    RHI::renderer->SetPSO(mainCommandList, currentPipelines.unlitAlphaBlendPSO);
 
     const SubMesh *currentSubMesh = nullptr;
     const RHI::Texture *currentTexture = nullptr;

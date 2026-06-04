@@ -311,6 +311,7 @@ void D3D12Renderer::Init(const void *mainWindowHandle) {
 
     releaseRequestMutex = BE1::PlatformMutex::Create();
     resourceRequestMutex = BE1::PlatformMutex::Create();
+    psoMapMutex = BE1::PlatformMutex::Create();
 
     InitDefaultStates();
 
@@ -534,6 +535,9 @@ void D3D12Renderer::Shutdown() {
         SAFE_RELEASE(blob);
     }
 #endif
+
+    BE1::PlatformMutex::Destroy(psoMapMutex);
+    psoMapMutex = nullptr;
 
     SAFE_DELETE(resCpuDescriptorPool);
     SAFE_DELETE(rtvCpuDescriptorPool);

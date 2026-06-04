@@ -406,12 +406,15 @@ RHI::PipelineState *D3D12Renderer::CreateGraphicsPSO(const RHI::PipelineStateDes
 
     // 전체 hash 값으로 완전히 동일한 PSO 가 존재하는지 찾아본다.
     const uint64_t psoHash = BE1::CityHash64((char *)&psoHashData, sizeof(psoHashData));
-    const auto *psoEntry = graphicsPsoMap.Get(psoHash);
-    if (psoEntry) {
-        // 동일한 PSO 를 찾았다면, 레퍼런스 카운트를 증가시키고 리턴한다.
-        D3D12PipelineState *pso = psoEntry->second;
-        pso->refCount.fetch_add(1);
-        return pso;
+    {
+        BE1::ScopedLock lock(psoMapMutex);
+        const auto *psoEntry = graphicsPsoMap.Get(psoHash);
+        if (psoEntry) {
+            // 동일한 PSO 를 찾았다면, 레퍼런스 카운트를 증가시키고 리턴한다.
+            D3D12PipelineState *pso = psoEntry->second;
+            pso->refCount.fetch_add(1);
+            return pso;
+        }
     }
 
     // 없다면 PSO 객체를 새로 만든다.
@@ -436,12 +439,17 @@ RHI::PipelineState *D3D12Renderer::CreateGraphicsPSO(const RHI::PipelineStateDes
 
 #ifdef USE_CACHED_PSO_BLOB
     // PSO hash 값으로 동일한 cached PSO 가 존재하는지 찾아보고, 찾았다면 재활용한다.
-    const auto *cachedPsoBlobEntry = cachedPsoBlobMap.Get(psoHash);
+    bool cachedPsoBlobEntry = false;
 
     // cachedPsoBlob 은 미리 컴파일된 cached PSO 정보가 담긴 ID3DBlob 객체이다.
     ID3DBlob *cachedPsoBlob = nullptr;
-    if (cachedPsoBlobEntry) {
-        cachedPsoBlob = cachedPsoBlobEntry->second;
+    {
+        BE1::ScopedLock lock(psoMapMutex);
+        const auto *entry = cachedPsoBlobMap.Get(psoHash);
+        if (entry) {
+            cachedPsoBlob = entry->second;
+            cachedPsoBlobEntry = true;
+        }
     }
 
     // cached PSO 가 없다면 파일로 저장된 cached PSO 파일을 로딩해본다.
@@ -643,8 +651,6 @@ RHI::PipelineState *D3D12Renderer::CreateGraphicsPSO(const RHI::PipelineStateDes
         return nullptr;
     }
 
-    graphicsPsoMap.Set(psoHash, pipelineState);
-
 #ifdef USE_CACHED_PSO_BLOB
     if (!cachedPsoBlobEntry) {
         if (!cachedPsoBlob) {
@@ -655,11 +661,40 @@ RHI::PipelineState *D3D12Renderer::CreateGraphicsPSO(const RHI::PipelineStateDes
         }
 
         // cached PSO 를 캐싱한다.
-        if (cachedPsoBlob) {
-            cachedPsoBlobMap.Set(psoHash, cachedPsoBlob);
-        }
     }
 #endif
+
+    {
+        BE1::ScopedLock lock(psoMapMutex);
+        const auto *psoEntry = graphicsPsoMap.Get(psoHash);
+        if (psoEntry) {
+            // lock 없이 PSO 를 생성하는 동안 같은 PSO 가 추가되었다면, 캐시된 PSO 를 사용한다.
+            D3D12PipelineState *pso = psoEntry->second;
+            pso->refCount.fetch_add(1);
+            delete pipelineState;
+
+#ifdef USE_CACHED_PSO_BLOB
+            if (!cachedPsoBlobEntry && cachedPsoBlob) {
+                SAFE_RELEASE(cachedPsoBlob);
+            }
+#endif
+            return pso;
+        }
+
+        graphicsPsoMap.Set(psoHash, pipelineState);
+
+#ifdef USE_CACHED_PSO_BLOB
+        // cached PSO 를 캐싱한다.
+        if (!cachedPsoBlobEntry && cachedPsoBlob) {
+            const auto *entry = cachedPsoBlobMap.Get(psoHash);
+            if (entry) {
+                SAFE_RELEASE(cachedPsoBlob);
+            } else {
+                cachedPsoBlobMap.Set(psoHash, cachedPsoBlob);
+            }
+        }
+#endif
+    }
 
     return pipelineState;
 }
@@ -669,9 +704,15 @@ RHI::PipelineState *D3D12Renderer::CreateComputePSO(const RHI::Shader *computeSh
 
     // compute shader 외에는 다른 상태가 없으므로 compute shader hash 값을 PSO hash 값으로 사용한다.
     const uint64_t psoHash = cs->hash;
-    const auto *psoEntry = computePsoMap.Get(psoHash);
-    if (psoEntry) {
-        return psoEntry->second;
+    {
+        BE1::ScopedLock lock(psoMapMutex);
+        const auto *psoEntry = computePsoMap.Get(psoHash);
+        if (psoEntry) {
+            // 동일한 PSO 를 찾았다면, 레퍼런스 카운트를 증가시키고 리턴한다.
+            D3D12PipelineState *pso = psoEntry->second;
+            pso->refCount.fetch_add(1);
+            return pso;
+        }
     }
 
     D3D12PipelineState *pipelineState = new D3D12PipelineState;
@@ -706,21 +747,36 @@ RHI::PipelineState *D3D12Renderer::CreateComputePSO(const RHI::Shader *computeSh
         return nullptr;
     }
 
-    computePsoMap.Set(psoHash, pipelineState);
+    {
+        BE1::ScopedLock lock(psoMapMutex);
+        const auto *psoEntry = computePsoMap.Get(psoHash);
+        if (psoEntry) {
+            // lock 없이 PSO 를 생성하는 동안 같은 PSO 가 추가되었다면, 캐시된 PSO 를 사용한다.
+            D3D12PipelineState *pso = psoEntry->second;
+            pso->refCount.fetch_add(1);
+            delete pipelineState;
+            return pso;
+        }
+
+        computePsoMap.Set(psoHash, pipelineState);
+    }
 
     return pipelineState;
 }
 
 void D3D12Renderer::DestroyPSO(RHI::PipelineState *pipelineState, bool immediate) {
-    int oldRefCount = pipelineState->refCount.fetch_sub(1);
-    if (oldRefCount > 1) {
-        return;
-    }
+    {
+        BE1::ScopedLock lock(psoMapMutex);
+        int oldRefCount = pipelineState->refCount.fetch_sub(1);
+        if (oldRefCount > 1) {
+            return;
+        }
 
-    if (pipelineState->isGraphics) {
-        graphicsPsoMap.Remove(pipelineState->hash);
-    } else {
-        computePsoMap.Remove(pipelineState->hash);
+        if (pipelineState->isGraphics) {
+            graphicsPsoMap.Remove(pipelineState->hash);
+        } else {
+            computePsoMap.Remove(pipelineState->hash);
+        }
     }
 
     if (immediate) {

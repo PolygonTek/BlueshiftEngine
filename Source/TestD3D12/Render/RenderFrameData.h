@@ -45,9 +45,22 @@ struct RenderCommandBuffer {
     uint32_t                        used = 0;
 };
 
+struct RenderContextPipelineSnapshot {
+    RHI::PipelineState *            imagePSO = nullptr;
+    RHI::PipelineState *            unlitPSO = nullptr;
+    RHI::PipelineState *            unlitAlphaBlendPSO = nullptr;
+    RHI::PipelineState *            unlitInstancedPSO = nullptr;
+    RHI::PipelineState *            unlitInstancedAlphaBlendPSO = nullptr;
+    RHI::PipelineState *            litPSO = nullptr;
+    RHI::PipelineState *            litAlphaBlendPSO = nullptr;
+    RHI::PipelineState *            litInstancedPSO = nullptr;
+    RHI::PipelineState *            litInstancedAlphaBlendPSO = nullptr;
+};
+
 struct BeginContextRenderCommand {
     RenderCommandId                 commandId;
     RenderContext *                 renderContext;
+    RenderContextPipelineSnapshot   pipelines;
 };
 
 struct DrawCameraRenderCommand {
@@ -219,16 +232,6 @@ BE_INLINE void RenderFrameData::EndFrame() {
 
     // 커맨드 버퍼 비우기.
     commands.used = 0;
-}
-
-BE_INLINE void RenderFrameData::CmdBeginContext(RenderContext *context) {
-    BeginContextRenderCommand *cmd = (BeginContextRenderCommand *)GetCommandBuffer(sizeof(BeginContextRenderCommand));
-    if (!cmd) {
-        return;
-    }
-
-    cmd->commandId = RenderCommandId::BeginContext;
-    cmd->renderContext = context;
 }
 
 BE_INLINE void RenderFrameData::CmdDrawCamera(const VisCamera *camera) {

@@ -16,42 +16,19 @@
 #include "ShaderTemplate.h"
 #include "IO/FileSystem.h"
 
-static void NormalizePermutationDefines(BE1::StrArray &defines) {
-    // 빈 define 제거
-    for (int i = defines.Count() - 1; i >= 0; --i) {
-        if (defines[i].IsEmpty()) {
-            defines.RemoveIndexFast(i);
-        }
-    }
-
-    // 정렬
-    defines.Sort();
-
-    // 중복 define 제거
-    for (int i = 1; i < defines.Count();) {
-        if (defines[i - 1] == defines[i]) {
-            defines.RemoveIndex(i);
-            continue;
-        }
-        i++;
-    }
-}
-
-static ShaderPermutationKey GeneratePermutationKey(const BE1::StrArray &defines) {
-    if (defines.Count() == 0) {
-        return ShaderPermutationKey();
-    }
-
-    uint64_t hash = 1469598103934665603ull;
-    for (const BE1::Str &define : defines) {
-        hash = hash_combine(hash, define.ToHash64());
-    }
-
-    return ShaderPermutationKey(hash);
-}
-
 const ShaderPropertyInfo *ShaderTemplate::FindProperty(const char *name) const {
     return internalData.FindProperty(name);
+}
+
+void ShaderTemplate::PipelineBuildData::Clear() {
+    permutationKey = ShaderPermutationKey();
+
+    for (StageSource &stageSource : stageSources) {
+        stageSource = StageSource();
+    }
+
+    permutationDefines.Clear();
+    globalDefines.Clear();
 }
 
 void ShaderTemplate::InternalData::Purge() {
@@ -78,6 +55,15 @@ const ShaderPropertyInfo *ShaderTemplate::InternalData::FindProperty(const char 
         }
     }
     return nullptr;
+}
+
+void ShaderTemplate::ShaderPermutation::ClearShaders() {
+    for (int i = 0; i < to_int(RHI::ShaderStage::Count); ++i) {
+        if (shaders[i]) {
+            RHI::renderer->DestroyShader(shaders[i], true);
+            shaders[i] = nullptr;
+        }
+    }
 }
 
 bool ShaderTemplate::AddProperty(const char *name, const char *label, BE1::Variant::Type::Enum type, const BE1::Variant &defaultValue, const char *desc, int flags, ShaderPropertyInfo::ShaderFlag shaderFlags) {
@@ -186,25 +172,33 @@ ShaderPermutationKey ShaderTemplate::AddPermutation(std::initializer_list<const 
 
 ShaderPermutationKey ShaderTemplate::AddPermutation(const BE1::StrArray &defines) {
     BE1::StrArray permutationDefines = defines;
-    NormalizePermutationDefines(permutationDefines);
+    ShaderPermutationKey::NormalizePermutationDefines(permutationDefines);
 
-    ShaderPermutationKey permutationKey = GeneratePermutationKey(permutationDefines);
-    ShaderPermutation *permutation = FindOrCreatePermutation(permutationKey);
+    ShaderPermutationKey permutationKey = ShaderPermutationKey::GeneratePermutationKey(permutationDefines);
+    ShaderPermutation *permutation = FindPermutation(permutationKey);
+    if (permutation) {
+        return permutationKey;
+    }
+
+    permutation = new ShaderPermutation;
+    permutation->key = permutationKey;
     permutation->defines = permutationDefines;
+    permutations.Append(permutation);
     return permutationKey;
 }
 
-static void AddDefine(BE1::StrArray &defines, const char *newName, int value) {
-    if (!newName || !newName[0]) {
+static void AddDefine(BE1::StrArray &defines, const char *newDefineName, int value) {
+    if (!newDefineName || !newDefineName[0]) {
         return;
     }
 
-    BE1::Str define = newName;
-    define.Append("=");
-    define.Append(BE1::Str(value));
-    defines.Append(define);
+    BE1::Str newDefine = newDefineName;
+    newDefine.Append("=");
+    newDefine.Append(BE1::Str(value));
+    defines.Append(newDefine);
 }
 
+// 같은 이름의 define 이 있는지 검사한다. define name 만 비교하며, value 는 비교하지 않는다.
 static bool HasDefine(const BE1::StrArray &defines, const char *keyDefine) {
     if (!keyDefine || !keyDefine[0]) {
         return false;
@@ -243,30 +237,41 @@ ShaderPermutationKey ShaderTemplate::AddPermutation(const BE1::Array<PropertyVal
             continue;
         }
 
-        // defines 의 define name 과 프로퍼티의 define name 은 중복되면 안된다.
-        assert(!HasDefine(permutationDefines, propertyInfo.GetName()));
+        const char *propertyDefineName = propertyInfo.GetName();
+        if (HasDefine(permutationDefines, propertyDefineName)) {
+            // permutation 의 define name 과 프로퍼티의 define name 은 중복되면 안된다.
+            BE_ERRLOG("ShaderTemplate::AddPermutation: permutation define name '%s' conflicts with an existing shader property in shader template '%s'\n", propertyDefineName, hashName.c_str());
+            continue;
+        }
 
         const PropertyValue *propertyValue = i < propertyValues.Count() ? &propertyValues[i] : nullptr;
         const BE1::Variant &value = propertyValue ? *propertyValue : propertyInfo.GetDefaultValue();
+
         switch (propertyInfo.GetType()) {
         case BE1::Variant::Type::Bool:
-            AddDefine(permutationDefines, propertyInfo.GetName(), value.As<bool>() ? 1 : 0);
+            AddDefine(permutationDefines, propertyDefineName, value.As<bool>() ? 1 : 0);
             break;
         case BE1::Variant::Type::Int:
-            AddDefine(permutationDefines, propertyInfo.GetName(), value.As<int>());
+            AddDefine(permutationDefines, propertyDefineName, value.As<int>());
             break;
         default:
-            BE_WARNLOG("ShaderTemplate::AddPermutation: shader define property '%s' has unsupported type\n", propertyInfo.GetName());
+            BE_WARNLOG("ShaderTemplate::AddPermutation: shader define property '%s' has unsupported type\n", propertyDefineName);
             break;
         }
     }
 
-    NormalizePermutationDefines(permutationDefines);
+    ShaderPermutationKey::NormalizePermutationDefines(permutationDefines);
 
-    ShaderPermutationKey permutationKey = GeneratePermutationKey(permutationDefines);
-    ShaderPermutation *permutation = FindOrCreatePermutation(permutationKey);
+    ShaderPermutationKey permutationKey = ShaderPermutationKey::GeneratePermutationKey(permutationDefines);
+    ShaderPermutation *permutation = FindPermutation(permutationKey);
+    if (permutation) {
+        return permutationKey;
+    }
+
+    permutation = new ShaderPermutation;
+    permutation->key = permutationKey;
     permutation->defines = permutationDefines;
-
+    permutations.Append(permutation);
     return permutationKey;
 }
 
@@ -795,8 +800,8 @@ bool ShaderTemplate::Reload() {
     return Load(hashName);
 }
 
-std::shared_ptr<ShaderPipelineState> ShaderTemplate::FindCachedGraphicsPipeline(const ShaderPipelineDesc &desc) const {
-    uint64_t hash = GenerateGraphicsPipelineDescHash(desc);
+std::shared_ptr<ShaderPipelineState> ShaderTemplate::FindCachedGraphicsPipeline(ShaderPermutationKey permutationKey, const ShaderPipelineDesc &pipelineDesc) const {
+    uint64_t hash = GenerateGraphicsPipelineHash(permutationKey, pipelineDesc);
 
     for (const CachedGraphicsPipeline &cachedPipeline : cachedGraphicsPipelines) {
         if (cachedPipeline.hash == hash) {
@@ -817,20 +822,20 @@ std::shared_ptr<ShaderPipelineState> ShaderTemplate::FindCachedComputePipeline(S
     return nullptr;
 }
 
-std::shared_ptr<ShaderPipelineState> ShaderTemplate::GetGraphicsPipeline(const ShaderPipelineDesc &desc) {
-    std::shared_ptr<ShaderPipelineState> pipelineState = FindCachedGraphicsPipeline(desc);
+std::shared_ptr<ShaderPipelineState> ShaderTemplate::GetGraphicsPipeline(ShaderPermutationKey permutationKey, const ShaderPipelineDesc &pipelineDesc) {
+    std::shared_ptr<ShaderPipelineState> pipelineState = FindCachedGraphicsPipeline(permutationKey, pipelineDesc);
     if (!pipelineState) {
-        uint64_t hash = GenerateGraphicsPipelineDescHash(desc);
+        uint64_t hash = GenerateGraphicsPipelineHash(permutationKey, pipelineDesc);
 
         CachedGraphicsPipeline &cachedPipeline = cachedGraphicsPipelines.Alloc();
         cachedPipeline.hash = hash;
-        cachedPipeline.pipelineState = std::shared_ptr<ShaderPipelineState>(new ShaderPipelineState(ShaderPipelineState::Type::Graphics, hash, desc));
+        cachedPipeline.pipelineState = std::shared_ptr<ShaderPipelineState>(new ShaderPipelineState(ShaderPipelineState::Type::Graphics, hash, permutationKey, pipelineDesc));
 
         pipelineState = cachedPipeline.pipelineState;
     }
 
     if (!pipelineState->IsReady()) {
-        pipelineState->RequestBuild(shared_from_this());
+        pipelineState->EnsureBuildAsync(shared_from_this());
     }
 
     return pipelineState;
@@ -847,71 +852,41 @@ std::shared_ptr<ShaderPipelineState> ShaderTemplate::GetComputePipeline(ShaderPe
     }
 
     if (!pipelineState->IsReady()) {
-        pipelineState->RequestBuild(shared_from_this());
+        pipelineState->EnsureBuildAsync(shared_from_this());
     }
 
     return pipelineState;
 }
 
-RHI::PipelineState *ShaderTemplate::CreateGraphicsPSO(const ShaderPipelineDesc &desc) {
-    ShaderPermutation *permutation = FindPermutation(desc.permutationKey);
-    if (!permutation) {
-        BE_WARNLOG("ShaderTemplate::CreateGraphicsPSO: shader template '%s' has no permutation 0x%llx\n", GetHashName(), desc.permutationKey.hash);
-        return nullptr;
-    }
-
-    BE1::StrArray globalDefines;
-    uint32_t globalDefineModCount = shaderTemplateManager.CopyGlobalDefines(globalDefines);
-
-    if (!PreparePermutationGraphicsShaders(permutation, globalDefines, globalDefineModCount)) {
+RHI::PipelineState *ShaderTemplate::CreateGraphicsPSO(const PipelineBuildData &buildData, ShaderPermutation &permutation, const ShaderPipelineDesc &pipelineDesc) const {
+    if (!PreparePermutationGraphicsShaders(buildData, &permutation)) {
         return nullptr;
     }
 
     RHI::PipelineStateDesc psoDesc;
-    psoDesc.vs = permutation->shaders[to_int(RHI::ShaderStage::Vertex)];
-    psoDesc.ps = permutation->shaders[to_int(RHI::ShaderStage::Fragment)];
-    psoDesc.ds = permutation->shaders[to_int(RHI::ShaderStage::Domain)];
-    psoDesc.hs = permutation->shaders[to_int(RHI::ShaderStage::Hull)];
-    psoDesc.gs = permutation->shaders[to_int(RHI::ShaderStage::Geometry)];
-    psoDesc.inputLayout = desc.inputLayout;
-    psoDesc.rasterizerState = RHI::renderer->GetRasterizerState(desc.rasterizerStateType);
-    psoDesc.depthStencilState = RHI::renderer->GetDepthStencilState(desc.depthStencilStateType);
-    psoDesc.blendState = RHI::renderer->GetBlendState(desc.blendStateType);
-    psoDesc.renderDest = &desc.renderDest;
-    psoDesc.primitiveTopology = desc.primitiveTopology;
-    psoDesc.sampleMask = desc.sampleMask;
+    psoDesc.vs = permutation.shaders[to_int(RHI::ShaderStage::Vertex)];
+    psoDesc.ps = permutation.shaders[to_int(RHI::ShaderStage::Fragment)];
+    psoDesc.ds = permutation.shaders[to_int(RHI::ShaderStage::Domain)];
+    psoDesc.hs = permutation.shaders[to_int(RHI::ShaderStage::Hull)];
+    psoDesc.gs = permutation.shaders[to_int(RHI::ShaderStage::Geometry)];
+    psoDesc.inputLayout = pipelineDesc.inputLayout;
+    psoDesc.rasterizerState = RHI::renderer->GetRasterizerState(pipelineDesc.rasterizerStateType);
+    psoDesc.depthStencilState = RHI::renderer->GetDepthStencilState(pipelineDesc.depthStencilStateType);
+    psoDesc.blendState = RHI::renderer->GetBlendState(pipelineDesc.blendStateType);
+    psoDesc.renderDest = &pipelineDesc.renderDest;
+    psoDesc.primitiveTopology = pipelineDesc.primitiveTopology;
+    psoDesc.sampleMask = pipelineDesc.sampleMask;
 
-    RHI::PipelineState *pso = RHI::renderer->CreateGraphicsPSO(&psoDesc);
-    if (!pso) {
-        BE_WARNLOG("ShaderTemplate::CreateGraphicsPSO: failed to create PSO for shader template '%s'\n", GetHashName());
-        return nullptr;
-    }
-
-    return pso;
+    return RHI::renderer->CreateGraphicsPSO(&psoDesc);
 }
 
-RHI::PipelineState *ShaderTemplate::CreateComputePSO(ShaderPermutationKey permutationKey) {
-    ShaderPermutation *permutation = FindPermutation(permutationKey);
-    if (!permutation) {
-        BE_WARNLOG("ShaderTemplate::CreateComputePSO: shader template '%s' has no permutation 0x%llx\n", GetHashName(), permutationKey.hash);
+RHI::PipelineState *ShaderTemplate::CreateComputePSO(const PipelineBuildData &buildData, ShaderPermutation &permutation) const {
+    if (!PreparePermutationComputeShader(buildData, &permutation)) {
         return nullptr;
     }
 
-    BE1::StrArray globalDefines;
-    uint32_t globalDefineModCount = shaderTemplateManager.CopyGlobalDefines(globalDefines);
-
-    if (!PreparePermutationComputeShader(permutation, globalDefines, globalDefineModCount)) {
-        return nullptr;
-    }
-
-    RHI::Shader *computeShader = permutation->shaders[to_int(RHI::ShaderStage::Compute)];
-    RHI::PipelineState *pso = RHI::renderer->CreateComputePSO(computeShader);
-    if (!pso) {
-        BE_WARNLOG("ShaderTemplate::CreateComputePSO: failed to create PSO for shader template '%s'\n", GetHashName());
-        return nullptr;
-    }
-
-    return pso;
+    RHI::Shader *computeShader = permutation.shaders[to_int(RHI::ShaderStage::Compute)];
+    return RHI::renderer->CreateComputePSO(computeShader);
 }
 
 void ShaderTemplate::Purge() {
@@ -932,51 +907,38 @@ void ShaderTemplate::ApplyPrepared(InternalData &newInternalData) {
 void ShaderTemplate::ClearCachedPipelines() {
     for (CachedGraphicsPipeline &cachedPipeline : cachedGraphicsPipelines) {
         if (cachedPipeline.pipelineState) {
-            cachedPipeline.pipelineState->Purge();
+            cachedPipeline.pipelineState->Reset();
         }
     }
     cachedGraphicsPipelines.Clear();
 
     for (CachedComputePipeline &cachedPipeline : cachedComputePipelines) {
         if (cachedPipeline.pipelineState) {
-            cachedPipeline.pipelineState->Purge();
+            cachedPipeline.pipelineState->Reset();
         }
     }
     cachedComputePipelines.Clear();
 }
 
 void ShaderTemplate::InvalidateCachedPipelines() {
-    if (cachedGraphicsPipelines.Count() == 0 && cachedComputePipelines.Count() == 0) {
-        return;
-    }
-
     std::shared_ptr<ShaderTemplate> self = shared_from_this();
 
     for (CachedGraphicsPipeline &cachedPipeline : cachedGraphicsPipelines) {
         if (cachedPipeline.pipelineState) {
-            cachedPipeline.pipelineState->ResetAndRequestBuild(self);
+            cachedPipeline.pipelineState->BuildAsync(self);
         }
     }
 
     for (CachedComputePipeline &cachedPipeline : cachedComputePipelines) {
         if (cachedPipeline.pipelineState) {
-            cachedPipeline.pipelineState->ResetAndRequestBuild(self);
-        }
-    }
-}
-
-void ShaderTemplate::ClearPermutationShaders(ShaderPermutation *permutation) {
-    for (int i = 0; i < to_int(RHI::ShaderStage::Count); ++i) {
-        if (permutation->shaders[i]) {
-            RHI::renderer->DestroyShader(permutation->shaders[i], true);
-            permutation->shaders[i] = nullptr;
+            cachedPipeline.pipelineState->BuildAsync(self);
         }
     }
 }
 
 void ShaderTemplate::ClearPermutationShaders() {
     for (ShaderPermutation *permutation : permutations) {
-        ClearPermutationShaders(permutation);
+        permutation->ClearShaders();
     }
 }
 
@@ -995,47 +957,79 @@ ShaderTemplate::ShaderPermutation *ShaderTemplate::FindPermutation(ShaderPermuta
     return nullptr;
 }
 
-ShaderTemplate::ShaderPermutation *ShaderTemplate::FindOrCreatePermutation(ShaderPermutationKey permutationKey) {
-    ShaderPermutation *permutation = FindPermutation(permutationKey);
-    if (permutation) {
-        return permutation;
+bool ShaderTemplate::PreparePipelineBuildData(ShaderPermutationKey permutationKey, PipelineBuildData &outBuildData) const {
+    outBuildData.Clear();
+
+    // 원본 permutation 을 얻는다.
+    ShaderPermutation *srcPermutation = FindPermutation(permutationKey);
+    if (!srcPermutation) {
+        BE_WARNLOG("ShaderTemplate::PreparePipelineBuildData: shader template '%s' has no permutation 0x%llx\n", GetHashName(), permutationKey.hash);
+        return false;
     }
 
-    permutation = new ShaderPermutation;
-    permutation->key = permutationKey;
-    permutations.Append(permutation);
+    outBuildData.permutationKey = srcPermutation->key;
+    outBuildData.permutationDefines = srcPermutation->defines;
+    shaderTemplateManager.CopyGlobalDefines(outBuildData.globalDefines);
 
-    return permutation;
+    for (int i = 0; i < to_int(RHI::ShaderStage::Count); i++) {
+        outBuildData.stageSources[i] = internalData.stageSources[i];
+    }
+
+    return true;
 }
 
-void ShaderTemplate::MergePermutationDefines(const ShaderPermutation *permutation, const BE1::StrArray &globalDefines, BE1::StrArray &outDefines) const {
-    outDefines = globalDefines;
-    AppendDefines(outDefines, permutation->defines);
-    NormalizePermutationDefines(outDefines);
+bool ShaderTemplate::PreparePipelinePSO(const ShaderPipelineState &pipelineState, const PipelineBuildData &buildData, RHI::PipelineState *&preparedPSO) const {
+    preparedPSO = nullptr;
+
+    if (buildData.permutationKey != pipelineState.permutationKey) {
+        BE_WARNLOG("ShaderTemplate::PreparePipelinePSO: shader template '%s' has mismatched permutation 0x%llx, expected 0x%llx\n", GetHashName(), buildData.permutationKey.hash, pipelineState.permutationKey.hash);
+        return false;
+    }
+
+    ShaderPermutation buildPermutation;
+    buildPermutation.key = buildData.permutationKey;
+    buildPermutation.defines = buildData.permutationDefines;
+
+    // NOTE: stage source 와 define 은 enqueue 시점에 PipelineBuildData 로 복사해둔 값을 사용한다.
+    // live permutation 의 shader 포인터를 로딩 스레드에서 그대로 가져다 쓰면, 메인 스레드가 permutation 을 무효화하는 순간 shader 수명이 엇갈릴 수 있다.
+    // 그래서 PSO 생성에 필요한 shader 는 이 함수 안에서 임시로 만들고, PSO 생성이 끝나면 바로 해제한다.
+    // 같은 permutation 내에서 pipeline state 만 다르게 해서 PSO 를 여러 개 만드는 경우, 매번 같은 shader 를 생성해야 한다.
+    // 비효율적이지만 어차피 CSO 를 이용하기도 하고 재활용할 때 필요한 동기화 로직까지 고려하면, 이방법도 나쁘지 않은 것 같다.
+    switch (pipelineState.type) {
+    case ShaderPipelineState::Type::Graphics:
+        preparedPSO = CreateGraphicsPSO(buildData, buildPermutation, pipelineState.graphicsDesc);
+        break;
+    case ShaderPipelineState::Type::Compute:
+        preparedPSO = CreateComputePSO(buildData, buildPermutation);
+        break;
+    default:
+        assert(0);
+        break;
+    }
+
+    buildPermutation.ClearShaders();
+    return preparedPSO != nullptr;
 }
 
-// permutation 의 특정 shader stage 의 shader 를 준비한다. 필요하다면 컴파일한다.
-bool ShaderTemplate::PreparePermutationShader(ShaderPermutation *permutation, RHI::ShaderStage shaderStage, const BE1::StrArray &compileDefines) {
+// 특정 shader stage 의 shader 를 준비한다.
+bool ShaderTemplate::PrepareStageShader(const PipelineBuildData &buildData, RHI::Shader *&shader, RHI::ShaderStage shaderStage, const BE1::StrArray &compileDefines) const {
     assert(shaderStage < RHI::ShaderStage::Count);
 
-    const StageSource &stageSource = internalData.stageSources[to_int(shaderStage)];
+    const StageSource &stageSource = buildData.stageSources[to_int(shaderStage)];
     if (stageSource.shaderStage == RHI::ShaderStage::Count) {
         return false;
     }
 
-    RHI::Shader *&shader = permutation->shaders[to_int(shaderStage)];
+    shader = RHI::renderer->CreateShaderFromFile(stageSource.shaderModel, stageSource.shaderStage, stageSource.filename, stageSource.entryPoint, compileDefines.Count() > 0 ? &compileDefines : nullptr);
     if (!shader) {
-        shader = RHI::renderer->CreateShaderFromFile(stageSource.shaderModel, stageSource.shaderStage, stageSource.filename, stageSource.entryPoint, compileDefines.Count() > 0 ? &compileDefines : nullptr);
-        if (!shader) {
-            BE_WARNLOG("ShaderTemplate::PreparePermutationShader: failed to compile shader '%s'\n", stageSource.filename.c_str());
-            return false;
-        }
+        BE_WARNLOG("ShaderTemplate::PrepareStageShader: failed to compile shader '%s'\n", stageSource.filename.c_str());
+        return false;
     }
     return true;
 }
 
-// permutation 의 모든 graphics shaders 들을 준비한다. 필요하다면 컴파일한다.
-bool ShaderTemplate::PreparePermutationGraphicsShaders(ShaderPermutation *permutation, const BE1::StrArray &globalDefines, uint32_t globalDefineModCount) {
+// permutation 의 모든 graphics shaders 들을 준비한다.
+bool ShaderTemplate::PreparePermutationGraphicsShaders(const PipelineBuildData &buildData, ShaderPermutation *permutation) const {
     static constexpr RHI::ShaderStage GraphicsShaderStages[] = {
         RHI::ShaderStage::Vertex,
         RHI::ShaderStage::Hull,
@@ -1046,24 +1040,24 @@ bool ShaderTemplate::PreparePermutationGraphicsShaders(ShaderPermutation *permut
 
     bool hasGraphicsStage = false;
 
-    if (permutation->globalDefineModCount != globalDefineModCount) {
-        ClearPermutationShaders(permutation);
-        permutation->globalDefineModCount = globalDefineModCount;
-    }
-
     // 컴파일 define 목록은 글로벌 define 과 permutation 의 define 을 합쳐서 만든다.
-    BE1::StrArray compileDefines;
-    MergePermutationDefines(permutation, globalDefines, compileDefines);
+    BE1::StrArray compileDefines = buildData.globalDefines;
+    AppendDefines(compileDefines, permutation->defines);
+    ShaderPermutationKey::NormalizePermutationDefines(compileDefines);
 
     for (RHI::ShaderStage shaderStage : GraphicsShaderStages) {
-        const StageSource &stageSource = internalData.stageSources[to_int(shaderStage)];
+        const StageSource &stageSource = buildData.stageSources[to_int(shaderStage)];
         if (stageSource.shaderStage == RHI::ShaderStage::Count) {
             continue;
         }
 
         hasGraphicsStage = true;
-        if (!PreparePermutationShader(permutation, shaderStage, compileDefines)) {
-            return false;
+
+        RHI::Shader *&permutationShader = permutation->shaders[to_int(shaderStage)];
+        if (!permutationShader) {
+            if (!PrepareStageShader(buildData, permutationShader, shaderStage, compileDefines)) {
+                return false;
+            }
         }
     }
 
@@ -1075,24 +1069,27 @@ bool ShaderTemplate::PreparePermutationGraphicsShaders(ShaderPermutation *permut
     return true;
 }
 
-// permutation 의 compute shader 를 준비한다. 필요하다면 컴파일한다.
-bool ShaderTemplate::PreparePermutationComputeShader(ShaderPermutation *permutation, const BE1::StrArray &globalDefines, uint32_t globalDefineModCount) {
-    const StageSource &stageSource = internalData.stageSources[to_int(RHI::ShaderStage::Compute)];
+// permutation 의 compute shader 를 준비한다.
+bool ShaderTemplate::PreparePermutationComputeShader(const PipelineBuildData &buildData, ShaderPermutation *permutation) const {
+    const StageSource &stageSource = buildData.stageSources[to_int(RHI::ShaderStage::Compute)];
     if (stageSource.shaderStage == RHI::ShaderStage::Count) {
         BE_WARNLOG("ShaderTemplate::PreparePermutationComputeShader: shader template '%s' has no compute shader stage for permutation 0x%llx\n", GetHashName(), permutation->key.hash);
         return false;
     }
 
-    if (permutation->globalDefineModCount != globalDefineModCount) {
-        ClearPermutationShaders(permutation);
-        permutation->globalDefineModCount = globalDefineModCount;
+    // 컴파일 define 목록은 글로벌 define 과 permutation 의 define 을 합쳐서 만든다.
+    BE1::StrArray compileDefines = buildData.globalDefines;
+    AppendDefines(compileDefines, permutation->defines);
+    ShaderPermutationKey::NormalizePermutationDefines(compileDefines);
+
+    RHI::Shader *&permutationShader = permutation->shaders[to_int(RHI::ShaderStage::Compute)];
+    if (!permutationShader) {
+        if (!PrepareStageShader(buildData, permutationShader, RHI::ShaderStage::Compute, compileDefines)) {
+            return false;
+        }
     }
 
-    // 컴파일 define 목록은 글로벌 define 과 permutation 의 define 을 합쳐서 만든다.
-    BE1::StrArray compileDefines;
-    MergePermutationDefines(permutation, globalDefines, compileDefines);
-
-    return PreparePermutationShader(permutation, RHI::ShaderStage::Compute, compileDefines);
+    return true;
 }
 
 uint64_t ShaderTemplate::GenerateInputLayoutHash(const RHI::InputLayout *inputLayout) {
@@ -1108,7 +1105,7 @@ uint64_t ShaderTemplate::GenerateInputLayoutHash(const RHI::InputLayout *inputLa
     return static_cast<uint64_t>(hash);
 }
 
-uint64_t ShaderTemplate::GenerateGraphicsPipelineDescHash(const ShaderPipelineDesc &desc) {
+uint64_t ShaderTemplate::GenerateGraphicsPipelineHash(ShaderPermutationKey permutationKey, const ShaderPipelineDesc &pipelineDesc) {
     struct PipelineHashData {
         uint64_t    permutationHash = 0;
         uint64_t    inputLayoutHash = 0;
@@ -1120,14 +1117,14 @@ uint64_t ShaderTemplate::GenerateGraphicsPipelineDescHash(const ShaderPipelineDe
         uint32_t    sampleMask = 0;
     } hashData;
 
-    hashData.permutationHash = desc.permutationKey.hash;
-    hashData.inputLayoutHash = GenerateInputLayoutHash(desc.inputLayout);
-    hashData.renderDestHash = desc.renderDest.GetHash();
-    hashData.rasterizerStateType = static_cast<uint8_t>(desc.rasterizerStateType);
-    hashData.depthStencilStateType = static_cast<uint8_t>(desc.depthStencilStateType);
-    hashData.blendStateType = static_cast<uint8_t>(desc.blendStateType);
-    hashData.primitiveTopology = static_cast<uint8_t>(desc.primitiveTopology);
-    hashData.sampleMask = desc.sampleMask;
+    hashData.permutationHash = permutationKey.hash;
+    hashData.inputLayoutHash = GenerateInputLayoutHash(pipelineDesc.inputLayout);
+    hashData.renderDestHash = pipelineDesc.renderDest.GetHash();
+    hashData.rasterizerStateType = static_cast<uint8_t>(pipelineDesc.rasterizerStateType);
+    hashData.depthStencilStateType = static_cast<uint8_t>(pipelineDesc.depthStencilStateType);
+    hashData.blendStateType = static_cast<uint8_t>(pipelineDesc.blendStateType);
+    hashData.primitiveTopology = static_cast<uint8_t>(pipelineDesc.primitiveTopology);
+    hashData.sampleMask = pipelineDesc.sampleMask;
 
     return BE1::CityHash64(reinterpret_cast<const char *>(&hashData), sizeof(hashData));
 }

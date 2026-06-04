@@ -14,12 +14,46 @@
 
 #include "Precompiled.h"
 #include "RenderFrameData.h"
+#include "RenderContext.h"
 #include "RenderInternal.h"
 
 uint64_t                    RenderFrameData::globalFrameSerial = 0;
 static constexpr uint32_t   MaxRenderTaskThreads = 32;
 static constexpr uint32_t   MaxMemSizePerBlock = 0x4000000;
 static constexpr uint32_t   MemAlignSize = 32;
+
+static RHI::PipelineState *SnapshotPSO(const std::shared_ptr<ShaderPipelineState> &pipelineState) {
+    if (!pipelineState || !pipelineState->IsReady()) {
+        return nullptr;
+    }
+
+    return pipelineState->GetPSO();
+}
+
+void RenderFrameData::CmdBeginContext(RenderContext *context) {
+    BeginContextRenderCommand *cmd = (BeginContextRenderCommand *)GetCommandBuffer(sizeof(BeginContextRenderCommand));
+    if (!cmd) {
+        return;
+    }
+
+    cmd->commandId = RenderCommandId::BeginContext;
+    cmd->renderContext = context;
+    cmd->pipelines = RenderContextPipelineSnapshot();
+
+    if (!context) {
+        return;
+    }
+
+    cmd->pipelines.imagePSO = SnapshotPSO(context->imagePSO);
+    cmd->pipelines.unlitPSO = SnapshotPSO(context->unlitPSO);
+    cmd->pipelines.unlitAlphaBlendPSO = SnapshotPSO(context->unlitAlphaBlendPSO);
+    cmd->pipelines.unlitInstancedPSO = SnapshotPSO(context->unlitInstancedPSO);
+    cmd->pipelines.unlitInstancedAlphaBlendPSO = SnapshotPSO(context->unlitInstancedAlphaBlendPSO);
+    cmd->pipelines.litPSO = SnapshotPSO(context->litPSO);
+    cmd->pipelines.litAlphaBlendPSO = SnapshotPSO(context->litAlphaBlendPSO);
+    cmd->pipelines.litInstancedPSO = SnapshotPSO(context->litInstancedPSO);
+    cmd->pipelines.litInstancedAlphaBlendPSO = SnapshotPSO(context->litInstancedAlphaBlendPSO);
+}
 
 void RenderFrameData::Init(int32_t frameIndex, int32_t numFrames) {
     InitMemBlocks();

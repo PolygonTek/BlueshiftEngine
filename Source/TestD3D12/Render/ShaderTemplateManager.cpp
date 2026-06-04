@@ -48,15 +48,17 @@ void ShaderTemplateManager::Init() {
 
     globalDefinesMutex = BE1::PlatformMutex::Create();
     globalDefines.Clear();
-    globalDefineModCount = 0;
 
-    CreateBuiltInShaderTemplates();
+    InitGlobalDefines();
+
+    globalDefineModCount = 0;
+    lastInvalidatedGlobalDefineModCount = 0;
+
+    CreateEngineShaderTemplates();
 }
 
 void ShaderTemplateManager::Shutdown() {
-    for (std::shared_ptr<ShaderTemplate> &shaderTemplate : builtInShaderTemplates) {
-        shaderTemplate.reset();
-    }
+    DestroyEngineShaderTemplates();
 
     shaderTemplateHashMap.Clear();
 
@@ -64,6 +66,7 @@ void ShaderTemplateManager::Shutdown() {
         BE1::ScopedLock lock(globalDefinesMutex);
         globalDefines.Clear();
         globalDefineModCount = 0;
+        lastInvalidatedGlobalDefineModCount = 0;
     }
 
     BE1::PlatformMutex::Destroy(globalDefinesMutex);
@@ -71,6 +74,17 @@ void ShaderTemplateManager::Shutdown() {
 }
 
 void ShaderTemplateManager::UpdateFrame() {
+    uint32_t globalDefineModCountSnapshot;
+    {
+        BE1::ScopedLock lock(globalDefinesMutex);
+        globalDefineModCountSnapshot = globalDefineModCount;
+    }
+
+    if (lastInvalidatedGlobalDefineModCount != globalDefineModCountSnapshot) {
+        InvalidateShaderTemplateCaches();
+        lastInvalidatedGlobalDefineModCount = globalDefineModCountSnapshot;
+    }
+
     CleanExpiredShaderTemplates();
 }
 
@@ -128,16 +142,13 @@ std::shared_ptr<ShaderTemplate> ShaderTemplateManager::GetShaderTemplate(const c
     return shaderTemplate;
 }
 
-std::shared_ptr<ShaderTemplate> ShaderTemplateManager::GetBuiltInShaderTemplate(ShaderTemplateId id) const {
-    assert(to_int(id) >= 0 && to_int(id) < COUNT_OF(builtInShaderTemplates));
-    return builtInShaderTemplates[to_int(id)];
-}
+void ShaderTemplateManager::InitGlobalDefines() {
+#ifdef COMPRESSED_VERTEX_NORMAL_TANGENTS
+    AddGlobalDefine("COMPRESSED_VERTEX_NORMAL_TANGENTS");
+#endif
 
-uint32_t ShaderTemplateManager::CopyGlobalDefines(BE1::StrArray &outDefines) const {
-    BE1::ScopedLock lock(globalDefinesMutex);
-
-    outDefines = globalDefines;
-    return globalDefineModCount;
+    AddGlobalDefine(BE1::va("CSM_COUNT=%i", 4));
+    AddGlobalDefine(BE1::va("CASCADE_SELECTION_METHOD=%i", 1));
 }
 
 bool ShaderTemplateManager::FindGlobalDefine(const char *define) const {
@@ -190,6 +201,13 @@ void ShaderTemplateManager::RemoveGlobalDefine(const char *define) {
     }
 }
 
+uint32_t ShaderTemplateManager::CopyGlobalDefines(BE1::StrArray &outDefines) const {
+    BE1::ScopedLock lock(globalDefinesMutex);
+
+    outDefines = globalDefines;
+    return globalDefineModCount;
+}
+
 void ShaderTemplateManager::InvalidateShaderTemplateCaches() {
     for (int i = 0; i < shaderTemplateHashMap.Count(); i++) {
         const auto *entry = shaderTemplateHashMap.GetByIndex(i);
@@ -200,7 +218,10 @@ void ShaderTemplateManager::InvalidateShaderTemplateCaches() {
             continue;
         }
 
+        // 셰이더를 모두 삭제
         shaderTemplate->ClearPermutationShaders();
+
+        // 캐시된 파이프라인을 모두 무효화 후 재생성 요청
         shaderTemplate->InvalidateCachedPipelines();
     }
 }
@@ -226,24 +247,33 @@ void ShaderTemplateManager::CleanExpiredShaderTemplates() {
     }
 }
 
-void ShaderTemplateManager::CreateBuiltInShaderTemplates() {
-    std::shared_ptr<ShaderTemplate> fullScreenImage = AllocShaderTemplate("_fullScreenImageShader");
-    fullScreenImage->AddStage(RHI::ShaderStage::Vertex, RHI::ShaderModel::SM_6_0, "Source/TestD3D12/Shaders/FullScreenTriangle.hlsl", "VSMain");
-    fullScreenImage->AddStage(RHI::ShaderStage::Fragment, RHI::ShaderModel::SM_6_0, "Source/TestD3D12/Shaders/FullScreenTriangle.hlsl", "PSMain");
-    fullScreenImage->AddPermutation({});
-    builtInShaderTemplates[to_int(ShaderTemplateId::FullScreenImage)] = fullScreenImage;
+void ShaderTemplateManager::CreateEngineShaderTemplates() {
+    fullscreenImageShaderTemplate = AllocShaderTemplate("_fullScreenImageShader");
+    fullscreenImageShaderTemplate->AddStage(RHI::ShaderStage::Vertex, RHI::ShaderModel::SM_6_0, "Source/TestD3D12/Shaders/FullScreenTriangle.hlsl", "VSMain");
+    fullscreenImageShaderTemplate->AddStage(RHI::ShaderStage::Fragment, RHI::ShaderModel::SM_6_0, "Source/TestD3D12/Shaders/FullScreenTriangle.hlsl", "PSMain");
+    fullscreenImageShaderTemplate->AddPermutation({});
 
-    std::shared_ptr<ShaderTemplate> unlit = AllocShaderTemplate("_unlitShader");
-    unlit->AddStage(RHI::ShaderStage::Vertex, RHI::ShaderModel::SM_6_0, "Source/TestD3D12/Shaders/Unlit.hlsl", "VSMain");
-    unlit->AddStage(RHI::ShaderStage::Fragment, RHI::ShaderModel::SM_6_0, "Source/TestD3D12/Shaders/Unlit.hlsl", "PSMain");
-    unlit->AddPermutation({});
-    unlit->AddPermutation({ "USE_INSTANCING=1" });
-    builtInShaderTemplates[to_int(ShaderTemplateId::Unlit)] = unlit;
+    unlitShaderTemplate = AllocShaderTemplate("_unlitShader");
+    unlitShaderTemplate->AddStage(RHI::ShaderStage::Vertex, RHI::ShaderModel::SM_6_0, "Source/TestD3D12/Shaders/Unlit.hlsl", "VSMain");
+    unlitShaderTemplate->AddStage(RHI::ShaderStage::Fragment, RHI::ShaderModel::SM_6_0, "Source/TestD3D12/Shaders/Unlit.hlsl", "PSMain");
+    unlitShaderTemplate->AddPermutation({});
+    unlitShaderTemplate->AddPermutation({ "USE_INSTANCING=1" });
 
-    std::shared_ptr<ShaderTemplate> lit = AllocShaderTemplate("_litShader");
-    lit->AddStage(RHI::ShaderStage::Vertex, RHI::ShaderModel::SM_6_0, "Source/TestD3D12/Shaders/Lit.hlsl", "VSMain");
-    lit->AddStage(RHI::ShaderStage::Fragment, RHI::ShaderModel::SM_6_0, "Source/TestD3D12/Shaders/Lit.hlsl", "PSMain");
-    lit->AddPermutation({});
-    lit->AddPermutation({ "USE_INSTANCING=1" });
-    builtInShaderTemplates[to_int(ShaderTemplateId::Lit)] = lit;
+    litShaderTemplate = AllocShaderTemplate("_litShader");
+    litShaderTemplate->AddStage(RHI::ShaderStage::Vertex, RHI::ShaderModel::SM_6_0, "Source/TestD3D12/Shaders/Lit.hlsl", "VSMain");
+    litShaderTemplate->AddStage(RHI::ShaderStage::Fragment, RHI::ShaderModel::SM_6_0, "Source/TestD3D12/Shaders/Lit.hlsl", "PSMain");
+    litShaderTemplate->AddPermutation({});
+    litShaderTemplate->AddPermutation({ "USE_INSTANCING=1" });
+}
+
+void ShaderTemplateManager::DestroyEngineShaderTemplates() {
+    if (fullscreenImageShaderTemplate) {
+        fullscreenImageShaderTemplate.reset();
+    }
+    if (unlitShaderTemplate) {
+        unlitShaderTemplate.reset();
+    }
+    if (litShaderTemplate) {
+        litShaderTemplate.reset();
+    }
 }

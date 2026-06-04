@@ -294,8 +294,8 @@ public:
     D3D12MA::Allocator *                allocator = nullptr;
 #endif
 
-    uint32_t                            vendorId;
-    uint32_t                            deviceId;
+    uint32_t                            vendorId = 0;
+    uint32_t                            deviceId = 0;
     BE1::Str                            adapterName;
     uint64_t                            dedicatedVideoMemSize = 0;
     uint64_t                            dedicatedSystemMemSize = 0;
@@ -325,6 +325,7 @@ public:
     BE1::Str                            shaderCacheDir;
     BE1::Str                            psoCacheDir;
 
+    BE1::PlatformMutex *                psoMapMutex = nullptr;
     BE1::HashMap<uint64_t, D3D12PipelineState *> graphicsPsoMap;
     BE1::HashMap<uint64_t, D3D12PipelineState *> computePsoMap;
 

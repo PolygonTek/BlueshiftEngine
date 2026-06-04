@@ -17,7 +17,7 @@
 #include "ShaderTemplate.h"
 #include "LoadingSystem.h"
 
-static void NormalizePermutationDefines(BE1::StrArray &defines) {
+void ShaderPermutationKey::NormalizePermutationDefines(BE1::StrArray &defines) {
     // Remove empty defines.
     for (int i = defines.Count() - 1; i >= 0; --i) {
         if (defines[i].IsEmpty()) {
@@ -38,7 +38,7 @@ static void NormalizePermutationDefines(BE1::StrArray &defines) {
     }
 }
 
-static ShaderPermutationKey GeneratePermutationKey(const BE1::StrArray &defines) {
+ShaderPermutationKey ShaderPermutationKey::GeneratePermutationKey(const BE1::StrArray &defines) {
     if (defines.Count() == 0) {
         return ShaderPermutationKey();
     }
@@ -59,14 +59,14 @@ ShaderPermutationKey ShaderPermutationKey::FromDefines(std::initializer_list<con
         }
     }
 
-    NormalizePermutationDefines(permutationDefines);
-    return GeneratePermutationKey(permutationDefines);
+    ShaderPermutationKey::NormalizePermutationDefines(permutationDefines);
+    return ShaderPermutationKey::GeneratePermutationKey(permutationDefines);
 }
 
 ShaderPermutationKey ShaderPermutationKey::FromDefines(const BE1::StrArray &defines) {
     BE1::StrArray permutationDefines = defines;
-    NormalizePermutationDefines(permutationDefines);
-    return GeneratePermutationKey(permutationDefines);
+    ShaderPermutationKey::NormalizePermutationDefines(permutationDefines);
+    return ShaderPermutationKey::GeneratePermutationKey(permutationDefines);
 }
 
 void ShaderPipelineState::Purge() {
@@ -80,61 +80,41 @@ void ShaderPipelineState::Purge() {
 
 void ShaderPipelineState::Reset() {
     BumpBuildSerial();
+    state = State::Empty;
 
     Purge();
 }
 
-void ShaderPipelineState::RequestBuild(const std::shared_ptr<ShaderTemplate> &shaderTemplate) {
+void ShaderPipelineState::BuildAsync(const std::shared_ptr<ShaderTemplate> &shaderTemplate) {
+    state = pso ? State::Rebuilding : State::Building;
+
+    if (!EnqueueBuild(shaderTemplate)) {
+        state = pso ? State::Ready : State::Failed;
+    }
+}
+
+void ShaderPipelineState::EnsureBuildAsync(const std::shared_ptr<ShaderTemplate> &shaderTemplate) {
+    // state == State::Empty 일 때만 BuildAsync() 를 실행한다.
     State expected = State::Empty;
     if (!state.compare_exchange_strong(expected, State::Building)) {
         return;
     }
 
-    uint32_t requestedBuildSerial = BumpBuildSerial();
-
-    if (!loadingSystem.EnqueueShaderPipelineBuild(shaderTemplate, shared_from_this(), requestedBuildSerial, LoadingSystem::LoadPriority::High)) {
+    if (!EnqueueBuild(shaderTemplate)) {
         state = State::Failed;
-        return;
     }
 }
 
-void ShaderPipelineState::ResetAndRequestBuild(const std::shared_ptr<ShaderTemplate> &shaderTemplate) {
-    Reset();
-    RequestBuild(shaderTemplate);
-}
+bool ShaderPipelineState::EnqueueBuild(const std::shared_ptr<ShaderTemplate> &shaderTemplate) {
+    uint32_t newSerial = BumpBuildSerial();
 
-bool ShaderPipelineState::Build(ShaderTemplate &shaderTemplate, uint32_t requestedBuildSerial) {
-    if (GetState() != State::Building || GetBuildSerial() != requestedBuildSerial) {
-        return IsReady();
-    }
-
-    RHI::PipelineState *newPSO = nullptr;
-
-    switch (type) {
-    case Type::Graphics:
-        newPSO = shaderTemplate.CreateGraphicsPSO(graphicsDesc);
-        break;
-    case Type::Compute:
-        newPSO = shaderTemplate.CreateComputePSO(permutationKey);
-        break;
-    default:
-        assert(0);
-        break;
-    }
-
-    if (GetState() != State::Building || GetBuildSerial() != requestedBuildSerial) {
-        if (newPSO) {
-            RHI::renderer->DestroyPSO(newPSO, true);
-        }
+    ShaderTemplate::PipelineBuildData buildData;
+    if (!shaderTemplate->PreparePipelineBuildData(permutationKey, buildData)) {
         return false;
     }
 
-    if (pso) {
-        RHI::renderer->DestroyPSO(pso);
+    if (!loadingSystem.EnqueueShaderPipelineBuild(shaderTemplate, shared_from_this(), buildData, newSerial, LoadingSystem::LoadPriority::High)) {
+        return false;
     }
-
-    pso = newPSO;
-    state = pso ? State::Ready : State::Failed;
-
-    return pso != nullptr;
+    return true;
 }

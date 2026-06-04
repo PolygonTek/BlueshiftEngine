@@ -116,23 +116,33 @@ void RenderBackend::DrawLitSurfaces(const DrawSurf **drawSurfs, uint32_t numDraw
 #endif
 }
 
-const RHI::Texture *RenderBackend::ResolveDrawSurfTexture(const DrawSurf *drawSurf) const {
+const RHI::Texture *RenderBackend::ResolveDrawSurfTexture(const DrawSurf *drawSurf, bool useDefaultTexture) const {
     const RHI::Texture *rhiTexture = nullptr;
     if (drawSurf->texture) {
         rhiTexture = drawSurf->texture->GetRHITexture();
     }
     if (!rhiTexture || rhiTexture->GetStatus() != RHI::GPUResourceStatus::Ready) {
-        rhiTexture = textureManager.defaultTexture->GetRHITexture();
+        rhiTexture = useDefaultTexture ? textureManager.defaultTexture->GetRHITexture() : nullptr;
     }
     return rhiTexture;
+}
+
+uint32_t RenderBackend::ResolveDrawSurfTextureBindlessIndex(const DrawSurf *drawSurf, bool useDefaultTexture, RHI::ViewType viewType, RHI::ViewID viewID) const {
+    const RHI::Texture *texture = ResolveDrawSurfTexture(drawSurf, useDefaultTexture);
+    if (!texture) {
+        return 0;
+    }
+    return texture->GetBindlessIndex(viewType, viewID);
 }
 
 void RenderBackend::DrawLitSurfacesInstanced(const DrawSurf **drawSurfs, uint32_t instanceCount) {
     assert(instanceCount > 0);
 
-    if (!SetPSO(mainCommandList, currentContext->litInstancedPSO)) {
+    if (!currentPipelines.litInstancedPSO) {
         return;
     }
+
+    RHI::renderer->SetPSO(mainCommandList, currentPipelines.litInstancedPSO);
     RHI::renderer->SetVertexBuffer(mainCommandList, 0, drawSurfs[0]->subMesh->vertexBuffer);
     RHI::renderer->SetIndexBuffer(mainCommandList, drawSurfs[0]->subMesh->indexBuffer);
 
@@ -152,9 +162,11 @@ void RenderBackend::DrawLitSurfacesInstanced(const DrawSurf **drawSurfs, uint32_
 void RenderBackend::DrawLitSurfacesWithoutTask(const DrawSurf **drawSurfs, uint32_t numDrawSurfs) {
     PROFILER_CPU_SCOPED_EVENT("RenderBackend::DrawSurfacesWithoutTask");
 
-    if (!SetPSO(mainCommandList, currentContext->litPSO)) {
+    if (!currentPipelines.litPSO) {
         return;
     }
+
+    RHI::renderer->SetPSO(mainCommandList, currentPipelines.litPSO);
 
     uint32_t feedbackBufferIndex = currentContext->textureStreamingFeedback.buffer->GetBindlessIndex(RHI::ViewType::UAV);
     RHI::renderer->SetConstants(mainCommandList, 1, &feedbackBufferIndex, sizeof(feedbackBufferIndex), 0);
@@ -181,11 +193,13 @@ void RenderBackend::DrawLitSurfacesByTask(RenderBackend::DrawSurfsTaskDesc *task
     RHI::FrameThreadData *frameThreadData = frameData->GetThreadData(taskDesc->threadIndex);
     RHI::CommandList *commandList = frameThreadData->BeginSecondaryCommandList(mainCommandList);
 
-    if (!SetPSO(commandList, currentContext->litPSO)) {
+    if (!currentPipelines.litPSO) {
         commandList->Close();
         taskDesc->commandList = commandList;
         return;
     }
+
+    RHI::renderer->SetPSO(commandList, currentPipelines.litPSO);
 
     uint32_t feedbackBufferIndex = currentContext->textureStreamingFeedback.buffer->GetBindlessIndex(RHI::ViewType::UAV);
     RHI::renderer->SetConstants(commandList, 1, &feedbackBufferIndex, sizeof(feedbackBufferIndex), 0);
@@ -262,7 +276,7 @@ void RenderBackend::DrawLitSurface(RHI::FrameThreadData *frameThreadData, RHI::C
     constantDataPtr->modelViewProjMatrix = drawSurf->space->modelViewProjMatrix;
 
     // 오브젝트 텍스쳐의 바인드리스 인덱스 기록
-    constantDataPtr->baseColorTextureIndex = ResolveDrawSurfTexture(drawSurf)->GetBindlessIndex(RHI::ViewType::SRV);
+    constantDataPtr->baseColorTextureIndex = ResolveDrawSurfTextureBindlessIndex(drawSurf, false, RHI::ViewType::SRV);
 
     // 오브젝트의 텍스처 인덱스를 기록
     constantDataPtr->streamingTextureIndex = drawSurf->texture->GetStreaming()->streamingListIndex;
@@ -285,7 +299,7 @@ void RenderBackend::DrawLitSurfaceInstanced(RHI::FrameThreadData *frameThreadDat
     constantDataPtr->viewProjMatrix = currentVisCamera->viewProjMatrix;
 
     // 인스턴스 텍스쳐의 바인드리스 인덱스 기록
-    constantDataPtr->baseColorTextureIndex = ResolveDrawSurfTexture(instanceSurfs[0])->GetBindlessIndex(RHI::ViewType::SRV);
+    constantDataPtr->baseColorTextureIndex = ResolveDrawSurfTextureBindlessIndex(instanceSurfs[0], false, RHI::ViewType::SRV);
 
     // 인스턴스의 텍스처 인덱스를 기록
     constantDataPtr->streamingTextureIndex = instanceSurfs[0]->texture->GetStreaming()->streamingListIndex;
@@ -311,7 +325,7 @@ void RenderBackend::DrawGuiSurface(RHI::FrameThreadData *frameThreadData, RHI::C
 
     constantDataPtr->modelViewProjMatrix = drawSurf->space->modelViewProjMatrix;
 
-    constantDataPtr->baseColorTextureIndex = ResolveDrawSurfTexture(drawSurf)->GetBindlessIndex(RHI::ViewType::SRV);
+    constantDataPtr->baseColorTextureIndex = ResolveDrawSurfTextureBindlessIndex(drawSurf, false, RHI::ViewType::SRV);
 
     RHI::renderer->SetConstantBuffer(commandList, 0, constantBuffer);
 

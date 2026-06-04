@@ -16,6 +16,8 @@
 
 #include "RHI.h"
 
+class LoadingSystem;
+
 struct ShaderPermutationKey {
     ShaderPermutationKey() = default;
     explicit ShaderPermutationKey(uint64_t hash) : hash(hash) {}
@@ -26,11 +28,13 @@ struct ShaderPermutationKey {
     static ShaderPermutationKey     FromDefines(std::initializer_list<const char *> defines);
     static ShaderPermutationKey     FromDefines(const BE1::StrArray &defines);
 
+    static void                     NormalizePermutationDefines(BE1::StrArray &defines);
+    static ShaderPermutationKey     GeneratePermutationKey(const BE1::StrArray &defines);
+
     uint64_t                        hash = 0;
 };
 
 struct ShaderPipelineDesc {
-    ShaderPermutationKey            permutationKey;
     const RHI::InputLayout *        inputLayout = nullptr;
     RHI::RenderDest                 renderDest;
     RHI::RasterizerStateType        rasterizerStateType = RHI::RasterizerStateType::SolidFrontSided;
@@ -50,6 +54,7 @@ struct ShaderPipelineDesc {
 
 class ShaderPipelineState : public std::enable_shared_from_this<ShaderPipelineState> {
     friend class ShaderTemplate;
+    friend class LoadingSystem;
 
 public:
     enum class Type : uint8_t {
@@ -61,6 +66,7 @@ public:
         Empty,
         Building,
         Ready,
+        Rebuilding,
         Failed
     };
 
@@ -68,7 +74,9 @@ public:
 
     Type                            GetType() const { return type; }
     State                           GetState() const { return state.load(); }
-    bool                            IsReady() const { return GetState() == State::Ready; }
+    void                            SetState(State newState) { state.store(newState); }
+    bool                            IsReady() const { State s = GetState(); return s == State::Ready || s == State::Rebuilding; }
+    bool                            IsBuilding() const { State s = GetState(); return s == State::Building || s == State::Rebuilding; }
 
     uint32_t                        GetBuildSerial() const { return buildSerial.load(); }
     uint32_t                        BumpBuildSerial() { return buildSerial.fetch_add(1) + 1; }
@@ -78,31 +86,30 @@ public:
     const ShaderPipelineDesc &      GetGraphicsDesc() const { assert(type == Type::Graphics); return graphicsDesc; }
     RHI::PipelineState *            GetPSO() const { return pso; }
 
-    void                            RequestBuild(const std::shared_ptr<ShaderTemplate> &shaderTemplate);
-    void                            ResetAndRequestBuild(const std::shared_ptr<ShaderTemplate> &shaderTemplate);
+    void                            Reset();
 
-                                    // 실질적인 shader compile & PSO 생성 로직이다. 로딩 스레드에서 호출된다.
-    bool                            Build(ShaderTemplate &shaderTemplate, uint32_t requestedBuildSerial);
+    void                            BuildAsync(const std::shared_ptr<ShaderTemplate> &shaderTemplate);
+    void                            EnsureBuildAsync(const std::shared_ptr<ShaderTemplate> &shaderTemplate);
 
 private:
-    ShaderPipelineState(Type type, uint64_t hash, const ShaderPipelineDesc &graphicsDesc);
+    ShaderPipelineState(Type type, uint64_t hash, ShaderPermutationKey permutationKey, const ShaderPipelineDesc &graphicsDesc);
     ShaderPipelineState(Type type, uint64_t hash, ShaderPermutationKey permutationKey);
 
     void                            Purge();
-    void                            Reset();
+    bool                            EnqueueBuild(const std::shared_ptr<ShaderTemplate> &shaderTemplate);
 
-    Type                            type = Type::Graphics;
+    const Type                      type = Type::Graphics;
     std::atomic<State>              state = State::Empty;
     std::atomic<uint32_t>           buildSerial = 0;
     uint64_t                        hash = 0;
-    ShaderPermutationKey            permutationKey;
-    ShaderPipelineDesc              graphicsDesc;
-    RHI::InputLayout                inputLayout;
+    const ShaderPermutationKey      permutationKey;
+    ShaderPipelineDesc              graphicsDesc;       // 생성자에서 한번 정해지면 변하지 않는다.
+    RHI::InputLayout                inputLayout;        // 생성자에서 한번 정해지면 변하지 않는다.
     RHI::PipelineState *            pso = nullptr;
 };
 
-BE_INLINE ShaderPipelineState::ShaderPipelineState(Type type, uint64_t hash, const ShaderPipelineDesc &graphicsPipelineDesc) :
-    type(type), hash(hash), permutationKey(graphicsPipelineDesc.permutationKey), graphicsDesc(graphicsPipelineDesc) {
+BE_INLINE ShaderPipelineState::ShaderPipelineState(Type type, uint64_t hash, ShaderPermutationKey permutationKey, const ShaderPipelineDesc &graphicsPipelineDesc) :
+    type(type), hash(hash), permutationKey(permutationKey), graphicsDesc(graphicsPipelineDesc) {
     assert(type == Type::Graphics);
 
     if (graphicsPipelineDesc.inputLayout) {

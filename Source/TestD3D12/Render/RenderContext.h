@@ -43,6 +43,7 @@ class RenderBackend;
 class RenderContext {
     friend class RenderSystem;
     friend class RenderBackend;
+    friend class RenderFrameData;
 
 public:
     RenderContext() = default;

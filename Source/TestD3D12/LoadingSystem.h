@@ -18,9 +18,9 @@
 #include "Render/Mesh.h"
 #include "Render/Skeleton.h"
 #include "Render/Anim.h"
+#include "Render/ShaderTemplate.h"
 
 class ShaderPipelineState;
-class ShaderTemplate;
 
 /*
 -------------------------------------------------------------------------------
@@ -50,12 +50,13 @@ public:
     bool                            EnqueueMeshLoad(std::shared_ptr<Mesh> mesh, const char *filename, bool isReload, uint32_t serial, LoadPriority priority = LoadPriority::Normal);
     bool                            EnqueueSkeletonLoad(std::shared_ptr<Skeleton> skeleton, const char *filename, bool isReload, uint32_t serial, LoadPriority priority = LoadPriority::Normal);
     bool                            EnqueueAnimLoad(std::shared_ptr<Anim> anim, const char *filename, bool isReload, uint32_t serial, LoadPriority priority = LoadPriority::Normal);
-    bool                            EnqueueShaderPipelineBuild(std::shared_ptr<ShaderTemplate> shaderTemplate, std::shared_ptr<ShaderPipelineState> pipelineState, uint32_t serial, LoadPriority priority = LoadPriority::High);
+    bool                            EnqueueShaderPipelineBuild(std::shared_ptr<ShaderTemplate> shaderTemplate, std::shared_ptr<ShaderPipelineState> pipelineState, const ShaderTemplate::PipelineBuildData &buildData, uint32_t serial, LoadPriority priority = LoadPriority::High);
 
     bool                            BoostTextureLoad(const Texture *texture, uint32_t serial, LoadPriority priority);
     bool                            BoostMeshLoad(const Mesh *mesh, uint32_t serial, LoadPriority priority);
     bool                            BoostSkeletonLoad(const Skeleton *skeleton, uint32_t serial, LoadPriority priority);
     bool                            BoostAnimLoad(const Anim *anim, uint32_t serial, LoadPriority priority);
+    bool                            BoostShaderPipelineBuild(const ShaderPipelineState *pipelineState, uint32_t serial, LoadPriority priority);
 
                                     /// Applies completed load requests on the main thread.
     void                            ProcessLoadCompletions();
@@ -68,6 +69,7 @@ private:
         std::shared_ptr<Anim>       anim;
         std::shared_ptr<ShaderTemplate> shaderTemplate;
         std::shared_ptr<ShaderPipelineState> pipelineState;
+        ShaderTemplate::PipelineBuildData shaderPipelineBuildData;
         BE1::Str                    filename;
         Texture::Flag               textureFlags = Texture::Flag::None;
         std::shared_ptr<BE1::Image> image;
@@ -85,10 +87,12 @@ private:
         std::shared_ptr<Mesh>       mesh;
         std::shared_ptr<Skeleton>   skeleton;
         std::shared_ptr<Anim>       anim;
+        std::shared_ptr<ShaderPipelineState> pipelineState;
         Texture::InternalData       textureData;
         Mesh::InternalData          meshData;
         Skeleton::InternalData      skeletonData;
         Anim::InternalData          animData;
+        RHI::PipelineState *        pso = nullptr;
         BE1::Image::MipRange        mipRange;
         uint32_t                    serial = 0;
         bool                        isReload = false;
@@ -111,6 +115,7 @@ private:
     bool                            ProcessMeshLoadCompletion(LoadCompletion &completion);
     bool                            ProcessSkeletonLoadCompletion(LoadCompletion &completion);
     bool                            ProcessAnimLoadCompletion(LoadCompletion &completion);
+    bool                            ProcessShaderPipelineBuildCompletion(LoadCompletion &completion);
 
     static bool                     IsHigherPriority(const LoadRequest &lhs, const LoadRequest &rhs);
     static unsigned int             ThreadProc(void *param);
