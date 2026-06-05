@@ -117,6 +117,13 @@ std::shared_ptr<Mesh> MeshManager::AllocMesh(const char *hashName) {
     return mesh;
 }
 
+std::shared_ptr<Mesh> MeshManager::AllocTransientMesh(const char *name) {
+    std::shared_ptr<Mesh> mesh = std::make_shared<Mesh>();
+    mesh->name = name;
+
+    return mesh;
+}
+
 std::shared_ptr<Mesh> MeshManager::FindMesh(const char *hashName) const {
     if (!hashName || !hashName[0]) {
         return nullptr;

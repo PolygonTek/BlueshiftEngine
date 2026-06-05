@@ -80,23 +80,6 @@ public:
         RHI::Texture *              pendingReplacementTexture = nullptr;
     };
 
-    struct InternalData {
-        InternalData() = default;
-        InternalData(const InternalData &rhs) = delete;
-        InternalData &operator=(const InternalData &rhs) = delete;
-        InternalData(InternalData &&rhs) noexcept { Swap(rhs); }
-        InternalData &operator=(InternalData &&rhs) noexcept;
-        ~InternalData() { Purge(); }
-
-        void                        Purge();
-        void                        Swap(InternalData &rhs);
-
-        RHI::TextureType            rhiTextureType = RHI::TextureType::Unknown;
-        RHI::Texture *              rhiTexture = nullptr;
-        BE1::Image::Format          format = BE1::Image::Format::Unknown;
-        Texture::Flag               flags = Texture::Flag::None;
-    };
-
     Texture() = default;
     Texture(const Texture &rhs) = delete;
     Texture &operator=(const Texture &rhs) = delete;
@@ -160,6 +143,23 @@ public:
     static bool                     GetCubeImageFromCubeTexture(const Texture *cubeTexture, int numMipLevels, BE1::Image &outCubeImage);
 
 private:
+    struct InternalData {
+        InternalData() = default;
+        InternalData(const InternalData &rhs) = delete;
+        InternalData &operator=(const InternalData &rhs) = delete;
+        InternalData(InternalData &&rhs) noexcept { Swap(rhs); }
+        InternalData &operator=(InternalData &&rhs) noexcept;
+        ~InternalData() { Purge(); }
+
+        void                        Purge();
+        void                        Swap(InternalData &rhs);
+
+        RHI::TextureType            rhiTextureType = RHI::TextureType::Unknown;
+        RHI::Texture *              rhiTexture = nullptr;
+        BE1::Image::Format          format = BE1::Image::Format::Unknown;
+        Texture::Flag               flags = Texture::Flag::None;
+    };
+
     void                            Purge();
 
                                     /// Prepares a texture from an image, applying the renderer's normal texture processing such as size adjustment, format conversion, and mipmap generation.

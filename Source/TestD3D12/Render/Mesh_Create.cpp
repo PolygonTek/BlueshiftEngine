@@ -877,12 +877,12 @@ bool Mesh::TrySliceMesh(const Mesh &srcMesh, const BE1::Plane &slicePlane, bool 
         aboveData.FinishSurfaces(FinishFlag::ComputeAABB | FinishFlag::ComputeTangents);
     }
 
-    outBelowMesh = std::make_shared<Mesh>();
+    outBelowMesh = meshManager.AllocTransientMesh(BE1::va("%s-bellowMesh", srcMesh.GetHashName()));
     outBelowMesh->ApplyPrepared(belowData);
     outBelowMesh->SetState(State::Ready);
 
     if (generateAboveMesh) {
-        outAboveMesh = std::make_shared<Mesh>();
+        outAboveMesh = meshManager.AllocTransientMesh(BE1::va("%s-aboveMesh", srcMesh.GetHashName()));
         outAboveMesh->ApplyPrepared(aboveData);
         outAboveMesh->SetState(State::Ready);
     }

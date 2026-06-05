@@ -69,42 +69,6 @@ public:
         int32_t                     materialIndex = -1;
     };
 
-    struct InternalData {
-        InternalData() = default;
-        InternalData(const InternalData &rhs) = delete;
-        InternalData &operator=(const InternalData &rhs) = delete;
-        InternalData(InternalData &&rhs) noexcept { Swap(rhs); }
-        InternalData &operator=(InternalData &&rhs) noexcept;
-        ~InternalData() { Purge(); }
-
-        void                        Purge();
-        void                        Swap(InternalData &rhs);
-
-        bool                        LoadBinaryMesh(const char *filename);
-        void                        WriteBinaryMesh(const char *filename);
-
-                                    /// Finalizes all surfaces by performing post-processing operations.
-        void                        FinishSurfaces(FinishFlag finishFlags = FinishFlag::None);
-
-                                    /// Applies a transformation to all vertices and optionally recomputes the AABB.
-        void                        TransformVerts(const BE1::Mat3 &rotation, const BE1::Vec3 &scale, const BE1::Vec3 &translation, bool recomputeAABB = true);
-
-        void                        RecomputeTangents();
-
-        void                        GetJointAABBs(const BE1::Mat3x4 *invBindPoseMats, BE1::Array<BE1::AABB> &jointAabbs) const;
-
-        void                        SortAndMerge();
-        void                        ComputeAABB();
-        void                        ComputeNormals();
-        void                        ComputeTangents(bool includeNormals, bool useUnsmoothedTangents);
-        void                        ComputeEdges();
-
-        BE1::Array<Surface *>       surfaces = BE1::Array<Surface *>(16);
-        int32_t                     numJoints = 0;
-        Joint *                     joints = nullptr;
-        BE1::AABB                   aabb = BE1::AABB::empty;
-    };
-
     Mesh() = default;
     Mesh(const Mesh &rhs) = delete;
     Mesh &operator=(const Mesh &rhs) = delete;
@@ -165,6 +129,42 @@ public:
     static bool                     TrySliceMesh(const Mesh &srcMesh, const BE1::Plane &slicePlane, bool generateCap, float capTextureScale, bool generateAboveMesh, std::shared_ptr<Mesh> &outBelowMesh, std::shared_ptr<Mesh> &outAboveMesh);
 
 private:
+    struct InternalData {
+        InternalData() = default;
+        InternalData(const InternalData &rhs) = delete;
+        InternalData &operator=(const InternalData &rhs) = delete;
+        InternalData(InternalData &&rhs) noexcept { Swap(rhs); }
+        InternalData &operator=(InternalData &&rhs) noexcept;
+        ~InternalData() { Purge(); }
+
+        void                        Purge();
+        void                        Swap(InternalData &rhs);
+
+        bool                        LoadBinaryMesh(const char *filename);
+        void                        WriteBinaryMesh(const char *filename);
+
+                                    /// Finalizes all surfaces by performing post-processing operations.
+        void                        FinishSurfaces(FinishFlag finishFlags = FinishFlag::None);
+
+                                    /// Applies a transformation to all vertices and optionally recomputes the AABB.
+        void                        TransformVerts(const BE1::Mat3 &rotation, const BE1::Vec3 &scale, const BE1::Vec3 &translation, bool recomputeAABB = true);
+
+        void                        RecomputeTangents();
+
+        void                        GetJointAABBs(const BE1::Mat3x4 *invBindPoseMats, BE1::Array<BE1::AABB> &jointAabbs) const;
+
+        void                        SortAndMerge();
+        void                        ComputeAABB();
+        void                        ComputeNormals();
+        void                        ComputeTangents(bool includeNormals, bool useUnsmoothedTangents);
+        void                        ComputeEdges();
+
+        BE1::Array<Surface *>       surfaces = BE1::Array<Surface *>(16);
+        int32_t                     numJoints = 0;
+        Joint *                     joints = nullptr;
+        BE1::AABB                   aabb = BE1::AABB::empty;
+    };
+
     void                            Purge();
 
     static bool                     Prepare(const char *filename, InternalData &outInternalData);
@@ -209,6 +209,7 @@ public:
     void                            UpdateFrame();
 
     std::shared_ptr<Mesh>           AllocMesh(const char *name);
+    std::shared_ptr<Mesh>           AllocTransientMesh(const char *name);
     std::shared_ptr<Mesh>           FindMesh(const char *name) const;
     std::shared_ptr<Mesh>           GetMesh(const char *name, bool async = true);
 

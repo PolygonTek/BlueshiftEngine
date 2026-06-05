@@ -45,24 +45,6 @@ public:
         Failed
     };
 
-    struct InternalData {
-        InternalData() = default;
-        InternalData(const InternalData &rhs) = delete;
-        InternalData &operator=(const InternalData &rhs) = delete;
-        InternalData(InternalData &&rhs) noexcept { Swap(rhs); }
-        InternalData &operator=(InternalData &&rhs) noexcept;
-        ~InternalData() { Purge(); }
-
-        void                        Purge();
-        void                        Swap(InternalData &rhs);
-
-        int32_t                     numJoints = 0;              ///< Number of joints
-        Joint *                     joints = nullptr;           ///< Joint information array
-        int *                       jointParents = nullptr;     ///< Parent indexes for each joint
-        BE1::JointPose *            bindPoses = nullptr;        ///< Local joint transforms of bindpose (quaternion based)
-        BE1::Mat3x4 *               invBindPoseMats = nullptr;  ///< World inverse transform of bindpose (for use in HW skinning)
-    };
-
     Skeleton() = default;
     Skeleton(const Skeleton &rhs) = delete;
     Skeleton &operator=(const Skeleton &rhs) = delete;
@@ -106,6 +88,24 @@ public:
     bool                            CheckHierarchy(const Skeleton *otherSkeleton) const;
 
 private:
+    struct InternalData {
+        InternalData() = default;
+        InternalData(const InternalData &rhs) = delete;
+        InternalData &operator=(const InternalData &rhs) = delete;
+        InternalData(InternalData &&rhs) noexcept { Swap(rhs); }
+        InternalData &operator=(InternalData &&rhs) noexcept;
+        ~InternalData() { Purge(); }
+
+        void                        Purge();
+        void                        Swap(InternalData &rhs);
+
+        int32_t                     numJoints = 0;              ///< Number of joints
+        Joint *                     joints = nullptr;           ///< Joint information array
+        int *                       jointParents = nullptr;     ///< Parent indexes for each joint
+        BE1::JointPose *            bindPoses = nullptr;        ///< Local joint transforms of bindpose (quaternion based)
+        BE1::Mat3x4 *               invBindPoseMats = nullptr;  ///< World inverse transform of bindpose (for use in HW skinning)
+    };
+
     void                            Purge();
 
     static bool                     Prepare(const char *filename, InternalData &outInternalData);
