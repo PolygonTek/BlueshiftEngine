@@ -50,7 +50,7 @@ public:
     bool                            EnqueueMeshLoad(std::shared_ptr<Mesh> mesh, const char *filename, bool isReload, uint32_t serial, LoadPriority priority = LoadPriority::Normal);
     bool                            EnqueueSkeletonLoad(std::shared_ptr<Skeleton> skeleton, const char *filename, bool isReload, uint32_t serial, LoadPriority priority = LoadPriority::Normal);
     bool                            EnqueueAnimLoad(std::shared_ptr<Anim> anim, const char *filename, bool isReload, uint32_t serial, LoadPriority priority = LoadPriority::Normal);
-    bool                            EnqueueShaderPipelineBuild(std::shared_ptr<ShaderTemplate> shaderTemplate, std::shared_ptr<ShaderPipelineState> pipelineState, const ShaderTemplate::PipelineBuildData &buildData, uint32_t serial, LoadPriority priority = LoadPriority::High);
+    bool                            EnqueueShaderPipelineBuild(std::shared_ptr<ShaderPipelineState> pipelineState, const ShaderTemplate::PipelineBuildData &buildData, uint32_t serial, LoadPriority priority = LoadPriority::High);
 
     bool                            BoostTextureLoad(const Texture *texture, uint32_t serial, LoadPriority priority);
     bool                            BoostMeshLoad(const Mesh *mesh, uint32_t serial, LoadPriority priority);
@@ -67,7 +67,6 @@ private:
         std::shared_ptr<Mesh>       mesh;
         std::shared_ptr<Skeleton>   skeleton;
         std::shared_ptr<Anim>       anim;
-        std::shared_ptr<ShaderTemplate> shaderTemplate;
         std::shared_ptr<ShaderPipelineState> pipelineState;
         ShaderTemplate::PipelineBuildData shaderPipelineBuildData;
         BE1::Str                    filename;

@@ -14,6 +14,7 @@
 
 #pragma once
 
+#include "Containers/HashMap.h"
 #include "Core/Property.h"
 #include "ShaderPipelineState.h"
 
@@ -59,7 +60,6 @@ struct ShaderPropertyInfo : public BE1::PropertyInfo {
 
 class ShaderTemplate : public std::enable_shared_from_this<ShaderTemplate> {
     friend class ShaderTemplateManager;
-    friend class ShaderPipelineState;
     friend class LoadingSystem;
 
 public:
@@ -68,6 +68,7 @@ public:
         LoadedFromFile              = BIT(0)
     };
 
+    using Feature = ShaderFeature;
     using PropertyValue = BE1::Variant;
 
     struct StageSource {
@@ -80,10 +81,8 @@ public:
     struct PipelineBuildData {
         void                        Clear();
 
-        ShaderPermutationKey        permutationKey;
         StageSource                 stageSources[to_int(RHI::ShaderStage::Count)] = {};
-        BE1::StrArray               permutationDefines;
-        BE1::StrArray               globalDefines;
+        BE1::StrArray               compileDefines;
     };
 
     ShaderTemplate() = default;
@@ -99,21 +98,27 @@ public:
     bool                            AddProperty(const ShaderPropertyInfo &propertyInfo);
     bool                            AddProperty(const char *name, const char *label, BE1::Variant::Type::Enum type, const BE1::Variant &defaultValue, const char *desc = "", int flags = BE1::PropertyInfo::Flag::Editor, ShaderPropertyInfo::ShaderFlag shaderFlags = ShaderPropertyInfo::ShaderFlag::None);
     bool                            CopyPropertiesFrom(const ShaderTemplate &shaderTemplate);
+
     void                            InitDefaultPropertyValues(BE1::Array<PropertyValue> &outPropertyValues) const;
 
     void                            AddStage(RHI::ShaderStage shaderStage, RHI::ShaderModel shaderModel, const char *filename, const char *entryPoint);
 
                                     // permutation 추가, permutation 은 추가만 가능하고 수정은 불가능하다.
-                                    // TODO: shader template 파일을 로딩할 떄 permutation 까지 추가되도록 해야함.
     ShaderPermutationKey            AddPermutation(std::initializer_list<const char *> defines);
     ShaderPermutationKey            AddPermutation(const BE1::StrArray &defines);
+    ShaderPermutationKey            AddPermutation(std::initializer_list<const char *> defines, const ShaderFeatureSet &featureSet);
+    ShaderPermutationKey            AddPermutation(const BE1::StrArray &defines, const ShaderFeatureSet &featureSet);
     ShaderPermutationKey            AddPermutation(const BE1::Array<PropertyValue> &propertyValues);
     ShaderPermutationKey            AddPermutation(const BE1::Array<PropertyValue> &propertyValues, const BE1::StrArray &defines);
+    ShaderPermutationKey            AddPermutation(const BE1::Array<PropertyValue> &propertyValues, const ShaderFeatureSet &featureSet);
+    ShaderPermutationKey            AddPermutation(const BE1::Array<PropertyValue> &propertyValues, const BE1::StrArray &defines, const ShaderFeatureSet &featureSet);
 
     bool                            Create(const char *text, const char *baseDir);
 
     bool                            Load(const char *filename);
     bool                            Reload();
+
+    bool                            PreparePipelineBuildData(ShaderPermutationKey permutationKey, PipelineBuildData &outBuildData) const;
 
     std::shared_ptr<ShaderPipelineState> GetGraphicsPipeline(ShaderPermutationKey permutationKey, const ShaderPipelineDesc &pipelineDesc);
     std::shared_ptr<ShaderPipelineState> GetComputePipeline(ShaderPermutationKey permutationKey);
@@ -129,16 +134,16 @@ private:
         void                        AddStage(RHI::ShaderStage shaderStage, RHI::ShaderModel shaderModel, const char *filename, const char *entryPoint);
 
         StageSource                 stageSources[to_int(RHI::ShaderStage::Count)] = {};
+        BE1::StrArray               baseDefines;
+        BE1::StrArray               featureDefines[to_int(Feature::Count)] = {};
         BE1::Array<ShaderPropertyInfo> properties;
         Flag                        flags = Flag::None;
     };
 
     struct ShaderPermutation {
-        void                        ClearShaders();
-
         ShaderPermutationKey        key;
+        ShaderFeatureSet            featureSet;
         BE1::StrArray               defines;
-        RHI::Shader *               shaders[to_int(RHI::ShaderStage::Count)] = {};
     };
 
     struct CachedGraphicsPipeline {
@@ -155,23 +160,27 @@ private:
     void                            ApplyPrepared(InternalData &newInternalData);
     bool                            Prepare(const char *text, const char *baseDir, InternalData &outInternalData);
     bool                            ParseInheritProperties(BE1::Lexer &lexer, const char *baseDir, InternalData &outInternalData);
+    bool                            ParseBaseDefines(BE1::Lexer &lexer, InternalData &outInternalData);
+    bool                            ParseFeatures(BE1::Lexer &lexer, InternalData &outInternalData);
     bool                            ParseStages(BE1::Lexer &lexer, const char *baseDir, InternalData &outInternalData);
     bool                            ParseProperties(BE1::Lexer &lexer, InternalData &outInternalData);
 
     void                            ClearCachedPipelines();
     void                            InvalidateCachedPipelines();
-    void                            ClearPermutationShaders();
-    void                            ClearPermutations();
-    ShaderPermutation *             FindPermutation(ShaderPermutationKey permutationKey) const;
-    bool                            PreparePipelineBuildData(ShaderPermutationKey permutationKey, PipelineBuildData &outBuildData) const;
-    bool                            PreparePipelinePSO(const ShaderPipelineState &pipelineState, const PipelineBuildData &buildData, RHI::PipelineState *&preparedPSO) const;
-    bool                            PrepareStageShader(const PipelineBuildData &buildData, RHI::Shader *&shader, RHI::ShaderStage shaderStage, const BE1::StrArray &compileDefines) const;
-    bool                            PreparePermutationGraphicsShaders(const PipelineBuildData &buildData, ShaderPermutation *permutation) const;
-    bool                            PreparePermutationComputeShader(const PipelineBuildData &buildData, ShaderPermutation *permutation) const;
     std::shared_ptr<ShaderPipelineState> FindCachedGraphicsPipeline(ShaderPermutationKey permutationKey, const ShaderPipelineDesc &pipelineDesc) const;
     std::shared_ptr<ShaderPipelineState> FindCachedComputePipeline(ShaderPermutationKey permutationKey) const;
-    RHI::PipelineState *            CreateGraphicsPSO(const PipelineBuildData &buildData, ShaderPermutation &permutation, const ShaderPipelineDesc &pipelineDesc) const;
-    RHI::PipelineState *            CreateComputePSO(const PipelineBuildData &buildData, ShaderPermutation &permutation) const;
+
+    void                            ClearPermutations();
+    ShaderPermutation *             FindPermutation(ShaderPermutationKey permutationKey) const;
+    bool                            HasTemplateDefine(const char *define, const ShaderFeatureSet &featureSet) const;
+    bool                            AppendFeatureSetDefines(BE1::StrArray &defines, const ShaderFeatureSet &featureSet) const;
+
+    static bool                     PreparePipelinePSO(const ShaderPipelineState &pipelineState, const PipelineBuildData &buildData, RHI::PipelineState *&preparedPSO);
+    static bool                     PrepareStageShader(const PipelineBuildData &buildData, RHI::ShaderStage shaderStage, const BE1::StrArray &compileDefines, RHI::Shader *&outShader);
+    static bool                     PreparePipelineGraphicsShaders(const PipelineBuildData &buildData, RHI::Shader *stageShaders[to_int(RHI::ShaderStage::Count)]);
+    static bool                     PreparePipelineComputeShader(const PipelineBuildData &buildData, RHI::Shader *stageShaders[to_int(RHI::ShaderStage::Count)]);
+    static RHI::PipelineState *     CreateGraphicsPSO(const PipelineBuildData &buildData, const ShaderPipelineDesc &pipelineDesc, RHI::Shader *stageShaders[to_int(RHI::ShaderStage::Count)]);
+    static RHI::PipelineState *     CreateComputePSO(const PipelineBuildData &buildData, RHI::Shader *stageShaders[to_int(RHI::ShaderStage::Count)]);
 
     static uint64_t                 GenerateInputLayoutHash(const RHI::InputLayout *inputLayout);
     static uint64_t                 GenerateGraphicsPipelineHash(ShaderPermutationKey permutationKey, const ShaderPipelineDesc &pipelineDesc);
@@ -180,7 +189,7 @@ private:
     BE1::Str                        name;
     InternalData                    internalData;
 
-    BE1::Array<ShaderPermutation *> permutations;
+    BE1::HashMap<uint64_t, ShaderPermutation *> permutationMap;
     BE1::Array<CachedGraphicsPipeline> cachedGraphicsPipelines;
     BE1::Array<CachedComputePipeline> cachedComputePipelines;
 };

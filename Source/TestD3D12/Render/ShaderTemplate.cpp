@@ -21,14 +21,11 @@ const ShaderPropertyInfo *ShaderTemplate::FindProperty(const char *name) const {
 }
 
 void ShaderTemplate::PipelineBuildData::Clear() {
-    permutationKey = ShaderPermutationKey();
-
     for (StageSource &stageSource : stageSources) {
         stageSource = StageSource();
     }
 
-    permutationDefines.Clear();
-    globalDefines.Clear();
+    compileDefines.Clear();
 }
 
 void ShaderTemplate::InternalData::Purge() {
@@ -36,6 +33,10 @@ void ShaderTemplate::InternalData::Purge() {
         stageSource = StageSource();
     }
 
+    baseDefines.Clear();
+    for (BE1::StrArray &defines : featureDefines) {
+        defines.Clear();
+    }
     properties.Clear();
 }
 
@@ -44,6 +45,10 @@ void ShaderTemplate::InternalData::Swap(InternalData &rhs) {
         BE1::Swap(stageSources[i], rhs.stageSources[i]);
     }
 
+    baseDefines.Swap(rhs.baseDefines);
+    for (int i = 0; i < to_int(Feature::Count); i++) {
+        featureDefines[i].Swap(rhs.featureDefines[i]);
+    }
     properties.Swap(rhs.properties);
     BE1::Swap(flags, rhs.flags);
 }
@@ -55,15 +60,6 @@ const ShaderPropertyInfo *ShaderTemplate::InternalData::FindProperty(const char 
         }
     }
     return nullptr;
-}
-
-void ShaderTemplate::ShaderPermutation::ClearShaders() {
-    for (int i = 0; i < to_int(RHI::ShaderStage::Count); ++i) {
-        if (shaders[i]) {
-            RHI::renderer->DestroyShader(shaders[i], true);
-            shaders[i] = nullptr;
-        }
-    }
 }
 
 bool ShaderTemplate::AddProperty(const char *name, const char *label, BE1::Variant::Type::Enum type, const BE1::Variant &defaultValue, const char *desc, int flags, ShaderPropertyInfo::ShaderFlag shaderFlags) {
@@ -137,14 +133,6 @@ void ShaderTemplate::AddStage(RHI::ShaderStage shaderStage, RHI::ShaderModel sha
     StageSource &stageSource = internalData.stageSources[to_int(shaderStage)];
     assert(stageSource.shaderStage == RHI::ShaderStage::Count);
 
-    for (ShaderPermutation *permutation : permutations) {
-        RHI::Shader *&shader = permutation->shaders[to_int(shaderStage)];
-        if (shader) {
-            RHI::renderer->DestroyShader(shader, true);
-            shader = nullptr;
-        }
-    }
-
     internalData.AddStage(shaderStage, shaderModel, filename, entryPoint);
 }
 
@@ -159,48 +147,9 @@ void ShaderTemplate::InternalData::AddStage(RHI::ShaderStage shaderStage, RHI::S
     stageSource.entryPoint = entryPoint;
 }
 
-ShaderPermutationKey ShaderTemplate::AddPermutation(std::initializer_list<const char *> defines) {
-    BE1::StrArray permutationDefines;
-    for (const char *define : defines) {
-        if (define && define[0]) {
-            permutationDefines.Append(define);
-        }
-    }
-
-    return AddPermutation(permutationDefines);
-}
-
-ShaderPermutationKey ShaderTemplate::AddPermutation(const BE1::StrArray &defines) {
-    BE1::StrArray permutationDefines = defines;
-    ShaderPermutationKey::NormalizePermutationDefines(permutationDefines);
-
-    ShaderPermutationKey permutationKey = ShaderPermutationKey::GeneratePermutationKey(permutationDefines);
-    ShaderPermutation *permutation = FindPermutation(permutationKey);
-    if (permutation) {
-        return permutationKey;
-    }
-
-    permutation = new ShaderPermutation;
-    permutation->key = permutationKey;
-    permutation->defines = permutationDefines;
-    permutations.Append(permutation);
-    return permutationKey;
-}
-
-static void AddDefine(BE1::StrArray &defines, const char *newDefineName, int value) {
-    if (!newDefineName || !newDefineName[0]) {
-        return;
-    }
-
-    BE1::Str newDefine = newDefineName;
-    newDefine.Append("=");
-    newDefine.Append(BE1::Str(value));
-    defines.Append(newDefine);
-}
-
 // 같은 이름의 define 이 있는지 검사한다. define name 만 비교하며, value 는 비교하지 않는다.
 static bool HasDefine(const BE1::StrArray &defines, const char *keyDefine) {
-    if (!keyDefine || !keyDefine[0]) {
+    if (!keyDefine || !keyDefine[0] || defines.Count() == 0) {
         return false;
     }
 
@@ -221,15 +170,119 @@ static bool HasDefine(const BE1::StrArray &defines, const char *keyDefine) {
     return false;
 }
 
-static void AppendDefines(BE1::StrArray &defines, const BE1::StrArray &appendDefines) {
-    for (const BE1::Str &define : appendDefines) {
-        assert(!HasDefine(defines, define.c_str()));
-        defines.Append(define);
+static void AddDefine(BE1::StrArray &defines, const char *newDefineName, int value) {
+    if (!newDefineName || !newDefineName[0]) {
+        return;
     }
+
+    BE1::Str newDefine = newDefineName;
+    newDefine.Append("=");
+    newDefine.Append(BE1::Str(value));
+    defines.Append(newDefine);
+}
+
+static bool AddDefine(BE1::StrArray &defines, const char *newDefine) {
+    if (!newDefine || !newDefine[0]) {
+        return false;
+    }
+
+    if (HasDefine(defines, newDefine)) {
+        return false;
+    }
+
+    defines.Append(newDefine);
+    return true;
+}
+
+static bool AppendDefines(BE1::StrArray &defines, const BE1::StrArray &appendDefines) {
+    bool addedAllDefines = true;
+
+    for (const BE1::Str &define : appendDefines) {
+        if (!AddDefine(defines, define.c_str())) {
+            addedAllDefines = false;
+            continue;
+        }
+    }
+
+    return addedAllDefines;
+}
+
+ShaderPermutationKey ShaderTemplate::AddPermutation(std::initializer_list<const char *> defines) {
+    return AddPermutation(defines, ShaderFeatureSet());
+}
+
+ShaderPermutationKey ShaderTemplate::AddPermutation(const BE1::StrArray &defines) {
+    return AddPermutation(defines, ShaderFeatureSet());
+}
+
+ShaderPermutationKey ShaderTemplate::AddPermutation(std::initializer_list<const char *> defines, const ShaderFeatureSet &featureSet) {
+    BE1::StrArray permutationDefines;
+
+    for (const char *define : defines) {
+        if (define && define[0]) {
+            permutationDefines.Append(define);
+        }
+    }
+
+    return AddPermutation(permutationDefines, featureSet);
+}
+
+ShaderPermutationKey ShaderTemplate::AddPermutation(const BE1::StrArray &defines, const ShaderFeatureSet &featureSet) {
+    BE1::StrArray permutationDefines;
+
+    for (const BE1::Str &define : defines) {
+        if (HasTemplateDefine(define.c_str(), featureSet)) {
+            BE_ERRLOG("ShaderTemplate::AddPermutation: permutation define name '%s' conflicts with a template define in shader template '%s'\n", define.c_str(), hashName.c_str());
+            continue;
+        }
+
+        if (!AddDefine(permutationDefines, define.c_str())) {
+            BE_ERRLOG("ShaderTemplate::AddPermutation: duplicated permutation define name '%s' in shader template '%s'\n", define.c_str(), hashName.c_str());
+            continue;
+        }
+    }
+    ShaderPermutationKey::NormalizePermutationDefines(permutationDefines);
+
+    ShaderPermutationKey permutationKey = ShaderPermutationKey::GeneratePermutationKey(permutationDefines, featureSet);
+    ShaderPermutation *permutation = FindPermutation(permutationKey);
+    if (permutation) {
+        return permutationKey;
+    }
+
+    permutation = new ShaderPermutation;
+    permutation->key = permutationKey;
+    permutation->featureSet = featureSet;
+    permutation->defines = permutationDefines;
+    permutationMap.Set(permutationKey.hash, permutation);
+    return permutationKey;
+}
+
+ShaderPermutationKey ShaderTemplate::AddPermutation(const BE1::Array<PropertyValue> &propertyValues) {
+    return AddPermutation(propertyValues, BE1::StrArray(), ShaderFeatureSet());
 }
 
 ShaderPermutationKey ShaderTemplate::AddPermutation(const BE1::Array<PropertyValue> &propertyValues, const BE1::StrArray &defines) {
-    BE1::StrArray permutationDefines = defines;
+    return AddPermutation(propertyValues, defines, ShaderFeatureSet());
+}
+
+ShaderPermutationKey ShaderTemplate::AddPermutation(const BE1::Array<PropertyValue> &propertyValues, const ShaderFeatureSet &featureSet) {
+    return AddPermutation(propertyValues, BE1::StrArray(), featureSet);
+}
+
+ShaderPermutationKey ShaderTemplate::AddPermutation(const BE1::Array<PropertyValue> &propertyValues, const BE1::StrArray &defines, const ShaderFeatureSet &featureSet) {
+    BE1::StrArray permutationDefines;
+
+    for (const BE1::Str &define : defines) {
+        if (HasTemplateDefine(define.c_str(), featureSet)) {
+            BE_ERRLOG("ShaderTemplate::AddPermutation: permutation define name '%s' conflicts with a template define in shader template '%s'\n", define.c_str(), hashName.c_str());
+            continue;
+        }
+
+        if (!AddDefine(permutationDefines, define.c_str())) {
+            BE_ERRLOG("ShaderTemplate::AddPermutation: duplicated permutation define name '%s' in shader template '%s'\n", define.c_str(), hashName.c_str());
+            continue;
+        }
+    }
 
     for (int i = 0; i < internalData.properties.Count(); i++) {
         const ShaderPropertyInfo &propertyInfo = internalData.properties[i];
@@ -238,7 +291,7 @@ ShaderPermutationKey ShaderTemplate::AddPermutation(const BE1::Array<PropertyVal
         }
 
         const char *propertyDefineName = propertyInfo.GetName();
-        if (HasDefine(permutationDefines, propertyDefineName)) {
+        if (HasTemplateDefine(propertyDefineName, featureSet) || HasDefine(permutationDefines, propertyDefineName)) {
             // permutation 의 define name 과 프로퍼티의 define name 은 중복되면 안된다.
             BE_ERRLOG("ShaderTemplate::AddPermutation: permutation define name '%s' conflicts with an existing shader property in shader template '%s'\n", propertyDefineName, hashName.c_str());
             continue;
@@ -262,7 +315,7 @@ ShaderPermutationKey ShaderTemplate::AddPermutation(const BE1::Array<PropertyVal
 
     ShaderPermutationKey::NormalizePermutationDefines(permutationDefines);
 
-    ShaderPermutationKey permutationKey = ShaderPermutationKey::GeneratePermutationKey(permutationDefines);
+    ShaderPermutationKey permutationKey = ShaderPermutationKey::GeneratePermutationKey(permutationDefines, featureSet);
     ShaderPermutation *permutation = FindPermutation(permutationKey);
     if (permutation) {
         return permutationKey;
@@ -270,13 +323,10 @@ ShaderPermutationKey ShaderTemplate::AddPermutation(const BE1::Array<PropertyVal
 
     permutation = new ShaderPermutation;
     permutation->key = permutationKey;
+    permutation->featureSet = featureSet;
     permutation->defines = permutationDefines;
-    permutations.Append(permutation);
+    permutationMap.Set(permutationKey.hash, permutation);
     return permutationKey;
-}
-
-ShaderPermutationKey ShaderTemplate::AddPermutation(const BE1::Array<PropertyValue> &propertyValues) {
-    return AddPermutation(propertyValues, {});
 }
 
 bool ShaderTemplate::Create(const char *text, const char *baseDir) {
@@ -312,6 +362,14 @@ bool ShaderTemplate::Prepare(const char *text, const char *baseDir, InternalData
             break;
         } else if (!token.Icmp("inheritProperties")) {
             if (!ParseInheritProperties(lexer, baseDir, outInternalData)) {
+                return false;
+            }
+        } else if (!token.Icmp("baseDefines")) {
+            if (!ParseBaseDefines(lexer, outInternalData)) {
+                return false;
+            }
+        } else if (!token.Icmp("features")) {
+            if (!ParseFeatures(lexer, outInternalData)) {
                 return false;
             }
         } else if (!token.Icmp("stages")) {
@@ -441,6 +499,164 @@ bool ShaderTemplate::ParseInheritProperties(BE1::Lexer &lexer, const char *baseD
     const char *duplicatedPropertyName = nullptr;
     if (!outInternalData.CopyPropertiesFrom(inheritedShaderTemplate->internalData, &duplicatedPropertyName)) {
         BE_WARNLOG("ShaderTemplate::ParseInheritProperties: duplicated property name '%s' in shader template '%s'\n", duplicatedPropertyName ? duplicatedPropertyName : "", hashName.c_str());
+        return false;
+    }
+
+    return true;
+}
+
+bool ShaderTemplate::ParseBaseDefines(BE1::Lexer &lexer, InternalData &outInternalData) {
+    BE1::Str token;
+    bool closed = false;
+
+    if (!lexer.ExpectPunctuation(BE1::Lexer::PuncType::BraceOpen)) {
+        return false;
+    }
+
+    while (lexer.ReadToken(&token)) {
+        if (token[0] == '}') {
+            closed = true;
+            break;
+        }
+
+        if (token == "," || token == ";") {
+            continue;
+        }
+
+        BE1::Str define = token;
+        BE1::Str nextToken;
+        if (lexer.ReadToken(&nextToken, false)) {
+            if (nextToken == "=") {
+                BE1::Str valueToken;
+                if (!lexer.ReadToken(&valueToken, false)) {
+                    BE_WARNLOG("ShaderTemplate::ParseBaseDefines: missing value for base define '%s' in shader template '%s'\n", define.c_str(), hashName.c_str());
+                    return false;
+                }
+                define.Append("=");
+                define.Append(valueToken);
+            } else {
+                lexer.UnreadToken(&nextToken);
+            }
+        }
+
+        if (HasDefine(outInternalData.baseDefines, define.c_str())) {
+            BE_WARNLOG("ShaderTemplate::ParseBaseDefines: duplicated base define name '%s' in shader template '%s'\n", define.c_str(), hashName.c_str());
+            return false;
+        }
+
+        outInternalData.baseDefines.Append(define);
+    }
+
+    if (!closed) {
+        BE_WARNLOG("ShaderTemplate::ParseBaseDefines: missing closing brace in shader template '%s'\n", hashName.c_str());
+        return false;
+    }
+
+    return true;
+}
+
+static bool ParseShaderFeature(const BE1::Str &token, ShaderTemplate::Feature &outFeature) {
+    struct FeatureName {
+        const char *featureName;
+        ShaderTemplate::Feature feature;
+    };
+
+    static constexpr FeatureName FeatureNames[] = {
+        { "perforated",         ShaderTemplate::Feature::Perforated },
+        { "gpuSkinningWeight1", ShaderTemplate::Feature::GpuSkinningWeight1 },
+        { "gpuSkinningWeight4", ShaderTemplate::Feature::GpuSkinningWeight4 },
+        { "gpuSkinningWeight8", ShaderTemplate::Feature::GpuSkinningWeight8 },
+        { "gpuInstancing",      ShaderTemplate::Feature::GpuInstancing }
+    };
+
+    for (const FeatureName &featureName : FeatureNames) {
+        if (!token.Icmp(featureName.featureName)) {
+            outFeature = featureName.feature;
+            return true;
+        }
+    }
+
+    return false;
+}
+
+bool ShaderTemplate::ParseFeatures(BE1::Lexer &lexer, InternalData &outInternalData) {
+    BE1::Str token;
+    bool closed = false;
+    bool declaredFeatures[to_int(Feature::Count)] = {};
+
+    if (!lexer.ExpectPunctuation(BE1::Lexer::PuncType::BraceOpen)) {
+        return false;
+    }
+
+    while (lexer.ReadToken(&token)) {
+        if (token[0] == '}') {
+            closed = true;
+            break;
+        }
+
+        Feature feature = Feature::Count;
+        if (!ParseShaderFeature(token, feature)) {
+            BE_WARNLOG("ShaderTemplate::ParseFeatures: unknown feature '%s' in shader template '%s'\n", token.c_str(), hashName.c_str());
+            return false;
+        }
+
+        int featureIndex = to_int(feature);
+        if (declaredFeatures[featureIndex]) {
+            BE_WARNLOG("ShaderTemplate::ParseFeatures: duplicated feature '%s' in shader template '%s'\n", token.c_str(), hashName.c_str());
+            return false;
+        }
+        declaredFeatures[featureIndex] = true;
+
+        BE1::StrArray &featureDefines = outInternalData.featureDefines[featureIndex];
+
+        bool featureClosed = false;
+        if (!lexer.ExpectPunctuation(BE1::Lexer::PuncType::BraceOpen)) {
+            return false;
+        }
+
+        BE1::Str defineToken;
+        while (lexer.ReadToken(&defineToken)) {
+            if (defineToken[0] == '}') {
+                featureClosed = true;
+                break;
+            }
+
+            if (defineToken == "," || defineToken == ";") {
+                continue;
+            }
+
+            BE1::Str define = defineToken;
+            BE1::Str nextToken;
+            if (lexer.ReadToken(&nextToken, false)) {
+                if (nextToken == "=") {
+                    BE1::Str valueToken;
+                    if (!lexer.ReadToken(&valueToken, false)) {
+                        BE_WARNLOG("ShaderTemplate::ParseFeatures: missing value for feature define '%s' in shader template '%s'\n", define.c_str(), hashName.c_str());
+                        return false;
+                    }
+                    define.Append("=");
+                    define.Append(valueToken);
+                } else {
+                    lexer.UnreadToken(&nextToken);
+                }
+            }
+
+            if (HasDefine(featureDefines, define.c_str())) {
+                BE_WARNLOG("ShaderTemplate::ParseFeatures: duplicated feature define name '%s' in shader template '%s'\n", define.c_str(), hashName.c_str());
+                return false;
+            }
+
+            featureDefines.Append(define);
+        }
+
+        if (!featureClosed) {
+            BE_WARNLOG("ShaderTemplate::ParseFeatures: missing closing brace in feature '%s' in shader template '%s'\n", token.c_str(), hashName.c_str());
+            return false;
+        }
+    }
+
+    if (!closed) {
+        BE_WARNLOG("ShaderTemplate::ParseFeatures: missing closing brace in shader template '%s'\n", hashName.c_str());
         return false;
     }
 
@@ -823,18 +1039,23 @@ std::shared_ptr<ShaderPipelineState> ShaderTemplate::FindCachedComputePipeline(S
 }
 
 std::shared_ptr<ShaderPipelineState> ShaderTemplate::GetGraphicsPipeline(ShaderPermutationKey permutationKey, const ShaderPipelineDesc &pipelineDesc) {
+    if (!FindPermutation(permutationKey)) {
+        BE_WARNLOG("ShaderTemplate::GetGraphicsPipeline: shader template '%s' has no permutation 0x%llx\n", GetHashName(), permutationKey.hash);
+        return nullptr;
+    }
+
     std::shared_ptr<ShaderPipelineState> pipelineState = FindCachedGraphicsPipeline(permutationKey, pipelineDesc);
     if (!pipelineState) {
         uint64_t hash = GenerateGraphicsPipelineHash(permutationKey, pipelineDesc);
 
         CachedGraphicsPipeline &cachedPipeline = cachedGraphicsPipelines.Alloc();
         cachedPipeline.hash = hash;
-        cachedPipeline.pipelineState = std::shared_ptr<ShaderPipelineState>(new ShaderPipelineState(ShaderPipelineState::Type::Graphics, hash, permutationKey, pipelineDesc));
+        cachedPipeline.pipelineState = std::shared_ptr<ShaderPipelineState>(new ShaderPipelineState(ShaderPipelineState::Type::Graphics, permutationKey, pipelineDesc));
 
         pipelineState = cachedPipeline.pipelineState;
     }
 
-    if (!pipelineState->IsReady()) {
+    if (pipelineState->GetState() == ShaderPipelineState::State::Empty) {
         pipelineState->EnsureBuildAsync(shared_from_this());
     }
 
@@ -846,7 +1067,7 @@ std::shared_ptr<ShaderPipelineState> ShaderTemplate::GetComputePipeline(ShaderPe
     if (!pipelineState) {
         CachedComputePipeline &cachedPipeline = cachedComputePipelines.Alloc();
         cachedPipeline.permutationKey = permutationKey;
-        cachedPipeline.pipelineState = std::shared_ptr<ShaderPipelineState>(new ShaderPipelineState(ShaderPipelineState::Type::Compute, permutationKey.hash, permutationKey));
+        cachedPipeline.pipelineState = std::shared_ptr<ShaderPipelineState>(new ShaderPipelineState(ShaderPipelineState::Type::Compute, permutationKey));
 
         pipelineState = cachedPipeline.pipelineState;
     }
@@ -858,17 +1079,17 @@ std::shared_ptr<ShaderPipelineState> ShaderTemplate::GetComputePipeline(ShaderPe
     return pipelineState;
 }
 
-RHI::PipelineState *ShaderTemplate::CreateGraphicsPSO(const PipelineBuildData &buildData, ShaderPermutation &permutation, const ShaderPipelineDesc &pipelineDesc) const {
-    if (!PreparePermutationGraphicsShaders(buildData, &permutation)) {
+RHI::PipelineState *ShaderTemplate::CreateGraphicsPSO(const PipelineBuildData &buildData, const ShaderPipelineDesc &pipelineDesc, RHI::Shader *stageShaders[to_int(RHI::ShaderStage::Count)]) {
+    if (!ShaderTemplate::PreparePipelineGraphicsShaders(buildData, stageShaders)) {
         return nullptr;
     }
 
     RHI::PipelineStateDesc psoDesc;
-    psoDesc.vs = permutation.shaders[to_int(RHI::ShaderStage::Vertex)];
-    psoDesc.ps = permutation.shaders[to_int(RHI::ShaderStage::Fragment)];
-    psoDesc.ds = permutation.shaders[to_int(RHI::ShaderStage::Domain)];
-    psoDesc.hs = permutation.shaders[to_int(RHI::ShaderStage::Hull)];
-    psoDesc.gs = permutation.shaders[to_int(RHI::ShaderStage::Geometry)];
+    psoDesc.vs = stageShaders[to_int(RHI::ShaderStage::Vertex)];
+    psoDesc.ps = stageShaders[to_int(RHI::ShaderStage::Fragment)];
+    psoDesc.ds = stageShaders[to_int(RHI::ShaderStage::Domain)];
+    psoDesc.hs = stageShaders[to_int(RHI::ShaderStage::Hull)];
+    psoDesc.gs = stageShaders[to_int(RHI::ShaderStage::Geometry)];
     psoDesc.inputLayout = pipelineDesc.inputLayout;
     psoDesc.rasterizerState = RHI::renderer->GetRasterizerState(pipelineDesc.rasterizerStateType);
     psoDesc.depthStencilState = RHI::renderer->GetDepthStencilState(pipelineDesc.depthStencilStateType);
@@ -880,12 +1101,12 @@ RHI::PipelineState *ShaderTemplate::CreateGraphicsPSO(const PipelineBuildData &b
     return RHI::renderer->CreateGraphicsPSO(&psoDesc);
 }
 
-RHI::PipelineState *ShaderTemplate::CreateComputePSO(const PipelineBuildData &buildData, ShaderPermutation &permutation) const {
-    if (!PreparePermutationComputeShader(buildData, &permutation)) {
+RHI::PipelineState *ShaderTemplate::CreateComputePSO(const PipelineBuildData &buildData, RHI::Shader *stageShaders[to_int(RHI::ShaderStage::Count)]) {
+    if (!ShaderTemplate::PreparePipelineComputeShader(buildData, stageShaders)) {
         return nullptr;
     }
 
-    RHI::Shader *computeShader = permutation.shaders[to_int(RHI::ShaderStage::Compute)];
+    RHI::Shader *computeShader = stageShaders[to_int(RHI::ShaderStage::Compute)];
     return RHI::renderer->CreateComputePSO(computeShader);
 }
 
@@ -897,8 +1118,6 @@ void ShaderTemplate::Purge() {
 }
 
 void ShaderTemplate::ApplyPrepared(InternalData &newInternalData) {
-    ClearPermutationShaders();
-
     internalData.Swap(newInternalData);
 
     InvalidateCachedPipelines();
@@ -936,25 +1155,57 @@ void ShaderTemplate::InvalidateCachedPipelines() {
     }
 }
 
-void ShaderTemplate::ClearPermutationShaders() {
-    for (ShaderPermutation *permutation : permutations) {
-        permutation->ClearShaders();
-    }
-}
-
 void ShaderTemplate::ClearPermutations() {
-    ClearPermutationShaders();
-
-    permutations.DeleteContents(true);
+    permutationMap.DeleteContents(true);
 }
 
 ShaderTemplate::ShaderPermutation *ShaderTemplate::FindPermutation(ShaderPermutationKey permutationKey) const {
-    for (ShaderPermutation *permutation : permutations) {
-        if (permutation->key == permutationKey) {
-            return permutation;
-        }
+    const auto *entry = permutationMap.Get(permutationKey.hash);
+    if (entry) {
+        return entry->second;
     }
     return nullptr;
+}
+
+// baseDefines 나 featureDefines 에 define 이 있는지 확인한다.
+bool ShaderTemplate::HasTemplateDefine(const char *define, const ShaderFeatureSet &featureSet) const {
+    if (HasDefine(internalData.baseDefines, define)) {
+        return true;
+    }
+
+    for (int i = 0; i < to_int(ShaderFeature::Count); i++) {
+        ShaderFeature feature = static_cast<ShaderFeature>(i);
+        if (!featureSet.HasFeature(feature)) {
+            continue;
+        }
+
+        if (HasDefine(internalData.featureDefines[i], define)) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+bool ShaderTemplate::AppendFeatureSetDefines(BE1::StrArray &defines, const ShaderFeatureSet &featureSet) const {
+    bool addedAllDefines = true;
+
+    for (int i = 0; i < to_int(ShaderFeature::Count); i++) {
+        ShaderFeature feature = static_cast<ShaderFeature>(i);
+        if (!featureSet.HasFeature(feature)) {
+            continue;
+        }
+
+        for (const BE1::Str &define : internalData.featureDefines[i]) {
+            if (!AddDefine(defines, define.c_str())) {
+                BE_ERRLOG("ShaderTemplate::AppendFeatureSetDefines: feature define name '%s' conflicts with an existing define in shader template '%s'\n", define.c_str(), hashName.c_str());
+                addedAllDefines = false;
+                continue;
+            }
+        }
+    }
+
+    return addedAllDefines;
 }
 
 bool ShaderTemplate::PreparePipelineBuildData(ShaderPermutationKey permutationKey, PipelineBuildData &outBuildData) const {
@@ -967,9 +1218,15 @@ bool ShaderTemplate::PreparePipelineBuildData(ShaderPermutationKey permutationKe
         return false;
     }
 
-    outBuildData.permutationKey = srcPermutation->key;
-    outBuildData.permutationDefines = srcPermutation->defines;
-    shaderTemplateManager.CopyGlobalDefines(outBuildData.globalDefines);
+    // global defines + base defines + permutation defines + feature defines 순으로 컴파일 define 을 만든다.
+    shaderTemplateManager.CopyGlobalDefines(outBuildData.compileDefines);
+    AppendDefines(outBuildData.compileDefines, internalData.baseDefines);
+    AppendDefines(outBuildData.compileDefines, srcPermutation->defines);
+    if (!AppendFeatureSetDefines(outBuildData.compileDefines, srcPermutation->featureSet)) {
+        return false;
+    }
+
+    ShaderPermutationKey::NormalizePermutationDefines(outBuildData.compileDefines);
 
     for (int i = 0; i < to_int(RHI::ShaderStage::Count); i++) {
         outBuildData.stageSources[i] = internalData.stageSources[i];
@@ -978,41 +1235,33 @@ bool ShaderTemplate::PreparePipelineBuildData(ShaderPermutationKey permutationKe
     return true;
 }
 
-bool ShaderTemplate::PreparePipelinePSO(const ShaderPipelineState &pipelineState, const PipelineBuildData &buildData, RHI::PipelineState *&preparedPSO) const {
+bool ShaderTemplate::PreparePipelinePSO(const ShaderPipelineState &pipelineState, const PipelineBuildData &buildData, RHI::PipelineState *&preparedPSO) {
     preparedPSO = nullptr;
 
-    if (buildData.permutationKey != pipelineState.permutationKey) {
-        BE_WARNLOG("ShaderTemplate::PreparePipelinePSO: shader template '%s' has mismatched permutation 0x%llx, expected 0x%llx\n", GetHashName(), buildData.permutationKey.hash, pipelineState.permutationKey.hash);
-        return false;
-    }
+    RHI::Shader *stageShaders[to_int(RHI::ShaderStage::Count)] = {};
 
-    ShaderPermutation buildPermutation;
-    buildPermutation.key = buildData.permutationKey;
-    buildPermutation.defines = buildData.permutationDefines;
-
-    // NOTE: stage source 와 define 은 enqueue 시점에 PipelineBuildData 로 복사해둔 값을 사용한다.
-    // live permutation 의 shader 포인터를 로딩 스레드에서 그대로 가져다 쓰면, 메인 스레드가 permutation 을 무효화하는 순간 shader 수명이 엇갈릴 수 있다.
-    // 그래서 PSO 생성에 필요한 shader 는 이 함수 안에서 임시로 만들고, PSO 생성이 끝나면 바로 해제한다.
-    // 같은 permutation 내에서 pipeline state 만 다르게 해서 PSO 를 여러 개 만드는 경우, 매번 같은 shader 를 생성해야 한다.
-    // 비효율적이지만 어차피 CSO 를 이용하기도 하고 재활용할 때 필요한 동기화 로직까지 고려하면, 이방법도 나쁘지 않은 것 같다.
-    switch (pipelineState.type) {
+    switch (pipelineState.GetType()) {
     case ShaderPipelineState::Type::Graphics:
-        preparedPSO = CreateGraphicsPSO(buildData, buildPermutation, pipelineState.graphicsDesc);
+        preparedPSO = ShaderTemplate::CreateGraphicsPSO(buildData, pipelineState.GetGraphicsDesc(), stageShaders);
         break;
     case ShaderPipelineState::Type::Compute:
-        preparedPSO = CreateComputePSO(buildData, buildPermutation);
+        preparedPSO = ShaderTemplate::CreateComputePSO(buildData, stageShaders);
         break;
     default:
         assert(0);
         break;
     }
 
-    buildPermutation.ClearShaders();
+    for (int i = 0; i < to_int(RHI::ShaderStage::Count); ++i) {
+        if (stageShaders[i]) {
+            RHI::renderer->DestroyShader(stageShaders[i], true);
+            stageShaders[i] = nullptr;
+        }
+    }
     return preparedPSO != nullptr;
 }
 
-// 특정 shader stage 의 shader 를 준비한다.
-bool ShaderTemplate::PrepareStageShader(const PipelineBuildData &buildData, RHI::Shader *&shader, RHI::ShaderStage shaderStage, const BE1::StrArray &compileDefines) const {
+bool ShaderTemplate::PrepareStageShader(const PipelineBuildData &buildData, RHI::ShaderStage shaderStage, const BE1::StrArray &compileDefines, RHI::Shader *&outShader) {
     assert(shaderStage < RHI::ShaderStage::Count);
 
     const StageSource &stageSource = buildData.stageSources[to_int(shaderStage)];
@@ -1020,16 +1269,15 @@ bool ShaderTemplate::PrepareStageShader(const PipelineBuildData &buildData, RHI:
         return false;
     }
 
-    shader = RHI::renderer->CreateShaderFromFile(stageSource.shaderModel, stageSource.shaderStage, stageSource.filename, stageSource.entryPoint, compileDefines.Count() > 0 ? &compileDefines : nullptr);
-    if (!shader) {
+    outShader = RHI::renderer->CreateShaderFromFile(stageSource.shaderModel, stageSource.shaderStage, stageSource.filename, stageSource.entryPoint, compileDefines.Count() > 0 ? &compileDefines : nullptr);
+    if (!outShader) {
         BE_WARNLOG("ShaderTemplate::PrepareStageShader: failed to compile shader '%s'\n", stageSource.filename.c_str());
         return false;
     }
     return true;
 }
 
-// permutation 의 모든 graphics shaders 들을 준비한다.
-bool ShaderTemplate::PreparePermutationGraphicsShaders(const PipelineBuildData &buildData, ShaderPermutation *permutation) const {
+bool ShaderTemplate::PreparePipelineGraphicsShaders(const PipelineBuildData &buildData, RHI::Shader *stageShaders[to_int(RHI::ShaderStage::Count)]) {
     static constexpr RHI::ShaderStage GraphicsShaderStages[] = {
         RHI::ShaderStage::Vertex,
         RHI::ShaderStage::Hull,
@@ -1040,11 +1288,6 @@ bool ShaderTemplate::PreparePermutationGraphicsShaders(const PipelineBuildData &
 
     bool hasGraphicsStage = false;
 
-    // 컴파일 define 목록은 글로벌 define 과 permutation 의 define 을 합쳐서 만든다.
-    BE1::StrArray compileDefines = buildData.globalDefines;
-    AppendDefines(compileDefines, permutation->defines);
-    ShaderPermutationKey::NormalizePermutationDefines(compileDefines);
-
     for (RHI::ShaderStage shaderStage : GraphicsShaderStages) {
         const StageSource &stageSource = buildData.stageSources[to_int(shaderStage)];
         if (stageSource.shaderStage == RHI::ShaderStage::Count) {
@@ -1053,38 +1296,32 @@ bool ShaderTemplate::PreparePermutationGraphicsShaders(const PipelineBuildData &
 
         hasGraphicsStage = true;
 
-        RHI::Shader *&permutationShader = permutation->shaders[to_int(shaderStage)];
-        if (!permutationShader) {
-            if (!PrepareStageShader(buildData, permutationShader, shaderStage, compileDefines)) {
+        RHI::Shader *&stageShader = stageShaders[to_int(shaderStage)];
+        if (!stageShader) {
+            if (!PrepareStageShader(buildData, shaderStage, buildData.compileDefines, stageShader)) {
                 return false;
             }
         }
     }
 
     if (!hasGraphicsStage) {
-        BE_WARNLOG("ShaderTemplate::PreparePermutationGraphicsShaders: shader template '%s' has no graphics shader stages for permutation 0x%llx\n", GetHashName(), permutation->key.hash);
+        BE_WARNLOG("ShaderTemplate::PreparePipelineGraphicsShaders: no graphics shader stages\n");
         return false;
     }
 
     return true;
 }
 
-// permutation 의 compute shader 를 준비한다.
-bool ShaderTemplate::PreparePermutationComputeShader(const PipelineBuildData &buildData, ShaderPermutation *permutation) const {
+bool ShaderTemplate::PreparePipelineComputeShader(const PipelineBuildData &buildData, RHI::Shader *stageShaders[to_int(RHI::ShaderStage::Count)]) {
     const StageSource &stageSource = buildData.stageSources[to_int(RHI::ShaderStage::Compute)];
     if (stageSource.shaderStage == RHI::ShaderStage::Count) {
-        BE_WARNLOG("ShaderTemplate::PreparePermutationComputeShader: shader template '%s' has no compute shader stage for permutation 0x%llx\n", GetHashName(), permutation->key.hash);
         return false;
     }
 
-    // 컴파일 define 목록은 글로벌 define 과 permutation 의 define 을 합쳐서 만든다.
-    BE1::StrArray compileDefines = buildData.globalDefines;
-    AppendDefines(compileDefines, permutation->defines);
-    ShaderPermutationKey::NormalizePermutationDefines(compileDefines);
-
-    RHI::Shader *&permutationShader = permutation->shaders[to_int(RHI::ShaderStage::Compute)];
-    if (!permutationShader) {
-        if (!PrepareStageShader(buildData, permutationShader, RHI::ShaderStage::Compute, compileDefines)) {
+    RHI::Shader *&stageShader = stageShaders[to_int(RHI::ShaderStage::Compute)];
+    if (!stageShader) {
+        if (!PrepareStageShader(buildData, RHI::ShaderStage::Compute, buildData.compileDefines, stageShader)) {
+            BE_WARNLOG("ShaderTemplate::PreparePipelineComputeShader: no compute shader stage\n");
             return false;
         }
     }

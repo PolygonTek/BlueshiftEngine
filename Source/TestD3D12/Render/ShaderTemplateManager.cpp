@@ -218,9 +218,6 @@ void ShaderTemplateManager::InvalidateShaderTemplateCaches() {
             continue;
         }
 
-        // 셰이더를 모두 삭제
-        shaderTemplate->ClearPermutationShaders();
-
         // 캐시된 파이프라인을 모두 무효화 후 재생성 요청
         shaderTemplate->InvalidateCachedPipelines();
     }
@@ -248,22 +245,73 @@ void ShaderTemplateManager::CleanExpiredShaderTemplates() {
 }
 
 void ShaderTemplateManager::CreateEngineShaderTemplates() {
+#define ENGINE_SHADER_TEMPLATE(...) #__VA_ARGS__
+
+    static constexpr const char *fullScreenImageShaderTemplateText = ENGINE_SHADER_TEMPLATE(
+    {
+        stages {
+            vertex SM_6_0 "FullScreenTriangle.hlsl" "VSMain"
+            fragment SM_6_0 "FullScreenTriangle.hlsl" "PSMain"
+        }
+    }
+    );
+
+    static constexpr const char *unlitShaderTemplateText = ENGINE_SHADER_TEMPLATE(
+    {
+        stages {
+            vertex SM_6_0 "Unlit.hlsl" "VSMain"
+            fragment SM_6_0 "Unlit.hlsl" "PSMain"
+        }
+
+        features {
+            gpuInstancing {
+                USE_INSTANCING=1
+            }
+        }
+    }
+    );
+
+    static constexpr const char *litShaderTemplateText = ENGINE_SHADER_TEMPLATE(
+    {
+        stages {
+            vertex SM_6_0 "Lit.hlsl" "VSMain"
+            fragment SM_6_0 "Lit.hlsl" "PSMain"
+        }
+
+        features {
+            gpuInstancing {
+                USE_INSTANCING=1
+            }
+        }
+    }
+    );
+
+#undef ENGINE_SHADER_TEMPLATE
+
+    const char *baseDir = "Source/TestD3D12/Shaders";
+
     fullscreenImageShaderTemplate = AllocShaderTemplate("_fullScreenImageShader");
-    fullscreenImageShaderTemplate->AddStage(RHI::ShaderStage::Vertex, RHI::ShaderModel::SM_6_0, "Source/TestD3D12/Shaders/FullScreenTriangle.hlsl", "VSMain");
-    fullscreenImageShaderTemplate->AddStage(RHI::ShaderStage::Fragment, RHI::ShaderModel::SM_6_0, "Source/TestD3D12/Shaders/FullScreenTriangle.hlsl", "PSMain");
+    if (!fullscreenImageShaderTemplate->Create(fullScreenImageShaderTemplateText, baseDir)) {
+        BE_FATALERROR("ShaderTemplateManager::CreateEngineShaderTemplates: failed to create fullscreen image shader template");
+    }
     fullscreenImageShaderTemplate->AddPermutation({});
 
+    ShaderFeatureSet instancingFeatureSet;
+    instancingFeatureSet.EnableFeature(ShaderFeature::GpuInstancing);
+
     unlitShaderTemplate = AllocShaderTemplate("_unlitShader");
-    unlitShaderTemplate->AddStage(RHI::ShaderStage::Vertex, RHI::ShaderModel::SM_6_0, "Source/TestD3D12/Shaders/Unlit.hlsl", "VSMain");
-    unlitShaderTemplate->AddStage(RHI::ShaderStage::Fragment, RHI::ShaderModel::SM_6_0, "Source/TestD3D12/Shaders/Unlit.hlsl", "PSMain");
+    if (!unlitShaderTemplate->Create(unlitShaderTemplateText, baseDir)) {
+        BE_FATALERROR("ShaderTemplateManager::CreateEngineShaderTemplates: failed to create unlit shader template");
+    }
     unlitShaderTemplate->AddPermutation({});
-    unlitShaderTemplate->AddPermutation({ "USE_INSTANCING=1" });
+    unlitShaderTemplate->AddPermutation({}, instancingFeatureSet);
 
     litShaderTemplate = AllocShaderTemplate("_litShader");
-    litShaderTemplate->AddStage(RHI::ShaderStage::Vertex, RHI::ShaderModel::SM_6_0, "Source/TestD3D12/Shaders/Lit.hlsl", "VSMain");
-    litShaderTemplate->AddStage(RHI::ShaderStage::Fragment, RHI::ShaderModel::SM_6_0, "Source/TestD3D12/Shaders/Lit.hlsl", "PSMain");
+    if (!litShaderTemplate->Create(litShaderTemplateText, baseDir)) {
+        BE_FATALERROR("ShaderTemplateManager::CreateEngineShaderTemplates: failed to create lit shader template");
+    }
     litShaderTemplate->AddPermutation({});
-    litShaderTemplate->AddPermutation({ "USE_INSTANCING=1" });
+    litShaderTemplate->AddPermutation({}, instancingFeatureSet);
 }
 
 void ShaderTemplateManager::DestroyEngineShaderTemplates() {

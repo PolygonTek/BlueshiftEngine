@@ -17,65 +17,11 @@
 #include "ShaderTemplate.h"
 #include "LoadingSystem.h"
 
-void ShaderPermutationKey::NormalizePermutationDefines(BE1::StrArray &defines) {
-    // Remove empty defines.
-    for (int i = defines.Count() - 1; i >= 0; --i) {
-        if (defines[i].IsEmpty()) {
-            defines.RemoveIndexFast(i);
-        }
-    }
-
-    // Keep permutation keys deterministic.
-    defines.Sort();
-
-    // Remove duplicated defines.
-    for (int i = 1; i < defines.Count();) {
-        if (defines[i - 1] == defines[i]) {
-            defines.RemoveIndex(i);
-            continue;
-        }
-        i++;
-    }
-}
-
-ShaderPermutationKey ShaderPermutationKey::GeneratePermutationKey(const BE1::StrArray &defines) {
-    if (defines.Count() == 0) {
-        return ShaderPermutationKey();
-    }
-
-    uint64_t hash = 1469598103934665603ull;
-    for (const BE1::Str &define : defines) {
-        hash = hash_combine(hash, define.ToHash64());
-    }
-
-    return ShaderPermutationKey(hash);
-}
-
-ShaderPermutationKey ShaderPermutationKey::FromDefines(std::initializer_list<const char *> defines) {
-    BE1::StrArray permutationDefines;
-    for (const char *defineName : defines) {
-        if (defineName && defineName[0]) {
-            permutationDefines.Append(defineName);
-        }
-    }
-
-    ShaderPermutationKey::NormalizePermutationDefines(permutationDefines);
-    return ShaderPermutationKey::GeneratePermutationKey(permutationDefines);
-}
-
-ShaderPermutationKey ShaderPermutationKey::FromDefines(const BE1::StrArray &defines) {
-    BE1::StrArray permutationDefines = defines;
-    ShaderPermutationKey::NormalizePermutationDefines(permutationDefines);
-    return ShaderPermutationKey::GeneratePermutationKey(permutationDefines);
-}
-
 void ShaderPipelineState::Purge() {
     if (pso) {
         RHI::renderer->DestroyPSO(pso);
         pso = nullptr;
     }
-
-    state = State::Empty;
 }
 
 void ShaderPipelineState::Reset() {
@@ -83,6 +29,13 @@ void ShaderPipelineState::Reset() {
     state = State::Empty;
 
     Purge();
+}
+
+void ShaderPipelineState::SetPSO(RHI::PipelineState *newPso) {
+    if (pso) {
+        RHI::renderer->DestroyPSO(pso);
+    }
+    pso = newPso;
 }
 
 void ShaderPipelineState::BuildAsync(const std::shared_ptr<ShaderTemplate> &shaderTemplate) {
@@ -113,7 +66,7 @@ bool ShaderPipelineState::EnqueueBuild(const std::shared_ptr<ShaderTemplate> &sh
         return false;
     }
 
-    if (!loadingSystem.EnqueueShaderPipelineBuild(shaderTemplate, shared_from_this(), buildData, newSerial, LoadingSystem::LoadPriority::High)) {
+    if (!loadingSystem.EnqueueShaderPipelineBuild(shared_from_this(), buildData, newSerial, LoadingSystem::LoadPriority::High)) {
         return false;
     }
     return true;

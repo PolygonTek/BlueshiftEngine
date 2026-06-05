@@ -179,13 +179,17 @@ void RenderContext::InitPSO() {
     unlitAlphaBlendPSO = shaderTemplateManager.unlitShaderTemplate->GetGraphicsPipeline(ShaderPermutationKey(), pipelineDesc);
     litAlphaBlendPSO = shaderTemplateManager.litShaderTemplate->GetGraphicsPipeline(ShaderPermutationKey(), pipelineDesc);
 
+    ShaderFeatureSet instancingFeatureSet;
+    instancingFeatureSet.EnableFeature(ShaderFeature::GpuInstancing);
+    ShaderPermutationKey instancingPermutationKey = ShaderPermutationKey::FromDefines({}, instancingFeatureSet);
+
     pipelineDesc.blendStateType = RHI::BlendStateType::Opaque;
-    unlitInstancedPSO = shaderTemplateManager.unlitShaderTemplate->GetGraphicsPipeline(ShaderPermutationKey::FromDefines({ "USE_INSTANCING=1" }), pipelineDesc);
-    litInstancedPSO = shaderTemplateManager.litShaderTemplate->GetGraphicsPipeline(ShaderPermutationKey::FromDefines({ "USE_INSTANCING=1" }), pipelineDesc);
+    unlitInstancedPSO = shaderTemplateManager.unlitShaderTemplate->GetGraphicsPipeline(instancingPermutationKey, pipelineDesc);
+    litInstancedPSO = shaderTemplateManager.litShaderTemplate->GetGraphicsPipeline(instancingPermutationKey, pipelineDesc);
 
     pipelineDesc.blendStateType = RHI::BlendStateType::AlphaBlend;
-    unlitInstancedAlphaBlendPSO = shaderTemplateManager.unlitShaderTemplate->GetGraphicsPipeline(ShaderPermutationKey::FromDefines({ "USE_INSTANCING=1" }), pipelineDesc);
-    litInstancedAlphaBlendPSO = shaderTemplateManager.litShaderTemplate->GetGraphicsPipeline(ShaderPermutationKey::FromDefines({ "USE_INSTANCING=1" }), pipelineDesc);
+    unlitInstancedAlphaBlendPSO = shaderTemplateManager.unlitShaderTemplate->GetGraphicsPipeline(instancingPermutationKey, pipelineDesc);
+    litInstancedAlphaBlendPSO = shaderTemplateManager.litShaderTemplate->GetGraphicsPipeline(instancingPermutationKey, pipelineDesc);
 }
 
 void RenderContext::InitFullScreenTrianglePSO() {

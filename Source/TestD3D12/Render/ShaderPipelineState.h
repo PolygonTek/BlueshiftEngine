@@ -15,24 +15,10 @@
 #pragma once
 
 #include "RHI.h"
+#include "ShaderPermutationKey.h"
 
+class ShaderTemplate;
 class LoadingSystem;
-
-struct ShaderPermutationKey {
-    ShaderPermutationKey() = default;
-    explicit ShaderPermutationKey(uint64_t hash) : hash(hash) {}
-
-    bool                            operator==(const ShaderPermutationKey &rhs) const { return hash == rhs.hash; }
-    bool                            operator!=(const ShaderPermutationKey &rhs) const { return hash != rhs.hash; }
-
-    static ShaderPermutationKey     FromDefines(std::initializer_list<const char *> defines);
-    static ShaderPermutationKey     FromDefines(const BE1::StrArray &defines);
-
-    static void                     NormalizePermutationDefines(BE1::StrArray &defines);
-    static ShaderPermutationKey     GeneratePermutationKey(const BE1::StrArray &defines);
-
-    uint64_t                        hash = 0;
-};
 
 struct ShaderPipelineDesc {
     const RHI::InputLayout *        inputLayout = nullptr;
@@ -53,7 +39,6 @@ struct ShaderPipelineDesc {
 */
 
 class ShaderPipelineState : public std::enable_shared_from_this<ShaderPipelineState> {
-    friend class ShaderTemplate;
     friend class LoadingSystem;
 
 public:
@@ -70,6 +55,8 @@ public:
         Failed
     };
 
+    ShaderPipelineState(Type type, ShaderPermutationKey permutationKey, const ShaderPipelineDesc &graphicsDesc);
+    ShaderPipelineState(Type type, ShaderPermutationKey permutationKey);
     ~ShaderPipelineState() { Purge(); }
 
     Type                            GetType() const { return type; }
@@ -81,10 +68,10 @@ public:
     uint32_t                        GetBuildSerial() const { return buildSerial.load(); }
     uint32_t                        BumpBuildSerial() { return buildSerial.fetch_add(1) + 1; }
 
-    uint64_t                        GetHash() const { return hash; }
     ShaderPermutationKey            GetPermutationKey() const { return permutationKey; }
     const ShaderPipelineDesc &      GetGraphicsDesc() const { assert(type == Type::Graphics); return graphicsDesc; }
     RHI::PipelineState *            GetPSO() const { return pso; }
+    void                            SetPSO(RHI::PipelineState *newPso);
 
     void                            Reset();
 
@@ -92,24 +79,20 @@ public:
     void                            EnsureBuildAsync(const std::shared_ptr<ShaderTemplate> &shaderTemplate);
 
 private:
-    ShaderPipelineState(Type type, uint64_t hash, ShaderPermutationKey permutationKey, const ShaderPipelineDesc &graphicsDesc);
-    ShaderPipelineState(Type type, uint64_t hash, ShaderPermutationKey permutationKey);
-
     void                            Purge();
     bool                            EnqueueBuild(const std::shared_ptr<ShaderTemplate> &shaderTemplate);
 
-    const Type                      type = Type::Graphics;
+    const Type                      type = Type::Graphics;  // 생성자에서 한번 정해지면 변하지 않는다.
+    const ShaderPermutationKey      permutationKey;         // 생성자에서 한번 정해지면 변하지 않는다.
+    ShaderPipelineDesc              graphicsDesc;           // 생성자에서 한번 정해지면 변하지 않는다.
+    RHI::InputLayout                inputLayout;            // 생성자에서 한번 정해지면 변하지 않는다.
     std::atomic<State>              state = State::Empty;
     std::atomic<uint32_t>           buildSerial = 0;
-    uint64_t                        hash = 0;
-    const ShaderPermutationKey      permutationKey;
-    ShaderPipelineDesc              graphicsDesc;       // 생성자에서 한번 정해지면 변하지 않는다.
-    RHI::InputLayout                inputLayout;        // 생성자에서 한번 정해지면 변하지 않는다.
     RHI::PipelineState *            pso = nullptr;
 };
 
-BE_INLINE ShaderPipelineState::ShaderPipelineState(Type type, uint64_t hash, ShaderPermutationKey permutationKey, const ShaderPipelineDesc &graphicsPipelineDesc) :
-    type(type), hash(hash), permutationKey(permutationKey), graphicsDesc(graphicsPipelineDesc) {
+BE_INLINE ShaderPipelineState::ShaderPipelineState(Type type, ShaderPermutationKey permutationKey, const ShaderPipelineDesc &graphicsPipelineDesc) :
+    type(type), permutationKey(permutationKey), graphicsDesc(graphicsPipelineDesc) {
     assert(type == Type::Graphics);
 
     if (graphicsPipelineDesc.inputLayout) {
@@ -118,7 +101,7 @@ BE_INLINE ShaderPipelineState::ShaderPipelineState(Type type, uint64_t hash, Sha
     }
 }
 
-BE_INLINE ShaderPipelineState::ShaderPipelineState(Type type, uint64_t hash, ShaderPermutationKey permutationKey) :
-    type(type), hash(hash), permutationKey(permutationKey) {
+BE_INLINE ShaderPipelineState::ShaderPipelineState(Type type, ShaderPermutationKey permutationKey) :
+    type(type), permutationKey(permutationKey) {
     assert(type == Type::Compute);
 }

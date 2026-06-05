@@ -225,8 +225,8 @@ bool LoadingSystem::EnqueueAnimLoad(std::shared_ptr<Anim> anim, const char *file
     return true;
 }
 
-bool LoadingSystem::EnqueueShaderPipelineBuild(std::shared_ptr<ShaderTemplate> shaderTemplate, std::shared_ptr<ShaderPipelineState> pipelineState, const ShaderTemplate::PipelineBuildData &buildData, uint32_t serial, LoadPriority priority) {
-    if (!shaderTemplate || !pipelineState) {
+bool LoadingSystem::EnqueueShaderPipelineBuild(std::shared_ptr<ShaderPipelineState> pipelineState, const ShaderTemplate::PipelineBuildData &buildData, uint32_t serial, LoadPriority priority) {
+    if (!pipelineState) {
         return false;
     }
 
@@ -238,7 +238,6 @@ bool LoadingSystem::EnqueueShaderPipelineBuild(std::shared_ptr<ShaderTemplate> s
         }
 
         LoadRequest request;
-        request.shaderTemplate = shaderTemplate;
         request.pipelineState = pipelineState;
         request.shaderPipelineBuildData = buildData;
         request.serial = serial;
@@ -424,7 +423,7 @@ void LoadingSystem::Run() {
             ProcessSkeletonLoadRequest(request);
         } else if (request.anim) {
             ProcessAnimLoadRequest(request);
-        } else if (request.shaderTemplate && request.pipelineState) {
+        } else if (request.pipelineState) {
             ProcessShaderPipelineBuildRequest(request);
         }
     }
@@ -433,7 +432,7 @@ void LoadingSystem::Run() {
 bool LoadingSystem::ProcessTextureLoadRequest(const LoadRequest &request) {
     PROFILER_CPU_SCOPED_EVENT("LoadingSystem::ProcessTextureLoadRequest");
 
-    // 로딩 요청을 처리하려는 사이에 로딩이 취소되었거나 시리얼이 변경되었다면, 로딩을 취소한다.
+    // 로딩 요청을 처리하려는 사이에 로딩이 취소되었거나 시리얼이 변경되었다면, 로딩을 하지 않는다.
     if (!request.texture->IsLoading() || request.serial != request.texture->GetLoadSerial()) {
         return false;
     }
@@ -496,7 +495,7 @@ bool LoadingSystem::ProcessTextureLoadRequest(const LoadRequest &request) {
 bool LoadingSystem::ProcessTextureStreamingReplacementRequest(const LoadRequest &request) {
     PROFILER_CPU_SCOPED_EVENT("LoadingSystem::ProcessTextureStreamingReplacementRequest");
 
-    // 로딩 요청을 처리하려는 사이에 시리얼이 변경되었다면, 로딩을 취소한다.
+    // 로딩 요청을 처리하려는 사이에 시리얼이 변경되었다면, 로딩을 하지 않는다.
     if (request.serial != request.texture->GetLoadSerial()) {
         return false;
     }
@@ -544,7 +543,7 @@ bool LoadingSystem::ProcessTextureStreamingReplacementRequest(const LoadRequest 
 bool LoadingSystem::ProcessMeshLoadRequest(const LoadRequest &request) {
     PROFILER_CPU_SCOPED_EVENT("LoadingSystem::ProcessMeshLoadRequest");
 
-    // 로딩 요청을 처리하려는 사이에 로딩이 취소되었거나 시리얼이 변경되었다면, 로딩을 취소한다.
+    // 로딩 요청을 처리하려는 사이에 로딩이 취소되었거나 시리얼이 변경되었다면, 로딩을 하지 않는다.
     if (!request.mesh->IsLoading() || request.serial != request.mesh->GetLoadSerial()) {
         return false;
     }
@@ -562,7 +561,7 @@ bool LoadingSystem::ProcessMeshLoadRequest(const LoadRequest &request) {
 bool LoadingSystem::ProcessSkeletonLoadRequest(const LoadRequest &request) {
     PROFILER_CPU_SCOPED_EVENT("LoadingSystem::ProcessSkeletonLoadRequest");
 
-    // 로딩 요청을 처리하려는 사이에 로딩이 취소되었거나 시리얼이 변경되었다면, 로딩을 취소한다.
+    // 로딩 요청을 처리하려는 사이에 로딩이 취소되었거나 시리얼이 변경되었다면, 로딩을 하지 않는다.
     if (!request.skeleton->IsLoading() || request.serial != request.skeleton->GetLoadSerial()) {
         return false;
     }
@@ -580,7 +579,7 @@ bool LoadingSystem::ProcessSkeletonLoadRequest(const LoadRequest &request) {
 bool LoadingSystem::ProcessAnimLoadRequest(const LoadRequest &request) {
     PROFILER_CPU_SCOPED_EVENT("LoadingSystem::ProcessAnimLoadRequest");
 
-    // 로딩 요청을 처리하려는 사이에 로딩이 취소되었거나 시리얼이 변경되었다면, 로딩을 취소한다.
+    // 로딩 요청을 처리하려는 사이에 로딩이 취소되었거나 시리얼이 변경되었다면, 로딩을 하지 않는다.
     if (!request.anim->IsLoading() || request.serial != request.anim->GetLoadSerial()) {
         return false;
     }
@@ -598,7 +597,7 @@ bool LoadingSystem::ProcessAnimLoadRequest(const LoadRequest &request) {
 bool LoadingSystem::ProcessShaderPipelineBuildRequest(const LoadRequest &request) {
     PROFILER_CPU_SCOPED_EVENT("LoadingSystem::ProcessShaderPipelineBuildRequest");
 
-    // 빌딩 요청을 처리하려는 사이에 빌딩이 취소되었거나 시리얼이 변경되었다면, 빌딩을 취소한다.
+    // 빌딩 요청을 처리하려는 사이에 빌딩이 취소되었거나 시리얼이 변경되었다면, 빌딩을 하지 않는다.
     if (!request.pipelineState->IsBuilding() || request.serial != request.pipelineState->GetBuildSerial()) {
         return false;
     }
@@ -606,7 +605,7 @@ bool LoadingSystem::ProcessShaderPipelineBuildRequest(const LoadRequest &request
     LoadCompletion completion;
     completion.pipelineState = request.pipelineState;
     completion.serial = request.serial;
-    completion.success = request.shaderTemplate->PreparePipelinePSO(*request.pipelineState, request.shaderPipelineBuildData, completion.pso);
+    completion.success = ShaderTemplate::PreparePipelinePSO(*request.pipelineState, request.shaderPipelineBuildData, completion.pso);
 
     PushCompletion(std::move(completion));
     return true;
@@ -789,11 +788,7 @@ bool LoadingSystem::ProcessShaderPipelineBuildCompletion(LoadCompletion &complet
     }
 
     // 준비된 PSO 로 교체한다.
-    RHI::PipelineState *oldPSO = pipelineState->pso;
-    pipelineState->pso = completion.pso;
-    if (oldPSO) {
-        RHI::renderer->DestroyPSO(oldPSO);
-    }
+    pipelineState->SetPSO(completion.pso);
     completion.pso = nullptr;
 
     // 빌드가 성공했으므로 Ready 상태로 바꿔준다.

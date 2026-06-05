@@ -85,6 +85,10 @@ set(SRC_FILES
     Render/Material.h
     Render/Material.cpp
     Render/MaterialManager.cpp
+    Render/ShaderFeatureSet.h
+    Render/ShaderFeatureSet.cpp
+    Render/ShaderPermutationKey.h
+    Render/ShaderPermutationKey.cpp
     Render/ShaderPipelineState.h
     Render/ShaderPipelineState.cpp
     Render/ShaderTemplate.h
