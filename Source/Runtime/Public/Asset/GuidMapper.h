@@ -42,6 +42,9 @@ public:
                             /// Removes hash using path.
     bool                    Remove(const Str &filePath);
 
+                            /// nameOrGuid 가 GUID 문자열인 경우 GUID 를 리턴, 일반 filePath 인 경우 매핑하여 새로운 GUID 를 리턴
+    Guid                    GetOrCreateGuid(const Str &filePathOrGuid);
+
                             /// Reads GUID map from file.
     bool                    Read(const char *filename);
 
@@ -115,7 +118,6 @@ BE_INLINE const Str GuidMapper::Get(const Guid &guid) const {
     if (!kv) {
         return "";
     }
-
     return kv->second;
 }
 
@@ -124,7 +126,6 @@ BE_INLINE const Guid GuidMapper::Get(const Str &filePath) const {
     if (!kv) {
         return Guid();
     }
-
     return kv->second;
 }
 
@@ -142,7 +143,6 @@ BE_INLINE bool GuidMapper::Remove(const Guid &guid) {
         filePathToGuidMap.Remove(filePath);
         return true;
     }
-
     return false;
 }
 
@@ -153,7 +153,6 @@ BE_INLINE bool GuidMapper::Remove(const Str &filePath) {
         guidToFilePathMap.Remove(guid);
         return true;
     }
-    
     return false;
 }
 

@@ -34,6 +34,16 @@ Guid Guid::CreateGuid() {
     return Guid(randomBits | (sequentialBits << 16), (day - 1) | (hour << 8) | (month << 16) | (sec << 24), msec | (min << 16), (year - 1600) ^ cycles);
 }
 
+static bool IsHexString(const Str &str) {
+    for (int i = 0; i < str.Length(); i++) {
+        const char c = str[i];
+        if (!((c >= '0' && c <= '9') || (c >= 'a' && c <= 'f') || (c >= 'A' && c <= 'F'))) {
+            return false;
+        }
+    }
+    return true;
+}
+
 bool Guid::SetFromString(const char *s) {
     Str guidStr(s);
     Str normalizedGuidStr;
@@ -86,8 +96,14 @@ bool Guid::SetFromString(const char *s) {
             normalizedGuidStr += guidStr.Mid(15, 4);
             normalizedGuidStr += guidStr.Mid(20, 4);
             normalizedGuidStr += guidStr.Mid(25, 12);
+        } else {
+            return false;
         }
     } else {
+        return false;
+    }
+
+    if (!IsHexString(normalizedGuidStr)) {
         return false;
     }
 

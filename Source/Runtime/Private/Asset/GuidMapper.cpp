@@ -73,6 +73,28 @@ Guid        GuidMapper::defaultAnimControllerGuid(0, 0, 0, 700);
 // predefined sound GUID
 Guid        GuidMapper::defaultSoundGuid(0, 0, 0, 800);
 
+Guid GuidMapper::GetOrCreateGuid(const BE1::Str &filePathOrGuid) {
+    if (filePathOrGuid.IsEmpty()) {
+        return Guid();
+    }
+
+    // 먼저 filePathOrGuid 이 GUID 문자열인지 확인해본다.
+    Guid guid;
+    if (guid.SetFromString(filePathOrGuid.c_str())) {
+        return guid;
+    }
+
+    // filePathOrGuid 이 GUID 문자열이 아닌 경우, filePathOrGuid 으로 GUID 를 가져온다.
+    guid = Get(filePathOrGuid);
+    if (guid.IsZero()) {
+        // 없는 filePath 인 경우, 새로운 GUID 를 생성하여 매핑한다.
+        guid = BE1::Guid::CreateGuid();
+        Set(guid, filePathOrGuid);
+    }
+
+    return guid;
+}
+
 bool GuidMapper::Read(const char *filename) {
     File *file = fileSystem.OpenFileRead(filename, false);
     if (!file) {
