@@ -207,13 +207,11 @@ public:
     void                                FreeBindlessResourceDescriptor(uint32_t bindlessIndex);
     D3D12_CPU_DESCRIPTOR_HANDLE         GetBindlessResourceCPUDescriptorHandle(uint32_t bindlessIndex) const;
     D3D12_GPU_DESCRIPTOR_HANDLE         GetBindlessResourceGPUDescriptorHandle(uint32_t bindlessIndex) const;
-    D3D12_GPU_DESCRIPTOR_HANDLE         GetBindlessResourceBaseGPUDescriptorHandle() const;
 
     uint32_t                            AllocBindlessSamplerDescriptor();
     void                                FreeBindlessSamplerDescriptor(uint32_t bindlessIndex);
     D3D12_CPU_DESCRIPTOR_HANDLE         GetBindlessSamplerCPUDescriptorHandle(uint32_t bindlessIndex) const;
     D3D12_GPU_DESCRIPTOR_HANDLE         GetBindlessSamplerGPUDescriptorHandle(uint32_t bindlessIndex) const;
-    D3D12_GPU_DESCRIPTOR_HANDLE         GetBindlessSamplerBaseGPUDescriptorHandle() const;
 
     void                                CheckFeatures();
 
@@ -311,10 +309,10 @@ public:
     bool                                supportsUAVFormatCommon = false;
     std::unordered_set<DXGI_FORMAT>     optionalUAVFormatMap;
 
-    D3D12DescriptorPool *               resCpuDescriptorPool = nullptr;
-    D3D12DescriptorPool *               rtvCpuDescriptorPool = nullptr;
-    D3D12DescriptorPool *               dsvCpuDescriptorPool = nullptr;
-    D3D12DescriptorPool *               samCpuDescriptorPool = nullptr;
+    D3D12DescriptorPool *               resStagingDescriptorPool = nullptr;
+    D3D12DescriptorPool *               samStagingDescriptorPool = nullptr;
+    D3D12DescriptorPool *               rtvDescriptorPool = nullptr;
+    D3D12DescriptorPool *               dsvDescriptorPool = nullptr;
 
     D3D12ShaderVisibleDescriptorHeap    resShaderVisibleDescriptorHeap;
     D3D12ShaderVisibleDescriptorHeap    samShaderVisibleDescriptorHeap;

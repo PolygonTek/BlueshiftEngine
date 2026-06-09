@@ -22,7 +22,7 @@
 void D3D12ConstantBuffer::Release() {
     if (dynamicBlockIndex == -1) {
         if (descriptorHandle.ptr != 0) {
-            D3D12Renderer::GetRenderer()->resCpuDescriptorPool->Free(descriptorHandle);
+            D3D12Renderer::GetRenderer()->resStagingDescriptorPool->Free(descriptorHandle);
             descriptorHandle = {};
         }
     }
@@ -48,7 +48,7 @@ RHI::ConstantBuffer* D3D12Renderer::CreateConstantBuffer(RHI::BufferUsage usage,
 
     // 디스크립터 핸들 생성
     D3D12_CPU_DESCRIPTOR_HANDLE descriptorHandle = {};
-    if (!resCpuDescriptorPool->Alloc(&descriptorHandle, nullptr)) {
+    if (!resStagingDescriptorPool->Alloc(&descriptorHandle, nullptr)) {
         DestroyBuffer(buffer);
         return nullptr;
     }

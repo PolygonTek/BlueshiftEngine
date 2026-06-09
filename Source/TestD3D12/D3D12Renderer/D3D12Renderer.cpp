@@ -281,18 +281,19 @@ void D3D12Renderer::Init(const void *mainWindowHandle) {
 
     // CPU 접근 전용 디스크립터 풀 생성
     // NOTE: non-shader visible 디스크립터 힙은 개수 제한을 받지 않는다. 더 커도 상관이 없음.
-    resCpuDescriptorPool = new D3D12DescriptorPool(device, D3D12DescriptorPool::Type::CBV_SRV_UAV, 1000000, false);
-    rtvCpuDescriptorPool = new D3D12DescriptorPool(device, D3D12DescriptorPool::Type::RTV, 16, false);
-    dsvCpuDescriptorPool = new D3D12DescriptorPool(device, D3D12DescriptorPool::Type::DSV, 16, false);
-    samCpuDescriptorPool = new D3D12DescriptorPool(device, D3D12DescriptorPool::Type::Sampler, 2048, false);
+    resStagingDescriptorPool = new D3D12DescriptorPool(device, D3D12DescriptorPool::Type::CBV_SRV_UAV, 1000000, false);
+    samStagingDescriptorPool = new D3D12DescriptorPool(device, D3D12DescriptorPool::Type::Sampler, 2048, false);
+    rtvDescriptorPool = new D3D12DescriptorPool(device, D3D12DescriptorPool::Type::RTV, 16, false);
+    dsvDescriptorPool = new D3D12DescriptorPool(device, D3D12DescriptorPool::Type::DSV, 16, false);
 
-    // shader-visible 디스크립터 힙 생성
+    // shader-visible 리소스/샘플러 디스크립터 힙 생성
     resShaderVisibleDescriptorHeap.Init(device, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, MaxShaderVisibleResourceDescriptors);
     samShaderVisibleDescriptorHeap.Init(device, D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER, MaxShaderVisibleSamplerDescriptors);
 
-    // shader-visible 리소스 디스크립터 힙의 [0, MaxBindlessResourceDescriptors) 영역은 bindless 디스크립터로 사용
-    // 0 번 인덱스는 NullIndex 로 예약한다.
+    // shader-visible 리소스 디스크립터 힙의 [0, MaxBindlessResourceDescriptors) 영역은 bindless 디스크립터로 사용 (0번 인덱스는 실제로는 invalid index 로 사용)
     bindlessResDescriptorAllocator.Init({ &resShaderVisibleDescriptorHeap, 0, MaxBindlessResourceDescriptors });
+
+    // shader-visible 샘플러 디스크립터 힙의 [0, MaxBindlessSamplerDescriptors) 영역은 bindless 디스크립터로 사용 (0번 인덱스는 실제로는 invalid index 로 사용)
     bindlessSamDescriptorAllocator.Init({ &samShaderVisibleDescriptorHeap, 0, MaxBindlessSamplerDescriptors });
 
     // shader cache 디렉토리 초기화
@@ -539,13 +540,13 @@ void D3D12Renderer::Shutdown() {
     BE1::PlatformMutex::Destroy(psoMapMutex);
     psoMapMutex = nullptr;
 
-    SAFE_DELETE(resCpuDescriptorPool);
-    SAFE_DELETE(rtvCpuDescriptorPool);
-    SAFE_DELETE(dsvCpuDescriptorPool);
-    SAFE_DELETE(samCpuDescriptorPool);
+    SAFE_DELETE(resStagingDescriptorPool);
+    SAFE_DELETE(samStagingDescriptorPool);
+    SAFE_DELETE(rtvDescriptorPool);
+    SAFE_DELETE(dsvDescriptorPool);
 
     bindlessSamDescriptorAllocator.Shutdown();
-    bindlessResDescriptorAllocator.Shutdown();    
+    bindlessResDescriptorAllocator.Shutdown();
     samShaderVisibleDescriptorHeap.Shutdown();
     resShaderVisibleDescriptorHeap.Shutdown();
 
@@ -694,10 +695,6 @@ D3D12_GPU_DESCRIPTOR_HANDLE D3D12Renderer::GetBindlessResourceGPUDescriptorHandl
     return bindlessResDescriptorAllocator.GetGPUDescriptorHandleFromIndex(bindlessIndex);
 }
 
-D3D12_GPU_DESCRIPTOR_HANDLE D3D12Renderer::GetBindlessResourceBaseGPUDescriptorHandle() const {
-    return bindlessResDescriptorAllocator.GetBaseGPUDescriptorHandle();
-}
-
 uint32_t D3D12Renderer::AllocBindlessSamplerDescriptor() {
     return bindlessSamDescriptorAllocator.Alloc();
 }
@@ -713,10 +710,6 @@ D3D12_CPU_DESCRIPTOR_HANDLE D3D12Renderer::GetBindlessSamplerCPUDescriptorHandle
 
 D3D12_GPU_DESCRIPTOR_HANDLE D3D12Renderer::GetBindlessSamplerGPUDescriptorHandle(uint32_t bindlessIndex) const {
     return bindlessSamDescriptorAllocator.GetGPUDescriptorHandleFromIndex(bindlessIndex);
-}
-
-D3D12_GPU_DESCRIPTOR_HANDLE D3D12Renderer::GetBindlessSamplerBaseGPUDescriptorHandle() const {
-    return bindlessSamDescriptorAllocator.GetBaseGPUDescriptorHandle();
 }
 
 void D3D12Renderer::RequestRelease(ID3D12Resource *resource) {

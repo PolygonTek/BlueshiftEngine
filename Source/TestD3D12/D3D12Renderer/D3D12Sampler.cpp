@@ -79,7 +79,7 @@ static void ToD3D12TextureBorderColor(RHI::TextureBorderColor borderColor, FLOAT
 
 void D3D12Sampler::Release() {
     if (descriptorHandle.ptr != 0) {
-        D3D12Renderer::GetRenderer()->samCpuDescriptorPool->Free(descriptorHandle);
+        D3D12Renderer::GetRenderer()->samStagingDescriptorPool->Free(descriptorHandle);
         descriptorHandle = {};
     }
 
@@ -91,7 +91,7 @@ void D3D12Sampler::Release() {
 
 RHI::Sampler *D3D12Renderer::CreateSampler(const RHI::SamplerDesc *desc) {
     D3D12_CPU_DESCRIPTOR_HANDLE descriptorHandle = {};
-    if (!samCpuDescriptorPool->Alloc(&descriptorHandle, nullptr)) {
+    if (!samStagingDescriptorPool->Alloc(&descriptorHandle, nullptr)) {
         return nullptr;
     }
 
@@ -100,7 +100,7 @@ RHI::Sampler *D3D12Renderer::CreateSampler(const RHI::SamplerDesc *desc) {
     sampler->descriptorHandle = descriptorHandle;
     sampler->bindlessIndex = AllocBindlessSamplerDescriptor();
     if (sampler->bindlessIndex == D3D12BindlessDescriptorAllocator::NullIndex) {
-        samCpuDescriptorPool->Free(descriptorHandle);
+        samStagingDescriptorPool->Free(descriptorHandle);
         sampler->descriptorHandle = {};
         delete sampler;
         return nullptr;

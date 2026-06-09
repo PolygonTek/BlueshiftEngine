@@ -28,7 +28,7 @@ void D3D12Buffer::Release() {
 
         for (const D3D12SRVEntry &srvEntry : srvEntries) {
             if (srvEntry.cpuDescriptorHandle.ptr != 0) {
-                D3D12Renderer::GetRenderer()->resCpuDescriptorPool->Free(srvEntry.cpuDescriptorHandle);
+                D3D12Renderer::GetRenderer()->resStagingDescriptorPool->Free(srvEntry.cpuDescriptorHandle);
             }
             if (srvEntry.bindlessIndex != D3D12BindlessDescriptorAllocator::NullIndex) {
                 D3D12Renderer::GetRenderer()->FreeBindlessResourceDescriptor(srvEntry.bindlessIndex);
@@ -37,7 +37,7 @@ void D3D12Buffer::Release() {
 
         for (const D3D12UAVEntry &uavEntry : uavEntries) {
             if (uavEntry.cpuDescriptorHandle.ptr != 0) {
-                D3D12Renderer::GetRenderer()->resCpuDescriptorPool->Free(uavEntry.cpuDescriptorHandle);
+                D3D12Renderer::GetRenderer()->resStagingDescriptorPool->Free(uavEntry.cpuDescriptorHandle);
             }
             if (uavEntry.bindlessIndex != D3D12BindlessDescriptorAllocator::NullIndex) {
                 D3D12Renderer::GetRenderer()->FreeBindlessResourceDescriptor(uavEntry.bindlessIndex);
@@ -309,7 +309,7 @@ void D3D12Renderer::DestroyView(RHI::Buffer *buffer, RHI::ViewType viewType, RHI
         }
         D3D12SRVEntry *srvEntryPtr = &_buffer->srvEntries[viewID.value];
         if (srvEntryPtr->cpuDescriptorHandle.ptr != 0) {
-            resCpuDescriptorPool->Free(srvEntryPtr->cpuDescriptorHandle);
+            resStagingDescriptorPool->Free(srvEntryPtr->cpuDescriptorHandle);
         }
         if (srvEntryPtr->bindlessIndex != D3D12BindlessDescriptorAllocator::NullIndex) {
             FreeBindlessResourceDescriptor(srvEntryPtr->bindlessIndex);
@@ -324,7 +324,7 @@ void D3D12Renderer::DestroyView(RHI::Buffer *buffer, RHI::ViewType viewType, RHI
         }
         D3D12UAVEntry *uavEntryPtr = &_buffer->uavEntries[viewID.value];
         if (uavEntryPtr->cpuDescriptorHandle.ptr != 0) {
-            resCpuDescriptorPool->Free(uavEntryPtr->cpuDescriptorHandle);
+            resStagingDescriptorPool->Free(uavEntryPtr->cpuDescriptorHandle);
         }
         if (uavEntryPtr->bindlessIndex != D3D12BindlessDescriptorAllocator::NullIndex) {
             FreeBindlessResourceDescriptor(uavEntryPtr->bindlessIndex);
@@ -382,7 +382,7 @@ RHI::ViewID D3D12Renderer::CreateSRV(D3D12Buffer *buffer, RHI::Format format, ui
     newSrvEntry.viewDesc.Buffer.NumElements = viewSize / byteStride;
 
     // 디스크립터 슬롯 할당
-    if (!resCpuDescriptorPool->Alloc(&newSrvEntry.cpuDescriptorHandle, nullptr)) {
+    if (!resStagingDescriptorPool->Alloc(&newSrvEntry.cpuDescriptorHandle, nullptr)) {
         return RHI::ViewID::InvalidID;
     }
 
@@ -392,7 +392,7 @@ RHI::ViewID D3D12Renderer::CreateSRV(D3D12Buffer *buffer, RHI::Format format, ui
     // bindless index 할당
     newSrvEntry.bindlessIndex = AllocBindlessResourceDescriptor();
     if (newSrvEntry.bindlessIndex == D3D12BindlessDescriptorAllocator::NullIndex) {
-        resCpuDescriptorPool->Free(newSrvEntry.cpuDescriptorHandle);
+        resStagingDescriptorPool->Free(newSrvEntry.cpuDescriptorHandle);
         return RHI::ViewID::InvalidID;
     }
 
@@ -461,7 +461,7 @@ RHI::ViewID D3D12Renderer::CreateUAV(D3D12Buffer *buffer, RHI::Format format, ui
     newUavEntry.viewDesc.Buffer.NumElements = viewSize / byteStride;
 
     // 디스크립터 슬롯 할당
-    if (!resCpuDescriptorPool->Alloc(&newUavEntry.cpuDescriptorHandle, nullptr)) {
+    if (!resStagingDescriptorPool->Alloc(&newUavEntry.cpuDescriptorHandle, nullptr)) {
         return RHI::ViewID::InvalidID;
     }
 
@@ -471,7 +471,7 @@ RHI::ViewID D3D12Renderer::CreateUAV(D3D12Buffer *buffer, RHI::Format format, ui
     // bindless index 할당
     newUavEntry.bindlessIndex = AllocBindlessResourceDescriptor();
     if (newUavEntry.bindlessIndex == D3D12BindlessDescriptorAllocator::NullIndex) {
-        resCpuDescriptorPool->Free(newUavEntry.cpuDescriptorHandle);
+        resStagingDescriptorPool->Free(newUavEntry.cpuDescriptorHandle);
         return RHI::ViewID::InvalidID;
     }
 

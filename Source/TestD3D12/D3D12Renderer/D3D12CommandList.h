@@ -76,7 +76,7 @@ public:
     void                            SetGraphicsRootSignature(ID3D12RootSignature *graphicsRootSignature);
     void                            SetComputeRootSignature(ID3D12RootSignature *computeRootSignature);
     void                            SetPipelineState(const RHI::PipelineState *pipelineState);
-    void                            SetBindlessRootDescriptorTables(D3D12_GPU_DESCRIPTOR_HANDLE resourceDescriptorBaseHandle, D3D12_GPU_DESCRIPTOR_HANDLE samplerDescriptorBaseHandle);
+    void                            SetBindlessRootDescriptorTables(D3D12_GPU_DESCRIPTOR_HANDLE resourceDescriptorGpuBaseHandle, D3D12_GPU_DESCRIPTOR_HANDLE samplerDescriptorGpuBaseHandle);
     void                            SetPrimitiveTopology(D3D12_PRIMITIVE_TOPOLOGY primitiveTopology);
     void                            SetVertexBuffers(int startSlot, int count, const RHI::VertexBuffer *vertexBuffers[]);
     void                            SetVertexBuffer(int slot, const RHI::VertexBuffer *vertexBuffer);
@@ -101,8 +101,8 @@ private:
     ID3D12Resource *                shadingRateImage = nullptr;
     BE1::Array<D3D12_RESOURCE_BARRIER> endRenderPassBarriers;
     ID3D12RootSignature *           bindlessRootSignature = nullptr;
-    D3D12_GPU_DESCRIPTOR_HANDLE     bindlessResourceDescriptorBaseHandle = {};
-    D3D12_GPU_DESCRIPTOR_HANDLE     bindlessSamplerDescriptorBaseHandle = {};
+    D3D12_GPU_DESCRIPTOR_HANDLE     bindlessResourceDescriptorGpuBaseHandle = {};
+    D3D12_GPU_DESCRIPTOR_HANDLE     bindlessSamplerDescriptorGpuBaseHandle = {};
 
 #ifdef USE_STATE_CACHE_FOR_COMMAND_LIST
     bool                            IsSameDescriptorHeaps(int numDescriptorHeaps, ID3D12DescriptorHeap *descriptorHeaps[]);
@@ -133,8 +133,8 @@ BE_INLINE void D3D12CommandList::SetDescriptorTablePools(D3D12DescriptorTablePoo
 
 BE_INLINE void D3D12CommandList::InvalidateRootSignatureDependentBindings() {
     bindlessRootSignature = nullptr;
-    bindlessResourceDescriptorBaseHandle = {};
-    bindlessSamplerDescriptorBaseHandle = {};
+    bindlessResourceDescriptorGpuBaseHandle = {};
+    bindlessSamplerDescriptorGpuBaseHandle = {};
 }
 
 BE_INLINE void D3D12CommandList::ResourceBarrier(ID3D12Resource *resource, D3D12_RESOURCE_STATES stateBefore, D3D12_RESOURCE_STATES stateAfter) {

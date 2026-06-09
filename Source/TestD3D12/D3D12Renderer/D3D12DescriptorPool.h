@@ -23,7 +23,7 @@ class D3D12Renderer;
 
     Descriptor Pool
 
-    - Non shader-visible 디스크립터 힙을 관리하는 디스크립터 풀
+    - Non-shader-visible 디스크립터 힙을 관리하는 디스크립터 풀
     - 디스크립터 단위 스테이징/보관 용도
     - IDAllocator 를 사용하여 디스크립터 힙 내에서 빈 슬롯을 thread-safe 하게 관리한다.
 

@@ -23,7 +23,7 @@
 void D3D12Texture::Release() {
     for (const D3D12SRVEntry &srvEntry : srvEntries) {
         if (srvEntry.cpuDescriptorHandle.ptr != 0) {
-            D3D12Renderer::GetRenderer()->resCpuDescriptorPool->Free(srvEntry.cpuDescriptorHandle);
+            D3D12Renderer::GetRenderer()->resStagingDescriptorPool->Free(srvEntry.cpuDescriptorHandle);
         }
         if (srvEntry.bindlessIndex != D3D12BindlessDescriptorAllocator::NullIndex) {
             D3D12Renderer::GetRenderer()->FreeBindlessResourceDescriptor(srvEntry.bindlessIndex);
@@ -32,7 +32,7 @@ void D3D12Texture::Release() {
 
     for (const D3D12UAVEntry &uavEntry : uavEntries) {
         if (uavEntry.cpuDescriptorHandle.ptr != 0) {
-            D3D12Renderer::GetRenderer()->resCpuDescriptorPool->Free(uavEntry.cpuDescriptorHandle);
+            D3D12Renderer::GetRenderer()->resStagingDescriptorPool->Free(uavEntry.cpuDescriptorHandle);
         }
         if (uavEntry.bindlessIndex != D3D12BindlessDescriptorAllocator::NullIndex) {
             D3D12Renderer::GetRenderer()->FreeBindlessResourceDescriptor(uavEntry.bindlessIndex);
@@ -41,13 +41,13 @@ void D3D12Texture::Release() {
 
     for (const D3D12RTVEntry &rtvEntry : rtvEntries) {
         if (rtvEntry.cpuDescriptorHandle.ptr != 0) {
-            D3D12Renderer::GetRenderer()->rtvCpuDescriptorPool->Free(rtvEntry.cpuDescriptorHandle);
+            D3D12Renderer::GetRenderer()->rtvDescriptorPool->Free(rtvEntry.cpuDescriptorHandle);
         }
     }
 
     for (const D3D12DSVEntry &dsvEntry : dsvEntries) {
         if (dsvEntry.cpuDescriptorHandle.ptr != 0) {
-            D3D12Renderer::GetRenderer()->dsvCpuDescriptorPool->Free(dsvEntry.cpuDescriptorHandle);
+            D3D12Renderer::GetRenderer()->dsvDescriptorPool->Free(dsvEntry.cpuDescriptorHandle);
         }
     }
 
@@ -473,7 +473,7 @@ void D3D12Renderer::DestroyView(RHI::Texture *texture, RHI::ViewType viewType, R
         }
         D3D12SRVEntry *srvEntryPtr = &_texture->srvEntries[viewID.value];
         if (srvEntryPtr->cpuDescriptorHandle.ptr != 0) {
-            resCpuDescriptorPool->Free(srvEntryPtr->cpuDescriptorHandle);
+            resStagingDescriptorPool->Free(srvEntryPtr->cpuDescriptorHandle);
         }
         if (srvEntryPtr->bindlessIndex != D3D12BindlessDescriptorAllocator::NullIndex) {
             FreeBindlessResourceDescriptor(srvEntryPtr->bindlessIndex);
@@ -488,7 +488,7 @@ void D3D12Renderer::DestroyView(RHI::Texture *texture, RHI::ViewType viewType, R
         }
         D3D12UAVEntry *uavEntryPtr = &_texture->uavEntries[viewID.value];
         if (uavEntryPtr->cpuDescriptorHandle.ptr != 0) {
-            resCpuDescriptorPool->Free(uavEntryPtr->cpuDescriptorHandle);
+            resStagingDescriptorPool->Free(uavEntryPtr->cpuDescriptorHandle);
         }
         if (uavEntryPtr->bindlessIndex != D3D12BindlessDescriptorAllocator::NullIndex) {
             FreeBindlessResourceDescriptor(uavEntryPtr->bindlessIndex);
@@ -503,7 +503,7 @@ void D3D12Renderer::DestroyView(RHI::Texture *texture, RHI::ViewType viewType, R
         }
         D3D12RTVEntry *rtvEntryPtr = &_texture->rtvEntries[viewID.value];
         if (rtvEntryPtr->cpuDescriptorHandle.ptr != 0) {
-            rtvCpuDescriptorPool->Free(rtvEntryPtr->cpuDescriptorHandle);
+            rtvDescriptorPool->Free(rtvEntryPtr->cpuDescriptorHandle);
         }
         *rtvEntryPtr = {};
         return;
@@ -515,7 +515,7 @@ void D3D12Renderer::DestroyView(RHI::Texture *texture, RHI::ViewType viewType, R
         }
         D3D12DSVEntry *dsvEntryPtr = &_texture->dsvEntries[viewID.value];
         if (dsvEntryPtr->cpuDescriptorHandle.ptr != 0) {
-            dsvCpuDescriptorPool->Free(dsvEntryPtr->cpuDescriptorHandle);
+            dsvDescriptorPool->Free(dsvEntryPtr->cpuDescriptorHandle);
         }
         *dsvEntryPtr = {};
         return;
@@ -670,18 +670,18 @@ RHI::ViewID D3D12Renderer::CreateSRV(D3D12Texture *texture, RHI::Format typeless
         break;
     }
 
-    // 디스크립터 슬롯 할당
-    if (!resCpuDescriptorPool->Alloc(&newSrvEntry.cpuDescriptorHandle, nullptr)) {
+    // non-shader-visible 디스크립터 슬롯 할당
+    if (!resStagingDescriptorPool->Alloc(&newSrvEntry.cpuDescriptorHandle, nullptr)) {
         return RHI::ViewID::InvalidID;
     }
 
-    // 디스크립터 슬롯에 SRV 를 기록
+    // non-shader-visible 디스크립터 슬롯에 SRV 를 기록
     device->CreateShaderResourceView(texture->GetResource(), &newSrvEntry.viewDesc, newSrvEntry.cpuDescriptorHandle);
 
     // bindless index 할당
     newSrvEntry.bindlessIndex = AllocBindlessResourceDescriptor();
     if (newSrvEntry.bindlessIndex == D3D12BindlessDescriptorAllocator::NullIndex) {
-        resCpuDescriptorPool->Free(newSrvEntry.cpuDescriptorHandle);
+        resStagingDescriptorPool->Free(newSrvEntry.cpuDescriptorHandle);
         return RHI::ViewID::InvalidID;
     }
 
@@ -794,7 +794,7 @@ RHI::ViewID D3D12Renderer::CreateUAV(D3D12Texture *texture, RHI::Format typeless
     }
 
     // 디스크립터 슬롯 할당
-    if (!resCpuDescriptorPool->Alloc(&newUavEntry.cpuDescriptorHandle, nullptr)) {
+    if (!resStagingDescriptorPool->Alloc(&newUavEntry.cpuDescriptorHandle, nullptr)) {
         return RHI::ViewID::InvalidID;
     }
 
@@ -804,7 +804,7 @@ RHI::ViewID D3D12Renderer::CreateUAV(D3D12Texture *texture, RHI::Format typeless
     // bindless index 할당
     newUavEntry.bindlessIndex = AllocBindlessResourceDescriptor();
     if (newUavEntry.bindlessIndex == D3D12BindlessDescriptorAllocator::NullIndex) {
-        resCpuDescriptorPool->Free(newUavEntry.cpuDescriptorHandle);
+        resStagingDescriptorPool->Free(newUavEntry.cpuDescriptorHandle);
         return RHI::ViewID::InvalidID;
     }
 
@@ -928,7 +928,7 @@ RHI::ViewID D3D12Renderer::CreateRTV(D3D12Texture *texture, RHI::Format typeless
     }
 
     // 디스크립터 슬롯 할당
-    if (!rtvCpuDescriptorPool->Alloc(&newRtvEntry.cpuDescriptorHandle, nullptr)) {
+    if (!rtvDescriptorPool->Alloc(&newRtvEntry.cpuDescriptorHandle, nullptr)) {
         return RHI::ViewID::InvalidID;
     }
 
@@ -1020,7 +1020,7 @@ RHI::ViewID D3D12Renderer::CreateDSV(D3D12Texture *texture, RHI::Format typeless
     }
 
     // 디스크립터 슬롯 할당
-    if (!dsvCpuDescriptorPool->Alloc(&newDsvEntry.cpuDescriptorHandle, nullptr)) {
+    if (!dsvDescriptorPool->Alloc(&newDsvEntry.cpuDescriptorHandle, nullptr)) {
         return RHI::ViewID::InvalidID;
     }
 

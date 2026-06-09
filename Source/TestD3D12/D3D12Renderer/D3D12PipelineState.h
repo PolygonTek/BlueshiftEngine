@@ -135,7 +135,7 @@ BE_INLINE void D3D12PipelineState::RegisterBinder::Init(const D3D12_ROOT_SIGNATU
             for (UINT rangeIndex = 0; rangeIndex < rootParameter->DescriptorTable.NumDescriptorRanges; ++rangeIndex) {
                 const D3D12_DESCRIPTOR_RANGE1 &descriptorRange = rootParameter->DescriptorTable.pDescriptorRanges[rangeIndex];
 
-                // space=0 만 관리한다. (나머지는 bindless 용)
+                // 레지스터 스페이스 == 0 인 경우에만 shader register 인덱스에 대한 루트 파라미터 인덱스와 디스크립터 테이블 내의 인덱스를 계산하여 LUT 에 저장한다.
                 if (descriptorRange.RegisterSpace == 0) {
                     switch (descriptorRange.RangeType) {
                     case D3D12_DESCRIPTOR_RANGE_TYPE_CBV:
@@ -178,6 +178,7 @@ BE_INLINE void D3D12PipelineState::RegisterBinder::Init(const D3D12_ROOT_SIGNATU
 
                     tableOffset += descriptorRange.NumDescriptors;
                 } else {
+                    // 레지스터 스페이스 > 0 인 경우는 bindless 용으로 사용한다.
                     if (descriptorRange.RangeType == D3D12_DESCRIPTOR_RANGE_TYPE_SAMPLER) {
                         bindlessSamplerRootParameterMask |= BIT64(rootParameterIndex);
                     } else {

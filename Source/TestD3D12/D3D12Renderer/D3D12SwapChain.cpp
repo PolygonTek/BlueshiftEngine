@@ -94,9 +94,9 @@ void D3D12SwapChain::CreateRTVs() {
 
     for (int bufferIndex = 0; bufferIndex < COUNT_OF(backBuffers); ++bufferIndex) {
         if (backBufferRTVs[bufferIndex].ptr != 0) {
-            D3D12Renderer::GetRenderer()->rtvCpuDescriptorPool->Free(backBufferRTVs[bufferIndex]);
+            D3D12Renderer::GetRenderer()->rtvDescriptorPool->Free(backBufferRTVs[bufferIndex]);
         }
-        D3D12Renderer::GetRenderer()->rtvCpuDescriptorPool->Alloc(&backBufferRTVs[bufferIndex], nullptr);
+        D3D12Renderer::GetRenderer()->rtvDescriptorPool->Alloc(&backBufferRTVs[bufferIndex], nullptr);
 
         // 스왑 체인의 백버퍼 리소스를 가져온다.
         dxgiSwapChain->GetBuffer(bufferIndex, IID_PPV_ARGS(&backBuffers[bufferIndex]));

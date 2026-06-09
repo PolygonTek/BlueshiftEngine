@@ -906,6 +906,7 @@ namespace RHI {
     enum class RasterizerStateType : uint8_t {
         SolidFrontSided,
         SolidBackSided,
+        SolidTwoSided,
         Wire,
         WireSmooth,
         Count
@@ -918,9 +919,12 @@ namespace RHI {
     };
 
     enum class BlendStateType : uint8_t {
-        Opaque,
+        Disabled,
         AlphaBlend,
+        AddBlend,
         Add,
+        Modulate,
+        Modulate2X,
         Count
     };
 

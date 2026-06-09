@@ -949,7 +949,7 @@ void D3D12Renderer::SetPSO(RHI::CommandList *commandList, const RHI::PipelineSta
 
     // direct descriptor heap 을 지원하지 않는다면 fallback 으로 모든 bindless 용 디스크립터 테이블을 세팅해줘야 한다.
     // 지원한다면 결과적으로 내부에서 아무것도 안한다.
-    _commandList->SetBindlessRootDescriptorTables(GetBindlessResourceBaseGPUDescriptorHandle(), GetBindlessSamplerBaseGPUDescriptorHandle());
+    _commandList->SetBindlessRootDescriptorTables(bindlessResDescriptorAllocator.GetBaseGPUDescriptorHandle(), bindlessSamDescriptorAllocator.GetBaseGPUDescriptorHandle());
 }
 
 // Draw 나 Dispatch 직전에 호출된다.

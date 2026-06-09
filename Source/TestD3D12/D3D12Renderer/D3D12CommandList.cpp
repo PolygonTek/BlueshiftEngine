@@ -50,47 +50,51 @@ D3D12RootBindingData *D3D12CommandList::GetRootBindingData() const {
     return parentPool->GetRootBindingData();
 }
 
-void D3D12CommandList::SetBindlessRootDescriptorTables(D3D12_GPU_DESCRIPTOR_HANDLE resourceDescriptorBaseHandle, D3D12_GPU_DESCRIPTOR_HANDLE samplerDescriptorBaseHandle) {
+void D3D12CommandList::SetBindlessRootDescriptorTables(D3D12_GPU_DESCRIPTOR_HANDLE resourceDescriptorGpuBaseHandle, D3D12_GPU_DESCRIPTOR_HANDLE samplerDescriptorGpuBaseHandle) {
     assert(currentPSO);
 
     const D3D12PipelineState::RegisterBinder &binder = currentPSO->binder;
-    const uint64_t resRootParameterMask = binder.bindlessResourceRootParameterMask;
-    const uint64_t samRootParameterMask = binder.bindlessSamplerRootParameterMask;
+    const uint64_t bindlessResRootParameterMask = binder.bindlessResourceRootParameterMask;
+    const uint64_t bindlessSamRootParameterMask = binder.bindlessSamplerRootParameterMask;
 
-    if (resRootParameterMask == 0 && samRootParameterMask == 0) {
+    // 루트 시그니쳐에서 fallback bindless 디스크립터 테이블을 사용하지 않는다면 세팅할 필요가 없다.
+    if (bindlessResRootParameterMask == 0 && bindlessSamRootParameterMask == 0) {
         return;
     }
 
-    // 루트 시그니쳐가 동일하면, fallback bindless 디스크립터 테이블을 중복 세팅하지 않도록 한다.
+    // 루트 시그니쳐가 동일하다면, fallback bindless 디스크립터 테이블을 중복 세팅하지 않도록 한다.
     if (bindlessRootSignature == currentPSO->rootSignature &&
-        bindlessResourceDescriptorBaseHandle.ptr == resourceDescriptorBaseHandle.ptr &&
-        bindlessSamplerDescriptorBaseHandle.ptr == samplerDescriptorBaseHandle.ptr) {
+        bindlessResourceDescriptorGpuBaseHandle.ptr == resourceDescriptorGpuBaseHandle.ptr &&
+        bindlessSamplerDescriptorGpuBaseHandle.ptr == samplerDescriptorGpuBaseHandle.ptr) {
         return;
     }
 
     ID3D12GraphicsCommandList6 *cmd = GetGraphicsCommandList();
 
-    for (int rootParameterIndex = 0; rootParameterIndex < 64; ++rootParameterIndex) {
-        if (resRootParameterMask & BIT64(rootParameterIndex)) {
-            if (currentPSO->isGraphics) {
-                cmd->SetGraphicsRootDescriptorTable(rootParameterIndex, resourceDescriptorBaseHandle);
-            } else {
-                cmd->SetComputeRootDescriptorTable(rootParameterIndex, resourceDescriptorBaseHandle);
+    // 루트 시그니쳐에 존재하는 모든 fallback bindless (리소스 or 샘플러) 디스크립터 테이블들을 세팅한다.
+    if (currentPSO->isGraphics) {
+        for (int rootParameterIndex = 0; rootParameterIndex < 64; ++rootParameterIndex) {
+            if (bindlessResRootParameterMask & BIT64(rootParameterIndex)) {
+                cmd->SetGraphicsRootDescriptorTable(rootParameterIndex, resourceDescriptorGpuBaseHandle);
+            }
+            if (bindlessSamRootParameterMask & BIT64(rootParameterIndex)) {
+                cmd->SetGraphicsRootDescriptorTable(rootParameterIndex, samplerDescriptorGpuBaseHandle);
             }
         }
-
-        if (samRootParameterMask & BIT64(rootParameterIndex)) {
-            if (currentPSO->isGraphics) {
-                cmd->SetGraphicsRootDescriptorTable(rootParameterIndex, samplerDescriptorBaseHandle);
-            } else {
-                cmd->SetComputeRootDescriptorTable(rootParameterIndex, samplerDescriptorBaseHandle);
+    } else {
+        for (int rootParameterIndex = 0; rootParameterIndex < 64; ++rootParameterIndex) {
+            if (bindlessResRootParameterMask & BIT64(rootParameterIndex)) {
+                cmd->SetComputeRootDescriptorTable(rootParameterIndex, resourceDescriptorGpuBaseHandle);
+            }
+            if (bindlessSamRootParameterMask & BIT64(rootParameterIndex)) {
+                cmd->SetComputeRootDescriptorTable(rootParameterIndex, samplerDescriptorGpuBaseHandle);
             }
         }
     }
 
     bindlessRootSignature = currentPSO->rootSignature;
-    bindlessResourceDescriptorBaseHandle = resourceDescriptorBaseHandle;
-    bindlessSamplerDescriptorBaseHandle = samplerDescriptorBaseHandle;
+    bindlessResourceDescriptorGpuBaseHandle = resourceDescriptorGpuBaseHandle;
+    bindlessSamplerDescriptorGpuBaseHandle = samplerDescriptorGpuBaseHandle;
 }
 
 void D3D12CommandList::SetShadingRate(RHI::ShadingRate shadingRate) {
