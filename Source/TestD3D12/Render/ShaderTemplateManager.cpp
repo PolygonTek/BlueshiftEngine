@@ -61,6 +61,7 @@ void ShaderTemplateManager::Shutdown() {
     DestroyEngineShaderTemplates();
 
     shaderTemplateHashMap.Clear();
+    shaderTemplateReloaded.Clear();
 
     {
         BE1::ScopedLock lock(globalDefinesMutex);
@@ -80,6 +81,7 @@ void ShaderTemplateManager::UpdateFrame() {
         globalDefineModCountSnapshot = globalDefineModCount;
     }
 
+    // 글로벌 디파인이 변경되었다면 모든 셰이더 템플릿의 캐시된 파이프라인을 재빌드한다.
     if (lastInvalidatedGlobalDefineModCount != globalDefineModCountSnapshot) {
         InvalidateShaderTemplateCaches();
         lastInvalidatedGlobalDefineModCount = globalDefineModCountSnapshot;
@@ -218,8 +220,8 @@ void ShaderTemplateManager::InvalidateShaderTemplateCaches() {
             continue;
         }
 
-        // 캐시된 파이프라인을 모두 무효화 후 재생성 요청
-        shaderTemplate->InvalidateCachedPipelines();
+        // 캐시된 파이프라인을 모두 무효화 후 재빌드 요청
+        shaderTemplate->RebuildCachedPipelines();
     }
 }
 
@@ -263,9 +265,28 @@ void ShaderTemplateManager::CreateEngineShaderTemplates() {
             fragment SM_6_0 "Unlit.hlsl" "PSMain"
         }
 
+        properties {
+            baseColorTexture("Base Color") : texture "2D" = "_whiteTexture"
+        }
+
         features {
             gpuInstancing {
                 USE_INSTANCING=1
+            }
+
+            gpuSkinningWeight1 {
+                GPU_SKINNING=1
+                GPU_SKINNING_WEIGHTS=1
+            }
+
+            gpuSkinningWeight4 {
+                GPU_SKINNING=1
+                GPU_SKINNING_WEIGHTS=4
+            }
+
+            gpuSkinningWeight8 {
+                GPU_SKINNING=1
+                GPU_SKINNING_WEIGHTS=8
             }
         }
     }
@@ -278,9 +299,28 @@ void ShaderTemplateManager::CreateEngineShaderTemplates() {
             fragment SM_6_0 "Lit.hlsl" "PSMain"
         }
 
+        properties {
+            baseColorTexture("Base Color") : texture "2D" = "_whiteTexture"
+        }
+
         features {
             gpuInstancing {
                 USE_INSTANCING=1
+            }
+
+            gpuSkinningWeight1 {
+                GPU_SKINNING=1
+                GPU_SKINNING_WEIGHTS=1
+            }
+
+            gpuSkinningWeight4 {
+                GPU_SKINNING=1
+                GPU_SKINNING_WEIGHTS=4
+            }
+
+            gpuSkinningWeight8 {
+                GPU_SKINNING=1
+                GPU_SKINNING_WEIGHTS=8
             }
         }
     }
@@ -294,24 +334,17 @@ void ShaderTemplateManager::CreateEngineShaderTemplates() {
     if (!fullscreenImageShaderTemplate->Create(fullScreenImageShaderTemplateText, baseDir)) {
         BE_FATALERROR("ShaderTemplateManager::CreateEngineShaderTemplates: failed to create fullscreen image shader template");
     }
-    fullscreenImageShaderTemplate->AddPermutation({});
-
-    ShaderFeatureSet instancingFeatureSet;
-    instancingFeatureSet.EnableFeature(ShaderFeature::GpuInstancing);
+    fullscreenImageShaderTemplate->AddPermutation();
 
     unlitShaderTemplate = AllocShaderTemplate("_unlitShader");
     if (!unlitShaderTemplate->Create(unlitShaderTemplateText, baseDir)) {
         BE_FATALERROR("ShaderTemplateManager::CreateEngineShaderTemplates: failed to create unlit shader template");
     }
-    unlitShaderTemplate->AddPermutation({});
-    unlitShaderTemplate->AddPermutation({}, instancingFeatureSet);
 
     litShaderTemplate = AllocShaderTemplate("_litShader");
     if (!litShaderTemplate->Create(litShaderTemplateText, baseDir)) {
         BE_FATALERROR("ShaderTemplateManager::CreateEngineShaderTemplates: failed to create lit shader template");
     }
-    litShaderTemplate->AddPermutation({});
-    litShaderTemplate->AddPermutation({}, instancingFeatureSet);
 }
 
 void ShaderTemplateManager::DestroyEngineShaderTemplates() {

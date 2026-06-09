@@ -17,6 +17,46 @@
 #include "ShaderTemplate.h"
 #include "LoadingSystem.h"
 
+uint64_t ShaderPipelineDesc::GenerateInputLayoutHash(const RHI::InputLayout *inputLayout) {
+    if (!inputLayout) {
+        return 0;
+    }
+
+    uint64_t hash = 0;
+    for (const RHI::InputLayoutElement &element : inputLayout->elements) {
+        hash = hash_combine(hash, element);
+    }
+    return hash;
+}
+
+uint64_t ShaderPipelineDesc::GeneratePipelineDescHash() const {
+    struct PipelineDescHashData {
+        uint64_t    inputLayoutHash = 0;
+        uint64_t    renderDestHash = 0;
+        uint8_t     rasterizerStateType = 0;
+        uint8_t     depthStencilStateType = 0;
+        uint8_t     blendStateType = 0;
+        uint8_t     primitiveTopology = 0;
+        uint32_t    sampleMask = 0;
+    } hashData = {};
+
+    hashData.inputLayoutHash = GenerateInputLayoutHash(inputLayout);
+    hashData.renderDestHash = renderDest.GetHash();
+    hashData.rasterizerStateType = static_cast<uint8_t>(rasterizerStateType);
+    hashData.depthStencilStateType = static_cast<uint8_t>(depthStencilStateType);
+    hashData.blendStateType = static_cast<uint8_t>(blendStateType);
+    hashData.primitiveTopology = static_cast<uint8_t>(primitiveTopology);
+    hashData.sampleMask = sampleMask;
+
+    return BE1::CityHash64(reinterpret_cast<const char *>(&hashData), sizeof(hashData));
+}
+
+uint64_t ShaderPipelineDesc::GenerateGraphicsPipelineHash(ShaderPermutationKey permutationKey) const {
+    uint64_t hash = permutationKey.hash;
+    hash = hash_combine(hash, GeneratePipelineDescHash());
+    return hash;
+}
+
 void ShaderPipelineState::Purge() {
     if (pso) {
         RHI::renderer->DestroyPSO(pso);

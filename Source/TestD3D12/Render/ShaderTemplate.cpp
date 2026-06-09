@@ -14,11 +14,8 @@
 
 #include "Precompiled.h"
 #include "ShaderTemplate.h"
+#include "Asset/GuidMapper.h"
 #include "IO/FileSystem.h"
-
-const ShaderPropertyInfo *ShaderTemplate::FindProperty(const char *name) const {
-    return internalData.FindProperty(name);
-}
 
 void ShaderTemplate::PipelineBuildData::Clear() {
     for (StageSource &stageSource : stageSources) {
@@ -38,6 +35,7 @@ void ShaderTemplate::InternalData::Purge() {
         defines.Clear();
     }
     properties.Clear();
+    propertyHash.Clear(64, 64);
 }
 
 void ShaderTemplate::InternalData::Swap(InternalData &rhs) {
@@ -50,16 +48,31 @@ void ShaderTemplate::InternalData::Swap(InternalData &rhs) {
         featureDefines[i].Swap(rhs.featureDefines[i]);
     }
     properties.Swap(rhs.properties);
+    propertyHash.Swap(rhs.propertyHash);
     BE1::Swap(flags, rhs.flags);
 }
 
 const ShaderPropertyInfo *ShaderTemplate::InternalData::FindProperty(const char *name) const {
-    for (const ShaderPropertyInfo &propertyInfo : properties) {
-        if (!BE1::Str::Cmp(propertyInfo.GetName(), name)) {
-            return &propertyInfo;
-        }
+    int propertyIndex = FindPropertyIndex(name);
+    if (propertyIndex >= 0) {
+        return &properties[propertyIndex];
     }
     return nullptr;
+}
+
+int ShaderTemplate::InternalData::FindPropertyIndex(const char *name) const {
+    if (!name || !name[0]) {
+        return -1;
+    }
+
+    int hash = propertyHash.GenerateHash(name, true);
+    for (int index = propertyHash.First(hash); index != -1; index = propertyHash.Next(index)) {
+        if (!BE1::Str::Cmp(properties[index].GetName(), name)) {
+            return index;
+        }
+    }
+
+    return -1;
 }
 
 bool ShaderTemplate::AddProperty(const char *name, const char *label, BE1::Variant::Type::Enum type, const BE1::Variant &defaultValue, const char *desc, int flags, ShaderPropertyInfo::ShaderFlag shaderFlags) {
@@ -87,7 +100,9 @@ bool ShaderTemplate::InternalData::AddProperty(const ShaderPropertyInfo &propert
         return false;
     }
 
-    properties.Append(propertyInfo);
+    int propertyIndex = properties.Append(propertyInfo);
+    int hash = propertyHash.GenerateHash(propertyInfo.GetName(), true);
+    propertyHash.Add(hash, propertyIndex);
     return true;
 }
 
@@ -113,7 +128,7 @@ bool ShaderTemplate::InternalData::CopyPropertiesFrom(const InternalData &rhs, c
     }
 
     for (const ShaderPropertyInfo &propertyInfo : rhs.properties) {
-        properties.Append(propertyInfo);
+        AddProperty(propertyInfo);
     }
 
     return true;
@@ -127,15 +142,6 @@ void ShaderTemplate::InitDefaultPropertyValues(BE1::Array<PropertyValue> &outPro
     }
 }
 
-void ShaderTemplate::AddStage(RHI::ShaderStage shaderStage, RHI::ShaderModel shaderModel, const char *filename, const char *entryPoint) {
-    assert(shaderStage >= RHI::ShaderStage::Vertex && shaderStage < RHI::ShaderStage::Count);
-
-    StageSource &stageSource = internalData.stageSources[to_int(shaderStage)];
-    assert(stageSource.shaderStage == RHI::ShaderStage::Count);
-
-    internalData.AddStage(shaderStage, shaderModel, filename, entryPoint);
-}
-
 void ShaderTemplate::InternalData::AddStage(RHI::ShaderStage shaderStage, RHI::ShaderModel shaderModel, const char *filename, const char *entryPoint) {
     assert(shaderStage >= RHI::ShaderStage::Vertex && shaderStage < RHI::ShaderStage::Count);
 
@@ -145,6 +151,26 @@ void ShaderTemplate::InternalData::AddStage(RHI::ShaderStage shaderStage, RHI::S
     stageSource.shaderModel = shaderModel;
     stageSource.filename = filename;
     stageSource.entryPoint = entryPoint;
+}
+
+bool ShaderTemplate::SupportsFeature(Feature feature) const {
+    if (feature >= Feature::Count) {
+        return false;
+    }
+    return internalData.featureDefines[to_int(feature)].Count() > 0;
+}
+
+ShaderFeatureSet ShaderTemplate::MaskSupportedFeatures(const ShaderFeatureSet &featureSet) const {
+    ShaderFeatureSet supportedFeatureSet;
+
+    for (int i = 0; i < to_int(Feature::Count); i++) {
+        Feature feature = static_cast<Feature>(i);
+        if (featureSet.HasFeature(feature) && SupportsFeature(feature)) {
+            supportedFeatureSet.EnableFeature(feature);
+        }
+    }
+
+    return supportedFeatureSet;
 }
 
 // 같은 이름의 define 이 있는지 검사한다. define name 만 비교하며, value 는 비교하지 않는다.
@@ -207,82 +233,16 @@ static bool AppendDefines(BE1::StrArray &defines, const BE1::StrArray &appendDef
     return addedAllDefines;
 }
 
-ShaderPermutationKey ShaderTemplate::AddPermutation(std::initializer_list<const char *> defines) {
-    return AddPermutation(defines, ShaderFeatureSet());
-}
-
-ShaderPermutationKey ShaderTemplate::AddPermutation(const BE1::StrArray &defines) {
-    return AddPermutation(defines, ShaderFeatureSet());
-}
-
-ShaderPermutationKey ShaderTemplate::AddPermutation(std::initializer_list<const char *> defines, const ShaderFeatureSet &featureSet) {
-    BE1::StrArray permutationDefines;
-
-    for (const char *define : defines) {
-        if (define && define[0]) {
-            permutationDefines.Append(define);
-        }
-    }
-
-    return AddPermutation(permutationDefines, featureSet);
-}
-
-ShaderPermutationKey ShaderTemplate::AddPermutation(const BE1::StrArray &defines, const ShaderFeatureSet &featureSet) {
-    BE1::StrArray permutationDefines;
-
-    for (const BE1::Str &define : defines) {
-        if (HasTemplateDefine(define.c_str(), featureSet)) {
-            BE_ERRLOG("ShaderTemplate::AddPermutation: permutation define name '%s' conflicts with a template define in shader template '%s'\n", define.c_str(), hashName.c_str());
-            continue;
-        }
-
-        if (!AddDefine(permutationDefines, define.c_str())) {
-            BE_ERRLOG("ShaderTemplate::AddPermutation: duplicated permutation define name '%s' in shader template '%s'\n", define.c_str(), hashName.c_str());
-            continue;
-        }
-    }
-    ShaderPermutationKey::NormalizePermutationDefines(permutationDefines);
-
-    ShaderPermutationKey permutationKey = ShaderPermutationKey::GeneratePermutationKey(permutationDefines, featureSet);
-    ShaderPermutation *permutation = FindPermutation(permutationKey);
-    if (permutation) {
-        return permutationKey;
-    }
-
-    permutation = new ShaderPermutation;
-    permutation->key = permutationKey;
-    permutation->featureSet = featureSet;
-    permutation->defines = permutationDefines;
-    permutationMap.Set(permutationKey.hash, permutation);
-    return permutationKey;
+ShaderPermutationKey ShaderTemplate::AddPermutation() {
+    return AddPermutation(BE1::Array<PropertyValue>(), ShaderFeatureSet());
 }
 
 ShaderPermutationKey ShaderTemplate::AddPermutation(const BE1::Array<PropertyValue> &propertyValues) {
-    return AddPermutation(propertyValues, BE1::StrArray(), ShaderFeatureSet());
-}
-
-ShaderPermutationKey ShaderTemplate::AddPermutation(const BE1::Array<PropertyValue> &propertyValues, const BE1::StrArray &defines) {
-    return AddPermutation(propertyValues, defines, ShaderFeatureSet());
+    return AddPermutation(propertyValues, ShaderFeatureSet());
 }
 
 ShaderPermutationKey ShaderTemplate::AddPermutation(const BE1::Array<PropertyValue> &propertyValues, const ShaderFeatureSet &featureSet) {
-    return AddPermutation(propertyValues, BE1::StrArray(), featureSet);
-}
-
-ShaderPermutationKey ShaderTemplate::AddPermutation(const BE1::Array<PropertyValue> &propertyValues, const BE1::StrArray &defines, const ShaderFeatureSet &featureSet) {
     BE1::StrArray permutationDefines;
-
-    for (const BE1::Str &define : defines) {
-        if (HasTemplateDefine(define.c_str(), featureSet)) {
-            BE_ERRLOG("ShaderTemplate::AddPermutation: permutation define name '%s' conflicts with a template define in shader template '%s'\n", define.c_str(), hashName.c_str());
-            continue;
-        }
-
-        if (!AddDefine(permutationDefines, define.c_str())) {
-            BE_ERRLOG("ShaderTemplate::AddPermutation: duplicated permutation define name '%s' in shader template '%s'\n", define.c_str(), hashName.c_str());
-            continue;
-        }
-    }
 
     for (int i = 0; i < internalData.properties.Count(); i++) {
         const ShaderPropertyInfo &propertyInfo = internalData.properties[i];
@@ -332,15 +292,17 @@ ShaderPermutationKey ShaderTemplate::AddPermutation(const BE1::Array<PropertyVal
 bool ShaderTemplate::Create(const char *text, const char *baseDir) {
     InternalData newInternalData;
 
-    if (!Prepare(text, baseDir, newInternalData)) {
+    if (!Parse(text, baseDir, newInternalData)) {
         return false;
     }
 
-    ApplyPrepared(newInternalData);
+    Purge();
+
+    internalData.Swap(newInternalData);
     return true;
 }
 
-bool ShaderTemplate::Prepare(const char *text, const char *baseDir, InternalData &outInternalData) {
+bool ShaderTemplate::Parse(const char *text, const char *baseDir, InternalData &outInternalData) {
     outInternalData.Purge();
 
     BE1::Lexer lexer;
@@ -360,6 +322,10 @@ bool ShaderTemplate::Prepare(const char *text, const char *baseDir, InternalData
         } else if (token[0] == '}') {
             closed = true;
             break;
+        } else if (!token.Icmp("litSurface")) {
+            outInternalData.flags |= Flag::LitSurface;
+        } else if (!token.Icmp("skySurface")) {
+            outInternalData.flags |= Flag::SkySurface;
         } else if (!token.Icmp("inheritProperties")) {
             if (!ParseInheritProperties(lexer, baseDir, outInternalData)) {
                 return false;
@@ -387,7 +353,7 @@ bool ShaderTemplate::Prepare(const char *text, const char *baseDir, InternalData
     }
 
     if (!closed) {
-        BE_WARNLOG("ShaderTemplate::Create: missing closing brace in shader template '%s'\n", hashName.c_str());
+        BE_WARNLOG("ShaderTemplate::Parse: missing closing brace in shader template '%s'\n", hashName.c_str());
         return false;
     }
 
@@ -400,7 +366,7 @@ bool ShaderTemplate::Prepare(const char *text, const char *baseDir, InternalData
     }
 
     if (!hasShaderStage) {
-        BE_WARNLOG("ShaderTemplate::Create: shader template '%s' has no shader stages\n", hashName.c_str());
+        BE_WARNLOG("ShaderTemplate::Parse: shader template '%s' has no shader stages\n", hashName.c_str());
         return false;
     }
 
@@ -769,6 +735,7 @@ bool ShaderPropertyInfo::Parse(BE1::Lexer &lexer) {
     type = BE1::Variant::Type::None;
     flags = BE1::PropertyInfo::Flag::Editor;
     shaderFlags = ShaderFlag::None;
+    textureType = TextureType::None;
     range = BE1::Rangef(0, 0, 1);
     metaObject = nullptr;
 
@@ -835,16 +802,14 @@ bool ShaderPropertyInfo::Parse(BE1::Lexer &lexer) {
             return false;
         }
 
-        /*if (!BE1::Str::Icmp(textureTypeStr, "2D")) {
-            metaObject = &Texture2DResource::metaObject;
-        } else if (!BE1::Str::Icmp(textureTypeStr, "CUBE")) {
-            metaObject = &TextureCubeMapResource::metaObject;
-        } else if (!BE1::Str::Icmp(textureTypeStr, "SPRITE")) {
-            metaObject = &TextureSpriteResource::metaObject;
+        if (!textureTypeStr.Icmp("2D")) {
+            textureType = TextureType::Texture2D;
+        } else if (!textureTypeStr.Icmp("CUBE")) {
+            textureType = TextureType::TextureCube;
         } else {
-            BE_WARNLOG("unknown texture type %s in shader '%s'\n", textureTypeStr.c_str(), lexer.GetFilename());
-            metaObject = &Texture2DResource::metaObject;
-        }*/
+            BE_WARNLOG("unknown texture type '%s' in shader property '%s'\n", textureTypeStr.c_str(), name.c_str());
+            return false;
+        }
     } else {
         BE_WARNLOG("unknown property type '%s' in shader template '%s'\n", typeStr.c_str(), lexer.GetFilename());
         return false;
@@ -879,7 +844,7 @@ bool ShaderPropertyInfo::Parse(BE1::Lexer &lexer) {
     }
 
     if (!BE1::Str::Cmp(typeStr, "texture")) {
-        defaultValue = BE1::resourceGuidMapper.Get(defaultValueString);
+        defaultValue = BE1::resourceGuidMapper.GetOrCreateGuid(defaultValueString);
     } else {
         defaultValue = BE1::Variant::FromString(type, defaultValueString);
     }
@@ -949,6 +914,8 @@ bool ShaderPropertyInfo::Parse(BE1::Lexer &lexer) {
                 shaderFlags |= ShaderPropertyInfo::ShaderFlag::Normal;
             } else if (token == "linear") {
                 shaderFlags |= ShaderPropertyInfo::ShaderFlag::Linear;
+            } else if (token == "noStreaming") {
+                shaderFlags |= ShaderPropertyInfo::ShaderFlag::NoStreaming;
             } else {
                 BE_WARNLOG("unknown shader property flag '%s' in shader property '%s'\n", token.c_str(), name.c_str());
                 return false;
@@ -1013,11 +980,19 @@ bool ShaderTemplate::Reload() {
         return false;
     }
 
-    return Load(hashName);
+    BE1::Array<ShaderPropertyInfo> oldProperties = internalData.properties;
+
+    if (!Load(hashName)) {
+        return false;
+    }
+
+    shaderTemplateManager.shaderTemplateReloaded(this, oldProperties);
+
+    return true;
 }
 
 std::shared_ptr<ShaderPipelineState> ShaderTemplate::FindCachedGraphicsPipeline(ShaderPermutationKey permutationKey, const ShaderPipelineDesc &pipelineDesc) const {
-    uint64_t hash = GenerateGraphicsPipelineHash(permutationKey, pipelineDesc);
+    uint64_t hash = pipelineDesc.GenerateGraphicsPipelineHash(permutationKey);
 
     for (const CachedGraphicsPipeline &cachedPipeline : cachedGraphicsPipelines) {
         if (cachedPipeline.hash == hash) {
@@ -1044,9 +1019,10 @@ std::shared_ptr<ShaderPipelineState> ShaderTemplate::GetGraphicsPipeline(ShaderP
         return nullptr;
     }
 
+    // 캐시된 ShaderPipelineState 를 찾는다. 캐시된 것이 없으면 새로 생성하여 캐시에 추가한다.
     std::shared_ptr<ShaderPipelineState> pipelineState = FindCachedGraphicsPipeline(permutationKey, pipelineDesc);
     if (!pipelineState) {
-        uint64_t hash = GenerateGraphicsPipelineHash(permutationKey, pipelineDesc);
+        uint64_t hash = pipelineDesc.GenerateGraphicsPipelineHash(permutationKey);
 
         CachedGraphicsPipeline &cachedPipeline = cachedGraphicsPipelines.Alloc();
         cachedPipeline.hash = hash;
@@ -1055,6 +1031,7 @@ std::shared_ptr<ShaderPipelineState> ShaderTemplate::GetGraphicsPipeline(ShaderP
         pipelineState = cachedPipeline.pipelineState;
     }
 
+    // ShaderPipelineState 가 비어있다면 비동기로 빌드한다.
     if (pipelineState->GetState() == ShaderPipelineState::State::Empty) {
         pipelineState->EnsureBuildAsync(shared_from_this());
     }
@@ -1063,6 +1040,12 @@ std::shared_ptr<ShaderPipelineState> ShaderTemplate::GetGraphicsPipeline(ShaderP
 }
 
 std::shared_ptr<ShaderPipelineState> ShaderTemplate::GetComputePipeline(ShaderPermutationKey permutationKey) {
+    if (!FindPermutation(permutationKey)) {
+        BE_WARNLOG("ShaderTemplate::GetComputePipeline: shader template '%s' has no permutation 0x%llx\n", GetHashName(), permutationKey.hash);
+        return nullptr;
+    }
+
+    // 캐시된 ShaderPipelineState 를 찾는다. 캐시된 것이 없으면 새로 생성하여 캐시에 추가한다.
     std::shared_ptr<ShaderPipelineState> pipelineState = FindCachedComputePipeline(permutationKey);
     if (!pipelineState) {
         CachedComputePipeline &cachedPipeline = cachedComputePipelines.Alloc();
@@ -1072,6 +1055,7 @@ std::shared_ptr<ShaderPipelineState> ShaderTemplate::GetComputePipeline(ShaderPe
         pipelineState = cachedPipeline.pipelineState;
     }
 
+    // ShaderPipelineState 가 비어있다면 비동기로 빌드한다.
     if (!pipelineState->IsReady()) {
         pipelineState->EnsureBuildAsync(shared_from_this());
     }
@@ -1117,12 +1101,6 @@ void ShaderTemplate::Purge() {
     internalData.Purge();
 }
 
-void ShaderTemplate::ApplyPrepared(InternalData &newInternalData) {
-    internalData.Swap(newInternalData);
-
-    InvalidateCachedPipelines();
-}
-
 void ShaderTemplate::ClearCachedPipelines() {
     for (CachedGraphicsPipeline &cachedPipeline : cachedGraphicsPipelines) {
         if (cachedPipeline.pipelineState) {
@@ -1139,7 +1117,7 @@ void ShaderTemplate::ClearCachedPipelines() {
     cachedComputePipelines.Clear();
 }
 
-void ShaderTemplate::InvalidateCachedPipelines() {
+void ShaderTemplate::RebuildCachedPipelines() {
     std::shared_ptr<ShaderTemplate> self = shared_from_this();
 
     for (CachedGraphicsPipeline &cachedPipeline : cachedGraphicsPipelines) {
@@ -1218,7 +1196,7 @@ bool ShaderTemplate::PreparePipelineBuildData(ShaderPermutationKey permutationKe
         return false;
     }
 
-    // global defines + base defines + permutation defines + feature defines 순으로 컴파일 define 을 만든다.
+    // global defines + base defines + permutation defines + feature defines 순으로 합쳐서 컴파일 define 을 만든다.
     shaderTemplateManager.CopyGlobalDefines(outBuildData.compileDefines);
     AppendDefines(outBuildData.compileDefines, internalData.baseDefines);
     AppendDefines(outBuildData.compileDefines, srcPermutation->defines);
@@ -1327,41 +1305,4 @@ bool ShaderTemplate::PreparePipelineComputeShader(const PipelineBuildData &build
     }
 
     return true;
-}
-
-uint64_t ShaderTemplate::GenerateInputLayoutHash(const RHI::InputLayout *inputLayout) {
-    if (!inputLayout) {
-        return 0;
-    }
-
-    size_t hash = 0;
-    for (const RHI::InputLayoutElement &element : inputLayout->elements) {
-        hash = hash_combine(hash, element);
-    }
-
-    return static_cast<uint64_t>(hash);
-}
-
-uint64_t ShaderTemplate::GenerateGraphicsPipelineHash(ShaderPermutationKey permutationKey, const ShaderPipelineDesc &pipelineDesc) {
-    struct PipelineHashData {
-        uint64_t    permutationHash = 0;
-        uint64_t    inputLayoutHash = 0;
-        uint64_t    renderDestHash = 0;
-        uint8_t     rasterizerStateType = 0;
-        uint8_t     depthStencilStateType = 0;
-        uint8_t     blendStateType = 0;
-        uint8_t     primitiveTopology = 0;
-        uint32_t    sampleMask = 0;
-    } hashData;
-
-    hashData.permutationHash = permutationKey.hash;
-    hashData.inputLayoutHash = GenerateInputLayoutHash(pipelineDesc.inputLayout);
-    hashData.renderDestHash = pipelineDesc.renderDest.GetHash();
-    hashData.rasterizerStateType = static_cast<uint8_t>(pipelineDesc.rasterizerStateType);
-    hashData.depthStencilStateType = static_cast<uint8_t>(pipelineDesc.depthStencilStateType);
-    hashData.blendStateType = static_cast<uint8_t>(pipelineDesc.blendStateType);
-    hashData.primitiveTopology = static_cast<uint8_t>(pipelineDesc.primitiveTopology);
-    hashData.sampleMask = pipelineDesc.sampleMask;
-
-    return BE1::CityHash64(reinterpret_cast<const char *>(&hashData), sizeof(hashData));
 }

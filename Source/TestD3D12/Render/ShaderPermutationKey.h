@@ -14,10 +14,19 @@
 
 #pragma once
 
-#include <initializer_list>
 #include <stdint.h>
 #include "Containers/StrArray.h"
 #include "ShaderFeatureSet.h"
+
+/*
+---------------------------------------------------------------------------------------------------
+
+    ShaderPermutationKey
+
+    * permutation key 는 permutation defines (shader define properties) + featureSet flags 으로 만들어 진다.
+
+---------------------------------------------------------------------------------------------------
+*/
 
 struct ShaderPermutationKey {
     ShaderPermutationKey() = default;
@@ -26,14 +35,9 @@ struct ShaderPermutationKey {
     bool                            operator==(const ShaderPermutationKey &rhs) const { return hash == rhs.hash; }
     bool                            operator!=(const ShaderPermutationKey &rhs) const { return hash != rhs.hash; }
 
-    static ShaderPermutationKey     FromDefines(std::initializer_list<const char *> defines);
-    static ShaderPermutationKey     FromDefines(const BE1::StrArray &defines);
-    static ShaderPermutationKey     FromDefines(std::initializer_list<const char *> defines, const ShaderFeatureSet &featureSet);
-    static ShaderPermutationKey     FromDefines(const BE1::StrArray &defines, const ShaderFeatureSet &featureSet);
+    static void                     NormalizePermutationDefines(BE1::StrArray &permutationDefines);
 
-    static void                     NormalizePermutationDefines(BE1::StrArray &defines);
-    static ShaderPermutationKey     GeneratePermutationKey(const BE1::StrArray &defines);
-    static ShaderPermutationKey     GeneratePermutationKey(const BE1::StrArray &defines, const ShaderFeatureSet &featureSet);
+    static ShaderPermutationKey     GeneratePermutationKey(const BE1::StrArray &permutationDefines, const ShaderFeatureSet &featureSet = {});
 
     uint64_t                        hash = 0;
 };

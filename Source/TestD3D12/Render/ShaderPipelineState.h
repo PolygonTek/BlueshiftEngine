@@ -21,21 +21,26 @@ class ShaderTemplate;
 class LoadingSystem;
 
 struct ShaderPipelineDesc {
+    static uint64_t                 GenerateInputLayoutHash(const RHI::InputLayout *inputLayout);
+
+    uint64_t                        GeneratePipelineDescHash() const;
+    uint64_t                        GenerateGraphicsPipelineHash(ShaderPermutationKey permutationKey) const;
+
     const RHI::InputLayout *        inputLayout = nullptr;
     RHI::RenderDest                 renderDest;
     RHI::RasterizerStateType        rasterizerStateType = RHI::RasterizerStateType::SolidFrontSided;
     RHI::DepthStencilStateType      depthStencilStateType = RHI::DepthStencilStateType::Default;
-    RHI::BlendStateType             blendStateType = RHI::BlendStateType::Opaque;
+    RHI::BlendStateType             blendStateType = RHI::BlendStateType::Disabled;
     RHI::PrimitiveTopology          primitiveTopology = RHI::PrimitiveTopology::TriangleList;
     uint32_t                        sampleMask = 0xffffffff;
 };
 
 /*
--------------------------------------------------------------------------------
+---------------------------------------------------------------------------------------------------
 
     ShaderPipelineState
 
--------------------------------------------------------------------------------
+---------------------------------------------------------------------------------------------------
 */
 
 class ShaderPipelineState : public std::enable_shared_from_this<ShaderPipelineState> {

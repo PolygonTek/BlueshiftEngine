@@ -41,3 +41,18 @@ struct ShaderFeatureSet {
 
     uint32_t                        flags = 0;
 };
+
+BE_INLINE ShaderFeatureSet operator|(const ShaderFeatureSet &lhs, const ShaderFeatureSet &rhs) {
+    const uint32_t lhsSkinning = lhs.flags & ShaderFeatureSet::GpuSkinningWeightMask;
+    const uint32_t rhsSkinning = rhs.flags & ShaderFeatureSet::GpuSkinningWeightMask;
+    assert(lhsSkinning == 0 || rhsSkinning == 0 || lhsSkinning == rhsSkinning);
+
+    ShaderFeatureSet result;
+    result.flags = lhs.flags | rhs.flags;
+    return result;
+}
+
+BE_INLINE ShaderFeatureSet &operator|=(ShaderFeatureSet &lhs, const ShaderFeatureSet &rhs) {
+    lhs = lhs | rhs;
+    return lhs;
+}
