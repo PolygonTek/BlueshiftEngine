@@ -18,22 +18,23 @@
 #include "SkinningJointCache.h"
 
 /*
--------------------------------------------------------------------------------
+---------------------------------------------------------------------------------------------------
 
     Mesh Instance
 
--------------------------------------------------------------------------------
+---------------------------------------------------------------------------------------------------
 */
 
 class MeshInstance {
-    friend class RenderFrameData;
-
 public:
     using Type = Mesh::InstanceType;
 
     MeshInstance() = default;
     MeshInstance(const MeshInstance &rhs) = delete;
     MeshInstance &operator=(const MeshInstance &rhs) = delete;
+
+    uint64_t                        GetRetainedFrameSerial() const { return retainedFrameSerial; }
+    void                            SetRetainedFrameSerial(uint64_t frameSerial) { retainedFrameSerial = frameSerial; }
 
     void                            Reset();
 

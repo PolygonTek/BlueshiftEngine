@@ -21,17 +21,16 @@ class TextureManager;
 class LoadingSystem;
 
 /*
--------------------------------------------------------------------------------
+---------------------------------------------------------------------------------------------------
 
     Texture
 
--------------------------------------------------------------------------------
+---------------------------------------------------------------------------------------------------
 */
 
 class Texture : public std::enable_shared_from_this<Texture> {
     friend class TextureManager;
     friend class LoadingSystem;
-    friend class RenderFrameData;
 
 public:
     enum class Flag : uint16_t {
@@ -95,6 +94,9 @@ public:
 
     uint32_t                        GetLoadSerial() const { return loadSerial.load(); }
     uint32_t                        BumpLoadSerial() { return loadSerial.fetch_add(1) + 1; }
+
+    uint64_t                        GetRetainedFrameSerial() const { return retainedFrameSerial; }
+    void                            SetRetainedFrameSerial(uint64_t frameSerial) { retainedFrameSerial = frameSerial; }
 
     RHI::TextureType                GetType() const { assert(IsReady()); return internalData.rhiTextureType; }
     uint32_t                        GetWidth() const { assert(IsReady()); return internalData.rhiTexture->GetWidth(); }

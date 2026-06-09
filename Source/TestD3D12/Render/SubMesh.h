@@ -63,6 +63,8 @@ public:
 
     ~SubMesh() { Purge(); }
 
+    int32_t                 GetID() const { return subMeshId; }
+
     uint32_t                NumVerts() const { return numVerts; }
     BE1::VertexGenericLit * Verts() const { return verts; }
 

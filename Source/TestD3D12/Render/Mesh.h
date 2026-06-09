@@ -22,14 +22,14 @@ class MeshManager;
 class LoadingSystem;
 
 /*
--------------------------------------------------------------------------------
+---------------------------------------------------------------------------------------------------
 
     Mesh
 
     A class for managing 3D mesh data.
     A mesh consists of one or more surfaces, each containing its own sub-mesh and material information.
 
--------------------------------------------------------------------------------
+---------------------------------------------------------------------------------------------------
 */
 
 class Mesh : public std::enable_shared_from_this<Mesh> {
