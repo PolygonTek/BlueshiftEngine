@@ -215,7 +215,8 @@ uint32_t TextureManager::GetStreamingTextureMinResidentMaxDimension() const {
 }
 
 void TextureManager::ApplyStreamingFeedback(const uint32_t *feedbackData, uint32_t feedbackCapacity) {
-    for (int i = 0; i < streamingTextures.Count(); ++i) {
+    const int numStreamingTextures = streamingTextures.Count();
+    for (int i = 0; i < numStreamingTextures; ++i) {
         std::shared_ptr<Texture> texture = streamingTextures[i].lock();
         if (!texture) {
             continue;
@@ -258,7 +259,8 @@ void TextureManager::UpdateStreamingTextures() {
         budgetDebtBytes = streamingTextureMemoryUsageBytes > streamingTextureMemoryBudgetBytes ? streamingTextureMemoryUsageBytes - streamingTextureMemoryBudgetBytes : 0;
     }
 
-    for (int streamingTextureIndex = 0; streamingTextureIndex < streamingTextures.Count(); ++streamingTextureIndex) {
+    const int numStreamingTextures = streamingTextures.Count();
+    for (int streamingTextureIndex = 0; streamingTextureIndex < numStreamingTextures; ++streamingTextureIndex) {
         std::shared_ptr<Texture> texture = streamingTextures[streamingTextureIndex].lock();
         if (!texture) {
             continue;
@@ -377,7 +379,8 @@ void TextureManager::UpdateStreamingTextures() {
 void TextureManager::ComputeStreamingTextureMemoryUsage() {
     uint64_t totalBytes = 0;
 
-    for (int i = 0; i < streamingTextures.Count(); ++i) {
+    const int numStreamingTextures = streamingTextures.Count();
+    for (int i = 0; i < numStreamingTextures; ++i) {
         std::shared_ptr<Texture> texture = streamingTextures[i].lock();
         if (!texture || !texture->GetRHITexture()) {
             continue;

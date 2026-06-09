@@ -65,7 +65,8 @@ void IDAllocator::Clear() {
 }
 
 bool IDAllocator::AllocateID(uint32_t &id) {
-    for (size_t blockIndex = 0; blockIndex < bitmap.Count(); ++blockIndex) {
+    const size_t count = bitmap.Count();
+    for (size_t blockIndex = 0; blockIndex < count; ++blockIndex) {
         // If the block is not fully occupied
         if (bitmap[blockIndex] != ~0ULL) {
             int bitIndex = FindFirstZeroBit(bitmap[blockIndex]);
@@ -137,7 +138,8 @@ void IDAllocator::FreeRange(uint32_t startID, size_t count) {
 
 size_t IDAllocator::GetAvailableCount() const {
     size_t totalFree = 0;
-    for (size_t blockIndex = 0; blockIndex < bitmap.Count(); ++blockIndex) {
+    const size_t count = bitmap.Count();
+    for (size_t blockIndex = 0; blockIndex < count; ++blockIndex) {
         totalFree += CountZeroBits(bitmap[blockIndex]);
     }
     return totalFree;

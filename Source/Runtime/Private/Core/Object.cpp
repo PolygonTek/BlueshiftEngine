@@ -187,7 +187,8 @@ void MetaObject::GetPropertyInfoList(Array<PropertyInfo> &propertyInfoList) cons
     Array<Str> names(propertyInfoList.GetGranularity());
 
     for (const MetaObject *t = this; t != nullptr; t = t->super) {
-        for (int index = 0; index < t->propertyInfoList.Count(); index++) {
+        const int count = t->propertyInfoList.Count();
+        for (int index = 0; index < count; index++) {
             const PropertyInfo &propInfo = t->propertyInfoList[index];
             const char *propName = propInfo.GetName();
 

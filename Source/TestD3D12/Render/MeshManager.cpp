@@ -170,7 +170,8 @@ std::shared_ptr<Mesh> MeshManager::CreateCombinedMesh(const char *hashName, cons
     int numTotalVerts = 0;
     int numTotalIndexes = 0;
 
-    for (int subMeshIndex = 0; subMeshIndex < batchSubMeshes.Count(); subMeshIndex++) {
+    const int numBatchSubMeshes = batchSubMeshes.Count();
+    for (int subMeshIndex = 0; subMeshIndex < numBatchSubMeshes; subMeshIndex++) {
         const SubMesh *subMesh = batchSubMeshes[subMeshIndex].subMesh;
 
         numTotalVerts += subMesh->NumVerts();
@@ -186,7 +187,7 @@ std::shared_ptr<Mesh> MeshManager::CreateCombinedMesh(const char *hashName, cons
     BE1::VertIndex *dstIndexPtr = surf->subMesh->indexes;
     int baseVertex = 0;
 
-    for (int subMeshIndex = 0; subMeshIndex < batchSubMeshes.Count(); subMeshIndex++) {
+    for (int subMeshIndex = 0; subMeshIndex < numBatchSubMeshes; subMeshIndex++) {
         const SubMesh *srcSubMesh = batchSubMeshes[subMeshIndex].subMesh;
 
         for (int i = 0; i < srcSubMesh->numVerts; ++i) {

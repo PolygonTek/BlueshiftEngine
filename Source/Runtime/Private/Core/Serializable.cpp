@@ -54,7 +54,8 @@ void Serializable::Serialize(Json::Value &out, bool forCopying) const {
     Array<PropertyInfo> propertyInfoList(64);
     GetPropertyInfoList(propertyInfoList);
 
-    for (int propertyIndex = 0; propertyIndex < propertyInfoList.Count(); propertyIndex++) {
+    const int numProperties = propertyInfoList.Count();
+    for (int propertyIndex = 0; propertyIndex < numProperties; propertyIndex++) {
         const PropertyInfo &propertyInfo = propertyInfoList[propertyIndex];
 
         if (propertyInfo.GetFlags() & PropertyInfo::Flag::SkipSerialization) {
@@ -70,7 +71,8 @@ void Serializable::Serialize(Json::Value &out, bool forCopying) const {
         if (propertyInfo.GetFlags() & PropertyInfo::Flag::Array) {
             out[name] = Json::arrayValue;
 
-            for (int elementIndex = 0; elementIndex < GetPropertyArrayCount(propertyIndex); elementIndex++) {
+            const int count = GetPropertyArrayCount(propertyIndex);
+            for (int elementIndex = 0; elementIndex < count; elementIndex++) {
                 Variant value;
                 GetArrayProperty(propertyInfo, elementIndex, value);
 

@@ -240,7 +240,8 @@ bool TaskManager::IsTaskRunning(int32_t taskId) const {
 bool TaskManager::IsTaskRunning(const Array<int32_t>& taskIds) const {
     ScopedLock lock(taskMutex);
 
-    for (int i = 0; i < taskIds.Count(); ++i) {
+    const int numTaskIds = taskIds.Count();
+    for (int i = 0; i < numTaskIds; ++i) {
         int32_t taskId = taskIds[i];
         bool taskIdFound = false;
 

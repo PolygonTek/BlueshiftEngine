@@ -403,7 +403,8 @@ RHI::ViewID D3D12Renderer::CreateSRV(D3D12Buffer *buffer, RHI::Format format, ui
     // SRV 추가 후 viewID 를 리턴
     RHI::ViewID viewID;
 
-    for (int i = 0; i < buffer->srvEntries.Count(); ++i) {
+    const int numSrvEntries = buffer->srvEntries.Count();
+    for (int i = 0; i < numSrvEntries; ++i) {
         if (!buffer->srvEntries[i].cpuDescriptorHandle.ptr) {
             buffer->srvEntries[i] = newSrvEntry;
             viewID.value = i;
@@ -482,7 +483,8 @@ RHI::ViewID D3D12Renderer::CreateUAV(D3D12Buffer *buffer, RHI::Format format, ui
     // UAV 추가 후 viewID 를 리턴
     RHI::ViewID viewID;
 
-    for (int i = 0; i < buffer->uavEntries.Count(); ++i) {
+    const int numUavEntries = buffer->uavEntries.Count();
+    for (int i = 0; i < numUavEntries; ++i) {
         if (!buffer->uavEntries[i].cpuDescriptorHandle.ptr) {
             buffer->uavEntries[i] = newUavEntry;
             viewID.value = i;

@@ -54,7 +54,7 @@ BE_INLINE void SplitStringIntoList(StrArray &array, const char *string, const ch
 template <>
 BE_INLINE size_t StrArray::Size() const {
     size_t s = sizeof(*this);
-    for (int i = 0; i < Count(); i++) {
+    for (int i = 0; i < count; i++) {
         s += (*this)[i].Size();
     }
 

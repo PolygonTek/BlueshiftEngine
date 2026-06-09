@@ -176,7 +176,8 @@ void MaterialManager::OnShaderTemplateReloaded(const ShaderTemplate *shaderTempl
         return;
     }
 
-    for (int i = 0; i < materialHashMap.Count(); i++) {
+    const int numMaterials = materialHashMap.Count();
+    for (int i = 0; i < numMaterials; i++) {
         const auto *entry = materialHashMap.GetByIndex(i);
         assert(entry);
 

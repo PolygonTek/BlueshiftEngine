@@ -332,9 +332,11 @@ Str Str::ToRelativePath(const char *basePath) const {
     StrArray base_path_list;
     SplitStringIntoList(a_path_list, a_path, PATHSEPERATOR_STR);
     SplitStringIntoList(base_path_list, base_path, PATHSEPERATOR_STR);
-    
+
+    const int a_path_list_count = a_path_list.Count();
+    const int base_path_list_count = base_path_list.Count();
     int idx;
-    for (idx = 0; idx < a_path_list.Count() && idx < base_path_list.Count(); idx++) {
+    for (idx = 0; idx < a_path_list_count && idx < base_path_list_count; idx++) {
         if (a_path_list[idx] != base_path_list[idx]) {
             break;
         }
@@ -347,14 +349,14 @@ Str Str::ToRelativePath(const char *basePath) const {
     assert(idx > 0);
 
     Str result;
-    for (int i = idx; i < base_path_list.Count(); i++) {
+    for (int i = idx; i < base_path_list_count; i++) {
         if (!result.IsEmpty()) {
             result += PATHSEPERATOR_STR;
         }
         result += "..";
     }
 
-    for (int i = idx; i < a_path_list.Count(); i++) {
+    for (int i = idx; i < a_path_list_count; i++) {
         if (!result.IsEmpty()) {
             result += PATHSEPERATOR_STR;
         }

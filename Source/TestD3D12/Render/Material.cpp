@@ -158,7 +158,8 @@ void Material::UpdateTextureProperties() {
     }
 
     const BE1::Array<ShaderPropertyInfo> &properties = internalData.shaderTemplate->GetProperties();
-    for (int propertyIndex = 0; propertyIndex < properties.Count(); propertyIndex++) {
+    const int numProperties = properties.Count();
+    for (int propertyIndex = 0; propertyIndex < numProperties; propertyIndex++) {
         const ShaderPropertyInfo &propertyInfo = properties[propertyIndex];
         if (!propertyInfo.IsTexture()) {
             continue;
@@ -491,6 +492,8 @@ void Material::RemapShaderTemplateProperties(const BE1::Array<ShaderPropertyInfo
         return;
     }
 
+    const int numOldProperties = oldProperties.Count();
+
     // 예전 프로퍼티 값들을 백업해둔다.
     BE1::Array<ShaderTemplate::PropertyValue> oldPropertyValues;
     oldPropertyValues.Swap(internalData.propertyValues);
@@ -500,10 +503,11 @@ void Material::RemapShaderTemplateProperties(const BE1::Array<ShaderPropertyInfo
 
     // 예전 프로퍼티와 같은 이름이 있다면 예전 값들로 세팅한다.
     const BE1::Array<ShaderPropertyInfo> &newProperties = internalData.shaderTemplate->GetProperties();
-    for (int newIndex = 0; newIndex < newProperties.Count(); newIndex++) {
+    const int numNewProperties = newProperties.Count();
+    for (int newIndex = 0; newIndex < numNewProperties; newIndex++) {
         const ShaderPropertyInfo &newProperty = newProperties[newIndex];
 
-        for (int oldIndex = 0; oldIndex < oldProperties.Count(); oldIndex++) {
+        for (int oldIndex = 0; oldIndex < numOldProperties; oldIndex++) {
             const ShaderPropertyInfo &oldProperty = oldProperties[oldIndex];
             if (BE1::Str::Cmp(newProperty.GetName(), oldProperty.GetName())) {
                 continue;

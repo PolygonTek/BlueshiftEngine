@@ -84,7 +84,8 @@ void CVarSystem::Shutdown() {
     cmdSystem.RemoveCommand("set");
     cmdSystem.RemoveCommand("toggle");
 
-    for (int i = 0; i < cvars.Count(); i++) {
+    const int numCvars = cvars.Count();
+    for (int i = 0; i < numCvars; i++) {
         Mem_Free(cvars[i]->valueString);
 
         if (!(cvars[i]->flags & CVar::Flag::Static)) {
@@ -105,17 +106,18 @@ const char *CVarSystem::CompleteVariable(const char *partial) {
         return nullptr;
     }
 
+    const int count = cvars.Count();
     int i;
 
     // Check full name 
-    for (i = 0; i < cvars.Count(); i++) {
+    for (i = 0; i < count; i++) {
         if (!Str::Icmp(partial, cvars[i]->name)) {
             return cvars[i]->name;
         }
     }
 
     // Check partial name
-    for (i = 0; i < cvars.Count(); i++) {
+    for (i = 0; i < count; i++) {
         if (!Str::Icmpn(partial, cvars[i]->name, len)) {
             return cvars[i]->name;
         }
@@ -160,7 +162,8 @@ void CVarSystem::Register(CVar *cvar) {
 }
 
 void CVarSystem::WriteVariables(File *fp) const {
-    for (int i = 0; i < cvars.Count(); i++) {
+    const int numCvars = cvars.Count();
+    for (int i = 0; i < numCvars; i++) {
         CVar *cvar = cvars[i];
 
         if (cvar->flags & CVar::Flag::Archive) {

@@ -156,7 +156,8 @@ void D3D12FrameThreadData::Reset() {
 D3D12FrameThreadData::DynamicBufferBlock *D3D12FrameThreadData::FindFreeDynamicBufferBlock(uint32_t size, uint32_t alignSize, uint32_t *outOffset) const {
     DynamicBufferBlock *currentBlock = nullptr;
 
-    for (int blockIndex = 0; blockIndex < dynamicBufferBlocks.Count(); ++blockIndex) {
+    const int blockCount = dynamicBufferBlocks.Count();
+    for (int blockIndex = 0; blockIndex < blockCount; ++blockIndex) {
         currentBlock = dynamicBufferBlocks[blockIndex];
 
         uint32_t alignedOffset = BE1::AlignUp(currentBlock->usedBytes, alignSize);

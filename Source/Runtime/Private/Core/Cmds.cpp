@@ -348,7 +348,8 @@ void CmdSystem::Cmd_Dec(const CmdArgs &args) {
 }
 
 void CmdSystem::Cmd_Echo(const CmdArgs &args) {
-    for (int i = 1; i < args.Argc(); i++) {
+    const int argc = args.Argc();
+    for (int i = 1; i < argc; i++) {
         BE_LOG("%s ", args.Argv(i));
     }
     BE_LOG("\n");

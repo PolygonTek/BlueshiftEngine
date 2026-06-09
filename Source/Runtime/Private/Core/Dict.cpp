@@ -34,7 +34,8 @@ const KeyValue *Dict::MatchPrefix(const char *prefix, const KeyValue *lastMatch)
         }
     }
 
-    for (int i = start + 1; i < kvArray.Count(); i++) {
+    const int count = kvArray.Count();
+    for (int i = start + 1; i < count; i++) {
         if (!kvArray[i].GetKey().Icmpn(prefix, len)) {
             return &kvArray[i];
         }
@@ -53,7 +54,8 @@ Dict &Dict::operator=(const Dict &other) {
     kvArray = other.kvArray;
     kvHash = other.kvHash;
 
-    for (int i = 0; i < kvArray.Count(); i++) {
+    const int count = kvArray.Count();
+    for (int i = 0; i < count; i++) {
         kvArray[i].key = keyPool->CopyString(kvArray[i].key);
         kvArray[i].value = valuePool->CopyString(kvArray[i].value);
     }
@@ -403,7 +405,8 @@ void Dict::Delete(const char *key) {
 
 #if 0
     // make sure all keys can still be found in the hash index
-    for (i = 0; i < kvArray.Count(); i++) {
+    const int count = kvArray.Count();
+    for (i = 0; i < count; i++) {
         assert(FindKeyValue(kvArray[i].GetKey()) != nullptr);
     }
 #endif

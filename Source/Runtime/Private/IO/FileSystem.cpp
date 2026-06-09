@@ -514,7 +514,8 @@ bool FileSystem::CopyDirectoryTree(const char *from, const char *to) {
     FileArray fileArray;
     ListFiles(from, "*", fileArray, false, true);
 
-    for (int i = 0; i < fileArray.NumFiles(); i++) {
+    const int numFiles = fileArray.NumFiles();
+    for (int i = 0; i < numFiles; i++) {
         if (fileArray.GetArray()[i].isSubDir) {
             continue;
         }
@@ -856,7 +857,8 @@ bool FileSystem::WriteDict(const char *filename, const Dict &dict) {
 
     fp->Printf("{\n");
 
-    for (int i = 0; i < dict.NumKeyValues(); i++) {
+    const int numKeyValues = dict.NumKeyValues();
+    for (int i = 0; i < numKeyValues; i++) {
         const KeyValue *keyValue = dict.GetKeyValue(i);
         fp->Printf("  \"%s\" \"%s\"\n", keyValue->GetKey().c_str(), keyValue->GetValue().c_str());
     }
@@ -974,7 +976,8 @@ void FileSystem::Cmd_Dir(const CmdArgs &args) {
 
     BE_LOG("Directory of %s %s\n", directory, nameFilter);
 
-    for (int i = 0; i < files.NumFiles(); i++) {
+    const int numFiles = files.NumFiles();
+    for (int i = 0; i < numFiles; i++) {
         BE_LOG("%s\n", files.GetFileName(i));
     }
     

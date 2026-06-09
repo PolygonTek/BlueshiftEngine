@@ -365,7 +365,8 @@ void Entity::GetChildrenRecursive(EntityPtrArray &children) const {
 ComponentPtrArray Entity::GetComponentsInChildren(const MetaObject *type, bool skipIfParentDontHave) const {
     ComponentPtrArray subComponents;
 
-    for (int i = 0; i < components.Count(); i++) {
+    const int numComponents = components.Count();
+    for (int i = 0; i < numComponents; i++) {
         Component *component = components[i];
 
         if (component->GetMetaObject()->IsTypeOf(*type)) {
@@ -395,7 +396,8 @@ Array<ComTransform *> Entity::GetTransformsInChildren() const {
 }
 
 bool Entity::HasRenderObject(int renderObjectHandle) const {
-    for (int componentIndex = 1; componentIndex < components.Count(); componentIndex++) {
+    const int numComponents = components.Count();
+    for (int componentIndex = 1; componentIndex < numComponents; componentIndex++) {
         Component *component = components[componentIndex];
 
         if (component) {
@@ -409,7 +411,9 @@ bool Entity::HasRenderObject(int renderObjectHandle) const {
 
 void Entity::OnApplicationResize(int width, int height) {
     ComponentPtrArray scriptComponents = GetComponents(&ComScript::metaObject);
-    for (int i = 0; i < scriptComponents.Count(); i++) {
+    const int numScriptComponents = scriptComponents.Count();
+
+    for (int i = 0; i < numScriptComponents; i++) {
         ComScript *scriptComponent = scriptComponents[i]->Cast<ComScript>();
 
         scriptComponent->OnApplicationResize(width, height);
@@ -419,7 +423,9 @@ void Entity::OnApplicationResize(int width, int height) {
 
 void Entity::OnApplicationTerminate() {
     ComponentPtrArray scriptComponents = GetComponents(&ComScript::metaObject);
-    for (int i = 0; i < scriptComponents.Count(); i++) {
+    const int numScriptComponents = scriptComponents.Count();
+
+    for (int i = 0; i < numScriptComponents; i++) {
         ComScript *scriptComponent = scriptComponents[i]->Cast<ComScript>();
         
         scriptComponent->OnApplicationTerminate();
@@ -428,7 +434,9 @@ void Entity::OnApplicationTerminate() {
 
 void Entity::OnApplicationPause(bool pause) {
     ComponentPtrArray scriptComponents = GetComponents(&ComScript::metaObject);
-    for (int i = 0; i < scriptComponents.Count(); i++) {
+    const int numScriptComponents = scriptComponents.Count();
+
+    for (int i = 0; i < numScriptComponents; i++) {
         ComScript *scriptComponent = scriptComponents[i]->Cast<ComScript>();
         
         scriptComponent->OnApplicationPause(pause);
@@ -458,8 +466,9 @@ void Entity::Deserialize(const Json::Value &entityValue) {
     Serializable::Deserialize(entityValue);
 
     const Json::Value &componentsValue = entityValue["components"];
+    const int numComponents = componentsValue.size();
 
-    for (int i = 0; i < componentsValue.size(); i++) {
+    for (int i = 0; i < numComponents; i++) {
         const Json::Value &componentValue = componentsValue[i];
 
         const char *classname = componentValue["classname"].asCString();
@@ -548,7 +557,8 @@ void Entity::UpdateUpdatableFlagsSelf() {
     // Clear updatable flags
     flags &= ~(Flag::Updatable | Flag::LateUpdatable | Flag::FixedUpdatable);
 
-    for (int i = 0; i < components.Count(); i++) {
+    const int numComponents = components.Count();
+    for (int i = 0; i < numComponents; i++) {
         const Component *component = components[i];
 
         if (component->IsTypeOf<ComScript>()) {
@@ -618,7 +628,8 @@ const AABB Entity::GetLocalAABB(bool includingChildren) const {
     AABB outAabb;
     outAabb.Clear();
 
-    for (int componentIndex = 0; componentIndex < components.Count(); componentIndex++) {
+    const int numComponents = components.Count();
+    for (int componentIndex = 0; componentIndex < numComponents; componentIndex++) {
         Component *component = components[componentIndex];
 
         if (component) {
@@ -632,7 +643,8 @@ const AABB Entity::GetLocalAABB(bool includingChildren) const {
         Array<Entity *> children;
         GetChildrenRecursive(children);
 
-        for (int childIndex = 0; childIndex < children.Count(); childIndex++) {
+        const int numChildren = children.Count();
+        for (int childIndex = 0; childIndex < numChildren; childIndex++) {
             const Entity *child = children[childIndex];
 
             AABB childLocalAabb = child->GetLocalAABB();
@@ -738,7 +750,8 @@ bool Entity::IntersectRay(const Ray &ray, bool backFaceCull, float &lastDist, Ve
     float dist;
     Vec3 normal;
 
-    for (int componentIndex = 0; componentIndex < components.Count(); componentIndex++) {
+    const int numComponents = components.Count();
+    for (int componentIndex = 0; componentIndex < numComponents; componentIndex++) {
         const Component *component = components[componentIndex];
 
         if (component && component->IsActiveInHierarchy()) {
@@ -984,12 +997,15 @@ void Entity::RemapGuids(const HashTable<Guid, Guid> &guidMap) {
         Array<PropertyInfo> propertyInfoList;
         component->GetPropertyInfoList(propertyInfoList);
 
-        for (int propIndex = 0; propIndex < propertyInfoList.Count(); propIndex++) {
+        const int propertyInfoCount = propertyInfoList.Count();
+        for (int propIndex = 0; propIndex < propertyInfoCount; propIndex++) {
             const auto &propInfo = propertyInfoList[propIndex];
 
             if (propInfo.GetType() == Variant::Type::Guid) {
                 if (propInfo.GetFlags() & PropertyInfo::Flag::Array) {
-                    for (int arrayIndex = 0; arrayIndex < component->GetPropertyArrayCount(propInfo.GetName()); arrayIndex++) {
+                    const int arrayCount = component->GetPropertyArrayCount(propInfo.GetName());
+
+                    for (int arrayIndex = 0; arrayIndex < arrayCount; arrayIndex++) {
                         const Guid fromGuid = component->GetArrayProperty(propIndex, arrayIndex).As<Guid>();
 
                         if (guidMap.Get(fromGuid, &toGuid)) {

@@ -334,7 +334,8 @@ bool Anim::CheckHierarchy(const Skeleton *skeleton) const {
 
     const Joint *skeletonJoints = skeleton->GetJoints();
 
-    for (int jointIndex = 0; jointIndex < internalData.joints.Count(); jointIndex++) {
+    const int numJoints = internalData.joints.Count();
+    for (int jointIndex = 0; jointIndex < numJoints; jointIndex++) {
         const JointInfo &joint = internalData.joints[jointIndex];
         const Joint &skeletonJoint = skeletonJoints[jointIndex];
 
@@ -417,6 +418,8 @@ void Anim::ComputeFrameAABBs(const Skeleton *skeleton, const Mesh *mesh, BE1::Ar
     frameAABBs.SetGranularity(1);
     frameAABBs.SetCount(internalData.numFrames);
 
+    const int numSurfaces = mesh->NumSurfaces();
+
     for (int frameIndex = 0; frameIndex < internalData.numFrames; frameIndex++) {
         BE1::AABB &frameAABB = frameAABBs[frameIndex];
 
@@ -430,14 +433,15 @@ void Anim::ComputeFrameAABBs(const Skeleton *skeleton, const Mesh *mesh, BE1::Ar
 
         frameAABB.Clear();
 
-        for (int surfaceIndex = 0; surfaceIndex < mesh->NumSurfaces(); surfaceIndex++) {
+        for (int surfaceIndex = 0; surfaceIndex < numSurfaces; surfaceIndex++) {
             const SubMesh *subMesh = mesh->GetSurface(surfaceIndex)->subMesh;
+            const int numVerts = subMesh->NumVerts();
 
             switch (subMesh->MaxVertexWeights()) {
             case 8: {
                 const BE1::VertexWeight8 *vertWeights = (const BE1::VertexWeight8 *)subMesh->VertexWeights();
 
-                for (int vertexIndex = 0; vertexIndex < subMesh->NumVerts(); vertexIndex++) {
+                for (int vertexIndex = 0; vertexIndex < numVerts; vertexIndex++) {
                     const BE1::VertexWeight8 *vw = &vertWeights[vertexIndex];
                     const BE1::Vec3 &pos = subMesh->Verts()[vertexIndex].xyz;
                     BE1::Vec3 resultPos = BE1::Vec3::zero;
@@ -459,7 +463,7 @@ void Anim::ComputeFrameAABBs(const Skeleton *skeleton, const Mesh *mesh, BE1::Ar
             case 4: {
                 const BE1::VertexWeight4 *vertWeights = (const BE1::VertexWeight4 *)subMesh->VertexWeights();
 
-                for (int vertexIndex = 0; vertexIndex < subMesh->NumVerts(); vertexIndex++) {
+                for (int vertexIndex = 0; vertexIndex < numVerts; vertexIndex++) {
                     const BE1::VertexWeight4 *vw = &vertWeights[vertexIndex];
                     const BE1::Vec3 &pos = subMesh->Verts()[vertexIndex].xyz;
                     BE1::Vec3 resultPos = BE1::Vec3::zero;
@@ -480,7 +484,7 @@ void Anim::ComputeFrameAABBs(const Skeleton *skeleton, const Mesh *mesh, BE1::Ar
             case 1: {
                 const BE1::VertexWeight1 *vertWeights = (const BE1::VertexWeight1 *)subMesh->VertexWeights();
 
-                for (int vertexIndex = 0; vertexIndex < subMesh->NumVerts(); vertexIndex++) {
+                for (int vertexIndex = 0; vertexIndex < numVerts; vertexIndex++) {
                     const BE1::VertexWeight1 *vw = &vertWeights[vertexIndex];
                     const BE1::Vec3 &pos = subMesh->Verts()[vertexIndex].xyz;
                     BE1::Vec3 resultPos = jointMats2[vw->jointIndex].TransformPos(pos);
@@ -1218,19 +1222,21 @@ static float CompareJointsS(const BE1::JointPose *joints1, const BE1::JointPose 
 }
 
 void Anim::RemoveFrames(const BE1::Array<int> &removableFrameNums) {
+    const int numRemovableFrameNums = removableFrameNums.Count();
+
     BE1::Array<float> newFrameComponents;
     newFrameComponents.SetGranularity(1);
-    newFrameComponents.SetCount(internalData.components.Count() - removableFrameNums.Count() * internalData.numComponentsPerFrame);
+    newFrameComponents.SetCount(internalData.components.Count() - numRemovableFrameNums * internalData.numComponentsPerFrame);
 
     BE1::Array<int> newFrameTimes;
     newFrameTimes.SetGranularity(1);
-    newFrameTimes.SetCount(internalData.frameTimes.Count() - removableFrameNums.Count());
+    newFrameTimes.SetCount(internalData.frameTimes.Count() - numRemovableFrameNums);
 
     int numNewFrames = 0;
 
     for (int frameNum = 0; frameNum < internalData.numFrames; frameNum++) {
         bool remove = false;
-        for (int i = 0; i < removableFrameNums.Count(); i++) {
+        for (int i = 0; i < numRemovableFrameNums; i++) {
             if (frameNum == removableFrameNums[i]) {
                 remove = true;
                 break;

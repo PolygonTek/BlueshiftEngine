@@ -370,13 +370,14 @@ void Mesh::InternalData::GetJointAABBs(const BE1::Mat3x4 *invBindPoseMats, BE1::
 
     for (Mesh::Surface *surface : surfaces) {
         const SubMesh *subMesh = surface->subMesh;
+        const int numVerts = subMesh->NumVerts();
 
         switch (subMesh->MaxVertexWeights()) {
         case 8:
         {
             const BE1::VertexWeight8 *vertWeights = (const BE1::VertexWeight8 *)subMesh->VertexWeights();
 
-            for (int vertexIndex = 0; vertexIndex < subMesh->NumVerts(); vertexIndex++) {
+            for (int vertexIndex = 0; vertexIndex < numVerts; vertexIndex++) {
                 const BE1::VertexWeight8 *vw = &vertWeights[vertexIndex];
                 const BE1::Vec3 &position = subMesh->Verts()[vertexIndex].xyz;
 
@@ -392,7 +393,7 @@ void Mesh::InternalData::GetJointAABBs(const BE1::Mat3x4 *invBindPoseMats, BE1::
         {
             const BE1::VertexWeight4 *vertWeights = (const BE1::VertexWeight4 *)subMesh->VertexWeights();
 
-            for (int vertexIndex = 0; vertexIndex < subMesh->NumVerts(); vertexIndex++) {
+            for (int vertexIndex = 0; vertexIndex < numVerts; vertexIndex++) {
                 const BE1::VertexWeight4 *vw = &vertWeights[vertexIndex];
                 const BE1::Vec3 &position = subMesh->Verts()[vertexIndex].xyz;
 
@@ -408,7 +409,7 @@ void Mesh::InternalData::GetJointAABBs(const BE1::Mat3x4 *invBindPoseMats, BE1::
         {
             const BE1::VertexWeight1 *vertWeights = (const BE1::VertexWeight1 *)subMesh->VertexWeights();
 
-            for (int vertexIndex = 0; vertexIndex < subMesh->NumVerts(); vertexIndex++) {
+            for (int vertexIndex = 0; vertexIndex < numVerts; vertexIndex++) {
                 const BE1::VertexWeight1 *vw = &vertWeights[vertexIndex];
                 const BE1::Vec3 &position = subMesh->Verts()[vertexIndex].xyz;
 

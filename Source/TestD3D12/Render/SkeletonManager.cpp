@@ -142,7 +142,8 @@ void SkeletonManager::CleanExpiredSkeletons() {
 void SkeletonManager::Cmd_ListSkeletons(const BE1::CmdArgs &args) {
     int count = 0;
 
-    for (int i = 0; i < skeletonManager.skeletonHashMap.Count(); i++) {
+    const int numSkeletons = skeletonManager.skeletonHashMap.Count();
+    for (int i = 0; i < numSkeletons; i++) {
         const auto *entry = skeletonManager.skeletonHashMap.GetByIndex(i);
         std::shared_ptr<Skeleton> skeleton = entry->second.lock();
         if (!skeleton) {

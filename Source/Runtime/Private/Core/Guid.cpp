@@ -35,7 +35,8 @@ Guid Guid::CreateGuid() {
 }
 
 static bool IsHexString(const Str &str) {
-    for (int i = 0; i < str.Length(); i++) {
+    const int strLen = str.Length();
+    for (int i = 0; i < strLen; i++) {
         const char c = str[i];
         if (!((c >= '0' && c <= '9') || (c >= 'a' && c <= 'f') || (c >= 'A' && c <= 'F'))) {
             return false;

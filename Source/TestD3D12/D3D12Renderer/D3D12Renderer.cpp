@@ -740,7 +740,8 @@ void D3D12Renderer::DrainReleaseRequestsToRetireList() {
 void D3D12Renderer::FreeRetiredResources(bool waitPendings) {
     int retiredIndex = 0;
 
-    for (retiredIndex = 0; retiredIndex < retiredResources.Count(); ++retiredIndex) {
+    const int numRetiredResources = retiredResources.Count();
+    for (retiredIndex = 0; retiredIndex < numRetiredResources; ++retiredIndex) {
         D3D12RetiredResource &retiredResource = retiredResources[retiredIndex];
         if (waitPendings) {
             WaitFence(RHI::CommandQueueType::Graphics, retiredResource.graphicsFenceValue);

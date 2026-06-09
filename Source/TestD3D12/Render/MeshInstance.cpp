@@ -137,7 +137,8 @@ bool MeshInstance::HasSkinningData() const {
         return false;
     }
 
-    for (int surfaceIndex = 0; surfaceIndex < sourceMesh->NumSurfaces(); ++surfaceIndex) {
+    const int numSurfaces = sourceMesh->NumSurfaces();
+    for (int surfaceIndex = 0; surfaceIndex < numSurfaces; ++surfaceIndex) {
         const Mesh::Surface *surface = sourceMesh->GetSurface(surfaceIndex);
         if (surface && surface->subMesh && surface->subMesh->MaxVertexWeights() > 0) {
             return true;
@@ -158,7 +159,7 @@ void MeshInstance::ResizeSkinningMatrices(int numMatrices) {
 
     skinningMatrices.SetCount(numMatrices, false);
 
-    for (int i = oldCount; i < skinningMatrices.Count(); ++i) {
+    for (int i = oldCount; i < numMatrices; ++i) {
         skinningMatrices[i].SetIdentity();
     }
 

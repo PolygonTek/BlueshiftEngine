@@ -389,7 +389,8 @@ bool LoadingSystem::PopNextRequest(LoadRequest &outRequest) {
     }
 
     int bestIndex = 0;
-    for (int i = 1; i < requests.Count(); i++) {
+    const int numRequests = requests.Count();
+    for (int i = 1; i < numRequests; i++) {
         if (IsHigherPriority(requests[i], requests[bestIndex])) {
             bestIndex = i;
         }

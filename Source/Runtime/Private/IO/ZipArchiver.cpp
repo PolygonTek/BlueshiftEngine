@@ -142,7 +142,8 @@ bool ZipArchiver::Archive(const char *zipFilename, const char *archiveDirectory,
     FileArray fileArray;
     fileSystem.ListFiles(archiveDirectory, filter, fileArray, false, true);
 
-    for (int i = 0; i < fileArray.NumFiles(); i++) {
+    const int numFiles = fileArray.NumFiles();
+    for (int i = 0; i < numFiles; i++) {
         const auto &fileInfo = fileArray.GetArray()[i];
         if (fileInfo.isSubDir) {
             continue;

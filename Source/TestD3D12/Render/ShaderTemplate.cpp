@@ -244,7 +244,8 @@ ShaderPermutationKey ShaderTemplate::AddPermutation(const BE1::Array<PropertyVal
 ShaderPermutationKey ShaderTemplate::AddPermutation(const BE1::Array<PropertyValue> &propertyValues, const ShaderFeatureSet &featureSet) {
     BE1::StrArray permutationDefines;
 
-    for (int i = 0; i < internalData.properties.Count(); i++) {
+    const int numProperties = internalData.properties.Count();
+    for (int i = 0; i < numProperties; i++) {
         const ShaderPropertyInfo &propertyInfo = internalData.properties[i];
         if (!propertyInfo.IsShaderDefine()) {
             continue;

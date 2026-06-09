@@ -565,7 +565,8 @@ bool Mesh::TrySliceMesh(const Mesh &srcMesh, const BE1::Plane &slicePlane, bool 
         return false;
     }
 
-    for (int surfaceIndex = 0; surfaceIndex < srcMesh.internalData.surfaces.Count(); surfaceIndex++) {
+    const int numSurfaces = srcMesh.internalData.surfaces.Count();
+    for (int surfaceIndex = 0; surfaceIndex < numSurfaces; surfaceIndex++) {
         const Surface *srcSurf = srcMesh.internalData.surfaces[surfaceIndex];
 
         int planeSide = srcSurf->subMesh->aabb.PlaneSide(slicePlane);
@@ -730,7 +731,8 @@ bool Mesh::TrySliceMesh(const Mesh &srcMesh, const BE1::Plane &slicePlane, bool 
 
                         // TODO: Optimization
                         bool foundSameClippedVertex = false;
-                        for (int clippedVertIndex = 0; clippedVertIndex < clippedVerts.Count(); clippedVertIndex++) {
+                        const int numClippedVerts = clippedVerts.Count();
+                        for (int clippedVertIndex = 0; clippedVertIndex < numClippedVerts; clippedVertIndex++) {
                             if (clippedVerts[clippedVertIndex].Equals(clippedVertex.GetPosition(), 0.00001f)) {
                                 foundSameClippedVertex = true;
                                 break;
@@ -758,7 +760,9 @@ bool Mesh::TrySliceMesh(const Mesh &srcMesh, const BE1::Plane &slicePlane, bool 
             }
         }
 
-        if (generateCap && clippedVerts.Count() >= 3) {
+        const int numClippedVerts = clippedVerts.Count();
+
+        if (generateCap && numClippedVerts >= 3) {
             BE1::Array<BE1::VertexGenericLit> *tempBelowCapVertsPtr = &tempBelowVerts;
             BE1::Array<BE1::VertexGenericLit> *tempAboveCapVertsPtr = &tempAboveVerts;
             BE1::Array<BE1::VertIndex> *tempBelowCapIndexesPtr = &tempBelowIndexes;
@@ -775,9 +779,9 @@ bool Mesh::TrySliceMesh(const Mesh &srcMesh, const BE1::Plane &slicePlane, bool 
 
             // pointsOnPlane has same order with clippedVerts.
             BE1::Array<BE1::Vec2> pointsOnPlane;
-            pointsOnPlane.SetCount(clippedVerts.Count());
+            pointsOnPlane.SetCount(numClippedVerts);
 
-            for (int i = 0; i < clippedVerts.Count(); i++) {
+            for (int i = 0; i < numClippedVerts; i++) {
                 BE1::Vec3 offset = clippedVerts[i] - planeOrigin;
                 pointsOnPlane[i].x = planeXAxis.Dot(offset);
                 pointsOnPlane[i].y = planeYAxis.Dot(offset);
@@ -787,7 +791,7 @@ bool Mesh::TrySliceMesh(const Mesh &srcMesh, const BE1::Plane &slicePlane, bool 
             int numTriangulatedVerts = idb->Triangulate(pointsOnPlane.Count(), &pointsOnPlane[0].x, &pointsOnPlane[0].y, sizeof(pointsOnPlane[0]));
             //int numTriangulatedVerts = idb->GetNumOutputIndices();
             if (numTriangulatedVerts > 0) {
-                for (int i = 0; i < clippedVerts.Count(); i++) {
+                for (int i = 0; i < numClippedVerts; i++) {
                     const IDelaBella2<float>::Vertex *v = idb->GetVertexByIndex(i);
 
                     // Texture coordinates are based on the 2D coordinates used for triangulation.

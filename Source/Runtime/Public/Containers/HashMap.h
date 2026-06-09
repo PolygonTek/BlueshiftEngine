@@ -319,7 +319,8 @@ BE_INLINE void HASH_MAP_TEMPLATE::Clear() {
 
 template <typename KeyT, typename ValueT, typename HashCompareT, typename HashGeneratorT>
 BE_INLINE void HASH_MAP_TEMPLATE::DeleteContents(bool clear) {
-    for (int index = 0; index < pairs.Count(); index++) {
+    const int numPairs = pairs.Count();
+    for (int index = 0; index < numPairs; index++) {
         delete pairs[index].second;
         pairs[index].second = nullptr;
     }

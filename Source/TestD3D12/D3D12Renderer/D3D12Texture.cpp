@@ -692,7 +692,8 @@ RHI::ViewID D3D12Renderer::CreateSRV(D3D12Texture *texture, RHI::Format typeless
     // SRV 추가 후 viewID 를 리턴
     RHI::ViewID viewID;
 
-    for (int i = 0; i < texture->srvEntries.Count(); ++i) {
+    const int numSrvEntries = texture->srvEntries.Count();
+    for (int i = 0; i < numSrvEntries; ++i) {
         if (!texture->srvEntries[i].cpuDescriptorHandle.ptr) {
             texture->srvEntries[i] = newSrvEntry;
             viewID.value = i;
@@ -815,7 +816,8 @@ RHI::ViewID D3D12Renderer::CreateUAV(D3D12Texture *texture, RHI::Format typeless
     // UAV 추가 후 viewID 를 리턴
     RHI::ViewID viewID;
 
-    for (int i = 0; i < texture->uavEntries.Count(); ++i) {
+    const int numUavEntries = texture->uavEntries.Count();
+    for (int i = 0; i < numUavEntries; ++i) {
         if (!texture->uavEntries[i].cpuDescriptorHandle.ptr) {
             texture->uavEntries[i] = newUavEntry;
             viewID.value = i;
@@ -938,7 +940,8 @@ RHI::ViewID D3D12Renderer::CreateRTV(D3D12Texture *texture, RHI::Format typeless
     // RTV 추가 후 viewID 를 리턴
     RHI::ViewID viewID;
 
-    for (int i = 0; i < texture->rtvEntries.Count(); ++i) {
+    const int numRtvEntries = texture->rtvEntries.Count();
+    for (int i = 0; i < numRtvEntries; ++i) {
         if (!texture->rtvEntries[i].cpuDescriptorHandle.ptr) {
             texture->rtvEntries[i] = newRtvEntry;
             viewID.value = i;
@@ -1030,7 +1033,8 @@ RHI::ViewID D3D12Renderer::CreateDSV(D3D12Texture *texture, RHI::Format typeless
     // DSV 추가 후 viewID 를 리턴
     RHI::ViewID viewID;
 
-    for (int i = 0; i < texture->dsvEntries.Count(); ++i) {
+    const int numDsvEntries = texture->dsvEntries.Count();
+    for (int i = 0; i < numDsvEntries; ++i) {
         if (!texture->dsvEntries[i].cpuDescriptorHandle.ptr) {
             texture->dsvEntries[i] = newDsvEntry;
             viewID.value = i;
@@ -1560,7 +1564,8 @@ bool D3D12Renderer::ExecuteGenerateMipmaps(D3D12ResourceCommandContext &commandC
     RHI::ViewID *uavMipSubresourceIDs = (RHI::ViewID *)_alloca(sizeof(RHI::ViewID) * texture->GetMipLevelCount() * texture->GetArraySize());
 
     // Mip Level 별로 임시 SRV/UAV 를 생성
-    for (int mipLevel = 0; mipLevel < texture->GetMipLevelCount(); ++mipLevel) {
+    const int mipLevelCount = texture->GetMipLevelCount();
+    for (int mipLevel = 0; mipLevel < mipLevelCount; ++mipLevel) {
         srvMipSubresourceIDs[mipLevel] = CreateView(texture, RHI::ViewType::SRV, RHI::Format::Auto, 0, texture->GetArraySize(), mipLevel, 1);
         uavMipSubresourceIDs[mipLevel] = CreateView(texture, RHI::ViewType::UAV, RHI::Format::Auto, 0, texture->GetArraySize(), mipLevel, 1);
     }
@@ -1569,7 +1574,7 @@ bool D3D12Renderer::ExecuteGenerateMipmaps(D3D12ResourceCommandContext &commandC
     GenerateMipmaps(commandContext.GetGraphicsCommandList(), texture, srvMipSubresourceIDs, uavMipSubresourceIDs, true);
 
     // 임시 SRV/UAV 삭제
-    for (int mipLevel = 0; mipLevel < texture->GetMipLevelCount(); ++mipLevel) {
+    for (int mipLevel = 0; mipLevel < mipLevelCount; ++mipLevel) {
         if (srvMipSubresourceIDs[mipLevel].IsValid()) {
             DestroyView(texture, RHI::ViewType::SRV, srvMipSubresourceIDs[mipLevel]);
         }

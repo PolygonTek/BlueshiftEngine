@@ -192,7 +192,8 @@ void ShaderTemplateManager::RemoveGlobalDefine(const char *define) {
 
     BE1::ScopedLock lock(globalDefinesMutex);
 
-    for (int i = 0; i < globalDefines.Count(); i++) {
+    const int numGlobalDefines = globalDefines.Count();
+    for (int i = 0; i < numGlobalDefines; i++) {
         const int globalDefineNameLength = GetDefineNameLength(globalDefines[i]);
 
         if (globalDefineNameLength == defineNameLength && !BE1::Str::Cmpn(globalDefines[i].c_str(), define, defineNameLength)) {
@@ -211,7 +212,8 @@ uint32_t ShaderTemplateManager::CopyGlobalDefines(BE1::StrArray &outDefines) con
 }
 
 void ShaderTemplateManager::InvalidateShaderTemplateCaches() {
-    for (int i = 0; i < shaderTemplateHashMap.Count(); i++) {
+    const int numShaderTemplates = shaderTemplateHashMap.Count();
+    for (int i = 0; i < numShaderTemplates; i++) {
         const auto *entry = shaderTemplateHashMap.GetByIndex(i);
         assert(entry);
 
