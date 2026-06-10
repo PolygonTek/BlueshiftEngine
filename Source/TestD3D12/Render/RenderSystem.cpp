@@ -21,6 +21,7 @@
 #include "Texture.h"
 #include "ShaderTemplate.h"
 #include "ShaderPipelineCache.h"
+#include "VertexInputLayoutFactory.h"
 #include "Material.h"
 #include "Font.h"
 #include "Mesh.h"
@@ -34,6 +35,8 @@ void RenderSystem::Init(void *mainWindowHandle) {
 
     RHI::renderer = new D3D12Renderer;
     RHI::renderer->Init(mainWindowHandle);
+
+    VertexInputLayoutFactory::Init();
 
     samplerManager.Init();
 
@@ -82,6 +85,8 @@ void RenderSystem::Shutdown() {
     shaderPipelineCache.ClearAll();
 
     shaderTemplateManager.Shutdown();
+
+    VertexInputLayoutFactory::Shutdown();
 
     textureManager.Shutdown();
 

@@ -16,18 +16,35 @@
 
 #include "RHI.h"
 
-enum class VertexSkinningLayout : uint8_t {
-    None,
-    Weight1,
-    Weight4,
-    Weight8
+enum class VertexInputLayoutId : uint8_t {
+    Xyz,
+    XyzSkinning1,
+    XyzSkinning4,
+    XyzSkinning8,
+    XyzSt,
+    XyzStSkinning1,
+    XyzStSkinning4,
+    XyzStSkinning8,
+    XyzStColor,
+    XyzStColorSkinning1,
+    XyzStColorSkinning4,
+    XyzStColorSkinning8,
+    XyzStColorNormalTangent,
+    XyzStColorNormalTangentSkinning1,
+    XyzStColorNormalTangentSkinning4,
+    XyzStColorNormalTangentSkinning8,
+    Count
 };
 
 class VertexInputLayoutFactory {
 public:
     VertexInputLayoutFactory() = delete;
 
-    static const RHI::InputLayout & GetGeneric();
-    static const RHI::InputLayout & GetGenericLit();
-    static const RHI::InputLayout & GetGenericLit(VertexSkinningLayout skinningLayout);
+    static void                     Init();
+    static void                     Shutdown();
+
+    static const RHI::InputLayout & Get(VertexInputLayoutId id);
+
+    static VertexInputLayoutId      GetSkinnedId(VertexInputLayoutId baseId, int maxVertexWeights);
+    static bool                     IsSkinning(VertexInputLayoutId id);
 };

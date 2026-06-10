@@ -15,6 +15,7 @@
 #pragma once
 
 #include "RHI.h"
+#include "VertexInputLayoutFactory.h"
 #include "RenderObject.h"
 #include "RenderCamera.h"
 #include "Texture.h"
@@ -50,6 +51,7 @@ struct PassDrawSurf {
     const VisSurf *             visSurf = nullptr;
     uint64_t                    sortKey = 0;
 
+    VertexInputLayoutId         inputLayoutId = VertexInputLayoutId::XyzStColorNormalTangent;
     RHI::PipelineState *        basePSO = nullptr;
     RHI::PipelineState *        instancedPSO = nullptr;
 };

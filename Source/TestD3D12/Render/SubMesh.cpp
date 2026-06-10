@@ -32,6 +32,10 @@ void SubMesh::Purge() {
         RHI::renderer->DestroyVertexBuffer(vertexBuffer);
         vertexBuffer = nullptr;
     }
+    if (vertexWeightBuffer) {
+        RHI::renderer->DestroyVertexBuffer(vertexWeightBuffer);
+        vertexWeightBuffer = nullptr;
+    }
     if (indexBuffer) {
         RHI::renderer->DestroyIndexBuffer(indexBuffer);
         indexBuffer = nullptr;
@@ -1032,6 +1036,9 @@ const BE1::Mat3 SubMesh::CalculateInertiaTensor(const BE1::Vec3 &centroid, float
 void SubMesh::UploadStaticDataToGPU() const {
     if (!vertexBuffer) {
         vertexBuffer = RHI::renderer->CreateVertexBuffer(RHI::BufferUsage::Default, sizeof(verts[0]), numVerts, verts);
+    }
+    if (!vertexWeightBuffer && vertWeights) {
+        vertexWeightBuffer = RHI::renderer->CreateVertexBuffer(RHI::BufferUsage::Default, VertexWeightSize(), numVerts, vertWeights);
     }
     if (!indexBuffer) {
         indexBuffer = RHI::renderer->CreateIndexBuffer(RHI::BufferUsage::Default, sizeof(indexes[0]), numIndexes, indexes);

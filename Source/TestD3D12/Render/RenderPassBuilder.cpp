@@ -27,36 +27,50 @@ static RHI::PipelineState *GetReadyPSO(const SharedPtr<ShaderPipeline> &shaderPi
     return shaderPipeline->GetPSO();
 }
 
-void PassPipelineResolver::Begin(const ShaderPipelineDesc &pipelineDesc, int maxEntries) {
-    this->pipelineDesc = &pipelineDesc;
+void PassPipelineResolver::Begin(const ShaderPipelineDesc &pipelineDesc, uint32_t maxEntries) {
+    basePipelineDesc = pipelineDesc;
+    memset(pipelineDescValid, 0, sizeof(pipelineDescValid));
 
-    maxEntries = BE1::Max(maxEntries, 1);
+    maxEntries = BE1::Max(maxEntries, 1u);
     entriesHash.Clear();
     entries.Reserve(maxEntries);
     entries.SetCount(0, false);
 }
 
-RHI::PipelineState *PassPipelineResolver::Resolve(const Material *material, const ShaderFeatureSet &featureSet) {
-    assert(pipelineDesc);
+const ShaderPipelineDesc &PassPipelineResolver::GetPipelineDesc(VertexInputLayoutId inputLayoutId) {
+    const int inputLayoutIndex = static_cast<int>(inputLayoutId);
+    assert(inputLayoutIndex >= 0 && inputLayoutIndex < NumInputLayouts);
 
-    // material pointer 와 featureSet 으로 hash 키를 만든다.
+    if (!pipelineDescValid[inputLayoutIndex]) {
+        pipelineDescs[inputLayoutIndex] = basePipelineDesc;
+        pipelineDescs[inputLayoutIndex].inputLayout = &VertexInputLayoutFactory::Get(inputLayoutId);
+        pipelineDescValid[inputLayoutIndex] = true;
+    }
+
+    return pipelineDescs[inputLayoutIndex];
+}
+
+RHI::PipelineState *PassPipelineResolver::Resolve(VertexInputLayoutId inputLayoutId, const Material *material, const ShaderFeatureSet &featureSet) {
+    // material pointer, featureSet, input layout id 로 hash 키를 만든다.
     uint64_t hash = reinterpret_cast<uintptr_t>(material);
     hash = hash_combine(hash, featureSet.flags);
+    hash = hash_combine(hash, static_cast<int>(inputLayoutId));
 
     const int hashKey = entriesHash.GenerateHash(hash);
     for (int index = entriesHash.First(hashKey); index != -1; index = entriesHash.Next(index)) {
         const Entry &entry = entries[index];
-        if (entry.material == material && entry.featureFlags == featureSet.flags) {
+        if (entry.material == material && entry.featureFlags == featureSet.flags && entry.inputLayoutId == inputLayoutId) {
             return entry.pso;
         }
     }
 
     // hash 에 존재하지 않는다면 material->GetGraphicsPipeline 호출로 새 ShaderPipeline 을 얻는다.
-    RHI::PipelineState *pso = GetReadyPSO(material->GetGraphicsPipeline(featureSet, *pipelineDesc));
+    RHI::PipelineState *pso = GetReadyPSO(material->GetGraphicsPipeline(featureSet, GetPipelineDesc(inputLayoutId)));
 
     PassPipelineResolver::Entry &entry = entries.Alloc();
     entry.material = material;
     entry.featureFlags = featureSet.flags;
+    entry.inputLayoutId = inputLayoutId;
     entry.pso = pso;
     entriesHash.Add(hashKey, entries.Count() - 1);
 
@@ -77,12 +91,13 @@ RenderPass *RenderPassBuilder::AllocRenderPass(RenderFrameData *frameData, VisCa
     return renderPass;
 }
 
-void RenderPassBuilder::AddPassDrawSurf(RenderFrameData *frameData, RenderPass *renderPass, const VisSurf *visSurf, uint64_t sortKey, RHI::PipelineState *basePSO, RHI::PipelineState *instancedPSO) {
+void RenderPassBuilder::AddPassDrawSurf(RenderFrameData *frameData, RenderPass *renderPass, const VisSurf *visSurf, uint64_t sortKey, VertexInputLayoutId inputLayoutId, RHI::PipelineState *basePSO, RHI::PipelineState *instancedPSO) {
     assert(renderPass->numDrawSurfs < renderPass->maxDrawSurfs);
 
     PassDrawSurf *passDrawSurf = (PassDrawSurf *)frameData->MemAlloc(sizeof(PassDrawSurf));
     passDrawSurf->visSurf = visSurf;
     passDrawSurf->sortKey = sortKey;
+    passDrawSurf->inputLayoutId = inputLayoutId;
     passDrawSurf->basePSO = basePSO;
     passDrawSurf->instancedPSO = instancedPSO;
 
@@ -123,11 +138,11 @@ void RenderPassBuilder::BuildMain(RenderFrameData *frameData, VisCamera *visCame
 
     RenderPass *opaquePass = AllocRenderPass(frameData, visCamera, RenderPassType::MainOpaque, {}, visCamera->numVisSurfs);
     RenderContext::activeContext->GetMainRenderDest(opaquePass->pipelineDesc.renderDest);
-    opaquePass->pipelineDesc.inputLayout = &VertexInputLayoutFactory::GetGenericLit();
+    opaquePass->pipelineDesc.inputLayout = &VertexInputLayoutFactory::Get(VertexInputLayoutId::XyzStColorNormalTangent);
 
     RenderPass *blendPass = AllocRenderPass(frameData, visCamera, RenderPassType::MainBlend, {}, visCamera->numVisSurfs);
     RenderContext::activeContext->GetMainRenderDest(blendPass->pipelineDesc.renderDest);
-    blendPass->pipelineDesc.inputLayout = &VertexInputLayoutFactory::GetGenericLit();
+    blendPass->pipelineDesc.inputLayout = &VertexInputLayoutFactory::Get(VertexInputLayoutId::XyzStColorNormalTangent);
 
     opaquePipelineResolver.Begin(opaquePass->pipelineDesc, visCamera->numVisSurfs * 2);
     blendPipelineResolver.Begin(blendPass->pipelineDesc, visCamera->numVisSurfs * 2);
@@ -137,18 +152,19 @@ void RenderPassBuilder::BuildMain(RenderFrameData *frameData, VisCamera *visCame
         const bool isBlend = visSurf->material->GetRenderingMode() == Material::RenderingMode::Blend;
         RenderPass *pass = isBlend ? blendPass : opaquePass;
         PassPipelineResolver &pipelineResolver = isBlend ? blendPipelineResolver : opaquePipelineResolver;
+        const VertexInputLayoutId inputLayoutId = VertexInputLayoutFactory::GetSkinnedId(VertexInputLayoutId::XyzStColorNormalTangent, visSurf->subMesh->MaxVertexWeights());
 
         ShaderFeatureSet baseFeatureSet = visSurf->baseFeatureSet | pass->passFeatureSet;
-        RHI::PipelineState *basePSO = pipelineResolver.Resolve(visSurf->material, baseFeatureSet);
+        RHI::PipelineState *basePSO = pipelineResolver.Resolve(inputLayoutId, visSurf->material, baseFeatureSet);
 
         RHI::PipelineState *instancedPSO = nullptr;
         if (BE1::HasFlag(visSurf->flags, VisSurfFlag::UseInstancing)) {
             ShaderFeatureSet instancedFeatureSet = baseFeatureSet;
             instancedFeatureSet.EnableFeature(ShaderFeature::GpuInstancing);
-            instancedPSO = pipelineResolver.Resolve(visSurf->material, instancedFeatureSet);
+            instancedPSO = pipelineResolver.Resolve(inputLayoutId, visSurf->material, instancedFeatureSet);
         }
 
-        AddPassDrawSurf(frameData, pass, visSurf, isBlend ? BuildMainBlendSortKey(visSurf) : BuildMainOpaqueSortKey(visSurf), basePSO, instancedPSO);
+        AddPassDrawSurf(frameData, pass, visSurf, isBlend ? BuildMainBlendSortKey(visSurf) : BuildMainOpaqueSortKey(visSurf), inputLayoutId, basePSO, instancedPSO);
     }
 
     SortPassDrawSurfs(frameData, opaquePass);
@@ -165,16 +181,16 @@ void RenderPassBuilder::BuildGUI(RenderFrameData *frameData, VisCamera *visCamer
     RenderPass *guiPass = AllocRenderPass(frameData, visCamera, RenderPassType::Gui, {}, visCamera->numVisSurfs);
     RenderContext::activeContext->GetMainRenderDest(guiPass->pipelineDesc.renderDest);
     guiPass->pipelineDesc.depthStencilStateType = RHI::DepthStencilStateType::Never;
-    guiPass->pipelineDesc.inputLayout = &VertexInputLayoutFactory::GetGeneric();
+    guiPass->pipelineDesc.inputLayout = &VertexInputLayoutFactory::Get(VertexInputLayoutId::XyzStColor);
 
     guiPipelineResolver.Begin(guiPass->pipelineDesc, visCamera->numVisSurfs);
 
     for (uint32_t i = 0; i < visCamera->numVisSurfs; ++i) {
         const VisSurf *visSurf = visCamera->visSurfs[i];
         ShaderFeatureSet featureSet = visSurf->baseFeatureSet | guiPass->passFeatureSet;
-        RHI::PipelineState *basePSO = guiPipelineResolver.Resolve(visSurf->material, featureSet);
+        RHI::PipelineState *basePSO = guiPipelineResolver.Resolve(VertexInputLayoutId::XyzStColor, visSurf->material, featureSet);
 
-        AddPassDrawSurf(frameData, guiPass, visSurf, i, basePSO, nullptr);
+        AddPassDrawSurf(frameData, guiPass, visSurf, i, VertexInputLayoutId::XyzStColor, basePSO, nullptr);
     }
 }
 

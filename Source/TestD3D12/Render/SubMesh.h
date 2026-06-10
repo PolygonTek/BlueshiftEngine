@@ -140,8 +140,9 @@ private:
     void *                  vertWeights = nullptr;      ///< vertex weights for GPU skinning (numVerts * sizeof(VertexWeightX))
     int                     gpuSkinningVersionIndex;    ///< 0: VertexWeight1, 1: VertexWeight4, 2: VertexWeight8
 
-    mutable RHI::VertexBuffer *vertexBuffer = nullptr;  ///< RHI vertex buffer.
-    mutable RHI::IndexBuffer *indexBuffer = nullptr;    ///< RHI index buffer.
+    mutable RHI::VertexBuffer *vertexBuffer = nullptr;          ///< RHI vertex buffer.
+    mutable RHI::VertexBuffer *vertexWeightBuffer = nullptr;    ///< RHI vertex weight buffer for GPU skinning.
+    mutable RHI::IndexBuffer *indexBuffer = nullptr;            ///< RHI index buffer.
 
     Flag                    flags = Flag::None;
 };

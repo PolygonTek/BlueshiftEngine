@@ -48,6 +48,15 @@ struct ALIGN_AS16 LitInstancedConstantData {
     uint32_t        padding[3];
 };
 
+void RenderBackend::SetPassVertexBuffers(RHI::CommandList *commandList, const PassDrawSurf *drawSurf) const {
+    const SubMesh *subMesh = drawSurf->visSurf->subMesh;
+
+    RHI::renderer->SetVertexBuffer(commandList, 0, subMesh->vertexBuffer);
+    if (VertexInputLayoutFactory::IsSkinning(drawSurf->inputLayoutId)) {
+        RHI::renderer->SetVertexBuffer(commandList, 1, subMesh->vertexWeightBuffer);
+    }
+}
+
 void RenderBackend::DrawMainPass(const RenderPass *renderPass) {
     constexpr uint32_t MaxActualDrawSurfs = 65536;
     const PassDrawSurf **drawSurfs = renderPass->drawSurfs;
@@ -76,6 +85,7 @@ void RenderBackend::DrawMainPass(const RenderPass *renderPass) {
                 if (!BE1::HasFlag(nextDrawSurf->visSurf->flags, VisSurfFlag::UseInstancing) ||
                     nextVisSurf->subMesh != visSurf->subMesh ||
                     nextVisSurf->shaderMaterialIndex != visSurf->shaderMaterialIndex ||
+                    nextDrawSurf->inputLayoutId != drawSurf->inputLayoutId ||
                     nextDrawSurf->instancedPSO != instancedPSO) {
                     break;
                 }
@@ -129,8 +139,6 @@ void RenderBackend::DrawLitSurfaces(const PassDrawSurf **drawSurfs, uint32_t num
 void RenderBackend::DrawLitSurfacesInstanced(const PassDrawSurf **drawSurfs, uint32_t instanceCount) {
     assert(instanceCount > 0);
 
-    const VisSurf *firstVisSurf = drawSurfs[0]->visSurf;
-
     RHI::PipelineState *pso = drawSurfs[0]->instancedPSO;
     if (!pso) {
         return;
@@ -140,8 +148,8 @@ void RenderBackend::DrawLitSurfacesInstanced(const PassDrawSurf **drawSurfs, uin
 
     RHI::renderer->SetConstantBuffer(mainCommandList, 0, frameConstantBuffer);
 
-    RHI::renderer->SetVertexBuffer(mainCommandList, 0, firstVisSurf->subMesh->vertexBuffer);
-    RHI::renderer->SetIndexBuffer(mainCommandList, firstVisSurf->subMesh->indexBuffer);
+    SetPassVertexBuffers(mainCommandList, drawSurfs[0]);
+    RHI::renderer->SetIndexBuffer(mainCommandList, drawSurfs[0]->visSurf->subMesh->indexBuffer);
 
     do {
         uint32_t currentInstanceCount = BE1::Min(instanceCount, MaxDrawInstanceCount);
@@ -158,6 +166,7 @@ void RenderBackend::DrawLitSurfacesWithoutTask(const PassDrawSurf **drawSurfs, u
 
     RHI::PipelineState *currentPSO = nullptr;
     const SubMesh *currentSubMesh = nullptr;
+    VertexInputLayoutId currentInputLayoutId = VertexInputLayoutId::Count;
 
     for (int drawSurfIndex = 0; drawSurfIndex < numDrawSurfs; ++drawSurfIndex) {
         const PassDrawSurf *drawSurf = drawSurfs[drawSurfIndex];
@@ -171,9 +180,10 @@ void RenderBackend::DrawLitSurfacesWithoutTask(const PassDrawSurf **drawSurfs, u
             RHI::renderer->SetConstantBuffer(mainCommandList, 0, frameConstantBuffer);
         }
 
-        if (currentSubMesh != drawSurf->visSurf->subMesh) {
+        if (currentSubMesh != drawSurf->visSurf->subMesh || currentInputLayoutId != drawSurf->inputLayoutId) {
             currentSubMesh = drawSurf->visSurf->subMesh;
-            RHI::renderer->SetVertexBuffer(mainCommandList, 0, currentSubMesh->vertexBuffer);
+            currentInputLayoutId = drawSurf->inputLayoutId;
+            SetPassVertexBuffers(mainCommandList, drawSurf);
             RHI::renderer->SetIndexBuffer(mainCommandList, currentSubMesh->indexBuffer);
         }
 
@@ -190,6 +200,7 @@ void RenderBackend::DrawLitSurfacesByTask(RenderBackend::DrawSurfsTaskDesc *task
 
     RHI::PipelineState *currentPSO = nullptr;
     const SubMesh *currentSubMesh = nullptr;
+    VertexInputLayoutId currentInputLayoutId = VertexInputLayoutId::Count;
 
     for (int drawSurfIndex = 0; drawSurfIndex < taskDesc->numDrawSurfs; ++drawSurfIndex) {
         const PassDrawSurf *drawSurf = taskDesc->drawSurfs[drawSurfIndex];
@@ -203,9 +214,10 @@ void RenderBackend::DrawLitSurfacesByTask(RenderBackend::DrawSurfsTaskDesc *task
             RHI::renderer->SetConstantBuffer(commandList, 0, frameConstantBuffer);
         }
 
-        if (currentSubMesh != drawSurf->visSurf->subMesh) {
+        if (currentSubMesh != drawSurf->visSurf->subMesh || currentInputLayoutId != drawSurf->inputLayoutId) {
             currentSubMesh = drawSurf->visSurf->subMesh;
-            RHI::renderer->SetVertexBuffer(commandList, 0, currentSubMesh->vertexBuffer);
+            currentInputLayoutId = drawSurf->inputLayoutId;
+            SetPassVertexBuffers(commandList, drawSurf);
             RHI::renderer->SetIndexBuffer(commandList, currentSubMesh->indexBuffer);
         }
 

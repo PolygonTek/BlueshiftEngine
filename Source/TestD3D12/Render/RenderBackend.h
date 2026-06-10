@@ -65,6 +65,9 @@ private:
 
     void                            DrawMainPass(const RenderPass *renderPass);
     void                            DrawGuiPass(const RenderPass *renderPass);
+
+    void                            SetPassVertexBuffers(RHI::CommandList *commandList, const PassDrawSurf *drawSurf) const;
+
     void                            DrawLitSurfaces(const PassDrawSurf **drawSurfs, uint32_t numDrawSurfs);
     void                            DrawLitSurfacesInstanced(const PassDrawSurf **instanceSurfs, uint32_t instanceCount);
 
