@@ -312,13 +312,17 @@ RHI::PipelineState *D3D12Renderer::CreateGraphicsPSO(const RHI::PipelineStateDes
             uint64_t dsHash = 0;
             uint64_t psHash = 0;
         } shaderHashData;
-        D3D12_PRIMITIVE_TOPOLOGY_TYPE primitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_UNDEFINED;
         uint64_t inputLayoutHash = 0;
         uint64_t blendHash = 0;
         uint64_t depthStencilHash = 0;
         uint64_t rasterizerHash = 0;
         uint64_t renderDestHash = 0;
+        uint32_t primitiveTopologyType = 0;
+        uint32_t sampleMask = 0xFFFFFFFF;
     } psoHashData;
+
+    // psoHashData 변수 전체로 hash 키를 만들기 때문에 패딩이 없도록 해야한다.
+    static_assert(sizeof(PSOHashData) == sizeof(uint64_t) * 10 + sizeof(uint32_t) * 2);
 
     ID3D12RootSignature *rootSignature = nullptr;
     ID3D12VersionedRootSignatureDeserializer *rootSignatureDeserializer = nullptr;
@@ -374,9 +378,6 @@ RHI::PipelineState *D3D12Renderer::CreateGraphicsPSO(const RHI::PipelineStateDes
         }
     }
 
-    D3D12_PRIMITIVE_TOPOLOGY_TYPE primitiveTopologyType = ToD3D12TopologyType(psDesc->primitiveTopology);
-    psoHashData.primitiveTopologyType = primitiveTopologyType;
-
     if (psDesc->inputLayout) {
         size_t hash = 0;
         for (const RHI::InputLayoutElement &element : psDesc->inputLayout->elements) {
@@ -403,6 +404,10 @@ RHI::PipelineState *D3D12Renderer::CreateGraphicsPSO(const RHI::PipelineStateDes
     if (psDesc->renderDest) {
         psoHashData.renderDestHash = psDesc->renderDest->GetHash();
     }
+
+    D3D12_PRIMITIVE_TOPOLOGY_TYPE primitiveTopologyType = ToD3D12TopologyType(psDesc->primitiveTopology);
+    psoHashData.primitiveTopologyType = primitiveTopologyType;
+    psoHashData.sampleMask = psDesc->sampleMask;
 
     // 전체 hash 값으로 완전히 동일한 PSO 가 존재하는지 찾아본다.
     const uint64_t psoHash = BE1::CityHash64((char *)&psoHashData, sizeof(psoHashData));
