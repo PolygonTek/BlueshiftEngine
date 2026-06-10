@@ -61,7 +61,7 @@ public:
     virtual RHI::ConstantBuffer *   AllocConstant(uint32_t size, const void *data = nullptr) override;
 
                                     // 다이나믹 (raw) 버퍼를 할당한다. Reset 이 호출되면 할당된 버퍼는 모두 해제된다.
-    virtual RHI::Buffer *           AllocBuffer(uint32_t size, uint32_t alignSize, const void *data = nullptr) override;
+    virtual RHI::Buffer *           AllocRawBuffer(uint32_t size, uint32_t alignSize, const void *data = nullptr) override;
 
                                     // 다이나믹 (structured) 버퍼를 할당한다. Reset 이 호출되면 할당된 버퍼는 모두 해제된다.
     virtual RHI::Buffer *           AllocStructuredBuffer(uint32_t stride, uint32_t count, const void *data = nullptr) override;

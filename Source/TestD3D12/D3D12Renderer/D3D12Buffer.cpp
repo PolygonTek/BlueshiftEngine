@@ -342,6 +342,7 @@ RHI::ViewID D3D12Renderer::CreateSRV(D3D12Buffer *buffer, RHI::Format format, ui
     newSrvEntry.viewDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
 
     uint32_t byteStride = 0;
+    bool rootSrvCompatible = true;
 
     if (format != RHI::Format::Unknown) {
         // Typed buffer
@@ -350,6 +351,9 @@ RHI::ViewID D3D12Renderer::CreateSRV(D3D12Buffer *buffer, RHI::Format format, ui
         byteStride = BE1::Image::BytesPerPixel(imageFormat);
 
         newSrvEntry.viewDesc.Format = RHIFormatToDXGIFormat(format);
+
+        // Root SRV 는 Typed buffer 를 허용하지 않음.
+        rootSrvCompatible = false;
     } else {
         // format == Image::Format::Unknown 이고 structureByteStride == 0 이면, raw buffer 다.
         // format == Image::Format::Unknown 이고 structureByteStride > 0 이면, structured buffer 다.
@@ -389,6 +393,11 @@ RHI::ViewID D3D12Renderer::CreateSRV(D3D12Buffer *buffer, RHI::Format format, ui
     // 디스크립터 슬롯에 SRV 를 기록
     device->CreateShaderResourceView(buffer->GetResource(), &newSrvEntry.viewDesc, newSrvEntry.cpuDescriptorHandle);
 
+    // Root SRV 를 위해 GPU 주소 저장
+    if (rootSrvCompatible) {
+        newSrvEntry.gpuAddress = buffer->GetResource()->GetGPUVirtualAddress() + offset;
+    }
+
     // bindless index 할당
     newSrvEntry.bindlessIndex = AllocBindlessResourceDescriptor();
     if (newSrvEntry.bindlessIndex == D3D12BindlessDescriptorAllocator::NullIndex) {
@@ -422,6 +431,7 @@ RHI::ViewID D3D12Renderer::CreateUAV(D3D12Buffer *buffer, RHI::Format format, ui
     newUavEntry.viewDesc.ViewDimension = D3D12_UAV_DIMENSION_BUFFER;
 
     uint32_t byteStride = 0;
+    bool rootUavCompatible = true;
 
     if (format != RHI::Format::Unknown) {
         // Typed buffer
@@ -430,6 +440,9 @@ RHI::ViewID D3D12Renderer::CreateUAV(D3D12Buffer *buffer, RHI::Format format, ui
         byteStride = BE1::Image::BytesPerPixel(imageFormat);
 
         newUavEntry.viewDesc.Format = RHIFormatToDXGIFormat(format);
+
+        // Root UAV 는 Typed buffer 를 허용하지 않음.
+        rootUavCompatible = false;
     } else {
         // format == Image::Format::Unknown 이고 structureByteStride == 0 이면, raw buffer 다.
         // format == Image::Format::Unknown 이고 structureByteStride > 0 이면, structured buffer 다.
@@ -468,6 +481,11 @@ RHI::ViewID D3D12Renderer::CreateUAV(D3D12Buffer *buffer, RHI::Format format, ui
 
     // 디스크립터 슬롯에 UAV 를 기록
     device->CreateUnorderedAccessView(buffer->GetResource(), nullptr, &newUavEntry.viewDesc, newUavEntry.cpuDescriptorHandle);
+
+    // Root UAV 를 위해 GPU 주소 저장
+    if (rootUavCompatible) {
+        newUavEntry.gpuAddress = buffer->GetResource()->GetGPUVirtualAddress() + offset;
+    }
 
     // bindless index 할당
     newUavEntry.bindlessIndex = AllocBindlessResourceDescriptor();
@@ -603,28 +621,29 @@ void D3D12Renderer::SetBuffer(RHI::CommandList *commandList, int shaderRegister,
             return;
         }
 
+        if (!_buffer->HasValidView(RHI::ViewType::UAV, viewID)) {
+            BE_ERRLOG("D3D12Renderer::SetBuffer: Invalid UAV view ID (%i)\n", viewID.value);
+            return;
+        }
+
+        // 사용할 디스크립터 테이블 변수에 디스크립터 핸들을 채워 넣는다.
+        const D3D12UAVEntry &uavEntry = _buffer->uavEntries[viewID.value];
+
         // 루트 파라미터가 디스크립터 테이블일 경우 테이블 내의 인덱스 LUT 에는 유효한 값이 들어있다.
         indexInTable = binder.descriptorTableIndexLUT.uav[shaderRegister];
         if (indexInTable != 0xFF) {
-            if (!_buffer->HasValidView(RHI::ViewType::UAV, viewID)) {
-                BE_ERRLOG("D3D12Renderer::SetBuffer: Invalid UAV view ID (%i)\n", viewID.value);
-                return;
-            }
-
-            // 사용할 디스크립터 테이블 변수에 디스크립터 핸들을 채워 넣는다.
-            const D3D12UAVEntry &uavEntry = _buffer->uavEntries[viewID.value];
             rootBindingData->descriptorTableHandles[rootParameterIndex][indexInTable] = uavEntry.cpuDescriptorHandle;
             if (rootBindingData->descriptorTableHandles[rootParameterIndex][indexInTable].ptr == 0) {
                 BE_ERRLOG("D3D12Renderer::SetBuffer: Buffer has no valid UAV descriptor handle\n");
                 return;
             }
         } else {
-            if (!_buffer->GetResource()) {
-                BE_ERRLOG("D3D12Renderer::SetBuffer: Dynamic buffer cannot be bound as root UAV\n");
+            if (uavEntry.gpuAddress == 0) {
+                BE_ERRLOG("D3D12Renderer::SetBuffer: Buffer UAV cannot be bound as root UAV\n");
                 return;
             }
 
-            rootBindingData->uavResources[shaderRegister] = _buffer;
+            rootBindingData->uavGpuAddresses[shaderRegister] = uavEntry.gpuAddress;
         }
     } else {
         // SRV
@@ -635,28 +654,29 @@ void D3D12Renderer::SetBuffer(RHI::CommandList *commandList, int shaderRegister,
             return;
         }
 
+        if (!_buffer->HasValidView(RHI::ViewType::SRV, viewID)) {
+            BE_ERRLOG("D3D12Renderer::SetBuffer: Invalid SRV view ID (%i)\n", viewID.value);
+            return;
+        }
+
+        // 사용할 디스크립터 테이블 변수에 디스크립터 핸들을 채워 넣는다.
+        const D3D12SRVEntry &srvEntry = _buffer->srvEntries[viewID.value];
+
         // 루트 파라미터가 디스크립터 테이블일 경우 테이블 내의 인덱스 LUT 에는 유효한 값이 들어있다.
         indexInTable = binder.descriptorTableIndexLUT.srv[shaderRegister];
         if (indexInTable != 0xFF) {
-            if (!_buffer->HasValidView(RHI::ViewType::SRV, viewID)) {
-                BE_ERRLOG("D3D12Renderer::SetBuffer: Invalid SRV view ID (%i)\n", viewID.value);
-                return;
-            }
-
-            // 사용할 디스크립터 테이블 변수에 디스크립터 핸들을 채워 넣는다.
-            const D3D12SRVEntry &srvEntry = _buffer->srvEntries[viewID.value];
             rootBindingData->descriptorTableHandles[rootParameterIndex][indexInTable] = srvEntry.cpuDescriptorHandle;
             if (rootBindingData->descriptorTableHandles[rootParameterIndex][indexInTable].ptr == 0) {
                 BE_ERRLOG("D3D12Renderer::SetBuffer: Buffer has no valid SRV descriptor handle\n");
                 return;
             }
         } else {
-            if (!_buffer->GetResource()) {
-                BE_ERRLOG("D3D12Renderer::SetBuffer: Dynamic buffer cannot be bound as root SRV\n");
+            if (srvEntry.gpuAddress == 0) {
+                BE_ERRLOG("D3D12Renderer::SetBuffer: Buffer SRV cannot be bound as root SRV\n");
                 return;
             }
 
-            rootBindingData->srvResources[shaderRegister] = _buffer;
+            rootBindingData->srvGpuAddresses[shaderRegister] = srvEntry.gpuAddress;
         }
     }
 

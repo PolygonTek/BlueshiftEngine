@@ -44,10 +44,10 @@ public:
                                         // 루트 상수의 셰이더 레지스터 별 32 비트 값의 배열
     uint32_t                            rootConstants[MaxRootConstantRegisters][MaxRootConstant32BitValues] = {};
 
-                                        // 셰이더 레지스터 별 CBV GPUResource 포인터
-    const RHI::GPUResource *            cbvResources[16] = {};
-                                        // 셰이더 레지스터 별 SRV GPUResource 포인터
-    const RHI::GPUResource *            srvResources[64] = {};
-                                        // 셰이더 레지스터 별 UAV GPUResource 포인터
-    const RHI::GPUResource *            uavResources[8] = {};
+                                        // 셰이더 레지스터 별 CBV GPU 주소
+    D3D12_GPU_VIRTUAL_ADDRESS           cbvGpuAddresses[16] = {};
+                                        // 셰이더 레지스터 별 SRV GPU 주소
+    D3D12_GPU_VIRTUAL_ADDRESS           srvGpuAddresses[64] = {};
+                                        // 셰이더 레지스터 별 UAV GPU 주소
+    D3D12_GPU_VIRTUAL_ADDRESS           uavGpuAddresses[8] = {};
 };

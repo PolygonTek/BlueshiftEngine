@@ -890,7 +890,7 @@ namespace RHI {
         virtual VertexBuffer *          AllocVertex(uint32_t vertexSize, uint32_t count, const void *data = nullptr) = 0;
         virtual IndexBuffer *           AllocIndex(uint32_t indexSize, uint32_t count, const void *data = nullptr) = 0;
         virtual ConstantBuffer *        AllocConstant(uint32_t size, const void *data = nullptr) = 0;
-        virtual Buffer *                AllocBuffer(uint32_t size, uint32_t alignSize, const void *data = nullptr) = 0;
+        virtual Buffer *                AllocRawBuffer(uint32_t size, uint32_t alignSize, const void *data = nullptr) = 0;
         virtual Buffer *                AllocStructuredBuffer(uint32_t stride, uint32_t count, const void *data = nullptr) = 0;
 
         virtual void *                  AppendVertex(RHI::VertexBuffer *vertexBuffer, uint32_t vertexSize, uint32_t count, const void *data = nullptr) = 0;

@@ -267,6 +267,7 @@ RHI::ConstantBuffer *D3D12FrameThreadData::AllocConstant(uint32_t size, const vo
 
     D3D12ConstantBuffer &dynamicConstantBuffer = dynamicConstantBuffers.Alloc();
     dynamicConstantBuffer.mappedPtr = reinterpret_cast<byte *>(currentBlock->buffer->mappedPtr) + offset;
+    dynamicConstantBuffer.gpuAddress = cbvDesc.BufferLocation;
     dynamicConstantBuffer.descriptorHandle = cpuDescriptorHandle;
     dynamicConstantBuffer.dynamicBlockIndex = currentBlock->blockIndex;
     
@@ -315,6 +316,7 @@ RHI::Buffer *D3D12FrameThreadData::AllocShaderResourceBuffer(uint32_t size, uint
     D3D12SRVEntry srvEntry = {};
     srvEntry.viewDesc = srvDesc;
     srvEntry.cpuDescriptorHandle = cpuDescriptorHandle;
+    srvEntry.gpuAddress = currentBlock->buffer->GetResource()->GetGPUVirtualAddress() + offset;
 
     D3D12Buffer &dynamicBuffer = dynamicBuffers.Alloc();
     dynamicBuffer.srvEntries.SetCount(0, false);
@@ -343,7 +345,7 @@ RHI::Buffer *D3D12FrameThreadData::AllocStructuredBuffer(uint32_t stride, uint32
     return AllocShaderResourceBuffer(stride * count, stride, stride, data);
 }
 
-RHI::Buffer *D3D12FrameThreadData::AllocBuffer(uint32_t size, uint32_t alignSize, const void *data) {
+RHI::Buffer *D3D12FrameThreadData::AllocRawBuffer(uint32_t size, uint32_t alignSize, const void *data) {
     assert(BE1::IsAligned(alignSize, 4));
 
     if (size == 0 || !BE1::IsAligned(size, 4)) {

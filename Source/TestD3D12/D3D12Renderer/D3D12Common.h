@@ -57,6 +57,7 @@ T *NormalizePointer(T *&ptr) noexcept {
 struct D3D12SRVEntry {
     D3D12_SHADER_RESOURCE_VIEW_DESC     viewDesc = {};
     D3D12_CPU_DESCRIPTOR_HANDLE         cpuDescriptorHandle = {};
+    D3D12_GPU_VIRTUAL_ADDRESS           gpuAddress = 0;
     uint32_t                            bindlessIndex = 0;
 };
 
@@ -73,5 +74,6 @@ struct D3D12DSVEntry {
 struct D3D12UAVEntry {
     D3D12_UNORDERED_ACCESS_VIEW_DESC    viewDesc = {};
     D3D12_CPU_DESCRIPTOR_HANDLE         cpuDescriptorHandle = {};
+    D3D12_GPU_VIRTUAL_ADDRESS           gpuAddress = 0;
     uint32_t                            bindlessIndex = 0;
 };

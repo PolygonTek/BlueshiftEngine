@@ -62,6 +62,7 @@ RHI::ConstantBuffer* D3D12Renderer::CreateConstantBuffer(RHI::BufferUsage usage,
     // 상수 버퍼 객체 생성
     D3D12ConstantBuffer* constantBuffer = new D3D12ConstantBuffer;
     constantBuffer->buffer = buffer;
+    constantBuffer->gpuAddress = cbvDesc.BufferLocation;
     constantBuffer->descriptorHandle = descriptorHandle;
 
     return constantBuffer;
@@ -96,8 +97,8 @@ void D3D12Renderer::SetConstantBuffer(RHI::CommandList *commandList, int shaderR
         // 사용할 디스크립터 테이블 변수에 디스크립터 핸들을 채워 넣는다.
         rootBindingData->descriptorTableHandles[rootParameterIndex][indexInTable] = _constantBuffer->descriptorHandle;
     }
-    // 셰이더 레지스터에 대한 상수 버퍼 객체도 저장한다.
-    rootBindingData->cbvResources[shaderRegister] = _constantBuffer;
+    // 셰이더 레지스터에 대한 상수 버퍼 GPU 주소도 저장한다.
+    rootBindingData->cbvGpuAddresses[shaderRegister] = _constantBuffer->gpuAddress;
 
     // 변경할 루트 파라미터 인덱스에 대한 dirty mask 를 설정한다.
     if (_commandList->currentPSO->isGraphics) {

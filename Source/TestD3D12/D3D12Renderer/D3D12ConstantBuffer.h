@@ -36,6 +36,7 @@ public:
 
 private:
     D3D12Buffer *                   buffer = nullptr;
+    D3D12_GPU_VIRTUAL_ADDRESS       gpuAddress = 0;
     D3D12_CPU_DESCRIPTOR_HANDLE     descriptorHandle = {};
     int32_t                         dynamicBlockIndex = -1;
 };

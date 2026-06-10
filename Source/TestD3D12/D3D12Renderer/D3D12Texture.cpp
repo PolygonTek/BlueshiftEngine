@@ -1625,8 +1625,10 @@ void D3D12Renderer::SetTexture(RHI::CommandList *commandList, int shaderRegister
                 BE_ERRLOG("D3D12Renderer::SetTexture: Texture has no valid UAV descriptor handle\n");
                 return;
             }
+        } else {
+            BE_ERRLOG("D3D12Renderer::SetTexture: Texture cannot be bound as root UAV\n");
+            return;
         }
-        rootBindingData->uavResources[shaderRegister] = _texture;
     } else {
         // SRV
         assert(shaderRegister < COUNT_OF(binder.rootParameterIndexLUT.srv));
@@ -1651,8 +1653,10 @@ void D3D12Renderer::SetTexture(RHI::CommandList *commandList, int shaderRegister
                 BE_ERRLOG("D3D12Renderer::SetTexture: Texture has no valid SRV descriptor handle\n");
                 return;
             }
+        } else {
+            BE_ERRLOG("D3D12Renderer::SetTexture: Texture cannot be bound as root SRV\n");
+            return;
         }
-        rootBindingData->srvResources[shaderRegister] = _texture;
     }
 
     // 변경할 루트 파라미터 인덱스에 대한 dirty mask 를 설정한다.

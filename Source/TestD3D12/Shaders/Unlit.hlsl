@@ -1,8 +1,8 @@
 #include "Common.hlsli"
 
 #define COMMON_ROOT_SIGNATURE ROOT_SIGNATURE_GRAPHICS_ROOT_FLAGS \
-    "DescriptorTable(CBV(b0)), " \
-    "DescriptorTable(CBV(b1)), " \
+    "CBV(b0), " \
+    "CBV(b1), " \
     ROOT_SIGNATURE_BINDLESS_DESCRIPTOR_TABLES \
     ROOT_SIGNATURE_COMMON_STATIC_SAMPLERS
 

@@ -1079,9 +1079,8 @@ void D3D12Renderer::BindRootParameters(D3D12CommandList *commandList) {
         } else if (rootParameter->ParameterType == D3D12_ROOT_PARAMETER_TYPE_CBV) {
             // 루트 CBV 설정 : 루트 파라미터에 CBV 로 사용할 버퍼의 GPU 주소를 직접 세팅한다.
             UINT shaderRegister = rootParameter->Descriptor.ShaderRegister;
-            const RHI::GPUResource *cbvResource = rootBindingData->cbvResources[shaderRegister];
-            if (cbvResource) {
-                D3D12_GPU_VIRTUAL_ADDRESS gpuAddress = reinterpret_cast<ID3D12Resource *>(cbvResource->GetNativeResource())->GetGPUVirtualAddress();
+            D3D12_GPU_VIRTUAL_ADDRESS gpuAddress = rootBindingData->cbvGpuAddresses[shaderRegister];
+            if (gpuAddress) {
                 if (isGraphicsPSO) {
                     cmd->SetGraphicsRootConstantBufferView(rootParameterIndex, gpuAddress);
                 } else {
@@ -1091,9 +1090,8 @@ void D3D12Renderer::BindRootParameters(D3D12CommandList *commandList) {
         } else if (rootParameter->ParameterType == D3D12_ROOT_PARAMETER_TYPE_SRV) {
             // 루트 SRV 설정 : 루트 파라미터에 SRV 로 사용할 버퍼의 GPU 주소를 직접 세팅한다.
             UINT shaderRegister = rootParameter->Descriptor.ShaderRegister;
-            const RHI::GPUResource *srvResource = rootBindingData->srvResources[shaderRegister];
-            if (srvResource) {
-                D3D12_GPU_VIRTUAL_ADDRESS gpuAddress = reinterpret_cast<ID3D12Resource *>(srvResource->GetNativeResource())->GetGPUVirtualAddress();
+            D3D12_GPU_VIRTUAL_ADDRESS gpuAddress = rootBindingData->srvGpuAddresses[shaderRegister];
+            if (gpuAddress) {
                 if (isGraphicsPSO) {
                     cmd->SetGraphicsRootShaderResourceView(rootParameterIndex, gpuAddress);
                 } else {
@@ -1103,9 +1101,8 @@ void D3D12Renderer::BindRootParameters(D3D12CommandList *commandList) {
         } else if (rootParameter->ParameterType == D3D12_ROOT_PARAMETER_TYPE_UAV) {
             // 루트 UAV 설정 : 루트 파라미터에 UAV 로 사용할 버퍼의 GPU 주소를 직접 세팅한다.
             UINT shaderRegister = rootParameter->Descriptor.ShaderRegister;
-            const RHI::GPUResource *uavResource = rootBindingData->uavResources[shaderRegister];
-            if (uavResource) {
-                D3D12_GPU_VIRTUAL_ADDRESS gpuAddress = reinterpret_cast<ID3D12Resource *>(uavResource->GetNativeResource())->GetGPUVirtualAddress();
+            D3D12_GPU_VIRTUAL_ADDRESS gpuAddress = rootBindingData->uavGpuAddresses[shaderRegister];
+            if (gpuAddress) {
                 if (isGraphicsPSO) {
                     cmd->SetGraphicsRootUnorderedAccessView(rootParameterIndex, gpuAddress);
                 } else {
