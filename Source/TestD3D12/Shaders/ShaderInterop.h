@@ -60,16 +60,19 @@ struct MipGenParams {
     uint flags;
 };
 
-struct BindlessMaterialData {
+struct ShaderMaterial {
     uint baseColorTextureIndex;
+    uint normalTextureIndex;
     uint streamingTextureIndex;
     uint flags;
-    uint padding;
     float4 baseColorFactor;
 };
 
-struct DrawMaterialConstants {
-    uint materialIndex;
+struct FrameConstants {
+    uint shaderMaterialTableIndex;
+    uint feedbackBufferIndex;
+    uint padding0;
+    uint padding1;
 };
 
 #endif // SHADERINTEROP_H

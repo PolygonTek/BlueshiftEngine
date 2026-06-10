@@ -149,13 +149,13 @@ public:
 
     void                            UpdateFrame();
 
-    std::shared_ptr<Skeleton>       AllocSkeleton(const char *name);
-    std::shared_ptr<Skeleton>       FindSkeleton(const char *name) const;
-    std::shared_ptr<Skeleton>       GetSkeleton(const char *name, bool async = true);
+    SharedPtr<Skeleton>             AllocSkeleton(const char *name);
+    SharedPtr<Skeleton>             FindSkeleton(const char *name) const;
+    SharedPtr<Skeleton>             GetSkeleton(const char *name, bool async = true);
 
     void                            RenameSkeleton(Skeleton *skeleton, const BE1::Str &newName);
 
-    std::shared_ptr<Skeleton>       defaultSkeleton;
+    SharedPtr<Skeleton>             defaultSkeleton;
 
 private:
     void                            CleanExpiredSkeletons();
@@ -163,7 +163,7 @@ private:
     static void                     Cmd_ListSkeletons(const BE1::CmdArgs &args);
     static void                     Cmd_ReloadSkeleton(const BE1::CmdArgs &args);
 
-    BE1::StrIHashMap<std::weak_ptr<Skeleton>> skeletonHashMap;
+    BE1::StrIHashMap<WeakPtr<Skeleton>> skeletonHashMap;
     int                             expiredSkeletonHashMapCursor = 0;
 };
 

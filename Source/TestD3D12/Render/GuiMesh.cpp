@@ -14,7 +14,7 @@
 
 #include "Precompiled.h"
 #include "GuiMesh.h"
-#include "Texture.h"
+#include "Material.h"
 #include "Font.h"
 #include "Core/Vec4Color.h"
 #include "RenderWorld.h"
@@ -27,7 +27,7 @@ void GuiMesh::Clear() {
 
 void GuiMesh::PrepareNewSurf() {
     Surface &newSurf = surfaces.Alloc();
-    newSurf.texture = currentSurf ? currentSurf->texture : textureManager.defaultTexture.get();
+    newSurf.material = currentSurf ? currentSurf->material : materialManager.defaultUnlitMaterial.get();
     newSurf.numVerts = 0;
     newSurf.numIndexes = 0;
     newSurf.vertexBuffer = nullptr;
@@ -36,9 +36,9 @@ void GuiMesh::PrepareNewSurf() {
     currentSurf = &newSurf;
 }
 
-void GuiMesh::DrawPic(RHI::FrameThreadData *frameThreadData, float x, float y, float w, float h, float s1, float t1, float s2, float t2, uint32_t color, const Texture *texture) {
-    if (!texture) {
-        texture = textureManager.defaultTexture.get();
+void GuiMesh::DrawPic(RHI::FrameThreadData *frameThreadData, float x, float y, float w, float h, float s1, float t1, float s2, float t2, uint32_t color, const Material *material) {
+    if (!material) {
+        material = materialManager.defaultUnlitMaterial.get();
     }
 
     if (coordFrame == CoordFrame::CoordFrame2D && !clipRect.IsEmpty()) {
@@ -120,17 +120,17 @@ void GuiMesh::DrawPic(RHI::FrameThreadData *frameThreadData, float x, float y, f
     localVerts[3].st[1] = ht1;
     *reinterpret_cast<uint32_t *>(localVerts[3].color) = color;
 
-    DrawQuad(frameThreadData, localVerts, texture);
+    DrawQuad(frameThreadData, localVerts, material);
 }
 
-void GuiMesh::DrawQuad(RHI::FrameThreadData *frameThreadData, const BE1::VertexGeneric *verts, const Texture *texture) {
-    if (!verts || !texture) {
+void GuiMesh::DrawQuad(RHI::FrameThreadData *frameThreadData, const BE1::VertexGeneric *verts, const Material *material) {
+    if (!verts || !material) {
         return;
     }
 
     // 다이나믹 버텍스 버퍼에 Quad 버텍스 데이터를 복사하기만 하고, 실제로 draw 하지는 않는다.
     // 다이나믹 인덱스 버퍼는 CacheIndexes() 에서 모든 Quad 에 대한 인덱스 데이터가 한꺼번에 만들어진다.
-    if (currentSurf && texture == currentSurf->texture) {
+    if (currentSurf && material == currentSurf->material) {
         assert(currentSurf->vertexBuffer);
         if (frameThreadData->AppendVertex(currentSurf->vertexBuffer, sizeof(BE1::VertexGeneric), 4, verts)) {
             currentSurf->numVerts += 4;
@@ -141,7 +141,7 @@ void GuiMesh::DrawQuad(RHI::FrameThreadData *frameThreadData, const BE1::VertexG
 
     PrepareNewSurf();
 
-    currentSurf->texture = texture;
+    currentSurf->material = material;
     currentSurf->vertexBuffer = frameThreadData->AllocVertex(sizeof(BE1::VertexGeneric), 4, verts);
     currentSurf->numVerts += 4;
     currentSurf->numIndexes += 6;
@@ -179,7 +179,7 @@ float GuiMesh::DrawChar(RHI::FrameThreadData *frameThreadData, float x, float y,
             charY += currentTextShadowOffsetY * currentTextScale;
         }
 
-        DrawPic(frameThreadData, charX, charY, charW, charH, glyph->s, glyph->t, glyph->s2, glyph->t2, currentTextShadowColor, glyph->texture);
+        DrawPic(frameThreadData, charX, charY, charW, charH, glyph->s, glyph->t, glyph->s2, glyph->t2, currentTextShadowColor, glyph->material.get());
     }
 
     FontGlyph *glyph = currentFont->GetGlyph(unicodeChar);
@@ -192,7 +192,7 @@ float GuiMesh::DrawChar(RHI::FrameThreadData *frameThreadData, float x, float y,
     float charW = glyph->width * currentTextScale;
     float charH = glyph->height * currentTextScale;
 
-    DrawPic(frameThreadData, charX, charY, charW, charH, glyph->s, glyph->t, glyph->s2, glyph->t2, currentTextColor, glyph->texture);
+    DrawPic(frameThreadData, charX, charY, charW, charH, glyph->s, glyph->t, glyph->s2, glyph->t2, currentTextColor, glyph->material.get());
 
     float pitch = glyph->advanceX * currentTextScale + GetTextOutlineSpacing();
     return pitch;

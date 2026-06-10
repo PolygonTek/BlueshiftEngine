@@ -38,14 +38,14 @@ public:
 
     void                            Reset();
 
-    bool                            InitStatic(const std::shared_ptr<Mesh> &sourceMesh);
-    bool                            InitSkinned(const std::shared_ptr<Mesh> &sourceMesh);
+    bool                            InitStatic(const SharedPtr<Mesh> &sourceMesh);
+    bool                            InitSkinned(const SharedPtr<Mesh> &sourceMesh);
 
     Type                            GetType() const { return type; }
     bool                            IsSkinned() const { return type == Type::Skinned; }
     bool                            IsStatic() const { return type == Type::Static; }
 
-    const std::shared_ptr<Mesh> &   GetSourceMesh() const { return sourceMesh; }
+    const SharedPtr<Mesh> &         GetSourceMesh() const { return sourceMesh; }
 
     bool                            IsSourceReady() const;
     bool                            IsSourceDirty() const;
@@ -77,7 +77,7 @@ private:
     static constexpr uint32_t       InvalidDataSerial = UINT32_MAX;
 
     Type                            type = Type::Static;
-    std::shared_ptr<Mesh>           sourceMesh;
+    SharedPtr<Mesh>                 sourceMesh;
     uint32_t                        sourceDataSerial = InvalidDataSerial;
     uint64_t                        retainedFrameSerial = 0;
     BE1::Array<BE1::Mat3x4>         skinningMatrices = BE1::Array<BE1::Mat3x4>(64);

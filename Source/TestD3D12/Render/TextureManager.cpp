@@ -49,7 +49,7 @@ void TextureManager::UpdateFrame() {
     CleanExpiredTextures();
 }
 
-std::shared_ptr<Texture> TextureManager::AllocTexture(const char *hashName) {
+SharedPtr<Texture> TextureManager::AllocTexture(const char *hashName) {
     if (!hashName || !hashName[0]) {
         BE_FATALERROR("TextureManager::AllocTexture: empty texture name");
     }
@@ -60,7 +60,7 @@ std::shared_ptr<Texture> TextureManager::AllocTexture(const char *hashName) {
         textureHashMap.Remove(hashName);
     }
 
-    std::shared_ptr<Texture> texture = std::make_shared<Texture>();
+    SharedPtr<Texture> texture = MakeShared<Texture>();
     texture->hashName = hashName;
     texture->name = hashName;
     texture->name.StripPath();
@@ -71,7 +71,7 @@ std::shared_ptr<Texture> TextureManager::AllocTexture(const char *hashName) {
     return texture;
 }
 
-std::shared_ptr<Texture> TextureManager::FindTexture(const char *hashName) const {
+SharedPtr<Texture> TextureManager::FindTexture(const char *hashName) const {
     if (!hashName || !hashName[0]) {
         return nullptr;
     }
@@ -84,12 +84,12 @@ std::shared_ptr<Texture> TextureManager::FindTexture(const char *hashName) const
     return entry->second.lock();
 }
 
-std::shared_ptr<Texture> TextureManager::GetTexture(const char *hashName, Texture::Flag flags, bool async) {
+SharedPtr<Texture> TextureManager::GetTexture(const char *hashName, Texture::Flag flags, bool async) {
     if (!hashName || !hashName[0]) {
         return defaultTexture;
     }
 
-    std::shared_ptr<Texture> texture = FindTexture(hashName);
+    SharedPtr<Texture> texture = FindTexture(hashName);
     if (texture) {
         if (!async && !texture->WaitReady()) {
             return defaultTexture;
@@ -166,7 +166,7 @@ bool TextureManager::IsRegisteredStreamingTexture(const Texture *texture) const 
     return texture->streaming.streamingListIndex != TextureStreamingInvalidIndex;
 }
 
-void TextureManager::RegisterStreamingTexture(const std::shared_ptr<Texture> &texture, const BE1::Image::MipRange &mipRange) {
+void TextureManager::RegisterStreamingTexture(const SharedPtr<Texture> &texture, const BE1::Image::MipRange &mipRange) {
     if (!texture) {
         return;
     }
@@ -178,7 +178,7 @@ void TextureManager::RegisterStreamingTexture(const std::shared_ptr<Texture> &te
         return;
     }
 
-    streaming.streamingListIndex = streamingTextures.Append(std::weak_ptr<Texture>(texture));
+    streaming.streamingListIndex = streamingTextures.Append(WeakPtr<Texture>(texture));
     streaming.originalWidth = mipRange.originalWidth;
     streaming.originalHeight = mipRange.originalHeight;
     streaming.originalDepth = mipRange.originalDepth;
@@ -217,7 +217,7 @@ uint32_t TextureManager::GetStreamingTextureMinResidentMaxDimension() const {
 void TextureManager::ApplyStreamingFeedback(const uint32_t *feedbackData, uint32_t feedbackCapacity) {
     const int numStreamingTextures = streamingTextures.Count();
     for (int i = 0; i < numStreamingTextures; ++i) {
-        std::shared_ptr<Texture> texture = streamingTextures[i].lock();
+        SharedPtr<Texture> texture = streamingTextures[i].lock();
         if (!texture) {
             continue;
         }
@@ -261,7 +261,7 @@ void TextureManager::UpdateStreamingTextures() {
 
     const int numStreamingTextures = streamingTextures.Count();
     for (int streamingTextureIndex = 0; streamingTextureIndex < numStreamingTextures; ++streamingTextureIndex) {
-        std::shared_ptr<Texture> texture = streamingTextures[streamingTextureIndex].lock();
+        SharedPtr<Texture> texture = streamingTextures[streamingTextureIndex].lock();
         if (!texture) {
             continue;
         }
@@ -381,7 +381,7 @@ void TextureManager::ComputeStreamingTextureMemoryUsage() {
 
     const int numStreamingTextures = streamingTextures.Count();
     for (int i = 0; i < numStreamingTextures; ++i) {
-        std::shared_ptr<Texture> texture = streamingTextures[i].lock();
+        SharedPtr<Texture> texture = streamingTextures[i].lock();
         if (!texture || !texture->GetRHITexture()) {
             continue;
         }

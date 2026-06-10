@@ -35,16 +35,30 @@ struct ShaderPipelineDesc {
     uint32_t                        sampleMask = 0xffffffff;
 };
 
+struct ShaderStageSource {
+    RHI::ShaderStage                shaderStage = RHI::ShaderStage::Count;
+    RHI::ShaderModel                shaderModel = RHI::ShaderModel::SM_6_0;
+    BE1::Str                        filename;
+    BE1::Str                        entryPoint;
+};
+
+struct ShaderPipelineBuildData {
+    void                            Clear();
+
+    ShaderStageSource               stageSources[to_int(RHI::ShaderStage::Count)] = {};
+    BE1::StrArray                   compileDefines;
+};
+
 /*
 ---------------------------------------------------------------------------------------------------
 
-    ShaderPipelineState
+    ShaderPipeline
 
 ---------------------------------------------------------------------------------------------------
 */
 
-class ShaderPipelineState : public std::enable_shared_from_this<ShaderPipelineState> {
-    friend class LoadingSystem;
+class ShaderPipeline : public std::enable_shared_from_this<ShaderPipeline> {
+    friend class ShaderPipelineCache;
 
 public:
     enum class Type : uint8_t {
@@ -60,9 +74,9 @@ public:
         Failed
     };
 
-    ShaderPipelineState(Type type, ShaderPermutationKey permutationKey, const ShaderPipelineDesc &graphicsDesc);
-    ShaderPipelineState(Type type, ShaderPermutationKey permutationKey);
-    ~ShaderPipelineState() { Purge(); }
+    ShaderPipeline(Type type, ShaderPermutationKey permutationKey, const ShaderPipelineDesc &graphicsDesc);
+    ShaderPipeline(Type type, ShaderPermutationKey permutationKey);
+    ~ShaderPipeline() { Purge(); }
 
     Type                            GetType() const { return type; }
     State                           GetState() const { return state.load(); }
@@ -80,12 +94,13 @@ public:
 
     void                            Reset();
 
-    void                            BuildAsync(const std::shared_ptr<ShaderTemplate> &shaderTemplate);
-    void                            EnsureBuildAsync(const std::shared_ptr<ShaderTemplate> &shaderTemplate);
+    bool                            PreparePSO(const ShaderPipelineBuildData &buildData, RHI::PipelineState *&preparedPSO) const;
 
 private:
     void                            Purge();
-    bool                            EnqueueBuild(const std::shared_ptr<ShaderTemplate> &shaderTemplate);
+    void                            BuildAsync(const SharedPtr<ShaderTemplate> &shaderTemplate);
+    void                            EnsureBuildAsync(const SharedPtr<ShaderTemplate> &shaderTemplate);
+    bool                            EnqueueBuild(const SharedPtr<ShaderTemplate> &shaderTemplate);
 
     const Type                      type = Type::Graphics;  // 생성자에서 한번 정해지면 변하지 않는다.
     const ShaderPermutationKey      permutationKey;         // 생성자에서 한번 정해지면 변하지 않는다.
@@ -96,7 +111,7 @@ private:
     RHI::PipelineState *            pso = nullptr;
 };
 
-BE_INLINE ShaderPipelineState::ShaderPipelineState(Type type, ShaderPermutationKey permutationKey, const ShaderPipelineDesc &graphicsPipelineDesc) :
+BE_INLINE ShaderPipeline::ShaderPipeline(Type type, ShaderPermutationKey permutationKey, const ShaderPipelineDesc &graphicsPipelineDesc) :
     type(type), permutationKey(permutationKey), graphicsDesc(graphicsPipelineDesc) {
     assert(type == Type::Graphics);
 
@@ -106,7 +121,7 @@ BE_INLINE ShaderPipelineState::ShaderPipelineState(Type type, ShaderPermutationK
     }
 }
 
-BE_INLINE ShaderPipelineState::ShaderPipelineState(Type type, ShaderPermutationKey permutationKey) :
+BE_INLINE ShaderPipeline::ShaderPipeline(Type type, ShaderPermutationKey permutationKey) :
     type(type), permutationKey(permutationKey) {
     assert(type == Type::Compute);
 }

@@ -123,13 +123,13 @@ public:
     void                            Reset();
 
                                     /// Creates additive anim from other anim.
-    std::shared_ptr<Anim>           CreateAdditiveAnim(const Anim *refAnim, int numJointIndexes, const int *jointIndexes);
+    SharedPtr<Anim>                 CreateAdditiveAnim(const Anim *refAnim, int numJointIndexes, const int *jointIndexes);
 
                                     /// Creates additive anim from bind-pose.
-    std::shared_ptr<Anim>           CreateAdditiveAnim(const Skeleton *skeleton, int numJointIndexes, const int *jointIndexes);
+    SharedPtr<Anim>                 CreateAdditiveAnim(const Skeleton *skeleton, int numJointIndexes, const int *jointIndexes);
 
                                     // TODO: IMPLEMENT THIS
-    std::shared_ptr<Anim>           CreateMirroredAnim(const int *jointMirrorTable);
+    SharedPtr<Anim>                 CreateMirroredAnim(const int *jointMirrorTable);
 
     bool                            Load(const char *filename);
     bool                            LoadAsync(const char *filename);
@@ -217,7 +217,7 @@ private:
     Anim &                          Copy(const Anim &other);
 
     void                            CreateDefaultAnim(const Skeleton *skeleton);
-    std::shared_ptr<Anim>           CreateAdditiveAnim(const char *name, const BE1::JointPose *firstFrame, int numJointIndexes, const int *jointIndexes);
+    SharedPtr<Anim>                 CreateAdditiveAnim(const char *name, const BE1::JointPose *firstFrame, int numJointIndexes, const int *jointIndexes);
 
     void                            ComputeTotalDelta();
 
@@ -247,10 +247,10 @@ public:
 
     void                            UpdateFrame();
 
-    std::shared_ptr<Anim>           AllocAnim(const char *hashName);
-    std::shared_ptr<Anim>           FindAnim(const char *hashName) const;
-    std::shared_ptr<Anim>           GetAnim(const char *hashName, bool async = true);
-    std::shared_ptr<Anim>           GetDefaultAnim(const char *hashName, const Skeleton *skeleton);
+    SharedPtr<Anim>                 AllocAnim(const char *hashName);
+    SharedPtr<Anim>                 FindAnim(const char *hashName) const;
+    SharedPtr<Anim>                 GetAnim(const char *hashName, bool async = true);
+    SharedPtr<Anim>                 GetDefaultAnim(const char *hashName, const Skeleton *skeleton);
 
     int                             JointIndexByName(const char *jointName);
     const char *                    JointNameByIndex(int index) const;
@@ -258,7 +258,7 @@ public:
 private:
     void                            CleanExpiredAnims();
 
-    BE1::StrIHashMap<std::weak_ptr<Anim>> animHashMap;
+    BE1::StrIHashMap<WeakPtr<Anim>> animHashMap;
     int                             expiredAnimHashMapCursor = 0;
 
     BE1::StrArray                   jointNames;

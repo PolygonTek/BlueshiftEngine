@@ -171,6 +171,8 @@ void RenderBackend::Execute(RenderFrameData *frameData) {
     // 백엔드가 처리할 프레임 데이터
     this->frameData = frameData;
 
+    frameConstantBuffer = nullptr;
+
     const void *data = frameData->GetCommands()->buffer;
     bool finished = false;
 
@@ -212,6 +214,21 @@ void RenderBackend::RecordDrawStats(uint32_t drawCount, uint64_t triangleCount) 
     currentContext->AddRenderStats(drawCount, triangleCount);
 }
 
+bool RenderBackend::UploadFrameConstants() {
+    frameConstantBuffer = frameData->GetThreadData(0)->AllocConstant(sizeof(FrameConstants));
+    if (!frameConstantBuffer) {
+        return false;
+    }
+
+    FrameConstants *constants = reinterpret_cast<FrameConstants *>(frameConstantBuffer->mappedPtr);
+    constants->feedbackBufferIndex = currentContext->textureStreamingFeedback.buffer ? currentContext->textureStreamingFeedback.buffer->GetBindlessIndex(RHI::ViewType::UAV) : 0;
+    constants->shaderMaterialTableIndex = frameData->GetShaderMaterialTableBindlessIndex();
+    constants->padding0 = 0;
+    constants->padding1 = 0;
+
+    return true;
+}
+
 const void *RenderBackend::ExecuteBeginContext(const void *data) {
     PROFILER_CPU_SCOPED_EVENT("RenderBackend::ExecuteBeginContext");
 
@@ -225,9 +242,16 @@ const void *RenderBackend::ExecuteBeginContext(const void *data) {
 
     BeginGpuFrameTiming(mainCommandList);
 
+    // 등록된 셰이더 머티리얼 테이블을 GPU 에 업로드한다.
+    frameData->UploadShaderMaterialTable(mainCommandList);
+    assert(frameData->GetShaderMaterialTableBindlessIndex() != 0);
+
 #ifdef USE_MIPMAP_STREAMING
     currentContext->textureStreamingFeedback.Clear(mainCommandList);
 #endif
+
+    // 이번 프레임에 사용할 상수 데이터들을 준비한다.
+    UploadFrameConstants();
 
     mainCommandList->CloseAndExecute();
 
@@ -377,26 +401,50 @@ const void *RenderBackend::ExecuteSwapBuffers(const void *data) {
 void RenderBackend::DrawCamera3D() {
     PROFILER_CPU_SCOPED_EVENT("RenderBackend::DrawCamera3D");
 
-    DrawAllLitSurfaces(currentVisCamera->drawSurfs, currentVisCamera->numDrawSurfs);
+    for (uint32_t passIndex = 0; passIndex < currentVisCamera->numRenderPasses; ++passIndex) {
+        const RenderPass *renderPass = &currentVisCamera->renderPasses[passIndex];
+        switch (renderPass->type) {
+        case RenderPassType::MainOpaque:
+        case RenderPassType::MainBlend:
+            DrawMainPass(renderPass);
+            break;
+        default:
+            break;
+        }
+    }
 }
 
 void RenderBackend::DrawCamera2D() {
     PROFILER_CPU_SCOPED_EVENT("RenderBackend::DrawCamera2D");
 
-    if (!currentPipelines.unlitAlphaBlendPSO) {
-        return;
+    for (uint32_t passIndex = 0; passIndex < currentVisCamera->numRenderPasses; ++passIndex) {
+        const RenderPass *renderPass = &currentVisCamera->renderPasses[passIndex];
+        if (renderPass->type == RenderPassType::Gui) {
+            DrawGuiPass(renderPass);
+        }
     }
+}
 
-    RHI::renderer->SetPSO(mainCommandList, currentPipelines.unlitAlphaBlendPSO);
+void RenderBackend::DrawGuiPass(const RenderPass *renderPass) {
+    PROFILER_CPU_SCOPED_EVENT("RenderBackend::DrawGuiPass");
 
+    RHI::PipelineState *currentPSO = nullptr;
     const SubMesh *currentSubMesh = nullptr;
-    const RHI::Texture *currentTexture = nullptr;
 
-    for (int drawSurfIndex = 0; drawSurfIndex < currentVisCamera->numDrawSurfs; ++drawSurfIndex) {
-        const DrawSurf *drawSurf = currentVisCamera->drawSurfs[drawSurfIndex];
+    for (uint32_t drawSurfIndex = 0; drawSurfIndex < renderPass->numDrawSurfs; ++drawSurfIndex) {
+        const PassDrawSurf *drawSurf = renderPass->drawSurfs[drawSurfIndex];
+        if (!drawSurf->basePSO) {
+            continue;
+        }
 
-        if (currentSubMesh != drawSurf->subMesh) {
-            currentSubMesh = drawSurf->subMesh;
+        if (currentPSO != drawSurf->basePSO) {
+            currentPSO = drawSurf->basePSO;
+            RHI::renderer->SetPSO(mainCommandList, currentPSO);
+            RHI::renderer->SetConstantBuffer(mainCommandList, 0, frameConstantBuffer);
+        }
+
+        if (currentSubMesh != drawSurf->visSurf->subMesh) {
+            currentSubMesh = drawSurf->visSurf->subMesh;
             RHI::renderer->SetVertexBuffer(mainCommandList, 0, currentSubMesh->vertexBuffer);
             RHI::renderer->SetIndexBuffer(mainCommandList, currentSubMesh->indexBuffer);
         }

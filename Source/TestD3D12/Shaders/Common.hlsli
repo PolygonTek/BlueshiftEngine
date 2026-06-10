@@ -10,7 +10,7 @@
 #ifdef USE_DIRECT_DESCRIPTOR_HEAP
 
 #define ROOT_SIGNATURE_GRAPHICS_ROOT_FLAGS "RootFlags(ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT | CBV_SRV_UAV_HEAP_DIRECTLY_INDEXED | SAMPLER_HEAP_DIRECTLY_INDEXED), "
-#define ROOT_SIGNATURE_BINDLESS_TABLES ""
+#define ROOT_SIGNATURE_BINDLESS_DESCRIPTOR_TABLES ""
 
 Texture1D<float4> GetTexture1D(uint index) { return ResourceDescriptorHeap[index]; }
 Texture1D<half4> GetTexture1DHalf4(uint index) { return ResourceDescriptorHeap[index]; }
@@ -38,6 +38,7 @@ Buffer<uint> GetBufferUInt(uint index) { return ResourceDescriptorHeap[index]; }
 Buffer<uint2> GetBufferUInt2(uint index) { return ResourceDescriptorHeap[index]; }
 Buffer<uint3> GetBufferUInt3(uint index) { return ResourceDescriptorHeap[index]; }
 Buffer<uint4> GetBufferUInt4(uint index) { return ResourceDescriptorHeap[index]; }
+StructuredBuffer<ShaderMaterial> GetShaderMaterial(uint index) { return ResourceDescriptorHeap[index]; }
 RWTexture2D<float4> GetRWTexture2D(uint index) { return ResourceDescriptorHeap[index]; }
 RWTexture2D<uint> GetRWTexture2DUInt(uint index) { return ResourceDescriptorHeap[index]; }
 RWTexture2D<uint2> GetRWTexture2DUInt2(uint index) { return ResourceDescriptorHeap[index]; }
@@ -59,50 +60,51 @@ SamplerState GetSampler(uint index) { return SamplerDescriptorHeap[index]; }
 #else
 
 #define ROOT_SIGNATURE_GRAPHICS_ROOT_FLAGS "RootFlags(ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT), "
-#define ROOT_SIGNATURE_BINDLESS_TABLES \
-    "DescriptorTable(SRV(t0, numDescriptors = unbounded, space = 1)), " \
-    "DescriptorTable(SRV(t0, numDescriptors = unbounded, space = 2)), " \
-    "DescriptorTable(SRV(t0, numDescriptors = unbounded, space = 3)), " \
-    "DescriptorTable(SRV(t0, numDescriptors = unbounded, space = 4)), " \
-    "DescriptorTable(SRV(t0, numDescriptors = unbounded, space = 5)), " \
-    "DescriptorTable(SRV(t0, numDescriptors = unbounded, space = 6)), " \
-    "DescriptorTable(SRV(t0, numDescriptors = unbounded, space = 7)), " \
-    "DescriptorTable(SRV(t0, numDescriptors = unbounded, space = 8)), " \
-    "DescriptorTable(SRV(t0, numDescriptors = unbounded, space = 9)), " \
-    "DescriptorTable(SRV(t0, numDescriptors = unbounded, space = 10)), " \
-    "DescriptorTable(SRV(t0, numDescriptors = unbounded, space = 11)), " \
-    "DescriptorTable(SRV(t0, numDescriptors = unbounded, space = 12)), " \
-    "DescriptorTable(SRV(t0, numDescriptors = unbounded, space = 13)), " \
-    "DescriptorTable(SRV(t0, numDescriptors = unbounded, space = 14)), " \
-    "DescriptorTable(SRV(t0, numDescriptors = unbounded, space = 15)), " \
-    "DescriptorTable(SRV(t0, numDescriptors = unbounded, space = 16)), " \
-    "DescriptorTable(SRV(t0, numDescriptors = unbounded, space = 17)), " \
-    "DescriptorTable(SRV(t0, numDescriptors = unbounded, space = 18)), " \
-    "DescriptorTable(SRV(t0, numDescriptors = unbounded, space = 19)), " \
-    "DescriptorTable(SRV(t0, numDescriptors = unbounded, space = 20)), " \
-    "DescriptorTable(SRV(t0, numDescriptors = unbounded, space = 21)), " \
-    "DescriptorTable(SRV(t0, numDescriptors = unbounded, space = 22)), " \
-    "DescriptorTable(SRV(t0, numDescriptors = unbounded, space = 23)), " \
-    "DescriptorTable(SRV(t0, numDescriptors = unbounded, space = 24)), " \
-    "DescriptorTable(SRV(t0, numDescriptors = unbounded, space = 25)), " \
-    "DescriptorTable(SRV(t0, numDescriptors = unbounded, space = 26)), " \
-    "DescriptorTable(UAV(u0, numDescriptors = unbounded, space = 50)), " \
-    "DescriptorTable(UAV(u0, numDescriptors = unbounded, space = 51)), " \
-    "DescriptorTable(UAV(u0, numDescriptors = unbounded, space = 52)), " \
-    "DescriptorTable(UAV(u0, numDescriptors = unbounded, space = 53)), " \
-    "DescriptorTable(UAV(u0, numDescriptors = unbounded, space = 54)), " \
-    "DescriptorTable(UAV(u0, numDescriptors = unbounded, space = 55)), " \
-    "DescriptorTable(UAV(u0, numDescriptors = unbounded, space = 56)), " \
-    "DescriptorTable(UAV(u0, numDescriptors = unbounded, space = 57)), " \
-    "DescriptorTable(UAV(u0, numDescriptors = unbounded, space = 58)), " \
-    "DescriptorTable(UAV(u0, numDescriptors = unbounded, space = 59)), " \
-    "DescriptorTable(UAV(u0, numDescriptors = unbounded, space = 60)), " \
-    "DescriptorTable(UAV(u0, numDescriptors = unbounded, space = 61)), " \
-    "DescriptorTable(UAV(u0, numDescriptors = unbounded, space = 62)), " \
-    "DescriptorTable(UAV(u0, numDescriptors = unbounded, space = 63)), " \
-    "DescriptorTable(UAV(u0, numDescriptors = unbounded, space = 64)), " \
-    "DescriptorTable(UAV(u0, numDescriptors = unbounded, space = 65)), " \
-    "DescriptorTable(Sampler(s0, numDescriptors = unbounded, space = 66)), "
+#define ROOT_SIGNATURE_BINDLESS_DESCRIPTOR_TABLES \
+    "DescriptorTable(SRV(t0, numDescriptors = unbounded, space = 1, flags = DESCRIPTORS_VOLATILE)), " \
+    "DescriptorTable(SRV(t0, numDescriptors = unbounded, space = 2, flags = DESCRIPTORS_VOLATILE)), " \
+    "DescriptorTable(SRV(t0, numDescriptors = unbounded, space = 3, flags = DESCRIPTORS_VOLATILE)), " \
+    "DescriptorTable(SRV(t0, numDescriptors = unbounded, space = 4, flags = DESCRIPTORS_VOLATILE)), " \
+    "DescriptorTable(SRV(t0, numDescriptors = unbounded, space = 5, flags = DESCRIPTORS_VOLATILE)), " \
+    "DescriptorTable(SRV(t0, numDescriptors = unbounded, space = 6, flags = DESCRIPTORS_VOLATILE)), " \
+    "DescriptorTable(SRV(t0, numDescriptors = unbounded, space = 7, flags = DESCRIPTORS_VOLATILE)), " \
+    "DescriptorTable(SRV(t0, numDescriptors = unbounded, space = 8, flags = DESCRIPTORS_VOLATILE)), " \
+    "DescriptorTable(SRV(t0, numDescriptors = unbounded, space = 9, flags = DESCRIPTORS_VOLATILE)), " \
+    "DescriptorTable(SRV(t0, numDescriptors = unbounded, space = 10, flags = DESCRIPTORS_VOLATILE)), " \
+    "DescriptorTable(SRV(t0, numDescriptors = unbounded, space = 11, flags = DESCRIPTORS_VOLATILE)), " \
+    "DescriptorTable(SRV(t0, numDescriptors = unbounded, space = 12, flags = DESCRIPTORS_VOLATILE)), " \
+    "DescriptorTable(SRV(t0, numDescriptors = unbounded, space = 13, flags = DESCRIPTORS_VOLATILE)), " \
+    "DescriptorTable(SRV(t0, numDescriptors = unbounded, space = 14, flags = DESCRIPTORS_VOLATILE)), " \
+    "DescriptorTable(SRV(t0, numDescriptors = unbounded, space = 15, flags = DESCRIPTORS_VOLATILE)), " \
+    "DescriptorTable(SRV(t0, numDescriptors = unbounded, space = 16, flags = DESCRIPTORS_VOLATILE)), " \
+    "DescriptorTable(SRV(t0, numDescriptors = unbounded, space = 17, flags = DESCRIPTORS_VOLATILE)), " \
+    "DescriptorTable(SRV(t0, numDescriptors = unbounded, space = 18, flags = DESCRIPTORS_VOLATILE)), " \
+    "DescriptorTable(SRV(t0, numDescriptors = unbounded, space = 19, flags = DESCRIPTORS_VOLATILE)), " \
+    "DescriptorTable(SRV(t0, numDescriptors = unbounded, space = 20, flags = DESCRIPTORS_VOLATILE)), " \
+    "DescriptorTable(SRV(t0, numDescriptors = unbounded, space = 21, flags = DESCRIPTORS_VOLATILE)), " \
+    "DescriptorTable(SRV(t0, numDescriptors = unbounded, space = 22, flags = DESCRIPTORS_VOLATILE)), " \
+    "DescriptorTable(SRV(t0, numDescriptors = unbounded, space = 23, flags = DESCRIPTORS_VOLATILE)), " \
+    "DescriptorTable(SRV(t0, numDescriptors = unbounded, space = 24, flags = DESCRIPTORS_VOLATILE)), " \
+    "DescriptorTable(SRV(t0, numDescriptors = unbounded, space = 25, flags = DESCRIPTORS_VOLATILE)), " \
+    "DescriptorTable(SRV(t0, numDescriptors = unbounded, space = 26, flags = DESCRIPTORS_VOLATILE)), " \
+    "DescriptorTable(SRV(t0, numDescriptors = unbounded, space = 27, flags = DESCRIPTORS_VOLATILE)), " \
+    "DescriptorTable(UAV(u0, numDescriptors = unbounded, space = 50, flags = DESCRIPTORS_VOLATILE)), " \
+    "DescriptorTable(UAV(u0, numDescriptors = unbounded, space = 51, flags = DESCRIPTORS_VOLATILE)), " \
+    "DescriptorTable(UAV(u0, numDescriptors = unbounded, space = 52, flags = DESCRIPTORS_VOLATILE)), " \
+    "DescriptorTable(UAV(u0, numDescriptors = unbounded, space = 53, flags = DESCRIPTORS_VOLATILE)), " \
+    "DescriptorTable(UAV(u0, numDescriptors = unbounded, space = 54, flags = DESCRIPTORS_VOLATILE)), " \
+    "DescriptorTable(UAV(u0, numDescriptors = unbounded, space = 55, flags = DESCRIPTORS_VOLATILE)), " \
+    "DescriptorTable(UAV(u0, numDescriptors = unbounded, space = 56, flags = DESCRIPTORS_VOLATILE)), " \
+    "DescriptorTable(UAV(u0, numDescriptors = unbounded, space = 57, flags = DESCRIPTORS_VOLATILE)), " \
+    "DescriptorTable(UAV(u0, numDescriptors = unbounded, space = 58, flags = DESCRIPTORS_VOLATILE)), " \
+    "DescriptorTable(UAV(u0, numDescriptors = unbounded, space = 59, flags = DESCRIPTORS_VOLATILE)), " \
+    "DescriptorTable(UAV(u0, numDescriptors = unbounded, space = 60, flags = DESCRIPTORS_VOLATILE)), " \
+    "DescriptorTable(UAV(u0, numDescriptors = unbounded, space = 61, flags = DESCRIPTORS_VOLATILE)), " \
+    "DescriptorTable(UAV(u0, numDescriptors = unbounded, space = 62, flags = DESCRIPTORS_VOLATILE)), " \
+    "DescriptorTable(UAV(u0, numDescriptors = unbounded, space = 63, flags = DESCRIPTORS_VOLATILE)), " \
+    "DescriptorTable(UAV(u0, numDescriptors = unbounded, space = 64, flags = DESCRIPTORS_VOLATILE)), " \
+    "DescriptorTable(UAV(u0, numDescriptors = unbounded, space = 65, flags = DESCRIPTORS_VOLATILE)), " \
+    "DescriptorTable(Sampler(s0, numDescriptors = unbounded, space = 66, flags = DESCRIPTORS_VOLATILE)), "
 
 Texture1D<float4> bindlessTexture1DTable[] : register(t0, space1);
 Texture1D<half4> bindlessTexture1DHalf4Table[] : register(t0, space2);
@@ -130,6 +132,7 @@ Buffer<uint> bindlessBufferUIntTable[] : register(t0, space23);
 Buffer<uint2> bindlessBufferUInt2Table[] : register(t0, space24);
 Buffer<uint3> bindlessBufferUInt3Table[] : register(t0, space25);
 Buffer<uint4> bindlessBufferUInt4Table[] : register(t0, space26);
+StructuredBuffer<ShaderMaterial> bindlessShaderMaterialTable[] : register(t0, space27);
 RWTexture2D<float4> bindlessRWTexture2DTable[] : register(u0, space50);
 RWTexture2D<uint> bindlessRWTexture2DUIntTable[] : register(u0, space51);
 RWTexture2D<uint2> bindlessRWTexture2DUInt2Table[] : register(u0, space52);
@@ -174,6 +177,7 @@ Buffer<uint> GetBufferUInt(uint index) { return bindlessBufferUIntTable[index]; 
 Buffer<uint2> GetBufferUInt2(uint index) { return bindlessBufferUInt2Table[index]; }
 Buffer<uint3> GetBufferUInt3(uint index) { return bindlessBufferUInt3Table[index]; }
 Buffer<uint4> GetBufferUInt4(uint index) { return bindlessBufferUInt4Table[index]; }
+StructuredBuffer<ShaderMaterial> GetShaderMaterial(uint index) { return bindlessShaderMaterialTable[index]; }
 RWTexture2D<float4> GetRWTexture2D(uint index) { return bindlessRWTexture2DTable[index]; }
 RWTexture2D<uint> GetRWTexture2DUInt(uint index) { return bindlessRWTexture2DUIntTable[index]; }
 RWTexture2D<uint2> GetRWTexture2DUInt2(uint index) { return bindlessRWTexture2DUInt2Table[index]; }
@@ -194,7 +198,7 @@ SamplerState GetSampler(uint index) { return bindlessSamplerTable[index]; }
 
 #endif
 
-#define ROOT_SIGNATURE_STATIC_SAMPLERS "StaticSampler(s100, addressU = TEXTURE_ADDRESS_CLAMP, addressV = TEXTURE_ADDRESS_CLAMP, addressW = TEXTURE_ADDRESS_CLAMP, filter = FILTER_MIN_MAG_MIP_LINEAR)," \
+#define ROOT_SIGNATURE_COMMON_STATIC_SAMPLERS "StaticSampler(s100, addressU = TEXTURE_ADDRESS_CLAMP, addressV = TEXTURE_ADDRESS_CLAMP, addressW = TEXTURE_ADDRESS_CLAMP, filter = FILTER_MIN_MAG_MIP_LINEAR)," \
     "StaticSampler(s101, addressU = TEXTURE_ADDRESS_WRAP, addressV = TEXTURE_ADDRESS_WRAP, addressW = TEXTURE_ADDRESS_WRAP, filter = FILTER_MIN_MAG_MIP_LINEAR)," \
     "StaticSampler(s102, addressU = TEXTURE_ADDRESS_MIRROR, addressV = TEXTURE_ADDRESS_MIRROR, addressW = TEXTURE_ADDRESS_MIRROR, filter = FILTER_MIN_MAG_MIP_LINEAR)," \
     "StaticSampler(s103, addressU = TEXTURE_ADDRESS_CLAMP, addressV = TEXTURE_ADDRESS_CLAMP, addressW = TEXTURE_ADDRESS_CLAMP, filter = FILTER_MIN_MAG_MIP_POINT)," \
@@ -203,6 +207,17 @@ SamplerState GetSampler(uint index) { return bindlessSamplerTable[index]; }
     "StaticSampler(s106, addressU = TEXTURE_ADDRESS_CLAMP, addressV = TEXTURE_ADDRESS_CLAMP, addressW = TEXTURE_ADDRESS_CLAMP, filter = FILTER_ANISOTROPIC, maxAnisotropy = 16)," \
     "StaticSampler(s107, addressU = TEXTURE_ADDRESS_WRAP, addressV = TEXTURE_ADDRESS_WRAP, addressW = TEXTURE_ADDRESS_WRAP, filter = FILTER_ANISOTROPIC, maxAnisotropy = 16)," \
     "StaticSampler(s108, addressU = TEXTURE_ADDRESS_MIRROR, addressV = TEXTURE_ADDRESS_MIRROR, addressW = TEXTURE_ADDRESS_MIRROR, filter = FILTER_ANISOTROPIC, maxAnisotropy = 16)"
+
+#define DECLARE_COMMON_STATIC_SAMPLERS \
+    SamplerState linearClampSampler : register(s100); \
+    SamplerState linearWrapSampler : register(s101); \
+    SamplerState linearMirrorSampler : register(s102); \
+    SamplerState pointClampSampler : register(s103); \
+    SamplerState pointWrapSampler : register(s104); \
+    SamplerState pointMirrorSampler : register(s105); \
+    SamplerState anisoClampSampler : register(s106); \
+    SamplerState anisoWrapSampler : register(s107); \
+    SamplerState anisoMirrorSampler : register(s108);
 
 inline float ComputeTextureLod(in uint2 textureSize, in float2 dFdx_uv, in float2 dFdy_uv, uint anisotropy = 0) {
     // Isotropic:

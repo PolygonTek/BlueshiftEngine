@@ -16,20 +16,23 @@
 #include "FontFile.h"
 #include "FontFace.h"
 #include "Texture.h"
+#include "Material.h"
 
 void BitmapFontFace::Purge() {
-    textures.Clear();
+    materials.Clear();
 
     glyphHashMap.DeleteContents(true);
 }
 
 Texture *BitmapFontFace::AddBitmap(const char *filename) {
-    std::shared_ptr<Texture> texture = textureManager.GetTexture(filename, Texture::Flag::HighQuality | Texture::Flag::NoMipmaps);
+    SharedPtr<Texture> texture = textureManager.GetTexture(filename, Texture::Flag::HighQuality | Texture::Flag::NoMipmaps);
     if (!texture) {
         return nullptr;
     }
 
-    textures.Append(texture);
+    SharedPtr<Material> material = materialManager.GetSingleTextureMaterial(texture->GetHashName(), Material::TextureHint::Overlay);
+    materials.Append(material);
+
     return texture.get();
 }
 
@@ -47,7 +50,7 @@ FontGlyph *BitmapFontFace::AddGlyph(char32_t charCode, int width, int height, in
     glyph->t = t;
     glyph->s2 = s2;
     glyph->t2 = t2;
-    glyph->texture = textures[materialIndex].get();
+    glyph->material = materials[materialIndex];
 
     glyphHashMap.Set(glyph->charCode, glyph);
 
@@ -115,14 +118,14 @@ void BitmapFontFace::Write(const char *filename) {
     }
 
     FontFileHeader header;
-    header.numBitmaps = textures.Count();
+    header.numBitmaps = materials.Count();
     header.numGlyphs = glyphHashMap.Count();
     header.ofsBitmaps = sizeof(header);
     header.ofsGlyphs = header.ofsBitmaps + header.numBitmaps * sizeof(FontFileBitmap);
 
     fp->Write(&header, sizeof(header));
 
-    for (int bitmapIndex = 0; bitmapIndex < textures.Count(); bitmapIndex++) {
+    for (int bitmapIndex = 0; bitmapIndex < materials.Count(); bitmapIndex++) {
         FontFileBitmap bitmap;
         BE1::Str::Copynz(bitmap.name, bitmapNames[bitmapIndex].c_str(), sizeof(bitmap.name));
 
@@ -144,9 +147,7 @@ void BitmapFontFace::Write(const char *filename) {
         glyph.t             = gl->t;
         glyph.s2            = gl->s2;
         glyph.t2            = gl->t2;
-        glyph.bitmapIndex   = textures.FindIndexIf([gl](const std::shared_ptr<Texture> &texture) {
-            return texture.get() == gl->texture;
-        });
+        glyph.bitmapIndex   = materials.FindIndex(gl->material);
 
         fp->Write(&glyph, sizeof(glyph));
     }

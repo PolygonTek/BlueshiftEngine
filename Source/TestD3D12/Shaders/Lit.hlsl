@@ -2,19 +2,11 @@
 
 #define COMMON_ROOT_SIGNATURE ROOT_SIGNATURE_GRAPHICS_ROOT_FLAGS \
     "DescriptorTable(CBV(b0)), " \
-    "RootConstants(num32BitConstants=1, b1), " \
-    ROOT_SIGNATURE_BINDLESS_TABLES \
-    ROOT_SIGNATURE_STATIC_SAMPLERS
+    "DescriptorTable(CBV(b1)), " \
+    ROOT_SIGNATURE_BINDLESS_DESCRIPTOR_TABLES \
+    ROOT_SIGNATURE_COMMON_STATIC_SAMPLERS
 
-SamplerState linearClampSampler : register(s100);
-SamplerState linearWrapSampler : register(s101);
-SamplerState linearMirrorSampler : register(s102);
-SamplerState pointClampSampler : register(s103);
-SamplerState pointWrapSampler : register(s104);
-SamplerState pointMirrorSampler : register(s105);
-SamplerState anisoClampSampler : register(s106);
-SamplerState anisoWrapSampler : register(s107);
-SamplerState anisoMirrorSampler : register(s108);
+DECLARE_COMMON_STATIC_SAMPLERS
 
 struct VSInput {
     float4 position : POSITION;
@@ -33,24 +25,22 @@ struct PSInput {
     float2 texCoord : TEXCOORD0;
 };
 
+cbuffer FrameCB : register(b0) {
+    FrameConstants frameConstants;
+};
+
 #if USE_INSTANCING == 1
-cbuffer ObjectCB : register(b0) {
+cbuffer ObjectCB : register(b1) {
     row_major float4x4 viewProjMatrix;
     row_major float3x4 worldMatrix[MaxDrawInstanceCount];
-    uint baseColorTextureIndex;
-    uint streamingTextureIndex;
+    uint shaderMaterialIndex;
 };
 #else
-cbuffer ObjectCB : register(b0) {
+cbuffer ObjectCB : register(b1) {
     row_major float4x4 modelViewProjMatrix;
-    uint baseColorTextureIndex;
-    uint streamingTextureIndex;
+    uint shaderMaterialIndex;
 };
 #endif
-
-cbuffer LitPassCB : register(b1) {
-    uint feedbackBufferIndex;
-};
 
 [RootSignature(COMMON_ROOT_SIGNATURE)]
 PSInput VSMain(VSInput input) {
@@ -69,10 +59,12 @@ PSInput VSMain(VSInput input) {
 
 [RootSignature(COMMON_ROOT_SIGNATURE)]
 float4 PSMain(PSInput input) : SV_TARGET {
-    if (feedbackBufferIndex != 0 && streamingTextureIndex != TextureStreamingInvalidIndex) {
-        WriteMipmapFeedback(GetRWBufferUInt(feedbackBufferIndex), streamingTextureIndex, ddx_coarse(input.texCoord.xy), ddy_coarse(input.texCoord.xy));
+    ShaderMaterial shaderMaterial = GetShaderMaterial(frameConstants.shaderMaterialTableIndex)[shaderMaterialIndex];
+
+    if (frameConstants.feedbackBufferIndex != 0 && shaderMaterial.streamingTextureIndex != TextureStreamingInvalidIndex) {
+        WriteMipmapFeedback(GetRWBufferUInt(frameConstants.feedbackBufferIndex), shaderMaterial.streamingTextureIndex, ddx_coarse(input.texCoord.xy), ddy_coarse(input.texCoord.xy));
     }
-    
-    float4 color = GetTexture2D(baseColorTextureIndex).Sample(anisoClampSampler, input.texCoord);
-    return color * input.color;
+
+    float4 textureColor = GetTexture2D(shaderMaterial.baseColorTextureIndex).Sample(anisoClampSampler, input.texCoord);
+    return textureColor * shaderMaterial.baseColorFactor * input.color;
 }

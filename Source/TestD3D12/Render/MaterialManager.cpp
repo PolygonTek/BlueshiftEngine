@@ -44,7 +44,7 @@ void MaterialManager::UpdateFrame() {
     CleanExpiredMaterials();
 }
 
-std::shared_ptr<Material> MaterialManager::AllocMaterial(const char *hashName) {
+SharedPtr<Material> MaterialManager::AllocMaterial(const char *hashName) {
     if (!hashName || !hashName[0]) {
         BE_FATALERROR("MaterialManager::AllocMaterial: empty material name");
     }
@@ -55,7 +55,7 @@ std::shared_ptr<Material> MaterialManager::AllocMaterial(const char *hashName) {
         materialHashMap.Remove(hashName);
     }
 
-    std::shared_ptr<Material> material = std::make_shared<Material>();
+    SharedPtr<Material> material = MakeShared<Material>();
     material->hashName = hashName;
     material->name = hashName;
     material->name.StripPath();
@@ -66,7 +66,7 @@ std::shared_ptr<Material> MaterialManager::AllocMaterial(const char *hashName) {
     return material;
 }
 
-std::shared_ptr<Material> MaterialManager::FindMaterial(const char *hashName) const {
+SharedPtr<Material> MaterialManager::FindMaterial(const char *hashName) const {
     if (!hashName || !hashName[0]) {
         return nullptr;
     }
@@ -79,12 +79,12 @@ std::shared_ptr<Material> MaterialManager::FindMaterial(const char *hashName) co
     return entry->second.lock();
 }
 
-std::shared_ptr<Material> MaterialManager::GetMaterial(const char *hashName) {
+SharedPtr<Material> MaterialManager::GetMaterial(const char *hashName) {
     if (!hashName || !hashName[0]) {
         return defaultUnlitMaterial;
     }
 
-    std::shared_ptr<Material> material = FindMaterial(hashName);
+    SharedPtr<Material> material = FindMaterial(hashName);
     if (material) {
         return material;
     }
@@ -111,7 +111,7 @@ static const char *TextureHintName(Material::TextureHint hint) {
     return "None";
 }
 
-std::shared_ptr<Material> MaterialManager::GetSingleTextureMaterial(const char *textureFilename, Material::TextureHint hint) {
+SharedPtr<Material> MaterialManager::GetSingleTextureMaterial(const char *textureFilename, Material::TextureHint hint) {
     if (!textureFilename || !textureFilename[0]) {
         return defaultUnlitMaterial;
     }
@@ -121,7 +121,7 @@ std::shared_ptr<Material> MaterialManager::GetSingleTextureMaterial(const char *
     materialName += "/";
     materialName += textureFilename;
 
-    std::shared_ptr<Material> material = FindMaterial(materialName);
+    SharedPtr<Material> material = FindMaterial(materialName);
     if (material) {
         return material;
     }
@@ -181,7 +181,7 @@ void MaterialManager::OnShaderTemplateReloaded(const ShaderTemplate *shaderTempl
         const auto *entry = materialHashMap.GetByIndex(i);
         assert(entry);
 
-        std::shared_ptr<Material> material = entry->second.lock();
+        SharedPtr<Material> material = entry->second.lock();
         if (!material) {
             continue;
         }

@@ -17,6 +17,7 @@
 #include "FontFile.h"
 #include "FontFace.h"
 #include "Texture.h"
+#include "Material.h"
 #include "STB/stb_rect_pack.h"
 
 #define GLYPH_CACHE_TEXTURE_FORMAT  BE1::Image::Format::A8
@@ -24,7 +25,7 @@
 #define GLYPH_COORD_OFFSET          1
 
 struct GlyphAtlas {
-    std::shared_ptr<Texture>        texture;
+    SharedPtr<Texture>        texture;
     stbrp_context                   context;
     BE1::Array<stbrp_node>          nodes;
 };
@@ -34,7 +35,7 @@ static BE1::Array<GlyphAtlas>       atlasArray;
 static void Atlas_Add(int textureSize) {
     GlyphAtlas &atlas = atlasArray.Alloc();
 
-    std::shared_ptr<BE1::Image> image = std::make_shared<BE1::Image>();
+    SharedPtr<BE1::Image> image = MakeShared<BE1::Image>();
     image->Create2D(textureSize, textureSize, 1, GLYPH_CACHE_TEXTURE_FORMAT, BE1::Image::GammaSpace::Linear, nullptr, BE1::Image::Flag::None);
     memset(image->GetPixels(), 0, image->SizeInBytes());
 
@@ -222,7 +223,7 @@ FontGlyph *TrueTypeFontFace::CacheGlyph(char32_t unicodeChar, Font::RenderMode r
     gl->t           = (float)(glyphY - GLYPH_COORD_OFFSET) / atlasTexture->GetHeight();
     gl->s2          = (float)(glyphX + glyphWidth + GLYPH_COORD_OFFSET) / atlasTexture->GetWidth();
     gl->t2          = (float)(glyphY + glyphHeight + GLYPH_COORD_OFFSET) / atlasTexture->GetHeight();
-    gl->texture     = atlasTexture;
+    gl->material    = materialManager.GetSingleTextureMaterial(atlasTexture->GetHashName(), Material::TextureHint::Overlay);
 
     glyphHashMap.Set(hashKey, gl);
 

@@ -96,7 +96,7 @@ void MeshManager::DestroyEngineMeshes() {
     }
 }
 
-std::shared_ptr<Mesh> MeshManager::AllocMesh(const char *hashName) {
+SharedPtr<Mesh> MeshManager::AllocMesh(const char *hashName) {
     if (!hashName || !hashName[0]) {
         BE_FATALERROR("MeshManager::AllocMesh: empty mesh name");
     }
@@ -107,7 +107,7 @@ std::shared_ptr<Mesh> MeshManager::AllocMesh(const char *hashName) {
         meshHashMap.Remove(hashName);
     }
 
-    std::shared_ptr<Mesh> mesh = std::make_shared<Mesh>();
+    SharedPtr<Mesh> mesh = MakeShared<Mesh>();
     mesh->hashName = hashName;
     mesh->name = hashName;
     mesh->name.StripPath();
@@ -117,14 +117,14 @@ std::shared_ptr<Mesh> MeshManager::AllocMesh(const char *hashName) {
     return mesh;
 }
 
-std::shared_ptr<Mesh> MeshManager::AllocTransientMesh(const char *name) {
-    std::shared_ptr<Mesh> mesh = std::make_shared<Mesh>();
+SharedPtr<Mesh> MeshManager::AllocTransientMesh(const char *name) {
+    SharedPtr<Mesh> mesh = MakeShared<Mesh>();
     mesh->name = name;
 
     return mesh;
 }
 
-std::shared_ptr<Mesh> MeshManager::FindMesh(const char *hashName) const {
+SharedPtr<Mesh> MeshManager::FindMesh(const char *hashName) const {
     if (!hashName || !hashName[0]) {
         return nullptr;
     }
@@ -137,12 +137,12 @@ std::shared_ptr<Mesh> MeshManager::FindMesh(const char *hashName) const {
     return entry->second.lock();
 }
 
-std::shared_ptr<Mesh> MeshManager::GetMesh(const char *hashName, bool async) {
+SharedPtr<Mesh> MeshManager::GetMesh(const char *hashName, bool async) {
     if (!hashName || !hashName[0]) {
         return defaultMesh;
     }
 
-    std::shared_ptr<Mesh> mesh = FindMesh(hashName);
+    SharedPtr<Mesh> mesh = FindMesh(hashName);
     if (mesh) {
         if (!async && !mesh->WaitReady()) {
             return defaultMesh;
@@ -165,7 +165,7 @@ std::shared_ptr<Mesh> MeshManager::GetMesh(const char *hashName, bool async) {
     return mesh;
 }
 
-std::shared_ptr<Mesh> MeshManager::CreateCombinedMesh(const char *hashName, const BE1::Array<BatchSubMesh> &batchSubMeshes) {
+SharedPtr<Mesh> MeshManager::CreateCombinedMesh(const char *hashName, const BE1::Array<BatchSubMesh> &batchSubMeshes) {
     // Counts total verts/indices for combined mesh.
     int numTotalVerts = 0;
     int numTotalIndexes = 0;
@@ -179,7 +179,7 @@ std::shared_ptr<Mesh> MeshManager::CreateCombinedMesh(const char *hashName, cons
     }
 
     // Allocates a combined mesh.
-    std::shared_ptr<Mesh> mesh = AllocMesh(hashName);
+    SharedPtr<Mesh> mesh = AllocMesh(hashName);
     Mesh::Surface *surf = mesh->AllocSurface(numTotalVerts, numTotalIndexes);
     mesh->internalData.surfaces.Append(surf);
 

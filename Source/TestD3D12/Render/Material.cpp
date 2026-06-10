@@ -14,6 +14,7 @@
 
 #include "Precompiled.h"
 #include "Material.h"
+#include "ShaderPipelineCache.h"
 #include "Asset/GuidMapper.h"
 #include "IO/FileSystem.h"
 #include "Texture.h"
@@ -76,7 +77,7 @@ const ShaderTemplate::PropertyValue *Material::GetPropertyValue(const char *prop
     return GetPropertyValue(FindPropertyIndex(propertyName));
 }
 
-const std::shared_ptr<Texture> *Material::GetTextureProperty(int propertyIndex) const {
+const SharedPtr<Texture> *Material::GetTextureProperty(int propertyIndex) const {
     for (const TextureProperty &textureProperty : internalData.textureProperties) {
         if (textureProperty.propertyIndex == propertyIndex) {
             return &textureProperty.texture;
@@ -86,7 +87,7 @@ const std::shared_ptr<Texture> *Material::GetTextureProperty(int propertyIndex) 
     return nullptr;
 }
 
-const std::shared_ptr<Texture> *Material::GetTextureProperty(const char *propertyName) const {
+const SharedPtr<Texture> *Material::GetTextureProperty(const char *propertyName) const {
     return GetTextureProperty(FindPropertyIndex(propertyName));
 }
 
@@ -141,7 +142,7 @@ static Texture::Flag GetTextureFlags(const ShaderPropertyInfo &propertyInfo) {
     return flags;
 }
 
-static std::shared_ptr<Texture> GetFallbackTexture(const ShaderPropertyInfo &propertyInfo) {
+static SharedPtr<Texture> GetFallbackTexture(const ShaderPropertyInfo &propertyInfo) {
     if (propertyInfo.IsNormal()) {
         return textureManager.flatNormalTexture ? textureManager.flatNormalTexture : textureManager.defaultTexture;
     }
@@ -247,16 +248,16 @@ static RHI::RasterizerStateType GetMaterialRasterizerStateType(RHI::RasterizerSt
     return baseRasterizerStateType;
 }
 
-std::shared_ptr<ShaderPipelineState> Material::GetGraphicsPipeline(const ShaderFeatureSet &featureSet, const ShaderPipelineDesc &desc) const {
+SharedPtr<ShaderPipeline> Material::GetGraphicsPipeline(const ShaderFeatureSet &featureSet, const ShaderPipelineDesc &baseDesc) const {
     if (!internalData.shaderTemplate) {
         return nullptr;
     }
 
-    ShaderPipelineDesc materialDesc = desc;
-    materialDesc.rasterizerStateType = GetMaterialRasterizerStateType(desc.rasterizerStateType, internalData.cullMode);
+    ShaderPipelineDesc materialDesc = baseDesc;
+    materialDesc.rasterizerStateType = GetMaterialRasterizerStateType(baseDesc.rasterizerStateType, internalData.cullMode);
     materialDesc.blendStateType = internalData.renderingMode == RenderingMode::Blend ? internalData.blendType : RHI::BlendStateType::Disabled;
 
-    return internalData.shaderTemplate->GetGraphicsPipeline(EnsurePermutation(featureSet), materialDesc);
+    return shaderPipelineCache.GetGraphicsPipeline(internalData.shaderTemplate, EnsurePermutation(featureSet), materialDesc);
 }
 
 bool Material::Create(const char *text, const char *baseDir) {
@@ -416,7 +417,7 @@ bool Material::ParseShaderTemplate(BE1::Lexer &lexer, const char *baseDir, Inter
         return false;
     }
 
-    std::shared_ptr<ShaderTemplate> shaderTemplate = shaderTemplateManager.GetShaderTemplate(shaderTemplateName.c_str());
+    SharedPtr<ShaderTemplate> shaderTemplate = shaderTemplateManager.GetShaderTemplate(shaderTemplateName.c_str());
     if (!shaderTemplate && baseDir && baseDir[0] && BE1::FileSystem::IsRelativePath(shaderTemplateName.c_str())) {
         BE1::Str resolvedName = baseDir;
         resolvedName.AppendPath(shaderTemplateName, '/');

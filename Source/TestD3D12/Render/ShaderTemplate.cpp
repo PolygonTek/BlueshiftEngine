@@ -14,20 +14,13 @@
 
 #include "Precompiled.h"
 #include "ShaderTemplate.h"
+#include "ShaderPipelineCache.h"
 #include "Asset/GuidMapper.h"
 #include "IO/FileSystem.h"
 
-void ShaderTemplate::PipelineBuildData::Clear() {
-    for (StageSource &stageSource : stageSources) {
-        stageSource = StageSource();
-    }
-
-    compileDefines.Clear();
-}
-
 void ShaderTemplate::InternalData::Purge() {
-    for (StageSource &stageSource : stageSources) {
-        stageSource = StageSource();
+    for (ShaderStageSource &stageSource : stageSources) {
+        stageSource = ShaderStageSource();
     }
 
     baseDefines.Clear();
@@ -145,7 +138,7 @@ void ShaderTemplate::InitDefaultPropertyValues(BE1::Array<PropertyValue> &outPro
 void ShaderTemplate::InternalData::AddStage(RHI::ShaderStage shaderStage, RHI::ShaderModel shaderModel, const char *filename, const char *entryPoint) {
     assert(shaderStage >= RHI::ShaderStage::Vertex && shaderStage < RHI::ShaderStage::Count);
 
-    StageSource &stageSource = stageSources[to_int(shaderStage)];
+    ShaderStageSource &stageSource = stageSources[to_int(shaderStage)];
 
     stageSource.shaderStage = shaderStage;
     stageSource.shaderModel = shaderModel;
@@ -359,7 +352,7 @@ bool ShaderTemplate::Parse(const char *text, const char *baseDir, InternalData &
     }
 
     bool hasShaderStage = false;
-    for (const StageSource &stageSource : outInternalData.stageSources) {
+    for (const ShaderStageSource &stageSource : outInternalData.stageSources) {
         if (stageSource.shaderStage != RHI::ShaderStage::Count) {
             hasShaderStage = true;
             break;
@@ -451,7 +444,7 @@ bool ShaderTemplate::ParseInheritProperties(BE1::Lexer &lexer, const char *baseD
         return false;
     }
 
-    std::shared_ptr<ShaderTemplate> inheritedShaderTemplate = shaderTemplateManager.GetShaderTemplate(inheritedName.c_str());
+    SharedPtr<ShaderTemplate> inheritedShaderTemplate = shaderTemplateManager.GetShaderTemplate(inheritedName.c_str());
     if (!inheritedShaderTemplate && baseDir && baseDir[0] && BE1::FileSystem::IsRelativePath(inheritedName.c_str())) {
         BE1::Str resolvedName = baseDir;
         resolvedName.AppendPath(inheritedName, '/');
@@ -992,146 +985,11 @@ bool ShaderTemplate::Reload() {
     return true;
 }
 
-std::shared_ptr<ShaderPipelineState> ShaderTemplate::FindCachedGraphicsPipeline(ShaderPermutationKey permutationKey, const ShaderPipelineDesc &pipelineDesc) const {
-    uint64_t hash = pipelineDesc.GenerateGraphicsPipelineHash(permutationKey);
-
-    for (const CachedGraphicsPipeline &cachedPipeline : cachedGraphicsPipelines) {
-        if (cachedPipeline.hash == hash) {
-            return cachedPipeline.pipelineState;
-        }
-    }
-
-    return nullptr;
-}
-
-std::shared_ptr<ShaderPipelineState> ShaderTemplate::FindCachedComputePipeline(ShaderPermutationKey permutationKey) const {
-    for (const CachedComputePipeline &cachedPipeline : cachedComputePipelines) {
-        if (cachedPipeline.permutationKey == permutationKey) {
-            return cachedPipeline.pipelineState;
-        }
-    }
-
-    return nullptr;
-}
-
-std::shared_ptr<ShaderPipelineState> ShaderTemplate::GetGraphicsPipeline(ShaderPermutationKey permutationKey, const ShaderPipelineDesc &pipelineDesc) {
-    if (!FindPermutation(permutationKey)) {
-        BE_WARNLOG("ShaderTemplate::GetGraphicsPipeline: shader template '%s' has no permutation 0x%llx\n", GetHashName(), permutationKey.hash);
-        return nullptr;
-    }
-
-    // 캐시된 ShaderPipelineState 를 찾는다. 캐시된 것이 없으면 새로 생성하여 캐시에 추가한다.
-    std::shared_ptr<ShaderPipelineState> pipelineState = FindCachedGraphicsPipeline(permutationKey, pipelineDesc);
-    if (!pipelineState) {
-        uint64_t hash = pipelineDesc.GenerateGraphicsPipelineHash(permutationKey);
-
-        CachedGraphicsPipeline &cachedPipeline = cachedGraphicsPipelines.Alloc();
-        cachedPipeline.hash = hash;
-        cachedPipeline.pipelineState = std::shared_ptr<ShaderPipelineState>(new ShaderPipelineState(ShaderPipelineState::Type::Graphics, permutationKey, pipelineDesc));
-
-        pipelineState = cachedPipeline.pipelineState;
-    }
-
-    // ShaderPipelineState 가 비어있다면 비동기로 빌드한다.
-    if (pipelineState->GetState() == ShaderPipelineState::State::Empty) {
-        pipelineState->EnsureBuildAsync(shared_from_this());
-    }
-
-    return pipelineState;
-}
-
-std::shared_ptr<ShaderPipelineState> ShaderTemplate::GetComputePipeline(ShaderPermutationKey permutationKey) {
-    if (!FindPermutation(permutationKey)) {
-        BE_WARNLOG("ShaderTemplate::GetComputePipeline: shader template '%s' has no permutation 0x%llx\n", GetHashName(), permutationKey.hash);
-        return nullptr;
-    }
-
-    // 캐시된 ShaderPipelineState 를 찾는다. 캐시된 것이 없으면 새로 생성하여 캐시에 추가한다.
-    std::shared_ptr<ShaderPipelineState> pipelineState = FindCachedComputePipeline(permutationKey);
-    if (!pipelineState) {
-        CachedComputePipeline &cachedPipeline = cachedComputePipelines.Alloc();
-        cachedPipeline.permutationKey = permutationKey;
-        cachedPipeline.pipelineState = std::shared_ptr<ShaderPipelineState>(new ShaderPipelineState(ShaderPipelineState::Type::Compute, permutationKey));
-
-        pipelineState = cachedPipeline.pipelineState;
-    }
-
-    // ShaderPipelineState 가 비어있다면 비동기로 빌드한다.
-    if (!pipelineState->IsReady()) {
-        pipelineState->EnsureBuildAsync(shared_from_this());
-    }
-
-    return pipelineState;
-}
-
-RHI::PipelineState *ShaderTemplate::CreateGraphicsPSO(const PipelineBuildData &buildData, const ShaderPipelineDesc &pipelineDesc, RHI::Shader *stageShaders[to_int(RHI::ShaderStage::Count)]) {
-    if (!ShaderTemplate::PreparePipelineGraphicsShaders(buildData, stageShaders)) {
-        return nullptr;
-    }
-
-    RHI::PipelineStateDesc psoDesc;
-    psoDesc.vs = stageShaders[to_int(RHI::ShaderStage::Vertex)];
-    psoDesc.ps = stageShaders[to_int(RHI::ShaderStage::Fragment)];
-    psoDesc.ds = stageShaders[to_int(RHI::ShaderStage::Domain)];
-    psoDesc.hs = stageShaders[to_int(RHI::ShaderStage::Hull)];
-    psoDesc.gs = stageShaders[to_int(RHI::ShaderStage::Geometry)];
-    psoDesc.inputLayout = pipelineDesc.inputLayout;
-    psoDesc.rasterizerState = RHI::renderer->GetRasterizerState(pipelineDesc.rasterizerStateType);
-    psoDesc.depthStencilState = RHI::renderer->GetDepthStencilState(pipelineDesc.depthStencilStateType);
-    psoDesc.blendState = RHI::renderer->GetBlendState(pipelineDesc.blendStateType);
-    psoDesc.renderDest = &pipelineDesc.renderDest;
-    psoDesc.primitiveTopology = pipelineDesc.primitiveTopology;
-    psoDesc.sampleMask = pipelineDesc.sampleMask;
-
-    return RHI::renderer->CreateGraphicsPSO(&psoDesc);
-}
-
-RHI::PipelineState *ShaderTemplate::CreateComputePSO(const PipelineBuildData &buildData, RHI::Shader *stageShaders[to_int(RHI::ShaderStage::Count)]) {
-    if (!ShaderTemplate::PreparePipelineComputeShader(buildData, stageShaders)) {
-        return nullptr;
-    }
-
-    RHI::Shader *computeShader = stageShaders[to_int(RHI::ShaderStage::Compute)];
-    return RHI::renderer->CreateComputePSO(computeShader);
-}
-
 void ShaderTemplate::Purge() {
-    ClearCachedPipelines();
+    shaderPipelineCache.ClearShaderTemplate(this);
     ClearPermutations();
 
     internalData.Purge();
-}
-
-void ShaderTemplate::ClearCachedPipelines() {
-    for (CachedGraphicsPipeline &cachedPipeline : cachedGraphicsPipelines) {
-        if (cachedPipeline.pipelineState) {
-            cachedPipeline.pipelineState->Reset();
-        }
-    }
-    cachedGraphicsPipelines.Clear();
-
-    for (CachedComputePipeline &cachedPipeline : cachedComputePipelines) {
-        if (cachedPipeline.pipelineState) {
-            cachedPipeline.pipelineState->Reset();
-        }
-    }
-    cachedComputePipelines.Clear();
-}
-
-void ShaderTemplate::RebuildCachedPipelines() {
-    std::shared_ptr<ShaderTemplate> self = shared_from_this();
-
-    for (CachedGraphicsPipeline &cachedPipeline : cachedGraphicsPipelines) {
-        if (cachedPipeline.pipelineState) {
-            cachedPipeline.pipelineState->BuildAsync(self);
-        }
-    }
-
-    for (CachedComputePipeline &cachedPipeline : cachedComputePipelines) {
-        if (cachedPipeline.pipelineState) {
-            cachedPipeline.pipelineState->BuildAsync(self);
-        }
-    }
 }
 
 void ShaderTemplate::ClearPermutations() {
@@ -1187,7 +1045,7 @@ bool ShaderTemplate::AppendFeatureSetDefines(BE1::StrArray &defines, const Shade
     return addedAllDefines;
 }
 
-bool ShaderTemplate::PreparePipelineBuildData(ShaderPermutationKey permutationKey, PipelineBuildData &outBuildData) const {
+bool ShaderTemplate::PreparePipelineBuildData(ShaderPermutationKey permutationKey, ShaderPipelineBuildData &outBuildData) const {
     outBuildData.Clear();
 
     // 원본 permutation 을 얻는다.
@@ -1209,100 +1067,6 @@ bool ShaderTemplate::PreparePipelineBuildData(ShaderPermutationKey permutationKe
 
     for (int i = 0; i < to_int(RHI::ShaderStage::Count); i++) {
         outBuildData.stageSources[i] = internalData.stageSources[i];
-    }
-
-    return true;
-}
-
-bool ShaderTemplate::PreparePipelinePSO(const ShaderPipelineState &pipelineState, const PipelineBuildData &buildData, RHI::PipelineState *&preparedPSO) {
-    preparedPSO = nullptr;
-
-    RHI::Shader *stageShaders[to_int(RHI::ShaderStage::Count)] = {};
-
-    switch (pipelineState.GetType()) {
-    case ShaderPipelineState::Type::Graphics:
-        preparedPSO = ShaderTemplate::CreateGraphicsPSO(buildData, pipelineState.GetGraphicsDesc(), stageShaders);
-        break;
-    case ShaderPipelineState::Type::Compute:
-        preparedPSO = ShaderTemplate::CreateComputePSO(buildData, stageShaders);
-        break;
-    default:
-        assert(0);
-        break;
-    }
-
-    for (int i = 0; i < to_int(RHI::ShaderStage::Count); ++i) {
-        if (stageShaders[i]) {
-            RHI::renderer->DestroyShader(stageShaders[i], true);
-            stageShaders[i] = nullptr;
-        }
-    }
-    return preparedPSO != nullptr;
-}
-
-bool ShaderTemplate::PrepareStageShader(const PipelineBuildData &buildData, RHI::ShaderStage shaderStage, const BE1::StrArray &compileDefines, RHI::Shader *&outShader) {
-    assert(shaderStage < RHI::ShaderStage::Count);
-
-    const StageSource &stageSource = buildData.stageSources[to_int(shaderStage)];
-    if (stageSource.shaderStage == RHI::ShaderStage::Count) {
-        return false;
-    }
-
-    outShader = RHI::renderer->CreateShaderFromFile(stageSource.shaderModel, stageSource.shaderStage, stageSource.filename, stageSource.entryPoint, compileDefines.Count() > 0 ? &compileDefines : nullptr);
-    if (!outShader) {
-        BE_WARNLOG("ShaderTemplate::PrepareStageShader: failed to compile shader '%s'\n", stageSource.filename.c_str());
-        return false;
-    }
-    return true;
-}
-
-bool ShaderTemplate::PreparePipelineGraphicsShaders(const PipelineBuildData &buildData, RHI::Shader *stageShaders[to_int(RHI::ShaderStage::Count)]) {
-    static constexpr RHI::ShaderStage GraphicsShaderStages[] = {
-        RHI::ShaderStage::Vertex,
-        RHI::ShaderStage::Hull,
-        RHI::ShaderStage::Domain,
-        RHI::ShaderStage::Geometry,
-        RHI::ShaderStage::Fragment
-    };
-
-    bool hasGraphicsStage = false;
-
-    for (RHI::ShaderStage shaderStage : GraphicsShaderStages) {
-        const StageSource &stageSource = buildData.stageSources[to_int(shaderStage)];
-        if (stageSource.shaderStage == RHI::ShaderStage::Count) {
-            continue;
-        }
-
-        hasGraphicsStage = true;
-
-        RHI::Shader *&stageShader = stageShaders[to_int(shaderStage)];
-        if (!stageShader) {
-            if (!PrepareStageShader(buildData, shaderStage, buildData.compileDefines, stageShader)) {
-                return false;
-            }
-        }
-    }
-
-    if (!hasGraphicsStage) {
-        BE_WARNLOG("ShaderTemplate::PreparePipelineGraphicsShaders: no graphics shader stages\n");
-        return false;
-    }
-
-    return true;
-}
-
-bool ShaderTemplate::PreparePipelineComputeShader(const PipelineBuildData &buildData, RHI::Shader *stageShaders[to_int(RHI::ShaderStage::Count)]) {
-    const StageSource &stageSource = buildData.stageSources[to_int(RHI::ShaderStage::Compute)];
-    if (stageSource.shaderStage == RHI::ShaderStage::Count) {
-        return false;
-    }
-
-    RHI::Shader *&stageShader = stageShaders[to_int(RHI::ShaderStage::Compute)];
-    if (!stageShader) {
-        if (!PrepareStageShader(buildData, RHI::ShaderStage::Compute, buildData.compileDefines, stageShader)) {
-            BE_WARNLOG("ShaderTemplate::PreparePipelineComputeShader: no compute shader stage\n");
-            return false;
-        }
     }
 
     return true;

@@ -16,7 +16,7 @@
 
 #include "RHI.h"
 #include "RenderFrameData.h"
-#include "ShaderPipelineState.h"
+#include "ShaderPipeline.h"
 #include "TextureStreamingFeedback.h"
 #include "GuiMesh.h"
 
@@ -72,6 +72,7 @@ public:
     RHI::Format                     GetMainRTColorFormat() const { return mainRTColorFormat; }
     RHI::Format                     GetMainRTDepthFormat() const { return mainRTDepthFormat; }
     uint32_t                        GetMainRTSampleCount() const { return mainRTSampleCount; }
+    void                            GetMainRenderDest(RHI::RenderDest &renderDest) const;
 
     const RenderFrameData *         GetCurrentFrontendFrameData() const { return &frames[currentFrontendFrameIndex]; }
     RenderFrameData *               GetCurrentFrontendFrameData() { return &frames[currentFrontendFrameIndex]; }
@@ -81,13 +82,13 @@ public:
 
                                     // 컨텍스트의 GUI 그리기 함수들
     void                            SetColor(const BE1::Color4 &color);
-    void                            SetFont(std::shared_ptr<Font> font);
+    void                            SetFont(SharedPtr<Font> font);
     void                            SetTextScale(float scale);
     void                            SetTextLineSpacing(float lineSpacing);
     void                            SetTextShadowColor(const BE1::Color4 &shadowColor);
     void                            SetTextShadowOffset(float shadowOffsetX, float shadowOffsetY);
-    void                            DrawPic(float x, float y, float w, float h, const std::shared_ptr<Texture> &texture);
-    void                            DrawStretchPic(float x, float y, float w, float h, float s1, float t1, float s2, float t2, const std::shared_ptr<Texture> &texture);
+    void                            DrawPic(float x, float y, float w, float h, const SharedPtr<Material> &material);
+    void                            DrawStretchPic(float x, float y, float w, float h, float s1, float t1, float s2, float t2, const SharedPtr<Material> &material);
     void                            DrawBar(float x, float y, float w, float h);
     void                            DrawRect(float x, float y, float w, float h);
     void                            DrawText(const BE1::Rect &rect, float x, float y, const char *text, DrawTextFlag flags);
@@ -102,7 +103,6 @@ private:
 
     void                            CreateMainRenderTextures(uint32_t width, uint32_t height);
     void                            DestroyMainRenderTextures();
-    void                            InitPSO();
     void                            InitFullScreenTrianglePSO();
     void                            FlushPendingScreenshots(RenderFrameData *frameData);
     void                            EnsureTextureStreamingFeedbackCapacity(uint32_t requiredCapacity);
@@ -115,15 +115,7 @@ private:
     RHI::Texture *                  mainRTColorMSAATexture = nullptr;
     RHI::Texture *                  mainRTColorTexture = nullptr;
     RHI::Texture *                  mainRTDepthTexture = nullptr;
-    std::shared_ptr<ShaderPipelineState> imagePSO;
-    std::shared_ptr<ShaderPipelineState> unlitPSO;
-    std::shared_ptr<ShaderPipelineState> unlitAlphaBlendPSO;
-    std::shared_ptr<ShaderPipelineState> unlitInstancedPSO;
-    std::shared_ptr<ShaderPipelineState> unlitInstancedAlphaBlendPSO;
-    std::shared_ptr<ShaderPipelineState> litPSO;
-    std::shared_ptr<ShaderPipelineState> litAlphaBlendPSO;
-    std::shared_ptr<ShaderPipelineState> litInstancedPSO;
-    std::shared_ptr<ShaderPipelineState> litInstancedAlphaBlendPSO;
+    SharedPtr<ShaderPipeline>       imagePSO;
 
 #ifdef USE_RENDER_FRAME_BUFFERING
     static constexpr int            NumFrames = 2;
@@ -158,5 +150,5 @@ private:
     float                           currentTextScale = 1.0f;
     float                           currentTextLineSpacing = 2;
     BE1::Vec2                       currentTextShadowOffset = BE1::Vec2::zero;
-    std::shared_ptr<Font>           currentFont;
+    SharedPtr<Font>                 currentFont;
 };

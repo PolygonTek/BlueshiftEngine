@@ -17,7 +17,7 @@
 #include "RHI.h"
 #include "RenderObject.h"
 
-class Texture;
+class Material;
 class Font;
 enum class DrawTextFlag : uint16_t;
 
@@ -29,11 +29,11 @@ public:
     };
 
     struct Surface {
-        const Texture *     texture;
-        int                 numVerts;
-        int                 numIndexes;
-        RHI::VertexBuffer * vertexBuffer;
-        RHI::IndexBuffer *  indexBuffer;
+        const Material *    material = nullptr;
+        int                 numVerts = 0;
+        int                 numIndexes = 0;
+        RHI::VertexBuffer * vertexBuffer = nullptr;
+        RHI::IndexBuffer *  indexBuffer = nullptr;
     };
 
     GuiMesh() = default;
@@ -48,7 +48,7 @@ public:
 
     void                    SetClipRect(const BE1::Rect &clipRect) { this->clipRect = clipRect; }
 
-    void                    DrawPic(RHI::FrameThreadData *frameThreadData, float x, float y, float w, float h, float s1, float t1, float s2, float t2, uint32_t color, const Texture *texture);
+    void                    DrawPic(RHI::FrameThreadData *frameThreadData, float x, float y, float w, float h, float s1, float t1, float s2, float t2, uint32_t color, const Material *material);
     float                   DrawChar(RHI::FrameThreadData *frameThreadData, float x, float y, char32_t unicodeChar);
 
     void                    DrawText2D(RHI::FrameThreadData *frameThreadData, const BE1::Rect &rect, int x, int y, int lineSpacing, float textScale,
@@ -65,7 +65,7 @@ public:
 
 private:
     void                    PrepareNewSurf();
-    void                    DrawQuad(RHI::FrameThreadData *frameThreadData, const BE1::VertexGeneric *verts, const Texture *texture);
+    void                    DrawQuad(RHI::FrameThreadData *frameThreadData, const BE1::VertexGeneric *verts, const Material *material);
     float                   GetTextOutlineSpacing() const { return currentTextAddOutlines ? currentTextScale : 0.0f; }
     float                   GetTextCharAdvanceX(char32_t unicodeChar) const;
 

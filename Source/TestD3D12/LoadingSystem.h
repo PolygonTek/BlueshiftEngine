@@ -18,9 +18,9 @@
 #include "Render/Mesh.h"
 #include "Render/Skeleton.h"
 #include "Render/Anim.h"
-#include "Render/ShaderTemplate.h"
+#include "Render/ShaderPipeline.h"
 
-class ShaderPipelineState;
+class ShaderPipeline;
 
 /*
 ---------------------------------------------------------------------------------------------------
@@ -45,33 +45,33 @@ public:
     void                            Start();
     void                            Stop();
 
-    bool                            EnqueueTextureLoad(std::shared_ptr<Texture> texture, const char *filename, Texture::Flag flags, bool isReload, uint32_t serial, LoadPriority priority = LoadPriority::Normal);
-    bool                            EnqueueTextureStreamingReplacement(std::shared_ptr<Texture> texture, const char *filename, int firstMip, LoadPriority priority = LoadPriority::Background);
-    bool                            EnqueueMeshLoad(std::shared_ptr<Mesh> mesh, const char *filename, bool isReload, uint32_t serial, LoadPriority priority = LoadPriority::Normal);
-    bool                            EnqueueSkeletonLoad(std::shared_ptr<Skeleton> skeleton, const char *filename, bool isReload, uint32_t serial, LoadPriority priority = LoadPriority::Normal);
-    bool                            EnqueueAnimLoad(std::shared_ptr<Anim> anim, const char *filename, bool isReload, uint32_t serial, LoadPriority priority = LoadPriority::Normal);
-    bool                            EnqueueShaderPipelineBuild(std::shared_ptr<ShaderPipelineState> pipelineState, const ShaderTemplate::PipelineBuildData &buildData, uint32_t serial, LoadPriority priority = LoadPriority::High);
+    bool                            EnqueueTextureLoad(SharedPtr<Texture> texture, const char *filename, Texture::Flag flags, bool isReload, uint32_t serial, LoadPriority priority = LoadPriority::Normal);
+    bool                            EnqueueTextureStreamingReplacement(SharedPtr<Texture> texture, const char *filename, int firstMip, LoadPriority priority = LoadPriority::Background);
+    bool                            EnqueueMeshLoad(SharedPtr<Mesh> mesh, const char *filename, bool isReload, uint32_t serial, LoadPriority priority = LoadPriority::Normal);
+    bool                            EnqueueSkeletonLoad(SharedPtr<Skeleton> skeleton, const char *filename, bool isReload, uint32_t serial, LoadPriority priority = LoadPriority::Normal);
+    bool                            EnqueueAnimLoad(SharedPtr<Anim> anim, const char *filename, bool isReload, uint32_t serial, LoadPriority priority = LoadPriority::Normal);
+    bool                            EnqueueShaderPipelineBuild(SharedPtr<ShaderPipeline> shaderPipeline, const ShaderPipelineBuildData &buildData, uint32_t serial, LoadPriority priority = LoadPriority::High);
 
     bool                            BoostTextureLoad(const Texture *texture, uint32_t serial, LoadPriority priority);
     bool                            BoostMeshLoad(const Mesh *mesh, uint32_t serial, LoadPriority priority);
     bool                            BoostSkeletonLoad(const Skeleton *skeleton, uint32_t serial, LoadPriority priority);
     bool                            BoostAnimLoad(const Anim *anim, uint32_t serial, LoadPriority priority);
-    bool                            BoostShaderPipelineBuild(const ShaderPipelineState *pipelineState, uint32_t serial, LoadPriority priority);
+    bool                            BoostShaderPipelineBuild(const ShaderPipeline *shaderPipeline, uint32_t serial, LoadPriority priority);
 
                                     /// Applies completed load requests on the main thread.
     void                            ProcessLoadCompletions();
 
 private:
     struct LoadRequest {
-        std::shared_ptr<Texture>    texture;
-        std::shared_ptr<Mesh>       mesh;
-        std::shared_ptr<Skeleton>   skeleton;
-        std::shared_ptr<Anim>       anim;
-        std::shared_ptr<ShaderPipelineState> pipelineState;
-        ShaderTemplate::PipelineBuildData shaderPipelineBuildData;
+        SharedPtr<Texture>          texture;
+        SharedPtr<Mesh>             mesh;
+        SharedPtr<Skeleton>         skeleton;
+        SharedPtr<Anim>             anim;
+        SharedPtr<ShaderPipeline>   shaderPipeline;
+        ShaderPipelineBuildData     shaderPipelineBuildData;
         BE1::Str                    filename;
         Texture::Flag               textureFlags = Texture::Flag::None;
-        std::shared_ptr<BE1::Image> image;
+        SharedPtr<BE1::Image>       image;
         int                         originalMipLevels = 0;
         int                         firstMip = -1;
         uint32_t                    serial = 0;
@@ -82,11 +82,11 @@ private:
     };
 
     struct LoadCompletion {
-        std::shared_ptr<Texture>    texture;
-        std::shared_ptr<Mesh>       mesh;
-        std::shared_ptr<Skeleton>   skeleton;
-        std::shared_ptr<Anim>       anim;
-        std::shared_ptr<ShaderPipelineState> pipelineState;
+        SharedPtr<Texture>          texture;
+        SharedPtr<Mesh>             mesh;
+        SharedPtr<Skeleton>         skeleton;
+        SharedPtr<Anim>             anim;
+        SharedPtr<ShaderPipeline>   shaderPipeline;
         Texture::InternalData       textureData;
         Mesh::InternalData          meshData;
         Skeleton::InternalData      skeletonData;

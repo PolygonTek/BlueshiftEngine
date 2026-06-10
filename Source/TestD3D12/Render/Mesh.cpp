@@ -143,14 +143,14 @@ void Mesh::Write(const char *filename) {
     internalData.WriteBinaryMesh(filename);
 }
 
-std::shared_ptr<MeshInstance> Mesh::GetStaticInstance() {
+SharedPtr<MeshInstance> Mesh::GetStaticInstance() {
     assert(IsReady());
 
-    if (std::shared_ptr<MeshInstance> meshInstance = staticMeshInstance.lock()) {
+    if (SharedPtr<MeshInstance> meshInstance = staticMeshInstance.lock()) {
         return meshInstance;
     }
 
-    std::shared_ptr<MeshInstance> meshInstance = std::make_shared<MeshInstance>();
+    SharedPtr<MeshInstance> meshInstance = MakeShared<MeshInstance>();
     if (!meshInstance->InitStatic(shared_from_this())) {
         return nullptr;
     }
@@ -159,10 +159,10 @@ std::shared_ptr<MeshInstance> Mesh::GetStaticInstance() {
     return meshInstance;
 }
 
-std::shared_ptr<MeshInstance> Mesh::InstantiateSkinned() {
+SharedPtr<MeshInstance> Mesh::InstantiateSkinned() {
     assert(IsReady());
 
-    std::shared_ptr<MeshInstance> meshInstance = std::make_shared<MeshInstance>();
+    SharedPtr<MeshInstance> meshInstance = MakeShared<MeshInstance>();
     if (!meshInstance->InitSkinned(shared_from_this())) {
         return nullptr;
     }

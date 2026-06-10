@@ -111,8 +111,8 @@ public:
 
     void                            Write(const char *filename);
 
-    std::shared_ptr<MeshInstance>   GetStaticInstance();
-    std::shared_ptr<MeshInstance>   InstantiateSkinned();
+    SharedPtr<MeshInstance>         GetStaticInstance();
+    SharedPtr<MeshInstance>         InstantiateSkinned();
 
                                     /// Returns the volume of the solid mesh.
                                     /// NOTE: For an exact calculation the mesh must form a closed polytope. Otherwise, an approximation based on the AABB is used.
@@ -126,7 +126,7 @@ public:
                                     /// NOTE: For an exact calculation the mesh must form a closed polytope. Otherwise, an approximation based on the AABB is used.
     float                           CalculateVolumeAndCentroid(BE1::Vec3 &outCentroid) const;
 
-    static bool                     TrySliceMesh(const Mesh &srcMesh, const BE1::Plane &slicePlane, bool generateCap, float capTextureScale, bool generateAboveMesh, std::shared_ptr<Mesh> &outBelowMesh, std::shared_ptr<Mesh> &outAboveMesh);
+    static bool                     TrySliceMesh(const Mesh &srcMesh, const BE1::Plane &slicePlane, bool generateCap, float capTextureScale, bool generateAboveMesh, SharedPtr<Mesh> &outBelowMesh, SharedPtr<Mesh> &outAboveMesh);
 
 private:
     struct InternalData {
@@ -186,7 +186,7 @@ private:
     std::atomic<uint32_t>           loadSerial = 0;
     std::atomic<uint32_t>           dataSerial = 0;
     InternalData                    internalData;
-    std::weak_ptr<MeshInstance>     staticMeshInstance;
+    WeakPtr<MeshInstance>           staticMeshInstance;
 };
 
 template<>
@@ -208,30 +208,30 @@ public:
 
     void                            UpdateFrame();
 
-    std::shared_ptr<Mesh>           AllocMesh(const char *name);
-    std::shared_ptr<Mesh>           AllocTransientMesh(const char *name);
-    std::shared_ptr<Mesh>           FindMesh(const char *name) const;
-    std::shared_ptr<Mesh>           GetMesh(const char *name, bool async = true);
+    SharedPtr<Mesh>                 AllocMesh(const char *name);
+    SharedPtr<Mesh>                 AllocTransientMesh(const char *name);
+    SharedPtr<Mesh>                 FindMesh(const char *name) const;
+    SharedPtr<Mesh>                 GetMesh(const char *name, bool async = true);
 
-    std::shared_ptr<Mesh>           CreateCombinedMesh(const char *name, const BE1::Array<BatchSubMesh> &batchSubMeshes);
+    SharedPtr<Mesh>                 CreateCombinedMesh(const char *name, const BE1::Array<BatchSubMesh> &batchSubMeshes);
 
     void                            RenameMesh(Mesh *mesh, const BE1::Str &newName);
 
-    std::shared_ptr<Mesh>           defaultMesh;
-    std::shared_ptr<Mesh>           defaultQuadMesh;
-    std::shared_ptr<Mesh>           defaultPlaneMesh;
-    std::shared_ptr<Mesh>           defaultBoxMesh;
-    std::shared_ptr<Mesh>           defaultSphereMesh;
-    std::shared_ptr<Mesh>           defaultGeoSphereMesh;
-    std::shared_ptr<Mesh>           defaultCylinderMesh;
-    std::shared_ptr<Mesh>           defaultCapsuleMesh;
+    SharedPtr<Mesh>                 defaultMesh;
+    SharedPtr<Mesh>                 defaultQuadMesh;
+    SharedPtr<Mesh>                 defaultPlaneMesh;
+    SharedPtr<Mesh>                 defaultBoxMesh;
+    SharedPtr<Mesh>                 defaultSphereMesh;
+    SharedPtr<Mesh>                 defaultGeoSphereMesh;
+    SharedPtr<Mesh>                 defaultCylinderMesh;
+    SharedPtr<Mesh>                 defaultCapsuleMesh;
 
 private:
     void                            CleanExpiredMeshes();
     void                            CreateEngineMeshes();
     void                            DestroyEngineMeshes();
 
-    BE1::StrIHashMap<std::weak_ptr<Mesh>> meshHashMap;
+    BE1::StrIHashMap<WeakPtr<Mesh>> meshHashMap;
     int                             expiredMeshHashMapCursor = 0;
 };
 

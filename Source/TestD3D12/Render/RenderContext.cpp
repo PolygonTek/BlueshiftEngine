@@ -18,6 +18,7 @@
 #include "RenderBackend.h"
 #include "RenderInternal.h"
 #include "ShaderTemplate.h"
+#include "ShaderPipelineCache.h"
 
 RenderContext *     RenderContext::activeContext = nullptr;
 
@@ -48,8 +49,6 @@ void RenderContext::Init(void *windowHandle) {
 
     InitFullScreenTrianglePSO();
 
-    InitPSO();
-
     textureStreamingFeedback.Init();
 
     guiMesh.SetCoordFrame(GuiMesh::CoordFrame::CoordFrame2D);
@@ -64,14 +63,6 @@ void RenderContext::Shutdown() {
     textureStreamingFeedback.Shutdown();
 
     imagePSO = nullptr;
-    unlitPSO = nullptr;
-    unlitAlphaBlendPSO = nullptr;
-    unlitInstancedPSO = nullptr;
-    unlitInstancedAlphaBlendPSO = nullptr;
-    litPSO = nullptr;
-    litAlphaBlendPSO = nullptr;
-    litInstancedPSO = nullptr;
-    litInstancedAlphaBlendPSO = nullptr;
 
     DestroyMainRenderTextures();
 
@@ -108,7 +99,7 @@ void RenderContext::CreateMainRenderTextures(uint32_t width, uint32_t height) {
     BE1::Image::Format colorImageFormat = BE1::Image::Format::Unknown;
     RHI::Renderer::RHIFormatToImageFormat(mainRTColorFormat, &colorImageFormat, nullptr);
 
-    std::shared_ptr<BE1::Image> colorImage = std::make_shared<BE1::Image>();
+    SharedPtr<BE1::Image> colorImage = MakeShared<BE1::Image>();
     colorImage->InitFromMemory(width, height, 1, 1, 1, colorImageFormat, BE1::Image::GammaSpace::Linear, nullptr, BE1::Image::Flag::None);
     mainRTColorTexture = RHI::renderer->CreateTexture(RHI::TextureType::Texture2D, RHI::TextureFlag::RenderTarget | RHI::TextureFlag::ShaderResource | RHI::TextureFlag::UnorderedAccess,
         colorImage, false, RHI::ClearValue::Color(0.0f, 0.0f, 0.5f, 0.0f), 1);
@@ -123,7 +114,7 @@ void RenderContext::CreateMainRenderTextures(uint32_t width, uint32_t height) {
     BE1::Image::Format depthImageFormat = BE1::Image::Format::Unknown;
     RHI::Renderer::RHIFormatToImageFormat(mainRTDepthFormat, &depthImageFormat, nullptr);
 
-    std::shared_ptr<BE1::Image> depthStencilImage = std::make_shared<BE1::Image>();
+    SharedPtr<BE1::Image> depthStencilImage = MakeShared<BE1::Image>();
     depthStencilImage->InitFromMemory(width, height, 1, 1, 1, depthImageFormat, BE1::Image::GammaSpace::Linear, nullptr, BE1::Image::Flag::None);
     mainRTDepthTexture = RHI::renderer->CreateTexture(RHI::TextureType::Texture2D, RHI::TextureFlag::DepthStencil,
         depthStencilImage, false, RHI::ClearValue::DepthStencil(1.0f, 0), mainRTSampleCount, RHI::GPUResourceState::DepthWrite);
@@ -145,17 +136,7 @@ void RenderContext::DestroyMainRenderTextures() {
     }
 }
 
-void RenderContext::InitPSO() {
-    RHI::InputLayout inputLayout;
-    inputLayout.elements = {
-        { "POSITION", 0, OFFSET_OF(BE1::VertexGenericLit, xyz), 0, RHI::InputLayoutElement::Format::Float3 },
-        { "TEXCOORD", 0, OFFSET_OF(BE1::VertexGenericLit, st), 0, RHI::InputLayoutElement::Format::Half2 },
-        { "COLOR", 0, OFFSET_OF(BE1::VertexGenericLit, color), 0, RHI::InputLayoutElement::Format::UByte4N },
-        { "NORMAL", 0, OFFSET_OF(BE1::VertexGenericLit, normal), 0, RHI::InputLayoutElement::Format::UByte4N },
-        { "TEXCOORD", 1, OFFSET_OF(BE1::VertexGenericLit, tangent), 0, RHI::InputLayoutElement::Format::UByte4N },
-    };
-
-    RHI::RenderDest renderDest;
+void RenderContext::GetMainRenderDest(RHI::RenderDest &renderDest) const {
     renderDest.renderTargetCount = 1;
     renderDest.depthStencilFormat = GetMainRTDepthFormat();
 
@@ -166,30 +147,6 @@ void RenderContext::InitPSO() {
     renderDest.renderTargetFormats[0] = swapChain->GetRTVFormat();
     renderDest.sampleCount = 1;
 #endif
-
-    ShaderPipelineDesc pipelineDesc;
-    pipelineDesc.inputLayout = &inputLayout;
-    pipelineDesc.renderDest = renderDest;
-
-    pipelineDesc.blendStateType = RHI::BlendStateType::Opaque;
-    unlitPSO = shaderTemplateManager.unlitShaderTemplate->GetGraphicsPipeline(ShaderPermutationKey(), pipelineDesc);
-    litPSO = shaderTemplateManager.litShaderTemplate->GetGraphicsPipeline(ShaderPermutationKey(), pipelineDesc);
-
-    pipelineDesc.blendStateType = RHI::BlendStateType::AlphaBlend;
-    unlitAlphaBlendPSO = shaderTemplateManager.unlitShaderTemplate->GetGraphicsPipeline(ShaderPermutationKey(), pipelineDesc);
-    litAlphaBlendPSO = shaderTemplateManager.litShaderTemplate->GetGraphicsPipeline(ShaderPermutationKey(), pipelineDesc);
-
-    ShaderFeatureSet instancingFeatureSet;
-    instancingFeatureSet.EnableFeature(ShaderFeature::GpuInstancing);
-    ShaderPermutationKey instancingPermutationKey = ShaderPermutationKey::FromDefines({}, instancingFeatureSet);
-
-    pipelineDesc.blendStateType = RHI::BlendStateType::Opaque;
-    unlitInstancedPSO = shaderTemplateManager.unlitShaderTemplate->GetGraphicsPipeline(instancingPermutationKey, pipelineDesc);
-    litInstancedPSO = shaderTemplateManager.litShaderTemplate->GetGraphicsPipeline(instancingPermutationKey, pipelineDesc);
-
-    pipelineDesc.blendStateType = RHI::BlendStateType::AlphaBlend;
-    unlitInstancedAlphaBlendPSO = shaderTemplateManager.unlitShaderTemplate->GetGraphicsPipeline(instancingPermutationKey, pipelineDesc);
-    litInstancedAlphaBlendPSO = shaderTemplateManager.litShaderTemplate->GetGraphicsPipeline(instancingPermutationKey, pipelineDesc);
 }
 
 void RenderContext::InitFullScreenTrianglePSO() {
@@ -201,8 +158,8 @@ void RenderContext::InitFullScreenTrianglePSO() {
     ShaderPipelineDesc pipelineDesc;
     pipelineDesc.renderDest = renderDest;
     pipelineDesc.depthStencilStateType = RHI::DepthStencilStateType::Never;
-    pipelineDesc.blendStateType = RHI::BlendStateType::Opaque;
-    imagePSO = shaderTemplateManager.fullscreenImageShaderTemplate->GetGraphicsPipeline(ShaderPermutationKey(), pipelineDesc);
+    pipelineDesc.blendStateType = RHI::BlendStateType::Disabled;
+    imagePSO = shaderPipelineCache.GetGraphicsPipeline(shaderTemplateManager.fullscreenImageShaderTemplate, ShaderPermutationKey(), pipelineDesc);
 }
 
 void RenderContext::WaitAllFrameFences() {
@@ -325,24 +282,24 @@ void RenderContext::EndFrame() {
     renderSystem->SubmitFrame(this, frameData);
 }
 
-void RenderContext::DrawPic(float x, float y, float w, float h, const std::shared_ptr<Texture> &texture) {
+void RenderContext::DrawPic(float x, float y, float w, float h, const SharedPtr<Material> &material) {
     RenderFrameData *frameData = GetCurrentFrontendFrameData();
 
-    frameData->RetainTexture(texture);
-    guiMesh.DrawPic(frameData->GetThreadData(0), x, y, w, h, 0.0f, 0.0f, 1.0f, 1.0f, currentColor.ToUInt32(), texture ? texture.get() : nullptr);
+    frameData->RetainMaterial(material);
+    guiMesh.DrawPic(frameData->GetThreadData(0), x, y, w, h, 0.0f, 0.0f, 1.0f, 1.0f, currentColor.ToUInt32(), material ? material.get() : nullptr);
 }
 
-void RenderContext::DrawStretchPic(float x, float y, float w, float h, float s1, float t1, float s2, float t2, const std::shared_ptr<Texture> &texture) {
+void RenderContext::DrawStretchPic(float x, float y, float w, float h, float s1, float t1, float s2, float t2, const SharedPtr<Material> &material) {
     RenderFrameData *frameData = GetCurrentFrontendFrameData();
 
-    frameData->RetainTexture(texture);
-    guiMesh.DrawPic(frameData->GetThreadData(0), x, y, w, h, s1, t1, s2, t2, currentColor.ToUInt32(), texture ? texture.get() : nullptr);
+    frameData->RetainMaterial(material);
+    guiMesh.DrawPic(frameData->GetThreadData(0), x, y, w, h, s1, t1, s2, t2, currentColor.ToUInt32(), material ? material.get() : nullptr);
 }
 
 void RenderContext::DrawBar(float x, float y, float w, float h) {
     RenderFrameData *frameData = GetCurrentFrontendFrameData();
 
-    guiMesh.DrawPic(frameData->GetThreadData(0), x, y, w, h, 0.0f, 0.0f, 1.0f, 1.0f, currentColor.ToUInt32(), textureManager.whiteTexture.get());
+    guiMesh.DrawPic(frameData->GetThreadData(0), x, y, w, h, 0.0f, 0.0f, 1.0f, 1.0f, currentColor.ToUInt32(), materialManager.whiteUnlitMaterial.get());
 }
 
 void RenderContext::DrawRect(float x, float y, float w, float h) {
@@ -365,7 +322,7 @@ void RenderContext::SetColor(const BE1::Color4 &color) {
     currentColor = color;
 }
 
-void RenderContext::SetFont(std::shared_ptr<Font> font) {
+void RenderContext::SetFont(SharedPtr<Font> font) {
     if (!font) {
         currentFont = fontManager.defaultFont;
         return;

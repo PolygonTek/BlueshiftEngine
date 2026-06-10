@@ -31,9 +31,6 @@ RenderObject::~RenderObject() {
     if (proxy) {
         Mem_Free(proxy);
     }
-    if (meshSurfProxies) {
-        Mem_Free(meshSurfProxies);
-    }
 #endif
 }
 
@@ -50,8 +47,8 @@ void RenderObject::Update(const RenderObject::Desc &src, RenderObject::Desc::Upd
         desc.meshInstance = src.meshInstance;
     }
 
-    if (BE1::HasFlag(flags, Desc::UpdateFlag::Textures)) {
-        desc.textures = src.textures;
+    if (BE1::HasFlag(flags, Desc::UpdateFlag::Materials)) {
+        desc.materials = src.materials;
     }
 
     if (src.text) {

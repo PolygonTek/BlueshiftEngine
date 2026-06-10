@@ -17,6 +17,7 @@
 #include "Platform/Windows/PlatformWinUtils.h"
 #include "WinResource.h"
 #include "App.h"
+#include "RHI.h"
 #include <tchar.h>
 
 static const TCHAR *        mainWindowClassName  = _T("BLUESHIFT_MAIN_WINDOW");
@@ -209,6 +210,8 @@ static bool ProcessEventLoop() {
 }
 
 static bool RunFrameInstance(int frameMsec) {
+    PROFILER_CPU_SCOPED_EVENT("RunFrameInstance");
+
     app.UpdateFrameTime(frameMsec);
 
     if (!ProcessEventLoop()) {

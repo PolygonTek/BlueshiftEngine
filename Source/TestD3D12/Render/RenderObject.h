@@ -15,11 +15,12 @@
 #pragma once
 
 struct DbvtProxy;
+struct VisObject;
 class MeshInstance;
 class Texture;
+class Material;
 class Font;
 class RenderWorld;
-class VisObject;
 
 class RenderObject {
     friend class RenderWorld;
@@ -78,7 +79,7 @@ public:
     };
 
     struct TextDesc {
-        std::shared_ptr<Font>       font;
+        SharedPtr<Font>             font;
         BE1::Str                    text; ///< UTF8 encoded string
         BE1::RectF                  textRect = BE1::RectF::zero;
         BE1::Vec2                   textShadowOffset = BE1::Vec2(1, 1);
@@ -94,7 +95,7 @@ public:
             Transform               = BIT(0),
             AABB                    = BIT(1),
             Mesh                    = BIT(2),
-            Textures                = BIT(3),
+            Materials               = BIT(3),
             Font                    = BIT(4),
             Text                    = BIT(5),
             TextStyle               = BIT(6)
@@ -102,13 +103,34 @@ public:
 
         TextDesc &                  GetTextDesc();
 
+        //
+        // Transform info
+        //
         BE1::Mat3x4                 worldMatrix = BE1::Mat3x4::identity;
         BE1::AABB                   aabb = BE1::AABB::empty; ///< non-scaled AABB in local space
 
-        std::shared_ptr<MeshInstance> meshInstance;
-        BE1::Array<std::shared_ptr<Texture>> textures;
+        //
+        // static/skinned mesh
+        //
+        SharedPtr<MeshInstance>     meshInstance;
 
-        std::unique_ptr<TextDesc>   text;
+        //
+        // Raw indexed triangles rendering (typically for GUI rendering)
+        //
+        int                         numVerts = 0;
+        BE1::VertexGeneric *        verts = nullptr;
+        int                         numIndexes = 0;
+        BE1::VertIndex *            indexes = nullptr;
+
+        //
+        // Text rendering
+        //
+        UniquePtr<TextDesc>         text;
+
+        //
+        // Materials
+        //
+        BE1::Array<SharedPtr<Material>> materials;
     };
 
     RenderObject() = default;
@@ -134,11 +156,10 @@ private:
 
 #ifdef USE_DBVT
     DbvtProxy *                     proxy = nullptr;                // proxy for render object
-
-    int                             numMeshSurfProxies = 0;         // number of proxies for static sub mesh
-    DbvtProxy *                     meshSurfProxies = nullptr;      // proxies for static sub mesh
-    uint32_t                        meshSurfProxyDataSerial = ~0u;
-    bool                            meshSurfProxyPending = false;
+    bool                            objectProxyPending = false;
+    bool                            objectProxyInDbvt = false;
+    bool                            dynamicObjectRegistered = false;
+    uint32_t                        lastTransformUpdateMsec = 0;
 #endif
 
     mutable uint32_t                viewCount = 0;                  // 현재 실행 중인 DrawCamera or DrawGUICamera 함수의 실행 카운터
@@ -147,7 +168,7 @@ private:
 
 BE_INLINE RenderObject::TextDesc &RenderObject::Desc::GetTextDesc() {
     if (!text) {
-        text = std::make_unique<TextDesc>();
+        text = MakeUnique<TextDesc>();
     }
     return *text;
 }

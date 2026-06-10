@@ -41,7 +41,7 @@ void SkeletonManager::UpdateFrame() {
     CleanExpiredSkeletons();
 }
 
-std::shared_ptr<Skeleton> SkeletonManager::AllocSkeleton(const char *hashName) {
+SharedPtr<Skeleton> SkeletonManager::AllocSkeleton(const char *hashName) {
     if (!hashName || !hashName[0]) {
         BE_FATALERROR("SkeletonManager::AllocSkeleton: empty skeleton name");
     }
@@ -52,7 +52,7 @@ std::shared_ptr<Skeleton> SkeletonManager::AllocSkeleton(const char *hashName) {
         skeletonHashMap.Remove(hashName);
     }
 
-    std::shared_ptr<Skeleton> skeleton = std::make_shared<Skeleton>();
+    SharedPtr<Skeleton> skeleton = MakeShared<Skeleton>();
     skeleton->hashName = hashName;
     skeleton->name = hashName;
     skeleton->name.StripPath();
@@ -62,7 +62,7 @@ std::shared_ptr<Skeleton> SkeletonManager::AllocSkeleton(const char *hashName) {
     return skeleton;
 }
 
-std::shared_ptr<Skeleton> SkeletonManager::FindSkeleton(const char *hashName) const {
+SharedPtr<Skeleton> SkeletonManager::FindSkeleton(const char *hashName) const {
     if (!hashName || !hashName[0]) {
         return nullptr;
     }
@@ -75,12 +75,12 @@ std::shared_ptr<Skeleton> SkeletonManager::FindSkeleton(const char *hashName) co
     return entry->second.lock();
 }
 
-std::shared_ptr<Skeleton> SkeletonManager::GetSkeleton(const char *hashName, bool async) {
+SharedPtr<Skeleton> SkeletonManager::GetSkeleton(const char *hashName, bool async) {
     if (!hashName || !hashName[0]) {
         return defaultSkeleton;
     }
 
-    std::shared_ptr<Skeleton> skeleton = FindSkeleton(hashName);
+    SharedPtr<Skeleton> skeleton = FindSkeleton(hashName);
     if (skeleton) {
         if (!async && !skeleton->WaitReady()) {
             return defaultSkeleton;
@@ -145,7 +145,7 @@ void SkeletonManager::Cmd_ListSkeletons(const BE1::CmdArgs &args) {
     const int numSkeletons = skeletonManager.skeletonHashMap.Count();
     for (int i = 0; i < numSkeletons; i++) {
         const auto *entry = skeletonManager.skeletonHashMap.GetByIndex(i);
-        std::shared_ptr<Skeleton> skeleton = entry->second.lock();
+        SharedPtr<Skeleton> skeleton = entry->second.lock();
         if (!skeleton) {
             continue;
         }
@@ -169,13 +169,13 @@ void SkeletonManager::Cmd_ReloadSkeleton(const BE1::CmdArgs &args) {
 
     if (!BE1::Str::Icmp(args.Argv(1), "all")) {
         for (const auto &entry : skeletonManager.skeletonHashMap) {
-            std::shared_ptr<Skeleton> skeleton = entry.second.lock();
+            SharedPtr<Skeleton> skeleton = entry.second.lock();
             if (skeleton) {
                 skeleton->Reload();
             }
         }
     } else {
-        std::shared_ptr<Skeleton> skeleton = skeletonManager.FindSkeleton(args.Argv(1));
+        SharedPtr<Skeleton> skeleton = skeletonManager.FindSkeleton(args.Argv(1));
         if (!skeleton) {
             BE_WARNLOG("Couldn't find skeleton to reload \"%s\"\n", args.Argv(1));
             return;

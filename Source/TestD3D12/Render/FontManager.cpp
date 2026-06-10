@@ -50,7 +50,7 @@ void FontManager::UpdateFrame() {
     CleanExpiredFonts();
 }
 
-std::shared_ptr<Font> FontManager::AllocFont(const char *hashName, uint32_t fontSize) {
+SharedPtr<Font> FontManager::AllocFont(const char *hashName, uint32_t fontSize) {
     if (!hashName || !hashName[0]) {
         BE_FATALERROR("FontManager::AllocFont: empty font name");
     }
@@ -61,7 +61,7 @@ std::shared_ptr<Font> FontManager::AllocFont(const char *hashName, uint32_t font
         fontHashMap.Remove(FontHashKey(hashName, fontSize));
     }
 
-    std::shared_ptr<Font> font = std::make_shared<Font>();
+    SharedPtr<Font> font = MakeShared<Font>();
     font->hashName = hashName;
     font->name = hashName;
     font->name.StripPath();
@@ -72,7 +72,7 @@ std::shared_ptr<Font> FontManager::AllocFont(const char *hashName, uint32_t font
     return font;
 }
 
-std::shared_ptr<Font> FontManager::FindFont(const char *hashName, uint32_t fontSize) const {
+SharedPtr<Font> FontManager::FindFont(const char *hashName, uint32_t fontSize) const {
     if (!hashName || !hashName[0]) {
         return nullptr;
     }
@@ -85,12 +85,12 @@ std::shared_ptr<Font> FontManager::FindFont(const char *hashName, uint32_t fontS
     return entry->second.lock();
 }
 
-std::shared_ptr<Font> FontManager::GetFont(const char *hashName, uint32_t fontSize) {
+SharedPtr<Font> FontManager::GetFont(const char *hashName, uint32_t fontSize) {
     if (!hashName || !hashName[0]) {
         return defaultFont;
     }
 
-    std::shared_ptr<Font> font = FindFont(hashName, fontSize);
+    SharedPtr<Font> font = FindFont(hashName, fontSize);
     if (font) {
         return font;
     }

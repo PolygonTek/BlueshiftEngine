@@ -548,7 +548,7 @@ void Mesh::CreateCapsule(const BE1::Vec3 &origin, const BE1::Mat3 &axis, float r
     state = State::Ready;
 }
 
-bool Mesh::TrySliceMesh(const Mesh &srcMesh, const BE1::Plane &slicePlane, bool generateCap, float capTextureScale, bool generateAboveMesh, std::shared_ptr<Mesh> &outBelowMesh, std::shared_ptr<Mesh> &outAboveMesh) {
+bool Mesh::TrySliceMesh(const Mesh &srcMesh, const BE1::Plane &slicePlane, bool generateCap, float capTextureScale, bool generateAboveMesh, SharedPtr<Mesh> &outBelowMesh, SharedPtr<Mesh> &outAboveMesh) {
     outBelowMesh.reset();
     outAboveMesh.reset();
 

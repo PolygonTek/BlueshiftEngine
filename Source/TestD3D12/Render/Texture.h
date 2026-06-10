@@ -126,7 +126,7 @@ public:
 
     void                            Reset();
 
-    bool                            Create(RHI::TextureType textureType, std::shared_ptr<const BE1::Image> srcImage, Texture::Flag flags);
+    bool                            Create(RHI::TextureType textureType, SharedPtr<const BE1::Image> srcImage, Texture::Flag flags);
 
                                     /// Generate mipmaps using compute shader.
     void                            GenerateMipmaps();
@@ -165,12 +165,12 @@ private:
     void                            Purge();
 
                                     /// Prepares a texture from an image, applying the renderer's normal texture processing such as size adjustment, format conversion, and mipmap generation.
-    static bool                     Prepare(RHI::TextureType textureType, std::shared_ptr<const BE1::Image> srcImage, Texture::Flag flags, InternalData &outInternalData);
+    static bool                     Prepare(RHI::TextureType textureType, SharedPtr<const BE1::Image> srcImage, Texture::Flag flags, InternalData &outInternalData);
                                     /// Prepares a texture directly from an already-final image without resizing, format conversion, or mip generation.
-    static bool                     PrepareDirect(RHI::TextureType textureType, std::shared_ptr<const BE1::Image> srcImage, Texture::Flag flags, InternalData &outInternalData);
+    static bool                     PrepareDirect(RHI::TextureType textureType, SharedPtr<const BE1::Image> srcImage, Texture::Flag flags, InternalData &outInternalData);
     void                            ApplyPrepared(InternalData &newInternalData);
 
-    static RHI::Texture *           CreateRHITexture(RHI::TextureType textureType, RHI::TextureFlag flags, std::shared_ptr<const BE1::Image> srcImage, BE1::Image::Format dstFormat, bool generateMipmaps, bool allocateEmptyMipmaps, RHI::GPUResourceState initialState);
+    static RHI::Texture *           CreateRHITexture(RHI::TextureType textureType, RHI::TextureFlag flags, SharedPtr<const BE1::Image> srcImage, BE1::Image::Format dstFormat, bool generateMipmaps, bool allocateEmptyMipmaps, RHI::GPUResourceState initialState);
 
     void                            CreateDefaultTexture(int size, Texture::Flag flags = Texture::Flag::None);
     void                            CreateColorTexture(int size, const BE1::Color4 &color, Texture::Flag flags = Texture::Flag::None);
@@ -201,12 +201,12 @@ public:
 
     void                            UpdateFrame();
 
-    std::shared_ptr<Texture>        AllocTexture(const char *hashName);
-    std::shared_ptr<Texture>        FindTexture(const char *hashName) const;
-    std::shared_ptr<Texture>        GetTexture(const char *hashName, Texture::Flag flags = Texture::Flag::None, bool async = true);
+    SharedPtr<Texture>              AllocTexture(const char *hashName);
+    SharedPtr<Texture>              FindTexture(const char *hashName) const;
+    SharedPtr<Texture>              GetTexture(const char *hashName, Texture::Flag flags = Texture::Flag::None, bool async = true);
 
     bool                            IsRegisteredStreamingTexture(const Texture *texture) const;
-    void                            RegisterStreamingTexture(const std::shared_ptr<Texture> &texture, const BE1::Image::MipRange &mipRange);
+    void                            RegisterStreamingTexture(const SharedPtr<Texture> &texture, const BE1::Image::MipRange &mipRange);
     void                            UnregisterStreamingTexture(Texture *texture);
     uint32_t                        GetStreamingTextureCount() const { return streamingTextures.Count(); }
     uint64_t                        GetStreamingTextureMemoryUsageBytes() const { return streamingTextureMemoryUsageBytes; }
@@ -216,9 +216,9 @@ public:
 
     void                            ApplyStreamingFeedback(const uint32_t *feedbackData, uint32_t feedbackCapacity);
 
-    std::shared_ptr<Texture>        defaultTexture;
-    std::shared_ptr<Texture>        whiteTexture;
-    std::shared_ptr<Texture>        flatNormalTexture;
+    SharedPtr<Texture>              defaultTexture;
+    SharedPtr<Texture>              whiteTexture;
+    SharedPtr<Texture>              flatNormalTexture;
 
 private:
     void                            CleanExpiredTextures();
@@ -227,10 +227,10 @@ private:
     void                            UpdateStreamingTextures();
     void                            ComputeStreamingTextureMemoryUsage();
 
-    BE1::StrIHashMap<std::weak_ptr<Texture>> textureHashMap;
+    BE1::StrIHashMap<WeakPtr<Texture>> textureHashMap;
     int                             expiredTextureHashMapCursor = 0;
     uint32_t                        nextTextureIndex = 0;
-    BE1::Array<std::weak_ptr<Texture>> streamingTextures;
+    BE1::Array<WeakPtr<Texture>>    streamingTextures;
     uint64_t                        streamingTextureMemoryUsageBytes = 0;
     uint64_t                        streamingTextureMemoryBudgetBytes = 256 * (1024 * 1024);
 };

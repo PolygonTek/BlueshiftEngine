@@ -20,9 +20,11 @@
 
 class RenderFrameData;
 class RenderContext;
-class ShaderPipelineState;
-class VisCamera;
-class DrawSurf;
+class ShaderPipeline;
+struct VisCamera;
+struct RenderPass;
+struct VisSurf;
+struct PassDrawSurf;
 
 class RenderBackend {
 public:
@@ -48,7 +50,7 @@ private:
 
     struct DrawSurfsTaskDesc {
         int32_t                     threadIndex = -1;
-        const DrawSurf **           drawSurfs = nullptr;
+        const PassDrawSurf **       drawSurfs = nullptr;
         uint32_t                    numDrawSurfs = 0;
         RHI::CommandList *          commandList = nullptr;
     };
@@ -61,22 +63,22 @@ private:
     void                            DrawCamera3D();
     void                            DrawCamera2D();
 
-    void                            DrawAllLitSurfaces(const DrawSurf **drawSurfs, uint32_t numDrawSurfs);
-    void                            DrawLitSurfaces(const DrawSurf **drawSurfs, uint32_t numDrawSurfs);
-    void                            DrawLitSurfacesInstanced(const DrawSurf **instanceSurfs, uint32_t instanceCount);
+    void                            DrawMainPass(const RenderPass *renderPass);
+    void                            DrawGuiPass(const RenderPass *renderPass);
+    void                            DrawLitSurfaces(const PassDrawSurf **drawSurfs, uint32_t numDrawSurfs);
+    void                            DrawLitSurfacesInstanced(const PassDrawSurf **instanceSurfs, uint32_t instanceCount);
 
-    void                            DrawLitSurfacesWithoutTask(const DrawSurf **drawSurfs, uint32_t numDrawSurfs);
-    void                            DrawLitSurfacesWithTask(const DrawSurf **drawSurfs, uint32_t numDrawSurfs, uint32_t numTasks);
+    void                            DrawLitSurfacesWithoutTask(const PassDrawSurf **drawSurfs, uint32_t numDrawSurfs);
+    void                            DrawLitSurfacesWithTask(const PassDrawSurf **drawSurfs, uint32_t numDrawSurfs, uint32_t numTasks);
     void                            DrawLitSurfacesByTask(RenderBackend::DrawSurfsTaskDesc *taskDesc);
     static void                     DrawLitSurfacesByTaskFunction(void *data);
 
-    void                            DrawLitSurface(RHI::FrameThreadData *frameThreadData, RHI::CommandList *commandList, const DrawSurf *drawSurf);
-    void                            DrawLitSurfaceInstanced(RHI::FrameThreadData *frameThreadData, RHI::CommandList *commandList, const DrawSurf **instanceSurfs, int instanceCount);
-    void                            DrawGuiSurface(RHI::FrameThreadData *frameThreadData, RHI::CommandList *commandList, const DrawSurf *drawSurf);
+    void                            DrawLitSurface(RHI::FrameThreadData *frameThreadData, RHI::CommandList *commandList, const PassDrawSurf *drawSurf);
+    void                            DrawLitSurfaceInstanced(RHI::FrameThreadData *frameThreadData, RHI::CommandList *commandList, const PassDrawSurf **instanceSurfs, int instanceCount);
+    void                            DrawGuiSurface(RHI::FrameThreadData *frameThreadData, RHI::CommandList *commandList, const PassDrawSurf *drawSurf);
 
-    const RHI::Texture *            ResolveDrawSurfTexture(const DrawSurf *drawSurf, bool useDefaultTexture) const;
-    uint32_t                        ResolveDrawSurfTextureBindlessIndex(const DrawSurf *drawSurf, bool useDefaultTexture, RHI::ViewType viewType, RHI::ViewID viewID = RHI::ViewID::PrimaryID) const;
     void                            RecordDrawStats(uint32_t drawCount, uint64_t triangleCount);
+    bool                            UploadFrameConstants();
 
     void                            BeginGpuFrameTiming(RHI::CommandList *commandList);
     void                            EndGpuFrameTiming(RHI::CommandList *commandList);
@@ -88,6 +90,7 @@ private:
     RHI::CommandList *              mainCommandList = nullptr;
     uint32_t                        frameCount = 0;
     RenderContextPipelineSnapshot   currentPipelines;
+    RHI::ConstantBuffer *           frameConstantBuffer = nullptr;
 
     const VisCamera *               currentVisCamera = nullptr;
 

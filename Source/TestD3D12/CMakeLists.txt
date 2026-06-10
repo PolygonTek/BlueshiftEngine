@@ -63,6 +63,8 @@ set(SRC_FILES
     Render/BModel.h
     Render/TextureStreamingFeedback.h
     Render/TextureStreamingFeedback.cpp
+    Render/VertexInputLayoutFactory.h
+    Render/VertexInputLayoutFactory.cpp
     Render/RenderContext.h
     Render/RenderContext.cpp
     Render/RenderFrameData.h
@@ -81,16 +83,19 @@ set(SRC_FILES
     Render/RenderCamera.h
     Render/RenderCamera.cpp
     Render/RenderInternal.h
-    Render/DrawSurf.h
+    Render/RenderPassBuilder.h
+    Render/RenderPassBuilder.cpp
     Render/Material.h
     Render/Material.cpp
     Render/MaterialManager.cpp
+    Render/ShaderPipelineCache.h
+    Render/ShaderPipelineCache.cpp
     Render/ShaderFeatureSet.h
     Render/ShaderFeatureSet.cpp
     Render/ShaderPermutationKey.h
     Render/ShaderPermutationKey.cpp
-    Render/ShaderPipelineState.h
-    Render/ShaderPipelineState.cpp
+    Render/ShaderPipeline.h
+    Render/ShaderPipeline.cpp
     Render/ShaderTemplate.h
     Render/ShaderTemplate.cpp
     Render/ShaderTemplateManager.cpp

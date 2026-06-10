@@ -23,7 +23,7 @@ void MeshInstance::Reset() {
     skinningJointCache.reset();
 }
 
-bool MeshInstance::InitStatic(const std::shared_ptr<Mesh> &newSourceMesh) {
+bool MeshInstance::InitStatic(const SharedPtr<Mesh> &newSourceMesh) {
     Reset();
 
     if (!newSourceMesh) {
@@ -36,7 +36,7 @@ bool MeshInstance::InitStatic(const std::shared_ptr<Mesh> &newSourceMesh) {
     return IsSourceReady() ? RefreshFromSource() : true;
 }
 
-bool MeshInstance::InitSkinned(const std::shared_ptr<Mesh> &newSourceMesh) {
+bool MeshInstance::InitSkinned(const SharedPtr<Mesh> &newSourceMesh) {
     Reset();
 
     if (!newSourceMesh) {
@@ -152,7 +152,7 @@ void MeshInstance::ResizeSkinningMatrices(int numMatrices) {
     int oldCount = skinningMatrices.Count();
     if (oldCount == numMatrices) {
         if (!skinningJointCache) {
-            skinningJointCache = numMatrices > 0 ? std::make_unique<SkinningJointCache>(numMatrices) : nullptr;
+            skinningJointCache = numMatrices > 0 ? MakeUnique<SkinningJointCache>(numMatrices) : nullptr;
         }
         return;
     }
@@ -163,7 +163,7 @@ void MeshInstance::ResizeSkinningMatrices(int numMatrices) {
         skinningMatrices[i].SetIdentity();
     }
 
-    skinningJointCache = numMatrices > 0 ? std::make_unique<SkinningJointCache>(numMatrices) : nullptr;
+    skinningJointCache = numMatrices > 0 ? MakeUnique<SkinningJointCache>(numMatrices) : nullptr;
 }
 
 bool MeshInstance::SetSkinningMatrices(const BE1::Mat3x4 *matrices, int numMatrices) {

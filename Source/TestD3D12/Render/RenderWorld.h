@@ -15,44 +15,44 @@
 #pragma once
 
 #include "RenderObject.h"
-#include "DrawSurf.h"
 #include "GuiMesh.h"
+#include "RenderPassBuilder.h"
 
+struct VisSurf;
+struct VisCamera;
+struct VisLight;
+struct VisObject;
 class RenderFrameData;
 class RenderCamera;
-class VisCamera;
-class VisLight;
-class VisObject;
 class Texture;
 class Material;
 class Mesh;
 class SubMesh;
-
-/// Proxy node in the dynamic bounding volume tree.
-struct DbvtProxy {
-    BE1::AABB                   worldAABB;              ///< World bounding volume for this proxy node.
-    RenderObject *              renderObject;           ///< Associated render object.
-    MeshInstance *              staticMeshInstance;     ///< Static mesh instance.
-    int32_t                     staticMeshSurfIndex;    ///< Index into the mesh's surface array.
-    int32_t                     id;                     ///< Proxy id.
-};
+enum class VisSurfFlag : uint8_t;
 
 enum class DrawTextFlag : uint16_t {
-    None                        = 0,
-    Right                       = BIT(0),
-    Center                      = BIT(1),
-    Bottom                      = BIT(2),
-    VCenter                     = BIT(3),
-    MultiLines                  = BIT(5),
-    WordWrap                    = BIT(6),
-    Truncate                    = BIT(7),
-    DropShadows                 = BIT(8),
-    AddOutlines                 = BIT(9)
+    None = 0,
+    Right = BIT(0),
+    Center = BIT(1),
+    Bottom = BIT(2),
+    VCenter = BIT(3),
+    MultiLines = BIT(5),
+    WordWrap = BIT(6),
+    Truncate = BIT(7),
+    DropShadows = BIT(8),
+    AddOutlines = BIT(9)
 };
 
 template<>
 struct enable_bitmask_operators<DrawTextFlag> {
     static const bool enable = true;
+};
+
+/// Proxy node in the dynamic bounding volume tree.
+struct DbvtProxy {
+    BE1::AABB                   worldAABB;              ///< World bounding volume for this proxy node.
+    RenderObject *              renderObject;           ///< Associated render object.
+    int32_t                     id;                     ///< Proxy id.
 };
 
 /// RenderWorld is the central manager for scene objects.
@@ -116,23 +116,26 @@ private:
     void                        UpdateSkinningJointCachesByTask(RenderWorld::SkinningJointCacheTaskDesc *taskDesc);
     static void                 UpdateSkinningJointCachesByTaskFunction(void *data);
     void                        AddTextMeshes(RenderFrameData *frameData, const RenderCamera *renderCamera, VisCamera *visCamera);
+    void                        AddRawMeshes(RenderFrameData *frameData, const RenderCamera *renderCamera, VisCamera *visCamera);
     void                        AddSkyBoxMeshes(RenderFrameData *frameData, const RenderCamera *renderCamera, VisCamera *visCamera);
 
 #ifdef USE_DBVT
     void                        CreateObjectProxy(RenderObject *renderObject);
     void                        UpdateObjectProxy(RenderObject *renderObject, const BE1::Mat3x4 &worldMatrix, const BE1::Vec3 &displacementVector);
-    void                        RegisterPendingStaticMeshProxy(RenderObject *renderObject);
-    void                        UnregisterPendingStaticMeshProxy(RenderObject *renderObject);
-    void                        DestroyStaticMeshSurfProxies(RenderObject *renderObject);
-    bool                        TryUpdateStaticMeshSurfProxies(RenderObject *renderObject, const BE1::Mat3x4 &worldMatrix, const BE1::Vec3 &displacementVector, bool forceRebuild, bool proxyMoved);
-    void                        UpdatePendingStaticMeshSurfProxies();
+    void                        InsertObjectProxyToDbvt(RenderObject *renderObject);
+    void                        RemoveObjectProxyFromDbvt(RenderObject *renderObject);
+    void                        RegisterDynamicObject(RenderObject *renderObject);
+    void                        UnregisterDynamicObject(RenderObject *renderObject);
+    void                        RegisterPendingObjectProxy(RenderObject *renderObject);
+    void                        UnregisterPendingObjectProxy(RenderObject *renderObject);
+    void                        UpdatePendingObjectProxies();
+    void                        UpdateSleepingObjectProxies();
 #endif
 
     void                        DrawCamera(RenderFrameData *frameData, const RenderCamera *renderCamera, VisCamera *visCamera);
     void                        DrawGUICamera(RenderFrameData *frameData, uint32_t screenWidth, uint32_t screenHeight, GuiMesh &guiMesh);
 
-    void                        AddDrawSurf(RenderFrameData *frameData, VisCamera *visCamera, VisLight *visLight, VisObject *visObject, const Texture *texture, SubMesh *subMesh, DrawSurf::Flag flags);
-    void                        SortDrawSurfs(RenderFrameData *frameData, VisCamera *visCamera);
+    void                        AddVisSurf(RenderFrameData *frameData, VisCamera *visCamera, VisLight *visLight, VisObject *visObject, const Material *material, SubMesh *subMesh, VisSurfFlag flags);
 
     BE1::Array<RenderObject *>  renderObjects;      /// The array of pointers to all render objects managed by the world.
 
@@ -140,15 +143,17 @@ private:
 
 #ifdef USE_DBVT
     BE1::DynamicAABBTree        objectDbvt;         ///< Dynamic bounding volume tree (DBVT) for render objects.
-    BE1::DynamicAABBTree        staticMeshDbvt;     ///< Dynamic bounding volume tree (DBVT) for static meshes.
-    BE1::Array<int>             pendingStaticMeshProxyObjects;
+    BE1::Array<int>             pendingObjectProxyObjects;
+    BE1::Array<int>             dynamicObjectIndices;
 #endif
 
     uint32_t                    renderWorldGroupId = -1;
     BE1::Array<SkinningJointCacheTaskDesc> skinningJointCacheTaskDescs;
 
     GuiMesh                     textMesh;           ///< 3D text mesh
-    std::shared_ptr<Material>   skyboxMaterial;
+    SharedPtr<Material>         skyboxMaterial;
+
+    RenderPassBuilder           renderPassBuilder;
 
     BE1::Color4                 debugLineColor;
     BE1::Color4                 debugFillColor;

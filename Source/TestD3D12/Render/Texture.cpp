@@ -94,7 +94,7 @@ void Texture::Reset() {
     Purge();
 }
 
-bool Texture::Create(RHI::TextureType textureType, std::shared_ptr<const BE1::Image> srcImage, Texture::Flag flags) {
+bool Texture::Create(RHI::TextureType textureType, SharedPtr<const BE1::Image> srcImage, Texture::Flag flags) {
     InternalData newInternalData;
     if (!Texture::Prepare(textureType, srcImage, flags, newInternalData)) {
         return false;
@@ -110,7 +110,7 @@ bool Texture::Create(RHI::TextureType textureType, std::shared_ptr<const BE1::Im
 }
 
 void Texture::CreateDefaultTexture(int size, Texture::Flag flags) {
-    std::shared_ptr<BE1::Image> image = std::make_shared<BE1::Image>();
+    SharedPtr<BE1::Image> image = MakeShared<BE1::Image>();
     image->Create2D(size, size, 1, BE1::Image::Format::R8G8B8A8, BE1::Image::GammaSpace::sRGB, nullptr, BE1::Image::Flag::None);
     byte *dstPtr = image->GetPixels();
 
@@ -142,7 +142,7 @@ void Texture::CreateDefaultTexture(int size, Texture::Flag flags) {
 }
 
 void Texture::CreateColorTexture(int size, const BE1::Color4 &color, Flag flags) {
-    std::shared_ptr<BE1::Image> image = std::make_shared<BE1::Image>();
+    SharedPtr<BE1::Image> image = MakeShared<BE1::Image>();
     image->Create2D(size, size, 1, BE1::Image::Format::R8G8B8A8, BE1::Image::GammaSpace::sRGB, nullptr, BE1::Image::Flag::None);
     uint32_t *dstPtr = (uint32_t *)image->GetPixels();
     uint32_t c = color.ToUInt32();
@@ -157,7 +157,7 @@ void Texture::CreateColorTexture(int size, const BE1::Color4 &color, Flag flags)
 }
 
 void Texture::CreateFlatNormalTexture(int size, Texture::Flag flags) {
-    std::shared_ptr<BE1::Image> image = std::make_shared<BE1::Image>();
+    SharedPtr<BE1::Image> image = MakeShared<BE1::Image>();
     image->Create2D(size, size, 1, BE1::Image::Format::R8G8B8, BE1::Image::GammaSpace::Linear, nullptr, BE1::Image::Flag::None);
     byte *dstPtr = image->GetPixels();
 
@@ -173,7 +173,7 @@ void Texture::CreateFlatNormalTexture(int size, Texture::Flag flags) {
     Create(RHI::TextureType::Texture2D, image, Texture::Flag::NormalMap | Texture::Flag::NoScaleDown | flags);
 }
 
-RHI::Texture *Texture::CreateRHITexture(RHI::TextureType textureType, RHI::TextureFlag flags, std::shared_ptr<const BE1::Image> srcImage, BE1::Image::Format dstFormat, bool generateMipmaps, bool allocateEmptyMipmaps, RHI::GPUResourceState initialState) {
+RHI::Texture *Texture::CreateRHITexture(RHI::TextureType textureType, RHI::TextureFlag flags, SharedPtr<const BE1::Image> srcImage, BE1::Image::Format dstFormat, bool generateMipmaps, bool allocateEmptyMipmaps, RHI::GPUResourceState initialState) {
     BE1::Image::Format srcFormat = srcImage->GetFormat();
     bool srcCompressed = BE1::Image::IsCompressed(srcFormat);
     bool srcFormatSupported = RHI::renderer->IsSupportedImageFormat(srcFormat);
@@ -199,7 +199,7 @@ RHI::Texture *Texture::CreateRHITexture(RHI::TextureType textureType, RHI::Textu
                     // 밉맵을 생성해야 한다면, 지원되는 가장 비슷한 무압축 포맷으로 컨버팅한다.
                     BE1::Image::Format supportedUncompressedFormat = RHI::renderer->ToUncompressedImageFormat(srcFormat);
 
-                    std::shared_ptr<BE1::Image> uncompressedImage = std::make_shared<BE1::Image>();
+                    SharedPtr<BE1::Image> uncompressedImage = MakeShared<BE1::Image>();
                     srcImage->ConvertFormat(supportedUncompressedFormat, *uncompressedImage);
                     srcImage = uncompressedImage;
 
@@ -209,7 +209,7 @@ RHI::Texture *Texture::CreateRHITexture(RHI::TextureType textureType, RHI::Textu
                 }
 
                 // CPU 에서 밉맵을 직접 생성한다.
-                std::shared_ptr<BE1::Image> mipmappedImage = std::make_shared<BE1::Image>();
+                SharedPtr<BE1::Image> mipmappedImage = MakeShared<BE1::Image>();
                 mipmappedImage->Create(w, h, d, srcImage->GetArraySize(), maxMipLevels, srcImage->GetFormat(), srcImage->GetGammaSpace(), nullptr, srcImage->GetFlags());
                 mipmappedImage->CopyFrom(*srcImage, 0, 1);
                 mipmappedImage->GenerateMipmaps();
@@ -219,7 +219,7 @@ RHI::Texture *Texture::CreateRHITexture(RHI::TextureType textureType, RHI::Textu
 
         // dstFormat 으로 컨버팅
         if (srcFormat != dstFormat) {
-            std::shared_ptr<BE1::Image> dstImage = std::make_shared<BE1::Image>();
+            SharedPtr<BE1::Image> dstImage = MakeShared<BE1::Image>();
             srcImage->ConvertFormat(dstFormat, *dstImage);
             srcImage = dstImage;
         }
@@ -228,7 +228,7 @@ RHI::Texture *Texture::CreateRHITexture(RHI::TextureType textureType, RHI::Textu
     return RHI::renderer->CreateTexture(textureType, flags, srcImage, allocateEmptyMipmaps, {}, 1, initialState);
 }
 
-bool Texture::Prepare(RHI::TextureType textureType, std::shared_ptr<const BE1::Image> srcImage, Flag flags, InternalData &outInternalData) {
+bool Texture::Prepare(RHI::TextureType textureType, SharedPtr<const BE1::Image> srcImage, Flag flags, InternalData &outInternalData) {
     outInternalData.Purge();
 
     if (!srcImage) {
@@ -256,7 +256,7 @@ bool Texture::Prepare(RHI::TextureType textureType, std::shared_ptr<const BE1::I
 
     if (!srcImage->IsEmpty()) {
         if (srcImage->GetWidth() != dstWidth || srcImage->GetHeight() != dstHeight) {
-            std::shared_ptr<BE1::Image> scaledImage = std::make_shared<BE1::Image>();
+            SharedPtr<BE1::Image> scaledImage = MakeShared<BE1::Image>();
             srcImage->Resize(dstWidth, dstHeight, BE1::Image::ResampleFilter::Bicubic, *scaledImage);
             srcImage = scaledImage;
         }
@@ -288,7 +288,7 @@ bool Texture::Prepare(RHI::TextureType textureType, std::shared_ptr<const BE1::I
     return outInternalData.rhiTexture != nullptr;
 }
 
-bool Texture::PrepareDirect(RHI::TextureType textureType, std::shared_ptr<const BE1::Image> srcImage, Flag flags, InternalData &outInternalData) {
+bool Texture::PrepareDirect(RHI::TextureType textureType, SharedPtr<const BE1::Image> srcImage, Flag flags, InternalData &outInternalData) {
     outInternalData.Purge();
 
     if (!srcImage) {
@@ -344,7 +344,7 @@ void Texture::GenerateMipmaps() {
 bool Texture::Load(const char *filename, Texture::Flag flags) {
     BE_LOG("Loading texture '%s'...\n", filename);
 
-    std::shared_ptr<BE1::Image> image = std::make_shared<BE1::Image>();
+    SharedPtr<BE1::Image> image = MakeShared<BE1::Image>();
     image->Load(filename);
 
     if (image->IsEmpty()) {

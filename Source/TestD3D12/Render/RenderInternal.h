@@ -18,25 +18,77 @@
 #include "RenderObject.h"
 #include "RenderCamera.h"
 #include "Texture.h"
+#include "Material.h"
 #include "Font.h"
 #include "Mesh.h"
 #include "MeshInstance.h"
-#include "DrawSurf.h"
+
+enum class VisSurfFlag : uint8_t {
+    None                        = 0,
+    Visible                     = BIT(0),           ///< Surface is visible by camera
+    ShadowVisible               = BIT(1),           ///< Shadow of surface is visible by camera
+    ShowWires                   = BIT(2),
+    SkipSelection               = BIT(3),
+    UseInstancing               = BIT(4)
+};
+
+template<>
+struct enable_bitmask_operators<VisSurfFlag> {
+    static const bool enable = true;
+};
+
+struct VisSurf {
+    const VisObject *           space = nullptr;
+    const SubMesh *             subMesh = nullptr;
+    const Material *            material = nullptr;
+    ShaderFeatureSet            baseFeatureSet;
+    uint32_t                    shaderMaterialIndex = ~0u;
+    VisSurfFlag                 flags = VisSurfFlag::None;
+};
+
+struct PassDrawSurf {
+    const VisSurf *             visSurf = nullptr;
+    uint64_t                    sortKey = 0;
+
+    RHI::PipelineState *        basePSO = nullptr;
+    RHI::PipelineState *        instancedPSO = nullptr;
+};
+
+enum class RenderPassType : uint8_t {
+    MainOpaque,
+    MainBlend,
+    DepthPrepass,
+    Shadow,
+    Gui
+};
+
+struct RenderPass {
+    RenderPassType              type = RenderPassType::MainOpaque;
+    ShaderPipelineDesc          pipelineDesc;
+    ShaderFeatureSet            passFeatureSet;
+
+    uint32_t                    maxDrawSurfs = 0;
+    uint32_t                    numDrawSurfs = 0;
+    const PassDrawSurf **       drawSurfs = nullptr;
+};
 
 // 한 프레임 렌더링에서만 유효한 렌더링 카메라
 // 매 프레임 생성되고, 생성될 때 어떠한 힙 할당도 일어나지 않는다.
-class VisCamera {
-public:
-    static constexpr int        MaxDrawSurfs = 0x10000;
+struct VisCamera {
+    static constexpr int        MaxVisSurfs = 0x10000;
+    static constexpr int        MaxRenderPasses = 8;
 
     ALIGN_AS32 BE1::Mat4        viewProjMatrix;
     ALIGN_AS32 BE1::AABB        worldAABB;
 
     uint32_t                    index = ~0;
 
-    uint32_t                    numDrawSurfs = 0;
-    uint32_t                    maxDrawSurfs = 0;
-    const DrawSurf **           drawSurfs = nullptr; // 카메라에 보이는 모든 surfaces 와 shadow surfaces
+    uint32_t                    maxVisSurfs = 0;
+    uint32_t                    numVisSurfs = 0;
+    const VisSurf **            visSurfs = nullptr; // 카메라에 보이는 모든 surfaces 와 shadow surfaces
+
+    uint32_t                    numRenderPasses = 0;
+    RenderPass *                renderPasses = nullptr;
 
     BE1::Rect                   renderRect;
     RenderCameraClearMethod     clearMethod;
@@ -49,8 +101,7 @@ public:
 // 매 프레임 외부 렌더링 객체로부터 복사되어 생성되고, 생성될 때 어떠한 힙 할당도 일어나지 않는다.
 // 외부에서 공유받은 자원은 렌더링할 동안은 내부적으로 유지되어야 한다.
 // 따라서 공유 자윈이 파괴되는 걸 방지하기 위해, 한 프레임 렌더링이 끝난 후 릴리즈하는 구조로 되어있다.
-class VisObject {
-public:
+struct VisObject {
     ALIGN_AS32 BE1::Mat3x4      worldMatrix;
     //ALIGN_AS32 BE1::Mat3x4      modelViewMatrix;
     ALIGN_AS32 BE1::Mat4        modelViewProjMatrix;
@@ -60,8 +111,13 @@ public:
     MeshInstance *              meshInstance = nullptr;     ///< Mesh instance
     const Skeleton *            skeleton = nullptr;         ///< Skeleton information for skeletal mesh
 
-    uint32_t                    numTextures = 0;
-    const Texture *             textures[32] = {};
+    uint32_t                    numMaterials = 0;
+    const Material *            materials[32] = {};
+
+    int                         numVerts = 0;
+    BE1::VertexGeneric *        verts = nullptr;
+    int                         numIndexes = 0;
+    BE1::VertIndex *            indexes = nullptr;
 
     Font *                      font = nullptr;
     const char *                text = nullptr;
@@ -72,11 +128,10 @@ public:
     float                       textScale;
     float                       textLineSpacing;
 
-    bool                        ambientVisible = false;
+    bool                        cameraVisible = false;
     bool                        shadowVisible = false;
 };
 
-class VisLight {
-public:
+struct VisLight {
     uint32_t                    index = ~0;
 };

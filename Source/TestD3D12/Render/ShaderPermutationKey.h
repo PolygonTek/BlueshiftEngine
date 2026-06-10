@@ -23,7 +23,7 @@
 
     ShaderPermutationKey
 
-    * permutation key 는 permutation defines (shader define properties) + featureSet flags 으로 만들어 진다.
+    permutation key 는 permutation defines (shader define properties) + featureSet flags 으로 이루어진다.
 
 ---------------------------------------------------------------------------------------------------
 */
@@ -35,6 +35,7 @@ struct ShaderPermutationKey {
     bool                            operator==(const ShaderPermutationKey &rhs) const { return hash == rhs.hash; }
     bool                            operator!=(const ShaderPermutationKey &rhs) const { return hash != rhs.hash; }
 
+                                    // 중복 define 제거 + deterministic 하게 순서 정렬
     static void                     NormalizePermutationDefines(BE1::StrArray &permutationDefines);
 
     static ShaderPermutationKey     GeneratePermutationKey(const BE1::StrArray &permutationDefines, const ShaderFeatureSet &featureSet = {});

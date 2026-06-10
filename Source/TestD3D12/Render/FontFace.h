@@ -77,7 +77,7 @@ private:
     GlyphHashMap            glyphHashMap;
 
     BE1::Array<BE1::Str>    bitmapNames;
-    BE1::Array<std::shared_ptr<Texture>> textures;
+    BE1::Array<SharedPtr<Material>> materials;
     uint32_t                fontHeight;
 };
 

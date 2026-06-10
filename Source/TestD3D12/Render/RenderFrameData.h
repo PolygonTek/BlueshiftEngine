@@ -16,13 +16,15 @@
 
 #include "Containers/HashIndex.h"
 #include "RHI.h"
+#include "Shaders/ShaderInterop.h"
 
 class RenderContext;
 class Texture;
+class Material;
 class MeshInstance;
 class Font;
-class VisCamera;
-class VisObject;
+struct VisCamera;
+struct VisObject;
 enum class DrawTextFlag : uint16_t;
 
 enum class FrameSyncState : uint8_t {
@@ -47,14 +49,6 @@ struct RenderCommandBuffer {
 
 struct RenderContextPipelineSnapshot {
     RHI::PipelineState *            imagePSO = nullptr;
-    RHI::PipelineState *            unlitPSO = nullptr;
-    RHI::PipelineState *            unlitAlphaBlendPSO = nullptr;
-    RHI::PipelineState *            unlitInstancedPSO = nullptr;
-    RHI::PipelineState *            unlitInstancedAlphaBlendPSO = nullptr;
-    RHI::PipelineState *            litPSO = nullptr;
-    RHI::PipelineState *            litAlphaBlendPSO = nullptr;
-    RHI::PipelineState *            litInstancedPSO = nullptr;
-    RHI::PipelineState *            litInstancedAlphaBlendPSO = nullptr;
 };
 
 struct BeginContextRenderCommand {
@@ -142,9 +136,15 @@ public:
     bool                            IsStatEnabled() const { return statEnabled; }
     void                            SetStatEnabled(bool enabled) { statEnabled = enabled; }
 
-    Texture *                       RetainTexture(const std::shared_ptr<Texture> &texture);
-    MeshInstance *                  RetainMeshInstance(const std::shared_ptr<MeshInstance> &meshInstance);
-    Font *                          RetainFont(const std::shared_ptr<Font> &font);
+    Material *                      RetainMaterial(const SharedPtr<Material> &material);
+    MeshInstance *                  RetainMeshInstance(const SharedPtr<MeshInstance> &meshInstance);
+    Font *                          RetainFont(const SharedPtr<Font> &font);
+
+    uint32_t                        GetShaderMaterialTableBindlessIndex() const { return shaderMaterialTableBindlessIndex; }
+
+                                    // 셰이더 머티리얼 테이블에 머티리얼을 등록하고, 테이블 인덱스를 리턴한다.
+    uint32_t                        RegisterShaderMaterial(const Material *material);
+    bool                            UploadShaderMaterialTable(RHI::CommandList *commandList);
 
                                     // 프론트 엔드에서 프레임 데이터의 사용을 시작
     void                            BeginFrame();
@@ -176,9 +176,14 @@ private:
     void                            InitVisObjects(int maxVisObjects);
     void                            FreeVisObjects();
 
-    void                            ClearRetainedTextures();
+    void                            ClearRetainedMaterials();
     void                            ClearRetainedMeshInstances();
     void                            ClearRetainedFonts();
+
+    void                            ClearShaderMaterialTable();
+    void                            DestroyShaderMaterialBuffers();
+    bool                            EnsureShaderMaterialBufferCapacity(uint32_t shaderMaterialCount);
+    void                            BuildShaderMaterial(const Material *material, ShaderMaterial &outShaderMaterial) const;
 
     void *                          GetCommandBuffer(uint32_t bytes);
 
@@ -204,9 +209,20 @@ private:
     RHI::FrameThreadData **         threadData = nullptr;
     int                             numRenderTaskThreads = 0;
 
-    BE1::Array<std::shared_ptr<Texture>> retainedTextures;
-    BE1::Array<std::shared_ptr<MeshInstance>> retainedMeshInstances;
-    BE1::Array<std::shared_ptr<Font>> retainedFonts;
+    BE1::Array<const Material *>    shaderMaterialSources;
+    BE1::Array<ShaderMaterial>      shaderMaterialTable;
+    BE1::HashIndex                  shaderMaterialHash { 256, 256 };
+    RHI::Buffer *                   shaderMaterialBuffer = nullptr;
+    RHI::Buffer *                   shaderMaterialUploadBuffer = nullptr;
+    RHI::ViewID                     shaderMaterialBufferView = RHI::ViewID::InvalidID;
+    RHI::GPUResourceState           shaderMaterialBufferState = RHI::GPUResourceState::Undefined;
+    uint32_t                        shaderMaterialBufferCapacity = 0;
+    uint32_t                        shaderMaterialTableBindlessIndex = 0;
+    bool                            shaderMaterialTableDirty = false;
+
+    BE1::Array<SharedPtr<Material>> retainedMaterials;
+    BE1::Array<SharedPtr<MeshInstance>> retainedMeshInstances;
+    BE1::Array<SharedPtr<Font>> retainedFonts;
 };
 
 BE_INLINE void RenderFrameData::BeginFrame() {

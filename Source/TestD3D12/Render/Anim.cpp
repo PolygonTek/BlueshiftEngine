@@ -90,10 +90,10 @@ void Anim::CreateDefaultAnim(const Skeleton *skeleton) {
     state = State::Ready;
 }
 
-std::shared_ptr<Anim> Anim::CreateAdditiveAnim(const char *hashName, const BE1::JointPose *firstFrame, int numJointIndexes, const int *jointIndexes) {
+SharedPtr<Anim> Anim::CreateAdditiveAnim(const char *hashName, const BE1::JointPose *firstFrame, int numJointIndexes, const int *jointIndexes) {
     assert(IsReady());
 
-    std::shared_ptr<Anim> additiveAnim = animManager.AllocAnim(hashName);
+    SharedPtr<Anim> additiveAnim = animManager.AllocAnim(hashName);
     additiveAnim->Copy(*this);
     additiveAnim->internalData.isAdditiveAnim = true;
 
@@ -167,7 +167,7 @@ std::shared_ptr<Anim> Anim::CreateAdditiveAnim(const char *hashName, const BE1::
     return additiveAnim;
 }
 
-std::shared_ptr<Anim> Anim::CreateAdditiveAnim(const Skeleton *skeleton, int numJointIndexes, const int *jointIndexes) {
+SharedPtr<Anim> Anim::CreateAdditiveAnim(const Skeleton *skeleton, int numJointIndexes, const int *jointIndexes) {
     assert(IsReady());
     assert(skeleton && skeleton->IsReady());
 
@@ -185,7 +185,7 @@ std::shared_ptr<Anim> Anim::CreateAdditiveAnim(const Skeleton *skeleton, int num
     return CreateAdditiveAnim(newName.c_str(), firstFrame, numJointIndexes, jointIndexes);
 }
 
-std::shared_ptr<Anim> Anim::CreateAdditiveAnim(const Anim *refAnim, int numJointIndexes, const int *jointIndexes) {
+SharedPtr<Anim> Anim::CreateAdditiveAnim(const Anim *refAnim, int numJointIndexes, const int *jointIndexes) {
     assert(IsReady());
     assert(refAnim && refAnim->IsReady());
 

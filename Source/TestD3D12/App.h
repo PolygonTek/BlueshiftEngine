@@ -46,17 +46,18 @@ public:
     void                            TakeScreenshot();
 
 private:
-    void                            RenderText();
     void                            UpdateGameFrameTime(uint64_t frameUsec);
     void                            UpdateRenderFrontendFrameTime(uint64_t frameUsec);
     void                            UpdateCubes();
+    void                            RenderScene();
+    void                            RenderText();
 
     RenderContext *                 mainRenderContext = nullptr;
-    std::shared_ptr<Font>           mainFont;
+    SharedPtr<Font>                 mainFont;
     RenderCamera *                  renderCamera = nullptr;
     RenderWorld *                   renderWorld = nullptr;
 
-    std::shared_ptr<Mesh>           testMesh;
+    SharedPtr<Mesh>                 testMesh;
 
     BE1::Array<GameObject *>        gameObjects;
 

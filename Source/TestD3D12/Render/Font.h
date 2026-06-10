@@ -24,7 +24,7 @@
 ---------------------------------------------------------------------------------------------------
 */
 
-class Texture;
+class Material;
 class FontFace;
 struct GlyphAtlas;
 
@@ -35,12 +35,11 @@ struct FontGlyph {
     int32_t                 offsetX, offsetY;
     int32_t                 advanceX, advanceY;
     float                   s, t, s2, t2;
-    Texture *               texture = nullptr;
+    SharedPtr<Material>     material;
 };
 
 class Font {
     friend class FontManager;
-    friend class RenderFrameData;
 
 public:
     enum class Type : uint8_t {
@@ -59,6 +58,9 @@ public:
 
     const char *            GetName() const { return name; }
     const char *            GetHashName() const { return hashName; }
+
+    uint64_t                GetRetainedFrameSerial() const { return retainedFrameSerial; }
+    void                    SetRetainedFrameSerial(uint64_t frameSerial) { retainedFrameSerial = frameSerial; }
 
                             /// Returns font type.
     Type                    GetFontType() const { return fontType; }
@@ -96,11 +98,11 @@ public:
 
     void                    UpdateFrame();
 
-    std::shared_ptr<Font>   AllocFont(const char *name, uint32_t fontSize);
-    std::shared_ptr<Font>   FindFont(const char *name, uint32_t fontSize) const;
-    std::shared_ptr<Font>   GetFont(const char *name, uint32_t fontSize);
+    SharedPtr<Font>         AllocFont(const char *name, uint32_t fontSize);
+    SharedPtr<Font>         FindFont(const char *name, uint32_t fontSize) const;
+    SharedPtr<Font>         GetFont(const char *name, uint32_t fontSize);
 
-    std::shared_ptr<Font>   defaultFont;
+    SharedPtr<Font>         defaultFont;
 
 private:
     void                    CleanExpiredFonts();
@@ -127,7 +129,7 @@ private:
         }
     };
 
-    using FontHashMap       = BE1::HashMap<FontHashKey, std::weak_ptr<Font>, FontHashCompare, FontHashGenerator>;
+    using FontHashMap       = BE1::HashMap<FontHashKey, WeakPtr<Font>, FontHashCompare, FontHashGenerator>;
     FontHashMap             fontHashMap;
     int                     expiredFontHashMapCursor = 0;
 };

@@ -14,6 +14,7 @@
 
 #include "Precompiled.h"
 #include "ShaderTemplate.h"
+#include "ShaderPipelineCache.h"
 
 ShaderTemplateManager    shaderTemplateManager;
 
@@ -81,16 +82,16 @@ void ShaderTemplateManager::UpdateFrame() {
         globalDefineModCountSnapshot = globalDefineModCount;
     }
 
-    // 글로벌 디파인이 변경되었다면 모든 셰이더 템플릿의 캐시된 파이프라인을 재빌드한다.
+    // 글로벌 디파인이 변경되었다면 모든 캐시된 파이프라인을 재빌드한다.
     if (lastInvalidatedGlobalDefineModCount != globalDefineModCountSnapshot) {
-        InvalidateShaderTemplateCaches();
+        shaderPipelineCache.RebuildAll();
         lastInvalidatedGlobalDefineModCount = globalDefineModCountSnapshot;
     }
 
     CleanExpiredShaderTemplates();
 }
 
-std::shared_ptr<ShaderTemplate> ShaderTemplateManager::AllocShaderTemplate(const char *hashName) {
+SharedPtr<ShaderTemplate> ShaderTemplateManager::AllocShaderTemplate(const char *hashName) {
     if (!hashName || !hashName[0]) {
         BE_FATALERROR("ShaderTemplateManager::AllocShaderTemplate: empty shader template name");
     }
@@ -101,7 +102,7 @@ std::shared_ptr<ShaderTemplate> ShaderTemplateManager::AllocShaderTemplate(const
         shaderTemplateHashMap.Remove(hashName);
     }
 
-    std::shared_ptr<ShaderTemplate> shaderTemplate = std::make_shared<ShaderTemplate>();
+    SharedPtr<ShaderTemplate> shaderTemplate = MakeShared<ShaderTemplate>();
     shaderTemplate->hashName = hashName;
     shaderTemplate->name = hashName;
     shaderTemplate->name.StripPath();
@@ -111,7 +112,7 @@ std::shared_ptr<ShaderTemplate> ShaderTemplateManager::AllocShaderTemplate(const
     return shaderTemplate;
 }
 
-std::shared_ptr<ShaderTemplate> ShaderTemplateManager::FindShaderTemplate(const char *hashName) const {
+SharedPtr<ShaderTemplate> ShaderTemplateManager::FindShaderTemplate(const char *hashName) const {
     if (!hashName || !hashName[0]) {
         return nullptr;
     }
@@ -124,12 +125,12 @@ std::shared_ptr<ShaderTemplate> ShaderTemplateManager::FindShaderTemplate(const 
     return entry->second.lock();
 }
 
-std::shared_ptr<ShaderTemplate> ShaderTemplateManager::GetShaderTemplate(const char *hashName) {
+SharedPtr<ShaderTemplate> ShaderTemplateManager::GetShaderTemplate(const char *hashName) {
     if (!hashName || !hashName[0]) {
         return nullptr;
     }
 
-    std::shared_ptr<ShaderTemplate> shaderTemplate = FindShaderTemplate(hashName);
+    SharedPtr<ShaderTemplate> shaderTemplate = FindShaderTemplate(hashName);
     if (shaderTemplate) {
         return shaderTemplate;
     }
@@ -209,22 +210,6 @@ uint32_t ShaderTemplateManager::CopyGlobalDefines(BE1::StrArray &outDefines) con
 
     outDefines = globalDefines;
     return globalDefineModCount;
-}
-
-void ShaderTemplateManager::InvalidateShaderTemplateCaches() {
-    const int numShaderTemplates = shaderTemplateHashMap.Count();
-    for (int i = 0; i < numShaderTemplates; i++) {
-        const auto *entry = shaderTemplateHashMap.GetByIndex(i);
-        assert(entry);
-
-        std::shared_ptr<ShaderTemplate> shaderTemplate = entry->second.lock();
-        if (!shaderTemplate) {
-            continue;
-        }
-
-        // 캐시된 파이프라인을 모두 무효화 후 재빌드 요청
-        shaderTemplate->RebuildCachedPipelines();
-    }
 }
 
 void ShaderTemplateManager::CleanExpiredShaderTemplates() {

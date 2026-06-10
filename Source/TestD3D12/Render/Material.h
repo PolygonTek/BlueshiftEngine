@@ -57,7 +57,7 @@ public:
     void                            SetRetainedFrameSerial(uint64_t frameSerial) { retainedFrameSerial = frameSerial; }
 
     uint32_t                        GetIndex() const { return index; }
-    const std::shared_ptr<ShaderTemplate> &GetShaderTemplate() const { return internalData.shaderTemplate; }
+    const SharedPtr<ShaderTemplate> &GetShaderTemplate() const { return internalData.shaderTemplate; }
     RHI::CullMode                   GetCullMode() const { return internalData.cullMode; }
     RenderingMode                   GetRenderingMode() const { return internalData.renderingMode; }
     RHI::BlendStateType             GetBlendType() const { return internalData.blendType; }
@@ -66,8 +66,8 @@ public:
     int                             FindPropertyIndex(const char *propertyName) const;
     const ShaderTemplate::PropertyValue *GetPropertyValue(int propertyIndex) const;
     const ShaderTemplate::PropertyValue *GetPropertyValue(const char *propertyName) const;
-    const std::shared_ptr<Texture> *GetTextureProperty(int propertyIndex) const;
-    const std::shared_ptr<Texture> *GetTextureProperty(const char *propertyName) const;
+    const SharedPtr<Texture> *      GetTextureProperty(int propertyIndex) const;
+    const SharedPtr<Texture> *      GetTextureProperty(const char *propertyName) const;
     bool                            SetPropertyValue(int propertyIndex, const ShaderTemplate::PropertyValue &value);
     bool                            SetPropertyValue(const char *propertyName, const ShaderTemplate::PropertyValue &value);
 
@@ -75,7 +75,7 @@ public:
     ShaderPermutationKey            EnsurePermutation(const ShaderFeatureSet &featureSet = {}) const;
     void                            EnsurePermutations(const BE1::Array<ShaderFeatureSet> &featureSets) const;
 
-    std::shared_ptr<ShaderPipelineState> GetGraphicsPipeline(const ShaderFeatureSet &featureSet, const ShaderPipelineDesc &desc) const;
+    SharedPtr<ShaderPipeline>       GetGraphicsPipeline(const ShaderFeatureSet &featureSet, const ShaderPipelineDesc &baseDesc) const;
 
     bool                            Create(const char *text, const char *baseDir);
 
@@ -85,14 +85,14 @@ public:
 private:
     struct TextureProperty {
         int                         propertyIndex = -1; // shader property index
-        std::shared_ptr<Texture>    texture;
+        SharedPtr<Texture>          texture;
     };
 
     struct InternalData {
         void                        Purge();
         void                        Swap(InternalData &rhs);
 
-        std::shared_ptr<ShaderTemplate> shaderTemplate;
+        SharedPtr<ShaderTemplate>   shaderTemplate;
         BE1::Array<ShaderTemplate::PropertyValue> propertyValues;
         BE1::Array<TextureProperty> textureProperties;
         RHI::CullMode               cullMode = RHI::CullMode::Back;
@@ -141,17 +141,17 @@ public:
 
     void                            UpdateFrame();
 
-    std::shared_ptr<Material>       AllocMaterial(const char *hashName);
-    std::shared_ptr<Material>       FindMaterial(const char *hashName) const;
-    std::shared_ptr<Material>       GetMaterial(const char *hashName);
-    std::shared_ptr<Material>       GetSingleTextureMaterial(const char *textureFilename, Material::TextureHint hint = Material::TextureHint::None);
+    SharedPtr<Material>             AllocMaterial(const char *hashName);
+    SharedPtr<Material>             FindMaterial(const char *hashName) const;
+    SharedPtr<Material>             GetMaterial(const char *hashName);
+    SharedPtr<Material>             GetSingleTextureMaterial(const char *textureFilename, Material::TextureHint hint = Material::TextureHint::None);
 
-    std::shared_ptr<Material>       defaultUnlitMaterial;
-    std::shared_ptr<Material>       defaultLitMaterial;
-    std::shared_ptr<Material>       whiteUnlitMaterial;
-    std::shared_ptr<Material>       whiteLitMaterial;
-    std::shared_ptr<Material>       blendUnlitMaterial;
-    std::shared_ptr<Material>       blendLitMaterial;
+    SharedPtr<Material>             defaultUnlitMaterial;
+    SharedPtr<Material>             defaultLitMaterial;
+    SharedPtr<Material>             whiteUnlitMaterial;
+    SharedPtr<Material>             whiteLitMaterial;
+    SharedPtr<Material>             blendUnlitMaterial;
+    SharedPtr<Material>             blendLitMaterial;
 
 private:
     void                            OnShaderTemplateReloaded(const ShaderTemplate *shaderTemplate, const BE1::Array<ShaderPropertyInfo> &oldProperties);
@@ -159,7 +159,7 @@ private:
     void                            CreateEngineMaterials();
     void                            DestroyEngineMaterials();
 
-    BE1::StrIHashMap<std::weak_ptr<Material>> materialHashMap;
+    BE1::StrIHashMap<WeakPtr<Material>> materialHashMap;
     int                             expiredMaterialHashMapCursor = 0;
     uint32_t                        nextMaterialIndex = 0;
     BE1::DelegateHandle             shaderTemplateReloadedHandle;

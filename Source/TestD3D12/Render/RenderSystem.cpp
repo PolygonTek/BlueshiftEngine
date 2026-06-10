@@ -20,6 +20,7 @@
 #include "Sampler.h"
 #include "Texture.h"
 #include "ShaderTemplate.h"
+#include "ShaderPipelineCache.h"
 #include "Material.h"
 #include "Font.h"
 #include "Mesh.h"
@@ -77,6 +78,8 @@ void RenderSystem::Shutdown() {
     fontManager.Shutdown();
 
     materialManager.Shutdown();
+
+    shaderPipelineCache.ClearAll();
 
     shaderTemplateManager.Shutdown();
 
@@ -185,6 +188,8 @@ void RenderSystem::ShutdownRenderThread() {
 }
 
 bool RenderSystem::WaitRenderCompleted(const RenderFrameData *frameData) {
+    PROFILER_CPU_SCOPED_EVENT("RenderSystem::WaitRenderCompleted");
+
     assert(BE1::Engine::IsInMainThread());
 
     if (!IsUsingRenderThread()) {

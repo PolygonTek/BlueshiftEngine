@@ -39,7 +39,7 @@ void AnimManager::UpdateFrame() {
     CleanExpiredAnims();
 }
 
-std::shared_ptr<Anim> AnimManager::AllocAnim(const char *hashName) {
+SharedPtr<Anim> AnimManager::AllocAnim(const char *hashName) {
     if (!hashName || !hashName[0]) {
         BE_FATALERROR("AnimManager::AllocAnim: empty anim name");
     }
@@ -51,7 +51,7 @@ std::shared_ptr<Anim> AnimManager::AllocAnim(const char *hashName) {
         animHashMap.Remove(hashName);
     }
 
-    std::shared_ptr<Anim> anim = std::make_shared<Anim>();
+    SharedPtr<Anim> anim = MakeShared<Anim>();
     anim->hashName = hashName;
     anim->name = hashName;
     anim->name.StripPath();
@@ -61,7 +61,7 @@ std::shared_ptr<Anim> AnimManager::AllocAnim(const char *hashName) {
     return anim;
 }
 
-std::shared_ptr<Anim> AnimManager::FindAnim(const char *hashName) const {
+SharedPtr<Anim> AnimManager::FindAnim(const char *hashName) const {
     if (!hashName || !hashName[0]) {
         return nullptr;
     }
@@ -74,12 +74,12 @@ std::shared_ptr<Anim> AnimManager::FindAnim(const char *hashName) const {
     return entry->second.lock();
 }
 
-std::shared_ptr<Anim> AnimManager::GetAnim(const char *hashName, bool async) {
+SharedPtr<Anim> AnimManager::GetAnim(const char *hashName, bool async) {
     if (!hashName || !hashName[0]) {
         return nullptr;
     }
 
-    std::shared_ptr<Anim> anim = FindAnim(hashName);
+    SharedPtr<Anim> anim = FindAnim(hashName);
     if (anim) {
         if (!async && !anim->WaitReady()) {
             return nullptr;
@@ -102,12 +102,12 @@ std::shared_ptr<Anim> AnimManager::GetAnim(const char *hashName, bool async) {
     return anim;
 }
 
-std::shared_ptr<Anim> AnimManager::GetDefaultAnim(const char *hashName, const Skeleton *skeleton) {
+SharedPtr<Anim> AnimManager::GetDefaultAnim(const char *hashName, const Skeleton *skeleton) {
     if (!hashName || !hashName[0] || !skeleton) {
         return nullptr;
     }
 
-    std::shared_ptr<Anim> anim = FindAnim(hashName);
+    SharedPtr<Anim> anim = FindAnim(hashName);
     if (anim) {
         return anim;
     }
