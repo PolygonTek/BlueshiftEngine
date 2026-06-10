@@ -63,7 +63,8 @@ struct MipGenParams {
 struct ShaderMaterial {
     uint baseColorTextureIndex;
     uint normalTextureIndex;
-    uint streamingTextureIndex;
+    uint emissiveTextureIndex;
+    uint streamingMaterialIndex;
     uint flags;
     float4 baseColorFactor;
 };

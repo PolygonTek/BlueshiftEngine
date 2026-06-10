@@ -214,8 +214,6 @@ public:
     uint32_t                        GetStreamingTextureMinResidentMaxDimension() const;
     void                            SetStreamingTextureMemoryBudgetBytes(uint64_t budget) { streamingTextureMemoryBudgetBytes = budget; }
 
-    void                            ApplyStreamingFeedback(const uint32_t *feedbackData, uint32_t feedbackCapacity);
-
     SharedPtr<Texture>              defaultTexture;
     SharedPtr<Texture>              whiteTexture;
     SharedPtr<Texture>              flatNormalTexture;

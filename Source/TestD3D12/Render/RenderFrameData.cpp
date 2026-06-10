@@ -339,7 +339,7 @@ static const RHI::Texture *GetReadyRHITexture(const Texture *texture) {
 
 void RenderFrameData::BuildShaderMaterial(const Material *material, ShaderMaterial &outShaderMaterial) const {
     outShaderMaterial = {};
-    outShaderMaterial.streamingTextureIndex = TextureStreamingInvalidIndex;
+    outShaderMaterial.streamingMaterialIndex = TextureStreamingInvalidIndex;
     outShaderMaterial.baseColorFactor = float4(1.0f, 1.0f, 1.0f, 1.0f);
 
     const Texture *texture = ResolveMaterialBaseColorTexture(material);
@@ -353,8 +353,8 @@ void RenderFrameData::BuildShaderMaterial(const Material *material, ShaderMateri
         outShaderMaterial.baseColorTextureIndex = rhiTexture->GetBindlessIndex(RHI::ViewType::SRV);
     }
 
-    if (texture && rhiTexture) {
-        outShaderMaterial.streamingTextureIndex = texture->GetStreaming()->streamingListIndex;
+    if (material) {
+        outShaderMaterial.streamingMaterialIndex = material->GetStreamingListIndex();
     }
 }
 

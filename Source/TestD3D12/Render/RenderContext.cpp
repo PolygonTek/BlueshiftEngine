@@ -271,7 +271,7 @@ void RenderContext::EndFrame() {
     FlushPendingScreenshots(frameData);
 
 #ifdef USE_MIPMAP_STREAMING
-    EnsureTextureStreamingFeedbackCapacity(textureManager.GetStreamingTextureCount());
+    EnsureTextureStreamingFeedbackCapacity(materialManager.GetStreamingMaterialCount());
 #endif
 
     frameData->CmdSwapBuffers();

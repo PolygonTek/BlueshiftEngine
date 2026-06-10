@@ -214,36 +214,6 @@ uint32_t TextureManager::GetStreamingTextureMinResidentMaxDimension() const {
     return static_cast<uint32_t>(BE1::Max(1, r_textureStreamingMinResidentMaxDimension.GetInteger()));
 }
 
-void TextureManager::ApplyStreamingFeedback(const uint32_t *feedbackData, uint32_t feedbackCapacity) {
-    const int numStreamingTextures = streamingTextures.Count();
-    for (int i = 0; i < numStreamingTextures; ++i) {
-        SharedPtr<Texture> texture = streamingTextures[i].lock();
-        if (!texture) {
-            continue;
-        }
-
-        uint32_t streamingListIndex = texture->GetStreaming()->streamingListIndex;
-        if (streamingListIndex >= feedbackCapacity) {
-            continue;
-        }
-
-        uint32_t feedbackMask = feedbackData[streamingListIndex];
-        if (!feedbackMask) {
-            continue;
-        }
-
-        // 요청된 해상도
-        uint32_t feedbackMaxDimension = 1u << FloorLog2(feedbackMask);
-
-        // 실제 원본 텍스쳐의 최대 축 크기
-        uint32_t originalMaxDimension = BE1::Max3(texture->streaming.originalWidth, texture->streaming.originalHeight, texture->streaming.originalDepth);
-
-        // 요청된 해상도와 원본 텍스쳐의 최대 축 크기를 비교하여, 스트리밍 시스템에 요청할 최대 해상도를 결정한다.
-        uint32_t requestedMaxDimension = BE1::Min(feedbackMaxDimension, originalMaxDimension);
-        texture->RequestStreamingMaxDimension(requestedMaxDimension);
-    }
-}
-
 void TextureManager::UpdateStreamingTextures() {
     int requestedStreamingTextureCount = 0;
     const uint32_t streamInDelay = static_cast<uint32_t>(BE1::Max(0, r_textureStreamingStreamInDelay.GetInteger()));

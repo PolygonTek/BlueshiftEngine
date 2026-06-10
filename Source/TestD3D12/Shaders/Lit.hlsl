@@ -61,8 +61,8 @@ PSInput VSMain(VSInput input) {
 float4 PSMain(PSInput input) : SV_TARGET {
     ShaderMaterial shaderMaterial = GetShaderMaterial(frameConstants.shaderMaterialTableIndex)[shaderMaterialIndex];
 
-    if (frameConstants.feedbackBufferIndex != 0 && shaderMaterial.streamingTextureIndex != TextureStreamingInvalidIndex) {
-        WriteMipmapFeedback(GetRWBufferUInt(frameConstants.feedbackBufferIndex), shaderMaterial.streamingTextureIndex, ddx_coarse(input.texCoord.xy), ddy_coarse(input.texCoord.xy));
+    if (frameConstants.feedbackBufferIndex != 0 && shaderMaterial.streamingMaterialIndex != TextureStreamingInvalidIndex) {
+        WriteMipmapFeedback(GetRWBufferUInt(frameConstants.feedbackBufferIndex), shaderMaterial.streamingMaterialIndex, ddx_coarse(input.texCoord.xy), ddy_coarse(input.texCoord.xy));
     }
 
     float4 textureColor = GetTexture2D(shaderMaterial.baseColorTextureIndex).Sample(anisoClampSampler, input.texCoord);

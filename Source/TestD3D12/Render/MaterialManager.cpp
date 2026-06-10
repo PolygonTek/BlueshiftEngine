@@ -38,10 +38,36 @@ void MaterialManager::Shutdown() {
     }
 
     materialHashMap.Clear();
+    streamingMaterials.Clear();
 }
 
 void MaterialManager::UpdateFrame() {
     CleanExpiredMaterials();
+}
+
+void MaterialManager::ApplyStreamingFeedback(const uint32_t *feedbackData, uint32_t feedbackCapacity) {
+    const int numStreamingMaterials = streamingMaterials.Count();
+    for (int i = 0; i < numStreamingMaterials; ++i) {
+        SharedPtr<Material> material = streamingMaterials[i].lock();
+        if (!material) {
+            continue;
+        }
+
+        uint32_t streamingListIndex = material->GetStreamingListIndex();
+        if (streamingListIndex >= feedbackCapacity) {
+            continue;
+        }
+
+        uint32_t feedbackMask = feedbackData[streamingListIndex];
+        if (!feedbackMask) {
+            continue;
+        }
+
+        // UV 미분값 기준으로 계산된 가장 큰 요청 해상도
+        uint32_t feedbackMaxDimension = 1u << FloorLog2(feedbackMask);
+
+        material->RequestStreamingMaxDimension(feedbackMaxDimension);
+    }
 }
 
 SharedPtr<Material> MaterialManager::AllocMaterial(const char *hashName) {
@@ -211,6 +237,46 @@ void MaterialManager::CleanExpiredMaterials() {
 
         expiredMaterialHashMapCursor++;
     }
+}
+
+void MaterialManager::RefreshStreamingMaterial(const SharedPtr<Material> &material) {
+    if (!material) {
+        return;
+    }
+
+    if (material->HasStreamingTextureProperties()) {
+        RegisterStreamingMaterial(material);
+    } else {
+        UnregisterStreamingMaterial(material.get());
+    }
+}
+
+void MaterialManager::RegisterStreamingMaterial(const SharedPtr<Material> &material) {
+    if (!material) {
+        return;
+    }
+
+    if (material->streamingListIndex != TextureStreamingInvalidIndex) {
+        return;
+    }
+
+    material->streamingListIndex = streamingMaterials.Append(WeakPtr<Material>(material));
+}
+
+void MaterialManager::UnregisterStreamingMaterial(Material *material) {
+    if (!material) {
+        return;
+    }
+
+    if (material->streamingListIndex == TextureStreamingInvalidIndex) {
+        return;
+    }
+
+    if (streamingMaterials.IsValidIndex(material->streamingListIndex)) {
+        streamingMaterials[material->streamingListIndex].reset();
+    }
+
+    material->streamingListIndex = TextureStreamingInvalidIndex;
 }
 
 void MaterialManager::CreateEngineMaterials() {

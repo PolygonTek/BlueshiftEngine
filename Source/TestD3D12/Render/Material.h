@@ -15,6 +15,7 @@
 #pragma once
 
 #include "ShaderTemplate.h"
+#include "Shaders/ShaderInterop.h"
 
 class MaterialManager;
 class Texture;
@@ -71,6 +72,8 @@ public:
     bool                            SetPropertyValue(int propertyIndex, const ShaderTemplate::PropertyValue &value);
     bool                            SetPropertyValue(const char *propertyName, const ShaderTemplate::PropertyValue &value);
 
+    uint32_t                        GetStreamingListIndex() const { return streamingListIndex; }
+
     void                            InvalidatePermutationKeys() const;
     ShaderPermutationKey            EnsurePermutation(const ShaderFeatureSet &featureSet = {}) const;
     void                            EnsurePermutations(const BE1::Array<ShaderFeatureSet> &featureSets) const;
@@ -117,12 +120,15 @@ private:
 
     void                            UpdateTextureProperties();
     void                            RemapShaderTemplateProperties(const BE1::Array<ShaderPropertyInfo> &oldProperties);
+    bool                            HasStreamingTextureProperties() const;
+    void                            RequestStreamingMaxDimension(uint32_t requestedMaxDimension) const;
 
     BE1::Str                        hashName;
     BE1::Str                        name;
     uint32_t                        index = 0;
     uint64_t                        retainedFrameSerial = 0;
     InternalData                    internalData;
+    uint32_t                        streamingListIndex = TextureStreamingInvalidIndex;
 
     mutable BE1::Array<CachedPermutationKey> cachedPermutationKeys;
 };
@@ -146,6 +152,9 @@ public:
     SharedPtr<Material>             GetMaterial(const char *hashName);
     SharedPtr<Material>             GetSingleTextureMaterial(const char *textureFilename, Material::TextureHint hint = Material::TextureHint::None);
 
+    uint32_t                        GetStreamingMaterialCount() const { return streamingMaterials.Count(); }
+    void                            ApplyStreamingFeedback(const uint32_t *feedbackData, uint32_t feedbackCapacity);
+
     SharedPtr<Material>             defaultUnlitMaterial;
     SharedPtr<Material>             defaultLitMaterial;
     SharedPtr<Material>             whiteUnlitMaterial;
@@ -158,10 +167,14 @@ private:
     void                            CleanExpiredMaterials();
     void                            CreateEngineMaterials();
     void                            DestroyEngineMaterials();
+    void                            RefreshStreamingMaterial(const SharedPtr<Material> &material);
+    void                            RegisterStreamingMaterial(const SharedPtr<Material> &material);
+    void                            UnregisterStreamingMaterial(Material *material);
 
     BE1::StrIHashMap<WeakPtr<Material>> materialHashMap;
     int                             expiredMaterialHashMapCursor = 0;
     uint32_t                        nextMaterialIndex = 0;
+    BE1::Array<WeakPtr<Material>>   streamingMaterials;
     BE1::DelegateHandle             shaderTemplateReloadedHandle;
 };
 

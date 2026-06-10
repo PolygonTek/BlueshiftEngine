@@ -116,7 +116,7 @@ void RenderSystem::UpdateFrame() {
 
     for (RenderContext *renderContext : renderContexts) {
         renderContext->textureStreamingFeedback.ConsumeCompletedReadbacks([](const uint32_t *feedbackData, uint32_t capacity) {
-            textureManager.ApplyStreamingFeedback(feedbackData, capacity);
+            materialManager.ApplyStreamingFeedback(feedbackData, capacity);
         });
     }
 }

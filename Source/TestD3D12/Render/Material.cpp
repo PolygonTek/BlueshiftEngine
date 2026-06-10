@@ -40,6 +40,7 @@ void Material::InternalData::Swap(InternalData &rhs) {
 }
 
 void Material::Purge() {
+    materialManager.UnregisterStreamingMaterial(this);
     internalData.Purge();
     InvalidatePermutationKeys();
 }
@@ -155,6 +156,7 @@ void Material::UpdateTextureProperties() {
     internalData.textureProperties.Clear();
 
     if (!internalData.shaderTemplate) {
+        materialManager.UnregisterStreamingMaterial(this);
         return;
     }
 
@@ -179,6 +181,43 @@ void Material::UpdateTextureProperties() {
 
         if (!textureProperty.texture) {
             textureProperty.texture = GetFallbackTexture(propertyInfo);
+        }
+    }
+
+    materialManager.RefreshStreamingMaterial(shared_from_this());
+}
+
+bool Material::HasStreamingTextureProperties() const {
+    if (!internalData.shaderTemplate) {
+        return false;
+    }
+
+    const BE1::Array<ShaderPropertyInfo> &properties = internalData.shaderTemplate->GetProperties();
+    for (const TextureProperty &textureProperty : internalData.textureProperties) {
+        if (textureProperty.propertyIndex < 0 || textureProperty.propertyIndex >= properties.Count()) {
+            continue;
+        }
+
+        if (!properties[textureProperty.propertyIndex].IsNoStreaming()) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+void Material::RequestStreamingMaxDimension(uint32_t requestedMaxDimension) const {
+    for (const TextureProperty &textureProperty : internalData.textureProperties) {
+        const SharedPtr<Texture> &texture = textureProperty.texture;
+
+        if (texture && textureManager.IsRegisteredStreamingTexture(texture.get())) {
+            const Texture::Streaming *streaming = texture->GetStreaming();
+
+            // 실제 원본 텍스쳐의 최대 축 크기
+            uint32_t originalMaxDimension = BE1::Max3(streaming->originalWidth, streaming->originalHeight, streaming->originalDepth);
+
+            // 요청된 해상도와 원본 텍스쳐의 최대 축 크기를 비교하여, 스트리밍 시스템에 요청할 최대 해상도를 결정한다.
+            texture->RequestStreamingMaxDimension(BE1::Min(requestedMaxDimension, originalMaxDimension));
         }
     }
 }
