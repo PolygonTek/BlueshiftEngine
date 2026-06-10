@@ -179,6 +179,8 @@ VisObject *RenderWorld::RegisterVisObject(RenderFrameData *frameData, const Rend
 void RenderWorld::FindVisObjects(RenderFrameData *frameData, const RenderCamera *renderCamera, VisCamera *visCamera) {
     PROFILER_CPU_SCOPED_EVENT("RenderWorld::FindVisObjects");
 
+    const uint32_t startVisibleObjectCount = frameData->NumVisObjects();
+
     visCamera->worldAABB.Clear();
 
 #ifdef USE_DBVT
@@ -244,6 +246,8 @@ void RenderWorld::FindVisObjects(RenderFrameData *frameData, const RenderCamera 
         visCamera->worldAABB.AddAABB(renderObject->worldAABB);
     }
 #endif
+
+    frameData->AddObjectStats(static_cast<uint32_t>(renderObjects.Count()), frameData->NumVisObjects() - startVisibleObjectCount);
 }
 
 void RenderWorld::UpdateSkinningJointCaches(RenderFrameData *frameData, VisObject **visObjects, uint32_t numVisObjects, uint32_t numSkinningJoints) {
@@ -388,7 +392,7 @@ void RenderWorld::AddMeshes(RenderFrameData *frameData, const RenderCamera *rend
         }
 
         // FIXME: 일단 무조건 인스턴싱을 켠다. material 에 옵션을 넣자
-        VisSurfFlag flags = VisSurfFlag::Visible | VisSurfFlag::UseInstancing;
+        VisSurfFlag flags = VisSurfFlag::CameraVisible | VisSurfFlag::UseInstancing;
         const int numSurfaces = visObject->meshInstance->NumSurfaces();
         const bool cullSurfaces = numSurfaces > 1;
 

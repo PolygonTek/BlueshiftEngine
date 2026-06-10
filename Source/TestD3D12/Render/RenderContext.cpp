@@ -180,7 +180,9 @@ void RenderContext::UpdateGpuFrameTime(float frameMsec) {
     }
 }
 
-void RenderContext::SetRenderStats(uint32_t drawCount, uint64_t drawTriangleCount) {
+void RenderContext::SetRenderStats(uint32_t renderObjectCount, uint32_t visibleObjectCount, uint32_t drawCount, uint64_t drawTriangleCount) {
+    statRenderObjectCount.store(renderObjectCount);
+    statVisibleObjectCount.store(visibleObjectCount);
     statDrawCount.store(drawCount);
     statDrawTriangleCount.store(drawTriangleCount);
 }

@@ -148,7 +148,7 @@ void RenderBackend::DrawLitSurfacesInstanced(const PassDrawSurf **drawSurfs, uin
     do {
         uint32_t currentInstanceCount = BE1::Min(instanceCount, MaxDrawInstanceCount);
 
-        DrawLitSurfaceInstanced(frameData->GetThreadData(0), mainCommandList, drawSurfs, currentInstanceCount, statDrawCount, statTriangleCount);
+        DrawLitSurfaceInstanced(frameData->GetThreadData(0), mainCommandList, drawSurfs, currentInstanceCount, statDrawCount, statDrawTriangleCount);
 
         drawSurfs += currentInstanceCount;
         instanceCount -= currentInstanceCount;
@@ -181,7 +181,7 @@ void RenderBackend::DrawLitSurfacesWithoutTask(const PassDrawSurf **drawSurfs, u
             RHI::renderer->SetIndexBuffer(mainCommandList, currentSubMesh->indexBuffer);
         }
 
-        DrawLitSurface(frameData->GetThreadData(0), mainCommandList, drawSurf, statDrawCount, statTriangleCount);
+        DrawLitSurface(frameData->GetThreadData(0), mainCommandList, drawSurf, statDrawCount, statDrawTriangleCount);
     }
 }
 

@@ -82,7 +82,7 @@ private:
     void                            DrawLitSurfaceInstanced(RHI::FrameThreadData *frameThreadData, RHI::CommandList *commandList, const PassDrawSurf **instanceSurfs, int instanceCount, uint32_t &drawCount, uint64_t &drawTriangleCount);
     void                            DrawGuiSurface(RHI::FrameThreadData *frameThreadData, RHI::CommandList *commandList, const PassDrawSurf *drawSurf, uint32_t &drawCount, uint64_t &drawTriangleCount);
 
-    void                            RecordDrawStats(uint32_t drawCount, uint64_t triangleCount);
+    void                            RecordDrawStats(uint32_t drawCount, uint64_t drawTriangleCount);
     bool                            UploadFrameConstants();
 
     void                            BeginGpuFrameTiming(RHI::CommandList *commandList);
@@ -106,7 +106,7 @@ private:
     int                             statRenderFrameCount = 0;
     std::atomic<float>              statRenderAverageUsec = 0;
     uint32_t                        statDrawCount = 0;
-    uint64_t                        statTriangleCount = 0;
+    uint64_t                        statDrawTriangleCount = 0;
 
     uint64_t                        gpuTimestampFrequency = 0;
     RHI::QueryHeap *                gpuTimestampQueryHeap = nullptr;

@@ -131,6 +131,9 @@ public:
 
     bool                            IsStatEnabled() const { return statEnabled; }
     void                            SetStatEnabled(bool enabled) { statEnabled = enabled; }
+    void                            AddObjectStats(uint32_t renderObjectCount, uint32_t visibleObjectCount);
+    uint32_t                        GetStatRenderObjectCount() const { return statRenderObjectCount; }
+    uint32_t                        GetStatVisibleObjectCount() const { return statVisibleObjectCount; }
 
     Material *                      RetainMaterial(const SharedPtr<Material> &material);
     MeshInstance *                  RetainMeshInstance(const SharedPtr<MeshInstance> &meshInstance);
@@ -201,6 +204,8 @@ private:
     static uint64_t                 globalFrameSerial;
 
     bool                            statEnabled = false;
+    uint32_t                        statRenderObjectCount = 0;
+    uint32_t                        statVisibleObjectCount = 0;
 
     RHI::FrameThreadData **         threadData = nullptr;
     int                             numRenderTaskThreads = 0;
@@ -226,6 +231,8 @@ BE_INLINE void RenderFrameData::BeginFrame() {
     WaitFrameFence();
 
     statEnabled = false;
+    statRenderObjectCount = 0;
+    statVisibleObjectCount = 0;
 
     // 스레드 별로 사용할 자원을 초기화한다.
     for (int32_t threadIndex = 0; threadIndex < numRenderTaskThreads; ++threadIndex) {
@@ -236,6 +243,15 @@ BE_INLINE void RenderFrameData::BeginFrame() {
 
     // 프레임 메모리를 초기화한다.
     BeginFrameMemAllocs();
+}
+
+BE_INLINE void RenderFrameData::AddObjectStats(uint32_t renderObjectCount, uint32_t visibleObjectCount) {
+    if (!statEnabled) {
+        return;
+    }
+
+    statRenderObjectCount += renderObjectCount;
+    statVisibleObjectCount += visibleObjectCount;
 }
 
 BE_INLINE void RenderFrameData::EndFrame() {

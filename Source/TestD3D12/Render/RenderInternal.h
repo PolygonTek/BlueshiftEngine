@@ -26,7 +26,7 @@
 
 enum class VisSurfFlag : uint8_t {
     None                        = 0,
-    Visible                     = BIT(0),           ///< Surface is visible by camera
+    CameraVisible               = BIT(0),           ///< Surface is visible by camera
     ShadowVisible               = BIT(1),           ///< Shadow of surface is visible by camera
     ShowWires                   = BIT(2),
     SkipSelection               = BIT(3),

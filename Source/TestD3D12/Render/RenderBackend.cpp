@@ -206,13 +206,13 @@ void RenderBackend::Execute(RenderFrameData *frameData) {
     UpdateRenderFrameTime(t1 - t0);
 }
 
-void RenderBackend::RecordDrawStats(uint32_t drawCount, uint64_t triangleCount) {
+void RenderBackend::RecordDrawStats(uint32_t drawCount, uint64_t drawTriangleCount) {
     if (!frameData->IsStatEnabled()) {
         return;
     }
 
     statDrawCount += drawCount;
-    statTriangleCount += triangleCount;
+    statDrawTriangleCount += drawTriangleCount;
 }
 
 bool RenderBackend::UploadFrameConstants() {
@@ -239,7 +239,7 @@ const void *RenderBackend::ExecuteBeginContext(const void *data) {
     currentImagePSO = cmd->imagePSO;
 
     statDrawCount = 0;
-    statTriangleCount = 0;
+    statDrawTriangleCount = 0;
 
     mainCommandList = frameData->GetThreadData(0)->BeginCommandList(RHI::CommandQueueType::Graphics);
 
@@ -386,7 +386,7 @@ const void *RenderBackend::ExecuteSwapBuffers(const void *data) {
     SetGpuFrameTimingFence(fenceValue);
 
     if (frameData->IsStatEnabled()) {
-        currentContext->SetRenderStats(statDrawCount, statTriangleCount);
+        currentContext->SetRenderStats(frameData->GetStatRenderObjectCount(), frameData->GetStatVisibleObjectCount(), statDrawCount, statDrawTriangleCount);
     }
 
 #ifdef USE_MIPMAP_STREAMING
@@ -454,6 +454,6 @@ void RenderBackend::DrawGuiPass(const RenderPass *renderPass) {
             RHI::renderer->SetIndexBuffer(mainCommandList, currentSubMesh->indexBuffer);
         }
 
-        DrawGuiSurface(frameData->GetThreadData(0), mainCommandList, drawSurf, statDrawCount, statTriangleCount);
+        DrawGuiSurface(frameData->GetThreadData(0), mainCommandList, drawSurf, statDrawCount, statDrawTriangleCount);
     }
 }
