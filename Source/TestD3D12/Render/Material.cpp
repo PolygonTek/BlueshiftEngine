@@ -296,7 +296,7 @@ SharedPtr<ShaderPipeline> Material::GetGraphicsPipeline(const ShaderFeatureSet &
     materialDesc.rasterizerStateType = GetMaterialRasterizerStateType(baseDesc.rasterizerStateType, internalData.cullMode);
     materialDesc.blendStateType = internalData.renderingMode == RenderingMode::Blend ? internalData.blendType : RHI::BlendStateType::Disabled;
 
-    return shaderPipelineCache.GetGraphicsPipeline(internalData.shaderTemplate, EnsurePermutation(featureSet), materialDesc);
+    return shaderPipelineCache.GetGraphicsPipeline(internalData.shaderTemplate, EnsurePermutation(featureSet), materialDesc, true);
 }
 
 bool Material::Create(const char *text, const char *baseDir) {

@@ -94,10 +94,14 @@ public:
 
     void                            Reset();
 
+    bool                            WaitReady();
+    bool                            WaitLoadComplete();
+
     bool                            PreparePSO(const ShaderPipelineBuildData &buildData, RHI::PipelineState *&preparedPSO) const;
 
 private:
     void                            Purge();
+    bool                            Build(const SharedPtr<ShaderTemplate> &shaderTemplate);
     void                            BuildAsync(const SharedPtr<ShaderTemplate> &shaderTemplate);
     void                            EnsureBuildAsync(const SharedPtr<ShaderTemplate> &shaderTemplate);
     bool                            EnqueueBuild(const SharedPtr<ShaderTemplate> &shaderTemplate);

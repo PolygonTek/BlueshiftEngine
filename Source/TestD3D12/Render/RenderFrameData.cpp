@@ -40,13 +40,13 @@ void RenderFrameData::CmdBeginContext(RenderContext *context) {
 
     cmd->commandId = RenderCommandId::BeginContext;
     cmd->renderContext = context;
-    cmd->pipelines = RenderContextPipelineSnapshot();
+    cmd->imagePSO = nullptr;
 
     if (!context) {
         return;
     }
 
-    cmd->pipelines.imagePSO = SnapshotPSO(context->imagePSO);
+    cmd->imagePSO = SnapshotPSO(context->imagePSO);
 }
 
 void RenderFrameData::Init(int32_t frameIndex, int32_t numFrames) {

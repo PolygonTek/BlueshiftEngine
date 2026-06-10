@@ -235,7 +235,7 @@ const void *RenderBackend::ExecuteBeginContext(const void *data) {
     const BeginContextRenderCommand *cmd = reinterpret_cast<const BeginContextRenderCommand *>(data);
 
     currentContext = cmd->renderContext;
-    currentPipelines = cmd->pipelines;
+    currentImagePSO = cmd->imagePSO;
     currentContext->BeginRenderStatsFrame();
 
     mainCommandList = frameData->GetThreadData(0)->BeginCommandList(RHI::CommandQueueType::Graphics);
@@ -362,8 +362,8 @@ const void *RenderBackend::ExecuteSwapBuffers(const void *data) {
     RHI::renderer->SetScissorRect(mainCommandList, currentVisCamera->renderRect);
 
     RHI::renderer->BeginRenderPass(mainCommandList, currentContext->swapChain, nullptr);
-    if (currentPipelines.imagePSO) {
-        RHI::renderer->SetPSO(mainCommandList, currentPipelines.imagePSO);
+    if (currentImagePSO) {
+        RHI::renderer->SetPSO(mainCommandList, currentImagePSO);
         RHI::renderer->SetTexture(mainCommandList, 0, false, currentContext->mainRTColorTexture);
         RHI::renderer->Draw(mainCommandList, 3, 0);
         RecordDrawStats(1, 1);

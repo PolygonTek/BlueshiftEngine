@@ -159,7 +159,7 @@ void RenderContext::InitFullScreenTrianglePSO() {
     pipelineDesc.renderDest = renderDest;
     pipelineDesc.depthStencilStateType = RHI::DepthStencilStateType::Never;
     pipelineDesc.blendStateType = RHI::BlendStateType::Disabled;
-    imagePSO = shaderPipelineCache.GetGraphicsPipeline(shaderTemplateManager.fullscreenImageShaderTemplate, ShaderPermutationKey(), pipelineDesc);
+    imagePSO = shaderPipelineCache.GetGraphicsPipeline(shaderTemplateManager.fullscreenImageShaderTemplate, ShaderPermutationKey(), pipelineDesc, false);
 }
 
 void RenderContext::WaitAllFrameFences() {

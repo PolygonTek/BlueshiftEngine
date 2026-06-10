@@ -92,7 +92,7 @@ private:
     RenderContext *                 currentContext = nullptr;
     RHI::CommandList *              mainCommandList = nullptr;
     uint32_t                        frameCount = 0;
-    RenderContextPipelineSnapshot   currentPipelines;
+    RHI::PipelineState *            currentImagePSO = nullptr;
     RHI::ConstantBuffer *           frameConstantBuffer = nullptr;
 
     const VisCamera *               currentVisCamera = nullptr;

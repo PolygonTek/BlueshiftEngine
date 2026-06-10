@@ -211,7 +211,33 @@ bool ShaderPipeline::PreparePSO(const ShaderPipelineBuildData &buildData, RHI::P
     return preparedPSO != nullptr;
 }
 
+bool ShaderPipeline::Build(const SharedPtr<ShaderTemplate> &shaderTemplate) {
+    if (!shaderTemplate) {
+        return false;
+    }
+
+    ShaderPipelineBuildData buildData;
+    if (!shaderTemplate->PreparePipelineBuildData(permutationKey, buildData)) {
+        return false;
+    }
+
+    RHI::PipelineState *preparedPSO = nullptr;
+    if (!PreparePSO(buildData, preparedPSO)) {
+        return false;
+    }
+
+    BumpBuildSerial(); // 진행 중인 async completion 무효화
+
+    SetPSO(preparedPSO);
+    state = State::Ready;
+    return true;
+}
+
 void ShaderPipeline::BuildAsync(const SharedPtr<ShaderTemplate> &shaderTemplate) {
+    if (!shaderTemplate) {
+        return;
+    }
+
     state = pso ? State::Rebuilding : State::Building;
 
     if (!EnqueueBuild(shaderTemplate)) {
@@ -220,6 +246,10 @@ void ShaderPipeline::BuildAsync(const SharedPtr<ShaderTemplate> &shaderTemplate)
 }
 
 void ShaderPipeline::EnsureBuildAsync(const SharedPtr<ShaderTemplate> &shaderTemplate) {
+    if (!shaderTemplate) {
+        return;
+    }
+
     // state == State::Empty 일 때만 BuildAsync() 를 실행한다.
     State expected = State::Empty;
     if (!state.compare_exchange_strong(expected, State::Building)) {
@@ -232,6 +262,10 @@ void ShaderPipeline::EnsureBuildAsync(const SharedPtr<ShaderTemplate> &shaderTem
 }
 
 bool ShaderPipeline::EnqueueBuild(const SharedPtr<ShaderTemplate> &shaderTemplate) {
+    if (!shaderTemplate) {
+        return false;
+    }
+
     uint32_t newSerial = BumpBuildSerial();
 
     ShaderPipelineBuildData buildData;
@@ -243,4 +277,36 @@ bool ShaderPipeline::EnqueueBuild(const SharedPtr<ShaderTemplate> &shaderTemplat
         return false;
     }
     return true;
+}
+
+bool ShaderPipeline::WaitReady() {
+    assert(BE1::Engine::IsInMainThread());
+
+    if (GetState() == State::Building) {
+        loadingSystem.BoostShaderPipelineBuild(this, GetBuildSerial(), LoadingSystem::LoadPriority::Critical);
+    }
+
+    while (GetState() == State::Building) {
+        loadingSystem.ProcessLoadCompletions();
+
+        BE1::PlatformThread::Yield();
+    }
+
+    return IsReady();
+}
+
+bool ShaderPipeline::WaitLoadComplete() {
+    assert(BE1::Engine::IsInMainThread());
+
+    if (IsBuilding()) {
+        loadingSystem.BoostShaderPipelineBuild(this, GetBuildSerial(), LoadingSystem::LoadPriority::Critical);
+    }
+
+    while (IsBuilding()) {
+        loadingSystem.ProcessLoadCompletions();
+
+        BE1::PlatformThread::Yield();
+    }
+
+    return GetState() == State::Ready;
 }

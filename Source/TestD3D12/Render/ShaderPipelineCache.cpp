@@ -55,7 +55,7 @@ uint64_t ShaderPipelineCache::GenerateGraphicsPipelineCacheHash(const ShaderTemp
     return hash;
 }
 
-SharedPtr<ShaderPipeline> ShaderPipelineCache::GetGraphicsPipeline(const SharedPtr<ShaderTemplate> &shaderTemplate, ShaderPermutationKey permutationKey, const ShaderPipelineDesc &pipelineDesc) {
+SharedPtr<ShaderPipeline> ShaderPipelineCache::GetGraphicsPipeline(const SharedPtr<ShaderTemplate> &shaderTemplate, ShaderPermutationKey permutationKey, const ShaderPipelineDesc &pipelineDesc, bool async) {
     if (!shaderTemplate) {
         return nullptr;
     }
@@ -77,13 +77,17 @@ SharedPtr<ShaderPipeline> ShaderPipelineCache::GetGraphicsPipeline(const SharedP
     }
 
     if (pipeline->GetState() == ShaderPipeline::State::Empty) {
-        pipeline->EnsureBuildAsync(shaderTemplate);
+        if (async) {
+            pipeline->BuildAsync(shaderTemplate);
+        } else {
+            pipeline->Build(shaderTemplate);
+        }
     }
 
     return pipeline;
 }
 
-SharedPtr<ShaderPipeline> ShaderPipelineCache::GetComputePipeline(const SharedPtr<ShaderTemplate> &shaderTemplate, ShaderPermutationKey permutationKey) {
+SharedPtr<ShaderPipeline> ShaderPipelineCache::GetComputePipeline(const SharedPtr<ShaderTemplate> &shaderTemplate, ShaderPermutationKey permutationKey, bool async) {
     if (!shaderTemplate) {
         return nullptr;
     }
@@ -99,8 +103,12 @@ SharedPtr<ShaderPipeline> ShaderPipelineCache::GetComputePipeline(const SharedPt
         pipeline = cachedPipeline.pipeline;
     }
 
-    if (!pipeline->IsReady()) {
-        pipeline->EnsureBuildAsync(shaderTemplate);
+    if (pipeline->GetState() == ShaderPipeline::State::Empty) {
+        if (async) {
+            pipeline->BuildAsync(shaderTemplate);
+        } else {
+            pipeline->Build(shaderTemplate);
+        }
     }
 
     return pipeline;

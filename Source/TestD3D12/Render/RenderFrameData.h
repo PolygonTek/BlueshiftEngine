@@ -47,14 +47,10 @@ struct RenderCommandBuffer {
     uint32_t                        used = 0;
 };
 
-struct RenderContextPipelineSnapshot {
-    RHI::PipelineState *            imagePSO = nullptr;
-};
-
 struct BeginContextRenderCommand {
     RenderCommandId                 commandId;
     RenderContext *                 renderContext;
-    RenderContextPipelineSnapshot   pipelines;
+    RHI::PipelineState *            imagePSO = nullptr;
 };
 
 struct DrawCameraRenderCommand {
