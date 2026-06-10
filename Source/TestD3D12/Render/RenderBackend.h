@@ -53,6 +53,8 @@ private:
         const PassDrawSurf **       drawSurfs = nullptr;
         uint32_t                    numDrawSurfs = 0;
         RHI::CommandList *          commandList = nullptr;
+        uint32_t                    drawCount = 0;
+        uint64_t                    drawTriangleCount = 0;
     };
 
     const void *                    ExecuteBeginContext(const void *data);
@@ -76,9 +78,9 @@ private:
     void                            DrawLitSurfacesByTask(RenderBackend::DrawSurfsTaskDesc *taskDesc);
     static void                     DrawLitSurfacesByTaskFunction(void *data);
 
-    void                            DrawLitSurface(RHI::FrameThreadData *frameThreadData, RHI::CommandList *commandList, const PassDrawSurf *drawSurf);
-    void                            DrawLitSurfaceInstanced(RHI::FrameThreadData *frameThreadData, RHI::CommandList *commandList, const PassDrawSurf **instanceSurfs, int instanceCount);
-    void                            DrawGuiSurface(RHI::FrameThreadData *frameThreadData, RHI::CommandList *commandList, const PassDrawSurf *drawSurf);
+    void                            DrawLitSurface(RHI::FrameThreadData *frameThreadData, RHI::CommandList *commandList, const PassDrawSurf *drawSurf, uint32_t &drawCount, uint64_t &drawTriangleCount);
+    void                            DrawLitSurfaceInstanced(RHI::FrameThreadData *frameThreadData, RHI::CommandList *commandList, const PassDrawSurf **instanceSurfs, int instanceCount, uint32_t &drawCount, uint64_t &drawTriangleCount);
+    void                            DrawGuiSurface(RHI::FrameThreadData *frameThreadData, RHI::CommandList *commandList, const PassDrawSurf *drawSurf, uint32_t &drawCount, uint64_t &drawTriangleCount);
 
     void                            RecordDrawStats(uint32_t drawCount, uint64_t triangleCount);
     bool                            UploadFrameConstants();
@@ -103,6 +105,8 @@ private:
     uint64_t                        statRenderElapsedUsec = 0;
     int                             statRenderFrameCount = 0;
     std::atomic<float>              statRenderAverageUsec = 0;
+    uint32_t                        statDrawCount = 0;
+    uint64_t                        statTriangleCount = 0;
 
     uint64_t                        gpuTimestampFrequency = 0;
     RHI::QueryHeap *                gpuTimestampQueryHeap = nullptr;

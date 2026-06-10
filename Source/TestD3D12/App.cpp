@@ -339,14 +339,14 @@ void App::RenderText() {
         const float statRenderBackendMsec = renderSystem->GetBackend()->GetStatRenderAverageMsec();
         const float statGpuMsec = mainRenderContext->GetStatGpuAverageMsec();
         const uint32_t statDrawCount = mainRenderContext->GetStatDrawCount();
-        const uint64_t statTriangleCount = mainRenderContext->GetStatTriangleCount();
+        const uint64_t statDrawTriangleCount = mainRenderContext->GetStatDrawTriangleCount();
 
         mainRenderContext->DrawString(0, y, BE1::va("Frame: %.2f ms", statFrameAverageMsec), DrawTextFlag::Right | DrawTextFlag::AddOutlines); y += textLineHeight;
         mainRenderContext->DrawString(0, y, BE1::va("Game: %.2f ms", statGameAverageMsec), DrawTextFlag::Right | DrawTextFlag::AddOutlines); y += textLineHeight;
         mainRenderContext->DrawString(0, y, BE1::va("Render Frontend: %.2f ms", statRenderFrontendMsec), DrawTextFlag::Right | DrawTextFlag::AddOutlines); y += textLineHeight;
         mainRenderContext->DrawString(0, y, BE1::va("Render Backend: %.2f ms", statRenderBackendMsec), DrawTextFlag::Right | DrawTextFlag::AddOutlines); y += textLineHeight;
         mainRenderContext->DrawString(0, y, BE1::va("GPU: %.2f ms", statGpuMsec), DrawTextFlag::Right | DrawTextFlag::AddOutlines); y += textLineHeight;
-        mainRenderContext->DrawString(0, y, BE1::va("Draws: %u, Tris: %llu", statDrawCount, statTriangleCount), DrawTextFlag::Right | DrawTextFlag::AddOutlines); y += textLineHeight;
+        mainRenderContext->DrawString(0, y, BE1::va("Draws: %u, Tris: %llu", statDrawCount, statDrawTriangleCount), DrawTextFlag::Right | DrawTextFlag::AddOutlines); y += textLineHeight;
         mainRenderContext->DrawString(0, y, BE1::va("Video Memory: %s / %s", BE1::Str::FormatBytes(videoMemUsageBytes).c_str(), BE1::Str::FormatBytes(videoMemBudgetBytes).c_str()), DrawTextFlag::Right | DrawTextFlag::AddOutlines); y += textLineHeight;
         mainRenderContext->DrawString(0, y, BE1::va("Mipmap Streaming: %s / %s", BE1::Str::FormatBytes(textureStreamingUsageBytes).c_str(), BE1::Str::FormatBytes(textureStreamingBudgetBytes).c_str()), DrawTextFlag::Right | DrawTextFlag::AddOutlines); y += textLineHeight;
     }
