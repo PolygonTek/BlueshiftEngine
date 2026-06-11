@@ -101,17 +101,10 @@ void D3D12FrameThreadData::Init(D3D12Renderer *renderer, int32_t frameIndex, int
     const uint32_t numDynamicResDescriptors = 32768 / numThreads;
     dynamicResDescriptorPool = new D3D12DescriptorPool(D3D12Renderer::GetRenderer()->device, D3D12DescriptorPool::Type::CBV_SRV_UAV, numDynamicResDescriptors, false);
 
-    dynamicConstantBuffers.SetGranularity(256);
-    dynamicConstantBuffers.Reserve(256);
-
-    dynamicVertexBuffers.SetGranularity(256);
-    dynamicVertexBuffers.Reserve(256);
-
-    dynamicIndexBuffers.SetGranularity(256);
-    dynamicIndexBuffers.Reserve(256);
-
-    dynamicBuffers.SetGranularity(256);
-    dynamicBuffers.Reserve(256);
+    dynamicConstantBuffers.Reserve(1024);
+    dynamicVertexBuffers.Reserve(1024);
+    dynamicIndexBuffers.Reserve(1024);
+    dynamicBuffers.Reserve(1024);
 }
 
 void D3D12FrameThreadData::Shutdown() {
@@ -137,10 +130,10 @@ void D3D12FrameThreadData::Reset() {
     dynamicResDescriptorPool->Clear();
 
     // 다이나믹 버퍼들도 비운다.
-    dynamicConstantBuffers.SetCount(0, false);
-    dynamicVertexBuffers.SetCount(0, false);
-    dynamicIndexBuffers.SetCount(0, false);
-    dynamicBuffers.SetCount(0, false);
+    dynamicConstantBuffers.Reset();
+    dynamicVertexBuffers.Reset();
+    dynamicIndexBuffers.Reset();
+    dynamicBuffers.Reset();
 
     // 디스크립터 테이블 풀을 비운다.
     resDescriptorTablePool->Reset();

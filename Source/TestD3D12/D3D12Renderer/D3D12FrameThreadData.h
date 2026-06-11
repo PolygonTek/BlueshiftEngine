@@ -95,10 +95,10 @@ private:
     DynamicBufferBlock *            FindFreeDynamicBufferBlock(uint32_t size, uint32_t alignSize, uint32_t *outAlignedOffset) const;
 
     BE1::Array<DynamicBufferBlock *> dynamicBufferBlocks;
-    BE1::Array<D3D12ConstantBuffer> dynamicConstantBuffers;
-    BE1::Array<D3D12VertexBuffer>   dynamicVertexBuffers;
-    BE1::Array<D3D12IndexBuffer>    dynamicIndexBuffers;
-    BE1::Array<D3D12Buffer>         dynamicBuffers;
+    BE1::DynamicObjectAllocator<D3D12ConstantBuffer, 1024> dynamicConstantBuffers;
+    BE1::DynamicObjectAllocator<D3D12VertexBuffer, 1024> dynamicVertexBuffers;
+    BE1::DynamicObjectAllocator<D3D12IndexBuffer, 1024> dynamicIndexBuffers;
+    BE1::DynamicObjectAllocator<D3D12Buffer, 1024> dynamicBuffers;
     D3D12DescriptorPool *           dynamicResDescriptorPool = nullptr;
 
     D3D12CommandListPool *          graphicsCommandListPool = nullptr;

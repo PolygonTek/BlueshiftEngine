@@ -15,6 +15,7 @@
 #pragma once
 
 #include "Core/Heap.h"
+#include "Containers/Array.h"
 
 BE_NAMESPACE_BEGIN
 
@@ -31,55 +32,55 @@ public:
     /// Destructor.
     ~BlockAllocator();
 
-                        /// Prevents assignment operator.
-    BlockAllocator<T, N> &operator=(const BlockAllocator<T, N> &rhs) = delete;
+                            /// Prevents assignment operator.
+    BlockAllocator<T, N> &  operator=(const BlockAllocator<T, N> &rhs) = delete;
 
-                        /// Returns the count of allocated objects.
-    int                 GetAllocCount() const { return allocCount; }
+                            /// Returns the count of allocated objects.
+    int                     GetAllocCount() const { return allocCount; }
 
-                        /// Returns total size of allocated memory.
-    size_t              Allocated() const { return totalCount * sizeof(T); }
+                            /// Returns total size of allocated memory.
+    size_t                  Allocated() const { return totalCount * sizeof(T); }
 
-                        /// Returns total size of allocated memory including size of (*this).
-    size_t              Size() const { return sizeof(*this) + Allocated(); }
+                            /// Returns total size of allocated memory including size of (*this).
+    size_t                  Size() const { return sizeof(*this) + Allocated(); }
 
-                        /// Allocates a new object.
-    T *                 Alloc();
+                            /// Allocates a new object.
+    T *                     Alloc();
 
-                        /// Free an object.
-    void                Free(T *obj);
+                            /// Free an object.
+    void                    Free(T *obj);
 
-                        /// Reserves blocks.
-    void                ReserveBlocks(int numBlocks);
+                            /// Reserves blocks.
+    void                    ReserveBlocks(int numBlocks);
    
-                        /// Free empty blocks and rebuild free elements chain.
-    void                FreeEmptyBlocks();
+                            /// Free empty blocks and rebuild free elements chain.
+    void                    FreeEmptyBlocks();
 
-                        /// Free all allocated blocks.
-                        /// This function doesn't call destructor for each allocated objects.
-    void                FreeAllBlocks();
+                            /// Free all allocated blocks.
+                            /// This function doesn't call destructor for each allocated objects.
+    void                    FreeAllBlocks();
 
 private:
     union Element {
-        T *             data;                   // T *
-        Element *       next;                   // next free element
-        byte            buffer[AlignUp(Max(sizeof(T), sizeof(Element *)), Alignment)];  // actual data that is aligned by
+        T *                 data;                   // T *
+        Element *           next;                   // next free element
+        byte                buffer[AlignUp(Max(sizeof(T), sizeof(Element *)), Alignment)];  // actual data that is aligned by
     };
 
     struct Block {
-        Element         elements[N];            // each blocks have fixed count of elements
-        Block *         next;                   // next block
-        Element *       free;                   // list with free elements in this block (temp used only by FreeEmptyBlocks)
-        int             freeCount;              // number of free elements in this block (temp used only by FreeEmptyBlocks)
+        Element             elements[N];            // each blocks have fixed count of elements
+        Block *             next;                   // next block
+        Element *           free;                   // list with free elements in this block (temp used only by FreeEmptyBlocks)
+        int                 freeCount;              // number of free elements in this block (temp used only by FreeEmptyBlocks)
     };
 
-    void                AllocNewBlock();
+    void                    AllocNewBlock();
 
-    Block *             blocks;                 ///< Head pointer of the blocks
-    Element *           freeElements;           ///< Head pointer of the free elements
-    int                 totalCount;             ///< Total count of the allocated objects
-    int                 allocCount;             ///< Total count of the allocated objects in used
-    bool                clearedAllocs;
+    Block *                 blocks;                 ///< Head pointer of the blocks
+    Element *               freeElements;           ///< Head pointer of the free elements
+    int                     totalCount;             ///< Total count of the allocated objects
+    int                     allocCount;             ///< Total count of the allocated objects in used
+    bool                    clearedAllocs;
 };
 
 template <typename T, int N>
@@ -225,5 +226,56 @@ BE_INLINE void BlockAllocator<T, N>::FreeEmptyBlocks() {
         }
     }
 }
+
+/// BlockAllocator based allocator for transient objects.
+/// Returned object addresses stay valid until Reset() or Shutdown().
+template <typename T, int N>
+class DynamicObjectAllocator {
+public:
+    DynamicObjectAllocator(bool clear = false) :
+        blockAllocator(clear) {
+    }
+
+    DynamicObjectAllocator(const DynamicObjectAllocator<T, N> &rhs) = delete;
+    ~DynamicObjectAllocator() {
+        Shutdown();
+    }
+
+    DynamicObjectAllocator<T, N> &operator=(const DynamicObjectAllocator<T, N> &rhs) = delete;
+
+    int GetAllocCount() const { return allocatedObjects.Count(); }
+
+    void Reserve(int objectCount) {
+        blockAllocator.ReserveBlocks((objectCount + N - 1) / N);
+        allocatedObjects.Reserve(objectCount);
+    }
+
+    T &Alloc() {
+        T *object = blockAllocator.Alloc();
+        allocatedObjects.Append(object);
+        return *object;
+    }
+
+    void Reset() {
+        for (T *object : allocatedObjects) {
+            blockAllocator.Free(object);
+        }
+        allocatedObjects.SetCount(0, false);
+    }
+
+    void Shutdown() {
+        Reset();
+        blockAllocator.FreeAllBlocks();
+        allocatedObjects.Clear();
+    }
+
+    void FreeEmptyBlocks() {
+        blockAllocator.FreeEmptyBlocks();
+    }
+
+private:
+    BlockAllocator<T, N>    blockAllocator;
+    Array<T *>              allocatedObjects;
+};
 
 BE_NAMESPACE_END
