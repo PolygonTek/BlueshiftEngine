@@ -324,6 +324,7 @@ public:
     BE1::Str                            psoCacheDir;
 
     BE1::PlatformMutex *                psoMapMutex = nullptr;
+    std::atomic_uint32_t                nextPipelineStateSortIndex { 1 };
     BE1::HashMap<uint64_t, D3D12PipelineState *> graphicsPsoMap;
     BE1::HashMap<uint64_t, D3D12PipelineState *> computePsoMap;
 

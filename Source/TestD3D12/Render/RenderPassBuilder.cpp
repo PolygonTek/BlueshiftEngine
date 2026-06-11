@@ -103,29 +103,27 @@ void RenderPassBuilder::AddPassDrawSurf(RenderFrameData *frameData, RenderPass *
     renderPass->drawSurfs[renderPass->numDrawSurfs++] = passDrawSurf;
 }
 
-static uint64_t BuildMainOpaqueSortKey(const VisSurf *visSurf) {
-    //---------------------------------------------------
-    // 0xFFF0000000000000 (0~4095)  : visLight index
-    // 0x000F000000000000 (0~15)    : material sort
-    // 0x0000FFFF00000000 (0~65535) : subMesh index
-    // 0x00000000FFFF0000 (0~65535) : shader material index
-    // 0x000000000000FFFF (0~65535) : visObject index
-    //---------------------------------------------------
-
-    uint64_t shaderMaterialIndex = visSurf->shaderMaterialIndex & 0xFFFF;
+static uint64_t BuildMainOpaqueSortKey(const VisSurf *visSurf, RHI::PipelineState *pso) {
+    //-----------------------------------------------------------
+    // 0xFFFFFFFF00000000 (0~4294967295) : PSO sort index
+    // 0x00000000FFFF0000 (0~65535)      : subMesh index
+    // 0x000000000000FFFF (0~65535)      : shader material index
+    //-----------------------------------------------------------
+    uint64_t psoIndex = pso ? pso->sortIndex : 0;
     uint64_t subMeshIndex = visSurf->subMesh ? (visSurf->subMesh->GetID() & 0xFFFF) : 0;
-    uint64_t visObjectIndex = visSurf->space->index;
+    uint64_t shaderMaterialIndex = visSurf->shaderMaterialIndex & 0xFFFF;
 
-    return (subMeshIndex << 32) | (shaderMaterialIndex << 16) | visObjectIndex;
+    return (psoIndex << 32) | (subMeshIndex << 16) | shaderMaterialIndex;
 }
 
-static uint64_t BuildMainBlendSortKey(const VisSurf *visSurf) {
-    // 일단은 기존 order 유지에 가까운 key.
-    // 나중에 camera-space depth 기반 back-to-front 로 바꾸면 됨.
-    uint64_t shaderMaterialIndex = visSurf->shaderMaterialIndex & 0xFFFF;
-    uint64_t visObjectIndex = visSurf->space->index;
+static uint64_t BuildMainBlendSortKey(const VisSurf *visSurf, const VisCamera *visCamera) {
+    const BE1::Vec3 localCenter = visSurf->subMesh->GetAABB().Center();
+    const BE1::Vec3 worldCenter = visSurf->space->worldMatrix.TransformPos(localCenter);
+    const BE1::Vec3 viewCenter = visCamera->viewMatrix.TransformPos(worldCenter);
 
-    return (shaderMaterialIndex << 16) | visObjectIndex;
+    uint32_t bits;
+    memcpy(&bits, &viewCenter.z, sizeof(bits));
+    return (bits & 0x80000000u) ? ~bits : (bits ^ 0x80000000u);
 }
 
 void RenderPassBuilder::BuildMain(RenderFrameData *frameData, VisCamera *visCamera) {
@@ -156,7 +154,7 @@ void RenderPassBuilder::BuildMain(RenderFrameData *frameData, VisCamera *visCame
         ShaderFeatureSet featureSet = visSurf->baseFeatureSet | pass->passFeatureSet;
         RHI::PipelineState *pso = pipelineResolver.Resolve(inputLayoutId, visSurf->material, featureSet);
 
-        AddPassDrawSurf(frameData, pass, visSurf, isBlend ? BuildMainBlendSortKey(visSurf) : BuildMainOpaqueSortKey(visSurf), inputLayoutId, pso);
+        AddPassDrawSurf(frameData, pass, visSurf, isBlend ? BuildMainBlendSortKey(visSurf, visCamera) : BuildMainOpaqueSortKey(visSurf, pso), inputLayoutId, pso);
     }
 
     SortPassDrawSurfs(frameData, opaquePass);

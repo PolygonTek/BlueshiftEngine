@@ -79,6 +79,7 @@ struct VisCamera {
     static constexpr int        MaxVisSurfs = 0x10000;
     static constexpr int        MaxRenderPasses = 8;
 
+    ALIGN_AS32 BE1::Mat4        viewMatrix;
     ALIGN_AS32 BE1::Mat4        viewProjMatrix;
     ALIGN_AS32 BE1::AABB        worldAABB;
 

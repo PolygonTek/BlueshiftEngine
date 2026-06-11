@@ -19,7 +19,7 @@
 #include "RenderInternal.h"
 
 // 태스크 당 처리할 최대 Draw Call 횟수
-static constexpr uint32_t   MaxDrawSurfsPerTask = 1024;
+static constexpr uint32_t   MaxDrawSurfsPerTask = 2048;
 
 static bool CanBatchSurfaceInstances(const PassDrawSurf *baseDrawSurf, const PassDrawSurf *drawSurf) {
     return drawSurf->pso &&

@@ -85,6 +85,7 @@ void RenderWorld::RenderScene(const RenderCamera *renderCamera) {
     visCamera->renderRect = renderCamera->desc.renderRect;
     visCamera->clearMethod = RenderCameraClearMethod::Color;
     visCamera->clearColor = BE1::Color4(0, 0, 1, 1);
+    visCamera->viewMatrix = renderCamera->viewMatrix;
     visCamera->viewProjMatrix = renderCamera->viewProjMatrix;
     visCamera->worldAABB.Clear();
     visCamera->is2D = false;
@@ -533,6 +534,7 @@ void RenderWorld::DrawGUICamera(RenderFrameData *frameData, uint32_t screenWidth
     //visCamera->orthogonal = true;
     //visCamera->zNear = 0.0f;
     //visCamera->zFar = 1.0f;
+    visCamera->viewMatrix = BE1::Mat4::identity;
     visCamera->viewProjMatrix.SetOrthoRH(0, screenWidth, screenHeight, 0, -1.0, 1.0, true); // Y 를 뒤집는다.
     visCamera->worldAABB.Clear();
     visCamera->is2D = true;
