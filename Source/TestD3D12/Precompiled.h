@@ -40,9 +40,6 @@
 // 프레임 버퍼링 사용 여부
 #define USE_RENDER_FRAME_BUFFERING
 
-// 인스턴싱 사용 여부
-#define USE_RENDER_INSTANCED
-
 // 렌더타겟 텍스쳐 사용 여부
 #define USE_OFFSCREEN_MAIN_RENDER_TARGET
 

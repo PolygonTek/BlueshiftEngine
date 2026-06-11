@@ -19,8 +19,6 @@ bool ShaderFeatureSet::HasFeature(ShaderFeature feature) const {
     switch (feature) {
     case ShaderFeature::Perforated:
         return !!(flags & Perforated);
-    case ShaderFeature::GpuInstancing:
-        return !!(flags & GpuInstancing);
     case ShaderFeature::GpuSkinningWeight1:
         return !!(flags & GpuSkinningWeight1);
     case ShaderFeature::GpuSkinningWeight4:
@@ -36,9 +34,6 @@ void ShaderFeatureSet::EnableFeature(ShaderFeature feature) {
     switch (feature) {
     case ShaderFeature::Perforated:
         flags |= Perforated;
-        break;
-    case ShaderFeature::GpuInstancing:
-        flags |= GpuInstancing;
         break;
     case ShaderFeature::GpuSkinningWeight1:
         flags = (flags & ~GpuSkinningWeightMask) | GpuSkinningWeight1;

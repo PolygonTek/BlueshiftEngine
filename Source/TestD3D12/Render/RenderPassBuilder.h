@@ -60,7 +60,7 @@ public:
 
 private:
     RenderPass *                AllocRenderPass(RenderFrameData *frameData, VisCamera *visCamera, RenderPassType type, ShaderFeatureSet passFeatureSet, int maxDrawSurfs);
-    void                        AddPassDrawSurf(RenderFrameData *frameData, RenderPass *renderPass, const VisSurf *visSurf, uint64_t sortKey, VertexInputLayoutId inputLayoutId, RHI::PipelineState *basePSO, RHI::PipelineState *instancedPSO);
+    void                        AddPassDrawSurf(RenderFrameData *frameData, RenderPass *renderPass, const VisSurf *visSurf, uint64_t sortKey, VertexInputLayoutId inputLayoutId, RHI::PipelineState *pso);
     void                        SortPassDrawSurfs(RenderFrameData *frameData, RenderPass *renderPass);
 
     PassPipelineResolver        opaquePipelineResolver;

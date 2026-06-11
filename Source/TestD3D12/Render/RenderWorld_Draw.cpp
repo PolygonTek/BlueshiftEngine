@@ -221,8 +221,6 @@ void RenderWorld::FindVisObjects(RenderFrameData *frameData, const RenderCamera 
         }
 
         visObject->worldMatrix = renderObject->GetWorldMatrix();
-        //visObject->modelViewMatrix = renderCamera->viewMatrix * visObject->worldMatrix;
-        visObject->modelViewProjMatrix = renderCamera->viewProjMatrix * visObject->worldMatrix;
         visObject->cameraVisible = true;
 
         visCamera->worldAABB.AddAABB(renderObject->worldAABB);
@@ -240,8 +238,6 @@ void RenderWorld::FindVisObjects(RenderFrameData *frameData, const RenderCamera 
         }
 
         visObject->worldMatrix = renderObject->GetWorldMatrix();
-        //visObject->modelViewMatrix = renderCamera->viewMatrix * visObject->worldMatrix;
-        visObject->modelViewProjMatrix = renderCamera->viewProjMatrix * visObject->worldMatrix;
         visObject->cameraVisible = true;
 
         visCamera->worldAABB.AddAABB(renderObject->worldAABB);
@@ -392,8 +388,7 @@ void RenderWorld::AddMeshes(RenderFrameData *frameData, const RenderCamera *rend
             continue;
         }
 
-        // FIXME: 일단 무조건 인스턴싱을 켠다. material 에 옵션을 넣자
-        VisSurfFlag flags = VisSurfFlag::CameraVisible | VisSurfFlag::UseInstancing;
+        VisSurfFlag flags = VisSurfFlag::CameraVisible;
         const int numSurfaces = visObject->meshInstance->NumSurfaces();
         const bool cullSurfaces = numSurfaces > 1;
 
@@ -543,8 +538,7 @@ void RenderWorld::DrawGUICamera(RenderFrameData *frameData, uint32_t screenWidth
     visCamera->is2D = true;
 
     VisObject *visObject = frameData->AllocVisObject();
-    //visObject->modelViewMatrix.SetIdentity();
-    visObject->modelViewProjMatrix = visCamera->viewProjMatrix;
+    visObject->worldMatrix.SetIdentity();
 
     guiMesh.CacheIndexes(frameData->GetThreadData(0));
 

@@ -29,8 +29,7 @@ enum class VisSurfFlag : uint8_t {
     CameraVisible               = BIT(0),           ///< Surface is visible by camera
     ShadowVisible               = BIT(1),           ///< Shadow of surface is visible by camera
     ShowWires                   = BIT(2),
-    SkipSelection               = BIT(3),
-    UseInstancing               = BIT(4)
+    SkipSelection               = BIT(3)
 };
 
 template<>
@@ -53,8 +52,7 @@ struct PassDrawSurf {
     uint64_t                    sortKey = 0;
 
     VertexInputLayoutId         inputLayoutId = VertexInputLayoutId::XyzStColorNormalTangent;
-    RHI::PipelineState *        basePSO = nullptr;
-    RHI::PipelineState *        instancedPSO = nullptr;
+    RHI::PipelineState *        pso = nullptr;
 };
 
 enum class RenderPassType : uint8_t {
@@ -106,8 +104,6 @@ struct VisCamera {
 // 따라서 공유 자윈이 파괴되는 걸 방지하기 위해, 한 프레임 렌더링이 끝난 후 릴리즈하는 구조로 되어있다.
 struct VisObject {
     ALIGN_AS32 BE1::Mat3x4      worldMatrix;
-    //ALIGN_AS32 BE1::Mat3x4      modelViewMatrix;
-    ALIGN_AS32 BE1::Mat4        modelViewProjMatrix;
 
     uint32_t                    index = ~0;
 

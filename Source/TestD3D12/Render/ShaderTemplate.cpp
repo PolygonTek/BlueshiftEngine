@@ -525,8 +525,7 @@ static bool ParseShaderFeature(const BE1::Str &token, ShaderTemplate::Feature &o
         { "perforated",         ShaderTemplate::Feature::Perforated },
         { "gpuSkinningWeight1", ShaderTemplate::Feature::GpuSkinningWeight1 },
         { "gpuSkinningWeight4", ShaderTemplate::Feature::GpuSkinningWeight4 },
-        { "gpuSkinningWeight8", ShaderTemplate::Feature::GpuSkinningWeight8 },
-        { "gpuInstancing",      ShaderTemplate::Feature::GpuInstancing }
+        { "gpuSkinningWeight8", ShaderTemplate::Feature::GpuSkinningWeight8 }
     };
 
     for (const FeatureName &featureName : FeatureNames) {

@@ -48,6 +48,20 @@ void RenderFrameData::CmdBeginContext(RenderContext *context) {
     cmd->imagePSO = SnapshotPSO(context->imagePSO);
 }
 
+void RenderFrameData::CmdDrawCamera(const VisCamera *camera) {
+    DrawCameraRenderCommand *cmd = (DrawCameraRenderCommand *)GetCommandBuffer(sizeof(DrawCameraRenderCommand));
+    if (!cmd) {
+        return;
+    }
+
+    cmd->commandId = RenderCommandId::DrawCamera;
+    cmd->visCamera = camera;
+
+    if (camera) {
+        maxShaderSurfaceCount = BE1::Max(maxShaderSurfaceCount, camera->numVisSurfs);
+    }
+}
+
 void RenderFrameData::Init(int32_t frameIndex, int32_t numFrames) {
     InitMemBlocks();
 

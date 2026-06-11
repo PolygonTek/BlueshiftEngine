@@ -172,6 +172,7 @@ void RenderBackend::Execute(RenderFrameData *frameData) {
     this->frameData = frameData;
 
     frameConstantBuffer = nullptr;
+    cameraConstantBuffer = nullptr;
 
     const void *data = frameData->GetCommands()->buffer;
     bool finished = false;
@@ -222,10 +223,28 @@ bool RenderBackend::UploadFrameConstants() {
     }
 
     FrameConstants *constants = reinterpret_cast<FrameConstants *>(frameConstantBuffer->mappedPtr);
-    constants->feedbackBufferIndex = currentContext->textureStreamingFeedback.buffer ? currentContext->textureStreamingFeedback.buffer->GetBindlessIndex(RHI::ViewType::UAV) : 0;
     constants->shaderMaterialTableIndex = frameData->GetShaderMaterialTableBindlessIndex();
-    constants->surfaceTableIndex = 0; // 나중에 채운다.
+    constants->feedbackBufferIndex = currentContext->textureStreamingFeedback.buffer ? currentContext->textureStreamingFeedback.buffer->GetBindlessIndex(RHI::ViewType::UAV) : 0;
+    constants->padding0 = 0;
     constants->padding1 = 0;
+
+    return true;
+}
+
+bool RenderBackend::UploadCameraConstants() {
+    if (!currentVisCamera) {
+        return false;
+    }
+
+    cameraConstantBuffer = frameData->GetThreadData(0)->AllocConstant(sizeof(CameraConstants));
+    if (!cameraConstantBuffer) {
+        return false;
+    }
+
+    CameraConstants *constants = reinterpret_cast<CameraConstants *>(cameraConstantBuffer->mappedPtr);
+    static_assert(sizeof(constants->viewProjMatrix) == sizeof(currentVisCamera->viewProjMatrix));
+    BE1::simdProcessor->Memcpy(&constants->viewProjMatrix, &currentVisCamera->viewProjMatrix, sizeof(constants->viewProjMatrix));
+    constants->surfaceTableIndex = frameData->GetShaderSurfaceTableBindlessIndex();
 
     return true;
 }
@@ -245,13 +264,21 @@ const void *RenderBackend::ExecuteBeginContext(const void *data) {
 
     BeginGpuFrameTiming(mainCommandList);
 
-    // 등록된 셰이더 머티리얼 테이블을 GPU 에 업로드한다.
-    frameData->UploadShaderMaterialTable(mainCommandList);
-    assert(frameData->GetShaderMaterialTableBindlessIndex() != 0);
-
 #ifdef USE_MIPMAP_STREAMING
     currentContext->textureStreamingFeedback.Clear(mainCommandList);
 #endif
+
+    // 이번 프레임의 카메라들이 참조할 ShaderSurface 테이블 용량을 미리 확보한다.
+    if (!frameData->EnsureShaderSurfaceTableCapacity()) {
+        BE_WARNLOG("RenderBackend::ExecuteBeginContext: failed to ensure shader surface table capacity\n");
+        mainCommandList->CloseAndExecute();
+        return (const void *)(cmd + 1);
+    }
+    assert(frameData->GetShaderSurfaceTableBindlessIndex() != 0);
+
+    // 등록된 ShaderMaterial 테이블을 GPU 에 업로드한다.
+    frameData->UploadShaderMaterialTable(frameData->GetThreadData(0), mainCommandList);
+    assert(frameData->GetShaderMaterialTableBindlessIndex() != 0);
 
     // 이번 프레임에 사용할 상수 데이터들을 준비한다.
     UploadFrameConstants();
@@ -271,15 +298,23 @@ const void *RenderBackend::ExecuteDrawCamera(const void *data) {
     // 커맨드 리스트 풀에서 새로운 커맨드 리스트를 얻어온다.
     mainCommandList = frameData->GetThreadData(0)->BeginCommandList(RHI::CommandQueueType::Graphics);
 
+    // 현재 카메라에서 참조할 ShaderSurface 테이블을 GPU 에 업로드한다.
+    if (!frameData->UploadShaderSurfaceTable(frameData->GetThreadData(0), mainCommandList, currentVisCamera)) {
+        BE_WARNLOG("RenderBackend::ExecuteDrawCamera: failed to upload shader surface table\n");
+        mainCommandList->CloseAndExecute();
+        return (const void *)(cmd + 1);
+    }
+
+    // 현재 카메라의 상수 데이터들을 준비한다.
+    if (!UploadCameraConstants()) {
+        BE_WARNLOG("RenderBackend::ExecuteDrawCamera: failed to upload camera constants\n");
+        mainCommandList->CloseAndExecute();
+        return (const void *)(cmd + 1);
+    }
+
     // 뷰포트 & ScissorRect 의 초기값 설정
     RHI::renderer->SetViewport(mainCommandList, currentVisCamera->renderRect);
     RHI::renderer->SetScissorRect(mainCommandList, currentVisCamera->renderRect);
-
-    // 현재 카메라에서 참조할 surface table 을 GPU default buffer 로 업로드한다.
-    if (frameData->UploadShaderSurfaceTable(mainCommandList, currentVisCamera) && frameConstantBuffer) {
-        FrameConstants *constants = reinterpret_cast<FrameConstants *>(frameConstantBuffer->mappedPtr);
-        constants->surfaceTableIndex = frameData->GetShaderSurfaceTableBindlessIndex();
-    }
 
     RHI::ClearFlag clearFlags = RHI::ClearFlag::None;
     BE1::Color4 clearColor = BE1::Color4::black;
@@ -438,30 +473,65 @@ void RenderBackend::DrawCamera2D() {
     }
 }
 
+void RenderBackend::DrawMainPass(const RenderPass *renderPass) {
+    PROFILER_CPU_SCOPED_EVENT("RenderBackend::DrawMainPass");
+
+    const PassDrawSurf **drawSurfs = renderPass->drawSurfs;
+    const uint32_t numDrawSurfs = renderPass->numDrawSurfs;
+
+    for (uint32_t drawSurfIndex = 0; drawSurfIndex < numDrawSurfs; ++drawSurfIndex) {
+        const VisSurf *visSurf = drawSurfs[drawSurfIndex]->visSurf;
+
+        if (!visSurf->subMesh->vertexBuffer) {
+            visSurf->subMesh->UploadStaticDataToGPU();
+        }
+    }
+
+    if (numDrawSurfs > 0) {
+        DrawLitSurfaces(drawSurfs, numDrawSurfs);
+    }
+}
+
 void RenderBackend::DrawGuiPass(const RenderPass *renderPass) {
     PROFILER_CPU_SCOPED_EVENT("RenderBackend::DrawGuiPass");
 
     RHI::PipelineState *currentPSO = nullptr;
     const SubMesh *currentSubMesh = nullptr;
+    VertexInputLayoutId currentInputLayoutId = VertexInputLayoutId::Count;
 
-    for (uint32_t drawSurfIndex = 0; drawSurfIndex < renderPass->numDrawSurfs; ++drawSurfIndex) {
+    uint32_t drawSurfIndex = 0;
+    while (drawSurfIndex < renderPass->numDrawSurfs) {
         const PassDrawSurf *drawSurf = renderPass->drawSurfs[drawSurfIndex];
-        if (!drawSurf->basePSO) {
+        if (!drawSurf->pso) {
+            drawSurfIndex++;
             continue;
         }
 
-        if (currentPSO != drawSurf->basePSO) {
-            currentPSO = drawSurf->basePSO;
+        if (currentPSO != drawSurf->pso) {
+            currentPSO = drawSurf->pso;
             RHI::renderer->SetPSO(mainCommandList, currentPSO);
             RHI::renderer->SetConstantBuffer(mainCommandList, 0, frameConstantBuffer);
+            RHI::renderer->SetConstantBuffer(mainCommandList, 1, cameraConstantBuffer);
         }
 
-        if (currentSubMesh != drawSurf->visSurf->subMesh) {
+        if (currentSubMesh != drawSurf->visSurf->subMesh || currentInputLayoutId != drawSurf->inputLayoutId) {
             currentSubMesh = drawSurf->visSurf->subMesh;
-            RHI::renderer->SetVertexBuffer(mainCommandList, 0, currentSubMesh->vertexBuffer);
+            currentInputLayoutId = drawSurf->inputLayoutId;
+            SetPassVertexBuffers(mainCommandList, drawSurf);
             RHI::renderer->SetIndexBuffer(mainCommandList, currentSubMesh->indexBuffer);
         }
 
-        DrawGuiSurface(frameData->GetThreadData(0), mainCommandList, drawSurf, statDrawCount, statDrawTriangleCount);
+        const uint32_t instanceStartIndex = drawSurfIndex++;
+        while (drawSurfIndex < renderPass->numDrawSurfs) {
+            const PassDrawSurf *nextDrawSurf = renderPass->drawSurfs[drawSurfIndex];
+            if (nextDrawSurf->pso != drawSurf->pso ||
+                nextDrawSurf->visSurf->subMesh != drawSurf->visSurf->subMesh ||
+                nextDrawSurf->inputLayoutId != drawSurf->inputLayoutId) {
+                break;
+            }
+            drawSurfIndex++;
+        }
+
+        DrawSurfaceInstances(frameData->GetThreadData(0), mainCommandList, &renderPass->drawSurfs[instanceStartIndex], drawSurfIndex - instanceStartIndex, statDrawCount, statDrawTriangleCount);
     }
 }

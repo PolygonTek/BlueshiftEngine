@@ -32,16 +32,16 @@ public:
     uint32_t                        GetBindlessIndex() const { return bufferBindlessIndex; }
 
     uint32_t                        Register(const Material *material);
-    bool                            Upload(RHI::CommandList *commandList);
+    bool                            EnsureBufferCapacity(uint32_t count);
+
+    bool                            Upload(RHI::FrameThreadData *frameThreadData, RHI::CommandList *commandList, bool allowResize);
 
 private:
     void                            DestroyBuffers();
-    bool                            EnsureBufferCapacity(uint32_t count);
     void                            Build(const Material *material, ShaderMaterial &outShaderMaterial) const;
 
     BE1::Array<const Material *>    materials;
     BE1::HashIndex                  materialHash { 256, 256 };
-    RHI::Buffer *                   uploadBuffer = nullptr;
     RHI::Buffer *                   buffer = nullptr;
     RHI::ViewID                     bufferView = RHI::ViewID::InvalidID;
     RHI::GPUResourceState           bufferState = RHI::GPUResourceState::Undefined;
@@ -59,14 +59,14 @@ public:
 
     uint32_t                        GetBindlessIndex() const { return bufferBindlessIndex; }
 
-    bool                            Upload(RHI::CommandList *commandList, const VisCamera *visCamera);
+    bool                            EnsureBufferCapacity(uint32_t count);
+
+    bool                            Upload(RHI::FrameThreadData *frameThreadData, RHI::CommandList *commandList, const VisCamera *visCamera, bool allowResize);
 
 private:
     void                            DestroyBuffers();
-    bool                            EnsureBufferCapacity(uint32_t count);
     void                            Build(const VisSurf *visSurf, ShaderSurface &outShaderSurface) const;
 
-    RHI::Buffer *                   uploadBuffer = nullptr;
     RHI::Buffer *                   buffer = nullptr;
     RHI::ViewID                     bufferView = RHI::ViewID::InvalidID;
     RHI::GPUResourceState           bufferState = RHI::GPUResourceState::Undefined;

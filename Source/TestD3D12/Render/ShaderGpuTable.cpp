@@ -34,11 +34,6 @@ void ShaderMaterialTable::Clear() {
 }
 
 void ShaderMaterialTable::DestroyBuffers() {
-    if (uploadBuffer) {
-        RHI::renderer->DestroyBuffer(uploadBuffer);
-        uploadBuffer = nullptr;
-    }
-
     if (buffer) {
         RHI::renderer->DestroyBuffer(buffer);
         buffer = nullptr;
@@ -48,7 +43,6 @@ void ShaderMaterialTable::DestroyBuffers() {
     bufferState = RHI::GPUResourceState::Undefined;
     bufferCapacity = 0;
     bufferBindlessIndex = 0;
-    dirty = false;
 }
 
 bool ShaderMaterialTable::EnsureBufferCapacity(uint32_t count) {
@@ -64,17 +58,15 @@ bool ShaderMaterialTable::EnsureBufferCapacity(uint32_t count) {
 
     DestroyBuffers();
 
-    // 디폴트 버퍼와 업로드 버퍼를 생성한다.
+    // 디폴트 버퍼를 생성한다.
     uint32_t bufferSize = newCapacity * sizeof(ShaderMaterial);
     buffer = RHI::renderer->CreateBuffer(RHI::BufferUsage::Default, RHI::BufferFlag::ShaderResource, bufferSize, nullptr);
-    uploadBuffer = RHI::renderer->CreateBuffer(RHI::BufferUsage::Upload, RHI::BufferFlag::None, bufferSize, nullptr);
-    if (!buffer || !uploadBuffer) {
+    if (!buffer) {
         DestroyBuffers();
         return false;
     }
 
     RHI::renderer->SetName(buffer, "shaderMaterialTableBuffer");
-    RHI::renderer->SetName(uploadBuffer, "shaderMaterialTableUploadBuffer");
 
     bufferView = RHI::renderer->CreateView(buffer, RHI::ViewType::SRV, RHI::Format::Unknown, sizeof(ShaderMaterial), 0, bufferSize);
     if (!bufferView.IsValid()) {
@@ -150,13 +142,27 @@ uint32_t ShaderMaterialTable::Register(const Material *material) {
     return newShaderMaterialIndex;
 }
 
-bool ShaderMaterialTable::Upload(RHI::CommandList *commandList) {
+bool ShaderMaterialTable::Upload(RHI::FrameThreadData *frameThreadData, RHI::CommandList *commandList, bool allowResize) {
     if (!dirty || materials.Count() == 0) {
         return true;
     }
+    if (!frameThreadData || !commandList) {
+        return false;
+    }
 
     const int numMaterials = materials.Count();
-    if (!EnsureBufferCapacity(numMaterials)) {
+    if (numMaterials > bufferCapacity) {
+        assert(allowResize);
+        if (!allowResize) {
+            return false;
+        }
+        if (!EnsureBufferCapacity(numMaterials)) {
+            return false;
+        }
+    }
+
+    RHI::Buffer *uploadBuffer = frameThreadData->AllocStructuredBuffer(sizeof(ShaderMaterial), numMaterials, nullptr);
+    if (!uploadBuffer) {
         return false;
     }
 
@@ -190,11 +196,6 @@ void ShaderSurfaceTable::Clear() {
 }
 
 void ShaderSurfaceTable::DestroyBuffers() {
-    if (uploadBuffer) {
-        RHI::renderer->DestroyBuffer(uploadBuffer);
-        uploadBuffer = nullptr;
-    }
-
     if (buffer) {
         RHI::renderer->DestroyBuffer(buffer);
         buffer = nullptr;
@@ -220,14 +221,12 @@ bool ShaderSurfaceTable::EnsureBufferCapacity(uint32_t count) {
 
     const uint32_t bufferSize = newCapacity * sizeof(ShaderSurface);
     buffer = RHI::renderer->CreateBuffer(RHI::BufferUsage::Default, RHI::BufferFlag::ShaderResource, bufferSize, nullptr);
-    uploadBuffer = RHI::renderer->CreateBuffer(RHI::BufferUsage::Upload, RHI::BufferFlag::None, bufferSize, nullptr);
-    if (!buffer || !uploadBuffer) {
+    if (!buffer) {
         DestroyBuffers();
         return false;
     }
 
     RHI::renderer->SetName(buffer, "shaderSurfaceTableBuffer");
-    RHI::renderer->SetName(uploadBuffer, "shaderSurfaceTableUploadBuffer");
 
     bufferView = RHI::renderer->CreateView(buffer, RHI::ViewType::SRV, RHI::Format::Unknown, sizeof(ShaderSurface), 0, bufferSize);
     if (!bufferView.IsValid()) {
@@ -253,14 +252,28 @@ void ShaderSurfaceTable::Build(const VisSurf *visSurf, ShaderSurface &outShaderS
     outShaderSurface.padding2 = 0;
 }
 
-bool ShaderSurfaceTable::Upload(RHI::CommandList *commandList, const VisCamera *visCamera) {
+bool ShaderSurfaceTable::Upload(RHI::FrameThreadData *frameThreadData, RHI::CommandList *commandList, const VisCamera *visCamera, bool allowResize) {
     if (!visCamera || visCamera->numVisSurfs == 0) {
         Clear();
         return true;
     }
+    if (!frameThreadData || !commandList) {
+        return false;
+    }
 
     const uint32_t surfaceCount = visCamera->numVisSurfs;
-    if (!EnsureBufferCapacity(surfaceCount)) {
+    if (surfaceCount > bufferCapacity) {
+        assert(allowResize);
+        if (!allowResize) {
+            return false;
+        }
+        if (!EnsureBufferCapacity(surfaceCount)) {
+            return false;
+        }
+    }
+
+    RHI::Buffer *uploadBuffer = frameThreadData->AllocStructuredBuffer(sizeof(ShaderSurface), surfaceCount, nullptr);
+    if (!uploadBuffer) {
         return false;
     }
 

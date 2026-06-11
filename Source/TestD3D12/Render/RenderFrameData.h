@@ -144,8 +144,9 @@ public:
                                     // 셰이더 머티리얼 테이블에 머티리얼을 등록하고, 테이블 인덱스를 리턴한다.
     uint32_t                        RegisterShaderMaterial(const Material *material) { return shaderMaterialTable.Register(material); }
 
-    bool                            UploadShaderMaterialTable(RHI::CommandList *commandList) { return shaderMaterialTable.Upload(commandList); }
-    bool                            UploadShaderSurfaceTable(RHI::CommandList *commandList, const VisCamera *visCamera) { return shaderSurfaceTable.Upload(commandList, visCamera); }
+    bool                            UploadShaderMaterialTable(RHI::FrameThreadData *frameThreadData, RHI::CommandList *commandList) { return shaderMaterialTable.Upload(frameThreadData, commandList, true); }
+    bool                            UploadShaderSurfaceTable(RHI::FrameThreadData *frameThreadData, RHI::CommandList *commandList, const VisCamera *visCamera) { return shaderSurfaceTable.Upload(frameThreadData, commandList, visCamera, false); }
+    bool                            EnsureShaderSurfaceTableCapacity() { return shaderSurfaceTable.EnsureBufferCapacity(maxShaderSurfaceCount); }
 
                                     // 프론트 엔드에서 프레임 데이터의 사용을 시작
     void                            BeginFrame();
@@ -203,6 +204,7 @@ private:
     bool                            statEnabled = false;
     uint32_t                        statRenderObjectCount = 0;
     uint32_t                        statVisibleObjectCount = 0;
+    uint32_t                        maxShaderSurfaceCount = 0;
 
     RHI::FrameThreadData **         threadData = nullptr;
     int                             numRenderTaskThreads = 0;
@@ -222,6 +224,7 @@ BE_INLINE void RenderFrameData::BeginFrame() {
     statEnabled = false;
     statRenderObjectCount = 0;
     statVisibleObjectCount = 0;
+    maxShaderSurfaceCount = 0;
 
     // 스레드 별로 사용할 자원을 초기화한다.
     for (int32_t threadIndex = 0; threadIndex < numRenderTaskThreads; ++threadIndex) {
@@ -249,16 +252,6 @@ BE_INLINE void RenderFrameData::EndFrame() {
 
     // 커맨드 버퍼 비우기.
     commands.used = 0;
-}
-
-BE_INLINE void RenderFrameData::CmdDrawCamera(const VisCamera *camera) {
-    DrawCameraRenderCommand *cmd = (DrawCameraRenderCommand *)GetCommandBuffer(sizeof(DrawCameraRenderCommand));
-    if (!cmd) {
-        return;
-    }
-
-    cmd->commandId = RenderCommandId::DrawCamera;
-    cmd->visCamera = camera;
 }
 
 BE_INLINE void RenderFrameData::CmdSwapBuffers() {

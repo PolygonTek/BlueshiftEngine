@@ -312,12 +312,20 @@ RHI::Buffer *D3D12FrameThreadData::AllocShaderResourceBuffer(uint32_t size, uint
     srvEntry.gpuAddress = currentBlock->buffer->GetResource()->GetGPUVirtualAddress() + offset;
 
     D3D12Buffer &dynamicBuffer = dynamicBuffers.Alloc();
+#ifdef USE_D3D12_MEMALLOC
+    dynamicBuffer.bufferAllocation = currentBlock->buffer->bufferAllocation;
+    dynamicBuffer.bufferAllocation->AddRef();
+#else
+    dynamicBuffer.bufferResource = currentBlock->buffer->bufferResource;
+    dynamicBuffer.bufferResource->AddRef();
+#endif
     dynamicBuffer.srvEntries.SetCount(0, false);
     dynamicBuffer.srvEntries.Append(srvEntry);
     dynamicBuffer.uavEntries.SetCount(0, false);
     dynamicBuffer.mappedPtr = reinterpret_cast<byte *>(currentBlock->buffer->mappedPtr) + offset;
     dynamicBuffer.dynamicBlockIndex = currentBlock->blockIndex;
     dynamicBuffer.size = size;
+    dynamicBuffer.resourceOffset = offset;
     dynamicBuffer.flags = RHI::BufferFlag::ShaderResource;
 
     if (data) {

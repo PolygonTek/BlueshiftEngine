@@ -71,19 +71,18 @@ private:
     void                            SetPassVertexBuffers(RHI::CommandList *commandList, const PassDrawSurf *drawSurf) const;
 
     void                            DrawLitSurfaces(const PassDrawSurf **drawSurfs, uint32_t numDrawSurfs);
-    void                            DrawLitSurfacesInstanced(const PassDrawSurf **instanceSurfs, uint32_t instanceCount);
 
     void                            DrawLitSurfacesWithoutTask(const PassDrawSurf **drawSurfs, uint32_t numDrawSurfs);
     void                            DrawLitSurfacesWithTask(const PassDrawSurf **drawSurfs, uint32_t numDrawSurfs, uint32_t numTasks);
     void                            DrawLitSurfacesByTask(RenderBackend::DrawSurfsTaskDesc *taskDesc);
     static void                     DrawLitSurfacesByTaskFunction(void *data);
 
-    void                            DrawLitSurface(RHI::FrameThreadData *frameThreadData, RHI::CommandList *commandList, const PassDrawSurf *drawSurf, uint32_t &drawCount, uint64_t &drawTriangleCount);
-    void                            DrawLitSurfaceInstanced(RHI::FrameThreadData *frameThreadData, RHI::CommandList *commandList, const PassDrawSurf **instanceSurfs, int instanceCount, uint32_t &drawCount, uint64_t &drawTriangleCount);
-    void                            DrawGuiSurface(RHI::FrameThreadData *frameThreadData, RHI::CommandList *commandList, const PassDrawSurf *drawSurf, uint32_t &drawCount, uint64_t &drawTriangleCount);
+    RHI::Buffer *                   AllocInstanceToShaderSurfaceTable(RHI::FrameThreadData *frameThreadData, const PassDrawSurf **drawSurfs, uint32_t instanceCount) const;
+    void                            DrawSurfaceInstances(RHI::FrameThreadData *frameThreadData, RHI::CommandList *commandList, const PassDrawSurf **drawSurfs, uint32_t instanceCount, uint32_t &drawCount, uint64_t &drawTriangleCount);
 
     void                            RecordDrawStats(uint32_t drawCount, uint64_t drawTriangleCount);
     bool                            UploadFrameConstants();
+    bool                            UploadCameraConstants();
 
     void                            BeginGpuFrameTiming(RHI::CommandList *commandList);
     void                            EndGpuFrameTiming(RHI::CommandList *commandList);
@@ -96,6 +95,7 @@ private:
     uint32_t                        frameCount = 0;
     RHI::PipelineState *            currentImagePSO = nullptr;
     RHI::ConstantBuffer *           frameConstantBuffer = nullptr;
+    RHI::ConstantBuffer *           cameraConstantBuffer = nullptr;
 
     const VisCamera *               currentVisCamera = nullptr;
 

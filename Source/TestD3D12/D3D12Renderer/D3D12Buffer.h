@@ -81,6 +81,7 @@ private:
     ID3D12Resource *                bufferResource = nullptr;
 #endif
     uint64_t                        size = 0;
+    uint64_t                        resourceOffset = 0;
     RHI::BufferFlag                 flags = RHI::BufferFlag::None;
     int32_t                         dynamicBlockIndex = -1;
 
@@ -97,9 +98,5 @@ BE_INLINE ID3D12Resource *D3D12Buffer::GetResource() const {
 }
 
 BE_INLINE uint64_t D3D12Buffer::GetSize() {
-#ifdef USE_D3D12_MEMALLOC
-    return bufferAllocation ? bufferAllocation->GetSize() : size;
-#else
     return size;
-#endif
 }

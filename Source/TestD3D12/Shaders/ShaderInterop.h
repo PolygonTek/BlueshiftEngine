@@ -40,8 +40,6 @@ using uint4 = DirectX::XMUINT4;
 
 #endif // __cplusplus
 
-static const uint MaxDrawInstanceCount = 1024;
-
 static const uint TextureStreamingFeedbackResolution = 16384;
 static const uint TextureStreamingFeedbackMaxLOD = 14;
 static const uint TextureStreamingInvalidIndex = 0xFFFFFFFF;
@@ -64,8 +62,16 @@ struct MipGenParams {
 struct FrameConstants {
     uint shaderMaterialTableIndex;
     uint feedbackBufferIndex;
-    uint surfaceTableIndex;
+    uint padding0;
     uint padding1;
+};
+
+struct CameraConstants {
+    row_major float4x4 viewProjMatrix;
+    uint surfaceTableIndex;
+    uint padding0;
+    uint padding1;
+    uint padding2;
 };
 
 struct ShaderSurface {

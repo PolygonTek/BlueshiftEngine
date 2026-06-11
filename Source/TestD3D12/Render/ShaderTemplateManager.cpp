@@ -257,10 +257,6 @@ void ShaderTemplateManager::CreateEngineShaderTemplates() {
         }
 
         features {
-            gpuInstancing {
-                USE_INSTANCING=1
-            }
-
             gpuSkinningWeight1 {
                 GPU_SKINNING=1
                 GPU_SKINNING_WEIGHTS=1
@@ -291,10 +287,6 @@ void ShaderTemplateManager::CreateEngineShaderTemplates() {
         }
 
         features {
-            gpuInstancing {
-                USE_INSTANCING=1
-            }
-
             gpuSkinningWeight1 {
                 GPU_SKINNING=1
                 GPU_SKINNING_WEIGHTS=1

@@ -1022,7 +1022,7 @@ void D3D12Renderer::CopyBuffer(RHI::CommandList *commandList, const RHI::Buffer 
     const D3D12Buffer *_srcBuffer = static_cast<const D3D12Buffer *>(srcBuffer);
 
     D3D12CommandList *_commandList = static_cast<D3D12CommandList *>(commandList);
-    _commandList->GetGraphicsCommandList()->CopyBufferRegion(_dstBuffer->GetResource(), dstOffset, _srcBuffer->GetResource(), srcOffset, size);
+    _commandList->GetGraphicsCommandList()->CopyBufferRegion(_dstBuffer->GetResource(), _dstBuffer->resourceOffset + dstOffset, _srcBuffer->GetResource(), _srcBuffer->resourceOffset + srcOffset, size);
 }
 
 void D3D12Renderer::CopyTexture(RHI::CommandList *commandList, const RHI::Texture *dstTexture, uint32_t dstSlice, uint32_t dstMipLevel, uint32_t dstX, uint32_t dstY, uint32_t dstZ,

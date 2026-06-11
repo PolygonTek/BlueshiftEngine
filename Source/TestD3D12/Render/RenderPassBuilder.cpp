@@ -91,15 +91,14 @@ RenderPass *RenderPassBuilder::AllocRenderPass(RenderFrameData *frameData, VisCa
     return renderPass;
 }
 
-void RenderPassBuilder::AddPassDrawSurf(RenderFrameData *frameData, RenderPass *renderPass, const VisSurf *visSurf, uint64_t sortKey, VertexInputLayoutId inputLayoutId, RHI::PipelineState *basePSO, RHI::PipelineState *instancedPSO) {
+void RenderPassBuilder::AddPassDrawSurf(RenderFrameData *frameData, RenderPass *renderPass, const VisSurf *visSurf, uint64_t sortKey, VertexInputLayoutId inputLayoutId, RHI::PipelineState *pso) {
     assert(renderPass->numDrawSurfs < renderPass->maxDrawSurfs);
 
     PassDrawSurf *passDrawSurf = (PassDrawSurf *)frameData->MemAlloc(sizeof(PassDrawSurf));
     passDrawSurf->visSurf = visSurf;
     passDrawSurf->sortKey = sortKey;
     passDrawSurf->inputLayoutId = inputLayoutId;
-    passDrawSurf->basePSO = basePSO;
-    passDrawSurf->instancedPSO = instancedPSO;
+    passDrawSurf->pso = pso;
 
     renderPass->drawSurfs[renderPass->numDrawSurfs++] = passDrawSurf;
 }
@@ -144,8 +143,8 @@ void RenderPassBuilder::BuildMain(RenderFrameData *frameData, VisCamera *visCame
     RenderContext::activeContext->GetMainRenderDest(blendPass->pipelineDesc.renderDest);
     blendPass->pipelineDesc.inputLayout = &VertexInputLayoutFactory::Get(VertexInputLayoutId::XyzStColorNormalTangent);
 
-    opaquePipelineResolver.Begin(opaquePass->pipelineDesc, visCamera->numVisSurfs * 2);
-    blendPipelineResolver.Begin(blendPass->pipelineDesc, visCamera->numVisSurfs * 2);
+    opaquePipelineResolver.Begin(opaquePass->pipelineDesc, visCamera->numVisSurfs);
+    blendPipelineResolver.Begin(blendPass->pipelineDesc, visCamera->numVisSurfs);
 
     for (uint32_t i = 0; i < visCamera->numVisSurfs; ++i) {
         const VisSurf *visSurf = visCamera->visSurfs[i];
@@ -154,17 +153,10 @@ void RenderPassBuilder::BuildMain(RenderFrameData *frameData, VisCamera *visCame
         PassPipelineResolver &pipelineResolver = isBlend ? blendPipelineResolver : opaquePipelineResolver;
         const VertexInputLayoutId inputLayoutId = VertexInputLayoutFactory::GetSkinnedId(VertexInputLayoutId::XyzStColorNormalTangent, visSurf->subMesh->MaxVertexWeights());
 
-        ShaderFeatureSet baseFeatureSet = visSurf->baseFeatureSet | pass->passFeatureSet;
-        RHI::PipelineState *basePSO = pipelineResolver.Resolve(inputLayoutId, visSurf->material, baseFeatureSet);
+        ShaderFeatureSet featureSet = visSurf->baseFeatureSet | pass->passFeatureSet;
+        RHI::PipelineState *pso = pipelineResolver.Resolve(inputLayoutId, visSurf->material, featureSet);
 
-        RHI::PipelineState *instancedPSO = nullptr;
-        if (BE1::HasFlag(visSurf->flags, VisSurfFlag::UseInstancing)) {
-            ShaderFeatureSet instancedFeatureSet = baseFeatureSet;
-            instancedFeatureSet.EnableFeature(ShaderFeature::GpuInstancing);
-            instancedPSO = pipelineResolver.Resolve(inputLayoutId, visSurf->material, instancedFeatureSet);
-        }
-
-        AddPassDrawSurf(frameData, pass, visSurf, isBlend ? BuildMainBlendSortKey(visSurf) : BuildMainOpaqueSortKey(visSurf), inputLayoutId, basePSO, instancedPSO);
+        AddPassDrawSurf(frameData, pass, visSurf, isBlend ? BuildMainBlendSortKey(visSurf) : BuildMainOpaqueSortKey(visSurf), inputLayoutId, pso);
     }
 
     SortPassDrawSurfs(frameData, opaquePass);
@@ -188,9 +180,9 @@ void RenderPassBuilder::BuildGUI(RenderFrameData *frameData, VisCamera *visCamer
     for (uint32_t i = 0; i < visCamera->numVisSurfs; ++i) {
         const VisSurf *visSurf = visCamera->visSurfs[i];
         ShaderFeatureSet featureSet = visSurf->baseFeatureSet | guiPass->passFeatureSet;
-        RHI::PipelineState *basePSO = guiPipelineResolver.Resolve(VertexInputLayoutId::XyzStColor, visSurf->material, featureSet);
+        RHI::PipelineState *pso = guiPipelineResolver.Resolve(VertexInputLayoutId::XyzStColor, visSurf->material, featureSet);
 
-        AddPassDrawSurf(frameData, guiPass, visSurf, i, VertexInputLayoutId::XyzStColor, basePSO, nullptr);
+        AddPassDrawSurf(frameData, guiPass, visSurf, i, VertexInputLayoutId::XyzStColor, pso);
     }
 }
 
