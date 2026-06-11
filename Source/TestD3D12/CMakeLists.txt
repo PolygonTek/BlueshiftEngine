@@ -70,6 +70,8 @@ set(SRC_FILES
     Render/RenderContext.cpp
     Render/RenderFrameData.h
     Render/RenderFrameData.cpp
+    Render/ShaderGpuTable.h
+    Render/ShaderGpuTable.cpp
     Render/RenderSystem.h
     Render/RenderSystem.cpp
     Render/RenderBackend.h

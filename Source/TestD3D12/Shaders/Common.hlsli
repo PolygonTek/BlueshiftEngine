@@ -245,14 +245,14 @@ inline float ComputeTextureLod(in uint2 textureSize, in float2 dFdx_uv, in float
     return log2(lengthMinor);
 }
 
-inline void WriteMipmapFeedback(RWBuffer<uint> feedbackBuffer, in uint textureIndex, in float2 dFdx_uv, in float2 dFdy_uv) {
+inline void WriteMipmapFeedback(RWBuffer<uint> feedbackBuffer, in uint materialIndex, in float2 dFdx_uv, in float2 dFdy_uv) {
     const float lod = ComputeTextureLod(TextureStreamingFeedbackResolution, dFdx_uv, dFdy_uv);
     const uint clampedLod = (uint)clamp(lod, 0.0f, (float)TextureStreamingFeedbackMaxLOD);
     const uint resolution = TextureStreamingFeedbackResolution >> clampedLod;
     const uint resolutionMask = WaveActiveBitOr(resolution);
     
     if (WaveIsFirstLane()) {
-        InterlockedOr(feedbackBuffer[textureIndex], resolutionMask);
+        InterlockedOr(feedbackBuffer[materialIndex], resolutionMask);
     }
 }
 

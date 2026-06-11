@@ -17,7 +17,6 @@
 #include "RenderContext.h"
 #include "RenderInternal.h"
 #include "Material.h"
-#include "Texture.h"
 
 uint64_t                    RenderFrameData::globalFrameSerial = 0;
 static constexpr uint32_t   MaxRenderTaskThreads = 32;
@@ -66,6 +65,14 @@ void RenderFrameData::Init(int32_t frameIndex, int32_t numFrames) {
     for (int32_t threadIndex = 0; threadIndex < numRenderTaskThreads; ++threadIndex) {
         threadData[threadIndex] = RHI::renderer->CreateFrameThreadData(frameIndex, numFrames, threadIndex, numRenderTaskThreads);
     }
+
+    if (!shaderMaterialTable.Init()) {
+        BE_WARNLOG("RenderFrameData::Init: failed to initialize shader material table\n");
+    }
+
+    if (!shaderSurfaceTable.Init()) {
+        BE_WARNLOG("RenderFrameData::Init: failed to initialize shader surface table\n");
+    }
 }
 
 void RenderFrameData::Shutdown() {
@@ -86,7 +93,8 @@ void RenderFrameData::Shutdown() {
 
     ClearRetainedFonts();
 
-    DestroyShaderMaterialBuffers();
+    shaderMaterialTable.Shutdown();
+    shaderSurfaceTable.Shutdown();
 
     ClearMemBlocks();
 }
@@ -132,7 +140,8 @@ void RenderFrameData::BeginFrameMemAllocs() {
 
     ClearRetainedFonts();
 
-    ClearShaderMaterialTable();
+    shaderMaterialTable.Clear();
+    shaderSurfaceTable.Clear();
 
     // Reset the mem allocation to the first block.
     currentBlock = headBlock;
@@ -244,167 +253,6 @@ void RenderFrameData::ClearRetainedFonts() {
         retainedFonts[i].reset();
     }
     retainedFonts.SetCount(0, false);
-}
-
-void RenderFrameData::ClearShaderMaterialTable() {
-    shaderMaterialSources.SetCount(0, false);
-    shaderMaterialTable.SetCount(0, false);
-    shaderMaterialHash.Clear();
-    shaderMaterialTableDirty = false;
-}
-
-void RenderFrameData::DestroyShaderMaterialBuffers() {
-    if (shaderMaterialBuffer) {
-        RHI::renderer->DestroyBuffer(shaderMaterialBuffer);
-        shaderMaterialBuffer = nullptr;
-    }
-
-    if (shaderMaterialUploadBuffer) {
-        RHI::renderer->DestroyBuffer(shaderMaterialUploadBuffer);
-        shaderMaterialUploadBuffer = nullptr;
-    }
-
-    shaderMaterialBufferView = RHI::ViewID::InvalidID;
-    shaderMaterialBufferState = RHI::GPUResourceState::Undefined;
-    shaderMaterialBufferCapacity = 0;
-    shaderMaterialTableBindlessIndex = 0;
-    shaderMaterialTableDirty = false;
-}
-
-bool RenderFrameData::EnsureShaderMaterialBufferCapacity(uint32_t shaderMaterialCount) {
-    if (shaderMaterialCount <= shaderMaterialBufferCapacity) {
-        return true;
-    }
-
-    // 초기 개수는 256 으로 시작해서, 필요한 용량이 될 때까지 2배씩 늘린다.
-    uint32_t newCapacity = shaderMaterialBufferCapacity > 0 ? shaderMaterialBufferCapacity : 256;
-    while (newCapacity < shaderMaterialCount) {
-        newCapacity <<= 1;
-    }
-
-    DestroyShaderMaterialBuffers();
-
-    // 디폴트 버퍼와 업로드 버퍼를 생성한다.
-    uint32_t bufferSize = newCapacity * sizeof(ShaderMaterial);
-    shaderMaterialBuffer = RHI::renderer->CreateBuffer(RHI::BufferUsage::Default, RHI::BufferFlag::ShaderResource, bufferSize, nullptr);
-    shaderMaterialUploadBuffer = RHI::renderer->CreateBuffer(RHI::BufferUsage::Upload, RHI::BufferFlag::None, bufferSize, nullptr);
-    if (!shaderMaterialBuffer || !shaderMaterialUploadBuffer) {
-        DestroyShaderMaterialBuffers();
-        return false;
-    }
-
-    RHI::renderer->SetName(shaderMaterialBuffer, "shaderMaterialBuffer");
-    RHI::renderer->SetName(shaderMaterialUploadBuffer, "shaderMaterialUploadBuffer");
-
-    shaderMaterialBufferView = RHI::renderer->CreateView(shaderMaterialBuffer, RHI::ViewType::SRV, RHI::Format::Unknown, sizeof(ShaderMaterial), 0, bufferSize);
-    if (!shaderMaterialBufferView.IsValid()) {
-        DestroyShaderMaterialBuffers();
-        return false;
-    }
-
-    shaderMaterialBufferCapacity = newCapacity;
-    shaderMaterialBufferState = RHI::GPUResourceState::Undefined;
-    shaderMaterialTableBindlessIndex = shaderMaterialBuffer->GetBindlessIndex(RHI::ViewType::SRV, shaderMaterialBufferView);
-    return true;
-}
-
-static const Texture *GetDefaultMaterialTexture() {
-    if (textureManager.whiteTexture) {
-        return textureManager.whiteTexture.get();
-    }
-    if (textureManager.defaultTexture) {
-        return textureManager.defaultTexture.get();
-    }
-    return nullptr;
-}
-
-static const Texture *ResolveMaterialBaseColorTexture(const Material *material) {
-    if (material) {
-        const SharedPtr<Texture> *textureProperty = material->GetTextureProperty("baseColorTexture");
-        if (textureProperty && *textureProperty) {
-            return textureProperty->get();
-        }
-    }
-
-    return textureManager.defaultTexture.get();
-}
-
-static const RHI::Texture *GetReadyRHITexture(const Texture *texture) {
-    if (!texture || !texture->IsReadyForRendering()) {
-        return nullptr;
-    }
-
-    return texture->GetRHITexture();
-}
-
-void RenderFrameData::BuildShaderMaterial(const Material *material, ShaderMaterial &outShaderMaterial) const {
-    outShaderMaterial = {};
-    outShaderMaterial.streamingMaterialIndex = TextureStreamingInvalidIndex;
-    outShaderMaterial.baseColorFactor = float4(1.0f, 1.0f, 1.0f, 1.0f);
-
-    const Texture *texture = ResolveMaterialBaseColorTexture(material);
-    const RHI::Texture *rhiTexture = GetReadyRHITexture(texture);
-    if (!rhiTexture) {
-        texture = GetDefaultMaterialTexture();
-        rhiTexture = GetReadyRHITexture(texture);
-    }
-
-    if (rhiTexture) {
-        outShaderMaterial.baseColorTextureIndex = rhiTexture->GetBindlessIndex(RHI::ViewType::SRV);
-    }
-
-    if (material) {
-        outShaderMaterial.streamingMaterialIndex = material->GetStreamingListIndex();
-    }
-}
-
-uint32_t RenderFrameData::RegisterShaderMaterial(const Material *material) {
-    assert(material);
-
-    int hash = shaderMaterialHash.GenerateHash(material);
-    for (int index = shaderMaterialHash.First(hash); index != -1; index = shaderMaterialHash.Next(index)) {
-        const Material *sourceMaterial = shaderMaterialSources[index];
-        if (sourceMaterial == material) {
-            return index;
-        }
-    }
-
-    uint32_t newShaderMaterialIndex = shaderMaterialSources.Count();
-    shaderMaterialSources.Append(material);
-    shaderMaterialHash.Add(hash, newShaderMaterialIndex);
-    shaderMaterialTableDirty = true;
-
-    return newShaderMaterialIndex;
-}
-
-bool RenderFrameData::UploadShaderMaterialTable(RHI::CommandList *commandList) {
-    if (!shaderMaterialTableDirty || shaderMaterialSources.Count() == 0) {
-        return true;
-    }
-
-    // shader material 테이블을 구성한다.
-    const int numShaderMaterialSources = shaderMaterialSources.Count();
-    shaderMaterialTable.SetCount(numShaderMaterialSources, false);
-    for (int shaderMaterialIndex = 0; shaderMaterialIndex < numShaderMaterialSources; shaderMaterialIndex++) {
-        BuildShaderMaterial(shaderMaterialSources[shaderMaterialIndex], shaderMaterialTable[shaderMaterialIndex]);
-    }
-
-    if (!EnsureShaderMaterialBufferCapacity(shaderMaterialTable.Count())) {
-        return false;
-    }
-
-    // 업로드 버퍼에 shader material 테이블 데이터를 복사한다.
-    const uint32_t uploadSize = shaderMaterialTable.Count() * sizeof(ShaderMaterial);
-    BE1::simdProcessor->Memcpy(shaderMaterialUploadBuffer->mappedPtr, shaderMaterialTable.Ptr(), uploadSize);
-
-    // 디폴트 버퍼에 업로드 버퍼의 데이터를 복사한다.
-    RHI::renderer->Barrier(commandList, RHI::Renderer::MakeBufferBarrier(shaderMaterialBuffer, shaderMaterialBufferState, RHI::GPUResourceState::CopyDst));
-    RHI::renderer->CopyBuffer(commandList, shaderMaterialBuffer, 0, shaderMaterialUploadBuffer, 0, uploadSize);
-    RHI::renderer->Barrier(commandList, RHI::Renderer::MakeBufferBarrier(shaderMaterialBuffer, RHI::GPUResourceState::CopyDst, RHI::GPUResourceState::ShaderResource));
-
-    shaderMaterialBufferState = RHI::GPUResourceState::ShaderResource;
-    shaderMaterialTableDirty = false;
-    return true;
 }
 
 Material *RenderFrameData::RetainMaterial(const SharedPtr<Material> &material) {

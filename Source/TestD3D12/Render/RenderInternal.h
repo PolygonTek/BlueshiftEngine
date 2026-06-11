@@ -39,6 +39,7 @@ struct enable_bitmask_operators<VisSurfFlag> {
 };
 
 struct VisSurf {
+    uint32_t                    index = ~0u;
     const VisObject *           space = nullptr;
     const SubMesh *             subMesh = nullptr;
     const Material *            material = nullptr;

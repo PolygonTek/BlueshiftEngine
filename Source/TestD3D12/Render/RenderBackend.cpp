@@ -224,7 +224,7 @@ bool RenderBackend::UploadFrameConstants() {
     FrameConstants *constants = reinterpret_cast<FrameConstants *>(frameConstantBuffer->mappedPtr);
     constants->feedbackBufferIndex = currentContext->textureStreamingFeedback.buffer ? currentContext->textureStreamingFeedback.buffer->GetBindlessIndex(RHI::ViewType::UAV) : 0;
     constants->shaderMaterialTableIndex = frameData->GetShaderMaterialTableBindlessIndex();
-    constants->padding0 = 0;
+    constants->surfaceTableIndex = 0; // 나중에 채운다.
     constants->padding1 = 0;
 
     return true;
@@ -274,6 +274,12 @@ const void *RenderBackend::ExecuteDrawCamera(const void *data) {
     // 뷰포트 & ScissorRect 의 초기값 설정
     RHI::renderer->SetViewport(mainCommandList, currentVisCamera->renderRect);
     RHI::renderer->SetScissorRect(mainCommandList, currentVisCamera->renderRect);
+
+    // 현재 카메라에서 참조할 surface table 을 GPU default buffer 로 업로드한다.
+    if (frameData->UploadShaderSurfaceTable(mainCommandList, currentVisCamera) && frameConstantBuffer) {
+        FrameConstants *constants = reinterpret_cast<FrameConstants *>(frameConstantBuffer->mappedPtr);
+        constants->surfaceTableIndex = frameData->GetShaderSurfaceTableBindlessIndex();
+    }
 
     RHI::ClearFlag clearFlags = RHI::ClearFlag::None;
     BE1::Color4 clearColor = BE1::Color4::black;

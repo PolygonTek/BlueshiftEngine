@@ -54,6 +54,7 @@ void RenderWorld::AddVisSurf(RenderFrameData *frameData, VisCamera *visCamera, V
     assert(material);
 
     VisSurf *drawSurf = (VisSurf *)frameData->MemAlloc(sizeof(VisSurf));
+    drawSurf->index = visCamera->numVisSurfs;
     drawSurf->space = visObject;
     drawSurf->subMesh = subMesh;
     drawSurf->material = material;

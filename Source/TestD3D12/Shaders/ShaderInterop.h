@@ -22,6 +22,7 @@
 using float2 = DirectX::XMFLOAT2;
 using float3 = DirectX::XMFLOAT3;
 using float4 = DirectX::XMFLOAT4;
+using float3x4 = DirectX::XMFLOAT3X4;
 using float3x3 = DirectX::XMFLOAT3X3;
 using float4x4 = DirectX::XMFLOAT4X4;
 using int2 = DirectX::XMINT2;
@@ -60,20 +61,27 @@ struct MipGenParams {
     uint flags;
 };
 
+struct FrameConstants {
+    uint shaderMaterialTableIndex;
+    uint feedbackBufferIndex;
+    uint surfaceTableIndex;
+    uint padding1;
+};
+
+struct ShaderSurface {
+    row_major float3x4 worldMatrix;
+    uint shaderMaterialIndex;
+    uint padding0;
+    uint padding1;
+    uint padding2;
+};
+
 struct ShaderMaterial {
     uint baseColorTextureIndex;
     uint normalTextureIndex;
     uint emissiveTextureIndex;
     uint streamingMaterialIndex;
-    uint flags;
     float4 baseColorFactor;
-};
-
-struct FrameConstants {
-    uint shaderMaterialTableIndex;
-    uint feedbackBufferIndex;
-    uint padding0;
-    uint padding1;
 };
 
 #endif // SHADERINTEROP_H
