@@ -90,7 +90,7 @@ void RenderBackend::DrawLitSurfacesWithoutTask(const PassDrawSurf **drawSurfs, u
             drawSurfIndex++;
         }
 
-        DrawSurfaceInstances(frameData->GetThreadData(0), mainCommandList, &drawSurfs[instanceStartIndex], drawSurfIndex - instanceStartIndex, statDrawCount, statDrawTriangleCount);
+        DrawSurfaceInstances(frameData->GetThreadData(0), mainCommandList, &drawSurfs[instanceStartIndex], drawSurfIndex - instanceStartIndex, statDrawCount, statDrawTriangleCount, statInstanceTableAllocCount, statInstanceTableUploadBytes);
     }
 }
 
@@ -132,7 +132,7 @@ void RenderBackend::DrawLitSurfacesByTask(RenderBackend::DrawSurfsTaskDesc *task
             drawSurfIndex++;
         }
 
-        DrawSurfaceInstances(frameThreadData, commandList, &taskDesc->drawSurfs[instanceStartIndex], drawSurfIndex - instanceStartIndex, taskDesc->drawCount, taskDesc->drawTriangleCount);
+        DrawSurfaceInstances(frameThreadData, commandList, &taskDesc->drawSurfs[instanceStartIndex], drawSurfIndex - instanceStartIndex, taskDesc->drawCount, taskDesc->drawTriangleCount, taskDesc->instanceTableAllocCount, taskDesc->instanceTableUploadBytes);
     }
 
     // 세컨더리 커맨드 리스트의 기록을 마친다.
@@ -167,6 +167,8 @@ void RenderBackend::DrawLitSurfacesWithTask(const PassDrawSurf **drawSurfs, uint
         currentThreadDesc.numDrawSurfs = BE1::Min(startIndex + numDrawSurfsPerTask, numDrawSurfs) - startIndex;
         currentThreadDesc.drawCount = 0;
         currentThreadDesc.drawTriangleCount = 0;
+        currentThreadDesc.instanceTableAllocCount = 0;
+        currentThreadDesc.instanceTableUploadBytes = 0;
 
         BE1::Engine::taskManager->AddTask(RenderBackend::DrawLitSurfacesByTaskFunction, &currentThreadDesc, drawGroupId, false);
 
@@ -179,7 +181,7 @@ void RenderBackend::DrawLitSurfacesWithTask(const PassDrawSurf **drawSurfs, uint
     // 메인 커맨드 리스트에 모든 태스크의 세컨더리 커맨드 리스트들을 기록한다.
     const int32_t threadCount = drawSurfsTaskDescs.Count();
     for (int32_t threadIndex = 0; threadIndex < threadCount; ++threadIndex) {
-        RecordDrawStats(drawSurfsTaskDescs[threadIndex].drawCount, drawSurfsTaskDescs[threadIndex].drawTriangleCount);
+        RecordDrawStats(drawSurfsTaskDescs[threadIndex].drawCount, drawSurfsTaskDescs[threadIndex].drawTriangleCount, drawSurfsTaskDescs[threadIndex].instanceTableAllocCount, drawSurfsTaskDescs[threadIndex].instanceTableUploadBytes);
 
         mainCommandList->ExecuteSecondary(drawSurfsTaskDescs[threadIndex].commandList);
     }
@@ -199,7 +201,7 @@ RHI::Buffer *RenderBackend::AllocInstanceToShaderSurfaceTable(RHI::FrameThreadDa
     return buffer;
 }
 
-void RenderBackend::DrawSurfaceInstances(RHI::FrameThreadData *frameThreadData, RHI::CommandList *commandList, const PassDrawSurf **drawSurfs, uint32_t instanceCount, uint32_t &drawCount, uint64_t &drawTriangleCount) {
+void RenderBackend::DrawSurfaceInstances(RHI::FrameThreadData *frameThreadData, RHI::CommandList *commandList, const PassDrawSurf **drawSurfs, uint32_t instanceCount, uint32_t &drawCount, uint64_t &drawTriangleCount, uint32_t &instanceTableAllocCount, uint32_t &instanceTableUploadBytes) {
     assert(instanceCount > 0);
 
     const VisSurf *firstVisSurf = drawSurfs[0]->visSurf;
@@ -214,4 +216,6 @@ void RenderBackend::DrawSurfaceInstances(RHI::FrameThreadData *frameThreadData, 
 
     drawCount++;
     drawTriangleCount += firstVisSurf->subMesh->numIndexes / 3 * instanceCount;
+    instanceTableAllocCount++;
+    instanceTableUploadBytes += sizeof(uint32_t) * instanceCount;
 }

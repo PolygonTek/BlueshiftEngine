@@ -207,13 +207,15 @@ void RenderBackend::Execute(RenderFrameData *frameData) {
     UpdateRenderFrameTime(t1 - t0);
 }
 
-void RenderBackend::RecordDrawStats(uint32_t drawCount, uint64_t drawTriangleCount) {
+void RenderBackend::RecordDrawStats(uint32_t drawCount, uint64_t drawTriangleCount, uint32_t instanceTableAllocCount, uint32_t instanceTableUploadBytes) {
     if (!frameData->IsStatEnabled()) {
         return;
     }
 
     statDrawCount += drawCount;
     statDrawTriangleCount += drawTriangleCount;
+    statInstanceTableAllocCount += instanceTableAllocCount;
+    statInstanceTableUploadBytes += instanceTableUploadBytes;
 }
 
 bool RenderBackend::UploadFrameConstants() {
@@ -259,6 +261,8 @@ const void *RenderBackend::ExecuteBeginContext(const void *data) {
 
     statDrawCount = 0;
     statDrawTriangleCount = 0;
+    statInstanceTableAllocCount = 0;
+    statInstanceTableUploadBytes = 0;
 
     mainCommandList = frameData->GetThreadData(0)->BeginCommandList(RHI::CommandQueueType::Graphics);
 
@@ -410,7 +414,7 @@ const void *RenderBackend::ExecuteSwapBuffers(const void *data) {
         RHI::renderer->SetPSO(mainCommandList, currentImagePSO);
         RHI::renderer->SetTexture(mainCommandList, 0, false, currentContext->mainRTColorTexture);
         RHI::renderer->Draw(mainCommandList, 3, 0);
-        RecordDrawStats(1, 1);
+        RecordDrawStats(1, 1, 0, 0);
     }
 
     RHI::renderer->EndRenderPass(mainCommandList);
@@ -427,7 +431,7 @@ const void *RenderBackend::ExecuteSwapBuffers(const void *data) {
     SetGpuFrameTimingFence(fenceValue);
 
     if (frameData->IsStatEnabled()) {
-        currentContext->SetRenderStats(frameData->GetStatRenderObjectCount(), frameData->GetStatVisibleObjectCount(), statDrawCount, statDrawTriangleCount);
+        currentContext->SetRenderStats(frameData->GetStatRenderObjectCount(), frameData->GetStatVisibleObjectCount(), statDrawCount, statDrawTriangleCount, statInstanceTableAllocCount, statInstanceTableUploadBytes);
     }
 
 #ifdef USE_MIPMAP_STREAMING
@@ -532,6 +536,6 @@ void RenderBackend::DrawGuiPass(const RenderPass *renderPass) {
             drawSurfIndex++;
         }
 
-        DrawSurfaceInstances(frameData->GetThreadData(0), mainCommandList, &renderPass->drawSurfs[instanceStartIndex], drawSurfIndex - instanceStartIndex, statDrawCount, statDrawTriangleCount);
+        DrawSurfaceInstances(frameData->GetThreadData(0), mainCommandList, &renderPass->drawSurfs[instanceStartIndex], drawSurfIndex - instanceStartIndex, statDrawCount, statDrawTriangleCount, statInstanceTableAllocCount, statInstanceTableUploadBytes);
     }
 }

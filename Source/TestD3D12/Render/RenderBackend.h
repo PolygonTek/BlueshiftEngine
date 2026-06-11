@@ -55,6 +55,8 @@ private:
         RHI::CommandList *          commandList = nullptr;
         uint32_t                    drawCount = 0;
         uint64_t                    drawTriangleCount = 0;
+        uint32_t                    instanceTableAllocCount = 0;
+        uint32_t                    instanceTableUploadBytes = 0;
     };
 
     const void *                    ExecuteBeginContext(const void *data);
@@ -78,9 +80,9 @@ private:
     static void                     DrawLitSurfacesByTaskFunction(void *data);
 
     RHI::Buffer *                   AllocInstanceToShaderSurfaceTable(RHI::FrameThreadData *frameThreadData, const PassDrawSurf **drawSurfs, uint32_t instanceCount) const;
-    void                            DrawSurfaceInstances(RHI::FrameThreadData *frameThreadData, RHI::CommandList *commandList, const PassDrawSurf **drawSurfs, uint32_t instanceCount, uint32_t &drawCount, uint64_t &drawTriangleCount);
+    void                            DrawSurfaceInstances(RHI::FrameThreadData *frameThreadData, RHI::CommandList *commandList, const PassDrawSurf **drawSurfs, uint32_t instanceCount, uint32_t &drawCount, uint64_t &drawTriangleCount, uint32_t &instanceTableAllocCount, uint32_t &instanceTableUploadBytes);
 
-    void                            RecordDrawStats(uint32_t drawCount, uint64_t drawTriangleCount);
+    void                            RecordDrawStats(uint32_t drawCount, uint64_t drawTriangleCount, uint32_t instanceTableAllocCount, uint32_t instanceTableUploadBytes);
     bool                            UploadFrameConstants();
     bool                            UploadCameraConstants();
 
@@ -107,6 +109,8 @@ private:
     std::atomic<float>              statRenderAverageUsec = 0;
     uint32_t                        statDrawCount = 0;
     uint64_t                        statDrawTriangleCount = 0;
+    uint32_t                        statInstanceTableAllocCount = 0;
+    uint32_t                        statInstanceTableUploadBytes = 0;
 
     uint64_t                        gpuTimestampFrequency = 0;
     RHI::QueryHeap *                gpuTimestampQueryHeap = nullptr;

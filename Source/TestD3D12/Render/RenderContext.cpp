@@ -180,11 +180,13 @@ void RenderContext::UpdateGpuFrameTime(float frameMsec) {
     }
 }
 
-void RenderContext::SetRenderStats(uint32_t renderObjectCount, uint32_t visibleObjectCount, uint32_t drawCount, uint64_t drawTriangleCount) {
+void RenderContext::SetRenderStats(uint32_t renderObjectCount, uint32_t visibleObjectCount, uint32_t drawCount, uint64_t drawTriangleCount, uint32_t instanceTableAllocCount, uint32_t instanceTableUploadBytes) {
     statRenderObjectCount.store(renderObjectCount);
     statVisibleObjectCount.store(visibleObjectCount);
     statDrawCount.store(drawCount);
     statDrawTriangleCount.store(drawTriangleCount);
+    statInstanceTableAllocCount.store(instanceTableAllocCount);
+    statInstanceTableUploadBytes.store(instanceTableUploadBytes);
 }
 
 void RenderContext::RequestScreenshot(const char *filename) {

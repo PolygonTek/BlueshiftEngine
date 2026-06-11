@@ -66,6 +66,8 @@ public:
     uint32_t                        GetStatVisibleObjectCount() const { return statVisibleObjectCount.load(); }
     uint32_t                        GetStatDrawCount() const { return statDrawCount.load(); }
     uint64_t                        GetStatDrawTriangleCount() const { return statDrawTriangleCount.load(); }
+    uint32_t                        GetStatInstanceTableAllocCount() const { return statInstanceTableAllocCount.load(); }
+    uint32_t                        GetStatInstanceTableUploadBytes() const { return statInstanceTableUploadBytes.load(); }
 
     void                            OnResize(int width, int height);
 
@@ -109,7 +111,7 @@ private:
     void                            FlushPendingScreenshots(RenderFrameData *frameData);
     void                            EnsureTextureStreamingFeedbackCapacity(uint32_t requiredCapacity);
     void                            UpdateGpuFrameTime(float frameMsec);
-    void                            SetRenderStats(uint32_t renderObjectCount, uint32_t visibleObjectCount, uint32_t drawCount, uint64_t drawTriangleCount);
+    void                            SetRenderStats(uint32_t renderObjectCount, uint32_t visibleObjectCount, uint32_t drawCount, uint64_t drawTriangleCount, uint32_t instanceTableAllocCount, uint32_t instanceTableUploadBytes);
 
     RHI::SwapChain *                swapChain = nullptr;
     RHI::Texture *                  mainRTColorMSAATexture = nullptr;
@@ -136,6 +138,8 @@ private:
     std::atomic<uint32_t>           statVisibleObjectCount = 0;
     std::atomic<uint32_t>           statDrawCount = 0;
     std::atomic<uint64_t>           statDrawTriangleCount = 0;
+    std::atomic<uint32_t>           statInstanceTableAllocCount = 0;
+    std::atomic<uint32_t>           statInstanceTableUploadBytes = 0;
 
     RHI::Format                     mainRTColorFormat = RHI::Format::R8G8B8A8_UNORM;
     RHI::Format                     mainRTDepthFormat = RHI::Format::D24_UNORM_S8_UINT;
