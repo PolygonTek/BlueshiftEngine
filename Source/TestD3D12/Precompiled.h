@@ -19,6 +19,16 @@
 
 #include "BlueshiftEngine.h"
 
+// 디버그 레이어 사용 여부 (Release 모드에서는 무시됨)
+#define USE_RENDERER_DEBUG_LAYER
+
+// 프로파일러 사용 여부 (Release 모드에서는 무시됨)
+#define USE_PROFILER
+
+// 기존 PROFILER_* 매크로가 사용할 백엔드 선택
+//#define USE_RHI_PROFILER
+#define USE_TRACY_PROFILER
+
 #ifdef USE_TASK_MANAGER
 // 렌더 태스크 사용 여부
 #define USE_RENDER_TASK
@@ -35,12 +45,6 @@
 
 // 렌더타겟 텍스쳐 사용 여부
 #define USE_OFFSCREEN_MAIN_RENDER_TARGET
-
-// 프로파일러 사용 여부 (D3D12 의 경우엔 PIX, Release 모드에서는 무시됨)
-#define USE_PROFILER
-
-// 디버그 레이어 사용 여부 (Release 모드에서는 무시됨)
-#define USE_RENDERER_DEBUG_LAYER
 
 // 스레드 로딩 시스템 사용 여부
 #define USE_ASYNC_LOADING
@@ -69,3 +73,5 @@ template <typename T, typename... Args>
 BE_INLINE UniquePtr<T> MakeUnique(Args &&...args) {
     return std::make_unique<T>(std::forward<Args>(args)...);
 }
+
+#include "Profiler.h"

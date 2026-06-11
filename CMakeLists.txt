@@ -318,7 +318,9 @@ if (BUILD_RUNTIME)
 
     # Tracy options must be set before add_subdirectory.
     set(TRACY_ENABLE ON CACHE BOOL "" FORCE)
-    set(TRACY_ON_DEMAND OFF CACHE BOOL "" FORCE)
+    set(TRACY_DELAYED_INIT ON CACHE BOOL "" FORCE)
+    set(TRACY_MANUAL_LIFETIME ON CACHE BOOL "" FORCE)
+    set(TRACY_ON_DEMAND ON CACHE BOOL "" FORCE)
     set(TRACY_STATIC ON CACHE BOOL "" FORCE)
 
     add_subdirectory(Source/ThirdParty/tracy)

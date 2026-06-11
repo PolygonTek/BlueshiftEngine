@@ -398,6 +398,8 @@ const void *RenderBackend::ExecuteSwapBuffers(const void *data) {
     // 백버퍼를 전면버퍼와 교환한다.
     currentContext->GetSwapChain()->SwapBuffers(false);
 
+    PROFILER_FRAME_MARK();
+
     frameCount++;
 
     return (const void *)(cmd + 1);

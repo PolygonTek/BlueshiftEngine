@@ -1095,37 +1095,18 @@ namespace RHI {
 
     extern Renderer *                   renderer;
 
-    class ScopedEventObject {
+    class ScopedProfilerEvent {
     public:
-        ScopedEventObject() = delete;
-        ScopedEventObject(CommandList *commandList, const char *string, uint8_t colorIndex) : eventCommandList(commandList) { renderer->BeginEvent(commandList, string, colorIndex); }
-        ScopedEventObject(ScopedEventObject &scopedEventObject) = delete;
-        ~ScopedEventObject() { renderer->EndEvent(eventCommandList); }
+        ScopedProfilerEvent() = delete;
+        ScopedProfilerEvent(CommandList *commandList, const char *string, uint8_t colorIndex) : eventCommandList(commandList) { renderer->BeginEvent(commandList, string, colorIndex); }
+        ScopedProfilerEvent(const ScopedProfilerEvent &) = delete;
+        ScopedProfilerEvent &operator=(const ScopedProfilerEvent &) = delete;
+        ~ScopedProfilerEvent() { renderer->EndEvent(eventCommandList); }
 
+    private:
         CommandList *                   eventCommandList = nullptr;
     };
 };
-
-#if defined(USE_PROFILER) && (defined(_DEBUG) || defined(_DEVELOPMENT))
-#define PROFILER_STRING_TO_COLOR_INDEX(str) (fnv1a_hash(str) % 8)
-#define PROFILER_CPU_BEGIN_EVENT(str) RHI::renderer->BeginEvent(nullptr, str, PROFILER_STRING_TO_COLOR_INDEX(str))
-#define PROFILER_CPU_END_EVENT() RHI::renderer->EndEvent(nullptr);
-#define PROFILER_CPU_SCOPED_EVENT(str) RHI::ScopedEventObject _scopedEventObject(nullptr, str, PROFILER_STRING_TO_COLOR_INDEX(str))
-#define PROFILER_CPU_MARKER(str) RHI::renderer->SetMarker(nullptr, str, PROFILER_STRING_TO_COLOR_INDEX(str))
-#define PROFILER_BEGIN_EVENT(commandList, str) RHI::renderer->BeginEvent(commandList, str, PROFILER_STRING_TO_COLOR_INDEX(str))
-#define PROFILER_END_EVENT(commandList) RHI::renderer->EndEvent(commandList)
-#define PROFILER_SCOPED_EVENT(commandList, str) RHI::ScopedEventObject _scopedEventObject(commandList, str, PROFILER_STRING_TO_COLOR_INDEX(str))
-#define PROFILER_MARKER(commandList, str) RHI::renderer->SetMarker(commandList, str, PROFILER_STRING_TO_COLOR_INDEX(str))
-#else
-#define PROFILER_CPU_BEGIN_EVENT(str)
-#define PROFILER_CPU_END_EVENT()
-#define PROFILER_CPU_SCOPED_EVENT(str)
-#define PROFILER_CPU_MARKER(str)
-#define PROFILER_BEGIN_EVENT(commandList, str)
-#define PROFILER_END_EVENT(commandList)
-#define PROFILER_SCOPED_EVENT(commandList, str)
-#define PROFILER_MARKER(commandList, str)
-#endif
 
 template<>
 struct enable_bitmask_operators<RHI::ClearFlag> {

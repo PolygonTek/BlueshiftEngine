@@ -44,6 +44,8 @@ static BE1::CVar            stat_render("stat_render", "1", BE1::CVar::Flag::Boo
 App                         app;
 
 void App::Init(void *mainWindowHandle) {
+    PROFILER_INIT();
+
     renderSystem = new RenderSystem;
     renderSystem->Init(mainWindowHandle);
 
@@ -77,6 +79,8 @@ void App::Shutdown() {
 
     renderSystem->Shutdown();
     delete renderSystem;
+
+    PROFILER_SHUTDOWN();
 }
 
 void App::Update(int frameMsec) {

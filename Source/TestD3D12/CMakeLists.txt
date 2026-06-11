@@ -5,6 +5,7 @@ project(TestD3D12)
 set(SRC_FILES
     Precompiled.h
     Precompiled.cpp
+    Profiler.h
     App.h
     App.cpp
     LoadingSystem.h
@@ -171,4 +172,7 @@ target_link_libraries(${PROJECT_NAME} winmm.lib dxgi.lib dxguid.lib d3d12.lib d3
 target_link_libraries(${PROJECT_NAME} D3D12MemAlloc)
 #target_link_libraries(${PROJECT_NAME} ${DXC_LIBRARY})
 target_link_libraries(${PROJECT_NAME} ${PIX_LIBRARY})
+if (TARGET Tracy::TracyClient)
+    target_link_libraries(${PROJECT_NAME} Tracy::TracyClient)
+endif ()
 target_link_libraries(${PROJECT_NAME} BlueshiftRuntime)
