@@ -744,9 +744,11 @@ RHI::Shader *D3D12Renderer::CreateShader(RHI::ShaderModel shaderModel, RHI::Shad
         return nullptr;
     }
 
+    const uint64_t compiledShaderHash = BE1::CityHash64(reinterpret_cast<const char *>(compiledShaderData), compiledShaderDataSize);
+
     D3D12Shader *shader = new D3D12Shader;
     shader->shaderStage = shaderStage;
-    shader->hash = shaderHash;
+    shader->hash = compiledShaderHash;
     shader->compiledShaderData = compiledShaderData;
     shader->compiledShaderDataSize = compiledShaderDataSize;
     shader->rootSignature = rootSignature;
