@@ -1066,7 +1066,8 @@ target_link_libraries(${PROJECT_NAME}
     luasocket
     LuaCpp
     NvTriStrip
-    delabella)
+    delabella
+    Tracy::TracyClient)
 
 if (USE_LUAJIT)
     target_include_directories(${PROJECT_NAME} PUBLIC ${ENGINE_INCLUDE_DIR}/ThirdParty/luaJIT/src)

@@ -315,6 +315,13 @@ if (BUILD_RUNTIME)
     add_subdirectory(Source/ThirdParty/STB)
     add_subdirectory(Source/ThirdParty/imgui)
     add_subdirectory(Source/ThirdParty/delabella)
+
+    # Tracy options must be set before add_subdirectory.
+    set(TRACY_ENABLE ON CACHE BOOL "" FORCE)
+    set(TRACY_ON_DEMAND OFF CACHE BOOL "" FORCE)
+    set(TRACY_STATIC ON CACHE BOOL "" FORCE)
+
+    add_subdirectory(Source/ThirdParty/tracy)
  
     if (USE_LUAJIT)
         add_subdirectory(Source/ThirdParty/luaJIT)
