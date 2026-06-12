@@ -30,6 +30,8 @@ class D3D12PipelineState;
 class D3D12CommandList;
 class D3D12CommandListPool;
 class D3D12DescriptorPool;
+class D3D12ImGuiRenderer;
+class D3D12ImGuiOverlay;
 
 struct D3D12ReleaseRequest {
     ID3D12Resource *                    resourceToRelease = nullptr;
@@ -49,6 +51,7 @@ public:
     virtual void                        Shutdown() override;
 
     virtual void                        GetMemoryUsage(RHI::MemoryUsage &memoryUsage) const override;
+    virtual const RHI::RendererInfo &   GetRendererInfo() const override { return rendererInfo; }
 
     RHI::ShaderFormat                   GetShaderFormat() const;
 
@@ -65,6 +68,14 @@ public:
 
     virtual RHI::SwapChain *            CreateSwapChain(HWND hwnd, uint32_t width, uint32_t height, RHI::Format format) override;
     virtual void                        DestroySwapChain(RHI::SwapChain *swapChain) override;
+
+    virtual RHI::ImGuiOverlay *         CreateImGuiOverlay(void *windowHandle, RHI::SwapChain *swapChain) override;
+    virtual void                        DestroyImGuiOverlay(RHI::ImGuiOverlay *overlay) override;
+    virtual void                        RenderImGuiDrawData(RHI::FrameThreadData *frameThreadData, RHI::CommandList *commandList, RHI::ImGuiOverlay *overlay, void *userData) override;
+    virtual void                        FreeImGuiDrawData(RHI::ImGuiOverlay *overlay, void *userData) override;
+
+    bool                                InitImGuiOverlayRenderer(D3D12ImGuiOverlay *overlay, RHI::SwapChain *swapChain);
+    void                                ShutdownImGuiOverlayRenderer(D3D12ImGuiOverlay *overlay);
 
     virtual RHI::FrameThreadData *      CreateFrameThreadData(int32_t frameIndex, int32_t numFrames, int32_t threadIndex, int32_t numRenderTaskThreads) override;
     virtual void                        DestroyFrameThreadData(RHI::FrameThreadData *frameThreadData) override;
@@ -237,6 +248,8 @@ public:
     void                                CreateDevice(IDXGIAdapter1 **adapterPtr);
     void                                CreateShaderCompiler();
 
+    ID3D12Device5 *                     GetDevice() { return device; }
+
 #ifdef USE_D3D12_MEMALLOC
     void                                PrintMemoryAllocatorStats();
 #endif
@@ -251,6 +264,7 @@ public:
     static bool                         IsTypelessFormat(DXGI_FORMAT format);
     static bool                         IsTypelessCompatibleFormat(DXGI_FORMAT typelessFormat, DXGI_FORMAT viewFormat);
     static bool                         IsHDRSwapChainFormat(DXGI_FORMAT format);
+    static bool                         IsSRGBFormat(DXGI_FORMAT format);
     static DXGI_FORMAT                  ToLinearFormat(DXGI_FORMAT format);
     static DXGI_FORMAT                  ToSRGBFormat(DXGI_FORMAT format);
     static DXGI_FORMAT                  ToTypelessFormat(DXGI_FORMAT format);
@@ -298,6 +312,8 @@ public:
     uint64_t                            dedicatedVideoMemSize = 0;
     uint64_t                            dedicatedSystemMemSize = 0;
     uint64_t                            sharedSystemMemSize = 0;
+    RHI::RendererInfo                   rendererInfo;
+
     D3D12_RESOURCE_HEAP_TIER            resourceHeapTier = {};
     bool                                supportsTearing = false;
     bool                                supportsConservativeRasterization = false;
@@ -313,6 +329,8 @@ public:
     D3D12DescriptorPool *               samStagingDescriptorPool = nullptr;
     D3D12DescriptorPool *               rtvDescriptorPool = nullptr;
     D3D12DescriptorPool *               dsvDescriptorPool = nullptr;
+
+    D3D12ImGuiRenderer *                imguiRenderer = nullptr;
 
     D3D12ShaderVisibleDescriptorHeap    resShaderVisibleDescriptorHeap;
     D3D12ShaderVisibleDescriptorHeap    samShaderVisibleDescriptorHeap;

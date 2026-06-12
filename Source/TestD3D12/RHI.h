@@ -501,6 +501,17 @@ namespace RHI {
         uint64_t                        usageBytes = 0;     // used video memory by the current application
     };
 
+    struct RendererInfo {
+        static constexpr int            MaxNameLength = 128;
+
+        char                            name[MaxNameLength] = {};
+        uint32_t                        vendorId = 0;
+        uint32_t                        deviceId = 0;
+        uint64_t                        dedicatedVideoMemoryBytes = 0;
+        uint64_t                        dedicatedSystemMemoryBytes = 0;
+        uint64_t                        sharedSystemMemoryBytes = 0;
+    };
+
     enum class QueryType : uint8_t {
         Timestamp,
         Occlusion,
@@ -882,6 +893,18 @@ namespace RHI {
         virtual void                    ExecuteSecondary(RHI::CommandList *secondaryCommandList) = 0;
     };
 
+    class ImGuiOverlay {
+    public:
+        virtual ~ImGuiOverlay() = default;
+
+        virtual bool                    BeginFrameCapture() = 0;
+        virtual void *                  EndFrameCapture() = 0;
+
+        virtual bool                    HandleWndProc(void *hwnd, uint32_t message, uintptr_t wParam, intptr_t lParam) = 0;
+        virtual bool                    WantsCaptureMouse() const = 0;
+        virtual bool                    WantsCaptureKeyboard() const = 0;
+    };
+
     class FrameThreadData {
     public:
         virtual ~FrameThreadData() = 0 {}
@@ -939,6 +962,7 @@ namespace RHI {
         bool                            IsInitialized() const { return initialized; }
 
         virtual void                    GetMemoryUsage(MemoryUsage &memoryUsage) const = 0;
+        virtual const RendererInfo &    GetRendererInfo() const = 0;
 
         virtual uint64_t                SignalFence(CommandQueueType queueType) = 0;
         virtual bool                    IsFenceComplete(CommandQueueType queueType, uint64_t checkFenceValue) = 0;
@@ -955,6 +979,11 @@ namespace RHI {
 
         virtual SwapChain *             CreateSwapChain(HWND hwnd, uint32_t width, uint32_t height, Format format) = 0;
         virtual void                    DestroySwapChain(SwapChain *swapChain) = 0;
+
+        virtual ImGuiOverlay *          CreateImGuiOverlay(void *windowHandle, SwapChain *swapChain) = 0;
+        virtual void                    DestroyImGuiOverlay(ImGuiOverlay *overlay) = 0;
+        virtual void                    RenderImGuiDrawData(FrameThreadData *frameThreadData, CommandList *commandList, ImGuiOverlay *overlay, void *userData) = 0;
+        virtual void                    FreeImGuiDrawData(ImGuiOverlay *overlay, void *userData) = 0;
 
         virtual RHI::FrameThreadData *  CreateFrameThreadData(int32_t frameIndex, int32_t numFrames, int32_t threadIndex, int32_t numRenderTaskThreads) = 0;
         virtual void                    DestroyFrameThreadData(FrameThreadData *frameThreadData) = 0;

@@ -42,6 +42,7 @@ void RenderWorld::ClearScene() {
     for (RenderObject *renderObject : renderObjects) {
         SAFE_DELETE(renderObject);
     }
+    renderObjects.Clear();
 }
 
 RenderObject *RenderWorld::GetRenderObject(int index) const {

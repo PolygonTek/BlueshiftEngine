@@ -303,6 +303,15 @@ RenderContext *RenderSystem::CreateRenderContext(void *windowHandle, bool isMain
     return renderContext;
 }
 
+RenderContext *RenderSystem::FindRenderContextByWindowHandle(void *windowHandle) const {
+    for (RenderContext *renderContext : renderContexts) {
+        if (renderContext->GetWindowHandle() == windowHandle) {
+            return renderContext;
+        }
+    }
+    return nullptr;
+}
+
 void RenderSystem::DestroyRenderContext(RenderContext *renderContext) {
     if (IsUsingRenderThread()) {
         for (RenderFrameData &frameData : renderContext->frames) {

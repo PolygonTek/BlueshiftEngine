@@ -404,21 +404,40 @@ const void *RenderBackend::ExecuteSwapBuffers(const void *data) {
     TextureStreamingFeedback::ReadbackFrame *readbackFrame = currentContext->textureStreamingFeedback.Resolve(mainCommandList);
 #endif
 
+    const bool hasPendingImGuiOverlay = frameData->HasPendingImGuiOverlay();
+
 #ifdef USE_OFFSCREEN_MAIN_RENDER_TARGET
-    // 뷰포트 & ScissorRect 의 초기값 설정
-    RHI::renderer->SetViewport(mainCommandList, currentVisCamera->renderRect);
-    RHI::renderer->SetScissorRect(mainCommandList, currentVisCamera->renderRect);
-
-    RHI::renderer->BeginRenderPass(mainCommandList, currentContext->swapChain, nullptr);
-    if (currentImagePSO) {
-        RHI::renderer->SetPSO(mainCommandList, currentImagePSO);
-        RHI::renderer->SetTexture(mainCommandList, 0, false, currentContext->mainRTColorTexture);
-        RHI::renderer->Draw(mainCommandList, 3, 0);
-        RecordDrawStats(1, 1, 0, 0);
-    }
-
-    RHI::renderer->EndRenderPass(mainCommandList);
+    const bool needsSwapChainRenderPass = true;
+#else
+    const bool needsSwapChainRenderPass = hasPendingImGuiOverlay;
 #endif
+
+    if (needsSwapChainRenderPass) {
+        BE1::Rect renderRect(0, 0, currentContext->GetWidth(), currentContext->GetHeight());
+        if (currentVisCamera) {
+            renderRect = currentVisCamera->renderRect;
+        }
+
+        // 뷰포트 & ScissorRect 의 초기값 설정
+        RHI::renderer->SetViewport(mainCommandList, renderRect);
+        RHI::renderer->SetScissorRect(mainCommandList, renderRect);
+
+        RHI::renderer->BeginRenderPass(mainCommandList, currentContext->swapChain, nullptr);
+#ifdef USE_OFFSCREEN_MAIN_RENDER_TARGET
+        if (currentImagePSO) {
+            RHI::renderer->SetPSO(mainCommandList, currentImagePSO);
+            RHI::renderer->SetTexture(mainCommandList, 0, false, currentContext->mainRTColorTexture);
+            RHI::renderer->Draw(mainCommandList, 3, 0);
+            //RecordDrawStats(1, 1, 0, 0);
+        }
+#endif
+
+        if (hasPendingImGuiOverlay) {
+            frameData->RenderPendingImGuiOverlay(mainCommandList);
+        }
+
+        RHI::renderer->EndRenderPass(mainCommandList);
+    }
 
     EndGpuFrameTiming(mainCommandList);
 

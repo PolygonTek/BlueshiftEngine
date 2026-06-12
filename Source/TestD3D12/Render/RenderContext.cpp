@@ -25,6 +25,8 @@ RenderContext *     RenderContext::activeContext = nullptr;
 static constexpr int    GpuStatUpdateSampleCount = 16;
 
 void RenderContext::Init(void *windowHandle) {
+    this->windowHandle = windowHandle;
+
     // 프레임 별로 사용할 프레임 데이터들을 초기화한다.
     // 프레임 데이터: 임시 메모리, 커맨드 리스트 풀, 디스크립터 힙, 다이나믹 버퍼와 그 디스크립터 풀
     for (int32_t frameIndex = 0; frameIndex < NumFrames; ++frameIndex) {
@@ -44,6 +46,11 @@ void RenderContext::Init(void *windowHandle) {
     // 스왑 체인 (백버퍼) 생성
     swapChain = RHI::renderer->CreateSwapChain(hwnd, backBufferWidth, backBufferHeight, RHI::Format::R8G8B8A8_UNORM);
 
+#ifdef ENABLE_IMGUI
+    // ImGui 오버레이 객체 생성
+    imguiOverlay = RHI::renderer->CreateImGuiOverlay(windowHandle, swapChain);
+#endif
+
     // 렌더 타겟 텍스쳐 & 뎁스 텍스쳐 생성
     CreateMainRenderTextures(backBufferWidth, backBufferHeight);
 
@@ -60,6 +67,16 @@ void RenderContext::Shutdown() {
     RHI::renderer->Finish(RHI::CommandQueueType::Graphics);
     RHI::renderer->Finish(RHI::CommandQueueType::Compute);
 
+#ifdef ENABLE_IMGUI
+    for (RenderFrameData &frameData : frames) {
+        frameData.ClearPendingImGuiOverlay();
+    }
+
+    // ImGui 오버레이 객체 파괴
+    RHI::renderer->DestroyImGuiOverlay(imguiOverlay);
+    imguiOverlay = nullptr;
+#endif
+
     textureStreamingFeedback.Shutdown();
 
     imagePSO = nullptr;
@@ -71,6 +88,8 @@ void RenderContext::Shutdown() {
     }
 
     RHI::renderer->DestroySwapChain(swapChain);
+    swapChain = nullptr;
+    windowHandle = nullptr;
 }
 
 void RenderContext::OnResize(int width, int height) {
@@ -274,6 +293,52 @@ void RenderContext::EndFrame() {
     frameCount++;
 
     renderSystem->SubmitFrame(this, frameData);
+}
+
+bool RenderContext::BeginImGui() {
+#ifdef ENABLE_IMGUI
+    return imguiOverlay && imguiOverlay->BeginFrameCapture();
+#else
+    return false;
+#endif
+}
+
+void RenderContext::EndImGui() {
+#ifdef ENABLE_IMGUI
+    if (!imguiOverlay) {
+        return;
+    }
+    void *imguiDrawData = imguiOverlay->EndFrameCapture();
+    if (imguiDrawData) {
+        // RenderBackend::ExecuteSwapBuffers 에서 렌더링하기 위해 캡쳐 데이터를 세팅한다.
+        GetCurrentFrontendFrameData()->SetPendingImGuiOverlay(imguiOverlay, imguiDrawData);
+    }
+#endif
+}
+
+bool RenderContext::HandleImGuiWndProc(void *hwnd, uint32_t message, uintptr_t wParam, intptr_t lParam) {
+#ifdef ENABLE_IMGUI
+    if (imguiOverlay && hwnd == windowHandle) {
+        return imguiOverlay->HandleWndProc(hwnd, message, wParam, lParam);
+    }
+#endif
+    return false;
+}
+
+bool RenderContext::ImGuiWantsCaptureMouse() const {
+#ifdef ENABLE_IMGUI
+    return imguiOverlay && imguiOverlay->WantsCaptureMouse();
+#else
+    return false;
+#endif
+}
+
+bool RenderContext::ImGuiWantsCaptureKeyboard() const {
+#ifdef ENABLE_IMGUI
+    return imguiOverlay && imguiOverlay->WantsCaptureKeyboard();
+#else
+    return false;
+#endif
 }
 
 void RenderContext::DrawPic(float x, float y, float w, float h, const SharedPtr<Material> &material) {

@@ -74,6 +74,11 @@ struct EndRenderCommand {
     RenderCommandId                 commandId;
 };
 
+struct PendingImGuiOverlay {
+    RHI::ImGuiOverlay *             overlay = nullptr;
+    void *                          userData = nullptr;
+};
+
 /*
 ---------------------------------------------------------------------------------------------------
 
@@ -124,6 +129,11 @@ public:
     void                            CmdSwapBuffers();
     void                            CmdScreenshot(int x, int y, int width, int height, const char *filename);
     void                            CmdEnd();
+
+    bool                            HasPendingImGuiOverlay() const { return pendingImGuiOverlay.overlay != nullptr; }
+    void                            SetPendingImGuiOverlay(RHI::ImGuiOverlay *overlay, void *userData);
+    void                            RenderPendingImGuiOverlay(RHI::CommandList *commandList);
+    void                            ClearPendingImGuiOverlay();
 
                                     // 렌더 태스크의 스레드 별 데이터 얻기
     RHI::FrameThreadData *          GetThreadData(int32_t threadIndex) { assert(threadIndex >= 0 && threadIndex < numRenderTaskThreads); return threadData[threadIndex]; }
@@ -195,6 +205,7 @@ private:
     VisObject *                     visObjects = nullptr;
 
     RenderCommandBuffer             commands;
+    PendingImGuiOverlay             pendingImGuiOverlay;
 
     FrameSyncState                  frameSyncState = FrameSyncState::RenderCompleted;
     uint64_t                        frameFenceValue = 0;
@@ -220,6 +231,8 @@ private:
 BE_INLINE void RenderFrameData::BeginFrame() {
     // 프론트 엔드에서 이번 프레임의 프레임 데이터를 사용하기 위해서는, 백엔드에서의 사용이 완료되야 한다.
     WaitFrameFence();
+
+    ClearPendingImGuiOverlay();
 
     statEnabled = false;
     statRenderObjectCount = 0;

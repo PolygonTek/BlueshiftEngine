@@ -46,6 +46,7 @@ public:
 
     RenderContext *                 CreateRenderContext(void *windowHandle, bool isMain = false);
     void                            DestroyRenderContext(RenderContext *renderContext);
+    RenderContext *                 FindRenderContextByWindowHandle(void *windowHandle) const;
 
                                     // 프레임 데이터를 렌더 스레드에 제출한다. 제출된 프레임 데이터는 렌더 스레드에서 순서대로 처리된다.
     void                            SubmitFrame(RenderContext *renderContext, RenderFrameData *frameData);

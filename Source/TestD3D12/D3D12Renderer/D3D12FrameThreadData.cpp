@@ -256,7 +256,7 @@ RHI::ConstantBuffer *D3D12FrameThreadData::AllocConstant(uint32_t size, const vo
     cbvDesc.BufferLocation = currentBlock->buffer->GetResource()->GetGPUVirtualAddress() + offset;
     cbvDesc.SizeInBytes = alignedSize;
 
-    D3D12Renderer::GetRenderer()->device->CreateConstantBufferView(&cbvDesc, cpuDescriptorHandle);
+    D3D12Renderer::GetRenderer()->GetDevice()->CreateConstantBufferView(&cbvDesc, cpuDescriptorHandle);
 
     D3D12ConstantBuffer &dynamicConstantBuffer = dynamicConstantBuffers.Alloc();
     dynamicConstantBuffer.mappedPtr = reinterpret_cast<byte *>(currentBlock->buffer->mappedPtr) + offset;
@@ -304,7 +304,7 @@ RHI::Buffer *D3D12FrameThreadData::AllocShaderResourceBuffer(uint32_t size, uint
         srvDesc.Buffer.Flags = D3D12_BUFFER_SRV_FLAG_RAW;
     }
 
-    D3D12Renderer::GetRenderer()->device->CreateShaderResourceView(currentBlock->buffer->GetResource(), &srvDesc, cpuDescriptorHandle);
+    D3D12Renderer::GetRenderer()->GetDevice()->CreateShaderResourceView(currentBlock->buffer->GetResource(), &srvDesc, cpuDescriptorHandle);
 
     D3D12SRVEntry srvEntry = {};
     srvEntry.viewDesc = srvDesc;

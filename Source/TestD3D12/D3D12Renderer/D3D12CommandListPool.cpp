@@ -25,7 +25,7 @@ void D3D12CommandListPool::Init(D3D12RootBindingData *rootBindingData, D3D12_COM
     this->maxCommandLists = maxPrimaryCommandLists + maxSecondaryCommandLists;
     this->commandListPool = new D3D12CommandList[maxCommandLists];
 
-    ID3D12Device5 *device = D3D12Renderer::GetRenderer()->device;
+    ID3D12Device5 *device = D3D12Renderer::GetRenderer()->GetDevice();
 
     // primary command list 들을 생성
     for (int i = 0; i < maxPrimaryCommandLists; ++i) {

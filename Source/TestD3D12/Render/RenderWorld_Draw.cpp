@@ -229,6 +229,10 @@ void RenderWorld::FindVisObjects(RenderFrameData *frameData, const RenderCamera 
 #else
     // 등록된 모든 RenderObject 들을 개별 Culling 해서 프레임 데이터에 VisObject 로 등록한다.
     for (const RenderObject *renderObject : renderObjects) {
+        if (!renderObject) {
+            continue;
+        }
+
         if (renderCamera->frustum.CullAABB(renderObject->worldAABB)) {
             continue;
         }

@@ -24,6 +24,7 @@
 #include "D3D12Texture.h"
 #include "D3D12FrameThreadData.h"
 #include "D3D12ResourceRequest.h"
+#include "D3D12ImGuiRenderer.h"
 
 // D3D12.dll 이 D3D12Core.dll 을 찾기 위한 설정
 extern "C" { __declspec(dllexport) extern const UINT D3D12SDKVersion = 614; }
@@ -111,6 +112,13 @@ void D3D12Renderer::Init(const void *mainWindowHandle) {
     char temp[128] = "";
     BE1::PlatformWinUtils::UCS2ToUTF8(dxgiAdapterDesc.Description, temp, COUNT_OF(temp));
     adapterName = temp;
+
+    BE1::Str::Copynz(rendererInfo.name, adapterName.c_str(), COUNT_OF(rendererInfo.name));
+    rendererInfo.vendorId = vendorId;
+    rendererInfo.deviceId = deviceId;
+    rendererInfo.dedicatedVideoMemoryBytes = dedicatedVideoMemSize;
+    rendererInfo.dedicatedSystemMemoryBytes = dedicatedSystemMemSize;
+    rendererInfo.sharedSystemMemoryBytes = sharedSystemMemSize;
 
     BE_LOG("Adapter: %s\n", adapterName.c_str());
     BE_LOG("Dedicated VideoMem Size: %s\n", BE1::Str::FormatBytes(dedicatedVideoMemSize).c_str());
@@ -326,6 +334,12 @@ void D3D12Renderer::Init(const void *mainWindowHandle) {
     utilComputeCommandListPool = new D3D12CommandListPool(nullptr, D3D12_COMMAND_LIST_TYPE_COMPUTE, 8);
 
     InitGenMipmapsPSO();
+
+    imguiRenderer = new D3D12ImGuiRenderer;
+    if (!imguiRenderer->Init()) {
+        BE_WARNLOG("D3D12Renderer::Init: failed to initialize ImGui renderer\n");
+        SAFE_DELETE(imguiRenderer);
+    }
 }
 
 void D3D12Renderer::CheckFeatures() {
@@ -507,6 +521,11 @@ void D3D12Renderer::Shutdown() {
 
     // 렌더 스레드 종료 후에도 삭제 대기중인 리소스가 있을 수 있기 때문에 여기서 한번 더 정리한다.
     FreeRetiredResources(true);
+
+    if (imguiRenderer) {
+        imguiRenderer->Shutdown();
+        SAFE_DELETE(imguiRenderer);
+    }
 
     BE1::PlatformMutex::Destroy(utilGraphicsCommandListMutex);
     utilGraphicsCommandListMutex = nullptr;
@@ -2324,6 +2343,16 @@ bool D3D12Renderer::IsHDRSwapChainFormat(DXGI_FORMAT format) {
     switch (format) {
     case DXGI_FORMAT_R10G10B10A2_UNORM:
     case DXGI_FORMAT_R16G16B16A16_FLOAT:
+        return true;
+    }
+    return false;
+}
+
+bool D3D12Renderer::IsSRGBFormat(DXGI_FORMAT format) {
+    switch (format) {
+    case DXGI_FORMAT_R8G8B8A8_UNORM_SRGB:
+    case DXGI_FORMAT_B8G8R8A8_UNORM_SRGB:
+    case DXGI_FORMAT_B8G8R8X8_UNORM_SRGB:
         return true;
     }
     return false;

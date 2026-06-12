@@ -59,6 +59,6 @@ float4 PSMain(PSInput input) : SV_TARGET {
         WriteMipmapFeedback(GetRWBufferUInt(frameConstants.feedbackBufferIndex), shaderMaterial.streamingMaterialIndex, ddx_coarse(input.texCoord.xy), ddy_coarse(input.texCoord.xy));
     }
 
-    float4 textureColor = GetTexture2D(shaderMaterial.baseColorTextureIndex).Sample(anisoClampSampler, input.texCoord);
+    float4 textureColor = GetTexture2D(shaderMaterial.baseColorTextureIndex).Sample(linearClampSampler, input.texCoord);
     return textureColor * shaderMaterial.baseColorFactor * input.color;
 }

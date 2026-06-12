@@ -53,7 +53,10 @@ public:
 
     void                            BeginFrame(bool statEnabled);
     void                            EndFrame();
+    template <typename BuildFunc>
+    void                            RenderImGui(const BuildFunc &buildFunc);
 
+    void *                          GetWindowHandle() const { return windowHandle; }
     RHI::SwapChain *                GetSwapChain() const { return swapChain; }
 
     GuiMesh &                       GetGuiMesh() { return guiMesh; }
@@ -72,6 +75,10 @@ public:
     void                            OnResize(int width, int height);
 
     void                            RequestScreenshot(const char *filename);
+
+    bool                            HandleImGuiWndProc(void *hwnd, uint32_t message, uintptr_t wParam, intptr_t lParam);
+    bool                            ImGuiWantsCaptureMouse() const;
+    bool                            ImGuiWantsCaptureKeyboard() const;
 
     RHI::Format                     GetMainRTColorFormat() const { return mainRTColorFormat; }
     RHI::Format                     GetMainRTDepthFormat() const { return mainRTDepthFormat; }
@@ -108,12 +115,16 @@ private:
     void                            CreateMainRenderTextures(uint32_t width, uint32_t height);
     void                            DestroyMainRenderTextures();
     void                            InitFullScreenTrianglePSO();
+    bool                            BeginImGui();
+    void                            EndImGui();
     void                            FlushPendingScreenshots(RenderFrameData *frameData);
     void                            EnsureTextureStreamingFeedbackCapacity(uint32_t requiredCapacity);
     void                            UpdateGpuFrameTime(float frameMsec);
     void                            SetRenderStats(uint32_t renderObjectCount, uint32_t visibleObjectCount, uint32_t drawCount, uint64_t drawTriangleCount, uint32_t instanceTableAllocCount, uint32_t instanceTableUploadBytes);
 
+    void *                          windowHandle = nullptr;
     RHI::SwapChain *                swapChain = nullptr;
+    RHI::ImGuiOverlay *             imguiOverlay = nullptr;
     RHI::Texture *                  mainRTColorMSAATexture = nullptr;
     RHI::Texture *                  mainRTColorTexture = nullptr;
     RHI::Texture *                  mainRTDepthTexture = nullptr;
@@ -156,3 +167,18 @@ private:
     BE1::Vec2                       currentTextShadowOffset = BE1::Vec2::zero;
     SharedPtr<Font>                 currentFont;
 };
+
+template <typename BuildFunc>
+void RenderContext::RenderImGui(const BuildFunc &buildFunc) {
+#ifdef ENABLE_IMGUI
+    if (!BeginImGui()) {
+        return;
+    }
+
+    buildFunc();
+
+    EndImGui();
+#else
+    (void)buildFunc;
+#endif
+}

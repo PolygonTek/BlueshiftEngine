@@ -33,9 +33,9 @@ public:
 
     void                            OnResize(int width, int height);
 
-    void                            InitGameObjects();
+    void                            InitGameObjects(uint32_t countX, uint32_t countY, uint32_t countZ);
     void                            ClearGameObjects();
-    void                            UpdateGameObjects();
+    void                            ChangeGameObjectCount(uint32_t countX, uint32_t countY, uint32_t countZ);
     void                            UpdateCamera(int frameMsec);
 
     RenderContext *                 GetMainRenderContext() const { return mainRenderContext; }
@@ -46,11 +46,15 @@ public:
     void                            TakeScreenshot();
 
 private:
+    void                            RotateGameObjects();
     void                            UpdateGameFrameTime(uint64_t frameUsec);
     void                            UpdateRenderFrontendFrameTime(uint64_t frameUsec);
-    void                            UpdateCubes();
+    void                            UpdateGameObjects();
     void                            RenderScene();
     void                            RenderText();
+#ifdef ENABLE_IMGUI
+    void                            BuildImGuiOverlay();
+#endif
 
     RenderContext *                 mainRenderContext = nullptr;
     SharedPtr<Font>                 mainFont;
@@ -82,6 +86,16 @@ private:
     float                           cameraYaw;
     float                           cameraPitch;
     float                           cameraDistance;
+
+    uint32_t                        goCountX = 1;
+    uint32_t                        goCountY = 1;
+    uint32_t                        goCountZ = 1;
+
+#ifdef ENABLE_IMGUI
+    int                             imguiGoCountX = 1;
+    int                             imguiGoCountY = 1;
+    bool                            imguiShowDemoWindow = false;
+#endif
 };
 
 extern App                          app;

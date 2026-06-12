@@ -18,6 +18,8 @@
 #include "WinResource.h"
 #include "App.h"
 #include "RHI.h"
+#include "Render/RenderSystem.h"
+#include "Render/RenderContext.h"
 #include <tchar.h>
 
 static const TCHAR *        mainWindowClassName  = _T("BLUESHIFT_MAIN_WINDOW");
@@ -286,6 +288,11 @@ LRESULT CALLBACK MainWndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lPar
     static int lastMouseX = 0;
     static int lastMouseY = 0;
 
+#ifdef ENABLE_IMGUI
+    RenderContext *renderContext = renderSystem ? renderSystem->FindRenderContextByWindowHandle(hwnd) : nullptr;
+    const bool imguiHandled = renderContext && renderContext->HandleImGuiWndProc(hwnd, message, static_cast<uintptr_t>(wParam), static_cast<intptr_t>(lParam));
+#endif
+
     switch (message) {
     case WM_CLOSE:
         break;
@@ -299,9 +306,20 @@ LRESULT CALLBACK MainWndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lPar
     case WM_KEYDOWN:
         if (wParam == VK_F11) {
             app.TakeScreenshot();
+            return 0;
         }
+#ifdef ENABLE_IMGUI
+        if (renderContext && renderContext->ImGuiWantsCaptureKeyboard()) {
+            return 0;
+        }
+#endif
         break;
     case WM_LBUTTONDOWN:
+#ifdef ENABLE_IMGUI
+        if (renderContext && renderContext->ImGuiWantsCaptureMouse()) {
+            return 0;
+        }
+#endif
         {
             POINTS p = MAKEPOINTS(lParam);
             lastMouseX = p.x;
@@ -311,10 +329,17 @@ LRESULT CALLBACK MainWndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lPar
         }
         return 0;
     case WM_LBUTTONUP:
-        mouseLook = false;
-        ReleaseCapture();
+        if (mouseLook) {
+            mouseLook = false;
+            ReleaseCapture();
+        }
         return 0;
     case WM_MOUSEMOVE:
+#ifdef ENABLE_IMGUI
+        if (renderContext && renderContext->ImGuiWantsCaptureMouse() && !mouseLook) {
+            return 0;
+        }
+#endif
         if (mouseLook) {
             POINTS p = MAKEPOINTS(lParam);
             int deltaX = p.x - lastMouseX;
@@ -325,6 +350,11 @@ LRESULT CALLBACK MainWndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lPar
         }
         return 0;
     case WM_MOUSEWHEEL:
+#ifdef ENABLE_IMGUI
+        if (renderContext && renderContext->ImGuiWantsCaptureMouse()) {
+            return 0;
+        }
+#endif
         {
             int delta = GET_WHEEL_DELTA_WPARAM(wParam);
             app.AddCameraDistance(delta);
@@ -351,5 +381,10 @@ LRESULT CALLBACK MainWndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lPar
         PostQuitMessage(0);
         return 0;
     }
+#ifdef ENABLE_IMGUI
+    if (imguiHandled) {
+        return 0;
+    }
+#endif
     return DefWindowProc(hwnd, message, wParam, lParam);
 }

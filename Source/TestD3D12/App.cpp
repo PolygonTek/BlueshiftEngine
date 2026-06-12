@@ -17,6 +17,9 @@
 #include "Render/RenderSystem.h"
 #include "Render/RenderContext.h"
 #include "Render/RenderBackend.h"
+#ifdef ENABLE_IMGUI
+#include "imgui/imgui.h"
+#endif
 #include "Render/RenderWorld.h"
 #include "Render/RenderCamera.h"
 #include "Render/Texture.h"
@@ -29,17 +32,8 @@
 #include "GameObject.h"
 #include "App.h"
 
-static constexpr int        CubeDimensionX = 100;//64;
-static constexpr int        CubeDimensionY = 100;//64;
-static constexpr int        CubeDimensionZ = 1;
-static constexpr int        CubeCount = CubeDimensionX * CubeDimensionY * CubeDimensionZ;
-static constexpr float      CubeSpacing = 1.414214f;
-static constexpr float      CubeStartX = -CubeSpacing * (CubeDimensionX - 1) * 0.5f;
-static constexpr float      CubeStartY = -CubeSpacing * (CubeDimensionY - 1) * 0.5f;
-static constexpr float      CubeStartZ = -CubeSpacing * (CubeDimensionZ - 1) * 0.5f;
-
 static BE1::CVar            stat_fps("stat_fps", "1", BE1::CVar::Flag::Bool, "show FPS");
-static BE1::CVar            stat_render("stat_render", "1", BE1::CVar::Flag::Bool, "show render statistics");
+static BE1::CVar            stat_render("stat_render", "0", BE1::CVar::Flag::Bool, "show render statistics");
 
 App                         app;
 
@@ -53,12 +47,12 @@ void App::Init(void *mainWindowHandle) {
 
     mainRenderContext = renderSystem->CreateRenderContext(mainWindowHandle, true);
 
-    mainFont = fontManager.GetFont("Data/EngineFonts/Galmuri11-Bold.ttf", 22);
+    mainFont = fontManager.GetFont("Data/EngineFonts/consola.ttf", 22);
 
     renderWorld = new RenderWorld;
     renderCamera = new RenderCamera;
 
-    InitGameObjects();
+    InitGameObjects(100, 100, 1);
 
     cameraYaw = targetCameraYaw;
     cameraPitch = targetCameraPitch;
@@ -76,6 +70,7 @@ void App::Shutdown() {
     loadingSystem.Shutdown();
 
     renderSystem->DestroyRenderContext(mainRenderContext);
+    mainRenderContext = nullptr;
 
     renderSystem->Shutdown();
     delete renderSystem;
@@ -118,6 +113,12 @@ void App::Render() {
     RenderText();
 
     renderWorld->RenderGUI(mainRenderContext->GetGuiMesh());
+
+#ifdef ENABLE_IMGUI
+    mainRenderContext->RenderImGui([this]() {
+        BuildImGuiOverlay();
+    });
+#endif
 
     mainRenderContext->EndFrame();
 
@@ -173,8 +174,22 @@ void App::OnResize(int width, int height) {
     }
 }
 
-void App::InitGameObjects() {
-    BE1::Str textureFilenames[] = {
+void App::InitGameObjects(uint32_t countX, uint32_t countY, uint32_t countZ) {
+    goCountX = countX;
+    goCountY = countY;
+    goCountZ = countZ;
+
+#ifdef ENABLE_IMGUI
+    imguiGoCountX = static_cast<int>(countX);
+    imguiGoCountY = static_cast<int>(countY);
+#endif
+
+    uint32_t goCount = goCountX * goCountY * goCountZ;
+    gameObjects.Reserve(goCount);
+
+    testMesh = meshManager.GetMesh("_defaultBoxMesh");
+
+    const BE1::Str textureFilenames[] = {
         "Data/Test/Brick_Wall_Worn.dds",
         "Data/Test/Construction_Gravel.dds",
         "Data/Test/Dry_Cracked_Mud.dds",
@@ -193,11 +208,7 @@ void App::InitGameObjects() {
         "Data/Test/Curated_Stone_Facade.dds",
     };
 
-    gameObjects.Reserve(CubeCount);
-
-    testMesh = meshManager.GetMesh("_defaultBoxMesh");
-
-    for (int i = 0; i < CubeCount; ++i) {
+    for (int i = 0; i < goCount; ++i) {
         GameObject *gameObject = new GameObject;
         gameObjects.Append(gameObject);
 
@@ -224,22 +235,57 @@ void App::InitGameObjects() {
 
     gameObject->renderObjectHandle = renderWorld->AddRenderObject(gameObject->renderObjectDesc);*/
 
-    UpdateCubes();
+    RotateGameObjects();
 }
 
 void App::ClearGameObjects() {
     for (GameObject *gameObject : gameObjects) {
         renderWorld->RemoveRenderObject(gameObject->renderObjectHandle);
     }
+    renderWorld->ClearScene();
+
     gameObjects.DeleteContents(true);
+    gameObjects.Clear();
 
     testMesh.reset();
+}
+
+void App::ChangeGameObjectCount(uint32_t countX, uint32_t countY, uint32_t countZ) {
+    ClearGameObjects();
+
+    InitGameObjects(countX, countY, countZ);
 }
 
 void App::UpdateGameObjects() {
     PROFILER_CPU_SCOPED_EVENT("App::UpdateGameObjects");
 
-    //UpdateCubes();
+    //RotateGameObjects();
+}
+
+void App::RotateGameObjects() {
+    float elapsedSeconds = MILLI2SEC(elapsedMsec);
+
+    const float goSpacing = 1.414214f;
+    const float goStartX = -goSpacing * (goCountX - 1) * 0.5f;
+    const float goStartY = -goSpacing * (goCountY - 1) * 0.5f;
+    const float goStartZ = -goSpacing * (goCountZ - 1) * 0.5f;
+
+    float zRotationSpeed = 0.25f;
+
+    for (int z = 0; z < goCountZ; ++z) {
+        for (int y = 0; y < goCountY; ++y) {
+            for (int x = 0; x < goCountX; ++x) {
+                int index = goCountX * goCountY * z + goCountX * y + x;
+
+                float t = elapsedSeconds + index * 0.1f;
+
+                GameObject *gameObject = gameObjects[index];
+                gameObject->renderObjectDesc.worldMatrix.SetTranslationRotation(BE1::Vec3(goStartX + goSpacing * x, goStartY + goSpacing * y, goStartZ + goSpacing * z), BE1::Mat3::FromRotationZ(t * zRotationSpeed), false);
+
+                renderWorld->UpdateRenderObject(gameObject->renderObjectHandle, gameObject->renderObjectDesc, RenderObject::Desc::UpdateFlag::Transform);
+            }
+        }
+    }
 }
 
 void App::UpdateCamera(int frameMsec) {
@@ -272,27 +318,6 @@ void App::AddCameraDistance(int delta) {
 
 void App::TakeScreenshot() {
     BE1::cmdSystem.BufferCommandText(BE1::CmdSystem::Execution::Now, "screenshot");
-}
-
-void App::UpdateCubes() {
-    float elapsedSeconds = MILLI2SEC(elapsedMsec);
-
-    float zRotationSpeed = 0.25f;
-
-    for (int z = 0; z < CubeDimensionZ; ++z) {
-        for (int y = 0; y < CubeDimensionY; ++y) {
-            for (int x = 0; x < CubeDimensionX; ++x) {
-                int index = CubeDimensionX * CubeDimensionY * z + CubeDimensionX * y + x;
-
-                float t = elapsedSeconds + index * 0.1f;
-
-                GameObject *gameObject = gameObjects[index];
-                gameObject->renderObjectDesc.worldMatrix.SetTranslationRotation(BE1::Vec3(CubeStartX + CubeSpacing * x, CubeStartY + CubeSpacing * y, CubeStartZ + CubeSpacing * z), BE1::Mat3::FromRotationZ(t * zRotationSpeed), false);
-
-                renderWorld->UpdateRenderObject(gameObject->renderObjectHandle, gameObject->renderObjectDesc, RenderObject::Desc::UpdateFlag::Transform);
-            }
-        }
-    }
 }
 
 void App::RenderScene() {
@@ -361,3 +386,74 @@ void App::RenderText() {
         mainRenderContext->DrawString(0, y, BE1::va("Mipmap Streaming: %s / %s", BE1::Str::FormatBytes(textureStreamingUsageBytes).c_str(), BE1::Str::FormatBytes(textureStreamingBudgetBytes).c_str()), DrawTextFlag::Right | DrawTextFlag::AddOutlines); y += textLineHeight;
     }
 }
+
+#ifdef ENABLE_IMGUI
+void App::BuildImGuiOverlay() {
+    const float fontSize = ImGui::GetFontSize();
+
+    //ImGui::StyleColorsClassic();
+    //ImGui::StyleColorsLight();
+    ImGui::StyleColorsDark();
+
+    ImGui::Begin("TestD3D12", nullptr, ImGuiWindowFlags_AlwaysAutoResize);
+
+    if (RHI::renderer) {
+        const RHI::RendererInfo &rendererInfo = RHI::renderer->GetRendererInfo();
+
+        ImGui::Text("GPU Adapter: %s", rendererInfo.name);
+        ImGui::Text("Vendor ID: 0x%04X", rendererInfo.vendorId);
+        ImGui::Text("Device ID: 0x%04X", rendererInfo.deviceId);
+        ImGui::Separator();
+        ImGui::Text("Dedicated VRAM: %s", BE1::Str::FormatBytes(rendererInfo.dedicatedVideoMemoryBytes).c_str());
+        ImGui::Text("Dedicated System Memory: %s", BE1::Str::FormatBytes(rendererInfo.dedicatedSystemMemoryBytes).c_str());
+        ImGui::Text("Shared System Memory: %s", BE1::Str::FormatBytes(rendererInfo.sharedSystemMemoryBytes).c_str());
+        ImGui::Separator();
+    }
+
+    bool showFps = stat_fps.GetBool();
+    if (ImGui::Checkbox("Show FPS", &showFps)) {
+        stat_fps.SetBool(showFps);
+    }
+
+    bool showRenderStats = stat_render.GetBool();
+    if (ImGui::Checkbox("Show render statistics", &showRenderStats)) {
+        stat_render.SetBool(showRenderStats);
+    }
+
+    int streamInDelay = r_textureStreamingStreamInDelay.GetInteger();
+    ImGui::SetNextItemWidth(ImGui::GetFontSize() * 6.0f);
+    if (ImGui::InputInt("Texture stream-in delay", &streamInDelay)) {
+        r_textureStreamingStreamInDelay.SetInteger(BE1::Max(0, streamInDelay));
+    }
+
+    ImGui::Separator();
+
+    ImGui::SetNextItemWidth(ImGui::GetFontSize() * 10.0f);
+    ImGui::SliderInt("Count X", &imguiGoCountX, 1, 250);
+    const bool applyCountX = ImGui::IsItemDeactivatedAfterEdit();
+
+    ImGui::SetNextItemWidth(ImGui::GetFontSize() * 10.0f);
+    ImGui::SliderInt("Count Y", &imguiGoCountY, 1, 250);
+    const bool applyCountY = ImGui::IsItemDeactivatedAfterEdit();
+
+    if ((applyCountX || applyCountY) && (static_cast<uint32_t>(imguiGoCountX) != goCountX || static_cast<uint32_t>(imguiGoCountY) != goCountY || goCountZ != 1)) {
+        ChangeGameObjectCount(static_cast<uint32_t>(imguiGoCountX), static_cast<uint32_t>(imguiGoCountY), 1);
+    }
+
+    ImGui::Separator();
+
+    ImGui::Text("Mouse capture: %s", ImGui::GetIO().WantCaptureMouse ? "true" : "false");
+    ImGui::Text("Keyboard capture: %s", ImGui::GetIO().WantCaptureKeyboard ? "true" : "false");
+    ImGui::Separator();
+
+    if (ImGui::Button(imguiShowDemoWindow ? "Hide ImGui Demo" : "Show ImGui Demo")) {
+        imguiShowDemoWindow = !imguiShowDemoWindow;
+    }
+
+    ImGui::End();
+
+    if (imguiShowDemoWindow) {
+        ImGui::ShowDemoWindow(&imguiShowDemoWindow);
+    }
+}
+#endif

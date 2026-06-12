@@ -107,7 +107,7 @@ void D3D12SwapChain::CreateRTVs() {
         rtvDesc.Texture2D.MipSlice = 0;
         rtvDesc.Texture2D.PlaneSlice = 0;
 
-        D3D12Renderer::GetRenderer()->device->CreateRenderTargetView(backBuffers[bufferIndex], &rtvDesc, backBufferRTVs[bufferIndex]);
+        D3D12Renderer::GetRenderer()->GetDevice()->CreateRenderTargetView(backBuffers[bufferIndex], &rtvDesc, backBufferRTVs[bufferIndex]);
     }
 
     currentBackBufferIndex = dxgiSwapChain->GetCurrentBackBufferIndex();

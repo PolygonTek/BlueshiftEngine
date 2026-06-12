@@ -16,10 +16,10 @@
 #include "Texture.h"
 #include "LoadingSystem.h"
 
-static BE1::CVar    r_textureStreamingStreamInDelay("r_textureStreamingStreamInDelay", "0", BE1::CVar::Flag::Integer, "texture streaming frame delay before loading higher-resolution mips");
-static BE1::CVar    r_textureStreamingMaxRequestsPerFrame("r_textureStreamingMaxRequestsPerFrame", "256", BE1::CVar::Flag::Integer, "maximum texture streaming requests per frame");
-static BE1::CVar    r_textureStreamingMaxLevelReduction("r_textureStreamingMaxLevelReduction", "6", BE1::CVar::Flag::Integer, "maximum mip level reduction for streaming textures");
-static BE1::CVar    r_textureStreamingMinResidentMaxDimension("r_textureStreamingMinResidentMaxDimension", "64", BE1::CVar::Flag::Integer, "minimum requested resident texture max dimension");
+BE1::CVar           r_textureStreamingStreamInDelay("r_textureStreamingStreamInDelay", "0", BE1::CVar::Flag::Integer, "texture streaming frame delay before loading higher-resolution mips");
+BE1::CVar           r_textureStreamingMaxRequestsPerFrame("r_textureStreamingMaxRequestsPerFrame", "256", BE1::CVar::Flag::Integer, "maximum texture streaming requests per frame");
+BE1::CVar           r_textureStreamingMaxLevelReduction("r_textureStreamingMaxLevelReduction", "6", BE1::CVar::Flag::Integer, "maximum mip level reduction for streaming textures");
+BE1::CVar           r_textureStreamingMinResidentMaxDimension("r_textureStreamingMinResidentMaxDimension", "64", BE1::CVar::Flag::Integer, "minimum requested resident texture max dimension");
 
 TextureManager      textureManager;
 

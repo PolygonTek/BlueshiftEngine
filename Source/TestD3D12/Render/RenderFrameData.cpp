@@ -90,6 +90,8 @@ void RenderFrameData::Init(int32_t frameIndex, int32_t numFrames) {
 }
 
 void RenderFrameData::Shutdown() {
+    ClearPendingImGuiOverlay();
+
     for (int32_t threadIndex = 0; threadIndex < numRenderTaskThreads; ++threadIndex) {
         RHI::renderer->DestroyFrameThreadData(threadData[threadIndex]);
     }
@@ -309,6 +311,32 @@ Font *RenderFrameData::RetainFont(const SharedPtr<Font> &font) {
     }
 
     return fontPtr;
+}
+
+void RenderFrameData::SetPendingImGuiOverlay(RHI::ImGuiOverlay *overlay, void *userData) {
+    ClearPendingImGuiOverlay();
+
+    pendingImGuiOverlay.overlay = overlay;
+    pendingImGuiOverlay.userData = userData;
+}
+
+void RenderFrameData::RenderPendingImGuiOverlay(RHI::CommandList *commandList) {
+    PendingImGuiOverlay overlay = pendingImGuiOverlay;
+    pendingImGuiOverlay = {};
+
+    if (overlay.overlay) {
+        // ImGui 의 캡쳐 데이터를 렌더링 후 폐기한다.
+        RHI::renderer->RenderImGuiDrawData(GetThreadData(0), commandList, overlay.overlay, overlay.userData);
+        RHI::renderer->FreeImGuiDrawData(overlay.overlay, overlay.userData);
+    }
+}
+
+void RenderFrameData::ClearPendingImGuiOverlay() {
+    if (pendingImGuiOverlay.overlay) {
+        // ImGui 의 캡쳐 데이터를 폐기한다.
+        RHI::renderer->FreeImGuiDrawData(pendingImGuiOverlay.overlay, pendingImGuiOverlay.userData);
+    }
+    pendingImGuiOverlay = {};
 }
 
 VisCamera *RenderFrameData::AllocVisCamera() {

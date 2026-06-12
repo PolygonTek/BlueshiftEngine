@@ -56,6 +56,8 @@ set(SRC_FILES
     D3D12Renderer/D3D12CommandListPool.cpp
     D3D12Renderer/D3D12FrameThreadData.h
     D3D12Renderer/D3D12FrameThreadData.cpp
+    D3D12Renderer/D3D12ImGuiRenderer.h
+    D3D12Renderer/D3D12ImGuiRenderer.cpp
     Shaders/ShaderInterop.h
     Render/Anim.h
     Render/Anim.cpp
@@ -66,6 +68,8 @@ set(SRC_FILES
     Render/TextureStreamingFeedback.cpp
     Render/VertexInputLayoutFactory.h
     Render/VertexInputLayoutFactory.cpp
+    D3D12Renderer/D3D12ImGuiOverlay.h
+    D3D12Renderer/D3D12ImGuiOverlay.cpp
     Render/RenderContext.h
     Render/RenderContext.cpp
     Render/RenderFrameData.h
