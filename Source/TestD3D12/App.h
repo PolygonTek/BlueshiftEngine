@@ -41,6 +41,7 @@ public:
     RenderContext *                 GetMainRenderContext() const { return mainRenderContext; }
 
     void                            AddCameraMouseDelta(int deltaX, int deltaY);
+    void                            AddCameraPanDelta(int deltaX, int deltaY);
     void                            AddCameraDistance(int delta);
 
     void                            TakeScreenshot();
@@ -82,10 +83,12 @@ private:
     float                           targetCameraYaw = 0.0f;
     float                           targetCameraPitch = 45.0f;
     float                           targetCameraDistance = 205.0f;
+    BE1::Vec3                       targetCameraCenter = BE1::Vec3::origin;
 
     float                           cameraYaw;
     float                           cameraPitch;
     float                           cameraDistance;
+    BE1::Vec3                       cameraCenter = BE1::Vec3::origin;
 
     uint32_t                        goCountX = 1;
     uint32_t                        goCountY = 1;

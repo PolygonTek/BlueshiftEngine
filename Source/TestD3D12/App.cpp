@@ -57,6 +57,7 @@ void App::Init(void *mainWindowHandle) {
     cameraYaw = targetCameraYaw;
     cameraPitch = targetCameraPitch;
     cameraDistance = targetCameraDistance;
+    cameraCenter = targetCameraCenter;
 }
 
 void App::Shutdown() {
@@ -297,6 +298,7 @@ void App::UpdateCamera(int frameMsec) {
     cameraYaw += (targetCameraYaw - cameraYaw) * alpha;
     cameraPitch += (targetCameraPitch - cameraPitch) * alpha;
     cameraDistance += (targetCameraDistance - cameraDistance) * alpha;
+    cameraCenter = cameraCenter + (targetCameraCenter - cameraCenter) * alpha;
 }
 
 void App::AddCameraMouseDelta(int deltaX, int deltaY) {
@@ -305,6 +307,26 @@ void App::AddCameraMouseDelta(int deltaX, int deltaY) {
     targetCameraYaw -= deltaX * MouseSensitivity;
     targetCameraPitch += deltaY * MouseSensitivity;
     BE1::Clamp(targetCameraPitch, -90.0f, 90.0f);
+}
+
+void App::AddCameraPanDelta(int deltaX, int deltaY) {
+    if (!mainRenderContext || mainRenderContext->GetWidth() <= 0 || mainRenderContext->GetHeight() <= 0) {
+        return;
+    }
+
+    const float width = static_cast<float>(mainRenderContext->GetWidth());
+    const float height = static_cast<float>(mainRenderContext->GetHeight());
+    const float aspectRatio = width / height;
+
+    float fovX;
+    float fovY;
+    RenderCamera::CalculateFov(60.0f, 16.0f / 9.0f, aspectRatio, &fovX, &fovY);
+
+    const float unitsPerPixelX = 2.0f * targetCameraDistance * BE1::Math::Tan(DEG2RAD(fovX * 0.5f)) / width;
+    const float unitsPerPixelY = 2.0f * targetCameraDistance * BE1::Math::Tan(DEG2RAD(fovY * 0.5f)) / height;
+    const BE1::Mat3 cameraAxis = BE1::Angles(0.0f, targetCameraPitch, targetCameraYaw).ToMat3();
+
+    targetCameraCenter = targetCameraCenter + cameraAxis[1] * (deltaX * unitsPerPixelX) + cameraAxis[2] * (deltaY * unitsPerPixelY);
 }
 
 void App::AddCameraDistance(int delta) {
@@ -329,7 +351,7 @@ void App::RenderScene() {
     cameraDesc.orthogonal = false;
     cameraDesc.renderRect.Set(0, 0, w, h);
     cameraDesc.axis = BE1::Angles(0.0f, cameraPitch, cameraYaw).ToMat3();
-    cameraDesc.origin = BE1::Vec3::origin - cameraDesc.axis[0] * cameraDistance;
+    cameraDesc.origin = cameraCenter - cameraDesc.axis[0] * cameraDistance;
     RenderCamera::CalculateFov(60, 16.0f / 9.0f, aspectRatio, &cameraDesc.fovX, &cameraDesc.fovY);
     cameraDesc.zNear = BE1::MeterToUnit(0.5f);
     cameraDesc.zFar = BE1::MeterToUnit(1000.0f);

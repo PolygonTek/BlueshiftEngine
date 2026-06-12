@@ -284,7 +284,13 @@ INT_PTR CALLBACK About(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam) {
 }
 
 LRESULT CALLBACK MainWndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam) {
-    static bool mouseLook = false;
+    enum class MouseDragMode {
+        None,
+        Look,
+        Pan
+    };
+
+    static MouseDragMode mouseDragMode = MouseDragMode::None;
     static int lastMouseX = 0;
     static int lastMouseY = 0;
 
@@ -324,27 +330,51 @@ LRESULT CALLBACK MainWndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lPar
             POINTS p = MAKEPOINTS(lParam);
             lastMouseX = p.x;
             lastMouseY = p.y;
-            mouseLook = true;
+            mouseDragMode = MouseDragMode::Look;
             SetCapture(hwnd);
         }
         return 0;
     case WM_LBUTTONUP:
-        if (mouseLook) {
-            mouseLook = false;
+        if (mouseDragMode == MouseDragMode::Look) {
+            mouseDragMode = MouseDragMode::None;
+            ReleaseCapture();
+        }
+        return 0;
+    case WM_RBUTTONDOWN:
+#ifdef ENABLE_IMGUI
+        if (renderContext && renderContext->ImGuiWantsCaptureMouse()) {
+            return 0;
+        }
+#endif
+        {
+            POINTS p = MAKEPOINTS(lParam);
+            lastMouseX = p.x;
+            lastMouseY = p.y;
+            mouseDragMode = MouseDragMode::Pan;
+            SetCapture(hwnd);
+        }
+        return 0;
+    case WM_RBUTTONUP:
+        if (mouseDragMode == MouseDragMode::Pan) {
+            mouseDragMode = MouseDragMode::None;
             ReleaseCapture();
         }
         return 0;
     case WM_MOUSEMOVE:
 #ifdef ENABLE_IMGUI
-        if (renderContext && renderContext->ImGuiWantsCaptureMouse() && !mouseLook) {
+        if (renderContext && renderContext->ImGuiWantsCaptureMouse() && mouseDragMode == MouseDragMode::None) {
             return 0;
         }
 #endif
-        if (mouseLook) {
+        if (mouseDragMode != MouseDragMode::None) {
             POINTS p = MAKEPOINTS(lParam);
             int deltaX = p.x - lastMouseX;
             int deltaY = p.y - lastMouseY;
-            app.AddCameraMouseDelta(deltaX, deltaY);
+            if (mouseDragMode == MouseDragMode::Look) {
+                app.AddCameraMouseDelta(deltaX, deltaY);
+            } else {
+                app.AddCameraPanDelta(deltaX, deltaY);
+            }
             lastMouseX = p.x;
             lastMouseY = p.y;
         }
