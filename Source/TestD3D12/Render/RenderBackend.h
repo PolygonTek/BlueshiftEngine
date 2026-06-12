@@ -41,6 +41,7 @@ public:
 private:
     static constexpr int            GpuTimingSlotCount = 8;
     static constexpr int            GpuTimingSampleInterval = 4; // must be a power of two.
+    static constexpr uint32_t       MaxInstancesPerDraw = 2048;
 
     struct GpuTimingSlot {
         RenderContext *             renderContext = nullptr;
@@ -75,10 +76,11 @@ private:
     void                            DrawLitSurfaces(const PassDrawSurf **drawSurfs, uint32_t numDrawSurfs);
 
     void                            DrawLitSurfacesWithoutTask(const PassDrawSurf **drawSurfs, uint32_t numDrawSurfs);
-    void                            DrawLitSurfacesWithTask(const PassDrawSurf **drawSurfs, uint32_t numDrawSurfs, uint32_t numTasks);
+    void                            DrawLitSurfacesWithTask(const PassDrawSurf **drawSurfs, uint32_t numDrawSurfs);
     void                            DrawLitSurfacesByTask(RenderBackend::DrawSurfsTaskDesc *taskDesc);
     static void                     DrawLitSurfacesByTaskFunction(void *data);
 
+    uint32_t                        FindSurfaceInstanceBatchEnd(const PassDrawSurf **drawSurfs, uint32_t numDrawSurfs, uint32_t startIndex) const;
     RHI::Buffer *                   AllocInstanceToShaderSurfaceTable(RHI::FrameThreadData *frameThreadData, const PassDrawSurf **drawSurfs, uint32_t instanceCount) const;
     void                            DrawSurfaceInstances(RHI::FrameThreadData *frameThreadData, RHI::CommandList *commandList, const PassDrawSurf **drawSurfs, uint32_t instanceCount, uint32_t &drawCount, uint64_t &drawTriangleCount, uint32_t &instanceTableAllocCount, uint32_t &instanceTableUploadBytes);
 

@@ -525,16 +525,8 @@ void RenderBackend::DrawGuiPass(const RenderPass *renderPass) {
             RHI::renderer->SetIndexBuffer(mainCommandList, currentSubMesh->indexBuffer);
         }
 
-        const uint32_t instanceStartIndex = drawSurfIndex++;
-        while (drawSurfIndex < renderPass->numDrawSurfs) {
-            const PassDrawSurf *nextDrawSurf = renderPass->drawSurfs[drawSurfIndex];
-            if (nextDrawSurf->pso != drawSurf->pso ||
-                nextDrawSurf->visSurf->subMesh != drawSurf->visSurf->subMesh ||
-                nextDrawSurf->inputLayoutId != drawSurf->inputLayoutId) {
-                break;
-            }
-            drawSurfIndex++;
-        }
+        const uint32_t instanceStartIndex = drawSurfIndex;
+        drawSurfIndex = FindSurfaceInstanceBatchEnd(renderPass->drawSurfs, renderPass->numDrawSurfs, instanceStartIndex);
 
         DrawSurfaceInstances(frameData->GetThreadData(0), mainCommandList, &renderPass->drawSurfs[instanceStartIndex], drawSurfIndex - instanceStartIndex, statDrawCount, statDrawTriangleCount, statInstanceTableAllocCount, statInstanceTableUploadBytes);
     }

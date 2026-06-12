@@ -18,14 +18,23 @@
 #include "RenderContext.h"
 #include "RenderInternal.h"
 
-// 태스크 당 처리할 최대 Draw Call 횟수
-static constexpr uint32_t   MaxDrawSurfsPerTask = 2048;
-
 static bool CanBatchSurfaceInstances(const PassDrawSurf *baseDrawSurf, const PassDrawSurf *drawSurf) {
     return drawSurf->pso &&
         drawSurf->pso == baseDrawSurf->pso &&
         drawSurf->visSurf->subMesh == baseDrawSurf->visSurf->subMesh &&
         drawSurf->inputLayoutId == baseDrawSurf->inputLayoutId;
+}
+
+// startIndex 부터 batch 렌더링할 수 있는 최대 endIndex 를 구한다 (MaxInstancesPerDraw 제한은 있음)
+uint32_t RenderBackend::FindSurfaceInstanceBatchEnd(const PassDrawSurf **drawSurfs, uint32_t numDrawSurfs, uint32_t startIndex) const {
+    assert(startIndex < numDrawSurfs);
+
+    const PassDrawSurf *baseDrawSurf = drawSurfs[startIndex];
+    uint32_t endIndex = startIndex + 1;
+    while (endIndex < numDrawSurfs && endIndex - startIndex < MaxInstancesPerDraw && CanBatchSurfaceInstances(baseDrawSurf, drawSurfs[endIndex])) {
+        endIndex++;
+    }
+    return endIndex;
 }
 
 void RenderBackend::SetPassVertexBuffers(RHI::CommandList *commandList, const PassDrawSurf *drawSurf) const {
@@ -41,13 +50,9 @@ void RenderBackend::DrawLitSurfaces(const PassDrawSurf **drawSurfs, uint32_t num
     assert(numDrawSurfs > 0);
 
 #ifdef USE_RENDER_TASK
-    // numDrawSurfs 에 따라 numTasks 를 계산한다.
-    uint32_t numTasks = (numDrawSurfs + MaxDrawSurfsPerTask - 1) / MaxDrawSurfsPerTask;
-    numTasks = BE1::Min(BE1::Engine::taskManager->NumThreads(), numTasks);
-
     // numDrawSurfs 가 많으면 태스크로 나눠서 그린다.
-    if (numTasks > 1) {
-        DrawLitSurfacesWithTask(drawSurfs, numDrawSurfs, numTasks);
+    if (numDrawSurfs > MaxInstancesPerDraw && BE1::Engine::taskManager->NumThreads() > 1) {
+        DrawLitSurfacesWithTask(drawSurfs, numDrawSurfs);
     } else {
         DrawLitSurfacesWithoutTask(drawSurfs, numDrawSurfs);
     }
@@ -85,10 +90,8 @@ void RenderBackend::DrawLitSurfacesWithoutTask(const PassDrawSurf **drawSurfs, u
             RHI::renderer->SetIndexBuffer(mainCommandList, currentSubMesh->indexBuffer);
         }
 
-        const uint32_t instanceStartIndex = drawSurfIndex++;
-        while (drawSurfIndex < numDrawSurfs && CanBatchSurfaceInstances(drawSurfs[instanceStartIndex], drawSurfs[drawSurfIndex])) {
-            drawSurfIndex++;
-        }
+        const uint32_t instanceStartIndex = drawSurfIndex;
+        drawSurfIndex = FindSurfaceInstanceBatchEnd(drawSurfs, numDrawSurfs, instanceStartIndex);
 
         DrawSurfaceInstances(frameData->GetThreadData(0), mainCommandList, &drawSurfs[instanceStartIndex], drawSurfIndex - instanceStartIndex, statDrawCount, statDrawTriangleCount, statInstanceTableAllocCount, statInstanceTableUploadBytes);
     }
@@ -127,10 +130,8 @@ void RenderBackend::DrawLitSurfacesByTask(RenderBackend::DrawSurfsTaskDesc *task
             RHI::renderer->SetIndexBuffer(commandList, currentSubMesh->indexBuffer);
         }
 
-        const uint32_t instanceStartIndex = drawSurfIndex++;
-        while (drawSurfIndex < taskDesc->numDrawSurfs && CanBatchSurfaceInstances(taskDesc->drawSurfs[instanceStartIndex], taskDesc->drawSurfs[drawSurfIndex])) {
-            drawSurfIndex++;
-        }
+        const uint32_t instanceStartIndex = drawSurfIndex;
+        drawSurfIndex = FindSurfaceInstanceBatchEnd(taskDesc->drawSurfs, taskDesc->numDrawSurfs, instanceStartIndex);
 
         DrawSurfaceInstances(frameThreadData, commandList, &taskDesc->drawSurfs[instanceStartIndex], drawSurfIndex - instanceStartIndex, taskDesc->drawCount, taskDesc->drawTriangleCount, taskDesc->instanceTableAllocCount, taskDesc->instanceTableUploadBytes);
     }
@@ -147,24 +148,35 @@ void RenderBackend::DrawLitSurfacesByTaskFunction(void *data) {
     renderSystem->GetBackend()->DrawLitSurfacesByTask(taskDesc);
 }
 
-// drawSurfs 를 numTasks 만큼 task 로 나눠서 그린다.
-void RenderBackend::DrawLitSurfacesWithTask(const PassDrawSurf **drawSurfs, uint32_t numDrawSurfs, uint32_t numTasks) {
+void RenderBackend::DrawLitSurfacesWithTask(const PassDrawSurf **drawSurfs, uint32_t numDrawSurfs) {
     PROFILER_CPU_SCOPED_EVENT("RenderBackend::DrawSurfacesWithTask");
 
-    uint32_t numDrawSurfsPerTask = (numDrawSurfs + numTasks - 1) / numTasks;
+    // numDrawSurfs 로 만들어 질 수 있는 최대 태스크 개수를 계산한다.
+    const uint32_t maxTasks = BE1::Min(BE1::Engine::taskManager->NumThreads(), (numDrawSurfs + MaxInstancesPerDraw - 1) / MaxInstancesPerDraw);
+
+    // 태스크 당 처리하는 목표 DrawSurfs 개수 (인스턴싱 경계에 걸리지 않도록 더 추가될 수 있다)
+    const uint32_t targetDrawSurfsPerTask = (numDrawSurfs + maxTasks - 1) / maxTasks;
+
     uint32_t startIndex = 0;
     int32_t threadIndex = 0;
 
     // 태스크 정보 초기화
-    drawSurfsTaskDescs.Reserve(numTasks);
+    drawSurfsTaskDescs.Reserve(maxTasks);
     drawSurfsTaskDescs.SetCount(0, false);
 
-    // numTask 개수만큼 태스크를 추가한다.
+    // maxTasks 개수 이하로 태스크를 추가한다.
     while (startIndex < numDrawSurfs) {
+        // 인스턴싱 batch 경계를 유지하므로 실제 생성되는 task 수는 maxTasks 보다 적을 수 있다.
+        const uint32_t targetEndIndex = BE1::Min(startIndex + targetDrawSurfsPerTask, numDrawSurfs);
+        uint32_t endIndex = startIndex;
+        do {
+            endIndex = FindSurfaceInstanceBatchEnd(drawSurfs, numDrawSurfs, endIndex);
+        } while (endIndex < targetEndIndex);
+
         DrawSurfsTaskDesc &currentThreadDesc = drawSurfsTaskDescs.Alloc();
         currentThreadDesc.threadIndex = threadIndex++;
         currentThreadDesc.drawSurfs = &drawSurfs[startIndex];
-        currentThreadDesc.numDrawSurfs = BE1::Min(startIndex + numDrawSurfsPerTask, numDrawSurfs) - startIndex;
+        currentThreadDesc.numDrawSurfs = endIndex - startIndex;
         currentThreadDesc.drawCount = 0;
         currentThreadDesc.drawTriangleCount = 0;
         currentThreadDesc.instanceTableAllocCount = 0;
@@ -172,7 +184,7 @@ void RenderBackend::DrawLitSurfacesWithTask(const PassDrawSurf **drawSurfs, uint
 
         BE1::Engine::taskManager->AddTask(RenderBackend::DrawLitSurfacesByTaskFunction, &currentThreadDesc, drawGroupId, false);
 
-        startIndex += currentThreadDesc.numDrawSurfs;
+        startIndex = endIndex;
     }
 
     // 모든 태스크가 끝날 때까지 기다린다.
