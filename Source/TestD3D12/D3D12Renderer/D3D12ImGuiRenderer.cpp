@@ -637,6 +637,20 @@ bool D3D12ImGuiRenderer::InitOverlay(D3D12ImGuiOverlay *overlay, RHI::SwapChain 
     return true;
 }
 
+bool D3D12ImGuiRenderer::UpdateTextures(D3D12ImGuiOverlay *overlay, ImVector<ImTextureData *> *textures) {
+    if (!initialized || !overlay || !textures) {
+        return true;
+    }
+
+    for (ImTextureData *textureData : *textures) {
+        if (textureData && textureData->Status != ImTextureStatus_OK && !UpdateTexture(overlay, textureData)) {
+            return false;
+        }
+    }
+
+    return true;
+}
+
 void D3D12ImGuiRenderer::ShutdownOverlay(D3D12ImGuiOverlay *overlay) {
     if (!initialized || !overlay) {
         return;
@@ -691,14 +705,6 @@ void D3D12ImGuiRenderer::RenderDrawData(RHI::FrameThreadData *frameThreadData, R
     ImDrawData *drawData = _overlay->GetCapturedDrawData(userData);
     if (!drawData || !drawData->Valid || drawData->DisplaySize.x <= 0.0f || drawData->DisplaySize.y <= 0.0f || drawData->TotalVtxCount <= 0 || drawData->TotalIdxCount <= 0) {
         return;
-    }
-
-    if (drawData->Textures) {
-        for (ImTextureData *textureData : *drawData->Textures) {
-            if (textureData->Status != ImTextureStatus_OK && !UpdateTexture(_overlay, textureData)) {
-                return;
-            }
-        }
     }
 
     DXGI_FORMAT rtvFormat = D3D12Renderer::RHIFormatToDXGIFormat(_overlay->GetRTVFormat());
@@ -832,4 +838,11 @@ void D3D12Renderer::ShutdownImGuiOverlayRenderer(D3D12ImGuiOverlay *overlay) {
         return;
     }
     imguiRenderer->ShutdownOverlay(overlay);
+}
+
+bool D3D12Renderer::UpdateImGuiOverlayTextures(D3D12ImGuiOverlay *overlay, ImVector<ImTextureData *> *textures) {
+    if (!imguiRenderer) {
+        return true;
+    }
+    return imguiRenderer->UpdateTextures(overlay, textures);
 }

@@ -32,6 +32,8 @@ class D3D12CommandListPool;
 class D3D12DescriptorPool;
 class D3D12ImGuiRenderer;
 class D3D12ImGuiOverlay;
+template <typename T> struct ImVector;
+struct ImTextureData;
 
 struct D3D12ReleaseRequest {
     ID3D12Resource *                    resourceToRelease = nullptr;
@@ -76,6 +78,7 @@ public:
 
     bool                                InitImGuiOverlayRenderer(D3D12ImGuiOverlay *overlay, RHI::SwapChain *swapChain);
     void                                ShutdownImGuiOverlayRenderer(D3D12ImGuiOverlay *overlay);
+    bool                                UpdateImGuiOverlayTextures(D3D12ImGuiOverlay *overlay, ImVector<ImTextureData *> *textures);
 
     virtual RHI::FrameThreadData *      CreateFrameThreadData(int32_t frameIndex, int32_t numFrames, int32_t threadIndex, int32_t numRenderTaskThreads) override;
     virtual void                        DestroyFrameThreadData(RHI::FrameThreadData *frameThreadData) override;

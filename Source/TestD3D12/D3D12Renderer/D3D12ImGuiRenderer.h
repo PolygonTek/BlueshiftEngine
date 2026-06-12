@@ -19,6 +19,7 @@
 #include <unordered_map>
 
 class D3D12ImGuiOverlay;
+template <typename T> struct ImVector;
 struct ImTextureData;
 
 class D3D12ImGuiRenderer {
@@ -30,6 +31,7 @@ public:
 
     bool                            InitOverlay(D3D12ImGuiOverlay *overlay, RHI::SwapChain *swapChain);
     void                            ShutdownOverlay(D3D12ImGuiOverlay *overlay);
+    bool                            UpdateTextures(D3D12ImGuiOverlay *overlay, ImVector<ImTextureData *> *textures);
 
     void                            RenderDrawData(RHI::FrameThreadData *frameThreadData, RHI::CommandList *commandList, RHI::ImGuiOverlay *overlay, void *userData);
     void                            FreeDrawData(RHI::ImGuiOverlay *overlay, void *userData);

@@ -26,7 +26,7 @@ struct D3D12ImGuiOverlay::CapturedImGuiDrawData {
     D3D12ImGuiOverlay *         owner = nullptr;
     ImDrawData                  drawData;
     ImVector<ImDrawList *>      ownedDrawLists;
-    bool                        inUse = false;
+    std::atomic_bool            inUse = false;
 };
 
 // Win32 capture changes can synchronously re-enter WndProc while the ImGui handler is running.
@@ -65,9 +65,9 @@ D3D12ImGuiOverlay::CapturedImGuiDrawData *D3D12ImGuiOverlay::AllocCaptureSlot() 
     for (int slotOffset = 0; slotOffset < captureSlotCount; ++slotOffset) {
         const int slotIndex = (nextCaptureSlotIndex + slotOffset) % captureSlotCount;
         CapturedImGuiDrawData &captureSlot = captureSlots[slotIndex];
-        if (!captureSlot.inUse) {
+        bool expected = false;
+        if (captureSlot.inUse.compare_exchange_strong(expected, true, std::memory_order_acquire, std::memory_order_relaxed)) {
             nextCaptureSlotIndex = (slotIndex + 1) % captureSlotCount;
-            captureSlot.inUse = true;
             return &captureSlot;
         }
     }
@@ -96,7 +96,8 @@ D3D12ImGuiOverlay::CapturedImGuiDrawData *D3D12ImGuiOverlay::CaptureDrawData(con
     capturedDrawData->drawData.DisplaySize = srcDrawData->DisplaySize;
     capturedDrawData->drawData.FramebufferScale = srcDrawData->FramebufferScale;
     capturedDrawData->drawData.OwnerViewport = srcDrawData->OwnerViewport;
-    capturedDrawData->drawData.Textures = srcDrawData->Textures;
+    // Texture updates are completed during capture while the ImGui context is locked.
+    capturedDrawData->drawData.Textures = nullptr;
     capturedDrawData->drawData.CmdLists.resize(srcDrawData->CmdListsCount);
 
     for (int listIndex = 0; listIndex < srcDrawData->CmdListsCount; ++listIndex) {
@@ -118,7 +119,7 @@ void D3D12ImGuiOverlay::FreeCaptureSlots() {
         CapturedImGuiDrawData &captureSlot = captureSlots[slotIndex];
         captureSlot.drawData.Clear();
         captureSlot.ownedDrawLists.clear_delete();
-        captureSlot.inUse = false;
+        captureSlot.inUse.store(false, std::memory_order_relaxed);
     }
 
     delete [] captureSlots;
@@ -280,7 +281,14 @@ void *D3D12ImGuiOverlay::EndFrameCapture() {
     ImGui::SetCurrentContext(context);
     ImGui::Render();
     UpdateCaptureState();
-    void *capturedDrawData = CaptureDrawData(ImGui::GetDrawData());
+
+    ImDrawData *drawData = ImGui::GetDrawData();
+    D3D12Renderer *renderer = D3D12Renderer::GetRenderer();
+    if (renderer && !renderer->UpdateImGuiOverlayTextures(this, drawData ? drawData->Textures : nullptr)) {
+        BE_WARNLOG("D3D12ImGuiOverlay::EndFrameCapture: failed to update ImGui textures\n");
+    }
+
+    void *capturedDrawData = CaptureDrawData(drawData);
 
     frameStarted = false;
     imguiContextMutex.unlock();
@@ -290,7 +298,7 @@ void *D3D12ImGuiOverlay::EndFrameCapture() {
 
 ImDrawData *D3D12ImGuiOverlay::GetCapturedDrawData(void *userData) {
     CapturedImGuiDrawData *capturedDrawData = static_cast<CapturedImGuiDrawData *>(userData);
-    if (!initialized || !context || !capturedDrawData || capturedDrawData->owner != this || !capturedDrawData->inUse || !capturedDrawData->drawData.Valid) {
+    if (!initialized || !context || !capturedDrawData || capturedDrawData->owner != this || !capturedDrawData->inUse.load(std::memory_order_acquire) || !capturedDrawData->drawData.Valid) {
         return nullptr;
     }
 
@@ -304,7 +312,7 @@ void D3D12ImGuiOverlay::FreeCapturedDrawData(void *userData) {
     }
 
     capturedDrawData->drawData.Clear();
-    capturedDrawData->inUse = false;
+    capturedDrawData->inUse.store(false, std::memory_order_release);
 }
 
 bool D3D12ImGuiOverlay::HandleWndProc(void *hwnd, uint32_t message, uintptr_t wParam, intptr_t lParam) {
