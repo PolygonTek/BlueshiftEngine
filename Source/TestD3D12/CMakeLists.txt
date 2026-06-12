@@ -171,7 +171,7 @@ set_target_properties(${PROJECT_NAME} PROPERTIES FOLDER Test)
 target_include_directories(${PROJECT_NAME} PUBLIC ${DXC_INCLUDE_DIR})
 
 target_link_libraries(${PROJECT_NAME} winmm.lib dxgi.lib dxguid.lib d3d12.lib d3dcompiler.lib)
-target_link_libraries(${PROJECT_NAME} D3D12MemAlloc)
+target_link_libraries(${PROJECT_NAME} D3D12MemAlloc imgui_win32_dx12)
 #target_link_libraries(${PROJECT_NAME} ${DXC_LIBRARY})
 target_link_libraries(${PROJECT_NAME} ${PIX_LIBRARY})
 if (TARGET Tracy::TracyClient)
