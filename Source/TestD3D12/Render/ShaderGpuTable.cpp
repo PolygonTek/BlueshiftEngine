@@ -143,6 +143,8 @@ uint32_t ShaderMaterialTable::Register(const Material *material) {
 }
 
 bool ShaderMaterialTable::Upload(RHI::FrameThreadData *frameThreadData, RHI::CommandList *commandList, bool allowResize) {
+    PROFILER_CPU_SCOPED_EVENT("ShaderMaterialTable::Upload");
+
     if (!dirty || materials.Count() == 0) {
         return true;
     }
@@ -253,6 +255,8 @@ void ShaderSurfaceTable::Build(const VisSurf *visSurf, ShaderSurface &outShaderS
 }
 
 bool ShaderSurfaceTable::Upload(RHI::FrameThreadData *frameThreadData, RHI::CommandList *commandList, const VisCamera *visCamera, bool allowResize) {
+    PROFILER_CPU_SCOPED_EVENT("ShaderSurfaceTable::Upload");
+
     if (!visCamera || visCamera->numVisSurfs == 0) {
         Clear();
         return true;

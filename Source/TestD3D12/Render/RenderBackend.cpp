@@ -234,6 +234,8 @@ bool RenderBackend::UploadFrameConstants() {
 }
 
 bool RenderBackend::UploadCameraConstants() {
+    PROFILER_CPU_SCOPED_EVENT("RenderBackend::UploadCameraConstants");
+
     if (!currentVisCamera) {
         return false;
     }

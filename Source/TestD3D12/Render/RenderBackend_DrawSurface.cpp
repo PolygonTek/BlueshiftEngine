@@ -47,6 +47,8 @@ void RenderBackend::SetPassVertexBuffers(RHI::CommandList *commandList, const Pa
 }
 
 void RenderBackend::DrawLitSurfaces(const PassDrawSurf **drawSurfs, uint32_t numDrawSurfs) {
+    PROFILER_CPU_SCOPED_EVENT("RenderBackend::DrawLitSurfaces");
+
     assert(numDrawSurfs > 0);
 
 #ifdef USE_RENDER_TASK
