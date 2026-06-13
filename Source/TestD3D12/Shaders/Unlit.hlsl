@@ -1,15 +1,4 @@
-#include "Common.hlsli"
-
-#define COMMON_ROOT_SIGNATURE ROOT_SIGNATURE_GRAPHICS_ROOT_FLAGS \
-    ROOT_SIGNATURE_BINDLESS_DESCRIPTOR_TABLES \
-    "SRV(t0), " \
-    "CBV(b0), " \
-    "CBV(b1), " \
-    ROOT_SIGNATURE_COMMON_STATIC_SAMPLERS
-
-DECLARE_COMMON_STATIC_SAMPLERS
-
-StructuredBuffer<uint> instanceToShaderSurfaceTable : register(t0);
+#include "SurfaceDrawCommon.hlsli"
 
 struct VSInput {
     float4 position : POSITION;
@@ -25,20 +14,11 @@ struct PSInput {
     nointerpolation uint shaderMaterialIndex : TEXCOORD1;
 };
 
-cbuffer FrameCB : register(b0) {
-    FrameConstants frameConstants;
-};
-
-cbuffer CameraCB : register(b1) {
-    CameraConstants cameraConstants;
-};
-
 [RootSignature(COMMON_ROOT_SIGNATURE)]
 PSInput VSMain(VSInput input) {
     PSInput result;
 
-    const uint shaderSurfaceIndex = instanceToShaderSurfaceTable[input.instanceID];
-    ShaderSurface shaderSurface = GetShaderSurface(cameraConstants.surfaceTableIndex)[shaderSurfaceIndex];
+    ShaderSurface shaderSurface = GetShaderSurfaceByInstanceID(input.instanceID);
 
     float4 positionWS = float4(mul(shaderSurface.worldMatrix, input.position), 1.0);
     result.position = mul(cameraConstants.viewProjMatrix, positionWS);
@@ -51,7 +31,7 @@ PSInput VSMain(VSInput input) {
 
 [RootSignature(COMMON_ROOT_SIGNATURE)]
 float4 PSMain(PSInput input) : SV_TARGET {
-    ShaderMaterial shaderMaterial = GetShaderMaterial(frameConstants.shaderMaterialTableIndex)[input.shaderMaterialIndex];
+    ShaderMaterial shaderMaterial = GetShaderMaterial(input.shaderMaterialIndex);
 
     if (frameConstants.feedbackBufferIndex != 0 && shaderMaterial.streamingMaterialIndex != TextureStreamingInvalidIndex) {
         WriteMipmapFeedback(GetRWBufferUInt(frameConstants.feedbackBufferIndex), shaderMaterial.streamingMaterialIndex, ddx_coarse(input.texCoord.xy), ddy_coarse(input.texCoord.xy));

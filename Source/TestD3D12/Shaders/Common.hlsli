@@ -38,8 +38,8 @@ Buffer<uint> GetBufferUInt(uint index) { return ResourceDescriptorHeap[index]; }
 Buffer<uint2> GetBufferUInt2(uint index) { return ResourceDescriptorHeap[index]; }
 Buffer<uint3> GetBufferUInt3(uint index) { return ResourceDescriptorHeap[index]; }
 Buffer<uint4> GetBufferUInt4(uint index) { return ResourceDescriptorHeap[index]; }
-StructuredBuffer<ShaderSurface> GetShaderSurface(uint index) { return ResourceDescriptorHeap[index]; }
-StructuredBuffer<ShaderMaterial> GetShaderMaterial(uint index) { return ResourceDescriptorHeap[index]; }
+StructuredBuffer<ShaderSurface> GetShaderSurfaceTable(uint index) { return ResourceDescriptorHeap[index]; }
+StructuredBuffer<ShaderMaterial> GetShaderMaterialTable(uint index) { return ResourceDescriptorHeap[index]; }
 RWTexture2D<float4> GetRWTexture2D(uint index) { return ResourceDescriptorHeap[index]; }
 RWTexture2D<uint> GetRWTexture2DUInt(uint index) { return ResourceDescriptorHeap[index]; }
 RWTexture2D<uint2> GetRWTexture2DUInt2(uint index) { return ResourceDescriptorHeap[index]; }
@@ -180,8 +180,8 @@ Buffer<uint> GetBufferUInt(uint index) { return bindlessBufferUIntTable[index]; 
 Buffer<uint2> GetBufferUInt2(uint index) { return bindlessBufferUInt2Table[index]; }
 Buffer<uint3> GetBufferUInt3(uint index) { return bindlessBufferUInt3Table[index]; }
 Buffer<uint4> GetBufferUInt4(uint index) { return bindlessBufferUInt4Table[index]; }
-StructuredBuffer<ShaderSurface> GetShaderSurface(uint index) { return bindlessShaderSurfaceTable[index]; }
-StructuredBuffer<ShaderMaterial> GetShaderMaterial(uint index) { return bindlessShaderMaterialTable[index]; }
+StructuredBuffer<ShaderSurface> GetShaderSurfaceTable(uint index) { return bindlessShaderSurfaceTable[index]; }
+StructuredBuffer<ShaderMaterial> GetShaderMaterialTable(uint index) { return bindlessShaderMaterialTable[index]; }
 RWTexture2D<float4> GetRWTexture2D(uint index) { return bindlessRWTexture2DTable[index]; }
 RWTexture2D<uint> GetRWTexture2DUInt(uint index) { return bindlessRWTexture2DUIntTable[index]; }
 RWTexture2D<uint2> GetRWTexture2DUInt2(uint index) { return bindlessRWTexture2DUInt2Table[index]; }
