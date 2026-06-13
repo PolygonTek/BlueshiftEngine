@@ -62,6 +62,11 @@ void RHI::Renderer::InitDefaultStates() {
     dss->depthWriteMask = RHI::DepthWriteMask::Zero;
     dss->depthFunc = RHI::ComparisonFunc::Never;
 
+    dss = &depthStencilStates[to_int(RHI::DepthStencilStateType::ReadOnly)];
+    dss->depthTestEnabled = true;
+    dss->depthWriteMask = RHI::DepthWriteMask::Zero;
+    dss->depthFunc = RHI::ComparisonFunc::LEqual;
+
     RHI::BlendState *bs = &blendStates[to_int(RHI::BlendStateType::AlphaBlend)];
     bs->renderTargets[0].blendEnabled = true;
     bs->renderTargets[0].srcFactorColor = RHI::Blend::SrcAlpha;

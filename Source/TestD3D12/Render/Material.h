@@ -59,6 +59,7 @@ public:
 
     uint32_t                        GetIndex() const { return index; }
     const SharedPtr<ShaderTemplate> &GetShaderTemplate() const { return internalData.shaderTemplate; }
+    bool                            IsSkySurface() const { return internalData.shaderTemplate && internalData.shaderTemplate->IsSkySurface(); }
     RHI::CullMode                   GetCullMode() const { return internalData.cullMode; }
     RenderingMode                   GetRenderingMode() const { return internalData.renderingMode; }
     RHI::BlendStateType             GetBlendType() const { return internalData.blendType; }
@@ -161,6 +162,7 @@ public:
     SharedPtr<Material>             whiteLitMaterial;
     SharedPtr<Material>             blendUnlitMaterial;
     SharedPtr<Material>             blendLitMaterial;
+    SharedPtr<Material>             defaultSkyboxMaterial;
 
 private:
     void                            OnShaderTemplateReloaded(const ShaderTemplate *shaderTemplate, const BE1::Array<ShaderPropertyInfo> &oldProperties);

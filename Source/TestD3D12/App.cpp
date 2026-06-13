@@ -40,16 +40,18 @@ App                         app;
 void App::Init(void *mainWindowHandle) {
     PROFILER_INIT();
 
+    loadingSystem.Init();
+
     renderSystem = new RenderSystem;
     renderSystem->Init(mainWindowHandle);
-
-    loadingSystem.Init();
 
     mainRenderContext = renderSystem->CreateRenderContext(mainWindowHandle, true);
 
     mainFont = fontManager.GetFont("Data/EngineFonts/consola.ttf", 22);
 
     renderWorld = new RenderWorld;
+    renderWorld->SetSkyboxMaterial(materialManager.defaultSkyboxMaterial);
+
     renderCamera = new RenderCamera;
 
     InitGameObjects(100, 100, 1);
@@ -348,9 +350,8 @@ void App::RenderScene() {
     float aspectRatio = w / h;
 
     RenderCameraDesc cameraDesc;
-    cameraDesc.clearMethod = RenderCameraClearMethod::Color;
-    cameraDesc.clearColorMode = RenderCameraClearColorMode::RenderTargetDefault;
-    //cameraDesc.clearColor = BE1::Color4::darkBlue.SRGBToLinear();
+    cameraDesc.clearMethod = RenderCameraClearMethod::Skybox;
+    //cameraDesc.clearColorMode = RenderCameraClearColorMode::RenderTargetDefault;
     cameraDesc.orthogonal = false;
     cameraDesc.renderRect.Set(0, 0, w, h);
     cameraDesc.axis = BE1::Angles(0.0f, cameraPitch, cameraYaw).ToMat3();

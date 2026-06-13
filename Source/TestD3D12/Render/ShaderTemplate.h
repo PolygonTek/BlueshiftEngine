@@ -93,6 +93,7 @@ public:
     const char *                    GetName() const { return name.c_str(); }
     const char *                    GetHashName() const { return hashName.c_str(); }
     const BE1::Array<ShaderPropertyInfo> &GetProperties() const { return internalData.properties; }
+    bool                            IsSkySurface() const { return BE1::HasFlag(internalData.flags, Flag::SkySurface); }
 
     const ShaderPropertyInfo *      FindProperty(const char *name) const { return internalData.FindProperty(name); }
     int                             FindPropertyIndex(const char *name) const { return internalData.FindPropertyIndex(name); }

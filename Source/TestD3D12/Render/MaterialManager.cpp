@@ -346,6 +346,17 @@ void MaterialManager::CreateEngineMaterials() {
         }
     );
 
+    static constexpr const char *defaultSkyboxMaterialText = ENGINE_MATERIAL(
+    {
+        cull twoSided
+        shaderTemplate "Source/TestD3D12/Shaders/SkyboxCubemap"
+
+        properties {
+            skyCubeMap "Data/EngineTextures/default_sky.dds"
+        }
+    }
+    );
+
 #undef ENGINE_MATERIAL
 
     defaultUnlitMaterial = AllocMaterial("_defaultUnlitMaterial");
@@ -377,6 +388,11 @@ void MaterialManager::CreateEngineMaterials() {
     if (!blendLitMaterial->Create(blendLitMaterialText, nullptr)) {
         BE_FATALERROR("MaterialManager::CreateEngineMaterials: failed to create blendLit material");
     }
+
+    defaultSkyboxMaterial = AllocMaterial("_defaultSkyboxMaterial");
+    if (!defaultSkyboxMaterial->Create(defaultSkyboxMaterialText, nullptr)) {
+        BE_FATALERROR("MaterialManager::CreateEngineMaterials: failed to create defaultSkybox material");
+    }
 }
 
 void MaterialManager::DestroyEngineMaterials() {
@@ -386,4 +402,5 @@ void MaterialManager::DestroyEngineMaterials() {
     whiteLitMaterial.reset();
     blendUnlitMaterial.reset();
     blendLitMaterial.reset();
+    defaultSkyboxMaterial.reset();
 }

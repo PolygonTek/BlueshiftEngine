@@ -69,16 +69,19 @@ private:
     void                            DrawCamera2D();
 
     void                            DrawMainPass(const RenderPass *renderPass);
+    void                            DrawSkyPass(const RenderPass *renderPass);
     void                            DrawGuiPass(const RenderPass *renderPass);
 
+    void                            UploadStaticDataToGPU(const RenderPass *renderPass) const;
     void                            SetPassVertexBuffers(RHI::CommandList *commandList, const PassDrawSurf *drawSurf) const;
 
-    void                            DrawLitSurfaces(const PassDrawSurf **drawSurfs, uint32_t numDrawSurfs);
+    void                            DrawGenericSurfaces(const PassDrawSurf **drawSurfs, uint32_t numDrawSurfs);
+    void                            DrawSkySurfaces(const PassDrawSurf **drawSurfs, uint32_t numDrawSurfs);
 
-    void                            DrawLitSurfacesWithoutTask(const PassDrawSurf **drawSurfs, uint32_t numDrawSurfs);
-    void                            DrawLitSurfacesWithTask(const PassDrawSurf **drawSurfs, uint32_t numDrawSurfs);
-    void                            DrawLitSurfacesByTask(RenderBackend::DrawSurfsTaskDesc *taskDesc);
-    static void                     DrawLitSurfacesByTaskFunction(void *data);
+    void                            DrawGenericSurfacesWithoutTask(const PassDrawSurf **drawSurfs, uint32_t numDrawSurfs);
+    void                            DrawGenericSurfacesWithTask(const PassDrawSurf **drawSurfs, uint32_t numDrawSurfs);
+    void                            DrawGenericSurfacesByTask(RenderBackend::DrawSurfsTaskDesc *taskDesc);
+    static void                     DrawGenericSurfacesByTaskFunction(void *data);
 
     uint32_t                        FindSurfaceInstanceBatchEnd(const PassDrawSurf **drawSurfs, uint32_t numDrawSurfs, uint32_t startIndex) const;
     RHI::Buffer *                   AllocInstanceToShaderSurfaceTable(RHI::FrameThreadData *frameThreadData, const PassDrawSurf **drawSurfs, uint32_t instanceCount) const;

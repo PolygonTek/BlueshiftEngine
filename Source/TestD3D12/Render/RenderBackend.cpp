@@ -492,6 +492,9 @@ void RenderBackend::DrawCamera3D() {
     for (uint32_t passIndex = 0; passIndex < currentVisCamera->numRenderPasses; ++passIndex) {
         const RenderPass *renderPass = &currentVisCamera->renderPasses[passIndex];
         switch (renderPass->type) {
+        case RenderPassType::Skybox:
+            DrawSkyPass(renderPass);
+            break;
         case RenderPassType::MainOpaque:
         case RenderPassType::MainBlend:
             DrawMainPass(renderPass);
@@ -513,57 +516,108 @@ void RenderBackend::DrawCamera2D() {
     }
 }
 
+void RenderBackend::UploadStaticDataToGPU(const RenderPass *renderPass) const {
+    for (uint32_t drawSurfIndex = 0; drawSurfIndex < renderPass->numDrawSurfs; ++drawSurfIndex) {
+        const VisSurf *visSurf = renderPass->drawSurfs[drawSurfIndex]->visSurf;
+
+        if (!visSurf->subMesh->vertexBuffer) {
+            visSurf->subMesh->UploadStaticDataToGPU();
+        }
+    }
+}
+
+void RenderBackend::SetPassVertexBuffers(RHI::CommandList *commandList, const PassDrawSurf *drawSurf) const {
+    const SubMesh *subMesh = drawSurf->visSurf->subMesh;
+
+    RHI::renderer->SetVertexBuffer(commandList, 0, subMesh->vertexBuffer);
+    if (VertexInputLayoutFactory::IsSkinning(drawSurf->inputLayoutId)) {
+        RHI::renderer->SetVertexBuffer(commandList, 1, subMesh->vertexWeightBuffer);
+    }
+}
+
 void RenderBackend::DrawMainPass(const RenderPass *renderPass) {
     PROFILER_CPU_SCOPED_EVENT("RenderBackend::DrawMainPass");
 
     const PassDrawSurf **drawSurfs = renderPass->drawSurfs;
     const uint32_t numDrawSurfs = renderPass->numDrawSurfs;
 
-    for (uint32_t drawSurfIndex = 0; drawSurfIndex < numDrawSurfs; ++drawSurfIndex) {
-        const VisSurf *visSurf = drawSurfs[drawSurfIndex]->visSurf;
-
-        if (!visSurf->subMesh->vertexBuffer) {
-            visSurf->subMesh->UploadStaticDataToGPU();
-        }
-    }
+    UploadStaticDataToGPU(renderPass);
 
     if (numDrawSurfs > 0) {
-        DrawLitSurfaces(drawSurfs, numDrawSurfs);
+        DrawGenericSurfaces(drawSurfs, numDrawSurfs);
+    }
+}
+
+void RenderBackend::DrawSkyPass(const RenderPass *renderPass) {
+    PROFILER_CPU_SCOPED_EVENT("RenderBackend::DrawSkyPass");
+
+    const PassDrawSurf **drawSurfs = renderPass->drawSurfs;
+    const uint32_t numDrawSurfs = renderPass->numDrawSurfs;
+
+    UploadStaticDataToGPU(renderPass);
+
+    if (numDrawSurfs > 0) {
+        DrawSkySurfaces(drawSurfs, numDrawSurfs);
     }
 }
 
 void RenderBackend::DrawGuiPass(const RenderPass *renderPass) {
     PROFILER_CPU_SCOPED_EVENT("RenderBackend::DrawGuiPass");
 
-    RHI::PipelineState *currentPSO = nullptr;
-    const SubMesh *currentSubMesh = nullptr;
-    VertexInputLayoutId currentInputLayoutId = VertexInputLayoutId::Count;
+    const PassDrawSurf **drawSurfs = renderPass->drawSurfs;
+    const uint32_t numDrawSurfs = renderPass->numDrawSurfs;
 
-    uint32_t drawSurfIndex = 0;
-    while (drawSurfIndex < renderPass->numDrawSurfs) {
-        const PassDrawSurf *drawSurf = renderPass->drawSurfs[drawSurfIndex];
-        if (!drawSurf->pso) {
-            drawSurfIndex++;
-            continue;
-        }
+    DrawGenericSurfacesWithoutTask(drawSurfs, numDrawSurfs);
+}
 
-        if (currentPSO != drawSurf->pso) {
-            currentPSO = drawSurf->pso;
-            RHI::renderer->SetPSO(mainCommandList, currentPSO);
-            RHI::renderer->SetConstantBuffer(mainCommandList, 0, frameConstantBuffer);
-            RHI::renderer->SetConstantBuffer(mainCommandList, 1, cameraConstantBuffer);
-        }
+static bool CanBatchSurfaceInstances(const PassDrawSurf *baseDrawSurf, const PassDrawSurf *drawSurf) {
+    return drawSurf->pso &&
+        drawSurf->pso == baseDrawSurf->pso &&
+        drawSurf->visSurf->subMesh == baseDrawSurf->visSurf->subMesh &&
+        drawSurf->inputLayoutId == baseDrawSurf->inputLayoutId;
+}
 
-        if (currentSubMesh != drawSurf->visSurf->subMesh || currentInputLayoutId != drawSurf->inputLayoutId) {
-            currentSubMesh = drawSurf->visSurf->subMesh;
-            currentInputLayoutId = drawSurf->inputLayoutId;
-            SetPassVertexBuffers(mainCommandList, drawSurf);
-            RHI::renderer->SetIndexBuffer(mainCommandList, currentSubMesh->indexBuffer);
-        }
+// startIndex 부터 batch 렌더링할 수 있는 최대 endIndex 를 구한다 (MaxInstancesPerDraw 제한은 있음)
+uint32_t RenderBackend::FindSurfaceInstanceBatchEnd(const PassDrawSurf **drawSurfs, uint32_t numDrawSurfs, uint32_t startIndex) const {
+    assert(startIndex < numDrawSurfs);
 
-        const uint32_t instanceStartIndex = drawSurfIndex;
-        drawSurfIndex = FindSurfaceInstanceBatchEnd(renderPass->drawSurfs, renderPass->numDrawSurfs, instanceStartIndex);
-
-        DrawSurfaceInstances(frameData->GetThreadData(0), mainCommandList, &renderPass->drawSurfs[instanceStartIndex], drawSurfIndex - instanceStartIndex, statDrawCount, statDrawTriangleCount, statInstanceTableAllocCount, statInstanceTableUploadBytes);
+    const PassDrawSurf *baseDrawSurf = drawSurfs[startIndex];
+    uint32_t endIndex = startIndex + 1;
+    while (endIndex < numDrawSurfs && endIndex - startIndex < MaxInstancesPerDraw && CanBatchSurfaceInstances(baseDrawSurf, drawSurfs[endIndex])) {
+        endIndex++;
     }
+    return endIndex;
+}
+
+RHI::Buffer *RenderBackend::AllocInstanceToShaderSurfaceTable(RHI::FrameThreadData *frameThreadData, const PassDrawSurf **drawSurfs, uint32_t instanceCount) const {
+    RHI::Buffer *buffer = frameThreadData->AllocStructuredBuffer(sizeof(uint32_t), instanceCount, nullptr);
+    if (!buffer) {
+        return nullptr;
+    }
+
+    uint32_t *shaderSurfaceIndices = reinterpret_cast<uint32_t *>(buffer->mappedPtr);
+    for (uint32_t instanceIndex = 0; instanceIndex < instanceCount; ++instanceIndex) {
+        shaderSurfaceIndices[instanceIndex] = drawSurfs[instanceIndex]->visSurf->index;
+    }
+
+    return buffer;
+}
+
+void RenderBackend::DrawSurfaceInstances(RHI::FrameThreadData *frameThreadData, RHI::CommandList *commandList, const PassDrawSurf **drawSurfs, uint32_t instanceCount, uint32_t &drawCount, uint64_t &drawTriangleCount, uint32_t &instanceTableAllocCount, uint32_t &instanceTableUploadBytes) {
+    assert(instanceCount > 0);
+
+    const VisSurf *firstVisSurf = drawSurfs[0]->visSurf;
+
+    RHI::Buffer *instanceToShaderSurfaceTable = AllocInstanceToShaderSurfaceTable(frameThreadData, drawSurfs, instanceCount);
+    if (!instanceToShaderSurfaceTable) {
+        return;
+    }
+
+    RHI::renderer->SetBuffer(commandList, 0, false, instanceToShaderSurfaceTable);
+    RHI::renderer->DrawIndexedInstanced(commandList, firstVisSurf->subMesh->numIndexes, instanceCount, 0, 0, 0);
+
+    drawCount++;
+    drawTriangleCount += firstVisSurf->subMesh->numIndexes / 3 * instanceCount;
+    instanceTableAllocCount++;
+    instanceTableUploadBytes += sizeof(uint32_t) * instanceCount;
 }

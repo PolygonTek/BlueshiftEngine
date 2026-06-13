@@ -29,7 +29,8 @@ enum class VisSurfFlag : uint8_t {
     CameraVisible               = BIT(0),           ///< Surface is visible by camera
     ShadowVisible               = BIT(1),           ///< Shadow of surface is visible by camera
     ShowWires                   = BIT(2),
-    SkipSelection               = BIT(3)
+    SkipSelection               = BIT(3),
+    Skybox                      = BIT(4)
 };
 
 template<>
@@ -56,6 +57,7 @@ struct PassDrawSurf {
 };
 
 enum class RenderPassType : uint8_t {
+    Skybox,
     MainOpaque,
     MainBlend,
     DepthPrepass,
@@ -67,6 +69,7 @@ struct RenderPass {
     RenderPassType              type = RenderPassType::MainOpaque;
     ShaderPipelineDesc          pipelineDesc;
     ShaderFeatureSet            passFeatureSet;
+    VertexInputLayoutId         baseInputLayoutId = VertexInputLayoutId::XyzStColorNormalTangent;
 
     uint32_t                    maxDrawSurfs = 0;
     uint32_t                    numDrawSurfs = 0;

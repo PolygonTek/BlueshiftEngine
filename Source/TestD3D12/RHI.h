@@ -948,6 +948,7 @@ namespace RHI {
     enum class DepthStencilStateType : uint8_t {
         Default,
         Never,
+        ReadOnly,
         Count
     };
 

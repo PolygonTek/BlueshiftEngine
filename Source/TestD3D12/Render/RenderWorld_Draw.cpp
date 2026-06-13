@@ -529,7 +529,7 @@ void RenderWorld::AddSkyBoxMeshes(RenderFrameData *frameData, const RenderCamera
     visObject->cameraVisible = true;
     Material *material = frameData->RetainMaterial(skyboxMaterial);
 
-    AddVisSurf(frameData, visCamera, nullptr, visObject, material, meshSurf->subMesh, VisSurfFlag::CameraVisible | VisSurfFlag::SkipSelection);
+    AddVisSurf(frameData, visCamera, nullptr, visObject, material, meshSurf->subMesh, VisSurfFlag::CameraVisible | VisSurfFlag::SkipSelection | VisSurfFlag::Skybox);
 }
 
 void RenderWorld::RenderGUI(GuiMesh &guiMesh) {

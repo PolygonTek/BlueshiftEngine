@@ -80,7 +80,8 @@ set(SRC_FILES
     Render/RenderSystem.cpp
     Render/RenderBackend.h
     Render/RenderBackend.cpp
-    Render/RenderBackend_DrawSurface.cpp
+    Render/RenderBackend_DrawGeneric.cpp
+    Render/RenderBackend_DrawSky.cpp
     Render/RenderObject.h
     Render/RenderObject.cpp
     Render/RenderWorld.h

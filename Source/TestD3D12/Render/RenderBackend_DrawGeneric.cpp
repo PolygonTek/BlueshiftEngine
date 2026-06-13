@@ -1,11 +1,11 @@
 // Copyright(c) 2017 POLYGONTEK
-// 
+//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
-// 
+//
 // http://www.apache.org/licenses/LICENSE-2.0
-// 
+//
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -15,56 +15,27 @@
 #include "Precompiled.h"
 #include "RenderBackend.h"
 #include "RenderSystem.h"
-#include "RenderContext.h"
 #include "RenderInternal.h"
 
-static bool CanBatchSurfaceInstances(const PassDrawSurf *baseDrawSurf, const PassDrawSurf *drawSurf) {
-    return drawSurf->pso &&
-        drawSurf->pso == baseDrawSurf->pso &&
-        drawSurf->visSurf->subMesh == baseDrawSurf->visSurf->subMesh &&
-        drawSurf->inputLayoutId == baseDrawSurf->inputLayoutId;
-}
-
-// startIndex 부터 batch 렌더링할 수 있는 최대 endIndex 를 구한다 (MaxInstancesPerDraw 제한은 있음)
-uint32_t RenderBackend::FindSurfaceInstanceBatchEnd(const PassDrawSurf **drawSurfs, uint32_t numDrawSurfs, uint32_t startIndex) const {
-    assert(startIndex < numDrawSurfs);
-
-    const PassDrawSurf *baseDrawSurf = drawSurfs[startIndex];
-    uint32_t endIndex = startIndex + 1;
-    while (endIndex < numDrawSurfs && endIndex - startIndex < MaxInstancesPerDraw && CanBatchSurfaceInstances(baseDrawSurf, drawSurfs[endIndex])) {
-        endIndex++;
-    }
-    return endIndex;
-}
-
-void RenderBackend::SetPassVertexBuffers(RHI::CommandList *commandList, const PassDrawSurf *drawSurf) const {
-    const SubMesh *subMesh = drawSurf->visSurf->subMesh;
-
-    RHI::renderer->SetVertexBuffer(commandList, 0, subMesh->vertexBuffer);
-    if (VertexInputLayoutFactory::IsSkinning(drawSurf->inputLayoutId)) {
-        RHI::renderer->SetVertexBuffer(commandList, 1, subMesh->vertexWeightBuffer);
-    }
-}
-
-void RenderBackend::DrawLitSurfaces(const PassDrawSurf **drawSurfs, uint32_t numDrawSurfs) {
-    PROFILER_CPU_SCOPED_EVENT("RenderBackend::DrawLitSurfaces");
+void RenderBackend::DrawGenericSurfaces(const PassDrawSurf **drawSurfs, uint32_t numDrawSurfs) {
+    PROFILER_CPU_SCOPED_EVENT("RenderBackend::DrawGenericSurfaces");
 
     assert(numDrawSurfs > 0);
 
 #ifdef USE_RENDER_TASK
     // numDrawSurfs 가 많으면 태스크로 나눠서 그린다.
     if (numDrawSurfs > MaxInstancesPerDraw && BE1::Engine::taskManager->NumThreads() > 1) {
-        DrawLitSurfacesWithTask(drawSurfs, numDrawSurfs);
+        DrawGenericSurfacesWithTask(drawSurfs, numDrawSurfs);
     } else {
-        DrawLitSurfacesWithoutTask(drawSurfs, numDrawSurfs);
+        DrawGenericSurfacesWithoutTask(drawSurfs, numDrawSurfs);
     }
 #else
-    DrawLitSurfacesWithoutTask(drawSurfs, numDrawSurfs);
+    DrawGenericSurfacesWithoutTask(drawSurfs, numDrawSurfs);
 #endif
 }
 
-void RenderBackend::DrawLitSurfacesWithoutTask(const PassDrawSurf **drawSurfs, uint32_t numDrawSurfs) {
-    PROFILER_CPU_SCOPED_EVENT("RenderBackend::DrawSurfacesWithoutTask");
+void RenderBackend::DrawGenericSurfacesWithoutTask(const PassDrawSurf **drawSurfs, uint32_t numDrawSurfs) {
+    PROFILER_CPU_SCOPED_EVENT("RenderBackend::DrawGenericSurfacesWithoutTask");
 
     RHI::PipelineState *currentPSO = nullptr;
     const SubMesh *currentSubMesh = nullptr;
@@ -99,8 +70,8 @@ void RenderBackend::DrawLitSurfacesWithoutTask(const PassDrawSurf **drawSurfs, u
     }
 }
 
-void RenderBackend::DrawLitSurfacesByTask(RenderBackend::DrawSurfsTaskDesc *taskDesc) {
-    PROFILER_CPU_SCOPED_EVENT("RenderBackend::DrawSurfacesByTask");
+void RenderBackend::DrawGenericSurfacesByTask(RenderBackend::DrawSurfsTaskDesc *taskDesc) {
+    PROFILER_CPU_SCOPED_EVENT("RenderBackend::DrawGenericSurfacesByTask");
 
     // 세컨더리 커맨드 리스트를 시작한다.
     RHI::FrameThreadData *frameThreadData = frameData->GetThreadData(taskDesc->threadIndex);
@@ -145,13 +116,13 @@ void RenderBackend::DrawLitSurfacesByTask(RenderBackend::DrawSurfsTaskDesc *task
     taskDesc->commandList = commandList;
 }
 
-void RenderBackend::DrawLitSurfacesByTaskFunction(void *data) {
+void RenderBackend::DrawGenericSurfacesByTaskFunction(void *data) {
     RenderBackend::DrawSurfsTaskDesc *taskDesc = reinterpret_cast<RenderBackend::DrawSurfsTaskDesc *>(data);
-    renderSystem->GetBackend()->DrawLitSurfacesByTask(taskDesc);
+    renderSystem->GetBackend()->DrawGenericSurfacesByTask(taskDesc);
 }
 
-void RenderBackend::DrawLitSurfacesWithTask(const PassDrawSurf **drawSurfs, uint32_t numDrawSurfs) {
-    PROFILER_CPU_SCOPED_EVENT("RenderBackend::DrawSurfacesWithTask");
+void RenderBackend::DrawGenericSurfacesWithTask(const PassDrawSurf **drawSurfs, uint32_t numDrawSurfs) {
+    PROFILER_CPU_SCOPED_EVENT("RenderBackend::DrawGenericSurfacesWithTask");
 
     // numDrawSurfs 로 만들어 질 수 있는 최대 태스크 개수를 계산한다.
     const uint32_t maxTasks = BE1::Min(BE1::Engine::taskManager->NumThreads(), (numDrawSurfs + MaxInstancesPerDraw - 1) / MaxInstancesPerDraw);
@@ -184,7 +155,7 @@ void RenderBackend::DrawLitSurfacesWithTask(const PassDrawSurf **drawSurfs, uint
         currentThreadDesc.instanceTableAllocCount = 0;
         currentThreadDesc.instanceTableUploadBytes = 0;
 
-        BE1::Engine::taskManager->AddTask(RenderBackend::DrawLitSurfacesByTaskFunction, &currentThreadDesc, drawGroupId, false);
+        BE1::Engine::taskManager->AddTask(RenderBackend::DrawGenericSurfacesByTaskFunction, &currentThreadDesc, drawGroupId, false);
 
         startIndex = endIndex;
     }
@@ -199,37 +170,4 @@ void RenderBackend::DrawLitSurfacesWithTask(const PassDrawSurf **drawSurfs, uint
 
         mainCommandList->ExecuteSecondary(drawSurfsTaskDescs[threadIndex].commandList);
     }
-}
-
-RHI::Buffer *RenderBackend::AllocInstanceToShaderSurfaceTable(RHI::FrameThreadData *frameThreadData, const PassDrawSurf **drawSurfs, uint32_t instanceCount) const {
-    RHI::Buffer *buffer = frameThreadData->AllocStructuredBuffer(sizeof(uint32_t), instanceCount, nullptr);
-    if (!buffer) {
-        return nullptr;
-    }
-
-    uint32_t *shaderSurfaceIndices = reinterpret_cast<uint32_t *>(buffer->mappedPtr);
-    for (uint32_t instanceIndex = 0; instanceIndex < instanceCount; ++instanceIndex) {
-        shaderSurfaceIndices[instanceIndex] = drawSurfs[instanceIndex]->visSurf->index;
-    }
-
-    return buffer;
-}
-
-void RenderBackend::DrawSurfaceInstances(RHI::FrameThreadData *frameThreadData, RHI::CommandList *commandList, const PassDrawSurf **drawSurfs, uint32_t instanceCount, uint32_t &drawCount, uint64_t &drawTriangleCount, uint32_t &instanceTableAllocCount, uint32_t &instanceTableUploadBytes) {
-    assert(instanceCount > 0);
-
-    const VisSurf *firstVisSurf = drawSurfs[0]->visSurf;
-
-    RHI::Buffer *instanceToShaderSurfaceTable = AllocInstanceToShaderSurfaceTable(frameThreadData, drawSurfs, instanceCount);
-    if (!instanceToShaderSurfaceTable) {
-        return;
-    }
-
-    RHI::renderer->SetBuffer(commandList, 0, false, instanceToShaderSurfaceTable);
-    RHI::renderer->DrawIndexedInstanced(commandList, firstVisSurf->subMesh->numIndexes, instanceCount, 0, 0, 0);
-
-    drawCount++;
-    drawTriangleCount += firstVisSurf->subMesh->numIndexes / 3 * instanceCount;
-    instanceTableAllocCount++;
-    instanceTableUploadBytes += sizeof(uint32_t) * instanceCount;
 }
