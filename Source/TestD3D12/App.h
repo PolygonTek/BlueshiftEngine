@@ -55,6 +55,8 @@ private:
     void                            RenderText();
 #ifdef ENABLE_IMGUI
     void                            BuildImGuiOverlay();
+    void                            UpdateImGuiStatsPlotHistory();
+    void                            BuildImGuiStatsPlotWindow();
 #endif
 
     RenderContext *                 mainRenderContext = nullptr;
@@ -95,9 +97,16 @@ private:
     uint32_t                        goCountZ = 1;
 
 #ifdef ENABLE_IMGUI
+    static constexpr int            ImGuiStatsPlotSeriesCount = 5;
+    static constexpr int            ImGuiStatsPlotHistoryLength = 300;
+
     int                             imguiGoCountX = 1;
     int                             imguiGoCountY = 1;
     bool                            imguiShowDemoWindow = false;
+    bool                            imguiShowStatsPlotWindow = false;
+    float                           imguiStatsPlotSamples[ImGuiStatsPlotSeriesCount][ImGuiStatsPlotHistoryLength] = {};
+    int                             imguiStatsPlotWriteIndex = 0;
+    int                             imguiStatsPlotSampleCount = 0;
 #endif
 };
 

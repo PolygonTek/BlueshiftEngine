@@ -410,7 +410,117 @@ void App::RenderText() {
 }
 
 #ifdef ENABLE_IMGUI
+void App::UpdateImGuiStatsPlotHistory() {
+    const float stats[ImGuiStatsPlotSeriesCount] = {
+        statFrameAverageMsec,
+        statGameAverageMsec,
+        statRenderFrontendAverageMsec,
+        renderSystem && renderSystem->GetBackend() ? renderSystem->GetBackend()->GetStatRenderAverageMsec() : 0.0f,
+        mainRenderContext ? mainRenderContext->GetStatGpuAverageMsec() : 0.0f
+    };
+
+    for (int seriesIndex = 0; seriesIndex < ImGuiStatsPlotSeriesCount; ++seriesIndex) {
+        imguiStatsPlotSamples[seriesIndex][imguiStatsPlotWriteIndex] = stats[seriesIndex];
+    }
+
+    imguiStatsPlotWriteIndex = (imguiStatsPlotWriteIndex + 1) % ImGuiStatsPlotHistoryLength;
+    imguiStatsPlotSampleCount = BE1::Min(imguiStatsPlotSampleCount + 1, ImGuiStatsPlotHistoryLength);
+}
+
+void App::BuildImGuiStatsPlotWindow() {
+    if (!imguiShowStatsPlotWindow) {
+        return;
+    }
+
+    static const char *statNames[ImGuiStatsPlotSeriesCount] = {
+        "Frame",
+        "Game",
+        "Frontend",
+        "Backend",
+        "GPU"
+    };
+    static const ImVec4 statColors[ImGuiStatsPlotSeriesCount] = {
+        ImVec4(0.90f, 0.35f, 0.25f, 1.00f),
+        ImVec4(0.30f, 0.75f, 0.35f, 1.00f),
+        ImVec4(0.25f, 0.55f, 1.00f, 1.00f),
+        ImVec4(0.95f, 0.75f, 0.25f, 1.00f),
+        ImVec4(0.75f, 0.45f, 1.00f, 1.00f)
+    };
+
+    const float fontSize = ImGui::GetFontSize();
+    ImGui::SetNextWindowSize(ImVec2(fontSize * 42.0f, fontSize * 24.0f), ImGuiCond_FirstUseEver);
+    if (!ImGui::Begin("Stats Plot", &imguiShowStatsPlotWindow)) {
+        ImGui::End();
+        return;
+    }
+
+    const int latestSampleIndex = (imguiStatsPlotWriteIndex + ImGuiStatsPlotHistoryLength - 1) % ImGuiStatsPlotHistoryLength;
+    for (int seriesIndex = 0; seriesIndex < ImGuiStatsPlotSeriesCount; ++seriesIndex) {
+        ImGui::ColorButton(statNames[seriesIndex], statColors[seriesIndex], ImGuiColorEditFlags_NoTooltip | ImGuiColorEditFlags_NoDragDrop, ImVec2(fontSize, fontSize));
+        ImGui::SameLine();
+        ImGui::Text("%s %.2f ms", statNames[seriesIndex], imguiStatsPlotSamples[seriesIndex][latestSampleIndex]);
+    }
+
+    float maxMsec = 1.0f;
+    for (int seriesIndex = 0; seriesIndex < ImGuiStatsPlotSeriesCount; ++seriesIndex) {
+        for (int sampleOffset = 0; sampleOffset < imguiStatsPlotSampleCount; ++sampleOffset) {
+            const int sampleIndex = (imguiStatsPlotSampleCount == ImGuiStatsPlotHistoryLength)
+                ? (imguiStatsPlotWriteIndex + sampleOffset) % ImGuiStatsPlotHistoryLength
+                : sampleOffset;
+            maxMsec = BE1::Max(maxMsec, imguiStatsPlotSamples[seriesIndex][sampleIndex]);
+        }
+    }
+    maxMsec *= 1.15f;
+
+    ImGui::Text("Scale 0.00 - %.2f ms", maxMsec);
+
+    const ImVec2 plotSize(ImGui::GetContentRegionAvail().x, fontSize * 12.0f);
+    ImGui::InvisibleButton("##StatsPlotCanvas", plotSize);
+
+    const ImVec2 plotMin = ImGui::GetItemRectMin();
+    const ImVec2 plotMax = ImGui::GetItemRectMax();
+    ImDrawList *drawList = ImGui::GetWindowDrawList();
+
+    drawList->AddRectFilled(plotMin, plotMax, IM_COL32(16, 18, 22, 220));
+    drawList->AddRect(plotMin, plotMax, IM_COL32(96, 104, 116, 255));
+
+    for (int gridIndex = 1; gridIndex < 4; ++gridIndex) {
+        const float y = plotMin.y + (plotMax.y - plotMin.y) * gridIndex / 4.0f;
+        drawList->AddLine(ImVec2(plotMin.x, y), ImVec2(plotMax.x, y), IM_COL32(96, 104, 116, 80));
+    }
+
+    if (imguiStatsPlotSampleCount > 1) {
+        const float plotWidth = plotMax.x - plotMin.x;
+        const float plotHeight = plotMax.y - plotMin.y;
+        const float invMaxMsec = 1.0f / maxMsec;
+
+        for (int seriesIndex = 0; seriesIndex < ImGuiStatsPlotSeriesCount; ++seriesIndex) {
+            const ImU32 color = ImGui::ColorConvertFloat4ToU32(statColors[seriesIndex]);
+
+            for (int sampleOffset = 1; sampleOffset < imguiStatsPlotSampleCount; ++sampleOffset) {
+                const int prevSampleIndex = (imguiStatsPlotSampleCount == ImGuiStatsPlotHistoryLength)
+                    ? (imguiStatsPlotWriteIndex + sampleOffset - 1) % ImGuiStatsPlotHistoryLength
+                    : sampleOffset - 1;
+                const int sampleIndex = (imguiStatsPlotSampleCount == ImGuiStatsPlotHistoryLength)
+                    ? (imguiStatsPlotWriteIndex + sampleOffset) % ImGuiStatsPlotHistoryLength
+                    : sampleOffset;
+
+                const float x0 = plotMin.x + plotWidth * (sampleOffset - 1) / (imguiStatsPlotSampleCount - 1);
+                const float x1 = plotMin.x + plotWidth * sampleOffset / (imguiStatsPlotSampleCount - 1);
+                const float y0 = plotMax.y - BE1::Min(imguiStatsPlotSamples[seriesIndex][prevSampleIndex] * invMaxMsec, 1.0f) * plotHeight;
+                const float y1 = plotMax.y - BE1::Min(imguiStatsPlotSamples[seriesIndex][sampleIndex] * invMaxMsec, 1.0f) * plotHeight;
+
+                drawList->AddLine(ImVec2(x0, y0), ImVec2(x1, y1), color, 1.5f);
+            }
+        }
+    }
+
+    ImGui::End();
+}
+
 void App::BuildImGuiOverlay() {
+    UpdateImGuiStatsPlotHistory();
+
     const float fontSize = ImGui::GetFontSize();
 
     //ImGui::StyleColorsClassic();
@@ -442,19 +552,23 @@ void App::BuildImGuiOverlay() {
         stat_render.SetBool(showRenderStats);
     }
 
+    if (ImGui::Button(imguiShowStatsPlotWindow ? "Hide Stats Plot" : "Show Stats Plot")) {
+        imguiShowStatsPlotWindow = !imguiShowStatsPlotWindow;
+    }
+
     int streamInDelay = r_textureStreamingStreamInDelay.GetInteger();
-    ImGui::SetNextItemWidth(ImGui::GetFontSize() * 6.0f);
+    ImGui::SetNextItemWidth(fontSize * 6.0f);
     if (ImGui::InputInt("Texture stream-in delay", &streamInDelay)) {
         r_textureStreamingStreamInDelay.SetInteger(BE1::Max(0, streamInDelay));
     }
 
     ImGui::Separator();
 
-    ImGui::SetNextItemWidth(ImGui::GetFontSize() * 10.0f);
+    ImGui::SetNextItemWidth(fontSize * 10.0f);
     ImGui::SliderInt("Count X", &imguiGoCountX, 1, 250);
     const bool applyCountX = ImGui::IsItemDeactivatedAfterEdit();
 
-    ImGui::SetNextItemWidth(ImGui::GetFontSize() * 10.0f);
+    ImGui::SetNextItemWidth(fontSize * 10.0f);
     ImGui::SliderInt("Count Y", &imguiGoCountY, 1, 250);
     const bool applyCountY = ImGui::IsItemDeactivatedAfterEdit();
 
@@ -473,6 +587,8 @@ void App::BuildImGuiOverlay() {
     }
 
     ImGui::End();
+
+    BuildImGuiStatsPlotWindow();
 
     if (imguiShowDemoWindow) {
         ImGui::ShowDemoWindow(&imguiShowDemoWindow);
