@@ -66,6 +66,14 @@ int Material::FindPropertyIndex(const char *propertyName) const {
     return internalData.shaderTemplate->FindPropertyIndex(propertyName);
 }
 
+int Material::FindPropertyIndex(ShaderTemplate::BuiltInProperty builtInProperty) const {
+    if (!internalData.shaderTemplate) {
+        return -1;
+    }
+
+    return internalData.shaderTemplate->GetBuiltInPropertyIndex(builtInProperty);
+}
+
 const ShaderTemplate::PropertyValue *Material::GetPropertyValue(int propertyIndex) const {
     if (propertyIndex < 0 || propertyIndex >= internalData.propertyValues.Count()) {
         return nullptr;
@@ -76,6 +84,13 @@ const ShaderTemplate::PropertyValue *Material::GetPropertyValue(int propertyInde
 
 const ShaderTemplate::PropertyValue *Material::GetPropertyValue(const char *propertyName) const {
     return GetPropertyValue(FindPropertyIndex(propertyName));
+}
+
+const ShaderTemplate::PropertyValue *Material::GetPropertyValue(ShaderTemplate::BuiltInProperty builtInProperty) const {
+    if (!internalData.shaderTemplate) {
+        return nullptr;
+    }
+    return GetPropertyValue(FindPropertyIndex(builtInProperty));
 }
 
 const SharedPtr<Texture> *Material::GetTextureProperty(int propertyIndex) const {
@@ -90,6 +105,13 @@ const SharedPtr<Texture> *Material::GetTextureProperty(int propertyIndex) const 
 
 const SharedPtr<Texture> *Material::GetTextureProperty(const char *propertyName) const {
     return GetTextureProperty(FindPropertyIndex(propertyName));
+}
+
+const SharedPtr<Texture> *Material::GetTextureProperty(ShaderTemplate::BuiltInProperty builtInProperty) const {
+    if (!internalData.shaderTemplate) {
+        return nullptr;
+    }
+    return GetTextureProperty(FindPropertyIndex(builtInProperty));
 }
 
 void Material::InvalidatePermutationKeys() const {

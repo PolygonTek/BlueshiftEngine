@@ -18,6 +18,22 @@
 #include "Asset/GuidMapper.h"
 #include "IO/FileSystem.h"
 
+static constexpr const char *BuiltInPropertyNames[] = {
+    "baseColorTexture",
+    "skyCubeMap",
+    "skyBackMap",
+    "skyFrontMap",
+    "skyRightMap",
+    "skyLeftMap",
+    "skyTopMap",
+    "skyDownMap"
+};
+static_assert(COUNT_OF(BuiltInPropertyNames) == static_cast<int>(ShaderTemplate::BuiltInProperty::Count));
+
+ShaderTemplate::InternalData::InternalData() {
+    ResetBuiltInPropertyIndices();
+}
+
 void ShaderTemplate::InternalData::Purge() {
     for (ShaderStageSource &stageSource : stageSources) {
         stageSource = ShaderStageSource();
@@ -29,6 +45,7 @@ void ShaderTemplate::InternalData::Purge() {
     }
     properties.Clear();
     propertyHash.Clear(64, 64);
+    ResetBuiltInPropertyIndices();
 }
 
 void ShaderTemplate::InternalData::Swap(InternalData &rhs) {
@@ -42,6 +59,9 @@ void ShaderTemplate::InternalData::Swap(InternalData &rhs) {
     }
     properties.Swap(rhs.properties);
     propertyHash.Swap(rhs.propertyHash);
+    for (int i = 0; i < NumBuiltInProperties; ++i) {
+        BE1::Swap(builtInPropertyIndices[i], rhs.builtInPropertyIndices[i]);
+    }
     BE1::Swap(flags, rhs.flags);
 }
 
@@ -66,6 +86,27 @@ int ShaderTemplate::InternalData::FindPropertyIndex(const char *name) const {
     }
 
     return -1;
+}
+
+int ShaderTemplate::InternalData::GetBuiltInPropertyIndex(BuiltInProperty builtInProperty) const {
+    const int builtInPropertyIndex = static_cast<int>(builtInProperty);
+    assert(builtInPropertyIndex >= 0 && builtInPropertyIndex < NumBuiltInProperties);
+
+    return builtInPropertyIndices[builtInPropertyIndex];
+}
+
+void ShaderTemplate::InternalData::ResetBuiltInPropertyIndices() {
+    for (int i = 0; i < NumBuiltInProperties; ++i) {
+        builtInPropertyIndices[i] = -1;
+    }
+}
+
+void ShaderTemplate::InternalData::RefreshBuiltInPropertyIndices() {
+    ResetBuiltInPropertyIndices();
+
+    for (int i = 0; i < NumBuiltInProperties; ++i) {
+        builtInPropertyIndices[i] = FindPropertyIndex(BuiltInPropertyNames[i]);
+    }
 }
 
 bool ShaderTemplate::AddProperty(const char *name, const char *label, BE1::Variant::Type::Enum type, const BE1::Variant &defaultValue, const char *desc, int flags, ShaderPropertyInfo::ShaderFlag shaderFlags) {
@@ -96,6 +137,7 @@ bool ShaderTemplate::InternalData::AddProperty(const ShaderPropertyInfo &propert
     int propertyIndex = properties.Append(propertyInfo);
     int hash = propertyHash.GenerateHash(propertyInfo.GetName(), true);
     propertyHash.Add(hash, propertyIndex);
+    RefreshBuiltInPropertyIndices();
     return true;
 }
 

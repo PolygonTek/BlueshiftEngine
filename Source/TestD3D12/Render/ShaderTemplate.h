@@ -82,6 +82,18 @@ public:
         LoadedFromFile              = BIT(3)
     };
 
+    enum class BuiltInProperty : uint8_t {
+        BaseColorTexture,
+        SkyCubeMap,
+        SkyBackMap,
+        SkyFrontMap,
+        SkyRightMap,
+        SkyLeftMap,
+        SkyTopMap,
+        SkyDownMap,
+        Count
+    };
+
     using Feature = ShaderFeature;
     using PropertyValue = BE1::Variant;
 
@@ -97,6 +109,7 @@ public:
 
     const ShaderPropertyInfo *      FindProperty(const char *name) const { return internalData.FindProperty(name); }
     int                             FindPropertyIndex(const char *name) const { return internalData.FindPropertyIndex(name); }
+    int                             GetBuiltInPropertyIndex(BuiltInProperty builtInProperty) const { return internalData.GetBuiltInPropertyIndex(builtInProperty); }
     bool                            AddProperty(const ShaderPropertyInfo &propertyInfo);
     bool                            AddProperty(const char *name, const char *label, BE1::Variant::Type::Enum type, const BE1::Variant &defaultValue, const char *desc = "", int flags = BE1::PropertyInfo::Flag::Editor, ShaderPropertyInfo::ShaderFlag shaderFlags = ShaderPropertyInfo::ShaderFlag::None);
     bool                            CopyPropertiesFrom(const ShaderTemplate &shaderTemplate);
@@ -126,20 +139,28 @@ public:
 
 private:
     struct InternalData {
+        static constexpr int        NumBuiltInProperties = static_cast<int>(BuiltInProperty::Count);
+
+        InternalData();
+
         void                        Purge();
         void                        Swap(InternalData &rhs);
 
         const ShaderPropertyInfo *  FindProperty(const char *name) const;
         int                         FindPropertyIndex(const char *name) const;
+        int                         GetBuiltInPropertyIndex(BuiltInProperty builtInProperty) const;
         bool                        AddProperty(const ShaderPropertyInfo &propertyInfo);
         bool                        CopyPropertiesFrom(const InternalData &rhs, const char **duplicatedPropertyName = nullptr);
         void                        AddStage(RHI::ShaderStage shaderStage, RHI::ShaderModel shaderModel, const char *filename, const char *entryPoint);
+        void                        ResetBuiltInPropertyIndices();
+        void                        RefreshBuiltInPropertyIndices();
 
         ShaderStageSource           stageSources[to_int(RHI::ShaderStage::Count)] = {};
         BE1::StrArray               baseDefines;
         BE1::StrArray               featureDefines[to_int(Feature::Count)] = {};
         BE1::Array<ShaderPropertyInfo> properties;
         BE1::HashIndex              propertyHash { 64, 64 };
+        int                         builtInPropertyIndices[NumBuiltInProperties];
         Flag                        flags = Flag::None;
     };
 

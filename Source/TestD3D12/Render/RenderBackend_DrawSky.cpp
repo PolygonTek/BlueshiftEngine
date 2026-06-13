@@ -24,12 +24,12 @@ static const Texture *GetReadyTexture(const SharedPtr<Texture> *texture) {
     return texture->get();
 }
 
-static const Texture *GetReadyMaterialTexture(const Material *material, const char *propertyName) {
+static const Texture *GetReadyMaterialTexture(const Material *material, ShaderTemplate::BuiltInProperty builtInProperty) {
     if (!material) {
         return nullptr;
     }
 
-    return GetReadyTexture(material->GetTextureProperty(propertyName));
+    return GetReadyTexture(material->GetTextureProperty(builtInProperty));
 }
 
 static const Texture *GetReadyDefault2DTexture() {
@@ -42,8 +42,8 @@ static const Texture *GetReadyDefault2DTexture() {
     return nullptr;
 }
 
-static bool BindTexturePropertyOrDefault2D(RHI::CommandList *commandList, int shaderRegister, const Material *material, const char *propertyName) {
-    const Texture *texture = GetReadyMaterialTexture(material, propertyName);
+static bool BindTexturePropertyOrDefault2D(RHI::CommandList *commandList, int shaderRegister, const Material *material, ShaderTemplate::BuiltInProperty builtInProperty) {
+    const Texture *texture = GetReadyMaterialTexture(material, builtInProperty);
     if (!texture) {
         texture = GetReadyDefault2DTexture();
     }
@@ -60,8 +60,9 @@ static bool BindSkyboxTextures(RHI::CommandList *commandList, const Material *ma
         return true;
     }
 
-    if (material->FindPropertyIndex("skyCubeMap") >= 0) {
-        const Texture *texture = GetReadyMaterialTexture(material, "skyCubeMap");
+    // SkyboxCubemap
+    if (material->FindPropertyIndex(ShaderTemplate::BuiltInProperty::SkyCubeMap) >= 0) {
+        const Texture *texture = GetReadyMaterialTexture(material, ShaderTemplate::BuiltInProperty::SkyCubeMap);
         if (!texture) {
             return false;
         }
@@ -70,13 +71,14 @@ static bool BindSkyboxTextures(RHI::CommandList *commandList, const Material *ma
         return true;
     }
 
-    if (material->FindPropertyIndex("skyBackMap") >= 0) {
-        return BindTexturePropertyOrDefault2D(commandList, 1, material, "skyBackMap") &&
-            BindTexturePropertyOrDefault2D(commandList, 2, material, "skyFrontMap") &&
-            BindTexturePropertyOrDefault2D(commandList, 3, material, "skyRightMap") &&
-            BindTexturePropertyOrDefault2D(commandList, 4, material, "skyLeftMap") &&
-            BindTexturePropertyOrDefault2D(commandList, 5, material, "skyTopMap") &&
-            BindTexturePropertyOrDefault2D(commandList, 6, material, "skyDownMap");
+    // SkyboxSixSided
+    if (material->FindPropertyIndex(ShaderTemplate::BuiltInProperty::SkyBackMap) >= 0) {
+        return BindTexturePropertyOrDefault2D(commandList, 1, material, ShaderTemplate::BuiltInProperty::SkyBackMap) &&
+            BindTexturePropertyOrDefault2D(commandList, 2, material, ShaderTemplate::BuiltInProperty::SkyFrontMap) &&
+            BindTexturePropertyOrDefault2D(commandList, 3, material, ShaderTemplate::BuiltInProperty::SkyRightMap) &&
+            BindTexturePropertyOrDefault2D(commandList, 4, material, ShaderTemplate::BuiltInProperty::SkyLeftMap) &&
+            BindTexturePropertyOrDefault2D(commandList, 5, material, ShaderTemplate::BuiltInProperty::SkyTopMap) &&
+            BindTexturePropertyOrDefault2D(commandList, 6, material, ShaderTemplate::BuiltInProperty::SkyDownMap);
     }
 
     return true;

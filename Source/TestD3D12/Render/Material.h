@@ -66,10 +66,13 @@ public:
     Flag                            GetFlags() const { return internalData.flags; }
 
     int                             FindPropertyIndex(const char *propertyName) const;
+    int                             FindPropertyIndex(ShaderTemplate::BuiltInProperty builtInProperty) const;
     const ShaderTemplate::PropertyValue *GetPropertyValue(int propertyIndex) const;
     const ShaderTemplate::PropertyValue *GetPropertyValue(const char *propertyName) const;
+    const ShaderTemplate::PropertyValue *GetPropertyValue(ShaderTemplate::BuiltInProperty builtInProperty) const;
     const SharedPtr<Texture> *      GetTextureProperty(int propertyIndex) const;
     const SharedPtr<Texture> *      GetTextureProperty(const char *propertyName) const;
+    const SharedPtr<Texture> *      GetTextureProperty(ShaderTemplate::BuiltInProperty builtInProperty) const;
     bool                            SetPropertyValue(int propertyIndex, const ShaderTemplate::PropertyValue &value);
     bool                            SetPropertyValue(const char *propertyName, const ShaderTemplate::PropertyValue &value);
 
