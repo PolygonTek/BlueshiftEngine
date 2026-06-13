@@ -24,7 +24,7 @@ RenderContext *     RenderContext::activeContext = nullptr;
 
 static constexpr int    GpuStatUpdateSampleCount = 16;
 
-void RenderContext::Init(void *windowHandle) {
+void RenderContext::Init(void *windowHandle, const BE1::Color4 &optimizedClearColor) {
     this->windowHandle = windowHandle;
 
     // 프레임 별로 사용할 프레임 데이터들을 초기화한다.
@@ -44,13 +44,20 @@ void RenderContext::Init(void *windowHandle) {
     uint32_t backBufferHeight = rc.bottom;
 
     // 스왑 체인 (백버퍼) 생성
-    swapChain = RHI::renderer->CreateSwapChain(hwnd, backBufferWidth, backBufferHeight, RHI::Format::R8G8B8A8_UNORM);
+    RHI::Format swapChainFormat = RHI::Format::R8G8B8A8_UNORM;
+    swapChain = RHI::renderer->CreateSwapChain(hwnd, backBufferWidth, backBufferHeight, swapChainFormat);
 
 #ifdef ENABLE_IMGUI
     // ImGui 오버레이 객체 생성
     imguiOverlay = RHI::renderer->CreateImGuiOverlay(windowHandle, swapChain);
 #endif
 
+#ifdef USE_OFFSCREEN_MAIN_RENDER_TARGET
+    this->optimizedClearColor = !RHI::Renderer::IsSRGBFormat(mainRTColorFormat) ? optimizedClearColor.SRGBToLinear() : optimizedClearColor;
+#else
+    this->optimizedClearColor = !RHI::Renderer::IsSRGBFormat(swapChainFormat) ? optimizedClearColor.SRGBToLinear() : optimizedClearColor;
+#endif
+    
     // 렌더 타겟 텍스쳐 & 뎁스 텍스쳐 생성
     CreateMainRenderTextures(backBufferWidth, backBufferHeight);
 
@@ -118,15 +125,17 @@ void RenderContext::CreateMainRenderTextures(uint32_t width, uint32_t height) {
     BE1::Image::Format colorImageFormat = BE1::Image::Format::Unknown;
     RHI::Renderer::RHIFormatToImageFormat(mainRTColorFormat, &colorImageFormat, nullptr);
 
+    // NOTE: colorImageFormat 이 sRGB 포맷이 아닌 Linear 포맷이라면, optimizedClearColor 도 같은 컬러 공간을 가져야 한다.
+    const RHI::ClearValue optimizedClearColorValue = RHI::ClearValue::Color(optimizedClearColor[0], optimizedClearColor[1], optimizedClearColor[2], optimizedClearColor[3]);
+    const RHI::ClearValue optimizedclearDepthStencilValue = RHI::ClearValue::DepthStencil(1.0f, 0);
+
     SharedPtr<BE1::Image> colorImage = MakeShared<BE1::Image>();
     colorImage->InitFromMemory(width, height, 1, 1, 1, colorImageFormat, BE1::Image::GammaSpace::Linear, nullptr, BE1::Image::Flag::None);
-    mainRTColorTexture = RHI::renderer->CreateTexture(RHI::TextureType::Texture2D, RHI::TextureFlag::RenderTarget | RHI::TextureFlag::ShaderResource | RHI::TextureFlag::UnorderedAccess,
-        colorImage, false, RHI::ClearValue::Color(0.0f, 0.0f, 0.5f, 0.0f), 1);
+    mainRTColorTexture = RHI::renderer->CreateTexture(RHI::TextureType::Texture2D, RHI::TextureFlag::RenderTarget | RHI::TextureFlag::ShaderResource | RHI::TextureFlag::UnorderedAccess, colorImage, false, optimizedClearColorValue, 1);
     RHI::renderer->SetName(mainRTColorTexture, "mainRTColorTexture");
 
     if (mainRTSampleCount > 1) {
-        mainRTColorMSAATexture = RHI::renderer->CreateTexture(RHI::TextureType::Texture2D, RHI::TextureFlag::RenderTarget | RHI::TextureFlag::ShaderResource,
-            colorImage, false, RHI::ClearValue::Color(0.0f, 0.0f, 5.0f, 0.0f), mainRTSampleCount);
+        mainRTColorMSAATexture = RHI::renderer->CreateTexture(RHI::TextureType::Texture2D, RHI::TextureFlag::RenderTarget | RHI::TextureFlag::ShaderResource, colorImage, false, optimizedClearColorValue, mainRTSampleCount);
         RHI::renderer->SetName(mainRTColorMSAATexture, "mainRTColorMSAATexture");
     }
 
@@ -135,8 +144,7 @@ void RenderContext::CreateMainRenderTextures(uint32_t width, uint32_t height) {
 
     SharedPtr<BE1::Image> depthStencilImage = MakeShared<BE1::Image>();
     depthStencilImage->InitFromMemory(width, height, 1, 1, 1, depthImageFormat, BE1::Image::GammaSpace::Linear, nullptr, BE1::Image::Flag::None);
-    mainRTDepthTexture = RHI::renderer->CreateTexture(RHI::TextureType::Texture2D, RHI::TextureFlag::DepthStencil,
-        depthStencilImage, false, RHI::ClearValue::DepthStencil(1.0f, 0), mainRTSampleCount, RHI::GPUResourceState::DepthWrite);
+    mainRTDepthTexture = RHI::renderer->CreateTexture(RHI::TextureType::Texture2D, RHI::TextureFlag::DepthStencil, depthStencilImage, false, optimizedclearDepthStencilValue, mainRTSampleCount, RHI::GPUResourceState::DepthWrite);
     RHI::renderer->SetName(mainRTDepthTexture, "mainRTDepthTexture");
 }
 

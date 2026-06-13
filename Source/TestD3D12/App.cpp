@@ -348,6 +348,9 @@ void App::RenderScene() {
     float aspectRatio = w / h;
 
     RenderCameraDesc cameraDesc;
+    cameraDesc.clearMethod = RenderCameraClearMethod::Color;
+    cameraDesc.clearColorMode = RenderCameraClearColorMode::RenderTargetDefault;
+    //cameraDesc.clearColor = BE1::Color4::darkBlue.SRGBToLinear();
     cameraDesc.orthogonal = false;
     cameraDesc.renderRect.Set(0, 0, w, h);
     cameraDesc.axis = BE1::Angles(0.0f, cameraPitch, cameraYaw).ToMat3();

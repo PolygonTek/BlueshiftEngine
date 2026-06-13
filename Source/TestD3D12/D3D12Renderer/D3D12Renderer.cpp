@@ -1246,13 +1246,14 @@ void D3D12Renderer::ReadPixels(RHI::CommandList *commandList, const RHI::SwapCha
 
 void D3D12Renderer::BeginRenderPass(RHI::CommandList *commandList, const RHI::SwapChain *swapChain, const RHI::Texture *depthStencilTexture, const BE1::Color4 &clearColor, float clearDepth, uint8_t clearStencil, RHI::ClearFlag clearFlags) {
     D3D12CommandList *_commandList = static_cast<D3D12CommandList *>(commandList);
+    const D3D12SwapChain *d3d12SwapChain = static_cast<const D3D12SwapChain *>(swapChain);
 
     if (swapChain) {
         // 백버퍼를 렌더 타겟 상태로 전환하는 Barrier
         D3D12_RESOURCE_BARRIER barrier;
         barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
         barrier.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
-        barrier.Transition.pResource = static_cast<const D3D12SwapChain *>(swapChain)->GetCurrentBackBuffer();
+        barrier.Transition.pResource = d3d12SwapChain->GetCurrentBackBuffer();
         barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_PRESENT;
         barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_RENDER_TARGET;
         barrier.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
@@ -1268,9 +1269,10 @@ void D3D12Renderer::BeginRenderPass(RHI::CommandList *commandList, const RHI::Sw
     D3D12_RENDER_PASS_RENDER_TARGET_DESC *rtDescPtr = nullptr;
     D3D12_RENDER_PASS_RENDER_TARGET_DESC rtDesc = {};
     if (swapChain) {
-        rtDesc.cpuDescriptor = static_cast<const D3D12SwapChain *>(swapChain)->GetCurrentBackBufferRTVDescriptorHandle();
+        rtDesc.cpuDescriptor = d3d12SwapChain->GetCurrentBackBufferRTVDescriptorHandle();
         if (BE1::HasFlag(clearFlags, RHI::ClearFlag::Color)) {
             rtDesc.BeginningAccess.Type = D3D12_RENDER_PASS_BEGINNING_ACCESS_TYPE_CLEAR;
+            rtDesc.BeginningAccess.Clear.ClearValue.Format = RHIFormatToDXGIFormat(d3d12SwapChain->GetRTVFormat());
             rtDesc.BeginningAccess.Clear.ClearValue.Color[0] = clearColor[0];
             rtDesc.BeginningAccess.Clear.ClearValue.Color[1] = clearColor[1];
             rtDesc.BeginningAccess.Clear.ClearValue.Color[2] = clearColor[2];
@@ -1459,7 +1461,13 @@ void D3D12Renderer::BeginRenderPass(RHI::CommandList *commandList, const RHI::Re
             D3D12_RENDER_PASS_RENDER_TARGET_DESC &rtDesc = rtDescs[rtCount];
             rtDesc.cpuDescriptor = rtvEntry.cpuDescriptorHandle;
             rtDesc.BeginningAccess.Type = beginningAccessType;
-            rtDesc.BeginningAccess.Clear.ClearValue = texture->clearValue;
+            rtDesc.BeginningAccess.Clear.ClearValue = texture->optimizedClearValue;
+            if (renderPassImage.hasClearValue) {
+                rtDesc.BeginningAccess.Clear.ClearValue.Color[0] = renderPassImage.clearValue.color[0];
+                rtDesc.BeginningAccess.Clear.ClearValue.Color[1] = renderPassImage.clearValue.color[1];
+                rtDesc.BeginningAccess.Clear.ClearValue.Color[2] = renderPassImage.clearValue.color[2];
+                rtDesc.BeginningAccess.Clear.ClearValue.Color[3] = renderPassImage.clearValue.color[3];
+            }
             rtDesc.EndingAccess.Type = endingAccessType;
 
             // 텍스쳐의 RTV 정보를 가져온다.
@@ -1484,7 +1492,11 @@ void D3D12Renderer::BeginRenderPass(RHI::CommandList *commandList, const RHI::Re
             const D3D12DSVEntry &dsvEntry = texture->dsvEntries[renderPassImage.viewID.value];
             dsDesc.cpuDescriptor = dsvEntry.cpuDescriptorHandle;
             dsDesc.DepthBeginningAccess.Type = beginningAccessType;
-            dsDesc.DepthBeginningAccess.Clear.ClearValue = texture->clearValue;
+            dsDesc.DepthBeginningAccess.Clear.ClearValue = texture->optimizedClearValue;
+            if (renderPassImage.hasClearValue) {
+                dsDesc.DepthBeginningAccess.Clear.ClearValue.DepthStencil.Depth = renderPassImage.clearValue.depthStencil.depth;
+                dsDesc.DepthBeginningAccess.Clear.ClearValue.DepthStencil.Stencil = renderPassImage.clearValue.depthStencil.stencil;
+            }
             dsDesc.DepthEndingAccess.Type = endingAccessType;
 
             if (IsStencilFormat(texture->textureDesc.Format)) {
@@ -2145,6 +2157,10 @@ bool D3D12Renderer::IsStencilFormat(DXGI_FORMAT format) {
         return true;
     }
     return false;
+}
+
+bool D3D12Renderer::IsDepthStencilFormat(DXGI_FORMAT format) {
+    return IsDepthFormat(format) && IsStencilFormat(format);
 }
 
 bool D3D12Renderer::IsTypelessFormat(DXGI_FORMAT format) {

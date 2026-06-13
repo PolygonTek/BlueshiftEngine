@@ -169,9 +169,10 @@ RHI::Texture *D3D12Renderer::CreateTexture(RHI::TextureType textureType, RHI::Te
     textureDesc.SampleDesc.Quality = 0;
     textureDesc.Flags = resourceFlags;
 
+    // 렌더 타겟이거나 뎁스 스텐실 버퍼라면 optimized clear value 를 세팅해준다.
     D3D12_CLEAR_VALUE optimizedClearValue = {};
-    bool useClearValue = BE1::HasAnyFlag(flags, RHI::TextureFlag::RenderTarget | RHI::TextureFlag::DepthStencil);
-    if (useClearValue) {
+    bool useOptimizedClearValue = BE1::HasAnyFlag(flags, RHI::TextureFlag::RenderTarget | RHI::TextureFlag::DepthStencil);
+    if (useOptimizedClearValue) {
         // Typed 포맷이어야 한다.
         optimizedClearValue.Format = textureDesc.Format;
 
@@ -208,7 +209,7 @@ RHI::Texture *D3D12Renderer::CreateTexture(RHI::TextureType textureType, RHI::Te
         &allocationDesc,
         &textureDesc,
         d3d12InitialState,
-        useClearValue ? &optimizedClearValue : nullptr,
+        useOptimizedClearValue ? &optimizedClearValue : nullptr,
         &textureAllocation,
         IID_NULL, nullptr))) {
         return false;
@@ -220,7 +221,7 @@ RHI::Texture *D3D12Renderer::CreateTexture(RHI::TextureType textureType, RHI::Te
         D3D12_HEAP_FLAG_NONE,
         &textureDesc,
         d3d12InitialState,
-        useClearValue ? &optimizedClearValue : nullptr,
+        useOptimizedClearValue ? &optimizedClearValue : nullptr,
         IID_PPV_ARGS(&textureResource)))) {
         return false;
     }
@@ -232,7 +233,7 @@ RHI::Texture *D3D12Renderer::CreateTexture(RHI::TextureType textureType, RHI::Te
     texture->srcFormat = srcFormat;
     texture->srcSRGB = !isLinearSpace;
     texture->textureDesc = textureDesc;
-    texture->clearValue = optimizedClearValue;
+    texture->optimizedClearValue = optimizedClearValue;
     texture->defaultState = initialState;
 
 #ifdef USE_D3D12_MEMALLOC

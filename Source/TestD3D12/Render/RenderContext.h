@@ -48,7 +48,7 @@ class RenderContext {
 public:
     RenderContext() = default;
 
-    void                            Init(void *windowHandle);
+    void                            Init(void *windowHandle, const BE1::Color4 &optimizedClearColor = BE1::Color4::black);
     void                            Shutdown();
 
     void                            BeginFrame(bool statEnabled);
@@ -128,6 +128,7 @@ private:
     RHI::Texture *                  mainRTColorMSAATexture = nullptr;
     RHI::Texture *                  mainRTColorTexture = nullptr;
     RHI::Texture *                  mainRTDepthTexture = nullptr;
+    BE1::Color4                     optimizedClearColor = BE1::Color4::black;
     SharedPtr<ShaderPipeline>       imagePSO;
 
 #ifdef USE_RENDER_FRAME_BUFFERING

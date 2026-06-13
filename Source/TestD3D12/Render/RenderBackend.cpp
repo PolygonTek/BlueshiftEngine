@@ -321,12 +321,16 @@ const void *RenderBackend::ExecuteDrawCamera(const void *data) {
     RHI::renderer->SetScissorRect(mainCommandList, currentVisCamera->renderRect);
 
     RHI::ClearFlag clearFlags = RHI::ClearFlag::None;
-    BE1::Color4 clearColor = BE1::Color4::black;
+    BE1::Color4 clearColor = currentContext->optimizedClearColor;
     float clearDepth = 1.0f;
+    bool useExplicitClearColor = false;
 
     if (currentVisCamera->clearMethod == RenderCameraClearMethod::Color) {
         clearFlags |= (RHI::ClearFlag::Color | RHI::ClearFlag::Depth);
-        clearColor = currentVisCamera->clearColor;
+        if (currentVisCamera->clearColorMode == RenderCameraClearColorMode::Explicit) {
+            clearColor = currentVisCamera->clearColor;
+            useExplicitClearColor = true;
+        }
     } else if (currentVisCamera->clearMethod == RenderCameraClearMethod::DepthOnly || currentVisCamera->clearMethod == RenderCameraClearMethod::Skybox) {
         clearFlags |= RHI::ClearFlag::Depth;
     }
@@ -336,17 +340,28 @@ const void *RenderBackend::ExecuteDrawCamera(const void *data) {
 #else
     RHI::RenderPassImage::LoadAction colorLoadAction = BE1::HasFlag(clearFlags, RHI::ClearFlag::Color) ? RHI::RenderPassImage::LoadAction::Clear : RHI::RenderPassImage::LoadAction::Load;
     RHI::RenderPassImage::LoadAction depthLoadAction = BE1::HasFlag(clearFlags, RHI::ClearFlag::Depth) ? RHI::RenderPassImage::LoadAction::Clear : RHI::RenderPassImage::LoadAction::Load;
+    RHI::ClearValue clearColorValue = RHI::ClearValue::Color(clearColor[0], clearColor[1], clearColor[2], clearColor[3]);
 
     if (currentContext->mainRTSampleCount > 1) {
+        RHI::RenderPassImage colorImage = RHI::RenderPassImage::Color(currentContext->mainRTColorMSAATexture, RHI::ViewID::PrimaryID, colorLoadAction);
+        if (useExplicitClearColor) {
+            colorImage = colorImage.WithClearValue(clearColorValue);
+        }
+
         RHI::RenderPassImage renderPassImages[] = {
-            RHI::RenderPassImage::Color(currentContext->mainRTColorMSAATexture, RHI::ViewID::PrimaryID, colorLoadAction),
+            colorImage,
             RHI::RenderPassImage::DepthStencil(currentContext->mainRTDepthTexture, RHI::ViewID::PrimaryID, depthLoadAction),
             RHI::RenderPassImage::ResolveColor(currentContext->mainRTColorTexture, RHI::ViewID::PrimaryID, 0)
         };
         RHI::renderer->BeginRenderPass(mainCommandList, renderPassImages, COUNT_OF(renderPassImages));
     } else {
+        RHI::RenderPassImage colorImage = RHI::RenderPassImage::Color(currentContext->mainRTColorTexture, RHI::ViewID::PrimaryID, colorLoadAction);
+        if (useExplicitClearColor) {
+            colorImage = colorImage.WithClearValue(clearColorValue);
+        }
+
         RHI::RenderPassImage renderPassImages[] = {
-            RHI::RenderPassImage::Color(currentContext->mainRTColorTexture, RHI::ViewID::PrimaryID, colorLoadAction),
+            colorImage,
             RHI::RenderPassImage::DepthStencil(currentContext->mainRTDepthTexture, RHI::ViewID::PrimaryID, depthLoadAction)
         };
         RHI::renderer->BeginRenderPass(mainCommandList, renderPassImages, COUNT_OF(renderPassImages));

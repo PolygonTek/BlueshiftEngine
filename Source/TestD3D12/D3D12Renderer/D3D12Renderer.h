@@ -264,6 +264,7 @@ public:
 
     static bool                         IsDepthFormat(DXGI_FORMAT format);
     static bool                         IsStencilFormat(DXGI_FORMAT format);
+    static bool                         IsDepthStencilFormat(DXGI_FORMAT format);
     static bool                         IsTypelessFormat(DXGI_FORMAT format);
     static bool                         IsTypelessCompatibleFormat(DXGI_FORMAT typelessFormat, DXGI_FORMAT viewFormat);
     static bool                         IsHDRSwapChainFormat(DXGI_FORMAT format);

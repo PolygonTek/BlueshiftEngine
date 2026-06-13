@@ -65,6 +65,10 @@ void RenderWorld::AddVisSurf(RenderFrameData *frameData, VisCamera *visCamera, V
     visCamera->visSurfs[visCamera->numVisSurfs++] = drawSurf;
 }
 
+void RenderWorld::SetSkyboxMaterial(SharedPtr<Material> skyboxMaterial) {
+    this->skyboxMaterial = skyboxMaterial;
+}
+
 void RenderWorld::RenderScene(const RenderCamera *renderCamera) {
     PROFILER_CPU_SCOPED_EVENT("RenderWorld::RenderScene");
 
@@ -83,8 +87,9 @@ void RenderWorld::RenderScene(const RenderCamera *renderCamera) {
     visCamera->numRenderPasses = 0;
     visCamera->renderPasses = (RenderPass *)frameData->MemAlloc(VisCamera::MaxRenderPasses * sizeof(RenderPass));
     visCamera->renderRect = renderCamera->desc.renderRect;
-    visCamera->clearMethod = RenderCameraClearMethod::Color;
-    visCamera->clearColor = BE1::Color4(0, 0, 1, 1);
+    visCamera->clearMethod = renderCamera->desc.clearMethod;
+    visCamera->clearColorMode = renderCamera->desc.clearColorMode;
+    visCamera->clearColor = renderCamera->desc.clearColor;
     visCamera->viewMatrix = renderCamera->viewMatrix;
     visCamera->viewProjMatrix = renderCamera->viewProjMatrix;
     visCamera->worldAABB.Clear();
@@ -501,9 +506,30 @@ void RenderWorld::AddRawMeshes(RenderFrameData *frameData, const RenderCamera *r
 }
 
 void RenderWorld::AddSkyBoxMeshes(RenderFrameData *frameData, const RenderCamera *renderCamera, VisCamera *visCamera) {
+    PROFILER_CPU_SCOPED_EVENT("RenderWorld::AddSkyBoxMeshes");
+
     if (renderCamera->GetDesc().clearMethod != RenderCameraClearMethod::Skybox) {
         return;
     }
+    if (!skyboxMaterial || !meshManager.defaultBoxMesh || !meshManager.defaultBoxMesh->IsReady()) {
+        return;
+    }
+
+    const Mesh::Surface *meshSurf = meshManager.defaultBoxMesh->GetSurface(0);
+    if (!meshSurf || !meshSurf->subMesh) {
+        return;
+    }
+
+    VisObject *visObject = frameData->AllocVisObject();
+    if (!visObject) {
+        return;
+    }
+
+    visObject->worldMatrix.SetTRS(renderCamera->GetDesc().origin, BE1::Mat3::identity, BE1::Vec3(10, 10, 10));
+    visObject->cameraVisible = true;
+    Material *material = frameData->RetainMaterial(skyboxMaterial);
+
+    AddVisSurf(frameData, visCamera, nullptr, visObject, material, meshSurf->subMesh, VisSurfFlag::CameraVisible | VisSurfFlag::SkipSelection);
 }
 
 void RenderWorld::RenderGUI(GuiMesh &guiMesh) {

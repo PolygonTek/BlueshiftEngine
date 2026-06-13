@@ -784,9 +784,18 @@ namespace RHI {
         LoadAction                      loadAction = LoadAction::Load;
         StoreAction                     storeAction = StoreAction::Store;
         DepthResolveMode                depthResolveMode = DepthResolveMode::None;
+        ClearValue                      clearValue = {};
+        bool                            hasClearValue = false;
         GPUResourceState                beforeState = GPUResourceState::Undefined;
         GPUResourceState                duringState = GPUResourceState::Undefined;
         GPUResourceState                afterState = GPUResourceState::Undefined;
+
+        RenderPassImage WithClearValue(const ClearValue &value) const {
+            RenderPassImage image = *this;
+            image.clearValue = value;
+            image.hasClearValue = true;
+            return image;
+        }
 
         static RenderPassImage Color(const Texture *texture, RHI::ViewID viewID = RHI::ViewID::PrimaryID, LoadAction loadAction = LoadAction::Load, StoreAction storeAction = StoreAction::Store,
             GPUResourceState beforeState = GPUResourceState::ShaderResource, GPUResourceState afterState = GPUResourceState::ShaderResource) {
@@ -971,6 +980,12 @@ namespace RHI {
 
         static bool                     ImageFormatToRHIFormat(BE1::Image::Format imageFormat, bool isSRGB, Format *rhiFormat);
         static bool                     RHIFormatToImageFormat(Format rhiFormat, BE1::Image::Format *imageFormat, bool *isSRGB);
+        static bool                     IsSRGBFormat(Format format);
+        static Format                   ToLinearFormat(Format format);
+        static Format                   ToSRGBFormat(Format format);
+        static bool                     IsDepthFormat(Format format);
+        static bool                     IsStencilFormat(Format format);
+        static bool                     IsDepthStencilFormat(Format format);
 
         virtual bool                    IsSupportedImageFormat(BE1::Image::Format imageFormat) const = 0;
         virtual BE1::Image::Format      ToUncompressedImageFormat(BE1::Image::Format imageFormat) const = 0;

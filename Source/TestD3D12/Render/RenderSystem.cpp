@@ -293,7 +293,9 @@ RenderContext *RenderSystem::CreateRenderContext(void *windowHandle, bool isMain
     RenderContext *renderContext = new RenderContext;
     renderContexts.Append(renderContext);
 
-    renderContext->Init(windowHandle);
+    const BE1::Color4 optimizedClearColor = BE1::Color4::darkBlue;
+
+    renderContext->Init(windowHandle, optimizedClearColor);
 
     if (isMain) {
         assert(!mainRenderContext);

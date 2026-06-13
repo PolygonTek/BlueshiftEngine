@@ -56,7 +56,7 @@ private:
     BE1::Image::Format              srcFormat = BE1::Image::Format::Unknown;
     bool                            srcSRGB = false;
     D3D12_RESOURCE_DESC             textureDesc;
-    D3D12_CLEAR_VALUE               clearValue;
+    D3D12_CLEAR_VALUE               optimizedClearValue;
     RHI::GPUResourceState           defaultState = RHI::GPUResourceState::Undefined;
     BE1::Array<D3D12SRVEntry>       srvEntries = (16);
     BE1::Array<D3D12UAVEntry>       uavEntries = (16);

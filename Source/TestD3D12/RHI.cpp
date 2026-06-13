@@ -555,3 +555,81 @@ bool RHI::Renderer::RHIFormatToImageFormat(RHI::Format rhiFormat, BE1::Image::Fo
     }
     return false;
 }
+
+bool RHI::Renderer::IsSRGBFormat(RHI::Format format) {
+    switch (format) {
+    case RHI::Format::R8G8B8A8_UNORM_SRGB:
+    case RHI::Format::B8G8R8A8_UNORM_SRGB:
+    case RHI::Format::B8G8R8X8_UNORM_SRGB:
+    case RHI::Format::BC1_UNORM_SRGB:
+    case RHI::Format::BC2_UNORM_SRGB:
+    case RHI::Format::BC3_UNORM_SRGB:
+    case RHI::Format::BC7_UNORM_SRGB:
+        return true;
+    }
+    return false;
+}
+
+RHI::Format RHI::Renderer::ToLinearFormat(RHI::Format format) {
+    switch (format) {
+    case RHI::Format::R8G8B8A8_UNORM_SRGB:
+        return RHI::Format::R8G8B8A8_UNORM;
+    case RHI::Format::B8G8R8A8_UNORM_SRGB:
+        return RHI::Format::B8G8R8A8_UNORM;
+    case RHI::Format::B8G8R8X8_UNORM_SRGB:
+        return RHI::Format::B8G8R8X8_UNORM;
+    case RHI::Format::BC1_UNORM_SRGB:
+        return RHI::Format::BC1_UNORM;
+    case RHI::Format::BC2_UNORM_SRGB:
+        return RHI::Format::BC2_UNORM;
+    case RHI::Format::BC3_UNORM_SRGB:
+        return RHI::Format::BC3_UNORM;
+    case RHI::Format::BC7_UNORM_SRGB:
+        return RHI::Format::BC7_UNORM;
+    }
+    return format;
+}
+
+RHI::Format RHI::Renderer::ToSRGBFormat(RHI::Format format) {
+    switch (format) {
+    case RHI::Format::R8G8B8A8_UNORM:
+        return RHI::Format::R8G8B8A8_UNORM_SRGB;
+    case RHI::Format::B8G8R8A8_UNORM:
+        return RHI::Format::B8G8R8A8_UNORM_SRGB;
+    case RHI::Format::B8G8R8X8_UNORM:
+        return RHI::Format::B8G8R8X8_UNORM_SRGB;
+    case RHI::Format::BC1_UNORM:
+        return RHI::Format::BC1_UNORM_SRGB;
+    case RHI::Format::BC2_UNORM:
+        return RHI::Format::BC2_UNORM_SRGB;
+    case RHI::Format::BC3_UNORM:
+        return RHI::Format::BC3_UNORM_SRGB;
+    case RHI::Format::BC7_UNORM:
+        return RHI::Format::BC7_UNORM_SRGB;
+    }
+    return format;
+}
+
+bool RHI::Renderer::IsDepthFormat(RHI::Format format) {
+    switch (format) {
+    case RHI::Format::D16_UNORM:
+    case RHI::Format::D32_FLOAT:
+    case RHI::Format::D24_UNORM_S8_UINT:
+    case RHI::Format::D32_FLOAT_S8X24_UINT:
+        return true;
+    }
+    return false;
+}
+
+bool RHI::Renderer::IsStencilFormat(RHI::Format format) {
+    switch (format) {
+    case RHI::Format::D24_UNORM_S8_UINT:
+    case RHI::Format::D32_FLOAT_S8X24_UINT:
+        return true;
+    }
+    return false;
+}
+
+bool RHI::Renderer::IsDepthStencilFormat(RHI::Format format) {
+    return IsDepthFormat(format) && IsStencilFormat(format);
+}

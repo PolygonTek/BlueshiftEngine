@@ -23,6 +23,11 @@ enum class RenderCameraClearMethod : uint8_t {
     Skybox
 };
 
+enum class RenderCameraClearColorMode : uint8_t {
+    RenderTargetDefault,
+    Explicit
+};
+
 struct RenderCameraDesc {
     int                         time = 0;               ///< Time in milliseconds for shader effects and other time dependent rendering issues
 
@@ -30,8 +35,9 @@ struct RenderCameraDesc {
     BE1::Vec3                   origin;                 ///< View origin
     BE1::Mat3                   axis;                   ///< View axis [FORWARD, LEFT, UP]
 
-    RenderCameraClearMethod     clearMethod = RenderCameraClearMethod::NoClear; ///< Clearing method before rendering view
-    BE1::Color4                 clearColor;             ///< Clearing color is needed if clearing method is set to 'ColorClear'
+    RenderCameraClearMethod     clearMethod = RenderCameraClearMethod::Color; ///< Clearing method before rendering view
+    RenderCameraClearColorMode  clearColorMode = RenderCameraClearColorMode::RenderTargetDefault; ///< Source of color clear value
+    BE1::Color4                 clearColor = BE1::Color4::black; ///< Clearing color is needed if clearing method is set to 'ColorClear'
 
     float                       fovX;                   ///< Perspective projection FOV in horizontal axis
     float                       fovY;                   ///< Perspective projection FOV in vertical axis

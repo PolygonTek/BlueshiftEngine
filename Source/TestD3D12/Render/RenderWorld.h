@@ -68,6 +68,8 @@ public:
     void                        UpdateRenderObject(int index, const RenderObject::Desc &desc, RenderObject::Desc::UpdateFlag updateFlags);
     void                        RemoveRenderObject(int index);
 
+    void                        SetSkyboxMaterial(SharedPtr<Material> skyboxMaterial);
+
     void                        RenderScene(const RenderCamera *renderCamera);
     void                        RenderGUI(GuiMesh &guiMesh);
 
