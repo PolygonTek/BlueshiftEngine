@@ -559,13 +559,18 @@ void App::BuildImGuiOverlay() {
         imguiShowStatsPlotWindow = !imguiShowStatsPlotWindow;
     }
 
+    ImGui::Separator();
+
+    bool skipCulling = r_skipCulling.GetBool();
+    if (ImGui::Checkbox("Skip culling", &skipCulling)) {
+        r_skipCulling.SetBool(skipCulling);
+    }
+
     int streamInDelay = r_textureStreamingStreamInDelay.GetInteger();
     ImGui::SetNextItemWidth(fontSize * 6.0f);
     if (ImGui::InputInt("Texture stream-in delay", &streamInDelay)) {
         r_textureStreamingStreamInDelay.SetInteger(BE1::Max(0, streamInDelay));
     }
-
-    ImGui::Separator();
 
     ImGui::SetNextItemWidth(fontSize * 10.0f);
     ImGui::SliderInt("Count X", &imguiGoCountX, 1, 250);

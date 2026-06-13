@@ -217,7 +217,7 @@ void RenderWorld::FindVisObjects(RenderFrameData *frameData, const RenderCamera 
     for (int objectIndex : dynamicObjectIndices) {
         const RenderObject *renderObject = renderObjects[objectIndex];
 
-        if (renderCamera->frustum.CullAABB(renderObject->worldAABB)) {
+        if (!r_skipCulling.GetBool() && renderCamera->frustum.CullAABB(renderObject->worldAABB)) {
             continue;
         }
 
@@ -238,7 +238,7 @@ void RenderWorld::FindVisObjects(RenderFrameData *frameData, const RenderCamera 
             continue;
         }
 
-        if (renderCamera->frustum.CullAABB(renderObject->worldAABB)) {
+        if (!r_skipCulling.GetBool() && renderCamera->frustum.CullAABB(renderObject->worldAABB)) {
             continue;
         }
 
@@ -400,7 +400,7 @@ void RenderWorld::AddMeshes(RenderFrameData *frameData, const RenderCamera *rend
 
         VisSurfFlag flags = VisSurfFlag::CameraVisible;
         const int numSurfaces = visObject->meshInstance->NumSurfaces();
-        const bool cullSurfaces = numSurfaces > 1;
+        const bool cullSurfaces = !r_skipCulling.GetBool() && numSurfaces > 1;
 
         for (int meshSurfIndex = 0; meshSurfIndex < numSurfaces; ++meshSurfIndex) {
             const Mesh::Surface *meshSurf = visObject->meshInstance->GetSurface(meshSurfIndex);
