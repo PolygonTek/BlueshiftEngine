@@ -101,6 +101,7 @@ void RenderBackend::DrawSkySurfaces(const PassDrawSurf **drawSurfs, uint32_t num
 
         if (currentPSO != drawSurf->pso) {
             currentPSO = drawSurf->pso;
+
             RHI::renderer->SetPSO(mainCommandList, currentPSO);
             RHI::renderer->SetConstantBuffer(mainCommandList, 0, frameConstantBuffer);
             RHI::renderer->SetConstantBuffer(mainCommandList, 1, cameraConstantBuffer);
@@ -109,7 +110,8 @@ void RenderBackend::DrawSkySurfaces(const PassDrawSurf **drawSurfs, uint32_t num
         if (currentSubMesh != drawSurf->visSurf->subMesh || currentInputLayoutId != drawSurf->inputLayoutId) {
             currentSubMesh = drawSurf->visSurf->subMesh;
             currentInputLayoutId = drawSurf->inputLayoutId;
-            SetPassVertexBuffers(mainCommandList, drawSurf);
+
+            RHI::renderer->SetVertexBuffer(mainCommandList, 0, currentSubMesh->vertexBuffer);
             RHI::renderer->SetIndexBuffer(mainCommandList, currentSubMesh->indexBuffer);
         }
 

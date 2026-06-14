@@ -1,0 +1,51 @@
+#include "Common.hlsli"
+
+#define COMMON_ROOT_SIGNATURE "RootFlags(0), " \
+    "DescriptorTable(SRV(t0), UAV(u0)), " \
+    "CBV(b0), " \
+    "RootConstants(num32BitConstants=12, b1), " \
+    ROOT_SIGNATURE_COMMON_STATIC_SAMPLERS
+
+DECLARE_COMMON_STATIC_SAMPLERS
+
+cbuffer FrameCB : register(b0) {
+    FrameConstants frameConstants;
+};
+
+cbuffer PostProcessCB : register(b1) {
+    PostProcessParams postProcessParams;
+}
+
+Texture2D<float4> inputTexture : register(t0);
+RWByteAddressBuffer outputHistogram : register(u0);
+
+// local histogram bin table
+groupshared uint shared_bins[LuminanceHistogramBinCount];
+
+[RootSignature(COMMON_ROOT_SIGNATURE)]
+[numthreads(LuminanceBlockSize, LuminanceBlockSize, 1)]
+void CSMain(uint3 dispatchThreadId : SV_DispatchThreadID, uint groupIndex : SV_GroupIndex) {
+    shared_bins[groupIndex] = 0;
+    GroupMemoryBarrierWithGroupSync();
+
+    if (dispatchThreadId.x < postProcessParams.resolution.x && dispatchThreadId.y < postProcessParams.resolution.y) {
+        // 절반 크기로 중앙을 샘플링하여 downsample 된 inputTexture 를 샘플링하는 효과
+        const float2 uv = (dispatchThreadId.xy + 0.5) * postProcessParams.resolutionRcp;
+        float3 color = inputTexture.SampleLevel(linearClampSampler, uv, 0);
+        float luminance = dot(color, float3(0.2127f, 0.7152f, 0.0722f));
+
+        // luminance 값에 log 를 취하고 적절한 범위로 clamp 한 후 양자화하여 binIndex 를 구한다.
+        uint binIndex = 0;
+        if (luminance > 0.001) {
+            float logLuminance = saturate((log2(luminance) - PPP_LUMINANCE_LOG_MIN) * PPP_LUMINANCE_LOG_RANGE_RCP);
+            binIndex = (uint)(logLuminance * (LuminanceHistogramBinCount - 2) + 1);
+        }
+        
+        // local histogram bin table 에 누적한다.
+        InterlockedAdd(shared_bins[binIndex], 1);
+    }
+
+    // global histogram bin table 에 누적한다.
+    GroupMemoryBarrierWithGroupSync();
+    outputHistogram.InterlockedAdd(LuminanceBufferOffsetHistogram + groupIndex * 4, shared_bins[groupIndex]);
+}

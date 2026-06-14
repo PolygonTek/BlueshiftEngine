@@ -27,7 +27,7 @@ public:
     void                            Shutdown();
 
     void                            Update(int frameMsec);
-    void                            Render();
+    void                            Render(int frameMsec);
 
     void                            UpdateFrameTime(int frameMsec);
 

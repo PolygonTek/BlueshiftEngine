@@ -245,6 +245,30 @@ void ShaderTemplateManager::CreateEngineShaderTemplates() {
     }
     );
 
+    static constexpr const char *toneMappingShaderTemplateText = ENGINE_SHADER_TEMPLATE(
+    {
+        stages {
+            compute SM_6_0 "ToneMapping.hlsl" "CSMain"
+        }
+    }
+    );
+
+    static constexpr const char *luminancePass1ShaderTemplateText = ENGINE_SHADER_TEMPLATE(
+    {
+        stages {
+            compute SM_6_0 "LuminancePass1.hlsl" "CSMain"
+        }
+    }
+    );
+
+    static constexpr const char *luminancePass2ShaderTemplateText = ENGINE_SHADER_TEMPLATE(
+    {
+        stages {
+            compute SM_6_0 "LuminancePass2.hlsl" "CSMain"
+        }
+    }
+    );
+
     static constexpr const char *unlitShaderTemplateText = ENGINE_SHADER_TEMPLATE(
     {
         stages {
@@ -315,6 +339,24 @@ void ShaderTemplateManager::CreateEngineShaderTemplates() {
     }
     fullscreenImageShaderTemplate->AddPermutation();
 
+    toneMappingShaderTemplate = AllocShaderTemplate("_toneMappingShader");
+    if (!toneMappingShaderTemplate->Create(toneMappingShaderTemplateText, baseDir)) {
+        BE_FATALERROR("ShaderTemplateManager::CreateEngineShaderTemplates: failed to create tone mapping shader template");
+    }
+    toneMappingShaderTemplate->AddPermutation();
+
+    luminancePass1ShaderTemplate = AllocShaderTemplate("_luminancePass1Shader");
+    if (!luminancePass1ShaderTemplate->Create(luminancePass1ShaderTemplateText, baseDir)) {
+        BE_FATALERROR("ShaderTemplateManager::CreateEngineShaderTemplates: failed to create luminance pass 1 shader template");
+    }
+    luminancePass1ShaderTemplate->AddPermutation();
+
+    luminancePass2ShaderTemplate = AllocShaderTemplate("_luminancePass2Shader");
+    if (!luminancePass2ShaderTemplate->Create(luminancePass2ShaderTemplateText, baseDir)) {
+        BE_FATALERROR("ShaderTemplateManager::CreateEngineShaderTemplates: failed to create luminance pass 2 shader template");
+    }
+    luminancePass2ShaderTemplate->AddPermutation();
+
     unlitShaderTemplate = AllocShaderTemplate("_unlitShader");
     if (!unlitShaderTemplate->Create(unlitShaderTemplateText, baseDir)) {
         BE_FATALERROR("ShaderTemplateManager::CreateEngineShaderTemplates: failed to create unlit shader template");
@@ -329,6 +371,15 @@ void ShaderTemplateManager::CreateEngineShaderTemplates() {
 void ShaderTemplateManager::DestroyEngineShaderTemplates() {
     if (fullscreenImageShaderTemplate) {
         fullscreenImageShaderTemplate.reset();
+    }
+    if (toneMappingShaderTemplate) {
+        toneMappingShaderTemplate.reset();
+    }
+    if (luminancePass1ShaderTemplate) {
+        luminancePass1ShaderTemplate.reset();
+    }
+    if (luminancePass2ShaderTemplate) {
+        luminancePass2ShaderTemplate.reset();
     }
     if (unlitShaderTemplate) {
         unlitShaderTemplate.reset();

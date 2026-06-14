@@ -83,6 +83,9 @@ private:
     void                            DrawGenericSurfacesByTask(RenderBackend::DrawSurfsTaskDesc *taskDesc);
     static void                     DrawGenericSurfacesByTaskFunction(void *data);
 
+    bool                            DispatchLuminance();
+    bool                            DispatchToneMapping();
+
     uint32_t                        FindSurfaceInstanceBatchEnd(const PassDrawSurf **drawSurfs, uint32_t numDrawSurfs, uint32_t startIndex) const;
     RHI::Buffer *                   AllocInstanceToShaderSurfaceTable(RHI::FrameThreadData *frameThreadData, const PassDrawSurf **drawSurfs, uint32_t instanceCount) const;
     void                            DrawSurfaceInstances(RHI::FrameThreadData *frameThreadData, RHI::CommandList *commandList, const PassDrawSurf **drawSurfs, uint32_t instanceCount, uint32_t &drawCount, uint64_t &drawTriangleCount, uint32_t &instanceTableAllocCount, uint32_t &instanceTableUploadBytes);
@@ -101,6 +104,9 @@ private:
     RHI::CommandList *              mainCommandList = nullptr;
     uint32_t                        frameCount = 0;
     RHI::PipelineState *            currentImagePSO = nullptr;
+    RHI::PipelineState *            currentToneMappingPSO = nullptr;
+    RHI::PipelineState *            currentLuminancePass1PSO = nullptr;
+    RHI::PipelineState *            currentLuminancePass2PSO = nullptr;
     RHI::ConstantBuffer *           frameConstantBuffer = nullptr;
     RHI::ConstantBuffer *           cameraConstantBuffer = nullptr;
 

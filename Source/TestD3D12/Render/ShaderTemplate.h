@@ -225,6 +225,9 @@ public:
     ReloadedDelegate                shaderTemplateReloaded;
 
     SharedPtr<ShaderTemplate>       fullscreenImageShaderTemplate;
+    SharedPtr<ShaderTemplate>       toneMappingShaderTemplate;
+    SharedPtr<ShaderTemplate>       luminancePass1ShaderTemplate;
+    SharedPtr<ShaderTemplate>       luminancePass2ShaderTemplate;
     SharedPtr<ShaderTemplate>       unlitShaderTemplate;
     SharedPtr<ShaderTemplate>       litShaderTemplate;
 

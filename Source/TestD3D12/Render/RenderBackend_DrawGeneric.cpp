@@ -51,6 +51,7 @@ void RenderBackend::DrawGenericSurfacesWithoutTask(const PassDrawSurf **drawSurf
 
         if (currentPSO != drawSurf->pso) {
             currentPSO = drawSurf->pso;
+
             RHI::renderer->SetPSO(mainCommandList, currentPSO);
             RHI::renderer->SetConstantBuffer(mainCommandList, 0, frameConstantBuffer);
             RHI::renderer->SetConstantBuffer(mainCommandList, 1, cameraConstantBuffer);
@@ -59,6 +60,7 @@ void RenderBackend::DrawGenericSurfacesWithoutTask(const PassDrawSurf **drawSurf
         if (currentSubMesh != drawSurf->visSurf->subMesh || currentInputLayoutId != drawSurf->inputLayoutId) {
             currentSubMesh = drawSurf->visSurf->subMesh;
             currentInputLayoutId = drawSurf->inputLayoutId;
+
             SetPassVertexBuffers(mainCommandList, drawSurf);
             RHI::renderer->SetIndexBuffer(mainCommandList, currentSubMesh->indexBuffer);
         }
@@ -91,6 +93,7 @@ void RenderBackend::DrawGenericSurfacesByTask(RenderBackend::DrawSurfsTaskDesc *
 
         if (currentPSO != drawSurf->pso) {
             currentPSO = drawSurf->pso;
+
             RHI::renderer->SetPSO(commandList, currentPSO);
             RHI::renderer->SetConstantBuffer(commandList, 0, frameConstantBuffer);
             RHI::renderer->SetConstantBuffer(commandList, 1, cameraConstantBuffer);
@@ -99,6 +102,7 @@ void RenderBackend::DrawGenericSurfacesByTask(RenderBackend::DrawSurfsTaskDesc *
         if (currentSubMesh != drawSurf->visSurf->subMesh || currentInputLayoutId != drawSurf->inputLayoutId) {
             currentSubMesh = drawSurf->visSurf->subMesh;
             currentInputLayoutId = drawSurf->inputLayoutId;
+
             SetPassVertexBuffers(commandList, drawSurf);
             RHI::renderer->SetIndexBuffer(commandList, currentSubMesh->indexBuffer);
         }

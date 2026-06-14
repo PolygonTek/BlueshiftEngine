@@ -50,6 +50,9 @@ struct BeginContextRenderCommand {
     RenderCommandId                 commandId;
     RenderContext *                 renderContext;
     RHI::PipelineState *            imagePSO = nullptr;
+    RHI::PipelineState *            toneMappingPSO = nullptr;
+    RHI::PipelineState *            luminancePass1PSO = nullptr;
+    RHI::PipelineState *            luminancePass2PSO = nullptr;
 };
 
 struct DrawCameraRenderCommand {
@@ -138,6 +141,12 @@ public:
                                     // 렌더 태스크의 스레드 별 데이터 얻기
     RHI::FrameThreadData *          GetThreadData(int32_t threadIndex) { assert(threadIndex >= 0 && threadIndex < numRenderTaskThreads); return threadData[threadIndex]; }
 
+    float                           GetFrameTime() const { return frameTime; }
+    float                           GetElapsedTime() const { return elapsedTime; }
+    float                           GetElapsedPrevTime() const { return elapsedPrevTime; }
+    uint32_t                        GetFrameCount() const { return frameCount; }
+    void                            SetFrameTiming(float frameTime, float elapsedTime, float elapsedPrevTime, uint32_t frameCount);
+
     bool                            IsStatEnabled() const { return statEnabled; }
     void                            SetStatEnabled(bool enabled) { statEnabled = enabled; }
     void                            AddObjectStats(uint32_t renderObjectCount, uint32_t visibleObjectCount);
@@ -211,6 +220,10 @@ private:
     uint64_t                        frameFenceValue = 0;
     uint64_t                        frameSerial = 0;
     static uint64_t                 globalFrameSerial;
+    float                           frameTime = 0.0f;
+    float                           elapsedTime = 0.0f;
+    float                           elapsedPrevTime = 0.0f;
+    uint32_t                        frameCount = 0;
 
     bool                            statEnabled = false;
     uint32_t                        statRenderObjectCount = 0;
@@ -234,6 +247,10 @@ BE_INLINE void RenderFrameData::BeginFrame() {
 
     ClearPendingImGuiOverlay();
 
+    frameTime = 0.0f;
+    elapsedTime = 0.0f;
+    elapsedPrevTime = 0.0f;
+    frameCount = 0;
     statEnabled = false;
     statRenderObjectCount = 0;
     statVisibleObjectCount = 0;
@@ -297,4 +314,11 @@ BE_INLINE void RenderFrameData::CmdEnd() {
     }
 
     cmd->commandId = RenderCommandId::End;
+}
+
+BE_INLINE void RenderFrameData::SetFrameTiming(float frameTime, float elapsedTime, float elapsedPrevTime, uint32_t frameCount) {
+    this->frameTime = frameTime;
+    this->elapsedTime = elapsedTime;
+    this->elapsedPrevTime = elapsedPrevTime;
+    this->frameCount = frameCount;
 }

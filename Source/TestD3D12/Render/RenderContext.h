@@ -48,10 +48,10 @@ class RenderContext {
 public:
     RenderContext() = default;
 
-    void                            Init(void *windowHandle, const BE1::Color4 &optimizedClearColor = BE1::Color4::black);
+    void                            Init(void *windowHandle, const BE1::Color4 &baseClearColor = BE1::Color4::black);
     void                            Shutdown();
 
-    void                            BeginFrame(bool statEnabled);
+    void                            BeginFrame(float frameTime, float elapsedTime, float elapsedPrevTime, bool statEnabled);
     void                            EndFrame();
     template <typename BuildFunc>
     void                            RenderImGui(const BuildFunc &buildFunc);
@@ -114,7 +114,10 @@ private:
 
     void                            CreateMainRenderTextures(uint32_t width, uint32_t height);
     void                            DestroyMainRenderTextures();
+    void                            CreateLuminanceBuffer();
+    void                            DestroyLuminanceBuffer();
     void                            InitFullScreenTrianglePSO();
+    void                            InitToneMappingPSO();
     bool                            BeginImGui();
     void                            EndImGui();
     void                            FlushPendingScreenshots(RenderFrameData *frameData);
@@ -127,9 +130,14 @@ private:
     RHI::ImGuiOverlay *             imguiOverlay = nullptr;
     RHI::Texture *                  mainRTColorMSAATexture = nullptr;
     RHI::Texture *                  mainRTColorTexture = nullptr;
+    RHI::Texture *                  toneMappedColorTexture = nullptr;
     RHI::Texture *                  mainRTDepthTexture = nullptr;
-    BE1::Color4                     optimizedClearColor = BE1::Color4::black;
+    RHI::Buffer *                   luminanceBuffer = nullptr;
+    BE1::Color4                     baseClearColor = BE1::Color4::black;
     SharedPtr<ShaderPipeline>       imagePSO;
+    SharedPtr<ShaderPipeline>       toneMappingPSO;
+    SharedPtr<ShaderPipeline>       luminancePass1PSO;
+    SharedPtr<ShaderPipeline>       luminancePass2PSO;
 
 #ifdef USE_RENDER_FRAME_BUFFERING
     static constexpr int            NumFrames = 2;
@@ -183,3 +191,10 @@ void RenderContext::RenderImGui(const BuildFunc &buildFunc) {
     (void)buildFunc;
 #endif
 }
+
+extern BE1::CVar                    r_toneMapping;
+extern BE1::CVar                    r_toneMapOp;
+extern BE1::CVar                    r_toneMapLuminanceLogMin;
+extern BE1::CVar                    r_toneMapLuminanceLogMax;
+extern BE1::CVar                    r_toneMapLuminanceAdaptationRate;
+extern BE1::CVar                    r_toneMapMiddleGray;

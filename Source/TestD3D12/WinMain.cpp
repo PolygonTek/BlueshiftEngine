@@ -224,7 +224,7 @@ static bool RunFrameInstance(int frameMsec) {
 
     app.Update(frameMsec);
 
-    app.Render();
+    app.Render(frameMsec);
 
     return true;
 }

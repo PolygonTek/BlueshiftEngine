@@ -17,6 +17,7 @@
 #include "Render/RenderSystem.h"
 #include "Render/RenderContext.h"
 #include "Render/RenderBackend.h"
+#include "Shaders/ShaderInterop.h"
 #ifdef ENABLE_IMGUI
 #include "imgui/imgui.h"
 #endif
@@ -100,10 +101,14 @@ void App::Update(int frameMsec) {
     UpdateGameFrameTime(t1 - t0);
 }
 
-void App::Render() {
+void App::Render(int frameMsec) {
     PROFILER_CPU_SCOPED_EVENT("App::Render");
 
-    mainRenderContext->BeginFrame(stat_render.GetBool());
+    const float frameTime = (float)frameMsec * 0.001f;
+    const float elapsedTime = (float)elapsedMsec * 0.001f;
+    const float elapsedPrevTime = (float)(elapsedMsec - frameMsec) * 0.001f;
+
+    mainRenderContext->BeginFrame(frameTime, elapsedTime, elapsedPrevTime, stat_render.GetBool());
 
     uint64_t t0 = BE1::PlatformTime::Microseconds();
 
@@ -533,66 +538,105 @@ void App::BuildImGuiOverlay() {
 
     ImGui::Begin("TestD3D12", nullptr, ImGuiWindowFlags_AlwaysAutoResize);
 
-    if (RHI::renderer) {
-        const RHI::RendererInfo &rendererInfo = RHI::renderer->GetRendererInfo();
+    if (ImGui::BeginTabBar("TestD3D12Tabs")) {
+        if (ImGui::BeginTabItem("System")) {
+            if (RHI::renderer) {
+                const RHI::RendererInfo &rendererInfo = RHI::renderer->GetRendererInfo();
 
-        ImGui::Text("GPU Adapter: %s", rendererInfo.name);
-        ImGui::Text("Vendor ID: 0x%04X", rendererInfo.vendorId);
-        ImGui::Text("Device ID: 0x%04X", rendererInfo.deviceId);
-        ImGui::Separator();
-        ImGui::Text("Dedicated VRAM: %s", BE1::Str::FormatBytes(rendererInfo.dedicatedVideoMemoryBytes).c_str());
-        ImGui::Text("Dedicated System Memory: %s", BE1::Str::FormatBytes(rendererInfo.dedicatedSystemMemoryBytes).c_str());
-        ImGui::Text("Shared System Memory: %s", BE1::Str::FormatBytes(rendererInfo.sharedSystemMemoryBytes).c_str());
-        ImGui::Separator();
-    }
+                ImGui::Text("GPU Adapter: %s", rendererInfo.name);
+                ImGui::Text("Vendor ID: 0x%04X", rendererInfo.vendorId);
+                ImGui::Text("Device ID: 0x%04X", rendererInfo.deviceId);
+                ImGui::Separator();
+                ImGui::Text("Dedicated VRAM: %s", BE1::Str::FormatBytes(rendererInfo.dedicatedVideoMemoryBytes).c_str());
+                ImGui::Text("Dedicated System Memory: %s", BE1::Str::FormatBytes(rendererInfo.dedicatedSystemMemoryBytes).c_str());
+                ImGui::Text("Shared System Memory: %s", BE1::Str::FormatBytes(rendererInfo.sharedSystemMemoryBytes).c_str());
+            }
 
-    bool showFps = stat_fps.GetBool();
-    if (ImGui::Checkbox("Show FPS", &showFps)) {
-        stat_fps.SetBool(showFps);
-    }
+            ImGui::EndTabItem();
+        }
 
-    bool showRenderStats = stat_render.GetBool();
-    if (ImGui::Checkbox("Show render statistics", &showRenderStats)) {
-        stat_render.SetBool(showRenderStats);
-    }
+        if (ImGui::BeginTabItem("Render")) {
+            bool showFps = stat_fps.GetBool();
+            if (ImGui::Checkbox("Show FPS", &showFps)) {
+                stat_fps.SetBool(showFps);
+            }
 
-    if (ImGui::Button(imguiShowStatsPlotWindow ? "Hide Stats Plot" : "Show Stats Plot")) {
-        imguiShowStatsPlotWindow = !imguiShowStatsPlotWindow;
-    }
+            bool showRenderStats = stat_render.GetBool();
+            if (ImGui::Checkbox("Show render statistics", &showRenderStats)) {
+                stat_render.SetBool(showRenderStats);
+            }
 
-    ImGui::Separator();
+            if (ImGui::Button(imguiShowStatsPlotWindow ? "Hide Stats Plot" : "Show Stats Plot")) {
+                imguiShowStatsPlotWindow = !imguiShowStatsPlotWindow;
+            }
 
-    bool skipCulling = r_skipCulling.GetBool();
-    if (ImGui::Checkbox("Skip culling", &skipCulling)) {
-        r_skipCulling.SetBool(skipCulling);
-    }
+            ImGui::Separator();
 
-    int streamInDelay = r_textureStreamingStreamInDelay.GetInteger();
-    ImGui::SetNextItemWidth(fontSize * 6.0f);
-    if (ImGui::InputInt("Texture stream-in delay", &streamInDelay)) {
-        r_textureStreamingStreamInDelay.SetInteger(BE1::Max(0, streamInDelay));
-    }
+            bool skipCulling = r_skipCulling.GetBool();
+            if (ImGui::Checkbox("Skip culling", &skipCulling)) {
+                r_skipCulling.SetBool(skipCulling);
+            }
 
-    ImGui::SetNextItemWidth(fontSize * 10.0f);
-    ImGui::SliderInt("Count X", &imguiGoCountX, 1, 250);
-    const bool applyCountX = ImGui::IsItemDeactivatedAfterEdit();
+            bool toneMapping = r_toneMapping.GetBool();
+            if (ImGui::Checkbox("Tone mapping", &toneMapping)) {
+                r_toneMapping.SetBool(toneMapping);
+            }
 
-    ImGui::SetNextItemWidth(fontSize * 10.0f);
-    ImGui::SliderInt("Count Y", &imguiGoCountY, 1, 250);
-    const bool applyCountY = ImGui::IsItemDeactivatedAfterEdit();
+            int toneMapOp = BE1::Clamp(r_toneMapOp.GetInteger(), static_cast<int>(ToneMappingOperatorLinear), static_cast<int>(ToneMappingOperatorFilmicGT));
+            ImGui::SetNextItemWidth(fontSize * 12.0f);
+            if (ImGui::Combo("Tone map operator", &toneMapOp,
+                "Linear\0"
+                "Exponential\0"
+                "Logarithmic\0"
+                "Drago Logarithmic\0"
+                "Reinhard\0"
+                "Reinhard Extended\0"
+                "Filmic ALU\0"
+                "Filmic ACES\0"
+                "Filmic Unreal3\0"
+                "Filmic Uncharted 2\0"
+                "Filmic GT\0\0")) {
+                r_toneMapOp.SetInteger(toneMapOp);
+            }
 
-    if ((applyCountX || applyCountY) && (static_cast<uint32_t>(imguiGoCountX) != goCountX || static_cast<uint32_t>(imguiGoCountY) != goCountY || goCountZ != 1)) {
-        ChangeGameObjectCount(static_cast<uint32_t>(imguiGoCountX), static_cast<uint32_t>(imguiGoCountY), 1);
-    }
+            int streamInDelay = r_textureStreamingStreamInDelay.GetInteger();
+            ImGui::SetNextItemWidth(fontSize * 6.0f);
+            if (ImGui::InputInt("Texture stream-in delay", &streamInDelay)) {
+                r_textureStreamingStreamInDelay.SetInteger(BE1::Max(0, streamInDelay));
+            }
 
-    ImGui::Separator();
+            ImGui::EndTabItem();
+        }
 
-    ImGui::Text("Mouse capture: %s", ImGui::GetIO().WantCaptureMouse ? "true" : "false");
-    ImGui::Text("Keyboard capture: %s", ImGui::GetIO().WantCaptureKeyboard ? "true" : "false");
-    ImGui::Separator();
+        if (ImGui::BeginTabItem("Scene")) {
+            ImGui::SetNextItemWidth(fontSize * 10.0f);
+            ImGui::SliderInt("Count X", &imguiGoCountX, 1, 250);
+            const bool applyCountX = ImGui::IsItemDeactivatedAfterEdit();
 
-    if (ImGui::Button(imguiShowDemoWindow ? "Hide ImGui Demo" : "Show ImGui Demo")) {
-        imguiShowDemoWindow = !imguiShowDemoWindow;
+            ImGui::SetNextItemWidth(fontSize * 10.0f);
+            ImGui::SliderInt("Count Y", &imguiGoCountY, 1, 250);
+            const bool applyCountY = ImGui::IsItemDeactivatedAfterEdit();
+
+            if ((applyCountX || applyCountY) && (static_cast<uint32_t>(imguiGoCountX) != goCountX || static_cast<uint32_t>(imguiGoCountY) != goCountY || goCountZ != 1)) {
+                ChangeGameObjectCount(static_cast<uint32_t>(imguiGoCountX), static_cast<uint32_t>(imguiGoCountY), 1);
+            }
+
+            ImGui::EndTabItem();
+        }
+
+        if (ImGui::BeginTabItem("Debug")) {
+            ImGui::Text("Mouse capture: %s", ImGui::GetIO().WantCaptureMouse ? "true" : "false");
+            ImGui::Text("Keyboard capture: %s", ImGui::GetIO().WantCaptureKeyboard ? "true" : "false");
+            ImGui::Separator();
+
+            if (ImGui::Button(imguiShowDemoWindow ? "Hide ImGui Demo" : "Show ImGui Demo")) {
+                imguiShowDemoWindow = !imguiShowDemoWindow;
+            }
+
+            ImGui::EndTabItem();
+        }
+
+        ImGui::EndTabBar();
     }
 
     ImGui::End();

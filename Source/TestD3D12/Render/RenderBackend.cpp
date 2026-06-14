@@ -16,6 +16,7 @@
 #include "RenderBackend.h"
 #include "RenderContext.h"
 #include "RenderInternal.h"
+#include "Shaders/ShaderInterop.h"
 
 void RenderBackend::Init() {
 #ifdef USE_RENDER_TASK
@@ -225,6 +226,10 @@ bool RenderBackend::UploadFrameConstants() {
     }
 
     FrameConstants *constants = reinterpret_cast<FrameConstants *>(frameConstantBuffer->mappedPtr);
+    constants->frameTime = frameData->GetFrameTime();
+    constants->elapsedTime = frameData->GetElapsedTime();
+    constants->elapsedPrevTime = frameData->GetElapsedPrevTime();
+    constants->frameCount = frameData->GetFrameCount();
     constants->shaderMaterialTableIndex = frameData->GetShaderMaterialTableBindlessIndex();
     constants->feedbackBufferIndex = currentContext->textureStreamingFeedback.buffer ? currentContext->textureStreamingFeedback.buffer->GetBindlessIndex(RHI::ViewType::UAV) : 0;
     constants->padding0 = 0;
@@ -260,6 +265,9 @@ const void *RenderBackend::ExecuteBeginContext(const void *data) {
 
     currentContext = cmd->renderContext;
     currentImagePSO = cmd->imagePSO;
+    currentToneMappingPSO = cmd->toneMappingPSO;
+    currentLuminancePass1PSO = cmd->luminancePass1PSO;
+    currentLuminancePass2PSO = cmd->luminancePass2PSO;
 
     statDrawCount = 0;
     statDrawTriangleCount = 0;
@@ -323,7 +331,7 @@ const void *RenderBackend::ExecuteDrawCamera(const void *data) {
     RHI::renderer->SetScissorRect(mainCommandList, currentVisCamera->renderRect);
 
     RHI::ClearFlag clearFlags = RHI::ClearFlag::None;
-    BE1::Color4 clearColor = currentContext->optimizedClearColor;
+    BE1::Color4 clearColor = currentContext->baseClearColor;
     float clearDepth = 1.0f;
     bool useExplicitClearColor = false;
 
@@ -341,6 +349,9 @@ const void *RenderBackend::ExecuteDrawCamera(const void *data) {
     RHI::renderer->BeginRenderPass(mainCommandList, currentContext->swapChain, currentContext->mainRTDepthTexture, clearColor, clearDepth, 0, clearFlags);
 #else
     RHI::RenderPassImage::LoadAction colorLoadAction = BE1::HasFlag(clearFlags, RHI::ClearFlag::Color) ? RHI::RenderPassImage::LoadAction::Clear : RHI::RenderPassImage::LoadAction::Load;
+    if (currentVisCamera->clearMethod == RenderCameraClearMethod::Skybox) {
+        colorLoadAction = RHI::RenderPassImage::LoadAction::DontCare;
+    }
     RHI::RenderPassImage::LoadAction depthLoadAction = BE1::HasFlag(clearFlags, RHI::ClearFlag::Depth) ? RHI::RenderPassImage::LoadAction::Clear : RHI::RenderPassImage::LoadAction::Load;
     RHI::ClearValue clearColorValue = RHI::ClearValue::Color(clearColor[0], clearColor[1], clearColor[2], clearColor[3]);
 
@@ -425,6 +436,8 @@ const void *RenderBackend::ExecuteSwapBuffers(const void *data) {
 
 #ifdef USE_OFFSCREEN_MAIN_RENDER_TARGET
     const bool needsSwapChainRenderPass = true;
+
+    const bool useToneMappedColorTexture = DispatchLuminance() && DispatchToneMapping();
 #else
     const bool needsSwapChainRenderPass = hasPendingImGuiOverlay;
 #endif
@@ -443,7 +456,7 @@ const void *RenderBackend::ExecuteSwapBuffers(const void *data) {
 #ifdef USE_OFFSCREEN_MAIN_RENDER_TARGET
         if (currentImagePSO) {
             RHI::renderer->SetPSO(mainCommandList, currentImagePSO);
-            RHI::renderer->SetTexture(mainCommandList, 0, false, currentContext->mainRTColorTexture);
+            RHI::renderer->SetTexture(mainCommandList, 0, false, useToneMappedColorTexture ? currentContext->toneMappedColorTexture : currentContext->mainRTColorTexture);
             RHI::renderer->Draw(mainCommandList, 3, 0);
             //RecordDrawStats(1, 1, 0, 0);
         }
@@ -484,6 +497,111 @@ const void *RenderBackend::ExecuteSwapBuffers(const void *data) {
     frameCount++;
 
     return (const void *)(cmd + 1);
+}
+
+bool RenderBackend::DispatchLuminance() {
+    PROFILER_CPU_SCOPED_EVENT("RenderBackend::DispatchLuminance");
+
+    if (!r_toneMapping.GetBool() ||
+        !currentLuminancePass1PSO ||
+        !currentLuminancePass2PSO ||
+        !currentContext->mainRTColorTexture ||
+        !currentContext->luminanceBuffer ||
+        !frameConstantBuffer) {
+        return false;
+    }
+
+    const uint32_t w = currentContext->GetWidth() / 2;
+    const uint32_t h = currentContext->GetHeight() / 2;
+    if (w == 0 || h == 0) {
+        return false;
+    }
+
+    const float lumLogMin = r_toneMapLuminanceLogMin.GetFloat();
+    const float lumLogMax = BE1::Max(r_toneMapLuminanceLogMax.GetFloat(), lumLogMin + 0.0001f);
+    const float lumLogRange = lumLogMax - lumLogMin;
+
+    PostProcessParams postProcessParams = {};
+    postProcessParams.resolution.x = w / 2;
+    postProcessParams.resolution.y = h / 2;
+    postProcessParams.resolutionRcp.x = 1.0f / postProcessParams.resolution.x;
+    postProcessParams.resolutionRcp.y = 1.0f / postProcessParams.resolution.y;
+    postProcessParams.params0 = float4(lumLogMin, 1.0f / lumLogRange, static_cast<float>(postProcessParams.resolution.x * postProcessParams.resolution.y), BE1::Max(r_toneMapLuminanceAdaptationRate.GetFloat(), 0.0f));
+    postProcessParams.params1 = float4(BE1::Max(r_toneMapMiddleGray.GetFloat(), 0.0f), lumLogRange, 0.0f, 0.0f);
+
+    RHI::renderer->Barrier(mainCommandList, RHI::Renderer::MakeImageBarrier(currentContext->mainRTColorTexture, RHI::GPUResourceState::ShaderResource, RHI::GPUResourceState::ShaderResourceCompute));
+
+    // Pass 1 : Log Luminance 히스토그램 계산
+    RHI::renderer->SetPSO(mainCommandList, currentLuminancePass1PSO);
+    RHI::renderer->SetTexture(mainCommandList, 0, false, currentContext->mainRTColorTexture);
+    RHI::renderer->SetBuffer(mainCommandList, 0, true, currentContext->luminanceBuffer);
+    RHI::renderer->SetConstantBuffer(mainCommandList, 0, frameConstantBuffer);
+    RHI::renderer->SetConstants(mainCommandList, 1, &postProcessParams, sizeof(postProcessParams), 0);
+
+    const uint32_t threadGroupCountX = (postProcessParams.resolution.x + LuminanceBlockSize - 1) / LuminanceBlockSize;
+    const uint32_t threadGroupCountY = (postProcessParams.resolution.y + LuminanceBlockSize - 1) / LuminanceBlockSize;
+    RHI::renderer->Dispatch(mainCommandList, threadGroupCountX, threadGroupCountY, 1);
+
+    RHI::renderer->Barrier(mainCommandList, RHI::Renderer::MakeMemoryBarrier(currentContext->luminanceBuffer));
+
+    // Pass 2 : 평균 Luminance 를 계산하고, 보간된 exposure 도 계산한다.
+    RHI::renderer->SetPSO(mainCommandList, currentLuminancePass2PSO);
+    RHI::renderer->SetBuffer(mainCommandList, 0, true, currentContext->luminanceBuffer);
+    RHI::renderer->SetConstantBuffer(mainCommandList, 0, frameConstantBuffer);
+    RHI::renderer->SetConstants(mainCommandList, 1, &postProcessParams, sizeof(postProcessParams), 0);
+
+    RHI::renderer->Dispatch(mainCommandList, 1, 1, 1);
+
+    RHI::GPUBarrier endBarriers[] = {
+        RHI::Renderer::MakeMemoryBarrier(currentContext->luminanceBuffer),
+        RHI::Renderer::MakeImageBarrier(currentContext->mainRTColorTexture, RHI::GPUResourceState::ShaderResourceCompute, RHI::GPUResourceState::ShaderResource)
+    };
+    RHI::renderer->Barrier(mainCommandList, endBarriers, COUNT_OF(endBarriers));
+
+    return true;
+}
+
+bool RenderBackend::DispatchToneMapping() {
+    PROFILER_CPU_SCOPED_EVENT("RenderBackend::DispatchToneMapping");
+
+    if (!r_toneMapping.GetBool() ||
+        !currentToneMappingPSO ||
+        !currentContext->mainRTColorTexture ||
+        !currentContext->luminanceBuffer ||
+        !currentContext->toneMappedColorTexture) {
+        return false;
+    }
+
+    ToneMappingParams toneMappingParams = {};
+    toneMappingParams.outputSize = uint2(currentContext->GetWidth(), currentContext->GetHeight());
+    toneMappingParams.exposureScale = 1.0f;
+    toneMappingParams.toneMappingOperator = static_cast<uint32_t>(BE1::Clamp(r_toneMapOp.GetInteger(), static_cast<int>(ToneMappingOperatorLinear), static_cast<int>(ToneMappingOperatorFilmicGT)));
+
+    RHI::GPUBarrier startBarriers[] = {
+        RHI::Renderer::MakeImageBarrier(currentContext->mainRTColorTexture, RHI::GPUResourceState::ShaderResource, RHI::GPUResourceState::ShaderResourceCompute),
+        RHI::Renderer::MakeBufferBarrier(currentContext->luminanceBuffer, RHI::GPUResourceState::UnorderedAccess, RHI::GPUResourceState::ShaderResourceCompute),
+        RHI::Renderer::MakeImageBarrier(currentContext->toneMappedColorTexture, RHI::GPUResourceState::ShaderResource, RHI::GPUResourceState::UnorderedAccess)
+    };
+    RHI::renderer->Barrier(mainCommandList, startBarriers, COUNT_OF(startBarriers));
+
+    RHI::renderer->SetPSO(mainCommandList, currentToneMappingPSO);
+    RHI::renderer->SetConstants(mainCommandList, 0, &toneMappingParams, sizeof(toneMappingParams), 0);
+    RHI::renderer->SetTexture(mainCommandList, 0, false, currentContext->mainRTColorTexture);
+    RHI::renderer->SetBuffer(mainCommandList, 1, false, currentContext->luminanceBuffer);
+    RHI::renderer->SetTexture(mainCommandList, 0, true, currentContext->toneMappedColorTexture);
+
+    const uint32_t threadGroupCountX = (toneMappingParams.outputSize.x + ToneMappingBlockSizeX - 1) / ToneMappingBlockSizeX;
+    const uint32_t threadGroupCountY = (toneMappingParams.outputSize.y + ToneMappingBlockSizeY - 1) / ToneMappingBlockSizeY;
+    RHI::renderer->Dispatch(mainCommandList, threadGroupCountX, threadGroupCountY, 1);
+
+    RHI::GPUBarrier endBarriers[] = {
+        RHI::Renderer::MakeImageBarrier(currentContext->mainRTColorTexture, RHI::GPUResourceState::ShaderResourceCompute, RHI::GPUResourceState::ShaderResource),
+        RHI::Renderer::MakeBufferBarrier(currentContext->luminanceBuffer, RHI::GPUResourceState::ShaderResourceCompute, RHI::GPUResourceState::UnorderedAccess),
+        RHI::Renderer::MakeImageBarrier(currentContext->toneMappedColorTexture, RHI::GPUResourceState::UnorderedAccess, RHI::GPUResourceState::ShaderResource)
+    };
+    RHI::renderer->Barrier(mainCommandList, endBarriers, COUNT_OF(endBarriers));
+
+    return true;
 }
 
 void RenderBackend::DrawCamera3D() {
@@ -613,11 +731,12 @@ void RenderBackend::DrawSurfaceInstances(RHI::FrameThreadData *frameThreadData, 
         return;
     }
 
+    instanceTableAllocCount++;
+    instanceTableUploadBytes += sizeof(uint32_t) * instanceCount;
+
     RHI::renderer->SetBuffer(commandList, 0, false, instanceToShaderSurfaceTable);
     RHI::renderer->DrawIndexedInstanced(commandList, firstVisSurf->subMesh->numIndexes, instanceCount, 0, 0, 0);
 
     drawCount++;
     drawTriangleCount += firstVisSurf->subMesh->numIndexes / 3 * instanceCount;
-    instanceTableAllocCount++;
-    instanceTableUploadBytes += sizeof(uint32_t) * instanceCount;
 }

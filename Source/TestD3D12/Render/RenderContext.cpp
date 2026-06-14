@@ -19,12 +19,20 @@
 #include "RenderInternal.h"
 #include "ShaderTemplate.h"
 #include "ShaderPipelineCache.h"
+#include "Shaders/ShaderInterop.h"
 
-RenderContext *     RenderContext::activeContext = nullptr;
+RenderContext *         RenderContext::activeContext = nullptr;
+
+BE1::CVar               r_toneMapping("r_toneMapping", "1", BE1::CVar::Flag::Bool, "enable compute tone mapping");
+BE1::CVar               r_toneMapOp("r_toneMapOp", "7", BE1::CVar::Flag::Integer, "tone mapping operator", 0, 10);
+BE1::CVar               r_toneMapLuminanceLogMin("r_toneMapLuminanceLogMin", "-10", BE1::CVar::Flag::Float, "tone mapping luminance histogram minimum log2 luminance");
+BE1::CVar               r_toneMapLuminanceLogMax("r_toneMapLuminanceLogMax", "2", BE1::CVar::Flag::Float, "tone mapping luminance histogram maximum log2 luminance");
+BE1::CVar               r_toneMapLuminanceAdaptationRate("r_toneMapLuminanceAdaptationRate", "1.1", BE1::CVar::Flag::Float, "tone mapping luminance adaptation rate", 0.0f, 100.0f);
+BE1::CVar               r_toneMapMiddleGray("r_toneMapMiddleGray", "0.18", BE1::CVar::Flag::Float, "tone mapping middle gray", 0.0f, 10.0f);
 
 static constexpr int    GpuStatUpdateSampleCount = 16;
 
-void RenderContext::Init(void *windowHandle, const BE1::Color4 &optimizedClearColor) {
+void RenderContext::Init(void *windowHandle, const BE1::Color4 &baseClearColor) {
     this->windowHandle = windowHandle;
 
     // 프레임 별로 사용할 프레임 데이터들을 초기화한다.
@@ -53,15 +61,20 @@ void RenderContext::Init(void *windowHandle, const BE1::Color4 &optimizedClearCo
 #endif
 
 #ifdef USE_OFFSCREEN_MAIN_RENDER_TARGET
-    this->optimizedClearColor = !RHI::Renderer::IsSRGBFormat(mainRTColorFormat) ? optimizedClearColor.SRGBToLinear() : optimizedClearColor;
+    mainRTColorFormat = RHI::Format::R16G16B16A16_FLOAT;
+    this->baseClearColor = !RHI::Renderer::IsSRGBFormat(mainRTColorFormat) ? baseClearColor.SRGBToLinear() : baseClearColor;
 #else
-    this->optimizedClearColor = !RHI::Renderer::IsSRGBFormat(swapChainFormat) ? optimizedClearColor.SRGBToLinear() : optimizedClearColor;
+    this->baseClearColor = baseClearColor.SRGBToLinear();
 #endif
-    
+
     // 렌더 타겟 텍스쳐 & 뎁스 텍스쳐 생성
     CreateMainRenderTextures(backBufferWidth, backBufferHeight);
 
+    // Tonemapping 에 사용할 Luminance 버퍼 생성
+    CreateLuminanceBuffer();
+
     InitFullScreenTrianglePSO();
+    InitToneMappingPSO();
 
     textureStreamingFeedback.Init();
 
@@ -86,8 +99,12 @@ void RenderContext::Shutdown() {
 
     textureStreamingFeedback.Shutdown();
 
-    imagePSO = nullptr;
+    imagePSO.reset();
+    toneMappingPSO.reset();
+    luminancePass1PSO.reset();
+    luminancePass2PSO.reset();
 
+    DestroyLuminanceBuffer();
     DestroyMainRenderTextures();
 
     for (RenderFrameData &frameData : frames) {
@@ -125,17 +142,25 @@ void RenderContext::CreateMainRenderTextures(uint32_t width, uint32_t height) {
     BE1::Image::Format colorImageFormat = BE1::Image::Format::Unknown;
     RHI::Renderer::RHIFormatToImageFormat(mainRTColorFormat, &colorImageFormat, nullptr);
 
-    // NOTE: colorImageFormat 이 sRGB 포맷이 아닌 Linear 포맷이라면, optimizedClearColor 도 같은 컬러 공간을 가져야 한다.
-    const RHI::ClearValue optimizedClearColorValue = RHI::ClearValue::Color(optimizedClearColor[0], optimizedClearColor[1], optimizedClearColor[2], optimizedClearColor[3]);
-    const RHI::ClearValue optimizedclearDepthStencilValue = RHI::ClearValue::DepthStencil(1.0f, 0);
+    // NOTE: colorImageFormat 이 sRGB 포맷이 아닌 Linear 포맷이라면, baseClearColor 도 같은 컬러 공간을 가져야 한다.
+    const RHI::ClearValue colorOptimizedClearValue = RHI::ClearValue::Color(baseClearColor[0], baseClearColor[1], baseClearColor[2], baseClearColor[3]);
+    const RHI::ClearValue depthStencilOptimizedClearValue = RHI::ClearValue::DepthStencil(1.0f, 0);
 
     SharedPtr<BE1::Image> colorImage = MakeShared<BE1::Image>();
     colorImage->InitFromMemory(width, height, 1, 1, 1, colorImageFormat, BE1::Image::GammaSpace::Linear, nullptr, BE1::Image::Flag::None);
-    mainRTColorTexture = RHI::renderer->CreateTexture(RHI::TextureType::Texture2D, RHI::TextureFlag::RenderTarget | RHI::TextureFlag::ShaderResource | RHI::TextureFlag::UnorderedAccess, colorImage, false, optimizedClearColorValue, 1);
+    mainRTColorTexture = RHI::renderer->CreateTexture(RHI::TextureType::Texture2D, RHI::TextureFlag::RenderTarget | RHI::TextureFlag::ShaderResource | RHI::TextureFlag::UnorderedAccess, colorImage, false, colorOptimizedClearValue, 1, RHI::GPUResourceState::ShaderResource);
     RHI::renderer->SetName(mainRTColorTexture, "mainRTColorTexture");
 
+    BE1::Image::Format toneMappedImageFormat = BE1::Image::Format::Unknown;
+    RHI::Renderer::RHIFormatToImageFormat(RHI::Format::R8G8B8A8_UNORM, &toneMappedImageFormat, nullptr);
+
+    SharedPtr<BE1::Image> toneMappedImage = MakeShared<BE1::Image>();
+    toneMappedImage->InitFromMemory(width, height, 1, 1, 1, toneMappedImageFormat, BE1::Image::GammaSpace::Linear, nullptr, BE1::Image::Flag::None);
+    toneMappedColorTexture = RHI::renderer->CreateTexture(RHI::TextureType::Texture2D, RHI::TextureFlag::ShaderResource | RHI::TextureFlag::UnorderedAccess, toneMappedImage, false, {}, 1, RHI::GPUResourceState::ShaderResource);
+    RHI::renderer->SetName(toneMappedColorTexture, "toneMappedColorTexture");
+
     if (mainRTSampleCount > 1) {
-        mainRTColorMSAATexture = RHI::renderer->CreateTexture(RHI::TextureType::Texture2D, RHI::TextureFlag::RenderTarget | RHI::TextureFlag::ShaderResource, colorImage, false, optimizedClearColorValue, mainRTSampleCount);
+        mainRTColorMSAATexture = RHI::renderer->CreateTexture(RHI::TextureType::Texture2D, RHI::TextureFlag::RenderTarget | RHI::TextureFlag::ShaderResource, colorImage, false, colorOptimizedClearValue, mainRTSampleCount, RHI::GPUResourceState::ShaderResource);
         RHI::renderer->SetName(mainRTColorMSAATexture, "mainRTColorMSAATexture");
     }
 
@@ -144,7 +169,7 @@ void RenderContext::CreateMainRenderTextures(uint32_t width, uint32_t height) {
 
     SharedPtr<BE1::Image> depthStencilImage = MakeShared<BE1::Image>();
     depthStencilImage->InitFromMemory(width, height, 1, 1, 1, depthImageFormat, BE1::Image::GammaSpace::Linear, nullptr, BE1::Image::Flag::None);
-    mainRTDepthTexture = RHI::renderer->CreateTexture(RHI::TextureType::Texture2D, RHI::TextureFlag::DepthStencil, depthStencilImage, false, optimizedclearDepthStencilValue, mainRTSampleCount, RHI::GPUResourceState::DepthWrite);
+    mainRTDepthTexture = RHI::renderer->CreateTexture(RHI::TextureType::Texture2D, RHI::TextureFlag::DepthStencil, depthStencilImage, false, depthStencilOptimizedClearValue, mainRTSampleCount, RHI::GPUResourceState::DepthWrite);
     RHI::renderer->SetName(mainRTDepthTexture, "mainRTDepthTexture");
 }
 
@@ -153,6 +178,10 @@ void RenderContext::DestroyMainRenderTextures() {
         RHI::renderer->DestroyTexture(mainRTColorTexture, true);
         mainRTColorTexture = nullptr;
     }
+    if (toneMappedColorTexture) {
+        RHI::renderer->DestroyTexture(toneMappedColorTexture, true);
+        toneMappedColorTexture = nullptr;
+    }
     if (mainRTColorMSAATexture) {
         RHI::renderer->DestroyTexture(mainRTColorMSAATexture, true);
         mainRTColorMSAATexture = nullptr;
@@ -160,6 +189,44 @@ void RenderContext::DestroyMainRenderTextures() {
     if (mainRTDepthTexture) {
         RHI::renderer->DestroyTexture(mainRTDepthTexture, true);
         mainRTDepthTexture = nullptr;
+    }
+}
+
+void RenderContext::CreateLuminanceBuffer() {
+    // Luminance buffer : exposure (float) + luminance (float) + histogram (uint32_t * 1024)
+    static constexpr uint32_t LuminanceBufferSize = LuminanceBufferOffsetHistogram + LuminanceHistogramBinCount * sizeof(uint32_t);
+    static constexpr uint32_t LuminanceBufferDwordCount = LuminanceBufferSize / sizeof(uint32_t);
+    static const uint32_t InitialLuminanceBufferData[LuminanceBufferDwordCount] = {};
+
+    luminanceBuffer = RHI::renderer->CreateBuffer(RHI::BufferUsage::Default, RHI::BufferFlag::ShaderResource | RHI::BufferFlag::UnorderedAccess, LuminanceBufferSize, InitialLuminanceBufferData);
+    if (!luminanceBuffer) {
+        BE_WARNLOG("RenderContext::CreateLuminanceBuffer: failed to create luminance buffer\n");
+        return;
+    }
+
+    RHI::renderer->SetName(luminanceBuffer, "luminanceBuffer");
+
+    RHI::ViewID srvViewID = RHI::renderer->CreateView(luminanceBuffer, RHI::ViewType::SRV, RHI::Format::Unknown, 0, 0, LuminanceBufferSize);
+    if (!srvViewID.IsValid()) {
+        BE_WARNLOG("RenderContext::CreateLuminanceBuffer: failed to create luminance SRV\n");
+        RHI::renderer->DestroyBuffer(luminanceBuffer);
+        luminanceBuffer = nullptr;
+        return;
+    }
+
+    RHI::ViewID uavViewID = RHI::renderer->CreateView(luminanceBuffer, RHI::ViewType::UAV, RHI::Format::Unknown, 0, 0, LuminanceBufferSize);
+    if (!uavViewID.IsValid()) {
+        BE_WARNLOG("RenderContext::CreateLuminanceBuffer: failed to create luminance UAV\n");
+        RHI::renderer->DestroyBuffer(luminanceBuffer);
+        luminanceBuffer = nullptr;
+        return;
+    }
+}
+
+void RenderContext::DestroyLuminanceBuffer() {
+    if (luminanceBuffer) {
+        RHI::renderer->DestroyBuffer(luminanceBuffer);
+        luminanceBuffer = nullptr;
     }
 }
 
@@ -187,6 +254,12 @@ void RenderContext::InitFullScreenTrianglePSO() {
     pipelineDesc.depthStencilStateType = RHI::DepthStencilStateType::Never;
     pipelineDesc.blendStateType = RHI::BlendStateType::Disabled;
     imagePSO = shaderPipelineCache.GetGraphicsPipeline(shaderTemplateManager.fullscreenImageShaderTemplate, ShaderPermutationKey(), pipelineDesc, false);
+}
+
+void RenderContext::InitToneMappingPSO() {
+    luminancePass1PSO = shaderPipelineCache.GetComputePipeline(shaderTemplateManager.luminancePass1ShaderTemplate, ShaderPermutationKey(), false);
+    luminancePass2PSO = shaderPipelineCache.GetComputePipeline(shaderTemplateManager.luminancePass2ShaderTemplate, ShaderPermutationKey(), false);
+    toneMappingPSO = shaderPipelineCache.GetComputePipeline(shaderTemplateManager.toneMappingShaderTemplate, ShaderPermutationKey(), false);
 }
 
 void RenderContext::WaitAllFrameFences() {
@@ -255,7 +328,7 @@ void RenderContext::EnsureTextureStreamingFeedbackCapacity(uint32_t requiredCapa
     textureStreamingFeedback.EnsureCapacity(requiredCapacity);
 }
 
-void RenderContext::BeginFrame(bool statEnabled) {
+void RenderContext::BeginFrame(float frameTime, float elapsedTime, float elapsedPrevTime, bool statEnabled) {
     PROFILER_CPU_SCOPED_EVENT("RenderContext::BeginFrame");
 
     assert(BE1::Engine::IsInMainThread());
@@ -274,6 +347,7 @@ void RenderContext::BeginFrame(bool statEnabled) {
     }
 
     frameData->BeginFrame();
+    frameData->SetFrameTiming(frameTime, elapsedTime, elapsedPrevTime, frameCount);
     frameData->SetStatEnabled(statEnabled);
     frameData->CmdBeginContext(this);
 

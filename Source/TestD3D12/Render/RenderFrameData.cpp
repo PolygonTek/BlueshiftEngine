@@ -40,12 +40,18 @@ void RenderFrameData::CmdBeginContext(RenderContext *context) {
     cmd->commandId = RenderCommandId::BeginContext;
     cmd->renderContext = context;
     cmd->imagePSO = nullptr;
+    cmd->toneMappingPSO = nullptr;
+    cmd->luminancePass1PSO = nullptr;
+    cmd->luminancePass2PSO = nullptr;
 
     if (!context) {
         return;
     }
 
     cmd->imagePSO = SnapshotPSO(context->imagePSO);
+    cmd->toneMappingPSO = SnapshotPSO(context->toneMappingPSO);
+    cmd->luminancePass1PSO = SnapshotPSO(context->luminancePass1PSO);
+    cmd->luminancePass2PSO = SnapshotPSO(context->luminancePass2PSO);
 }
 
 void RenderFrameData::CmdDrawCamera(const VisCamera *camera) {

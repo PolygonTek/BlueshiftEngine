@@ -52,6 +52,26 @@ static const uint GenMip3DBlockSizeZ = 8;
 static const uint MipGenOptionBitPreserveCoverage = 1 << 0;
 static const uint MipGenOptionBitSRGB = 1 << 1;
 
+static const uint LuminanceBlockSize = 32;
+static const uint LuminanceHistogramBinCount = LuminanceBlockSize * LuminanceBlockSize;
+static const uint LuminanceBufferOffsetExposure = 0;
+static const uint LuminanceBufferOffsetLuminance = LuminanceBufferOffsetExposure + 4;
+static const uint LuminanceBufferOffsetHistogram = LuminanceBufferOffsetLuminance + 4;
+
+static const uint ToneMappingBlockSizeX = 16;
+static const uint ToneMappingBlockSizeY = 16;
+static const uint ToneMappingOperatorLinear = 0;
+static const uint ToneMappingOperatorExponential = 1;
+static const uint ToneMappingOperatorLogarithmic = 2;
+static const uint ToneMappingOperatorDragoLogarithmic = 3;
+static const uint ToneMappingOperatorReinhard = 4;
+static const uint ToneMappingOperatorReinhardExtended = 5;
+static const uint ToneMappingOperatorFilmicALU = 6;
+static const uint ToneMappingOperatorFilmicACES = 7;
+static const uint ToneMappingOperatorFilmicUnreal3 = 8;
+static const uint ToneMappingOperatorFilmicUncharted2 = 9;
+static const uint ToneMappingOperatorFilmicGT = 10;
+
 struct MipGenParams {
     uint3 dstSize;
     uint padding;
@@ -59,7 +79,31 @@ struct MipGenParams {
     uint flags;
 };
 
+struct PostProcessParams {
+    uint2 resolution;
+    float2 resolutionRcp;
+    float4 params0;
+    float4 params1;
+};
+
+#define PPP_LUMINANCE_LOG_MIN postProcessParams.params0.x
+#define PPP_LUMINANCE_LOG_RANGE_RCP postProcessParams.params0.y
+#define PPP_LUMINANCE_PIXEL_COUNT postProcessParams.params0.z
+#define PPP_LUMINANCE_ADAPTATION_RATE postProcessParams.params0.w
+#define PPP_LUMINANCE_MIDDLE_GRAY postProcessParams.params1.x
+#define PPP_LUMINANCE_LOG_RANGE postProcessParams.params1.y
+
+struct ToneMappingParams {
+    uint2 outputSize;
+    float exposureScale;
+    uint toneMappingOperator;
+};
+
 struct FrameConstants {
+    float frameTime;
+    float elapsedTime;
+    float elapsedPrevTime;
+    uint frameCount;
     uint shaderMaterialTableIndex;
     uint feedbackBufferIndex;
     uint padding0;
