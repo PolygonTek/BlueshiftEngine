@@ -74,6 +74,8 @@ void D3D12Renderer::ProcessResourceRequests(RHI::FrameThreadData *frameThreadDat
                 } else {
                     static_cast<RHI::GPUResource *>(request.object)->SetStatus(RHI::GPUResourceStatus::Failed);
                 }
+            } else if (request.uploadBufferRequest.uploadBuffer) {
+                RequestRelease(request.uploadBufferRequest.uploadBuffer);
             }
             break;
         case D3D12ResourceRequest::Type::UploadTexture:

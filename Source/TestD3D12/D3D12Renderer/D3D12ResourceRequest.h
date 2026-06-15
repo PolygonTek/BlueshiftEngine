@@ -22,10 +22,8 @@ class D3D12FrameThreadData;
 class D3D12CommandList;
 
 struct D3D12UploadBufferRequest {
-    const void *                        data = nullptr;
+    ID3D12Resource *                    uploadBuffer = nullptr;
     uint64_t                            dataSize = 0;
-    D3D12_HEAP_TYPE                     heapType;
-    D3D12_RESOURCE_DESC                 resourceDesc = {};
 };
 
 struct D3D12UploadBufferSubDataRequest {
