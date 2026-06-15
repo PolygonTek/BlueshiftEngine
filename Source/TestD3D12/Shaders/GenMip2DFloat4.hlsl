@@ -8,11 +8,13 @@
     "RootConstants(num32BitConstants=8, b0), " \
     "StaticSampler(s0, FILTER = FILTER_MIN_MAG_MIP_POINT, ADDRESSU = TEXTURE_ADDRESS_CLAMP, ADDRESSV = TEXTURE_ADDRESS_CLAMP, ADDRESSW = TEXTURE_ADDRESS_CLAMP)"
 
-MipGenParams mipGenParams : register(b0);
-
 #ifndef MIP_OUTPUT_FORMAT
 #define MIP_OUTPUT_FORMAT float4
 #endif
+
+cbuffer MipGenCB : register(b0) {
+    MipGenParams mipGenParams;
+}
 
 RWTexture2D<MIP_OUTPUT_FORMAT> outputTexture : register(u0);
 Texture2D<MIP_OUTPUT_FORMAT> inputTexture : register(t0);
