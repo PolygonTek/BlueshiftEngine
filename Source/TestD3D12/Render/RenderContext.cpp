@@ -30,6 +30,13 @@ BE1::CVar               r_toneMapLuminanceLogMax("r_toneMapLuminanceLogMax", "2"
 BE1::CVar               r_toneMapLuminanceAdaptationRate("r_toneMapLuminanceAdaptationRate", "1.1", BE1::CVar::Flag::Float, "tone mapping luminance adaptation rate", 0.0f, 100.0f);
 BE1::CVar               r_toneMapMiddleGray("r_toneMapMiddleGray", "0.18", BE1::CVar::Flag::Float, "tone mapping middle gray", 0.0f, 10.0f);
 
+BE1::CVar               r_bloom("r_bloom", "1", BE1::CVar::Flag::Bool, "enable bloom");
+BE1::CVar               r_bloomThreshold("r_bloomThreshold", "1.0", BE1::CVar::Flag::Float, "bloom luminance threshold", 0.0f, 100.0f);
+BE1::CVar               r_bloomSoftThreshold("r_bloomSoftThreshold", "0.5", BE1::CVar::Flag::Float, "bloom soft threshold width", 0.0f, 10.0f);
+BE1::CVar               r_bloomIntensity("r_bloomIntensity", "0.05", BE1::CVar::Flag::Float, "bloom intensity", 0.0f, 10.0f);
+BE1::CVar               r_bloomRadius("r_bloomRadius", "1.0", BE1::CVar::Flag::Float, "bloom dual kawase sample radius", 0.0f, 10.0f);
+BE1::CVar               r_bloomMipCount("r_bloomMipCount", "6", BE1::CVar::Flag::Integer, "bloom mip level count", 1, 8);
+
 static constexpr int    GpuStatUpdateSampleCount = 16;
 
 void RenderContext::Init(void *windowHandle, const BE1::Color4 &baseClearColor) {
@@ -159,6 +166,8 @@ void RenderContext::CreateMainRenderTextures(uint32_t width, uint32_t height) {
     toneMappedColorTexture = RHI::renderer->CreateTexture(RHI::TextureType::Texture2D, RHI::TextureFlag::ShaderResource | RHI::TextureFlag::UnorderedAccess, toneMappedImage, false, {}, 1, RHI::GPUResourceState::ShaderResource);
     RHI::renderer->SetName(toneMappedColorTexture, "toneMappedColorTexture");
 
+    CreateBloomTextures(width, height);
+
     if (mainRTSampleCount > 1) {
         mainRTColorMSAATexture = RHI::renderer->CreateTexture(RHI::TextureType::Texture2D, RHI::TextureFlag::RenderTarget | RHI::TextureFlag::ShaderResource, colorImage, false, colorOptimizedClearValue, mainRTSampleCount, RHI::GPUResourceState::ShaderResource);
         RHI::renderer->SetName(mainRTColorMSAATexture, "mainRTColorMSAATexture");
@@ -174,6 +183,8 @@ void RenderContext::CreateMainRenderTextures(uint32_t width, uint32_t height) {
 }
 
 void RenderContext::DestroyMainRenderTextures() {
+    DestroyBloomTextures();
+
     if (mainRTColorTexture) {
         RHI::renderer->DestroyTexture(mainRTColorTexture, true);
         mainRTColorTexture = nullptr;
@@ -190,6 +201,79 @@ void RenderContext::DestroyMainRenderTextures() {
         RHI::renderer->DestroyTexture(mainRTDepthTexture, true);
         mainRTDepthTexture = nullptr;
     }
+}
+
+void RenderContext::CreateBloomTextures(uint32_t width, uint32_t height) {
+    DestroyBloomTextures();
+
+    BE1::Image::Format bloomImageFormat = BE1::Image::Format::Unknown;
+    RHI::Format bloomFormat = mainRTColorFormat;
+    RHI::Renderer::RHIFormatToImageFormat(bloomFormat, &bloomImageFormat, nullptr);
+
+    uint32_t bloomWidths[BloomMaxLevelCount] = {};
+    uint32_t bloomHeights[BloomMaxLevelCount] = {};
+    uint32_t levelCount = 0;
+
+    uint32_t bloomWidth = width > 1 ? width >> 1 : 1;
+    uint32_t bloomHeight = height > 1 ? height >> 1 : 1;
+
+    while (levelCount < BloomMaxLevelCount) {
+        bloomWidths[levelCount] = bloomWidth;
+        bloomHeights[levelCount] = bloomHeight;
+        levelCount++;
+
+        if (bloomWidth == 1 && bloomHeight == 1) {
+            break;
+        }
+
+        bloomWidth = bloomWidth > 1 ? bloomWidth >> 1 : 1;
+        bloomHeight = bloomHeight > 1 ? bloomHeight >> 1 : 1;
+    }
+
+    for (uint32_t textureIndex = 0; textureIndex < levelCount; ++textureIndex) {
+        SharedPtr<BE1::Image> image = MakeShared<BE1::Image>();
+        image->InitFromMemory(bloomWidths[textureIndex], bloomHeights[textureIndex], 1, 1, 1, bloomImageFormat, BE1::Image::GammaSpace::Linear, nullptr, BE1::Image::Flag::None);
+
+        bloomDownTextures[textureIndex] = RHI::renderer->CreateTexture(RHI::TextureType::Texture2D, RHI::TextureFlag::ShaderResource | RHI::TextureFlag::UnorderedAccess, image, false, {}, 1, RHI::GPUResourceState::ShaderResource);
+        if (!bloomDownTextures[textureIndex]) {
+            BE_WARNLOG("RenderContext::CreateBloomTextures: failed to create bloom down texture %i\n", textureIndex);
+            DestroyBloomTextures();
+            return;
+        }
+
+        RHI::renderer->SetName(bloomDownTextures[textureIndex], BE1::va("bloomDownTextures[%i]", textureIndex));
+    }
+
+    for (uint32_t textureIndex = 0; textureIndex + 1 < levelCount; ++textureIndex) {
+        SharedPtr<BE1::Image> image = MakeShared<BE1::Image>();
+        image->InitFromMemory(bloomWidths[textureIndex], bloomHeights[textureIndex], 1, 1, 1, bloomImageFormat, BE1::Image::GammaSpace::Linear, nullptr, BE1::Image::Flag::None);
+
+        bloomUpTextures[textureIndex] = RHI::renderer->CreateTexture(RHI::TextureType::Texture2D, RHI::TextureFlag::ShaderResource | RHI::TextureFlag::UnorderedAccess, image, false, {}, 1, RHI::GPUResourceState::ShaderResource);
+        if (!bloomUpTextures[textureIndex]) {
+            BE_WARNLOG("RenderContext::CreateBloomTextures: failed to create bloom up texture %i\n", textureIndex);
+            DestroyBloomTextures();
+            return;
+        }
+
+        RHI::renderer->SetName(bloomUpTextures[textureIndex], BE1::va("bloomUpTextures[%i]", textureIndex));
+    }
+
+    bloomTextureCount = levelCount;
+}
+
+void RenderContext::DestroyBloomTextures() {
+    for (uint32_t textureIndex = 0; textureIndex < BloomMaxLevelCount; ++textureIndex) {
+        if (bloomDownTextures[textureIndex]) {
+            RHI::renderer->DestroyTexture(bloomDownTextures[textureIndex], true);
+            bloomDownTextures[textureIndex] = nullptr;
+        }
+        if (bloomUpTextures[textureIndex]) {
+            RHI::renderer->DestroyTexture(bloomUpTextures[textureIndex], true);
+            bloomUpTextures[textureIndex] = nullptr;
+        }
+    }
+
+    bloomTextureCount = 0;
 }
 
 void RenderContext::CreateLuminanceBuffer() {

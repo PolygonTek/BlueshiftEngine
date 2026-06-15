@@ -112,8 +112,12 @@ private:
         char                        filename[BE1::MaxAbsolutePath] = {};
     };
 
+    static constexpr int            BloomMaxLevelCount = 8;
+
     void                            CreateMainRenderTextures(uint32_t width, uint32_t height);
     void                            DestroyMainRenderTextures();
+    void                            CreateBloomTextures(uint32_t width, uint32_t height);
+    void                            DestroyBloomTextures();
     void                            CreateLuminanceBuffer();
     void                            DestroyLuminanceBuffer();
     void                            InitFullScreenTrianglePSO();
@@ -131,6 +135,9 @@ private:
     RHI::Texture *                  mainRTColorMSAATexture = nullptr;
     RHI::Texture *                  mainRTColorTexture = nullptr;
     RHI::Texture *                  toneMappedColorTexture = nullptr;
+    RHI::Texture *                  bloomDownTextures[BloomMaxLevelCount] = {};
+    RHI::Texture *                  bloomUpTextures[BloomMaxLevelCount] = {};
+    uint32_t                        bloomTextureCount = 0;
     RHI::Texture *                  mainRTDepthTexture = nullptr;
     RHI::Buffer *                   luminanceBuffer = nullptr;
     BE1::Color4                     baseClearColor = BE1::Color4::black;
@@ -198,3 +205,10 @@ extern BE1::CVar                    r_toneMapLuminanceLogMin;
 extern BE1::CVar                    r_toneMapLuminanceLogMax;
 extern BE1::CVar                    r_toneMapLuminanceAdaptationRate;
 extern BE1::CVar                    r_toneMapMiddleGray;
+
+extern BE1::CVar                    r_bloom;
+extern BE1::CVar                    r_bloomThreshold;
+extern BE1::CVar                    r_bloomSoftThreshold;
+extern BE1::CVar                    r_bloomIntensity;
+extern BE1::CVar                    r_bloomRadius;
+extern BE1::CVar                    r_bloomMipCount;
