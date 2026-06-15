@@ -20,8 +20,6 @@
 static constexpr uint32_t DynamicObjectSleepDelayMsec = 3000;
 #endif
 
-BE1::CVar           r_skipCulling("r_skipCulling", "0", BE1::CVar::Flag::Bool, "skip frustum culling for render objects and mesh surfaces");
-
 RenderWorld::RenderWorld() {
     renderObjects.Reserve(65536);
     renderObjects.SetGranularity(4096);

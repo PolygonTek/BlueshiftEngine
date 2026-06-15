@@ -23,20 +23,6 @@
 
 RenderContext *         RenderContext::activeContext = nullptr;
 
-BE1::CVar               r_toneMapping("r_toneMapping", "1", BE1::CVar::Flag::Bool, "enable compute tone mapping");
-BE1::CVar               r_toneMapOp("r_toneMapOp", "7", BE1::CVar::Flag::Integer, "tone mapping operator", 0, 10);
-BE1::CVar               r_toneMapLuminanceLogMin("r_toneMapLuminanceLogMin", "-10", BE1::CVar::Flag::Float, "tone mapping luminance histogram minimum log2 luminance");
-BE1::CVar               r_toneMapLuminanceLogMax("r_toneMapLuminanceLogMax", "2", BE1::CVar::Flag::Float, "tone mapping luminance histogram maximum log2 luminance");
-BE1::CVar               r_toneMapLuminanceAdaptationRate("r_toneMapLuminanceAdaptationRate", "1.1", BE1::CVar::Flag::Float, "tone mapping luminance adaptation rate", 0.0f, 100.0f);
-BE1::CVar               r_toneMapMiddleGray("r_toneMapMiddleGray", "0.18", BE1::CVar::Flag::Float, "tone mapping middle gray", 0.0f, 10.0f);
-
-BE1::CVar               r_bloom("r_bloom", "1", BE1::CVar::Flag::Bool, "enable bloom");
-BE1::CVar               r_bloomThreshold("r_bloomThreshold", "1.0", BE1::CVar::Flag::Float, "bloom luminance threshold", 0.0f, 100.0f);
-BE1::CVar               r_bloomSoftThreshold("r_bloomSoftThreshold", "0.5", BE1::CVar::Flag::Float, "bloom soft threshold width", 0.0f, 10.0f);
-BE1::CVar               r_bloomIntensity("r_bloomIntensity", "0.05", BE1::CVar::Flag::Float, "bloom intensity", 0.0f, 10.0f);
-BE1::CVar               r_bloomRadius("r_bloomRadius", "1.0", BE1::CVar::Flag::Float, "bloom dual kawase sample radius", 0.0f, 10.0f);
-BE1::CVar               r_bloomMipCount("r_bloomMipCount", "6", BE1::CVar::Flag::Integer, "bloom mip level count", 1, 8);
-
 static constexpr int    GpuStatUpdateSampleCount = 16;
 
 void RenderContext::Init(void *windowHandle, const BE1::Color4 &baseClearColor) {

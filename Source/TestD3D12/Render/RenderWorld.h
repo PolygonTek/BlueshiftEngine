@@ -160,5 +160,3 @@ private:
     BE1::Color4                 debugLineColor;
     BE1::Color4                 debugFillColor;
 };
-
-extern BE1::CVar                r_skipCulling;

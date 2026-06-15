@@ -14,6 +14,7 @@
 
 #include "Precompiled.h"
 #include "RenderBackend.h"
+#include "RenderCvars.h"
 #include "RenderContext.h"
 #include "RenderInternal.h"
 #include "Shaders/ShaderInterop.h"
@@ -167,6 +168,10 @@ void RenderBackend::DiscardGpuFrameTimings(const RenderContext *renderContext) {
 }
 
 void RenderBackend::Execute(RenderFrameData *frameData) {
+    if (r_skipBackend.GetBool()) {
+        return;
+    }
+
     uint64_t t0 = BE1::PlatformTime::Microseconds();
 
     // 백엔드가 처리할 프레임 데이터

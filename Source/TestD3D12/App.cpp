@@ -15,6 +15,7 @@
 #include "Precompiled.h"
 #include "Platform/PlatformSystem.h"
 #include "Render/RenderSystem.h"
+#include "Render/RenderCvars.h"
 #include "Render/RenderContext.h"
 #include "Render/RenderBackend.h"
 #include "Shaders/ShaderInterop.h"

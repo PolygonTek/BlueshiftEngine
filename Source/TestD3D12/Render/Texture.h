@@ -234,8 +234,3 @@ private:
 };
 
 extern TextureManager               textureManager;
-
-extern BE1::CVar                    r_textureStreamingStreamInDelay;
-extern BE1::CVar                    r_textureStreamingMaxRequestsPerFrame;
-extern BE1::CVar                    r_textureStreamingMaxLevelReduction;
-extern BE1::CVar                    r_textureStreamingMinResidentMaxDimension;

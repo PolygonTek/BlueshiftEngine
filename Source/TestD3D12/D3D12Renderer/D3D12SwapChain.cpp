@@ -17,7 +17,7 @@
 #include "D3D12DescriptorPool.h"
 #include "D3D12SwapChain.h"
 
-static BE1::CVar        r_swapChainAllowTearing("r_swapChainAllowTearing", "1", BE1::CVar::Flag::Bool, "allow tearing when presenting without vsync");
+static CVAR(d3d12_swapChainAllowTearing, "1", BE1::CVar::Flag::Bool, "allow tearing when presenting without vsync");
 
 RHI::SwapChain *D3D12Renderer::CreateSwapChain(HWND hwnd, uint32_t width, uint32_t height, RHI::Format format) {
     DXGI_FORMAT dxgiFormat = RHIFormatToDXGIFormat(format);
@@ -138,7 +138,7 @@ void D3D12SwapChain::Resize(uint32_t width, uint32_t height) {
 
 void D3D12SwapChain::SwapBuffers(bool vsync) {
     const UINT syncInterval = vsync ? 1 : 0;
-    const UINT presentFlags = (!vsync && D3D12Renderer::GetRenderer()->supportsTearing && r_swapChainAllowTearing.GetBool()) ? DXGI_PRESENT_ALLOW_TEARING : 0;
+    const UINT presentFlags = (!vsync && D3D12Renderer::GetRenderer()->supportsTearing && d3d12_swapChainAllowTearing.GetBool()) ? DXGI_PRESENT_ALLOW_TEARING : 0;
 
     if (dxgiSwapChain->Present(syncInterval, presentFlags) == DXGI_ERROR_DEVICE_REMOVED) {
         BE_FATALERROR("DXGI Device Removed");

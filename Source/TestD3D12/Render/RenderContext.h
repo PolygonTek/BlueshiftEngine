@@ -198,17 +198,3 @@ void RenderContext::RenderImGui(const BuildFunc &buildFunc) {
     (void)buildFunc;
 #endif
 }
-
-extern BE1::CVar                    r_toneMapping;
-extern BE1::CVar                    r_toneMapOp;
-extern BE1::CVar                    r_toneMapLuminanceLogMin;
-extern BE1::CVar                    r_toneMapLuminanceLogMax;
-extern BE1::CVar                    r_toneMapLuminanceAdaptationRate;
-extern BE1::CVar                    r_toneMapMiddleGray;
-
-extern BE1::CVar                    r_bloom;
-extern BE1::CVar                    r_bloomThreshold;
-extern BE1::CVar                    r_bloomSoftThreshold;
-extern BE1::CVar                    r_bloomIntensity;
-extern BE1::CVar                    r_bloomRadius;
-extern BE1::CVar                    r_bloomMipCount;

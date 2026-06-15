@@ -70,6 +70,8 @@ set(SRC_FILES
     Render/VertexInputLayoutFactory.cpp
     D3D12Renderer/D3D12ImGuiOverlay.h
     D3D12Renderer/D3D12ImGuiOverlay.cpp
+    Render/RenderCvars.h
+    Render/RenderCvars.cpp
     Render/RenderContext.h
     Render/RenderContext.cpp
     Render/RenderFrameData.h

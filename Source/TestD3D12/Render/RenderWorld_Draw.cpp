@@ -14,6 +14,7 @@
 
 #include "Precompiled.h"
 #include "RenderWorld.h"
+#include "RenderCvars.h"
 #include "RenderContext.h"
 #include "RenderCamera.h"
 #include "RenderInternal.h"
