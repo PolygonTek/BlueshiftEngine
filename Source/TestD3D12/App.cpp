@@ -362,8 +362,8 @@ void App::RenderScene() {
     cameraDesc.axis = BE1::Angles(0.0f, cameraPitch, cameraYaw).ToMat3();
     cameraDesc.origin = cameraCenter - cameraDesc.axis[0] * cameraDistance;
     RenderCamera::CalculateFov(60, 16.0f / 9.0f, aspectRatio, &cameraDesc.fovX, &cameraDesc.fovY);
-    cameraDesc.zNear = BE1::MeterToUnit(0.5f);
-    cameraDesc.zFar = BE1::MeterToUnit(1000.0f);
+    cameraDesc.zNear = BE1::MeterToUnit(1.0f);
+    cameraDesc.zFar = BE1::MeterToUnit(2000.0f);
     if (cameraDesc.orthogonal) {
         cameraDesc.sizeX = cameraDistance * BE1::Math::Tan(cameraDesc.fovX * 0.5f) * 0.5f;
         cameraDesc.sizeY = cameraDesc.sizeX / aspectRatio;
@@ -597,6 +597,26 @@ void App::BuildImGuiOverlay() {
                 "Filmic Uncharted 2\0"
                 "Filmic GT\0\0")) {
                 r_toneMapOp.SetInteger(toneMapOp);
+            }
+
+            float luminanceLogMin = r_toneMapLuminanceLogMin.GetFloat();
+            float luminanceLogMax = r_toneMapLuminanceLogMax.GetFloat();
+            ImGui::SetNextItemWidth(fontSize * 12.0f);
+            if (ImGui::DragFloatRange2("Luminance log2 range", &luminanceLogMin, &luminanceLogMax, 0.05f, -16.0f, 16.0f, "Min: %.2f", "Max: %.2f")) {
+                r_toneMapLuminanceLogMin.SetFloat(luminanceLogMin);
+                r_toneMapLuminanceLogMax.SetFloat(BE1::Max(luminanceLogMax, luminanceLogMin + 0.0001f));
+            }
+
+            float luminanceAdaptationRate = r_toneMapLuminanceAdaptationRate.GetFloat();
+            ImGui::SetNextItemWidth(fontSize * 12.0f);
+            if (ImGui::SliderFloat("Luminance adaptation rate", &luminanceAdaptationRate, 0.0f, 10.0f, "%.2f")) {
+                r_toneMapLuminanceAdaptationRate.SetFloat(luminanceAdaptationRate);
+            }
+
+            float middleGray = r_toneMapMiddleGray.GetFloat();
+            ImGui::SetNextItemWidth(fontSize * 12.0f);
+            if (ImGui::SliderFloat("Middle gray", &middleGray, 0.0f, 2.0f, "%.3f")) {
+                r_toneMapMiddleGray.SetFloat(middleGray);
             }
 
             int streamInDelay = r_textureStreamingStreamInDelay.GetInteger();

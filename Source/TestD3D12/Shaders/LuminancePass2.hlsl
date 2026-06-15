@@ -49,7 +49,8 @@ void CSMain(uint binIndex : SV_GroupIndex) {
         
         // 이전 프레임의 luminance 값과 현재의 평균값을 exp smoothing 으로 보간한다.
         float luminanceLastFrame = luminanceHistogram.Load<float>(LuminanceBufferOffsetLuminance);
-        float adaptedLuminance = luminanceLastFrame + (weightedAverageLuminance - luminanceLastFrame) * (1 - exp(-max(frameConstants.frameTime, 0.01) * PPP_LUMINANCE_ADAPTATION_RATE));
+        float adaptationFrameTime = max(frameConstants.frameTime, 0.0);
+        float adaptedLuminance = luminanceLastFrame + (weightedAverageLuminance - luminanceLastFrame) * (1 - exp(-adaptationFrameTime * PPP_LUMINANCE_ADAPTATION_RATE));
 
         // 보간된 luminance 값 저장 (다음 프레임에 사용)
         luminanceHistogram.Store<float>(LuminanceBufferOffsetLuminance, adaptedLuminance);

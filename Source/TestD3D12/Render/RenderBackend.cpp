@@ -499,6 +499,7 @@ const void *RenderBackend::ExecuteSwapBuffers(const void *data) {
     return (const void *)(cmd + 1);
 }
 
+// 히스토그램 기반 luminance 계산: https://www.alextardif.com/HistogramLuminance.html
 bool RenderBackend::DispatchLuminance() {
     PROFILER_CPU_SCOPED_EVENT("RenderBackend::DispatchLuminance");
 
