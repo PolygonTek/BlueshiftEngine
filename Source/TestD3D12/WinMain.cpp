@@ -211,10 +211,10 @@ static bool ProcessEventLoop() {
     return true;
 }
 
-static bool RunFrameInstance(int frameMsec) {
+static bool RunFrameInstance(uint64_t frameUsec) {
     PROFILER_CPU_SCOPED_EVENT("RunFrameInstance");
 
-    app.UpdateFrameTime(frameMsec);
+    app.UpdateFrameTime(frameUsec);
 
     if (!ProcessEventLoop()) {
         return false;
@@ -222,9 +222,9 @@ static bool RunFrameInstance(int frameMsec) {
 
     BE1::cmdSystem.ExecuteCommandBuffer();
 
-    app.Update(frameMsec);
+    app.Update(frameUsec);
 
-    app.Render(frameMsec);
+    app.Render(frameUsec);
 
     return true;
 }
@@ -249,16 +249,16 @@ int APIENTRY _tWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPTSTR lpCm
 
     GetWindowText(hwndMain, windowTitleString, COUNT_OF(windowTitleString));
 
-    int t0 = BE1::PlatformTime::Milliseconds();
+    uint64_t t0 = BE1::PlatformTime::Microseconds();
 
     while (1) {
-        int t = BE1::PlatformTime::Milliseconds();
-        int elapsedMsec = t - t0;
-        BE1::Clamp(elapsedMsec, 0, 1000);
+        uint64_t t = BE1::PlatformTime::Microseconds();
+        uint64_t elapsedUsec = t - t0;
+        BE1::Clamp(elapsedUsec, 0ULL, 1000000ULL);
 
         t0 = t;
 
-        if (!RunFrameInstance(elapsedMsec)) {
+        if (!RunFrameInstance(elapsedUsec)) {
             break;
         }
     }

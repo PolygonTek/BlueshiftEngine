@@ -26,17 +26,17 @@ public:
     void                            Init(void *mainWindowHandle);
     void                            Shutdown();
 
-    void                            Update(int frameMsec);
-    void                            Render(int frameMsec);
+    void                            Update(uint64_t frameUsec);
+    void                            Render(uint64_t frameUsec);
 
-    void                            UpdateFrameTime(int frameMsec);
+    void                            UpdateFrameTime(uint64_t frameUsec);
 
     void                            OnResize(int width, int height);
 
     void                            InitGameObjects(uint32_t countX, uint32_t countY, uint32_t countZ);
     void                            ClearGameObjects();
     void                            ChangeGameObjectCount(uint32_t countX, uint32_t countY, uint32_t countZ);
-    void                            UpdateCamera(int frameMsec);
+    void                            UpdateCamera(uint64_t frameUsec);
 
     RenderContext *                 GetMainRenderContext() const { return mainRenderContext; }
 
@@ -68,9 +68,9 @@ private:
 
     BE1::Array<GameObject *>        gameObjects;
 
-    int                             elapsedMsec = 0;
+    uint64_t                        elapsedUsec = 0;
 
-    uint32_t                        statFrameElapsedMsec = 0;
+    uint64_t                        statFrameElapsedUsec = 0;
     uint32_t                        statFrameCount = 0;
     float                           statFrameAverageMsec = 0;
 
