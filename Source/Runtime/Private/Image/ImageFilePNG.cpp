@@ -24,8 +24,6 @@
 
 BE_NAMESPACE_BEGIN
 
-static size_t png_compressed_size;
-
 struct PNGReadContext {
     const byte *current;
 };
@@ -131,21 +129,15 @@ bool Image::LoadPNGFromMemory(const char *name, const byte *data, size_t size) {
 }
 
 struct PNGWriteContext {
-    byte *current;
-    byte *end;
-    size_t written = 0;
+    File *file;
 };
 
 static void png_write_data(png_structp png, png_bytep data, png_size_t length) {
     auto *ctx = static_cast<PNGWriteContext *>(png_get_io_ptr(png));
-    if (!ctx || ctx->current + length > ctx->end) {
-        png_error(png, "PNG write overflow");
+    if (!ctx || !ctx->file || !ctx->file->Write(data, length)) {
+        png_error(png, "PNG write failed");
         return;
     }
-
-    memcpy(ctx->current, data, length);
-    ctx->current += length;
-    ctx->written += length;
 }
 
 static void png_flush_data(png_structp png) {
@@ -194,34 +186,29 @@ bool Image::WritePNG(const char *filename) const {
         src = convertedImage.pic;
     }
 
-    png_compressed_size = 0;
-    int size = width * height * bpp;
-    byte *buffer = (byte *)Mem_Alloc16(size);
+    File *fp = fileSystem.OpenFile(filename, File::Mode::Write);
+    if (!fp) {
+        png_destroy_write_struct(&png, &info);
+        return false;
+    }
+
+    png_bytep *row_pointers = (byte **)Mem_Alloc16(height * sizeof(png_bytep));
 
     // Set error handling.
     if (setjmp(png_jmpbuf(png))) {
-        Mem_AlignedFree(buffer);
+        Mem_AlignedFree(row_pointers);
+        fileSystem.CloseFile(fp);
         png_destroy_write_struct(&png, &info);
         return false;
     }
 
     PNGWriteContext ctx;
-    ctx.current = buffer;
-    ctx.end = buffer + size;
+    ctx.file = fp;
     png_set_write_fn(png, &ctx, png_write_data, png_flush_data);
     png_set_IHDR(png, info, width, height, 8, colorType, PNG_INTERLACE_NONE, PNG_COMPRESSION_TYPE_DEFAULT, PNG_FILTER_TYPE_DEFAULT);
 
     // Write the file header information.
     png_write_info(png, info);
-
-    png_bytep *row_pointers = (byte **)Mem_Alloc16(height * sizeof(png_bytep));
-
-    if (setjmp(png_jmpbuf(png))) {
-        Mem_AlignedFree(row_pointers);
-        Mem_AlignedFree(buffer);
-        png_destroy_write_struct(&png, &info);
-        return false;
-    }
 
     int row_stride = width * bpp;
     byte *row = (byte *)(src + (0) * row_stride);
@@ -237,10 +224,7 @@ bool Image::WritePNG(const char *filename) const {
     png_destroy_write_struct(&png, &info);
 
     Mem_AlignedFree(row_pointers);
-
-    fileSystem.WriteFile(filename, buffer, (int)png_compressed_size);
-
-    Mem_AlignedFree(buffer);
+    fileSystem.CloseFile(fp);
 
     return true;
 }
