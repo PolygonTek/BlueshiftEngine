@@ -133,6 +133,10 @@ void TextureManager::CreateEngineTextures() {
     defaultTexture = AllocTexture("_defaultTexture");
     defaultTexture->CreateDefaultTexture(16);
 
+    // Create black texture.
+    blackTexture = AllocTexture("_blackTexture");
+    blackTexture->CreateColorTexture(8, BE1::Color4::black);
+
     // Create white texture.
     whiteTexture = AllocTexture("_whiteTexture");
     whiteTexture->CreateColorTexture(8, BE1::Color4::white);
@@ -145,6 +149,9 @@ void TextureManager::CreateEngineTextures() {
 void TextureManager::DestroyEngineTextures() {
     if (defaultTexture) {
         defaultTexture.reset();
+    }
+    if (blackTexture) {
+        blackTexture.reset();
     }
     if (whiteTexture) {
         whiteTexture.reset();

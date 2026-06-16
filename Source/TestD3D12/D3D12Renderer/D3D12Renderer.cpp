@@ -2660,6 +2660,11 @@ BE1::Image::Format D3D12Renderer::ToUAVImageFormat(BE1::Image::Format format) co
         return format;
     }
 
+    if (format == BE1::Image::Format::R9G9B9E5_FLOAT ||
+        format == BE1::Image::Format::R11G11B10_FLOAT) {
+        return BE1::Image::Format::R16G16B16A16_FLOAT;
+    }
+
     if (BE1::Image::IsCompressed(format) || BE1::Image::IsPacked(format)) {
         format = ToUncompressedImageFormat(format);
     }

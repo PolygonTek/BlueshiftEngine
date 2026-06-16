@@ -16,6 +16,7 @@
 #include "RenderSystem.h"
 #include "RenderContext.h"
 #include "RenderBackend.h"
+#include "RenderCvars.h"
 #include "RenderInternal.h"
 #include "ShaderTemplate.h"
 #include "ShaderPipelineCache.h"
@@ -96,6 +97,9 @@ void RenderContext::Shutdown() {
     toneMappingPSO.reset();
     luminancePass1PSO.reset();
     luminancePass2PSO.reset();
+    bloomPrefilterPSO.reset();
+    bloomDownsamplePSO.reset();
+    bloomUpsamplePSO.reset();
 
     DestroyLuminanceBuffer();
     DestroyMainRenderTextures();
@@ -192,20 +196,19 @@ void RenderContext::DestroyMainRenderTextures() {
 void RenderContext::CreateBloomTextures(uint32_t width, uint32_t height) {
     DestroyBloomTextures();
 
-    BE1::Image::Format bloomImageFormat = BE1::Image::Format::Unknown;
-    RHI::Format bloomFormat = mainRTColorFormat;
-    RHI::Renderer::RHIFormatToImageFormat(bloomFormat, &bloomImageFormat, nullptr);
+    BE1::Image::Format bloomImageFormat = RHI::renderer->ToUAVImageFormat(BE1::Image::Format::R11G11B10_FLOAT);
+    const RHI::TextureFlag bloomTextureFlags = RHI::TextureFlag::ShaderResource | RHI::TextureFlag::UnorderedAccess | RHI::TextureFlag::SkipDefaultViews;
+    const uint32_t maxLevelCount = static_cast<uint32_t>(BE1::Clamp(r_bloomMipCount.GetInteger(), 1, BloomMaxLevelCount));
 
-    uint32_t bloomWidths[BloomMaxLevelCount] = {};
-    uint32_t bloomHeights[BloomMaxLevelCount] = {};
-    uint32_t levelCount = 0;
-
+    // bloom texture 의 mip 0 는 화면의 절반 크기로 시작
     uint32_t bloomWidth = width > 1 ? width >> 1 : 1;
     uint32_t bloomHeight = height > 1 ? height >> 1 : 1;
+    uint32_t levelCount = 0;
 
-    while (levelCount < BloomMaxLevelCount) {
-        bloomWidths[levelCount] = bloomWidth;
-        bloomHeights[levelCount] = bloomHeight;
+    // 1x1 이 될 때까지 몇개의 bloom mip 이 필요한지 계산한다. (최대 BloomMaxLevelCount = 8)
+    while (levelCount < maxLevelCount) {
+        bloomMipWidths[levelCount] = bloomWidth;
+        bloomMipHeights[levelCount] = bloomHeight;
         levelCount++;
 
         if (bloomWidth == 1 && bloomHeight == 1) {
@@ -216,59 +219,84 @@ void RenderContext::CreateBloomTextures(uint32_t width, uint32_t height) {
         bloomHeight = bloomHeight > 1 ? bloomHeight >> 1 : 1;
     }
 
-    for (uint32_t textureIndex = 0; textureIndex < levelCount; ++textureIndex) {
-        SharedPtr<BE1::Image> image = MakeShared<BE1::Image>();
-        image->InitFromMemory(bloomWidths[textureIndex], bloomHeights[textureIndex], 1, 1, 1, bloomImageFormat, BE1::Image::GammaSpace::Linear, nullptr, BE1::Image::Flag::None);
+    SharedPtr<BE1::Image> image = MakeShared<BE1::Image>();
+    image->InitFromMemory(bloomMipWidths[0], bloomMipHeights[0], 1, 1, levelCount, bloomImageFormat, BE1::Image::GammaSpace::Linear, nullptr, BE1::Image::Flag::None);
 
-        bloomDownTextures[textureIndex] = RHI::renderer->CreateTexture(RHI::TextureType::Texture2D, RHI::TextureFlag::ShaderResource | RHI::TextureFlag::UnorderedAccess, image, false, {}, 1, RHI::GPUResourceState::ShaderResource);
-        if (!bloomDownTextures[textureIndex]) {
-            BE_WARNLOG("RenderContext::CreateBloomTextures: failed to create bloom down texture %i\n", textureIndex);
-            DestroyBloomTextures();
-            return;
+    // bloom down texture 생성
+    bloomDownTexture = RHI::renderer->CreateTexture(RHI::TextureType::Texture2D, bloomTextureFlags, image, false, {}, 1, RHI::GPUResourceState::ShaderResource);
+    if (!bloomDownTexture) {
+        BE_WARNLOG("RenderContext::CreateBloomTextures: failed to create bloom down texture\n");
+        DestroyBloomTextures();
+        return;
+    }
+    RHI::renderer->SetName(bloomDownTexture, "bloomDownTexture");
+
+    // bloom up texture 생성
+    bloomUpTexture = RHI::renderer->CreateTexture(RHI::TextureType::Texture2D, bloomTextureFlags, image, false, {}, 1, RHI::GPUResourceState::ShaderResource);
+    if (!bloomUpTexture) {
+        BE_WARNLOG("RenderContext::CreateBloomTextures: failed to create bloom up texture\n");
+        DestroyBloomTextures();
+        return;
+    }
+    RHI::renderer->SetName(bloomUpTexture, "bloomUpTexture");
+
+    // mip 별 view 생성
+    auto createBloomMipViews = [](RHI::Texture *texture, RHI::ViewID *srvViewIDs, RHI::ViewID *uavViewIDs, uint32_t levelCount, const char *debugName) -> bool {
+        for (uint32_t mipLevel = 0; mipLevel < levelCount; ++mipLevel) {
+            srvViewIDs[mipLevel] = RHI::renderer->CreateView(texture, RHI::ViewType::SRV, RHI::Format::Auto, 0, texture->GetArraySize(), mipLevel, 1);
+            if (!srvViewIDs[mipLevel].IsValid()) {
+                BE_WARNLOG("RenderContext::CreateBloomTextures: failed to create %s mip %i SRV\n", debugName, mipLevel);
+                return false;
+            }
+
+            uavViewIDs[mipLevel] = RHI::renderer->CreateView(texture, RHI::ViewType::UAV, RHI::Format::Auto, 0, texture->GetArraySize(), mipLevel, 1);
+            if (!uavViewIDs[mipLevel].IsValid()) {
+                BE_WARNLOG("RenderContext::CreateBloomTextures: failed to create %s mip %i UAV\n", debugName, mipLevel);
+                return false;
+            }
         }
 
-        RHI::renderer->SetName(bloomDownTextures[textureIndex], BE1::va("bloomDownTextures[%i]", textureIndex));
+        return true;
+    };
+
+    if (!createBloomMipViews(bloomDownTexture, bloomDownMipSRVs, bloomDownMipUAVs, levelCount, "bloomDownTexture") ||
+        !createBloomMipViews(bloomUpTexture, bloomUpMipSRVs, bloomUpMipUAVs, levelCount, "bloomUpTexture")) {
+        DestroyBloomTextures();
+        return;
     }
 
-    for (uint32_t textureIndex = 0; textureIndex + 1 < levelCount; ++textureIndex) {
-        SharedPtr<BE1::Image> image = MakeShared<BE1::Image>();
-        image->InitFromMemory(bloomWidths[textureIndex], bloomHeights[textureIndex], 1, 1, 1, bloomImageFormat, BE1::Image::GammaSpace::Linear, nullptr, BE1::Image::Flag::None);
-
-        bloomUpTextures[textureIndex] = RHI::renderer->CreateTexture(RHI::TextureType::Texture2D, RHI::TextureFlag::ShaderResource | RHI::TextureFlag::UnorderedAccess, image, false, {}, 1, RHI::GPUResourceState::ShaderResource);
-        if (!bloomUpTextures[textureIndex]) {
-            BE_WARNLOG("RenderContext::CreateBloomTextures: failed to create bloom up texture %i\n", textureIndex);
-            DestroyBloomTextures();
-            return;
-        }
-
-        RHI::renderer->SetName(bloomUpTextures[textureIndex], BE1::va("bloomUpTextures[%i]", textureIndex));
-    }
-
-    bloomTextureCount = levelCount;
+    bloomMipCount = levelCount;
 }
 
 void RenderContext::DestroyBloomTextures() {
-    for (uint32_t textureIndex = 0; textureIndex < BloomMaxLevelCount; ++textureIndex) {
-        if (bloomDownTextures[textureIndex]) {
-            RHI::renderer->DestroyTexture(bloomDownTextures[textureIndex], true);
-            bloomDownTextures[textureIndex] = nullptr;
-        }
-        if (bloomUpTextures[textureIndex]) {
-            RHI::renderer->DestroyTexture(bloomUpTextures[textureIndex], true);
-            bloomUpTextures[textureIndex] = nullptr;
-        }
+    if (bloomDownTexture) {
+        RHI::renderer->DestroyTexture(bloomDownTexture, true);
+        bloomDownTexture = nullptr;
+    }
+    if (bloomUpTexture) {
+        RHI::renderer->DestroyTexture(bloomUpTexture, true);
+        bloomUpTexture = nullptr;
     }
 
-    bloomTextureCount = 0;
+    for (uint32_t mipLevel = 0; mipLevel < BloomMaxLevelCount; ++mipLevel) {
+        bloomDownMipSRVs[mipLevel] = RHI::ViewID::InvalidID;
+        bloomDownMipUAVs[mipLevel] = RHI::ViewID::InvalidID;
+        bloomUpMipSRVs[mipLevel] = RHI::ViewID::InvalidID;
+        bloomUpMipUAVs[mipLevel] = RHI::ViewID::InvalidID;
+        bloomMipWidths[mipLevel] = 0;
+        bloomMipHeights[mipLevel] = 0;
+    }
+
+    bloomMipCount = 0;
 }
 
 void RenderContext::CreateLuminanceBuffer() {
     // Luminance buffer : exposure (float) + luminance (float) + histogram (uint32_t * 1024)
     static constexpr uint32_t LuminanceBufferSize = LuminanceBufferOffsetHistogram + LuminanceHistogramBinCount * sizeof(uint32_t);
     static constexpr uint32_t LuminanceBufferDwordCount = LuminanceBufferSize / sizeof(uint32_t);
-    static const uint32_t InitialLuminanceBufferData[LuminanceBufferDwordCount] = {};
+    const uint32_t initialLuminanceBufferData[LuminanceBufferDwordCount] = {};
 
-    luminanceBuffer = RHI::renderer->CreateBuffer(RHI::BufferUsage::Default, RHI::BufferFlag::ShaderResource | RHI::BufferFlag::UnorderedAccess, LuminanceBufferSize, InitialLuminanceBufferData);
+    luminanceBuffer = RHI::renderer->CreateBuffer(RHI::BufferUsage::Default, RHI::BufferFlag::ShaderResource | RHI::BufferFlag::UnorderedAccess, LuminanceBufferSize, initialLuminanceBufferData);
     if (!luminanceBuffer) {
         BE_WARNLOG("RenderContext::CreateLuminanceBuffer: failed to create luminance buffer\n");
         return;
@@ -329,6 +357,9 @@ void RenderContext::InitFullScreenTrianglePSO() {
 void RenderContext::InitToneMappingPSO() {
     luminancePass1PSO = shaderPipelineCache.GetComputePipeline(shaderTemplateManager.luminancePass1ShaderTemplate, ShaderPermutationKey(), false);
     luminancePass2PSO = shaderPipelineCache.GetComputePipeline(shaderTemplateManager.luminancePass2ShaderTemplate, ShaderPermutationKey(), false);
+    bloomPrefilterPSO = shaderPipelineCache.GetComputePipeline(shaderTemplateManager.bloomPrefilterShaderTemplate, ShaderPermutationKey(), false);
+    bloomDownsamplePSO = shaderPipelineCache.GetComputePipeline(shaderTemplateManager.bloomDownsampleShaderTemplate, ShaderPermutationKey(), false);
+    bloomUpsamplePSO = shaderPipelineCache.GetComputePipeline(shaderTemplateManager.bloomUpsampleShaderTemplate, ShaderPermutationKey(), false);
     toneMappingPSO = shaderPipelineCache.GetComputePipeline(shaderTemplateManager.toneMappingShaderTemplate, ShaderPermutationKey(), false);
 }
 

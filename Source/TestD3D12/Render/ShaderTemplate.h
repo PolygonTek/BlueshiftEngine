@@ -228,6 +228,9 @@ public:
     SharedPtr<ShaderTemplate>       toneMappingShaderTemplate;
     SharedPtr<ShaderTemplate>       luminancePass1ShaderTemplate;
     SharedPtr<ShaderTemplate>       luminancePass2ShaderTemplate;
+    SharedPtr<ShaderTemplate>       bloomPrefilterShaderTemplate;
+    SharedPtr<ShaderTemplate>       bloomDownsampleShaderTemplate;
+    SharedPtr<ShaderTemplate>       bloomUpsampleShaderTemplate;
     SharedPtr<ShaderTemplate>       unlitShaderTemplate;
     SharedPtr<ShaderTemplate>       litShaderTemplate;
 

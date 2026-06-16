@@ -4,9 +4,9 @@
     "DescriptorTable(SRV(t0), UAV(u0)), " \
     "CBV(b0), " \
     "RootConstants(num32BitConstants=12, b1), " \
-    ROOT_SIGNATURE_COMMON_STATIC_SAMPLERS
+    "StaticSampler(s100, addressU = TEXTURE_ADDRESS_CLAMP, addressV = TEXTURE_ADDRESS_CLAMP, addressW = TEXTURE_ADDRESS_CLAMP, filter = FILTER_MIN_MAG_MIP_LINEAR)"
 
-DECLARE_COMMON_STATIC_SAMPLERS
+SamplerState linearClampSampler : register(s100);
 
 cbuffer FrameCB : register(b0) {
     FrameConstants frameConstants;
@@ -31,13 +31,13 @@ void CSMain(uint3 dispatchThreadId : SV_DispatchThreadID, uint groupIndex : SV_G
     if (dispatchThreadId.x < postProcessParams.resolution.x && dispatchThreadId.y < postProcessParams.resolution.y) {
         // 절반 크기로 중앙을 샘플링하여 downsample 된 inputTexture 를 샘플링하는 효과
         const float2 uv = (dispatchThreadId.xy + 0.5) * postProcessParams.resolutionRcp;
-        float3 color = inputTexture.SampleLevel(linearClampSampler, uv, 0);
-        float luminance = dot(color, float3(0.2127f, 0.7152f, 0.0722f));
+        half3 color = half3(inputTexture.SampleLevel(linearClampSampler, uv, 0).rgb);
+        half luminance = dot(color, half3(0.2127h, 0.7152h, 0.0722h));
 
         // luminance 값에 log 를 취하고 적절한 범위로 clamp 한 후 양자화하여 binIndex 를 구한다.
         uint binIndex = 0;
-        if (luminance > 0.001) {
-            float logLuminance = saturate((log2(luminance) - PPP_LUMINANCE_LOG_MIN) * PPP_LUMINANCE_LOG_RANGE_RCP);
+        if (luminance > half(0.001)) {
+            float logLuminance = saturate((log2(float(luminance)) - PPP_LUMINANCE_LOG_MIN) * PPP_LUMINANCE_LOG_RANGE_RCP);
             binIndex = (uint)(logLuminance * (LuminanceHistogramBinCount - 2) + 1);
         }
         

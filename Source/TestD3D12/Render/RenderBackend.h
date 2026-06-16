@@ -84,7 +84,8 @@ private:
     static void                     DrawGenericSurfacesByTaskFunction(void *data);
 
     bool                            DispatchLuminance();
-    bool                            DispatchToneMapping();
+    bool                            DispatchBloom();
+    bool                            DispatchToneMapping(bool useBloom);
 
     uint32_t                        FindSurfaceInstanceBatchEnd(const PassDrawSurf **drawSurfs, uint32_t numDrawSurfs, uint32_t startIndex) const;
     RHI::Buffer *                   AllocInstanceToShaderSurfaceTable(RHI::FrameThreadData *frameThreadData, const PassDrawSurf **drawSurfs, uint32_t instanceCount) const;
@@ -107,6 +108,9 @@ private:
     RHI::PipelineState *            currentToneMappingPSO = nullptr;
     RHI::PipelineState *            currentLuminancePass1PSO = nullptr;
     RHI::PipelineState *            currentLuminancePass2PSO = nullptr;
+    RHI::PipelineState *            currentBloomPrefilterPSO = nullptr;
+    RHI::PipelineState *            currentBloomDownsamplePSO = nullptr;
+    RHI::PipelineState *            currentBloomUpsamplePSO = nullptr;
     RHI::ConstantBuffer *           frameConstantBuffer = nullptr;
     RHI::ConstantBuffer *           cameraConstantBuffer = nullptr;
 

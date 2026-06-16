@@ -215,6 +215,7 @@ public:
     void                            SetStreamingTextureMemoryBudgetBytes(uint64_t budget) { streamingTextureMemoryBudgetBytes = budget; }
 
     SharedPtr<Texture>              defaultTexture;
+    SharedPtr<Texture>              blackTexture;
     SharedPtr<Texture>              whiteTexture;
     SharedPtr<Texture>              flatNormalTexture;
 

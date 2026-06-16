@@ -60,6 +60,8 @@ static const uint LuminanceBufferOffsetHistogram = LuminanceBufferOffsetLuminanc
 
 static const uint ToneMappingBlockSizeX = 16;
 static const uint ToneMappingBlockSizeY = 16;
+static const uint BloomBlockSizeX = 16;
+static const uint BloomBlockSizeY = 16;
 static const uint ToneMappingOperatorLinear = 0;
 static const uint ToneMappingOperatorExponential = 1;
 static const uint ToneMappingOperatorLogarithmic = 2;
@@ -97,7 +99,23 @@ struct ToneMappingParams {
     uint2 outputSize;
     float exposureScale;
     uint toneMappingOperator;
+    float bloomIntensity;
+    float3 padding0;
 };
+
+struct BloomParams {
+    uint2 inputSize;
+    uint2 outputSize;
+    float2 inputTexelSize;
+    float2 outputTexelSize;
+    float4 params0;
+};
+
+#define BP_BLOOM_THRESHOLD bloomParams.params0.x
+#define BP_BLOOM_SOFT_THRESHOLD bloomParams.params0.y
+#define BP_BLOOM_PREFILTER_QUALITY bloomParams.params0.z
+#define BP_BLOOM_WEIGHT bloomParams.params0.z
+#define BP_BLOOM_RADIUS bloomParams.params0.w
 
 struct FrameConstants {
     float frameTime;

@@ -132,19 +132,7 @@ private:
     void *                          windowHandle = nullptr;
     RHI::SwapChain *                swapChain = nullptr;
     RHI::ImGuiOverlay *             imguiOverlay = nullptr;
-    RHI::Texture *                  mainRTColorMSAATexture = nullptr;
-    RHI::Texture *                  mainRTColorTexture = nullptr;
-    RHI::Texture *                  toneMappedColorTexture = nullptr;
-    RHI::Texture *                  bloomDownTextures[BloomMaxLevelCount] = {};
-    RHI::Texture *                  bloomUpTextures[BloomMaxLevelCount] = {};
-    uint32_t                        bloomTextureCount = 0;
-    RHI::Texture *                  mainRTDepthTexture = nullptr;
-    RHI::Buffer *                   luminanceBuffer = nullptr;
     BE1::Color4                     baseClearColor = BE1::Color4::black;
-    SharedPtr<ShaderPipeline>       imagePSO;
-    SharedPtr<ShaderPipeline>       toneMappingPSO;
-    SharedPtr<ShaderPipeline>       luminancePass1PSO;
-    SharedPtr<ShaderPipeline>       luminancePass2PSO;
 
 #ifdef USE_RENDER_FRAME_BUFFERING
     static constexpr int            NumFrames = 2;
@@ -157,6 +145,43 @@ private:
     uint32_t                        frameCount = 0;
     BE1::Array<PendingScreenshot>   pendingScreenshots;
 
+    RHI::Format                     mainRTColorFormat = RHI::Format::R8G8B8A8_UNORM;
+    RHI::Format                     mainRTDepthFormat = RHI::Format::D24_UNORM_S8_UINT;
+    uint32_t                        mainRTSampleCount = 1;
+
+    SharedPtr<ShaderPipeline>       imagePSO;
+    SharedPtr<ShaderPipeline>       toneMappingPSO;
+    SharedPtr<ShaderPipeline>       luminancePass1PSO;
+    SharedPtr<ShaderPipeline>       luminancePass2PSO;
+    SharedPtr<ShaderPipeline>       bloomPrefilterPSO;
+    SharedPtr<ShaderPipeline>       bloomDownsamplePSO;
+    SharedPtr<ShaderPipeline>       bloomUpsamplePSO;
+
+    RHI::Texture *                  mainRTColorTexture = nullptr;
+    RHI::Texture *                  mainRTColorMSAATexture = nullptr;
+    RHI::Texture *                  mainRTDepthTexture = nullptr;
+    RHI::Texture *                  bloomDownTexture = nullptr;
+    RHI::Texture *                  bloomUpTexture = nullptr;
+    RHI::ViewID                     bloomDownMipSRVs[BloomMaxLevelCount] = {};
+    RHI::ViewID                     bloomDownMipUAVs[BloomMaxLevelCount] = {};
+    RHI::ViewID                     bloomUpMipSRVs[BloomMaxLevelCount] = {};
+    RHI::ViewID                     bloomUpMipUAVs[BloomMaxLevelCount] = {};
+    uint32_t                        bloomMipWidths[BloomMaxLevelCount] = {};
+    uint32_t                        bloomMipHeights[BloomMaxLevelCount] = {};
+    uint32_t                        bloomMipCount = 0;
+    RHI::Texture *                  toneMappedColorTexture = nullptr;
+    RHI::Buffer *                   luminanceBuffer = nullptr;
+
+    TextureStreamingFeedback        textureStreamingFeedback;
+
+    GuiMesh                         guiMesh;            ///< System GUI mesh
+    BE1::Color4                     currentColor = BE1::Color4(1, 1, 1, 1);
+    BE1::Color4                     currentTextShadowColor = BE1::Color4(0, 0, 0, 0);
+    float                           currentTextScale = 1.0f;
+    float                           currentTextLineSpacing = 2;
+    BE1::Vec2                       currentTextShadowOffset = BE1::Vec2::zero;
+    SharedPtr<Font>                 currentFont;
+
     uint32_t                        gpuTimingSampleFrameCount = 0;
     float                           statGpuElapsedMsec = 0.0f;
     int                             statGpuSampleCount = 0;
@@ -167,21 +192,6 @@ private:
     std::atomic<uint64_t>           statDrawTriangleCount = 0;
     std::atomic<uint32_t>           statInstanceTableAllocCount = 0;
     std::atomic<uint32_t>           statInstanceTableUploadBytes = 0;
-
-    RHI::Format                     mainRTColorFormat = RHI::Format::R8G8B8A8_UNORM;
-    RHI::Format                     mainRTDepthFormat = RHI::Format::D24_UNORM_S8_UINT;
-    uint32_t                        mainRTSampleCount = 1;
-
-    TextureStreamingFeedback        textureStreamingFeedback;
-
-    GuiMesh                         guiMesh;            ///< System GUI mesh
-
-    BE1::Color4                     currentColor = BE1::Color4(1, 1, 1, 1);
-    BE1::Color4                     currentTextShadowColor = BE1::Color4(0, 0, 0, 0);
-    float                           currentTextScale = 1.0f;
-    float                           currentTextLineSpacing = 2;
-    BE1::Vec2                       currentTextShadowOffset = BE1::Vec2::zero;
-    SharedPtr<Font>                 currentFont;
 };
 
 template <typename BuildFunc>

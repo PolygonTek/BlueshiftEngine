@@ -273,6 +273,9 @@ const void *RenderBackend::ExecuteBeginContext(const void *data) {
     currentToneMappingPSO = cmd->toneMappingPSO;
     currentLuminancePass1PSO = cmd->luminancePass1PSO;
     currentLuminancePass2PSO = cmd->luminancePass2PSO;
+    currentBloomPrefilterPSO = cmd->bloomPrefilterPSO;
+    currentBloomDownsamplePSO = cmd->bloomDownsamplePSO;
+    currentBloomUpsamplePSO = cmd->bloomUpsamplePSO;
 
     statDrawCount = 0;
     statDrawTriangleCount = 0;
@@ -442,7 +445,9 @@ const void *RenderBackend::ExecuteSwapBuffers(const void *data) {
 #ifdef USE_OFFSCREEN_MAIN_RENDER_TARGET
     const bool needsSwapChainRenderPass = true;
 
-    const bool useToneMappedColorTexture = DispatchLuminance() && DispatchToneMapping();
+    const bool hasLuminance = DispatchLuminance();
+    const bool hasBloom = hasLuminance && DispatchBloom();
+    const bool useToneMappedColorTexture = hasLuminance && DispatchToneMapping(hasBloom);
 #else
     const bool needsSwapChainRenderPass = hasPendingImGuiOverlay;
 #endif
@@ -567,7 +572,141 @@ bool RenderBackend::DispatchLuminance() {
     return true;
 }
 
-bool RenderBackend::DispatchToneMapping() {
+bool RenderBackend::DispatchBloom() {
+    PROFILER_CPU_SCOPED_EVENT("RenderBackend::DispatchBloom");
+
+    if (!r_bloom.GetBool() ||
+        !currentBloomPrefilterPSO ||
+        !currentBloomDownsamplePSO ||
+        !currentBloomUpsamplePSO ||
+        !currentContext->mainRTColorTexture ||
+        !currentContext->bloomDownTexture ||
+        !currentContext->bloomUpTexture ||
+        currentContext->bloomMipCount < 2) {
+        return false;
+    }
+
+    RHI::renderer->Barrier(mainCommandList, RHI::Renderer::MakeImageBarrier(currentContext->mainRTColorTexture, RHI::GPUResourceState::ShaderResource, RHI::GPUResourceState::ShaderResourceCompute));
+
+    const float bloomThreshold = BE1::Max(r_bloomThreshold.GetFloat(), 0.0f);
+    const float bloomSoftThreshold = BE1::Max(r_bloomSoftThreshold.GetFloat(), 0.0f);
+    const float bloomPrefilterQuality = static_cast<float>(BE1::Clamp(r_bloomPrefilterQuality.GetInteger(), 0, 1));
+    const float bloomScatter = BE1::Clamp(r_bloomScatter.GetFloat(), 0.0f, 1.0f);
+    const float bloomRadius = BE1::Max(r_bloomRadius.GetFloat(), 0.0f);
+
+    auto dispatchDownsamplePass = [this](RHI::Texture *inputTexture, RHI::ViewID inputViewID, uint32_t inputWidth, uint32_t inputHeight, uint32_t outputMipLevel, float threshold, float softThreshold, float prefilterQuality, float radius) -> bool {
+        const uint32_t outputWidth = currentContext->bloomMipWidths[outputMipLevel];
+        const uint32_t outputHeight = currentContext->bloomMipHeights[outputMipLevel];
+        if (inputWidth == 0 || inputHeight == 0 || outputWidth == 0 || outputHeight == 0) {
+            return false;
+        }
+
+        BloomParams bloomParams = {};
+        bloomParams.inputSize = uint2(inputWidth, inputHeight);
+        bloomParams.outputSize = uint2(outputWidth, outputHeight);
+        bloomParams.inputTexelSize = float2(1.0f / inputWidth, 1.0f / inputHeight);
+        bloomParams.outputTexelSize = float2(1.0f / outputWidth, 1.0f / outputHeight);
+        bloomParams.params0 = float4(threshold, softThreshold, prefilterQuality, radius);
+
+        RHI::ConstantBuffer *bloomConstantBuffer = frameData->GetThreadData(0)->AllocConstant(sizeof(BloomParams), &bloomParams);
+        if (!bloomConstantBuffer) {
+            return false;
+        }
+
+        RHI::renderer->Barrier(mainCommandList, RHI::Renderer::MakeImageBarrier(currentContext->bloomDownTexture, RHI::GPUResourceState::ShaderResource, RHI::GPUResourceState::UnorderedAccess, 0, outputMipLevel));
+
+        RHI::renderer->SetTexture(mainCommandList, 0, false, inputTexture, inputViewID);
+        RHI::renderer->SetTexture(mainCommandList, 0, true, currentContext->bloomDownTexture, currentContext->bloomDownMipUAVs[outputMipLevel]);
+        RHI::renderer->SetConstantBuffer(mainCommandList, 0, bloomConstantBuffer);
+
+        const uint32_t threadGroupCountX = (outputWidth + BloomBlockSizeX - 1) / BloomBlockSizeX;
+        const uint32_t threadGroupCountY = (outputHeight + BloomBlockSizeY - 1) / BloomBlockSizeY;
+        RHI::renderer->Dispatch(mainCommandList, threadGroupCountX, threadGroupCountY, 1);
+
+        RHI::renderer->Barrier(mainCommandList, RHI::Renderer::MakeImageBarrier(currentContext->bloomDownTexture, RHI::GPUResourceState::UnorderedAccess, RHI::GPUResourceState::ShaderResource, 0, outputMipLevel));
+
+        return true;
+    };
+
+    // threshold 를 적용해 밝은 영역만 필터링하여 mip-0 에 blur downsample 한다.
+    RHI::renderer->SetPSO(mainCommandList, currentBloomPrefilterPSO);
+    if (!dispatchDownsamplePass(currentContext->mainRTColorTexture, RHI::ViewID::PrimaryID, currentContext->GetWidth(), currentContext->GetHeight(), 0, bloomThreshold, bloomSoftThreshold, bloomPrefilterQuality, bloomRadius)) {
+        RHI::renderer->Barrier(mainCommandList, RHI::Renderer::MakeImageBarrier(currentContext->mainRTColorTexture, RHI::GPUResourceState::ShaderResourceCompute, RHI::GPUResourceState::ShaderResource));
+        return false;
+    }
+
+    // 이후 mip 은 blur downsample 을 반복한다.
+    RHI::renderer->SetPSO(mainCommandList, currentBloomDownsamplePSO);
+    for (uint32_t mipLevel = 1; mipLevel < currentContext->bloomMipCount; ++mipLevel) {
+        const uint32_t inputMipLevel = mipLevel - 1;
+        if (!dispatchDownsamplePass(currentContext->bloomDownTexture, currentContext->bloomDownMipSRVs[inputMipLevel], currentContext->bloomMipWidths[inputMipLevel], currentContext->bloomMipHeights[inputMipLevel], mipLevel, 0.0f, 0.0f, 0.0f, bloomRadius)) {
+            RHI::renderer->Barrier(mainCommandList, RHI::Renderer::MakeImageBarrier(currentContext->mainRTColorTexture, RHI::GPUResourceState::ShaderResourceCompute, RHI::GPUResourceState::ShaderResource));
+            return false;
+        }
+    }
+
+    RHI::renderer->SetPSO(mainCommandList, currentBloomUpsamplePSO);
+
+    auto dispatchUpsamplePass = [this](uint32_t outputMipLevel, RHI::Texture *lowerTexture, RHI::ViewID lowerViewID, uint32_t lowerWidth, uint32_t lowerHeight, float weight, float radius) -> bool {
+        const uint32_t outputWidth = currentContext->bloomMipWidths[outputMipLevel];
+        const uint32_t outputHeight = currentContext->bloomMipHeights[outputMipLevel];
+        if (lowerWidth == 0 || lowerHeight == 0 || outputWidth == 0 || outputHeight == 0) {
+            return false;
+        }
+
+        BloomParams bloomParams = {};
+        bloomParams.inputSize = uint2(lowerWidth, lowerHeight);
+        bloomParams.outputSize = uint2(outputWidth, outputHeight);
+        bloomParams.inputTexelSize = float2(1.0f / lowerWidth, 1.0f / lowerHeight);
+        bloomParams.outputTexelSize = float2(1.0f / outputWidth, 1.0f / outputHeight);
+        bloomParams.params0 = float4(0.0f, 0.0f, weight, radius);
+
+        RHI::ConstantBuffer *bloomConstantBuffer = frameData->GetThreadData(0)->AllocConstant(sizeof(BloomParams), &bloomParams);
+        if (!bloomConstantBuffer) {
+            return false;
+        }
+
+        RHI::renderer->Barrier(mainCommandList, RHI::Renderer::MakeImageBarrier(currentContext->bloomUpTexture, RHI::GPUResourceState::ShaderResource, RHI::GPUResourceState::UnorderedAccess, 0, outputMipLevel));
+
+        RHI::renderer->SetTexture(mainCommandList, 0, false, currentContext->bloomDownTexture, currentContext->bloomDownMipSRVs[outputMipLevel]);
+        RHI::renderer->SetTexture(mainCommandList, 1, false, lowerTexture, lowerViewID);
+        RHI::renderer->SetTexture(mainCommandList, 0, true, currentContext->bloomUpTexture, currentContext->bloomUpMipUAVs[outputMipLevel]);
+        RHI::renderer->SetConstantBuffer(mainCommandList, 0, bloomConstantBuffer);
+
+        const uint32_t threadGroupCountX = (outputWidth + BloomBlockSizeX - 1) / BloomBlockSizeX;
+        const uint32_t threadGroupCountY = (outputHeight + BloomBlockSizeY - 1) / BloomBlockSizeY;
+        RHI::renderer->Dispatch(mainCommandList, threadGroupCountX, threadGroupCountY, 1);
+
+        RHI::renderer->Barrier(mainCommandList, RHI::Renderer::MakeImageBarrier(currentContext->bloomUpTexture, RHI::GPUResourceState::UnorderedAccess, RHI::GPUResourceState::ShaderResource, 0, outputMipLevel));
+
+        return true;
+    };
+
+    // 작은 mip 부터 큰 mip 으로 올라오면서 downsample 결과와 누적 bloom 을 합성한다.
+    const uint32_t maxMipLevel = currentContext->bloomMipCount - 1;
+    for (uint32_t mipLevel = currentContext->bloomMipCount - 1; mipLevel > 0; --mipLevel) {
+        const uint32_t outputMipLevel = mipLevel - 1;
+        RHI::Texture *lowerTexture = currentContext->bloomDownTexture;
+        RHI::ViewID lowerViewID = currentContext->bloomDownMipSRVs[mipLevel];
+        if (mipLevel < currentContext->bloomMipCount - 1) {
+            lowerTexture = currentContext->bloomUpTexture;
+            lowerViewID = currentContext->bloomUpMipSRVs[mipLevel];
+        }
+
+        const float bloomWeight = BE1::Math::Pow(bloomScatter, static_cast<float>(maxMipLevel - mipLevel));
+
+        if (!dispatchUpsamplePass(outputMipLevel, lowerTexture, lowerViewID, currentContext->bloomMipWidths[mipLevel], currentContext->bloomMipHeights[mipLevel], bloomWeight, bloomRadius)) {
+            RHI::renderer->Barrier(mainCommandList, RHI::Renderer::MakeImageBarrier(currentContext->mainRTColorTexture, RHI::GPUResourceState::ShaderResourceCompute, RHI::GPUResourceState::ShaderResource));
+            return false;
+        }
+    }
+
+    RHI::renderer->Barrier(mainCommandList, RHI::Renderer::MakeImageBarrier(currentContext->mainRTColorTexture, RHI::GPUResourceState::ShaderResourceCompute, RHI::GPUResourceState::ShaderResource));
+
+    return true;
+}
+
+bool RenderBackend::DispatchToneMapping(bool useBloom) {
     PROFILER_CPU_SCOPED_EVENT("RenderBackend::DispatchToneMapping");
 
     if (!r_toneMapping.GetBool() ||
@@ -582,6 +721,12 @@ bool RenderBackend::DispatchToneMapping() {
     toneMappingParams.outputSize = uint2(currentContext->GetWidth(), currentContext->GetHeight());
     toneMappingParams.exposureScale = 1.0f;
     toneMappingParams.toneMappingOperator = static_cast<uint32_t>(BE1::Clamp(r_toneMapOp.GetInteger(), static_cast<int>(ToneMappingOperatorLinear), static_cast<int>(ToneMappingOperatorFilmicGT)));
+    toneMappingParams.bloomIntensity = useBloom ? BE1::Max(r_bloomIntensity.GetFloat(), 0.0f) : 0.0f;
+
+    RHI::ConstantBuffer *toneMappingConstantBuffer = frameData->GetThreadData(0)->AllocConstant(sizeof(ToneMappingParams), &toneMappingParams);
+    if (!toneMappingConstantBuffer) {
+        return false;
+    }
 
     RHI::GPUBarrier startBarriers[] = {
         RHI::Renderer::MakeImageBarrier(currentContext->mainRTColorTexture, RHI::GPUResourceState::ShaderResource, RHI::GPUResourceState::ShaderResourceCompute),
@@ -591,10 +736,14 @@ bool RenderBackend::DispatchToneMapping() {
     RHI::renderer->Barrier(mainCommandList, startBarriers, COUNT_OF(startBarriers));
 
     RHI::renderer->SetPSO(mainCommandList, currentToneMappingPSO);
-    RHI::renderer->SetConstants(mainCommandList, 0, &toneMappingParams, sizeof(toneMappingParams), 0);
     RHI::renderer->SetTexture(mainCommandList, 0, false, currentContext->mainRTColorTexture);
     RHI::renderer->SetBuffer(mainCommandList, 1, false, currentContext->luminanceBuffer);
+
+    // useBloom 이 꺼져있으면, 더미 텍스쳐로 그냥 mainRTColorTexture 을 바인딩한다. (어차피 사용안함)
+    RHI::renderer->SetTexture(mainCommandList, 2, false, useBloom ? currentContext->bloomUpTexture : currentContext->mainRTColorTexture, useBloom ? currentContext->bloomUpMipSRVs[0] : RHI::ViewID::PrimaryID);
+
     RHI::renderer->SetTexture(mainCommandList, 0, true, currentContext->toneMappedColorTexture);
+    RHI::renderer->SetConstantBuffer(mainCommandList, 0, toneMappingConstantBuffer);
 
     const uint32_t threadGroupCountX = (toneMappingParams.outputSize.x + ToneMappingBlockSizeX - 1) / ToneMappingBlockSizeX;
     const uint32_t threadGroupCountY = (toneMappingParams.outputSize.y + ToneMappingBlockSizeY - 1) / ToneMappingBlockSizeY;

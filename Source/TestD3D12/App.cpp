@@ -620,6 +620,51 @@ void App::BuildImGuiOverlay() {
                 r_toneMapMiddleGray.SetFloat(middleGray);
             }
 
+            ImGui::Separator();
+
+            bool bloom = r_bloom.GetBool();
+            if (ImGui::Checkbox("Bloom", &bloom)) {
+                r_bloom.SetBool(bloom);
+            }
+
+            float bloomThreshold = r_bloomThreshold.GetFloat();
+            ImGui::SetNextItemWidth(fontSize * 12.0f);
+            if (ImGui::SliderFloat("Bloom threshold", &bloomThreshold, 0.0f, 10.0f, "%.2f")) {
+                r_bloomThreshold.SetFloat(bloomThreshold);
+            }
+
+            float bloomSoftThreshold = r_bloomSoftThreshold.GetFloat();
+            ImGui::SetNextItemWidth(fontSize * 12.0f);
+            if (ImGui::SliderFloat("Bloom soft threshold", &bloomSoftThreshold, 0.0f, 5.0f, "%.2f")) {
+                r_bloomSoftThreshold.SetFloat(bloomSoftThreshold);
+            }
+
+            int bloomPrefilterQuality = BE1::Clamp(r_bloomPrefilterQuality.GetInteger(), 0, 1);
+            ImGui::SetNextItemWidth(fontSize * 12.0f);
+            if (ImGui::Combo("Bloom prefilter quality", &bloomPrefilterQuality,
+                "Rotated Grid 5 Tap\0"
+                "Jimenez 13 Tap\0")) {
+                r_bloomPrefilterQuality.SetInteger(bloomPrefilterQuality);
+            }
+
+            float bloomIntensity = r_bloomIntensity.GetFloat();
+            ImGui::SetNextItemWidth(fontSize * 12.0f);
+            if (ImGui::SliderFloat("Bloom intensity", &bloomIntensity, 0.0f, 2.0f, "%.3f")) {
+                r_bloomIntensity.SetFloat(bloomIntensity);
+            }
+
+            float bloomScatter = r_bloomScatter.GetFloat();
+            ImGui::SetNextItemWidth(fontSize * 12.0f);
+            if (ImGui::SliderFloat("Bloom scatter", &bloomScatter, 0.0f, 1.0f, "%.3f")) {
+                r_bloomScatter.SetFloat(bloomScatter);
+            }
+
+            float bloomRadius = r_bloomRadius.GetFloat();
+            ImGui::SetNextItemWidth(fontSize * 12.0f);
+            if (ImGui::SliderFloat("Bloom radius", &bloomRadius, 0.0f, 5.0f, "%.2f")) {
+                r_bloomRadius.SetFloat(bloomRadius);
+            }
+
             int streamInDelay = r_textureStreamingStreamInDelay.GetInteger();
             ImGui::SetNextItemWidth(fontSize * 6.0f);
             if (ImGui::InputInt("Texture stream-in delay", &streamInDelay)) {

@@ -3,6 +3,14 @@
 
 #include "ShaderInterop.h"
 
+#define half min16float
+#define half2 min16float2
+#define half3 min16float3
+#define half4 min16float4
+#define half3x3 min16float3x3
+#define half3x4 min16float3x4
+#define half4x4 min16float4x4
+
 #if (__SHADER_TARGET_MAJOR > 6) || (__SHADER_TARGET_MAJOR == 6 && __SHADER_TARGET_MINOR >= 6)
     #define USE_DIRECT_DESCRIPTOR_HEAP
 #endif

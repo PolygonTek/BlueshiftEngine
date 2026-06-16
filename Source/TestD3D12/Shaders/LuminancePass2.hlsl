@@ -3,10 +3,7 @@
 #define COMMON_ROOT_SIGNATURE "RootFlags(0), " \
     "DescriptorTable(UAV(u0)), " \
     "CBV(b0), " \
-    "RootConstants(num32BitConstants=12, b1), " \
-    ROOT_SIGNATURE_COMMON_STATIC_SAMPLERS
-
-DECLARE_COMMON_STATIC_SAMPLERS
+    "RootConstants(num32BitConstants=12, b1)"
 
 cbuffer FrameCB : register(b0) {
     FrameConstants frameConstants;

@@ -43,6 +43,9 @@ void RenderFrameData::CmdBeginContext(RenderContext *context) {
     cmd->toneMappingPSO = nullptr;
     cmd->luminancePass1PSO = nullptr;
     cmd->luminancePass2PSO = nullptr;
+    cmd->bloomPrefilterPSO = nullptr;
+    cmd->bloomDownsamplePSO = nullptr;
+    cmd->bloomUpsamplePSO = nullptr;
 
     if (!context) {
         return;
@@ -52,6 +55,9 @@ void RenderFrameData::CmdBeginContext(RenderContext *context) {
     cmd->toneMappingPSO = SnapshotPSO(context->toneMappingPSO);
     cmd->luminancePass1PSO = SnapshotPSO(context->luminancePass1PSO);
     cmd->luminancePass2PSO = SnapshotPSO(context->luminancePass2PSO);
+    cmd->bloomPrefilterPSO = SnapshotPSO(context->bloomPrefilterPSO);
+    cmd->bloomDownsamplePSO = SnapshotPSO(context->bloomDownsamplePSO);
+    cmd->bloomUpsamplePSO = SnapshotPSO(context->bloomUpsamplePSO);
 }
 
 void RenderFrameData::CmdDrawCamera(const VisCamera *camera) {

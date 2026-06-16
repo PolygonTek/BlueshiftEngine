@@ -53,6 +53,9 @@ struct BeginContextRenderCommand {
     RHI::PipelineState *            toneMappingPSO = nullptr;
     RHI::PipelineState *            luminancePass1PSO = nullptr;
     RHI::PipelineState *            luminancePass2PSO = nullptr;
+    RHI::PipelineState *            bloomPrefilterPSO = nullptr;
+    RHI::PipelineState *            bloomDownsamplePSO = nullptr;
+    RHI::PipelineState *            bloomUpsamplePSO = nullptr;
 };
 
 struct DrawCameraRenderCommand {

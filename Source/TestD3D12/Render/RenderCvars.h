@@ -34,6 +34,8 @@ extern BE1::CVar    r_toneMapMiddleGray;
 extern BE1::CVar    r_bloom;
 extern BE1::CVar    r_bloomThreshold;
 extern BE1::CVar    r_bloomSoftThreshold;
+extern BE1::CVar    r_bloomPrefilterQuality;
 extern BE1::CVar    r_bloomIntensity;
+extern BE1::CVar    r_bloomScatter;
 extern BE1::CVar    r_bloomRadius;
 extern BE1::CVar    r_bloomMipCount;

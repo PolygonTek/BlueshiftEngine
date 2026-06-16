@@ -269,6 +269,30 @@ void ShaderTemplateManager::CreateEngineShaderTemplates() {
     }
     );
 
+    static constexpr const char *bloomPrefilterShaderTemplateText = ENGINE_SHADER_TEMPLATE(
+    {
+        stages {
+            compute SM_6_0 "BloomPrefilter.hlsl" "CSMain"
+        }
+    }
+    );
+
+    static constexpr const char *bloomDownsampleShaderTemplateText = ENGINE_SHADER_TEMPLATE(
+    {
+        stages {
+            compute SM_6_0 "BloomDownsample.hlsl" "CSMain"
+        }
+    }
+    );
+
+    static constexpr const char *bloomUpsampleShaderTemplateText = ENGINE_SHADER_TEMPLATE(
+    {
+        stages {
+            compute SM_6_0 "BloomUpsample.hlsl" "CSMain"
+        }
+    }
+    );
+
     static constexpr const char *unlitShaderTemplateText = ENGINE_SHADER_TEMPLATE(
     {
         stages {
@@ -357,6 +381,24 @@ void ShaderTemplateManager::CreateEngineShaderTemplates() {
     }
     luminancePass2ShaderTemplate->AddPermutation();
 
+    bloomPrefilterShaderTemplate = AllocShaderTemplate("_bloomPrefilterShader");
+    if (!bloomPrefilterShaderTemplate->Create(bloomPrefilterShaderTemplateText, baseDir)) {
+        BE_FATALERROR("ShaderTemplateManager::CreateEngineShaderTemplates: failed to create bloom prefilter shader template");
+    }
+    bloomPrefilterShaderTemplate->AddPermutation();
+
+    bloomDownsampleShaderTemplate = AllocShaderTemplate("_bloomDownsampleShader");
+    if (!bloomDownsampleShaderTemplate->Create(bloomDownsampleShaderTemplateText, baseDir)) {
+        BE_FATALERROR("ShaderTemplateManager::CreateEngineShaderTemplates: failed to create bloom downsample shader template");
+    }
+    bloomDownsampleShaderTemplate->AddPermutation();
+
+    bloomUpsampleShaderTemplate = AllocShaderTemplate("_bloomUpsampleShader");
+    if (!bloomUpsampleShaderTemplate->Create(bloomUpsampleShaderTemplateText, baseDir)) {
+        BE_FATALERROR("ShaderTemplateManager::CreateEngineShaderTemplates: failed to create bloom upsample shader template");
+    }
+    bloomUpsampleShaderTemplate->AddPermutation();
+
     unlitShaderTemplate = AllocShaderTemplate("_unlitShader");
     if (!unlitShaderTemplate->Create(unlitShaderTemplateText, baseDir)) {
         BE_FATALERROR("ShaderTemplateManager::CreateEngineShaderTemplates: failed to create unlit shader template");
@@ -380,6 +422,15 @@ void ShaderTemplateManager::DestroyEngineShaderTemplates() {
     }
     if (luminancePass2ShaderTemplate) {
         luminancePass2ShaderTemplate.reset();
+    }
+    if (bloomPrefilterShaderTemplate) {
+        bloomPrefilterShaderTemplate.reset();
+    }
+    if (bloomDownsampleShaderTemplate) {
+        bloomDownsampleShaderTemplate.reset();
+    }
+    if (bloomUpsampleShaderTemplate) {
+        bloomUpsampleShaderTemplate.reset();
     }
     if (unlitShaderTemplate) {
         unlitShaderTemplate.reset();
