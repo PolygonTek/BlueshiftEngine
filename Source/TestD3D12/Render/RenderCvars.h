@@ -16,8 +16,16 @@
 
 #include "Core/CVars.h"
 
+enum RenderBloomMode {
+    Off = 0,
+    Pyramid = 1,
+    FFTConvolution = 2
+};
+
 extern BE1::CVar    r_skipCulling;
-extern BE1::CVar    r_skipBackend;
+extern BE1::CVar    r_skipDrawCamera2D;
+extern BE1::CVar    r_skipDrawCamera3D;
+extern BE1::CVar    r_skipPostProcess;
 
 extern BE1::CVar    r_textureStreamingStreamInDelay;
 extern BE1::CVar    r_textureStreamingMaxRequestsPerFrame;

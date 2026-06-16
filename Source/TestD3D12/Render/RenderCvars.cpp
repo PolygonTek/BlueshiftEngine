@@ -16,7 +16,9 @@
 #include "RenderCvars.h"
 
 CVAR(r_skipCulling, "0", BE1::CVar::Flag::Bool, "skip frustum culling for render objects and mesh surfaces");
-CVAR(r_skipBackend, "0", BE1::CVar::Flag::Bool, "skip render backend command execution");
+CVAR(r_skipDrawCamera2D, "0", BE1::CVar::Flag::Bool, "skip 2D draw camera render commands");
+CVAR(r_skipDrawCamera3D, "0", BE1::CVar::Flag::Bool, "skip 3D draw camera render commands");
+CVAR(r_skipPostProcess, "0", BE1::CVar::Flag::Bool, "skip post process dispatches");
 
 CVAR(r_textureStreamingStreamInDelay, "0", BE1::CVar::Flag::Integer, "texture streaming frame delay before loading higher-resolution mips");
 CVAR(r_textureStreamingMaxRequestsPerFrame, "256", BE1::CVar::Flag::Integer, "maximum texture streaming requests per frame");
@@ -30,7 +32,7 @@ CVAR(r_toneMapLuminanceLogMax, "2", BE1::CVar::Flag::Float, "tone mapping lumina
 CVAR_MINMAX(r_toneMapLuminanceAdaptationRate, "1.1", BE1::CVar::Flag::Float, "tone mapping luminance adaptation rate", 0.0f, 100.0f);
 CVAR_MINMAX(r_toneMapMiddleGray, "0.18", BE1::CVar::Flag::Float, "tone mapping middle gray", 0.0f, 10.0f);
 
-CVAR(r_bloom, "1", BE1::CVar::Flag::Bool, "enable bloom");
+CVAR_MINMAX(r_bloom, "1", BE1::CVar::Flag::Integer, "bloom mode (0 = off, 1 = pyramid, 2 = FFT convolution)", RenderBloomMode::Off, RenderBloomMode::FFTConvolution);
 CVAR_MINMAX(r_bloomThreshold, "1.0", BE1::CVar::Flag::Float, "bloom luminance threshold", 0.0f, 100.0f);
 CVAR_MINMAX(r_bloomSoftThreshold, "0.5", BE1::CVar::Flag::Float, "bloom soft threshold width", 0.0f, 10.0f);
 CVAR_MINMAX(r_bloomPrefilterQuality, "1", BE1::CVar::Flag::Integer, "bloom prefilter quality (0 = low quality, 1 = high quality)", 0, 1);

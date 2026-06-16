@@ -541,6 +541,15 @@ void App::BuildImGuiOverlay() {
 
     if (ImGui::BeginTabBar("TestD3D12Tabs")) {
         if (ImGui::BeginTabItem("System")) {
+            ImGui::Text("CPU Cores: %i physical / %i logical",
+                BE1::PlatformSystem::NumCPUCores(),
+                BE1::PlatformSystem::NumCPUCoresIncludingHyperthreads());
+            ImGui::Text("Render Thread: %s",
+                renderSystem && renderSystem->IsUsingRenderThread() ? "Enabled" : "Disabled");
+            ImGui::Text("Task Threads: %u",
+                BE1::Engine::taskManager ? BE1::Engine::taskManager->NumThreads() : 0);
+            ImGui::Separator();
+
             if (RHI::renderer) {
                 const RHI::RendererInfo &rendererInfo = RHI::renderer->GetRendererInfo();
 
@@ -577,6 +586,23 @@ void App::BuildImGuiOverlay() {
             if (ImGui::Checkbox("Skip culling", &skipCulling)) {
                 r_skipCulling.SetBool(skipCulling);
             }
+
+            bool skipDrawCamera2D = r_skipDrawCamera2D.GetBool();
+            if (ImGui::Checkbox("Skip draw camera 2D", &skipDrawCamera2D)) {
+                r_skipDrawCamera2D.SetBool(skipDrawCamera2D);
+            }
+
+            bool skipDrawCamera3D = r_skipDrawCamera3D.GetBool();
+            if (ImGui::Checkbox("Skip draw camera 3D", &skipDrawCamera3D)) {
+                r_skipDrawCamera3D.SetBool(skipDrawCamera3D);
+            }
+
+            bool skipPostProcess = r_skipPostProcess.GetBool();
+            if (ImGui::Checkbox("Skip post process", &skipPostProcess)) {
+                r_skipPostProcess.SetBool(skipPostProcess);
+            }
+
+            ImGui::Separator();
 
             bool toneMapping = r_toneMapping.GetBool();
             if (ImGui::Checkbox("Tone mapping", &toneMapping)) {
@@ -622,9 +648,13 @@ void App::BuildImGuiOverlay() {
 
             ImGui::Separator();
 
-            bool bloom = r_bloom.GetBool();
-            if (ImGui::Checkbox("Bloom", &bloom)) {
-                r_bloom.SetBool(bloom);
+            int bloomMode = BE1::Clamp(r_bloom.GetInteger(), static_cast<int>(RenderBloomMode::Off), static_cast<int>(RenderBloomMode::FFTConvolution));
+            ImGui::SetNextItemWidth(fontSize * 12.0f);
+            if (ImGui::Combo("Bloom", &bloomMode,
+                "Off\0"
+                "Pyramid\0"
+                "FFT Convolution\0")) {
+                r_bloom.SetInteger(bloomMode);
             }
 
             float bloomThreshold = r_bloomThreshold.GetFloat();
@@ -664,6 +694,8 @@ void App::BuildImGuiOverlay() {
             if (ImGui::SliderFloat("Bloom radius", &bloomRadius, 0.0f, 5.0f, "%.2f")) {
                 r_bloomRadius.SetFloat(bloomRadius);
             }
+
+            ImGui::Separator();
 
             int streamInDelay = r_textureStreamingStreamInDelay.GetInteger();
             ImGui::SetNextItemWidth(fontSize * 6.0f);
