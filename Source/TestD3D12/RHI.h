@@ -536,6 +536,31 @@ namespace RHI {
         constexpr bool IsPrimary() const { return value == PrimaryValue; }
     };
 
+    struct BufferViewInfo {
+        ViewID                          viewID = ViewID::InvalidID;
+        ViewType                        viewType = ViewType::SRV;
+        Format                          format = Format::Unknown;
+        uint64_t                        byteOffset = 0;
+        uint64_t                        byteSize = 0;
+        uint64_t                        firstElement = 0;
+        uint32_t                        elementCount = 0;
+        uint32_t                        structureByteStride = 0;
+        bool                            raw = false;
+    };
+
+    struct TextureViewInfo {
+        ViewID                          viewID = ViewID::InvalidID;
+        ViewType                        viewType = ViewType::SRV;
+        Format                          format = Format::Unknown;
+        uint32_t                        firstSlice = 0;
+        uint32_t                        sliceCount = 0;
+        uint32_t                        firstMipLevel = 0;
+        uint32_t                        mipCount = 0;
+        uint32_t                        width = 0;
+        uint32_t                        height = 0;
+        uint32_t                        depth = 0;
+    };
+
     class GPUObject {
     public:
         virtual ~GPUObject() = 0 {}
@@ -561,6 +586,9 @@ namespace RHI {
     class Buffer : public GPUResource {
     public:
         virtual bool                    HasValidView(RHI::ViewType viewType, RHI::ViewID viewID = RHI::ViewID::PrimaryID) const = 0;
+        virtual uint32_t                GetViewCount(RHI::ViewType viewType) const = 0;
+        virtual RHI::ViewID             GetViewID(RHI::ViewType viewType, uint32_t viewIndex) const = 0;
+        virtual bool                    GetViewInfo(RHI::ViewType viewType, RHI::ViewID viewID, BufferViewInfo &outInfo) const = 0;
 
         virtual uint32_t                GetBindlessIndex(RHI::ViewType viewType, RHI::ViewID viewID = RHI::ViewID::PrimaryID) const = 0;
 
@@ -591,14 +619,19 @@ namespace RHI {
     class Texture : public GPUResource {
     public:
         virtual bool                    HasValidView(RHI::ViewType viewType, RHI::ViewID viewID = RHI::ViewID::PrimaryID) const = 0;
+        virtual uint32_t                GetViewCount(RHI::ViewType viewType) const = 0;
+        virtual RHI::ViewID             GetViewID(RHI::ViewType viewType, uint32_t viewIndex) const = 0;
+        virtual bool                    GetViewInfo(RHI::ViewType viewType, RHI::ViewID viewID, TextureViewInfo &outInfo) const = 0;
 
         virtual uint32_t                GetBindlessIndex(RHI::ViewType viewType, RHI::ViewID viewID = RHI::ViewID::PrimaryID) const = 0;
 
+        virtual Format                  GetFormat() const = 0;
         virtual uint32_t                GetWidth() const = 0;
         virtual uint32_t                GetHeight() const = 0;
         virtual uint32_t                GetDepth() const = 0;
         virtual uint32_t                GetArraySize() const = 0;
         virtual uint32_t                GetMipLevelCount() const = 0;
+        virtual uint32_t                GetSampleCount() const = 0;
 
         TextureType                     type;
         TextureFlag                     flags = TextureFlag::None;
@@ -987,6 +1020,10 @@ namespace RHI {
         static bool                     IsDepthFormat(Format format);
         static bool                     IsStencilFormat(Format format);
         static bool                     IsDepthStencilFormat(Format format);
+        static const char *             TextureTypeName(TextureType textureType);
+        static const char *             FormatName(Format format);
+        static const char *             BufferFlagName(BufferFlag flag);
+        static const char *             TextureFlagName(TextureFlag flag);
 
         virtual bool                    IsSupportedImageFormat(BE1::Image::Format imageFormat) const = 0;
         virtual BE1::Image::Format      ToUncompressedImageFormat(BE1::Image::Format imageFormat) const = 0;

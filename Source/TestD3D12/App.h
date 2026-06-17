@@ -55,6 +55,7 @@ private:
     void                            RenderText();
 #ifdef ENABLE_IMGUI
     void                            BuildImGuiOverlay();
+    void                            BuildImGuiTextureViewer();
     void                            UpdateImGuiStatsPlotHistory();
     void                            BuildImGuiStatsPlotWindow();
 #endif

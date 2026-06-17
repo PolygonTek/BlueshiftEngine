@@ -22,6 +22,131 @@ namespace RHI {
     const ViewID ViewID::PrimaryID = { ViewID::PrimaryValue };
 }
 
+const char *RHI::Renderer::TextureTypeName(RHI::TextureType textureType) {
+    switch (textureType) {
+    case RHI::TextureType::Unknown: return "Unknown";
+    case RHI::TextureType::Texture1D: return "Texture1D";
+    case RHI::TextureType::Texture1DArray: return "Texture1DArray";
+    case RHI::TextureType::Texture2D: return "Texture2D";
+    case RHI::TextureType::Texture2DArray: return "Texture2DArray";
+    case RHI::TextureType::TextureCube: return "TextureCube";
+    case RHI::TextureType::TextureCubeArray: return "TextureCubeArray";
+    case RHI::TextureType::Texture3D: return "Texture3D";
+    }
+    return "Invalid";
+}
+
+const char *RHI::Renderer::FormatName(RHI::Format format) {
+#define RHI_FORMAT_NAME(x) case RHI::Format::x: return #x
+    switch (format) {
+    RHI_FORMAT_NAME(Unknown);
+    RHI_FORMAT_NAME(Auto);
+    RHI_FORMAT_NAME(R32G32B32A32_FLOAT);
+    RHI_FORMAT_NAME(R32G32B32A32_UINT);
+    RHI_FORMAT_NAME(R32G32B32A32_SINT);
+    RHI_FORMAT_NAME(R32G32B32_FLOAT);
+    RHI_FORMAT_NAME(R32G32B32_UINT);
+    RHI_FORMAT_NAME(R32G32B32_SINT);
+    RHI_FORMAT_NAME(R16G16B16A16_FLOAT);
+    RHI_FORMAT_NAME(R16G16B16A16_UNORM);
+    RHI_FORMAT_NAME(R16G16B16A16_UINT);
+    RHI_FORMAT_NAME(R16G16B16A16_SNORM);
+    RHI_FORMAT_NAME(R16G16B16A16_SINT);
+    RHI_FORMAT_NAME(R32G32_FLOAT);
+    RHI_FORMAT_NAME(R32G32_UINT);
+    RHI_FORMAT_NAME(R32G32_SINT);
+    RHI_FORMAT_NAME(D32_FLOAT_S8X24_UINT);
+    RHI_FORMAT_NAME(R32_FLOAT_X8X24_TYPELESS);
+    RHI_FORMAT_NAME(X32_TYPELESS_G8X24_UINT);
+    RHI_FORMAT_NAME(R10G10B10A2_UNORM);
+    RHI_FORMAT_NAME(R10G10B10A2_UINT);
+    RHI_FORMAT_NAME(R11G11B10_FLOAT);
+    RHI_FORMAT_NAME(R8G8B8A8_UNORM);
+    RHI_FORMAT_NAME(R8G8B8A8_UNORM_SRGB);
+    RHI_FORMAT_NAME(R8G8B8A8_UINT);
+    RHI_FORMAT_NAME(R8G8B8A8_SNORM);
+    RHI_FORMAT_NAME(R8G8B8A8_SINT);
+    RHI_FORMAT_NAME(R16G16_FLOAT);
+    RHI_FORMAT_NAME(R16G16_UNORM);
+    RHI_FORMAT_NAME(R16G16_UINT);
+    RHI_FORMAT_NAME(R16G16_SNORM);
+    RHI_FORMAT_NAME(R16G16_SINT);
+    RHI_FORMAT_NAME(R32_FLOAT);
+    RHI_FORMAT_NAME(D32_FLOAT);
+    RHI_FORMAT_NAME(R32_UINT);
+    RHI_FORMAT_NAME(R32_SINT);
+    RHI_FORMAT_NAME(D24_UNORM_S8_UINT);
+    RHI_FORMAT_NAME(R24_UNORM_X8_TYPELESS);
+    RHI_FORMAT_NAME(X24_TYPELESS_G8_UINT);
+    RHI_FORMAT_NAME(R8G8_UNORM);
+    RHI_FORMAT_NAME(R8G8_UINT);
+    RHI_FORMAT_NAME(R8G8_SNORM);
+    RHI_FORMAT_NAME(R8G8_SINT);
+    RHI_FORMAT_NAME(R16_FLOAT);
+    RHI_FORMAT_NAME(D16_UNORM);
+    RHI_FORMAT_NAME(R16_UNORM);
+    RHI_FORMAT_NAME(R16_UINT);
+    RHI_FORMAT_NAME(R16_SNORM);
+    RHI_FORMAT_NAME(R16_SINT);
+    RHI_FORMAT_NAME(R8_UNORM);
+    RHI_FORMAT_NAME(R8_UINT);
+    RHI_FORMAT_NAME(R8_SNORM);
+    RHI_FORMAT_NAME(R8_SINT);
+    RHI_FORMAT_NAME(A8_UNORM);
+    RHI_FORMAT_NAME(B5G6R5_UNORM);
+    RHI_FORMAT_NAME(B5G5R5A1_UNORM);
+    RHI_FORMAT_NAME(B8G8R8A8_UNORM);
+    RHI_FORMAT_NAME(B8G8R8A8_UNORM_SRGB);
+    RHI_FORMAT_NAME(B8G8R8X8_UNORM);
+    RHI_FORMAT_NAME(B8G8R8X8_UNORM_SRGB);
+    RHI_FORMAT_NAME(B4G4R4A4_UNORM);
+    RHI_FORMAT_NAME(A4B4G4R4_UNORM);
+    RHI_FORMAT_NAME(R9G9B9E5_SHAREDEXP);
+    RHI_FORMAT_NAME(BC1_UNORM);
+    RHI_FORMAT_NAME(BC1_UNORM_SRGB);
+    RHI_FORMAT_NAME(BC2_UNORM);
+    RHI_FORMAT_NAME(BC2_UNORM_SRGB);
+    RHI_FORMAT_NAME(BC3_UNORM);
+    RHI_FORMAT_NAME(BC3_UNORM_SRGB);
+    RHI_FORMAT_NAME(BC4_UNORM);
+    RHI_FORMAT_NAME(BC4_SNORM);
+    RHI_FORMAT_NAME(BC5_UNORM);
+    RHI_FORMAT_NAME(BC5_SNORM);
+    RHI_FORMAT_NAME(BC6H_UF16);
+    RHI_FORMAT_NAME(BC6H_SF16);
+    RHI_FORMAT_NAME(BC7_UNORM);
+    RHI_FORMAT_NAME(BC7_UNORM_SRGB);
+    }
+#undef RHI_FORMAT_NAME
+    return "Invalid";
+}
+
+const char *RHI::Renderer::BufferFlagName(RHI::BufferFlag flag) {
+    switch (flag) {
+    case RHI::BufferFlag::None: return "None";
+    case RHI::BufferFlag::ConstantBuffer: return "ConstantBuffer";
+    case RHI::BufferFlag::VertexBuffer: return "VertexBuffer";
+    case RHI::BufferFlag::IndexBuffer: return "IndexBuffer";
+    case RHI::BufferFlag::IndirectBuffer: return "IndirectBuffer";
+    case RHI::BufferFlag::ShaderResource: return "ShaderResource";
+    case RHI::BufferFlag::UnorderedAccess: return "UnorderedAccess";
+    }
+    return "Invalid";
+}
+
+const char *RHI::Renderer::TextureFlagName(RHI::TextureFlag flag) {
+    switch (flag) {
+    case RHI::TextureFlag::None: return "None";
+    case RHI::TextureFlag::RenderTarget: return "RenderTarget";
+    case RHI::TextureFlag::DepthStencil: return "DepthStencil";
+    case RHI::TextureFlag::Typeless: return "Typeless";
+    case RHI::TextureFlag::ShaderResource: return "ShaderResource";
+    case RHI::TextureFlag::UnorderedAccess: return "UnorderedAccess";
+    case RHI::TextureFlag::SkipDefaultViews: return "SkipDefaultViews";
+    }
+    return "Invalid";
+}
+
 void RHI::Renderer::Init(const void *mainWindowHandle) {
     initialized = true;
 }

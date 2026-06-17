@@ -102,5 +102,5 @@ float4 PSMain(PSInput input) : SV_TARGET {
     }
 
     color *= tint * exposure;
-    return input.color * float4(color, 0.0);
+    return input.color * float4(color, 1.0);
 }

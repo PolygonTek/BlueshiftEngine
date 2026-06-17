@@ -19,6 +19,37 @@
 #include "D3D12DescriptorPool.h"
 #include "D3D12FrameThreadData.h"
 
+static uint64_t D3D12BufferViewByteStride(DXGI_FORMAT format, uint32_t structureByteStride, bool raw) {
+    if (raw) {
+        return 4;
+    }
+    if (structureByteStride > 0) {
+        return structureByteStride;
+    }
+
+    const RHI::Format rhiFormat = D3D12Renderer::DXGIFormatToRHIFormat(format);
+    if (rhiFormat != RHI::Format::Unknown) {
+        BE1::Image::Format imageFormat;
+        if (RHI::Renderer::RHIFormatToImageFormat(rhiFormat, &imageFormat, nullptr)) {
+            return BE1::Image::BytesPerPixel(imageFormat);
+        }
+    }
+
+    return 0;
+}
+
+static void D3D12FillBufferViewInfo(RHI::BufferViewInfo &outInfo, DXGI_FORMAT format, uint64_t firstElement, uint32_t elementCount, uint32_t structureByteStride, bool raw) {
+    outInfo.format = D3D12Renderer::DXGIFormatToRHIFormat(format);
+    outInfo.firstElement = firstElement;
+    outInfo.elementCount = elementCount;
+    outInfo.structureByteStride = structureByteStride;
+    outInfo.raw = raw;
+
+    const uint64_t byteStride = D3D12BufferViewByteStride(format, structureByteStride, raw);
+    outInfo.byteOffset = firstElement * byteStride;
+    outInfo.byteSize = uint64_t(elementCount) * byteStride;
+}
+
 void D3D12Buffer::Release() {
     if (dynamicBlockIndex == -1) {
         if (mappedPtr) {
@@ -64,6 +95,92 @@ bool D3D12Buffer::HasValidView(RHI::ViewType viewType, RHI::ViewID viewID) const
             return uavEntries.IsValidIndex(viewID.value) && uavEntries[viewID.value].cpuDescriptorHandle.ptr != 0;
         }
     }
+    return false;
+}
+
+uint32_t D3D12Buffer::GetViewCount(RHI::ViewType viewType) const {
+    uint32_t viewCount = 0;
+
+    if (viewType == RHI::ViewType::SRV) {
+        for (const D3D12SRVEntry &srvEntry : srvEntries) {
+            if (srvEntry.cpuDescriptorHandle.ptr != 0) {
+                viewCount++;
+            }
+        }
+    } else if (viewType == RHI::ViewType::UAV) {
+        for (const D3D12UAVEntry &uavEntry : uavEntries) {
+            if (uavEntry.cpuDescriptorHandle.ptr != 0) {
+                viewCount++;
+            }
+        }
+    }
+
+    return viewCount;
+}
+
+RHI::ViewID D3D12Buffer::GetViewID(RHI::ViewType viewType, uint32_t viewIndex) const {
+    auto makeViewID = [](uint32_t value) -> RHI::ViewID {
+        RHI::ViewID viewID;
+        viewID.value = value;
+        return viewID;
+    };
+
+    if (viewType == RHI::ViewType::SRV) {
+        for (uint32_t entryIndex = 0; entryIndex < uint32_t(srvEntries.Count()); entryIndex++) {
+            if (srvEntries[entryIndex].cpuDescriptorHandle.ptr != 0 && viewIndex-- == 0) {
+                return makeViewID(entryIndex);
+            }
+        }
+    } else if (viewType == RHI::ViewType::UAV) {
+        for (uint32_t entryIndex = 0; entryIndex < uint32_t(uavEntries.Count()); entryIndex++) {
+            if (uavEntries[entryIndex].cpuDescriptorHandle.ptr != 0 && viewIndex-- == 0) {
+                return makeViewID(entryIndex);
+            }
+        }
+    }
+
+    return RHI::ViewID::InvalidID;
+}
+
+bool D3D12Buffer::GetViewInfo(RHI::ViewType viewType, RHI::ViewID viewID, RHI::BufferViewInfo &outInfo) const {
+    outInfo = {};
+    if (!viewID.IsValid()) {
+        return false;
+    }
+
+    outInfo.viewID = viewID;
+    outInfo.viewType = viewType;
+
+    if (viewType == RHI::ViewType::SRV) {
+        if (!srvEntries.IsValidIndex(viewID.value) || srvEntries[viewID.value].cpuDescriptorHandle.ptr == 0) {
+            return false;
+        }
+
+        const D3D12_SHADER_RESOURCE_VIEW_DESC &viewDesc = srvEntries[viewID.value].viewDesc;
+        if (viewDesc.ViewDimension != D3D12_SRV_DIMENSION_BUFFER) {
+            return false;
+        }
+
+        const D3D12_BUFFER_SRV &bufferDesc = viewDesc.Buffer;
+        D3D12FillBufferViewInfo(outInfo, viewDesc.Format, bufferDesc.FirstElement, bufferDesc.NumElements, bufferDesc.StructureByteStride, bufferDesc.Flags == D3D12_BUFFER_SRV_FLAG_RAW);
+        return true;
+    }
+
+    if (viewType == RHI::ViewType::UAV) {
+        if (!uavEntries.IsValidIndex(viewID.value) || uavEntries[viewID.value].cpuDescriptorHandle.ptr == 0) {
+            return false;
+        }
+
+        const D3D12_UNORDERED_ACCESS_VIEW_DESC &viewDesc = uavEntries[viewID.value].viewDesc;
+        if (viewDesc.ViewDimension != D3D12_UAV_DIMENSION_BUFFER) {
+            return false;
+        }
+
+        const D3D12_BUFFER_UAV &bufferDesc = viewDesc.Buffer;
+        D3D12FillBufferViewInfo(outInfo, viewDesc.Format, bufferDesc.FirstElement, bufferDesc.NumElements, bufferDesc.StructureByteStride, bufferDesc.Flags == D3D12_BUFFER_UAV_FLAG_RAW);
+        return true;
+    }
+
     return false;
 }
 

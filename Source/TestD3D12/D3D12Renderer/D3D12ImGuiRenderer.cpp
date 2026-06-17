@@ -65,7 +65,7 @@ static D3D12ImGuiOverlay *GetImGuiOverlay(ImGui_ImplDX12_InitInfo *initInfo) {
     return initInfo ? static_cast<D3D12ImGuiOverlay *>(initInfo->UserData) : nullptr;
 }
 
-static void AllocImGuiSrvDescriptor(D3D12ImGuiOverlay *owner, D3D12_CPU_DESCRIPTOR_HANDLE *outCpuDescriptorHandle, D3D12_GPU_DESCRIPTOR_HANDLE *outGpuDescriptorHandle) {
+static void AllocImGuiSrvDescriptor(D3D12ImGuiOverlay *owner, D3D12_CPU_DESCRIPTOR_HANDLE *outCpuDescriptorHandle, D3D12_GPU_DESCRIPTOR_HANDLE *outGpuDescriptorHandle, uint32_t *outBindlessIndex = nullptr) {
     D3D12Renderer *renderer = D3D12Renderer::GetRenderer();
     const uint32_t bindlessIndex = renderer->AllocBindlessResourceDescriptor();
     if (bindlessIndex == D3D12BindlessDescriptorAllocator::NullIndex) {
@@ -82,6 +82,9 @@ static void AllocImGuiSrvDescriptor(D3D12ImGuiOverlay *owner, D3D12_CPU_DESCRIPT
 
     *outCpuDescriptorHandle = cpuDescriptorHandle;
     *outGpuDescriptorHandle = gpuDescriptorHandle;
+    if (outBindlessIndex) {
+        *outBindlessIndex = bindlessIndex;
+    }
 }
 
 static void FreeImGuiSrvDescriptor(D3D12ImGuiOverlay *owner, D3D12_CPU_DESCRIPTOR_HANDLE cpuDescriptorHandle, D3D12_GPU_DESCRIPTOR_HANDLE gpuDescriptorHandle) {
@@ -137,6 +140,13 @@ static int FreeRemainingImGuiSrvDescriptors(D3D12ImGuiOverlay *owner) {
     }
 
     return static_cast<int>(bindlessIndices.size());
+}
+
+static uint32_t GetImGuiSrvDescriptorBindlessIndex(D3D12_CPU_DESCRIPTOR_HANDLE cpuDescriptorHandle) {
+    std::lock_guard<std::mutex> lock(imguiSrvDescriptorMutex);
+
+    auto it = imguiSrvDescriptorMap.find(cpuDescriptorHandle.ptr);
+    return it != imguiSrvDescriptorMap.end() ? it->second.bindlessIndex : D3D12BindlessDescriptorAllocator::NullIndex;
 }
 
 bool D3D12ImGuiRenderer::Init() {
@@ -438,7 +448,8 @@ bool D3D12ImGuiRenderer::UpdateTexture(D3D12ImGuiOverlay *overlay, ImTextureData
         }
 
         ImGuiD3D12Texture *backendTexture = IM_NEW(ImGuiD3D12Texture)();
-        AllocImGuiSrvDescriptor(overlay, &backendTexture->srvCpuDescriptorHandle, &backendTexture->srvGpuDescriptorHandle);
+        uint32_t bindlessIndex = D3D12BindlessDescriptorAllocator::NullIndex;
+        AllocImGuiSrvDescriptor(overlay, &backendTexture->srvCpuDescriptorHandle, &backendTexture->srvGpuDescriptorHandle, &bindlessIndex);
 
         D3D12_HEAP_PROPERTIES heapProperties = {};
         heapProperties.Type = D3D12_HEAP_TYPE_DEFAULT;
@@ -472,7 +483,7 @@ bool D3D12ImGuiRenderer::UpdateTexture(D3D12ImGuiOverlay *overlay, ImTextureData
         srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
         renderer->GetDevice()->CreateShaderResourceView(backendTexture->textureResource, &srvDesc, backendTexture->srvCpuDescriptorHandle);
 
-        textureData->SetTexID((ImTextureID)backendTexture->srvGpuDescriptorHandle.ptr);
+        textureData->SetTexID((ImTextureID)(UINT64)bindlessIndex);
         textureData->BackendUserData = backendTexture;
         needBarrierBeforeCopy = false;
     }
@@ -579,8 +590,9 @@ bool D3D12ImGuiRenderer::UpdateTexture(D3D12ImGuiOverlay *overlay, ImTextureData
     if (textureData->Status == ImTextureStatus_WantDestroy && textureData->UnusedFrames >= D3D12SwapChain::NumSwapChainBuffers) {
         ImGuiD3D12Texture *backendTexture = static_cast<ImGuiD3D12Texture *>(textureData->BackendUserData);
         if (backendTexture) {
-            if (backendTexture->srvGpuDescriptorHandle.ptr != (UINT64)textureData->TexID) {
-                BE_WARNLOG("D3D12ImGuiRenderer::DestroyTexture: texture descriptor mismatch\n");
+            const uint32_t bindlessIndex = GetImGuiSrvDescriptorBindlessIndex(backendTexture->srvCpuDescriptorHandle);
+            if (bindlessIndex != static_cast<uint32_t>((UINT64)textureData->TexID)) {
+                BE_WARNLOG("D3D12ImGuiRenderer::DestroyTexture: texture bindless index mismatch\n");
             }
             FreeImGuiSrvDescriptor(overlay, backendTexture->srvCpuDescriptorHandle, backendTexture->srvGpuDescriptorHandle);
             SAFE_RELEASE(backendTexture->textureResource);
@@ -784,8 +796,12 @@ void D3D12ImGuiRenderer::RenderDrawData(RHI::FrameThreadData *frameThreadData, R
             };
             graphicsCommandList->RSSetScissorRects(1, &scissorRect);
 
-            D3D12_GPU_DESCRIPTOR_HANDLE textureHandle = {};
-            textureHandle.ptr = (UINT64)drawCmd->GetTexID();
+            const uint32_t bindlessIndex = static_cast<uint32_t>((UINT64)drawCmd->GetTexID());
+            if (bindlessIndex == D3D12BindlessDescriptorAllocator::NullIndex) {
+                continue;
+            }
+
+            D3D12_GPU_DESCRIPTOR_HANDLE textureHandle = renderer->GetBindlessResourceGPUDescriptorHandle(bindlessIndex);
             graphicsCommandList->SetGraphicsRootDescriptorTable(1, textureHandle);
             graphicsCommandList->DrawIndexedInstanced(drawCmd->ElemCount, 1, drawCmd->IdxOffset + globalIdxOffset, drawCmd->VtxOffset + globalVtxOffset, 0);
         }

@@ -531,6 +531,202 @@ void App::BuildImGuiStatsPlotWindow() {
     ImGui::End();
 }
 
+struct ImGuiTextureViewerEntry {
+    char                        label[64] = {};
+    const RHI::Texture *        texture = nullptr;
+};
+
+static void AddImGuiTextureViewerEntry(ImGuiTextureViewerEntry *entries, int maxEntries, int &entryCount, const char *label, const RHI::Texture *texture) {
+    if (entryCount >= maxEntries || !texture || texture->GetViewCount(RHI::ViewType::SRV) == 0) {
+        return;
+    }
+
+    ImGuiTextureViewerEntry &entry = entries[entryCount++];
+    BE1::Str::Copynz(entry.label, label, sizeof(entry.label));
+    entry.texture = texture;
+}
+
+static void AppendImGuiTextureFlagName(char *text, size_t textSize, bool &hasText, RHI::TextureFlag flag) {
+    if (!text || textSize == 0) {
+        return;
+    }
+
+    const char *flagName = RHI::Renderer::TextureFlagName(flag);
+    const char *separator = hasText ? " | " : "";
+    const size_t textLength = strlen(text);
+    if (textLength >= textSize - 1) {
+        return;
+    }
+
+    BE1::Str::snPrintf(text + textLength, static_cast<int>(textSize - textLength), "%s%s", separator, flagName);
+    hasText = true;
+}
+
+static void TextureFlagsToText(RHI::TextureFlag flags, char *text, size_t textSize) {
+    if (!text || textSize == 0) {
+        return;
+    }
+
+    text[0] = '\0';
+    if (flags == RHI::TextureFlag::None) {
+        BE1::Str::Copynz(text, RHI::Renderer::TextureFlagName(RHI::TextureFlag::None), static_cast<int>(textSize));
+        return;
+    }
+
+    bool hasText = false;
+    if (BE1::HasFlag(flags, RHI::TextureFlag::RenderTarget)) {
+        AppendImGuiTextureFlagName(text, textSize, hasText, RHI::TextureFlag::RenderTarget);
+    }
+    if (BE1::HasFlag(flags, RHI::TextureFlag::DepthStencil)) {
+        AppendImGuiTextureFlagName(text, textSize, hasText, RHI::TextureFlag::DepthStencil);
+    }
+    if (BE1::HasFlag(flags, RHI::TextureFlag::Typeless)) {
+        AppendImGuiTextureFlagName(text, textSize, hasText, RHI::TextureFlag::Typeless);
+    }
+    if (BE1::HasFlag(flags, RHI::TextureFlag::ShaderResource)) {
+        AppendImGuiTextureFlagName(text, textSize, hasText, RHI::TextureFlag::ShaderResource);
+    }
+    if (BE1::HasFlag(flags, RHI::TextureFlag::UnorderedAccess)) {
+        AppendImGuiTextureFlagName(text, textSize, hasText, RHI::TextureFlag::UnorderedAccess);
+    }
+    if (BE1::HasFlag(flags, RHI::TextureFlag::SkipDefaultViews)) {
+        AppendImGuiTextureFlagName(text, textSize, hasText, RHI::TextureFlag::SkipDefaultViews);
+    }
+
+    if (!hasText) {
+        BE1::Str::Copynz(text, "Invalid", static_cast<int>(textSize));
+    }
+}
+
+void App::BuildImGuiTextureViewer() {
+    static int selectedTextureIndex = 0;
+    static int selectedViewIndex = 0;
+
+    constexpr int MaxTextureViewerEntries = 4;
+    ImGuiTextureViewerEntry entries[MaxTextureViewerEntries];
+    int entryCount = 0;
+
+    if (renderCamera) {
+        AddImGuiTextureViewerEntry(entries, MaxTextureViewerEntries, entryCount, "Render Color", renderCamera->GetColorTexture());
+        AddImGuiTextureViewerEntry(entries, MaxTextureViewerEntries, entryCount, "Post Process Color", renderCamera->GetPostProcessColorTexture());
+        AddImGuiTextureViewerEntry(entries, MaxTextureViewerEntries, entryCount, "Bloom Down", renderCamera->GetBloomDownTexture());
+        AddImGuiTextureViewerEntry(entries, MaxTextureViewerEntries, entryCount, "Bloom Up", renderCamera->GetBloomUpTexture());
+    }
+
+    if (entryCount == 0) {
+        ImGui::TextUnformatted("No texture is available.");
+        return;
+    }
+
+    selectedTextureIndex = BE1::Min(BE1::Max(selectedTextureIndex, 0), entryCount - 1);
+
+    const float fontSize = ImGui::GetFontSize();
+    ImGui::SetNextItemWidth(fontSize * 18.0f);
+    if (ImGui::BeginCombo("Texture", entries[selectedTextureIndex].label)) {
+        for (int entryIndex = 0; entryIndex < entryCount; ++entryIndex) {
+            const bool selected = selectedTextureIndex == entryIndex;
+            if (ImGui::Selectable(entries[entryIndex].label, selected)) {
+                selectedTextureIndex = entryIndex;
+            }
+            if (selected) {
+                ImGui::SetItemDefaultFocus();
+            }
+        }
+        ImGui::EndCombo();
+    }
+
+    const ImGuiTextureViewerEntry &entry = entries[selectedTextureIndex];
+    const RHI::Texture *texture = entry.texture;
+    const uint32_t viewCount = texture->GetViewCount(RHI::ViewType::SRV);
+    selectedViewIndex = BE1::Min(BE1::Max(selectedViewIndex, 0), static_cast<int>(viewCount) - 1);
+
+    if (viewCount > 1) {
+        ImGui::SetNextItemWidth(fontSize * 12.0f);
+        char viewSliderLabel[32];
+        BE1::Str::snPrintf(viewSliderLabel, static_cast<int>(sizeof(viewSliderLabel)), "View (0..%u)", viewCount - 1);
+        ImGui::SliderInt(viewSliderLabel, &selectedViewIndex, 0, static_cast<int>(viewCount) - 1);
+    }
+
+    const RHI::ViewID viewID = texture->GetViewID(RHI::ViewType::SRV, selectedViewIndex);
+    RHI::TextureViewInfo viewInfo;
+    const bool hasViewInfo = texture->GetViewInfo(RHI::ViewType::SRV, viewID, viewInfo);
+    const uint32_t textureID = texture->GetBindlessIndex(RHI::ViewType::SRV, viewID);
+
+    ImGui::Separator();
+    ImGui::Text("Type: %s", RHI::Renderer::TextureTypeName(texture->type));
+    ImGui::Text("Format: %s", RHI::Renderer::FormatName(texture->GetFormat()));
+    ImGui::Text("Size: %u x %u x %u", texture->GetWidth(), texture->GetHeight(), texture->GetDepth());
+    ImGui::Text("Array: %u, Mips: %u, Samples: %u", texture->GetArraySize(), texture->GetMipLevelCount(), texture->GetSampleCount());
+
+    char flagsText[128];
+    TextureFlagsToText(texture->flags, flagsText, sizeof(flagsText));
+    ImGui::TextUnformatted("Flags:");
+    ImGui::SameLine();
+    ImGui::PushTextWrapPos(0.0f);
+    ImGui::TextUnformatted(flagsText);
+    ImGui::PopTextWrapPos();
+
+    if (hasViewInfo) {
+        ImGui::Text("View ID: %u", viewInfo.viewID.value);
+        if (viewInfo.format != texture->GetFormat()) {
+            ImGui::Text("View Format: %s", RHI::Renderer::FormatName(viewInfo.format));
+        }
+        if (viewInfo.sliceCount > 1) {
+            ImGui::Text("View Slice Range: %u..%u (%u)", viewInfo.firstSlice, viewInfo.firstSlice + viewInfo.sliceCount - 1, viewInfo.sliceCount);
+        } else {
+            ImGui::Text("View Slice: %u", viewInfo.firstSlice);
+        }
+        if (viewInfo.mipCount > 1) {
+            ImGui::Text("View Mip Range: %u..%u (%u)", viewInfo.firstMipLevel, viewInfo.firstMipLevel + viewInfo.mipCount - 1, viewInfo.mipCount);
+        } else {
+            ImGui::Text("View Mip: %u", viewInfo.firstMipLevel);
+        }
+        ImGui::Text("View Size: %u x %u x %u", viewInfo.width, viewInfo.height, viewInfo.depth);
+    } else {
+        ImGui::Text("View ID: %u", viewID.value);
+    }
+
+    const uint32_t previewWidth = hasViewInfo ? viewInfo.width : texture->GetWidth();
+    const uint32_t previewHeight = hasViewInfo ? viewInfo.height : texture->GetHeight();
+    if (textureID == 0 || previewWidth == 0 || previewHeight == 0) {
+        ImGui::TextUnformatted("Preview is unavailable.");
+        return;
+    }
+
+    const float maxPreviewSize = fontSize * 24.0f;
+    const float previewAspectRatio = static_cast<float>(previewWidth) / previewHeight;
+    ImVec2 previewSize;
+    if (previewAspectRatio > 1.0f) {
+        previewSize.x = maxPreviewSize;
+        previewSize.y = maxPreviewSize / previewAspectRatio;
+    } else {
+        previewSize.x = maxPreviewSize * previewAspectRatio;
+        previewSize.y = maxPreviewSize;
+    }
+
+    const ImVec2 previewFrameSize(maxPreviewSize, maxPreviewSize);
+    const float availableWidth = ImGui::GetContentRegionAvail().x;
+    if (availableWidth > previewFrameSize.x) {
+        ImGui::SetCursorPosX(ImGui::GetCursorPosX() + (availableWidth - previewFrameSize.x) * 0.5f);
+    }
+
+    const ImVec2 framePos = ImGui::GetCursorScreenPos();
+    const ImVec2 imagePos(
+        framePos.x + (previewFrameSize.x - previewSize.x) * 0.5f,
+        framePos.y + (previewFrameSize.y - previewSize.y) * 0.5f);
+
+    ImDrawList *drawList = ImGui::GetWindowDrawList();
+    drawList->AddRectFilled(
+        framePos,
+        ImVec2(framePos.x + previewFrameSize.x, framePos.y + previewFrameSize.y),
+        IM_COL32(0, 0, 0, 255));
+    drawList->AddImage(
+        (ImTextureID)(UINT64)textureID,
+        imagePos,
+        ImVec2(imagePos.x + previewSize.x, imagePos.y + previewSize.y));
+    ImGui::Dummy(previewFrameSize);
+}
+
 void App::BuildImGuiOverlay() {
     UpdateImGuiStatsPlotHistory();
 
@@ -706,6 +902,11 @@ void App::BuildImGuiOverlay() {
                 r_textureStreamingStreamInDelay.SetInteger(BE1::Max(0, streamInDelay));
             }
 
+            ImGui::EndTabItem();
+        }
+
+        if (ImGui::BeginTabItem("Textures")) {
+            BuildImGuiTextureViewer();
             ImGui::EndTabItem();
         }
 

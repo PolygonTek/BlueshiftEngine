@@ -35,15 +35,20 @@ public:
     virtual const void *            GetNativeTextureObject() const override { return this; }
 
     virtual bool                    HasValidView(RHI::ViewType viewType, RHI::ViewID viewID = RHI::ViewID::PrimaryID) const override;
+    virtual uint32_t                GetViewCount(RHI::ViewType viewType) const override;
+    virtual RHI::ViewID             GetViewID(RHI::ViewType viewType, uint32_t viewIndex) const override;
+    virtual bool                    GetViewInfo(RHI::ViewType viewType, RHI::ViewID viewID, RHI::TextureViewInfo &outInfo) const override;
 
                                     // Bindless index 를 리턴한다.
     virtual uint32_t                GetBindlessIndex(RHI::ViewType viewType, RHI::ViewID viewID = RHI::ViewID::PrimaryID) const override;
 
+    virtual RHI::Format             GetFormat() const override;
     virtual uint32_t                GetWidth() const override { return textureDesc.Width; }
     virtual uint32_t                GetHeight() const override { return textureDesc.Height; }
     virtual uint32_t                GetDepth() const override { return textureDesc.Dimension == D3D12_RESOURCE_DIMENSION_TEXTURE3D ? textureDesc.DepthOrArraySize : 1; }
     virtual uint32_t                GetArraySize() const override { return textureDesc.Dimension == D3D12_RESOURCE_DIMENSION_TEXTURE3D ? 1 : textureDesc.DepthOrArraySize; }
     virtual uint32_t                GetMipLevelCount() const override { return textureDesc.MipLevels; }
+    virtual uint32_t                GetSampleCount() const override { return textureDesc.SampleDesc.Count; }
 
     ID3D12Resource *                GetResource() const;
 

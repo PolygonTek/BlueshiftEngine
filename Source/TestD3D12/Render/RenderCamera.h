@@ -18,7 +18,8 @@
 
 class RenderWorld;
 
-static constexpr int RenderBloomMaxLevelCount = 8;
+static constexpr int RenderBloomDownMaxLevelCount = 8;
+static constexpr int RenderBloomUpMaxLevelCount = RenderBloomDownMaxLevelCount - 1;
 
 enum class RenderCameraFlag : uint8_t {
     NoFlag                      = 0,
@@ -174,12 +175,12 @@ private:
 
     RHI::Texture *              bloomDownTexture = nullptr;
     RHI::Texture *              bloomUpTexture = nullptr;
-    RHI::ViewID                 bloomDownMipSRVs[RenderBloomMaxLevelCount] = {};
-    RHI::ViewID                 bloomDownMipUAVs[RenderBloomMaxLevelCount] = {};
-    RHI::ViewID                 bloomUpMipSRVs[RenderBloomMaxLevelCount] = {};
-    RHI::ViewID                 bloomUpMipUAVs[RenderBloomMaxLevelCount] = {};
-    uint32_t                    bloomMipWidths[RenderBloomMaxLevelCount] = {};
-    uint32_t                    bloomMipHeights[RenderBloomMaxLevelCount] = {};
+    uint32_t                    bloomMipWidths[RenderBloomDownMaxLevelCount] = {};
+    uint32_t                    bloomMipHeights[RenderBloomDownMaxLevelCount] = {};
+    RHI::ViewID                 bloomDownMipSRVs[RenderBloomDownMaxLevelCount] = {};
+    RHI::ViewID                 bloomDownMipUAVs[RenderBloomDownMaxLevelCount] = {};
+    RHI::ViewID                 bloomUpMipSRVs[RenderBloomUpMaxLevelCount] = {};
+    RHI::ViewID                 bloomUpMipUAVs[RenderBloomUpMaxLevelCount] = {};
     uint32_t                    bloomMipCount = 0;
     uint32_t                    bloomMipMaxLevelCount = 0;
 

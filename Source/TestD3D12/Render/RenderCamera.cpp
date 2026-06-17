@@ -461,7 +461,7 @@ void RenderCamera::EnsurePostProcessResources() {
 
     const RenderBloomMode bloomMode = static_cast<RenderBloomMode>(BE1::Clamp(r_bloom.GetInteger(), static_cast<int>(RenderBloomMode::Off), static_cast<int>(RenderBloomMode::FFTConvolution)));
     if (bloomMode == RenderBloomMode::Pyramid) {
-        const uint32_t requestedBloomMipMaxLevelCount = static_cast<uint32_t>(BE1::Clamp(r_bloomMipCount.GetInteger(), 1, RenderBloomMaxLevelCount));
+        const uint32_t requestedBloomMipMaxLevelCount = static_cast<uint32_t>(BE1::Clamp(r_bloomMipCount.GetInteger(), 1, RenderBloomDownMaxLevelCount));
         const bool hasReusablePyramidBloomTextures = bloomDownTexture &&
             bloomUpTexture &&
             bloomMipCount > 0 &&
@@ -610,7 +610,7 @@ bool RenderCamera::CreatePyramidBloomTextures(uint32_t width, uint32_t height, u
     uint32_t bloomHeight = height > 1 ? height >> 1 : 1;
     uint32_t levelCount = 0;
 
-    // 1x1 이 될 때까지 몇 개의 bloom mip 이 필요한지 계산한다. (최대 RenderBloomMaxLevelCount = 8)
+    // 1x1 이 될 때까지 몇 개의 bloom down mip 이 필요한지 계산한다. (최대 RenderBloomDownMaxLevelCount)
     while (levelCount < requestedBloomMipMaxLevelCount) {
         bloomMipWidths[levelCount] = bloomWidth;
         bloomMipHeights[levelCount] = bloomHeight;
@@ -624,17 +624,28 @@ bool RenderCamera::CreatePyramidBloomTextures(uint32_t width, uint32_t height, u
         bloomHeight = bloomHeight > 1 ? bloomHeight >> 1 : 1;
     }
 
-    SharedPtr<BE1::Image> image = MakeShared<BE1::Image>();
-    image->InitFromMemory(bloomMipWidths[0], bloomMipHeights[0], 1, 1, levelCount, bloomImageFormat, BE1::Image::GammaSpace::Linear, nullptr, BE1::Image::Flag::None);
+    if (levelCount < 2) {
+        return false;
+    }
 
-    bloomDownTexture = RHI::renderer->CreateTexture(RHI::TextureType::Texture2D, bloomTextureFlags, image, false, {}, 1, RHI::GPUResourceState::ShaderResource);
+    const uint32_t bloomDownMipCount = levelCount;
+    const uint32_t bloomUpMipCount = levelCount - 1;
+
+    SharedPtr<BE1::Image> bloomDownImage = MakeShared<BE1::Image>();
+    bloomDownImage->InitFromMemory(bloomMipWidths[0], bloomMipHeights[0], 1, 1, bloomDownMipCount, bloomImageFormat, BE1::Image::GammaSpace::Linear, nullptr, BE1::Image::Flag::None);
+
+    bloomDownTexture = RHI::renderer->CreateTexture(RHI::TextureType::Texture2D, bloomTextureFlags, bloomDownImage, false, {}, 1, RHI::GPUResourceState::ShaderResource);
     if (!bloomDownTexture) {
         BE_WARNLOG("RenderCamera::CreatePyramidBloomTextures: failed to create bloom down texture\n");
         return false;
     }
     RHI::renderer->SetName(bloomDownTexture, "RenderCamera::bloomDownTexture");
 
-    bloomUpTexture = RHI::renderer->CreateTexture(RHI::TextureType::Texture2D, bloomTextureFlags, image, false, {}, 1, RHI::GPUResourceState::ShaderResource);
+    // bloomUpTexture 는 upsample pass 의 출력 mip 만 필요하므로 가장 작은 source-only mip 은 만들지 않는다.
+    SharedPtr<BE1::Image> bloomUpImage = MakeShared<BE1::Image>();
+    bloomUpImage->InitFromMemory(bloomMipWidths[0], bloomMipHeights[0], 1, 1, bloomUpMipCount, bloomImageFormat, BE1::Image::GammaSpace::Linear, nullptr, BE1::Image::Flag::None);
+
+    bloomUpTexture = RHI::renderer->CreateTexture(RHI::TextureType::Texture2D, bloomTextureFlags, bloomUpImage, false, {}, 1, RHI::GPUResourceState::ShaderResource);
     if (!bloomUpTexture) {
         BE_WARNLOG("RenderCamera::CreatePyramidBloomTextures: failed to create bloom up texture\n");
         DestroyPyramidBloomTextures();
@@ -660,8 +671,8 @@ bool RenderCamera::CreatePyramidBloomTextures(uint32_t width, uint32_t height, u
         return true;
     };
 
-    if (!createBloomMipViews(bloomDownTexture, bloomDownMipSRVs, bloomDownMipUAVs, levelCount, "bloomDownTexture") ||
-        !createBloomMipViews(bloomUpTexture, bloomUpMipSRVs, bloomUpMipUAVs, levelCount, "bloomUpTexture")) {
+    if (!createBloomMipViews(bloomDownTexture, bloomDownMipSRVs, bloomDownMipUAVs, bloomDownMipCount, "bloomDownTexture") ||
+        !createBloomMipViews(bloomUpTexture, bloomUpMipSRVs, bloomUpMipUAVs, bloomUpMipCount, "bloomUpTexture")) {
         DestroyPyramidBloomTextures();
         return false;
     }
@@ -682,13 +693,15 @@ void RenderCamera::DestroyPyramidBloomTextures() {
         bloomUpTexture = nullptr;
     }
 
-    for (uint32_t mipLevel = 0; mipLevel < RenderBloomMaxLevelCount; ++mipLevel) {
+    for (uint32_t mipLevel = 0; mipLevel < RenderBloomDownMaxLevelCount; ++mipLevel) {
         bloomDownMipSRVs[mipLevel] = RHI::ViewID::InvalidID;
         bloomDownMipUAVs[mipLevel] = RHI::ViewID::InvalidID;
-        bloomUpMipSRVs[mipLevel] = RHI::ViewID::InvalidID;
-        bloomUpMipUAVs[mipLevel] = RHI::ViewID::InvalidID;
         bloomMipWidths[mipLevel] = 0;
         bloomMipHeights[mipLevel] = 0;
+    }
+    for (uint32_t mipLevel = 0; mipLevel < RenderBloomUpMaxLevelCount; ++mipLevel) {
+        bloomUpMipSRVs[mipLevel] = RHI::ViewID::InvalidID;
+        bloomUpMipUAVs[mipLevel] = RHI::ViewID::InvalidID;
     }
 
     bloomMipCount = 0;

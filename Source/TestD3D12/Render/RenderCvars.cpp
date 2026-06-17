@@ -14,6 +14,7 @@
 
 #include "Precompiled.h"
 #include "RenderCvars.h"
+#include "RenderCamera.h"
 
 CVAR(r_skipCulling, "0", BE1::CVar::Flag::Bool, "skip frustum culling for render objects and mesh surfaces");
 CVAR(r_skipDrawCamera2D, "0", BE1::CVar::Flag::Bool, "skip 2D draw camera render commands");
@@ -39,4 +40,4 @@ CVAR_MINMAX(r_bloomPrefilterQuality, "1", BE1::CVar::Flag::Integer, "bloom prefi
 CVAR_MINMAX(r_bloomIntensity, "0.15", BE1::CVar::Flag::Float, "final bloom composite intensity", 0.0f, 10.0f);
 CVAR_MINMAX(r_bloomScatter, "0.85", BE1::CVar::Flag::Float, "bloom mip scatter weight", 0.0f, 1.0f);
 CVAR_MINMAX(r_bloomRadius, "1.0", BE1::CVar::Flag::Float, "bloom dual kawase sample radius", 0.0f, 10.0f);
-CVAR_MINMAX(r_bloomMipCount, "6", BE1::CVar::Flag::Integer, "bloom mip level count", 1, 8);
+CVAR_MINMAX(r_bloomMipCount, "6", BE1::CVar::Flag::Integer, "bloom mip level count", 1, RenderBloomDownMaxLevelCount);

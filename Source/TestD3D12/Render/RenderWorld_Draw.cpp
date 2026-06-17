@@ -112,13 +112,15 @@ void RenderWorld::RenderScene(RenderCamera *renderCamera) {
     visCamera->bloomDownTexture = renderCamera->GetBloomDownTexture();
     visCamera->bloomUpTexture = renderCamera->GetBloomUpTexture();
     visCamera->bloomMipCount = renderCamera->GetBloomMipCount();
-    for (uint32_t mipLevel = 0; mipLevel < RenderBloomMaxLevelCount; ++mipLevel) {
-        visCamera->bloomDownMipSRVs[mipLevel] = renderCamera->GetBloomDownMipSRVs()[mipLevel];
-        visCamera->bloomDownMipUAVs[mipLevel] = renderCamera->GetBloomDownMipUAVs()[mipLevel];
-        visCamera->bloomUpMipSRVs[mipLevel] = renderCamera->GetBloomUpMipSRVs()[mipLevel];
-        visCamera->bloomUpMipUAVs[mipLevel] = renderCamera->GetBloomUpMipUAVs()[mipLevel];
+    for (uint32_t mipLevel = 0; mipLevel < RenderBloomDownMaxLevelCount; ++mipLevel) {
         visCamera->bloomMipWidths[mipLevel] = renderCamera->GetBloomMipWidths()[mipLevel];
         visCamera->bloomMipHeights[mipLevel] = renderCamera->GetBloomMipHeights()[mipLevel];
+        visCamera->bloomDownMipSRVs[mipLevel] = renderCamera->GetBloomDownMipSRVs()[mipLevel];
+        visCamera->bloomDownMipUAVs[mipLevel] = renderCamera->GetBloomDownMipUAVs()[mipLevel];
+    }
+    for (uint32_t mipLevel = 0; mipLevel < RenderBloomUpMaxLevelCount; ++mipLevel) {
+        visCamera->bloomUpMipSRVs[mipLevel] = renderCamera->GetBloomUpMipSRVs()[mipLevel];
+        visCamera->bloomUpMipUAVs[mipLevel] = renderCamera->GetBloomUpMipUAVs()[mipLevel];
     }
     visCamera->luminanceBuffer = renderCamera->GetLuminanceBuffer();
     visCamera->viewMatrix = renderCamera->viewMatrix;

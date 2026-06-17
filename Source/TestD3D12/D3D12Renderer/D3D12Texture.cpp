@@ -81,6 +81,84 @@ bool D3D12Texture::HasValidView(RHI::ViewType viewType, RHI::ViewID viewID) cons
     return false;
 }
 
+uint32_t D3D12Texture::GetViewCount(RHI::ViewType viewType) const {
+    uint32_t viewCount = 0;
+
+    if (viewType == RHI::ViewType::SRV) {
+        const int numEntries = srvEntries.Count();
+        for (int entryIndex = 0; entryIndex < numEntries; ++entryIndex) {
+            if (srvEntries[entryIndex].cpuDescriptorHandle.ptr != 0) {
+                viewCount++;
+            }
+        }
+    } else if (viewType == RHI::ViewType::UAV) {
+        const int numEntries = uavEntries.Count();
+        for (int entryIndex = 0; entryIndex < numEntries; ++entryIndex) {
+            if (uavEntries[entryIndex].cpuDescriptorHandle.ptr != 0) {
+                viewCount++;
+            }
+        }
+    } else if (viewType == RHI::ViewType::RTV) {
+        const int numEntries = rtvEntries.Count();
+        for (int entryIndex = 0; entryIndex < numEntries; ++entryIndex) {
+            if (rtvEntries[entryIndex].cpuDescriptorHandle.ptr != 0) {
+                viewCount++;
+            }
+        }
+    } else if (viewType == RHI::ViewType::DSV) {
+        const int numEntries = dsvEntries.Count();
+        for (int entryIndex = 0; entryIndex < numEntries; ++entryIndex) {
+            if (dsvEntries[entryIndex].cpuDescriptorHandle.ptr != 0) {
+                viewCount++;
+            }
+        }
+    }
+
+    return viewCount;
+}
+
+RHI::ViewID D3D12Texture::GetViewID(RHI::ViewType viewType, uint32_t viewIndex) const {
+    uint32_t validViewIndex = 0;
+
+    auto makeViewID = [](uint32_t value) -> RHI::ViewID {
+        RHI::ViewID viewID;
+        viewID.value = value;
+        return viewID;
+    };
+
+    if (viewType == RHI::ViewType::SRV) {
+        const int numEntries = srvEntries.Count();
+        for (int entryIndex = 0; entryIndex < numEntries; ++entryIndex) {
+            if (srvEntries[entryIndex].cpuDescriptorHandle.ptr != 0 && validViewIndex++ == viewIndex) {
+                return makeViewID(entryIndex);
+            }
+        }
+    } else if (viewType == RHI::ViewType::UAV) {
+        const int numEntries = uavEntries.Count();
+        for (int entryIndex = 0; entryIndex < numEntries; ++entryIndex) {
+            if (uavEntries[entryIndex].cpuDescriptorHandle.ptr != 0 && validViewIndex++ == viewIndex) {
+                return makeViewID(entryIndex);
+            }
+        }
+    } else if (viewType == RHI::ViewType::RTV) {
+        const int numEntries = rtvEntries.Count();
+        for (int entryIndex = 0; entryIndex < numEntries; ++entryIndex) {
+            if (rtvEntries[entryIndex].cpuDescriptorHandle.ptr != 0 && validViewIndex++ == viewIndex) {
+                return makeViewID(entryIndex);
+            }
+        }
+    } else if (viewType == RHI::ViewType::DSV) {
+        const int numEntries = dsvEntries.Count();
+        for (int entryIndex = 0; entryIndex < numEntries; ++entryIndex) {
+            if (dsvEntries[entryIndex].cpuDescriptorHandle.ptr != 0 && validViewIndex++ == viewIndex) {
+                return makeViewID(entryIndex);
+            }
+        }
+    }
+
+    return RHI::ViewID::InvalidID;
+}
+
 uint32_t D3D12Texture::GetBindlessIndex(RHI::ViewType viewType, RHI::ViewID viewID) const {
     if (viewID.IsValid()) {
         if (viewType == RHI::ViewType::SRV) {
@@ -91,6 +169,213 @@ uint32_t D3D12Texture::GetBindlessIndex(RHI::ViewType viewType, RHI::ViewID view
         }
     }
     return D3D12BindlessDescriptorAllocator::NullIndex;
+}
+
+static uint32_t D3D12TextureMipExtent(uint32_t extent, uint32_t mipLevel) {
+    return BE1::Max(1u, extent >> mipLevel);
+}
+
+static void D3D12FinalizeTextureViewInfo(const D3D12Texture *texture, RHI::TextureViewInfo &viewInfo) {
+    viewInfo.width = D3D12TextureMipExtent(texture->GetWidth(), viewInfo.firstMipLevel);
+    viewInfo.height = D3D12TextureMipExtent(texture->GetHeight(), viewInfo.firstMipLevel);
+
+    if (texture->type == RHI::TextureType::Texture3D) {
+        const uint32_t mipDepth = D3D12TextureMipExtent(texture->GetDepth(), viewInfo.firstMipLevel);
+        if (viewInfo.sliceCount == 0 || viewInfo.sliceCount == UINT_MAX) {
+            viewInfo.sliceCount = viewInfo.firstSlice < mipDepth ? mipDepth - viewInfo.firstSlice : 0;
+        }
+        viewInfo.depth = viewInfo.sliceCount;
+    } else {
+        if (viewInfo.sliceCount == 0) {
+            viewInfo.sliceCount = 1;
+        }
+        viewInfo.depth = 1;
+    }
+}
+
+bool D3D12Texture::GetViewInfo(RHI::ViewType viewType, RHI::ViewID viewID, RHI::TextureViewInfo &outInfo) const {
+    outInfo = {};
+    if (!viewID.IsValid()) {
+        return false;
+    }
+
+    outInfo.viewID = viewID;
+    outInfo.viewType = viewType;
+    outInfo.firstSlice = 0;
+    outInfo.sliceCount = 1;
+    outInfo.firstMipLevel = 0;
+    outInfo.mipCount = 1;
+
+    if (viewType == RHI::ViewType::SRV) {
+        if (!srvEntries.IsValidIndex(viewID.value) || srvEntries[viewID.value].cpuDescriptorHandle.ptr == 0) {
+            return false;
+        }
+
+        const D3D12_SHADER_RESOURCE_VIEW_DESC &viewDesc = srvEntries[viewID.value].viewDesc;
+        outInfo.format = D3D12Renderer::DXGIFormatToRHIFormat(viewDesc.Format);
+
+        switch (viewDesc.ViewDimension) {
+        case D3D12_SRV_DIMENSION_TEXTURE1D:
+            outInfo.firstMipLevel = viewDesc.Texture1D.MostDetailedMip;
+            outInfo.mipCount = viewDesc.Texture1D.MipLevels;
+            break;
+        case D3D12_SRV_DIMENSION_TEXTURE1DARRAY:
+            outInfo.firstSlice = viewDesc.Texture1DArray.FirstArraySlice;
+            outInfo.sliceCount = viewDesc.Texture1DArray.ArraySize;
+            outInfo.firstMipLevel = viewDesc.Texture1DArray.MostDetailedMip;
+            outInfo.mipCount = viewDesc.Texture1DArray.MipLevels;
+            break;
+        case D3D12_SRV_DIMENSION_TEXTURE2D:
+            outInfo.firstMipLevel = viewDesc.Texture2D.MostDetailedMip;
+            outInfo.mipCount = viewDesc.Texture2D.MipLevels;
+            break;
+        case D3D12_SRV_DIMENSION_TEXTURE2DARRAY:
+            outInfo.firstSlice = viewDesc.Texture2DArray.FirstArraySlice;
+            outInfo.sliceCount = viewDesc.Texture2DArray.ArraySize;
+            outInfo.firstMipLevel = viewDesc.Texture2DArray.MostDetailedMip;
+            outInfo.mipCount = viewDesc.Texture2DArray.MipLevels;
+            break;
+        case D3D12_SRV_DIMENSION_TEXTURE2DMS:
+            break;
+        case D3D12_SRV_DIMENSION_TEXTURE2DMSARRAY:
+            outInfo.firstSlice = viewDesc.Texture2DMSArray.FirstArraySlice;
+            outInfo.sliceCount = viewDesc.Texture2DMSArray.ArraySize;
+            break;
+        case D3D12_SRV_DIMENSION_TEXTURECUBE:
+            outInfo.sliceCount = 6;
+            outInfo.firstMipLevel = viewDesc.TextureCube.MostDetailedMip;
+            outInfo.mipCount = viewDesc.TextureCube.MipLevels;
+            break;
+        case D3D12_SRV_DIMENSION_TEXTURECUBEARRAY:
+            outInfo.firstSlice = viewDesc.TextureCubeArray.First2DArrayFace;
+            outInfo.sliceCount = viewDesc.TextureCubeArray.NumCubes * 6;
+            outInfo.firstMipLevel = viewDesc.TextureCubeArray.MostDetailedMip;
+            outInfo.mipCount = viewDesc.TextureCubeArray.MipLevels;
+            break;
+        case D3D12_SRV_DIMENSION_TEXTURE3D:
+            outInfo.firstMipLevel = viewDesc.Texture3D.MostDetailedMip;
+            outInfo.mipCount = viewDesc.Texture3D.MipLevels;
+            outInfo.sliceCount = 0;
+            break;
+        default:
+            return false;
+        }
+    } else if (viewType == RHI::ViewType::UAV) {
+        if (!uavEntries.IsValidIndex(viewID.value) || uavEntries[viewID.value].cpuDescriptorHandle.ptr == 0) {
+            return false;
+        }
+
+        const D3D12_UNORDERED_ACCESS_VIEW_DESC &viewDesc = uavEntries[viewID.value].viewDesc;
+        outInfo.format = D3D12Renderer::DXGIFormatToRHIFormat(viewDesc.Format);
+
+        switch (viewDesc.ViewDimension) {
+        case D3D12_UAV_DIMENSION_TEXTURE1D:
+            outInfo.firstMipLevel = viewDesc.Texture1D.MipSlice;
+            break;
+        case D3D12_UAV_DIMENSION_TEXTURE1DARRAY:
+            outInfo.firstSlice = viewDesc.Texture1DArray.FirstArraySlice;
+            outInfo.sliceCount = viewDesc.Texture1DArray.ArraySize;
+            outInfo.firstMipLevel = viewDesc.Texture1DArray.MipSlice;
+            break;
+        case D3D12_UAV_DIMENSION_TEXTURE2D:
+            outInfo.firstMipLevel = viewDesc.Texture2D.MipSlice;
+            break;
+        case D3D12_UAV_DIMENSION_TEXTURE2DARRAY:
+            outInfo.firstSlice = viewDesc.Texture2DArray.FirstArraySlice;
+            outInfo.sliceCount = viewDesc.Texture2DArray.ArraySize;
+            outInfo.firstMipLevel = viewDesc.Texture2DArray.MipSlice;
+            break;
+        case D3D12_UAV_DIMENSION_TEXTURE3D:
+            outInfo.firstSlice = viewDesc.Texture3D.FirstWSlice;
+            outInfo.sliceCount = viewDesc.Texture3D.WSize;
+            outInfo.firstMipLevel = viewDesc.Texture3D.MipSlice;
+            break;
+        default:
+            return false;
+        }
+    } else if (viewType == RHI::ViewType::RTV) {
+        if (!rtvEntries.IsValidIndex(viewID.value) || rtvEntries[viewID.value].cpuDescriptorHandle.ptr == 0) {
+            return false;
+        }
+
+        const D3D12_RENDER_TARGET_VIEW_DESC &viewDesc = rtvEntries[viewID.value].viewDesc;
+        outInfo.format = D3D12Renderer::DXGIFormatToRHIFormat(viewDesc.Format);
+
+        switch (viewDesc.ViewDimension) {
+        case D3D12_RTV_DIMENSION_TEXTURE1D:
+            outInfo.firstMipLevel = viewDesc.Texture1D.MipSlice;
+            break;
+        case D3D12_RTV_DIMENSION_TEXTURE1DARRAY:
+            outInfo.firstSlice = viewDesc.Texture1DArray.FirstArraySlice;
+            outInfo.sliceCount = viewDesc.Texture1DArray.ArraySize;
+            outInfo.firstMipLevel = viewDesc.Texture1DArray.MipSlice;
+            break;
+        case D3D12_RTV_DIMENSION_TEXTURE2D:
+            outInfo.firstMipLevel = viewDesc.Texture2D.MipSlice;
+            break;
+        case D3D12_RTV_DIMENSION_TEXTURE2DARRAY:
+            outInfo.firstSlice = viewDesc.Texture2DArray.FirstArraySlice;
+            outInfo.sliceCount = viewDesc.Texture2DArray.ArraySize;
+            outInfo.firstMipLevel = viewDesc.Texture2DArray.MipSlice;
+            break;
+        case D3D12_RTV_DIMENSION_TEXTURE2DMS:
+            break;
+        case D3D12_RTV_DIMENSION_TEXTURE2DMSARRAY:
+            outInfo.firstSlice = viewDesc.Texture2DMSArray.FirstArraySlice;
+            outInfo.sliceCount = viewDesc.Texture2DMSArray.ArraySize;
+            break;
+        case D3D12_RTV_DIMENSION_TEXTURE3D:
+            outInfo.firstSlice = viewDesc.Texture3D.FirstWSlice;
+            outInfo.sliceCount = viewDesc.Texture3D.WSize;
+            outInfo.firstMipLevel = viewDesc.Texture3D.MipSlice;
+            break;
+        default:
+            return false;
+        }
+    } else if (viewType == RHI::ViewType::DSV) {
+        if (!dsvEntries.IsValidIndex(viewID.value) || dsvEntries[viewID.value].cpuDescriptorHandle.ptr == 0) {
+            return false;
+        }
+
+        const D3D12_DEPTH_STENCIL_VIEW_DESC &viewDesc = dsvEntries[viewID.value].viewDesc;
+        outInfo.format = D3D12Renderer::DXGIFormatToRHIFormat(viewDesc.Format);
+
+        switch (viewDesc.ViewDimension) {
+        case D3D12_DSV_DIMENSION_TEXTURE1D:
+            outInfo.firstMipLevel = viewDesc.Texture1D.MipSlice;
+            break;
+        case D3D12_DSV_DIMENSION_TEXTURE1DARRAY:
+            outInfo.firstSlice = viewDesc.Texture1DArray.FirstArraySlice;
+            outInfo.sliceCount = viewDesc.Texture1DArray.ArraySize;
+            outInfo.firstMipLevel = viewDesc.Texture1DArray.MipSlice;
+            break;
+        case D3D12_DSV_DIMENSION_TEXTURE2D:
+            outInfo.firstMipLevel = viewDesc.Texture2D.MipSlice;
+            break;
+        case D3D12_DSV_DIMENSION_TEXTURE2DARRAY:
+            outInfo.firstSlice = viewDesc.Texture2DArray.FirstArraySlice;
+            outInfo.sliceCount = viewDesc.Texture2DArray.ArraySize;
+            outInfo.firstMipLevel = viewDesc.Texture2DArray.MipSlice;
+            break;
+        case D3D12_DSV_DIMENSION_TEXTURE2DMS:
+            break;
+        case D3D12_DSV_DIMENSION_TEXTURE2DMSARRAY:
+            outInfo.firstSlice = viewDesc.Texture2DMSArray.FirstArraySlice;
+            outInfo.sliceCount = viewDesc.Texture2DMSArray.ArraySize;
+            break;
+        default:
+            return false;
+        }
+    } else {
+        return false;
+    }
+
+    D3D12FinalizeTextureViewInfo(this, outInfo);
+    return true;
+}
+
+RHI::Format D3D12Texture::GetFormat() const {
+    return D3D12Renderer::DXGIFormatToRHIFormat(textureDesc.Format);
 }
 
 RHI::Texture *D3D12Renderer::CreateTexture(RHI::TextureType textureType, RHI::TextureFlag flags, std::shared_ptr<const BE1::Image> srcImage, bool allocateEmptyMipmaps, const RHI::ClearValue &clearValue, uint32_t sampleCount, RHI::GPUResourceState initialState) {
