@@ -2174,6 +2174,7 @@ bool D3D12Renderer::IsTypelessFormat(DXGI_FORMAT format) {
         format == DXGI_FORMAT_R8G8B8A8_TYPELESS ||
         format == DXGI_FORMAT_R16G16_TYPELESS ||
         format == DXGI_FORMAT_R32_TYPELESS ||
+        format == DXGI_FORMAT_R24G8_TYPELESS ||
         format == DXGI_FORMAT_R24_UNORM_X8_TYPELESS ||
         format == DXGI_FORMAT_X24_TYPELESS_G8_UINT ||
         format == DXGI_FORMAT_R8G8_TYPELESS ||

@@ -528,13 +528,20 @@ bool RenderCamera::CreateRenderTextures(uint32_t width, uint32_t height, RHI::Fo
 
     SharedPtr<BE1::Image> depthStencilImage = MakeShared<BE1::Image>();
     depthStencilImage->InitFromMemory(width, height, 1, 1, 1, depthImageFormat, BE1::Image::GammaSpace::Linear, nullptr, BE1::Image::Flag::None);
-    depthTexture = RHI::renderer->CreateTexture(RHI::TextureType::Texture2D, RHI::TextureFlag::DepthStencil, depthStencilImage, false, depthStencilOptimizedClearValue, sampleCount, RHI::GPUResourceState::DepthWrite);
+    depthTexture = RHI::renderer->CreateTexture(RHI::TextureType::Texture2D, RHI::TextureFlag::DepthStencil | RHI::TextureFlag::ShaderResource | RHI::TextureFlag::Typeless, depthStencilImage, false, depthStencilOptimizedClearValue, sampleCount, RHI::GPUResourceState::ShaderResource);
     if (!depthTexture) {
         BE_WARNLOG("RenderCamera::CreateRenderTextures: failed to create depth texture\n");
         DestroyRenderTextures();
         return false;
     }
     RHI::renderer->SetName(depthTexture, "RenderCamera::depthTexture");
+
+    if (!RHI::renderer->CreateView(depthTexture, RHI::ViewType::SRV).IsValid() ||
+        !RHI::renderer->CreateView(depthTexture, RHI::ViewType::DSV).IsValid()) {
+        BE_WARNLOG("RenderCamera::CreateRenderTextures: failed to create depth texture views\n");
+        DestroyRenderTextures();
+        return false;
+    }
 
     renderWidth = width;
     renderHeight = height;

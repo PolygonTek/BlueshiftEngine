@@ -149,6 +149,22 @@ static uint32_t GetImGuiSrvDescriptorBindlessIndex(D3D12_CPU_DESCRIPTOR_HANDLE c
     return it != imguiSrvDescriptorMap.end() ? it->second.bindlessIndex : D3D12BindlessDescriptorAllocator::NullIndex;
 }
 
+static void RestoreImGuiTextureIDsForBackendShutdown() {
+    ImGuiPlatformIO &platformIO = ImGui::GetPlatformIO();
+    for (ImTextureData *textureData : platformIO.Textures) {
+        if (!textureData || !textureData->BackendUserData) {
+            continue;
+        }
+
+        const ImGuiD3D12Texture *backendTexture = static_cast<const ImGuiD3D12Texture *>(textureData->BackendUserData);
+        if (GetImGuiSrvDescriptorBindlessIndex(backendTexture->srvCpuDescriptorHandle) == D3D12BindlessDescriptorAllocator::NullIndex) {
+            continue;
+        }
+
+        textureData->SetTexID((ImTextureID)backendTexture->srvGpuDescriptorHandle.ptr);
+    }
+}
+
 bool D3D12ImGuiRenderer::Init() {
     initialized = true;
     return true;
@@ -668,6 +684,7 @@ void D3D12ImGuiRenderer::ShutdownOverlay(D3D12ImGuiOverlay *overlay) {
         return;
     }
 
+    RestoreImGuiTextureIDsForBackendShutdown();
     ImGui_ImplDX12_Shutdown();
 
     const int leakedDescriptorCount = FreeRemainingImGuiSrvDescriptors(overlay);

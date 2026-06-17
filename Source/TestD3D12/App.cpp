@@ -532,8 +532,8 @@ void App::BuildImGuiStatsPlotWindow() {
 }
 
 struct ImGuiTextureViewerEntry {
-    char                        label[64] = {};
-    const RHI::Texture *        texture = nullptr;
+    char                    label[64] = {};
+    const RHI::Texture *    texture = nullptr;
 };
 
 static void AddImGuiTextureViewerEntry(ImGuiTextureViewerEntry *entries, int maxEntries, int &entryCount, const char *label, const RHI::Texture *texture) {
@@ -602,12 +602,13 @@ void App::BuildImGuiTextureViewer() {
     static int selectedTextureIndex = 0;
     static int selectedViewIndex = 0;
 
-    constexpr int MaxTextureViewerEntries = 4;
+    constexpr int MaxTextureViewerEntries = 5;
     ImGuiTextureViewerEntry entries[MaxTextureViewerEntries];
     int entryCount = 0;
 
     if (renderCamera) {
-        AddImGuiTextureViewerEntry(entries, MaxTextureViewerEntries, entryCount, "Render Color", renderCamera->GetColorTexture());
+        AddImGuiTextureViewerEntry(entries, MaxTextureViewerEntries, entryCount, "Color", renderCamera->GetColorTexture());
+        AddImGuiTextureViewerEntry(entries, MaxTextureViewerEntries, entryCount, "Depth", renderCamera->GetDepthTexture());
         AddImGuiTextureViewerEntry(entries, MaxTextureViewerEntries, entryCount, "Post Process Color", renderCamera->GetPostProcessColorTexture());
         AddImGuiTextureViewerEntry(entries, MaxTextureViewerEntries, entryCount, "Bloom Down", renderCamera->GetBloomDownTexture());
         AddImGuiTextureViewerEntry(entries, MaxTextureViewerEntries, entryCount, "Bloom Up", renderCamera->GetBloomUpTexture());

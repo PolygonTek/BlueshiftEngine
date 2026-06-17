@@ -382,6 +382,8 @@ const void *RenderBackend::ExecuteDrawCamera(const void *data) {
         }
         RHI::RenderPassImage::LoadAction depthLoadAction = BE1::HasFlag(clearFlags, RHI::ClearFlag::Depth) ? RHI::RenderPassImage::LoadAction::Clear : RHI::RenderPassImage::LoadAction::Load;
         RHI::ClearValue clearColorValue = RHI::ClearValue::Color(clearColor[0], clearColor[1], clearColor[2], clearColor[3]);
+        RHI::RenderPassImage depthImage = RHI::RenderPassImage::DepthStencil(currentVisCamera->depthTexture, RHI::ViewID::PrimaryID, depthLoadAction, RHI::RenderPassImage::StoreAction::Store,
+            RHI::GPUResourceState::ShaderResource, RHI::GPUResourceState::DepthWrite, RHI::GPUResourceState::ShaderResource);
 
         if (currentVisCamera->colorMSAATexture) {
             RHI::RenderPassImage colorImage = RHI::RenderPassImage::Color(currentVisCamera->colorMSAATexture, RHI::ViewID::PrimaryID, colorLoadAction);
@@ -391,7 +393,7 @@ const void *RenderBackend::ExecuteDrawCamera(const void *data) {
 
             RHI::RenderPassImage renderPassImages[] = {
                 colorImage,
-                RHI::RenderPassImage::DepthStencil(currentVisCamera->depthTexture, RHI::ViewID::PrimaryID, depthLoadAction),
+                depthImage,
                 RHI::RenderPassImage::ResolveColor(currentVisCamera->colorTexture, RHI::ViewID::PrimaryID, 0)
             };
             RHI::renderer->BeginRenderPass(mainCommandList, renderPassImages, COUNT_OF(renderPassImages));
@@ -403,7 +405,7 @@ const void *RenderBackend::ExecuteDrawCamera(const void *data) {
 
             RHI::RenderPassImage renderPassImages[] = {
                 colorImage,
-                RHI::RenderPassImage::DepthStencil(currentVisCamera->depthTexture, RHI::ViewID::PrimaryID, depthLoadAction)
+                depthImage
             };
             RHI::renderer->BeginRenderPass(mainCommandList, renderPassImages, COUNT_OF(renderPassImages));
         }
