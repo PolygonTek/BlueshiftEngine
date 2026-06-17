@@ -14,6 +14,9 @@
 
 #include "Precompiled.h"
 #include "RenderCamera.h"
+#include "RenderCvars.h"
+#include "RHI.h"
+#include "Shaders/ShaderInterop.h"
 
 static void SetViewMatrix(const BE1::Mat3 &viewAxis, const BE1::Vec3 &viewOrigin, float *rowMajor4x4ViewMatrix) {
     // left axis
@@ -93,8 +96,8 @@ void RenderCamera::TransformNDCToPixel(const BE1::Vec3 &normalizedDeviceCoords, 
     float fy = 1.0f - (normalizedDeviceCoords.y + 1.0f) * 0.5f; // Valid range is [0, 1]
     float fz = (normalizedDeviceCoords.z + 1.0f) * 0.5f; // Valid range is [0, 1]
 
-    pixelCoords.x = fx * (desc.renderRect.x + desc.renderRect.w);
-    pixelCoords.y = fy * (desc.renderRect.y + desc.renderRect.h);
+    pixelCoords.x = desc.outputRect.x + fx * desc.outputRect.w;
+    pixelCoords.y = desc.outputRect.y + fy * desc.outputRect.h;
     pixelCoords.z = fz; // depth value
 }
 
@@ -109,8 +112,8 @@ bool RenderCamera::TransformWorldToPixel(const BE1::Vec3 &worldPosition, BE1::Ve
 }
 
 void RenderCamera::UntransformPixelToNDC(const BE1::Vec3 &pixelCoords, BE1::Vec3 &normalizedDeviceCoords) const {
-    float fx = pixelCoords.x / (desc.renderRect.x + desc.renderRect.w);
-    float fy = 1.0f - pixelCoords.y / (desc.renderRect.y + desc.renderRect.h);
+    float fx = (pixelCoords.x - desc.outputRect.x) / desc.outputRect.w;
+    float fy = 1.0f - (pixelCoords.y - desc.outputRect.y) / desc.outputRect.h;
     float fz = pixelCoords.z; // depth value
 
     normalizedDeviceCoords.x = (fx * 2.0f) - 1.0f;
@@ -150,7 +153,7 @@ bool RenderCamera::CalcClipRectFromSphere(const BE1::Sphere &sphere, BE1::Rect &
 
     // in case camera in in sphere.
     if (desc.origin.DistanceSqr(sphere.center) < r2) {
-        clipRect = desc.renderRect;
+        clipRect = desc.outputRect;
         return true;
     }
 
@@ -172,8 +175,8 @@ bool RenderCamera::CalcClipRectFromSphere(const BE1::Sphere &sphere, BE1::Rect &
     float d = r2 * y2 - (y2 + x2) * (r2 - x2);
 
     if (d <= 0.001f) {
-        xmin = desc.renderRect.x;
-        xmax = desc.renderRect.x + desc.renderRect.w;
+        xmin = desc.outputRect.x;
+        xmax = desc.outputRect.x + desc.outputRect.w;
     } else {
         d = BE1::Math::Sqrt(d);
 
@@ -204,21 +207,21 @@ bool RenderCamera::CalcClipRectFromSphere(const BE1::Sphere &sphere, BE1::Rect &
         if (pz1 < 0) {
             x = planeNormal1.y / (planeNormal1.x * e);
             BE1::Clamp(x, -1.0f, 1.0f);
-            int vx = desc.renderRect.x + (x + 1.0f) * desc.renderRect.w * 0.5f;
+            int vx = desc.outputRect.x + (x + 1.0f) * desc.outputRect.w * 0.5f;
 
-            xmin = BE1::Max(desc.renderRect.x, vx);
+            xmin = BE1::Max(desc.outputRect.x, vx);
         } else {
-            xmin = desc.renderRect.x;
+            xmin = desc.outputRect.x;
         }
 
         if (pz2 < 0) {
             x = planeNormal2.y / (planeNormal2.x * e);
             BE1::Clamp(x, -1.0f, 1.0f);
-            int vx = desc.renderRect.x + (x + 1.0f) * desc.renderRect.w * 0.5f;
+            int vx = desc.outputRect.x + (x + 1.0f) * desc.outputRect.w * 0.5f;
 
-            xmax = BE1::Min(desc.renderRect.x + desc.renderRect.w, vx);
+            xmax = BE1::Min(desc.outputRect.x + desc.outputRect.w, vx);
         } else {
-            xmax = desc.renderRect.x + desc.renderRect.w;
+            xmax = desc.outputRect.x + desc.outputRect.w;
         }
 
         if (xmax - xmin <= 0) {
@@ -236,8 +239,8 @@ bool RenderCamera::CalcClipRectFromSphere(const BE1::Sphere &sphere, BE1::Rect &
     d = r2 * z2 - (z2 + x2) * (r2 - x2);
 
     if (d <= 0.001f) {
-        ymin = desc.renderRect.y;
-        ymax = desc.renderRect.y + desc.renderRect.h;
+        ymin = desc.outputRect.y;
+        ymax = desc.outputRect.y + desc.outputRect.h;
     } else {
         d = BE1::Math::Sqrt(d);
 
@@ -268,21 +271,21 @@ bool RenderCamera::CalcClipRectFromSphere(const BE1::Sphere &sphere, BE1::Rect &
         if (pz1 < 0) {
             y = planeNormal1.x / (planeNormal1.z * e);
             BE1::Clamp(y, -1.0f, 1.0f);
-            int vy = desc.renderRect.y + (1.0f - y) * desc.renderRect.h * 0.5f;
+            int vy = desc.outputRect.y + (1.0f - y) * desc.outputRect.h * 0.5f;
 
-            ymin = BE1::Max(desc.renderRect.y, vy);
+            ymin = BE1::Max(desc.outputRect.y, vy);
         } else {
-            ymin = desc.renderRect.y;
+            ymin = desc.outputRect.y;
         }
 
         if (pz2 < 0) {
             y = planeNormal2.x / (planeNormal2.z * e);
             BE1::Clamp(y, -1.0f, 1.0f);
-            int vy = desc.renderRect.y + (1.0f - y) * desc.renderRect.h * 0.5f;
+            int vy = desc.outputRect.y + (1.0f - y) * desc.outputRect.h * 0.5f;
 
-            ymax = BE1::Min(desc.renderRect.y + desc.renderRect.h, vy);
+            ymax = BE1::Min(desc.outputRect.y + desc.outputRect.h, vy);
         } else {
-            ymax = desc.renderRect.y + desc.renderRect.h;
+            ymax = desc.outputRect.y + desc.outputRect.h;
         }
 
         if (ymax - ymin <= 0) {
@@ -323,10 +326,10 @@ bool RenderCamera::CalcClipRectFromOBB(const BE1::OBB &obb, BE1::Rect &clipRect)
         return false;
     }
 
-    clipRect.x = desc.renderRect.x + (-bounds[1][1] + 1) * desc.renderRect.w * 0.5f;
-    clipRect.y = desc.renderRect.y + (-bounds[1][2] + 1) * desc.renderRect.h * 0.5f;
-    clipRect.w = desc.renderRect.w * 0.5f * (bounds[1][1] - bounds[0][1]);
-    clipRect.h = desc.renderRect.h * 0.5f * (bounds[1][2] - bounds[0][2]);
+    clipRect.x = desc.outputRect.x + (-bounds[1][1] + 1) * desc.outputRect.w * 0.5f;
+    clipRect.y = desc.outputRect.y + (-bounds[1][2] + 1) * desc.outputRect.h * 0.5f;
+    clipRect.w = desc.outputRect.w * 0.5f * (bounds[1][1] - bounds[0][1]);
+    clipRect.h = desc.outputRect.h * 0.5f * (bounds[1][2] - bounds[0][2]);
 
     return true;
 }
@@ -353,10 +356,10 @@ bool RenderCamera::CalcClipRectFromFrustum(const BE1::Frustum &frustum, BE1::Rec
         return false;
     }
 
-    clipRect.x = desc.renderRect.x + (-bounds[1][1] + 1) * desc.renderRect.w * 0.5f;
-    clipRect.y = desc.renderRect.y + (-bounds[1][2] + 1) * desc.renderRect.h * 0.5f;
-    clipRect.w = desc.renderRect.w * 0.5f * (bounds[1][1] - bounds[0][1]);
-    clipRect.h = desc.renderRect.h * 0.5f * (bounds[1][2] - bounds[0][2]);
+    clipRect.x = desc.outputRect.x + (-bounds[1][1] + 1) * desc.outputRect.w * 0.5f;
+    clipRect.y = desc.outputRect.y + (-bounds[1][2] + 1) * desc.outputRect.h * 0.5f;
+    clipRect.w = desc.outputRect.w * 0.5f * (bounds[1][1] - bounds[0][1]);
+    clipRect.h = desc.outputRect.h * 0.5f * (bounds[1][2] - bounds[0][2]);
 
     return true;
 }
@@ -421,4 +424,313 @@ void RenderCamera::CalculateFov(float fromFovX, float fromAspectRatio, float toA
 
     *toFovX = RAD2DEG(BE1::Math::ATan(tanFovY * toAspectRatio) * 2.0f);
     *toFovY = RAD2DEG(BE1::Math::ATan(tanFovY) * 2.0f);
+}
+
+void RenderCamera::EnsureRenderTextures(uint32_t width, uint32_t height, RHI::Format colorFormat, RHI::Format depthFormat, uint32_t sampleCount, const BE1::Color4 &optimizedClearColor) {
+    sampleCount = BE1::Max(sampleCount, 1u);
+
+    if (colorTexture &&
+        depthTexture &&
+        renderWidth == width &&
+        renderHeight == height &&
+        renderColorFormat == colorFormat &&
+        renderDepthFormat == depthFormat &&
+        renderSampleCount == sampleCount) {
+        return;
+    }
+
+    DestroyPostProcessColorTexture();
+    DestroyPyramidBloomTextures();
+
+    if (!CreateRenderTextures(width, height, colorFormat, depthFormat, sampleCount, optimizedClearColor)) {
+        DestroyRenderTextures();
+        return;
+    }
+}
+
+void RenderCamera::EnsurePostProcessResources() {
+    if (BE1::HasFlag(desc.flags, RenderCameraFlag::SkipPostProcess) || r_skipPostProcess.GetBool() || !r_toneMapping.GetBool() || renderWidth == 0 || renderHeight == 0) {
+        DestroyPostProcessResources();
+        return;
+    }
+
+    if (!postProcessColorTexture && !CreatePostProcessColorTexture(renderWidth, renderHeight)) {
+        DestroyPostProcessResources();
+        return;
+    }
+
+    const RenderBloomMode bloomMode = static_cast<RenderBloomMode>(BE1::Clamp(r_bloom.GetInteger(), static_cast<int>(RenderBloomMode::Off), static_cast<int>(RenderBloomMode::FFTConvolution)));
+    if (bloomMode == RenderBloomMode::Pyramid) {
+        const uint32_t requestedBloomMipMaxLevelCount = static_cast<uint32_t>(BE1::Clamp(r_bloomMipCount.GetInteger(), 1, RenderBloomMaxLevelCount));
+        const bool hasReusablePyramidBloomTextures = bloomDownTexture &&
+            bloomUpTexture &&
+            bloomMipCount > 0 &&
+            bloomMipMaxLevelCount == requestedBloomMipMaxLevelCount;
+
+        if (!hasReusablePyramidBloomTextures) {
+            if (!CreatePyramidBloomTextures(renderWidth, renderHeight, requestedBloomMipMaxLevelCount)) {
+                DestroyPyramidBloomTextures();
+            }
+        }
+    } else {
+        DestroyPyramidBloomTextures();
+    }
+
+    if (!luminanceBuffer) {
+        // Tonemapping 에 사용할 Luminance 버퍼 생성
+        CreateLuminanceBuffer();
+    }
+}
+
+void RenderCamera::DestroyPostProcessResources() {
+    DestroyLuminanceBuffer();
+    DestroyPostProcessColorTexture();
+    DestroyPyramidBloomTextures();
+}
+
+bool RenderCamera::CreateRenderTextures(uint32_t width, uint32_t height, RHI::Format colorFormat, RHI::Format depthFormat, uint32_t sampleCount, const BE1::Color4 &optimizedClearColor) {
+    DestroyRenderTextures();
+
+    if (width == 0 || height == 0) {
+        return false;
+    }
+
+    sampleCount = BE1::Max(sampleCount, 1u);
+
+    BE1::Image::Format colorImageFormat = BE1::Image::Format::Unknown;
+    RHI::Renderer::RHIFormatToImageFormat(colorFormat, &colorImageFormat, nullptr);
+
+    const RHI::ClearValue colorOptimizedClearValue = RHI::ClearValue::Color(optimizedClearColor[0], optimizedClearColor[1], optimizedClearColor[2], optimizedClearColor[3]);
+
+    SharedPtr<BE1::Image> colorImage = MakeShared<BE1::Image>();
+    colorImage->InitFromMemory(width, height, 1, 1, 1, colorImageFormat, BE1::Image::GammaSpace::Linear, nullptr, BE1::Image::Flag::None);
+    colorTexture = RHI::renderer->CreateTexture(RHI::TextureType::Texture2D, RHI::TextureFlag::RenderTarget | RHI::TextureFlag::ShaderResource | RHI::TextureFlag::UnorderedAccess, colorImage, false, colorOptimizedClearValue, 1, RHI::GPUResourceState::ShaderResource);
+    if (!colorTexture) {
+        BE_WARNLOG("RenderCamera::CreateRenderTextures: failed to create color texture\n");
+        return false;
+    }
+    RHI::renderer->SetName(colorTexture, "RenderCamera::colorTexture");
+
+    if (sampleCount > 1) {
+        colorMSAATexture = RHI::renderer->CreateTexture(RHI::TextureType::Texture2D, RHI::TextureFlag::RenderTarget | RHI::TextureFlag::ShaderResource, colorImage, false, colorOptimizedClearValue, sampleCount, RHI::GPUResourceState::ShaderResource);
+        if (!colorMSAATexture) {
+            BE_WARNLOG("RenderCamera::CreateRenderTextures: failed to create MSAA color texture\n");
+            DestroyRenderTextures();
+            return false;
+        }
+        RHI::renderer->SetName(colorMSAATexture, "RenderCamera::colorMSAATexture");
+    }
+
+    BE1::Image::Format depthImageFormat = BE1::Image::Format::Unknown;
+    RHI::Renderer::RHIFormatToImageFormat(depthFormat, &depthImageFormat, nullptr);
+
+    const RHI::ClearValue depthStencilOptimizedClearValue = RHI::ClearValue::DepthStencil(1.0f, 0);
+
+    SharedPtr<BE1::Image> depthStencilImage = MakeShared<BE1::Image>();
+    depthStencilImage->InitFromMemory(width, height, 1, 1, 1, depthImageFormat, BE1::Image::GammaSpace::Linear, nullptr, BE1::Image::Flag::None);
+    depthTexture = RHI::renderer->CreateTexture(RHI::TextureType::Texture2D, RHI::TextureFlag::DepthStencil, depthStencilImage, false, depthStencilOptimizedClearValue, sampleCount, RHI::GPUResourceState::DepthWrite);
+    if (!depthTexture) {
+        BE_WARNLOG("RenderCamera::CreateRenderTextures: failed to create depth texture\n");
+        DestroyRenderTextures();
+        return false;
+    }
+    RHI::renderer->SetName(depthTexture, "RenderCamera::depthTexture");
+
+    renderWidth = width;
+    renderHeight = height;
+    renderColorFormat = colorFormat;
+    renderDepthFormat = depthFormat;
+    renderSampleCount = sampleCount;
+
+    return true;
+}
+
+void RenderCamera::DestroyRenderTextures() {
+    if (colorTexture) {
+        RHI::renderer->DestroyTexture(colorTexture);
+        colorTexture = nullptr;
+    }
+    if (colorMSAATexture) {
+        RHI::renderer->DestroyTexture(colorMSAATexture);
+        colorMSAATexture = nullptr;
+    }
+    if (depthTexture) {
+        RHI::renderer->DestroyTexture(depthTexture);
+        depthTexture = nullptr;
+    }
+
+    renderWidth = 0;
+    renderHeight = 0;
+    renderColorFormat = RHI::Format::Unknown;
+    renderDepthFormat = RHI::Format::Unknown;
+    renderSampleCount = 1;
+}
+
+bool RenderCamera::CreatePostProcessColorTexture(uint32_t width, uint32_t height) {
+    DestroyPostProcessColorTexture();
+
+    if (width == 0 || height == 0) {
+        return false;
+    }
+
+    BE1::Image::Format postProcessColorImageFormat = BE1::Image::Format::Unknown;
+    RHI::Renderer::RHIFormatToImageFormat(RHI::Format::R8G8B8A8_UNORM, &postProcessColorImageFormat, nullptr);
+
+    SharedPtr<BE1::Image> postProcessColorImage = MakeShared<BE1::Image>();
+    postProcessColorImage->InitFromMemory(width, height, 1, 1, 1, postProcessColorImageFormat, BE1::Image::GammaSpace::Linear, nullptr, BE1::Image::Flag::None);
+    postProcessColorTexture = RHI::renderer->CreateTexture(RHI::TextureType::Texture2D, RHI::TextureFlag::ShaderResource | RHI::TextureFlag::UnorderedAccess, postProcessColorImage, false, {}, 1, RHI::GPUResourceState::ShaderResource);
+    if (!postProcessColorTexture) {
+        BE_WARNLOG("RenderCamera::CreatePostProcessColorTexture: failed to create post process color texture\n");
+        return false;
+    }
+
+    RHI::renderer->SetName(postProcessColorTexture, "RenderCamera::postProcessColorTexture");
+    return true;
+}
+
+void RenderCamera::DestroyPostProcessColorTexture() {
+    if (postProcessColorTexture) {
+        RHI::renderer->DestroyTexture(postProcessColorTexture);
+        postProcessColorTexture = nullptr;
+    }
+}
+
+bool RenderCamera::CreatePyramidBloomTextures(uint32_t width, uint32_t height, uint32_t requestedBloomMipMaxLevelCount) {
+    DestroyPyramidBloomTextures();
+
+    if (width == 0 || height == 0) {
+        return false;
+    }
+
+    const BE1::Image::Format bloomImageFormat = RHI::renderer->ToUAVImageFormat(BE1::Image::Format::R11G11B10_FLOAT);
+    const RHI::TextureFlag bloomTextureFlags = RHI::TextureFlag::ShaderResource | RHI::TextureFlag::UnorderedAccess | RHI::TextureFlag::SkipDefaultViews;
+
+    // bloom texture 의 mip 0 는 카메라 렌더 타겟의 절반 크기로 시작
+    uint32_t bloomWidth = width > 1 ? width >> 1 : 1;
+    uint32_t bloomHeight = height > 1 ? height >> 1 : 1;
+    uint32_t levelCount = 0;
+
+    // 1x1 이 될 때까지 몇 개의 bloom mip 이 필요한지 계산한다. (최대 RenderBloomMaxLevelCount = 8)
+    while (levelCount < requestedBloomMipMaxLevelCount) {
+        bloomMipWidths[levelCount] = bloomWidth;
+        bloomMipHeights[levelCount] = bloomHeight;
+        levelCount++;
+
+        if (bloomWidth == 1 && bloomHeight == 1) {
+            break;
+        }
+
+        bloomWidth = bloomWidth > 1 ? bloomWidth >> 1 : 1;
+        bloomHeight = bloomHeight > 1 ? bloomHeight >> 1 : 1;
+    }
+
+    SharedPtr<BE1::Image> image = MakeShared<BE1::Image>();
+    image->InitFromMemory(bloomMipWidths[0], bloomMipHeights[0], 1, 1, levelCount, bloomImageFormat, BE1::Image::GammaSpace::Linear, nullptr, BE1::Image::Flag::None);
+
+    bloomDownTexture = RHI::renderer->CreateTexture(RHI::TextureType::Texture2D, bloomTextureFlags, image, false, {}, 1, RHI::GPUResourceState::ShaderResource);
+    if (!bloomDownTexture) {
+        BE_WARNLOG("RenderCamera::CreatePyramidBloomTextures: failed to create bloom down texture\n");
+        return false;
+    }
+    RHI::renderer->SetName(bloomDownTexture, "RenderCamera::bloomDownTexture");
+
+    bloomUpTexture = RHI::renderer->CreateTexture(RHI::TextureType::Texture2D, bloomTextureFlags, image, false, {}, 1, RHI::GPUResourceState::ShaderResource);
+    if (!bloomUpTexture) {
+        BE_WARNLOG("RenderCamera::CreatePyramidBloomTextures: failed to create bloom up texture\n");
+        DestroyPyramidBloomTextures();
+        return false;
+    }
+    RHI::renderer->SetName(bloomUpTexture, "RenderCamera::bloomUpTexture");
+
+    auto createBloomMipViews = [](RHI::Texture *texture, RHI::ViewID *srvViewIDs, RHI::ViewID *uavViewIDs, uint32_t levelCount, const char *debugName) -> bool {
+        for (uint32_t mipLevel = 0; mipLevel < levelCount; ++mipLevel) {
+            srvViewIDs[mipLevel] = RHI::renderer->CreateView(texture, RHI::ViewType::SRV, RHI::Format::Auto, 0, texture->GetArraySize(), mipLevel, 1);
+            if (!srvViewIDs[mipLevel].IsValid()) {
+                BE_WARNLOG("RenderCamera::CreatePyramidBloomTextures: failed to create %s mip %i SRV\n", debugName, mipLevel);
+                return false;
+            }
+
+            uavViewIDs[mipLevel] = RHI::renderer->CreateView(texture, RHI::ViewType::UAV, RHI::Format::Auto, 0, texture->GetArraySize(), mipLevel, 1);
+            if (!uavViewIDs[mipLevel].IsValid()) {
+                BE_WARNLOG("RenderCamera::CreatePyramidBloomTextures: failed to create %s mip %i UAV\n", debugName, mipLevel);
+                return false;
+            }
+        }
+
+        return true;
+    };
+
+    if (!createBloomMipViews(bloomDownTexture, bloomDownMipSRVs, bloomDownMipUAVs, levelCount, "bloomDownTexture") ||
+        !createBloomMipViews(bloomUpTexture, bloomUpMipSRVs, bloomUpMipUAVs, levelCount, "bloomUpTexture")) {
+        DestroyPyramidBloomTextures();
+        return false;
+    }
+
+    bloomMipCount = levelCount;
+    bloomMipMaxLevelCount = requestedBloomMipMaxLevelCount;
+
+    return true;
+}
+
+void RenderCamera::DestroyPyramidBloomTextures() {
+    if (bloomDownTexture) {
+        RHI::renderer->DestroyTexture(bloomDownTexture);
+        bloomDownTexture = nullptr;
+    }
+    if (bloomUpTexture) {
+        RHI::renderer->DestroyTexture(bloomUpTexture);
+        bloomUpTexture = nullptr;
+    }
+
+    for (uint32_t mipLevel = 0; mipLevel < RenderBloomMaxLevelCount; ++mipLevel) {
+        bloomDownMipSRVs[mipLevel] = RHI::ViewID::InvalidID;
+        bloomDownMipUAVs[mipLevel] = RHI::ViewID::InvalidID;
+        bloomUpMipSRVs[mipLevel] = RHI::ViewID::InvalidID;
+        bloomUpMipUAVs[mipLevel] = RHI::ViewID::InvalidID;
+        bloomMipWidths[mipLevel] = 0;
+        bloomMipHeights[mipLevel] = 0;
+    }
+
+    bloomMipCount = 0;
+    bloomMipMaxLevelCount = 0;
+}
+
+void RenderCamera::CreateLuminanceBuffer() {
+    DestroyLuminanceBuffer();
+
+    // Luminance buffer : exposure (float) + luminance (float) + histogram (uint32_t * 1024)
+    static constexpr uint32_t LuminanceBufferSize = LuminanceBufferOffsetHistogram + LuminanceHistogramBinCount * sizeof(uint32_t);
+    static constexpr uint32_t LuminanceBufferDwordCount = LuminanceBufferSize / sizeof(uint32_t);
+    const uint32_t initialLuminanceBufferData[LuminanceBufferDwordCount] = {};
+
+    luminanceBuffer = RHI::renderer->CreateBuffer(RHI::BufferUsage::Default, RHI::BufferFlag::ShaderResource | RHI::BufferFlag::UnorderedAccess, LuminanceBufferSize, initialLuminanceBufferData);
+    if (!luminanceBuffer) {
+        BE_WARNLOG("RenderCamera::CreateLuminanceBuffer: failed to create luminance buffer\n");
+        return;
+    }
+
+    RHI::renderer->SetName(luminanceBuffer, "RenderCamera::luminanceBuffer");
+
+    RHI::ViewID srvViewID = RHI::renderer->CreateView(luminanceBuffer, RHI::ViewType::SRV, RHI::Format::Unknown, 0, 0, LuminanceBufferSize);
+    if (!srvViewID.IsValid()) {
+        BE_WARNLOG("RenderCamera::CreateLuminanceBuffer: failed to create luminance SRV\n");
+        RHI::renderer->DestroyBuffer(luminanceBuffer);
+        luminanceBuffer = nullptr;
+        return;
+    }
+
+    RHI::ViewID uavViewID = RHI::renderer->CreateView(luminanceBuffer, RHI::ViewType::UAV, RHI::Format::Unknown, 0, 0, LuminanceBufferSize);
+    if (!uavViewID.IsValid()) {
+        BE_WARNLOG("RenderCamera::CreateLuminanceBuffer: failed to create luminance UAV\n");
+        RHI::renderer->DestroyBuffer(luminanceBuffer);
+        luminanceBuffer = nullptr;
+        return;
+    }
+}
+
+void RenderCamera::DestroyLuminanceBuffer() {
+    if (luminanceBuffer) {
+        RHI::renderer->DestroyBuffer(luminanceBuffer);
+        luminanceBuffer = nullptr;
+    }
 }

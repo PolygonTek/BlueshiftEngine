@@ -128,7 +128,7 @@ static uint64_t BuildMainOpaqueSortKey(const VisSurf *visSurf, RHI::PipelineStat
     return (psoIndex << 32) | (subMeshIndex << 16) | shaderMaterialIndex;
 }
 
-static uint64_t BuildMainBlendSortKey(const VisSurf *visSurf, const VisCamera *visCamera) {
+static uint64_t BuildMainTransparentSortKey(const VisSurf *visSurf, const VisCamera *visCamera) {
     const BE1::Vec3 localCenter = visSurf->subMesh->GetAABB().Center();
     const BE1::Vec3 worldCenter = visSurf->space->worldMatrix.TransformPos(localCenter);
     const BE1::Vec3 viewCenter = visCamera->viewMatrix.TransformPos(worldCenter);
@@ -153,7 +153,7 @@ void RenderPassBuilder::BuildMain(RenderFrameData *frameData, VisCamera *visCame
     RenderContext::activeContext->GetMainRenderDest(skyboxPass->pipelineDesc.renderDest);
     skyboxPass->pipelineDesc.depthStencilStateType = RHI::DepthStencilStateType::ReadOnly;
 
-    RenderPass *blendPass = AllocRenderPass(frameData, visCamera, RenderPassType::MainBlend, {}, VertexInputLayoutId::XyzStColorNormalTangent, visCamera->numVisSurfs);
+    RenderPass *blendPass = AllocRenderPass(frameData, visCamera, RenderPassType::MainTransparent, {}, VertexInputLayoutId::XyzStColorNormalTangent, visCamera->numVisSurfs);
     RenderContext::activeContext->GetMainRenderDest(blendPass->pipelineDesc.renderDest);
 
     skyboxPipelineResolver.Begin(skyboxPass->pipelineDesc, skyboxPass->maxDrawSurfs);
@@ -177,7 +177,7 @@ void RenderPassBuilder::BuildMain(RenderFrameData *frameData, VisCamera *visCame
         ShaderFeatureSet featureSet = visSurf->baseFeatureSet | pass->passFeatureSet;
         const PassPipelineResolver::ResolveResult resolveResult = pipelineResolver.Resolve(pass, visSurf, featureSet);
 
-        AddPassDrawSurf(frameData, pass, visSurf, isBlend ? BuildMainBlendSortKey(visSurf, visCamera) : BuildMainOpaqueSortKey(visSurf, resolveResult.pso), resolveResult.inputLayoutId, resolveResult.pso);
+        AddPassDrawSurf(frameData, pass, visSurf, isBlend ? BuildMainTransparentSortKey(visSurf, visCamera) : BuildMainOpaqueSortKey(visSurf, resolveResult.pso), resolveResult.inputLayoutId, resolveResult.pso);
     }
 
     SortPassDrawSurfs(frameData, opaquePass);

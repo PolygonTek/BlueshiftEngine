@@ -272,7 +272,6 @@ const void *RenderBackend::ExecuteBeginContext(const void *data) {
     currentBloomPrefilterPSO = cmd->bloomPrefilterPSO;
     currentBloomDownsamplePSO = cmd->bloomDownsamplePSO;
     currentBloomUpsamplePSO = cmd->bloomUpsamplePSO;
-    currentFFTBloomPrefilterPSO = cmd->fftBloomPrefilterPSO;
 
     statDrawCount = 0;
     statDrawTriangleCount = 0;
@@ -335,9 +334,24 @@ const void *RenderBackend::ExecuteDrawCamera(const void *data) {
         return (const void *)(cmd + 1);
     }
 
+    if (!currentVisCamera->is2D &&
+        (currentVisCamera->renderWidth == 0 ||
+        currentVisCamera->renderHeight == 0 ||
+        !currentVisCamera->colorTexture ||
+        !currentVisCamera->depthTexture)) {
+        BE_WARNLOG("RenderBackend::ExecuteDrawCamera: invalid camera render target\n");
+        mainCommandList->CloseAndExecute();
+        return (const void *)(cmd + 1);
+    }
+
+    BE1::Rect viewportRect = currentVisCamera->outputRect;
+    if (!currentVisCamera->is2D) {
+        viewportRect.Set(0, 0, currentVisCamera->renderWidth, currentVisCamera->renderHeight);
+    }
+
     // 뷰포트 & ScissorRect 의 초기값 설정
-    RHI::renderer->SetViewport(mainCommandList, currentVisCamera->renderRect);
-    RHI::renderer->SetScissorRect(mainCommandList, currentVisCamera->renderRect);
+    RHI::renderer->SetViewport(mainCommandList, viewportRect);
+    RHI::renderer->SetScissorRect(mainCommandList, viewportRect);
 
     RHI::ClearFlag clearFlags = RHI::ClearFlag::None;
     BE1::Color4 clearColor = currentContext->baseClearColor;
@@ -369,27 +383,27 @@ const void *RenderBackend::ExecuteDrawCamera(const void *data) {
         RHI::RenderPassImage::LoadAction depthLoadAction = BE1::HasFlag(clearFlags, RHI::ClearFlag::Depth) ? RHI::RenderPassImage::LoadAction::Clear : RHI::RenderPassImage::LoadAction::Load;
         RHI::ClearValue clearColorValue = RHI::ClearValue::Color(clearColor[0], clearColor[1], clearColor[2], clearColor[3]);
 
-        if (currentContext->mainRTSampleCount > 1) {
-            RHI::RenderPassImage colorImage = RHI::RenderPassImage::Color(currentContext->mainRTColorMSAATexture, RHI::ViewID::PrimaryID, colorLoadAction);
+        if (currentVisCamera->colorMSAATexture) {
+            RHI::RenderPassImage colorImage = RHI::RenderPassImage::Color(currentVisCamera->colorMSAATexture, RHI::ViewID::PrimaryID, colorLoadAction);
             if (useExplicitClearColor) {
                 colorImage = colorImage.WithClearValue(clearColorValue);
             }
 
             RHI::RenderPassImage renderPassImages[] = {
                 colorImage,
-                RHI::RenderPassImage::DepthStencil(currentContext->mainRTDepthTexture, RHI::ViewID::PrimaryID, depthLoadAction),
-                RHI::RenderPassImage::ResolveColor(currentContext->mainRTColorTexture, RHI::ViewID::PrimaryID, 0)
+                RHI::RenderPassImage::DepthStencil(currentVisCamera->depthTexture, RHI::ViewID::PrimaryID, depthLoadAction),
+                RHI::RenderPassImage::ResolveColor(currentVisCamera->colorTexture, RHI::ViewID::PrimaryID, 0)
             };
             RHI::renderer->BeginRenderPass(mainCommandList, renderPassImages, COUNT_OF(renderPassImages));
         } else {
-            RHI::RenderPassImage colorImage = RHI::RenderPassImage::Color(currentContext->mainRTColorTexture, RHI::ViewID::PrimaryID, colorLoadAction);
+            RHI::RenderPassImage colorImage = RHI::RenderPassImage::Color(currentVisCamera->colorTexture, RHI::ViewID::PrimaryID, colorLoadAction);
             if (useExplicitClearColor) {
                 colorImage = colorImage.WithClearValue(clearColorValue);
             }
 
             RHI::RenderPassImage renderPassImages[] = {
                 colorImage,
-                RHI::RenderPassImage::DepthStencil(currentContext->mainRTDepthTexture, RHI::ViewID::PrimaryID, depthLoadAction)
+                RHI::RenderPassImage::DepthStencil(currentVisCamera->depthTexture, RHI::ViewID::PrimaryID, depthLoadAction)
             };
             RHI::renderer->BeginRenderPass(mainCommandList, renderPassImages, COUNT_OF(renderPassImages));
         }
@@ -408,30 +422,60 @@ const void *RenderBackend::ExecuteDrawCamera(const void *data) {
 }
 
 void RenderBackend::PostProcessAndBlitToSwapChain() {
-    const RHI::Texture *finalColorTexture = currentContext->mainRTColorTexture;
+    const RHI::Texture *finalColorTexture = currentVisCamera->colorTexture;
 
     if (!r_skipPostProcess.GetBool() && !BE1::HasFlag(currentVisCamera->flags, RenderCameraFlag::SkipPostProcess)) {
         const bool hasLuminance = DispatchLuminance();
         const bool hasBloom = hasLuminance && DispatchBloom();
 
         if (hasLuminance && DispatchToneMapping(hasBloom)) {
-            finalColorTexture = currentContext->postProcessColorTexture;
+            finalColorTexture = currentVisCamera->postProcessColorTexture;
         }
     }
 
-    BlitToSwapChain(finalColorTexture);
+    BlitRectToSwapChain(finalColorTexture, currentVisCamera->outputRect);
 }
 
-void RenderBackend::BlitToSwapChain(const RHI::Texture *texture) {
+void RenderBackend::BlitRectToSwapChain(const RHI::Texture *texture, const BE1::Rect &rect) {
     if (!texture || !currentImagePSO) {
         return;
     }
 
+    const uint32_t w = currentContext->GetWidth();
+    const uint32_t h = currentContext->GetHeight();
+    if (w == 0 || h == 0) {
+        return;
+    }
+
+    if (rect.w <= 0 || rect.h <= 0) {
+        return;
+    }
+
+    const int outputX0 = BE1::Max(rect.x, 0);
+    const int outputY0 = BE1::Max(rect.y, 0);
+    const int outputX1 = BE1::Min(rect.x + rect.w, static_cast<int>(w));
+    const int outputY1 = BE1::Min(rect.y + rect.h, static_cast<int>(h));
+    if (outputX1 <= outputX0 || outputY1 <= outputY0) {
+        return;
+    }
+
+    const uint32_t outputW = static_cast<uint32_t>(outputX1 - outputX0);
+    const uint32_t outputH = static_cast<uint32_t>(outputY1 - outputY0);
+
+    FullScreenImageParams imageParams = {};
+    imageParams.texCoordScale = float2(static_cast<float>(outputW) / rect.w, static_cast<float>(outputH) / rect.h);
+    imageParams.texCoordOffset = float2(static_cast<float>(outputX0 - rect.x) / rect.w, static_cast<float>(outputY0 - rect.y) / rect.h);
+
+    BE1::Rect outputRect(outputX0, outputY0, outputW, outputH);
+
     RHI::renderer->BeginRenderPass(mainCommandList, currentContext->swapChain, nullptr);
+    RHI::renderer->SetViewport(mainCommandList, outputRect);
+    RHI::renderer->SetScissorRect(mainCommandList, outputRect);
     RHI::renderer->SetPSO(mainCommandList, currentImagePSO);
     RHI::renderer->SetTexture(mainCommandList, 0, false, texture);
+    RHI::renderer->SetConstants(mainCommandList, 0, &imageParams, sizeof(imageParams), 0);
     RHI::renderer->Draw(mainCommandList, 3, 0);
-    //RecordDrawStats(1, 1, 0, 0);
+    RecordDrawStats(1, 1, 0, 0);
     RHI::renderer->EndRenderPass(mainCommandList);
 }
 
@@ -474,11 +518,11 @@ const void *RenderBackend::ExecuteSwapBuffers(const void *data) {
 
     const bool hasPendingImGuiOverlay = frameData->HasPendingImGuiOverlay();
     if (hasPendingImGuiOverlay) {
-        BE1::Rect renderRect(0, 0, currentContext->GetWidth(), currentContext->GetHeight());
+        BE1::Rect viewportRect(0, 0, currentContext->GetWidth(), currentContext->GetHeight());
 
         // 뷰포트 & ScissorRect 의 초기값 설정
-        RHI::renderer->SetViewport(mainCommandList, renderRect);
-        RHI::renderer->SetScissorRect(mainCommandList, renderRect);
+        RHI::renderer->SetViewport(mainCommandList, viewportRect);
+        RHI::renderer->SetScissorRect(mainCommandList, viewportRect);
 
         RHI::renderer->BeginRenderPass(mainCommandList, currentContext->swapChain, nullptr);
 
@@ -524,56 +568,67 @@ bool RenderBackend::DispatchLuminance() {
     if (!r_toneMapping.GetBool() ||
         !currentLuminancePass1PSO ||
         !currentLuminancePass2PSO ||
-        !currentContext->mainRTColorTexture ||
-        !currentContext->luminanceBuffer ||
+        !currentVisCamera->colorTexture ||
+        !currentVisCamera->luminanceBuffer ||
         !frameConstantBuffer) {
         return false;
     }
 
-    const uint32_t w = currentContext->GetWidth() / 2;
-    const uint32_t h = currentContext->GetHeight() / 2;
-    if (w == 0 || h == 0) {
+    const uint32_t inputW = currentVisCamera->renderWidth;
+    const uint32_t inputH = currentVisCamera->renderHeight;
+    if (inputW == 0 || inputH == 0) {
         return false;
     }
+
+    const uint32_t sampleW = BE1::Max(inputW / 2, 1u);
+    const uint32_t sampleH = BE1::Max(inputH / 2, 1u);
 
     const float lumLogMin = r_toneMapLuminanceLogMin.GetFloat();
     const float lumLogMax = BE1::Max(r_toneMapLuminanceLogMax.GetFloat(), lumLogMin + 0.0001f);
     const float lumLogRange = lumLogMax - lumLogMin;
 
-    PostProcessParams postProcessParams = {};
-    postProcessParams.resolution.x = w / 2;
-    postProcessParams.resolution.y = h / 2;
-    postProcessParams.resolutionRcp.x = 1.0f / postProcessParams.resolution.x;
-    postProcessParams.resolutionRcp.y = 1.0f / postProcessParams.resolution.y;
-    postProcessParams.params0 = float4(lumLogMin, 1.0f / lumLogRange, static_cast<float>(postProcessParams.resolution.x * postProcessParams.resolution.y), BE1::Max(r_toneMapLuminanceAdaptationRate.GetFloat(), 0.0f));
-    postProcessParams.params1 = float4(BE1::Max(r_toneMapMiddleGray.GetFloat(), 0.0f), lumLogRange, 0.0f, 0.0f);
+    RHI::Buffer *luminanceBuffer = currentVisCamera->luminanceBuffer;
 
-    RHI::renderer->Barrier(mainCommandList, RHI::Renderer::MakeImageBarrier(currentContext->mainRTColorTexture, RHI::GPUResourceState::ShaderResource, RHI::GPUResourceState::ShaderResourceCompute));
+    LuminancePass1Params luminancePass1Params = {};
+    luminancePass1Params.sampleSize = uint2(sampleW, sampleH);
+    luminancePass1Params.sampleSizeRcp = float2(1.0f / sampleW, 1.0f / sampleH);
+    luminancePass1Params.luminanceLogMin = lumLogMin;
+    luminancePass1Params.luminanceLogRangeRcp = 1.0f / lumLogRange;
+
+    LuminancePass2Params luminancePass2Params = {};
+    luminancePass2Params.luminanceLogMin = lumLogMin;
+    luminancePass2Params.luminanceLogRange = lumLogRange;
+    luminancePass2Params.luminancePixelCount = static_cast<float>(sampleW * sampleH);
+    luminancePass2Params.luminanceAdaptationRate = BE1::Max(r_toneMapLuminanceAdaptationRate.GetFloat(), 0.0f);
+    luminancePass2Params.middleGray = BE1::Max(r_toneMapMiddleGray.GetFloat(), 0.0f);
+
+    RHI::Texture *inputTexture = currentVisCamera->colorTexture;
+
+    RHI::renderer->Barrier(mainCommandList, RHI::Renderer::MakeImageBarrier(inputTexture, RHI::GPUResourceState::ShaderResource, RHI::GPUResourceState::ShaderResourceCompute));
 
     // Pass 1 : Log Luminance 히스토그램 계산
     RHI::renderer->SetPSO(mainCommandList, currentLuminancePass1PSO);
-    RHI::renderer->SetTexture(mainCommandList, 0, false, currentContext->mainRTColorTexture);
-    RHI::renderer->SetBuffer(mainCommandList, 0, true, currentContext->luminanceBuffer);
-    RHI::renderer->SetConstantBuffer(mainCommandList, 0, frameConstantBuffer);
-    RHI::renderer->SetConstants(mainCommandList, 1, &postProcessParams, sizeof(postProcessParams), 0);
+    RHI::renderer->SetTexture(mainCommandList, 0, false, inputTexture);
+    RHI::renderer->SetBuffer(mainCommandList, 0, true, luminanceBuffer);
+    RHI::renderer->SetConstants(mainCommandList, 1, &luminancePass1Params, sizeof(luminancePass1Params), 0);
 
-    const uint32_t threadGroupCountX = (postProcessParams.resolution.x + LuminanceBlockSize - 1) / LuminanceBlockSize;
-    const uint32_t threadGroupCountY = (postProcessParams.resolution.y + LuminanceBlockSize - 1) / LuminanceBlockSize;
+    const uint32_t threadGroupCountX = (luminancePass1Params.sampleSize.x + LuminanceBlockSize - 1) / LuminanceBlockSize;
+    const uint32_t threadGroupCountY = (luminancePass1Params.sampleSize.y + LuminanceBlockSize - 1) / LuminanceBlockSize;
     RHI::renderer->Dispatch(mainCommandList, threadGroupCountX, threadGroupCountY, 1);
 
-    RHI::renderer->Barrier(mainCommandList, RHI::Renderer::MakeMemoryBarrier(currentContext->luminanceBuffer));
+    RHI::renderer->Barrier(mainCommandList, RHI::Renderer::MakeMemoryBarrier(luminanceBuffer));
 
     // Pass 2 : 평균 Luminance 를 계산하고, 보간된 exposure 도 계산한다.
     RHI::renderer->SetPSO(mainCommandList, currentLuminancePass2PSO);
-    RHI::renderer->SetBuffer(mainCommandList, 0, true, currentContext->luminanceBuffer);
+    RHI::renderer->SetBuffer(mainCommandList, 0, true, luminanceBuffer);
     RHI::renderer->SetConstantBuffer(mainCommandList, 0, frameConstantBuffer);
-    RHI::renderer->SetConstants(mainCommandList, 1, &postProcessParams, sizeof(postProcessParams), 0);
+    RHI::renderer->SetConstants(mainCommandList, 1, &luminancePass2Params, sizeof(luminancePass2Params), 0);
 
     RHI::renderer->Dispatch(mainCommandList, 1, 1, 1);
 
     RHI::GPUBarrier endBarriers[] = {
-        RHI::Renderer::MakeMemoryBarrier(currentContext->luminanceBuffer),
-        RHI::Renderer::MakeImageBarrier(currentContext->mainRTColorTexture, RHI::GPUResourceState::ShaderResourceCompute, RHI::GPUResourceState::ShaderResource)
+        RHI::Renderer::MakeMemoryBarrier(luminanceBuffer),
+        RHI::Renderer::MakeImageBarrier(inputTexture, RHI::GPUResourceState::ShaderResourceCompute, RHI::GPUResourceState::ShaderResource)
     };
     RHI::renderer->Barrier(mainCommandList, endBarriers, COUNT_OF(endBarriers));
 
@@ -600,14 +655,18 @@ bool RenderBackend::DispatchBloomPyramid() {
     if (!currentBloomPrefilterPSO ||
         !currentBloomDownsamplePSO ||
         !currentBloomUpsamplePSO ||
-        !currentContext->mainRTColorTexture ||
-        !currentContext->bloomDownTexture ||
-        !currentContext->bloomUpTexture ||
-        currentContext->bloomMipCount < 2) {
+        !currentVisCamera->colorTexture ||
+        !currentVisCamera->bloomDownTexture ||
+        !currentVisCamera->bloomUpTexture ||
+        currentVisCamera->bloomMipCount < 2) {
         return false;
     }
 
-    RHI::renderer->Barrier(mainCommandList, RHI::Renderer::MakeImageBarrier(currentContext->mainRTColorTexture, RHI::GPUResourceState::ShaderResource, RHI::GPUResourceState::ShaderResourceCompute));
+    RHI::Texture *inputColorTexture = currentVisCamera->colorTexture;
+    RHI::Texture *bloomDownTexture = currentVisCamera->bloomDownTexture;
+    RHI::Texture *bloomUpTexture = currentVisCamera->bloomUpTexture;
+
+    RHI::renderer->Barrier(mainCommandList, RHI::Renderer::MakeImageBarrier(inputColorTexture, RHI::GPUResourceState::ShaderResource, RHI::GPUResourceState::ShaderResourceCompute));
 
     const float bloomThreshold = BE1::Max(r_bloomThreshold.GetFloat(), 0.0f);
     const float bloomSoftThreshold = BE1::Max(r_bloomSoftThreshold.GetFloat(), 0.0f);
@@ -616,8 +675,8 @@ bool RenderBackend::DispatchBloomPyramid() {
     const float bloomRadius = BE1::Max(r_bloomRadius.GetFloat(), 0.0f);
 
     auto dispatchDownsamplePass = [this](RHI::Texture *inputTexture, RHI::ViewID inputViewID, uint32_t inputWidth, uint32_t inputHeight, uint32_t outputMipLevel, float threshold, float softThreshold, float prefilterQuality, float radius) -> bool {
-        const uint32_t outputWidth = currentContext->bloomMipWidths[outputMipLevel];
-        const uint32_t outputHeight = currentContext->bloomMipHeights[outputMipLevel];
+        const uint32_t outputWidth = currentVisCamera->bloomMipWidths[outputMipLevel];
+        const uint32_t outputHeight = currentVisCamera->bloomMipHeights[outputMipLevel];
         if (inputWidth == 0 || inputHeight == 0 || outputWidth == 0 || outputHeight == 0) {
             return false;
         }
@@ -634,34 +693,34 @@ bool RenderBackend::DispatchBloomPyramid() {
             return false;
         }
 
-        RHI::renderer->Barrier(mainCommandList, RHI::Renderer::MakeImageBarrier(currentContext->bloomDownTexture, RHI::GPUResourceState::ShaderResource, RHI::GPUResourceState::UnorderedAccess, 0, outputMipLevel));
+        RHI::renderer->Barrier(mainCommandList, RHI::Renderer::MakeImageBarrier(currentVisCamera->bloomDownTexture, RHI::GPUResourceState::ShaderResource, RHI::GPUResourceState::UnorderedAccess, 0, outputMipLevel));
 
         RHI::renderer->SetTexture(mainCommandList, 0, false, inputTexture, inputViewID);
-        RHI::renderer->SetTexture(mainCommandList, 0, true, currentContext->bloomDownTexture, currentContext->bloomDownMipUAVs[outputMipLevel]);
+        RHI::renderer->SetTexture(mainCommandList, 0, true, currentVisCamera->bloomDownTexture, currentVisCamera->bloomDownMipUAVs[outputMipLevel]);
         RHI::renderer->SetConstantBuffer(mainCommandList, 0, bloomConstantBuffer);
 
         const uint32_t threadGroupCountX = (outputWidth + BloomBlockSizeX - 1) / BloomBlockSizeX;
         const uint32_t threadGroupCountY = (outputHeight + BloomBlockSizeY - 1) / BloomBlockSizeY;
         RHI::renderer->Dispatch(mainCommandList, threadGroupCountX, threadGroupCountY, 1);
 
-        RHI::renderer->Barrier(mainCommandList, RHI::Renderer::MakeImageBarrier(currentContext->bloomDownTexture, RHI::GPUResourceState::UnorderedAccess, RHI::GPUResourceState::ShaderResource, 0, outputMipLevel));
+        RHI::renderer->Barrier(mainCommandList, RHI::Renderer::MakeImageBarrier(currentVisCamera->bloomDownTexture, RHI::GPUResourceState::UnorderedAccess, RHI::GPUResourceState::ShaderResource, 0, outputMipLevel));
 
         return true;
     };
 
     // threshold 를 적용해 밝은 영역만 필터링하여 mip-0 에 blur downsample 한다.
     RHI::renderer->SetPSO(mainCommandList, currentBloomPrefilterPSO);
-    if (!dispatchDownsamplePass(currentContext->mainRTColorTexture, RHI::ViewID::PrimaryID, currentContext->GetWidth(), currentContext->GetHeight(), 0, bloomThreshold, bloomSoftThreshold, bloomPrefilterQuality, bloomRadius)) {
-        RHI::renderer->Barrier(mainCommandList, RHI::Renderer::MakeImageBarrier(currentContext->mainRTColorTexture, RHI::GPUResourceState::ShaderResourceCompute, RHI::GPUResourceState::ShaderResource));
+    if (!dispatchDownsamplePass(inputColorTexture, RHI::ViewID::PrimaryID, currentVisCamera->renderWidth, currentVisCamera->renderHeight, 0, bloomThreshold, bloomSoftThreshold, bloomPrefilterQuality, bloomRadius)) {
+        RHI::renderer->Barrier(mainCommandList, RHI::Renderer::MakeImageBarrier(inputColorTexture, RHI::GPUResourceState::ShaderResourceCompute, RHI::GPUResourceState::ShaderResource));
         return false;
     }
 
     // 이후 mip 은 blur downsample 을 반복한다.
     RHI::renderer->SetPSO(mainCommandList, currentBloomDownsamplePSO);
-    for (uint32_t mipLevel = 1; mipLevel < currentContext->bloomMipCount; ++mipLevel) {
+    for (uint32_t mipLevel = 1; mipLevel < currentVisCamera->bloomMipCount; ++mipLevel) {
         const uint32_t inputMipLevel = mipLevel - 1;
-        if (!dispatchDownsamplePass(currentContext->bloomDownTexture, currentContext->bloomDownMipSRVs[inputMipLevel], currentContext->bloomMipWidths[inputMipLevel], currentContext->bloomMipHeights[inputMipLevel], mipLevel, 0.0f, 0.0f, 0.0f, bloomRadius)) {
-            RHI::renderer->Barrier(mainCommandList, RHI::Renderer::MakeImageBarrier(currentContext->mainRTColorTexture, RHI::GPUResourceState::ShaderResourceCompute, RHI::GPUResourceState::ShaderResource));
+        if (!dispatchDownsamplePass(bloomDownTexture, currentVisCamera->bloomDownMipSRVs[inputMipLevel], currentVisCamera->bloomMipWidths[inputMipLevel], currentVisCamera->bloomMipHeights[inputMipLevel], mipLevel, 0.0f, 0.0f, 0.0f, bloomRadius)) {
+            RHI::renderer->Barrier(mainCommandList, RHI::Renderer::MakeImageBarrier(inputColorTexture, RHI::GPUResourceState::ShaderResourceCompute, RHI::GPUResourceState::ShaderResource));
             return false;
         }
     }
@@ -669,8 +728,8 @@ bool RenderBackend::DispatchBloomPyramid() {
     RHI::renderer->SetPSO(mainCommandList, currentBloomUpsamplePSO);
 
     auto dispatchUpsamplePass = [this](uint32_t outputMipLevel, RHI::Texture *lowerTexture, RHI::ViewID lowerViewID, uint32_t lowerWidth, uint32_t lowerHeight, float weight, float radius) -> bool {
-        const uint32_t outputWidth = currentContext->bloomMipWidths[outputMipLevel];
-        const uint32_t outputHeight = currentContext->bloomMipHeights[outputMipLevel];
+        const uint32_t outputWidth = currentVisCamera->bloomMipWidths[outputMipLevel];
+        const uint32_t outputHeight = currentVisCamera->bloomMipHeights[outputMipLevel];
         if (lowerWidth == 0 || lowerHeight == 0 || outputWidth == 0 || outputHeight == 0) {
             return false;
         }
@@ -687,57 +746,48 @@ bool RenderBackend::DispatchBloomPyramid() {
             return false;
         }
 
-        RHI::renderer->Barrier(mainCommandList, RHI::Renderer::MakeImageBarrier(currentContext->bloomUpTexture, RHI::GPUResourceState::ShaderResource, RHI::GPUResourceState::UnorderedAccess, 0, outputMipLevel));
+        RHI::renderer->Barrier(mainCommandList, RHI::Renderer::MakeImageBarrier(currentVisCamera->bloomUpTexture, RHI::GPUResourceState::ShaderResource, RHI::GPUResourceState::UnorderedAccess, 0, outputMipLevel));
 
-        RHI::renderer->SetTexture(mainCommandList, 0, false, currentContext->bloomDownTexture, currentContext->bloomDownMipSRVs[outputMipLevel]);
+        RHI::renderer->SetTexture(mainCommandList, 0, false, currentVisCamera->bloomDownTexture, currentVisCamera->bloomDownMipSRVs[outputMipLevel]);
         RHI::renderer->SetTexture(mainCommandList, 1, false, lowerTexture, lowerViewID);
-        RHI::renderer->SetTexture(mainCommandList, 0, true, currentContext->bloomUpTexture, currentContext->bloomUpMipUAVs[outputMipLevel]);
+        RHI::renderer->SetTexture(mainCommandList, 0, true, currentVisCamera->bloomUpTexture, currentVisCamera->bloomUpMipUAVs[outputMipLevel]);
         RHI::renderer->SetConstantBuffer(mainCommandList, 0, bloomConstantBuffer);
 
         const uint32_t threadGroupCountX = (outputWidth + BloomBlockSizeX - 1) / BloomBlockSizeX;
         const uint32_t threadGroupCountY = (outputHeight + BloomBlockSizeY - 1) / BloomBlockSizeY;
         RHI::renderer->Dispatch(mainCommandList, threadGroupCountX, threadGroupCountY, 1);
 
-        RHI::renderer->Barrier(mainCommandList, RHI::Renderer::MakeImageBarrier(currentContext->bloomUpTexture, RHI::GPUResourceState::UnorderedAccess, RHI::GPUResourceState::ShaderResource, 0, outputMipLevel));
+        RHI::renderer->Barrier(mainCommandList, RHI::Renderer::MakeImageBarrier(currentVisCamera->bloomUpTexture, RHI::GPUResourceState::UnorderedAccess, RHI::GPUResourceState::ShaderResource, 0, outputMipLevel));
 
         return true;
     };
 
     // 작은 mip 부터 큰 mip 으로 올라오면서 downsample 결과와 누적 bloom 을 합성한다.
-    const uint32_t maxMipLevel = currentContext->bloomMipCount - 1;
-    for (uint32_t mipLevel = currentContext->bloomMipCount - 1; mipLevel > 0; --mipLevel) {
+    const uint32_t maxMipLevel = currentVisCamera->bloomMipCount - 1;
+    for (uint32_t mipLevel = currentVisCamera->bloomMipCount - 1; mipLevel > 0; --mipLevel) {
         const uint32_t outputMipLevel = mipLevel - 1;
-        RHI::Texture *lowerTexture = currentContext->bloomDownTexture;
-        RHI::ViewID lowerViewID = currentContext->bloomDownMipSRVs[mipLevel];
-        if (mipLevel < currentContext->bloomMipCount - 1) {
-            lowerTexture = currentContext->bloomUpTexture;
-            lowerViewID = currentContext->bloomUpMipSRVs[mipLevel];
+        RHI::Texture *lowerTexture = bloomDownTexture;
+        RHI::ViewID lowerViewID = currentVisCamera->bloomDownMipSRVs[mipLevel];
+        if (mipLevel < currentVisCamera->bloomMipCount - 1) {
+            lowerTexture = bloomUpTexture;
+            lowerViewID = currentVisCamera->bloomUpMipSRVs[mipLevel];
         }
 
         const float bloomWeight = BE1::Math::Pow(bloomScatter, static_cast<float>(maxMipLevel - mipLevel));
 
-        if (!dispatchUpsamplePass(outputMipLevel, lowerTexture, lowerViewID, currentContext->bloomMipWidths[mipLevel], currentContext->bloomMipHeights[mipLevel], bloomWeight, bloomRadius)) {
-            RHI::renderer->Barrier(mainCommandList, RHI::Renderer::MakeImageBarrier(currentContext->mainRTColorTexture, RHI::GPUResourceState::ShaderResourceCompute, RHI::GPUResourceState::ShaderResource));
+        if (!dispatchUpsamplePass(outputMipLevel, lowerTexture, lowerViewID, currentVisCamera->bloomMipWidths[mipLevel], currentVisCamera->bloomMipHeights[mipLevel], bloomWeight, bloomRadius)) {
+            RHI::renderer->Barrier(mainCommandList, RHI::Renderer::MakeImageBarrier(inputColorTexture, RHI::GPUResourceState::ShaderResourceCompute, RHI::GPUResourceState::ShaderResource));
             return false;
         }
     }
 
-    RHI::renderer->Barrier(mainCommandList, RHI::Renderer::MakeImageBarrier(currentContext->mainRTColorTexture, RHI::GPUResourceState::ShaderResourceCompute, RHI::GPUResourceState::ShaderResource));
+    RHI::renderer->Barrier(mainCommandList, RHI::Renderer::MakeImageBarrier(inputColorTexture, RHI::GPUResourceState::ShaderResourceCompute, RHI::GPUResourceState::ShaderResource));
 
     return true;
 }
 
 bool RenderBackend::DispatchBloomFFT() {
     PROFILER_CPU_SCOPED_EVENT("RenderBackend::DispatchBloomFFT");
-
-    if (!currentFFTBloomPrefilterPSO ||
-        !currentContext->bloomFFTInputTexture ||
-        !currentContext->bloomFFTWorkTexture ||
-        !currentContext->bloomFFTOutputTexture ||
-        currentContext->bloomFFTWidth == 0 ||
-        currentContext->bloomFFTHeight == 0) {
-        return false;
-    }
 
     // TODO: FFT convolution bloom will be implemented as a separate path.
     return false;
@@ -748,14 +798,21 @@ bool RenderBackend::DispatchToneMapping(bool useBloom) {
 
     if (!r_toneMapping.GetBool() ||
         !currentToneMappingPSO ||
-        !currentContext->mainRTColorTexture ||
-        !currentContext->luminanceBuffer ||
-        !currentContext->postProcessColorTexture) {
+        !currentVisCamera->colorTexture ||
+        !currentVisCamera->luminanceBuffer ||
+        !currentVisCamera->postProcessColorTexture) {
+        return false;
+    }
+
+    const uint32_t outputW = currentVisCamera->renderWidth;
+    const uint32_t outputH = currentVisCamera->renderHeight;
+    if (outputW == 0 || outputH == 0) {
         return false;
     }
 
     ToneMappingParams toneMappingParams = {};
-    toneMappingParams.outputSize = uint2(currentContext->GetWidth(), currentContext->GetHeight());
+    toneMappingParams.outputSize = uint2(outputW, outputH);
+    toneMappingParams.outputTexelSize = float2(1.0f / outputW, 1.0f / outputH);
     toneMappingParams.exposureScale = 1.0f;
     toneMappingParams.toneMappingOperator = static_cast<uint32_t>(BE1::Clamp(r_toneMapOp.GetInteger(), static_cast<int>(ToneMappingOperatorLinear), static_cast<int>(ToneMappingOperatorFilmicGT)));
     toneMappingParams.bloomIntensity = useBloom ? BE1::Max(r_bloomIntensity.GetFloat(), 0.0f) : 0.0f;
@@ -765,21 +822,25 @@ bool RenderBackend::DispatchToneMapping(bool useBloom) {
         return false;
     }
 
+    RHI::Buffer *luminanceBuffer = currentVisCamera->luminanceBuffer;
+    RHI::Texture *inputTexture = currentVisCamera->colorTexture;
+    RHI::Texture *outputTexture = currentVisCamera->postProcessColorTexture;
+
     RHI::GPUBarrier startBarriers[] = {
-        RHI::Renderer::MakeImageBarrier(currentContext->mainRTColorTexture, RHI::GPUResourceState::ShaderResource, RHI::GPUResourceState::ShaderResourceCompute),
-        RHI::Renderer::MakeBufferBarrier(currentContext->luminanceBuffer, RHI::GPUResourceState::UnorderedAccess, RHI::GPUResourceState::ShaderResourceCompute),
-        RHI::Renderer::MakeImageBarrier(currentContext->postProcessColorTexture, RHI::GPUResourceState::ShaderResource, RHI::GPUResourceState::UnorderedAccess)
+        RHI::Renderer::MakeImageBarrier(inputTexture, RHI::GPUResourceState::ShaderResource, RHI::GPUResourceState::ShaderResourceCompute),
+        RHI::Renderer::MakeBufferBarrier(luminanceBuffer, RHI::GPUResourceState::UnorderedAccess, RHI::GPUResourceState::ShaderResourceCompute),
+        RHI::Renderer::MakeImageBarrier(outputTexture, RHI::GPUResourceState::ShaderResource, RHI::GPUResourceState::UnorderedAccess)
     };
     RHI::renderer->Barrier(mainCommandList, startBarriers, COUNT_OF(startBarriers));
 
     RHI::renderer->SetPSO(mainCommandList, currentToneMappingPSO);
-    RHI::renderer->SetTexture(mainCommandList, 0, false, currentContext->mainRTColorTexture);
-    RHI::renderer->SetBuffer(mainCommandList, 1, false, currentContext->luminanceBuffer);
+    RHI::renderer->SetTexture(mainCommandList, 0, false, inputTexture);
+    RHI::renderer->SetBuffer(mainCommandList, 1, false, luminanceBuffer);
 
-    // useBloom 이 꺼져있으면, 더미 텍스쳐로 그냥 mainRTColorTexture 을 바인딩한다. (어차피 사용안함)
-    RHI::renderer->SetTexture(mainCommandList, 2, false, useBloom ? currentContext->bloomUpTexture : currentContext->mainRTColorTexture, useBloom ? currentContext->bloomUpMipSRVs[0] : RHI::ViewID::PrimaryID);
+    // useBloom 이 꺼져있으면, 더미 텍스쳐로 그냥 inputTexture 를 바인딩한다. (어차피 사용안함)
+    RHI::renderer->SetTexture(mainCommandList, 2, false, useBloom ? currentVisCamera->bloomUpTexture : inputTexture, useBloom ? currentVisCamera->bloomUpMipSRVs[0] : RHI::ViewID::PrimaryID);
 
-    RHI::renderer->SetTexture(mainCommandList, 0, true, currentContext->postProcessColorTexture);
+    RHI::renderer->SetTexture(mainCommandList, 0, true, outputTexture);
     RHI::renderer->SetConstantBuffer(mainCommandList, 0, toneMappingConstantBuffer);
 
     const uint32_t threadGroupCountX = (toneMappingParams.outputSize.x + ToneMappingBlockSizeX - 1) / ToneMappingBlockSizeX;
@@ -787,9 +848,9 @@ bool RenderBackend::DispatchToneMapping(bool useBloom) {
     RHI::renderer->Dispatch(mainCommandList, threadGroupCountX, threadGroupCountY, 1);
 
     RHI::GPUBarrier endBarriers[] = {
-        RHI::Renderer::MakeImageBarrier(currentContext->mainRTColorTexture, RHI::GPUResourceState::ShaderResourceCompute, RHI::GPUResourceState::ShaderResource),
-        RHI::Renderer::MakeBufferBarrier(currentContext->luminanceBuffer, RHI::GPUResourceState::ShaderResourceCompute, RHI::GPUResourceState::UnorderedAccess),
-        RHI::Renderer::MakeImageBarrier(currentContext->postProcessColorTexture, RHI::GPUResourceState::UnorderedAccess, RHI::GPUResourceState::ShaderResource)
+        RHI::Renderer::MakeImageBarrier(inputTexture, RHI::GPUResourceState::ShaderResourceCompute, RHI::GPUResourceState::ShaderResource),
+        RHI::Renderer::MakeBufferBarrier(luminanceBuffer, RHI::GPUResourceState::ShaderResourceCompute, RHI::GPUResourceState::UnorderedAccess),
+        RHI::Renderer::MakeImageBarrier(outputTexture, RHI::GPUResourceState::UnorderedAccess, RHI::GPUResourceState::ShaderResource)
     };
     RHI::renderer->Barrier(mainCommandList, endBarriers, COUNT_OF(endBarriers));
 
@@ -806,7 +867,7 @@ void RenderBackend::DrawCamera3D() {
             DrawSkyPass(renderPass);
             break;
         case RenderPassType::MainOpaque:
-        case RenderPassType::MainBlend:
+        case RenderPassType::MainTransparent:
             DrawMainPass(renderPass);
             break;
         default:

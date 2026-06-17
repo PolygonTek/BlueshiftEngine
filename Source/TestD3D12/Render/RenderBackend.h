@@ -67,8 +67,9 @@ private:
 
     void                            DrawCamera3D();
     void                            DrawCamera2D();
+
     void                            PostProcessAndBlitToSwapChain();
-    void                            BlitToSwapChain(const RHI::Texture *texture);
+    void                            BlitRectToSwapChain(const RHI::Texture *texture, const BE1::Rect &rect);
 
     void                            DrawMainPass(const RenderPass *renderPass);
     void                            DrawSkyPass(const RenderPass *renderPass);
@@ -115,7 +116,6 @@ private:
     RHI::PipelineState *            currentBloomPrefilterPSO = nullptr;
     RHI::PipelineState *            currentBloomDownsamplePSO = nullptr;
     RHI::PipelineState *            currentBloomUpsamplePSO = nullptr;
-    RHI::PipelineState *            currentFFTBloomPrefilterPSO = nullptr;
     RHI::ConstantBuffer *           frameConstantBuffer = nullptr;
     RHI::ConstantBuffer *           cameraConstantBuffer = nullptr;
 

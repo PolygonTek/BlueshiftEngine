@@ -59,7 +59,7 @@ struct PassDrawSurf {
 enum class RenderPassType : uint8_t {
     Skybox,
     MainOpaque,
-    MainBlend,
+    MainTransparent,
     DepthPrepass,
     Shadow,
     Gui
@@ -95,11 +95,27 @@ struct VisCamera {
     uint32_t                    numRenderPasses = 0;
     RenderPass *                renderPasses = nullptr;
 
-    BE1::Rect                   renderRect;
+    BE1::Rect                   outputRect;
+    uint32_t                    renderWidth = 0;
+    uint32_t                    renderHeight = 0;
     RenderCameraClearMethod     clearMethod;
     RenderCameraClearColorMode  clearColorMode;
     BE1::Color4                 clearColor;
     RenderCameraFlag            flags = RenderCameraFlag::NoFlag;
+    RHI::Texture *              colorTexture = nullptr;
+    RHI::Texture *              colorMSAATexture = nullptr;
+    RHI::Texture *              depthTexture = nullptr;
+    RHI::Texture *              postProcessColorTexture = nullptr;
+    RHI::Texture *              bloomDownTexture = nullptr;
+    RHI::Texture *              bloomUpTexture = nullptr;
+    RHI::ViewID                 bloomDownMipSRVs[RenderBloomMaxLevelCount] = {};
+    RHI::ViewID                 bloomDownMipUAVs[RenderBloomMaxLevelCount] = {};
+    RHI::ViewID                 bloomUpMipSRVs[RenderBloomMaxLevelCount] = {};
+    RHI::ViewID                 bloomUpMipUAVs[RenderBloomMaxLevelCount] = {};
+    uint32_t                    bloomMipWidths[RenderBloomMaxLevelCount] = {};
+    uint32_t                    bloomMipHeights[RenderBloomMaxLevelCount] = {};
+    uint32_t                    bloomMipCount = 0;
+    RHI::Buffer *               luminanceBuffer = nullptr;
 
     bool                        is2D;
 };

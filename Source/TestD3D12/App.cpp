@@ -359,11 +359,13 @@ void App::RenderScene() {
     cameraDesc.clearMethod = RenderCameraClearMethod::Skybox;
     //cameraDesc.clearColorMode = RenderCameraClearColorMode::RenderTargetDefault;
     cameraDesc.orthogonal = false;
-    cameraDesc.renderRect.Set(0, 0, w, h);
+    cameraDesc.outputRect.Set(0, 0, w, h);
+    cameraDesc.renderWidth = static_cast<uint32_t>(w);
+    cameraDesc.renderHeight = static_cast<uint32_t>(h);
     cameraDesc.axis = BE1::Angles(0.0f, cameraPitch, cameraYaw).ToMat3();
     cameraDesc.origin = cameraCenter - cameraDesc.axis[0] * cameraDistance;
     RenderCamera::CalculateFov(60, 16.0f / 9.0f, aspectRatio, &cameraDesc.fovX, &cameraDesc.fovY);
-    cameraDesc.zNear = BE1::MeterToUnit(1.0f);
+    cameraDesc.zNear = BE1::MeterToUnit(0.1f);
     cameraDesc.zFar = BE1::MeterToUnit(2000.0f);
     if (cameraDesc.orthogonal) {
         cameraDesc.sizeX = cameraDistance * BE1::Math::Tan(cameraDesc.fovX * 0.5f) * 0.5f;

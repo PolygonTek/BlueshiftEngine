@@ -46,7 +46,6 @@ void RenderFrameData::CmdBeginContext(RenderContext *context) {
     cmd->bloomPrefilterPSO = nullptr;
     cmd->bloomDownsamplePSO = nullptr;
     cmd->bloomUpsamplePSO = nullptr;
-    cmd->fftBloomPrefilterPSO = nullptr;
 
     if (!context) {
         return;
@@ -59,7 +58,6 @@ void RenderFrameData::CmdBeginContext(RenderContext *context) {
     cmd->bloomPrefilterPSO = SnapshotPSO(context->bloomPrefilterPSO);
     cmd->bloomDownsamplePSO = SnapshotPSO(context->bloomDownsamplePSO);
     cmd->bloomUpsamplePSO = SnapshotPSO(context->bloomUpsamplePSO);
-    cmd->fftBloomPrefilterPSO = SnapshotPSO(context->fftBloomPrefilterPSO);
 }
 
 void RenderFrameData::CmdDrawCamera(const VisCamera *camera) {

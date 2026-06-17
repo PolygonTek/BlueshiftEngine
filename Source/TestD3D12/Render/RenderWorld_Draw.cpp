@@ -70,12 +70,20 @@ void RenderWorld::SetSkyboxMaterial(SharedPtr<Material> skyboxMaterial) {
     this->skyboxMaterial = skyboxMaterial;
 }
 
-void RenderWorld::RenderScene(const RenderCamera *renderCamera) {
+void RenderWorld::RenderScene(RenderCamera *renderCamera) {
     PROFILER_CPU_SCOPED_EVENT("RenderWorld::RenderScene");
 
     assert(BE1::Engine::IsInMainThread());
 
     RenderFrameData *frameData = RenderContext::activeContext->GetCurrentFrontendFrameData();
+    RenderContext *renderContext = RenderContext::activeContext;
+    const BE1::Rect &outputRect = renderCamera->desc.outputRect;
+    const uint32_t renderWidth = renderCamera->desc.renderWidth > 0
+        ? renderCamera->desc.renderWidth
+        : (outputRect.w > 0 ? static_cast<uint32_t>(outputRect.w) : 0);
+    const uint32_t renderHeight = renderCamera->desc.renderHeight > 0
+        ? renderCamera->desc.renderHeight
+        : (outputRect.h > 0 ? static_cast<uint32_t>(outputRect.h) : 0);
 
     // RenderCamera 정보를 기반으로 프레임 데이터에 필요한 VisCamera 를 구성한다.
     VisCamera *visCamera = frameData->AllocVisCamera();
@@ -83,15 +91,36 @@ void RenderWorld::RenderScene(const RenderCamera *renderCamera) {
         return;
     }
 
+    renderCamera->EnsureRenderTextures(renderWidth, renderHeight, renderContext->GetMainRTColorFormat(), renderContext->GetMainRTDepthFormat(), renderContext->GetMainRTSampleCount(), renderContext->GetBaseClearColor());
+    renderCamera->EnsurePostProcessResources();
+
     visCamera->maxVisSurfs = VisCamera::MaxVisSurfs;
     visCamera->visSurfs = (const VisSurf **)frameData->MemAlloc(visCamera->maxVisSurfs * sizeof(VisSurf *));
     visCamera->numRenderPasses = 0;
     visCamera->renderPasses = (RenderPass *)frameData->MemAlloc(VisCamera::MaxRenderPasses * sizeof(RenderPass));
-    visCamera->renderRect = renderCamera->desc.renderRect;
+    visCamera->outputRect = outputRect;
+    visCamera->renderWidth = renderWidth;
+    visCamera->renderHeight = renderHeight;
     visCamera->clearMethod = renderCamera->desc.clearMethod;
     visCamera->clearColorMode = renderCamera->desc.clearColorMode;
     visCamera->clearColor = renderCamera->desc.clearColor;
     visCamera->flags = renderCamera->desc.flags;
+    visCamera->colorTexture = renderCamera->GetColorTexture();
+    visCamera->colorMSAATexture = renderCamera->GetColorMSAATexture();
+    visCamera->depthTexture = renderCamera->GetDepthTexture();
+    visCamera->postProcessColorTexture = renderCamera->GetPostProcessColorTexture();
+    visCamera->bloomDownTexture = renderCamera->GetBloomDownTexture();
+    visCamera->bloomUpTexture = renderCamera->GetBloomUpTexture();
+    visCamera->bloomMipCount = renderCamera->GetBloomMipCount();
+    for (uint32_t mipLevel = 0; mipLevel < RenderBloomMaxLevelCount; ++mipLevel) {
+        visCamera->bloomDownMipSRVs[mipLevel] = renderCamera->GetBloomDownMipSRVs()[mipLevel];
+        visCamera->bloomDownMipUAVs[mipLevel] = renderCamera->GetBloomDownMipUAVs()[mipLevel];
+        visCamera->bloomUpMipSRVs[mipLevel] = renderCamera->GetBloomUpMipSRVs()[mipLevel];
+        visCamera->bloomUpMipUAVs[mipLevel] = renderCamera->GetBloomUpMipUAVs()[mipLevel];
+        visCamera->bloomMipWidths[mipLevel] = renderCamera->GetBloomMipWidths()[mipLevel];
+        visCamera->bloomMipHeights[mipLevel] = renderCamera->GetBloomMipHeights()[mipLevel];
+    }
+    visCamera->luminanceBuffer = renderCamera->GetLuminanceBuffer();
     visCamera->viewMatrix = renderCamera->viewMatrix;
     visCamera->viewProjMatrix = renderCamera->viewProjMatrix;
     visCamera->worldAABB.Clear();
@@ -560,7 +589,9 @@ void RenderWorld::DrawGUICamera(RenderFrameData *frameData, uint32_t screenWidth
     visCamera->visSurfs = (const VisSurf **)frameData->MemAlloc(visCamera->maxVisSurfs * sizeof(VisSurf *));
     visCamera->numRenderPasses = 0;
     visCamera->renderPasses = (RenderPass *)frameData->MemAlloc(VisCamera::MaxRenderPasses * sizeof(RenderPass));
-    visCamera->renderRect = BE1::Rect(0, 0, screenWidth, screenHeight);
+    visCamera->outputRect = BE1::Rect(0, 0, screenWidth, screenHeight);
+    visCamera->renderWidth = screenWidth;
+    visCamera->renderHeight = screenHeight;
     visCamera->clearMethod = RenderCameraClearMethod::NoClear;
     visCamera->flags = RenderCameraFlag::SkipPostProcess;
     //visCamera->time = BE1::PlatformTime::Milliseconds();

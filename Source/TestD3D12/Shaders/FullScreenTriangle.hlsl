@@ -1,4 +1,7 @@
+#include "ShaderInterop.h"
+
 #define COMMON_ROOT_SIGNATURE "DescriptorTable(SRV(t0)), " \
+    "RootConstants(num32BitConstants=4, b0), " \
     "StaticSampler(s0, FILTER = FILTER_MIN_MAG_MIP_POINT, ADDRESSU = TEXTURE_ADDRESS_CLAMP, ADDRESSV = TEXTURE_ADDRESS_CLAMP, ADDRESSW = TEXTURE_ADDRESS_CLAMP)"
 
 struct PSInput {
@@ -8,6 +11,10 @@ struct PSInput {
 
 Texture2D defaultTexture : register(t0);
 SamplerState defaultSampler : register(s0);
+
+cbuffer FullScreenImageCB : register(b0) {
+    FullScreenImageParams imageParams;
+}
 
 [RootSignature(COMMON_ROOT_SIGNATURE)]
 PSInput VSMain(uint vertexID : SV_VertexID) {
@@ -27,5 +34,6 @@ PSInput VSMain(uint vertexID : SV_VertexID) {
 
 [RootSignature(COMMON_ROOT_SIGNATURE)]
 float4 PSMain(PSInput input) : SV_TARGET {
-    return defaultTexture.Sample(defaultSampler, input.texCoord);
+    float2 texCoord = input.texCoord * imageParams.texCoordScale + imageParams.texCoordOffset;
+    return defaultTexture.Sample(defaultSampler, texCoord);
 }

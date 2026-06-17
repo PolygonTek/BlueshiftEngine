@@ -16,11 +16,9 @@
 #include "RenderSystem.h"
 #include "RenderContext.h"
 #include "RenderBackend.h"
-#include "RenderCvars.h"
 #include "RenderInternal.h"
 #include "ShaderTemplate.h"
 #include "ShaderPipelineCache.h"
-#include "Shaders/ShaderInterop.h"
 
 RenderContext *         RenderContext::activeContext = nullptr;
 
@@ -57,12 +55,6 @@ void RenderContext::Init(void *windowHandle, const BE1::Color4 &baseClearColor) 
     mainRTColorFormat = RHI::Format::R16G16B16A16_FLOAT;
     this->baseClearColor = !RHI::Renderer::IsSRGBFormat(mainRTColorFormat) ? baseClearColor.SRGBToLinear() : baseClearColor;
 
-    // 렌더 타겟 텍스쳐 & 뎁스 텍스쳐 생성
-    CreateMainRenderTextures(backBufferWidth, backBufferHeight);
-
-    // Tonemapping 에 사용할 Luminance 버퍼 생성
-    CreateLuminanceBuffer();
-
     InitFullScreenTrianglePSO();
     InitToneMappingPSO();
 
@@ -96,10 +88,6 @@ void RenderContext::Shutdown() {
     bloomPrefilterPSO.reset();
     bloomDownsamplePSO.reset();
     bloomUpsamplePSO.reset();
-    fftBloomPrefilterPSO.reset();
-
-    DestroyLuminanceBuffer();
-    DestroyMainRenderTextures();
 
     for (RenderFrameData &frameData : frames) {
         frameData.Shutdown();
@@ -126,262 +114,6 @@ void RenderContext::OnResize(int width, int height) {
     swapChain->Resize(width, height);
 
     guiMesh.SetClipRect(BE1::Rect(0, 0, width, height));
-
-    // 렌더 타겟 텍스쳐 & 뎁스 텍스쳐 재생성
-    DestroyMainRenderTextures();
-    CreateMainRenderTextures(width, height);
-}
-
-void RenderContext::CreateMainRenderTextures(uint32_t width, uint32_t height) {
-    BE1::Image::Format colorImageFormat = BE1::Image::Format::Unknown;
-    RHI::Renderer::RHIFormatToImageFormat(mainRTColorFormat, &colorImageFormat, nullptr);
-
-    // NOTE: colorImageFormat 이 sRGB 포맷이 아닌 Linear 포맷이라면, baseClearColor 도 같은 컬러 공간을 가져야 한다.
-    const RHI::ClearValue colorOptimizedClearValue = RHI::ClearValue::Color(baseClearColor[0], baseClearColor[1], baseClearColor[2], baseClearColor[3]);
-    const RHI::ClearValue depthStencilOptimizedClearValue = RHI::ClearValue::DepthStencil(1.0f, 0);
-
-    SharedPtr<BE1::Image> colorImage = MakeShared<BE1::Image>();
-    colorImage->InitFromMemory(width, height, 1, 1, 1, colorImageFormat, BE1::Image::GammaSpace::Linear, nullptr, BE1::Image::Flag::None);
-    mainRTColorTexture = RHI::renderer->CreateTexture(RHI::TextureType::Texture2D, RHI::TextureFlag::RenderTarget | RHI::TextureFlag::ShaderResource | RHI::TextureFlag::UnorderedAccess, colorImage, false, colorOptimizedClearValue, 1, RHI::GPUResourceState::ShaderResource);
-    RHI::renderer->SetName(mainRTColorTexture, "mainRTColorTexture");
-
-    BE1::Image::Format postProcessColorImageFormat = BE1::Image::Format::Unknown;
-    RHI::Renderer::RHIFormatToImageFormat(RHI::Format::R8G8B8A8_UNORM, &postProcessColorImageFormat, nullptr);
-
-    SharedPtr<BE1::Image> postProcessColorImage = MakeShared<BE1::Image>();
-    postProcessColorImage->InitFromMemory(width, height, 1, 1, 1, postProcessColorImageFormat, BE1::Image::GammaSpace::Linear, nullptr, BE1::Image::Flag::None);
-    postProcessColorTexture = RHI::renderer->CreateTexture(RHI::TextureType::Texture2D, RHI::TextureFlag::ShaderResource | RHI::TextureFlag::UnorderedAccess, postProcessColorImage, false, {}, 1, RHI::GPUResourceState::ShaderResource);
-    RHI::renderer->SetName(postProcessColorTexture, "postProcessColorTexture");
-
-    CreatePyramidBloomTextures(width, height);
-    CreateFFTBloomTextures(width, height);
-
-    if (mainRTSampleCount > 1) {
-        mainRTColorMSAATexture = RHI::renderer->CreateTexture(RHI::TextureType::Texture2D, RHI::TextureFlag::RenderTarget | RHI::TextureFlag::ShaderResource, colorImage, false, colorOptimizedClearValue, mainRTSampleCount, RHI::GPUResourceState::ShaderResource);
-        RHI::renderer->SetName(mainRTColorMSAATexture, "mainRTColorMSAATexture");
-    }
-
-    BE1::Image::Format depthImageFormat = BE1::Image::Format::Unknown;
-    RHI::Renderer::RHIFormatToImageFormat(mainRTDepthFormat, &depthImageFormat, nullptr);
-
-    SharedPtr<BE1::Image> depthStencilImage = MakeShared<BE1::Image>();
-    depthStencilImage->InitFromMemory(width, height, 1, 1, 1, depthImageFormat, BE1::Image::GammaSpace::Linear, nullptr, BE1::Image::Flag::None);
-    mainRTDepthTexture = RHI::renderer->CreateTexture(RHI::TextureType::Texture2D, RHI::TextureFlag::DepthStencil, depthStencilImage, false, depthStencilOptimizedClearValue, mainRTSampleCount, RHI::GPUResourceState::DepthWrite);
-    RHI::renderer->SetName(mainRTDepthTexture, "mainRTDepthTexture");
-}
-
-void RenderContext::DestroyMainRenderTextures() {
-    DestroyFFTBloomTextures();
-    DestroyPyramidBloomTextures();
-
-    if (mainRTColorTexture) {
-        RHI::renderer->DestroyTexture(mainRTColorTexture, true);
-        mainRTColorTexture = nullptr;
-    }
-    if (postProcessColorTexture) {
-        RHI::renderer->DestroyTexture(postProcessColorTexture, true);
-        postProcessColorTexture = nullptr;
-    }
-    if (mainRTColorMSAATexture) {
-        RHI::renderer->DestroyTexture(mainRTColorMSAATexture, true);
-        mainRTColorMSAATexture = nullptr;
-    }
-    if (mainRTDepthTexture) {
-        RHI::renderer->DestroyTexture(mainRTDepthTexture, true);
-        mainRTDepthTexture = nullptr;
-    }
-}
-
-void RenderContext::CreatePyramidBloomTextures(uint32_t width, uint32_t height) {
-    DestroyPyramidBloomTextures();
-
-    const BE1::Image::Format bloomImageFormat = RHI::renderer->ToUAVImageFormat(BE1::Image::Format::R11G11B10_FLOAT);
-    const RHI::TextureFlag bloomTextureFlags = RHI::TextureFlag::ShaderResource | RHI::TextureFlag::UnorderedAccess | RHI::TextureFlag::SkipDefaultViews;
-    const uint32_t maxLevelCount = static_cast<uint32_t>(BE1::Clamp(r_bloomMipCount.GetInteger(), 1, BloomMaxLevelCount));
-
-    // bloom texture 의 mip 0 는 화면의 절반 크기로 시작
-    uint32_t bloomWidth = width > 1 ? width >> 1 : 1;
-    uint32_t bloomHeight = height > 1 ? height >> 1 : 1;
-    uint32_t levelCount = 0;
-
-    // 1x1 이 될 때까지 몇개의 bloom mip 이 필요한지 계산한다. (최대 BloomMaxLevelCount = 8)
-    while (levelCount < maxLevelCount) {
-        bloomMipWidths[levelCount] = bloomWidth;
-        bloomMipHeights[levelCount] = bloomHeight;
-        levelCount++;
-
-        if (bloomWidth == 1 && bloomHeight == 1) {
-            break;
-        }
-
-        bloomWidth = bloomWidth > 1 ? bloomWidth >> 1 : 1;
-        bloomHeight = bloomHeight > 1 ? bloomHeight >> 1 : 1;
-    }
-
-    SharedPtr<BE1::Image> image = MakeShared<BE1::Image>();
-    image->InitFromMemory(bloomMipWidths[0], bloomMipHeights[0], 1, 1, levelCount, bloomImageFormat, BE1::Image::GammaSpace::Linear, nullptr, BE1::Image::Flag::None);
-
-    // bloom down texture 생성
-    bloomDownTexture = RHI::renderer->CreateTexture(RHI::TextureType::Texture2D, bloomTextureFlags, image, false, {}, 1, RHI::GPUResourceState::ShaderResource);
-    if (!bloomDownTexture) {
-        BE_WARNLOG("RenderContext::CreatePyramidBloomTextures: failed to create bloom down texture\n");
-        DestroyPyramidBloomTextures();
-        return;
-    }
-    RHI::renderer->SetName(bloomDownTexture, "bloomDownTexture");
-
-    // bloom up texture 생성
-    bloomUpTexture = RHI::renderer->CreateTexture(RHI::TextureType::Texture2D, bloomTextureFlags, image, false, {}, 1, RHI::GPUResourceState::ShaderResource);
-    if (!bloomUpTexture) {
-        BE_WARNLOG("RenderContext::CreatePyramidBloomTextures: failed to create bloom up texture\n");
-        DestroyPyramidBloomTextures();
-        return;
-    }
-    RHI::renderer->SetName(bloomUpTexture, "bloomUpTexture");
-
-    // mip 별 view 생성
-    auto createBloomMipViews = [](RHI::Texture *texture, RHI::ViewID *srvViewIDs, RHI::ViewID *uavViewIDs, uint32_t levelCount, const char *debugName) -> bool {
-        for (uint32_t mipLevel = 0; mipLevel < levelCount; ++mipLevel) {
-            srvViewIDs[mipLevel] = RHI::renderer->CreateView(texture, RHI::ViewType::SRV, RHI::Format::Auto, 0, texture->GetArraySize(), mipLevel, 1);
-            if (!srvViewIDs[mipLevel].IsValid()) {
-                BE_WARNLOG("RenderContext::CreatePyramidBloomTextures: failed to create %s mip %i SRV\n", debugName, mipLevel);
-                return false;
-            }
-
-            uavViewIDs[mipLevel] = RHI::renderer->CreateView(texture, RHI::ViewType::UAV, RHI::Format::Auto, 0, texture->GetArraySize(), mipLevel, 1);
-            if (!uavViewIDs[mipLevel].IsValid()) {
-                BE_WARNLOG("RenderContext::CreatePyramidBloomTextures: failed to create %s mip %i UAV\n", debugName, mipLevel);
-                return false;
-            }
-        }
-
-        return true;
-    };
-
-    if (!createBloomMipViews(bloomDownTexture, bloomDownMipSRVs, bloomDownMipUAVs, levelCount, "bloomDownTexture") ||
-        !createBloomMipViews(bloomUpTexture, bloomUpMipSRVs, bloomUpMipUAVs, levelCount, "bloomUpTexture")) {
-        DestroyPyramidBloomTextures();
-        return;
-    }
-
-    bloomMipCount = levelCount;
-}
-
-void RenderContext::DestroyPyramidBloomTextures() {
-    if (bloomDownTexture) {
-        RHI::renderer->DestroyTexture(bloomDownTexture, true);
-        bloomDownTexture = nullptr;
-    }
-    if (bloomUpTexture) {
-        RHI::renderer->DestroyTexture(bloomUpTexture, true);
-        bloomUpTexture = nullptr;
-    }
-
-    for (uint32_t mipLevel = 0; mipLevel < BloomMaxLevelCount; ++mipLevel) {
-        bloomDownMipSRVs[mipLevel] = RHI::ViewID::InvalidID;
-        bloomDownMipUAVs[mipLevel] = RHI::ViewID::InvalidID;
-        bloomUpMipSRVs[mipLevel] = RHI::ViewID::InvalidID;
-        bloomUpMipUAVs[mipLevel] = RHI::ViewID::InvalidID;
-        bloomMipWidths[mipLevel] = 0;
-        bloomMipHeights[mipLevel] = 0;
-    }
-
-    bloomMipCount = 0;
-}
-
-void RenderContext::CreateFFTBloomTextures(uint32_t width, uint32_t height) {
-    DestroyFFTBloomTextures();
-
-    // FFT bloom 은 convolution 중간값을 다루므로 RGB-only packed 포맷보다 signed half float 작업 포맷을 사용한다.
-    const BE1::Image::Format fftBloomImageFormat = BE1::Image::Format::R16G16B16A16_FLOAT;
-    const RHI::TextureFlag fftBloomTextureFlags = RHI::TextureFlag::ShaderResource | RHI::TextureFlag::UnorderedAccess;
-
-    // 화면의 절반 크기를 기준으로 하되, FFT pass 에서 쓰기 좋은 power-of-two 크기로 맞춘다.
-    bloomFFTWidth = BE1::Math::RoundUpPowerOfTwo(width > 1 ? width >> 1 : 1);
-    bloomFFTHeight = BE1::Math::RoundUpPowerOfTwo(height > 1 ? height >> 1 : 1);
-
-    SharedPtr<BE1::Image> image = MakeShared<BE1::Image>();
-    image->InitFromMemory(bloomFFTWidth, bloomFFTHeight, 1, 1, 1, fftBloomImageFormat, BE1::Image::GammaSpace::Linear, nullptr, BE1::Image::Flag::None);
-
-    bloomFFTInputTexture = RHI::renderer->CreateTexture(RHI::TextureType::Texture2D, fftBloomTextureFlags, image, false, {}, 1, RHI::GPUResourceState::ShaderResource);
-    if (!bloomFFTInputTexture) {
-        BE_WARNLOG("RenderContext::CreateFFTBloomTextures: failed to create bloom FFT input texture\n");
-        DestroyFFTBloomTextures();
-        return;
-    }
-    RHI::renderer->SetName(bloomFFTInputTexture, "bloomFFTInputTexture");
-
-    bloomFFTWorkTexture = RHI::renderer->CreateTexture(RHI::TextureType::Texture2D, fftBloomTextureFlags, image, false, {}, 1, RHI::GPUResourceState::ShaderResource);
-    if (!bloomFFTWorkTexture) {
-        BE_WARNLOG("RenderContext::CreateFFTBloomTextures: failed to create bloom FFT work texture\n");
-        DestroyFFTBloomTextures();
-        return;
-    }
-    RHI::renderer->SetName(bloomFFTWorkTexture, "bloomFFTWorkTexture");
-
-    bloomFFTOutputTexture = RHI::renderer->CreateTexture(RHI::TextureType::Texture2D, fftBloomTextureFlags, image, false, {}, 1, RHI::GPUResourceState::ShaderResource);
-    if (!bloomFFTOutputTexture) {
-        BE_WARNLOG("RenderContext::CreateFFTBloomTextures: failed to create bloom FFT output texture\n");
-        DestroyFFTBloomTextures();
-        return;
-    }
-    RHI::renderer->SetName(bloomFFTOutputTexture, "bloomFFTOutputTexture");
-}
-
-void RenderContext::DestroyFFTBloomTextures() {
-    if (bloomFFTInputTexture) {
-        RHI::renderer->DestroyTexture(bloomFFTInputTexture, true);
-        bloomFFTInputTexture = nullptr;
-    }
-    if (bloomFFTWorkTexture) {
-        RHI::renderer->DestroyTexture(bloomFFTWorkTexture, true);
-        bloomFFTWorkTexture = nullptr;
-    }
-    if (bloomFFTOutputTexture) {
-        RHI::renderer->DestroyTexture(bloomFFTOutputTexture, true);
-        bloomFFTOutputTexture = nullptr;
-    }
-
-    bloomFFTWidth = 0;
-    bloomFFTHeight = 0;
-}
-
-void RenderContext::CreateLuminanceBuffer() {
-    // Luminance buffer : exposure (float) + luminance (float) + histogram (uint32_t * 1024)
-    static constexpr uint32_t LuminanceBufferSize = LuminanceBufferOffsetHistogram + LuminanceHistogramBinCount * sizeof(uint32_t);
-    static constexpr uint32_t LuminanceBufferDwordCount = LuminanceBufferSize / sizeof(uint32_t);
-    const uint32_t initialLuminanceBufferData[LuminanceBufferDwordCount] = {};
-
-    luminanceBuffer = RHI::renderer->CreateBuffer(RHI::BufferUsage::Default, RHI::BufferFlag::ShaderResource | RHI::BufferFlag::UnorderedAccess, LuminanceBufferSize, initialLuminanceBufferData);
-    if (!luminanceBuffer) {
-        BE_WARNLOG("RenderContext::CreateLuminanceBuffer: failed to create luminance buffer\n");
-        return;
-    }
-
-    RHI::renderer->SetName(luminanceBuffer, "luminanceBuffer");
-
-    RHI::ViewID srvViewID = RHI::renderer->CreateView(luminanceBuffer, RHI::ViewType::SRV, RHI::Format::Unknown, 0, 0, LuminanceBufferSize);
-    if (!srvViewID.IsValid()) {
-        BE_WARNLOG("RenderContext::CreateLuminanceBuffer: failed to create luminance SRV\n");
-        RHI::renderer->DestroyBuffer(luminanceBuffer);
-        luminanceBuffer = nullptr;
-        return;
-    }
-
-    RHI::ViewID uavViewID = RHI::renderer->CreateView(luminanceBuffer, RHI::ViewType::UAV, RHI::Format::Unknown, 0, 0, LuminanceBufferSize);
-    if (!uavViewID.IsValid()) {
-        BE_WARNLOG("RenderContext::CreateLuminanceBuffer: failed to create luminance UAV\n");
-        RHI::renderer->DestroyBuffer(luminanceBuffer);
-        luminanceBuffer = nullptr;
-        return;
-    }
-}
-
-void RenderContext::DestroyLuminanceBuffer() {
-    if (luminanceBuffer) {
-        RHI::renderer->DestroyBuffer(luminanceBuffer);
-        luminanceBuffer = nullptr;
-    }
 }
 
 void RenderContext::GetMainRenderDest(RHI::RenderDest &renderDest) const {
@@ -415,7 +147,6 @@ void RenderContext::InitToneMappingPSO() {
     bloomPrefilterPSO = shaderPipelineCache.GetComputePipeline(shaderTemplateManager.bloomPrefilterShaderTemplate, ShaderPermutationKey(), false);
     bloomDownsamplePSO = shaderPipelineCache.GetComputePipeline(shaderTemplateManager.bloomDownsampleShaderTemplate, ShaderPermutationKey(), false);
     bloomUpsamplePSO = shaderPipelineCache.GetComputePipeline(shaderTemplateManager.bloomUpsampleShaderTemplate, ShaderPermutationKey(), false);
-    fftBloomPrefilterPSO = shaderPipelineCache.GetComputePipeline(shaderTemplateManager.fftBloomPrefilterShaderTemplate, ShaderPermutationKey(), false);
     toneMappingPSO = shaderPipelineCache.GetComputePipeline(shaderTemplateManager.toneMappingShaderTemplate, ShaderPermutationKey(), false);
 }
 

@@ -22,7 +22,6 @@ RWTexture2D<float4> outputTexture : register(u0);
 [numthreads(ToneMappingBlockSizeX, ToneMappingBlockSizeY, 1)]
 void CSMain(uint3 dispatchThreadId : SV_DispatchThreadID) {
     uint2 pixelCoord = dispatchThreadId.xy;
-
     if (pixelCoord.x >= toneMappingParams.outputSize.x || pixelCoord.y >= toneMappingParams.outputSize.y) {
         return;
     }
@@ -30,7 +29,7 @@ void CSMain(uint3 dispatchThreadId : SV_DispatchThreadID) {
     float4 hdrColor = inputTexture.Load(int3(pixelCoord, 0));
 
     if (toneMappingParams.bloomIntensity > 0.0) {
-        float2 uv = (float2(pixelCoord) + 0.5) / float2(toneMappingParams.outputSize);
+        float2 uv = (float2(pixelCoord) + 0.5) * toneMappingParams.outputTexelSize;
         hdrColor.rgb += bloomTexture.SampleLevel(linearClampSampler, uv, 0).rgb * toneMappingParams.bloomIntensity;
     }
 

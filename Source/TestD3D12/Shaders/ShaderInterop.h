@@ -81,26 +81,34 @@ struct MipGenParams {
     uint flags;
 };
 
-struct PostProcessParams {
-    uint2 resolution;
-    float2 resolutionRcp;
-    float4 params0;
-    float4 params1;
+struct LuminancePass1Params {
+    uint2 sampleSize;
+    float2 sampleSizeRcp;
+    float luminanceLogMin;
+    float luminanceLogRangeRcp;
 };
 
-#define PPP_LUMINANCE_LOG_MIN postProcessParams.params0.x
-#define PPP_LUMINANCE_LOG_RANGE_RCP postProcessParams.params0.y
-#define PPP_LUMINANCE_PIXEL_COUNT postProcessParams.params0.z
-#define PPP_LUMINANCE_ADAPTATION_RATE postProcessParams.params0.w
-#define PPP_LUMINANCE_MIDDLE_GRAY postProcessParams.params1.x
-#define PPP_LUMINANCE_LOG_RANGE postProcessParams.params1.y
+struct LuminancePass2Params {
+    float luminanceLogMin;
+    float luminanceLogRange;
+    float luminancePixelCount;
+    float luminanceAdaptationRate;
+    float middleGray;
+    float3 padding0;
+};
 
 struct ToneMappingParams {
     uint2 outputSize;
+    float2 outputTexelSize;
     float exposureScale;
     uint toneMappingOperator;
     float bloomIntensity;
-    float3 padding0;
+    float padding0;
+};
+
+struct FullScreenImageParams {
+    float2 texCoordScale;
+    float2 texCoordOffset;
 };
 
 struct BloomParams {

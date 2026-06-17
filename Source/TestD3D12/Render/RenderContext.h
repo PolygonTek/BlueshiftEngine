@@ -30,7 +30,6 @@ class RenderBackend;
     하나의 윈도우 (SwapChain) 에 대응되는 렌더링 객체
 
     - 스왑 체인
-    - 화면 렌더 타겟 텍스쳐
     - 프레임 데이터 배열
         - 요소 하나는 한 프레임 렌더링에 필요한 데이터를 관리한다.
         - 프론트엔드 (메인 스레드) 는 프레임 데이터를 작성하고, RenderSystem 에 제출한다.
@@ -63,6 +62,7 @@ public:
 
     uint32_t                        GetWidth() const { return swapChain->GetWidth(); }
     uint32_t                        GetHeight() const { return swapChain->GetHeight(); }
+    const BE1::Color4 &             GetBaseClearColor() const { return baseClearColor; }
 
     float                           GetStatGpuAverageMsec() const { return statGpuAverageMsec.load(); }
     uint32_t                        GetStatRenderObjectCount() const { return statRenderObjectCount.load(); }
@@ -113,16 +113,6 @@ private:
         char                        filename[BE1::MaxAbsolutePath] = {};
     };
 
-    static constexpr int            BloomMaxLevelCount = 8;
-
-    void                            CreateMainRenderTextures(uint32_t width, uint32_t height);
-    void                            DestroyMainRenderTextures();
-    void                            CreatePyramidBloomTextures(uint32_t width, uint32_t height);
-    void                            DestroyPyramidBloomTextures();
-    void                            CreateFFTBloomTextures(uint32_t width, uint32_t height);
-    void                            DestroyFFTBloomTextures();
-    void                            CreateLuminanceBuffer();
-    void                            DestroyLuminanceBuffer();
     void                            InitFullScreenTrianglePSO();
     void                            InitToneMappingPSO();
     bool                            BeginImGui();
@@ -159,27 +149,6 @@ private:
     SharedPtr<ShaderPipeline>       bloomPrefilterPSO;
     SharedPtr<ShaderPipeline>       bloomDownsamplePSO;
     SharedPtr<ShaderPipeline>       bloomUpsamplePSO;
-    SharedPtr<ShaderPipeline>       fftBloomPrefilterPSO;
-
-    RHI::Texture *                  mainRTColorTexture = nullptr;
-    RHI::Texture *                  mainRTColorMSAATexture = nullptr;
-    RHI::Texture *                  mainRTDepthTexture = nullptr;
-    RHI::Texture *                  bloomDownTexture = nullptr;
-    RHI::Texture *                  bloomUpTexture = nullptr;
-    RHI::ViewID                     bloomDownMipSRVs[BloomMaxLevelCount] = {};
-    RHI::ViewID                     bloomDownMipUAVs[BloomMaxLevelCount] = {};
-    RHI::ViewID                     bloomUpMipSRVs[BloomMaxLevelCount] = {};
-    RHI::ViewID                     bloomUpMipUAVs[BloomMaxLevelCount] = {};
-    uint32_t                        bloomMipWidths[BloomMaxLevelCount] = {};
-    uint32_t                        bloomMipHeights[BloomMaxLevelCount] = {};
-    uint32_t                        bloomMipCount = 0;
-    RHI::Texture *                  bloomFFTInputTexture = nullptr;
-    RHI::Texture *                  bloomFFTWorkTexture = nullptr;
-    RHI::Texture *                  bloomFFTOutputTexture = nullptr;
-    uint32_t                        bloomFFTWidth = 0;
-    uint32_t                        bloomFFTHeight = 0;
-    RHI::Texture *                  postProcessColorTexture = nullptr;
-    RHI::Buffer *                   luminanceBuffer = nullptr;
 
     TextureStreamingFeedback        textureStreamingFeedback;
 

@@ -70,7 +70,7 @@ public:
 
     void                        SetSkyboxMaterial(SharedPtr<Material> skyboxMaterial);
 
-    void                        RenderScene(const RenderCamera *renderCamera);
+    void                        RenderScene(RenderCamera *renderCamera);
     void                        RenderGUI(GuiMesh &guiMesh);
 
     void                        DrawDebugLine(const BE1::Vec3 &start, const BE1::Vec3 &end, bool depthTest = false, int lifeTime = 0);

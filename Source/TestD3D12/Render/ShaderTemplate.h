@@ -231,7 +231,6 @@ public:
     SharedPtr<ShaderTemplate>       bloomPrefilterShaderTemplate;
     SharedPtr<ShaderTemplate>       bloomDownsampleShaderTemplate;
     SharedPtr<ShaderTemplate>       bloomUpsampleShaderTemplate;
-    SharedPtr<ShaderTemplate>       fftBloomPrefilterShaderTemplate;
     SharedPtr<ShaderTemplate>       unlitShaderTemplate;
     SharedPtr<ShaderTemplate>       litShaderTemplate;
 

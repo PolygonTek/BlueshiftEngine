@@ -56,7 +56,6 @@ struct BeginContextRenderCommand {
     RHI::PipelineState *            bloomPrefilterPSO = nullptr;
     RHI::PipelineState *            bloomDownsamplePSO = nullptr;
     RHI::PipelineState *            bloomUpsamplePSO = nullptr;
-    RHI::PipelineState *            fftBloomPrefilterPSO = nullptr;
 };
 
 struct DrawCameraRenderCommand {
