@@ -14,7 +14,7 @@
 
 #pragma once
 
-#include "RHI.h"
+#include "RHI/RHI.h"
 
 #if defined(USE_RHI_PROFILER) && defined(USE_TRACY_PROFILER)
 #error USE_RHI_PROFILER and USE_TRACY_PROFILER are mutually exclusive for PROFILER_* aliases.

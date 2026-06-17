@@ -15,7 +15,7 @@
 #include "Precompiled.h"
 #include "RenderCamera.h"
 #include "RenderCvars.h"
-#include "RHI.h"
+#include "RHI/RHI.h"
 #include "Shaders/ShaderInterop.h"
 
 static void SetViewMatrix(const BE1::Mat3 &viewAxis, const BE1::Vec3 &viewOrigin, float *rowMajor4x4ViewMatrix) {

@@ -15,11 +15,41 @@
 #include "Precompiled.h"
 #include "RHI.h"
 
+#if defined(_WIN32)
+#include "D3D12/D3D12Renderer.h"
+#endif
+
 namespace RHI {
     Renderer *renderer = nullptr;
 
     const ViewID ViewID::InvalidID = { ViewID::InvalidValue };
     const ViewID ViewID::PrimaryID = { ViewID::PrimaryValue };
+
+    bool CreateRenderer(GraphicsAPI graphicsAPI) {
+        assert(!renderer);
+
+        if (graphicsAPI == GraphicsAPI::Default) {
+#if defined(_WIN32)
+            graphicsAPI = GraphicsAPI::D3D12;
+#else
+            return false;
+#endif
+        }
+
+        switch (graphicsAPI) {
+#if defined(_WIN32)
+        case GraphicsAPI::D3D12:
+            renderer = new D3D12Renderer;
+            return true;
+#endif
+        default:
+            return false;
+        }
+    }
+
+    void DestroyRenderer() {
+        SAFE_DELETE(renderer);
+    }
 }
 
 const char *RHI::Renderer::TextureTypeName(RHI::TextureType textureType) {

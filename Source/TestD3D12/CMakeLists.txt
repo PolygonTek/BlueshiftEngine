@@ -17,47 +17,49 @@ set(SRC_FILES
     WinRes/small.ico
     WinRes/TestD3D12.ico
     WinRes/TestD3D12.rc
-    RHI.h
-    RHI.cpp
-    D3D12Renderer/D3D12Common.h
-    D3D12Renderer/D3D12Renderer.h
-    D3D12Renderer/D3D12Renderer.cpp
-    D3D12Renderer/D3D12SwapChain.h
-    D3D12Renderer/D3D12SwapChain.cpp
-    D3D12Renderer/D3D12DescriptorPool.h
-    D3D12Renderer/D3D12DescriptorPool.cpp
-    D3D12Renderer/D3D12ShaderVisibleDescriptorHeap.h
-    D3D12Renderer/D3D12ShaderVisibleDescriptorHeap.cpp
-    D3D12Renderer/D3D12Buffer.h
-    D3D12Renderer/D3D12Buffer.cpp
-    D3D12Renderer/D3D12Shader.h
-    D3D12Renderer/D3D12Shader.cpp
-    D3D12Renderer/D3D12Texture.h
-    D3D12Renderer/D3D12Texture.cpp
-    D3D12Renderer/D3D12Sampler.h
-    D3D12Renderer/D3D12Sampler.cpp
-    D3D12Renderer/D3D12VertexBuffer.h
-    D3D12Renderer/D3D12VertexBuffer.cpp
-    D3D12Renderer/D3D12IndexBuffer.h
-    D3D12Renderer/D3D12IndexBuffer.cpp
-    D3D12Renderer/D3D12ConstantBuffer.h
-    D3D12Renderer/D3D12ConstantBuffer.cpp
-    D3D12Renderer/D3D12PipelineState.h
-    D3D12Renderer/D3D12PipelineState.cpp
-    D3D12Renderer/D3D12RootBindingData.h
-    D3D12Renderer/D3D12RootBindingData.cpp
-    D3D12Renderer/D3D12ResourceRequest.h
-    D3D12Renderer/D3D12ResourceRequest.cpp
-    D3D12Renderer/D3D12Query.h
-    D3D12Renderer/D3D12Query.cpp
-    D3D12Renderer/D3D12CommandList.h
-    D3D12Renderer/D3D12CommandList.cpp
-    D3D12Renderer/D3D12CommandListPool.h
-    D3D12Renderer/D3D12CommandListPool.cpp
-    D3D12Renderer/D3D12FrameThreadData.h
-    D3D12Renderer/D3D12FrameThreadData.cpp
-    D3D12Renderer/D3D12ImGuiRenderer.h
-    D3D12Renderer/D3D12ImGuiRenderer.cpp
+    RHI/RHI.h
+    RHI/RHI.cpp
+    RHI/D3D12/D3D12Common.h
+    RHI/D3D12/D3D12Renderer.h
+    RHI/D3D12/D3D12Renderer.cpp
+    RHI/D3D12/D3D12SwapChain.h
+    RHI/D3D12/D3D12SwapChain.cpp
+    RHI/D3D12/D3D12DescriptorPool.h
+    RHI/D3D12/D3D12DescriptorPool.cpp
+    RHI/D3D12/D3D12ShaderVisibleDescriptorHeap.h
+    RHI/D3D12/D3D12ShaderVisibleDescriptorHeap.cpp
+    RHI/D3D12/D3D12Buffer.h
+    RHI/D3D12/D3D12Buffer.cpp
+    RHI/D3D12/D3D12Shader.h
+    RHI/D3D12/D3D12Shader.cpp
+    RHI/D3D12/D3D12Texture.h
+    RHI/D3D12/D3D12Texture.cpp
+    RHI/D3D12/D3D12Sampler.h
+    RHI/D3D12/D3D12Sampler.cpp
+    RHI/D3D12/D3D12VertexBuffer.h
+    RHI/D3D12/D3D12VertexBuffer.cpp
+    RHI/D3D12/D3D12IndexBuffer.h
+    RHI/D3D12/D3D12IndexBuffer.cpp
+    RHI/D3D12/D3D12ConstantBuffer.h
+    RHI/D3D12/D3D12ConstantBuffer.cpp
+    RHI/D3D12/D3D12PipelineState.h
+    RHI/D3D12/D3D12PipelineState.cpp
+    RHI/D3D12/D3D12RootBindingData.h
+    RHI/D3D12/D3D12RootBindingData.cpp
+    RHI/D3D12/D3D12ResourceRequest.h
+    RHI/D3D12/D3D12ResourceRequest.cpp
+    RHI/D3D12/D3D12Query.h
+    RHI/D3D12/D3D12Query.cpp
+    RHI/D3D12/D3D12CommandList.h
+    RHI/D3D12/D3D12CommandList.cpp
+    RHI/D3D12/D3D12CommandListPool.h
+    RHI/D3D12/D3D12CommandListPool.cpp
+    RHI/D3D12/D3D12FrameThreadData.h
+    RHI/D3D12/D3D12FrameThreadData.cpp
+    RHI/D3D12/D3D12ImGuiRenderer.h
+    RHI/D3D12/D3D12ImGuiRenderer.cpp
+    RHI/D3D12/D3D12ImGuiOverlay.h
+    RHI/D3D12/D3D12ImGuiOverlay.cpp
     Shaders/ShaderInterop.h
     Render/Anim.h
     Render/Anim.cpp
@@ -68,8 +70,6 @@ set(SRC_FILES
     Render/TextureStreamingFeedback.cpp
     Render/VertexInputLayoutFactory.h
     Render/VertexInputLayoutFactory.cpp
-    D3D12Renderer/D3D12ImGuiOverlay.h
-    D3D12Renderer/D3D12ImGuiOverlay.cpp
     Render/RenderCvars.h
     Render/RenderCvars.cpp
     Render/RenderContext.h

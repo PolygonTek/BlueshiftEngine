@@ -13,7 +13,7 @@
 // limitations under the License.
 
 #include "Precompiled.h"
-#include "RHI.h"
+#include "RHI/RHI.h"
 
 class RenderContext;
 class RenderBackend;

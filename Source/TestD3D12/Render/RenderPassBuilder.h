@@ -15,7 +15,7 @@
 #pragma once
 
 #include "Containers/HashIndex.h"
-#include "RHI.h"
+#include "RHI/RHI.h"
 #include "ShaderFeatureSet.h"
 #include "ShaderPipeline.h"
 #include "VertexInputLayoutFactory.h"

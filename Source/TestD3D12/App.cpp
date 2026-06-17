@@ -18,10 +18,6 @@
 #include "Render/RenderCvars.h"
 #include "Render/RenderContext.h"
 #include "Render/RenderBackend.h"
-#include "Shaders/ShaderInterop.h"
-#ifdef ENABLE_IMGUI
-#include "imgui/imgui.h"
-#endif
 #include "Render/RenderWorld.h"
 #include "Render/RenderCamera.h"
 #include "Render/Texture.h"
@@ -34,10 +30,14 @@
 #include "GameObject.h"
 #include "App.h"
 
-static BE1::CVar            stat_fps("stat_fps", "1", BE1::CVar::Flag::Bool, "show FPS");
-static BE1::CVar            stat_render("stat_render", "0", BE1::CVar::Flag::Bool, "show render statistics");
+#ifdef ENABLE_IMGUI
+#include "imgui/imgui.h"
+#endif
 
-App                         app;
+static BE1::CVar        stat_fps("stat_fps", "1", BE1::CVar::Flag::Bool, "show FPS");
+static BE1::CVar        stat_render("stat_render", "0", BE1::CVar::Flag::Bool, "show render statistics");
+
+App                     app;
 
 void App::Init(void *mainWindowHandle) {
     PROFILER_INIT();

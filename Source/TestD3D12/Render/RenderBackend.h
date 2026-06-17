@@ -15,7 +15,7 @@
 #pragma once
 
 #include "Precompiled.h"
-#include "RHI.h"
+#include "RHI/RHI.h"
 #include "RenderFrameData.h"
 
 class RenderFrameData;

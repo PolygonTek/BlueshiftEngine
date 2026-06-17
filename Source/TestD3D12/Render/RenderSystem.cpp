@@ -16,7 +16,7 @@
 #include "RenderSystem.h"
 #include "RenderContext.h"
 #include "RenderBackend.h"
-#include "D3D12Renderer/D3D12Renderer.h"
+#include "RHI/RHI.h"
 #include "Sampler.h"
 #include "Texture.h"
 #include "ShaderTemplate.h"
@@ -33,7 +33,10 @@ RenderSystem *          renderSystem = nullptr;
 void RenderSystem::Init(void *mainWindowHandle) {
     BE1::cmdSystem.AddCommand("screenshot", Cmd_ScreenShot);
 
-    RHI::renderer = new D3D12Renderer;
+    if (!RHI::CreateRenderer()) {
+        BE_FATALERROR("RenderSystem::Init: failed to create RHI renderer\n");
+    }
+
     RHI::renderer->Init(mainWindowHandle);
 
     VertexInputLayoutFactory::Init();
@@ -93,7 +96,8 @@ void RenderSystem::Shutdown() {
     samplerManager.Shutdown();
 
     RHI::renderer->Shutdown();
-    SAFE_DELETE(RHI::renderer);
+
+    RHI::DestroyRenderer();
 }
 
 void RenderSystem::UpdateFrame() {

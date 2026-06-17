@@ -17,7 +17,7 @@
 #include "Platform/Windows/PlatformWinUtils.h"
 #include "WinResource.h"
 #include "App.h"
-#include "RHI.h"
+#include "RHI/RHI.h"
 #include "Render/RenderSystem.h"
 #include "Render/RenderContext.h"
 #include <tchar.h>

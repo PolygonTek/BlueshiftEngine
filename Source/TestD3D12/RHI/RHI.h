@@ -15,6 +15,13 @@
 #pragma once
 
 namespace RHI {
+    enum class GraphicsAPI : uint8_t {
+        Default,
+        D3D12,
+        Vulkan,
+        Metal
+    };
+
     enum class ClearFlag : uint32_t {
         None                            = 0,
         Color                           = BIT(0),
@@ -1177,6 +1184,8 @@ namespace RHI {
     };
 
     extern Renderer *                   renderer;
+    bool                                CreateRenderer(GraphicsAPI graphicsAPI = GraphicsAPI::Default);
+    void                                DestroyRenderer();
 
     class ScopedProfilerEvent {
     public:

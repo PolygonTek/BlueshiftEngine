@@ -14,7 +14,7 @@
 
 #pragma once
 
-#include "RHI.h"
+#include "RHI/RHI.h"
 #include "Shaders/ShaderInterop.h"
 
 class TextureManager;

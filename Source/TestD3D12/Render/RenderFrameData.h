@@ -14,7 +14,7 @@
 
 #pragma once
 
-#include "RHI.h"
+#include "RHI/RHI.h"
 #include "ShaderGpuTable.h"
 
 class RenderContext;
