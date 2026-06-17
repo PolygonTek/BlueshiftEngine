@@ -99,6 +99,7 @@ struct VisCamera {
     RenderCameraClearMethod     clearMethod;
     RenderCameraClearColorMode  clearColorMode;
     BE1::Color4                 clearColor;
+    RenderCameraFlag            flags = RenderCameraFlag::NoFlag;
 
     bool                        is2D;
 };

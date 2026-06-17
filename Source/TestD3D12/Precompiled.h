@@ -40,9 +40,6 @@
 // 프레임 버퍼링 사용 여부
 #define USE_RENDER_FRAME_BUFFERING
 
-// 렌더타겟 텍스쳐 사용 여부
-#define USE_OFFSCREEN_MAIN_RENDER_TARGET
-
 // 스레드 로딩 시스템 사용 여부
 #define USE_ASYNC_LOADING
 

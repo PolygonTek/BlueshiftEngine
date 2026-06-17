@@ -16,6 +16,12 @@
 
 class RenderWorld;
 
+enum class RenderCameraFlag : uint8_t {
+    NoFlag                      = 0,
+    WireframeMode               = BIT(0),
+    SkipPostProcess             = BIT(1)
+};
+
 enum class RenderCameraClearMethod : uint8_t {
     NoClear,
     DepthOnly,
@@ -30,6 +36,7 @@ enum class RenderCameraClearColorMode : uint8_t {
 
 struct RenderCameraDesc {
     int                         time = 0;               ///< Time in milliseconds for shader effects and other time dependent rendering issues
+    RenderCameraFlag            flags = RenderCameraFlag::NoFlag;
 
     BE1::Rect                   renderRect;
     BE1::Vec3                   origin;                 ///< View origin
@@ -112,4 +119,9 @@ private:
     ALIGN_AS32 BE1::Mat4        viewMatrix;
     ALIGN_AS32 BE1::Mat4        projMatrix;
     ALIGN_AS32 BE1::Mat4        viewProjMatrix;
+};
+
+template<>
+struct enable_bitmask_operators<RenderCameraFlag> {
+    static const bool enable = true;
 };

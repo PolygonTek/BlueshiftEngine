@@ -192,7 +192,7 @@ void RenderPassBuilder::BuildGUI(RenderFrameData *frameData, VisCamera *visCamer
     }
 
     RenderPass *guiPass = AllocRenderPass(frameData, visCamera, RenderPassType::Gui, {}, VertexInputLayoutId::XyzStColor, visCamera->numVisSurfs);
-    RenderContext::activeContext->GetMainRenderDest(guiPass->pipelineDesc.renderDest);
+    RenderContext::activeContext->GetSwapChainRenderDest(guiPass->pipelineDesc.renderDest);
     guiPass->pipelineDesc.depthStencilStateType = RHI::DepthStencilStateType::Never;
 
     guiPipelineResolver.Begin(guiPass->pipelineDesc, visCamera->numVisSurfs);

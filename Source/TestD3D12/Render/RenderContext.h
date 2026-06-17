@@ -84,6 +84,7 @@ public:
     RHI::Format                     GetMainRTDepthFormat() const { return mainRTDepthFormat; }
     uint32_t                        GetMainRTSampleCount() const { return mainRTSampleCount; }
     void                            GetMainRenderDest(RHI::RenderDest &renderDest) const;
+    void                            GetSwapChainRenderDest(RHI::RenderDest &renderDest) const;
 
     const RenderFrameData *         GetCurrentFrontendFrameData() const { return &frames[currentFrontendFrameIndex]; }
     RenderFrameData *               GetCurrentFrontendFrameData() { return &frames[currentFrontendFrameIndex]; }
@@ -116,8 +117,10 @@ private:
 
     void                            CreateMainRenderTextures(uint32_t width, uint32_t height);
     void                            DestroyMainRenderTextures();
-    void                            CreateBloomTextures(uint32_t width, uint32_t height);
-    void                            DestroyBloomTextures();
+    void                            CreatePyramidBloomTextures(uint32_t width, uint32_t height);
+    void                            DestroyPyramidBloomTextures();
+    void                            CreateFFTBloomTextures(uint32_t width, uint32_t height);
+    void                            DestroyFFTBloomTextures();
     void                            CreateLuminanceBuffer();
     void                            DestroyLuminanceBuffer();
     void                            InitFullScreenTrianglePSO();
@@ -156,6 +159,7 @@ private:
     SharedPtr<ShaderPipeline>       bloomPrefilterPSO;
     SharedPtr<ShaderPipeline>       bloomDownsamplePSO;
     SharedPtr<ShaderPipeline>       bloomUpsamplePSO;
+    SharedPtr<ShaderPipeline>       fftBloomPrefilterPSO;
 
     RHI::Texture *                  mainRTColorTexture = nullptr;
     RHI::Texture *                  mainRTColorMSAATexture = nullptr;
@@ -169,7 +173,12 @@ private:
     uint32_t                        bloomMipWidths[BloomMaxLevelCount] = {};
     uint32_t                        bloomMipHeights[BloomMaxLevelCount] = {};
     uint32_t                        bloomMipCount = 0;
-    RHI::Texture *                  toneMappedColorTexture = nullptr;
+    RHI::Texture *                  bloomFFTInputTexture = nullptr;
+    RHI::Texture *                  bloomFFTWorkTexture = nullptr;
+    RHI::Texture *                  bloomFFTOutputTexture = nullptr;
+    uint32_t                        bloomFFTWidth = 0;
+    uint32_t                        bloomFFTHeight = 0;
+    RHI::Texture *                  postProcessColorTexture = nullptr;
     RHI::Buffer *                   luminanceBuffer = nullptr;
 
     TextureStreamingFeedback        textureStreamingFeedback;

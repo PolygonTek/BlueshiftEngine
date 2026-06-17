@@ -54,12 +54,8 @@ void RenderContext::Init(void *windowHandle, const BE1::Color4 &baseClearColor) 
     imguiOverlay = RHI::renderer->CreateImGuiOverlay(windowHandle, swapChain);
 #endif
 
-#ifdef USE_OFFSCREEN_MAIN_RENDER_TARGET
     mainRTColorFormat = RHI::Format::R16G16B16A16_FLOAT;
     this->baseClearColor = !RHI::Renderer::IsSRGBFormat(mainRTColorFormat) ? baseClearColor.SRGBToLinear() : baseClearColor;
-#else
-    this->baseClearColor = baseClearColor.SRGBToLinear();
-#endif
 
     // 렌더 타겟 텍스쳐 & 뎁스 텍스쳐 생성
     CreateMainRenderTextures(backBufferWidth, backBufferHeight);
@@ -100,6 +96,7 @@ void RenderContext::Shutdown() {
     bloomPrefilterPSO.reset();
     bloomDownsamplePSO.reset();
     bloomUpsamplePSO.reset();
+    fftBloomPrefilterPSO.reset();
 
     DestroyLuminanceBuffer();
     DestroyMainRenderTextures();
@@ -148,15 +145,16 @@ void RenderContext::CreateMainRenderTextures(uint32_t width, uint32_t height) {
     mainRTColorTexture = RHI::renderer->CreateTexture(RHI::TextureType::Texture2D, RHI::TextureFlag::RenderTarget | RHI::TextureFlag::ShaderResource | RHI::TextureFlag::UnorderedAccess, colorImage, false, colorOptimizedClearValue, 1, RHI::GPUResourceState::ShaderResource);
     RHI::renderer->SetName(mainRTColorTexture, "mainRTColorTexture");
 
-    BE1::Image::Format toneMappedImageFormat = BE1::Image::Format::Unknown;
-    RHI::Renderer::RHIFormatToImageFormat(RHI::Format::R8G8B8A8_UNORM, &toneMappedImageFormat, nullptr);
+    BE1::Image::Format postProcessColorImageFormat = BE1::Image::Format::Unknown;
+    RHI::Renderer::RHIFormatToImageFormat(RHI::Format::R8G8B8A8_UNORM, &postProcessColorImageFormat, nullptr);
 
-    SharedPtr<BE1::Image> toneMappedImage = MakeShared<BE1::Image>();
-    toneMappedImage->InitFromMemory(width, height, 1, 1, 1, toneMappedImageFormat, BE1::Image::GammaSpace::Linear, nullptr, BE1::Image::Flag::None);
-    toneMappedColorTexture = RHI::renderer->CreateTexture(RHI::TextureType::Texture2D, RHI::TextureFlag::ShaderResource | RHI::TextureFlag::UnorderedAccess, toneMappedImage, false, {}, 1, RHI::GPUResourceState::ShaderResource);
-    RHI::renderer->SetName(toneMappedColorTexture, "toneMappedColorTexture");
+    SharedPtr<BE1::Image> postProcessColorImage = MakeShared<BE1::Image>();
+    postProcessColorImage->InitFromMemory(width, height, 1, 1, 1, postProcessColorImageFormat, BE1::Image::GammaSpace::Linear, nullptr, BE1::Image::Flag::None);
+    postProcessColorTexture = RHI::renderer->CreateTexture(RHI::TextureType::Texture2D, RHI::TextureFlag::ShaderResource | RHI::TextureFlag::UnorderedAccess, postProcessColorImage, false, {}, 1, RHI::GPUResourceState::ShaderResource);
+    RHI::renderer->SetName(postProcessColorTexture, "postProcessColorTexture");
 
-    CreateBloomTextures(width, height);
+    CreatePyramidBloomTextures(width, height);
+    CreateFFTBloomTextures(width, height);
 
     if (mainRTSampleCount > 1) {
         mainRTColorMSAATexture = RHI::renderer->CreateTexture(RHI::TextureType::Texture2D, RHI::TextureFlag::RenderTarget | RHI::TextureFlag::ShaderResource, colorImage, false, colorOptimizedClearValue, mainRTSampleCount, RHI::GPUResourceState::ShaderResource);
@@ -173,15 +171,16 @@ void RenderContext::CreateMainRenderTextures(uint32_t width, uint32_t height) {
 }
 
 void RenderContext::DestroyMainRenderTextures() {
-    DestroyBloomTextures();
+    DestroyFFTBloomTextures();
+    DestroyPyramidBloomTextures();
 
     if (mainRTColorTexture) {
         RHI::renderer->DestroyTexture(mainRTColorTexture, true);
         mainRTColorTexture = nullptr;
     }
-    if (toneMappedColorTexture) {
-        RHI::renderer->DestroyTexture(toneMappedColorTexture, true);
-        toneMappedColorTexture = nullptr;
+    if (postProcessColorTexture) {
+        RHI::renderer->DestroyTexture(postProcessColorTexture, true);
+        postProcessColorTexture = nullptr;
     }
     if (mainRTColorMSAATexture) {
         RHI::renderer->DestroyTexture(mainRTColorMSAATexture, true);
@@ -193,10 +192,10 @@ void RenderContext::DestroyMainRenderTextures() {
     }
 }
 
-void RenderContext::CreateBloomTextures(uint32_t width, uint32_t height) {
-    DestroyBloomTextures();
+void RenderContext::CreatePyramidBloomTextures(uint32_t width, uint32_t height) {
+    DestroyPyramidBloomTextures();
 
-    BE1::Image::Format bloomImageFormat = RHI::renderer->ToUAVImageFormat(BE1::Image::Format::R11G11B10_FLOAT);
+    const BE1::Image::Format bloomImageFormat = RHI::renderer->ToUAVImageFormat(BE1::Image::Format::R11G11B10_FLOAT);
     const RHI::TextureFlag bloomTextureFlags = RHI::TextureFlag::ShaderResource | RHI::TextureFlag::UnorderedAccess | RHI::TextureFlag::SkipDefaultViews;
     const uint32_t maxLevelCount = static_cast<uint32_t>(BE1::Clamp(r_bloomMipCount.GetInteger(), 1, BloomMaxLevelCount));
 
@@ -225,8 +224,8 @@ void RenderContext::CreateBloomTextures(uint32_t width, uint32_t height) {
     // bloom down texture 생성
     bloomDownTexture = RHI::renderer->CreateTexture(RHI::TextureType::Texture2D, bloomTextureFlags, image, false, {}, 1, RHI::GPUResourceState::ShaderResource);
     if (!bloomDownTexture) {
-        BE_WARNLOG("RenderContext::CreateBloomTextures: failed to create bloom down texture\n");
-        DestroyBloomTextures();
+        BE_WARNLOG("RenderContext::CreatePyramidBloomTextures: failed to create bloom down texture\n");
+        DestroyPyramidBloomTextures();
         return;
     }
     RHI::renderer->SetName(bloomDownTexture, "bloomDownTexture");
@@ -234,8 +233,8 @@ void RenderContext::CreateBloomTextures(uint32_t width, uint32_t height) {
     // bloom up texture 생성
     bloomUpTexture = RHI::renderer->CreateTexture(RHI::TextureType::Texture2D, bloomTextureFlags, image, false, {}, 1, RHI::GPUResourceState::ShaderResource);
     if (!bloomUpTexture) {
-        BE_WARNLOG("RenderContext::CreateBloomTextures: failed to create bloom up texture\n");
-        DestroyBloomTextures();
+        BE_WARNLOG("RenderContext::CreatePyramidBloomTextures: failed to create bloom up texture\n");
+        DestroyPyramidBloomTextures();
         return;
     }
     RHI::renderer->SetName(bloomUpTexture, "bloomUpTexture");
@@ -245,13 +244,13 @@ void RenderContext::CreateBloomTextures(uint32_t width, uint32_t height) {
         for (uint32_t mipLevel = 0; mipLevel < levelCount; ++mipLevel) {
             srvViewIDs[mipLevel] = RHI::renderer->CreateView(texture, RHI::ViewType::SRV, RHI::Format::Auto, 0, texture->GetArraySize(), mipLevel, 1);
             if (!srvViewIDs[mipLevel].IsValid()) {
-                BE_WARNLOG("RenderContext::CreateBloomTextures: failed to create %s mip %i SRV\n", debugName, mipLevel);
+                BE_WARNLOG("RenderContext::CreatePyramidBloomTextures: failed to create %s mip %i SRV\n", debugName, mipLevel);
                 return false;
             }
 
             uavViewIDs[mipLevel] = RHI::renderer->CreateView(texture, RHI::ViewType::UAV, RHI::Format::Auto, 0, texture->GetArraySize(), mipLevel, 1);
             if (!uavViewIDs[mipLevel].IsValid()) {
-                BE_WARNLOG("RenderContext::CreateBloomTextures: failed to create %s mip %i UAV\n", debugName, mipLevel);
+                BE_WARNLOG("RenderContext::CreatePyramidBloomTextures: failed to create %s mip %i UAV\n", debugName, mipLevel);
                 return false;
             }
         }
@@ -261,14 +260,14 @@ void RenderContext::CreateBloomTextures(uint32_t width, uint32_t height) {
 
     if (!createBloomMipViews(bloomDownTexture, bloomDownMipSRVs, bloomDownMipUAVs, levelCount, "bloomDownTexture") ||
         !createBloomMipViews(bloomUpTexture, bloomUpMipSRVs, bloomUpMipUAVs, levelCount, "bloomUpTexture")) {
-        DestroyBloomTextures();
+        DestroyPyramidBloomTextures();
         return;
     }
 
     bloomMipCount = levelCount;
 }
 
-void RenderContext::DestroyBloomTextures() {
+void RenderContext::DestroyPyramidBloomTextures() {
     if (bloomDownTexture) {
         RHI::renderer->DestroyTexture(bloomDownTexture, true);
         bloomDownTexture = nullptr;
@@ -288,6 +287,63 @@ void RenderContext::DestroyBloomTextures() {
     }
 
     bloomMipCount = 0;
+}
+
+void RenderContext::CreateFFTBloomTextures(uint32_t width, uint32_t height) {
+    DestroyFFTBloomTextures();
+
+    // FFT bloom 은 convolution 중간값을 다루므로 RGB-only packed 포맷보다 signed half float 작업 포맷을 사용한다.
+    const BE1::Image::Format fftBloomImageFormat = BE1::Image::Format::R16G16B16A16_FLOAT;
+    const RHI::TextureFlag fftBloomTextureFlags = RHI::TextureFlag::ShaderResource | RHI::TextureFlag::UnorderedAccess;
+
+    // 화면의 절반 크기를 기준으로 하되, FFT pass 에서 쓰기 좋은 power-of-two 크기로 맞춘다.
+    bloomFFTWidth = BE1::Math::RoundUpPowerOfTwo(width > 1 ? width >> 1 : 1);
+    bloomFFTHeight = BE1::Math::RoundUpPowerOfTwo(height > 1 ? height >> 1 : 1);
+
+    SharedPtr<BE1::Image> image = MakeShared<BE1::Image>();
+    image->InitFromMemory(bloomFFTWidth, bloomFFTHeight, 1, 1, 1, fftBloomImageFormat, BE1::Image::GammaSpace::Linear, nullptr, BE1::Image::Flag::None);
+
+    bloomFFTInputTexture = RHI::renderer->CreateTexture(RHI::TextureType::Texture2D, fftBloomTextureFlags, image, false, {}, 1, RHI::GPUResourceState::ShaderResource);
+    if (!bloomFFTInputTexture) {
+        BE_WARNLOG("RenderContext::CreateFFTBloomTextures: failed to create bloom FFT input texture\n");
+        DestroyFFTBloomTextures();
+        return;
+    }
+    RHI::renderer->SetName(bloomFFTInputTexture, "bloomFFTInputTexture");
+
+    bloomFFTWorkTexture = RHI::renderer->CreateTexture(RHI::TextureType::Texture2D, fftBloomTextureFlags, image, false, {}, 1, RHI::GPUResourceState::ShaderResource);
+    if (!bloomFFTWorkTexture) {
+        BE_WARNLOG("RenderContext::CreateFFTBloomTextures: failed to create bloom FFT work texture\n");
+        DestroyFFTBloomTextures();
+        return;
+    }
+    RHI::renderer->SetName(bloomFFTWorkTexture, "bloomFFTWorkTexture");
+
+    bloomFFTOutputTexture = RHI::renderer->CreateTexture(RHI::TextureType::Texture2D, fftBloomTextureFlags, image, false, {}, 1, RHI::GPUResourceState::ShaderResource);
+    if (!bloomFFTOutputTexture) {
+        BE_WARNLOG("RenderContext::CreateFFTBloomTextures: failed to create bloom FFT output texture\n");
+        DestroyFFTBloomTextures();
+        return;
+    }
+    RHI::renderer->SetName(bloomFFTOutputTexture, "bloomFFTOutputTexture");
+}
+
+void RenderContext::DestroyFFTBloomTextures() {
+    if (bloomFFTInputTexture) {
+        RHI::renderer->DestroyTexture(bloomFFTInputTexture, true);
+        bloomFFTInputTexture = nullptr;
+    }
+    if (bloomFFTWorkTexture) {
+        RHI::renderer->DestroyTexture(bloomFFTWorkTexture, true);
+        bloomFFTWorkTexture = nullptr;
+    }
+    if (bloomFFTOutputTexture) {
+        RHI::renderer->DestroyTexture(bloomFFTOutputTexture, true);
+        bloomFFTOutputTexture = nullptr;
+    }
+
+    bloomFFTWidth = 0;
+    bloomFFTHeight = 0;
 }
 
 void RenderContext::CreateLuminanceBuffer() {
@@ -331,21 +387,20 @@ void RenderContext::DestroyLuminanceBuffer() {
 void RenderContext::GetMainRenderDest(RHI::RenderDest &renderDest) const {
     renderDest.renderTargetCount = 1;
     renderDest.depthStencilFormat = GetMainRTDepthFormat();
-
-#ifdef USE_OFFSCREEN_MAIN_RENDER_TARGET
     renderDest.renderTargetFormats[0] = GetMainRTColorFormat();
     renderDest.sampleCount = GetMainRTSampleCount();
-#else
+}
+
+void RenderContext::GetSwapChainRenderDest(RHI::RenderDest &renderDest) const {
+    renderDest = RHI::RenderDest();
+    renderDest.renderTargetCount = 1;
     renderDest.renderTargetFormats[0] = swapChain->GetRTVFormat();
     renderDest.sampleCount = 1;
-#endif
 }
 
 void RenderContext::InitFullScreenTrianglePSO() {
     RHI::RenderDest renderDest;
-    renderDest.renderTargetCount = 1;
-    renderDest.renderTargetFormats[0] = swapChain->GetRTVFormat();
-    renderDest.sampleCount = 1;
+    GetSwapChainRenderDest(renderDest);
 
     ShaderPipelineDesc pipelineDesc;
     pipelineDesc.renderDest = renderDest;
@@ -360,6 +415,7 @@ void RenderContext::InitToneMappingPSO() {
     bloomPrefilterPSO = shaderPipelineCache.GetComputePipeline(shaderTemplateManager.bloomPrefilterShaderTemplate, ShaderPermutationKey(), false);
     bloomDownsamplePSO = shaderPipelineCache.GetComputePipeline(shaderTemplateManager.bloomDownsampleShaderTemplate, ShaderPermutationKey(), false);
     bloomUpsamplePSO = shaderPipelineCache.GetComputePipeline(shaderTemplateManager.bloomUpsampleShaderTemplate, ShaderPermutationKey(), false);
+    fftBloomPrefilterPSO = shaderPipelineCache.GetComputePipeline(shaderTemplateManager.fftBloomPrefilterShaderTemplate, ShaderPermutationKey(), false);
     toneMappingPSO = shaderPipelineCache.GetComputePipeline(shaderTemplateManager.toneMappingShaderTemplate, ShaderPermutationKey(), false);
 }
 

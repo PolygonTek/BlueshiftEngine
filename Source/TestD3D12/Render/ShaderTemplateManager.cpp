@@ -293,6 +293,14 @@ void ShaderTemplateManager::CreateEngineShaderTemplates() {
     }
     );
 
+    static constexpr const char *fftBloomPrefilterShaderTemplateText = ENGINE_SHADER_TEMPLATE(
+    {
+        stages {
+            compute SM_6_0 "FFTBloomPrefilter.hlsl" "CSMain"
+        }
+    }
+    );
+
     static constexpr const char *unlitShaderTemplateText = ENGINE_SHADER_TEMPLATE(
     {
         stages {
@@ -399,6 +407,12 @@ void ShaderTemplateManager::CreateEngineShaderTemplates() {
     }
     bloomUpsampleShaderTemplate->AddPermutation();
 
+    fftBloomPrefilterShaderTemplate = AllocShaderTemplate("_fftBloomPrefilterShader");
+    if (!fftBloomPrefilterShaderTemplate->Create(fftBloomPrefilterShaderTemplateText, baseDir)) {
+        BE_FATALERROR("ShaderTemplateManager::CreateEngineShaderTemplates: failed to create FFT bloom prefilter shader template");
+    }
+    fftBloomPrefilterShaderTemplate->AddPermutation();
+
     unlitShaderTemplate = AllocShaderTemplate("_unlitShader");
     if (!unlitShaderTemplate->Create(unlitShaderTemplateText, baseDir)) {
         BE_FATALERROR("ShaderTemplateManager::CreateEngineShaderTemplates: failed to create unlit shader template");
@@ -431,6 +445,9 @@ void ShaderTemplateManager::DestroyEngineShaderTemplates() {
     }
     if (bloomUpsampleShaderTemplate) {
         bloomUpsampleShaderTemplate.reset();
+    }
+    if (fftBloomPrefilterShaderTemplate) {
+        fftBloomPrefilterShaderTemplate.reset();
     }
     if (unlitShaderTemplate) {
         unlitShaderTemplate.reset();

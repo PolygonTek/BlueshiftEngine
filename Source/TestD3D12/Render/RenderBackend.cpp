@@ -168,10 +168,6 @@ void RenderBackend::DiscardGpuFrameTimings(const RenderContext *renderContext) {
 }
 
 void RenderBackend::Execute(RenderFrameData *frameData) {
-    if (r_skipBackend.GetBool()) {
-        return;
-    }
-
     uint64_t t0 = BE1::PlatformTime::Microseconds();
 
     // 백엔드가 처리할 프레임 데이터
@@ -276,6 +272,7 @@ const void *RenderBackend::ExecuteBeginContext(const void *data) {
     currentBloomPrefilterPSO = cmd->bloomPrefilterPSO;
     currentBloomDownsamplePSO = cmd->bloomDownsamplePSO;
     currentBloomUpsamplePSO = cmd->bloomUpsamplePSO;
+    currentFFTBloomPrefilterPSO = cmd->fftBloomPrefilterPSO;
 
     statDrawCount = 0;
     statDrawTriangleCount = 0;
@@ -317,6 +314,10 @@ const void *RenderBackend::ExecuteDrawCamera(const void *data) {
 
     currentVisCamera = cmd->visCamera;
 
+    if ((currentVisCamera->is2D && r_skipDrawCamera2D.GetBool()) || (!currentVisCamera->is2D && r_skipDrawCamera3D.GetBool())) {
+        return (const void *)(cmd + 1);
+    }
+
     // 커맨드 리스트 풀에서 새로운 커맨드 리스트를 얻어온다.
     mainCommandList = frameData->GetThreadData(0)->BeginCommandList(RHI::CommandQueueType::Graphics);
 
@@ -353,54 +354,85 @@ const void *RenderBackend::ExecuteDrawCamera(const void *data) {
         clearFlags |= RHI::ClearFlag::Depth;
     }
 
-#ifndef USE_OFFSCREEN_MAIN_RENDER_TARGET
-    RHI::renderer->BeginRenderPass(mainCommandList, currentContext->swapChain, currentContext->mainRTDepthTexture, clearColor, clearDepth, 0, clearFlags);
-#else
-    RHI::RenderPassImage::LoadAction colorLoadAction = BE1::HasFlag(clearFlags, RHI::ClearFlag::Color) ? RHI::RenderPassImage::LoadAction::Clear : RHI::RenderPassImage::LoadAction::Load;
-    if (currentVisCamera->clearMethod == RenderCameraClearMethod::Skybox) {
-        colorLoadAction = RHI::RenderPassImage::LoadAction::DontCare;
-    }
-    RHI::RenderPassImage::LoadAction depthLoadAction = BE1::HasFlag(clearFlags, RHI::ClearFlag::Depth) ? RHI::RenderPassImage::LoadAction::Clear : RHI::RenderPassImage::LoadAction::Load;
-    RHI::ClearValue clearColorValue = RHI::ClearValue::Color(clearColor[0], clearColor[1], clearColor[2], clearColor[3]);
-
-    if (currentContext->mainRTSampleCount > 1) {
-        RHI::RenderPassImage colorImage = RHI::RenderPassImage::Color(currentContext->mainRTColorMSAATexture, RHI::ViewID::PrimaryID, colorLoadAction);
-        if (useExplicitClearColor) {
-            colorImage = colorImage.WithClearValue(clearColorValue);
-        }
-
-        RHI::RenderPassImage renderPassImages[] = {
-            colorImage,
-            RHI::RenderPassImage::DepthStencil(currentContext->mainRTDepthTexture, RHI::ViewID::PrimaryID, depthLoadAction),
-            RHI::RenderPassImage::ResolveColor(currentContext->mainRTColorTexture, RHI::ViewID::PrimaryID, 0)
-        };
-        RHI::renderer->BeginRenderPass(mainCommandList, renderPassImages, COUNT_OF(renderPassImages));
-    } else {
-        RHI::RenderPassImage colorImage = RHI::RenderPassImage::Color(currentContext->mainRTColorTexture, RHI::ViewID::PrimaryID, colorLoadAction);
-        if (useExplicitClearColor) {
-            colorImage = colorImage.WithClearValue(clearColorValue);
-        }
-
-        RHI::RenderPassImage renderPassImages[] = {
-            colorImage,
-            RHI::RenderPassImage::DepthStencil(currentContext->mainRTDepthTexture, RHI::ViewID::PrimaryID, depthLoadAction)
-        };
-        RHI::renderer->BeginRenderPass(mainCommandList, renderPassImages, COUNT_OF(renderPassImages));
-    }
-#endif
-
     if (currentVisCamera->is2D) {
-        DrawCamera2D();
-    } else {
-        DrawCamera3D();
-    }
+        const RHI::ClearFlag swapChainClearFlags = BE1::HasFlag(clearFlags, RHI::ClearFlag::Color) ? RHI::ClearFlag::Color : RHI::ClearFlag::None;
+        RHI::renderer->BeginRenderPass(mainCommandList, currentContext->swapChain, nullptr, clearColor, clearDepth, 0, swapChainClearFlags);
 
-    RHI::renderer->EndRenderPass(mainCommandList);
+        DrawCamera2D();
+
+        RHI::renderer->EndRenderPass(mainCommandList);
+    } else {
+        RHI::RenderPassImage::LoadAction colorLoadAction = BE1::HasFlag(clearFlags, RHI::ClearFlag::Color) ? RHI::RenderPassImage::LoadAction::Clear : RHI::RenderPassImage::LoadAction::Load;
+        if (currentVisCamera->clearMethod == RenderCameraClearMethod::Skybox) {
+            colorLoadAction = RHI::RenderPassImage::LoadAction::DontCare;
+        }
+        RHI::RenderPassImage::LoadAction depthLoadAction = BE1::HasFlag(clearFlags, RHI::ClearFlag::Depth) ? RHI::RenderPassImage::LoadAction::Clear : RHI::RenderPassImage::LoadAction::Load;
+        RHI::ClearValue clearColorValue = RHI::ClearValue::Color(clearColor[0], clearColor[1], clearColor[2], clearColor[3]);
+
+        if (currentContext->mainRTSampleCount > 1) {
+            RHI::RenderPassImage colorImage = RHI::RenderPassImage::Color(currentContext->mainRTColorMSAATexture, RHI::ViewID::PrimaryID, colorLoadAction);
+            if (useExplicitClearColor) {
+                colorImage = colorImage.WithClearValue(clearColorValue);
+            }
+
+            RHI::RenderPassImage renderPassImages[] = {
+                colorImage,
+                RHI::RenderPassImage::DepthStencil(currentContext->mainRTDepthTexture, RHI::ViewID::PrimaryID, depthLoadAction),
+                RHI::RenderPassImage::ResolveColor(currentContext->mainRTColorTexture, RHI::ViewID::PrimaryID, 0)
+            };
+            RHI::renderer->BeginRenderPass(mainCommandList, renderPassImages, COUNT_OF(renderPassImages));
+        } else {
+            RHI::RenderPassImage colorImage = RHI::RenderPassImage::Color(currentContext->mainRTColorTexture, RHI::ViewID::PrimaryID, colorLoadAction);
+            if (useExplicitClearColor) {
+                colorImage = colorImage.WithClearValue(clearColorValue);
+            }
+
+            RHI::RenderPassImage renderPassImages[] = {
+                colorImage,
+                RHI::RenderPassImage::DepthStencil(currentContext->mainRTDepthTexture, RHI::ViewID::PrimaryID, depthLoadAction)
+            };
+            RHI::renderer->BeginRenderPass(mainCommandList, renderPassImages, COUNT_OF(renderPassImages));
+        }
+
+        DrawCamera3D();
+
+        RHI::renderer->EndRenderPass(mainCommandList);
+
+        PostProcessAndBlitToSwapChain();
+    }
 
     // command list 에 기록을 마치고 실행
     mainCommandList->CloseAndExecute();
 
     return (const void *)(cmd + 1);
+}
+
+void RenderBackend::PostProcessAndBlitToSwapChain() {
+    const RHI::Texture *finalColorTexture = currentContext->mainRTColorTexture;
+
+    if (!r_skipPostProcess.GetBool() && !BE1::HasFlag(currentVisCamera->flags, RenderCameraFlag::SkipPostProcess)) {
+        const bool hasLuminance = DispatchLuminance();
+        const bool hasBloom = hasLuminance && DispatchBloom();
+
+        if (hasLuminance && DispatchToneMapping(hasBloom)) {
+            finalColorTexture = currentContext->postProcessColorTexture;
+        }
+    }
+
+    BlitToSwapChain(finalColorTexture);
+}
+
+void RenderBackend::BlitToSwapChain(const RHI::Texture *texture) {
+    if (!texture || !currentImagePSO) {
+        return;
+    }
+
+    RHI::renderer->BeginRenderPass(mainCommandList, currentContext->swapChain, nullptr);
+    RHI::renderer->SetPSO(mainCommandList, currentImagePSO);
+    RHI::renderer->SetTexture(mainCommandList, 0, false, texture);
+    RHI::renderer->Draw(mainCommandList, 3, 0);
+    //RecordDrawStats(1, 1, 0, 0);
+    RHI::renderer->EndRenderPass(mainCommandList);
 }
 
 const void *RenderBackend::ExecuteScreenshot(const void *data) {
@@ -441,40 +473,16 @@ const void *RenderBackend::ExecuteSwapBuffers(const void *data) {
 #endif
 
     const bool hasPendingImGuiOverlay = frameData->HasPendingImGuiOverlay();
-
-#ifdef USE_OFFSCREEN_MAIN_RENDER_TARGET
-    const bool needsSwapChainRenderPass = true;
-
-    const bool hasLuminance = DispatchLuminance();
-    const bool hasBloom = hasLuminance && DispatchBloom();
-    const bool useToneMappedColorTexture = hasLuminance && DispatchToneMapping(hasBloom);
-#else
-    const bool needsSwapChainRenderPass = hasPendingImGuiOverlay;
-#endif
-
-    if (needsSwapChainRenderPass) {
+    if (hasPendingImGuiOverlay) {
         BE1::Rect renderRect(0, 0, currentContext->GetWidth(), currentContext->GetHeight());
-        if (currentVisCamera) {
-            renderRect = currentVisCamera->renderRect;
-        }
 
         // 뷰포트 & ScissorRect 의 초기값 설정
         RHI::renderer->SetViewport(mainCommandList, renderRect);
         RHI::renderer->SetScissorRect(mainCommandList, renderRect);
 
         RHI::renderer->BeginRenderPass(mainCommandList, currentContext->swapChain, nullptr);
-#ifdef USE_OFFSCREEN_MAIN_RENDER_TARGET
-        if (currentImagePSO) {
-            RHI::renderer->SetPSO(mainCommandList, currentImagePSO);
-            RHI::renderer->SetTexture(mainCommandList, 0, false, useToneMappedColorTexture ? currentContext->toneMappedColorTexture : currentContext->mainRTColorTexture);
-            RHI::renderer->Draw(mainCommandList, 3, 0);
-            //RecordDrawStats(1, 1, 0, 0);
-        }
-#endif
 
-        if (hasPendingImGuiOverlay) {
-            frameData->RenderPendingImGuiOverlay(mainCommandList);
-        }
+        frameData->RenderPendingImGuiOverlay(mainCommandList);
 
         RHI::renderer->EndRenderPass(mainCommandList);
     }
@@ -575,8 +583,21 @@ bool RenderBackend::DispatchLuminance() {
 bool RenderBackend::DispatchBloom() {
     PROFILER_CPU_SCOPED_EVENT("RenderBackend::DispatchBloom");
 
-    if (!r_bloom.GetBool() ||
-        !currentBloomPrefilterPSO ||
+    const RenderBloomMode bloomMode = static_cast<RenderBloomMode>(BE1::Clamp(r_bloom.GetInteger(), static_cast<int>(RenderBloomMode::Off), static_cast<int>(RenderBloomMode::FFTConvolution)));
+    switch (bloomMode) {
+    case RenderBloomMode::Pyramid:
+        return DispatchBloomPyramid();
+    case RenderBloomMode::FFTConvolution:
+        return DispatchBloomFFT();
+    default:
+        return false;
+    }
+}
+
+bool RenderBackend::DispatchBloomPyramid() {
+    PROFILER_CPU_SCOPED_EVENT("RenderBackend::DispatchBloomPyramid");
+
+    if (!currentBloomPrefilterPSO ||
         !currentBloomDownsamplePSO ||
         !currentBloomUpsamplePSO ||
         !currentContext->mainRTColorTexture ||
@@ -706,6 +727,22 @@ bool RenderBackend::DispatchBloom() {
     return true;
 }
 
+bool RenderBackend::DispatchBloomFFT() {
+    PROFILER_CPU_SCOPED_EVENT("RenderBackend::DispatchBloomFFT");
+
+    if (!currentFFTBloomPrefilterPSO ||
+        !currentContext->bloomFFTInputTexture ||
+        !currentContext->bloomFFTWorkTexture ||
+        !currentContext->bloomFFTOutputTexture ||
+        currentContext->bloomFFTWidth == 0 ||
+        currentContext->bloomFFTHeight == 0) {
+        return false;
+    }
+
+    // TODO: FFT convolution bloom will be implemented as a separate path.
+    return false;
+}
+
 bool RenderBackend::DispatchToneMapping(bool useBloom) {
     PROFILER_CPU_SCOPED_EVENT("RenderBackend::DispatchToneMapping");
 
@@ -713,7 +750,7 @@ bool RenderBackend::DispatchToneMapping(bool useBloom) {
         !currentToneMappingPSO ||
         !currentContext->mainRTColorTexture ||
         !currentContext->luminanceBuffer ||
-        !currentContext->toneMappedColorTexture) {
+        !currentContext->postProcessColorTexture) {
         return false;
     }
 
@@ -731,7 +768,7 @@ bool RenderBackend::DispatchToneMapping(bool useBloom) {
     RHI::GPUBarrier startBarriers[] = {
         RHI::Renderer::MakeImageBarrier(currentContext->mainRTColorTexture, RHI::GPUResourceState::ShaderResource, RHI::GPUResourceState::ShaderResourceCompute),
         RHI::Renderer::MakeBufferBarrier(currentContext->luminanceBuffer, RHI::GPUResourceState::UnorderedAccess, RHI::GPUResourceState::ShaderResourceCompute),
-        RHI::Renderer::MakeImageBarrier(currentContext->toneMappedColorTexture, RHI::GPUResourceState::ShaderResource, RHI::GPUResourceState::UnorderedAccess)
+        RHI::Renderer::MakeImageBarrier(currentContext->postProcessColorTexture, RHI::GPUResourceState::ShaderResource, RHI::GPUResourceState::UnorderedAccess)
     };
     RHI::renderer->Barrier(mainCommandList, startBarriers, COUNT_OF(startBarriers));
 
@@ -742,7 +779,7 @@ bool RenderBackend::DispatchToneMapping(bool useBloom) {
     // useBloom 이 꺼져있으면, 더미 텍스쳐로 그냥 mainRTColorTexture 을 바인딩한다. (어차피 사용안함)
     RHI::renderer->SetTexture(mainCommandList, 2, false, useBloom ? currentContext->bloomUpTexture : currentContext->mainRTColorTexture, useBloom ? currentContext->bloomUpMipSRVs[0] : RHI::ViewID::PrimaryID);
 
-    RHI::renderer->SetTexture(mainCommandList, 0, true, currentContext->toneMappedColorTexture);
+    RHI::renderer->SetTexture(mainCommandList, 0, true, currentContext->postProcessColorTexture);
     RHI::renderer->SetConstantBuffer(mainCommandList, 0, toneMappingConstantBuffer);
 
     const uint32_t threadGroupCountX = (toneMappingParams.outputSize.x + ToneMappingBlockSizeX - 1) / ToneMappingBlockSizeX;
@@ -752,7 +789,7 @@ bool RenderBackend::DispatchToneMapping(bool useBloom) {
     RHI::GPUBarrier endBarriers[] = {
         RHI::Renderer::MakeImageBarrier(currentContext->mainRTColorTexture, RHI::GPUResourceState::ShaderResourceCompute, RHI::GPUResourceState::ShaderResource),
         RHI::Renderer::MakeBufferBarrier(currentContext->luminanceBuffer, RHI::GPUResourceState::ShaderResourceCompute, RHI::GPUResourceState::UnorderedAccess),
-        RHI::Renderer::MakeImageBarrier(currentContext->toneMappedColorTexture, RHI::GPUResourceState::UnorderedAccess, RHI::GPUResourceState::ShaderResource)
+        RHI::Renderer::MakeImageBarrier(currentContext->postProcessColorTexture, RHI::GPUResourceState::UnorderedAccess, RHI::GPUResourceState::ShaderResource)
     };
     RHI::renderer->Barrier(mainCommandList, endBarriers, COUNT_OF(endBarriers));
 

@@ -91,6 +91,7 @@ void RenderWorld::RenderScene(const RenderCamera *renderCamera) {
     visCamera->clearMethod = renderCamera->desc.clearMethod;
     visCamera->clearColorMode = renderCamera->desc.clearColorMode;
     visCamera->clearColor = renderCamera->desc.clearColor;
+    visCamera->flags = renderCamera->desc.flags;
     visCamera->viewMatrix = renderCamera->viewMatrix;
     visCamera->viewProjMatrix = renderCamera->viewProjMatrix;
     visCamera->worldAABB.Clear();
@@ -561,6 +562,7 @@ void RenderWorld::DrawGUICamera(RenderFrameData *frameData, uint32_t screenWidth
     visCamera->renderPasses = (RenderPass *)frameData->MemAlloc(VisCamera::MaxRenderPasses * sizeof(RenderPass));
     visCamera->renderRect = BE1::Rect(0, 0, screenWidth, screenHeight);
     visCamera->clearMethod = RenderCameraClearMethod::NoClear;
+    visCamera->flags = RenderCameraFlag::SkipPostProcess;
     //visCamera->time = BE1::PlatformTime::Milliseconds();
     //visCamera->orthogonal = true;
     //visCamera->zNear = 0.0f;

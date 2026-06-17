@@ -67,6 +67,8 @@ private:
 
     void                            DrawCamera3D();
     void                            DrawCamera2D();
+    void                            PostProcessAndBlitToSwapChain();
+    void                            BlitToSwapChain(const RHI::Texture *texture);
 
     void                            DrawMainPass(const RenderPass *renderPass);
     void                            DrawSkyPass(const RenderPass *renderPass);
@@ -85,6 +87,8 @@ private:
 
     bool                            DispatchLuminance();
     bool                            DispatchBloom();
+    bool                            DispatchBloomPyramid();
+    bool                            DispatchBloomFFT();
     bool                            DispatchToneMapping(bool useBloom);
 
     uint32_t                        FindSurfaceInstanceBatchEnd(const PassDrawSurf **drawSurfs, uint32_t numDrawSurfs, uint32_t startIndex) const;
@@ -111,6 +115,7 @@ private:
     RHI::PipelineState *            currentBloomPrefilterPSO = nullptr;
     RHI::PipelineState *            currentBloomDownsamplePSO = nullptr;
     RHI::PipelineState *            currentBloomUpsamplePSO = nullptr;
+    RHI::PipelineState *            currentFFTBloomPrefilterPSO = nullptr;
     RHI::ConstantBuffer *           frameConstantBuffer = nullptr;
     RHI::ConstantBuffer *           cameraConstantBuffer = nullptr;
 
