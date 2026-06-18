@@ -214,7 +214,82 @@ void Mesh::CreateBox(const BE1::Vec3 &origin, const BE1::Mat3 &axis, const BE1::
 }
 
 void Mesh::CreateSphere(const BE1::Vec3 &origin, const BE1::Mat3 &axis, float radius, int numSegments) {
-    CreateCapsule(origin, axis, radius, 0, numSegments);
+    assert(numSegments >= 4);
+    assert(numSegments % 2 == 0);
+
+    Purge();
+
+    float invR = 1.0f / radius;
+    float sideRepeat = 2.0f;
+    float sideTileWorldLength = BE1::Math::TwoPi * radius / sideRepeat;
+    float invSideTileWorldLength = 1.0f / sideTileWorldLength;
+
+    int numLat = numSegments / 2 + 1;
+    int numLng = numSegments + 1;
+
+    int numVerts = numLat * numLng;
+    int numIndexes = (numLat - 2) * numSegments * 3 * 2;
+
+    Surface *surf = AllocSurface(numVerts, numIndexes);
+    surf->materialIndex = 0;
+    internalData.surfaces.Append(surf);
+
+    BE1::VertexGenericLit *v = surf->subMesh->verts;
+
+    for (int i = 0; i < numLat; ++i) {
+        float phi = BE1::Math::Pi * i / (numLat - 1); // 0 ~ pi
+        float sp, cp;
+        BE1::Math::SinCos(phi, sp, cp);
+        float z = cp * radius;
+        float zr = sp * radius;
+        float t = phi * radius * invSideTileWorldLength;
+
+        for (int j = 0; j < numLng; ++j) {
+            float theta = BE1::Math::TwoPi * j / (numLng - 1); // 0 ~ 2pi
+            float st, ct;
+            BE1::Math::SinCos(theta - BE1::Math::HalfPi, st, ct);
+            float x = ct * zr;
+            float y = st * zr;
+            float s = theta * BE1::Math::InvTwoPi * sideRepeat;
+
+            v->SetPosition(x, y, z);
+            v->SetNormal(x * invR, y * invR, cp);
+            v->SetTexCoord(s, t);
+            v->SetColor(0xffffffff);
+            v++;
+        }
+    }
+
+    BE1::VertIndex *idx = surf->subMesh->indexes;
+
+    for (int i = 0; i < numLat - 1; ++i) {
+        int a = numLng * i;
+
+        for (int j = 0; j < numLng - 1; ++j) {
+            if (i > 0) {
+                int b = a + j;
+                *idx++ = a + (j + 1) % numLng;
+                *idx++ = b;
+                *idx++ = b + numLng;
+            }
+
+            if (i < numLat - 2) {
+                int b = a + (j + 1) % numLng;
+                *idx++ = b;
+                *idx++ = a + numLng + j;
+                *idx++ = numLng + b;
+            }
+        }
+    }
+
+    internalData.FinishSurfaces(FinishFlag::ComputeAABB | FinishFlag::ComputeEdges | FinishFlag::ComputeTangents);
+
+    if (!axis.IsIdentity() || !origin.IsZero()) {
+        internalData.TransformVerts(axis, BE1::Vec3::one, origin);
+    }
+
+    BumpDataSerial();
+    state = State::Ready;
 }
 
 void Mesh::CreateGeosphere(const BE1::Vec3 &origin, float radius, int numSubdivisions) {
@@ -342,7 +417,7 @@ void Mesh::CreateCylinder(const BE1::Vec3 &origin, const BE1::Mat3 &axis, float 
 
     int numSideSegments = numSegments + 1;
     int numVerts = 2 + numSegments * 2 + numSideSegments * 2;
-    int numIndexes = numSegments * 3 * 2 + numSideSegments * 3 * 2;
+    int numIndexes = numSegments * 3 * 2 + numSegments * 3 * 2;
 
     Surface *surf = AllocSurface(numVerts, numIndexes);
     surf->materialIndex = 0;
@@ -376,13 +451,15 @@ void Mesh::CreateCylinder(const BE1::Vec3 &origin, const BE1::Mat3 &axis, float 
     }
 
     // sides verts
+    float sideRepeat = 2.0f;
+    float sideVScale = height * sideRepeat / (BE1::Math::TwoPi * radius);
     for (int i = 0; i < numSideSegments; ++i) {
         float theta = BE1::Math::TwoPi * i / (numSideSegments - 1); // 0 ~ 2pi
         float st, ct;
         BE1::Math::SinCos(theta + BE1::Math::HalfPi, st, ct);
         float x = ct * radius;
         float y = st * radius;
-        float s = theta * BE1::Math::InvPi;
+        float s = theta * BE1::Math::InvTwoPi * sideRepeat;
         BE1::Vec3 n = BE1::Vec3(ct, st, 0);
 
         v->SetPosition(x, y, half_height);
@@ -393,7 +470,7 @@ void Mesh::CreateCylinder(const BE1::Vec3 &origin, const BE1::Mat3 &axis, float 
 
         v->SetPosition(x, y, -half_height);
         v->SetNormal(n);
-        v->SetTexCoord(s, 1.0f);
+        v->SetTexCoord(s, sideVScale);
         v->SetColor(0xffffffff);
         v++;
     }
@@ -419,9 +496,9 @@ void Mesh::CreateCylinder(const BE1::Vec3 &origin, const BE1::Mat3 &axis, float 
     offset += numSegments + 1;
 
     // sides indexes
-    for (int i = 0; i < numSideSegments; ++i) {
+    for (int i = 0; i < numSegments; ++i) {
         int a = i * 2;
-        int b = ((i + 1) % numSideSegments) * 2;
+        int b = (i + 1) * 2;
 
         *idx++ = offset + a;
         *idx++ = offset + a + 1;
@@ -450,7 +527,10 @@ void Mesh::CreateCapsule(const BE1::Vec3 &origin, const BE1::Mat3 &axis, float r
 
     float half_height = height * 0.5f;
     float invR = 1.0f / radius;
-    float real_height = 2.0f * radius + height;
+    float sideRepeat = 2.0f;
+    float sideTileWorldLength = BE1::Math::TwoPi * radius / sideRepeat;
+    float invSideTileWorldLength = 1.0f / sideTileWorldLength;
+    float capArcLength = BE1::Math::HalfPi * radius;
 
     int numLat = numSegments / 4 + 1;   // hemisphere latitude verts
     int numLng = numSegments + 1;       // hemisphere longitude verts
@@ -470,7 +550,7 @@ void Mesh::CreateCapsule(const BE1::Vec3 &origin, const BE1::Mat3 &axis, float r
         BE1::Math::SinCos(phi, sp, cp);
         float z = cp * radius;
         float zr = sp * radius;
-        float t = 1.0f - (z + radius + height) / real_height;
+        float t = phi * radius * invSideTileWorldLength;
 
         for (int j = 0; j < numLng; ++j) {
             float theta = BE1::Math::TwoPi * j / (numLng - 1); // 0 ~ 2pi
@@ -478,7 +558,7 @@ void Mesh::CreateCapsule(const BE1::Vec3 &origin, const BE1::Mat3 &axis, float r
             BE1::Math::SinCos(theta - BE1::Math::HalfPi, st, ct);
             float x = ct * zr;
             float y = st * zr;
-            float s = theta * BE1::Math::InvPi;
+            float s = theta * BE1::Math::InvTwoPi * sideRepeat;
 
             v->SetPosition(x, y, z + half_height);
             v->SetNormal(x * invR, y * invR, cp);
@@ -496,7 +576,7 @@ void Mesh::CreateCapsule(const BE1::Vec3 &origin, const BE1::Mat3 &axis, float r
         BE1::Math::SinCos(phi, sp, cp);
         float z = cp * radius;
         float zr = sp * radius;
-        float t = 1.0f - (z + radius) / real_height;
+        float t = (capArcLength + height + (phi - BE1::Math::HalfPi) * radius) * invSideTileWorldLength;
 
         for (int j = 0; j < numLng; ++j) {
             float theta = BE1::Math::TwoPi * j / (numLng - 1); // 0 ~ 2pi
@@ -504,7 +584,7 @@ void Mesh::CreateCapsule(const BE1::Vec3 &origin, const BE1::Mat3 &axis, float r
             BE1::Math::SinCos(theta - BE1::Math::HalfPi, st, ct);
             float x = ct * zr;
             float y = st * zr;
-            float s = theta * BE1::Math::InvPi;
+            float s = theta * BE1::Math::InvTwoPi * sideRepeat;
 
             v->SetPosition(x, y, z - half_height);
             v->SetNormal(x * invR, y * invR, cp);
