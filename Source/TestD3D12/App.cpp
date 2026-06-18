@@ -654,8 +654,7 @@ void App::BuildImGuiTextureViewer() {
     const uint32_t textureID = texture->GetBindlessIndex(RHI::ViewType::SRV, viewID);
 
     ImGui::Separator();
-    ImGui::Text("Type: %s", RHI::Renderer::TextureTypeName(texture->type));
-    ImGui::Text("Format: %s", RHI::Renderer::FormatName(texture->GetFormat()));
+    ImGui::Text("Type: %s, Format: %s", RHI::Renderer::TextureTypeName(texture->type), RHI::Renderer::FormatName(texture->GetFormat()));
     ImGui::Text("Size: %u x %u x %u", texture->GetWidth(), texture->GetHeight(), texture->GetDepth());
     ImGui::Text("Array: %u, Mips: %u, Samples: %u", texture->GetArraySize(), texture->GetMipLevelCount(), texture->GetSampleCount());
 
@@ -737,6 +736,14 @@ void App::BuildImGuiOverlay() {
     //ImGui::StyleColorsLight();
     ImGui::StyleColorsDark();
 
+    const auto roundedCollapsingHeader = [fontSize](const char *label) {
+        ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, fontSize * 0.3f);
+        const bool isOpen = ImGui::CollapsingHeader(label);
+        ImGui::PopStyleVar();
+        return isOpen;
+    };
+
+    ImGui::SetNextWindowSizeConstraints(ImVec2(fontSize * 28.0f, fontSize * 8.0f), ImVec2(FLT_MAX, FLT_MAX));
     ImGui::Begin("TestD3D12", nullptr, ImGuiWindowFlags_AlwaysAutoResize);
 
     if (ImGui::BeginTabBar("TestD3D12Tabs")) {
@@ -780,146 +787,145 @@ void App::BuildImGuiOverlay() {
                 imguiShowStatsPlotWindow = !imguiShowStatsPlotWindow;
             }
 
-            ImGui::Separator();
+            if (roundedCollapsingHeader("Skip options##RenderSkipOptionsHeader")) {
+                bool skipCulling = r_skipCulling.GetBool();
+                if (ImGui::Checkbox("Skip culling", &skipCulling)) {
+                    r_skipCulling.SetBool(skipCulling);
+                }
 
-            bool skipCulling = r_skipCulling.GetBool();
-            if (ImGui::Checkbox("Skip culling", &skipCulling)) {
-                r_skipCulling.SetBool(skipCulling);
+                bool skipDrawCamera2D = r_skipDrawCamera2D.GetBool();
+                if (ImGui::Checkbox("Skip draw camera 2D", &skipDrawCamera2D)) {
+                    r_skipDrawCamera2D.SetBool(skipDrawCamera2D);
+                }
+
+                bool skipDrawCamera3D = r_skipDrawCamera3D.GetBool();
+                if (ImGui::Checkbox("Skip draw camera 3D", &skipDrawCamera3D)) {
+                    r_skipDrawCamera3D.SetBool(skipDrawCamera3D);
+                }
+
+                bool skipPostProcess = r_skipPostProcess.GetBool();
+                if (ImGui::Checkbox("Skip post process", &skipPostProcess)) {
+                    r_skipPostProcess.SetBool(skipPostProcess);
+                }
             }
 
-            bool skipDrawCamera2D = r_skipDrawCamera2D.GetBool();
-            if (ImGui::Checkbox("Skip draw camera 2D", &skipDrawCamera2D)) {
-                r_skipDrawCamera2D.SetBool(skipDrawCamera2D);
+            if (roundedCollapsingHeader("Tone mapping##ToneMappingHeader")) {
+                bool toneMapping = r_toneMapping.GetBool();
+                if (ImGui::Checkbox("Tone mapping", &toneMapping)) {
+                    r_toneMapping.SetBool(toneMapping);
+                }
+
+                int toneMapOp = BE1::Clamp(r_toneMapOp.GetInteger(), static_cast<int>(ToneMappingOperatorLinear), static_cast<int>(ToneMappingOperatorFilmicGT));
+                ImGui::SetNextItemWidth(fontSize * 12.0f);
+                if (ImGui::Combo("Tone map operator", &toneMapOp,
+                    "Linear\0"
+                    "Exponential\0"
+                    "Logarithmic\0"
+                    "Drago Logarithmic\0"
+                    "Reinhard\0"
+                    "Reinhard Extended\0"
+                    "Filmic ALU\0"
+                    "Filmic ACES\0"
+                    "Filmic Unreal3\0"
+                    "Filmic Uncharted 2\0"
+                    "Filmic GT\0\0")) {
+                    r_toneMapOp.SetInteger(toneMapOp);
+                }
+
+                float luminanceLogMin = r_toneMapLuminanceLogMin.GetFloat();
+                float luminanceLogMax = r_toneMapLuminanceLogMax.GetFloat();
+                ImGui::SetNextItemWidth(fontSize * 12.0f);
+                if (ImGui::DragFloatRange2("Luminance log2 range", &luminanceLogMin, &luminanceLogMax, 0.05f, -16.0f, 16.0f, "Min: %.2f", "Max: %.2f")) {
+                    r_toneMapLuminanceLogMin.SetFloat(luminanceLogMin);
+                    r_toneMapLuminanceLogMax.SetFloat(BE1::Max(luminanceLogMax, luminanceLogMin + 0.0001f));
+                }
+
+                float luminanceAdaptationRate = r_toneMapLuminanceAdaptationRate.GetFloat();
+                ImGui::SetNextItemWidth(fontSize * 12.0f);
+                if (ImGui::SliderFloat("Luminance adaptation rate", &luminanceAdaptationRate, 0.0f, 10.0f, "%.2f")) {
+                    r_toneMapLuminanceAdaptationRate.SetFloat(luminanceAdaptationRate);
+                }
+
+                float middleGray = r_toneMapMiddleGray.GetFloat();
+                ImGui::SetNextItemWidth(fontSize * 12.0f);
+                if (ImGui::SliderFloat("Middle gray", &middleGray, 0.0f, 2.0f, "%.3f")) {
+                    r_toneMapMiddleGray.SetFloat(middleGray);
+                }
             }
 
-            bool skipDrawCamera3D = r_skipDrawCamera3D.GetBool();
-            if (ImGui::Checkbox("Skip draw camera 3D", &skipDrawCamera3D)) {
-                r_skipDrawCamera3D.SetBool(skipDrawCamera3D);
+            if (roundedCollapsingHeader("Bloom##BloomHeader")) {
+                int bloomMode = BE1::Clamp(r_bloom.GetInteger(), static_cast<int>(RenderBloomMode::Off), static_cast<int>(RenderBloomMode::FFTConvolution));
+                ImGui::SetNextItemWidth(fontSize * 12.0f);
+                if (ImGui::Combo("Bloom", &bloomMode,
+                    "Off\0"
+                    "Pyramid\0"
+                    "FFT Convolution\0")) {
+                    r_bloom.SetInteger(bloomMode);
+                }
+
+                float bloomThreshold = r_bloomThreshold.GetFloat();
+                ImGui::SetNextItemWidth(fontSize * 12.0f);
+                if (ImGui::SliderFloat("Bloom threshold", &bloomThreshold, 0.0f, 10.0f, "%.2f")) {
+                    r_bloomThreshold.SetFloat(bloomThreshold);
+                }
+
+                float bloomSoftThreshold = r_bloomSoftThreshold.GetFloat();
+                ImGui::SetNextItemWidth(fontSize * 12.0f);
+                if (ImGui::SliderFloat("Bloom soft threshold", &bloomSoftThreshold, 0.0f, 5.0f, "%.2f")) {
+                    r_bloomSoftThreshold.SetFloat(bloomSoftThreshold);
+                }
+
+                int bloomPrefilterQuality = BE1::Clamp(r_bloomPrefilterQuality.GetInteger(), 0, 1);
+                ImGui::SetNextItemWidth(fontSize * 12.0f);
+                if (ImGui::Combo("Bloom prefilter quality", &bloomPrefilterQuality,
+                    "Rotated Grid 5 Tap\0"
+                    "Jimenez 13 Tap\0")) {
+                    r_bloomPrefilterQuality.SetInteger(bloomPrefilterQuality);
+                }
+
+                float bloomIntensity = r_bloomIntensity.GetFloat();
+                ImGui::SetNextItemWidth(fontSize * 12.0f);
+                if (ImGui::SliderFloat("Bloom intensity", &bloomIntensity, 0.0f, 2.0f, "%.3f")) {
+                    r_bloomIntensity.SetFloat(bloomIntensity);
+                }
+
+                float bloomScatter = r_bloomScatter.GetFloat();
+                ImGui::SetNextItemWidth(fontSize * 12.0f);
+                if (ImGui::SliderFloat("Bloom scatter", &bloomScatter, 0.0f, 1.0f, "%.3f")) {
+                    r_bloomScatter.SetFloat(bloomScatter);
+                }
+
+                float bloomPrefilterRadius = r_bloomPrefilterRadius.GetFloat();
+                ImGui::SetNextItemWidth(fontSize * 12.0f);
+                if (ImGui::SliderFloat("Bloom prefilter radius", &bloomPrefilterRadius, 0.0f, 5.0f, "%.2f")) {
+                    r_bloomPrefilterRadius.SetFloat(bloomPrefilterRadius);
+                }
+
+                float bloomDownsampleRadius = r_bloomDownsampleRadius.GetFloat();
+                ImGui::SetNextItemWidth(fontSize * 12.0f);
+                if (ImGui::SliderFloat("Bloom downsample radius", &bloomDownsampleRadius, 0.0f, 5.0f, "%.2f")) {
+                    r_bloomDownsampleRadius.SetFloat(bloomDownsampleRadius);
+                }
+
+                float bloomUpsampleRadius = r_bloomUpsampleRadius.GetFloat();
+                ImGui::SetNextItemWidth(fontSize * 12.0f);
+                if (ImGui::SliderFloat("Bloom upsample radius", &bloomUpsampleRadius, 0.0f, 5.0f, "%.2f")) {
+                    r_bloomUpsampleRadius.SetFloat(bloomUpsampleRadius);
+                }
             }
 
-            bool skipPostProcess = r_skipPostProcess.GetBool();
-            if (ImGui::Checkbox("Skip post process", &skipPostProcess)) {
-                r_skipPostProcess.SetBool(skipPostProcess);
+            if (roundedCollapsingHeader("Texture Streaming##TextureStreamingHeader")) {
+                int streamInDelay = r_textureStreamingStreamInDelay.GetInteger();
+                ImGui::SetNextItemWidth(fontSize * 6.0f);
+                if (ImGui::InputInt("Texture stream-in delay", &streamInDelay)) {
+                    r_textureStreamingStreamInDelay.SetInteger(BE1::Max(0, streamInDelay));
+                }
             }
 
-            ImGui::Separator();
-
-            bool toneMapping = r_toneMapping.GetBool();
-            if (ImGui::Checkbox("Tone mapping", &toneMapping)) {
-                r_toneMapping.SetBool(toneMapping);
+            if (roundedCollapsingHeader("Texture Viewer##TextureViewerHeader")) {
+                BuildImGuiTextureViewer();
             }
 
-            int toneMapOp = BE1::Clamp(r_toneMapOp.GetInteger(), static_cast<int>(ToneMappingOperatorLinear), static_cast<int>(ToneMappingOperatorFilmicGT));
-            ImGui::SetNextItemWidth(fontSize * 12.0f);
-            if (ImGui::Combo("Tone map operator", &toneMapOp,
-                "Linear\0"
-                "Exponential\0"
-                "Logarithmic\0"
-                "Drago Logarithmic\0"
-                "Reinhard\0"
-                "Reinhard Extended\0"
-                "Filmic ALU\0"
-                "Filmic ACES\0"
-                "Filmic Unreal3\0"
-                "Filmic Uncharted 2\0"
-                "Filmic GT\0\0")) {
-                r_toneMapOp.SetInteger(toneMapOp);
-            }
-
-            float luminanceLogMin = r_toneMapLuminanceLogMin.GetFloat();
-            float luminanceLogMax = r_toneMapLuminanceLogMax.GetFloat();
-            ImGui::SetNextItemWidth(fontSize * 12.0f);
-            if (ImGui::DragFloatRange2("Luminance log2 range", &luminanceLogMin, &luminanceLogMax, 0.05f, -16.0f, 16.0f, "Min: %.2f", "Max: %.2f")) {
-                r_toneMapLuminanceLogMin.SetFloat(luminanceLogMin);
-                r_toneMapLuminanceLogMax.SetFloat(BE1::Max(luminanceLogMax, luminanceLogMin + 0.0001f));
-            }
-
-            float luminanceAdaptationRate = r_toneMapLuminanceAdaptationRate.GetFloat();
-            ImGui::SetNextItemWidth(fontSize * 12.0f);
-            if (ImGui::SliderFloat("Luminance adaptation rate", &luminanceAdaptationRate, 0.0f, 10.0f, "%.2f")) {
-                r_toneMapLuminanceAdaptationRate.SetFloat(luminanceAdaptationRate);
-            }
-
-            float middleGray = r_toneMapMiddleGray.GetFloat();
-            ImGui::SetNextItemWidth(fontSize * 12.0f);
-            if (ImGui::SliderFloat("Middle gray", &middleGray, 0.0f, 2.0f, "%.3f")) {
-                r_toneMapMiddleGray.SetFloat(middleGray);
-            }
-
-            ImGui::Separator();
-
-            int bloomMode = BE1::Clamp(r_bloom.GetInteger(), static_cast<int>(RenderBloomMode::Off), static_cast<int>(RenderBloomMode::FFTConvolution));
-            ImGui::SetNextItemWidth(fontSize * 12.0f);
-            if (ImGui::Combo("Bloom", &bloomMode,
-                "Off\0"
-                "Pyramid\0"
-                "FFT Convolution\0")) {
-                r_bloom.SetInteger(bloomMode);
-            }
-
-            float bloomThreshold = r_bloomThreshold.GetFloat();
-            ImGui::SetNextItemWidth(fontSize * 12.0f);
-            if (ImGui::SliderFloat("Bloom threshold", &bloomThreshold, 0.0f, 10.0f, "%.2f")) {
-                r_bloomThreshold.SetFloat(bloomThreshold);
-            }
-
-            float bloomSoftThreshold = r_bloomSoftThreshold.GetFloat();
-            ImGui::SetNextItemWidth(fontSize * 12.0f);
-            if (ImGui::SliderFloat("Bloom soft threshold", &bloomSoftThreshold, 0.0f, 5.0f, "%.2f")) {
-                r_bloomSoftThreshold.SetFloat(bloomSoftThreshold);
-            }
-
-            int bloomPrefilterQuality = BE1::Clamp(r_bloomPrefilterQuality.GetInteger(), 0, 1);
-            ImGui::SetNextItemWidth(fontSize * 12.0f);
-            if (ImGui::Combo("Bloom prefilter quality", &bloomPrefilterQuality,
-                "Rotated Grid 5 Tap\0"
-                "Jimenez 13 Tap\0")) {
-                r_bloomPrefilterQuality.SetInteger(bloomPrefilterQuality);
-            }
-
-            float bloomIntensity = r_bloomIntensity.GetFloat();
-            ImGui::SetNextItemWidth(fontSize * 12.0f);
-            if (ImGui::SliderFloat("Bloom intensity", &bloomIntensity, 0.0f, 2.0f, "%.3f")) {
-                r_bloomIntensity.SetFloat(bloomIntensity);
-            }
-
-            float bloomScatter = r_bloomScatter.GetFloat();
-            ImGui::SetNextItemWidth(fontSize * 12.0f);
-            if (ImGui::SliderFloat("Bloom scatter", &bloomScatter, 0.0f, 1.0f, "%.3f")) {
-                r_bloomScatter.SetFloat(bloomScatter);
-            }
-
-            float bloomPrefilterRadius = r_bloomPrefilterRadius.GetFloat();
-            ImGui::SetNextItemWidth(fontSize * 12.0f);
-            if (ImGui::SliderFloat("Bloom prefilter radius", &bloomPrefilterRadius, 0.0f, 5.0f, "%.2f")) {
-                r_bloomPrefilterRadius.SetFloat(bloomPrefilterRadius);
-            }
-
-            float bloomDownsampleRadius = r_bloomDownsampleRadius.GetFloat();
-            ImGui::SetNextItemWidth(fontSize * 12.0f);
-            if (ImGui::SliderFloat("Bloom downsample radius", &bloomDownsampleRadius, 0.0f, 5.0f, "%.2f")) {
-                r_bloomDownsampleRadius.SetFloat(bloomDownsampleRadius);
-            }
-
-            float bloomUpsampleRadius = r_bloomUpsampleRadius.GetFloat();
-            ImGui::SetNextItemWidth(fontSize * 12.0f);
-            if (ImGui::SliderFloat("Bloom upsample radius", &bloomUpsampleRadius, 0.0f, 5.0f, "%.2f")) {
-                r_bloomUpsampleRadius.SetFloat(bloomUpsampleRadius);
-            }
-
-            ImGui::Separator();
-
-            int streamInDelay = r_textureStreamingStreamInDelay.GetInteger();
-            ImGui::SetNextItemWidth(fontSize * 6.0f);
-            if (ImGui::InputInt("Texture stream-in delay", &streamInDelay)) {
-                r_textureStreamingStreamInDelay.SetInteger(BE1::Max(0, streamInDelay));
-            }
-
-            ImGui::EndTabItem();
-        }
-
-        if (ImGui::BeginTabItem("Textures")) {
-            BuildImGuiTextureViewer();
             ImGui::EndTabItem();
         }
 
