@@ -504,6 +504,7 @@ private:
     bool                LoadJPGFromMemory(const char *name, const byte *data, size_t size);
     bool                LoadPNGFromMemory(const char *name, const byte *data, size_t size);
     bool                LoadHDRFromMemory(const char *name, const byte *data, size_t size);
+    bool                LoadEXRFromMemory(const char *name, const byte *data, size_t size);
 
     byte *              pic = nullptr;                  ///< Pixel data
     int                 width = 0;                      ///< Width

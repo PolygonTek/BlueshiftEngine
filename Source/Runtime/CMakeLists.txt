@@ -335,6 +335,7 @@ set(COMMON_ENGINE_FILES
     Private/Image/ImageFileBMP.cpp
     Private/Image/ImageFileDDS.cpp
     Private/Image/ImageFilePVR.cpp
+    Private/Image/ImageFileEXR.cpp
     Private/Image/ImageFileHDR.cpp
     Private/Image/ImageFileJPG.cpp
     Private/Image/ImageFilePCX.cpp

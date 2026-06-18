@@ -50,6 +50,8 @@ bool Image::Load(const char *filename) {
             LoadPCXFromMemory(name, data, size);
         } else if (name.CheckExtension(".hdr")) {
             LoadHDRFromMemory(name, data, size);
+        } else if (name.CheckExtension(".exr")) {
+            LoadEXRFromMemory(name, data, size);
         }
 
         fileSystem.FreeFile(data);
@@ -60,7 +62,7 @@ bool Image::Load(const char *filename) {
     }
    
 #if 0
-    static const char *extensions[] = { ".dds", ".pvr", ".tga", ".jpg", ".png", ".bmp", ".pcx", ".hdr" };
+    static const char *extensions[] = { ".dds", ".pvr", ".tga", ".jpg", ".png", ".bmp", ".pcx", ".hdr", ".exr" };
 
     // If it failed to load the image, do it by changing file extensions.
     for (int i = 0; i < COUNT_OF(extensions); i++) {
@@ -84,6 +86,8 @@ bool Image::Load(const char *filename) {
                 LoadPCXFromMemory(name2, data, size);
             } else if (name2.CheckExtension(".hdr")) {
                 LoadHDRFromMemory(name2, data, size);
+            } else if (name2.CheckExtension(".exr")) {
+                LoadEXRFromMemory(name2, data, size);
             }
 
             fileSystem.FreeFile(data);
