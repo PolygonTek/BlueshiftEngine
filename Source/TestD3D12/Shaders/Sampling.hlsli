@@ -17,6 +17,11 @@ half3 SampleBox4Tap(Texture2D<float4> texture, float2 uv, float2 offset) {
     return color * half(0.25);
 }
 
+// Equal-weight Kawase 4-tap diagonal filter.
+half3 SampleKawase4Tap(Texture2D<float4> texture, float2 uv, float2 offset) {
+    return SampleBox4Tap(texture, uv, offset * 2.0);
+}
+
 // Center-weighted quincunx 5-tap filter.
 // Samples the center with 4x weight and the four diagonal taps with 1x weight.
 // The weights sum to 8, so this adds a mild blur while sampling.

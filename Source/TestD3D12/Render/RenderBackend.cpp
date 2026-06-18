@@ -674,7 +674,9 @@ bool RenderBackend::DispatchBloomPyramid() {
     const float bloomSoftThreshold = BE1::Max(r_bloomSoftThreshold.GetFloat(), 0.0f);
     const float bloomPrefilterQuality = static_cast<float>(BE1::Clamp(r_bloomPrefilterQuality.GetInteger(), 0, 1));
     const float bloomScatter = BE1::Clamp(r_bloomScatter.GetFloat(), 0.0f, 1.0f);
-    const float bloomRadius = BE1::Max(r_bloomRadius.GetFloat(), 0.0f);
+    const float bloomPrefilterRadius = BE1::Max(r_bloomPrefilterRadius.GetFloat(), 0.0f);
+    const float bloomDownsampleRadius = BE1::Max(r_bloomDownsampleRadius.GetFloat(), 0.0f);
+    const float bloomUpsampleRadius = BE1::Max(r_bloomUpsampleRadius.GetFloat(), 0.0f);
 
     auto dispatchDownsamplePass = [this](RHI::Texture *inputTexture, RHI::ViewID inputViewID, uint32_t inputWidth, uint32_t inputHeight, uint32_t outputMipLevel, float threshold, float softThreshold, float prefilterQuality, float radius) -> bool {
         const uint32_t outputWidth = currentVisCamera->bloomMipWidths[outputMipLevel];
@@ -712,7 +714,7 @@ bool RenderBackend::DispatchBloomPyramid() {
 
     // threshold 를 적용해 밝은 영역만 필터링하여 mip-0 에 blur downsample 한다.
     RHI::renderer->SetPSO(mainCommandList, currentBloomPrefilterPSO);
-    if (!dispatchDownsamplePass(inputColorTexture, RHI::ViewID::PrimaryID, currentVisCamera->renderWidth, currentVisCamera->renderHeight, 0, bloomThreshold, bloomSoftThreshold, bloomPrefilterQuality, bloomRadius)) {
+    if (!dispatchDownsamplePass(inputColorTexture, RHI::ViewID::PrimaryID, currentVisCamera->renderWidth, currentVisCamera->renderHeight, 0, bloomThreshold, bloomSoftThreshold, bloomPrefilterQuality, bloomPrefilterRadius)) {
         RHI::renderer->Barrier(mainCommandList, RHI::Renderer::MakeImageBarrier(inputColorTexture, RHI::GPUResourceState::ShaderResourceCompute, RHI::GPUResourceState::ShaderResource));
         return false;
     }
@@ -721,7 +723,7 @@ bool RenderBackend::DispatchBloomPyramid() {
     RHI::renderer->SetPSO(mainCommandList, currentBloomDownsamplePSO);
     for (uint32_t mipLevel = 1; mipLevel < currentVisCamera->bloomMipCount; ++mipLevel) {
         const uint32_t inputMipLevel = mipLevel - 1;
-        if (!dispatchDownsamplePass(bloomDownTexture, currentVisCamera->bloomDownMipSRVs[inputMipLevel], currentVisCamera->bloomMipWidths[inputMipLevel], currentVisCamera->bloomMipHeights[inputMipLevel], mipLevel, 0.0f, 0.0f, 0.0f, bloomRadius)) {
+        if (!dispatchDownsamplePass(bloomDownTexture, currentVisCamera->bloomDownMipSRVs[inputMipLevel], currentVisCamera->bloomMipWidths[inputMipLevel], currentVisCamera->bloomMipHeights[inputMipLevel], mipLevel, 0.0f, 0.0f, 0.0f, bloomDownsampleRadius)) {
             RHI::renderer->Barrier(mainCommandList, RHI::Renderer::MakeImageBarrier(inputColorTexture, RHI::GPUResourceState::ShaderResourceCompute, RHI::GPUResourceState::ShaderResource));
             return false;
         }
@@ -777,7 +779,7 @@ bool RenderBackend::DispatchBloomPyramid() {
 
         const float bloomWeight = BE1::Math::Pow(bloomScatter, static_cast<float>(maxMipLevel - mipLevel));
 
-        if (!dispatchUpsamplePass(outputMipLevel, lowerTexture, lowerViewID, currentVisCamera->bloomMipWidths[mipLevel], currentVisCamera->bloomMipHeights[mipLevel], bloomWeight, bloomRadius)) {
+        if (!dispatchUpsamplePass(outputMipLevel, lowerTexture, lowerViewID, currentVisCamera->bloomMipWidths[mipLevel], currentVisCamera->bloomMipHeights[mipLevel], bloomWeight, bloomUpsampleRadius)) {
             RHI::renderer->Barrier(mainCommandList, RHI::Renderer::MakeImageBarrier(inputColorTexture, RHI::GPUResourceState::ShaderResourceCompute, RHI::GPUResourceState::ShaderResource));
             return false;
         }

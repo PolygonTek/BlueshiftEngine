@@ -26,7 +26,7 @@ void CSMain(uint3 dispatchThreadId : SV_DispatchThreadID) {
 
     float2 uv = (float2(pixelCoord) + 0.5) * bloomParams.outputTexelSize;
     float2 offset = bloomParams.inputTexelSize * max(BP_BLOOM_RADIUS, 0.0);
-    half3 color = SampleQuincunx5Tap(inputTexture, uv, offset);
+    half3 color = SampleKawase4Tap(inputTexture, uv, offset);
 
     outputTexture[pixelCoord] = float4(float3(max(color, half3(0.0, 0.0, 0.0))), 1.0);
 }

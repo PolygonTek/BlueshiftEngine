@@ -889,10 +889,22 @@ void App::BuildImGuiOverlay() {
                 r_bloomScatter.SetFloat(bloomScatter);
             }
 
-            float bloomRadius = r_bloomRadius.GetFloat();
+            float bloomPrefilterRadius = r_bloomPrefilterRadius.GetFloat();
             ImGui::SetNextItemWidth(fontSize * 12.0f);
-            if (ImGui::SliderFloat("Bloom radius", &bloomRadius, 0.0f, 5.0f, "%.2f")) {
-                r_bloomRadius.SetFloat(bloomRadius);
+            if (ImGui::SliderFloat("Bloom prefilter radius", &bloomPrefilterRadius, 0.0f, 5.0f, "%.2f")) {
+                r_bloomPrefilterRadius.SetFloat(bloomPrefilterRadius);
+            }
+
+            float bloomDownsampleRadius = r_bloomDownsampleRadius.GetFloat();
+            ImGui::SetNextItemWidth(fontSize * 12.0f);
+            if (ImGui::SliderFloat("Bloom downsample radius", &bloomDownsampleRadius, 0.0f, 5.0f, "%.2f")) {
+                r_bloomDownsampleRadius.SetFloat(bloomDownsampleRadius);
+            }
+
+            float bloomUpsampleRadius = r_bloomUpsampleRadius.GetFloat();
+            ImGui::SetNextItemWidth(fontSize * 12.0f);
+            if (ImGui::SliderFloat("Bloom upsample radius", &bloomUpsampleRadius, 0.0f, 5.0f, "%.2f")) {
+                r_bloomUpsampleRadius.SetFloat(bloomUpsampleRadius);
             }
 
             ImGui::Separator();

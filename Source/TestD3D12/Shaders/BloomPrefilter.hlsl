@@ -31,19 +31,27 @@ half3 ApplyBloomThreshold(half3 color) {
     return color * (contribution / max(luminance, half(0.0001)));
 }
 
+// 컬러 샘플링 후 threshold 를 적용하여 리턴한다, Karis weight 를 함께 얻는다.
 half3 SampleBloomPrefilterTap(float2 uv, out half w) {
     half3 color = half3(inputTexture.SampleLevel(linearClampSampler, uv, 0).rgb);
     color = ApplyBloomThreshold(max(color, half3(0.0, 0.0, 0.0)));
 
     // Karis average weight reduces firefly-like highlights before the bloom pyramid amplifies them.
-    w = rcp(dot(color, half3(0.2127, 0.7152, 0.0722)) + half(1.0));
+    half luminance = dot(color, half3(0.2127, 0.7152, 0.0722));
+    w = rcp(luminance + half(1.0));
     return color;
 }
 
- // Luma weighted average [Karis13]
-half3 PartialKarisAverage(half3 c0, half3 c1, half3 c2, half3 c3, half w0, half w1, half w2, half w3) {
-    half wSum = w0 + w1 + w2 + w3;
-    return (c0 * w0 + c1 * w1 + c2 * w2 + c3 * w3) / max(wSum, half(0.0001));
+// 4-samples 가중 평균
+half3 WeightedAverage4(half3 sample0, half3 sample1, half3 sample2, half3 sample3, half w0, half w1, half w2, half w3) {
+    half weightSum = w0 + w1 + w2 + w3;
+    return (sample0 * w0 + sample1 * w1 + sample2 * w2 + sample3 * w3) / max(weightSum, half(0.0001));
+}
+
+// 5-samples 가중 평균
+half3 WeightedAverage5(half3 sample0, half3 sample1, half3 sample2, half3 sample3, half3 sample4, half w0, half w1, half w2, half w3, half w4) {
+    half weightSum = w0 + w1 + w2 + w3 + w4;
+    return (sample0 * w0 + sample1 * w1 + sample2 * w2 + sample3 * w3 + sample4 * w4) / max(weightSum, half(0.0001));
 }
 
 // Use a rotated grid to minimize artifacts from horizontal and vertical boundaries.
@@ -57,16 +65,14 @@ half3 SampleBloomPrefilterRotatedGrid5Tap(float2 uv, float2 offset) {
         float2(-0.4, -0.9)
     };
 
-    // Luma weighted average
     half w0, w1, w2, w3, w4;
-    half3 c0 = SampleBloomPrefilterTap(uv + taps[0] * offset, w0);
-    half3 c1 = SampleBloomPrefilterTap(uv + taps[1] * offset, w1);
-    half3 c2 = SampleBloomPrefilterTap(uv + taps[2] * offset, w2);
-    half3 c3 = SampleBloomPrefilterTap(uv + taps[3] * offset, w3);
-    half3 c4 = SampleBloomPrefilterTap(uv + taps[4] * offset, w4);
+    half3 sample0 = SampleBloomPrefilterTap(uv + taps[0] * offset, w0);
+    half3 sample1 = SampleBloomPrefilterTap(uv + taps[1] * offset, w1);
+    half3 sample2 = SampleBloomPrefilterTap(uv + taps[2] * offset, w2);
+    half3 sample3 = SampleBloomPrefilterTap(uv + taps[3] * offset, w3);
+    half3 sample4 = SampleBloomPrefilterTap(uv + taps[4] * offset, w4);
 
-    half wSum = w0 + w1 + w2 + w3 + w4;
-    return (c0 * w0 + c1 * w1 + c2 * w2 + c3 * w3 + c4 * w4) / max(wSum, half(0.0001));
+    return WeightedAverage5(sample0, sample1, sample2, sample3, sample4, w0, w1, w2, w3, w4);
 }
 
 // "Post-Processing in CoD Advanced Warfare" [Jimenez14]
@@ -86,11 +92,11 @@ half3 SampleBloomPrefilterJimenez13Tap(float2 uv, float2 offset) {
     half3 l = SampleBloomPrefilterTap(uv + offset * float2( 0.0,  1.0), wl);
     half3 m = SampleBloomPrefilterTap(uv + offset * float2( 1.0,  1.0), wm);
 
-    half3 color = PartialKarisAverage(d, e, i, j, wd, we, wi, wj) * half(0.5);
-    color += PartialKarisAverage(a, b, f, g, wa, wb, wf, wg) * half(0.125);
-    color += PartialKarisAverage(b, c, g, h, wb, wc, wg, wh) * half(0.125);
-    color += PartialKarisAverage(f, g, k, l, wf, wg, wk, wl) * half(0.125);
-    color += PartialKarisAverage(g, h, l, m, wg, wh, wl, wm) * half(0.125);
+    half3 color = WeightedAverage4(d, e, i, j, wd, we, wi, wj) * half(0.5);
+    color += WeightedAverage4(a, b, f, g, wa, wb, wf, wg) * half(0.125);
+    color += WeightedAverage4(b, c, g, h, wb, wc, wg, wh) * half(0.125);
+    color += WeightedAverage4(f, g, k, l, wf, wg, wk, wl) * half(0.125);
+    color += WeightedAverage4(g, h, l, m, wg, wh, wl, wm) * half(0.125);
 
     return color;
 }

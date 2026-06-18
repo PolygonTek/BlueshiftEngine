@@ -39,5 +39,7 @@ CVAR_MINMAX(r_bloomSoftThreshold, "0.5", BE1::CVar::Flag::Float, "bloom soft thr
 CVAR_MINMAX(r_bloomPrefilterQuality, "1", BE1::CVar::Flag::Integer, "bloom prefilter quality (0 = low quality, 1 = high quality)", 0, 1);
 CVAR_MINMAX(r_bloomIntensity, "0.15", BE1::CVar::Flag::Float, "final bloom composite intensity", 0.0f, 10.0f);
 CVAR_MINMAX(r_bloomScatter, "0.85", BE1::CVar::Flag::Float, "bloom mip scatter weight", 0.0f, 1.0f);
-CVAR_MINMAX(r_bloomRadius, "1.0", BE1::CVar::Flag::Float, "bloom dual kawase sample radius", 0.0f, 10.0f);
+CVAR_MINMAX(r_bloomPrefilterRadius, "1.25", BE1::CVar::Flag::Float, "bloom prefilter sample radius", 0.0f, 10.0f);
+CVAR_MINMAX(r_bloomDownsampleRadius, "1.0", BE1::CVar::Flag::Float, "bloom downsample sample radius", 0.0f, 10.0f);
+CVAR_MINMAX(r_bloomUpsampleRadius, "1.0", BE1::CVar::Flag::Float, "bloom upsample sample radius", 0.0f, 10.0f);
 CVAR_MINMAX(r_bloomMipCount, "6", BE1::CVar::Flag::Integer, "bloom mip level count", 1, RenderBloomDownMaxLevelCount);
