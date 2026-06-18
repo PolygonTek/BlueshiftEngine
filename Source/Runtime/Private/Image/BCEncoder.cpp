@@ -665,6 +665,29 @@ void BCEncoder::EncodeBC3BlockFast(const byte *colorBlock, byte **dstPtr) {
     *dstPtr += sizeof(bcColorBlock);
 }
 
+void BCEncoder::EncodeBC4BlockFast(const byte *colorBlock, byte **dstPtr) {
+    ALIGN_AS32 byte minColor[4];
+    ALIGN_AS32 byte maxColor[4];
+    ALIGN_AS32 BCCodec::AlphaBlock3Bit bcAlphaBlock;
+
+    GetMinMaxAlpha(colorBlock, 0, minColor, maxColor);
+
+    int inset = (maxColor[0] - minColor[0]) - ((1 << (INSET_ALPHA_SHIFT - 1)) - 1);
+    int mini = ((minColor[0] << INSET_ALPHA_SHIFT) + inset) >> INSET_ALPHA_SHIFT;
+    int maxi = ((maxColor[0] << INSET_ALPHA_SHIFT) - inset) >> INSET_ALPHA_SHIFT;
+
+    mini = (mini >= 0) ? mini : 0;
+    maxi = (maxi <= 255) ? maxi : 255;
+
+    bcAlphaBlock.alpha0 = (byte)maxi;
+    bcAlphaBlock.alpha1 = (byte)mini;
+
+    ComputeAlphaIndicesFast(colorBlock, 0, bcAlphaBlock.alpha0, bcAlphaBlock.alpha1, bcAlphaBlock.indexes);
+
+    memcpy(*dstPtr, &bcAlphaBlock, sizeof(bcAlphaBlock));
+    *dstPtr += sizeof(bcAlphaBlock);
+}
+
 void BCEncoder::EncodeBC5BlockFast(const byte *colorBlock, byte **dstPtr) {
     ALIGN_AS32 byte minNormal[4];
     ALIGN_AS32 byte maxNormal[4];
@@ -772,6 +795,32 @@ void BCEncoder::EncodeBC3BlockHQ(const byte *colorBlock, byte **dstPtr) {
 
     memcpy(*dstPtr, &bcColorBlock, sizeof(bcColorBlock));
     *dstPtr += sizeof(bcColorBlock);
+}
+
+void BCEncoder::EncodeBC4BlockHQ(const byte *colorBlock, byte **dstPtr) {
+    ALIGN_AS32 byte minColor[4];
+    ALIGN_AS32 byte maxColor[4];
+    ALIGN_AS32 BCCodec::AlphaBlock3Bit bcAlphaBlock1;
+    ALIGN_AS32 BCCodec::AlphaBlock3Bit bcAlphaBlock2;
+
+    GetMinMaxAlpha(colorBlock, 0, minColor, maxColor);
+
+    bcAlphaBlock1.alpha0 = maxColor[0];
+    bcAlphaBlock1.alpha1 = minColor[0];
+
+    bcAlphaBlock2.alpha0 = minColor[0];
+    bcAlphaBlock2.alpha1 = maxColor[0];
+
+    int error1 = ComputeAlphaIndices(colorBlock, 0, bcAlphaBlock1.alpha0, bcAlphaBlock1.alpha1, bcAlphaBlock1.indexes);
+    int error2 = ComputeAlphaIndices(colorBlock, 0, bcAlphaBlock2.alpha0, bcAlphaBlock2.alpha1, bcAlphaBlock2.indexes);
+
+    if (error1 < error2) {
+        memcpy(*dstPtr, &bcAlphaBlock1, sizeof(bcAlphaBlock1));
+    } else {
+        memcpy(*dstPtr, &bcAlphaBlock2, sizeof(bcAlphaBlock2));
+    }
+
+    *dstPtr += sizeof(BCCodec::AlphaBlock3Bit);
 }
 
 void BCEncoder::EncodeBC5BlockHQ(const byte *colorBlock, byte **dstPtr) {
@@ -919,6 +968,42 @@ void BCEncoder::CompressImageBC3HQ(const byte *src, const int width, const int h
                 ExtractBlock(src + 4 * x, 4 * width, bw, bh, colorBlock);
 
                 EncodeBC3BlockHQ(colorBlock, &dstPtr);
+            }
+        }
+    }
+}
+
+void BCEncoder::CompressImageBC4Fast(const byte *src, const int width, const int height, const int depth, byte *dst) {
+    ALIGN_AS32 byte colorBlock[4 * 16];
+    byte *dstPtr = dst;
+
+    for (int z = 0; z < depth; z++) {
+        for (int y = 0; y < height; y += 4, src += width * 4 * 4) {
+            for (int x = 0; x < width; x += 4) {
+                int bw = Min(4, width - x);
+                int bh = Min(4, height - y);
+
+                ExtractBlock(src + 4 * x, 4 * width, bw, bh, colorBlock);
+
+                EncodeBC4BlockFast(colorBlock, &dstPtr);
+            }
+        }
+    }
+}
+
+void BCEncoder::CompressImageBC4HQ(const byte *src, const int width, const int height, const int depth, byte *dst) {
+    ALIGN_AS32 byte colorBlock[4 * 16];
+    byte *dstPtr = dst;
+
+    for (int z = 0; z < depth; z++) {
+        for (int y = 0; y < height; y += 4, src += width * 4 * 4) {
+            for (int x = 0; x < width; x += 4) {
+                int bw = Min(4, width - x);
+                int bh = Min(4, height - y);
+
+                ExtractBlock(src + 4 * x, 4 * width, bw, bh, colorBlock);
+
+                EncodeBC4BlockHQ(colorBlock, &dstPtr);
             }
         }
     }

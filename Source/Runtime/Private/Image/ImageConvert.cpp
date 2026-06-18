@@ -112,6 +112,9 @@ static bool CompressImage(const Image &srcImage, Image &dstImage, Image::Compres
     case Image::Format::BC3:
         CompressBC3(srcImage, dstImage, compressionQuality);
         break;
+    case Image::Format::BC4:
+        CompressBC4(srcImage, dstImage, compressionQuality);
+        break;
     case Image::Format::BC5:
         CompressBC5(srcImage, dstImage, compressionQuality);
         break;

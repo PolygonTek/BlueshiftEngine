@@ -55,6 +55,7 @@ void DecompressEAC_RG11(const Image &srcImage, Image &dstImage, bool signedForma
 void CompressBC1(const Image &srcImage, Image &dstImage, Image::CompressionQuality compressionQuality);
 void CompressBC2(const Image &srcImage, Image &dstImage, Image::CompressionQuality compressionQuality);
 void CompressBC3(const Image &srcImage, Image &dstImage, Image::CompressionQuality compressionQuality);
+void CompressBC4(const Image &srcImage, Image &dstImage, Image::CompressionQuality compressionQuality);
 void CompressBC5(const Image &srcImage, Image &dstImage, Image::CompressionQuality compressionQuality);
 
 void CompressETC1(const Image &srcImage, Image &dstImage, Image::CompressionQuality compressionQuality);

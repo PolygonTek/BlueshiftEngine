@@ -2641,35 +2641,46 @@ BE1::Image::Format D3D12Renderer::ToCompressedImageFormat(BE1::Image::Format inF
     int redBits, greenBits, blueBits, alphaBits;
     BE1::Image::GetBits(inFormat, &redBits, &greenBits, &blueBits, &alphaBits);
 
-    BE1::Image::Format outFormat = inFormat;
+    const bool hasRed = redBits > 0;
+    const bool hasGreen = greenBits > 0;
+    const bool hasBlue = blueBits > 0;
+    const bool hasAlpha = alphaBits > 0;
 
-    if (redBits <= 0 || greenBits <= 0 || (!useNormalMap && blueBits <= 0)) {
-        return outFormat;
-    }
-
-    if (BE1::Image::IsFloatFormat(inFormat) || BE1::Image::IsHalfFormat(inFormat)) {
-        if (alphaBits == 0) {
-            outFormat = BE1::Image::Format::R11G11B10_FLOAT;
+    const bool isFloatFormat = BE1::Image::IsFloatFormat(inFormat) || BE1::Image::IsHalfFormat(inFormat);
+    if (isFloatFormat) {
+        if (hasRed && hasGreen && hasBlue && !hasAlpha) {
+            return BE1::Image::Format::R11G11B10_FLOAT;
         }
-        return outFormat;
+        return inFormat;
     }
 
     const bool isLowPrecisionUNorm = !BE1::Image::NeedFloatConversion(inFormat) && redBits <= 8 && greenBits <= 8 && blueBits <= 8 && alphaBits <= 8;
-    if (isLowPrecisionUNorm) {
-        if (useNormalMap) {
-            outFormat = BE1::Image::Format::BC5;
-        } else {
-            if (alphaBits <= 1) {
-                outFormat = BE1::Image::Format::BC1;
-            } else if (alphaBits <= 4) {
-                outFormat = BE1::Image::Format::BC2;
-            } else {
-                outFormat = BE1::Image::Format::BC3;
-            }
-        }
+    if (!isLowPrecisionUNorm) {
+        return inFormat;
     }
 
-    return outFormat;
+    if (hasRed && !hasGreen && !hasBlue && !hasAlpha) {
+        return BE1::Image::Format::BC4;
+    }
+
+    if (useNormalMap) {
+        if (hasRed && hasGreen && !hasAlpha) {
+            return BE1::Image::Format::BC5;
+        }
+        return inFormat;
+    }
+
+    if (hasRed && hasGreen && hasBlue) {
+        if (alphaBits <= 1) {
+            return BE1::Image::Format::BC1;
+        }
+        if (alphaBits <= 4) {
+            return BE1::Image::Format::BC2;
+        }
+        return BE1::Image::Format::BC3;
+    }
+
+    return inFormat;
 }
 
 BE1::Image::Format D3D12Renderer::ToSupportedImageFormat(BE1::Image::Format inFormat) const {

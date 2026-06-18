@@ -36,6 +36,9 @@ public:
     static void             CompressImageBC3Fast(const byte *src, const int width, const int height, const int depth, byte *dst);
     static void             CompressImageBC3HQ(const byte *src, const int width, const int height, const int depth, byte *dst);
     
+    static void             CompressImageBC4Fast(const byte *src, const int width, const int height, const int depth, byte *dst);
+    static void             CompressImageBC4HQ(const byte *src, const int width, const int height, const int depth, byte *dst);
+
     static void             CompressImageBC5Fast(const byte *src, const int width, const int height, const int depth, byte *dst);
     static void             CompressImageBC5HQ(const byte *src, const int width, const int height, const int depth, byte *dst);
 
@@ -69,11 +72,13 @@ private:
     static void             EncodeBC1BlockFast(const byte *src, byte **dstPtr);
     static void             EncodeBC2BlockFast(const byte *src, byte **dstPtr);
     static void             EncodeBC3BlockFast(const byte *src, byte **dstPtr);
+    static void             EncodeBC4BlockFast(const byte *src, byte **dstPtr);
     static void             EncodeBC5BlockFast(const byte *src, byte **dstPtr);
 
     static void             EncodeBC1BlockHQ(const byte *src, byte **dstPtr);
     static void             EncodeBC2BlockHQ(const byte *src, byte **dstPtr);
     static void             EncodeBC3BlockHQ(const byte *src, byte **dstPtr);
+    static void             EncodeBC4BlockHQ(const byte *src, byte **dstPtr);
     static void             EncodeBC5BlockHQ(const byte *src, byte **dstPtr);
 };
 

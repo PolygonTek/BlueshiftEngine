@@ -103,6 +103,34 @@ void CompressBC3(const Image &srcImage, Image &dstImage, Image::CompressionQuali
     }
 }
 
+void CompressBC4(const Image &srcImage, Image &dstImage, Image::CompressionQuality compressionQuality) {
+    assert(srcImage.GetFormat() == Image::Format::R8G8B8A8);
+
+    void (*CompressImage)(const byte *src, const int width, const int height, const int depth, byte *dst);
+
+    if (compressionQuality == Image::CompressionQuality::HighQuality) {
+        CompressImage = BCEncoder::CompressImageBC4HQ;
+    } else {
+        CompressImage = BCEncoder::CompressImageBC4Fast;
+    }
+
+    int numMipmaps = srcImage.NumMipmaps();
+    int numSlices = srcImage.GetArraySize();
+
+    for (int sliceIndex = 0; sliceIndex < numSlices; sliceIndex++) {
+        for (int mipLevel = 0; mipLevel < numMipmaps; mipLevel++) {
+            int w = srcImage.GetWidth(mipLevel);
+            int h = srcImage.GetHeight(mipLevel);
+            int d = srcImage.GetDepth(mipLevel);
+
+            byte *src = srcImage.GetPixels(mipLevel, sliceIndex);
+            byte *dst = dstImage.GetPixels(mipLevel, sliceIndex);
+
+            CompressImage(src, w, h, d, dst);
+        }
+    }
+}
+
 void CompressBC5(const Image &srcImage, Image &dstImage, Image::CompressionQuality compressionQuality) {
     assert(srcImage.GetFormat() == Image::Format::R8G8B8A8);
 
