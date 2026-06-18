@@ -34,6 +34,7 @@ public:
     static void             DecompressImageBC6H(const byte *blocks, const int width, const int height, const int depth, bool signedFormat, float *out);
     static void             DecompressImageBC6HU(const byte *blocks, const int width, const int height, const int depth, float *out);
     static void             DecompressImageBC6HS(const byte *blocks, const int width, const int height, const int depth, float *out);
+    static void             DecompressImageBC7(const byte *blocks, const int width, const int height, const int depth, byte *out);
 
 private:
                             /// Decode 64 bits color block to RGBA8888
@@ -50,6 +51,9 @@ private:
 
                             /// Decode one signed BC6H block to 16 RGBA32F texels. Alpha is set to 1.0.
     static void             DecodeBC6HSBlock(const BCCodec::BC6HBlock *block, float *out);
+
+                            /// Decode one BC7 block to 16 RGBA8888 texels.
+    static void             DecodeBC7Block(const BCCodec::BC7Block *block, byte *out);
 };
 
 BE_INLINE void BCDecoder::DecompressImageBC6HU(const byte *blocks, const int width, const int height, const int depth, float *out) {

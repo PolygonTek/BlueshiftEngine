@@ -159,4 +159,24 @@ void DecompressBC6H_SF16(const Image &srcImage, Image &dstImage) {
     }
 }
 
+void DecompressBC7(const Image &srcImage, Image &dstImage) {
+    assert(dstImage.GetFormat() == Image::Format::R8G8B8A8);
+
+    int numMipmaps = srcImage.NumMipmaps();
+    int numSlices = srcImage.GetArraySize();
+
+    for (int sliceIndex = 0; sliceIndex < numSlices; sliceIndex++) {
+        for (int mipLevel = 0; mipLevel < numMipmaps; mipLevel++) {
+            int w = srcImage.GetWidth(mipLevel);
+            int h = srcImage.GetHeight(mipLevel);
+            int d = srcImage.GetDepth(mipLevel);
+
+            const byte *srcBlocks = srcImage.GetPixels(mipLevel, sliceIndex);
+            byte *dst = dstImage.GetPixels(mipLevel, sliceIndex);
+
+            BCDecoder::DecompressImageBC7(srcBlocks, w, h, d, dst);
+        }
+    }
+}
+
 BE_NAMESPACE_END

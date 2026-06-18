@@ -50,6 +50,9 @@ static bool DecompressImage(const Image &srcImage, Image &dstImage) {
     case Image::Format::BC6H_SF16:
         DecompressBC6H_SF16(srcImage, dstImage);
         break;
+    case Image::Format::BC7:
+        DecompressBC7(srcImage, dstImage);
+        break;
     case Image::Format::PVRTC12:
     case Image::Format::PVRTC12A:
     case Image::Format::PVRTC22A:

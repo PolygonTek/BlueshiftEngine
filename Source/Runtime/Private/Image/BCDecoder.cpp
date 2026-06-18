@@ -157,6 +157,10 @@ void BCDecoder::DecodeBC6HSBlock(const BCCodec::BC6HBlock *block, float *out) {
     }
 }
 
+void BCDecoder::DecodeBC7Block(const BCCodec::BC7Block *block, byte *out) {
+    ::bcdec_bc7(block->data, out, 4 * 4);
+}
+
 void BCDecoder::DecompressImageBC1(const byte *blocks, const int width, const int height, const int depth, byte *out) {
     ALIGN_AS32 byte unpackedBlock[64];
     const byte *blockPtr = blocks;
@@ -364,6 +368,31 @@ void BCDecoder::DecompressImageBC6H(const byte *blocks, const int width, const i
 
                 for (int i = 0; i < dstBlockHeight; i++) {
                     memcpy(dst_z + 4 * ((y + i) * width + x), unpackedBlock + i * 4 * 4, dstBlockWidth * 4 * sizeof(float));
+                }
+            }
+        }
+    }
+}
+
+void BCDecoder::DecompressImageBC7(const byte *blocks, const int width, const int height, const int depth, byte *out) {
+    const byte *blockPtr = blocks;
+
+    for (int z = 0; z < depth; z++) {
+        byte *dst_z = out + 4 * width * height * z;
+
+        for (int y = 0; y < height; y += 4) {
+            for (int x = 0; x < width; x += 4) {
+                ALIGN_AS32 byte unpackedBlock[16 * 4];
+
+                const BCCodec::BC7Block *bc7Block = reinterpret_cast<const BCCodec::BC7Block *>(blockPtr);
+                BCDecoder::DecodeBC7Block(bc7Block, unpackedBlock);
+                blockPtr += sizeof(BCCodec::BC7Block);
+
+                const int dstBlockWidth = Min(4, width - x);
+                const int dstBlockHeight = Min(4, height - y);
+
+                for (int i = 0; i < dstBlockHeight; i++) {
+                    memcpy(dst_z + 4 * ((y + i) * width + x), unpackedBlock + i * 4 * 4, dstBlockWidth * 4);
                 }
             }
         }

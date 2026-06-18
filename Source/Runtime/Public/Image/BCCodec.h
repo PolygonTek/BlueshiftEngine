@@ -21,6 +21,8 @@ BE_NAMESPACE_BEGIN
 // BC3: Three-component color and alpha         - Color(5:6:5), Alpha(8)
 // BC4: One-component color                     - One component(8)
 // BC5: Two-component color                     - Two components(8:8)
+// BC6H: Three-component HDR color              - Three half float components, unsigned or signed
+// BC7: Three-component color and alpha         - Variable precision color and alpha
 
 class BE_API BCCodec {
 public:

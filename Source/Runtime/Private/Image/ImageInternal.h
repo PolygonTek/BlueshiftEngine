@@ -41,6 +41,7 @@ void DecompressBC4(const Image &srcImage, Image &dstImage);
 void DecompressBC5(const Image &srcImage, Image &dstImage);
 void DecompressBC6H_UF16(const Image &srcImage, Image &dstImage);
 void DecompressBC6H_SF16(const Image &srcImage, Image &dstImage);
+void DecompressBC7(const Image &srcImage, Image &dstImage);
 
 void DecompressPVRTC(const Image &srcImage, Image &dstImage, int do2BitMode);
 
