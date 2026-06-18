@@ -186,8 +186,8 @@ void OpenGL3::SetTextureSwizzling(GLenum target, Image::Format format) {
     case Image::Format::L8A8:
     case Image::Format::L16A16_FLOAT:
     case Image::Format::L32A32_FLOAT:
-    case Image::Format::DXN1:
-    case Image::Format::DXN2:
+    case Image::Format::BC4:
+    case Image::Format::BC5:
         gglTexParameteriv(target, GL_TEXTURE_SWIZZLE_RGBA, swiz_la);
         break;
     default:
@@ -436,28 +436,28 @@ bool OpenGL3::ImageFormatToGLFormat(Image::Format imageFormat, bool isSRGB, GLen
         if (glType)     *glType = GL_FLOAT;
         if (glInternal) *glInternal = GL_RGBA32F;
         return true;
-    case Image::Format::DXT1:
+    case Image::Format::BC1:
         if (glFormat)   *glFormat = isSRGB ? GL_COMPRESSED_SRGB_ALPHA_S3TC_DXT1_EXT : GL_COMPRESSED_RGBA_S3TC_DXT1_EXT;
         if (glType)     *glType = 0;
         if (glInternal) *glInternal = isSRGB ? GL_COMPRESSED_SRGB_ALPHA_S3TC_DXT1_EXT : GL_COMPRESSED_RGBA_S3TC_DXT1_EXT;
         return true;
-    case Image::Format::DXT3:
+    case Image::Format::BC2:
         if (glFormat)   *glFormat = isSRGB ? GL_COMPRESSED_SRGB_ALPHA_S3TC_DXT3_EXT : GL_COMPRESSED_RGBA_S3TC_DXT3_EXT;
         if (glType)     *glType = 0;
         if (glInternal) *glInternal = isSRGB ? GL_COMPRESSED_SRGB_ALPHA_S3TC_DXT3_EXT : GL_COMPRESSED_RGBA_S3TC_DXT3_EXT;
         return true;
-    case Image::Format::DXT5:
-    case Image::Format::DXT5XGBR:
+    case Image::Format::BC3:
+    case Image::Format::BC3XGBR:
         if (glFormat)   *glFormat = isSRGB ? GL_COMPRESSED_SRGB_ALPHA_S3TC_DXT5_EXT : GL_COMPRESSED_RGBA_S3TC_DXT5_EXT;
         if (glType)     *glType = 0;
         if (glInternal) *glInternal = isSRGB ? GL_COMPRESSED_SRGB_ALPHA_S3TC_DXT5_EXT : GL_COMPRESSED_RGBA_S3TC_DXT5_EXT;
         return true;
-    case Image::Format::DXN1:
+    case Image::Format::BC4:
         if (glFormat)   *glFormat = GL_COMPRESSED_RED_RGTC1;
         if (glType)     *glType = 0;
         if (glInternal) *glInternal = GL_COMPRESSED_RED_RGTC1;//GL_COMPRESSED_SIGNED_RED_RGTC1 GL_COMPRESSED_LUMINANCE_LATC1_EXT;
         return true;
-    case Image::Format::DXN2:
+    case Image::Format::BC5:
         if (glFormat)   *glFormat = GL_COMPRESSED_RG_RGTC2;
         if (glType)     *glType = 0;
         if (glInternal) *glInternal = GL_COMPRESSED_RG_RGTC2;//GL_COMPRESSED_SIGNED_RG_RGTC2 GL_COMPRESSED_LUMINANCE_ALPHA_LATC2_EXT;
@@ -511,14 +511,14 @@ Image::Format OpenGL3::ToCompressedImageFormat(Image::Format inFormat, bool useN
                 outFormat = Image::Format::R9G9B9E5_FLOAT;
             }
         } else if (useNormalMap) {
-            outFormat = Image::Format::DXN2;
+            outFormat = Image::Format::BC5;
         } else {
             if (alphaBits <= 1) {
-                outFormat = Image::Format::DXT1;
+                outFormat = Image::Format::BC1;
             } else if (alphaBits <= 4) {
-                outFormat = Image::Format::DXT3;
+                outFormat = Image::Format::BC2;
             } else {
-                outFormat = Image::Format::DXT5;
+                outFormat = Image::Format::BC3;
             }
         }
     }

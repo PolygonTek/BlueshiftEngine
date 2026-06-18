@@ -128,8 +128,8 @@ Image::Format OpenGLBase::ToUncompressedImageFormat(Image::Format inFormat) {
     Image::Format outFormat;
 
     switch (inFormat) {
-    case Image::Format::DXN1:
-    case Image::Format::DXN2:
+    case Image::Format::BC4:
+    case Image::Format::BC5:
     case Image::Format::PVRTC12:
     case Image::Format::PVRTC14:
     case Image::Format::ETC1:
@@ -137,9 +137,9 @@ Image::Format OpenGLBase::ToUncompressedImageFormat(Image::Format inFormat) {
     case Image::Format::ATC:
         outFormat = Image::Format::R8G8B8;
         break;
-    case Image::Format::DXT1:
-    case Image::Format::DXT3:
-    case Image::Format::DXT5:
+    case Image::Format::BC1:
+    case Image::Format::BC2:
+    case Image::Format::BC3:
     case Image::Format::PVRTC12A:
     case Image::Format::PVRTC14A:
     case Image::Format::PVRTC22A:

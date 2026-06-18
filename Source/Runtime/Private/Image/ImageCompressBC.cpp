@@ -14,20 +14,20 @@
 
 #include "Precompiled.h"
 #include "Image/Image.h"
-#include "Image/DxtEncoder.h"
+#include "Image/BCEncoder.h"
 #include "ImageInternal.h"
 
 BE_NAMESPACE_BEGIN
 
-void CompressDXT1(const Image &srcImage, Image &dstImage, Image::CompressionQuality compressionQuality) {
+void CompressBC1(const Image &srcImage, Image &dstImage, Image::CompressionQuality compressionQuality) {
     assert(srcImage.GetFormat() == Image::Format::R8G8B8A8);
 
     void (*CompressImage)(const byte *src, const int width, const int height, const int depth, byte *dst);
 
     if (compressionQuality == Image::CompressionQuality::HighQuality) {
-        CompressImage = DXTEncoder::CompressImageDXT1HQ;
+        CompressImage = BCEncoder::CompressImageBC1HQ;
     } else {
-        CompressImage = DXTEncoder::CompressImageDXT1Fast;
+        CompressImage = BCEncoder::CompressImageBC1Fast;
     }
 
     int numMipmaps = srcImage.NumMipmaps();
@@ -47,15 +47,15 @@ void CompressDXT1(const Image &srcImage, Image &dstImage, Image::CompressionQual
     }
 }
 
-void CompressDXT3(const Image &srcImage, Image &dstImage, Image::CompressionQuality compressionQuality) {
+void CompressBC2(const Image &srcImage, Image &dstImage, Image::CompressionQuality compressionQuality) {
     assert(srcImage.GetFormat() == Image::Format::R8G8B8A8);
 
     void (*CompressImage)(const byte *src, const int width, const int height, const int depth, byte *dst);
 
     if (compressionQuality == Image::CompressionQuality::HighQuality) {
-        CompressImage = DXTEncoder::CompressImageDXT3HQ;
+        CompressImage = BCEncoder::CompressImageBC2HQ;
     } else {
-        CompressImage = DXTEncoder::CompressImageDXT3Fast;
+        CompressImage = BCEncoder::CompressImageBC2Fast;
     }
 
     int numMipmaps = srcImage.NumMipmaps();
@@ -75,15 +75,15 @@ void CompressDXT3(const Image &srcImage, Image &dstImage, Image::CompressionQual
     }
 }
 
-void CompressDXT5(const Image &srcImage, Image &dstImage, Image::CompressionQuality compressionQuality) {
+void CompressBC3(const Image &srcImage, Image &dstImage, Image::CompressionQuality compressionQuality) {
     assert(srcImage.GetFormat() == Image::Format::R8G8B8A8);
 
     void (*CompressImage)(const byte *src, const int width, const int height, const int depth, byte *dst);
 
     if (compressionQuality == Image::CompressionQuality::HighQuality) {
-        CompressImage = DXTEncoder::CompressImageDXT5HQ;
+        CompressImage = BCEncoder::CompressImageBC3HQ;
     } else {
-        CompressImage = DXTEncoder::CompressImageDXT5Fast;
+        CompressImage = BCEncoder::CompressImageBC3Fast;
     }
 
     int numMipmaps = srcImage.NumMipmaps();
@@ -103,15 +103,15 @@ void CompressDXT5(const Image &srcImage, Image &dstImage, Image::CompressionQual
     }
 }
 
-void CompressDXN2(const Image &srcImage, Image &dstImage, Image::CompressionQuality compressionQuality) {
+void CompressBC5(const Image &srcImage, Image &dstImage, Image::CompressionQuality compressionQuality) {
     assert(srcImage.GetFormat() == Image::Format::R8G8B8A8);
 
     void (*CompressImage)(const byte *src, const int width, const int height, const int depth, byte *dst);
 
     if (compressionQuality == Image::CompressionQuality::HighQuality) {
-        CompressImage = DXTEncoder::CompressImageDXN2HQ;
+        CompressImage = BCEncoder::CompressImageBC5HQ;
     } else {
-        CompressImage = DXTEncoder::CompressImageDXN2Fast;
+        CompressImage = BCEncoder::CompressImageBC5Fast;
     }
 
     int numMipmaps = srcImage.NumMipmaps();

@@ -25,21 +25,30 @@ static bool DecompressImage(const Image &srcImage, Image &dstImage) {
     assert(dstImage.GetPixels());
 
     switch (srcImage.GetFormat()) {
-    case Image::Format::DXT1:
-        DecompressDXT1(srcImage, dstImage);
+    case Image::Format::BC1:
+        DecompressBC1(srcImage, dstImage);
         break;
-    case Image::Format::DXT3:
-        DecompressDXT3(srcImage, dstImage);
+    case Image::Format::BC2:
+        DecompressBC2(srcImage, dstImage);
         break;
-    case Image::Format::DXT5:
-        DecompressDXT5(srcImage, dstImage);
+    case Image::Format::BC3:
+        DecompressBC3(srcImage, dstImage);
         break;
-    case Image::Format::DXT5XGBR:
-        DecompressDXT5(srcImage, dstImage);
-        BE_WARNLOG("DecompressImage: XGBR_DXT5 need to swap channels\n");
+    case Image::Format::BC3XGBR:
+        DecompressBC3(srcImage, dstImage);
+        BE_WARNLOG("DecompressImage: BC3XGBR need to swap channels\n");
         break;
-    case Image::Format::DXN2:
-        DecompressDXN2(srcImage, dstImage);
+    case Image::Format::BC4:
+        DecompressBC4(srcImage, dstImage);
+        break;
+    case Image::Format::BC5:
+        DecompressBC5(srcImage, dstImage);
+        break;
+    case Image::Format::BC6H_UF16:
+        DecompressBC6H_UF16(srcImage, dstImage);
+        break;
+    case Image::Format::BC6H_SF16:
+        DecompressBC6H_SF16(srcImage, dstImage);
         break;
     case Image::Format::PVRTC12:
     case Image::Format::PVRTC12A:
@@ -91,17 +100,17 @@ static bool CompressImage(const Image &srcImage, Image &dstImage, Image::Compres
     //uint64_t startClocks = rdtsc();
 
     switch (dstImage.GetFormat()) {
-    case Image::Format::DXT1:
-        CompressDXT1(srcImage, dstImage, compressionQuality);
+    case Image::Format::BC1:
+        CompressBC1(srcImage, dstImage, compressionQuality);
         break;
-    case Image::Format::DXT3:
-        CompressDXT3(srcImage, dstImage, compressionQuality);
+    case Image::Format::BC2:
+        CompressBC2(srcImage, dstImage, compressionQuality);
         break;
-    case Image::Format::DXT5:
-        CompressDXT5(srcImage, dstImage, compressionQuality);
+    case Image::Format::BC3:
+        CompressBC3(srcImage, dstImage, compressionQuality);
         break;
-    case Image::Format::DXN2:
-        CompressDXN2(srcImage, dstImage, compressionQuality);
+    case Image::Format::BC5:
+        CompressBC5(srcImage, dstImage, compressionQuality);
         break;
     case Image::Format::ETC1:
         CompressETC1(srcImage, dstImage, compressionQuality);
@@ -133,7 +142,7 @@ static bool CompressImage(const Image &srcImage, Image &dstImage, Image::Compres
     }
 
     //uint64_t endClocks = rdtsc();
-    //BE_LOG("%DXT compression in %" PRIu64 " clocks\n", endClocks - startClocks);
+    //BE_LOG("%BC compression in %" PRIu64 " clocks\n", endClocks - startClocks);
 
     return true;
 }

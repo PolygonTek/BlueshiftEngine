@@ -606,9 +606,9 @@ bool Image::HasAlpha(Image::Format imageFormat) {
     const ImageFormatInfo *formatInfo = GetImageFormatInfo(imageFormat);
     if (HasFlag(formatInfo->type, FormatType::Compressed)) {
         switch (imageFormat) {
-        case Format::DXT1: // TODO: check 1-bit-alpha is used
-        case Format::DXT3:
-        case Format::DXT5:
+        case Format::BC1: // TODO: check 1-bit-alpha is used
+        case Format::BC2:
+        case Format::BC3:
         case Format::PVRTC12A:
         case Format::PVRTC14A:
         case Format::PVRTC22A:
@@ -630,7 +630,7 @@ bool Image::HasOneBitAlpha(Image::Format imageFormat) {
     const ImageFormatInfo *formatInfo = GetImageFormatInfo(imageFormat);
     if (HasFlag(formatInfo->type, FormatType::Compressed)) {
         switch (imageFormat) {
-        case Format::DXT1: // TODO: check 1-bit-alpha is used
+        case Format::BC1: // TODO: check 1-bit-alpha is used
         case Format::ETC2A1:
             return true;
         default:

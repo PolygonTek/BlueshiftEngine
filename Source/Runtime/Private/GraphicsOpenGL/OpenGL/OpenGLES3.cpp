@@ -144,8 +144,8 @@ void OpenGLES3::SetTextureSwizzling(GLenum target, Image::Format format) {
     case Image::Format::L8A8:
     case Image::Format::L16A16_FLOAT:
     case Image::Format::L32A32_FLOAT:
-    case Image::Format::DXN1:
-    case Image::Format::DXN2:
+    case Image::Format::BC4:
+    case Image::Format::BC5:
         gglTexParameteri(target, GL_TEXTURE_SWIZZLE_R, GL_RED);
         gglTexParameteri(target, GL_TEXTURE_SWIZZLE_G, GL_RED);
         gglTexParameteri(target, GL_TEXTURE_SWIZZLE_B, GL_RED);
@@ -440,7 +440,7 @@ bool OpenGLES3::ImageFormatToGLFormat(Image::Format imageFormat, bool isSRGB, GL
         if (glType)     *glType = GL_FLOAT;
         if (glInternal) *glInternal = GL_RGBA32F;
         return true;
-    case Image::Format::DXT1:
+    case Image::Format::BC1:
 #ifdef GL_EXT_texture_compression_s3tc
         if (!gglext._GL_EXT_texture_compression_s3tc) return false;
         if (glFormat)   *glFormat = GL_COMPRESSED_RGBA_S3TC_DXT1_EXT;
@@ -450,7 +450,7 @@ bool OpenGLES3::ImageFormatToGLFormat(Image::Format imageFormat, bool isSRGB, GL
 #else
         return false;
 #endif
-    case Image::Format::DXT3:
+    case Image::Format::BC2:
 #ifdef GL_EXT_texture_compression_s3tc
         if (!gglext._GL_EXT_texture_compression_s3tc) return false;
         if (glFormat)   *glFormat = GL_COMPRESSED_RGBA_S3TC_DXT3_EXT;
@@ -460,8 +460,8 @@ bool OpenGLES3::ImageFormatToGLFormat(Image::Format imageFormat, bool isSRGB, GL
 #else
         return false;
 #endif
-    case Image::Format::DXT5:
-    case Image::Format::DXT5XGBR:
+    case Image::Format::BC3:
+    case Image::Format::BC3XGBR:
 #ifdef GL_EXT_texture_compression_s3tc
         if (!gglext._GL_EXT_texture_compression_s3tc) return false;
         if (glFormat)   *glFormat = GL_COMPRESSED_RGBA_S3TC_DXT5_EXT;
@@ -471,7 +471,7 @@ bool OpenGLES3::ImageFormatToGLFormat(Image::Format imageFormat, bool isSRGB, GL
 #else
         return false;
 #endif
-    case Image::Format::DXN1:
+    case Image::Format::BC4:
 #ifdef GL_EXT_texture_compression_rgtc
         if (!gglext._GL_EXT_texture_compression_rgtc) return false;
         if (glFormat)   *glFormat = GL_COMPRESSED_RED_RGTC1;
@@ -481,7 +481,7 @@ bool OpenGLES3::ImageFormatToGLFormat(Image::Format imageFormat, bool isSRGB, GL
 #else
         return false;
 #endif
-    case Image::Format::DXN2:
+    case Image::Format::BC5:
 #ifdef GL_EXT_texture_compression_rgtc
         if (!gglext._GL_EXT_texture_compression_rgtc) return false;
         if (glFormat)   *glFormat = GL_COMPRESSED_RG_RGTC2;

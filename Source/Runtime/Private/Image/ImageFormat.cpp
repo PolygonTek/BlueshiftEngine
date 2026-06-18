@@ -2869,15 +2869,15 @@ static const ImageFormatInfo imageFormatInfo[] = {
     { "A8" ,                    1,  1,  0,  0,  0,  8,  Image::FormatType::UNorm, A8ToRGBA8888, RGBA8888ToA8, A8ToRGBA32F, RGBA32FToA8 },
     { "L8A8"  ,                 2,  2,  8,  0,  0,  8,  Image::FormatType::UNorm, LA88ToRGBA8888, RGBA8888ToLA88, LA88ToRGBA32F, RGBA32FToLA88 },
 
-    // DXT (BTC) ----------------------------------------------------------------------------------
-    { "DXT1",                   8,  4,  0,  0,  0,  0,  Image::FormatType::UNorm | Image::FormatType::Compressed, nullptr, nullptr, nullptr, nullptr },
-    { "DXT3",                   16, 4,  0,  0,  0,  0,  Image::FormatType::UNorm | Image::FormatType::Compressed, nullptr, nullptr, nullptr, nullptr },
-    { "DXT5",                   16, 4,  0,  0,  0,  0,  Image::FormatType::UNorm | Image::FormatType::Compressed, nullptr, nullptr, nullptr, nullptr },
-    { "DXT5_XGBR",              16, 4,  0,  0,  0,  0,  Image::FormatType::UNorm | Image::FormatType::Compressed, nullptr, nullptr, nullptr, nullptr },
-    { "DXN1",                   8,  2,  0,  0,  0,  0,  Image::FormatType::UNorm | Image::FormatType::Compressed, nullptr, nullptr, nullptr, nullptr },
-    { "DXN2",                   16, 2,  0,  0,  0,  0,  Image::FormatType::UNorm | Image::FormatType::Compressed, nullptr, nullptr, nullptr, nullptr },
-    { "BC6H_UF16",              16, 3,  0,  0,  0,  0,  Image::FormatType::Compressed, nullptr, nullptr, nullptr, nullptr },
-    { "BC6H_SF16",              16, 3,  0,  0,  0,  0,  Image::FormatType::Compressed, nullptr, nullptr, nullptr, nullptr },
+    // BC -----------------------------------------------------------------------------------------
+    { "BC1",                    8,  4,  0,  0,  0,  0,  Image::FormatType::UNorm | Image::FormatType::Compressed, nullptr, nullptr, nullptr, nullptr },
+    { "BC2",                    16, 4,  0,  0,  0,  0,  Image::FormatType::UNorm | Image::FormatType::Compressed, nullptr, nullptr, nullptr, nullptr },
+    { "BC3",                    16, 4,  0,  0,  0,  0,  Image::FormatType::UNorm | Image::FormatType::Compressed, nullptr, nullptr, nullptr, nullptr },
+    { "BC3_XGBR",               16, 4,  0,  0,  0,  0,  Image::FormatType::UNorm | Image::FormatType::Compressed, nullptr, nullptr, nullptr, nullptr },
+    { "BC4",                    8,  2,  0,  0,  0,  0,  Image::FormatType::UNorm | Image::FormatType::Compressed, nullptr, nullptr, nullptr, nullptr },
+    { "BC5",                    16, 2,  0,  0,  0,  0,  Image::FormatType::UNorm | Image::FormatType::Compressed, nullptr, nullptr, nullptr, nullptr },
+    { "BC6H_UF16",              16, 3,  0,  0,  0,  0,  Image::FormatType::Float | Image::FormatType::Compressed, nullptr, nullptr, nullptr, nullptr },
+    { "BC6H_SF16",              16, 3,  0,  0,  0,  0,  Image::FormatType::Float | Image::FormatType::Compressed, nullptr, nullptr, nullptr, nullptr },
     { "BC7",                    16, 4,  0,  0,  0,  0,  Image::FormatType::UNorm | Image::FormatType::Compressed, nullptr, nullptr, nullptr, nullptr },
 
     // PVRTC --------------------------------------------------------------------------------------
@@ -2911,12 +2911,14 @@ const ImageFormatInfo *GetImageFormatInfo(Image::Format imageFormat) {
 
 bool CompressedFormatMinDimensions(Image::Format imageFormat, int &minWidth, int &minHeight) {
     switch (imageFormat) {
-    case Image::Format::DXT1:
-    case Image::Format::DXT3:
-    case Image::Format::DXT5:
-    case Image::Format::DXT5XGBR:
-    case Image::Format::DXN1:
-    case Image::Format::DXN2:
+    case Image::Format::BC1:
+    case Image::Format::BC2:
+    case Image::Format::BC3:
+    case Image::Format::BC3XGBR:
+    case Image::Format::BC4:
+    case Image::Format::BC5:
+    case Image::Format::BC6H_UF16:
+    case Image::Format::BC6H_SF16:
         minWidth = 4;
         minHeight = 4;
         return true;
@@ -2964,12 +2966,14 @@ bool CompressedFormatMinDimensions(Image::Format imageFormat, int &minWidth, int
 
 bool CompressedFormatBlockDimensions(Image::Format imageFormat, int &blockWidth, int &blockHeight) {
     switch (imageFormat) {
-    case Image::Format::DXT1:
-    case Image::Format::DXT3:
-    case Image::Format::DXT5:
-    case Image::Format::DXT5XGBR:
-    case Image::Format::DXN1:
-    case Image::Format::DXN2:
+    case Image::Format::BC1:
+    case Image::Format::BC2:
+    case Image::Format::BC3:
+    case Image::Format::BC3XGBR:
+    case Image::Format::BC4:
+    case Image::Format::BC5:
+    case Image::Format::BC6H_UF16:
+    case Image::Format::BC6H_SF16:
         blockWidth = 4;
         blockHeight = 4;
         return true;

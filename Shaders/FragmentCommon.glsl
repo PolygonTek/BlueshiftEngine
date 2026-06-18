@@ -34,7 +34,7 @@ vec3 GetNormal(sampler2D normalMap, in vec2 tc) {
     vec3 n = tex2D(normalMap, tc).xyy * 2.0 - 1.0;
     n.z = 0.0;
     n.z = sqrt(abs(1.0 - dot(n, n)));
-#elif defined(DXT5_XGBR_NORMAL)
+#elif defined(BC3_XGBR_NORMAL)
     vec3 n = tex2D(normalMap, tc).wyz * 2.0 - 1.0;
 #else
     vec3 n = tex2D(normalMap, tc).xyz * 2.0 - 1.0;

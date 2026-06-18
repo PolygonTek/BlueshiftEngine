@@ -16,36 +16,38 @@
 
 BE_NAMESPACE_BEGIN
 
-// BC1(DXT1): Three-component color and alpha   - Color(5:6:5), Alpha(1) or no alpha
-// BC2(DXT3): Three-component color and alpha   - Color(5:6:5), Alpha(4)
-// BC3(DXT5): Three-component color and alpha   - Color(5:6:5), Alpha(8)
-// BC4(DXN1): One-component color               - One component(8)
-// BC5(DXN2): Two-component color               - Two components(8:8)
+// BC1: Three-component color and alpha         - Color(5:6:5), Alpha(1) or no alpha
+// BC2: Three-component color and alpha         - Color(5:6:5), Alpha(4)
+// BC3: Three-component color and alpha         - Color(5:6:5), Alpha(8)
+// BC4: One-component color                     - One component(8)
+// BC5: Two-component color                     - Two components(8:8)
 
-union DXTBlock {
-    struct ColorBlock {
+class BE_API BCCodec {
+public:
+    struct ColorBlock565 {
         uint16_t            color0;         ///< RGB565 color key 0
         uint16_t            color1;         ///< RGB565 color key 1
         uint32_t            indexes;        ///< 2 bit index per color pixel
     };
     
-    struct AlphaBlock {
+    struct AlphaBlock3Bit {
         byte                alpha0;         ///< alpha key 0
         byte                alpha1;         ///< alpha key 1
         byte                indexes[6];     ///< 3 bit index per alpha pixel
     };
         
-    struct AlphaExplicitBlock {
+    struct AlphaBlock4Bit {
         uint16_t            row[4];         ///< 4 bit explicit alpha value per alpha pixel
     };
-    
-    ColorBlock              colorBlock;
-    AlphaBlock              alphaBlock;
-    AlphaExplicitBlock      alphaExplicitBlock;
-};
 
-class BE_API DXTCodec {
-public:
+    struct BC6HBlock {
+        byte                data[16];       ///< Mode-dependent 128-bit BC6H payload
+    };
+
+    struct BC7Block {
+        byte                data[16];       ///< Mode-dependent 128-bit BC7 payload
+    };
+
                             /// Convert BGR565 to RGB888
     static void             RGB888From565(const uint16_t c565, byte *rgb);
                             /// Convert RGB888 to BGR565
@@ -56,24 +58,30 @@ public:
     static const Vec3       RGB888ToVec3(const byte *rgb);
 };
 
-BE_INLINE void DXTCodec::RGB888From565(const uint16_t c565, byte *rgb) {
+static_assert(sizeof(BCCodec::ColorBlock565) == 8, "BCCodec::ColorBlock565 must be 8 bytes");
+static_assert(sizeof(BCCodec::AlphaBlock3Bit) == 8, "BCCodec::AlphaBlock3Bit must be 8 bytes");
+static_assert(sizeof(BCCodec::AlphaBlock4Bit) == 8, "BCCodec::AlphaBlock4Bit must be 8 bytes");
+static_assert(sizeof(BCCodec::BC6HBlock) == 16, "BCCodec::BC6HBlock must be 16 bytes");
+static_assert(sizeof(BCCodec::BC7Block) == 16, "BCCodec::BC7Block must be 16 bytes");
+
+BE_INLINE void BCCodec::RGB888From565(const uint16_t c565, byte *rgb) {
     // Shift and then or with the most significant bits
     rgb[0] = byte(((c565 >> 8) & (((1 << (8 - 3)) - 1) << 3)) | ((c565 >> 13) & ((1 << 3) - 1)));   // r
     rgb[1] = byte(((c565 >> 3) & (((1 << (8 - 2)) - 1) << 2)) | ((c565 >> 9) & ((1 << 2) - 1)));    // g
     rgb[2] = byte(((c565 << 3) & (((1 << (8 - 3)) - 1) << 3)) | ((c565 >> 2) & ((1 << 3) - 1)));    // b
 }
 
-BE_INLINE const uint16_t DXTCodec::RGB888To565(const byte *rgb) {
+BE_INLINE const uint16_t BCCodec::RGB888To565(const byte *rgb) {
     return ((rgb[0] >> 3) << 11) | ((rgb[1] >> 2) << 5) | (rgb[2] >> 3);
 }
 
-BE_INLINE void DXTCodec::RGB888FromVec3(const Vec3 &v, byte *rgb) {
+BE_INLINE void BCCodec::RGB888FromVec3(const Vec3 &v, byte *rgb) {
     rgb[0] = (byte)(v.x == 1.0 ? 255 : v.x * 256.0f);
     rgb[1] = (byte)(v.y == 1.0 ? 255 : v.y * 256.0f);
     rgb[2] = (byte)(v.z == 1.0 ? 255 : v.z * 256.0f);
 }
 
-BE_INLINE const Vec3 DXTCodec::RGB888ToVec3(const byte *rgb) {
+BE_INLINE const Vec3 BCCodec::RGB888ToVec3(const byte *rgb) {
     return Vec3(rgb[0] / 255.0f, rgb[1] / 255.0f, rgb[2] / 255.0f);
 }
 

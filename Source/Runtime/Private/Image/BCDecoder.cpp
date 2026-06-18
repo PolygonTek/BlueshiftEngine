@@ -14,12 +14,16 @@
 
 #include "Precompiled.h"
 #include "Math/Math.h"
-#include "Image/DxtDecoder.h"
+#include "Image/BCDecoder.h"
+
+#define BCDEC_STATIC
+#define BCDEC_IMPLEMENTATION
+#include "bcdec.h"
 
 BE_NAMESPACE_BEGIN
 
 // Decode 64 bits color block to RGBA8888
-void DXTDecoder::DecodeColorBlock(const DXTBlock::ColorBlock *block, byte *out, bool writeAlpha) {
+void BCDecoder::DecodeColorBlock(const BCCodec::ColorBlock565 *block, byte *out, bool writeAlpha) {
     byte colors[4][4];
 
     RGB888From565(block->color0, colors[0]);
@@ -70,7 +74,7 @@ void DXTDecoder::DecodeColorBlock(const DXTBlock::ColorBlock *block, byte *out, 
 }
 
 // Decode 64 bits alpha block to 8-bit alphas
-void DXTDecoder::DecodeAlphaBlock(const DXTBlock::AlphaBlock *block, byte *out) {
+void BCDecoder::DecodeAlphaBlock(const BCCodec::AlphaBlock3Bit *block, byte *out) {
     byte alphas[8];
 
     alphas[0] = block->alpha0;
@@ -112,7 +116,7 @@ void DXTDecoder::DecodeAlphaBlock(const DXTBlock::AlphaBlock *block, byte *out) 
 }
 
 // Decode 64 bits alpha block (4 bits per pixel) to 8-bit alphas
-void DXTDecoder::DecodeAlphaExplicitBlock(const DXTBlock::AlphaExplicitBlock *block, byte *out) {
+void BCDecoder::DecodeAlphaExplicitBlock(const BCCodec::AlphaBlock4Bit *block, byte *out) {
     uint16_t    bits;
     byte        alpha;
 
@@ -127,8 +131,35 @@ void DXTDecoder::DecodeAlphaExplicitBlock(const DXTBlock::AlphaExplicitBlock *bl
     }
 }
 
-void DXTDecoder::DecompressImageDXT1(const DXTBlock *dxtBlock, const int width, const int height, const int depth, byte *out) {
+void BCDecoder::DecodeBC6HUBlock(const BCCodec::BC6HBlock *block, float *out) {
+    ALIGN_AS32 float rgb[16 * 3];
+
+    ::bcdec_bc6h_float(block->data, rgb, 4 * 3 * sizeof(float), 0);
+
+    for (int i = 0; i < 16; i++) {
+        out[i * 4 + 0] = rgb[i * 3 + 0];
+        out[i * 4 + 1] = rgb[i * 3 + 1];
+        out[i * 4 + 2] = rgb[i * 3 + 2];
+        out[i * 4 + 3] = 1.0f;
+    }
+}
+
+void BCDecoder::DecodeBC6HSBlock(const BCCodec::BC6HBlock *block, float *out) {
+    ALIGN_AS32 float rgb[16 * 3];
+
+    ::bcdec_bc6h_float(block->data, rgb, 4 * 3 * sizeof(float), 1);
+
+    for (int i = 0; i < 16; i++) {
+        out[i * 4 + 0] = rgb[i * 3 + 0];
+        out[i * 4 + 1] = rgb[i * 3 + 1];
+        out[i * 4 + 2] = rgb[i * 3 + 2];
+        out[i * 4 + 3] = 1.0f;
+    }
+}
+
+void BCDecoder::DecompressImageBC1(const byte *blocks, const int width, const int height, const int depth, byte *out) {
     ALIGN_AS32 byte unpackedBlock[64];
+    const byte *blockPtr = blocks;
 
     for (int z = 0; z < depth; z++) {
         byte *dst_z = out + 4 * (width * height * z);
@@ -139,8 +170,9 @@ void DXTDecoder::DecompressImageDXT1(const DXTBlock *dxtBlock, const int width, 
             int dstBlockHeight = Min(4, height - y);
 
             for (int x = 0; x < width; x += 4, dstPtr += 4 * 4) {
-                DXTDecoder::DecodeColorBlock(&dxtBlock->colorBlock, unpackedBlock, true);
-                dxtBlock++;
+                const BCCodec::ColorBlock565 *colorBlock = reinterpret_cast<const BCCodec::ColorBlock565 *>(blockPtr);
+                BCDecoder::DecodeColorBlock(colorBlock, unpackedBlock, true);
+                blockPtr += sizeof(BCCodec::ColorBlock565);
 
                 const byte *srcPtr = unpackedBlock;
 
@@ -154,8 +186,9 @@ void DXTDecoder::DecompressImageDXT1(const DXTBlock *dxtBlock, const int width, 
     }
 }
 
-void DXTDecoder::DecompressImageDXT3(const DXTBlock *dxtBlock, const int width, const int height, const int depth, byte *out) {
+void BCDecoder::DecompressImageBC2(const byte *blocks, const int width, const int height, const int depth, byte *out) {
     ALIGN_AS32 byte unpackedBlock[64];
+    const byte *blockPtr = blocks;
 
     for (int z = 0; z < depth; z++) {
         byte *dst_z = out + 4 * (width * height * z);
@@ -166,10 +199,13 @@ void DXTDecoder::DecompressImageDXT3(const DXTBlock *dxtBlock, const int width, 
             int dstBlockHeight = Min(4, height - y);
 
             for (int x = 0; x < width; x += 4, dstPtr += 4 * 4) {
-                DXTDecoder::DecodeAlphaExplicitBlock(&dxtBlock->alphaExplicitBlock, unpackedBlock + 3);
-                dxtBlock++;
-                DXTDecoder::DecodeColorBlock(&dxtBlock->colorBlock, unpackedBlock, false);
-                dxtBlock++;
+                const BCCodec::AlphaBlock4Bit *alphaBlock = reinterpret_cast<const BCCodec::AlphaBlock4Bit *>(blockPtr);
+                BCDecoder::DecodeAlphaExplicitBlock(alphaBlock, unpackedBlock + 3);
+                blockPtr += sizeof(BCCodec::AlphaBlock4Bit);
+
+                const BCCodec::ColorBlock565 *colorBlock = reinterpret_cast<const BCCodec::ColorBlock565 *>(blockPtr);
+                BCDecoder::DecodeColorBlock(colorBlock, unpackedBlock, false);
+                blockPtr += sizeof(BCCodec::ColorBlock565);
 
                 const byte *srcPtr = unpackedBlock;
 
@@ -183,8 +219,9 @@ void DXTDecoder::DecompressImageDXT3(const DXTBlock *dxtBlock, const int width, 
     }
 }
 
-void DXTDecoder::DecompressImageDXT5(const DXTBlock *dxtBlock, const int width, const int height, const int depth, byte *out) {
+void BCDecoder::DecompressImageBC3(const byte *blocks, const int width, const int height, const int depth, byte *out) {
     ALIGN_AS32 byte unpackedBlock[64];
+    const byte *blockPtr = blocks;
 
     for (int z = 0; z < depth; z++) {
         byte *dst_z = out + 4 * (width * height * z);
@@ -195,10 +232,13 @@ void DXTDecoder::DecompressImageDXT5(const DXTBlock *dxtBlock, const int width, 
             int dstBlockHeight = Min(4, height - y);
 
             for (int x = 0; x < width; x += 4, dstPtr += 4 * 4) {
-                DXTDecoder::DecodeAlphaBlock(&dxtBlock->alphaBlock, unpackedBlock + 3);
-                dxtBlock++;
-                DXTDecoder::DecodeColorBlock(&dxtBlock->colorBlock, unpackedBlock, false);
-                dxtBlock++;
+                const BCCodec::AlphaBlock3Bit *alphaBlock = reinterpret_cast<const BCCodec::AlphaBlock3Bit *>(blockPtr);
+                BCDecoder::DecodeAlphaBlock(alphaBlock, unpackedBlock + 3);
+                blockPtr += sizeof(BCCodec::AlphaBlock3Bit);
+
+                const BCCodec::ColorBlock565 *colorBlock = reinterpret_cast<const BCCodec::ColorBlock565 *>(blockPtr);
+                BCDecoder::DecodeColorBlock(colorBlock, unpackedBlock, false);
+                blockPtr += sizeof(BCCodec::ColorBlock565);
 
                 const byte *srcPtr = unpackedBlock;
 
@@ -212,8 +252,9 @@ void DXTDecoder::DecompressImageDXT5(const DXTBlock *dxtBlock, const int width, 
     }
 }
 
-void DXTDecoder::DecompressImageDXN2(const DXTBlock *dxtBlock, const int width, const int height, const int depth, byte *out) {
+void BCDecoder::DecompressImageBC4(const byte *blocks, const int width, const int height, const int depth, byte *out) {
     ALIGN_AS32 byte unpackedBlock[64];
+    const byte *blockPtr = blocks;
 
     for (int z = 0; z < depth; z++) {
         byte *dst_z = out + 4 * (width * height * z);
@@ -224,10 +265,48 @@ void DXTDecoder::DecompressImageDXN2(const DXTBlock *dxtBlock, const int width, 
             int dstBlockHeight = Min(4, height - y);
 
             for (int x = 0; x < width; x += 4, dstPtr += 4 * 4) {
-                DXTDecoder::DecodeAlphaBlock(&dxtBlock->alphaBlock, unpackedBlock);
-                dxtBlock++;
-                DXTDecoder::DecodeAlphaBlock(&dxtBlock->alphaBlock, unpackedBlock + 1);
-                dxtBlock++;
+                const BCCodec::AlphaBlock3Bit *alphaBlock = reinterpret_cast<const BCCodec::AlphaBlock3Bit *>(blockPtr);
+                BCDecoder::DecodeAlphaBlock(alphaBlock, unpackedBlock);
+                blockPtr += sizeof(BCCodec::AlphaBlock3Bit);
+
+                for (int i = 0; i < 16; i++) {
+                    unpackedBlock[i * 4 + 1] = 0;
+                    unpackedBlock[i * 4 + 2] = 0;
+                    unpackedBlock[i * 4 + 3] = 255;
+                }
+
+                const byte *srcPtr = unpackedBlock;
+
+                int dstBlockWidth = Min(4, width - x);
+
+                for (int i = 0; i < dstBlockHeight; i++, srcPtr += 4 * 4) {
+                    memcpy(dstPtr + i * 4 * width, srcPtr, dstBlockWidth * 4);
+                }
+            }
+        }
+    }
+}
+
+void BCDecoder::DecompressImageBC5(const byte *blocks, const int width, const int height, const int depth, byte *out) {
+    ALIGN_AS32 byte unpackedBlock[64];
+    const byte *blockPtr = blocks;
+
+    for (int z = 0; z < depth; z++) {
+        byte *dst_z = out + 4 * (width * height * z);
+
+        for (int y = 0; y < height; y += 4) {
+            byte *dstPtr = dst_z + 4 * width * y;
+
+            int dstBlockHeight = Min(4, height - y);
+
+            for (int x = 0; x < width; x += 4, dstPtr += 4 * 4) {
+                const BCCodec::AlphaBlock3Bit *alphaBlock = reinterpret_cast<const BCCodec::AlphaBlock3Bit *>(blockPtr);
+                BCDecoder::DecodeAlphaBlock(alphaBlock, unpackedBlock);
+                blockPtr += sizeof(BCCodec::AlphaBlock3Bit);
+
+                alphaBlock = reinterpret_cast<const BCCodec::AlphaBlock3Bit *>(blockPtr);
+                BCDecoder::DecodeAlphaBlock(alphaBlock, unpackedBlock + 1);
+                blockPtr += sizeof(BCCodec::AlphaBlock3Bit);
 
                 float normals[16 * 4];
                 for (int i = 0; i < 16; i++) {
@@ -256,6 +335,35 @@ void DXTDecoder::DecompressImageDXN2(const DXTBlock *dxtBlock, const int width, 
 
                 for (int i = 0; i < dstBlockHeight; i++, srcPtr += 4 * 4) {
                     memcpy(dstPtr + i * 4 * width, srcPtr, dstBlockWidth * 4);
+                }
+            }
+        }
+    }
+}
+
+void BCDecoder::DecompressImageBC6H(const byte *blocks, const int width, const int height, const int depth, bool signedFormat, float *out) {
+    const byte *blockPtr = blocks;
+
+    for (int z = 0; z < depth; z++) {
+        float *dst_z = out + 4 * width * height * z;
+
+        for (int y = 0; y < height; y += 4) {
+            for (int x = 0; x < width; x += 4) {
+                ALIGN_AS32 float unpackedBlock[16 * 4];
+
+                const BCCodec::BC6HBlock *bc6hBlock = reinterpret_cast<const BCCodec::BC6HBlock *>(blockPtr);
+                if (signedFormat) {
+                    BCDecoder::DecodeBC6HSBlock(bc6hBlock, unpackedBlock);
+                } else {
+                    BCDecoder::DecodeBC6HUBlock(bc6hBlock, unpackedBlock);
+                }
+                blockPtr += sizeof(BCCodec::BC6HBlock);
+
+                const int dstBlockWidth = Min(4, width - x);
+                const int dstBlockHeight = Min(4, height - y);
+
+                for (int i = 0; i < dstBlockHeight; i++) {
+                    memcpy(dst_z + 4 * ((y + i) * width + x), unpackedBlock + i * 4 * 4, dstBlockWidth * 4 * sizeof(float));
                 }
             }
         }

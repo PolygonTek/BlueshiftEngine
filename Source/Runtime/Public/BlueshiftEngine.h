@@ -106,8 +106,8 @@
 
 // Image
 #include "Image/Image.h"
-#include "Image/DxtEncoder.h"
-#include "Image/DxtDecoder.h"
+#include "Image/BCEncoder.h"
+#include "Image/BCDecoder.h"
 
 // Sound
 #include "Sound/Pcm.h"

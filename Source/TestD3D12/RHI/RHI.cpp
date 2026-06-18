@@ -507,20 +507,26 @@ bool RHI::Renderer::ImageFormatToRHIFormat(BE1::Image::Format imageFormat, bool 
     case BE1::Image::Format::R10G10B10A2_UINT:
         if (rhiFormat) *rhiFormat = RHI::Format::R10G10B10A2_UINT;
         return true;
-    case BE1::Image::Format::DXT1: // BC1
+    case BE1::Image::Format::BC1:
         if (rhiFormat) *rhiFormat = isSRGB ? RHI::Format::BC1_UNORM_SRGB : RHI::Format::BC1_UNORM;
         return true;
-    case BE1::Image::Format::DXT3: // BC2
+    case BE1::Image::Format::BC2:
         if (rhiFormat) *rhiFormat = isSRGB ? RHI::Format::BC2_UNORM_SRGB : RHI::Format::BC2_UNORM;
         return true;
-    case BE1::Image::Format::DXT5: // BC3
+    case BE1::Image::Format::BC3:
         if (rhiFormat) *rhiFormat = isSRGB ? RHI::Format::BC3_UNORM_SRGB : RHI::Format::BC3_UNORM;
         return true;
-    case BE1::Image::Format::DXN1: // BC4
+    case BE1::Image::Format::BC4:
         if (rhiFormat) *rhiFormat = RHI::Format::BC4_UNORM;
         return true;
-    case BE1::Image::Format::DXN2: // BC5
+    case BE1::Image::Format::BC5:
         if (rhiFormat) *rhiFormat = RHI::Format::BC5_UNORM;
+        return true;
+    case BE1::Image::Format::BC6H_UF16:
+        if (rhiFormat) *rhiFormat = RHI::Format::BC6H_UF16;
+        return true;
+    case BE1::Image::Format::BC6H_SF16:
+        if (rhiFormat) *rhiFormat = RHI::Format::BC6H_SF16;
         return true;
     case BE1::Image::Format::D16:
         if (rhiFormat) *rhiFormat = RHI::Format::D16_UNORM;
@@ -686,21 +692,21 @@ bool RHI::Renderer::RHIFormatToImageFormat(RHI::Format rhiFormat, BE1::Image::Fo
         return true;
     case RHI::Format::BC1_UNORM:
     case RHI::Format::BC1_UNORM_SRGB:
-        if (imageFormat) *imageFormat = BE1::Image::Format::DXT1;
+        if (imageFormat) *imageFormat = BE1::Image::Format::BC1;
         return true;
     case RHI::Format::BC2_UNORM:
     case RHI::Format::BC2_UNORM_SRGB:
-        if (imageFormat) *imageFormat = BE1::Image::Format::DXT3;
+        if (imageFormat) *imageFormat = BE1::Image::Format::BC2;
         return true;
     case RHI::Format::BC3_UNORM:
     case RHI::Format::BC3_UNORM_SRGB:
-        if (imageFormat) *imageFormat = BE1::Image::Format::DXT5;
+        if (imageFormat) *imageFormat = BE1::Image::Format::BC3;
         return true;
     case RHI::Format::BC4_UNORM:
-        if (imageFormat) *imageFormat = BE1::Image::Format::DXN1;
+        if (imageFormat) *imageFormat = BE1::Image::Format::BC4;
         return true;
     case RHI::Format::BC5_UNORM:
-        if (imageFormat) *imageFormat = BE1::Image::Format::DXN2;
+        if (imageFormat) *imageFormat = BE1::Image::Format::BC5;
         return true;
     case RHI::Format::BC6H_UF16:
         if (imageFormat) *imageFormat = BE1::Image::Format::BC6H_UF16;

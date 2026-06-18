@@ -118,16 +118,16 @@ public:
         A8,
         L8A8,
 
-        // Compressed (DXT) formats
-        DXT1,               // BC1: Three color channels (5 bits:6 bits:5 bits), with 0 or 1 bit(s) of alpha
-        DXT3,               // BC2: Three color channels (5 bits:6 bits:5 bits), with 4 bits of alpha
-        DXT5,               // BC3: Three color channels (5 bits:6 bits:5 bits) with 8 bits of alpha
-        DXT5XGBR,           // BC3: Three color channels (5 bits:6 bits:5 bits) with 8 bits of alpha (XGBR)
-        DXN1,               // BC4: One color channel (8 bits)
-        DXN2,               // BC5: Two color channels (8 bits:8 bits)
-        BC6H_UF16,          // BC6: Three color channels (16 bits:16 bits:16 bits) in "half" floating point
-        BC6H_SF16,          // BC6: Three color channels (16 bits:16 bits:16 bits) in "half" floating point
-        BC7,                // BC7: Three color channels (4 to 7 bits per channel) with 0 to 8 bits of alpha
+        // Compressed (BC) formats
+        BC1,                // BC1(aka DXT1): RGB 5:6:5 color block, optional 1-bit alpha
+        BC2,                // BC2(aka DXT3): RGB 5:6:5 color block, explicit 4-bit alpha
+        BC3,                // BC3(aka DXT5): RGB 5:6:5 color block, interpolated 8-bit alpha
+        BC3XGBR,            // BC3(aka DXT5) XGBR: Red-alpha swapped BC3 (Doom 3 normal-map encoding)
+        BC4,                // BC4(aka DXN1 or ATI1N): One 8-bit channel
+        BC5,                // BC5(aka DXN2 or ATI2N): Two 8-bit channels
+        BC6H_UF16,          // BC6H_UF16: Three HDR color channels, unsigned half float, 16-byte 4x4 block
+        BC6H_SF16,          // BC6H_SF16: Three HDR color channels, signed half float, 16-byte 4x4 block
+        BC7,                // BC7: RGB/RGBA UNorm, variable precision, 16-byte 4x4 block
 
         // Compressed (PVRTC) formats
         PVRTC12,            // PVRTC1 RGB 2BPP
@@ -151,7 +151,15 @@ public:
         ATC,                // ATC RGB 4BPP
         ATCE,               // ATCE RGBA 8BPP explicit alpha
         ATCI,               // ATCI RGBA 8BPP interpolated alpha
-        Count
+        Count,
+
+        // Legacy aliases
+        DXT1 = BC1,
+        DXT3 = BC2,
+        DXT5 = BC3,
+        DXT5XGBR = BC3XGBR,
+        DXN1 = BC4,
+        DXN2 = BC5
     };
 
     /// Format type

@@ -34,10 +34,13 @@ struct ImageFormatInfo {
     ImagePackFunc packRGBA32F;      // Pack from RGBA_32F_32F_32F_32F
 };
 
-void DecompressDXT1(const Image &srcImage, Image &dstImage);
-void DecompressDXT3(const Image &srcImage, Image &dstImage);
-void DecompressDXT5(const Image &srcImage, Image &dstImage);
-void DecompressDXN2(const Image &srcImage, Image &dstImage);
+void DecompressBC1(const Image &srcImage, Image &dstImage);
+void DecompressBC2(const Image &srcImage, Image &dstImage);
+void DecompressBC3(const Image &srcImage, Image &dstImage);
+void DecompressBC4(const Image &srcImage, Image &dstImage);
+void DecompressBC5(const Image &srcImage, Image &dstImage);
+void DecompressBC6H_UF16(const Image &srcImage, Image &dstImage);
+void DecompressBC6H_SF16(const Image &srcImage, Image &dstImage);
 
 void DecompressPVRTC(const Image &srcImage, Image &dstImage, int do2BitMode);
 
@@ -48,10 +51,10 @@ void DecompressETC2_RGB8A1(const Image &srcImage, Image &dstImage);
 void DecompressEAC_R11(const Image &srcImage, Image &dstImage, bool signedFormat);
 void DecompressEAC_RG11(const Image &srcImage, Image &dstImage, bool signedFormat, bool normal);
 
-void CompressDXT1(const Image &srcImage, Image &dstImage, Image::CompressionQuality compressionQuality);
-void CompressDXT3(const Image &srcImage, Image &dstImage, Image::CompressionQuality compressionQuality);
-void CompressDXT5(const Image &srcImage, Image &dstImage, Image::CompressionQuality compressionQuality);
-void CompressDXN2(const Image &srcImage, Image &dstImage, Image::CompressionQuality compressionQuality);
+void CompressBC1(const Image &srcImage, Image &dstImage, Image::CompressionQuality compressionQuality);
+void CompressBC2(const Image &srcImage, Image &dstImage, Image::CompressionQuality compressionQuality);
+void CompressBC3(const Image &srcImage, Image &dstImage, Image::CompressionQuality compressionQuality);
+void CompressBC5(const Image &srcImage, Image &dstImage, Image::CompressionQuality compressionQuality);
 
 void CompressETC1(const Image &srcImage, Image &dstImage, Image::CompressionQuality compressionQuality);
 void CompressETC2_RGB8(const Image &srcImage, Image &dstImage, Image::CompressionQuality compressionQuality);

@@ -65,9 +65,9 @@ set(COMMON_ENGINE_FILES
     Public/Core/Vertex.h 
 
     Public/Image/Image.h 
-    Public/Image/DxtCodec.h
-    Public/Image/DxtDecoder.h
-    Public/Image/DxtEncoder.h
+    Public/Image/BCCodec.h
+    Public/Image/BCDecoder.h
+    Public/Image/BCEncoder.h
 
     Public/Math/AABB.h
     Public/Math/Angles.h
@@ -326,9 +326,9 @@ set(COMMON_ENGINE_FILES
     Private/Image/Image.cpp
     Private/Image/ImageColorSpace.cpp
     Private/Image/ImageConvert.cpp
-    Private/Image/ImageCompressDXT.cpp
+    Private/Image/ImageCompressBC.cpp
     Private/Image/ImageCompressETC.cpp
-    Private/Image/ImageDecompressDXT.cpp
+    Private/Image/ImageDecompressBC.cpp
     Private/Image/ImageDecompressPVRTC.cpp
     Private/Image/ImageDecompressETC.cpp
     Private/Image/ImageFile.cpp
@@ -343,8 +343,9 @@ set(COMMON_ENGINE_FILES
     Private/Image/ImageFormat.cpp
     Private/Image/ImageProcess.cpp
     Private/Image/ImageResize.cpp
-    Private/Image/DxtDecoder.cpp
-    Private/Image/DxtEncoder.cpp
+    Private/Image/BCDecoder.cpp
+    Private/Image/BCEncoder.cpp
+    Private/Image/bcdec.h
 
     Private/Math/Vector3.cpp
     Private/Math/Vector4.cpp

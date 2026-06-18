@@ -481,26 +481,26 @@ static bool ParseDDSFormat(const DdsFileHeader &ddsHeader, Image::Format &format
         format = Image::Format::R32G32B32A32_FLOAT;
         break;
     case DDS_FORMAT_DXT1:
-        format = Image::Format::DXT1;
+        format = Image::Format::BC1;
         break;
     case DDS_FORMAT_DXT3:
-        format = Image::Format::DXT3;
+        format = Image::Format::BC2;
         break;
     case DDS_FORMAT_DXT5:
         if (ddsHeader.ddsPixelFormat.RGBBitCount == MAKE_FOURCC('x', 'G', 'B', 'R')) {
-            format = Image::Format::DXT5XGBR;
+            format = Image::Format::BC3XGBR;
         } else {
-            format = Image::Format::DXT5;
+            format = Image::Format::BC3;
         }
         break;
     case MAKE_FOURCC('R', 'X', 'G', 'B'):   // doom3 RXGB
-        format = Image::Format::DXT5XGBR;
+        format = Image::Format::BC3XGBR;
         break;
     case MAKE_FOURCC('A', 'T', 'I', '1'):
-        format = Image::Format::DXN1;
+        format = Image::Format::BC4;
         break;
     case MAKE_FOURCC('A', 'T', 'I', '2'):   // ATI 3DTc
-        format = Image::Format::DXN2;
+        format = Image::Format::BC5;
         break;
     default:
         format = Image::Format::Unknown;
@@ -547,13 +547,15 @@ static bool ParseDX10Format(const DdsFileHeaderDX10 &dx10Header, Image::Format &
     case DX10_FORMAT_R11G11B10_FLOAT: format = Image::Format::R11G11B10_FLOAT; break;
     case DX10_FORMAT_R10G10B10A2_UNORM: format = Image::Format::R10G10B10A2; break;
     case DX10_FORMAT_BC1_UNORM:
-    case DX10_FORMAT_BC1_UNORM_SRGB: format = Image::Format::DXT1; break;
+    case DX10_FORMAT_BC1_UNORM_SRGB: format = Image::Format::BC1; break;
     case DX10_FORMAT_BC2_UNORM:
-    case DX10_FORMAT_BC2_UNORM_SRGB: format = Image::Format::DXT3; break;
+    case DX10_FORMAT_BC2_UNORM_SRGB: format = Image::Format::BC2; break;
     case DX10_FORMAT_BC3_UNORM:
-    case DX10_FORMAT_BC3_UNORM_SRGB: format = Image::Format::DXT5; break;
-    case DX10_FORMAT_BC4_UNORM: format = Image::Format::DXN1; break;
-    case DX10_FORMAT_BC5_UNORM: format = Image::Format::DXN2; break;
+    case DX10_FORMAT_BC3_UNORM_SRGB: format = Image::Format::BC3; break;
+    case DX10_FORMAT_BC4_UNORM: format = Image::Format::BC4; break;
+    case DX10_FORMAT_BC5_UNORM: format = Image::Format::BC5; break;
+    case DX10_FORMAT_BC6H_UF16: format = Image::Format::BC6H_UF16; break;
+    case DX10_FORMAT_BC6H_SF16: format = Image::Format::BC6H_SF16; break;
     default:
         format = Image::Format::Unknown;
         return false;
@@ -566,6 +568,9 @@ static bool ParseDX10Format(const DdsFileHeaderDX10 &dx10Header, Image::Format &
         dx10Header.dxgiFormat == DX10_FORMAT_BC2_UNORM_SRGB ||
         dx10Header.dxgiFormat == DX10_FORMAT_BC3_UNORM_SRGB) {
         gammaSpace = Image::GammaSpace::sRGB;
+    } else if (dx10Header.dxgiFormat == DX10_FORMAT_BC6H_UF16 ||
+        dx10Header.dxgiFormat == DX10_FORMAT_BC6H_SF16) {
+        gammaSpace = Image::GammaSpace::Linear;
     } else if (
         dx10Header.dxgiFormat == DX10_FORMAT_R8_UNORM ||
         dx10Header.dxgiFormat == DX10_FORMAT_R8G8_UNORM ||
@@ -623,7 +628,7 @@ bool Image::LoadDDSFromMemory(const char *name, const byte *data, size_t size) {
     }
 
     if (this->gammaSpace == Image::GammaSpace::DontCare) {
-        if (Image::NeedFloatConversion(format) || format == Format::DXN1 || format == Format::DXN2) {
+        if (Image::NeedFloatConversion(format) || format == Format::BC4 || format == Format::BC5) {
             this->gammaSpace = Image::GammaSpace::Linear;
         } else {
             this->gammaSpace = Image::GammaSpace::sRGB;
@@ -701,7 +706,7 @@ static bool LoadDDSInfo(File *fp, DdsFileHeader &header, Image::Format &format, 
     }
 
     if (gammaSpace == Image::GammaSpace::DontCare) {
-        if (Image::NeedFloatConversion(format) || format == Image::Format::DXN1 || format == Image::Format::DXN2) {
+        if (Image::NeedFloatConversion(format) || format == Image::Format::BC4 || format == Image::Format::BC5) {
             gammaSpace = Image::GammaSpace::Linear;
         } else {
             gammaSpace = Image::GammaSpace::sRGB;
@@ -1121,28 +1126,28 @@ bool Image::WriteDDS(const char *filename) const {
         header.ddsPixelFormat.BBitMask = 0x00000000;
         header.ddsPixelFormat.ABitMask = 0x000000FF;
         break;
-    case Format::DXT1:
+    case Format::BC1:
         header.ddsPixelFormat.flags = DDSPF_FOURCC;
         header.ddsPixelFormat.fourCC = MAKE_FOURCC('D', 'X', 'T', '1');
         break;
-    case Format::DXT3:
+    case Format::BC2:
         header.ddsPixelFormat.flags = DDSPF_FOURCC;
         header.ddsPixelFormat.fourCC = MAKE_FOURCC('D', 'X', 'T', '3');
         break;
-    case Format::DXT5:
+    case Format::BC3:
         header.ddsPixelFormat.flags = DDSPF_FOURCC;
         header.ddsPixelFormat.fourCC = MAKE_FOURCC('D', 'X', 'T', '5');
         break;
-    case Format::DXT5XGBR:
+    case Format::BC3XGBR:
         header.ddsPixelFormat.flags = DDSPF_FOURCC;
         header.ddsPixelFormat.fourCC = MAKE_FOURCC('D', 'X', 'T', '5');
         header.ddsPixelFormat.RGBBitCount = MAKE_FOURCC('x', 'G', 'B', 'R');
         break;
-    case Format::DXN1:
+    case Format::BC4:
         header.ddsPixelFormat.flags = DDSPF_FOURCC;
         header.ddsPixelFormat.fourCC = MAKE_FOURCC('A', 'T', 'I', '1');
         break;
-    case Format::DXN2:
+    case Format::BC5:
         header.ddsPixelFormat.flags = DDSPF_FOURCC;
         header.ddsPixelFormat.fourCC = MAKE_FOURCC('A', 'T', 'I', '2'); // ATI 3DTc
         break;
