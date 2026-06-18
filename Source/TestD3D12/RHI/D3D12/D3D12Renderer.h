@@ -1,0 +1,374 @@
+// Copyright(c) 2017 POLYGONTEK
+// 
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+// 
+// http://www.apache.org/licenses/LICENSE-2.0
+// 
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+#pragma once
+
+#include "../RHI.h"
+#include "D3D12Common.h"
+#include "D3D12ShaderVisibleDescriptorHeap.h"
+#include "D3D12RootBindingData.h"
+#include "D3D12ResourceRequest.h"
+
+#ifdef USE_D3D12_MEMALLOC
+#include "D3D12MemoryAllocator/D3D12MemAlloc.h"
+#endif
+
+class D3D12Buffer;
+class D3D12Texture;
+class D3D12PipelineState;
+class D3D12CommandList;
+class D3D12CommandListPool;
+class D3D12DescriptorPool;
+class D3D12ImGuiRenderer;
+class D3D12ImGuiOverlay;
+template <typename T> struct ImVector;
+struct ImTextureData;
+
+struct D3D12ReleaseRequest {
+    ID3D12Resource *                    resourceToRelease = nullptr;
+    RHI::GPUObject *                    objectToDelete = nullptr;
+};
+
+struct D3D12RetiredResource {
+    ID3D12Resource *                    resourceToRelease = nullptr;
+    RHI::GPUObject *                    objectToDelete = nullptr;
+    UINT64                              graphicsFenceValue = 0;
+    UINT64                              computeFenceValue = 0;
+};
+
+class D3D12Renderer : public RHI::Renderer {
+public:
+    virtual void                        Init(const void *mainWindowHandle) override;
+    virtual void                        Shutdown() override;
+
+    virtual void                        GetMemoryUsage(RHI::MemoryUsage &memoryUsage) const override;
+    virtual const RHI::RendererInfo &   GetRendererInfo() const override { return rendererInfo; }
+
+    RHI::ShaderFormat                   GetShaderFormat() const;
+
+    virtual uint64_t                    SignalFence(RHI::CommandQueueType queueType) override;
+    virtual bool                        IsFenceComplete(RHI::CommandQueueType queueType, uint64_t checkFenceValue) override;
+    virtual void                        WaitFence(RHI::CommandQueueType queueType, uint64_t expectedFenceValue) override;
+    virtual void                        Finish(RHI::CommandQueueType queueType) override;
+
+    virtual bool                        IsSupportedImageFormat(BE1::Image::Format imageFormat) const override { return ImageFormatToDXGIFormat(imageFormat, false, nullptr); }
+    virtual BE1::Image::Format          ToUncompressedImageFormat(BE1::Image::Format imageFormat) const override;
+    virtual BE1::Image::Format          ToCompressedImageFormat(BE1::Image::Format inFormat, bool useNormalMap) const override;
+    virtual BE1::Image::Format          ToUAVImageFormat(BE1::Image::Format inFormat) const override;
+    bool                                IsSupportedUAVFormat(DXGI_FORMAT format) const;
+
+    virtual RHI::SwapChain *            CreateSwapChain(HWND hwnd, uint32_t width, uint32_t height, RHI::Format format) override;
+    virtual void                        DestroySwapChain(RHI::SwapChain *swapChain) override;
+
+    virtual RHI::ImGuiOverlay *         CreateImGuiOverlay(void *windowHandle, RHI::SwapChain *swapChain) override;
+    virtual void                        DestroyImGuiOverlay(RHI::ImGuiOverlay *overlay) override;
+    virtual void                        RenderImGuiDrawData(RHI::FrameThreadData *frameThreadData, RHI::CommandList *commandList, RHI::ImGuiOverlay *overlay, void *userData) override;
+    virtual void                        FreeImGuiDrawData(RHI::ImGuiOverlay *overlay, void *userData) override;
+
+    bool                                InitImGuiOverlayRenderer(D3D12ImGuiOverlay *overlay, RHI::SwapChain *swapChain);
+    void                                ShutdownImGuiOverlayRenderer(D3D12ImGuiOverlay *overlay);
+    bool                                UpdateImGuiOverlayTextures(D3D12ImGuiOverlay *overlay, ImVector<ImTextureData *> *textures);
+
+    virtual RHI::FrameThreadData *      CreateFrameThreadData(int32_t frameIndex, int32_t numFrames, int32_t threadIndex, int32_t numRenderTaskThreads) override;
+    virtual void                        DestroyFrameThreadData(RHI::FrameThreadData *frameThreadData) override;
+
+    void                                RequestRelease(ID3D12Resource *resource);
+    virtual void                        DrainReleaseRequestsToRetireList() override;
+    virtual void                        FreeRetiredResources(bool waitPendings = false) override;
+
+    void                                EnqueueResourceRequest(D3D12ResourceRequest&& request);
+    virtual void                        ProcessResourceRequests(RHI::FrameThreadData *frameThreadData) override;
+
+    void                                DeleteGPUObject(RHI::GPUObject *object);
+
+    bool                                ExecuteUploadBuffer(D3D12ResourceCommandContext &commandContext, D3D12Buffer *buffer, const D3D12UploadBufferRequest &request);
+    bool                                ExecuteUploadBufferSubData(D3D12ResourceCommandContext &commandContext, D3D12Buffer *buffer, const D3D12UploadBufferSubDataRequest &request);
+    bool                                ExecuteUploadTexture(D3D12ResourceCommandContext &commandContext, D3D12Texture *texture, const D3D12UploadTextureRequest &request);
+    bool                                ExecuteUploadTextureSubImage(D3D12ResourceCommandContext &commandContext, D3D12Texture *texture, const D3D12UploadTextureSubImageRequest &request);
+    bool                                ExecuteUpdateTextureViewMipRange(D3D12ResourceCommandContext &commandContext, D3D12Texture *texture, const D3D12UpdateTextureViewMipRangeRequest &request);
+    bool                                ExecuteGenerateMipChain(D3D12ResourceCommandContext &commandContext, D3D12Texture *texture);
+
+    virtual void                        SetName(RHI::GPUResource *resource, const char *name) const override;
+
+    virtual RHI::Buffer *               CreateBuffer(RHI::BufferUsage usage, RHI::BufferFlag flags, uint64_t size, const void *data) override;
+    virtual void                        DestroyBuffer(RHI::Buffer *buffer, bool immediate = false) override;
+
+    virtual RHI::VertexBuffer *         CreateVertexBuffer(RHI::BufferUsage usage, uint32_t vertexSize, uint32_t numVerts, const void *data) override;
+    virtual void                        DestroyVertexBuffer(RHI::VertexBuffer *vertexBuffer, bool immediate = false) override;
+
+    virtual RHI::IndexBuffer *          CreateIndexBuffer(RHI::BufferUsage usage, uint32_t indexSize, uint32_t numIndexes, const void *data) override;
+    virtual void                        DestroyIndexBuffer(RHI::IndexBuffer *indexBuffer, bool immediate = false) override;
+
+    virtual RHI::ConstantBuffer *       CreateConstantBuffer(RHI::BufferUsage usage, uint32_t size, const void *data) override;
+    virtual void                        DestroyConstantBuffer(RHI::ConstantBuffer *constantBuffer, bool immediate = false) override;
+
+    virtual RHI::Texture *              CreateTexture(RHI::TextureType textureType, RHI::TextureFlag flags, std::shared_ptr<const BE1::Image> image, bool allocateEmptyMipmaps, const RHI::ClearValue &clearValue = {}, uint32_t sampleCount = 1, RHI::GPUResourceState initialState = RHI::GPUResourceState::Undefined) override;
+    virtual void                        DestroyTexture(RHI::Texture *texture, bool immediate = false) override;
+
+    virtual bool                        SetBufferSubData(RHI::Buffer *buffer, uint64_t offset, uint64_t size, const void *data, RHI::GPUResourceState stateBefore, RHI::GPUResourceState stateAfter) override;
+
+    virtual bool                        UploadTextureMipRange(RHI::Texture *texture, std::shared_ptr<const BE1::Image> image, int firstMip) override;
+
+    virtual void                        GenerateMipChain(RHI::Texture *texture) override;
+
+    virtual bool                        GetTextureImage2D(RHI::Texture *texture, int mipLevel, BE1::Image::Format imageFormat, void *outPixels) override;
+    virtual bool                        GetTextureImage3D(RHI::Texture *texture, int mipLevel, BE1::Image::Format imageFormat, void *outPixels) override;
+    virtual bool                        GetTextureImageCubeFace(RHI::Texture *texture, RHI::CubemapFace face, int mipLevel, BE1::Image::Format imageFormat, void *outPixels) override;
+
+    bool                                GetTextureImage(RHI::Texture *texture, int mipLevel, int sliceIndex, BE1::Image::Format imageFormat, void *outPixels);
+
+    virtual bool                        SetTextureSubImage2D(RHI::Texture *texture, int mipLevel, int x, int y, int width, int height, BE1::Image::Format imageFormat, const void *pixels) override;
+    virtual bool                        SetTextureSubImage3D(RHI::Texture *texture, int mipLevel, int x, int y, int z, int width, int height, int depth, BE1::Image::Format imageFormat, const void *pixels) override;
+    virtual bool                        SetTextureSubImageCubeFace(RHI::Texture *texture, RHI::CubemapFace face, int mipLevel, int x, int y, int width, int height, BE1::Image::Format imageFormat, const void *pixels) override;
+
+    bool                                SetTextureSubImage(RHI::Texture *texture, int mipLevel, int sliceIndex, int x, int y, int z, int width, int height, int depth, BE1::Image::Format imageFormat, const void *pixels);
+
+    virtual RHI::ViewID                 CreateView(RHI::Buffer *buffer, RHI::ViewType viewType, RHI::Format format, uint32_t structuredStride, uint64_t offset = 0, uint64_t size = ~0) override;
+    virtual RHI::ViewID                 CreateView(RHI::Texture *texture, RHI::ViewType viewType, RHI::Format typelessCompatibleFormat = RHI::Format::Auto, uint32_t firstSlice = 0, uint32_t sliceCount = ~0, uint32_t firstMipLevel = 0, uint32_t mipCount = ~0) override;
+
+    virtual void                        DestroyView(RHI::Buffer *buffer, RHI::ViewType viewType, RHI::ViewID viewID) override;
+    virtual void                        DestroyView(RHI::Texture *texture, RHI::ViewType viewType, RHI::ViewID viewID) override;
+
+    RHI::ViewID                         CreateSRV(D3D12Buffer *buffer, RHI::Format format, uint32_t structureByteStride, uint64_t offset = 0, uint64_t size = ~0);
+    RHI::ViewID                         CreateUAV(D3D12Buffer *buffer, RHI::Format format, uint32_t structureByteStride, uint64_t offset = 0, uint64_t size = ~0);
+
+    RHI::ViewID                         CreateSRV(D3D12Texture *texture, RHI::Format typelessCompatibleFormat, uint32_t firstSlice = 0, uint32_t sliceCount = ~0, uint32_t firstMipLevel = 0, uint32_t mipCount = ~0);
+    RHI::ViewID                         CreateUAV(D3D12Texture *texture, RHI::Format typelessCompatibleFormat, uint32_t firstSlice = 0, uint32_t sliceCount = ~0, uint32_t firstMipLevel = 0);
+    RHI::ViewID                         CreateRTV(D3D12Texture *texture, RHI::Format typelessCompatibleFormat, uint32_t firstSlice = 0, uint32_t sliceCount = ~0, uint32_t firstMipLevel = 0);
+    RHI::ViewID                         CreateDSV(D3D12Texture *texture, RHI::Format typelessCompatibleFormat, uint32_t firstSlice = 0, uint32_t sliceCount = ~0, uint32_t firstMipLevel = 0);
+
+    virtual bool                        UpdateTextureViewMipRange(RHI::Texture *texture, RHI::ViewID viewID, uint32_t mostDetailedMip, uint32_t mipLevels) override;
+
+    virtual RHI::Shader *               CreateShader(RHI::ShaderModel shaderModel, RHI::ShaderStage shaderStage, const char *sourceName, const char *shaderText, int shaderTextSize, const char *entryPoint, const BE1::StrArray *defines = nullptr) override;
+    virtual RHI::Shader *               CreateShaderFromFile(RHI::ShaderModel shaderModel, RHI::ShaderStage shaderStage, const char *filename, const char *entryPoint, const BE1::StrArray *defines = nullptr) override;
+    virtual void                        DestroyShader(RHI::Shader *shader, bool immediate = false) override;
+
+    virtual RHI::Sampler *              CreateSampler(const RHI::SamplerDesc *desc) override;
+    virtual void                        DestroySampler(RHI::Sampler *sampler, bool immediate = false) override;
+    virtual void                        RecreateSampler(RHI::Sampler *sampler, const RHI::SamplerDesc *desc) override;
+
+    virtual RHI::PipelineState *        CreateGraphicsPSO(const RHI::PipelineStateDesc *psDesc) override;
+    virtual RHI::PipelineState *        CreateComputePSO(const RHI::Shader *computeShader) override;
+    virtual void                        DestroyPSO(RHI::PipelineState *pipelineState, bool immediate = false) override;
+
+    virtual RHI::QueryHeap *            CreateQueryHeap(const RHI::QueryHeapDesc *desc) override;
+    virtual void                        DestroyQueryHeap(RHI::QueryHeap *queryHeap, bool immediate = false) override;
+
+                                        // NOTE: 전역 유틸리티 커맨드 리스트는 RootBindingData 가 없다.
+                                        // 수명을 유지해야 하는 디스크립터 힙을 사용하지 않는다.
+    RHI::CommandList *                  BeginUtilityCommandList(RHI::CommandQueueType queueType);
+    void                                EndUtilityCommandList(RHI::CommandList *commandList);
+
+    virtual void                        SetVertexBuffer(RHI::CommandList *commandList, int slot, const RHI::VertexBuffer *vertexBuffer) override;
+    virtual void                        SetIndexBuffer(RHI::CommandList *commandList, const RHI::IndexBuffer *indexBuffer) override;
+    virtual void                        SetConstantBuffer(RHI::CommandList *commandList, int shaderRegister, const RHI::ConstantBuffer *constantBuffer) override;
+    virtual void                        SetConstants(RHI::CommandList *commandList, int shaderRegister, const void *data, uint32_t size, uint32_t offset = 0) override;
+    virtual void                        SetTexture(RHI::CommandList *commandList, int shaderRegister, bool shaderWritable, const RHI::Texture *texture, RHI::ViewID viewID = RHI::ViewID::PrimaryID) override;
+    virtual void                        SetBuffer(RHI::CommandList *commandList, int shaderRegister, bool shaderWritable, const RHI::Buffer *buffer, RHI::ViewID viewID = RHI::ViewID::PrimaryID) override;
+    virtual void                        SetSampler(RHI::CommandList *commandList, int shaderRegister, RHI::Sampler *sampler) override;
+    virtual void                        SetPSO(RHI::CommandList *commandList, const RHI::PipelineState *pipelineState) override;
+    virtual void                        SetBlendFactor(RHI::CommandList *commandList, const BE1::Color4 &rgba) override;
+    virtual void                        SetStencilRef(RHI::CommandList *commandList, uint32_t value) override;
+    virtual void                        SetShadingRate(RHI::CommandList *commandList, RHI::ShadingRate shadingRate) override;
+    virtual void                        SetViewport(RHI::CommandList *commandList, const BE1::Rect &viewportRect) override;
+    virtual void                        SetScissorRect(RHI::CommandList *commandList, const BE1::Rect &scissorRect) override;
+    virtual void                        SetDepthBounds(RHI::CommandList *commandList, float depthMin, float depthMax) override;
+    virtual void                        BeginQuery(RHI::CommandList *commandList, const RHI::QueryHeap *queryHeap, uint32_t index) override;
+    virtual void                        EndQuery(RHI::CommandList *commandList, const RHI::QueryHeap *queryHeap, uint32_t index) override;
+    virtual void                        ResolveQuery(RHI::CommandList *commandList, const RHI::QueryHeap *queryHeap, uint32_t index, uint32_t count, const RHI::Buffer *destBuffer, uint64_t destOffset) override;
+    virtual void                        ResetQuery(RHI::CommandList *commandList, const RHI::QueryHeap *queryHeap, uint32_t index, uint32_t count) override;
+    virtual uint64_t                    GetTimestampFrequency(RHI::CommandQueueType queueType) const override;
+    virtual void                        ClearUAV(RHI::CommandList *commandList, const RHI::GPUResource *resource, RHI::ViewID viewID, uint32_t value) override;
+    virtual void                        CopyBuffer(RHI::CommandList *commandList, const RHI::Buffer *dstBuffer, uint32_t dstOffset, const RHI::Buffer *srcBuffer, uint32_t srcOffset, uint32_t size) override;
+    virtual void                        CopyTexture(RHI::CommandList *commandList, const RHI::Texture *dstTexture, uint32_t dstSlice, uint32_t dstMipLevel, uint32_t dstX, uint32_t dstY, uint32_t dstZ, const RHI::Texture *srcTexture, uint32_t srcSlice, uint32_t srcMipLevel, uint32_t srcX, uint32_t srcY, uint32_t srcZ, uint32_t width, uint32_t height, uint32_t depth) override;
+    virtual void                        GenerateMipChain(RHI::CommandList *commandList, const RHI::Texture *texture, const RHI::ViewID *srvMipViewIDs, const RHI::ViewID *uavMipViewIDs, bool preserveCoverage) override;
+    virtual void                        Barrier(RHI::CommandList *commandList, const RHI::GPUBarrier *barriers, uint32_t barrierCount) override;
+    virtual void                        ReadPixels(RHI::CommandList *commandList, const RHI::SwapChain *swapChain, int x, int y, int width, int height, BE1::Image::Format dstFormat, void *outPixels) override;
+    virtual void                        BeginRenderPass(RHI::CommandList *commandList, const RHI::SwapChain *swapChain, const RHI::Texture *depthStencilTexture, const BE1::Color4 &clearColor = {}, float clearDepth = 0, uint8_t clearStencil = 0, RHI::ClearFlag clearFlags = RHI::ClearFlag::None) override;
+    virtual void                        BeginRenderPass(RHI::CommandList *commandList, const RHI::RenderPassImage renderPassImages[], int numRenderPassImages, RHI::RenderPassFlag flags = RHI::RenderPassFlag::None) override;
+    virtual void                        EndRenderPass(RHI::CommandList *commandList) override;
+
+    virtual void                        Draw(RHI::CommandList *commandList, uint32_t vertexCount, uint32_t startVertexLocation) override;
+    virtual void                        DrawIndexed(RHI::CommandList *commandList, uint32_t indexCount, uint32_t startIndexLocation, uint32_t baseVertexLocation) override;
+    virtual void                        DrawInstanced(RHI::CommandList *commandList, uint32_t vertexCount, uint32_t instanceCount, uint32_t startVertexLocation, uint32_t startInstanceLocation) override;
+    virtual void                        DrawInstancedIndirect(RHI::CommandList *commandList, const RHI::Buffer *argsBuffer, uint32_t argsOffset) override;
+    virtual void                        DrawInstancedIndirectCount(RHI::CommandList *commandList, const RHI::Buffer *argsBuffer, uint32_t argsOffset, const RHI::Buffer *countBuffer, uint32_t countOffset, uint32_t maxCount) override;
+    virtual void                        DrawIndexedInstanced(RHI::CommandList *commandList, uint32_t indexCount, uint32_t instanceCount, uint32_t startIndexLocation, uint32_t baseVertexLocation, uint32_t startInstanceLocation) override;
+    virtual void                        DrawIndexedInstancedIndirect(RHI::CommandList *commandList, const RHI::Buffer *argsBuffer, uint32_t argsOffset) override;
+    virtual void                        DrawIndexedInstancedIndirectCount(RHI::CommandList *commandList, const RHI::Buffer *argsBuffer, uint32_t argsOffset, const RHI::Buffer *countBuffer, uint32_t countOffset, uint32_t maxCount) override;
+
+    virtual void                        Dispatch(RHI::CommandList *commandList, uint32_t threadGroupCountX, uint32_t threadGroupCountY, uint32_t threadGroupCountZ) override;
+    virtual void                        DispatchIndirect(RHI::CommandList *commandList, const RHI::Buffer *argsBuffer, uint32_t argsOffset) override;
+    virtual void                        DispatchMesh(RHI::CommandList *commandList, uint32_t threadGroupCountX, uint32_t threadGroupCountY, uint32_t threadGroupCountZ) override;
+    virtual void                        DispatchMeshIndirect(RHI::CommandList *commandList, const RHI::Buffer *argsBuffer, uint32_t argsOffset) override;
+
+    virtual void                        SetMarker(RHI::CommandList *commandList, const char *string, uint8_t colorIndex) override;
+    virtual void                        BeginEvent(RHI::CommandList *commandList, const char *string, uint8_t colorIndex) override;
+    virtual void                        EndEvent(RHI::CommandList *commandList) override;
+
+    uint32_t                            AllocBindlessResourceDescriptor();
+    void                                FreeBindlessResourceDescriptor(uint32_t bindlessIndex);
+    D3D12_CPU_DESCRIPTOR_HANDLE         GetBindlessResourceCPUDescriptorHandle(uint32_t bindlessIndex) const;
+    D3D12_GPU_DESCRIPTOR_HANDLE         GetBindlessResourceGPUDescriptorHandle(uint32_t bindlessIndex) const;
+
+    uint32_t                            AllocBindlessSamplerDescriptor();
+    void                                FreeBindlessSamplerDescriptor(uint32_t bindlessIndex);
+    D3D12_CPU_DESCRIPTOR_HANDLE         GetBindlessSamplerCPUDescriptorHandle(uint32_t bindlessIndex) const;
+    D3D12_GPU_DESCRIPTOR_HANDLE         GetBindlessSamplerGPUDescriptorHandle(uint32_t bindlessIndex) const;
+
+    void                                CheckFeatures();
+
+    void                                InitGenMipmapsPSO();
+    void                                FreeGenMipmapsPSO();
+
+    RHI::PipelineState *                CreateBasicPSO(ID3D12RootSignature *rootSignature, const D3D12_SHADER_BYTECODE &byteCodeVS, const D3D12_SHADER_BYTECODE &byteCodePS, const D3D12_INPUT_LAYOUT_DESC &inputLayout);
+    RHI::PipelineState *                CreateBasicPSO(ID3D12RootSignature *rootSignature, const char *shaderFilename, const D3D12_INPUT_LAYOUT_DESC &inputLayout);
+    ID3D12PipelineState *               CreatePSOFromLibrary(const D3D12_PIPELINE_STATE_STREAM_DESC *streamDesc, ID3D12PipelineLibrary1 *library, const TCHAR *name);
+
+    void                                GetCachedPSOFilename(const uint64_t hash, BE1::Str &outFilename) const;
+    bool                                LoadCachedPSO(const uint64_t hash, ID3DBlob **cachedPSOBlob);
+    void                                WriteCachedPSO(const uint64_t hash, ID3DBlob *cachedPSOBlob);
+
+    bool                                CompileShader(const RHI::ShaderCompileInput *compileInput, RHI::ShaderCompileOutput *compileOutput);
+    bool                                CompileShaderD3D(const RHI::ShaderCompileInput *compileInput, RHI::ShaderCompileOutput *compileOutput);
+    bool                                CompileShaderDXC(const RHI::ShaderCompileInput *compileInput, RHI::ShaderCompileOutput *compileOutput);
+    bool                                LoadCompiledShader(const char *name, const uint64_t hash, byte **compiledShaderDataPtr, uint32_t *compiledShaderDataSizePtr);
+    void                                WriteCompiledShader(const char *name, const uint64_t hash, const byte *compiledShaderData, uint32_t compiledShaderDataSize, const BE1::Array<RHI::ShaderSourceDependency> &dependencies);
+
+    void                                BindRootParameters(D3D12CommandList *commandList);
+
+    void                                CreateDevice(IDXGIAdapter1 **adapterPtr);
+    void                                CreateShaderCompiler();
+
+    ID3D12Device5 *                     GetDevice() { return device; }
+
+#ifdef USE_D3D12_MEMALLOC
+    void                                PrintMemoryAllocatorStats();
+#endif
+
+    static DXGI_FORMAT                  RHIFormatToDXGIFormat(RHI::Format rhiFormat);
+    static RHI::Format                  DXGIFormatToRHIFormat(DXGI_FORMAT dxgiFormat);
+    static bool                         ImageFormatToDXGIFormat(BE1::Image::Format imageFormat, bool isSRGB, DXGI_FORMAT *dxgiFormat);
+    static bool                         DXGIFormatToImageFormat(DXGI_FORMAT dxgiFormat, BE1::Image::Format *imageFormat, bool *isSRGB);
+
+    static bool                         IsDepthFormat(DXGI_FORMAT format);
+    static bool                         IsStencilFormat(DXGI_FORMAT format);
+    static bool                         IsDepthStencilFormat(DXGI_FORMAT format);
+    static bool                         IsTypelessFormat(DXGI_FORMAT format);
+    static bool                         IsTypelessCompatibleFormat(DXGI_FORMAT typelessFormat, DXGI_FORMAT viewFormat);
+    static bool                         IsHDRSwapChainFormat(DXGI_FORMAT format);
+    static bool                         IsSRGBFormat(DXGI_FORMAT format);
+    static DXGI_FORMAT                  ToLinearFormat(DXGI_FORMAT format);
+    static DXGI_FORMAT                  ToSRGBFormat(DXGI_FORMAT format);
+    static DXGI_FORMAT                  ToTypelessFormat(DXGI_FORMAT format);
+    static UINT                         GetComponentSwizzling(BE1::Image::Format format);
+    static D3D12_RESOURCE_STATES        ToD3D12ResourceState(RHI::GPUResourceState resourceState);
+
+    static D3D12Renderer *              GetRenderer() { return static_cast<D3D12Renderer *>(RHI::renderer); }
+
+    static constexpr uint32_t           MaxShaderVisibleResourceDescriptors = 1000000; // Resource Binding Tier 1 Limit
+    static constexpr uint32_t           MaxBindlessResourceDescriptors = 500000; // 앞부분 절반을 Bindless Resource 에 사용한다.
+    static constexpr uint32_t           MaxTransientResourceDescriptors = MaxShaderVisibleResourceDescriptors - MaxBindlessResourceDescriptors;
+    static constexpr uint32_t           MaxShaderVisibleSamplerDescriptors = 2048;
+    static constexpr uint32_t           MaxBindlessSamplerDescriptors = 256;
+    static constexpr uint32_t           MaxTransientSamplerDescriptors = MaxShaderVisibleSamplerDescriptors - MaxBindlessSamplerDescriptors;
+
+    struct D3D12QueueFence {
+        ID3D12Fence *                   fence = nullptr;
+        uint64_t                        value = 0;
+        HANDLE                          eventHandle = nullptr;
+    };
+
+    ID3D12Device5 *                     device = nullptr;
+    IDXGIFactory4 *                     dxgiFactory = nullptr;
+    IDXGIAdapter3 *                     dxgiAdapter3 = nullptr;
+    D3D12QueueFence                     queueFences[to_int(RHI::CommandQueueType::Count)];
+    ID3D12CommandQueue *                commandQueues[to_int(RHI::CommandQueueType::Count)] = {};
+
+    D3D12CommandListPool *              utilGraphicsCommandListPool = nullptr;
+    D3D12CommandListPool *              utilComputeCommandListPool = nullptr;
+
+    BE1::PlatformMutex *                utilGraphicsCommandListMutex = nullptr;
+    BE1::PlatformMutex *                utilComputeCommandListMutex = nullptr;
+
+    ID3D12CommandSignature *            drawInstancedIndirectCommandSignature = nullptr;
+    ID3D12CommandSignature *            drawIndexedInstancedIndirectCommandSignature = nullptr;
+    ID3D12CommandSignature *            dispatchIndirectCommandSignature = nullptr;
+    ID3D12CommandSignature *            dispatchMeshIndirectCommandSignature = nullptr;
+#ifdef USE_D3D12_MEMALLOC
+    D3D12MA::Allocator *                allocator = nullptr;
+#endif
+
+    uint32_t                            vendorId = 0;
+    uint32_t                            deviceId = 0;
+    BE1::Str                            adapterName;
+    uint64_t                            dedicatedVideoMemSize = 0;
+    uint64_t                            dedicatedSystemMemSize = 0;
+    uint64_t                            sharedSystemMemSize = 0;
+    RHI::RendererInfo                   rendererInfo;
+
+    D3D12_RESOURCE_HEAP_TIER            resourceHeapTier = {};
+    bool                                supportsTearing = false;
+    bool                                supportsConservativeRasterization = false;
+    bool                                supportsVRS = false;
+    bool                                supportsRayTracing = false;
+    bool                                supportsMeshShader = false;
+    bool                                supportsDepthBoundsTest = false;
+    bool                                supportsCastingFullyTypedFormat = false;
+    bool                                supportsUAVFormatCommon = false;
+    std::unordered_set<DXGI_FORMAT>     optionalUAVFormatMap;
+
+    D3D12DescriptorPool *               resStagingDescriptorPool = nullptr;
+    D3D12DescriptorPool *               samStagingDescriptorPool = nullptr;
+    D3D12DescriptorPool *               rtvDescriptorPool = nullptr;
+    D3D12DescriptorPool *               dsvDescriptorPool = nullptr;
+
+    D3D12ImGuiRenderer *                imguiRenderer = nullptr;
+
+    D3D12ShaderVisibleDescriptorHeap    resShaderVisibleDescriptorHeap;
+    D3D12ShaderVisibleDescriptorHeap    samShaderVisibleDescriptorHeap;
+    D3D12BindlessDescriptorAllocator    bindlessResDescriptorAllocator;
+    D3D12BindlessDescriptorAllocator    bindlessSamDescriptorAllocator;
+
+    BE1::SharedLib                      dxcompilerLibrary = nullptr;
+    BE1::Str                            shaderCacheDir;
+    BE1::Str                            psoCacheDir;
+
+    BE1::PlatformMutex *                psoMapMutex = nullptr;
+    std::atomic_uint32_t                nextPipelineStateSortIndex { 1 };
+    BE1::HashMap<uint64_t, D3D12PipelineState *> graphicsPsoMap;
+    BE1::HashMap<uint64_t, D3D12PipelineState *> computePsoMap;
+
+#ifdef USE_CACHED_PSO_BLOB
+    BE1::HashMap<uint64_t, ID3DBlob *>  cachedPsoBlobMap;
+#endif
+
+    IDxcCompiler3 *                     dxcCompiler = nullptr;
+    IDxcUtils *                         dxcUtils = nullptr;
+    IDxcLibrary *                       dxcLibrary = nullptr;
+
+    BE1::PlatformMutex *                releaseRequestMutex = nullptr;
+    BE1::Array<D3D12ReleaseRequest>     releaseRequests;
+    BE1::Array<D3D12RetiredResource>    retiredResources;
+
+    BE1::PlatformMutex *                resourceRequestMutex = nullptr;
+    BE1::Array<D3D12ResourceRequest>    resourceRequests;
+
+    RHI::PipelineState *                genMipmaps2DFloat4PSO = nullptr;
+    RHI::PipelineState *                genMipmaps2DUNorm4PSO = nullptr;
+    RHI::PipelineState *                genMipmapsCubeFloat4PSO = nullptr;
+    RHI::PipelineState *                genMipmapsCubeUNorm4PSO = nullptr;
+    RHI::PipelineState *                genMipmaps3DFloat4PSO = nullptr;
+    RHI::PipelineState *                genMipmaps3DUNorm4PSO = nullptr;
+};

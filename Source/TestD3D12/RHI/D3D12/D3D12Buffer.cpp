@@ -1,0 +1,804 @@
+// Copyright(c) 2017 POLYGONTEK
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+#include "Precompiled.h"
+#include "D3D12Renderer.h"
+#include "D3D12Buffer.h"
+#include "D3D12CommandList.h"
+#include "D3D12DescriptorPool.h"
+#include "D3D12FrameThreadData.h"
+
+static uint64_t D3D12BufferViewByteStride(DXGI_FORMAT format, uint32_t structureByteStride, bool raw) {
+    if (raw) {
+        return 4;
+    }
+    if (structureByteStride > 0) {
+        return structureByteStride;
+    }
+
+    const RHI::Format rhiFormat = D3D12Renderer::DXGIFormatToRHIFormat(format);
+    if (rhiFormat != RHI::Format::Unknown) {
+        BE1::Image::Format imageFormat;
+        if (RHI::Renderer::RHIFormatToImageFormat(rhiFormat, &imageFormat, nullptr)) {
+            return BE1::Image::BytesPerPixel(imageFormat);
+        }
+    }
+
+    return 0;
+}
+
+static void D3D12FillBufferViewInfo(RHI::BufferViewInfo &outInfo, DXGI_FORMAT format, uint64_t firstElement, uint32_t elementCount, uint32_t structureByteStride, bool raw) {
+    outInfo.format = D3D12Renderer::DXGIFormatToRHIFormat(format);
+    outInfo.firstElement = firstElement;
+    outInfo.elementCount = elementCount;
+    outInfo.structureByteStride = structureByteStride;
+    outInfo.raw = raw;
+
+    const uint64_t byteStride = D3D12BufferViewByteStride(format, structureByteStride, raw);
+    outInfo.byteOffset = firstElement * byteStride;
+    outInfo.byteSize = uint64_t(elementCount) * byteStride;
+}
+
+void D3D12Buffer::Release() {
+    if (dynamicBlockIndex == -1) {
+        if (mappedPtr) {
+            GetResource()->Unmap(0, nullptr);
+            mappedPtr = nullptr;
+        }
+
+        for (const D3D12SRVEntry &srvEntry : srvEntries) {
+            if (srvEntry.cpuDescriptorHandle.ptr != 0) {
+                D3D12Renderer::GetRenderer()->resStagingDescriptorPool->Free(srvEntry.cpuDescriptorHandle);
+            }
+            if (srvEntry.bindlessIndex != D3D12BindlessDescriptorAllocator::NullIndex) {
+                D3D12Renderer::GetRenderer()->FreeBindlessResourceDescriptor(srvEntry.bindlessIndex);
+            }
+        }
+
+        for (const D3D12UAVEntry &uavEntry : uavEntries) {
+            if (uavEntry.cpuDescriptorHandle.ptr != 0) {
+                D3D12Renderer::GetRenderer()->resStagingDescriptorPool->Free(uavEntry.cpuDescriptorHandle);
+            }
+            if (uavEntry.bindlessIndex != D3D12BindlessDescriptorAllocator::NullIndex) {
+                D3D12Renderer::GetRenderer()->FreeBindlessResourceDescriptor(uavEntry.bindlessIndex);
+            }
+        }
+    }
+
+    srvEntries.Clear();
+    uavEntries.Clear();
+
+#ifdef USE_D3D12_MEMALLOC
+    SAFE_RELEASE(bufferAllocation);
+#else
+    SAFE_RELEASE(bufferResource);
+#endif
+}
+
+bool D3D12Buffer::HasValidView(RHI::ViewType viewType, RHI::ViewID viewID) const {
+    if (viewID.IsValid()) {
+        if (viewType == RHI::ViewType::SRV) {
+            return srvEntries.IsValidIndex(viewID.value) && srvEntries[viewID.value].cpuDescriptorHandle.ptr != 0;
+        }
+        if (viewType == RHI::ViewType::UAV) {
+            return uavEntries.IsValidIndex(viewID.value) && uavEntries[viewID.value].cpuDescriptorHandle.ptr != 0;
+        }
+    }
+    return false;
+}
+
+uint32_t D3D12Buffer::GetViewCount(RHI::ViewType viewType) const {
+    uint32_t viewCount = 0;
+
+    if (viewType == RHI::ViewType::SRV) {
+        for (const D3D12SRVEntry &srvEntry : srvEntries) {
+            if (srvEntry.cpuDescriptorHandle.ptr != 0) {
+                viewCount++;
+            }
+        }
+    } else if (viewType == RHI::ViewType::UAV) {
+        for (const D3D12UAVEntry &uavEntry : uavEntries) {
+            if (uavEntry.cpuDescriptorHandle.ptr != 0) {
+                viewCount++;
+            }
+        }
+    }
+
+    return viewCount;
+}
+
+RHI::ViewID D3D12Buffer::GetViewID(RHI::ViewType viewType, uint32_t viewIndex) const {
+    auto makeViewID = [](uint32_t value) -> RHI::ViewID {
+        RHI::ViewID viewID;
+        viewID.value = value;
+        return viewID;
+    };
+
+    if (viewType == RHI::ViewType::SRV) {
+        for (uint32_t entryIndex = 0; entryIndex < uint32_t(srvEntries.Count()); entryIndex++) {
+            if (srvEntries[entryIndex].cpuDescriptorHandle.ptr != 0 && viewIndex-- == 0) {
+                return makeViewID(entryIndex);
+            }
+        }
+    } else if (viewType == RHI::ViewType::UAV) {
+        for (uint32_t entryIndex = 0; entryIndex < uint32_t(uavEntries.Count()); entryIndex++) {
+            if (uavEntries[entryIndex].cpuDescriptorHandle.ptr != 0 && viewIndex-- == 0) {
+                return makeViewID(entryIndex);
+            }
+        }
+    }
+
+    return RHI::ViewID::InvalidID;
+}
+
+bool D3D12Buffer::GetViewInfo(RHI::ViewType viewType, RHI::ViewID viewID, RHI::BufferViewInfo &outInfo) const {
+    outInfo = {};
+    if (!viewID.IsValid()) {
+        return false;
+    }
+
+    outInfo.viewID = viewID;
+    outInfo.viewType = viewType;
+
+    if (viewType == RHI::ViewType::SRV) {
+        if (!srvEntries.IsValidIndex(viewID.value) || srvEntries[viewID.value].cpuDescriptorHandle.ptr == 0) {
+            return false;
+        }
+
+        const D3D12_SHADER_RESOURCE_VIEW_DESC &viewDesc = srvEntries[viewID.value].viewDesc;
+        if (viewDesc.ViewDimension != D3D12_SRV_DIMENSION_BUFFER) {
+            return false;
+        }
+
+        const D3D12_BUFFER_SRV &bufferDesc = viewDesc.Buffer;
+        D3D12FillBufferViewInfo(outInfo, viewDesc.Format, bufferDesc.FirstElement, bufferDesc.NumElements, bufferDesc.StructureByteStride, bufferDesc.Flags == D3D12_BUFFER_SRV_FLAG_RAW);
+        return true;
+    }
+
+    if (viewType == RHI::ViewType::UAV) {
+        if (!uavEntries.IsValidIndex(viewID.value) || uavEntries[viewID.value].cpuDescriptorHandle.ptr == 0) {
+            return false;
+        }
+
+        const D3D12_UNORDERED_ACCESS_VIEW_DESC &viewDesc = uavEntries[viewID.value].viewDesc;
+        if (viewDesc.ViewDimension != D3D12_UAV_DIMENSION_BUFFER) {
+            return false;
+        }
+
+        const D3D12_BUFFER_UAV &bufferDesc = viewDesc.Buffer;
+        D3D12FillBufferViewInfo(outInfo, viewDesc.Format, bufferDesc.FirstElement, bufferDesc.NumElements, bufferDesc.StructureByteStride, bufferDesc.Flags == D3D12_BUFFER_UAV_FLAG_RAW);
+        return true;
+    }
+
+    return false;
+}
+
+uint32_t D3D12Buffer::GetBindlessIndex(RHI::ViewType viewType, RHI::ViewID viewID) const {
+    if (viewID.IsValid()) {
+        if (viewType == RHI::ViewType::SRV) {
+            return srvEntries.IsValidIndex(viewID.value) ? srvEntries[viewID.value].bindlessIndex : D3D12BindlessDescriptorAllocator::NullIndex;
+        }
+        if (viewType == RHI::ViewType::UAV) {
+            return uavEntries.IsValidIndex(viewID.value) ? uavEntries[viewID.value].bindlessIndex : D3D12BindlessDescriptorAllocator::NullIndex;
+        }
+    }
+    return D3D12BindlessDescriptorAllocator::NullIndex;
+}
+
+RHI::Buffer *D3D12Renderer::CreateBuffer(RHI::BufferUsage usage, RHI::BufferFlag flags, uint64_t size, const void *data) {
+    D3D12_HEAP_TYPE heapType;
+    D3D12_RESOURCE_STATES initialState;
+    D3D12_RESOURCE_FLAGS resourceFlags;
+
+    switch (usage) {
+    case RHI::BufferUsage::Default:
+        heapType = D3D12_HEAP_TYPE_DEFAULT;
+        // NOTE: 텍스처와 달리 D3D12_RESOURCE_DIMENSION_BUFFER 리소스의 initialState 는 항상 D3D12_RESOURCE_STATE_COMMON 로 설정된다.
+        initialState = D3D12_RESOURCE_STATE_COMMON;
+        resourceFlags = D3D12_RESOURCE_FLAG_NONE;
+        break;
+    case RHI::BufferUsage::Upload:
+        heapType = D3D12_HEAP_TYPE_UPLOAD;
+        // NOTE: 리소스가 업로드 힙인 경우 initialState 는 다른 값으로 설정해도 무시되며, 항상 D3D12_RESOURCE_STATE_GENERIC_READ 로 설정된다.
+        initialState = D3D12_RESOURCE_STATE_GENERIC_READ;
+        resourceFlags = D3D12_RESOURCE_FLAG_NONE;
+        break;
+    case RHI::BufferUsage::Readback:
+        heapType = D3D12_HEAP_TYPE_READBACK;
+        // NOTE: 리소스가 리드백 힙인 경우 initialState 는 다른 값으로 설정해도 무시되며, 항상 D3D12_RESOURCE_STATE_COPY_DEST 로 설정된다.
+        initialState = D3D12_RESOURCE_STATE_COPY_DEST;
+        resourceFlags = D3D12_RESOURCE_FLAG_DENY_SHADER_RESOURCE;
+        break;
+    default:
+        BE_ERRLOG("D3D12Renderer::CreateBuffer: Invalid buffer usage (%i)\n", static_cast<int>(usage));
+        return nullptr;
+    }
+
+    if (BE1::HasFlag(flags, RHI::BufferFlag::UnorderedAccess)) {
+        resourceFlags |= D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS;
+    }
+
+    uint32_t alignedSize = size;
+
+    if (BE1::HasFlag(flags, RHI::BufferFlag::ConstantBuffer)) {
+        // 상수 버퍼를 생성하면 내부적으로 GPU 에서 어차피 256 바이트로 사이즈가 정렬된다.
+        alignedSize = BE1::AlignUp(alignedSize, D3D12_CONSTANT_BUFFER_DATA_PLACEMENT_ALIGNMENT);
+    }
+
+    D3D12_RESOURCE_DESC bufferDesc = {};
+    bufferDesc.Dimension = D3D12_RESOURCE_DIMENSION_BUFFER;
+    bufferDesc.Alignment = 0;
+    bufferDesc.Width = alignedSize;
+    bufferDesc.Height = 1;
+    bufferDesc.DepthOrArraySize = 1;
+    bufferDesc.MipLevels = 1;
+    bufferDesc.Format = DXGI_FORMAT_UNKNOWN; // 버퍼 리소스는 항상 DXGI_FORMAT_UNKNOWN 으로 생성한다.
+    bufferDesc.SampleDesc.Count = 1;
+    bufferDesc.SampleDesc.Quality = 0;
+    bufferDesc.Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
+    bufferDesc.Flags = resourceFlags;
+
+#ifdef USE_D3D12_MEMALLOC
+    D3D12MA::ALLOCATION_DESC allocationDesc = {};
+    //allocationDesc.Flags |= D3D12MA::ALLOCATION_FLAG_CAN_ALIAS;
+    allocationDesc.Flags |= D3D12MA::ALLOCATION_FLAG_STRATEGY_MIN_TIME;
+    allocationDesc.HeapType = heapType;
+
+    // NOTE: 내부적으로 Placed Resource 를 생성할 때, UAV/RTV/DSV 이거나 크기가 64KB 를 넘어간다면,
+    // 오프셋을 64KB 에 정렬하고, 그게 아니면 4KB 에 정렬한다.
+    D3D12MA::Allocation *bufferAllocation;
+    if (FAILED(allocator->CreateResource(
+        &allocationDesc,
+        &bufferDesc,
+        initialState,
+        nullptr,
+        &bufferAllocation,
+        IID_NULL, nullptr))) {
+        return nullptr;
+    }
+    ID3D12Resource *bufferResource = bufferAllocation->GetResource();
+#else
+    D3D12_HEAP_PROPERTIES heapProperties;
+    heapProperties.Type = heapType;
+    heapProperties.CPUPageProperty = D3D12_CPU_PAGE_PROPERTY_UNKNOWN;
+    heapProperties.MemoryPoolPreference = D3D12_MEMORY_POOL_UNKNOWN;
+    heapProperties.CreationNodeMask = 1;
+    heapProperties.VisibleNodeMask = 1;
+
+    ID3D12Resource *bufferResource = nullptr;
+    if (FAILED(device->CreateCommittedResource(
+        &heapProperties,
+        D3D12_HEAP_FLAG_NONE,
+        &bufferDesc,
+        initialState,
+        nullptr, IID_PPV_ARGS(&bufferResource)))) {
+        return nullptr;
+    }
+#endif
+
+    D3D12Buffer *buffer = new D3D12Buffer;
+    buffer->flags = flags;
+    buffer->size = alignedSize;
+
+#ifdef USE_D3D12_MEMALLOC
+    buffer->bufferAllocation = bufferAllocation;
+#else
+    buffer->bufferResource = bufferResource;
+#endif
+
+    if (heapType == D3D12_HEAP_TYPE_DEFAULT) {
+        if (data) {
+            D3D12_RESOURCE_DESC uploadBufferDesc;
+            uploadBufferDesc.Dimension = D3D12_RESOURCE_DIMENSION_BUFFER;
+            uploadBufferDesc.Alignment = 0;
+            uploadBufferDesc.Width = bufferDesc.Width;
+            uploadBufferDesc.Height = 1;
+            uploadBufferDesc.DepthOrArraySize = 1;
+            uploadBufferDesc.MipLevels = 1;
+            uploadBufferDesc.Format = DXGI_FORMAT_UNKNOWN;
+            uploadBufferDesc.SampleDesc.Count = 1;
+            uploadBufferDesc.SampleDesc.Quality = 0;
+            uploadBufferDesc.Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
+            uploadBufferDesc.Flags = D3D12_RESOURCE_FLAG_NONE;
+
+            D3D12_HEAP_PROPERTIES uploadHeapProperties;
+            uploadHeapProperties.Type = D3D12_HEAP_TYPE_UPLOAD;
+            uploadHeapProperties.CPUPageProperty = D3D12_CPU_PAGE_PROPERTY_UNKNOWN;
+            uploadHeapProperties.MemoryPoolPreference = D3D12_MEMORY_POOL_UNKNOWN;
+            uploadHeapProperties.CreationNodeMask = 1;
+            uploadHeapProperties.VisibleNodeMask = 1;
+
+            // CPU 데이터를 upload heap 에 미리 복사해 두어, 지연 업로드 시점까지 호출자 data 수명에 의존하지 않는다.
+            ID3D12Resource *uploadBuffer = nullptr;
+            if (FAILED(device->CreateCommittedResource(
+                &uploadHeapProperties,
+                D3D12_HEAP_FLAG_NONE,
+                &uploadBufferDesc,
+                D3D12_RESOURCE_STATE_GENERIC_READ,
+                nullptr, IID_PPV_ARGS(&uploadBuffer)))) {
+                delete buffer;
+                return nullptr;
+            }
+
+            UINT8 *mappedPtr = nullptr;
+            if (FAILED(uploadBuffer->Map(0, nullptr, reinterpret_cast<void **>(&mappedPtr)))) {
+                SAFE_RELEASE(uploadBuffer);
+                delete buffer;
+                return nullptr;
+            }
+
+            BE1::simdProcessor->Memcpy(mappedPtr, data, size);
+
+            D3D12_RANGE writtenRange = { 0, size };
+            uploadBuffer->Unmap(0, &writtenRange);
+
+            buffer->SetStatus(RHI::GPUResourceStatus::Pending);
+
+            // 업로드 요청을 등록한다.
+            D3D12ResourceRequest request;
+            request.type = D3D12ResourceRequest::Type::UploadBuffer;
+            request.object = buffer;
+            request.uploadBufferRequest.uploadBuffer = uploadBuffer;
+            request.uploadBufferRequest.dataSize = size;
+            EnqueueResourceRequest(std::move(request));
+        }
+    } else if (heapType == D3D12_HEAP_TYPE_UPLOAD) {
+        bufferResource->Map(0, nullptr, reinterpret_cast<void **>(&buffer->mappedPtr));
+
+        if (data) {
+            BE1::simdProcessor->Memcpy(buffer->mappedPtr, data, size);
+        }
+    } else if (heapType == D3D12_HEAP_TYPE_READBACK) {
+        bufferResource->Map(0, nullptr, reinterpret_cast<void **>(&buffer->mappedPtr));
+
+        // 리드백 버퍼는 CPU 에서 GPU 로 데이터를 업로드할 수 없으므로, 업로드 요청이 등록되어 있다면 경고 로그를 출력한다.
+        if (data) {
+            BE_WARNLOG("D3D12Renderer::CreateBuffer: Data upload is not supported for readback buffers. Buffer creation succeeded, but data was not uploaded.\n");
+        }
+    }
+
+    return buffer;
+}
+
+bool D3D12Renderer::ExecuteUploadBuffer(D3D12ResourceCommandContext &commandContext, D3D12Buffer *buffer, const D3D12UploadBufferRequest &request) {
+    if (!request.uploadBuffer) {
+        return false;
+    }
+
+#ifdef USE_D3D12_MEMALLOC
+    ID3D12Resource *bufferResource = buffer->bufferAllocation->GetResource();
+#else
+    ID3D12Resource *bufferResource = buffer->bufferResource;
+#endif
+
+    D3D12_RESOURCE_STATES afterResourceState = D3D12_RESOURCE_STATE_COMMON;
+    if (BE1::HasAnyFlag(buffer->flags, RHI::BufferFlag::ConstantBuffer | RHI::BufferFlag::VertexBuffer)) {
+        afterResourceState = D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER;
+    } else if (BE1::HasFlag(buffer->flags, RHI::BufferFlag::IndexBuffer)) {
+        afterResourceState = D3D12_RESOURCE_STATE_INDEX_BUFFER;
+    } else if (BE1::HasFlag(buffer->flags, RHI::BufferFlag::UnorderedAccess)) {
+        afterResourceState = D3D12_RESOURCE_STATE_UNORDERED_ACCESS;
+    }
+
+    // 업로드 버퍼에서 디바이스 버퍼 (VRAM) 로 GPU 에 복사 요청
+    D3D12CommandList *commandList = commandContext.GetGraphicsCommandList();
+    commandList->ResourceBarrier(bufferResource, D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_COPY_DEST);
+    commandList->GetGraphicsCommandList()->CopyBufferRegion(bufferResource, 0, request.uploadBuffer, 0, request.dataSize);
+    commandList->ResourceBarrier(bufferResource, D3D12_RESOURCE_STATE_COPY_DEST, afterResourceState);
+
+    RequestRelease(request.uploadBuffer);
+
+    return true;
+}
+
+RHI::ViewID D3D12Renderer::CreateView(RHI::Buffer *buffer, RHI::ViewType viewType, RHI::Format format, uint32_t structuredStride, uint64_t offset, uint64_t size) {
+    D3D12Buffer *_buffer = static_cast<D3D12Buffer *>(buffer);
+
+    if (viewType == RHI::ViewType::SRV) {
+        return CreateSRV(_buffer, format, structuredStride, offset, size);
+    }
+    if (viewType == RHI::ViewType::UAV) {
+        return CreateUAV(_buffer, format, structuredStride, offset, size);
+    }
+    return RHI::ViewID::InvalidID;
+}
+
+void D3D12Renderer::DestroyView(RHI::Buffer *buffer, RHI::ViewType viewType, RHI::ViewID viewID) {
+    D3D12Buffer *_buffer = static_cast<D3D12Buffer *>(buffer);
+
+    if (viewType == RHI::ViewType::SRV) {
+        if (!_buffer->srvEntries.IsValidIndex(viewID.value)) {
+            BE_ERRLOG("D3D12Renderer::DestroyView: Invalid SRV view ID (%i)\n", viewID.value);
+            return;
+        }
+        D3D12SRVEntry *srvEntryPtr = &_buffer->srvEntries[viewID.value];
+        if (srvEntryPtr->cpuDescriptorHandle.ptr != 0) {
+            resStagingDescriptorPool->Free(srvEntryPtr->cpuDescriptorHandle);
+        }
+        if (srvEntryPtr->bindlessIndex != D3D12BindlessDescriptorAllocator::NullIndex) {
+            FreeBindlessResourceDescriptor(srvEntryPtr->bindlessIndex);
+        }
+        *srvEntryPtr = {};
+        return;
+    }
+    if (viewType == RHI::ViewType::UAV) {
+        if (!_buffer->uavEntries.IsValidIndex(viewID.value)) {
+            BE_ERRLOG("D3D12Renderer::DestroyView: Invalid UAV view ID (%i)\n", viewID.value);
+            return;
+        }
+        D3D12UAVEntry *uavEntryPtr = &_buffer->uavEntries[viewID.value];
+        if (uavEntryPtr->cpuDescriptorHandle.ptr != 0) {
+            resStagingDescriptorPool->Free(uavEntryPtr->cpuDescriptorHandle);
+        }
+        if (uavEntryPtr->bindlessIndex != D3D12BindlessDescriptorAllocator::NullIndex) {
+            FreeBindlessResourceDescriptor(uavEntryPtr->bindlessIndex);
+        }
+        *uavEntryPtr = {};
+        return;
+    }
+}
+
+RHI::ViewID D3D12Renderer::CreateSRV(D3D12Buffer *buffer, RHI::Format format, uint32_t structureByteStride, uint64_t offset, uint64_t size) {
+    assert(offset < buffer->size);
+
+    D3D12SRVEntry newSrvEntry;
+    newSrvEntry.viewDesc.ViewDimension = D3D12_SRV_DIMENSION_BUFFER;
+    newSrvEntry.viewDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+
+    uint32_t byteStride = 0;
+    bool rootSrvCompatible = true;
+
+    if (format != RHI::Format::Unknown) {
+        // Typed buffer
+        BE1::Image::Format imageFormat;
+        RHIFormatToImageFormat(format, &imageFormat, nullptr);
+        byteStride = BE1::Image::BytesPerPixel(imageFormat);
+
+        newSrvEntry.viewDesc.Format = RHIFormatToDXGIFormat(format);
+
+        // Root SRV 는 Typed buffer 를 허용하지 않음.
+        rootSrvCompatible = false;
+    } else {
+        // format == Image::Format::Unknown 이고 structureByteStride == 0 이면, raw buffer 다.
+        // format == Image::Format::Unknown 이고 structureByteStride > 0 이면, structured buffer 다.
+        if (structureByteStride == 0) {
+            // Raw buffer
+            byteStride = 4;
+            newSrvEntry.viewDesc.Format = DXGI_FORMAT_R32_TYPELESS;
+            newSrvEntry.viewDesc.Buffer.Flags = D3D12_BUFFER_SRV_FLAG_RAW;
+        } else {
+            // structureByteStride 는 4의 배수이고, 2048 보다 작아야 한다.
+            assert(BE1::IsAligned(structureByteStride, 4) && structureByteStride < 2048);
+
+            // Structured buffer
+            byteStride = structureByteStride;
+            newSrvEntry.viewDesc.Format = DXGI_FORMAT_UNKNOWN;
+            newSrvEntry.viewDesc.Buffer.StructureByteStride = structureByteStride;
+        }
+    }
+
+    if (!BE1::IsAligned(offset, byteStride)) {
+        BE_ERRLOG("D3D12Renderer::CreateSRV: offset must be aligned to element stride\n");
+        return RHI::ViewID::InvalidID;
+    }
+
+    uint64_t viewSize = BE1::Min(size, buffer->size - offset);
+    assert(viewSize > 0);
+    assert(BE1::IsAligned(viewSize, byteStride));
+
+    newSrvEntry.viewDesc.Buffer.FirstElement = offset / byteStride;
+    newSrvEntry.viewDesc.Buffer.NumElements = viewSize / byteStride;
+
+    // 디스크립터 슬롯 할당
+    if (!resStagingDescriptorPool->Alloc(&newSrvEntry.cpuDescriptorHandle, nullptr)) {
+        return RHI::ViewID::InvalidID;
+    }
+
+    // 디스크립터 슬롯에 SRV 를 기록
+    device->CreateShaderResourceView(buffer->GetResource(), &newSrvEntry.viewDesc, newSrvEntry.cpuDescriptorHandle);
+
+    // Root SRV 를 위해 GPU 주소 저장
+    if (rootSrvCompatible) {
+        newSrvEntry.gpuAddress = buffer->GetResource()->GetGPUVirtualAddress() + offset;
+    }
+
+    // bindless index 할당
+    newSrvEntry.bindlessIndex = AllocBindlessResourceDescriptor();
+    if (newSrvEntry.bindlessIndex == D3D12BindlessDescriptorAllocator::NullIndex) {
+        resStagingDescriptorPool->Free(newSrvEntry.cpuDescriptorHandle);
+        return RHI::ViewID::InvalidID;
+    }
+
+    // shader-visible heap 의 bindless slot 으로 복사
+    D3D12_CPU_DESCRIPTOR_HANDLE bindlessCpuDescriptorHandle = GetBindlessResourceCPUDescriptorHandle(newSrvEntry.bindlessIndex);
+    device->CopyDescriptorsSimple(1, bindlessCpuDescriptorHandle, newSrvEntry.cpuDescriptorHandle, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+
+    // SRV 추가 후 viewID 를 리턴
+    RHI::ViewID viewID;
+
+    const int numSrvEntries = buffer->srvEntries.Count();
+    for (int i = 0; i < numSrvEntries; ++i) {
+        if (!buffer->srvEntries[i].cpuDescriptorHandle.ptr) {
+            buffer->srvEntries[i] = newSrvEntry;
+            viewID.value = i;
+            return viewID;
+        }
+    }
+    viewID.value = buffer->srvEntries.Append(newSrvEntry);
+    return viewID;
+}
+
+RHI::ViewID D3D12Renderer::CreateUAV(D3D12Buffer *buffer, RHI::Format format, uint32_t structureByteStride, uint64_t offset, uint64_t size) {
+    assert(offset < buffer->size);
+
+    D3D12UAVEntry newUavEntry;
+    newUavEntry.viewDesc.ViewDimension = D3D12_UAV_DIMENSION_BUFFER;
+
+    uint32_t byteStride = 0;
+    bool rootUavCompatible = true;
+
+    if (format != RHI::Format::Unknown) {
+        // Typed buffer
+        BE1::Image::Format imageFormat;
+        RHIFormatToImageFormat(format, &imageFormat, nullptr);
+        byteStride = BE1::Image::BytesPerPixel(imageFormat);
+
+        newUavEntry.viewDesc.Format = RHIFormatToDXGIFormat(format);
+
+        // Root UAV 는 Typed buffer 를 허용하지 않음.
+        rootUavCompatible = false;
+    } else {
+        // format == Image::Format::Unknown 이고 structureByteStride == 0 이면, raw buffer 다.
+        // format == Image::Format::Unknown 이고 structureByteStride > 0 이면, structured buffer 다.
+        if (structureByteStride == 0) {
+            // Raw buffer
+            byteStride = 4;
+            newUavEntry.viewDesc.Format = DXGI_FORMAT_R32_TYPELESS;
+            newUavEntry.viewDesc.Buffer.Flags = D3D12_BUFFER_UAV_FLAG_RAW;
+        } else {
+            // structureByteStride 는 4의 배수이고, 2048 보다 작아야 한다.
+            assert(BE1::IsAligned(structureByteStride, 4) && structureByteStride < 2048);
+
+            // Structured buffer
+            byteStride = structureByteStride;
+            newUavEntry.viewDesc.Format = DXGI_FORMAT_UNKNOWN;
+            newUavEntry.viewDesc.Buffer.StructureByteStride = structureByteStride;
+        }
+    }
+
+    if (!BE1::IsAligned(offset, byteStride)) {
+        BE_ERRLOG("D3D12Renderer::CreateUAV: offset must be aligned to element stride\n");
+        return RHI::ViewID::InvalidID;
+    }
+
+    uint64_t viewSize = BE1::Min(size, buffer->size - offset);
+    assert(viewSize > 0);
+    assert(BE1::IsAligned(viewSize, byteStride));
+
+    newUavEntry.viewDesc.Buffer.FirstElement = offset / byteStride;
+    newUavEntry.viewDesc.Buffer.NumElements = viewSize / byteStride;
+
+    // 디스크립터 슬롯 할당
+    if (!resStagingDescriptorPool->Alloc(&newUavEntry.cpuDescriptorHandle, nullptr)) {
+        return RHI::ViewID::InvalidID;
+    }
+
+    // 디스크립터 슬롯에 UAV 를 기록
+    device->CreateUnorderedAccessView(buffer->GetResource(), nullptr, &newUavEntry.viewDesc, newUavEntry.cpuDescriptorHandle);
+
+    // Root UAV 를 위해 GPU 주소 저장
+    if (rootUavCompatible) {
+        newUavEntry.gpuAddress = buffer->GetResource()->GetGPUVirtualAddress() + offset;
+    }
+
+    // bindless index 할당
+    newUavEntry.bindlessIndex = AllocBindlessResourceDescriptor();
+    if (newUavEntry.bindlessIndex == D3D12BindlessDescriptorAllocator::NullIndex) {
+        resStagingDescriptorPool->Free(newUavEntry.cpuDescriptorHandle);
+        return RHI::ViewID::InvalidID;
+    }
+
+    // shader-visible heap 의 bindless slot 으로 복사
+    D3D12_CPU_DESCRIPTOR_HANDLE bindlessCpuDescriptorHandle = GetBindlessResourceCPUDescriptorHandle(newUavEntry.bindlessIndex);
+    device->CopyDescriptorsSimple(1, bindlessCpuDescriptorHandle, newUavEntry.cpuDescriptorHandle, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+
+    // UAV 추가 후 viewID 를 리턴
+    RHI::ViewID viewID;
+
+    const int numUavEntries = buffer->uavEntries.Count();
+    for (int i = 0; i < numUavEntries; ++i) {
+        if (!buffer->uavEntries[i].cpuDescriptorHandle.ptr) {
+            buffer->uavEntries[i] = newUavEntry;
+            viewID.value = i;
+            return viewID;
+        }
+    }
+    viewID.value = buffer->uavEntries.Append(newUavEntry);
+    return viewID;
+}
+
+void D3D12Renderer::DestroyBuffer(RHI::Buffer *buffer, bool immediate) {
+    if (immediate) {
+        delete buffer;
+    } else {
+        DeleteGPUObject(buffer);
+    }
+}
+
+bool D3D12Renderer::SetBufferSubData(RHI::Buffer *buffer, uint64_t offset, uint64_t size, const void *data, RHI::GPUResourceState stateBefore, RHI::GPUResourceState stateAfter) {
+    if (!buffer || !data || size == 0) {
+        return false;
+    }
+
+    D3D12Buffer *_buffer = static_cast<D3D12Buffer *>(buffer);
+    if (offset + size > _buffer->GetSize()) {
+        BE_WARNLOG("D3D12Renderer::SetBufferSubData: update range exceeds buffer size\n");
+        return false;
+    }
+
+    if (!_buffer->GetResource() || _buffer->dynamicBlockIndex != -1) {
+        BE_WARNLOG("D3D12Renderer::SetBufferSubData: dynamic buffer cannot be updated this way\n");
+        return false;
+    }
+
+    D3D12_RESOURCE_DESC uploadBufferDesc;
+    uploadBufferDesc.Dimension = D3D12_RESOURCE_DIMENSION_BUFFER;
+    uploadBufferDesc.Alignment = 0;
+    uploadBufferDesc.Width = size;
+    uploadBufferDesc.Height = 1;
+    uploadBufferDesc.DepthOrArraySize = 1;
+    uploadBufferDesc.MipLevels = 1;
+    uploadBufferDesc.Format = DXGI_FORMAT_UNKNOWN;
+    uploadBufferDesc.SampleDesc.Count = 1;
+    uploadBufferDesc.SampleDesc.Quality = 0;
+    uploadBufferDesc.Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
+    uploadBufferDesc.Flags = D3D12_RESOURCE_FLAG_NONE;
+
+    D3D12_HEAP_PROPERTIES heapProperties;
+    heapProperties.Type = D3D12_HEAP_TYPE_UPLOAD;
+    heapProperties.CPUPageProperty = D3D12_CPU_PAGE_PROPERTY_UNKNOWN;
+    heapProperties.MemoryPoolPreference = D3D12_MEMORY_POOL_UNKNOWN;
+    heapProperties.CreationNodeMask = 1;
+    heapProperties.VisibleNodeMask = 1;
+
+    // 업로드 버퍼 생성
+    ID3D12Resource *uploadBuffer = nullptr;
+    if (FAILED(device->CreateCommittedResource(
+        &heapProperties,
+        D3D12_HEAP_FLAG_NONE,
+        &uploadBufferDesc,
+        D3D12_RESOURCE_STATE_GENERIC_READ,
+        nullptr, IID_PPV_ARGS(&uploadBuffer)))) {
+        return false;
+    }
+
+    void *mappedPtr = nullptr;
+    uploadBuffer->Map(0, nullptr, &mappedPtr);
+
+    BE1::simdProcessor->Memcpy(mappedPtr, data, size);
+
+    D3D12_RANGE writtenRange = { 0, size };
+    uploadBuffer->Unmap(0, &writtenRange);
+
+    D3D12ResourceRequest request;
+    request.type = D3D12ResourceRequest::Type::UploadBufferSubData;
+    request.object = buffer;
+    request.uploadBufferSubDataRequest.uploadBuffer = uploadBuffer;
+    request.uploadBufferSubDataRequest.dstOffset = offset;
+    request.uploadBufferSubDataRequest.size = size;
+    request.uploadBufferSubDataRequest.stateBefore = stateBefore;
+    request.uploadBufferSubDataRequest.stateAfter = stateAfter;
+    EnqueueResourceRequest(std::move(request));
+    return true;
+}
+
+bool D3D12Renderer::ExecuteUploadBufferSubData(D3D12ResourceCommandContext &commandContext, D3D12Buffer *buffer, const D3D12UploadBufferSubDataRequest &request) {
+    ID3D12Resource *bufferResource = buffer->GetResource();
+
+    D3D12CommandList *commandList = commandContext.GetGraphicsCommandList();
+
+    commandList->ResourceBarrier(bufferResource, ToD3D12ResourceState(request.stateBefore), D3D12_RESOURCE_STATE_COPY_DEST);
+    commandList->GetGraphicsCommandList()->CopyBufferRegion(bufferResource, request.dstOffset, request.uploadBuffer, 0, request.size);
+    commandList->ResourceBarrier(bufferResource, D3D12_RESOURCE_STATE_COPY_DEST, ToD3D12ResourceState(request.stateAfter));
+
+    RequestRelease(request.uploadBuffer);
+    return true;
+}
+
+void D3D12Renderer::SetBuffer(RHI::CommandList *commandList, int shaderRegister, bool shaderWritable, const RHI::Buffer *buffer, RHI::ViewID viewID) {
+    D3D12CommandList *_commandList = static_cast<D3D12CommandList *>(commandList);
+    D3D12RootBindingData *rootBindingData = _commandList->GetRootBindingData();
+
+    const D3D12Buffer *_buffer = static_cast<const D3D12Buffer *>(buffer);
+
+    // 셰이더 레지스터에 대한 루트 파라미터 인덱스를 얻는다.
+    const D3D12PipelineState::RegisterBinder &binder = _commandList->currentPSO->binder;
+    uint8_t rootParameterIndex = 0xFF;
+    uint8_t indexInTable = 0xFF;
+
+    if (shaderWritable) {
+        // UAV
+        assert(shaderRegister < COUNT_OF(binder.rootParameterIndexLUT.uav));
+        rootParameterIndex = binder.rootParameterIndexLUT.uav[shaderRegister];
+        if (rootParameterIndex >= 64) {
+            BE_ERRLOG("D3D12Renderer::SetBuffer: Invalid root parameter index\n");
+            return;
+        }
+
+        if (!_buffer->HasValidView(RHI::ViewType::UAV, viewID)) {
+            BE_ERRLOG("D3D12Renderer::SetBuffer: Invalid UAV view ID (%i)\n", viewID.value);
+            return;
+        }
+
+        // 사용할 디스크립터 테이블 변수에 디스크립터 핸들을 채워 넣는다.
+        const D3D12UAVEntry &uavEntry = _buffer->uavEntries[viewID.value];
+
+        // 루트 파라미터가 디스크립터 테이블일 경우 테이블 내의 인덱스 LUT 에는 유효한 값이 들어있다.
+        indexInTable = binder.descriptorTableIndexLUT.uav[shaderRegister];
+        if (indexInTable != 0xFF) {
+            rootBindingData->descriptorTableHandles[rootParameterIndex][indexInTable] = uavEntry.cpuDescriptorHandle;
+            if (rootBindingData->descriptorTableHandles[rootParameterIndex][indexInTable].ptr == 0) {
+                BE_ERRLOG("D3D12Renderer::SetBuffer: Buffer has no valid UAV descriptor handle\n");
+                return;
+            }
+        } else {
+            if (uavEntry.gpuAddress == 0) {
+                BE_ERRLOG("D3D12Renderer::SetBuffer: Buffer UAV cannot be bound as root UAV\n");
+                return;
+            }
+
+            rootBindingData->uavGpuAddresses[shaderRegister] = uavEntry.gpuAddress;
+        }
+    } else {
+        // SRV
+        assert(shaderRegister < COUNT_OF(binder.rootParameterIndexLUT.srv));
+        rootParameterIndex = binder.rootParameterIndexLUT.srv[shaderRegister];
+        if (rootParameterIndex >= 64) {
+            BE_ERRLOG("D3D12Renderer::SetBuffer: Invalid root parameter index\n");
+            return;
+        }
+
+        if (!_buffer->HasValidView(RHI::ViewType::SRV, viewID)) {
+            BE_ERRLOG("D3D12Renderer::SetBuffer: Invalid SRV view ID (%i)\n", viewID.value);
+            return;
+        }
+
+        // 사용할 디스크립터 테이블 변수에 디스크립터 핸들을 채워 넣는다.
+        const D3D12SRVEntry &srvEntry = _buffer->srvEntries[viewID.value];
+
+        // 루트 파라미터가 디스크립터 테이블일 경우 테이블 내의 인덱스 LUT 에는 유효한 값이 들어있다.
+        indexInTable = binder.descriptorTableIndexLUT.srv[shaderRegister];
+        if (indexInTable != 0xFF) {
+            rootBindingData->descriptorTableHandles[rootParameterIndex][indexInTable] = srvEntry.cpuDescriptorHandle;
+            if (rootBindingData->descriptorTableHandles[rootParameterIndex][indexInTable].ptr == 0) {
+                BE_ERRLOG("D3D12Renderer::SetBuffer: Buffer has no valid SRV descriptor handle\n");
+                return;
+            }
+        } else {
+            if (srvEntry.gpuAddress == 0) {
+                BE_ERRLOG("D3D12Renderer::SetBuffer: Buffer SRV cannot be bound as root SRV\n");
+                return;
+            }
+
+            rootBindingData->srvGpuAddresses[shaderRegister] = srvEntry.gpuAddress;
+        }
+    }
+
+    // 변경할 루트 파라미터 인덱스에 대한 dirty mask 를 설정한다.
+    if (_commandList->currentPSO->isGraphics) {
+        _commandList->graphicsRootParametersDirtyMask |= BIT64(rootParameterIndex);
+    } else {
+        _commandList->computeRootParametersDirtyMask |= BIT64(rootParameterIndex);
+    }
+}

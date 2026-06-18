@@ -338,7 +338,7 @@ void Texture::ApplyPrepared(InternalData &newInternalData) {
 void Texture::GenerateMipmaps() {
     assert(state == State::Ready);
 
-    RHI::renderer->GenerateMipmaps(internalData.rhiTexture);
+    RHI::renderer->GenerateMipChain(internalData.rhiTexture);
 }
 
 bool Texture::Load(const char *filename, Texture::Flag flags) {

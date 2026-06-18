@@ -1080,7 +1080,7 @@ namespace RHI {
 
         virtual bool                    UploadTextureMipRange(Texture *texture, std::shared_ptr<const BE1::Image> image, int firstMip) = 0;
 
-        virtual void                    GenerateMipmaps(Texture *texture) = 0;
+        virtual void                    GenerateMipChain(Texture *texture) = 0;
 
         virtual bool                    GetTextureImage2D(Texture *texture, int mipLevel, BE1::Image::Format imageFormat, void *outPixels) = 0;
         virtual bool                    GetTextureImage3D(Texture *texture, int mipLevel, BE1::Image::Format imageFormat, void *outPixels) = 0;
@@ -1135,7 +1135,7 @@ namespace RHI {
         virtual void                    ClearUAV(CommandList *commandList, const GPUResource *resource, ViewID viewID, uint32_t value) = 0;
         virtual void                    CopyBuffer(CommandList *commandList, const Buffer *dstBuffer, uint32_t dstOffset, const Buffer *srcBuffer, uint32_t srcOffset, uint32_t size) = 0;
         virtual void                    CopyTexture(CommandList *commandList, const Texture *dstTexture, uint32_t dstSlice, uint32_t dstMipLevel, uint32_t dstX, uint32_t dstY, uint32_t dstZ, const Texture *srcTexture, uint32_t srcSlice, uint32_t srcMipLevel, uint32_t srcX, uint32_t srcY, uint32_t srcZ, uint32_t width, uint32_t height, uint32_t depth) = 0;
-        virtual void                    GenerateMipmaps(CommandList *commandList, const Texture *texture, const ViewID *srvMipSubresourceIDs, const ViewID *uavMipSubresourceIDs, bool preserveCoverage) = 0;
+        virtual void                    GenerateMipChain(CommandList *commandList, const Texture *texture, const ViewID *srvMipSubresourceIDs, const ViewID *uavMipSubresourceIDs, bool preserveCoverage) = 0;
         virtual void                    Barrier(CommandList *commandList, const GPUBarrier *barriers, uint32_t barrierCount) = 0;
         void                            Barrier(CommandList *commandList, const GPUBarrier &barrier) { Barrier(commandList, &barrier, 1); }
         virtual void                    ReadPixels(CommandList *commandList, const SwapChain *swapChain, int x, int y, int width, int height, BE1::Image::Format dstFormat, void *outPixels) = 0;

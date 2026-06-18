@@ -1,0 +1,174 @@
+// Copyright(c) 2017 POLYGONTEK
+// 
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+// 
+// http://www.apache.org/licenses/LICENSE-2.0
+// 
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+#include "Precompiled.h"
+#include "D3D12Renderer.h"
+#include "D3D12DescriptorPool.h"
+#include "D3D12SwapChain.h"
+
+static CVAR(d3d12_swapChainAllowTearing, "1", BE1::CVar::Flag::Bool, "allow tearing when presenting without vsync");
+
+RHI::SwapChain *D3D12Renderer::CreateSwapChain(HWND hwnd, uint32_t width, uint32_t height, RHI::Format format) {
+    DXGI_FORMAT dxgiFormat = RHIFormatToDXGIFormat(format);
+
+    DXGI_SWAP_CHAIN_DESC1 swapChainDesc = {};
+    swapChainDesc.Width = (UINT)width;
+    swapChainDesc.Height = (UINT)height;
+    swapChainDesc.Format = dxgiFormat;
+    //swapChainDesc.BufferDesc.RefreshRate.Numerator = refreshRate;
+    //swapChainDesc.BufferDesc.RefreshRate.Denominator = 1;
+    swapChainDesc.BufferUsage = DXGI_USAGE_BACK_BUFFER | DXGI_USAGE_RENDER_TARGET_OUTPUT;
+    swapChainDesc.BufferCount = D3D12SwapChain::NumSwapChainBuffers;
+    swapChainDesc.SampleDesc.Count = 1;
+    swapChainDesc.SampleDesc.Quality = 0;
+    swapChainDesc.Scaling = DXGI_SCALING_NONE;
+    swapChainDesc.SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD;
+    swapChainDesc.AlphaMode = DXGI_ALPHA_MODE_UNSPECIFIED;
+    swapChainDesc.Flags = DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH;
+
+    if (supportsTearing) {
+        swapChainDesc.Flags |= DXGI_SWAP_CHAIN_FLAG_ALLOW_TEARING;
+    }
+
+    DXGI_SWAP_CHAIN_FULLSCREEN_DESC swapChainFullscreenDesc = {};
+    swapChainFullscreenDesc.Windowed = TRUE;
+
+    IDXGISwapChain1 *dxgiSwapChain1 = nullptr;
+    HRESULT hr = dxgiFactory->CreateSwapChainForHwnd(commandQueues[to_int(RHI::CommandQueueType::Graphics)], hwnd, &swapChainDesc, &swapChainFullscreenDesc, nullptr, &dxgiSwapChain1);
+    if (FAILED(hr)) {
+        BE_FATALERROR("CreateSwapChainForHwnd failed, ERROR: 0x%x", hr);
+    }
+    hr = dxgiFactory->MakeWindowAssociation(hwnd, DXGI_MWA_NO_WINDOW_CHANGES | DXGI_MWA_NO_ALT_ENTER);
+    if (FAILED(hr)) {
+        BE_FATALERROR("MakeWindowAssociation failed, ERROR: 0x%x", hr);
+    }
+
+    IDXGISwapChain3 *dxgiSwapChain3 = nullptr;
+    hr = dxgiSwapChain1->QueryInterface(IID_PPV_ARGS(&dxgiSwapChain3));
+    dxgiSwapChain1->Release();
+    if (FAILED(hr)) {
+        BE_FATALERROR("Failed to create swapchain, ERROR: 0x%x", hr);
+    }
+
+    //IDXGIOutput *dxgiOutput = nullptr;
+    //hr = dxgiSwapChain3->GetContainingOutput(&dxgiOutput);
+
+    D3D12SwapChain *swapChain = new D3D12SwapChain;
+    swapChain->swapChainFormat = dxgiFormat;
+    swapChain->width = width;
+    swapChain->height = height;
+    swapChain->dxgiSwapChain = dxgiSwapChain3;
+    swapChain->CreateRTVs();
+
+    return swapChain;
+}
+
+void D3D12Renderer::DestroySwapChain(RHI::SwapChain *swapChain) {
+    SAFE_DELETE(swapChain);
+}
+
+void D3D12SwapChain::Release() {
+    for (int bufferIndex = 0; bufferIndex < COUNT_OF(backBuffers); ++bufferIndex) {
+        SAFE_RELEASE(backBuffers[bufferIndex]);
+    }
+    SAFE_RELEASE(dxgiSwapChain);
+}
+
+void D3D12SwapChain::CreateRTVs() {
+    // 각 백버퍼의 RTV 를 생성한다.
+    if (D3D12Renderer::IsHDRSwapChainFormat(swapChainFormat)) {
+        rtvFormat = swapChainFormat;
+    } else {
+        // sRGB 포맷으로 변환
+        rtvFormat = D3D12Renderer::ToSRGBFormat(swapChainFormat);
+    }
+
+    for (int bufferIndex = 0; bufferIndex < COUNT_OF(backBuffers); ++bufferIndex) {
+        if (backBufferRTVs[bufferIndex].ptr != 0) {
+            D3D12Renderer::GetRenderer()->rtvDescriptorPool->Free(backBufferRTVs[bufferIndex]);
+        }
+        D3D12Renderer::GetRenderer()->rtvDescriptorPool->Alloc(&backBufferRTVs[bufferIndex], nullptr);
+
+        // 스왑 체인의 백버퍼 리소스를 가져온다.
+        dxgiSwapChain->GetBuffer(bufferIndex, IID_PPV_ARGS(&backBuffers[bufferIndex]));
+
+        D3D12_RENDER_TARGET_VIEW_DESC rtvDesc = {};
+        rtvDesc.Format = rtvFormat;
+        rtvDesc.ViewDimension = D3D12_RTV_DIMENSION_TEXTURE2D;
+        rtvDesc.Texture2D.MipSlice = 0;
+        rtvDesc.Texture2D.PlaneSlice = 0;
+
+        D3D12Renderer::GetRenderer()->GetDevice()->CreateRenderTargetView(backBuffers[bufferIndex], &rtvDesc, backBufferRTVs[bufferIndex]);
+    }
+
+    currentBackBufferIndex = dxgiSwapChain->GetCurrentBackBufferIndex();
+}
+
+void D3D12SwapChain::Resize(uint32_t width, uint32_t height) {
+    // 기존 스왑 체인 백버퍼 해제
+    for (int bufferIndex = 0; bufferIndex < COUNT_OF(backBuffers); ++bufferIndex) {
+        SAFE_RELEASE(backBuffers[bufferIndex]);
+    }
+
+    UINT swapChainFlags = DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH;
+    if (D3D12Renderer::GetRenderer()->supportsTearing) {
+        swapChainFlags |= DXGI_SWAP_CHAIN_FLAG_ALLOW_TEARING;
+    }
+
+    this->width = width;
+    this->height = height;
+
+    // 스왑 체인 백버퍼의 사이즈를 조정한다.
+    dxgiSwapChain->ResizeBuffers(D3D12SwapChain::NumSwapChainBuffers, width, height, swapChainFormat, swapChainFlags);
+
+    // 백버퍼 리소스를 다시 가져오고 RTV 를 다시 생성한다.
+    CreateRTVs();
+}
+
+void D3D12SwapChain::SwapBuffers(bool vsync) {
+    const UINT syncInterval = vsync ? 1 : 0;
+    const UINT presentFlags = (!vsync && D3D12Renderer::GetRenderer()->supportsTearing && d3d12_swapChainAllowTearing.GetBool()) ? DXGI_PRESENT_ALLOW_TEARING : 0;
+
+    if (dxgiSwapChain->Present(syncInterval, presentFlags) == DXGI_ERROR_DEVICE_REMOVED) {
+        BE_FATALERROR("DXGI Device Removed");
+    }
+
+    // 다음 프레임에 사용할 백버퍼 인덱스 얻어오기
+    currentBackBufferIndex = dxgiSwapChain->GetCurrentBackBufferIndex();
+}
+
+bool D3D12SwapChain::IsSupportsHDR() const {
+    // HDR display query: https://docs.microsoft.com/en-us/windows/win32/direct3darticles/high-dynamic-range
+    Microsoft::WRL::ComPtr<IDXGIOutput> dxgiOutput;
+    if (SUCCEEDED(dxgiSwapChain->GetContainingOutput(&dxgiOutput))) {
+        Microsoft::WRL::ComPtr<IDXGIOutput6> output6;
+        if (SUCCEEDED(dxgiOutput.As(&output6))) {
+            DXGI_OUTPUT_DESC1 desc1;
+            if (SUCCEEDED(output6->GetDesc1(&desc1))) {
+                if (desc1.ColorSpace == DXGI_COLOR_SPACE_RGB_FULL_G2084_NONE_P2020) {
+                    return true;
+                }
+            }
+        }
+    }
+    return false;
+}
+
+RHI::Format D3D12SwapChain::GetFormat() const {
+    return D3D12Renderer::DXGIFormatToRHIFormat(swapChainFormat);
+}
+
+RHI::Format D3D12SwapChain::GetRTVFormat() const {
+    return D3D12Renderer::DXGIFormatToRHIFormat(rtvFormat);
+}
