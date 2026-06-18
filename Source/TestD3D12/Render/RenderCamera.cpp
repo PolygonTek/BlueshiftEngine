@@ -449,7 +449,11 @@ void RenderCamera::EnsureRenderTextures(uint32_t width, uint32_t height, RHI::Fo
 }
 
 void RenderCamera::EnsurePostProcessResources() {
-    if (BE1::HasFlag(desc.flags, RenderCameraFlag::SkipPostProcess) || r_skipPostProcess.GetBool() || !r_toneMapping.GetBool() || renderWidth == 0 || renderHeight == 0) {
+    if (BE1::HasFlag(desc.flags, RenderCameraFlag::SkipPostProcess)) {
+        return;
+    }
+
+    if (r_skipPostProcess.GetBool() || !r_toneMapping.GetBool() || renderWidth == 0 || renderHeight == 0) {
         DestroyPostProcessResources();
         return;
     }

@@ -196,7 +196,7 @@ void App::InitGameObjects(uint32_t countX, uint32_t countY, uint32_t countZ) {
     uint32_t goCount = goCountX * goCountY * goCountZ;
     gameObjects.Reserve(goCount);
 
-    testMesh = meshManager.GetMesh("_defaultBoxMesh");
+    testMesh = meshManager.GetMesh("_defaultCylinderMesh");
 
     const BE1::Str textureFilenames[] = {
         "Data/Test/Brick_Wall_Worn.dds",
@@ -351,17 +351,17 @@ void App::TakeScreenshot() {
 }
 
 void App::RenderScene() {
-    float w = mainRenderContext->GetWidth();
-    float h = mainRenderContext->GetHeight();
-    float aspectRatio = w / h;
+    uint32_t w = mainRenderContext->GetWidth();
+    uint32_t h = mainRenderContext->GetHeight();
+    float aspectRatio = (float)w / h;
 
     RenderCameraDesc cameraDesc;
     cameraDesc.clearMethod = RenderCameraClearMethod::Skybox;
     //cameraDesc.clearColorMode = RenderCameraClearColorMode::RenderTargetDefault;
     cameraDesc.orthogonal = false;
     cameraDesc.outputRect.Set(0, 0, w, h);
-    cameraDesc.renderWidth = static_cast<uint32_t>(w);
-    cameraDesc.renderHeight = static_cast<uint32_t>(h);
+    cameraDesc.renderWidth = w;
+    cameraDesc.renderHeight = h;
     cameraDesc.axis = BE1::Angles(0.0f, cameraPitch, cameraYaw).ToMat3();
     cameraDesc.origin = cameraCenter - cameraDesc.axis[0] * cameraDistance;
     RenderCamera::CalculateFov(60, 16.0f / 9.0f, aspectRatio, &cameraDesc.fovX, &cameraDesc.fovY);
