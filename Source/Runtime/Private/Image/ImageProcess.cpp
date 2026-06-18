@@ -394,7 +394,47 @@ Image &Image::AddNormalMapRGBA8888(const Image &normalMap) {
 }
 
 template <typename T>
-void BuildMipMap1D(T *dst, const T *src, int width, int numComponents, int alphaComponentIndex, bool preserveCoverage) {
+static BE_INLINE T MipMapSample(T value) {
+    return value;
+}
+
+#ifndef IMAGE_GENERATE_MIPMAPS_CLAMP_INF_NAN
+#define IMAGE_GENERATE_MIPMAPS_CLAMP_INF_NAN 1
+#endif
+
+// IMAGE_GENERATE_MIPMAPS_CLAMP_INF_NAN 이 켜져있으면, float/half 이미지의 밉맵 생성 시 INF/NAN 을 clamp 한다.
+#if IMAGE_GENERATE_MIPMAPS_CLAMP_INF_NAN
+static BE_INLINE float MipMapSample(float value) {
+    const uint32_t bits = *(const uint32_t *)&value;
+    const uint32_t absBits = bits & 0x7fffffff;
+
+    if (absBits < 0x7f800000) {
+        return value;
+    }
+
+    // INF should not propagate through the mip chain.
+    if (absBits == 0x7f800000) {
+        return (bits & 0x80000000) ? -(float)HALF_MAX : (float)HALF_MAX;
+    }
+
+    return 0.0f; // NaN
+}
+
+static BE_INLINE half MipMapSample(half value) {
+    if (value.IsFinite()) {
+        return value;
+    }
+
+    if (value.IsInfinity()) {
+        return half(value.IsNegative() ? -(float)HALF_MAX : (float)HALF_MAX);
+    }
+
+    return half(0.0f); // NaN
+}
+#endif
+
+template <typename T>
+static void BuildMipMap1D(T *dst, const T *src, int width, int numComponents, int alphaComponentIndex, bool preserveCoverage) {
     int xOff = (width < 2) ? 0 : numComponents;
     float a0 = 0;
     float a1 = 0;
@@ -402,24 +442,24 @@ void BuildMipMap1D(T *dst, const T *src, int width, int numComponents, int alpha
 
     for (int x = 0; x < width; x += 2) {
         if (alphaComponentIndex >= 0) {
-            a0 = src[alphaComponentIndex];
-            a1 = src[alphaComponentIndex + xOff];
+            a0 = MipMapSample(src[alphaComponentIndex]);
+            a1 = MipMapSample(src[alphaComponentIndex + xOff]);
             alphaSum = a0 + a1;
         }
 
         for (int i = 0; i < numComponents; i++) {
             if (preserveCoverage && alphaSum > 0) {
                 if (i != alphaComponentIndex) {
-                    float p0 = src[0] * a0;
-                    float p1 = src[xOff] * a1;
+                    float p0 = MipMapSample(src[0]) * a0;
+                    float p1 = MipMapSample(src[xOff]) * a1;
                     *dst++ = (p0 + p1) / alphaSum;
                 } else {
                     *dst++ = Max(a0, a1);
                 }
             } else {
                 if (i != alphaComponentIndex) {
-                    T p0 = src[0];
-                    T p1 = src[xOff];
+                    T p0 = MipMapSample(src[0]);
+                    T p1 = MipMapSample(src[xOff]);
                     *dst++ = (p0 + p1) / 2;
                 } else {
                     *dst++ = (a0 + a1) / 2;
@@ -432,7 +472,7 @@ void BuildMipMap1D(T *dst, const T *src, int width, int numComponents, int alpha
 }
 
 template <typename T>
-void BuildMipMap2D(T *dst, const T *src, int width, int height, int numComponents, int alphaComponentIndex, bool preserveCoverage) {
+static void BuildMipMap2D(T *dst, const T *src, int width, int height, int numComponents, int alphaComponentIndex, bool preserveCoverage) {
     int xOff = (width  < 2) ? 0 : numComponents;
     int yOff = (height < 2) ? 0 : numComponents * width;
     float a0 = 0;
@@ -444,30 +484,30 @@ void BuildMipMap2D(T *dst, const T *src, int width, int height, int numComponent
     for (int y = 0; y < height; y += 2) {
         for (int x = 0; x < width; x += 2) {
             if (alphaComponentIndex >= 0) {
-                a0 = src[alphaComponentIndex];
-                a1 = src[alphaComponentIndex + xOff];
-                a2 = src[alphaComponentIndex + yOff];
-                a3 = src[alphaComponentIndex + yOff + xOff];
+                a0 = MipMapSample(src[alphaComponentIndex]);
+                a1 = MipMapSample(src[alphaComponentIndex + xOff]);
+                a2 = MipMapSample(src[alphaComponentIndex + yOff]);
+                a3 = MipMapSample(src[alphaComponentIndex + yOff + xOff]);
                 alphaSum = a0 + a1 + a2 + a3;
             }
 
             for (int i = 0; i < numComponents; i++) {
                 if (preserveCoverage && alphaSum > 0) {
                     if (i != alphaComponentIndex) {
-                        float p0 = src[0] * a0;
-                        float p1 = src[xOff] * a1;
-                        float p2 = src[yOff] * a2;
-                        float p3 = src[yOff + xOff] * a3;
+                        float p0 = MipMapSample(src[0]) * a0;
+                        float p1 = MipMapSample(src[xOff]) * a1;
+                        float p2 = MipMapSample(src[yOff]) * a2;
+                        float p3 = MipMapSample(src[yOff + xOff]) * a3;
                         *dst++ = (p0 + p1 + p2 + p3) / alphaSum;
                     } else {
                         *dst++ = Max(a0, Max(a1, Max(a2, a3)));
                     }
                 } else {
                     if (i != alphaComponentIndex) {
-                        T p0 = src[0];
-                        T p1 = src[xOff];
-                        T p2 = src[yOff];
-                        T p3 = src[yOff + xOff];
+                        T p0 = MipMapSample(src[0]);
+                        T p1 = MipMapSample(src[xOff]);
+                        T p2 = MipMapSample(src[yOff]);
+                        T p3 = MipMapSample(src[yOff + xOff]);
                         *dst++ = (p0 + p1 + p2 + p3) / 4;
                     } else {
                         *dst++ = (a0 + a1 + a2 + a3) / 4;
@@ -482,7 +522,7 @@ void BuildMipMap2D(T *dst, const T *src, int width, int height, int numComponent
 }
 
 template <typename T>
-void BuildMipMap3D(T *dst, const T *src, int width, int height, int depth, int numComponents, int alphaComponentIndex, bool preserveCoverage) {
+static void BuildMipMap3D(T *dst, const T *src, int width, int height, int depth, int numComponents, int alphaComponentIndex, bool preserveCoverage) {
     int xOff = (width  < 2) ? 0 : numComponents;
     int yOff = (height < 2) ? 0 : numComponents * width;
     int zOff = (depth  < 2) ? 0 : numComponents * width * height;
@@ -500,42 +540,42 @@ void BuildMipMap3D(T *dst, const T *src, int width, int height, int depth, int n
         for (int y = 0; y < height; y += 2) {
             for (int x = 0; x < width; x += 2) {
                 if (alphaComponentIndex >= 0) {
-                    a0 = src[alphaComponentIndex];
-                    a1 = src[alphaComponentIndex + xOff];
-                    a2 = src[alphaComponentIndex + yOff];
-                    a3 = src[alphaComponentIndex + yOff + xOff];
-                    a4 = src[alphaComponentIndex + zOff];
-                    a5 = src[alphaComponentIndex + zOff + xOff];
-                    a6 = src[alphaComponentIndex + zOff + yOff];
-                    a7 = src[alphaComponentIndex + zOff + yOff + xOff];
+                    a0 = MipMapSample(src[alphaComponentIndex]);
+                    a1 = MipMapSample(src[alphaComponentIndex + xOff]);
+                    a2 = MipMapSample(src[alphaComponentIndex + yOff]);
+                    a3 = MipMapSample(src[alphaComponentIndex + yOff + xOff]);
+                    a4 = MipMapSample(src[alphaComponentIndex + zOff]);
+                    a5 = MipMapSample(src[alphaComponentIndex + zOff + xOff]);
+                    a6 = MipMapSample(src[alphaComponentIndex + zOff + yOff]);
+                    a7 = MipMapSample(src[alphaComponentIndex + zOff + yOff + xOff]);
                     alphaSum = a0 + a1 + a2 + a3 + a4 + a5 + a6 + a7;
                 }
 
                 for (int i = 0; i < numComponents; i++) {
                     if (preserveCoverage && alphaSum > 0) {
                         if (i != alphaComponentIndex) {
-                            float p0 = src[0] * a0;
-                            float p1 = src[xOff] * a1;
-                            float p2 = src[yOff] * a2;
-                            float p3 = src[yOff + xOff] * a3;
-                            float p4 = src[zOff] * a4;
-                            float p5 = src[zOff + xOff] * a5;
-                            float p6 = src[zOff + yOff] * a6;
-                            float p7 = src[zOff + yOff + xOff] * a7;
+                            float p0 = MipMapSample(src[0]) * a0;
+                            float p1 = MipMapSample(src[xOff]) * a1;
+                            float p2 = MipMapSample(src[yOff]) * a2;
+                            float p3 = MipMapSample(src[yOff + xOff]) * a3;
+                            float p4 = MipMapSample(src[zOff]) * a4;
+                            float p5 = MipMapSample(src[zOff + xOff]) * a5;
+                            float p6 = MipMapSample(src[zOff + yOff]) * a6;
+                            float p7 = MipMapSample(src[zOff + yOff + xOff]) * a7;
                             *dst++ = (p0 + p1 + p2 + p3 + p4 + p5 + p6 + p7) / alphaSum;
                         } else {
                             *dst++ = Max(a0, Max(a1, Max(a2, Max(a3, Max(a4, Max(a5, Max(a6, a7)))))));
                         }
                     } else {
                         if (i != alphaComponentIndex) {
-                            T p0 = src[0];
-                            T p1 = src[xOff];
-                            T p2 = src[yOff];
-                            T p3 = src[yOff + xOff];
-                            T p4 = src[zOff];
-                            T p5 = src[zOff + xOff];
-                            T p6 = src[zOff + yOff];
-                            T p7 = src[zOff + yOff + xOff];
+                            T p0 = MipMapSample(src[0]);
+                            T p1 = MipMapSample(src[xOff]);
+                            T p2 = MipMapSample(src[yOff]);
+                            T p3 = MipMapSample(src[yOff + xOff]);
+                            T p4 = MipMapSample(src[zOff]);
+                            T p5 = MipMapSample(src[zOff + xOff]);
+                            T p6 = MipMapSample(src[zOff + yOff]);
+                            T p7 = MipMapSample(src[zOff + yOff + xOff]);
                             *dst++ = (p0 + p1 + p2 + p3 + p4 + p5 + p6 + p7) / 8;
                         } else {
                             *dst++ = (a0 + a1 + a2 + a3 + a4 + a5 + a6 + a7) * 0.125f;
@@ -552,7 +592,7 @@ void BuildMipMap3D(T *dst, const T *src, int width, int height, int depth, int n
 }
 
 template <typename T>
-void BuildMipMap(T *dst, const T *src, int width, int height, int depth, int numComponents, int alphaComponentIndex, bool preserveCoverage) {
+static void BuildMipMap(T *dst, const T *src, int width, int height, int depth, int numComponents, int alphaComponentIndex, bool preserveCoverage) {
     if (depth > 1) {
         BuildMipMap3D(dst, src, width, height, depth, numComponents, alphaComponentIndex, preserveCoverage);
     } else if (height > 1) {
