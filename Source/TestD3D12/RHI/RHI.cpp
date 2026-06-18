@@ -317,15 +317,24 @@ void RHI::Renderer::AdjustTextureFormat(bool useCompression, bool useNormalMap, 
         return;
     }
 
-    if (IsSupportedImageFormat(inFormat)) {
-        *outFormat = inFormat;
-        return;
+    BE1::Image::Format candidateFormat = inFormat;
+
+    // 지원되지 않는 포맷일 경우, 먼저 무압축 포맷으로 변환한다.
+    if (!IsSupportedImageFormat(candidateFormat)) {
+        candidateFormat = ToUncompressedImageFormat(candidateFormat);
     }
 
-    // 지원되지 않는 압축 포맷일 경우, 무압축 포맷으로 변환한다.
-    inFormat = ToUncompressedImageFormat(inFormat);
+    // 압축을 원할 경우, 지원되는 적절한 압축 포맷을 고른다.
+    if (useCompression && !BE1::Image::IsCompressed(candidateFormat)) {
+        candidateFormat = ToCompressedImageFormat(candidateFormat, useNormalMap);
+    }
 
-    *outFormat = useCompression ? ToCompressedImageFormat(inFormat, useNormalMap) : inFormat;
+    // 최종적으로 지원하지 않는 포맷은 지원하는 대체 포맷으로 바꾼다.
+    if (!IsSupportedImageFormat(candidateFormat)) {
+        candidateFormat = ToSupportedImageFormat(candidateFormat);
+    }
+
+    *outFormat = candidateFormat;
 }
 
 void RHI::Renderer::AdjustTextureSize(TextureType textureType, bool useNPOT, uint32_t inWidth, uint32_t inHeight, uint32_t inDepth, uint32_t *outWidth, uint32_t *outHeight, uint32_t *outDepth) {
@@ -385,7 +394,6 @@ void RHI::Renderer::AdjustTextureSize(TextureType textureType, bool useNPOT, uin
     }
 }
 
-
 bool RHI::Renderer::ImageFormatToRHIFormat(BE1::Image::Format imageFormat, bool isSRGB, RHI::Format *rhiFormat) {
     switch (imageFormat) {
     case BE1::Image::Format::Unknown:
@@ -431,11 +439,47 @@ bool RHI::Renderer::ImageFormatToRHIFormat(BE1::Image::Format imageFormat, bool 
     case BE1::Image::Format::L16_FLOAT:
         if (rhiFormat) *rhiFormat = RHI::Format::R16_FLOAT;
         return true;
+    case BE1::Image::Format::R16:
+        if (rhiFormat) *rhiFormat = RHI::Format::R16_UNORM;
+        return true;
+    case BE1::Image::Format::R16_SNORM:
+        if (rhiFormat) *rhiFormat = RHI::Format::R16_SNORM;
+        return true;
+    case BE1::Image::Format::R16_SINT:
+        if (rhiFormat) *rhiFormat = RHI::Format::R16_SINT;
+        return true;
+    case BE1::Image::Format::R16_UINT:
+        if (rhiFormat) *rhiFormat = RHI::Format::R16_UINT;
+        return true;
     case BE1::Image::Format::R16G16_FLOAT:
         if (rhiFormat) *rhiFormat = RHI::Format::R16G16_FLOAT;
         return true;
+    case BE1::Image::Format::R16G16:
+        if (rhiFormat) *rhiFormat = RHI::Format::R16G16_UNORM;
+        return true;
+    case BE1::Image::Format::R16G16_SNORM:
+        if (rhiFormat) *rhiFormat = RHI::Format::R16G16_SNORM;
+        return true;
+    case BE1::Image::Format::R16G16_SINT:
+        if (rhiFormat) *rhiFormat = RHI::Format::R16G16_SINT;
+        return true;
+    case BE1::Image::Format::R16G16_UINT:
+        if (rhiFormat) *rhiFormat = RHI::Format::R16G16_UINT;
+        return true;
     case BE1::Image::Format::R16G16B16A16_FLOAT:
         if (rhiFormat) *rhiFormat = RHI::Format::R16G16B16A16_FLOAT;
+        return true;
+    case BE1::Image::Format::R16G16B16A16:
+        if (rhiFormat) *rhiFormat = RHI::Format::R16G16B16A16_UNORM;
+        return true;
+    case BE1::Image::Format::R16G16B16A16_SNORM:
+        if (rhiFormat) *rhiFormat = RHI::Format::R16G16B16A16_SNORM;
+        return true;
+    case BE1::Image::Format::R16G16B16A16_SINT:
+        if (rhiFormat) *rhiFormat = RHI::Format::R16G16B16A16_SINT;
+        return true;
+    case BE1::Image::Format::R16G16B16A16_UINT:
+        if (rhiFormat) *rhiFormat = RHI::Format::R16G16B16A16_UINT;
         return true;
     case BE1::Image::Format::R9G9B9E5_FLOAT:
         if (rhiFormat) *rhiFormat = RHI::Format::R9G9B9E5_SHAREDEXP;
@@ -528,6 +572,9 @@ bool RHI::Renderer::ImageFormatToRHIFormat(BE1::Image::Format imageFormat, bool 
     case BE1::Image::Format::BC6H_SF16:
         if (rhiFormat) *rhiFormat = RHI::Format::BC6H_SF16;
         return true;
+    case BE1::Image::Format::BC7:
+        if (rhiFormat) *rhiFormat = isSRGB ? RHI::Format::BC7_UNORM_SRGB : RHI::Format::BC7_UNORM;
+        return true;
     case BE1::Image::Format::D16:
         if (rhiFormat) *rhiFormat = RHI::Format::D16_UNORM;
         return true;
@@ -600,11 +647,47 @@ bool RHI::Renderer::RHIFormatToImageFormat(RHI::Format rhiFormat, BE1::Image::Fo
     case RHI::Format::R16_FLOAT:
         if (imageFormat) *imageFormat = BE1::Image::Format::R16_FLOAT;
         return true;
+    case RHI::Format::R16_UNORM:
+        if (imageFormat) *imageFormat = BE1::Image::Format::R16;
+        return true;
+    case RHI::Format::R16_SNORM:
+        if (imageFormat) *imageFormat = BE1::Image::Format::R16_SNORM;
+        return true;
+    case RHI::Format::R16_SINT:
+        if (imageFormat) *imageFormat = BE1::Image::Format::R16_SINT;
+        return true;
+    case RHI::Format::R16_UINT:
+        if (imageFormat) *imageFormat = BE1::Image::Format::R16_UINT;
+        return true;
     case RHI::Format::R16G16_FLOAT:
         if (imageFormat) *imageFormat = BE1::Image::Format::R16G16_FLOAT;
         return true;
+    case RHI::Format::R16G16_UNORM:
+        if (imageFormat) *imageFormat = BE1::Image::Format::R16G16;
+        return true;
+    case RHI::Format::R16G16_SNORM:
+        if (imageFormat) *imageFormat = BE1::Image::Format::R16G16_SNORM;
+        return true;
+    case RHI::Format::R16G16_SINT:
+        if (imageFormat) *imageFormat = BE1::Image::Format::R16G16_SINT;
+        return true;
+    case RHI::Format::R16G16_UINT:
+        if (imageFormat) *imageFormat = BE1::Image::Format::R16G16_UINT;
+        return true;
     case RHI::Format::R16G16B16A16_FLOAT:
         if (imageFormat) *imageFormat = BE1::Image::Format::R16G16B16A16_FLOAT;
+        return true;
+    case RHI::Format::R16G16B16A16_UNORM:
+        if (imageFormat) *imageFormat = BE1::Image::Format::R16G16B16A16;
+        return true;
+    case RHI::Format::R16G16B16A16_SNORM:
+        if (imageFormat) *imageFormat = BE1::Image::Format::R16G16B16A16_SNORM;
+        return true;
+    case RHI::Format::R16G16B16A16_SINT:
+        if (imageFormat) *imageFormat = BE1::Image::Format::R16G16B16A16_SINT;
+        return true;
+    case RHI::Format::R16G16B16A16_UINT:
+        if (imageFormat) *imageFormat = BE1::Image::Format::R16G16B16A16_UINT;
         return true;
     case RHI::Format::R9G9B9E5_SHAREDEXP:
         if (imageFormat) *imageFormat = BE1::Image::Format::R9G9B9E5_FLOAT;

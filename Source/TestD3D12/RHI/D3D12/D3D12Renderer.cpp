@@ -429,7 +429,8 @@ void D3D12Renderer::CheckFeatures() {
             D3D12_FORMAT_SUPPORT2 formatSupport2 = D3D12_FORMAT_SUPPORT2_NONE;
 
             hr = features.FormatSupport(uavFormat, formatSupport1, formatSupport2);
-            if (SUCCEEDED(hr) && (formatSupport2 & D3D12_FORMAT_SUPPORT2_UAV_TYPED_LOAD) != 0) {
+            const D3D12_FORMAT_SUPPORT2 requiredSupport = D3D12_FORMAT_SUPPORT2_UAV_TYPED_LOAD | D3D12_FORMAT_SUPPORT2_UAV_TYPED_STORE;
+            if (SUCCEEDED(hr) && (formatSupport2 & requiredSupport) == requiredSupport) {
                 optionalUAVFormatMap.insert(uavFormat);
             }
         }
@@ -2370,6 +2371,10 @@ bool D3D12Renderer::IsSRGBFormat(DXGI_FORMAT format) {
     case DXGI_FORMAT_R8G8B8A8_UNORM_SRGB:
     case DXGI_FORMAT_B8G8R8A8_UNORM_SRGB:
     case DXGI_FORMAT_B8G8R8X8_UNORM_SRGB:
+    case DXGI_FORMAT_BC1_UNORM_SRGB:
+    case DXGI_FORMAT_BC2_UNORM_SRGB:
+    case DXGI_FORMAT_BC3_UNORM_SRGB:
+    case DXGI_FORMAT_BC7_UNORM_SRGB:
         return true;
     }
     return false;
@@ -2596,6 +2601,8 @@ BE1::Image::Format D3D12Renderer::ToUncompressedImageFormat(BE1::Image::Format i
     case BE1::Image::Format::BC1:
     case BE1::Image::Format::BC2:
     case BE1::Image::Format::BC3:
+    case BE1::Image::Format::BC3XGBR:
+    case BE1::Image::Format::BC7:
     case BE1::Image::Format::PVRTC12A:
     case BE1::Image::Format::PVRTC14A:
     case BE1::Image::Format::PVRTC22A:
@@ -2613,6 +2620,10 @@ BE1::Image::Format D3D12Renderer::ToUncompressedImageFormat(BE1::Image::Format i
     case BE1::Image::Format::EACRG11:
     case BE1::Image::Format::EACRG11_SNORM:
         outFormat = BE1::Image::Format::R16G16_FLOAT;
+        break;
+    case BE1::Image::Format::BC6H_UF16:
+    case BE1::Image::Format::BC6H_SF16:
+        outFormat = BE1::Image::Format::R16G16B16A16_FLOAT;
         break;
     default:
         outFormat = inFormat;
@@ -2632,12 +2643,20 @@ BE1::Image::Format D3D12Renderer::ToCompressedImageFormat(BE1::Image::Format inF
 
     BE1::Image::Format outFormat = inFormat;
 
-    if (redBits > 0 && greenBits > 0 && blueBits > 0) {
-        if (BE1::Image::IsFloatFormat(inFormat) || BE1::Image::IsHalfFormat(inFormat)) {
-            if (alphaBits == 0) {
-                outFormat = BE1::Image::Format::R9G9B9E5_FLOAT;
-            }
-        } else if (useNormalMap) {
+    if (redBits <= 0 || greenBits <= 0 || (!useNormalMap && blueBits <= 0)) {
+        return outFormat;
+    }
+
+    if (BE1::Image::IsFloatFormat(inFormat) || BE1::Image::IsHalfFormat(inFormat)) {
+        if (alphaBits == 0) {
+            outFormat = BE1::Image::Format::R11G11B10_FLOAT;
+        }
+        return outFormat;
+    }
+
+    const bool isLowPrecisionUNorm = !BE1::Image::NeedFloatConversion(inFormat) && redBits <= 8 && greenBits <= 8 && blueBits <= 8 && alphaBits <= 8;
+    if (isLowPrecisionUNorm) {
+        if (useNormalMap) {
             outFormat = BE1::Image::Format::BC5;
         } else {
             if (alphaBits <= 1) {
@@ -2653,64 +2672,115 @@ BE1::Image::Format D3D12Renderer::ToCompressedImageFormat(BE1::Image::Format inF
     return outFormat;
 }
 
-BE1::Image::Format D3D12Renderer::ToUAVImageFormat(BE1::Image::Format format) const {
-    DXGI_FORMAT dxgiFormat;
-    ImageFormatToDXGIFormat(format, false, &dxgiFormat);
+BE1::Image::Format D3D12Renderer::ToSupportedImageFormat(BE1::Image::Format inFormat) const {
+    BE1::Image::Format outFormat;
 
-    if (IsSupportedUAVFormat(dxgiFormat)) {
+    switch (inFormat) {
+    case BE1::Image::Format::R16G16B16_FLOAT:
+        outFormat = BE1::Image::Format::R16G16B16A16_FLOAT;
+        break;
+    case BE1::Image::Format::R16G16B16:
+        outFormat = BE1::Image::Format::R16G16B16A16;
+        break;
+    case BE1::Image::Format::R16G16B16_SNORM:
+        outFormat = BE1::Image::Format::R16G16B16A16_SNORM;
+        break;
+    case BE1::Image::Format::R16G16B16_SINT:
+        outFormat = BE1::Image::Format::R16G16B16A16_SINT;
+        break;
+    case BE1::Image::Format::R16G16B16_UINT:
+        outFormat = BE1::Image::Format::R16G16B16A16_UINT;
+        break;
+    case BE1::Image::Format::R8G8B8_SNORM:
+        outFormat = BE1::Image::Format::R8G8B8A8_SNORM;
+        break;
+    case BE1::Image::Format::R8G8B8_SINT:
+        outFormat = BE1::Image::Format::R8G8B8A8_SINT;
+        break;
+    case BE1::Image::Format::R8G8B8_UINT:
+        outFormat = BE1::Image::Format::R8G8B8A8_UINT;
+        break;
+    default:
+        outFormat = inFormat;
+        break;
+    }
+    return outFormat;
+}
+
+BE1::Image::Format D3D12Renderer::ToUAVImageFormat(BE1::Image::Format format) const {
+    DXGI_FORMAT dxgiFormat = DXGI_FORMAT_UNKNOWN;
+    if (ImageFormatToDXGIFormat(format, false, &dxgiFormat) && IsSupportedUAVFormat(dxgiFormat)) {
         return format;
     }
 
-    if (format == BE1::Image::Format::R9G9B9E5_FLOAT ||
-        format == BE1::Image::Format::R11G11B10_FLOAT) {
-        return BE1::Image::Format::R16G16B16A16_FLOAT;
+    BE1::Image::Format candidateFormat = format;
+
+    if (format == BE1::Image::Format::R9G9B9E5_FLOAT || format == BE1::Image::Format::R11G11B10_FLOAT) {
+        candidateFormat = BE1::Image::Format::R16G16B16A16_FLOAT;
+    } else {
+        if (BE1::Image::IsCompressed(candidateFormat) || BE1::Image::IsPacked(candidateFormat)) {
+            candidateFormat = ToUncompressedImageFormat(candidateFormat);
+        }
+
+        switch (candidateFormat) {
+        case BE1::Image::Format::R32G32_FLOAT:
+        case BE1::Image::Format::R32G32B32_FLOAT:
+            candidateFormat = BE1::Image::Format::R32G32B32A32_FLOAT;
+            break;
+        case BE1::Image::Format::R32G32_UINT:
+        case BE1::Image::Format::R32G32B32_UINT:
+            candidateFormat = BE1::Image::Format::R32G32B32A32_UINT;
+            break;
+        case BE1::Image::Format::R32G32_SINT:
+        case BE1::Image::Format::R32G32B32_SINT:
+            candidateFormat = BE1::Image::Format::R32G32B32A32_SINT;
+            break;
+        case BE1::Image::Format::R16:
+            candidateFormat = BE1::Image::Format::R16_FLOAT;
+            break;
+        case BE1::Image::Format::R16G16_FLOAT:
+        case BE1::Image::Format::R16G16B16_FLOAT:
+            candidateFormat = BE1::Image::Format::R16G16B16A16_FLOAT;
+            break;
+        case BE1::Image::Format::R16G16_UINT:
+        case BE1::Image::Format::R16G16B16_UINT:
+            candidateFormat = BE1::Image::Format::R16G16B16A16_UINT;
+            break;
+        case BE1::Image::Format::R16G16_SINT:
+        case BE1::Image::Format::R16G16B16_SINT:
+            candidateFormat = BE1::Image::Format::R16G16B16A16_SINT;
+            break;
+        case BE1::Image::Format::A8:
+        case BE1::Image::Format::R8G8:
+        case BE1::Image::Format::R8G8B8:
+        case BE1::Image::Format::B8G8R8:
+        case BE1::Image::Format::R8G8B8X8:
+        case BE1::Image::Format::B8G8R8X8:
+        case BE1::Image::Format::B8G8R8A8:
+        case BE1::Image::Format::A8B8G8R8:
+        case BE1::Image::Format::A8R8G8B8:
+        case BE1::Image::Format::R10G10B10A2:
+            candidateFormat = BE1::Image::Format::R8G8B8A8;
+            break;
+        case BE1::Image::Format::R8G8_UINT:
+        case BE1::Image::Format::R8G8B8_UINT:
+        case BE1::Image::Format::R10G10B10A2_UINT:
+            candidateFormat = BE1::Image::Format::R8G8B8A8_UINT;
+            break;
+        case BE1::Image::Format::R8G8_SINT:
+        case BE1::Image::Format::R8G8B8_SINT:
+            candidateFormat = BE1::Image::Format::R8G8B8A8_SINT;
+            break;
+        }
     }
 
-    if (BE1::Image::IsCompressed(format) || BE1::Image::IsPacked(format)) {
-        format = ToUncompressedImageFormat(format);
+    dxgiFormat = DXGI_FORMAT_UNKNOWN;
+    if (ImageFormatToDXGIFormat(candidateFormat, false, &dxgiFormat) && IsSupportedUAVFormat(dxgiFormat)) {
+        return candidateFormat;
     }
 
-    switch (format) {
-    case BE1::Image::Format::R32G32_FLOAT:
-    case BE1::Image::Format::R32G32B32_FLOAT:
-        return BE1::Image::Format::R32G32B32A32_FLOAT;
-    case BE1::Image::Format::R32G32_UINT:
-    case BE1::Image::Format::R32G32B32_UINT:
-        return BE1::Image::Format::R32G32B32A32_UINT;
-    case BE1::Image::Format::R32G32_SINT:
-    case BE1::Image::Format::R32G32B32_SINT:
-        return BE1::Image::Format::R32G32B32A32_SINT;
-    case BE1::Image::Format::R16:
-        return BE1::Image::Format::R16_FLOAT;
-    case BE1::Image::Format::R16G16_FLOAT:
-    case BE1::Image::Format::R16G16B16_FLOAT:
-        return BE1::Image::Format::R16G16B16A16_FLOAT;
-    case BE1::Image::Format::R16G16_UINT:
-    case BE1::Image::Format::R16G16B16_UINT:
-        return BE1::Image::Format::R16G16B16A16_UINT;
-    case BE1::Image::Format::R16G16_SINT:
-    case BE1::Image::Format::R16G16B16_SINT:
-        return BE1::Image::Format::R16G16B16A16_SINT;
-    case BE1::Image::Format::A8:
-    case BE1::Image::Format::R8G8:
-    case BE1::Image::Format::R8G8B8:
-    case BE1::Image::Format::B8G8R8:
-    case BE1::Image::Format::R8G8B8X8:
-    case BE1::Image::Format::B8G8R8X8:
-    case BE1::Image::Format::B8G8R8A8:
-    case BE1::Image::Format::A8B8G8R8:
-    case BE1::Image::Format::A8R8G8B8:
-    case BE1::Image::Format::R10G10B10A2:
-        return BE1::Image::Format::R8G8B8A8;
-    case BE1::Image::Format::R8G8_UINT:
-    case BE1::Image::Format::R8G8B8_UINT:
-    case BE1::Image::Format::R10G10B10A2_UINT:
-        return BE1::Image::Format::R8G8B8A8_UINT;
-    case BE1::Image::Format::R8G8_SINT:
-    case BE1::Image::Format::R8G8B8_SINT:
-        return BE1::Image::Format::R8G8B8A8_SINT;
-    }
-    return format;
+    assert(0);
+    return BE1::Image::Format::Unknown;
 }
 
 bool D3D12Renderer::IsSupportedUAVFormat(DXGI_FORMAT format) const {

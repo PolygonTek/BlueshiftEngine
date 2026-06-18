@@ -65,6 +65,7 @@ public:
     virtual bool                        IsSupportedImageFormat(BE1::Image::Format imageFormat) const override { return ImageFormatToDXGIFormat(imageFormat, false, nullptr); }
     virtual BE1::Image::Format          ToUncompressedImageFormat(BE1::Image::Format imageFormat) const override;
     virtual BE1::Image::Format          ToCompressedImageFormat(BE1::Image::Format inFormat, bool useNormalMap) const override;
+    virtual BE1::Image::Format          ToSupportedImageFormat(BE1::Image::Format imageFormat) const override;
     virtual BE1::Image::Format          ToUAVImageFormat(BE1::Image::Format inFormat) const override;
     bool                                IsSupportedUAVFormat(DXGI_FORMAT format) const;
 

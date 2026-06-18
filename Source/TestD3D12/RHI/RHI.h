@@ -1035,6 +1035,7 @@ namespace RHI {
         virtual bool                    IsSupportedImageFormat(BE1::Image::Format imageFormat) const = 0;
         virtual BE1::Image::Format      ToUncompressedImageFormat(BE1::Image::Format imageFormat) const = 0;
         virtual BE1::Image::Format      ToCompressedImageFormat(BE1::Image::Format inFormat, bool useNormalMap) const = 0;
+        virtual BE1::Image::Format      ToSupportedImageFormat(BE1::Image::Format imageFormat) const = 0;
         virtual BE1::Image::Format      ToUAVImageFormat(BE1::Image::Format inFormat) const = 0;
 
         virtual SwapChain *             CreateSwapChain(HWND hwnd, uint32_t width, uint32_t height, Format format) = 0;
