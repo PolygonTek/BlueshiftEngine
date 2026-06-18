@@ -46,7 +46,7 @@ static float ClampRange_for_rgb9e5(float x) {
    that will hide these problem cases. */
 static int FloorLog2(float x) {
     uint32_t i = reinterpret_cast<uint32_t &>(x);
-    int exponent = (i >> IEEE_FLT_MANTISSA_BITS) & ((1 << IEEE_FLT_EXPONENT_BITS) - 1) - IEEE_FLT_EXPONENT_BIAS;
+    int exponent = ((i >> IEEE_FLT_MANTISSA_BITS) & ((1 << IEEE_FLT_EXPONENT_BITS) - 1)) - IEEE_FLT_EXPONENT_BIAS;
     return exponent;
 }
 

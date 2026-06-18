@@ -2204,7 +2204,7 @@ static void RGBA32FToRGBE9995(const byte *src, byte *dst, int numPixels) {
     uint32_t *dstPtr = reinterpret_cast<uint32_t *>(dst);
 
     for (; srcPtr < srcEnd; srcPtr += 4, dstPtr++) {
-        *dstPtr = RGBE9995::FromColor3(srcPtr[0], srcPtr[1], srcPtr[1]);
+        *dstPtr = RGBE9995::FromColor3(srcPtr[0], srcPtr[1], srcPtr[2]);
     }
 }
 
