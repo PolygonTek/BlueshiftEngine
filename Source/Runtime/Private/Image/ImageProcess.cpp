@@ -751,12 +751,12 @@ static int GetAlphaComponentIndex(Image::Format format) {
 
 Image &Image::GenerateMipmaps(bool preserveAlphaCoverage) {
     if (IsCompressed()) {
-        BE_WARNLOG("Couldn't generate mipmaps for a compressed image.\n");
+        BE_WARNLOG("Image::GenerateMipmaps: Couldn't generate mipmaps for a compressed image.\n");
         return *this;
     }
 
     if (IsPacked()) {
-        BE_WARNLOG("Couldn't generate mipmaps for a packed format image.\n");
+        BE_WARNLOG("Image::GenerateMipmaps: Couldn't generate mipmaps for a packed format image.\n");
         return *this;
     }
 

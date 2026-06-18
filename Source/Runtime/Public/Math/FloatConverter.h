@@ -35,9 +35,9 @@ public:
             }
         } else if (e == (1 << EBits) - 1) {
             if (m == 0) { // INF
-                i = (s << IEEE_FLT_SIGN_BIT) | (((1 << EBits) - 1) << MBits);
+                i = (s << IEEE_FLT_SIGN_BIT) | (((1 << IEEE_FLT_EXPONENT_BITS) - 1) << IEEE_FLT_MANTISSA_BITS);
             } else { // NaN
-                i = (s << IEEE_FLT_SIGN_BIT) | (((1 << EBits) - 1) << MBits) | ((1 << MBits) - 1);
+                i = (s << IEEE_FLT_SIGN_BIT) | (((1 << IEEE_FLT_EXPONENT_BITS) - 1) << IEEE_FLT_MANTISSA_BITS) | (m << (IEEE_FLT_MANTISSA_BITS - MBits));
             }
             return reinterpret_cast<float &>(i);
         } else { // normal number
@@ -55,7 +55,7 @@ public:
         const uint32_t s = (f >> IEEE_FLT_SIGN_BIT) << SBit;
         if (e >= (1 << EBits) - 1) {
             // map +INF to largest number, -INF to smallest number
-            return (T)(s | ((1 << EBits) - 2) | ((1 << MBits) - 1));
+            return (T)(s | (((1 << EBits) - 2) << MBits) | ((1 << MBits) - 1));
         }
         const uint32_t m = (f & ((1 << IEEE_FLT_MANTISSA_BITS) - 1)) >> (IEEE_FLT_MANTISSA_BITS - MBits);
         return (T)(s | (e << MBits) | m);
@@ -79,9 +79,9 @@ public:
             }
         } else if (e == (1 << EBits) - 1) {
             if (m == 0) { // INF
-                i = (((1 << EBits) - 1) << MBits);
+                i = (((1 << IEEE_FLT_EXPONENT_BITS) - 1) << IEEE_FLT_MANTISSA_BITS);
             } else { // NaN
-                i = (((1 << EBits) - 1) << MBits) | ((1 << MBits) - 1);
+                i = (((1 << IEEE_FLT_EXPONENT_BITS) - 1) << IEEE_FLT_MANTISSA_BITS) | (m << (IEEE_FLT_MANTISSA_BITS - MBits));
             }
             return reinterpret_cast<float &>(i);
         } else { // normal number
@@ -98,7 +98,7 @@ public:
         }
         if (e >= (1 << EBits) - 1) {
             // map +INF to largest number, -INF to smallest number
-            return (T)(((1 << EBits) - 2) | ((1 << MBits) - 1));
+            return (T)((((1 << EBits) - 2) << MBits) | ((1 << MBits) - 1));
         }
         const uint32_t m = (f & ((1 << IEEE_FLT_MANTISSA_BITS) - 1)) >> (IEEE_FLT_MANTISSA_BITS - MBits);
         return (T)((e << MBits) | m);
