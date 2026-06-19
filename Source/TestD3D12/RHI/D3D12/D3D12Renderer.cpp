@@ -2623,6 +2623,8 @@ BE1::Image::Format D3D12Renderer::ToUncompressedImageFormat(BE1::Image::Format i
         break;
     case BE1::Image::Format::BC6H_UF16:
     case BE1::Image::Format::BC6H_SF16:
+    case BE1::Image::Format::R9G9B9E5_FLOAT:
+    case BE1::Image::Format::R11G11B10_FLOAT:
         outFormat = BE1::Image::Format::R16G16B16A16_FLOAT;
         break;
     default:
@@ -2726,63 +2728,59 @@ BE1::Image::Format D3D12Renderer::ToUAVImageFormat(BE1::Image::Format format) co
 
     BE1::Image::Format candidateFormat = format;
 
-    if (format == BE1::Image::Format::R9G9B9E5_FLOAT || format == BE1::Image::Format::R11G11B10_FLOAT) {
-        candidateFormat = BE1::Image::Format::R16G16B16A16_FLOAT;
-    } else {
-        if (BE1::Image::IsCompressed(candidateFormat) || BE1::Image::IsPacked(candidateFormat)) {
-            candidateFormat = ToUncompressedImageFormat(candidateFormat);
-        }
+    if (BE1::Image::IsCompressed(candidateFormat) || BE1::Image::IsPacked(candidateFormat)) {
+        candidateFormat = ToUncompressedImageFormat(candidateFormat);
+    }
 
-        switch (candidateFormat) {
-        case BE1::Image::Format::R32G32_FLOAT:
-        case BE1::Image::Format::R32G32B32_FLOAT:
-            candidateFormat = BE1::Image::Format::R32G32B32A32_FLOAT;
-            break;
-        case BE1::Image::Format::R32G32_UINT:
-        case BE1::Image::Format::R32G32B32_UINT:
-            candidateFormat = BE1::Image::Format::R32G32B32A32_UINT;
-            break;
-        case BE1::Image::Format::R32G32_SINT:
-        case BE1::Image::Format::R32G32B32_SINT:
-            candidateFormat = BE1::Image::Format::R32G32B32A32_SINT;
-            break;
-        case BE1::Image::Format::R16:
-            candidateFormat = BE1::Image::Format::R16_FLOAT;
-            break;
-        case BE1::Image::Format::R16G16_FLOAT:
-        case BE1::Image::Format::R16G16B16_FLOAT:
-            candidateFormat = BE1::Image::Format::R16G16B16A16_FLOAT;
-            break;
-        case BE1::Image::Format::R16G16_UINT:
-        case BE1::Image::Format::R16G16B16_UINT:
-            candidateFormat = BE1::Image::Format::R16G16B16A16_UINT;
-            break;
-        case BE1::Image::Format::R16G16_SINT:
-        case BE1::Image::Format::R16G16B16_SINT:
-            candidateFormat = BE1::Image::Format::R16G16B16A16_SINT;
-            break;
-        case BE1::Image::Format::A8:
-        case BE1::Image::Format::R8G8:
-        case BE1::Image::Format::R8G8B8:
-        case BE1::Image::Format::B8G8R8:
-        case BE1::Image::Format::R8G8B8X8:
-        case BE1::Image::Format::B8G8R8X8:
-        case BE1::Image::Format::B8G8R8A8:
-        case BE1::Image::Format::A8B8G8R8:
-        case BE1::Image::Format::A8R8G8B8:
-        case BE1::Image::Format::R10G10B10A2:
-            candidateFormat = BE1::Image::Format::R8G8B8A8;
-            break;
-        case BE1::Image::Format::R8G8_UINT:
-        case BE1::Image::Format::R8G8B8_UINT:
-        case BE1::Image::Format::R10G10B10A2_UINT:
-            candidateFormat = BE1::Image::Format::R8G8B8A8_UINT;
-            break;
-        case BE1::Image::Format::R8G8_SINT:
-        case BE1::Image::Format::R8G8B8_SINT:
-            candidateFormat = BE1::Image::Format::R8G8B8A8_SINT;
-            break;
-        }
+    switch (candidateFormat) {
+    case BE1::Image::Format::R32G32_FLOAT:
+    case BE1::Image::Format::R32G32B32_FLOAT:
+        candidateFormat = BE1::Image::Format::R32G32B32A32_FLOAT;
+        break;
+    case BE1::Image::Format::R32G32_UINT:
+    case BE1::Image::Format::R32G32B32_UINT:
+        candidateFormat = BE1::Image::Format::R32G32B32A32_UINT;
+        break;
+    case BE1::Image::Format::R32G32_SINT:
+    case BE1::Image::Format::R32G32B32_SINT:
+        candidateFormat = BE1::Image::Format::R32G32B32A32_SINT;
+        break;
+    case BE1::Image::Format::R16:
+        candidateFormat = BE1::Image::Format::R16_FLOAT;
+        break;
+    case BE1::Image::Format::R16G16_FLOAT:
+    case BE1::Image::Format::R16G16B16_FLOAT:
+        candidateFormat = BE1::Image::Format::R16G16B16A16_FLOAT;
+        break;
+    case BE1::Image::Format::R16G16_UINT:
+    case BE1::Image::Format::R16G16B16_UINT:
+        candidateFormat = BE1::Image::Format::R16G16B16A16_UINT;
+        break;
+    case BE1::Image::Format::R16G16_SINT:
+    case BE1::Image::Format::R16G16B16_SINT:
+        candidateFormat = BE1::Image::Format::R16G16B16A16_SINT;
+        break;
+    case BE1::Image::Format::A8:
+    case BE1::Image::Format::R8G8:
+    case BE1::Image::Format::R8G8B8:
+    case BE1::Image::Format::B8G8R8:
+    case BE1::Image::Format::R8G8B8X8:
+    case BE1::Image::Format::B8G8R8X8:
+    case BE1::Image::Format::B8G8R8A8:
+    case BE1::Image::Format::A8B8G8R8:
+    case BE1::Image::Format::A8R8G8B8:
+    case BE1::Image::Format::R10G10B10A2:
+        candidateFormat = BE1::Image::Format::R8G8B8A8;
+        break;
+    case BE1::Image::Format::R8G8_UINT:
+    case BE1::Image::Format::R8G8B8_UINT:
+    case BE1::Image::Format::R10G10B10A2_UINT:
+        candidateFormat = BE1::Image::Format::R8G8B8A8_UINT;
+        break;
+    case BE1::Image::Format::R8G8_SINT:
+    case BE1::Image::Format::R8G8B8_SINT:
+        candidateFormat = BE1::Image::Format::R8G8B8A8_SINT;
+        break;
     }
 
     dxgiFormat = DXGI_FORMAT_UNKNOWN;

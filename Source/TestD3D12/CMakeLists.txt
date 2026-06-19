@@ -141,7 +141,10 @@ set(SRC_FILES
     Render/Texture.cpp
     Render/TextureManager.cpp)
 
-file(GLOB_RECURSE SHADER_FILES RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/Shaders/**.hlsl*)
+file(GLOB_RECURSE SHADER_FILES RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
+    ${CMAKE_CURRENT_SOURCE_DIR}/Shaders/*.hlsl
+    ${CMAKE_CURRENT_SOURCE_DIR}/Shaders/*.hlsli
+    ${CMAKE_CURRENT_SOURCE_DIR}/Shaders/*.shader)
 
 set_source_files_properties(${SHADER_FILES} PROPERTIES HEADER_FILE_ONLY TRUE)
 

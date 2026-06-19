@@ -700,10 +700,19 @@ uint64_t Image::MemRequired(int width, int height, int depth, int numMipmaps, in
     uint64_t size = 0;
     while (numMipmaps) {
         if (IsCompressed(imageFormat)) {
-            int blockWidth, blockHeight;
-            int minWidth, minHeight;
+            int blockWidth = 0;
+            int blockHeight = 0;
+            int minWidth = 0;
+            int minHeight = 0;
+
             CompressedFormatBlockDimensions(imageFormat, blockWidth, blockHeight);
             CompressedFormatMinDimensions(imageFormat, minWidth, minHeight);
+
+            assert(blockWidth > 0 && blockHeight > 0 && minWidth > 0 && minHeight > 0);
+            if (blockWidth <= 0 || blockHeight <= 0 || minWidth <= 0 || minHeight <= 0) {
+                return 0;
+            }
+
             int w2 = w + ((unsigned int)(-w) % minWidth);
             int h2 = h + ((unsigned int)(-h) % minHeight);
             size += (w2 * h2 * d) / (blockWidth * blockHeight);

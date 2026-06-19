@@ -2919,6 +2919,7 @@ bool CompressedFormatMinDimensions(Image::Format imageFormat, int &minWidth, int
     case Image::Format::BC5:
     case Image::Format::BC6H_UF16:
     case Image::Format::BC6H_SF16:
+    case Image::Format::BC7:
         minWidth = 4;
         minHeight = 4;
         return true;
@@ -2974,6 +2975,7 @@ bool CompressedFormatBlockDimensions(Image::Format imageFormat, int &blockWidth,
     case Image::Format::BC5:
     case Image::Format::BC6H_UF16:
     case Image::Format::BC6H_SF16:
+    case Image::Format::BC7:
         blockWidth = 4;
         blockHeight = 4;
         return true;
