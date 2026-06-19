@@ -103,10 +103,8 @@ bool Image::LoadPCXFromMemory(const char *name, const byte *data, size_t size) {
     return true;
 }
 
-bool Image::WritePCX(const char *filename) const {
-    File *fp = fileSystem.OpenFile(filename, File::Mode::Write);
+bool Image::WritePCX(File *fp) const {
     if (!fp) {
-        BE_WARNLOG("Image::WritePCX: file open error\n");
         return false;
     }
 
@@ -114,7 +112,6 @@ bool Image::WritePCX(const char *filename) const {
     byte *src = pic;
     if (format != Format::B8G8R8) {
         if (!ConvertFormat(Format::B8G8R8, convertedImage)) {
-            fileSystem.CloseFile(fp);
             return false;
         }
         
@@ -174,9 +171,21 @@ bool Image::WritePCX(const char *filename) const {
         }
     }
 
+    return true;
+}
+
+bool Image::WritePCX(const char *filename) const {
+    File *fp = fileSystem.OpenFile(filename, File::Mode::Write);
+    if (!fp) {
+        BE_WARNLOG("Image::WritePCX: file open error\n");
+        return false;
+    }
+
+    bool ret = WritePCX(fp);
+
     fileSystem.CloseFile(fp);
 
-    return true;
+    return ret;
 }
 
 BE_NAMESPACE_END

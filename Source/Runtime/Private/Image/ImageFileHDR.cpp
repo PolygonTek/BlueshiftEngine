@@ -13,6 +13,7 @@
 // limitations under the License.
 
 #include "Precompiled.h"
+#include "Core/Heap.h"
 #include "Math/Math.h"
 #include "IO/FileSystem.h"
 #include "Image/Image.h"
@@ -34,6 +35,10 @@ static void Float2RGBE(float red, float green, float blue, byte *rgbe) {
     float v;
     int e;
 
+    red = red > 0.0f ? (red > 1.0e38f ? 1.0e38f : red) : 0.0f;
+    green = green > 0.0f ? (green > 1.0e38f ? 1.0e38f : green) : 0.0f;
+    blue = blue > 0.0f ? (blue > 1.0e38f ? 1.0e38f : blue) : 0.0f;
+
     v = Max3(red, green, blue);
     if (v < 1e-32) {
         rgbe[0] = rgbe[1] = rgbe[2] = rgbe[3] = 0;
@@ -44,6 +49,100 @@ static void Float2RGBE(float red, float green, float blue, byte *rgbe) {
         rgbe[2] = (byte)(blue * v);
         rgbe[3] = (byte)(e + 128);
     }
+}
+
+static bool CanWriteHDRDirect(Image::Format format, Image::GammaSpace gammaSpace) {
+    if (gammaSpace != Image::GammaSpace::Linear) {
+        return false;
+    }
+
+    switch (format) {
+    case Image::Format::R16G16B16_FLOAT:
+    case Image::Format::R16G16B16A16_FLOAT:
+    case Image::Format::R32G32B32_FLOAT:
+    case Image::Format::R32G32B32A32_FLOAT:
+        return true;
+    default:
+        return false;
+    }
+}
+
+static void ReadHDRPixelAsFloat(Image::Format format, const byte *src, float &r, float &g, float &b) {
+    switch (format) {
+    case Image::Format::R16G16B16_FLOAT: {
+        const float16_t *p = reinterpret_cast<const float16_t *>(src);
+        r = F16Converter::ToF32(p[0]);
+        g = F16Converter::ToF32(p[1]);
+        b = F16Converter::ToF32(p[2]);
+        break;
+    }
+    case Image::Format::R16G16B16A16_FLOAT: {
+        const float16_t *p = reinterpret_cast<const float16_t *>(src);
+        r = F16Converter::ToF32(p[0]);
+        g = F16Converter::ToF32(p[1]);
+        b = F16Converter::ToF32(p[2]);
+        break;
+    }
+    case Image::Format::R32G32B32_FLOAT: {
+        const float *p = reinterpret_cast<const float *>(src);
+        r = p[0];
+        g = p[1];
+        b = p[2];
+        break;
+    }
+    case Image::Format::R32G32B32A32_FLOAT: {
+        const float *p = reinterpret_cast<const float *>(src);
+        r = p[0];
+        g = p[1];
+        b = p[2];
+        break;
+    }
+    default:
+        assert(0);
+        r = g = b = 0.0f;
+        break;
+    }
+}
+
+static bool WriteHDRRLEChannel(File *fp, const byte *channel, int width) {
+    int x = 0;
+    while (x < width) {
+        const int count = Min(128, width - x);
+        const byte countByte = static_cast<byte>(count);
+
+        if (!fp->Write(&countByte, 1) || !fp->Write(channel + x, count)) {
+            return false;
+        }
+
+        x += count;
+    }
+
+    return true;
+}
+
+static bool WriteHDRScanline(File *fp, const byte *scanline, int width) {
+    if (width < 8 || width > 0x7fff) {
+        return fp->Write(scanline, static_cast<size_t>(width) * 4);
+    }
+
+    const byte header[4] = {
+        2,
+        2,
+        static_cast<byte>(width >> 8),
+        static_cast<byte>(width & 0xff)
+    };
+
+    if (!fp->Write(header, sizeof(header))) {
+        return false;
+    }
+
+    for (int i = 0; i < 4; i++) {
+        if (!WriteHDRRLEChannel(fp, scanline + i * width, width)) {
+            return false;
+        }
+    }
+
+    return true;
 }
 
 // standard conversion from rgbe to float pixels 
@@ -212,40 +311,82 @@ bool Image::LoadHDRFromMemory(const char *name, const byte *data, size_t size) {
     return true;
 }
 
-bool Image::WriteHDR(const char *filename) const {
-#if 0
-    if (format != FORMAT_RGBE8 && format != FORMAT_RGB32F) {
+bool Image::WriteHDR(File *fp) const {
+    if (!fp || !pic || width <= 0 || height <= 0) {
+        return false;
+    }
+    if (depth != 1 || arraySize != 1) {
+        BE_WARNLOG("Image::WriteHDR: HDR only supports 2D images\n");
         return false;
     }
 
+    Image convertedImage;
+    const Image *srcImage = this;
+    if (!CanWriteHDRDirect(format, gammaSpace)) {
+        if (!ConvertFormat(Format::R32G32B32_FLOAT, convertedImage, GammaSpace::Linear)) {
+            BE_WARNLOG("Image::WriteHDR: failed to convert '%s' to RGB32F\n", Image::FormatName(format));
+            return false;
+        }
+        srcImage = &convertedImage;
+    }
+
+    if (!fp->Printf("#?RADIANCE\nFORMAT=32-bit_rle_rgbe\n\n-Y %d +X %d\n", height, width)) {
+        return false;
+    }
+
+    const bool useRLE = width >= 8 && width <= 0x7fff;
+    const int bytesPerPixel = srcImage->BytesPerPixel();
+    const byte *src = srcImage->GetPixels();
+    byte *scanline = static_cast<byte *>(Mem_Alloc16(static_cast<size_t>(width) * 4));
+
+    for (int y = 0; y < height; y++) {
+        const byte *srcRow = src + static_cast<size_t>(y) * width * bytesPerPixel;
+
+        for (int x = 0; x < width; x++) {
+            float r;
+            float g;
+            float b;
+            byte rgbe[4];
+
+            ReadHDRPixelAsFloat(srcImage->GetFormat(), srcRow + x * bytesPerPixel, r, g, b);
+            Float2RGBE(r, g, b, rgbe);
+
+            if (useRLE) {
+                scanline[x] = rgbe[0];
+                scanline[x + width] = rgbe[1];
+                scanline[x + width * 2] = rgbe[2];
+                scanline[x + width * 3] = rgbe[3];
+            } else {
+                byte *dst = scanline + x * 4;
+                dst[0] = rgbe[0];
+                dst[1] = rgbe[1];
+                dst[2] = rgbe[2];
+                dst[3] = rgbe[3];
+            }
+        }
+
+        if (!WriteHDRScanline(fp, scanline, width)) {
+            Mem_AlignedFree(scanline);
+            return false;
+        }
+    }
+
+    Mem_AlignedFree(scanline);
+    return true;
+}
+
+bool Image::WriteHDR(const char *filename) const {
     File *fp = fileSystem.OpenFile(filename, File::Mode::Write);
     if (!fp) {
         BE_WARNLOG("Image::WriteHDR: file open error\n");
         return false;
     }
 
-    fp->Printf("#?RADIANCE\nFORMAT=32-bit_rle_rgbe\n\n-Y %d +X %d\n", height, width);
-
-    int nPixels = width * height;
-
-    if (format == FORMAT_RGBE8) {
-        fp->Write(pic, sizeof(uint32_t) * nPixels);
-    } else {
-        Color3 *src = (Color3 *)pic;
-        uint32_t *dst = new uint32_t[nPixels];
-
-        for (int i = 0; i < nPixels; i++) {
-            Float2RGBE(src[i].r, src[i].g, src[i].b, &dst[i]);
-        }
-
-        fp->Write(dst, sizeof(uint32_t) * nPixels);
-
-        delete[] dst;
-    }
+    bool ret = WriteHDR(fp);
 
     fileSystem.CloseFile(fp);
-#endif
-    return true;
+
+    return ret;
 }
 
 BE_NAMESPACE_END

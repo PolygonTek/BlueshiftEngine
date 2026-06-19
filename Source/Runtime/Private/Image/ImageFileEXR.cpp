@@ -24,8 +24,6 @@
 
 BE_NAMESPACE_BEGIN
 
-namespace {
-
 struct EXRScopedData {
     EXRScopedData() {
         InitEXRHeader(&header);
@@ -195,8 +193,6 @@ static bool CopyTiledEXRImage(byte *dst, bool useFloat32, const EXRHeader &heade
     }
 
     return true;
-}
-
 }
 
 bool Image::LoadEXRFromMemory(const char *name, const byte *data, size_t size) {

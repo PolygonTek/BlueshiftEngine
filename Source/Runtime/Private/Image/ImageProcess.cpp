@@ -33,10 +33,10 @@ Image &Image::FlipY() {
     for (int mipLevel = 0; mipLevel < numMipLevels; mipLevel++) {
         int w = GetWidth(mipLevel);
         int h = GetHeight(mipLevel);
-        int sliceSize = SizeInBytes(mipLevel);
+        size_t sliceSize = SizeInBytes(mipLevel);
 
         int h2 = h / 2;
-        int pitch = Image::MemRequired(w, 1, 1, 1, 1, format);
+        int pitch = static_cast<int>(Image::MemRequired(w, 1, 1, 1, 1, format));
 
         for (int y = 0; y < h2; y++) {
             simdProcessor->Memcpy(tmp, src + y*pitch, pitch);
@@ -62,7 +62,7 @@ Image &Image::FlipX() {
     for (int mipLevel = 0; mipLevel < numMipLevels; mipLevel++) {
         int w = GetWidth(mipLevel);
         int h = GetHeight(mipLevel);
-        int sliceSize = SizeInBytes(mipLevel);
+        size_t sliceSize = SizeInBytes(mipLevel);
 
         int w2 = w / 2;
         int pitch = bpp * w;
@@ -88,11 +88,11 @@ Image &Image::AdjustBrightness(float factor) {
     }
 
     int bpp = Image::BytesPerPixel(format);
-    int numPixels = NumPixels(0, numMipLevels);
+    uint64_t numPixels = NumPixels(0, numMipLevels);
 
     byte *ptr = pic;
 
-    for (int i = 0; i < numPixels; i++) {
+    for (uint64_t i = 0; i < numPixels; i++) {
         float r = (float)ptr[0];
         float g = (float)ptr[1];
         float b = (float)ptr[2];
@@ -144,9 +144,9 @@ Image &Image::ApplyGammaRampTableRGB888(const uint16_t table[768]) {
         return *this;
     }
 
-    int numPixels = NumPixels(0, numMipLevels);
+    uint64_t numPixels = NumPixels(0, numMipLevels);
 
-    for (int i = 0; i < numPixels; i++) {
+    for (uint64_t i = 0; i < numPixels; i++) {
         uint16_t r = table[pic[0] + 0];
         uint16_t g = table[pic[1] + 256];
         uint16_t b = table[pic[2] + 512];
@@ -257,7 +257,7 @@ Image Image::MakeErosion() const {
     return image;
 }
 
-Image Image::MakeSDF(int spread) const {
+Image Image::MakeSDF(int32_t spread) const {
     Image image;
     image.Create2D(width, height, 1, Format::A8, GammaSpace::Linear, nullptr, Flag::None);
 
@@ -296,9 +296,9 @@ Image Image::MakeSDF(int spread) const {
 }
 
 Image &Image::SwapRedAlphaRGBA8888() {
-    int numPixels = NumPixels(0, numMipLevels);
+    uint64_t numPixels = NumPixels(0, numMipLevels);
 
-    for (int i = 0; i < numPixels; i++) {
+    for (uint64_t i = 0; i < numPixels; i++) {
         pic[3] = pic[0];
         //pic[3] = 0;
         pic += 4;

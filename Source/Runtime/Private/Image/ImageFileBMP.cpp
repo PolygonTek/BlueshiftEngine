@@ -175,10 +175,8 @@ bool Image::LoadBMPFromMemory(const char *name, const byte *data, size_t size) {
     return true;
 }
 
-bool Image::WriteBMP(const char *filename) const {
-    File *fp = fileSystem.OpenFile(filename, File::Mode::Write);
+bool Image::WriteBMP(File *fp) const {
     if (!fp) {
-        BE_WARNLOG("Image::WriteBMP: file open error\n");
         return false;
     }
 
@@ -186,7 +184,6 @@ bool Image::WriteBMP(const char *filename) const {
     byte *src = pic;
     if (format != Image::Format::B8G8R8) {
         if (!ConvertFormat(Image::Format::B8G8R8, convertedImage)) {
-            fileSystem.CloseFile(fp);
             return false;
         }
         src = convertedImage.pic;
@@ -226,9 +223,21 @@ bool Image::WriteBMP(const char *filename) const {
         fp->Write(temp, pad);
     }
 
+    return true;
+}
+
+bool Image::WriteBMP(const char *filename) const {
+    File *fp = fileSystem.OpenFile(filename, File::Mode::Write);
+    if (!fp) {
+        BE_WARNLOG("Image::WriteBMP: file open error\n");
+        return false;
+    }
+
+    bool ret = WriteBMP(fp);
+
     fileSystem.CloseFile(fp);
 
-    return true;
+    return ret;
 }
 
 BE_NAMESPACE_END

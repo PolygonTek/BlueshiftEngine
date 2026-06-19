@@ -1225,7 +1225,7 @@ void D3D12Renderer::ReadPixels(RHI::CommandList *commandList, const RHI::SwapCha
     }
 
     int srcPitch = mipLevelFootprint.Footprint.RowPitch;
-    int dstPitch = BE1::Image::MemRequired(width, 1, 1, 1, 1, backBufferFormat);
+    int dstPitch = static_cast<int>(BE1::Image::MemRequired(width, 1, 1, 1, 1, backBufferFormat));
 
     for (UINT y = 0; y < height; ++y) {
         BE1::simdProcessor->Memcpy(dstPtr, srcPtr, srcPitch);
@@ -1240,7 +1240,7 @@ void D3D12Renderer::ReadPixels(RHI::CommandList *commandList, const RHI::SwapCha
     if (backBufferFormat != dstFormat) {
         BE1::Image dstImage;
         if (tempImage.ConvertFormat(dstFormat, dstImage)) {
-            BE1::simdProcessor->Memcpy(outPixels, dstImage.GetPixels(), dstImage.SizeInBytes());
+            BE1::simdProcessor->Memcpy(outPixels, dstImage.GetPixels(), static_cast<int>(dstImage.SizeInBytes()));
         }
     }
 }

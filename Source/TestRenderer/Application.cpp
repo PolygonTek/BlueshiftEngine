@@ -132,15 +132,15 @@ void Application::LoadResources() {
 
     defaultVertexBuffer = BE1::graphics.CreateBuffer(BE1::Graphics::BufferType::Vertex, BE1::Graphics::BufferUsage::Static, sizeof(Vertex3D) * COUNT_OF(verts), 0, verts);
 
-    BE1::Image *image = BE1::Image::NewImageFromFile("Data/EngineTextures/checker.dds");
+    std::shared_ptr<BE1::Image> image = BE1::Image::NewImageFromFile("Data/EngineTextures/checker.dds");
     if (!image->IsEmpty()) {
         defaultTexture = BE1::graphics.CreateTexture(BE1::Graphics::TextureType::Texture2D);
         BE1::graphics.BindTexture(defaultTexture);
-        BE1::graphics.SetTextureImage(BE1::Graphics::TextureType::Texture2D, image, image->GetFormat(), true, true);
+        BE1::graphics.SetTextureImage(BE1::Graphics::TextureType::Texture2D, image.get(), image->GetFormat(), true, true);
         BE1::graphics.SetTextureAddressMode(BE1::Graphics::AddressMode::Clamp);
         BE1::graphics.SetTextureFilter(BE1::Graphics::TextureFilter::LinearMipmapLinear);
         BE1::graphics.BindTexture(BE1::Graphics::NullTexture);
-        delete image;
+        image.reset();
     }
 
     InitShaders();

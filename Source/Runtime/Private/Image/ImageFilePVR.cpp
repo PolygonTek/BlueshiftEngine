@@ -301,7 +301,7 @@ bool Image::LoadPVR3FromMemory(const char *name, const byte *data, size_t fileSi
     simdProcessor->Memcpy(this->pic, ptr, (int)dataSize);
     this->alloced = true;
     
-    return false;
+    return true;
 }
 
 bool Image::LoadPVRFromMemory(const char *name, const byte *data, size_t size) {
@@ -317,10 +317,8 @@ bool Image::LoadPVRFromMemory(const char *name, const byte *data, size_t size) {
     return ret;
 }
 
-bool Image::WritePVR(const char *filename) const {
-    File *fp = fileSystem.OpenFile(filename, File::Mode::Write);
+bool Image::WritePVR(File *fp) const {
     if (!fp) {
-        BE_WARNLOG("Image::WritePVR: file open error\n");
         return false;
     }
 
@@ -601,7 +599,6 @@ bool Image::WritePVR(const char *filename) const {
         header.u32ChannelType = ePVRTVarTypeSignedFloat;
         break;
     default:
-        fileSystem.CloseFile(fp);
         BE_WARNLOG("Image::WritePVR: invalid format '%s' for PVR\n", Image::FormatName(format));
         return false;
     }
@@ -636,9 +633,21 @@ bool Image::WritePVR(const char *filename) const {
     
     fp->Write(pic, SizeInBytes(0, numMipLevels));
 
+    return true;
+}
+
+bool Image::WritePVR(const char *filename) const {
+    File *fp = fileSystem.OpenFile(filename, File::Mode::Write);
+    if (!fp) {
+        BE_WARNLOG("Image::WritePVR: file open error\n");
+        return false;
+    }
+
+    bool ret = WritePVR(fp);
+
     fileSystem.CloseFile(fp);
 
-    return true;
+    return ret;
 }
 
 BE_NAMESPACE_END

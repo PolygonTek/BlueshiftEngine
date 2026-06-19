@@ -139,6 +139,7 @@ public:
 
     void                            RequestStreamingMaxDimension(uint32_t requestedMaxDimension);
 
+    static Flag                     ApplyTextureHints(Flag baseFlags, BE1::Image::Flag textureHints);
     static bool                     GetCubeImageFromCubeTexture(const Texture *cubeTexture, int numMipLevels, BE1::Image &outCubeImage);
 
 private:

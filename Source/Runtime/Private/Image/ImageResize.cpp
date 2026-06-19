@@ -337,7 +337,7 @@ static void ResizeImageWithGamma(const byte *src, int srcWidth, int srcHeight, b
     }
 }
 
-bool Image::Resize(int dstWidth, int dstHeight, Image::ResampleFilter filter, Image &dstImage) const {
+bool Image::Resize(int32_t dstWidth, int32_t dstHeight, Image::ResampleFilter filter, Image &dstImage) const {
     assert(width && height);
     assert(dstWidth && dstHeight);
     
@@ -378,7 +378,7 @@ bool Image::Resize(int dstWidth, int dstHeight, Image::ResampleFilter filter, Im
     return true;
 }
 
-bool Image::ResizeSelf(int dstWidth, int dstHeight, Image::ResampleFilter filter) {
+bool Image::ResizeSelf(int32_t dstWidth, int32_t dstHeight, Image::ResampleFilter filter) {
     Image dstImage;
     bool ret = Resize(dstWidth, dstHeight, filter, dstImage);
     if (ret) {

@@ -143,7 +143,11 @@ static void png_write_data(png_structp png, png_bytep data, png_size_t length) {
 static void png_flush_data(png_structp png) {
 }
 
-bool Image::WritePNG(const char *filename) const {
+bool Image::WritePNG(File *fp) const {
+    if (!fp) {
+        return false;
+    }
+
     png_structp	png = png_create_write_struct(PNG_LIBPNG_VER_STRING, nullptr, nullptr, nullptr);
     if (!png) {
         return false;
@@ -186,18 +190,11 @@ bool Image::WritePNG(const char *filename) const {
         src = convertedImage.pic;
     }
 
-    File *fp = fileSystem.OpenFile(filename, File::Mode::Write);
-    if (!fp) {
-        png_destroy_write_struct(&png, &info);
-        return false;
-    }
-
     png_bytep *row_pointers = (byte **)Mem_Alloc16(height * sizeof(png_bytep));
 
     // Set error handling.
     if (setjmp(png_jmpbuf(png))) {
         Mem_AlignedFree(row_pointers);
-        fileSystem.CloseFile(fp);
         png_destroy_write_struct(&png, &info);
         return false;
     }
@@ -224,9 +221,22 @@ bool Image::WritePNG(const char *filename) const {
     png_destroy_write_struct(&png, &info);
 
     Mem_AlignedFree(row_pointers);
-    fileSystem.CloseFile(fp);
 
     return true;
+}
+
+bool Image::WritePNG(const char *filename) const {
+    File *fp = fileSystem.OpenFile(filename, File::Mode::Write);
+    if (!fp) {
+        BE_WARNLOG("Image::WritePNG: file open error\n");
+        return false;
+    }
+
+    bool ret = WritePNG(fp);
+
+    fileSystem.CloseFile(fp);
+
+    return ret;
 }
 
 BE_NAMESPACE_END

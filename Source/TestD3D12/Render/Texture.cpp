@@ -47,6 +47,25 @@ bool Texture::IsReadyForRendering() const {
     return IsReady() && internalData.rhiTexture && internalData.rhiTexture->GetStatus() == RHI::GPUResourceStatus::Ready;
 }
 
+Texture::Flag Texture::ApplyTextureHints(Flag baseFlags, BE1::Image::Flag textureHints) {
+    Flag flags = baseFlags;
+
+    if (BE1::HasFlag(textureHints, BE1::Image::Flag::NormalMap)) {
+        flags |= Flag::NormalMap;
+    }
+    if (BE1::HasFlag(textureHints, BE1::Image::Flag::NoMipmaps)) {
+        flags |= Flag::NoMipmaps;
+    }
+    if (BE1::HasFlag(textureHints, BE1::Image::Flag::NoCompression)) {
+        flags |= Flag::NoCompression;
+    }
+    if (BE1::HasFlag(textureHints, BE1::Image::Flag::NoStreaming)) {
+        flags = static_cast<Flag>(static_cast<uint16_t>(flags) & ~static_cast<uint16_t>(Flag::Streaming));
+    }
+
+    return flags;
+}
+
 uint64_t Texture::MemRequired(bool includingMipmaps) const {
     assert(IsReady());
 
@@ -240,6 +259,9 @@ bool Texture::Prepare(RHI::TextureType textureType, SharedPtr<const BE1::Image> 
         return false;
     }
 
+    // image 에 있는 texture hints 적용
+    flags = Texture::ApplyTextureHints(flags, srcImage->GetTextureHints());
+
     bool useUAV = BE1::HasFlag(flags, Texture::Flag::UnorderedAccess);
     bool useNormalMap = BE1::HasFlag(flags, Texture::Flag::NormalMap);
     bool useCompression = !BE1::HasFlag(flags, Texture::Flag::NoCompression);
@@ -309,6 +331,9 @@ bool Texture::PrepareDirect(RHI::TextureType textureType, SharedPtr<const BE1::I
     if (!srcImage) {
         return false;
     }
+
+    // image 에 있는 texture hints 적용
+    flags = Texture::ApplyTextureHints(flags, srcImage->GetTextureHints());
 
     RHI::TextureFlag resourceFlags = RHI::TextureFlag::ShaderResource;
     if (BE1::HasFlag(flags, Texture::Flag::UnorderedAccess)) {

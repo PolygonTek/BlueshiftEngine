@@ -46,7 +46,7 @@ public:
     void                            Stop();
 
     bool                            EnqueueTextureLoad(SharedPtr<Texture> texture, const char *filename, Texture::Flag flags, bool isReload, uint32_t serial, LoadPriority priority = LoadPriority::Normal);
-    bool                            EnqueueTextureStreamingReplacement(SharedPtr<Texture> texture, const char *filename, int firstMip, LoadPriority priority = LoadPriority::Background);
+    bool                            EnqueueTextureStreamingReplacement(SharedPtr<Texture> texture, const char *filename, int32_t firstMip, LoadPriority priority = LoadPriority::Background);
     bool                            EnqueueMeshLoad(SharedPtr<Mesh> mesh, const char *filename, bool isReload, uint32_t serial, LoadPriority priority = LoadPriority::Normal);
     bool                            EnqueueSkeletonLoad(SharedPtr<Skeleton> skeleton, const char *filename, bool isReload, uint32_t serial, LoadPriority priority = LoadPriority::Normal);
     bool                            EnqueueAnimLoad(SharedPtr<Anim> anim, const char *filename, bool isReload, uint32_t serial, LoadPriority priority = LoadPriority::Normal);
@@ -72,8 +72,8 @@ private:
         BE1::Str                    filename;
         Texture::Flag               textureFlags = Texture::Flag::None;
         SharedPtr<BE1::Image>       image;
-        int                         originalMipLevels = 0;
-        int                         firstMip = -1;
+        int32_t                     originalMipLevels = 0;
+        int32_t                     firstMip = -1;
         uint32_t                    serial = 0;
         uint64_t                    sequence = 0;
         LoadPriority                priority = LoadPriority::Normal;

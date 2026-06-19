@@ -93,7 +93,7 @@ float Image::sRGBToLinearTable[256] = {
     0.938685725169219, 0.947306533426946, 0.955973349925421, 0.964686244552961, 0.973445287039244, 0.982250546956257, 0.991102093719252, 1.0,
 };
 
-Image &Image::InitFromMemory(int width, int height, int depth, int numSlices, int numMipLevels, Image::Format format, GammaSpace gammaSpace, byte *data, Flag flags) {
+Image &Image::InitFromMemory(int32_t width, int32_t height, int32_t depth, int32_t numSlices, int32_t numMipLevels, Image::Format format, GammaSpace gammaSpace, byte *data, Flag flags) {
     Clear();
 
     this->width = width;
@@ -110,7 +110,7 @@ Image &Image::InitFromMemory(int width, int height, int depth, int numSlices, in
     return *this;
 }
 
-Image &Image::Create(int width, int height, int depth, int numSlices, int numMipLevels, Image::Format format, GammaSpace gammaSpace, const byte *data, Flag flags) {
+Image &Image::Create(int32_t width, int32_t height, int32_t depth, int32_t numSlices, int32_t numMipLevels, Image::Format format, GammaSpace gammaSpace, const byte *data, Flag flags) {
     Clear();
 
     this->width = width;
@@ -122,12 +122,12 @@ Image &Image::Create(int width, int height, int depth, int numSlices, int numMip
     this->gammaSpace = gammaSpace;
     this->flags = flags;
     
-    int size = SizeInBytes(0, this->numMipLevels);
+    size_t size = SizeInBytes(0, this->numMipLevels);
     this->pic = (byte *)Mem_Alloc256(size);
     this->alloced = true;
     
     if (data) {
-        simdProcessor->Memcpy(this->pic, data, size);
+        simdProcessor->Memcpy(this->pic, data, static_cast<int>(size));
     }
 
     return *this;
@@ -145,7 +145,7 @@ Image &Image::CreateCubeFrom6Faces(const Image *images) {
     this->gammaSpace = images[0].gammaSpace;
     this->flags = images[0].flags | Flag::CubeMap;
 
-    int bytesForFace = SizeInBytesForSlice(0, numMipLevels);
+    size_t bytesForFace = SizeInBytesForSlice(0, numMipLevels);
     this->pic = (byte *)Mem_Alloc256(bytesForFace * 6);
     this->alloced = true;
     
@@ -157,14 +157,14 @@ Image &Image::CreateCubeFrom6Faces(const Image *images) {
         assert(images[i].format == images[0].format);
         assert(images[i].numMipLevels == images[0].numMipLevels);
 
-        simdProcessor->Memcpy(dst, images[i].pic, bytesForFace);
+        simdProcessor->Memcpy(dst, images[i].pic, static_cast<int>(bytesForFace));
         dst += bytesForFace;
     }
 
     return *this;
 }
 
-Image &Image::CreateCubeFromEquirectangular(const Image &equirectangularImage, int faceSize) {
+Image &Image::CreateCubeFromEquirectangular(const Image &equirectangularImage, int32_t faceSize) {
     Clear();
 
     this->width = faceSize;
@@ -176,7 +176,7 @@ Image &Image::CreateCubeFromEquirectangular(const Image &equirectangularImage, i
     this->gammaSpace = equirectangularImage.gammaSpace;
     this->flags = equirectangularImage.flags | Flag::CubeMap;
 
-    int bytesForFace = SizeInBytesForSlice(0, numMipLevels);
+    size_t bytesForFace = SizeInBytesForSlice(0, numMipLevels);
     this->pic = (byte *)Mem_Alloc256(bytesForFace * 6);
     this->alloced = true;
 
@@ -228,7 +228,7 @@ Image &Image::CreateEquirectangularFromCube(const Image &cubeImage) {
     this->gammaSpace = cubeImage.gammaSpace;
     this->flags = cubeImage.flags & ~Flag::CubeMap;
 
-    int size = SizeInBytes(0, numMipLevels);
+    size_t size = SizeInBytes(0, numMipLevels);
     this->pic = (byte *)Mem_Alloc256(size);
     this->alloced = true;
 
@@ -259,7 +259,7 @@ Image &Image::CreateEquirectangularFromCube(const Image &cubeImage) {
     return *this;
 }
 
-Image &Image::CopyFrom(const Image &srcImage, int firstMipLevel, int numMipLevels) {
+Image &Image::CopyFrom(const Image &srcImage, int32_t firstMipLevel, int32_t numMipLevels) {
     if (srcImage.GetWidth() != width || srcImage.GetHeight() != height || srcImage.GetDepth() != depth || srcImage.IsCubeMap() != IsCubeMap() || srcImage.GetArraySize() != arraySize) {
         return *this;
     }
@@ -267,20 +267,20 @@ Image &Image::CopyFrom(const Image &srcImage, int firstMipLevel, int numMipLevel
     for (int sliceIndex = 0; sliceIndex < arraySize; sliceIndex++) {
         byte *src = srcImage.GetPixels(firstMipLevel, sliceIndex);
         byte *dst = GetPixels(firstMipLevel, sliceIndex);
-        int bytesForFace = srcImage.SizeInBytesForSlice(firstMipLevel, numMipLevels);
+        size_t bytesForFace = srcImage.SizeInBytesForSlice(firstMipLevel, numMipLevels);
 
-        simdProcessor->Memcpy(dst, src, bytesForFace);
+        simdProcessor->Memcpy(dst, src, static_cast<int>(bytesForFace));
     }
 
     return *this;
 }
 
-void Image::Update2D(int mipLevel, int x, int y, int width, int height, const byte *data) {
+void Image::Update2D(int32_t mipLevel, int32_t x, int32_t y, int32_t width, int32_t height, const byte *data) {
     int bpp = BytesPerPixel();
     int srcPitch = width * bpp;
     int dstPitch = GetWidth(mipLevel) * bpp;
     int dstStartOffset = y * dstPitch + x * bpp;
-    int dstSize = SizeInBytes(mipLevel);
+    size_t dstSize = SizeInBytes(mipLevel);
 
     if (dstStartOffset + height * dstPitch > dstSize) {
         assert(0);
@@ -407,7 +407,7 @@ Color4 Image::Sample2DBilinear(const byte *src, const Vec2 &st, SampleWrapMode w
     return outputColor;
 }
 
-Color4 Image::Sample2D(const Vec2 &st, SampleWrapMode wrapModeS, SampleWrapMode wrapModeT, SampleFilter filter, int mipLevel) const {
+Color4 Image::Sample2D(const Vec2 &st, SampleWrapMode wrapModeS, SampleWrapMode wrapModeT, SampleFilter filter, int32_t mipLevel) const {
     if (IsCompressed()) {
         assert(0);
         return Color4::zero;
@@ -426,7 +426,7 @@ Color4 Image::Sample2D(const Vec2 &st, SampleWrapMode wrapModeS, SampleWrapMode 
     return outputColor;
 }
 
-Color4 Image::SampleCube(const Vec3 &str, SampleFilter filter, int mipLevel) const {
+Color4 Image::SampleCube(const Vec3 &str, SampleFilter filter, int32_t mipLevel) const {
     if (IsCompressed()) {
         assert(0);
         return Color4::zero;
@@ -523,7 +523,7 @@ static float AreaElement(float x, float y) {
     return Math::ATan(x * y, Math::Sqrt(x * x + y * y + 1.0f));
 }
 
-float Image::CubeMapTexelSolidAngle(float x, float y, int size) {
+float Image::CubeMapTexelSolidAngle(float x, float y, int32_t size) {
     float invSize = 1.0f / size;
 
     // Scale up to [-1, 1] range (inclusive), offset by 0.5 to point to texel center.
@@ -540,14 +540,14 @@ float Image::CubeMapTexelSolidAngle(float x, float y, int size) {
     return AreaElement(x0, y0) - AreaElement(x0, y1) - AreaElement(x1, y0) + AreaElement(x1, y1);
 }
 
-int Image::NumPixels(int firstMipLevel, int numMipLevels) const {
+uint64_t Image::NumPixels(int32_t firstMipLevel, int32_t numMipLevels) const {
     int w = GetWidth(firstMipLevel);
     int h = GetHeight(firstMipLevel);
     int d = GetDepth(firstMipLevel);
     
-    int size = 0;
+    uint64_t size = 0;
     while (numMipLevels) {
-        size += w * h * d;
+        size += static_cast<uint64_t>(w) * h * d;
 
         w >>= 1;
         h >>= 1;
@@ -564,12 +564,12 @@ int Image::NumPixels(int firstMipLevel, int numMipLevels) const {
     return size * arraySize;
 }
 
-int Image::SizeInBytes(int firstMipLevel, int numMipLevels) const {
-    return MemRequired(GetWidth(firstMipLevel), GetHeight(firstMipLevel), GetDepth(firstMipLevel), numMipLevels, arraySize, format);
+size_t Image::SizeInBytes(int32_t firstMipLevel, int32_t numMipLevels) const {
+    return static_cast<size_t>(MemRequired(GetWidth(firstMipLevel), GetHeight(firstMipLevel), GetDepth(firstMipLevel), numMipLevels, arraySize, format));
 }
 
-int Image::SizeInBytesForSlice(int firstMipLevel, int numMipLevels) const {
-    return MemRequired(GetWidth(firstMipLevel), GetHeight(firstMipLevel), GetDepth(firstMipLevel), numMipLevels, 1, format);
+size_t Image::SizeInBytesForSlice(int32_t firstMipLevel, int32_t numMipLevels) const {
+    return static_cast<size_t>(MemRequired(GetWidth(firstMipLevel), GetHeight(firstMipLevel), GetDepth(firstMipLevel), numMipLevels, 1, format));
 }
 
 //--------------------------------------------------------------------------------------------------
@@ -692,7 +692,7 @@ bool Image::NeedFloatConversion(Image::Format imageFormat) {
     return false;
 }
 
-uint64_t Image::MemRequired(int width, int height, int depth, int numMipmaps, int numSlices, Image::Format imageFormat) {
+uint64_t Image::MemRequired(int32_t width, int32_t height, int32_t depth, int32_t numMipmaps, int32_t numSlices, Image::Format imageFormat) {
     int w = width;
     int h = height;
     int d = depth;
@@ -740,7 +740,7 @@ uint64_t Image::MemRequired(int width, int height, int depth, int numMipmaps, in
     return size * numSlices;
 }
 
-int Image::MaxMipLevels(int width, int height, int depth) {
+int32_t Image::MaxMipLevels(int32_t width, int32_t height, int32_t depth) {
     int m = Max3(width, height, depth);
 
     int numMipLevels = 0;

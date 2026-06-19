@@ -185,11 +185,26 @@ public:
         sRGB
     };
 
+    /// BTEX payload image format.
+    enum class PayloadFormat : uint8_t {
+        Unknown,
+        DDS,
+        PVR,
+        TGA,
+        PNG
+    };
+
     /// Image flags
     enum class Flag : uint8_t {
         None                = 0,
         CubeMap             = BIT(0),
-        NormalMap           = BIT(1)
+
+        // Texture hints
+        NormalMap           = BIT(1),
+        NoMipmaps           = BIT(2),
+        NoCompression       = BIT(3),
+        NoStreaming         = BIT(4),
+        TextureHintsMask    = NormalMap | NoMipmaps | NoCompression | NoStreaming
     };
 
     /// Cube map face
@@ -236,12 +251,12 @@ public:
 
     /// Describes the original image dimensions and the loaded mip range.
     struct MipRange {
-        int             originalWidth = 0;
-        int             originalHeight = 0;
-        int             originalDepth = 0;
-        int             originalMipLevels = 0;
-        int             firstMip = 0;
-        int             mipCount = 0;
+        int32_t         originalWidth = 0;
+        int32_t         originalHeight = 0;
+        int32_t         originalDepth = 0;
+        int32_t         originalMipLevels = 0;
+        int32_t         firstMip = 0;
+        int32_t         mipCount = 0;
     };
 
     /// Default constructor.
@@ -249,7 +264,7 @@ public:
 
     /// Constructs image with the given data.
     /// If data is not nullptr, the image data is initialized with given data.
-    Image(int width, int height, int depth, int numSlices, int numMipmaps, Format format, GammaSpace gammaSpace, byte *data, Flag flags);
+    Image(int32_t width, int32_t height, int32_t depth, int32_t numSlices, int32_t numMipmaps, Format format, GammaSpace gammaSpace, byte *data, Flag flags);
     
     /// Copy constructor.
     Image(const Image &other);
@@ -301,23 +316,25 @@ public:
     bool                IsCubeMap() const { return !!(HasFlag(flags, Flag::CubeMap)); }
 
                         /// Returns image width.
-    int                 GetWidth() const { return width; }
+    int32_t             GetWidth() const { return width; }
                         /// Returns image width with the given mip level.
-    int                 GetWidth(int mipLevel) const;
+    int32_t             GetWidth(int32_t mipLevel) const;
                         /// Returns image height.
-    int                 GetHeight() const { return height; }
+    int32_t             GetHeight() const { return height; }
                         /// Returns image height with the given mip level.
-    int                 GetHeight(int mipLevel) const;
+    int32_t             GetHeight(int32_t mipLevel) const;
                         /// Returns image depth.
-    int                 GetDepth() const { return depth; }
+    int32_t             GetDepth() const { return depth; }
                         /// Returns image depth with the given mip level.
-    int                 GetDepth(int mipLevel) const;
+    int32_t             GetDepth(int32_t mipLevel) const;
                         /// Returns array size (6 for cubic image)
-    int                 GetArraySize() const { return arraySize; }
+    int32_t             GetArraySize() const { return arraySize; }
                         /// Returns number of mip levels.
-    int                 NumMipmaps() const { return numMipLevels; }
+    int32_t             NumMipmaps() const { return numMipLevels; }
                         /// Returns image flags.
     Flag                GetFlags() const { return flags; }
+                        /// Returns texture hint flags.
+    Flag                GetTextureHints() const;
                         /// Returns image format.
     Format              GetFormat() const { return format; }
                         /// Returns gamma space of this image.
@@ -328,51 +345,51 @@ public:
                         /// Returns pixel data pointer.
     byte *              GetPixels() const { return pic; }
                         /// Returns pixel data pointer with the given mip level.
-    byte *              GetPixels(int mipLevel) const;
+    byte *              GetPixels(int32_t mipLevel) const;
                         /// Returns pixel data pointer with the given mip level and slice index.
-    byte *              GetPixels(int mipLevel, int sliceIndex) const;
+    byte *              GetPixels(int32_t mipLevel, int32_t sliceIndex) const;
 
                         /// Returns linearly interpolated Color4 sample with the given 2D coordinates.
-    Color4              Sample2D(const Vec2 &st, SampleWrapMode wrapModeS = SampleWrapMode::Clamp, SampleWrapMode wrapModeT = SampleWrapMode::Clamp, SampleFilter filter = SampleFilter::Bilinear, int mipLevel = 0) const;
+    Color4              Sample2D(const Vec2 &st, SampleWrapMode wrapModeS = SampleWrapMode::Clamp, SampleWrapMode wrapModeT = SampleWrapMode::Clamp, SampleFilter filter = SampleFilter::Bilinear, int32_t mipLevel = 0) const;
                         /// Returns linearly interpolated Color4 sample with the given cubemap coordinates.
-    Color4              SampleCube(const Vec3 &str, SampleFilter filter = SampleFilter::Bilinear, int mipLevel = 0) const;
+    Color4              SampleCube(const Vec3 &str, SampleFilter filter = SampleFilter::Bilinear, int32_t mipLevel = 0) const;
 
                         /// Returns number of pixels with the given mipmap levels.
-    int                 NumPixels(int firstMipLevel = 0, int numMipLevels = 1) const;
+    uint64_t            NumPixels(int32_t firstMipLevel = 0, int32_t numMipLevels = 1) const;
 
                         /// Returns number of bytes with the given mipmap levels.
-    int                 SizeInBytes(int firstMipLevel = 0, int numMipLevels = 1) const;
+    size_t              SizeInBytes(int32_t firstMipLevel = 0, int32_t numMipLevels = 1) const;
                         /// Returns number of bytes of single cubemap face with the given mipmap levels.
-    int                 SizeInBytesForSlice(int firstMipLevel = 0, int numMipLevels = 1) const;
+    size_t              SizeInBytesForSlice(int32_t firstMipLevel = 0, int32_t numMipLevels = 1) const;
                         
                         /// Clears allocated pixel data.
     void                Clear();
 
                         /// Creates an image with the given memory.
-    Image &             InitFromMemory(int width, int height, int depth, int numSlices, int numMipLevels, Format format, GammaSpace gammaSpace, byte *data, Flag flags);
+    Image &             InitFromMemory(int32_t width, int32_t height, int32_t depth, int32_t numSlices, int32_t numMipLevels, Format format, GammaSpace gammaSpace, byte *data, Flag flags);
 
                         /// Creates an image.
                         /// If data is nullptr, just allocate the memory.
-    Image &             Create(int width, int height, int depth, int numSlices, int numMipLevels, Format format, GammaSpace gammaSpace, const byte *data, Flag flags);
+    Image &             Create(int32_t width, int32_t height, int32_t depth, int32_t numSlices, int32_t numMipLevels, Format format, GammaSpace gammaSpace, const byte *data, Flag flags);
 
-    Image &             Create2D(int width, int height, int numMipLevels, Format format, GammaSpace gammaSpace, const byte *data, Flag flags);
-    Image &             Create3D(int width, int height, int depth, int numMipLevels, Format format, GammaSpace gammaSpace, const byte *data, Flag flags);
-    Image &             CreateCube(int size, int numMipLevels, Format format, GammaSpace gammaSpace, const byte *data, Flag flags);
-    Image &             Create2DArray(int width, int height, int numSlices, int numMipLevels, Format format, GammaSpace gammaSpace, const byte *data, Flag flags);
+    Image &             Create2D(int32_t width, int32_t height, int32_t numMipLevels, Format format, GammaSpace gammaSpace, const byte *data, Flag flags);
+    Image &             Create3D(int32_t width, int32_t height, int32_t depth, int32_t numMipLevels, Format format, GammaSpace gammaSpace, const byte *data, Flag flags);
+    Image &             CreateCube(int32_t size, int32_t numMipLevels, Format format, GammaSpace gammaSpace, const byte *data, Flag flags);
+    Image &             Create2DArray(int32_t width, int32_t height, int32_t numSlices, int32_t numMipLevels, Format format, GammaSpace gammaSpace, const byte *data, Flag flags);
 
                         /// Creates a cubic image from six square images.
     Image &             CreateCubeFrom6Faces(const Image *faceImages);
                         /// Creates a cubic image from single equirectangular spherical image.
-    Image &             CreateCubeFromEquirectangular(const Image &equirectangularImage, int faceSize);
+    Image &             CreateCubeFromEquirectangular(const Image &equirectangularImage, int32_t faceSize);
                         /// Creates an equirectangular spherical image from cubic image.
     Image &             CreateEquirectangularFromCube(const Image &cubeImage);
 
                         /// Copies image data from another.
                         /// Nothing happen if source image dimensions are not match with this image.
-    Image &             CopyFrom(const Image &srcImage, int firstMipLevel = 0, int numMipLevels = 1);
+    Image &             CopyFrom(const Image &srcImage, int32_t firstMipLevel = 0, int32_t numMipLevels = 1);
 
                         /// Updates sub region.
-    void                Update2D(int mipLevel, int x, int y, int width, int height, const byte *data);
+    void                Update2D(int32_t mipLevel, int32_t x, int32_t y, int32_t width, int32_t height, const byte *data);
     
                         /// Generates all mipmaps this image has.
     Image &             GenerateMipmaps(bool preserveAlphaCoverage = false);
@@ -385,9 +402,9 @@ public:
                             GammaSpace dstGammaSpace = GammaSpace::DontCare, MipmapGenerationMode regenerateMipmaps = MipmapGenerationMode::NoMipmaps, CompressionQuality compressionQuality = CompressionQuality::Normal);
 
                         /// Resizes this image to the given target image.
-    bool                Resize(int width, int height, ResampleFilter resampleFilter, Image &dstImage) const;
+    bool                Resize(int32_t width, int32_t height, ResampleFilter resampleFilter, Image &dstImage) const;
                         /// Resizes this image in-places.
-    bool                ResizeSelf(int width, int height, ResampleFilter resampleFilter);
+    bool                ResizeSelf(int32_t width, int32_t height, ResampleFilter resampleFilter);
 
                         /// Flips vertically.
     Image &             FlipX();
@@ -406,7 +423,7 @@ public:
     Image               MakeErosion() const;
 
                         /// Returns SDF image.
-    Image               MakeSDF(int spread) const;
+    Image               MakeSDF(int32_t spread) const;
 
                         /// Swaps the component red with alpha.
     Image &             SwapRedAlphaRGBA8888();
@@ -420,11 +437,11 @@ public:
                         /// Loads image from the file.
     bool                Load(const char *filename);
 
-                        /// Loads the specified DDS mip range from a file.
-    bool                LoadDDSMipRange(const char *filename, int firstMip, int mipCount, MipRange *outInfo);
+                        /// Loads the specified streamable image mip range from a file.
+    bool                LoadMipRange(const char *filename, int32_t firstMip, int32_t mipCount, MipRange *outInfo);
 
-                        /// Loads the DDS mip range whose largest dimension is at most maxDimension.
-    bool                LoadDDSMipRangeForMaxDimension(const char *filename, int maxDimension, MipRange *outInfo);
+                        /// Loads the streamable image mip range whose largest dimension is at most maxDimension.
+    bool                LoadMipRangeForMaxDimension(const char *filename, int32_t maxDimension, MipRange *outInfo);
 
                         /// Writes image to the file.
     bool                Write(const char *filename) const;
@@ -434,6 +451,7 @@ public:
     bool                WriteBMP(const char *filename) const;
     bool                WritePCX(const char *filename) const;
     bool                WriteTGA(const char *filename) const;
+    bool                WriteBTEX(const char *filename, PayloadFormat payloadFormat = PayloadFormat::DDS) const;
                         /// @param quality  value has the range [0, 100]
     bool                WriteJPG(const char *filename, int quality = 100) const; 
     bool                WritePNG(const char *filename) const;
@@ -454,9 +472,9 @@ public:
     static bool         IsDepthFormat(Format imageFormat);
     static bool         IsDepthStencilFormat(Format imageFormat);
     static bool         NeedFloatConversion(Format imageFormat);
-    static uint64_t     MemRequired(int width, int height, int depth, int numMipmaps, int numSlices, Format imageFormat);
-    static int          MaxMipLevels(int width, int height, int depth);
-    static int          ComputeFirstMipForMaxDimension(int width, int height, int depth, int numMipLevels, int maxDimension);
+    static uint64_t     MemRequired(int32_t width, int32_t height, int32_t depth, int32_t numMipmaps, int32_t numSlices, Format imageFormat);
+    static int32_t      MaxMipLevels(int32_t width, int32_t height, int32_t depth);
+    static int32_t      ComputeFirstMipForMaxDimension(int32_t width, int32_t height, int32_t depth, int32_t numMipLevels, int32_t maxDimension);
 
                         /// Converts an sRGB value in the range [0, 1] to a linear value in the range [0, 1].
     static float        GammaToLinear(float value);
@@ -477,16 +495,22 @@ public:
                         /// Converts cube map coordinates to 2D face coordinates.
     static CubeMapFace  CubeMapToFaceCoords(const Vec3 &cubeMapCoords, float &s, float &t);
 
-    static float        CubeMapTexelSolidAngle(float x, float y, int size);
+    static float        CubeMapTexelSolidAngle(float x, float y, int32_t size);
 
-    static Image *      NewImageFromFile(const char *filename);
+    static std::shared_ptr<Image> NewImageFromFile(const char *filename);
     static std::shared_ptr<Image> NewSharedImageFromFile(const char *filename);
 
     static float        pow22ToLinearTable[256];
     static float        sRGBToLinearTable[256];
 
 private:
-    bool                LoadDDSMipRange(File *fp, int headerWidth, int headerHeight, int headerDepth, int headerArraySize, int headerMipmapCount, bool isCubemap, int firstMip, int mipCount, MipRange *outInfo);
+    bool                LoadBTEXDDSMipRange(const char *filename, int32_t firstMip, int32_t mipCount, MipRange *outInfo);
+    bool                LoadBTEXDDSMipRangeForMaxDimension(const char *filename, int32_t maxDimension, MipRange *outInfo);
+    bool                LoadDDSMipRange(const char *filename, int32_t firstMip, int32_t mipCount, MipRange *outInfo);
+    bool                LoadDDSMipRange(File *fp, int32_t firstMip, int32_t mipCount, MipRange *outInfo);
+    bool                LoadDDSMipRangeForMaxDimension(const char *filename, int32_t maxDimension, MipRange *outInfo);
+    bool                LoadDDSMipRangeForMaxDimension(File *fp, int32_t maxDimension, MipRange *outInfo);
+    bool                LoadDDSMipRangeData(File *fp, int32_t originalWidth, int32_t originalHeight, int32_t originalDepth, int32_t ddsArraySize, int32_t originalMipLevels, bool isCubemap, int32_t firstMip, int32_t mipCount, MipRange *outInfo);
 
     template <typename T>
     T                   WrapCoord(T coord, T maxCoord, SampleWrapMode wrapMode) const;
@@ -494,6 +518,15 @@ private:
     Color4              Sample2DNearest(const byte *src, const Vec2 &st, SampleWrapMode wrapModeS, SampleWrapMode wrapModeT) const;
     Color4              Sample2DBilinear(const byte *src, const Vec2 &st, SampleWrapMode wrapModeS, SampleWrapMode wrapModeT) const;
 
+    bool                WriteDDS(File *fp) const;
+    bool                WritePVR(File *fp) const;
+    bool                WriteBMP(File *fp) const;
+    bool                WritePCX(File *fp) const;
+    bool                WriteTGA(File *fp) const;
+    bool                WritePNG(File *fp) const;
+    bool                WriteHDR(File *fp) const;
+
+    bool                LoadBTEXFromMemory(const char *name, const byte *data, size_t size);
     bool                LoadDDSFromMemory(const char *name, const byte *data, size_t size);
     bool                LoadPVRFromMemory(const char *name, const byte *data, size_t size);
     bool                LoadPVR2FromMemory(const char *name, const byte *data, size_t size);
@@ -507,11 +540,11 @@ private:
     bool                LoadEXRFromMemory(const char *name, const byte *data, size_t size);
 
     byte *              pic = nullptr;                  ///< Pixel data
-    int                 width = 0;                      ///< Width
-    int                 height = 0;                     ///< Height
-    int                 depth = 0;                      ///< Depth
-    int                 arraySize = 0;                  ///< Number of array images (6 for cubic image)
-    int                 numMipLevels = 0;               ///< Number of mip levels
+    int32_t             width = 0;                      ///< Width
+    int32_t             height = 0;                     ///< Height
+    int32_t             depth = 0;                      ///< Depth
+    int32_t             arraySize = 0;                  ///< Number of array images (6 for cubic image)
+    int32_t             numMipLevels = 0;               ///< Number of mip levels
     Format              format = Format::Unknown;       ///< Image format
     GammaSpace          gammaSpace = GammaSpace::sRGB;  ///< Gamma space enum
     Flag                flags = Flag::None;             ///< Image flags
@@ -528,7 +561,11 @@ struct enable_bitmask_operators<Image::Flag> {
     static const bool enable = true;
 };
 
-BE_INLINE Image::Image(int width, int height, int depth, int numSlices, int numMipmaps, Format format, GammaSpace gammaSpace, byte *data, Flag flags) {
+BE_INLINE Image::Flag Image::GetTextureHints() const {
+    return flags & Flag::TextureHintsMask;
+}
+
+BE_INLINE Image::Image(int32_t width, int32_t height, int32_t depth, int32_t numSlices, int32_t numMipmaps, Format format, GammaSpace gammaSpace, byte *data, Flag flags) {
     alloced = false;
     InitFromMemory(width, height, depth, numSlices, numMipmaps, format, gammaSpace, data, flags);
     //Create(width, height, depth, numSlices, numMipmaps, format, gammaSpace, data, flags);
@@ -556,26 +593,26 @@ BE_INLINE Image::~Image() {
     Clear();
 }
 
-BE_INLINE int Image::GetWidth(int mipLevel) const {
-    int a = width >> mipLevel;
+BE_INLINE int32_t Image::GetWidth(int32_t mipLevel) const {
+    int32_t a = width >> mipLevel;
     return (a == 0) ? 1 : a;
 }
 
-BE_INLINE int Image::GetHeight(int mipLevel) const {
-    int a = height >> mipLevel;
+BE_INLINE int32_t Image::GetHeight(int32_t mipLevel) const {
+    int32_t a = height >> mipLevel;
     return (a == 0) ? 1 : a;
 }
 
-BE_INLINE int Image::GetDepth(int mipLevel) const {
-    int a = depth >> mipLevel;
+BE_INLINE int32_t Image::GetDepth(int32_t mipLevel) const {
+    int32_t a = depth >> mipLevel;
     return (a == 0) ? 1 : a;
 }
 
-BE_INLINE byte *Image::GetPixels(int mipLevel) const {
+BE_INLINE byte *Image::GetPixels(int32_t mipLevel) const {
     return (mipLevel < numMipLevels) ? pic + SizeInBytes(0, mipLevel) : nullptr;
 }
 
-BE_INLINE byte *Image::GetPixels(int mipLevel, int sliceIndex) const {
+BE_INLINE byte *Image::GetPixels(int32_t mipLevel, int32_t sliceIndex) const {
     if (mipLevel >= numMipLevels || sliceIndex >= arraySize) {
         return nullptr;
     }
@@ -586,19 +623,19 @@ BE_INLINE byte *Image::GetPixels(int mipLevel, int sliceIndex) const {
     return pic + SizeInBytesForSlice(0, numMipLevels) * sliceIndex + SizeInBytesForSlice(0, mipLevel);
 }
 
-BE_INLINE Image &Image::Create2D(int width, int height, int numMipLevels, Format format, GammaSpace gammaSpace, const byte *data, Flag flags) {
+BE_INLINE Image &Image::Create2D(int32_t width, int32_t height, int32_t numMipLevels, Format format, GammaSpace gammaSpace, const byte *data, Flag flags) {
     return Create(width, height, 1, 1, numMipLevels, format, gammaSpace, data, flags);
 }
 
-BE_INLINE Image &Image::Create3D(int width, int height, int depth, int numMipLevels, Format format, GammaSpace gammaSpace, const byte *data, Flag flags) {
+BE_INLINE Image &Image::Create3D(int32_t width, int32_t height, int32_t depth, int32_t numMipLevels, Format format, GammaSpace gammaSpace, const byte *data, Flag flags) {
     return Create(width, height, depth, 1, numMipLevels, format, gammaSpace, data, flags);
 }
 
-BE_INLINE Image &Image::CreateCube(int size, int numMipLevels, Format format, GammaSpace gammaSpace, const byte *data, Flag flags) {
+BE_INLINE Image &Image::CreateCube(int32_t size, int32_t numMipLevels, Format format, GammaSpace gammaSpace, const byte *data, Flag flags) {
     return Create(size, size, 1, 6, numMipLevels, format, gammaSpace, data, (flags | Flag::CubeMap));
 }
 
-BE_INLINE Image &Image::Create2DArray(int width, int height, int numSlices, int numMipLevels, Format format, GammaSpace gammaSpace, const byte *data, Flag flags) {
+BE_INLINE Image &Image::Create2DArray(int32_t width, int32_t height, int32_t numSlices, int32_t numMipLevels, Format format, GammaSpace gammaSpace, const byte *data, Flag flags) {
     return Create(width, height, 1, numSlices, numMipLevels, format, gammaSpace, data, flags);
 }
 

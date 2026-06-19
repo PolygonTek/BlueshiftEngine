@@ -644,23 +644,23 @@ bool Image::LoadDDSFromMemory(const char *name, const byte *data, size_t size) {
     this->arraySize = ddsArraySize * (isCube ? 6 : 1);
     this->flags = isCube ? Flag::CubeMap : Flag::None;
 
-    int bufSize = SizeInBytes(0, numMipLevels);
+    size_t bufSize = SizeInBytes(0, numMipLevels);
     this->pic = (byte *)Mem_Alloc256(bufSize);
     this->alloced = true;
 
     if (isCube) {
         for (int mipLevel = 0; mipLevel < numMipLevels; mipLevel++) {
-            int sliceSize = SizeInBytesForSlice(mipLevel);
+            size_t sliceSize = SizeInBytesForSlice(mipLevel);
 
             for (int sliceIndex = 0; sliceIndex < arraySize; sliceIndex++) {
                 byte *dest = GetPixels(mipLevel, sliceIndex);
 
-                simdProcessor->Memcpy(dest, ptr, sliceSize);
+                simdProcessor->Memcpy(dest, ptr, static_cast<int>(sliceSize));
                 ptr += sliceSize;
             }
         }
     } else {
-        simdProcessor->Memcpy(this->pic, ptr, bufSize);
+        simdProcessor->Memcpy(this->pic, ptr, static_cast<int>(bufSize));
     }
 
     return true;
@@ -716,38 +716,38 @@ static bool LoadDDSInfo(File *fp, DdsFileHeader &header, Image::Format &format, 
     return true;
 }
 
-bool Image::LoadDDSMipRange(File *fp, int headerWidth, int headerHeight, int headerDepth, int headerArraySize, int headerMipmapCount, bool isCubemap, int firstMip, int mipCount, MipRange *outInfo) {
-    // headerDepth 와 headerMipmapCount 는 0 일 수 있기 때문에 여기서 최소 1 로 변경해준다.
-    headerDepth = Max(1, headerDepth);
-    headerMipmapCount = Max(1, headerMipmapCount);
+bool Image::LoadDDSMipRangeData(File *fp, int32_t originalWidth, int32_t originalHeight, int32_t originalDepth, int32_t ddsArraySize, int32_t originalMipLevels, bool isCubemap, int32_t firstMip, int32_t mipCount, MipRange *outInfo) {
+    // DDS depth 와 mip count 값은 0 일 수 있기 때문에 여기서 최소 1 로 변경해준다.
+    originalDepth = Max(1, originalDepth);
+    originalMipLevels = Max(1, originalMipLevels);
 
-    Clamp(firstMip, 0, headerMipmapCount - 1);
-    Clamp(mipCount, 1, headerMipmapCount - firstMip);
+    Clamp(firstMip, 0, originalMipLevels - 1);
+    Clamp(mipCount, 1, originalMipLevels - firstMip);
 
-    this->width = BE1::Max(1, headerWidth >> firstMip);
-    this->height = BE1::Max(1, headerHeight >> firstMip);
-    this->depth = BE1::Max(1, headerDepth >> firstMip);
+    this->width = BE1::Max(1, originalWidth >> firstMip);
+    this->height = BE1::Max(1, originalHeight >> firstMip);
+    this->depth = BE1::Max(1, originalDepth >> firstMip);
     this->numMipLevels = mipCount;
-    this->arraySize = headerArraySize * (isCubemap ? 6 : 1);
+    this->arraySize = ddsArraySize * (isCubemap ? 6 : 1);
     this->flags = isCubemap ? Flag::CubeMap : Flag::None;
 
-    int bufSize = SizeInBytes(0, numMipLevels);
+    size_t bufSize = SizeInBytes(0, numMipLevels);
     this->pic = (byte *)Mem_Alloc256(bufSize);
     this->alloced = true;
 
     int seekStart = fp->Tell();
-    int seekOffset = Image::MemRequired(headerWidth, headerHeight, headerDepth, firstMip, arraySize, format);
+    uint64_t seekOffset = Image::MemRequired(originalWidth, originalHeight, originalDepth, firstMip, arraySize, format);
 
     // NOTE: fp 가 zip 으로 압축된 파일인 경우 Seek 을 사용할 수 없음에 주의
-    fp->Seek(seekStart + seekOffset);
+    fp->Seek(seekStart + static_cast<int64_t>(seekOffset));
 
     // NOTE: DDS 는 mip-major order 로 저장되고, Image 는 slice-major order 로 저장된다.
     for (int mipLevel = 0; mipLevel < numMipLevels; mipLevel++) {
-        int sliceSize = SizeInBytesForSlice(mipLevel);
+        size_t sliceSize = SizeInBytesForSlice(mipLevel);
 
         for (int sliceIndex = 0; sliceIndex < arraySize; sliceIndex++) {
             byte *dest = GetPixels(mipLevel, sliceIndex);
-            int readSize = fp->Read(dest, sliceSize);
+            size_t readSize = fp->Read(dest, sliceSize);
             if (readSize != sliceSize) {
                 Mem_AlignedFree(this->pic);
                 this->pic = nullptr;
@@ -758,17 +758,17 @@ bool Image::LoadDDSMipRange(File *fp, int headerWidth, int headerHeight, int hea
     }
 
     if (outInfo) {
-        outInfo->originalWidth = headerWidth;
-        outInfo->originalHeight = headerHeight;
-        outInfo->originalDepth = headerDepth;
-        outInfo->originalMipLevels = headerMipmapCount;
+        outInfo->originalWidth = originalWidth;
+        outInfo->originalHeight = originalHeight;
+        outInfo->originalDepth = originalDepth;
+        outInfo->originalMipLevels = originalMipLevels;
         outInfo->firstMip = firstMip;
         outInfo->mipCount = mipCount;
     }
     return true;
 }
 
-bool Image::LoadDDSMipRange(const char *filename, int firstMip, int mipCount, MipRange *outInfo) {
+bool Image::LoadDDSMipRange(const char *filename, int32_t firstMip, int32_t mipCount, MipRange *outInfo) {
     if (!filename || filename[0] == 0) {
         return false;
     }
@@ -778,26 +778,34 @@ bool Image::LoadDDSMipRange(const char *filename, int firstMip, int mipCount, Mi
         return false;
     }
 
+    bool ret = LoadDDSMipRange(fp, firstMip, mipCount, outInfo);
+
+    fileSystem.CloseFile(fp);
+    return ret;
+}
+
+bool Image::LoadDDSMipRange(File *fp, int32_t firstMip, int32_t mipCount, MipRange *outInfo) {
+    if (!fp) {
+        return false;
+    }
+
     DdsFileHeader header;
     int ddsArraySize;
     if (!LoadDDSInfo(fp, header, format, gammaSpace, ddsArraySize)) {
-        fileSystem.CloseFile(fp);
         return false;
     }
 
     bool isCubemap = (header.ddsCaps.caps2 & DDSCAPS2_CUBEMAP) ? true : false;
 
-    if (!LoadDDSMipRange(fp, header.width, header.height, header.depth, ddsArraySize, header.mipmapCount, isCubemap, firstMip, mipCount, outInfo)) {
-        fileSystem.CloseFile(fp);
+    if (!LoadDDSMipRangeData(fp, header.width, header.height, header.depth, ddsArraySize, header.mipmapCount, isCubemap, firstMip, mipCount, outInfo)) {
         return false;
     }
 
-    fileSystem.CloseFile(fp);
     return true;
 }
 
 // Returns the first mip level whose largest dimension is less than or equal to maxDimension.
-int Image::ComputeFirstMipForMaxDimension(int width, int height, int depth, int numMipLevels, int maxDimension) {
+int32_t Image::ComputeFirstMipForMaxDimension(int32_t width, int32_t height, int32_t depth, int32_t numMipLevels, int32_t maxDimension) {
     if (maxDimension <= 0) {
         return 0;
     }
@@ -816,13 +824,23 @@ int Image::ComputeFirstMipForMaxDimension(int width, int height, int depth, int 
     return BE1::Max(0, numMipLevels - 1);
 }
 
-bool Image::LoadDDSMipRangeForMaxDimension(const char *filename, int maxDimension, MipRange *outInfo) {
+bool Image::LoadDDSMipRangeForMaxDimension(const char *filename, int32_t maxDimension, MipRange *outInfo) {
     if (!filename || filename[0] == 0) {
         return false;
     }
 
-    size_t fileSize;
-    File *fp = fileSystem.OpenFileRead(filename, false, &fileSize);
+    File *fp = fileSystem.OpenFileRead(filename, false);
+    if (!fp) {
+        return false;
+    }
+
+    bool ret = LoadDDSMipRangeForMaxDimension(fp, maxDimension, outInfo);
+
+    fileSystem.CloseFile(fp);
+    return ret;
+}
+
+bool Image::LoadDDSMipRangeForMaxDimension(File *fp, int32_t maxDimension, MipRange *outInfo) {
     if (!fp) {
         return false;
     }
@@ -830,28 +848,23 @@ bool Image::LoadDDSMipRangeForMaxDimension(const char *filename, int maxDimensio
     DdsFileHeader header;
     int ddsArraySize;
     if (!LoadDDSInfo(fp, header, format, gammaSpace, ddsArraySize)) {
-        fileSystem.CloseFile(fp);
         return false;
     }
 
     bool isCubemap = (header.ddsCaps.caps2 & DDSCAPS2_CUBEMAP) ? true : false;
 
-    int firstMip = Image::ComputeFirstMipForMaxDimension(header.width, header.height, header.depth, header.mipmapCount, maxDimension);
-    int mipCount = header.mipmapCount - firstMip;
+    int32_t firstMip = Image::ComputeFirstMipForMaxDimension(header.width, header.height, header.depth, header.mipmapCount, maxDimension);
+    int32_t mipCount = header.mipmapCount - firstMip;
 
-    if (!LoadDDSMipRange(fp, header.width, header.height, header.depth, ddsArraySize, header.mipmapCount, isCubemap, firstMip, mipCount, outInfo)) {
-        fileSystem.CloseFile(fp);
+    if (!LoadDDSMipRangeData(fp, header.width, header.height, header.depth, ddsArraySize, header.mipmapCount, isCubemap, firstMip, mipCount, outInfo)) {
         return false;
     }
 
-    fileSystem.CloseFile(fp);
     return true;
 }
 
-bool Image::WriteDDS(const char *filename) const {
-    File *fp = fileSystem.OpenFile(filename, File::Mode::Write);
+bool Image::WriteDDS(File *fp) const {
     if (!fp) {
-        BE_WARNLOG("Image::WriteDDS: file open error\n");
         return false;
     }
 
@@ -885,7 +898,7 @@ bool Image::WriteDDS(const char *filename) const {
 
     if (IsCompressed()) {
         header.flags |= DDSD_LINEARSIZE;
-        header.pitchOrLinearSize = SizeInBytesForSlice();
+        header.pitchOrLinearSize = static_cast<uint32_t>(SizeInBytesForSlice());
     } else {
         header.flags |= DDSD_PITCH;
         header.pitchOrLinearSize = (width * BytesPerPixel() + 7) / 8;
@@ -1207,7 +1220,6 @@ bool Image::WriteDDS(const char *filename) const {
         dx10Header.dxgiFormat = DX10_FORMAT_R11G11B10_FLOAT;
         break;
     default:
-        fileSystem.CloseFile(fp);
         BE_WARNLOG("Image::WriteDDS: invalid format '%s' for DDS\n", Image::FormatName(format));
         return false;
     }
@@ -1224,7 +1236,7 @@ bool Image::WriteDDS(const char *filename) const {
     // 반면, Image 의 데이터는 slice-major order 로 되어있다.
     if (arraySize > 1) {
         for (int mipLevel = 0; mipLevel < numMipLevels; mipLevel++) {
-            int sliceSize = SizeInBytesForSlice(mipLevel);
+            size_t sliceSize = SizeInBytesForSlice(mipLevel);
 
             for (int sliceIndex = 0; sliceIndex < arraySize; sliceIndex++) {
                 const byte *slicePtr = GetPixels(mipLevel, sliceIndex);
@@ -1236,9 +1248,21 @@ bool Image::WriteDDS(const char *filename) const {
         fp->Write(pic, SizeInBytes(0, numMipLevels));
     }
 
+    return true;
+}
+
+bool Image::WriteDDS(const char *filename) const {
+    File *fp = fileSystem.OpenFile(filename, File::Mode::Write);
+    if (!fp) {
+        BE_WARNLOG("Image::WriteDDS: file open error\n");
+        return false;
+    }
+
+    bool ret = WriteDDS(fp);
+
     fileSystem.CloseFile(fp);
 
-    return true;
+    return ret;
 }
 
 BE_NAMESPACE_END

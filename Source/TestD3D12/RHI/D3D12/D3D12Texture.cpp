@@ -1472,7 +1472,7 @@ bool D3D12Renderer::GetTextureImage(RHI::Texture *texture, int mipLevel, int sli
     }
 
     int srcPitch = subresourceFootprint.Footprint.RowPitch;
-    int dstPitch = BE1::Image::MemRequired(subresourceFootprint.Footprint.Width, 1, 1, 1, 1, _texture->srcFormat);
+    int dstPitch = static_cast<int>(BE1::Image::MemRequired(subresourceFootprint.Footprint.Width, 1, 1, 1, 1, _texture->srcFormat));
 
     for (UINT z = 0; z < subresourceFootprint.Footprint.Depth; ++z) {
         for (UINT y = 0; y < subresourceFootprint.Footprint.Height; ++y) {
@@ -1491,7 +1491,7 @@ bool D3D12Renderer::GetTextureImage(RHI::Texture *texture, int mipLevel, int sli
         if (!tempImage.ConvertFormat(dstFormat, dstImage)) {
             return false;
         }
-        BE1::simdProcessor->Memcpy(outPixels, dstImage.GetPixels(), dstImage.SizeInBytes());
+        BE1::simdProcessor->Memcpy(outPixels, dstImage.GetPixels(), static_cast<int>(dstImage.SizeInBytes()));
     }
     return true;
 }
@@ -1533,7 +1533,7 @@ bool D3D12Renderer::SetTextureSubImage(RHI::Texture *texture, int mipLevel, int 
     D3D12_PLACED_SUBRESOURCE_FOOTPRINT subresourceFootprint;
     device->GetCopyableFootprints(&_texture->textureDesc, subresourceIndex, 1, 0, &subresourceFootprint, nullptr, nullptr, nullptr);
 
-    int srcPitch = BE1::Image::MemRequired(width, 1, 1, 1, 1, imageFormat);
+    int srcPitch = static_cast<int>(BE1::Image::MemRequired(width, 1, 1, 1, 1, imageFormat));
     int dstPitch = subresourceFootprint.Footprint.RowPitch;
     uint64_t uploadBufferSize = dstPitch * height * depth;
 

@@ -102,7 +102,7 @@ bool LoadingSystem::EnqueueTextureLoad(SharedPtr<Texture> texture, const char *f
     return true;
 }
 
-bool LoadingSystem::EnqueueTextureStreamingReplacement(SharedPtr<Texture> texture, const char *filename, int firstMip, LoadPriority priority) {
+bool LoadingSystem::EnqueueTextureStreamingReplacement(SharedPtr<Texture> texture, const char *filename, int32_t firstMip, LoadPriority priority) {
     if (!texture || !filename || !filename[0]) {
         return false;
     }
@@ -448,13 +448,15 @@ bool LoadingSystem::ProcessTextureLoadRequest(const LoadRequest &request) {
 
     BE_LOG("Loading texture '%s'...\n", request.filename.c_str());
 
-    // Texture::Flag::Streaming 이 켜져있고 DDS 파일이면 스트리밍 로딩을 시도한다.
-    if (BE1::HasFlag(request.textureFlags, Texture::Flag::Streaming) && request.filename.CheckExtension(".dds")) {
+    // Texture::Flag::Streaming 이 켜져있으면 스트리밍 가능한 파일의 partial mip loading 을 시도한다.
+    if (BE1::HasFlag(request.textureFlags, Texture::Flag::Streaming)) {
         // 이미지 파일에서 r_textureStreamingMinResidentMaxDimension 이하의 크기까지의 mip 레벨만 initial loading
-        if (image->LoadDDSMipRangeForMaxDimension(request.filename.c_str(), textureManager.GetStreamingTextureMinResidentMaxDimension(), &mipRange)) {
+        if (image->LoadMipRangeForMaxDimension(request.filename.c_str(), textureManager.GetStreamingTextureMinResidentMaxDimension(), &mipRange)) {
             useMipRange = mipRange.mipCount < mipRange.originalMipLevels;
         }
-    } else {
+    }
+
+    if (image->IsEmpty()) {
         // 이미지 파일 full loading
         image->Load(request.filename.c_str());
     }
@@ -507,14 +509,14 @@ bool LoadingSystem::ProcessTextureStreamingReplacementRequest(const LoadRequest 
     // 기존 텍스쳐의 교체 요청을 받았다고 표시
     completion.isStreamingReplacement = true;
 
-    uint32_t mipCount = request.originalMipLevels - request.firstMip;
+    int32_t mipCount = request.originalMipLevels - request.firstMip;
 
     SharedPtr<BE1::Image> image = MakeShared<BE1::Image>();
     BE1::Image::MipRange mipRange;
 
     BE_LOG("Loading texture '%s' [%i, %i]...\n", request.filename.c_str(), request.firstMip, request.firstMip + mipCount - 1);
 
-    image->LoadDDSMipRange(request.filename.c_str(), request.firstMip, mipCount, &mipRange);
+    image->LoadMipRange(request.filename.c_str(), request.firstMip, mipCount, &mipRange);
     
     if (image->IsEmpty()) {
         BE_WARNLOG("LoadingSystem::ProcessTextureStreamingReplacementRequest: couldn't load texture \"%s\"\n", request.filename.c_str());

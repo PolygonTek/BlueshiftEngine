@@ -29,7 +29,7 @@ struct ImageFormatInfo {
     int alphaBits;
     Image::FormatType type;
     ImageUnpackFunc unpackRGBA8888; // Unpack to RGBA_8_8_8_8
-    ImagePackFunc packRGBA8888;     // Pack from RGBA_8_8_8_8`
+    ImagePackFunc packRGBA8888;     // Pack from RGBA_8_8_8_8
     ImageUnpackFunc unpackRGBA32F;  // Unpack to RGBA_32F_32F_32F_32F
     ImagePackFunc packRGBA32F;      // Pack from RGBA_32F_32F_32F_32F
 };
