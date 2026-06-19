@@ -2794,6 +2794,40 @@ BE1::Image::Format D3D12Renderer::ToUAVImageFormat(BE1::Image::Format format) co
     return BE1::Image::Format::Unknown;
 }
 
+bool D3D12Renderer::CanGenerateMipmapsOnGPU(RHI::TextureType textureType, BE1::Image::Format imageFormat, int arraySize) const {
+    switch (textureType) {
+    case RHI::TextureType::Texture2D:
+    case RHI::TextureType::Texture3D:
+        break;
+    case RHI::TextureType::TextureCube:
+        if (arraySize != 6) {
+            return false;
+        }
+        break;
+    default:
+        return false;
+    }
+
+    if (BE1::Image::IsCompressed(imageFormat) ||
+        BE1::Image::IsPacked(imageFormat) ||
+        BE1::Image::IsDepthFormat(imageFormat) ||
+        BE1::Image::IsDepthStencilFormat(imageFormat)) {
+        return false;
+    }
+
+    // 현재 D3D12 mip generation compute shader 는 Float4 / UNorm4 텍스쳐만 지원한다.
+    if (BE1::Image::NumComponents(imageFormat) != 4) {
+        return false;
+    }
+
+    if (!BE1::Image::IsFloatFormat(imageFormat) && BE1::Image::NeedFloatConversion(imageFormat)) {
+        return false;
+    }
+
+    DXGI_FORMAT dxgiFormat = DXGI_FORMAT_UNKNOWN;
+    return ImageFormatToDXGIFormat(imageFormat, false, &dxgiFormat) && IsSupportedUAVFormat(dxgiFormat);
+}
+
 bool D3D12Renderer::IsSupportedUAVFormat(DXGI_FORMAT format) const {
     // D3D11.0 부터 지원하는 포맷
     if (format == DXGI_FORMAT_R32_FLOAT ||

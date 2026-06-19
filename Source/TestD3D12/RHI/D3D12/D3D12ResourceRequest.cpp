@@ -101,14 +101,13 @@ void D3D12Renderer::ProcessResourceRequests(RHI::FrameThreadData *frameThreadDat
                 RequestRelease(request.uploadTextureSubImageRequest.uploadBuffer);
             }
             break;
-        case D3D12ResourceRequest::Type::UpdateTextureViewMipRange:
+        case D3D12ResourceRequest::Type::BuildMipChain:
             if (frameThreadData) {
-                ExecuteUpdateTextureViewMipRange(commandContext, static_cast<D3D12Texture *>(request.object), request.updateTextureViewMipRangeRequest);
-            }
-            break;
-        case D3D12ResourceRequest::Type::GenerateMipChain:
-            if (frameThreadData) {
-                ExecuteGenerateMipChain(commandContext, static_cast<D3D12Texture *>(request.object));
+                if (ExecuteBuildMipChain(commandContext, static_cast<D3D12Texture *>(request.object), request.buildMipChainRequest)) {
+                    static_cast<RHI::GPUResource *>(request.object)->SetStatus(RHI::GPUResourceStatus::Ready);
+                } else {
+                    static_cast<RHI::GPUResource *>(request.object)->SetStatus(RHI::GPUResourceStatus::Failed);
+                }
             }
             break;
         }

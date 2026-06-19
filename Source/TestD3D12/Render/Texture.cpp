@@ -131,14 +131,7 @@ void Texture::CreateDefaultTexture(int size, Texture::Flag flags) {
         }
     }
 
-    flags |= Texture::Flag::HighQuality | Texture::Flag::NoCompression | Texture::Flag::UnorderedAccess | Texture::Flag::NoMipmaps | Texture::Flag::AllocateEmptyMipmaps;
-    Create(RHI::TextureType::Texture2D, image, flags);
-
-    // 컴퓨트 쉐이더를 통해 밉맵 생성
-    // 컴퓨트 쉐이더로 밉맵을 생성하기 위해서는 대상 텍스쳐를 만들 때 하위 mip level 들이 존재해야 하고, UAV 도 만들어야 한다.
-    // UAV 로 만들 sRGB 텍스쳐의 경우에는 텍스쳐 생성 함수에서 자동으로 Typeless 텍스쳐로 만들어 진다.
-    // sRGB 텍스쳐를 생성할 때 Typeless 로 만들어야 SRV 는 sRGB 포맷으로, UAV 는 Linear 포맷으로 생성된다.
-    GenerateMipmaps();
+    Create(RHI::TextureType::Texture2D, image, flags | Texture::Flag::HighQuality | Texture::Flag::NoCompression);
 }
 
 void Texture::CreateColorTexture(int size, const BE1::Color4 &color, Flag flags) {
@@ -153,7 +146,7 @@ void Texture::CreateColorTexture(int size, const BE1::Color4 &color, Flag flags)
         }
     }
 
-    Create(RHI::TextureType::Texture2D, image, Texture::Flag::HighQuality | flags);
+    Create(RHI::TextureType::Texture2D, image, flags | Texture::Flag::HighQuality);
 }
 
 void Texture::CreateFlatNormalTexture(int size, Texture::Flag flags) {
@@ -170,24 +163,23 @@ void Texture::CreateFlatNormalTexture(int size, Texture::Flag flags) {
         }
     }
 
-    Create(RHI::TextureType::Texture2D, image, Texture::Flag::NormalMap | Texture::Flag::NoScaleDown | flags);
+    Create(RHI::TextureType::Texture2D, image, flags | Texture::Flag::NormalMap | Texture::Flag::NoScaleDown);
 }
 
-RHI::Texture *Texture::CreateRHITexture(RHI::TextureType textureType, RHI::TextureFlag flags, SharedPtr<const BE1::Image> srcImage, BE1::Image::Format dstFormat, bool generateMipmaps, bool allocateEmptyMipmaps, RHI::GPUResourceState initialState) {
+RHI::Texture *Texture::CreateRHITexture(RHI::TextureType textureType, RHI::TextureFlag flags, SharedPtr<const BE1::Image> srcImage, BE1::Image::Format dstFormat, bool generateMipmapsOnCPU, RHI::TextureMipInitMode mipInitMode, RHI::GPUResourceState initialState) {
     BE1::Image::Format srcFormat = srcImage->GetFormat();
     bool srcCompressed = BE1::Image::IsCompressed(srcFormat);
     bool srcFormatSupported = RHI::renderer->IsSupportedImageFormat(srcFormat);
 
     if (!srcImage->IsEmpty()) {
         bool dstFormatSupported = RHI::renderer->IsSupportedImageFormat(dstFormat);
-
         if (!dstFormatSupported) {
             BE_WARNLOG("Texture::PrepareTextureImage: Unsupported internal image format %s\n", BE1::Image::FormatName(dstFormat));
             return nullptr;
         }
 
         // 필요하다면 밉맵을 생성한다.
-        if (generateMipmaps) {
+        if (generateMipmapsOnCPU) {
             int w = srcImage->GetWidth();
             int h = srcImage->GetHeight();
             int d = srcImage->GetDepth();
@@ -225,7 +217,20 @@ RHI::Texture *Texture::CreateRHITexture(RHI::TextureType textureType, RHI::Textu
         }
     }
 
-    return RHI::renderer->CreateTexture(textureType, flags, srcImage, allocateEmptyMipmaps, {}, 1, initialState);
+    return RHI::renderer->CreateTexture(textureType, flags, srcImage, mipInitMode, {}, 1, initialState);
+}
+
+static bool ShouldGenerateMipmapsOnGPU(RHI::TextureType textureType, SharedPtr<const BE1::Image> srcImage, BE1::Image::Format dstFormat) {
+    if (!srcImage || srcImage->IsEmpty()) {
+        return false;
+    }
+
+    const int maxMipLevels = BE1::Image::MaxMipLevels(srcImage->GetWidth(), srcImage->GetHeight(), srcImage->GetDepth());
+    if (maxMipLevels <= 1 || srcImage->NumMipmaps() >= maxMipLevels) {
+        return false;
+    }
+
+    return RHI::renderer->CanGenerateMipmapsOnGPU(textureType, dstFormat, srcImage->GetArraySize());
 }
 
 bool Texture::Prepare(RHI::TextureType textureType, SharedPtr<const BE1::Image> srcImage, Flag flags, InternalData &outInternalData) {
@@ -280,10 +285,20 @@ bool Texture::Prepare(RHI::TextureType textureType, SharedPtr<const BE1::Image> 
 
     RHI::GPUResourceState initialState = BE1::HasFlag(flags, Texture::Flag::Compute) ? RHI::GPUResourceState::ShaderResourceCompute : RHI::GPUResourceState::ShaderResource;
 
+    bool generateMipmapsOnGPU = false;
+    bool generateMipmapsOnCPU = false;
+
+    if (generateMipmaps) {
+        generateMipmapsOnGPU = ShouldGenerateMipmapsOnGPU(textureType, srcImage, dstFormat);
+        generateMipmapsOnCPU = !generateMipmapsOnGPU;
+    }
+
+    const RHI::TextureMipInitMode mipInitMode = generateMipmapsOnGPU ? RHI::TextureMipInitMode::GenerateOnGPU : (allocateEmptyMipmaps ? RHI::TextureMipInitMode::AllocateEmpty : RHI::TextureMipInitMode::FromImage);
+
     outInternalData.rhiTextureType = textureType;
     outInternalData.format = dstFormat;
     outInternalData.flags = flags;
-    outInternalData.rhiTexture = Texture::CreateRHITexture(textureType, resourceFlags, srcImage, dstFormat, generateMipmaps, allocateEmptyMipmaps, initialState);
+    outInternalData.rhiTexture = Texture::CreateRHITexture(textureType, resourceFlags, srcImage, dstFormat, generateMipmapsOnCPU, mipInitMode, initialState);
 
     return outInternalData.rhiTexture != nullptr;
 }
@@ -313,7 +328,7 @@ bool Texture::PrepareDirect(RHI::TextureType textureType, SharedPtr<const BE1::I
 
     RHI::GPUResourceState initialState = BE1::HasFlag(flags, Texture::Flag::Compute) ? RHI::GPUResourceState::ShaderResourceCompute : RHI::GPUResourceState::ShaderResource;
 
-    RHI::Texture *texture = RHI::renderer->CreateTexture(textureType, resourceFlags, srcImage, false, {}, 1, initialState);
+    RHI::Texture *texture = RHI::renderer->CreateTexture(textureType, resourceFlags, srcImage, RHI::TextureMipInitMode::FromImage, {}, 1, initialState);
     if (!texture) {
         return false;
     }
@@ -333,12 +348,6 @@ void Texture::ApplyPrepared(InternalData &newInternalData) {
     Purge();
 
     internalData.Swap(newInternalData);
-}
-
-void Texture::GenerateMipmaps() {
-    assert(state == State::Ready);
-
-    RHI::renderer->GenerateMipChain(internalData.rhiTexture);
 }
 
 bool Texture::Load(const char *filename, Texture::Flag flags) {

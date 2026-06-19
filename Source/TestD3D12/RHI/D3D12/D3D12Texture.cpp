@@ -378,7 +378,7 @@ RHI::Format D3D12Texture::GetFormat() const {
     return D3D12Renderer::DXGIFormatToRHIFormat(textureDesc.Format);
 }
 
-RHI::Texture *D3D12Renderer::CreateTexture(RHI::TextureType textureType, RHI::TextureFlag flags, std::shared_ptr<const BE1::Image> srcImage, bool allocateEmptyMipmaps, const RHI::ClearValue &clearValue, uint32_t sampleCount, RHI::GPUResourceState initialState) {
+RHI::Texture *D3D12Renderer::CreateTexture(RHI::TextureType textureType, RHI::TextureFlag flags, std::shared_ptr<const BE1::Image> srcImage, RHI::TextureMipInitMode mipInitMode, const RHI::ClearValue &clearValue, uint32_t sampleCount, RHI::GPUResourceState initialState) {
     if (!srcImage) {
         BE_ERRLOG("D3D12Renderer::CreateTexture: srcImage is null\n");
         return nullptr;
@@ -435,7 +435,7 @@ RHI::Texture *D3D12Renderer::CreateTexture(RHI::TextureType textureType, RHI::Te
 
     int maxDstMipLevels = 0;
 
-    if (allocateEmptyMipmaps) {
+    if (mipInitMode == RHI::TextureMipInitMode::AllocateEmpty || mipInitMode == RHI::TextureMipInitMode::GenerateOnGPU) {
         // srcImage 의 mipmap level 0 만 사용하고, 나머지 서브 mipmap levels 는 빈 공간으로 채운다.
         maxDstMipLevels = BE1::Image::MaxMipLevels(srcImage->GetWidth(), srcImage->GetHeight(), srcImage->GetDepth());
     } else {
@@ -555,13 +555,19 @@ RHI::Texture *D3D12Renderer::CreateTexture(RHI::TextureType textureType, RHI::Te
         texture->SetStatus(RHI::GPUResourceStatus::Pending);
 
         D3D12ResourceRequest request;
-        request.type = D3D12ResourceRequest::Type::UploadTexture;
         request.object = texture;
-        request.uploadTextureRequest.srcImage = srcImage;
-        request.uploadTextureRequest.resourceDesc = textureDesc;
-        request.uploadTextureRequest.dstFirstMip = 0;
-        // allocateEmptyMipmaps == true 라면, srcImage 의 mipmap level 0 만 사용하고, 나머지 서브 mipmap levels 는 빈 공간으로 채운다.
-        request.uploadTextureRequest.mipCount = allocateEmptyMipmaps ? 1 : srcImage->NumMipmaps();
+
+        if (mipInitMode == RHI::TextureMipInitMode::GenerateOnGPU) {
+            request.type = D3D12ResourceRequest::Type::BuildMipChain;
+            request.buildMipChainRequest.srcImage = srcImage;
+        } else {
+            request.type = D3D12ResourceRequest::Type::UploadTexture;
+            request.uploadTextureRequest.srcImage = srcImage;
+            request.uploadTextureRequest.resourceDesc = textureDesc;
+            request.uploadTextureRequest.dstFirstMip = 0;
+            // AllocateEmpty 라면, srcImage 의 mipmap level 0 만 사용하고, 나머지 서브 mipmap levels 는 빈 공간으로 채운다.
+            request.uploadTextureRequest.mipCount = mipInitMode == RHI::TextureMipInitMode::AllocateEmpty ? 1 : srcImage->NumMipmaps();
+        }
         EnqueueResourceRequest(std::move(request));
     }
 
@@ -621,7 +627,7 @@ bool D3D12Renderer::ExecuteUploadTexture(D3D12ResourceCommandContext &commandCon
         device->GetCopyableFootprints(&request.resourceDesc, 0, numSubresources, 0, subresourceFootprints, nullptr, nullptr, &size);
 
         // NOTE: size 는 텍스쳐 전체를 기준으로 계산된 값이다.
-        // 만약 allocateEmptyMipmaps 가 true 라면, srcImage 의 mipmap level 0 만 사용하기 때문에 업로드 버퍼가 실제로 필요한 데이터보다 더 큰 사이즈가 될 수 있다.
+        // AllocateEmpty / GenerateOnGPU 는 srcImage 의 mipmap level 0 만 사용하기 때문에 업로드 버퍼가 실제로 필요한 데이터보다 더 큰 사이즈가 될 수 있다.
         // 업로드 버퍼 할당에 약간의 낭비는 있으나 필요한 부분만 사용할 것이므로 문제가 되지는 않는다.
         D3D12_RESOURCE_DESC uploadBufferDesc;
         uploadBufferDesc.Dimension = D3D12_RESOURCE_DIMENSION_BUFFER;
@@ -720,6 +726,70 @@ bool D3D12Renderer::ExecuteUploadTexture(D3D12ResourceCommandContext &commandCon
         }
     }
 
+    return true;
+}
+
+bool D3D12Renderer::ExecuteBuildMipChain(D3D12ResourceCommandContext &commandContext, D3D12Texture *texture, const D3D12BuildMipChainRequest &request) {
+    if (!request.srcImage || request.srcImage->IsEmpty()) {
+        BE_ERRLOG("D3D12Renderer::ExecuteBuildMipChain: source image is empty\n");
+        return false;
+    }
+
+    SharedPtr<BE1::Image> tempImage = MakeShared<BE1::Image>();
+    tempImage->InitFromMemory(request.srcImage->GetWidth(), request.srcImage->GetHeight(), request.srcImage->GetDepth(), request.srcImage->GetArraySize(),
+        texture->textureDesc.MipLevels, request.srcImage->GetFormat(), request.srcImage->GetGammaSpace(), nullptr, request.srcImage->GetFlags());
+
+    RHI::TextureFlag tempFlags = RHI::TextureFlag::ShaderResource | RHI::TextureFlag::UnorderedAccess | RHI::TextureFlag::SkipDefaultViews;
+    if (request.srcImage->GetGammaSpace() != BE1::Image::GammaSpace::Linear) {
+        tempFlags |= RHI::TextureFlag::Typeless;
+    }
+
+    // mip chain 을 만들기 위한 임시 Unordered Access 텍스쳐를 생성한다.
+    D3D12Texture *tempTexture = static_cast<D3D12Texture *>(CreateTexture(texture->type, tempFlags, tempImage, RHI::TextureMipInitMode::AllocateEmpty, {}, 1, texture->defaultState));
+    if (!tempTexture) {
+        return false;
+    }
+
+    D3D12UploadTextureRequest uploadRequest;
+    uploadRequest.srcImage = request.srcImage;
+    uploadRequest.resourceDesc = tempTexture->textureDesc;
+    uploadRequest.dstFirstMip = 0;
+    uploadRequest.mipCount = 1;
+
+    // 임시 텍스쳐에 원본 이미지의 mip-0 만 업로드한다.
+    if (!ExecuteUploadTexture(commandContext, tempTexture, uploadRequest)) {
+        DestroyTexture(tempTexture);
+        return false;
+    }
+
+    D3D12CommandList *commandList = commandContext.GetGraphicsCommandList();
+
+    // 컴퓨트 셰이더로 밉맵 생성
+    if (!GenerateMipChain(commandList, tempTexture)) {
+        DestroyTexture(tempTexture);
+        return false;
+    }
+
+    // TODO: BC 인코딩이 필요하다면 ByteAddressBuffer or structured UAV buffer 를 생성
+    // Compute shader 로 encoding
+    // buffer -> 대상 텍스쳐로 CopyTextureRegion
+
+    // 임시 텍스쳐에서 대상 텍스쳐로 리소스 복사
+    ID3D12Resource *dstResource = texture->GetResource();
+    ID3D12Resource *srcResource = tempTexture->GetResource();
+    const D3D12_RESOURCE_STATES dstDefaultState = ToD3D12ResourceState(texture->defaultState);
+    const D3D12_RESOURCE_STATES srcDefaultState = ToD3D12ResourceState(tempTexture->defaultState);
+
+    commandList->ResourceBarrier(srcResource, srcDefaultState, D3D12_RESOURCE_STATE_COPY_SOURCE);
+    commandList->ResourceBarrier(dstResource, dstDefaultState, D3D12_RESOURCE_STATE_COPY_DEST);
+
+    commandList->GetGraphicsCommandList()->CopyResource(dstResource, srcResource);
+
+    commandList->ResourceBarrier(dstResource, D3D12_RESOURCE_STATE_COPY_DEST, dstDefaultState);
+    commandList->ResourceBarrier(srcResource, D3D12_RESOURCE_STATE_COPY_SOURCE, srcDefaultState);
+
+    // 임시 텍스쳐 파괴
+    DestroyTexture(tempTexture);
     return true;
 }
 
@@ -1331,83 +1401,6 @@ RHI::ViewID D3D12Renderer::CreateDSV(D3D12Texture *texture, RHI::Format typeless
     return viewID;
 }
 
-bool D3D12Renderer::UpdateTextureViewMipRange(RHI::Texture *texture, RHI::ViewID viewID, uint32_t mostDetailedMip, uint32_t mipLevels) {
-    D3D12Texture *_texture = static_cast<D3D12Texture *>(texture);
-    assert(_texture);
-
-    if (!_texture->srvEntries.IsValidIndex(viewID.value)) {
-        return false;
-    }
-
-    if (mostDetailedMip >= _texture->textureDesc.MipLevels || mipLevels == 0) {
-        return false;
-    }
-
-    D3D12SRVEntry &entry = _texture->srvEntries[viewID.value];
-    if (entry.cpuDescriptorHandle.ptr == 0) {
-        return false;
-    }
-
-    D3D12ResourceRequest request;
-    request.type = D3D12ResourceRequest::Type::UpdateTextureViewMipRange;
-    request.object = texture;
-    request.updateTextureViewMipRangeRequest.viewID = viewID;
-    request.updateTextureViewMipRangeRequest.firstMip = mostDetailedMip;
-    request.updateTextureViewMipRangeRequest.mipCount = mipLevels;
-    EnqueueResourceRequest(std::move(request));
-    return true;
-}
-
-bool D3D12Renderer::ExecuteUpdateTextureViewMipRange(D3D12ResourceCommandContext &commandContext, D3D12Texture *texture, const D3D12UpdateTextureViewMipRangeRequest &request) {
-    D3D12SRVEntry &entry = texture->srvEntries[request.viewID.value];
-    if (entry.cpuDescriptorHandle.ptr == 0) {
-        return false;
-    }
-
-    uint32_t clampedMipLevels = BE1::Min(request.mipCount, texture->textureDesc.MipLevels - request.firstMip);
-
-    switch (entry.viewDesc.ViewDimension) {
-    case D3D12_SRV_DIMENSION_TEXTURE1D:
-        entry.viewDesc.Texture1D.MostDetailedMip = request.firstMip;
-        entry.viewDesc.Texture1D.MipLevels = clampedMipLevels;
-        break;
-    case D3D12_SRV_DIMENSION_TEXTURE1DARRAY:
-        entry.viewDesc.Texture1DArray.MostDetailedMip = request.firstMip;
-        entry.viewDesc.Texture1DArray.MipLevels = clampedMipLevels;
-        break;
-    case D3D12_SRV_DIMENSION_TEXTURE2D:
-        entry.viewDesc.Texture2D.MostDetailedMip = request.firstMip;
-        entry.viewDesc.Texture2D.MipLevels = clampedMipLevels;
-        break;
-    case D3D12_SRV_DIMENSION_TEXTURE2DARRAY:
-        entry.viewDesc.Texture2DArray.MostDetailedMip = request.firstMip;
-        entry.viewDesc.Texture2DArray.MipLevels = clampedMipLevels;
-        break;
-    case D3D12_SRV_DIMENSION_TEXTURECUBE:
-        entry.viewDesc.TextureCube.MostDetailedMip = request.firstMip;
-        entry.viewDesc.TextureCube.MipLevels = clampedMipLevels;
-        break;
-    case D3D12_SRV_DIMENSION_TEXTURECUBEARRAY:
-        entry.viewDesc.TextureCubeArray.MostDetailedMip = request.firstMip;
-        entry.viewDesc.TextureCubeArray.MipLevels = clampedMipLevels;
-        break;
-    case D3D12_SRV_DIMENSION_TEXTURE3D:
-        entry.viewDesc.Texture3D.MostDetailedMip = request.firstMip;
-        entry.viewDesc.Texture3D.MipLevels = clampedMipLevels;
-        break;
-    default:
-        return false;
-    }
-
-    device->CreateShaderResourceView(texture->GetResource(), &entry.viewDesc, entry.cpuDescriptorHandle);
-
-    if (entry.bindlessIndex != D3D12BindlessDescriptorAllocator::NullIndex) {
-        D3D12_CPU_DESCRIPTOR_HANDLE bindlessCpuDescriptorHandle = GetBindlessResourceCPUDescriptorHandle(entry.bindlessIndex);
-        device->CopyDescriptorsSimple(1, bindlessCpuDescriptorHandle, entry.cpuDescriptorHandle, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
-    }
-    return true;
-}
-
 bool D3D12Renderer::GetTextureImage(RHI::Texture *texture, int mipLevel, int sliceIndex, BE1::Image::Format dstFormat, void *outPixels) {
     D3D12Texture *_texture = static_cast<D3D12Texture *>(texture);
     assert(_texture);
@@ -1654,11 +1647,50 @@ bool D3D12Renderer::SetTextureSubImageCubeFace(RHI::Texture *texture, RHI::Cubem
     return SetTextureSubImage(texture, mipLevel, to_int(face), x, y, 0, width, height, 1, imageFormat, pixels);
 }
 
-void D3D12Renderer::GenerateMipChain(RHI::Texture *texture) {
-    D3D12ResourceRequest request;
-    request.type = D3D12ResourceRequest::Type::GenerateMipChain;
-    request.object = texture;
-    EnqueueResourceRequest(std::move(request));
+bool D3D12Renderer::GenerateMipChain(RHI::CommandList *commandList, D3D12Texture *texture) {
+    if (texture->GetStatus() != RHI::GPUResourceStatus::Ready) {
+        BE_WARNLOG("D3D12Renderer::GenerateMipChain: texture is not ready\n");
+        return false;
+    }
+
+    if (texture->GetMipLevelCount() <= 1) {
+        BE_WARNLOG("D3D12Renderer::GenerateMipChain: texture has no mipmap allocations\n");
+        return false;
+    }
+
+    // 전체 텍스쳐 리소스에 대한 SRV 가 없다면 생성
+    if (!texture->HasValidView(RHI::ViewType::SRV, RHI::ViewID::PrimaryID)) {
+        CreateView(texture, RHI::ViewType::SRV);
+    }
+    // 전체 텍스쳐 리소스에 대한 UAV 가 없다면 생성
+    if (!texture->HasValidView(RHI::ViewType::UAV, RHI::ViewID::PrimaryID)) {
+        CreateView(texture, RHI::ViewType::UAV);
+    }
+
+    RHI::ViewID *srvMipSubresourceIDs = (RHI::ViewID *)_alloca(sizeof(RHI::ViewID) * texture->GetMipLevelCount() * texture->GetArraySize());
+    RHI::ViewID *uavMipSubresourceIDs = (RHI::ViewID *)_alloca(sizeof(RHI::ViewID) * texture->GetMipLevelCount() * texture->GetArraySize());
+
+    // Mip Level 별로 필요한 임시 SRV/UAV 를 생성
+    const int mipLevelCount = texture->GetMipLevelCount();
+    for (int mipLevel = 0; mipLevel < mipLevelCount; ++mipLevel) {
+        srvMipSubresourceIDs[mipLevel] = CreateView(texture, RHI::ViewType::SRV, RHI::Format::Auto, 0, texture->GetArraySize(), mipLevel, 1);
+        uavMipSubresourceIDs[mipLevel] = CreateView(texture, RHI::ViewType::UAV, RHI::Format::Auto, 0, texture->GetArraySize(), mipLevel, 1);
+    }
+
+    // 컴퓨트 쉐이더를 이용해서 밉맵 생성
+    GenerateMipChain(commandList, texture, srvMipSubresourceIDs, uavMipSubresourceIDs, true);
+
+    // 임시 SRV/UAV 삭제
+    for (int mipLevel = 0; mipLevel < mipLevelCount; ++mipLevel) {
+        if (srvMipSubresourceIDs[mipLevel].IsValid()) {
+            DestroyView(texture, RHI::ViewType::SRV, srvMipSubresourceIDs[mipLevel]);
+        }
+        if (uavMipSubresourceIDs[mipLevel].IsValid()) {
+            DestroyView(texture, RHI::ViewType::UAV, uavMipSubresourceIDs[mipLevel]);
+        }
+    }
+
+    return true;
 }
 
 void D3D12Renderer::GenerateMipChain(RHI::CommandList *commandList, const RHI::Texture *texture, const RHI::ViewID *srvMipViewIDs, const RHI::ViewID *uavMipViewIDs, bool preserveCoverage) {
@@ -1824,55 +1856,6 @@ void D3D12Renderer::GenerateMipChain(RHI::CommandList *commandList, const RHI::T
             Barrier(commandList, endBarriers, COUNT_OF(endBarriers));
         }
     }
-}
-
-bool D3D12Renderer::ExecuteGenerateMipChain(D3D12ResourceCommandContext &commandContext, D3D12Texture *texture) {
-    if (texture->GetStatus() != RHI::GPUResourceStatus::Ready) {
-        BE_WARNLOG("D3D12Renderer::ExecuteGenerateMipChain: texture is not ready\n");
-        return false;
-    }
-
-    if (texture->GetMipLevelCount() <= 1) {
-        BE_WARNLOG("D3D12Renderer::ExecuteGenerateMipChain: texture has no mipmap allocations\n");
-        return false;
-    }
-
-    // 전체 텍스쳐 리소스에 대한 SRV 생성
-    if (!texture->HasValidView(RHI::ViewType::SRV, RHI::ViewID::PrimaryID)) {
-        CreateView(texture, RHI::ViewType::SRV);
-    }
-    // 전체 텍스쳐 리소스에 대한 UAV 생성
-    if (!texture->HasValidView(RHI::ViewType::UAV, RHI::ViewID::PrimaryID)) {
-        CreateView(texture, RHI::ViewType::UAV);
-    }
-
-    RHI::ViewID *srvMipSubresourceIDs = (RHI::ViewID *)_alloca(sizeof(RHI::ViewID) * texture->GetMipLevelCount() * texture->GetArraySize());
-    RHI::ViewID *uavMipSubresourceIDs = (RHI::ViewID *)_alloca(sizeof(RHI::ViewID) * texture->GetMipLevelCount() * texture->GetArraySize());
-
-    // Mip Level 별로 임시 SRV/UAV 를 생성
-    const int mipLevelCount = texture->GetMipLevelCount();
-    for (int mipLevel = 0; mipLevel < mipLevelCount; ++mipLevel) {
-        srvMipSubresourceIDs[mipLevel] = CreateView(texture, RHI::ViewType::SRV, RHI::Format::Auto, 0, texture->GetArraySize(), mipLevel, 1);
-        uavMipSubresourceIDs[mipLevel] = CreateView(texture, RHI::ViewType::UAV, RHI::Format::Auto, 0, texture->GetArraySize(), mipLevel, 1);
-    }
-
-    // 컴퓨트 쉐이더를 이용해서 밉맵 생성
-    GenerateMipChain(commandContext.GetGraphicsCommandList(), texture, srvMipSubresourceIDs, uavMipSubresourceIDs, true);
-
-    // 임시 SRV/UAV 삭제
-    for (int mipLevel = 0; mipLevel < mipLevelCount; ++mipLevel) {
-        if (srvMipSubresourceIDs[mipLevel].IsValid()) {
-            DestroyView(texture, RHI::ViewType::SRV, srvMipSubresourceIDs[mipLevel]);
-        }
-        if (uavMipSubresourceIDs[mipLevel].IsValid()) {
-            DestroyView(texture, RHI::ViewType::UAV, uavMipSubresourceIDs[mipLevel]);
-        }
-    }
-
-    // TODO:
-    // 컴퓨트 커맨드 리스트/큐를 이용하려면, 텍스쳐를 만들 때 non-pixel shader resource 로 상태 전이가 이루어져야 한다.
-    // 이후에 렌더링에 사용할 것이므로, 다이렉트 커맨드 리스트/큐를 통해 다시 pixel shader resource 로 상태 전이를 해야 한다.
-    return true;
 }
 
 void D3D12Renderer::SetTexture(RHI::CommandList *commandList, int shaderRegister, bool shaderWritable, const RHI::Texture *texture, RHI::ViewID viewID) {

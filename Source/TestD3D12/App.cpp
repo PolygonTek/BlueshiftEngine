@@ -196,7 +196,7 @@ void App::InitGameObjects(uint32_t countX, uint32_t countY, uint32_t countZ) {
     uint32_t goCount = goCountX * goCountY * goCountZ;
     gameObjects.Reserve(goCount);
 
-    testMesh = meshManager.GetMesh("_defaultCapsuleMesh");
+    testMesh = meshManager.GetMesh("_defaultBoxMesh");
 
     const BE1::Str textureFilenames[] = {
         "Data/Test/Brick_Wall_Worn.dds",

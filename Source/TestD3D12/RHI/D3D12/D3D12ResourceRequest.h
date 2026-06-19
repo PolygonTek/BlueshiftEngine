@@ -52,10 +52,8 @@ struct D3D12UploadTextureSubImageRequest {
     int                                 depth = 0;
 };
 
-struct D3D12UpdateTextureViewMipRangeRequest {
-    RHI::ViewID                         viewID;
-    int                                 firstMip = 0;
-    int                                 mipCount = 0;
+struct D3D12BuildMipChainRequest {
+    std::shared_ptr<const BE1::Image>   srcImage;
 };
 
 struct D3D12ResourceRequest {
@@ -66,8 +64,7 @@ struct D3D12ResourceRequest {
         UploadBufferSubData,
         UploadTexture,
         UploadTextureSubImage,
-        UpdateTextureViewMipRange,
-        GenerateMipChain
+        BuildMipChain,
     };
 
     Type                                type = Type::None;
@@ -76,7 +73,7 @@ struct D3D12ResourceRequest {
     D3D12UploadBufferSubDataRequest     uploadBufferSubDataRequest;
     D3D12UploadTextureRequest           uploadTextureRequest;
     D3D12UploadTextureSubImageRequest   uploadTextureSubImageRequest;
-    D3D12UpdateTextureViewMipRangeRequest updateTextureViewMipRangeRequest;
+    D3D12BuildMipChainRequest           buildMipChainRequest;
 };
 
 struct D3D12ResourceCommandContext {

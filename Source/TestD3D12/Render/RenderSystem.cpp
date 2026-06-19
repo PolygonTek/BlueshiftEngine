@@ -144,20 +144,19 @@ void RenderSystem::SubmitFrame(RenderContext *renderContext, RenderFrameData *fr
 
         // 렌더 스레드에게 업데이트가 완료되었다고 신호를 보낸다.
         BE1::PlatformCondition::Signal(updateCompletedCondition);
-        return;
+    } else {
+        // 이전에 사용이 완료된 리소스들을 해제한다.
+        RHI::renderer->FreeRetiredResources(false);
+
+        // 리소스 요청 처리
+        RHI::renderer->ProcessResourceRequests(frameData->GetThreadData(0));
+
+        // 현재 프레임 데이터로 렌더링 백엔드를 실행한다.
+        backEnd->Execute(frameData);
+
+        // 이번 프레임에 Release/Delete 를 요청한 리소스들을 retiredResources 목록에 추가한다.
+        RHI::renderer->DrainReleaseRequestsToRetireList();
     }
-
-    // 이전에 사용이 완료된 리소스들을 해제한다.
-    RHI::renderer->FreeRetiredResources(false);
-
-    // 리소스 요청 처리
-    RHI::renderer->ProcessResourceRequests(frameData->GetThreadData(0));
-
-    // 현재 프레임 데이터로 렌더링 백엔드를 실행한다.
-    backEnd->Execute(frameData);
-
-    // 이번 프레임에 Release/Delete 를 요청한 리소스들을 retiredResources 목록에 추가한다.
-    RHI::renderer->DrainReleaseRequestsToRetireList();
 }
 
 void RenderSystem::InitRenderThread() {

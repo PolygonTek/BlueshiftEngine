@@ -673,6 +673,7 @@ bool Image::IsDepthStencilFormat(Image::Format imageFormat) {
 
 bool Image::NeedFloatConversion(Image::Format imageFormat) {
     const ImageFormatInfo *formatInfo = GetImageFormatInfo(imageFormat);
+
     if (HasFlag(formatInfo->type, FormatType::Float) ||
         HasFlag(formatInfo->type, FormatType::SNorm) ||
         HasFlag(formatInfo->type, FormatType::SInt) ||

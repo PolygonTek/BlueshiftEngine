@@ -128,9 +128,6 @@ public:
 
     bool                            Create(RHI::TextureType textureType, SharedPtr<const BE1::Image> srcImage, Texture::Flag flags);
 
-                                    /// Generate mipmaps using compute shader.
-    void                            GenerateMipmaps();
-
     bool                            Load(const char *filename, Texture::Flag flags);
     bool                            LoadAsync(const char *filename, Texture::Flag flags);
 
@@ -170,7 +167,7 @@ private:
     static bool                     PrepareDirect(RHI::TextureType textureType, SharedPtr<const BE1::Image> srcImage, Texture::Flag flags, InternalData &outInternalData);
     void                            ApplyPrepared(InternalData &newInternalData);
 
-    static RHI::Texture *           CreateRHITexture(RHI::TextureType textureType, RHI::TextureFlag flags, SharedPtr<const BE1::Image> srcImage, BE1::Image::Format dstFormat, bool generateMipmaps, bool allocateEmptyMipmaps, RHI::GPUResourceState initialState);
+    static RHI::Texture *           CreateRHITexture(RHI::TextureType textureType, RHI::TextureFlag flags, SharedPtr<const BE1::Image> srcImage, BE1::Image::Format dstFormat, bool generateMipmapsOnCPU, RHI::TextureMipInitMode mipInitMode, RHI::GPUResourceState initialState);
 
     void                            CreateDefaultTexture(int size, Texture::Flag flags = Texture::Flag::None);
     void                            CreateColorTexture(int size, const BE1::Color4 &color, Texture::Flag flags = Texture::Flag::None);

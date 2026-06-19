@@ -67,6 +67,7 @@ public:
     virtual BE1::Image::Format          ToCompressedImageFormat(BE1::Image::Format inFormat, bool useNormalMap) const override;
     virtual BE1::Image::Format          ToSupportedImageFormat(BE1::Image::Format imageFormat) const override;
     virtual BE1::Image::Format          ToUAVImageFormat(BE1::Image::Format inFormat) const override;
+    virtual bool                        CanGenerateMipmapsOnGPU(RHI::TextureType textureType, BE1::Image::Format imageFormat, int arraySize) const override;
     bool                                IsSupportedUAVFormat(DXGI_FORMAT format) const;
 
     virtual RHI::SwapChain *            CreateSwapChain(HWND hwnd, uint32_t width, uint32_t height, RHI::Format format) override;
@@ -97,8 +98,7 @@ public:
     bool                                ExecuteUploadBufferSubData(D3D12ResourceCommandContext &commandContext, D3D12Buffer *buffer, const D3D12UploadBufferSubDataRequest &request);
     bool                                ExecuteUploadTexture(D3D12ResourceCommandContext &commandContext, D3D12Texture *texture, const D3D12UploadTextureRequest &request);
     bool                                ExecuteUploadTextureSubImage(D3D12ResourceCommandContext &commandContext, D3D12Texture *texture, const D3D12UploadTextureSubImageRequest &request);
-    bool                                ExecuteUpdateTextureViewMipRange(D3D12ResourceCommandContext &commandContext, D3D12Texture *texture, const D3D12UpdateTextureViewMipRangeRequest &request);
-    bool                                ExecuteGenerateMipChain(D3D12ResourceCommandContext &commandContext, D3D12Texture *texture);
+    bool                                ExecuteBuildMipChain(D3D12ResourceCommandContext &commandContext, D3D12Texture *texture, const D3D12BuildMipChainRequest &request);
 
     virtual void                        SetName(RHI::GPUResource *resource, const char *name) const override;
 
@@ -114,14 +114,12 @@ public:
     virtual RHI::ConstantBuffer *       CreateConstantBuffer(RHI::BufferUsage usage, uint32_t size, const void *data) override;
     virtual void                        DestroyConstantBuffer(RHI::ConstantBuffer *constantBuffer, bool immediate = false) override;
 
-    virtual RHI::Texture *              CreateTexture(RHI::TextureType textureType, RHI::TextureFlag flags, std::shared_ptr<const BE1::Image> image, bool allocateEmptyMipmaps, const RHI::ClearValue &clearValue = {}, uint32_t sampleCount = 1, RHI::GPUResourceState initialState = RHI::GPUResourceState::Undefined) override;
+    virtual RHI::Texture *              CreateTexture(RHI::TextureType textureType, RHI::TextureFlag flags, std::shared_ptr<const BE1::Image> image, RHI::TextureMipInitMode mipInitMode, const RHI::ClearValue &clearValue = {}, uint32_t sampleCount = 1, RHI::GPUResourceState initialState = RHI::GPUResourceState::Undefined) override;
     virtual void                        DestroyTexture(RHI::Texture *texture, bool immediate = false) override;
 
     virtual bool                        SetBufferSubData(RHI::Buffer *buffer, uint64_t offset, uint64_t size, const void *data, RHI::GPUResourceState stateBefore, RHI::GPUResourceState stateAfter) override;
 
     virtual bool                        UploadTextureMipRange(RHI::Texture *texture, std::shared_ptr<const BE1::Image> image, int firstMip) override;
-
-    virtual void                        GenerateMipChain(RHI::Texture *texture) override;
 
     virtual bool                        GetTextureImage2D(RHI::Texture *texture, int mipLevel, BE1::Image::Format imageFormat, void *outPixels) override;
     virtual bool                        GetTextureImage3D(RHI::Texture *texture, int mipLevel, BE1::Image::Format imageFormat, void *outPixels) override;
@@ -148,8 +146,6 @@ public:
     RHI::ViewID                         CreateUAV(D3D12Texture *texture, RHI::Format typelessCompatibleFormat, uint32_t firstSlice = 0, uint32_t sliceCount = ~0, uint32_t firstMipLevel = 0);
     RHI::ViewID                         CreateRTV(D3D12Texture *texture, RHI::Format typelessCompatibleFormat, uint32_t firstSlice = 0, uint32_t sliceCount = ~0, uint32_t firstMipLevel = 0);
     RHI::ViewID                         CreateDSV(D3D12Texture *texture, RHI::Format typelessCompatibleFormat, uint32_t firstSlice = 0, uint32_t sliceCount = ~0, uint32_t firstMipLevel = 0);
-
-    virtual bool                        UpdateTextureViewMipRange(RHI::Texture *texture, RHI::ViewID viewID, uint32_t mostDetailedMip, uint32_t mipLevels) override;
 
     virtual RHI::Shader *               CreateShader(RHI::ShaderModel shaderModel, RHI::ShaderStage shaderStage, const char *sourceName, const char *shaderText, int shaderTextSize, const char *entryPoint, const BE1::StrArray *defines = nullptr) override;
     virtual RHI::Shader *               CreateShaderFromFile(RHI::ShaderModel shaderModel, RHI::ShaderStage shaderStage, const char *filename, const char *entryPoint, const BE1::StrArray *defines = nullptr) override;
@@ -193,6 +189,7 @@ public:
     virtual void                        ClearUAV(RHI::CommandList *commandList, const RHI::GPUResource *resource, RHI::ViewID viewID, uint32_t value) override;
     virtual void                        CopyBuffer(RHI::CommandList *commandList, const RHI::Buffer *dstBuffer, uint32_t dstOffset, const RHI::Buffer *srcBuffer, uint32_t srcOffset, uint32_t size) override;
     virtual void                        CopyTexture(RHI::CommandList *commandList, const RHI::Texture *dstTexture, uint32_t dstSlice, uint32_t dstMipLevel, uint32_t dstX, uint32_t dstY, uint32_t dstZ, const RHI::Texture *srcTexture, uint32_t srcSlice, uint32_t srcMipLevel, uint32_t srcX, uint32_t srcY, uint32_t srcZ, uint32_t width, uint32_t height, uint32_t depth) override;
+    bool                                GenerateMipChain(RHI::CommandList *commandList, D3D12Texture *texture);
     virtual void                        GenerateMipChain(RHI::CommandList *commandList, const RHI::Texture *texture, const RHI::ViewID *srvMipViewIDs, const RHI::ViewID *uavMipViewIDs, bool preserveCoverage) override;
     virtual void                        Barrier(RHI::CommandList *commandList, const RHI::GPUBarrier *barriers, uint32_t barrierCount) override;
     virtual void                        ReadPixels(RHI::CommandList *commandList, const RHI::SwapChain *swapChain, int x, int y, int width, int height, BE1::Image::Format dstFormat, void *outPixels) override;
