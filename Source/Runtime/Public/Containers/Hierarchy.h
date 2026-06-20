@@ -27,7 +27,7 @@ BE_NAMESPACE_BEGIN
 template <typename T>
 class Hierarchy {
 public:
-    Hierarchy();
+    Hierarchy() = default;
 
     /// Copy constructor.
     Hierarchy(const Hierarchy &rhs) = delete;
@@ -113,10 +113,10 @@ public:
     int                 GetIndex() const;
 
 private:
-    Hierarchy *         parent;
-    Hierarchy *         nextSibling;
-    Hierarchy *         child;
-    T *                 owner;
+    Hierarchy *         parent = nullptr;
+    Hierarchy *         nextSibling = nullptr;
+    Hierarchy *         child = nullptr;
+    T *                 owner = nullptr;
 
                         /// Returns next node in depth-first order.
     Hierarchy *         GetNextNode() const;
@@ -125,14 +125,6 @@ private:
                         /// Previous node with the same parent. Returns nullptr if no parent, or if it is the first child.
     Hierarchy *         GetPrevSiblingNode() const;
 };
-
-template <typename T>
-Hierarchy<T>::Hierarchy() {
-    owner       = nullptr;
-    parent      = nullptr;
-    nextSibling = nullptr;
-    child       = nullptr;
-}
 
 template <typename T>
 Hierarchy<T>::~Hierarchy() {
@@ -332,9 +324,36 @@ void Hierarchy<T>::SetSiblingIndex(int siblingIndex) {
         return;
     }
 
-    Hierarchy<T> *prev = GetPrevSiblingNode();
-    if (prev) {
-        prev->nextSibling = nextSibling;
+    Hierarchy<T> *prev = nullptr;
+    Hierarchy<T> *prevOfThis = nullptr;
+    int childCount = 0;
+    int currentIndex = -1;
+
+    for (Hierarchy<T> *node = parent->child; node; node = node->nextSibling) {
+        if (node == this) {
+            prevOfThis = prev;
+            currentIndex = childCount;
+        }
+        prev = node;
+        childCount++;
+    }
+
+    if (currentIndex == -1 || childCount <= 1) {
+        return;
+    }
+
+    if (siblingIndex < 0) {
+        siblingIndex = 0;
+    } else if (siblingIndex >= childCount) {
+        siblingIndex = childCount - 1;
+    }
+
+    if (siblingIndex == currentIndex) {
+        return;
+    }
+
+    if (prevOfThis) {
+        prevOfThis->nextSibling = nextSibling;
     } else {
         parent->child = nextSibling;
     }
@@ -345,18 +364,23 @@ void Hierarchy<T>::SetSiblingIndex(int siblingIndex) {
         return;
     }
 
-    int currentIndex = 1;
-    Hierarchy<T> *node = parent->child;
-
-    while (node) {
+    prev = nullptr;
+    currentIndex = 0;
+    for (Hierarchy<T> *node = parent->child; node; node = node->nextSibling) {
         if (currentIndex == siblingIndex) {
-            nextSibling = node->nextSibling;
-            node->nextSibling = this;
+            assert(prev);
+            prev->nextSibling = this;
+            nextSibling = node;
             return;
         }
+
+        prev = node;
         currentIndex++;
-        node = node->nextSibling;
     }
+
+    assert(prev);
+    prev->nextSibling = this;
+    nextSibling = nullptr;
 }
 
 template <typename T>
@@ -366,6 +390,10 @@ void Hierarchy<T>::SetAsFirstSibling() {
 
 template <typename T>
 void Hierarchy<T>::SetAsLastSibling() {
+    if (!parent) {
+        return;
+    }
+
     SetSiblingIndex(parent->GetChildCount() - 1);
 }
 

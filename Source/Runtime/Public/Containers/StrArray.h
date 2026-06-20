@@ -30,14 +30,17 @@ BE_NAMESPACE_BEGIN
 using StrArray = Array<Str>;
 
 BE_INLINE void SplitStringIntoList(StrArray &array, const char *string, const char *separator = "|") {
-    int separatorLength = Str::Length(separator);
+    if (!separator || !separator[0]) {
+        assert(separator && separator[0]);
+        return;
+    }
 
-    assert(separatorLength > 0);
+    int separatorLength = Str::Length(separator);
 
     Str str(string);
 
     // append a terminator there's no terminating one
-    if (Str::Icmp(str.Mid(str.Length() - separatorLength, separatorLength), separator) != 0) {
+    if (Str::Cmp(str.Right(separatorLength), separator) != 0) {
         str += separator;
     }
 
@@ -47,7 +50,7 @@ BE_INLINE void SplitStringIntoList(StrArray &array, const char *string, const ch
     while (endIndex != -1 && endIndex < str.Length()) {
         array.Append(str.Mid(startIndex, endIndex - startIndex));
         startIndex = endIndex + separatorLength;
-        endIndex = str.Find(separator, false, startIndex);
+        endIndex = str.Find(separator, true, startIndex);
     }
 }
 

@@ -60,9 +60,13 @@ public:
     T &                 Push(const T &element);
     T &                 Push(T &&element);
     T                   Pop();
+    bool                TryPop(T &out);
 
     const T &           Top() const;
     T &                 Top();
+    bool                TryTop(T &out) const;
+    const T *           TryTop() const;
+    T *                 TryTop();
 
     void                Clear();
     void                DeleteContents(bool clear);
@@ -131,6 +135,16 @@ BE_INLINE T Stack<T>::Pop() {
 }
 
 template <typename T>
+BE_INLINE bool Stack<T>::TryPop(T &out) {
+    if (stack.Count() == 0) {
+        return false;
+    }
+
+    out = stack.TakeLast();
+    return true;
+}
+
+template <typename T>
 BE_INLINE const T &Stack<T>::Top() const {
     return stack[Count() - 1];
 }
@@ -138,6 +152,34 @@ BE_INLINE const T &Stack<T>::Top() const {
 template <typename T>
 BE_INLINE T &Stack<T>::Top() {
     return stack[Count() - 1];
+}
+
+template <typename T>
+BE_INLINE bool Stack<T>::TryTop(T &out) const {
+    if (stack.Count() == 0) {
+        return false;
+    }
+
+    out = stack[stack.Count() - 1];
+    return true;
+}
+
+template <typename T>
+BE_INLINE const T *Stack<T>::TryTop() const {
+    if (stack.Count() == 0) {
+        return nullptr;
+    }
+
+    return &stack[stack.Count() - 1];
+}
+
+template <typename T>
+BE_INLINE T *Stack<T>::TryTop() {
+    if (stack.Count() == 0) {
+        return nullptr;
+    }
+
+    return &stack[stack.Count() - 1];
 }
 
 template <typename T>

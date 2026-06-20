@@ -69,7 +69,7 @@ public:
     int             GetGranularity() const { return granularity; }
 
                     /// Returns total size of allocated memory.
-    size_t          Allocated() const { return hashSize * sizeof(*hashTable) + indexSize * sizeof(*indexChain); }
+    size_t          Allocated() const;
 
                     /// Returns total size of allocated memory including size of this type.
     size_t          Size() const { return Allocated() + sizeof(*this); }
@@ -160,6 +160,17 @@ BE_INLINE void HashIndex::SetGranularity(const int newGranularity) {
     granularity = newGranularity;
 }
 
+BE_INLINE size_t HashIndex::Allocated() const {
+    size_t size = 0;
+    if (hashTable != EmptyTable) {
+        size += hashSize * sizeof(*hashTable);
+    }
+    if (indexChain != EmptyTable) {
+        size += indexSize * sizeof(*indexChain);
+    }
+    return size;
+}
+
 BE_INLINE void HashIndex::Clear() {
     // Only clear the hash table because clearing the indexChain is not really needed.
     if (hashTable != EmptyTable) {
@@ -168,10 +179,13 @@ BE_INLINE void HashIndex::Clear() {
 }
 
 BE_INLINE void HashIndex::Clear(const int newHashSize, const int newIndexSize) {
+    assert(newHashSize > 0 && (newHashSize & (newHashSize - 1)) == 0);
+
     Free();
 
     hashSize = newHashSize;
     indexSize = newIndexSize;
+    hashMask = hashSize - 1;
 }
 
 BE_INLINE int HashIndex::First(const int hash) const {

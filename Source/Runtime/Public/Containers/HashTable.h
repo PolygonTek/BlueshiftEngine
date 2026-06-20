@@ -105,7 +105,7 @@ public:
     }
 
     static int Compare(const Str &key1, const Str &key2) {
-        return Str::Icmp(key1, key2);
+        return Str::Cmp(key1, key2);
     }
 
 public:
@@ -127,7 +127,7 @@ public:
     }
 
     static int Compare(const char * const &key1, const char * const &key2) {
-        return Str::Icmp(key1, key2);
+        return Str::Cmp(key1, key2);
     }
 
 public:
@@ -170,6 +170,11 @@ class HashTable {
     using THashBucket = HashBucket<KeyT, ValueT>;
 
 public:
+    class Entry;
+    class ConstEntry;
+    class Iterator;
+    class ConstIterator;
+
     /// Constructs empty hash table with the given table size.
     HashTable(int newTableSize = 256);
 
@@ -205,6 +210,13 @@ public:
                             /// You can iterate entire buckets with an index, but when a bucket is added or removed, the existing index may no longer be valid.
     bool                    GetKeyByIndex(int index, KeyT &key) const;
 
+    Iterator                begin();
+    ConstIterator           begin() const;
+    ConstIterator           cbegin() const;
+    Iterator                end();
+    ConstIterator           end() const;
+    ConstIterator           cend() const;
+
                             /// Finds the value by key and get the value pointer.
     bool                    Get(const KeyT &key, ValueT *value) const;
 
@@ -231,6 +243,140 @@ public:
 
                             /// Get the variance of the distributed hash buckets.
     float                   GetVariance() const;
+
+    class Entry {
+    public:
+        Entry(const KeyT &key, ValueT &value) : key(key), value(value) {}
+
+        const KeyT &        key;
+        ValueT &            value;
+    };
+
+    class ConstEntry {
+    public:
+        ConstEntry(const KeyT &key, const ValueT &value) : key(key), value(value) {}
+
+        const KeyT &        key;
+        const ValueT &      value;
+    };
+
+    class Iterator {
+    public:
+        Iterator() : hashTable(nullptr), bucketIndex(0), node(nullptr) {}
+        Iterator(HashTable *hashTable, int bucketIndex) : hashTable(hashTable), bucketIndex(bucketIndex), node(nullptr) {
+            SkipEmptyBuckets();
+        }
+
+        Entry operator*() const {
+            assert(node);
+            return Entry(node->key, node->value);
+        }
+
+        Iterator &operator++() {
+            if (node && node->next) {
+                node = node->next;
+            } else {
+                bucketIndex++;
+                SkipEmptyBuckets();
+            }
+            return *this;
+        }
+
+        Iterator operator++(int) {
+            Iterator tmp = *this;
+            ++(*this);
+            return tmp;
+        }
+
+        bool operator==(const Iterator &rhs) const {
+            return hashTable == rhs.hashTable && bucketIndex == rhs.bucketIndex && node == rhs.node;
+        }
+
+        bool operator!=(const Iterator &rhs) const {
+            return !(*this == rhs);
+        }
+
+    private:
+        void SkipEmptyBuckets() {
+            if (!hashTable) {
+                node = nullptr;
+                return;
+            }
+
+            while (bucketIndex < hashTable->tableSize) {
+                node = hashTable->heads[bucketIndex];
+                if (node) {
+                    return;
+                }
+                bucketIndex++;
+            }
+
+            node = nullptr;
+        }
+
+        HashTable *         hashTable;
+        int                 bucketIndex;
+        THashBucket *       node;
+    };
+
+    class ConstIterator {
+    public:
+        ConstIterator() : hashTable(nullptr), bucketIndex(0), node(nullptr) {}
+        ConstIterator(const HashTable *hashTable, int bucketIndex) : hashTable(hashTable), bucketIndex(bucketIndex), node(nullptr) {
+            SkipEmptyBuckets();
+        }
+
+        ConstEntry operator*() const {
+            assert(node);
+            return ConstEntry(node->key, node->value);
+        }
+
+        ConstIterator &operator++() {
+            if (node && node->next) {
+                node = node->next;
+            } else {
+                bucketIndex++;
+                SkipEmptyBuckets();
+            }
+            return *this;
+        }
+
+        ConstIterator operator++(int) {
+            ConstIterator tmp = *this;
+            ++(*this);
+            return tmp;
+        }
+
+        bool operator==(const ConstIterator &rhs) const {
+            return hashTable == rhs.hashTable && bucketIndex == rhs.bucketIndex && node == rhs.node;
+        }
+
+        bool operator!=(const ConstIterator &rhs) const {
+            return !(*this == rhs);
+        }
+
+    private:
+        void SkipEmptyBuckets() {
+            if (!hashTable) {
+                node = nullptr;
+                return;
+            }
+
+            while (bucketIndex < hashTable->tableSize) {
+                node = hashTable->heads[bucketIndex];
+                if (node) {
+                    return;
+                }
+                bucketIndex++;
+            }
+
+            node = nullptr;
+        }
+
+        const HashTable *   hashTable;
+        int                 bucketIndex;
+        const THashBucket * node;
+    };
 
 private:
     BlockAllocator<THashBucket, BucketGranularity> blockAllocator;
@@ -259,6 +405,36 @@ template <typename KeyT, typename ValueT, int BucketGranularity>
 BE_INLINE HashTable<KeyT, ValueT, BucketGranularity>::~HashTable() {
     Clear();
     delete [] heads;
+}
+
+template <typename KeyT, typename ValueT, int BucketGranularity>
+BE_INLINE typename HashTable<KeyT, ValueT, BucketGranularity>::Iterator HashTable<KeyT, ValueT, BucketGranularity>::begin() {
+    return Iterator(this, 0);
+}
+
+template <typename KeyT, typename ValueT, int BucketGranularity>
+BE_INLINE typename HashTable<KeyT, ValueT, BucketGranularity>::ConstIterator HashTable<KeyT, ValueT, BucketGranularity>::begin() const {
+    return ConstIterator(this, 0);
+}
+
+template <typename KeyT, typename ValueT, int BucketGranularity>
+BE_INLINE typename HashTable<KeyT, ValueT, BucketGranularity>::ConstIterator HashTable<KeyT, ValueT, BucketGranularity>::cbegin() const {
+    return ConstIterator(this, 0);
+}
+
+template <typename KeyT, typename ValueT, int BucketGranularity>
+BE_INLINE typename HashTable<KeyT, ValueT, BucketGranularity>::Iterator HashTable<KeyT, ValueT, BucketGranularity>::end() {
+    return Iterator(this, tableSize);
+}
+
+template <typename KeyT, typename ValueT, int BucketGranularity>
+BE_INLINE typename HashTable<KeyT, ValueT, BucketGranularity>::ConstIterator HashTable<KeyT, ValueT, BucketGranularity>::end() const {
+    return ConstIterator(this, tableSize);
+}
+
+template <typename KeyT, typename ValueT, int BucketGranularity>
+BE_INLINE typename HashTable<KeyT, ValueT, BucketGranularity>::ConstIterator HashTable<KeyT, ValueT, BucketGranularity>::cend() const {
+    return ConstIterator(this, tableSize);
 }
 
 template <typename KeyT, typename ValueT, int BucketGranularity>
@@ -438,7 +614,8 @@ BE_INLINE bool HashTable<KeyT, ValueT, BucketGranularity>::Remove(const KeyT &ke
         THashBucket *node;
 
         for (node = *head; node != nullptr; prev = node, node = node->next) {
-            if (node->key == key) {
+            int s = THashBucket::Compare(node->key, key);
+            if (s == 0) {
                 if (prev) {
                     prev->next = node->next;
                 } else {
@@ -448,6 +625,11 @@ BE_INLINE bool HashTable<KeyT, ValueT, BucketGranularity>::Remove(const KeyT &ke
                 blockAllocator.Free(node);
                 numEntries--;
                 return true;
+            }
+
+            if (s > 0) {
+                // not found in ascending order
+                break;
             }
         }
     }
@@ -474,6 +656,8 @@ BE_INLINE void HashTable<KeyT, ValueT, BucketGranularity>::Clear() {
 
 template <typename KeyT, typename ValueT, int BucketGranularity>
 BE_INLINE void HashTable<KeyT, ValueT, BucketGranularity>::DeleteContents() {
+    static_assert(std::is_pointer<ValueT>::value, "HashTable::DeleteContents requires pointer values");
+
     for (int i = 0; i < tableSize; i++) {
         THashBucket *next = heads[i];
 

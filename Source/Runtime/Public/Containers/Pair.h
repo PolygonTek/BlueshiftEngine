@@ -14,6 +14,8 @@
 
 #pragma once
 
+#include <utility>
+
 /*
 -------------------------------------------------------------------------------
 
@@ -29,13 +31,29 @@ template <typename T, typename U>
 class Pair {
 public:
     /// The default constructor.
-    Pair();
+    Pair() : first(T()), second(U()) {}
+
+    /// Copy constructor.
+    Pair(const Pair &rhs) = default;
+
+    /// Constructs from rvalue pair.
+    Pair(Pair &&rhs) = default;
 
     /// Constructs a pair with two values.
-    Pair(const T &first, const U &second);
+    Pair(const T &first, const U &second) : first(first), second(second) {}
 
-    template <typename T1, typename T2> Pair(const Pair<T1, T2> &rhs);
-    template <typename T1, typename T2> Pair(const T1 &f, const T2 &s);
+    template <typename T1, typename T2> Pair(const Pair<T1, T2> &rhs) : first(rhs.first), second(rhs.second) {}
+    template <typename T1, typename T2> Pair(Pair<T1, T2> &&rhs) : first(std::move(rhs.first)), second(std::move(rhs.second)) {}
+    template <typename T1, typename T2> Pair(T1 &&f, T2 &&s) : first(std::forward<T1>(f)), second(std::forward<T2>(s)) {}
+
+                /// Copy from another pair.
+    Pair &     operator=(const Pair &rhs) = default;
+
+                /// Move from another pair.
+    Pair &     operator=(Pair &&rhs) = default;
+
+    template <typename T1, typename T2> Pair &operator=(const Pair<T1, T2> &rhs);
+    template <typename T1, typename T2> Pair &operator=(Pair<T1, T2> &&rhs);
 
                 /// Tests for equality with another pair.
     bool        operator==(const Pair<T, U> &rhs) const { return first != rhs.first || second != rhs.second ? false : true; }
@@ -54,23 +72,19 @@ public:
 };
 
 template <typename T, typename U>
-BE_INLINE Pair<T, U>::Pair() : first(T()), second(U()) { 
-}
-
-template <typename T, typename U>
-BE_INLINE Pair<T, U>::Pair(const T &first, const U &second) { 
-    this->first = first;
-    this->second = second;
+template <typename T1, typename T2>
+BE_INLINE Pair<T, U> &Pair<T, U>::operator=(const Pair<T1, T2> &rhs) {
+    first = rhs.first;
+    second = rhs.second;
+    return *this;
 }
 
 template <typename T, typename U>
 template <typename T1, typename T2>
-BE_INLINE Pair<T, U>::Pair(const Pair<T1, T2> &rhs) : first(rhs.first), second(rhs.second) { 
-}
-
-template <typename T, typename U>
-template <typename T1, typename T2>
-BE_INLINE Pair<T, U>::Pair(const T1 &f, const T2 &s) : first(f), second(s) { 
+BE_INLINE Pair<T, U> &Pair<T, U>::operator=(Pair<T1, T2> &&rhs) {
+    first = std::move(rhs.first);
+    second = std::move(rhs.second);
+    return *this;
 }
 
 template <typename T, typename U>

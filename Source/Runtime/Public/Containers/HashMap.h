@@ -108,7 +108,7 @@ public:
     size_t                  Allocated() const { return pairs.Allocated() + hashIndex.Allocated(); }
 
                             /// Returns total size of allocated memory including size of this type.
-    size_t                  Size() const { return pairs.Size() + hashIndex.Size() + sizeof(*this); }
+    size_t                  Size() const { return sizeof(*this) + Allocated(); }
 
                             /// Direct access of pair array.
     const KVArray &         GetPairs() const { return pairs; }
@@ -319,6 +319,8 @@ BE_INLINE void HASH_MAP_TEMPLATE::Clear() {
 
 template <typename KeyT, typename ValueT, typename HashCompareT, typename HashGeneratorT>
 BE_INLINE void HASH_MAP_TEMPLATE::DeleteContents(bool clear) {
+    static_assert(std::is_pointer<ValueT>::value, "HashMap::DeleteContents requires pointer values");
+
     const int numPairs = pairs.Count();
     for (int index = 0; index < numPairs; index++) {
         delete pairs[index].second;

@@ -53,7 +53,7 @@ private:
 
 class BE_API StrPool {
 public:
-    StrPool();
+    explicit StrPool(bool caseSensitive = true);
 
     /// Copy constructor.
     StrPool(const StrPool &rhs) = delete;
@@ -61,7 +61,8 @@ public:
     /// Copy from another pool.
     StrPool &operator=(const StrPool &rhs) = delete;
 
-    void                SetCaseSensitive(bool caseSensitive) { this->caseSensitive = caseSensitive; }
+                        /// Returns true if this pool treats string case as significant.
+    bool                IsCaseSensitive() const { return caseSensitive; }
 
                         /// Returns number of strings.
     int                 Count() const { return pool.Count(); }
@@ -92,26 +93,21 @@ private:
     HashIndex           poolHash;
 };
 
-BE_INLINE StrPool::StrPool() {
-    caseSensitive = true;
+BE_INLINE StrPool::StrPool(bool caseSensitive) {
+    this->caseSensitive = caseSensitive;
 }
 
 BE_INLINE size_t StrPool::Allocated() const {
     size_t size = pool.Allocated() + poolHash.Allocated();
     for (const PoolStr *poolStr : pool) {
-        size += poolStr->Allocated();
+        size += poolStr->Size();
     }
 
     return size;
 }
 
 BE_INLINE size_t StrPool::Size() const {
-    size_t size = pool.Size() + poolHash.Size();
-    for (const PoolStr *poolStr : pool) {
-        size += poolStr->Size();
-    }
-
-    return size;
+    return sizeof(*this) + Allocated();
 }
 
 BE_INLINE const PoolStr *StrPool::AllocString(const char *string) {

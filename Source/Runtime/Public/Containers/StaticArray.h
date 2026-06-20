@@ -60,10 +60,10 @@ public:
     int             Capacity() const { return capacity; }
 
                     /// Returns total size of allocated memory.
-    size_t          Allocated() const { return capacity * sizeof(T); }
+    size_t          Allocated() const { return 0; }
 
                     /// Returns total size of allocated memory including size of this type.
-    size_t          Size() const { return sizeof(StaticArray<T, capacity>) + Allocated(); }
+    size_t          Size() const { return sizeof(*this); }
     
                     /// Returns actual size of the used elements.
     size_t          MemoryUsed() const { return count * sizeof(elements[0]); }
@@ -194,7 +194,7 @@ public:
                     /// Removes all elements that compare equal to 'value' from the array.
                     /// Returns the number of elements removed.
     template <typename CompatibleT>
-    bool            RemoveAll(CompatibleT &&value);
+    int             RemoveAll(CompatibleT &&value);
 
                     /// Assigns same value to all elements.
     void            Fill(const T &value);
@@ -209,7 +209,7 @@ public:
     void            StableSort(Functor &&compare);
     void            StableSort() { StableSort(std::less<T>()); }
 
-                    /// Sorts sub-section using predicate 'compare'.
+                    /// Sorts sub-section using predicate 'compare'. endIndex is inclusive.
     template <typename Functor>
     void            SortSubSection(int startIndex, int endIndex, Functor &&compare);
     void            SortSubSection(int startIndex, int endIndex) { SortSubSection(startIndex, endIndex, std::less<T>()); }
@@ -261,6 +261,8 @@ BE_INLINE void StaticArray<T, capacity>::Clear() {
 
 template <typename T, int capacity>
 BE_INLINE void StaticArray<T, capacity>::DeleteContents(bool clear) {
+    static_assert(std::is_pointer<T>::value, "StaticArray::DeleteContents requires pointer elements");
+
     for (int i = 0; i < count; i++) {
         delete elements[i];
         elements[i] = nullptr;
@@ -283,7 +285,7 @@ BE_INLINE void StaticArray<T, capacity>::SetCount(int newCount) {
 template <typename T, int capacity>
 BE_INLINE const T &StaticArray<T, capacity>::operator[](int index) const {
     assert(index >= 0);
-    assert(index < capacity);
+    assert(index < count);
 
     return elements[index];
 }
@@ -291,7 +293,7 @@ BE_INLINE const T &StaticArray<T, capacity>::operator[](int index) const {
 template <typename T, int capacity>
 BE_INLINE T &StaticArray<T, capacity>::operator[](int index) {
     assert(index >= 0);
-    assert(index < capacity);
+    assert(index < count);
 
     return elements[index];
 }
@@ -403,6 +405,8 @@ BE_INLINE int StaticArray<T, capacity>::AddUnique(CompatibleT &&value) {
 template <typename T, int capacity>
 template <typename CompatibleT>
 BE_INLINE int StaticArray<T, capacity>::FindIndex(CompatibleT &&value, int from) const {
+    assert(from >= 0 && from <= count);
+
     for (int i = from; i < count; i++) {
         if (elements[i] == std::forward<CompatibleT>(value)) {
             return i;
@@ -415,6 +419,8 @@ BE_INLINE int StaticArray<T, capacity>::FindIndex(CompatibleT &&value, int from)
 template <typename T, int capacity>
 template <typename Functor>
 BE_INLINE int StaticArray<T, capacity>::FindIndexIf(Functor &&finder, int from) {
+    assert(from >= 0 && from <= count);
+
     T *first = elements + from;
     T *last = elements + count;
 
@@ -439,6 +445,8 @@ BE_INLINE T *StaticArray<T, capacity>::Find(CompatibleT &&value, int from) const
 template <typename T, int capacity>
 template <typename Functor>
 BE_INLINE T *StaticArray<T, capacity>::FindIf(Functor &&finder, int from) {
+    assert(from >= 0 && from <= count);
+
     T *first = elements + from;
     T *last = elements + count;
 
@@ -525,7 +533,7 @@ BE_INLINE bool StaticArray<T, capacity>::Remove(CompatibleT &&value) {
 
 template <typename T, int capacity>
 template <typename CompatibleT>
-BE_INLINE bool StaticArray<T, capacity>::RemoveAll(CompatibleT &&value) {
+BE_INLINE int StaticArray<T, capacity>::RemoveAll(CompatibleT &&value) {
     int removed = 0;
     int index = FindIndex(value, 0);
 
@@ -561,6 +569,10 @@ BE_INLINE void StaticArray<T, capacity>::StableSort(Functor &&compare) {
 template <typename T, int capacity>
 template <typename Functor>
 BE_INLINE void StaticArray<T, capacity>::SortSubSection(int startIndex, int endIndex, Functor &&compare) {
+    if (count <= 1) {
+        return;
+    }
+
     if (startIndex < 0) {
         startIndex = 0;
     }
@@ -573,7 +585,7 @@ BE_INLINE void StaticArray<T, capacity>::SortSubSection(int startIndex, int endI
         return;
     }
 
-    std::sort(&elements[startIndex], &elements[endIndex], std::forward<Functor>(compare));
+    std::sort(&elements[startIndex], &elements[endIndex + 1], std::forward<Functor>(compare));
 }
 
 template <typename T, int capacity>

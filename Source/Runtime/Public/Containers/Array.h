@@ -249,7 +249,7 @@ public:
                     /// Removes all elements that compare equal to 'value' from the array.
                     /// Returns the number of elements removed.
     template <typename CompatibleT>
-    bool            RemoveAll(CompatibleT &&value);
+    int             RemoveAll(CompatibleT &&value);
 
                     /// Assigns same value to all elements.
     void            Fill(const T &value);
@@ -273,7 +273,7 @@ public:
     void            StableSort(Functor &&compare);
     void            StableSort() { StableSort(std::less<T>()); }
 
-                    /// Sorts sub-section using predicate 'compare'.
+                    /// Sorts sub-section using predicate 'compare'. endIndex is inclusive.
     template <typename Functor> 
     void            SortSubSection(int startIndex, int endIndex, Functor &&compare);
     void            SortSubSection(int startIndex, int endIndex) { SortSubSection(startIndex, endIndex, std::less<T>()); }
@@ -647,6 +647,8 @@ BE_INLINE int Array<T>::AddUnique(CompatibleT &&value) {
 template <typename T>
 template <typename CompatibleT>
 BE_INLINE int Array<T>::FindIndex(CompatibleT &&value, int from) const {
+    assert(from >= 0 && from <= count);
+
     for (int i = from; i < count; i++) {
         if (elements[i] == std::forward<CompatibleT>(value)) {
             return i;
@@ -659,6 +661,8 @@ BE_INLINE int Array<T>::FindIndex(CompatibleT &&value, int from) const {
 template <typename T>
 template <typename Functor>
 BE_INLINE int Array<T>::FindIndexIf(Functor &&finder, int from) {
+    assert(from >= 0 && from <= count);
+
     T *first = elements + from;
     T *last = elements + count;
 
@@ -683,6 +687,8 @@ BE_INLINE T *Array<T>::Find(CompatibleT &&value, int from) const {
 template <typename T>
 template <typename Functor>
 BE_INLINE T *Array<T>::FindIf(Functor &&finder, int from) {
+    assert(from >= 0 && from <= count);
+
     T *first = elements + from;
     T *last = elements + count;
 
@@ -781,7 +787,7 @@ BE_INLINE bool Array<T>::RemoveFast(CompatibleT &&value) {
 
 template <typename T>
 template <typename CompatibleT>
-BE_INLINE bool Array<T>::RemoveAll(CompatibleT &&value) {
+BE_INLINE int Array<T>::RemoveAll(CompatibleT &&value) {
     int removed = 0;
     int index = FindIndex(value, 0);
 
@@ -830,6 +836,8 @@ BE_INLINE void Array<T>::Clear() {
 
 template <typename T>
 BE_INLINE void Array<T>::DeleteContents(bool clear) {
+    static_assert(std::is_pointer<T>::value, "Array::DeleteContents requires pointer elements");
+
     for (int i = 0; i < count; i++) {
         delete elements[i];
     }
@@ -856,7 +864,7 @@ BE_INLINE void Array<T>::StableSort(Functor &&compare) {
 template <typename T> 
 template <typename Functor>
 BE_INLINE void Array<T>::SortSubSection(int startIndex, int endIndex, Functor &&compare) {
-    if (!elements) {
+    if (count <= 1 || !elements) {
         return;
     }
 
@@ -872,7 +880,7 @@ BE_INLINE void Array<T>::SortSubSection(int startIndex, int endIndex, Functor &&
         return;
     }
 
-    std::sort(&elements[startIndex], &elements[endIndex], std::forward<Functor>(compare));
+    std::sort(&elements[startIndex], &elements[endIndex + 1], std::forward<Functor>(compare));
 }
 
 template <typename T>
