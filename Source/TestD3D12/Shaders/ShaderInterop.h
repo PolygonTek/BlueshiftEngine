@@ -60,8 +60,7 @@ static const uint LuminanceBufferOffsetHistogram = LuminanceBufferOffsetLuminanc
 
 static const uint ToneMappingBlockSizeX = 16;
 static const uint ToneMappingBlockSizeY = 16;
-static const uint BloomBlockSizeX = 16;
-static const uint BloomBlockSizeY = 16;
+
 static const uint ToneMappingOperatorLinear = 0;
 static const uint ToneMappingOperatorExponential = 1;
 static const uint ToneMappingOperatorLogarithmic = 2;
@@ -73,6 +72,21 @@ static const uint ToneMappingOperatorFilmicACES = 7;
 static const uint ToneMappingOperatorFilmicUnreal3 = 8;
 static const uint ToneMappingOperatorFilmicUncharted2 = 9;
 static const uint ToneMappingOperatorFilmicGT = 10;
+
+static const uint BloomBlockSizeX = 16;
+static const uint BloomBlockSizeY = 16;
+
+static const uint FFTRadix2_256StageCount = 8;
+static const uint FFTRadix2_256ButterflyCount = 256 / 2;
+static const uint FFTRadix2_256BlockSize = FFTRadix2_256ButterflyCount;
+static const uint FFTRadix4_256StageCount = 4;
+static const uint FFTRadix4_256ButterflyCount = 256 / 4;
+static const uint FFTRadix4_256BlockSize = FFTRadix4_256ButterflyCount;
+static const uint FFTRadix8_512StageCount = 3;
+static const uint FFTRadix8_512ButterflyCount = 512 / 8;
+static const uint FFTRadix8_512BlockSize = FFTRadix8_512ButterflyCount;
+
+static const uint TransposeComplexTileSize = 16;
 
 struct MipGenParams {
     uint3 dstSize;
@@ -124,6 +138,13 @@ struct BloomParams {
 #define BP_BLOOM_PREFILTER_QUALITY bloomParams.params0.z
 #define BP_BLOOM_WEIGHT bloomParams.params0.z
 #define BP_BLOOM_RADIUS bloomParams.params0.w
+
+struct FFTStageParams {
+    uint stageIndex;
+    float sign;
+    float scale;
+    uint padding0;
+};
 
 struct FrameConstants {
     float frameTime;
