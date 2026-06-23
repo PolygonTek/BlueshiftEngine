@@ -16,7 +16,7 @@ RWStructuredBuffer<float2> outputBuffer : register(u0);
 // Forward real FFT postprocess 는 complex FFT512 결과 Z[k] 와 Z[512 - k] 를 함께 사용한다.
 groupshared float2 fftOutput[512];
 
-float2 LoadRealFFTOutput(uint binIndex) {
+float2 LoadPackedRealFFTOutput(uint binIndex) {
     // packed X[0] 의 실수부에는 DC 항을, 허수부에는 Nyquist 항을 담는다.
     if (binIndex == 0) {
         float2 Z0 = fftOutput[0];
@@ -113,12 +113,12 @@ void CSMain(uint3 dispatchThreadId : SV_DispatchThreadID) {
     // 최종 FFT 결과는 X[0..1023] 이지만 켤레 대칭이므로, 최종 출력은 512 개의 packed complex 데이터로 저장한다.
     // 출력 데이터의 첫번째 원소는 실수부에 DC 항 (X[0]), 허수부에 Nyquist 항 (X[512]) 이 들어가고, 나머지 복소수 X[1..511] 는 순차적으로 들어간다.
     // packed X[0] = (X[0], X[512]), packed X[1..511] = X[1..511]
-    outputBuffer[bufferBase + outputIndex0] = LoadRealFFTOutput(outputIndex0);
-    outputBuffer[bufferBase + outputIndex1] = LoadRealFFTOutput(outputIndex1);
-    outputBuffer[bufferBase + outputIndex2] = LoadRealFFTOutput(outputIndex2);
-    outputBuffer[bufferBase + outputIndex3] = LoadRealFFTOutput(outputIndex3);
-    outputBuffer[bufferBase + outputIndex4] = LoadRealFFTOutput(outputIndex4);
-    outputBuffer[bufferBase + outputIndex5] = LoadRealFFTOutput(outputIndex5);
-    outputBuffer[bufferBase + outputIndex6] = LoadRealFFTOutput(outputIndex6);
-    outputBuffer[bufferBase + outputIndex7] = LoadRealFFTOutput(outputIndex7);
+    outputBuffer[bufferBase + outputIndex0] = LoadPackedRealFFTOutput(outputIndex0);
+    outputBuffer[bufferBase + outputIndex1] = LoadPackedRealFFTOutput(outputIndex1);
+    outputBuffer[bufferBase + outputIndex2] = LoadPackedRealFFTOutput(outputIndex2);
+    outputBuffer[bufferBase + outputIndex3] = LoadPackedRealFFTOutput(outputIndex3);
+    outputBuffer[bufferBase + outputIndex4] = LoadPackedRealFFTOutput(outputIndex4);
+    outputBuffer[bufferBase + outputIndex5] = LoadPackedRealFFTOutput(outputIndex5);
+    outputBuffer[bufferBase + outputIndex6] = LoadPackedRealFFTOutput(outputIndex6);
+    outputBuffer[bufferBase + outputIndex7] = LoadPackedRealFFTOutput(outputIndex7);
 }
