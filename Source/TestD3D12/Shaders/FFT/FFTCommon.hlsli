@@ -59,47 +59,39 @@ void Radix8Butterfly(float2 a0, float2 a1, float2 a2, float2 a3, float2 a4, floa
 //
 // value: Z[k]
 // mirrorValue: Z[N/2 - k]
+// Wk: W_N^k
 //
 // X_e[k] =      (Z[k] + conj(Z[N/2 - k])) / 2
 // X_o[k] = -i * (Z[k] - conj(Z[N/2 - k])) / 2
 //
 // X[k] = X_e[k] + conj(W_N^k) * X_o[k]
 // W_N^k = exp(i * 2PI * k / N)
-float2 RealFFTPostProcess(float2 value, float2 mirrorValue, uint k, uint N) {
+float2 RealFFTPostProcess(float2 value, float2 mirrorValue, float2 Wk) {
     float2 conjMirrorValue = ComplexConj(mirrorValue);
     float2 Xe = 0.5 * (value + conjMirrorValue);
     float2 diff = value - conjMirrorValue;
     float2 Xo = 0.5 * float2(diff.y, -diff.x);
 
-    float angle = -TWO_PI * float(k) / float(N);
-    float sinAngle;
-    float cosAngle;
-    sincos(angle, sinAngle, cosAngle);
-
-    return Xe + ComplexMul(float2(cosAngle, sinAngle), Xo);
+    return Xe + ComplexMul(ComplexConj(Wk), Xo);
 }
 
 // Real IFFT 프리 프로세스 for 0 < k < N/2
 //
 // value: X[k]
 // mirrorValue: X[N/2 - k]
+// Wk: W_N^k
 //
 // X_e[k] =         (X[k] + conj(X[N/2 - k])) / 2
 // X_o[k] = W_N^k * (X[k] - conj(X[N/2 - k])) / 2
 //
 // Z[k] = X_e[k] + i * X_o[k]
 // W_N^k = exp(i * 2PI * k / N)
-float2 RealIFFTPreProcess(float2 value, float2 mirrorValue, uint k, uint N) {
+float2 RealIFFTPreProcess(float2 value, float2 mirrorValue, float2 Wk) {
     float2 conjMirrorValue = ComplexConj(mirrorValue);
     float2 X_e = 0.5 * (value + conjMirrorValue);
     float2 diff = 0.5 * (value - conjMirrorValue);
 
-    float angle = TWO_PI * float(k) / float(N);
-    float sinAngle;
-    float cosAngle;
-    sincos(angle, sinAngle, cosAngle);
-
-    float2 X_o = ComplexMul(float2(cosAngle, sinAngle), diff);
+    float2 X_o = ComplexMul(Wk, diff);
     return X_e + float2(-X_o.y, X_o.x);
 }
 

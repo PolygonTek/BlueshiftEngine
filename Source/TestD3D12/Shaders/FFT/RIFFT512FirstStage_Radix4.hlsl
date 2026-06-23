@@ -2,10 +2,13 @@
 #include "FFTCommon.hlsli"
 
 #define COMMON_ROOT_SIGNATURE "RootFlags(0), " \
-    "DescriptorTable(SRV(t0), UAV(u0))"
+    "DescriptorTable(SRV(t0), SRV(t1), UAV(u0))"
 
 // 256 개의 packed complex (packed real forward FFT512) FFT 최종 결과가 연속으로 배치된 입력 버퍼
 StructuredBuffer<float2> inputBuffer : register(t0);
+
+// W_512^k = exp(i * 2PI * k / 512) 를 저장한 twiddle factor 테이블
+StructuredBuffer<float2> twiddleBuffer : register(t1);
 
 // 256 개의 complex IFFT 중간 결과가 연속으로 배치된 출력 버퍼
 RWStructuredBuffer<float2> outputBuffer : register(u0);
@@ -19,7 +22,8 @@ float2 LoadComplexIFFTInput(uint bufferBase, uint binIndex) {
     }
     // 0 < k < 256
     // X[k] 와 X[256 - k] 로부터 Z[k] 를 구한다.
-    return RealIFFTPreProcess(inputBuffer[bufferBase + binIndex], inputBuffer[bufferBase + 256 - binIndex], binIndex, 512);
+    float2 Wk = twiddleBuffer[binIndex];
+    return RealIFFTPreProcess(inputBuffer[bufferBase + binIndex], inputBuffer[bufferBase + 256 - binIndex], Wk);
 }
 
 // Inverse Real FFT512 첫 stage. packed spectrum 을 complex FFT256 입력 Z[k] 로 복원한 뒤 radix-4 stage 0 을 수행한다.
