@@ -1,0 +1,4 @@
+#define TRANSPOSE_COMPLEX_INPUT_WIDTH 1024
+#define TRANSPOSE_COMPLEX_INPUT_HEIGHT 256
+
+#include "TransposeComplex.hlsli"
