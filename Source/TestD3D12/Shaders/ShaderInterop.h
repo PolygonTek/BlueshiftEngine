@@ -76,6 +76,8 @@ static const uint ToneMappingOperatorFilmicGT = 10;
 static const uint BloomBlockSizeX = 16;
 static const uint BloomBlockSizeY = 16;
 
+static const uint ConvolutionBloomSpectrumBlockSize = 256;
+
 static const uint FFTRadix2_256StageCount = 8;
 static const uint FFTRadix2_256ButterflyCount = 256 / 2;
 static const uint FFTRadix2_256BlockSize = FFTRadix2_256ButterflyCount;
@@ -85,6 +87,11 @@ static const uint FFTRadix4_256BlockSize = FFTRadix4_256ButterflyCount;
 static const uint FFTRadix8_512StageCount = 3;
 static const uint FFTRadix8_512ButterflyCount = 512 / 8;
 static const uint FFTRadix8_512BlockSize = FFTRadix8_512ButterflyCount;
+static const uint FFTRadix8_1024StageCount = 3;
+static const uint FFTRadix8_1024ButterflyCount = 1024 / 8;
+static const uint FFTRadix8_1024BlockSize = FFTRadix8_1024ButterflyCount;
+static const uint FFTRadix2_1024ButterflyCount = 1024 / 2;
+static const uint FFTRadix2_1024BlockSize = FFTRadix2_1024ButterflyCount;
 
 static const uint TransposeComplexTileSize = 16;
 
@@ -131,6 +138,7 @@ struct BloomParams {
     float2 inputTexelSize;
     float2 outputTexelSize;
     float4 params0;
+    float4 params1;
 };
 
 #define BP_BLOOM_THRESHOLD bloomParams.params0.x
@@ -138,6 +146,8 @@ struct BloomParams {
 #define BP_BLOOM_PREFILTER_QUALITY bloomParams.params0.z
 #define BP_BLOOM_WEIGHT bloomParams.params0.z
 #define BP_BLOOM_RADIUS bloomParams.params0.w
+#define BP_BLOOM_CONTENT_OFFSET bloomParams.params1.xy
+#define BP_BLOOM_CONTENT_SIZE bloomParams.params1.zw
 
 struct FFTStageParams {
     uint stageIndex;
