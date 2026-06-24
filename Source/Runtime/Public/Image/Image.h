@@ -357,6 +357,11 @@ public:
                         /// Returns number of pixels with the given mipmap levels.
     uint64_t            NumPixels(int32_t firstMipLevel = 0, int32_t numMipLevels = 1) const;
 
+                        /// Returns RGB sum in linear space for the given mip level and slice.
+    Color3              ComputeRGBSum(int32_t mipLevel = 0, int32_t sliceIndex = 0, bool ignoreNegativeValues = false) const;
+                        /// Returns luminance sum in linear space for the given mip level and slice.
+    float               ComputeLuminanceSum(int32_t mipLevel = 0, int32_t sliceIndex = 0, bool ignoreNegativeValues = false) const;
+
                         /// Returns number of bytes with the given mipmap levels.
     size_t              SizeInBytes(int32_t firstMipLevel = 0, int32_t numMipLevels = 1) const;
                         /// Returns number of bytes of single cubemap face with the given mipmap levels.

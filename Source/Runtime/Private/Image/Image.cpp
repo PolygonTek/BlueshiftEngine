@@ -564,6 +564,113 @@ uint64_t Image::NumPixels(int32_t firstMipLevel, int32_t numMipLevels) const {
     return size * arraySize;
 }
 
+static void ConvertColorRGBToLinear(Image::GammaSpace gammaSpace, Color4 &color) {
+    if (gammaSpace == Image::GammaSpace::sRGB) {
+        color[0] = Image::GammaToLinearApprox(color[0]);
+        color[1] = Image::GammaToLinearApprox(color[1]);
+        color[2] = Image::GammaToLinearApprox(color[2]);
+    } else if (gammaSpace == Image::GammaSpace::Pow22) {
+        color[0] = Image::GammaToLinearFast(color[0]);
+        color[1] = Image::GammaToLinearFast(color[1]);
+        color[2] = Image::GammaToLinearFast(color[2]);
+    }
+}
+
+Color3 Image::ComputeRGBSum(int32_t mipLevel, int32_t sliceIndex, bool ignoreNegativeValues) const {
+    if (IsEmpty() ||
+        mipLevel < 0 || mipLevel >= numMipLevels ||
+        sliceIndex < 0 || sliceIndex >= arraySize) {
+        return Color3::zero;
+    }
+
+    const ImageFormatInfo *formatInfo = GetImageFormatInfo(format);
+    if (IsCompressed()) {
+        Image linearImage;
+        if (!ConvertFormat(Format::R32G32B32A32_FLOAT, linearImage, GammaSpace::Linear)) {
+            return Color3::zero;
+        }
+        return linearImage.ComputeRGBSum(mipLevel, sliceIndex, ignoreNegativeValues);
+    }
+
+    const int32_t w = GetWidth(mipLevel);
+    const int32_t h = GetHeight(mipLevel);
+    const int32_t d = GetDepth(mipLevel);
+    const int32_t bpp = BytesPerPixel();
+    const byte *src = GetPixels(mipLevel, sliceIndex);
+
+    double sumR = 0.0;
+    double sumG = 0.0;
+    double sumB = 0.0;
+
+    for (int32_t z = 0; z < d; z++) {
+        for (int32_t y = 0; y < h; y++) {
+            const byte *srcPtr = src + (static_cast<size_t>(z) * h + y) * w * bpp;
+            for (int32_t x = 0; x < w; x++) {
+                ALIGN_AS16 Color4 color;
+                formatInfo->unpackRGBA32F(srcPtr, reinterpret_cast<byte *>(&color), 1);
+                ConvertColorRGBToLinear(gammaSpace, color);
+
+                if (std::isfinite(color[0])) {
+                    sumR += ignoreNegativeValues ? Max(color[0], 0.0f) : color[0];
+                }
+                if (std::isfinite(color[1])) {
+                    sumG += ignoreNegativeValues ? Max(color[1], 0.0f) : color[1];
+                }
+                if (std::isfinite(color[2])) {
+                    sumB += ignoreNegativeValues ? Max(color[2], 0.0f) : color[2];
+                }
+                srcPtr += bpp;
+            }
+        }
+    }
+
+    return Color3(static_cast<float>(sumR), static_cast<float>(sumG), static_cast<float>(sumB));
+}
+
+float Image::ComputeLuminanceSum(int32_t mipLevel, int32_t sliceIndex, bool ignoreNegativeValues) const {
+    if (IsEmpty() ||
+        mipLevel < 0 || mipLevel >= numMipLevels ||
+        sliceIndex < 0 || sliceIndex >= arraySize) {
+        return 0.0f;
+    }
+
+    const ImageFormatInfo *formatInfo = GetImageFormatInfo(format);
+    if (IsCompressed()) {
+        Image linearImage;
+        if (!ConvertFormat(Format::R32G32B32A32_FLOAT, linearImage, GammaSpace::Linear)) {
+            return 0.0f;
+        }
+        return linearImage.ComputeLuminanceSum(mipLevel, sliceIndex, ignoreNegativeValues);
+    }
+
+    const int32_t w = GetWidth(mipLevel);
+    const int32_t h = GetHeight(mipLevel);
+    const int32_t d = GetDepth(mipLevel);
+    const int32_t bpp = BytesPerPixel();
+    const byte *src = GetPixels(mipLevel, sliceIndex);
+
+    double sum = 0.0;
+
+    for (int32_t z = 0; z < d; z++) {
+        for (int32_t y = 0; y < h; y++) {
+            const byte *srcPtr = src + (static_cast<size_t>(z) * h + y) * w * bpp;
+            for (int32_t x = 0; x < w; x++) {
+                ALIGN_AS16 Color4 color;
+                formatInfo->unpackRGBA32F(srcPtr, reinterpret_cast<byte *>(&color), 1);
+                ConvertColorRGBToLinear(gammaSpace, color);
+
+                const float luminance = GetLuminance(color.ToColor3());
+                if (std::isfinite(luminance)) {
+                    sum += ignoreNegativeValues ? Max(luminance, 0.0f) : luminance;
+                }
+                srcPtr += bpp;
+            }
+        }
+    }
+
+    return static_cast<float>(sum);
+}
+
 size_t Image::SizeInBytes(int32_t firstMipLevel, int32_t numMipLevels) const {
     return static_cast<size_t>(MemRequired(GetWidth(firstMipLevel), GetHeight(firstMipLevel), GetDepth(firstMipLevel), numMipLevels, arraySize, format));
 }
