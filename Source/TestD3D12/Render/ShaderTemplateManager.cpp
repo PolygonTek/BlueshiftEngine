@@ -469,6 +469,14 @@ void ShaderTemplateManager::CreateEngineShaderTemplates() {
     }
     );
 
+    static constexpr const char *transposeComplex256ShaderTemplateText = ENGINE_SHADER_TEMPLATE(
+    {
+        stages {
+            compute SM_6_0 "Transpose/TransposeComplex256.hlsl" "CSMain"
+        }
+    }
+    );
+
     static constexpr const char *transposeComplex256x512ShaderTemplateText = ENGINE_SHADER_TEMPLATE(
     {
         stages {
@@ -783,6 +791,12 @@ void ShaderTemplateManager::CreateEngineShaderTemplates() {
     }
     ifftDualReal1024LastStageShaderTemplate->AddPermutation();
 
+    transposeComplex256ShaderTemplate = AllocShaderTemplate("_transposeComplex256Shader");
+    if (!transposeComplex256ShaderTemplate->Create(transposeComplex256ShaderTemplateText, baseDir)) {
+        BE_FATALERROR("ShaderTemplateManager::CreateEngineShaderTemplates: failed to create transpose complex 256 shader template");
+    }
+    transposeComplex256ShaderTemplate->AddPermutation();
+
     transposeComplex256x512ShaderTemplate = AllocShaderTemplate("_transposeComplex256x512Shader");
     if (!transposeComplex256x512ShaderTemplate->Create(transposeComplex256x512ShaderTemplateText, baseDir)) {
         BE_FATALERROR("ShaderTemplateManager::CreateEngineShaderTemplates: failed to create transpose complex 256x512 shader template");
@@ -923,6 +937,9 @@ void ShaderTemplateManager::DestroyEngineShaderTemplates() {
     }
     if (ifftDualReal1024LastStageShaderTemplate) {
         ifftDualReal1024LastStageShaderTemplate.reset();
+    }
+    if (transposeComplex256ShaderTemplate) {
+        transposeComplex256ShaderTemplate.reset();
     }
     if (transposeComplex256x512ShaderTemplate) {
         transposeComplex256x512ShaderTemplate.reset();

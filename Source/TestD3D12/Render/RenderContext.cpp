@@ -112,6 +112,7 @@ void RenderContext::Shutdown() {
     ifftDualReal512LastStagePSO.reset();
     ifftDualReal1024FirstStagePSO.reset();
     ifftDualReal1024LastStagePSO.reset();
+    transposeComplex256PSO.reset();
     transposeComplex256x512PSO.reset();
     transposeComplex512x256PSO.reset();
     transposeComplex512x1024PSO.reset();
@@ -210,6 +211,7 @@ void RenderContext::InitToneMappingPSO() {
     ifftDualReal1024FirstStagePSO = shaderPipelineCache.GetComputePipeline(shaderTemplateManager.ifftDualReal1024FirstStageShaderTemplate, ShaderPermutationKey(), false);
     ifftDualReal1024LastStagePSO = shaderPipelineCache.GetComputePipeline(shaderTemplateManager.ifftDualReal1024LastStageShaderTemplate, ShaderPermutationKey(), false);
 
+    transposeComplex256PSO = shaderPipelineCache.GetComputePipeline(shaderTemplateManager.transposeComplex256ShaderTemplate, ShaderPermutationKey(), false);
     transposeComplex256x512PSO = shaderPipelineCache.GetComputePipeline(shaderTemplateManager.transposeComplex256x512ShaderTemplate, ShaderPermutationKey(), false);
     transposeComplex512x256PSO = shaderPipelineCache.GetComputePipeline(shaderTemplateManager.transposeComplex512x256ShaderTemplate, ShaderPermutationKey(), false);
     transposeComplex512x1024PSO = shaderPipelineCache.GetComputePipeline(shaderTemplateManager.transposeComplex512x1024ShaderTemplate, ShaderPermutationKey(), false);

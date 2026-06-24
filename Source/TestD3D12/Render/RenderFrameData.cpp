@@ -71,6 +71,7 @@ void RenderFrameData::CmdBeginContext(RenderContext *context) {
     cmd->ifftDualReal512LastStagePSO = nullptr;
     cmd->ifftDualReal1024FirstStagePSO = nullptr;
     cmd->ifftDualReal1024LastStagePSO = nullptr;
+    cmd->transposeComplex256PSO = nullptr;
     cmd->transposeComplex256x512PSO = nullptr;
     cmd->transposeComplex512x256PSO = nullptr;
     cmd->transposeComplex512x1024PSO = nullptr;
@@ -113,6 +114,7 @@ void RenderFrameData::CmdBeginContext(RenderContext *context) {
     cmd->ifftDualReal512LastStagePSO = SnapshotPSO(context->ifftDualReal512LastStagePSO);
     cmd->ifftDualReal1024FirstStagePSO = SnapshotPSO(context->ifftDualReal1024FirstStagePSO);
     cmd->ifftDualReal1024LastStagePSO = SnapshotPSO(context->ifftDualReal1024LastStagePSO);
+    cmd->transposeComplex256PSO = SnapshotPSO(context->transposeComplex256PSO);
     cmd->transposeComplex256x512PSO = SnapshotPSO(context->transposeComplex256x512PSO);
     cmd->transposeComplex512x256PSO = SnapshotPSO(context->transposeComplex512x256PSO);
     cmd->transposeComplex512x1024PSO = SnapshotPSO(context->transposeComplex512x1024PSO);

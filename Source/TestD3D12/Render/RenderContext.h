@@ -181,6 +181,7 @@ private:
     SharedPtr<ShaderPipeline>       ifftDualReal1024FirstStagePSO;
     SharedPtr<ShaderPipeline>       ifftDualReal1024LastStagePSO;
 
+    SharedPtr<ShaderPipeline>       transposeComplex256PSO;
     SharedPtr<ShaderPipeline>       transposeComplex256x512PSO;
     SharedPtr<ShaderPipeline>       transposeComplex512x256PSO;
     SharedPtr<ShaderPipeline>       transposeComplex512x1024PSO;

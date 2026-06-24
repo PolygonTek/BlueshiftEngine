@@ -66,6 +66,309 @@ RHI::Buffer *FFT2D::CreateRealFFTTwiddleBuffer(uint32_t fftSize) {
     return buffer;
 }
 
+bool FFT2D::DispatchFFTComplex2D(RHI::CommandList *commandList, RenderFrameData *frameData, RHI::Buffer *inputBuffer, RHI::Buffer *outputBuffer, RHI::Buffer *workBuffer, uint32_t planeCount, const FFTComplex2DDispatchDesc &desc) {
+    if (!commandList || !frameData || !inputBuffer || !outputBuffer || !workBuffer || planeCount == 0) {
+        return false;
+    }
+    if (desc.fftSize == 0 || desc.regularStageCount == 0 || !desc.regularStagePSO || !desc.transposePSO) {
+        return false;
+    }
+
+    RHI::FrameThreadData *frameThreadData = frameData->GetThreadData(0);
+
+    const uint32_t totalStageCount = desc.regularStageCount + (desc.lastStagePSO ? 1 : 0);
+    const uint32_t FFTBlockCount = desc.fftSize * planeCount;
+    const uint32_t TransposeTileCount = desc.fftSize / TransposeComplexTileSize;
+    const float sign = -1.0f;
+    const float scale = 1.0f;
+
+    auto transition2 = [&](const RHI::GPUBarrier &barrier0, const RHI::GPUBarrier &barrier1) {
+        RHI::GPUBarrier barriers[] = { barrier0, barrier1 };
+        RHI::renderer->Barrier(commandList, barriers, COUNT_OF(barriers));
+    };
+
+    auto transition3 = [&](const RHI::GPUBarrier &barrier0, const RHI::GPUBarrier &barrier1, const RHI::GPUBarrier &barrier2) {
+        RHI::GPUBarrier barriers[] = { barrier0, barrier1, barrier2 };
+        RHI::renderer->Barrier(commandList, barriers, COUNT_OF(barriers));
+    };
+
+    auto dispatchBufferPSO = [&](RHI::PipelineState *pso, RHI::Buffer *input, RHI::Buffer *output, uint32_t groupCountX, uint32_t groupCountY = 1, uint32_t groupCountZ = 1) {
+        RHI::renderer->SetPSO(commandList, pso);
+        RHI::renderer->SetBuffer(commandList, 0, false, input);
+        RHI::renderer->SetBuffer(commandList, 0, true, output);
+        RHI::renderer->Dispatch(commandList, groupCountX, groupCountY, groupCountZ);
+    };
+
+    auto dispatchFFTStage = [&](uint32_t stageIndex, RHI::Buffer *input, RHI::Buffer *output) -> bool {
+        const bool isLastStagePSO = stageIndex >= desc.regularStageCount;
+        RHI::PipelineState *pso = isLastStagePSO ? desc.lastStagePSO : desc.regularStagePSO;
+        if (!pso) {
+            return false;
+        }
+
+        FFTStageParams fftParams = {};
+        fftParams.stageIndex = isLastStagePSO ? 0 : stageIndex;
+        fftParams.sign = sign;
+        fftParams.scale = scale;
+
+        RHI::ConstantBuffer *fftConstantBuffer = frameThreadData->AllocConstant(sizeof(FFTStageParams), &fftParams);
+        if (!fftConstantBuffer) {
+            return false;
+        }
+
+        RHI::renderer->SetPSO(commandList, pso);
+        RHI::renderer->SetBuffer(commandList, 0, false, input);
+        RHI::renderer->SetBuffer(commandList, 0, true, output);
+        RHI::renderer->SetConstantBuffer(commandList, 0, fftConstantBuffer);
+        RHI::renderer->Dispatch(commandList, FFTBlockCount, 1, 1);
+        return true;
+    };
+
+    RHI::Buffer *pingBuffer0 = outputBuffer;
+    RHI::Buffer *pingBuffer1 = workBuffer;
+
+    RHI::Buffer *stageInput = inputBuffer;
+    RHI::Buffer *stageOutput = pingBuffer1;
+
+    // 가로 FFT 스테이지
+    for (uint32_t stageIndex = 0; stageIndex < totalStageCount; stageIndex++) {
+        stageOutput = (stageInput == pingBuffer0) ? pingBuffer1 : pingBuffer0;
+
+        if (stageIndex == 0) {
+            transition2(
+                RHI::Renderer::MakeBufferBarrier(stageInput, RHI::GPUResourceState::Undefined, RHI::GPUResourceState::ShaderResourceCompute),
+                RHI::Renderer::MakeBufferBarrier(stageOutput, RHI::GPUResourceState::Undefined, RHI::GPUResourceState::UnorderedAccess));
+        } else if (stageIndex == 1) {
+            transition3(
+                RHI::Renderer::MakeBufferBarrier(stageInput, RHI::GPUResourceState::UnorderedAccess, RHI::GPUResourceState::ShaderResourceCompute),
+                RHI::Renderer::MakeBufferBarrier(stageOutput, RHI::GPUResourceState::Undefined, RHI::GPUResourceState::UnorderedAccess),
+                RHI::Renderer::MakeBufferBarrier(inputBuffer, RHI::GPUResourceState::ShaderResourceCompute, RHI::GPUResourceState::Undefined));
+        } else {
+            transition2(
+                RHI::Renderer::MakeBufferBarrier(stageInput, RHI::GPUResourceState::UnorderedAccess, RHI::GPUResourceState::ShaderResourceCompute),
+                RHI::Renderer::MakeBufferBarrier(stageOutput, RHI::GPUResourceState::ShaderResourceCompute, RHI::GPUResourceState::UnorderedAccess));
+        }
+
+        if (!dispatchFFTStage(stageIndex, stageInput, stageOutput)) {
+            return false;
+        }
+
+        stageInput = stageOutput;
+    }
+
+    // transpose
+    RHI::Buffer *transposeOutput = (stageInput == pingBuffer0) ? pingBuffer1 : pingBuffer0;
+
+    transition2(
+        RHI::Renderer::MakeBufferBarrier(stageInput, RHI::GPUResourceState::UnorderedAccess, RHI::GPUResourceState::ShaderResourceCompute),
+        RHI::Renderer::MakeBufferBarrier(transposeOutput, RHI::GPUResourceState::ShaderResourceCompute, RHI::GPUResourceState::UnorderedAccess));
+    dispatchBufferPSO(desc.transposePSO, stageInput, transposeOutput, TransposeTileCount, TransposeTileCount, planeCount);
+
+    stageInput = transposeOutput;
+    stageOutput = nullptr;
+
+    // 세로 FFT 스테이지
+    for (uint32_t stageIndex = 0; stageIndex < totalStageCount; stageIndex++) {
+        const bool isLastStage = stageIndex == totalStageCount - 1;
+        if (isLastStage) {
+            stageOutput = outputBuffer;
+            transition2(
+                RHI::Renderer::MakeBufferBarrier(stageInput, RHI::GPUResourceState::UnorderedAccess, RHI::GPUResourceState::ShaderResourceCompute),
+                RHI::Renderer::MakeBufferBarrier(stageOutput, RHI::GPUResourceState::ShaderResourceCompute, RHI::GPUResourceState::UnorderedAccess));
+        } else {
+            stageOutput = (stageInput == pingBuffer0) ? pingBuffer1 : pingBuffer0;
+            transition2(
+                RHI::Renderer::MakeBufferBarrier(stageInput, RHI::GPUResourceState::UnorderedAccess, RHI::GPUResourceState::ShaderResourceCompute),
+                RHI::Renderer::MakeBufferBarrier(stageOutput, RHI::GPUResourceState::ShaderResourceCompute, RHI::GPUResourceState::UnorderedAccess));
+        }
+
+        if (!dispatchFFTStage(stageIndex, stageInput, stageOutput)) {
+            return false;
+        }
+
+        if (!isLastStage) {
+            stageInput = stageOutput;
+        }
+    }
+
+    transition2(
+        RHI::Renderer::MakeBufferBarrier(stageInput, RHI::GPUResourceState::ShaderResourceCompute, RHI::GPUResourceState::Undefined),
+        RHI::Renderer::MakeBufferBarrier(outputBuffer, RHI::GPUResourceState::UnorderedAccess, RHI::GPUResourceState::Undefined));
+
+    return true;
+}
+
+bool FFT2D::DispatchIFFTComplex2D(RHI::CommandList *commandList, RenderFrameData *frameData, RHI::Buffer *inputBuffer, RHI::Buffer *outputBuffer, RHI::Buffer *workBuffer, uint32_t planeCount, const FFTComplex2DDispatchDesc &desc) {
+    if (!commandList || !frameData || !inputBuffer || !outputBuffer || !workBuffer || planeCount == 0) {
+        return false;
+    }
+    if (desc.fftSize == 0 || desc.regularStageCount == 0 || !desc.regularStagePSO || !desc.transposePSO) {
+        return false;
+    }
+
+    RHI::FrameThreadData *frameThreadData = frameData->GetThreadData(0);
+
+    const uint32_t totalStageCount = desc.regularStageCount + (desc.lastStagePSO ? 1 : 0);
+    const uint32_t FFTBlockCount = desc.fftSize * planeCount;
+    const uint32_t TransposeTileCount = desc.fftSize / TransposeComplexTileSize;
+    const float sign = 1.0f;
+    const float scale = 1.0f / static_cast<float>(desc.fftSize);
+
+    auto transition2 = [&](const RHI::GPUBarrier &barrier0, const RHI::GPUBarrier &barrier1) {
+        RHI::GPUBarrier barriers[] = { barrier0, barrier1 };
+        RHI::renderer->Barrier(commandList, barriers, COUNT_OF(barriers));
+    };
+
+    auto transition3 = [&](const RHI::GPUBarrier &barrier0, const RHI::GPUBarrier &barrier1, const RHI::GPUBarrier &barrier2) {
+        RHI::GPUBarrier barriers[] = { barrier0, barrier1, barrier2 };
+        RHI::renderer->Barrier(commandList, barriers, COUNT_OF(barriers));
+    };
+
+    auto dispatchBufferPSO = [&](RHI::PipelineState *pso, RHI::Buffer *input, RHI::Buffer *output, uint32_t groupCountX, uint32_t groupCountY = 1, uint32_t groupCountZ = 1) {
+        RHI::renderer->SetPSO(commandList, pso);
+        RHI::renderer->SetBuffer(commandList, 0, false, input);
+        RHI::renderer->SetBuffer(commandList, 0, true, output);
+        RHI::renderer->Dispatch(commandList, groupCountX, groupCountY, groupCountZ);
+    };
+
+    auto dispatchFFTStage = [&](uint32_t stageIndex, RHI::Buffer *input, RHI::Buffer *output) -> bool {
+        const bool isLastStagePSO = stageIndex >= desc.regularStageCount;
+        RHI::PipelineState *pso = isLastStagePSO ? desc.lastStagePSO : desc.regularStagePSO;
+        if (!pso) {
+            return false;
+        }
+
+        FFTStageParams fftParams = {};
+        fftParams.stageIndex = isLastStagePSO ? 0 : stageIndex;
+        fftParams.sign = sign;
+        fftParams.scale = scale;
+
+        RHI::ConstantBuffer *fftConstantBuffer = frameThreadData->AllocConstant(sizeof(FFTStageParams), &fftParams);
+        if (!fftConstantBuffer) {
+            return false;
+        }
+
+        RHI::renderer->SetPSO(commandList, pso);
+        RHI::renderer->SetBuffer(commandList, 0, false, input);
+        RHI::renderer->SetBuffer(commandList, 0, true, output);
+        RHI::renderer->SetConstantBuffer(commandList, 0, fftConstantBuffer);
+        RHI::renderer->Dispatch(commandList, FFTBlockCount, 1, 1);
+        return true;
+    };
+
+    RHI::Buffer *pingBuffer0 = inputBuffer;
+    RHI::Buffer *pingBuffer1 = workBuffer;
+
+    RHI::Buffer *stageInput = inputBuffer;
+    RHI::Buffer *stageOutput = pingBuffer1;
+
+    // 가로 IFFT 스테이지
+    for (uint32_t stageIndex = 0; stageIndex < totalStageCount; stageIndex++) {
+        stageOutput = (stageInput == pingBuffer0) ? pingBuffer1 : pingBuffer0;
+
+        if (stageIndex == 0) {
+            transition2(
+                RHI::Renderer::MakeBufferBarrier(stageInput, RHI::GPUResourceState::Undefined, RHI::GPUResourceState::ShaderResourceCompute),
+                RHI::Renderer::MakeBufferBarrier(stageOutput, RHI::GPUResourceState::Undefined, RHI::GPUResourceState::UnorderedAccess));
+        } else {
+            transition2(
+                RHI::Renderer::MakeBufferBarrier(stageInput, RHI::GPUResourceState::UnorderedAccess, RHI::GPUResourceState::ShaderResourceCompute),
+                RHI::Renderer::MakeBufferBarrier(stageOutput, RHI::GPUResourceState::ShaderResourceCompute, RHI::GPUResourceState::UnorderedAccess));
+        }
+
+        if (!dispatchFFTStage(stageIndex, stageInput, stageOutput)) {
+            return false;
+        }
+
+        stageInput = stageOutput;
+    }
+
+    // transpose
+    RHI::Buffer *transposeOutput = (stageInput == pingBuffer0) ? pingBuffer1 : pingBuffer0;
+
+    transition2(
+        RHI::Renderer::MakeBufferBarrier(stageInput, RHI::GPUResourceState::UnorderedAccess, RHI::GPUResourceState::ShaderResourceCompute),
+        RHI::Renderer::MakeBufferBarrier(transposeOutput, RHI::GPUResourceState::ShaderResourceCompute, RHI::GPUResourceState::UnorderedAccess));
+    dispatchBufferPSO(desc.transposePSO, stageInput, transposeOutput, TransposeTileCount, TransposeTileCount, planeCount);
+
+    stageInput = transposeOutput;
+    stageOutput = nullptr;
+
+    // 세로 IFFT 스테이지
+    for (uint32_t stageIndex = 0; stageIndex < totalStageCount; stageIndex++) {
+        const bool isLastStage = stageIndex == totalStageCount - 1;
+        if (isLastStage) {
+            stageOutput = outputBuffer;
+            RHI::Buffer *unusedBuffer = (stageInput == pingBuffer0) ? pingBuffer1 : pingBuffer0;
+            transition3(
+                RHI::Renderer::MakeBufferBarrier(stageInput, RHI::GPUResourceState::UnorderedAccess, RHI::GPUResourceState::ShaderResourceCompute),
+                RHI::Renderer::MakeBufferBarrier(stageOutput, RHI::GPUResourceState::Undefined, RHI::GPUResourceState::UnorderedAccess),
+                RHI::Renderer::MakeBufferBarrier(unusedBuffer, RHI::GPUResourceState::ShaderResourceCompute, RHI::GPUResourceState::Undefined));
+        } else {
+            stageOutput = (stageInput == pingBuffer0) ? pingBuffer1 : pingBuffer0;
+            transition2(
+                RHI::Renderer::MakeBufferBarrier(stageInput, RHI::GPUResourceState::UnorderedAccess, RHI::GPUResourceState::ShaderResourceCompute),
+                RHI::Renderer::MakeBufferBarrier(stageOutput, RHI::GPUResourceState::ShaderResourceCompute, RHI::GPUResourceState::UnorderedAccess));
+        }
+
+        if (!dispatchFFTStage(stageIndex, stageInput, stageOutput)) {
+            return false;
+        }
+
+        if (!isLastStage) {
+            stageInput = stageOutput;
+        }
+    }
+
+    transition2(
+        RHI::Renderer::MakeBufferBarrier(stageInput, RHI::GPUResourceState::ShaderResourceCompute, RHI::GPUResourceState::Undefined),
+        RHI::Renderer::MakeBufferBarrier(outputBuffer, RHI::GPUResourceState::UnorderedAccess, RHI::GPUResourceState::Undefined));
+
+    return true;
+}
+
+bool FFT2D::DispatchFFTComplex2D256(RHI::CommandList *commandList, RenderFrameData *frameData, RHI::Buffer *inputBuffer, RHI::Buffer *outputBuffer, RHI::Buffer *workBuffer, uint32_t planeCount) {
+    PROFILER_CPU_SCOPED_EVENT("FFT2D::DispatchFFTComplex2D256");
+
+    const FFTComplex2DDispatchDesc desc = { 256, 4, fftComplex256PSO, nullptr, transposeComplex256PSO };
+    return DispatchFFTComplex2D(commandList, frameData, inputBuffer, outputBuffer, workBuffer, planeCount, desc);
+}
+
+bool FFT2D::DispatchIFFTComplex2D256(RHI::CommandList *commandList, RenderFrameData *frameData, RHI::Buffer *inputBuffer, RHI::Buffer *outputBuffer, RHI::Buffer *workBuffer, uint32_t planeCount) {
+    PROFILER_CPU_SCOPED_EVENT("FFT2D::DispatchIFFTComplex2D256");
+
+    const FFTComplex2DDispatchDesc desc = { 256, 4, fftComplex256PSO, nullptr, transposeComplex256PSO };
+    return DispatchIFFTComplex2D(commandList, frameData, inputBuffer, outputBuffer, workBuffer, planeCount, desc);
+}
+
+bool FFT2D::DispatchFFTComplex2D512(RHI::CommandList *commandList, RenderFrameData *frameData, RHI::Buffer *inputBuffer, RHI::Buffer *outputBuffer, RHI::Buffer *workBuffer, uint32_t planeCount) {
+    PROFILER_CPU_SCOPED_EVENT("FFT2D::DispatchFFTComplex2D512");
+
+    const FFTComplex2DDispatchDesc desc = { 512, 3, fftComplex512PSO, nullptr, transposeComplex512PSO };
+    return DispatchFFTComplex2D(commandList, frameData, inputBuffer, outputBuffer, workBuffer, planeCount, desc);
+}
+
+bool FFT2D::DispatchIFFTComplex2D512(RHI::CommandList *commandList, RenderFrameData *frameData, RHI::Buffer *inputBuffer, RHI::Buffer *outputBuffer, RHI::Buffer *workBuffer, uint32_t planeCount) {
+    PROFILER_CPU_SCOPED_EVENT("FFT2D::DispatchIFFTComplex2D512");
+
+    const FFTComplex2DDispatchDesc desc = { 512, 3, fftComplex512PSO, nullptr, transposeComplex512PSO };
+    return DispatchIFFTComplex2D(commandList, frameData, inputBuffer, outputBuffer, workBuffer, planeCount, desc);
+}
+
+bool FFT2D::DispatchFFTComplex2D1024(RHI::CommandList *commandList, RenderFrameData *frameData, RHI::Buffer *inputBuffer, RHI::Buffer *outputBuffer, RHI::Buffer *workBuffer, uint32_t planeCount) {
+    PROFILER_CPU_SCOPED_EVENT("FFT2D::DispatchFFTComplex2D1024");
+
+    const FFTComplex2DDispatchDesc desc = { 1024, 3, fftComplex1024PSO, fftComplex1024LastStagePSO, transposeComplex1024PSO };
+    return DispatchFFTComplex2D(commandList, frameData, inputBuffer, outputBuffer, workBuffer, planeCount, desc);
+}
+
+bool FFT2D::DispatchIFFTComplex2D1024(RHI::CommandList *commandList, RenderFrameData *frameData, RHI::Buffer *inputBuffer, RHI::Buffer *outputBuffer, RHI::Buffer *workBuffer, uint32_t planeCount) {
+    PROFILER_CPU_SCOPED_EVENT("FFT2D::DispatchIFFTComplex2D1024");
+
+    const FFTComplex2DDispatchDesc desc = { 1024, 3, fftComplex1024PSO, fftComplex1024LastStagePSO, transposeComplex1024PSO };
+    return DispatchIFFTComplex2D(commandList, frameData, inputBuffer, outputBuffer, workBuffer, planeCount, desc);
+}
+
 bool FFT2D::DispatchFFTReal2D512(RHI::CommandList *commandList, RenderFrameData *frameData, RHI::Buffer *inputBuffer, RHI::Buffer *outputBuffer, RHI::Buffer *workBuffer, uint32_t planeCount) {
     PROFILER_CPU_SCOPED_EVENT("FFT2D::DispatchFFTReal2D512");
 

@@ -255,6 +255,7 @@ public:
     SharedPtr<ShaderTemplate>       ifftDualReal512LastStageShaderTemplate;
     SharedPtr<ShaderTemplate>       ifftDualReal1024FirstStageShaderTemplate;
     SharedPtr<ShaderTemplate>       ifftDualReal1024LastStageShaderTemplate;
+    SharedPtr<ShaderTemplate>       transposeComplex256ShaderTemplate;
     SharedPtr<ShaderTemplate>       transposeComplex256x512ShaderTemplate;
     SharedPtr<ShaderTemplate>       transposeComplex512x256ShaderTemplate;
     SharedPtr<ShaderTemplate>       transposeComplex512x1024ShaderTemplate;

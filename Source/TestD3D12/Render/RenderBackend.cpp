@@ -330,6 +330,7 @@ const void *RenderBackend::ExecuteBeginContext(const void *data) {
     fft2D.ifftDualReal512LastStagePSO = cmd->ifftDualReal512LastStagePSO;
     fft2D.ifftDualReal1024FirstStagePSO = cmd->ifftDualReal1024FirstStagePSO;
     fft2D.ifftDualReal1024LastStagePSO = cmd->ifftDualReal1024LastStagePSO;
+    fft2D.transposeComplex256PSO = cmd->transposeComplex256PSO;
     fft2D.transposeComplex256x512PSO = cmd->transposeComplex256x512PSO;
     fft2D.transposeComplex512x256PSO = cmd->transposeComplex512x256PSO;
     fft2D.transposeComplex512x1024PSO = cmd->transposeComplex512x1024PSO;

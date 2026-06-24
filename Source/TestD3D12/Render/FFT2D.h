@@ -38,6 +38,24 @@ public:
     void                        Init();
     void                        Shutdown();
 
+                                // 256 x 256 complex planes -> transposed 256 x 256 complex planes
+    bool                        DispatchFFTComplex2D256(RHI::CommandList *commandList, RenderFrameData *frameData, RHI::Buffer *inputBuffer, RHI::Buffer *outputBuffer, RHI::Buffer *workBuffer, uint32_t planeCount);
+
+                                // transposed 256 x 256 complex planes -> 256 x 256 complex planes
+    bool                        DispatchIFFTComplex2D256(RHI::CommandList *commandList, RenderFrameData *frameData, RHI::Buffer *inputBuffer, RHI::Buffer *outputBuffer, RHI::Buffer *workBuffer, uint32_t planeCount);
+
+                                // 512 x 512 complex planes -> transposed 512 x 512 complex planes
+    bool                        DispatchFFTComplex2D512(RHI::CommandList *commandList, RenderFrameData *frameData, RHI::Buffer *inputBuffer, RHI::Buffer *outputBuffer, RHI::Buffer *workBuffer, uint32_t planeCount);
+
+                                // transposed 512 x 512 complex planes -> 512 x 512 complex planes
+    bool                        DispatchIFFTComplex2D512(RHI::CommandList *commandList, RenderFrameData *frameData, RHI::Buffer *inputBuffer, RHI::Buffer *outputBuffer, RHI::Buffer *workBuffer, uint32_t planeCount);
+
+                                // 1024 x 1024 complex planes -> transposed 1024 x 1024 complex planes
+    bool                        DispatchFFTComplex2D1024(RHI::CommandList *commandList, RenderFrameData *frameData, RHI::Buffer *inputBuffer, RHI::Buffer *outputBuffer, RHI::Buffer *workBuffer, uint32_t planeCount);
+
+                                // transposed 1024 x 1024 complex planes -> 1024 x 1024 complex planes
+    bool                        DispatchIFFTComplex2D1024(RHI::CommandList *commandList, RenderFrameData *frameData, RHI::Buffer *inputBuffer, RHI::Buffer *outputBuffer, RHI::Buffer *workBuffer, uint32_t planeCount);
+
                                 // 512 x 512 real planes -> transposed 512 x 256 packed complex planes
     bool                        DispatchFFTReal2D512(RHI::CommandList *commandList, RenderFrameData *frameData, RHI::Buffer *inputBuffer, RHI::Buffer *outputBuffer, RHI::Buffer *workBuffer, uint32_t planeCount);
 
@@ -93,6 +111,7 @@ public:
     RHI::PipelineState *        ifftDualReal1024LastStagePSO = nullptr;
 
                                 // transpose complex
+    RHI::PipelineState *        transposeComplex256PSO = nullptr;
     RHI::PipelineState *        transposeComplex256x512PSO = nullptr;
     RHI::PipelineState *        transposeComplex512x256PSO = nullptr;
     RHI::PipelineState *        transposeComplex512x1024PSO = nullptr;
@@ -101,7 +120,17 @@ public:
     RHI::PipelineState *        transposeComplex1024PSO = nullptr;
 
 private:
+    struct FFTComplex2DDispatchDesc {
+        uint32_t                fftSize;
+        uint32_t                regularStageCount;
+        RHI::PipelineState *    regularStagePSO;
+        RHI::PipelineState *    lastStagePSO;
+        RHI::PipelineState *    transposePSO;
+    };
+
     RHI::Buffer *               CreateRealFFTTwiddleBuffer(uint32_t fftSize);
+    bool                        DispatchFFTComplex2D(RHI::CommandList *commandList, RenderFrameData *frameData, RHI::Buffer *inputBuffer, RHI::Buffer *outputBuffer, RHI::Buffer *workBuffer, uint32_t planeCount, const FFTComplex2DDispatchDesc &desc);
+    bool                        DispatchIFFTComplex2D(RHI::CommandList *commandList, RenderFrameData *frameData, RHI::Buffer *inputBuffer, RHI::Buffer *outputBuffer, RHI::Buffer *workBuffer, uint32_t planeCount, const FFTComplex2DDispatchDesc &desc);
 
     RHI::Buffer *               realFFTTwiddle512Buffer = nullptr;
     RHI::Buffer *               realFFTTwiddle1024Buffer = nullptr;
