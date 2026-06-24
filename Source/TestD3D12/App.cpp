@@ -50,7 +50,7 @@ void App::Init(void *mainWindowHandle) {
 
     renderCamera = new RenderCamera;
 
-    SetConvolutionBloomKernelFromFile("Data/Test/BloomKernels/CGV_Bloom_35.exr");
+    SetConvolutionBloomKernelIndex(convolutionBloomKernelIndex);
 
     InitGameObjects(100, 100, 1);
 
@@ -78,6 +78,29 @@ void App::Shutdown() {
     delete renderSystem;
 
     PROFILER_SHUTDOWN();
+}
+
+void App::GetConvolutionBloomKernelDisplayName(int index, char *buffer, int bufferSize) const {
+    BE1::Clamp(index, 0, ConvolutionBloomKernelCount - 1);
+    BE1::Str::snPrintf(buffer, bufferSize, "CGV Bloom %02i", index + 1);
+}
+
+void App::GetConvolutionBloomKernelFilename(int index, char *buffer, int bufferSize) const {
+    BE1::Clamp(index, 0, ConvolutionBloomKernelCount - 1);
+    BE1::Str::snPrintf(buffer, bufferSize, "Data/Test/BloomKernels/CGV_Bloom_%02i.EXR", index + 1);
+}
+
+void App::SetConvolutionBloomKernelIndex(int index) {
+    BE1::Clamp(index, 0, ConvolutionBloomKernelCount - 1);
+    if (convolutionBloomKernelIndex == index && convolutionBloomKernelTexture) {
+        return;
+    }
+
+    convolutionBloomKernelIndex = index;
+
+    char filename[128];
+    GetConvolutionBloomKernelFilename(convolutionBloomKernelIndex, filename, sizeof(filename));
+    SetConvolutionBloomKernelFromFile(filename);
 }
 
 void App::SetConvolutionBloomKernelFromFile(const char *filename) {

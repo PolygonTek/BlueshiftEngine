@@ -48,6 +48,14 @@ public:
     void                            TakeScreenshot();
 
 private:
+    static constexpr int            ConvolutionBloomKernelCount = 43;
+    static constexpr int            DefaultConvolutionBloomKernelIndex = 0;
+
+    int                             GetConvolutionBloomKernelCount() const { return ConvolutionBloomKernelCount; }
+    int                             GetConvolutionBloomKernelIndex() const { return convolutionBloomKernelIndex; }
+    void                            GetConvolutionBloomKernelDisplayName(int index, char *buffer, int bufferSize) const;
+    void                            GetConvolutionBloomKernelFilename(int index, char *buffer, int bufferSize) const;
+    void                            SetConvolutionBloomKernelIndex(int index);
     void                            SetConvolutionBloomKernelFromFile(const char *filename);
     void                            RotateGameObjects();
     void                            UpdateGameFrameTime(uint64_t frameUsec);
@@ -68,6 +76,7 @@ private:
     RenderWorld *                   renderWorld = nullptr;
 
     SharedPtr<Texture>              convolutionBloomKernelTexture;
+    int                             convolutionBloomKernelIndex = DefaultConvolutionBloomKernelIndex;
     SharedPtr<Mesh>                 testMesh;
 
     BE1::Array<GameObject *>        gameObjects;

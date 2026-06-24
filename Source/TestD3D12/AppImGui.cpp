@@ -496,6 +496,25 @@ void App::BuildImGuiOverlay() {
                 }
 
                 if (useConvolutionBloom) {
+                    char currentKernelName[32];
+                    GetConvolutionBloomKernelDisplayName(GetConvolutionBloomKernelIndex(), currentKernelName, sizeof(currentKernelName));
+                    ImGui::SetNextItemWidth(fontSize * 12.0f);
+                    if (ImGui::BeginCombo("Convolution bloom kernel", currentKernelName)) {
+                        for (int kernelIndex = 0; kernelIndex < GetConvolutionBloomKernelCount(); ++kernelIndex) {
+                            char kernelName[32];
+                            GetConvolutionBloomKernelDisplayName(kernelIndex, kernelName, sizeof(kernelName));
+
+                            const bool isSelected = kernelIndex == GetConvolutionBloomKernelIndex();
+                            if (ImGui::Selectable(kernelName, isSelected)) {
+                                SetConvolutionBloomKernelIndex(kernelIndex);
+                            }
+                            if (isSelected) {
+                                ImGui::SetItemDefaultFocus();
+                            }
+                        }
+                        ImGui::EndCombo();
+                    }
+
                     static constexpr int convolutionBloomFFTMaxSizeOptions[] = { 512, 1024 };
                     int convolutionBloomFFTMaxSize = r_convolutionBloomFFTMaxSize.GetInteger();
                     int convolutionBloomFFTMaxSizeIndex = convolutionBloomFFTMaxSize <= 512 ? 0 : 1;
