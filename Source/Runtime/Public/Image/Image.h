@@ -502,8 +502,8 @@ public:
 
     static float        CubeMapTexelSolidAngle(float x, float y, int32_t size);
 
-    static std::shared_ptr<Image> NewImageFromFile(const char *filename);
-    static std::shared_ptr<Image> NewSharedImageFromFile(const char *filename);
+    static Image        ImageFromFile(const char *filename);
+    static std::shared_ptr<Image> SharedImageFromFile(const char *filename);
 
     static float        pow22ToLinearTable[256];
     static float        sRGBToLinearTable[256];
@@ -693,6 +693,18 @@ BE_INLINE T Image::WrapCoord(T coord, T maxCoord, SampleWrapMode wrapMode) const
         Wrap<T>(coord, 0, maxCoord);
     }
     return coord;
+}
+
+BE_INLINE Image Image::ImageFromFile(const char *filename) {
+    Image image;
+    image.Load(filename);
+    return image;
+}
+
+BE_INLINE std::shared_ptr<Image> Image::SharedImageFromFile(const char *filename) {
+    std::shared_ptr<Image> image = std::make_shared<Image>();
+    image->Load(filename);
+    return image;
 }
 
 BE_NAMESPACE_END

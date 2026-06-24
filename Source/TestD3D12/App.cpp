@@ -104,16 +104,20 @@ void App::SetConvolutionBloomKernelIndex(int index) {
 }
 
 void App::SetConvolutionBloomKernelFromFile(const char *filename) {
-    BE1::Image kernelImage;
-    const bool imageLoaded = kernelImage.Load(filename);
-    const float luminanceSum = imageLoaded ? kernelImage.ComputeLuminanceSum(0, 0, true) : 0.0f;
-    const float sourcePixelCount = imageLoaded ? static_cast<float>(kernelImage.GetWidth()) * static_cast<float>(kernelImage.GetHeight()) : 1.0f;
+    BE1::Image kernelImage = BE1::Image::ImageFromFile(filename);
+    if (kernelImage.IsEmpty()) {
+        return;
+    }
+
+    const float pixelCount = kernelImage.GetWidth() * kernelImage.GetHeight();
 
     // 원본 kernel 의 luminanceSum 은 source texel 개수에 묶인 discrete sum 이다.
-    // FFT kernel 은 fftSize^2 샘플로 다시 rasterize 되므로, sourcePixelCount 를 곱해 texel 밀도 의존성을 제거한다.
-    const float normalizationFactor = std::isfinite(luminanceSum) && luminanceSum > 0.000001f ? sourcePixelCount / luminanceSum : 1.0f;
+    const float luminanceSum = kernelImage.ComputeLuminanceSum(0, 0, true);
 
-    convolutionBloomKernelTexture = textureManager.GetTexture(filename, Texture::Flag::HighQuality);
+    // FFT kernel 은 fftSize^2 샘플로 다시 resize 되므로, pixelCount 를 곱해 texel 밀도 의존성을 제거한다.
+    const float normalizationFactor = (std::isfinite(luminanceSum) && luminanceSum > 0.000001f) ? pixelCount / luminanceSum : 1.0f;
+
+    convolutionBloomKernelTexture = textureManager.GetTexture(filename, Texture::Flag::HighQuality | Texture::Flag::NoMipmaps | Texture::Flag::Compute);
     renderCamera->SetConvolutionBloomKernelTexture(convolutionBloomKernelTexture, normalizationFactor);
 }
 

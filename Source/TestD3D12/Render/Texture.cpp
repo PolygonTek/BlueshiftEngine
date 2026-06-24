@@ -378,9 +378,7 @@ void Texture::ApplyPrepared(InternalData &newInternalData) {
 bool Texture::Load(const char *filename, Texture::Flag flags) {
     BE_LOG("Loading texture '%s'...\n", filename);
 
-    SharedPtr<BE1::Image> image = MakeShared<BE1::Image>();
-    image->Load(filename);
-
+    SharedPtr<BE1::Image> image = BE1::Image::SharedImageFromFile(filename);
     if (image->IsEmpty()) {
         BE_WARNLOG("Couldn't load texture \"%s\"\n", filename);
         return false;

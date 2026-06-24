@@ -132,7 +132,7 @@ void Application::LoadResources() {
 
     defaultVertexBuffer = BE1::graphics.CreateBuffer(BE1::Graphics::BufferType::Vertex, BE1::Graphics::BufferUsage::Static, sizeof(Vertex3D) * COUNT_OF(verts), 0, verts);
 
-    std::shared_ptr<BE1::Image> image = BE1::Image::NewImageFromFile("Data/EngineTextures/checker.dds");
+    std::shared_ptr<BE1::Image> image = BE1::Image::SharedImageFromFile("Data/EngineTextures/checker.dds");
     if (!image->IsEmpty()) {
         defaultTexture = BE1::graphics.CreateTexture(BE1::Graphics::TextureType::Texture2D);
         BE1::graphics.BindTexture(defaultTexture);
