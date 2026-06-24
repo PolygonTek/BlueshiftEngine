@@ -10,19 +10,19 @@ StructuredBuffer<float2> inputBuffer : register(t0);
 // 256 개의 packed complex FFT 중간 결과가 연속으로 배치된 출력 버퍼
 RWStructuredBuffer<float2> outputBuffer : register(u0);
 
-// Forward TwoReal256 첫 stage. 두 real signal 을 하나의 complex signal 로 pack 한 뒤 radix-4 stage 0 을 수행한다.
+// Forward DualReal256 첫 stage. 두 real signal 을 하나의 complex signal 로 pack 한 뒤 radix-4 stage 0 을 수행한다.
 [RootSignature(COMMON_ROOT_SIGNATURE)]
 [numthreads(FFTRadix4_256BlockSize, 1, 1)]
 void CSMain(uint3 dispatchThreadId : SV_DispatchThreadID) {
     uint threadIndex = dispatchThreadId.x;
 
-    // 256-point two-real FFT 블럭 인덱스
+    // 256-point dual-real FFT 블럭 인덱스
     uint fftBlockIndex = threadIndex / FFTRadix4_256ButterflyCount;
 
     // 버터플라이 인덱스
     uint butterflyIndex = threadIndex - fftBlockIndex * FFTRadix4_256ButterflyCount;
 
-    // 현재 two-real FFT256 블록에서 사용할 입력/출력 버퍼의 시작 오프셋
+    // 현재 dual-real FFT256 블록에서 사용할 입력/출력 버퍼의 시작 오프셋
     uint bufferBase = fftBlockIndex * 256;
 
     // complex FFT256 radix-4 stage 0 의 네 입력 원소 사이의 간격 (stockham)

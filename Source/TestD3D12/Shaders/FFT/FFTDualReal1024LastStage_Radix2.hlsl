@@ -13,7 +13,7 @@ StructuredBuffer<float2> inputBuffer : register(t0);
 // output[base + 512].x = B[0], output[base + 512].y = B[512], output[base + 513..1023] = B[1..511]
 RWStructuredBuffer<float2> outputBuffer : register(u0);
 
-// Forward two-real FFT postprocess 는 complex FFT1024 결과 Z[k] 와 Z[1024 - k] 를 함께 사용한다.
+// Forward dual-real FFT postprocess 는 complex FFT1024 결과 Z[k] 와 Z[1024 - k] 를 함께 사용한다.
 groupshared float2 fftOutput[1024];
 
 void StorePackedSpectra(uint bufferBase, uint binIndex) {
@@ -43,19 +43,19 @@ void StorePackedSpectra(uint bufferBase, uint binIndex) {
     outputBuffer[bSpectrumBase + binIndex] = Bk;
 }
 
-// Forward TwoReal1024 마지막 스테이지. complex FFT1024 radix-2 마지막 stage 를 수행한 뒤 두 packed real spectrum 으로 분리한다.
+// Forward DualReal1024 마지막 스테이지. complex FFT1024 radix-2 마지막 stage 를 수행한 뒤 두 packed real spectrum 으로 분리한다.
 [RootSignature(COMMON_ROOT_SIGNATURE)]
 [numthreads(FFTRadix2_1024BlockSize, 1, 1)]
 void CSMain(uint3 dispatchThreadId : SV_DispatchThreadID) {
     uint threadIndex = dispatchThreadId.x;
 
-    // 1024-point two-real FFT 블럭 인덱스
+    // 1024-point dual-real FFT 블럭 인덱스
     uint fftBlockIndex = threadIndex / FFTRadix2_1024ButterflyCount;
 
     // 버터플라이 인덱스
     uint butterflyIndex = threadIndex - fftBlockIndex * FFTRadix2_1024ButterflyCount;
 
-    // 현재 two-real FFT1024 블록에서 사용할 입력/출력 버퍼의 시작 오프셋
+    // 현재 dual-real FFT1024 블록에서 사용할 입력/출력 버퍼의 시작 오프셋
     uint bufferBase = fftBlockIndex * 1024;
 
     // complex FFT1024 마지막 스테이지는 span 1024, inputStride 1 로 고정된다.

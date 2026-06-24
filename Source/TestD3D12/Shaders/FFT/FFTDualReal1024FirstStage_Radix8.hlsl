@@ -4,29 +4,29 @@
 #define COMMON_ROOT_SIGNATURE "RootFlags(0), " \
     "DescriptorTable(SRV(t0), UAV(u0))"
 
-// 512 개의 interleaved (512 x 2) 실수 입력 데이터가 연속으로 배치된 입력 버퍼.
+// 1024 개의 interleaved (1024 x 2) 실수 입력 데이터가 연속으로 배치된 입력 버퍼.
 StructuredBuffer<float2> inputBuffer : register(t0);
 
-// 512 개의 packed complex FFT 중간 결과가 연속으로 배치된 출력 버퍼
+// 1024 개의 packed complex FFT 중간 결과가 연속으로 배치된 출력 버퍼
 RWStructuredBuffer<float2> outputBuffer : register(u0);
 
-// Forward TwoReal512 첫 stage. 두 real signal 을 하나의 complex signal 로 pack 한 뒤 radix-8 stage 0 을 수행한다.
+// Forward DualReal1024 첫 stage. 두 real signal 을 하나의 complex signal 로 pack 한 뒤 radix-8 stage 0 을 수행한다.
 [RootSignature(COMMON_ROOT_SIGNATURE)]
-[numthreads(FFTRadix8_512BlockSize, 1, 1)]
+[numthreads(FFTRadix8_1024BlockSize, 1, 1)]
 void CSMain(uint3 dispatchThreadId : SV_DispatchThreadID) {
     uint threadIndex = dispatchThreadId.x;
 
-    // 512-point two-real FFT 블럭 인덱스
-    uint fftBlockIndex = threadIndex / FFTRadix8_512ButterflyCount;
+    // 1024-point dual-real FFT 블럭 인덱스
+    uint fftBlockIndex = threadIndex / FFTRadix8_1024ButterflyCount;
 
     // 버터플라이 인덱스
-    uint butterflyIndex = threadIndex - fftBlockIndex * FFTRadix8_512ButterflyCount;
+    uint butterflyIndex = threadIndex - fftBlockIndex * FFTRadix8_1024ButterflyCount;
 
-    // 현재 two-real FFT512 블록에서 사용할 입력/출력 버퍼의 시작 오프셋
-    uint bufferBase = fftBlockIndex * 512;
+    // 현재 dual-real FFT1024 블록에서 사용할 입력/출력 버퍼의 시작 오프셋
+    uint bufferBase = fftBlockIndex * 1024;
 
-    // complex FFT512 radix-8 stage 0 의 여덟 입력 원소 사이의 간격 (stockham)
-    uint inputStride = 512 / 8;
+    // complex FFT1024 radix-8 stage 0 의 여덟 입력 원소 사이의 간격 (stockham)
+    uint inputStride = 1024 / 8;
 
     uint inputIndex0 = bufferBase + butterflyIndex;
     uint inputIndex1 = inputIndex0 + inputStride;
@@ -39,13 +39,13 @@ void CSMain(uint3 dispatchThreadId : SV_DispatchThreadID) {
 
     // 결과 complex 원소 인덱스
     uint outputIndex0 = bufferBase + butterflyIndex;
-    uint outputIndex1 = outputIndex0 + FFTRadix8_512ButterflyCount;
-    uint outputIndex2 = outputIndex1 + FFTRadix8_512ButterflyCount;
-    uint outputIndex3 = outputIndex2 + FFTRadix8_512ButterflyCount;
-    uint outputIndex4 = outputIndex3 + FFTRadix8_512ButterflyCount;
-    uint outputIndex5 = outputIndex4 + FFTRadix8_512ButterflyCount;
-    uint outputIndex6 = outputIndex5 + FFTRadix8_512ButterflyCount;
-    uint outputIndex7 = outputIndex6 + FFTRadix8_512ButterflyCount;
+    uint outputIndex1 = outputIndex0 + FFTRadix8_1024ButterflyCount;
+    uint outputIndex2 = outputIndex1 + FFTRadix8_1024ButterflyCount;
+    uint outputIndex3 = outputIndex2 + FFTRadix8_1024ButterflyCount;
+    uint outputIndex4 = outputIndex3 + FFTRadix8_1024ButterflyCount;
+    uint outputIndex5 = outputIndex4 + FFTRadix8_1024ButterflyCount;
+    uint outputIndex6 = outputIndex5 + FFTRadix8_1024ButterflyCount;
+    uint outputIndex7 = outputIndex6 + FFTRadix8_1024ButterflyCount;
 
     // z[n] = a[n] + i * b[n] 으로 pack 한다.
     float2 z0 = inputBuffer[inputIndex0];

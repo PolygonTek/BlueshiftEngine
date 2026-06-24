@@ -4,7 +4,7 @@
 #define COMMON_ROOT_SIGNATURE "RootFlags(0), " \
     "DescriptorTable(SRV(t0), UAV(u0))"
 
-// Inverse TwoReal256 입력 spectrum 이 packed spectrum 두 벌로 저장된 입력 버퍼
+// Inverse DualReal256 입력 spectrum 이 packed spectrum 두 벌로 저장된 입력 버퍼
 // input[base + 0..127] = A spectrum, input[base + 128..255] = B spectrum
 StructuredBuffer<float2> inputBuffer : register(t0);
 
@@ -40,19 +40,19 @@ float2 LoadComplexIFFTInput(uint bufferBase, uint binIndex) {
     return float2(ANk.x + BNk.y, -ANk.y + BNk.x);
 }
 
-// Inverse TwoReal256 첫 stage. 두 packed spectrum 을 complex FFT256 입력 Z[k] 로 합성한 뒤 radix-4 stage 0 을 수행한다.
+// Inverse DualReal256 첫 stage. 두 packed spectrum 을 complex FFT256 입력 Z[k] 로 합성한 뒤 radix-4 stage 0 을 수행한다.
 [RootSignature(COMMON_ROOT_SIGNATURE)]
 [numthreads(FFTRadix4_256BlockSize, 1, 1)]
 void CSMain(uint3 dispatchThreadId : SV_DispatchThreadID) {
     uint threadIndex = dispatchThreadId.x;
 
-    // 256-point two-real FFT 블럭 인덱스
+    // 256-point dual-real FFT 블럭 인덱스
     uint fftBlockIndex = threadIndex / FFTRadix4_256ButterflyCount;
 
     // 버터플라이 인덱스
     uint butterflyIndex = threadIndex - fftBlockIndex * FFTRadix4_256ButterflyCount;
 
-    // 현재 two-real FFT256 블록에서 사용할 packed spectrum/complex 중간 버퍼의 시작 오프셋
+    // 현재 dual-real FFT256 블록에서 사용할 packed spectrum/complex 중간 버퍼의 시작 오프셋
     uint bufferBase = fftBlockIndex * 256;
 
     // complex FFT256 radix-4 stage 0 의 네 입력 원소 사이의 간격 (stockham)

@@ -10,19 +10,19 @@ StructuredBuffer<float2> inputBuffer : register(t0);
 // 512 개의 interleaved (512 x 2) 실수 데이터가 연속으로 배치된 출력 버퍼.
 RWStructuredBuffer<float2> outputBuffer : register(u0);
 
-// Inverse TwoReal512 마지막 스테이지. complex FFT512 radix-8 stage 2 를 수행한 뒤 a/b real signal 로 unpack 한다.
+// Inverse DualReal512 마지막 스테이지. complex FFT512 radix-8 stage 2 를 수행한 뒤 a/b real signal 로 unpack 한다.
 [RootSignature(COMMON_ROOT_SIGNATURE)]
 [numthreads(FFTRadix8_512BlockSize, 1, 1)]
 void CSMain(uint3 dispatchThreadId : SV_DispatchThreadID) {
     uint threadIndex = dispatchThreadId.x;
 
-    // 512-point two-real FFT 블럭 인덱스
+    // 512-point dual-real FFT 블럭 인덱스
     uint fftBlockIndex = threadIndex / FFTRadix8_512ButterflyCount;
 
     // 버터플라이 인덱스
     uint butterflyIndex = threadIndex - fftBlockIndex * FFTRadix8_512ButterflyCount;
 
-    // 현재 two-real FFT512 블록에서 사용할 입력/출력 버퍼의 시작 오프셋
+    // 현재 dual-real FFT512 블록에서 사용할 입력/출력 버퍼의 시작 오프셋
     uint bufferBase = fftBlockIndex * 512;
 
     // complex FFT512 radix-8 마지막 스테이지는 span 512, inputStride 1 로 고정된다.
