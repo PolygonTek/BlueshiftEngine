@@ -17,6 +17,7 @@
 #include "Precompiled.h"
 #include "RHI/RHI.h"
 #include "RenderFrameData.h"
+#include "FFT2D.h"
 
 class RenderFrameData;
 class RenderContext;
@@ -88,8 +89,14 @@ private:
 
     bool                            DispatchLuminance();
     bool                            DispatchBloom();
-    bool                            DispatchBloomPyramid();
-    bool                            DispatchBloomFFT();
+    bool                            DispatchPyramidBloom();
+    bool                            DispatchConvolutionBloom();
+    bool                            DispatchConvolutionBloomKernelPrepare();
+    bool                            DispatchConvolutionBloomScreenPrefilter();
+    bool                            DispatchConvolutionBloomMultiplySpectrum();
+    bool                            DispatchConvolutionBloomResolve();
+    bool                            DispatchConvolutionBloomFFTDualReal2D(RHI::Buffer *inputBuffer, RHI::Buffer *outputBuffer);
+    bool                            DispatchConvolutionBloomIFFTDualReal2D(RHI::Buffer *inputBuffer, RHI::Buffer *outputBuffer);
     bool                            DispatchToneMapping(bool useBloom);
 
     uint32_t                        FindSurfaceInstanceBatchEnd(const PassDrawSurf **drawSurfs, uint32_t numDrawSurfs, uint32_t startIndex) const;
@@ -109,6 +116,7 @@ private:
     RenderContext *                 currentContext = nullptr;
     RHI::CommandList *              mainCommandList = nullptr;
     uint32_t                        frameCount = 0;
+
     RHI::PipelineState *            currentImagePSO = nullptr;
     RHI::PipelineState *            currentToneMappingPSO = nullptr;
     RHI::PipelineState *            currentLuminancePass1PSO = nullptr;
@@ -116,6 +124,13 @@ private:
     RHI::PipelineState *            currentBloomPrefilterPSO = nullptr;
     RHI::PipelineState *            currentBloomDownsamplePSO = nullptr;
     RHI::PipelineState *            currentBloomUpsamplePSO = nullptr;
+    RHI::PipelineState *            currentConvolutionBloomPrefilterPSO = nullptr;
+    RHI::PipelineState *            currentConvolutionBloomKernelPreparePSO = nullptr;
+    RHI::PipelineState *            currentConvolutionBloomMultiplySpectrumPSO = nullptr;
+    RHI::PipelineState *            currentConvolutionBloomResolvePSO = nullptr;
+
+    FFT2D                           fft2D;
+
     RHI::ConstantBuffer *           frameConstantBuffer = nullptr;
     RHI::ConstantBuffer *           cameraConstantBuffer = nullptr;
 

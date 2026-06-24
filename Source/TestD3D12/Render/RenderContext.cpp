@@ -88,6 +88,36 @@ void RenderContext::Shutdown() {
     bloomPrefilterPSO.reset();
     bloomDownsamplePSO.reset();
     bloomUpsamplePSO.reset();
+    convolutionBloomPrefilterPSO.reset();
+    convolutionBloomKernelPreparePSO.reset();
+    convolutionBloomMultiplySpectrumPSO.reset();
+    convolutionBloomResolvePSO.reset();
+    fftComplex256PSO.reset();
+    fftComplex512PSO.reset();
+    fftComplex1024PSO.reset();
+    fftComplex1024LastStagePSO.reset();
+    fftReal512FirstStagePSO.reset();
+    fftReal512LastStagePSO.reset();
+    fftReal1024FirstStagePSO.reset();
+    fftReal1024LastStagePSO.reset();
+    ifftReal512FirstStagePSO.reset();
+    ifftReal512LastStagePSO.reset();
+    ifftReal1024FirstStagePSO.reset();
+    ifftReal1024LastStagePSO.reset();
+    fftDualReal512FirstStagePSO.reset();
+    fftDualReal512LastStagePSO.reset();
+    fftDualReal1024FirstStagePSO.reset();
+    fftDualReal1024LastStagePSO.reset();
+    ifftDualReal512FirstStagePSO.reset();
+    ifftDualReal512LastStagePSO.reset();
+    ifftDualReal1024FirstStagePSO.reset();
+    ifftDualReal1024LastStagePSO.reset();
+    transposeComplex256x512PSO.reset();
+    transposeComplex512x256PSO.reset();
+    transposeComplex512x1024PSO.reset();
+    transposeComplex1024x512PSO.reset();
+    transposeComplex512PSO.reset();
+    transposeComplex1024PSO.reset();
 
     for (RenderFrameData &frameData : frames) {
         frameData.Shutdown();
@@ -142,12 +172,50 @@ void RenderContext::InitFullScreenTrianglePSO() {
 }
 
 void RenderContext::InitToneMappingPSO() {
+    toneMappingPSO = shaderPipelineCache.GetComputePipeline(shaderTemplateManager.toneMappingShaderTemplate, ShaderPermutationKey(), false);
     luminancePass1PSO = shaderPipelineCache.GetComputePipeline(shaderTemplateManager.luminancePass1ShaderTemplate, ShaderPermutationKey(), false);
     luminancePass2PSO = shaderPipelineCache.GetComputePipeline(shaderTemplateManager.luminancePass2ShaderTemplate, ShaderPermutationKey(), false);
+
     bloomPrefilterPSO = shaderPipelineCache.GetComputePipeline(shaderTemplateManager.bloomPrefilterShaderTemplate, ShaderPermutationKey(), false);
     bloomDownsamplePSO = shaderPipelineCache.GetComputePipeline(shaderTemplateManager.bloomDownsampleShaderTemplate, ShaderPermutationKey(), false);
     bloomUpsamplePSO = shaderPipelineCache.GetComputePipeline(shaderTemplateManager.bloomUpsampleShaderTemplate, ShaderPermutationKey(), false);
-    toneMappingPSO = shaderPipelineCache.GetComputePipeline(shaderTemplateManager.toneMappingShaderTemplate, ShaderPermutationKey(), false);
+
+    convolutionBloomPrefilterPSO = shaderPipelineCache.GetComputePipeline(shaderTemplateManager.convolutionBloomPrefilterShaderTemplate, ShaderPermutationKey(), false);
+    convolutionBloomKernelPreparePSO = shaderPipelineCache.GetComputePipeline(shaderTemplateManager.convolutionBloomKernelPrepareShaderTemplate, ShaderPermutationKey(), false);
+    convolutionBloomMultiplySpectrumPSO = shaderPipelineCache.GetComputePipeline(shaderTemplateManager.convolutionBloomMultiplySpectrumShaderTemplate, ShaderPermutationKey(), false);
+    convolutionBloomResolvePSO = shaderPipelineCache.GetComputePipeline(shaderTemplateManager.convolutionBloomResolveShaderTemplate, ShaderPermutationKey(), false);
+
+    fftComplex256PSO = shaderPipelineCache.GetComputePipeline(shaderTemplateManager.fftComplex256ShaderTemplate, ShaderPermutationKey(), false);
+    fftComplex512PSO = shaderPipelineCache.GetComputePipeline(shaderTemplateManager.fftComplex512ShaderTemplate, ShaderPermutationKey(), false);
+    fftComplex1024PSO = shaderPipelineCache.GetComputePipeline(shaderTemplateManager.fftComplex1024ShaderTemplate, ShaderPermutationKey(), false);
+    fftComplex1024LastStagePSO = shaderPipelineCache.GetComputePipeline(shaderTemplateManager.fftComplex1024LastStageShaderTemplate, ShaderPermutationKey(), false);
+
+    fftReal512FirstStagePSO = shaderPipelineCache.GetComputePipeline(shaderTemplateManager.fftReal512FirstStageShaderTemplate, ShaderPermutationKey(), false);
+    fftReal512LastStagePSO = shaderPipelineCache.GetComputePipeline(shaderTemplateManager.fftReal512LastStageShaderTemplate, ShaderPermutationKey(), false);
+    fftReal1024FirstStagePSO = shaderPipelineCache.GetComputePipeline(shaderTemplateManager.fftReal1024FirstStageShaderTemplate, ShaderPermutationKey(), false);
+    fftReal1024LastStagePSO = shaderPipelineCache.GetComputePipeline(shaderTemplateManager.fftReal1024LastStageShaderTemplate, ShaderPermutationKey(), false);
+
+    ifftReal512FirstStagePSO = shaderPipelineCache.GetComputePipeline(shaderTemplateManager.ifftReal512FirstStageShaderTemplate, ShaderPermutationKey(), false);
+    ifftReal512LastStagePSO = shaderPipelineCache.GetComputePipeline(shaderTemplateManager.ifftReal512LastStageShaderTemplate, ShaderPermutationKey(), false);
+    ifftReal1024FirstStagePSO = shaderPipelineCache.GetComputePipeline(shaderTemplateManager.ifftReal1024FirstStageShaderTemplate, ShaderPermutationKey(), false);
+    ifftReal1024LastStagePSO = shaderPipelineCache.GetComputePipeline(shaderTemplateManager.ifftReal1024LastStageShaderTemplate, ShaderPermutationKey(), false);
+
+    fftDualReal512FirstStagePSO = shaderPipelineCache.GetComputePipeline(shaderTemplateManager.fftDualReal512FirstStageShaderTemplate, ShaderPermutationKey(), false);
+    fftDualReal512LastStagePSO = shaderPipelineCache.GetComputePipeline(shaderTemplateManager.fftDualReal512LastStageShaderTemplate, ShaderPermutationKey(), false);
+    fftDualReal1024FirstStagePSO = shaderPipelineCache.GetComputePipeline(shaderTemplateManager.fftDualReal1024FirstStageShaderTemplate, ShaderPermutationKey(), false);
+    fftDualReal1024LastStagePSO = shaderPipelineCache.GetComputePipeline(shaderTemplateManager.fftDualReal1024LastStageShaderTemplate, ShaderPermutationKey(), false);
+
+    ifftDualReal512FirstStagePSO = shaderPipelineCache.GetComputePipeline(shaderTemplateManager.ifftDualReal512FirstStageShaderTemplate, ShaderPermutationKey(), false);
+    ifftDualReal512LastStagePSO = shaderPipelineCache.GetComputePipeline(shaderTemplateManager.ifftDualReal512LastStageShaderTemplate, ShaderPermutationKey(), false);
+    ifftDualReal1024FirstStagePSO = shaderPipelineCache.GetComputePipeline(shaderTemplateManager.ifftDualReal1024FirstStageShaderTemplate, ShaderPermutationKey(), false);
+    ifftDualReal1024LastStagePSO = shaderPipelineCache.GetComputePipeline(shaderTemplateManager.ifftDualReal1024LastStageShaderTemplate, ShaderPermutationKey(), false);
+
+    transposeComplex256x512PSO = shaderPipelineCache.GetComputePipeline(shaderTemplateManager.transposeComplex256x512ShaderTemplate, ShaderPermutationKey(), false);
+    transposeComplex512x256PSO = shaderPipelineCache.GetComputePipeline(shaderTemplateManager.transposeComplex512x256ShaderTemplate, ShaderPermutationKey(), false);
+    transposeComplex512x1024PSO = shaderPipelineCache.GetComputePipeline(shaderTemplateManager.transposeComplex512x1024ShaderTemplate, ShaderPermutationKey(), false);
+    transposeComplex1024x512PSO = shaderPipelineCache.GetComputePipeline(shaderTemplateManager.transposeComplex1024x512ShaderTemplate, ShaderPermutationKey(), false);
+    transposeComplex512PSO = shaderPipelineCache.GetComputePipeline(shaderTemplateManager.transposeComplex512ShaderTemplate, ShaderPermutationKey(), false);
+    transposeComplex1024PSO = shaderPipelineCache.GetComputePipeline(shaderTemplateManager.transposeComplex1024ShaderTemplate, ShaderPermutationKey(), false);
 }
 
 void RenderContext::WaitAllFrameFences() {

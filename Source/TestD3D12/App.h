@@ -18,6 +18,7 @@ class RenderContext;
 class RenderWorld;
 class RenderCamera;
 class GameObject;
+class Texture;
 class Mesh;
 class Font;
 
@@ -47,6 +48,7 @@ public:
     void                            TakeScreenshot();
 
 private:
+    void                            SetConvolutionBloomKernelFromFile(const char *filename);
     void                            RotateGameObjects();
     void                            UpdateGameFrameTime(uint64_t frameUsec);
     void                            UpdateRenderFrontendFrameTime(uint64_t frameUsec);
@@ -65,6 +67,7 @@ private:
     RenderCamera *                  renderCamera = nullptr;
     RenderWorld *                   renderWorld = nullptr;
 
+    SharedPtr<Texture>              convolutionBloomKernelTexture;
     SharedPtr<Mesh>                 testMesh;
 
     BE1::Array<GameObject *>        gameObjects;

@@ -17,6 +17,7 @@
 #include "RHI/RHI.h"
 
 class RenderWorld;
+class Texture;
 
 static constexpr int RenderBloomDownMaxLevelCount = 8;
 static constexpr int RenderBloomUpMaxLevelCount = RenderBloomDownMaxLevelCount - 1;
@@ -120,6 +121,10 @@ public:
 
     void                        Update(const RenderCameraDesc &desc);
 
+    void                        SetConvolutionBloomKernelTexture(const SharedPtr<Texture> &texture, float normalizationFactor);
+    void                        SetConvolutionBloomKernelRotation(float rotation);
+    void                        SetConvolutionBloomKernelContentPaddingRatio(float contentPaddingRatio);
+
     void                        EnsureRenderTextures(uint32_t width, uint32_t height, RHI::Format colorFormat, RHI::Format depthFormat, uint32_t sampleCount, const BE1::Color4 &optimizedClearColor);
     void                        EnsurePostProcessResources();
 
@@ -129,6 +134,8 @@ public:
     RHI::Texture *              GetColorMSAATexture() const { return colorMSAATexture; }
     RHI::Texture *              GetDepthTexture() const { return depthTexture; }
     RHI::Texture *              GetPostProcessColorTexture() const { return postProcessColorTexture; }
+    RHI::Buffer *               GetLuminanceBuffer() const { return luminanceBuffer; }
+
     RHI::Texture *              GetBloomDownTexture() const { return bloomDownTexture; }
     RHI::Texture *              GetBloomUpTexture() const { return bloomUpTexture; }
     const RHI::ViewID *         GetBloomDownMipSRVs() const { return bloomDownMipSRVs; }
@@ -138,7 +145,20 @@ public:
     const uint32_t *            GetBloomMipWidths() const { return bloomMipWidths; }
     const uint32_t *            GetBloomMipHeights() const { return bloomMipHeights; }
     uint32_t                    GetBloomMipCount() const { return bloomMipCount; }
-    RHI::Buffer *               GetLuminanceBuffer() const { return luminanceBuffer; }
+
+    uint32_t                    GetFFTBloomSize() const { return fftBloomSize; }
+    RHI::Buffer *               GetFFTBloomScreenSpatialBuffer() const { return fftBloomScreenSpatialBuffer; }
+    RHI::Buffer *               GetFFTBloomScreenSpectrumBuffer() const { return fftBloomScreenSpectrumBuffer; }
+    const SharedPtr<Texture> &  GetFFTBloomKernelTexture() const { return fftBloomKernelSourceTexture; }
+    float                       GetFFTBloomKernelNormalizationFactor() const { return fftBloomKernelNormalizationFactor; }
+    RHI::Buffer *               GetFFTBloomKernelSpatialBuffer() const { return fftBloomKernelSpatialBuffer; }
+    RHI::Buffer *               GetFFTBloomKernelSpectrumBuffer() const { return fftBloomKernelSpectrumBuffer; }
+    RHI::Buffer *               GetFFTBloomWorkBuffer() const { return fftBloomWorkBuffer; }
+    RHI::Texture *              GetFFTBloomConvolutionOutputTexture() const { return fftBloomConvolutionOutputTexture; }
+    uint32_t                    GetFFTBloomConvolutionOutputWidth() const { return fftBloomConvolutionOutputWidth; }
+    uint32_t                    GetFFTBloomConvolutionOutputHeight() const { return fftBloomConvolutionOutputHeight; }
+    bool                        IsFFTBloomKernelDirty() const { return fftBloomKernelDirty; }
+    float                       GetFFTBloomKernelRotation() const { return fftBloomKernelRotation; }
 
     static void                 CalculateFov(float fromFovX, float fromAspectRatio, float toAspectRatio, float *toFovX, float *toFovY);
 
@@ -150,6 +170,11 @@ private:
     void                        DestroyPostProcessColorTexture();
     bool                        CreatePyramidBloomTextures(uint32_t width, uint32_t height, uint32_t requestedBloomMipMaxLevelCount);
     void                        DestroyPyramidBloomTextures();
+    bool                        CreateConvolutionBloomResources(uint32_t size);
+    void                        DestroyConvolutionBloomResources();
+    bool                        CreateConvolutionBloomOutputTexture(uint32_t width, uint32_t height);
+    void                        DestroyConvolutionBloomOutputTexture();
+    void                        MarkConvolutionBloomKernelClean() { fftBloomKernelDirty = false; }
     void                        CreateLuminanceBuffer();
     void                        DestroyLuminanceBuffer();
 
@@ -183,6 +208,24 @@ private:
     RHI::ViewID                 bloomUpMipUAVs[RenderBloomUpMaxLevelCount] = {};
     uint32_t                    bloomMipCount = 0;
     uint32_t                    bloomMipMaxLevelCount = 0;
+
+    uint32_t                    fftBloomSize = 0;
+    SharedPtr<Texture>          fftBloomKernelSourceTexture;
+    float                       fftBloomKernelNormalizationFactor = 1.0f;
+    RHI::Buffer *               fftBloomKernelSpatialBuffer = nullptr;
+    RHI::Buffer *               fftBloomKernelSpectrumBuffer = nullptr;
+    float                       fftBloomKernelRotation = 0.0f;
+    float                       fftBloomKernelContentPaddingRatio = -1.0f;
+    uint32_t                    fftBloomKernelRenderWidth = 0;
+    uint32_t                    fftBloomKernelRenderHeight = 0;
+    uint32_t                    fftBloomKernelFFTSize = 0;
+    bool                        fftBloomKernelDirty = true;
+    RHI::Buffer *               fftBloomScreenSpatialBuffer = nullptr;
+    RHI::Buffer *               fftBloomScreenSpectrumBuffer = nullptr;
+    RHI::Buffer *               fftBloomWorkBuffer = nullptr;
+    RHI::Texture *              fftBloomConvolutionOutputTexture = nullptr;
+    uint32_t                    fftBloomConvolutionOutputWidth = 0;
+    uint32_t                    fftBloomConvolutionOutputHeight = 0;
 
     RHI::Buffer *               luminanceBuffer = nullptr;
 };

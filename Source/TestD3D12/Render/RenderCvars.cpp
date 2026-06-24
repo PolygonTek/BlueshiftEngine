@@ -33,13 +33,19 @@ CVAR(r_toneMapLuminanceLogMax, "2", BE1::CVar::Flag::Float, "tone mapping lumina
 CVAR_MINMAX(r_toneMapLuminanceAdaptationRate, "1.1", BE1::CVar::Flag::Float, "tone mapping luminance adaptation rate", 0.0f, 100.0f);
 CVAR_MINMAX(r_toneMapMiddleGray, "0.18", BE1::CVar::Flag::Float, "tone mapping middle gray", 0.0f, 10.0f);
 
-CVAR_MINMAX(r_bloom, "1", BE1::CVar::Flag::Integer, "bloom mode (0 = off, 1 = pyramid, 2 = FFT convolution)", RenderBloomMode::Off, RenderBloomMode::FFTConvolution);
+CVAR_MINMAX(r_bloom, "2", BE1::CVar::Flag::Integer, "bloom mode (0 = off, 1 = pyramid, 2 = convolution)", RenderBloomMode::Off, RenderBloomMode::Convolution);
+CVAR_MINMAX(r_bloomIntensity, "0.15", BE1::CVar::Flag::Float, "final bloom composite intensity", 0.0f, 10.0f);
 CVAR_MINMAX(r_bloomThreshold, "1.0", BE1::CVar::Flag::Float, "bloom luminance threshold", 0.0f, 100.0f);
 CVAR_MINMAX(r_bloomSoftThreshold, "0.5", BE1::CVar::Flag::Float, "bloom soft threshold width", 0.0f, 10.0f);
-CVAR_MINMAX(r_bloomPrefilterQuality, "1", BE1::CVar::Flag::Integer, "bloom prefilter quality (0 = low quality, 1 = high quality)", 0, 1);
-CVAR_MINMAX(r_bloomIntensity, "0.15", BE1::CVar::Flag::Float, "final bloom composite intensity", 0.0f, 10.0f);
-CVAR_MINMAX(r_bloomScatter, "0.85", BE1::CVar::Flag::Float, "bloom mip scatter weight", 0.0f, 1.0f);
-CVAR_MINMAX(r_bloomPrefilterRadius, "1.25", BE1::CVar::Flag::Float, "bloom prefilter sample radius", 0.0f, 10.0f);
-CVAR_MINMAX(r_bloomDownsampleRadius, "1.0", BE1::CVar::Flag::Float, "bloom downsample sample radius", 0.0f, 10.0f);
-CVAR_MINMAX(r_bloomUpsampleRadius, "1.0", BE1::CVar::Flag::Float, "bloom upsample sample radius", 0.0f, 10.0f);
-CVAR_MINMAX(r_bloomMipCount, "6", BE1::CVar::Flag::Integer, "bloom mip level count", 1, RenderBloomDownMaxLevelCount);
+
+CVAR_MINMAX(r_pyramidBloomPrefilterQuality, "1", BE1::CVar::Flag::Integer, "pyramid bloom prefilter quality (0 = low quality, 1 = high quality)", 0, 1);
+CVAR_MINMAX(r_pyramidBloomScatter, "0.85", BE1::CVar::Flag::Float, "pyramid bloom mip scatter weight", 0.0f, 1.0f);
+CVAR_MINMAX(r_pyramidBloomPrefilterRadius, "1.25", BE1::CVar::Flag::Float, "pyramid bloom prefilter sample radius", 0.0f, 10.0f);
+CVAR_MINMAX(r_pyramidBloomDownsampleRadius, "1.0", BE1::CVar::Flag::Float, "pyramid bloom downsample sample radius", 0.0f, 10.0f);
+CVAR_MINMAX(r_pyramidBloomUpsampleRadius, "1.0", BE1::CVar::Flag::Float, "pyramid bloom upsample sample radius", 0.0f, 10.0f);
+CVAR_MINMAX(r_pyramidBloomMipCount, "6", BE1::CVar::Flag::Integer, "pyramid bloom mip level count", 1, RenderBloomDownMaxLevelCount);
+
+CVAR_MINMAX(r_convolutionBloomFFTMaxSize, "1024", BE1::CVar::Flag::Integer, "maximum convolution bloom FFT texture axis size", 512, 1024);
+CVAR_MINMAX(r_convolutionBloomContentPaddingRatio, "0.109375", BE1::CVar::Flag::Float, "minimum convolution bloom content padding ratio", 0.0f, 0.45f);
+CVAR_MINMAX(r_convolutionBloomKernelScale, "10.0", BE1::CVar::Flag::Float, "convolution bloom kernel spectrum scale", 0.0f, 100.0f);
+CVAR(r_convolutionBloomKernelRotation, "0", BE1::CVar::Flag::Float, "convolution bloom kernel rotation in degrees");

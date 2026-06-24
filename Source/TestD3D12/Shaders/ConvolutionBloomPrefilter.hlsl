@@ -11,8 +11,8 @@ cbuffer BloomCB : register(b0) {
     BloomParams bloomParams;
 }
 
-Texture2D<float4> inputTexture : register(t0);
-RWTexture2D<float4> outputTexture : register(u0);
+Texture2D<float4> screenTexture : register(t0);
+RWStructuredBuffer<float2> fftScreenBuffer : register(u0);
 
 half3 ApplyBloomThreshold(half3 color) {
     half threshold = half(BP_BLOOM_THRESHOLD);
@@ -39,9 +39,23 @@ void CSMain(uint3 dispatchThreadId : SV_DispatchThreadID) {
         return;
     }
 
-    float2 uv = (float2(pixelCoord) + 0.5) * bloomParams.outputTexelSize;
-    half3 color = half3(inputTexture.SampleLevel(linearClampSampler, uv, 0).rgb);
+    uint outputIndex = pixelCoord.y * bloomParams.outputSize.x + pixelCoord.x;
+    uint outputPixelCount = bloomParams.outputSize.x * bloomParams.outputSize.y;
+
+    // content 영역 밖은 검은색으로 칠한다.
+    float2 contentSampleCoord = float2(pixelCoord) + 0.5 - BP_BLOOM_CONTENT_OFFSET;
+    if (contentSampleCoord.x < 0.0 || contentSampleCoord.y < 0.0 || contentSampleCoord.x >= BP_BLOOM_CONTENT_SIZE.x || contentSampleCoord.y >= BP_BLOOM_CONTENT_SIZE.y) {
+        fftScreenBuffer[outputIndex] = float2(0.0, 0.0);
+        fftScreenBuffer[outputPixelCount + outputIndex] = float2(0.0, 0.0);
+        return;
+    }
+
+    float2 uv = contentSampleCoord / BP_BLOOM_CONTENT_SIZE;
+    half3 color = half3(screenTexture.SampleLevel(linearClampSampler, uv, 0).rgb);
     color = ApplyBloomThreshold(max(color, half3(0.0, 0.0, 0.0)));
 
-    outputTexture[pixelCoord] = float4(float3(color), 1.0);
+    // FFT screen buffer 의 앞쪽에는 rg 배열만 담고, 이후에 b0 배열을 담는다. (패킹된 FFTDualReal 셰이더를 사용하기에 유리)
+    float3 outputColor = float3(color);
+    fftScreenBuffer[outputIndex] = outputColor.rg;
+    fftScreenBuffer[outputPixelCount + outputIndex] = float2(outputColor.b, 0.0);
 }

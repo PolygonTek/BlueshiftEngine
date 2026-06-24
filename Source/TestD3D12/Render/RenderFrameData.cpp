@@ -17,6 +17,7 @@
 #include "RenderContext.h"
 #include "RenderInternal.h"
 #include "Material.h"
+#include "Texture.h"
 
 uint64_t                    RenderFrameData::globalFrameSerial = 0;
 static constexpr uint32_t   MaxRenderTaskThreads = 32;
@@ -46,6 +47,36 @@ void RenderFrameData::CmdBeginContext(RenderContext *context) {
     cmd->bloomPrefilterPSO = nullptr;
     cmd->bloomDownsamplePSO = nullptr;
     cmd->bloomUpsamplePSO = nullptr;
+    cmd->convolutionBloomPrefilterPSO = nullptr;
+    cmd->convolutionBloomKernelPreparePSO = nullptr;
+    cmd->convolutionBloomMultiplySpectrumPSO = nullptr;
+    cmd->convolutionBloomResolvePSO = nullptr;
+    cmd->fftComplex256PSO = nullptr;
+    cmd->fftComplex512PSO = nullptr;
+    cmd->fftComplex1024PSO = nullptr;
+    cmd->fftComplex1024LastStagePSO = nullptr;
+    cmd->fftReal512FirstStagePSO = nullptr;
+    cmd->fftReal512LastStagePSO = nullptr;
+    cmd->fftReal1024FirstStagePSO = nullptr;
+    cmd->fftReal1024LastStagePSO = nullptr;
+    cmd->ifftReal512FirstStagePSO = nullptr;
+    cmd->ifftReal512LastStagePSO = nullptr;
+    cmd->ifftReal1024FirstStagePSO = nullptr;
+    cmd->ifftReal1024LastStagePSO = nullptr;
+    cmd->fftDualReal512FirstStagePSO = nullptr;
+    cmd->fftDualReal512LastStagePSO = nullptr;
+    cmd->fftDualReal1024FirstStagePSO = nullptr;
+    cmd->fftDualReal1024LastStagePSO = nullptr;
+    cmd->ifftDualReal512FirstStagePSO = nullptr;
+    cmd->ifftDualReal512LastStagePSO = nullptr;
+    cmd->ifftDualReal1024FirstStagePSO = nullptr;
+    cmd->ifftDualReal1024LastStagePSO = nullptr;
+    cmd->transposeComplex256x512PSO = nullptr;
+    cmd->transposeComplex512x256PSO = nullptr;
+    cmd->transposeComplex512x1024PSO = nullptr;
+    cmd->transposeComplex1024x512PSO = nullptr;
+    cmd->transposeComplex512PSO = nullptr;
+    cmd->transposeComplex1024PSO = nullptr;
 
     if (!context) {
         return;
@@ -58,6 +89,36 @@ void RenderFrameData::CmdBeginContext(RenderContext *context) {
     cmd->bloomPrefilterPSO = SnapshotPSO(context->bloomPrefilterPSO);
     cmd->bloomDownsamplePSO = SnapshotPSO(context->bloomDownsamplePSO);
     cmd->bloomUpsamplePSO = SnapshotPSO(context->bloomUpsamplePSO);
+    cmd->convolutionBloomPrefilterPSO = SnapshotPSO(context->convolutionBloomPrefilterPSO);
+    cmd->convolutionBloomKernelPreparePSO = SnapshotPSO(context->convolutionBloomKernelPreparePSO);
+    cmd->convolutionBloomMultiplySpectrumPSO = SnapshotPSO(context->convolutionBloomMultiplySpectrumPSO);
+    cmd->convolutionBloomResolvePSO = SnapshotPSO(context->convolutionBloomResolvePSO);
+    cmd->fftComplex256PSO = SnapshotPSO(context->fftComplex256PSO);
+    cmd->fftComplex512PSO = SnapshotPSO(context->fftComplex512PSO);
+    cmd->fftComplex1024PSO = SnapshotPSO(context->fftComplex1024PSO);
+    cmd->fftComplex1024LastStagePSO = SnapshotPSO(context->fftComplex1024LastStagePSO);
+    cmd->fftReal512FirstStagePSO = SnapshotPSO(context->fftReal512FirstStagePSO);
+    cmd->fftReal512LastStagePSO = SnapshotPSO(context->fftReal512LastStagePSO);
+    cmd->fftReal1024FirstStagePSO = SnapshotPSO(context->fftReal1024FirstStagePSO);
+    cmd->fftReal1024LastStagePSO = SnapshotPSO(context->fftReal1024LastStagePSO);
+    cmd->ifftReal512FirstStagePSO = SnapshotPSO(context->ifftReal512FirstStagePSO);
+    cmd->ifftReal512LastStagePSO = SnapshotPSO(context->ifftReal512LastStagePSO);
+    cmd->ifftReal1024FirstStagePSO = SnapshotPSO(context->ifftReal1024FirstStagePSO);
+    cmd->ifftReal1024LastStagePSO = SnapshotPSO(context->ifftReal1024LastStagePSO);
+    cmd->fftDualReal512FirstStagePSO = SnapshotPSO(context->fftDualReal512FirstStagePSO);
+    cmd->fftDualReal512LastStagePSO = SnapshotPSO(context->fftDualReal512LastStagePSO);
+    cmd->fftDualReal1024FirstStagePSO = SnapshotPSO(context->fftDualReal1024FirstStagePSO);
+    cmd->fftDualReal1024LastStagePSO = SnapshotPSO(context->fftDualReal1024LastStagePSO);
+    cmd->ifftDualReal512FirstStagePSO = SnapshotPSO(context->ifftDualReal512FirstStagePSO);
+    cmd->ifftDualReal512LastStagePSO = SnapshotPSO(context->ifftDualReal512LastStagePSO);
+    cmd->ifftDualReal1024FirstStagePSO = SnapshotPSO(context->ifftDualReal1024FirstStagePSO);
+    cmd->ifftDualReal1024LastStagePSO = SnapshotPSO(context->ifftDualReal1024LastStagePSO);
+    cmd->transposeComplex256x512PSO = SnapshotPSO(context->transposeComplex256x512PSO);
+    cmd->transposeComplex512x256PSO = SnapshotPSO(context->transposeComplex512x256PSO);
+    cmd->transposeComplex512x1024PSO = SnapshotPSO(context->transposeComplex512x1024PSO);
+    cmd->transposeComplex1024x512PSO = SnapshotPSO(context->transposeComplex1024x512PSO);
+    cmd->transposeComplex512PSO = SnapshotPSO(context->transposeComplex512PSO);
+    cmd->transposeComplex1024PSO = SnapshotPSO(context->transposeComplex1024PSO);
 }
 
 void RenderFrameData::CmdDrawCamera(const VisCamera *camera) {
@@ -121,6 +182,8 @@ void RenderFrameData::Shutdown() {
 
     ClearRetainedFonts();
 
+    ClearRetainedTextures();
+
     shaderMaterialTable.Shutdown();
     shaderSurfaceTable.Shutdown();
 
@@ -167,6 +230,8 @@ void RenderFrameData::BeginFrameMemAllocs() {
     ClearRetainedMeshInstances();
 
     ClearRetainedFonts();
+
+    ClearRetainedTextures();
 
     shaderMaterialTable.Clear();
     shaderSurfaceTable.Clear();
@@ -283,6 +348,14 @@ void RenderFrameData::ClearRetainedFonts() {
     retainedFonts.SetCount(0, false);
 }
 
+void RenderFrameData::ClearRetainedTextures() {
+    const int numRetainedTextures = retainedTextures.Count();
+    for (int i = 0; i < numRetainedTextures; ++i) {
+        retainedTextures[i].reset();
+    }
+    retainedTextures.SetCount(0, false);
+}
+
 Material *RenderFrameData::RetainMaterial(const SharedPtr<Material> &material) {
     if (!material) {
         return nullptr;
@@ -323,6 +396,20 @@ Font *RenderFrameData::RetainFont(const SharedPtr<Font> &font) {
     }
 
     return fontPtr;
+}
+
+Texture *RenderFrameData::RetainTexture(const SharedPtr<Texture> &texture) {
+    if (!texture) {
+        return nullptr;
+    }
+
+    Texture *texturePtr = texture.get();
+    if (texturePtr->GetRetainedFrameSerial() != frameSerial) {
+        texturePtr->SetRetainedFrameSerial(frameSerial);
+        retainedTextures.Append(texture);
+    }
+
+    return texturePtr;
 }
 
 void RenderFrameData::SetPendingImGuiOverlay(RHI::ImGuiOverlay *overlay, void *userData) {

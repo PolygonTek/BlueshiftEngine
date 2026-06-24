@@ -146,9 +146,47 @@ private:
     SharedPtr<ShaderPipeline>       toneMappingPSO;
     SharedPtr<ShaderPipeline>       luminancePass1PSO;
     SharedPtr<ShaderPipeline>       luminancePass2PSO;
+
     SharedPtr<ShaderPipeline>       bloomPrefilterPSO;
     SharedPtr<ShaderPipeline>       bloomDownsamplePSO;
     SharedPtr<ShaderPipeline>       bloomUpsamplePSO;
+
+    SharedPtr<ShaderPipeline>       convolutionBloomPrefilterPSO;
+    SharedPtr<ShaderPipeline>       convolutionBloomKernelPreparePSO;
+    SharedPtr<ShaderPipeline>       convolutionBloomMultiplySpectrumPSO;
+    SharedPtr<ShaderPipeline>       convolutionBloomResolvePSO;
+
+    SharedPtr<ShaderPipeline>       fftComplex256PSO;
+    SharedPtr<ShaderPipeline>       fftComplex512PSO;
+    SharedPtr<ShaderPipeline>       fftComplex1024PSO;
+    SharedPtr<ShaderPipeline>       fftComplex1024LastStagePSO;
+
+    SharedPtr<ShaderPipeline>       fftReal512FirstStagePSO;
+    SharedPtr<ShaderPipeline>       fftReal512LastStagePSO;
+    SharedPtr<ShaderPipeline>       fftReal1024FirstStagePSO;
+    SharedPtr<ShaderPipeline>       fftReal1024LastStagePSO;
+
+    SharedPtr<ShaderPipeline>       ifftReal512FirstStagePSO;
+    SharedPtr<ShaderPipeline>       ifftReal512LastStagePSO;
+    SharedPtr<ShaderPipeline>       ifftReal1024FirstStagePSO;
+    SharedPtr<ShaderPipeline>       ifftReal1024LastStagePSO;
+
+    SharedPtr<ShaderPipeline>       fftDualReal512FirstStagePSO;
+    SharedPtr<ShaderPipeline>       fftDualReal512LastStagePSO;
+    SharedPtr<ShaderPipeline>       fftDualReal1024FirstStagePSO;
+    SharedPtr<ShaderPipeline>       fftDualReal1024LastStagePSO;
+
+    SharedPtr<ShaderPipeline>       ifftDualReal512FirstStagePSO;
+    SharedPtr<ShaderPipeline>       ifftDualReal512LastStagePSO;
+    SharedPtr<ShaderPipeline>       ifftDualReal1024FirstStagePSO;
+    SharedPtr<ShaderPipeline>       ifftDualReal1024LastStagePSO;
+
+    SharedPtr<ShaderPipeline>       transposeComplex256x512PSO;
+    SharedPtr<ShaderPipeline>       transposeComplex512x256PSO;
+    SharedPtr<ShaderPipeline>       transposeComplex512x1024PSO;
+    SharedPtr<ShaderPipeline>       transposeComplex1024x512PSO;
+    SharedPtr<ShaderPipeline>       transposeComplex512PSO;
+    SharedPtr<ShaderPipeline>       transposeComplex1024PSO;
 
     TextureStreamingFeedback        textureStreamingFeedback;
 

@@ -8,6 +8,7 @@ set(SRC_FILES
     Profiler.h
     App.h
     App.cpp
+    AppImGui.cpp
     LoadingSystem.h
     LoadingSystem.cpp
     GameObject.h
@@ -76,6 +77,8 @@ set(SRC_FILES
     Render/RenderContext.cpp
     Render/RenderFrameData.h
     Render/RenderFrameData.cpp
+    Render/FFT2D.h
+    Render/FFT2D.cpp
     Render/ShaderGpuTable.h
     Render/ShaderGpuTable.cpp
     Render/RenderSystem.h

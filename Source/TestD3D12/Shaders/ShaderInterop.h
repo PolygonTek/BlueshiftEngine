@@ -148,6 +148,10 @@ struct BloomParams {
 #define BP_BLOOM_RADIUS bloomParams.params0.w
 #define BP_BLOOM_CONTENT_OFFSET bloomParams.params1.xy
 #define BP_BLOOM_CONTENT_SIZE bloomParams.params1.zw
+#define BP_BLOOM_KERNEL_SCALE bloomParams.params0.x
+#define BP_BLOOM_KERNEL_ROTATION_COS bloomParams.params0.x
+#define BP_BLOOM_KERNEL_ROTATION_SIN bloomParams.params0.y
+#define BP_BLOOM_KERNEL_SPATIAL_SCALE bloomParams.params0.zw
 
 struct FFTStageParams {
     uint stageIndex;

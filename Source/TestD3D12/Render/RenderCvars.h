@@ -19,7 +19,7 @@
 enum RenderBloomMode {
     Off = 0,
     Pyramid = 1,
-    FFTConvolution = 2
+    Convolution = 2
 };
 
 extern BE1::CVar    r_skipCulling;
@@ -40,12 +40,18 @@ extern BE1::CVar    r_toneMapLuminanceAdaptationRate;
 extern BE1::CVar    r_toneMapMiddleGray;
 
 extern BE1::CVar    r_bloom;
+extern BE1::CVar    r_bloomIntensity;
 extern BE1::CVar    r_bloomThreshold;
 extern BE1::CVar    r_bloomSoftThreshold;
-extern BE1::CVar    r_bloomPrefilterQuality;
-extern BE1::CVar    r_bloomIntensity;
-extern BE1::CVar    r_bloomScatter;
-extern BE1::CVar    r_bloomPrefilterRadius;
-extern BE1::CVar    r_bloomDownsampleRadius;
-extern BE1::CVar    r_bloomUpsampleRadius;
-extern BE1::CVar    r_bloomMipCount;
+
+extern BE1::CVar    r_pyramidBloomPrefilterQuality;
+extern BE1::CVar    r_pyramidBloomScatter;
+extern BE1::CVar    r_pyramidBloomPrefilterRadius;
+extern BE1::CVar    r_pyramidBloomDownsampleRadius;
+extern BE1::CVar    r_pyramidBloomUpsampleRadius;
+extern BE1::CVar    r_pyramidBloomMipCount;
+
+extern BE1::CVar    r_convolutionBloomFFTMaxSize;
+extern BE1::CVar    r_convolutionBloomContentPaddingRatio;
+extern BE1::CVar    r_convolutionBloomKernelScale;
+extern BE1::CVar    r_convolutionBloomKernelRotation;

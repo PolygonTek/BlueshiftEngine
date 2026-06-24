@@ -56,6 +56,36 @@ struct BeginContextRenderCommand {
     RHI::PipelineState *            bloomPrefilterPSO = nullptr;
     RHI::PipelineState *            bloomDownsamplePSO = nullptr;
     RHI::PipelineState *            bloomUpsamplePSO = nullptr;
+    RHI::PipelineState *            convolutionBloomPrefilterPSO = nullptr;
+    RHI::PipelineState *            convolutionBloomKernelPreparePSO = nullptr;
+    RHI::PipelineState *            convolutionBloomMultiplySpectrumPSO = nullptr;
+    RHI::PipelineState *            convolutionBloomResolvePSO = nullptr;
+    RHI::PipelineState *            fftComplex256PSO = nullptr;
+    RHI::PipelineState *            fftComplex512PSO = nullptr;
+    RHI::PipelineState *            fftComplex1024PSO = nullptr;
+    RHI::PipelineState *            fftComplex1024LastStagePSO = nullptr;
+    RHI::PipelineState *            fftReal512FirstStagePSO = nullptr;
+    RHI::PipelineState *            fftReal512LastStagePSO = nullptr;
+    RHI::PipelineState *            fftReal1024FirstStagePSO = nullptr;
+    RHI::PipelineState *            fftReal1024LastStagePSO = nullptr;
+    RHI::PipelineState *            ifftReal512FirstStagePSO = nullptr;
+    RHI::PipelineState *            ifftReal512LastStagePSO = nullptr;
+    RHI::PipelineState *            ifftReal1024FirstStagePSO = nullptr;
+    RHI::PipelineState *            ifftReal1024LastStagePSO = nullptr;
+    RHI::PipelineState *            fftDualReal512FirstStagePSO = nullptr;
+    RHI::PipelineState *            fftDualReal512LastStagePSO = nullptr;
+    RHI::PipelineState *            fftDualReal1024FirstStagePSO = nullptr;
+    RHI::PipelineState *            fftDualReal1024LastStagePSO = nullptr;
+    RHI::PipelineState *            ifftDualReal512FirstStagePSO = nullptr;
+    RHI::PipelineState *            ifftDualReal512LastStagePSO = nullptr;
+    RHI::PipelineState *            ifftDualReal1024FirstStagePSO = nullptr;
+    RHI::PipelineState *            ifftDualReal1024LastStagePSO = nullptr;
+    RHI::PipelineState *            transposeComplex256x512PSO = nullptr;
+    RHI::PipelineState *            transposeComplex512x256PSO = nullptr;
+    RHI::PipelineState *            transposeComplex512x1024PSO = nullptr;
+    RHI::PipelineState *            transposeComplex1024x512PSO = nullptr;
+    RHI::PipelineState *            transposeComplex512PSO = nullptr;
+    RHI::PipelineState *            transposeComplex1024PSO = nullptr;
 };
 
 struct DrawCameraRenderCommand {
@@ -159,6 +189,7 @@ public:
     Material *                      RetainMaterial(const SharedPtr<Material> &material);
     MeshInstance *                  RetainMeshInstance(const SharedPtr<MeshInstance> &meshInstance);
     Font *                          RetainFont(const SharedPtr<Font> &font);
+    Texture *                       RetainTexture(const SharedPtr<Texture> &texture);
 
     uint32_t                        GetShaderMaterialTableBindlessIndex() const { return shaderMaterialTable.GetBindlessIndex(); }
     uint32_t                        GetShaderSurfaceTableBindlessIndex() const { return shaderSurfaceTable.GetBindlessIndex(); }
@@ -203,6 +234,7 @@ private:
     void                            ClearRetainedMaterials();
     void                            ClearRetainedMeshInstances();
     void                            ClearRetainedFonts();
+    void                            ClearRetainedTextures();
 
     void *                          GetCommandBuffer(uint32_t bytes);
 
@@ -242,6 +274,7 @@ private:
     BE1::Array<SharedPtr<Material>> retainedMaterials;
     BE1::Array<SharedPtr<MeshInstance>> retainedMeshInstances;
     BE1::Array<SharedPtr<Font>> retainedFonts;
+    BE1::Array<SharedPtr<Texture>> retainedTextures;
 };
 
 BE_INLINE void RenderFrameData::BeginFrame() {

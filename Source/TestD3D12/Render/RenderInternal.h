@@ -102,10 +102,13 @@ struct VisCamera {
     RenderCameraClearColorMode  clearColorMode;
     BE1::Color4                 clearColor;
     RenderCameraFlag            flags = RenderCameraFlag::NoFlag;
+
     RHI::Texture *              colorTexture = nullptr;
     RHI::Texture *              colorMSAATexture = nullptr;
     RHI::Texture *              depthTexture = nullptr;
     RHI::Texture *              postProcessColorTexture = nullptr;
+    RHI::Buffer *               luminanceBuffer = nullptr;
+
     RHI::Texture *              bloomDownTexture = nullptr;
     RHI::Texture *              bloomUpTexture = nullptr;
     uint32_t                    bloomMipWidths[RenderBloomDownMaxLevelCount] = {};
@@ -115,7 +118,20 @@ struct VisCamera {
     RHI::ViewID                 bloomUpMipSRVs[RenderBloomUpMaxLevelCount] = {};
     RHI::ViewID                 bloomUpMipUAVs[RenderBloomUpMaxLevelCount] = {};
     uint32_t                    bloomMipCount = 0;
-    RHI::Buffer *               luminanceBuffer = nullptr;
+
+    uint32_t                    fftBloomSize = 0;
+    RHI::Buffer *               fftBloomScreenSpatialBuffer = nullptr;
+    RHI::Buffer *               fftBloomScreenSpectrumBuffer = nullptr;
+    RHI::Texture *              fftBloomKernelSourceTexture = nullptr;
+    RHI::Buffer *               fftBloomKernelSpatialBuffer = nullptr;
+    RHI::Buffer *               fftBloomKernelSpectrumBuffer = nullptr;
+    RHI::Buffer *               fftBloomWorkBuffer = nullptr;
+    RHI::Texture *              fftBloomConvolutionOutputTexture = nullptr;
+    uint32_t                    fftBloomConvolutionOutputWidth = 0;
+    uint32_t                    fftBloomConvolutionOutputHeight = 0;
+    float                       fftBloomKernelRotation = 0.0f;
+    float                       fftBloomKernelNormalizationFactor = 1.0f;
+    bool                        fftBloomKernelDirty = true;
 
     bool                        is2D;
 };
