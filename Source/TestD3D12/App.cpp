@@ -28,8 +28,9 @@
 #include "GameObject.h"
 #include "App.h"
 
-BE1::CVar       stat_fps("stat_fps", "1", BE1::CVar::Flag::Bool, "show FPS");
-BE1::CVar       stat_render("stat_render", "0", BE1::CVar::Flag::Bool, "show render statistics");
+BE1::CVar       app_statFps("app_statFps", "1", BE1::CVar::Flag::Bool, "show FPS");
+BE1::CVar       app_statRender("app_statRender", "0", BE1::CVar::Flag::Bool, "show render statistics");
+BE1::CVar       app_convolutionBloomKernelIndex("app_convolutionBloomKernelIndex", "0", BE1::CVar::Flag::Integer | BE1::CVar::Flag::Archive, "convolution bloom kernel index", 0, App::ConvolutionBloomKernelCount - 1);
 
 App             app;
 
@@ -52,7 +53,7 @@ void App::Init(void *mainWindowHandle) {
 
     renderCamera = new RenderCamera;
 
-    SetConvolutionBloomKernelIndex(convolutionBloomKernelIndex);
+    SetConvolutionBloomKernelIndex(app_convolutionBloomKernelIndex.GetInteger());
  
     InitGameObjects(100, 100, 1);
 
@@ -84,25 +85,25 @@ void App::Shutdown() {
 }
 
 void App::GetConvolutionBloomKernelDisplayName(int index, char *buffer, int bufferSize) const {
-    BE1::Clamp(index, 0, ConvolutionBloomKernelCount - 1);
     BE1::Str::snPrintf(buffer, bufferSize, "CGV Bloom %02i", index + 1);
 }
 
 void App::GetConvolutionBloomKernelFilename(int index, char *buffer, int bufferSize) const {
-    BE1::Clamp(index, 0, ConvolutionBloomKernelCount - 1);
     BE1::Str::snPrintf(buffer, bufferSize, "BloomKernels/CGV_Bloom_%02i.EXR", index + 1);
 }
 
 void App::SetConvolutionBloomKernelIndex(int index) {
-    BE1::Clamp(index, 0, ConvolutionBloomKernelCount - 1);
-    if (convolutionBloomKernelIndex == index && convolutionBloomKernelTexture) {
+    const int currentIndex = app_convolutionBloomKernelIndex.GetInteger();
+
+    app_convolutionBloomKernelIndex.SetInteger(index);
+    index = app_convolutionBloomKernelIndex.GetInteger();
+
+    if (currentIndex == index && convolutionBloomKernelTexture) {
         return;
     }
 
-    convolutionBloomKernelIndex = index;
-
     char filename[128];
-    GetConvolutionBloomKernelFilename(convolutionBloomKernelIndex, filename, sizeof(filename));
+    GetConvolutionBloomKernelFilename(index, filename, sizeof(filename));
     SetConvolutionBloomKernelFromFile(filename);
 }
 
@@ -150,7 +151,7 @@ void App::Render(uint64_t frameUsec) {
     const float elapsedTime = (float)MICRO2SEC((double)elapsedUsec);
     const float elapsedPrevTime = (float)MICRO2SEC((double)(elapsedUsec - frameUsec));
 
-    mainRenderContext->BeginFrame(frameTime, elapsedTime, elapsedPrevTime, stat_render.GetBool());
+    mainRenderContext->BeginFrame(frameTime, elapsedTime, elapsedPrevTime, app_statRender.GetBool());
 
     uint64_t t0 = BE1::PlatformTime::Microseconds();
 
@@ -427,13 +428,13 @@ void App::RenderText() {
     int x = 4;
     int y = 4;
 
-    if (stat_fps.GetBool()) {
+    if (app_statFps.GetBool()) {
         const float statFps = statFrameAverageMsec > 0.0f ? 1000.0f / statFrameAverageMsec : 0.0f;
 
         mainRenderContext->DrawString(x, y, BE1::va("FPS: %.1f", statFps), DrawTextFlag::Right | DrawTextFlag::AddOutlines); y += textLineHeight;
     }
 
-    if (stat_render.GetBool()) {
+    if (app_statRender.GetBool()) {
         const uint64_t videoMemBudgetBytes = renderSystem->GetVideoMemoryUsage().budgetBytes;
         const uint64_t videoMemUsageBytes = renderSystem->GetVideoMemoryUsage().usageBytes;
 

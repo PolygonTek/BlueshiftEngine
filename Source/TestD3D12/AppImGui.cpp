@@ -27,8 +27,9 @@
 #include "imgui/imgui.h"
 #endif
 
-extern BE1::CVar       stat_fps;
-extern BE1::CVar       stat_render;
+extern BE1::CVar       app_statFps;
+extern BE1::CVar       app_statRender;
+extern BE1::CVar       app_convolutionBloomKernelIndex;
 
 #ifdef ENABLE_IMGUI
 void App::UpdateImGuiStatsPlotHistory() {
@@ -382,14 +383,14 @@ void App::BuildImGuiOverlay() {
         }
 
         if (ImGui::BeginTabItem("Render")) {
-            bool showFps = stat_fps.GetBool();
+            bool showFps = app_statFps.GetBool();
             if (ImGui::Checkbox("Show FPS", &showFps)) {
-                stat_fps.SetBool(showFps);
+                app_statFps.SetBool(showFps);
             }
 
-            bool showRenderStats = stat_render.GetBool();
+            bool showRenderStats = app_statRender.GetBool();
             if (ImGui::Checkbox("Show render statistics", &showRenderStats)) {
-                stat_render.SetBool(showRenderStats);
+                app_statRender.SetBool(showRenderStats);
             }
 
             if (ImGui::Button(imguiShowStatsPlotWindow ? "Hide Stats Plot" : "Show Stats Plot")) {
@@ -497,14 +498,14 @@ void App::BuildImGuiOverlay() {
 
                 if (useConvolutionBloom) {
                     char currentKernelName[32];
-                    GetConvolutionBloomKernelDisplayName(GetConvolutionBloomKernelIndex(), currentKernelName, sizeof(currentKernelName));
+                    GetConvolutionBloomKernelDisplayName(app_convolutionBloomKernelIndex.GetInteger(), currentKernelName, sizeof(currentKernelName));
                     ImGui::SetNextItemWidth(fontSize * 12.0f);
                     if (ImGui::BeginCombo("Convolution bloom kernel", currentKernelName)) {
-                        for (int kernelIndex = 0; kernelIndex < GetConvolutionBloomKernelCount(); ++kernelIndex) {
+                        for (int kernelIndex = 0; kernelIndex < App::ConvolutionBloomKernelCount; ++kernelIndex) {
                             char kernelName[32];
                             GetConvolutionBloomKernelDisplayName(kernelIndex, kernelName, sizeof(kernelName));
 
-                            const bool isSelected = kernelIndex == GetConvolutionBloomKernelIndex();
+                            const bool isSelected = kernelIndex == app_convolutionBloomKernelIndex.GetInteger();
                             if (ImGui::Selectable(kernelName, isSelected)) {
                                 SetConvolutionBloomKernelIndex(kernelIndex);
                             }

@@ -25,6 +25,8 @@ class Font;
 
 class App {
 public:
+    static constexpr int            ConvolutionBloomKernelCount = 43;
+
     void                            Init(void *mainWindowHandle);
     void                            Shutdown();
 
@@ -49,11 +51,6 @@ public:
     void                            TakeScreenshot();
 
 private:
-    static constexpr int            ConvolutionBloomKernelCount = 43;
-    static constexpr int            DefaultConvolutionBloomKernelIndex = 0;
-
-    int                             GetConvolutionBloomKernelCount() const { return ConvolutionBloomKernelCount; }
-    int                             GetConvolutionBloomKernelIndex() const { return convolutionBloomKernelIndex; }
     void                            GetConvolutionBloomKernelDisplayName(int index, char *buffer, int bufferSize) const;
     void                            GetConvolutionBloomKernelFilename(int index, char *buffer, int bufferSize) const;
     void                            SetConvolutionBloomKernelIndex(int index);
@@ -78,7 +75,6 @@ private:
     SharedPtr<Font>                 mainFont;
     SharedPtr<Material>             mainSkyboxMaterial;
     SharedPtr<Texture>              convolutionBloomKernelTexture;
-    int                             convolutionBloomKernelIndex = DefaultConvolutionBloomKernelIndex;
     SharedPtr<Mesh>                 testMesh;
 
     BE1::Array<GameObject *>        gameObjects;

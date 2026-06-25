@@ -34,6 +34,8 @@ static WCHAR                windowTitleString[256];
 
 LRESULT CALLBACK            MainWndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam);
 
+static constexpr const char *appConfigFilename = "Config/TestD3D12.cfg";
+
 static void SystemLog(int logLevel, const char* text) {
     int len = BE1::PlatformWinUtils::UTF8ToUCS2(text, nullptr, 0);
     wchar_t* wText = (wchar_t *)alloca(sizeof(wchar_t) * len);
@@ -170,6 +172,9 @@ static BOOL InitInstance(int nCmdShow) {
     searchPath.AppendPath("Data");
     BE1::fileSystem.SetSearchPath(searchPath);
 
+    BE1::cmdSystem.BufferCommandText(BE1::CmdSystem::Execution::Now, BE1::va("exec \"%s\"\n", appConfigFilename));
+    BE1::cvarSystem.ClearModified();
+
     // 추가적인 DLL 폴더로 Win64 폴더를 추가
     BE1::Str commonDllPath = execPath;
     commonDllPath.AppendPath("..");
@@ -195,6 +200,12 @@ static BOOL InitInstance(int nCmdShow) {
 
 static void ShutdownInstance() {
     app.Shutdown();
+
+    BE1::File *file = BE1::fileSystem.OpenFile(appConfigFilename, BE1::File::Mode::Write);
+    if (file) {
+        BE1::cvarSystem.WriteVariables(file);
+        BE1::fileSystem.CloseFile(file);
+    }
 
     BE1::Engine::ShutdownBase();
 }
