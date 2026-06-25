@@ -248,7 +248,7 @@ void ShaderTemplateManager::CreateEngineShaderTemplates() {
     static constexpr const char *toneMappingShaderTemplateText = ENGINE_SHADER_TEMPLATE(
     {
         stages {
-            compute SM_6_0 "ToneMapping.hlsl" "CSMain"
+            compute SM_6_0 "ToneMapping/ToneMapping.hlsl" "CSMain"
         }
     }
     );
@@ -256,7 +256,7 @@ void ShaderTemplateManager::CreateEngineShaderTemplates() {
     static constexpr const char *luminancePass1ShaderTemplateText = ENGINE_SHADER_TEMPLATE(
     {
         stages {
-            compute SM_6_0 "LuminancePass1.hlsl" "CSMain"
+            compute SM_6_0 "ToneMapping/LuminancePass1.hlsl" "CSMain"
         }
     }
     );
@@ -264,7 +264,7 @@ void ShaderTemplateManager::CreateEngineShaderTemplates() {
     static constexpr const char *luminancePass2ShaderTemplateText = ENGINE_SHADER_TEMPLATE(
     {
         stages {
-            compute SM_6_0 "LuminancePass2.hlsl" "CSMain"
+            compute SM_6_0 "ToneMapping/LuminancePass2.hlsl" "CSMain"
         }
     }
     );
