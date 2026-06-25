@@ -3,10 +3,15 @@
 
 #define COMMON_ROOT_SIGNATURE "RootFlags(0), " \
     "DescriptorTable(SRV(t0), UAV(u0)), " \
-    "CBV(b0)"
+    "CBV(b0), " \
+    "RootConstants(num32BitConstants=1, b1)"
 
 cbuffer FFTStageCB : register(b0) {
     FFTStageParams fftParams;
+}
+
+cbuffer FFTStageIndexCB : register(b1) {
+    uint fftStageIndex;
 }
 
 // 256 개의 복소수 FFT 데이터가 연속으로 배치된 입력 버퍼
@@ -31,7 +36,7 @@ void CSMain(uint3 dispatchThreadId : SV_DispatchThreadID) {
     uint bufferBase = fftBlockIndex << 8;
     
     // 스테이지 별 버터플라이 그룹의 사이즈: 2, 4, 8, 16, 32, 64, 128, 256
-    uint span = 2u << fftParams.stageIndex;
+    uint span = 2u << fftStageIndex;
 
     // 하나의 버터플라이가 읽는 두 입력 원소 사이의 간격 (stockham)
     uint inputStride = 256 / span;
@@ -63,7 +68,7 @@ void CSMain(uint3 dispatchThreadId : SV_DispatchThreadID) {
     float2 stageOutput1 = a - b;
 
     // 역변환의 마지막 스테이지에서 정규화를 한다 (정변환은 scale = 1, 역변환은 scale = 1/256)
-    if (fftParams.stageIndex == FFTRadix2_256StageCount - 1) {
+    if (fftStageIndex == FFTRadix2_256StageCount - 1) {
         stageOutput0 *= fftParams.scale;
         stageOutput1 *= fftParams.scale;
     }

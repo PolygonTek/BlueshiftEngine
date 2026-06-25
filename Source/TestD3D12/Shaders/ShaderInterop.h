@@ -161,10 +161,10 @@ struct MultiplySpectrum2DParams {
 };
 
 struct FFTStageParams {
-    uint stageIndex;
     float sign;
     float scale;
     uint padding0;
+    uint padding1;
 };
 
 struct FrameConstants {

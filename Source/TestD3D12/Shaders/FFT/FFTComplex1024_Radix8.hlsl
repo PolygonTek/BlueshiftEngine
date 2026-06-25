@@ -3,10 +3,15 @@
 
 #define COMMON_ROOT_SIGNATURE "RootFlags(0), " \
     "DescriptorTable(SRV(t0), UAV(u0)), " \
-    "CBV(b0)"
+    "CBV(b0), " \
+    "RootConstants(num32BitConstants=1, b1)"
 
 cbuffer FFTStageCB : register(b0) {
     FFTStageParams fftParams;
+}
+
+cbuffer FFTStageIndexCB : register(b1) {
+    uint fftStageIndex;
 }
 
 // 1024 개의 복소수 FFT 데이터가 연속으로 배치된 입력 버퍼
@@ -32,7 +37,7 @@ void CSMain(uint3 dispatchThreadId : SV_DispatchThreadID) {
     uint bufferBase = fftBlockIndex << 10;
 
     // 스테이지 별 버터플라이 그룹의 사이즈: 8, 64, 512
-    uint span = 8u << (fftParams.stageIndex * 3u);
+    uint span = 8u << (fftStageIndex * 3u);
 
     // 하나의 버터플라이가 읽는 여덟 입력 원소 사이의 간격 (stockham)
     uint inputStride = 1024 / span;

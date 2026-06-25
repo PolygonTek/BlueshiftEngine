@@ -3,7 +3,8 @@
 
 #define COMMON_ROOT_SIGNATURE "RootFlags(0), " \
     "DescriptorTable(SRV(t0), UAV(u0)), " \
-    "CBV(b0)"
+    "CBV(b0), " \
+    "RootConstants(num32BitConstants=1, b1)"
 
 cbuffer FFTStageCB : register(b0) {
     FFTStageParams fftParams;
