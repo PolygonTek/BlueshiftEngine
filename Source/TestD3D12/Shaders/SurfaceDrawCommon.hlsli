@@ -1,5 +1,5 @@
-#ifndef _SURFACEDRAWCOMMON_HLSLI_
-#define _SURFACEDRAWCOMMON_HLSLI_
+#ifndef __SURFACEDRAWCOMMON_HLSLI__
+#define __SURFACEDRAWCOMMON_HLSLI__
 
 #include "Common.hlsli"
 

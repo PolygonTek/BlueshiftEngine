@@ -1,6 +1,8 @@
 #ifndef __MULTIPLY_PACKED_SPECTRUM_2D_COMMON_HLSLI__
 #define __MULTIPLY_PACKED_SPECTRUM_2D_COMMON_HLSLI__
 
+#include "FFTCommon.hlsli"
+
 // rowBase 가 가리키는 row 에는 real spectrum 의 DC[0..N-1], Nyquist[0..N-1] 성분들을 packed complex 로 보고 FFT 정변환한 데이터가 들어있다.
 // z[y] = DC[y] + i * Nyquist[y]
 // Z[k] = FFT(z)[k]

@@ -1,5 +1,5 @@
-#ifndef _COMMON_HLSLI_
-#define _COMMON_HLSLI_
+#ifndef __COMMON_HLSLI__
+#define __COMMON_HLSLI__
 
 #include "ShaderInterop.h"
 

@@ -1,5 +1,5 @@
-#ifndef COLORS_INCLUDED
-#define COLORS_INCLUDED
+#ifndef __COLORS_HLSLI__
+#define __COLORS_HLSLI__
 
 // REC 709 (sRGB) primaries
 static const float3x3 Rec709_2_XYZ = float3x3(
