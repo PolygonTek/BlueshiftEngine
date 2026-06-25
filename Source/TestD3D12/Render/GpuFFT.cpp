@@ -513,6 +513,60 @@ bool GpuFFT::DispatchIFFTComplex1D1024(RHI::CommandList *commandList, RenderFram
     return true;
 }
 
+bool GpuFFT::DispatchFFTReal1D512(RHI::CommandList *commandList, RenderFrameData *frameData, RHI::Buffer *inputBuffer, RHI::Buffer *outputBuffer, RHI::Buffer *workBuffer, uint32_t fftBlockCount) {
+    PROFILER_CPU_SCOPED_EVENT("GpuFFT::DispatchFFTReal1D512");
+
+    RHI::FrameThreadData *frameThreadData = frameData->GetThreadData(0);
+
+    RHI::Buffer *resultBuffer = nullptr;
+    if (!DispatchFFTReal512(commandList, frameThreadData, inputBuffer, outputBuffer, workBuffer, fftBlockCount, &resultBuffer)) {
+        return false;
+    }
+
+    RHI::GPUBarrier barriers[] = {
+        RHI::Renderer::MakeBufferBarrier(workBuffer, RHI::GPUResourceState::ShaderResourceCompute, RHI::GPUResourceState::Undefined),
+        RHI::Renderer::MakeBufferBarrier(outputBuffer, RHI::GPUResourceState::UnorderedAccess, RHI::GPUResourceState::Undefined)
+    };
+    RHI::renderer->Barrier(commandList, barriers, COUNT_OF(barriers));
+
+    return true;
+}
+
+bool GpuFFT::DispatchFFTReal1D1024(RHI::CommandList *commandList, RenderFrameData *frameData, RHI::Buffer *inputBuffer, RHI::Buffer *outputBuffer, RHI::Buffer *workBuffer, uint32_t fftBlockCount) {
+    PROFILER_CPU_SCOPED_EVENT("GpuFFT::DispatchFFTReal1D1024");
+
+    RHI::FrameThreadData *frameThreadData = frameData->GetThreadData(0);
+
+    RHI::Buffer *resultBuffer = nullptr;
+    if (!DispatchFFTReal1024(commandList, frameThreadData, inputBuffer, workBuffer, outputBuffer, fftBlockCount, &resultBuffer)) {
+        return false;
+    }
+
+    RHI::GPUBarrier barriers[] = {
+        RHI::Renderer::MakeBufferBarrier(workBuffer, RHI::GPUResourceState::ShaderResourceCompute, RHI::GPUResourceState::Undefined),
+        RHI::Renderer::MakeBufferBarrier(outputBuffer, RHI::GPUResourceState::UnorderedAccess, RHI::GPUResourceState::Undefined)
+    };
+    RHI::renderer->Barrier(commandList, barriers, COUNT_OF(barriers));
+
+    return true;
+}
+
+bool GpuFFT::DispatchIFFTReal1D512(RHI::CommandList *commandList, RenderFrameData *frameData, RHI::Buffer *inputBuffer, RHI::Buffer *outputBuffer, RHI::Buffer *workBuffer, uint32_t fftBlockCount) {
+    PROFILER_CPU_SCOPED_EVENT("GpuFFT::DispatchIFFTReal1D512");
+
+    RHI::FrameThreadData *frameThreadData = frameData->GetThreadData(0);
+
+    return DispatchIFFTReal512(commandList, frameThreadData, inputBuffer, outputBuffer, workBuffer, fftBlockCount, RHI::GPUResourceState::Undefined, RHI::GPUResourceState::Undefined);
+}
+
+bool GpuFFT::DispatchIFFTReal1D1024(RHI::CommandList *commandList, RenderFrameData *frameData, RHI::Buffer *inputBuffer, RHI::Buffer *outputBuffer, RHI::Buffer *workBuffer, uint32_t fftBlockCount) {
+    PROFILER_CPU_SCOPED_EVENT("GpuFFT::DispatchIFFTReal1D1024");
+
+    RHI::FrameThreadData *frameThreadData = frameData->GetThreadData(0);
+
+    return DispatchIFFTReal1024(commandList, frameThreadData, inputBuffer, outputBuffer, workBuffer, fftBlockCount, RHI::GPUResourceState::Undefined, RHI::GPUResourceState::Undefined);
+}
+
 bool GpuFFT::DispatchFFTComplex2D256(RHI::CommandList *commandList, RenderFrameData *frameData, RHI::Buffer *inputBuffer, RHI::Buffer *outputBuffer, RHI::Buffer *workBuffer, uint32_t planeCount) {
     PROFILER_CPU_SCOPED_EVENT("GpuFFT::DispatchFFTComplex2D256");
 
@@ -778,7 +832,6 @@ bool GpuFFT::DispatchFFTReal2D512(RHI::CommandList *commandList, RenderFrameData
     RHI::FrameThreadData *frameThreadData = frameData->GetThreadData(0);
 
     const uint32_t RealFFTBlockCount = 512 * planeCount;
-    const uint32_t HorizontalComplexFFTBlockCount = 512 * planeCount;
     const uint32_t VerticalComplexFFTBlockCount = 256 * planeCount;
     constexpr uint32_t TransposeTileCountX = 256 / TransposeComplexTileSize;
     constexpr uint32_t TransposeTileCountY = 512 / TransposeComplexTileSize;
@@ -791,11 +844,6 @@ bool GpuFFT::DispatchFFTReal2D512(RHI::CommandList *commandList, RenderFrameData
         RHI::renderer->Barrier(commandList, barriers, COUNT_OF(barriers));
     };
 
-    auto transition3 = [&](const RHI::GPUBarrier &barrier0, const RHI::GPUBarrier &barrier1, const RHI::GPUBarrier &barrier2) {
-        RHI::GPUBarrier barriers[] = { barrier0, barrier1, barrier2 };
-        RHI::renderer->Barrier(commandList, barriers, COUNT_OF(barriers));
-    };
-
     auto dispatchBufferPSO = [&](RHI::PipelineState *pipelineState, RHI::Buffer *input, RHI::Buffer *output, uint32_t groupCountX, uint32_t groupCountY = 1, uint32_t groupCountZ = 1) {
         RHI::renderer->SetPSO(commandList, pipelineState);
         RHI::renderer->SetBuffer(commandList, 0, false, input);
@@ -803,51 +851,20 @@ bool GpuFFT::DispatchFFTReal2D512(RHI::CommandList *commandList, RenderFrameData
         RHI::renderer->Dispatch(commandList, groupCountX, groupCountY, groupCountZ);
     };
 
-    auto dispatchRealBufferPSO = [&](RHI::PipelineState *pipelineState, RHI::Buffer *input, RHI::Buffer *output, uint32_t groupCountX) {
-        RHI::renderer->SetPSO(commandList, pipelineState);
-        RHI::renderer->SetBuffer(commandList, 0, false, input);
-        RHI::renderer->SetBuffer(commandList, 1, false, realFFTTwiddle512Buffer);
-        RHI::renderer->SetBuffer(commandList, 0, true, output);
-        RHI::renderer->Dispatch(commandList, groupCountX, 1, 1);
-    };
-
-    // 가로 FFT 스테이지 0
-    transition2(
-        RHI::Renderer::MakeBufferBarrier(inputBuffer, RHI::GPUResourceState::Undefined, RHI::GPUResourceState::ShaderResourceCompute),
-        RHI::Renderer::MakeBufferBarrier(pingBuffer1, RHI::GPUResourceState::Undefined, RHI::GPUResourceState::UnorderedAccess));
-    dispatchBufferPSO(fftReal512FirstStagePSO, inputBuffer, pingBuffer1, RealFFTBlockCount);
-
-    // 가로 FFT256 스테이지 1
-    transition3(
-        RHI::Renderer::MakeBufferBarrier(pingBuffer1, RHI::GPUResourceState::UnorderedAccess, RHI::GPUResourceState::ShaderResourceCompute),
-        RHI::Renderer::MakeBufferBarrier(pingBuffer0, RHI::GPUResourceState::Undefined, RHI::GPUResourceState::UnorderedAccess),
-        RHI::Renderer::MakeBufferBarrier(inputBuffer, RHI::GPUResourceState::ShaderResourceCompute, RHI::GPUResourceState::Undefined));
-    if (!DispatchFFTComplexStage(commandList, frameThreadData, fftComplex256PSO, pingBuffer1, pingBuffer0, HorizontalComplexFFTBlockCount, 1, -1.0f, 1.0f)) {
+    RHI::Buffer *stageInput = nullptr;
+    if (!DispatchFFTReal512(commandList, frameThreadData, inputBuffer, pingBuffer0, pingBuffer1, RealFFTBlockCount, &stageInput)) {
         return false;
     }
-
-    // 가로 FFT256 스테이지 2
-    transition2(
-        RHI::Renderer::MakeBufferBarrier(pingBuffer0, RHI::GPUResourceState::UnorderedAccess, RHI::GPUResourceState::ShaderResourceCompute),
-        RHI::Renderer::MakeBufferBarrier(pingBuffer1, RHI::GPUResourceState::ShaderResourceCompute, RHI::GPUResourceState::UnorderedAccess));
-    if (!DispatchFFTComplexStage(commandList, frameThreadData, fftComplex256PSO, pingBuffer0, pingBuffer1, HorizontalComplexFFTBlockCount, 2, -1.0f, 1.0f)) {
-        return false;
-    }
-
-    // 가로 FFT 스테이지 (마지막)
-    transition2(
-        RHI::Renderer::MakeBufferBarrier(pingBuffer1, RHI::GPUResourceState::UnorderedAccess, RHI::GPUResourceState::ShaderResourceCompute),
-        RHI::Renderer::MakeBufferBarrier(pingBuffer0, RHI::GPUResourceState::ShaderResourceCompute, RHI::GPUResourceState::UnorderedAccess));
-    dispatchRealBufferPSO(fftReal512LastStagePSO, pingBuffer1, pingBuffer0, RealFFTBlockCount);
 
     // 256 x 512 packed spectrum 을 512 x 256 으로 transpose 해서 세로 Complex FFT512 를 수행한다.
+    RHI::Buffer *transposeOutput = (stageInput == pingBuffer0) ? pingBuffer1 : pingBuffer0;
     transition2(
-        RHI::Renderer::MakeBufferBarrier(pingBuffer0, RHI::GPUResourceState::UnorderedAccess, RHI::GPUResourceState::ShaderResourceCompute),
-        RHI::Renderer::MakeBufferBarrier(pingBuffer1, RHI::GPUResourceState::ShaderResourceCompute, RHI::GPUResourceState::UnorderedAccess));
-    dispatchBufferPSO(transposeComplex256x512PSO, pingBuffer0, pingBuffer1, TransposeTileCountX, TransposeTileCountY, planeCount);
+        RHI::Renderer::MakeBufferBarrier(stageInput, RHI::GPUResourceState::UnorderedAccess, RHI::GPUResourceState::ShaderResourceCompute),
+        RHI::Renderer::MakeBufferBarrier(transposeOutput, RHI::GPUResourceState::ShaderResourceCompute, RHI::GPUResourceState::UnorderedAccess));
+    dispatchBufferPSO(transposeComplex256x512PSO, stageInput, transposeOutput, TransposeTileCountX, TransposeTileCountY, planeCount);
 
     // 세로 FFT512 스테이지
-    return DispatchFFTComplexToOutput(commandList, frameThreadData, pingBuffer1, outputBuffer, pingBuffer0, pingBuffer1, VerticalComplexFFTBlockCount, 3, fftComplex512PSO, nullptr, -1.0f, 1.0f);
+    return DispatchFFTComplexToOutput(commandList, frameThreadData, transposeOutput, outputBuffer, pingBuffer0, pingBuffer1, VerticalComplexFFTBlockCount, 3, fftComplex512PSO, nullptr, -1.0f, 1.0f);
 }
 
 bool GpuFFT::DispatchFFTReal2D1024(RHI::CommandList *commandList, RenderFrameData *frameData, RHI::Buffer *inputBuffer, RHI::Buffer *outputBuffer, RHI::Buffer *workBuffer, uint32_t planeCount) {
@@ -857,7 +874,6 @@ bool GpuFFT::DispatchFFTReal2D1024(RHI::CommandList *commandList, RenderFrameDat
     RHI::FrameThreadData *frameThreadData = frameData->GetThreadData(0);
 
     const uint32_t RealFFTBlockCount = 1024 * planeCount;
-    const uint32_t HorizontalComplexFFTBlockCount = 1024 * planeCount;
     const uint32_t VerticalComplexFFTBlockCount = 512 * planeCount;
     constexpr uint32_t TransposeTileCountX = 512 / TransposeComplexTileSize;
     constexpr uint32_t TransposeTileCountY = 1024 / TransposeComplexTileSize;
@@ -870,11 +886,6 @@ bool GpuFFT::DispatchFFTReal2D1024(RHI::CommandList *commandList, RenderFrameDat
         RHI::renderer->Barrier(commandList, barriers, COUNT_OF(barriers));
     };
 
-    auto transition3 = [&](const RHI::GPUBarrier &barrier0, const RHI::GPUBarrier &barrier1, const RHI::GPUBarrier &barrier2) {
-        RHI::GPUBarrier barriers[] = { barrier0, barrier1, barrier2 };
-        RHI::renderer->Barrier(commandList, barriers, COUNT_OF(barriers));
-    };
-
     auto dispatchBufferPSO = [&](RHI::PipelineState *pipelineState, RHI::Buffer *input, RHI::Buffer *output, uint32_t groupCountX, uint32_t groupCountY = 1, uint32_t groupCountZ = 1) {
         RHI::renderer->SetPSO(commandList, pipelineState);
         RHI::renderer->SetBuffer(commandList, 0, false, input);
@@ -882,43 +893,20 @@ bool GpuFFT::DispatchFFTReal2D1024(RHI::CommandList *commandList, RenderFrameDat
         RHI::renderer->Dispatch(commandList, groupCountX, groupCountY, groupCountZ);
     };
 
-    auto dispatchRealBufferPSO = [&](RHI::PipelineState *pipelineState, RHI::Buffer *input, RHI::Buffer *output, uint32_t groupCountX) {
-        RHI::renderer->SetPSO(commandList, pipelineState);
-        RHI::renderer->SetBuffer(commandList, 0, false, input);
-        RHI::renderer->SetBuffer(commandList, 1, false, realFFTTwiddle1024Buffer);
-        RHI::renderer->SetBuffer(commandList, 0, true, output);
-        RHI::renderer->Dispatch(commandList, groupCountX, 1, 1);
-    };
-
-    // 가로 FFT 스테이지 0
-    transition2(
-        RHI::Renderer::MakeBufferBarrier(inputBuffer, RHI::GPUResourceState::Undefined, RHI::GPUResourceState::ShaderResourceCompute),
-        RHI::Renderer::MakeBufferBarrier(pingBuffer1, RHI::GPUResourceState::Undefined, RHI::GPUResourceState::UnorderedAccess));
-    dispatchBufferPSO(fftReal1024FirstStagePSO, inputBuffer, pingBuffer1, RealFFTBlockCount);
-
-    // 가로 FFT512 스테이지 1
-    transition3(
-        RHI::Renderer::MakeBufferBarrier(pingBuffer1, RHI::GPUResourceState::UnorderedAccess, RHI::GPUResourceState::ShaderResourceCompute),
-        RHI::Renderer::MakeBufferBarrier(pingBuffer0, RHI::GPUResourceState::Undefined, RHI::GPUResourceState::UnorderedAccess),
-        RHI::Renderer::MakeBufferBarrier(inputBuffer, RHI::GPUResourceState::ShaderResourceCompute, RHI::GPUResourceState::Undefined));
-    if (!DispatchFFTComplexStage(commandList, frameThreadData, fftComplex512PSO, pingBuffer1, pingBuffer0, HorizontalComplexFFTBlockCount, 1, -1.0f, 1.0f)) {
+    RHI::Buffer *stageInput = nullptr;
+    if (!DispatchFFTReal1024(commandList, frameThreadData, inputBuffer, pingBuffer0, pingBuffer1, RealFFTBlockCount, &stageInput)) {
         return false;
     }
 
-    // 가로 FFT 스테이지 2 (마지막)
-    transition2(
-        RHI::Renderer::MakeBufferBarrier(pingBuffer0, RHI::GPUResourceState::UnorderedAccess, RHI::GPUResourceState::ShaderResourceCompute),
-        RHI::Renderer::MakeBufferBarrier(pingBuffer1, RHI::GPUResourceState::ShaderResourceCompute, RHI::GPUResourceState::UnorderedAccess));
-    dispatchRealBufferPSO(fftReal1024LastStagePSO, pingBuffer0, pingBuffer1, RealFFTBlockCount);
-
     // 512 x 1024 packed spectrum 을 1024 x 512 로 transpose 해서 세로 Complex FFT1024 를 수행한다.
+    RHI::Buffer *transposeOutput = (stageInput == pingBuffer0) ? pingBuffer1 : pingBuffer0;
     transition2(
-        RHI::Renderer::MakeBufferBarrier(pingBuffer1, RHI::GPUResourceState::UnorderedAccess, RHI::GPUResourceState::ShaderResourceCompute),
-        RHI::Renderer::MakeBufferBarrier(pingBuffer0, RHI::GPUResourceState::ShaderResourceCompute, RHI::GPUResourceState::UnorderedAccess));
-    dispatchBufferPSO(transposeComplex512x1024PSO, pingBuffer1, pingBuffer0, TransposeTileCountX, TransposeTileCountY, planeCount);
+        RHI::Renderer::MakeBufferBarrier(stageInput, RHI::GPUResourceState::UnorderedAccess, RHI::GPUResourceState::ShaderResourceCompute),
+        RHI::Renderer::MakeBufferBarrier(transposeOutput, RHI::GPUResourceState::ShaderResourceCompute, RHI::GPUResourceState::UnorderedAccess));
+    dispatchBufferPSO(transposeComplex512x1024PSO, stageInput, transposeOutput, TransposeTileCountX, TransposeTileCountY, planeCount);
 
     // 세로 FFT1024 스테이지
-    return DispatchFFTComplexToOutput(commandList, frameThreadData, pingBuffer0, outputBuffer, pingBuffer0, pingBuffer1, VerticalComplexFFTBlockCount, 3, fftComplex1024PSO, fftComplex1024LastStagePSO, -1.0f, 1.0f);
+    return DispatchFFTComplexToOutput(commandList, frameThreadData, transposeOutput, outputBuffer, pingBuffer0, pingBuffer1, VerticalComplexFFTBlockCount, 3, fftComplex1024PSO, fftComplex1024LastStagePSO, -1.0f, 1.0f);
 }
 
 bool GpuFFT::DispatchIFFTReal2D512(RHI::CommandList *commandList, RenderFrameData *frameData, RHI::Buffer *inputBuffer, RHI::Buffer *outputBuffer, RHI::Buffer *workBuffer, uint32_t planeCount) {
@@ -928,7 +916,6 @@ bool GpuFFT::DispatchIFFTReal2D512(RHI::CommandList *commandList, RenderFrameDat
     RHI::FrameThreadData *frameThreadData = frameData->GetThreadData(0);
 
     const uint32_t RealFFTBlockCount = 512 * planeCount;
-    const uint32_t HorizontalComplexFFTBlockCount = 512 * planeCount;
     const uint32_t VerticalComplexFFTBlockCount = 256 * planeCount;
     constexpr uint32_t TransposeTileCountX = 512 / TransposeComplexTileSize;
     constexpr uint32_t TransposeTileCountY = 256 / TransposeComplexTileSize;
@@ -941,24 +928,11 @@ bool GpuFFT::DispatchIFFTReal2D512(RHI::CommandList *commandList, RenderFrameDat
         RHI::renderer->Barrier(commandList, barriers, COUNT_OF(barriers));
     };
 
-    auto transition3 = [&](const RHI::GPUBarrier &barrier0, const RHI::GPUBarrier &barrier1, const RHI::GPUBarrier &barrier2) {
-        RHI::GPUBarrier barriers[] = { barrier0, barrier1, barrier2 };
-        RHI::renderer->Barrier(commandList, barriers, COUNT_OF(barriers));
-    };
-
     auto dispatchBufferPSO = [&](RHI::PipelineState *pipelineState, RHI::Buffer *input, RHI::Buffer *output, uint32_t groupCountX, uint32_t groupCountY = 1, uint32_t groupCountZ = 1) {
         RHI::renderer->SetPSO(commandList, pipelineState);
         RHI::renderer->SetBuffer(commandList, 0, false, input);
         RHI::renderer->SetBuffer(commandList, 0, true, output);
         RHI::renderer->Dispatch(commandList, groupCountX, groupCountY, groupCountZ);
-    };
-
-    auto dispatchRealBufferPSO = [&](RHI::PipelineState *pipelineState, RHI::Buffer *input, RHI::Buffer *output, uint32_t groupCountX) {
-        RHI::renderer->SetPSO(commandList, pipelineState);
-        RHI::renderer->SetBuffer(commandList, 0, false, input);
-        RHI::renderer->SetBuffer(commandList, 1, false, realFFTTwiddle512Buffer);
-        RHI::renderer->SetBuffer(commandList, 0, true, output);
-        RHI::renderer->Dispatch(commandList, groupCountX, 1, 1);
     };
 
     // 세로 IFFT512 스테이지
@@ -968,45 +942,13 @@ bool GpuFFT::DispatchIFFTReal2D512(RHI::CommandList *commandList, RenderFrameDat
     }
 
     // 512 x 256 spectrum 을 256 x 512 로 transpose 해서 가로 Real IFFT512 를 수행한다.
+    RHI::Buffer *transposeOutput = (stageInput == pingBuffer0) ? pingBuffer1 : pingBuffer0;
     transition2(
         RHI::Renderer::MakeBufferBarrier(stageInput, RHI::GPUResourceState::UnorderedAccess, RHI::GPUResourceState::ShaderResourceCompute),
-        RHI::Renderer::MakeBufferBarrier(pingBuffer0, RHI::GPUResourceState::ShaderResourceCompute, RHI::GPUResourceState::UnorderedAccess));
-    dispatchBufferPSO(transposeComplex512x256PSO, stageInput, pingBuffer0, TransposeTileCountX, TransposeTileCountY, planeCount);
+        RHI::Renderer::MakeBufferBarrier(transposeOutput, RHI::GPUResourceState::ShaderResourceCompute, RHI::GPUResourceState::UnorderedAccess));
+    dispatchBufferPSO(transposeComplex512x256PSO, stageInput, transposeOutput, TransposeTileCountX, TransposeTileCountY, planeCount);
 
-    // 가로 IFFT 스테이지 0
-    transition2(
-        RHI::Renderer::MakeBufferBarrier(pingBuffer0, RHI::GPUResourceState::UnorderedAccess, RHI::GPUResourceState::ShaderResourceCompute),
-        RHI::Renderer::MakeBufferBarrier(pingBuffer1, RHI::GPUResourceState::ShaderResourceCompute, RHI::GPUResourceState::UnorderedAccess));
-    dispatchRealBufferPSO(ifftReal512FirstStagePSO, pingBuffer0, pingBuffer1, RealFFTBlockCount);
-
-    // 가로 IFFT256 스테이지 1
-    transition2(
-        RHI::Renderer::MakeBufferBarrier(pingBuffer1, RHI::GPUResourceState::UnorderedAccess, RHI::GPUResourceState::ShaderResourceCompute),
-        RHI::Renderer::MakeBufferBarrier(pingBuffer0, RHI::GPUResourceState::ShaderResourceCompute, RHI::GPUResourceState::UnorderedAccess));
-    if (!DispatchFFTComplexStage(commandList, frameThreadData, fftComplex256PSO, pingBuffer1, pingBuffer0, HorizontalComplexFFTBlockCount, 1, 1.0f, 1.0f / 256.0f)) {
-        return false;
-    }
-
-    // 가로 IFFT256 스테이지 2
-    transition2(
-        RHI::Renderer::MakeBufferBarrier(pingBuffer0, RHI::GPUResourceState::UnorderedAccess, RHI::GPUResourceState::ShaderResourceCompute),
-        RHI::Renderer::MakeBufferBarrier(pingBuffer1, RHI::GPUResourceState::ShaderResourceCompute, RHI::GPUResourceState::UnorderedAccess));
-    if (!DispatchFFTComplexStage(commandList, frameThreadData, fftComplex256PSO, pingBuffer0, pingBuffer1, HorizontalComplexFFTBlockCount, 2, 1.0f, 1.0f / 256.0f)) {
-        return false;
-    }
-
-    // 가로 IFFT 스테이지 3 (마지막)
-    transition3(
-        RHI::Renderer::MakeBufferBarrier(pingBuffer1, RHI::GPUResourceState::UnorderedAccess, RHI::GPUResourceState::ShaderResourceCompute),
-        RHI::Renderer::MakeBufferBarrier(outputBuffer, RHI::GPUResourceState::Undefined, RHI::GPUResourceState::UnorderedAccess),
-        RHI::Renderer::MakeBufferBarrier(pingBuffer0, RHI::GPUResourceState::ShaderResourceCompute, RHI::GPUResourceState::Undefined));
-    dispatchBufferPSO(ifftReal512LastStagePSO, pingBuffer1, outputBuffer, RealFFTBlockCount);
-
-    transition2(
-        RHI::Renderer::MakeBufferBarrier(pingBuffer1, RHI::GPUResourceState::ShaderResourceCompute, RHI::GPUResourceState::Undefined),
-        RHI::Renderer::MakeBufferBarrier(outputBuffer, RHI::GPUResourceState::UnorderedAccess, RHI::GPUResourceState::Undefined));
-
-    return true;
+    return DispatchIFFTReal512(commandList, frameThreadData, transposeOutput, outputBuffer, stageInput, RealFFTBlockCount, RHI::GPUResourceState::UnorderedAccess, RHI::GPUResourceState::ShaderResourceCompute);
 }
 
 bool GpuFFT::DispatchIFFTReal2D1024(RHI::CommandList *commandList, RenderFrameData *frameData, RHI::Buffer *inputBuffer, RHI::Buffer *outputBuffer, RHI::Buffer *workBuffer, uint32_t planeCount) {
@@ -1016,7 +958,6 @@ bool GpuFFT::DispatchIFFTReal2D1024(RHI::CommandList *commandList, RenderFrameDa
     RHI::FrameThreadData *frameThreadData = frameData->GetThreadData(0);
 
     const uint32_t RealFFTBlockCount = 1024 * planeCount;
-    const uint32_t HorizontalComplexFFTBlockCount = 1024 * planeCount;
     const uint32_t VerticalComplexFFTBlockCount = 512 * planeCount;
     constexpr uint32_t TransposeTileCountX = 1024 / TransposeComplexTileSize;
     constexpr uint32_t TransposeTileCountY = 512 / TransposeComplexTileSize;
@@ -1029,24 +970,11 @@ bool GpuFFT::DispatchIFFTReal2D1024(RHI::CommandList *commandList, RenderFrameDa
         RHI::renderer->Barrier(commandList, barriers, COUNT_OF(barriers));
     };
 
-    auto transition3 = [&](const RHI::GPUBarrier &barrier0, const RHI::GPUBarrier &barrier1, const RHI::GPUBarrier &barrier2) {
-        RHI::GPUBarrier barriers[] = { barrier0, barrier1, barrier2 };
-        RHI::renderer->Barrier(commandList, barriers, COUNT_OF(barriers));
-    };
-
     auto dispatchBufferPSO = [&](RHI::PipelineState *pipelineState, RHI::Buffer *input, RHI::Buffer *output, uint32_t groupCountX, uint32_t groupCountY = 1, uint32_t groupCountZ = 1) {
         RHI::renderer->SetPSO(commandList, pipelineState);
         RHI::renderer->SetBuffer(commandList, 0, false, input);
         RHI::renderer->SetBuffer(commandList, 0, true, output);
         RHI::renderer->Dispatch(commandList, groupCountX, groupCountY, groupCountZ);
-    };
-
-    auto dispatchRealBufferPSO = [&](RHI::PipelineState *pipelineState, RHI::Buffer *input, RHI::Buffer *output, uint32_t groupCountX) {
-        RHI::renderer->SetPSO(commandList, pipelineState);
-        RHI::renderer->SetBuffer(commandList, 0, false, input);
-        RHI::renderer->SetBuffer(commandList, 1, false, realFFTTwiddle1024Buffer);
-        RHI::renderer->SetBuffer(commandList, 0, true, output);
-        RHI::renderer->Dispatch(commandList, groupCountX, 1, 1);
     };
 
     // 세로 IFFT1024 스테이지
@@ -1056,37 +984,67 @@ bool GpuFFT::DispatchIFFTReal2D1024(RHI::CommandList *commandList, RenderFrameDa
     }
 
     // 1024 x 512 spectrum 을 512 x 1024 로 transpose 해서 가로 Real IFFT1024 를 수행한다.
+    RHI::Buffer *transposeOutput = (stageInput == pingBuffer0) ? pingBuffer1 : pingBuffer0;
     transition2(
         RHI::Renderer::MakeBufferBarrier(stageInput, RHI::GPUResourceState::UnorderedAccess, RHI::GPUResourceState::ShaderResourceCompute),
-        RHI::Renderer::MakeBufferBarrier(pingBuffer1, RHI::GPUResourceState::ShaderResourceCompute, RHI::GPUResourceState::UnorderedAccess));
-    dispatchBufferPSO(transposeComplex1024x512PSO, stageInput, pingBuffer1, TransposeTileCountX, TransposeTileCountY, planeCount);
+        RHI::Renderer::MakeBufferBarrier(transposeOutput, RHI::GPUResourceState::ShaderResourceCompute, RHI::GPUResourceState::UnorderedAccess));
+    dispatchBufferPSO(transposeComplex1024x512PSO, stageInput, transposeOutput, TransposeTileCountX, TransposeTileCountY, planeCount);
 
-    // 가로 IFFT 스테이지 0
-    transition2(
-        RHI::Renderer::MakeBufferBarrier(pingBuffer1, RHI::GPUResourceState::UnorderedAccess, RHI::GPUResourceState::ShaderResourceCompute),
-        RHI::Renderer::MakeBufferBarrier(pingBuffer0, RHI::GPUResourceState::ShaderResourceCompute, RHI::GPUResourceState::UnorderedAccess));
-    dispatchRealBufferPSO(ifftReal1024FirstStagePSO, pingBuffer1, pingBuffer0, RealFFTBlockCount);
+    return DispatchIFFTReal1024(commandList, frameThreadData, transposeOutput, outputBuffer, stageInput, RealFFTBlockCount, RHI::GPUResourceState::UnorderedAccess, RHI::GPUResourceState::ShaderResourceCompute);
+}
 
-    // 가로 IFFT512 스테이지 1
-    transition2(
-        RHI::Renderer::MakeBufferBarrier(pingBuffer0, RHI::GPUResourceState::UnorderedAccess, RHI::GPUResourceState::ShaderResourceCompute),
-        RHI::Renderer::MakeBufferBarrier(pingBuffer1, RHI::GPUResourceState::ShaderResourceCompute, RHI::GPUResourceState::UnorderedAccess));
-    if (!DispatchFFTComplexStage(commandList, frameThreadData, fftComplex512PSO, pingBuffer0, pingBuffer1, HorizontalComplexFFTBlockCount, 1, 1.0f, 1.0f / 512.0f)) {
+bool GpuFFT::DispatchFFTDualReal1D512(RHI::CommandList *commandList, RenderFrameData *frameData, RHI::Buffer *inputBuffer, RHI::Buffer *outputBuffer, RHI::Buffer *workBuffer, uint32_t fftBlockCount) {
+    PROFILER_CPU_SCOPED_EVENT("GpuFFT::DispatchFFTDualReal1D512");
+
+    RHI::FrameThreadData *frameThreadData = frameData->GetThreadData(0);
+
+    RHI::Buffer *resultBuffer = nullptr;
+    if (!DispatchFFTDualReal512(commandList, frameThreadData, inputBuffer, outputBuffer, workBuffer, fftBlockCount, &resultBuffer)) {
         return false;
     }
 
-    // 가로 IFFT 스테이지 2 (마지막)
-    transition3(
-        RHI::Renderer::MakeBufferBarrier(pingBuffer1, RHI::GPUResourceState::UnorderedAccess, RHI::GPUResourceState::ShaderResourceCompute),
-        RHI::Renderer::MakeBufferBarrier(outputBuffer, RHI::GPUResourceState::Undefined, RHI::GPUResourceState::UnorderedAccess),
-        RHI::Renderer::MakeBufferBarrier(pingBuffer0, RHI::GPUResourceState::ShaderResourceCompute, RHI::GPUResourceState::Undefined));
-    dispatchBufferPSO(ifftReal1024LastStagePSO, pingBuffer1, outputBuffer, RealFFTBlockCount);
-
-    transition2(
-        RHI::Renderer::MakeBufferBarrier(pingBuffer1, RHI::GPUResourceState::ShaderResourceCompute, RHI::GPUResourceState::Undefined),
-        RHI::Renderer::MakeBufferBarrier(outputBuffer, RHI::GPUResourceState::UnorderedAccess, RHI::GPUResourceState::Undefined));
+    RHI::GPUBarrier barriers[] = {
+        RHI::Renderer::MakeBufferBarrier(workBuffer, RHI::GPUResourceState::ShaderResourceCompute, RHI::GPUResourceState::Undefined),
+        RHI::Renderer::MakeBufferBarrier(outputBuffer, RHI::GPUResourceState::UnorderedAccess, RHI::GPUResourceState::Undefined)
+    };
+    RHI::renderer->Barrier(commandList, barriers, COUNT_OF(barriers));
 
     return true;
+}
+
+bool GpuFFT::DispatchFFTDualReal1D1024(RHI::CommandList *commandList, RenderFrameData *frameData, RHI::Buffer *inputBuffer, RHI::Buffer *outputBuffer, RHI::Buffer *workBuffer, uint32_t fftBlockCount) {
+    PROFILER_CPU_SCOPED_EVENT("GpuFFT::DispatchFFTDualReal1D1024");
+
+    RHI::FrameThreadData *frameThreadData = frameData->GetThreadData(0);
+
+    RHI::Buffer *resultBuffer = nullptr;
+    if (!DispatchFFTDualReal1024(commandList, frameThreadData, inputBuffer, workBuffer, outputBuffer, fftBlockCount, &resultBuffer)) {
+        return false;
+    }
+
+    RHI::GPUBarrier barriers[] = {
+        RHI::Renderer::MakeBufferBarrier(workBuffer, RHI::GPUResourceState::ShaderResourceCompute, RHI::GPUResourceState::Undefined),
+        RHI::Renderer::MakeBufferBarrier(outputBuffer, RHI::GPUResourceState::UnorderedAccess, RHI::GPUResourceState::Undefined)
+    };
+    RHI::renderer->Barrier(commandList, barriers, COUNT_OF(barriers));
+
+    return true;
+}
+
+bool GpuFFT::DispatchIFFTDualReal1D512(RHI::CommandList *commandList, RenderFrameData *frameData, RHI::Buffer *inputBuffer, RHI::Buffer *outputBuffer, RHI::Buffer *workBuffer, uint32_t fftBlockCount) {
+    PROFILER_CPU_SCOPED_EVENT("GpuFFT::DispatchIFFTDualReal1D512");
+
+    RHI::FrameThreadData *frameThreadData = frameData->GetThreadData(0);
+
+    return DispatchIFFTDualReal512(commandList, frameThreadData, inputBuffer, outputBuffer, workBuffer, fftBlockCount, RHI::GPUResourceState::Undefined, RHI::GPUResourceState::Undefined);
+}
+
+bool GpuFFT::DispatchIFFTDualReal1D1024(RHI::CommandList *commandList, RenderFrameData *frameData, RHI::Buffer *inputBuffer, RHI::Buffer *outputBuffer, RHI::Buffer *workBuffer, uint32_t fftBlockCount) {
+    PROFILER_CPU_SCOPED_EVENT("GpuFFT::DispatchIFFTDualReal1D1024");
+
+    RHI::FrameThreadData *frameThreadData = frameData->GetThreadData(0);
+
+    return DispatchIFFTDualReal1024(commandList, frameThreadData, inputBuffer, outputBuffer, workBuffer, fftBlockCount, RHI::GPUResourceState::Undefined, RHI::GPUResourceState::Undefined);
 }
 
 bool GpuFFT::DispatchFFTDualReal2D512(RHI::CommandList *commandList, RenderFrameData *frameData, RHI::Buffer *inputBuffer, RHI::Buffer *outputBuffer, RHI::Buffer *workBuffer, uint32_t planeCount) {
@@ -1105,11 +1063,6 @@ bool GpuFFT::DispatchFFTDualReal2D512(RHI::CommandList *commandList, RenderFrame
         RHI::renderer->Barrier(commandList, barriers, COUNT_OF(barriers));
     };
 
-    auto transition3 = [&](const RHI::GPUBarrier &barrier0, const RHI::GPUBarrier &barrier1, const RHI::GPUBarrier &barrier2) {
-        RHI::GPUBarrier barriers[] = { barrier0, barrier1, barrier2 };
-        RHI::renderer->Barrier(commandList, barriers, COUNT_OF(barriers));
-    };
-
     auto dispatchBufferPSO = [&](RHI::PipelineState *pso, RHI::Buffer *input, RHI::Buffer *output, uint32_t groupCountX, uint32_t groupCountY = 1, uint32_t groupCountZ = 1) {
         RHI::renderer->SetPSO(commandList, pso);
         RHI::renderer->SetBuffer(commandList, 0, false, input);
@@ -1117,35 +1070,21 @@ bool GpuFFT::DispatchFFTDualReal2D512(RHI::CommandList *commandList, RenderFrame
         RHI::renderer->Dispatch(commandList, groupCountX, groupCountY, groupCountZ);
     };
 
-    // 가로 FFT 스테이지 0
-    transition2(
-        RHI::Renderer::MakeBufferBarrier(inputBuffer, RHI::GPUResourceState::Undefined, RHI::GPUResourceState::ShaderResourceCompute),
-        RHI::Renderer::MakeBufferBarrier(pingBuffer0, RHI::GPUResourceState::Undefined, RHI::GPUResourceState::UnorderedAccess));
-    dispatchBufferPSO(fftDualReal512FirstStagePSO, inputBuffer, pingBuffer0, FFTBlockCount);
-
-    // 가로 FFT 스테이지 1
-    transition3(
-        RHI::Renderer::MakeBufferBarrier(pingBuffer0, RHI::GPUResourceState::UnorderedAccess, RHI::GPUResourceState::ShaderResourceCompute),
-        RHI::Renderer::MakeBufferBarrier(pingBuffer1, RHI::GPUResourceState::Undefined, RHI::GPUResourceState::UnorderedAccess),
-        RHI::Renderer::MakeBufferBarrier(inputBuffer, RHI::GPUResourceState::ShaderResourceCompute, RHI::GPUResourceState::Undefined));
-    if (!DispatchFFTComplexStage(commandList, frameThreadData, fftComplex512PSO, pingBuffer0, pingBuffer1, FFTBlockCount, 1, -1.0f, 1.0f)) {
+    // 가로 FFT 스테이지
+    RHI::Buffer *stageInput = nullptr;
+    if (!DispatchFFTDualReal512(commandList, frameThreadData, inputBuffer, pingBuffer0, pingBuffer1, FFTBlockCount, &stageInput)) {
         return false;
     }
 
-    // 가로 FFT 스테이지 2 (마지막)
-    transition2(
-        RHI::Renderer::MakeBufferBarrier(pingBuffer1, RHI::GPUResourceState::UnorderedAccess, RHI::GPUResourceState::ShaderResourceCompute),
-        RHI::Renderer::MakeBufferBarrier(pingBuffer0, RHI::GPUResourceState::ShaderResourceCompute, RHI::GPUResourceState::UnorderedAccess));
-    dispatchBufferPSO(fftDualReal512LastStagePSO, pingBuffer1, pingBuffer0, FFTBlockCount);
-
     // 512 x 512 transpose 해서 다음 FFT 스테이지는 세로로 하게 된다.
+    RHI::Buffer *transposeOutput = (stageInput == pingBuffer0) ? pingBuffer1 : pingBuffer0;
     transition2(
-        RHI::Renderer::MakeBufferBarrier(pingBuffer0, RHI::GPUResourceState::UnorderedAccess, RHI::GPUResourceState::ShaderResourceCompute),
-        RHI::Renderer::MakeBufferBarrier(pingBuffer1, RHI::GPUResourceState::ShaderResourceCompute, RHI::GPUResourceState::UnorderedAccess));
-    dispatchBufferPSO(transposeComplex512PSO, pingBuffer0, pingBuffer1, TransposeTileCount, TransposeTileCount, planeCount);
+        RHI::Renderer::MakeBufferBarrier(stageInput, RHI::GPUResourceState::UnorderedAccess, RHI::GPUResourceState::ShaderResourceCompute),
+        RHI::Renderer::MakeBufferBarrier(transposeOutput, RHI::GPUResourceState::ShaderResourceCompute, RHI::GPUResourceState::UnorderedAccess));
+    dispatchBufferPSO(transposeComplex512PSO, stageInput, transposeOutput, TransposeTileCount, TransposeTileCount, planeCount);
 
     // 세로 FFT 스테이지
-    return DispatchFFTComplexToOutput(commandList, frameThreadData, pingBuffer1, outputBuffer, pingBuffer0, pingBuffer1, FFTBlockCount, 3, fftComplex512PSO, nullptr, -1.0f, 1.0f);
+    return DispatchFFTComplexToOutput(commandList, frameThreadData, transposeOutput, outputBuffer, pingBuffer0, pingBuffer1, FFTBlockCount, 3, fftComplex512PSO, nullptr, -1.0f, 1.0f);
 }
 
 bool GpuFFT::DispatchFFTDualReal2D1024(RHI::CommandList *commandList, RenderFrameData *frameData, RHI::Buffer *inputBuffer, RHI::Buffer *outputBuffer, RHI::Buffer *workBuffer, uint32_t planeCount) {
@@ -1164,11 +1103,6 @@ bool GpuFFT::DispatchFFTDualReal2D1024(RHI::CommandList *commandList, RenderFram
         RHI::renderer->Barrier(commandList, barriers, COUNT_OF(barriers));
     };
 
-    auto transition3 = [&](const RHI::GPUBarrier &barrier0, const RHI::GPUBarrier &barrier1, const RHI::GPUBarrier &barrier2) {
-        RHI::GPUBarrier barriers[] = { barrier0, barrier1, barrier2 };
-        RHI::renderer->Barrier(commandList, barriers, COUNT_OF(barriers));
-    };
-
     auto dispatchBufferPSO = [&](RHI::PipelineState *pso, RHI::Buffer *input, RHI::Buffer *output, uint32_t groupCountX, uint32_t groupCountY = 1, uint32_t groupCountZ = 1) {
         RHI::renderer->SetPSO(commandList, pso);
         RHI::renderer->SetBuffer(commandList, 0, false, input);
@@ -1176,43 +1110,21 @@ bool GpuFFT::DispatchFFTDualReal2D1024(RHI::CommandList *commandList, RenderFram
         RHI::renderer->Dispatch(commandList, groupCountX, groupCountY, groupCountZ);
     };
 
-    // 가로 FFT 스테이지 0
-    transition2(
-        RHI::Renderer::MakeBufferBarrier(inputBuffer, RHI::GPUResourceState::Undefined, RHI::GPUResourceState::ShaderResourceCompute),
-        RHI::Renderer::MakeBufferBarrier(pingBuffer0, RHI::GPUResourceState::Undefined, RHI::GPUResourceState::UnorderedAccess));
-    dispatchBufferPSO(fftDualReal1024FirstStagePSO, inputBuffer, pingBuffer0, FFTBlockCount);
-
-    // 가로 FFT 스테이지 1
-    transition3(
-        RHI::Renderer::MakeBufferBarrier(pingBuffer0, RHI::GPUResourceState::UnorderedAccess, RHI::GPUResourceState::ShaderResourceCompute),
-        RHI::Renderer::MakeBufferBarrier(pingBuffer1, RHI::GPUResourceState::Undefined, RHI::GPUResourceState::UnorderedAccess),
-        RHI::Renderer::MakeBufferBarrier(inputBuffer, RHI::GPUResourceState::ShaderResourceCompute, RHI::GPUResourceState::Undefined));
-    if (!DispatchFFTComplexStage(commandList, frameThreadData, fftComplex1024PSO, pingBuffer0, pingBuffer1, FFTBlockCount, 1, -1.0f, 1.0f)) {
+    // 가로 FFT 스테이지
+    RHI::Buffer *stageInput = nullptr;
+    if (!DispatchFFTDualReal1024(commandList, frameThreadData, inputBuffer, pingBuffer0, pingBuffer1, FFTBlockCount, &stageInput)) {
         return false;
     }
-
-    // 가로 FFT 스테이지 2
-    transition2(
-        RHI::Renderer::MakeBufferBarrier(pingBuffer1, RHI::GPUResourceState::UnorderedAccess, RHI::GPUResourceState::ShaderResourceCompute),
-        RHI::Renderer::MakeBufferBarrier(pingBuffer0, RHI::GPUResourceState::ShaderResourceCompute, RHI::GPUResourceState::UnorderedAccess));
-    if (!DispatchFFTComplexStage(commandList, frameThreadData, fftComplex1024PSO, pingBuffer1, pingBuffer0, FFTBlockCount, 2, -1.0f, 1.0f)) {
-        return false;
-    }
-
-    // 가로 FFT 스테이지 3 (마지막)
-    transition2(
-        RHI::Renderer::MakeBufferBarrier(pingBuffer0, RHI::GPUResourceState::UnorderedAccess, RHI::GPUResourceState::ShaderResourceCompute),
-        RHI::Renderer::MakeBufferBarrier(pingBuffer1, RHI::GPUResourceState::ShaderResourceCompute, RHI::GPUResourceState::UnorderedAccess));
-    dispatchBufferPSO(fftDualReal1024LastStagePSO, pingBuffer0, pingBuffer1, FFTBlockCount);
 
     // 1024 x 1024 transpose 해서 다음 FFT 스테이지는 세로로 하게 된다.
+    RHI::Buffer *transposeOutput = (stageInput == pingBuffer0) ? pingBuffer1 : pingBuffer0;
     transition2(
-        RHI::Renderer::MakeBufferBarrier(pingBuffer1, RHI::GPUResourceState::UnorderedAccess, RHI::GPUResourceState::ShaderResourceCompute),
-        RHI::Renderer::MakeBufferBarrier(pingBuffer0, RHI::GPUResourceState::ShaderResourceCompute, RHI::GPUResourceState::UnorderedAccess));
-    dispatchBufferPSO(transposeComplex1024PSO, pingBuffer1, pingBuffer0, TransposeTileCount, TransposeTileCount, planeCount);
+        RHI::Renderer::MakeBufferBarrier(stageInput, RHI::GPUResourceState::UnorderedAccess, RHI::GPUResourceState::ShaderResourceCompute),
+        RHI::Renderer::MakeBufferBarrier(transposeOutput, RHI::GPUResourceState::ShaderResourceCompute, RHI::GPUResourceState::UnorderedAccess));
+    dispatchBufferPSO(transposeComplex1024PSO, stageInput, transposeOutput, TransposeTileCount, TransposeTileCount, planeCount);
 
     // 세로 FFT 스테이지
-    return DispatchFFTComplexToOutput(commandList, frameThreadData, pingBuffer0, outputBuffer, pingBuffer0, pingBuffer1, FFTBlockCount, 3, fftComplex1024PSO, fftComplex1024LastStagePSO, -1.0f, 1.0f);
+    return DispatchFFTComplexToOutput(commandList, frameThreadData, transposeOutput, outputBuffer, pingBuffer0, pingBuffer1, FFTBlockCount, 3, fftComplex1024PSO, fftComplex1024LastStagePSO, -1.0f, 1.0f);
 }
 
 bool GpuFFT::DispatchIFFTDualReal2D512(RHI::CommandList *commandList, RenderFrameData *frameData, RHI::Buffer *inputBuffer, RHI::Buffer *outputBuffer, RHI::Buffer *workBuffer, uint32_t planeCount) {
@@ -1228,11 +1140,6 @@ bool GpuFFT::DispatchIFFTDualReal2D512(RHI::CommandList *commandList, RenderFram
 
     auto transition2 = [&](const RHI::GPUBarrier &barrier0, const RHI::GPUBarrier &barrier1) {
         RHI::GPUBarrier barriers[] = { barrier0, barrier1 };
-        RHI::renderer->Barrier(commandList, barriers, COUNT_OF(barriers));
-    };
-
-    auto transition3 = [&](const RHI::GPUBarrier &barrier0, const RHI::GPUBarrier &barrier1, const RHI::GPUBarrier &barrier2) {
-        RHI::GPUBarrier barriers[] = { barrier0, barrier1, barrier2 };
         RHI::renderer->Barrier(commandList, barriers, COUNT_OF(barriers));
     };
 
@@ -1255,32 +1162,7 @@ bool GpuFFT::DispatchIFFTDualReal2D512(RHI::CommandList *commandList, RenderFram
         RHI::Renderer::MakeBufferBarrier(pingBuffer0, RHI::GPUResourceState::ShaderResourceCompute, RHI::GPUResourceState::UnorderedAccess));
     dispatchBufferPSO(transposeComplex512PSO, stageInput, pingBuffer0, TransposeTileCount, TransposeTileCount, planeCount);
 
-    // 가로 IFFT 스테이지 0
-    transition2(
-        RHI::Renderer::MakeBufferBarrier(pingBuffer0, RHI::GPUResourceState::UnorderedAccess, RHI::GPUResourceState::ShaderResourceCompute),
-        RHI::Renderer::MakeBufferBarrier(pingBuffer1, RHI::GPUResourceState::ShaderResourceCompute, RHI::GPUResourceState::UnorderedAccess));
-    dispatchBufferPSO(ifftDualReal512FirstStagePSO, pingBuffer0, pingBuffer1, FFTBlockCount);
-
-    // 가로 IFFT 스테이지 1
-    transition2(
-        RHI::Renderer::MakeBufferBarrier(pingBuffer1, RHI::GPUResourceState::UnorderedAccess, RHI::GPUResourceState::ShaderResourceCompute),
-        RHI::Renderer::MakeBufferBarrier(pingBuffer0, RHI::GPUResourceState::ShaderResourceCompute, RHI::GPUResourceState::UnorderedAccess));
-    if (!DispatchFFTComplexStage(commandList, frameThreadData, fftComplex512PSO, pingBuffer1, pingBuffer0, FFTBlockCount, 1, 1.0f, 1.0f / 512.0f)) {
-        return false;
-    }
-
-    // 가로 IFFT 스테이지 2 (마지막)
-    transition3(
-        RHI::Renderer::MakeBufferBarrier(pingBuffer0, RHI::GPUResourceState::UnorderedAccess, RHI::GPUResourceState::ShaderResourceCompute),
-        RHI::Renderer::MakeBufferBarrier(outputBuffer, RHI::GPUResourceState::Undefined, RHI::GPUResourceState::UnorderedAccess),
-        RHI::Renderer::MakeBufferBarrier(pingBuffer1, RHI::GPUResourceState::ShaderResourceCompute, RHI::GPUResourceState::Undefined));
-    dispatchBufferPSO(ifftDualReal512LastStagePSO, pingBuffer0, outputBuffer, FFTBlockCount);
-
-    transition2(
-        RHI::Renderer::MakeBufferBarrier(pingBuffer0, RHI::GPUResourceState::ShaderResourceCompute, RHI::GPUResourceState::Undefined),
-        RHI::Renderer::MakeBufferBarrier(outputBuffer, RHI::GPUResourceState::UnorderedAccess, RHI::GPUResourceState::Undefined));
-
-    return true;
+    return DispatchIFFTDualReal512(commandList, frameThreadData, pingBuffer0, outputBuffer, stageInput, FFTBlockCount, RHI::GPUResourceState::UnorderedAccess, RHI::GPUResourceState::ShaderResourceCompute);
 }
 
 bool GpuFFT::DispatchIFFTDualReal2D1024(RHI::CommandList *commandList, RenderFrameData *frameData, RHI::Buffer *inputBuffer, RHI::Buffer *outputBuffer, RHI::Buffer *workBuffer, uint32_t planeCount) {
@@ -1296,11 +1178,6 @@ bool GpuFFT::DispatchIFFTDualReal2D1024(RHI::CommandList *commandList, RenderFra
 
     auto transition2 = [&](const RHI::GPUBarrier &barrier0, const RHI::GPUBarrier &barrier1) {
         RHI::GPUBarrier barriers[] = { barrier0, barrier1 };
-        RHI::renderer->Barrier(commandList, barriers, COUNT_OF(barriers));
-    };
-
-    auto transition3 = [&](const RHI::GPUBarrier &barrier0, const RHI::GPUBarrier &barrier1, const RHI::GPUBarrier &barrier2) {
-        RHI::GPUBarrier barriers[] = { barrier0, barrier1, barrier2 };
         RHI::renderer->Barrier(commandList, barriers, COUNT_OF(barriers));
     };
 
@@ -1323,40 +1200,7 @@ bool GpuFFT::DispatchIFFTDualReal2D1024(RHI::CommandList *commandList, RenderFra
         RHI::Renderer::MakeBufferBarrier(pingBuffer1, RHI::GPUResourceState::ShaderResourceCompute, RHI::GPUResourceState::UnorderedAccess));
     dispatchBufferPSO(transposeComplex1024PSO, stageInput, pingBuffer1, TransposeTileCount, TransposeTileCount, planeCount);
 
-    // 가로 IFFT 스테이지 0
-    transition2(
-        RHI::Renderer::MakeBufferBarrier(pingBuffer1, RHI::GPUResourceState::UnorderedAccess, RHI::GPUResourceState::ShaderResourceCompute),
-        RHI::Renderer::MakeBufferBarrier(pingBuffer0, RHI::GPUResourceState::ShaderResourceCompute, RHI::GPUResourceState::UnorderedAccess));
-    dispatchBufferPSO(ifftDualReal1024FirstStagePSO, pingBuffer1, pingBuffer0, FFTBlockCount);
-
-    // 가로 IFFT 스테이지 1
-    transition2(
-        RHI::Renderer::MakeBufferBarrier(pingBuffer0, RHI::GPUResourceState::UnorderedAccess, RHI::GPUResourceState::ShaderResourceCompute),
-        RHI::Renderer::MakeBufferBarrier(pingBuffer1, RHI::GPUResourceState::ShaderResourceCompute, RHI::GPUResourceState::UnorderedAccess));
-    if (!DispatchFFTComplexStage(commandList, frameThreadData, fftComplex1024PSO, pingBuffer0, pingBuffer1, FFTBlockCount, 1, 1.0f, 1.0f)) {
-        return false;
-    }
-
-    // 가로 IFFT 스테이지 2
-    transition2(
-        RHI::Renderer::MakeBufferBarrier(pingBuffer1, RHI::GPUResourceState::UnorderedAccess, RHI::GPUResourceState::ShaderResourceCompute),
-        RHI::Renderer::MakeBufferBarrier(pingBuffer0, RHI::GPUResourceState::ShaderResourceCompute, RHI::GPUResourceState::UnorderedAccess));
-    if (!DispatchFFTComplexStage(commandList, frameThreadData, fftComplex1024PSO, pingBuffer1, pingBuffer0, FFTBlockCount, 2, 1.0f, 1.0f)) {
-        return false;
-    }
-
-    // 가로 IFFT 스테이지 3 (마지막)
-    transition3(
-        RHI::Renderer::MakeBufferBarrier(pingBuffer0, RHI::GPUResourceState::UnorderedAccess, RHI::GPUResourceState::ShaderResourceCompute),
-        RHI::Renderer::MakeBufferBarrier(outputBuffer, RHI::GPUResourceState::Undefined, RHI::GPUResourceState::UnorderedAccess),
-        RHI::Renderer::MakeBufferBarrier(pingBuffer1, RHI::GPUResourceState::ShaderResourceCompute, RHI::GPUResourceState::Undefined));
-    dispatchBufferPSO(ifftDualReal1024LastStagePSO, pingBuffer0, outputBuffer, FFTBlockCount);
-
-    transition2(
-        RHI::Renderer::MakeBufferBarrier(pingBuffer0, RHI::GPUResourceState::ShaderResourceCompute, RHI::GPUResourceState::Undefined),
-        RHI::Renderer::MakeBufferBarrier(outputBuffer, RHI::GPUResourceState::UnorderedAccess, RHI::GPUResourceState::Undefined));
-
-    return true;
+    return DispatchIFFTDualReal1024(commandList, frameThreadData, pingBuffer1, outputBuffer, pingBuffer0, FFTBlockCount, RHI::GPUResourceState::UnorderedAccess, RHI::GPUResourceState::ShaderResourceCompute);
 }
 
 bool GpuFFT::DispatchMultiplyComplexSpectrum2D(RHI::CommandList *commandList, RenderFrameData *frameData, RHI::Buffer *lhsSpectrumBuffer, RHI::Buffer *rhsSpectrumBuffer, RHI::Buffer *outputSpectrumBuffer, uint32_t fftSize, uint32_t planeCount, float scale) {
@@ -1504,6 +1348,434 @@ bool GpuFFT::DispatchMultiplyPackedDualRealSpectrum2D(RHI::CommandList *commandL
         RHI::Renderer::MakeBufferBarrier(outputSpectrumBuffer, RHI::GPUResourceState::UnorderedAccess, RHI::GPUResourceState::Undefined)
     };
     RHI::renderer->Barrier(commandList, endBarriers, COUNT_OF(endBarriers));
+
+    return true;
+}
+
+bool GpuFFT::DispatchFFTReal512(RHI::CommandList *commandList, RHI::FrameThreadData *frameThreadData, RHI::Buffer *inputBuffer, RHI::Buffer *pingBuffer0, RHI::Buffer *pingBuffer1, uint32_t fftBlockCount, RHI::Buffer **resultBuffer) {
+    assert(realFFTTwiddle512Buffer);
+
+    auto transition2 = [&](const RHI::GPUBarrier &barrier0, const RHI::GPUBarrier &barrier1) {
+        RHI::GPUBarrier barriers[] = { barrier0, barrier1 };
+        RHI::renderer->Barrier(commandList, barriers, COUNT_OF(barriers));
+    };
+
+    auto transition3 = [&](const RHI::GPUBarrier &barrier0, const RHI::GPUBarrier &barrier1, const RHI::GPUBarrier &barrier2) {
+        RHI::GPUBarrier barriers[] = { barrier0, barrier1, barrier2 };
+        RHI::renderer->Barrier(commandList, barriers, COUNT_OF(barriers));
+    };
+
+    auto dispatchBufferPSO = [&](RHI::PipelineState *pipelineState, RHI::Buffer *input, RHI::Buffer *output, uint32_t groupCountX) {
+        RHI::renderer->SetPSO(commandList, pipelineState);
+        RHI::renderer->SetBuffer(commandList, 0, false, input);
+        RHI::renderer->SetBuffer(commandList, 0, true, output);
+        RHI::renderer->Dispatch(commandList, groupCountX, 1, 1);
+    };
+
+    auto dispatchRealBufferPSO = [&](RHI::PipelineState *pipelineState, RHI::Buffer *input, RHI::Buffer *output, uint32_t groupCountX) {
+        RHI::renderer->SetPSO(commandList, pipelineState);
+        RHI::renderer->SetBuffer(commandList, 0, false, input);
+        RHI::renderer->SetBuffer(commandList, 1, false, realFFTTwiddle512Buffer);
+        RHI::renderer->SetBuffer(commandList, 0, true, output);
+        RHI::renderer->Dispatch(commandList, groupCountX, 1, 1);
+    };
+
+    // 가로 FFT 스테이지 0
+    transition2(
+        RHI::Renderer::MakeBufferBarrier(inputBuffer, RHI::GPUResourceState::Undefined, RHI::GPUResourceState::ShaderResourceCompute),
+        RHI::Renderer::MakeBufferBarrier(pingBuffer1, RHI::GPUResourceState::Undefined, RHI::GPUResourceState::UnorderedAccess));
+    dispatchBufferPSO(fftReal512FirstStagePSO, inputBuffer, pingBuffer1, fftBlockCount);
+
+    // 가로 FFT256 스테이지 1
+    transition3(
+        RHI::Renderer::MakeBufferBarrier(pingBuffer1, RHI::GPUResourceState::UnorderedAccess, RHI::GPUResourceState::ShaderResourceCompute),
+        RHI::Renderer::MakeBufferBarrier(pingBuffer0, RHI::GPUResourceState::Undefined, RHI::GPUResourceState::UnorderedAccess),
+        RHI::Renderer::MakeBufferBarrier(inputBuffer, RHI::GPUResourceState::ShaderResourceCompute, RHI::GPUResourceState::Undefined));
+    if (!DispatchFFTComplexStage(commandList, frameThreadData, fftComplex256PSO, pingBuffer1, pingBuffer0, fftBlockCount, 1, -1.0f, 1.0f)) {
+        return false;
+    }
+
+    // 가로 FFT256 스테이지 2
+    transition2(
+        RHI::Renderer::MakeBufferBarrier(pingBuffer0, RHI::GPUResourceState::UnorderedAccess, RHI::GPUResourceState::ShaderResourceCompute),
+        RHI::Renderer::MakeBufferBarrier(pingBuffer1, RHI::GPUResourceState::ShaderResourceCompute, RHI::GPUResourceState::UnorderedAccess));
+    if (!DispatchFFTComplexStage(commandList, frameThreadData, fftComplex256PSO, pingBuffer0, pingBuffer1, fftBlockCount, 2, -1.0f, 1.0f)) {
+        return false;
+    }
+
+    // 가로 FFT 스테이지 (마지막)
+    transition2(
+        RHI::Renderer::MakeBufferBarrier(pingBuffer1, RHI::GPUResourceState::UnorderedAccess, RHI::GPUResourceState::ShaderResourceCompute),
+        RHI::Renderer::MakeBufferBarrier(pingBuffer0, RHI::GPUResourceState::ShaderResourceCompute, RHI::GPUResourceState::UnorderedAccess));
+    dispatchRealBufferPSO(fftReal512LastStagePSO, pingBuffer1, pingBuffer0, fftBlockCount);
+
+    *resultBuffer = pingBuffer0;
+    return true;
+}
+
+bool GpuFFT::DispatchFFTReal1024(RHI::CommandList *commandList, RHI::FrameThreadData *frameThreadData, RHI::Buffer *inputBuffer, RHI::Buffer *pingBuffer0, RHI::Buffer *pingBuffer1, uint32_t fftBlockCount, RHI::Buffer **resultBuffer) {
+    assert(realFFTTwiddle1024Buffer);
+
+    auto transition2 = [&](const RHI::GPUBarrier &barrier0, const RHI::GPUBarrier &barrier1) {
+        RHI::GPUBarrier barriers[] = { barrier0, barrier1 };
+        RHI::renderer->Barrier(commandList, barriers, COUNT_OF(barriers));
+    };
+
+    auto transition3 = [&](const RHI::GPUBarrier &barrier0, const RHI::GPUBarrier &barrier1, const RHI::GPUBarrier &barrier2) {
+        RHI::GPUBarrier barriers[] = { barrier0, barrier1, barrier2 };
+        RHI::renderer->Barrier(commandList, barriers, COUNT_OF(barriers));
+    };
+
+    auto dispatchBufferPSO = [&](RHI::PipelineState *pipelineState, RHI::Buffer *input, RHI::Buffer *output, uint32_t groupCountX) {
+        RHI::renderer->SetPSO(commandList, pipelineState);
+        RHI::renderer->SetBuffer(commandList, 0, false, input);
+        RHI::renderer->SetBuffer(commandList, 0, true, output);
+        RHI::renderer->Dispatch(commandList, groupCountX, 1, 1);
+    };
+
+    auto dispatchRealBufferPSO = [&](RHI::PipelineState *pipelineState, RHI::Buffer *input, RHI::Buffer *output, uint32_t groupCountX) {
+        RHI::renderer->SetPSO(commandList, pipelineState);
+        RHI::renderer->SetBuffer(commandList, 0, false, input);
+        RHI::renderer->SetBuffer(commandList, 1, false, realFFTTwiddle1024Buffer);
+        RHI::renderer->SetBuffer(commandList, 0, true, output);
+        RHI::renderer->Dispatch(commandList, groupCountX, 1, 1);
+    };
+
+    // 가로 FFT 스테이지 0
+    transition2(
+        RHI::Renderer::MakeBufferBarrier(inputBuffer, RHI::GPUResourceState::Undefined, RHI::GPUResourceState::ShaderResourceCompute),
+        RHI::Renderer::MakeBufferBarrier(pingBuffer1, RHI::GPUResourceState::Undefined, RHI::GPUResourceState::UnorderedAccess));
+    dispatchBufferPSO(fftReal1024FirstStagePSO, inputBuffer, pingBuffer1, fftBlockCount);
+
+    // 가로 FFT512 스테이지 1
+    transition3(
+        RHI::Renderer::MakeBufferBarrier(pingBuffer1, RHI::GPUResourceState::UnorderedAccess, RHI::GPUResourceState::ShaderResourceCompute),
+        RHI::Renderer::MakeBufferBarrier(pingBuffer0, RHI::GPUResourceState::Undefined, RHI::GPUResourceState::UnorderedAccess),
+        RHI::Renderer::MakeBufferBarrier(inputBuffer, RHI::GPUResourceState::ShaderResourceCompute, RHI::GPUResourceState::Undefined));
+    if (!DispatchFFTComplexStage(commandList, frameThreadData, fftComplex512PSO, pingBuffer1, pingBuffer0, fftBlockCount, 1, -1.0f, 1.0f)) {
+        return false;
+    }
+
+    // 가로 FFT 스테이지 2 (마지막)
+    transition2(
+        RHI::Renderer::MakeBufferBarrier(pingBuffer0, RHI::GPUResourceState::UnorderedAccess, RHI::GPUResourceState::ShaderResourceCompute),
+        RHI::Renderer::MakeBufferBarrier(pingBuffer1, RHI::GPUResourceState::ShaderResourceCompute, RHI::GPUResourceState::UnorderedAccess));
+    dispatchRealBufferPSO(fftReal1024LastStagePSO, pingBuffer0, pingBuffer1, fftBlockCount);
+
+    *resultBuffer = pingBuffer1;
+    return true;
+}
+
+bool GpuFFT::DispatchIFFTReal512(RHI::CommandList *commandList, RHI::FrameThreadData *frameThreadData, RHI::Buffer *inputBuffer, RHI::Buffer *outputBuffer, RHI::Buffer *workBuffer, uint32_t fftBlockCount, RHI::GPUResourceState inputBufferState, RHI::GPUResourceState workBufferState) {
+    assert(realFFTTwiddle512Buffer);
+
+    auto transition2 = [&](const RHI::GPUBarrier &barrier0, const RHI::GPUBarrier &barrier1) {
+        RHI::GPUBarrier barriers[] = { barrier0, barrier1 };
+        RHI::renderer->Barrier(commandList, barriers, COUNT_OF(barriers));
+    };
+
+    auto transition3 = [&](const RHI::GPUBarrier &barrier0, const RHI::GPUBarrier &barrier1, const RHI::GPUBarrier &barrier2) {
+        RHI::GPUBarrier barriers[] = { barrier0, barrier1, barrier2 };
+        RHI::renderer->Barrier(commandList, barriers, COUNT_OF(barriers));
+    };
+
+    auto dispatchBufferPSO = [&](RHI::PipelineState *pipelineState, RHI::Buffer *input, RHI::Buffer *output, uint32_t groupCountX) {
+        RHI::renderer->SetPSO(commandList, pipelineState);
+        RHI::renderer->SetBuffer(commandList, 0, false, input);
+        RHI::renderer->SetBuffer(commandList, 0, true, output);
+        RHI::renderer->Dispatch(commandList, groupCountX, 1, 1);
+    };
+
+    auto dispatchRealBufferPSO = [&](RHI::PipelineState *pipelineState, RHI::Buffer *input, RHI::Buffer *output, uint32_t groupCountX) {
+        RHI::renderer->SetPSO(commandList, pipelineState);
+        RHI::renderer->SetBuffer(commandList, 0, false, input);
+        RHI::renderer->SetBuffer(commandList, 1, false, realFFTTwiddle512Buffer);
+        RHI::renderer->SetBuffer(commandList, 0, true, output);
+        RHI::renderer->Dispatch(commandList, groupCountX, 1, 1);
+    };
+
+    // 가로 IFFT 스테이지 0
+    transition2(
+        RHI::Renderer::MakeBufferBarrier(inputBuffer, inputBufferState, RHI::GPUResourceState::ShaderResourceCompute),
+        RHI::Renderer::MakeBufferBarrier(workBuffer, workBufferState, RHI::GPUResourceState::UnorderedAccess));
+    dispatchRealBufferPSO(ifftReal512FirstStagePSO, inputBuffer, workBuffer, fftBlockCount);
+
+    // 가로 IFFT256 스테이지 1
+    transition2(
+        RHI::Renderer::MakeBufferBarrier(workBuffer, RHI::GPUResourceState::UnorderedAccess, RHI::GPUResourceState::ShaderResourceCompute),
+        RHI::Renderer::MakeBufferBarrier(inputBuffer, RHI::GPUResourceState::ShaderResourceCompute, RHI::GPUResourceState::UnorderedAccess));
+    if (!DispatchFFTComplexStage(commandList, frameThreadData, fftComplex256PSO, workBuffer, inputBuffer, fftBlockCount, 1, 1.0f, 1.0f / 256.0f)) {
+        return false;
+    }
+
+    // 가로 IFFT256 스테이지 2
+    transition2(
+        RHI::Renderer::MakeBufferBarrier(inputBuffer, RHI::GPUResourceState::UnorderedAccess, RHI::GPUResourceState::ShaderResourceCompute),
+        RHI::Renderer::MakeBufferBarrier(workBuffer, RHI::GPUResourceState::ShaderResourceCompute, RHI::GPUResourceState::UnorderedAccess));
+    if (!DispatchFFTComplexStage(commandList, frameThreadData, fftComplex256PSO, inputBuffer, workBuffer, fftBlockCount, 2, 1.0f, 1.0f / 256.0f)) {
+        return false;
+    }
+
+    // 가로 IFFT 스테이지 3 (마지막)
+    transition3(
+        RHI::Renderer::MakeBufferBarrier(workBuffer, RHI::GPUResourceState::UnorderedAccess, RHI::GPUResourceState::ShaderResourceCompute),
+        RHI::Renderer::MakeBufferBarrier(outputBuffer, RHI::GPUResourceState::Undefined, RHI::GPUResourceState::UnorderedAccess),
+        RHI::Renderer::MakeBufferBarrier(inputBuffer, RHI::GPUResourceState::ShaderResourceCompute, RHI::GPUResourceState::Undefined));
+    dispatchBufferPSO(ifftReal512LastStagePSO, workBuffer, outputBuffer, fftBlockCount);
+
+    transition2(
+        RHI::Renderer::MakeBufferBarrier(workBuffer, RHI::GPUResourceState::ShaderResourceCompute, RHI::GPUResourceState::Undefined),
+        RHI::Renderer::MakeBufferBarrier(outputBuffer, RHI::GPUResourceState::UnorderedAccess, RHI::GPUResourceState::Undefined));
+
+    return true;
+}
+
+bool GpuFFT::DispatchIFFTReal1024(RHI::CommandList *commandList, RHI::FrameThreadData *frameThreadData, RHI::Buffer *inputBuffer, RHI::Buffer *outputBuffer, RHI::Buffer *workBuffer, uint32_t fftBlockCount, RHI::GPUResourceState inputBufferState, RHI::GPUResourceState workBufferState) {
+    assert(realFFTTwiddle1024Buffer);
+
+    auto transition2 = [&](const RHI::GPUBarrier &barrier0, const RHI::GPUBarrier &barrier1) {
+        RHI::GPUBarrier barriers[] = { barrier0, barrier1 };
+        RHI::renderer->Barrier(commandList, barriers, COUNT_OF(barriers));
+    };
+
+    auto transition3 = [&](const RHI::GPUBarrier &barrier0, const RHI::GPUBarrier &barrier1, const RHI::GPUBarrier &barrier2) {
+        RHI::GPUBarrier barriers[] = { barrier0, barrier1, barrier2 };
+        RHI::renderer->Barrier(commandList, barriers, COUNT_OF(barriers));
+    };
+
+    auto dispatchBufferPSO = [&](RHI::PipelineState *pipelineState, RHI::Buffer *input, RHI::Buffer *output, uint32_t groupCountX) {
+        RHI::renderer->SetPSO(commandList, pipelineState);
+        RHI::renderer->SetBuffer(commandList, 0, false, input);
+        RHI::renderer->SetBuffer(commandList, 0, true, output);
+        RHI::renderer->Dispatch(commandList, groupCountX, 1, 1);
+    };
+
+    auto dispatchRealBufferPSO = [&](RHI::PipelineState *pipelineState, RHI::Buffer *input, RHI::Buffer *output, uint32_t groupCountX) {
+        RHI::renderer->SetPSO(commandList, pipelineState);
+        RHI::renderer->SetBuffer(commandList, 0, false, input);
+        RHI::renderer->SetBuffer(commandList, 1, false, realFFTTwiddle1024Buffer);
+        RHI::renderer->SetBuffer(commandList, 0, true, output);
+        RHI::renderer->Dispatch(commandList, groupCountX, 1, 1);
+    };
+
+    // 가로 IFFT 스테이지 0
+    transition2(
+        RHI::Renderer::MakeBufferBarrier(inputBuffer, inputBufferState, RHI::GPUResourceState::ShaderResourceCompute),
+        RHI::Renderer::MakeBufferBarrier(workBuffer, workBufferState, RHI::GPUResourceState::UnorderedAccess));
+    dispatchRealBufferPSO(ifftReal1024FirstStagePSO, inputBuffer, workBuffer, fftBlockCount);
+
+    // 가로 IFFT512 스테이지 1
+    transition2(
+        RHI::Renderer::MakeBufferBarrier(workBuffer, RHI::GPUResourceState::UnorderedAccess, RHI::GPUResourceState::ShaderResourceCompute),
+        RHI::Renderer::MakeBufferBarrier(inputBuffer, RHI::GPUResourceState::ShaderResourceCompute, RHI::GPUResourceState::UnorderedAccess));
+    if (!DispatchFFTComplexStage(commandList, frameThreadData, fftComplex512PSO, workBuffer, inputBuffer, fftBlockCount, 1, 1.0f, 1.0f / 512.0f)) {
+        return false;
+    }
+
+    // 가로 IFFT 스테이지 2 (마지막)
+    transition3(
+        RHI::Renderer::MakeBufferBarrier(inputBuffer, RHI::GPUResourceState::UnorderedAccess, RHI::GPUResourceState::ShaderResourceCompute),
+        RHI::Renderer::MakeBufferBarrier(outputBuffer, RHI::GPUResourceState::Undefined, RHI::GPUResourceState::UnorderedAccess),
+        RHI::Renderer::MakeBufferBarrier(workBuffer, RHI::GPUResourceState::ShaderResourceCompute, RHI::GPUResourceState::Undefined));
+    dispatchBufferPSO(ifftReal1024LastStagePSO, inputBuffer, outputBuffer, fftBlockCount);
+
+    transition2(
+        RHI::Renderer::MakeBufferBarrier(inputBuffer, RHI::GPUResourceState::ShaderResourceCompute, RHI::GPUResourceState::Undefined),
+        RHI::Renderer::MakeBufferBarrier(outputBuffer, RHI::GPUResourceState::UnorderedAccess, RHI::GPUResourceState::Undefined));
+
+    return true;
+}
+
+bool GpuFFT::DispatchFFTDualReal512(RHI::CommandList *commandList, RHI::FrameThreadData *frameThreadData, RHI::Buffer *inputBuffer, RHI::Buffer *pingBuffer0, RHI::Buffer *pingBuffer1, uint32_t fftBlockCount, RHI::Buffer **resultBuffer) {
+    auto transition2 = [&](const RHI::GPUBarrier &barrier0, const RHI::GPUBarrier &barrier1) {
+        RHI::GPUBarrier barriers[] = { barrier0, barrier1 };
+        RHI::renderer->Barrier(commandList, barriers, COUNT_OF(barriers));
+    };
+
+    auto transition3 = [&](const RHI::GPUBarrier &barrier0, const RHI::GPUBarrier &barrier1, const RHI::GPUBarrier &barrier2) {
+        RHI::GPUBarrier barriers[] = { barrier0, barrier1, barrier2 };
+        RHI::renderer->Barrier(commandList, barriers, COUNT_OF(barriers));
+    };
+
+    auto dispatchBufferPSO = [&](RHI::PipelineState *pipelineState, RHI::Buffer *input, RHI::Buffer *output, uint32_t groupCountX) {
+        RHI::renderer->SetPSO(commandList, pipelineState);
+        RHI::renderer->SetBuffer(commandList, 0, false, input);
+        RHI::renderer->SetBuffer(commandList, 0, true, output);
+        RHI::renderer->Dispatch(commandList, groupCountX, 1, 1);
+    };
+
+    // 가로 FFT 스테이지 0
+    transition2(
+        RHI::Renderer::MakeBufferBarrier(inputBuffer, RHI::GPUResourceState::Undefined, RHI::GPUResourceState::ShaderResourceCompute),
+        RHI::Renderer::MakeBufferBarrier(pingBuffer0, RHI::GPUResourceState::Undefined, RHI::GPUResourceState::UnorderedAccess));
+    dispatchBufferPSO(fftDualReal512FirstStagePSO, inputBuffer, pingBuffer0, fftBlockCount);
+
+    // 가로 FFT 스테이지 1
+    transition3(
+        RHI::Renderer::MakeBufferBarrier(pingBuffer0, RHI::GPUResourceState::UnorderedAccess, RHI::GPUResourceState::ShaderResourceCompute),
+        RHI::Renderer::MakeBufferBarrier(pingBuffer1, RHI::GPUResourceState::Undefined, RHI::GPUResourceState::UnorderedAccess),
+        RHI::Renderer::MakeBufferBarrier(inputBuffer, RHI::GPUResourceState::ShaderResourceCompute, RHI::GPUResourceState::Undefined));
+    if (!DispatchFFTComplexStage(commandList, frameThreadData, fftComplex512PSO, pingBuffer0, pingBuffer1, fftBlockCount, 1, -1.0f, 1.0f)) {
+        return false;
+    }
+
+    // 가로 FFT 스테이지 2 (마지막)
+    transition2(
+        RHI::Renderer::MakeBufferBarrier(pingBuffer1, RHI::GPUResourceState::UnorderedAccess, RHI::GPUResourceState::ShaderResourceCompute),
+        RHI::Renderer::MakeBufferBarrier(pingBuffer0, RHI::GPUResourceState::ShaderResourceCompute, RHI::GPUResourceState::UnorderedAccess));
+    dispatchBufferPSO(fftDualReal512LastStagePSO, pingBuffer1, pingBuffer0, fftBlockCount);
+
+    *resultBuffer = pingBuffer0;
+    return true;
+}
+
+bool GpuFFT::DispatchFFTDualReal1024(RHI::CommandList *commandList, RHI::FrameThreadData *frameThreadData, RHI::Buffer *inputBuffer, RHI::Buffer *pingBuffer0, RHI::Buffer *pingBuffer1, uint32_t fftBlockCount, RHI::Buffer **resultBuffer) {
+    auto transition2 = [&](const RHI::GPUBarrier &barrier0, const RHI::GPUBarrier &barrier1) {
+        RHI::GPUBarrier barriers[] = { barrier0, barrier1 };
+        RHI::renderer->Barrier(commandList, barriers, COUNT_OF(barriers));
+    };
+
+    auto transition3 = [&](const RHI::GPUBarrier &barrier0, const RHI::GPUBarrier &barrier1, const RHI::GPUBarrier &barrier2) {
+        RHI::GPUBarrier barriers[] = { barrier0, barrier1, barrier2 };
+        RHI::renderer->Barrier(commandList, barriers, COUNT_OF(barriers));
+    };
+
+    auto dispatchBufferPSO = [&](RHI::PipelineState *pipelineState, RHI::Buffer *input, RHI::Buffer *output, uint32_t groupCountX) {
+        RHI::renderer->SetPSO(commandList, pipelineState);
+        RHI::renderer->SetBuffer(commandList, 0, false, input);
+        RHI::renderer->SetBuffer(commandList, 0, true, output);
+        RHI::renderer->Dispatch(commandList, groupCountX, 1, 1);
+    };
+
+    // 가로 FFT 스테이지 0
+    transition2(
+        RHI::Renderer::MakeBufferBarrier(inputBuffer, RHI::GPUResourceState::Undefined, RHI::GPUResourceState::ShaderResourceCompute),
+        RHI::Renderer::MakeBufferBarrier(pingBuffer0, RHI::GPUResourceState::Undefined, RHI::GPUResourceState::UnorderedAccess));
+    dispatchBufferPSO(fftDualReal1024FirstStagePSO, inputBuffer, pingBuffer0, fftBlockCount);
+
+    // 가로 FFT 스테이지 1
+    transition3(
+        RHI::Renderer::MakeBufferBarrier(pingBuffer0, RHI::GPUResourceState::UnorderedAccess, RHI::GPUResourceState::ShaderResourceCompute),
+        RHI::Renderer::MakeBufferBarrier(pingBuffer1, RHI::GPUResourceState::Undefined, RHI::GPUResourceState::UnorderedAccess),
+        RHI::Renderer::MakeBufferBarrier(inputBuffer, RHI::GPUResourceState::ShaderResourceCompute, RHI::GPUResourceState::Undefined));
+    if (!DispatchFFTComplexStage(commandList, frameThreadData, fftComplex1024PSO, pingBuffer0, pingBuffer1, fftBlockCount, 1, -1.0f, 1.0f)) {
+        return false;
+    }
+
+    // 가로 FFT 스테이지 2
+    transition2(
+        RHI::Renderer::MakeBufferBarrier(pingBuffer1, RHI::GPUResourceState::UnorderedAccess, RHI::GPUResourceState::ShaderResourceCompute),
+        RHI::Renderer::MakeBufferBarrier(pingBuffer0, RHI::GPUResourceState::ShaderResourceCompute, RHI::GPUResourceState::UnorderedAccess));
+    if (!DispatchFFTComplexStage(commandList, frameThreadData, fftComplex1024PSO, pingBuffer1, pingBuffer0, fftBlockCount, 2, -1.0f, 1.0f)) {
+        return false;
+    }
+
+    // 가로 FFT 스테이지 3 (마지막)
+    transition2(
+        RHI::Renderer::MakeBufferBarrier(pingBuffer0, RHI::GPUResourceState::UnorderedAccess, RHI::GPUResourceState::ShaderResourceCompute),
+        RHI::Renderer::MakeBufferBarrier(pingBuffer1, RHI::GPUResourceState::ShaderResourceCompute, RHI::GPUResourceState::UnorderedAccess));
+    dispatchBufferPSO(fftDualReal1024LastStagePSO, pingBuffer0, pingBuffer1, fftBlockCount);
+
+    *resultBuffer = pingBuffer1;
+    return true;
+}
+
+bool GpuFFT::DispatchIFFTDualReal512(RHI::CommandList *commandList, RHI::FrameThreadData *frameThreadData, RHI::Buffer *inputBuffer, RHI::Buffer *outputBuffer, RHI::Buffer *workBuffer, uint32_t fftBlockCount, RHI::GPUResourceState inputBufferState, RHI::GPUResourceState workBufferState) {
+    auto transition2 = [&](const RHI::GPUBarrier &barrier0, const RHI::GPUBarrier &barrier1) {
+        RHI::GPUBarrier barriers[] = { barrier0, barrier1 };
+        RHI::renderer->Barrier(commandList, barriers, COUNT_OF(barriers));
+    };
+
+    auto transition3 = [&](const RHI::GPUBarrier &barrier0, const RHI::GPUBarrier &barrier1, const RHI::GPUBarrier &barrier2) {
+        RHI::GPUBarrier barriers[] = { barrier0, barrier1, barrier2 };
+        RHI::renderer->Barrier(commandList, barriers, COUNT_OF(barriers));
+    };
+
+    auto dispatchBufferPSO = [&](RHI::PipelineState *pipelineState, RHI::Buffer *input, RHI::Buffer *output, uint32_t groupCountX) {
+        RHI::renderer->SetPSO(commandList, pipelineState);
+        RHI::renderer->SetBuffer(commandList, 0, false, input);
+        RHI::renderer->SetBuffer(commandList, 0, true, output);
+        RHI::renderer->Dispatch(commandList, groupCountX, 1, 1);
+    };
+
+    // 가로 IFFT 스테이지 0
+    transition2(
+        RHI::Renderer::MakeBufferBarrier(inputBuffer, inputBufferState, RHI::GPUResourceState::ShaderResourceCompute),
+        RHI::Renderer::MakeBufferBarrier(workBuffer, workBufferState, RHI::GPUResourceState::UnorderedAccess));
+    dispatchBufferPSO(ifftDualReal512FirstStagePSO, inputBuffer, workBuffer, fftBlockCount);
+
+    // 가로 IFFT 스테이지 1
+    transition2(
+        RHI::Renderer::MakeBufferBarrier(workBuffer, RHI::GPUResourceState::UnorderedAccess, RHI::GPUResourceState::ShaderResourceCompute),
+        RHI::Renderer::MakeBufferBarrier(inputBuffer, RHI::GPUResourceState::ShaderResourceCompute, RHI::GPUResourceState::UnorderedAccess));
+    if (!DispatchFFTComplexStage(commandList, frameThreadData, fftComplex512PSO, workBuffer, inputBuffer, fftBlockCount, 1, 1.0f, 1.0f / 512.0f)) {
+        return false;
+    }
+
+    // 가로 IFFT 스테이지 2 (마지막)
+    transition3(
+        RHI::Renderer::MakeBufferBarrier(inputBuffer, RHI::GPUResourceState::UnorderedAccess, RHI::GPUResourceState::ShaderResourceCompute),
+        RHI::Renderer::MakeBufferBarrier(outputBuffer, RHI::GPUResourceState::Undefined, RHI::GPUResourceState::UnorderedAccess),
+        RHI::Renderer::MakeBufferBarrier(workBuffer, RHI::GPUResourceState::ShaderResourceCompute, RHI::GPUResourceState::Undefined));
+    dispatchBufferPSO(ifftDualReal512LastStagePSO, inputBuffer, outputBuffer, fftBlockCount);
+
+    transition2(
+        RHI::Renderer::MakeBufferBarrier(inputBuffer, RHI::GPUResourceState::ShaderResourceCompute, RHI::GPUResourceState::Undefined),
+        RHI::Renderer::MakeBufferBarrier(outputBuffer, RHI::GPUResourceState::UnorderedAccess, RHI::GPUResourceState::Undefined));
+
+    return true;
+}
+
+bool GpuFFT::DispatchIFFTDualReal1024(RHI::CommandList *commandList, RHI::FrameThreadData *frameThreadData, RHI::Buffer *inputBuffer, RHI::Buffer *outputBuffer, RHI::Buffer *workBuffer, uint32_t fftBlockCount, RHI::GPUResourceState inputBufferState, RHI::GPUResourceState workBufferState) {
+    auto transition2 = [&](const RHI::GPUBarrier &barrier0, const RHI::GPUBarrier &barrier1) {
+        RHI::GPUBarrier barriers[] = { barrier0, barrier1 };
+        RHI::renderer->Barrier(commandList, barriers, COUNT_OF(barriers));
+    };
+
+    auto transition3 = [&](const RHI::GPUBarrier &barrier0, const RHI::GPUBarrier &barrier1, const RHI::GPUBarrier &barrier2) {
+        RHI::GPUBarrier barriers[] = { barrier0, barrier1, barrier2 };
+        RHI::renderer->Barrier(commandList, barriers, COUNT_OF(barriers));
+    };
+
+    auto dispatchBufferPSO = [&](RHI::PipelineState *pipelineState, RHI::Buffer *input, RHI::Buffer *output, uint32_t groupCountX) {
+        RHI::renderer->SetPSO(commandList, pipelineState);
+        RHI::renderer->SetBuffer(commandList, 0, false, input);
+        RHI::renderer->SetBuffer(commandList, 0, true, output);
+        RHI::renderer->Dispatch(commandList, groupCountX, 1, 1);
+    };
+
+    // 가로 IFFT 스테이지 0
+    transition2(
+        RHI::Renderer::MakeBufferBarrier(inputBuffer, inputBufferState, RHI::GPUResourceState::ShaderResourceCompute),
+        RHI::Renderer::MakeBufferBarrier(workBuffer, workBufferState, RHI::GPUResourceState::UnorderedAccess));
+    dispatchBufferPSO(ifftDualReal1024FirstStagePSO, inputBuffer, workBuffer, fftBlockCount);
+
+    // 가로 IFFT 스테이지 1
+    transition2(
+        RHI::Renderer::MakeBufferBarrier(workBuffer, RHI::GPUResourceState::UnorderedAccess, RHI::GPUResourceState::ShaderResourceCompute),
+        RHI::Renderer::MakeBufferBarrier(inputBuffer, RHI::GPUResourceState::ShaderResourceCompute, RHI::GPUResourceState::UnorderedAccess));
+    if (!DispatchFFTComplexStage(commandList, frameThreadData, fftComplex1024PSO, workBuffer, inputBuffer, fftBlockCount, 1, 1.0f, 1.0f)) {
+        return false;
+    }
+
+    // 가로 IFFT 스테이지 2
+    transition2(
+        RHI::Renderer::MakeBufferBarrier(inputBuffer, RHI::GPUResourceState::UnorderedAccess, RHI::GPUResourceState::ShaderResourceCompute),
+        RHI::Renderer::MakeBufferBarrier(workBuffer, RHI::GPUResourceState::ShaderResourceCompute, RHI::GPUResourceState::UnorderedAccess));
+    if (!DispatchFFTComplexStage(commandList, frameThreadData, fftComplex1024PSO, inputBuffer, workBuffer, fftBlockCount, 2, 1.0f, 1.0f)) {
+        return false;
+    }
+
+    // 가로 IFFT 스테이지 3 (마지막)
+    transition3(
+        RHI::Renderer::MakeBufferBarrier(workBuffer, RHI::GPUResourceState::UnorderedAccess, RHI::GPUResourceState::ShaderResourceCompute),
+        RHI::Renderer::MakeBufferBarrier(outputBuffer, RHI::GPUResourceState::Undefined, RHI::GPUResourceState::UnorderedAccess),
+        RHI::Renderer::MakeBufferBarrier(inputBuffer, RHI::GPUResourceState::ShaderResourceCompute, RHI::GPUResourceState::Undefined));
+    dispatchBufferPSO(ifftDualReal1024LastStagePSO, workBuffer, outputBuffer, fftBlockCount);
+
+    transition2(
+        RHI::Renderer::MakeBufferBarrier(workBuffer, RHI::GPUResourceState::ShaderResourceCompute, RHI::GPUResourceState::Undefined),
+        RHI::Renderer::MakeBufferBarrier(outputBuffer, RHI::GPUResourceState::UnorderedAccess, RHI::GPUResourceState::Undefined));
 
     return true;
 }
