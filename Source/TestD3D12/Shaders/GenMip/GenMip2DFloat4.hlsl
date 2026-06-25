@@ -1,5 +1,5 @@
-#include "ShaderInterop.h"
-#include "ColorSpaceUtility.hlsli"
+#include "../ShaderInterop.h"
+#include "../ColorSpaceUtility.hlsli"
 
 #define GEN_MIP_WITH_GATHER
 

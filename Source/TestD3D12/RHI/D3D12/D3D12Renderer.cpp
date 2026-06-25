@@ -440,14 +440,14 @@ void D3D12Renderer::CheckFeatures() {
 void D3D12Renderer::InitGenMipmapsPSO() {
     // 2D 텍스쳐 용 밉맵 생성 컴퓨트 셰이더 PSO 생성
     {
-        RHI::Shader *cs = static_cast<RHI::Shader *>(CreateShaderFromFile(RHI::ShaderModel::SM_6_0, RHI::ShaderStage::Compute, "Source/TestD3D12/Shaders/GenMip2DFloat4.hlsl", "CSMain"));
+        RHI::Shader *cs = static_cast<RHI::Shader *>(CreateShaderFromFile(RHI::ShaderModel::SM_6_0, RHI::ShaderStage::Compute, "Source/TestD3D12/Shaders/GenMip/GenMip2DFloat4.hlsl", "CSMain"));
         if (cs) {
             genMipmaps2DFloat4PSO = CreateComputePSO(cs);
             DestroyShader(cs, true);
         }
     }
     {
-        RHI::Shader *cs = static_cast<RHI::Shader *>(CreateShaderFromFile(RHI::ShaderModel::SM_6_0, RHI::ShaderStage::Compute, "Source/TestD3D12/Shaders/GenMip2DUNorm4.hlsl", "CSMain"));
+        RHI::Shader *cs = static_cast<RHI::Shader *>(CreateShaderFromFile(RHI::ShaderModel::SM_6_0, RHI::ShaderStage::Compute, "Source/TestD3D12/Shaders/GenMip/GenMip2DUNorm4.hlsl", "CSMain"));
         if (cs) {
             genMipmaps2DUNorm4PSO = CreateComputePSO(cs);
             DestroyShader(cs, true);
@@ -455,14 +455,14 @@ void D3D12Renderer::InitGenMipmapsPSO() {
     }
     // 큐브맵 텍스쳐 용 밉맵 생성 컴퓨트 셰이더 PSO 생성
     {
-        RHI::Shader *cs = static_cast<RHI::Shader *>(CreateShaderFromFile(RHI::ShaderModel::SM_6_0, RHI::ShaderStage::Compute, "Source/TestD3D12/Shaders/GenMipCubeFloat4.hlsl", "CSMain"));
+        RHI::Shader *cs = static_cast<RHI::Shader *>(CreateShaderFromFile(RHI::ShaderModel::SM_6_0, RHI::ShaderStage::Compute, "Source/TestD3D12/Shaders/GenMip/GenMipCubeFloat4.hlsl", "CSMain"));
         if (cs) {
             genMipmapsCubeFloat4PSO = CreateComputePSO(cs);
             DestroyShader(cs, true);
         }
     }
     {
-        RHI::Shader *cs = static_cast<RHI::Shader *>(CreateShaderFromFile(RHI::ShaderModel::SM_6_0, RHI::ShaderStage::Compute, "Source/TestD3D12/Shaders/GenMipCubeUNorm4.hlsl", "CSMain"));
+        RHI::Shader *cs = static_cast<RHI::Shader *>(CreateShaderFromFile(RHI::ShaderModel::SM_6_0, RHI::ShaderStage::Compute, "Source/TestD3D12/Shaders/GenMip/GenMipCubeUNorm4.hlsl", "CSMain"));
         if (cs) {
             genMipmapsCubeUNorm4PSO = CreateComputePSO(cs);
             DestroyShader(cs, true);
@@ -470,14 +470,14 @@ void D3D12Renderer::InitGenMipmapsPSO() {
     }
     // 3D 텍스쳐 용 밉맵 생성 컴퓨트 셰이더 PSO 생성
     {
-        RHI::Shader *cs = static_cast<RHI::Shader *>(CreateShaderFromFile(RHI::ShaderModel::SM_6_0, RHI::ShaderStage::Compute, "Source/TestD3D12/Shaders/GenMip3DFloat4.hlsl", "CSMain"));
+        RHI::Shader *cs = static_cast<RHI::Shader *>(CreateShaderFromFile(RHI::ShaderModel::SM_6_0, RHI::ShaderStage::Compute, "Source/TestD3D12/Shaders/GenMip/GenMip3DFloat4.hlsl", "CSMain"));
         if (cs) {
             genMipmaps3DFloat4PSO = CreateComputePSO(cs);
             DestroyShader(cs, true);
         }
     }
     {
-        RHI::Shader *cs = static_cast<RHI::Shader *>(CreateShaderFromFile(RHI::ShaderModel::SM_6_0, RHI::ShaderStage::Compute, "Source/TestD3D12/Shaders/GenMip3DUNorm4.hlsl", "CSMain"));
+        RHI::Shader *cs = static_cast<RHI::Shader *>(CreateShaderFromFile(RHI::ShaderModel::SM_6_0, RHI::ShaderStage::Compute, "Source/TestD3D12/Shaders/GenMip/GenMip3DUNorm4.hlsl", "CSMain"));
         if (cs) {
             genMipmaps3DUNorm4PSO = CreateComputePSO(cs);
             DestroyShader(cs, true);
