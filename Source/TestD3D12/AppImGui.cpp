@@ -500,7 +500,7 @@ void App::BuildImGuiOverlay() {
                     char currentKernelName[32];
                     GetConvolutionBloomKernelDisplayName(app_convolutionBloomKernelIndex.GetInteger(), currentKernelName, sizeof(currentKernelName));
                     ImGui::SetNextItemWidth(fontSize * 12.0f);
-                    if (ImGui::BeginCombo("Convolution bloom kernel", currentKernelName)) {
+                    if (ImGui::BeginCombo("bloom kernel", currentKernelName)) {
                         for (int kernelIndex = 0; kernelIndex < App::ConvolutionBloomKernelCount; ++kernelIndex) {
                             char kernelName[32];
                             GetConvolutionBloomKernelDisplayName(kernelIndex, kernelName, sizeof(kernelName));
@@ -520,7 +520,7 @@ void App::BuildImGuiOverlay() {
                     int convolutionBloomFFTMaxSize = r_convolutionBloomFFTMaxSize.GetInteger();
                     int convolutionBloomFFTMaxSizeIndex = convolutionBloomFFTMaxSize <= 512 ? 0 : 1;
                     ImGui::SetNextItemWidth(fontSize * 12.0f);
-                    if (ImGui::Combo("Convolution bloom FFT max size", &convolutionBloomFFTMaxSizeIndex,
+                    if (ImGui::Combo("bloom FFT max size", &convolutionBloomFFTMaxSizeIndex,
                         "512\0"
                         "1024\0")) {
                         r_convolutionBloomFFTMaxSize.SetInteger(convolutionBloomFFTMaxSizeOptions[convolutionBloomFFTMaxSizeIndex]);
@@ -528,20 +528,20 @@ void App::BuildImGuiOverlay() {
 
                     float convolutionBloomContentPaddingRatio = r_convolutionBloomContentPaddingRatio.GetFloat();
                     ImGui::SetNextItemWidth(fontSize * 12.0f);
-                    if (ImGui::SliderFloat("Convolution bloom content padding", &convolutionBloomContentPaddingRatio, 0.0f, 0.45f, "%.3f")) {
+                    if (ImGui::SliderFloat("bloom content padding", &convolutionBloomContentPaddingRatio, 0.0f, 0.45f, "%.3f")) {
                         BE1::Clamp(convolutionBloomContentPaddingRatio, 0.0f, 0.45f);
                         r_convolutionBloomContentPaddingRatio.SetFloat(convolutionBloomContentPaddingRatio);
                     }
 
                     float convolutionBloomKernelRotation = r_convolutionBloomKernelRotation.GetFloat();
                     ImGui::SetNextItemWidth(fontSize * 12.0f);
-                    if (ImGui::SliderFloat("Convolution bloom kernel rotation", &convolutionBloomKernelRotation, -180.0f, 180.0f, "%.1f deg")) {
+                    if (ImGui::SliderFloat("bloom kernel rotation", &convolutionBloomKernelRotation, -180.0f, 180.0f, "%.1f deg")) {
                         r_convolutionBloomKernelRotation.SetFloat(convolutionBloomKernelRotation);
                     }
 
                     float convolutionBloomKernelScale = r_convolutionBloomKernelScale.GetFloat();
                     ImGui::SetNextItemWidth(fontSize * 12.0f);
-                    if (ImGui::DragFloat("Convolution bloom kernel scale", &convolutionBloomKernelScale, 0.001f, 0.0f, 10.0f, "%.4f")) {
+                    if (ImGui::DragFloat("bloom kernel scale", &convolutionBloomKernelScale, 0.001f, 0.0f, 10.0f, "%.4f")) {
                         r_convolutionBloomKernelScale.SetFloat(BE1::Max(convolutionBloomKernelScale, 0.0f));
                     }
                 }
@@ -549,7 +549,7 @@ void App::BuildImGuiOverlay() {
                 if (usePyramidBloom) {
                     int pyramidBloomPrefilterQuality = BE1::Clamp(r_pyramidBloomPrefilterQuality.GetInteger(), 0, 1);
                     ImGui::SetNextItemWidth(fontSize * 12.0f);
-                    if (ImGui::Combo("Pyramid bloom prefilter quality", &pyramidBloomPrefilterQuality,
+                    if (ImGui::Combo("bloom prefilter quality", &pyramidBloomPrefilterQuality,
                         "Rotated Grid 5 Tap\0"
                         "Jimenez 13 Tap\0")) {
                         r_pyramidBloomPrefilterQuality.SetInteger(pyramidBloomPrefilterQuality);
@@ -557,25 +557,25 @@ void App::BuildImGuiOverlay() {
 
                     float pyramidBloomScatter = r_pyramidBloomScatter.GetFloat();
                     ImGui::SetNextItemWidth(fontSize * 12.0f);
-                    if (ImGui::SliderFloat("Pyramid bloom scatter", &pyramidBloomScatter, 0.0f, 1.0f, "%.3f")) {
+                    if (ImGui::SliderFloat("bloom scatter", &pyramidBloomScatter, 0.0f, 1.0f, "%.3f")) {
                         r_pyramidBloomScatter.SetFloat(pyramidBloomScatter);
                     }
 
                     float pyramidBloomPrefilterRadius = r_pyramidBloomPrefilterRadius.GetFloat();
                     ImGui::SetNextItemWidth(fontSize * 12.0f);
-                    if (ImGui::SliderFloat("Pyramid bloom prefilter radius", &pyramidBloomPrefilterRadius, 0.0f, 5.0f, "%.2f")) {
+                    if (ImGui::SliderFloat("bloom prefilter radius", &pyramidBloomPrefilterRadius, 0.0f, 5.0f, "%.2f")) {
                         r_pyramidBloomPrefilterRadius.SetFloat(pyramidBloomPrefilterRadius);
                     }
 
                     float pyramidBloomDownsampleRadius = r_pyramidBloomDownsampleRadius.GetFloat();
                     ImGui::SetNextItemWidth(fontSize * 12.0f);
-                    if (ImGui::SliderFloat("Pyramid bloom downsample radius", &pyramidBloomDownsampleRadius, 0.0f, 5.0f, "%.2f")) {
+                    if (ImGui::SliderFloat("bloom downsample radius", &pyramidBloomDownsampleRadius, 0.0f, 5.0f, "%.2f")) {
                         r_pyramidBloomDownsampleRadius.SetFloat(pyramidBloomDownsampleRadius);
                     }
 
                     float pyramidBloomUpsampleRadius = r_pyramidBloomUpsampleRadius.GetFloat();
                     ImGui::SetNextItemWidth(fontSize * 12.0f);
-                    if (ImGui::SliderFloat("Pyramid bloom upsample radius", &pyramidBloomUpsampleRadius, 0.0f, 5.0f, "%.2f")) {
+                    if (ImGui::SliderFloat("bloom upsample radius", &pyramidBloomUpsampleRadius, 0.0f, 5.0f, "%.2f")) {
                         r_pyramidBloomUpsampleRadius.SetFloat(pyramidBloomUpsampleRadius);
                     }
                 }

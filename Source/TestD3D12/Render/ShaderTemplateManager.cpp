@@ -272,7 +272,7 @@ void ShaderTemplateManager::CreateEngineShaderTemplates() {
     static constexpr const char *bloomPrefilterShaderTemplateText = ENGINE_SHADER_TEMPLATE(
     {
         stages {
-            compute SM_6_0 "BloomPrefilter.hlsl" "CSMain"
+            compute SM_6_0 "Bloom/BloomPrefilter.hlsl" "CSMain"
         }
     }
     );
@@ -280,7 +280,7 @@ void ShaderTemplateManager::CreateEngineShaderTemplates() {
     static constexpr const char *convolutionBloomPrefilterShaderTemplateText = ENGINE_SHADER_TEMPLATE(
     {
         stages {
-            compute SM_6_0 "ConvolutionBloomPrefilter.hlsl" "CSMain"
+            compute SM_6_0 "Bloom/ConvolutionBloomPrefilter.hlsl" "CSMain"
         }
     }
     );
@@ -288,7 +288,31 @@ void ShaderTemplateManager::CreateEngineShaderTemplates() {
     static constexpr const char *convolutionBloomKernelPrepareShaderTemplateText = ENGINE_SHADER_TEMPLATE(
     {
         stages {
-            compute SM_6_0 "ConvolutionBloomKernelPrepare.hlsl" "CSMain"
+            compute SM_6_0 "Bloom/ConvolutionBloomKernelPrepare.hlsl" "CSMain"
+        }
+    }
+    );
+
+    static constexpr const char *convolutionBloomResolveShaderTemplateText = ENGINE_SHADER_TEMPLATE(
+    {
+        stages {
+            compute SM_6_0 "Bloom/ConvolutionBloomResolve.hlsl" "CSMain"
+        }
+    }
+    );
+
+     static constexpr const char *bloomDownsampleShaderTemplateText = ENGINE_SHADER_TEMPLATE(
+    {
+        stages {
+            compute SM_6_0 "Bloom/BloomDownsample.hlsl" "CSMain"
+        }
+    }
+    );
+
+    static constexpr const char *bloomUpsampleShaderTemplateText = ENGINE_SHADER_TEMPLATE(
+    {
+        stages {
+            compute SM_6_0 "Bloom/BloomUpsample.hlsl" "CSMain"
         }
     }
     );
@@ -313,14 +337,6 @@ void ShaderTemplateManager::CreateEngineShaderTemplates() {
     {
         stages {
             compute SM_6_0 "FFT/MultiplyPackedDualRealSpectrum2D.hlsl" "CSMain"
-        }
-    }
-    );
-
-    static constexpr const char *convolutionBloomResolveShaderTemplateText = ENGINE_SHADER_TEMPLATE(
-    {
-        stages {
-            compute SM_6_0 "ConvolutionBloomResolve.hlsl" "CSMain"
         }
     }
     );
@@ -537,22 +553,6 @@ void ShaderTemplateManager::CreateEngineShaderTemplates() {
     {
         stages {
             compute SM_6_0 "Transpose/TransposeComplex1024.hlsl" "CSMain"
-        }
-    }
-    );
-
-    static constexpr const char *bloomDownsampleShaderTemplateText = ENGINE_SHADER_TEMPLATE(
-    {
-        stages {
-            compute SM_6_0 "BloomDownsample.hlsl" "CSMain"
-        }
-    }
-    );
-
-    static constexpr const char *bloomUpsampleShaderTemplateText = ENGINE_SHADER_TEMPLATE(
-    {
-        stages {
-            compute SM_6_0 "BloomUpsample.hlsl" "CSMain"
         }
     }
     );
