@@ -151,7 +151,12 @@ void App::Render(uint64_t frameUsec) {
     const float elapsedTime = (float)MICRO2SEC((double)elapsedUsec);
     const float elapsedPrevTime = (float)MICRO2SEC((double)(elapsedUsec - frameUsec));
 
-    mainRenderContext->BeginFrame(frameTime, elapsedTime, elapsedPrevTime, app_statRender.GetBool());
+    bool statEnabled = app_statRender.GetBool();
+#ifdef ENABLE_IMGUI
+    statEnabled |= imguiShowStatsPlotWindow;
+#endif
+
+    mainRenderContext->BeginFrame(frameTime, elapsedTime, elapsedPrevTime, statEnabled);
 
     uint64_t t0 = BE1::PlatformTime::Microseconds();
 
