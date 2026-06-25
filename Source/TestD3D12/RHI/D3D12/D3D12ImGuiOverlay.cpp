@@ -179,6 +179,7 @@ bool D3D12ImGuiOverlay::Init(void *mainWindowHandle, RHI::SwapChain *swapChain) 
 
     ImGuiIO &io = ImGui::GetIO();
     io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
+    io.ConfigWindowsMoveFromTitleBarOnly = true;
 
     ImGui::StyleColorsDark();
 
