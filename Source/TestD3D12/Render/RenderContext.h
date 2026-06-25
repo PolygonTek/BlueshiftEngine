@@ -114,6 +114,7 @@ private:
     };
 
     void                            InitFullScreenTrianglePSO();
+    void                            InitFFTPSO();
     void                            InitToneMappingPSO();
     bool                            BeginImGui();
     void                            EndImGui();
@@ -153,7 +154,6 @@ private:
 
     SharedPtr<ShaderPipeline>       convolutionBloomPrefilterPSO;
     SharedPtr<ShaderPipeline>       convolutionBloomKernelPreparePSO;
-    SharedPtr<ShaderPipeline>       convolutionBloomMultiplySpectrumPSO;
     SharedPtr<ShaderPipeline>       convolutionBloomResolvePSO;
 
     SharedPtr<ShaderPipeline>       fftComplex256PSO;
@@ -180,6 +180,10 @@ private:
     SharedPtr<ShaderPipeline>       ifftDualReal512LastStagePSO;
     SharedPtr<ShaderPipeline>       ifftDualReal1024FirstStagePSO;
     SharedPtr<ShaderPipeline>       ifftDualReal1024LastStagePSO;
+
+    SharedPtr<ShaderPipeline>       multiplyComplexSpectrum2DPSO;
+    SharedPtr<ShaderPipeline>       multiplyPackedRealSpectrum2DPSO;
+    SharedPtr<ShaderPipeline>       multiplyPackedDualRealSpectrum2DPSO;
 
     SharedPtr<ShaderPipeline>       transposeComplex256PSO;
     SharedPtr<ShaderPipeline>       transposeComplex256x512PSO;

@@ -307,7 +307,6 @@ const void *RenderBackend::ExecuteBeginContext(const void *data) {
     currentBloomUpsamplePSO = cmd->bloomUpsamplePSO;
     currentConvolutionBloomPrefilterPSO = cmd->convolutionBloomPrefilterPSO;
     currentConvolutionBloomKernelPreparePSO = cmd->convolutionBloomKernelPreparePSO;
-    currentConvolutionBloomMultiplySpectrumPSO = cmd->convolutionBloomMultiplySpectrumPSO;
     currentConvolutionBloomResolvePSO = cmd->convolutionBloomResolvePSO;
 
     fft2D.fftComplex256PSO = cmd->fftComplex256PSO;
@@ -330,6 +329,9 @@ const void *RenderBackend::ExecuteBeginContext(const void *data) {
     fft2D.ifftDualReal512LastStagePSO = cmd->ifftDualReal512LastStagePSO;
     fft2D.ifftDualReal1024FirstStagePSO = cmd->ifftDualReal1024FirstStagePSO;
     fft2D.ifftDualReal1024LastStagePSO = cmd->ifftDualReal1024LastStagePSO;
+    fft2D.multiplyComplexSpectrum2DPSO = cmd->multiplyComplexSpectrum2DPSO;
+    fft2D.multiplyPackedRealSpectrum2DPSO = cmd->multiplyPackedRealSpectrum2DPSO;
+    fft2D.multiplyPackedDualRealSpectrum2DPSO = cmd->multiplyPackedDualRealSpectrum2DPSO;
     fft2D.transposeComplex256PSO = cmd->transposeComplex256PSO;
     fft2D.transposeComplex256x512PSO = cmd->transposeComplex256x512PSO;
     fft2D.transposeComplex512x256PSO = cmd->transposeComplex512x256PSO;
@@ -1020,8 +1022,7 @@ bool RenderBackend::DispatchConvolutionBloomScreenPrefilter() {
 bool RenderBackend::DispatchConvolutionBloomMultiplySpectrum() {
     PROFILER_CPU_SCOPED_EVENT("RenderBackend::DispatchConvolutionBloomMultiplySpectrum");
 
-    if (!currentConvolutionBloomMultiplySpectrumPSO ||
-        currentVisCamera->renderWidth == 0 ||
+    if (currentVisCamera->renderWidth == 0 ||
         currentVisCamera->renderHeight == 0 ||
         currentVisCamera->fftBloomSize == 0) {
         return false;
@@ -1029,7 +1030,6 @@ bool RenderBackend::DispatchConvolutionBloomMultiplySpectrum() {
 
     const uint32_t fftSize = currentVisCamera->fftBloomSize;
     constexpr uint32_t ColorPairCount = 2; // RG, B0
-    const uint32_t elementCount = fftSize * fftSize * ColorPairCount;
 
     float2 kernelSpatialScale(1.0f, 1.0f);
     CalcConvolutionBloomContentRect(currentVisCamera->renderWidth, currentVisCamera->renderHeight, fftSize, &kernelSpatialScale);
@@ -1041,44 +1041,15 @@ bool RenderBackend::DispatchConvolutionBloomMultiplySpectrum() {
     const float kernelSampleCount = static_cast<float>(fftSize) * static_cast<float>(fftSize);
     const float kernelScale = BE1::Max(r_convolutionBloomKernelScale.GetFloat(), 0.0f) * BE1::Max(currentVisCamera->fftBloomKernelNormalizationFactor, 0.0f) / (BE1::Max(kernelSampleCount, 1.0f) * kernelAreaScale);
 
-    BloomParams bloomParams = {};
-    bloomParams.outputSize = uint2(fftSize, fftSize);
-    bloomParams.outputTexelSize = float2(1.0f / fftSize, 1.0f / fftSize);
-    bloomParams.params0 = float4(kernelScale, 0.0f, 0.0f, 0.0f);
-
-    RHI::ConstantBuffer *bloomConstantBuffer = frameData->GetThreadData(0)->AllocConstant(sizeof(BloomParams), &bloomParams);
-    if (!bloomConstantBuffer) {
-        return false;
-    }
-
-    RHI::Buffer *screenSpectrumBuffer = currentVisCamera->fftBloomScreenSpectrumBuffer;
-    RHI::Buffer *kernelSpectrumBuffer = currentVisCamera->fftBloomKernelSpectrumBuffer;
-    RHI::Buffer *outputSpectrumBuffer = currentVisCamera->fftBloomWorkBuffer;
-
-    RHI::GPUBarrier startBarriers[] = {
-        RHI::Renderer::MakeBufferBarrier(screenSpectrumBuffer, RHI::GPUResourceState::Undefined, RHI::GPUResourceState::ShaderResourceCompute),
-        RHI::Renderer::MakeBufferBarrier(kernelSpectrumBuffer, RHI::GPUResourceState::Undefined, RHI::GPUResourceState::ShaderResourceCompute),
-        RHI::Renderer::MakeBufferBarrier(outputSpectrumBuffer, RHI::GPUResourceState::Undefined, RHI::GPUResourceState::UnorderedAccess)
-    };
-    RHI::renderer->Barrier(mainCommandList, startBarriers, COUNT_OF(startBarriers));
-
-    RHI::renderer->SetPSO(mainCommandList, currentConvolutionBloomMultiplySpectrumPSO);
-    RHI::renderer->SetBuffer(mainCommandList, 0, false, kernelSpectrumBuffer);
-    RHI::renderer->SetBuffer(mainCommandList, 1, false, screenSpectrumBuffer);
-    RHI::renderer->SetBuffer(mainCommandList, 0, true, outputSpectrumBuffer);
-    RHI::renderer->SetConstantBuffer(mainCommandList, 0, bloomConstantBuffer);
-
-    const uint32_t threadGroupCount = (elementCount + ConvolutionBloomSpectrumBlockSize - 1) / ConvolutionBloomSpectrumBlockSize;
-    RHI::renderer->Dispatch(mainCommandList, threadGroupCount, 1, 1);
-
-    RHI::GPUBarrier endBarriers[] = {
-        RHI::Renderer::MakeBufferBarrier(screenSpectrumBuffer, RHI::GPUResourceState::ShaderResourceCompute, RHI::GPUResourceState::Undefined),
-        RHI::Renderer::MakeBufferBarrier(kernelSpectrumBuffer, RHI::GPUResourceState::ShaderResourceCompute, RHI::GPUResourceState::Undefined),
-        RHI::Renderer::MakeBufferBarrier(outputSpectrumBuffer, RHI::GPUResourceState::UnorderedAccess, RHI::GPUResourceState::Undefined)
-    };
-    RHI::renderer->Barrier(mainCommandList, endBarriers, COUNT_OF(endBarriers));
-
-    return true;
+    return fft2D.DispatchMultiplyPackedDualRealSpectrum2D(
+        mainCommandList,
+        frameData,
+        currentVisCamera->fftBloomKernelSpectrumBuffer,
+        currentVisCamera->fftBloomScreenSpectrumBuffer,
+        currentVisCamera->fftBloomWorkBuffer,
+        fftSize,
+        ColorPairCount,
+        kernelScale);
 }
 
 bool RenderBackend::DispatchConvolutionBloomResolve() {

@@ -58,7 +58,6 @@ struct BeginContextRenderCommand {
     RHI::PipelineState *            bloomUpsamplePSO = nullptr;
     RHI::PipelineState *            convolutionBloomPrefilterPSO = nullptr;
     RHI::PipelineState *            convolutionBloomKernelPreparePSO = nullptr;
-    RHI::PipelineState *            convolutionBloomMultiplySpectrumPSO = nullptr;
     RHI::PipelineState *            convolutionBloomResolvePSO = nullptr;
     RHI::PipelineState *            fftComplex256PSO = nullptr;
     RHI::PipelineState *            fftComplex512PSO = nullptr;
@@ -80,6 +79,9 @@ struct BeginContextRenderCommand {
     RHI::PipelineState *            ifftDualReal512LastStagePSO = nullptr;
     RHI::PipelineState *            ifftDualReal1024FirstStagePSO = nullptr;
     RHI::PipelineState *            ifftDualReal1024LastStagePSO = nullptr;
+    RHI::PipelineState *            multiplyComplexSpectrum2DPSO = nullptr;
+    RHI::PipelineState *            multiplyPackedRealSpectrum2DPSO = nullptr;
+    RHI::PipelineState *            multiplyPackedDualRealSpectrum2DPSO = nullptr;
     RHI::PipelineState *            transposeComplex256PSO = nullptr;
     RHI::PipelineState *            transposeComplex256x512PSO = nullptr;
     RHI::PipelineState *            transposeComplex512x256PSO = nullptr;

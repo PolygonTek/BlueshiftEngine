@@ -76,7 +76,7 @@ static const uint ToneMappingOperatorFilmicGT = 10;
 static const uint BloomBlockSizeX = 16;
 static const uint BloomBlockSizeY = 16;
 
-static const uint ConvolutionBloomSpectrumBlockSize = 256;
+static const uint MultiplySpectrum2DBlockSize = 256;
 
 static const uint FFTRadix2_256StageCount = 8;
 static const uint FFTRadix2_256ButterflyCount = 256 / 2;
@@ -152,6 +152,13 @@ struct BloomParams {
 #define BP_BLOOM_KERNEL_ROTATION_COS bloomParams.params0.x
 #define BP_BLOOM_KERNEL_ROTATION_SIN bloomParams.params0.y
 #define BP_BLOOM_KERNEL_SPATIAL_SCALE bloomParams.params0.zw
+
+struct MultiplySpectrum2DParams {
+    uint fftSize;
+    uint planeCount;
+    float scale;
+    uint padding0;
+};
 
 struct FFTStageParams {
     uint stageIndex;

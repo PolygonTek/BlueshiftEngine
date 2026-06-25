@@ -49,7 +49,6 @@ void RenderFrameData::CmdBeginContext(RenderContext *context) {
     cmd->bloomUpsamplePSO = nullptr;
     cmd->convolutionBloomPrefilterPSO = nullptr;
     cmd->convolutionBloomKernelPreparePSO = nullptr;
-    cmd->convolutionBloomMultiplySpectrumPSO = nullptr;
     cmd->convolutionBloomResolvePSO = nullptr;
     cmd->fftComplex256PSO = nullptr;
     cmd->fftComplex512PSO = nullptr;
@@ -71,6 +70,9 @@ void RenderFrameData::CmdBeginContext(RenderContext *context) {
     cmd->ifftDualReal512LastStagePSO = nullptr;
     cmd->ifftDualReal1024FirstStagePSO = nullptr;
     cmd->ifftDualReal1024LastStagePSO = nullptr;
+    cmd->multiplyComplexSpectrum2DPSO = nullptr;
+    cmd->multiplyPackedRealSpectrum2DPSO = nullptr;
+    cmd->multiplyPackedDualRealSpectrum2DPSO = nullptr;
     cmd->transposeComplex256PSO = nullptr;
     cmd->transposeComplex256x512PSO = nullptr;
     cmd->transposeComplex512x256PSO = nullptr;
@@ -92,7 +94,6 @@ void RenderFrameData::CmdBeginContext(RenderContext *context) {
     cmd->bloomUpsamplePSO = SnapshotPSO(context->bloomUpsamplePSO);
     cmd->convolutionBloomPrefilterPSO = SnapshotPSO(context->convolutionBloomPrefilterPSO);
     cmd->convolutionBloomKernelPreparePSO = SnapshotPSO(context->convolutionBloomKernelPreparePSO);
-    cmd->convolutionBloomMultiplySpectrumPSO = SnapshotPSO(context->convolutionBloomMultiplySpectrumPSO);
     cmd->convolutionBloomResolvePSO = SnapshotPSO(context->convolutionBloomResolvePSO);
     cmd->fftComplex256PSO = SnapshotPSO(context->fftComplex256PSO);
     cmd->fftComplex512PSO = SnapshotPSO(context->fftComplex512PSO);
@@ -114,6 +115,9 @@ void RenderFrameData::CmdBeginContext(RenderContext *context) {
     cmd->ifftDualReal512LastStagePSO = SnapshotPSO(context->ifftDualReal512LastStagePSO);
     cmd->ifftDualReal1024FirstStagePSO = SnapshotPSO(context->ifftDualReal1024FirstStagePSO);
     cmd->ifftDualReal1024LastStagePSO = SnapshotPSO(context->ifftDualReal1024LastStagePSO);
+    cmd->multiplyComplexSpectrum2DPSO = SnapshotPSO(context->multiplyComplexSpectrum2DPSO);
+    cmd->multiplyPackedRealSpectrum2DPSO = SnapshotPSO(context->multiplyPackedRealSpectrum2DPSO);
+    cmd->multiplyPackedDualRealSpectrum2DPSO = SnapshotPSO(context->multiplyPackedDualRealSpectrum2DPSO);
     cmd->transposeComplex256PSO = SnapshotPSO(context->transposeComplex256PSO);
     cmd->transposeComplex256x512PSO = SnapshotPSO(context->transposeComplex256x512PSO);
     cmd->transposeComplex512x256PSO = SnapshotPSO(context->transposeComplex512x256PSO);

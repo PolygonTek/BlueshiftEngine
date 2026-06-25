@@ -56,6 +56,7 @@ void RenderContext::Init(void *windowHandle, const BE1::Color4 &baseClearColor) 
     this->baseClearColor = !RHI::Renderer::IsSRGBFormat(mainRTColorFormat) ? baseClearColor.SRGBToLinear() : baseClearColor;
 
     InitFullScreenTrianglePSO();
+    InitFFTPSO();
     InitToneMappingPSO();
 
     textureStreamingFeedback.Init();
@@ -90,8 +91,8 @@ void RenderContext::Shutdown() {
     bloomUpsamplePSO.reset();
     convolutionBloomPrefilterPSO.reset();
     convolutionBloomKernelPreparePSO.reset();
-    convolutionBloomMultiplySpectrumPSO.reset();
     convolutionBloomResolvePSO.reset();
+
     fftComplex256PSO.reset();
     fftComplex512PSO.reset();
     fftComplex1024PSO.reset();
@@ -112,6 +113,9 @@ void RenderContext::Shutdown() {
     ifftDualReal512LastStagePSO.reset();
     ifftDualReal1024FirstStagePSO.reset();
     ifftDualReal1024LastStagePSO.reset();
+    multiplyComplexSpectrum2DPSO.reset();
+    multiplyPackedRealSpectrum2DPSO.reset();
+    multiplyPackedDualRealSpectrum2DPSO.reset();
     transposeComplex256PSO.reset();
     transposeComplex256x512PSO.reset();
     transposeComplex512x256PSO.reset();
@@ -172,20 +176,7 @@ void RenderContext::InitFullScreenTrianglePSO() {
     imagePSO = shaderPipelineCache.GetGraphicsPipeline(shaderTemplateManager.fullscreenImageShaderTemplate, ShaderPermutationKey(), pipelineDesc, false);
 }
 
-void RenderContext::InitToneMappingPSO() {
-    toneMappingPSO = shaderPipelineCache.GetComputePipeline(shaderTemplateManager.toneMappingShaderTemplate, ShaderPermutationKey(), false);
-    luminancePass1PSO = shaderPipelineCache.GetComputePipeline(shaderTemplateManager.luminancePass1ShaderTemplate, ShaderPermutationKey(), false);
-    luminancePass2PSO = shaderPipelineCache.GetComputePipeline(shaderTemplateManager.luminancePass2ShaderTemplate, ShaderPermutationKey(), false);
-
-    bloomPrefilterPSO = shaderPipelineCache.GetComputePipeline(shaderTemplateManager.bloomPrefilterShaderTemplate, ShaderPermutationKey(), false);
-    bloomDownsamplePSO = shaderPipelineCache.GetComputePipeline(shaderTemplateManager.bloomDownsampleShaderTemplate, ShaderPermutationKey(), false);
-    bloomUpsamplePSO = shaderPipelineCache.GetComputePipeline(shaderTemplateManager.bloomUpsampleShaderTemplate, ShaderPermutationKey(), false);
-
-    convolutionBloomPrefilterPSO = shaderPipelineCache.GetComputePipeline(shaderTemplateManager.convolutionBloomPrefilterShaderTemplate, ShaderPermutationKey(), false);
-    convolutionBloomKernelPreparePSO = shaderPipelineCache.GetComputePipeline(shaderTemplateManager.convolutionBloomKernelPrepareShaderTemplate, ShaderPermutationKey(), false);
-    convolutionBloomMultiplySpectrumPSO = shaderPipelineCache.GetComputePipeline(shaderTemplateManager.convolutionBloomMultiplySpectrumShaderTemplate, ShaderPermutationKey(), false);
-    convolutionBloomResolvePSO = shaderPipelineCache.GetComputePipeline(shaderTemplateManager.convolutionBloomResolveShaderTemplate, ShaderPermutationKey(), false);
-
+void RenderContext::InitFFTPSO() {
     fftComplex256PSO = shaderPipelineCache.GetComputePipeline(shaderTemplateManager.fftComplex256ShaderTemplate, ShaderPermutationKey(), false);
     fftComplex512PSO = shaderPipelineCache.GetComputePipeline(shaderTemplateManager.fftComplex512ShaderTemplate, ShaderPermutationKey(), false);
     fftComplex1024PSO = shaderPipelineCache.GetComputePipeline(shaderTemplateManager.fftComplex1024ShaderTemplate, ShaderPermutationKey(), false);
@@ -211,6 +202,10 @@ void RenderContext::InitToneMappingPSO() {
     ifftDualReal1024FirstStagePSO = shaderPipelineCache.GetComputePipeline(shaderTemplateManager.ifftDualReal1024FirstStageShaderTemplate, ShaderPermutationKey(), false);
     ifftDualReal1024LastStagePSO = shaderPipelineCache.GetComputePipeline(shaderTemplateManager.ifftDualReal1024LastStageShaderTemplate, ShaderPermutationKey(), false);
 
+    multiplyComplexSpectrum2DPSO = shaderPipelineCache.GetComputePipeline(shaderTemplateManager.multiplyComplexSpectrum2DShaderTemplate, ShaderPermutationKey(), false);
+    multiplyPackedRealSpectrum2DPSO = shaderPipelineCache.GetComputePipeline(shaderTemplateManager.multiplyPackedRealSpectrum2DShaderTemplate, ShaderPermutationKey(), false);
+    multiplyPackedDualRealSpectrum2DPSO = shaderPipelineCache.GetComputePipeline(shaderTemplateManager.multiplyPackedDualRealSpectrum2DShaderTemplate, ShaderPermutationKey(), false);
+
     transposeComplex256PSO = shaderPipelineCache.GetComputePipeline(shaderTemplateManager.transposeComplex256ShaderTemplate, ShaderPermutationKey(), false);
     transposeComplex256x512PSO = shaderPipelineCache.GetComputePipeline(shaderTemplateManager.transposeComplex256x512ShaderTemplate, ShaderPermutationKey(), false);
     transposeComplex512x256PSO = shaderPipelineCache.GetComputePipeline(shaderTemplateManager.transposeComplex512x256ShaderTemplate, ShaderPermutationKey(), false);
@@ -218,6 +213,20 @@ void RenderContext::InitToneMappingPSO() {
     transposeComplex1024x512PSO = shaderPipelineCache.GetComputePipeline(shaderTemplateManager.transposeComplex1024x512ShaderTemplate, ShaderPermutationKey(), false);
     transposeComplex512PSO = shaderPipelineCache.GetComputePipeline(shaderTemplateManager.transposeComplex512ShaderTemplate, ShaderPermutationKey(), false);
     transposeComplex1024PSO = shaderPipelineCache.GetComputePipeline(shaderTemplateManager.transposeComplex1024ShaderTemplate, ShaderPermutationKey(), false);
+}
+
+void RenderContext::InitToneMappingPSO() {
+    toneMappingPSO = shaderPipelineCache.GetComputePipeline(shaderTemplateManager.toneMappingShaderTemplate, ShaderPermutationKey(), false);
+    luminancePass1PSO = shaderPipelineCache.GetComputePipeline(shaderTemplateManager.luminancePass1ShaderTemplate, ShaderPermutationKey(), false);
+    luminancePass2PSO = shaderPipelineCache.GetComputePipeline(shaderTemplateManager.luminancePass2ShaderTemplate, ShaderPermutationKey(), false);
+
+    bloomPrefilterPSO = shaderPipelineCache.GetComputePipeline(shaderTemplateManager.bloomPrefilterShaderTemplate, ShaderPermutationKey(), false);
+    bloomDownsamplePSO = shaderPipelineCache.GetComputePipeline(shaderTemplateManager.bloomDownsampleShaderTemplate, ShaderPermutationKey(), false);
+    bloomUpsamplePSO = shaderPipelineCache.GetComputePipeline(shaderTemplateManager.bloomUpsampleShaderTemplate, ShaderPermutationKey(), false);
+
+    convolutionBloomPrefilterPSO = shaderPipelineCache.GetComputePipeline(shaderTemplateManager.convolutionBloomPrefilterShaderTemplate, ShaderPermutationKey(), false);
+    convolutionBloomKernelPreparePSO = shaderPipelineCache.GetComputePipeline(shaderTemplateManager.convolutionBloomKernelPrepareShaderTemplate, ShaderPermutationKey(), false);
+    convolutionBloomResolvePSO = shaderPipelineCache.GetComputePipeline(shaderTemplateManager.convolutionBloomResolveShaderTemplate, ShaderPermutationKey(), false);
 }
 
 void RenderContext::WaitAllFrameFences() {

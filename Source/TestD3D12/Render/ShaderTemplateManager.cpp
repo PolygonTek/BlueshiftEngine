@@ -293,10 +293,26 @@ void ShaderTemplateManager::CreateEngineShaderTemplates() {
     }
     );
 
-    static constexpr const char *convolutionBloomMultiplySpectrumShaderTemplateText = ENGINE_SHADER_TEMPLATE(
+    static constexpr const char *multiplyComplexSpectrum2DShaderTemplateText = ENGINE_SHADER_TEMPLATE(
     {
         stages {
-            compute SM_6_0 "ConvolutionBloomMultiplySpectrum.hlsl" "CSMain"
+            compute SM_6_0 "FFT/MultiplyComplexSpectrum2D.hlsl" "CSMain"
+        }
+    }
+    );
+
+    static constexpr const char *multiplyPackedRealSpectrum2DShaderTemplateText = ENGINE_SHADER_TEMPLATE(
+    {
+        stages {
+            compute SM_6_0 "FFT/MultiplyPackedRealSpectrum2D.hlsl" "CSMain"
+        }
+    }
+    );
+
+    static constexpr const char *multiplyPackedDualRealSpectrum2DShaderTemplateText = ENGINE_SHADER_TEMPLATE(
+    {
+        stages {
+            compute SM_6_0 "FFT/MultiplyPackedDualRealSpectrum2D.hlsl" "CSMain"
         }
     }
     );
@@ -659,11 +675,23 @@ void ShaderTemplateManager::CreateEngineShaderTemplates() {
     }
     convolutionBloomKernelPrepareShaderTemplate->AddPermutation();
 
-    convolutionBloomMultiplySpectrumShaderTemplate = AllocShaderTemplate("_convolutionBloomMultiplySpectrumShader");
-    if (!convolutionBloomMultiplySpectrumShaderTemplate->Create(convolutionBloomMultiplySpectrumShaderTemplateText, baseDir)) {
-        BE_FATALERROR("ShaderTemplateManager::CreateEngineShaderTemplates: failed to create convolution bloom multiply spectrum shader template");
+    multiplyComplexSpectrum2DShaderTemplate = AllocShaderTemplate("_multiplyComplexSpectrum2DShader");
+    if (!multiplyComplexSpectrum2DShaderTemplate->Create(multiplyComplexSpectrum2DShaderTemplateText, baseDir)) {
+        BE_FATALERROR("ShaderTemplateManager::CreateEngineShaderTemplates: failed to create multiply complex spectrum 2D shader template");
     }
-    convolutionBloomMultiplySpectrumShaderTemplate->AddPermutation();
+    multiplyComplexSpectrum2DShaderTemplate->AddPermutation();
+
+    multiplyPackedRealSpectrum2DShaderTemplate = AllocShaderTemplate("_multiplyPackedRealSpectrum2DShader");
+    if (!multiplyPackedRealSpectrum2DShaderTemplate->Create(multiplyPackedRealSpectrum2DShaderTemplateText, baseDir)) {
+        BE_FATALERROR("ShaderTemplateManager::CreateEngineShaderTemplates: failed to create multiply packed real spectrum 2D shader template");
+    }
+    multiplyPackedRealSpectrum2DShaderTemplate->AddPermutation();
+
+    multiplyPackedDualRealSpectrum2DShaderTemplate = AllocShaderTemplate("_multiplyPackedDualRealSpectrum2DShader");
+    if (!multiplyPackedDualRealSpectrum2DShaderTemplate->Create(multiplyPackedDualRealSpectrum2DShaderTemplateText, baseDir)) {
+        BE_FATALERROR("ShaderTemplateManager::CreateEngineShaderTemplates: failed to create multiply packed dual-real spectrum 2D shader template");
+    }
+    multiplyPackedDualRealSpectrum2DShaderTemplate->AddPermutation();
 
     convolutionBloomResolveShaderTemplate = AllocShaderTemplate("_convolutionBloomResolveShader");
     if (!convolutionBloomResolveShaderTemplate->Create(convolutionBloomResolveShaderTemplateText, baseDir)) {
@@ -872,8 +900,14 @@ void ShaderTemplateManager::DestroyEngineShaderTemplates() {
     if (convolutionBloomKernelPrepareShaderTemplate) {
         convolutionBloomKernelPrepareShaderTemplate.reset();
     }
-    if (convolutionBloomMultiplySpectrumShaderTemplate) {
-        convolutionBloomMultiplySpectrumShaderTemplate.reset();
+    if (multiplyComplexSpectrum2DShaderTemplate) {
+        multiplyComplexSpectrum2DShaderTemplate.reset();
+    }
+    if (multiplyPackedRealSpectrum2DShaderTemplate) {
+        multiplyPackedRealSpectrum2DShaderTemplate.reset();
+    }
+    if (multiplyPackedDualRealSpectrum2DShaderTemplate) {
+        multiplyPackedDualRealSpectrum2DShaderTemplate.reset();
     }
     if (convolutionBloomResolveShaderTemplate) {
         convolutionBloomResolveShaderTemplate.reset();

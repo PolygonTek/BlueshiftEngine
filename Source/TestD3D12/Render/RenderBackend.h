@@ -126,7 +126,6 @@ private:
     RHI::PipelineState *            currentBloomUpsamplePSO = nullptr;
     RHI::PipelineState *            currentConvolutionBloomPrefilterPSO = nullptr;
     RHI::PipelineState *            currentConvolutionBloomKernelPreparePSO = nullptr;
-    RHI::PipelineState *            currentConvolutionBloomMultiplySpectrumPSO = nullptr;
     RHI::PipelineState *            currentConvolutionBloomResolvePSO = nullptr;
 
     FFT2D                           fft2D;

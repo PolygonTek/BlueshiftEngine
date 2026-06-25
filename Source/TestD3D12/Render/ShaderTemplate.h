@@ -233,7 +233,9 @@ public:
     SharedPtr<ShaderTemplate>       bloomUpsampleShaderTemplate;
     SharedPtr<ShaderTemplate>       convolutionBloomPrefilterShaderTemplate;
     SharedPtr<ShaderTemplate>       convolutionBloomKernelPrepareShaderTemplate;
-    SharedPtr<ShaderTemplate>       convolutionBloomMultiplySpectrumShaderTemplate;
+    SharedPtr<ShaderTemplate>       multiplyComplexSpectrum2DShaderTemplate;
+    SharedPtr<ShaderTemplate>       multiplyPackedRealSpectrum2DShaderTemplate;
+    SharedPtr<ShaderTemplate>       multiplyPackedDualRealSpectrum2DShaderTemplate;
     SharedPtr<ShaderTemplate>       convolutionBloomResolveShaderTemplate;
     SharedPtr<ShaderTemplate>       fftComplex256ShaderTemplate;
     SharedPtr<ShaderTemplate>       fftComplex512ShaderTemplate;

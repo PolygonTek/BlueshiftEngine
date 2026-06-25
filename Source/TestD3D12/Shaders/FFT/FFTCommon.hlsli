@@ -1,5 +1,5 @@
-#ifndef _FFTCOMMON_HLSLI_
-#define _FFTCOMMON_HLSLI_
+#ifndef __FFT_COMMON_HLSLI__
+#define __FFT_COMMON_HLSLI__
 
 #include "../MathConstants.hlsli"
 

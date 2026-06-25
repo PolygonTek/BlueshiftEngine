@@ -25,8 +25,8 @@ class RenderFrameData;
     FFT 2D
 
     * FFT 함수는 한번만 transpose 하여 transposed 상태로 리턴한다. IFFT 함수에서는 입력으로 transposed 상태를 가정한다.
+    * plane 은 planeCount 개만큼 버퍼에 연속으로 배치되며, transpose 도 plane 별로 독립적으로 수행한다.
     * real FFT packed complex 레이아웃: Z[0].re = DC, Z[0].im = Nyquist, 나머지는 켤레 대칭이므로 절반인 Z[1..N/2-1] 만 저장하면 된다.
-    * planeCount 개의 plane 은 버퍼에 연속으로 배치되며, transpose 도 plane 별로 독립적으로 수행한다.
     * dual-real plane 은 float2 한 plane 에 두 real signal 을 a/b 로 pack 한 것이다.
     * dual-real FFT 결과는 transpose 된 같은 plane 안에 두 packed spectrum 을 저장한다. (A[0], A[1], .., A[N/2-1], B[0], B[1], .., B[N/2-1])
 
@@ -80,6 +80,15 @@ public:
                                 // transposed 1024 x 1024 packed complex planes -> 1024 x 1024 dual-real planes
     bool                        DispatchIFFTDualReal2D1024(RHI::CommandList *commandList, RenderFrameData *frameData, RHI::Buffer *inputBuffer, RHI::Buffer *outputBuffer, RHI::Buffer *workBuffer, uint32_t planeCount);
 
+                                // fftSize x fftSize complex spectra -> fftSize x fftSize complex spectra
+    bool                        DispatchMultiplyComplexSpectrum2D(RHI::CommandList *commandList, RenderFrameData *frameData, RHI::Buffer *lhsSpectrumBuffer, RHI::Buffer *rhsSpectrumBuffer, RHI::Buffer *outputSpectrumBuffer, uint32_t fftSize, uint32_t planeCount, float scale);
+
+                                // transposed fftSize x fftSize/2 packed real spectra -> transposed fftSize x fftSize/2 packed real spectra
+    bool                        DispatchMultiplyPackedRealSpectrum2D(RHI::CommandList *commandList, RenderFrameData *frameData, RHI::Buffer *lhsSpectrumBuffer, RHI::Buffer *rhsSpectrumBuffer, RHI::Buffer *outputSpectrumBuffer, uint32_t fftSize, uint32_t planeCount, float scale);
+
+                                // transposed fftSize x fftSize packed dual-real spectra -> transposed fftSize x fftSize packed dual-real spectra
+    bool                        DispatchMultiplyPackedDualRealSpectrum2D(RHI::CommandList *commandList, RenderFrameData *frameData, RHI::Buffer *lhsSpectrumBuffer, RHI::Buffer *rhsSpectrumBuffer, RHI::Buffer *outputSpectrumBuffer, uint32_t fftSize, uint32_t planeCount, float scale);
+
                                 // complex to complex
     RHI::PipelineState *        fftComplex256PSO = nullptr;
     RHI::PipelineState *        fftComplex512PSO = nullptr;
@@ -109,6 +118,11 @@ public:
     RHI::PipelineState *        ifftDualReal512LastStagePSO = nullptr;
     RHI::PipelineState *        ifftDualReal1024FirstStagePSO = nullptr;
     RHI::PipelineState *        ifftDualReal1024LastStagePSO = nullptr;
+
+                                // packed spectrum ops
+    RHI::PipelineState *        multiplyComplexSpectrum2DPSO = nullptr;
+    RHI::PipelineState *        multiplyPackedRealSpectrum2DPSO = nullptr;
+    RHI::PipelineState *        multiplyPackedDualRealSpectrum2DPSO = nullptr;
 
                                 // transpose complex
     RHI::PipelineState *        transposeComplex256PSO = nullptr;
