@@ -165,6 +165,11 @@ static BOOL InitInstance(int nCmdShow) {
     basePath.CleanPath();
     BE1::Engine::InitBase(4096, basePath, SystemLog, SystemError);
 
+    // search path 설정
+    BE1::Str searchPath = basePath;
+    searchPath.AppendPath("Data");
+    BE1::fileSystem.SetSearchPath(searchPath);
+
     // 추가적인 DLL 폴더로 Win64 폴더를 추가
     BE1::Str commonDllPath = execPath;
     commonDllPath.AppendPath("..");

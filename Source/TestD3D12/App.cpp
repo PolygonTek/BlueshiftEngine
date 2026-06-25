@@ -87,7 +87,7 @@ void App::GetConvolutionBloomKernelDisplayName(int index, char *buffer, int buff
 
 void App::GetConvolutionBloomKernelFilename(int index, char *buffer, int bufferSize) const {
     BE1::Clamp(index, 0, ConvolutionBloomKernelCount - 1);
-    BE1::Str::snPrintf(buffer, bufferSize, "Data/Test/BloomKernels/CGV_Bloom_%02i.EXR", index + 1);
+    BE1::Str::snPrintf(buffer, bufferSize, "BloomKernels/CGV_Bloom_%02i.EXR", index + 1);
 }
 
 void App::SetConvolutionBloomKernelIndex(int index) {
