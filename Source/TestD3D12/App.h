@@ -19,6 +19,7 @@ class RenderWorld;
 class RenderCamera;
 class GameObject;
 class Texture;
+class Material;
 class Mesh;
 class Font;
 
@@ -71,10 +72,11 @@ private:
 #endif
 
     RenderContext *                 mainRenderContext = nullptr;
-    SharedPtr<Font>                 mainFont;
     RenderCamera *                  renderCamera = nullptr;
     RenderWorld *                   renderWorld = nullptr;
 
+    SharedPtr<Font>                 mainFont;
+    SharedPtr<Material>             mainSkyboxMaterial;
     SharedPtr<Texture>              convolutionBloomKernelTexture;
     int                             convolutionBloomKernelIndex = DefaultConvolutionBloomKernelIndex;
     SharedPtr<Mesh>                 testMesh;

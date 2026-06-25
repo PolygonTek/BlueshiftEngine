@@ -29,7 +29,8 @@ struct ShaderPropertyInfo : public BE1::PropertyInfo {
         Hidden                      = BIT(1),
         Normal                      = BIT(2),
         Linear                      = BIT(3),
-        NoStreaming                 = BIT(4)
+        NoStreaming                 = BIT(4),
+        NoMipmaps                   = BIT(5)
     };
 
     enum class TextureType : uint8_t {
@@ -56,6 +57,7 @@ struct ShaderPropertyInfo : public BE1::PropertyInfo {
     bool                            IsLinear() const { return BE1::HasFlag(shaderFlags, ShaderFlag::Linear); }
     bool                            IsTexture() const { return textureType != TextureType::None; }
     bool                            IsNoStreaming() const { return BE1::HasFlag(shaderFlags, ShaderFlag::NoStreaming); }
+    bool                            IsNoMipmaps() const { return BE1::HasFlag(shaderFlags, ShaderFlag::NoMipmaps); }
     bool                            Parse(BE1::Lexer &lexer);
 
     ShaderFlag                      shaderFlags = ShaderFlag::None;

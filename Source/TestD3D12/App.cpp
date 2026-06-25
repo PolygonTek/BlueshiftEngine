@@ -45,13 +45,15 @@ void App::Init(void *mainWindowHandle) {
 
     mainFont = fontManager.GetFont("Data/EngineFonts/consola.ttf", 22);
 
+    mainSkyboxMaterial = materialManager.GetMaterial("Source/TestD3D12/Materials/skybox.material");
+
     renderWorld = new RenderWorld;
-    renderWorld->SetSkyboxMaterial(materialManager.defaultSkyboxMaterial);
+    renderWorld->SetSkyboxMaterial(mainSkyboxMaterial);
 
     renderCamera = new RenderCamera;
 
     SetConvolutionBloomKernelIndex(convolutionBloomKernelIndex);
-
+ 
     InitGameObjects(100, 100, 1);
 
     cameraYaw = targetCameraYaw;
@@ -68,6 +70,7 @@ void App::Shutdown() {
 
     convolutionBloomKernelTexture.reset();
     mainFont.reset();
+    mainSkyboxMaterial.reset();
 
     loadingSystem.Shutdown();
 
@@ -75,7 +78,7 @@ void App::Shutdown() {
     mainRenderContext = nullptr;
 
     renderSystem->Shutdown();
-    delete renderSystem;
+    SAFE_DELETE(renderSystem);
 
     PROFILER_SHUTDOWN();
 }

@@ -951,6 +951,8 @@ bool ShaderPropertyInfo::Parse(BE1::Lexer &lexer) {
                 shaderFlags |= ShaderPropertyInfo::ShaderFlag::Linear;
             } else if (token == "noStreaming") {
                 shaderFlags |= ShaderPropertyInfo::ShaderFlag::NoStreaming;
+            } else if (token == "noMipmaps") {
+                shaderFlags |= ShaderPropertyInfo::ShaderFlag::NoMipmaps;
             } else {
                 BE_WARNLOG("unknown shader property flag '%s' in shader property '%s'\n", token.c_str(), name.c_str());
                 return false;

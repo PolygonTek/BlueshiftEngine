@@ -161,6 +161,9 @@ static Texture::Flag GetTextureFlags(const ShaderPropertyInfo &propertyInfo) {
     if (propertyInfo.IsNormal()) {
         flags |= Texture::Flag::NormalMap;
     }
+    if (propertyInfo.IsNoMipmaps()) {
+        flags |= Texture::Flag::NoMipmaps;
+    }
 
     return flags;
 }

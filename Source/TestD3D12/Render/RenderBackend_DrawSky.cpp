@@ -50,6 +50,10 @@ static bool BindTexturePropertyOrDefault2D(RHI::CommandList *commandList, int sh
     if (!texture) {
         return false;
     }
+    if (texture->GetType() != RHI::TextureType::Texture2D) {
+        BE_WARNLOG("Skybox texture '%s' is not Texture2D\n", texture->GetHashName());
+        return false;
+    }
 
     RHI::renderer->SetTexture(commandList, shaderRegister, false, texture->GetRHITexture());
     return true;
@@ -64,6 +68,10 @@ static bool BindSkyboxTextures(RHI::CommandList *commandList, const Material *ma
     if (material->FindPropertyIndex(ShaderTemplate::BuiltInProperty::SkyCubeMap) >= 0) {
         const Texture *texture = GetReadyMaterialTexture(material, ShaderTemplate::BuiltInProperty::SkyCubeMap);
         if (!texture) {
+            return false;
+        }
+        if (texture->GetType() != RHI::TextureType::TextureCube) {
+            BE_WARNLOG("Skybox cubemap texture '%s' is not TextureCube\n", texture->GetHashName());
             return false;
         }
 
