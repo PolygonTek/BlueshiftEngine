@@ -22,7 +22,7 @@ class RenderFrameData;
 /*
 ---------------------------------------------------------------------------------------------------
 
-    FFT 2D
+    GPU FFT
 
     * FFT 함수는 한번만 transpose 하여 transposed 상태로 리턴한다. IFFT 함수에서는 입력으로 transposed 상태를 가정한다.
     * plane 은 planeCount 개만큼 버퍼에 연속으로 배치되며, transpose 도 plane 별로 독립적으로 수행한다.
@@ -33,7 +33,7 @@ class RenderFrameData;
 ---------------------------------------------------------------------------------------------------
 */
 
-class FFT2D {
+class GpuFFT {
 public:
     void                        Init();
     void                        Shutdown();

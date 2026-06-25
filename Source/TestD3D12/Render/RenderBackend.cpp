@@ -53,7 +53,7 @@ void RenderBackend::Init() {
     drawGroupId = BE1::Engine::taskManager->CreateGroupId();
 #endif
 
-    fft2D.Init();
+    gpuFFT.Init();
 
     // GPU 타임 스탬프가 초당 몇번 증가하는지를 얻어온다.
     gpuTimestampFrequency = RHI::renderer->GetTimestampFrequency(RHI::CommandQueueType::Graphics);
@@ -68,7 +68,7 @@ void RenderBackend::Init() {
 }
 
 void RenderBackend::Shutdown() {
-    fft2D.Shutdown();
+    gpuFFT.Shutdown();
 
     if (gpuTimestampReadbackBuffer) {
         RHI::renderer->DestroyBuffer(gpuTimestampReadbackBuffer);
@@ -309,36 +309,36 @@ const void *RenderBackend::ExecuteBeginContext(const void *data) {
     currentConvolutionBloomKernelPreparePSO = cmd->convolutionBloomKernelPreparePSO;
     currentConvolutionBloomResolvePSO = cmd->convolutionBloomResolvePSO;
 
-    fft2D.fftComplex256PSO = cmd->fftComplex256PSO;
-    fft2D.fftComplex512PSO = cmd->fftComplex512PSO;
-    fft2D.fftComplex1024PSO = cmd->fftComplex1024PSO;
-    fft2D.fftComplex1024LastStagePSO = cmd->fftComplex1024LastStagePSO;
-    fft2D.fftReal512FirstStagePSO = cmd->fftReal512FirstStagePSO;
-    fft2D.fftReal512LastStagePSO = cmd->fftReal512LastStagePSO;
-    fft2D.fftReal1024FirstStagePSO = cmd->fftReal1024FirstStagePSO;
-    fft2D.fftReal1024LastStagePSO = cmd->fftReal1024LastStagePSO;
-    fft2D.ifftReal512FirstStagePSO = cmd->ifftReal512FirstStagePSO;
-    fft2D.ifftReal512LastStagePSO = cmd->ifftReal512LastStagePSO;
-    fft2D.ifftReal1024FirstStagePSO = cmd->ifftReal1024FirstStagePSO;
-    fft2D.ifftReal1024LastStagePSO = cmd->ifftReal1024LastStagePSO;
-    fft2D.fftDualReal512FirstStagePSO = cmd->fftDualReal512FirstStagePSO;
-    fft2D.fftDualReal512LastStagePSO = cmd->fftDualReal512LastStagePSO;
-    fft2D.fftDualReal1024FirstStagePSO = cmd->fftDualReal1024FirstStagePSO;
-    fft2D.fftDualReal1024LastStagePSO = cmd->fftDualReal1024LastStagePSO;
-    fft2D.ifftDualReal512FirstStagePSO = cmd->ifftDualReal512FirstStagePSO;
-    fft2D.ifftDualReal512LastStagePSO = cmd->ifftDualReal512LastStagePSO;
-    fft2D.ifftDualReal1024FirstStagePSO = cmd->ifftDualReal1024FirstStagePSO;
-    fft2D.ifftDualReal1024LastStagePSO = cmd->ifftDualReal1024LastStagePSO;
-    fft2D.multiplyComplexSpectrum2DPSO = cmd->multiplyComplexSpectrum2DPSO;
-    fft2D.multiplyPackedRealSpectrum2DPSO = cmd->multiplyPackedRealSpectrum2DPSO;
-    fft2D.multiplyPackedDualRealSpectrum2DPSO = cmd->multiplyPackedDualRealSpectrum2DPSO;
-    fft2D.transposeComplex256PSO = cmd->transposeComplex256PSO;
-    fft2D.transposeComplex256x512PSO = cmd->transposeComplex256x512PSO;
-    fft2D.transposeComplex512x256PSO = cmd->transposeComplex512x256PSO;
-    fft2D.transposeComplex512x1024PSO = cmd->transposeComplex512x1024PSO;
-    fft2D.transposeComplex1024x512PSO = cmd->transposeComplex1024x512PSO;
-    fft2D.transposeComplex512PSO = cmd->transposeComplex512PSO;
-    fft2D.transposeComplex1024PSO = cmd->transposeComplex1024PSO;
+    gpuFFT.fftComplex256PSO = cmd->fftComplex256PSO;
+    gpuFFT.fftComplex512PSO = cmd->fftComplex512PSO;
+    gpuFFT.fftComplex1024PSO = cmd->fftComplex1024PSO;
+    gpuFFT.fftComplex1024LastStagePSO = cmd->fftComplex1024LastStagePSO;
+    gpuFFT.fftReal512FirstStagePSO = cmd->fftReal512FirstStagePSO;
+    gpuFFT.fftReal512LastStagePSO = cmd->fftReal512LastStagePSO;
+    gpuFFT.fftReal1024FirstStagePSO = cmd->fftReal1024FirstStagePSO;
+    gpuFFT.fftReal1024LastStagePSO = cmd->fftReal1024LastStagePSO;
+    gpuFFT.ifftReal512FirstStagePSO = cmd->ifftReal512FirstStagePSO;
+    gpuFFT.ifftReal512LastStagePSO = cmd->ifftReal512LastStagePSO;
+    gpuFFT.ifftReal1024FirstStagePSO = cmd->ifftReal1024FirstStagePSO;
+    gpuFFT.ifftReal1024LastStagePSO = cmd->ifftReal1024LastStagePSO;
+    gpuFFT.fftDualReal512FirstStagePSO = cmd->fftDualReal512FirstStagePSO;
+    gpuFFT.fftDualReal512LastStagePSO = cmd->fftDualReal512LastStagePSO;
+    gpuFFT.fftDualReal1024FirstStagePSO = cmd->fftDualReal1024FirstStagePSO;
+    gpuFFT.fftDualReal1024LastStagePSO = cmd->fftDualReal1024LastStagePSO;
+    gpuFFT.ifftDualReal512FirstStagePSO = cmd->ifftDualReal512FirstStagePSO;
+    gpuFFT.ifftDualReal512LastStagePSO = cmd->ifftDualReal512LastStagePSO;
+    gpuFFT.ifftDualReal1024FirstStagePSO = cmd->ifftDualReal1024FirstStagePSO;
+    gpuFFT.ifftDualReal1024LastStagePSO = cmd->ifftDualReal1024LastStagePSO;
+    gpuFFT.multiplyComplexSpectrum2DPSO = cmd->multiplyComplexSpectrum2DPSO;
+    gpuFFT.multiplyPackedRealSpectrum2DPSO = cmd->multiplyPackedRealSpectrum2DPSO;
+    gpuFFT.multiplyPackedDualRealSpectrum2DPSO = cmd->multiplyPackedDualRealSpectrum2DPSO;
+    gpuFFT.transposeComplex256PSO = cmd->transposeComplex256PSO;
+    gpuFFT.transposeComplex256x512PSO = cmd->transposeComplex256x512PSO;
+    gpuFFT.transposeComplex512x256PSO = cmd->transposeComplex512x256PSO;
+    gpuFFT.transposeComplex512x1024PSO = cmd->transposeComplex512x1024PSO;
+    gpuFFT.transposeComplex1024x512PSO = cmd->transposeComplex1024x512PSO;
+    gpuFFT.transposeComplex512PSO = cmd->transposeComplex512PSO;
+    gpuFFT.transposeComplex1024PSO = cmd->transposeComplex1024PSO;
 
     statDrawCount = 0;
     statDrawTriangleCount = 0;
@@ -1041,7 +1041,7 @@ bool RenderBackend::DispatchConvolutionBloomMultiplySpectrum() {
     const float kernelSampleCount = static_cast<float>(fftSize) * static_cast<float>(fftSize);
     const float kernelScale = BE1::Max(r_convolutionBloomKernelScale.GetFloat(), 0.0f) * BE1::Max(currentVisCamera->fftBloomKernelNormalizationFactor, 0.0f) / (BE1::Max(kernelSampleCount, 1.0f) * kernelAreaScale);
 
-    return fft2D.DispatchMultiplyPackedDualRealSpectrum2D(
+    return gpuFFT.DispatchMultiplyPackedDualRealSpectrum2D(
         mainCommandList,
         frameData,
         currentVisCamera->fftBloomKernelSpectrumBuffer,
@@ -1116,10 +1116,10 @@ bool RenderBackend::DispatchConvolutionBloomFFTDualReal2D(RHI::Buffer *inputBuff
     constexpr uint32_t PlaneCount = 2; // RG, B0
 
     if (currentVisCamera->fftBloomSize == 512) {
-        return fft2D.DispatchFFTDualReal2D512(mainCommandList, frameData, inputBuffer, outputBuffer, currentVisCamera->fftBloomWorkBuffer, PlaneCount);
+        return gpuFFT.DispatchFFTDualReal2D512(mainCommandList, frameData, inputBuffer, outputBuffer, currentVisCamera->fftBloomWorkBuffer, PlaneCount);
     }
     if (currentVisCamera->fftBloomSize == 1024) {
-        return fft2D.DispatchFFTDualReal2D1024(mainCommandList, frameData, inputBuffer, outputBuffer, currentVisCamera->fftBloomWorkBuffer, PlaneCount);
+        return gpuFFT.DispatchFFTDualReal2D1024(mainCommandList, frameData, inputBuffer, outputBuffer, currentVisCamera->fftBloomWorkBuffer, PlaneCount);
     }
     return false;
 }
@@ -1128,10 +1128,10 @@ bool RenderBackend::DispatchConvolutionBloomIFFTDualReal2D(RHI::Buffer *inputBuf
     constexpr uint32_t PlaneCount = 2; // RG, B0
 
     if (currentVisCamera->fftBloomSize == 512) {
-        return fft2D.DispatchIFFTDualReal2D512(mainCommandList, frameData, inputBuffer, outputBuffer, currentVisCamera->fftBloomScreenSpectrumBuffer, PlaneCount);
+        return gpuFFT.DispatchIFFTDualReal2D512(mainCommandList, frameData, inputBuffer, outputBuffer, currentVisCamera->fftBloomScreenSpectrumBuffer, PlaneCount);
     }
     if (currentVisCamera->fftBloomSize == 1024) {
-        return fft2D.DispatchIFFTDualReal2D1024(mainCommandList, frameData, inputBuffer, outputBuffer, currentVisCamera->fftBloomScreenSpectrumBuffer, PlaneCount);
+        return gpuFFT.DispatchIFFTDualReal2D1024(mainCommandList, frameData, inputBuffer, outputBuffer, currentVisCamera->fftBloomScreenSpectrumBuffer, PlaneCount);
     }
     return false;
 }

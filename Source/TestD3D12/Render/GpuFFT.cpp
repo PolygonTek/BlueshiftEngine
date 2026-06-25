@@ -13,16 +13,16 @@
 // limitations under the License.
 
 #include "Precompiled.h"
-#include "FFT2D.h"
+#include "GpuFFT.h"
 #include "RenderFrameData.h"
 #include "Shaders/ShaderInterop.h"
 
-void FFT2D::Init() {
+void GpuFFT::Init() {
     realFFTTwiddle512Buffer = CreateRealFFTTwiddleBuffer(512);
     realFFTTwiddle1024Buffer = CreateRealFFTTwiddleBuffer(1024);
 }
 
-void FFT2D::Shutdown() {
+void GpuFFT::Shutdown() {
     if (realFFTTwiddle1024Buffer) {
         RHI::renderer->DestroyBuffer(realFFTTwiddle1024Buffer);
         realFFTTwiddle1024Buffer = nullptr;
@@ -34,7 +34,7 @@ void FFT2D::Shutdown() {
     }
 }
 
-RHI::Buffer *FFT2D::CreateRealFFTTwiddleBuffer(uint32_t fftSize) {
+RHI::Buffer *GpuFFT::CreateRealFFTTwiddleBuffer(uint32_t fftSize) {
     const uint32_t halfSize = fftSize / 2;
 
     BE1::Array<float2> twiddles;
@@ -50,15 +50,15 @@ RHI::Buffer *FFT2D::CreateRealFFTTwiddleBuffer(uint32_t fftSize) {
     const uint64_t bufferSize = uint64_t(halfSize) * sizeof(float2);
     RHI::Buffer *buffer = RHI::renderer->CreateBuffer(RHI::BufferUsage::Default, RHI::BufferFlag::ShaderResource, bufferSize, twiddles.Ptr());
     if (!buffer) {
-        BE_WARNLOG("FFT2D::CreateRealFFTTwiddleBuffer: failed to create twiddle buffer for FFT%u\n", fftSize);
+        BE_WARNLOG("GpuFFT::CreateRealFFTTwiddleBuffer: failed to create twiddle buffer for FFT%u\n", fftSize);
         return nullptr;
     }
 
-    RHI::renderer->SetName(buffer, BE1::va("FFT2D::realFFTTwiddle%iBuffer", fftSize));
+    RHI::renderer->SetName(buffer, BE1::va("GpuFFT::realFFTTwiddle%iBuffer", fftSize));
 
     RHI::ViewID srvViewID = RHI::renderer->CreateView(buffer, RHI::ViewType::SRV, RHI::Format::Unknown, sizeof(float2), 0, bufferSize);
     if (!srvViewID.IsValid()) {
-        BE_WARNLOG("FFT2D::CreateRealFFTTwiddleBuffer: failed to create twiddle SRV for FFT%u\n", fftSize);
+        BE_WARNLOG("GpuFFT::CreateRealFFTTwiddleBuffer: failed to create twiddle SRV for FFT%u\n", fftSize);
         RHI::renderer->DestroyBuffer(buffer);
         return nullptr;
     }
@@ -66,7 +66,7 @@ RHI::Buffer *FFT2D::CreateRealFFTTwiddleBuffer(uint32_t fftSize) {
     return buffer;
 }
 
-bool FFT2D::DispatchFFTComplex2D(RHI::CommandList *commandList, RenderFrameData *frameData, RHI::Buffer *inputBuffer, RHI::Buffer *outputBuffer, RHI::Buffer *workBuffer, uint32_t planeCount, const FFTComplex2DDispatchDesc &desc) {
+bool GpuFFT::DispatchFFTComplex2D(RHI::CommandList *commandList, RenderFrameData *frameData, RHI::Buffer *inputBuffer, RHI::Buffer *outputBuffer, RHI::Buffer *workBuffer, uint32_t planeCount, const FFTComplex2DDispatchDesc &desc) {
     if (!commandList || !frameData || !inputBuffer || !outputBuffer || !workBuffer || planeCount == 0) {
         return false;
     }
@@ -198,7 +198,7 @@ bool FFT2D::DispatchFFTComplex2D(RHI::CommandList *commandList, RenderFrameData 
     return true;
 }
 
-bool FFT2D::DispatchIFFTComplex2D(RHI::CommandList *commandList, RenderFrameData *frameData, RHI::Buffer *inputBuffer, RHI::Buffer *outputBuffer, RHI::Buffer *workBuffer, uint32_t planeCount, const FFTComplex2DDispatchDesc &desc) {
+bool GpuFFT::DispatchIFFTComplex2D(RHI::CommandList *commandList, RenderFrameData *frameData, RHI::Buffer *inputBuffer, RHI::Buffer *outputBuffer, RHI::Buffer *workBuffer, uint32_t planeCount, const FFTComplex2DDispatchDesc &desc) {
     if (!commandList || !frameData || !inputBuffer || !outputBuffer || !workBuffer || planeCount == 0) {
         return false;
     }
@@ -327,50 +327,50 @@ bool FFT2D::DispatchIFFTComplex2D(RHI::CommandList *commandList, RenderFrameData
     return true;
 }
 
-bool FFT2D::DispatchFFTComplex2D256(RHI::CommandList *commandList, RenderFrameData *frameData, RHI::Buffer *inputBuffer, RHI::Buffer *outputBuffer, RHI::Buffer *workBuffer, uint32_t planeCount) {
-    PROFILER_CPU_SCOPED_EVENT("FFT2D::DispatchFFTComplex2D256");
+bool GpuFFT::DispatchFFTComplex2D256(RHI::CommandList *commandList, RenderFrameData *frameData, RHI::Buffer *inputBuffer, RHI::Buffer *outputBuffer, RHI::Buffer *workBuffer, uint32_t planeCount) {
+    PROFILER_CPU_SCOPED_EVENT("GpuFFT::DispatchFFTComplex2D256");
 
     const FFTComplex2DDispatchDesc desc = { 256, 4, fftComplex256PSO, nullptr, transposeComplex256PSO };
     return DispatchFFTComplex2D(commandList, frameData, inputBuffer, outputBuffer, workBuffer, planeCount, desc);
 }
 
-bool FFT2D::DispatchIFFTComplex2D256(RHI::CommandList *commandList, RenderFrameData *frameData, RHI::Buffer *inputBuffer, RHI::Buffer *outputBuffer, RHI::Buffer *workBuffer, uint32_t planeCount) {
-    PROFILER_CPU_SCOPED_EVENT("FFT2D::DispatchIFFTComplex2D256");
+bool GpuFFT::DispatchIFFTComplex2D256(RHI::CommandList *commandList, RenderFrameData *frameData, RHI::Buffer *inputBuffer, RHI::Buffer *outputBuffer, RHI::Buffer *workBuffer, uint32_t planeCount) {
+    PROFILER_CPU_SCOPED_EVENT("GpuFFT::DispatchIFFTComplex2D256");
 
     const FFTComplex2DDispatchDesc desc = { 256, 4, fftComplex256PSO, nullptr, transposeComplex256PSO };
     return DispatchIFFTComplex2D(commandList, frameData, inputBuffer, outputBuffer, workBuffer, planeCount, desc);
 }
 
-bool FFT2D::DispatchFFTComplex2D512(RHI::CommandList *commandList, RenderFrameData *frameData, RHI::Buffer *inputBuffer, RHI::Buffer *outputBuffer, RHI::Buffer *workBuffer, uint32_t planeCount) {
-    PROFILER_CPU_SCOPED_EVENT("FFT2D::DispatchFFTComplex2D512");
+bool GpuFFT::DispatchFFTComplex2D512(RHI::CommandList *commandList, RenderFrameData *frameData, RHI::Buffer *inputBuffer, RHI::Buffer *outputBuffer, RHI::Buffer *workBuffer, uint32_t planeCount) {
+    PROFILER_CPU_SCOPED_EVENT("GpuFFT::DispatchFFTComplex2D512");
 
     const FFTComplex2DDispatchDesc desc = { 512, 3, fftComplex512PSO, nullptr, transposeComplex512PSO };
     return DispatchFFTComplex2D(commandList, frameData, inputBuffer, outputBuffer, workBuffer, planeCount, desc);
 }
 
-bool FFT2D::DispatchIFFTComplex2D512(RHI::CommandList *commandList, RenderFrameData *frameData, RHI::Buffer *inputBuffer, RHI::Buffer *outputBuffer, RHI::Buffer *workBuffer, uint32_t planeCount) {
-    PROFILER_CPU_SCOPED_EVENT("FFT2D::DispatchIFFTComplex2D512");
+bool GpuFFT::DispatchIFFTComplex2D512(RHI::CommandList *commandList, RenderFrameData *frameData, RHI::Buffer *inputBuffer, RHI::Buffer *outputBuffer, RHI::Buffer *workBuffer, uint32_t planeCount) {
+    PROFILER_CPU_SCOPED_EVENT("GpuFFT::DispatchIFFTComplex2D512");
 
     const FFTComplex2DDispatchDesc desc = { 512, 3, fftComplex512PSO, nullptr, transposeComplex512PSO };
     return DispatchIFFTComplex2D(commandList, frameData, inputBuffer, outputBuffer, workBuffer, planeCount, desc);
 }
 
-bool FFT2D::DispatchFFTComplex2D1024(RHI::CommandList *commandList, RenderFrameData *frameData, RHI::Buffer *inputBuffer, RHI::Buffer *outputBuffer, RHI::Buffer *workBuffer, uint32_t planeCount) {
-    PROFILER_CPU_SCOPED_EVENT("FFT2D::DispatchFFTComplex2D1024");
+bool GpuFFT::DispatchFFTComplex2D1024(RHI::CommandList *commandList, RenderFrameData *frameData, RHI::Buffer *inputBuffer, RHI::Buffer *outputBuffer, RHI::Buffer *workBuffer, uint32_t planeCount) {
+    PROFILER_CPU_SCOPED_EVENT("GpuFFT::DispatchFFTComplex2D1024");
 
     const FFTComplex2DDispatchDesc desc = { 1024, 3, fftComplex1024PSO, fftComplex1024LastStagePSO, transposeComplex1024PSO };
     return DispatchFFTComplex2D(commandList, frameData, inputBuffer, outputBuffer, workBuffer, planeCount, desc);
 }
 
-bool FFT2D::DispatchIFFTComplex2D1024(RHI::CommandList *commandList, RenderFrameData *frameData, RHI::Buffer *inputBuffer, RHI::Buffer *outputBuffer, RHI::Buffer *workBuffer, uint32_t planeCount) {
-    PROFILER_CPU_SCOPED_EVENT("FFT2D::DispatchIFFTComplex2D1024");
+bool GpuFFT::DispatchIFFTComplex2D1024(RHI::CommandList *commandList, RenderFrameData *frameData, RHI::Buffer *inputBuffer, RHI::Buffer *outputBuffer, RHI::Buffer *workBuffer, uint32_t planeCount) {
+    PROFILER_CPU_SCOPED_EVENT("GpuFFT::DispatchIFFTComplex2D1024");
 
     const FFTComplex2DDispatchDesc desc = { 1024, 3, fftComplex1024PSO, fftComplex1024LastStagePSO, transposeComplex1024PSO };
     return DispatchIFFTComplex2D(commandList, frameData, inputBuffer, outputBuffer, workBuffer, planeCount, desc);
 }
 
-bool FFT2D::DispatchFFTReal2D512(RHI::CommandList *commandList, RenderFrameData *frameData, RHI::Buffer *inputBuffer, RHI::Buffer *outputBuffer, RHI::Buffer *workBuffer, uint32_t planeCount) {
-    PROFILER_CPU_SCOPED_EVENT("FFT2D::DispatchFFTReal2D512");
+bool GpuFFT::DispatchFFTReal2D512(RHI::CommandList *commandList, RenderFrameData *frameData, RHI::Buffer *inputBuffer, RHI::Buffer *outputBuffer, RHI::Buffer *workBuffer, uint32_t planeCount) {
+    PROFILER_CPU_SCOPED_EVENT("GpuFFT::DispatchFFTReal2D512");
 
     if (!commandList || !frameData || !inputBuffer || !outputBuffer || !workBuffer || planeCount == 0) {
         return false;
@@ -516,8 +516,8 @@ bool FFT2D::DispatchFFTReal2D512(RHI::CommandList *commandList, RenderFrameData 
     return true;
 }
 
-bool FFT2D::DispatchFFTReal2D1024(RHI::CommandList *commandList, RenderFrameData *frameData, RHI::Buffer *inputBuffer, RHI::Buffer *outputBuffer, RHI::Buffer *workBuffer, uint32_t planeCount) {
-    PROFILER_CPU_SCOPED_EVENT("FFT2D::DispatchFFTReal2D1024");
+bool GpuFFT::DispatchFFTReal2D1024(RHI::CommandList *commandList, RenderFrameData *frameData, RHI::Buffer *inputBuffer, RHI::Buffer *outputBuffer, RHI::Buffer *workBuffer, uint32_t planeCount) {
+    PROFILER_CPU_SCOPED_EVENT("GpuFFT::DispatchFFTReal2D1024");
 
     if (!commandList || !frameData || !inputBuffer || !outputBuffer || !workBuffer || planeCount == 0) {
         return false;
@@ -681,8 +681,8 @@ bool FFT2D::DispatchFFTReal2D1024(RHI::CommandList *commandList, RenderFrameData
     return true;
 }
 
-bool FFT2D::DispatchIFFTReal2D512(RHI::CommandList *commandList, RenderFrameData *frameData, RHI::Buffer *inputBuffer, RHI::Buffer *outputBuffer, RHI::Buffer *workBuffer, uint32_t planeCount) {
-    PROFILER_CPU_SCOPED_EVENT("FFT2D::DispatchIFFTReal2D512");
+bool GpuFFT::DispatchIFFTReal2D512(RHI::CommandList *commandList, RenderFrameData *frameData, RHI::Buffer *inputBuffer, RHI::Buffer *outputBuffer, RHI::Buffer *workBuffer, uint32_t planeCount) {
+    PROFILER_CPU_SCOPED_EVENT("GpuFFT::DispatchIFFTReal2D512");
 
     if (!commandList || !frameData || !inputBuffer || !outputBuffer || !workBuffer || planeCount == 0) {
         return false;
@@ -828,8 +828,8 @@ bool FFT2D::DispatchIFFTReal2D512(RHI::CommandList *commandList, RenderFrameData
     return true;
 }
 
-bool FFT2D::DispatchIFFTReal2D1024(RHI::CommandList *commandList, RenderFrameData *frameData, RHI::Buffer *inputBuffer, RHI::Buffer *outputBuffer, RHI::Buffer *workBuffer, uint32_t planeCount) {
-    PROFILER_CPU_SCOPED_EVENT("FFT2D::DispatchIFFTReal2D1024");
+bool GpuFFT::DispatchIFFTReal2D1024(RHI::CommandList *commandList, RenderFrameData *frameData, RHI::Buffer *inputBuffer, RHI::Buffer *outputBuffer, RHI::Buffer *workBuffer, uint32_t planeCount) {
+    PROFILER_CPU_SCOPED_EVENT("GpuFFT::DispatchIFFTReal2D1024");
 
     if (!commandList || !frameData || !inputBuffer || !outputBuffer || !workBuffer || planeCount == 0) {
         return false;
@@ -993,8 +993,8 @@ bool FFT2D::DispatchIFFTReal2D1024(RHI::CommandList *commandList, RenderFrameDat
     return true;
 }
 
-bool FFT2D::DispatchFFTDualReal2D512(RHI::CommandList *commandList, RenderFrameData *frameData, RHI::Buffer *inputBuffer, RHI::Buffer *outputBuffer, RHI::Buffer *workBuffer, uint32_t planeCount) {
-    PROFILER_CPU_SCOPED_EVENT("FFT2D::DispatchFFTDualReal2D512");
+bool GpuFFT::DispatchFFTDualReal2D512(RHI::CommandList *commandList, RenderFrameData *frameData, RHI::Buffer *inputBuffer, RHI::Buffer *outputBuffer, RHI::Buffer *workBuffer, uint32_t planeCount) {
+    PROFILER_CPU_SCOPED_EVENT("GpuFFT::DispatchFFTDualReal2D512");
 
     if (!commandList || !frameData || !inputBuffer || !outputBuffer || !workBuffer || planeCount == 0) {
         return false;
@@ -1102,8 +1102,8 @@ bool FFT2D::DispatchFFTDualReal2D512(RHI::CommandList *commandList, RenderFrameD
     return true;
 }
 
-bool FFT2D::DispatchFFTDualReal2D1024(RHI::CommandList *commandList, RenderFrameData *frameData, RHI::Buffer *inputBuffer, RHI::Buffer *outputBuffer, RHI::Buffer *workBuffer, uint32_t planeCount) {
-    PROFILER_CPU_SCOPED_EVENT("FFT2D::DispatchFFTDualReal2D1024");
+bool GpuFFT::DispatchFFTDualReal2D1024(RHI::CommandList *commandList, RenderFrameData *frameData, RHI::Buffer *inputBuffer, RHI::Buffer *outputBuffer, RHI::Buffer *workBuffer, uint32_t planeCount) {
+    PROFILER_CPU_SCOPED_EVENT("GpuFFT::DispatchFFTDualReal2D1024");
 
     if (!commandList || !frameData || !inputBuffer || !outputBuffer || !workBuffer || planeCount == 0) {
         return false;
@@ -1245,8 +1245,8 @@ bool FFT2D::DispatchFFTDualReal2D1024(RHI::CommandList *commandList, RenderFrame
     return true;
 }
 
-bool FFT2D::DispatchIFFTDualReal2D512(RHI::CommandList *commandList, RenderFrameData *frameData, RHI::Buffer *inputBuffer, RHI::Buffer *outputBuffer, RHI::Buffer *workBuffer, uint32_t planeCount) {
-    PROFILER_CPU_SCOPED_EVENT("FFT2D::DispatchIFFTDualReal2D512");
+bool GpuFFT::DispatchIFFTDualReal2D512(RHI::CommandList *commandList, RenderFrameData *frameData, RHI::Buffer *inputBuffer, RHI::Buffer *outputBuffer, RHI::Buffer *workBuffer, uint32_t planeCount) {
+    PROFILER_CPU_SCOPED_EVENT("GpuFFT::DispatchIFFTDualReal2D512");
 
     if (!commandList || !frameData || !inputBuffer || !outputBuffer || !workBuffer || planeCount == 0) {
         return false;
@@ -1354,8 +1354,8 @@ bool FFT2D::DispatchIFFTDualReal2D512(RHI::CommandList *commandList, RenderFrame
     return true;
 }
 
-bool FFT2D::DispatchIFFTDualReal2D1024(RHI::CommandList *commandList, RenderFrameData *frameData, RHI::Buffer *inputBuffer, RHI::Buffer *outputBuffer, RHI::Buffer *workBuffer, uint32_t planeCount) {
-    PROFILER_CPU_SCOPED_EVENT("FFT2D::DispatchIFFTDualReal2D1024");
+bool GpuFFT::DispatchIFFTDualReal2D1024(RHI::CommandList *commandList, RenderFrameData *frameData, RHI::Buffer *inputBuffer, RHI::Buffer *outputBuffer, RHI::Buffer *workBuffer, uint32_t planeCount) {
+    PROFILER_CPU_SCOPED_EVENT("GpuFFT::DispatchIFFTDualReal2D1024");
 
     if (!commandList || !frameData || !inputBuffer || !outputBuffer || !workBuffer || planeCount == 0) {
         return false;
@@ -1497,8 +1497,8 @@ bool FFT2D::DispatchIFFTDualReal2D1024(RHI::CommandList *commandList, RenderFram
     return true;
 }
 
-bool FFT2D::DispatchMultiplyComplexSpectrum2D(RHI::CommandList *commandList, RenderFrameData *frameData, RHI::Buffer *lhsSpectrumBuffer, RHI::Buffer *rhsSpectrumBuffer, RHI::Buffer *outputSpectrumBuffer, uint32_t fftSize, uint32_t planeCount, float scale) {
-    PROFILER_CPU_SCOPED_EVENT("FFT2D::DispatchMultiplyComplexSpectrum2D");
+bool GpuFFT::DispatchMultiplyComplexSpectrum2D(RHI::CommandList *commandList, RenderFrameData *frameData, RHI::Buffer *lhsSpectrumBuffer, RHI::Buffer *rhsSpectrumBuffer, RHI::Buffer *outputSpectrumBuffer, uint32_t fftSize, uint32_t planeCount, float scale) {
+    PROFILER_CPU_SCOPED_EVENT("GpuFFT::DispatchMultiplyComplexSpectrum2D");
 
     if (!commandList ||
         !frameData ||
@@ -1555,8 +1555,8 @@ bool FFT2D::DispatchMultiplyComplexSpectrum2D(RHI::CommandList *commandList, Ren
     return true;
 }
 
-bool FFT2D::DispatchMultiplyPackedRealSpectrum2D(RHI::CommandList *commandList, RenderFrameData *frameData, RHI::Buffer *lhsSpectrumBuffer, RHI::Buffer *rhsSpectrumBuffer, RHI::Buffer *outputSpectrumBuffer, uint32_t fftSize, uint32_t planeCount, float scale) {
-    PROFILER_CPU_SCOPED_EVENT("FFT2D::DispatchMultiplyPackedRealSpectrum2D");
+bool GpuFFT::DispatchMultiplyPackedRealSpectrum2D(RHI::CommandList *commandList, RenderFrameData *frameData, RHI::Buffer *lhsSpectrumBuffer, RHI::Buffer *rhsSpectrumBuffer, RHI::Buffer *outputSpectrumBuffer, uint32_t fftSize, uint32_t planeCount, float scale) {
+    PROFILER_CPU_SCOPED_EVENT("GpuFFT::DispatchMultiplyPackedRealSpectrum2D");
 
     if (!commandList ||
         !frameData ||
@@ -1614,8 +1614,8 @@ bool FFT2D::DispatchMultiplyPackedRealSpectrum2D(RHI::CommandList *commandList, 
     return true;
 }
 
-bool FFT2D::DispatchMultiplyPackedDualRealSpectrum2D(RHI::CommandList *commandList, RenderFrameData *frameData, RHI::Buffer *lhsSpectrumBuffer, RHI::Buffer *rhsSpectrumBuffer, RHI::Buffer *outputSpectrumBuffer, uint32_t fftSize, uint32_t planeCount, float scale) {
-    PROFILER_CPU_SCOPED_EVENT("FFT2D::DispatchMultiplyPackedDualRealSpectrum2D");
+bool GpuFFT::DispatchMultiplyPackedDualRealSpectrum2D(RHI::CommandList *commandList, RenderFrameData *frameData, RHI::Buffer *lhsSpectrumBuffer, RHI::Buffer *rhsSpectrumBuffer, RHI::Buffer *outputSpectrumBuffer, uint32_t fftSize, uint32_t planeCount, float scale) {
+    PROFILER_CPU_SCOPED_EVENT("GpuFFT::DispatchMultiplyPackedDualRealSpectrum2D");
 
     if (!commandList ||
         !frameData ||

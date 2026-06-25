@@ -17,7 +17,7 @@
 #include "Precompiled.h"
 #include "RHI/RHI.h"
 #include "RenderFrameData.h"
-#include "FFT2D.h"
+#include "GpuFFT.h"
 
 class RenderFrameData;
 class RenderContext;
@@ -128,7 +128,7 @@ private:
     RHI::PipelineState *            currentConvolutionBloomKernelPreparePSO = nullptr;
     RHI::PipelineState *            currentConvolutionBloomResolvePSO = nullptr;
 
-    FFT2D                           fft2D;
+    GpuFFT                          gpuFFT;
 
     RHI::ConstantBuffer *           frameConstantBuffer = nullptr;
     RHI::ConstantBuffer *           cameraConstantBuffer = nullptr;
