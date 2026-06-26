@@ -520,7 +520,7 @@ void RenderBackend::BlitRectToSwapChain(const RHI::Texture *texture, const BE1::
     const uint32_t outputW = static_cast<uint32_t>(outputX1 - outputX0);
     const uint32_t outputH = static_cast<uint32_t>(outputY1 - outputY0);
 
-    FullScreenImageParams imageParams = {};
+    FullscreenImageParams imageParams = {};
     imageParams.texCoordScale = float2(static_cast<float>(outputW) / rect.w, static_cast<float>(outputH) / rect.h);
     imageParams.texCoordOffset = float2(static_cast<float>(outputX0 - rect.x) / rect.w, static_cast<float>(outputY0 - rect.y) / rect.h);
 

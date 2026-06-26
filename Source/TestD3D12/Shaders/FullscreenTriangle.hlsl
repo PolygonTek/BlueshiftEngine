@@ -12,8 +12,8 @@ struct PSInput {
 Texture2D defaultTexture : register(t0);
 SamplerState defaultSampler : register(s0);
 
-cbuffer FullScreenImageCB : register(b0) {
-    FullScreenImageParams imageParams;
+cbuffer FullscreenImageCB : register(b0) {
+    FullscreenImageParams imageParams;
 }
 
 [RootSignature(COMMON_ROOT_SIGNATURE)]

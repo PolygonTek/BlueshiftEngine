@@ -127,7 +127,7 @@ struct ToneMappingParams {
     float padding0;
 };
 
-struct FullScreenImageParams {
+struct FullscreenImageParams {
     float2 texCoordScale;
     float2 texCoordOffset;
 };

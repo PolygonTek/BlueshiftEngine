@@ -265,7 +265,7 @@ static BE1::Str CreateComputeShaderTemplateText(RHI::ShaderModel shaderModel, co
 void ShaderTemplateManager::CreateEngineShaderTemplates() {
     const char *baseDir = "Source/TestD3D12/Shaders";
 
-    fullscreenImageShaderTemplate = GetShaderTemplate("Source/TestD3D12/Shaders/FullScreenImage");
+    fullscreenImageShaderTemplate = GetShaderTemplate("Source/TestD3D12/Shaders/FullscreenImage");
     if (!fullscreenImageShaderTemplate) {
         BE_FATALERROR("ShaderTemplateManager::CreateEngineShaderTemplates: failed to load fullscreen image shader template");
     }
