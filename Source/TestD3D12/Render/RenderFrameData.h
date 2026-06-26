@@ -148,16 +148,16 @@ public:
                                     // 할당된 메모리는 다음 프레임에서 재사용될 때 일괄적으로 해제된다.
                                     // 현재는 프론트엔드에서 이번 프레임의 렌더 데이터를 구성하는 동안에만 사용한다.
                                     // 프론트엔드/백엔드 또는 여러 스레드에서 동시에 할당하려면 별도의 동기화가 필요하다.
-    void *                          MemAlloc(int size);
-    void *                          ClearedMemAlloc(int size);
+    [[nodiscard]] void *            MemAlloc(int size);
+    [[nodiscard]] void *            ClearedMemAlloc(int size);
 
     uint32_t                        NumVisCameras() const { return numVisCameras; }
     VisCamera *                     GetVisCameras() const { return visCameras; }
-    VisCamera *                     AllocVisCamera();
+    [[nodiscard]] VisCamera *       AllocVisCamera();
 
     uint32_t                        NumVisObjects() const { return numVisObjects; }
     VisObject *                     GetVisObjects() const { return visObjects; }
-    VisObject *                     AllocVisObject();
+    [[nodiscard]] VisObject *       AllocVisObject();
 
                                     // 렌더 커맨드 버퍼 리턴
     RenderCommandBuffer *           GetCommands() { return &commands; }
@@ -223,7 +223,7 @@ private:
 
     void                            InitMemBlocks();
     void                            ClearMemBlocks();
-    MemBlock *                      AllocMemBlock();
+    [[nodiscard]] MemBlock *        AllocMemBlock();
 
                                     // 이번 프레임의 임시 시스템 메모리 할당 초기화 (메인 스레드에서 호출됨)
     void                            BeginFrameMemAllocs();
@@ -239,7 +239,7 @@ private:
     void                            ClearRetainedFonts();
     void                            ClearRetainedTextures();
 
-    void *                          GetCommandBuffer(uint32_t bytes);
+    [[nodiscard]] void *            GetCommandBuffer(uint32_t bytes);
 
     MemBlock *                      headBlock = nullptr;
     MemBlock *                      currentBlock = nullptr;

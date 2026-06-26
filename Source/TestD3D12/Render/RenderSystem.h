@@ -44,7 +44,7 @@ public:
     const RHI::MemoryUsage &        GetVideoMemoryUsage() const { return videoMemoryUsage; }
     bool                            IsUsingRenderThread() const { return !!renderThread; }
 
-    RenderContext *                 CreateRenderContext(void *windowHandle, bool isMain = false);
+    [[nodiscard]] RenderContext *   CreateRenderContext(void *windowHandle, bool isMain = false);
     void                            DestroyRenderContext(RenderContext *renderContext);
     RenderContext *                 FindRenderContextByWindowHandle(void *windowHandle) const;
 

@@ -38,7 +38,7 @@ public:
     void                        Shutdown();
 
     void                        Clear(RHI::CommandList *commandList);
-    ReadbackFrame *             Resolve(RHI::CommandList *commandList);
+    [[nodiscard]] ReadbackFrame *Resolve(RHI::CommandList *commandList);
     void                        SetReadbackFenceValue(ReadbackFrame *readbackFrame, uint64_t fenceValue);
 
     void                        ConsumeCompletedReadbacks(ConsumeCallback callback, void *userData = nullptr);
