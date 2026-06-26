@@ -248,6 +248,8 @@ public:
     SharedPtr<ShaderTemplate>       fftReal512LastStageShaderTemplate;
     SharedPtr<ShaderTemplate>       fftReal1024FirstStageShaderTemplate;
     SharedPtr<ShaderTemplate>       fftReal1024LastStageShaderTemplate;
+    SharedPtr<ShaderTemplate>       fftDualReal256FirstStageShaderTemplate;
+    SharedPtr<ShaderTemplate>       fftDualReal256LastStageShaderTemplate;
     SharedPtr<ShaderTemplate>       fftDualReal512FirstStageShaderTemplate;
     SharedPtr<ShaderTemplate>       fftDualReal512LastStageShaderTemplate;
     SharedPtr<ShaderTemplate>       fftDualReal1024FirstStageShaderTemplate;
@@ -256,6 +258,8 @@ public:
     SharedPtr<ShaderTemplate>       ifftReal512LastStageShaderTemplate;
     SharedPtr<ShaderTemplate>       ifftReal1024FirstStageShaderTemplate;
     SharedPtr<ShaderTemplate>       ifftReal1024LastStageShaderTemplate;
+    SharedPtr<ShaderTemplate>       ifftDualReal256FirstStageShaderTemplate;
+    SharedPtr<ShaderTemplate>       ifftDualReal256LastStageShaderTemplate;
     SharedPtr<ShaderTemplate>       ifftDualReal512FirstStageShaderTemplate;
     SharedPtr<ShaderTemplate>       ifftDualReal512LastStageShaderTemplate;
     SharedPtr<ShaderTemplate>       ifftDualReal1024FirstStageShaderTemplate;

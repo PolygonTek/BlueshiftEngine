@@ -71,10 +71,14 @@ struct BeginContextRenderCommand {
     RHI::PipelineState *            ifftReal512LastStagePSO = nullptr;
     RHI::PipelineState *            ifftReal1024FirstStagePSO = nullptr;
     RHI::PipelineState *            ifftReal1024LastStagePSO = nullptr;
+    RHI::PipelineState *            fftDualReal256FirstStagePSO = nullptr;
+    RHI::PipelineState *            fftDualReal256LastStagePSO = nullptr;
     RHI::PipelineState *            fftDualReal512FirstStagePSO = nullptr;
     RHI::PipelineState *            fftDualReal512LastStagePSO = nullptr;
     RHI::PipelineState *            fftDualReal1024FirstStagePSO = nullptr;
     RHI::PipelineState *            fftDualReal1024LastStagePSO = nullptr;
+    RHI::PipelineState *            ifftDualReal256FirstStagePSO = nullptr;
+    RHI::PipelineState *            ifftDualReal256LastStagePSO = nullptr;
     RHI::PipelineState *            ifftDualReal512FirstStagePSO = nullptr;
     RHI::PipelineState *            ifftDualReal512LastStagePSO = nullptr;
     RHI::PipelineState *            ifftDualReal1024FirstStagePSO = nullptr;

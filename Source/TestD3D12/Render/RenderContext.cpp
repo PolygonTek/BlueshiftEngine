@@ -105,10 +105,14 @@ void RenderContext::Shutdown() {
     ifftReal512LastStagePSO.reset();
     ifftReal1024FirstStagePSO.reset();
     ifftReal1024LastStagePSO.reset();
+    fftDualReal256FirstStagePSO.reset();
+    fftDualReal256LastStagePSO.reset();
     fftDualReal512FirstStagePSO.reset();
     fftDualReal512LastStagePSO.reset();
     fftDualReal1024FirstStagePSO.reset();
     fftDualReal1024LastStagePSO.reset();
+    ifftDualReal256FirstStagePSO.reset();
+    ifftDualReal256LastStagePSO.reset();
     ifftDualReal512FirstStagePSO.reset();
     ifftDualReal512LastStagePSO.reset();
     ifftDualReal1024FirstStagePSO.reset();
@@ -192,11 +196,15 @@ void RenderContext::InitFFTPSO() {
     ifftReal1024FirstStagePSO = shaderPipelineCache.GetComputePipeline(shaderTemplateManager.ifftReal1024FirstStageShaderTemplate, ShaderPermutationKey(), false);
     ifftReal1024LastStagePSO = shaderPipelineCache.GetComputePipeline(shaderTemplateManager.ifftReal1024LastStageShaderTemplate, ShaderPermutationKey(), false);
 
+    fftDualReal256FirstStagePSO = shaderPipelineCache.GetComputePipeline(shaderTemplateManager.fftDualReal256FirstStageShaderTemplate, ShaderPermutationKey(), false);
+    fftDualReal256LastStagePSO = shaderPipelineCache.GetComputePipeline(shaderTemplateManager.fftDualReal256LastStageShaderTemplate, ShaderPermutationKey(), false);
     fftDualReal512FirstStagePSO = shaderPipelineCache.GetComputePipeline(shaderTemplateManager.fftDualReal512FirstStageShaderTemplate, ShaderPermutationKey(), false);
     fftDualReal512LastStagePSO = shaderPipelineCache.GetComputePipeline(shaderTemplateManager.fftDualReal512LastStageShaderTemplate, ShaderPermutationKey(), false);
     fftDualReal1024FirstStagePSO = shaderPipelineCache.GetComputePipeline(shaderTemplateManager.fftDualReal1024FirstStageShaderTemplate, ShaderPermutationKey(), false);
     fftDualReal1024LastStagePSO = shaderPipelineCache.GetComputePipeline(shaderTemplateManager.fftDualReal1024LastStageShaderTemplate, ShaderPermutationKey(), false);
 
+    ifftDualReal256FirstStagePSO = shaderPipelineCache.GetComputePipeline(shaderTemplateManager.ifftDualReal256FirstStageShaderTemplate, ShaderPermutationKey(), false);
+    ifftDualReal256LastStagePSO = shaderPipelineCache.GetComputePipeline(shaderTemplateManager.ifftDualReal256LastStageShaderTemplate, ShaderPermutationKey(), false);
     ifftDualReal512FirstStagePSO = shaderPipelineCache.GetComputePipeline(shaderTemplateManager.ifftDualReal512FirstStageShaderTemplate, ShaderPermutationKey(), false);
     ifftDualReal512LastStagePSO = shaderPipelineCache.GetComputePipeline(shaderTemplateManager.ifftDualReal512LastStageShaderTemplate, ShaderPermutationKey(), false);
     ifftDualReal1024FirstStagePSO = shaderPipelineCache.GetComputePipeline(shaderTemplateManager.ifftDualReal1024FirstStageShaderTemplate, ShaderPermutationKey(), false);

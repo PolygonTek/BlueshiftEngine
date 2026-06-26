@@ -171,11 +171,15 @@ private:
     SharedPtr<ShaderPipeline>       ifftReal1024FirstStagePSO;
     SharedPtr<ShaderPipeline>       ifftReal1024LastStagePSO;
 
+    SharedPtr<ShaderPipeline>       fftDualReal256FirstStagePSO;
+    SharedPtr<ShaderPipeline>       fftDualReal256LastStagePSO;
     SharedPtr<ShaderPipeline>       fftDualReal512FirstStagePSO;
     SharedPtr<ShaderPipeline>       fftDualReal512LastStagePSO;
     SharedPtr<ShaderPipeline>       fftDualReal1024FirstStagePSO;
     SharedPtr<ShaderPipeline>       fftDualReal1024LastStagePSO;
 
+    SharedPtr<ShaderPipeline>       ifftDualReal256FirstStagePSO;
+    SharedPtr<ShaderPipeline>       ifftDualReal256LastStagePSO;
     SharedPtr<ShaderPipeline>       ifftDualReal512FirstStagePSO;
     SharedPtr<ShaderPipeline>       ifftDualReal512LastStagePSO;
     SharedPtr<ShaderPipeline>       ifftDualReal1024FirstStagePSO;

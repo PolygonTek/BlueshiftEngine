@@ -341,6 +341,14 @@ void ShaderTemplateManager::CreateEngineShaderTemplates() {
     }
     );
 
+    static constexpr const char *fftDualReal256FirstStageShaderTemplateText = ENGINE_SHADER_TEMPLATE(
+    {
+        stages {
+            compute SM_6_0 "FFT/FFTDualReal256FirstStage_Radix4.hlsl" "CSMain"
+        }
+    }
+    );
+
     static constexpr const char *fftDualReal512FirstStageShaderTemplateText = ENGINE_SHADER_TEMPLATE(
     {
         stages {
@@ -413,6 +421,14 @@ void ShaderTemplateManager::CreateEngineShaderTemplates() {
     }
     );
 
+    static constexpr const char *fftDualReal256LastStageShaderTemplateText = ENGINE_SHADER_TEMPLATE(
+    {
+        stages {
+            compute SM_6_0 "FFT/FFTDualReal256LastStage_Radix4.hlsl" "CSMain"
+        }
+    }
+    );
+
     static constexpr const char *fftDualReal512LastStageShaderTemplateText = ENGINE_SHADER_TEMPLATE(
     {
         stages {
@@ -469,10 +485,26 @@ void ShaderTemplateManager::CreateEngineShaderTemplates() {
     }
     );
 
+    static constexpr const char *ifftDualReal256FirstStageShaderTemplateText = ENGINE_SHADER_TEMPLATE(
+    {
+        stages {
+            compute SM_6_0 "FFT/IFFTDualReal256FirstStage_Radix4.hlsl" "CSMain"
+        }
+    }
+    );
+
     static constexpr const char *ifftDualReal512FirstStageShaderTemplateText = ENGINE_SHADER_TEMPLATE(
     {
         stages {
             compute SM_6_0 "FFT/IFFTDualReal512FirstStage_Radix8.hlsl" "CSMain"
+        }
+    }
+    );
+
+    static constexpr const char *ifftDualReal256LastStageShaderTemplateText = ENGINE_SHADER_TEMPLATE(
+    {
+        stages {
+            compute SM_6_0 "FFT/IFFTDualReal256LastStage_Radix4.hlsl" "CSMain"
         }
     }
     );
@@ -747,6 +779,18 @@ void ShaderTemplateManager::CreateEngineShaderTemplates() {
     }
     fftReal1024LastStageShaderTemplate->AddPermutation();
 
+    fftDualReal256FirstStageShaderTemplate = AllocShaderTemplate("_fftDualReal256FirstStageShader");
+    if (!fftDualReal256FirstStageShaderTemplate->Create(fftDualReal256FirstStageShaderTemplateText, baseDir)) {
+        BE_FATALERROR("ShaderTemplateManager::CreateEngineShaderTemplates: failed to create FFT dual real 256 first stage shader template");
+    }
+    fftDualReal256FirstStageShaderTemplate->AddPermutation();
+
+    fftDualReal256LastStageShaderTemplate = AllocShaderTemplate("_fftDualReal256LastStageShader");
+    if (!fftDualReal256LastStageShaderTemplate->Create(fftDualReal256LastStageShaderTemplateText, baseDir)) {
+        BE_FATALERROR("ShaderTemplateManager::CreateEngineShaderTemplates: failed to create FFT dual real 256 last stage shader template");
+    }
+    fftDualReal256LastStageShaderTemplate->AddPermutation();
+
     fftDualReal512FirstStageShaderTemplate = AllocShaderTemplate("_fftDualReal512FirstStageShader");
     if (!fftDualReal512FirstStageShaderTemplate->Create(fftDualReal512FirstStageShaderTemplateText, baseDir)) {
         BE_FATALERROR("ShaderTemplateManager::CreateEngineShaderTemplates: failed to create FFT dual real 512 first stage shader template");
@@ -794,6 +838,18 @@ void ShaderTemplateManager::CreateEngineShaderTemplates() {
         BE_FATALERROR("ShaderTemplateManager::CreateEngineShaderTemplates: failed to create IFFT real 1024 last stage shader template");
     }
     ifftReal1024LastStageShaderTemplate->AddPermutation();
+
+    ifftDualReal256FirstStageShaderTemplate = AllocShaderTemplate("_ifftDualReal256FirstStageShader");
+    if (!ifftDualReal256FirstStageShaderTemplate->Create(ifftDualReal256FirstStageShaderTemplateText, baseDir)) {
+        BE_FATALERROR("ShaderTemplateManager::CreateEngineShaderTemplates: failed to create IFFT dual real 256 first stage shader template");
+    }
+    ifftDualReal256FirstStageShaderTemplate->AddPermutation();
+
+    ifftDualReal256LastStageShaderTemplate = AllocShaderTemplate("_ifftDualReal256LastStageShader");
+    if (!ifftDualReal256LastStageShaderTemplate->Create(ifftDualReal256LastStageShaderTemplateText, baseDir)) {
+        BE_FATALERROR("ShaderTemplateManager::CreateEngineShaderTemplates: failed to create IFFT dual real 256 last stage shader template");
+    }
+    ifftDualReal256LastStageShaderTemplate->AddPermutation();
 
     ifftDualReal512FirstStageShaderTemplate = AllocShaderTemplate("_ifftDualReal512FirstStageShader");
     if (!ifftDualReal512FirstStageShaderTemplate->Create(ifftDualReal512FirstStageShaderTemplateText, baseDir)) {
@@ -936,6 +992,12 @@ void ShaderTemplateManager::DestroyEngineShaderTemplates() {
     if (fftReal1024LastStageShaderTemplate) {
         fftReal1024LastStageShaderTemplate.reset();
     }
+    if (fftDualReal256FirstStageShaderTemplate) {
+        fftDualReal256FirstStageShaderTemplate.reset();
+    }
+    if (fftDualReal256LastStageShaderTemplate) {
+        fftDualReal256LastStageShaderTemplate.reset();
+    }
     if (fftDualReal512FirstStageShaderTemplate) {
         fftDualReal512FirstStageShaderTemplate.reset();
     }
@@ -959,6 +1021,12 @@ void ShaderTemplateManager::DestroyEngineShaderTemplates() {
     }
     if (ifftReal1024LastStageShaderTemplate) {
         ifftReal1024LastStageShaderTemplate.reset();
+    }
+    if (ifftDualReal256FirstStageShaderTemplate) {
+        ifftDualReal256FirstStageShaderTemplate.reset();
+    }
+    if (ifftDualReal256LastStageShaderTemplate) {
+        ifftDualReal256LastStageShaderTemplate.reset();
     }
     if (ifftDualReal512FirstStageShaderTemplate) {
         ifftDualReal512FirstStageShaderTemplate.reset();
