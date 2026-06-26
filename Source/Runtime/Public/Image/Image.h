@@ -361,6 +361,8 @@ public:
     Color3              ComputeRGBSum(int32_t mipLevel = 0, int32_t sliceIndex = 0, bool ignoreNegativeValues = false) const;
                         /// Returns luminance sum in linear space for the given mip level and slice.
     float               ComputeLuminanceSum(int32_t mipLevel = 0, int32_t sliceIndex = 0, bool ignoreNegativeValues = false) const;
+                        /// Returns luminance bounds in linear space for the given mip level and slice.
+    bool                ComputeLuminanceBounds(int32_t mipLevel, int32_t sliceIndex, float luminanceThreshold, bool ignoreNegativeValues, Rect &bounds) const;
 
                         /// Returns number of bytes with the given mipmap levels.
     size_t              SizeInBytes(int32_t firstMipLevel = 0, int32_t numMipLevels = 1) const;

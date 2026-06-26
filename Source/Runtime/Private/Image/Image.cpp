@@ -671,6 +671,68 @@ float Image::ComputeLuminanceSum(int32_t mipLevel, int32_t sliceIndex, bool igno
     return static_cast<float>(sum);
 }
 
+bool Image::ComputeLuminanceBounds(int32_t mipLevel, int32_t sliceIndex, float luminanceThreshold, bool ignoreNegativeValues, Rect &bounds) const {
+    bounds = Rect(0, 0, 0, 0);
+
+    if (IsEmpty() ||
+        mipLevel < 0 || mipLevel >= numMipLevels ||
+        sliceIndex < 0 || sliceIndex >= arraySize) {
+        return false;
+    }
+
+    const ImageFormatInfo *formatInfo = GetImageFormatInfo(format);
+    if (IsCompressed()) {
+        Image linearImage;
+        if (!ConvertFormat(Format::R32G32B32A32_FLOAT, linearImage, GammaSpace::Linear)) {
+            return false;
+        }
+        return linearImage.ComputeLuminanceBounds(mipLevel, sliceIndex, luminanceThreshold, ignoreNegativeValues, bounds);
+    }
+
+    const int32_t w = GetWidth(mipLevel);
+    const int32_t h = GetHeight(mipLevel);
+    const int32_t d = GetDepth(mipLevel);
+    const int32_t bpp = BytesPerPixel();
+    const byte *src = GetPixels(mipLevel, sliceIndex);
+
+    int32_t minX = w;
+    int32_t minY = h;
+    int32_t maxX = -1;
+    int32_t maxY = -1;
+
+    for (int32_t z = 0; z < d; z++) {
+        for (int32_t y = 0; y < h; y++) {
+            const byte *srcPtr = src + (static_cast<size_t>(z) * h + y) * w * bpp;
+            for (int32_t x = 0; x < w; x++) {
+                ALIGN_AS16 Color4 color;
+                formatInfo->unpackRGBA32F(srcPtr, reinterpret_cast<byte *>(&color), 1);
+                ConvertColorRGBToLinear(gammaSpace, color);
+
+                float luminance = GetLuminance(color.ToColor3());
+                if (std::isfinite(luminance)) {
+                    if (ignoreNegativeValues) {
+                        luminance = Max(luminance, 0.0f);
+                    }
+                    if (luminance >= luminanceThreshold) {
+                        minX = Min(minX, x);
+                        minY = Min(minY, y);
+                        maxX = Max(maxX, x);
+                        maxY = Max(maxY, y);
+                    }
+                }
+                srcPtr += bpp;
+            }
+        }
+    }
+
+    if (maxX < minX || maxY < minY) {
+        return false;
+    }
+
+    bounds = Rect(minX, minY, maxX - minX + 1, maxY - minY + 1);
+    return true;
+}
+
 size_t Image::SizeInBytes(int32_t firstMipLevel, int32_t numMipLevels) const {
     return static_cast<size_t>(MemRequired(GetWidth(firstMipLevel), GetHeight(firstMipLevel), GetDepth(firstMipLevel), numMipLevels, arraySize, format));
 }
