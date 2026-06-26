@@ -321,10 +321,14 @@ const void *RenderBackend::ExecuteBeginContext(const void *data) {
     gpuFFT.ifftReal512LastStagePSO = cmd->ifftReal512LastStagePSO;
     gpuFFT.ifftReal1024FirstStagePSO = cmd->ifftReal1024FirstStagePSO;
     gpuFFT.ifftReal1024LastStagePSO = cmd->ifftReal1024LastStagePSO;
+    gpuFFT.fftDualReal256FirstStagePSO = cmd->fftDualReal256FirstStagePSO;
+    gpuFFT.fftDualReal256LastStagePSO = cmd->fftDualReal256LastStagePSO;
     gpuFFT.fftDualReal512FirstStagePSO = cmd->fftDualReal512FirstStagePSO;
     gpuFFT.fftDualReal512LastStagePSO = cmd->fftDualReal512LastStagePSO;
     gpuFFT.fftDualReal1024FirstStagePSO = cmd->fftDualReal1024FirstStagePSO;
     gpuFFT.fftDualReal1024LastStagePSO = cmd->fftDualReal1024LastStagePSO;
+    gpuFFT.ifftDualReal256FirstStagePSO = cmd->ifftDualReal256FirstStagePSO;
+    gpuFFT.ifftDualReal256LastStagePSO = cmd->ifftDualReal256LastStagePSO;
     gpuFFT.ifftDualReal512FirstStagePSO = cmd->ifftDualReal512FirstStagePSO;
     gpuFFT.ifftDualReal512LastStagePSO = cmd->ifftDualReal512LastStagePSO;
     gpuFFT.ifftDualReal1024FirstStagePSO = cmd->ifftDualReal1024FirstStagePSO;
@@ -506,7 +510,7 @@ void RenderBackend::PostProcessAndBlitToSwapChain() {
 }
 
 void RenderBackend::BlitRectToSwapChain(const RHI::Texture *texture, const BE1::Rect &rect) {
-    if (!texture || !currentImagePSO) {
+    if (!texture) {
         return;
     }
 
@@ -634,12 +638,7 @@ const void *RenderBackend::ExecuteSwapBuffers(const void *data) {
 bool RenderBackend::DispatchLuminance() {
     PROFILER_CPU_SCOPED_EVENT("RenderBackend::DispatchLuminance");
 
-    if (!r_toneMapping.GetBool() ||
-        !currentLuminancePass1PSO ||
-        !currentLuminancePass2PSO ||
-        !currentVisCamera->colorTexture ||
-        !currentVisCamera->luminanceBuffer ||
-        !frameConstantBuffer) {
+    if (!r_toneMapping.GetBool()) {
         return false;
     }
 
@@ -721,13 +720,7 @@ bool RenderBackend::DispatchBloom() {
 bool RenderBackend::DispatchPyramidBloom() {
     PROFILER_CPU_SCOPED_EVENT("RenderBackend::DispatchPyramidBloom");
 
-    if (!currentBloomPrefilterPSO ||
-        !currentBloomDownsamplePSO ||
-        !currentBloomUpsamplePSO ||
-        !currentVisCamera->colorTexture ||
-        !currentVisCamera->bloomDownTexture ||
-        !currentVisCamera->bloomUpTexture ||
-        currentVisCamera->bloomMipCount < 2) {
+    if (currentVisCamera->bloomMipCount < 2) {
         return false;
     }
 
@@ -871,7 +864,7 @@ bool RenderBackend::DispatchConvolutionBloom() {
             return false;
         }
         // 커널 버퍼 FFT
-        if (!DispatchConvolutionBloomFFTDualReal2D(currentVisCamera->fftBloomKernelSpatialBuffer, currentVisCamera->fftBloomKernelSpectrumBuffer)) {
+        if (!DispatchConvolutionBloomFFT(currentVisCamera->fftBloomKernelSpatialBuffer, currentVisCamera->fftBloomKernelSpectrumBuffer)) {
             return false;
         }
     }
@@ -880,7 +873,7 @@ bool RenderBackend::DispatchConvolutionBloom() {
         return false;
     }
     // 화면 버퍼 FFT
-    if (!DispatchConvolutionBloomFFTDualReal2D(currentVisCamera->fftBloomScreenSpatialBuffer, currentVisCamera->fftBloomScreenSpectrumBuffer)) {
+    if (!DispatchConvolutionBloomFFT(currentVisCamera->fftBloomScreenSpatialBuffer, currentVisCamera->fftBloomScreenSpectrumBuffer)) {
         return false;
     }
     // 화면 스펙트럼과 커널 스펙트럼의 Hadamard 곱 (fftBloomWorkBuffer 에 출력)
@@ -888,7 +881,7 @@ bool RenderBackend::DispatchConvolutionBloom() {
         return false;
     }
     // 결과를 IFFT
-    if (!DispatchConvolutionBloomIFFTDualReal2D(currentVisCamera->fftBloomWorkBuffer, currentVisCamera->fftBloomScreenSpatialBuffer)) {
+    if (!DispatchConvolutionBloomIFFT(currentVisCamera->fftBloomWorkBuffer, currentVisCamera->fftBloomScreenSpatialBuffer)) {
         return false;
     }
     // IFFT 결과 버퍼를 tone mapping 이 샘플할 half-res texture 로 resolve
@@ -902,9 +895,7 @@ bool RenderBackend::DispatchConvolutionBloom() {
 bool RenderBackend::DispatchConvolutionBloomKernelPrepare() {
     PROFILER_CPU_SCOPED_EVENT("RenderBackend::DispatchConvolutionBloomKernelPrepare");
 
-    if (!currentConvolutionBloomKernelPreparePSO ||
-        !currentVisCamera->fftBloomKernelSourceTexture ||
-        currentVisCamera->fftBloomSize == 0) {
+    if (currentVisCamera->fftBloomSize == 0) {
         return false;
     }
 
@@ -962,10 +953,7 @@ bool RenderBackend::DispatchConvolutionBloomKernelPrepare() {
 bool RenderBackend::DispatchConvolutionBloomScreenPrefilter() {
     PROFILER_CPU_SCOPED_EVENT("RenderBackend::DispatchConvolutionBloomScreenPrefilter");
 
-    if (!currentConvolutionBloomPrefilterPSO ||
-        currentVisCamera->renderWidth == 0 ||
-        currentVisCamera->renderHeight == 0 ||
-        currentVisCamera->fftBloomSize == 0) {
+    if (currentVisCamera->renderWidth == 0 || currentVisCamera->renderHeight == 0 || currentVisCamera->fftBloomSize == 0) {
         return false;
     }
 
@@ -1022,9 +1010,7 @@ bool RenderBackend::DispatchConvolutionBloomScreenPrefilter() {
 bool RenderBackend::DispatchConvolutionBloomMultiplySpectrum() {
     PROFILER_CPU_SCOPED_EVENT("RenderBackend::DispatchConvolutionBloomMultiplySpectrum");
 
-    if (currentVisCamera->renderWidth == 0 ||
-        currentVisCamera->renderHeight == 0 ||
-        currentVisCamera->fftBloomSize == 0) {
+    if (currentVisCamera->renderWidth == 0 || currentVisCamera->renderHeight == 0 || currentVisCamera->fftBloomSize == 0) {
         return false;
     }
 
@@ -1055,12 +1041,7 @@ bool RenderBackend::DispatchConvolutionBloomMultiplySpectrum() {
 bool RenderBackend::DispatchConvolutionBloomResolve() {
     PROFILER_CPU_SCOPED_EVENT("RenderBackend::DispatchConvolutionBloomResolve");
 
-    if (!currentConvolutionBloomResolvePSO ||
-        currentVisCamera->fftBloomSize == 0 ||
-        currentVisCamera->fftBloomConvolutionOutputWidth == 0 ||
-        currentVisCamera->fftBloomConvolutionOutputHeight == 0 ||
-        !currentVisCamera->fftBloomScreenSpatialBuffer ||
-        !currentVisCamera->fftBloomConvolutionOutputTexture) {
+    if (currentVisCamera->fftBloomSize == 0) {
         return false;
     }
 
@@ -1076,7 +1057,6 @@ bool RenderBackend::DispatchConvolutionBloomResolve() {
     BloomParams bloomParams = {};
     bloomParams.inputSize = uint2(fftSize, fftSize);
     bloomParams.outputSize = uint2(outputW, outputH);
-    bloomParams.inputTexelSize = float2(1.0f / fftSize, 1.0f / fftSize);
     bloomParams.outputTexelSize = float2(1.0f / outputW, 1.0f / outputH);
     bloomParams.params1 = CalcConvolutionBloomContentRect(inputW, inputH, fftSize);
 
@@ -1112,9 +1092,12 @@ bool RenderBackend::DispatchConvolutionBloomResolve() {
     return true;
 }
 
-bool RenderBackend::DispatchConvolutionBloomFFTDualReal2D(RHI::Buffer *inputBuffer, RHI::Buffer *outputBuffer) {
+bool RenderBackend::DispatchConvolutionBloomFFT(RHI::Buffer *inputBuffer, RHI::Buffer *outputBuffer) {
     constexpr uint32_t PlaneCount = 2; // RG, B0
 
+    if (currentVisCamera->fftBloomSize == 256) {
+        return gpuFFT.DispatchFFTDualReal2D256(mainCommandList, frameData, inputBuffer, outputBuffer, currentVisCamera->fftBloomWorkBuffer, PlaneCount);
+    }
     if (currentVisCamera->fftBloomSize == 512) {
         return gpuFFT.DispatchFFTDualReal2D512(mainCommandList, frameData, inputBuffer, outputBuffer, currentVisCamera->fftBloomWorkBuffer, PlaneCount);
     }
@@ -1124,9 +1107,12 @@ bool RenderBackend::DispatchConvolutionBloomFFTDualReal2D(RHI::Buffer *inputBuff
     return false;
 }
 
-bool RenderBackend::DispatchConvolutionBloomIFFTDualReal2D(RHI::Buffer *inputBuffer, RHI::Buffer *outputBuffer) {
+bool RenderBackend::DispatchConvolutionBloomIFFT(RHI::Buffer *inputBuffer, RHI::Buffer *outputBuffer) {
     constexpr uint32_t PlaneCount = 2; // RG, B0
 
+    if (currentVisCamera->fftBloomSize == 256) {
+        return gpuFFT.DispatchIFFTDualReal2D256(mainCommandList, frameData, inputBuffer, outputBuffer, currentVisCamera->fftBloomScreenSpectrumBuffer, PlaneCount);
+    }
     if (currentVisCamera->fftBloomSize == 512) {
         return gpuFFT.DispatchIFFTDualReal2D512(mainCommandList, frameData, inputBuffer, outputBuffer, currentVisCamera->fftBloomScreenSpectrumBuffer, PlaneCount);
     }
@@ -1139,11 +1125,7 @@ bool RenderBackend::DispatchConvolutionBloomIFFTDualReal2D(RHI::Buffer *inputBuf
 bool RenderBackend::DispatchToneMapping(bool useBloom) {
     PROFILER_CPU_SCOPED_EVENT("RenderBackend::DispatchToneMapping");
 
-    if (!r_toneMapping.GetBool() ||
-        !currentToneMappingPSO ||
-        !currentVisCamera->colorTexture ||
-        !currentVisCamera->luminanceBuffer ||
-        !currentVisCamera->postProcessColorTexture) {
+    if (!r_toneMapping.GetBool()) {
         return false;
     }
 

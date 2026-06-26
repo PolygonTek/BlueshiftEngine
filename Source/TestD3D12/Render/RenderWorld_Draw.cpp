@@ -163,7 +163,7 @@ void RenderWorld::RenderScene(RenderCamera *renderCamera) {
         if (fftBloomKernelSourceTexture) {
             const bool hasReadyFFTBloomKernelSourceTexture = fftBloomKernelSourceTexture->IsReadyForRendering();
             const uint32_t fftBloomSize = renderCamera->GetFFTBloomSize();
-            const bool hasSupportedFFTBloomKernelSpectrumSize = fftBloomSize == 512 || fftBloomSize == 1024;
+            const bool hasSupportedFFTBloomKernelSpectrumSize = fftBloomSize == 256 || fftBloomSize == 512 || fftBloomSize == 1024;
             const bool updateFFTBloomKernelBuffer = hasReadyFFTBloomKernelSourceTexture && hasSupportedFFTBloomKernelSpectrumSize && renderCamera->IsFFTBloomKernelDirty();
 
             visCamera->fftBloomKernelSourceTexture = hasReadyFFTBloomKernelSourceTexture ? fftBloomKernelSourceTexture->GetRHITexture() : nullptr;

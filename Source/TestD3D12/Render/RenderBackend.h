@@ -95,8 +95,8 @@ private:
     bool                            DispatchConvolutionBloomScreenPrefilter();
     bool                            DispatchConvolutionBloomMultiplySpectrum();
     bool                            DispatchConvolutionBloomResolve();
-    bool                            DispatchConvolutionBloomFFTDualReal2D(RHI::Buffer *inputBuffer, RHI::Buffer *outputBuffer);
-    bool                            DispatchConvolutionBloomIFFTDualReal2D(RHI::Buffer *inputBuffer, RHI::Buffer *outputBuffer);
+    bool                            DispatchConvolutionBloomFFT(RHI::Buffer *inputBuffer, RHI::Buffer *outputBuffer);
+    bool                            DispatchConvolutionBloomIFFT(RHI::Buffer *inputBuffer, RHI::Buffer *outputBuffer);
     bool                            DispatchToneMapping(bool useBloom);
 
     uint32_t                        FindSurfaceInstanceBatchEnd(const PassDrawSurf **drawSurfs, uint32_t numDrawSurfs, uint32_t startIndex) const;
