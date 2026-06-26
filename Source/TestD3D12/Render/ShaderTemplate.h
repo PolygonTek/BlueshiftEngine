@@ -280,6 +280,10 @@ private:
     void                            InitGlobalDefines();
     void                            CleanExpiredShaderTemplates();
     void                            CreateEngineShaderTemplates();
+    void                            CreateToneMappingShaderTemplates(RHI::ShaderModel shaderModel, const char *baseDir);
+    void                            CreateBloomShaderTemplates(RHI::ShaderModel shaderModel, const char *baseDir);
+    void                            CreateFFTShaderTemplates(RHI::ShaderModel shaderModel, const char *baseDir);
+    void                            CreateTransposeShaderTemplates(RHI::ShaderModel shaderModel, const char *baseDir);
     void                            DestroyEngineShaderTemplates();
 
     BE1::StrIHashMap<WeakPtr<ShaderTemplate>> shaderTemplateHashMap;

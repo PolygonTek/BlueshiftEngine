@@ -156,7 +156,7 @@ SharedPtr<Material> MaterialManager::GetSingleTextureMaterial(const char *textur
     switch (hint) {
     case Material::TextureHint::None:
         text = BE1::va("{\n"
-            "shaderTemplate \"_litShader\"\n"
+            "shaderTemplate \"Source/TestD3D12/Shaders/Lit\"\n"
             "properties {\n"
             "   baseColorTexture \"%s\"\n"
             "}\n"
@@ -167,7 +167,7 @@ SharedPtr<Material> MaterialManager::GetSingleTextureMaterial(const char *textur
             "noShadow\n"
             "renderingMode blend\n"
             "blendType alphaBlend\n"
-            "shaderTemplate \"_unlitShader\"\n"
+            "shaderTemplate \"Source/TestD3D12/Shaders/Unlit\"\n"
             "properties {\n"
             "   baseColorTexture \"%s\"\n"
             "}\n"
@@ -179,7 +179,7 @@ SharedPtr<Material> MaterialManager::GetSingleTextureMaterial(const char *textur
             "cull twoSided\n"
             "renderingMode blend\n"
             "blendType alphaBlend\n"
-            "shaderTemplate \"_unlitShader\"\n"
+            "shaderTemplate \"Source/TestD3D12/Shaders/Unlit\"\n"
             "properties {\n"
             "   baseColorTexture \"%s\"\n"
             "}\n"
@@ -284,7 +284,7 @@ void MaterialManager::CreateEngineMaterials() {
 
     static constexpr const char *defaultLitMaterialText = ENGINE_MATERIAL(
     {
-        shaderTemplate "_litShader"
+        shaderTemplate "Source/TestD3D12/Shaders/Lit"
 
         properties {
             baseColorTexture "_defaultTexture"
@@ -294,7 +294,7 @@ void MaterialManager::CreateEngineMaterials() {
 
     static constexpr const char *defaultUnlitMaterialText = ENGINE_MATERIAL(
         {
-            shaderTemplate "_unlitShader"
+            shaderTemplate "Source/TestD3D12/Shaders/Unlit"
 
             properties {
                 baseColorTexture "_defaultTexture"
@@ -304,7 +304,7 @@ void MaterialManager::CreateEngineMaterials() {
 
     static constexpr const char *whiteLitMaterialText = ENGINE_MATERIAL(
     {
-        shaderTemplate "_litShader"
+        shaderTemplate "Source/TestD3D12/Shaders/Lit"
 
         properties {
             baseColorTexture "_whiteTexture"
@@ -314,7 +314,7 @@ void MaterialManager::CreateEngineMaterials() {
 
     static constexpr const char *whiteUnlitMaterialText = ENGINE_MATERIAL(
     {
-        shaderTemplate "_unlitShader"
+        shaderTemplate "Source/TestD3D12/Shaders/Unlit"
 
         properties {
             baseColorTexture "_whiteTexture"
@@ -324,7 +324,7 @@ void MaterialManager::CreateEngineMaterials() {
 
     static constexpr const char *blendUnlitMaterialText = ENGINE_MATERIAL(
     {
-        shaderTemplate "_unlitShader"
+        shaderTemplate "Source/TestD3D12/Shaders/Unlit"
         renderingMode "Blend"
         blendType "AlphaBlend"
 
@@ -336,7 +336,7 @@ void MaterialManager::CreateEngineMaterials() {
 
     static constexpr const char *blendLitMaterialText = ENGINE_MATERIAL(
         {
-            shaderTemplate "_litShader"
+            shaderTemplate "Source/TestD3D12/Shaders/Lit"
             renderingMode "Blend"
             blendType "AlphaBlend"
 
