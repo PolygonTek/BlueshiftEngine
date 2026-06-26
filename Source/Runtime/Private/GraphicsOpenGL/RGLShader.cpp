@@ -858,7 +858,7 @@ static void GetUniformConstantsAndTextures(GLuint programObject, int &numUniform
                 numUniformTextures++;
             }
         } else {
-            if (Str::Cmpn(uniformName, "gl_", 3)) { // built-in uniform 은 제외한다
+            if (!Str::StartsWith(uniformName, "gl_")) { // built-in uniform 은 제외한다
                 char *bracket = strchr(uniformName, '[');
                 if (bracket == nullptr || (bracket[1] == '0' && bracket[2] == ']')) {
                     if (bracket) {

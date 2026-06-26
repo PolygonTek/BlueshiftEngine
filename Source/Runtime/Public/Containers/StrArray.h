@@ -40,7 +40,7 @@ BE_INLINE void SplitStringIntoList(StrArray &array, const char *string, const ch
     Str str(string);
 
     // append a terminator there's no terminating one
-    if (Str::Cmp(str.Right(separatorLength), separator) != 0) {
+    if (!str.EndsWith(separator)) {
         str += separator;
     }
 

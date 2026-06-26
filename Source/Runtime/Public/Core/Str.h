@@ -185,6 +185,11 @@ public:
                             /// Returns case insensitive natural order comparison result with a string.
     int                     IcmpNat(const char *text) const;
 
+                            /// Returns true if this string starts with the given string.
+    bool                    StartsWith(const char *text, bool caseSensitive = true) const;
+                            /// Returns true if this string ends with the given string.
+    bool                    EndsWith(const char *text, bool caseSensitive = true) const;
+
                             /// string ranking algorithm that produced a number between 0 and 1 representing the similarity between two strings.
     float                   FuzzyScore(const char *text, float fuzziness = 0.0f) const;
 
@@ -389,6 +394,8 @@ public:
     static int              IcmpnPath(const char *s1, const char *s2, int n);
     static int              CmpNat(const char *s1, const char *s2);
     static int              IcmpNat(const char *s1, const char *s2);
+    static bool             StartsWith(const char *s, const char *text, bool caseSensitive = true);
+    static bool             EndsWith(const char *s, const char *text, bool caseSensitive = true);
 
     static float            FuzzyScore(const char *s1, const char *s2, float fuzziness = 0.0f);
 
@@ -797,6 +804,51 @@ BE_INLINE int Str::IcmpnPath(const char *text, int n) const {
 BE_INLINE int Str::IcmpNat(const char *text) const {
     assert(text);
     return Str::IcmpNat(data, text);
+}
+
+BE_INLINE bool Str::StartsWith(const char *s, const char *text, bool caseSensitive) {
+    assert(s);
+    assert(text);
+
+    const int textLength = Str::Length(text);
+    return !(caseSensitive ? Str::Cmpn(s, text, textLength) : Str::Icmpn(s, text, textLength));
+}
+
+BE_INLINE bool Str::EndsWith(const char *s, const char *text, bool caseSensitive) {
+    assert(s);
+    assert(text);
+
+    const int sLength = Str::Length(s);
+    const int textLength = Str::Length(text);
+    if (textLength > sLength) {
+        return false;
+    }
+
+    const char *suffix = s + sLength - textLength;
+    return !(caseSensitive ? Str::Cmpn(suffix, text, textLength) : Str::Icmpn(suffix, text, textLength));
+}
+
+BE_INLINE bool Str::StartsWith(const char *text, bool caseSensitive) const {
+    assert(text);
+
+    const int textLength = Str::Length(text);
+    if (textLength > len) {
+        return false;
+    }
+
+    return !(caseSensitive ? Str::Cmpn(data, text, textLength) : Str::Icmpn(data, text, textLength));
+}
+
+BE_INLINE bool Str::EndsWith(const char *text, bool caseSensitive) const {
+    assert(text);
+
+    const int textLength = Str::Length(text);
+    if (textLength > len) {
+        return false;
+    }
+
+    const char *suffix = data + len - textLength;
+    return !(caseSensitive ? Str::Cmpn(suffix, text, textLength) : Str::Icmpn(suffix, text, textLength));
 }
 
 BE_INLINE float Str::FuzzyScore(const char *text, float fuzziness) const {

@@ -510,7 +510,7 @@ void ShaderManager::PrecacheShader(const char *name) {
 
 bool ShaderManager::FindGlobalHeader(const char *text) const {
     for (int i = 0; i < globalHeaderList.Count(); i++) {
-        if (!globalHeaderList[i].Cmpn(text, Str::Length(text))) {
+        if (globalHeaderList[i].StartsWith(text)) {
             return true;
         }
     }
@@ -525,7 +525,7 @@ void ShaderManager::RemoveGlobalHeader(const char *text) {
     int removeIndex = -1;
 
     for (int i = 0; i < globalHeaderList.Count(); i++) {
-        if (!globalHeaderList[i].Cmpn(text, Str::Length(text))) {
+        if (globalHeaderList[i].StartsWith(text)) {
             removeIndex = i;
             break;
         }

@@ -126,7 +126,7 @@ IOSDevice::Type::Enum IOSDevice::GetIOSDeviceType() {
     BE1::Str deviceIDString([NSString stringWithCString:deviceID encoding:NSUTF8StringEncoding]);
     free(deviceID);
     
-    if (!deviceIDString.Cmpn("iPod", 4)) {
+    if (deviceIDString.StartsWith("iPod")) {
         // get major revision number
         int major = deviceIDString[4] - '0';
         
@@ -141,7 +141,7 @@ IOSDevice::Type::Enum IOSDevice::GetIOSDeviceType() {
         } else if (major >= 10) {
             deviceType = Type::IPodTouch7;
         }
-    } else if (!deviceIDString.Cmpn("iPad", 4)) {
+    } else if (deviceIDString.StartsWith("iPad")) {
         // get major revision number
         int major = deviceIDString[4] - '0';
         int minor = deviceIDString[6] - '0';
@@ -212,7 +212,7 @@ IOSDevice::Type::Enum IOSDevice::GetIOSDeviceType() {
                 deviceType = Type::IPadPro3_12_9;
             }
         }
-    } else if (!deviceIDString.Cmpn("iPhone", 6)) {
+    } else if (deviceIDString.StartsWith("iPhone")) {
         int major = atoi(&deviceIDString[6]);
         int commaIndex = deviceIDString.Find(',');
         int minor = deviceIDString[commaIndex + 1] - '0';
@@ -276,7 +276,7 @@ IOSDevice::Type::Enum IOSDevice::GetIOSDeviceType() {
                 deviceType = Type::IPhone11Pro;
             }
         }
-    } else if (!deviceIDString.Cmpn("x86", 3)) { // simulator
+    } else if (deviceIDString.StartsWith("x86")) { // simulator
         if (UI_USER_INTERFACE_IDIOM() == UIUserInterfaceIdiomPhone) {
             CGSize result = [[UIScreen mainScreen] bounds].size;
             if (result.height >= 586) {

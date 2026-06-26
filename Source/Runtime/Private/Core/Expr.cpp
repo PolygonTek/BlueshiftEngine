@@ -546,7 +546,7 @@ bool ExprChunk::ParseExpressions(Lexer &lexer, int numExpressions, int *outputRe
                     //const char *p = token.c_str() + 4;
                     g_operandStack[++g_operandStackPointer] = MAKE_REG_LOCALPARM(0);
                     continue;
-                } else if (!token.Cmpn("parm", 4)) {
+                } else if (token.StartsWith("parm")) {
                     // 로컬 파라미터에서 찾는다
                     const char *p = token.c_str() + 4;
                     for (i = 0; p[i]; i++) {
