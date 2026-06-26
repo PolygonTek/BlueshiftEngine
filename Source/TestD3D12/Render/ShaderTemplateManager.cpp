@@ -281,7 +281,7 @@ void ShaderTemplateManager::CreateEngineShaderTemplates() {
         BE_FATALERROR("ShaderTemplateManager::CreateEngineShaderTemplates: failed to load lit shader template");
     }
 
-    const RHI::ShaderModel computeShaderModel = RHI::ShaderModel::SM_6_0;
+    const RHI::ShaderModel computeShaderModel = RHI::ShaderModel::SM_6_6;
 
     CreateToneMappingShaderTemplates(computeShaderModel, baseDir);
     CreateBloomShaderTemplates(computeShaderModel, baseDir);

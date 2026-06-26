@@ -38,10 +38,10 @@ Buffer<float> GetBufferFloat(uint index) { return ResourceDescriptorHeap[index];
 Buffer<float2> GetBufferFloat2(uint index) { return ResourceDescriptorHeap[index]; }
 Buffer<float3> GetBufferFloat3(uint index) { return ResourceDescriptorHeap[index]; }
 Buffer<float4> GetBufferFloat4(uint index) { return ResourceDescriptorHeap[index]; }
-Buffer<half> GetBufferFloat(uint index) { return ResourceDescriptorHeap[index]; }
-Buffer<half2> GetBufferFloat2(uint index) { return ResourceDescriptorHeap[index]; }
-Buffer<half3> GetBufferFloat3(uint index) { return ResourceDescriptorHeap[index]; }
-Buffer<half4> GetBufferFloat4(uint index) { return ResourceDescriptorHeap[index]; }
+Buffer<half> GetBufferHalf(uint index) { return ResourceDescriptorHeap[index]; }
+Buffer<half2> GetBufferHalf2(uint index) { return ResourceDescriptorHeap[index]; }
+Buffer<half3> GetBufferHalf3(uint index) { return ResourceDescriptorHeap[index]; }
+Buffer<half4> GetBufferHalf4(uint index) { return ResourceDescriptorHeap[index]; }
 Buffer<uint> GetBufferUInt(uint index) { return ResourceDescriptorHeap[index]; }
 Buffer<uint2> GetBufferUInt2(uint index) { return ResourceDescriptorHeap[index]; }
 Buffer<uint3> GetBufferUInt3(uint index) { return ResourceDescriptorHeap[index]; }
