@@ -1,8 +1,8 @@
 #ifndef __TONE_MAP_OPERATORS_HLSLI__
 #define __TONE_MAP_OPERATORS_HLSLI__
 
-#include "ShaderInterop.h"
-#include "Colors.hlsli"
+#include "../ShaderInterop.h"
+#include "../Colors.hlsli"
 
 static const float ToneMapWhiteLevel = 5.0;
 static const float ToneMapLuminanceSaturation = 1.0;

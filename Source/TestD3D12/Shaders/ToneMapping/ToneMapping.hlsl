@@ -1,5 +1,5 @@
-#include "ShaderInterop.h"
-#include "ColorSpaceUtility.hlsli"
+#include "../ShaderInterop.h"
+#include "../ColorSpaceUtility.hlsli"
 #include "ToneMapOperators.hlsli"
 
 #define COMMON_ROOT_SIGNATURE "RootFlags(0), " \
