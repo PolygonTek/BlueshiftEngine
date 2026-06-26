@@ -16,8 +16,17 @@
 #include "RenderBackend.h"
 #include "RenderCvars.h"
 #include "RenderContext.h"
+#include "RenderSystem.h"
 #include "RenderInternal.h"
 #include "Shaders/ShaderInterop.h"
+
+static RHI::PipelineState *GetReadyPSO(const SharedPtr<ShaderPipeline> &shaderPipeline) {
+    if (!shaderPipeline || !shaderPipeline->IsReady()) {
+        return nullptr;
+    }
+
+    return shaderPipeline->GetPSO();
+}
 
 static float4 CalcConvolutionBloomContentRect(uint32_t inputW, uint32_t inputH, uint32_t fftSize, float2 *kernelSpatialScale = nullptr) {
     float contentW = static_cast<float>(fftSize);
@@ -206,6 +215,8 @@ void RenderBackend::Execute(RenderFrameData *frameData) {
     // 백엔드가 처리할 프레임 데이터
     this->frameData = frameData;
 
+    UpdateGlobalPSOs();
+
     frameConstantBuffer = nullptr;
     cameraConstantBuffer = nullptr;
 
@@ -292,6 +303,53 @@ bool RenderBackend::UploadCameraConstants() {
     return true;
 }
 
+void RenderBackend::UpdateGlobalPSOs() {
+    currentToneMappingPSO = GetReadyPSO(renderSystem->toneMappingPSO);
+    currentLuminancePass1PSO = GetReadyPSO(renderSystem->luminancePass1PSO);
+    currentLuminancePass2PSO = GetReadyPSO(renderSystem->luminancePass2PSO);
+    currentBloomPrefilterPSO = GetReadyPSO(renderSystem->bloomPrefilterPSO);
+    currentBloomDownsamplePSO = GetReadyPSO(renderSystem->bloomDownsamplePSO);
+    currentBloomUpsamplePSO = GetReadyPSO(renderSystem->bloomUpsamplePSO);
+    currentConvolutionBloomPrefilterPSO = GetReadyPSO(renderSystem->convolutionBloomPrefilterPSO);
+    currentConvolutionBloomKernelPreparePSO = GetReadyPSO(renderSystem->convolutionBloomKernelPreparePSO);
+    currentConvolutionBloomResolvePSO = GetReadyPSO(renderSystem->convolutionBloomResolvePSO);
+
+    gpuFFT.fftComplex256PSO = GetReadyPSO(renderSystem->fftComplex256PSO);
+    gpuFFT.fftComplex512PSO = GetReadyPSO(renderSystem->fftComplex512PSO);
+    gpuFFT.fftComplex1024PSO = GetReadyPSO(renderSystem->fftComplex1024PSO);
+    gpuFFT.fftComplex1024LastStagePSO = GetReadyPSO(renderSystem->fftComplex1024LastStagePSO);
+    gpuFFT.fftReal512FirstStagePSO = GetReadyPSO(renderSystem->fftReal512FirstStagePSO);
+    gpuFFT.fftReal512LastStagePSO = GetReadyPSO(renderSystem->fftReal512LastStagePSO);
+    gpuFFT.fftReal1024FirstStagePSO = GetReadyPSO(renderSystem->fftReal1024FirstStagePSO);
+    gpuFFT.fftReal1024LastStagePSO = GetReadyPSO(renderSystem->fftReal1024LastStagePSO);
+    gpuFFT.ifftReal512FirstStagePSO = GetReadyPSO(renderSystem->ifftReal512FirstStagePSO);
+    gpuFFT.ifftReal512LastStagePSO = GetReadyPSO(renderSystem->ifftReal512LastStagePSO);
+    gpuFFT.ifftReal1024FirstStagePSO = GetReadyPSO(renderSystem->ifftReal1024FirstStagePSO);
+    gpuFFT.ifftReal1024LastStagePSO = GetReadyPSO(renderSystem->ifftReal1024LastStagePSO);
+    gpuFFT.fftDualReal256FirstStagePSO = GetReadyPSO(renderSystem->fftDualReal256FirstStagePSO);
+    gpuFFT.fftDualReal256LastStagePSO = GetReadyPSO(renderSystem->fftDualReal256LastStagePSO);
+    gpuFFT.fftDualReal512FirstStagePSO = GetReadyPSO(renderSystem->fftDualReal512FirstStagePSO);
+    gpuFFT.fftDualReal512LastStagePSO = GetReadyPSO(renderSystem->fftDualReal512LastStagePSO);
+    gpuFFT.fftDualReal1024FirstStagePSO = GetReadyPSO(renderSystem->fftDualReal1024FirstStagePSO);
+    gpuFFT.fftDualReal1024LastStagePSO = GetReadyPSO(renderSystem->fftDualReal1024LastStagePSO);
+    gpuFFT.ifftDualReal256FirstStagePSO = GetReadyPSO(renderSystem->ifftDualReal256FirstStagePSO);
+    gpuFFT.ifftDualReal256LastStagePSO = GetReadyPSO(renderSystem->ifftDualReal256LastStagePSO);
+    gpuFFT.ifftDualReal512FirstStagePSO = GetReadyPSO(renderSystem->ifftDualReal512FirstStagePSO);
+    gpuFFT.ifftDualReal512LastStagePSO = GetReadyPSO(renderSystem->ifftDualReal512LastStagePSO);
+    gpuFFT.ifftDualReal1024FirstStagePSO = GetReadyPSO(renderSystem->ifftDualReal1024FirstStagePSO);
+    gpuFFT.ifftDualReal1024LastStagePSO = GetReadyPSO(renderSystem->ifftDualReal1024LastStagePSO);
+    gpuFFT.multiplyComplexSpectrum2DPSO = GetReadyPSO(renderSystem->multiplyComplexSpectrum2DPSO);
+    gpuFFT.multiplyPackedRealSpectrum2DPSO = GetReadyPSO(renderSystem->multiplyPackedRealSpectrum2DPSO);
+    gpuFFT.multiplyPackedDualRealSpectrum2DPSO = GetReadyPSO(renderSystem->multiplyPackedDualRealSpectrum2DPSO);
+    gpuFFT.transposeComplex256PSO = GetReadyPSO(renderSystem->transposeComplex256PSO);
+    gpuFFT.transposeComplex256x512PSO = GetReadyPSO(renderSystem->transposeComplex256x512PSO);
+    gpuFFT.transposeComplex512x256PSO = GetReadyPSO(renderSystem->transposeComplex512x256PSO);
+    gpuFFT.transposeComplex512x1024PSO = GetReadyPSO(renderSystem->transposeComplex512x1024PSO);
+    gpuFFT.transposeComplex1024x512PSO = GetReadyPSO(renderSystem->transposeComplex1024x512PSO);
+    gpuFFT.transposeComplex512PSO = GetReadyPSO(renderSystem->transposeComplex512PSO);
+    gpuFFT.transposeComplex1024PSO = GetReadyPSO(renderSystem->transposeComplex1024PSO);
+}
+
 const void *RenderBackend::ExecuteBeginContext(const void *data) {
     PROFILER_CPU_SCOPED_EVENT("RenderBackend::ExecuteBeginContext");
 
@@ -299,50 +357,6 @@ const void *RenderBackend::ExecuteBeginContext(const void *data) {
 
     currentContext = cmd->renderContext;
     currentImagePSO = cmd->imagePSO;
-    currentToneMappingPSO = cmd->toneMappingPSO;
-    currentLuminancePass1PSO = cmd->luminancePass1PSO;
-    currentLuminancePass2PSO = cmd->luminancePass2PSO;
-    currentBloomPrefilterPSO = cmd->bloomPrefilterPSO;
-    currentBloomDownsamplePSO = cmd->bloomDownsamplePSO;
-    currentBloomUpsamplePSO = cmd->bloomUpsamplePSO;
-    currentConvolutionBloomPrefilterPSO = cmd->convolutionBloomPrefilterPSO;
-    currentConvolutionBloomKernelPreparePSO = cmd->convolutionBloomKernelPreparePSO;
-    currentConvolutionBloomResolvePSO = cmd->convolutionBloomResolvePSO;
-
-    gpuFFT.fftComplex256PSO = cmd->fftComplex256PSO;
-    gpuFFT.fftComplex512PSO = cmd->fftComplex512PSO;
-    gpuFFT.fftComplex1024PSO = cmd->fftComplex1024PSO;
-    gpuFFT.fftComplex1024LastStagePSO = cmd->fftComplex1024LastStagePSO;
-    gpuFFT.fftReal512FirstStagePSO = cmd->fftReal512FirstStagePSO;
-    gpuFFT.fftReal512LastStagePSO = cmd->fftReal512LastStagePSO;
-    gpuFFT.fftReal1024FirstStagePSO = cmd->fftReal1024FirstStagePSO;
-    gpuFFT.fftReal1024LastStagePSO = cmd->fftReal1024LastStagePSO;
-    gpuFFT.ifftReal512FirstStagePSO = cmd->ifftReal512FirstStagePSO;
-    gpuFFT.ifftReal512LastStagePSO = cmd->ifftReal512LastStagePSO;
-    gpuFFT.ifftReal1024FirstStagePSO = cmd->ifftReal1024FirstStagePSO;
-    gpuFFT.ifftReal1024LastStagePSO = cmd->ifftReal1024LastStagePSO;
-    gpuFFT.fftDualReal256FirstStagePSO = cmd->fftDualReal256FirstStagePSO;
-    gpuFFT.fftDualReal256LastStagePSO = cmd->fftDualReal256LastStagePSO;
-    gpuFFT.fftDualReal512FirstStagePSO = cmd->fftDualReal512FirstStagePSO;
-    gpuFFT.fftDualReal512LastStagePSO = cmd->fftDualReal512LastStagePSO;
-    gpuFFT.fftDualReal1024FirstStagePSO = cmd->fftDualReal1024FirstStagePSO;
-    gpuFFT.fftDualReal1024LastStagePSO = cmd->fftDualReal1024LastStagePSO;
-    gpuFFT.ifftDualReal256FirstStagePSO = cmd->ifftDualReal256FirstStagePSO;
-    gpuFFT.ifftDualReal256LastStagePSO = cmd->ifftDualReal256LastStagePSO;
-    gpuFFT.ifftDualReal512FirstStagePSO = cmd->ifftDualReal512FirstStagePSO;
-    gpuFFT.ifftDualReal512LastStagePSO = cmd->ifftDualReal512LastStagePSO;
-    gpuFFT.ifftDualReal1024FirstStagePSO = cmd->ifftDualReal1024FirstStagePSO;
-    gpuFFT.ifftDualReal1024LastStagePSO = cmd->ifftDualReal1024LastStagePSO;
-    gpuFFT.multiplyComplexSpectrum2DPSO = cmd->multiplyComplexSpectrum2DPSO;
-    gpuFFT.multiplyPackedRealSpectrum2DPSO = cmd->multiplyPackedRealSpectrum2DPSO;
-    gpuFFT.multiplyPackedDualRealSpectrum2DPSO = cmd->multiplyPackedDualRealSpectrum2DPSO;
-    gpuFFT.transposeComplex256PSO = cmd->transposeComplex256PSO;
-    gpuFFT.transposeComplex256x512PSO = cmd->transposeComplex256x512PSO;
-    gpuFFT.transposeComplex512x256PSO = cmd->transposeComplex512x256PSO;
-    gpuFFT.transposeComplex512x1024PSO = cmd->transposeComplex512x1024PSO;
-    gpuFFT.transposeComplex1024x512PSO = cmd->transposeComplex1024x512PSO;
-    gpuFFT.transposeComplex512PSO = cmd->transposeComplex512PSO;
-    gpuFFT.transposeComplex1024PSO = cmd->transposeComplex1024PSO;
 
     statDrawCount = 0;
     statDrawTriangleCount = 0;
@@ -857,7 +871,7 @@ bool RenderBackend::DispatchConvolutionBloom() {
         return false;
     }
 
-    // 커널 텍스쳐가 바뀌었을 때만 실행
+    // 커널 버퍼 업데이트가 필요한 경우에만 실행
     if (currentVisCamera->fftBloomKernelDirty) {
         // 커널 버퍼 준비
         if (!DispatchConvolutionBloomKernelPrepare()) {
@@ -884,7 +898,7 @@ bool RenderBackend::DispatchConvolutionBloom() {
     if (!DispatchConvolutionBloomIFFT(currentVisCamera->fftBloomWorkBuffer, currentVisCamera->fftBloomScreenSpatialBuffer)) {
         return false;
     }
-    // IFFT 결과 버퍼를 tone mapping 이 샘플할 half-res texture 로 resolve
+    // IFFT 결과 버퍼를 스크린 half-res 텍스쳐 (fftBloomConvolutionOutputTexture) 에 resolve
     if (!DispatchConvolutionBloomResolve()) {
         return false;
     }

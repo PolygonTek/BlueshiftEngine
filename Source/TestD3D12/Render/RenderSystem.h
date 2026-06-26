@@ -18,6 +18,7 @@
 class RenderContext;
 class RenderBackend;
 class RenderFrameData;
+class ShaderPipeline;
 
 /*
 ---------------------------------------------------------------------------------------------------
@@ -35,6 +36,9 @@ class RenderFrameData;
 */
 
 class RenderSystem {
+    friend class RenderFrameData;
+    friend class RenderBackend;
+
 public:
     void                            Init(void *mainWindowHandle);
     void                            Shutdown();
@@ -65,6 +69,10 @@ private:
 
     void                            InitRenderThread();
     void                            ShutdownRenderThread();
+    void                            InitFFTPSOs();
+    void                            ReleaseFFTPSOs();
+    void                            InitPostProcessPSOs();
+    void                            ReleasePostProcessPSOs();
 
     void                            MarkRenderCompleted(RenderFrameData *frameData);
     bool                            WaitSubmittedFrame(SubmittedFrame &submittedFrame);
@@ -86,6 +94,59 @@ private:
     BE1::PlatformCondition *        updateCompletedCondition = nullptr;
     BE1::PlatformThread *           renderThread = nullptr;
     bool                            isStoppingRenderThread = false;
+
+    SharedPtr<ShaderPipeline>       toneMappingPSO;
+    SharedPtr<ShaderPipeline>       luminancePass1PSO;
+    SharedPtr<ShaderPipeline>       luminancePass2PSO;
+
+    SharedPtr<ShaderPipeline>       bloomPrefilterPSO;
+    SharedPtr<ShaderPipeline>       bloomDownsamplePSO;
+    SharedPtr<ShaderPipeline>       bloomUpsamplePSO;
+
+    SharedPtr<ShaderPipeline>       convolutionBloomPrefilterPSO;
+    SharedPtr<ShaderPipeline>       convolutionBloomKernelPreparePSO;
+    SharedPtr<ShaderPipeline>       convolutionBloomResolvePSO;
+
+    SharedPtr<ShaderPipeline>       fftComplex256PSO;
+    SharedPtr<ShaderPipeline>       fftComplex512PSO;
+    SharedPtr<ShaderPipeline>       fftComplex1024PSO;
+    SharedPtr<ShaderPipeline>       fftComplex1024LastStagePSO;
+
+    SharedPtr<ShaderPipeline>       fftReal512FirstStagePSO;
+    SharedPtr<ShaderPipeline>       fftReal512LastStagePSO;
+    SharedPtr<ShaderPipeline>       fftReal1024FirstStagePSO;
+    SharedPtr<ShaderPipeline>       fftReal1024LastStagePSO;
+
+    SharedPtr<ShaderPipeline>       ifftReal512FirstStagePSO;
+    SharedPtr<ShaderPipeline>       ifftReal512LastStagePSO;
+    SharedPtr<ShaderPipeline>       ifftReal1024FirstStagePSO;
+    SharedPtr<ShaderPipeline>       ifftReal1024LastStagePSO;
+
+    SharedPtr<ShaderPipeline>       fftDualReal256FirstStagePSO;
+    SharedPtr<ShaderPipeline>       fftDualReal256LastStagePSO;
+    SharedPtr<ShaderPipeline>       fftDualReal512FirstStagePSO;
+    SharedPtr<ShaderPipeline>       fftDualReal512LastStagePSO;
+    SharedPtr<ShaderPipeline>       fftDualReal1024FirstStagePSO;
+    SharedPtr<ShaderPipeline>       fftDualReal1024LastStagePSO;
+
+    SharedPtr<ShaderPipeline>       ifftDualReal256FirstStagePSO;
+    SharedPtr<ShaderPipeline>       ifftDualReal256LastStagePSO;
+    SharedPtr<ShaderPipeline>       ifftDualReal512FirstStagePSO;
+    SharedPtr<ShaderPipeline>       ifftDualReal512LastStagePSO;
+    SharedPtr<ShaderPipeline>       ifftDualReal1024FirstStagePSO;
+    SharedPtr<ShaderPipeline>       ifftDualReal1024LastStagePSO;
+
+    SharedPtr<ShaderPipeline>       multiplyComplexSpectrum2DPSO;
+    SharedPtr<ShaderPipeline>       multiplyPackedRealSpectrum2DPSO;
+    SharedPtr<ShaderPipeline>       multiplyPackedDualRealSpectrum2DPSO;
+
+    SharedPtr<ShaderPipeline>       transposeComplex256PSO;
+    SharedPtr<ShaderPipeline>       transposeComplex256x512PSO;
+    SharedPtr<ShaderPipeline>       transposeComplex512x256PSO;
+    SharedPtr<ShaderPipeline>       transposeComplex512x1024PSO;
+    SharedPtr<ShaderPipeline>       transposeComplex1024x512PSO;
+    SharedPtr<ShaderPipeline>       transposeComplex512PSO;
+    SharedPtr<ShaderPipeline>       transposeComplex1024PSO;
 };
 
 extern RenderSystem *               renderSystem;

@@ -66,6 +66,8 @@ private:
     const void *                    ExecuteScreenshot(const void *data);
     const void *                    ExecuteSwapBuffers(const void *data);
 
+    void                            UpdateGlobalPSOs();
+
     void                            DrawCamera3D();
     void                            DrawCamera2D();
 

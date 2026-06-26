@@ -848,22 +848,6 @@ static RHI::Buffer *CreateFFTBloomStructuredBuffer(const char *debugName, uint64
     return buffer;
 }
 
-static RHI::Texture *CreateConvolutionBloomTexture(uint32_t width, uint32_t height) {
-    const BE1::Image::Format imageFormat = RHI::renderer->ToUAVImageFormat(BE1::Image::Format::R11G11B10_FLOAT);
-
-    SharedPtr<BE1::Image> image = MakeShared<BE1::Image>();
-    image->InitFromMemory(width, height, 1, 1, 1, imageFormat, BE1::Image::GammaSpace::Linear, nullptr, BE1::Image::Flag::None);
-
-    RHI::Texture *texture = RHI::renderer->CreateTexture(RHI::TextureType::Texture2D, RHI::TextureFlag::ShaderResource | RHI::TextureFlag::UnorderedAccess, image, RHI::TextureMipInitMode::FromImage, {}, 1, RHI::GPUResourceState::ShaderResource);
-    if (!texture) {
-        BE_WARNLOG("RenderCamera::CreateConvolutionBloomOutputTexture: failed to create convolution texture\n");
-        return nullptr;
-    }
-
-    RHI::renderer->SetName(texture, "RenderCamera::fftBloomConvolutionOutputTexture");
-    return texture;
-}
-
 bool RenderCamera::CreateConvolutionBloomResources(uint32_t size) {
     DestroyConvolutionBloomResources();
 
@@ -942,10 +926,18 @@ bool RenderCamera::CreateConvolutionBloomOutputTexture(uint32_t width, uint32_t 
         return false;
     }
 
-    fftBloomConvolutionOutputTexture = CreateConvolutionBloomTexture(width, height);
+    const BE1::Image::Format imageFormat = RHI::renderer->ToUAVImageFormat(BE1::Image::Format::R11G11B10_FLOAT);
+
+    SharedPtr<BE1::Image> image = MakeShared<BE1::Image>();
+    image->InitFromMemory(width, height, 1, 1, 1, imageFormat, BE1::Image::GammaSpace::Linear, nullptr, BE1::Image::Flag::None);
+
+    fftBloomConvolutionOutputTexture = RHI::renderer->CreateTexture(RHI::TextureType::Texture2D, RHI::TextureFlag::ShaderResource | RHI::TextureFlag::UnorderedAccess, image, RHI::TextureMipInitMode::FromImage, {}, 1, RHI::GPUResourceState::ShaderResource);
     if (!fftBloomConvolutionOutputTexture) {
+        BE_WARNLOG("RenderCamera::CreateConvolutionBloomOutputTexture: failed to create convolution texture\n");
         return false;
     }
+
+    RHI::renderer->SetName(fftBloomConvolutionOutputTexture, "RenderCamera::fftBloomConvolutionOutputTexture");
 
     fftBloomConvolutionOutputWidth = width;
     fftBloomConvolutionOutputHeight = height;
