@@ -841,6 +841,7 @@ void RenderBackend::UpdateConvolutionBloomGuardedContentRect() {
     const uint32_t inputH = currentVisCamera->renderHeight;
     const uint32_t fftSize = currentVisCamera->fftBloomSize;
     const BE1::Vec2 &kernelExtents = currentVisCamera->fftBloomKernelExtents;
+    const float kernelSizeScale = BE1::Max(currentVisCamera->fftBloomKernelSizeScale, 0.01f);
     const float kernelRotation = currentVisCamera->fftBloomKernelRotation;
 
     // fftSize x fftSize 안에서 content aspect ratio 에 맞춘 내부 크기 
@@ -859,8 +860,10 @@ void RenderBackend::UpdateConvolutionBloomGuardedContentRect() {
     // 회전된 normalized kernel extent 계산하기
     const float absCos = BE1::Math::Fabs(rotationCos);
     const float absSin = BE1::Math::Fabs(rotationSin);
-    const float projectedKernelExtentX = BE1::Max(kernelExtents.x, 0.0f) * absCos + BE1::Max(kernelExtents.y, 0.0f) * absSin;
-    const float projectedKernelExtentY = BE1::Max(kernelExtents.x, 0.0f) * absSin + BE1::Max(kernelExtents.y, 0.0f) * absCos;
+    const float scaledKernelExtentX = BE1::Max(kernelExtents.x, 0.0f) * kernelSizeScale;
+    const float scaledKernelExtentY = BE1::Max(kernelExtents.y, 0.0f) * kernelSizeScale;
+    const float projectedKernelExtentX = scaledKernelExtentX * absCos + scaledKernelExtentY * absSin;
+    const float projectedKernelExtentY = scaledKernelExtentX * absSin + scaledKernelExtentY * absCos;
 
     // normalized content extent
     const float normalizedContentExtentX = aspectFitContentW / static_cast<float>(fftSize);
@@ -882,7 +885,9 @@ void RenderBackend::UpdateConvolutionBloomGuardedContentRect() {
     currentConvolutionBloomGuardedContentRect = BE1::RectF(guardedContentX, guardedContentY, guardedContentW, guardedContentH);
 
     // guardedContentW x guardedContentH 가 실제로 aspectFitContentW x aspectFitContentH 에 비해서 얼마나 줄어들었는지 그 scale 값을 계산한다.
-    currentConvolutionBloomKernelSpatialScale = BE1::Vec2(guardedContentW / aspectFitContentW, guardedContentH / aspectFitContentH);
+    currentConvolutionBloomKernelSpatialScale = BE1::Vec2(
+        (guardedContentW / aspectFitContentW) * kernelSizeScale,
+        (guardedContentH / aspectFitContentH) * kernelSizeScale);
 }
 
 bool RenderBackend::DispatchConvolutionBloom() {

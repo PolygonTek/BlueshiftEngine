@@ -100,6 +100,16 @@ void RenderCamera::SetConvolutionBloomKernelRotation(float rotation) {
     fftBloomKernelDirty = true;
 }
 
+void RenderCamera::SetConvolutionBloomKernelSizeScale(float sizeScale) {
+    sizeScale = BE1::Max(sizeScale, 0.01f);
+    if (fftBloomKernelSizeScale == sizeScale) {
+        return;
+    }
+
+    fftBloomKernelSizeScale = sizeScale;
+    fftBloomKernelDirty = true;
+}
+
 bool RenderCamera::TransformWorldToNDC(const BE1::Vec3 &worldPosition, BE1::Vec3 &normalizedDeviceCoords) const {
     BE1::Vec4 clipCoords = viewProjMatrix * BE1::Vec4(worldPosition, 1.0f);
     if (clipCoords.w > 0) {

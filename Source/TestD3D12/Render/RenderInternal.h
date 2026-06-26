@@ -130,6 +130,7 @@ struct VisCamera {
     uint32_t                    fftBloomConvolutionOutputWidth = 0;
     uint32_t                    fftBloomConvolutionOutputHeight = 0;
     float                       fftBloomKernelRotation = 0.0f;
+    float                       fftBloomKernelSizeScale = 1.0f;
     BE1::Vec2                   fftBloomKernelExtents = BE1::Vec2(1.0f, 1.0f);
     float                       fftBloomKernelNormalizationFactor = 1.0f;
     bool                        fftBloomKernelDirty = true;

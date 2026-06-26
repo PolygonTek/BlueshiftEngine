@@ -533,9 +533,15 @@ void App::BuildImGuiOverlay() {
                         r_convolutionBloomKernelRotation.SetFloat(convolutionBloomKernelRotation);
                     }
 
+                    float convolutionBloomKernelSizeScale = r_convolutionBloomKernelSizeScale.GetFloat();
+                    ImGui::SetNextItemWidth(fontSize * 12.0f);
+                    if (ImGui::SliderFloat("bloom kernel size scale", &convolutionBloomKernelSizeScale, 0.01f, 10.0f, "%.3f")) {
+                        r_convolutionBloomKernelSizeScale.SetFloat(BE1::Max(convolutionBloomKernelSizeScale, 0.01f));
+                    }
+
                     float convolutionBloomKernelScale = r_convolutionBloomKernelScale.GetFloat();
                     ImGui::SetNextItemWidth(fontSize * 12.0f);
-                    if (ImGui::DragFloat("bloom kernel scale", &convolutionBloomKernelScale, 0.001f, 0.0f, 10.0f, "%.4f")) {
+                    if (ImGui::SliderFloat("bloom kernel scale", &convolutionBloomKernelScale, 0.0f, 10.0f, "%.4f")) {
                         r_convolutionBloomKernelScale.SetFloat(BE1::Max(convolutionBloomKernelScale, 0.0f));
                     }
                 }
