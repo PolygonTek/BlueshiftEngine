@@ -500,10 +500,44 @@ static bool GenerateFileContentHash(const char *filename, uint64_t *contentHash)
     return true;
 }
 
+static void GetCompiledShaderCacheRelativeName(const char *name, BE1::Str &outRelativeName) {
+    outRelativeName = name;
+    outRelativeName.CleanPath('/');
+
+    static constexpr const char *shaderDirPrefix = "Shaders/";
+    const size_t shaderDirPrefixLength = strlen(shaderDirPrefix);
+    if (outRelativeName.StartsWith(shaderDirPrefix)) {
+        outRelativeName = outRelativeName.c_str() + shaderDirPrefixLength;
+        return;
+    }
+
+    static constexpr const char *shaderDirComponent = "/Shaders/";
+    const char *shaderDir = strstr(outRelativeName.c_str(), shaderDirComponent);
+    if (shaderDir) {
+        outRelativeName = shaderDir + strlen(shaderDirComponent);
+        return;
+    }
+
+    outRelativeName.StripPath();
+}
+
+void D3D12Renderer::GetCompiledShaderCacheFilename(const char *name, BE1::Str &outFilename) const {
+    BE1::Str relativeName;
+    GetCompiledShaderCacheRelativeName(name, relativeName);
+
+    const char *relativeNamePtr = relativeName.c_str();
+    while (*relativeNamePtr == '/') {
+        relativeNamePtr++;
+    }
+
+    outFilename = shaderCacheDir;
+    outFilename.AppendPath(relativeNamePtr, '/');
+    outFilename.SetFileExtension(".cso");
+}
+
 bool D3D12Renderer::LoadCompiledShader(const char *name, const uint64_t hash, byte **compiledShaderDataPtr, uint32_t *compiledShaderDataSizePtr) {
-    BE1::Str filename;// = shaderCacheDir;
-    filename.AppendPath(name);
-    filename.SetFileExtension(".cso");
+    BE1::Str filename;
+    GetCompiledShaderCacheFilename(name, filename);
 
     BE1::PlatformFileMapping *fileMapping = BE1::PlatformFileMapping::OpenFileRead(filename);
     if (!fileMapping) {
@@ -570,9 +604,15 @@ void D3D12Renderer::WriteCompiledShader(const char *name, const uint64_t hash, c
         return;
     }
 
-    BE1::Str filename;// = shaderCacheDir;
-    filename.AppendPath(name);
-    filename.SetFileExtension(".cso");
+    BE1::Str filename;
+    GetCompiledShaderCacheFilename(name, filename);
+
+    BE1::Str cacheDir = filename;
+    cacheDir.StripFileName();
+    if (!BE1::PlatformFile::DirectoryExists(cacheDir)) {
+        BE1::PlatformFile::CreateDirectoryTree(cacheDir);
+    }
+
     BE1::PlatformFile *file = (BE1::PlatformFile *)BE1::PlatformFile::OpenFileWrite(filename);
     if (!file) {
         return;

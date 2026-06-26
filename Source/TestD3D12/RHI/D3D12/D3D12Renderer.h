@@ -241,6 +241,7 @@ public:
     bool                                CompileShader(const RHI::ShaderCompileInput *compileInput, RHI::ShaderCompileOutput *compileOutput);
     bool                                CompileShaderD3D(const RHI::ShaderCompileInput *compileInput, RHI::ShaderCompileOutput *compileOutput);
     bool                                CompileShaderDXC(const RHI::ShaderCompileInput *compileInput, RHI::ShaderCompileOutput *compileOutput);
+    void                                GetCompiledShaderCacheFilename(const char *name, BE1::Str &outFilename) const;
     bool                                LoadCompiledShader(const char *name, const uint64_t hash, byte **compiledShaderDataPtr, uint32_t *compiledShaderDataSizePtr);
     void                                WriteCompiledShader(const char *name, const uint64_t hash, const byte *compiledShaderData, uint32_t compiledShaderDataSize, const BE1::Array<RHI::ShaderSourceDependency> &dependencies);
 
