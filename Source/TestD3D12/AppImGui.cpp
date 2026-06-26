@@ -587,6 +587,14 @@ void App::BuildImGuiOverlay() {
                 if (ImGui::InputInt("Texture stream-in delay", &streamInDelay)) {
                     r_textureStreamingStreamInDelay.SetInteger(BE1::Max(0, streamInDelay));
                 }
+
+                int maxLevelReduction = r_textureStreamingMaxLevelReduction.GetInteger();
+                ImGui::SetNextItemWidth(fontSize * 6.0f);
+                if (ImGui::SliderInt("Texture max level reduction", &maxLevelReduction,
+                        static_cast<int>(r_textureStreamingMaxLevelReduction.GetMinValue()),
+                        static_cast<int>(r_textureStreamingMaxLevelReduction.GetMaxValue()))) {
+                    r_textureStreamingMaxLevelReduction.SetInteger(maxLevelReduction);
+                }
             }
 
             if (roundedCollapsingHeader("Texture Viewer##TextureViewerHeader")) {
