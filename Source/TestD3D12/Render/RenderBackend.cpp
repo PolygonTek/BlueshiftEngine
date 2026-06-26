@@ -28,35 +28,6 @@ static RHI::PipelineState *GetReadyPSO(const SharedPtr<ShaderPipeline> &shaderPi
     return shaderPipeline->GetPSO();
 }
 
-static float4 CalcConvolutionBloomContentRect(uint32_t inputW, uint32_t inputH, uint32_t fftSize, float2 *kernelSpatialScale = nullptr) {
-    float contentW = static_cast<float>(fftSize);
-    float contentH = static_cast<float>(fftSize);
-    if (inputW >= inputH) {
-        contentH = contentW * static_cast<float>(inputH) / static_cast<float>(inputW);
-    } else {
-        contentW = contentH * static_cast<float>(inputW) / static_cast<float>(inputH);
-    }
-    const float aspectFitContentW = contentW;
-    const float aspectFitContentH = contentH;
-
-    float offsetX = (static_cast<float>(fftSize) - contentW) * 0.5f;
-    float offsetY = (static_cast<float>(fftSize) - contentH) * 0.5f;
-
-    float paddingRatio = r_convolutionBloomContentPaddingRatio.GetFloat();
-    BE1::Clamp(paddingRatio, 0.0f, 0.45f);
-    const float minPadding = static_cast<float>(fftSize) * paddingRatio;
-    const float insetX = BE1::Min(BE1::Max(minPadding - offsetX, 0.0f), BE1::Max((contentW - 1.0f) * 0.5f, 0.0f));
-    const float insetY = BE1::Min(BE1::Max(minPadding - offsetY, 0.0f), BE1::Max((contentH - 1.0f) * 0.5f, 0.0f));
-
-    contentW -= insetX * 2.0f;
-    contentH -= insetY * 2.0f;
-    if (kernelSpatialScale) {
-        *kernelSpatialScale = float2(contentW / aspectFitContentW, contentH / aspectFitContentH);
-    }
-
-    return float4(offsetX + insetX, offsetY + insetY, contentW, contentH);
-}
-
 void RenderBackend::Init() {
 #ifdef USE_RENDER_TASK
     drawGroupId = BE1::Engine::taskManager->CreateGroupId();
@@ -864,12 +835,64 @@ bool RenderBackend::DispatchPyramidBloom() {
     return true;
 }
 
+// aspect ratio 에 맞춰서 fftSize x fftSize 에 안에 fit 된 content 를 convolution padding 을 고려했을 때 얼만큼의 크기가 되어야 하는지를 계산한다.
+void RenderBackend::UpdateConvolutionBloomGuardedContentRect() {
+    const uint32_t inputW = currentVisCamera->renderWidth;
+    const uint32_t inputH = currentVisCamera->renderHeight;
+    const uint32_t fftSize = currentVisCamera->fftBloomSize;
+    const BE1::Vec2 &kernelExtents = currentVisCamera->fftBloomKernelExtents;
+    const float kernelRotation = currentVisCamera->fftBloomKernelRotation;
+
+    // fftSize x fftSize 안에서 content aspect ratio 에 맞춘 내부 크기 
+    float aspectFitContentW = static_cast<float>(fftSize);
+    float aspectFitContentH = static_cast<float>(fftSize);
+    if (inputW >= inputH) {
+        aspectFitContentH = aspectFitContentW * static_cast<float>(inputH) / static_cast<float>(inputW);
+    } else {
+        aspectFitContentW = aspectFitContentH * static_cast<float>(inputW) / static_cast<float>(inputH);
+    }
+
+    float rotationSin;
+    float rotationCos;
+    BE1::Math::SinCos(DEG2RAD(kernelRotation), rotationSin, rotationCos);
+
+    // 회전된 normalized kernel extent 계산하기
+    const float absCos = BE1::Math::Fabs(rotationCos);
+    const float absSin = BE1::Math::Fabs(rotationSin);
+    const float projectedKernelExtentX = BE1::Max(kernelExtents.x, 0.0f) * absCos + BE1::Max(kernelExtents.y, 0.0f) * absSin;
+    const float projectedKernelExtentY = BE1::Max(kernelExtents.x, 0.0f) * absSin + BE1::Max(kernelExtents.y, 0.0f) * absCos;
+
+    // normalized content extent
+    const float normalizedContentExtentX = aspectFitContentW / static_cast<float>(fftSize);
+    const float normalizedContentExtentY = aspectFitContentH / static_cast<float>(fftSize);
+
+    // normalized support extent (= content extent + rotated kernel extent)
+    const float normalizedSupportExtentX = normalizedContentExtentX + projectedKernelExtentX;
+    const float normalizedSupportExtentY = normalizedContentExtentY + projectedKernelExtentY;
+
+    const float scaleX = 1.0f / BE1::Max(normalizedSupportExtentX, 1.0f);
+    const float scaleY = 1.0f / BE1::Max(normalizedSupportExtentY, 1.0f);
+
+    // fftSize x fftSize 안에서 컨벌루션에 필요한 패딩을 고려한 실제 content 크기와 오프셋
+    const float guardedContentW = BE1::Max(aspectFitContentW * scaleX, 1.0f);
+    const float guardedContentH = BE1::Max(aspectFitContentH * scaleY, 1.0f);
+    const float guardedContentX = (static_cast<float>(fftSize) - guardedContentW) * 0.5f;
+    const float guardedContentY = (static_cast<float>(fftSize) - guardedContentH) * 0.5f;
+
+    currentConvolutionBloomGuardedContentRect = BE1::RectF(guardedContentX, guardedContentY, guardedContentW, guardedContentH);
+
+    // guardedContentW x guardedContentH 가 실제로 aspectFitContentW x aspectFitContentH 에 비해서 얼마나 줄어들었는지 그 scale 값을 계산한다.
+    currentConvolutionBloomKernelSpatialScale = BE1::Vec2(guardedContentW / aspectFitContentW, guardedContentH / aspectFitContentH);
+}
+
 bool RenderBackend::DispatchConvolutionBloom() {
     PROFILER_CPU_SCOPED_EVENT("RenderBackend::DispatchConvolutionBloom");
 
-    if (currentVisCamera->renderWidth == 0 || currentVisCamera->renderHeight == 0) {
+    if (currentVisCamera->renderWidth == 0 || currentVisCamera->renderHeight == 0 || currentVisCamera->fftBloomSize == 0) {
         return false;
     }
+
+    UpdateConvolutionBloomGuardedContentRect();
 
     // 커널 버퍼 업데이트가 필요한 경우에만 실행
     if (currentVisCamera->fftBloomKernelDirty) {
@@ -927,15 +950,12 @@ bool RenderBackend::DispatchConvolutionBloomKernelPrepare() {
     float rotationCos;
     BE1::Math::SinCos(DEG2RAD(currentVisCamera->fftBloomKernelRotation), rotationSin, rotationCos);
 
-    float2 kernelSpatialScale(1.0f, 1.0f);
-    CalcConvolutionBloomContentRect(currentVisCamera->renderWidth, currentVisCamera->renderHeight, outputW, &kernelSpatialScale);
-
     BloomParams bloomParams = {};
     bloomParams.inputSize = uint2(inputW, inputH);
     bloomParams.outputSize = uint2(outputW, outputH);
     bloomParams.inputTexelSize = float2(1.0f / inputW, 1.0f / inputH);
     bloomParams.outputTexelSize = float2(1.0f / outputW, 1.0f / outputH);
-    bloomParams.params0 = float4(rotationCos, rotationSin, kernelSpatialScale.x, kernelSpatialScale.y);
+    bloomParams.params0 = float4(rotationCos, rotationSin, currentConvolutionBloomKernelSpatialScale.x, currentConvolutionBloomKernelSpatialScale.y);
 
     RHI::ConstantBuffer *bloomConstantBuffer = frameData->GetThreadData(0)->AllocConstant(sizeof(BloomParams), &bloomParams);
     if (!bloomConstantBuffer) {
@@ -985,9 +1005,11 @@ bool RenderBackend::DispatchConvolutionBloomScreenPrefilter() {
     bloomParams.inputTexelSize = float2(1.0f / inputW, 1.0f / inputH);
     bloomParams.outputTexelSize = float2(1.0f / outputW, 1.0f / outputH);
     bloomParams.params0 = float4(bloomThreshold, bloomSoftThreshold, 0.0f, 0.0f);
-
-    // FFT bloom spatial buffer 의 중앙에 렌더링하기 위한 offset/size
-    bloomParams.params1 = CalcConvolutionBloomContentRect(inputW, inputH, outputW);
+    bloomParams.params1 = float4(
+        currentConvolutionBloomGuardedContentRect.x,
+        currentConvolutionBloomGuardedContentRect.y,
+        currentConvolutionBloomGuardedContentRect.w,
+        currentConvolutionBloomGuardedContentRect.h);
 
     RHI::ConstantBuffer *bloomConstantBuffer = frameData->GetThreadData(0)->AllocConstant(sizeof(BloomParams), &bloomParams);
     if (!bloomConstantBuffer) {
@@ -1031,11 +1053,8 @@ bool RenderBackend::DispatchConvolutionBloomMultiplySpectrum() {
     const uint32_t fftSize = currentVisCamera->fftBloomSize;
     constexpr uint32_t ColorPairCount = 2; // RG, B0
 
-    float2 kernelSpatialScale(1.0f, 1.0f);
-    CalcConvolutionBloomContentRect(currentVisCamera->renderWidth, currentVisCamera->renderHeight, fftSize, &kernelSpatialScale);
-
-    // content padding 때문에 줄어든 kernel footprint 의 면적만큼 커널 에너지를 보정한다.
-    const float kernelAreaScale = BE1::Max(kernelSpatialScale.x * kernelSpatialScale.y, 0.000001f);
+    // content guard padding 때문에 줄어든 kernel footprint 의 면적만큼 커널 에너지를 보정한다.
+    const float kernelAreaScale = BE1::Max(currentConvolutionBloomKernelSpatialScale.x * currentConvolutionBloomKernelSpatialScale.y, 0.000001f);
     // sourcePixelCount 를 곱해둔 factor 를 현재 FFT kernel 샘플 수로 나눈다.
     // 이렇게 해서 FFT size 에 독립적이 되도록 커널 에너지를 보정한다.
     const float kernelSampleCount = static_cast<float>(fftSize) * static_cast<float>(fftSize);
@@ -1072,7 +1091,11 @@ bool RenderBackend::DispatchConvolutionBloomResolve() {
     bloomParams.inputSize = uint2(fftSize, fftSize);
     bloomParams.outputSize = uint2(outputW, outputH);
     bloomParams.outputTexelSize = float2(1.0f / outputW, 1.0f / outputH);
-    bloomParams.params1 = CalcConvolutionBloomContentRect(inputW, inputH, fftSize);
+    bloomParams.params1 = float4(
+        currentConvolutionBloomGuardedContentRect.x,
+        currentConvolutionBloomGuardedContentRect.y,
+        currentConvolutionBloomGuardedContentRect.w,
+        currentConvolutionBloomGuardedContentRect.h);
 
     RHI::ConstantBuffer *bloomConstantBuffer = frameData->GetThreadData(0)->AllocConstant(sizeof(BloomParams), &bloomParams);
     if (!bloomConstantBuffer) {

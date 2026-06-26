@@ -29,15 +29,15 @@ class RenderFrameData;
 
     * Real FFT spectrum as packed complex:
       - N-point real FFT 결과 X[0..N-1] 는 켤레 대칭이므로 N/2 개의 float2 만 저장한다.
-      - packedX[0].x = X[0]      // DC
-      - packedX[0].y = X[N/2]    // Nyquist
+      - packedX[0].x = X[0]   (DC)
+      - packedX[0].y = X[N/2] (Nyquist)
       - packedX[1..N/2-1] = X[1..N/2-1]
 
     * Dual-real FFT spectrum as packed complex:
       - 두 real 입력 A, B 를 하나의 complex FFT 로 처리한 뒤, packed real spectrum 두 벌로 분리한다.
       - 한 FFT block 은 N 개의 float2 를 사용한다.
-      - packed[0..N/2-1]       = A spectrum
-      - packed[N/2..N-1]       = B spectrum
+      - packed[0..N/2-1] = A spectrum
+      - packed[N/2..N-1] = B spectrum
       - A[0].x = A_DC, A[0].y = A_Nyquist, A[1..N/2-1]
       - B[0].x = B_DC, B[0].y = B_Nyquist, B[1..N/2-1]
 

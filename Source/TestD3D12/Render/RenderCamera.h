@@ -121,9 +121,8 @@ public:
 
     void                        Update(const RenderCameraDesc &desc);
 
-    void                        SetConvolutionBloomKernelTexture(const SharedPtr<Texture> &texture, float normalizationFactor);
+    void                        SetConvolutionBloomKernelTexture(const SharedPtr<Texture> &texture, float normalizationFactor, const BE1::Vec2 &kernelExtents);
     void                        SetConvolutionBloomKernelRotation(float rotation);
-    void                        SetConvolutionBloomKernelContentPaddingRatio(float contentPaddingRatio);
 
     void                        EnsureRenderTextures(uint32_t width, uint32_t height, RHI::Format colorFormat, RHI::Format depthFormat, uint32_t sampleCount, const BE1::Color4 &optimizedClearColor);
     void                        EnsurePostProcessResources();
@@ -151,6 +150,7 @@ public:
     RHI::Buffer *               GetFFTBloomScreenSpectrumBuffer() const { return fftBloomScreenSpectrumBuffer; }
     const SharedPtr<Texture> &  GetFFTBloomKernelTexture() const { return fftBloomKernelSourceTexture; }
     float                       GetFFTBloomKernelNormalizationFactor() const { return fftBloomKernelNormalizationFactor; }
+    const BE1::Vec2 &           GetFFTBloomKernelExtents() const { return fftBloomKernelExtents; }
     RHI::Buffer *               GetFFTBloomKernelSpatialBuffer() const { return fftBloomKernelSpatialBuffer; }
     RHI::Buffer *               GetFFTBloomKernelSpectrumBuffer() const { return fftBloomKernelSpectrumBuffer; }
     RHI::Buffer *               GetFFTBloomWorkBuffer() const { return fftBloomWorkBuffer; }
@@ -212,13 +212,10 @@ private:
     uint32_t                    fftBloomSize = 0;
     SharedPtr<Texture>          fftBloomKernelSourceTexture;
     float                       fftBloomKernelNormalizationFactor = 1.0f;
+    BE1::Vec2                   fftBloomKernelExtents = BE1::Vec2(1.0f, 1.0f);
     RHI::Buffer *               fftBloomKernelSpatialBuffer = nullptr;
     RHI::Buffer *               fftBloomKernelSpectrumBuffer = nullptr;
     float                       fftBloomKernelRotation = 0.0f;
-    float                       fftBloomKernelContentPaddingRatio = -1.0f;
-    uint32_t                    fftBloomKernelRenderWidth = 0;
-    uint32_t                    fftBloomKernelRenderHeight = 0;
-    uint32_t                    fftBloomKernelFFTSize = 0;
     bool                        fftBloomKernelDirty = true;
     RHI::Buffer *               fftBloomScreenSpatialBuffer = nullptr;
     RHI::Buffer *               fftBloomScreenSpectrumBuffer = nullptr;

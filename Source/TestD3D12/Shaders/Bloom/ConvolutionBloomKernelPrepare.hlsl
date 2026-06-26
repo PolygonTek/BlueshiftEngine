@@ -34,6 +34,7 @@ void CSMain(uint3 dispatchThreadId : SV_DispatchThreadID) {
     // 회전된 kernel 을 만들기 위해 sourceCoord 를 kernel center 기준으로 역방향 회전한다.
     float2 sourceCoord = float2(shiftedCoord) + 0.5;
     float2 halfSize = bloomParams.outputSize * 0.5;
+ 
     // content padding 으로 줄어든 만큼 kernel 도 줄여 resolve 후 screen-space radius 가 커지지 않도록 한다.
     float2 kernelSpatialScale = max(BP_BLOOM_KERNEL_SPATIAL_SCALE, float2(0.0001, 0.0001));
     float2 centeredCoord = (sourceCoord - halfSize) / kernelSpatialScale;

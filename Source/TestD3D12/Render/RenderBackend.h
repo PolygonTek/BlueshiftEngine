@@ -93,6 +93,7 @@ private:
     bool                            DispatchBloom();
     bool                            DispatchPyramidBloom();
     bool                            DispatchConvolutionBloom();
+    void                            UpdateConvolutionBloomGuardedContentRect();
     bool                            DispatchConvolutionBloomKernelPrepare();
     bool                            DispatchConvolutionBloomScreenPrefilter();
     bool                            DispatchConvolutionBloomMultiplySpectrum();
@@ -129,6 +130,8 @@ private:
     RHI::PipelineState *            currentConvolutionBloomPrefilterPSO = nullptr;
     RHI::PipelineState *            currentConvolutionBloomKernelPreparePSO = nullptr;
     RHI::PipelineState *            currentConvolutionBloomResolvePSO = nullptr;
+    BE1::RectF                      currentConvolutionBloomGuardedContentRect = BE1::RectF(0.0f, 0.0f, 0.0f, 0.0f);
+    BE1::Vec2                       currentConvolutionBloomKernelSpatialScale = BE1::Vec2(1.0f, 1.0f);
 
     GpuFFT                          gpuFFT;
 

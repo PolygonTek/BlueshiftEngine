@@ -516,21 +516,15 @@ void App::BuildImGuiOverlay() {
                         ImGui::EndCombo();
                     }
 
-                    static constexpr int convolutionBloomFFTMaxSizeOptions[] = { 512, 1024 };
+                    static constexpr int convolutionBloomFFTMaxSizeOptions[] = { 256, 512, 1024 };
                     int convolutionBloomFFTMaxSize = r_convolutionBloomFFTMaxSize.GetInteger();
-                    int convolutionBloomFFTMaxSizeIndex = convolutionBloomFFTMaxSize <= 512 ? 0 : 1;
+                    int convolutionBloomFFTMaxSizeIndex = convolutionBloomFFTMaxSize <= 256 ? 0 : (convolutionBloomFFTMaxSize <= 512 ? 1 : 2);
                     ImGui::SetNextItemWidth(fontSize * 12.0f);
                     if (ImGui::Combo("bloom FFT max size", &convolutionBloomFFTMaxSizeIndex,
+                        "256\0"
                         "512\0"
                         "1024\0")) {
                         r_convolutionBloomFFTMaxSize.SetInteger(convolutionBloomFFTMaxSizeOptions[convolutionBloomFFTMaxSizeIndex]);
-                    }
-
-                    float convolutionBloomContentPaddingRatio = r_convolutionBloomContentPaddingRatio.GetFloat();
-                    ImGui::SetNextItemWidth(fontSize * 12.0f);
-                    if (ImGui::SliderFloat("bloom content padding", &convolutionBloomContentPaddingRatio, 0.0f, 0.45f, "%.3f")) {
-                        BE1::Clamp(convolutionBloomContentPaddingRatio, 0.0f, 0.45f);
-                        r_convolutionBloomContentPaddingRatio.SetFloat(convolutionBloomContentPaddingRatio);
                     }
 
                     float convolutionBloomKernelRotation = r_convolutionBloomKernelRotation.GetFloat();

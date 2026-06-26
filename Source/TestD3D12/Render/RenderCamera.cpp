@@ -79,9 +79,13 @@ void RenderCamera::Update(const RenderCameraDesc &desc) {
     viewProjMatrix = projMatrix * viewMatrix;
 }
 
-void RenderCamera::SetConvolutionBloomKernelTexture(const SharedPtr<Texture> &texture, float normalizationFactor) {
+void RenderCamera::SetConvolutionBloomKernelTexture(const SharedPtr<Texture> &texture, float normalizationFactor, const BE1::Vec2 &kernelExtents) {
     if (fftBloomKernelSourceTexture != texture) {
         fftBloomKernelSourceTexture = texture;
+        fftBloomKernelDirty = true;
+    }
+    if (fftBloomKernelExtents != kernelExtents) {
+        fftBloomKernelExtents = kernelExtents;
         fftBloomKernelDirty = true;
     }
     fftBloomKernelNormalizationFactor = normalizationFactor;
@@ -93,22 +97,6 @@ void RenderCamera::SetConvolutionBloomKernelRotation(float rotation) {
     }
 
     fftBloomKernelRotation = rotation;
-    fftBloomKernelDirty = true;
-}
-
-void RenderCamera::SetConvolutionBloomKernelContentPaddingRatio(float contentPaddingRatio) {
-    BE1::Clamp(contentPaddingRatio, 0.0f, 0.45f);
-    if (fftBloomKernelContentPaddingRatio == contentPaddingRatio &&
-        fftBloomKernelRenderWidth == renderWidth &&
-        fftBloomKernelRenderHeight == renderHeight &&
-        fftBloomKernelFFTSize == fftBloomSize) {
-        return;
-    }
-
-    fftBloomKernelContentPaddingRatio = contentPaddingRatio;
-    fftBloomKernelRenderWidth = renderWidth;
-    fftBloomKernelRenderHeight = renderHeight;
-    fftBloomKernelFFTSize = fftBloomSize;
     fftBloomKernelDirty = true;
 }
 
