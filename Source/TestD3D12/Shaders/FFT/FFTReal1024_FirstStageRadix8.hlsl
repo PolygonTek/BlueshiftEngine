@@ -26,7 +26,7 @@ void CSMain(uint3 dispatchThreadId : SV_DispatchThreadID) {
     uint inputBase = fftBlockIndex * 1024;
     uint outputBase = fftBlockIndex * 512;
 
-    // complex FFT512 radix-8 stage 0 의 여덟 입력 원소 사이의 간격 (stockham)
+    // complex FFT512 radix-8 stage 0 의 여덟 입력 원소 사이의 간격 (Stockham)
     uint inputStride = 512 / 8;
 
     uint packedIndex0 = butterflyIndex;

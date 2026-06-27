@@ -285,11 +285,23 @@ void RenderBackend::UpdateGlobalPSOs() {
     currentConvolutionBloomKernelPreparePSO = GetReadyPSO(renderSystem->convolutionBloomKernelPreparePSO);
     currentConvolutionBloomResolvePSO = GetReadyPSO(renderSystem->convolutionBloomResolvePSO);
 
+#ifdef USE_FUSED_FFT
     gpuFFT.fftComplex256PSO = GetReadyPSO(renderSystem->fftComplex256PSO);
-    gpuFFT.fftComplex256StagePSO = GetReadyPSO(renderSystem->fftComplex256StagePSO);
     gpuFFT.fftComplex512PSO = GetReadyPSO(renderSystem->fftComplex512PSO);
-    gpuFFT.fftComplex512StagePSO = GetReadyPSO(renderSystem->fftComplex512StagePSO);
     gpuFFT.fftComplex1024PSO = GetReadyPSO(renderSystem->fftComplex1024PSO);
+    gpuFFT.fftReal512PSO = GetReadyPSO(renderSystem->fftReal512PSO);
+    gpuFFT.fftReal1024PSO = GetReadyPSO(renderSystem->fftReal1024PSO);
+    gpuFFT.ifftReal512PSO = GetReadyPSO(renderSystem->ifftReal512PSO);
+    gpuFFT.ifftReal1024PSO = GetReadyPSO(renderSystem->ifftReal1024PSO);
+    gpuFFT.fftDualReal256PSO = GetReadyPSO(renderSystem->fftDualReal256PSO);
+    gpuFFT.fftDualReal512PSO = GetReadyPSO(renderSystem->fftDualReal512PSO);
+    gpuFFT.fftDualReal1024PSO = GetReadyPSO(renderSystem->fftDualReal1024PSO);
+    gpuFFT.ifftDualReal256PSO = GetReadyPSO(renderSystem->ifftDualReal256PSO);
+    gpuFFT.ifftDualReal512PSO = GetReadyPSO(renderSystem->ifftDualReal512PSO);
+    gpuFFT.ifftDualReal1024PSO = GetReadyPSO(renderSystem->ifftDualReal1024PSO);
+#else
+    gpuFFT.fftComplex256StagePSO = GetReadyPSO(renderSystem->fftComplex256StagePSO);
+    gpuFFT.fftComplex512StagePSO = GetReadyPSO(renderSystem->fftComplex512StagePSO);
     gpuFFT.fftComplex1024StagePSO = GetReadyPSO(renderSystem->fftComplex1024StagePSO);
     gpuFFT.fftComplex1024LastStagePSO = GetReadyPSO(renderSystem->fftComplex1024LastStagePSO);
     gpuFFT.fftReal512FirstStagePSO = GetReadyPSO(renderSystem->fftReal512FirstStagePSO);
@@ -312,6 +324,7 @@ void RenderBackend::UpdateGlobalPSOs() {
     gpuFFT.ifftDualReal512LastStagePSO = GetReadyPSO(renderSystem->ifftDualReal512LastStagePSO);
     gpuFFT.ifftDualReal1024FirstStagePSO = GetReadyPSO(renderSystem->ifftDualReal1024FirstStagePSO);
     gpuFFT.ifftDualReal1024LastStagePSO = GetReadyPSO(renderSystem->ifftDualReal1024LastStagePSO);
+#endif
     gpuFFT.multiplyComplexSpectrum2DPSO = GetReadyPSO(renderSystem->multiplyComplexSpectrum2DPSO);
     gpuFFT.multiplyPackedRealSpectrum2DPSO = GetReadyPSO(renderSystem->multiplyPackedRealSpectrum2DPSO);
     gpuFFT.multiplyPackedDualRealSpectrum2DPSO = GetReadyPSO(renderSystem->multiplyPackedDualRealSpectrum2DPSO);

@@ -107,11 +107,27 @@ void RenderSystem::Shutdown() {
 }
 
 void RenderSystem::InitFFTPSOs() {
+#ifdef USE_FUSED_FFT
     fftComplex256PSO = shaderPipelineCache.GetComputePipeline(shaderTemplateManager.fftComplex256ShaderTemplate, ShaderPermutationKey(), false);
-    fftComplex256StagePSO = shaderPipelineCache.GetComputePipeline(shaderTemplateManager.fftComplex256StageShaderTemplate, ShaderPermutationKey(), false);
     fftComplex512PSO = shaderPipelineCache.GetComputePipeline(shaderTemplateManager.fftComplex512ShaderTemplate, ShaderPermutationKey(), false);
-    fftComplex512StagePSO = shaderPipelineCache.GetComputePipeline(shaderTemplateManager.fftComplex512StageShaderTemplate, ShaderPermutationKey(), false);
     fftComplex1024PSO = shaderPipelineCache.GetComputePipeline(shaderTemplateManager.fftComplex1024ShaderTemplate, ShaderPermutationKey(), false);
+
+    fftReal512PSO = shaderPipelineCache.GetComputePipeline(shaderTemplateManager.fftReal512ShaderTemplate, ShaderPermutationKey(), false);
+    fftReal1024PSO = shaderPipelineCache.GetComputePipeline(shaderTemplateManager.fftReal1024ShaderTemplate, ShaderPermutationKey(), false);
+
+    ifftReal512PSO = shaderPipelineCache.GetComputePipeline(shaderTemplateManager.ifftReal512ShaderTemplate, ShaderPermutationKey(), false);
+    ifftReal1024PSO = shaderPipelineCache.GetComputePipeline(shaderTemplateManager.ifftReal1024ShaderTemplate, ShaderPermutationKey(), false);
+
+    fftDualReal256PSO = shaderPipelineCache.GetComputePipeline(shaderTemplateManager.fftDualReal256ShaderTemplate, ShaderPermutationKey(), false);
+    fftDualReal512PSO = shaderPipelineCache.GetComputePipeline(shaderTemplateManager.fftDualReal512ShaderTemplate, ShaderPermutationKey(), false);
+    fftDualReal1024PSO = shaderPipelineCache.GetComputePipeline(shaderTemplateManager.fftDualReal1024ShaderTemplate, ShaderPermutationKey(), false);
+
+    ifftDualReal256PSO = shaderPipelineCache.GetComputePipeline(shaderTemplateManager.ifftDualReal256ShaderTemplate, ShaderPermutationKey(), false);
+    ifftDualReal512PSO = shaderPipelineCache.GetComputePipeline(shaderTemplateManager.ifftDualReal512ShaderTemplate, ShaderPermutationKey(), false);
+    ifftDualReal1024PSO = shaderPipelineCache.GetComputePipeline(shaderTemplateManager.ifftDualReal1024ShaderTemplate, ShaderPermutationKey(), false);
+#else
+    fftComplex256StagePSO = shaderPipelineCache.GetComputePipeline(shaderTemplateManager.fftComplex256StageShaderTemplate, ShaderPermutationKey(), false);
+    fftComplex512StagePSO = shaderPipelineCache.GetComputePipeline(shaderTemplateManager.fftComplex512StageShaderTemplate, ShaderPermutationKey(), false);
     fftComplex1024StagePSO = shaderPipelineCache.GetComputePipeline(shaderTemplateManager.fftComplex1024StageShaderTemplate, ShaderPermutationKey(), false);
     fftComplex1024LastStagePSO = shaderPipelineCache.GetComputePipeline(shaderTemplateManager.fftComplex1024LastStageShaderTemplate, ShaderPermutationKey(), false);
 
@@ -138,7 +154,7 @@ void RenderSystem::InitFFTPSOs() {
     ifftDualReal512LastStagePSO = shaderPipelineCache.GetComputePipeline(shaderTemplateManager.ifftDualReal512LastStageShaderTemplate, ShaderPermutationKey(), false);
     ifftDualReal1024FirstStagePSO = shaderPipelineCache.GetComputePipeline(shaderTemplateManager.ifftDualReal1024FirstStageShaderTemplate, ShaderPermutationKey(), false);
     ifftDualReal1024LastStagePSO = shaderPipelineCache.GetComputePipeline(shaderTemplateManager.ifftDualReal1024LastStageShaderTemplate, ShaderPermutationKey(), false);
-
+#endif
     multiplyComplexSpectrum2DPSO = shaderPipelineCache.GetComputePipeline(shaderTemplateManager.multiplyComplexSpectrum2DShaderTemplate, ShaderPermutationKey(), false);
     multiplyPackedRealSpectrum2DPSO = shaderPipelineCache.GetComputePipeline(shaderTemplateManager.multiplyPackedRealSpectrum2DShaderTemplate, ShaderPermutationKey(), false);
     multiplyPackedDualRealSpectrum2DPSO = shaderPipelineCache.GetComputePipeline(shaderTemplateManager.multiplyPackedDualRealSpectrum2DShaderTemplate, ShaderPermutationKey(), false);
@@ -153,11 +169,27 @@ void RenderSystem::InitFFTPSOs() {
 }
 
 void RenderSystem::ReleaseFFTPSOs() {
+#ifdef USE_FUSED_FFT
     fftComplex256PSO.reset();
-    fftComplex256StagePSO.reset();
     fftComplex512PSO.reset();
-    fftComplex512StagePSO.reset();
     fftComplex1024PSO.reset();
+
+    fftReal512PSO.reset();
+    fftReal1024PSO.reset();
+
+    ifftReal512PSO.reset();
+    ifftReal1024PSO.reset();
+
+    fftDualReal256PSO.reset();
+    fftDualReal512PSO.reset();
+    fftDualReal1024PSO.reset();
+
+    ifftDualReal256PSO.reset();
+    ifftDualReal512PSO.reset();
+    ifftDualReal1024PSO.reset();
+#else
+    fftComplex256StagePSO.reset();
+    fftComplex512StagePSO.reset();
     fftComplex1024StagePSO.reset();
     fftComplex1024LastStagePSO.reset();
 
@@ -184,6 +216,7 @@ void RenderSystem::ReleaseFFTPSOs() {
     ifftDualReal512LastStagePSO.reset();
     ifftDualReal1024FirstStagePSO.reset();
     ifftDualReal1024LastStagePSO.reset();
+#endif
 
     multiplyComplexSpectrum2DPSO.reset();
     multiplyPackedRealSpectrum2DPSO.reset();

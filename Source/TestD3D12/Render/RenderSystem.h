@@ -107,37 +107,46 @@ private:
     SharedPtr<ShaderPipeline>       convolutionBloomKernelPreparePSO;
     SharedPtr<ShaderPipeline>       convolutionBloomResolvePSO;
 
+#ifdef USE_FUSED_FFT
     SharedPtr<ShaderPipeline>       fftComplex256PSO;
-    SharedPtr<ShaderPipeline>       fftComplex256StagePSO;
     SharedPtr<ShaderPipeline>       fftComplex512PSO;
-    SharedPtr<ShaderPipeline>       fftComplex512StagePSO;
     SharedPtr<ShaderPipeline>       fftComplex1024PSO;
+    SharedPtr<ShaderPipeline>       fftReal512PSO;
+    SharedPtr<ShaderPipeline>       fftReal1024PSO;
+    SharedPtr<ShaderPipeline>       ifftReal512PSO;
+    SharedPtr<ShaderPipeline>       ifftReal1024PSO;
+    SharedPtr<ShaderPipeline>       fftDualReal256PSO;
+    SharedPtr<ShaderPipeline>       fftDualReal512PSO;
+    SharedPtr<ShaderPipeline>       fftDualReal1024PSO;
+    SharedPtr<ShaderPipeline>       ifftDualReal256PSO;
+    SharedPtr<ShaderPipeline>       ifftDualReal512PSO;
+    SharedPtr<ShaderPipeline>       ifftDualReal1024PSO;
+#else
+    SharedPtr<ShaderPipeline>       fftComplex256StagePSO;
+    SharedPtr<ShaderPipeline>       fftComplex512StagePSO;
     SharedPtr<ShaderPipeline>       fftComplex1024StagePSO;
     SharedPtr<ShaderPipeline>       fftComplex1024LastStagePSO;
-
     SharedPtr<ShaderPipeline>       fftReal512FirstStagePSO;
     SharedPtr<ShaderPipeline>       fftReal512LastStagePSO;
     SharedPtr<ShaderPipeline>       fftReal1024FirstStagePSO;
     SharedPtr<ShaderPipeline>       fftReal1024LastStagePSO;
-
     SharedPtr<ShaderPipeline>       ifftReal512FirstStagePSO;
     SharedPtr<ShaderPipeline>       ifftReal512LastStagePSO;
     SharedPtr<ShaderPipeline>       ifftReal1024FirstStagePSO;
     SharedPtr<ShaderPipeline>       ifftReal1024LastStagePSO;
-
     SharedPtr<ShaderPipeline>       fftDualReal256FirstStagePSO;
     SharedPtr<ShaderPipeline>       fftDualReal256LastStagePSO;
     SharedPtr<ShaderPipeline>       fftDualReal512FirstStagePSO;
     SharedPtr<ShaderPipeline>       fftDualReal512LastStagePSO;
     SharedPtr<ShaderPipeline>       fftDualReal1024FirstStagePSO;
     SharedPtr<ShaderPipeline>       fftDualReal1024LastStagePSO;
-
     SharedPtr<ShaderPipeline>       ifftDualReal256FirstStagePSO;
     SharedPtr<ShaderPipeline>       ifftDualReal256LastStagePSO;
     SharedPtr<ShaderPipeline>       ifftDualReal512FirstStagePSO;
     SharedPtr<ShaderPipeline>       ifftDualReal512LastStagePSO;
     SharedPtr<ShaderPipeline>       ifftDualReal1024FirstStagePSO;
     SharedPtr<ShaderPipeline>       ifftDualReal1024LastStagePSO;
+#endif
 
     SharedPtr<ShaderPipeline>       multiplyComplexSpectrum2DPSO;
     SharedPtr<ShaderPipeline>       multiplyPackedRealSpectrum2DPSO;

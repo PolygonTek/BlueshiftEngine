@@ -49,6 +49,9 @@
 // DBVT 사용 여부
 //#define USE_DBVT
 
+// Fused FFT 셰이더 사용 여부
+#define USE_FUSED_FFT
+
 template <typename T>
 using SharedPtr = std::shared_ptr<T>;
 

@@ -38,7 +38,7 @@ void CSMain(uint3 dispatchThreadId : SV_DispatchThreadID) {
     // 스테이지 별 버터플라이 그룹의 사이즈: 8, 64, 512
     uint span = 8u << (fftStageIndex * 3u);
 
-    // 하나의 버터플라이가 읽는 여덟 입력 원소 사이의 간격 (stockham)
+    // 하나의 버터플라이가 읽는 여덟 입력 원소 사이의 간격 (Stockham)
     uint inputStride = 512 / span;
 
     // 현재 스테이지에서의 twiddle factor 의 지수 = W_{span}^{twiddle_index}

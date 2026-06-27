@@ -18,21 +18,6 @@ RWStructuredBuffer<float2> outputBuffer : register(u0);
 groupshared float2 fftStageBuffer0[512];
 groupshared float2 fftStageBuffer1[512];
 
-// twiddle factor W, W^2, ..., W^7 계산
-void GetRadix8Twiddles(uint twiddleIndex, float invSpan, out float2 w1, out float2 w2, out float2 w3, out float2 w4, out float2 w5, out float2 w6, out float2 w7) {
-    float s;
-    float c;
-    sincos(fftParams.sign * TWO_PI * float(twiddleIndex) * invSpan, s, c);
-
-    w1 = float2(c, s);
-    w2 = ComplexMul(w1, w1);
-    w3 = ComplexMul(w2, w1);
-    w4 = ComplexMul(w3, w1);
-    w5 = ComplexMul(w4, w1);
-    w6 = ComplexMul(w5, w1);
-    w7 = ComplexMul(w6, w1);
-}
-
 void RunRadix8Stage0_Buffer0To1(uint butterflyIndex) {
     float2 a0 = fftStageBuffer0[butterflyIndex];
     float2 a1 = fftStageBuffer0[butterflyIndex + 64u];
@@ -75,7 +60,7 @@ void RunRadix8Stage1_Buffer1To0(uint butterflyIndex) {
     float2 w5;
     float2 w6;
     float2 w7;
-    GetRadix8Twiddles(twiddleIndex, 1.0f / 64.0f, w1, w2, w3, w4, w5, w6, w7);
+    GetRadix8Twiddles(twiddleIndex, 1.0f / 64.0f, fftParams.sign, w1, w2, w3, w4, w5, w6, w7);
 
     float2 a0 = fftStageBuffer1[inputIndex0];
     float2 a1 = ComplexMul(w1, fftStageBuffer1[inputIndex0 + 8u]);
@@ -116,7 +101,7 @@ void RunRadix8Stage2_Buffer0ToOutput(uint butterflyIndex, uint bufferBase) {
     float2 w5;
     float2 w6;
     float2 w7;
-    GetRadix8Twiddles(butterflyIndex, 1.0f / 512.0f, w1, w2, w3, w4, w5, w6, w7);
+    GetRadix8Twiddles(butterflyIndex, 1.0f / 512.0f, fftParams.sign, w1, w2, w3, w4, w5, w6, w7);
 
     float2 a0 = fftStageBuffer0[inputIndex0];
     float2 a1 = ComplexMul(w1, fftStageBuffer0[inputIndex0 + 1u]);

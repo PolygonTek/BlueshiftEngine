@@ -25,7 +25,7 @@ void CSMain(uint3 dispatchThreadId : SV_DispatchThreadID) {
     // 현재 dual-real FFT512 블록에서 사용할 입력/출력 버퍼의 시작 오프셋
     uint bufferBase = fftBlockIndex * 512;
 
-    // complex FFT512 radix-8 stage 0 의 여덟 입력 원소 사이의 간격 (stockham)
+    // complex FFT512 radix-8 stage 0 의 여덟 입력 원소 사이의 간격 (Stockham)
     uint inputStride = 512 / 8;
 
     uint inputIndex0 = bufferBase + butterflyIndex;

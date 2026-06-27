@@ -163,28 +163,49 @@ public:
                                 // transposed fftSize x fftSize packed dual-real spectra -> transposed fftSize x fftSize packed dual-real spectra
     bool                        DispatchMultiplyPackedDualRealSpectrum2D(RHI::CommandList *commandList, RenderFrameData *frameData, RHI::Buffer *lhsSpectrumBuffer, RHI::Buffer *rhsSpectrumBuffer, RHI::Buffer *outputSpectrumBuffer, uint32_t fftSize, uint32_t planeCount, float scale);
 
-                                // complex to complex
+#ifdef USE_FUSED_FFT
+                                // complex to complex (fused)
     RHI::PipelineState *        fftComplex256PSO = nullptr;
-    RHI::PipelineState *        fftComplex256StagePSO = nullptr;
     RHI::PipelineState *        fftComplex512PSO = nullptr;
-    RHI::PipelineState *        fftComplex512StagePSO = nullptr;
     RHI::PipelineState *        fftComplex1024PSO = nullptr;
+
+                                // real to packed complex (fused)
+    RHI::PipelineState *        fftReal512PSO = nullptr;
+    RHI::PipelineState *        fftReal1024PSO = nullptr;
+
+                                // packed complex to real (fused)
+    RHI::PipelineState *        ifftReal512PSO = nullptr;
+    RHI::PipelineState *        ifftReal1024PSO = nullptr;
+
+                                // dual real to 2 packed complex (fused)
+    RHI::PipelineState *        fftDualReal256PSO = nullptr;
+    RHI::PipelineState *        fftDualReal512PSO = nullptr;
+    RHI::PipelineState *        fftDualReal1024PSO = nullptr;
+
+                                // 2 packed complex to dual real (fused)
+    RHI::PipelineState *        ifftDualReal256PSO = nullptr;
+    RHI::PipelineState *        ifftDualReal512PSO = nullptr;
+    RHI::PipelineState *        ifftDualReal1024PSO = nullptr;
+#else
+                                // complex to complex (stage)
+    RHI::PipelineState *        fftComplex256StagePSO = nullptr;
+    RHI::PipelineState *        fftComplex512StagePSO = nullptr;
     RHI::PipelineState *        fftComplex1024StagePSO = nullptr;
     RHI::PipelineState *        fftComplex1024LastStagePSO = nullptr;
 
-                                // real to packed complex
+                                // real to packed complex (stage)
     RHI::PipelineState *        fftReal512FirstStagePSO = nullptr;
     RHI::PipelineState *        fftReal512LastStagePSO = nullptr;
     RHI::PipelineState *        fftReal1024FirstStagePSO = nullptr;
     RHI::PipelineState *        fftReal1024LastStagePSO = nullptr;
 
-                                // packed complex to real
+                                // packed complex to real (stage)
     RHI::PipelineState *        ifftReal512FirstStagePSO = nullptr;
     RHI::PipelineState *        ifftReal512LastStagePSO = nullptr;
     RHI::PipelineState *        ifftReal1024FirstStagePSO = nullptr;
     RHI::PipelineState *        ifftReal1024LastStagePSO = nullptr;
 
-                                // dual real to 2 packed complex
+                                // dual real to 2 packed complex (stage)
     RHI::PipelineState *        fftDualReal256FirstStagePSO = nullptr;
     RHI::PipelineState *        fftDualReal256LastStagePSO = nullptr;
     RHI::PipelineState *        fftDualReal512FirstStagePSO = nullptr;
@@ -192,14 +213,14 @@ public:
     RHI::PipelineState *        fftDualReal1024FirstStagePSO = nullptr;
     RHI::PipelineState *        fftDualReal1024LastStagePSO = nullptr;
 
-                                // 2 packed complex to dual real
+                                // 2 packed complex to dual real (stage)
     RHI::PipelineState *        ifftDualReal256FirstStagePSO = nullptr;
     RHI::PipelineState *        ifftDualReal256LastStagePSO = nullptr;
     RHI::PipelineState *        ifftDualReal512FirstStagePSO = nullptr;
     RHI::PipelineState *        ifftDualReal512LastStagePSO = nullptr;
     RHI::PipelineState *        ifftDualReal1024FirstStagePSO = nullptr;
     RHI::PipelineState *        ifftDualReal1024LastStagePSO = nullptr;
-
+#endif
                                 // packed spectrum ops
     RHI::PipelineState *        multiplyComplexSpectrum2DPSO = nullptr;
     RHI::PipelineState *        multiplyPackedRealSpectrum2DPSO = nullptr;
@@ -217,8 +238,20 @@ public:
 private:
     RHI::Buffer *               CreateRealFFTTwiddleBuffer(uint32_t fftSize);
 
-    bool                        DispatchFFTComplexStage(RHI::CommandList *commandList, RHI::PipelineState *pso, RHI::Buffer *inputBuffer, RHI::Buffer *outputBuffer, uint32_t fftBlockCount, RHI::ConstantBuffer *fftConstantBuffer, uint32_t stageIndex);
+#ifdef USE_FUSED_FFT
     bool                        DispatchFFTComplexFused(RHI::CommandList *commandList, RHI::FrameThreadData *frameThreadData, RHI::PipelineState *pso, RHI::Buffer *inputBuffer, RHI::Buffer *outputBuffer, uint32_t fftBlockCount, RHI::GPUResourceState inputBufferState, RHI::GPUResourceState outputBufferState, float sign, float scale);
+    bool                        DispatchFFTReal512Fused(RHI::CommandList *commandList, RHI::FrameThreadData *frameThreadData, RHI::Buffer *inputBuffer, RHI::Buffer *outputBuffer, uint32_t fftBlockCount, RHI::Buffer **resultBuffer);
+    bool                        DispatchFFTReal1024Fused(RHI::CommandList *commandList, RHI::FrameThreadData *frameThreadData, RHI::Buffer *inputBuffer, RHI::Buffer *outputBuffer, uint32_t fftBlockCount, RHI::Buffer **resultBuffer);
+    bool                        DispatchIFFTReal512Fused(RHI::CommandList *commandList, RHI::FrameThreadData *frameThreadData, RHI::Buffer *inputBuffer, RHI::Buffer *outputBuffer, RHI::Buffer *workBuffer, uint32_t fftBlockCount, RHI::GPUResourceState inputBufferState, RHI::GPUResourceState workBufferState);
+    bool                        DispatchIFFTReal1024Fused(RHI::CommandList *commandList, RHI::FrameThreadData *frameThreadData, RHI::Buffer *inputBuffer, RHI::Buffer *outputBuffer, RHI::Buffer *workBuffer, uint32_t fftBlockCount, RHI::GPUResourceState inputBufferState, RHI::GPUResourceState workBufferState);
+    bool                        DispatchFFTDualReal256Fused(RHI::CommandList *commandList, RHI::FrameThreadData *frameThreadData, RHI::Buffer *inputBuffer, RHI::Buffer *outputBuffer, uint32_t fftBlockCount, RHI::Buffer **resultBuffer);
+    bool                        DispatchFFTDualReal512Fused(RHI::CommandList *commandList, RHI::FrameThreadData *frameThreadData, RHI::Buffer *inputBuffer, RHI::Buffer *outputBuffer, uint32_t fftBlockCount, RHI::Buffer **resultBuffer);
+    bool                        DispatchFFTDualReal1024Fused(RHI::CommandList *commandList, RHI::FrameThreadData *frameThreadData, RHI::Buffer *inputBuffer, RHI::Buffer *outputBuffer, uint32_t fftBlockCount, RHI::Buffer **resultBuffer);
+    bool                        DispatchIFFTDualReal256Fused(RHI::CommandList *commandList, RHI::FrameThreadData *frameThreadData, RHI::Buffer *inputBuffer, RHI::Buffer *outputBuffer, RHI::Buffer *workBuffer, uint32_t fftBlockCount, RHI::GPUResourceState inputBufferState, RHI::GPUResourceState workBufferState);
+    bool                        DispatchIFFTDualReal512Fused(RHI::CommandList *commandList, RHI::FrameThreadData *frameThreadData, RHI::Buffer *inputBuffer, RHI::Buffer *outputBuffer, RHI::Buffer *workBuffer, uint32_t fftBlockCount, RHI::GPUResourceState inputBufferState, RHI::GPUResourceState workBufferState);
+    bool                        DispatchIFFTDualReal1024Fused(RHI::CommandList *commandList, RHI::FrameThreadData *frameThreadData, RHI::Buffer *inputBuffer, RHI::Buffer *outputBuffer, RHI::Buffer *workBuffer, uint32_t fftBlockCount, RHI::GPUResourceState inputBufferState, RHI::GPUResourceState workBufferState);
+#else
+    bool                        DispatchFFTComplexStage(RHI::CommandList *commandList, RHI::PipelineState *pso, RHI::Buffer *inputBuffer, RHI::Buffer *outputBuffer, uint32_t fftBlockCount, RHI::ConstantBuffer *fftConstantBuffer, uint32_t stageIndex);
     bool                        DispatchFFTComplex256(RHI::CommandList *commandList, RHI::FrameThreadData *frameThreadData, RHI::Buffer *inputBuffer, RHI::Buffer *pingBuffer0, RHI::Buffer *pingBuffer1, uint32_t fftBlockCount, float sign, float scale, RHI::PipelineState *regularStagePSO, RHI::Buffer **resultBuffer);
     bool                        DispatchFFTComplex512(RHI::CommandList *commandList, RHI::FrameThreadData *frameThreadData, RHI::Buffer *inputBuffer, RHI::Buffer *pingBuffer0, RHI::Buffer *pingBuffer1, uint32_t fftBlockCount, float sign, float scale, RHI::PipelineState *regularStagePSO, RHI::Buffer **resultBuffer);
     bool                        DispatchFFTComplex1024(RHI::CommandList *commandList, RHI::FrameThreadData *frameThreadData, RHI::Buffer *inputBuffer, RHI::Buffer *pingBuffer0, RHI::Buffer *pingBuffer1, uint32_t fftBlockCount, float sign, float scale, RHI::PipelineState *regularStagePSO, RHI::PipelineState *lastStagePSO, RHI::Buffer **resultBuffer);
@@ -227,18 +260,17 @@ private:
     bool                        DispatchIFFTComplex512(RHI::CommandList *commandList, RHI::FrameThreadData *frameThreadData, RHI::Buffer *inputBuffer, RHI::Buffer *workBuffer, uint32_t fftBlockCount, float sign, float scale, RHI::PipelineState *regularStagePSO, RHI::Buffer **resultBuffer);
     bool                        DispatchIFFTComplex1024(RHI::CommandList *commandList, RHI::FrameThreadData *frameThreadData, RHI::Buffer *inputBuffer, RHI::Buffer *workBuffer, uint32_t fftBlockCount, float sign, float scale, RHI::PipelineState *regularStagePSO, RHI::PipelineState *lastStagePSO, RHI::Buffer **resultBuffer);
     bool                        DispatchIFFTComplexToOutput(RHI::CommandList *commandList, RHI::FrameThreadData *frameThreadData, RHI::Buffer *inputBuffer, RHI::Buffer *outputBuffer, RHI::Buffer *pingBuffer0, RHI::Buffer *pingBuffer1, uint32_t fftBlockCount, uint32_t regularStageCount, RHI::PipelineState *regularStagePSO, RHI::PipelineState *lastStagePSO, float sign, float scale);
-
     bool                        DispatchFFTReal512(RHI::CommandList *commandList, RHI::FrameThreadData *frameThreadData, RHI::Buffer *inputBuffer, RHI::Buffer *pingBuffer0, RHI::Buffer *pingBuffer1, uint32_t fftBlockCount, RHI::Buffer **resultBuffer);
     bool                        DispatchFFTReal1024(RHI::CommandList *commandList, RHI::FrameThreadData *frameThreadData, RHI::Buffer *inputBuffer, RHI::Buffer *pingBuffer0, RHI::Buffer *pingBuffer1, uint32_t fftBlockCount, RHI::Buffer **resultBuffer);
     bool                        DispatchIFFTReal512(RHI::CommandList *commandList, RHI::FrameThreadData *frameThreadData, RHI::Buffer *inputBuffer, RHI::Buffer *outputBuffer, RHI::Buffer *workBuffer, uint32_t fftBlockCount, RHI::GPUResourceState inputBufferState, RHI::GPUResourceState workBufferState);
     bool                        DispatchIFFTReal1024(RHI::CommandList *commandList, RHI::FrameThreadData *frameThreadData, RHI::Buffer *inputBuffer, RHI::Buffer *outputBuffer, RHI::Buffer *workBuffer, uint32_t fftBlockCount, RHI::GPUResourceState inputBufferState, RHI::GPUResourceState workBufferState);
-
     bool                        DispatchFFTDualReal256(RHI::CommandList *commandList, RHI::FrameThreadData *frameThreadData, RHI::Buffer *inputBuffer, RHI::Buffer *pingBuffer0, RHI::Buffer *pingBuffer1, uint32_t fftBlockCount, RHI::Buffer **resultBuffer);
     bool                        DispatchFFTDualReal512(RHI::CommandList *commandList, RHI::FrameThreadData *frameThreadData, RHI::Buffer *inputBuffer, RHI::Buffer *pingBuffer0, RHI::Buffer *pingBuffer1, uint32_t fftBlockCount, RHI::Buffer **resultBuffer);
     bool                        DispatchFFTDualReal1024(RHI::CommandList *commandList, RHI::FrameThreadData *frameThreadData, RHI::Buffer *inputBuffer, RHI::Buffer *pingBuffer0, RHI::Buffer *pingBuffer1, uint32_t fftBlockCount, RHI::Buffer **resultBuffer);
     bool                        DispatchIFFTDualReal256(RHI::CommandList *commandList, RHI::FrameThreadData *frameThreadData, RHI::Buffer *inputBuffer, RHI::Buffer *outputBuffer, RHI::Buffer *workBuffer, uint32_t fftBlockCount, RHI::GPUResourceState inputBufferState, RHI::GPUResourceState workBufferState);
     bool                        DispatchIFFTDualReal512(RHI::CommandList *commandList, RHI::FrameThreadData *frameThreadData, RHI::Buffer *inputBuffer, RHI::Buffer *outputBuffer, RHI::Buffer *workBuffer, uint32_t fftBlockCount, RHI::GPUResourceState inputBufferState, RHI::GPUResourceState workBufferState);
     bool                        DispatchIFFTDualReal1024(RHI::CommandList *commandList, RHI::FrameThreadData *frameThreadData, RHI::Buffer *inputBuffer, RHI::Buffer *outputBuffer, RHI::Buffer *workBuffer, uint32_t fftBlockCount, RHI::GPUResourceState inputBufferState, RHI::GPUResourceState workBufferState);
+#endif
 
     RHI::Buffer *               realFFTTwiddle512Buffer = nullptr;
     RHI::Buffer *               realFFTTwiddle1024Buffer = nullptr;

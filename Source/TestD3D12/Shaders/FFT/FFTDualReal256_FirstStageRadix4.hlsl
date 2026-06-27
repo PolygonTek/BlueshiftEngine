@@ -25,7 +25,7 @@ void CSMain(uint3 dispatchThreadId : SV_DispatchThreadID) {
     // 현재 dual-real FFT256 블록에서 사용할 입력/출력 버퍼의 시작 오프셋
     uint bufferBase = fftBlockIndex * 256;
 
-    // complex FFT256 radix-4 stage 0 의 네 입력 원소 사이의 간격 (stockham)
+    // complex FFT256 radix-4 stage 0 의 네 입력 원소 사이의 간격 (Stockham)
     uint inputStride = 256 / 4;
 
     uint inputIndex0 = bufferBase + butterflyIndex;

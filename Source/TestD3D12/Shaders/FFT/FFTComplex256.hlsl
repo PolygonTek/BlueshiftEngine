@@ -18,17 +18,6 @@ RWStructuredBuffer<float2> outputBuffer : register(u0);
 groupshared float2 fftStageBuffer0[256];
 groupshared float2 fftStageBuffer1[256];
 
-// twiddle factor W, W^2, W^3 계산
-void GetRadix4Twiddles(uint twiddleIndex, float invSpan, out float2 w1, out float2 w2, out float2 w3) {
-    float s;
-    float c;
-    sincos(fftParams.sign * TWO_PI * float(twiddleIndex) * invSpan, s, c);
-
-    w1 = float2(c, s);
-    w2 = ComplexMul(w1, w1);
-    w3 = ComplexMul(w2, w1);
-}
-
 void RunRadix4Stage0_Buffer0To1(uint butterflyIndex) {
     float2 a0 = fftStageBuffer0[butterflyIndex];
     float2 a1 = fftStageBuffer0[butterflyIndex + 64u];
@@ -55,7 +44,7 @@ void RunRadix4Stage1_Buffer1To0(uint butterflyIndex) {
     float2 w1;
     float2 w2;
     float2 w3;
-    GetRadix4Twiddles(twiddleIndex, 1.0f / 16.0f, w1, w2, w3);
+    GetRadix4Twiddles(twiddleIndex, 1.0f / 16.0f, fftParams.sign, w1, w2, w3);
 
     float2 a0 = fftStageBuffer1[inputIndex0];
     float2 a1 = ComplexMul(w1, fftStageBuffer1[inputIndex0 + 16u]);
@@ -82,7 +71,7 @@ void RunRadix4Stage2_Buffer0To1(uint butterflyIndex) {
     float2 w1;
     float2 w2;
     float2 w3;
-    GetRadix4Twiddles(twiddleIndex, 1.0f / 64.0f, w1, w2, w3);
+    GetRadix4Twiddles(twiddleIndex, 1.0f / 64.0f, fftParams.sign, w1, w2, w3);
 
     float2 a0 = fftStageBuffer0[inputIndex0];
     float2 a1 = ComplexMul(w1, fftStageBuffer0[inputIndex0 + 4u]);
@@ -107,7 +96,7 @@ void RunRadix4Stage3_Buffer1ToOutput(uint butterflyIndex, uint bufferBase) {
     float2 w1;
     float2 w2;
     float2 w3;
-    GetRadix4Twiddles(butterflyIndex, 1.0f / 256.0f, w1, w2, w3);
+    GetRadix4Twiddles(butterflyIndex, 1.0f / 256.0f, fftParams.sign, w1, w2, w3);
 
     float2 a0 = fftStageBuffer1[inputIndex0];
     float2 a1 = ComplexMul(w1, fftStageBuffer1[inputIndex0 + 1u]);

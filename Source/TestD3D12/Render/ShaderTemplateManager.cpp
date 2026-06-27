@@ -290,19 +290,13 @@ void ShaderTemplateManager::CreateEngineShaderTemplates() {
 }
 
 void ShaderTemplateManager::CreateFFTShaderTemplates(RHI::ShaderModel shaderModel, const char *baseDir) {
+#ifdef USE_FUSED_FFT
     fftComplex256ShaderTemplate = AllocShaderTemplate("_fftComplex256Shader");
     const BE1::Str fftComplex256ShaderTemplateText = CreateComputeShaderTemplateText(shaderModel, "FFT/FFTComplex256.hlsl", "CSMain");
     if (!fftComplex256ShaderTemplate->Create(fftComplex256ShaderTemplateText.c_str(), baseDir)) {
         BE_FATALERROR("ShaderTemplateManager::CreateEngineShaderTemplates: failed to create FFT complex 256 shader template");
     }
     fftComplex256ShaderTemplate->AddPermutation();
-
-    fftComplex256StageShaderTemplate = AllocShaderTemplate("_fftComplex256StageShader");
-    const BE1::Str fftComplex256StageShaderTemplateText = CreateComputeShaderTemplateText(shaderModel, "FFT/FFTComplex256_StageRadix4.hlsl", "CSMain");
-    if (!fftComplex256StageShaderTemplate->Create(fftComplex256StageShaderTemplateText.c_str(), baseDir)) {
-        BE_FATALERROR("ShaderTemplateManager::CreateEngineShaderTemplates: failed to create FFT complex 256 stage shader template");
-    }
-    fftComplex256StageShaderTemplate->AddPermutation();
 
     fftComplex512ShaderTemplate = AllocShaderTemplate("_fftComplex512Shader");
     const BE1::Str fftComplex512ShaderTemplateText = CreateComputeShaderTemplateText(shaderModel, "FFT/FFTComplex512.hlsl", "CSMain");
@@ -311,19 +305,96 @@ void ShaderTemplateManager::CreateFFTShaderTemplates(RHI::ShaderModel shaderMode
     }
     fftComplex512ShaderTemplate->AddPermutation();
 
-    fftComplex512StageShaderTemplate = AllocShaderTemplate("_fftComplex512StageShader");
-    const BE1::Str fftComplex512StageShaderTemplateText = CreateComputeShaderTemplateText(shaderModel, "FFT/FFTComplex512_StageRadix8.hlsl", "CSMain");
-    if (!fftComplex512StageShaderTemplate->Create(fftComplex512StageShaderTemplateText.c_str(), baseDir)) {
-        BE_FATALERROR("ShaderTemplateManager::CreateEngineShaderTemplates: failed to create FFT512 stage shader template");
-    }
-    fftComplex512StageShaderTemplate->AddPermutation();
-
     fftComplex1024ShaderTemplate = AllocShaderTemplate("_fftComplex1024Shader");
     const BE1::Str fftComplex1024ShaderTemplateText = CreateComputeShaderTemplateText(shaderModel, "FFT/FFTComplex1024.hlsl", "CSMain");
     if (!fftComplex1024ShaderTemplate->Create(fftComplex1024ShaderTemplateText.c_str(), baseDir)) {
         BE_FATALERROR("ShaderTemplateManager::CreateEngineShaderTemplates: failed to create FFT complex 1024 shader template");
     }
     fftComplex1024ShaderTemplate->AddPermutation();
+
+    fftReal512ShaderTemplate = AllocShaderTemplate("_fftReal512Shader");
+    const BE1::Str fftReal512ShaderTemplateText = CreateComputeShaderTemplateText(shaderModel, "FFT/FFTReal512.hlsl", "CSMain");
+    if (!fftReal512ShaderTemplate->Create(fftReal512ShaderTemplateText.c_str(), baseDir)) {
+        BE_FATALERROR("ShaderTemplateManager::CreateEngineShaderTemplates: failed to create FFT real 512 shader template");
+    }
+    fftReal512ShaderTemplate->AddPermutation();
+
+    fftReal1024ShaderTemplate = AllocShaderTemplate("_fftReal1024Shader");
+    const BE1::Str fftReal1024ShaderTemplateText = CreateComputeShaderTemplateText(shaderModel, "FFT/FFTReal1024.hlsl", "CSMain");
+    if (!fftReal1024ShaderTemplate->Create(fftReal1024ShaderTemplateText.c_str(), baseDir)) {
+        BE_FATALERROR("ShaderTemplateManager::CreateEngineShaderTemplates: failed to create FFT real 1024 shader template");
+    }
+    fftReal1024ShaderTemplate->AddPermutation();
+
+    fftDualReal256ShaderTemplate = AllocShaderTemplate("_fftDualReal256Shader");
+    const BE1::Str fftDualReal256ShaderTemplateText = CreateComputeShaderTemplateText(shaderModel, "FFT/FFTDualReal256.hlsl", "CSMain");
+    if (!fftDualReal256ShaderTemplate->Create(fftDualReal256ShaderTemplateText.c_str(), baseDir)) {
+        BE_FATALERROR("ShaderTemplateManager::CreateEngineShaderTemplates: failed to create FFT dual real 256 shader template");
+    }
+    fftDualReal256ShaderTemplate->AddPermutation();
+
+    fftDualReal512ShaderTemplate = AllocShaderTemplate("_fftDualReal512Shader");
+    const BE1::Str fftDualReal512ShaderTemplateText = CreateComputeShaderTemplateText(shaderModel, "FFT/FFTDualReal512.hlsl", "CSMain");
+    if (!fftDualReal512ShaderTemplate->Create(fftDualReal512ShaderTemplateText.c_str(), baseDir)) {
+        BE_FATALERROR("ShaderTemplateManager::CreateEngineShaderTemplates: failed to create FFT dual real 512 shader template");
+    }
+    fftDualReal512ShaderTemplate->AddPermutation();
+
+    fftDualReal1024ShaderTemplate = AllocShaderTemplate("_fftDualReal1024Shader");
+    const BE1::Str fftDualReal1024ShaderTemplateText = CreateComputeShaderTemplateText(shaderModel, "FFT/FFTDualReal1024.hlsl", "CSMain");
+    if (!fftDualReal1024ShaderTemplate->Create(fftDualReal1024ShaderTemplateText.c_str(), baseDir)) {
+        BE_FATALERROR("ShaderTemplateManager::CreateEngineShaderTemplates: failed to create FFT dual real 1024 shader template");
+    }
+    fftDualReal1024ShaderTemplate->AddPermutation();
+
+    ifftReal512ShaderTemplate = AllocShaderTemplate("_ifftReal512Shader");
+    const BE1::Str ifftReal512ShaderTemplateText = CreateComputeShaderTemplateText(shaderModel, "FFT/IFFTReal512.hlsl", "CSMain");
+    if (!ifftReal512ShaderTemplate->Create(ifftReal512ShaderTemplateText.c_str(), baseDir)) {
+        BE_FATALERROR("ShaderTemplateManager::CreateEngineShaderTemplates: failed to create IFFT real 512 shader template");
+    }
+    ifftReal512ShaderTemplate->AddPermutation();
+
+    ifftReal1024ShaderTemplate = AllocShaderTemplate("_ifftReal1024Shader");
+    const BE1::Str ifftReal1024ShaderTemplateText = CreateComputeShaderTemplateText(shaderModel, "FFT/IFFTReal1024.hlsl", "CSMain");
+    if (!ifftReal1024ShaderTemplate->Create(ifftReal1024ShaderTemplateText.c_str(), baseDir)) {
+        BE_FATALERROR("ShaderTemplateManager::CreateEngineShaderTemplates: failed to create IFFT real 1024 shader template");
+    }
+    ifftReal1024ShaderTemplate->AddPermutation();
+
+    ifftDualReal256ShaderTemplate = AllocShaderTemplate("_ifftDualReal256Shader");
+    const BE1::Str ifftDualReal256ShaderTemplateText = CreateComputeShaderTemplateText(shaderModel, "FFT/IFFTDualReal256.hlsl", "CSMain");
+    if (!ifftDualReal256ShaderTemplate->Create(ifftDualReal256ShaderTemplateText.c_str(), baseDir)) {
+        BE_FATALERROR("ShaderTemplateManager::CreateEngineShaderTemplates: failed to create IFFT dual real 256 shader template");
+    }
+    ifftDualReal256ShaderTemplate->AddPermutation();
+
+    ifftDualReal512ShaderTemplate = AllocShaderTemplate("_ifftDualReal512Shader");
+    const BE1::Str ifftDualReal512ShaderTemplateText = CreateComputeShaderTemplateText(shaderModel, "FFT/IFFTDualReal512.hlsl", "CSMain");
+    if (!ifftDualReal512ShaderTemplate->Create(ifftDualReal512ShaderTemplateText.c_str(), baseDir)) {
+        BE_FATALERROR("ShaderTemplateManager::CreateEngineShaderTemplates: failed to create IFFT dual real 512 shader template");
+    }
+    ifftDualReal512ShaderTemplate->AddPermutation();
+
+    ifftDualReal1024ShaderTemplate = AllocShaderTemplate("_ifftDualReal1024Shader");
+    const BE1::Str ifftDualReal1024ShaderTemplateText = CreateComputeShaderTemplateText(shaderModel, "FFT/IFFTDualReal1024.hlsl", "CSMain");
+    if (!ifftDualReal1024ShaderTemplate->Create(ifftDualReal1024ShaderTemplateText.c_str(), baseDir)) {
+        BE_FATALERROR("ShaderTemplateManager::CreateEngineShaderTemplates: failed to create IFFT dual real 1024 shader template");
+    }
+    ifftDualReal1024ShaderTemplate->AddPermutation();
+#else
+    fftComplex256StageShaderTemplate = AllocShaderTemplate("_fftComplex256StageShader");
+    const BE1::Str fftComplex256StageShaderTemplateText = CreateComputeShaderTemplateText(shaderModel, "FFT/FFTComplex256_StageRadix4.hlsl", "CSMain");
+    if (!fftComplex256StageShaderTemplate->Create(fftComplex256StageShaderTemplateText.c_str(), baseDir)) {
+        BE_FATALERROR("ShaderTemplateManager::CreateEngineShaderTemplates: failed to create FFT complex 256 stage shader template");
+    }
+    fftComplex256StageShaderTemplate->AddPermutation();
+
+    fftComplex512StageShaderTemplate = AllocShaderTemplate("_fftComplex512StageShader");
+    const BE1::Str fftComplex512StageShaderTemplateText = CreateComputeShaderTemplateText(shaderModel, "FFT/FFTComplex512_StageRadix8.hlsl", "CSMain");
+    if (!fftComplex512StageShaderTemplate->Create(fftComplex512StageShaderTemplateText.c_str(), baseDir)) {
+        BE_FATALERROR("ShaderTemplateManager::CreateEngineShaderTemplates: failed to create FFT512 stage shader template");
+    }
+    fftComplex512StageShaderTemplate->AddPermutation();
 
     fftComplex1024StageShaderTemplate = AllocShaderTemplate("_fftComplex1024StageShader");
     const BE1::Str fftComplex1024StageShaderTemplateText = CreateComputeShaderTemplateText(shaderModel, "FFT/FFTComplex1024_StageRadix8.hlsl", "CSMain");
@@ -478,6 +549,7 @@ void ShaderTemplateManager::CreateFFTShaderTemplates(RHI::ShaderModel shaderMode
         BE_FATALERROR("ShaderTemplateManager::CreateEngineShaderTemplates: failed to create IFFT dual real 1024 last stage shader template");
     }
     ifftDualReal1024LastStageShaderTemplate->AddPermutation();
+#endif
 
     multiplyComplexSpectrum2DShaderTemplate = AllocShaderTemplate("_multiplyComplexSpectrum2DShader");
     const BE1::Str multiplyComplexSpectrum2DShaderTemplateText = CreateComputeShaderTemplateText(shaderModel, "FFT/MultiplyComplexSpectrum2D.hlsl", "CSMain");
@@ -629,20 +701,52 @@ void ShaderTemplateManager::DestroyEngineShaderTemplates() {
     if (litShaderTemplate) {
         litShaderTemplate.reset();
     }
+#ifdef USE_FUSED_FFT
     if (fftComplex256ShaderTemplate) {
         fftComplex256ShaderTemplate.reset();
-    }
-    if (fftComplex256StageShaderTemplate) {
-        fftComplex256StageShaderTemplate.reset();
     }
     if (fftComplex512ShaderTemplate) {
         fftComplex512ShaderTemplate.reset();
     }
-    if (fftComplex512StageShaderTemplate) {
-        fftComplex512StageShaderTemplate.reset();
-    }
     if (fftComplex1024ShaderTemplate) {
         fftComplex1024ShaderTemplate.reset();
+    }
+    if (fftReal512ShaderTemplate) {
+        fftReal512ShaderTemplate.reset();
+    }
+    if (fftReal1024ShaderTemplate) {
+        fftReal1024ShaderTemplate.reset();
+    }
+    if (ifftReal512ShaderTemplate) {
+        ifftReal512ShaderTemplate.reset();
+    }
+    if (ifftReal1024ShaderTemplate) {
+        ifftReal1024ShaderTemplate.reset();
+    }
+    if (fftDualReal256ShaderTemplate) {
+        fftDualReal256ShaderTemplate.reset();
+    }
+    if (fftDualReal512ShaderTemplate) {
+        fftDualReal512ShaderTemplate.reset();
+    }
+    if (fftDualReal1024ShaderTemplate) {
+        fftDualReal1024ShaderTemplate.reset();
+    }
+    if (ifftDualReal256ShaderTemplate) {
+        ifftDualReal256ShaderTemplate.reset();
+    }
+    if (ifftDualReal512ShaderTemplate) {
+        ifftDualReal512ShaderTemplate.reset();
+    }
+    if (ifftDualReal1024ShaderTemplate) {
+        ifftDualReal1024ShaderTemplate.reset();
+    }
+#else
+    if (fftComplex256StageShaderTemplate) {
+        fftComplex256StageShaderTemplate.reset();
+    }
+    if (fftComplex512StageShaderTemplate) {
+        fftComplex512StageShaderTemplate.reset();
     }
     if (fftComplex1024StageShaderTemplate) {
         fftComplex1024StageShaderTemplate.reset();
@@ -662,6 +766,18 @@ void ShaderTemplateManager::DestroyEngineShaderTemplates() {
     if (fftReal1024LastStageShaderTemplate) {
         fftReal1024LastStageShaderTemplate.reset();
     }
+    if (ifftReal512FirstStageShaderTemplate) {
+        ifftReal512FirstStageShaderTemplate.reset();
+    }
+    if (ifftReal512LastStageShaderTemplate) {
+        ifftReal512LastStageShaderTemplate.reset();
+    }
+    if (ifftReal1024FirstStageShaderTemplate) {
+        ifftReal1024FirstStageShaderTemplate.reset();
+    }
+    if (ifftReal1024LastStageShaderTemplate) {
+        ifftReal1024LastStageShaderTemplate.reset();
+    }
     if (fftDualReal256FirstStageShaderTemplate) {
         fftDualReal256FirstStageShaderTemplate.reset();
     }
@@ -679,18 +795,6 @@ void ShaderTemplateManager::DestroyEngineShaderTemplates() {
     }
     if (fftDualReal1024LastStageShaderTemplate) {
         fftDualReal1024LastStageShaderTemplate.reset();
-    }
-    if (ifftReal512FirstStageShaderTemplate) {
-        ifftReal512FirstStageShaderTemplate.reset();
-    }
-    if (ifftReal512LastStageShaderTemplate) {
-        ifftReal512LastStageShaderTemplate.reset();
-    }
-    if (ifftReal1024FirstStageShaderTemplate) {
-        ifftReal1024FirstStageShaderTemplate.reset();
-    }
-    if (ifftReal1024LastStageShaderTemplate) {
-        ifftReal1024LastStageShaderTemplate.reset();
     }
     if (ifftDualReal256FirstStageShaderTemplate) {
         ifftDualReal256FirstStageShaderTemplate.reset();
@@ -710,6 +814,7 @@ void ShaderTemplateManager::DestroyEngineShaderTemplates() {
     if (ifftDualReal1024LastStageShaderTemplate) {
         ifftDualReal1024LastStageShaderTemplate.reset();
     }
+#endif
     if (multiplyComplexSpectrum2DShaderTemplate) {
         multiplyComplexSpectrum2DShaderTemplate.reset();
     }

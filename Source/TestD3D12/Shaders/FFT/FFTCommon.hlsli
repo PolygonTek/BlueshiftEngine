@@ -11,6 +11,32 @@ float2 ComplexConj(float2 a) {
     return float2(a.x, -a.y);
 }
 
+// twiddle factor W, W^2, W^3 계산
+void GetRadix4Twiddles(uint twiddleIndex, float invSpan, float sign, out float2 w1, out float2 w2, out float2 w3) {
+    float s;
+    float c;
+    sincos(sign * TWO_PI * float(twiddleIndex) * invSpan, s, c);
+
+    w1 = float2(c, s);
+    w2 = ComplexMul(w1, w1);
+    w3 = ComplexMul(w2, w1);
+}
+
+// twiddle factor W, W^2, ..., W^7 계산
+void GetRadix8Twiddles(uint twiddleIndex, float invSpan, float sign, out float2 w1, out float2 w2, out float2 w3, out float2 w4, out float2 w5, out float2 w6, out float2 w7) {
+    float s;
+    float c;
+    sincos(sign * TWO_PI * float(twiddleIndex) * invSpan, s, c);
+
+    w1 = float2(c, s);
+    w2 = ComplexMul(w1, w1);
+    w3 = ComplexMul(w2, w1);
+    w4 = ComplexMul(w3, w1);
+    w5 = ComplexMul(w4, w1);
+    w6 = ComplexMul(w5, w1);
+    w7 = ComplexMul(w6, w1);
+}
+
 void Radix4Butterfly(float2 a0, float2 a1, float2 a2, float2 a3, float sign,
     out float2 output0, out float2 output1, out float2 output2, out float2 output3) {
     float2 t0 = a0 + a2;
