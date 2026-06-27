@@ -16,7 +16,8 @@ void Radix4Butterfly(float2 a0, float2 a1, float2 a2, float2 a3, float sign,
     float2 t0 = a0 + a2;
     float2 t1 = a0 - a2;
     float2 t2 = a1 + a3;
-    float2 t3 = ComplexMul(float2(0.0, sign), a1 - a3);
+    float2 d  = a1 - a3;
+    float2 t3 = float2(-sign * d.y, sign * d.x);
 
     output0 = t0 + t2;
     output1 = t1 + t3;

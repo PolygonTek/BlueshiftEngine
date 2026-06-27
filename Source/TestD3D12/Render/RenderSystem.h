@@ -108,8 +108,11 @@ private:
     SharedPtr<ShaderPipeline>       convolutionBloomResolvePSO;
 
     SharedPtr<ShaderPipeline>       fftComplex256PSO;
+    SharedPtr<ShaderPipeline>       fftComplex256StagePSO;
     SharedPtr<ShaderPipeline>       fftComplex512PSO;
+    SharedPtr<ShaderPipeline>       fftComplex512StagePSO;
     SharedPtr<ShaderPipeline>       fftComplex1024PSO;
+    SharedPtr<ShaderPipeline>       fftComplex1024StagePSO;
     SharedPtr<ShaderPipeline>       fftComplex1024LastStagePSO;
 
     SharedPtr<ShaderPipeline>       fftReal512FirstStagePSO;

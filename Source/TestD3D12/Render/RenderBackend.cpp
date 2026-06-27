@@ -286,8 +286,11 @@ void RenderBackend::UpdateGlobalPSOs() {
     currentConvolutionBloomResolvePSO = GetReadyPSO(renderSystem->convolutionBloomResolvePSO);
 
     gpuFFT.fftComplex256PSO = GetReadyPSO(renderSystem->fftComplex256PSO);
+    gpuFFT.fftComplex256StagePSO = GetReadyPSO(renderSystem->fftComplex256StagePSO);
     gpuFFT.fftComplex512PSO = GetReadyPSO(renderSystem->fftComplex512PSO);
+    gpuFFT.fftComplex512StagePSO = GetReadyPSO(renderSystem->fftComplex512StagePSO);
     gpuFFT.fftComplex1024PSO = GetReadyPSO(renderSystem->fftComplex1024PSO);
+    gpuFFT.fftComplex1024StagePSO = GetReadyPSO(renderSystem->fftComplex1024StagePSO);
     gpuFFT.fftComplex1024LastStagePSO = GetReadyPSO(renderSystem->fftComplex1024LastStagePSO);
     gpuFFT.fftReal512FirstStagePSO = GetReadyPSO(renderSystem->fftReal512FirstStagePSO);
     gpuFFT.fftReal512LastStagePSO = GetReadyPSO(renderSystem->fftReal512LastStagePSO);

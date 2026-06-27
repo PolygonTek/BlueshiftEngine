@@ -291,25 +291,46 @@ void ShaderTemplateManager::CreateEngineShaderTemplates() {
 
 void ShaderTemplateManager::CreateFFTShaderTemplates(RHI::ShaderModel shaderModel, const char *baseDir) {
     fftComplex256ShaderTemplate = AllocShaderTemplate("_fftComplex256Shader");
-    const BE1::Str fftComplex256ShaderTemplateText = CreateComputeShaderTemplateText(shaderModel, "FFT/FFTComplex256_StageRadix4.hlsl", "CSMain");
+    const BE1::Str fftComplex256ShaderTemplateText = CreateComputeShaderTemplateText(shaderModel, "FFT/FFTComplex256.hlsl", "CSMain");
     if (!fftComplex256ShaderTemplate->Create(fftComplex256ShaderTemplateText.c_str(), baseDir)) {
         BE_FATALERROR("ShaderTemplateManager::CreateEngineShaderTemplates: failed to create FFT complex 256 shader template");
     }
     fftComplex256ShaderTemplate->AddPermutation();
 
+    fftComplex256StageShaderTemplate = AllocShaderTemplate("_fftComplex256StageShader");
+    const BE1::Str fftComplex256StageShaderTemplateText = CreateComputeShaderTemplateText(shaderModel, "FFT/FFTComplex256_StageRadix4.hlsl", "CSMain");
+    if (!fftComplex256StageShaderTemplate->Create(fftComplex256StageShaderTemplateText.c_str(), baseDir)) {
+        BE_FATALERROR("ShaderTemplateManager::CreateEngineShaderTemplates: failed to create FFT complex 256 stage shader template");
+    }
+    fftComplex256StageShaderTemplate->AddPermutation();
+
     fftComplex512ShaderTemplate = AllocShaderTemplate("_fftComplex512Shader");
-    const BE1::Str fftComplex512ShaderTemplateText = CreateComputeShaderTemplateText(shaderModel, "FFT/FFTComplex512_StageRadix8.hlsl", "CSMain");
+    const BE1::Str fftComplex512ShaderTemplateText = CreateComputeShaderTemplateText(shaderModel, "FFT/FFTComplex512.hlsl", "CSMain");
     if (!fftComplex512ShaderTemplate->Create(fftComplex512ShaderTemplateText.c_str(), baseDir)) {
-        BE_FATALERROR("ShaderTemplateManager::CreateEngineShaderTemplates: failed to create FFT512 shader template");
+        BE_FATALERROR("ShaderTemplateManager::CreateEngineShaderTemplates: failed to create FFT complex 512 shader template");
     }
     fftComplex512ShaderTemplate->AddPermutation();
 
+    fftComplex512StageShaderTemplate = AllocShaderTemplate("_fftComplex512StageShader");
+    const BE1::Str fftComplex512StageShaderTemplateText = CreateComputeShaderTemplateText(shaderModel, "FFT/FFTComplex512_StageRadix8.hlsl", "CSMain");
+    if (!fftComplex512StageShaderTemplate->Create(fftComplex512StageShaderTemplateText.c_str(), baseDir)) {
+        BE_FATALERROR("ShaderTemplateManager::CreateEngineShaderTemplates: failed to create FFT512 stage shader template");
+    }
+    fftComplex512StageShaderTemplate->AddPermutation();
+
     fftComplex1024ShaderTemplate = AllocShaderTemplate("_fftComplex1024Shader");
-    const BE1::Str fftComplex1024ShaderTemplateText = CreateComputeShaderTemplateText(shaderModel, "FFT/FFTComplex1024_StageRadix8.hlsl", "CSMain");
+    const BE1::Str fftComplex1024ShaderTemplateText = CreateComputeShaderTemplateText(shaderModel, "FFT/FFTComplex1024.hlsl", "CSMain");
     if (!fftComplex1024ShaderTemplate->Create(fftComplex1024ShaderTemplateText.c_str(), baseDir)) {
-        BE_FATALERROR("ShaderTemplateManager::CreateEngineShaderTemplates: failed to create FFT1024 shader template");
+        BE_FATALERROR("ShaderTemplateManager::CreateEngineShaderTemplates: failed to create FFT complex 1024 shader template");
     }
     fftComplex1024ShaderTemplate->AddPermutation();
+
+    fftComplex1024StageShaderTemplate = AllocShaderTemplate("_fftComplex1024StageShader");
+    const BE1::Str fftComplex1024StageShaderTemplateText = CreateComputeShaderTemplateText(shaderModel, "FFT/FFTComplex1024_StageRadix8.hlsl", "CSMain");
+    if (!fftComplex1024StageShaderTemplate->Create(fftComplex1024StageShaderTemplateText.c_str(), baseDir)) {
+        BE_FATALERROR("ShaderTemplateManager::CreateEngineShaderTemplates: failed to create FFT1024 stage shader template");
+    }
+    fftComplex1024StageShaderTemplate->AddPermutation();
 
     fftComplex1024LastStageShaderTemplate = AllocShaderTemplate("_fftComplex1024LastStageShader");
     const BE1::Str fftComplex1024LastStageShaderTemplateText = CreateComputeShaderTemplateText(shaderModel, "FFT/FFTComplex1024_LastStageRadix2.hlsl", "CSMain");
@@ -611,11 +632,20 @@ void ShaderTemplateManager::DestroyEngineShaderTemplates() {
     if (fftComplex256ShaderTemplate) {
         fftComplex256ShaderTemplate.reset();
     }
+    if (fftComplex256StageShaderTemplate) {
+        fftComplex256StageShaderTemplate.reset();
+    }
     if (fftComplex512ShaderTemplate) {
         fftComplex512ShaderTemplate.reset();
     }
+    if (fftComplex512StageShaderTemplate) {
+        fftComplex512StageShaderTemplate.reset();
+    }
     if (fftComplex1024ShaderTemplate) {
         fftComplex1024ShaderTemplate.reset();
+    }
+    if (fftComplex1024StageShaderTemplate) {
+        fftComplex1024StageShaderTemplate.reset();
     }
     if (fftComplex1024LastStageShaderTemplate) {
         fftComplex1024LastStageShaderTemplate.reset();

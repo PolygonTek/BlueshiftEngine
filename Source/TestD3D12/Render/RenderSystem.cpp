@@ -108,8 +108,11 @@ void RenderSystem::Shutdown() {
 
 void RenderSystem::InitFFTPSOs() {
     fftComplex256PSO = shaderPipelineCache.GetComputePipeline(shaderTemplateManager.fftComplex256ShaderTemplate, ShaderPermutationKey(), false);
+    fftComplex256StagePSO = shaderPipelineCache.GetComputePipeline(shaderTemplateManager.fftComplex256StageShaderTemplate, ShaderPermutationKey(), false);
     fftComplex512PSO = shaderPipelineCache.GetComputePipeline(shaderTemplateManager.fftComplex512ShaderTemplate, ShaderPermutationKey(), false);
+    fftComplex512StagePSO = shaderPipelineCache.GetComputePipeline(shaderTemplateManager.fftComplex512StageShaderTemplate, ShaderPermutationKey(), false);
     fftComplex1024PSO = shaderPipelineCache.GetComputePipeline(shaderTemplateManager.fftComplex1024ShaderTemplate, ShaderPermutationKey(), false);
+    fftComplex1024StagePSO = shaderPipelineCache.GetComputePipeline(shaderTemplateManager.fftComplex1024StageShaderTemplate, ShaderPermutationKey(), false);
     fftComplex1024LastStagePSO = shaderPipelineCache.GetComputePipeline(shaderTemplateManager.fftComplex1024LastStageShaderTemplate, ShaderPermutationKey(), false);
 
     fftReal512FirstStagePSO = shaderPipelineCache.GetComputePipeline(shaderTemplateManager.fftReal512FirstStageShaderTemplate, ShaderPermutationKey(), false);
@@ -151,8 +154,11 @@ void RenderSystem::InitFFTPSOs() {
 
 void RenderSystem::ReleaseFFTPSOs() {
     fftComplex256PSO.reset();
+    fftComplex256StagePSO.reset();
     fftComplex512PSO.reset();
+    fftComplex512StagePSO.reset();
     fftComplex1024PSO.reset();
+    fftComplex1024StagePSO.reset();
     fftComplex1024LastStagePSO.reset();
 
     fftReal512FirstStagePSO.reset();

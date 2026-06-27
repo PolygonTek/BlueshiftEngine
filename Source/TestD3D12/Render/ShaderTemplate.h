@@ -229,8 +229,11 @@ public:
     SharedPtr<ShaderTemplate>       fullscreenImageShaderTemplate;
 
     SharedPtr<ShaderTemplate>       fftComplex256ShaderTemplate;
+    SharedPtr<ShaderTemplate>       fftComplex256StageShaderTemplate;
     SharedPtr<ShaderTemplate>       fftComplex512ShaderTemplate;
+    SharedPtr<ShaderTemplate>       fftComplex512StageShaderTemplate;
     SharedPtr<ShaderTemplate>       fftComplex1024ShaderTemplate;
+    SharedPtr<ShaderTemplate>       fftComplex1024StageShaderTemplate;
     SharedPtr<ShaderTemplate>       fftComplex1024LastStageShaderTemplate;
     SharedPtr<ShaderTemplate>       fftReal512FirstStageShaderTemplate;
     SharedPtr<ShaderTemplate>       fftReal512LastStageShaderTemplate;
