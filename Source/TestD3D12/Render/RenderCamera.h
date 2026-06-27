@@ -121,6 +121,8 @@ public:
 
     void                        Update(const RenderCameraDesc &desc);
 
+    static void                 CalcConvolutionBloomKernelParams(const BE1::Image &kernelImage, float &normalizationFactor, BE1::Vec2 &kernelExtents);
+
     void                        SetConvolutionBloomKernelTexture(const SharedPtr<Texture> &texture, float normalizationFactor, const BE1::Vec2 &kernelExtents);
     void                        SetConvolutionBloomKernelRotation(float rotation);
     void                        SetConvolutionBloomKernelSizeScale(float sizeScale);

@@ -107,58 +107,15 @@ void App::SetConvolutionBloomKernelIndex(int index) {
     SetConvolutionBloomKernelFromFile(filename);
 }
 
-// 컨볼루션 커널 이미지에서 실제 normalized extents 를 리턴한다.
-static BE1::Vec2 CalcConvolutionBloomKernelExtents(const BE1::Image &kernelImage, float luminanceSum) {
-    const int width = kernelImage.GetWidth();
-    const int height = kernelImage.GetHeight();
-
-    if (kernelImage.IsEmpty() || width <= 0 || height <= 0 || !std::isfinite(luminanceSum) || luminanceSum <= 0.000001f) {
-        return BE1::Vec2(1.0f, 1.0f);
-    }
-
-    // 바운딩 박스를 계산할 때 luminance average 에 대한 상대 threshold 를 기반으로 계산한다.
-    const float pixelCount = static_cast<float>(width) * static_cast<float>(height);
-    const float averageLuminance = luminanceSum / BE1::Max(pixelCount, 1.0f);
-    const float luminanceThreshold = BE1::Max(averageLuminance * 0.001f, 0.0f);
-
-    BE1::Rect bounds;
-    if (!kernelImage.ComputeLuminanceBounds(0, 0, luminanceThreshold, true, bounds)) {
-        return BE1::Vec2(1.0f, 1.0f);
-    }
-
-    const float centerX = static_cast<float>(width) * 0.5f;
-    const float centerY = static_cast<float>(height) * 0.5f;
-    if (centerX <= 0.0f || centerY <= 0.0f) {
-        return BE1::Vec2(1.0f, 1.0f);
-    }
-
-    const float minX = (static_cast<float>(bounds.x) + 0.5f - centerX) / centerX;
-    const float maxX = (static_cast<float>(bounds.x + bounds.w - 1) + 0.5f - centerX) / centerX;
-    const float minY = (static_cast<float>(bounds.y) + 0.5f - centerY) / centerY;
-    const float maxY = (static_cast<float>(bounds.y + bounds.h - 1) + 0.5f - centerY) / centerY;
-
-    const float texelGuardX = 1.0f / static_cast<float>(width);
-    const float texelGuardY = 1.0f / static_cast<float>(height);
-
-    return BE1::Vec2(
-        BE1::Min(BE1::Max(BE1::Math::Fabs(minX), BE1::Math::Fabs(maxX)) + texelGuardX, 1.0f),
-        BE1::Min(BE1::Max(BE1::Math::Fabs(minY), BE1::Math::Fabs(maxY)) + texelGuardY, 1.0f));
-}
-
 void App::SetConvolutionBloomKernelFromFile(const char *filename) {
     BE1::Image kernelImage = BE1::Image::ImageFromFile(filename);
     if (kernelImage.IsEmpty()) {
         return;
     }
 
-    const float pixelCount = kernelImage.GetWidth() * kernelImage.GetHeight();
-
-    // 원본 kernel 의 luminanceSum 은 source texel 개수에 묶인 discrete sum 이다.
-    const float luminanceSum = kernelImage.ComputeLuminanceSum(0, 0, true);
-
-    // FFT kernel 은 fftSize^2 샘플로 다시 resize 되므로, pixelCount 를 곱해 texel 밀도 의존성을 제거한다.
-    const float normalizationFactor = (std::isfinite(luminanceSum) && luminanceSum > 0.000001f) ? pixelCount / luminanceSum : 1.0f;
-    const BE1::Vec2 kernelExtents = CalcConvolutionBloomKernelExtents(kernelImage, luminanceSum);
+    float normalizationFactor;
+    BE1::Vec2 kernelExtents;
+    RenderCamera::CalcConvolutionBloomKernelParams(kernelImage, normalizationFactor, kernelExtents);
 
     convolutionBloomKernelTexture = textureManager.GetTexture(filename, Texture::Flag::HighQuality | Texture::Flag::NoMipmaps | Texture::Flag::Compute);
     renderCamera->SetConvolutionBloomKernelTexture(convolutionBloomKernelTexture, normalizationFactor, kernelExtents);
