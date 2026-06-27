@@ -124,6 +124,7 @@ public:
     void                        SetConvolutionBloomKernelTexture(const SharedPtr<Texture> &texture, float normalizationFactor, const BE1::Vec2 &kernelExtents);
     void                        SetConvolutionBloomKernelRotation(float rotation);
     void                        SetConvolutionBloomKernelSizeScale(float sizeScale);
+    void                        SetConvolutionBloomPaddingTrim(float paddingTrim);
 
     void                        EnsureRenderTextures(uint32_t width, uint32_t height, RHI::Format colorFormat, RHI::Format depthFormat, uint32_t sampleCount, const BE1::Color4 &optimizedClearColor);
     void                        EnsurePostProcessResources();
@@ -161,6 +162,7 @@ public:
     bool                        IsFFTBloomKernelDirty() const { return fftBloomKernelDirty; }
     float                       GetFFTBloomKernelRotation() const { return fftBloomKernelRotation; }
     float                       GetFFTBloomKernelSizeScale() const { return fftBloomKernelSizeScale; }
+    float                       GetFFTBloomPaddingTrim() const { return fftBloomPaddingTrim; }
 
     static void                 CalculateFov(float fromFovX, float fromAspectRatio, float toAspectRatio, float *toFovX, float *toFovY);
 
@@ -219,6 +221,7 @@ private:
     RHI::Buffer *               fftBloomKernelSpectrumBuffer = nullptr;
     float                       fftBloomKernelRotation = 0.0f;
     float                       fftBloomKernelSizeScale = 1.0f;
+    float                       fftBloomPaddingTrim = 0.0f;
     bool                        fftBloomKernelDirty = true;
     RHI::Buffer *               fftBloomScreenSpatialBuffer = nullptr;
     RHI::Buffer *               fftBloomScreenSpectrumBuffer = nullptr;

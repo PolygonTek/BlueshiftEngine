@@ -110,6 +110,16 @@ void RenderCamera::SetConvolutionBloomKernelSizeScale(float sizeScale) {
     fftBloomKernelDirty = true;
 }
 
+void RenderCamera::SetConvolutionBloomPaddingTrim(float paddingTrim) {
+    paddingTrim = BE1::Min(BE1::Max(paddingTrim, 0.0f), 0.25f);
+    if (fftBloomPaddingTrim == paddingTrim) {
+        return;
+    }
+
+    fftBloomPaddingTrim = paddingTrim;
+    fftBloomKernelDirty = true;
+}
+
 bool RenderCamera::TransformWorldToNDC(const BE1::Vec3 &worldPosition, BE1::Vec3 &normalizedDeviceCoords) const {
     BE1::Vec4 clipCoords = viewProjMatrix * BE1::Vec4(worldPosition, 1.0f);
     if (clipCoords.w > 0) {

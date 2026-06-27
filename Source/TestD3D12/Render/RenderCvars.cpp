@@ -49,3 +49,4 @@ CVAR_MINMAX(r_convolutionBloomFFTMaxSize, "1024", BE1::CVar::Flag::Integer, "max
 CVAR_MINMAX(r_convolutionBloomKernelSizeScale, "1.0", BE1::CVar::Flag::Float, "convolution bloom kernel spatial size scale", 0.01f, 10.0f);
 CVAR_MINMAX(r_convolutionBloomKernelScale, "5.0", BE1::CVar::Flag::Float, "convolution bloom kernel spectrum scale", 0.0f, 100.0f);
 CVAR(r_convolutionBloomKernelRotation, "0", BE1::CVar::Flag::Float, "convolution bloom kernel rotation in degrees");
+CVAR_MINMAX(r_convolutionBloomPaddingTrim, "0.03", BE1::CVar::Flag::Float, "convolution bloom padding reduction as fraction of FFT size", 0.0f, 0.25f);

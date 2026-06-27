@@ -539,6 +539,12 @@ void App::BuildImGuiOverlay() {
                         r_convolutionBloomKernelSizeScale.SetFloat(BE1::Max(convolutionBloomKernelSizeScale, 0.01f));
                     }
 
+                    float convolutionBloomPaddingTrim = r_convolutionBloomPaddingTrim.GetFloat();
+                    ImGui::SetNextItemWidth(fontSize * 12.0f);
+                    if (ImGui::SliderFloat("bloom padding trim", &convolutionBloomPaddingTrim, 0.0f, 0.25f, "%.3f")) {
+                        r_convolutionBloomPaddingTrim.SetFloat(BE1::Min(BE1::Max(convolutionBloomPaddingTrim, 0.0f), 0.25f));
+                    }
+
                     float convolutionBloomKernelScale = r_convolutionBloomKernelScale.GetFloat();
                     ImGui::SetNextItemWidth(fontSize * 12.0f);
                     if (ImGui::SliderFloat("bloom kernel scale", &convolutionBloomKernelScale, 0.0f, 10.0f, "%.4f")) {

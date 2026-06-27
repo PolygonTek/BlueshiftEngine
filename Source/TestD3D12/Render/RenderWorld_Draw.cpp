@@ -145,6 +145,7 @@ void RenderWorld::RenderScene(RenderCamera *renderCamera) {
     if (useConvolutionBloom) {
         renderCamera->SetConvolutionBloomKernelRotation(r_convolutionBloomKernelRotation.GetFloat());
         renderCamera->SetConvolutionBloomKernelSizeScale(r_convolutionBloomKernelSizeScale.GetFloat());
+        renderCamera->SetConvolutionBloomPaddingTrim(r_convolutionBloomPaddingTrim.GetFloat());
 
         visCamera->fftBloomSize = renderCamera->GetFFTBloomSize();
         visCamera->fftBloomScreenSpatialBuffer = renderCamera->GetFFTBloomScreenSpatialBuffer();
@@ -157,6 +158,7 @@ void RenderWorld::RenderScene(RenderCamera *renderCamera) {
         visCamera->fftBloomConvolutionOutputHeight = renderCamera->GetFFTBloomConvolutionOutputHeight();
         visCamera->fftBloomKernelRotation = renderCamera->GetFFTBloomKernelRotation();
         visCamera->fftBloomKernelSizeScale = renderCamera->GetFFTBloomKernelSizeScale();
+        visCamera->fftBloomPaddingTrim = renderCamera->GetFFTBloomPaddingTrim();
         visCamera->fftBloomKernelExtents = renderCamera->GetFFTBloomKernelExtents();
         visCamera->fftBloomKernelNormalizationFactor = renderCamera->GetFFTBloomKernelNormalizationFactor();
         visCamera->fftBloomKernelDirty = false;

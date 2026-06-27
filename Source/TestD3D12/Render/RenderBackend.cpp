@@ -859,6 +859,7 @@ void RenderBackend::UpdateConvolutionBloomGuardedContentRect() {
     const BE1::Vec2 &kernelExtents = currentVisCamera->fftBloomKernelExtents;
     const float kernelSizeScale = BE1::Max(currentVisCamera->fftBloomKernelSizeScale, 0.01f);
     const float kernelRotation = currentVisCamera->fftBloomKernelRotation;
+    const float paddingTrim = BE1::Min(BE1::Max(currentVisCamera->fftBloomPaddingTrim, 0.0f), 0.25f);
 
     // fftSize x fftSize 안에서 content aspect ratio 에 맞춘 내부 크기 
     float aspectFitContentW = static_cast<float>(fftSize);
@@ -889,8 +890,10 @@ void RenderBackend::UpdateConvolutionBloomGuardedContentRect() {
     const float normalizedSupportExtentX = normalizedContentExtentX + projectedKernelExtentX;
     const float normalizedSupportExtentY = normalizedContentExtentY + projectedKernelExtentY;
 
-    const float scaleX = 1.0f / BE1::Max(normalizedSupportExtentX, 1.0f);
-    const float scaleY = 1.0f / BE1::Max(normalizedSupportExtentY, 1.0f);
+    // paddingTrim 만큼 FFT 영역 밖으로 support 가 나가는 것을 허용해 content padding 을 줄인다.
+    const float allowedSupportExtent = 1.0f + paddingTrim;
+    const float scaleX = allowedSupportExtent / BE1::Max(normalizedSupportExtentX, allowedSupportExtent);
+    const float scaleY = allowedSupportExtent / BE1::Max(normalizedSupportExtentY, allowedSupportExtent);
 
     // fftSize x fftSize 안에서 컨벌루션에 필요한 패딩을 고려한 실제 content 크기와 오프셋
     const float guardedContentW = BE1::Max(aspectFitContentW * scaleX, 1.0f);
