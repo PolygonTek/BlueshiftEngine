@@ -15,49 +15,112 @@
 #include "Precompiled.h"
 #include "TextureStreamingFeedback.h"
 
-void TextureStreamingFeedback::Init() {
-    bufferCleared = false;
-
-    buffer = RHI::renderer->CreateBuffer(RHI::BufferUsage::Default, RHI::BufferFlag::UnorderedAccess, capacity * sizeof(uint32_t), nullptr);
-    RHI::renderer->SetName(buffer, "buffer");
-    RHI::renderer->CreateView(buffer, RHI::ViewType::UAV, RHI::Format::R32_UINT, 0, 0, capacity * sizeof(uint32_t));
-
-    for (int i = 0; i < COUNT_OF(readbackFrames); ++i) {
-        ReadbackFrame &readbackFrame = readbackFrames[i];
-
-        readbackFrame.buffer = RHI::renderer->CreateBuffer(RHI::BufferUsage::Readback, RHI::BufferFlag::None, capacity * sizeof(uint32_t), nullptr);
-        readbackFrame.fenceValue.store(0);
-        readbackFrame.state.store(ReadbackFrame::State::Idle);
-
-        RHI::renderer->SetName(readbackFrames[i].buffer, BE1::va("readbackFrames[%i].buffer", i));
-    }
-
-    readbackFrameIndex = 0;
+bool TextureStreamingFeedback::Init(uint32_t initialCapacity) {
+    return EnsureBufferCapacity(initialCapacity);
 }
 
 void TextureStreamingFeedback::Shutdown() {
-    for (int i = 0; i < COUNT_OF(readbackFrames); ++i) {
-        RHI::renderer->DestroyBuffer(readbackFrames[i].buffer);
-        readbackFrames[i].buffer = nullptr;
-    }
-
-    RHI::renderer->DestroyBuffer(buffer);
-    buffer = nullptr;
+    DestroyBuffers();
 }
 
-void TextureStreamingFeedback::Clear(RHI::CommandList *commandList) {
+void TextureStreamingFeedback::DestroyBuffers() {
+    for (int i = 0; i < COUNT_OF(readbackFrames); ++i) {
+        ReadbackFrame &readbackFrame = readbackFrames[i];
+        if (readbackFrame.buffer) {
+            RHI::renderer->DestroyBuffer(readbackFrame.buffer);
+            readbackFrame.buffer = nullptr;
+        }
+        readbackFrame.fenceValue.store(0);
+        readbackFrame.state.store(ReadbackFrame::State::Idle);
+    }
+
+    if (buffer) {
+        RHI::renderer->DestroyBuffer(buffer);
+    }
+    buffer = nullptr;
+    bufferView = RHI::ViewID::InvalidID;
+    bufferCapacity = 0;
+    bufferBindlessIndex = 0;
+    bufferCleared = false;
+    readbackFrameIndex = 0;
+}
+
+bool TextureStreamingFeedback::EnsureBufferCapacity(uint32_t count) {
+    assert(BE1::Engine::IsInMainThread());
+
+    if (count <= bufferCapacity) {
+        return true;
+    }
+
+    // 초기 개수는 4096 으로 시작해서, 필요한 용량이 될 때까지 2배씩 늘린다.
+    uint32_t newCapacity = bufferCapacity > 0 ? bufferCapacity : 4096;
+    while (newCapacity < count) {
+        newCapacity <<= 1;
+    }
+
+    DestroyBuffers();
+
+    // 디폴트 버퍼를 생성한다.
+    const uint32_t bufferSize = newCapacity * sizeof(uint32_t);
+    buffer = RHI::renderer->CreateBuffer(RHI::BufferUsage::Default, RHI::BufferFlag::UnorderedAccess, bufferSize, nullptr);
+    if (!buffer) {
+        DestroyBuffers();
+        return false;
+    }
+
+    RHI::renderer->SetName(buffer, "textureStreamingFeedbackBuffer");
+
+    bufferView = RHI::renderer->CreateView(buffer, RHI::ViewType::UAV, RHI::Format::R32_UINT, 0, 0, bufferSize);
+    if (!bufferView.IsValid()) {
+        DestroyBuffers();
+        return false;
+    }
+
+    bufferCapacity = newCapacity;
+    bufferBindlessIndex = buffer->GetBindlessIndex(RHI::ViewType::UAV, bufferView);
+
+    // 리드백 버퍼를 생성한다.
+    for (int i = 0; i < COUNT_OF(readbackFrames); ++i) {
+        ReadbackFrame &readbackFrame = readbackFrames[i];
+
+        readbackFrame.buffer = RHI::renderer->CreateBuffer(RHI::BufferUsage::Readback, RHI::BufferFlag::None, bufferSize, nullptr);
+        if (!readbackFrame.buffer) {
+            DestroyBuffers();
+            return false;
+        }
+
+        readbackFrame.fenceValue.store(0);
+        readbackFrame.state.store(ReadbackFrame::State::Idle);
+
+        RHI::renderer->SetName(readbackFrame.buffer, BE1::va("textureStreamingFeedbackReadbackFrames[%i].buffer", i));
+    }
+
+    bufferCleared = false;
+    readbackFrameIndex = 0;
+    return true;
+}
+
+void TextureStreamingFeedback::ClearBuffer(RHI::CommandList *commandList) {
+    if (!buffer || !bufferView.IsValid()) {
+        return;
+    }
+
     // 텍스쳐 스트리밍 피드백 버퍼의 내용을 0 으로 초기화한다.
     RHI::renderer->Barrier(commandList, RHI::Renderer::MakeBufferBarrier(buffer, bufferCleared ? RHI::GPUResourceState::UnorderedAccess : RHI::GPUResourceState::Undefined, RHI::GPUResourceState::UnorderedAccess));
-    RHI::renderer->ClearUAV(commandList, buffer, RHI::ViewID::PrimaryID, 0);
+    RHI::renderer->ClearUAV(commandList, buffer, bufferView, 0);
     RHI::renderer->Barrier(commandList, RHI::Renderer::MakeMemoryBarrier(buffer));
 
     bufferCleared = true;
 }
 
 TextureStreamingFeedback::ReadbackFrame *TextureStreamingFeedback::Resolve(RHI::CommandList *commandList) {
+    if (!buffer) {
+        return nullptr;
+    }
+
     ReadbackFrame &readbackFrame = readbackFrames[readbackFrameIndex];
 
-    if (readbackFrame.state.load() != ReadbackFrame::State::Idle) {
+    if (!readbackFrame.buffer || readbackFrame.state.load() != ReadbackFrame::State::Idle) {
         return nullptr;
     }
 
@@ -65,18 +128,12 @@ TextureStreamingFeedback::ReadbackFrame *TextureStreamingFeedback::Resolve(RHI::
 
     // 텍스쳐 스트리밍 피드백 버퍼의 내용을 Readback 버퍼로 복사한다.
     RHI::renderer->Barrier(commandList, RHI::Renderer::MakeBufferBarrier(buffer, RHI::GPUResourceState::UnorderedAccess, RHI::GPUResourceState::CopySrc));
-    RHI::renderer->CopyBuffer(commandList, readbackFrame.buffer, 0, buffer, 0, capacity * sizeof(uint32_t));
+    RHI::renderer->CopyBuffer(commandList, readbackFrame.buffer, 0, buffer, 0, bufferCapacity * sizeof(uint32_t));
     RHI::renderer->Barrier(commandList, RHI::Renderer::MakeBufferBarrier(buffer, RHI::GPUResourceState::CopySrc, RHI::GPUResourceState::UnorderedAccess));
 
     readbackFrameIndex = (readbackFrameIndex + 1) % COUNT_OF(readbackFrames);
 
     return &readbackFrame;
-}
-
-void TextureStreamingFeedback::SetReadbackFenceValue(TextureStreamingFeedback::ReadbackFrame *readbackFrame, uint64_t fenceValue) {
-    assert(readbackFrame);
-    readbackFrame->fenceValue.store(fenceValue);
-    readbackFrame->state.store(ReadbackFrame::State::Submitted);
 }
 
 void TextureStreamingFeedback::ConsumeCompletedReadbacks(ConsumeCallback callback, void *userData) {
@@ -96,31 +153,14 @@ void TextureStreamingFeedback::ConsumeCompletedReadbacks(ConsumeCallback callbac
             continue;
         }
 
-        callback(static_cast<const uint32_t *>(readbackFrame.buffer->mappedPtr), capacity);
+        callback(static_cast<const uint32_t *>(readbackFrame.buffer->mappedPtr), bufferCapacity);
 
         readbackFrame.fenceValue.store(0);
         readbackFrame.state.store(ReadbackFrame::State::Idle);
     }
 }
 
-void TextureStreamingFeedback::EnsureCapacity(uint32_t requiredCapacity) {
-    assert(BE1::Engine::IsInMainThread());
-
-    if (requiredCapacity <= capacity) {
-        return;
-    }
-
-    uint32_t newCapacity = capacity;
-    while (newCapacity < requiredCapacity) {
-        newCapacity = BE1::Min(newCapacity << 1, (uint32_t)(1 << 24));
-        if (newCapacity < requiredCapacity && newCapacity == (1u << 24)) {
-            BE_FATALERROR("TextureStreamingFeedback::EnsureCapacity: exceeded max capacity");
-        }
-    }
-
-    Shutdown();
-
-    capacity = newCapacity;
-
-    Init();
+void TextureStreamingFeedback::ReadbackFrame::SetReadbackFenceValue(uint64_t fenceValue) {
+    this->fenceValue.store(fenceValue);
+    this->state.store(ReadbackFrame::State::Submitted);
 }

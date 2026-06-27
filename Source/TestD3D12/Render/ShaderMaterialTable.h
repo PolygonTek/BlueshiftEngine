@@ -19,8 +19,6 @@
 #include "Shaders/ShaderInterop.h"
 
 class Material;
-struct VisCamera;
-struct VisSurf;
 
 class ShaderMaterialTable {
 public:
@@ -29,12 +27,12 @@ public:
 
     void                            Clear();
 
-    uint32_t                        GetBindlessIndex() const { return bufferBindlessIndex; }
-
     uint32_t                        Register(const Material *material);
     bool                            EnsureBufferCapacity(uint32_t count);
 
     bool                            Upload(RHI::FrameThreadData *frameThreadData, RHI::CommandList *commandList, bool allowResize);
+
+    uint32_t                        GetBindlessIndex() const { return bufferBindlessIndex; }
 
 private:
     void                            DestroyBuffers();
@@ -48,28 +46,4 @@ private:
     uint32_t                        bufferCapacity = 0;
     uint32_t                        bufferBindlessIndex = 0;
     bool                            dirty = false;
-};
-
-class ShaderSurfaceTable {
-public:
-    bool                            Init(uint32_t initialCapacity = 1024);
-    void                            Shutdown();
-
-    void                            Clear();
-
-    uint32_t                        GetBindlessIndex() const { return bufferBindlessIndex; }
-
-    bool                            EnsureBufferCapacity(uint32_t count);
-
-    bool                            Upload(RHI::FrameThreadData *frameThreadData, RHI::CommandList *commandList, const VisCamera *visCamera, bool allowResize);
-
-private:
-    void                            DestroyBuffers();
-    void                            Build(const VisSurf *visSurf, ShaderSurface &outShaderSurface) const;
-
-    RHI::Buffer *                   buffer = nullptr;
-    RHI::ViewID                     bufferView = RHI::ViewID::InvalidID;
-    RHI::GPUResourceState           bufferState = RHI::GPUResourceState::Undefined;
-    uint32_t                        bufferCapacity = 0;
-    uint32_t                        bufferBindlessIndex = 0;
 };

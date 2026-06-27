@@ -247,7 +247,7 @@ bool RenderBackend::UploadFrameConstants() {
     constants->elapsedPrevTime = frameData->GetElapsedPrevTime();
     constants->frameCount = frameData->GetFrameCount();
     constants->shaderMaterialTableIndex = frameData->GetShaderMaterialTableBindlessIndex();
-    constants->feedbackBufferIndex = currentContext->textureStreamingFeedback.buffer ? currentContext->textureStreamingFeedback.buffer->GetBindlessIndex(RHI::ViewType::UAV) : 0;
+    constants->feedbackBufferIndex = currentContext->textureStreamingFeedback.GetBindlessIndex();
     constants->padding0 = 0;
     constants->padding1 = 0;
 
@@ -339,7 +339,7 @@ const void *RenderBackend::ExecuteBeginContext(const void *data) {
     BeginGpuFrameTiming(mainCommandList);
 
 #ifdef USE_MIPMAP_STREAMING
-    currentContext->textureStreamingFeedback.Clear(mainCommandList);
+    currentContext->textureStreamingFeedback.ClearBuffer(mainCommandList);
 #endif
 
     // 이번 프레임의 카메라들이 참조할 ShaderSurface 테이블 용량을 미리 확보한다.
@@ -605,7 +605,7 @@ const void *RenderBackend::ExecuteSwapBuffers(const void *data) {
 
 #ifdef USE_MIPMAP_STREAMING
     if (readbackFrame) {
-        currentContext->textureStreamingFeedback.SetReadbackFenceValue(readbackFrame, fenceValue);
+        readbackFrame->SetReadbackFenceValue(fenceValue);
     }
 #endif
 

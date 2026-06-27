@@ -79,8 +79,10 @@ set(SRC_FILES
     Render/RenderFrameData.cpp
     Render/GpuFFT.h
     Render/GpuFFT.cpp
-    Render/ShaderGpuTable.h
-    Render/ShaderGpuTable.cpp
+    Render/ShaderMaterialTable.h
+    Render/ShaderMaterialTable.cpp
+    Render/ShaderSurfaceTable.h
+    Render/ShaderSurfaceTable.cpp
     Render/RenderSystem.h
     Render/RenderSystem.cpp
     Render/RenderBackend.h

@@ -227,18 +227,6 @@ public:
     ReloadedDelegate                shaderTemplateReloaded;
 
     SharedPtr<ShaderTemplate>       fullscreenImageShaderTemplate;
-    SharedPtr<ShaderTemplate>       toneMappingShaderTemplate;
-    SharedPtr<ShaderTemplate>       luminancePass1ShaderTemplate;
-    SharedPtr<ShaderTemplate>       luminancePass2ShaderTemplate;
-    SharedPtr<ShaderTemplate>       bloomPrefilterShaderTemplate;
-    SharedPtr<ShaderTemplate>       bloomDownsampleShaderTemplate;
-    SharedPtr<ShaderTemplate>       bloomUpsampleShaderTemplate;
-    SharedPtr<ShaderTemplate>       convolutionBloomPrefilterShaderTemplate;
-    SharedPtr<ShaderTemplate>       convolutionBloomKernelPrepareShaderTemplate;
-    SharedPtr<ShaderTemplate>       multiplyComplexSpectrum2DShaderTemplate;
-    SharedPtr<ShaderTemplate>       multiplyPackedRealSpectrum2DShaderTemplate;
-    SharedPtr<ShaderTemplate>       multiplyPackedDualRealSpectrum2DShaderTemplate;
-    SharedPtr<ShaderTemplate>       convolutionBloomResolveShaderTemplate;
 
     SharedPtr<ShaderTemplate>       fftComplex256ShaderTemplate;
     SharedPtr<ShaderTemplate>       fftComplex512ShaderTemplate;
@@ -264,6 +252,9 @@ public:
     SharedPtr<ShaderTemplate>       ifftDualReal512LastStageShaderTemplate;
     SharedPtr<ShaderTemplate>       ifftDualReal1024FirstStageShaderTemplate;
     SharedPtr<ShaderTemplate>       ifftDualReal1024LastStageShaderTemplate;
+    SharedPtr<ShaderTemplate>       multiplyComplexSpectrum2DShaderTemplate;
+    SharedPtr<ShaderTemplate>       multiplyPackedRealSpectrum2DShaderTemplate;
+    SharedPtr<ShaderTemplate>       multiplyPackedDualRealSpectrum2DShaderTemplate;
 
     SharedPtr<ShaderTemplate>       transposeComplex256ShaderTemplate;
     SharedPtr<ShaderTemplate>       transposeComplex256x512ShaderTemplate;
@@ -273,6 +264,17 @@ public:
     SharedPtr<ShaderTemplate>       transposeComplex512ShaderTemplate;
     SharedPtr<ShaderTemplate>       transposeComplex1024ShaderTemplate;
 
+    SharedPtr<ShaderTemplate>       bloomPrefilterShaderTemplate;
+    SharedPtr<ShaderTemplate>       bloomDownsampleShaderTemplate;
+    SharedPtr<ShaderTemplate>       bloomUpsampleShaderTemplate;
+    SharedPtr<ShaderTemplate>       convolutionBloomPrefilterShaderTemplate;
+    SharedPtr<ShaderTemplate>       convolutionBloomKernelPrepareShaderTemplate;
+    SharedPtr<ShaderTemplate>       convolutionBloomResolveShaderTemplate;
+
+    SharedPtr<ShaderTemplate>       luminancePass1ShaderTemplate;
+    SharedPtr<ShaderTemplate>       luminancePass2ShaderTemplate;
+    SharedPtr<ShaderTemplate>       toneMappingShaderTemplate;
+
     SharedPtr<ShaderTemplate>       unlitShaderTemplate;
     SharedPtr<ShaderTemplate>       litShaderTemplate;
 
@@ -280,10 +282,10 @@ private:
     void                            InitGlobalDefines();
     void                            CleanExpiredShaderTemplates();
     void                            CreateEngineShaderTemplates();
-    void                            CreateToneMappingShaderTemplates(RHI::ShaderModel shaderModel, const char *baseDir);
-    void                            CreateBloomShaderTemplates(RHI::ShaderModel shaderModel, const char *baseDir);
     void                            CreateFFTShaderTemplates(RHI::ShaderModel shaderModel, const char *baseDir);
     void                            CreateTransposeShaderTemplates(RHI::ShaderModel shaderModel, const char *baseDir);
+    void                            CreateBloomShaderTemplates(RHI::ShaderModel shaderModel, const char *baseDir);
+    void                            CreateToneMappingShaderTemplates(RHI::ShaderModel shaderModel, const char *baseDir);
     void                            DestroyEngineShaderTemplates();
 
     BE1::StrIHashMap<WeakPtr<ShaderTemplate>> shaderTemplateHashMap;

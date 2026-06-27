@@ -57,7 +57,9 @@ void RenderContext::Init(void *windowHandle, const BE1::Color4 &baseClearColor) 
 
     InitPSOs();
 
-    textureStreamingFeedback.Init();
+    if (!textureStreamingFeedback.Init()) {
+        BE_WARNLOG("RenderContext::Init: failed to initialize texture streaming feedback\n");
+    }
 
     guiMesh.SetCoordFrame(GuiMesh::CoordFrame::CoordFrame2D);
     guiMesh.SetClipRect(BE1::Rect(0, 0, backBufferWidth, backBufferHeight));
@@ -201,7 +203,9 @@ void RenderContext::EnsureTextureStreamingFeedbackCapacity(uint32_t requiredCapa
 
     WaitAllFrameFences();
 
-    textureStreamingFeedback.EnsureCapacity(requiredCapacity);
+    if (!textureStreamingFeedback.EnsureBufferCapacity(requiredCapacity)) {
+        BE_WARNLOG("RenderContext::EnsureTextureStreamingFeedbackCapacity: failed to ensure texture streaming feedback capacity\n");
+    }
 }
 
 void RenderContext::BeginFrame(float frameTime, float elapsedTime, float elapsedPrevTime, bool statEnabled) {

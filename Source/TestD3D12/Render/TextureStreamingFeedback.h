@@ -32,24 +32,32 @@ public:
         RHI::Buffer *           buffer = nullptr;
         std::atomic<uint64_t>   fenceValue = 0;
         std::atomic<State>      state = State::Idle;
+
+        void                    SetReadbackFenceValue(uint64_t fenceValue);
     };
 
-    void                        Init();
+    bool                        Init(uint32_t initialCapacity = 4096);
     void                        Shutdown();
 
-    void                        Clear(RHI::CommandList *commandList);
+    void                        ClearBuffer(RHI::CommandList *commandList);
     [[nodiscard]] ReadbackFrame *Resolve(RHI::CommandList *commandList);
-    void                        SetReadbackFenceValue(ReadbackFrame *readbackFrame, uint64_t fenceValue);
 
     void                        ConsumeCompletedReadbacks(ConsumeCallback callback, void *userData = nullptr);
 
-    bool                        NeedsGrowCapacity(uint32_t requiredCapacity) const { return requiredCapacity > capacity; }
-    void                        EnsureCapacity(uint32_t requiredCapacity);
+    bool                        NeedsGrowCapacity(uint32_t count) const { return count > bufferCapacity; }
+    bool                        EnsureBufferCapacity(uint32_t count);
+
+    uint32_t                    GetBindlessIndex() const { return bufferBindlessIndex; }
 
 private:
+    void                        DestroyBuffers();
+
     RHI::Buffer *               buffer = nullptr;
+    RHI::ViewID                 bufferView = RHI::ViewID::InvalidID;
+    uint32_t                    bufferCapacity = 0;
+    uint32_t                    bufferBindlessIndex = 0;
     bool                        bufferCleared = false;
-    uint32_t                    capacity = 4096;
-    int32_t                     readbackFrameIndex = 0;
+
     ReadbackFrame               readbackFrames[2] = {};
+    int32_t                     readbackFrameIndex = 0;
 };

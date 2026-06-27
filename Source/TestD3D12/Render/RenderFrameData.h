@@ -15,7 +15,8 @@
 #pragma once
 
 #include "RHI/RHI.h"
-#include "ShaderGpuTable.h"
+#include "ShaderMaterialTable.h"
+#include "ShaderSurfaceTable.h"
 
 class RenderContext;
 class Texture;
