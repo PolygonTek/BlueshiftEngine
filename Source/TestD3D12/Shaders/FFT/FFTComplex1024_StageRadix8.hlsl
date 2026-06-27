@@ -21,7 +21,7 @@ StructuredBuffer<float2> inputBuffer : register(t0);
 RWStructuredBuffer<float2> outputBuffer : register(u0);
 
 // Radix-8 Stockham autosort FFT. Each dispatch processes one stageIndex in [0, 2].
-// FFTComplex1024 의 마지막 stage 는 radix-2 이므로 FFTComplex1024LastStage_Radix2 에서 수행한다.
+// FFTComplex1024 의 마지막 stage 는 radix-2 이므로 FFTComplex1024_LastStageRadix2 에서 수행한다.
 [RootSignature(COMMON_ROOT_SIGNATURE)]
 [numthreads(FFTRadix8_1024BlockSize, 1, 1)]
 void CSMain(uint3 dispatchThreadId : SV_DispatchThreadID) {
