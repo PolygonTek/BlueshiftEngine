@@ -99,6 +99,8 @@ public:
 
     bool                            PreparePSO(const ShaderPipelineBuildData &buildData, RHI::PipelineState *&preparedPSO) const;
 
+    static RHI::PipelineState *     GetReadyPSO(const SharedPtr<ShaderPipeline> &shaderPipeline);
+
 private:
     void                            Purge();
     bool                            Build(const SharedPtr<ShaderTemplate> &shaderTemplate);
@@ -128,4 +130,12 @@ BE_INLINE ShaderPipeline::ShaderPipeline(Type type, ShaderPermutationKey permuta
 BE_INLINE ShaderPipeline::ShaderPipeline(Type type, ShaderPermutationKey permutationKey) :
     type(type), permutationKey(permutationKey) {
     assert(type == Type::Compute);
+}
+
+BE_INLINE RHI::PipelineState *ShaderPipeline::GetReadyPSO(const SharedPtr<ShaderPipeline> &shaderPipeline) {
+    if (!shaderPipeline || !shaderPipeline->IsReady()) {
+        return nullptr;
+    }
+
+    return shaderPipeline->GetPSO();
 }

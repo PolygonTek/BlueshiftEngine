@@ -8,7 +8,7 @@ set(SRC_FILES
     Profiler.h
     App.h
     App.cpp
-    AppImGui.cpp
+    App_ImGui.cpp
     LoadingSystem.h
     LoadingSystem.cpp
     GameObject.h

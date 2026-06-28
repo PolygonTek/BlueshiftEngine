@@ -18,6 +18,7 @@
 #include "RHI/RHI.h"
 
 class RenderFrameData;
+class ShaderPipeline;
 
 /*
 ---------------------------------------------------------------------------------------------------
@@ -57,24 +58,25 @@ class GpuFFT {
 public:
     void                        Init();
     void                        Shutdown();
+    void                        UpdateReadyPSOs();
 
                                 // 256-point complex buffers -> 256-point complex buffers
-    bool                        DispatchFFTComplex1D256(RHI::CommandList *commandList, RenderFrameData *frameData, RHI::Buffer *inputBuffer, RHI::Buffer *outputBuffer, RHI::Buffer *workBuffer, uint32_t fftBlockCount);
+    bool                        DispatchFFTComplex1D256(RHI::CommandList *commandList, RenderFrameData *frameData, RHI::Buffer *inputBuffer, RHI::Buffer *outputBuffer, uint32_t fftBlockCount);
 
                                 // 512-point complex buffers -> 512-point complex buffers
-    bool                        DispatchFFTComplex1D512(RHI::CommandList *commandList, RenderFrameData *frameData, RHI::Buffer *inputBuffer, RHI::Buffer *outputBuffer, RHI::Buffer *workBuffer, uint32_t fftBlockCount);
+    bool                        DispatchFFTComplex1D512(RHI::CommandList *commandList, RenderFrameData *frameData, RHI::Buffer *inputBuffer, RHI::Buffer *outputBuffer, uint32_t fftBlockCount);
 
                                 // 1024-point complex buffers -> 1024-point complex buffers
-    bool                        DispatchFFTComplex1D1024(RHI::CommandList *commandList, RenderFrameData *frameData, RHI::Buffer *inputBuffer, RHI::Buffer *outputBuffer, RHI::Buffer *workBuffer, uint32_t fftBlockCount);
+    bool                        DispatchFFTComplex1D1024(RHI::CommandList *commandList, RenderFrameData *frameData, RHI::Buffer *inputBuffer, RHI::Buffer *outputBuffer, uint32_t fftBlockCount);
 
                                 // inverse 256-point complex buffers -> 256-point complex buffers
-    bool                        DispatchIFFTComplex1D256(RHI::CommandList *commandList, RenderFrameData *frameData, RHI::Buffer *inputBuffer, RHI::Buffer *outputBuffer, RHI::Buffer *workBuffer, uint32_t fftBlockCount);
+    bool                        DispatchIFFTComplex1D256(RHI::CommandList *commandList, RenderFrameData *frameData, RHI::Buffer *inputBuffer, RHI::Buffer *outputBuffer, uint32_t fftBlockCount);
 
                                 // inverse 512-point complex buffers -> 512-point complex buffers
-    bool                        DispatchIFFTComplex1D512(RHI::CommandList *commandList, RenderFrameData *frameData, RHI::Buffer *inputBuffer, RHI::Buffer *outputBuffer, RHI::Buffer *workBuffer, uint32_t fftBlockCount);
+    bool                        DispatchIFFTComplex1D512(RHI::CommandList *commandList, RenderFrameData *frameData, RHI::Buffer *inputBuffer, RHI::Buffer *outputBuffer, uint32_t fftBlockCount);
 
                                 // inverse 1024-point complex buffers -> 1024-point complex buffers
-    bool                        DispatchIFFTComplex1D1024(RHI::CommandList *commandList, RenderFrameData *frameData, RHI::Buffer *inputBuffer, RHI::Buffer *outputBuffer, RHI::Buffer *workBuffer, uint32_t fftBlockCount);
+    bool                        DispatchIFFTComplex1D1024(RHI::CommandList *commandList, RenderFrameData *frameData, RHI::Buffer *inputBuffer, RHI::Buffer *outputBuffer, uint32_t fftBlockCount);
 
                                 // 256 x 256 complex planes -> transposed 256 x 256 complex planes
     bool                        DispatchFFTComplex2D256(RHI::CommandList *commandList, RenderFrameData *frameData, RHI::Buffer *inputBuffer, RHI::Buffer *outputBuffer, RHI::Buffer *workBuffer, uint32_t planeCount);
@@ -95,16 +97,16 @@ public:
     bool                        DispatchIFFTComplex2D1024(RHI::CommandList *commandList, RenderFrameData *frameData, RHI::Buffer *inputBuffer, RHI::Buffer *outputBuffer, RHI::Buffer *workBuffer, uint32_t planeCount);
 
                                 // 512-point real buffers -> 256-point packed complex buffers
-    bool                        DispatchFFTReal1D512(RHI::CommandList *commandList, RenderFrameData *frameData, RHI::Buffer *inputBuffer, RHI::Buffer *outputBuffer, RHI::Buffer *workBuffer, uint32_t fftBlockCount);
+    bool                        DispatchFFTReal1D512(RHI::CommandList *commandList, RHI::Buffer *inputBuffer, RHI::Buffer *outputBuffer, uint32_t fftBlockCount);
 
                                 // 1024-point real buffers -> 512-point packed complex buffers
-    bool                        DispatchFFTReal1D1024(RHI::CommandList *commandList, RenderFrameData *frameData, RHI::Buffer *inputBuffer, RHI::Buffer *outputBuffer, RHI::Buffer *workBuffer, uint32_t fftBlockCount);
+    bool                        DispatchFFTReal1D1024(RHI::CommandList *commandList, RHI::Buffer *inputBuffer, RHI::Buffer *outputBuffer, uint32_t fftBlockCount);
 
                                 // inverse 256-point packed complex buffers -> 512-point real buffers
-    bool                        DispatchIFFTReal1D512(RHI::CommandList *commandList, RenderFrameData *frameData, RHI::Buffer *inputBuffer, RHI::Buffer *outputBuffer, RHI::Buffer *workBuffer, uint32_t fftBlockCount);
+    bool                        DispatchIFFTReal1D512(RHI::CommandList *commandList, RHI::Buffer *inputBuffer, RHI::Buffer *outputBuffer, uint32_t fftBlockCount);
 
                                 // inverse 512-point packed complex buffers -> 1024-point real buffers
-    bool                        DispatchIFFTReal1D1024(RHI::CommandList *commandList, RenderFrameData *frameData, RHI::Buffer *inputBuffer, RHI::Buffer *outputBuffer, RHI::Buffer *workBuffer, uint32_t fftBlockCount);
+    bool                        DispatchIFFTReal1D1024(RHI::CommandList *commandList, RHI::Buffer *inputBuffer, RHI::Buffer *outputBuffer, uint32_t fftBlockCount);
 
                                 // 512 x 512 real planes -> transposed 512 x 256 packed complex planes
     bool                        DispatchFFTReal2D512(RHI::CommandList *commandList, RenderFrameData *frameData, RHI::Buffer *inputBuffer, RHI::Buffer *outputBuffer, RHI::Buffer *workBuffer, uint32_t planeCount);
@@ -119,22 +121,22 @@ public:
     bool                        DispatchIFFTReal2D1024(RHI::CommandList *commandList, RenderFrameData *frameData, RHI::Buffer *inputBuffer, RHI::Buffer *outputBuffer, RHI::Buffer *workBuffer, uint32_t planeCount);
 
                                 // 256-point dual-real buffers -> 256-point packed complex buffers
-    bool                        DispatchFFTDualReal1D256(RHI::CommandList *commandList, RenderFrameData *frameData, RHI::Buffer *inputBuffer, RHI::Buffer *outputBuffer, RHI::Buffer *workBuffer, uint32_t fftBlockCount);
+    bool                        DispatchFFTDualReal1D256(RHI::CommandList *commandList, RHI::Buffer *inputBuffer, RHI::Buffer *outputBuffer, uint32_t fftBlockCount);
 
                                 // 512-point dual-real buffers -> 512-point packed complex buffers
-    bool                        DispatchFFTDualReal1D512(RHI::CommandList *commandList, RenderFrameData *frameData, RHI::Buffer *inputBuffer, RHI::Buffer *outputBuffer, RHI::Buffer *workBuffer, uint32_t fftBlockCount);
+    bool                        DispatchFFTDualReal1D512(RHI::CommandList *commandList, RHI::Buffer *inputBuffer, RHI::Buffer *outputBuffer, uint32_t fftBlockCount);
 
                                 // 1024-point dual-real buffers -> 1024-point packed complex buffers
-    bool                        DispatchFFTDualReal1D1024(RHI::CommandList *commandList, RenderFrameData *frameData, RHI::Buffer *inputBuffer, RHI::Buffer *outputBuffer, RHI::Buffer *workBuffer, uint32_t fftBlockCount);
+    bool                        DispatchFFTDualReal1D1024(RHI::CommandList *commandList, RHI::Buffer *inputBuffer, RHI::Buffer *outputBuffer, uint32_t fftBlockCount);
 
                                 // inverse 256-point packed complex buffers -> 256-point dual-real buffers
-    bool                        DispatchIFFTDualReal1D256(RHI::CommandList *commandList, RenderFrameData *frameData, RHI::Buffer *inputBuffer, RHI::Buffer *outputBuffer, RHI::Buffer *workBuffer, uint32_t fftBlockCount);
+    bool                        DispatchIFFTDualReal1D256(RHI::CommandList *commandList, RHI::Buffer *inputBuffer, RHI::Buffer *outputBuffer, uint32_t fftBlockCount);
 
                                 // inverse 512-point packed complex buffers -> 512-point dual-real buffers
-    bool                        DispatchIFFTDualReal1D512(RHI::CommandList *commandList, RenderFrameData *frameData, RHI::Buffer *inputBuffer, RHI::Buffer *outputBuffer, RHI::Buffer *workBuffer, uint32_t fftBlockCount);
+    bool                        DispatchIFFTDualReal1D512(RHI::CommandList *commandList, RHI::Buffer *inputBuffer, RHI::Buffer *outputBuffer, uint32_t fftBlockCount);
 
                                 // inverse 1024-point packed complex buffers -> 1024-point dual-real buffers
-    bool                        DispatchIFFTDualReal1D1024(RHI::CommandList *commandList, RenderFrameData *frameData, RHI::Buffer *inputBuffer, RHI::Buffer *outputBuffer, RHI::Buffer *workBuffer, uint32_t fftBlockCount);
+    bool                        DispatchIFFTDualReal1D1024(RHI::CommandList *commandList, RHI::Buffer *inputBuffer, RHI::Buffer *outputBuffer, uint32_t fftBlockCount);
 
                                 // 256 x 256 dual-real planes -> transposed 256 x 256 packed complex planes
     bool                        DispatchFFTDualReal2D256(RHI::CommandList *commandList, RenderFrameData *frameData, RHI::Buffer *inputBuffer, RHI::Buffer *outputBuffer, RHI::Buffer *workBuffer, uint32_t planeCount);
@@ -163,7 +165,6 @@ public:
                                 // transposed fftSize x fftSize packed dual-real spectra -> transposed fftSize x fftSize packed dual-real spectra
     bool                        DispatchMultiplyPackedDualRealSpectrum2D(RHI::CommandList *commandList, RenderFrameData *frameData, RHI::Buffer *lhsSpectrumBuffer, RHI::Buffer *rhsSpectrumBuffer, RHI::Buffer *outputSpectrumBuffer, uint32_t fftSize, uint32_t planeCount, float scale);
 
-#ifdef USE_FUSED_FFT
                                 // complex to complex (fused)
     RHI::PipelineState *        fftComplex256PSO = nullptr;
     RHI::PipelineState *        fftComplex512PSO = nullptr;
@@ -186,41 +187,7 @@ public:
     RHI::PipelineState *        ifftDualReal256PSO = nullptr;
     RHI::PipelineState *        ifftDualReal512PSO = nullptr;
     RHI::PipelineState *        ifftDualReal1024PSO = nullptr;
-#else
-                                // complex to complex (stage)
-    RHI::PipelineState *        fftComplex256StagePSO = nullptr;
-    RHI::PipelineState *        fftComplex512StagePSO = nullptr;
-    RHI::PipelineState *        fftComplex1024StagePSO = nullptr;
-    RHI::PipelineState *        fftComplex1024LastStagePSO = nullptr;
 
-                                // real to packed complex (stage)
-    RHI::PipelineState *        fftReal512FirstStagePSO = nullptr;
-    RHI::PipelineState *        fftReal512LastStagePSO = nullptr;
-    RHI::PipelineState *        fftReal1024FirstStagePSO = nullptr;
-    RHI::PipelineState *        fftReal1024LastStagePSO = nullptr;
-
-                                // packed complex to real (stage)
-    RHI::PipelineState *        ifftReal512FirstStagePSO = nullptr;
-    RHI::PipelineState *        ifftReal512LastStagePSO = nullptr;
-    RHI::PipelineState *        ifftReal1024FirstStagePSO = nullptr;
-    RHI::PipelineState *        ifftReal1024LastStagePSO = nullptr;
-
-                                // dual real to 2 packed complex (stage)
-    RHI::PipelineState *        fftDualReal256FirstStagePSO = nullptr;
-    RHI::PipelineState *        fftDualReal256LastStagePSO = nullptr;
-    RHI::PipelineState *        fftDualReal512FirstStagePSO = nullptr;
-    RHI::PipelineState *        fftDualReal512LastStagePSO = nullptr;
-    RHI::PipelineState *        fftDualReal1024FirstStagePSO = nullptr;
-    RHI::PipelineState *        fftDualReal1024LastStagePSO = nullptr;
-
-                                // 2 packed complex to dual real (stage)
-    RHI::PipelineState *        ifftDualReal256FirstStagePSO = nullptr;
-    RHI::PipelineState *        ifftDualReal256LastStagePSO = nullptr;
-    RHI::PipelineState *        ifftDualReal512FirstStagePSO = nullptr;
-    RHI::PipelineState *        ifftDualReal512LastStagePSO = nullptr;
-    RHI::PipelineState *        ifftDualReal1024FirstStagePSO = nullptr;
-    RHI::PipelineState *        ifftDualReal1024LastStagePSO = nullptr;
-#endif
                                 // packed spectrum ops
     RHI::PipelineState *        multiplyComplexSpectrum2DPSO = nullptr;
     RHI::PipelineState *        multiplyPackedRealSpectrum2DPSO = nullptr;
@@ -238,40 +205,48 @@ public:
 private:
     RHI::Buffer *               CreateRealFFTTwiddleBuffer(uint32_t fftSize);
 
-#ifdef USE_FUSED_FFT
     bool                        DispatchFFTComplexFused(RHI::CommandList *commandList, RHI::FrameThreadData *frameThreadData, RHI::PipelineState *pso, RHI::Buffer *inputBuffer, RHI::Buffer *outputBuffer, uint32_t fftBlockCount, RHI::GPUResourceState inputBufferState, RHI::GPUResourceState outputBufferState, float sign, float scale);
-    bool                        DispatchFFTReal512Fused(RHI::CommandList *commandList, RHI::FrameThreadData *frameThreadData, RHI::Buffer *inputBuffer, RHI::Buffer *outputBuffer, uint32_t fftBlockCount, RHI::Buffer **resultBuffer);
-    bool                        DispatchFFTReal1024Fused(RHI::CommandList *commandList, RHI::FrameThreadData *frameThreadData, RHI::Buffer *inputBuffer, RHI::Buffer *outputBuffer, uint32_t fftBlockCount, RHI::Buffer **resultBuffer);
-    bool                        DispatchIFFTReal512Fused(RHI::CommandList *commandList, RHI::FrameThreadData *frameThreadData, RHI::Buffer *inputBuffer, RHI::Buffer *outputBuffer, RHI::Buffer *workBuffer, uint32_t fftBlockCount, RHI::GPUResourceState inputBufferState, RHI::GPUResourceState workBufferState);
-    bool                        DispatchIFFTReal1024Fused(RHI::CommandList *commandList, RHI::FrameThreadData *frameThreadData, RHI::Buffer *inputBuffer, RHI::Buffer *outputBuffer, RHI::Buffer *workBuffer, uint32_t fftBlockCount, RHI::GPUResourceState inputBufferState, RHI::GPUResourceState workBufferState);
-    bool                        DispatchFFTDualReal256Fused(RHI::CommandList *commandList, RHI::FrameThreadData *frameThreadData, RHI::Buffer *inputBuffer, RHI::Buffer *outputBuffer, uint32_t fftBlockCount, RHI::Buffer **resultBuffer);
-    bool                        DispatchFFTDualReal512Fused(RHI::CommandList *commandList, RHI::FrameThreadData *frameThreadData, RHI::Buffer *inputBuffer, RHI::Buffer *outputBuffer, uint32_t fftBlockCount, RHI::Buffer **resultBuffer);
-    bool                        DispatchFFTDualReal1024Fused(RHI::CommandList *commandList, RHI::FrameThreadData *frameThreadData, RHI::Buffer *inputBuffer, RHI::Buffer *outputBuffer, uint32_t fftBlockCount, RHI::Buffer **resultBuffer);
-    bool                        DispatchIFFTDualReal256Fused(RHI::CommandList *commandList, RHI::FrameThreadData *frameThreadData, RHI::Buffer *inputBuffer, RHI::Buffer *outputBuffer, RHI::Buffer *workBuffer, uint32_t fftBlockCount, RHI::GPUResourceState inputBufferState, RHI::GPUResourceState workBufferState);
-    bool                        DispatchIFFTDualReal512Fused(RHI::CommandList *commandList, RHI::FrameThreadData *frameThreadData, RHI::Buffer *inputBuffer, RHI::Buffer *outputBuffer, RHI::Buffer *workBuffer, uint32_t fftBlockCount, RHI::GPUResourceState inputBufferState, RHI::GPUResourceState workBufferState);
-    bool                        DispatchIFFTDualReal1024Fused(RHI::CommandList *commandList, RHI::FrameThreadData *frameThreadData, RHI::Buffer *inputBuffer, RHI::Buffer *outputBuffer, RHI::Buffer *workBuffer, uint32_t fftBlockCount, RHI::GPUResourceState inputBufferState, RHI::GPUResourceState workBufferState);
-#else
-    bool                        DispatchFFTComplexStage(RHI::CommandList *commandList, RHI::PipelineState *pso, RHI::Buffer *inputBuffer, RHI::Buffer *outputBuffer, uint32_t fftBlockCount, RHI::ConstantBuffer *fftConstantBuffer, uint32_t stageIndex);
-    bool                        DispatchFFTComplex256(RHI::CommandList *commandList, RHI::FrameThreadData *frameThreadData, RHI::Buffer *inputBuffer, RHI::Buffer *pingBuffer0, RHI::Buffer *pingBuffer1, uint32_t fftBlockCount, float sign, float scale, RHI::PipelineState *regularStagePSO, RHI::Buffer **resultBuffer);
-    bool                        DispatchFFTComplex512(RHI::CommandList *commandList, RHI::FrameThreadData *frameThreadData, RHI::Buffer *inputBuffer, RHI::Buffer *pingBuffer0, RHI::Buffer *pingBuffer1, uint32_t fftBlockCount, float sign, float scale, RHI::PipelineState *regularStagePSO, RHI::Buffer **resultBuffer);
-    bool                        DispatchFFTComplex1024(RHI::CommandList *commandList, RHI::FrameThreadData *frameThreadData, RHI::Buffer *inputBuffer, RHI::Buffer *pingBuffer0, RHI::Buffer *pingBuffer1, uint32_t fftBlockCount, float sign, float scale, RHI::PipelineState *regularStagePSO, RHI::PipelineState *lastStagePSO, RHI::Buffer **resultBuffer);
-    bool                        DispatchFFTComplexToOutput(RHI::CommandList *commandList, RHI::FrameThreadData *frameThreadData, RHI::Buffer *inputBuffer, RHI::Buffer *outputBuffer, RHI::Buffer *pingBuffer0, RHI::Buffer *pingBuffer1, uint32_t fftBlockCount, uint32_t regularStageCount, RHI::PipelineState *regularStagePSO, RHI::PipelineState *lastStagePSO, float sign, float scale);
-    bool                        DispatchIFFTComplex256(RHI::CommandList *commandList, RHI::FrameThreadData *frameThreadData, RHI::Buffer *inputBuffer, RHI::Buffer *workBuffer, uint32_t fftBlockCount, float sign, float scale, RHI::PipelineState *regularStagePSO, RHI::Buffer **resultBuffer);
-    bool                        DispatchIFFTComplex512(RHI::CommandList *commandList, RHI::FrameThreadData *frameThreadData, RHI::Buffer *inputBuffer, RHI::Buffer *workBuffer, uint32_t fftBlockCount, float sign, float scale, RHI::PipelineState *regularStagePSO, RHI::Buffer **resultBuffer);
-    bool                        DispatchIFFTComplex1024(RHI::CommandList *commandList, RHI::FrameThreadData *frameThreadData, RHI::Buffer *inputBuffer, RHI::Buffer *workBuffer, uint32_t fftBlockCount, float sign, float scale, RHI::PipelineState *regularStagePSO, RHI::PipelineState *lastStagePSO, RHI::Buffer **resultBuffer);
-    bool                        DispatchIFFTComplexToOutput(RHI::CommandList *commandList, RHI::FrameThreadData *frameThreadData, RHI::Buffer *inputBuffer, RHI::Buffer *outputBuffer, RHI::Buffer *pingBuffer0, RHI::Buffer *pingBuffer1, uint32_t fftBlockCount, uint32_t regularStageCount, RHI::PipelineState *regularStagePSO, RHI::PipelineState *lastStagePSO, float sign, float scale);
-    bool                        DispatchFFTReal512(RHI::CommandList *commandList, RHI::FrameThreadData *frameThreadData, RHI::Buffer *inputBuffer, RHI::Buffer *pingBuffer0, RHI::Buffer *pingBuffer1, uint32_t fftBlockCount, RHI::Buffer **resultBuffer);
-    bool                        DispatchFFTReal1024(RHI::CommandList *commandList, RHI::FrameThreadData *frameThreadData, RHI::Buffer *inputBuffer, RHI::Buffer *pingBuffer0, RHI::Buffer *pingBuffer1, uint32_t fftBlockCount, RHI::Buffer **resultBuffer);
-    bool                        DispatchIFFTReal512(RHI::CommandList *commandList, RHI::FrameThreadData *frameThreadData, RHI::Buffer *inputBuffer, RHI::Buffer *outputBuffer, RHI::Buffer *workBuffer, uint32_t fftBlockCount, RHI::GPUResourceState inputBufferState, RHI::GPUResourceState workBufferState);
-    bool                        DispatchIFFTReal1024(RHI::CommandList *commandList, RHI::FrameThreadData *frameThreadData, RHI::Buffer *inputBuffer, RHI::Buffer *outputBuffer, RHI::Buffer *workBuffer, uint32_t fftBlockCount, RHI::GPUResourceState inputBufferState, RHI::GPUResourceState workBufferState);
-    bool                        DispatchFFTDualReal256(RHI::CommandList *commandList, RHI::FrameThreadData *frameThreadData, RHI::Buffer *inputBuffer, RHI::Buffer *pingBuffer0, RHI::Buffer *pingBuffer1, uint32_t fftBlockCount, RHI::Buffer **resultBuffer);
-    bool                        DispatchFFTDualReal512(RHI::CommandList *commandList, RHI::FrameThreadData *frameThreadData, RHI::Buffer *inputBuffer, RHI::Buffer *pingBuffer0, RHI::Buffer *pingBuffer1, uint32_t fftBlockCount, RHI::Buffer **resultBuffer);
-    bool                        DispatchFFTDualReal1024(RHI::CommandList *commandList, RHI::FrameThreadData *frameThreadData, RHI::Buffer *inputBuffer, RHI::Buffer *pingBuffer0, RHI::Buffer *pingBuffer1, uint32_t fftBlockCount, RHI::Buffer **resultBuffer);
-    bool                        DispatchIFFTDualReal256(RHI::CommandList *commandList, RHI::FrameThreadData *frameThreadData, RHI::Buffer *inputBuffer, RHI::Buffer *outputBuffer, RHI::Buffer *workBuffer, uint32_t fftBlockCount, RHI::GPUResourceState inputBufferState, RHI::GPUResourceState workBufferState);
-    bool                        DispatchIFFTDualReal512(RHI::CommandList *commandList, RHI::FrameThreadData *frameThreadData, RHI::Buffer *inputBuffer, RHI::Buffer *outputBuffer, RHI::Buffer *workBuffer, uint32_t fftBlockCount, RHI::GPUResourceState inputBufferState, RHI::GPUResourceState workBufferState);
-    bool                        DispatchIFFTDualReal1024(RHI::CommandList *commandList, RHI::FrameThreadData *frameThreadData, RHI::Buffer *inputBuffer, RHI::Buffer *outputBuffer, RHI::Buffer *workBuffer, uint32_t fftBlockCount, RHI::GPUResourceState inputBufferState, RHI::GPUResourceState workBufferState);
-#endif
+    bool                        DispatchFFTReal512Fused(RHI::CommandList *commandList, RHI::Buffer *inputBuffer, RHI::Buffer *outputBuffer, uint32_t fftBlockCount, RHI::Buffer **resultBuffer);
+    bool                        DispatchFFTReal1024Fused(RHI::CommandList *commandList, RHI::Buffer *inputBuffer, RHI::Buffer *outputBuffer, uint32_t fftBlockCount, RHI::Buffer **resultBuffer);
+    bool                        DispatchIFFTReal512Fused(RHI::CommandList *commandList, RHI::Buffer *inputBuffer, RHI::Buffer *outputBuffer, RHI::Buffer *workBuffer, uint32_t fftBlockCount, RHI::GPUResourceState inputBufferState, RHI::GPUResourceState workBufferState);
+    bool                        DispatchIFFTReal1024Fused(RHI::CommandList *commandList, RHI::Buffer *inputBuffer, RHI::Buffer *outputBuffer, RHI::Buffer *workBuffer, uint32_t fftBlockCount, RHI::GPUResourceState inputBufferState, RHI::GPUResourceState workBufferState);
+    bool                        DispatchFFTDualReal256Fused(RHI::CommandList *commandList, RHI::Buffer *inputBuffer, RHI::Buffer *outputBuffer, uint32_t fftBlockCount, RHI::Buffer **resultBuffer);
+    bool                        DispatchFFTDualReal512Fused(RHI::CommandList *commandList, RHI::Buffer *inputBuffer, RHI::Buffer *outputBuffer, uint32_t fftBlockCount, RHI::Buffer **resultBuffer);
+    bool                        DispatchFFTDualReal1024Fused(RHI::CommandList *commandList, RHI::Buffer *inputBuffer, RHI::Buffer *outputBuffer, uint32_t fftBlockCount, RHI::Buffer **resultBuffer);
+    bool                        DispatchIFFTDualReal256Fused(RHI::CommandList *commandList, RHI::Buffer *inputBuffer, RHI::Buffer *outputBuffer, RHI::Buffer *workBuffer, uint32_t fftBlockCount, RHI::GPUResourceState inputBufferState, RHI::GPUResourceState workBufferState);
+    bool                        DispatchIFFTDualReal512Fused(RHI::CommandList *commandList, RHI::Buffer *inputBuffer, RHI::Buffer *outputBuffer, RHI::Buffer *workBuffer, uint32_t fftBlockCount, RHI::GPUResourceState inputBufferState, RHI::GPUResourceState workBufferState);
+    bool                        DispatchIFFTDualReal1024Fused(RHI::CommandList *commandList, RHI::Buffer *inputBuffer, RHI::Buffer *outputBuffer, RHI::Buffer *workBuffer, uint32_t fftBlockCount, RHI::GPUResourceState inputBufferState, RHI::GPUResourceState workBufferState);
 
-    RHI::Buffer *               realFFTTwiddle512Buffer = nullptr;
-    RHI::Buffer *               realFFTTwiddle1024Buffer = nullptr;
+    SharedPtr<ShaderPipeline>   fftComplex256Pipeline;
+    SharedPtr<ShaderPipeline>   fftComplex512Pipeline;
+    SharedPtr<ShaderPipeline>   fftComplex1024Pipeline;
+
+    SharedPtr<ShaderPipeline>   fftReal512Pipeline;
+    SharedPtr<ShaderPipeline>   fftReal1024Pipeline;
+
+    SharedPtr<ShaderPipeline>   ifftReal512Pipeline;
+    SharedPtr<ShaderPipeline>   ifftReal1024Pipeline;
+
+    SharedPtr<ShaderPipeline>   fftDualReal256Pipeline;
+    SharedPtr<ShaderPipeline>   fftDualReal512Pipeline;
+    SharedPtr<ShaderPipeline>   fftDualReal1024Pipeline;
+
+    SharedPtr<ShaderPipeline>   ifftDualReal256Pipeline;
+    SharedPtr<ShaderPipeline>   ifftDualReal512Pipeline;
+    SharedPtr<ShaderPipeline>   ifftDualReal1024Pipeline;
+
+    SharedPtr<ShaderPipeline>   multiplyComplexSpectrum2DPipeline;
+    SharedPtr<ShaderPipeline>   multiplyPackedRealSpectrum2DPipeline;
+    SharedPtr<ShaderPipeline>   multiplyPackedDualRealSpectrum2DPipeline;
+
+    SharedPtr<ShaderPipeline>   transposeComplex256Pipeline;
+    SharedPtr<ShaderPipeline>   transposeComplex256x512Pipeline;
+    SharedPtr<ShaderPipeline>   transposeComplex512x256Pipeline;
+    SharedPtr<ShaderPipeline>   transposeComplex512x1024Pipeline;
+    SharedPtr<ShaderPipeline>   transposeComplex1024x512Pipeline;
+    SharedPtr<ShaderPipeline>   transposeComplex512Pipeline;
+    SharedPtr<ShaderPipeline>   transposeComplex1024Pipeline;
+
+    RHI::Buffer *               fftRealTwiddle512Buffer = nullptr;
+    RHI::Buffer *               fftRealTwiddle1024Buffer = nullptr;
 };

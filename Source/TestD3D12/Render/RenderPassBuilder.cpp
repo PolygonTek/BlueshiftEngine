@@ -20,13 +20,6 @@
 #include "Material.h"
 #include "VertexInputLayoutFactory.h"
 
-static RHI::PipelineState *GetReadyPSO(const SharedPtr<ShaderPipeline> &shaderPipeline) {
-    if (!shaderPipeline || !shaderPipeline->IsReady()) {
-        return nullptr;
-    }
-    return shaderPipeline->GetPSO();
-}
-
 void PassPipelineResolver::Begin(const ShaderPipelineDesc &pipelineDesc, uint32_t maxEntries) {
     basePipelineDesc = pipelineDesc;
     memset(pipelineDescValid, 0, sizeof(pipelineDescValid));
@@ -75,7 +68,7 @@ PassPipelineResolver::ResolveResult PassPipelineResolver::Resolve(const RenderPa
     }
 
     // hash 에 존재하지 않는다면 material->GetGraphicsPipeline 호출로 새 ShaderPipeline 을 얻는다.
-    result.pso = GetReadyPSO(material->GetGraphicsPipeline(featureSet, GetPipelineDesc(result.inputLayoutId)));
+    result.pso = ShaderPipeline::GetReadyPSO(material->GetGraphicsPipeline(featureSet, GetPipelineDesc(result.inputLayoutId)));
 
     PassPipelineResolver::Entry &entry = entries.Alloc();
     entry.material = material;

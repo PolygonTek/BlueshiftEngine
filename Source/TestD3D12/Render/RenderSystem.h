@@ -14,6 +14,7 @@
 
 #include "Precompiled.h"
 #include "RHI/RHI.h"
+#include "GpuFFT.h"
 
 class RenderContext;
 class RenderBackend;
@@ -69,8 +70,6 @@ private:
 
     void                            InitRenderThread();
     void                            ShutdownRenderThread();
-    void                            InitFFTPSOs();
-    void                            ReleaseFFTPSOs();
     void                            InitPostProcessPSOs();
     void                            ReleasePostProcessPSOs();
 
@@ -95,70 +94,19 @@ private:
     BE1::PlatformThread *           renderThread = nullptr;
     bool                            isStoppingRenderThread = false;
 
-    SharedPtr<ShaderPipeline>       toneMappingPSO;
-    SharedPtr<ShaderPipeline>       luminancePass1PSO;
-    SharedPtr<ShaderPipeline>       luminancePass2PSO;
+    SharedPtr<ShaderPipeline>       toneMappingPipeline;
+    SharedPtr<ShaderPipeline>       luminancePass1Pipeline;
+    SharedPtr<ShaderPipeline>       luminancePass2Pipeline;
 
-    SharedPtr<ShaderPipeline>       bloomPrefilterPSO;
-    SharedPtr<ShaderPipeline>       bloomDownsamplePSO;
-    SharedPtr<ShaderPipeline>       bloomUpsamplePSO;
+    SharedPtr<ShaderPipeline>       bloomPrefilterPipeline;
+    SharedPtr<ShaderPipeline>       bloomDownsamplePipeline;
+    SharedPtr<ShaderPipeline>       bloomUpsamplePipeline;
 
-    SharedPtr<ShaderPipeline>       convolutionBloomPrefilterPSO;
-    SharedPtr<ShaderPipeline>       convolutionBloomKernelPreparePSO;
-    SharedPtr<ShaderPipeline>       convolutionBloomResolvePSO;
+    SharedPtr<ShaderPipeline>       convolutionBloomPrefilterPipeline;
+    SharedPtr<ShaderPipeline>       convolutionBloomKernelPreparePipeline;
+    SharedPtr<ShaderPipeline>       convolutionBloomResolvePipeline;
 
-#ifdef USE_FUSED_FFT
-    SharedPtr<ShaderPipeline>       fftComplex256PSO;
-    SharedPtr<ShaderPipeline>       fftComplex512PSO;
-    SharedPtr<ShaderPipeline>       fftComplex1024PSO;
-    SharedPtr<ShaderPipeline>       fftReal512PSO;
-    SharedPtr<ShaderPipeline>       fftReal1024PSO;
-    SharedPtr<ShaderPipeline>       ifftReal512PSO;
-    SharedPtr<ShaderPipeline>       ifftReal1024PSO;
-    SharedPtr<ShaderPipeline>       fftDualReal256PSO;
-    SharedPtr<ShaderPipeline>       fftDualReal512PSO;
-    SharedPtr<ShaderPipeline>       fftDualReal1024PSO;
-    SharedPtr<ShaderPipeline>       ifftDualReal256PSO;
-    SharedPtr<ShaderPipeline>       ifftDualReal512PSO;
-    SharedPtr<ShaderPipeline>       ifftDualReal1024PSO;
-#else
-    SharedPtr<ShaderPipeline>       fftComplex256StagePSO;
-    SharedPtr<ShaderPipeline>       fftComplex512StagePSO;
-    SharedPtr<ShaderPipeline>       fftComplex1024StagePSO;
-    SharedPtr<ShaderPipeline>       fftComplex1024LastStagePSO;
-    SharedPtr<ShaderPipeline>       fftReal512FirstStagePSO;
-    SharedPtr<ShaderPipeline>       fftReal512LastStagePSO;
-    SharedPtr<ShaderPipeline>       fftReal1024FirstStagePSO;
-    SharedPtr<ShaderPipeline>       fftReal1024LastStagePSO;
-    SharedPtr<ShaderPipeline>       ifftReal512FirstStagePSO;
-    SharedPtr<ShaderPipeline>       ifftReal512LastStagePSO;
-    SharedPtr<ShaderPipeline>       ifftReal1024FirstStagePSO;
-    SharedPtr<ShaderPipeline>       ifftReal1024LastStagePSO;
-    SharedPtr<ShaderPipeline>       fftDualReal256FirstStagePSO;
-    SharedPtr<ShaderPipeline>       fftDualReal256LastStagePSO;
-    SharedPtr<ShaderPipeline>       fftDualReal512FirstStagePSO;
-    SharedPtr<ShaderPipeline>       fftDualReal512LastStagePSO;
-    SharedPtr<ShaderPipeline>       fftDualReal1024FirstStagePSO;
-    SharedPtr<ShaderPipeline>       fftDualReal1024LastStagePSO;
-    SharedPtr<ShaderPipeline>       ifftDualReal256FirstStagePSO;
-    SharedPtr<ShaderPipeline>       ifftDualReal256LastStagePSO;
-    SharedPtr<ShaderPipeline>       ifftDualReal512FirstStagePSO;
-    SharedPtr<ShaderPipeline>       ifftDualReal512LastStagePSO;
-    SharedPtr<ShaderPipeline>       ifftDualReal1024FirstStagePSO;
-    SharedPtr<ShaderPipeline>       ifftDualReal1024LastStagePSO;
-#endif
-
-    SharedPtr<ShaderPipeline>       multiplyComplexSpectrum2DPSO;
-    SharedPtr<ShaderPipeline>       multiplyPackedRealSpectrum2DPSO;
-    SharedPtr<ShaderPipeline>       multiplyPackedDualRealSpectrum2DPSO;
-
-    SharedPtr<ShaderPipeline>       transposeComplex256PSO;
-    SharedPtr<ShaderPipeline>       transposeComplex256x512PSO;
-    SharedPtr<ShaderPipeline>       transposeComplex512x256PSO;
-    SharedPtr<ShaderPipeline>       transposeComplex512x1024PSO;
-    SharedPtr<ShaderPipeline>       transposeComplex1024x512PSO;
-    SharedPtr<ShaderPipeline>       transposeComplex512PSO;
-    SharedPtr<ShaderPipeline>       transposeComplex1024PSO;
+    GpuFFT                          gpuFFT;
 };
 
 extern RenderSystem *               renderSystem;

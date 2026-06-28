@@ -17,7 +17,6 @@
 #include "Precompiled.h"
 #include "RHI/RHI.h"
 #include "RenderFrameData.h"
-#include "GpuFFT.h"
 
 class RenderFrameData;
 class RenderContext;
@@ -132,8 +131,6 @@ private:
     RHI::PipelineState *            currentConvolutionBloomResolvePSO = nullptr;
     BE1::RectF                      currentConvolutionBloomGuardedContentRect = BE1::RectF(0.0f, 0.0f, 0.0f, 0.0f);
     BE1::Vec2                       currentConvolutionBloomKernelSpatialScale = BE1::Vec2(1.0f, 1.0f);
-
-    GpuFFT                          gpuFFT;
 
     RHI::ConstantBuffer *           frameConstantBuffer = nullptr;
     RHI::ConstantBuffer *           cameraConstantBuffer = nullptr;

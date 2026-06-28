@@ -28,8 +28,8 @@
 #include "GameObject.h"
 #include "App.h"
 
-BE1::CVar       app_statFps("app_statFps", "1", BE1::CVar::Flag::Bool, "show FPS");
-BE1::CVar       app_statRender("app_statRender", "0", BE1::CVar::Flag::Bool, "show render statistics");
+BE1::CVar       app_showFps("app_showFps", "1", BE1::CVar::Flag::Bool, "show FPS");
+BE1::CVar       app_showStats("app_showStats", "0", BE1::CVar::Flag::Bool, "show render statistics");
 BE1::CVar       app_convolutionBloomKernelIndex("app_convolutionBloomKernelIndex", "0", BE1::CVar::Flag::Integer | BE1::CVar::Flag::Archive, "convolution bloom kernel index", 0, App::ConvolutionBloomKernelCount - 1);
 
 App             app;
@@ -88,10 +88,6 @@ void App::GetConvolutionBloomKernelDisplayName(int index, char *buffer, int buff
     BE1::Str::snPrintf(buffer, bufferSize, "CGV Bloom %02i", index + 1);
 }
 
-void App::GetConvolutionBloomKernelFilename(int index, char *buffer, int bufferSize) const {
-    BE1::Str::snPrintf(buffer, bufferSize, "BloomKernels/CGV_Bloom_%02i.EXR", index + 1);
-}
-
 void App::SetConvolutionBloomKernelIndex(int index) {
     const int currentIndex = app_convolutionBloomKernelIndex.GetInteger();
 
@@ -103,7 +99,8 @@ void App::SetConvolutionBloomKernelIndex(int index) {
     }
 
     char filename[128];
-    GetConvolutionBloomKernelFilename(index, filename, sizeof(filename));
+    BE1::Str::snPrintf(filename, sizeof(filename), "BloomKernels/CGV_Bloom_%02i.EXR", index + 1);
+
     SetConvolutionBloomKernelFromFile(filename);
 }
 
@@ -147,7 +144,7 @@ void App::Render(uint64_t frameUsec) {
     const float elapsedTime = (float)MICRO2SEC((double)elapsedUsec);
     const float elapsedPrevTime = (float)MICRO2SEC((double)(elapsedUsec - frameUsec));
 
-    bool statEnabled = app_statRender.GetBool();
+    bool statEnabled = app_showStats.GetBool();
 #ifdef ENABLE_IMGUI
     statEnabled |= imguiShowStatsPlotWindow;
 #endif
@@ -162,15 +159,7 @@ void App::Render(uint64_t frameUsec) {
 
     RenderScene();
 
-    RenderText();
-
-    renderWorld->RenderGUI(mainRenderContext->GetGuiMesh());
-
-#ifdef ENABLE_IMGUI
-    mainRenderContext->RenderImGui([this]() {
-        BuildImGuiOverlay();
-    });
-#endif
+    RenderGUI();
 
     mainRenderContext->EndFrame();
 
@@ -419,7 +408,7 @@ void App::RenderScene() {
     renderWorld->RenderScene(renderCamera);
 }
 
-void App::RenderText() {
+void App::RenderGUI() {
     mainRenderContext->SetFont(mainFont);
     mainRenderContext->SetColor(BE1::Color4::white);
     mainRenderContext->SetTextShadowColor(BE1::Color4::black);
@@ -429,13 +418,13 @@ void App::RenderText() {
     int x = 4;
     int y = 4;
 
-    if (app_statFps.GetBool()) {
+    if (app_showFps.GetBool()) {
         const float statFps = statFrameAverageMsec > 0.0f ? 1000.0f / statFrameAverageMsec : 0.0f;
 
         mainRenderContext->DrawString(x, y, BE1::va("FPS: %.1f", statFps), DrawTextFlag::Right | DrawTextFlag::AddOutlines); y += textLineHeight;
     }
 
-    if (app_statRender.GetBool()) {
+    if (app_showStats.GetBool()) {
         const uint64_t videoMemBudgetBytes = renderSystem->GetVideoMemoryUsage().budgetBytes;
         const uint64_t videoMemUsageBytes = renderSystem->GetVideoMemoryUsage().usageBytes;
 
@@ -463,4 +452,12 @@ void App::RenderText() {
         mainRenderContext->DrawString(x, y, BE1::va("Video Memory: %s / %s", BE1::Str::FormatBytes(videoMemUsageBytes).c_str(), BE1::Str::FormatBytes(videoMemBudgetBytes).c_str()), DrawTextFlag::Right | DrawTextFlag::AddOutlines); y += textLineHeight;
         mainRenderContext->DrawString(x, y, BE1::va("Mipmap Streaming: %s / %s", BE1::Str::FormatBytes(textureStreamingUsageBytes).c_str(), BE1::Str::FormatBytes(textureStreamingBudgetBytes).c_str()), DrawTextFlag::Right | DrawTextFlag::AddOutlines); y += textLineHeight;
     }
+
+    renderWorld->RenderGUI(mainRenderContext->GetGuiMesh());
+
+#ifdef ENABLE_IMGUI
+    mainRenderContext->RenderImGui([this]() {
+        BuildImGuiOverlay();
+    });
+#endif
 }

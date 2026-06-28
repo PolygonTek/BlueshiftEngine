@@ -20,20 +20,10 @@
 #include "RenderInternal.h"
 #include "Shaders/ShaderInterop.h"
 
-static RHI::PipelineState *GetReadyPSO(const SharedPtr<ShaderPipeline> &shaderPipeline) {
-    if (!shaderPipeline || !shaderPipeline->IsReady()) {
-        return nullptr;
-    }
-
-    return shaderPipeline->GetPSO();
-}
-
 void RenderBackend::Init() {
 #ifdef USE_RENDER_TASK
     drawGroupId = BE1::Engine::taskManager->CreateGroupId();
 #endif
-
-    gpuFFT.Init();
 
     // GPU 타임 스탬프가 초당 몇번 증가하는지를 얻어온다.
     gpuTimestampFrequency = RHI::renderer->GetTimestampFrequency(RHI::CommandQueueType::Graphics);
@@ -48,8 +38,6 @@ void RenderBackend::Init() {
 }
 
 void RenderBackend::Shutdown() {
-    gpuFFT.Shutdown();
-
     if (gpuTimestampReadbackBuffer) {
         RHI::renderer->DestroyBuffer(gpuTimestampReadbackBuffer);
         gpuTimestampReadbackBuffer = nullptr;
@@ -275,66 +263,17 @@ bool RenderBackend::UploadCameraConstants() {
 }
 
 void RenderBackend::UpdateGlobalPSOs() {
-    currentToneMappingPSO = GetReadyPSO(renderSystem->toneMappingPSO);
-    currentLuminancePass1PSO = GetReadyPSO(renderSystem->luminancePass1PSO);
-    currentLuminancePass2PSO = GetReadyPSO(renderSystem->luminancePass2PSO);
-    currentBloomPrefilterPSO = GetReadyPSO(renderSystem->bloomPrefilterPSO);
-    currentBloomDownsamplePSO = GetReadyPSO(renderSystem->bloomDownsamplePSO);
-    currentBloomUpsamplePSO = GetReadyPSO(renderSystem->bloomUpsamplePSO);
-    currentConvolutionBloomPrefilterPSO = GetReadyPSO(renderSystem->convolutionBloomPrefilterPSO);
-    currentConvolutionBloomKernelPreparePSO = GetReadyPSO(renderSystem->convolutionBloomKernelPreparePSO);
-    currentConvolutionBloomResolvePSO = GetReadyPSO(renderSystem->convolutionBloomResolvePSO);
+    currentToneMappingPSO = ShaderPipeline::GetReadyPSO(renderSystem->toneMappingPipeline);
+    currentLuminancePass1PSO = ShaderPipeline::GetReadyPSO(renderSystem->luminancePass1Pipeline);
+    currentLuminancePass2PSO = ShaderPipeline::GetReadyPSO(renderSystem->luminancePass2Pipeline);
+    currentBloomPrefilterPSO = ShaderPipeline::GetReadyPSO(renderSystem->bloomPrefilterPipeline);
+    currentBloomDownsamplePSO = ShaderPipeline::GetReadyPSO(renderSystem->bloomDownsamplePipeline);
+    currentBloomUpsamplePSO = ShaderPipeline::GetReadyPSO(renderSystem->bloomUpsamplePipeline);
+    currentConvolutionBloomPrefilterPSO = ShaderPipeline::GetReadyPSO(renderSystem->convolutionBloomPrefilterPipeline);
+    currentConvolutionBloomKernelPreparePSO = ShaderPipeline::GetReadyPSO(renderSystem->convolutionBloomKernelPreparePipeline);
+    currentConvolutionBloomResolvePSO = ShaderPipeline::GetReadyPSO(renderSystem->convolutionBloomResolvePipeline);
 
-#ifdef USE_FUSED_FFT
-    gpuFFT.fftComplex256PSO = GetReadyPSO(renderSystem->fftComplex256PSO);
-    gpuFFT.fftComplex512PSO = GetReadyPSO(renderSystem->fftComplex512PSO);
-    gpuFFT.fftComplex1024PSO = GetReadyPSO(renderSystem->fftComplex1024PSO);
-    gpuFFT.fftReal512PSO = GetReadyPSO(renderSystem->fftReal512PSO);
-    gpuFFT.fftReal1024PSO = GetReadyPSO(renderSystem->fftReal1024PSO);
-    gpuFFT.ifftReal512PSO = GetReadyPSO(renderSystem->ifftReal512PSO);
-    gpuFFT.ifftReal1024PSO = GetReadyPSO(renderSystem->ifftReal1024PSO);
-    gpuFFT.fftDualReal256PSO = GetReadyPSO(renderSystem->fftDualReal256PSO);
-    gpuFFT.fftDualReal512PSO = GetReadyPSO(renderSystem->fftDualReal512PSO);
-    gpuFFT.fftDualReal1024PSO = GetReadyPSO(renderSystem->fftDualReal1024PSO);
-    gpuFFT.ifftDualReal256PSO = GetReadyPSO(renderSystem->ifftDualReal256PSO);
-    gpuFFT.ifftDualReal512PSO = GetReadyPSO(renderSystem->ifftDualReal512PSO);
-    gpuFFT.ifftDualReal1024PSO = GetReadyPSO(renderSystem->ifftDualReal1024PSO);
-#else
-    gpuFFT.fftComplex256StagePSO = GetReadyPSO(renderSystem->fftComplex256StagePSO);
-    gpuFFT.fftComplex512StagePSO = GetReadyPSO(renderSystem->fftComplex512StagePSO);
-    gpuFFT.fftComplex1024StagePSO = GetReadyPSO(renderSystem->fftComplex1024StagePSO);
-    gpuFFT.fftComplex1024LastStagePSO = GetReadyPSO(renderSystem->fftComplex1024LastStagePSO);
-    gpuFFT.fftReal512FirstStagePSO = GetReadyPSO(renderSystem->fftReal512FirstStagePSO);
-    gpuFFT.fftReal512LastStagePSO = GetReadyPSO(renderSystem->fftReal512LastStagePSO);
-    gpuFFT.fftReal1024FirstStagePSO = GetReadyPSO(renderSystem->fftReal1024FirstStagePSO);
-    gpuFFT.fftReal1024LastStagePSO = GetReadyPSO(renderSystem->fftReal1024LastStagePSO);
-    gpuFFT.ifftReal512FirstStagePSO = GetReadyPSO(renderSystem->ifftReal512FirstStagePSO);
-    gpuFFT.ifftReal512LastStagePSO = GetReadyPSO(renderSystem->ifftReal512LastStagePSO);
-    gpuFFT.ifftReal1024FirstStagePSO = GetReadyPSO(renderSystem->ifftReal1024FirstStagePSO);
-    gpuFFT.ifftReal1024LastStagePSO = GetReadyPSO(renderSystem->ifftReal1024LastStagePSO);
-    gpuFFT.fftDualReal256FirstStagePSO = GetReadyPSO(renderSystem->fftDualReal256FirstStagePSO);
-    gpuFFT.fftDualReal256LastStagePSO = GetReadyPSO(renderSystem->fftDualReal256LastStagePSO);
-    gpuFFT.fftDualReal512FirstStagePSO = GetReadyPSO(renderSystem->fftDualReal512FirstStagePSO);
-    gpuFFT.fftDualReal512LastStagePSO = GetReadyPSO(renderSystem->fftDualReal512LastStagePSO);
-    gpuFFT.fftDualReal1024FirstStagePSO = GetReadyPSO(renderSystem->fftDualReal1024FirstStagePSO);
-    gpuFFT.fftDualReal1024LastStagePSO = GetReadyPSO(renderSystem->fftDualReal1024LastStagePSO);
-    gpuFFT.ifftDualReal256FirstStagePSO = GetReadyPSO(renderSystem->ifftDualReal256FirstStagePSO);
-    gpuFFT.ifftDualReal256LastStagePSO = GetReadyPSO(renderSystem->ifftDualReal256LastStagePSO);
-    gpuFFT.ifftDualReal512FirstStagePSO = GetReadyPSO(renderSystem->ifftDualReal512FirstStagePSO);
-    gpuFFT.ifftDualReal512LastStagePSO = GetReadyPSO(renderSystem->ifftDualReal512LastStagePSO);
-    gpuFFT.ifftDualReal1024FirstStagePSO = GetReadyPSO(renderSystem->ifftDualReal1024FirstStagePSO);
-    gpuFFT.ifftDualReal1024LastStagePSO = GetReadyPSO(renderSystem->ifftDualReal1024LastStagePSO);
-#endif
-    gpuFFT.multiplyComplexSpectrum2DPSO = GetReadyPSO(renderSystem->multiplyComplexSpectrum2DPSO);
-    gpuFFT.multiplyPackedRealSpectrum2DPSO = GetReadyPSO(renderSystem->multiplyPackedRealSpectrum2DPSO);
-    gpuFFT.multiplyPackedDualRealSpectrum2DPSO = GetReadyPSO(renderSystem->multiplyPackedDualRealSpectrum2DPSO);
-    gpuFFT.transposeComplex256PSO = GetReadyPSO(renderSystem->transposeComplex256PSO);
-    gpuFFT.transposeComplex256x512PSO = GetReadyPSO(renderSystem->transposeComplex256x512PSO);
-    gpuFFT.transposeComplex512x256PSO = GetReadyPSO(renderSystem->transposeComplex512x256PSO);
-    gpuFFT.transposeComplex512x1024PSO = GetReadyPSO(renderSystem->transposeComplex512x1024PSO);
-    gpuFFT.transposeComplex1024x512PSO = GetReadyPSO(renderSystem->transposeComplex1024x512PSO);
-    gpuFFT.transposeComplex512PSO = GetReadyPSO(renderSystem->transposeComplex512PSO);
-    gpuFFT.transposeComplex1024PSO = GetReadyPSO(renderSystem->transposeComplex1024PSO);
+    renderSystem->gpuFFT.UpdateReadyPSOs();
 }
 
 const void *RenderBackend::ExecuteBeginContext(const void *data) {
@@ -1084,7 +1023,7 @@ bool RenderBackend::DispatchConvolutionBloomMultiplySpectrum() {
     const float kernelSampleCount = static_cast<float>(fftSize) * static_cast<float>(fftSize);
     const float kernelScale = BE1::Max(r_convolutionBloomKernelScale.GetFloat(), 0.0f) * BE1::Max(currentVisCamera->fftBloomKernelNormalizationFactor, 0.0f) / (BE1::Max(kernelSampleCount, 1.0f) * kernelAreaScale);
 
-    return gpuFFT.DispatchMultiplyPackedDualRealSpectrum2D(
+    return renderSystem->gpuFFT.DispatchMultiplyPackedDualRealSpectrum2D(
         mainCommandList,
         frameData,
         currentVisCamera->fftBloomKernelSpectrumBuffer,
@@ -1157,13 +1096,13 @@ bool RenderBackend::DispatchConvolutionBloomFFT(RHI::Buffer *inputBuffer, RHI::B
     constexpr uint32_t PlaneCount = 2; // RG, B0
 
     if (currentVisCamera->fftBloomSize == 256) {
-        return gpuFFT.DispatchFFTDualReal2D256(mainCommandList, frameData, inputBuffer, outputBuffer, currentVisCamera->fftBloomWorkBuffer, PlaneCount);
+        return renderSystem->gpuFFT.DispatchFFTDualReal2D256(mainCommandList, frameData, inputBuffer, outputBuffer, currentVisCamera->fftBloomWorkBuffer, PlaneCount);
     }
     if (currentVisCamera->fftBloomSize == 512) {
-        return gpuFFT.DispatchFFTDualReal2D512(mainCommandList, frameData, inputBuffer, outputBuffer, currentVisCamera->fftBloomWorkBuffer, PlaneCount);
+        return renderSystem->gpuFFT.DispatchFFTDualReal2D512(mainCommandList, frameData, inputBuffer, outputBuffer, currentVisCamera->fftBloomWorkBuffer, PlaneCount);
     }
     if (currentVisCamera->fftBloomSize == 1024) {
-        return gpuFFT.DispatchFFTDualReal2D1024(mainCommandList, frameData, inputBuffer, outputBuffer, currentVisCamera->fftBloomWorkBuffer, PlaneCount);
+        return renderSystem->gpuFFT.DispatchFFTDualReal2D1024(mainCommandList, frameData, inputBuffer, outputBuffer, currentVisCamera->fftBloomWorkBuffer, PlaneCount);
     }
     return false;
 }
@@ -1172,13 +1111,13 @@ bool RenderBackend::DispatchConvolutionBloomIFFT(RHI::Buffer *inputBuffer, RHI::
     constexpr uint32_t PlaneCount = 2; // RG, B0
 
     if (currentVisCamera->fftBloomSize == 256) {
-        return gpuFFT.DispatchIFFTDualReal2D256(mainCommandList, frameData, inputBuffer, outputBuffer, currentVisCamera->fftBloomScreenSpectrumBuffer, PlaneCount);
+        return renderSystem->gpuFFT.DispatchIFFTDualReal2D256(mainCommandList, frameData, inputBuffer, outputBuffer, currentVisCamera->fftBloomScreenSpectrumBuffer, PlaneCount);
     }
     if (currentVisCamera->fftBloomSize == 512) {
-        return gpuFFT.DispatchIFFTDualReal2D512(mainCommandList, frameData, inputBuffer, outputBuffer, currentVisCamera->fftBloomScreenSpectrumBuffer, PlaneCount);
+        return renderSystem->gpuFFT.DispatchIFFTDualReal2D512(mainCommandList, frameData, inputBuffer, outputBuffer, currentVisCamera->fftBloomScreenSpectrumBuffer, PlaneCount);
     }
     if (currentVisCamera->fftBloomSize == 1024) {
-        return gpuFFT.DispatchIFFTDualReal2D1024(mainCommandList, frameData, inputBuffer, outputBuffer, currentVisCamera->fftBloomScreenSpectrumBuffer, PlaneCount);
+        return renderSystem->gpuFFT.DispatchIFFTDualReal2D1024(mainCommandList, frameData, inputBuffer, outputBuffer, currentVisCamera->fftBloomScreenSpectrumBuffer, PlaneCount);
     }
     return false;
 }

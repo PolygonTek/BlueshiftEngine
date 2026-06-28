@@ -52,7 +52,6 @@ public:
 
 private:
     void                            GetConvolutionBloomKernelDisplayName(int index, char *buffer, int bufferSize) const;
-    void                            GetConvolutionBloomKernelFilename(int index, char *buffer, int bufferSize) const;
     void                            SetConvolutionBloomKernelIndex(int index);
     void                            SetConvolutionBloomKernelFromFile(const char *filename);
     void                            RotateGameObjects();
@@ -60,7 +59,8 @@ private:
     void                            UpdateRenderFrontendFrameTime(uint64_t frameUsec);
     void                            UpdateGameObjects();
     void                            RenderScene();
-    void                            RenderText();
+    void                            RenderGUI();
+
 #ifdef ENABLE_IMGUI
     void                            BuildImGuiOverlay();
     void                            BuildImGuiTextureViewer();

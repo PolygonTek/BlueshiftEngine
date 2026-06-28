@@ -24,14 +24,6 @@ static constexpr uint32_t   MaxRenderTaskThreads = 32;
 static constexpr uint32_t   MaxMemSizePerBlock = 0x4000000;
 static constexpr uint32_t   MemAlignSize = 32;
 
-static RHI::PipelineState *GetReadyPSO(const SharedPtr<ShaderPipeline> &shaderPipeline) {
-    if (!shaderPipeline || !shaderPipeline->IsReady()) {
-        return nullptr;
-    }
-
-    return shaderPipeline->GetPSO();
-}
-
 void RenderFrameData::CmdBeginContext(RenderContext *context) {
     BeginContextRenderCommand *cmd = (BeginContextRenderCommand *)GetCommandBuffer(sizeof(BeginContextRenderCommand));
     if (!cmd) {
@@ -40,7 +32,7 @@ void RenderFrameData::CmdBeginContext(RenderContext *context) {
 
     cmd->commandId = RenderCommandId::BeginContext;
     cmd->renderContext = context;
-    cmd->imagePSO = GetReadyPSO(context->imagePSO);
+    cmd->imagePSO = ShaderPipeline::GetReadyPSO(context->imagePSO);
 }
 
 void RenderFrameData::CmdDrawCamera(const VisCamera *camera) {
