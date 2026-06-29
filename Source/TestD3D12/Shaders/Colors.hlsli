@@ -1,45 +1,6 @@
 #ifndef __COLORS_HLSLI__
 #define __COLORS_HLSLI__
 
-// REC 709 (sRGB) primaries
-static const float3x3 Rec709_2_XYZ = float3x3(
-    0.4124564, 0.3575761, 0.1804375,
-    0.2126729, 0.7151522, 0.0721750,
-    0.0193339, 0.1191920, 0.9503041
-);
-
-static const float3x3 XYZ_2_Rec709 = float3x3(
-    3.2404542,-1.5371385,-0.4985314,
-    -0.9692660, 1.8760108, 0.0415560,
-    0.0556434,-0.2040259, 1.0572252
-);
-
-// REC 2020 primaries
-static const float3x3 XYZ_2_Rec2020 = float3x3(
-    1.7166084, -0.3556621, -0.2533601,
-    -0.6666829, 1.6164776, 0.0157685,
-    0.0176422, -0.0427763, 0.94222867
-);
-
-static const float3x3 Rec2020_2_XYZ = float3x3(
-    0.6369736, 0.1446172, 0.1688585,
-    0.2627066, 0.6779996, 0.0592938,
-    0.0000000, 0.0280728, 1.0608437
-);
-
-// P3, D65 primaries
-static const float3x3 XYZ_2_P3D65 = float3x3(
-    2.4933963, -0.9313459, -0.4026945,
-    -0.8294868, 1.7626597, 0.0236246,
-    0.0358507, -0.0761827, 0.9570140
-);
-
-static const float3x3 P3D65_2_XYZ = float3x3(
-    0.4865906, 0.2656683, 0.1981905,
-    0.2289838, 0.6917402, 0.0792762,
-    0.0000000, 0.0451135, 1.0438031
-);
-
 float3 GammaToLinear(float3 sRGB) {
     // Approximate version from http://chilliant.blogspot.com.au/2012/08/srgb-approximations-for-hlsl.html?m=1
     return sRGB * (sRGB * (sRGB * 0.305306011 + 0.682171111) + 0.012522878);
@@ -57,17 +18,23 @@ float GetLuma(float3 color) {
 }
 
 // Converts a color from linear RGB to XYZ space.
-float3 RGB_to_XYZ(float3 rgb) {
-    return mul(Rec709_2_XYZ, rgb);
+float3 LinearRGBToXYZ(float3 rgb) {
+    return float3(
+        0.4124564 * rgb.r + 0.3575761 * rgb.g + 0.1804375 * rgb.b,
+        0.2126729 * rgb.r + 0.7151522 * rgb.g + 0.0721750 * rgb.b,
+        0.0193339 * rgb.r + 0.1191920 * rgb.g + 0.9503041 * rgb.b);
 }
 
 // Converts a color from XYZ to linear RGB space.
-float3 XYZ_to_RGB(float3 xyz) {
-    return mul(XYZ_2_Rec709, xyz);
+float3 XYZToLinearRGB(float3 XYZ) {
+    return float3(
+        3.2404542 * XYZ.x - 1.5371385 * XYZ.y - 0.4985314 * XYZ.z,
+       -0.9692660 * XYZ.x + 1.8760108 * XYZ.y + 0.0415560 * XYZ.z,
+        0.0556434 * XYZ.x - 0.2040259 * XYZ.y + 1.0572252 * XYZ.z);
 }
 
 // Converts a color from XYZ to xyY space (Y is luminosity).
-float3 XYZ_to_xyY(float3 xyz) {
+float3 XYZToxyY(float3 xyz) {
     float Y = xyz.y;
     float x = xyz.x / (xyz.x + xyz.y + xyz.z);
     float y = xyz.y / (xyz.x + xyz.y + xyz.z);
@@ -75,7 +42,7 @@ float3 XYZ_to_xyY(float3 xyz) {
 }
 
 // Converts a color from xyY space to XYZ space.
-float3 xyY_to_XYZ(float3 xyY) {
+float3 xyYToXYZ(float3 xyY) {
     float Y = xyY.z;
     float x = Y * xyY.x / xyY.y;
     float z = Y * (1.0 - xyY.x - xyY.y) / xyY.y;
@@ -83,13 +50,13 @@ float3 xyY_to_XYZ(float3 xyY) {
 }
 
 // Converts a color from linear RGB to xyY space.
-float3 RGB_to_xyY(float3 rgb) {
-    return XYZ_to_xyY(RGB_to_XYZ(rgb));
+float3 LinearRGBToxyY(float3 rgb) {
+    return XYZToxyY(LinearRGBToXYZ(rgb));
 }
 
 // Converts a color from xyY space to linear RGB.
-float3 xyY_to_RGB(float3 xyY) {
-    return XYZ_to_RGB(xyY_to_XYZ(xyY));
+float3 xyYToLinearRGB(float3 xyY) {
+    return XYZToLinearRGB(xyYToXYZ(xyY));
 }
 
 //
@@ -99,7 +66,7 @@ float3 xyY_to_RGB(float3 xyY) {
 //  Sat [0.0, 1.0]
 //  Lum [0.0, HALF_MAX]
 //
-float3 RGB_to_HSV(float3 c) {
+float3 RGBToHSV(float3 c) {
     float4 K = float4(0.0, -1.0 / 3.0, 2.0 / 3.0, -1.0);
     float4 p = lerp(float4(c.bg, K.wz), float4(c.gb, K.xy), step(c.b, c.g));
     float4 q = lerp(float4(p.xyw, c.r), float4(c.r, p.yzx), step(p.x, c.r));
@@ -108,13 +75,13 @@ float3 RGB_to_HSV(float3 c) {
     return float3(abs(q.z + (q.w - q.y) / (6.0 * d + e)), d / (q.x + e), q.x);
 }
 
-float3 HSV_to_RGB(float3 c) {
+float3 HSVToRGB(float3 c) {
     float4 K = float4(1.0, 2.0 / 3.0, 1.0 / 3.0, 3.0);
     float3 p = abs(frac(c.xxx + K.xyz) * 6.0 - K.www);
     return c.z * lerp(K.xxx, saturate(p - K.xxx), c.y);
 }
 
-float3 RGB_to_YUV(float3 rgb) {
+float3 RGBToYUV(float3 rgb) {
     float3 yuv;
     yuv.x = dot(rgb, float3(0.299, 0.587, 0.114));
     yuv.y = (rgb.z - yuv.x) * 0.565;
@@ -122,7 +89,7 @@ float3 RGB_to_YUV(float3 rgb) {
     return yuv;
 }
 
-float3 YUV_to_RGB(float3 yuv) {
+float3 YUVToRGB(float3 yuv) {
     float3 rgb;
     rgb.r = yuv.x + 1.403 * yuv.z;
     rgb.g = yuv.x - 0.344 * yuv.y - 1.403 * yuv.z;
@@ -130,14 +97,14 @@ float3 YUV_to_RGB(float3 yuv) {
     return rgb;
 }
 
-float4 RGB_to_CMYK(float3 rgb) {
+float4 RGBToCMYK(float3 rgb) {
     float4 cmyk = float4(float3(1.0, 1.0, 1.0) - rgb, 0.0);
     cmyk.w = min(min(cmyk.x, cmyk.y), cmyk.z);
     cmyk.xyz = (cmyk.xyz - cmyk.w) / (1.0 - cmyk.w);
     return cmyk;
 }
 
-float3 CMYK_to_RGB(float4 cmyk) {
+float3 CMYKToRGB(float4 cmyk) {
     float3 rgb = min(float3(1.0, 1.0, 1.0), cmyk.xyz * (1.0 - cmyk.w) + float3(cmyk.w, cmyk.w, cmyk.w));
     return float3(1.0, 1.0, 1.0) - rgb;
 }
@@ -145,14 +112,14 @@ float3 CMYK_to_RGB(float4 cmyk) {
 //
 // RGB / Full-range YCbCr conversions (ITU-R BT.601)
 //
-float3 RGB_to_YCbCr(float3 c) {
+float3 RGBToYCbCr(float3 c) {
     float Y  =  0.299 * c.r + 0.587 * c.g + 0.114 * c.b;
     float Cb = -0.169 * c.r - 0.331 * c.g + 0.500 * c.b;
     float Cr =  0.500 * c.r - 0.419 * c.g - 0.081 * c.b;
     return float3(Y, Cb, Cr);
 }
 
-float3 YCbCr_to_RGB(float3 c) {
+float3 YCbCrToRGB(float3 c) {
     float R = c.x + 0.000 * c.y + 1.403 * c.z;
     float G = c.x - 0.344 * c.y - 0.714 * c.z;
     float B = c.x - 1.773 * c.y + 0.000 * c.z;
@@ -211,6 +178,32 @@ float4 EncodeFloatToRGBA(float v) {
 
 float DecodeFloatToRGBA(float4 rgba) {
     return dot(rgba, float4(1.0, 1.0/255.0, 1.0/65025.0, 1.0/160581375.0));
+}
+
+float CIE1931Gaussian(float t) {
+    return exp(-0.5 * t * t);
+}
+
+float3 SampleCIE1931CMF(float wavelengthNm) {
+    if (wavelengthNm < 360.0 || wavelengthNm > 830.0)
+    {
+        return float3(0.0, 0.0, 0.0);
+    }
+
+    float t1 = (wavelengthNm - 442.0) * (wavelengthNm < 442.0 ? 0.0624 : 0.0374);
+    float t2 = (wavelengthNm - 599.8) * (wavelengthNm < 599.8 ? 0.0264 : 0.0323);
+    float t3 = (wavelengthNm - 501.1) * (wavelengthNm < 501.1 ? 0.0490 : 0.0382);
+    float x = 0.362 * CIE1931Gaussian(t1) + 1.056 * CIE1931Gaussian(t2) - 0.065 * CIE1931Gaussian(t3);
+
+    t1 = (wavelengthNm - 568.8) * (wavelengthNm < 568.8 ? 0.0213 : 0.0247);
+    t2 = (wavelengthNm - 530.9) * (wavelengthNm < 530.9 ? 0.0613 : 0.0322);
+    float y = 0.821 * CIE1931Gaussian(t1) + 0.286 * CIE1931Gaussian(t2);
+
+    t1 = (wavelengthNm - 437.0) * (wavelengthNm < 437.0 ? 0.0845 : 0.0278);
+    t2 = (wavelengthNm - 459.0) * (wavelengthNm < 459.0 ? 0.0385 : 0.0725);
+    float z = 1.217 * CIE1931Gaussian(t1) + 0.681 * CIE1931Gaussian(t2);
+
+    return float3(x, y, z);
 }
 
 #endif

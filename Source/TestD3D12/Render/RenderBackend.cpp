@@ -272,6 +272,10 @@ void RenderBackend::UpdateGlobalPSOs() {
     currentConvolutionBloomPrefilterPSO = ShaderPipeline::GetReadyPSO(renderSystem->convolutionBloomPrefilterPipeline);
     currentConvolutionBloomKernelPreparePSO = ShaderPipeline::GetReadyPSO(renderSystem->convolutionBloomKernelPreparePipeline);
     currentConvolutionBloomResolvePSO = ShaderPipeline::GetReadyPSO(renderSystem->convolutionBloomResolvePipeline);
+    currentConvolutionBloomAperturePreparePSO = ShaderPipeline::GetReadyPSO(renderSystem->convolutionBloomAperturePreparePipeline);
+    currentConvolutionBloomReduceApertureEnergyPSO = ShaderPipeline::GetReadyPSO(renderSystem->convolutionBloomReduceApertureEnergyPipeline);
+    currentConvolutionBloomResolveDiffractionPSFPSO = ShaderPipeline::GetReadyPSO(renderSystem->convolutionBloomResolveDiffractionPSFPipeline);
+    currentConvolutionBloomApplyDispersionPSO = ShaderPipeline::GetReadyPSO(renderSystem->convolutionBloomApplyDispersionPipeline);
 }
 
 const void *RenderBackend::ExecuteBeginContext(const void *data) {
@@ -644,11 +648,12 @@ bool RenderBackend::DispatchLuminance() {
 bool RenderBackend::DispatchBloom() {
     PROFILER_CPU_SCOPED_EVENT("RenderBackend::DispatchBloom");
 
-    const RenderBloomMode bloomMode = static_cast<RenderBloomMode>(BE1::Clamp(r_bloom.GetInteger(), static_cast<int>(RenderBloomMode::Off), static_cast<int>(RenderBloomMode::Convolution)));
+    const RenderBloomMode bloomMode = static_cast<RenderBloomMode>(BE1::Clamp(r_bloom.GetInteger(), static_cast<int>(RenderBloomMode::Off), static_cast<int>(RenderBloomMode::ApertureConvolution)));
     switch (bloomMode) {
     case RenderBloomMode::Pyramid:
         return DispatchPyramidBloom();
     case RenderBloomMode::Convolution:
+    case RenderBloomMode::ApertureConvolution:
         return DispatchConvolutionBloom();
     default:
         return false;
@@ -788,64 +793,6 @@ bool RenderBackend::DispatchPyramidBloom() {
     return true;
 }
 
-// aspect ratio 에 맞춰서 fftSize x fftSize 에 안에 fit 된 content 를 convolution padding 을 고려했을 때 얼만큼의 크기가 되어야 하는지를 계산한다.
-void RenderBackend::UpdateConvolutionBloomGuardedContentRect() {
-    const uint32_t inputW = currentVisCamera->renderWidth;
-    const uint32_t inputH = currentVisCamera->renderHeight;
-    const uint32_t fftSize = currentVisCamera->fftBloomSize;
-    const BE1::Vec2 &kernelExtents = currentVisCamera->fftBloomKernelExtents;
-    const float kernelSizeScale = BE1::Max(currentVisCamera->fftBloomKernelSizeScale, 0.01f);
-    const float kernelRotation = currentVisCamera->fftBloomKernelRotation;
-    const float paddingTrim = BE1::Min(BE1::Max(currentVisCamera->fftBloomPaddingTrim, 0.0f), 0.25f);
-
-    // fftSize x fftSize 안에서 content aspect ratio 에 맞춘 내부 크기 
-    float aspectFitContentW = static_cast<float>(fftSize);
-    float aspectFitContentH = static_cast<float>(fftSize);
-    if (inputW >= inputH) {
-        aspectFitContentH = aspectFitContentW * static_cast<float>(inputH) / static_cast<float>(inputW);
-    } else {
-        aspectFitContentW = aspectFitContentH * static_cast<float>(inputW) / static_cast<float>(inputH);
-    }
-
-    float rotationSin;
-    float rotationCos;
-    BE1::Math::SinCos(DEG2RAD(kernelRotation), rotationSin, rotationCos);
-
-    // 회전된 normalized kernel extent 계산하기
-    const float absCos = BE1::Math::Fabs(rotationCos);
-    const float absSin = BE1::Math::Fabs(rotationSin);
-    const float scaledKernelExtentX = BE1::Max(kernelExtents.x, 0.0f) * kernelSizeScale;
-    const float scaledKernelExtentY = BE1::Max(kernelExtents.y, 0.0f) * kernelSizeScale;
-    const float projectedKernelExtentX = scaledKernelExtentX * absCos + scaledKernelExtentY * absSin;
-    const float projectedKernelExtentY = scaledKernelExtentX * absSin + scaledKernelExtentY * absCos;
-
-    // normalized content extent
-    const float normalizedContentExtentX = aspectFitContentW / static_cast<float>(fftSize);
-    const float normalizedContentExtentY = aspectFitContentH / static_cast<float>(fftSize);
-
-    // normalized support extent (= content extent + rotated kernel extent)
-    const float normalizedSupportExtentX = normalizedContentExtentX + projectedKernelExtentX;
-    const float normalizedSupportExtentY = normalizedContentExtentY + projectedKernelExtentY;
-
-    // paddingTrim 만큼 FFT 영역 밖으로 support 가 나가는 것을 허용해 content padding 을 줄인다.
-    const float allowedSupportExtent = 1.0f + paddingTrim;
-    const float scaleX = allowedSupportExtent / BE1::Max(normalizedSupportExtentX, allowedSupportExtent);
-    const float scaleY = allowedSupportExtent / BE1::Max(normalizedSupportExtentY, allowedSupportExtent);
-
-    // fftSize x fftSize 안에서 컨벌루션에 필요한 패딩을 고려한 실제 content 크기와 오프셋
-    const float guardedContentW = BE1::Max(aspectFitContentW * scaleX, 1.0f);
-    const float guardedContentH = BE1::Max(aspectFitContentH * scaleY, 1.0f);
-    const float guardedContentX = (static_cast<float>(fftSize) - guardedContentW) * 0.5f;
-    const float guardedContentY = (static_cast<float>(fftSize) - guardedContentH) * 0.5f;
-
-    currentConvolutionBloomGuardedContentRect = BE1::RectF(guardedContentX, guardedContentY, guardedContentW, guardedContentH);
-
-    // guardedContentW x guardedContentH 가 실제로 aspectFitContentW x aspectFitContentH 에 비해서 얼마나 줄어들었는지 그 scale 값을 계산한다.
-    currentConvolutionBloomKernelSpatialScale = BE1::Vec2(
-        (guardedContentW / aspectFitContentW) * kernelSizeScale,
-        (guardedContentH / aspectFitContentH) * kernelSizeScale);
-}
-
 bool RenderBackend::DispatchConvolutionBloom() {
     PROFILER_CPU_SCOPED_EVENT("RenderBackend::DispatchConvolutionBloom");
 
@@ -853,10 +800,19 @@ bool RenderBackend::DispatchConvolutionBloom() {
         return false;
     }
 
-    UpdateConvolutionBloomGuardedContentRect();
+    // aperture 기반 커널 버퍼 생성이 필요한 경우에만 실행
+    if (currentVisCamera->fftBloomApertureKernelDirty) {
+        // aperture 기반 커널 버퍼 생성
+        if (!DispatchConvolutionBloomApertureKernelGen()) {
+            return false;
+        }
+    }
 
     // 커널 버퍼 업데이트가 필요한 경우에만 실행
     if (currentVisCamera->fftBloomKernelDirty) {
+        if (!currentVisCamera->fftBloomKernelSourceTexture) {
+            return false;
+        }
         // 커널 버퍼 준비
         if (!DispatchConvolutionBloomKernelPrepare()) {
             return false;
@@ -866,26 +822,335 @@ bool RenderBackend::DispatchConvolutionBloom() {
             return false;
         }
     }
+
     // 블룸 프리필터된 화면 버퍼 준비
     if (!DispatchConvolutionBloomScreenPrefilter()) {
         return false;
     }
+
     // 화면 버퍼 FFT
     if (!DispatchConvolutionBloomFFT(currentVisCamera->fftBloomScreenSpatialBuffer, currentVisCamera->fftBloomScreenSpectrumBuffer)) {
         return false;
     }
+
     // 화면 스펙트럼과 커널 스펙트럼의 Hadamard 곱 (fftBloomWorkBuffer 에 출력)
     if (!DispatchConvolutionBloomMultiplySpectrum()) {
         return false;
     }
+
     // 결과를 IFFT
     if (!DispatchConvolutionBloomIFFT(currentVisCamera->fftBloomWorkBuffer, currentVisCamera->fftBloomScreenSpatialBuffer)) {
         return false;
     }
+
     // IFFT 결과 버퍼를 스크린 half-res 텍스쳐 (fftBloomConvolutionOutputTexture) 에 resolve
     if (!DispatchConvolutionBloomResolve()) {
         return false;
     }
+
+    return true;
+}
+
+bool RenderBackend::DispatchConvolutionBloomApertureKernelGen() {
+    PROFILER_CPU_SCOPED_EVENT("RenderBackend::DispatchConvolutionBloomApertureKernelGen");
+
+    if (currentVisCamera->fftBloomSize == 0) {
+        return false;
+    }
+
+    if (!currentVisCamera->fftBloomApertureSourceTexture) {
+        return false;
+    }
+
+    // aperture 버퍼 준비 (fftBloomKernelSpatialBuffer 에 출력)
+    if (!DispatchConvolutionBloomAperturePrepare()) {
+        return false;
+    }
+
+    RHI::Buffer *apertureEnergyBuffer = nullptr;
+    if (!DispatchConvolutionBloomReduceApertureEnergy(&apertureEnergyBuffer)) {
+        return false;
+    }
+
+    GpuFFT::FFTSize fftSizeEnum;
+    if (!GpuFFT::GetGpuFFTSize(currentVisCamera->fftBloomSize, fftSizeEnum)) {
+        return false;
+    }
+
+    // aperture 버퍼 FFT (fftBloomKernelSpectrumBuffer 에 출력) 하여 회절 (diffraction) 적용
+    if (!renderSystem->gpuFFT.DispatchFFTComplex2D(mainCommandList, frameData, currentVisCamera->fftBloomKernelSpatialBuffer, currentVisCamera->fftBloomKernelSpectrumBuffer, currentVisCamera->fftBloomWorkBuffer, fftSizeEnum, 1)) {
+        return false;
+    }
+
+    // circular shift 와 abs(FFT)^2 을 적용해서 intensity 를 표현한다.
+    if (!DispatchConvolutionBloomResolveDiffractionPSF(apertureEnergyBuffer)) {
+        return false;
+    }
+
+    // 분산 (dispersion) 적용
+    return DispatchConvolutionBloomApplyDispersion();
+}
+
+bool RenderBackend::DispatchConvolutionBloomAperturePrepare() {
+    PROFILER_CPU_SCOPED_EVENT("RenderBackend::DispatchConvolutionBloomAperturePrepare");
+
+    if (!currentConvolutionBloomAperturePreparePSO || currentVisCamera->fftBloomSize == 0) {
+        return false;
+    }
+
+    RHI::Texture *sourceTexture = currentVisCamera->fftBloomApertureSourceTexture;
+    RHI::Buffer *outputBuffer = currentVisCamera->fftBloomKernelSpatialBuffer;
+    if (!sourceTexture || !outputBuffer) {
+        return false;
+    }
+
+    const uint32_t inputW = sourceTexture->GetWidth();
+    const uint32_t inputH = sourceTexture->GetHeight();
+    const uint32_t outputW = currentVisCamera->fftBloomSize;
+    const uint32_t outputH = currentVisCamera->fftBloomSize;
+    if (inputW == 0 || inputH == 0 || outputW == 0 || outputH == 0) {
+        return false;
+    }
+
+    BloomParams bloomParams = {};
+    bloomParams.inputSize = uint2(inputW, inputH);
+    bloomParams.outputSize = uint2(outputW, outputH);
+    bloomParams.inputTexelSize = float2(1.0f / inputW, 1.0f / inputH);
+    bloomParams.outputTexelSize = float2(1.0f / outputW, 1.0f / outputH);
+
+    RHI::ConstantBuffer *bloomConstantBuffer = frameData->GetThreadData(0)->AllocConstant(sizeof(BloomParams), &bloomParams);
+    if (!bloomConstantBuffer) {
+        return false;
+    }
+
+    RHI::GPUBarrier startBarriers[] = {
+        RHI::Renderer::MakeImageBarrier(sourceTexture, RHI::GPUResourceState::ShaderResource, RHI::GPUResourceState::ShaderResourceCompute),
+        RHI::Renderer::MakeBufferBarrier(outputBuffer, RHI::GPUResourceState::Undefined, RHI::GPUResourceState::UnorderedAccess)
+    };
+    RHI::renderer->Barrier(mainCommandList, startBarriers, COUNT_OF(startBarriers));
+
+    RHI::renderer->SetPSO(mainCommandList, currentConvolutionBloomAperturePreparePSO);
+    RHI::renderer->SetTexture(mainCommandList, 0, false, sourceTexture);
+    RHI::renderer->SetBuffer(mainCommandList, 0, true, outputBuffer);
+    RHI::renderer->SetConstantBuffer(mainCommandList, 0, bloomConstantBuffer);
+
+    const uint32_t threadGroupCountX = (outputW + BloomBlockSizeX - 1) / BloomBlockSizeX;
+    const uint32_t threadGroupCountY = (outputH + BloomBlockSizeY - 1) / BloomBlockSizeY;
+    RHI::renderer->Dispatch(mainCommandList, threadGroupCountX, threadGroupCountY, 1);
+
+    RHI::GPUBarrier endBarriers[] = {
+        RHI::Renderer::MakeImageBarrier(sourceTexture, RHI::GPUResourceState::ShaderResourceCompute, RHI::GPUResourceState::ShaderResource),
+        RHI::Renderer::MakeBufferBarrier(outputBuffer, RHI::GPUResourceState::UnorderedAccess, RHI::GPUResourceState::Undefined)
+    };
+    RHI::renderer->Barrier(mainCommandList, endBarriers, COUNT_OF(endBarriers));
+
+    return true;
+}
+
+bool RenderBackend::DispatchConvolutionBloomReduceApertureEnergy(RHI::Buffer **outEnergyBuffer) {
+    PROFILER_CPU_SCOPED_EVENT("RenderBackend::DispatchConvolutionBloomReduceApertureEnergy");
+
+    if (!outEnergyBuffer || currentVisCamera->fftBloomSize == 0) {
+        return false;
+    }
+
+    RHI::Buffer *energyBuffers[2] = {
+        currentVisCamera->fftBloomApertureEnergyBuffer0,
+        currentVisCamera->fftBloomApertureEnergyBuffer1
+    };
+    if (!currentVisCamera->fftBloomKernelSpatialBuffer || !energyBuffers[0] || !energyBuffers[1]) {
+        return false;
+    }
+
+    const uint64_t pixelCount64 = uint64_t(currentVisCamera->fftBloomSize) * uint64_t(currentVisCamera->fftBloomSize);
+    if (pixelCount64 == 0 || pixelCount64 > UINT32_MAX) {
+        return false;
+    }
+
+    uint32_t inputElementCount = static_cast<uint32_t>(pixelCount64);
+    RHI::Buffer *inputBuffer = currentVisCamera->fftBloomKernelSpatialBuffer;
+    RHI::GPUResourceState inputState = RHI::GPUResourceState::Undefined;
+    bool inputIsPartialEnergy = false;
+    uint32_t outputBufferIndex = 0;
+
+    for (;;) {
+        RHI::Buffer *outputBuffer = energyBuffers[outputBufferIndex];
+        if (!DispatchConvolutionBloomReduceApertureEnergyPass(inputBuffer, outputBuffer, inputElementCount, inputIsPartialEnergy, inputState)) {
+            return false;
+        }
+
+        const uint32_t outputElementCount = (inputElementCount + ConvolutionBloomApertureEnergyReduceBlockSize - 1) / ConvolutionBloomApertureEnergyReduceBlockSize;
+        if (outputElementCount <= 1) {
+            *outEnergyBuffer = outputBuffer;
+            return true;
+        }
+
+        inputBuffer = outputBuffer;
+        inputState = RHI::GPUResourceState::UnorderedAccess;
+        inputIsPartialEnergy = true;
+        inputElementCount = outputElementCount;
+        outputBufferIndex ^= 1;
+    }
+}
+
+bool RenderBackend::DispatchConvolutionBloomReduceApertureEnergyPass(RHI::Buffer *inputBuffer, RHI::Buffer *outputBuffer, uint32_t inputElementCount, bool inputIsPartialEnergy, RHI::GPUResourceState inputState) {
+    PROFILER_CPU_SCOPED_EVENT("RenderBackend::DispatchConvolutionBloomReduceApertureEnergyPass");
+
+    if (!currentConvolutionBloomReduceApertureEnergyPSO || !inputBuffer || !outputBuffer || inputBuffer == outputBuffer || inputElementCount == 0) {
+        return false;
+    }
+
+    const uint32_t outputElementCount = (inputElementCount + ConvolutionBloomApertureEnergyReduceBlockSize - 1) / ConvolutionBloomApertureEnergyReduceBlockSize;
+    BloomParams bloomParams = {};
+    bloomParams.inputSize = uint2(inputElementCount, inputIsPartialEnergy ? 1u : 0u);
+    bloomParams.outputSize = uint2(outputElementCount, 1);
+
+    RHI::ConstantBuffer *bloomConstantBuffer = frameData->GetThreadData(0)->AllocConstant(sizeof(BloomParams), &bloomParams);
+    if (!bloomConstantBuffer) {
+        return false;
+    }
+
+    RHI::GPUBarrier startBarriers[] = {
+        RHI::Renderer::MakeBufferBarrier(inputBuffer, inputState, RHI::GPUResourceState::ShaderResourceCompute),
+        RHI::Renderer::MakeBufferBarrier(outputBuffer, RHI::GPUResourceState::Undefined, RHI::GPUResourceState::UnorderedAccess)
+    };
+    RHI::renderer->Barrier(mainCommandList, startBarriers, COUNT_OF(startBarriers));
+
+    RHI::renderer->SetPSO(mainCommandList, currentConvolutionBloomReduceApertureEnergyPSO);
+    RHI::renderer->SetBuffer(mainCommandList, 0, false, inputBuffer);
+    RHI::renderer->SetBuffer(mainCommandList, 0, true, outputBuffer);
+    RHI::renderer->SetConstantBuffer(mainCommandList, 0, bloomConstantBuffer);
+    RHI::renderer->Dispatch(mainCommandList, outputElementCount, 1, 1);
+
+    RHI::renderer->Barrier(mainCommandList, RHI::Renderer::MakeBufferBarrier(inputBuffer, RHI::GPUResourceState::ShaderResourceCompute, RHI::GPUResourceState::Undefined));
+
+    return true;
+}
+
+bool RenderBackend::DispatchConvolutionBloomResolveDiffractionPSF(RHI::Buffer *apertureEnergyBuffer) {
+    PROFILER_CPU_SCOPED_EVENT("RenderBackend::DispatchConvolutionBloomResolveDiffractionPSF");
+
+    if (!currentConvolutionBloomResolveDiffractionPSFPSO || currentVisCamera->fftBloomSize == 0) {
+        return false;
+    }
+
+    RHI::Buffer *spectrumBuffer = currentVisCamera->fftBloomKernelSpectrumBuffer;
+    RHI::Texture *outputTexture = currentVisCamera->fftBloomDiffractionPSFTexture;
+    if (!spectrumBuffer || !apertureEnergyBuffer || !outputTexture) {
+        return false;
+    }
+
+    const uint32_t inputW = currentVisCamera->fftBloomSize;
+    const uint32_t inputH = currentVisCamera->fftBloomSize;
+    const uint32_t outputW = outputTexture->GetWidth();
+    const uint32_t outputH = outputTexture->GetHeight();
+    if (inputW == 0 || inputH == 0 || outputW == 0 || outputH == 0) {
+        return false;
+    }
+
+    BloomParams bloomParams = {};
+    bloomParams.inputSize = uint2(inputW, inputH);
+    bloomParams.outputSize = uint2(outputW, outputH);
+    bloomParams.inputTexelSize = float2(1.0f / inputW, 1.0f / inputH);
+    bloomParams.outputTexelSize = float2(1.0f / outputW, 1.0f / outputH);
+    bloomParams.params0 = float4(BE1::Max(currentVisCamera->fftBloomDiffractionPSFScale, 0.0f), 0.0f, 0.0f, 0.0f);
+
+    RHI::ConstantBuffer *bloomConstantBuffer = frameData->GetThreadData(0)->AllocConstant(sizeof(BloomParams), &bloomParams);
+    if (!bloomConstantBuffer) {
+        return false;
+    }
+
+    RHI::GPUBarrier startBarriers[] = {
+        RHI::Renderer::MakeBufferBarrier(spectrumBuffer, RHI::GPUResourceState::Undefined, RHI::GPUResourceState::ShaderResourceCompute),
+        RHI::Renderer::MakeBufferBarrier(apertureEnergyBuffer, RHI::GPUResourceState::UnorderedAccess, RHI::GPUResourceState::ShaderResourceCompute),
+        RHI::Renderer::MakeImageBarrier(outputTexture, RHI::GPUResourceState::ShaderResource, RHI::GPUResourceState::UnorderedAccess)
+    };
+    RHI::renderer->Barrier(mainCommandList, startBarriers, COUNT_OF(startBarriers));
+
+    RHI::renderer->SetPSO(mainCommandList, currentConvolutionBloomResolveDiffractionPSFPSO);
+    RHI::renderer->SetBuffer(mainCommandList, 0, false, spectrumBuffer);
+    RHI::renderer->SetBuffer(mainCommandList, 1, false, apertureEnergyBuffer);
+    RHI::renderer->SetTexture(mainCommandList, 0, true, outputTexture);
+    RHI::renderer->SetConstantBuffer(mainCommandList, 0, bloomConstantBuffer);
+
+    const uint32_t threadGroupCountX = (outputW + BloomBlockSizeX - 1) / BloomBlockSizeX;
+    const uint32_t threadGroupCountY = (outputH + BloomBlockSizeY - 1) / BloomBlockSizeY;
+    RHI::renderer->Dispatch(mainCommandList, threadGroupCountX, threadGroupCountY, 1);
+
+    RHI::GPUBarrier endBarriers[] = {
+        RHI::Renderer::MakeBufferBarrier(spectrumBuffer, RHI::GPUResourceState::ShaderResourceCompute, RHI::GPUResourceState::Undefined),
+        RHI::Renderer::MakeBufferBarrier(apertureEnergyBuffer, RHI::GPUResourceState::ShaderResourceCompute, RHI::GPUResourceState::Undefined),
+        RHI::Renderer::MakeImageBarrier(outputTexture, RHI::GPUResourceState::UnorderedAccess, RHI::GPUResourceState::ShaderResource)
+    };
+    RHI::renderer->Barrier(mainCommandList, endBarriers, COUNT_OF(endBarriers));
+
+    return true;
+}
+
+bool RenderBackend::DispatchConvolutionBloomApplyDispersion() {
+    PROFILER_CPU_SCOPED_EVENT("RenderBackend::DispatchConvolutionBloomApplyDispersion");
+
+    if (!currentConvolutionBloomApplyDispersionPSO) {
+        return false;
+    }
+
+    RHI::Texture *inputTexture = currentVisCamera->fftBloomDiffractionPSFTexture;
+    RHI::Texture *outputTexture = currentVisCamera->fftBloomApertureKernelTexture;
+    if (!inputTexture || !outputTexture) {
+        return false;
+    }
+
+    const uint32_t inputW = inputTexture->GetWidth();
+    const uint32_t inputH = inputTexture->GetHeight();
+    const uint32_t outputW = outputTexture->GetWidth();
+    const uint32_t outputH = outputTexture->GetHeight();
+    if (inputW == 0 || inputH == 0 || outputW == 0 || outputH == 0) {
+        return false;
+    }
+
+    static constexpr float MinWavelengthNm = 380.0f;
+    static constexpr float MaxWavelengthNm = 780.0f;
+    static constexpr float ReferenceWavelengthNm = 550.0f;
+    static constexpr float DispersionSampleCount = 81.0f;
+    static constexpr float IntensityScale = 1.0f;
+
+    BloomParams bloomParams = {};
+    bloomParams.inputSize = uint2(inputW, inputH);
+    bloomParams.outputSize = uint2(outputW, outputH);
+    bloomParams.inputTexelSize = float2(1.0f / inputW, 1.0f / inputH);
+    bloomParams.outputTexelSize = float2(1.0f / outputW, 1.0f / outputH);
+    bloomParams.params0 = float4(
+        BE1::Max(currentVisCamera->fftBloomDispersionAmount, 0.0f),
+        MinWavelengthNm,
+        MaxWavelengthNm,
+        ReferenceWavelengthNm);
+    bloomParams.params1 = float4(DispersionSampleCount, IntensityScale, 0.0f, 0.0f);
+
+    RHI::ConstantBuffer *bloomConstantBuffer = frameData->GetThreadData(0)->AllocConstant(sizeof(BloomParams), &bloomParams);
+    if (!bloomConstantBuffer) {
+        return false;
+    }
+
+    RHI::GPUBarrier startBarriers[] = {
+        RHI::Renderer::MakeImageBarrier(inputTexture, RHI::GPUResourceState::ShaderResource, RHI::GPUResourceState::ShaderResourceCompute),
+        RHI::Renderer::MakeImageBarrier(outputTexture, RHI::GPUResourceState::ShaderResource, RHI::GPUResourceState::UnorderedAccess)
+    };
+    RHI::renderer->Barrier(mainCommandList, startBarriers, COUNT_OF(startBarriers));
+
+    RHI::renderer->SetPSO(mainCommandList, currentConvolutionBloomApplyDispersionPSO);
+    RHI::renderer->SetTexture(mainCommandList, 0, false, inputTexture);
+    RHI::renderer->SetTexture(mainCommandList, 0, true, outputTexture);
+    RHI::renderer->SetConstantBuffer(mainCommandList, 0, bloomConstantBuffer);
+
+    const uint32_t threadGroupCountX = (outputW + BloomBlockSizeX - 1) / BloomBlockSizeX;
+    const uint32_t threadGroupCountY = (outputH + BloomBlockSizeY - 1) / BloomBlockSizeY;
+    RHI::renderer->Dispatch(mainCommandList, threadGroupCountX, threadGroupCountY, 1);
+
+    RHI::GPUBarrier endBarriers[] = {
+        RHI::Renderer::MakeImageBarrier(inputTexture, RHI::GPUResourceState::ShaderResourceCompute, RHI::GPUResourceState::ShaderResource),
+        RHI::Renderer::MakeImageBarrier(outputTexture, RHI::GPUResourceState::UnorderedAccess, RHI::GPUResourceState::ShaderResource)
+    };
+    RHI::renderer->Barrier(mainCommandList, endBarriers, COUNT_OF(endBarriers));
 
     return true;
 }
@@ -916,7 +1181,7 @@ bool RenderBackend::DispatchConvolutionBloomKernelPrepare() {
     bloomParams.outputSize = uint2(outputW, outputH);
     bloomParams.inputTexelSize = float2(1.0f / inputW, 1.0f / inputH);
     bloomParams.outputTexelSize = float2(1.0f / outputW, 1.0f / outputH);
-    bloomParams.params0 = float4(rotationCos, rotationSin, currentConvolutionBloomKernelSpatialScale.x, currentConvolutionBloomKernelSpatialScale.y);
+    bloomParams.params0 = float4(rotationCos, rotationSin, currentVisCamera->fftBloomKernelSpatialScale.x, currentVisCamera->fftBloomKernelSpatialScale.y);
 
     RHI::ConstantBuffer *bloomConstantBuffer = frameData->GetThreadData(0)->AllocConstant(sizeof(BloomParams), &bloomParams);
     if (!bloomConstantBuffer) {
@@ -967,10 +1232,10 @@ bool RenderBackend::DispatchConvolutionBloomScreenPrefilter() {
     bloomParams.outputTexelSize = float2(1.0f / outputW, 1.0f / outputH);
     bloomParams.params0 = float4(bloomThreshold, bloomSoftThreshold, 0.0f, 0.0f);
     bloomParams.params1 = float4(
-        currentConvolutionBloomGuardedContentRect.x,
-        currentConvolutionBloomGuardedContentRect.y,
-        currentConvolutionBloomGuardedContentRect.w,
-        currentConvolutionBloomGuardedContentRect.h);
+        currentVisCamera->fftBloomGuardedContentRect.x,
+        currentVisCamera->fftBloomGuardedContentRect.y,
+        currentVisCamera->fftBloomGuardedContentRect.w,
+        currentVisCamera->fftBloomGuardedContentRect.h);
 
     RHI::ConstantBuffer *bloomConstantBuffer = frameData->GetThreadData(0)->AllocConstant(sizeof(BloomParams), &bloomParams);
     if (!bloomConstantBuffer) {
@@ -1015,15 +1280,14 @@ bool RenderBackend::DispatchConvolutionBloomMultiplySpectrum() {
     constexpr uint32_t ColorPairCount = 2; // RG, B0
 
     // content guard padding 때문에 줄어든 kernel footprint 의 면적만큼 커널 에너지를 보정한다.
-    const float kernelAreaScale = BE1::Max(currentConvolutionBloomKernelSpatialScale.x * currentConvolutionBloomKernelSpatialScale.y, 0.000001f);
+    const float kernelAreaScale = BE1::Max(currentVisCamera->fftBloomKernelSpatialScale.x * currentVisCamera->fftBloomKernelSpatialScale.y, 0.000001f);
+
     // sourcePixelCount 를 곱해둔 factor 를 현재 FFT kernel 샘플 수로 나눈다.
     // 이렇게 해서 FFT size 에 독립적이 되도록 커널 에너지를 보정한다.
     const float kernelSampleCount = static_cast<float>(fftSize) * static_cast<float>(fftSize);
     const float kernelScale = BE1::Max(r_convolutionBloomKernelScale.GetFloat(), 0.0f) * BE1::Max(currentVisCamera->fftBloomKernelNormalizationFactor, 0.0f) / (BE1::Max(kernelSampleCount, 1.0f) * kernelAreaScale);
 
-    return renderSystem->gpuFFT.DispatchMultiplyPackedDualRealSpectrum2D(
-        mainCommandList,
-        frameData,
+    return renderSystem->gpuFFT.DispatchMultiplyPackedDualRealSpectrum2D(mainCommandList, frameData,
         currentVisCamera->fftBloomKernelSpectrumBuffer,
         currentVisCamera->fftBloomScreenSpectrumBuffer,
         currentVisCamera->fftBloomWorkBuffer,
@@ -1053,10 +1317,10 @@ bool RenderBackend::DispatchConvolutionBloomResolve() {
     bloomParams.outputSize = uint2(outputW, outputH);
     bloomParams.outputTexelSize = float2(1.0f / outputW, 1.0f / outputH);
     bloomParams.params1 = float4(
-        currentConvolutionBloomGuardedContentRect.x,
-        currentConvolutionBloomGuardedContentRect.y,
-        currentConvolutionBloomGuardedContentRect.w,
-        currentConvolutionBloomGuardedContentRect.h);
+        currentVisCamera->fftBloomGuardedContentRect.x,
+        currentVisCamera->fftBloomGuardedContentRect.y,
+        currentVisCamera->fftBloomGuardedContentRect.w,
+        currentVisCamera->fftBloomGuardedContentRect.h);
 
     RHI::ConstantBuffer *bloomConstantBuffer = frameData->GetThreadData(0)->AllocConstant(sizeof(BloomParams), &bloomParams);
     if (!bloomConstantBuffer) {
@@ -1143,8 +1407,9 @@ bool RenderBackend::DispatchToneMapping(bool useBloom) {
     RHI::Texture *bloomTexture = inputTexture;
     RHI::ViewID bloomViewID = RHI::ViewID::PrimaryID;
     if (useBloom) {
-        const RenderBloomMode bloomMode = static_cast<RenderBloomMode>(BE1::Clamp(r_bloom.GetInteger(), static_cast<int>(RenderBloomMode::Off), static_cast<int>(RenderBloomMode::Convolution)));
-        if (bloomMode == RenderBloomMode::Convolution && currentVisCamera->fftBloomConvolutionOutputTexture) {
+        const RenderBloomMode bloomMode = static_cast<RenderBloomMode>(BE1::Clamp(r_bloom.GetInteger(), static_cast<int>(RenderBloomMode::Off), static_cast<int>(RenderBloomMode::ApertureConvolution)));
+        const bool useConvolutionBloom = bloomMode == RenderBloomMode::Convolution || bloomMode == RenderBloomMode::ApertureConvolution;
+        if (useConvolutionBloom && currentVisCamera->fftBloomConvolutionOutputTexture) {
             bloomTexture = currentVisCamera->fftBloomConvolutionOutputTexture;
         } else {
             bloomTexture = currentVisCamera->bloomUpTexture;

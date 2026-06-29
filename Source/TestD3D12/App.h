@@ -25,6 +25,18 @@ class Font;
 
 class App {
 public:
+    enum Aperture {
+        Triangle,
+        Square,
+        HorzRectangle,
+        VertRectangle,
+        Pentagon,
+        Hexagon,
+        Heptagon,
+        Octagon,
+        Circle
+    };
+
     static constexpr int            ConvolutionBloomKernelCount = 43;
 
     void                            Init(void *mainWindowHandle);
@@ -51,6 +63,8 @@ public:
     void                            TakeScreenshot();
 
 private:
+    void                            SetConvolutionBloomAperture(Aperture aperture);
+    void                            SetConvolutionBloomApertureFromFile(const char *filename);
     void                            GetConvolutionBloomKernelDisplayName(int index, char *buffer, int bufferSize) const;
     void                            SetConvolutionBloomKernelIndex(int index);
     void                            SetConvolutionBloomKernelFromFile(const char *filename);
@@ -74,6 +88,7 @@ private:
 
     SharedPtr<Font>                 mainFont;
     SharedPtr<Material>             mainSkyboxMaterial;
+    SharedPtr<Texture>              convolutionBloomApertureTexture;
     SharedPtr<Texture>              convolutionBloomKernelTexture;
     SharedPtr<Mesh>                 testMesh;
 

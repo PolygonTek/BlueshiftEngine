@@ -92,7 +92,12 @@ private:
     bool                            DispatchBloom();
     bool                            DispatchPyramidBloom();
     bool                            DispatchConvolutionBloom();
-    void                            UpdateConvolutionBloomGuardedContentRect();
+    bool                            DispatchConvolutionBloomApertureKernelGen();
+    bool                            DispatchConvolutionBloomAperturePrepare();
+    bool                            DispatchConvolutionBloomReduceApertureEnergy(RHI::Buffer **outEnergyBuffer);
+    bool                            DispatchConvolutionBloomReduceApertureEnergyPass(RHI::Buffer *inputBuffer, RHI::Buffer *outputBuffer, uint32_t inputElementCount, bool inputIsPartialEnergy, RHI::GPUResourceState inputState);
+    bool                            DispatchConvolutionBloomResolveDiffractionPSF(RHI::Buffer *apertureEnergyBuffer);
+    bool                            DispatchConvolutionBloomApplyDispersion();
     bool                            DispatchConvolutionBloomKernelPrepare();
     bool                            DispatchConvolutionBloomScreenPrefilter();
     bool                            DispatchConvolutionBloomMultiplySpectrum();
@@ -129,8 +134,10 @@ private:
     RHI::PipelineState *            currentConvolutionBloomPrefilterPSO = nullptr;
     RHI::PipelineState *            currentConvolutionBloomKernelPreparePSO = nullptr;
     RHI::PipelineState *            currentConvolutionBloomResolvePSO = nullptr;
-    BE1::RectF                      currentConvolutionBloomGuardedContentRect = BE1::RectF(0.0f, 0.0f, 0.0f, 0.0f);
-    BE1::Vec2                       currentConvolutionBloomKernelSpatialScale = BE1::Vec2(1.0f, 1.0f);
+    RHI::PipelineState *            currentConvolutionBloomAperturePreparePSO = nullptr;
+    RHI::PipelineState *            currentConvolutionBloomReduceApertureEnergyPSO = nullptr;
+    RHI::PipelineState *            currentConvolutionBloomResolveDiffractionPSFPSO = nullptr;
+    RHI::PipelineState *            currentConvolutionBloomApplyDispersionPSO = nullptr;
 
     RHI::ConstantBuffer *           frameConstantBuffer = nullptr;
     RHI::ConstantBuffer *           cameraConstantBuffer = nullptr;

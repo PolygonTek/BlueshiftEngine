@@ -552,6 +552,34 @@ void ShaderTemplateManager::CreateBloomShaderTemplates(RHI::ShaderModel shaderMo
         BE_FATALERROR("ShaderTemplateManager::CreateEngineShaderTemplates: failed to create convolution bloom resolve shader template");
     }
     convolutionBloomResolveShaderTemplate->AddPermutation();
+
+    convolutionBloomAperturePrepareShaderTemplate = AllocShaderTemplate("_convolutionBloomAperturePrepareShader");
+    const BE1::Str convolutionBloomAperturePrepareShaderTemplateText = CreateComputeShaderTemplateText(shaderModel, "Bloom/ConvolutionBloomAperturePrepare.hlsl", "CSMain");
+    if (!convolutionBloomAperturePrepareShaderTemplate->Create(convolutionBloomAperturePrepareShaderTemplateText.c_str(), baseDir)) {
+        BE_FATALERROR("ShaderTemplateManager::CreateEngineShaderTemplates: failed to create convolution bloom aperture prepare shader template");
+    }
+    convolutionBloomAperturePrepareShaderTemplate->AddPermutation();
+
+    convolutionBloomReduceApertureEnergyShaderTemplate = AllocShaderTemplate("_convolutionBloomReduceApertureEnergyShader");
+    const BE1::Str convolutionBloomReduceApertureEnergyShaderTemplateText = CreateComputeShaderTemplateText(shaderModel, "Bloom/ConvolutionBloomReduceApertureEnergy.hlsl", "CSMain");
+    if (!convolutionBloomReduceApertureEnergyShaderTemplate->Create(convolutionBloomReduceApertureEnergyShaderTemplateText.c_str(), baseDir)) {
+        BE_FATALERROR("ShaderTemplateManager::CreateEngineShaderTemplates: failed to create convolution bloom reduce aperture energy shader template");
+    }
+    convolutionBloomReduceApertureEnergyShaderTemplate->AddPermutation();
+
+    convolutionBloomResolveDiffractionPSFShaderTemplate = AllocShaderTemplate("_convolutionBloomResolveDiffractionPSFShader");
+    const BE1::Str convolutionBloomResolveDiffractionPSFShaderTemplateText = CreateComputeShaderTemplateText(shaderModel, "Bloom/ConvolutionBloomResolveDiffractionPSF.hlsl", "CSMain");
+    if (!convolutionBloomResolveDiffractionPSFShaderTemplate->Create(convolutionBloomResolveDiffractionPSFShaderTemplateText.c_str(), baseDir)) {
+        BE_FATALERROR("ShaderTemplateManager::CreateEngineShaderTemplates: failed to create convolution bloom resolve diffraction PSF shader template");
+    }
+    convolutionBloomResolveDiffractionPSFShaderTemplate->AddPermutation();
+
+    convolutionBloomApplyDispersionShaderTemplate = AllocShaderTemplate("_convolutionBloomApplyDispersionShader");
+    const BE1::Str convolutionBloomApplyDispersionShaderTemplateText = CreateComputeShaderTemplateText(shaderModel, "Bloom/ConvolutionBloomApplyDispersion.hlsl", "CSMain");
+    if (!convolutionBloomApplyDispersionShaderTemplate->Create(convolutionBloomApplyDispersionShaderTemplateText.c_str(), baseDir)) {
+        BE_FATALERROR("ShaderTemplateManager::CreateEngineShaderTemplates: failed to create convolution bloom apply dispersion shader template");
+    }
+    convolutionBloomApplyDispersionShaderTemplate->AddPermutation();
 }
 
 void ShaderTemplateManager::CreateToneMappingShaderTemplates(RHI::ShaderModel shaderModel, const char *baseDir) {
@@ -697,6 +725,18 @@ void ShaderTemplateManager::DestroyEngineShaderTemplates() {
     }
     if (convolutionBloomResolveShaderTemplate) {
         convolutionBloomResolveShaderTemplate.reset();
+    }
+    if (convolutionBloomAperturePrepareShaderTemplate) {
+        convolutionBloomAperturePrepareShaderTemplate.reset();
+    }
+    if (convolutionBloomReduceApertureEnergyShaderTemplate) {
+        convolutionBloomReduceApertureEnergyShaderTemplate.reset();
+    }
+    if (convolutionBloomResolveDiffractionPSFShaderTemplate) {
+        convolutionBloomResolveDiffractionPSFShaderTemplate.reset();
+    }
+    if (convolutionBloomApplyDispersionShaderTemplate) {
+        convolutionBloomApplyDispersionShaderTemplate.reset();
     }
     if (luminancePass1ShaderTemplate) {
         luminancePass1ShaderTemplate.reset();

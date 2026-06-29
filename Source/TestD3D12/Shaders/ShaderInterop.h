@@ -75,6 +75,7 @@ static const uint ToneMappingOperatorFilmicGT = 10;
 
 static const uint BloomBlockSizeX = 16;
 static const uint BloomBlockSizeY = 16;
+static const uint ConvolutionBloomApertureEnergyReduceBlockSize = 256;
 
 static const uint MultiplySpectrum2DBlockSize = 256;
 
@@ -152,6 +153,13 @@ struct BloomParams {
 #define BP_BLOOM_KERNEL_ROTATION_COS bloomParams.params0.x
 #define BP_BLOOM_KERNEL_ROTATION_SIN bloomParams.params0.y
 #define BP_BLOOM_KERNEL_SPATIAL_SCALE bloomParams.params0.zw
+#define BP_BLOOM_DIFFRACTION_PSF_SCALE bloomParams.params0.x
+#define BP_BLOOM_DISPERSION_AMOUNT bloomParams.params0.x
+#define BP_BLOOM_DISPERSION_MIN_WAVELENGTH_NM bloomParams.params0.y
+#define BP_BLOOM_DISPERSION_MAX_WAVELENGTH_NM bloomParams.params0.z
+#define BP_BLOOM_DISPERSION_REFERENCE_WAVELENGTH_NM bloomParams.params0.w
+#define BP_BLOOM_DISPERSION_SAMPLE_COUNT bloomParams.params1.x
+#define BP_BLOOM_DISPERSION_INTENSITY_SCALE bloomParams.params1.y
 
 struct MultiplySpectrum2DParams {
     uint fftSize;

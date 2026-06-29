@@ -120,6 +120,10 @@ void RenderSystem::InitPostProcessPSOs() {
     convolutionBloomPrefilterPipeline = shaderPipelineCache.GetComputePipeline(shaderTemplateManager.convolutionBloomPrefilterShaderTemplate, ShaderPermutationKey(), false);
     convolutionBloomKernelPreparePipeline = shaderPipelineCache.GetComputePipeline(shaderTemplateManager.convolutionBloomKernelPrepareShaderTemplate, ShaderPermutationKey(), false);
     convolutionBloomResolvePipeline = shaderPipelineCache.GetComputePipeline(shaderTemplateManager.convolutionBloomResolveShaderTemplate, ShaderPermutationKey(), false);
+    convolutionBloomAperturePreparePipeline = shaderPipelineCache.GetComputePipeline(shaderTemplateManager.convolutionBloomAperturePrepareShaderTemplate, ShaderPermutationKey(), false);
+    convolutionBloomReduceApertureEnergyPipeline = shaderPipelineCache.GetComputePipeline(shaderTemplateManager.convolutionBloomReduceApertureEnergyShaderTemplate, ShaderPermutationKey(), false);
+    convolutionBloomResolveDiffractionPSFPipeline = shaderPipelineCache.GetComputePipeline(shaderTemplateManager.convolutionBloomResolveDiffractionPSFShaderTemplate, ShaderPermutationKey(), false);
+    convolutionBloomApplyDispersionPipeline = shaderPipelineCache.GetComputePipeline(shaderTemplateManager.convolutionBloomApplyDispersionShaderTemplate, ShaderPermutationKey(), false);
 }
 
 void RenderSystem::ReleasePostProcessPSOs() {
@@ -134,6 +138,10 @@ void RenderSystem::ReleasePostProcessPSOs() {
     convolutionBloomPrefilterPipeline.reset();
     convolutionBloomKernelPreparePipeline.reset();
     convolutionBloomResolvePipeline.reset();
+    convolutionBloomAperturePreparePipeline.reset();
+    convolutionBloomReduceApertureEnergyPipeline.reset();
+    convolutionBloomResolveDiffractionPSFPipeline.reset();
+    convolutionBloomApplyDispersionPipeline.reset();
 }
 
 void RenderSystem::UpdateFrame() {

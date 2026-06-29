@@ -105,6 +105,10 @@ private:
     SharedPtr<ShaderPipeline>       convolutionBloomPrefilterPipeline;
     SharedPtr<ShaderPipeline>       convolutionBloomKernelPreparePipeline;
     SharedPtr<ShaderPipeline>       convolutionBloomResolvePipeline;
+    SharedPtr<ShaderPipeline>       convolutionBloomAperturePreparePipeline;
+    SharedPtr<ShaderPipeline>       convolutionBloomReduceApertureEnergyPipeline;
+    SharedPtr<ShaderPipeline>       convolutionBloomResolveDiffractionPSFPipeline;
+    SharedPtr<ShaderPipeline>       convolutionBloomApplyDispersionPipeline;
 
     GpuFFT                          gpuFFT;
 };

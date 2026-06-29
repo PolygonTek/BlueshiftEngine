@@ -272,6 +272,10 @@ public:
     SharedPtr<ShaderTemplate>       convolutionBloomPrefilterShaderTemplate;
     SharedPtr<ShaderTemplate>       convolutionBloomKernelPrepareShaderTemplate;
     SharedPtr<ShaderTemplate>       convolutionBloomResolveShaderTemplate;
+    SharedPtr<ShaderTemplate>       convolutionBloomAperturePrepareShaderTemplate;
+    SharedPtr<ShaderTemplate>       convolutionBloomReduceApertureEnergyShaderTemplate;
+    SharedPtr<ShaderTemplate>       convolutionBloomResolveDiffractionPSFShaderTemplate;
+    SharedPtr<ShaderTemplate>       convolutionBloomApplyDispersionShaderTemplate;
 
     SharedPtr<ShaderTemplate>       luminancePass1ShaderTemplate;
     SharedPtr<ShaderTemplate>       luminancePass2ShaderTemplate;

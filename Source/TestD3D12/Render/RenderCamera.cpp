@@ -130,6 +130,16 @@ void RenderCamera::CalcConvolutionBloomKernelParams(const BE1::Image &kernelImag
         BE1::Min(BE1::Max(BE1::Math::Fabs(minY), BE1::Math::Fabs(maxY)) + texelGuardY, 1.0f));
 }
 
+void RenderCamera::SetConvolutionBloomApertureTexture(const SharedPtr<Texture> &texture) {
+    if (fftBloomApertureSourceTexture == texture) {
+        return;
+    }
+
+    fftBloomApertureSourceTexture = texture;
+    fftBloomApertureKernelDirty = true;
+    fftBloomKernelDirty = true;
+}
+
 void RenderCamera::SetConvolutionBloomKernelTexture(const SharedPtr<Texture> &texture, float normalizationFactor, const BE1::Vec2 &kernelExtents) {
     if (fftBloomKernelSourceTexture != texture) {
         fftBloomKernelSourceTexture = texture;
@@ -169,6 +179,92 @@ void RenderCamera::SetConvolutionBloomPaddingTrim(float paddingTrim) {
 
     fftBloomPaddingTrim = paddingTrim;
     fftBloomKernelDirty = true;
+}
+
+void RenderCamera::SetConvolutionBloomDiffractionPSFScale(float scale) {
+    scale = BE1::Max(scale, 0.0f);
+    if (fftBloomDiffractionPSFScale == scale) {
+        return;
+    }
+
+    fftBloomDiffractionPSFScale = scale;
+    fftBloomApertureKernelDirty = true;
+    fftBloomKernelDirty = true;
+}
+
+void RenderCamera::SetConvolutionBloomDispersionAmount(float amount) {
+    amount = BE1::Max(amount, 0.0f);
+    if (fftBloomDispersionAmount == amount) {
+        return;
+    }
+
+    fftBloomDispersionAmount = amount;
+    fftBloomApertureKernelDirty = true;
+    fftBloomKernelDirty = true;
+}
+
+// aspect ratio 에 맞춰서 fftSize x fftSize 에 안에 fit 된 content 를 convolution padding 을 고려했을 때 얼만큼의 크기가 되어야 하는지를 계산한다.
+void RenderCamera::UpdateConvolutionBloomGuardedContentRect() {
+    const uint32_t inputW = renderWidth;
+    const uint32_t inputH = renderHeight;
+    const uint32_t fftSize = fftBloomSize;
+    const BE1::Vec2 &kernelExtents = fftBloomKernelExtents;
+    const float kernelSizeScale = BE1::Max(fftBloomKernelSizeScale, 0.01f);
+    const float kernelRotation = fftBloomKernelRotation;
+    const float paddingTrim = BE1::Min(BE1::Max(fftBloomPaddingTrim, 0.0f), 0.25f);
+
+    if (inputW == 0 || inputH == 0 || fftSize == 0) {
+        fftBloomGuardedContentRect = BE1::RectF(0.0f, 0.0f, 0.0f, 0.0f);
+        fftBloomKernelSpatialScale = BE1::Vec2(1.0f, 1.0f);
+        return;
+    }
+
+    // fftSize x fftSize 안에서 content aspect ratio 에 맞춘 내부 크기 
+    float aspectFitContentW = static_cast<float>(fftSize);
+    float aspectFitContentH = static_cast<float>(fftSize);
+    if (inputW >= inputH) {
+        aspectFitContentH = aspectFitContentW * static_cast<float>(inputH) / static_cast<float>(inputW);
+    } else {
+        aspectFitContentW = aspectFitContentH * static_cast<float>(inputW) / static_cast<float>(inputH);
+    }
+
+    float rotationSin;
+    float rotationCos;
+    BE1::Math::SinCos(DEG2RAD(kernelRotation), rotationSin, rotationCos);
+
+    // 회전된 normalized kernel extent 계산하기
+    const float absCos = BE1::Math::Fabs(rotationCos);
+    const float absSin = BE1::Math::Fabs(rotationSin);
+    const float scaledKernelExtentX = BE1::Max(kernelExtents.x, 0.0f) * kernelSizeScale;
+    const float scaledKernelExtentY = BE1::Max(kernelExtents.y, 0.0f) * kernelSizeScale;
+    const float projectedKernelExtentX = scaledKernelExtentX * absCos + scaledKernelExtentY * absSin;
+    const float projectedKernelExtentY = scaledKernelExtentX * absSin + scaledKernelExtentY * absCos;
+
+    // normalized content extent
+    const float normalizedContentExtentX = aspectFitContentW / static_cast<float>(fftSize);
+    const float normalizedContentExtentY = aspectFitContentH / static_cast<float>(fftSize);
+
+    // normalized support extent (= content extent + rotated kernel extent)
+    const float normalizedSupportExtentX = normalizedContentExtentX + projectedKernelExtentX;
+    const float normalizedSupportExtentY = normalizedContentExtentY + projectedKernelExtentY;
+
+    // paddingTrim 만큼 FFT 영역 밖으로 support 가 나가는 것을 허용해 content padding 을 줄인다.
+    const float allowedSupportExtent = 1.0f + paddingTrim;
+    const float scaleX = allowedSupportExtent / BE1::Max(normalizedSupportExtentX, allowedSupportExtent);
+    const float scaleY = allowedSupportExtent / BE1::Max(normalizedSupportExtentY, allowedSupportExtent);
+
+    // fftSize x fftSize 안에서 컨벌루션에 필요한 패딩을 고려한 실제 content 크기와 오프셋
+    const float guardedContentW = BE1::Max(aspectFitContentW * scaleX, 1.0f);
+    const float guardedContentH = BE1::Max(aspectFitContentH * scaleY, 1.0f);
+    const float guardedContentX = (static_cast<float>(fftSize) - guardedContentW) * 0.5f;
+    const float guardedContentY = (static_cast<float>(fftSize) - guardedContentH) * 0.5f;
+
+    fftBloomGuardedContentRect = BE1::RectF(guardedContentX, guardedContentY, guardedContentW, guardedContentH);
+
+    // guardedContentW x guardedContentH 가 실제로 aspectFitContentW x aspectFitContentH 에 비해서 얼마나 줄어들었는지 그 scale 값을 계산한다.
+    fftBloomKernelSpatialScale = BE1::Vec2(
+        (guardedContentW / aspectFitContentW) * kernelSizeScale,
+        (guardedContentH / aspectFitContentH) * kernelSizeScale);
 }
 
 bool RenderCamera::TransformWorldToNDC(const BE1::Vec3 &worldPosition, BE1::Vec3 &normalizedDeviceCoords) const {
@@ -573,7 +669,9 @@ void RenderCamera::EnsurePostProcessResources() {
         return;
     }
 
-    const RenderBloomMode bloomMode = static_cast<RenderBloomMode>(BE1::Clamp(r_bloom.GetInteger(), static_cast<int>(RenderBloomMode::Off), static_cast<int>(RenderBloomMode::Convolution)));
+    const RenderBloomMode bloomMode = static_cast<RenderBloomMode>(BE1::Clamp(r_bloom.GetInteger(), static_cast<int>(RenderBloomMode::Off), static_cast<int>(RenderBloomMode::ApertureConvolution)));
+    const bool useApertureConvolutionBloom = bloomMode == RenderBloomMode::ApertureConvolution;
+    const bool useConvolutionBloom = bloomMode == RenderBloomMode::Convolution || useApertureConvolutionBloom;
     if (bloomMode == RenderBloomMode::Pyramid) {
         DestroyConvolutionBloomResources();
         DestroyConvolutionBloomOutputTexture();
@@ -586,16 +684,16 @@ void RenderCamera::EnsurePostProcessResources() {
                 DestroyPyramidBloomTextures();
             }
         }
-    } else if (bloomMode == RenderBloomMode::Convolution) {
+    } else if (useConvolutionBloom) {
         DestroyPyramidBloomTextures();
 
         const uint32_t convolutionBloomFFTMaxSize = static_cast<uint32_t>(BE1::Clamp(r_convolutionBloomFFTMaxSize.GetInteger(), 256, 1024));
         const uint32_t requestedFFTBloomSize = SelectBloomFFTSize(renderWidth, renderHeight, convolutionBloomFFTMaxSize);
-        const bool hasReusableFFTBloomResources =
-            fftBloomScreenSpatialBuffer &&
-            fftBloomScreenSpectrumBuffer &&
-            fftBloomKernelSpatialBuffer &&
-            fftBloomKernelSpectrumBuffer &&
+    const bool hasReusableFFTBloomResources =
+        fftBloomScreenSpatialBuffer &&
+        fftBloomScreenSpectrumBuffer &&
+        fftBloomKernelSpatialBuffer &&
+        fftBloomKernelSpectrumBuffer &&
             fftBloomWorkBuffer &&
             fftBloomSize == requestedFFTBloomSize;
 
@@ -630,7 +728,24 @@ void RenderCamera::EnsurePostProcessResources() {
                     DestroyConvolutionBloomOutputTexture();
                 }
             }
+
+            const bool hasReusableApertureTextures =
+                fftBloomDiffractionPSFTexture &&
+                fftBloomApertureKernelTexture &&
+                fftBloomApertureEnergyBuffer0 &&
+                fftBloomApertureEnergyBuffer1 &&
+                fftBloomApertureTextureSize == requestedFFTBloomSize;
+            if (useApertureConvolutionBloom) {
+                if (!hasReusableApertureTextures) {
+                    if (!CreateConvolutionBloomApertureTextures(requestedFFTBloomSize)) {
+                        DestroyConvolutionBloomApertureTextures();
+                    }
+                }
+            } else {
+                DestroyConvolutionBloomApertureTextures();
+            }
         } else {
+            DestroyConvolutionBloomApertureTextures();
             DestroyConvolutionBloomOutputTexture();
         }
     } else {
@@ -954,6 +1069,8 @@ bool RenderCamera::CreateConvolutionBloomResources(uint32_t size) {
 }
 
 void RenderCamera::DestroyConvolutionBloomResources() {
+    DestroyConvolutionBloomApertureTextures();
+
     if (fftBloomScreenSpatialBuffer) {
         RHI::renderer->DestroyBuffer(fftBloomScreenSpatialBuffer);
         fftBloomScreenSpatialBuffer = nullptr;
@@ -975,7 +1092,90 @@ void RenderCamera::DestroyConvolutionBloomResources() {
         fftBloomWorkBuffer = nullptr;
     }
     fftBloomSize = 0;
+    fftBloomGuardedContentRect = BE1::RectF(0.0f, 0.0f, 0.0f, 0.0f);
+    fftBloomKernelSpatialScale = BE1::Vec2(1.0f, 1.0f);
     fftBloomKernelDirty = true;
+}
+
+bool RenderCamera::CreateConvolutionBloomApertureTextures(uint32_t size) {
+    DestroyConvolutionBloomApertureTextures();
+
+    if (size == 0) {
+        return false;
+    }
+
+    auto createTexture = [size](const char *debugName, BE1::Image::Format imageFormat) -> RHI::Texture * {
+        SharedPtr<BE1::Image> image = MakeShared<BE1::Image>();
+        image->InitFromMemory(size, size, 1, 1, 1, imageFormat, BE1::Image::GammaSpace::Linear, nullptr, BE1::Image::Flag::None);
+
+        RHI::Texture *texture = RHI::renderer->CreateTexture(RHI::TextureType::Texture2D, RHI::TextureFlag::ShaderResource | RHI::TextureFlag::UnorderedAccess, image, RHI::TextureMipInitMode::FromImage, {}, 1, RHI::GPUResourceState::ShaderResource);
+        if (!texture) {
+            BE_WARNLOG("RenderCamera::CreateConvolutionBloomApertureTextures: failed to create %s\n", debugName);
+            return nullptr;
+        }
+
+        RHI::renderer->SetName(texture, debugName);
+        return texture;
+    };
+
+    const BE1::Image::Format diffractionPSFFormat = RHI::renderer->ToUAVImageFormat(BE1::Image::Format::R16_FLOAT);
+    fftBloomDiffractionPSFTexture = createTexture("RenderCamera::fftBloomDiffractionPSFTexture", diffractionPSFFormat);
+    if (!fftBloomDiffractionPSFTexture) {
+        return false;
+    }
+
+    const BE1::Image::Format apertureKernelFormat = RHI::renderer->ToUAVImageFormat(BE1::Image::Format::R11G11B10_FLOAT);
+    fftBloomApertureKernelTexture = createTexture("RenderCamera::fftBloomApertureKernelTexture", apertureKernelFormat);
+    if (!fftBloomApertureKernelTexture) {
+        DestroyConvolutionBloomApertureTextures();
+        return false;
+    }
+
+    const uint64_t pixelCount = uint64_t(size) * uint64_t(size);
+    const uint64_t apertureEnergyElementCount = (pixelCount + ConvolutionBloomApertureEnergyReduceBlockSize - 1) / ConvolutionBloomApertureEnergyReduceBlockSize;
+    fftBloomApertureEnergyBuffer0 = CreateFFTBloomStructuredBuffer("RenderCamera::fftBloomApertureEnergyBuffer0", apertureEnergyElementCount);
+    if (!fftBloomApertureEnergyBuffer0) {
+        DestroyConvolutionBloomApertureTextures();
+        return false;
+    }
+
+    fftBloomApertureEnergyBuffer1 = CreateFFTBloomStructuredBuffer("RenderCamera::fftBloomApertureEnergyBuffer1", apertureEnergyElementCount);
+    if (!fftBloomApertureEnergyBuffer1) {
+        DestroyConvolutionBloomApertureTextures();
+        return false;
+    }
+
+    fftBloomApertureTextureSize = size;
+    fftBloomApertureKernelDirty = true;
+    fftBloomKernelDirty = true;
+
+    return true;
+}
+
+void RenderCamera::DestroyConvolutionBloomApertureTextures() {
+    if (!fftBloomDiffractionPSFTexture && !fftBloomApertureKernelTexture && !fftBloomApertureEnergyBuffer0 && !fftBloomApertureEnergyBuffer1 && fftBloomApertureTextureSize == 0) {
+        return;
+    }
+
+    if (fftBloomDiffractionPSFTexture) {
+        RHI::renderer->DestroyTexture(fftBloomDiffractionPSFTexture);
+        fftBloomDiffractionPSFTexture = nullptr;
+    }
+    if (fftBloomApertureKernelTexture) {
+        RHI::renderer->DestroyTexture(fftBloomApertureKernelTexture);
+        fftBloomApertureKernelTexture = nullptr;
+    }
+    if (fftBloomApertureEnergyBuffer0) {
+        RHI::renderer->DestroyBuffer(fftBloomApertureEnergyBuffer0);
+        fftBloomApertureEnergyBuffer0 = nullptr;
+    }
+    if (fftBloomApertureEnergyBuffer1) {
+        RHI::renderer->DestroyBuffer(fftBloomApertureEnergyBuffer1);
+        fftBloomApertureEnergyBuffer1 = nullptr;
+    }
+
+    fftBloomApertureTextureSize = 0;
+    fftBloomApertureKernelDirty = true;
 }
 
 bool RenderCamera::CreateConvolutionBloomOutputTexture(uint32_t width, uint32_t height) {

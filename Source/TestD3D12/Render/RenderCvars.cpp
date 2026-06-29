@@ -33,7 +33,7 @@ CVAR(r_toneMapLuminanceLogMax, "2", BE1::CVar::Flag::Float, "tone mapping lumina
 CVAR_MINMAX(r_toneMapLuminanceAdaptationRate, "1.1", BE1::CVar::Flag::Float, "tone mapping luminance adaptation rate", 0.0f, 100.0f);
 CVAR_MINMAX(r_toneMapMiddleGray, "0.18", BE1::CVar::Flag::Float, "tone mapping middle gray", 0.0f, 10.0f);
 
-CVAR_MINMAX(r_bloom, "2", BE1::CVar::Flag::Integer, "bloom mode (0 = off, 1 = pyramid, 2 = convolution)", RenderBloomMode::Off, RenderBloomMode::Convolution);
+CVAR_MINMAX(r_bloom, "3", BE1::CVar::Flag::Integer, "bloom mode (0 = off, 1 = pyramid, 2 = convolution, 3 = aperture convolution)", RenderBloomMode::Off, RenderBloomMode::ApertureConvolution);
 CVAR_MINMAX(r_bloomIntensity, "0.15", BE1::CVar::Flag::Float, "final bloom composite intensity", 0.0f, 10.0f);
 CVAR_MINMAX(r_bloomThreshold, "1.0", BE1::CVar::Flag::Float, "bloom luminance threshold", 0.0f, 100.0f);
 CVAR_MINMAX(r_bloomSoftThreshold, "0.5", BE1::CVar::Flag::Float, "bloom soft threshold width", 0.0f, 10.0f);
@@ -50,3 +50,5 @@ CVAR_MINMAX(r_convolutionBloomKernelSizeScale, "1.0", BE1::CVar::Flag::Float, "c
 CVAR_MINMAX(r_convolutionBloomKernelScale, "4.0", BE1::CVar::Flag::Float, "convolution bloom kernel spectrum scale", 0.0f, 100.0f);
 CVAR(r_convolutionBloomKernelRotation, "0", BE1::CVar::Flag::Float, "convolution bloom kernel rotation in degrees");
 CVAR_MINMAX(r_convolutionBloomPaddingTrim, "0.03", BE1::CVar::Flag::Float, "convolution bloom padding reduction as fraction of FFT size", 0.0f, 0.25f);
+CVAR_MINMAX(r_convolutionBloomDiffractionPSFScale, "1.0", BE1::CVar::Flag::Float, "convolution bloom diffraction PSF intensity scale", 0.0f, 100.0f);
+CVAR_MINMAX(r_convolutionBloomDispersionAmount, "1.0", BE1::CVar::Flag::Float, "convolution bloom diffraction dispersion amount", 0.0f, 10.0f);
