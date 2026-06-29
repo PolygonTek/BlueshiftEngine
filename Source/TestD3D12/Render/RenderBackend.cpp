@@ -272,8 +272,6 @@ void RenderBackend::UpdateGlobalPSOs() {
     currentConvolutionBloomPrefilterPSO = ShaderPipeline::GetReadyPSO(renderSystem->convolutionBloomPrefilterPipeline);
     currentConvolutionBloomKernelPreparePSO = ShaderPipeline::GetReadyPSO(renderSystem->convolutionBloomKernelPreparePipeline);
     currentConvolutionBloomResolvePSO = ShaderPipeline::GetReadyPSO(renderSystem->convolutionBloomResolvePipeline);
-
-    renderSystem->gpuFFT.UpdateReadyPSOs();
 }
 
 const void *RenderBackend::ExecuteBeginContext(const void *data) {
@@ -1095,31 +1093,23 @@ bool RenderBackend::DispatchConvolutionBloomResolve() {
 bool RenderBackend::DispatchConvolutionBloomFFT(RHI::Buffer *inputBuffer, RHI::Buffer *outputBuffer) {
     constexpr uint32_t PlaneCount = 2; // RG, B0
 
-    if (currentVisCamera->fftBloomSize == 256) {
-        return renderSystem->gpuFFT.DispatchFFTDualReal2D256(mainCommandList, frameData, inputBuffer, outputBuffer, currentVisCamera->fftBloomWorkBuffer, PlaneCount);
+    GpuFFT::FFTSize fftSizeEnum;
+    if (!GpuFFT::GetGpuFFTSize(currentVisCamera->fftBloomSize, fftSizeEnum)) {
+        return false;
     }
-    if (currentVisCamera->fftBloomSize == 512) {
-        return renderSystem->gpuFFT.DispatchFFTDualReal2D512(mainCommandList, frameData, inputBuffer, outputBuffer, currentVisCamera->fftBloomWorkBuffer, PlaneCount);
-    }
-    if (currentVisCamera->fftBloomSize == 1024) {
-        return renderSystem->gpuFFT.DispatchFFTDualReal2D1024(mainCommandList, frameData, inputBuffer, outputBuffer, currentVisCamera->fftBloomWorkBuffer, PlaneCount);
-    }
-    return false;
+
+    return renderSystem->gpuFFT.DispatchFFTDualReal2D(mainCommandList, frameData, inputBuffer, outputBuffer, currentVisCamera->fftBloomWorkBuffer, fftSizeEnum, PlaneCount);
 }
 
 bool RenderBackend::DispatchConvolutionBloomIFFT(RHI::Buffer *inputBuffer, RHI::Buffer *outputBuffer) {
     constexpr uint32_t PlaneCount = 2; // RG, B0
 
-    if (currentVisCamera->fftBloomSize == 256) {
-        return renderSystem->gpuFFT.DispatchIFFTDualReal2D256(mainCommandList, frameData, inputBuffer, outputBuffer, currentVisCamera->fftBloomScreenSpectrumBuffer, PlaneCount);
+    GpuFFT::FFTSize fftSizeEnum;
+    if (!GpuFFT::GetGpuFFTSize(currentVisCamera->fftBloomSize, fftSizeEnum)) {
+        return false;
     }
-    if (currentVisCamera->fftBloomSize == 512) {
-        return renderSystem->gpuFFT.DispatchIFFTDualReal2D512(mainCommandList, frameData, inputBuffer, outputBuffer, currentVisCamera->fftBloomScreenSpectrumBuffer, PlaneCount);
-    }
-    if (currentVisCamera->fftBloomSize == 1024) {
-        return renderSystem->gpuFFT.DispatchIFFTDualReal2D1024(mainCommandList, frameData, inputBuffer, outputBuffer, currentVisCamera->fftBloomScreenSpectrumBuffer, PlaneCount);
-    }
-    return false;
+
+    return renderSystem->gpuFFT.DispatchIFFTDualReal2D(mainCommandList, frameData, inputBuffer, outputBuffer, currentVisCamera->fftBloomScreenSpectrumBuffer, fftSizeEnum, PlaneCount);
 }
 
 bool RenderBackend::DispatchToneMapping(bool useBloom) {

@@ -231,32 +231,40 @@ public:
     SharedPtr<ShaderTemplate>       fftComplex256ShaderTemplate;
     SharedPtr<ShaderTemplate>       fftComplex512ShaderTemplate;
     SharedPtr<ShaderTemplate>       fftComplex1024ShaderTemplate;
+    SharedPtr<ShaderTemplate>       fftComplex2048ShaderTemplate;
 
     SharedPtr<ShaderTemplate>       fftReal512ShaderTemplate;
     SharedPtr<ShaderTemplate>       fftReal1024ShaderTemplate;
+    SharedPtr<ShaderTemplate>       fftReal2048ShaderTemplate;
 
     SharedPtr<ShaderTemplate>       ifftReal512ShaderTemplate;
     SharedPtr<ShaderTemplate>       ifftReal1024ShaderTemplate;
+    SharedPtr<ShaderTemplate>       ifftReal2048ShaderTemplate;
 
     SharedPtr<ShaderTemplate>       fftDualReal256ShaderTemplate;
     SharedPtr<ShaderTemplate>       fftDualReal512ShaderTemplate;
     SharedPtr<ShaderTemplate>       fftDualReal1024ShaderTemplate;
+    SharedPtr<ShaderTemplate>       fftDualReal2048ShaderTemplate;
 
     SharedPtr<ShaderTemplate>       ifftDualReal256ShaderTemplate;
     SharedPtr<ShaderTemplate>       ifftDualReal512ShaderTemplate;
     SharedPtr<ShaderTemplate>       ifftDualReal1024ShaderTemplate;
+    SharedPtr<ShaderTemplate>       ifftDualReal2048ShaderTemplate;
 
     SharedPtr<ShaderTemplate>       multiplyComplexSpectrum2DShaderTemplate;
     SharedPtr<ShaderTemplate>       multiplyPackedRealSpectrum2DShaderTemplate;
     SharedPtr<ShaderTemplate>       multiplyPackedDualRealSpectrum2DShaderTemplate;
 
     SharedPtr<ShaderTemplate>       transposeComplex256ShaderTemplate;
+    SharedPtr<ShaderTemplate>       transposeComplex512ShaderTemplate;
+    SharedPtr<ShaderTemplate>       transposeComplex1024ShaderTemplate;
+    SharedPtr<ShaderTemplate>       transposeComplex2048ShaderTemplate;
     SharedPtr<ShaderTemplate>       transposeComplex256x512ShaderTemplate;
     SharedPtr<ShaderTemplate>       transposeComplex512x256ShaderTemplate;
     SharedPtr<ShaderTemplate>       transposeComplex512x1024ShaderTemplate;
     SharedPtr<ShaderTemplate>       transposeComplex1024x512ShaderTemplate;
-    SharedPtr<ShaderTemplate>       transposeComplex512ShaderTemplate;
-    SharedPtr<ShaderTemplate>       transposeComplex1024ShaderTemplate;
+    SharedPtr<ShaderTemplate>       transposeComplex1024x2048ShaderTemplate;
+    SharedPtr<ShaderTemplate>       transposeComplex2048x1024ShaderTemplate;
 
     SharedPtr<ShaderTemplate>       bloomPrefilterShaderTemplate;
     SharedPtr<ShaderTemplate>       bloomDownsampleShaderTemplate;

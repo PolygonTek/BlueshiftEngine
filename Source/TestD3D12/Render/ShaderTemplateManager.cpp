@@ -311,6 +311,13 @@ void ShaderTemplateManager::CreateFFTShaderTemplates(RHI::ShaderModel shaderMode
     }
     fftComplex1024ShaderTemplate->AddPermutation();
 
+    fftComplex2048ShaderTemplate = AllocShaderTemplate("_fftComplex2048Shader");
+    const BE1::Str fftComplex2048ShaderTemplateText = CreateComputeShaderTemplateText(shaderModel, "FFT/FFTComplex2048.hlsl", "CSMain");
+    if (!fftComplex2048ShaderTemplate->Create(fftComplex2048ShaderTemplateText.c_str(), baseDir)) {
+        BE_FATALERROR("ShaderTemplateManager::CreateEngineShaderTemplates: failed to create FFT complex 2048 shader template");
+    }
+    fftComplex2048ShaderTemplate->AddPermutation();
+
     fftReal512ShaderTemplate = AllocShaderTemplate("_fftReal512Shader");
     const BE1::Str fftReal512ShaderTemplateText = CreateComputeShaderTemplateText(shaderModel, "FFT/FFTReal512.hlsl", "CSMain");
     if (!fftReal512ShaderTemplate->Create(fftReal512ShaderTemplateText.c_str(), baseDir)) {
@@ -324,6 +331,13 @@ void ShaderTemplateManager::CreateFFTShaderTemplates(RHI::ShaderModel shaderMode
         BE_FATALERROR("ShaderTemplateManager::CreateEngineShaderTemplates: failed to create FFT real 1024 shader template");
     }
     fftReal1024ShaderTemplate->AddPermutation();
+
+    fftReal2048ShaderTemplate = AllocShaderTemplate("_fftReal2048Shader");
+    const BE1::Str fftReal2048ShaderTemplateText = CreateComputeShaderTemplateText(shaderModel, "FFT/FFTReal2048.hlsl", "CSMain");
+    if (!fftReal2048ShaderTemplate->Create(fftReal2048ShaderTemplateText.c_str(), baseDir)) {
+        BE_FATALERROR("ShaderTemplateManager::CreateEngineShaderTemplates: failed to create FFT real 2048 shader template");
+    }
+    fftReal2048ShaderTemplate->AddPermutation();
 
     fftDualReal256ShaderTemplate = AllocShaderTemplate("_fftDualReal256Shader");
     const BE1::Str fftDualReal256ShaderTemplateText = CreateComputeShaderTemplateText(shaderModel, "FFT/FFTDualReal256.hlsl", "CSMain");
@@ -346,6 +360,13 @@ void ShaderTemplateManager::CreateFFTShaderTemplates(RHI::ShaderModel shaderMode
     }
     fftDualReal1024ShaderTemplate->AddPermutation();
 
+    fftDualReal2048ShaderTemplate = AllocShaderTemplate("_fftDualReal2048Shader");
+    const BE1::Str fftDualReal2048ShaderTemplateText = CreateComputeShaderTemplateText(shaderModel, "FFT/FFTDualReal2048.hlsl", "CSMain");
+    if (!fftDualReal2048ShaderTemplate->Create(fftDualReal2048ShaderTemplateText.c_str(), baseDir)) {
+        BE_FATALERROR("ShaderTemplateManager::CreateEngineShaderTemplates: failed to create FFT dual real 2048 shader template");
+    }
+    fftDualReal2048ShaderTemplate->AddPermutation();
+
     ifftReal512ShaderTemplate = AllocShaderTemplate("_ifftReal512Shader");
     const BE1::Str ifftReal512ShaderTemplateText = CreateComputeShaderTemplateText(shaderModel, "FFT/IFFTReal512.hlsl", "CSMain");
     if (!ifftReal512ShaderTemplate->Create(ifftReal512ShaderTemplateText.c_str(), baseDir)) {
@@ -359,6 +380,13 @@ void ShaderTemplateManager::CreateFFTShaderTemplates(RHI::ShaderModel shaderMode
         BE_FATALERROR("ShaderTemplateManager::CreateEngineShaderTemplates: failed to create IFFT real 1024 shader template");
     }
     ifftReal1024ShaderTemplate->AddPermutation();
+
+    ifftReal2048ShaderTemplate = AllocShaderTemplate("_ifftReal2048Shader");
+    const BE1::Str ifftReal2048ShaderTemplateText = CreateComputeShaderTemplateText(shaderModel, "FFT/IFFTReal2048.hlsl", "CSMain");
+    if (!ifftReal2048ShaderTemplate->Create(ifftReal2048ShaderTemplateText.c_str(), baseDir)) {
+        BE_FATALERROR("ShaderTemplateManager::CreateEngineShaderTemplates: failed to create IFFT real 2048 shader template");
+    }
+    ifftReal2048ShaderTemplate->AddPermutation();
 
     ifftDualReal256ShaderTemplate = AllocShaderTemplate("_ifftDualReal256Shader");
     const BE1::Str ifftDualReal256ShaderTemplateText = CreateComputeShaderTemplateText(shaderModel, "FFT/IFFTDualReal256.hlsl", "CSMain");
@@ -380,6 +408,13 @@ void ShaderTemplateManager::CreateFFTShaderTemplates(RHI::ShaderModel shaderMode
         BE_FATALERROR("ShaderTemplateManager::CreateEngineShaderTemplates: failed to create IFFT dual real 1024 shader template");
     }
     ifftDualReal1024ShaderTemplate->AddPermutation();
+
+    ifftDualReal2048ShaderTemplate = AllocShaderTemplate("_ifftDualReal2048Shader");
+    const BE1::Str ifftDualReal2048ShaderTemplateText = CreateComputeShaderTemplateText(shaderModel, "FFT/IFFTDualReal2048.hlsl", "CSMain");
+    if (!ifftDualReal2048ShaderTemplate->Create(ifftDualReal2048ShaderTemplateText.c_str(), baseDir)) {
+        BE_FATALERROR("ShaderTemplateManager::CreateEngineShaderTemplates: failed to create IFFT dual real 2048 shader template");
+    }
+    ifftDualReal2048ShaderTemplate->AddPermutation();
 
     multiplyComplexSpectrum2DShaderTemplate = AllocShaderTemplate("_multiplyComplexSpectrum2DShader");
     const BE1::Str multiplyComplexSpectrum2DShaderTemplateText = CreateComputeShaderTemplateText(shaderModel, "FFT/MultiplyComplexSpectrum2D.hlsl", "CSMain");
@@ -411,6 +446,27 @@ void ShaderTemplateManager::CreateTransposeShaderTemplates(RHI::ShaderModel shad
     }
     transposeComplex256ShaderTemplate->AddPermutation();
 
+    transposeComplex512ShaderTemplate = AllocShaderTemplate("_transposeComplex512Shader");
+    const BE1::Str transposeComplex512ShaderTemplateText = CreateComputeShaderTemplateText(shaderModel, "Transpose/TransposeComplex512.hlsl", "CSMain");
+    if (!transposeComplex512ShaderTemplate->Create(transposeComplex512ShaderTemplateText.c_str(), baseDir)) {
+        BE_FATALERROR("ShaderTemplateManager::CreateEngineShaderTemplates: failed to create transpose complex 512 shader template");
+    }
+    transposeComplex512ShaderTemplate->AddPermutation();
+
+    transposeComplex1024ShaderTemplate = AllocShaderTemplate("_transposeComplex1024Shader");
+    const BE1::Str transposeComplex1024ShaderTemplateText = CreateComputeShaderTemplateText(shaderModel, "Transpose/TransposeComplex1024.hlsl", "CSMain");
+    if (!transposeComplex1024ShaderTemplate->Create(transposeComplex1024ShaderTemplateText.c_str(), baseDir)) {
+        BE_FATALERROR("ShaderTemplateManager::CreateEngineShaderTemplates: failed to create transpose complex 1024 shader template");
+    }
+    transposeComplex1024ShaderTemplate->AddPermutation();
+
+    transposeComplex2048ShaderTemplate = AllocShaderTemplate("_transposeComplex2048Shader");
+    const BE1::Str transposeComplex2048ShaderTemplateText = CreateComputeShaderTemplateText(shaderModel, "Transpose/TransposeComplex2048.hlsl", "CSMain");
+    if (!transposeComplex2048ShaderTemplate->Create(transposeComplex2048ShaderTemplateText.c_str(), baseDir)) {
+        BE_FATALERROR("ShaderTemplateManager::CreateEngineShaderTemplates: failed to create transpose complex 2048 shader template");
+    }
+    transposeComplex2048ShaderTemplate->AddPermutation();
+
     transposeComplex256x512ShaderTemplate = AllocShaderTemplate("_transposeComplex256x512Shader");
     const BE1::Str transposeComplex256x512ShaderTemplateText = CreateComputeShaderTemplateText(shaderModel, "Transpose/TransposeComplex256x512.hlsl", "CSMain");
     if (!transposeComplex256x512ShaderTemplate->Create(transposeComplex256x512ShaderTemplateText.c_str(), baseDir)) {
@@ -439,19 +495,19 @@ void ShaderTemplateManager::CreateTransposeShaderTemplates(RHI::ShaderModel shad
     }
     transposeComplex1024x512ShaderTemplate->AddPermutation();
 
-    transposeComplex512ShaderTemplate = AllocShaderTemplate("_transposeComplex512Shader");
-    const BE1::Str transposeComplex512ShaderTemplateText = CreateComputeShaderTemplateText(shaderModel, "Transpose/TransposeComplex512.hlsl", "CSMain");
-    if (!transposeComplex512ShaderTemplate->Create(transposeComplex512ShaderTemplateText.c_str(), baseDir)) {
-        BE_FATALERROR("ShaderTemplateManager::CreateEngineShaderTemplates: failed to create transpose complex 512 shader template");
+    transposeComplex1024x2048ShaderTemplate = AllocShaderTemplate("_transposeComplex1024x2048Shader");
+    const BE1::Str transposeComplex1024x2048ShaderTemplateText = CreateComputeShaderTemplateText(shaderModel, "Transpose/TransposeComplex1024x2048.hlsl", "CSMain");
+    if (!transposeComplex1024x2048ShaderTemplate->Create(transposeComplex1024x2048ShaderTemplateText.c_str(), baseDir)) {
+        BE_FATALERROR("ShaderTemplateManager::CreateEngineShaderTemplates: failed to create transpose complex 1024x2048 shader template");
     }
-    transposeComplex512ShaderTemplate->AddPermutation();
+    transposeComplex1024x2048ShaderTemplate->AddPermutation();
 
-    transposeComplex1024ShaderTemplate = AllocShaderTemplate("_transposeComplex1024Shader");
-    const BE1::Str transposeComplex1024ShaderTemplateText = CreateComputeShaderTemplateText(shaderModel, "Transpose/TransposeComplex1024.hlsl", "CSMain");
-    if (!transposeComplex1024ShaderTemplate->Create(transposeComplex1024ShaderTemplateText.c_str(), baseDir)) {
-        BE_FATALERROR("ShaderTemplateManager::CreateEngineShaderTemplates: failed to create transpose complex 1024 shader template");
+    transposeComplex2048x1024ShaderTemplate = AllocShaderTemplate("_transposeComplex2048x1024Shader");
+    const BE1::Str transposeComplex2048x1024ShaderTemplateText = CreateComputeShaderTemplateText(shaderModel, "Transpose/TransposeComplex2048x1024.hlsl", "CSMain");
+    if (!transposeComplex2048x1024ShaderTemplate->Create(transposeComplex2048x1024ShaderTemplateText.c_str(), baseDir)) {
+        BE_FATALERROR("ShaderTemplateManager::CreateEngineShaderTemplates: failed to create transpose complex 2048x1024 shader template");
     }
-    transposeComplex1024ShaderTemplate->AddPermutation();
+    transposeComplex2048x1024ShaderTemplate->AddPermutation();
 }
 
 void ShaderTemplateManager::CreateBloomShaderTemplates(RHI::ShaderModel shaderModel, const char *baseDir) {
@@ -540,17 +596,26 @@ void ShaderTemplateManager::DestroyEngineShaderTemplates() {
     if (fftComplex1024ShaderTemplate) {
         fftComplex1024ShaderTemplate.reset();
     }
+    if (fftComplex2048ShaderTemplate) {
+        fftComplex2048ShaderTemplate.reset();
+    }
     if (fftReal512ShaderTemplate) {
         fftReal512ShaderTemplate.reset();
     }
     if (fftReal1024ShaderTemplate) {
         fftReal1024ShaderTemplate.reset();
     }
+    if (fftReal2048ShaderTemplate) {
+        fftReal2048ShaderTemplate.reset();
+    }
     if (ifftReal512ShaderTemplate) {
         ifftReal512ShaderTemplate.reset();
     }
     if (ifftReal1024ShaderTemplate) {
         ifftReal1024ShaderTemplate.reset();
+    }
+    if (ifftReal2048ShaderTemplate) {
+        ifftReal2048ShaderTemplate.reset();
     }
     if (fftDualReal256ShaderTemplate) {
         fftDualReal256ShaderTemplate.reset();
@@ -561,6 +626,9 @@ void ShaderTemplateManager::DestroyEngineShaderTemplates() {
     if (fftDualReal1024ShaderTemplate) {
         fftDualReal1024ShaderTemplate.reset();
     }
+    if (fftDualReal2048ShaderTemplate) {
+        fftDualReal2048ShaderTemplate.reset();
+    }
     if (ifftDualReal256ShaderTemplate) {
         ifftDualReal256ShaderTemplate.reset();
     }
@@ -569,6 +637,9 @@ void ShaderTemplateManager::DestroyEngineShaderTemplates() {
     }
     if (ifftDualReal1024ShaderTemplate) {
         ifftDualReal1024ShaderTemplate.reset();
+    }
+    if (ifftDualReal2048ShaderTemplate) {
+        ifftDualReal2048ShaderTemplate.reset();
     }
     if (multiplyComplexSpectrum2DShaderTemplate) {
         multiplyComplexSpectrum2DShaderTemplate.reset();
@@ -582,6 +653,15 @@ void ShaderTemplateManager::DestroyEngineShaderTemplates() {
     if (transposeComplex256ShaderTemplate) {
         transposeComplex256ShaderTemplate.reset();
     }
+    if (transposeComplex512ShaderTemplate) {
+        transposeComplex512ShaderTemplate.reset();
+    }
+    if (transposeComplex1024ShaderTemplate) {
+        transposeComplex1024ShaderTemplate.reset();
+    }
+    if (transposeComplex2048ShaderTemplate) {
+        transposeComplex2048ShaderTemplate.reset();
+    }
     if (transposeComplex256x512ShaderTemplate) {
         transposeComplex256x512ShaderTemplate.reset();
     }
@@ -594,11 +674,11 @@ void ShaderTemplateManager::DestroyEngineShaderTemplates() {
     if (transposeComplex1024x512ShaderTemplate) {
         transposeComplex1024x512ShaderTemplate.reset();
     }
-    if (transposeComplex512ShaderTemplate) {
-        transposeComplex512ShaderTemplate.reset();
+    if (transposeComplex1024x2048ShaderTemplate) {
+        transposeComplex1024x2048ShaderTemplate.reset();
     }
-    if (transposeComplex1024ShaderTemplate) {
-        transposeComplex1024ShaderTemplate.reset();
+    if (transposeComplex2048x1024ShaderTemplate) {
+        transposeComplex2048x1024ShaderTemplate.reset();
     }
     if (bloomPrefilterShaderTemplate) {
         bloomPrefilterShaderTemplate.reset();
