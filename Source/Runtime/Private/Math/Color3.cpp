@@ -320,6 +320,45 @@ Color3 Color3::LinearToSRGB() const {
         0.585122381 * sqrt_b + 0.783140355 * sqrt2_b - 0.368262736 * sqrt3_b);
 }
 
+static BE_FORCE_INLINE float CIE1931Gaussian(float t) {
+    return Math::Exp(-0.5f * t * t);
+}
+
+static Vec3 SampleCIE1931CMF(float wavelengthNm) {
+    if (wavelengthNm < 360.0f || wavelengthNm > 830.0f) {
+        return Vec3::zero;
+    }
+
+    // Analytic fit of the CIE 1931 2-degree color matching functions.
+    float t1 = (wavelengthNm - 442.0f) * (wavelengthNm < 442.0f ? 0.0624f : 0.0374f);
+    float t2 = (wavelengthNm - 599.8f) * (wavelengthNm < 599.8f ? 0.0264f : 0.0323f);
+    float t3 = (wavelengthNm - 501.1f) * (wavelengthNm < 501.1f ? 0.0490f : 0.0382f);
+    float x = 0.362f * CIE1931Gaussian(t1) + 1.056f * CIE1931Gaussian(t2) - 0.065f * CIE1931Gaussian(t3);
+
+    t1 = (wavelengthNm - 568.8f) * (wavelengthNm < 568.8f ? 0.0213f : 0.0247f);
+    t2 = (wavelengthNm - 530.9f) * (wavelengthNm < 530.9f ? 0.0613f : 0.0322f);
+    float y = 0.821f * CIE1931Gaussian(t1) + 0.286f * CIE1931Gaussian(t2);
+
+    t1 = (wavelengthNm - 437.0f) * (wavelengthNm < 437.0f ? 0.0845f : 0.0278f);
+    t2 = (wavelengthNm - 459.0f) * (wavelengthNm < 459.0f ? 0.0385f : 0.0725f);
+    float z = 1.217f * CIE1931Gaussian(t1) + 0.681f * CIE1931Gaussian(t2);
+
+    return Vec3(x, y, z);
+}
+
+Color3 Color3::FromXYZ(float X, float Y, float Z) {
+    // XYZ to RGB with BT.709 primaries.
+    return Color3(
+        3.2404542f * X + -1.5371385f * Y + -0.4985314f * Z,
+        -0.9692660f * X + 1.8760108f * Y + 0.0415560f * Z,
+        0.0556434f * X + -0.2040259f * Y + 1.0572252f * Z);
+}
+
+Color3 Color3::FromCIE1931Wavelength(float wavelengthNm) {
+    Vec3 XYZ = SampleCIE1931CMF(wavelengthNm);
+    return FromXYZ(XYZ.x, XYZ.y, XYZ.z);
+}
+
 Color3 Color3::FromColorTemperature(float temp) {
     Clamp(temp, 1000.0f, 15000.0f);
 
@@ -337,12 +376,7 @@ Color3 Color3::FromColorTemperature(float temp) {
     float X = Y / y * x;
     float Z = Y / y * z;
 
-    // XYZ to RGB with BT.709 primaries
-    float r = 3.2404542f * X + -1.5371385f * Y + -0.4985314f * Z;
-    float g = -0.9692660f * X + 1.8760108f * Y + 0.0415560f * Z;
-    float b = 0.0556434f * X + -0.2040259f * Y + 1.0572252f * Z;
-
-    return Color3(r, g, b);
+    return FromXYZ(X, Y, Z);
 }
 
 BE_NAMESPACE_END

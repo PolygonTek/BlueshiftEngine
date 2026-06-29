@@ -201,6 +201,12 @@ public:
                         /// Converts Linear to sRGB.
     Color3              LinearToSRGB() const;
 
+                        /// Converts CIE XYZ tristimulus values to RGB chromaticity (linear) with BT.709 primaries.
+    static Color3       FromXYZ(float X, float Y, float Z);
+
+                        /// Converts a spectral wavelength in nanometers to RGB (linear) using an approximate CIE 1931 2-degree CMF. The result is not clamped.
+    static Color3       FromCIE1931Wavelength(float wavelengthNm);
+
                         /// Converts temperature in Kelvins [1000, 15000] of a black body radiator to RGB chromaticity (linear).
     static Color3       FromColorTemperature(float temp);
 
