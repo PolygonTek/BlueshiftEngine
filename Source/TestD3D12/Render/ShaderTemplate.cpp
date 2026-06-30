@@ -14,6 +14,7 @@
 
 #include "Precompiled.h"
 #include "ShaderTemplate.h"
+#include "ShaderTemplateManager.h"
 #include "ShaderPipelineCache.h"
 #include "Asset/GuidMapper.h"
 #include "IO/FileSystem.h"
@@ -208,7 +209,7 @@ ShaderFeatureSet ShaderTemplate::MaskSupportedFeatures(const ShaderFeatureSet &f
     return supportedFeatureSet;
 }
 
-// 같은 이름의 define 이 있는지 검사한다. define name 만 비교하며, value 는 비교하지 않는다.
+// 같은 이름의 define 이 있는지 검사한다. define name 만 비교하고 value 는 비교하지 않는다.
 static bool HasDefine(const BE1::StrArray &defines, const char *keyDefine) {
     if (!keyDefine || !keyDefine[0] || defines.Count() == 0) {
         return false;
@@ -268,17 +269,18 @@ static bool AppendDefines(BE1::StrArray &defines, const BE1::StrArray &appendDef
     return addedAllDefines;
 }
 
-ShaderPermutationKey ShaderTemplate::AddPermutation() {
-    return AddPermutation(BE1::Array<PropertyValue>(), ShaderFeatureSet());
+ShaderPermutationKey ShaderTemplate::RegisterPermutation() {
+    return RegisterPermutation(BE1::Array<PropertyValue>(), ShaderFeatureSet());
 }
 
-ShaderPermutationKey ShaderTemplate::AddPermutation(const BE1::Array<PropertyValue> &propertyValues) {
-    return AddPermutation(propertyValues, ShaderFeatureSet());
+ShaderPermutationKey ShaderTemplate::RegisterPermutation(const BE1::Array<PropertyValue> &propertyValues) {
+    return RegisterPermutation(propertyValues, ShaderFeatureSet());
 }
 
-ShaderPermutationKey ShaderTemplate::AddPermutation(const BE1::Array<PropertyValue> &propertyValues, const ShaderFeatureSet &featureSet) {
+ShaderPermutationKey ShaderTemplate::RegisterPermutation(const BE1::Array<PropertyValue> &propertyValues, const ShaderFeatureSet &featureSet) {
     BE1::StrArray permutationDefines;
 
+    // 프로퍼티 중에 shader define 프로퍼티로 define 목록을 만든다.
     const int numProperties = internalData.properties.Count();
     for (int i = 0; i < numProperties; i++) {
         const ShaderPropertyInfo &propertyInfo = internalData.properties[i];
@@ -289,7 +291,7 @@ ShaderPermutationKey ShaderTemplate::AddPermutation(const BE1::Array<PropertyVal
         const char *propertyDefineName = propertyInfo.GetName();
         if (HasTemplateDefine(propertyDefineName, featureSet) || HasDefine(permutationDefines, propertyDefineName)) {
             // permutation 의 define name 과 프로퍼티의 define name 은 중복되면 안된다.
-            BE_ERRLOG("ShaderTemplate::AddPermutation: permutation define name '%s' conflicts with an existing shader property in shader template '%s'\n", propertyDefineName, hashName.c_str());
+            BE_ERRLOG("ShaderTemplate::RegisterPermutation: permutation define name '%s' conflicts with an existing shader property in shader template '%s'\n", propertyDefineName, hashName.c_str());
             continue;
         }
 
@@ -304,7 +306,7 @@ ShaderPermutationKey ShaderTemplate::AddPermutation(const BE1::Array<PropertyVal
             AddDefine(permutationDefines, propertyDefineName, value.As<int>());
             break;
         default:
-            BE_WARNLOG("ShaderTemplate::AddPermutation: shader define property '%s' has unsupported type\n", propertyDefineName);
+            BE_WARNLOG("ShaderTemplate::RegisterPermutation: shader define property '%s' has unsupported type\n", propertyDefineName);
             break;
         }
     }
@@ -335,6 +337,9 @@ bool ShaderTemplate::Create(const char *text, const char *baseDir) {
     Purge();
 
     internalData.Swap(newInternalData);
+
+    // default property 값 + empty featureSet 조합으로 permutation 을 등록한다.
+    RegisterPermutation();
     return true;
 }
 

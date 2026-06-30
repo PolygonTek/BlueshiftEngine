@@ -14,6 +14,7 @@
 
 #include "Precompiled.h"
 #include "Render/Anim.h"
+#include "Render/AnimManager.h"
 #include "Render/Mesh.h"
 #include "Skeleton.h"
 #include "LoadingSystem.h"

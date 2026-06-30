@@ -14,7 +14,7 @@
 
 #include "Precompiled.h"
 #include "RenderCvars.h"
-#include "Texture.h"
+#include "TextureManager.h"
 #include "LoadingSystem.h"
 
 TextureManager      textureManager;

@@ -21,6 +21,7 @@ class RenderContext;
 class RenderBackend;
 class RenderFrameData;
 class ShaderPipeline;
+class ShaderTemplate;
 
 /*
 ---------------------------------------------------------------------------------------------------
@@ -98,6 +99,22 @@ private:
     BE1::PlatformCondition *        updateCompletedCondition = nullptr;
     BE1::PlatformThread *           renderThread = nullptr;
     bool                            isStoppingRenderThread = false;
+
+    SharedPtr<ShaderTemplate>       toneMappingShaderTemplate;
+    SharedPtr<ShaderTemplate>       luminancePass1ShaderTemplate;
+    SharedPtr<ShaderTemplate>       luminancePass2ShaderTemplate;
+
+    SharedPtr<ShaderTemplate>       bloomPrefilterShaderTemplate;
+    SharedPtr<ShaderTemplate>       bloomDownsampleShaderTemplate;
+    SharedPtr<ShaderTemplate>       bloomUpsampleShaderTemplate;
+
+    SharedPtr<ShaderTemplate>       convolutionBloomPrefilterShaderTemplate;
+    SharedPtr<ShaderTemplate>       convolutionBloomKernelPrepareShaderTemplate;
+    SharedPtr<ShaderTemplate>       convolutionBloomResolveShaderTemplate;
+    SharedPtr<ShaderTemplate>       convolutionBloomAperturePrepareShaderTemplate;
+    SharedPtr<ShaderTemplate>       convolutionBloomReduceApertureEnergyShaderTemplate;
+    SharedPtr<ShaderTemplate>       convolutionBloomResolveDiffractionPSFShaderTemplate;
+    SharedPtr<ShaderTemplate>       convolutionBloomApplyDispersionShaderTemplate;
 
     SharedPtr<ShaderPipeline>       toneMappingPipeline;
     SharedPtr<ShaderPipeline>       luminancePass1Pipeline;

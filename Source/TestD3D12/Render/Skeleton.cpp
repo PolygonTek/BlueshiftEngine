@@ -14,6 +14,7 @@
 
 #include "Precompiled.h"
 #include "Skeleton.h"
+#include "SkeletonManager.h"
 #include "BModel.h"
 #include "LoadingSystem.h"
 

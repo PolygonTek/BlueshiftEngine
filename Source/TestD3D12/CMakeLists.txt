@@ -65,6 +65,7 @@ set(SRC_FILES
     Render/Anim.h
     Render/Anim.cpp
     Render/Anim_InternalData.cpp
+    Render/AnimManager.h
     Render/AnimManager.cpp
     Render/BModel.h
     Render/TextureStreamingFeedback.h
@@ -104,6 +105,7 @@ set(SRC_FILES
     Render/RenderPassBuilder.cpp
     Render/Material.h
     Render/Material.cpp
+    Render/MaterialManager.h
     Render/MaterialManager.cpp
     Render/ShaderPipelineCache.h
     Render/ShaderPipelineCache.cpp
@@ -115,6 +117,7 @@ set(SRC_FILES
     Render/ShaderPipeline.cpp
     Render/ShaderTemplate.h
     Render/ShaderTemplate.cpp
+    Render/ShaderTemplateManager.h
     Render/ShaderTemplateManager.cpp
     Render/Mesh.h
     Render/Mesh.cpp
@@ -125,6 +128,7 @@ set(SRC_FILES
     Render/MeshInstance.cpp
     Render/SkinningJointCache.h
     Render/SkinningJointCache.cpp
+    Render/MeshManager.h
     Render/MeshManager.cpp
     Render/SubMesh.h
     Render/SubMesh.cpp
@@ -132,12 +136,14 @@ set(SRC_FILES
     Render/GuiMesh.cpp
     Render/Skeleton.h
     Render/Skeleton.cpp
+    Render/SkeletonManager.h
     Render/SkeletonManager.cpp
     Render/Font.h
     Render/Font.cpp
     Render/FontFace.h
     Render/FontFaceBitmap.cpp
     Render/FontFaceTrueType.cpp
+    Render/FontManager.h
     Render/FontManager.cpp
     Render/FontFile.h
     Render/TrueTypeFont.h
@@ -146,6 +152,7 @@ set(SRC_FILES
     Render/Sampler.cpp
     Render/Texture.h
     Render/Texture.cpp
+    Render/TextureManager.h
     Render/TextureManager.cpp)
 
 file(GLOB_RECURSE SHADER_FILES RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}

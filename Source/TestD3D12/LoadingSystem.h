@@ -75,7 +75,7 @@ private:
         int32_t                     originalMipLevels = 0;
         int32_t                     firstMip = -1;
         uint32_t                    serial = 0;
-        uint64_t                    sequence = 0;
+        uint64_t                    sequence = 0;                       // 큐에 들어온 순서
         LoadPriority                priority = LoadPriority::Normal;
         bool                        isReload = false;
         bool                        isStreamingReplacement = false;

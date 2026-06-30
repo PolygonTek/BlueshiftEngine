@@ -376,7 +376,7 @@ void App::BuildImGuiOverlay() {
         return isOpen;
     };
 
-    ImGui::SetNextWindowSizeConstraints(ImVec2(fontSize * 28.0f, fontSize * 8.0f), ImVec2(FLT_MAX, FLT_MAX));
+    ImGui::SetNextWindowSizeConstraints(ImVec2(fontSize * 29.0f, fontSize * 8.0f), ImVec2(FLT_MAX, FLT_MAX));
     ImGui::Begin("TestD3D12", nullptr, ImGuiWindowFlags_AlwaysAutoResize);
 
     if (ImGui::BeginTabBar("TestD3D12Tabs")) {

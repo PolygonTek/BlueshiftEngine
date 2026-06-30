@@ -19,6 +19,7 @@
 
 class RenderFrameData;
 class ShaderPipeline;
+class ShaderTemplate;
 
 /*
 ---------------------------------------------------------------------------------------------------
@@ -122,6 +123,51 @@ private:
     bool                        DispatchIFFTRealFused(RHI::CommandList *commandList, RHI::PipelineState *pso, RHI::Buffer *twiddleBuffer, RHI::Buffer *inputBuffer, RHI::Buffer *outputBuffer, RHI::Buffer *workBuffer, uint32_t fftBlockCount, RHI::GPUResourceState inputBufferState, RHI::GPUResourceState workBufferState);
     bool                        DispatchFFTDualRealFused(RHI::CommandList *commandList, RHI::PipelineState *pso, RHI::Buffer *inputBuffer, RHI::Buffer *outputBuffer, uint32_t fftBlockCount, RHI::Buffer **resultBuffer);
     bool                        DispatchIFFTDualRealFused(RHI::CommandList *commandList, RHI::PipelineState *pso, RHI::Buffer *inputBuffer, RHI::Buffer *outputBuffer, RHI::Buffer *workBuffer, uint32_t fftBlockCount, RHI::GPUResourceState inputBufferState, RHI::GPUResourceState workBufferState);
+
+                                // complex to complex shader templates
+    SharedPtr<ShaderTemplate>   fftComplex256ShaderTemplate;
+    SharedPtr<ShaderTemplate>   fftComplex512ShaderTemplate;
+    SharedPtr<ShaderTemplate>   fftComplex1024ShaderTemplate;
+    SharedPtr<ShaderTemplate>   fftComplex2048ShaderTemplate;
+
+                                // real to packed complex shader templates
+    SharedPtr<ShaderTemplate>   fftReal512ShaderTemplate;
+    SharedPtr<ShaderTemplate>   fftReal1024ShaderTemplate;
+    SharedPtr<ShaderTemplate>   fftReal2048ShaderTemplate;
+
+                                // packed complex to real shader templates
+    SharedPtr<ShaderTemplate>   ifftReal512ShaderTemplate;
+    SharedPtr<ShaderTemplate>   ifftReal1024ShaderTemplate;
+    SharedPtr<ShaderTemplate>   ifftReal2048ShaderTemplate;
+
+                                // dual real to 2 packed complex shader templates
+    SharedPtr<ShaderTemplate>   fftDualReal256ShaderTemplate;
+    SharedPtr<ShaderTemplate>   fftDualReal512ShaderTemplate;
+    SharedPtr<ShaderTemplate>   fftDualReal1024ShaderTemplate;
+    SharedPtr<ShaderTemplate>   fftDualReal2048ShaderTemplate;
+
+                                // 2 packed complex to dual real shader templates
+    SharedPtr<ShaderTemplate>   ifftDualReal256ShaderTemplate;
+    SharedPtr<ShaderTemplate>   ifftDualReal512ShaderTemplate;
+    SharedPtr<ShaderTemplate>   ifftDualReal1024ShaderTemplate;
+    SharedPtr<ShaderTemplate>   ifftDualReal2048ShaderTemplate;
+
+                                // packed spectrum shader templates
+    SharedPtr<ShaderTemplate>   multiplyComplexSpectrum2DShaderTemplate;
+    SharedPtr<ShaderTemplate>   multiplyPackedRealSpectrum2DShaderTemplate;
+    SharedPtr<ShaderTemplate>   multiplyPackedDualRealSpectrum2DShaderTemplate;
+
+                                // transpose complex shader templates
+    SharedPtr<ShaderTemplate>   transposeComplex256ShaderTemplate;
+    SharedPtr<ShaderTemplate>   transposeComplex512ShaderTemplate;
+    SharedPtr<ShaderTemplate>   transposeComplex1024ShaderTemplate;
+    SharedPtr<ShaderTemplate>   transposeComplex2048ShaderTemplate;
+    SharedPtr<ShaderTemplate>   transposeComplex256x512ShaderTemplate;
+    SharedPtr<ShaderTemplate>   transposeComplex512x256ShaderTemplate;
+    SharedPtr<ShaderTemplate>   transposeComplex512x1024ShaderTemplate;
+    SharedPtr<ShaderTemplate>   transposeComplex1024x512ShaderTemplate;
+    SharedPtr<ShaderTemplate>   transposeComplex1024x2048ShaderTemplate;
+    SharedPtr<ShaderTemplate>   transposeComplex2048x1024ShaderTemplate;
 
                                 // complex to complex (fused)
     SharedPtr<ShaderPipeline>   fftComplex256Pipeline;

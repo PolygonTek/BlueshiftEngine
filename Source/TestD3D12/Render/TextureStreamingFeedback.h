@@ -20,7 +20,7 @@ class TextureStreamingFeedback {
     friend class RenderBackend;
 
 public:
-    using ConsumeCallback       = void (*)(const uint32_t *feedbackData, uint32_t capacity);
+    using ConsumeCallback           = void (*)(const uint32_t *feedbackData, uint32_t capacity);
 
     struct ReadbackFrame {
         enum class State : uint8_t {
@@ -29,35 +29,35 @@ public:
             Submitted
         };
 
-        RHI::Buffer *           buffer = nullptr;
-        std::atomic<uint64_t>   fenceValue = 0;
-        std::atomic<State>      state = State::Idle;
+        RHI::Buffer *               buffer = nullptr;
+        std::atomic<uint64_t>       fenceValue = 0;
+        std::atomic<State>          state = State::Idle;
 
-        void                    SetReadbackFenceValue(uint64_t fenceValue);
+        void                        SetReadbackFenceValue(uint64_t fenceValue);
     };
 
-    bool                        Init(uint32_t initialCapacity = 4096);
-    void                        Shutdown();
+    bool                            Init(uint32_t initialCapacity = 4096);
+    void                            Shutdown();
 
-    void                        ClearBuffer(RHI::CommandList *commandList);
-    [[nodiscard]] ReadbackFrame *Resolve(RHI::CommandList *commandList);
+    void                            ClearBuffer(RHI::CommandList *commandList);
+    [[nodiscard]] ReadbackFrame *   Resolve(RHI::CommandList *commandList);
 
-    void                        ConsumeCompletedReadbacks(ConsumeCallback callback, void *userData = nullptr);
+    void                            ConsumeCompletedReadbacks(ConsumeCallback callback, void *userData = nullptr);
 
-    bool                        NeedsGrowCapacity(uint32_t count) const { return count > bufferCapacity; }
-    bool                        EnsureBufferCapacity(uint32_t count);
+    bool                            NeedsGrowCapacity(uint32_t count) const { return count > bufferCapacity; }
+    bool                            EnsureBufferCapacity(uint32_t count);
 
-    uint32_t                    GetBindlessIndex() const { return bufferBindlessIndex; }
+    uint32_t                        GetBindlessIndex() const { return bufferBindlessIndex; }
 
 private:
-    void                        DestroyBuffers();
+    void                            DestroyBuffers();
 
-    RHI::Buffer *               buffer = nullptr;
-    RHI::ViewID                 bufferView = RHI::ViewID::InvalidID;
-    uint32_t                    bufferCapacity = 0;
-    uint32_t                    bufferBindlessIndex = 0;
-    bool                        bufferCleared = false;
+    RHI::Buffer *                   buffer = nullptr;
+    RHI::ViewID                     bufferView = RHI::ViewID::InvalidID;
+    uint32_t                        bufferCapacity = 0;
+    uint32_t                        bufferBindlessIndex = 0;
+    bool                            bufferCleared = false;
 
-    ReadbackFrame               readbackFrames[2] = {};
-    int32_t                     readbackFrameIndex = 0;
+    ReadbackFrame                   readbackFrames[2] = {};
+    int32_t                         readbackFrameIndex = 0;
 };

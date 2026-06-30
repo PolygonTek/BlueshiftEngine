@@ -37,6 +37,9 @@ struct ShaderFeatureSet {
     bool                            HasFeature(ShaderFeature feature) const;
     void                            EnableFeature(ShaderFeature feature);
 
+    bool                            operator==(const ShaderFeatureSet &rhs) const { return flags == rhs.flags; }
+    bool                            operator!=(const ShaderFeatureSet &rhs) const { return flags != rhs.flags; }
+
     uint32_t                        flags = 0;
 };
 

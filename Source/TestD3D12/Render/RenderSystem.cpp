@@ -18,15 +18,15 @@
 #include "RenderBackend.h"
 #include "RHI/RHI.h"
 #include "Sampler.h"
-#include "Texture.h"
-#include "ShaderTemplate.h"
+#include "TextureManager.h"
+#include "ShaderTemplateManager.h"
 #include "ShaderPipelineCache.h"
 #include "VertexInputLayoutFactory.h"
-#include "Material.h"
-#include "Font.h"
-#include "Mesh.h"
-#include "Skeleton.h"
-#include "Anim.h"
+#include "MaterialManager.h"
+#include "FontManager.h"
+#include "MeshManager.h"
+#include "SkeletonManager.h"
+#include "AnimManager.h"
 
 RenderSystem *          renderSystem = nullptr;
 
@@ -112,22 +112,58 @@ void RenderSystem::Shutdown() {
     RHI::DestroyRenderer();
 }
 
+static SharedPtr<ShaderTemplate> CreatePostProcessShaderTemplate(const char *hashName, RHI::ShaderModel shaderModel, const char *filename, const char *baseDir) {
+    BE1::Str shaderTemplateText;
+    shaderTemplateText.sPrintf(
+        "{\n"
+        "    stages {\n"
+        "        compute %s \"%s\" \"%s\"\n"
+        "    }\n"
+        "}\n",
+        RHI::Renderer::ShaderModelName(shaderModel), filename, "CSMain");
+
+    SharedPtr<ShaderTemplate> shaderTemplate = shaderTemplateManager.AllocShaderTemplate(hashName);
+    if (!shaderTemplate->Create(shaderTemplateText.c_str(), baseDir)) {
+        BE_FATALERROR("RenderSystem::CreatePostProcessShaderTemplate: failed to create shader template '%s'", hashName);
+    }
+    return shaderTemplate;
+}
+
 void RenderSystem::InitPostProcessPSOs() {
-    toneMappingPipeline = shaderPipelineCache.GetComputePipeline(shaderTemplateManager.toneMappingShaderTemplate, ShaderPermutationKey(), false);
-    luminancePass1Pipeline = shaderPipelineCache.GetComputePipeline(shaderTemplateManager.luminancePass1ShaderTemplate, ShaderPermutationKey(), false);
-    luminancePass2Pipeline = shaderPipelineCache.GetComputePipeline(shaderTemplateManager.luminancePass2ShaderTemplate, ShaderPermutationKey(), false);
+    const char *baseDir = "Source/TestD3D12/Shaders";
+    const RHI::ShaderModel computeShaderModel = RHI::ShaderModel::SM_6_6;
 
-    bloomPrefilterPipeline = shaderPipelineCache.GetComputePipeline(shaderTemplateManager.bloomPrefilterShaderTemplate, ShaderPermutationKey(), false);
-    bloomDownsamplePipeline = shaderPipelineCache.GetComputePipeline(shaderTemplateManager.bloomDownsampleShaderTemplate, ShaderPermutationKey(), false);
-    bloomUpsamplePipeline = shaderPipelineCache.GetComputePipeline(shaderTemplateManager.bloomUpsampleShaderTemplate, ShaderPermutationKey(), false);
+    toneMappingShaderTemplate = CreatePostProcessShaderTemplate("_toneMappingShader", computeShaderModel, "ToneMapping/ToneMapping.hlsl", baseDir);
+    luminancePass1ShaderTemplate = CreatePostProcessShaderTemplate("_luminancePass1Shader", computeShaderModel, "ToneMapping/LuminancePass1.hlsl", baseDir);
+    luminancePass2ShaderTemplate = CreatePostProcessShaderTemplate("_luminancePass2Shader", computeShaderModel, "ToneMapping/LuminancePass2.hlsl", baseDir);
 
-    convolutionBloomPrefilterPipeline = shaderPipelineCache.GetComputePipeline(shaderTemplateManager.convolutionBloomPrefilterShaderTemplate, ShaderPermutationKey(), false);
-    convolutionBloomKernelPreparePipeline = shaderPipelineCache.GetComputePipeline(shaderTemplateManager.convolutionBloomKernelPrepareShaderTemplate, ShaderPermutationKey(), false);
-    convolutionBloomResolvePipeline = shaderPipelineCache.GetComputePipeline(shaderTemplateManager.convolutionBloomResolveShaderTemplate, ShaderPermutationKey(), false);
-    convolutionBloomAperturePreparePipeline = shaderPipelineCache.GetComputePipeline(shaderTemplateManager.convolutionBloomAperturePrepareShaderTemplate, ShaderPermutationKey(), false);
-    convolutionBloomReduceApertureEnergyPipeline = shaderPipelineCache.GetComputePipeline(shaderTemplateManager.convolutionBloomReduceApertureEnergyShaderTemplate, ShaderPermutationKey(), false);
-    convolutionBloomResolveDiffractionPSFPipeline = shaderPipelineCache.GetComputePipeline(shaderTemplateManager.convolutionBloomResolveDiffractionPSFShaderTemplate, ShaderPermutationKey(), false);
-    convolutionBloomApplyDispersionPipeline = shaderPipelineCache.GetComputePipeline(shaderTemplateManager.convolutionBloomApplyDispersionShaderTemplate, ShaderPermutationKey(), false);
+    bloomPrefilterShaderTemplate = CreatePostProcessShaderTemplate("_bloomPrefilterShader", computeShaderModel, "Bloom/BloomPrefilter.hlsl", baseDir);
+    bloomDownsampleShaderTemplate = CreatePostProcessShaderTemplate("_bloomDownsampleShader", computeShaderModel, "Bloom/BloomDownsample.hlsl", baseDir);
+    bloomUpsampleShaderTemplate = CreatePostProcessShaderTemplate("_bloomUpsampleShader", computeShaderModel, "Bloom/BloomUpsample.hlsl", baseDir);
+
+    convolutionBloomPrefilterShaderTemplate = CreatePostProcessShaderTemplate("_convolutionBloomPrefilterShader", computeShaderModel, "Bloom/ConvolutionBloomPrefilter.hlsl", baseDir);
+    convolutionBloomKernelPrepareShaderTemplate = CreatePostProcessShaderTemplate("_convolutionBloomKernelPrepareShader", computeShaderModel, "Bloom/ConvolutionBloomKernelPrepare.hlsl", baseDir);
+    convolutionBloomResolveShaderTemplate = CreatePostProcessShaderTemplate("_convolutionBloomResolveShader", computeShaderModel, "Bloom/ConvolutionBloomResolve.hlsl", baseDir);
+    convolutionBloomAperturePrepareShaderTemplate = CreatePostProcessShaderTemplate("_convolutionBloomAperturePrepareShader", computeShaderModel, "Bloom/ConvolutionBloomAperturePrepare.hlsl", baseDir);
+    convolutionBloomReduceApertureEnergyShaderTemplate = CreatePostProcessShaderTemplate("_convolutionBloomReduceApertureEnergyShader", computeShaderModel, "Bloom/ConvolutionBloomReduceApertureEnergy.hlsl", baseDir);
+    convolutionBloomResolveDiffractionPSFShaderTemplate = CreatePostProcessShaderTemplate("_convolutionBloomResolveDiffractionPSFShader", computeShaderModel, "Bloom/ConvolutionBloomResolveDiffractionPSF.hlsl", baseDir);
+    convolutionBloomApplyDispersionShaderTemplate = CreatePostProcessShaderTemplate("_convolutionBloomApplyDispersionShader", computeShaderModel, "Bloom/ConvolutionBloomApplyDispersion.hlsl", baseDir);
+
+    toneMappingPipeline = shaderPipelineCache.GetComputePipeline(toneMappingShaderTemplate, ShaderPermutationKey(), false);
+    luminancePass1Pipeline = shaderPipelineCache.GetComputePipeline(luminancePass1ShaderTemplate, ShaderPermutationKey(), false);
+    luminancePass2Pipeline = shaderPipelineCache.GetComputePipeline(luminancePass2ShaderTemplate, ShaderPermutationKey(), false);
+
+    bloomPrefilterPipeline = shaderPipelineCache.GetComputePipeline(bloomPrefilterShaderTemplate, ShaderPermutationKey(), false);
+    bloomDownsamplePipeline = shaderPipelineCache.GetComputePipeline(bloomDownsampleShaderTemplate, ShaderPermutationKey(), false);
+    bloomUpsamplePipeline = shaderPipelineCache.GetComputePipeline(bloomUpsampleShaderTemplate, ShaderPermutationKey(), false);
+
+    convolutionBloomPrefilterPipeline = shaderPipelineCache.GetComputePipeline(convolutionBloomPrefilterShaderTemplate, ShaderPermutationKey(), false);
+    convolutionBloomKernelPreparePipeline = shaderPipelineCache.GetComputePipeline(convolutionBloomKernelPrepareShaderTemplate, ShaderPermutationKey(), false);
+    convolutionBloomResolvePipeline = shaderPipelineCache.GetComputePipeline(convolutionBloomResolveShaderTemplate, ShaderPermutationKey(), false);
+    convolutionBloomAperturePreparePipeline = shaderPipelineCache.GetComputePipeline(convolutionBloomAperturePrepareShaderTemplate, ShaderPermutationKey(), false);
+    convolutionBloomReduceApertureEnergyPipeline = shaderPipelineCache.GetComputePipeline(convolutionBloomReduceApertureEnergyShaderTemplate, ShaderPermutationKey(), false);
+    convolutionBloomResolveDiffractionPSFPipeline = shaderPipelineCache.GetComputePipeline(convolutionBloomResolveDiffractionPSFShaderTemplate, ShaderPermutationKey(), false);
+    convolutionBloomApplyDispersionPipeline = shaderPipelineCache.GetComputePipeline(convolutionBloomApplyDispersionShaderTemplate, ShaderPermutationKey(), false);
 }
 
 void RenderSystem::ReleasePostProcessPSOs() {
@@ -146,6 +182,22 @@ void RenderSystem::ReleasePostProcessPSOs() {
     convolutionBloomReduceApertureEnergyPipeline.reset();
     convolutionBloomResolveDiffractionPSFPipeline.reset();
     convolutionBloomApplyDispersionPipeline.reset();
+
+    toneMappingShaderTemplate.reset();
+    luminancePass1ShaderTemplate.reset();
+    luminancePass2ShaderTemplate.reset();
+
+    bloomPrefilterShaderTemplate.reset();
+    bloomDownsampleShaderTemplate.reset();
+    bloomUpsampleShaderTemplate.reset();
+
+    convolutionBloomPrefilterShaderTemplate.reset();
+    convolutionBloomKernelPrepareShaderTemplate.reset();
+    convolutionBloomResolveShaderTemplate.reset();
+    convolutionBloomAperturePrepareShaderTemplate.reset();
+    convolutionBloomReduceApertureEnergyShaderTemplate.reset();
+    convolutionBloomResolveDiffractionPSFShaderTemplate.reset();
+    convolutionBloomApplyDispersionShaderTemplate.reset();
 }
 
 void RenderSystem::UpdateFrame() {

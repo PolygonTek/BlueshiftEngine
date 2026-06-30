@@ -14,6 +14,7 @@
 
 #include "Precompiled.h"
 #include "LoadingSystem.h"
+#include "Render/TextureManager.h"
 
 LoadingSystem      loadingSystem;
 

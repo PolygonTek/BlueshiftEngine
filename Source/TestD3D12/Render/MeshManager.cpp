@@ -13,7 +13,7 @@
 // limitations under the License.
 
 #include "Precompiled.h"
-#include "Mesh.h"
+#include "MeshManager.h"
 
 MeshManager     meshManager;
 

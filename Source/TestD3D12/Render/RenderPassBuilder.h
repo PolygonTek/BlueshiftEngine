@@ -34,7 +34,7 @@ public:
         RHI::PipelineState *    pso = nullptr;
     };
 
-    void                        Begin(const ShaderPipelineDesc &pipelineDesc, uint32_t maxEntries);
+    void                        Begin(const GraphicsPipelineDesc &pipelineDesc, uint32_t maxEntries);
 
     ResolveResult               Resolve(const RenderPass *renderPass, const VisSurf *visSurf, const ShaderFeatureSet &featureSet);
 
@@ -46,12 +46,12 @@ private:
         RHI::PipelineState *    pso = nullptr;
     };
 
-    const ShaderPipelineDesc &  GetPipelineDesc(VertexInputLayoutId inputLayoutId);
+    const GraphicsPipelineDesc &GetPipelineDesc(VertexInputLayoutId inputLayoutId);
 
     static constexpr int        NumInputLayouts = static_cast<int>(VertexInputLayoutId::Count);
 
-    ShaderPipelineDesc          basePipelineDesc;
-    ShaderPipelineDesc          pipelineDescs[NumInputLayouts];
+    GraphicsPipelineDesc        basePipelineDesc;
+    GraphicsPipelineDesc        pipelineDescs[NumInputLayouts];
     bool                        pipelineDescValid[NumInputLayouts] = {};
 
     BE1::Array<Entry>           entries;

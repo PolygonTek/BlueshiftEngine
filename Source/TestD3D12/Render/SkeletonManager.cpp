@@ -13,7 +13,8 @@
 // limitations under the License.
 
 #include "Precompiled.h"
-#include "Skeleton.h"
+#include "SkeletonManager.h"
+#include "Core/Cmds.h"
 
 SkeletonManager     skeletonManager;
 

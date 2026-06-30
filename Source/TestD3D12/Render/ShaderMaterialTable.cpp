@@ -16,7 +16,7 @@
 #include "ShaderMaterialTable.h"
 #include "RenderInternal.h"
 #include "Material.h"
-#include "Texture.h"
+#include "TextureManager.h"
 
 bool ShaderMaterialTable::Init(uint32_t initialCapacity) {
     return EnsureBufferCapacity(initialCapacity);

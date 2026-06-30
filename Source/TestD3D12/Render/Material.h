@@ -82,7 +82,7 @@ public:
     ShaderPermutationKey            EnsurePermutation(const ShaderFeatureSet &featureSet = {}) const;
     void                            EnsurePermutations(const BE1::Array<ShaderFeatureSet> &featureSets) const;
 
-    SharedPtr<ShaderPipeline>       GetGraphicsPipeline(const ShaderFeatureSet &featureSet, const ShaderPipelineDesc &baseDesc) const;
+    SharedPtr<ShaderPipeline>       GetGraphicsPipeline(const ShaderFeatureSet &featureSet, const GraphicsPipelineDesc &baseDesc) const;
 
     bool                            Create(const char *text, const char *baseDir);
 
@@ -141,46 +141,3 @@ template<>
 struct enable_bitmask_operators<Material::Flag> {
     static const bool enable = true;
 };
-
-class MaterialManager {
-    friend class Material;
-
-public:
-    void                            Init();
-    void                            Shutdown();
-
-    void                            UpdateFrame();
-
-    SharedPtr<Material>             AllocMaterial(const char *hashName);
-    SharedPtr<Material>             FindMaterial(const char *hashName) const;
-    SharedPtr<Material>             GetMaterial(const char *hashName);
-    SharedPtr<Material>             GetSingleTextureMaterial(const char *textureFilename, Material::TextureHint hint = Material::TextureHint::None);
-
-    uint32_t                        GetStreamingMaterialCount() const { return streamingMaterials.Count(); }
-    void                            ApplyStreamingFeedback(const uint32_t *feedbackData, uint32_t feedbackCapacity);
-
-    SharedPtr<Material>             defaultUnlitMaterial;
-    SharedPtr<Material>             defaultLitMaterial;
-    SharedPtr<Material>             whiteUnlitMaterial;
-    SharedPtr<Material>             whiteLitMaterial;
-    SharedPtr<Material>             blendUnlitMaterial;
-    SharedPtr<Material>             blendLitMaterial;
-    SharedPtr<Material>             defaultSkyboxMaterial;
-
-private:
-    void                            OnShaderTemplateReloaded(const ShaderTemplate *shaderTemplate, const BE1::Array<ShaderPropertyInfo> &oldProperties);
-    void                            CleanExpiredMaterials();
-    void                            CreateEngineMaterials();
-    void                            DestroyEngineMaterials();
-    void                            RefreshStreamingMaterial(const SharedPtr<Material> &material);
-    void                            RegisterStreamingMaterial(const SharedPtr<Material> &material);
-    void                            UnregisterStreamingMaterial(Material *material);
-
-    BE1::StrIHashMap<WeakPtr<Material>> materialHashMap;
-    int                             expiredMaterialHashMapCursor = 0;
-    uint32_t                        nextMaterialIndex = 0;
-    BE1::Array<WeakPtr<Material>>   streamingMaterials;
-    BE1::DelegateHandle             shaderTemplateReloadedHandle;
-};
-
-extern MaterialManager              materialManager;

@@ -14,6 +14,7 @@
 
 #include "Precompiled.h"
 #include "Mesh.h"
+#include "MeshManager.h"
 #include "delabella/delabella.h"
 
 //#define PAR_OCTASPHERE_IMPLEMENTATION

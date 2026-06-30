@@ -14,8 +14,6 @@
 
 #pragma once
 
-#include "Containers/HashMap.h"
-
 /*
 ---------------------------------------------------------------------------------------------------
 
@@ -24,6 +22,7 @@
 ---------------------------------------------------------------------------------------------------
 */
 
+class FontManager;
 class Material;
 class FontFace;
 struct GlyphAtlas;
@@ -90,48 +89,3 @@ private:
     uint64_t                retainedFrameSerial = 0;
     FontFace *              fontFace = nullptr;
 };
-
-class FontManager {
-public:
-    void                    Init();
-    void                    Shutdown();
-
-    void                    UpdateFrame();
-
-    SharedPtr<Font>         AllocFont(const char *name, uint32_t fontSize);
-    SharedPtr<Font>         FindFont(const char *name, uint32_t fontSize) const;
-    SharedPtr<Font>         GetFont(const char *name, uint32_t fontSize);
-
-    SharedPtr<Font>         defaultFont;
-
-private:
-    void                    CleanExpiredFonts();
-
-    struct FontHashKey {
-        FontHashKey() {}
-        FontHashKey(const BE1::Str &name, uint32_t fontSize) : name(name), fontSize(fontSize) {}
-
-        BE1::Str            name;
-        uint32_t            fontSize;
-    };
-
-    struct FontHashCompare {
-        template <typename Type1, typename Type2>
-        static bool Compare(const Type1 &lhs, const Type2 &rhs) {
-            return (lhs.fontSize == rhs.fontSize && BE1::Str::Icmp(lhs.name, rhs.name) == 0);
-        }
-    };
-
-    struct FontHashGenerator {
-        template <typename Type>
-        static int Hash(const BE1::HashIndex &hasher, const Type &value) {
-            return hasher.GenerateHash(value.name, false) * value.fontSize;
-        }
-    };
-
-    using FontHashMap       = BE1::HashMap<FontHashKey, WeakPtr<Font>, FontHashCompare, FontHashGenerator>;
-    FontHashMap             fontHashMap;
-    int                     expiredFontHashMapCursor = 0;
-};
-
-extern FontManager          fontManager;

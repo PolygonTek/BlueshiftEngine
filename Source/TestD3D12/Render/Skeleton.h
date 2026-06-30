@@ -139,32 +139,3 @@ BE_INLINE const char *Skeleton::GetJointName(int jointIndex) const {
     }
     return nullptr;
 }
-
-class SkeletonManager {
-    friend class Skeleton;
-
-public:
-    void                            Init();
-    void                            Shutdown();
-
-    void                            UpdateFrame();
-
-    SharedPtr<Skeleton>             AllocSkeleton(const char *name);
-    SharedPtr<Skeleton>             FindSkeleton(const char *name) const;
-    SharedPtr<Skeleton>             GetSkeleton(const char *name, bool async = true);
-
-    void                            RenameSkeleton(Skeleton *skeleton, const BE1::Str &newName);
-
-    SharedPtr<Skeleton>             defaultSkeleton;
-
-private:
-    void                            CleanExpiredSkeletons();
-
-    static void                     Cmd_ListSkeletons(const BE1::CmdArgs &args);
-    static void                     Cmd_ReloadSkeleton(const BE1::CmdArgs &args);
-
-    BE1::StrIHashMap<WeakPtr<Skeleton>> skeletonHashMap;
-    int                             expiredSkeletonHashMapCursor = 0;
-};
-
-extern SkeletonManager              skeletonManager;

@@ -17,11 +17,9 @@
 #include "Core/Str.h"
 #include "Containers/Array.h"
 #include "Containers/StrArray.h"
-#include "Containers/HashIndex.h"
-#include "Containers/HashMap.h"
 #include "Core/JointPose.h"
 
-class CmdArgs;
+class AnimManager;
 class Mesh;
 class Skeleton;
 class LoadingSystem;
@@ -231,38 +229,3 @@ private:
     std::atomic<uint32_t>           loadSerial = 0;
     InternalData                    internalData;
 };
-
-/*
----------------------------------------------------------------------------------------------------
-
-    Anim manager
-
----------------------------------------------------------------------------------------------------
-*/
-
-class AnimManager {
-public:
-    void                            Init();
-    void                            Shutdown();
-
-    void                            UpdateFrame();
-
-    SharedPtr<Anim>                 AllocAnim(const char *hashName);
-    SharedPtr<Anim>                 FindAnim(const char *hashName) const;
-    SharedPtr<Anim>                 GetAnim(const char *hashName, bool async = true);
-    SharedPtr<Anim>                 GetDefaultAnim(const char *hashName, const Skeleton *skeleton);
-
-    int                             JointIndexByName(const char *jointName);
-    const char *                    JointNameByIndex(int index) const;
-
-private:
-    void                            CleanExpiredAnims();
-
-    BE1::StrIHashMap<WeakPtr<Anim>> animHashMap;
-    int                             expiredAnimHashMapCursor = 0;
-
-    BE1::StrArray                   jointNames;
-    BE1::HashIndex                  jointNameHash;
-};
-
-extern AnimManager                  animManager;

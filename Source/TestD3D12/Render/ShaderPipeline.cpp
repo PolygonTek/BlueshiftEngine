@@ -17,7 +17,7 @@
 #include "ShaderTemplate.h"
 #include "LoadingSystem.h"
 
-uint64_t ShaderPipelineDesc::GenerateInputLayoutHash(const RHI::InputLayout *inputLayout) {
+uint64_t GraphicsPipelineDesc::GenerateInputLayoutHash(const RHI::InputLayout *inputLayout) {
     if (!inputLayout) {
         return 0;
     }
@@ -29,7 +29,7 @@ uint64_t ShaderPipelineDesc::GenerateInputLayoutHash(const RHI::InputLayout *inp
     return hash;
 }
 
-uint64_t ShaderPipelineDesc::GeneratePipelineDescHash() const {
+uint64_t GraphicsPipelineDesc::GeneratePipelineDescHash() const {
     struct PipelineDescHashData {
         uint64_t    inputLayoutHash = 0;
         uint64_t    renderDestHash = 0;
@@ -51,7 +51,7 @@ uint64_t ShaderPipelineDesc::GeneratePipelineDescHash() const {
     return BE1::CityHash64(reinterpret_cast<const char *>(&hashData), sizeof(hashData));
 }
 
-uint64_t ShaderPipelineDesc::GenerateGraphicsPipelineHash(ShaderPermutationKey permutationKey) const {
+uint64_t GraphicsPipelineDesc::GenerateGraphicsPipelineHash(ShaderPermutationKey permutationKey) const {
     uint64_t hash = permutationKey.hash;
     hash = hash_combine(hash, GeneratePipelineDescHash());
     return hash;
@@ -133,7 +133,7 @@ static bool PreparePipelineComputeShader(const ShaderPipelineBuildData &buildDat
     return true;
 }
 
-static RHI::PipelineState *CreateGraphicsPSO(const ShaderPipelineBuildData &buildData, const ShaderPipelineDesc &pipelineDesc, RHI::Shader *stageShaders[to_int(RHI::ShaderStage::Count)]) {
+static RHI::PipelineState *CreateGraphicsPSO(const ShaderPipelineBuildData &buildData, const GraphicsPipelineDesc &pipelineDesc, RHI::Shader *stageShaders[to_int(RHI::ShaderStage::Count)]) {
     if (!PreparePipelineGraphicsShaders(buildData, stageShaders)) {
         return nullptr;
     }

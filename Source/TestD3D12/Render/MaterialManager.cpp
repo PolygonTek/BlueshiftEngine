@@ -13,7 +13,8 @@
 // limitations under the License.
 
 #include "Precompiled.h"
-#include "Material.h"
+#include "MaterialManager.h"
+#include "ShaderTemplateManager.h"
 
 MaterialManager     materialManager;
 

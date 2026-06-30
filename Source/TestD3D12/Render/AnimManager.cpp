@@ -13,7 +13,7 @@
 // limitations under the License.
 
 #include "Precompiled.h"
-#include "Render/Anim.h"
+#include "AnimManager.h"
 #include "Core/Cmds.h"
 
 AnimManager     animManager;

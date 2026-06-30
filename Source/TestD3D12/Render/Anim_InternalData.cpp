@@ -14,6 +14,7 @@
 
 #include "Precompiled.h"
 #include "Render/Anim.h"
+#include "Render/AnimManager.h"
 #include "BModel.h"
 
 Anim::InternalData &Anim::InternalData::operator=(InternalData &&rhs) noexcept {

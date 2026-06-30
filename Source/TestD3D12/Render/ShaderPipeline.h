@@ -18,13 +18,12 @@
 #include "ShaderPermutationKey.h"
 
 class ShaderTemplate;
-class LoadingSystem;
 
-struct ShaderPipelineDesc {
-    static uint64_t                 GenerateInputLayoutHash(const RHI::InputLayout *inputLayout);
-
+struct GraphicsPipelineDesc {
     uint64_t                        GeneratePipelineDescHash() const;
     uint64_t                        GenerateGraphicsPipelineHash(ShaderPermutationKey permutationKey) const;
+
+    static uint64_t                 GenerateInputLayoutHash(const RHI::InputLayout *inputLayout);
 
     const RHI::InputLayout *        inputLayout = nullptr;
     RHI::RenderDest                 renderDest;
@@ -54,7 +53,7 @@ struct ShaderPipelineBuildData {
 
     ShaderPipeline
 
-    ShaderTemplate 의 permutation 과 ShaderPipelineDesc (그래픽스의 경우) 을 기준으로 RHI::PipelineState (PSO) 를 생성하고 보관한다.
+    ShaderTemplate 의 permutation 과 GraphicsPipelineDesc (그래픽스의 경우) 을 기준으로 RHI::PipelineState (PSO) 를 생성하고 보관한다.
 
 ---------------------------------------------------------------------------------------------------
 */
@@ -76,8 +75,13 @@ public:
         Failed
     };
 
-    ShaderPipeline(Type type, ShaderPermutationKey permutationKey, const ShaderPipelineDesc &graphicsDesc);
+    // Graphics pipeline ctor (type == Type::Graphics)
+    ShaderPipeline(Type type, ShaderPermutationKey permutationKey, const GraphicsPipelineDesc &graphicsDesc);
+
+    // Compute pipeline ctor (type == Type::Compute)
     ShaderPipeline(Type type, ShaderPermutationKey permutationKey);
+
+    // dtor
     ~ShaderPipeline() { Purge(); }
 
     Type                            GetType() const { return type; }
@@ -90,7 +94,7 @@ public:
     uint32_t                        BumpBuildSerial() { return buildSerial.fetch_add(1) + 1; }
 
     ShaderPermutationKey            GetPermutationKey() const { return permutationKey; }
-    const ShaderPipelineDesc &      GetGraphicsDesc() const { assert(type == Type::Graphics); return graphicsDesc; }
+    const GraphicsPipelineDesc &    GetGraphicsDesc() const { assert(type == Type::Graphics); return graphicsDesc; }
     RHI::PipelineState *            GetPSO() const { return pso; }
     void                            SetPSO(RHI::PipelineState *newPso);
 
@@ -112,14 +116,14 @@ private:
 
     const Type                      type = Type::Graphics;  // 생성자에서 한번 정해지면 변하지 않는다.
     const ShaderPermutationKey      permutationKey;         // 생성자에서 한번 정해지면 변하지 않는다.
-    ShaderPipelineDesc              graphicsDesc;           // 생성자에서 한번 정해지면 변하지 않는다.
+    GraphicsPipelineDesc            graphicsDesc;           // 생성자에서 한번 정해지면 변하지 않는다.
     RHI::InputLayout                inputLayout;            // 생성자에서 한번 정해지면 변하지 않는다.
     std::atomic<State>              state = State::Empty;
     std::atomic<uint32_t>           buildSerial = 0;
     RHI::PipelineState *            pso = nullptr;
 };
 
-BE_INLINE ShaderPipeline::ShaderPipeline(Type type, ShaderPermutationKey permutationKey, const ShaderPipelineDesc &graphicsPipelineDesc) :
+BE_INLINE ShaderPipeline::ShaderPipeline(Type type, ShaderPermutationKey permutationKey, const GraphicsPipelineDesc &graphicsPipelineDesc) :
     type(type), permutationKey(permutationKey), graphicsDesc(graphicsPipelineDesc) {
     assert(type == Type::Graphics);
 

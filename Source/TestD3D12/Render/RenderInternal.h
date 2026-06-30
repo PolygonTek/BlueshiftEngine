@@ -18,11 +18,12 @@
 #include "VertexInputLayoutFactory.h"
 #include "RenderObject.h"
 #include "RenderCamera.h"
-#include "Texture.h"
 #include "Material.h"
 #include "Font.h"
 #include "Mesh.h"
 #include "MeshInstance.h"
+
+class Texture;
 
 enum class VisSurfFlag : uint8_t {
     None                        = 0,
@@ -67,7 +68,7 @@ enum class RenderPassType : uint8_t {
 
 struct RenderPass {
     RenderPassType              type = RenderPassType::MainOpaque;
-    ShaderPipelineDesc          pipelineDesc;
+    GraphicsPipelineDesc        pipelineDesc;
     ShaderFeatureSet            passFeatureSet;
     VertexInputLayoutId         baseInputLayoutId = VertexInputLayoutId::XyzStColorNormalTangent;
 

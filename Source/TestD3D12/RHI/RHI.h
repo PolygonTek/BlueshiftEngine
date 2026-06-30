@@ -1037,6 +1037,7 @@ namespace RHI {
         static const char *             FormatName(Format format);
         static const char *             BufferFlagName(BufferFlag flag);
         static const char *             TextureFlagName(TextureFlag flag);
+        static const char *             ShaderModelName(ShaderModel shaderModel);
 
         virtual bool                    IsSupportedImageFormat(BE1::Image::Format imageFormat) const = 0;
         virtual BE1::Image::Format      ToUncompressedImageFormat(BE1::Image::Format imageFormat) const = 0;

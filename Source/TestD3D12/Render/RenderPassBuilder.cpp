@@ -20,7 +20,7 @@
 #include "Material.h"
 #include "VertexInputLayoutFactory.h"
 
-void PassPipelineResolver::Begin(const ShaderPipelineDesc &pipelineDesc, uint32_t maxEntries) {
+void PassPipelineResolver::Begin(const GraphicsPipelineDesc &pipelineDesc, uint32_t maxEntries) {
     basePipelineDesc = pipelineDesc;
     memset(pipelineDescValid, 0, sizeof(pipelineDescValid));
 
@@ -30,7 +30,7 @@ void PassPipelineResolver::Begin(const ShaderPipelineDesc &pipelineDesc, uint32_
     entries.SetCount(0, false);
 }
 
-const ShaderPipelineDesc &PassPipelineResolver::GetPipelineDesc(VertexInputLayoutId inputLayoutId) {
+const GraphicsPipelineDesc &PassPipelineResolver::GetPipelineDesc(VertexInputLayoutId inputLayoutId) {
     const int inputLayoutIndex = static_cast<int>(inputLayoutId);
     assert(inputLayoutIndex >= 0 && inputLayoutIndex < NumInputLayouts);
 

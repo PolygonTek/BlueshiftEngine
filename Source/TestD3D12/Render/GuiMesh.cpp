@@ -14,7 +14,7 @@
 
 #include "Precompiled.h"
 #include "GuiMesh.h"
-#include "Material.h"
+#include "MaterialManager.h"
 #include "Font.h"
 #include "Core/Vec4Color.h"
 #include "RenderWorld.h"

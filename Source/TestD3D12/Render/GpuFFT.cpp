@@ -15,7 +15,7 @@
 #include "Precompiled.h"
 #include "GpuFFT.h"
 #include "RenderFrameData.h"
-#include "ShaderTemplate.h"
+#include "ShaderTemplateManager.h"
 #include "ShaderPipelineCache.h"
 #include "Shaders/ShaderInterop.h"
 
@@ -37,44 +37,102 @@ struct FFTDispatchEntry {
 
 static FFTDispatchEntry     fftDispatchTable[static_cast<uint32_t>(GpuFFT::FFTSize::Count)];
 
+static SharedPtr<ShaderTemplate> CreateGpuFFTShaderTemplate(const char *hashName, RHI::ShaderModel shaderModel, const char *filename, const char *baseDir) {
+    BE1::Str shaderTemplateText;
+    shaderTemplateText.sPrintf(
+        "{\n"
+        "    stages {\n"
+        "        compute %s \"%s\" \"%s\"\n"
+        "    }\n"
+        "}\n",
+        RHI::Renderer::ShaderModelName(shaderModel), filename, "CSMain");
+
+    SharedPtr<ShaderTemplate> shaderTemplate = shaderTemplateManager.AllocShaderTemplate(hashName);
+    if (!shaderTemplate->Create(shaderTemplateText.c_str(), baseDir)) {
+        BE_FATALERROR("GpuFFT::CreateShaderTemplate: failed to create shader template '%s'", hashName);
+    }
+    return shaderTemplate;
+}
+
 void GpuFFT::Init() {
-    fftComplex256Pipeline = shaderPipelineCache.GetComputePipeline(shaderTemplateManager.fftComplex256ShaderTemplate, ShaderPermutationKey(), false);
-    fftComplex512Pipeline = shaderPipelineCache.GetComputePipeline(shaderTemplateManager.fftComplex512ShaderTemplate, ShaderPermutationKey(), false);
-    fftComplex1024Pipeline = shaderPipelineCache.GetComputePipeline(shaderTemplateManager.fftComplex1024ShaderTemplate, ShaderPermutationKey(), false);
-    fftComplex2048Pipeline = shaderPipelineCache.GetComputePipeline(shaderTemplateManager.fftComplex2048ShaderTemplate, ShaderPermutationKey(), false);
+    const char *baseDir = "Source/TestD3D12/Shaders";
+    const RHI::ShaderModel computeShaderModel = RHI::ShaderModel::SM_6_6;
 
-    fftReal512Pipeline = shaderPipelineCache.GetComputePipeline(shaderTemplateManager.fftReal512ShaderTemplate, ShaderPermutationKey(), false);
-    fftReal1024Pipeline = shaderPipelineCache.GetComputePipeline(shaderTemplateManager.fftReal1024ShaderTemplate, ShaderPermutationKey(), false);
-    fftReal2048Pipeline = shaderPipelineCache.GetComputePipeline(shaderTemplateManager.fftReal2048ShaderTemplate, ShaderPermutationKey(), false);
+    fftComplex256ShaderTemplate = CreateGpuFFTShaderTemplate("_fftComplex256Shader", computeShaderModel, "FFT/FFTComplex256.hlsl", baseDir);
+    fftComplex512ShaderTemplate = CreateGpuFFTShaderTemplate("_fftComplex512Shader", computeShaderModel, "FFT/FFTComplex512.hlsl", baseDir);
+    fftComplex1024ShaderTemplate = CreateGpuFFTShaderTemplate("_fftComplex1024Shader", computeShaderModel, "FFT/FFTComplex1024.hlsl", baseDir);
+    fftComplex2048ShaderTemplate = CreateGpuFFTShaderTemplate("_fftComplex2048Shader", computeShaderModel, "FFT/FFTComplex2048.hlsl", baseDir);
 
-    ifftReal512Pipeline = shaderPipelineCache.GetComputePipeline(shaderTemplateManager.ifftReal512ShaderTemplate, ShaderPermutationKey(), false);
-    ifftReal1024Pipeline = shaderPipelineCache.GetComputePipeline(shaderTemplateManager.ifftReal1024ShaderTemplate, ShaderPermutationKey(), false);
-    ifftReal2048Pipeline = shaderPipelineCache.GetComputePipeline(shaderTemplateManager.ifftReal2048ShaderTemplate, ShaderPermutationKey(), false);
+    fftReal512ShaderTemplate = CreateGpuFFTShaderTemplate("_fftReal512Shader", computeShaderModel, "FFT/FFTReal512.hlsl", baseDir);
+    fftReal1024ShaderTemplate = CreateGpuFFTShaderTemplate("_fftReal1024Shader", computeShaderModel, "FFT/FFTReal1024.hlsl", baseDir);
+    fftReal2048ShaderTemplate = CreateGpuFFTShaderTemplate("_fftReal2048Shader", computeShaderModel, "FFT/FFTReal2048.hlsl", baseDir);
 
-    fftDualReal256Pipeline = shaderPipelineCache.GetComputePipeline(shaderTemplateManager.fftDualReal256ShaderTemplate, ShaderPermutationKey(), false);
-    fftDualReal512Pipeline = shaderPipelineCache.GetComputePipeline(shaderTemplateManager.fftDualReal512ShaderTemplate, ShaderPermutationKey(), false);
-    fftDualReal1024Pipeline = shaderPipelineCache.GetComputePipeline(shaderTemplateManager.fftDualReal1024ShaderTemplate, ShaderPermutationKey(), false);
-    fftDualReal2048Pipeline = shaderPipelineCache.GetComputePipeline(shaderTemplateManager.fftDualReal2048ShaderTemplate, ShaderPermutationKey(), false);
+    ifftReal512ShaderTemplate = CreateGpuFFTShaderTemplate("_ifftReal512Shader", computeShaderModel, "FFT/IFFTReal512.hlsl", baseDir);
+    ifftReal1024ShaderTemplate = CreateGpuFFTShaderTemplate("_ifftReal1024Shader", computeShaderModel, "FFT/IFFTReal1024.hlsl", baseDir);
+    ifftReal2048ShaderTemplate = CreateGpuFFTShaderTemplate("_ifftReal2048Shader", computeShaderModel, "FFT/IFFTReal2048.hlsl", baseDir);
 
-    ifftDualReal256Pipeline = shaderPipelineCache.GetComputePipeline(shaderTemplateManager.ifftDualReal256ShaderTemplate, ShaderPermutationKey(), false);
-    ifftDualReal512Pipeline = shaderPipelineCache.GetComputePipeline(shaderTemplateManager.ifftDualReal512ShaderTemplate, ShaderPermutationKey(), false);
-    ifftDualReal1024Pipeline = shaderPipelineCache.GetComputePipeline(shaderTemplateManager.ifftDualReal1024ShaderTemplate, ShaderPermutationKey(), false);
-    ifftDualReal2048Pipeline = shaderPipelineCache.GetComputePipeline(shaderTemplateManager.ifftDualReal2048ShaderTemplate, ShaderPermutationKey(), false);
+    fftDualReal256ShaderTemplate = CreateGpuFFTShaderTemplate("_fftDualReal256Shader", computeShaderModel, "FFT/FFTDualReal256.hlsl", baseDir);
+    fftDualReal512ShaderTemplate = CreateGpuFFTShaderTemplate("_fftDualReal512Shader", computeShaderModel, "FFT/FFTDualReal512.hlsl", baseDir);
+    fftDualReal1024ShaderTemplate = CreateGpuFFTShaderTemplate("_fftDualReal1024Shader", computeShaderModel, "FFT/FFTDualReal1024.hlsl", baseDir);
+    fftDualReal2048ShaderTemplate = CreateGpuFFTShaderTemplate("_fftDualReal2048Shader", computeShaderModel, "FFT/FFTDualReal2048.hlsl", baseDir);
 
-    multiplyComplexSpectrum2DPipeline = shaderPipelineCache.GetComputePipeline(shaderTemplateManager.multiplyComplexSpectrum2DShaderTemplate, ShaderPermutationKey(), false);
-    multiplyPackedRealSpectrum2DPipeline = shaderPipelineCache.GetComputePipeline(shaderTemplateManager.multiplyPackedRealSpectrum2DShaderTemplate, ShaderPermutationKey(), false);
-    multiplyPackedDualRealSpectrum2DPipeline = shaderPipelineCache.GetComputePipeline(shaderTemplateManager.multiplyPackedDualRealSpectrum2DShaderTemplate, ShaderPermutationKey(), false);
+    ifftDualReal256ShaderTemplate = CreateGpuFFTShaderTemplate("_ifftDualReal256Shader", computeShaderModel, "FFT/IFFTDualReal256.hlsl", baseDir);
+    ifftDualReal512ShaderTemplate = CreateGpuFFTShaderTemplate("_ifftDualReal512Shader", computeShaderModel, "FFT/IFFTDualReal512.hlsl", baseDir);
+    ifftDualReal1024ShaderTemplate = CreateGpuFFTShaderTemplate("_ifftDualReal1024Shader", computeShaderModel, "FFT/IFFTDualReal1024.hlsl", baseDir);
+    ifftDualReal2048ShaderTemplate = CreateGpuFFTShaderTemplate("_ifftDualReal2048Shader", computeShaderModel, "FFT/IFFTDualReal2048.hlsl", baseDir);
 
-    transposeComplex256Pipeline = shaderPipelineCache.GetComputePipeline(shaderTemplateManager.transposeComplex256ShaderTemplate, ShaderPermutationKey(), false);
-    transposeComplex512Pipeline = shaderPipelineCache.GetComputePipeline(shaderTemplateManager.transposeComplex512ShaderTemplate, ShaderPermutationKey(), false);
-    transposeComplex1024Pipeline = shaderPipelineCache.GetComputePipeline(shaderTemplateManager.transposeComplex1024ShaderTemplate, ShaderPermutationKey(), false);
-    transposeComplex2048Pipeline = shaderPipelineCache.GetComputePipeline(shaderTemplateManager.transposeComplex2048ShaderTemplate, ShaderPermutationKey(), false);
-    transposeComplex256x512Pipeline = shaderPipelineCache.GetComputePipeline(shaderTemplateManager.transposeComplex256x512ShaderTemplate, ShaderPermutationKey(), false);
-    transposeComplex512x256Pipeline = shaderPipelineCache.GetComputePipeline(shaderTemplateManager.transposeComplex512x256ShaderTemplate, ShaderPermutationKey(), false);
-    transposeComplex512x1024Pipeline = shaderPipelineCache.GetComputePipeline(shaderTemplateManager.transposeComplex512x1024ShaderTemplate, ShaderPermutationKey(), false);
-    transposeComplex1024x512Pipeline = shaderPipelineCache.GetComputePipeline(shaderTemplateManager.transposeComplex1024x512ShaderTemplate, ShaderPermutationKey(), false);
-    transposeComplex1024x2048Pipeline = shaderPipelineCache.GetComputePipeline(shaderTemplateManager.transposeComplex1024x2048ShaderTemplate, ShaderPermutationKey(), false);
-    transposeComplex2048x1024Pipeline = shaderPipelineCache.GetComputePipeline(shaderTemplateManager.transposeComplex2048x1024ShaderTemplate, ShaderPermutationKey(), false);
+    multiplyComplexSpectrum2DShaderTemplate = CreateGpuFFTShaderTemplate("_multiplyComplexSpectrum2DShader", computeShaderModel, "FFT/MultiplyComplexSpectrum2D.hlsl", baseDir);
+    multiplyPackedRealSpectrum2DShaderTemplate = CreateGpuFFTShaderTemplate("_multiplyPackedRealSpectrum2DShader", computeShaderModel, "FFT/MultiplyPackedRealSpectrum2D.hlsl", baseDir);
+    multiplyPackedDualRealSpectrum2DShaderTemplate = CreateGpuFFTShaderTemplate("_multiplyPackedDualRealSpectrum2DShader", computeShaderModel, "FFT/MultiplyPackedDualRealSpectrum2D.hlsl", baseDir);
+
+    transposeComplex256ShaderTemplate = CreateGpuFFTShaderTemplate("_transposeComplex256Shader", computeShaderModel, "Transpose/TransposeComplex256.hlsl", baseDir);
+    transposeComplex512ShaderTemplate = CreateGpuFFTShaderTemplate("_transposeComplex512Shader", computeShaderModel, "Transpose/TransposeComplex512.hlsl", baseDir);
+    transposeComplex1024ShaderTemplate = CreateGpuFFTShaderTemplate("_transposeComplex1024Shader", computeShaderModel, "Transpose/TransposeComplex1024.hlsl", baseDir);
+    transposeComplex2048ShaderTemplate = CreateGpuFFTShaderTemplate("_transposeComplex2048Shader", computeShaderModel, "Transpose/TransposeComplex2048.hlsl", baseDir);
+    transposeComplex256x512ShaderTemplate = CreateGpuFFTShaderTemplate("_transposeComplex256x512Shader", computeShaderModel, "Transpose/TransposeComplex256x512.hlsl", baseDir);
+    transposeComplex512x256ShaderTemplate = CreateGpuFFTShaderTemplate("_transposeComplex512x256Shader", computeShaderModel, "Transpose/TransposeComplex512x256.hlsl", baseDir);
+    transposeComplex512x1024ShaderTemplate = CreateGpuFFTShaderTemplate("_transposeComplex512x1024Shader", computeShaderModel, "Transpose/TransposeComplex512x1024.hlsl", baseDir);
+    transposeComplex1024x512ShaderTemplate = CreateGpuFFTShaderTemplate("_transposeComplex1024x512Shader", computeShaderModel, "Transpose/TransposeComplex1024x512.hlsl", baseDir);
+    transposeComplex1024x2048ShaderTemplate = CreateGpuFFTShaderTemplate("_transposeComplex1024x2048Shader", computeShaderModel, "Transpose/TransposeComplex1024x2048.hlsl", baseDir);
+    transposeComplex2048x1024ShaderTemplate = CreateGpuFFTShaderTemplate("_transposeComplex2048x1024Shader", computeShaderModel, "Transpose/TransposeComplex2048x1024.hlsl", baseDir);
+
+    fftComplex256Pipeline = shaderPipelineCache.GetComputePipeline(fftComplex256ShaderTemplate, ShaderPermutationKey(), false);
+    fftComplex512Pipeline = shaderPipelineCache.GetComputePipeline(fftComplex512ShaderTemplate, ShaderPermutationKey(), false);
+    fftComplex1024Pipeline = shaderPipelineCache.GetComputePipeline(fftComplex1024ShaderTemplate, ShaderPermutationKey(), false);
+    fftComplex2048Pipeline = shaderPipelineCache.GetComputePipeline(fftComplex2048ShaderTemplate, ShaderPermutationKey(), false);
+
+    fftReal512Pipeline = shaderPipelineCache.GetComputePipeline(fftReal512ShaderTemplate, ShaderPermutationKey(), false);
+    fftReal1024Pipeline = shaderPipelineCache.GetComputePipeline(fftReal1024ShaderTemplate, ShaderPermutationKey(), false);
+    fftReal2048Pipeline = shaderPipelineCache.GetComputePipeline(fftReal2048ShaderTemplate, ShaderPermutationKey(), false);
+
+    ifftReal512Pipeline = shaderPipelineCache.GetComputePipeline(ifftReal512ShaderTemplate, ShaderPermutationKey(), false);
+    ifftReal1024Pipeline = shaderPipelineCache.GetComputePipeline(ifftReal1024ShaderTemplate, ShaderPermutationKey(), false);
+    ifftReal2048Pipeline = shaderPipelineCache.GetComputePipeline(ifftReal2048ShaderTemplate, ShaderPermutationKey(), false);
+
+    fftDualReal256Pipeline = shaderPipelineCache.GetComputePipeline(fftDualReal256ShaderTemplate, ShaderPermutationKey(), false);
+    fftDualReal512Pipeline = shaderPipelineCache.GetComputePipeline(fftDualReal512ShaderTemplate, ShaderPermutationKey(), false);
+    fftDualReal1024Pipeline = shaderPipelineCache.GetComputePipeline(fftDualReal1024ShaderTemplate, ShaderPermutationKey(), false);
+    fftDualReal2048Pipeline = shaderPipelineCache.GetComputePipeline(fftDualReal2048ShaderTemplate, ShaderPermutationKey(), false);
+
+    ifftDualReal256Pipeline = shaderPipelineCache.GetComputePipeline(ifftDualReal256ShaderTemplate, ShaderPermutationKey(), false);
+    ifftDualReal512Pipeline = shaderPipelineCache.GetComputePipeline(ifftDualReal512ShaderTemplate, ShaderPermutationKey(), false);
+    ifftDualReal1024Pipeline = shaderPipelineCache.GetComputePipeline(ifftDualReal1024ShaderTemplate, ShaderPermutationKey(), false);
+    ifftDualReal2048Pipeline = shaderPipelineCache.GetComputePipeline(ifftDualReal2048ShaderTemplate, ShaderPermutationKey(), false);
+
+    multiplyComplexSpectrum2DPipeline = shaderPipelineCache.GetComputePipeline(multiplyComplexSpectrum2DShaderTemplate, ShaderPermutationKey(), false);
+    multiplyPackedRealSpectrum2DPipeline = shaderPipelineCache.GetComputePipeline(multiplyPackedRealSpectrum2DShaderTemplate, ShaderPermutationKey(), false);
+    multiplyPackedDualRealSpectrum2DPipeline = shaderPipelineCache.GetComputePipeline(multiplyPackedDualRealSpectrum2DShaderTemplate, ShaderPermutationKey(), false);
+
+    transposeComplex256Pipeline = shaderPipelineCache.GetComputePipeline(transposeComplex256ShaderTemplate, ShaderPermutationKey(), false);
+    transposeComplex512Pipeline = shaderPipelineCache.GetComputePipeline(transposeComplex512ShaderTemplate, ShaderPermutationKey(), false);
+    transposeComplex1024Pipeline = shaderPipelineCache.GetComputePipeline(transposeComplex1024ShaderTemplate, ShaderPermutationKey(), false);
+    transposeComplex2048Pipeline = shaderPipelineCache.GetComputePipeline(transposeComplex2048ShaderTemplate, ShaderPermutationKey(), false);
+    transposeComplex256x512Pipeline = shaderPipelineCache.GetComputePipeline(transposeComplex256x512ShaderTemplate, ShaderPermutationKey(), false);
+    transposeComplex512x256Pipeline = shaderPipelineCache.GetComputePipeline(transposeComplex512x256ShaderTemplate, ShaderPermutationKey(), false);
+    transposeComplex512x1024Pipeline = shaderPipelineCache.GetComputePipeline(transposeComplex512x1024ShaderTemplate, ShaderPermutationKey(), false);
+    transposeComplex1024x512Pipeline = shaderPipelineCache.GetComputePipeline(transposeComplex1024x512ShaderTemplate, ShaderPermutationKey(), false);
+    transposeComplex1024x2048Pipeline = shaderPipelineCache.GetComputePipeline(transposeComplex1024x2048ShaderTemplate, ShaderPermutationKey(), false);
+    transposeComplex2048x1024Pipeline = shaderPipelineCache.GetComputePipeline(transposeComplex2048x1024ShaderTemplate, ShaderPermutationKey(), false);
 
     fftRealTwiddle512Buffer = CreateRealFFTTwiddleBuffer(512);
     fftRealTwiddle1024Buffer = CreateRealFFTTwiddleBuffer(1024);
@@ -175,6 +233,44 @@ void GpuFFT::Shutdown() {
     transposeComplex1024x512Pipeline.reset();
     transposeComplex1024x2048Pipeline.reset();
     transposeComplex2048x1024Pipeline.reset();
+
+    fftComplex256ShaderTemplate.reset();
+    fftComplex512ShaderTemplate.reset();
+    fftComplex1024ShaderTemplate.reset();
+    fftComplex2048ShaderTemplate.reset();
+
+    fftReal512ShaderTemplate.reset();
+    fftReal1024ShaderTemplate.reset();
+    fftReal2048ShaderTemplate.reset();
+
+    ifftReal512ShaderTemplate.reset();
+    ifftReal1024ShaderTemplate.reset();
+    ifftReal2048ShaderTemplate.reset();
+
+    fftDualReal256ShaderTemplate.reset();
+    fftDualReal512ShaderTemplate.reset();
+    fftDualReal1024ShaderTemplate.reset();
+    fftDualReal2048ShaderTemplate.reset();
+
+    ifftDualReal256ShaderTemplate.reset();
+    ifftDualReal512ShaderTemplate.reset();
+    ifftDualReal1024ShaderTemplate.reset();
+    ifftDualReal2048ShaderTemplate.reset();
+
+    multiplyComplexSpectrum2DShaderTemplate.reset();
+    multiplyPackedRealSpectrum2DShaderTemplate.reset();
+    multiplyPackedDualRealSpectrum2DShaderTemplate.reset();
+
+    transposeComplex256ShaderTemplate.reset();
+    transposeComplex512ShaderTemplate.reset();
+    transposeComplex1024ShaderTemplate.reset();
+    transposeComplex2048ShaderTemplate.reset();
+    transposeComplex256x512ShaderTemplate.reset();
+    transposeComplex512x256ShaderTemplate.reset();
+    transposeComplex512x1024ShaderTemplate.reset();
+    transposeComplex1024x512ShaderTemplate.reset();
+    transposeComplex1024x2048ShaderTemplate.reset();
+    transposeComplex2048x1024ShaderTemplate.reset();
 
     if (fftRealTwiddle512Buffer) {
         RHI::renderer->DestroyBuffer(fftRealTwiddle512Buffer);

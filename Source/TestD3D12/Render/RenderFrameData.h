@@ -246,35 +246,9 @@ private:
 
     BE1::Array<SharedPtr<Material>> retainedMaterials;
     BE1::Array<SharedPtr<MeshInstance>> retainedMeshInstances;
-    BE1::Array<SharedPtr<Font>> retainedFonts;
-    BE1::Array<SharedPtr<Texture>> retainedTextures;
+    BE1::Array<SharedPtr<Font>>     retainedFonts;
+    BE1::Array<SharedPtr<Texture>>  retainedTextures;
 };
-
-BE_INLINE void RenderFrameData::BeginFrame() {
-    // 프론트 엔드에서 이번 프레임의 프레임 데이터를 사용하기 위해서는, 백엔드에서의 사용이 완료되야 한다.
-    WaitFrameFence();
-
-    ClearPendingImGuiOverlay();
-
-    frameTime = 0.0f;
-    elapsedTime = 0.0f;
-    elapsedPrevTime = 0.0f;
-    frameCount = 0;
-    statEnabled = false;
-    statRenderObjectCount = 0;
-    statVisibleObjectCount = 0;
-    maxShaderSurfaceCount = 0;
-
-    // 스레드 별로 사용할 자원을 초기화한다.
-    for (int32_t threadIndex = 0; threadIndex < numRenderTaskThreads; ++threadIndex) {
-        threadData[threadIndex]->Reset();
-    }
-
-    frameSerial = ++globalFrameSerial;
-
-    // 프레임 메모리를 초기화한다.
-    BeginFrameMemAllocs();
-}
 
 BE_INLINE void RenderFrameData::AddObjectStats(uint32_t renderObjectCount, uint32_t visibleObjectCount) {
     if (!statEnabled) {
@@ -283,14 +257,6 @@ BE_INLINE void RenderFrameData::AddObjectStats(uint32_t renderObjectCount, uint3
 
     statRenderObjectCount += renderObjectCount;
     statVisibleObjectCount += visibleObjectCount;
-}
-
-BE_INLINE void RenderFrameData::EndFrame() {
-    // 커맨드 버퍼에 커맨드의 끝을 기록.
-    *(uint32_t *)(commands.buffer + commands.used) = static_cast<uint32_t>(RenderCommandId::End);
-
-    // 커맨드 버퍼 비우기.
-    commands.used = 0;
 }
 
 BE_INLINE void RenderFrameData::CmdSwapBuffers() {

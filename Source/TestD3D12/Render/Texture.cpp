@@ -14,6 +14,7 @@
 
 #include "Precompiled.h"
 #include "Texture.h"
+#include "TextureManager.h"
 #include "Sampler.h"
 #include "LoadingSystem.h"
 

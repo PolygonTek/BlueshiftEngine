@@ -16,7 +16,6 @@
 
 #include "Containers/HashIndex.h"
 #include "Containers/HashMap.h"
-#include "Core/Delegate.h"
 #include "Core/Property.h"
 #include "ShaderPipeline.h"
 
@@ -68,7 +67,11 @@ struct ShaderPropertyInfo : public BE1::PropertyInfo {
 /*
 ---------------------------------------------------------------------------------------------------
 
-    ShaderTemplate
+    Shader Template
+
+    .shader 파일에서 읽은 stage source, base define, feature define, property 정보를 보관하는 템플릿이다.
+    shader define property 값과 featureSet 조합은 RegisterPermutation 함수로 등록되어 ShaderPermutationKey 로 관리된다.
+    ShaderPipeline 빌드 시 PreparePipelineBuildData 는 key 로 등록된 permutation 을 찾아 compile define 과 stage source 를 ShaderPipelineBuildData 로 만든다.
 
 ---------------------------------------------------------------------------------------------------
 */
@@ -106,6 +109,7 @@ public:
 
     const char *                    GetName() const { return name.c_str(); }
     const char *                    GetHashName() const { return hashName.c_str(); }
+
     const BE1::Array<ShaderPropertyInfo> &GetProperties() const { return internalData.properties; }
     bool                            IsSkySurface() const { return BE1::HasFlag(internalData.flags, Flag::SkySurface); }
 
@@ -125,18 +129,18 @@ public:
                                     // 지원하지 않는 features 는 거른다.
     ShaderFeatureSet                MaskSupportedFeatures(const ShaderFeatureSet &featureSet) const;
 
-                                    // ShaderPipeline 을 얻기 위해서는 필요한 permutation key 를 미리 등록해야 한다.
-                                    // 등록된 permutation 은 PSO 빌드 시 compile define 목록을 복원하는 데 사용된다.
-    ShaderPermutationKey            AddPermutation();
-    ShaderPermutationKey            AddPermutation(const BE1::Array<PropertyValue> &propertyValues);
-    ShaderPermutationKey            AddPermutation(const BE1::Array<PropertyValue> &propertyValues, const ShaderFeatureSet &featureSet);
-
     bool                            Create(const char *text, const char *baseDir);
 
     bool                            Load(const char *filename);
     bool                            Reload();
 
-                                    // permutation key 로 ShaderPipeline 을 빌드 (PSO 생성) 할 수 있는 데이터를 준비한다.
+                                    // shader define property 값과 featureSet 조합을 permutation 으로 등록하고 key 를 리턴한다.
+                                    // 반환된 key 는 ShaderPipelineCache 의 캐시 키이자, PreparePipelineBuildData 에서 등록된 compile define/feature define 조합을 찾기 위한 핸들이다.
+    ShaderPermutationKey            RegisterPermutation();
+    ShaderPermutationKey            RegisterPermutation(const BE1::Array<PropertyValue> &propertyValues);
+    ShaderPermutationKey            RegisterPermutation(const BE1::Array<PropertyValue> &propertyValues, const ShaderFeatureSet &featureSet);
+
+                                    // permutation key 로 ShaderPipeline 을 빌드할 수 있는 데이터를 준비한다.
     bool                            PreparePipelineBuildData(ShaderPermutationKey permutationKey, ShaderPipelineBuildData &outBuildData) const;
 
 private:
@@ -203,103 +207,3 @@ template<>
 struct enable_bitmask_operators<ShaderPropertyInfo::ShaderFlag> {
     static const bool enable = true;
 };
-
-class ShaderTemplateManager {
-    friend class ShaderTemplate;
-
-public:
-    using ReloadedDelegate = BE1::MulticastDelegate<void(const ShaderTemplate *, const BE1::Array<ShaderPropertyInfo> &)>;
-
-    void                            Init();
-    void                            Shutdown();
-
-    void                            UpdateFrame();
-
-    SharedPtr<ShaderTemplate>       AllocShaderTemplate(const char *hashName);
-    SharedPtr<ShaderTemplate>       FindShaderTemplate(const char *hashName) const;
-    SharedPtr<ShaderTemplate>       GetShaderTemplate(const char *hashName);
-
-    bool                            FindGlobalDefine(const char *define) const;
-    void                            AddGlobalDefine(const char *define);
-    void                            RemoveGlobalDefine(const char *define);
-    uint32_t                        CopyGlobalDefines(BE1::StrArray &outDefines) const;
-
-    ReloadedDelegate                shaderTemplateReloaded;
-
-    SharedPtr<ShaderTemplate>       fullscreenImageShaderTemplate;
-
-    SharedPtr<ShaderTemplate>       fftComplex256ShaderTemplate;
-    SharedPtr<ShaderTemplate>       fftComplex512ShaderTemplate;
-    SharedPtr<ShaderTemplate>       fftComplex1024ShaderTemplate;
-    SharedPtr<ShaderTemplate>       fftComplex2048ShaderTemplate;
-
-    SharedPtr<ShaderTemplate>       fftReal512ShaderTemplate;
-    SharedPtr<ShaderTemplate>       fftReal1024ShaderTemplate;
-    SharedPtr<ShaderTemplate>       fftReal2048ShaderTemplate;
-
-    SharedPtr<ShaderTemplate>       ifftReal512ShaderTemplate;
-    SharedPtr<ShaderTemplate>       ifftReal1024ShaderTemplate;
-    SharedPtr<ShaderTemplate>       ifftReal2048ShaderTemplate;
-
-    SharedPtr<ShaderTemplate>       fftDualReal256ShaderTemplate;
-    SharedPtr<ShaderTemplate>       fftDualReal512ShaderTemplate;
-    SharedPtr<ShaderTemplate>       fftDualReal1024ShaderTemplate;
-    SharedPtr<ShaderTemplate>       fftDualReal2048ShaderTemplate;
-
-    SharedPtr<ShaderTemplate>       ifftDualReal256ShaderTemplate;
-    SharedPtr<ShaderTemplate>       ifftDualReal512ShaderTemplate;
-    SharedPtr<ShaderTemplate>       ifftDualReal1024ShaderTemplate;
-    SharedPtr<ShaderTemplate>       ifftDualReal2048ShaderTemplate;
-
-    SharedPtr<ShaderTemplate>       multiplyComplexSpectrum2DShaderTemplate;
-    SharedPtr<ShaderTemplate>       multiplyPackedRealSpectrum2DShaderTemplate;
-    SharedPtr<ShaderTemplate>       multiplyPackedDualRealSpectrum2DShaderTemplate;
-
-    SharedPtr<ShaderTemplate>       transposeComplex256ShaderTemplate;
-    SharedPtr<ShaderTemplate>       transposeComplex512ShaderTemplate;
-    SharedPtr<ShaderTemplate>       transposeComplex1024ShaderTemplate;
-    SharedPtr<ShaderTemplate>       transposeComplex2048ShaderTemplate;
-    SharedPtr<ShaderTemplate>       transposeComplex256x512ShaderTemplate;
-    SharedPtr<ShaderTemplate>       transposeComplex512x256ShaderTemplate;
-    SharedPtr<ShaderTemplate>       transposeComplex512x1024ShaderTemplate;
-    SharedPtr<ShaderTemplate>       transposeComplex1024x512ShaderTemplate;
-    SharedPtr<ShaderTemplate>       transposeComplex1024x2048ShaderTemplate;
-    SharedPtr<ShaderTemplate>       transposeComplex2048x1024ShaderTemplate;
-
-    SharedPtr<ShaderTemplate>       bloomPrefilterShaderTemplate;
-    SharedPtr<ShaderTemplate>       bloomDownsampleShaderTemplate;
-    SharedPtr<ShaderTemplate>       bloomUpsampleShaderTemplate;
-    SharedPtr<ShaderTemplate>       convolutionBloomPrefilterShaderTemplate;
-    SharedPtr<ShaderTemplate>       convolutionBloomKernelPrepareShaderTemplate;
-    SharedPtr<ShaderTemplate>       convolutionBloomResolveShaderTemplate;
-    SharedPtr<ShaderTemplate>       convolutionBloomAperturePrepareShaderTemplate;
-    SharedPtr<ShaderTemplate>       convolutionBloomReduceApertureEnergyShaderTemplate;
-    SharedPtr<ShaderTemplate>       convolutionBloomResolveDiffractionPSFShaderTemplate;
-    SharedPtr<ShaderTemplate>       convolutionBloomApplyDispersionShaderTemplate;
-
-    SharedPtr<ShaderTemplate>       luminancePass1ShaderTemplate;
-    SharedPtr<ShaderTemplate>       luminancePass2ShaderTemplate;
-    SharedPtr<ShaderTemplate>       toneMappingShaderTemplate;
-
-    SharedPtr<ShaderTemplate>       unlitShaderTemplate;
-    SharedPtr<ShaderTemplate>       litShaderTemplate;
-
-private:
-    void                            InitGlobalDefines();
-    void                            CleanExpiredShaderTemplates();
-    void                            CreateEngineShaderTemplates();
-    void                            CreateFFTShaderTemplates(RHI::ShaderModel shaderModel, const char *baseDir);
-    void                            CreateTransposeShaderTemplates(RHI::ShaderModel shaderModel, const char *baseDir);
-    void                            CreateBloomShaderTemplates(RHI::ShaderModel shaderModel, const char *baseDir);
-    void                            CreateToneMappingShaderTemplates(RHI::ShaderModel shaderModel, const char *baseDir);
-    void                            DestroyEngineShaderTemplates();
-
-    BE1::StrIHashMap<WeakPtr<ShaderTemplate>> shaderTemplateHashMap;
-    int                             expiredShaderTemplateHashMapCursor = 0;
-    BE1::StrArray                   globalDefines;
-    uint32_t                        globalDefineModCount = 0;
-    uint32_t                        lastInvalidatedGlobalDefineModCount = 0;
-    BE1::PlatformMutex *            globalDefinesMutex = nullptr;
-};
-
-extern ShaderTemplateManager        shaderTemplateManager;

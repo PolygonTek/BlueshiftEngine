@@ -16,8 +16,8 @@
 #include "TrueTypeFont.h"
 #include "FontFile.h"
 #include "FontFace.h"
-#include "Texture.h"
-#include "Material.h"
+#include "TextureManager.h"
+#include "MaterialManager.h"
 #include "STB/stb_rect_pack.h"
 
 #define GLYPH_CACHE_TEXTURE_FORMAT  BE1::Image::Format::A8

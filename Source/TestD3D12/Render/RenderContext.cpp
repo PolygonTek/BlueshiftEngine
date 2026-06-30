@@ -17,8 +17,10 @@
 #include "RenderContext.h"
 #include "RenderBackend.h"
 #include "RenderInternal.h"
-#include "ShaderTemplate.h"
+#include "ShaderTemplateManager.h"
 #include "ShaderPipelineCache.h"
+#include "MaterialManager.h"
+#include "FontManager.h"
 
 RenderContext *         RenderContext::activeContext = nullptr;
 
@@ -129,11 +131,12 @@ void RenderContext::InitPSOs() {
     RHI::RenderDest renderDest;
     GetSwapChainRenderDest(renderDest);
 
-    ShaderPipelineDesc pipelineDesc;
-    pipelineDesc.renderDest = renderDest;
-    pipelineDesc.depthStencilStateType = RHI::DepthStencilStateType::Never;
-    pipelineDesc.blendStateType = RHI::BlendStateType::Disabled;
-    imagePSO = shaderPipelineCache.GetGraphicsPipeline(shaderTemplateManager.fullscreenImageShaderTemplate, ShaderPermutationKey(), pipelineDesc, false);
+    GraphicsPipelineDesc graphicsPipelineDesc;
+    graphicsPipelineDesc.renderDest = renderDest;
+    graphicsPipelineDesc.depthStencilStateType = RHI::DepthStencilStateType::Never;
+    graphicsPipelineDesc.blendStateType = RHI::BlendStateType::Disabled;
+
+    imagePSO = shaderPipelineCache.GetGraphicsPipeline(shaderTemplateManager.fullscreenImageShaderTemplate, ShaderPermutationKey(), graphicsPipelineDesc, false);
 }
 
 void RenderContext::ReleasePSOs() {

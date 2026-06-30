@@ -177,6 +177,21 @@ const char *RHI::Renderer::TextureFlagName(RHI::TextureFlag flag) {
     return "Invalid";
 }
 
+const char *RHI::Renderer::ShaderModelName(RHI::ShaderModel shaderModel) {
+    switch (shaderModel) {
+    case RHI::ShaderModel::SM_5_0: return "SM_5_0";
+    case RHI::ShaderModel::SM_6_0: return "SM_6_0";
+    case RHI::ShaderModel::SM_6_1: return "SM_6_1";
+    case RHI::ShaderModel::SM_6_2: return "SM_6_2";
+    case RHI::ShaderModel::SM_6_3: return "SM_6_3";
+    case RHI::ShaderModel::SM_6_4: return "SM_6_4";
+    case RHI::ShaderModel::SM_6_5: return "SM_6_5";
+    case RHI::ShaderModel::SM_6_6: return "SM_6_6";
+    case RHI::ShaderModel::SM_6_7: return "SM_6_7";
+    }
+    return "Invalid";
+}
+
 void RHI::Renderer::Init(const void *mainWindowHandle) {
     initialized = true;
 }
