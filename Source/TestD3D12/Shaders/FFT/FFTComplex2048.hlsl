@@ -153,6 +153,7 @@ void RunFinalRadix4Butterfly(uint butterflyIndex, uint bufferBase) {
     float2 stageOutput3;
     Radix4Butterfly(a0, a1, a2, a3, fftParams.sign, stageOutput0, stageOutput1, stageOutput2, stageOutput3);
 
+    // 역변환의 마지막 스테이지에서 정규화를 한다 (정변환은 scale = 1, 역변환은 scale = 1/2048)
     outputBuffer[bufferBase + butterflyIndex] = stageOutput0 * fftParams.scale;
     outputBuffer[bufferBase + butterflyIndex + 512u] = stageOutput1 * fftParams.scale;
     outputBuffer[bufferBase + butterflyIndex + 1024u] = stageOutput2 * fftParams.scale;

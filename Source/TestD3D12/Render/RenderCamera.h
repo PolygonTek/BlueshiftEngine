@@ -123,13 +123,12 @@ public:
 
     static void                 CalcConvolutionBloomKernelParams(const BE1::Image &kernelImage, float &normalizationFactor, BE1::Vec2 &kernelExtents);
 
-    void                        SetConvolutionBloomApertureTexture(const SharedPtr<Texture> &texture);
+    bool                        SetConvolutionBloomKernelFromImage(const char *textureName, const BE1::Image &kernelImage);
+    bool                        SetConvolutionBloomKernelFromFile(const char *filename);
     void                        SetConvolutionBloomKernelTexture(const SharedPtr<Texture> &texture, float normalizationFactor, const BE1::Vec2 &kernelExtents);
     void                        SetConvolutionBloomKernelRotation(float rotation);
     void                        SetConvolutionBloomKernelSizeScale(float sizeScale);
     void                        SetConvolutionBloomPaddingTrim(float paddingTrim);
-    void                        SetConvolutionBloomDiffractionPSFScale(float scale);
-    void                        SetConvolutionBloomDispersionAmount(float amount);
 
     void                        EnsureRenderTextures(uint32_t width, uint32_t height, RHI::Format colorFormat, RHI::Format depthFormat, uint32_t sampleCount, const BE1::Color4 &optimizedClearColor);
     void                        EnsurePostProcessResources();
@@ -155,13 +154,7 @@ public:
     uint32_t                    GetFFTBloomSize() const { return fftBloomSize; }
     RHI::Buffer *               GetFFTBloomScreenSpatialBuffer() const { return fftBloomScreenSpatialBuffer; }
     RHI::Buffer *               GetFFTBloomScreenSpectrumBuffer() const { return fftBloomScreenSpectrumBuffer; }
-    const SharedPtr<Texture> &  GetFFTBloomApertureTexture() const { return fftBloomApertureSourceTexture; }
     const SharedPtr<Texture> &  GetFFTBloomKernelTexture() const { return fftBloomKernelSourceTexture; }
-    RHI::Texture *              GetFFTBloomDiffractionPSFTexture() const { return fftBloomDiffractionPSFTexture; }
-    RHI::Texture *              GetFFTBloomApertureKernelTexture() const { return fftBloomApertureKernelTexture; }
-    RHI::Buffer *               GetFFTBloomApertureEnergyBuffer0() const { return fftBloomApertureEnergyBuffer0; }
-    RHI::Buffer *               GetFFTBloomApertureEnergyBuffer1() const { return fftBloomApertureEnergyBuffer1; }
-    uint32_t                    GetFFTBloomApertureTextureSize() const { return fftBloomApertureTextureSize; }
     float                       GetFFTBloomKernelNormalizationFactor() const { return fftBloomKernelNormalizationFactor; }
     const BE1::Vec2 &           GetFFTBloomKernelExtents() const { return fftBloomKernelExtents; }
     RHI::Buffer *               GetFFTBloomKernelSpatialBuffer() const { return fftBloomKernelSpatialBuffer; }
@@ -170,13 +163,10 @@ public:
     RHI::Texture *              GetFFTBloomConvolutionOutputTexture() const { return fftBloomConvolutionOutputTexture; }
     uint32_t                    GetFFTBloomConvolutionOutputWidth() const { return fftBloomConvolutionOutputWidth; }
     uint32_t                    GetFFTBloomConvolutionOutputHeight() const { return fftBloomConvolutionOutputHeight; }
-    bool                        IsFFTBloomApertureKernelDirty() const { return fftBloomApertureKernelDirty; }
     bool                        IsFFTBloomKernelDirty() const { return fftBloomKernelDirty; }
     float                       GetFFTBloomKernelRotation() const { return fftBloomKernelRotation; }
     float                       GetFFTBloomKernelSizeScale() const { return fftBloomKernelSizeScale; }
     float                       GetFFTBloomPaddingTrim() const { return fftBloomPaddingTrim; }
-    float                       GetFFTBloomDiffractionPSFScale() const { return fftBloomDiffractionPSFScale; }
-    float                       GetFFTBloomDispersionAmount() const { return fftBloomDispersionAmount; }
     const BE1::RectF &          GetFFTBloomGuardedContentRect() const { return fftBloomGuardedContentRect; }
     const BE1::Vec2 &           GetFFTBloomKernelSpatialScale() const { return fftBloomKernelSpatialScale; }
 
@@ -192,12 +182,9 @@ private:
     void                        DestroyPyramidBloomTextures();
     bool                        CreateConvolutionBloomResources(uint32_t size);
     void                        DestroyConvolutionBloomResources();
-    bool                        CreateConvolutionBloomApertureTextures(uint32_t size);
-    void                        DestroyConvolutionBloomApertureTextures();
     bool                        CreateConvolutionBloomOutputTexture(uint32_t width, uint32_t height);
     void                        DestroyConvolutionBloomOutputTexture();
     void                        UpdateConvolutionBloomGuardedContentRect();
-    void                        MarkConvolutionBloomApertureKernelClean() { fftBloomApertureKernelDirty = false; }
     void                        MarkConvolutionBloomKernelClean() { fftBloomKernelDirty = false; }
     void                        CreateLuminanceBuffer();
     void                        DestroyLuminanceBuffer();
@@ -234,14 +221,7 @@ private:
     uint32_t                    bloomMipMaxLevelCount = 0;
 
     uint32_t                    fftBloomSize = 0;
-    SharedPtr<Texture>          fftBloomApertureSourceTexture;
-    bool                        fftBloomApertureKernelDirty = true;
     SharedPtr<Texture>          fftBloomKernelSourceTexture;
-    RHI::Texture *              fftBloomDiffractionPSFTexture = nullptr;
-    RHI::Texture *              fftBloomApertureKernelTexture = nullptr;
-    RHI::Buffer *               fftBloomApertureEnergyBuffer0 = nullptr;
-    RHI::Buffer *               fftBloomApertureEnergyBuffer1 = nullptr;
-    uint32_t                    fftBloomApertureTextureSize = 0;
     float                       fftBloomKernelNormalizationFactor = 1.0f;
     BE1::Vec2                   fftBloomKernelExtents = BE1::Vec2(1.0f, 1.0f);
     RHI::Buffer *               fftBloomKernelSpatialBuffer = nullptr;
@@ -251,8 +231,6 @@ private:
     float                       fftBloomKernelRotation = 0.0f;
     float                       fftBloomKernelSizeScale = 1.0f;
     float                       fftBloomPaddingTrim = 0.0f;
-    float                       fftBloomDiffractionPSFScale = 1.0f;
-    float                       fftBloomDispersionAmount = 1.0f;
     bool                        fftBloomKernelDirty = true;
     RHI::Buffer *               fftBloomScreenSpatialBuffer = nullptr;
     RHI::Buffer *               fftBloomScreenSpectrumBuffer = nullptr;

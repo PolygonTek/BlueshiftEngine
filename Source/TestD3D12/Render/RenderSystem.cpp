@@ -51,6 +51,8 @@ void RenderSystem::Init(void *mainWindowHandle) {
 
     InitPostProcessPSOs();
 
+    convolutionBloomKernelGenerator.Init();
+
     materialManager.Init();
 
     fontManager.Init();
@@ -90,6 +92,8 @@ void RenderSystem::Shutdown() {
     materialManager.Shutdown();
 
     ReleasePostProcessPSOs();
+
+    convolutionBloomKernelGenerator.Shutdown();
 
     gpuFFT.Shutdown();
 

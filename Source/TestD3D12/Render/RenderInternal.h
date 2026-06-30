@@ -122,13 +122,7 @@ struct VisCamera {
     uint32_t                    fftBloomSize = 0;
     RHI::Buffer *               fftBloomScreenSpatialBuffer = nullptr;
     RHI::Buffer *               fftBloomScreenSpectrumBuffer = nullptr;
-    RHI::Texture *              fftBloomApertureSourceTexture = nullptr;
     RHI::Texture *              fftBloomKernelSourceTexture = nullptr;
-    RHI::Texture *              fftBloomDiffractionPSFTexture = nullptr;
-    RHI::Texture *              fftBloomApertureKernelTexture = nullptr;
-    RHI::Buffer *               fftBloomApertureEnergyBuffer0 = nullptr;
-    RHI::Buffer *               fftBloomApertureEnergyBuffer1 = nullptr;
-    uint32_t                    fftBloomApertureTextureSize = 0;
     RHI::Buffer *               fftBloomKernelSpatialBuffer = nullptr;
     RHI::Buffer *               fftBloomKernelSpectrumBuffer = nullptr;
     RHI::Buffer *               fftBloomWorkBuffer = nullptr;
@@ -138,13 +132,10 @@ struct VisCamera {
     float                       fftBloomKernelRotation = 0.0f;
     float                       fftBloomKernelSizeScale = 1.0f;
     float                       fftBloomPaddingTrim = 0.0f;
-    float                       fftBloomDiffractionPSFScale = 1.0f;
-    float                       fftBloomDispersionAmount = 1.0f;
     BE1::Vec2                   fftBloomKernelExtents = BE1::Vec2(1.0f, 1.0f);
     BE1::RectF                  fftBloomGuardedContentRect = BE1::RectF(0.0f, 0.0f, 0.0f, 0.0f);
     BE1::Vec2                   fftBloomKernelSpatialScale = BE1::Vec2(1.0f, 1.0f);
     float                       fftBloomKernelNormalizationFactor = 1.0f;
-    bool                        fftBloomApertureKernelDirty = true;
     bool                        fftBloomKernelDirty = true;
 
     bool                        is2D;

@@ -54,6 +54,8 @@ struct ShaderPipelineBuildData {
 
     ShaderPipeline
 
+    ShaderTemplate 의 permutation 과 ShaderPipelineDesc (그래픽스의 경우) 을 기준으로 RHI::PipelineState (PSO) 를 생성하고 보관한다.
+
 ---------------------------------------------------------------------------------------------------
 */
 

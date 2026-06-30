@@ -305,9 +305,6 @@ bool GpuFFT::DispatchFFTComplex2D(RHI::CommandList *commandList, RenderFrameData
     constexpr float sign = -1.0f;
     constexpr float scale = 1.0f;
 
-    RHI::Buffer *pingBuffer0 = outputBuffer;
-    RHI::Buffer *pingBuffer1 = workBuffer;
-
     auto dispatchBufferPSO = [&](RHI::PipelineState *pso, RHI::Buffer *input, RHI::Buffer *output, uint32_t groupCountX, uint32_t groupCountY = 1, uint32_t groupCountZ = 1) {
         RHI::renderer->SetPSO(commandList, pso);
         RHI::renderer->SetBuffer(commandList, 0, false, input);
@@ -316,13 +313,13 @@ bool GpuFFT::DispatchFFTComplex2D(RHI::CommandList *commandList, RenderFrameData
     };
 
     // 가로 FFT 스테이지
-    RHI::Buffer *stageInput = pingBuffer0;
+    RHI::Buffer *stageInput = outputBuffer;
     if (!DispatchFFTComplexFused(commandList, frameThreadData, fftPso, inputBuffer, stageInput, FFTBlockCount, RHI::GPUResourceState::Undefined, RHI::GPUResourceState::Undefined, sign, scale)) {
         return false;
     }
 
     // transpose
-    RHI::Buffer *transposeOutput = pingBuffer1;
+    RHI::Buffer *transposeOutput = workBuffer;
     RHI::GPUBarrier transposeBarriers[] = {
         RHI::Renderer::MakeBufferBarrier(inputBuffer, RHI::GPUResourceState::ShaderResourceCompute, RHI::GPUResourceState::Undefined),
         RHI::Renderer::MakeBufferBarrier(stageInput, RHI::GPUResourceState::UnorderedAccess, RHI::GPUResourceState::ShaderResourceCompute),
@@ -368,9 +365,6 @@ bool GpuFFT::DispatchIFFTComplex2D(RHI::CommandList *commandList, RenderFrameDat
     constexpr float sign = 1.0f;
     const float scale = 1.0f / static_cast<float>(entry.fftSize);
 
-    RHI::Buffer *pingBuffer0 = inputBuffer;
-    RHI::Buffer *pingBuffer1 = workBuffer;
-
     auto dispatchBufferPSO = [&](RHI::PipelineState *pso, RHI::Buffer *input, RHI::Buffer *output, uint32_t groupCountX, uint32_t groupCountY = 1, uint32_t groupCountZ = 1) {
         RHI::renderer->SetPSO(commandList, pso);
         RHI::renderer->SetBuffer(commandList, 0, false, input);
@@ -379,13 +373,13 @@ bool GpuFFT::DispatchIFFTComplex2D(RHI::CommandList *commandList, RenderFrameDat
     };
 
     // 가로 IFFT 스테이지
-    RHI::Buffer *stageInput = pingBuffer1;
+    RHI::Buffer *stageInput = workBuffer;
     if (!DispatchFFTComplexFused(commandList, frameThreadData, fftPso, inputBuffer, stageInput, FFTBlockCount, RHI::GPUResourceState::Undefined, RHI::GPUResourceState::Undefined, sign, scale)) {
         return false;
     }
 
     // transpose
-    RHI::Buffer *transposeOutput = pingBuffer0;
+    RHI::Buffer *transposeOutput = inputBuffer;
     RHI::GPUBarrier transposeBarriers[] = {
         RHI::Renderer::MakeBufferBarrier(stageInput, RHI::GPUResourceState::UnorderedAccess, RHI::GPUResourceState::ShaderResourceCompute),
         RHI::Renderer::MakeBufferBarrier(transposeOutput, RHI::GPUResourceState::ShaderResourceCompute, RHI::GPUResourceState::UnorderedAccess)
@@ -483,9 +477,6 @@ bool GpuFFT::DispatchFFTReal2D(RHI::CommandList *commandList, RenderFrameData *f
     const uint32_t TransposeTileCountX = packedSize / TransposeComplexTileSize;
     const uint32_t TransposeTileCountY = entry.fftSize / TransposeComplexTileSize;
 
-    RHI::Buffer *pingBuffer0 = outputBuffer;
-    RHI::Buffer *pingBuffer1 = workBuffer;
-
     auto dispatchBufferPSO = [&](RHI::PipelineState *pipelineState, RHI::Buffer *input, RHI::Buffer *output, uint32_t groupCountX, uint32_t groupCountY = 1, uint32_t groupCountZ = 1) {
         RHI::renderer->SetPSO(commandList, pipelineState);
         RHI::renderer->SetBuffer(commandList, 0, false, input);
@@ -495,12 +486,12 @@ bool GpuFFT::DispatchFFTReal2D(RHI::CommandList *commandList, RenderFrameData *f
 
     // 가로 FFT 스테이지
     RHI::Buffer *stageInput = nullptr;
-    if (!DispatchFFTRealFused(commandList, realPso, twiddleBuffer, inputBuffer, pingBuffer0, RealFFTBlockCount, &stageInput)) {
+    if (!DispatchFFTRealFused(commandList, realPso, twiddleBuffer, inputBuffer, outputBuffer, RealFFTBlockCount, &stageInput)) {
         return false;
     }
 
     // packedSize x fftSize packed spectrum 을 fftSize x packedSize 으로 transpose 해서 세로 Complex FFT 를 수행한다.
-    RHI::Buffer *transposeOutput = pingBuffer1;
+    RHI::Buffer *transposeOutput = workBuffer;
     RHI::GPUBarrier transposeBarriers[] = {
         RHI::Renderer::MakeBufferBarrier(inputBuffer, RHI::GPUResourceState::ShaderResourceCompute, RHI::GPUResourceState::Undefined),
         RHI::Renderer::MakeBufferBarrier(stageInput, RHI::GPUResourceState::UnorderedAccess, RHI::GPUResourceState::ShaderResourceCompute),
@@ -549,9 +540,6 @@ bool GpuFFT::DispatchIFFTReal2D(RHI::CommandList *commandList, RenderFrameData *
     const uint32_t TransposeTileCountX = entry.fftSize / TransposeComplexTileSize;
     const uint32_t TransposeTileCountY = packedSize / TransposeComplexTileSize;
 
-    RHI::Buffer *pingBuffer0 = inputBuffer; // Input is consumed as ping-pong storage.
-    RHI::Buffer *pingBuffer1 = workBuffer;
-
     auto dispatchBufferPSO = [&](RHI::PipelineState *pipelineState, RHI::Buffer *input, RHI::Buffer *output, uint32_t groupCountX, uint32_t groupCountY = 1, uint32_t groupCountZ = 1) {
         RHI::renderer->SetPSO(commandList, pipelineState);
         RHI::renderer->SetBuffer(commandList, 0, false, input);
@@ -560,13 +548,13 @@ bool GpuFFT::DispatchIFFTReal2D(RHI::CommandList *commandList, RenderFrameData *
     };
 
     // 세로 IFFT 스테이지
-    RHI::Buffer *stageInput = pingBuffer1;
-    if (!DispatchFFTComplexFused(commandList, frameThreadData, complexPso, pingBuffer0, stageInput, VerticalComplexFFTBlockCount, RHI::GPUResourceState::Undefined, RHI::GPUResourceState::Undefined, 1.0f, 1.0f / static_cast<float>(entry.fftSize))) {
+    RHI::Buffer *stageInput = workBuffer;
+    if (!DispatchFFTComplexFused(commandList, frameThreadData, complexPso, inputBuffer, stageInput, VerticalComplexFFTBlockCount, RHI::GPUResourceState::Undefined, RHI::GPUResourceState::Undefined, 1.0f, 1.0f / static_cast<float>(entry.fftSize))) {
         return false;
     }
 
     // fftSize x packedSize spectrum 을 packedSize x fftSize 로 transpose 해서 가로 Real IFFT 를 수행한다.
-    RHI::Buffer *transposeOutput = (stageInput == pingBuffer0) ? pingBuffer1 : pingBuffer0;
+    RHI::Buffer *transposeOutput = inputBuffer;
     RHI::GPUBarrier transposeBarriers[] = {
         RHI::Renderer::MakeBufferBarrier(stageInput, RHI::GPUResourceState::UnorderedAccess, RHI::GPUResourceState::ShaderResourceCompute),
         RHI::Renderer::MakeBufferBarrier(transposeOutput, RHI::GPUResourceState::ShaderResourceCompute, RHI::GPUResourceState::UnorderedAccess)

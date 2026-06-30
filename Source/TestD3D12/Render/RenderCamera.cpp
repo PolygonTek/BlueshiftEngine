@@ -130,14 +130,50 @@ void RenderCamera::CalcConvolutionBloomKernelParams(const BE1::Image &kernelImag
         BE1::Min(BE1::Max(BE1::Math::Fabs(minY), BE1::Math::Fabs(maxY)) + texelGuardY, 1.0f));
 }
 
-void RenderCamera::SetConvolutionBloomApertureTexture(const SharedPtr<Texture> &texture) {
-    if (fftBloomApertureSourceTexture == texture) {
-        return;
+bool RenderCamera::SetConvolutionBloomKernelFromImage(const char *textureName, const BE1::Image &kernelImage) {
+    if (!textureName || !textureName[0] || kernelImage.IsEmpty()) {
+        return false;
+    }
+    if (textureManager.FindTexture(textureName)) {
+        BE_WARNLOG("RenderCamera::SetConvolutionBloomKernelFromImage: texture '%s' already exists\n", textureName);
+        return false;
     }
 
-    fftBloomApertureSourceTexture = texture;
-    fftBloomApertureKernelDirty = true;
-    fftBloomKernelDirty = true;
+    float normalizationFactor;
+    BE1::Vec2 kernelExtents;
+    CalcConvolutionBloomKernelParams(kernelImage, normalizationFactor, kernelExtents);
+
+    SharedPtr<BE1::Image> textureImage = MakeShared<BE1::Image>(kernelImage);
+    SharedPtr<Texture> texture = textureManager.AllocTexture(textureName);
+    if (!texture->Create(RHI::TextureType::Texture2D, textureImage, Texture::Flag::HighQuality | Texture::Flag::NoMipmaps)) {
+        return false;
+    }
+
+    SetConvolutionBloomKernelTexture(texture, normalizationFactor, kernelExtents);
+    return true;
+}
+
+bool RenderCamera::SetConvolutionBloomKernelFromFile(const char *filename) {
+    if (!filename || !filename[0]) {
+        return false;
+    }
+
+    BE1::Image kernelImage = BE1::Image::ImageFromFile(filename);
+    if (kernelImage.IsEmpty()) {
+        return false;
+    }
+
+    float normalizationFactor;
+    BE1::Vec2 kernelExtents;
+    CalcConvolutionBloomKernelParams(kernelImage, normalizationFactor, kernelExtents);
+
+    SharedPtr<Texture> texture = textureManager.GetTexture(filename, Texture::Flag::HighQuality | Texture::Flag::NoMipmaps);
+    if (!texture) {
+        return false;
+    }
+
+    SetConvolutionBloomKernelTexture(texture, normalizationFactor, kernelExtents);
+    return true;
 }
 
 void RenderCamera::SetConvolutionBloomKernelTexture(const SharedPtr<Texture> &texture, float normalizationFactor, const BE1::Vec2 &kernelExtents) {
@@ -178,28 +214,6 @@ void RenderCamera::SetConvolutionBloomPaddingTrim(float paddingTrim) {
     }
 
     fftBloomPaddingTrim = paddingTrim;
-    fftBloomKernelDirty = true;
-}
-
-void RenderCamera::SetConvolutionBloomDiffractionPSFScale(float scale) {
-    scale = BE1::Max(scale, 0.0f);
-    if (fftBloomDiffractionPSFScale == scale) {
-        return;
-    }
-
-    fftBloomDiffractionPSFScale = scale;
-    fftBloomApertureKernelDirty = true;
-    fftBloomKernelDirty = true;
-}
-
-void RenderCamera::SetConvolutionBloomDispersionAmount(float amount) {
-    amount = BE1::Max(amount, 0.0f);
-    if (fftBloomDispersionAmount == amount) {
-        return;
-    }
-
-    fftBloomDispersionAmount = amount;
-    fftBloomApertureKernelDirty = true;
     fftBloomKernelDirty = true;
 }
 
@@ -659,7 +673,7 @@ void RenderCamera::EnsurePostProcessResources() {
         return;
     }
 
-    if (r_skipPostProcess.GetBool() || !r_toneMapping.GetBool() || renderWidth == 0 || renderHeight == 0) {
+    if (renderWidth == 0 || renderHeight == 0) {
         DestroyPostProcessResources();
         return;
     }
@@ -669,9 +683,8 @@ void RenderCamera::EnsurePostProcessResources() {
         return;
     }
 
-    const RenderBloomMode bloomMode = static_cast<RenderBloomMode>(BE1::Clamp(r_bloom.GetInteger(), static_cast<int>(RenderBloomMode::Off), static_cast<int>(RenderBloomMode::ApertureConvolution)));
-    const bool useApertureConvolutionBloom = bloomMode == RenderBloomMode::ApertureConvolution;
-    const bool useConvolutionBloom = bloomMode == RenderBloomMode::Convolution || useApertureConvolutionBloom;
+    const RenderBloomMode bloomMode = static_cast<RenderBloomMode>(BE1::Clamp(r_bloom.GetInteger(), static_cast<int>(RenderBloomMode::Off), static_cast<int>(RenderBloomMode::Convolution)));
+    const bool useConvolutionBloom = bloomMode == RenderBloomMode::Convolution;
     if (bloomMode == RenderBloomMode::Pyramid) {
         DestroyConvolutionBloomResources();
         DestroyConvolutionBloomOutputTexture();
@@ -689,11 +702,11 @@ void RenderCamera::EnsurePostProcessResources() {
 
         const uint32_t convolutionBloomFFTMaxSize = static_cast<uint32_t>(BE1::Clamp(r_convolutionBloomFFTMaxSize.GetInteger(), 256, 1024));
         const uint32_t requestedFFTBloomSize = SelectBloomFFTSize(renderWidth, renderHeight, convolutionBloomFFTMaxSize);
-    const bool hasReusableFFTBloomResources =
-        fftBloomScreenSpatialBuffer &&
-        fftBloomScreenSpectrumBuffer &&
-        fftBloomKernelSpatialBuffer &&
-        fftBloomKernelSpectrumBuffer &&
+        const bool hasReusableFFTBloomResources =
+            fftBloomScreenSpatialBuffer &&
+            fftBloomScreenSpectrumBuffer &&
+            fftBloomKernelSpatialBuffer &&
+            fftBloomKernelSpectrumBuffer &&
             fftBloomWorkBuffer &&
             fftBloomSize == requestedFFTBloomSize;
 
@@ -729,23 +742,7 @@ void RenderCamera::EnsurePostProcessResources() {
                 }
             }
 
-            const bool hasReusableApertureTextures =
-                fftBloomDiffractionPSFTexture &&
-                fftBloomApertureKernelTexture &&
-                fftBloomApertureEnergyBuffer0 &&
-                fftBloomApertureEnergyBuffer1 &&
-                fftBloomApertureTextureSize == requestedFFTBloomSize;
-            if (useApertureConvolutionBloom) {
-                if (!hasReusableApertureTextures) {
-                    if (!CreateConvolutionBloomApertureTextures(requestedFFTBloomSize)) {
-                        DestroyConvolutionBloomApertureTextures();
-                    }
-                }
-            } else {
-                DestroyConvolutionBloomApertureTextures();
-            }
         } else {
-            DestroyConvolutionBloomApertureTextures();
             DestroyConvolutionBloomOutputTexture();
         }
     } else {
@@ -1069,8 +1066,6 @@ bool RenderCamera::CreateConvolutionBloomResources(uint32_t size) {
 }
 
 void RenderCamera::DestroyConvolutionBloomResources() {
-    DestroyConvolutionBloomApertureTextures();
-
     if (fftBloomScreenSpatialBuffer) {
         RHI::renderer->DestroyBuffer(fftBloomScreenSpatialBuffer);
         fftBloomScreenSpatialBuffer = nullptr;
@@ -1095,87 +1090,6 @@ void RenderCamera::DestroyConvolutionBloomResources() {
     fftBloomGuardedContentRect = BE1::RectF(0.0f, 0.0f, 0.0f, 0.0f);
     fftBloomKernelSpatialScale = BE1::Vec2(1.0f, 1.0f);
     fftBloomKernelDirty = true;
-}
-
-bool RenderCamera::CreateConvolutionBloomApertureTextures(uint32_t size) {
-    DestroyConvolutionBloomApertureTextures();
-
-    if (size == 0) {
-        return false;
-    }
-
-    auto createTexture = [size](const char *debugName, BE1::Image::Format imageFormat) -> RHI::Texture * {
-        SharedPtr<BE1::Image> image = MakeShared<BE1::Image>();
-        image->InitFromMemory(size, size, 1, 1, 1, imageFormat, BE1::Image::GammaSpace::Linear, nullptr, BE1::Image::Flag::None);
-
-        RHI::Texture *texture = RHI::renderer->CreateTexture(RHI::TextureType::Texture2D, RHI::TextureFlag::ShaderResource | RHI::TextureFlag::UnorderedAccess, image, RHI::TextureMipInitMode::FromImage, {}, 1, RHI::GPUResourceState::ShaderResource);
-        if (!texture) {
-            BE_WARNLOG("RenderCamera::CreateConvolutionBloomApertureTextures: failed to create %s\n", debugName);
-            return nullptr;
-        }
-
-        RHI::renderer->SetName(texture, debugName);
-        return texture;
-    };
-
-    const BE1::Image::Format diffractionPSFFormat = RHI::renderer->ToUAVImageFormat(BE1::Image::Format::R16_FLOAT);
-    fftBloomDiffractionPSFTexture = createTexture("RenderCamera::fftBloomDiffractionPSFTexture", diffractionPSFFormat);
-    if (!fftBloomDiffractionPSFTexture) {
-        return false;
-    }
-
-    const BE1::Image::Format apertureKernelFormat = RHI::renderer->ToUAVImageFormat(BE1::Image::Format::R11G11B10_FLOAT);
-    fftBloomApertureKernelTexture = createTexture("RenderCamera::fftBloomApertureKernelTexture", apertureKernelFormat);
-    if (!fftBloomApertureKernelTexture) {
-        DestroyConvolutionBloomApertureTextures();
-        return false;
-    }
-
-    const uint64_t pixelCount = uint64_t(size) * uint64_t(size);
-    const uint64_t apertureEnergyElementCount = (pixelCount + ConvolutionBloomApertureEnergyReduceBlockSize - 1) / ConvolutionBloomApertureEnergyReduceBlockSize;
-    fftBloomApertureEnergyBuffer0 = CreateFFTBloomStructuredBuffer("RenderCamera::fftBloomApertureEnergyBuffer0", apertureEnergyElementCount);
-    if (!fftBloomApertureEnergyBuffer0) {
-        DestroyConvolutionBloomApertureTextures();
-        return false;
-    }
-
-    fftBloomApertureEnergyBuffer1 = CreateFFTBloomStructuredBuffer("RenderCamera::fftBloomApertureEnergyBuffer1", apertureEnergyElementCount);
-    if (!fftBloomApertureEnergyBuffer1) {
-        DestroyConvolutionBloomApertureTextures();
-        return false;
-    }
-
-    fftBloomApertureTextureSize = size;
-    fftBloomApertureKernelDirty = true;
-    fftBloomKernelDirty = true;
-
-    return true;
-}
-
-void RenderCamera::DestroyConvolutionBloomApertureTextures() {
-    if (!fftBloomDiffractionPSFTexture && !fftBloomApertureKernelTexture && !fftBloomApertureEnergyBuffer0 && !fftBloomApertureEnergyBuffer1 && fftBloomApertureTextureSize == 0) {
-        return;
-    }
-
-    if (fftBloomDiffractionPSFTexture) {
-        RHI::renderer->DestroyTexture(fftBloomDiffractionPSFTexture);
-        fftBloomDiffractionPSFTexture = nullptr;
-    }
-    if (fftBloomApertureKernelTexture) {
-        RHI::renderer->DestroyTexture(fftBloomApertureKernelTexture);
-        fftBloomApertureKernelTexture = nullptr;
-    }
-    if (fftBloomApertureEnergyBuffer0) {
-        RHI::renderer->DestroyBuffer(fftBloomApertureEnergyBuffer0);
-        fftBloomApertureEnergyBuffer0 = nullptr;
-    }
-    if (fftBloomApertureEnergyBuffer1) {
-        RHI::renderer->DestroyBuffer(fftBloomApertureEnergyBuffer1);
-        fftBloomApertureEnergyBuffer1 = nullptr;
-    }
-
-    fftBloomApertureTextureSize = 0;
-    fftBloomApertureKernelDirty = true;
 }
 
 bool RenderCamera::CreateConvolutionBloomOutputTexture(uint32_t width, uint32_t height) {

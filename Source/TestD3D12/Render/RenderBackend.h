@@ -63,6 +63,7 @@ private:
     const void *                    ExecuteBeginContext(const void *data);
     const void *                    ExecuteDrawCamera(const void *data);
     const void *                    ExecuteScreenshot(const void *data);
+    const void *                    ExecuteGenerateConvolutionBloomKernel(const void *data);
     const void *                    ExecuteSwapBuffers(const void *data);
 
     void                            UpdateGlobalPSOs();
@@ -92,12 +93,6 @@ private:
     bool                            DispatchBloom();
     bool                            DispatchPyramidBloom();
     bool                            DispatchConvolutionBloom();
-    bool                            DispatchConvolutionBloomApertureKernelGen();
-    bool                            DispatchConvolutionBloomAperturePrepare();
-    bool                            DispatchConvolutionBloomReduceApertureEnergy(RHI::Buffer **outEnergyBuffer);
-    bool                            DispatchConvolutionBloomReduceApertureEnergyPass(RHI::Buffer *inputBuffer, RHI::Buffer *outputBuffer, uint32_t inputElementCount, bool inputIsPartialEnergy, RHI::GPUResourceState inputState);
-    bool                            DispatchConvolutionBloomResolveDiffractionPSF(RHI::Buffer *apertureEnergyBuffer);
-    bool                            DispatchConvolutionBloomApplyDispersion();
     bool                            DispatchConvolutionBloomKernelPrepare();
     bool                            DispatchConvolutionBloomScreenPrefilter();
     bool                            DispatchConvolutionBloomMultiplySpectrum();
@@ -134,10 +129,6 @@ private:
     RHI::PipelineState *            currentConvolutionBloomPrefilterPSO = nullptr;
     RHI::PipelineState *            currentConvolutionBloomKernelPreparePSO = nullptr;
     RHI::PipelineState *            currentConvolutionBloomResolvePSO = nullptr;
-    RHI::PipelineState *            currentConvolutionBloomAperturePreparePSO = nullptr;
-    RHI::PipelineState *            currentConvolutionBloomReduceApertureEnergyPSO = nullptr;
-    RHI::PipelineState *            currentConvolutionBloomResolveDiffractionPSFPSO = nullptr;
-    RHI::PipelineState *            currentConvolutionBloomApplyDispersionPSO = nullptr;
 
     RHI::ConstantBuffer *           frameConstantBuffer = nullptr;
     RHI::ConstantBuffer *           cameraConstantBuffer = nullptr;

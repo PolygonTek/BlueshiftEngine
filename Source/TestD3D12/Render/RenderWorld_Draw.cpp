@@ -91,7 +91,7 @@ void RenderWorld::SetupPyramidBloom(RenderFrameData *frameData, RenderCamera *re
     }
 }
 
-void RenderWorld::SetupConvolutionBloom(RenderFrameData *frameData, RenderCamera *renderCamera, VisCamera *visCamera, bool useApertureConvolutionBloom) {
+void RenderWorld::SetupConvolutionBloom(RenderFrameData *frameData, RenderCamera *renderCamera, VisCamera *visCamera) {
     if (renderCamera->GetFFTBloomSize() == 0 ||
         !renderCamera->GetFFTBloomConvolutionOutputTexture() ||
         renderCamera->GetFFTBloomConvolutionOutputWidth() == 0 ||
@@ -103,43 +103,17 @@ void RenderWorld::SetupConvolutionBloom(RenderFrameData *frameData, RenderCamera
     renderCamera->SetConvolutionBloomKernelSizeScale(r_convolutionBloomKernelSizeScale.GetFloat());
     renderCamera->SetConvolutionBloomPaddingTrim(r_convolutionBloomPaddingTrim.GetFloat());
 
-    if (useApertureConvolutionBloom) {
-        renderCamera->SetConvolutionBloomDiffractionPSFScale(r_convolutionBloomDiffractionPSFScale.GetFloat());
-        renderCamera->SetConvolutionBloomDispersionAmount(r_convolutionBloomDispersionAmount.GetFloat());
-    }
-
     const uint32_t fftBloomSize = renderCamera->GetFFTBloomSize();
-    const bool updateFFTBloomApertureKernel = useApertureConvolutionBloom && renderCamera->IsFFTBloomApertureKernelDirty();
-    const bool updateFFTBloomKernelBuffer = renderCamera->IsFFTBloomKernelDirty() || updateFFTBloomApertureKernel;
-
-    Texture *fftBloomApertureSourceTexture = nullptr;
-    if (updateFFTBloomApertureKernel) {
-        assert(renderCamera->GetFFTBloomDiffractionPSFTexture());
-        assert(renderCamera->GetFFTBloomApertureKernelTexture());
-    }
-
-    if (updateFFTBloomApertureKernel) {
-        fftBloomApertureSourceTexture = frameData->RetainTexture(renderCamera->GetFFTBloomApertureTexture());
-        if (!fftBloomApertureSourceTexture || !fftBloomApertureSourceTexture->IsReadyForRendering()) {
-            return;
-        }
-    }
+    const bool updateFFTBloomKernelBuffer = renderCamera->IsFFTBloomKernelDirty();
 
     Texture *fftBloomKernelSourceTexture = nullptr;
     RHI::Texture *fftBloomKernelSourceRHITexture = nullptr;
     if (updateFFTBloomKernelBuffer) {
-        if (useApertureConvolutionBloom) {
-            fftBloomKernelSourceRHITexture = renderCamera->GetFFTBloomApertureKernelTexture();
-            if (!fftBloomKernelSourceRHITexture) {
-                return;
-            }
-        } else {
-            fftBloomKernelSourceTexture = frameData->RetainTexture(renderCamera->GetFFTBloomKernelTexture());
-            if (!fftBloomKernelSourceTexture || !fftBloomKernelSourceTexture->IsReadyForRendering()) {
-                return;
-            }
-            fftBloomKernelSourceRHITexture = fftBloomKernelSourceTexture->GetRHITexture();
+        fftBloomKernelSourceTexture = frameData->RetainTexture(renderCamera->GetFFTBloomKernelTexture());
+        if (!fftBloomKernelSourceTexture || !fftBloomKernelSourceTexture->IsReadyForRendering()) {
+            return;
         }
+        fftBloomKernelSourceRHITexture = fftBloomKernelSourceTexture->GetRHITexture();
 
         renderCamera->UpdateConvolutionBloomGuardedContentRect();
     }
@@ -147,13 +121,7 @@ void RenderWorld::SetupConvolutionBloom(RenderFrameData *frameData, RenderCamera
     visCamera->fftBloomSize = fftBloomSize;
     visCamera->fftBloomScreenSpatialBuffer = renderCamera->GetFFTBloomScreenSpatialBuffer();
     visCamera->fftBloomScreenSpectrumBuffer = renderCamera->GetFFTBloomScreenSpectrumBuffer();
-    visCamera->fftBloomApertureSourceTexture = updateFFTBloomApertureKernel ? fftBloomApertureSourceTexture->GetRHITexture() : nullptr;
     visCamera->fftBloomKernelSourceTexture = updateFFTBloomKernelBuffer ? fftBloomKernelSourceRHITexture : nullptr;
-    visCamera->fftBloomDiffractionPSFTexture = renderCamera->GetFFTBloomDiffractionPSFTexture();
-    visCamera->fftBloomApertureKernelTexture = renderCamera->GetFFTBloomApertureKernelTexture();
-    visCamera->fftBloomApertureEnergyBuffer0 = renderCamera->GetFFTBloomApertureEnergyBuffer0();
-    visCamera->fftBloomApertureEnergyBuffer1 = renderCamera->GetFFTBloomApertureEnergyBuffer1();
-    visCamera->fftBloomApertureTextureSize = renderCamera->GetFFTBloomApertureTextureSize();
     visCamera->fftBloomKernelSpatialBuffer = renderCamera->GetFFTBloomKernelSpatialBuffer();
     visCamera->fftBloomKernelSpectrumBuffer = renderCamera->GetFFTBloomKernelSpectrumBuffer();
     visCamera->fftBloomWorkBuffer = renderCamera->GetFFTBloomWorkBuffer();
@@ -163,20 +131,14 @@ void RenderWorld::SetupConvolutionBloom(RenderFrameData *frameData, RenderCamera
     visCamera->fftBloomKernelRotation = renderCamera->GetFFTBloomKernelRotation();
     visCamera->fftBloomKernelSizeScale = renderCamera->GetFFTBloomKernelSizeScale();
     visCamera->fftBloomPaddingTrim = renderCamera->GetFFTBloomPaddingTrim();
-    visCamera->fftBloomDiffractionPSFScale = renderCamera->GetFFTBloomDiffractionPSFScale();
-    visCamera->fftBloomDispersionAmount = renderCamera->GetFFTBloomDispersionAmount();
     visCamera->fftBloomKernelExtents = renderCamera->GetFFTBloomKernelExtents();
     visCamera->fftBloomGuardedContentRect = renderCamera->GetFFTBloomGuardedContentRect();
     visCamera->fftBloomKernelSpatialScale = renderCamera->GetFFTBloomKernelSpatialScale();
     visCamera->fftBloomKernelNormalizationFactor = renderCamera->GetFFTBloomKernelNormalizationFactor();
-    visCamera->fftBloomApertureKernelDirty = updateFFTBloomApertureKernel;
     visCamera->fftBloomKernelDirty = updateFFTBloomKernelBuffer;
 
     if (updateFFTBloomKernelBuffer) {
         renderCamera->MarkConvolutionBloomKernelClean();
-    }
-    if (updateFFTBloomApertureKernel) {
-        renderCamera->MarkConvolutionBloomApertureKernelClean();
     }
 }
 
@@ -200,7 +162,7 @@ void RenderWorld::RenderScene(RenderCamera *renderCamera) {
     renderCamera->EnsureRenderTextures(renderWidth, renderHeight, renderContext->GetMainRTColorFormat(), renderContext->GetMainRTDepthFormat(), renderContext->GetMainRTSampleCount(), renderContext->GetBaseClearColor());
     renderCamera->EnsurePostProcessResources();
 
-    const RenderBloomMode bloomMode = static_cast<RenderBloomMode>(BE1::Clamp(r_bloom.GetInteger(), static_cast<int>(RenderBloomMode::Off), static_cast<int>(RenderBloomMode::ApertureConvolution)));
+    const RenderBloomMode bloomMode = static_cast<RenderBloomMode>(BE1::Clamp(r_bloom.GetInteger(), static_cast<int>(RenderBloomMode::Off), static_cast<int>(RenderBloomMode::Convolution)));
 
     visCamera->maxVisSurfs = VisCamera::MaxVisSurfs;
     visCamera->visSurfs = (const VisSurf **)frameData->MemAlloc(visCamera->maxVisSurfs * sizeof(VisSurf *));
@@ -220,13 +182,12 @@ void RenderWorld::RenderScene(RenderCamera *renderCamera) {
     visCamera->luminanceBuffer = renderCamera->GetLuminanceBuffer();
 
     const bool usePyramidBloom = bloomMode == RenderBloomMode::Pyramid;
-    const bool useApertureConvolutionBloom = bloomMode == RenderBloomMode::ApertureConvolution;
-    const bool useConvolutionBloom = bloomMode == RenderBloomMode::Convolution || useApertureConvolutionBloom;
+    const bool useConvolutionBloom = bloomMode == RenderBloomMode::Convolution;
 
     if (usePyramidBloom) {
         SetupPyramidBloom(frameData, renderCamera, visCamera);
     } else if (useConvolutionBloom) {
-        SetupConvolutionBloom(frameData, renderCamera, visCamera, useApertureConvolutionBloom);
+        SetupConvolutionBloom(frameData, renderCamera, visCamera);
     }
 
     visCamera->viewMatrix = renderCamera->viewMatrix;
@@ -356,7 +317,7 @@ void RenderWorld::FindVisObjects(RenderFrameData *frameData, const RenderCamera 
     for (int objectIndex : dynamicObjectIndices) {
         const RenderObject *renderObject = renderObjects[objectIndex];
 
-        if (!r_skipCulling.GetBool() && renderCamera->frustum.CullAABB(renderObject->worldAABB)) {
+        if (!r_skipFrustumCulling.GetBool() && renderCamera->frustum.CullAABB(renderObject->worldAABB)) {
             continue;
         }
 
@@ -377,7 +338,7 @@ void RenderWorld::FindVisObjects(RenderFrameData *frameData, const RenderCamera 
             continue;
         }
 
-        if (!r_skipCulling.GetBool() && renderCamera->frustum.CullAABB(renderObject->worldAABB)) {
+        if (!r_skipFrustumCulling.GetBool() && renderCamera->frustum.CullAABB(renderObject->worldAABB)) {
             continue;
         }
 
@@ -539,7 +500,7 @@ void RenderWorld::AddMeshes(RenderFrameData *frameData, const RenderCamera *rend
 
         VisSurfFlag flags = VisSurfFlag::CameraVisible;
         const int numSurfaces = visObject->meshInstance->NumSurfaces();
-        const bool cullSurfaces = !r_skipCulling.GetBool() && numSurfaces > 1;
+        const bool cullSurfaces = !r_skipFrustumCulling.GetBool() && numSurfaces > 1;
 
         for (int meshSurfIndex = 0; meshSurfIndex < numSurfaces; ++meshSurfIndex) {
             const Mesh::Surface *meshSurf = visObject->meshInstance->GetSurface(meshSurfIndex);

@@ -73,6 +73,8 @@ set(SRC_FILES
     Render/VertexInputLayoutFactory.cpp
     Render/RenderCvars.h
     Render/RenderCvars.cpp
+    Render/ConvolutionBloomKernelGenerator.h
+    Render/ConvolutionBloomKernelGenerator.cpp
     Render/RenderContext.h
     Render/RenderContext.cpp
     Render/RenderFrameData.h

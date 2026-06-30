@@ -15,6 +15,7 @@
 #include "Precompiled.h"
 #include "RHI/RHI.h"
 #include "GpuFFT.h"
+#include "ConvolutionBloomKernelGenerator.h"
 
 class RenderContext;
 class RenderBackend;
@@ -39,6 +40,7 @@ class ShaderPipeline;
 class RenderSystem {
     friend class RenderFrameData;
     friend class RenderBackend;
+    friend class ConvolutionBloomKernelGenerator;
 
 public:
     void                            Init(void *mainWindowHandle);
@@ -61,6 +63,9 @@ public:
     void                            RequestScreenshot(RenderContext *renderContext, const char *filename);
 
     RenderBackend *                 GetBackend() const { return backEnd; }
+
+    ConvolutionBloomKernelGenerator &GetConvolutionBloomKernelGenerator() { return convolutionBloomKernelGenerator; }
+    const ConvolutionBloomKernelGenerator &GetConvolutionBloomKernelGenerator() const { return convolutionBloomKernelGenerator; }
 
 private:
     struct SubmittedFrame {
@@ -109,6 +114,8 @@ private:
     SharedPtr<ShaderPipeline>       convolutionBloomReduceApertureEnergyPipeline;
     SharedPtr<ShaderPipeline>       convolutionBloomResolveDiffractionPSFPipeline;
     SharedPtr<ShaderPipeline>       convolutionBloomApplyDispersionPipeline;
+
+    ConvolutionBloomKernelGenerator convolutionBloomKernelGenerator;
 
     GpuFFT                          gpuFFT;
 };

@@ -16,6 +16,7 @@
 #include "Render/RenderSystem.h"
 #include "Render/RenderContext.h"
 #include "Render/RenderBackend.h"
+#include "Render/RenderCvars.h"
 #include "Render/RenderWorld.h"
 #include "Render/RenderCamera.h"
 #include "Render/Texture.h"
@@ -30,8 +31,9 @@
 
 BE1::CVar       app_showFps("app_showFps", "1", BE1::CVar::Flag::Bool, "show FPS");
 BE1::CVar       app_showStats("app_showStats", "0", BE1::CVar::Flag::Bool, "show render statistics");
-BE1::CVar       app_convolutionBloomKernelIndex("app_convolutionBloomKernelIndex", "0", BE1::CVar::Flag::Integer | BE1::CVar::Flag::Archive, "convolution bloom kernel index", 0, App::ConvolutionBloomKernelCount - 1);
-BE1::CVar       app_convolutionBloomAperture("app_convolutionBloomAperture", "5", BE1::CVar::Flag::Integer | BE1::CVar::Flag::Archive, "convolution bloom aperture", App::Triangle, App::Circle);
+BE1::CVar       app_convolutionBloomKernelSource("app_convolutionBloomKernelSource", "1", BE1::CVar::Flag::Integer | BE1::CVar::Flag::Archive, "convolution bloom kernel source", static_cast<int>(App::ConvolutionBloomKernelSource::Preset), static_cast<int>(App::ConvolutionBloomKernelSource::GenerateFromAperture));
+BE1::CVar       app_convolutionBloomKernelPreset("app_convolutionBloomKernelPreset", "0", BE1::CVar::Flag::Integer | BE1::CVar::Flag::Archive, "convolution bloom kernel preset", 0, App::ConvolutionBloomKernelPresetCount - 1);
+BE1::CVar       app_convolutionBloomAperturePreset("app_convolutionBloomAperturePreset", "5", BE1::CVar::Flag::Integer | BE1::CVar::Flag::Archive, "convolution bloom aperture preset", static_cast<int>(App::AperturePreset::Triangle), static_cast<int>(App::AperturePreset::Circle));
 
 App             app;
 
@@ -47,15 +49,13 @@ void App::Init(void *mainWindowHandle) {
 
     mainFont = fontManager.GetFont("Data/EngineFonts/consola.ttf", 22);
 
+    //mainSkyboxMaterial = materialManager.GetMaterial("_defaultSkyboxMaterial");
     mainSkyboxMaterial = materialManager.GetMaterial("Source/TestD3D12/Materials/skybox.material");
 
     renderWorld = new RenderWorld;
     renderWorld->SetSkyboxMaterial(mainSkyboxMaterial);
 
     renderCamera = new RenderCamera;
-
-    SetConvolutionBloomKernelIndex(app_convolutionBloomKernelIndex.GetInteger());
-    SetConvolutionBloomAperture((App::Aperture)app_convolutionBloomAperture.GetInteger());
  
     InitGameObjects(100, 100, 1);
 
@@ -63,6 +63,10 @@ void App::Init(void *mainWindowHandle) {
     cameraPitch = targetCameraPitch;
     cameraDistance = targetCameraDistance;
     cameraCenter = targetCameraCenter;
+
+    app_convolutionBloomKernelPreset.SetModified();
+    app_convolutionBloomAperturePreset.SetModified();
+    app_convolutionBloomKernelSource.SetModified();
 }
 
 void App::Shutdown() {
@@ -72,7 +76,8 @@ void App::Shutdown() {
     SAFE_DELETE(renderWorld);
 
     convolutionBloomApertureTexture.reset();
-    convolutionBloomKernelTexture.reset();
+    convolutionBloomGeneratedKernelTexture.reset();
+
     mainFont.reset();
     mainSkyboxMaterial.reset();
 
@@ -85,82 +90,6 @@ void App::Shutdown() {
     SAFE_DELETE(renderSystem);
 
     PROFILER_SHUTDOWN();
-}
-
-void App::GetConvolutionBloomKernelDisplayName(int index, char *buffer, int bufferSize) const {
-    BE1::Str::snPrintf(buffer, bufferSize, "CGV Bloom %02i", index + 1);
-}
-
-void App::SetConvolutionBloomKernelIndex(int index) {
-    const int currentIndex = app_convolutionBloomKernelIndex.GetInteger();
-
-    app_convolutionBloomKernelIndex.SetInteger(index);
-    index = app_convolutionBloomKernelIndex.GetInteger();
-
-    if (currentIndex == index && convolutionBloomKernelTexture) {
-        return;
-    }
-
-    char filename[128];
-    BE1::Str::snPrintf(filename, sizeof(filename), "BloomKernels/CGV_Bloom_%02i.EXR", index + 1);
-
-    SetConvolutionBloomKernelFromFile(filename);
-}
-
-void App::SetConvolutionBloomKernelFromFile(const char *filename) {
-    BE1::Image kernelImage = BE1::Image::ImageFromFile(filename);
-    if (kernelImage.IsEmpty()) {
-        return;
-    }
-
-    float normalizationFactor;
-    BE1::Vec2 kernelExtents;
-    RenderCamera::CalcConvolutionBloomKernelParams(kernelImage, normalizationFactor, kernelExtents);
-
-    convolutionBloomKernelTexture = textureManager.GetTexture(filename, Texture::Flag::HighQuality | Texture::Flag::NoMipmaps);
-    renderCamera->SetConvolutionBloomKernelTexture(convolutionBloomKernelTexture, normalizationFactor, kernelExtents);
-}
-
-void App::SetConvolutionBloomAperture(App::Aperture aperture) {
-    char filename[128];
-    switch (aperture) {
-    case App::Aperture::Triangle:
-        BE1::Str::snPrintf(filename, sizeof(filename), "EngineTextures/Apertures/Triangle.png");
-        break;
-    case App::Aperture::Square:
-        BE1::Str::snPrintf(filename, sizeof(filename), "EngineTextures/Apertures/Square.png");
-        break;
-    case App::Aperture::HorzRectangle:
-        BE1::Str::snPrintf(filename, sizeof(filename), "EngineTextures/Apertures/RectangleHorz.png");
-        break;
-    case App::Aperture::VertRectangle:
-        BE1::Str::snPrintf(filename, sizeof(filename), "EngineTextures/Apertures/RectangleVert.png");
-        break;
-    case App::Aperture::Pentagon:
-        BE1::Str::snPrintf(filename, sizeof(filename), "EngineTextures/Apertures/Pentagon.png");
-        break;
-    case App::Aperture::Hexagon:
-        BE1::Str::snPrintf(filename, sizeof(filename), "EngineTextures/Apertures/Hexagon.png");
-        break;
-    case App::Aperture::Heptagon:
-        BE1::Str::snPrintf(filename, sizeof(filename), "EngineTextures/Apertures/Heptagon.png");
-        break;
-    case App::Aperture::Octagon:
-        BE1::Str::snPrintf(filename, sizeof(filename), "EngineTextures/Apertures/Octagon.png");
-        break;
-    case App::Aperture::Circle:
-        BE1::Str::snPrintf(filename, sizeof(filename), "EngineTextures/Apertures/Circle.png");
-        break;
-    default:
-        return;
-    }
-
-    SetConvolutionBloomApertureFromFile(filename);
-}
-
-void App::SetConvolutionBloomApertureFromFile(const char *filename) {
-    convolutionBloomApertureTexture = textureManager.GetTexture(filename, Texture::Flag::HighQuality | Texture::Flag::NoMipmaps);
-    renderCamera->SetConvolutionBloomApertureTexture(convolutionBloomApertureTexture);
 }
 
 void App::Update(uint64_t frameUsec) {
@@ -178,8 +107,36 @@ void App::Update(uint64_t frameUsec) {
 
     BE1::cmdSystem.ExecuteCommandBuffer();
 
+    CheckModifiedCVars();
+
     uint64_t t1 = BE1::PlatformTime::Microseconds();
     UpdateGameFrameTime(t1 - t0);
+}
+
+void App::CheckModifiedCVars() {
+    const bool kernelSourceModified = app_convolutionBloomKernelSource.IsModified();
+    if (kernelSourceModified) {
+        app_convolutionBloomKernelSource.ClearModified();
+    }
+
+    const bool kernelPresetModified = app_convolutionBloomKernelPreset.IsModified();
+    if (kernelPresetModified) {
+        app_convolutionBloomKernelPreset.ClearModified();
+    }
+
+    const bool aperturePresetModified = app_convolutionBloomAperturePreset.IsModified();
+    if (aperturePresetModified) {
+        app_convolutionBloomAperturePreset.ClearModified();
+    }
+
+    if (app_convolutionBloomKernelSource.GetInteger() == static_cast<int>(App::ConvolutionBloomKernelSource::Preset) && (kernelSourceModified || kernelPresetModified)) {
+        SetConvolutionBloomKernelPreset(app_convolutionBloomKernelPreset.GetInteger());
+    }
+
+    if (app_convolutionBloomKernelSource.GetInteger() == static_cast<int>(App::ConvolutionBloomKernelSource::GenerateFromAperture) && (kernelSourceModified || aperturePresetModified)) {
+        SetConvolutionBloomAperturePreset((App::AperturePreset)app_convolutionBloomAperturePreset.GetInteger());
+        RequestConvolutionBloomKernelGeneration();
+    }
 }
 
 void App::Render(uint64_t frameUsec) {
@@ -194,6 +151,8 @@ void App::Render(uint64_t frameUsec) {
     statEnabled |= imguiShowStatsPlotWindow;
 #endif
 
+    ProcessPendingConvolutionBloomKernelReadback();
+
     mainRenderContext->BeginFrame(frameTime, elapsedTime, elapsedPrevTime, statEnabled);
 
     uint64_t t0 = BE1::PlatformTime::Microseconds();
@@ -205,6 +164,10 @@ void App::Render(uint64_t frameUsec) {
     RenderScene();
 
     RenderGUI();
+
+    if (pendingConvolutionBloomKernelGeneration) {
+        EnqueuePendingConvolutionBloomKernelGeneration();
+    }
 
     mainRenderContext->EndFrame();
 
@@ -505,4 +468,108 @@ void App::RenderGUI() {
         BuildImGuiOverlay();
     });
 #endif
+}
+
+void App::SetConvolutionBloomAperturePreset(App::AperturePreset aperturePreset) {
+    char filename[128];
+    switch (aperturePreset) {
+    case App::AperturePreset::Triangle:
+        BE1::Str::snPrintf(filename, sizeof(filename), "EngineTextures/Apertures/Triangle.png");
+        break;
+    case App::AperturePreset::Square:
+        BE1::Str::snPrintf(filename, sizeof(filename), "EngineTextures/Apertures/Square.png");
+        break;
+    case App::AperturePreset::HorzRectangle:
+        BE1::Str::snPrintf(filename, sizeof(filename), "EngineTextures/Apertures/RectangleHorz.png");
+        break;
+    case App::AperturePreset::VertRectangle:
+        BE1::Str::snPrintf(filename, sizeof(filename), "EngineTextures/Apertures/RectangleVert.png");
+        break;
+    case App::AperturePreset::Pentagon:
+        BE1::Str::snPrintf(filename, sizeof(filename), "EngineTextures/Apertures/Pentagon.png");
+        break;
+    case App::AperturePreset::Hexagon:
+        BE1::Str::snPrintf(filename, sizeof(filename), "EngineTextures/Apertures/Hexagon.png");
+        break;
+    case App::AperturePreset::Heptagon:
+        BE1::Str::snPrintf(filename, sizeof(filename), "EngineTextures/Apertures/Heptagon.png");
+        break;
+    case App::AperturePreset::Octagon:
+        BE1::Str::snPrintf(filename, sizeof(filename), "EngineTextures/Apertures/Octagon.png");
+        break;
+    case App::AperturePreset::Circle:
+        BE1::Str::snPrintf(filename, sizeof(filename), "EngineTextures/Apertures/Circle.png");
+        break;
+    default:
+        return;
+    }
+
+    convolutionBloomApertureTexture = textureManager.GetTexture(filename, Texture::Flag::HighQuality | Texture::Flag::NoMipmaps);
+    if (renderSystem) {
+        renderSystem->GetConvolutionBloomKernelGenerator().SetApertureTexture(convolutionBloomApertureTexture);
+    }
+}
+
+void App::RequestConvolutionBloomKernelGeneration() {
+    pendingConvolutionBloomKernelGeneration = true;
+}
+
+void App::EnqueuePendingConvolutionBloomKernelGeneration() {
+    if (app_convolutionBloomKernelSource.GetInteger() != static_cast<int>(App::ConvolutionBloomKernelSource::GenerateFromAperture)) {
+        pendingConvolutionBloomKernelGeneration = false;
+        return;
+    }
+
+    RenderFrameData *frameData = mainRenderContext->GetCurrentFrontendFrameData();
+    frameData->CmdGenerateConvolutionBloomKernel(r_convolutionBloomDiffractionPSFScale.GetFloat(), r_convolutionBloomDispersionAmount.GetFloat());
+
+    pendingConvolutionBloomKernelGeneration = false;
+    pendingConvolutionBloomKernelReadbackFrameData = frameData;
+}
+
+void App::ProcessPendingConvolutionBloomKernelReadback() {
+    if (!pendingConvolutionBloomKernelReadbackFrameData) {
+        return;
+    }
+
+    if (app_convolutionBloomKernelSource.GetInteger() != static_cast<int>(App::ConvolutionBloomKernelSource::GenerateFromAperture)) {
+        pendingConvolutionBloomKernelReadbackFrameData = nullptr;
+        return;
+    }
+
+    renderSystem->WaitRenderCompleted(pendingConvolutionBloomKernelReadbackFrameData);
+
+    BE1::Image kernelImage;
+    if (!renderSystem->GetConvolutionBloomKernelGenerator().ReadKernelImage(kernelImage)) {
+        BE_WARNLOG("App::ProcessPendingConvolutionBloomKernelReadback: failed to read generated convolution bloom kernel\n");
+        pendingConvolutionBloomKernelReadbackFrameData = nullptr;
+        return;
+    }
+
+    char kernelTextureName[128];
+    BE1::Str::snPrintf(kernelTextureName, sizeof(kernelTextureName), "_Generated/ConvolutionBloom/ApertureKernel_%u", ++convolutionBloomGeneratedKernelSerial);
+    if (renderCamera->SetConvolutionBloomKernelFromImage(kernelTextureName, kernelImage)) {
+        convolutionBloomGeneratedKernelTexture = renderCamera->GetFFTBloomKernelTexture();
+    } else {
+        BE_WARNLOG("App::ProcessPendingConvolutionBloomKernelReadback: failed to create generated convolution bloom kernel texture\n");
+    }
+
+    pendingConvolutionBloomKernelReadbackFrameData = nullptr;
+}
+
+void App::GetConvolutionBloomKernelPresetName(int presetIndex, char *buffer, int bufferSize) const {
+    BE1::Str::snPrintf(buffer, bufferSize, "CGV_Bloom_%02i.EXR", presetIndex + 1);
+}
+
+void App::SetConvolutionBloomKernelPreset(int presetIndex) {
+    char filename[128];
+    GetConvolutionBloomKernelPresetName(presetIndex, filename, sizeof(filename));
+
+    BE1::Str filePath;
+    filePath.AppendPath("BloomKernels");
+    filePath.AppendPath(filename);
+
+    if (renderCamera->SetConvolutionBloomKernelFromFile(filePath)) {
+        convolutionBloomGeneratedKernelTexture.reset();
+    }
 }

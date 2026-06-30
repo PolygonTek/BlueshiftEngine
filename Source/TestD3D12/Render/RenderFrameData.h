@@ -37,6 +37,7 @@ enum class RenderCommandId : uint8_t {
     BeginContext,
     DrawCamera,
     ScreenShot,
+    GenerateConvolutionBloomKernel,
     SwapBuffers
 };
 
@@ -65,6 +66,12 @@ struct ScreenShotRenderCommand {
     int                             width;
     int                             height;
     char                            filename[BE1::MaxAbsolutePath];
+};
+
+struct GenerateConvolutionBloomKernelRenderCommand {
+    RenderCommandId                 commandId;
+    float                           diffractionPSFScale;
+    float                           dispersionAmount;
 };
 
 struct SwapBuffersRenderCommand {
@@ -129,6 +136,7 @@ public:
     void                            CmdDrawCamera(const VisCamera *camera);
     void                            CmdSwapBuffers();
     void                            CmdScreenshot(int x, int y, int width, int height, const char *filename);
+    void                            CmdGenerateConvolutionBloomKernel(float diffractionPSFScale, float dispersionAmount);
     void                            CmdEnd();
 
     bool                            HasPendingImGuiOverlay() const { return pendingImGuiOverlay.overlay != nullptr; }
@@ -306,6 +314,17 @@ BE_INLINE void RenderFrameData::CmdScreenshot(int x, int y, int width, int heigh
     cmd->width = width;
     cmd->height = height;
     BE1::Str::Copynz(cmd->filename, filename, COUNT_OF(cmd->filename));
+}
+
+BE_INLINE void RenderFrameData::CmdGenerateConvolutionBloomKernel(float diffractionPSFScale, float dispersionAmount) {
+    GenerateConvolutionBloomKernelRenderCommand *cmd = (GenerateConvolutionBloomKernelRenderCommand *)GetCommandBuffer(sizeof(GenerateConvolutionBloomKernelRenderCommand));
+    if (!cmd) {
+        return;
+    }
+
+    cmd->commandId = RenderCommandId::GenerateConvolutionBloomKernel;
+    cmd->diffractionPSFScale = diffractionPSFScale;
+    cmd->dispersionAmount = dispersionAmount;
 }
 
 BE_INLINE void RenderFrameData::CmdEnd() {

@@ -20,6 +20,7 @@
 #include "Render/RenderBackend.h"
 #include "Render/RenderWorld.h"
 #include "Render/RenderCamera.h"
+#include "Render/Texture.h"
 #include "GameObject.h"
 #include "App.h"
 
@@ -29,8 +30,9 @@
 
 extern BE1::CVar       app_showFps;
 extern BE1::CVar       app_showStats;
-extern BE1::CVar       app_convolutionBloomKernelIndex;
-extern BE1::CVar       app_convolutionBloomAperture;
+extern BE1::CVar       app_convolutionBloomKernelSource;
+extern BE1::CVar       app_convolutionBloomKernelPreset;
+extern BE1::CVar       app_convolutionBloomAperturePreset;
 
 #ifdef ENABLE_IMGUI
 void App::UpdateImGuiStatsPlotHistory() {
@@ -208,6 +210,57 @@ static void TextureFlagsToText(RHI::TextureFlag flags, char *text, size_t textSi
     }
 }
 
+static bool DrawImGuiTexturePreview(const RHI::Texture *texture, RHI::ViewID viewID, float maxPreviewSize, bool center) {
+    if (!texture || maxPreviewSize <= 0.0f) {
+        return false;
+    }
+
+    RHI::TextureViewInfo viewInfo;
+    const bool hasViewInfo = texture->GetViewInfo(RHI::ViewType::SRV, viewID, viewInfo);
+    const uint32_t textureID = texture->GetBindlessIndex(RHI::ViewType::SRV, viewID);
+    const uint32_t previewWidth = hasViewInfo ? viewInfo.width : texture->GetWidth();
+    const uint32_t previewHeight = hasViewInfo ? viewInfo.height : texture->GetHeight();
+    if (textureID == 0 || previewWidth == 0 || previewHeight == 0) {
+        return false;
+    }
+
+    const float previewAspectRatio = static_cast<float>(previewWidth) / previewHeight;
+    ImVec2 previewSize;
+    if (previewAspectRatio > 1.0f) {
+        previewSize.x = maxPreviewSize;
+        previewSize.y = maxPreviewSize / previewAspectRatio;
+    } else {
+        previewSize.x = maxPreviewSize * previewAspectRatio;
+        previewSize.y = maxPreviewSize;
+    }
+
+    const ImVec2 previewFrameSize(maxPreviewSize, maxPreviewSize);
+    if (center) {
+        const float availableWidth = ImGui::GetContentRegionAvail().x;
+        if (availableWidth > previewFrameSize.x) {
+            ImGui::SetCursorPosX(ImGui::GetCursorPosX() + (availableWidth - previewFrameSize.x) * 0.5f);
+        }
+    }
+
+    const ImVec2 framePos = ImGui::GetCursorScreenPos();
+    const ImVec2 imagePos(
+        framePos.x + (previewFrameSize.x - previewSize.x) * 0.5f,
+        framePos.y + (previewFrameSize.y - previewSize.y) * 0.5f);
+
+    ImDrawList *drawList = ImGui::GetWindowDrawList();
+    drawList->AddRectFilled(
+        framePos,
+        ImVec2(framePos.x + previewFrameSize.x, framePos.y + previewFrameSize.y),
+        IM_COL32(0, 0, 0, 255));
+    drawList->AddImage(
+        (ImTextureID)(UINT64)textureID,
+        imagePos,
+        ImVec2(imagePos.x + previewSize.x, imagePos.y + previewSize.y));
+    ImGui::Dummy(previewFrameSize);
+
+    return true;
+}
+
 void App::BuildImGuiTextureViewer() {
     static int selectedTextureIndex = 0;
     static int selectedViewIndex = 0;
@@ -222,9 +275,13 @@ void App::BuildImGuiTextureViewer() {
         AddImGuiTextureViewerEntry(entries, MaxTextureViewerEntries, entryCount, "Post Process Color", renderCamera->GetPostProcessColorTexture());
         AddImGuiTextureViewerEntry(entries, MaxTextureViewerEntries, entryCount, "Bloom Down", renderCamera->GetBloomDownTexture());
         AddImGuiTextureViewerEntry(entries, MaxTextureViewerEntries, entryCount, "Bloom Up", renderCamera->GetBloomUpTexture());
-        AddImGuiTextureViewerEntry(entries, MaxTextureViewerEntries, entryCount, "FFT Bloom Convolution Output", renderCamera->GetFFTBloomConvolutionOutputTexture());
-        AddImGuiTextureViewerEntry(entries, MaxTextureViewerEntries, entryCount, "FFT Bloom Diffraction PSF", renderCamera->GetFFTBloomDiffractionPSFTexture());
-        AddImGuiTextureViewerEntry(entries, MaxTextureViewerEntries, entryCount, "FFT Bloom Aperture Kernel", renderCamera->GetFFTBloomApertureKernelTexture());
+        AddImGuiTextureViewerEntry(entries, MaxTextureViewerEntries, entryCount, "Bloom Convolution Output", renderCamera->GetFFTBloomConvolutionOutputTexture());
+    }
+
+    if (renderSystem) {
+        const ConvolutionBloomKernelGenerator &kernelGenerator = renderSystem->GetConvolutionBloomKernelGenerator();
+        AddImGuiTextureViewerEntry(entries, MaxTextureViewerEntries, entryCount, "Bloom Diffraction PSF", kernelGenerator.GetDiffractionPSFTexture());
+        AddImGuiTextureViewerEntry(entries, MaxTextureViewerEntries, entryCount, "Generated Bloom Kernel", kernelGenerator.GetKernelTexture());
     }
 
     if (entryCount == 0) {
@@ -264,7 +321,6 @@ void App::BuildImGuiTextureViewer() {
     const RHI::ViewID viewID = texture->GetViewID(RHI::ViewType::SRV, selectedViewIndex);
     RHI::TextureViewInfo viewInfo;
     const bool hasViewInfo = texture->GetViewInfo(RHI::ViewType::SRV, viewID, viewInfo);
-    const uint32_t textureID = texture->GetBindlessIndex(RHI::ViewType::SRV, viewID);
 
     ImGui::Separator();
     ImGui::Text("Type: %s, Format: %s", RHI::Renderer::TextureTypeName(texture->type), RHI::Renderer::FormatName(texture->GetFormat()));
@@ -299,45 +355,9 @@ void App::BuildImGuiTextureViewer() {
         ImGui::Text("View ID: %u", viewID.value);
     }
 
-    const uint32_t previewWidth = hasViewInfo ? viewInfo.width : texture->GetWidth();
-    const uint32_t previewHeight = hasViewInfo ? viewInfo.height : texture->GetHeight();
-    if (textureID == 0 || previewWidth == 0 || previewHeight == 0) {
+    if (!DrawImGuiTexturePreview(texture, viewID, fontSize * 24.0f, true)) {
         ImGui::TextUnformatted("Preview is unavailable.");
-        return;
     }
-
-    const float maxPreviewSize = fontSize * 24.0f;
-    const float previewAspectRatio = static_cast<float>(previewWidth) / previewHeight;
-    ImVec2 previewSize;
-    if (previewAspectRatio > 1.0f) {
-        previewSize.x = maxPreviewSize;
-        previewSize.y = maxPreviewSize / previewAspectRatio;
-    } else {
-        previewSize.x = maxPreviewSize * previewAspectRatio;
-        previewSize.y = maxPreviewSize;
-    }
-
-    const ImVec2 previewFrameSize(maxPreviewSize, maxPreviewSize);
-    const float availableWidth = ImGui::GetContentRegionAvail().x;
-    if (availableWidth > previewFrameSize.x) {
-        ImGui::SetCursorPosX(ImGui::GetCursorPosX() + (availableWidth - previewFrameSize.x) * 0.5f);
-    }
-
-    const ImVec2 framePos = ImGui::GetCursorScreenPos();
-    const ImVec2 imagePos(
-        framePos.x + (previewFrameSize.x - previewSize.x) * 0.5f,
-        framePos.y + (previewFrameSize.y - previewSize.y) * 0.5f);
-
-    ImDrawList *drawList = ImGui::GetWindowDrawList();
-    drawList->AddRectFilled(
-        framePos,
-        ImVec2(framePos.x + previewFrameSize.x, framePos.y + previewFrameSize.y),
-        IM_COL32(0, 0, 0, 255));
-    drawList->AddImage(
-        (ImTextureID)(UINT64)textureID,
-        imagePos,
-        ImVec2(imagePos.x + previewSize.x, imagePos.y + previewSize.y));
-    ImGui::Dummy(previewFrameSize);
 }
 
 void App::BuildImGuiOverlay() {
@@ -401,9 +421,9 @@ void App::BuildImGuiOverlay() {
             }
 
             if (roundedCollapsingHeader("Skip options##RenderSkipOptionsHeader")) {
-                bool skipCulling = r_skipCulling.GetBool();
-                if (ImGui::Checkbox("Skip culling", &skipCulling)) {
-                    r_skipCulling.SetBool(skipCulling);
+                bool skipCulling = r_skipFrustumCulling.GetBool();
+                if (ImGui::Checkbox("Skip frustum culling", &skipCulling)) {
+                    r_skipFrustumCulling.SetBool(skipCulling);
                 }
 
                 bool skipDrawCamera2D = r_skipDrawCamera2D.GetBool();
@@ -422,66 +442,18 @@ void App::BuildImGuiOverlay() {
                 }
             }
 
-            if (roundedCollapsingHeader("Tone mapping##ToneMappingHeader")) {
-                bool toneMapping = r_toneMapping.GetBool();
-                if (ImGui::Checkbox("Tone mapping", &toneMapping)) {
-                    r_toneMapping.SetBool(toneMapping);
-                }
-
-                int toneMapOp = BE1::Clamp(r_toneMapOp.GetInteger(), static_cast<int>(ToneMappingOperatorLinear), static_cast<int>(ToneMappingOperatorFilmicGT));
-                ImGui::SetNextItemWidth(fontSize * 12.0f);
-                if (ImGui::Combo("Tone map operator", &toneMapOp,
-                    "Linear\0"
-                    "Exponential\0"
-                    "Logarithmic\0"
-                    "Drago Logarithmic\0"
-                    "Reinhard\0"
-                    "Reinhard Extended\0"
-                    "Filmic ALU\0"
-                    "Filmic ACES\0"
-                    "Filmic Unreal3\0"
-                    "Filmic Uncharted 2\0"
-                    "Filmic GT\0\0")) {
-                    r_toneMapOp.SetInteger(toneMapOp);
-                }
-
-                float luminanceLogMin = r_toneMapLuminanceLogMin.GetFloat();
-                float luminanceLogMax = r_toneMapLuminanceLogMax.GetFloat();
-                ImGui::SetNextItemWidth(fontSize * 12.0f);
-                if (ImGui::DragFloatRange2("Luminance log2 range", &luminanceLogMin, &luminanceLogMax, 0.05f, -16.0f, 16.0f, "Min: %.2f", "Max: %.2f")) {
-                    r_toneMapLuminanceLogMin.SetFloat(luminanceLogMin);
-                    r_toneMapLuminanceLogMax.SetFloat(BE1::Max(luminanceLogMax, luminanceLogMin + 0.0001f));
-                }
-
-                float luminanceAdaptationRate = r_toneMapLuminanceAdaptationRate.GetFloat();
-                ImGui::SetNextItemWidth(fontSize * 12.0f);
-                if (ImGui::SliderFloat("Luminance adaptation rate", &luminanceAdaptationRate, 0.0f, 10.0f, "%.2f")) {
-                    r_toneMapLuminanceAdaptationRate.SetFloat(luminanceAdaptationRate);
-                }
-
-                float middleGray = r_toneMapMiddleGray.GetFloat();
-                ImGui::SetNextItemWidth(fontSize * 12.0f);
-                if (ImGui::SliderFloat("Middle gray", &middleGray, 0.0f, 2.0f, "%.3f")) {
-                    r_toneMapMiddleGray.SetFloat(middleGray);
-                }
-            }
-
             if (roundedCollapsingHeader("Bloom##BloomHeader")) {
-                int bloomMode = BE1::Clamp(r_bloom.GetInteger(), static_cast<int>(RenderBloomMode::Off), static_cast<int>(RenderBloomMode::ApertureConvolution));
+                int bloomMode = BE1::Clamp(r_bloom.GetInteger(), static_cast<int>(RenderBloomMode::Off), static_cast<int>(RenderBloomMode::Convolution));
                 ImGui::SetNextItemWidth(fontSize * 12.0f);
                 if (ImGui::Combo("Bloom", &bloomMode,
                     "Off\0"
                     "Pyramid\0"
-                    "Convolution\0"
-                    "Aperture Convolution\0")) {
+                    "Convolution\0")) {
                     r_bloom.SetInteger(bloomMode);
                 }
                 const bool useBloom = bloomMode != static_cast<int>(RenderBloomMode::Off);
                 const bool usePyramidBloom = bloomMode == static_cast<int>(RenderBloomMode::Pyramid);
-                const bool useApertureConvolutionBloom = bloomMode == static_cast<int>(RenderBloomMode::ApertureConvolution);
-                const bool useConvolutionBloom =
-                    bloomMode == static_cast<int>(RenderBloomMode::Convolution) ||
-                    useApertureConvolutionBloom;
+                const bool useConvolutionBloom = bloomMode == static_cast<int>(RenderBloomMode::Convolution);
 
                 if (useBloom) {
                     float bloomThreshold = r_bloomThreshold.GetFloat();
@@ -549,18 +521,47 @@ void App::BuildImGuiOverlay() {
                         r_convolutionBloomFFTMaxSize.SetInteger(convolutionBloomFFTMaxSizeOptions[convolutionBloomFFTMaxSizeIndex]);
                     }
 
-                    if (!useApertureConvolutionBloom) {
-                        char currentKernelName[32];
-                        GetConvolutionBloomKernelDisplayName(app_convolutionBloomKernelIndex.GetInteger(), currentKernelName, sizeof(currentKernelName));
-                        ImGui::SetNextItemWidth(fontSize * 12.0f);
-                        if (ImGui::BeginCombo("Bloom kernel", currentKernelName)) {
-                            for (int kernelIndex = 0; kernelIndex < App::ConvolutionBloomKernelCount; ++kernelIndex) {
-                                char kernelName[32];
-                                GetConvolutionBloomKernelDisplayName(kernelIndex, kernelName, sizeof(kernelName));
+                    int convolutionBloomKernelSource = app_convolutionBloomKernelSource.GetInteger();
+                    const char *currentKernelSourceName = convolutionBloomKernelSource == static_cast<int>(App::ConvolutionBloomKernelSource::GenerateFromAperture) ? "From Aperture" : "Preset";
+                    ImGui::SetNextItemWidth(fontSize * 12.0f);
+                    if (ImGui::BeginCombo("Bloom kernel source", currentKernelSourceName)) {
+                        const bool presetSelected = convolutionBloomKernelSource == static_cast<int>(App::ConvolutionBloomKernelSource::Preset);
+                        if (ImGui::Selectable("Preset", presetSelected)) {
+                            if (!presetSelected) {
+                                app_convolutionBloomKernelSource.SetInteger(static_cast<int>(App::ConvolutionBloomKernelSource::Preset));
+                                convolutionBloomKernelSource = static_cast<int>(App::ConvolutionBloomKernelSource::Preset);
+                            }
+                        }
+                        if (presetSelected) {
+                            ImGui::SetItemDefaultFocus();
+                        }
 
-                                const bool isSelected = kernelIndex == app_convolutionBloomKernelIndex.GetInteger();
+                        if (ImGui::Selectable("From Aperture", convolutionBloomKernelSource == static_cast<int>(App::ConvolutionBloomKernelSource::GenerateFromAperture))) {
+                            if (convolutionBloomKernelSource != static_cast<int>(App::ConvolutionBloomKernelSource::GenerateFromAperture)) {
+                                app_convolutionBloomKernelSource.SetInteger(static_cast<int>(App::ConvolutionBloomKernelSource::GenerateFromAperture));
+                                convolutionBloomKernelSource = static_cast<int>(App::ConvolutionBloomKernelSource::GenerateFromAperture);
+                            }
+                        }
+                        if (convolutionBloomKernelSource == static_cast<int>(App::ConvolutionBloomKernelSource::GenerateFromAperture)) {
+                            ImGui::SetItemDefaultFocus();
+                        }
+                        ImGui::EndCombo();
+                    }
+
+                    if (convolutionBloomKernelSource == static_cast<int>(App::ConvolutionBloomKernelSource::Preset)) {
+                        char currentKernelName[32];
+                        GetConvolutionBloomKernelPresetName(app_convolutionBloomKernelPreset.GetInteger(), currentKernelName, sizeof(currentKernelName));
+                        ImGui::SetNextItemWidth(fontSize * 12.0f);
+                        if (ImGui::BeginCombo("Bloom kernel preset", currentKernelName)) {
+                            for (int kernelPreset = 0; kernelPreset < App::ConvolutionBloomKernelPresetCount; ++kernelPreset) {
+                                char kernelName[32];
+                                GetConvolutionBloomKernelPresetName(kernelPreset, kernelName, sizeof(kernelName));
+
+                                const bool isSelected = kernelPreset == app_convolutionBloomKernelPreset.GetInteger();
                                 if (ImGui::Selectable(kernelName, isSelected)) {
-                                    SetConvolutionBloomKernelIndex(kernelIndex);
+                                    if (kernelPreset != app_convolutionBloomKernelPreset.GetInteger()) {
+                                        app_convolutionBloomKernelPreset.SetInteger(kernelPreset);
+                                    }
                                 }
                                 if (isSelected) {
                                     ImGui::SetItemDefaultFocus();
@@ -568,33 +569,28 @@ void App::BuildImGuiOverlay() {
                             }
                             ImGui::EndCombo();
                         }
-                    } else {
-                        int convolutionBloomAperture = BE1::Clamp(app_convolutionBloomAperture.GetInteger(), static_cast<int>(App::Aperture::Triangle), static_cast<int>(App::Aperture::Circle));
+                    } else if (convolutionBloomKernelSource == static_cast<int>(App::ConvolutionBloomKernelSource::GenerateFromAperture)) {
+                        int convolutionBloomAperturePreset = app_convolutionBloomAperturePreset.GetInteger();
                         ImGui::SetNextItemWidth(fontSize * 12.0f);
-                        if (ImGui::Combo("Bloom aperture", &convolutionBloomAperture,
+                        if (ImGui::Combo("Bloom aperture preset", &convolutionBloomAperturePreset,
                             "Triangle\0"
                             "Square\0"
-                            "Horizontal Rectangle\0"
-                            "Vertical Rectangle\0"
+                            "Horz Rectangle\0"
+                            "Vert Rectangle\0"
                             "Pentagon\0"
                             "Hexagon\0"
                             "Heptagon\0"
                             "Octagon\0"
                             "Circle\0")) {
-                            app_convolutionBloomAperture.SetInteger(convolutionBloomAperture);
-                            SetConvolutionBloomAperture(static_cast<App::Aperture>(convolutionBloomAperture));
+                            app_convolutionBloomAperturePreset.SetInteger(convolutionBloomAperturePreset);
                         }
 
-                        float convolutionBloomDiffractionPSFScale = r_convolutionBloomDiffractionPSFScale.GetFloat();
-                        ImGui::SetNextItemWidth(fontSize * 12.0f);
-                        if (ImGui::SliderFloat("Bloom diffraction PSF scale", &convolutionBloomDiffractionPSFScale, 0.0f, 10.0f, "%.3f")) {
-                            r_convolutionBloomDiffractionPSFScale.SetFloat(BE1::Max(convolutionBloomDiffractionPSFScale, 0.0f));
-                        }
-
-                        float convolutionBloomDispersionAmount = r_convolutionBloomDispersionAmount.GetFloat();
-                        ImGui::SetNextItemWidth(fontSize * 12.0f);
-                        if (ImGui::SliderFloat("Bloom dispersion amount", &convolutionBloomDispersionAmount, 0.0f, 10.0f, "%.3f")) {
-                            r_convolutionBloomDispersionAmount.SetFloat(BE1::Max(convolutionBloomDispersionAmount, 0.0f));
+                        if (convolutionBloomApertureTexture && convolutionBloomApertureTexture->IsReadyForRendering()) {
+                            const RHI::Texture *apertureTexture = convolutionBloomApertureTexture->GetRHITexture();
+                            if (apertureTexture) {
+                                ImGui::Spacing();
+                                DrawImGuiTexturePreview(apertureTexture, RHI::ViewID::PrimaryID, fontSize * 8.0f, false);
+                            }
                         }
                     }
 
@@ -621,6 +617,68 @@ void App::BuildImGuiOverlay() {
                     if (ImGui::SliderFloat("Bloom padding trim", &convolutionBloomPaddingTrim, 0.0f, 0.25f, "%.3f")) {
                         r_convolutionBloomPaddingTrim.SetFloat(BE1::Min(BE1::Max(convolutionBloomPaddingTrim, 0.0f), 0.25f));
                     }
+
+                    if (convolutionBloomKernelSource == static_cast<int>(App::ConvolutionBloomKernelSource::GenerateFromAperture)) {
+                        float convolutionBloomDiffractionPSFScale = r_convolutionBloomDiffractionPSFScale.GetFloat();
+                        ImGui::SetNextItemWidth(fontSize * 12.0f);
+                        if (ImGui::SliderFloat("Bloom diffraction PSF scale", &convolutionBloomDiffractionPSFScale, 0.0f, 100.0f, "%.3f")) {
+                            r_convolutionBloomDiffractionPSFScale.SetFloat(BE1::Max(convolutionBloomDiffractionPSFScale, 0.0f));
+                        }
+
+                        float convolutionBloomDispersionAmount = r_convolutionBloomDispersionAmount.GetFloat();
+                        ImGui::SetNextItemWidth(fontSize * 12.0f);
+                        if (ImGui::SliderFloat("Bloom dispersion amount", &convolutionBloomDispersionAmount, 0.0f, 10.0f, "%.3f")) {
+                            r_convolutionBloomDispersionAmount.SetFloat(BE1::Max(convolutionBloomDispersionAmount, 0.0f));
+                        }
+
+                        if (ImGui::Button("Generate Bloom kernel")) {
+                            RequestConvolutionBloomKernelGeneration();
+                        }
+                    }
+                }
+            }
+
+            if (roundedCollapsingHeader("Tone mapping##ToneMappingHeader")) {
+                bool toneMapping = r_toneMapping.GetBool();
+                if (ImGui::Checkbox("Tone mapping", &toneMapping)) {
+                    r_toneMapping.SetBool(toneMapping);
+                }
+
+                int toneMapOp = BE1::Clamp(r_toneMapOp.GetInteger(), static_cast<int>(ToneMappingOperatorLinear), static_cast<int>(ToneMappingOperatorFilmicGT));
+                ImGui::SetNextItemWidth(fontSize * 12.0f);
+                if (ImGui::Combo("Tone map operator", &toneMapOp,
+                    "Linear\0"
+                    "Exponential\0"
+                    "Logarithmic\0"
+                    "Drago Logarithmic\0"
+                    "Reinhard\0"
+                    "Reinhard Extended\0"
+                    "Filmic ALU\0"
+                    "Filmic ACES\0"
+                    "Filmic Unreal3\0"
+                    "Filmic Uncharted 2\0"
+                    "Filmic GT\0\0")) {
+                    r_toneMapOp.SetInteger(toneMapOp);
+                }
+
+                float luminanceLogMin = r_toneMapLuminanceLogMin.GetFloat();
+                float luminanceLogMax = r_toneMapLuminanceLogMax.GetFloat();
+                ImGui::SetNextItemWidth(fontSize * 12.0f);
+                if (ImGui::DragFloatRange2("Luminance log2 range", &luminanceLogMin, &luminanceLogMax, 0.05f, -16.0f, 16.0f, "Min: %.2f", "Max: %.2f")) {
+                    r_toneMapLuminanceLogMin.SetFloat(luminanceLogMin);
+                    r_toneMapLuminanceLogMax.SetFloat(BE1::Max(luminanceLogMax, luminanceLogMin + 0.0001f));
+                }
+
+                float luminanceAdaptationRate = r_toneMapLuminanceAdaptationRate.GetFloat();
+                ImGui::SetNextItemWidth(fontSize * 12.0f);
+                if (ImGui::SliderFloat("Luminance adaptation rate", &luminanceAdaptationRate, 0.0f, 10.0f, "%.2f")) {
+                    r_toneMapLuminanceAdaptationRate.SetFloat(luminanceAdaptationRate);
+                }
+
+                float middleGray = r_toneMapMiddleGray.GetFloat();
+                ImGui::SetNextItemWidth(fontSize * 12.0f);
+                if (ImGui::SliderFloat("Middle gray", &middleGray, 0.0f, 2.0f, "%.3f")) {
+                    r_toneMapMiddleGray.SetFloat(middleGray);
                 }
             }
 

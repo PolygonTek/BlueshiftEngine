@@ -19,11 +19,10 @@
 enum RenderBloomMode {
     Off = 0,
     Pyramid = 1,
-    Convolution = 2,
-    ApertureConvolution = 3
+    Convolution = 2
 };
 
-extern BE1::CVar    r_skipCulling;
+extern BE1::CVar    r_skipFrustumCulling;
 extern BE1::CVar    r_skipDrawCamera2D;
 extern BE1::CVar    r_skipDrawCamera3D;
 extern BE1::CVar    r_skipPostProcess;

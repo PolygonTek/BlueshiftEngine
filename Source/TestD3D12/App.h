@@ -15,6 +15,7 @@
 #pragma once
 
 class RenderContext;
+class RenderFrameData;
 class RenderWorld;
 class RenderCamera;
 class GameObject;
@@ -25,7 +26,13 @@ class Font;
 
 class App {
 public:
-    enum Aperture {
+    enum class ConvolutionBloomKernelSource {
+        Preset,
+        GenerateFromAperture,
+        ExternalFile
+    };
+
+    enum class AperturePreset {
         Triangle,
         Square,
         HorzRectangle,
@@ -37,7 +44,7 @@ public:
         Circle
     };
 
-    static constexpr int            ConvolutionBloomKernelCount = 43;
+    static constexpr int            ConvolutionBloomKernelPresetCount = 43;
 
     void                            Init(void *mainWindowHandle);
     void                            Shutdown();
@@ -63,11 +70,13 @@ public:
     void                            TakeScreenshot();
 
 private:
-    void                            SetConvolutionBloomAperture(Aperture aperture);
-    void                            SetConvolutionBloomApertureFromFile(const char *filename);
-    void                            GetConvolutionBloomKernelDisplayName(int index, char *buffer, int bufferSize) const;
-    void                            SetConvolutionBloomKernelIndex(int index);
-    void                            SetConvolutionBloomKernelFromFile(const char *filename);
+    void                            SetConvolutionBloomAperturePreset(AperturePreset aperturePreset);
+    void                            RequestConvolutionBloomKernelGeneration();
+    void                            EnqueuePendingConvolutionBloomKernelGeneration();
+    void                            ProcessPendingConvolutionBloomKernelReadback();
+    void                            CheckModifiedCVars();
+    void                            GetConvolutionBloomKernelPresetName(int presetIndex, char *buffer, int bufferSize) const;
+    void                            SetConvolutionBloomKernelPreset(int presetIndex);
     void                            RotateGameObjects();
     void                            UpdateGameFrameTime(uint64_t frameUsec);
     void                            UpdateRenderFrontendFrameTime(uint64_t frameUsec);
@@ -89,8 +98,12 @@ private:
     SharedPtr<Font>                 mainFont;
     SharedPtr<Material>             mainSkyboxMaterial;
     SharedPtr<Texture>              convolutionBloomApertureTexture;
-    SharedPtr<Texture>              convolutionBloomKernelTexture;
+    SharedPtr<Texture>              convolutionBloomGeneratedKernelTexture;
     SharedPtr<Mesh>                 testMesh;
+
+    bool                            pendingConvolutionBloomKernelGeneration = false;
+    const RenderFrameData *         pendingConvolutionBloomKernelReadbackFrameData = nullptr;
+    uint32_t                        convolutionBloomGeneratedKernelSerial = 0;
 
     BE1::Array<GameObject *>        gameObjects;
 

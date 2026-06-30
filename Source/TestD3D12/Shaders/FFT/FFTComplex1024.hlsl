@@ -154,6 +154,7 @@ void RunFinalRadix2Butterfly(uint butterflyIndex, uint bufferBase, float2 twiddl
     float2 a = fftStageBuffer1[inputIndex0];
     float2 b = ComplexMul(twiddle, fftStageBuffer1[inputIndex0 + 1u]);
 
+    // 역변환의 마지막 스테이지에서 정규화를 한다 (정변환은 scale = 1, 역변환은 scale = 1/1024)
     outputBuffer[outputIndex0] = (a + b) * fftParams.scale;
     outputBuffer[outputIndex0 + 512u] = (a - b) * fftParams.scale;
 }
