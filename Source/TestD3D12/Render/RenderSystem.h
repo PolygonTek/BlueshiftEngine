@@ -26,7 +26,7 @@ class ShaderTemplate;
 /*
 ---------------------------------------------------------------------------------------------------
 
-    RenderSystem
+    Render System
 
     렌더러 전역 상태와 렌더 스레드를 관리한다.
 
@@ -76,8 +76,8 @@ private:
 
     void                            InitRenderThread();
     void                            ShutdownRenderThread();
-    void                            InitPostProcessPSOs();
-    void                            ReleasePostProcessPSOs();
+    void                            InitPostProcessPipelines();
+    void                            ReleasePostProcessPipelines();
 
     void                            MarkRenderCompleted(RenderFrameData *frameData);
     bool                            WaitSubmittedFrame(SubmittedFrame &submittedFrame);

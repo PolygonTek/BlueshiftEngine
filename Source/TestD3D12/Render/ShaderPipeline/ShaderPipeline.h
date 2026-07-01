@@ -18,6 +18,7 @@
 #include "ShaderPermutationKey.h"
 
 class ShaderTemplate;
+class LoadingSystem;
 
 struct GraphicsPipelineDesc {
     uint64_t                        GeneratePipelineDescHash() const;
@@ -35,13 +36,12 @@ struct GraphicsPipelineDesc {
 };
 
 struct ShaderStageSource {
-    RHI::ShaderStage                shaderStage = RHI::ShaderStage::Count;
     RHI::ShaderModel                shaderModel = RHI::ShaderModel::SM_6_0;
     BE1::Str                        filename;
     BE1::Str                        entryPoint;
 };
 
-struct ShaderPipelineBuildData {
+struct ShaderCompileData {
     void                            Clear();
 
     ShaderStageSource               stageSources[to_int(RHI::ShaderStage::Count)] = {};
@@ -53,13 +53,15 @@ struct ShaderPipelineBuildData {
 
     ShaderPipeline
 
-    ShaderTemplate 의 permutation 과 GraphicsPipelineDesc (그래픽스의 경우) 을 기준으로 RHI::PipelineState (PSO) 를 생성하고 보관한다.
+    PSO (RHI::PipelineState) 를 담고 있는 파이프라인 객체
+    shaderPipelineCache 에 의해 캐싱되고 재사용된다.
 
 ---------------------------------------------------------------------------------------------------
 */
 
 class ShaderPipeline : public std::enable_shared_from_this<ShaderPipeline> {
     friend class ShaderPipelineCache;
+    friend class LoadingSystem;
 
 public:
     enum class Type : uint8_t {
@@ -85,63 +87,74 @@ public:
     ~ShaderPipeline() { Purge(); }
 
     Type                            GetType() const { return type; }
+
     State                           GetState() const { return state.load(); }
     void                            SetState(State newState) { state.store(newState); }
     bool                            IsReady() const { State s = GetState(); return s == State::Ready || s == State::Rebuilding; }
     bool                            IsBuilding() const { State s = GetState(); return s == State::Building || s == State::Rebuilding; }
 
+                                    // 빌드 요청 했던 시리얼 번호.
     uint32_t                        GetBuildSerial() const { return buildSerial.load(); }
+
+                                    // 이미 진행 중인 빌딩 completion 무효화
     uint32_t                        BumpBuildSerial() { return buildSerial.fetch_add(1) + 1; }
 
-    ShaderPermutationKey            GetPermutationKey() const { return permutationKey; }
-    const GraphicsPipelineDesc &    GetGraphicsDesc() const { assert(type == Type::Graphics); return graphicsDesc; }
+    ShaderPermutationKey            GetShaderPermutationKey() const { return shaderPermutationKey; }
+    const GraphicsPipelineDesc &    GetGraphicsPipelineDesc() const { assert(type == Type::Graphics); return graphicsPipelineDesc; }
     RHI::PipelineState *            GetPSO() const { return pso; }
-    void                            SetPSO(RHI::PipelineState *newPso);
+
+    static RHI::PipelineState *     GetReadyPSO(const ShaderPipeline *shaderPipeline);
+    static RHI::PipelineState *     GetReadyPSO(const SharedPtr<ShaderPipeline> &shaderPipeline);
 
     void                            Reset();
 
+                                    // 최초 빌딩 중이면 완료될 때까지 기다리고, 리빌딩 중이면 기존 PSO 를 사용할 수 있으므로 Ready 로 간주한다.
     bool                            WaitReady();
+
+                                    // 최초 빌딩과 리빌딩이 모두 완료될 때까지 기다린다.
     bool                            WaitLoadComplete();
-
-    bool                            PreparePSO(const ShaderPipelineBuildData &buildData, RHI::PipelineState *&preparedPSO) const;
-
-    static RHI::PipelineState *     GetReadyPSO(const SharedPtr<ShaderPipeline> &shaderPipeline);
 
 private:
     void                            Purge();
+
+    bool                            PreparePSO(const ShaderCompileData &compileData, RHI::PipelineState *&outPSO) const;
+    void                            SetPSO(RHI::PipelineState *newPso);
+
     bool                            Build(const SharedPtr<ShaderTemplate> &shaderTemplate);
     void                            BuildAsync(const SharedPtr<ShaderTemplate> &shaderTemplate);
-    void                            EnsureBuildAsync(const SharedPtr<ShaderTemplate> &shaderTemplate);
     bool                            EnqueueBuild(const SharedPtr<ShaderTemplate> &shaderTemplate);
 
     const Type                      type = Type::Graphics;  // 생성자에서 한번 정해지면 변하지 않는다.
-    const ShaderPermutationKey      permutationKey;         // 생성자에서 한번 정해지면 변하지 않는다.
-    GraphicsPipelineDesc            graphicsDesc;           // 생성자에서 한번 정해지면 변하지 않는다.
+    const ShaderPermutationKey      shaderPermutationKey;   // 생성자에서 한번 정해지면 변하지 않는다.
+    GraphicsPipelineDesc            graphicsPipelineDesc;   // 생성자에서 한번 정해지면 변하지 않는다.
     RHI::InputLayout                inputLayout;            // 생성자에서 한번 정해지면 변하지 않는다.
     std::atomic<State>              state = State::Empty;
     std::atomic<uint32_t>           buildSerial = 0;
     RHI::PipelineState *            pso = nullptr;
 };
 
-BE_INLINE ShaderPipeline::ShaderPipeline(Type type, ShaderPermutationKey permutationKey, const GraphicsPipelineDesc &graphicsPipelineDesc) :
-    type(type), permutationKey(permutationKey), graphicsDesc(graphicsPipelineDesc) {
+BE_INLINE ShaderPipeline::ShaderPipeline(Type type, ShaderPermutationKey permutationKey, const GraphicsPipelineDesc &desc) :
+    type(type), shaderPermutationKey(permutationKey), graphicsPipelineDesc(desc) {
     assert(type == Type::Graphics);
 
-    if (graphicsPipelineDesc.inputLayout) {
-        inputLayout = *graphicsPipelineDesc.inputLayout;
-        graphicsDesc.inputLayout = &inputLayout;
+    if (desc.inputLayout) {
+        inputLayout = *desc.inputLayout;
+        graphicsPipelineDesc.inputLayout = &inputLayout;
     }
 }
 
 BE_INLINE ShaderPipeline::ShaderPipeline(Type type, ShaderPermutationKey permutationKey) :
-    type(type), permutationKey(permutationKey) {
+    type(type), shaderPermutationKey(permutationKey) {
     assert(type == Type::Compute);
 }
 
-BE_INLINE RHI::PipelineState *ShaderPipeline::GetReadyPSO(const SharedPtr<ShaderPipeline> &shaderPipeline) {
+BE_INLINE RHI::PipelineState *ShaderPipeline::GetReadyPSO(const ShaderPipeline *shaderPipeline) {
     if (!shaderPipeline || !shaderPipeline->IsReady()) {
         return nullptr;
     }
-
     return shaderPipeline->GetPSO();
+}
+
+BE_INLINE RHI::PipelineState *ShaderPipeline::GetReadyPSO(const SharedPtr<ShaderPipeline> &shaderPipeline) {
+    return GetReadyPSO(shaderPipeline.get());
 }

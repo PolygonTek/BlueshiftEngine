@@ -15,12 +15,16 @@
 #pragma once
 
 #include "Mesh.h"
-#include "SkinningJointCache.h"
+#include "Render/Animation/SkinningJointCache.h"
 
 /*
 ---------------------------------------------------------------------------------------------------
 
     Mesh Instance
+
+    원본 Mesh 에 렌더링 인스턴스별 상태를 덧붙여 관리한다.
+    Static 인스턴스는 Mesh 의 surface 데이터를 그대로 참조하고,
+    Skinned 인스턴스는 source mesh data serial 에 맞춰 joint matrix 와 GPU skinning joint cache 를 갱신한다.
 
 ---------------------------------------------------------------------------------------------------
 */

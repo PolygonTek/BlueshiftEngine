@@ -15,7 +15,7 @@
 #include "Precompiled.h"
 #include "Texture.h"
 #include "TextureManager.h"
-#include "Sampler.h"
+#include "Render/Sampler.h"
 #include "LoadingSystem.h"
 
 Texture::InternalData &Texture::InternalData::operator=(InternalData &&rhs) noexcept {
@@ -108,7 +108,7 @@ void Texture::Purge() {
 }
 
 void Texture::Reset() {
-    BumpLoadSerial(); // 진행 중인 로딩 completion 무효화
+    BumpLoadSerial();
     state = State::Empty;
 
     Purge();
@@ -120,7 +120,7 @@ bool Texture::Create(RHI::TextureType textureType, SharedPtr<const BE1::Image> s
         return false;
     }
 
-    BumpLoadSerial(); // 진행 중인 async completion 무효화
+    BumpLoadSerial();
     state = State::Empty;
 
     ApplyPrepared(newInternalData);
@@ -457,33 +457,41 @@ bool Texture::ReloadAsync() {
 bool Texture::WaitReady() {
     assert(BE1::Engine::IsInMainThread());
 
-    if (GetState() == State::Loading) {
+    State currentState = GetState();
+    if (currentState == State::Loading) {
         loadingSystem.BoostTextureLoad(this, GetLoadSerial(), LoadingSystem::LoadPriority::Critical);
     }
 
-    while (GetState() == State::Loading) {
+    while (currentState == State::Loading) {
         loadingSystem.ProcessLoadCompletions();
+        currentState = GetState();
 
-        BE1::PlatformThread::Yield();
+        if (currentState == State::Loading) {
+            BE1::PlatformThread::Yield();
+        }
     }
 
-    return IsReady();
+    return currentState == State::Ready || currentState == State::Reloading;
 }
 
 bool Texture::WaitLoadComplete() {
     assert(BE1::Engine::IsInMainThread());
 
-    if (IsLoading()) {
+    State currentState = GetState();
+    if (currentState == State::Loading || currentState == State::Reloading) {
         loadingSystem.BoostTextureLoad(this, GetLoadSerial(), LoadingSystem::LoadPriority::Critical);
     }
 
-    while (IsLoading()) {
+    while (currentState == State::Loading || currentState == State::Reloading) {
         loadingSystem.ProcessLoadCompletions();
+        currentState = GetState();
 
-        BE1::PlatformThread::Yield();
+        if (currentState == State::Loading || currentState == State::Reloading) {
+            BE1::PlatformThread::Yield();
+        }
     }
 
-    return GetState() == State::Ready;
+    return currentState == State::Ready;
 }
 
 void Texture::RequestStreamingMaxDimension(uint32_t requestedMaxDimension) {

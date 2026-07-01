@@ -20,7 +20,7 @@
 #include "Render/RenderBackend.h"
 #include "Render/RenderWorld.h"
 #include "Render/RenderCamera.h"
-#include "Render/Texture.h"
+#include "Render/Texture/Texture.h"
 #include "GameObject.h"
 #include "App.h"
 

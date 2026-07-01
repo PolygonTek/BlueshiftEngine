@@ -15,8 +15,8 @@
 #include "Precompiled.h"
 #include "FontFile.h"
 #include "FontFace.h"
-#include "TextureManager.h"
-#include "MaterialManager.h"
+#include "Render/Texture/TextureManager.h"
+#include "Render/Material/MaterialManager.h"
 
 void BitmapFontFace::Purge() {
     materials.Clear();

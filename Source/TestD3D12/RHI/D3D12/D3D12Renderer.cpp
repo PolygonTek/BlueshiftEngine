@@ -1128,18 +1128,18 @@ void D3D12Renderer::Barrier(RHI::CommandList *commandList, const RHI::GPUBarrier
                 actualBarrier.Transition.StateAfter = ToD3D12ResourceState(barrier->bufferBarrier.stateAfter);
                 actualBarrier.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
             }
-        } else if (barrier->type == RHI::GPUBarrier::Type::Image) {
-            if (barrier->imageBarrier.stateBefore != barrier->imageBarrier.stateAfter) {
+        } else if (barrier->type == RHI::GPUBarrier::Type::Texture) {
+            if (barrier->textureBarrier.stateBefore != barrier->textureBarrier.stateAfter) {
                 D3D12_RESOURCE_BARRIER &actualBarrier = actualBarriers[actualBarrierCount++];
                 actualBarrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
                 actualBarrier.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
-                actualBarrier.Transition.pResource = reinterpret_cast<ID3D12Resource *>(barrier->imageBarrier.texture->GetNativeResource());
-                actualBarrier.Transition.StateBefore = ToD3D12ResourceState(barrier->imageBarrier.stateBefore);
-                actualBarrier.Transition.StateAfter = ToD3D12ResourceState(barrier->imageBarrier.stateAfter);
+                actualBarrier.Transition.pResource = reinterpret_cast<ID3D12Resource *>(barrier->textureBarrier.texture->GetNativeResource());
+                actualBarrier.Transition.StateBefore = ToD3D12ResourceState(barrier->textureBarrier.stateBefore);
+                actualBarrier.Transition.StateAfter = ToD3D12ResourceState(barrier->textureBarrier.stateAfter);
 
-                if (barrier->imageBarrier.slice >= 0 || barrier->imageBarrier.mipLevel >= 0) {
-                    const D3D12Texture *_texture = static_cast<const D3D12Texture *>(barrier->imageBarrier.texture);
-                    actualBarrier.Transition.Subresource = D3D12CalcSubresource(barrier->imageBarrier.mipLevel, barrier->imageBarrier.slice, 0, _texture->textureDesc.MipLevels, _texture->textureDesc.DepthOrArraySize);
+                if (barrier->textureBarrier.slice >= 0 || barrier->textureBarrier.mipLevel >= 0) {
+                    const D3D12Texture *_texture = static_cast<const D3D12Texture *>(barrier->textureBarrier.texture);
+                    actualBarrier.Transition.Subresource = D3D12CalcSubresource(barrier->textureBarrier.mipLevel, barrier->textureBarrier.slice, 0, _texture->textureDesc.MipLevels, _texture->textureDesc.DepthOrArraySize);
                 } else {
                     actualBarrier.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
                 }

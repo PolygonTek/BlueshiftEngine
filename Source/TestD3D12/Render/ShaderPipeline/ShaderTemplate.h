@@ -71,7 +71,7 @@ struct ShaderPropertyInfo : public BE1::PropertyInfo {
 
     .shader 파일에서 읽은 stage source, base define, feature define, property 정보를 보관하는 템플릿이다.
     shader define property 값과 featureSet 조합은 RegisterPermutation 함수로 등록되어 ShaderPermutationKey 로 관리된다.
-    ShaderPipeline 빌드 시 PreparePipelineBuildData 는 key 로 등록된 permutation 을 찾아 compile define 과 stage source 를 ShaderPipelineBuildData 로 만든다.
+    ShaderPipeline 빌드 시 PrepareShaderCompileData 는 key 로 등록된 permutation 을 찾아 compile define 과 stage source 를 ShaderCompileData 로 만든다.
 
 ---------------------------------------------------------------------------------------------------
 */
@@ -135,13 +135,13 @@ public:
     bool                            Reload();
 
                                     // shader define property 값과 featureSet 조합을 permutation 으로 등록하고 key 를 리턴한다.
-                                    // 반환된 key 는 ShaderPipelineCache 의 캐시 키이자, PreparePipelineBuildData 에서 등록된 compile define/feature define 조합을 찾기 위한 핸들이다.
+                                    // 반환된 key 는 ShaderPipelineCache 의 캐시 키이자, PrepareShaderCompileData 에서 등록된 compile define/feature define 조합을 찾기 위한 핸들이다.
     ShaderPermutationKey            RegisterPermutation();
     ShaderPermutationKey            RegisterPermutation(const BE1::Array<PropertyValue> &propertyValues);
     ShaderPermutationKey            RegisterPermutation(const BE1::Array<PropertyValue> &propertyValues, const ShaderFeatureSet &featureSet);
 
-                                    // permutation key 로 ShaderPipeline 을 빌드할 수 있는 데이터를 준비한다.
-    bool                            PreparePipelineBuildData(ShaderPermutationKey permutationKey, ShaderPipelineBuildData &outBuildData) const;
+                                    // permutation key 로 ShaderPipeline 빌드에 필요한 shader compile data 를 준비한다.
+    bool                            PrepareShaderCompileData(ShaderPermutationKey permutationKey, ShaderCompileData &outCompileData) const;
 
 private:
     struct InternalData {

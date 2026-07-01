@@ -14,7 +14,7 @@
 
 #pragma once
 
-#include "ShaderTemplate.h"
+#include "Render/ShaderPipeline/ShaderTemplate.h"
 #include "Shaders/ShaderInterop.h"
 
 class MaterialManager;

@@ -16,9 +16,9 @@
 
 #include "Containers/HashIndex.h"
 #include "RHI/RHI.h"
-#include "ShaderFeatureSet.h"
-#include "ShaderPipeline.h"
-#include "VertexInputLayoutFactory.h"
+#include "Render/ShaderPipeline/ShaderFeatureSet.h"
+#include "Render/ShaderPipeline/ShaderPipeline.h"
+#include "Render/ShaderPipeline/VertexInputLayoutFactory.h"
 
 class Material;
 class RenderFrameData;

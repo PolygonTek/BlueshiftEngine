@@ -55,8 +55,8 @@ public:
     Font() = default;
     ~Font() { Purge(); }
 
-    const char *            GetName() const { return name; }
-    const char *            GetHashName() const { return hashName; }
+    const char *            GetName() const { return name.c_str(); }
+    const char *            GetHashName() const { return hashName.c_str(); }
 
     uint64_t                GetRetainedFrameSerial() const { return retainedFrameSerial; }
     void                    SetRetainedFrameSerial(uint64_t frameSerial) { retainedFrameSerial = frameSerial; }

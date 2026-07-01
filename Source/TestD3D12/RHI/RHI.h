@@ -364,7 +364,6 @@ namespace RHI {
         BC4_SNORM,
         BC5_UNORM,
         BC5_SNORM,
-
         BC6H_UF16,
         BC6H_SF16,
         BC7_UNORM,
@@ -699,7 +698,7 @@ namespace RHI {
         enum class Type : uint8_t {
             Memory,     // UAV 메모리 배리어
             Buffer,     // 버퍼의 상태 전이 배리어
-            Image,      // 텍스쳐의 상태 전이 배리어
+            Texture,    // 텍스쳐의 상태 전이 배리어
             Aliasing
         };
 
@@ -713,7 +712,7 @@ namespace RHI {
             GPUResourceState            stateAfter;
         };
 
-        struct ImageBarrier {
+        struct TextureBarrier {
             const Texture *             texture;
             GPUResourceState            stateBefore;
             GPUResourceState            stateAfter;
@@ -730,7 +729,7 @@ namespace RHI {
         union {
             MemoryBarrier               memoryBarrier;
             BufferBarrier               bufferBarrier;
-            ImageBarrier                imageBarrier;
+            TextureBarrier              textureBarrier;
             AliasingBarrier             aliasingBarrier;
         };
     };
@@ -742,7 +741,7 @@ namespace RHI {
         uint32_t                        sampleCount = 1;
         uint32_t                        sampleQuality = 0;
 
-        constexpr uint64_t              GetHash() const {
+        uint64_t                        GetHash() const {
             union Hasher {
                 struct {
                     uint64_t renderTargetFormat_0 : 6;
@@ -754,8 +753,7 @@ namespace RHI {
                     uint64_t renderTargetFormat_6 : 6;
                     uint64_t renderTargetFormat_7 : 6;
                     uint64_t depthStencilFormat : 6;
-                    uint64_t sampleCount : 4; // 5?
-                    uint64_t sampleQuality : 4; // 5?
+                    uint64_t sampleCount : 6;
                 } bits;
                 uint64_t value;
             } hasher = {};
@@ -770,8 +768,7 @@ namespace RHI {
             hasher.bits.renderTargetFormat_7 = (uint64_t)renderTargetFormats[7];
             hasher.bits.depthStencilFormat = (uint64_t)depthStencilFormat;
             hasher.bits.sampleCount = (uint64_t)sampleCount;
-            hasher.bits.sampleQuality = (uint64_t)sampleQuality;
-            return hasher.value;
+            return hash_combine(hasher.value, sampleQuality);
         }
     };
 
@@ -1168,7 +1165,7 @@ namespace RHI {
 
         static GPUBarrier               MakeMemoryBarrier(const GPUResource *resource);
         static GPUBarrier               MakeBufferBarrier(const Buffer *buffer, GPUResourceState stateBefore, GPUResourceState stateAfter);
-        static GPUBarrier               MakeImageBarrier(const Texture *texture, GPUResourceState stateBefore, GPUResourceState stateAfter, int slice = -1, int mipLevel = -1);
+        static GPUBarrier               MakeTextureBarrier(const Texture *texture, GPUResourceState stateBefore, GPUResourceState stateAfter, int slice = -1, int mipLevel = -1);
         static GPUBarrier               MakeAliasingBarrier(const GPUResource *resourceBefore, const GPUResource *resourceAfter);
 
     protected:

@@ -14,11 +14,11 @@
 
 #include "Precompiled.h"
 #include "ConvolutionBloomKernelGenerator.h"
-#include "Texture.h"
+#include "Render/Texture/Texture.h"
 #include "GpuFFT.h"
 #include "RenderFrameData.h"
 #include "RenderSystem.h"
-#include "ShaderPipeline.h"
+#include "Render/ShaderPipeline/ShaderPipeline.h"
 #include "Shaders/ShaderInterop.h"
 
 void ConvolutionBloomKernelGenerator::Init() {
@@ -320,7 +320,7 @@ bool ConvolutionBloomKernelGenerator::DispatchAperturePrepare(RHI::CommandList *
     }
 
     RHI::GPUBarrier startBarriers[] = {
-        RHI::Renderer::MakeImageBarrier(sourceTexture, RHI::GPUResourceState::ShaderResource, RHI::GPUResourceState::ShaderResourceCompute),
+        RHI::Renderer::MakeTextureBarrier(sourceTexture, RHI::GPUResourceState::ShaderResource, RHI::GPUResourceState::ShaderResourceCompute),
         RHI::Renderer::MakeBufferBarrier(outputBuffer, RHI::GPUResourceState::Undefined, RHI::GPUResourceState::UnorderedAccess)
     };
     RHI::renderer->Barrier(commandList, startBarriers, COUNT_OF(startBarriers));
@@ -335,7 +335,7 @@ bool ConvolutionBloomKernelGenerator::DispatchAperturePrepare(RHI::CommandList *
     RHI::renderer->Dispatch(commandList, threadGroupCountX, threadGroupCountY, 1);
 
     RHI::GPUBarrier endBarriers[] = {
-        RHI::Renderer::MakeImageBarrier(sourceTexture, RHI::GPUResourceState::ShaderResourceCompute, RHI::GPUResourceState::ShaderResource),
+        RHI::Renderer::MakeTextureBarrier(sourceTexture, RHI::GPUResourceState::ShaderResourceCompute, RHI::GPUResourceState::ShaderResource),
         RHI::Renderer::MakeBufferBarrier(outputBuffer, RHI::GPUResourceState::UnorderedAccess, RHI::GPUResourceState::Undefined)
     };
     RHI::renderer->Barrier(commandList, endBarriers, COUNT_OF(endBarriers));
@@ -461,7 +461,7 @@ bool ConvolutionBloomKernelGenerator::DispatchResolveDiffractionPSF(RHI::Command
     RHI::GPUBarrier startBarriers[] = {
         RHI::Renderer::MakeBufferBarrier(spectrumBuffer, RHI::GPUResourceState::Undefined, RHI::GPUResourceState::ShaderResourceCompute),
         RHI::Renderer::MakeBufferBarrier(apertureEnergyBuffer, RHI::GPUResourceState::UnorderedAccess, RHI::GPUResourceState::ShaderResourceCompute),
-        RHI::Renderer::MakeImageBarrier(outputTexture, RHI::GPUResourceState::ShaderResource, RHI::GPUResourceState::UnorderedAccess)
+        RHI::Renderer::MakeTextureBarrier(outputTexture, RHI::GPUResourceState::ShaderResource, RHI::GPUResourceState::UnorderedAccess)
     };
     RHI::renderer->Barrier(commandList, startBarriers, COUNT_OF(startBarriers));
 
@@ -478,7 +478,7 @@ bool ConvolutionBloomKernelGenerator::DispatchResolveDiffractionPSF(RHI::Command
     RHI::GPUBarrier endBarriers[] = {
         RHI::Renderer::MakeBufferBarrier(spectrumBuffer, RHI::GPUResourceState::ShaderResourceCompute, RHI::GPUResourceState::Undefined),
         RHI::Renderer::MakeBufferBarrier(apertureEnergyBuffer, RHI::GPUResourceState::ShaderResourceCompute, RHI::GPUResourceState::Undefined),
-        RHI::Renderer::MakeImageBarrier(outputTexture, RHI::GPUResourceState::UnorderedAccess, RHI::GPUResourceState::ShaderResource)
+        RHI::Renderer::MakeTextureBarrier(outputTexture, RHI::GPUResourceState::UnorderedAccess, RHI::GPUResourceState::ShaderResource)
     };
     RHI::renderer->Barrier(commandList, endBarriers, COUNT_OF(endBarriers));
 
@@ -527,8 +527,8 @@ bool ConvolutionBloomKernelGenerator::DispatchApplyDispersion(RHI::CommandList *
     }
 
     RHI::GPUBarrier startBarriers[] = {
-        RHI::Renderer::MakeImageBarrier(inputTexture, RHI::GPUResourceState::ShaderResource, RHI::GPUResourceState::ShaderResourceCompute),
-        RHI::Renderer::MakeImageBarrier(outputTexture, RHI::GPUResourceState::ShaderResource, RHI::GPUResourceState::UnorderedAccess)
+        RHI::Renderer::MakeTextureBarrier(inputTexture, RHI::GPUResourceState::ShaderResource, RHI::GPUResourceState::ShaderResourceCompute),
+        RHI::Renderer::MakeTextureBarrier(outputTexture, RHI::GPUResourceState::ShaderResource, RHI::GPUResourceState::UnorderedAccess)
     };
     RHI::renderer->Barrier(commandList, startBarriers, COUNT_OF(startBarriers));
 
@@ -542,8 +542,8 @@ bool ConvolutionBloomKernelGenerator::DispatchApplyDispersion(RHI::CommandList *
     RHI::renderer->Dispatch(commandList, threadGroupCountX, threadGroupCountY, 1);
 
     RHI::GPUBarrier endBarriers[] = {
-        RHI::Renderer::MakeImageBarrier(inputTexture, RHI::GPUResourceState::ShaderResourceCompute, RHI::GPUResourceState::ShaderResource),
-        RHI::Renderer::MakeImageBarrier(outputTexture, RHI::GPUResourceState::UnorderedAccess, RHI::GPUResourceState::ShaderResource)
+        RHI::Renderer::MakeTextureBarrier(inputTexture, RHI::GPUResourceState::ShaderResourceCompute, RHI::GPUResourceState::ShaderResource),
+        RHI::Renderer::MakeTextureBarrier(outputTexture, RHI::GPUResourceState::UnorderedAccess, RHI::GPUResourceState::ShaderResource)
     };
     RHI::renderer->Barrier(commandList, endBarriers, COUNT_OF(endBarriers));
 

@@ -18,9 +18,9 @@
 #include "RenderContext.h"
 #include "RenderCamera.h"
 #include "RenderInternal.h"
-#include "MaterialManager.h"
-#include "MeshManager.h"
-#include "Texture.h"
+#include "Render/Material/MaterialManager.h"
+#include "Render/Mesh/MeshManager.h"
+#include "Render/Texture/Texture.h"
 
 static constexpr uint32_t MaxSkinningJointsPerTask = 1024;
 

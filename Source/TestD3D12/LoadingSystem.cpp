@@ -14,7 +14,7 @@
 
 #include "Precompiled.h"
 #include "LoadingSystem.h"
-#include "Render/TextureManager.h"
+#include "Render/Texture/TextureManager.h"
 
 LoadingSystem      loadingSystem;
 
@@ -225,7 +225,7 @@ bool LoadingSystem::EnqueueAnimLoad(SharedPtr<Anim> anim, const char *filename, 
     return true;
 }
 
-bool LoadingSystem::EnqueueShaderPipelineBuild(SharedPtr<ShaderPipeline> shaderPipeline, const ShaderPipelineBuildData &buildData, uint32_t serial, LoadPriority priority) {
+bool LoadingSystem::EnqueueShaderPipelineBuild(SharedPtr<ShaderPipeline> shaderPipeline, const ShaderCompileData &compileData, uint32_t serial, LoadPriority priority) {
     if (!shaderPipeline) {
         return false;
     }
@@ -239,7 +239,7 @@ bool LoadingSystem::EnqueueShaderPipelineBuild(SharedPtr<ShaderPipeline> shaderP
 
         LoadRequest request;
         request.shaderPipeline = shaderPipeline;
-        request.shaderPipelineBuildData = buildData;
+        request.shaderCompileData = compileData;
         request.serial = serial;
         request.priority = priority;
         request.sequence = nextRequestSequence++;
@@ -608,7 +608,7 @@ bool LoadingSystem::ProcessShaderPipelineBuildRequest(const LoadRequest &request
     LoadCompletion completion;
     completion.shaderPipeline = request.shaderPipeline;
     completion.serial = request.serial;
-    completion.success = request.shaderPipeline->PreparePSO(request.shaderPipelineBuildData, completion.pso);
+    completion.success = request.shaderPipeline->PreparePSO(request.shaderCompileData, completion.pso);
 
     PushCompletion(std::move(completion));
     return true;

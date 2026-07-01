@@ -31,12 +31,12 @@ SharedPtr<ShaderPipeline> ShaderPipelineCache::GetGraphicsPipeline(const SharedP
         cachedPipeline.shaderTemplatePtr = shaderTemplate.get();
         cachedPipeline.shaderTemplateRef = shaderTemplate;
         cachedPipeline.hash = hash;
-        cachedPipeline.pipeline = MakeShared<ShaderPipeline>(ShaderPipeline::Type::Graphics, permutationKey, graphicsPipelineDesc);
+        cachedPipeline.shaderPipeline = MakeShared<ShaderPipeline>(ShaderPipeline::Type::Graphics, permutationKey, graphicsPipelineDesc);
 
         const int cachedPipelineIndex = cachedGraphicsPipelines.Count() - 1;
         cachedGraphicsPipelineHash.Add(cachedGraphicsPipelineHash.GenerateHash(hash), cachedPipelineIndex);
 
-        pipeline = cachedPipeline.pipeline;
+        pipeline = cachedPipeline.shaderPipeline;
     }
 
     if (pipeline->GetState() == ShaderPipeline::State::Empty) {
@@ -61,9 +61,9 @@ SharedPtr<ShaderPipeline> ShaderPipelineCache::GetComputePipeline(const SharedPt
         cachedPipeline.shaderTemplatePtr = shaderTemplate.get();
         cachedPipeline.shaderTemplateRef = shaderTemplate;
         cachedPipeline.permutationKey = permutationKey;
-        cachedPipeline.pipeline = MakeShared<ShaderPipeline>(ShaderPipeline::Type::Compute, permutationKey);
+        cachedPipeline.shaderPipeline = MakeShared<ShaderPipeline>(ShaderPipeline::Type::Compute, permutationKey);
 
-        pipeline = cachedPipeline.pipeline;
+        pipeline = cachedPipeline.shaderPipeline;
     }
 
     if (pipeline->GetState() == ShaderPipeline::State::Empty) {
@@ -79,16 +79,16 @@ SharedPtr<ShaderPipeline> ShaderPipelineCache::GetComputePipeline(const SharedPt
 
 void ShaderPipelineCache::ClearAll() {
     for (CachedGraphicsPipeline &cachedPipeline : cachedGraphicsPipelines) {
-        if (cachedPipeline.pipeline) {
-            cachedPipeline.pipeline->Reset();
+        if (cachedPipeline.shaderPipeline) {
+            cachedPipeline.shaderPipeline->Reset();
         }
     }
     cachedGraphicsPipelines.Clear();
     cachedGraphicsPipelineHash.Clear();
 
     for (CachedComputePipeline &cachedPipeline : cachedComputePipelines) {
-        if (cachedPipeline.pipeline) {
-            cachedPipeline.pipeline->Reset();
+        if (cachedPipeline.shaderPipeline) {
+            cachedPipeline.shaderPipeline->Reset();
         }
     }
     cachedComputePipelines.Clear();
@@ -102,8 +102,8 @@ void ShaderPipelineCache::ClearShaderTemplate(const ShaderTemplate *shaderTempla
     for (int i = cachedGraphicsPipelines.Count() - 1; i >= 0; --i) {
         CachedGraphicsPipeline &cachedPipeline = cachedGraphicsPipelines[i];
         if (cachedPipeline.shaderTemplatePtr == shaderTemplate) {
-            if (cachedPipeline.pipeline) {
-                cachedPipeline.pipeline->Reset();
+            if (cachedPipeline.shaderPipeline) {
+                cachedPipeline.shaderPipeline->Reset();
             }
             RemoveCachedGraphicsPipelineIndex(i);
         }
@@ -112,8 +112,8 @@ void ShaderPipelineCache::ClearShaderTemplate(const ShaderTemplate *shaderTempla
     for (int i = cachedComputePipelines.Count() - 1; i >= 0; --i) {
         CachedComputePipeline &cachedPipeline = cachedComputePipelines[i];
         if (cachedPipeline.shaderTemplatePtr == shaderTemplate) {
-            if (cachedPipeline.pipeline) {
-                cachedPipeline.pipeline->Reset();
+            if (cachedPipeline.shaderPipeline) {
+                cachedPipeline.shaderPipeline->Reset();
             }
             RemoveCachedComputePipelineIndex(i);
         }
@@ -125,15 +125,15 @@ void ShaderPipelineCache::RebuildAll() {
         CachedGraphicsPipeline &cachedPipeline = cachedGraphicsPipelines[i];
         SharedPtr<ShaderTemplate> shaderTemplate = cachedPipeline.shaderTemplateRef.lock();
         if (!shaderTemplate) {
-            if (cachedPipeline.pipeline) {
-                cachedPipeline.pipeline->Reset();
+            if (cachedPipeline.shaderPipeline) {
+                cachedPipeline.shaderPipeline->Reset();
             }
             RemoveCachedGraphicsPipelineIndex(i);
             continue;
         }
 
-        if (cachedPipeline.pipeline) {
-            cachedPipeline.pipeline->BuildAsync(shaderTemplate);
+        if (cachedPipeline.shaderPipeline) {
+            cachedPipeline.shaderPipeline->BuildAsync(shaderTemplate);
         }
     }
 
@@ -141,15 +141,15 @@ void ShaderPipelineCache::RebuildAll() {
         CachedComputePipeline &cachedPipeline = cachedComputePipelines[i];
         SharedPtr<ShaderTemplate> shaderTemplate = cachedPipeline.shaderTemplateRef.lock();
         if (!shaderTemplate) {
-            if (cachedPipeline.pipeline) {
-                cachedPipeline.pipeline->Reset();
+            if (cachedPipeline.shaderPipeline) {
+                cachedPipeline.shaderPipeline->Reset();
             }
             RemoveCachedComputePipelineIndex(i);
             continue;
         }
 
-        if (cachedPipeline.pipeline) {
-            cachedPipeline.pipeline->BuildAsync(shaderTemplate);
+        if (cachedPipeline.shaderPipeline) {
+            cachedPipeline.shaderPipeline->BuildAsync(shaderTemplate);
         }
     }
 }
@@ -160,14 +160,14 @@ void ShaderPipelineCache::RebuildShaderTemplate(const SharedPtr<ShaderTemplate> 
     }
 
     for (CachedGraphicsPipeline &cachedPipeline : cachedGraphicsPipelines) {
-        if (cachedPipeline.shaderTemplatePtr == shaderTemplate.get() && cachedPipeline.pipeline) {
-            cachedPipeline.pipeline->BuildAsync(shaderTemplate);
+        if (cachedPipeline.shaderTemplatePtr == shaderTemplate.get() && cachedPipeline.shaderPipeline) {
+            cachedPipeline.shaderPipeline->BuildAsync(shaderTemplate);
         }
     }
 
     for (CachedComputePipeline &cachedPipeline : cachedComputePipelines) {
-        if (cachedPipeline.shaderTemplatePtr == shaderTemplate.get() && cachedPipeline.pipeline) {
-            cachedPipeline.pipeline->BuildAsync(shaderTemplate);
+        if (cachedPipeline.shaderTemplatePtr == shaderTemplate.get() && cachedPipeline.shaderPipeline) {
+            cachedPipeline.shaderPipeline->BuildAsync(shaderTemplate);
         }
     }
 }
@@ -178,7 +178,7 @@ SharedPtr<ShaderPipeline> ShaderPipelineCache::FindCachedGraphicsPipeline(const 
     for (int index = cachedGraphicsPipelineHash.First(hashKey); index != -1; index = cachedGraphicsPipelineHash.Next(index)) {
         const CachedGraphicsPipeline &cachedPipeline = cachedGraphicsPipelines[index];
         if (cachedPipeline.shaderTemplatePtr == shaderTemplate && cachedPipeline.hash == hash) {
-            return cachedPipeline.pipeline;
+            return cachedPipeline.shaderPipeline;
         }
     }
 
@@ -196,7 +196,7 @@ void ShaderPipelineCache::RemoveCachedGraphicsPipelineIndex(int index) {
 SharedPtr<ShaderPipeline> ShaderPipelineCache::FindCachedComputePipeline(const ShaderTemplate *shaderTemplate, ShaderPermutationKey permutationKey) const {
     for (const CachedComputePipeline &cachedPipeline : cachedComputePipelines) {
         if (cachedPipeline.shaderTemplatePtr == shaderTemplate && cachedPipeline.permutationKey == permutationKey) {
-            return cachedPipeline.pipeline;
+            return cachedPipeline.shaderPipeline;
         }
     }
 

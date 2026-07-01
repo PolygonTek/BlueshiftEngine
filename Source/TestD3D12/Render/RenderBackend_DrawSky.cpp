@@ -15,7 +15,7 @@
 #include "Precompiled.h"
 #include "RenderBackend.h"
 #include "RenderInternal.h"
-#include "TextureManager.h"
+#include "Render/Texture/TextureManager.h"
 
 static const Texture *GetReadyTexture(const SharedPtr<Texture> *texture) {
     if (!texture || !*texture || !(*texture)->IsReadyForRendering()) {

@@ -74,15 +74,18 @@ public:
     Mesh &operator=(const Mesh &rhs) = delete;
     ~Mesh() { Purge(); }
 
-    const char *                    GetName() const { return name; }
-    const char *                    GetHashName() const { return hashName; }
+    const char *                    GetName() const { return name.c_str(); }
+    const char *                    GetHashName() const { return hashName.c_str(); }
 
     State                           GetState() const { return state.load(); }
     void                            SetState(State newState) { state.store(newState); }
     bool                            IsReady() const { State s = GetState(); return s == State::Ready || s == State::Reloading; }
     bool                            IsLoading() const { State s = GetState(); return s == State::Loading || s == State::Reloading; }
 
+                                    // 로딩 요청 했던 시리얼 번호.
     uint32_t                        GetLoadSerial() const { return loadSerial.load(); }
+
+                                    // 이미 진행 중인 로딩 completion 무효화
     uint32_t                        BumpLoadSerial() { return loadSerial.fetch_add(1) + 1; }
 
     uint32_t                        GetDataSerial() const { return dataSerial.load(); }
@@ -106,7 +109,10 @@ public:
     bool                            Reload();
     bool                            ReloadAsync();
 
+                                    // 최초 로딩 중이면 완료될 때까지 기다리고, 리로딩 중이면 기존 Mesh 를 사용할 수 있으므로 Ready 로 간주한다.
     bool                            WaitReady();
+
+                                    // 최초 로딩과 리로딩이 모두 완료될 때까지 기다린다.
     bool                            WaitLoadComplete();
 
     void                            Write(const char *filename);

@@ -14,11 +14,11 @@
 
 #pragma once
 
-#include "Render/Texture.h"
-#include "Render/Mesh.h"
-#include "Render/Skeleton.h"
-#include "Render/Anim.h"
-#include "Render/ShaderPipeline.h"
+#include "Render/Texture/Texture.h"
+#include "Render/Mesh/Mesh.h"
+#include "Render/Animation/Skeleton.h"
+#include "Render/Animation/Anim.h"
+#include "Render/ShaderPipeline/ShaderPipeline.h"
 
 class ShaderPipeline;
 
@@ -50,7 +50,7 @@ public:
     bool                            EnqueueMeshLoad(SharedPtr<Mesh> mesh, const char *filename, bool isReload, uint32_t serial, LoadPriority priority = LoadPriority::Normal);
     bool                            EnqueueSkeletonLoad(SharedPtr<Skeleton> skeleton, const char *filename, bool isReload, uint32_t serial, LoadPriority priority = LoadPriority::Normal);
     bool                            EnqueueAnimLoad(SharedPtr<Anim> anim, const char *filename, bool isReload, uint32_t serial, LoadPriority priority = LoadPriority::Normal);
-    bool                            EnqueueShaderPipelineBuild(SharedPtr<ShaderPipeline> shaderPipeline, const ShaderPipelineBuildData &buildData, uint32_t serial, LoadPriority priority = LoadPriority::High);
+    bool                            EnqueueShaderPipelineBuild(SharedPtr<ShaderPipeline> shaderPipeline, const ShaderCompileData &compileData, uint32_t serial, LoadPriority priority = LoadPriority::High);
 
     bool                            BoostTextureLoad(const Texture *texture, uint32_t serial, LoadPriority priority);
     bool                            BoostMeshLoad(const Mesh *mesh, uint32_t serial, LoadPriority priority);
@@ -68,7 +68,7 @@ private:
         SharedPtr<Skeleton>         skeleton;
         SharedPtr<Anim>             anim;
         SharedPtr<ShaderPipeline>   shaderPipeline;
-        ShaderPipelineBuildData     shaderPipelineBuildData;
+        ShaderCompileData           shaderCompileData;
         BE1::Str                    filename;
         Texture::Flag               textureFlags = Texture::Flag::None;
         SharedPtr<BE1::Image>       image;

@@ -17,8 +17,8 @@
 #include "RenderContext.h"
 #include "RenderFrameData.h"
 #include "RenderInternal.h"
-#include "Material.h"
-#include "VertexInputLayoutFactory.h"
+#include "Render/Material/Material.h"
+#include "Render/ShaderPipeline/VertexInputLayoutFactory.h"
 
 void PassPipelineResolver::Begin(const GraphicsPipelineDesc &pipelineDesc, uint32_t maxEntries) {
     basePipelineDesc = pipelineDesc;

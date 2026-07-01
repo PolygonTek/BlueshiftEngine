@@ -14,7 +14,7 @@
 
 #include "Precompiled.h"
 #include "RenderObject.h"
-#include "MeshInstance.h"
+#include "Render/Mesh/MeshInstance.h"
 
 static const BE1::AABB &GetEffectiveLocalAABB(const RenderObject::Desc &desc) {
     if (!desc.aabb.IsCleared()) {

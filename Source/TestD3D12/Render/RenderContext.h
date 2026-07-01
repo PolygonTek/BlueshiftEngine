@@ -16,9 +16,9 @@
 
 #include "RHI/RHI.h"
 #include "RenderFrameData.h"
-#include "ShaderPipeline.h"
-#include "TextureStreamingFeedback.h"
-#include "GuiMesh.h"
+#include "Render/ShaderPipeline/ShaderPipeline.h"
+#include "Render/Texture/TextureStreamingFeedback.h"
+#include "Render/Mesh/GuiMesh.h"
 
 class RenderBackend;
 
@@ -113,8 +113,8 @@ private:
         char                        filename[BE1::MaxAbsolutePath] = {};
     };
 
-    void                            InitPSOs();
-    void                            ReleasePSOs();
+    void                            InitPipelines();
+    void                            ReleasePipelines();
     bool                            BeginImGui();
     void                            EndImGui();
     void                            FlushPendingScreenshots(RenderFrameData *frameData);
@@ -142,7 +142,7 @@ private:
     RHI::Format                     mainRTDepthFormat = RHI::Format::D24_UNORM_S8_UINT;
     uint32_t                        mainRTSampleCount = 1;
 
-    SharedPtr<ShaderPipeline>       imagePSO;
+    SharedPtr<ShaderPipeline>       imagePipeline;
 
     TextureStreamingFeedback        textureStreamingFeedback;
 

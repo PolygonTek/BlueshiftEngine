@@ -14,10 +14,10 @@
 
 #include "Precompiled.h"
 #include "GuiMesh.h"
-#include "MaterialManager.h"
-#include "Font.h"
+#include "Render/Material/MaterialManager.h"
+#include "Render/Font/Font.h"
 #include "Core/Vec4Color.h"
-#include "RenderWorld.h"
+#include "Render/RenderWorld.h"
 
 void GuiMesh::Clear() {
     surfaces.SetCount(0, false);

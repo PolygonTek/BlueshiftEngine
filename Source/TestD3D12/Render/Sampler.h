@@ -24,12 +24,12 @@ class Sampler {
 public:
     union Hasher {
         struct {
-            uint32_t            filter : 5;
-            uint32_t            addressModeU : 5;
-            uint32_t            addressModeV : 5;
-            uint32_t            addressModeW : 5;
+            uint32_t            filter : 3;
+            uint32_t            addressModeU : 3;
+            uint32_t            addressModeV : 3;
+            uint32_t            addressModeW : 3;
             uint32_t            maxAnisotropy : 5;
-            uint32_t            borderColor : 5;
+            uint32_t            borderColor : 3;
         } bits;
         uint32_t                value;
     };

@@ -14,7 +14,7 @@
 
 #include "Precompiled.h"
 #include "RenderWorld.h"
-#include "MeshInstance.h"
+#include "Render/Mesh/MeshInstance.h"
 
 #ifdef USE_DBVT
 static constexpr uint32_t DynamicObjectSleepDelayMsec = 3000;

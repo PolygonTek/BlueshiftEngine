@@ -15,11 +15,11 @@
 #include "Precompiled.h"
 #include "Material.h"
 #include "MaterialManager.h"
-#include "ShaderTemplateManager.h"
-#include "ShaderPipelineCache.h"
+#include "Render/ShaderPipeline/ShaderTemplateManager.h"
+#include "Render/ShaderPipeline/ShaderPipelineCache.h"
 #include "Asset/GuidMapper.h"
 #include "IO/FileSystem.h"
-#include "TextureManager.h"
+#include "Render/Texture/TextureManager.h"
 
 void Material::InternalData::Purge() {
     shaderTemplate.reset();
@@ -319,11 +319,11 @@ SharedPtr<ShaderPipeline> Material::GetGraphicsPipeline(const ShaderFeatureSet &
         return nullptr;
     }
 
-    GraphicsPipelineDesc pipelineDesc = baseDesc;
-    pipelineDesc.rasterizerStateType = GetMaterialRasterizerStateType(baseDesc.rasterizerStateType, internalData.cullMode);
-    pipelineDesc.blendStateType = internalData.renderingMode == RenderingMode::Blend ? internalData.blendType : RHI::BlendStateType::Disabled;
+    GraphicsPipelineDesc graphicsPipelineDesc = baseDesc;
+    graphicsPipelineDesc.rasterizerStateType = GetMaterialRasterizerStateType(baseDesc.rasterizerStateType, internalData.cullMode);
+    graphicsPipelineDesc.blendStateType = internalData.renderingMode == RenderingMode::Blend ? internalData.blendType : RHI::BlendStateType::Disabled;
 
-    return shaderPipelineCache.GetGraphicsPipeline(internalData.shaderTemplate, EnsurePermutation(featureSet), pipelineDesc, true);
+    return shaderPipelineCache.GetGraphicsPipeline(internalData.shaderTemplate, EnsurePermutation(featureSet), graphicsPipelineDesc, true);
 }
 
 bool Material::Create(const char *text, const char *baseDir) {

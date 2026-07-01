@@ -15,13 +15,13 @@
 #pragma once
 
 #include "RHI/RHI.h"
-#include "VertexInputLayoutFactory.h"
+#include "Render/ShaderPipeline/VertexInputLayoutFactory.h"
+#include "Render/Material/Material.h"
+#include "Render/Font/Font.h"
+#include "Render/Mesh/Mesh.h"
+#include "Render/Mesh/MeshInstance.h"
 #include "RenderObject.h"
 #include "RenderCamera.h"
-#include "Material.h"
-#include "Font.h"
-#include "Mesh.h"
-#include "MeshInstance.h"
 
 class Texture;
 

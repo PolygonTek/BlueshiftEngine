@@ -16,8 +16,8 @@
 #include "RenderFrameData.h"
 #include "RenderContext.h"
 #include "RenderInternal.h"
-#include "Material.h"
-#include "Texture.h"
+#include "Render/Material/Material.h"
+#include "Render/Texture/Texture.h"
 
 uint64_t                    RenderFrameData::globalFrameSerial = 0;
 static constexpr uint32_t   MaxRenderTaskThreads = 32;
@@ -32,7 +32,7 @@ void RenderFrameData::CmdBeginContext(RenderContext *context) {
 
     cmd->commandId = RenderCommandId::BeginContext;
     cmd->renderContext = context;
-    cmd->imagePSO = ShaderPipeline::GetReadyPSO(context->imagePSO);
+    cmd->imagePSO = ShaderPipeline::GetReadyPSO(context->imagePipeline);
 }
 
 void RenderFrameData::CmdDrawCamera(const VisCamera *camera) {

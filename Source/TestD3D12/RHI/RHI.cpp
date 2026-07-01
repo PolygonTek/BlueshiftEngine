@@ -302,14 +302,14 @@ RHI::GPUBarrier RHI::Renderer::MakeBufferBarrier(const RHI::Buffer *buffer, RHI:
     return barrier;
 }
 
-RHI::GPUBarrier RHI::Renderer::MakeImageBarrier(const RHI::Texture *texture, RHI::GPUResourceState stateBefore, RHI::GPUResourceState stateAfter, int slice, int mipLevel) {
+RHI::GPUBarrier RHI::Renderer::MakeTextureBarrier(const RHI::Texture *texture, RHI::GPUResourceState stateBefore, RHI::GPUResourceState stateAfter, int slice, int mipLevel) {
     RHI::GPUBarrier barrier;
-    barrier.type = RHI::GPUBarrier::Type::Image;
-    barrier.imageBarrier.texture = texture;
-    barrier.imageBarrier.stateBefore = stateBefore;
-    barrier.imageBarrier.stateAfter = stateAfter;
-    barrier.imageBarrier.slice = slice;
-    barrier.imageBarrier.mipLevel = mipLevel;
+    barrier.type = RHI::GPUBarrier::Type::Texture;
+    barrier.textureBarrier.texture = texture;
+    barrier.textureBarrier.stateBefore = stateBefore;
+    barrier.textureBarrier.stateAfter = stateAfter;
+    barrier.textureBarrier.slice = slice;
+    barrier.textureBarrier.mipLevel = mipLevel;
     return barrier;
 }
 

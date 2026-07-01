@@ -13,9 +13,9 @@
 // limitations under the License.
 
 #include "Precompiled.h"
-#include "Render/Anim.h"
-#include "Render/AnimManager.h"
-#include "Render/Mesh.h"
+#include "Render/Animation/Anim.h"
+#include "Render/Animation/AnimManager.h"
+#include "Render/Mesh/Mesh.h"
 #include "Skeleton.h"
 #include "LoadingSystem.h"
 
@@ -26,7 +26,7 @@ void Anim::Purge() {
 }
 
 void Anim::Reset() {
-    BumpLoadSerial(); // 진행 중인 async completion 무효화
+    BumpLoadSerial();
     state = State::Empty;
 
     Purge();
@@ -233,7 +233,7 @@ bool Anim::Load(const char *filename) {
         return false;
     }
 
-    BumpLoadSerial(); // 진행 중인 async completion 무효화
+    BumpLoadSerial();
     state = State::Empty;
 
     ApplyPrepared(newInternalData);
@@ -288,33 +288,41 @@ bool Anim::ReloadAsync() {
 bool Anim::WaitReady() {
     assert(BE1::Engine::IsInMainThread());
 
-    if (GetState() == State::Loading) {
+    State currentState = GetState();
+    if (currentState == State::Loading) {
         loadingSystem.BoostAnimLoad(this, GetLoadSerial(), LoadingSystem::LoadPriority::Critical);
     }
 
-    while (GetState() == State::Loading) {
+    while (currentState == State::Loading) {
         loadingSystem.ProcessLoadCompletions();
+        currentState = GetState();
 
-        BE1::PlatformThread::Yield();
+        if (currentState == State::Loading) {
+            BE1::PlatformThread::Yield();
+        }
     }
 
-    return IsReady();
+    return currentState == State::Ready || currentState == State::Reloading;
 }
 
 bool Anim::WaitLoadComplete() {
     assert(BE1::Engine::IsInMainThread());
 
-    if (IsLoading()) {
+    State currentState = GetState();
+    if (currentState == State::Loading || currentState == State::Reloading) {
         loadingSystem.BoostAnimLoad(this, GetLoadSerial(), LoadingSystem::LoadPriority::Critical);
     }
 
-    while (IsLoading()) {
+    while (currentState == State::Loading || currentState == State::Reloading) {
         loadingSystem.ProcessLoadCompletions();
+        currentState = GetState();
 
-        BE1::PlatformThread::Yield();
+        if (currentState == State::Loading || currentState == State::Reloading) {
+            BE1::PlatformThread::Yield();
+        }
     }
 
-    return GetState() == State::Ready;
+    return currentState == State::Ready;
 }
 
 void Anim::Write(const char *filename) {

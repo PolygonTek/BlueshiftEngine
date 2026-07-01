@@ -15,7 +15,7 @@
 #pragma once
 
 #include "RenderObject.h"
-#include "GuiMesh.h"
+#include "Render/Mesh/GuiMesh.h"
 #include "RenderPassBuilder.h"
 
 struct VisSurf;
@@ -55,8 +55,17 @@ struct DbvtProxy {
     int32_t                     id;                     ///< Proxy id.
 };
 
-/// RenderWorld is the central manager for scene objects.
-/// It maintains a collection of render objects, organizes them spatially.
+/*
+---------------------------------------------------------------------------------------------------
+
+    Render World
+
+    RenderWorld is the central manager for scene objects.
+    It maintains a collection of render objects, organizes them spatially.
+
+---------------------------------------------------------------------------------------------------
+*/
+
 class RenderWorld {
 public:
     RenderWorld();

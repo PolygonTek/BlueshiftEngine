@@ -15,7 +15,7 @@
 #include "Precompiled.h"
 #include "Mesh.h"
 #include "BModel.h"
-#include "Skeleton.h"
+#include "Render/Animation/Skeleton.h"
 
 static BE1::AABB mergeAABB;
 

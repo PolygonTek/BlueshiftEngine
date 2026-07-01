@@ -14,7 +14,7 @@
 
 #include "Precompiled.h"
 #include "MaterialManager.h"
-#include "ShaderTemplateManager.h"
+#include "Render/ShaderPipeline/ShaderTemplateManager.h"
 
 MaterialManager     materialManager;
 

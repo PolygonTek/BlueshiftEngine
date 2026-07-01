@@ -183,7 +183,6 @@ void ShaderTemplate::InternalData::AddStage(RHI::ShaderStage shaderStage, RHI::S
 
     ShaderStageSource &stageSource = stageSources[to_int(shaderStage)];
 
-    stageSource.shaderStage = shaderStage;
     stageSource.shaderModel = shaderModel;
     stageSource.filename = filename;
     stageSource.entryPoint = entryPoint;
@@ -400,7 +399,7 @@ bool ShaderTemplate::Parse(const char *text, const char *baseDir, InternalData &
 
     bool hasShaderStage = false;
     for (const ShaderStageSource &stageSource : outInternalData.stageSources) {
-        if (stageSource.shaderStage != RHI::ShaderStage::Count) {
+        if (!stageSource.filename.IsEmpty()) {
             hasShaderStage = true;
             break;
         }
@@ -1034,7 +1033,9 @@ bool ShaderTemplate::Reload() {
 }
 
 void ShaderTemplate::Purge() {
+    // 파이프라인 캐시에서 이 ShaderTemplate 을 사용하는 모든 파이프라인 캐시를 제거한다.
     shaderPipelineCache.ClearShaderTemplate(this);
+
     ClearPermutations();
 
     internalData.Purge();
@@ -1093,28 +1094,28 @@ bool ShaderTemplate::AppendFeatureSetDefines(BE1::StrArray &defines, const Shade
     return addedAllDefines;
 }
 
-bool ShaderTemplate::PreparePipelineBuildData(ShaderPermutationKey permutationKey, ShaderPipelineBuildData &outBuildData) const {
-    outBuildData.Clear();
+bool ShaderTemplate::PrepareShaderCompileData(ShaderPermutationKey permutationKey, ShaderCompileData &outCompileData) const {
+    outCompileData.Clear();
 
     // 원본 permutation 을 얻는다.
     ShaderPermutation *srcPermutation = FindPermutation(permutationKey);
     if (!srcPermutation) {
-        BE_WARNLOG("ShaderTemplate::PreparePipelineBuildData: shader template '%s' has no permutation 0x%llx\n", GetHashName(), permutationKey.hash);
+        BE_WARNLOG("ShaderTemplate::PrepareShaderCompileData: shader template '%s' has no permutation 0x%llx\n", GetHashName(), permutationKey.hash);
         return false;
     }
 
     // global defines + base defines + permutation defines + feature defines 순으로 합쳐서 컴파일 define 을 만든다.
-    shaderTemplateManager.CopyGlobalDefines(outBuildData.compileDefines);
-    AppendDefines(outBuildData.compileDefines, internalData.baseDefines);
-    AppendDefines(outBuildData.compileDefines, srcPermutation->defines);
-    if (!AppendFeatureSetDefines(outBuildData.compileDefines, srcPermutation->featureSet)) {
+    shaderTemplateManager.CopyGlobalDefines(outCompileData.compileDefines);
+    AppendDefines(outCompileData.compileDefines, internalData.baseDefines);
+    AppendDefines(outCompileData.compileDefines, srcPermutation->defines);
+    if (!AppendFeatureSetDefines(outCompileData.compileDefines, srcPermutation->featureSet)) {
         return false;
     }
 
-    ShaderPermutationKey::NormalizePermutationDefines(outBuildData.compileDefines);
+    ShaderPermutationKey::NormalizePermutationDefines(outCompileData.compileDefines);
 
     for (int i = 0; i < to_int(RHI::ShaderStage::Count); i++) {
-        outBuildData.stageSources[i] = internalData.stageSources[i];
+        outCompileData.stageSources[i] = internalData.stageSources[i];
     }
 
     return true;

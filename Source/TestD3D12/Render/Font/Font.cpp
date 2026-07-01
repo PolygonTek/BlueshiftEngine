@@ -14,7 +14,7 @@
 
 #include "Precompiled.h"
 #include "Core/StrColor.h"
-#include "Render/Font.h"
+#include "Render/Font/Font.h"
 #include "FontFace.h"
 
 void Font::Purge() {

@@ -17,7 +17,7 @@
 #include "RenderCvars.h"
 #include "RHI/RHI.h"
 #include "Shaders/ShaderInterop.h"
-#include "TextureManager.h"
+#include "Render/Texture/TextureManager.h"
 
 static void SetViewMatrix(const BE1::Mat3 &viewAxis, const BE1::Vec3 &viewOrigin, float *rowMajor4x4ViewMatrix) {
     // left axis

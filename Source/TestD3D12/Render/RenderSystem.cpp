@@ -18,15 +18,15 @@
 #include "RenderBackend.h"
 #include "RHI/RHI.h"
 #include "Sampler.h"
-#include "TextureManager.h"
-#include "ShaderTemplateManager.h"
-#include "ShaderPipelineCache.h"
-#include "VertexInputLayoutFactory.h"
-#include "MaterialManager.h"
-#include "FontManager.h"
-#include "MeshManager.h"
-#include "SkeletonManager.h"
-#include "AnimManager.h"
+#include "Render/Texture/TextureManager.h"
+#include "Render/ShaderPipeline/ShaderTemplateManager.h"
+#include "Render/ShaderPipeline/ShaderPipelineCache.h"
+#include "Render/ShaderPipeline/VertexInputLayoutFactory.h"
+#include "Render/Material/MaterialManager.h"
+#include "Render/Font/FontManager.h"
+#include "Render/Mesh/MeshManager.h"
+#include "Render/Animation/SkeletonManager.h"
+#include "Render/Animation/AnimManager.h"
 
 RenderSystem *          renderSystem = nullptr;
 
@@ -49,7 +49,7 @@ void RenderSystem::Init(void *mainWindowHandle) {
 
     gpuFFT.Init();
 
-    InitPostProcessPSOs();
+    InitPostProcessPipelines();
 
     convolutionBloomKernelGenerator.Init();
 
@@ -91,7 +91,7 @@ void RenderSystem::Shutdown() {
 
     materialManager.Shutdown();
 
-    ReleasePostProcessPSOs();
+    ReleasePostProcessPipelines();
 
     convolutionBloomKernelGenerator.Shutdown();
 
@@ -129,7 +129,7 @@ static SharedPtr<ShaderTemplate> CreatePostProcessShaderTemplate(const char *has
     return shaderTemplate;
 }
 
-void RenderSystem::InitPostProcessPSOs() {
+void RenderSystem::InitPostProcessPipelines() {
     const char *baseDir = "Source/TestD3D12/Shaders";
     const RHI::ShaderModel computeShaderModel = RHI::ShaderModel::SM_6_6;
 
@@ -149,24 +149,24 @@ void RenderSystem::InitPostProcessPSOs() {
     convolutionBloomResolveDiffractionPSFShaderTemplate = CreatePostProcessShaderTemplate("_convolutionBloomResolveDiffractionPSFShader", computeShaderModel, "Bloom/ConvolutionBloomResolveDiffractionPSF.hlsl", baseDir);
     convolutionBloomApplyDispersionShaderTemplate = CreatePostProcessShaderTemplate("_convolutionBloomApplyDispersionShader", computeShaderModel, "Bloom/ConvolutionBloomApplyDispersion.hlsl", baseDir);
 
-    toneMappingPipeline = shaderPipelineCache.GetComputePipeline(toneMappingShaderTemplate, ShaderPermutationKey(), false);
-    luminancePass1Pipeline = shaderPipelineCache.GetComputePipeline(luminancePass1ShaderTemplate, ShaderPermutationKey(), false);
-    luminancePass2Pipeline = shaderPipelineCache.GetComputePipeline(luminancePass2ShaderTemplate, ShaderPermutationKey(), false);
+    toneMappingPipeline = shaderPipelineCache.GetComputePipeline(toneMappingShaderTemplate, ShaderPermutationKey(), true);
+    luminancePass1Pipeline = shaderPipelineCache.GetComputePipeline(luminancePass1ShaderTemplate, ShaderPermutationKey(), true);
+    luminancePass2Pipeline = shaderPipelineCache.GetComputePipeline(luminancePass2ShaderTemplate, ShaderPermutationKey(), true);
 
-    bloomPrefilterPipeline = shaderPipelineCache.GetComputePipeline(bloomPrefilterShaderTemplate, ShaderPermutationKey(), false);
-    bloomDownsamplePipeline = shaderPipelineCache.GetComputePipeline(bloomDownsampleShaderTemplate, ShaderPermutationKey(), false);
-    bloomUpsamplePipeline = shaderPipelineCache.GetComputePipeline(bloomUpsampleShaderTemplate, ShaderPermutationKey(), false);
+    bloomPrefilterPipeline = shaderPipelineCache.GetComputePipeline(bloomPrefilterShaderTemplate, ShaderPermutationKey(), true);
+    bloomDownsamplePipeline = shaderPipelineCache.GetComputePipeline(bloomDownsampleShaderTemplate, ShaderPermutationKey(), true);
+    bloomUpsamplePipeline = shaderPipelineCache.GetComputePipeline(bloomUpsampleShaderTemplate, ShaderPermutationKey(), true);
 
-    convolutionBloomPrefilterPipeline = shaderPipelineCache.GetComputePipeline(convolutionBloomPrefilterShaderTemplate, ShaderPermutationKey(), false);
-    convolutionBloomKernelPreparePipeline = shaderPipelineCache.GetComputePipeline(convolutionBloomKernelPrepareShaderTemplate, ShaderPermutationKey(), false);
-    convolutionBloomResolvePipeline = shaderPipelineCache.GetComputePipeline(convolutionBloomResolveShaderTemplate, ShaderPermutationKey(), false);
-    convolutionBloomAperturePreparePipeline = shaderPipelineCache.GetComputePipeline(convolutionBloomAperturePrepareShaderTemplate, ShaderPermutationKey(), false);
-    convolutionBloomReduceApertureEnergyPipeline = shaderPipelineCache.GetComputePipeline(convolutionBloomReduceApertureEnergyShaderTemplate, ShaderPermutationKey(), false);
-    convolutionBloomResolveDiffractionPSFPipeline = shaderPipelineCache.GetComputePipeline(convolutionBloomResolveDiffractionPSFShaderTemplate, ShaderPermutationKey(), false);
-    convolutionBloomApplyDispersionPipeline = shaderPipelineCache.GetComputePipeline(convolutionBloomApplyDispersionShaderTemplate, ShaderPermutationKey(), false);
+    convolutionBloomPrefilterPipeline = shaderPipelineCache.GetComputePipeline(convolutionBloomPrefilterShaderTemplate, ShaderPermutationKey(), true);
+    convolutionBloomKernelPreparePipeline = shaderPipelineCache.GetComputePipeline(convolutionBloomKernelPrepareShaderTemplate, ShaderPermutationKey(), true);
+    convolutionBloomResolvePipeline = shaderPipelineCache.GetComputePipeline(convolutionBloomResolveShaderTemplate, ShaderPermutationKey(), true);
+    convolutionBloomAperturePreparePipeline = shaderPipelineCache.GetComputePipeline(convolutionBloomAperturePrepareShaderTemplate, ShaderPermutationKey(), true);
+    convolutionBloomReduceApertureEnergyPipeline = shaderPipelineCache.GetComputePipeline(convolutionBloomReduceApertureEnergyShaderTemplate, ShaderPermutationKey(), true);
+    convolutionBloomResolveDiffractionPSFPipeline = shaderPipelineCache.GetComputePipeline(convolutionBloomResolveDiffractionPSFShaderTemplate, ShaderPermutationKey(), true);
+    convolutionBloomApplyDispersionPipeline = shaderPipelineCache.GetComputePipeline(convolutionBloomApplyDispersionShaderTemplate, ShaderPermutationKey(), true);
 }
 
-void RenderSystem::ReleasePostProcessPSOs() {
+void RenderSystem::ReleasePostProcessPipelines() {
     toneMappingPipeline.reset();
     luminancePass1Pipeline.reset();
     luminancePass2Pipeline.reset();

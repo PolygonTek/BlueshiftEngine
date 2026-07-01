@@ -17,10 +17,10 @@
 #include "RenderContext.h"
 #include "RenderBackend.h"
 #include "RenderInternal.h"
-#include "ShaderTemplateManager.h"
-#include "ShaderPipelineCache.h"
-#include "MaterialManager.h"
-#include "FontManager.h"
+#include "Render/ShaderPipeline/ShaderTemplateManager.h"
+#include "Render/ShaderPipeline/ShaderPipelineCache.h"
+#include "Render/Material/MaterialManager.h"
+#include "Render/Font/FontManager.h"
 
 RenderContext *         RenderContext::activeContext = nullptr;
 
@@ -57,7 +57,7 @@ void RenderContext::Init(void *windowHandle, const BE1::Color4 &baseClearColor) 
     mainRTColorFormat = RHI::Format::R16G16B16A16_FLOAT;
     this->baseClearColor = !RHI::Renderer::IsSRGBFormat(mainRTColorFormat) ? baseClearColor.SRGBToLinear() : baseClearColor;
 
-    InitPSOs();
+    InitPipelines();
 
     if (!textureStreamingFeedback.Init()) {
         BE_WARNLOG("RenderContext::Init: failed to initialize texture streaming feedback\n");
@@ -84,7 +84,7 @@ void RenderContext::Shutdown() {
 
     textureStreamingFeedback.Shutdown();
 
-    ReleasePSOs();
+    ReleasePipelines();
 
     for (RenderFrameData &frameData : frames) {
         frameData.Shutdown();
@@ -127,7 +127,7 @@ void RenderContext::GetSwapChainRenderDest(RHI::RenderDest &renderDest) const {
     renderDest.sampleCount = 1;
 }
 
-void RenderContext::InitPSOs() {
+void RenderContext::InitPipelines() {
     RHI::RenderDest renderDest;
     GetSwapChainRenderDest(renderDest);
 
@@ -136,11 +136,11 @@ void RenderContext::InitPSOs() {
     graphicsPipelineDesc.depthStencilStateType = RHI::DepthStencilStateType::Never;
     graphicsPipelineDesc.blendStateType = RHI::BlendStateType::Disabled;
 
-    imagePSO = shaderPipelineCache.GetGraphicsPipeline(shaderTemplateManager.fullscreenImageShaderTemplate, ShaderPermutationKey(), graphicsPipelineDesc, false);
+    imagePipeline = shaderPipelineCache.GetGraphicsPipeline(shaderTemplateManager.fullscreenImageShaderTemplate, ShaderPermutationKey(), graphicsPipelineDesc, false);
 }
 
-void RenderContext::ReleasePSOs() {
-    imagePSO.reset();
+void RenderContext::ReleasePipelines() {
+    imagePipeline.reset();
 }
 
 void RenderContext::WaitAllFrameFences() {

@@ -1755,24 +1755,24 @@ void D3D12Renderer::GenerateMipChain(RHI::CommandList *commandList, const RHI::T
                 SetTexture(commandList, 0, false, texture, srvMipViewIDs[mipLevel]);
 
                 RHI::GPUBarrier startBarriers[] = {
-                    RHI::Renderer::MakeImageBarrier(texture, _texture->defaultState, RHI::GPUResourceState::UnorderedAccess, 0, destMipLevel),
-                    RHI::Renderer::MakeImageBarrier(texture, _texture->defaultState, RHI::GPUResourceState::UnorderedAccess, 1, destMipLevel),
-                    RHI::Renderer::MakeImageBarrier(texture, _texture->defaultState, RHI::GPUResourceState::UnorderedAccess, 2, destMipLevel),
-                    RHI::Renderer::MakeImageBarrier(texture, _texture->defaultState, RHI::GPUResourceState::UnorderedAccess, 3, destMipLevel),
-                    RHI::Renderer::MakeImageBarrier(texture, _texture->defaultState, RHI::GPUResourceState::UnorderedAccess, 4, destMipLevel),
-                    RHI::Renderer::MakeImageBarrier(texture, _texture->defaultState, RHI::GPUResourceState::UnorderedAccess, 5, destMipLevel)
+                    RHI::Renderer::MakeTextureBarrier(texture, _texture->defaultState, RHI::GPUResourceState::UnorderedAccess, 0, destMipLevel),
+                    RHI::Renderer::MakeTextureBarrier(texture, _texture->defaultState, RHI::GPUResourceState::UnorderedAccess, 1, destMipLevel),
+                    RHI::Renderer::MakeTextureBarrier(texture, _texture->defaultState, RHI::GPUResourceState::UnorderedAccess, 2, destMipLevel),
+                    RHI::Renderer::MakeTextureBarrier(texture, _texture->defaultState, RHI::GPUResourceState::UnorderedAccess, 3, destMipLevel),
+                    RHI::Renderer::MakeTextureBarrier(texture, _texture->defaultState, RHI::GPUResourceState::UnorderedAccess, 4, destMipLevel),
+                    RHI::Renderer::MakeTextureBarrier(texture, _texture->defaultState, RHI::GPUResourceState::UnorderedAccess, 5, destMipLevel)
                 };
                 Barrier(commandList, startBarriers, COUNT_OF(startBarriers));
 
                 Dispatch(commandList, threadGroupCountX, threadGroupCountY, threadGroupCountZ);
 
                 RHI::GPUBarrier endBarriers[] = {
-                    RHI::Renderer::MakeImageBarrier(texture, RHI::GPUResourceState::UnorderedAccess, _texture->defaultState, 0, destMipLevel),
-                    RHI::Renderer::MakeImageBarrier(texture, RHI::GPUResourceState::UnorderedAccess, _texture->defaultState, 1, destMipLevel),
-                    RHI::Renderer::MakeImageBarrier(texture, RHI::GPUResourceState::UnorderedAccess, _texture->defaultState, 2, destMipLevel),
-                    RHI::Renderer::MakeImageBarrier(texture, RHI::GPUResourceState::UnorderedAccess, _texture->defaultState, 3, destMipLevel),
-                    RHI::Renderer::MakeImageBarrier(texture, RHI::GPUResourceState::UnorderedAccess, _texture->defaultState, 4, destMipLevel),
-                    RHI::Renderer::MakeImageBarrier(texture, RHI::GPUResourceState::UnorderedAccess, _texture->defaultState, 5, destMipLevel)
+                    RHI::Renderer::MakeTextureBarrier(texture, RHI::GPUResourceState::UnorderedAccess, _texture->defaultState, 0, destMipLevel),
+                    RHI::Renderer::MakeTextureBarrier(texture, RHI::GPUResourceState::UnorderedAccess, _texture->defaultState, 1, destMipLevel),
+                    RHI::Renderer::MakeTextureBarrier(texture, RHI::GPUResourceState::UnorderedAccess, _texture->defaultState, 2, destMipLevel),
+                    RHI::Renderer::MakeTextureBarrier(texture, RHI::GPUResourceState::UnorderedAccess, _texture->defaultState, 3, destMipLevel),
+                    RHI::Renderer::MakeTextureBarrier(texture, RHI::GPUResourceState::UnorderedAccess, _texture->defaultState, 4, destMipLevel),
+                    RHI::Renderer::MakeTextureBarrier(texture, RHI::GPUResourceState::UnorderedAccess, _texture->defaultState, 5, destMipLevel)
                 };
                 Barrier(commandList, endBarriers, COUNT_OF(endBarriers));
             }
@@ -1803,14 +1803,14 @@ void D3D12Renderer::GenerateMipChain(RHI::CommandList *commandList, const RHI::T
                 SetTexture(commandList, 0, false, texture, srvMipViewIDs[mipLevel]);
 
                 RHI::GPUBarrier startBarriers[] = {
-                    RHI::Renderer::MakeImageBarrier(texture, _texture->defaultState, RHI::GPUResourceState::UnorderedAccess, 0, destMipLevel)
+                    RHI::Renderer::MakeTextureBarrier(texture, _texture->defaultState, RHI::GPUResourceState::UnorderedAccess, 0, destMipLevel)
                 };
                 Barrier(commandList, startBarriers, COUNT_OF(startBarriers));
 
                 Dispatch(commandList, threadGroupCountX, threadGroupCountY, 1);
 
                 RHI::GPUBarrier endBarriers[] = {
-                    RHI::Renderer::MakeImageBarrier(texture, RHI::GPUResourceState::UnorderedAccess, _texture->defaultState, 0, destMipLevel)
+                    RHI::Renderer::MakeTextureBarrier(texture, RHI::GPUResourceState::UnorderedAccess, _texture->defaultState, 0, destMipLevel)
                 };
                 Barrier(commandList, endBarriers, COUNT_OF(endBarriers));
             }
@@ -1844,14 +1844,14 @@ void D3D12Renderer::GenerateMipChain(RHI::CommandList *commandList, const RHI::T
             SetTexture(commandList, 0, false, texture, srvMipViewIDs[mipLevel]);
 
             RHI::GPUBarrier startBarriers[] = {
-                RHI::Renderer::MakeImageBarrier(texture, _texture->defaultState, RHI::GPUResourceState::UnorderedAccess, 0, destMipLevel)
+                RHI::Renderer::MakeTextureBarrier(texture, _texture->defaultState, RHI::GPUResourceState::UnorderedAccess, 0, destMipLevel)
             };
             Barrier(commandList, startBarriers, COUNT_OF(startBarriers));
 
             Dispatch(commandList, threadGroupCountX, threadGroupCountY, threadGroupCountZ);
 
             RHI::GPUBarrier endBarriers[] = {
-                RHI::Renderer::MakeImageBarrier(texture, RHI::GPUResourceState::UnorderedAccess, _texture->defaultState, 0, destMipLevel)
+                RHI::Renderer::MakeTextureBarrier(texture, RHI::GPUResourceState::UnorderedAccess, _texture->defaultState, 0, destMipLevel)
             };
             Barrier(commandList, endBarriers, COUNT_OF(endBarriers));
         }

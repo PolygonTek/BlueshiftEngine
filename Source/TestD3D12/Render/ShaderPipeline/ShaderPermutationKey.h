@@ -21,9 +21,9 @@
 /*
 ---------------------------------------------------------------------------------------------------
 
-    ShaderPermutationKey
+    Shader Permutation Key
 
-    permutation key 는 permutation defines (shader define properties) + featureSet flags 으로 이루어진다.
+    64 비트 해시키는 permutation defines (shader define properties) + featureSet flags 로 만들어진다.
 
 ---------------------------------------------------------------------------------------------------
 */
