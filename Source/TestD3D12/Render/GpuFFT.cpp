@@ -22,15 +22,15 @@
 struct FFTDispatchEntry {
     uint32_t                fftSize = 0;
 
-    RHI::PipelineState *    fftComplexPSO = nullptr;
-    RHI::PipelineState *    fftRealPSO = nullptr;
-    RHI::PipelineState *    ifftRealPSO = nullptr;
-    RHI::PipelineState *    fftDualRealPSO = nullptr;
-    RHI::PipelineState *    ifftDualRealPSO = nullptr;
+    ShaderPipeline *        fftComplexPipeline = nullptr;
+    ShaderPipeline *        fftRealPipeline = nullptr;
+    ShaderPipeline *        ifftRealPipeline = nullptr;
+    ShaderPipeline *        fftDualRealPipeline = nullptr;
+    ShaderPipeline *        ifftDualRealPipeline = nullptr;
 
-    RHI::PipelineState *    transposeComplexPSO = nullptr;
-    RHI::PipelineState *    transposeComplexPackedToFullPSO = nullptr;
-    RHI::PipelineState *    transposeComplexFullToPackedPSO = nullptr;
+    ShaderPipeline *        transposeComplexPipeline = nullptr;
+    ShaderPipeline *        transposeComplexPackedToFullPipeline = nullptr;
+    ShaderPipeline *        transposeComplexFullToPackedPipeline = nullptr;
 
     RHI::Buffer *           fftRealTwiddleBuffer = nullptr;
 };
@@ -96,43 +96,43 @@ void GpuFFT::Init() {
     transposeComplex1024x2048ShaderTemplate = CreateGpuFFTShaderTemplate("_transposeComplex1024x2048Shader", shaderModel, "Transpose/TransposeComplex1024x2048.hlsl", baseDir);
     transposeComplex2048x1024ShaderTemplate = CreateGpuFFTShaderTemplate("_transposeComplex2048x1024Shader", shaderModel, "Transpose/TransposeComplex2048x1024.hlsl", baseDir);
 
-    fftComplex256Pipeline = shaderPipelineCache.GetComputePipeline(fftComplex256ShaderTemplate, ShaderPermutationKey(), false);
-    fftComplex512Pipeline = shaderPipelineCache.GetComputePipeline(fftComplex512ShaderTemplate, ShaderPermutationKey(), false);
-    fftComplex1024Pipeline = shaderPipelineCache.GetComputePipeline(fftComplex1024ShaderTemplate, ShaderPermutationKey(), false);
-    fftComplex2048Pipeline = shaderPipelineCache.GetComputePipeline(fftComplex2048ShaderTemplate, ShaderPermutationKey(), false);
+    fftComplex256Pipeline = shaderPipelineCache.GetComputePipeline(fftComplex256ShaderTemplate, ShaderPermutationKey(), true);
+    fftComplex512Pipeline = shaderPipelineCache.GetComputePipeline(fftComplex512ShaderTemplate, ShaderPermutationKey(), true);
+    fftComplex1024Pipeline = shaderPipelineCache.GetComputePipeline(fftComplex1024ShaderTemplate, ShaderPermutationKey(), true);
+    fftComplex2048Pipeline = shaderPipelineCache.GetComputePipeline(fftComplex2048ShaderTemplate, ShaderPermutationKey(), true);
 
-    fftReal512Pipeline = shaderPipelineCache.GetComputePipeline(fftReal512ShaderTemplate, ShaderPermutationKey(), false);
-    fftReal1024Pipeline = shaderPipelineCache.GetComputePipeline(fftReal1024ShaderTemplate, ShaderPermutationKey(), false);
-    fftReal2048Pipeline = shaderPipelineCache.GetComputePipeline(fftReal2048ShaderTemplate, ShaderPermutationKey(), false);
+    fftReal512Pipeline = shaderPipelineCache.GetComputePipeline(fftReal512ShaderTemplate, ShaderPermutationKey(), true);
+    fftReal1024Pipeline = shaderPipelineCache.GetComputePipeline(fftReal1024ShaderTemplate, ShaderPermutationKey(), true);
+    fftReal2048Pipeline = shaderPipelineCache.GetComputePipeline(fftReal2048ShaderTemplate, ShaderPermutationKey(), true);
 
-    ifftReal512Pipeline = shaderPipelineCache.GetComputePipeline(ifftReal512ShaderTemplate, ShaderPermutationKey(), false);
-    ifftReal1024Pipeline = shaderPipelineCache.GetComputePipeline(ifftReal1024ShaderTemplate, ShaderPermutationKey(), false);
-    ifftReal2048Pipeline = shaderPipelineCache.GetComputePipeline(ifftReal2048ShaderTemplate, ShaderPermutationKey(), false);
+    ifftReal512Pipeline = shaderPipelineCache.GetComputePipeline(ifftReal512ShaderTemplate, ShaderPermutationKey(), true);
+    ifftReal1024Pipeline = shaderPipelineCache.GetComputePipeline(ifftReal1024ShaderTemplate, ShaderPermutationKey(), true);
+    ifftReal2048Pipeline = shaderPipelineCache.GetComputePipeline(ifftReal2048ShaderTemplate, ShaderPermutationKey(), true);
 
-    fftDualReal256Pipeline = shaderPipelineCache.GetComputePipeline(fftDualReal256ShaderTemplate, ShaderPermutationKey(), false);
-    fftDualReal512Pipeline = shaderPipelineCache.GetComputePipeline(fftDualReal512ShaderTemplate, ShaderPermutationKey(), false);
-    fftDualReal1024Pipeline = shaderPipelineCache.GetComputePipeline(fftDualReal1024ShaderTemplate, ShaderPermutationKey(), false);
-    fftDualReal2048Pipeline = shaderPipelineCache.GetComputePipeline(fftDualReal2048ShaderTemplate, ShaderPermutationKey(), false);
+    fftDualReal256Pipeline = shaderPipelineCache.GetComputePipeline(fftDualReal256ShaderTemplate, ShaderPermutationKey(), true);
+    fftDualReal512Pipeline = shaderPipelineCache.GetComputePipeline(fftDualReal512ShaderTemplate, ShaderPermutationKey(), true);
+    fftDualReal1024Pipeline = shaderPipelineCache.GetComputePipeline(fftDualReal1024ShaderTemplate, ShaderPermutationKey(), true);
+    fftDualReal2048Pipeline = shaderPipelineCache.GetComputePipeline(fftDualReal2048ShaderTemplate, ShaderPermutationKey(), true);
 
-    ifftDualReal256Pipeline = shaderPipelineCache.GetComputePipeline(ifftDualReal256ShaderTemplate, ShaderPermutationKey(), false);
-    ifftDualReal512Pipeline = shaderPipelineCache.GetComputePipeline(ifftDualReal512ShaderTemplate, ShaderPermutationKey(), false);
-    ifftDualReal1024Pipeline = shaderPipelineCache.GetComputePipeline(ifftDualReal1024ShaderTemplate, ShaderPermutationKey(), false);
-    ifftDualReal2048Pipeline = shaderPipelineCache.GetComputePipeline(ifftDualReal2048ShaderTemplate, ShaderPermutationKey(), false);
+    ifftDualReal256Pipeline = shaderPipelineCache.GetComputePipeline(ifftDualReal256ShaderTemplate, ShaderPermutationKey(), true);
+    ifftDualReal512Pipeline = shaderPipelineCache.GetComputePipeline(ifftDualReal512ShaderTemplate, ShaderPermutationKey(), true);
+    ifftDualReal1024Pipeline = shaderPipelineCache.GetComputePipeline(ifftDualReal1024ShaderTemplate, ShaderPermutationKey(), true);
+    ifftDualReal2048Pipeline = shaderPipelineCache.GetComputePipeline(ifftDualReal2048ShaderTemplate, ShaderPermutationKey(), true);
 
-    multiplyComplexSpectrum2DPipeline = shaderPipelineCache.GetComputePipeline(multiplyComplexSpectrum2DShaderTemplate, ShaderPermutationKey(), false);
-    multiplyPackedRealSpectrum2DPipeline = shaderPipelineCache.GetComputePipeline(multiplyPackedRealSpectrum2DShaderTemplate, ShaderPermutationKey(), false);
-    multiplyPackedDualRealSpectrum2DPipeline = shaderPipelineCache.GetComputePipeline(multiplyPackedDualRealSpectrum2DShaderTemplate, ShaderPermutationKey(), false);
+    multiplyComplexSpectrum2DPipeline = shaderPipelineCache.GetComputePipeline(multiplyComplexSpectrum2DShaderTemplate, ShaderPermutationKey(), true);
+    multiplyPackedRealSpectrum2DPipeline = shaderPipelineCache.GetComputePipeline(multiplyPackedRealSpectrum2DShaderTemplate, ShaderPermutationKey(), true);
+    multiplyPackedDualRealSpectrum2DPipeline = shaderPipelineCache.GetComputePipeline(multiplyPackedDualRealSpectrum2DShaderTemplate, ShaderPermutationKey(), true);
 
-    transposeComplex256Pipeline = shaderPipelineCache.GetComputePipeline(transposeComplex256ShaderTemplate, ShaderPermutationKey(), false);
-    transposeComplex512Pipeline = shaderPipelineCache.GetComputePipeline(transposeComplex512ShaderTemplate, ShaderPermutationKey(), false);
-    transposeComplex1024Pipeline = shaderPipelineCache.GetComputePipeline(transposeComplex1024ShaderTemplate, ShaderPermutationKey(), false);
-    transposeComplex2048Pipeline = shaderPipelineCache.GetComputePipeline(transposeComplex2048ShaderTemplate, ShaderPermutationKey(), false);
-    transposeComplex256x512Pipeline = shaderPipelineCache.GetComputePipeline(transposeComplex256x512ShaderTemplate, ShaderPermutationKey(), false);
-    transposeComplex512x256Pipeline = shaderPipelineCache.GetComputePipeline(transposeComplex512x256ShaderTemplate, ShaderPermutationKey(), false);
-    transposeComplex512x1024Pipeline = shaderPipelineCache.GetComputePipeline(transposeComplex512x1024ShaderTemplate, ShaderPermutationKey(), false);
-    transposeComplex1024x512Pipeline = shaderPipelineCache.GetComputePipeline(transposeComplex1024x512ShaderTemplate, ShaderPermutationKey(), false);
-    transposeComplex1024x2048Pipeline = shaderPipelineCache.GetComputePipeline(transposeComplex1024x2048ShaderTemplate, ShaderPermutationKey(), false);
-    transposeComplex2048x1024Pipeline = shaderPipelineCache.GetComputePipeline(transposeComplex2048x1024ShaderTemplate, ShaderPermutationKey(), false);
+    transposeComplex256Pipeline = shaderPipelineCache.GetComputePipeline(transposeComplex256ShaderTemplate, ShaderPermutationKey(), true);
+    transposeComplex512Pipeline = shaderPipelineCache.GetComputePipeline(transposeComplex512ShaderTemplate, ShaderPermutationKey(), true);
+    transposeComplex1024Pipeline = shaderPipelineCache.GetComputePipeline(transposeComplex1024ShaderTemplate, ShaderPermutationKey(), true);
+    transposeComplex2048Pipeline = shaderPipelineCache.GetComputePipeline(transposeComplex2048ShaderTemplate, ShaderPermutationKey(), true);
+    transposeComplex256x512Pipeline = shaderPipelineCache.GetComputePipeline(transposeComplex256x512ShaderTemplate, ShaderPermutationKey(), true);
+    transposeComplex512x256Pipeline = shaderPipelineCache.GetComputePipeline(transposeComplex512x256ShaderTemplate, ShaderPermutationKey(), true);
+    transposeComplex512x1024Pipeline = shaderPipelineCache.GetComputePipeline(transposeComplex512x1024ShaderTemplate, ShaderPermutationKey(), true);
+    transposeComplex1024x512Pipeline = shaderPipelineCache.GetComputePipeline(transposeComplex1024x512ShaderTemplate, ShaderPermutationKey(), true);
+    transposeComplex1024x2048Pipeline = shaderPipelineCache.GetComputePipeline(transposeComplex1024x2048ShaderTemplate, ShaderPermutationKey(), true);
+    transposeComplex2048x1024Pipeline = shaderPipelineCache.GetComputePipeline(transposeComplex2048x1024ShaderTemplate, ShaderPermutationKey(), true);
 
     fftRealTwiddle512Buffer = CreateRealFFTTwiddleBuffer(512);
     fftRealTwiddle1024Buffer = CreateRealFFTTwiddleBuffer(1024);
@@ -140,12 +140,12 @@ void GpuFFT::Init() {
 
     fftDispatchTable[static_cast<uint32_t>(FFTSize::FFT256)] = FFTDispatchEntry{
         256,
-        ShaderPipeline::GetReadyPSO(fftComplex256Pipeline),
+        fftComplex256Pipeline.get(),
         nullptr,
         nullptr,
-        ShaderPipeline::GetReadyPSO(fftDualReal256Pipeline),
-        ShaderPipeline::GetReadyPSO(ifftDualReal256Pipeline),
-        ShaderPipeline::GetReadyPSO(transposeComplex256Pipeline),
+        fftDualReal256Pipeline.get(),
+        ifftDualReal256Pipeline.get(),
+        transposeComplex256Pipeline.get(),
         nullptr,
         nullptr,
         nullptr
@@ -153,49 +153,49 @@ void GpuFFT::Init() {
 
     fftDispatchTable[static_cast<uint32_t>(FFTSize::FFT512)] = FFTDispatchEntry{
         512,
-        ShaderPipeline::GetReadyPSO(fftComplex512Pipeline),
-        ShaderPipeline::GetReadyPSO(fftReal512Pipeline),
-        ShaderPipeline::GetReadyPSO(ifftReal512Pipeline),
-        ShaderPipeline::GetReadyPSO(fftDualReal512Pipeline),
-        ShaderPipeline::GetReadyPSO(ifftDualReal512Pipeline),
-        ShaderPipeline::GetReadyPSO(transposeComplex512Pipeline),
-        ShaderPipeline::GetReadyPSO(transposeComplex256x512Pipeline),
-        ShaderPipeline::GetReadyPSO(transposeComplex512x256Pipeline),
+        fftComplex512Pipeline.get(),
+        fftReal512Pipeline.get(),
+        ifftReal512Pipeline.get(),
+        fftDualReal512Pipeline.get(),
+        ifftDualReal512Pipeline.get(),
+        transposeComplex512Pipeline.get(),
+        transposeComplex256x512Pipeline.get(),
+        transposeComplex512x256Pipeline.get(),
         fftRealTwiddle512Buffer
     };
 
     fftDispatchTable[static_cast<uint32_t>(FFTSize::FFT1024)] = FFTDispatchEntry{
         1024,
-        ShaderPipeline::GetReadyPSO(fftComplex1024Pipeline),
-        ShaderPipeline::GetReadyPSO(fftReal1024Pipeline),
-        ShaderPipeline::GetReadyPSO(ifftReal1024Pipeline),
-        ShaderPipeline::GetReadyPSO(fftDualReal1024Pipeline),
-        ShaderPipeline::GetReadyPSO(ifftDualReal1024Pipeline),
-        ShaderPipeline::GetReadyPSO(transposeComplex1024Pipeline),
-        ShaderPipeline::GetReadyPSO(transposeComplex512x1024Pipeline),
-        ShaderPipeline::GetReadyPSO(transposeComplex1024x512Pipeline),
+        fftComplex1024Pipeline.get(),
+        fftReal1024Pipeline.get(),
+        ifftReal1024Pipeline.get(),
+        fftDualReal1024Pipeline.get(),
+        ifftDualReal1024Pipeline.get(),
+        transposeComplex1024Pipeline.get(),
+        transposeComplex512x1024Pipeline.get(),
+        transposeComplex1024x512Pipeline.get(),
         fftRealTwiddle1024Buffer
     };
 
     fftDispatchTable[static_cast<uint32_t>(FFTSize::FFT2048)] = FFTDispatchEntry{
         2048,
-        ShaderPipeline::GetReadyPSO(fftComplex2048Pipeline),
-        ShaderPipeline::GetReadyPSO(fftReal2048Pipeline),
-        ShaderPipeline::GetReadyPSO(ifftReal2048Pipeline),
-        ShaderPipeline::GetReadyPSO(fftDualReal2048Pipeline),
-        ShaderPipeline::GetReadyPSO(ifftDualReal2048Pipeline),
-        ShaderPipeline::GetReadyPSO(transposeComplex2048Pipeline),
-        ShaderPipeline::GetReadyPSO(transposeComplex1024x2048Pipeline),
-        ShaderPipeline::GetReadyPSO(transposeComplex2048x1024Pipeline),
+        fftComplex2048Pipeline.get(),
+        fftReal2048Pipeline.get(),
+        ifftReal2048Pipeline.get(),
+        fftDualReal2048Pipeline.get(),
+        ifftDualReal2048Pipeline.get(),
+        transposeComplex2048Pipeline.get(),
+        transposeComplex1024x2048Pipeline.get(),
+        transposeComplex2048x1024Pipeline.get(),
         fftRealTwiddle2048Buffer
     };
-
-    multiplyComplexSpectrum2DPSO = ShaderPipeline::GetReadyPSO(multiplyComplexSpectrum2DPipeline);
-    multiplyPackedRealSpectrum2DPSO = ShaderPipeline::GetReadyPSO(multiplyPackedRealSpectrum2DPipeline);
-    multiplyPackedDualRealSpectrum2DPSO = ShaderPipeline::GetReadyPSO(multiplyPackedDualRealSpectrum2DPipeline);
 }
 
 void GpuFFT::Shutdown() {
+    for (uint32_t i = 0; i < static_cast<uint32_t>(FFTSize::Count); i++) {
+        fftDispatchTable[i] = FFTDispatchEntry{};
+    }
+
     fftComplex256Pipeline.reset();
     fftComplex512Pipeline.reset();
     fftComplex1024Pipeline.reset();
@@ -286,14 +286,6 @@ void GpuFFT::Shutdown() {
         RHI::renderer->DestroyBuffer(fftRealTwiddle2048Buffer);
         fftRealTwiddle2048Buffer = nullptr;
     }
-
-    for (uint32_t i = 0; i < static_cast<uint32_t>(FFTSize::Count); i++) {
-        fftDispatchTable[i] = FFTDispatchEntry{};
-    }
-
-    multiplyComplexSpectrum2DPSO = nullptr;
-    multiplyPackedRealSpectrum2DPSO = nullptr;
-    multiplyPackedDualRealSpectrum2DPSO = nullptr;
 }
 
 bool GpuFFT::GetGpuFFTSize(uint32_t fftSizeValue, GpuFFT::FFTSize &fftSize) {
@@ -327,7 +319,7 @@ bool GpuFFT::DispatchFFTComplex1D(RHI::CommandList *commandList, RenderFrameData
     }
 
     const FFTDispatchEntry &entry = fftDispatchTable[fftSizeIndex];
-    RHI::PipelineState *pso = entry.fftComplexPSO;
+    RHI::PipelineState *pso = ShaderPipeline::GetReadyPSO(entry.fftComplexPipeline);
     if (!pso) {
         return false;
     }
@@ -357,7 +349,7 @@ bool GpuFFT::DispatchIFFTComplex1D(RHI::CommandList *commandList, RenderFrameDat
     }
 
     const FFTDispatchEntry &entry = fftDispatchTable[fftSizeIndex];
-    RHI::PipelineState *pso = entry.fftComplexPSO;
+    RHI::PipelineState *pso = ShaderPipeline::GetReadyPSO(entry.fftComplexPipeline);
     if (!pso) {
         return false;
     }
@@ -388,8 +380,8 @@ bool GpuFFT::DispatchFFTComplex2D(RHI::CommandList *commandList, RenderFrameData
     }
 
     const FFTDispatchEntry &entry = fftDispatchTable[fftSizeIndex];
-    RHI::PipelineState *fftPso = entry.fftComplexPSO;
-    RHI::PipelineState *transposePso = entry.transposeComplexPSO;
+    RHI::PipelineState *fftPso = ShaderPipeline::GetReadyPSO(entry.fftComplexPipeline);
+    RHI::PipelineState *transposePso = ShaderPipeline::GetReadyPSO(entry.transposeComplexPipeline);
     if (!fftPso || !transposePso) {
         return false;
     }
@@ -448,8 +440,8 @@ bool GpuFFT::DispatchIFFTComplex2D(RHI::CommandList *commandList, RenderFrameDat
     }
 
     const FFTDispatchEntry &entry = fftDispatchTable[fftSizeIndex];
-    RHI::PipelineState *fftPso = entry.fftComplexPSO;
-    RHI::PipelineState *transposePso = entry.transposeComplexPSO;
+    RHI::PipelineState *fftPso = ShaderPipeline::GetReadyPSO(entry.fftComplexPipeline);
+    RHI::PipelineState *transposePso = ShaderPipeline::GetReadyPSO(entry.transposeComplexPipeline);
     if (!fftPso || !transposePso) {
         return false;
     }
@@ -508,7 +500,7 @@ bool GpuFFT::DispatchFFTReal1D(RHI::CommandList *commandList, RHI::Buffer *input
     }
 
     const FFTDispatchEntry &entry = fftDispatchTable[fftSizeIndex];
-    RHI::PipelineState *pso = entry.fftRealPSO;
+    RHI::PipelineState *pso = ShaderPipeline::GetReadyPSO(entry.fftRealPipeline);
     RHI::Buffer *twiddleBuffer = entry.fftRealTwiddleBuffer;
     if (!pso || !twiddleBuffer) {
         return false;
@@ -538,7 +530,7 @@ bool GpuFFT::DispatchIFFTReal1D(RHI::CommandList *commandList, RHI::Buffer *inpu
     }
 
     const FFTDispatchEntry &entry = fftDispatchTable[fftSizeIndex];
-    RHI::PipelineState *pso = entry.ifftRealPSO;
+    RHI::PipelineState *pso = ShaderPipeline::GetReadyPSO(entry.ifftRealPipeline);
     RHI::Buffer *twiddleBuffer = entry.fftRealTwiddleBuffer;
     if (!pso || !twiddleBuffer) {
         return false;
@@ -557,9 +549,9 @@ bool GpuFFT::DispatchFFTReal2D(RHI::CommandList *commandList, RenderFrameData *f
     }
 
     const FFTDispatchEntry &entry = fftDispatchTable[fftSizeIndex];
-    RHI::PipelineState *realPso = entry.fftRealPSO;
-    RHI::PipelineState *complexPso = entry.fftComplexPSO;
-    RHI::PipelineState *transposePso = entry.transposeComplexPackedToFullPSO;
+    RHI::PipelineState *realPso = ShaderPipeline::GetReadyPSO(entry.fftRealPipeline);
+    RHI::PipelineState *complexPso = ShaderPipeline::GetReadyPSO(entry.fftComplexPipeline);
+    RHI::PipelineState *transposePso = ShaderPipeline::GetReadyPSO(entry.transposeComplexPackedToFullPipeline);
     RHI::Buffer *twiddleBuffer = entry.fftRealTwiddleBuffer;
     if (!realPso || !complexPso || !transposePso || !twiddleBuffer) {
         return false;
@@ -620,9 +612,9 @@ bool GpuFFT::DispatchIFFTReal2D(RHI::CommandList *commandList, RenderFrameData *
     }
 
     const FFTDispatchEntry &entry = fftDispatchTable[fftSizeIndex];
-    RHI::PipelineState *realPso = entry.ifftRealPSO;
-    RHI::PipelineState *complexPso = entry.fftComplexPSO;
-    RHI::PipelineState *transposePso = entry.transposeComplexFullToPackedPSO;
+    RHI::PipelineState *realPso = ShaderPipeline::GetReadyPSO(entry.ifftRealPipeline);
+    RHI::PipelineState *complexPso = ShaderPipeline::GetReadyPSO(entry.fftComplexPipeline);
+    RHI::PipelineState *transposePso = ShaderPipeline::GetReadyPSO(entry.transposeComplexFullToPackedPipeline);
     RHI::Buffer *twiddleBuffer = entry.fftRealTwiddleBuffer;
     if (!realPso || !complexPso || !transposePso || !twiddleBuffer) {
         return false;
@@ -672,7 +664,7 @@ bool GpuFFT::DispatchFFTDualReal1D(RHI::CommandList *commandList, RHI::Buffer *i
     }
 
     const FFTDispatchEntry &entry = fftDispatchTable[fftSizeIndex];
-    RHI::PipelineState *pso = entry.fftDualRealPSO;
+    RHI::PipelineState *pso = ShaderPipeline::GetReadyPSO(entry.fftDualRealPipeline);
     if (!pso) {
         return false;
     }
@@ -701,7 +693,7 @@ bool GpuFFT::DispatchIFFTDualReal1D(RHI::CommandList *commandList, RHI::Buffer *
     }
 
     const FFTDispatchEntry &entry = fftDispatchTable[fftSizeIndex];
-    RHI::PipelineState *pso = entry.ifftDualRealPSO;
+    RHI::PipelineState *pso = ShaderPipeline::GetReadyPSO(entry.ifftDualRealPipeline);
     if (!pso) {
         return false;
     }
@@ -719,9 +711,9 @@ bool GpuFFT::DispatchFFTDualReal2D(RHI::CommandList *commandList, RenderFrameDat
     }
 
     const FFTDispatchEntry &entry = fftDispatchTable[fftSizeIndex];
-    RHI::PipelineState *dualRealPso = entry.fftDualRealPSO;
-    RHI::PipelineState *complexPso = entry.fftComplexPSO;
-    RHI::PipelineState *transposePso = entry.transposeComplexPSO;
+    RHI::PipelineState *dualRealPso = ShaderPipeline::GetReadyPSO(entry.fftDualRealPipeline);
+    RHI::PipelineState *complexPso = ShaderPipeline::GetReadyPSO(entry.fftComplexPipeline);
+    RHI::PipelineState *transposePso = ShaderPipeline::GetReadyPSO(entry.transposeComplexPipeline);
     if (!dualRealPso || !complexPso || !transposePso) {
         return false;
     }
@@ -779,9 +771,9 @@ bool GpuFFT::DispatchIFFTDualReal2D(RHI::CommandList *commandList, RenderFrameDa
     }
 
     const FFTDispatchEntry &entry = fftDispatchTable[fftSizeIndex];
-    RHI::PipelineState *complexPso = entry.fftComplexPSO;
-    RHI::PipelineState *dualRealPso = entry.ifftDualRealPSO;
-    RHI::PipelineState *transposePso = entry.transposeComplexPSO;
+    RHI::PipelineState *complexPso = ShaderPipeline::GetReadyPSO(entry.fftComplexPipeline);
+    RHI::PipelineState *dualRealPso = ShaderPipeline::GetReadyPSO(entry.ifftDualRealPipeline);
+    RHI::PipelineState *transposePso = ShaderPipeline::GetReadyPSO(entry.transposeComplexPipeline);
     if (!complexPso || !dualRealPso || !transposePso) {
         return false;
     }
@@ -828,7 +820,8 @@ bool GpuFFT::DispatchMultiplyComplexSpectrum2D(RHI::CommandList *commandList, Re
         return false;
     }
 
-    if (!multiplyComplexSpectrum2DPSO) {
+    RHI::PipelineState *pso = ShaderPipeline::GetReadyPSO(multiplyComplexSpectrum2DPipeline);
+    if (!pso) {
         return false;
     }
 
@@ -857,7 +850,7 @@ bool GpuFFT::DispatchMultiplyComplexSpectrum2D(RHI::CommandList *commandList, Re
     };
     RHI::renderer->Barrier(commandList, startBarriers, COUNT_OF(startBarriers));
 
-    RHI::renderer->SetPSO(commandList, multiplyComplexSpectrum2DPSO);
+    RHI::renderer->SetPSO(commandList, pso);
     RHI::renderer->SetBuffer(commandList, 0, false, lhsSpectrumBuffer);
     RHI::renderer->SetBuffer(commandList, 1, false, rhsSpectrumBuffer);
     RHI::renderer->SetBuffer(commandList, 0, true, outputSpectrumBuffer);
@@ -887,7 +880,8 @@ bool GpuFFT::DispatchMultiplyPackedRealSpectrum2D(RHI::CommandList *commandList,
         return false;
     }
 
-    if (!multiplyPackedRealSpectrum2DPSO) {
+    RHI::PipelineState *pso = ShaderPipeline::GetReadyPSO(multiplyPackedRealSpectrum2DPipeline);
+    if (!pso) {
         return false;
     }
 
@@ -917,7 +911,7 @@ bool GpuFFT::DispatchMultiplyPackedRealSpectrum2D(RHI::CommandList *commandList,
     };
     RHI::renderer->Barrier(commandList, startBarriers, COUNT_OF(startBarriers));
 
-    RHI::renderer->SetPSO(commandList, multiplyPackedRealSpectrum2DPSO);
+    RHI::renderer->SetPSO(commandList, pso);
     RHI::renderer->SetBuffer(commandList, 0, false, lhsSpectrumBuffer);
     RHI::renderer->SetBuffer(commandList, 1, false, rhsSpectrumBuffer);
     RHI::renderer->SetBuffer(commandList, 0, true, outputSpectrumBuffer);
@@ -947,7 +941,8 @@ bool GpuFFT::DispatchMultiplyPackedDualRealSpectrum2D(RHI::CommandList *commandL
         return false;
     }
 
-    if (!multiplyPackedDualRealSpectrum2DPSO) {
+    RHI::PipelineState *pso = ShaderPipeline::GetReadyPSO(multiplyPackedDualRealSpectrum2DPipeline);
+    if (!pso) {
         return false;
     }
 
@@ -976,7 +971,7 @@ bool GpuFFT::DispatchMultiplyPackedDualRealSpectrum2D(RHI::CommandList *commandL
     };
     RHI::renderer->Barrier(commandList, startBarriers, COUNT_OF(startBarriers));
 
-    RHI::renderer->SetPSO(commandList, multiplyPackedDualRealSpectrum2DPSO);
+    RHI::renderer->SetPSO(commandList, pso);
     RHI::renderer->SetBuffer(commandList, 0, false, lhsSpectrumBuffer);
     RHI::renderer->SetBuffer(commandList, 1, false, rhsSpectrumBuffer);
     RHI::renderer->SetBuffer(commandList, 0, true, outputSpectrumBuffer);

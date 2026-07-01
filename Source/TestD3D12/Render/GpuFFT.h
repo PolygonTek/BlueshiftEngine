@@ -218,8 +218,4 @@ private:
     RHI::Buffer *               fftRealTwiddle512Buffer = nullptr;
     RHI::Buffer *               fftRealTwiddle1024Buffer = nullptr;
     RHI::Buffer *               fftRealTwiddle2048Buffer = nullptr;
-
-    RHI::PipelineState *        multiplyComplexSpectrum2DPSO = nullptr;
-    RHI::PipelineState *        multiplyPackedRealSpectrum2DPSO = nullptr;
-    RHI::PipelineState *        multiplyPackedDualRealSpectrum2DPSO = nullptr;
 };

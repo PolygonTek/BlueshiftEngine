@@ -129,6 +129,14 @@ static SharedPtr<ShaderTemplate> CreatePostProcessShaderTemplate(const char *has
     return shaderTemplate;
 }
 
+static void EnsurePostProcessPipeline(const SharedPtr<ShaderTemplate> &shaderTemplate, SharedPtr<ShaderPipeline> &pipeline) {
+    if (pipeline && pipeline->GetState() != ShaderPipeline::State::Empty) {
+        return;
+    }
+
+    pipeline = shaderPipelineCache.GetComputePipeline(shaderTemplate, ShaderPermutationKey(), true);
+}
+
 void RenderSystem::InitPostProcessPipelines() {
     const char *baseDir = "Source/TestD3D12/Shaders";
     const RHI::ShaderModel computeShaderModel = RHI::ShaderModel::SM_6_6;
@@ -149,21 +157,25 @@ void RenderSystem::InitPostProcessPipelines() {
     convolutionBloomResolveDiffractionPSFShaderTemplate = CreatePostProcessShaderTemplate("_convolutionBloomResolveDiffractionPSFShader", computeShaderModel, "Bloom/ConvolutionBloomResolveDiffractionPSF.hlsl", baseDir);
     convolutionBloomApplyDispersionShaderTemplate = CreatePostProcessShaderTemplate("_convolutionBloomApplyDispersionShader", computeShaderModel, "Bloom/ConvolutionBloomApplyDispersion.hlsl", baseDir);
 
-    toneMappingPipeline = shaderPipelineCache.GetComputePipeline(toneMappingShaderTemplate, ShaderPermutationKey(), true);
-    luminancePass1Pipeline = shaderPipelineCache.GetComputePipeline(luminancePass1ShaderTemplate, ShaderPermutationKey(), true);
-    luminancePass2Pipeline = shaderPipelineCache.GetComputePipeline(luminancePass2ShaderTemplate, ShaderPermutationKey(), true);
+    EnsurePostProcessPipelines();
+}
 
-    bloomPrefilterPipeline = shaderPipelineCache.GetComputePipeline(bloomPrefilterShaderTemplate, ShaderPermutationKey(), true);
-    bloomDownsamplePipeline = shaderPipelineCache.GetComputePipeline(bloomDownsampleShaderTemplate, ShaderPermutationKey(), true);
-    bloomUpsamplePipeline = shaderPipelineCache.GetComputePipeline(bloomUpsampleShaderTemplate, ShaderPermutationKey(), true);
+void RenderSystem::EnsurePostProcessPipelines() {
+    EnsurePostProcessPipeline(toneMappingShaderTemplate, toneMappingPipeline);
+    EnsurePostProcessPipeline(luminancePass1ShaderTemplate, luminancePass1Pipeline);
+    EnsurePostProcessPipeline(luminancePass2ShaderTemplate, luminancePass2Pipeline);
 
-    convolutionBloomPrefilterPipeline = shaderPipelineCache.GetComputePipeline(convolutionBloomPrefilterShaderTemplate, ShaderPermutationKey(), true);
-    convolutionBloomKernelPreparePipeline = shaderPipelineCache.GetComputePipeline(convolutionBloomKernelPrepareShaderTemplate, ShaderPermutationKey(), true);
-    convolutionBloomResolvePipeline = shaderPipelineCache.GetComputePipeline(convolutionBloomResolveShaderTemplate, ShaderPermutationKey(), true);
-    convolutionBloomAperturePreparePipeline = shaderPipelineCache.GetComputePipeline(convolutionBloomAperturePrepareShaderTemplate, ShaderPermutationKey(), true);
-    convolutionBloomReduceApertureEnergyPipeline = shaderPipelineCache.GetComputePipeline(convolutionBloomReduceApertureEnergyShaderTemplate, ShaderPermutationKey(), true);
-    convolutionBloomResolveDiffractionPSFPipeline = shaderPipelineCache.GetComputePipeline(convolutionBloomResolveDiffractionPSFShaderTemplate, ShaderPermutationKey(), true);
-    convolutionBloomApplyDispersionPipeline = shaderPipelineCache.GetComputePipeline(convolutionBloomApplyDispersionShaderTemplate, ShaderPermutationKey(), true);
+    EnsurePostProcessPipeline(bloomPrefilterShaderTemplate, bloomPrefilterPipeline);
+    EnsurePostProcessPipeline(bloomDownsampleShaderTemplate, bloomDownsamplePipeline);
+    EnsurePostProcessPipeline(bloomUpsampleShaderTemplate, bloomUpsamplePipeline);
+
+    EnsurePostProcessPipeline(convolutionBloomPrefilterShaderTemplate, convolutionBloomPrefilterPipeline);
+    EnsurePostProcessPipeline(convolutionBloomKernelPrepareShaderTemplate, convolutionBloomKernelPreparePipeline);
+    EnsurePostProcessPipeline(convolutionBloomResolveShaderTemplate, convolutionBloomResolvePipeline);
+    EnsurePostProcessPipeline(convolutionBloomAperturePrepareShaderTemplate, convolutionBloomAperturePreparePipeline);
+    EnsurePostProcessPipeline(convolutionBloomReduceApertureEnergyShaderTemplate, convolutionBloomReduceApertureEnergyPipeline);
+    EnsurePostProcessPipeline(convolutionBloomResolveDiffractionPSFShaderTemplate, convolutionBloomResolveDiffractionPSFPipeline);
+    EnsurePostProcessPipeline(convolutionBloomApplyDispersionShaderTemplate, convolutionBloomApplyDispersionPipeline);
 }
 
 void RenderSystem::ReleasePostProcessPipelines() {

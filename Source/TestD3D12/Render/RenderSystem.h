@@ -77,6 +77,7 @@ private:
     void                            InitRenderThread();
     void                            ShutdownRenderThread();
     void                            InitPostProcessPipelines();
+    void                            EnsurePostProcessPipelines();
     void                            ReleasePostProcessPipelines();
 
     void                            MarkRenderCompleted(RenderFrameData *frameData);
