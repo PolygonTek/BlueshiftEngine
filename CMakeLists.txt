@@ -338,6 +338,8 @@ if (BUILD_RUNTIME)
     set(SDL_TESTS OFF CACHE BOOL "" FORCE)
     set(SDL_EXAMPLES OFF CACHE BOOL "" FORCE)
     set(SDL_INSTALL OFF CACHE BOOL "" FORCE)
+    # Keep vendored SDL from deriving its revision from the engine Git repo.
+    set(SDL_REVISION "SDL-3.5.0" CACHE STRING "" FORCE)
 
     set(SDL_AUDIO OFF CACHE BOOL "" FORCE)
     set(SDL_VIDEO OFF CACHE BOOL "" FORCE)
