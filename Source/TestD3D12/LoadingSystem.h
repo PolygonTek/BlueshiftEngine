@@ -61,6 +61,8 @@ public:
                                     /// Applies completed load requests on the main thread.
     void                            ProcessLoadCompletions();
 
+    static bool                     IsAsyncAllowed();
+
 private:
     struct LoadRequest {
         SharedPtr<Texture>          texture;

@@ -27,6 +27,10 @@ bool RenderBackend::DispatchLuminance() {
         return false;
     }
 
+    if (!currentLuminancePass1PSO || !currentLuminancePass2PSO) {
+        return false;
+    }
+
     const uint32_t inputW = currentVisCamera->renderWidth;
     const uint32_t inputH = currentVisCamera->renderHeight;
     if (inputW == 0 || inputH == 0) {

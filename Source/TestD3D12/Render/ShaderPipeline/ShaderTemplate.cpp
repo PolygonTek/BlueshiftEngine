@@ -198,8 +198,9 @@ bool ShaderTemplate::SupportsFeature(Feature feature) const {
 ShaderFeatureSet ShaderTemplate::MaskSupportedFeatures(const ShaderFeatureSet &featureSet) const {
     ShaderFeatureSet supportedFeatureSet;
 
-    for (int i = 0; i < to_int(Feature::Count); i++) {
-        Feature feature = static_cast<Feature>(i);
+    for (int featureIndex = 0; featureIndex < to_int(Feature::Count); featureIndex++) {
+        Feature feature = static_cast<Feature>(featureIndex);
+
         if (featureSet.HasFeature(feature) && SupportsFeature(feature)) {
             supportedFeatureSet.EnableFeature(feature);
         }

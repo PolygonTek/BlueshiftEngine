@@ -92,7 +92,7 @@ static const Texture *GetDefaultMaterialTexture() {
 
 static const Texture *ResolveMaterialBaseColorTexture(const Material *material) {
     if (material) {
-        const SharedPtr<Texture> *textureProperty = material->GetTextureProperty(ShaderTemplate::BuiltInProperty::BaseColorTexture);
+        const SharedPtr<Texture> *textureProperty = material->GetPropertyTexture(ShaderTemplate::BuiltInProperty::BaseColorTexture);
         if (textureProperty && *textureProperty) {
             return textureProperty->get();
         }

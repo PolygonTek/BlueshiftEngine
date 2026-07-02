@@ -95,7 +95,7 @@ const ShaderTemplate::PropertyValue *Material::GetPropertyValue(ShaderTemplate::
     return GetPropertyValue(FindPropertyIndex(builtInProperty));
 }
 
-const SharedPtr<Texture> *Material::GetTextureProperty(int propertyIndex) const {
+const SharedPtr<Texture> *Material::GetPropertyTexture(int propertyIndex) const {
     for (const TextureProperty &textureProperty : internalData.textureProperties) {
         if (textureProperty.propertyIndex == propertyIndex) {
             return &textureProperty.texture;
@@ -105,15 +105,15 @@ const SharedPtr<Texture> *Material::GetTextureProperty(int propertyIndex) const 
     return nullptr;
 }
 
-const SharedPtr<Texture> *Material::GetTextureProperty(const char *propertyName) const {
-    return GetTextureProperty(FindPropertyIndex(propertyName));
+const SharedPtr<Texture> *Material::GetPropertyTexture(const char *propertyName) const {
+    return GetPropertyTexture(FindPropertyIndex(propertyName));
 }
 
-const SharedPtr<Texture> *Material::GetTextureProperty(ShaderTemplate::BuiltInProperty builtInProperty) const {
+const SharedPtr<Texture> *Material::GetPropertyTexture(ShaderTemplate::BuiltInProperty builtInProperty) const {
     if (!internalData.shaderTemplate) {
         return nullptr;
     }
-    return GetTextureProperty(FindPropertyIndex(builtInProperty));
+    return GetPropertyTexture(FindPropertyIndex(builtInProperty));
 }
 
 void Material::InvalidatePermutationKeys() const {
@@ -254,27 +254,28 @@ ShaderPermutationKey Material::EnsurePermutation(const ShaderFeatureSet &feature
         return ShaderPermutationKey();
     }
 
-    // 캐시에서 featureSet 에 대한 permutation key 를 찾아본다.
-    for (const CachedPermutationKey &cachedPermutationKey : cachedPermutationKeys) {
-        if (cachedPermutationKey.featureSet == featureSet) {
-            return cachedPermutationKey.key;
-        }
-    }
-
     ShaderFeatureSet supportedFeatureSet = featureSet;
     if (!featureSet.IsEmpty()) {
         // shader template 에서 지원하지 않는 features 는 거른다.
         supportedFeatureSet = internalData.shaderTemplate->MaskSupportedFeatures(featureSet);
-        if (supportedFeatureSet != featureSet) {
-            BE_WARNLOG("Material::EnsurePermutation: material '%s' requested unsupported shader features 0x%08x in shader template '%s'\n", hashName.c_str(), featureSet.flags & ~supportedFeatureSet.flags, internalData.shaderTemplate->GetHashName());
+    }
+
+    // permutation 캐시에서 실제로 사용할 featureSet 에 대한 permutation 을 찾아본다.
+    for (const CachedPermutationKey &cachedPermutationKey : cachedPermutationKeys) {
+        if (cachedPermutationKey.featureSet == supportedFeatureSet) {
+            return cachedPermutationKey.key;
         }
+    }
+
+    if (supportedFeatureSet != featureSet) {
+        BE_WARNLOG("Material::EnsurePermutation: material '%s' requested unsupported shader features 0x%08x in shader template '%s'\n", hashName.c_str(), featureSet.flags & ~supportedFeatureSet.flags, internalData.shaderTemplate->GetHashName());
     }
 
     // 프로퍼티 + 피쳐셋에 대한 permutation 을 등록한다.
     ShaderPermutationKey permutationKey = internalData.shaderTemplate->RegisterPermutation(internalData.propertyValues, supportedFeatureSet);
 
     CachedPermutationKey &cachedPermutationKey = cachedPermutationKeys.Alloc();
-    cachedPermutationKey.featureSet = featureSet;
+    cachedPermutationKey.featureSet = supportedFeatureSet;
     cachedPermutationKey.key = permutationKey;
 
     return permutationKey;
@@ -314,16 +315,16 @@ static RHI::RasterizerStateType GetMaterialRasterizerStateType(RHI::RasterizerSt
     return baseRasterizerStateType;
 }
 
-SharedPtr<ShaderPipeline> Material::GetGraphicsPipeline(const ShaderFeatureSet &featureSet, const GraphicsPipelineDesc &baseDesc) const {
+SharedPtr<ShaderPipeline> Material::GetGraphicsPipeline(const ShaderFeatureSet &featureSet, const GraphicsPipelineDesc &baseGraphicsPipelineDesc, bool async) const {
     if (!internalData.shaderTemplate) {
         return nullptr;
     }
 
-    GraphicsPipelineDesc graphicsPipelineDesc = baseDesc;
-    graphicsPipelineDesc.rasterizerStateType = GetMaterialRasterizerStateType(baseDesc.rasterizerStateType, internalData.cullMode);
+    GraphicsPipelineDesc graphicsPipelineDesc = baseGraphicsPipelineDesc;
+    graphicsPipelineDesc.rasterizerStateType = GetMaterialRasterizerStateType(baseGraphicsPipelineDesc.rasterizerStateType, internalData.cullMode);
     graphicsPipelineDesc.blendStateType = internalData.renderingMode == RenderingMode::Blend ? internalData.blendType : RHI::BlendStateType::Disabled;
 
-    return shaderPipelineCache.GetGraphicsPipeline(internalData.shaderTemplate, EnsurePermutation(featureSet), graphicsPipelineDesc, true);
+    return shaderPipelineCache.GetGraphicsPipeline(internalData.shaderTemplate, EnsurePermutation(featureSet), graphicsPipelineDesc, async);
 }
 
 bool Material::Create(const char *text, const char *baseDir) {

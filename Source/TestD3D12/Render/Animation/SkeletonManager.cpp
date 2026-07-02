@@ -14,6 +14,7 @@
 
 #include "Precompiled.h"
 #include "SkeletonManager.h"
+#include "LoadingSystem.h"
 #include "Core/Cmds.h"
 
 SkeletonManager     skeletonManager;
@@ -81,20 +82,18 @@ SharedPtr<Skeleton> SkeletonManager::GetSkeleton(const char *hashName, bool asyn
         return defaultSkeleton;
     }
 
+    const bool useAsync = async && LoadingSystem::IsAsyncAllowed();
+
     SharedPtr<Skeleton> skeleton = FindSkeleton(hashName);
     if (skeleton) {
-        if (!async && !skeleton->WaitReady()) {
+        if (!useAsync && !skeleton->WaitReady()) {
             return defaultSkeleton;
         }
         return skeleton;
     }
 
     skeleton = AllocSkeleton(hashName);
-#ifdef USE_ASYNC_LOADING
-    bool loaded = async ? skeleton->LoadAsync(hashName) : skeleton->Load(hashName);
-#else
-    bool loaded = skeleton->Load(hashName);
-#endif
+    bool loaded = useAsync ? skeleton->LoadAsync(hashName) : skeleton->Load(hashName);
     if (!loaded) {
         skeletonHashMap.Remove(skeleton->hashName);
         return defaultSkeleton;

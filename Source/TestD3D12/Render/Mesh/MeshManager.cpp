@@ -14,6 +14,7 @@
 
 #include "Precompiled.h"
 #include "MeshManager.h"
+#include "LoadingSystem.h"
 
 MeshManager     meshManager;
 
@@ -142,20 +143,18 @@ SharedPtr<Mesh> MeshManager::GetMesh(const char *hashName, bool async) {
         return defaultMesh;
     }
 
+    const bool useAsync = async && LoadingSystem::IsAsyncAllowed();
+
     SharedPtr<Mesh> mesh = FindMesh(hashName);
     if (mesh) {
-        if (!async && !mesh->WaitReady()) {
+        if (!useAsync && !mesh->WaitReady()) {
             return defaultMesh;
         }
         return mesh;
     }
 
     mesh = AllocMesh(hashName);
-#ifdef USE_ASYNC_LOADING
-    bool loaded = async ? mesh->LoadAsync(hashName) : mesh->Load(hashName);
-#else
-    bool loaded = mesh->Load(hashName);
-#endif
+    bool loaded = useAsync ? mesh->LoadAsync(hashName) : mesh->Load(hashName);
     if (!loaded) {
         BE_WARNLOG("Couldn't load mesh '%s'\n", hashName);
 

@@ -134,7 +134,7 @@ static void EnsurePostProcessPipeline(const SharedPtr<ShaderTemplate> &shaderTem
         return;
     }
 
-    pipeline = shaderPipelineCache.GetComputePipeline(shaderTemplate, ShaderPermutationKey(), true);
+    pipeline = shaderPipelineCache.GetComputePipeline(shaderTemplate, ShaderPermutationKey());
 }
 
 void RenderSystem::InitPostProcessPipelines() {

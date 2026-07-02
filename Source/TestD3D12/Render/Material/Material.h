@@ -70,19 +70,23 @@ public:
     const ShaderTemplate::PropertyValue *GetPropertyValue(int propertyIndex) const;
     const ShaderTemplate::PropertyValue *GetPropertyValue(const char *propertyName) const;
     const ShaderTemplate::PropertyValue *GetPropertyValue(ShaderTemplate::BuiltInProperty builtInProperty) const;
-    const SharedPtr<Texture> *      GetTextureProperty(int propertyIndex) const;
-    const SharedPtr<Texture> *      GetTextureProperty(const char *propertyName) const;
-    const SharedPtr<Texture> *      GetTextureProperty(ShaderTemplate::BuiltInProperty builtInProperty) const;
+    const SharedPtr<Texture> *      GetPropertyTexture(int propertyIndex) const;
+    const SharedPtr<Texture> *      GetPropertyTexture(const char *propertyName) const;
+    const SharedPtr<Texture> *      GetPropertyTexture(ShaderTemplate::BuiltInProperty builtInProperty) const;
     bool                            SetPropertyValue(int propertyIndex, const ShaderTemplate::PropertyValue &value);
     bool                            SetPropertyValue(const char *propertyName, const ShaderTemplate::PropertyValue &value);
 
     uint32_t                        GetStreamingListIndex() const { return streamingListIndex; }
 
+                                    // material 에 캐시된 permutation key 를 무효화한다.
     void                            InvalidatePermutationKeys() const;
+
+                                    // (지원하지 않는 shader features 를 제외한) material permutation key 를 등록한다.
     ShaderPermutationKey            EnsurePermutation(const ShaderFeatureSet &featureSet = {}) const;
     void                            EnsurePermutations(const BE1::Array<ShaderFeatureSet> &featureSets) const;
 
-    SharedPtr<ShaderPipeline>       GetGraphicsPipeline(const ShaderFeatureSet &featureSet, const GraphicsPipelineDesc &baseDesc) const;
+                                    // material 상태와 shader features 를 반영한 graphics pipeline 을 가져온다.
+    SharedPtr<ShaderPipeline>       GetGraphicsPipeline(const ShaderFeatureSet &featureSet, const GraphicsPipelineDesc &baseGraphicsPipelineDesc, bool async = true) const;
 
     bool                            Create(const char *text, const char *baseDir);
 

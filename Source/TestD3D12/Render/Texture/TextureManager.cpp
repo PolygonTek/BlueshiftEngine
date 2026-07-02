@@ -85,20 +85,18 @@ SharedPtr<Texture> TextureManager::GetTexture(const char *hashName, Texture::Fla
         return defaultTexture;
     }
 
+    const bool useAsync = async && LoadingSystem::IsAsyncAllowed();
+
     SharedPtr<Texture> texture = FindTexture(hashName);
     if (texture) {
-        if (!async && !texture->WaitReady()) {
+        if (!useAsync && !texture->WaitReady()) {
             return defaultTexture;
         }
         return texture;
     }
 
     texture = AllocTexture(hashName);
-#ifdef USE_ASYNC_LOADING
-    bool loaded = async ? texture->LoadAsync(hashName, flags) : texture->Load(hashName, flags);
-#else
-    bool loaded = texture->Load(hashName, flags);
-#endif
+    bool loaded = useAsync ? texture->LoadAsync(hashName, flags) : texture->Load(hashName, flags);
     if (!loaded) {
         textureHashMap.Remove(texture->hashName);
         return defaultTexture;

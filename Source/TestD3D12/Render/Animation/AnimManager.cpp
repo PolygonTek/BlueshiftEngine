@@ -14,6 +14,7 @@
 
 #include "Precompiled.h"
 #include "AnimManager.h"
+#include "LoadingSystem.h"
 #include "Core/Cmds.h"
 
 AnimManager     animManager;
@@ -79,20 +80,18 @@ SharedPtr<Anim> AnimManager::GetAnim(const char *hashName, bool async) {
         return nullptr;
     }
 
+    const bool useAsync = async && LoadingSystem::IsAsyncAllowed();
+
     SharedPtr<Anim> anim = FindAnim(hashName);
     if (anim) {
-        if (!async && !anim->WaitReady()) {
+        if (!useAsync && !anim->WaitReady()) {
             return nullptr;
         }
         return anim;
     }
 
     anim = AllocAnim(hashName);
-#ifdef USE_ASYNC_LOADING
-    bool loaded = async ? anim->LoadAsync(hashName) : anim->Load(hashName);
-#else
-    bool loaded = anim->Load(hashName);
-#endif
+    bool loaded = useAsync ? anim->LoadAsync(hashName) : anim->Load(hashName);
     if (!loaded) {
         BE_WARNLOG("Couldn't load anim '%s'\n", hashName);
         animHashMap.Remove(anim->hashName);

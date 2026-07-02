@@ -21,13 +21,7 @@
 LoadingSystem      loadingSystem;
 
 static CVAR_MINMAX(loading_delayMsec, "0", BE1::CVar::Flag::Integer, "artificial delay per loading request in milliseconds", 0, 5000);
-
-bool LoadingSystem::IsHigherPriority(const LoadRequest &lhs, const LoadRequest &rhs) {
-    if ((int)lhs.priority != (int)rhs.priority) {
-        return (int)lhs.priority > (int)rhs.priority;
-    }
-    return lhs.sequence < rhs.sequence;
-}
+static CVAR(loading_forceSynchronous, "0", BE1::CVar::Flag::Bool, "force asynchronous load and shader pipeline build requests to run synchronously");
 
 void LoadingSystem::Init() {
     requestMutex = BE1::PlatformMutex::Create();
@@ -43,6 +37,10 @@ void LoadingSystem::Shutdown() {
     BE1::PlatformCondition::Destroy(requestCondition);
     BE1::PlatformMutex::Destroy(completionMutex);
     BE1::PlatformMutex::Destroy(requestMutex);
+}
+
+bool LoadingSystem::IsAsyncAllowed() {
+    return !loading_forceSynchronous.GetBool();
 }
 
 void LoadingSystem::Start() {
@@ -804,6 +802,13 @@ bool LoadingSystem::ProcessShaderPipelineBuildCompletion(LoadCompletion &complet
     // 빌드가 성공했으므로 Ready 상태로 바꿔준다.
     shaderPipeline->SetState(ShaderPipeline::State::Ready);
     return true;
+}
+
+bool LoadingSystem::IsHigherPriority(const LoadRequest &lhs, const LoadRequest &rhs) {
+    if ((int)lhs.priority != (int)rhs.priority) {
+        return (int)lhs.priority > (int)rhs.priority;
+    }
+    return lhs.sequence < rhs.sequence;
 }
 
 void LoadingSystem::PushCompletion(LoadCompletion &&completion) {

@@ -30,7 +30,7 @@ static const Texture *GetReadyMaterialTexture(const Material *material, ShaderTe
         return nullptr;
     }
 
-    return GetReadyTexture(material->GetTextureProperty(builtInProperty));
+    return GetReadyTexture(material->GetPropertyTexture(builtInProperty));
 }
 
 static const Texture *GetReadyDefault2DTexture() {
