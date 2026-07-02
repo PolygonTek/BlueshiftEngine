@@ -209,11 +209,22 @@ static HWND CreateSubWindow(const TCHAR *title, int width, int height) {
     return hwnd;
 }
 
-static BOOL InitInstance(int nCmdShow) {
+static BOOL InitInstance(int nCmdShow, LPTSTR lpCmdLine) {
     BE1::Str basePath = BE1::PlatformFile::ExecutablePath();
     basePath.AppendPath("../../..");
     basePath.CleanPath();
     BE1::Engine::InitBase(4096, basePath.c_str(), SystemLog, SystemError);
+
+    BE1::CmdArgs startupArgs;
+    if (lpCmdLine[0]) {
+        BE1::Str startupCommandLine = BE1::Str::UTF8StrFromWCharString(lpCmdLine);
+        startupArgs.TokenizeString(startupCommandLine.c_str(), true);
+    }
+    const BE1::Str startupCommandText = BE1::CmdSystem::BuildStartupCommandText(startupArgs);
+    if (startupCommandText.Length()) {
+        BE1::cmdSystem.BufferCommandText(BE1::CmdSystem::Execution::Now, startupCommandText.c_str());
+    }
+    BE1::cvarSystem.ClearModified();
 
     char temp[128];
     BE1::Str::snPrintf(temp, sizeof(temp), "%ls %s %s %s", szTitle, BE1::PlatformProcess::PlatformName(), __DATE__, __TIME__);
@@ -281,7 +292,6 @@ static void ShutdownInstance() {
 
 int APIENTRY _tWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPTSTR lpCmdLine, int nCmdShow) {
     UNREFERENCED_PARAMETER(hPrevInstance);
-    UNREFERENCED_PARAMETER(lpCmdLine);
 
     MSG msg;
     HACCEL hAccelTable;
@@ -293,7 +303,7 @@ int APIENTRY _tWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPTSTR lpCm
     LoadString(hInstance, IDS_APP_TITLE, szTitle, COUNT_OF(szTitle));
 
     // Perform application initialization
-    if (!InitInstance(nCmdShow)) {
+    if (!InitInstance(nCmdShow, lpCmdLine)) {
         return FALSE;
     }
 

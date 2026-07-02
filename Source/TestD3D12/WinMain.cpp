@@ -159,7 +159,7 @@ static HWND CreateMainWindow(const TCHAR* title, int width, int height) {
     return hwnd;
 }
 
-static BOOL InitInstance(int nCmdShow) {
+static BOOL InitInstance(int nCmdShow, LPTSTR lpCmdLine) {
     BE1::Engine::isMainThread = true;
     BE1::Str execPath = BE1::PlatformFile::ExecutablePath();
     BE1::Str basePath = execPath;
@@ -172,7 +172,17 @@ static BOOL InitInstance(int nCmdShow) {
     searchPath.AppendPath("Data");
     BE1::fileSystem.SetSearchPath(searchPath);
 
+    BE1::CmdArgs startupArgs;
+    if (lpCmdLine[0]) {
+        BE1::Str startupCommandLine = BE1::Str::UTF8StrFromWCharString(lpCmdLine);
+        startupArgs.TokenizeString(startupCommandLine.c_str(), true);
+    }
+    const BE1::Str startupCommandText = BE1::CmdSystem::BuildStartupCommandText(startupArgs);
+
     BE1::cmdSystem.BufferCommandText(BE1::CmdSystem::Execution::Now, BE1::va("exec \"%s\"\n", appConfigFilename));
+    if (startupCommandText.Length()) {
+        BE1::cmdSystem.BufferCommandText(BE1::CmdSystem::Execution::Now, startupCommandText.c_str());
+    }
     BE1::cvarSystem.ClearModified();
 
     // 추가적인 DLL 폴더로 Win64 폴더를 추가
@@ -247,7 +257,6 @@ static bool RunFrameInstance(uint64_t frameUsec) {
 
 int APIENTRY _tWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPTSTR lpCmdLine, int nCmdShow) {
     UNREFERENCED_PARAMETER(hPrevInstance);
-    UNREFERENCED_PARAMETER(lpCmdLine);
     // Disable automatic DPI scaling.
     SetProcessDPIAware();
 
@@ -257,7 +266,7 @@ int APIENTRY _tWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPTSTR lpCm
     hAccelTable = LoadAccelerators(hInstance, MAKEINTRESOURCE(IDC_TESTD3D12));
 
     // Perform application initialization
-    if (!InitInstance(nCmdShow)) {
+    if (!InitInstance(nCmdShow, lpCmdLine)) {
         return FALSE;
     }
 

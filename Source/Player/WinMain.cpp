@@ -153,8 +153,11 @@ static void DisplayContext(BE1::Graphics::Handle context, void *dataPtr) {
 static void InitInstance(HINSTANCE hInstance, LPCTSTR lpCmdLine, int nCmdShow) {
     BE1::Engine::InitParams initParams;
 
-    //BE1::Str cmdLine = Str::UTF8StrFromWCharString(lpCmdLine);
-    //initParams.args.TokenizeString(cmdLine, false);
+    BE1::CmdArgs startupArgs;
+    if (lpCmdLine[0]) {
+        BE1::Str startupCommandLine = BE1::Str::UTF8StrFromWCharString(lpCmdLine);
+        startupArgs.TokenizeString(startupCommandLine.c_str(), true);
+    }
 
     BE1::Str playerDir;
 #if 0
@@ -164,10 +167,6 @@ static void InitInstance(HINSTANCE hInstance, LPCTSTR lpCmdLine, int nCmdShow) {
     playerDir.AppendPath("..\\..\\..");
 #endif
     playerDir.CleanPath(PATHSEPERATOR_CHAR);
-    
-    if (lpCmdLine[0]) {
-        playerDir = lpCmdLine;
-    }
 
     initParams.baseDir = playerDir;
 
@@ -179,6 +178,12 @@ static void InitInstance(HINSTANCE hInstance, LPCTSTR lpCmdLine, int nCmdShow) {
     initParams.searchPath = assetDir + ";" + dataDir;
 
     BE1::Engine::Init(&initParams);
+
+    const BE1::Str startupCommandText = BE1::CmdSystem::BuildStartupCommandText(startupArgs);
+    if (startupCommandText.Length()) {
+        BE1::cmdSystem.BufferCommandText(BE1::CmdSystem::Execution::Now, startupCommandText.c_str());
+    }
+    BE1::cvarSystem.ClearModified();
 
     if (!BE1::resourceGuidMapper.Read("Data\\guidmap")) {
         BE_FATALERROR("Couldn't open guidmap !");

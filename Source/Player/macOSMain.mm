@@ -20,6 +20,8 @@ static BE1::CVar    disp_height("disp_height", "720", BE1::CVar::Flag::Integer |
 static BE1::CVar    disp_fullscreen("disp_fullscreen", "0", BE1::CVar::Flag::Bool | BE1::CVar::Flag::Archive, "");
 static BE1::CVar    disp_bpp("disp_bpp", "0", BE1::CVar::Flag::Integer | BE1::CVar::Flag::Flag::Archive, "");
 static BE1::CVar    disp_frequency("disp_frequency", "0", BE1::CVar::Flag::Integer | BE1::CVar::Flag::Archive, "");
+static int          startupArgc = 0;
+static const char * const *startupArgv = nullptr;
 
 @interface MyWindow : NSWindow
 @end
@@ -431,6 +433,14 @@ static void DisplayContext(BE1::Graphics::Handle contextHandle, void *dataPtr) {
 
     BE1::Engine::Init(&initParams);
 
+    BE1::CmdArgs startupArgs;
+    BE1::CmdSystem::ParseCommandLineArgs(startupArgc, startupArgv, startupArgs);
+    const BE1::Str startupCommandText = BE1::CmdSystem::BuildStartupCommandText(startupArgs);
+    if (startupCommandText.Length()) {
+        BE1::cmdSystem.BufferCommandText(BE1::CmdSystem::Execution::Now, startupCommandText.c_str());
+    }
+    BE1::cvarSystem.ClearModified();
+
     BE1::resourceGuidMapper.Read("Data/guidmap");
 
     currentKeyboard = TISCopyCurrentKeyboardInputSource();
@@ -561,6 +571,9 @@ static void DisplayContext(BE1::Graphics::Handle contextHandle, void *dataPtr) {
 @end // @implementation AppDelegate
 
 int main(int argc, const char *argv[]) {
+    startupArgc = argc;
+    startupArgv = argv;
+
     BE1::Str workingDir = argv[0];
     workingDir.StripFileName();
     workingDir.AppendPath("../../.."); // Strip "BlueshiftPlayer.app/Contents/MacOS"

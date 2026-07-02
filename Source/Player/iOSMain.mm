@@ -27,6 +27,9 @@
 #include "iOSAdMob.h"
 #endif
 
+static int startupArgc = 0;
+static const char * const *startupArgv = nullptr;
+
 #define SuppressPerformSelectorLeakWarning(stuff) \
     do { \
         _Pragma("clang diagnostic push") \
@@ -426,6 +429,13 @@ static void DisplayContext(BE1::Graphics::Handle context, void *dataPtr) {
         configName = "lowQuality";
     }
     BE1::cmdSystem.BufferCommandText(BE1::CmdSystem::Execution::Now, BE1::va("exec \"Config/%s.cfg\"\n", configName));
+
+    BE1::CmdArgs startupArgs;
+    BE1::CmdSystem::ParseCommandLineArgs(startupArgc, startupArgv, startupArgs);
+    const BE1::Str startupCommandText = BE1::CmdSystem::BuildStartupCommandText(startupArgs);
+    if (startupCommandText.Length()) {
+        BE1::cmdSystem.BufferCommandText(BE1::CmdSystem::Execution::Now, startupCommandText.c_str());
+    }
     BE1::cvarSystem.ClearModified();
 
     BE1::gameClient.Init((__bridge BE1::Graphics::WindowHandle)mainWindow, false);
@@ -530,6 +540,9 @@ static void DisplayContext(BE1::Graphics::Handle context, void *dataPtr) {
 @end // @implementation AppDelegate
 
 int main(int argc, char *argv[]) {
+    startupArgc = argc;
+    startupArgv = argv;
+
     @autoreleasepool {
         return UIApplicationMain(argc, argv, nil, NSStringFromClass([AppDelegate class]));
     }

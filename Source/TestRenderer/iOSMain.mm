@@ -25,6 +25,8 @@
 
 static BE1::Graphics::Handle mainContext;
 static BE1::Graphics::Handle mainRenderTarget;
+static int startupArgc = 0;
+static const char * const *startupArgv = nullptr;
 
 @interface RootViewController : UIViewController {
 }
@@ -153,6 +155,14 @@ static void SystemError(int errLevel, const char *msg) {
 - (void)initInstance {
     BE1::Str basePath = BE1::PlatformFile::ExecutablePath(); // main bundle path
     BE1::Engine::InitBase(basePath, false, SystemLog, SystemError);
+
+    BE1::CmdArgs startupArgs;
+    BE1::CmdSystem::ParseCommandLineArgs(startupArgc, startupArgv, startupArgs);
+    const BE1::Str startupCommandText = BE1::CmdSystem::BuildStartupCommandText(startupArgs);
+    if (startupCommandText.Length()) {
+        BE1::cmdSystem.BufferCommandText(BE1::CmdSystem::Execution::Now, startupCommandText.c_str());
+    }
+    BE1::cvarSystem.ClearModified();
     
     osVersion = [[[UIDevice currentDevice] systemVersion] floatValue];
        
@@ -218,6 +228,9 @@ static void SystemError(int errLevel, const char *msg) {
 @end // @implementation AppDelegate
 
 int main(int argc, char *argv[]) {
+    startupArgc = argc;
+    startupArgv = argv;
+
     @autoreleasepool {
         return UIApplicationMain(argc, argv, nil, NSStringFromClass([AppDelegate class]));
     }

@@ -18,6 +18,9 @@
 //#define CREATE_SUB_WINDOW
 #define USE_SHARED_CONTEXT      false
 
+static int                      startupArgc = 0;
+static const char * const *     startupArgv = nullptr;
+
 @interface MyWindow : NSWindow
 
 @property (nonatomic, assign) BE1::Graphics::Handle context;
@@ -152,6 +155,14 @@ static void DisplaySubContext(BE1::Graphics::Handle context, void *dataPtr) {
     basePath.AppendPath("../../.."); // Strip "Bin/macOS/<Configuration>"
     basePath.CleanPath();
     BE1::Engine::InitBase(basePath, false, SystemLog, SystemError);
+
+    BE1::CmdArgs startupArgs;
+    BE1::CmdSystem::ParseCommandLineArgs(startupArgc, startupArgv, startupArgs);
+    const BE1::Str startupCommandText = BE1::CmdSystem::BuildStartupCommandText(startupArgs);
+    if (startupCommandText.Length()) {
+        BE1::cmdSystem.BufferCommandText(BE1::CmdSystem::Execution::Now, startupCommandText.c_str());
+    }
+    BE1::cvarSystem.ClearModified();
     
     mainWindow = [self createGLWindow:NSMakeSize(640, 480) title:@"Main Window"];
     NSView *mainContentView = [mainWindow contentView];
@@ -268,6 +279,9 @@ static void DisplaySubContext(BE1::Graphics::Handle context, void *dataPtr) {
 @end
 
 int main(int argc, const char *argv[]) {
+    startupArgc = argc;
+    startupArgv = argv;
+
     BE1::Str workingDir = argv[0];
     workingDir.StripFileName();
     workingDir.AppendPath("../../.."); // Strip "TestRenderer.app/Contents/MacOS"

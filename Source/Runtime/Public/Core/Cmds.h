@@ -63,6 +63,9 @@ public:
                             /// Executes commands pending in the buffer.
     void                    ExecuteCommandBuffer();
 
+    static void             ParseCommandLineArgs(int argc, const char * const *argv, CmdArgs &outArgs, int startIndex = 1);
+    static Str              BuildStartupCommandText(const CmdArgs &args);
+
 private:
     char                    commandBuffer[MaxBufferLength];     ///< space for commands and script files
     unsigned int            commandBufferSize;

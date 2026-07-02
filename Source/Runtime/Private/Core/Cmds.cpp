@@ -23,6 +23,75 @@ BE_NAMESPACE_BEGIN
 
 CmdSystem       cmdSystem;
 
+static void AppendQuotedCommandArg(Str &commandText, const char *arg) {
+    commandText.Append(" \"");
+
+    for (const char *p = arg; *p; p++) {
+        if (*p == '\\' || *p == '"') {
+            commandText.Append('\\');
+        }
+        commandText.Append(*p);
+    }
+
+    commandText.Append('"');
+}
+
+void CmdSystem::ParseCommandLineArgs(int argc, const char * const *argv, CmdArgs &outArgs, int startIndex) {
+    outArgs.Clear();
+
+    if (!argv) {
+        return;
+    }
+
+    for (int i = startIndex < 0 ? 0 : startIndex; i < argc; i++) {
+        if (argv[i]) {
+            outArgs.AppendArg(argv[i]);
+        }
+    }
+}
+
+Str CmdSystem::BuildStartupCommandText(const CmdArgs &args) {
+    Str commandText;
+
+    const int argc = args.Argc();
+
+    for (int i = 0; i < argc;) {
+        const char *arg = args.Argv(i);
+
+        if (arg[0] != '+') {
+            i++;
+            continue;
+        }
+
+        const char *commandName = arg + 1;
+        i++;
+
+        if (!commandName[0]) {
+            if (i >= argc) {
+                break;
+            }
+
+            commandName = args.Argv(i);
+            i++;
+        }
+
+        if (!commandName[0]) {
+            continue;
+        }
+
+        commandText.Append(commandName);
+
+        while (i < argc && args.Argv(i)[0] != '+') {
+            AppendQuotedCommandArg(commandText, args.Argv(i));
+            i++;
+        }
+
+        commandText.Append('\n');
+    }
+
+    return commandText;
+}
+
 void CmdSystem::Init() {
     commandBuffer[0] = 0;
     commandBufferSize = 0;
