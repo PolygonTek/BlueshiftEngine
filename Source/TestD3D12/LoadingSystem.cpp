@@ -14,9 +14,13 @@
 
 #include "Precompiled.h"
 #include "LoadingSystem.h"
+#include "Core/CVars.h"
+#include "Platform/PlatformProcess.h"
 #include "Render/Texture/TextureManager.h"
 
 LoadingSystem      loadingSystem;
+
+static CVAR_MINMAX(loading_delayMsec, "0", BE1::CVar::Flag::Integer, "artificial delay per loading request in milliseconds", 0, 5000);
 
 bool LoadingSystem::IsHigherPriority(const LoadRequest &lhs, const LoadRequest &rhs) {
     if ((int)lhs.priority != (int)rhs.priority) {
@@ -410,7 +414,10 @@ void LoadingSystem::Run() {
             break;
         }
 
-        //Sleep(100);
+        const int delayMsec = loading_delayMsec.GetInteger();
+        if (delayMsec > 0) {
+            BE1::PlatformProcess::Sleep(MILLI2SEC(delayMsec));
+        }
 
         if (request.texture) {
             if (request.isStreamingReplacement) {
