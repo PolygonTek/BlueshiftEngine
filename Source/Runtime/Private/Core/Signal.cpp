@@ -20,14 +20,14 @@
 
 BE_NAMESPACE_BEGIN
 
-static const int    MaxSignalStringLen = 128;
-static const int    MaxSignalsPerFrame = 4096;
+static constexpr int    MaxSignalStringLen = 128;
+static constexpr int    MaxSignalsPerFrame = 4096;
 
-static bool         signalErrorOccured = false;
-static char         signalErrorMsg[128];
+static bool             signalErrorOccured = false;
+static char             signalErrorMsg[128];
 
-SignalDef *         SignalDef::signalDefs[SignalDef::MaxSignalDefs];
-int                 SignalDef::numSignalDefs = 0;
+SignalDef *             SignalDef::signalDefs[SignalDef::MaxSignalDefs];
+int                     SignalDef::numSignalDefs = 0;
 
 SignalDef::SignalDef(const char *name, const char *formatSpec, char returnType) {
     assert(name);

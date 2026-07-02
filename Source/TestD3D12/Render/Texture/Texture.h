@@ -192,5 +192,5 @@ private:
 
 template<>
 struct enable_bitmask_operators<Texture::Flag> {
-    static const bool enable = true;
+    static constexpr bool enable = true;
 };

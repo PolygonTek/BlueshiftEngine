@@ -17,7 +17,7 @@
 
 BE_NAMESPACE_BEGIN
 
-static const byte trailingBytes[64] = {
+static constexpr byte trailingBytes[64] = {
     1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
     2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
     3, 3, 3, 3, 3, 3, 3, 3,
@@ -25,7 +25,7 @@ static const byte trailingBytes[64] = {
     5, 5, 5, 5
 };
 
-static const uint32_t trailingMask[6] = { 0x0000007f, 0x0000001f, 0x0000000f, 0x00000007, 0x00000003, 0x00000001 };
+static constexpr uint32_t trailingMask[6] = { 0x0000007f, 0x0000001f, 0x0000000f, 0x00000007, 0x00000003, 0x00000001 };
 
 bool UTF8::IsValid(const char *s, const int maxLen, Encoding &encoding) {
     struct Local {

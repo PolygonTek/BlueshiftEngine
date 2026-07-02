@@ -149,7 +149,7 @@ private:
 
 template<>
 struct enable_bitmask_operators<SubMesh::Flag> {
-    static const bool enable = true;
+    static constexpr bool enable = true;
 };
 
 BE_INLINE int SubMesh::VertexWeightSize() const {

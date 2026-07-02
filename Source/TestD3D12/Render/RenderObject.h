@@ -175,5 +175,5 @@ BE_INLINE RenderObject::TextDesc &RenderObject::Desc::GetTextDesc() {
 
 template<>
 struct enable_bitmask_operators<RenderObject::Desc::UpdateFlag> {
-    static const bool enable = true;
+    static constexpr bool enable = true;
 };

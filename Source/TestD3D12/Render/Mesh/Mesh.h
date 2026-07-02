@@ -197,5 +197,5 @@ private:
 
 template<>
 struct enable_bitmask_operators<Mesh::FinishFlag> {
-    static const bool enable = true;
+    static constexpr bool enable = true;
 };

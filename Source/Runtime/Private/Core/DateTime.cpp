@@ -21,9 +21,9 @@
 BE_NAMESPACE_BEGIN
 
 // Holds the days per month in a non-leap year.
-static const int32_t daysPerMonth[] = { 0, 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31 };
+static constexpr int32_t daysPerMonth[] = { 0, 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31 };
 // Holds the cumulative days per month in a non-leap year.
-static const int32_t daysToMonth[] = { 0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334, 365 };
+static constexpr int32_t daysToMonth[] = { 0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334, 365 };
 
 DateTime::DateTime(int32_t year, int32_t month, int32_t day, int32_t hour, int32_t min, int32_t sec, int32_t msec) {
     assert((year >= 1) && (year <= 9999));

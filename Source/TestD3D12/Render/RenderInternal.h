@@ -36,7 +36,7 @@ enum class VisSurfFlag : uint8_t {
 
 template<>
 struct enable_bitmask_operators<VisSurfFlag> {
-    static const bool enable = true;
+    static constexpr bool enable = true;
 };
 
 struct VisSurf {

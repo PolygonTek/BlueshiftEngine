@@ -27,7 +27,7 @@ BE_NAMESPACE_BEGIN
 const SignalDef PhysicsWorld::SIG_PreStep("PhysicsWorld::PreStep", "f");
 const SignalDef PhysicsWorld::SIG_PostStep("PhysicsWorld::PostStep", "f");
 
-static const int MAX_SUBSTEPS = 16;
+static constexpr int MAX_SUBSTEPS = 16;
 
 static void PreTickCallback(btDynamicsWorld *world, btScalar timeStep) {
     static_cast<PhysicsWorld *>(world->getWorldUserInfo())->PreStep(timeStep);

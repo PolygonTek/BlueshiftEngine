@@ -244,5 +244,5 @@ private:
 
 template<>
 struct enable_bitmask_operators<RenderCameraFlag> {
-    static const bool enable = true;
+    static constexpr bool enable = true;
 };

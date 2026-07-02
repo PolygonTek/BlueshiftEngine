@@ -200,7 +200,7 @@ float GuiMesh::DrawChar(RHI::FrameThreadData *frameThreadData, float x, float y,
 
 void GuiMesh::DrawText2D(RHI::FrameThreadData *frameThreadData, const BE1::Rect &rect, int marginX, int marginY, int lineSpacing, float textScale,
     uint32_t color, uint32_t shadowColor, const BE1::Vec2 &shadowOffset, const Font *font, const BE1::Str &text, DrawTextFlag flags) {
-    static const int MaxTextLines = 256;
+    static constexpr int MaxTextLines = 256;
     int lineOffsets[MaxTextLines];
     int lineLen[MaxTextLines];
     int numLines = 0;

@@ -18,7 +18,7 @@
 
 BE_NAMESPACE_BEGIN
 
-static const GLenum toGLType[] = {
+static constexpr GLenum toGLType[] = {
     GL_BYTE,
     GL_UNSIGNED_BYTE,
     GL_INT,
@@ -27,7 +27,7 @@ static const GLenum toGLType[] = {
     GL_HALF_FLOAT,
 };
 
-static const int GLTypeSize[] = { 
+static constexpr int GLTypeSize[] = { 
     sizeof(GLbyte),
     sizeof(GLubyte),
     sizeof(GLint),

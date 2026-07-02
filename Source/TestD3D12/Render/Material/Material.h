@@ -139,5 +139,5 @@ private:
 
 template<>
 struct enable_bitmask_operators<Material::Flag> {
-    static const bool enable = true;
+    static constexpr bool enable = true;
 };

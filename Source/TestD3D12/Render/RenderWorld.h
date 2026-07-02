@@ -45,7 +45,7 @@ enum class DrawTextFlag : uint16_t {
 
 template<>
 struct enable_bitmask_operators<DrawTextFlag> {
-    static const bool enable = true;
+    static constexpr bool enable = true;
 };
 
 /// Proxy node in the dynamic bounding volume tree.

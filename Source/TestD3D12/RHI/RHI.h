@@ -1208,32 +1208,32 @@ namespace RHI {
 
 template<>
 struct enable_bitmask_operators<RHI::ClearFlag> {
-    static const bool enable = true;
+    static constexpr bool enable = true;
 };
 
 template<>
 struct enable_bitmask_operators<RHI::ColorWriteMask> {
-    static const bool enable = true;
+    static constexpr bool enable = true;
 };
 
 template<>
 struct enable_bitmask_operators<RHI::BufferFlag> {
-    static const bool enable = true;
+    static constexpr bool enable = true;
 };
 
 template<>
 struct enable_bitmask_operators<RHI::TextureFlag> {
-    static const bool enable = true;
+    static constexpr bool enable = true;
 };
 
 template<>
 struct enable_bitmask_operators<RHI::GPUResourceState> {
-    static const bool enable = true;
+    static constexpr bool enable = true;
 };
 
 template<>
 struct enable_bitmask_operators<RHI::RenderPassFlag> {
-    static const bool enable = true;
+    static constexpr bool enable = true;
 };
 
 namespace std {

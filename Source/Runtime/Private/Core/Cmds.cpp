@@ -277,7 +277,7 @@ void CmdSystem::ExecuteString(const char *text) {
 }
 
 void CmdSystem::ExecuteCommandBuffer() {
-    static const int MaxCommandLine = 1024;
+    static constexpr int MaxCommandLine = 1024;
     char commandLine[MaxCommandLine];
 
     while (commandBufferSize) {

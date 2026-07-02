@@ -200,10 +200,10 @@ private:
 
 template<>
 struct enable_bitmask_operators<ShaderTemplate::Flag> {
-    static const bool enable = true;
+    static constexpr bool enable = true;
 };
 
 template<>
 struct enable_bitmask_operators<ShaderPropertyInfo::ShaderFlag> {
-    static const bool enable = true;
+    static constexpr bool enable = true;
 };
