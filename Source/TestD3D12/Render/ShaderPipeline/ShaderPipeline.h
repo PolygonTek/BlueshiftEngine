@@ -29,7 +29,7 @@ struct GraphicsPipelineDesc {
     const RHI::InputLayout *        inputLayout = nullptr;
     RHI::RenderDest                 renderDest;
     RHI::RasterizerStateType        rasterizerStateType = RHI::RasterizerStateType::SolidFrontSided;
-    RHI::DepthStencilStateType      depthStencilStateType = RHI::DepthStencilStateType::Default;
+    RHI::DepthStencilStateType      depthStencilStateType = RHI::DepthStencilStateType::LEqualWrite;
     RHI::BlendStateType             blendStateType = RHI::BlendStateType::Disabled;
     RHI::PrimitiveTopology          primitiveTopology = RHI::PrimitiveTopology::TriangleList;
     uint32_t                        sampleMask = 0xffffffff;

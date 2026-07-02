@@ -455,6 +455,10 @@ void RenderBackend::BlitRectToSwapChain(const RHI::Texture *texture, const BE1::
         return;
     }
 
+    if (!currentImagePSO) {
+        return;
+    }
+
     const uint32_t w = currentContext->GetWidth();
     const uint32_t h = currentContext->GetHeight();
     if (w == 0 || h == 0) {

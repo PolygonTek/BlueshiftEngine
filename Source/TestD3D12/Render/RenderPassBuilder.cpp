@@ -30,7 +30,7 @@ void PassPipelineResolver::Begin(const GraphicsPipelineDesc &pipelineDesc, uint3
     entries.SetCount(0, false);
 }
 
-const GraphicsPipelineDesc &PassPipelineResolver::GetPipelineDesc(VertexInputLayoutId inputLayoutId) {
+const GraphicsPipelineDesc &PassPipelineResolver::GetGraphicsPipelineDesc(VertexInputLayoutId inputLayoutId) {
     const int inputLayoutIndex = static_cast<int>(inputLayoutId);
     assert(inputLayoutIndex >= 0 && inputLayoutIndex < NumInputLayouts);
 
@@ -68,7 +68,7 @@ PassPipelineResolver::ResolveResult PassPipelineResolver::Resolve(const RenderPa
     }
 
     // hash 에 존재하지 않는다면 material->GetGraphicsPipeline 호출로 새 ShaderPipeline 을 얻는다.
-    result.pso = ShaderPipeline::GetReadyPSO(material->GetGraphicsPipeline(featureSet, GetPipelineDesc(result.inputLayoutId)));
+    result.pso = ShaderPipeline::GetReadyPSO(material->GetGraphicsPipeline(featureSet, GetGraphicsPipelineDesc(result.inputLayoutId)));
 
     PassPipelineResolver::Entry &entry = entries.Alloc();
     entry.material = material;
@@ -85,10 +85,10 @@ RenderPass *RenderPassBuilder::AllocRenderPass(RenderFrameData *frameData, VisCa
 
     RenderPass *renderPass = &visCamera->renderPasses[visCamera->numRenderPasses++];
     renderPass->type = type;
-    renderPass->pipelineDesc = {};
+    renderPass->graphicsPipelineDesc = {};
     renderPass->passFeatureSet = passFeatureSet;
     renderPass->baseInputLayoutId = baseInputLayoutId;
-    renderPass->pipelineDesc.inputLayout = &VertexInputLayoutFactory::Get(baseInputLayoutId);
+    renderPass->graphicsPipelineDesc.inputLayout = &VertexInputLayoutFactory::Get(baseInputLayoutId);
     renderPass->maxDrawSurfs = maxDrawSurfs;
     renderPass->numDrawSurfs = 0;
     renderPass->drawSurfs = (const PassDrawSurf **)frameData->MemAlloc(maxDrawSurfs * sizeof(PassDrawSurf *));
@@ -140,18 +140,18 @@ void RenderPassBuilder::BuildMain(RenderFrameData *frameData, VisCamera *visCame
 
     // AllocRenderPass 한 순서대로 백엔드에서 렌더링된다.
     RenderPass *opaquePass = AllocRenderPass(frameData, visCamera, RenderPassType::MainOpaque, {}, VertexInputLayoutId::XyzStColorNormalTangent, visCamera->numVisSurfs);
-    RenderContext::activeContext->GetMainRenderDest(opaquePass->pipelineDesc.renderDest);
+    RenderContext::activeContext->GetMainRenderDest(opaquePass->graphicsPipelineDesc.renderDest);
 
     RenderPass *skyboxPass = AllocRenderPass(frameData, visCamera, RenderPassType::Skybox, {}, VertexInputLayoutId::XyzStColor, 2);
-    RenderContext::activeContext->GetMainRenderDest(skyboxPass->pipelineDesc.renderDest);
-    skyboxPass->pipelineDesc.depthStencilStateType = RHI::DepthStencilStateType::ReadOnly;
+    RenderContext::activeContext->GetMainRenderDest(skyboxPass->graphicsPipelineDesc.renderDest);
+    skyboxPass->graphicsPipelineDesc.depthStencilStateType = RHI::DepthStencilStateType::LEqualNoWrite;
 
     RenderPass *blendPass = AllocRenderPass(frameData, visCamera, RenderPassType::MainTransparent, {}, VertexInputLayoutId::XyzStColorNormalTangent, visCamera->numVisSurfs);
-    RenderContext::activeContext->GetMainRenderDest(blendPass->pipelineDesc.renderDest);
+    RenderContext::activeContext->GetMainRenderDest(blendPass->graphicsPipelineDesc.renderDest);
 
-    skyboxPipelineResolver.Begin(skyboxPass->pipelineDesc, skyboxPass->maxDrawSurfs);
-    opaquePipelineResolver.Begin(opaquePass->pipelineDesc, opaquePass->maxDrawSurfs);
-    blendPipelineResolver.Begin(blendPass->pipelineDesc, blendPass->maxDrawSurfs);
+    opaquePipelineResolver.Begin(opaquePass->graphicsPipelineDesc, opaquePass->maxDrawSurfs);
+    skyboxPipelineResolver.Begin(skyboxPass->graphicsPipelineDesc, skyboxPass->maxDrawSurfs);
+    blendPipelineResolver.Begin(blendPass->graphicsPipelineDesc, blendPass->maxDrawSurfs);
 
     for (uint32_t i = 0; i < visCamera->numVisSurfs; ++i) {
         const VisSurf *visSurf = visCamera->visSurfs[i];
@@ -185,10 +185,10 @@ void RenderPassBuilder::BuildGUI(RenderFrameData *frameData, VisCamera *visCamer
     }
 
     RenderPass *guiPass = AllocRenderPass(frameData, visCamera, RenderPassType::Gui, {}, VertexInputLayoutId::XyzStColor, visCamera->numVisSurfs);
-    RenderContext::activeContext->GetSwapChainRenderDest(guiPass->pipelineDesc.renderDest);
-    guiPass->pipelineDesc.depthStencilStateType = RHI::DepthStencilStateType::Never;
+    RenderContext::activeContext->GetSwapChainRenderDest(guiPass->graphicsPipelineDesc.renderDest);
+    guiPass->graphicsPipelineDesc.depthStencilStateType = RHI::DepthStencilStateType::Disabled;
 
-    guiPipelineResolver.Begin(guiPass->pipelineDesc, visCamera->numVisSurfs);
+    guiPipelineResolver.Begin(guiPass->graphicsPipelineDesc, visCamera->numVisSurfs);
 
     for (uint32_t i = 0; i < visCamera->numVisSurfs; ++i) {
         const VisSurf *visSurf = visCamera->visSurfs[i];

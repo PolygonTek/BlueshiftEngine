@@ -35,10 +35,10 @@ class ShaderTemplate;
 class ShaderPipelineCache {
 public:
                                     // shaderTemplate, permutationKey, graphicsPipelineDesc 로 캐시된 그래픽스 파이프라인을 리턴한다. 캐시된게 없다면 빌드를 요청한다.
-    SharedPtr<ShaderPipeline>       GetGraphicsPipeline(const SharedPtr<ShaderTemplate> &shaderTemplate, ShaderPermutationKey permutationKey, const GraphicsPipelineDesc &graphicsPipelineDesc, bool async);
+    SharedPtr<ShaderPipeline>       GetGraphicsPipeline(const SharedPtr<ShaderTemplate> &shaderTemplate, ShaderPermutationKey permutationKey, const GraphicsPipelineDesc &graphicsPipelineDesc, bool async = true);
 
                                     // shaderTemplate, permutationKey 로 캐시된 컴퓨트 파이프라인을 리턴한다. 캐시된게 없다면 빌드를 요청한다.
-    SharedPtr<ShaderPipeline>       GetComputePipeline(const SharedPtr<ShaderTemplate> &shaderTemplate, ShaderPermutationKey permutationKey, bool async);
+    SharedPtr<ShaderPipeline>       GetComputePipeline(const SharedPtr<ShaderTemplate> &shaderTemplate, ShaderPermutationKey permutationKey, bool async = true);
 
                                     // shaderTemplate 으로 캐싱된 파이프라인을 제거한다. (빌드 중인 파이프라인은 폐기된다)
     void                            ClearShaderTemplate(const ShaderTemplate *shaderTemplate);

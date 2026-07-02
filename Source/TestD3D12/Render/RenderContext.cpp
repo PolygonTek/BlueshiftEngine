@@ -133,10 +133,10 @@ void RenderContext::InitPipelines() {
 
     GraphicsPipelineDesc graphicsPipelineDesc;
     graphicsPipelineDesc.renderDest = renderDest;
-    graphicsPipelineDesc.depthStencilStateType = RHI::DepthStencilStateType::Never;
+    graphicsPipelineDesc.depthStencilStateType = RHI::DepthStencilStateType::Disabled;
     graphicsPipelineDesc.blendStateType = RHI::BlendStateType::Disabled;
 
-    imagePipeline = shaderPipelineCache.GetGraphicsPipeline(shaderTemplateManager.fullscreenImageShaderTemplate, ShaderPermutationKey(), graphicsPipelineDesc, false);
+    imagePipeline = shaderPipelineCache.GetGraphicsPipeline(shaderTemplateManager.fullscreenImageShaderTemplate, ShaderPermutationKey(), graphicsPipelineDesc);
 }
 
 void RenderContext::ReleasePipelines() {

@@ -226,20 +226,60 @@ void RHI::Renderer::InitDefaultStates() {
     rs->cullMode = RHI::CullMode::None;
     rs->smoothLineEnabled = true;
 
-    RHI::DepthStencilState *dss = &depthStencilStates[to_int(RHI::DepthStencilStateType::Default)];
-    dss->depthTestEnabled = true;
-    dss->depthWriteMask = RHI::DepthWriteMask::All;
-    dss->depthFunc = RHI::ComparisonFunc::LEqual;
-
-    dss = &depthStencilStates[to_int(RHI::DepthStencilStateType::Never)];
+    RHI::DepthStencilState *dss = &depthStencilStates[to_int(RHI::DepthStencilStateType::Disabled)];
     dss->depthTestEnabled = false;
     dss->depthWriteMask = RHI::DepthWriteMask::Zero;
     dss->depthFunc = RHI::ComparisonFunc::Never;
 
-    dss = &depthStencilStates[to_int(RHI::DepthStencilStateType::ReadOnly)];
+    dss = &depthStencilStates[to_int(RHI::DepthStencilStateType::LessWrite)];
+    dss->depthTestEnabled = true;
+    dss->depthWriteMask = RHI::DepthWriteMask::All;
+    dss->depthFunc = RHI::ComparisonFunc::Less;
+
+    dss = &depthStencilStates[to_int(RHI::DepthStencilStateType::LessNoWrite)];
+    dss->depthTestEnabled = true;
+    dss->depthWriteMask = RHI::DepthWriteMask::Zero;
+    dss->depthFunc = RHI::ComparisonFunc::Less;
+
+    dss = &depthStencilStates[to_int(RHI::DepthStencilStateType::LEqualWrite)];
+    dss->depthTestEnabled = true;
+    dss->depthWriteMask = RHI::DepthWriteMask::All;
+    dss->depthFunc = RHI::ComparisonFunc::LEqual;
+
+    dss = &depthStencilStates[to_int(RHI::DepthStencilStateType::LEqualNoWrite)];
     dss->depthTestEnabled = true;
     dss->depthWriteMask = RHI::DepthWriteMask::Zero;
     dss->depthFunc = RHI::ComparisonFunc::LEqual;
+
+    dss = &depthStencilStates[to_int(RHI::DepthStencilStateType::EqualWrite)];
+    dss->depthTestEnabled = true;
+    dss->depthWriteMask = RHI::DepthWriteMask::All;
+    dss->depthFunc = RHI::ComparisonFunc::Equal;
+
+    dss = &depthStencilStates[to_int(RHI::DepthStencilStateType::EqualNoWrite)];
+    dss->depthTestEnabled = true;
+    dss->depthWriteMask = RHI::DepthWriteMask::Zero;
+    dss->depthFunc = RHI::ComparisonFunc::Equal;
+
+    dss = &depthStencilStates[to_int(RHI::DepthStencilStateType::GEqualWrite)];
+    dss->depthTestEnabled = true;
+    dss->depthWriteMask = RHI::DepthWriteMask::All;
+    dss->depthFunc = RHI::ComparisonFunc::GEqual;
+
+    dss = &depthStencilStates[to_int(RHI::DepthStencilStateType::GEqualNoWrite)];
+    dss->depthTestEnabled = true;
+    dss->depthWriteMask = RHI::DepthWriteMask::Zero;
+    dss->depthFunc = RHI::ComparisonFunc::GEqual;
+
+    dss = &depthStencilStates[to_int(RHI::DepthStencilStateType::GreaterWrite)];
+    dss->depthTestEnabled = true;
+    dss->depthWriteMask = RHI::DepthWriteMask::All;
+    dss->depthFunc = RHI::ComparisonFunc::Greater;
+
+    dss = &depthStencilStates[to_int(RHI::DepthStencilStateType::GreaterNoWrite)];
+    dss->depthTestEnabled = true;
+    dss->depthWriteMask = RHI::DepthWriteMask::Zero;
+    dss->depthFunc = RHI::ComparisonFunc::Greater;
 
     RHI::BlendState *bs = &blendStates[to_int(RHI::BlendStateType::AlphaBlend)];
     bs->renderTargets[0].blendEnabled = true;

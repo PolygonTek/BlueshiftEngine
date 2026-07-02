@@ -68,7 +68,7 @@ enum class RenderPassType : uint8_t {
 
 struct RenderPass {
     RenderPassType              type = RenderPassType::MainOpaque;
-    GraphicsPipelineDesc        pipelineDesc;
+    GraphicsPipelineDesc        graphicsPipelineDesc;
     ShaderFeatureSet            passFeatureSet;
     VertexInputLayoutId         baseInputLayoutId = VertexInputLayoutId::XyzStColorNormalTangent;
 

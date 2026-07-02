@@ -46,7 +46,7 @@ private:
         RHI::PipelineState *    pso = nullptr;
     };
 
-    const GraphicsPipelineDesc &GetPipelineDesc(VertexInputLayoutId inputLayoutId);
+    const GraphicsPipelineDesc &GetGraphicsPipelineDesc(VertexInputLayoutId inputLayoutId);
 
     static constexpr int        NumInputLayouts = static_cast<int>(VertexInputLayoutId::Count);
 
