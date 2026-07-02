@@ -30,28 +30,37 @@
 extern "C" { __declspec(dllexport) extern const UINT D3D12SDKVersion = 614; }
 extern "C" { __declspec(dllexport) extern const char *D3D12SDKPath = u8"."; }
 
+#if defined(_DEBUG)
+static CVAR(d3d12_debugLayer, "1", BE1::CVar::Flag::Bool, "enable D3D12 debug layer at renderer startup");
+#else
+static CVAR(d3d12_debugLayer, "0", BE1::CVar::Flag::Bool, "enable D3D12 debug layer at renderer startup");
+#endif
+static CVAR(d3d12_gpuValidation, "1", BE1::CVar::Flag::Bool, "enable D3D12 GPU validation when debug layer is enabled at renderer startup");
+
 void D3D12Renderer::Init(const void *mainWindowHandle) {
     RHI::Renderer::Init(mainWindowHandle);
 
-#if defined(USE_RENDERER_DEBUG_LAYER) && (defined(_DEBUG) || defined(_DEVELOPMENT))
-    bool enableDebugLayer = true;
-    bool withGpuValidation = true;
+#if defined(_DEBUG) || defined(_DEVELOPMENT)
+    const bool requestDebugLayer = d3d12_debugLayer.GetBool();
+    const bool requestGpuValidation = requestDebugLayer && d3d12_gpuValidation.GetBool();
 #else
-    bool enableDebugLayer = false;
-    bool withGpuValidation = false;
+    const bool requestDebugLayer = false;
+    const bool requestGpuValidation = false;
 #endif
 
     HRESULT hr;
 
-    if (enableDebugLayer) {
+    if (requestDebugLayer) {
         // 디버그 레이어 활성화
         ID3D12Debug* debugController = nullptr;
         hr = D3D12GetDebugInterface(IID_PPV_ARGS(&debugController));
         if (SUCCEEDED(hr)) {
             debugController->EnableDebugLayer();
 
+            validationLayerEnabled = true;
+
             // GPU Validation 활성화
-            if (withGpuValidation) {
+            if (requestGpuValidation) {
                 ID3D12Debug5* debugController5 = nullptr;
                 if (SUCCEEDED(debugController->QueryInterface(IID_PPV_ARGS(&debugController5))))
                 {
@@ -59,6 +68,8 @@ void D3D12Renderer::Init(const void *mainWindowHandle) {
                     debugController5->SetEnableSynchronizedCommandQueueValidation(TRUE);
                     debugController5->SetEnableAutoName(TRUE);
                     debugController5->Release();
+
+                    gpuValidationEnabled = true;
                 }
             }
             debugController->Release();
@@ -77,7 +88,7 @@ void D3D12Renderer::Init(const void *mainWindowHandle) {
     }
 
     // DXGI Factory 생성
-    hr = CreateDXGIFactory2(enableDebugLayer ? DXGI_CREATE_FACTORY_DEBUG : 0, IID_PPV_ARGS(&dxgiFactory));
+    hr = CreateDXGIFactory2(validationLayerEnabled ? DXGI_CREATE_FACTORY_DEBUG : 0, IID_PPV_ARGS(&dxgiFactory));
     if (FAILED(hr)) {
         BE_FATALERROR("CreateDXGIFactory2 failed, ERROR: 0x%x", hr);
     }
@@ -125,7 +136,7 @@ void D3D12Renderer::Init(const void *mainWindowHandle) {
     BE_LOG("Dedicated SystemMem Size: %s\n", BE1::Str::FormatBytes(dedicatedSystemMemSize).c_str());
     BE_LOG("Shared SystemMem Size: %s\n", BE1::Str::FormatBytes(sharedSystemMemSize).c_str());
 
-    if (enableDebugLayer) {
+    if (validationLayerEnabled) {
         // 디버그 표시 정보 설정
         ID3D12InfoQueue *infoQueue = nullptr;
         hr = device->QueryInterface(IID_PPV_ARGS(&infoQueue));

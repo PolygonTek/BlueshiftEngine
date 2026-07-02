@@ -193,10 +193,14 @@ const char *RHI::Renderer::ShaderModelName(RHI::ShaderModel shaderModel) {
 }
 
 void RHI::Renderer::Init(const void *mainWindowHandle) {
+    validationLayerEnabled = false;
+    gpuValidationEnabled = false;
     initialized = true;
 }
 
 void RHI::Renderer::Shutdown() {
+    validationLayerEnabled = false;
+    gpuValidationEnabled = false;
     initialized = false;
 }
 

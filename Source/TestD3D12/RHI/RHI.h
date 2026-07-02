@@ -1013,6 +1013,8 @@ namespace RHI {
         virtual void                    Shutdown();
 
         bool                            IsInitialized() const { return initialized; }
+        bool                            IsValidationLayerEnabled() const { return validationLayerEnabled; }
+        bool                            IsGpuValidationEnabled() const { return gpuValidationEnabled; }
 
         virtual void                    GetMemoryUsage(MemoryUsage &memoryUsage) const = 0;
         virtual const RendererInfo &    GetRendererInfo() const = 0;
@@ -1182,6 +1184,8 @@ namespace RHI {
         uint32_t                        max1DTextureArraySize = 0;
         uint32_t                        max2DTextureArraySize = 0;
         uint32_t                        maxCubeTextureArraySize = 0;
+        bool                            validationLayerEnabled = false;
+        bool                            gpuValidationEnabled = false;
         bool                            initialized = false;
     };
 
