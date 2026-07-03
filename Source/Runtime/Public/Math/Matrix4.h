@@ -191,17 +191,17 @@ public:
     void                SetTranslation(float tx, float ty, float tz);
 
                         /// Sets perspective projection matrix for right-handed coordinate system with given frustum definition.
-    void                SetFrustumRH(float left, float right, float bottom, float top, float zNear, float zFar, bool zNegativeOneToOne);
+    void                SetFrustumRH(float left, float right, float bottom, float top, float zNear, float zFar, bool zNegativeOneToOne, bool reverseZ = false, bool infiniteZFar = false);
                         /// Sets perspective projection matrix for left-handed coordinate system with given frustum definition.
-    void                SetFrustumLH(float left, float right, float bottom, float top, float zNear, float zFar, bool zNegativeOneToOne);
+    void                SetFrustumLH(float left, float right, float bottom, float top, float zNear, float zFar, bool zNegativeOneToOne, bool reverseZ = false, bool infiniteZFar = false);
                         /// Sets perspective projection matrix for right-handed coordinate system.
-    void                SetPerspectiveRH(float fovy, float aspect, float zNear, float zFar, bool zNegativeOneToOne);
+    void                SetPerspectiveRH(float fovy, float aspect, float zNear, float zFar, bool zNegativeOneToOne, bool reverseZ = false, bool infiniteZFar = false);
                         /// Sets perspective projection matrix for left-handed coordinate system.
-    void                SetPerspectiveLH(float fovy, float aspect, float zNear, float zFar, bool zNegativeOneToOne);
+    void                SetPerspectiveLH(float fovy, float aspect, float zNear, float zFar, bool zNegativeOneToOne, bool reverseZ = false, bool infiniteZFar = false);
                         /// Sets orthogonal projection matrix for right-handed coordinate system.
-    void                SetOrthoRH(float left, float right, float bottom, float top, float zNear, float zFar, bool zNegativeOneToOne);
+    void                SetOrthoRH(float left, float right, float bottom, float top, float zNear, float zFar, bool zNegativeOneToOne, bool reverseZ = false);
                         /// Sets orthogonal projection matrix for left-handed coordinate system.
-    void                SetOrthoLH(float left, float right, float bottom, float top, float zNear, float zFar, bool zNegativeOneToOne);
+    void                SetOrthoLH(float left, float right, float bottom, float top, float zNear, float zFar, bool zNegativeOneToOne, bool reverseZ = false);
                         /// Sets reflection matrix with the given reflection plane.
     void                SetReflect(const Plane &plane);
                         /// Sets linear transformation matrix which is a combination of translation, rotation and scale.

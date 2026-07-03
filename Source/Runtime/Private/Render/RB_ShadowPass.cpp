@@ -341,7 +341,7 @@ static void RB_ShadowCubeMapPass(const VisLight *visLight, const Frustum &viewFr
     backEnd.shadowProjectionDepth[1] = zFar * zRangeInv;
 
     float fov = RAD2DEG(backEnd.ctx->vscmBiasedFov);
-    R_SetPerspectiveProjectionMatrix(fov, fov, zNear, zFar, false, backEnd.shadowProjectionMatrix);
+    backEnd.shadowProjectionMatrix.SetPerspectiveRH(fov, 1.0f, zNear, zFar, true);
 
     Frustum lightFrustum;
     lightFrustum.SetOrigin(visLight->def->GetState().origin);
@@ -520,7 +520,8 @@ static void RB_OrthogonalShadowMapPass(const VisLight *visLight, const Frustum &
         return;
     }
 
-    R_SetOrthogonalProjectionMatrix(visLight->def->GetWorldOBB().Extents()[1], visLight->def->GetWorldOBB().Extents()[2], dNear, dFar, backEnd.shadowProjectionMatrix);
+    const Vec3 &obbExtents = visLight->def->GetWorldOBB().Extents();
+    backEnd.shadowProjectionMatrix.SetOrthoRH(-obbExtents[1], obbExtents[1], -obbExtents[2], obbExtents[2], dNear, dFar, true);
 
     if (r_optimizedShadowProjection.GetInteger() == 2) {
         ALIGN_AS32 Mat4 shadowCropMatrix;
@@ -563,7 +564,8 @@ static void RB_ProjectedShadowMapPass(const VisLight *visLight, const Frustum &v
     float xFov = RAD2DEG(Math::ATan(visLight->def->GetWorldFrustum().GetLeft(), dFar)) * 2.0f;
     float yFov = RAD2DEG(Math::ATan(visLight->def->GetWorldFrustum().GetUp(), dFar)) * 2.0f;
 
-    R_SetPerspectiveProjectionMatrix(xFov, yFov, dNear, dFar, false, backEnd.shadowProjectionMatrix);
+    float aspect = Math::Tan(DEG2RAD(xFov) * 0.5f) / Math::Tan(DEG2RAD(yFov) * 0.5f);
+    backEnd.shadowProjectionMatrix.SetPerspectiveRH(yFov, aspect, dNear, dFar, true);
 
     /*if (r_optimizedShadowProjection.GetInteger() > 0) {
         ALIGN_AS32 Mat4 shadowCropMatrix;
@@ -628,7 +630,8 @@ static bool RB_SingleCascadedShadowMapPass(const VisLight *visLight, const Frust
         return false;
     }
 
-    R_SetOrthogonalProjectionMatrix(visLight->def->GetWorldOBB().Extents()[1], visLight->def->GetWorldOBB().Extents()[2], dNear, dFar, backEnd.shadowProjectionMatrix);
+    const Vec3 &obbExtents = visLight->def->GetWorldOBB().Extents();
+    backEnd.shadowProjectionMatrix.SetOrthoRH(-obbExtents[1], obbExtents[1], -obbExtents[2], obbExtents[2], dNear, dFar, true);
 
     if (r_optimizedShadowProjection.GetInteger() > 0) {
         ALIGN_AS32 Mat4 shadowCropMatrix;

@@ -32,7 +32,7 @@ void RenderCamera::Update(const State *stateCopy) {
         box.SetAxis(state.axis);
 
         // Calculate orthogonal projection matrix.
-        R_SetOrthogonalProjectionMatrix(state.sizeX, state.sizeY, zNear, zFar, projMatrix);
+        projMatrix.SetOrthoRH(-state.sizeX, state.sizeX, -state.sizeY, state.sizeY, zNear, zFar, true);
     } else {
         // Set bounding frustum for perspective view.
         frustum.SetOrigin(state.origin);
@@ -46,7 +46,8 @@ void RenderCamera::Update(const State *stateCopy) {
         frustum.ToPoints(frustumPoints);
 
         // Calculate perspective projection matrix.
-        R_SetPerspectiveProjectionMatrix(state.fovX, state.fovY, zNear, zFar, false, projMatrix);
+        float aspect = Math::Tan(DEG2RAD(state.fovX) * 0.5f) / Math::Tan(DEG2RAD(state.fovY) * 0.5f);
+        projMatrix.SetPerspectiveRH(state.fovY, aspect, zNear, zFar, true);
     }
 
     // Calculate view matrix.
@@ -66,7 +67,7 @@ void RenderCamera::RecalcZFar(float zFar) {
         box.SetExtents(extents);
 
         // Calculate orthogonal projection matrix.
-        R_SetOrthogonalProjectionMatrix(state.sizeX, state.sizeY, zNear, zFar, projMatrix);
+        projMatrix.SetOrthoRH(-state.sizeX, state.sizeX, -state.sizeY, state.sizeY, zNear, zFar, true);
     } else {
         // Set bounding frustum for perspective view.
         frustum.SetSize(zNear, zFar, zFar * Math::Tan(DEG2RAD(state.fovX) * 0.5f), zFar * Math::Tan(DEG2RAD(state.fovY) * 0.5f));
@@ -78,7 +79,8 @@ void RenderCamera::RecalcZFar(float zFar) {
         frustum.ToPoints(frustumPoints);
 
         // Calculate perspective projection matrix.
-        R_SetPerspectiveProjectionMatrix(state.fovX, state.fovY, zNear, zFar, false, projMatrix);
+        float aspect = Math::Tan(DEG2RAD(state.fovX) * 0.5f) / Math::Tan(DEG2RAD(state.fovY) * 0.5f);
+        projMatrix.SetPerspectiveRH(state.fovY, aspect, zNear, zFar, true);
     }
 
     // Re-calculate view projection matrix.

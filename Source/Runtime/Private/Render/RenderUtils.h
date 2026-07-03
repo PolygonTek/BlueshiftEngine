@@ -41,12 +41,6 @@ void    R_EnvCubeMapFaceToEngineAxis(Graphics::CubeMapFace::Enum face, Mat3 &axi
 // Sets view matrix with the given origin and axis.
 void    R_SetViewMatrix(const Mat3 &viewaxis, const Vec3 &vieworg, float *viewMatrix);
 
-// Sets perspective projection matrix.
-void    R_SetPerspectiveProjectionMatrix(float xFov, float yFov, float zNear, float zFar, bool infinite, float *projectionMatrix);
-
-// Sets orthogonal projection matrix.
-void    R_SetOrthogonalProjectionMatrix(float xSize, float ySize, float zNear, float zFar, float *projectionMatrix);
-
 // Sets 2d crop matrix.
 void    R_Set2DCropMatrix(float xmin, float xmax, float ymin, float ymax, float *cropMatrix);
 

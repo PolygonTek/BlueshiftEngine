@@ -52,7 +52,7 @@ void RenderLight::Update(const RenderLight::State *stateDef) {
         worldOBB = OBB(state.origin, state.size, state.axis);
 
         // Calculate point light orthogonal projection matrix.
-        R_SetOrthogonalProjectionMatrix(state.size[1], state.size[2], -state.size[0], state.size[0], projMatrix);
+        projMatrix.SetOrthoRH(-state.size[1], state.size[1], -state.size[2], state.size[2], -state.size[0], state.size[0], true);
 
         // Calculate light fall-off matrix.
         fallOffMatrix = projMatrix * viewMatrix;
@@ -61,7 +61,8 @@ void RenderLight::Update(const RenderLight::State *stateDef) {
         worldOBB = OBB(state.origin + state.axis[0] * state.size[0] * 0.5f, Vec3(state.size[0] * 0.5f, state.size[1], state.size[2]), state.axis);
 
         // Calculate box light orthogonal projection matrix.
-        R_SetOrthogonalProjectionMatrix(worldOBB.Extents()[1], worldOBB.Extents()[2], 0, 2 * worldOBB.Extents()[0], projMatrix);
+        const Vec3 &obbExtents = worldOBB.Extents();
+        projMatrix.SetOrthoRH(-obbExtents[1], obbExtents[1], -obbExtents[2], obbExtents[2], 0, 2 * obbExtents[0], true);
 
         // No fall-off for directional light.
         fallOffMatrix = Mat3x4(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
@@ -75,11 +76,12 @@ void RenderLight::Update(const RenderLight::State *stateDef) {
         float yFov = RAD2DEG(Math::ATan(worldFrustum.GetUp(), worldFrustum.GetFarDistance())) * 2.0f;
 
         // Calculate spot light perspective projection matrix.
-        R_SetPerspectiveProjectionMatrix(xFov, yFov, worldFrustum.GetNearDistance(), worldFrustum.GetFarDistance(), false, projMatrix);
+        float aspect = Math::Tan(DEG2RAD(xFov) * 0.5f) / Math::Tan(DEG2RAD(yFov) * 0.5f);
+        projMatrix.SetPerspectiveRH(yFov, aspect, worldFrustum.GetNearDistance(), worldFrustum.GetFarDistance(), true);
 
         // Calculate light fall-off matrix.
         ALIGN_AS32 Mat4 orthoProjMatrix;
-        R_SetOrthogonalProjectionMatrix(state.size[1], state.size[2], 0, state.size[0], orthoProjMatrix);
+        orthoProjMatrix.SetOrthoRH(-state.size[1], state.size[1], -state.size[2], state.size[2], 0, state.size[0], true);
         fallOffMatrix = orthoProjMatrix * viewMatrix;
     } else {
         assert(0);
