@@ -60,7 +60,7 @@ void ShaderTemplateManager::UpdateFrame() {
 
     // 글로벌 디파인이 변경되었다면 모든 캐시된 파이프라인을 재빌드한다.
     if (lastInvalidatedGlobalDefineModCount != globalDefineModCountSnapshot) {
-        shaderPipelineCache.RebuildAll();
+        shaderPipelineCache.RebuildAllPipelines();
         lastInvalidatedGlobalDefineModCount = globalDefineModCountSnapshot;
     }
 
@@ -239,6 +239,11 @@ void ShaderTemplateManager::CreateEngineShaderTemplates() {
         BE_FATALERROR("ShaderTemplateManager::CreateEngineShaderTemplates: failed to load fullscreen image shader template");
     }
 
+    depthShaderTemplate = GetShaderTemplate("Source/TestD3D12/Shaders/Depth");
+    if (!depthShaderTemplate) {
+        BE_FATALERROR("ShaderTemplateManager::CreateEngineShaderTemplates: failed to load depth shader template");
+    }
+
     unlitShaderTemplate = GetShaderTemplate("Source/TestD3D12/Shaders/Unlit");
     if (!unlitShaderTemplate) {
         BE_FATALERROR("ShaderTemplateManager::CreateEngineShaderTemplates: failed to load unlit shader template");
@@ -253,6 +258,9 @@ void ShaderTemplateManager::CreateEngineShaderTemplates() {
 void ShaderTemplateManager::DestroyEngineShaderTemplates() {
     if (fullscreenImageShaderTemplate) {
         fullscreenImageShaderTemplate.reset();
+    }
+    if (depthShaderTemplate) {
+        depthShaderTemplate.reset();
     }
     if (unlitShaderTemplate) {
         unlitShaderTemplate.reset();

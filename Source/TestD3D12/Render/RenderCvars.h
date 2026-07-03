@@ -27,6 +27,8 @@ extern BE1::CVar    r_skipDrawCamera2D;
 extern BE1::CVar    r_skipDrawCamera3D;
 extern BE1::CVar    r_skipPostProcess;
 
+extern BE1::CVar    r_depthPrepass;
+
 extern BE1::CVar    r_textureStreamingStreamInDelay;
 extern BE1::CVar    r_textureStreamingMaxRequestsPerFrame;
 extern BE1::CVar    r_textureStreamingMaxLevelReduction;

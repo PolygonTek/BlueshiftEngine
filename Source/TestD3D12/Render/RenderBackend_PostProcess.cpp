@@ -27,7 +27,7 @@ bool RenderBackend::DispatchLuminance() {
         return false;
     }
 
-    if (!currentLuminancePass1PSO || !currentLuminancePass2PSO) {
+    if (!frameLuminancePass1PSO || !frameLuminancePass2PSO) {
         return false;
     }
 
@@ -64,7 +64,7 @@ bool RenderBackend::DispatchLuminance() {
     RHI::renderer->Barrier(mainCommandList, RHI::Renderer::MakeTextureBarrier(inputTexture, RHI::GPUResourceState::ShaderResource, RHI::GPUResourceState::ShaderResourceCompute));
 
     // Pass 1 : Log Luminance 히스토그램 계산
-    RHI::renderer->SetPSO(mainCommandList, currentLuminancePass1PSO);
+    RHI::renderer->SetPSO(mainCommandList, frameLuminancePass1PSO);
     RHI::renderer->SetTexture(mainCommandList, 0, false, inputTexture);
     RHI::renderer->SetBuffer(mainCommandList, 0, true, luminanceBuffer);
     RHI::renderer->SetConstants(mainCommandList, 1, &luminancePass1Params, sizeof(luminancePass1Params), 0);
@@ -76,7 +76,7 @@ bool RenderBackend::DispatchLuminance() {
     RHI::renderer->Barrier(mainCommandList, RHI::Renderer::MakeMemoryBarrier(luminanceBuffer));
 
     // Pass 2 : 평균 Luminance 를 계산하고, 보간된 exposure 도 계산한다.
-    RHI::renderer->SetPSO(mainCommandList, currentLuminancePass2PSO);
+    RHI::renderer->SetPSO(mainCommandList, frameLuminancePass2PSO);
     RHI::renderer->SetBuffer(mainCommandList, 0, true, luminanceBuffer);
     RHI::renderer->SetConstantBuffer(mainCommandList, 0, frameConstantBuffer);
     RHI::renderer->SetConstants(mainCommandList, 1, &luminancePass2Params, sizeof(luminancePass2Params), 0);
@@ -162,14 +162,14 @@ bool RenderBackend::DispatchPyramidBloom() {
     };
 
     // threshold 를 적용해 밝은 영역만 필터링하여 mip-0 에 blur downsample 한다.
-    RHI::renderer->SetPSO(mainCommandList, currentBloomPrefilterPSO);
+    RHI::renderer->SetPSO(mainCommandList, frameBloomPrefilterPSO);
     if (!dispatchDownsamplePass(inputColorTexture, RHI::ViewID::PrimaryID, currentVisCamera->renderWidth, currentVisCamera->renderHeight, 0, bloomThreshold, bloomSoftThreshold, pyramidBloomPrefilterQuality, pyramidBloomPrefilterRadius)) {
         RHI::renderer->Barrier(mainCommandList, RHI::Renderer::MakeTextureBarrier(inputColorTexture, RHI::GPUResourceState::ShaderResourceCompute, RHI::GPUResourceState::ShaderResource));
         return false;
     }
 
     // 이후 mip 은 blur downsample 을 반복한다.
-    RHI::renderer->SetPSO(mainCommandList, currentBloomDownsamplePSO);
+    RHI::renderer->SetPSO(mainCommandList, frameBloomDownsamplePSO);
     for (uint32_t mipLevel = 1; mipLevel < currentVisCamera->bloomMipCount; ++mipLevel) {
         const uint32_t inputMipLevel = mipLevel - 1;
         if (!dispatchDownsamplePass(bloomDownTexture, currentVisCamera->bloomDownMipSRVs[inputMipLevel], currentVisCamera->bloomMipWidths[inputMipLevel], currentVisCamera->bloomMipHeights[inputMipLevel], mipLevel, 0.0f, 0.0f, 0.0f, pyramidBloomDownsampleRadius)) {
@@ -178,7 +178,7 @@ bool RenderBackend::DispatchPyramidBloom() {
         }
     }
 
-    RHI::renderer->SetPSO(mainCommandList, currentBloomUpsamplePSO);
+    RHI::renderer->SetPSO(mainCommandList, frameBloomUpsamplePSO);
 
     auto dispatchUpsamplePass = [this](uint32_t outputMipLevel, RHI::Texture *lowerTexture, RHI::ViewID lowerViewID, uint32_t lowerWidth, uint32_t lowerHeight, float weight, float radius) -> bool {
         const uint32_t outputWidth = currentVisCamera->bloomMipWidths[outputMipLevel];
@@ -327,7 +327,7 @@ bool RenderBackend::DispatchConvolutionBloomKernelPrepare() {
     };
     RHI::renderer->Barrier(mainCommandList, startBarriers, COUNT_OF(startBarriers));
 
-    RHI::renderer->SetPSO(mainCommandList, currentConvolutionBloomKernelPreparePSO);
+    RHI::renderer->SetPSO(mainCommandList, frameConvolutionBloomKernelPreparePSO);
     RHI::renderer->SetTexture(mainCommandList, 0, false, sourceTexture);
     RHI::renderer->SetBuffer(mainCommandList, 0, true, spatialBuffer);
     RHI::renderer->SetConstantBuffer(mainCommandList, 0, bloomConstantBuffer);
@@ -385,7 +385,7 @@ bool RenderBackend::DispatchConvolutionBloomScreenPrefilter() {
     };
     RHI::renderer->Barrier(mainCommandList, startBarriers, COUNT_OF(startBarriers));
 
-    RHI::renderer->SetPSO(mainCommandList, currentConvolutionBloomPrefilterPSO);
+    RHI::renderer->SetPSO(mainCommandList, frameConvolutionBloomPrefilterPSO);
     RHI::renderer->SetTexture(mainCommandList, 0, false, inputTexture);
     RHI::renderer->SetBuffer(mainCommandList, 0, true, outputBuffer);
     RHI::renderer->SetConstantBuffer(mainCommandList, 0, bloomConstantBuffer);
@@ -470,7 +470,7 @@ bool RenderBackend::DispatchConvolutionBloomResolve() {
     };
     RHI::renderer->Barrier(mainCommandList, startBarriers, COUNT_OF(startBarriers));
 
-    RHI::renderer->SetPSO(mainCommandList, currentConvolutionBloomResolvePSO);
+    RHI::renderer->SetPSO(mainCommandList, frameConvolutionBloomResolvePSO);
     RHI::renderer->SetBuffer(mainCommandList, 0, false, spatialBuffer);
     RHI::renderer->SetTexture(mainCommandList, 0, true, outputTexture);
     RHI::renderer->SetConstantBuffer(mainCommandList, 0, bloomConstantBuffer);
@@ -558,7 +558,7 @@ bool RenderBackend::DispatchToneMapping(bool useBloom) {
     };
     RHI::renderer->Barrier(mainCommandList, startBarriers, COUNT_OF(startBarriers));
 
-    RHI::renderer->SetPSO(mainCommandList, currentToneMappingPSO);
+    RHI::renderer->SetPSO(mainCommandList, frameToneMappingPSO);
     RHI::renderer->SetTexture(mainCommandList, 0, false, inputTexture);
     RHI::renderer->SetBuffer(mainCommandList, 1, false, luminanceBuffer);
 

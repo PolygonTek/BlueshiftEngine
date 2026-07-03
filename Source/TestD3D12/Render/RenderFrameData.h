@@ -51,7 +51,7 @@ struct RenderCommandBuffer {
 struct BeginContextRenderCommand {
     RenderCommandId                 commandId;
     RenderContext *                 renderContext;
-    RHI::PipelineState *            imagePSO = nullptr;
+    RHI::PipelineState *            imagePSO;
 };
 
 struct DrawCameraRenderCommand {

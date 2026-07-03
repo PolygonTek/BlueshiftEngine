@@ -102,6 +102,10 @@ set(SRC_FILES
     Render/RenderCamera.h
     Render/RenderCamera.cpp
     Render/RenderInternal.h
+    Render/RenderPassDepthPSOResolver.h
+    Render/RenderPassDepthPSOResolver.cpp
+    Render/RenderPassPSOResolver.h
+    Render/RenderPassPSOResolver.cpp
     Render/RenderPassBuilder.h
     Render/RenderPassBuilder.cpp
     Render/Material/Material.h

@@ -24,7 +24,7 @@ class ShaderPipeline;
 struct VisCamera;
 struct RenderPass;
 struct VisSurf;
-struct PassDrawSurf;
+struct RenderPassDrawSurf;
 
 class RenderBackend {
 public:
@@ -51,7 +51,7 @@ private:
 
     struct DrawSurfsTaskDesc {
         int32_t                     threadIndex = -1;
-        const PassDrawSurf **       drawSurfs = nullptr;
+        const RenderPassDrawSurf ** drawSurfs = nullptr;
         uint32_t                    numDrawSurfs = 0;
         RHI::CommandList *          commandList = nullptr;
         uint32_t                    drawCount = 0;
@@ -66,7 +66,7 @@ private:
     const void *                    ExecuteGenerateConvolutionBloomKernel(const void *data);
     const void *                    ExecuteSwapBuffers(const void *data);
 
-    void                            UpdateGlobalPSOs();
+    void                            UpdateFramePSOs();
 
     void                            DrawCamera3D();
     void                            DrawCamera2D();
@@ -74,18 +74,18 @@ private:
     void                            PostProcessAndBlitToSwapChain();
     void                            BlitRectToSwapChain(const RHI::Texture *texture, const BE1::Rect &rect);
 
-    void                            DrawMainPass(const RenderPass *renderPass);
+    void                            DrawGenericPass(const RenderPass *renderPass);
     void                            DrawSkyPass(const RenderPass *renderPass);
     void                            DrawGuiPass(const RenderPass *renderPass);
 
     void                            UploadStaticDataToGPU(const RenderPass *renderPass) const;
-    void                            SetPassVertexBuffers(RHI::CommandList *commandList, const PassDrawSurf *drawSurf) const;
+    void                            SetPassVertexBuffers(RHI::CommandList *commandList, const RenderPassDrawSurf *drawSurf) const;
 
-    void                            DrawGenericSurfaces(const PassDrawSurf **drawSurfs, uint32_t numDrawSurfs);
-    void                            DrawSkySurfaces(const PassDrawSurf **drawSurfs, uint32_t numDrawSurfs);
+    void                            DrawGenericSurfaces(const RenderPassDrawSurf **drawSurfs, uint32_t numDrawSurfs);
+    void                            DrawSkySurfaces(const RenderPassDrawSurf **drawSurfs, uint32_t numDrawSurfs);
 
-    void                            DrawGenericSurfacesWithoutTask(const PassDrawSurf **drawSurfs, uint32_t numDrawSurfs);
-    void                            DrawGenericSurfacesWithTask(const PassDrawSurf **drawSurfs, uint32_t numDrawSurfs);
+    void                            DrawGenericSurfacesWithoutTask(const RenderPassDrawSurf **drawSurfs, uint32_t numDrawSurfs);
+    void                            DrawGenericSurfacesWithTask(const RenderPassDrawSurf **drawSurfs, uint32_t numDrawSurfs);
     void                            DrawGenericSurfacesByTask(RenderBackend::DrawSurfsTaskDesc *taskDesc);
     static void                     DrawGenericSurfacesByTaskFunction(void *data);
 
@@ -101,9 +101,9 @@ private:
     bool                            DispatchConvolutionBloomIFFT(RHI::Buffer *inputBuffer, RHI::Buffer *outputBuffer);
     bool                            DispatchToneMapping(bool useBloom);
 
-    uint32_t                        FindSurfaceInstanceBatchEnd(const PassDrawSurf **drawSurfs, uint32_t numDrawSurfs, uint32_t startIndex) const;
-    RHI::Buffer *                   AllocInstanceToShaderSurfaceTable(RHI::FrameThreadData *frameThreadData, const PassDrawSurf **drawSurfs, uint32_t instanceCount) const;
-    void                            DrawSurfaceInstances(RHI::FrameThreadData *frameThreadData, RHI::CommandList *commandList, const PassDrawSurf **drawSurfs, uint32_t instanceCount, uint32_t &drawCount, uint64_t &drawTriangleCount, uint32_t &instanceTableAllocCount, uint32_t &instanceTableUploadBytes);
+    uint32_t                        FindSurfaceInstanceBatchEnd(const RenderPassDrawSurf **drawSurfs, uint32_t numDrawSurfs, uint32_t startIndex) const;
+    RHI::Buffer *                   AllocInstanceToShaderSurfaceTable(RHI::FrameThreadData *frameThreadData, const RenderPassDrawSurf **drawSurfs, uint32_t instanceCount) const;
+    void                            DrawSurfaceInstances(RHI::FrameThreadData *frameThreadData, RHI::CommandList *commandList, const RenderPassDrawSurf **drawSurfs, uint32_t instanceCount, uint32_t &drawCount, uint64_t &drawTriangleCount, uint32_t &instanceTableAllocCount, uint32_t &instanceTableUploadBytes);
 
     void                            RecordDrawStats(uint32_t drawCount, uint64_t drawTriangleCount, uint32_t instanceTableAllocCount, uint32_t instanceTableUploadBytes);
     bool                            UploadFrameConstants();
@@ -119,16 +119,16 @@ private:
     RHI::CommandList *              mainCommandList = nullptr;
     uint32_t                        frameCount = 0;
 
-    RHI::PipelineState *            currentImagePSO = nullptr;
-    RHI::PipelineState *            currentToneMappingPSO = nullptr;
-    RHI::PipelineState *            currentLuminancePass1PSO = nullptr;
-    RHI::PipelineState *            currentLuminancePass2PSO = nullptr;
-    RHI::PipelineState *            currentBloomPrefilterPSO = nullptr;
-    RHI::PipelineState *            currentBloomDownsamplePSO = nullptr;
-    RHI::PipelineState *            currentBloomUpsamplePSO = nullptr;
-    RHI::PipelineState *            currentConvolutionBloomPrefilterPSO = nullptr;
-    RHI::PipelineState *            currentConvolutionBloomKernelPreparePSO = nullptr;
-    RHI::PipelineState *            currentConvolutionBloomResolvePSO = nullptr;
+    RHI::PipelineState *            frameImagePSO = nullptr;
+    RHI::PipelineState *            frameToneMappingPSO = nullptr;
+    RHI::PipelineState *            frameLuminancePass1PSO = nullptr;
+    RHI::PipelineState *            frameLuminancePass2PSO = nullptr;
+    RHI::PipelineState *            frameBloomPrefilterPSO = nullptr;
+    RHI::PipelineState *            frameBloomDownsamplePSO = nullptr;
+    RHI::PipelineState *            frameBloomUpsamplePSO = nullptr;
+    RHI::PipelineState *            frameConvolutionBloomPrefilterPSO = nullptr;
+    RHI::PipelineState *            frameConvolutionBloomKernelPreparePSO = nullptr;
+    RHI::PipelineState *            frameConvolutionBloomResolvePSO = nullptr;
 
     RHI::ConstantBuffer *           frameConstantBuffer = nullptr;
     RHI::ConstantBuffer *           cameraConstantBuffer = nullptr;

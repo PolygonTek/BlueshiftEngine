@@ -92,7 +92,7 @@ static const Texture *GetDefaultMaterialTexture() {
 
 static const Texture *ResolveMaterialBaseColorTexture(const Material *material) {
     if (material) {
-        const SharedPtr<Texture> *textureProperty = material->GetPropertyTexture(ShaderTemplate::BuiltInProperty::BaseColorTexture);
+        const SharedPtr<Texture> *textureProperty = material->GetPropertyTexture(ShaderTemplate::StandardProperty::BaseColorTexture);
         if (textureProperty && *textureProperty) {
             return textureProperty->get();
         }
@@ -109,6 +109,19 @@ static const RHI::Texture *GetReadyRHITexture(const Texture *texture) {
     return texture->GetRHITexture();
 }
 
+static float GetMaterialAlphaCutoff(const Material *material) {
+    static constexpr float DefaultAlphaCutoff = 0.5f;
+
+    if (material) {
+        const ShaderTemplate::PropertyValue *propertyValue = material->GetPropertyValue(ShaderTemplate::StandardProperty::AlphaCutoff);
+        if (propertyValue && propertyValue->GetType() == BE1::Variant::Type::Float) {
+            return propertyValue->As<float>();
+        }
+    }
+
+    return DefaultAlphaCutoff;
+}
+
 void ShaderMaterialTable::Build(const Material *material, ShaderMaterial &outShaderMaterial) const {
     const Texture *texture = ResolveMaterialBaseColorTexture(material);
     const RHI::Texture *rhiTexture = GetReadyRHITexture(texture);
@@ -122,6 +135,8 @@ void ShaderMaterialTable::Build(const Material *material, ShaderMaterial &outSha
     outShaderMaterial.emissiveTextureIndex = 0;
     outShaderMaterial.streamingMaterialIndex = material ? material->GetStreamingListIndex() : TextureStreamingInvalidIndex;
     outShaderMaterial.baseColorFactor = float4(1.0f, 1.0f, 1.0f, 1.0f);
+    outShaderMaterial.alphaCutoff = GetMaterialAlphaCutoff(material);
+    outShaderMaterial.padding0 = float3(0.0f, 0.0f, 0.0f);
 }
 
 uint32_t ShaderMaterialTable::Register(const Material *material) {

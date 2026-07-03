@@ -15,100 +15,13 @@
 #include "Precompiled.h"
 #include "RenderPassBuilder.h"
 #include "RenderContext.h"
+#include "RenderCvars.h"
 #include "RenderFrameData.h"
 #include "RenderInternal.h"
 #include "Render/Material/Material.h"
 #include "Render/ShaderPipeline/VertexInputLayoutFactory.h"
 
-void PassPipelineResolver::Begin(const GraphicsPipelineDesc &pipelineDesc, uint32_t maxEntries) {
-    basePipelineDesc = pipelineDesc;
-    memset(pipelineDescValid, 0, sizeof(pipelineDescValid));
-
-    maxEntries = BE1::Max(maxEntries, 1u);
-    entriesHash.Clear();
-    entries.Reserve(maxEntries);
-    entries.SetCount(0, false);
-}
-
-const GraphicsPipelineDesc &PassPipelineResolver::GetGraphicsPipelineDesc(VertexInputLayoutId inputLayoutId) {
-    const int inputLayoutIndex = static_cast<int>(inputLayoutId);
-    assert(inputLayoutIndex >= 0 && inputLayoutIndex < NumInputLayouts);
-
-    if (!pipelineDescValid[inputLayoutIndex]) {
-        pipelineDescs[inputLayoutIndex] = basePipelineDesc;
-        pipelineDescs[inputLayoutIndex].inputLayout = &VertexInputLayoutFactory::Get(inputLayoutId);
-        pipelineDescValid[inputLayoutIndex] = true;
-    }
-
-    return pipelineDescs[inputLayoutIndex];
-}
-
-PassPipelineResolver::ResolveResult PassPipelineResolver::Resolve(const RenderPass *renderPass, const VisSurf *visSurf, const ShaderFeatureSet &featureSet) {
-    assert(renderPass);
-    assert(visSurf);
-    assert(visSurf->material);
-    assert(visSurf->subMesh);
-
-    ResolveResult result;
-    result.inputLayoutId = VertexInputLayoutFactory::GetSkinnedId(renderPass->baseInputLayoutId, visSurf->subMesh->MaxVertexWeights());
-
-    // material pointer, featureSet, input layout id 로 hash 키를 만든다.
-    const Material *material = visSurf->material;
-    uint64_t hash = reinterpret_cast<uintptr_t>(material);
-    hash = hash_combine(hash, featureSet.flags);
-    hash = hash_combine(hash, static_cast<int>(result.inputLayoutId));
-
-    const int hashKey = entriesHash.GenerateHash(hash);
-    for (int index = entriesHash.First(hashKey); index != -1; index = entriesHash.Next(index)) {
-        const Entry &entry = entries[index];
-        if (entry.material == material && entry.featureFlags == featureSet.flags && entry.inputLayoutId == result.inputLayoutId) {
-            result.pso = entry.pso;
-            return result;
-        }
-    }
-
-    // hash 에 존재하지 않는다면 material->GetGraphicsPipeline 호출로 새 ShaderPipeline 을 얻는다.
-    result.pso = ShaderPipeline::GetReadyPSO(material->GetGraphicsPipeline(featureSet, GetGraphicsPipelineDesc(result.inputLayoutId)));
-
-    PassPipelineResolver::Entry &entry = entries.Alloc();
-    entry.material = material;
-    entry.featureFlags = featureSet.flags;
-    entry.inputLayoutId = result.inputLayoutId;
-    entry.pso = result.pso;
-    entriesHash.Add(hashKey, entries.Count() - 1);
-
-    return result;
-}
-
-RenderPass *RenderPassBuilder::AllocRenderPass(RenderFrameData *frameData, VisCamera *visCamera, RenderPassType type, ShaderFeatureSet passFeatureSet, VertexInputLayoutId baseInputLayoutId, int maxDrawSurfs) {
-    assert(visCamera->numRenderPasses < VisCamera::MaxRenderPasses);
-
-    RenderPass *renderPass = &visCamera->renderPasses[visCamera->numRenderPasses++];
-    renderPass->type = type;
-    renderPass->graphicsPipelineDesc = {};
-    renderPass->passFeatureSet = passFeatureSet;
-    renderPass->baseInputLayoutId = baseInputLayoutId;
-    renderPass->graphicsPipelineDesc.inputLayout = &VertexInputLayoutFactory::Get(baseInputLayoutId);
-    renderPass->maxDrawSurfs = maxDrawSurfs;
-    renderPass->numDrawSurfs = 0;
-    renderPass->drawSurfs = (const PassDrawSurf **)frameData->MemAlloc(maxDrawSurfs * sizeof(PassDrawSurf *));
-
-    return renderPass;
-}
-
-void RenderPassBuilder::AddPassDrawSurf(RenderFrameData *frameData, RenderPass *renderPass, const VisSurf *visSurf, uint64_t sortKey, VertexInputLayoutId inputLayoutId, RHI::PipelineState *pso) {
-    assert(renderPass->numDrawSurfs < renderPass->maxDrawSurfs);
-
-    PassDrawSurf *passDrawSurf = (PassDrawSurf *)frameData->MemAlloc(sizeof(PassDrawSurf));
-    passDrawSurf->visSurf = visSurf;
-    passDrawSurf->sortKey = sortKey;
-    passDrawSurf->inputLayoutId = inputLayoutId;
-    passDrawSurf->pso = pso;
-
-    renderPass->drawSurfs[renderPass->numDrawSurfs++] = passDrawSurf;
-}
-
-static uint64_t BuildMainOpaqueSortKey(const VisSurf *visSurf, RHI::PipelineState *pso) {
+static uint64_t BuildOpaqueSortKey(const VisSurf *visSurf, RHI::PipelineState *pso) {
     //-----------------------------------------------------------
     // 0xFFFFFFFF00000000 (0~4294967295) : PSO sort index
     // 0x00000000FFFF0000 (0~65535)      : subMesh index
@@ -121,14 +34,71 @@ static uint64_t BuildMainOpaqueSortKey(const VisSurf *visSurf, RHI::PipelineStat
     return (psoIndex << 32) | (subMeshIndex << 16) | shaderMaterialIndex;
 }
 
-static uint64_t BuildMainTransparentSortKey(const VisSurf *visSurf, const VisCamera *visCamera) {
+static uint32_t BuildFloatSortKey(float value) {
+    uint32_t bits;
+    memcpy(&bits, &value, sizeof(bits));
+    return (bits & 0x80000000u) ? ~bits : (bits ^ 0x80000000u);
+}
+
+static float GetViewCenterZ(const VisSurf *visSurf, const VisCamera *visCamera) {
     const BE1::Vec3 localCenter = visSurf->subMesh->GetAABB().Center();
     const BE1::Vec3 worldCenter = visSurf->space->worldMatrix.TransformPos(localCenter);
     const BE1::Vec3 viewCenter = visCamera->viewMatrix.TransformPos(worldCenter);
+    return viewCenter.z;
+}
 
-    uint32_t bits;
-    memcpy(&bits, &viewCenter.z, sizeof(bits));
-    return (bits & 0x80000000u) ? ~bits : (bits ^ 0x80000000u);
+static uint64_t BuildDepthSortKey(const VisSurf *visSurf, const VisCamera *visCamera) {
+    //-----------------------------------------------------------
+    // 0x8000000000000000 (0~1)          : alpha-test bucket
+    // 0x7FFFFFFF00000000 (0~2147483647) : shader material index (alpha-test only)
+    // 0x00000000FFFFFFFF (0~4294967295) : near-to-far view depth
+    //-----------------------------------------------------------
+    const bool alphaTest = visSurf->baseFeatureSet.HasFeature(ShaderFeature::Perforated);
+    const uint64_t alphaTestBucket = alphaTest ? 1ull : 0ull;
+    const uint64_t shaderMaterialIndex = alphaTest ? (visSurf->shaderMaterialIndex & 0x7FFFFFFFull) : 0;
+    const uint64_t depthKey = static_cast<uint64_t>(BuildFloatSortKey(GetViewCenterZ(visSurf, visCamera))) ^ 0xFFFFFFFFull;
+
+    return (alphaTestBucket << 63) | (shaderMaterialIndex << 32) | depthKey;
+}
+
+static uint64_t BuildTransparentSortKey(const VisSurf *visSurf, const VisCamera *visCamera) {
+    return BuildFloatSortKey(GetViewCenterZ(visSurf, visCamera));
+}
+
+void RenderPassBuilder::AllocRenderPassDrawSurfs(RenderFrameData *frameData, VisCamera *visCamera, uint32_t maxDrawSurfs) {
+    assert(!visCamera->renderPassDrawSurfs);
+    assert(!visCamera->renderPassDrawSurfStorage);
+
+    visCamera->maxRenderPassDrawSurfs = maxDrawSurfs;
+    visCamera->numRenderPassDrawSurfs = 0;
+    visCamera->renderPassDrawSurfs = (const RenderPassDrawSurf **)frameData->MemAlloc(maxDrawSurfs * sizeof(RenderPassDrawSurf *));
+    visCamera->renderPassDrawSurfStorage = (RenderPassDrawSurf *)frameData->MemAlloc(maxDrawSurfs * sizeof(RenderPassDrawSurf));
+}
+
+RenderPass *RenderPassBuilder::AllocRenderPass(VisCamera *visCamera, RenderPassType type, ShaderFeatureSet passFeatureSet, VertexInputLayoutId passBaseInputLayoutId, uint32_t maxDrawSurfs) {
+    assert(visCamera->numRenderPasses < VisCamera::MaxRenderPasses);
+    assert(visCamera->numRenderPassDrawSurfs + maxDrawSurfs <= visCamera->maxRenderPassDrawSurfs);
+
+    if (maxDrawSurfs <= 0) {
+        return nullptr;
+    }
+
+    RenderPass *renderPass = &visCamera->renderPasses[visCamera->numRenderPasses++];
+    renderPass->type = type;
+    renderPass->featureSet = passFeatureSet;
+    renderPass->baseInputLayoutId = passBaseInputLayoutId;
+
+    renderPass->graphicsPipelineDesc = {};
+    renderPass->graphicsPipelineDesc.inputLayout = &VertexInputLayoutFactory::Get(passBaseInputLayoutId);
+    RenderContext::activeContext->GetMainRenderDest(renderPass->graphicsPipelineDesc.renderDest);
+
+    renderPass->maxDrawSurfs = maxDrawSurfs;
+    renderPass->numDrawSurfs = 0;
+    renderPass->drawSurfs = visCamera->renderPassDrawSurfs + visCamera->numRenderPassDrawSurfs;
+    renderPass->drawSurfStorage = visCamera->renderPassDrawSurfStorage + visCamera->numRenderPassDrawSurfs;
+    visCamera->numRenderPassDrawSurfs += maxDrawSurfs;
+
+    return renderPass;
 }
 
 void RenderPassBuilder::BuildMain(RenderFrameData *frameData, VisCamera *visCamera) {
@@ -138,43 +108,91 @@ void RenderPassBuilder::BuildMain(RenderFrameData *frameData, VisCamera *visCame
         return;
     }
 
-    // AllocRenderPass 한 순서대로 백엔드에서 렌더링된다.
-    RenderPass *opaquePass = AllocRenderPass(frameData, visCamera, RenderPassType::MainOpaque, {}, VertexInputLayoutId::XyzStColorNormalTangent, visCamera->numVisSurfs);
-    RenderContext::activeContext->GetMainRenderDest(opaquePass->graphicsPipelineDesc.renderDest);
+    const bool useDepthPrepass = r_depthPrepass.GetBool();
+    int numDepthDrawSurfs = 0;
+    int numOpaqueDrawSurfs = 0;
+    int numSkyboxDrawSurfs = 0;
+    int numBlendDrawSurfs = 0;
 
-    RenderPass *skyboxPass = AllocRenderPass(frameData, visCamera, RenderPassType::Skybox, {}, VertexInputLayoutId::XyzStColor, 2);
-    RenderContext::activeContext->GetMainRenderDest(skyboxPass->graphicsPipelineDesc.renderDest);
-    skyboxPass->graphicsPipelineDesc.depthStencilStateType = RHI::DepthStencilStateType::LEqualNoWrite;
-
-    RenderPass *blendPass = AllocRenderPass(frameData, visCamera, RenderPassType::MainTransparent, {}, VertexInputLayoutId::XyzStColorNormalTangent, visCamera->numVisSurfs);
-    RenderContext::activeContext->GetMainRenderDest(blendPass->graphicsPipelineDesc.renderDest);
-
-    opaquePipelineResolver.Begin(opaquePass->graphicsPipelineDesc, opaquePass->maxDrawSurfs);
-    skyboxPipelineResolver.Begin(skyboxPass->graphicsPipelineDesc, skyboxPass->maxDrawSurfs);
-    blendPipelineResolver.Begin(blendPass->graphicsPipelineDesc, blendPass->maxDrawSurfs);
-
-    for (uint32_t i = 0; i < visCamera->numVisSurfs; ++i) {
+    for (int i = 0; i < visCamera->numVisSurfs; ++i) {
         const VisSurf *visSurf = visCamera->visSurfs[i];
+
         if (BE1::HasFlag(visSurf->flags, VisSurfFlag::Skybox)) {
-            ShaderFeatureSet featureSet = visSurf->baseFeatureSet | skyboxPass->passFeatureSet;
-            const PassPipelineResolver::ResolveResult resolveResult = skyboxPipelineResolver.Resolve(skyboxPass, visSurf, featureSet);
-
-            AddPassDrawSurf(frameData, skyboxPass, visSurf, BuildMainOpaqueSortKey(visSurf, resolveResult.pso), resolveResult.inputLayoutId, resolveResult.pso);
-            continue;
+            numSkyboxDrawSurfs++;
+        } else if (visSurf->material->GetRenderingMode() == Material::RenderingMode::Blend) {
+            numBlendDrawSurfs++;
+        } else {
+            if (useDepthPrepass) {
+                numDepthDrawSurfs++;
+            }
+            numOpaqueDrawSurfs++;
         }
-
-        const bool isBlend = visSurf->material->GetRenderingMode() == Material::RenderingMode::Blend;
-        RenderPass *pass = isBlend ? blendPass : opaquePass;
-        PassPipelineResolver &pipelineResolver = isBlend ? blendPipelineResolver : opaquePipelineResolver;
-
-        ShaderFeatureSet featureSet = visSurf->baseFeatureSet | pass->passFeatureSet;
-        const PassPipelineResolver::ResolveResult resolveResult = pipelineResolver.Resolve(pass, visSurf, featureSet);
-
-        AddPassDrawSurf(frameData, pass, visSurf, isBlend ? BuildMainTransparentSortKey(visSurf, visCamera) : BuildMainOpaqueSortKey(visSurf, resolveResult.pso), resolveResult.inputLayoutId, resolveResult.pso);
     }
 
-    SortPassDrawSurfs(frameData, opaquePass);
-    SortPassDrawSurfs(frameData, blendPass);
+    // RenderPass 에서 필요한 모든 RenderPassDrawSurf 를 미리 할당한다.
+    AllocRenderPassDrawSurfs(frameData, visCamera, numDepthDrawSurfs + numOpaqueDrawSurfs + numSkyboxDrawSurfs + numBlendDrawSurfs);
+
+    // AllocRenderPass 호출 순서대로 백엔드에서 RenderPass 가 렌더링된다.
+    RenderPass *depthPass = AllocRenderPass(visCamera, RenderPassType::DepthPrepass, {}, VertexInputLayoutId::XyzStColor, numDepthDrawSurfs);
+    if (depthPass) {
+        depthPass->graphicsPipelineDesc.depthStencilStateType = RHI::DepthStencilStateType::LEqualWrite;
+        depthPSOResolver.Begin(depthPass, BE1::Min(numDepthDrawSurfs, 16));
+    }
+
+    RenderPass *opaquePass = AllocRenderPass(visCamera, RenderPassType::Opaque, {}, VertexInputLayoutId::XyzStColorNormalTangent, numOpaqueDrawSurfs);
+    if (opaquePass) {
+        opaquePass->graphicsPipelineDesc.depthStencilStateType = useDepthPrepass ? RHI::DepthStencilStateType::LEqualNoWrite : RHI::DepthStencilStateType::LEqualWrite;
+        opaquePSOResolver.Begin(opaquePass, BE1::Min(numOpaqueDrawSurfs, 1024));
+    }
+
+    RenderPass *skyboxPass = AllocRenderPass(visCamera, RenderPassType::Skybox, {}, VertexInputLayoutId::XyzStColor, numSkyboxDrawSurfs);
+    if (skyboxPass) {
+        skyboxPass->graphicsPipelineDesc.depthStencilStateType = RHI::DepthStencilStateType::LEqualNoWrite;
+        skyboxPSOResolver.Begin(skyboxPass, BE1::Min(numSkyboxDrawSurfs, 1));
+    }
+
+    RenderPass *blendPass = AllocRenderPass(visCamera, RenderPassType::Transparent, {}, VertexInputLayoutId::XyzStColorNormalTangent, numBlendDrawSurfs);
+    if (blendPass) {
+        blendPass->graphicsPipelineDesc.depthStencilStateType = RHI::DepthStencilStateType::LEqualNoWrite;
+        blendPSOResolver.Begin(blendPass, BE1::Min(numBlendDrawSurfs, 256));
+    }
+
+    // 카메라에 보이는 모든 surfaces 를 순회한다.
+    for (int i = 0; i < visCamera->numVisSurfs; ++i) {
+        const VisSurf *visSurf = visCamera->visSurfs[i];
+
+        // 각 surface 의 특성 (material, featureSet, maxVertexWeights) 에 따라 PSO, inputLayoutId 를 얻고, RenderPassDrawSurf 를 추가한다.
+        if (BE1::HasFlag(visSurf->flags, VisSurfFlag::Skybox)) {
+            if (skyboxPass) {
+                const RenderPassPSOResolver::ResolveResult rr = skyboxPSOResolver.Resolve(visSurf, visSurf->baseFeatureSet | skyboxPass->featureSet);
+                AddRenderPassDrawSurf(skyboxPass, visSurf, 0, rr.inputLayoutId, rr.pso);
+            }
+        } else if (visSurf->material->GetRenderingMode() == Material::RenderingMode::Blend) {
+            if (blendPass) {
+                const RenderPassPSOResolver::ResolveResult rr = blendPSOResolver.Resolve(visSurf, visSurf->baseFeatureSet | blendPass->featureSet);
+                AddRenderPassDrawSurf(blendPass, visSurf, BuildTransparentSortKey(visSurf, visCamera), rr.inputLayoutId, rr.pso);
+            }
+        } else {
+            if (depthPass) {
+                const RenderPassDepthPSOResolver::ResolveResult rr = depthPSOResolver.Resolve(visSurf);
+                AddRenderPassDrawSurf(depthPass, visSurf, BuildDepthSortKey(visSurf, visCamera), rr.inputLayoutId, rr.pso);
+            }
+            if (opaquePass) {
+                const RenderPassPSOResolver::ResolveResult rr = opaquePSOResolver.Resolve(visSurf, visSurf->baseFeatureSet | opaquePass->featureSet);
+                AddRenderPassDrawSurf(opaquePass, visSurf, BuildOpaqueSortKey(visSurf, rr.pso), rr.inputLayoutId, rr.pso);
+            }
+        }
+    }
+
+    if (depthPass) {
+        SortRenderPassDrawSurfs(frameData, depthPass);
+    }
+    if (opaquePass) {
+        SortRenderPassDrawSurfs(frameData, opaquePass);
+    }
+    if (blendPass) {
+        SortRenderPassDrawSurfs(frameData, blendPass);
+    }
 }
 
 void RenderPassBuilder::BuildGUI(RenderFrameData *frameData, VisCamera *visCamera) {
@@ -184,27 +202,60 @@ void RenderPassBuilder::BuildGUI(RenderFrameData *frameData, VisCamera *visCamer
         return;
     }
 
-    RenderPass *guiPass = AllocRenderPass(frameData, visCamera, RenderPassType::Gui, {}, VertexInputLayoutId::XyzStColor, visCamera->numVisSurfs);
+    AllocRenderPassDrawSurfs(frameData, visCamera, visCamera->numVisSurfs);
+
+    RenderPass *guiPass = AllocRenderPass(visCamera, RenderPassType::Gui, {}, VertexInputLayoutId::XyzStColor, visCamera->numVisSurfs);
     RenderContext::activeContext->GetSwapChainRenderDest(guiPass->graphicsPipelineDesc.renderDest);
     guiPass->graphicsPipelineDesc.depthStencilStateType = RHI::DepthStencilStateType::Disabled;
 
-    guiPipelineResolver.Begin(guiPass->graphicsPipelineDesc, visCamera->numVisSurfs);
+    guiPSOResolver.Begin(guiPass, BE1::Min(visCamera->numVisSurfs, 16u));
 
     for (uint32_t i = 0; i < visCamera->numVisSurfs; ++i) {
         const VisSurf *visSurf = visCamera->visSurfs[i];
-        ShaderFeatureSet featureSet = visSurf->baseFeatureSet | guiPass->passFeatureSet;
-        const PassPipelineResolver::ResolveResult resolveResult = guiPipelineResolver.Resolve(guiPass, visSurf, featureSet);
+        ShaderFeatureSet featureSet = visSurf->baseFeatureSet | guiPass->featureSet;
+        const RenderPassPSOResolver::ResolveResult rr = guiPSOResolver.Resolve(visSurf, featureSet);
 
-        AddPassDrawSurf(frameData, guiPass, visSurf, i, resolveResult.inputLayoutId, resolveResult.pso);
+        AddRenderPassDrawSurf(guiPass, visSurf, i, rr.inputLayoutId, rr.pso);
     }
 }
 
-static void RadixSortDrawSurfs(const PassDrawSurf **drawSurfs, uint32_t numDrawSurfs, const PassDrawSurf **tempDrawSurfs) {
+void RenderPassBuilder::AddRenderPassDrawSurf(RenderPass *renderPass, const VisSurf *visSurf, uint64_t sortKey, VertexInputLayoutId inputLayoutId, RHI::PipelineState *pso) {
+    assert(renderPass->numDrawSurfs < renderPass->maxDrawSurfs);
+
+    const uint32_t drawSurfIndex = renderPass->numDrawSurfs++;
+    RenderPassDrawSurf *passDrawSurf = &renderPass->drawSurfStorage[drawSurfIndex];
+    passDrawSurf->visSurf = visSurf;
+    passDrawSurf->sortKey = sortKey;
+    passDrawSurf->inputLayoutId = inputLayoutId;
+    passDrawSurf->pso = pso;
+
+    renderPass->drawSurfs[drawSurfIndex] = passDrawSurf;
+}
+
+void RenderPassBuilder::SortRenderPassDrawSurfs(RenderFrameData *frameData, RenderPass *renderPass) {
+    PROFILER_CPU_SCOPED_EVENT("RenderPassBuilder::SortRenderPassDrawSurfs");
+
+    if (renderPass->numDrawSurfs == 0) {
+        return;
+    }
+
+    if (renderPass->numDrawSurfs < 128) {
+        std::sort(renderPass->drawSurfs, renderPass->drawSurfs + renderPass->numDrawSurfs, [](const RenderPassDrawSurf *lhs, const RenderPassDrawSurf *rhs) {
+            return lhs->sortKey < rhs->sortKey;
+        });
+        return;
+    }
+
+    const RenderPassDrawSurf **tempDrawSurfs = (const RenderPassDrawSurf **)frameData->MemAlloc(renderPass->numDrawSurfs * sizeof(tempDrawSurfs[0]));
+    RadixSortDrawSurfs(renderPass->drawSurfs, renderPass->numDrawSurfs, tempDrawSurfs);
+}
+
+void RenderPassBuilder::RadixSortDrawSurfs(const RenderPassDrawSurf **drawSurfs, uint32_t numDrawSurfs, const RenderPassDrawSurf **tempDrawSurfs) {
     constexpr uint32_t NumBuckets = 256;
     constexpr uint32_t NumPasses = 8;
 
-    const PassDrawSurf **src = drawSurfs;
-    const PassDrawSurf **dst = tempDrawSurfs;
+    const RenderPassDrawSurf **src = drawSurfs;
+    const RenderPassDrawSurf **dst = tempDrawSurfs;
 
     for (uint32_t pass = 0; pass < NumPasses; pass++) {
         const uint32_t shift = pass * 8;
@@ -225,12 +276,12 @@ static void RadixSortDrawSurfs(const PassDrawSurf **drawSurfs, uint32_t numDrawS
         }
 
         for (uint32_t i = 0; i < numDrawSurfs; i++) {
-            const PassDrawSurf *drawSurf = src[i];
+            const RenderPassDrawSurf *drawSurf = src[i];
             const uint32_t bucket = (drawSurf->sortKey >> shift) & 0xFF;
             dst[offsets[bucket]++] = drawSurf;
         }
 
-        const PassDrawSurf **swap = src;
+        const RenderPassDrawSurf **swap = src;
         src = dst;
         dst = swap;
     }
@@ -240,18 +291,4 @@ static void RadixSortDrawSurfs(const PassDrawSurf **drawSurfs, uint32_t numDrawS
     if (src != drawSurfs) {
         memcpy(drawSurfs, src, numDrawSurfs * sizeof(drawSurfs[0]));
     }
-}
-
-void RenderPassBuilder::SortPassDrawSurfs(RenderFrameData *frameData, RenderPass *renderPass) {
-    PROFILER_CPU_SCOPED_EVENT("RenderPassBuilder::SortPassDrawSurfs");
-
-    if (renderPass->numDrawSurfs < 128) {
-        std::sort(renderPass->drawSurfs, renderPass->drawSurfs + renderPass->numDrawSurfs, [](const PassDrawSurf *lhs, const PassDrawSurf *rhs) {
-            return lhs->sortKey < rhs->sortKey;
-        });
-        return;
-    }
-
-    const PassDrawSurf **tempDrawSurfs = (const PassDrawSurf **)frameData->MemAlloc(renderPass->numDrawSurfs * sizeof(tempDrawSurfs[0]));
-    RadixSortDrawSurfs(renderPass->drawSurfs, renderPass->numDrawSurfs, tempDrawSurfs);
 }

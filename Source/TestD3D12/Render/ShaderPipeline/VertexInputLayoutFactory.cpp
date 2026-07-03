@@ -183,7 +183,7 @@ const RHI::InputLayout &VertexInputLayoutFactory::Get(VertexInputLayoutId id) {
     return inputLayouts[index];
 }
 
-VertexInputLayoutId VertexInputLayoutFactory::GetSkinnedId(VertexInputLayoutId baseId, int maxVertexWeights) {
+VertexInputLayoutId VertexInputLayoutFactory::GetIdForVertexWeights(VertexInputLayoutId baseId, int maxVertexWeights) {
     assert(baseId == VertexInputLayoutId::Xyz ||
         baseId == VertexInputLayoutId::XyzSt ||
         baseId == VertexInputLayoutId::XyzStColor ||

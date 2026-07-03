@@ -265,13 +265,14 @@ void App::BuildImGuiTextureViewer() {
     static int selectedTextureIndex = 0;
     static int selectedViewIndex = 0;
 
-    constexpr int MaxTextureViewerEntries = 8;
+    constexpr int MaxTextureViewerEntries = 9;
     ImGuiTextureViewerEntry entries[MaxTextureViewerEntries];
     int entryCount = 0;
 
     if (renderCamera) {
         AddImGuiTextureViewerEntry(entries, MaxTextureViewerEntries, entryCount, "Color", renderCamera->GetColorTexture());
         AddImGuiTextureViewerEntry(entries, MaxTextureViewerEntries, entryCount, "Depth", renderCamera->GetDepthTexture());
+        AddImGuiTextureViewerEntry(entries, MaxTextureViewerEntries, entryCount, "Normal", renderCamera->GetNormalTexture());
         AddImGuiTextureViewerEntry(entries, MaxTextureViewerEntries, entryCount, "Post Process Color", renderCamera->GetPostProcessColorTexture());
         AddImGuiTextureViewerEntry(entries, MaxTextureViewerEntries, entryCount, "Bloom Down", renderCamera->GetBloomDownTexture());
         AddImGuiTextureViewerEntry(entries, MaxTextureViewerEntries, entryCount, "Bloom Up", renderCamera->GetBloomUpTexture());
@@ -418,6 +419,11 @@ void App::BuildImGuiOverlay() {
 
             if (ImGui::Button(imguiShowStatsPlotWindow ? "Hide Stats Plot" : "Show Stats Plot")) {
                 imguiShowStatsPlotWindow = !imguiShowStatsPlotWindow;
+            }
+
+            bool depthPrepass = r_depthPrepass.GetBool();
+            if (ImGui::Checkbox("Depth prepass", &depthPrepass)) {
+                r_depthPrepass.SetBool(depthPrepass);
             }
 
             if (roundedCollapsingHeader("Skip options##RenderSkipOptionsHeader")) {

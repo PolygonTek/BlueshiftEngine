@@ -69,9 +69,9 @@ struct ShaderPropertyInfo : public BE1::PropertyInfo {
 
     Shader Template
 
-    .shader 파일에서 읽은 stage source, base define, feature define, property 정보를 보관하는 템플릿이다.
-    shader define property 값과 featureSet 조합은 RegisterPermutation 함수로 등록되어 ShaderPermutationKey 로 관리된다.
-    ShaderPipeline 빌드 시 PrepareShaderCompileData 는 key 로 등록된 permutation 을 찾아 compile define 과 stage source 를 ShaderCompileData 로 만든다.
+    - stages, baseDefines, features, properties 정보를 보관하는 셰이더 템플릿이다.
+    - shader define property 값들과 featureSet 조합으로 필요한 shader permutation 을 미리 등록해야 한다.
+    - 셰이더 컴파일에 필요한 정보는 shaderTemplate 과 등록된 shaderPermutationKey 로 얻을 수 있다.
 
 ---------------------------------------------------------------------------------------------------
 */
@@ -87,8 +87,11 @@ public:
         LoadedFromFile              = BIT(3)
     };
 
-    enum class BuiltInProperty : uint8_t {
+    enum class StandardProperty : uint8_t {
+        AlphaCutoff,
         BaseColorTexture,
+        NormalTexture,
+        ShadowTexture,
         SkyCubeMap,
         SkyBackMap,
         SkyFrontMap,
@@ -99,7 +102,6 @@ public:
         Count
     };
 
-    using Feature = ShaderFeature;
     using PropertyValue = BE1::Variant;
 
     ShaderTemplate() = default;
@@ -115,7 +117,7 @@ public:
 
     const ShaderPropertyInfo *      FindProperty(const char *name) const { return internalData.FindProperty(name); }
     int                             FindPropertyIndex(const char *name) const { return internalData.FindPropertyIndex(name); }
-    int                             GetBuiltInPropertyIndex(BuiltInProperty builtInProperty) const { return internalData.GetBuiltInPropertyIndex(builtInProperty); }
+    int                             GetStandardPropertyIndex(StandardProperty standardProperty) const { return internalData.GetStandardPropertyIndex(standardProperty); }
     bool                            AddProperty(const ShaderPropertyInfo &propertyInfo);
     bool                            AddProperty(const char *name, const char *label, BE1::Variant::Type::Enum type, const BE1::Variant &defaultValue, const char *desc = "", int flags = BE1::PropertyInfo::Flag::Editor, ShaderPropertyInfo::ShaderFlag shaderFlags = ShaderPropertyInfo::ShaderFlag::None);
     bool                            CopyPropertiesFrom(const ShaderTemplate &shaderTemplate);
@@ -124,7 +126,7 @@ public:
     void                            InitDefaultPropertyValues(BE1::Array<PropertyValue> &outPropertyValues) const;
 
                                     // 지원하는 feature 인지 검사
-    bool                            SupportsFeature(Feature feature) const;
+    bool                            SupportsFeature(ShaderFeature feature) const;
 
                                     // 지원하지 않는 features 는 거른다.
     ShaderFeatureSet                MaskSupportedFeatures(const ShaderFeatureSet &featureSet) const;
@@ -134,18 +136,17 @@ public:
     bool                            Load(const char *filename);
     bool                            Reload();
 
-                                    // shader define property 값과 featureSet 조합을 permutation 으로 등록하고 key 를 리턴한다.
-                                    // 반환된 key 는 ShaderPipelineCache 의 캐시 키이자, PrepareShaderCompileData 에서 등록된 compile define/feature define 조합을 찾기 위한 핸들이다.
+                                    // defines (shader define properties) + featureSet flags 으로 permutation 을 등록하고 그 key 를 리턴한다.
     ShaderPermutationKey            RegisterPermutation();
     ShaderPermutationKey            RegisterPermutation(const BE1::Array<PropertyValue> &propertyValues);
     ShaderPermutationKey            RegisterPermutation(const BE1::Array<PropertyValue> &propertyValues, const ShaderFeatureSet &featureSet);
 
-                                    // permutation key 로 ShaderPipeline 빌드에 필요한 shader compile data 를 준비한다.
+                                    // 셰이더 컴파일에 필요한 정보들을 준비한다.
     bool                            PrepareShaderCompileData(ShaderPermutationKey permutationKey, ShaderCompileData &outCompileData) const;
 
 private:
     struct InternalData {
-        static constexpr int        NumBuiltInProperties = static_cast<int>(BuiltInProperty::Count);
+        static constexpr int        NumStandardProperties = static_cast<int>(StandardProperty::Count);
 
         InternalData();
 
@@ -154,25 +155,25 @@ private:
 
         const ShaderPropertyInfo *  FindProperty(const char *name) const;
         int                         FindPropertyIndex(const char *name) const;
-        int                         GetBuiltInPropertyIndex(BuiltInProperty builtInProperty) const;
+        int                         GetStandardPropertyIndex(StandardProperty standardProperty) const;
         bool                        AddProperty(const ShaderPropertyInfo &propertyInfo);
         bool                        CopyPropertiesFrom(const InternalData &rhs, const char **duplicatedPropertyName = nullptr);
         void                        AddStage(RHI::ShaderStage shaderStage, RHI::ShaderModel shaderModel, const char *filename, const char *entryPoint);
-        void                        ResetBuiltInPropertyIndices();
-        void                        RefreshBuiltInPropertyIndices();
+        void                        ResetStandardPropertyIndices();
+        void                        RefreshStandardPropertyIndices();
 
         ShaderStageSource           stageSources[to_int(RHI::ShaderStage::Count)] = {};
         BE1::StrArray               baseDefines;
-        BE1::StrArray               featureDefines[to_int(Feature::Count)] = {};
+        BE1::StrArray               featureDefines[to_int(ShaderFeature::Count)] = {};
         BE1::Array<ShaderPropertyInfo> properties;
         BE1::HashIndex              propertyHash { 64, 64 };
-        int                         builtInPropertyIndices[NumBuiltInProperties];
+        int                         standardPropertyIndices[NumStandardProperties];
         Flag                        flags = Flag::None;
     };
 
     struct ShaderPermutation {
         ShaderPermutationKey        key;
-        BE1::StrArray               defines;        // permutation defines (shader define properties)
+        BE1::StrArray               propertyDefines;
         ShaderFeatureSet            featureSet;
     };
 
@@ -188,8 +189,8 @@ private:
     ShaderPermutation *             FindPermutation(ShaderPermutationKey permutationKey) const;
     void                            ClearPermutations();
 
-    bool                            HasTemplateDefine(const char *define, const ShaderFeatureSet &featureSet) const;
-    bool                            AppendFeatureSetDefines(BE1::StrArray &defines, const ShaderFeatureSet &featureSet) const;
+    bool                            HasFeatureSetDefine(const ShaderFeatureSet &featureSet, const char *define) const;
+    bool                            AppendFeatureSetDefines(BE1::StrArray &outDefines, const ShaderFeatureSet &featureSet) const;
 
     BE1::Str                        hashName;
     BE1::Str                        name;

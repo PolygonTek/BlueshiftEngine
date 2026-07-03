@@ -40,41 +40,42 @@ struct enable_bitmask_operators<VisSurfFlag> {
 };
 
 struct VisSurf {
-    uint32_t                    index = ~0u;
-    const VisObject *           space = nullptr;
-    const SubMesh *             subMesh = nullptr;
-    const Material *            material = nullptr;
+    uint32_t                    index;
+    const VisObject *           space;
+    const SubMesh *             subMesh;
+    const Material *            material;
     ShaderFeatureSet            baseFeatureSet;
-    uint32_t                    shaderMaterialIndex = ~0u;
-    VisSurfFlag                 flags = VisSurfFlag::None;
+    uint32_t                    shaderMaterialIndex;
+    VisSurfFlag                 flags;
 };
 
-struct PassDrawSurf {
-    const VisSurf *             visSurf = nullptr;
-    uint64_t                    sortKey = 0;
+struct RenderPassDrawSurf {
+    const VisSurf *             visSurf;
+    uint64_t                    sortKey;
 
-    VertexInputLayoutId         inputLayoutId = VertexInputLayoutId::XyzStColorNormalTangent;
-    RHI::PipelineState *        pso = nullptr;
+    VertexInputLayoutId         inputLayoutId;
+    RHI::PipelineState *        pso;
 };
 
 enum class RenderPassType : uint8_t {
-    Skybox,
-    MainOpaque,
-    MainTransparent,
     DepthPrepass,
     Shadow,
+    Opaque,
+    Skybox,
+    Transparent,
     Gui
 };
 
 struct RenderPass {
-    RenderPassType              type = RenderPassType::MainOpaque;
+    RenderPassType              type;
     GraphicsPipelineDesc        graphicsPipelineDesc;
-    ShaderFeatureSet            passFeatureSet;
-    VertexInputLayoutId         baseInputLayoutId = VertexInputLayoutId::XyzStColorNormalTangent;
+    ShaderFeatureSet            featureSet;
+    VertexInputLayoutId         baseInputLayoutId;
 
-    uint32_t                    maxDrawSurfs = 0;
-    uint32_t                    numDrawSurfs = 0;
-    const PassDrawSurf **       drawSurfs = nullptr;
+    uint32_t                    maxDrawSurfs;
+    uint32_t                    numDrawSurfs;
+    const RenderPassDrawSurf ** drawSurfs;
+    RenderPassDrawSurf *        drawSurfStorage;
 };
 
 // 한 프레임 렌더링에서만 유효한 렌더링 카메라
@@ -95,6 +96,10 @@ struct VisCamera {
 
     uint32_t                    numRenderPasses = 0;
     RenderPass *                renderPasses = nullptr;
+    uint32_t                    maxRenderPassDrawSurfs = 0;
+    uint32_t                    numRenderPassDrawSurfs = 0;
+    const RenderPassDrawSurf ** renderPassDrawSurfs = nullptr; // RenderPass 들이 나눠 쓰는 draw surf pointer pool
+    RenderPassDrawSurf *        renderPassDrawSurfStorage = nullptr; // RenderPass 들이 나눠 쓰는 draw surf pool
 
     BE1::Rect                   outputRect;
     uint32_t                    renderWidth = 0;
@@ -107,6 +112,7 @@ struct VisCamera {
     RHI::Texture *              colorTexture = nullptr;
     RHI::Texture *              colorMSAATexture = nullptr;
     RHI::Texture *              depthTexture = nullptr;
+    RHI::Texture *              normalTexture = nullptr;
     RHI::Texture *              postProcessColorTexture = nullptr;
     RHI::Buffer *               luminanceBuffer = nullptr;
 

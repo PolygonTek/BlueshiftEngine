@@ -23,7 +23,7 @@
 
     Shader Permutation Key
 
-    64 비트 해시키는 permutation defines (shader define properties) + featureSet flags 로 만들어진다.
+    64 비트 해시 키는 defines (shader define properties) + featureSet flags 로 만들어진다.
 
 ---------------------------------------------------------------------------------------------------
 */
@@ -36,9 +36,9 @@ struct ShaderPermutationKey {
     bool                            operator!=(const ShaderPermutationKey &rhs) const { return hash != rhs.hash; }
 
                                     // 중복 define 제거 + deterministic 하게 순서 정렬
-    static void                     NormalizePermutationDefines(BE1::StrArray &permutationDefines);
+    static void                     NormalizeDefines(BE1::StrArray &defines);
 
-    static ShaderPermutationKey     GeneratePermutationKey(const BE1::StrArray &permutationDefines, const ShaderFeatureSet &featureSet = {});
+    static ShaderPermutationKey     GeneratePermutationKey(const BE1::StrArray &defines, const ShaderFeatureSet &featureSet = {});
 
     uint64_t                        hash = 0;
 };

@@ -25,38 +25,38 @@ class ShaderTemplate;
 
     ShaderPipelineCache
 
-    * Graphics shader pipeline 은 ShaderTemplate/ShaderPermutationKey/GraphicsPipelineDesc 조합으로 ShaderPipeline 을 캐싱하고 재사용한다.
-    * Compute shader pipeline 은 ShaderTemplate/ShaderPermutationKey 조합으로 ShaderPipeline 을 캐싱하고 재사용한다.
-    * ShaderPipeline 은 ClearShaderTemplate/ClearAll/ShaderTemplate::Purge 등을 통해 Clear 될 수 있다. (Empty 상태로 바뀜)
+    - Graphics shader pipeline 은 ShaderTemplate/ShaderPermutationKey/GraphicsPipelineDesc 조합으로 ShaderPipeline 을 캐싱하고 재사용한다.
+    - Compute shader pipeline 은 ShaderTemplate/ShaderPermutationKey 조합으로 ShaderPipeline 을 캐싱하고 재사용한다.
+    - ShaderPipeline 은 ClearShaderTemplatePipelines/ClearAllPipelines 를 통해 Clear 될 수 있다. (Empty 상태로 바뀜)
 
 ---------------------------------------------------------------------------------------------------
 */
 
 class ShaderPipelineCache {
 public:
-                                    // shaderTemplate, permutationKey, graphicsPipelineDesc 로 캐시된 그래픽스 파이프라인을 리턴한다. 캐시된게 없다면 빌드를 요청한다.
+                                    // shaderTemplate, permutationKey, graphicsPipelineDesc 로 캐시된 그래픽스 ShaderPipeline 을 리턴한다. 캐시된게 없다면 빌드를 요청한다.
     SharedPtr<ShaderPipeline>       GetGraphicsPipeline(const SharedPtr<ShaderTemplate> &shaderTemplate, ShaderPermutationKey permutationKey, const GraphicsPipelineDesc &graphicsPipelineDesc, bool async = true);
 
-                                    // shaderTemplate, permutationKey 로 캐시된 컴퓨트 파이프라인을 리턴한다. 캐시된게 없다면 빌드를 요청한다.
+                                    // shaderTemplate, permutationKey 로 캐시된 컴퓨트 ShaderPipeline 을 리턴한다. 캐시된게 없다면 빌드를 요청한다.
     SharedPtr<ShaderPipeline>       GetComputePipeline(const SharedPtr<ShaderTemplate> &shaderTemplate, ShaderPermutationKey permutationKey, bool async = true);
 
-                                    // shaderTemplate 으로 캐싱된 파이프라인을 제거한다. (빌드 중인 파이프라인은 폐기된다)
-    void                            ClearShaderTemplate(const ShaderTemplate *shaderTemplate);
+                                    // shaderTemplate 으로 캐싱된 모든 ShaderPipeline 을 제거한다. (빌드 중인 ShaderPipeline 은 폐기된다)
+    void                            ClearShaderTemplatePipelines(const ShaderTemplate *shaderTemplate);
 
-                                    // 캐싱된 모든 파이프라인을 제거한다. (빌드 중인 파이프라인은 폐기된다)
-    void                            ClearAll();
+                                    // 캐싱된 모든 ShaderPipeline 을 제거한다. (빌드 중인 ShaderPipeline 은 폐기된다)
+    void                            ClearAllPipelines();
 
-                                    // shaderTemplate 으로 캐싱된 모든 파이프라인을 재빌드한다.
-    void                            RebuildShaderTemplate(const SharedPtr<ShaderTemplate> &shaderTemplate);
+                                    // shaderTemplate 으로 캐싱된 모든 ShaderPipeline 을 재빌드한다.
+    void                            RebuildShaderTemplatePipelines(const SharedPtr<ShaderTemplate> &shaderTemplate);
 
-                                    // 캐싱된 모든 파이프라인을 재빌드한다.
-    void                            RebuildAll();
+                                    // 캐싱된 모든 ShaderPipeline 을 재빌드한다.
+    void                            RebuildAllPipelines();
 
 private:
     struct CachedGraphicsPipeline {
         const ShaderTemplate *      shaderTemplatePtr = nullptr;
         WeakPtr<ShaderTemplate>     shaderTemplateRef;
-        uint64_t                    hash = 0;
+        uint64_t                    graphicsPipelineCacheHash = 0;
         SharedPtr<ShaderPipeline>   shaderPipeline;
     };
 
@@ -67,7 +67,7 @@ private:
         SharedPtr<ShaderPipeline>   shaderPipeline;
     };
 
-    SharedPtr<ShaderPipeline>       FindCachedGraphicsPipeline(const ShaderTemplate *shaderTemplate, uint64_t hash) const;
+    SharedPtr<ShaderPipeline>       FindCachedGraphicsPipeline(const ShaderTemplate *shaderTemplate, uint64_t graphicsPipelineCacheHash) const;
     SharedPtr<ShaderPipeline>       FindCachedComputePipeline(const ShaderTemplate *shaderTemplate, ShaderPermutationKey permutationKey) const;
     void                            RemoveCachedGraphicsPipelineIndex(int index);
     void                            RemoveCachedComputePipelineIndex(int index);

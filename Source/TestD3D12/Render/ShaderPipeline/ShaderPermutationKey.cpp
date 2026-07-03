@@ -15,29 +15,29 @@
 #include "Precompiled.h"
 #include "ShaderPermutationKey.h"
 
-void ShaderPermutationKey::NormalizePermutationDefines(BE1::StrArray &permutationDefines) {
+void ShaderPermutationKey::NormalizeDefines(BE1::StrArray &defines) {
     // Remove empty defines.
-    for (int i = permutationDefines.Count() - 1; i >= 0; --i) {
-        if (permutationDefines[i].IsEmpty()) {
-            permutationDefines.RemoveIndexFast(i);
+    for (int i = defines.Count() - 1; i >= 0; --i) {
+        if (defines[i].IsEmpty()) {
+            defines.RemoveIndexFast(i);
         }
     }
 
     // Keep permutation keys deterministic.
-    permutationDefines.Sort();
+    defines.Sort();
 
     // Remove duplicated defines.
-    for (int i = 1; i < permutationDefines.Count();) {
-        if (permutationDefines[i - 1] == permutationDefines[i]) {
-            permutationDefines.RemoveIndex(i);
+    for (int i = 1; i < defines.Count();) {
+        if (defines[i - 1] == defines[i]) {
+            defines.RemoveIndex(i);
             continue;
         }
         i++;
     }
 }
 
-ShaderPermutationKey ShaderPermutationKey::GeneratePermutationKey(const BE1::StrArray &permutationDefines, const ShaderFeatureSet &featureSet) {
-    if (permutationDefines.IsEmpty() && featureSet.IsEmpty()) {
+ShaderPermutationKey ShaderPermutationKey::GeneratePermutationKey(const BE1::StrArray &defines, const ShaderFeatureSet &featureSet) {
+    if (defines.IsEmpty() && featureSet.IsEmpty()) {
         return ShaderPermutationKey();
     }
 
@@ -45,7 +45,7 @@ ShaderPermutationKey ShaderPermutationKey::GeneratePermutationKey(const BE1::Str
     if (!featureSet.IsEmpty()) {
         hash = hash_combine(hash, uint64_t(featureSet.flags));
     }
-    for (const BE1::Str &define : permutationDefines) {
+    for (const BE1::Str &define : defines) {
         hash = hash_combine(hash, define.ToHash64());
     }
 

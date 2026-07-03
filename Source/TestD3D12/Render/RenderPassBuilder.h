@@ -14,62 +14,33 @@
 
 #pragma once
 
-#include "Containers/HashIndex.h"
 #include "RHI/RHI.h"
-#include "Render/ShaderPipeline/ShaderFeatureSet.h"
-#include "Render/ShaderPipeline/ShaderPipeline.h"
+#include "Render/RenderPassDepthPSOResolver.h"
+#include "Render/RenderPassPSOResolver.h"
 #include "Render/ShaderPipeline/VertexInputLayoutFactory.h"
 
-class Material;
 class RenderFrameData;
 struct RenderPass;
+struct RenderPassDrawSurf;
 struct VisCamera;
 struct VisSurf;
 enum class RenderPassType : uint8_t;
 
-class PassPipelineResolver {
-public:
-    struct ResolveResult {
-        VertexInputLayoutId     inputLayoutId = VertexInputLayoutId::XyzStColorNormalTangent;
-        RHI::PipelineState *    pso = nullptr;
-    };
-
-    void                        Begin(const GraphicsPipelineDesc &pipelineDesc, uint32_t maxEntries);
-
-    ResolveResult               Resolve(const RenderPass *renderPass, const VisSurf *visSurf, const ShaderFeatureSet &featureSet);
-
-private:
-    struct Entry {
-        const Material *        material = nullptr;
-        uint32_t                featureFlags = 0;
-        VertexInputLayoutId     inputLayoutId = VertexInputLayoutId::XyzStColorNormalTangent;
-        RHI::PipelineState *    pso = nullptr;
-    };
-
-    const GraphicsPipelineDesc &GetGraphicsPipelineDesc(VertexInputLayoutId inputLayoutId);
-
-    static constexpr int        NumInputLayouts = static_cast<int>(VertexInputLayoutId::Count);
-
-    GraphicsPipelineDesc        basePipelineDesc;
-    GraphicsPipelineDesc        pipelineDescs[NumInputLayouts];
-    bool                        pipelineDescValid[NumInputLayouts] = {};
-
-    BE1::Array<Entry>           entries;
-    BE1::HashIndex              entriesHash { 256, 256 };
-};
-
 class RenderPassBuilder {
 public:
-    void                        BuildMain(RenderFrameData *frameData, VisCamera *visCamera);
-    void                        BuildGUI(RenderFrameData *frameData, VisCamera *visCamera);
+    void                            BuildMain(RenderFrameData *frameData, VisCamera *visCamera);
+    void                            BuildGUI(RenderFrameData *frameData, VisCamera *visCamera);
 
 private:
-    RenderPass *                AllocRenderPass(RenderFrameData *frameData, VisCamera *visCamera, RenderPassType type, ShaderFeatureSet passFeatureSet, VertexInputLayoutId baseInputLayoutId, int maxDrawSurfs);
-    void                        AddPassDrawSurf(RenderFrameData *frameData, RenderPass *renderPass, const VisSurf *visSurf, uint64_t sortKey, VertexInputLayoutId inputLayoutId, RHI::PipelineState *pso);
-    void                        SortPassDrawSurfs(RenderFrameData *frameData, RenderPass *renderPass);
+    void                            AllocRenderPassDrawSurfs(RenderFrameData *frameData, VisCamera *visCamera, uint32_t maxDrawSurfs);
+    RenderPass *                    AllocRenderPass(VisCamera *visCamera, RenderPassType type, ShaderFeatureSet passFeatureSet, VertexInputLayoutId passBaseInputLayoutId, uint32_t maxDrawSurfs);
+    void                            AddRenderPassDrawSurf(RenderPass *renderPass, const VisSurf *visSurf, uint64_t sortKey, VertexInputLayoutId inputLayoutId, RHI::PipelineState *pso);
+    void                            SortRenderPassDrawSurfs(RenderFrameData *frameData, RenderPass *renderPass);
+    void                            RadixSortDrawSurfs(const RenderPassDrawSurf **drawSurfs, uint32_t numDrawSurfs, const RenderPassDrawSurf **tempDrawSurfs);
 
-    PassPipelineResolver        opaquePipelineResolver;
-    PassPipelineResolver        blendPipelineResolver;
-    PassPipelineResolver        skyboxPipelineResolver;
-    PassPipelineResolver        guiPipelineResolver;
+    RenderPassDepthPSOResolver      depthPSOResolver;
+    RenderPassPSOResolver           opaquePSOResolver;
+    RenderPassPSOResolver           blendPSOResolver;
+    RenderPassPSOResolver           skyboxPSOResolver;
+    RenderPassPSOResolver           guiPSOResolver;
 };

@@ -208,6 +208,8 @@ struct ShaderMaterial {
     uint emissiveTextureIndex;
     uint streamingMaterialIndex;
     float4 baseColorFactor;
+    float alphaCutoff;
+    float3 padding0;
 };
 
 #endif // SHADERINTEROP_H

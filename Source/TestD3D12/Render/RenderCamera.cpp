@@ -634,6 +634,7 @@ void RenderCamera::EnsureRenderTextures(uint32_t width, uint32_t height, RHI::Fo
 
     if (colorTexture &&
         depthTexture &&
+        normalTexture &&
         renderWidth == width &&
         renderHeight == height &&
         renderColorFormat == colorFormat &&
@@ -774,6 +775,7 @@ bool RenderCamera::CreateRenderTextures(uint32_t width, uint32_t height, RHI::Fo
 
     sampleCount = BE1::Max(sampleCount, 1u);
 
+    // Color texture 생성
     BE1::Image::Format colorImageFormat = BE1::Image::Format::Unknown;
     RHI::Renderer::RHIFormatToImageFormat(colorFormat, &colorImageFormat, nullptr);
 
@@ -781,7 +783,7 @@ bool RenderCamera::CreateRenderTextures(uint32_t width, uint32_t height, RHI::Fo
 
     SharedPtr<BE1::Image> colorImage = MakeShared<BE1::Image>();
     colorImage->InitFromMemory(width, height, 1, 1, 1, colorImageFormat, BE1::Image::GammaSpace::Linear, nullptr, BE1::Image::Flag::None);
-    colorTexture = RHI::renderer->CreateTexture(RHI::TextureType::Texture2D, RHI::TextureFlag::RenderTarget | RHI::TextureFlag::ShaderResource | RHI::TextureFlag::UnorderedAccess, colorImage, RHI::TextureMipInitMode::FromImage, colorOptimizedClearValue, 1, RHI::GPUResourceState::ShaderResource);
+    colorTexture = RHI::renderer->CreateTexture(RHI::TextureType::Texture2D, RHI::TextureFlag::RenderTarget | RHI::TextureFlag::ShaderResource, colorImage, RHI::TextureMipInitMode::FromImage, colorOptimizedClearValue, 1, RHI::GPUResourceState::ShaderResource);
     if (!colorTexture) {
         BE_WARNLOG("RenderCamera::CreateRenderTextures: failed to create color texture\n");
         return false;
@@ -789,7 +791,7 @@ bool RenderCamera::CreateRenderTextures(uint32_t width, uint32_t height, RHI::Fo
     RHI::renderer->SetName(colorTexture, "RenderCamera::colorTexture");
 
     if (sampleCount > 1) {
-        colorMSAATexture = RHI::renderer->CreateTexture(RHI::TextureType::Texture2D, RHI::TextureFlag::RenderTarget | RHI::TextureFlag::ShaderResource, colorImage, RHI::TextureMipInitMode::FromImage, colorOptimizedClearValue, sampleCount, RHI::GPUResourceState::ShaderResource);
+        colorMSAATexture = RHI::renderer->CreateTexture(RHI::TextureType::Texture2D, RHI::TextureFlag::RenderTarget, colorImage, RHI::TextureMipInitMode::FromImage, colorOptimizedClearValue, sampleCount, RHI::GPUResourceState::ShaderResource);
         if (!colorMSAATexture) {
             BE_WARNLOG("RenderCamera::CreateRenderTextures: failed to create MSAA color texture\n");
             DestroyRenderTextures();
@@ -798,6 +800,7 @@ bool RenderCamera::CreateRenderTextures(uint32_t width, uint32_t height, RHI::Fo
         RHI::renderer->SetName(colorMSAATexture, "RenderCamera::colorMSAATexture");
     }
 
+    // Depth texture 생성
     BE1::Image::Format depthImageFormat = BE1::Image::Format::Unknown;
     RHI::Renderer::RHIFormatToImageFormat(depthFormat, &depthImageFormat, nullptr);
 
@@ -820,6 +823,22 @@ bool RenderCamera::CreateRenderTextures(uint32_t width, uint32_t height, RHI::Fo
         return false;
     }
 
+    // Normal texture 생성
+    BE1::Image::Format normalImageFormat = BE1::Image::Format::Unknown;
+    RHI::Renderer::RHIFormatToImageFormat(RHI::Format::R16G16_FLOAT, &normalImageFormat, nullptr);
+
+    const RHI::ClearValue normalOptimizedClearValue = RHI::ClearValue::Color(0.0f, 0.0f, 0.0f, 0.0f);
+
+    SharedPtr<BE1::Image> normalImage = MakeShared<BE1::Image>();
+    normalImage->InitFromMemory(width, height, 1, 1, 1, normalImageFormat, BE1::Image::GammaSpace::Linear, nullptr, BE1::Image::Flag::None);
+    normalTexture = RHI::renderer->CreateTexture(RHI::TextureType::Texture2D, RHI::TextureFlag::RenderTarget | RHI::TextureFlag::ShaderResource, normalImage, RHI::TextureMipInitMode::FromImage, normalOptimizedClearValue, sampleCount, RHI::GPUResourceState::ShaderResource);
+    if (!normalTexture) {
+        BE_WARNLOG("RenderCamera::CreateRenderTextures: failed to create normal texture\n");
+        DestroyRenderTextures();
+        return false;
+    }
+    RHI::renderer->SetName(normalTexture, "RenderCamera::normalTexture");
+
     renderWidth = width;
     renderHeight = height;
     renderColorFormat = colorFormat;
@@ -841,6 +860,10 @@ void RenderCamera::DestroyRenderTextures() {
     if (depthTexture) {
         RHI::renderer->DestroyTexture(depthTexture);
         depthTexture = nullptr;
+    }
+    if (normalTexture) {
+        RHI::renderer->DestroyTexture(normalTexture);
+        normalTexture = nullptr;
     }
 
     renderWidth = 0;

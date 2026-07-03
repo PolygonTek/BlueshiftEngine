@@ -25,12 +25,12 @@ static const Texture *GetReadyTexture(const SharedPtr<Texture> *texture) {
     return texture->get();
 }
 
-static const Texture *GetReadyMaterialTexture(const Material *material, ShaderTemplate::BuiltInProperty builtInProperty) {
+static const Texture *GetReadyMaterialTexture(const Material *material, ShaderTemplate::StandardProperty standardProperty) {
     if (!material) {
         return nullptr;
     }
 
-    return GetReadyTexture(material->GetPropertyTexture(builtInProperty));
+    return GetReadyTexture(material->GetPropertyTexture(standardProperty));
 }
 
 static const Texture *GetReadyDefault2DTexture() {
@@ -43,8 +43,8 @@ static const Texture *GetReadyDefault2DTexture() {
     return nullptr;
 }
 
-static bool BindTexturePropertyOrDefault2D(RHI::CommandList *commandList, int shaderRegister, const Material *material, ShaderTemplate::BuiltInProperty builtInProperty) {
-    const Texture *texture = GetReadyMaterialTexture(material, builtInProperty);
+static bool BindTexturePropertyOrDefault2D(RHI::CommandList *commandList, int shaderRegister, const Material *material, ShaderTemplate::StandardProperty standardProperty) {
+    const Texture *texture = GetReadyMaterialTexture(material, standardProperty);
     if (!texture) {
         texture = GetReadyDefault2DTexture();
     }
@@ -66,8 +66,8 @@ static bool BindSkyboxTextures(RHI::CommandList *commandList, const Material *ma
     }
 
     // SkyboxCubemap
-    if (material->FindPropertyIndex(ShaderTemplate::BuiltInProperty::SkyCubeMap) >= 0) {
-        const Texture *texture = GetReadyMaterialTexture(material, ShaderTemplate::BuiltInProperty::SkyCubeMap);
+    if (material->FindPropertyIndex(ShaderTemplate::StandardProperty::SkyCubeMap) >= 0) {
+        const Texture *texture = GetReadyMaterialTexture(material, ShaderTemplate::StandardProperty::SkyCubeMap);
         if (!texture) {
             return false;
         }
@@ -81,19 +81,19 @@ static bool BindSkyboxTextures(RHI::CommandList *commandList, const Material *ma
     }
 
     // SkyboxSixSided
-    if (material->FindPropertyIndex(ShaderTemplate::BuiltInProperty::SkyBackMap) >= 0) {
-        return BindTexturePropertyOrDefault2D(commandList, 1, material, ShaderTemplate::BuiltInProperty::SkyBackMap) &&
-            BindTexturePropertyOrDefault2D(commandList, 2, material, ShaderTemplate::BuiltInProperty::SkyFrontMap) &&
-            BindTexturePropertyOrDefault2D(commandList, 3, material, ShaderTemplate::BuiltInProperty::SkyRightMap) &&
-            BindTexturePropertyOrDefault2D(commandList, 4, material, ShaderTemplate::BuiltInProperty::SkyLeftMap) &&
-            BindTexturePropertyOrDefault2D(commandList, 5, material, ShaderTemplate::BuiltInProperty::SkyTopMap) &&
-            BindTexturePropertyOrDefault2D(commandList, 6, material, ShaderTemplate::BuiltInProperty::SkyDownMap);
+    if (material->FindPropertyIndex(ShaderTemplate::StandardProperty::SkyBackMap) >= 0) {
+        return BindTexturePropertyOrDefault2D(commandList, 1, material, ShaderTemplate::StandardProperty::SkyBackMap) &&
+            BindTexturePropertyOrDefault2D(commandList, 2, material, ShaderTemplate::StandardProperty::SkyFrontMap) &&
+            BindTexturePropertyOrDefault2D(commandList, 3, material, ShaderTemplate::StandardProperty::SkyRightMap) &&
+            BindTexturePropertyOrDefault2D(commandList, 4, material, ShaderTemplate::StandardProperty::SkyLeftMap) &&
+            BindTexturePropertyOrDefault2D(commandList, 5, material, ShaderTemplate::StandardProperty::SkyTopMap) &&
+            BindTexturePropertyOrDefault2D(commandList, 6, material, ShaderTemplate::StandardProperty::SkyDownMap);
     }
 
     return true;
 }
 
-void RenderBackend::DrawSkySurfaces(const PassDrawSurf **drawSurfs, uint32_t numDrawSurfs) {
+void RenderBackend::DrawSkySurfaces(const RenderPassDrawSurf **drawSurfs, uint32_t numDrawSurfs) {
     PROFILER_CPU_SCOPED_EVENT("RenderBackend::DrawSkySurfaces");
 
     assert(numDrawSurfs > 0);
@@ -103,7 +103,7 @@ void RenderBackend::DrawSkySurfaces(const PassDrawSurf **drawSurfs, uint32_t num
     VertexInputLayoutId currentInputLayoutId = VertexInputLayoutId::Count;
 
     for (uint32_t drawSurfIndex = 0; drawSurfIndex < numDrawSurfs; ++drawSurfIndex) {
-        const PassDrawSurf *drawSurf = drawSurfs[drawSurfIndex];
+        const RenderPassDrawSurf *drawSurf = drawSurfs[drawSurfIndex];
         if (!drawSurf->pso) {
             continue;
         }

@@ -68,12 +68,12 @@ int Material::FindPropertyIndex(const char *propertyName) const {
     return internalData.shaderTemplate->FindPropertyIndex(propertyName);
 }
 
-int Material::FindPropertyIndex(ShaderTemplate::BuiltInProperty builtInProperty) const {
+int Material::FindPropertyIndex(ShaderTemplate::StandardProperty standardProperty) const {
     if (!internalData.shaderTemplate) {
         return -1;
     }
 
-    return internalData.shaderTemplate->GetBuiltInPropertyIndex(builtInProperty);
+    return internalData.shaderTemplate->GetStandardPropertyIndex(standardProperty);
 }
 
 const ShaderTemplate::PropertyValue *Material::GetPropertyValue(int propertyIndex) const {
@@ -88,11 +88,11 @@ const ShaderTemplate::PropertyValue *Material::GetPropertyValue(const char *prop
     return GetPropertyValue(FindPropertyIndex(propertyName));
 }
 
-const ShaderTemplate::PropertyValue *Material::GetPropertyValue(ShaderTemplate::BuiltInProperty builtInProperty) const {
+const ShaderTemplate::PropertyValue *Material::GetPropertyValue(ShaderTemplate::StandardProperty standardProperty) const {
     if (!internalData.shaderTemplate) {
         return nullptr;
     }
-    return GetPropertyValue(FindPropertyIndex(builtInProperty));
+    return GetPropertyValue(FindPropertyIndex(standardProperty));
 }
 
 const SharedPtr<Texture> *Material::GetPropertyTexture(int propertyIndex) const {
@@ -109,11 +109,11 @@ const SharedPtr<Texture> *Material::GetPropertyTexture(const char *propertyName)
     return GetPropertyTexture(FindPropertyIndex(propertyName));
 }
 
-const SharedPtr<Texture> *Material::GetPropertyTexture(ShaderTemplate::BuiltInProperty builtInProperty) const {
+const SharedPtr<Texture> *Material::GetPropertyTexture(ShaderTemplate::StandardProperty standardProperty) const {
     if (!internalData.shaderTemplate) {
         return nullptr;
     }
-    return GetPropertyTexture(FindPropertyIndex(builtInProperty));
+    return GetPropertyTexture(FindPropertyIndex(standardProperty));
 }
 
 void Material::InvalidatePermutationKeys() const {
@@ -262,6 +262,7 @@ ShaderPermutationKey Material::EnsurePermutation(const ShaderFeatureSet &feature
 
     // permutation 캐시에서 실제로 사용할 featureSet 에 대한 permutation 을 찾아본다.
     for (const CachedPermutationKey &cachedPermutationKey : cachedPermutationKeys) {
+        // propertyValues 가 바뀌면 캐시가 무효화되므로, 여기서는 featureSet 만 비교하면 된다.
         if (cachedPermutationKey.featureSet == supportedFeatureSet) {
             return cachedPermutationKey.key;
         }
@@ -275,8 +276,8 @@ ShaderPermutationKey Material::EnsurePermutation(const ShaderFeatureSet &feature
     ShaderPermutationKey permutationKey = internalData.shaderTemplate->RegisterPermutation(internalData.propertyValues, supportedFeatureSet);
 
     CachedPermutationKey &cachedPermutationKey = cachedPermutationKeys.Alloc();
-    cachedPermutationKey.featureSet = supportedFeatureSet;
     cachedPermutationKey.key = permutationKey;
+    cachedPermutationKey.featureSet = supportedFeatureSet;
 
     return permutationKey;
 }
@@ -315,7 +316,7 @@ static RHI::RasterizerStateType GetMaterialRasterizerStateType(RHI::RasterizerSt
     return baseRasterizerStateType;
 }
 
-SharedPtr<ShaderPipeline> Material::GetGraphicsPipeline(const ShaderFeatureSet &featureSet, const GraphicsPipelineDesc &baseGraphicsPipelineDesc, bool async) const {
+ShaderPipeline *Material::GetGraphicsPipeline(const ShaderFeatureSet &featureSet, const GraphicsPipelineDesc &baseGraphicsPipelineDesc, bool async) const {
     if (!internalData.shaderTemplate) {
         return nullptr;
     }
@@ -324,7 +325,7 @@ SharedPtr<ShaderPipeline> Material::GetGraphicsPipeline(const ShaderFeatureSet &
     graphicsPipelineDesc.rasterizerStateType = GetMaterialRasterizerStateType(baseGraphicsPipelineDesc.rasterizerStateType, internalData.cullMode);
     graphicsPipelineDesc.blendStateType = internalData.renderingMode == RenderingMode::Blend ? internalData.blendType : RHI::BlendStateType::Disabled;
 
-    return shaderPipelineCache.GetGraphicsPipeline(internalData.shaderTemplate, EnsurePermutation(featureSet), graphicsPipelineDesc, async);
+    return shaderPipelineCache.GetGraphicsPipeline(internalData.shaderTemplate, EnsurePermutation(featureSet), graphicsPipelineDesc, async).get();
 }
 
 bool Material::Create(const char *text, const char *baseDir) {
@@ -569,7 +570,7 @@ void Material::RemapShaderTemplateProperties(const BE1::Array<ShaderPropertyInfo
     // 기본 프로퍼티 값들로 세팅한다.
     internalData.shaderTemplate->InitDefaultPropertyValues(internalData.propertyValues);
 
-    // 예전 프로퍼티와 같은 이름이 있다면 예전 값들로 세팅한다.
+    // 이름/타입이 예전과 같은 프로퍼티가 있다면 값을 옮겨온다.
     const BE1::Array<ShaderPropertyInfo> &newProperties = internalData.shaderTemplate->GetProperties();
     const int numNewProperties = newProperties.Count();
     for (int newIndex = 0; newIndex < numNewProperties; newIndex++) {

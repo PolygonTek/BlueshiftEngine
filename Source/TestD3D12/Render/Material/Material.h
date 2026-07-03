@@ -66,13 +66,13 @@ public:
     Flag                            GetFlags() const { return internalData.flags; }
 
     int                             FindPropertyIndex(const char *propertyName) const;
-    int                             FindPropertyIndex(ShaderTemplate::BuiltInProperty builtInProperty) const;
+    int                             FindPropertyIndex(ShaderTemplate::StandardProperty standardProperty) const;
     const ShaderTemplate::PropertyValue *GetPropertyValue(int propertyIndex) const;
     const ShaderTemplate::PropertyValue *GetPropertyValue(const char *propertyName) const;
-    const ShaderTemplate::PropertyValue *GetPropertyValue(ShaderTemplate::BuiltInProperty builtInProperty) const;
+    const ShaderTemplate::PropertyValue *GetPropertyValue(ShaderTemplate::StandardProperty standardProperty) const;
     const SharedPtr<Texture> *      GetPropertyTexture(int propertyIndex) const;
     const SharedPtr<Texture> *      GetPropertyTexture(const char *propertyName) const;
-    const SharedPtr<Texture> *      GetPropertyTexture(ShaderTemplate::BuiltInProperty builtInProperty) const;
+    const SharedPtr<Texture> *      GetPropertyTexture(ShaderTemplate::StandardProperty standardProperty) const;
     bool                            SetPropertyValue(int propertyIndex, const ShaderTemplate::PropertyValue &value);
     bool                            SetPropertyValue(const char *propertyName, const ShaderTemplate::PropertyValue &value);
 
@@ -85,8 +85,8 @@ public:
     ShaderPermutationKey            EnsurePermutation(const ShaderFeatureSet &featureSet = {}) const;
     void                            EnsurePermutations(const BE1::Array<ShaderFeatureSet> &featureSets) const;
 
-                                    // material 상태와 shader features 를 반영한 graphics pipeline 을 가져온다.
-    SharedPtr<ShaderPipeline>       GetGraphicsPipeline(const ShaderFeatureSet &featureSet, const GraphicsPipelineDesc &baseGraphicsPipelineDesc, bool async = true) const;
+                                    // featureSet/baseGraphicsPipelineDesc 기반에서 material 의 렌더링 상태를 반영하여 graphics pipeline 을 가져온다.
+    ShaderPipeline *                GetGraphicsPipeline(const ShaderFeatureSet &featureSet, const GraphicsPipelineDesc &baseGraphicsPipelineDesc, bool async = true) const;
 
     bool                            Create(const char *text, const char *baseDir);
 
@@ -113,8 +113,8 @@ private:
     };
 
     struct CachedPermutationKey {
-        ShaderFeatureSet            featureSet;
         ShaderPermutationKey        key;
+        ShaderFeatureSet            featureSet;
     };
 
     void                            Purge();

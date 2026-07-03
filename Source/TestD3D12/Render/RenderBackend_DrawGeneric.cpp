@@ -17,7 +17,7 @@
 #include "RenderSystem.h"
 #include "RenderInternal.h"
 
-void RenderBackend::DrawGenericSurfaces(const PassDrawSurf **drawSurfs, uint32_t numDrawSurfs) {
+void RenderBackend::DrawGenericSurfaces(const RenderPassDrawSurf **drawSurfs, uint32_t numDrawSurfs) {
     PROFILER_CPU_SCOPED_EVENT("RenderBackend::DrawGenericSurfaces");
 
     assert(numDrawSurfs > 0);
@@ -34,7 +34,7 @@ void RenderBackend::DrawGenericSurfaces(const PassDrawSurf **drawSurfs, uint32_t
 #endif
 }
 
-void RenderBackend::DrawGenericSurfacesWithoutTask(const PassDrawSurf **drawSurfs, uint32_t numDrawSurfs) {
+void RenderBackend::DrawGenericSurfacesWithoutTask(const RenderPassDrawSurf **drawSurfs, uint32_t numDrawSurfs) {
     PROFILER_CPU_SCOPED_EVENT("RenderBackend::DrawGenericSurfacesWithoutTask");
 
     RHI::PipelineState *currentPSO = nullptr;
@@ -43,7 +43,7 @@ void RenderBackend::DrawGenericSurfacesWithoutTask(const PassDrawSurf **drawSurf
 
     uint32_t drawSurfIndex = 0;
     while (drawSurfIndex < numDrawSurfs) {
-        const PassDrawSurf *drawSurf = drawSurfs[drawSurfIndex];
+        const RenderPassDrawSurf *drawSurf = drawSurfs[drawSurfIndex];
         if (!drawSurf->pso) {
             drawSurfIndex++;
             continue;
@@ -85,7 +85,7 @@ void RenderBackend::DrawGenericSurfacesByTask(RenderBackend::DrawSurfsTaskDesc *
 
     uint32_t drawSurfIndex = 0;
     while (drawSurfIndex < taskDesc->numDrawSurfs) {
-        const PassDrawSurf *drawSurf = taskDesc->drawSurfs[drawSurfIndex];
+        const RenderPassDrawSurf *drawSurf = taskDesc->drawSurfs[drawSurfIndex];
         if (!drawSurf->pso) {
             drawSurfIndex++;
             continue;
@@ -125,7 +125,7 @@ void RenderBackend::DrawGenericSurfacesByTaskFunction(void *data) {
     renderSystem->GetBackend()->DrawGenericSurfacesByTask(taskDesc);
 }
 
-void RenderBackend::DrawGenericSurfacesWithTask(const PassDrawSurf **drawSurfs, uint32_t numDrawSurfs) {
+void RenderBackend::DrawGenericSurfacesWithTask(const RenderPassDrawSurf **drawSurfs, uint32_t numDrawSurfs) {
     PROFILER_CPU_SCOPED_EVENT("RenderBackend::DrawGenericSurfacesWithTask");
 
     // numDrawSurfs 로 만들어 질 수 있는 최대 태스크 개수를 계산한다.

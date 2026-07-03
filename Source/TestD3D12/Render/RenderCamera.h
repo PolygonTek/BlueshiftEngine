@@ -138,6 +138,7 @@ public:
     RHI::Texture *              GetColorTexture() const { return colorTexture; }
     RHI::Texture *              GetColorMSAATexture() const { return colorMSAATexture; }
     RHI::Texture *              GetDepthTexture() const { return depthTexture; }
+    RHI::Texture *              GetNormalTexture() const { return normalTexture; }
     RHI::Texture *              GetPostProcessColorTexture() const { return postProcessColorTexture; }
     RHI::Buffer *               GetLuminanceBuffer() const { return luminanceBuffer; }
 
@@ -207,6 +208,7 @@ private:
     RHI::Texture *              colorTexture = nullptr;
     RHI::Texture *              colorMSAATexture = nullptr;
     RHI::Texture *              depthTexture = nullptr;
+    RHI::Texture *              normalTexture = nullptr;
     RHI::Texture *              postProcessColorTexture = nullptr;
 
     RHI::Texture *              bloomDownTexture = nullptr;

@@ -19,8 +19,11 @@
 #include "Asset/GuidMapper.h"
 #include "IO/FileSystem.h"
 
-static constexpr const char *BuiltInPropertyNames[] = {
+static constexpr const char *StandardPropertyNames[] = {
+    "alphaCutoff",
     "baseColorTexture",
+    "normalTexture",
+    "shadowTexture",
     "skyCubeMap",
     "skyBackMap",
     "skyFrontMap",
@@ -29,10 +32,10 @@ static constexpr const char *BuiltInPropertyNames[] = {
     "skyTopMap",
     "skyDownMap"
 };
-static_assert(COUNT_OF(BuiltInPropertyNames) == static_cast<int>(ShaderTemplate::BuiltInProperty::Count));
+static_assert(COUNT_OF(StandardPropertyNames) == static_cast<int>(ShaderTemplate::StandardProperty::Count));
 
 ShaderTemplate::InternalData::InternalData() {
-    ResetBuiltInPropertyIndices();
+    ResetStandardPropertyIndices();
 }
 
 void ShaderTemplate::InternalData::Purge() {
@@ -46,7 +49,7 @@ void ShaderTemplate::InternalData::Purge() {
     }
     properties.Clear();
     propertyHash.Clear(64, 64);
-    ResetBuiltInPropertyIndices();
+    ResetStandardPropertyIndices();
 }
 
 void ShaderTemplate::InternalData::Swap(InternalData &rhs) {
@@ -55,13 +58,13 @@ void ShaderTemplate::InternalData::Swap(InternalData &rhs) {
     }
 
     baseDefines.Swap(rhs.baseDefines);
-    for (int i = 0; i < to_int(Feature::Count); i++) {
+    for (int i = 0; i < to_int(ShaderFeature::Count); i++) {
         featureDefines[i].Swap(rhs.featureDefines[i]);
     }
     properties.Swap(rhs.properties);
     propertyHash.Swap(rhs.propertyHash);
-    for (int i = 0; i < NumBuiltInProperties; ++i) {
-        BE1::Swap(builtInPropertyIndices[i], rhs.builtInPropertyIndices[i]);
+    for (int i = 0; i < NumStandardProperties; ++i) {
+        BE1::Swap(standardPropertyIndices[i], rhs.standardPropertyIndices[i]);
     }
     BE1::Swap(flags, rhs.flags);
 }
@@ -89,24 +92,24 @@ int ShaderTemplate::InternalData::FindPropertyIndex(const char *name) const {
     return -1;
 }
 
-int ShaderTemplate::InternalData::GetBuiltInPropertyIndex(BuiltInProperty builtInProperty) const {
-    const int builtInPropertyIndex = static_cast<int>(builtInProperty);
-    assert(builtInPropertyIndex >= 0 && builtInPropertyIndex < NumBuiltInProperties);
+int ShaderTemplate::InternalData::GetStandardPropertyIndex(StandardProperty standardProperty) const {
+    const int standardPropertyIndex = static_cast<int>(standardProperty);
+    assert(standardPropertyIndex >= 0 && standardPropertyIndex < NumStandardProperties);
 
-    return builtInPropertyIndices[builtInPropertyIndex];
+    return standardPropertyIndices[standardPropertyIndex];
 }
 
-void ShaderTemplate::InternalData::ResetBuiltInPropertyIndices() {
-    for (int i = 0; i < NumBuiltInProperties; ++i) {
-        builtInPropertyIndices[i] = -1;
+void ShaderTemplate::InternalData::ResetStandardPropertyIndices() {
+    for (int i = 0; i < NumStandardProperties; ++i) {
+        standardPropertyIndices[i] = -1;
     }
 }
 
-void ShaderTemplate::InternalData::RefreshBuiltInPropertyIndices() {
-    ResetBuiltInPropertyIndices();
+void ShaderTemplate::InternalData::RefreshStandardPropertyIndices() {
+    ResetStandardPropertyIndices();
 
-    for (int i = 0; i < NumBuiltInProperties; ++i) {
-        builtInPropertyIndices[i] = FindPropertyIndex(BuiltInPropertyNames[i]);
+    for (int i = 0; i < NumStandardProperties; ++i) {
+        standardPropertyIndices[i] = FindPropertyIndex(StandardPropertyNames[i]);
     }
 }
 
@@ -138,7 +141,7 @@ bool ShaderTemplate::InternalData::AddProperty(const ShaderPropertyInfo &propert
     int propertyIndex = properties.Append(propertyInfo);
     int hash = propertyHash.GenerateHash(propertyInfo.GetName(), true);
     propertyHash.Add(hash, propertyIndex);
-    RefreshBuiltInPropertyIndices();
+    RefreshStandardPropertyIndices();
     return true;
 }
 
@@ -188,8 +191,8 @@ void ShaderTemplate::InternalData::AddStage(RHI::ShaderStage shaderStage, RHI::S
     stageSource.entryPoint = entryPoint;
 }
 
-bool ShaderTemplate::SupportsFeature(Feature feature) const {
-    if (feature >= Feature::Count) {
+bool ShaderTemplate::SupportsFeature(ShaderFeature feature) const {
+    if (feature >= ShaderFeature::Count) {
         return false;
     }
     return internalData.featureDefines[to_int(feature)].Count() > 0;
@@ -198,8 +201,8 @@ bool ShaderTemplate::SupportsFeature(Feature feature) const {
 ShaderFeatureSet ShaderTemplate::MaskSupportedFeatures(const ShaderFeatureSet &featureSet) const {
     ShaderFeatureSet supportedFeatureSet;
 
-    for (int featureIndex = 0; featureIndex < to_int(Feature::Count); featureIndex++) {
-        Feature feature = static_cast<Feature>(featureIndex);
+    for (int featureIndex = 0; featureIndex < to_int(ShaderFeature::Count); featureIndex++) {
+        ShaderFeature feature = static_cast<ShaderFeature>(featureIndex);
 
         if (featureSet.HasFeature(feature) && SupportsFeature(feature)) {
             supportedFeatureSet.EnableFeature(feature);
@@ -278,7 +281,7 @@ ShaderPermutationKey ShaderTemplate::RegisterPermutation(const BE1::Array<Proper
 }
 
 ShaderPermutationKey ShaderTemplate::RegisterPermutation(const BE1::Array<PropertyValue> &propertyValues, const ShaderFeatureSet &featureSet) {
-    BE1::StrArray permutationDefines;
+    BE1::StrArray propertyDefines;
 
     // 프로퍼티 중에 shader define 프로퍼티로 define 목록을 만든다.
     const int numProperties = internalData.properties.Count();
@@ -289,7 +292,7 @@ ShaderPermutationKey ShaderTemplate::RegisterPermutation(const BE1::Array<Proper
         }
 
         const char *propertyDefineName = propertyInfo.GetName();
-        if (HasTemplateDefine(propertyDefineName, featureSet) || HasDefine(permutationDefines, propertyDefineName)) {
+        if (HasDefine(internalData.baseDefines, propertyDefineName) || HasFeatureSetDefine(featureSet, propertyDefineName) || HasDefine(propertyDefines, propertyDefineName)) {
             // permutation 의 define name 과 프로퍼티의 define name 은 중복되면 안된다.
             BE_ERRLOG("ShaderTemplate::RegisterPermutation: permutation define name '%s' conflicts with an existing shader property in shader template '%s'\n", propertyDefineName, hashName.c_str());
             continue;
@@ -300,10 +303,10 @@ ShaderPermutationKey ShaderTemplate::RegisterPermutation(const BE1::Array<Proper
 
         switch (propertyInfo.GetType()) {
         case BE1::Variant::Type::Bool:
-            AddDefine(permutationDefines, propertyDefineName, value.As<bool>() ? 1 : 0);
+            AddDefine(propertyDefines, propertyDefineName, value.As<bool>() ? 1 : 0);
             break;
         case BE1::Variant::Type::Int:
-            AddDefine(permutationDefines, propertyDefineName, value.As<int>());
+            AddDefine(propertyDefines, propertyDefineName, value.As<int>());
             break;
         default:
             BE_WARNLOG("ShaderTemplate::RegisterPermutation: shader define property '%s' has unsupported type\n", propertyDefineName);
@@ -311,9 +314,9 @@ ShaderPermutationKey ShaderTemplate::RegisterPermutation(const BE1::Array<Proper
         }
     }
 
-    ShaderPermutationKey::NormalizePermutationDefines(permutationDefines);
+    ShaderPermutationKey::NormalizeDefines(propertyDefines);
 
-    ShaderPermutationKey permutationKey = ShaderPermutationKey::GeneratePermutationKey(permutationDefines, featureSet);
+    ShaderPermutationKey permutationKey = ShaderPermutationKey::GeneratePermutationKey(propertyDefines, featureSet);
     ShaderPermutation *permutation = FindPermutation(permutationKey);
     if (permutation) {
         return permutationKey;
@@ -322,7 +325,7 @@ ShaderPermutationKey ShaderTemplate::RegisterPermutation(const BE1::Array<Proper
     permutation = new ShaderPermutation;
     permutation->key = permutationKey;
     permutation->featureSet = featureSet;
-    permutation->defines = permutationDefines;
+    permutation->propertyDefines = propertyDefines;
     permutationMap.Set(permutationKey.hash, permutation);
     return permutationKey;
 }
@@ -562,17 +565,17 @@ bool ShaderTemplate::ParseBaseDefines(BE1::Lexer &lexer, InternalData &outIntern
     return true;
 }
 
-static bool ParseShaderFeature(const BE1::Str &token, ShaderTemplate::Feature &outFeature) {
+static bool ParseShaderFeature(const BE1::Str &token, ShaderFeature &outFeature) {
     struct FeatureName {
         const char *featureName;
-        ShaderTemplate::Feature feature;
+        ShaderFeature feature;
     };
 
     static constexpr FeatureName FeatureNames[] = {
-        { "perforated",         ShaderTemplate::Feature::Perforated },
-        { "gpuSkinningWeight1", ShaderTemplate::Feature::GpuSkinningWeight1 },
-        { "gpuSkinningWeight4", ShaderTemplate::Feature::GpuSkinningWeight4 },
-        { "gpuSkinningWeight8", ShaderTemplate::Feature::GpuSkinningWeight8 }
+        { "perforated",         ShaderFeature::Perforated },
+        { "gpuSkinningWeight1", ShaderFeature::GpuSkinningWeight1 },
+        { "gpuSkinningWeight4", ShaderFeature::GpuSkinningWeight4 },
+        { "gpuSkinningWeight8", ShaderFeature::GpuSkinningWeight8 }
     };
 
     for (const FeatureName &featureName : FeatureNames) {
@@ -588,7 +591,7 @@ static bool ParseShaderFeature(const BE1::Str &token, ShaderTemplate::Feature &o
 bool ShaderTemplate::ParseFeatures(BE1::Lexer &lexer, InternalData &outInternalData) {
     BE1::Str token;
     bool closed = false;
-    bool declaredFeatures[to_int(Feature::Count)] = {};
+    bool declaredFeatures[to_int(ShaderFeature::Count)] = {};
 
     if (!lexer.ExpectPunctuation(BE1::Lexer::PuncType::BraceOpen)) {
         return false;
@@ -600,7 +603,7 @@ bool ShaderTemplate::ParseFeatures(BE1::Lexer &lexer, InternalData &outInternalD
             break;
         }
 
-        Feature feature = Feature::Count;
+        ShaderFeature feature = ShaderFeature::Count;
         if (!ParseShaderFeature(token, feature)) {
             BE_WARNLOG("ShaderTemplate::ParseFeatures: unknown feature '%s' in shader template '%s'\n", token.c_str(), hashName.c_str());
             return false;
@@ -1028,14 +1031,16 @@ bool ShaderTemplate::Reload() {
         return false;
     }
 
+    // 외부 material shader template reload 대응용 알림이다.
+    // Reload 중 Purge 로 pipeline cache 는 이미 비워졌으므로 material 은 필요할 때 GetGraphicsPipeline 를 통해 새 pipeline 을 다시 얻는다.
     shaderTemplateManager.shaderTemplateReloaded(this, oldProperties);
 
     return true;
 }
 
 void ShaderTemplate::Purge() {
-    // 파이프라인 캐시에서 이 ShaderTemplate 을 사용하는 모든 파이프라인 캐시를 제거한다.
-    shaderPipelineCache.ClearShaderTemplate(this);
+    // 파이프라인 캐시에서 이 ShaderTemplate 을 사용하는 모든 ShaderPipeline 캐시를 제거한다.
+    shaderPipelineCache.ClearShaderTemplatePipelines(this);
 
     ClearPermutations();
 
@@ -1054,19 +1059,15 @@ ShaderTemplate::ShaderPermutation *ShaderTemplate::FindPermutation(ShaderPermuta
     return nullptr;
 }
 
-// baseDefines 나 featureDefines 에 define 이 있는지 확인한다.
-bool ShaderTemplate::HasTemplateDefine(const char *define, const ShaderFeatureSet &featureSet) const {
-    if (HasDefine(internalData.baseDefines, define)) {
-        return true;
-    }
-
-    for (int i = 0; i < to_int(ShaderFeature::Count); i++) {
-        ShaderFeature feature = static_cast<ShaderFeature>(i);
+// featureSet 에 해당하는 featureDefines 에 define 이 있는지 확인한다.
+bool ShaderTemplate::HasFeatureSetDefine(const ShaderFeatureSet &featureSet, const char *define) const {
+    for (int featureIndex = 0; featureIndex < to_int(ShaderFeature::Count); featureIndex++) {
+        ShaderFeature feature = static_cast<ShaderFeature>(featureIndex);
         if (!featureSet.HasFeature(feature)) {
             continue;
         }
 
-        if (HasDefine(internalData.featureDefines[i], define)) {
+        if (HasDefine(internalData.featureDefines[featureIndex], define)) {
             return true;
         }
     }
@@ -1074,17 +1075,17 @@ bool ShaderTemplate::HasTemplateDefine(const char *define, const ShaderFeatureSe
     return false;
 }
 
-bool ShaderTemplate::AppendFeatureSetDefines(BE1::StrArray &defines, const ShaderFeatureSet &featureSet) const {
+bool ShaderTemplate::AppendFeatureSetDefines(BE1::StrArray &outDefines, const ShaderFeatureSet &featureSet) const {
     bool addedAllDefines = true;
 
-    for (int i = 0; i < to_int(ShaderFeature::Count); i++) {
-        ShaderFeature feature = static_cast<ShaderFeature>(i);
+    for (int featureIndex = 0; featureIndex < to_int(ShaderFeature::Count); featureIndex++) {
+        ShaderFeature feature = static_cast<ShaderFeature>(featureIndex);
         if (!featureSet.HasFeature(feature)) {
             continue;
         }
 
-        for (const BE1::Str &define : internalData.featureDefines[i]) {
-            if (!AddDefine(defines, define.c_str())) {
+        for (const BE1::Str &define : internalData.featureDefines[featureIndex]) {
+            if (!AddDefine(outDefines, define.c_str())) {
                 BE_ERRLOG("ShaderTemplate::AppendFeatureSetDefines: feature define name '%s' conflicts with an existing define in shader template '%s'\n", define.c_str(), hashName.c_str());
                 addedAllDefines = false;
                 continue;
@@ -1105,15 +1106,15 @@ bool ShaderTemplate::PrepareShaderCompileData(ShaderPermutationKey permutationKe
         return false;
     }
 
-    // global defines + base defines + permutation defines + feature defines 순으로 합쳐서 컴파일 define 을 만든다.
+    // global defines + base defines + property defines + feature defines 순으로 합쳐서 컴파일 define 을 만든다.
     shaderTemplateManager.CopyGlobalDefines(outCompileData.compileDefines);
     AppendDefines(outCompileData.compileDefines, internalData.baseDefines);
-    AppendDefines(outCompileData.compileDefines, srcPermutation->defines);
+    AppendDefines(outCompileData.compileDefines, srcPermutation->propertyDefines);
     if (!AppendFeatureSetDefines(outCompileData.compileDefines, srcPermutation->featureSet)) {
         return false;
     }
 
-    ShaderPermutationKey::NormalizePermutationDefines(outCompileData.compileDefines);
+    ShaderPermutationKey::NormalizeDefines(outCompileData.compileDefines);
 
     for (int i = 0; i < to_int(RHI::ShaderStage::Count); i++) {
         outCompileData.stageSources[i] = internalData.stageSources[i];

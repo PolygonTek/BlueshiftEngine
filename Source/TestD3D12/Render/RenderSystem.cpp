@@ -97,7 +97,7 @@ void RenderSystem::Shutdown() {
 
     gpuFFT.Shutdown();
 
-    shaderPipelineCache.ClearAll();
+    shaderPipelineCache.ClearAllPipelines();
 
     shaderTemplateManager.Shutdown();
 

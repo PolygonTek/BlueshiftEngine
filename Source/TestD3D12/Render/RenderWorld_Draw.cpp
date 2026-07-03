@@ -181,6 +181,7 @@ void RenderWorld::RenderScene(RenderCamera *renderCamera) {
     visCamera->colorTexture = renderCamera->GetColorTexture();
     visCamera->colorMSAATexture = renderCamera->GetColorMSAATexture();
     visCamera->depthTexture = renderCamera->GetDepthTexture();
+    visCamera->normalTexture = renderCamera->GetNormalTexture();
     visCamera->postProcessColorTexture = renderCamera->GetPostProcessColorTexture();
     visCamera->luminanceBuffer = renderCamera->GetLuminanceBuffer();
 

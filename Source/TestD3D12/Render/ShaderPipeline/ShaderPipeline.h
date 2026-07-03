@@ -53,8 +53,10 @@ struct ShaderCompileData {
 
     ShaderPipeline
 
-    PSO (RHI::PipelineState) 를 담고 있는 파이프라인 객체
-    shaderPipelineCache 에 의해 캐싱되고 재사용된다.
+    - PSO (RHI::PipelineState) 를 담고 있는 파이프라인 객체.
+    - ShaderPipelineCache 에 의해 캐싱되고 재사용된다.
+    - 빌드 용 정보 Type/ShaderPermutationKey/GraphicsPipelineDesc 를 유지한다.
+    - ShaderTemplate 의 수명을 책임지지 않기 위해 ShaderTemplate 은 유지하지 않고 빌드할 때 외부에서 받아온다.
 
 ---------------------------------------------------------------------------------------------------
 */
@@ -124,10 +126,10 @@ private:
     void                            BuildAsync(const SharedPtr<ShaderTemplate> &shaderTemplate);
     bool                            EnqueueBuild(const SharedPtr<ShaderTemplate> &shaderTemplate);
 
-    const Type                      type = Type::Graphics;  // 생성자에서 한번 정해지면 변하지 않는다.
-    const ShaderPermutationKey      shaderPermutationKey;   // 생성자에서 한번 정해지면 변하지 않는다.
-    GraphicsPipelineDesc            graphicsPipelineDesc;   // 생성자에서 한번 정해지면 변하지 않는다.
-    RHI::InputLayout                inputLayout;            // 생성자에서 한번 정해지면 변하지 않는다.
+    const Type                      type = Type::Graphics;  // PSO 빌드에 필요한 정보 (생성자에서 한번 정해지면 변하지 않는다)
+    const ShaderPermutationKey      shaderPermutationKey;   // PSO 빌드에 필요한 정보 (생성자에서 한번 정해지면 변하지 않는다)
+    GraphicsPipelineDesc            graphicsPipelineDesc;   // PSO 빌드에 필요한 정보 (생성자에서 한번 정해지면 변하지 않는다)
+    RHI::InputLayout                inputLayout;            // PSO 빌드에 필요한 정보 (생성자에서 한번 정해지면 변하지 않는다)
     std::atomic<State>              state = State::Empty;
     std::atomic<uint32_t>           buildSerial = 0;
     RHI::PipelineState *            pso = nullptr;

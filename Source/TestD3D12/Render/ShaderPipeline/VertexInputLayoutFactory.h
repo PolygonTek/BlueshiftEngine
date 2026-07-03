@@ -45,6 +45,6 @@ public:
 
     static const RHI::InputLayout & Get(VertexInputLayoutId id);
 
-    static VertexInputLayoutId      GetSkinnedId(VertexInputLayoutId baseId, int maxVertexWeights);
+    static VertexInputLayoutId      GetIdForVertexWeights(VertexInputLayoutId baseId, int maxVertexWeights);
     static bool                     IsSkinning(VertexInputLayoutId id);
 };

@@ -174,7 +174,7 @@ void RenderBackend::Execute(RenderFrameData *frameData) {
     // 백엔드가 처리할 프레임 데이터
     this->frameData = frameData;
 
-    UpdateGlobalPSOs();
+    UpdateFramePSOs();
 
     frameConstantBuffer = nullptr;
     cameraConstantBuffer = nullptr;
@@ -265,16 +265,16 @@ bool RenderBackend::UploadCameraConstants() {
     return true;
 }
 
-void RenderBackend::UpdateGlobalPSOs() {
-    currentToneMappingPSO = ShaderPipeline::GetReadyPSO(renderSystem->toneMappingPipeline);
-    currentLuminancePass1PSO = ShaderPipeline::GetReadyPSO(renderSystem->luminancePass1Pipeline);
-    currentLuminancePass2PSO = ShaderPipeline::GetReadyPSO(renderSystem->luminancePass2Pipeline);
-    currentBloomPrefilterPSO = ShaderPipeline::GetReadyPSO(renderSystem->bloomPrefilterPipeline);
-    currentBloomDownsamplePSO = ShaderPipeline::GetReadyPSO(renderSystem->bloomDownsamplePipeline);
-    currentBloomUpsamplePSO = ShaderPipeline::GetReadyPSO(renderSystem->bloomUpsamplePipeline);
-    currentConvolutionBloomPrefilterPSO = ShaderPipeline::GetReadyPSO(renderSystem->convolutionBloomPrefilterPipeline);
-    currentConvolutionBloomKernelPreparePSO = ShaderPipeline::GetReadyPSO(renderSystem->convolutionBloomKernelPreparePipeline);
-    currentConvolutionBloomResolvePSO = ShaderPipeline::GetReadyPSO(renderSystem->convolutionBloomResolvePipeline);
+void RenderBackend::UpdateFramePSOs() {
+    frameToneMappingPSO = ShaderPipeline::GetReadyPSO(renderSystem->toneMappingPipeline);
+    frameLuminancePass1PSO = ShaderPipeline::GetReadyPSO(renderSystem->luminancePass1Pipeline);
+    frameLuminancePass2PSO = ShaderPipeline::GetReadyPSO(renderSystem->luminancePass2Pipeline);
+    frameBloomPrefilterPSO = ShaderPipeline::GetReadyPSO(renderSystem->bloomPrefilterPipeline);
+    frameBloomDownsamplePSO = ShaderPipeline::GetReadyPSO(renderSystem->bloomDownsamplePipeline);
+    frameBloomUpsamplePSO = ShaderPipeline::GetReadyPSO(renderSystem->bloomUpsamplePipeline);
+    frameConvolutionBloomPrefilterPSO = ShaderPipeline::GetReadyPSO(renderSystem->convolutionBloomPrefilterPipeline);
+    frameConvolutionBloomKernelPreparePSO = ShaderPipeline::GetReadyPSO(renderSystem->convolutionBloomKernelPreparePipeline);
+    frameConvolutionBloomResolvePSO = ShaderPipeline::GetReadyPSO(renderSystem->convolutionBloomResolvePipeline);
 }
 
 const void *RenderBackend::ExecuteBeginContext(const void *data) {
@@ -283,7 +283,7 @@ const void *RenderBackend::ExecuteBeginContext(const void *data) {
     const BeginContextRenderCommand *cmd = reinterpret_cast<const BeginContextRenderCommand *>(data);
 
     currentContext = cmd->renderContext;
-    currentImagePSO = cmd->imagePSO;
+    frameImagePSO = cmd->imagePSO;
 
     statDrawCount = 0;
     statDrawTriangleCount = 0;
@@ -455,7 +455,7 @@ void RenderBackend::BlitRectToSwapChain(const RHI::Texture *texture, const BE1::
         return;
     }
 
-    if (!currentImagePSO) {
+    if (!frameImagePSO) {
         return;
     }
 
@@ -489,7 +489,7 @@ void RenderBackend::BlitRectToSwapChain(const RHI::Texture *texture, const BE1::
     RHI::renderer->BeginRenderPass(mainCommandList, currentContext->swapChain, nullptr);
     RHI::renderer->SetViewport(mainCommandList, outputRect);
     RHI::renderer->SetScissorRect(mainCommandList, outputRect);
-    RHI::renderer->SetPSO(mainCommandList, currentImagePSO);
+    RHI::renderer->SetPSO(mainCommandList, frameImagePSO);
     RHI::renderer->SetTexture(mainCommandList, 0, false, texture);
     RHI::renderer->SetConstants(mainCommandList, 0, &imageParams, sizeof(imageParams), 0);
     RHI::renderer->Draw(mainCommandList, 3, 0);
@@ -612,9 +612,10 @@ void RenderBackend::DrawCamera3D() {
         case RenderPassType::Skybox:
             DrawSkyPass(renderPass);
             break;
-        case RenderPassType::MainOpaque:
-        case RenderPassType::MainTransparent:
-            DrawMainPass(renderPass);
+        case RenderPassType::DepthPrepass:
+        case RenderPassType::Opaque:
+        case RenderPassType::Transparent:
+            DrawGenericPass(renderPass);
             break;
         default:
             break;
@@ -643,7 +644,7 @@ void RenderBackend::UploadStaticDataToGPU(const RenderPass *renderPass) const {
     }
 }
 
-void RenderBackend::SetPassVertexBuffers(RHI::CommandList *commandList, const PassDrawSurf *drawSurf) const {
+void RenderBackend::SetPassVertexBuffers(RHI::CommandList *commandList, const RenderPassDrawSurf *drawSurf) const {
     const SubMesh *subMesh = drawSurf->visSurf->subMesh;
 
     RHI::renderer->SetVertexBuffer(commandList, 0, subMesh->vertexBuffer);
@@ -652,10 +653,10 @@ void RenderBackend::SetPassVertexBuffers(RHI::CommandList *commandList, const Pa
     }
 }
 
-void RenderBackend::DrawMainPass(const RenderPass *renderPass) {
-    PROFILER_CPU_SCOPED_EVENT("RenderBackend::DrawMainPass");
+void RenderBackend::DrawGenericPass(const RenderPass *renderPass) {
+    PROFILER_CPU_SCOPED_EVENT("RenderBackend::DrawGenericPass");
 
-    const PassDrawSurf **drawSurfs = renderPass->drawSurfs;
+    const RenderPassDrawSurf **drawSurfs = renderPass->drawSurfs;
     const uint32_t numDrawSurfs = renderPass->numDrawSurfs;
 
     UploadStaticDataToGPU(renderPass);
@@ -668,7 +669,7 @@ void RenderBackend::DrawMainPass(const RenderPass *renderPass) {
 void RenderBackend::DrawSkyPass(const RenderPass *renderPass) {
     PROFILER_CPU_SCOPED_EVENT("RenderBackend::DrawSkyPass");
 
-    const PassDrawSurf **drawSurfs = renderPass->drawSurfs;
+    const RenderPassDrawSurf **drawSurfs = renderPass->drawSurfs;
     const uint32_t numDrawSurfs = renderPass->numDrawSurfs;
 
     UploadStaticDataToGPU(renderPass);
@@ -681,13 +682,13 @@ void RenderBackend::DrawSkyPass(const RenderPass *renderPass) {
 void RenderBackend::DrawGuiPass(const RenderPass *renderPass) {
     PROFILER_CPU_SCOPED_EVENT("RenderBackend::DrawGuiPass");
 
-    const PassDrawSurf **drawSurfs = renderPass->drawSurfs;
+    const RenderPassDrawSurf **drawSurfs = renderPass->drawSurfs;
     const uint32_t numDrawSurfs = renderPass->numDrawSurfs;
 
     DrawGenericSurfacesWithoutTask(drawSurfs, numDrawSurfs);
 }
 
-static bool CanBatchSurfaceInstances(const PassDrawSurf *baseDrawSurf, const PassDrawSurf *drawSurf) {
+static bool CanBatchSurfaceInstances(const RenderPassDrawSurf *baseDrawSurf, const RenderPassDrawSurf *drawSurf) {
     return drawSurf->pso &&
         drawSurf->pso == baseDrawSurf->pso &&
         drawSurf->visSurf->subMesh == baseDrawSurf->visSurf->subMesh &&
@@ -695,10 +696,10 @@ static bool CanBatchSurfaceInstances(const PassDrawSurf *baseDrawSurf, const Pas
 }
 
 // startIndex 부터 batch 렌더링할 수 있는 최대 endIndex 를 구한다 (MaxInstancesPerDraw 제한은 있음)
-uint32_t RenderBackend::FindSurfaceInstanceBatchEnd(const PassDrawSurf **drawSurfs, uint32_t numDrawSurfs, uint32_t startIndex) const {
+uint32_t RenderBackend::FindSurfaceInstanceBatchEnd(const RenderPassDrawSurf **drawSurfs, uint32_t numDrawSurfs, uint32_t startIndex) const {
     assert(startIndex < numDrawSurfs);
 
-    const PassDrawSurf *baseDrawSurf = drawSurfs[startIndex];
+    const RenderPassDrawSurf *baseDrawSurf = drawSurfs[startIndex];
     uint32_t endIndex = startIndex + 1;
     while (endIndex < numDrawSurfs && endIndex - startIndex < MaxInstancesPerDraw && CanBatchSurfaceInstances(baseDrawSurf, drawSurfs[endIndex])) {
         endIndex++;
@@ -706,7 +707,7 @@ uint32_t RenderBackend::FindSurfaceInstanceBatchEnd(const PassDrawSurf **drawSur
     return endIndex;
 }
 
-RHI::Buffer *RenderBackend::AllocInstanceToShaderSurfaceTable(RHI::FrameThreadData *frameThreadData, const PassDrawSurf **drawSurfs, uint32_t instanceCount) const {
+RHI::Buffer *RenderBackend::AllocInstanceToShaderSurfaceTable(RHI::FrameThreadData *frameThreadData, const RenderPassDrawSurf **drawSurfs, uint32_t instanceCount) const {
     RHI::Buffer *buffer = frameThreadData->AllocStructuredBuffer(sizeof(uint32_t), instanceCount, nullptr);
     if (!buffer) {
         return nullptr;
@@ -720,7 +721,7 @@ RHI::Buffer *RenderBackend::AllocInstanceToShaderSurfaceTable(RHI::FrameThreadDa
     return buffer;
 }
 
-void RenderBackend::DrawSurfaceInstances(RHI::FrameThreadData *frameThreadData, RHI::CommandList *commandList, const PassDrawSurf **drawSurfs, uint32_t instanceCount, uint32_t &drawCount, uint64_t &drawTriangleCount, uint32_t &instanceTableAllocCount, uint32_t &instanceTableUploadBytes) {
+void RenderBackend::DrawSurfaceInstances(RHI::FrameThreadData *frameThreadData, RHI::CommandList *commandList, const RenderPassDrawSurf **drawSurfs, uint32_t instanceCount, uint32_t &drawCount, uint64_t &drawTriangleCount, uint32_t &instanceTableAllocCount, uint32_t &instanceTableUploadBytes) {
     assert(instanceCount > 0);
 
     const VisSurf *firstVisSurf = drawSurfs[0]->visSurf;
