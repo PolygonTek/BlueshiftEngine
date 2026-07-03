@@ -189,7 +189,7 @@ struct FrameConstants {
 struct CameraConstants {
     row_major float4x4 viewProjMatrix;
     uint surfaceTableIndex;
-    uint padding0;
+    float ndcFarZ;
     uint padding1;
     uint padding2;
 };

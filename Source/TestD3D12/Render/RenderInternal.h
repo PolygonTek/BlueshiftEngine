@@ -107,6 +107,7 @@ struct VisCamera {
     RenderCameraClearMethod     clearMethod;
     RenderCameraClearColorMode  clearColorMode;
     BE1::Color4                 clearColor;
+    RHI::ProjectionPolicy       projectionPolicy;
     RenderCameraFlag            flags = RenderCameraFlag::NoFlag;
 
     RHI::Texture *              colorTexture = nullptr;

@@ -261,6 +261,9 @@ bool RenderBackend::UploadCameraConstants() {
     static_assert(sizeof(constants->viewProjMatrix) == sizeof(currentVisCamera->viewProjMatrix));
     BE1::simdProcessor->Memcpy(&constants->viewProjMatrix, &currentVisCamera->viewProjMatrix, sizeof(constants->viewProjMatrix));
     constants->surfaceTableIndex = frameData->GetShaderSurfaceTableBindlessIndex();
+    constants->ndcFarZ = currentVisCamera->projectionPolicy.GetNDCFarZ();
+    constants->padding1 = 0;
+    constants->padding2 = 0;
 
     return true;
 }
@@ -367,7 +370,7 @@ const void *RenderBackend::ExecuteDrawCamera(const void *data) {
 
     RHI::ClearFlag clearFlags = RHI::ClearFlag::None;
     BE1::Color4 clearColor = currentContext->baseClearColor;
-    float clearDepth = 1.0f;
+    float clearDepth = currentVisCamera->projectionPolicy.GetDepthClearValue();
     bool useExplicitClearColor = false;
 
     if (currentVisCamera->clearMethod == RenderCameraClearMethod::Color) {

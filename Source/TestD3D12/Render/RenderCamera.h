@@ -59,7 +59,8 @@ struct RenderCameraDesc {
     float                       sizeX;                  ///< Orthogonal projection size in horizontal axis
     float                       sizeY;                  ///< Orthogonal projection size in vertical axis
     float                       zNear;                  ///< Near distance in z axis
-    float                       zFar;                   ///< Far distance in z axis
+    float                       zFar;                   ///< Finite visibility/culling far distance; ignored by infinite-far perspective projection
+    RHI::ProjectionPolicy       projectionPolicy;       ///< Graphics API projection convention used for shader-visible matrices
     bool                        orthogonal = false;     ///< True for orthogonal projection or false for perspective projection
 };
 

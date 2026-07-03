@@ -40,6 +40,10 @@ static CVAR(d3d12_gpuValidation, "1", BE1::CVar::Flag::Bool, "enable D3D12 GPU v
 void D3D12Renderer::Init(const void *mainWindowHandle) {
     RHI::Renderer::Init(mainWindowHandle);
 
+    projectionPolicy.clipDepthRange = RHI::ClipDepthRange::ZeroToOne;
+    projectionPolicy.reverseZ = true;
+    projectionPolicy.infiniteZFar = true;
+
 #if defined(_DEBUG) || defined(_DEVELOPMENT)
     const bool requestDebugLayer = d3d12_debugLayer.GetBool();
     const bool requestGpuValidation = requestDebugLayer && d3d12_gpuValidation.GetBool();

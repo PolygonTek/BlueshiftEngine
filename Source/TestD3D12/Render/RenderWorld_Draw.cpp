@@ -177,6 +177,7 @@ void RenderWorld::RenderScene(RenderCamera *renderCamera) {
     visCamera->clearMethod = renderCamera->desc.clearMethod;
     visCamera->clearColorMode = renderCamera->desc.clearColorMode;
     visCamera->clearColor = renderCamera->desc.clearColor;
+    visCamera->projectionPolicy = renderCamera->desc.projectionPolicy;
     visCamera->flags = renderCamera->desc.flags;
     visCamera->colorTexture = renderCamera->GetColorTexture();
     visCamera->colorMSAATexture = renderCamera->GetColorMSAATexture();
@@ -666,6 +667,7 @@ void RenderWorld::DrawGUICamera(RenderFrameData *frameData, uint32_t screenWidth
     visCamera->renderWidth = screenWidth;
     visCamera->renderHeight = screenHeight;
     visCamera->clearMethod = RenderCameraClearMethod::NoClear;
+    visCamera->projectionPolicy = RHI::renderer->GetProjectionPolicy();
     visCamera->flags = RenderCameraFlag::SkipPostProcess;
     //visCamera->time = BE1::PlatformTime::Milliseconds();
     //visCamera->orthogonal = true;

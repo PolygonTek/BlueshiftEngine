@@ -139,7 +139,7 @@ private:
     BE1::Array<PendingScreenshot>   pendingScreenshots;
 
     RHI::Format                     mainRTColorFormat = RHI::Format::R8G8B8A8_UNORM;
-    RHI::Format                     mainRTDepthFormat = RHI::Format::D24_UNORM_S8_UINT;
+    RHI::Format                     mainRTDepthFormat = RHI::Format::D32_FLOAT;
     uint32_t                        mainRTSampleCount = 1;
 
     SharedPtr<ShaderPipeline>       imagePipeline;

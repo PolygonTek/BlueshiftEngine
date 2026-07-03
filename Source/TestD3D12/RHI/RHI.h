@@ -524,6 +524,21 @@ namespace RHI {
         uint64_t                        sharedSystemMemoryBytes = 0;
     };
 
+    enum class ClipDepthRange : uint8_t {
+        ZeroToOne,
+        NegativeOneToOne
+    };
+
+    struct ProjectionPolicy {
+        ClipDepthRange                  clipDepthRange = ClipDepthRange::ZeroToOne;
+        bool                            reverseZ = false;
+        bool                            infiniteZFar = false;
+
+        bool                            IsZNegativeOneToOne() const { return clipDepthRange == ClipDepthRange::NegativeOneToOne; }
+        float                           GetNDCFarZ() const { return reverseZ ? (IsZNegativeOneToOne() ? -1.0f : 0.0f) : 1.0f; }
+        float                           GetDepthClearValue() const { return reverseZ ? 0.0f : 1.0f; }
+    };
+
     enum class QueryType : uint8_t {
         Timestamp,
         Occlusion,
@@ -1026,6 +1041,7 @@ namespace RHI {
 
         virtual void                    GetMemoryUsage(MemoryUsage &memoryUsage) const = 0;
         virtual const RendererInfo &    GetRendererInfo() const = 0;
+        const ProjectionPolicy &        GetProjectionPolicy() const { return projectionPolicy; }
 
         virtual uint64_t                SignalFence(CommandQueueType queueType) = 0;
         virtual bool                    IsFenceComplete(CommandQueueType queueType, uint64_t checkFenceValue) = 0;
@@ -1185,6 +1201,7 @@ namespace RHI {
         RasterizerState                 rasterizerStates[to_int(RasterizerStateType::Count)];
         DepthStencilState               depthStencilStates[to_int(DepthStencilStateType::Count)];
         BlendState                      blendStates[to_int(BlendStateType::Count)];
+        ProjectionPolicy                projectionPolicy;
         uint32_t                        max1DTextureSize = 0;
         uint32_t                        max2DTextureSize = 0;
         uint32_t                        max3DTextureSize = 0;

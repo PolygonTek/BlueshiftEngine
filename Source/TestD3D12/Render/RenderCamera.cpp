@@ -47,6 +47,10 @@ static void SetViewMatrix(const BE1::Mat3 &viewAxis, const BE1::Vec3 &viewOrigin
 void RenderCamera::Update(const RenderCameraDesc &desc) {
     this->desc = desc;
 
+    const bool zNegativeOneToOne = desc.projectionPolicy.IsZNegativeOneToOne();
+    const bool reverseZ = desc.projectionPolicy.reverseZ;
+    const bool infiniteZFar = desc.projectionPolicy.infiniteZFar;
+
     if (desc.orthogonal) {
         // Set bounding volume for orthogonal view.
         BE1::Vec3 extents((desc.zFar - desc.zNear) * 0.5f, desc.sizeX, desc.sizeY);
@@ -55,7 +59,7 @@ void RenderCamera::Update(const RenderCameraDesc &desc) {
         box.SetAxis(desc.axis);
 
         // Calculate orthogonal projection matrix.
-        projMatrix.SetOrthoRH(-desc.sizeX, desc.sizeX, -desc.sizeY, desc.sizeY, desc.zNear, desc.zFar, false);
+        projMatrix.SetOrthoRH(-desc.sizeX, desc.sizeX, -desc.sizeY, desc.sizeY, desc.zNear, desc.zFar, zNegativeOneToOne, reverseZ);
     } else {
         // Set bounding frustum for perspective view.
         frustum.SetOrigin(desc.origin);
@@ -69,7 +73,7 @@ void RenderCamera::Update(const RenderCameraDesc &desc) {
         frustum.ToPoints(frustumPoints);
 
         // Calculate perspective projection matrix.
-        projMatrix.SetPerspectiveRH(desc.fovY, desc.fovX / desc.fovY, desc.zNear, desc.zFar, false);
+        projMatrix.SetPerspectiveRH(desc.fovY, desc.fovX / desc.fovY, desc.zNear, desc.zFar, zNegativeOneToOne, reverseZ, infiniteZFar);
     }
 
     // Calculate view matrix.
@@ -281,6 +285,14 @@ void RenderCamera::UpdateConvolutionBloomGuardedContentRect() {
         (guardedContentH / aspectFitContentH) * kernelSizeScale);
 }
 
+static float NDCZToDeviceDepth(float ndcZ, const RHI::ProjectionPolicy &projectionPolicy) {
+    return projectionPolicy.IsZNegativeOneToOne() ? ndcZ * 0.5f + 0.5f : ndcZ;
+}
+
+static float DeviceDepthToNDCZ(float depth, const RHI::ProjectionPolicy &projectionPolicy) {
+    return projectionPolicy.IsZNegativeOneToOne() ? depth * 2.0f - 1.0f : depth;
+}
+
 bool RenderCamera::TransformWorldToNDC(const BE1::Vec3 &worldPosition, BE1::Vec3 &normalizedDeviceCoords) const {
     BE1::Vec4 clipCoords = viewProjMatrix * BE1::Vec4(worldPosition, 1.0f);
     if (clipCoords.w > 0) {
@@ -297,11 +309,11 @@ bool RenderCamera::TransformWorldToNDC(const BE1::Vec3 &worldPosition, BE1::Vec3
 void RenderCamera::TransformNDCToPixel(const BE1::Vec3 &normalizedDeviceCoords, BE1::Vec3 &pixelCoords) const {
     float fx = (normalizedDeviceCoords.x + 1.0f) * 0.5f; // Valid range is [0, 1]
     float fy = 1.0f - (normalizedDeviceCoords.y + 1.0f) * 0.5f; // Valid range is [0, 1]
-    float fz = (normalizedDeviceCoords.z + 1.0f) * 0.5f; // Valid range is [0, 1]
+    float fz = NDCZToDeviceDepth(normalizedDeviceCoords.z, desc.projectionPolicy); // Valid range is [0, 1]
 
     pixelCoords.x = desc.outputRect.x + fx * desc.outputRect.w;
     pixelCoords.y = desc.outputRect.y + fy * desc.outputRect.h;
-    pixelCoords.z = fz; // depth value
+    pixelCoords.z = fz; // device depth value
 }
 
 bool RenderCamera::TransformWorldToPixel(const BE1::Vec3 &worldPosition, BE1::Vec3 &pixelCoords) const {
@@ -317,11 +329,11 @@ bool RenderCamera::TransformWorldToPixel(const BE1::Vec3 &worldPosition, BE1::Ve
 void RenderCamera::UntransformPixelToNDC(const BE1::Vec3 &pixelCoords, BE1::Vec3 &normalizedDeviceCoords) const {
     float fx = (pixelCoords.x - desc.outputRect.x) / desc.outputRect.w;
     float fy = 1.0f - (pixelCoords.y - desc.outputRect.y) / desc.outputRect.h;
-    float fz = pixelCoords.z; // depth value
+    float fz = pixelCoords.z; // device depth value
 
     normalizedDeviceCoords.x = (fx * 2.0f) - 1.0f;
     normalizedDeviceCoords.y = (fy * 2.0f) - 1.0f;
-    normalizedDeviceCoords.z = (fz * 2.0f) - 1.0f;
+    normalizedDeviceCoords.z = DeviceDepthToNDCZ(fz, desc.projectionPolicy);
 }
 
 bool RenderCamera::UntransformNDCToWorld(const BE1::Vec3 &normalizedDeviceCoords, BE1::Vec3 &worldCoords) const {
@@ -568,6 +580,10 @@ bool RenderCamera::CalcClipRectFromFrustum(const BE1::Frustum &frustum, BE1::Rec
 }
 
 bool RenderCamera::CalcDepthBoundsFromPoints(int numPoints, const BE1::Vec3 *points, const BE1::Mat4 &mvp, float *depthMin, float *depthMax) const {
+    const float ndcMin = desc.projectionPolicy.IsZNegativeOneToOne() ? -1.0f : 0.0f;
+    const float ndcMax = 1.0f;
+    const float clippedNearZ = desc.projectionPolicy.reverseZ ? ndcMax : ndcMin;
+
     float localMin = BE1::Math::Infinity;
     float localMax = -BE1::Math::Infinity;
 
@@ -580,20 +596,23 @@ bool RenderCamera::CalcDepthBoundsFromPoints(int numPoints, const BE1::Vec3 *poi
         if (cw > BE1::Math::FloatSmallestNonDenormal) {
             cz = cz / cw;
         } else {
-            cz = -1.0f;
+            cz = clippedNearZ;
         }
 
         localMin = BE1::Min(localMin, cz);
         localMax = BE1::Max(localMax, cz);
     }
 
-    if (localMin <= localMax && (localMin >= -1.0 || localMax <= 1.0)) {
-        *depthMin = localMin * 0.5f + 0.5f;
-        *depthMax = localMax * 0.5f + 0.5f;
-        return true;
+    if (localMax < ndcMin || localMin > ndcMax) {
+        return false;
     }
 
-    return false;
+    localMin = BE1::Max(localMin, ndcMin);
+    localMax = BE1::Min(localMax, ndcMax);
+
+    *depthMin = NDCZToDeviceDepth(localMin, desc.projectionPolicy);
+    *depthMax = NDCZToDeviceDepth(localMax, desc.projectionPolicy);
+    return true;
 }
 
 bool RenderCamera::CalcDepthBoundsFromSphere(const BE1::Sphere &sphere, const BE1::Mat4 &mvp, float *depthMin, float *depthMax) const {
@@ -804,7 +823,7 @@ bool RenderCamera::CreateRenderTextures(uint32_t width, uint32_t height, RHI::Fo
     BE1::Image::Format depthImageFormat = BE1::Image::Format::Unknown;
     RHI::Renderer::RHIFormatToImageFormat(depthFormat, &depthImageFormat, nullptr);
 
-    const RHI::ClearValue depthStencilOptimizedClearValue = RHI::ClearValue::DepthStencil(1.0f, 0);
+    const RHI::ClearValue depthStencilOptimizedClearValue = RHI::ClearValue::DepthStencil(desc.projectionPolicy.GetDepthClearValue(), 0);
 
     SharedPtr<BE1::Image> depthStencilImage = MakeShared<BE1::Image>();
     depthStencilImage->InitFromMemory(width, height, 1, 1, 1, depthImageFormat, BE1::Image::GammaSpace::Linear, nullptr, BE1::Image::Flag::None);
