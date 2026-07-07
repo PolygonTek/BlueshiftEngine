@@ -427,6 +427,18 @@ void App::BuildImGuiOverlay() {
                 r_depthPrepass.SetBool(depthPrepass);
             }
 
+            static constexpr int msaaSampleCounts[] = { 1, 2, 4, 8 };
+            int msaaSampleCount = r_msaa.GetInteger();
+            int msaaSampleCountIndex = msaaSampleCount >= 8 ? 3 : (msaaSampleCount >= 4 ? 2 : (msaaSampleCount >= 2 ? 1 : 0));
+            ImGui::SetNextItemWidth(fontSize * 12.0f);
+            if (ImGui::Combo("MSAA", &msaaSampleCountIndex,
+                "Off\0"
+                "2x\0"
+                "4x\0"
+                "8x\0")) {
+                r_msaa.SetInteger(msaaSampleCounts[msaaSampleCountIndex]);
+            }
+
             if (roundedCollapsingHeader("Skip options##RenderSkipOptionsHeader")) {
                 bool skipCulling = r_skipFrustumCulling.GetBool();
                 if (ImGui::Checkbox("Skip frustum culling", &skipCulling)) {

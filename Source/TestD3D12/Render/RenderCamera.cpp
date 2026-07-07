@@ -843,7 +843,13 @@ bool RenderCamera::CreateRTColorTextures(uint32_t width, uint32_t height, RHI::F
 
     SharedPtr<BE1::Image> colorImage = MakeShared<BE1::Image>();
     colorImage->InitFromMemory(width, height, 1, 1, 1, colorImageFormat, BE1::Image::GammaSpace::Linear, nullptr, BE1::Image::Flag::None);
-    rtColorTexture = RHI::renderer->CreateTexture(RHI::TextureType::Texture2D, RHI::TextureFlag::RenderTarget | RHI::TextureFlag::ShaderResource, colorImage, RHI::TextureMipInitMode::FromImage, colorOptimizedClearValue, 1, RHI::GPUResourceState::ShaderResource);
+
+    RHI::TextureFlag colorTextureFlags = RHI::TextureFlag::ShaderResource;
+    if (sampleCount == 1) {
+        // MSAA 가 아닌 경우에만 RenderTarget 플래그를 설정한다. MSAA 인 경우에는 직접 렌더 대상이 아니고, Resolve 만 수행되므로 RenderTarget 플래그를 설정하지 않는다.
+        colorTextureFlags |= RHI::TextureFlag::RenderTarget;
+    }
+    rtColorTexture = RHI::renderer->CreateTexture(RHI::TextureType::Texture2D, colorTextureFlags, colorImage, RHI::TextureMipInitMode::FromImage, colorOptimizedClearValue, 1, RHI::GPUResourceState::ShaderResource);
     if (!rtColorTexture) {
         DestroyRenderTextures();
         BE_WARNLOG("RenderCamera::CreateRTColorTextures: failed to create color texture\n");

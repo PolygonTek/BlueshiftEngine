@@ -1539,8 +1539,6 @@ void D3D12Renderer::BeginRenderPass(RHI::CommandList *commandList, const RHI::Re
         case RHI::RenderPassImage::Type::ResolveColor:
         {
             // 지정한 Color 렌더타겟의 Resolve 정보를 기록한다.
-            assert(texture->HasValidView(RHI::ViewType::RTV, renderPassImage.viewID));
-            const D3D12RTVEntry &rtvEntry = texture->rtvEntries[renderPassImage.viewID.value];
             const ResolveSource &resolveSource = rtResolveSources[renderPassImage.resolveSourceIndex];
             D3D12_RENDER_PASS_RENDER_TARGET_DESC &rtDesc = rtDescs[renderPassImage.resolveSourceIndex];
             rtDesc.EndingAccess.Type = D3D12_RENDER_PASS_ENDING_ACCESS_TYPE_RESOLVE;
@@ -1550,8 +1548,15 @@ void D3D12Renderer::BeginRenderPass(RHI::CommandList *commandList, const RHI::Re
             rtDesc.EndingAccess.Resolve.pDstResource = reinterpret_cast<ID3D12Resource *>(texture->GetNativeResource());
             rtDesc.EndingAccess.Resolve.PreserveResolveSource = resolveSource.preserve;
 
-            // 텍스쳐의 RTV 정보를 가져온다.
-            GetInfoFromRTVDesc(rtvEntry.viewDesc, destMipSlice, destFirstArraySlice, destArraySize);
+            if (texture->HasValidView(RHI::ViewType::RTV, renderPassImage.viewID)) {
+                const D3D12RTVEntry &rtvEntry = texture->rtvEntries[renderPassImage.viewID.value];
+                GetInfoFromRTVDesc(rtvEntry.viewDesc, destMipSlice, destFirstArraySlice, destArraySize);
+            } else {
+                assert(renderPassImage.viewID.IsPrimary());
+                destMipSlice = 0;
+                destFirstArraySlice = 0;
+                destArraySize = texture->textureDesc.Dimension == D3D12_RESOURCE_DIMENSION_TEXTURE3D ? 1 : texture->textureDesc.DepthOrArraySize;
+            }
 
             UINT destWidth = BE1::Max((int)(texture->textureDesc.Width >> destMipSlice), 1);
             UINT destHeight = BE1::Max((int)(texture->textureDesc.Height >> destMipSlice), 1);

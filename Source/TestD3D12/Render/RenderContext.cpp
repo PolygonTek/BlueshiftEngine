@@ -16,6 +16,7 @@
 #include "RenderSystem.h"
 #include "RenderContext.h"
 #include "RenderBackend.h"
+#include "RenderCvars.h"
 #include "RenderInternal.h"
 #include "Render/ShaderPipeline/ShaderTemplateManager.h"
 #include "Render/ShaderPipeline/ShaderPipelineCache.h"
@@ -25,6 +26,21 @@
 RenderContext *         RenderContext::activeContext = nullptr;
 
 static constexpr int    GpuStatUpdateSampleCount = 16;
+
+static uint32_t GetMainRTSampleCountFromCVar() {
+    const int sampleCount = r_msaa.GetInteger();
+
+    if (sampleCount >= 8) {
+        return 8;
+    }
+    if (sampleCount >= 4) {
+        return 4;
+    }
+    if (sampleCount >= 2) {
+        return 2;
+    }
+    return 1;
+}
 
 void RenderContext::Init(void *windowHandle, const BE1::Color4 &baseClearColor) {
     this->windowHandle = windowHandle;
@@ -55,6 +71,7 @@ void RenderContext::Init(void *windowHandle, const BE1::Color4 &baseClearColor) 
 #endif
 
     mainRTColorFormat = RHI::Format::R16G16B16A16_FLOAT;
+    mainRTSampleCount = GetMainRTSampleCountFromCVar();
     this->baseClearColor = !RHI::Renderer::IsSRGBFormat(mainRTColorFormat) ? baseClearColor.SRGBToLinear() : baseClearColor;
 
     InitPipelines();
@@ -223,6 +240,7 @@ void RenderContext::BeginFrame(float frameTime, float elapsedTime, float elapsed
 
     currentFrontendFrameIndex = frameCount % COUNT_OF(frames);
     RenderFrameData *frameData = GetCurrentFrontendFrameData();
+    mainRTSampleCount = GetMainRTSampleCountFromCVar();
 
     if (renderSystem->IsUsingRenderThread()) {
         // 현재 프론트엔드 프레임의 렌더 스레드 작업이 끝날 때까지 기다린다.
