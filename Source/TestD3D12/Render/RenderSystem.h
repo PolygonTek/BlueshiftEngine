@@ -102,6 +102,7 @@ private:
     bool                            isStoppingRenderThread = false;
 
     SharedPtr<ShaderTemplate>       genHiZMipFirstBatchShaderTemplate;
+    SharedPtr<ShaderTemplate>       genHiZMipFirstBatchMSAAShaderTemplate;
     SharedPtr<ShaderTemplate>       genHiZMipBatchShaderTemplate;
     SharedPtr<ShaderTemplate>       genHiZMipOddDimShaderTemplate;
     SharedPtr<ShaderTemplate>       hiZCullInstancesShaderTemplate;
@@ -123,6 +124,7 @@ private:
     SharedPtr<ShaderTemplate>       convolutionBloomApplyDispersionShaderTemplate;
 
     SharedPtr<ShaderPipeline>       genHiZMipFirstBatchPipeline;
+    SharedPtr<ShaderPipeline>       genHiZMipFirstBatchMSAAPipeline;
     SharedPtr<ShaderPipeline>       genHiZMipBatchPipeline;
     SharedPtr<ShaderPipeline>       genHiZMipOddDimPipeline;
     SharedPtr<ShaderPipeline>       hiZCullInstancesPipeline;

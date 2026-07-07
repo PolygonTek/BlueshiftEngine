@@ -151,15 +151,15 @@ bool RenderBackend::DispatchGenHiZ() {
         return false;
     }
 
-    if (depthTexture->GetSampleCount() != 1 || hiZTexture->GetSampleCount() != 1) {
-        return false;
-    }
-
     const uint32_t useMinDepth = currentVisCamera->projectionPolicy.reverseZ ? 1 : 0;
     const uint32_t depthWidth = depthTexture->GetWidth();
     const uint32_t depthHeight = depthTexture->GetHeight();
     const uint32_t firstBatchMipCount = 1 + CountFastHiZReductions(currentVisCamera, 0, BE1::Min(hiZMipCount - 1, 3u));
     RHI::FrameThreadData *frameThreadData = frameData->GetThreadData(0);
+    RHI::PipelineState *firstBatchPSO = depthTexture->GetSampleCount() > 1 ? frameGenHiZMipFirstBatchMSAAPSO : frameGenHiZMipFirstBatchPSO;
+    if (!firstBatchPSO) {
+        return false;
+    }
 
     HiZMipGenParams hiZMipGenParams = {};
     hiZMipGenParams.inputSize = uint2(depthWidth, depthHeight);
@@ -182,7 +182,7 @@ bool RenderBackend::DispatchGenHiZ() {
     }
     RHI::renderer->Barrier(mainCommandList, startBarriers, startBarrierCount);
 
-    RHI::renderer->SetPSO(mainCommandList, frameGenHiZMipFirstBatchPSO);
+    RHI::renderer->SetPSO(mainCommandList, firstBatchPSO);
     RHI::renderer->SetTexture(mainCommandList, 0, false, depthTexture, RHI::ViewID::PrimaryID);
 
     for (uint32_t outputIndex = 0; outputIndex < 4; ++outputIndex) {

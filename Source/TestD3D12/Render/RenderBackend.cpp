@@ -274,6 +274,7 @@ bool RenderBackend::UploadCameraConstants() {
 
 void RenderBackend::UpdateFramePSOs() {
     frameGenHiZMipFirstBatchPSO = ShaderPipeline::GetReadyPSO(renderSystem->genHiZMipFirstBatchPipeline);
+    frameGenHiZMipFirstBatchMSAAPSO = ShaderPipeline::GetReadyPSO(renderSystem->genHiZMipFirstBatchMSAAPipeline);
     frameGenHiZMipBatchPSO = ShaderPipeline::GetReadyPSO(renderSystem->genHiZMipBatchPipeline);
     frameGenHiZMipOddDimPSO = ShaderPipeline::GetReadyPSO(renderSystem->genHiZMipOddDimPipeline);
     frameHiZCullInstancesPSO = ShaderPipeline::GetReadyPSO(renderSystem->hiZCullInstancesPipeline);

@@ -166,7 +166,7 @@ void RenderWorld::RenderScene(RenderCamera *renderCamera) {
     renderCamera->EnsurePostProcessResources();
 
     const RenderBloomMode bloomMode = static_cast<RenderBloomMode>(BE1::Clamp(r_bloom.GetInteger(), static_cast<int>(RenderBloomMode::Off), static_cast<int>(RenderBloomMode::Convolution)));
-    const bool canUseHiZ = renderCamera->GetDepthTexture() && renderCamera->GetDepthTexture()->GetSampleCount() == 1;
+    const bool canUseHiZ = renderCamera->GetDepthTexture() != nullptr;
     const bool requestHiZOcclusionCulling = !BE1::HasFlag(renderCamera->desc.flags, RenderCameraFlag::DisableHiZCulling) && canUseHiZ && r_hiZOcclusionCulling.GetBool();
     const bool requestHiZDebugPreview = canUseHiZ && r_hiZDebugPreview.GetBool() && renderCamera->EnsureHiZDebugPreviewTexture(renderWidth, renderHeight);
     const bool requestHiZGeneration = requestHiZOcclusionCulling;

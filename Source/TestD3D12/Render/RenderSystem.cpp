@@ -112,15 +112,28 @@ void RenderSystem::Shutdown() {
     RHI::DestroyRenderer();
 }
 
-static SharedPtr<ShaderTemplate> CreateComputeShaderTemplate(const char *hashName, RHI::ShaderModel shaderModel, const char *filename, const char *baseDir) {
+static SharedPtr<ShaderTemplate> CreateComputeShaderTemplate(const char *hashName, RHI::ShaderModel shaderModel, const char *filename, const char *baseDir, const char *baseDefine = nullptr) {
     BE1::Str shaderTemplateText;
-    shaderTemplateText.sPrintf(
-        "{\n"
-        "    stages {\n"
-        "        compute %s \"%s\" \"%s\"\n"
-        "    }\n"
-        "}\n",
-        RHI::Renderer::ShaderModelName(shaderModel), filename, "CSMain");
+    if (baseDefine && baseDefine[0]) {
+        shaderTemplateText.sPrintf(
+            "{\n"
+            "    baseDefines {\n"
+            "        %s\n"
+            "    }\n"
+            "    stages {\n"
+            "        compute %s \"%s\" \"%s\"\n"
+            "    }\n"
+            "}\n",
+            baseDefine, RHI::Renderer::ShaderModelName(shaderModel), filename, "CSMain");
+    } else {
+        shaderTemplateText.sPrintf(
+            "{\n"
+            "    stages {\n"
+            "        compute %s \"%s\" \"%s\"\n"
+            "    }\n"
+            "}\n",
+            RHI::Renderer::ShaderModelName(shaderModel), filename, "CSMain");
+    }
 
     SharedPtr<ShaderTemplate> shaderTemplate = shaderTemplateManager.AllocShaderTemplate(hashName);
     if (!shaderTemplate->Create(shaderTemplateText.c_str(), baseDir)) {
@@ -142,6 +155,7 @@ void RenderSystem::InitComputePipelines() {
     const RHI::ShaderModel computeShaderModel = RHI::ShaderModel::SM_6_6;
 
     genHiZMipFirstBatchShaderTemplate = CreateComputeShaderTemplate("_genHiZMipFirstBatchShader", computeShaderModel, "GenHiZMip/GenHiZMipFirstBatch.hlsl", baseDir);
+    genHiZMipFirstBatchMSAAShaderTemplate = CreateComputeShaderTemplate("_genHiZMipFirstBatchMSAAShader", computeShaderModel, "GenHiZMip/GenHiZMipFirstBatch.hlsl", baseDir, "GEN_HIZ_DEPTH_MSAA=1");
     genHiZMipBatchShaderTemplate = CreateComputeShaderTemplate("_genHiZMipBatchShader", computeShaderModel, "GenHiZMip/GenHiZMipBatch.hlsl", baseDir);
     genHiZMipOddDimShaderTemplate = CreateComputeShaderTemplate("_genHiZMipOddDimShader", computeShaderModel, "GenHiZMip/GenHiZMipOddDim.hlsl", baseDir);
     hiZCullInstancesShaderTemplate = CreateComputeShaderTemplate("_hiZCullInstancesShader", computeShaderModel, "HiZCullInstances.hlsl", baseDir);
@@ -168,6 +182,7 @@ void RenderSystem::InitComputePipelines() {
 
 void RenderSystem::EnsureComputePipelines() {
     EnsureComputePipeline(genHiZMipFirstBatchShaderTemplate, genHiZMipFirstBatchPipeline);
+    EnsureComputePipeline(genHiZMipFirstBatchMSAAShaderTemplate, genHiZMipFirstBatchMSAAPipeline);
     EnsureComputePipeline(genHiZMipBatchShaderTemplate, genHiZMipBatchPipeline);
     EnsureComputePipeline(genHiZMipOddDimShaderTemplate, genHiZMipOddDimPipeline);
     EnsureComputePipeline(hiZCullInstancesShaderTemplate, hiZCullInstancesPipeline);
@@ -192,6 +207,7 @@ void RenderSystem::EnsureComputePipelines() {
 
 void RenderSystem::ReleaseComputePipelines() {
     genHiZMipFirstBatchPipeline.reset();
+    genHiZMipFirstBatchMSAAPipeline.reset();
     genHiZMipBatchPipeline.reset();
     genHiZMipOddDimPipeline.reset();
     hiZCullInstancesPipeline.reset();
@@ -214,6 +230,7 @@ void RenderSystem::ReleaseComputePipelines() {
     convolutionBloomApplyDispersionPipeline.reset();
 
     genHiZMipFirstBatchShaderTemplate.reset();
+    genHiZMipFirstBatchMSAAShaderTemplate.reset();
     genHiZMipBatchShaderTemplate.reset();
     genHiZMipOddDimShaderTemplate.reset();
     hiZCullInstancesShaderTemplate.reset();

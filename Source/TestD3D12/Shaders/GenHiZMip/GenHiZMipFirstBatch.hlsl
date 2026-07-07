@@ -1,5 +1,9 @@
 #include "../Common.hlsli"
 
+#ifndef GEN_HIZ_DEPTH_MSAA
+#define GEN_HIZ_DEPTH_MSAA 0
+#endif
+
 #define COMMON_ROOT_SIGNATURE "RootFlags(0), " \
     "DescriptorTable(SRV(t0), UAV(u0), UAV(u1), UAV(u2), UAV(u3)), " \
     "CBV(b0)"
@@ -8,7 +12,11 @@ cbuffer HiZMipGenCB : register(b0) {
     HiZMipGenParams hiZMipGenParams;
 }
 
+#if GEN_HIZ_DEPTH_MSAA
+Texture2DMS<float> inputDepthTexture : register(t0);
+#else
 Texture2D<float> inputDepthTexture : register(t0);
+#endif
 RWTexture2D<float> outputMip0 : register(u0);
 RWTexture2D<float> outputMip1 : register(u1);
 RWTexture2D<float> outputMip2 : register(u2);
@@ -34,7 +42,22 @@ float ReduceQuadDepth(float depth) {
 
 float LoadInputDepth(uint2 coord) {
     coord = min(coord, hiZMipGenParams.inputSize - 1);
+
+#if GEN_HIZ_DEPTH_MSAA
+    uint width;
+    uint height;
+    uint sampleCount;
+    inputDepthTexture.GetDimensions(width, height, sampleCount);
+
+    float depth = inputDepthTexture.Load(int2(coord), 0);
+    for (uint sampleIndex = 1; sampleIndex < sampleCount; ++sampleIndex) {
+        const float sampleDepth = inputDepthTexture.Load(int2(coord), sampleIndex);
+        depth = hiZMipGenParams.useMinDepth != 0 ? min(depth, sampleDepth) : max(depth, sampleDepth);
+    }
+    return depth;
+#else
     return inputDepthTexture.Load(int3(coord, 0));
+#endif
 }
 
 [RootSignature(COMMON_ROOT_SIGNATURE)]
