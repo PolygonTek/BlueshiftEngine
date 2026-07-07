@@ -28,6 +28,10 @@ extern BE1::CVar    r_skipDrawCamera3D;
 extern BE1::CVar    r_skipPostProcess;
 
 extern BE1::CVar    r_depthPrepass;
+extern BE1::CVar    r_hiZOcclusionCulling;
+extern BE1::CVar    r_hiZOcclusionCullingFreeze;
+extern BE1::CVar    r_hiZDebugPreview;
+extern BE1::CVar    r_hiZDebugPreviewMipLevel;
 
 extern BE1::CVar    r_textureStreamingStreamInDelay;
 extern BE1::CVar    r_textureStreamingMaxRequestsPerFrame;

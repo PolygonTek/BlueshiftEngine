@@ -75,7 +75,17 @@ static const uint ToneMappingOperatorFilmicGT = 10;
 
 static const uint BloomBlockSizeX = 16;
 static const uint BloomBlockSizeY = 16;
+
 static const uint ConvolutionBloomApertureEnergyReduceBlockSize = 256;
+
+static const uint GenHiZMipBlockSizeX = 8;
+static const uint GenHiZMipBlockSizeY = 8;
+static const uint HiZDebugPreviewBlockSizeX = 16;
+static const uint HiZDebugPreviewBlockSizeY = 16;
+
+static const uint HiZCullThreadCount = 64;
+static const uint HiZCullIndirectArgInstanceCountOffset = 4;
+static const uint HiZCullIndirectArgSize = 20;
 
 static const uint MultiplySpectrum2DBlockSize = 256;
 
@@ -161,6 +171,36 @@ struct BloomParams {
 #define BP_BLOOM_DISPERSION_SAMPLE_COUNT bloomParams.params1.x
 #define BP_BLOOM_DISPERSION_INTENSITY_SCALE bloomParams.params1.y
 
+struct HiZMipGenParams {
+    uint2 inputSize;
+    uint2 outputSize;
+    float2 inputSizeRcp;
+    uint outputMipCount;
+    uint useMinDepth;
+};
+
+struct HiZDebugPreviewParams {
+    uint2 inputSize;
+    uint2 outputSize;
+    float2 projectionDepthParams;
+    float2 ndcDepthScaleBias;
+    float linearDepthScale;
+    uint orthogonal;
+    uint padding0;
+    uint padding1;
+};
+
+struct HiZCullInstancesParams {
+    uint inputInstanceCount;
+    uint surfaceTableIndex;
+    uint hiZWidth;
+    uint hiZHeight;
+    uint hiZMipCount;
+    uint useMinDepth;
+    uint instanceBaseOffset;
+    uint indirectArgOffset;
+};
+
 struct MultiplySpectrum2DParams {
     uint fftSize;
     uint planeCount;
@@ -188,14 +228,23 @@ struct FrameConstants {
 
 struct CameraConstants {
     row_major float4x4 viewProjMatrix;
+    row_major float4x4 invViewProjMatrix;
+    row_major float4x4 prevViewProjMatrix;
+    row_major float4x4 prevInvViewProjMatrix;
+    row_major float4x4 hiZCullViewProjMatrix;
     uint surfaceTableIndex;
     float ndcFarZ;
     uint padding1;
     uint padding2;
 };
 
+struct SurfaceDrawParams {
+    uint instanceBaseOffset;
+};
+
 struct ShaderSurface {
     row_major float3x4 worldMatrix;
+    float4 localBoundingSphere;
     uint shaderMaterialIndex;
     uint padding0;
     uint padding1;

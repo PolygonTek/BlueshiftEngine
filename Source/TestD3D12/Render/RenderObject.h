@@ -93,7 +93,7 @@ public:
         enum class UpdateFlag : uint32_t {
             All                     = 0xFFFFFFFF,
             Transform               = BIT(0),
-            AABB                    = BIT(1),
+            Bounds                  = BIT(1),
             Mesh                    = BIT(2),
             Materials               = BIT(3),
             Font                    = BIT(4),

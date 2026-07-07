@@ -75,7 +75,8 @@ public:
     int                     MaxVertexWeights() const;
     void *                  VertexWeights() const { return vertWeights; }
 
-    const BE1::AABB &       GetAABB() const { return aabb; }
+    const BE1::AABB &       GetBoundingBox() const { return boundingBox; }
+    const BE1::Sphere &     GetBoundingSphere() const { return boundingSphere; }
 
                             /// Finds the edge index corresponding to the edge defined by vertex indexes v1 and v2.
                             /// If the given vertex indices are in descending order (v1 > v2), a negative value is returned.
@@ -114,8 +115,8 @@ private:
                             /// Copies sub-mesh data from another sub-mesh. The destination should already be allocated.
     void                    CopyFrom(const SubMesh *other);
 
-                            /// Computes axis-aligned bounding box.
-    void                    ComputeAABB();
+                            /// Computes local-space bounds (AABB + bounding sphere).
+    void                    ComputeBounds();
 
                             /// Computes area weighted average of the normals.
     void                    ComputeNormals();
@@ -127,18 +128,19 @@ private:
 
     void                    ComputeEdges();
 
-    int32_t                 subMeshId = -1;             ///< ID of the sub-mesh.
-    uint32_t                numVerts = 0;               ///< Number of vertices.
-    BE1::VertexGenericLit * verts = nullptr;            ///< Pointer to vertices.
-    BE1::DominantTri *      dominantTris = nullptr;     ///< Dominant triangles for each vertex.
-    uint32_t                numIndexes = 0;             ///< Number of triangle indices.
-    BE1::VertIndex *        indexes = nullptr;          ///< Triangle indices in counter-clockwise order.
-    uint32_t                numEdges = 0;               ///< Number of edges that is not including shared edges.
-    Edge *                  edges = nullptr;            ///< Pointer to edges (shared edges are not stored explicitly).
-    int32_t *               edgeIndexes = nullptr;      ///< Mapping from triangle edge indices to edge indices (negative values indicate shared edges).
-    BE1::AABB               aabb = BE1::AABB::empty;    ///< Local axis-aligned bounding box (AABB) for this sub-mesh.
-    void *                  vertWeights = nullptr;      ///< vertex weights for GPU skinning (numVerts * sizeof(VertexWeightX))
-    int                     gpuSkinningVersionIndex;    ///< 0: VertexWeight1, 1: VertexWeight4, 2: VertexWeight8
+    int32_t                 subMeshId = -1;                     ///< ID of the sub-mesh.
+    uint32_t                numVerts = 0;                       ///< Number of vertices.
+    BE1::VertexGenericLit * verts = nullptr;                    ///< Pointer to vertices.
+    BE1::DominantTri *      dominantTris = nullptr;             ///< Dominant triangles for each vertex.
+    uint32_t                numIndexes = 0;                     ///< Number of triangle indices.
+    BE1::VertIndex *        indexes = nullptr;                  ///< Triangle indices in counter-clockwise order.
+    uint32_t                numEdges = 0;                       ///< Number of edges that is not including shared edges.
+    Edge *                  edges = nullptr;                    ///< Pointer to edges (shared edges are not stored explicitly).
+    int32_t *               edgeIndexes = nullptr;              ///< Mapping from triangle edge indices to edge indices (negative values indicate shared edges).
+    BE1::AABB               boundingBox = BE1::AABB::empty;     ///< Local axis-aligned bounding box (bounding box) for this sub-mesh.
+    BE1::Sphere             boundingSphere = BE1::Sphere(BE1::Vec3::zero, 0.0f); ///< Local bounding sphere for this sub-mesh.
+    void *                  vertWeights = nullptr;              ///< vertex weights for GPU skinning (numVerts * sizeof(VertexWeightX))
+    int                     gpuSkinningVersionIndex;            ///< 0: VertexWeight1, 1: VertexWeight4, 2: VertexWeight8
 
     mutable RHI::VertexBuffer *vertexBuffer = nullptr;          ///< RHI vertex buffer.
     mutable RHI::VertexBuffer *vertexWeightBuffer = nullptr;    ///< RHI vertex weight buffer for GPU skinning.

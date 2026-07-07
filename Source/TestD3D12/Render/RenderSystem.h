@@ -76,9 +76,9 @@ private:
 
     void                            InitRenderThread();
     void                            ShutdownRenderThread();
-    void                            InitPostProcessPipelines();
-    void                            EnsurePostProcessPipelines();
-    void                            ReleasePostProcessPipelines();
+    void                            InitComputePipelines();
+    void                            EnsureComputePipelines();
+    void                            ReleaseComputePipelines();
 
     void                            MarkRenderCompleted(RenderFrameData *frameData);
     bool                            WaitSubmittedFrame(SubmittedFrame &submittedFrame);
@@ -101,6 +101,11 @@ private:
     BE1::PlatformThread *           renderThread = nullptr;
     bool                            isStoppingRenderThread = false;
 
+    SharedPtr<ShaderTemplate>       genHiZMipFirstBatchShaderTemplate;
+    SharedPtr<ShaderTemplate>       genHiZMipBatchShaderTemplate;
+    SharedPtr<ShaderTemplate>       genHiZMipOddDimShaderTemplate;
+    SharedPtr<ShaderTemplate>       hiZCullInstancesShaderTemplate;
+    SharedPtr<ShaderTemplate>       hiZDebugPreviewShaderTemplate;
     SharedPtr<ShaderTemplate>       toneMappingShaderTemplate;
     SharedPtr<ShaderTemplate>       luminancePass1ShaderTemplate;
     SharedPtr<ShaderTemplate>       luminancePass2ShaderTemplate;
@@ -117,6 +122,11 @@ private:
     SharedPtr<ShaderTemplate>       convolutionBloomResolveDiffractionPSFShaderTemplate;
     SharedPtr<ShaderTemplate>       convolutionBloomApplyDispersionShaderTemplate;
 
+    SharedPtr<ShaderPipeline>       genHiZMipFirstBatchPipeline;
+    SharedPtr<ShaderPipeline>       genHiZMipBatchPipeline;
+    SharedPtr<ShaderPipeline>       genHiZMipOddDimPipeline;
+    SharedPtr<ShaderPipeline>       hiZCullInstancesPipeline;
+    SharedPtr<ShaderPipeline>       hiZDebugPreviewPipeline;
     SharedPtr<ShaderPipeline>       toneMappingPipeline;
     SharedPtr<ShaderPipeline>       luminancePass1Pipeline;
     SharedPtr<ShaderPipeline>       luminancePass2Pipeline;

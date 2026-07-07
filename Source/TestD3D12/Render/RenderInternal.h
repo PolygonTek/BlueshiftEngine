@@ -81,11 +81,15 @@ struct RenderPass {
 // 한 프레임 렌더링에서만 유효한 렌더링 카메라
 // 매 프레임 생성되고, 생성될 때 어떠한 힙 할당도 일어나지 않는다.
 struct VisCamera {
-    static constexpr int        MaxVisSurfs = 0x10000;
+    static constexpr int        MaxVisSurfs = 0x20000;
     static constexpr int        MaxRenderPasses = 8;
 
     ALIGN_AS32 BE1::Mat4        viewMatrix;
     ALIGN_AS32 BE1::Mat4        viewProjMatrix;
+    ALIGN_AS32 BE1::Mat4        invViewProjMatrix;
+    ALIGN_AS32 BE1::Mat4        prevViewProjMatrix;
+    ALIGN_AS32 BE1::Mat4        prevInvViewProjMatrix;
+    ALIGN_AS32 BE1::Mat4        hiZCullViewProjMatrix;
     ALIGN_AS32 BE1::AABB        worldAABB;
 
     uint32_t                    index = ~0;
@@ -110,10 +114,31 @@ struct VisCamera {
     RHI::ProjectionPolicy       projectionPolicy;
     RenderCameraFlag            flags = RenderCameraFlag::NoFlag;
 
-    RHI::Texture *              colorTexture = nullptr;
-    RHI::Texture *              colorMSAATexture = nullptr;
+    RHI::Texture *              rtColorTexture = nullptr;
+    RHI::Texture *              rtColorMSAATexture = nullptr;
     RHI::Texture *              depthTexture = nullptr;
-    RHI::Texture *              normalTexture = nullptr;
+    RHI::Texture *              rtNormalTexture = nullptr;
+
+    bool                        generateHiZ = false;
+    RHI::Texture *              hiZTexture = nullptr;
+    RHI::ViewID                 hiZMipSRVs[RenderHiZMaxLevelCount] = {};
+    RHI::ViewID                 hiZMipUAVs[RenderHiZMaxLevelCount] = {};
+    uint32_t                    hiZMipWidths[RenderHiZMaxLevelCount] = {};
+    uint32_t                    hiZMipHeights[RenderHiZMaxLevelCount] = {};
+    uint32_t                    hiZMipCount = 0;
+    bool                        hiZOcclusionCulling = false;
+    RHI::Buffer *               hiZCullVisibleInstanceBuffer = nullptr;
+    RHI::Buffer *               hiZCullIndirectArgsBuffer = nullptr;
+
+    bool                        hiZDebugPreview = false;
+    RHI::Texture *              hiZDebugPreviewTexture = nullptr;
+    float                       hiZDebugProjectionDepthA = 0.0f;
+    float                       hiZDebugProjectionDepthB = 0.0f;
+    float                       hiZDebugNDCDepthScale = 1.0f;
+    float                       hiZDebugNDCDepthBias = 0.0f;
+    float                       hiZDebugLinearDepthScale = 1.0f;
+    uint32_t                    hiZDebugOrthogonal = 0;
+
     RHI::Texture *              postProcessColorTexture = nullptr;
     RHI::Buffer *               luminanceBuffer = nullptr;
 
@@ -156,13 +181,13 @@ struct VisCamera {
 struct VisObject {
     ALIGN_AS32 BE1::Mat3x4      worldMatrix;
 
-    uint32_t                    index = ~0;
+    uint32_t                    index;
 
     MeshInstance *              meshInstance = nullptr;     ///< Mesh instance
     const Skeleton *            skeleton = nullptr;         ///< Skeleton information for skeletal mesh
 
-    uint32_t                    numMaterials = 0;
-    const Material *            materials[32] = {};
+    uint32_t                    numMaterials;
+    const Material *            materials[32];
 
     int                         numVerts = 0;
     BE1::VertexGeneric *        verts = nullptr;
@@ -183,5 +208,5 @@ struct VisObject {
 };
 
 struct VisLight {
-    uint32_t                    index = ~0;
+    uint32_t                    index;
 };

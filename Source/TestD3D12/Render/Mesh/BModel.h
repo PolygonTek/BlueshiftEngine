@@ -48,8 +48,8 @@ struct BMeshHeader {
     int32_t         version;
     uint32_t        numJoints;
     uint32_t        numSurfs;
-    BE1::Vec3       aabbMin;
-    BE1::Vec3       aabbMax;
+    BE1::Vec3       boundsMin;
+    BE1::Vec3       boundsMax;
 };
 
 struct BMeshSurf {
@@ -58,8 +58,8 @@ struct BMeshSurf {
     uint32_t        numIndexes;
     uint16_t        indexSize;
     uint16_t        maxWeights;
-    BE1::Vec3       aabbMin;
-    BE1::Vec3       aabbMax;
+    BE1::Vec3       boundsMin;
+    BE1::Vec3       boundsMax;
 };
 
 struct BMeshVert {

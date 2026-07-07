@@ -190,7 +190,7 @@ float Mesh::CalculateVolume() const {
             totalVolume += subMesh->CalculateVolume();
         } else {
             // Compute the volume using AABB.
-            totalVolume = subMesh->GetAABB().Volume();
+            totalVolume = subMesh->GetBoundingBox().Volume();
         }
     }
     return totalVolume;
@@ -220,8 +220,8 @@ float Mesh::CalculateVolumeAndCentroid(BE1::Vec3 &outCentroid) const {
             centroid = subMesh->CalculateCentroid();
         } else {
             // Computes the volume and centroid using AABB.
-            volume = subMesh->GetAABB().Volume();
-            centroid = subMesh->GetAABB().Center();
+            volume = subMesh->GetBoundingBox().Volume();
+            centroid = subMesh->GetBoundingBox().Center();
         }
 
         totalVolumeCentroid += centroid * volume;

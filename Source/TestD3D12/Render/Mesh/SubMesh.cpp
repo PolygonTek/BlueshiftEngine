@@ -81,14 +81,22 @@ void SubMesh::CopyFrom(const SubMesh *other) {
     flags = other->flags;
     flags &= ~Flag::EdgesCalculated;
 
+    boundingBox = other->boundingBox;
+    boundingSphere = other->boundingSphere;
+
     BE1::simdProcessor->Memcpy(verts, other->verts, sizeof(verts[0]) * other->numVerts);
     BE1::simdProcessor->Memcpy(indexes, other->indexes, sizeof(indexes[0]) * other->numIndexes);
 }
 
-void SubMesh::ComputeAABB() {
-    aabb.Clear();
+void SubMesh::ComputeBounds() {
+    boundingBox.Clear();
     for (int i = 0; i < numVerts; ++i) {
-        aabb.AddPoint(verts[i].xyz);
+        boundingBox.AddPoint(verts[i].xyz);
+    }
+
+    boundingSphere.Clear();
+    if (!boundingBox.IsCleared()) {
+        boundingSphere = boundingBox.ToSphere();
     }
 }
 

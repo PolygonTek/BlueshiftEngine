@@ -166,6 +166,10 @@ void RenderWorld::RenderScene(RenderCamera *renderCamera) {
     renderCamera->EnsurePostProcessResources();
 
     const RenderBloomMode bloomMode = static_cast<RenderBloomMode>(BE1::Clamp(r_bloom.GetInteger(), static_cast<int>(RenderBloomMode::Off), static_cast<int>(RenderBloomMode::Convolution)));
+    const bool canUseHiZ = renderCamera->GetDepthTexture() && renderCamera->GetDepthTexture()->GetSampleCount() == 1;
+    const bool requestHiZOcclusionCulling = !BE1::HasFlag(renderCamera->desc.flags, RenderCameraFlag::DisableHiZCulling) && canUseHiZ && r_hiZOcclusionCulling.GetBool();
+    const bool requestHiZDebugPreview = canUseHiZ && r_hiZDebugPreview.GetBool() && renderCamera->EnsureHiZDebugPreviewTexture(renderWidth, renderHeight);
+    const bool requestHiZGeneration = requestHiZOcclusionCulling;
 
     visCamera->maxVisSurfs = VisCamera::MaxVisSurfs;
     visCamera->visSurfs = (const VisSurf **)frameData->MemAlloc(visCamera->maxVisSurfs * sizeof(VisSurf *));
@@ -179,28 +183,84 @@ void RenderWorld::RenderScene(RenderCamera *renderCamera) {
     visCamera->clearColor = renderCamera->desc.clearColor;
     visCamera->projectionPolicy = renderCamera->desc.projectionPolicy;
     visCamera->flags = renderCamera->desc.flags;
-    visCamera->colorTexture = renderCamera->GetColorTexture();
-    visCamera->colorMSAATexture = renderCamera->GetColorMSAATexture();
+    visCamera->rtColorTexture = renderCamera->GetRTColorTexture();
+    visCamera->rtColorMSAATexture = renderCamera->GetRTColorMSAATexture();
     visCamera->depthTexture = renderCamera->GetDepthTexture();
-    visCamera->normalTexture = renderCamera->GetNormalTexture();
+    visCamera->rtNormalTexture = renderCamera->GetRTNormalTexture();
+
+    visCamera->generateHiZ = requestHiZGeneration;
+    if (visCamera->generateHiZ) {
+        visCamera->hiZTexture = renderCamera->GetHiZTexture();
+        visCamera->hiZMipCount = renderCamera->GetHiZMipCount();
+
+        for (uint32_t mipLevel = 0; mipLevel < RenderHiZMaxLevelCount; ++mipLevel) {
+            visCamera->hiZMipSRVs[mipLevel] = renderCamera->GetHiZMipSRVs()[mipLevel];
+            visCamera->hiZMipUAVs[mipLevel] = renderCamera->GetHiZMipUAVs()[mipLevel];
+            visCamera->hiZMipWidths[mipLevel] = renderCamera->GetHiZMipWidths()[mipLevel];
+            visCamera->hiZMipHeights[mipLevel] = renderCamera->GetHiZMipHeights()[mipLevel];
+        }
+
+        visCamera->hiZOcclusionCulling = renderCamera->HasPreviousHiZ() && requestHiZOcclusionCulling;
+        if (visCamera->hiZOcclusionCulling) {
+            visCamera->hiZCullVisibleInstanceBuffer = renderCamera->GetHiZCullVisibleInstanceBuffer();
+            visCamera->hiZCullIndirectArgsBuffer = renderCamera->GetHiZCullIndirectArgsBuffer();
+        }
+
+        visCamera->hiZDebugPreview = requestHiZDebugPreview;
+        if (visCamera->hiZDebugPreview) {
+            visCamera->hiZDebugPreviewTexture = renderCamera->GetHiZDebugPreviewTexture();
+            visCamera->hiZDebugProjectionDepthA = renderCamera->projMatrix[2][2];
+            visCamera->hiZDebugProjectionDepthB = renderCamera->projMatrix[2][3];
+            visCamera->hiZDebugNDCDepthScale = renderCamera->desc.projectionPolicy.IsZNegativeOneToOne() ? 2.0f : 1.0f;
+            visCamera->hiZDebugNDCDepthBias = renderCamera->desc.projectionPolicy.IsZNegativeOneToOne() ? -1.0f : 0.0f;
+            visCamera->hiZDebugLinearDepthScale = renderCamera->desc.zFar > 0.0f ? 1.0f / renderCamera->desc.zFar : 1.0f;
+            visCamera->hiZDebugOrthogonal = renderCamera->desc.orthogonal ? 1u : 0u;
+        }
+    }
+
     visCamera->postProcessColorTexture = renderCamera->GetPostProcessColorTexture();
     visCamera->luminanceBuffer = renderCamera->GetLuminanceBuffer();
 
-    const bool usePyramidBloom = bloomMode == RenderBloomMode::Pyramid;
-    const bool useConvolutionBloom = bloomMode == RenderBloomMode::Convolution;
-
-    if (usePyramidBloom) {
+    if (bloomMode == RenderBloomMode::Pyramid) {
         SetupPyramidBloom(frameData, renderCamera, visCamera);
-    } else if (useConvolutionBloom) {
+    } else if (bloomMode == RenderBloomMode::Convolution) {
         SetupConvolutionBloom(frameData, renderCamera, visCamera);
     }
 
-    visCamera->viewMatrix = renderCamera->viewMatrix;
-    visCamera->viewProjMatrix = renderCamera->viewProjMatrix;
     visCamera->worldAABB.Clear();
     visCamera->is2D = false;
+    visCamera->viewMatrix = renderCamera->viewMatrix;
+    visCamera->viewProjMatrix = renderCamera->viewProjMatrix;
+    visCamera->invViewProjMatrix = renderCamera->invViewProjMatrix;
+
+    const bool temporalHistoryEnabled = !BE1::HasFlag(renderCamera->desc.flags, RenderCameraFlag::DisableTemporalHistory);
+    const bool usePreviousMatrix = temporalHistoryEnabled && renderCamera->previousMatrixValid && !renderCamera->temporalHistoryInvalidated;
+
+    if (usePreviousMatrix) {
+        visCamera->prevViewProjMatrix = renderCamera->previousViewProjMatrix;
+        visCamera->prevInvViewProjMatrix = renderCamera->previousInvViewProjMatrix;
+    } else {
+        visCamera->prevViewProjMatrix = renderCamera->viewProjMatrix;
+        visCamera->prevInvViewProjMatrix = renderCamera->invViewProjMatrix;
+    }
+
+    if (!r_hiZOcclusionCullingFreeze.GetBool() || !renderCamera->hasPreviousHiZ) {
+        renderCamera->hiZCullViewProjMatrix = visCamera->prevViewProjMatrix;
+    }
+    visCamera->hiZCullViewProjMatrix = renderCamera->hiZCullViewProjMatrix;
 
     DrawCamera(frameData, renderCamera, visCamera);
+
+    if (temporalHistoryEnabled) {
+        renderCamera->previousViewProjMatrix = renderCamera->viewProjMatrix;
+        renderCamera->previousInvViewProjMatrix = renderCamera->invViewProjMatrix;
+        renderCamera->previousMatrixValid = true;
+        renderCamera->temporalHistoryInvalidated = false;
+    }
+
+    if (!r_hiZOcclusionCullingFreeze.GetBool()) {
+        renderCamera->hasPreviousHiZ = visCamera->generateHiZ;
+    }
 }
 
 void RenderWorld::DrawCamera(RenderFrameData *frameData, const RenderCamera *renderCamera, VisCamera *visCamera) {
@@ -234,10 +294,6 @@ void RenderWorld::DrawCamera(RenderFrameData *frameData, const RenderCamera *ren
     frameData->CmdDrawCamera(visCamera);
 
     viewCount++;
-}
-bool RenderWorld::IsVisObjectRegistered(const RenderObject *renderObject) const {
-    // 현재 프레임에 이미 등록된 VisObject 인지 체크
-    return renderObject->viewCount == viewCount && renderObject->visObject;
 }
 
 VisObject *RenderWorld::RegisterVisObject(RenderFrameData *frameData, const RenderObject *renderObject) {
@@ -322,8 +378,10 @@ void RenderWorld::FindVisObjects(RenderFrameData *frameData, const RenderCamera 
     for (int objectIndex : dynamicObjectIndices) {
         const RenderObject *renderObject = renderObjects[objectIndex];
 
-        if (!r_skipFrustumCulling.GetBool() && renderCamera->frustum.CullAABB(renderObject->worldAABB)) {
-            continue;
+        if (!r_skipFrustumCulling.GetBool()) {
+            if (renderCamera->frustum.CullAABB(renderObject->worldAABB)) {
+                continue;
+            }
         }
 
         VisObject *visObject = RegisterVisObject(frameData, renderObject);
@@ -343,8 +401,10 @@ void RenderWorld::FindVisObjects(RenderFrameData *frameData, const RenderCamera 
             continue;
         }
 
-        if (!r_skipFrustumCulling.GetBool() && renderCamera->frustum.CullAABB(renderObject->worldAABB)) {
-            continue;
+        if (!r_skipFrustumCulling.GetBool()) {
+            if (renderCamera->frustum.CullAABB(renderObject->worldAABB)) {
+                continue;
+            }
         }
 
         VisObject *visObject = RegisterVisObject(frameData, renderObject);
@@ -514,7 +574,7 @@ void RenderWorld::AddMeshes(RenderFrameData *frameData, const RenderCamera *rend
             }
 
             if (cullSurfaces) {
-                const BE1::AABB &localAABB = meshSurf->subMesh->GetAABB();
+                const BE1::AABB &localAABB = meshSurf->subMesh->GetBoundingBox();
                 if (!localAABB.IsCleared()) {
                     BE1::AABB worldAABB;
                     worldAABB.SetFromTransformedAABBFast(localAABB, visObject->worldMatrix);
@@ -675,6 +735,10 @@ void RenderWorld::DrawGUICamera(RenderFrameData *frameData, uint32_t screenWidth
     //visCamera->zFar = 1.0f;
     visCamera->viewMatrix = BE1::Mat4::identity;
     visCamera->viewProjMatrix.SetOrthoRH(0, screenWidth, screenHeight, 0, -1.0, 1.0, true); // Y 를 뒤집는다.
+    visCamera->invViewProjMatrix = visCamera->viewProjMatrix.Inverse();
+    visCamera->prevViewProjMatrix = visCamera->viewProjMatrix;
+    visCamera->prevInvViewProjMatrix = visCamera->invViewProjMatrix;
+    visCamera->hiZCullViewProjMatrix = visCamera->viewProjMatrix;
     visCamera->worldAABB.Clear();
     visCamera->is2D = true;
 

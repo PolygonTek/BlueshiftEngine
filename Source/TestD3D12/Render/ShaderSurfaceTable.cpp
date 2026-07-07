@@ -78,6 +78,14 @@ void ShaderSurfaceTable::Build(const VisSurf *visSurf, ShaderSurface &outShaderS
 
     static_assert(sizeof(outShaderSurface.worldMatrix) == sizeof(visSurf->space->worldMatrix));
     BE1::simdProcessor->Memcpy(&outShaderSurface.worldMatrix, &visSurf->space->worldMatrix, sizeof(outShaderSurface.worldMatrix));
+
+    if (visSurf->subMesh) {
+        const BE1::Sphere &sphere = visSurf->subMesh->GetBoundingSphere();
+        const BE1::Vec3 &sphereCenter = sphere.Center();
+        outShaderSurface.localBoundingSphere = float4(sphereCenter.x, sphereCenter.y, sphereCenter.z, sphere.Radius());
+    } else {
+        outShaderSurface.localBoundingSphere = float4(0.0f, 0.0f, 0.0f, 0.0f);
+    }
     outShaderSurface.shaderMaterialIndex = visSurf->shaderMaterialIndex;
     outShaderSurface.padding0 = 0;
     outShaderSurface.padding1 = 0;

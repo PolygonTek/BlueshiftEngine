@@ -141,6 +141,7 @@ private:
 
     int                             imguiGoCountX = 1;
     int                             imguiGoCountY = 1;
+    int                             imguiGoCountZ = 1;
     bool                            imguiShowDemoWindow = false;
     bool                            imguiShowStatsPlotWindow = false;
     float                           imguiStatsPlotSamples[ImGuiStatsPlotSeriesCount][ImGuiStatsPlotHistoryLength] = {};

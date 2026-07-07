@@ -23,15 +23,15 @@
 
 static uint64_t BuildOpaqueSortKey(const VisSurf *visSurf, RHI::PipelineState *pso) {
     //-----------------------------------------------------------
-    // 0xFFFFFFFF00000000 (0~4294967295) : PSO sort index
-    // 0x00000000FFFF0000 (0~65535)      : subMesh index
-    // 0x000000000000FFFF (0~65535)      : shader material index
+    // 0xFFFFFFF000000000 (0~268435455) : PSO sort index
+    // 0x0000000FFFFF0000 (0~1048575)   : subMesh index
+    // 0x000000000000FFFF (0~65535)     : shader material index
     //-----------------------------------------------------------
-    uint64_t psoIndex = pso ? pso->sortIndex : 0;
-    uint64_t subMeshIndex = visSurf->subMesh ? (visSurf->subMesh->GetID() & 0xFFFF) : 0;
+    uint64_t psoIndex = pso ? (pso->sortIndex & 0x0FFFFFFF) : 0;
+    uint64_t subMeshIndex = visSurf->subMesh ? (visSurf->subMesh->GetID() & 0xFFFFF) : 0;
     uint64_t shaderMaterialIndex = visSurf->shaderMaterialIndex & 0xFFFF;
 
-    return (psoIndex << 32) | (subMeshIndex << 16) | shaderMaterialIndex;
+    return (psoIndex << 36) | (subMeshIndex << 16) | shaderMaterialIndex;
 }
 
 static uint32_t BuildFloatSortKey(float value) {
@@ -41,7 +41,7 @@ static uint32_t BuildFloatSortKey(float value) {
 }
 
 static float GetViewCenterZ(const VisSurf *visSurf, const VisCamera *visCamera) {
-    const BE1::Vec3 localCenter = visSurf->subMesh->GetAABB().Center();
+    const BE1::Vec3 localCenter = visSurf->subMesh->GetBoundingBox().Center();
     const BE1::Vec3 worldCenter = visSurf->space->worldMatrix.TransformPos(localCenter);
     const BE1::Vec3 viewCenter = visCamera->viewMatrix.TransformPos(worldCenter);
     return viewCenter.z;

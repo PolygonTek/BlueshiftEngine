@@ -251,7 +251,7 @@ static bool DrawImGuiTexturePreview(const RHI::Texture *texture, RHI::ViewID vie
     drawList->AddRectFilled(
         framePos,
         ImVec2(framePos.x + previewFrameSize.x, framePos.y + previewFrameSize.y),
-        IM_COL32(0, 0, 0, 255));
+        IM_COL32(0, 0, 0, 0));
     drawList->AddImage(
         (ImTextureID)(UINT64)textureID,
         imagePos,
@@ -265,14 +265,14 @@ void App::BuildImGuiTextureViewer() {
     static int selectedTextureIndex = 0;
     static int selectedViewIndex = 0;
 
-    constexpr int MaxTextureViewerEntries = 9;
+    constexpr int MaxTextureViewerEntries = 10;
     ImGuiTextureViewerEntry entries[MaxTextureViewerEntries];
     int entryCount = 0;
 
     if (renderCamera) {
-        AddImGuiTextureViewerEntry(entries, MaxTextureViewerEntries, entryCount, "Color", renderCamera->GetColorTexture());
+        AddImGuiTextureViewerEntry(entries, MaxTextureViewerEntries, entryCount, "Color", renderCamera->GetRTColorTexture());
         AddImGuiTextureViewerEntry(entries, MaxTextureViewerEntries, entryCount, "Depth", renderCamera->GetDepthTexture());
-        AddImGuiTextureViewerEntry(entries, MaxTextureViewerEntries, entryCount, "Normal", renderCamera->GetNormalTexture());
+        AddImGuiTextureViewerEntry(entries, MaxTextureViewerEntries, entryCount, "Normal", renderCamera->GetRTNormalTexture());
         AddImGuiTextureViewerEntry(entries, MaxTextureViewerEntries, entryCount, "Post Process Color", renderCamera->GetPostProcessColorTexture());
         AddImGuiTextureViewerEntry(entries, MaxTextureViewerEntries, entryCount, "Bloom Down", renderCamera->GetBloomDownTexture());
         AddImGuiTextureViewerEntry(entries, MaxTextureViewerEntries, entryCount, "Bloom Up", renderCamera->GetBloomUpTexture());
@@ -376,6 +376,7 @@ void App::BuildImGuiOverlay() {
         ImGui::PopStyleVar();
         return isOpen;
     };
+    bool hiZDebugPreviewOpen = false;
 
     ImGui::SetNextWindowSizeConstraints(ImVec2(fontSize * 29.0f, fontSize * 8.0f), ImVec2(FLT_MAX, FLT_MAX));
     ImGui::Begin("TestD3D12", nullptr, ImGuiWindowFlags_AlwaysAutoResize);
@@ -445,6 +446,43 @@ void App::BuildImGuiOverlay() {
                 bool skipPostProcess = r_skipPostProcess.GetBool();
                 if (ImGui::Checkbox("Skip post process", &skipPostProcess)) {
                     r_skipPostProcess.SetBool(skipPostProcess);
+                }
+            }
+
+            const bool hiZHeaderOpen = roundedCollapsingHeader("Hi-Z##HiZHeader");
+            hiZDebugPreviewOpen = hiZHeaderOpen;
+            if (hiZHeaderOpen) {
+
+                bool hiZOcclusionCulling = r_hiZOcclusionCulling.GetBool();
+                if (ImGui::Checkbox("Hi-Z occlusion culling", &hiZOcclusionCulling)) {
+                    r_hiZOcclusionCulling.SetBool(hiZOcclusionCulling);
+                }
+
+                bool hiZOcclusionCullingFreeze = r_hiZOcclusionCullingFreeze.GetBool();
+                if (ImGui::Checkbox("Freeze Hi-Z occlusion culling", &hiZOcclusionCullingFreeze)) {
+                    r_hiZOcclusionCullingFreeze.SetBool(hiZOcclusionCullingFreeze);
+                }
+
+                const RHI::Texture *hiZTexture = renderCamera ? renderCamera->GetHiZTexture() : nullptr;
+                const uint32_t hiZMipCount = renderCamera ? renderCamera->GetHiZMipCount() : 0;
+                if (hiZTexture && hiZMipCount > 0) {
+                    const int maxHiZMipLevel = static_cast<int>(hiZMipCount) - 1;
+                    int selectedHiZMipLevel = BE1::Clamp(r_hiZDebugPreviewMipLevel.GetInteger(), 0, maxHiZMipLevel);
+
+                    ImGui::SetNextItemWidth(fontSize * 12.0f);
+                    if (ImGui::SliderInt("Mip Level", &selectedHiZMipLevel, 0, maxHiZMipLevel)) {
+                        r_hiZDebugPreviewMipLevel.SetInteger(selectedHiZMipLevel);
+                    } else if (selectedHiZMipLevel != r_hiZDebugPreviewMipLevel.GetInteger()) {
+                        r_hiZDebugPreviewMipLevel.SetInteger(selectedHiZMipLevel);
+                    }
+
+                    ImGui::Spacing();
+                    const RHI::Texture *hiZDebugPreviewTexture = renderCamera ? renderCamera->GetHiZDebugPreviewTexture() : nullptr;
+                    if (!DrawImGuiTexturePreview(hiZDebugPreviewTexture, RHI::ViewID::PrimaryID, fontSize * 24.0f, true)) {
+                        ImGui::TextUnformatted("Hi-Z preview is unavailable.");
+                    }
+                } else {
+                    ImGui::TextUnformatted("Hi-Z texture is unavailable.");
                 }
             }
 
@@ -713,15 +751,19 @@ void App::BuildImGuiOverlay() {
 
         if (ImGui::BeginTabItem("Scene")) {
             ImGui::SetNextItemWidth(fontSize * 10.0f);
-            ImGui::SliderInt("Count X", &imguiGoCountX, 1, 250);
+            ImGui::SliderInt("Count X", &imguiGoCountX, 1, 50);
             const bool applyCountX = ImGui::IsItemDeactivatedAfterEdit();
 
             ImGui::SetNextItemWidth(fontSize * 10.0f);
-            ImGui::SliderInt("Count Y", &imguiGoCountY, 1, 250);
+            ImGui::SliderInt("Count Y", &imguiGoCountY, 1, 50);
             const bool applyCountY = ImGui::IsItemDeactivatedAfterEdit();
 
-            if ((applyCountX || applyCountY) && (static_cast<uint32_t>(imguiGoCountX) != goCountX || static_cast<uint32_t>(imguiGoCountY) != goCountY || goCountZ != 1)) {
-                ChangeGameObjectCount(static_cast<uint32_t>(imguiGoCountX), static_cast<uint32_t>(imguiGoCountY), 1);
+            ImGui::SetNextItemWidth(fontSize * 10.0f);
+            ImGui::SliderInt("Count Z", &imguiGoCountZ, 1, 50);
+            const bool applyCountZ = ImGui::IsItemDeactivatedAfterEdit();
+
+            if ((applyCountX || applyCountY || applyCountZ) && (static_cast<uint32_t>(imguiGoCountX) != goCountX || static_cast<uint32_t>(imguiGoCountY) != goCountY || static_cast<uint32_t>(imguiGoCountZ) != goCountZ)) {
+                ChangeGameObjectCount(static_cast<uint32_t>(imguiGoCountX), static_cast<uint32_t>(imguiGoCountY), static_cast<uint32_t>(imguiGoCountZ));
             }
 
             ImGui::EndTabItem();
@@ -743,6 +785,10 @@ void App::BuildImGuiOverlay() {
     }
 
     ImGui::End();
+
+    if (r_hiZDebugPreview.GetBool() != hiZDebugPreviewOpen) {
+        r_hiZDebugPreview.SetBool(hiZDebugPreviewOpen);
+    }
 
     BuildImGuiStatsPlotWindow();
 

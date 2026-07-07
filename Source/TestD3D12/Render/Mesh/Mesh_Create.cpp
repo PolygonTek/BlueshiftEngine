@@ -650,7 +650,7 @@ bool Mesh::TrySliceMesh(const Mesh &srcMesh, const BE1::Plane &slicePlane, bool 
     for (int surfaceIndex = 0; surfaceIndex < numSurfaces; surfaceIndex++) {
         const Surface *srcSurf = srcMesh.internalData.surfaces[surfaceIndex];
 
-        int planeSide = srcSurf->subMesh->aabb.PlaneSide(slicePlane);
+        int planeSide = srcSurf->subMesh->boundingBox.PlaneSide(slicePlane);
         if (planeSide == BE1::Plane::Side::Back) {
             // SubMesh is totally below the plane. just copy it from the source mesh.
             Surface *surf = Mesh::AllocSurface(srcSurf->subMesh->numVerts, srcSurf->subMesh->numIndexes);

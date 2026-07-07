@@ -17,7 +17,7 @@
 #include "RenderSystem.h"
 #include "RenderInternal.h"
 
-void RenderBackend::DrawGenericSurfaces(const RenderPassDrawSurf **drawSurfs, uint32_t numDrawSurfs) {
+void RenderBackend::DrawGenericSurfaces(const RenderPassDrawSurf **drawSurfs, uint32_t numDrawSurfs, const SurfaceInstanceBatch *hiZCullBatches, uint32_t hiZCullBatchCount) {
     PROFILER_CPU_SCOPED_EVENT("RenderBackend::DrawGenericSurfaces");
 
     assert(numDrawSurfs > 0);
@@ -25,23 +25,30 @@ void RenderBackend::DrawGenericSurfaces(const RenderPassDrawSurf **drawSurfs, ui
 #ifdef USE_RENDER_TASK
     // numDrawSurfs 가 많으면 태스크로 나눠서 그린다.
     if (numDrawSurfs > MaxInstancesPerDraw && BE1::Engine::taskManager->NumThreads() > 1) {
-        DrawGenericSurfacesWithTask(drawSurfs, numDrawSurfs);
+        DrawGenericSurfacesWithTask(drawSurfs, numDrawSurfs, hiZCullBatches, hiZCullBatchCount);
     } else {
-        DrawGenericSurfacesWithoutTask(drawSurfs, numDrawSurfs);
+        DrawGenericSurfacesWithoutTask(drawSurfs, numDrawSurfs, hiZCullBatches, hiZCullBatchCount);
     }
 #else
-    DrawGenericSurfacesWithoutTask(drawSurfs, numDrawSurfs);
+    DrawGenericSurfacesWithoutTask(drawSurfs, numDrawSurfs, hiZCullBatches, hiZCullBatchCount);
 #endif
 }
 
-void RenderBackend::DrawGenericSurfacesWithoutTask(const RenderPassDrawSurf **drawSurfs, uint32_t numDrawSurfs) {
+void RenderBackend::DrawGenericSurfacesWithoutTask(const RenderPassDrawSurf **drawSurfs, uint32_t numDrawSurfs, const SurfaceInstanceBatch *hiZCullBatches, uint32_t hiZCullBatchCount) {
     PROFILER_CPU_SCOPED_EVENT("RenderBackend::DrawGenericSurfacesWithoutTask");
 
     RHI::PipelineState *currentPSO = nullptr;
     const SubMesh *currentSubMesh = nullptr;
     VertexInputLayoutId currentInputLayoutId = VertexInputLayoutId::Count;
 
+    uint32_t drawCount = 0;
+    uint64_t drawTriangleCount = 0;
+    uint32_t instanceTableAllocCount = 0;
+    uint32_t instanceTableUploadBytes = 0;
+
     uint32_t drawSurfIndex = 0;
+    uint32_t hiZCullBatchIndex = 0;
+
     while (drawSurfIndex < numDrawSurfs) {
         const RenderPassDrawSurf *drawSurf = drawSurfs[drawSurfIndex];
         if (!drawSurf->pso) {
@@ -67,9 +74,28 @@ void RenderBackend::DrawGenericSurfacesWithoutTask(const RenderPassDrawSurf **dr
 
         const uint32_t instanceStartIndex = drawSurfIndex;
         drawSurfIndex = FindSurfaceInstanceBatchEnd(drawSurfs, numDrawSurfs, instanceStartIndex);
+        const uint32_t instanceCount = drawSurfIndex - instanceStartIndex;
 
-        DrawSurfaceInstances(frameData->GetThreadData(0), mainCommandList, &drawSurfs[instanceStartIndex], drawSurfIndex - instanceStartIndex, statDrawCount, statDrawTriangleCount, statInstanceTableAllocCount, statInstanceTableUploadBytes);
+        const SurfaceInstanceBatch *preparedBatch = nullptr;
+        if (hiZCullBatches && hiZCullBatchIndex < hiZCullBatchCount) {
+            preparedBatch = &hiZCullBatches[hiZCullBatchIndex++];
+
+            assert(preparedBatch->drawSurfIndex == instanceStartIndex);
+            assert(preparedBatch->instanceCount == instanceCount);
+        }
+
+        if (preparedBatch && preparedBatch->valid) {
+            DrawSurfaceInstanceBatch(mainCommandList, &drawSurfs[instanceStartIndex], *preparedBatch, drawCount, drawTriangleCount);
+        } else {
+            SurfaceInstanceBatch batch;
+            if (PrepareSurfaceInstanceBatch(frameData->GetThreadData(0), &drawSurfs[instanceStartIndex], instanceStartIndex, instanceCount, batch, instanceTableAllocCount, instanceTableUploadBytes)) {
+                DrawSurfaceInstanceBatch(mainCommandList, &drawSurfs[instanceStartIndex], batch, drawCount, drawTriangleCount);
+            }
+        }
     }
+
+    assert(hiZCullBatchIndex == hiZCullBatchCount);
+    RecordDrawStats(drawCount, drawTriangleCount, instanceTableAllocCount, instanceTableUploadBytes);
 }
 
 void RenderBackend::DrawGenericSurfacesByTask(RenderBackend::DrawSurfsTaskDesc *taskDesc) {
@@ -84,6 +110,7 @@ void RenderBackend::DrawGenericSurfacesByTask(RenderBackend::DrawSurfsTaskDesc *
     VertexInputLayoutId currentInputLayoutId = VertexInputLayoutId::Count;
 
     uint32_t drawSurfIndex = 0;
+    uint32_t hiZCullBatchIndex = 0;
     while (drawSurfIndex < taskDesc->numDrawSurfs) {
         const RenderPassDrawSurf *drawSurf = taskDesc->drawSurfs[drawSurfIndex];
         if (!drawSurf->pso) {
@@ -109,9 +136,28 @@ void RenderBackend::DrawGenericSurfacesByTask(RenderBackend::DrawSurfsTaskDesc *
 
         const uint32_t instanceStartIndex = drawSurfIndex;
         drawSurfIndex = FindSurfaceInstanceBatchEnd(taskDesc->drawSurfs, taskDesc->numDrawSurfs, instanceStartIndex);
+        const uint32_t instanceCount = drawSurfIndex - instanceStartIndex;
 
-        DrawSurfaceInstances(frameThreadData, commandList, &taskDesc->drawSurfs[instanceStartIndex], drawSurfIndex - instanceStartIndex, taskDesc->drawCount, taskDesc->drawTriangleCount, taskDesc->instanceTableAllocCount, taskDesc->instanceTableUploadBytes);
+        const SurfaceInstanceBatch *preparedBatch = nullptr;
+        if (taskDesc->hiZCullBatches && hiZCullBatchIndex < taskDesc->numHiZCullBatches) {
+            preparedBatch = &taskDesc->hiZCullBatches[hiZCullBatchIndex++];
+
+            assert(preparedBatch->drawSurfIndex == taskDesc->firstDrawSurfIndex + instanceStartIndex);
+            assert(preparedBatch->instanceCount == instanceCount);
+        }
+
+        if (preparedBatch && preparedBatch->valid) {
+            DrawSurfaceInstanceBatch(commandList, &taskDesc->drawSurfs[instanceStartIndex], *preparedBatch, taskDesc->drawCount, taskDesc->drawTriangleCount);
+        } else {
+            SurfaceInstanceBatch batch;
+            const uint32_t globalInstanceStartIndex = taskDesc->firstDrawSurfIndex + instanceStartIndex;
+            if (PrepareSurfaceInstanceBatch(frameThreadData, &taskDesc->drawSurfs[instanceStartIndex], globalInstanceStartIndex, instanceCount, batch, taskDesc->instanceTableAllocCount, taskDesc->instanceTableUploadBytes)) {
+                DrawSurfaceInstanceBatch(commandList, &taskDesc->drawSurfs[instanceStartIndex], batch, taskDesc->drawCount, taskDesc->drawTriangleCount);
+            }
+        }
     }
+
+    assert(hiZCullBatchIndex == taskDesc->numHiZCullBatches);
 
     // 세컨더리 커맨드 리스트의 기록을 마친다.
     commandList->Close();
@@ -125,7 +171,7 @@ void RenderBackend::DrawGenericSurfacesByTaskFunction(void *data) {
     renderSystem->GetBackend()->DrawGenericSurfacesByTask(taskDesc);
 }
 
-void RenderBackend::DrawGenericSurfacesWithTask(const RenderPassDrawSurf **drawSurfs, uint32_t numDrawSurfs) {
+void RenderBackend::DrawGenericSurfacesWithTask(const RenderPassDrawSurf **drawSurfs, uint32_t numDrawSurfs, const SurfaceInstanceBatch *hiZCullBatches, uint32_t hiZCullBatchCount) {
     PROFILER_CPU_SCOPED_EVENT("RenderBackend::DrawGenericSurfacesWithTask");
 
     // numDrawSurfs 로 만들어 질 수 있는 최대 태스크 개수를 계산한다.
@@ -135,6 +181,7 @@ void RenderBackend::DrawGenericSurfacesWithTask(const RenderPassDrawSurf **drawS
     const uint32_t targetDrawSurfsPerTask = (numDrawSurfs + maxTasks - 1) / maxTasks;
 
     uint32_t startIndex = 0;
+    uint32_t hiZCullBatchCursor = 0;
     int32_t threadIndex = 0;
 
     // 태스크 정보 초기화
@@ -150,10 +197,28 @@ void RenderBackend::DrawGenericSurfacesWithTask(const RenderPassDrawSurf **drawS
             endIndex = FindSurfaceInstanceBatchEnd(drawSurfs, numDrawSurfs, endIndex);
         } while (endIndex < targetEndIndex);
 
+        const uint32_t taskHiZCullBatchStart = hiZCullBatchCursor;
+        if (hiZCullBatches) {
+            while (hiZCullBatchCursor < hiZCullBatchCount && hiZCullBatches[hiZCullBatchCursor].drawSurfIndex < startIndex) {
+                assert(false);
+                hiZCullBatchCursor++;
+            }
+            while (hiZCullBatchCursor < hiZCullBatchCount && hiZCullBatches[hiZCullBatchCursor].drawSurfIndex < endIndex) {
+                assert(hiZCullBatches[hiZCullBatchCursor].drawSurfIndex + hiZCullBatches[hiZCullBatchCursor].instanceCount <= endIndex);
+                hiZCullBatchCursor++;
+            }
+        }
+
         DrawSurfsTaskDesc &currentThreadDesc = drawSurfsTaskDescs.Alloc();
         currentThreadDesc.threadIndex = threadIndex++;
         currentThreadDesc.drawSurfs = &drawSurfs[startIndex];
         currentThreadDesc.numDrawSurfs = endIndex - startIndex;
+        currentThreadDesc.firstDrawSurfIndex = startIndex;
+        currentThreadDesc.hiZCullBatches = nullptr;
+        currentThreadDesc.numHiZCullBatches = hiZCullBatchCursor - taskHiZCullBatchStart;
+        if (currentThreadDesc.numHiZCullBatches > 0) {
+            currentThreadDesc.hiZCullBatches = &hiZCullBatches[taskHiZCullBatchStart];
+        }
         currentThreadDesc.drawCount = 0;
         currentThreadDesc.drawTriangleCount = 0;
         currentThreadDesc.instanceTableAllocCount = 0;
@@ -163,6 +228,8 @@ void RenderBackend::DrawGenericSurfacesWithTask(const RenderPassDrawSurf **drawS
 
         startIndex = endIndex;
     }
+
+    assert(hiZCullBatchCursor == hiZCullBatchCount);
 
     // 모든 태스크가 끝날 때까지 기다린다.
     BE1::Engine::taskManager->WaitFinish(drawGroupId, true);

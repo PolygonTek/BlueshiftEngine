@@ -251,7 +251,7 @@ void RenderWorld::UpdateRenderObject(int index, const RenderObject::Desc &desc, 
     } else {
 #ifdef USE_DBVT
         const bool transformChanged = BE1::HasFlag(updateFlags, RenderObject::Desc::UpdateFlag::Transform);
-        const bool aabbChanged = BE1::HasFlag(updateFlags, RenderObject::Desc::UpdateFlag::AABB);
+        const bool boundsChanged = BE1::HasFlag(updateFlags, RenderObject::Desc::UpdateFlag::Bounds);
         const bool meshChanged = BE1::HasFlag(updateFlags, RenderObject::Desc::UpdateFlag::Mesh);
 
         BE1::Vec3 displacementVector = BE1::Vec3::zero;
@@ -262,7 +262,7 @@ void RenderWorld::UpdateRenderObject(int index, const RenderObject::Desc &desc, 
 #endif
         renderObject->Update(desc, updateFlags);
 #ifdef USE_DBVT
-        if (transformChanged || aabbChanged || meshChanged) {
+        if (transformChanged || boundsChanged || meshChanged) {
             if (transformChanged) {
                 renderObject->lastTransformUpdateMsec = BE1::PlatformTime::Milliseconds();
                 RegisterDynamicObject(renderObject);

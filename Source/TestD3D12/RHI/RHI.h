@@ -1174,9 +1174,9 @@ namespace RHI {
         virtual void                    Draw(CommandList *commandList, uint32_t vertexCount, uint32_t startVertexLocation) = 0;
         virtual void                    DrawIndexed(CommandList *commandList, uint32_t indexCount, uint32_t startIndexLocation, uint32_t baseVertexLocation) = 0;
         virtual void                    DrawInstanced(CommandList *commandList, uint32_t vertexCount, uint32_t instanceCount, uint32_t startVertexLocation, uint32_t startInstanceLocation) = 0;
+        virtual void                    DrawIndexedInstanced(CommandList *commandList, uint32_t indexCount, uint32_t instanceCount, uint32_t startIndexLocation, uint32_t baseVertexLocation, uint32_t startInstanceLocation) = 0;
         virtual void                    DrawInstancedIndirect(CommandList *commandList, const Buffer *argsBuffer, uint32_t argsOffset) = 0;
         virtual void                    DrawInstancedIndirectCount(CommandList *commandList, const Buffer *argsBuffer, uint32_t argsOffset, const Buffer *countBuffer, uint32_t countOffset, uint32_t maxCount) = 0;
-        virtual void                    DrawIndexedInstanced(CommandList *commandList, uint32_t indexCount, uint32_t instanceCount, uint32_t startIndexLocation, uint32_t baseVertexLocation, uint32_t startInstanceLocation) = 0;
         virtual void                    DrawIndexedInstancedIndirect(CommandList *commandList, const Buffer *argsBuffer, uint32_t argsOffset) = 0;
         virtual void                    DrawIndexedInstancedIndirectCount(CommandList *commandList, const Buffer *argsBuffer, uint32_t argsOffset, const Buffer *countBuffer, uint32_t countOffset, uint32_t maxCount) = 0;
 

@@ -58,7 +58,7 @@ void App::Init(void *mainWindowHandle) {
 
     renderCamera = new RenderCamera;
  
-    InitGameObjects(100, 100, 1);
+    InitGameObjects(32, 32, 10);
 
     cameraYaw = targetCameraYaw;
     cameraPitch = targetCameraPitch;
@@ -232,6 +232,7 @@ void App::InitGameObjects(uint32_t countX, uint32_t countY, uint32_t countZ) {
 #ifdef ENABLE_IMGUI
     imguiGoCountX = static_cast<int>(countX);
     imguiGoCountY = static_cast<int>(countY);
+    imguiGoCountZ = static_cast<int>(countZ);
 #endif
 
     uint32_t goCount = goCountX * goCountY * goCountZ;
@@ -315,7 +316,7 @@ void App::UpdateGameObjects() {
 void App::RotateGameObjects() {
     float elapsedSeconds = (float)MICRO2SEC((double)elapsedUsec);
 
-    const float goSpacing = 1.414214f;
+    const float goSpacing = 4;//1.414214f;
     const float goStartX = -goSpacing * (goCountX - 1) * 0.5f;
     const float goStartY = -goSpacing * (goCountY - 1) * 0.5f;
     const float goStartZ = -goSpacing * (goCountZ - 1) * 0.5f;
@@ -327,7 +328,7 @@ void App::RotateGameObjects() {
             for (int x = 0; x < goCountX; ++x) {
                 int index = goCountX * goCountY * z + goCountX * y + x;
 
-                float t = elapsedSeconds + index * 0.1f;
+                float t = 0;//elapsedSeconds + index * 0.1f;
 
                 GameObject *gameObject = gameObjects[index];
                 gameObject->renderObjectDesc.worldMatrix.SetTranslationRotation(BE1::Vec3(goStartX + goSpacing * x, goStartY + goSpacing * y, goStartZ + goSpacing * z), BE1::Mat3::FromRotationZ(t * zRotationSpeed), false);
@@ -380,7 +381,7 @@ void App::AddCameraPanDelta(int deltaX, int deltaY) {
 
 void App::AddCameraDistance(int delta) {
     constexpr float MouseWheelDelta = 120.0f;
-    constexpr float MouseWheelZoomRatio = 0.12f;
+    constexpr float MouseWheelZoomRatio = 0.08f;
 
     float wheelSteps = (float)delta / MouseWheelDelta;
     targetCameraDistance *= BE1::Math::Pow(1.0f - MouseWheelZoomRatio, wheelSteps);

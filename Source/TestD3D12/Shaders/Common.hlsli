@@ -268,4 +268,35 @@ inline void WriteMipmapFeedback(RWBuffer<uint> feedbackBuffer, in uint materialI
     }
 }
 
+// Reconstructs world-space position from depth buffer
+// uv    : screen space coordinate in [0, 1] range, origin at upper-left corner of the screen
+// depth : depth value in NDC Z range [0, 1]
+// invVP : Inverse view-projection matrix that was used to generate the depth value
+inline float3 ReconstructPosition(in float2 uv, in float depth, in float4x4 invVP) {
+    float ndcX = uv.x * 2.0f - 1.0f;
+    float ndcY = (1.0f - uv.y) * 2.0f - 1.0f;
+    float4 ndcPosition = float4(ndcX, ndcY, depth, 1.0f);
+    float4 worldPosition = mul(invVP, ndcPosition);
+    return worldPosition.xyz / worldPosition.w;
+}
+
+// from https://github.com/GPUOpen-Effects/FidelityFX-Denoiser/blob/master/ffx-shadows-dnsr/ffx_denoiser_shadows_util.h
+//  LANE TO 8x8 MAPPING
+//  ===================
+//  00 01 08 09 10 11 18 19 
+//  02 03 0a 0b 12 13 1a 1b
+//  04 05 0c 0d 14 15 1c 1d
+//  06 07 0e 0f 16 17 1e 1f 
+//  20 21 28 29 30 31 38 39 
+//  22 23 2a 2b 32 33 3a 3b
+//  24 25 2c 2d 34 35 3c 3d
+//  26 27 2e 2f 36 37 3e 3f 
+uint BitfieldExtract(uint src, uint off, uint bits) { uint mask = (1 << bits) - 1; return (src >> off) & mask; } // ABfe
+uint BitfieldInsert(uint src, uint ins, uint bits) { uint mask = (1 << bits) - 1; return (ins & mask) | (src & (~mask)); } // ABfiM
+uint2 RemapLane8x8(uint lane) {
+    return uint2(BitfieldInsert(BitfieldExtract(lane, 2u, 3u), lane, 1u),
+        BitfieldInsert(BitfieldExtract(lane, 3u, 3u),
+        BitfieldExtract(lane, 1u, 2u), 2u));
+}
+
 #endif

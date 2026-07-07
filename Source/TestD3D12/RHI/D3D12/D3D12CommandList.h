@@ -85,6 +85,8 @@ public:
     void                            SetStencilRef(uint32_t value);
     void                            SetShadingRate(RHI::ShadingRate shadingRate);
 
+    void                            InvalidateStateCache();
+
 private:
     void                            InvalidateRootSignatureDependentBindings();
 
@@ -135,6 +137,22 @@ BE_INLINE void D3D12CommandList::InvalidateRootSignatureDependentBindings() {
     bindlessRootSignature = nullptr;
     bindlessResourceDescriptorGpuBaseHandle = {};
     bindlessSamplerDescriptorGpuBaseHandle = {};
+}
+
+BE_INLINE void D3D12CommandList::InvalidateStateCache() {
+    currentPSO = nullptr;
+    InvalidateRootSignatureDependentBindings();
+
+#ifdef USE_STATE_CACHE_FOR_COMMAND_LIST
+    cachedRootDescriptorHeaps.SetCount(0);
+    cachedGraphicsRootSignature = nullptr;
+    cachedComputeRootSignature = nullptr;
+    cachedPrimitiveTopology = D3D12_PRIMITIVE_TOPOLOGY::D3D_PRIMITIVE_TOPOLOGY_UNDEFINED;
+    for (int i = 0; i < D3D12_IA_VERTEX_INPUT_RESOURCE_SLOT_COUNT; ++i) {
+        cachedVertexBufferViews[i] = {};
+    }
+    cachedIndexBufferView = {};
+#endif
 }
 
 BE_INLINE void D3D12CommandList::ResourceBarrier(ID3D12Resource *resource, D3D12_RESOURCE_STATES stateBefore, D3D12_RESOURCE_STATES stateAfter) {

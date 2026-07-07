@@ -31,16 +31,16 @@ class SubMesh;
 enum class VisSurfFlag : uint8_t;
 
 enum class DrawTextFlag : uint16_t {
-    None = 0,
-    Right = BIT(0),
-    Center = BIT(1),
-    Bottom = BIT(2),
-    VCenter = BIT(3),
-    MultiLines = BIT(5),
-    WordWrap = BIT(6),
-    Truncate = BIT(7),
-    DropShadows = BIT(8),
-    AddOutlines = BIT(9)
+    None                        = 0,
+    Right                       = BIT(0),
+    Center                      = BIT(1),
+    Bottom                      = BIT(2),
+    VCenter                     = BIT(3),
+    MultiLines                  = BIT(5),
+    WordWrap                    = BIT(6),
+    Truncate                    = BIT(7),
+    DropShadows                 = BIT(8),
+    AddOutlines                 = BIT(9)
 };
 
 template<>
@@ -171,3 +171,8 @@ private:
     BE1::Color4                 debugLineColor;
     BE1::Color4                 debugFillColor;
 };
+
+BE_INLINE bool RenderWorld::IsVisObjectRegistered(const RenderObject *renderObject) const {
+    // 현재 프레임에 이미 등록된 VisObject 인지 체크
+    return renderObject->visObject && renderObject->viewCount == viewCount;
+}

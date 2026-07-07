@@ -59,7 +59,7 @@ bool RenderBackend::DispatchLuminance() {
     luminancePass2Params.luminanceAdaptationRate = BE1::Max(r_toneMapLuminanceAdaptationRate.GetFloat(), 0.0f);
     luminancePass2Params.middleGray = BE1::Max(r_toneMapMiddleGray.GetFloat(), 0.0f);
 
-    RHI::Texture *inputTexture = currentVisCamera->colorTexture;
+    RHI::Texture *inputTexture = currentVisCamera->rtColorTexture;
 
     RHI::renderer->Barrier(mainCommandList, RHI::Renderer::MakeTextureBarrier(inputTexture, RHI::GPUResourceState::ShaderResource, RHI::GPUResourceState::ShaderResourceCompute));
 
@@ -113,7 +113,7 @@ bool RenderBackend::DispatchPyramidBloom() {
         return false;
     }
 
-    RHI::Texture *inputColorTexture = currentVisCamera->colorTexture;
+    RHI::Texture *inputColorTexture = currentVisCamera->rtColorTexture;
     RHI::Texture *bloomDownTexture = currentVisCamera->bloomDownTexture;
     RHI::Texture *bloomUpTexture = currentVisCamera->bloomUpTexture;
 
@@ -376,7 +376,7 @@ bool RenderBackend::DispatchConvolutionBloomScreenPrefilter() {
         return false;
     }
 
-    RHI::Texture *inputTexture = currentVisCamera->colorTexture;
+    RHI::Texture *inputTexture = currentVisCamera->rtColorTexture;
     RHI::Buffer *outputBuffer = currentVisCamera->fftBloomScreenSpatialBuffer;
 
     RHI::GPUBarrier startBarriers[] = {
@@ -536,7 +536,7 @@ bool RenderBackend::DispatchToneMapping(bool useBloom) {
     }
 
     RHI::Buffer *luminanceBuffer = currentVisCamera->luminanceBuffer;
-    RHI::Texture *inputTexture = currentVisCamera->colorTexture;
+    RHI::Texture *inputTexture = currentVisCamera->rtColorTexture;
     RHI::Texture *outputTexture = currentVisCamera->postProcessColorTexture;
     RHI::Texture *bloomTexture = inputTexture;
     RHI::ViewID bloomViewID = RHI::ViewID::PrimaryID;

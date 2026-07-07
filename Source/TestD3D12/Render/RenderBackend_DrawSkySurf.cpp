@@ -102,6 +102,11 @@ void RenderBackend::DrawSkySurfaces(const RenderPassDrawSurf **drawSurfs, uint32
     const SubMesh *currentSubMesh = nullptr;
     VertexInputLayoutId currentInputLayoutId = VertexInputLayoutId::Count;
 
+    uint32_t drawCount = 0;
+    uint64_t drawTriangleCount = 0;
+    uint32_t instanceTableAllocCount = 0;
+    uint32_t instanceTableUploadBytes = 0;
+
     for (uint32_t drawSurfIndex = 0; drawSurfIndex < numDrawSurfs; ++drawSurfIndex) {
         const RenderPassDrawSurf *drawSurf = drawSurfs[drawSurfIndex];
         if (!drawSurf->pso) {
@@ -128,6 +133,11 @@ void RenderBackend::DrawSkySurfaces(const RenderPassDrawSurf **drawSurfs, uint32
             continue;
         }
 
-        DrawSurfaceInstances(frameData->GetThreadData(0), mainCommandList, &drawSurfs[drawSurfIndex], 1, statDrawCount, statDrawTriangleCount, statInstanceTableAllocCount, statInstanceTableUploadBytes);
+        SurfaceInstanceBatch batch;
+        if (PrepareSurfaceInstanceBatch(frameData->GetThreadData(0), &drawSurfs[drawSurfIndex], drawSurfIndex, 1, batch, instanceTableAllocCount, instanceTableUploadBytes)) {
+            DrawSurfaceInstanceBatch(mainCommandList, &drawSurfs[drawSurfIndex], batch, drawCount, drawTriangleCount);
+        }
     }
+
+    RecordDrawStats(drawCount, drawTriangleCount, instanceTableAllocCount, instanceTableUploadBytes);
 }

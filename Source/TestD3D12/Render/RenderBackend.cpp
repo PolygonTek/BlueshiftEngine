@@ -260,6 +260,10 @@ bool RenderBackend::UploadCameraConstants() {
     CameraConstants *constants = reinterpret_cast<CameraConstants *>(cameraConstantBuffer->mappedPtr);
     static_assert(sizeof(constants->viewProjMatrix) == sizeof(currentVisCamera->viewProjMatrix));
     BE1::simdProcessor->Memcpy(&constants->viewProjMatrix, &currentVisCamera->viewProjMatrix, sizeof(constants->viewProjMatrix));
+    BE1::simdProcessor->Memcpy(&constants->invViewProjMatrix, &currentVisCamera->invViewProjMatrix, sizeof(constants->invViewProjMatrix));
+    BE1::simdProcessor->Memcpy(&constants->prevViewProjMatrix, &currentVisCamera->prevViewProjMatrix, sizeof(constants->prevViewProjMatrix));
+    BE1::simdProcessor->Memcpy(&constants->prevInvViewProjMatrix, &currentVisCamera->prevInvViewProjMatrix, sizeof(constants->prevInvViewProjMatrix));
+    BE1::simdProcessor->Memcpy(&constants->hiZCullViewProjMatrix, &currentVisCamera->hiZCullViewProjMatrix, sizeof(constants->hiZCullViewProjMatrix));
     constants->surfaceTableIndex = frameData->GetShaderSurfaceTableBindlessIndex();
     constants->ndcFarZ = currentVisCamera->projectionPolicy.GetNDCFarZ();
     constants->padding1 = 0;
@@ -269,6 +273,11 @@ bool RenderBackend::UploadCameraConstants() {
 }
 
 void RenderBackend::UpdateFramePSOs() {
+    frameGenHiZMipFirstBatchPSO = ShaderPipeline::GetReadyPSO(renderSystem->genHiZMipFirstBatchPipeline);
+    frameGenHiZMipBatchPSO = ShaderPipeline::GetReadyPSO(renderSystem->genHiZMipBatchPipeline);
+    frameGenHiZMipOddDimPSO = ShaderPipeline::GetReadyPSO(renderSystem->genHiZMipOddDimPipeline);
+    frameHiZCullInstancesPSO = ShaderPipeline::GetReadyPSO(renderSystem->hiZCullInstancesPipeline);
+    frameHiZDebugPreviewPSO = ShaderPipeline::GetReadyPSO(renderSystem->hiZDebugPreviewPipeline);
     frameToneMappingPSO = ShaderPipeline::GetReadyPSO(renderSystem->toneMappingPipeline);
     frameLuminancePass1PSO = ShaderPipeline::GetReadyPSO(renderSystem->luminancePass1Pipeline);
     frameLuminancePass2PSO = ShaderPipeline::GetReadyPSO(renderSystem->luminancePass2Pipeline);
@@ -307,11 +316,13 @@ const void *RenderBackend::ExecuteBeginContext(const void *data) {
         mainCommandList->CloseAndExecute();
         return (const void *)(cmd + 1);
     }
-    assert(frameData->GetShaderSurfaceTableBindlessIndex() != 0);
 
     // 등록된 ShaderMaterial 테이블을 GPU 에 업로드한다.
-    frameData->UploadShaderMaterialTable(frameData->GetThreadData(0), mainCommandList);
-    assert(frameData->GetShaderMaterialTableBindlessIndex() != 0);
+    if (!frameData->UploadShaderMaterialTable(frameData->GetThreadData(0), mainCommandList)) {
+        BE_WARNLOG("RenderBackend::ExecuteBeginContext: failed to upload shader material table\n");
+        mainCommandList->CloseAndExecute();
+        return (const void *)(cmd + 1);
+    }
 
     // 이번 프레임에 사용할 상수 데이터들을 준비한다.
     UploadFrameConstants();
@@ -352,7 +363,7 @@ const void *RenderBackend::ExecuteDrawCamera(const void *data) {
     if (!currentVisCamera->is2D &&
         (currentVisCamera->renderWidth == 0 ||
         currentVisCamera->renderHeight == 0 ||
-        !currentVisCamera->colorTexture ||
+        !currentVisCamera->rtColorTexture ||
         !currentVisCamera->depthTexture)) {
         BE_WARNLOG("RenderBackend::ExecuteDrawCamera: invalid camera render target\n");
         mainCommandList->CloseAndExecute();
@@ -391,6 +402,8 @@ const void *RenderBackend::ExecuteDrawCamera(const void *data) {
 
         RHI::renderer->EndRenderPass(mainCommandList);
     } else {
+        const bool hiZCullingPrepared = PrepareHiZCulling();
+
         RHI::RenderPassImage::LoadAction colorLoadAction = BE1::HasFlag(clearFlags, RHI::ClearFlag::Color) ? RHI::RenderPassImage::LoadAction::Clear : RHI::RenderPassImage::LoadAction::Load;
         if (currentVisCamera->clearMethod == RenderCameraClearMethod::Skybox) {
             colorLoadAction = RHI::RenderPassImage::LoadAction::DontCare;
@@ -400,8 +413,8 @@ const void *RenderBackend::ExecuteDrawCamera(const void *data) {
         RHI::RenderPassImage depthImage = RHI::RenderPassImage::DepthStencil(currentVisCamera->depthTexture, RHI::ViewID::PrimaryID, depthLoadAction, RHI::RenderPassImage::StoreAction::Store,
             RHI::GPUResourceState::ShaderResource, RHI::GPUResourceState::DepthWrite, RHI::GPUResourceState::ShaderResource);
 
-        if (currentVisCamera->colorMSAATexture) {
-            RHI::RenderPassImage colorImage = RHI::RenderPassImage::Color(currentVisCamera->colorMSAATexture, RHI::ViewID::PrimaryID, colorLoadAction);
+        if (currentVisCamera->rtColorMSAATexture) {
+            RHI::RenderPassImage colorImage = RHI::RenderPassImage::Color(currentVisCamera->rtColorMSAATexture, RHI::ViewID::PrimaryID, colorLoadAction);
             if (useExplicitClearColor) {
                 colorImage = colorImage.WithClearValue(clearColorValue);
             }
@@ -409,11 +422,11 @@ const void *RenderBackend::ExecuteDrawCamera(const void *data) {
             RHI::RenderPassImage renderPassImages[] = {
                 colorImage,
                 depthImage,
-                RHI::RenderPassImage::ResolveColor(currentVisCamera->colorTexture, RHI::ViewID::PrimaryID, 0)
+                RHI::RenderPassImage::ResolveColor(currentVisCamera->rtColorTexture, RHI::ViewID::PrimaryID, 0)
             };
             RHI::renderer->BeginRenderPass(mainCommandList, renderPassImages, COUNT_OF(renderPassImages));
         } else {
-            RHI::RenderPassImage colorImage = RHI::RenderPassImage::Color(currentVisCamera->colorTexture, RHI::ViewID::PrimaryID, colorLoadAction);
+            RHI::RenderPassImage colorImage = RHI::RenderPassImage::Color(currentVisCamera->rtColorTexture, RHI::ViewID::PrimaryID, colorLoadAction);
             if (useExplicitClearColor) {
                 colorImage = colorImage.WithClearValue(clearColorValue);
             }
@@ -429,6 +442,18 @@ const void *RenderBackend::ExecuteDrawCamera(const void *data) {
 
         RHI::renderer->EndRenderPass(mainCommandList);
 
+        if (hiZCullingPrepared) {
+            FinishHiZCulling();
+        }
+
+        if (currentVisCamera->generateHiZ && !r_hiZOcclusionCullingFreeze.GetBool()) {
+            DispatchGenHiZ();
+        }
+
+        if (currentVisCamera->hiZDebugPreview) {
+            DispatchHiZDebugPreview();
+        }
+
         PostProcessAndBlitToSwapChain();
     }
 
@@ -439,7 +464,7 @@ const void *RenderBackend::ExecuteDrawCamera(const void *data) {
 }
 
 void RenderBackend::PostProcessAndBlitToSwapChain() {
-    const RHI::Texture *finalColorTexture = currentVisCamera->colorTexture;
+    const RHI::Texture *finalColorTexture = currentVisCamera->rtColorTexture;
 
     if (!r_skipPostProcess.GetBool() && !BE1::HasFlag(currentVisCamera->flags, RenderCameraFlag::SkipPostProcess)) {
         const bool hasLuminance = DispatchLuminance();
@@ -656,39 +681,54 @@ void RenderBackend::SetPassVertexBuffers(RHI::CommandList *commandList, const Re
     }
 }
 
+static bool IsHiZCullRenderPass(RenderPassType passType) {
+    return passType == RenderPassType::DepthPrepass || passType == RenderPassType::Opaque;
+}
+
 void RenderBackend::DrawGenericPass(const RenderPass *renderPass) {
     PROFILER_CPU_SCOPED_EVENT("RenderBackend::DrawGenericPass");
 
-    const RenderPassDrawSurf **drawSurfs = renderPass->drawSurfs;
     const uint32_t numDrawSurfs = renderPass->numDrawSurfs;
-
-    UploadStaticDataToGPU(renderPass);
-
     if (numDrawSurfs > 0) {
-        DrawGenericSurfaces(drawSurfs, numDrawSurfs);
+        UploadStaticDataToGPU(renderPass);
+
+        const SurfaceInstanceBatch *hiZCullBatches = nullptr;
+        uint32_t hiZCullBatchCount = 0;
+
+        if (currentVisCamera->hiZOcclusionCulling && IsHiZCullRenderPass(renderPass->type)) {
+            const uint32_t passIndex = static_cast<uint32_t>(renderPass - currentVisCamera->renderPasses);
+
+            if (passIndex < static_cast<uint32_t>(hiZCullPassRanges.Count())) {
+                const HiZCullPassRange &passRange = hiZCullPassRanges[passIndex];
+
+                if (passRange.numBatches > 0) {
+                    hiZCullBatches = hiZCullDrawBatches.Ptr() + passRange.firstBatchIndex;
+                    hiZCullBatchCount = passRange.numBatches;
+                }
+            }
+        }
+        DrawGenericSurfaces(renderPass->drawSurfs, numDrawSurfs, hiZCullBatches, hiZCullBatchCount);
     }
 }
 
 void RenderBackend::DrawSkyPass(const RenderPass *renderPass) {
     PROFILER_CPU_SCOPED_EVENT("RenderBackend::DrawSkyPass");
 
-    const RenderPassDrawSurf **drawSurfs = renderPass->drawSurfs;
     const uint32_t numDrawSurfs = renderPass->numDrawSurfs;
-
-    UploadStaticDataToGPU(renderPass);
-
     if (numDrawSurfs > 0) {
-        DrawSkySurfaces(drawSurfs, numDrawSurfs);
+        UploadStaticDataToGPU(renderPass);
+
+        DrawSkySurfaces(renderPass->drawSurfs, numDrawSurfs);
     }
 }
 
 void RenderBackend::DrawGuiPass(const RenderPass *renderPass) {
     PROFILER_CPU_SCOPED_EVENT("RenderBackend::DrawGuiPass");
 
-    const RenderPassDrawSurf **drawSurfs = renderPass->drawSurfs;
     const uint32_t numDrawSurfs = renderPass->numDrawSurfs;
-
-    DrawGenericSurfacesWithoutTask(drawSurfs, numDrawSurfs);
+    if (numDrawSurfs > 0) {
+        DrawGenericSurfacesWithoutTask(renderPass->drawSurfs, numDrawSurfs);
+    }
 }
 
 static bool CanBatchSurfaceInstances(const RenderPassDrawSurf *baseDrawSurf, const RenderPassDrawSurf *drawSurf) {
@@ -724,22 +764,49 @@ RHI::Buffer *RenderBackend::AllocInstanceToShaderSurfaceTable(RHI::FrameThreadDa
     return buffer;
 }
 
-void RenderBackend::DrawSurfaceInstances(RHI::FrameThreadData *frameThreadData, RHI::CommandList *commandList, const RenderPassDrawSurf **drawSurfs, uint32_t instanceCount, uint32_t &drawCount, uint64_t &drawTriangleCount, uint32_t &instanceTableAllocCount, uint32_t &instanceTableUploadBytes) {
+bool RenderBackend::PrepareSurfaceInstanceBatch(RHI::FrameThreadData *frameThreadData, const RenderPassDrawSurf **drawSurfs, uint32_t drawSurfIndex, uint32_t instanceCount, SurfaceInstanceBatch &batch, uint32_t &instanceTableAllocCount, uint32_t &instanceTableUploadBytes) const {
     assert(instanceCount > 0);
-
-    const VisSurf *firstVisSurf = drawSurfs[0]->visSurf;
 
     RHI::Buffer *instanceToShaderSurfaceTable = AllocInstanceToShaderSurfaceTable(frameThreadData, drawSurfs, instanceCount);
     if (!instanceToShaderSurfaceTable) {
-        return;
+        batch = {};
+        return false;
     }
+
+    batch.drawSurfIndex = drawSurfIndex;
+    batch.instanceCount = instanceCount;
+    batch.instanceToShaderSurfaceTable = instanceToShaderSurfaceTable;
+    batch.instanceBaseOffset = 0;
+    batch.indirectArgsBuffer = nullptr;
+    batch.indirectArgsOffset = 0;
+    batch.valid = true;
 
     instanceTableAllocCount++;
     instanceTableUploadBytes += sizeof(uint32_t) * instanceCount;
 
-    RHI::renderer->SetBuffer(commandList, 0, false, instanceToShaderSurfaceTable);
-    RHI::renderer->DrawIndexedInstanced(commandList, firstVisSurf->subMesh->numIndexes, instanceCount, 0, 0, 0);
+    return true;
+}
+
+void RenderBackend::DrawSurfaceInstanceBatch(RHI::CommandList *commandList, const RenderPassDrawSurf **drawSurfs, const SurfaceInstanceBatch &batch, uint32_t &drawCount, uint64_t &drawTriangleCount) {
+    assert(batch.valid);
+    assert(batch.instanceCount > 0);
+    assert(batch.instanceToShaderSurfaceTable);
+
+    SurfaceDrawParams surfaceDrawParams = {};
+    surfaceDrawParams.instanceBaseOffset = batch.instanceBaseOffset;
+
+    const VisSurf *firstVisSurf = drawSurfs[0]->visSurf;
+
+    RHI::renderer->SetConstants(commandList, 2, &surfaceDrawParams, sizeof(surfaceDrawParams), 0);
+    RHI::renderer->SetBuffer(commandList, 0, false, batch.instanceToShaderSurfaceTable);
+
+    if (batch.indirectArgsBuffer) {
+        RHI::renderer->DrawIndexedInstancedIndirect(commandList, batch.indirectArgsBuffer, batch.indirectArgsOffset);
+    } else {
+        RHI::renderer->DrawIndexedInstanced(commandList, firstVisSurf->subMesh->numIndexes, batch.instanceCount, 0, 0, 0);
+
+        drawTriangleCount += firstVisSurf->subMesh->numIndexes / 3 * batch.instanceCount;
+    }
 
     drawCount++;
-    drawTriangleCount += firstVisSurf->subMesh->numIndexes / 3 * instanceCount;
 }

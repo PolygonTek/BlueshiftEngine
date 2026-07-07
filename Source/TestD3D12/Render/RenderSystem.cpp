@@ -49,7 +49,7 @@ void RenderSystem::Init(void *mainWindowHandle) {
 
     gpuFFT.Init();
 
-    InitPostProcessPipelines();
+    InitComputePipelines();
 
     convolutionBloomKernelGenerator.Init();
 
@@ -91,7 +91,7 @@ void RenderSystem::Shutdown() {
 
     materialManager.Shutdown();
 
-    ReleasePostProcessPipelines();
+    ReleaseComputePipelines();
 
     convolutionBloomKernelGenerator.Shutdown();
 
@@ -112,7 +112,7 @@ void RenderSystem::Shutdown() {
     RHI::DestroyRenderer();
 }
 
-static SharedPtr<ShaderTemplate> CreatePostProcessShaderTemplate(const char *hashName, RHI::ShaderModel shaderModel, const char *filename, const char *baseDir) {
+static SharedPtr<ShaderTemplate> CreateComputeShaderTemplate(const char *hashName, RHI::ShaderModel shaderModel, const char *filename, const char *baseDir) {
     BE1::Str shaderTemplateText;
     shaderTemplateText.sPrintf(
         "{\n"
@@ -124,12 +124,12 @@ static SharedPtr<ShaderTemplate> CreatePostProcessShaderTemplate(const char *has
 
     SharedPtr<ShaderTemplate> shaderTemplate = shaderTemplateManager.AllocShaderTemplate(hashName);
     if (!shaderTemplate->Create(shaderTemplateText.c_str(), baseDir)) {
-        BE_FATALERROR("RenderSystem::CreatePostProcessShaderTemplate: failed to create shader template '%s'", hashName);
+        BE_FATALERROR("RenderSystem::CreateComputeShaderTemplate: failed to create shader template '%s'", hashName);
     }
     return shaderTemplate;
 }
 
-static void EnsurePostProcessPipeline(const SharedPtr<ShaderTemplate> &shaderTemplate, SharedPtr<ShaderPipeline> &pipeline) {
+static void EnsureComputePipeline(const SharedPtr<ShaderTemplate> &shaderTemplate, SharedPtr<ShaderPipeline> &pipeline) {
     if (pipeline && pipeline->GetState() != ShaderPipeline::State::Empty) {
         return;
     }
@@ -137,48 +137,66 @@ static void EnsurePostProcessPipeline(const SharedPtr<ShaderTemplate> &shaderTem
     pipeline = shaderPipelineCache.GetComputePipeline(shaderTemplate, ShaderPermutationKey());
 }
 
-void RenderSystem::InitPostProcessPipelines() {
+void RenderSystem::InitComputePipelines() {
     const char *baseDir = "Source/TestD3D12/Shaders";
     const RHI::ShaderModel computeShaderModel = RHI::ShaderModel::SM_6_6;
 
-    toneMappingShaderTemplate = CreatePostProcessShaderTemplate("_toneMappingShader", computeShaderModel, "ToneMapping/ToneMapping.hlsl", baseDir);
-    luminancePass1ShaderTemplate = CreatePostProcessShaderTemplate("_luminancePass1Shader", computeShaderModel, "ToneMapping/LuminancePass1.hlsl", baseDir);
-    luminancePass2ShaderTemplate = CreatePostProcessShaderTemplate("_luminancePass2Shader", computeShaderModel, "ToneMapping/LuminancePass2.hlsl", baseDir);
+    genHiZMipFirstBatchShaderTemplate = CreateComputeShaderTemplate("_genHiZMipFirstBatchShader", computeShaderModel, "GenHiZMip/GenHiZMipFirstBatch.hlsl", baseDir);
+    genHiZMipBatchShaderTemplate = CreateComputeShaderTemplate("_genHiZMipBatchShader", computeShaderModel, "GenHiZMip/GenHiZMipBatch.hlsl", baseDir);
+    genHiZMipOddDimShaderTemplate = CreateComputeShaderTemplate("_genHiZMipOddDimShader", computeShaderModel, "GenHiZMip/GenHiZMipOddDim.hlsl", baseDir);
+    hiZCullInstancesShaderTemplate = CreateComputeShaderTemplate("_hiZCullInstancesShader", computeShaderModel, "HiZCullInstances.hlsl", baseDir);
+    hiZDebugPreviewShaderTemplate = CreateComputeShaderTemplate("_hiZDebugPreviewShader", computeShaderModel, "HiZDebugPreview.hlsl", baseDir);
 
-    bloomPrefilterShaderTemplate = CreatePostProcessShaderTemplate("_bloomPrefilterShader", computeShaderModel, "Bloom/BloomPrefilter.hlsl", baseDir);
-    bloomDownsampleShaderTemplate = CreatePostProcessShaderTemplate("_bloomDownsampleShader", computeShaderModel, "Bloom/BloomDownsample.hlsl", baseDir);
-    bloomUpsampleShaderTemplate = CreatePostProcessShaderTemplate("_bloomUpsampleShader", computeShaderModel, "Bloom/BloomUpsample.hlsl", baseDir);
+    toneMappingShaderTemplate = CreateComputeShaderTemplate("_toneMappingShader", computeShaderModel, "ToneMapping/ToneMapping.hlsl", baseDir);
+    luminancePass1ShaderTemplate = CreateComputeShaderTemplate("_luminancePass1Shader", computeShaderModel, "ToneMapping/LuminancePass1.hlsl", baseDir);
+    luminancePass2ShaderTemplate = CreateComputeShaderTemplate("_luminancePass2Shader", computeShaderModel, "ToneMapping/LuminancePass2.hlsl", baseDir);
 
-    convolutionBloomPrefilterShaderTemplate = CreatePostProcessShaderTemplate("_convolutionBloomPrefilterShader", computeShaderModel, "Bloom/ConvolutionBloomPrefilter.hlsl", baseDir);
-    convolutionBloomKernelPrepareShaderTemplate = CreatePostProcessShaderTemplate("_convolutionBloomKernelPrepareShader", computeShaderModel, "Bloom/ConvolutionBloomKernelPrepare.hlsl", baseDir);
-    convolutionBloomResolveShaderTemplate = CreatePostProcessShaderTemplate("_convolutionBloomResolveShader", computeShaderModel, "Bloom/ConvolutionBloomResolve.hlsl", baseDir);
-    convolutionBloomAperturePrepareShaderTemplate = CreatePostProcessShaderTemplate("_convolutionBloomAperturePrepareShader", computeShaderModel, "Bloom/ConvolutionBloomAperturePrepare.hlsl", baseDir);
-    convolutionBloomReduceApertureEnergyShaderTemplate = CreatePostProcessShaderTemplate("_convolutionBloomReduceApertureEnergyShader", computeShaderModel, "Bloom/ConvolutionBloomReduceApertureEnergy.hlsl", baseDir);
-    convolutionBloomResolveDiffractionPSFShaderTemplate = CreatePostProcessShaderTemplate("_convolutionBloomResolveDiffractionPSFShader", computeShaderModel, "Bloom/ConvolutionBloomResolveDiffractionPSF.hlsl", baseDir);
-    convolutionBloomApplyDispersionShaderTemplate = CreatePostProcessShaderTemplate("_convolutionBloomApplyDispersionShader", computeShaderModel, "Bloom/ConvolutionBloomApplyDispersion.hlsl", baseDir);
+    bloomPrefilterShaderTemplate = CreateComputeShaderTemplate("_bloomPrefilterShader", computeShaderModel, "Bloom/BloomPrefilter.hlsl", baseDir);
+    bloomDownsampleShaderTemplate = CreateComputeShaderTemplate("_bloomDownsampleShader", computeShaderModel, "Bloom/BloomDownsample.hlsl", baseDir);
+    bloomUpsampleShaderTemplate = CreateComputeShaderTemplate("_bloomUpsampleShader", computeShaderModel, "Bloom/BloomUpsample.hlsl", baseDir);
 
-    EnsurePostProcessPipelines();
+    convolutionBloomPrefilterShaderTemplate = CreateComputeShaderTemplate("_convolutionBloomPrefilterShader", computeShaderModel, "Bloom/ConvolutionBloomPrefilter.hlsl", baseDir);
+    convolutionBloomKernelPrepareShaderTemplate = CreateComputeShaderTemplate("_convolutionBloomKernelPrepareShader", computeShaderModel, "Bloom/ConvolutionBloomKernelPrepare.hlsl", baseDir);
+    convolutionBloomResolveShaderTemplate = CreateComputeShaderTemplate("_convolutionBloomResolveShader", computeShaderModel, "Bloom/ConvolutionBloomResolve.hlsl", baseDir);
+    convolutionBloomAperturePrepareShaderTemplate = CreateComputeShaderTemplate("_convolutionBloomAperturePrepareShader", computeShaderModel, "Bloom/ConvolutionBloomAperturePrepare.hlsl", baseDir);
+    convolutionBloomReduceApertureEnergyShaderTemplate = CreateComputeShaderTemplate("_convolutionBloomReduceApertureEnergyShader", computeShaderModel, "Bloom/ConvolutionBloomReduceApertureEnergy.hlsl", baseDir);
+    convolutionBloomResolveDiffractionPSFShaderTemplate = CreateComputeShaderTemplate("_convolutionBloomResolveDiffractionPSFShader", computeShaderModel, "Bloom/ConvolutionBloomResolveDiffractionPSF.hlsl", baseDir);
+    convolutionBloomApplyDispersionShaderTemplate = CreateComputeShaderTemplate("_convolutionBloomApplyDispersionShader", computeShaderModel, "Bloom/ConvolutionBloomApplyDispersion.hlsl", baseDir);
+
+    EnsureComputePipelines();
 }
 
-void RenderSystem::EnsurePostProcessPipelines() {
-    EnsurePostProcessPipeline(toneMappingShaderTemplate, toneMappingPipeline);
-    EnsurePostProcessPipeline(luminancePass1ShaderTemplate, luminancePass1Pipeline);
-    EnsurePostProcessPipeline(luminancePass2ShaderTemplate, luminancePass2Pipeline);
+void RenderSystem::EnsureComputePipelines() {
+    EnsureComputePipeline(genHiZMipFirstBatchShaderTemplate, genHiZMipFirstBatchPipeline);
+    EnsureComputePipeline(genHiZMipBatchShaderTemplate, genHiZMipBatchPipeline);
+    EnsureComputePipeline(genHiZMipOddDimShaderTemplate, genHiZMipOddDimPipeline);
+    EnsureComputePipeline(hiZCullInstancesShaderTemplate, hiZCullInstancesPipeline);
+    EnsureComputePipeline(hiZDebugPreviewShaderTemplate, hiZDebugPreviewPipeline);
 
-    EnsurePostProcessPipeline(bloomPrefilterShaderTemplate, bloomPrefilterPipeline);
-    EnsurePostProcessPipeline(bloomDownsampleShaderTemplate, bloomDownsamplePipeline);
-    EnsurePostProcessPipeline(bloomUpsampleShaderTemplate, bloomUpsamplePipeline);
+    EnsureComputePipeline(toneMappingShaderTemplate, toneMappingPipeline);
+    EnsureComputePipeline(luminancePass1ShaderTemplate, luminancePass1Pipeline);
+    EnsureComputePipeline(luminancePass2ShaderTemplate, luminancePass2Pipeline);
 
-    EnsurePostProcessPipeline(convolutionBloomPrefilterShaderTemplate, convolutionBloomPrefilterPipeline);
-    EnsurePostProcessPipeline(convolutionBloomKernelPrepareShaderTemplate, convolutionBloomKernelPreparePipeline);
-    EnsurePostProcessPipeline(convolutionBloomResolveShaderTemplate, convolutionBloomResolvePipeline);
-    EnsurePostProcessPipeline(convolutionBloomAperturePrepareShaderTemplate, convolutionBloomAperturePreparePipeline);
-    EnsurePostProcessPipeline(convolutionBloomReduceApertureEnergyShaderTemplate, convolutionBloomReduceApertureEnergyPipeline);
-    EnsurePostProcessPipeline(convolutionBloomResolveDiffractionPSFShaderTemplate, convolutionBloomResolveDiffractionPSFPipeline);
-    EnsurePostProcessPipeline(convolutionBloomApplyDispersionShaderTemplate, convolutionBloomApplyDispersionPipeline);
+    EnsureComputePipeline(bloomPrefilterShaderTemplate, bloomPrefilterPipeline);
+    EnsureComputePipeline(bloomDownsampleShaderTemplate, bloomDownsamplePipeline);
+    EnsureComputePipeline(bloomUpsampleShaderTemplate, bloomUpsamplePipeline);
+
+    EnsureComputePipeline(convolutionBloomPrefilterShaderTemplate, convolutionBloomPrefilterPipeline);
+    EnsureComputePipeline(convolutionBloomKernelPrepareShaderTemplate, convolutionBloomKernelPreparePipeline);
+    EnsureComputePipeline(convolutionBloomResolveShaderTemplate, convolutionBloomResolvePipeline);
+    EnsureComputePipeline(convolutionBloomAperturePrepareShaderTemplate, convolutionBloomAperturePreparePipeline);
+    EnsureComputePipeline(convolutionBloomReduceApertureEnergyShaderTemplate, convolutionBloomReduceApertureEnergyPipeline);
+    EnsureComputePipeline(convolutionBloomResolveDiffractionPSFShaderTemplate, convolutionBloomResolveDiffractionPSFPipeline);
+    EnsureComputePipeline(convolutionBloomApplyDispersionShaderTemplate, convolutionBloomApplyDispersionPipeline);
 }
 
-void RenderSystem::ReleasePostProcessPipelines() {
+void RenderSystem::ReleaseComputePipelines() {
+    genHiZMipFirstBatchPipeline.reset();
+    genHiZMipBatchPipeline.reset();
+    genHiZMipOddDimPipeline.reset();
+    hiZCullInstancesPipeline.reset();
+    hiZDebugPreviewPipeline.reset();
+
     toneMappingPipeline.reset();
     luminancePass1Pipeline.reset();
     luminancePass2Pipeline.reset();
@@ -194,6 +212,12 @@ void RenderSystem::ReleasePostProcessPipelines() {
     convolutionBloomReduceApertureEnergyPipeline.reset();
     convolutionBloomResolveDiffractionPSFPipeline.reset();
     convolutionBloomApplyDispersionPipeline.reset();
+
+    genHiZMipFirstBatchShaderTemplate.reset();
+    genHiZMipBatchShaderTemplate.reset();
+    genHiZMipOddDimShaderTemplate.reset();
+    hiZCullInstancesShaderTemplate.reset();
+    hiZDebugPreviewShaderTemplate.reset();
 
     toneMappingShaderTemplate.reset();
     luminancePass1ShaderTemplate.reset();

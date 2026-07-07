@@ -16,6 +16,7 @@
 
 #include "Precompiled.h"
 #include "RHI/RHI.h"
+#include "RenderCamera.h"
 #include "RenderFrameData.h"
 
 class RenderFrameData;
@@ -41,7 +42,7 @@ public:
 private:
     static constexpr int            GpuTimingSlotCount = 8;
     static constexpr int            GpuTimingSampleInterval = 4; // must be a power of two.
-    static constexpr uint32_t       MaxInstancesPerDraw = 2048;
+    static constexpr uint32_t       MaxInstancesPerDraw = RenderHiZCullMaxInstanceCount;
 
     struct GpuTimingSlot {
         RenderContext *             renderContext = nullptr;
@@ -49,10 +50,28 @@ private:
         bool                        pending = false;
     };
 
+    struct SurfaceInstanceBatch {
+        uint32_t                    drawSurfIndex = 0;
+        uint32_t                    instanceCount = 0;
+        RHI::Buffer *               instanceToShaderSurfaceTable = nullptr;
+        uint32_t                    instanceBaseOffset = 0;
+        RHI::Buffer *               indirectArgsBuffer = nullptr;
+        uint32_t                    indirectArgsOffset = 0;
+        bool                        valid = false;
+    };
+
+    struct HiZCullPassRange {
+        uint32_t                    firstBatchIndex = 0;
+        uint32_t                    numBatches = 0;
+    };
+
     struct DrawSurfsTaskDesc {
         int32_t                     threadIndex = -1;
         const RenderPassDrawSurf ** drawSurfs = nullptr;
         uint32_t                    numDrawSurfs = 0;
+        uint32_t                    firstDrawSurfIndex = 0;
+        const SurfaceInstanceBatch *hiZCullBatches = nullptr;
+        uint32_t                    numHiZCullBatches = 0;
         RHI::CommandList *          commandList = nullptr;
         uint32_t                    drawCount = 0;
         uint64_t                    drawTriangleCount = 0;
@@ -81,13 +100,19 @@ private:
     void                            UploadStaticDataToGPU(const RenderPass *renderPass) const;
     void                            SetPassVertexBuffers(RHI::CommandList *commandList, const RenderPassDrawSurf *drawSurf) const;
 
-    void                            DrawGenericSurfaces(const RenderPassDrawSurf **drawSurfs, uint32_t numDrawSurfs);
+    void                            DrawGenericSurfaces(const RenderPassDrawSurf **drawSurfs, uint32_t numDrawSurfs, const SurfaceInstanceBatch *hiZCullBatches = nullptr, uint32_t hiZCullBatchCount = 0);
     void                            DrawSkySurfaces(const RenderPassDrawSurf **drawSurfs, uint32_t numDrawSurfs);
 
-    void                            DrawGenericSurfacesWithoutTask(const RenderPassDrawSurf **drawSurfs, uint32_t numDrawSurfs);
-    void                            DrawGenericSurfacesWithTask(const RenderPassDrawSurf **drawSurfs, uint32_t numDrawSurfs);
+    void                            DrawGenericSurfacesWithoutTask(const RenderPassDrawSurf **drawSurfs, uint32_t numDrawSurfs, const SurfaceInstanceBatch *hiZCullBatches = nullptr, uint32_t hiZCullBatchCount = 0);
+    void                            DrawGenericSurfacesWithTask(const RenderPassDrawSurf **drawSurfs, uint32_t numDrawSurfs, const SurfaceInstanceBatch *hiZCullBatches = nullptr, uint32_t hiZCullBatchCount = 0);
     void                            DrawGenericSurfacesByTask(RenderBackend::DrawSurfsTaskDesc *taskDesc);
     static void                     DrawGenericSurfacesByTaskFunction(void *data);
+
+    bool                            PrepareHiZCulling();
+    bool                            DispatchHiZCullInstances(RHI::FrameThreadData *frameThreadData, RHI::CommandList *commandList, uint32_t instanceCount, RHI::Buffer *inputInstanceToShaderSurfaceTable, uint32_t instanceBaseOffset, uint32_t indirectArgsOffset);
+    void                            FinishHiZCulling();
+    bool                            DispatchGenHiZ();
+    bool                            DispatchHiZDebugPreview();
 
     bool                            DispatchLuminance();
     bool                            DispatchBloom();
@@ -103,7 +128,8 @@ private:
 
     uint32_t                        FindSurfaceInstanceBatchEnd(const RenderPassDrawSurf **drawSurfs, uint32_t numDrawSurfs, uint32_t startIndex) const;
     RHI::Buffer *                   AllocInstanceToShaderSurfaceTable(RHI::FrameThreadData *frameThreadData, const RenderPassDrawSurf **drawSurfs, uint32_t instanceCount) const;
-    void                            DrawSurfaceInstances(RHI::FrameThreadData *frameThreadData, RHI::CommandList *commandList, const RenderPassDrawSurf **drawSurfs, uint32_t instanceCount, uint32_t &drawCount, uint64_t &drawTriangleCount, uint32_t &instanceTableAllocCount, uint32_t &instanceTableUploadBytes);
+    bool                            PrepareSurfaceInstanceBatch(RHI::FrameThreadData *frameThreadData, const RenderPassDrawSurf **drawSurfs, uint32_t drawSurfIndex, uint32_t instanceCount, SurfaceInstanceBatch &batch, uint32_t &instanceTableAllocCount, uint32_t &instanceTableUploadBytes) const;
+    void                            DrawSurfaceInstanceBatch(RHI::CommandList *commandList, const RenderPassDrawSurf **drawSurfs, const SurfaceInstanceBatch &batch, uint32_t &drawCount, uint64_t &drawTriangleCount);
 
     void                            RecordDrawStats(uint32_t drawCount, uint64_t drawTriangleCount, uint32_t instanceTableAllocCount, uint32_t instanceTableUploadBytes);
     bool                            UploadFrameConstants();
@@ -120,6 +146,11 @@ private:
     uint32_t                        frameCount = 0;
 
     RHI::PipelineState *            frameImagePSO = nullptr;
+    RHI::PipelineState *            frameGenHiZMipFirstBatchPSO = nullptr;
+    RHI::PipelineState *            frameGenHiZMipBatchPSO = nullptr;
+    RHI::PipelineState *            frameGenHiZMipOddDimPSO = nullptr;
+    RHI::PipelineState *            frameHiZCullInstancesPSO = nullptr;
+    RHI::PipelineState *            frameHiZDebugPreviewPSO = nullptr;
     RHI::PipelineState *            frameToneMappingPSO = nullptr;
     RHI::PipelineState *            frameLuminancePass1PSO = nullptr;
     RHI::PipelineState *            frameLuminancePass2PSO = nullptr;
@@ -137,6 +168,8 @@ private:
 
     uint32_t                        drawGroupId = -1;
     BE1::Array<DrawSurfsTaskDesc>   drawSurfsTaskDescs;
+    BE1::Array<SurfaceInstanceBatch> hiZCullDrawBatches;
+    BE1::Array<HiZCullPassRange>    hiZCullPassRanges;
 
     uint64_t                        statRenderElapsedUsec = 0;
     int                             statRenderFrameCount = 0;

@@ -253,7 +253,7 @@ void D3D12Renderer::Init(const void *mainWindowHandle) {
     }
     commandQueues[to_int(RHI::CommandQueueType::Compute)]->SetName(L"ComputeCommandQueue");
 
-    // Command Signature 생성
+    // ExecuteIndirect 에서 사용할 Command Signature 생성
     D3D12_COMMAND_SIGNATURE_DESC commandSignatureDesc = {};
 
     D3D12_INDIRECT_ARGUMENT_DESC drawInstancedArgs[1];
@@ -1518,6 +1518,9 @@ void D3D12Renderer::BeginRenderPass(RHI::CommandList *commandList, const RHI::Re
             if (IsStencilFormat(texture->textureDesc.Format)) {
                 dsDesc.StencilBeginningAccess = dsDesc.DepthBeginningAccess;
                 dsDesc.StencilEndingAccess = dsDesc.DepthEndingAccess;
+            } else {
+                dsDesc.StencilBeginningAccess.Type = D3D12_RENDER_PASS_BEGINNING_ACCESS_TYPE_NO_ACCESS;
+                dsDesc.StencilEndingAccess.Type = D3D12_RENDER_PASS_ENDING_ACCESS_TYPE_NO_ACCESS;
             }
 
             // 텍스쳐의 DSV 정보를 가져온다.
@@ -1617,6 +1620,9 @@ void D3D12Renderer::BeginRenderPass(RHI::CommandList *commandList, const RHI::Re
 
             if (IsStencilFormat(texture->textureDesc.Format)) {
                 dsDesc.StencilEndingAccess = dsDesc.DepthEndingAccess;
+            } else {
+                dsDesc.StencilBeginningAccess.Type = D3D12_RENDER_PASS_BEGINNING_ACCESS_TYPE_NO_ACCESS;
+                dsDesc.StencilEndingAccess.Type = D3D12_RENDER_PASS_ENDING_ACCESS_TYPE_NO_ACCESS;
             }
             break;
         }
@@ -1744,6 +1750,12 @@ void D3D12Renderer::DrawInstanced(RHI::CommandList *commandList, uint32_t vertex
     _commandList->GetGraphicsCommandList()->DrawInstanced(vertexCount, instanceCount, startVertexLocation, startInstanceLocation);
 }
 
+void D3D12Renderer::DrawIndexedInstanced(RHI::CommandList *commandList, uint32_t indexCount, uint32_t instanceCount, uint32_t startIndexLocation, uint32_t baseVertexLocation, uint32_t startInstanceLocation) {
+    D3D12CommandList *_commandList = static_cast<D3D12CommandList *>(commandList);
+    BindRootParameters(_commandList);
+    _commandList->GetGraphicsCommandList()->DrawIndexedInstanced(indexCount, instanceCount, startIndexLocation, baseVertexLocation, startInstanceLocation);
+}
+
 void D3D12Renderer::DrawInstancedIndirect(RHI::CommandList *commandList, const RHI::Buffer *argsBuffer, uint32_t argsOffset) {
     D3D12CommandList *_commandList = static_cast<D3D12CommandList *>(commandList);
     BindRootParameters(_commandList);
@@ -1754,12 +1766,6 @@ void D3D12Renderer::DrawInstancedIndirectCount(RHI::CommandList *commandList, co
     D3D12CommandList *_commandList = static_cast<D3D12CommandList *>(commandList);
     BindRootParameters(_commandList);
     _commandList->GetGraphicsCommandList()->ExecuteIndirect(drawInstancedIndirectCommandSignature, maxCount, static_cast<const D3D12Buffer *>(argsBuffer)->GetResource(), argsOffset, static_cast<const D3D12Buffer *>(countBuffer)->GetResource(), countOffset);
-}
-
-void D3D12Renderer::DrawIndexedInstanced(RHI::CommandList *commandList, uint32_t indexCount, uint32_t instanceCount, uint32_t startIndexLocation, uint32_t baseVertexLocation, uint32_t startInstanceLocation) {
-    D3D12CommandList *_commandList = static_cast<D3D12CommandList *>(commandList);
-    BindRootParameters(_commandList);
-    _commandList->GetGraphicsCommandList()->DrawIndexedInstanced(indexCount, instanceCount, startIndexLocation, baseVertexLocation, startInstanceLocation);
 }
 
 void D3D12Renderer::DrawIndexedInstancedIndirect(RHI::CommandList *commandList, const RHI::Buffer *argsBuffer, uint32_t argsOffset) {

@@ -194,8 +194,7 @@ void RenderFrameData::BeginFrameMemAllocs() {
 
     InitVisCameras(16);
 
-    // NOTE: visObject 에 대한 sort key 가 16 비트이므로 0xFFFF = 65536 을 최대로 설정한다.
-    InitVisObjects(65536);
+    InitVisObjects(0x20000);
 }
 
 void *RenderFrameData::MemAlloc(int size) {

@@ -39,7 +39,7 @@ void RenderObject::Update(const RenderObject::Desc &src, RenderObject::Desc::Upd
         desc.worldMatrix = src.worldMatrix;
     }
 
-    if (BE1::HasFlag(flags, Desc::UpdateFlag::AABB)) {
+    if (BE1::HasFlag(flags, Desc::UpdateFlag::Bounds)) {
         desc.aabb = src.aabb;
     }
 
@@ -73,7 +73,7 @@ void RenderObject::Update(const RenderObject::Desc &src, RenderObject::Desc::Upd
         }
     }
 
-    if (BE1::HasAnyFlag(flags, Desc::UpdateFlag::Transform | Desc::UpdateFlag::AABB | Desc::UpdateFlag::Mesh)) {
+    if (BE1::HasAnyFlag(flags, Desc::UpdateFlag::Transform | Desc::UpdateFlag::Bounds | Desc::UpdateFlag::Mesh)) {
         const BE1::AABB &localAABB = GetEffectiveLocalAABB(desc);
         if (localAABB.IsCleared()) {
             worldAABB = BE1::AABB::empty;

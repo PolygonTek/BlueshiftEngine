@@ -61,17 +61,65 @@ set(SRC_FILES
     RHI/D3D12/D3D12ImGuiRenderer.cpp
     RHI/D3D12/D3D12ImGuiOverlay.h
     RHI/D3D12/D3D12ImGuiOverlay.cpp
-    Shaders/ShaderInterop.h
     Render/Animation/Anim.h
     Render/Animation/Anim.cpp
     Render/Animation/Anim_InternalData.cpp
     Render/Animation/AnimManager.h
     Render/Animation/AnimManager.cpp
+    Render/Animation/SkinningJointCache.h
+    Render/Animation/SkinningJointCache.cpp
+    Render/Animation/Skeleton.h
+    Render/Animation/Skeleton.cpp
+    Render/Animation/SkeletonManager.h
+    Render/Animation/SkeletonManager.cpp
+    Render/Font/Font.h
+    Render/Font/Font.cpp
+    Render/Font/FontFace.h
+    Render/Font/FontFaceBitmap.cpp
+    Render/Font/FontFaceTrueType.cpp
+    Render/Font/FontManager.h
+    Render/Font/FontManager.cpp
+    Render/Font/FontFile.h
+    Render/Font/TrueTypeFont.h
+    Render/Font/TrueTypeFont.cpp
+    Render/Material/Material.h
+    Render/Material/Material.cpp
+    Render/Material/MaterialManager.h
+    Render/Material/MaterialManager.cpp
     Render/Mesh/BModel.h
-    Render/Texture/TextureStreamingFeedback.h
-    Render/Texture/TextureStreamingFeedback.cpp
+    Render/Mesh/Mesh.h
+    Render/Mesh/Mesh.cpp
+    Render/Mesh/Mesh_InternalData.cpp
+    Render/Mesh/par_octasphere.h
+    Render/Mesh/Mesh_Create.cpp
+    Render/Mesh/MeshInstance.h
+    Render/Mesh/MeshInstance.cpp
+    Render/Mesh/MeshManager.h
+    Render/Mesh/MeshManager.cpp
+    Render/Mesh/SubMesh.h
+    Render/Mesh/SubMesh.cpp
+    Render/Mesh/GuiMesh.h
+    Render/Mesh/GuiMesh.cpp
+    Render/ShaderPipeline/ShaderPipelineCache.h
+    Render/ShaderPipeline/ShaderPipelineCache.cpp
+    Render/ShaderPipeline/ShaderFeatureSet.h
+    Render/ShaderPipeline/ShaderFeatureSet.cpp
+    Render/ShaderPipeline/ShaderPermutationKey.h
+    Render/ShaderPipeline/ShaderPermutationKey.cpp
+    Render/ShaderPipeline/ShaderPipeline.h
+    Render/ShaderPipeline/ShaderPipeline.cpp
+    Render/ShaderPipeline/ShaderTemplate.h
+    Render/ShaderPipeline/ShaderTemplate.cpp
+    Render/ShaderPipeline/ShaderTemplateManager.h
+    Render/ShaderPipeline/ShaderTemplateManager.cpp
     Render/ShaderPipeline/VertexInputLayoutFactory.h
     Render/ShaderPipeline/VertexInputLayoutFactory.cpp
+    Render/Texture/TextureStreamingFeedback.h
+    Render/Texture/TextureStreamingFeedback.cpp
+    Render/Texture/Texture.h
+    Render/Texture/Texture.cpp
+    Render/Texture/TextureManager.h
+    Render/Texture/TextureManager.cpp
     Render/RenderCvars.h
     Render/RenderCvars.cpp
     Render/ConvolutionBloomKernelGenerator.h
@@ -90,9 +138,12 @@ set(SRC_FILES
     Render/RenderSystem.cpp
     Render/RenderBackend.h
     Render/RenderBackend.cpp
+    Render/RenderBackend_HiZCulling.cpp
+    Render/RenderBackend_GenHiZ.cpp
+    Render/RenderBackend_HiZDebug.cpp
     Render/RenderBackend_PostProcess.cpp
-    Render/RenderBackend_DrawGeneric.cpp
-    Render/RenderBackend_DrawSky.cpp
+    Render/RenderBackend_DrawGenericSurf.cpp
+    Render/RenderBackend_DrawSkySurf.cpp
     Render/RenderObject.h
     Render/RenderObject.cpp
     Render/RenderWorld.h
@@ -108,57 +159,9 @@ set(SRC_FILES
     Render/RenderPassPSOResolver.cpp
     Render/RenderPassBuilder.h
     Render/RenderPassBuilder.cpp
-    Render/Material/Material.h
-    Render/Material/Material.cpp
-    Render/Material/MaterialManager.h
-    Render/Material/MaterialManager.cpp
-    Render/ShaderPipeline/ShaderPipelineCache.h
-    Render/ShaderPipeline/ShaderPipelineCache.cpp
-    Render/ShaderPipeline/ShaderFeatureSet.h
-    Render/ShaderPipeline/ShaderFeatureSet.cpp
-    Render/ShaderPipeline/ShaderPermutationKey.h
-    Render/ShaderPipeline/ShaderPermutationKey.cpp
-    Render/ShaderPipeline/ShaderPipeline.h
-    Render/ShaderPipeline/ShaderPipeline.cpp
-    Render/ShaderPipeline/ShaderTemplate.h
-    Render/ShaderPipeline/ShaderTemplate.cpp
-    Render/ShaderPipeline/ShaderTemplateManager.h
-    Render/ShaderPipeline/ShaderTemplateManager.cpp
-    Render/Mesh/Mesh.h
-    Render/Mesh/Mesh.cpp
-    Render/Mesh/Mesh_InternalData.cpp
-    Render/Mesh/par_octasphere.h
-    Render/Mesh/Mesh_Create.cpp
-    Render/Mesh/MeshInstance.h
-    Render/Mesh/MeshInstance.cpp
-    Render/Animation/SkinningJointCache.h
-    Render/Animation/SkinningJointCache.cpp
-    Render/Mesh/MeshManager.h
-    Render/Mesh/MeshManager.cpp
-    Render/Mesh/SubMesh.h
-    Render/Mesh/SubMesh.cpp
-    Render/Mesh/GuiMesh.h
-    Render/Mesh/GuiMesh.cpp
-    Render/Animation/Skeleton.h
-    Render/Animation/Skeleton.cpp
-    Render/Animation/SkeletonManager.h
-    Render/Animation/SkeletonManager.cpp
-    Render/Font/Font.h
-    Render/Font/Font.cpp
-    Render/Font/FontFace.h
-    Render/Font/FontFaceBitmap.cpp
-    Render/Font/FontFaceTrueType.cpp
-    Render/Font/FontManager.h
-    Render/Font/FontManager.cpp
-    Render/Font/FontFile.h
-    Render/Font/TrueTypeFont.h
-    Render/Font/TrueTypeFont.cpp
     Render/Sampler.h
     Render/Sampler.cpp
-    Render/Texture/Texture.h
-    Render/Texture/Texture.cpp
-    Render/Texture/TextureManager.h
-    Render/Texture/TextureManager.cpp)
+    Shaders/ShaderInterop.h)
 
 file(GLOB_RECURSE SHADER_FILES RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
     ${CMAKE_CURRENT_SOURCE_DIR}/Shaders/*.hlsl

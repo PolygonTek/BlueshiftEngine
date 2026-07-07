@@ -163,9 +163,6 @@ bool ShaderMaterialTable::Upload(RHI::FrameThreadData *frameThreadData, RHI::Com
     if (!dirty || materials.Count() == 0) {
         return true;
     }
-    if (!frameThreadData || !commandList) {
-        return false;
-    }
 
     const int numMaterials = materials.Count();
     if (numMaterials > bufferCapacity) {

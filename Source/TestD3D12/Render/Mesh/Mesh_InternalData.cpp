@@ -81,7 +81,7 @@ bool Mesh::InternalData::LoadBinaryMesh(const char *filename) {
         }
     }
 
-    aabb = BE1::AABB(bMeshHeader->aabbMin, bMeshHeader->aabbMax);
+    aabb = BE1::AABB(bMeshHeader->boundsMin, bMeshHeader->boundsMax);
 
     // --- surfaces ---
     for (int surfaceIndex = 0; surfaceIndex < bMeshHeader->numSurfs; surfaceIndex++) {
@@ -91,7 +91,9 @@ bool Mesh::InternalData::LoadBinaryMesh(const char *filename) {
         Surface *meshSurf = Mesh::AllocSurface(bMeshSurf->numVerts, bMeshSurf->numIndexes);
         surfaces.Append(meshSurf);
         SubMesh *subMesh = meshSurf->subMesh;
-        subMesh->aabb = BE1::AABB(bMeshSurf->aabbMin, bMeshSurf->aabbMax);
+        subMesh->boundingBox = BE1::AABB(bMeshSurf->boundsMin, bMeshSurf->boundsMax);
+        const BE1::Vec3 sphereCenter = (bMeshSurf->boundsMin + bMeshSurf->boundsMax) * 0.5f;
+        subMesh->boundingSphere = BE1::Sphere(sphereCenter, (bMeshSurf->boundsMax - sphereCenter).Length());
 
         meshSurf->materialIndex = bMeshSurf->materialIndex;
 
@@ -205,8 +207,8 @@ void Mesh::InternalData::WriteBinaryMesh(const char *filename) {
     bMeshHeader.version = BMESH_VERSION;
     bMeshHeader.numJoints = numJoints;
     bMeshHeader.numSurfs = surfaces.Count();
-    bMeshHeader.aabbMin = aabb[0];
-    bMeshHeader.aabbMax = aabb[1];
+    bMeshHeader.boundsMin = aabb[0];
+    bMeshHeader.boundsMax = aabb[1];
     fp->Write(&bMeshHeader, sizeof(bMeshHeader));
 
     if (bMeshHeader.numJoints > 0) {
@@ -232,8 +234,8 @@ void Mesh::InternalData::WriteBinaryMesh(const char *filename) {
         bMeshSurf.numIndexes = subMesh->numIndexes;
         bMeshSurf.indexSize = subMesh->numIndexes < BIT(16) ? sizeof(uint16_t) : sizeof(uint32_t);
         bMeshSurf.maxWeights = subMesh->MaxVertexWeights();
-        bMeshSurf.aabbMin = subMesh->GetAABB()[0];
-        bMeshSurf.aabbMax = subMesh->GetAABB()[1];
+        bMeshSurf.boundsMin = subMesh->GetBoundingBox()[0];
+        bMeshSurf.boundsMax = subMesh->GetBoundingBox()[1];
         fp->Write(&bMeshSurf, sizeof(bMeshSurf));
 
         // --- vertexes ---
@@ -428,9 +430,9 @@ void Mesh::InternalData::ComputeAABB() {
 
     for (Surface *surface : surfaces) {
         SubMesh *subMesh = surface->subMesh;
-        subMesh->ComputeAABB();
+        subMesh->ComputeBounds();
 
-        aabb.AddAABB(subMesh->aabb);
+        aabb.AddAABB(subMesh->boundingBox);
     }
 
     // add small epsilon
@@ -467,8 +469,8 @@ static bool ListSortCompareMeshMaterials(const MeshSurfPtr &a, const MeshSurfPtr
 using MeshSurfPtr = Mesh::Surface *;
 template <typename MeshSurfPtr>
 static bool ListSortCompareMergedAABBArea(const MeshSurfPtr &a, const MeshSurfPtr &b) {
-    const BE1::AABB &aAABB = (a)->subMesh->GetAABB();
-    const BE1::AABB &bAABB = (b)->subMesh->GetAABB();
+    const BE1::AABB &aAABB = (a)->subMesh->GetBoundingBox();
+    const BE1::AABB &bAABB = (b)->subMesh->GetBoundingBox();
 
     float aArea = (mergeAABB + aAABB).Area();
     float bArea = (mergeAABB + bAABB).Area();
@@ -516,18 +518,18 @@ void Mesh::InternalData::SortAndMerge() {
 
             if (m2 > m0) {
                 // m0 의 AABB 와 합쳤을 때 area 가 작은 순으로 sorting
-                mergeAABB = surfaces[m0]->subMesh->aabb;
+                mergeAABB = surfaces[m0]->subMesh->boundingBox;
                 surfaces.SortSubSection(m0, m2, ListSortCompareMergedAABBArea<MeshSurfPtr>);
             }
 
             // 합칠 기준 AABB 를 확장
-            BE1::AABB aabb1 = surfaces[m0]->subMesh->aabb;
+            BE1::AABB aabb1 = surfaces[m0]->subMesh->boundingBox;
             aabb1.ExpandSelf(BE1::MeterToUnit(10.0f));
 
             while (m1 + 1 < surfaces.Count() && 
                 surfaces[m0]->materialIndex == surfaces[m1 + 1]->materialIndex && 
                 numNewIndexes < 32768) {
-                BE1::AABB aabb2 = surfaces[m1 + 1]->subMesh->aabb;
+                BE1::AABB aabb2 = surfaces[m1 + 1]->subMesh->boundingBox;
 
                 if (!aabb1.IsIntersectAABB(aabb2)) {
                     break;
