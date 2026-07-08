@@ -66,8 +66,6 @@ void RenderContext::Init(Graphics::WindowHandle hwnd, int renderingWidth, int re
 
     InitShadowMapRT();
 
-    this->random.SetSeed(123123);
-
     this->lastFrameMsec = PlatformTime::Milliseconds();
 }
 

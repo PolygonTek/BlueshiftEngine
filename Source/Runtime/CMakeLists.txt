@@ -369,6 +369,7 @@ set(COMMON_ENGINE_FILES
     Private/Math/SphericalHarmonics.cpp
     Private/Math/Math.cpp
     Private/Math/Plane.cpp
+    Private/Math/Random.cpp
     Private/Math/Rotation.cpp
     Private/Math/Complex.cpp
     Private/Math/Line.cpp

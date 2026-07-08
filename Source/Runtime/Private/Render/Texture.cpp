@@ -430,13 +430,11 @@ void Texture::CreateRandomRotMatTexture(int size, int flags) {
     image.Create2D(size, size, 1, Image::Format::R8G8B8A8, Image::GammaSpace::Linear, nullptr, Image::Flag::None);
     byte *dst = image.GetPixels();
     float s, c;
-
-    Random random;
-    random.SetSeed(23119);
+    RNG rng(23119);
 
     for (int y = 0; y < size; y++) {
         for (int x = 0; x < size; x++) {
-            Math::SinCos(random.RandomFloat() * Math::TwoPi, s, c);
+            Math::SinCos(rng.GetNextFloat(0.0f, 1.0f) * Math::TwoPi, s, c);
 
             dst[4 * (y * 64 + x) + 0] = ClampByte((+c + 1.0f) * 0.5f * 255 + 0.5f);
             dst[4 * (y * 64 + x) + 1] = ClampByte((-s + 1.0f) * 0.5f * 255 + 0.5f);
@@ -461,15 +459,13 @@ void Texture::CreateRandomDir4x4Texture(int flags) {
     image.Create2D(4, 4, 1, Image::Format::R8G8B8, Image::GammaSpace::Linear, nullptr, Image::Flag::None);
     byte *dst = image.GetPixels();
     Vec3 dir;
-
-    Random random;
-    random.SetSeed(810202);
+    RNG rng(810202);
 
     for (int y = 0; y < 4; y++) {
         for (int x = 0; x < 4; x++) {
-            dir.x = random.RandomFloat();
-            dir.y = random.RandomFloat();
-            dir.z = random.RandomFloat();
+            dir.x = rng.GetNextFloat(-1.0f, 1.0f);
+            dir.y = rng.GetNextFloat(-1.0f, 1.0f);
+            dir.z = rng.GetNextFloat(-1.0f, 1.0f);
             dir.Normalize();
 
             dir = (dir + Vec3(1.0f, 1.0f, 1.0f)) * 0.5f;

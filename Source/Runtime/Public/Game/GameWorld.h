@@ -71,8 +71,6 @@ public:
 
     virtual Str                 ToString() const override { return "Game World"; }
 
-    Random &                    GetRandom() { return random; }
-
                                 /// Returns internal render world interface pointer.
     RenderWorld *               GetRenderWorld() const { return renderWorld; }
 
@@ -237,8 +235,6 @@ private:
     GameScene                   scenes[MaxScenes];
 
     Json::Value                 snapshotValues;
-
-    Random                      random;
 
     LuaVM                       luaVM;
 

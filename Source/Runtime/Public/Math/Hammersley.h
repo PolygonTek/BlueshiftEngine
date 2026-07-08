@@ -52,7 +52,7 @@ private:
 
 template <int N>
 BE_INLINE Hammersley<N>::Hammersley(int baseX, int baseY) : baseX(baseX), baseY(baseY) {
-    GenerateSamples(baseX, baseY, Vec2(Math::Random(0.0f, 1.0f), Math::Random(0.0f, 1.0f)));
+    GenerateSamples(baseX, baseY, Vec2(RNG::GetRandom(1.0f), RNG::GetRandom(1.0f)));
 }
 
 template <int N>

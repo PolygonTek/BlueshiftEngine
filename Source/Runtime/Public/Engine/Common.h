@@ -15,7 +15,7 @@
 #pragma once
 
 #include "Platform/Platform.h"
-#include "Math/Math.h"
+#include "Core/Str.h"
 
 BE_NAMESPACE_BEGIN
 
@@ -43,8 +43,6 @@ public:
     PlatformId::Enum    GetPlatformId() const;
 
     Str                 GetAppPreferenceDir() const;
-
-    Random              random;
 
     int                 realTime;       // absolute time in milliseconds
     int                 frameTime;      // frame time in milliseconds

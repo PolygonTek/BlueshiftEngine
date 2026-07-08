@@ -182,8 +182,6 @@ public:
     float                   screenSelectionScale;
     Rect                    safeAreaInsets;         // left, top, right, bottom
 
-    Random                  random;
-
     int                     frameCount;
     uint32_t                frameMsec;
     uint32_t                lastFrameMsec;

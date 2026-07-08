@@ -126,8 +126,6 @@ void Common::Init(uint32_t maxTaskCount, const char *baseDir) {
     cmdSystem.BufferCommandText(CmdSystem::Execution::Now, "exec \"Config/config.cfg\"\n");
     cvarSystem.ClearModified();
 
-    random.SetSeed(0);
-
     srand((unsigned int)time(nullptr));
 
     realTime = 0;
