@@ -25,147 +25,11 @@ void RenderBackend::Init() {
     drawGroupId = BE1::Engine::taskManager->CreateGroupId();
 #endif
 
-    // GPU 타임 스탬프가 초당 몇번 증가하는지를 얻어온다.
-    gpuTimestampFrequency = RHI::renderer->GetTimestampFrequency(RHI::CommandQueueType::Graphics);
-
-    // timestamp heap: Begin[0], End[0], Begin[1], End[1], Begin[2], End[2], ...
-    RHI::QueryHeapDesc queryHeapDesc;
-    queryHeapDesc.type = RHI::QueryType::Timestamp;
-    queryHeapDesc.queryCount = GpuTimingSlotCount << 1; // 슬롯 별로 Timestamp 두개 (시작/끝) 가 필요하므로 2 를 곱한다.
-    gpuTimestampQueryHeap = RHI::renderer->CreateQueryHeap(&queryHeapDesc);
-
-    gpuTimestampReadbackBuffer = RHI::renderer->CreateBuffer(RHI::BufferUsage::Readback, RHI::BufferFlag::None, sizeof(uint64_t) * queryHeapDesc.queryCount, nullptr);
+    gpuTiming.Init();
 }
 
 void RenderBackend::Shutdown() {
-    if (gpuTimestampReadbackBuffer) {
-        RHI::renderer->DestroyBuffer(gpuTimestampReadbackBuffer);
-        gpuTimestampReadbackBuffer = nullptr;
-    }
-
-    if (gpuTimestampQueryHeap) {
-        RHI::renderer->DestroyQueryHeap(gpuTimestampQueryHeap);
-        gpuTimestampQueryHeap = nullptr;
-    }
-}
-
-void RenderBackend::UpdateRenderFrameTime(uint64_t frameUsec) {
-    static constexpr int StatUpdateFrameCount = 60;
-
-    statRenderElapsedUsec += frameUsec;
-    statRenderFrameCount++;
-
-    if (statRenderFrameCount >= StatUpdateFrameCount) {
-        statRenderAverageUsec.store((float)statRenderElapsedUsec / statRenderFrameCount);
-
-        statRenderElapsedUsec = 0;
-        statRenderFrameCount = 0;
-    }
-}
-
-void RenderBackend::BeginGpuFrameTiming(RHI::CommandList *commandList) {
-    if (!frameData->IsStatEnabled()) {
-        return;
-    }
-
-    if (gpuTimingCurrentSlot >= 0) {
-        // 이미 BeginGpuFrameTiming 이 호출되었다면, SetGpuFrameTimingFence 가 호출될 때까지 무시한다.
-        return;
-    }
-
-    // GpuTimingSampleInterval 에 따라 한번씩만 처리한다.
-    if ((currentContext->gpuTimingSampleFrameCount++ & (GpuTimingSampleInterval - 1)) != 0) {
-        return;
-    }
-
-    // 완료된 슬롯들의 타임스탬프를 읽어서 처리한다.
-    ReadCompletedGpuTimings();
-
-    for (int i = 0; i < GpuTimingSlotCount; ++i) {
-        int slotIndex = (gpuTimingNextSlot + i) % GpuTimingSlotCount;
-        GpuTimingSlot &slot = gpuTimingSlots[slotIndex];
-
-        if (!slot.pending) {
-            gpuTimingCurrentSlot = slotIndex;
-            gpuTimingNextSlot = (slotIndex + 1) % GpuTimingSlotCount;
-
-            slot.renderContext = currentContext;
-
-            // Begin Timestamp 찍기
-            uint32_t stampIndex = slotIndex << 1;
-            RHI::renderer->EndQuery(commandList, gpuTimestampQueryHeap, stampIndex);
-            return;
-        }
-    }
-}
-
-void RenderBackend::EndGpuFrameTiming(RHI::CommandList *commandList) {
-    if (gpuTimingCurrentSlot < 0) {
-        return;
-    }
-
-    uint32_t stampIndex = gpuTimingCurrentSlot << 1;
-
-    // End Timestamp 찍기
-    RHI::renderer->EndQuery(commandList, gpuTimestampQueryHeap, stampIndex + 1);
-
-    // 현재 슬롯의 Timestamp 2개를 Readback 버퍼로 읽어오기
-    RHI::renderer->ResolveQuery(commandList, gpuTimestampQueryHeap, stampIndex, 2, gpuTimestampReadbackBuffer, sizeof(uint64_t) * stampIndex);
-}
-
-void RenderBackend::SetGpuFrameTimingFence(uint64_t fenceValue) {
-    if (gpuTimingCurrentSlot < 0) {
-        return;
-    }
-
-    GpuTimingSlot &slot = gpuTimingSlots[gpuTimingCurrentSlot];
-    slot.fenceValue = fenceValue;
-    slot.pending = true;
-    gpuTimingCurrentSlot = -1;
-}
-
-void RenderBackend::ReadCompletedGpuTimings() {
-    const uint64_t *timestamps = static_cast<const uint64_t *>(gpuTimestampReadbackBuffer->mappedPtr);
-
-    for (int slotIndex = 0; slotIndex < GpuTimingSlotCount; ++slotIndex) {
-        GpuTimingSlot &slot = gpuTimingSlots[slotIndex];
-        if (!slot.pending) {
-            continue;
-        }
-        if (!RHI::renderer->IsFenceComplete(RHI::CommandQueueType::Graphics, slot.fenceValue)) {
-            continue;
-        }
-
-        uint64_t beginStamp = timestamps[(slotIndex << 1) + 0];
-        uint64_t endStamp = timestamps[(slotIndex << 1) + 1];
-
-        if (endStamp >= beginStamp && slot.renderContext) {
-            float frameMsec = 1000.0f * (float)(endStamp - beginStamp) / gpuTimestampFrequency;
-            slot.renderContext->UpdateGpuFrameTime(frameMsec);
-        }
-
-        slot.renderContext = nullptr;
-        slot.fenceValue = 0;
-        slot.pending = false;
-    }
-}
-
-void RenderBackend::DiscardGpuFrameTimings(const RenderContext *renderContext) {
-    for (int slotIndex = 0; slotIndex < GpuTimingSlotCount; ++slotIndex) {
-        GpuTimingSlot &slot = gpuTimingSlots[slotIndex];
-
-        if (slot.renderContext != renderContext) {
-            continue;
-        }
-
-        if (gpuTimingCurrentSlot == slotIndex) {
-            gpuTimingCurrentSlot = -1;
-        }
-
-        slot.renderContext = nullptr;
-        slot.fenceValue = 0;
-        slot.pending = false;
-    }
+    gpuTiming.Shutdown();
 }
 
 void RenderBackend::Execute(RenderFrameData *frameData) {
@@ -213,6 +77,25 @@ void RenderBackend::Execute(RenderFrameData *frameData) {
 
     uint64_t t1 = BE1::PlatformTime::Microseconds();
     UpdateRenderFrameTime(t1 - t0);
+}
+
+void RenderBackend::UpdateRenderFrameTime(uint64_t frameUsec) {
+    static constexpr int StatUpdateFrameCount = 60;
+
+    statRenderElapsedUsec += frameUsec;
+    statRenderFrameCount++;
+
+    // 60 프레임마다 평균 렌더링 시간을 계산한다.
+    if (statRenderFrameCount >= StatUpdateFrameCount) {
+        statRenderAverageUsec.store((float)statRenderElapsedUsec / statRenderFrameCount);
+
+        statRenderElapsedUsec = 0;
+        statRenderFrameCount = 0;
+    }
+}
+
+void RenderBackend::DiscardGpuFrameTimings(const RenderContext *renderContext) {
+    gpuTiming.Discard(renderContext);
 }
 
 void RenderBackend::RecordDrawStats(uint32_t drawCount, uint64_t drawTriangleCount, uint32_t instanceTableAllocCount, uint32_t instanceTableUploadBytes) {
@@ -305,7 +188,7 @@ const void *RenderBackend::ExecuteBeginContext(const void *data) {
 
     mainCommandList = frameData->GetThreadData(0)->BeginCommandList(RHI::CommandQueueType::Graphics);
 
-    BeginGpuFrameTiming(mainCommandList);
+    gpuTiming.BeginFrame(mainCommandList, frameData, currentContext);
 
 #ifdef USE_MIPMAP_STREAMING
     currentContext->textureStreamingFeedback.ClearBuffer(mainCommandList);
@@ -403,7 +286,10 @@ const void *RenderBackend::ExecuteDrawCamera(const void *data) {
 
         RHI::renderer->EndRenderPass(mainCommandList);
     } else {
-        const bool hiZCullingPrepared = PrepareHiZCulling();
+        bool hiZCullingPrepared = false;
+        if (currentVisCamera->hiZOcclusionCulling) {
+            hiZCullingPrepared = PrepareHiZCulling();
+        }
 
         RHI::RenderPassImage::LoadAction colorLoadAction = BE1::HasFlag(clearFlags, RHI::ClearFlag::Color) ? RHI::RenderPassImage::LoadAction::Clear : RHI::RenderPassImage::LoadAction::Load;
         if (currentVisCamera->clearMethod == RenderCameraClearMethod::Skybox) {
@@ -515,6 +401,8 @@ void RenderBackend::BlitRectToSwapChain(const RHI::Texture *texture, const BE1::
 
     BE1::Rect outputRect(outputX0, outputY0, outputW, outputH);
 
+    GpuTiming::ScopedTimer gpuScope(gpuTiming, mainCommandList, GpuTiming::Tag::BlitToSwapChain);
+
     RHI::renderer->BeginRenderPass(mainCommandList, currentContext->swapChain, nullptr);
     RHI::renderer->SetViewport(mainCommandList, outputRect);
     RHI::renderer->SetScissorRect(mainCommandList, outputRect);
@@ -589,6 +477,8 @@ const void *RenderBackend::ExecuteSwapBuffers(const void *data) {
 
     const bool hasPendingImGuiOverlay = frameData->HasPendingImGuiOverlay();
     if (hasPendingImGuiOverlay) {
+        GpuTiming::ScopedTimer gpuScope(gpuTiming, mainCommandList, GpuTiming::Tag::ImGuiOverlay);
+
         BE1::Rect viewportRect(0, 0, currentContext->GetWidth(), currentContext->GetHeight());
 
         // 뷰포트 & ScissorRect 의 초기값 설정
@@ -602,7 +492,7 @@ const void *RenderBackend::ExecuteSwapBuffers(const void *data) {
         RHI::renderer->EndRenderPass(mainCommandList);
     }
 
-    EndGpuFrameTiming(mainCommandList);
+    gpuTiming.EndFrame(mainCommandList);
 
     mainCommandList->CloseAndExecute();
 
@@ -610,7 +500,7 @@ const void *RenderBackend::ExecuteSwapBuffers(const void *data) {
     uint64_t fenceValue = RHI::renderer->SignalFence(RHI::CommandQueueType::Graphics);
     frameData->SetFrameFenceValue(fenceValue);
 
-    SetGpuFrameTimingFence(fenceValue);
+    gpuTiming.SetFrameFence(fenceValue);
 
     if (frameData->IsStatEnabled()) {
         currentContext->SetRenderStats(frameData->GetStatRenderObjectCount(), frameData->GetStatVisibleObjectCount(), statDrawCount, statDrawTriangleCount, statInstanceTableAllocCount, statInstanceTableUploadBytes);
@@ -686,50 +576,80 @@ static bool IsHiZCullRenderPass(RenderPassType passType) {
     return passType == RenderPassType::DepthPrepass || passType == RenderPassType::Opaque;
 }
 
+static GpuTiming::Tag GpuTagForRenderPass(RenderPassType passType) {
+    switch (passType) {
+    case RenderPassType::DepthPrepass:
+        return GpuTiming::Tag::DepthPrepass;
+    case RenderPassType::Opaque:
+        return GpuTiming::Tag::OpaquePass;
+    case RenderPassType::Skybox:
+        return GpuTiming::Tag::SkyPass;
+    case RenderPassType::Transparent:
+        return GpuTiming::Tag::TransparentPass;
+    case RenderPassType::Gui:
+        return GpuTiming::Tag::GuiPass;
+    default:
+        return GpuTiming::Tag::OpaquePass;
+    }
+}
+
 void RenderBackend::DrawGenericPass(const RenderPass *renderPass) {
     PROFILER_CPU_SCOPED_EVENT("RenderBackend::DrawGenericPass");
 
     const uint32_t numDrawSurfs = renderPass->numDrawSurfs;
-    if (numDrawSurfs > 0) {
-        UploadStaticDataToGPU(renderPass);
+    if (numDrawSurfs == 0) {
+        return;
+    }
 
-        const SurfaceInstanceBatch *hiZCullBatches = nullptr;
-        uint32_t hiZCullBatchCount = 0;
+    GpuTiming::ScopedTimer gpuScope(gpuTiming, mainCommandList, GpuTagForRenderPass(renderPass->type));
 
-        if (currentVisCamera->hiZOcclusionCulling && IsHiZCullRenderPass(renderPass->type)) {
-            const uint32_t passIndex = static_cast<uint32_t>(renderPass - currentVisCamera->renderPasses);
+    UploadStaticDataToGPU(renderPass);
 
-            if (passIndex < static_cast<uint32_t>(hiZCullPassRanges.Count())) {
-                const HiZCullPassRange &passRange = hiZCullPassRanges[passIndex];
+    const SurfaceInstanceBatch *hiZCullBatches = nullptr;
+    uint32_t hiZCullBatchCount = 0;
 
-                if (passRange.numBatches > 0) {
-                    hiZCullBatches = hiZCullDrawBatches.Ptr() + passRange.firstBatchIndex;
-                    hiZCullBatchCount = passRange.numBatches;
-                }
+    if (currentVisCamera->hiZOcclusionCulling && IsHiZCullRenderPass(renderPass->type)) {
+        const uint32_t passIndex = static_cast<uint32_t>(renderPass - currentVisCamera->renderPasses);
+
+        if (passIndex < static_cast<uint32_t>(hiZCullPassRanges.Count())) {
+            const HiZCullPassRange &passRange = hiZCullPassRanges[passIndex];
+
+            if (passRange.numBatches > 0) {
+                hiZCullBatches = hiZCullDrawBatches.Ptr() + passRange.firstBatchIndex;
+                hiZCullBatchCount = passRange.numBatches;
             }
         }
-        DrawGenericSurfaces(renderPass->drawSurfs, numDrawSurfs, hiZCullBatches, hiZCullBatchCount);
     }
+
+    DrawGenericSurfaces(renderPass->drawSurfs, numDrawSurfs, hiZCullBatches, hiZCullBatchCount);
 }
 
 void RenderBackend::DrawSkyPass(const RenderPass *renderPass) {
     PROFILER_CPU_SCOPED_EVENT("RenderBackend::DrawSkyPass");
 
     const uint32_t numDrawSurfs = renderPass->numDrawSurfs;
-    if (numDrawSurfs > 0) {
-        UploadStaticDataToGPU(renderPass);
-
-        DrawSkySurfaces(renderPass->drawSurfs, numDrawSurfs);
+    if (numDrawSurfs == 0) {
+        return;
     }
+
+    GpuTiming::ScopedTimer gpuScope(gpuTiming, mainCommandList, GpuTiming::Tag::SkyPass);
+
+    UploadStaticDataToGPU(renderPass);
+
+    DrawSkySurfaces(renderPass->drawSurfs, numDrawSurfs);
 }
 
 void RenderBackend::DrawGuiPass(const RenderPass *renderPass) {
     PROFILER_CPU_SCOPED_EVENT("RenderBackend::DrawGuiPass");
 
     const uint32_t numDrawSurfs = renderPass->numDrawSurfs;
-    if (numDrawSurfs > 0) {
-        DrawGenericSurfacesWithoutTask(renderPass->drawSurfs, numDrawSurfs);
+    if (numDrawSurfs == 0) {
+        return;
     }
+
+    GpuTiming::ScopedTimer gpuScope(gpuTiming, mainCommandList, GpuTiming::Tag::GuiPass);
+
+    DrawGenericSurfacesWithoutTask(renderPass->drawSurfs, numDrawSurfs);
 }
 
 static bool CanBatchSurfaceInstances(const RenderPassDrawSurf *baseDrawSurf, const RenderPassDrawSurf *drawSurf) {

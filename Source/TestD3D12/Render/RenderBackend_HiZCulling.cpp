@@ -27,10 +27,6 @@ bool RenderBackend::PrepareHiZCulling() {
     hiZCullDrawBatches.SetCount(0, false);
     hiZCullPassRanges.SetCount(0, false);
 
-    if (!currentVisCamera->hiZOcclusionCulling) {
-        return false;
-    }
-
     assert(currentVisCamera->hiZMipCount > 0 && currentVisCamera->hiZMipWidths[0] > 0 && currentVisCamera->hiZMipHeights[0] > 0);
 
     uint32_t totalBatchCount = 0;
@@ -145,6 +141,9 @@ bool RenderBackend::PrepareHiZCulling() {
     RHI::GPUBarrier copyStartBarriers[] = {
         RHI::Renderer::MakeBufferBarrier(indirectArgsBuffer, RHI::GPUResourceState::Undefined, RHI::GPUResourceState::CopyDst)
     };
+
+    GpuTiming::ScopedTimer gpuScope(gpuTiming, mainCommandList, GpuTiming::Tag::HiZCulling);
+
     RHI::renderer->Barrier(mainCommandList, copyStartBarriers, COUNT_OF(copyStartBarriers));
 
     // CPU 업로드 버퍼에 만든 indirectArgsUploadBuffer 를 GPU 디폴트 버퍼인 hiZCullIndirectArgsBuffer 에 복사한다.

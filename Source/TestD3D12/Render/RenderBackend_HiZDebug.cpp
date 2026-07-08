@@ -49,6 +49,8 @@ bool RenderBackend::DispatchHiZDebugPreview() {
         RHI::Renderer::MakeTextureBarrier(currentVisCamera->hiZTexture, RHI::GPUResourceState::ShaderResource, RHI::GPUResourceState::ShaderResourceCompute, 0, mipLevel),
         RHI::Renderer::MakeTextureBarrier(currentVisCamera->hiZDebugPreviewTexture, RHI::GPUResourceState::ShaderResource, RHI::GPUResourceState::UnorderedAccess)
     };
+    GpuTiming::ScopedTimer gpuScope(gpuTiming, mainCommandList, GpuTiming::Tag::HiZDebugPreview);
+
     RHI::renderer->Barrier(mainCommandList, startBarriers, COUNT_OF(startBarriers));
 
     RHI::renderer->SetPSO(mainCommandList, frameHiZDebugPreviewPSO);

@@ -61,33 +61,41 @@ bool RenderBackend::DispatchLuminance() {
 
     RHI::Texture *inputTexture = currentVisCamera->rtColorTexture;
 
-    RHI::renderer->Barrier(mainCommandList, RHI::Renderer::MakeTextureBarrier(inputTexture, RHI::GPUResourceState::ShaderResource, RHI::GPUResourceState::ShaderResourceCompute));
-
     // Pass 1 : Log Luminance 히스토그램 계산
-    RHI::renderer->SetPSO(mainCommandList, frameLuminancePass1PSO);
-    RHI::renderer->SetTexture(mainCommandList, 0, false, inputTexture);
-    RHI::renderer->SetBuffer(mainCommandList, 0, true, luminanceBuffer);
-    RHI::renderer->SetConstants(mainCommandList, 1, &luminancePass1Params, sizeof(luminancePass1Params), 0);
+    {
+        GpuTiming::ScopedTimer gpuScope(gpuTiming, mainCommandList, GpuTiming::Tag::LuminancePass1);
 
-    const uint32_t threadGroupCountX = (luminancePass1Params.sampleSize.x + LuminanceBlockSize - 1) / LuminanceBlockSize;
-    const uint32_t threadGroupCountY = (luminancePass1Params.sampleSize.y + LuminanceBlockSize - 1) / LuminanceBlockSize;
-    RHI::renderer->Dispatch(mainCommandList, threadGroupCountX, threadGroupCountY, 1);
+        RHI::renderer->Barrier(mainCommandList, RHI::Renderer::MakeTextureBarrier(inputTexture, RHI::GPUResourceState::ShaderResource, RHI::GPUResourceState::ShaderResourceCompute));
 
-    RHI::renderer->Barrier(mainCommandList, RHI::Renderer::MakeMemoryBarrier(luminanceBuffer));
+        RHI::renderer->SetPSO(mainCommandList, frameLuminancePass1PSO);
+        RHI::renderer->SetTexture(mainCommandList, 0, false, inputTexture);
+        RHI::renderer->SetBuffer(mainCommandList, 0, true, luminanceBuffer);
+        RHI::renderer->SetConstants(mainCommandList, 1, &luminancePass1Params, sizeof(luminancePass1Params), 0);
+
+        const uint32_t threadGroupCountX = (luminancePass1Params.sampleSize.x + LuminanceBlockSize - 1) / LuminanceBlockSize;
+        const uint32_t threadGroupCountY = (luminancePass1Params.sampleSize.y + LuminanceBlockSize - 1) / LuminanceBlockSize;
+        RHI::renderer->Dispatch(mainCommandList, threadGroupCountX, threadGroupCountY, 1);
+    }
 
     // Pass 2 : 평균 Luminance 를 계산하고, 보간된 exposure 도 계산한다.
-    RHI::renderer->SetPSO(mainCommandList, frameLuminancePass2PSO);
-    RHI::renderer->SetBuffer(mainCommandList, 0, true, luminanceBuffer);
-    RHI::renderer->SetConstantBuffer(mainCommandList, 0, frameConstantBuffer);
-    RHI::renderer->SetConstants(mainCommandList, 1, &luminancePass2Params, sizeof(luminancePass2Params), 0);
+    {
+        GpuTiming::ScopedTimer gpuScope(gpuTiming, mainCommandList, GpuTiming::Tag::LuminancePass2);
 
-    RHI::renderer->Dispatch(mainCommandList, 1, 1, 1);
+        RHI::renderer->Barrier(mainCommandList, RHI::Renderer::MakeMemoryBarrier(luminanceBuffer));
 
-    RHI::GPUBarrier endBarriers[] = {
-        RHI::Renderer::MakeMemoryBarrier(luminanceBuffer),
-        RHI::Renderer::MakeTextureBarrier(inputTexture, RHI::GPUResourceState::ShaderResourceCompute, RHI::GPUResourceState::ShaderResource)
-    };
-    RHI::renderer->Barrier(mainCommandList, endBarriers, COUNT_OF(endBarriers));
+        RHI::renderer->SetPSO(mainCommandList, frameLuminancePass2PSO);
+        RHI::renderer->SetBuffer(mainCommandList, 0, true, luminanceBuffer);
+        RHI::renderer->SetConstantBuffer(mainCommandList, 0, frameConstantBuffer);
+        RHI::renderer->SetConstants(mainCommandList, 1, &luminancePass2Params, sizeof(luminancePass2Params), 0);
+
+        RHI::renderer->Dispatch(mainCommandList, 1, 1, 1);
+
+        RHI::GPUBarrier endBarriers[] = {
+            RHI::Renderer::MakeMemoryBarrier(luminanceBuffer),
+            RHI::Renderer::MakeTextureBarrier(inputTexture, RHI::GPUResourceState::ShaderResourceCompute, RHI::GPUResourceState::ShaderResource)
+        };
+        RHI::renderer->Barrier(mainCommandList, endBarriers, COUNT_OF(endBarriers));
+    }
 
     return true;
 }
@@ -127,7 +135,7 @@ bool RenderBackend::DispatchPyramidBloom() {
     const float pyramidBloomDownsampleRadius = BE1::Max(r_pyramidBloomDownsampleRadius.GetFloat(), 0.0f);
     const float pyramidBloomUpsampleRadius = BE1::Max(r_pyramidBloomUpsampleRadius.GetFloat(), 0.0f);
 
-    auto dispatchDownsamplePass = [this](RHI::Texture *inputTexture, RHI::ViewID inputViewID, uint32_t inputWidth, uint32_t inputHeight, uint32_t outputMipLevel, float threshold, float softThreshold, float prefilterQuality, float radius) -> bool {
+    auto dispatchDownsamplePass = [this](GpuTiming::Tag timingTag, RHI::Texture *inputTexture, RHI::ViewID inputViewID, uint32_t inputWidth, uint32_t inputHeight, uint32_t outputMipLevel, float threshold, float softThreshold, float prefilterQuality, float radius) -> bool {
         const uint32_t outputWidth = currentVisCamera->bloomMipWidths[outputMipLevel];
         const uint32_t outputHeight = currentVisCamera->bloomMipHeights[outputMipLevel];
         if (inputWidth == 0 || inputHeight == 0 || outputWidth == 0 || outputHeight == 0) {
@@ -146,6 +154,8 @@ bool RenderBackend::DispatchPyramidBloom() {
             return false;
         }
 
+        GpuTiming::ScopedTimer gpuScope(gpuTiming, mainCommandList, timingTag);
+
         RHI::renderer->Barrier(mainCommandList, RHI::Renderer::MakeTextureBarrier(currentVisCamera->bloomDownTexture, RHI::GPUResourceState::ShaderResource, RHI::GPUResourceState::UnorderedAccess, 0, outputMipLevel));
 
         RHI::renderer->SetTexture(mainCommandList, 0, false, inputTexture, inputViewID);
@@ -163,7 +173,7 @@ bool RenderBackend::DispatchPyramidBloom() {
 
     // threshold 를 적용해 밝은 영역만 필터링하여 mip-0 에 blur downsample 한다.
     RHI::renderer->SetPSO(mainCommandList, frameBloomPrefilterPSO);
-    if (!dispatchDownsamplePass(inputColorTexture, RHI::ViewID::PrimaryID, currentVisCamera->renderWidth, currentVisCamera->renderHeight, 0, bloomThreshold, bloomSoftThreshold, pyramidBloomPrefilterQuality, pyramidBloomPrefilterRadius)) {
+    if (!dispatchDownsamplePass(GpuTiming::Tag::BloomPrefilter, inputColorTexture, RHI::ViewID::PrimaryID, currentVisCamera->renderWidth, currentVisCamera->renderHeight, 0, bloomThreshold, bloomSoftThreshold, pyramidBloomPrefilterQuality, pyramidBloomPrefilterRadius)) {
         RHI::renderer->Barrier(mainCommandList, RHI::Renderer::MakeTextureBarrier(inputColorTexture, RHI::GPUResourceState::ShaderResourceCompute, RHI::GPUResourceState::ShaderResource));
         return false;
     }
@@ -172,7 +182,7 @@ bool RenderBackend::DispatchPyramidBloom() {
     RHI::renderer->SetPSO(mainCommandList, frameBloomDownsamplePSO);
     for (uint32_t mipLevel = 1; mipLevel < currentVisCamera->bloomMipCount; ++mipLevel) {
         const uint32_t inputMipLevel = mipLevel - 1;
-        if (!dispatchDownsamplePass(bloomDownTexture, currentVisCamera->bloomDownMipSRVs[inputMipLevel], currentVisCamera->bloomMipWidths[inputMipLevel], currentVisCamera->bloomMipHeights[inputMipLevel], mipLevel, 0.0f, 0.0f, 0.0f, pyramidBloomDownsampleRadius)) {
+        if (!dispatchDownsamplePass(GpuTiming::Tag::BloomDownsample, bloomDownTexture, currentVisCamera->bloomDownMipSRVs[inputMipLevel], currentVisCamera->bloomMipWidths[inputMipLevel], currentVisCamera->bloomMipHeights[inputMipLevel], mipLevel, 0.0f, 0.0f, 0.0f, pyramidBloomDownsampleRadius)) {
             RHI::renderer->Barrier(mainCommandList, RHI::Renderer::MakeTextureBarrier(inputColorTexture, RHI::GPUResourceState::ShaderResourceCompute, RHI::GPUResourceState::ShaderResource));
             return false;
         }
@@ -198,6 +208,8 @@ bool RenderBackend::DispatchPyramidBloom() {
         if (!bloomConstantBuffer) {
             return false;
         }
+
+        GpuTiming::ScopedTimer gpuScope(gpuTiming, mainCommandList, GpuTiming::Tag::BloomUpsample);
 
         RHI::renderer->Barrier(mainCommandList, RHI::Renderer::MakeTextureBarrier(currentVisCamera->bloomUpTexture, RHI::GPUResourceState::ShaderResource, RHI::GPUResourceState::UnorderedAccess, 0, outputMipLevel));
 
@@ -325,6 +337,8 @@ bool RenderBackend::DispatchConvolutionBloomKernelPrepare() {
     RHI::GPUBarrier startBarriers[] = {
         RHI::Renderer::MakeBufferBarrier(spatialBuffer, RHI::GPUResourceState::Undefined, RHI::GPUResourceState::UnorderedAccess)
     };
+    GpuTiming::ScopedTimer gpuScope(gpuTiming, mainCommandList, GpuTiming::Tag::ConvolutionBloomKernelPrepare);
+
     RHI::renderer->Barrier(mainCommandList, startBarriers, COUNT_OF(startBarriers));
 
     RHI::renderer->SetPSO(mainCommandList, frameConvolutionBloomKernelPreparePSO);
@@ -383,6 +397,8 @@ bool RenderBackend::DispatchConvolutionBloomScreenPrefilter() {
         RHI::Renderer::MakeTextureBarrier(inputTexture, RHI::GPUResourceState::ShaderResource, RHI::GPUResourceState::ShaderResourceCompute),
         RHI::Renderer::MakeBufferBarrier(outputBuffer, RHI::GPUResourceState::Undefined, RHI::GPUResourceState::UnorderedAccess)
     };
+    GpuTiming::ScopedTimer gpuScope(gpuTiming, mainCommandList, GpuTiming::Tag::ConvolutionBloomScreenPrefilter);
+
     RHI::renderer->Barrier(mainCommandList, startBarriers, COUNT_OF(startBarriers));
 
     RHI::renderer->SetPSO(mainCommandList, frameConvolutionBloomPrefilterPSO);
@@ -420,6 +436,8 @@ bool RenderBackend::DispatchConvolutionBloomMultiplySpectrum() {
     // 이렇게 해서 FFT size 에 독립적이 되도록 커널 에너지를 보정한다.
     const float kernelSampleCount = static_cast<float>(fftSize) * static_cast<float>(fftSize);
     const float kernelScale = BE1::Max(r_convolutionBloomKernelScale.GetFloat(), 0.0f) * BE1::Max(currentVisCamera->fftBloomKernelNormalizationFactor, 0.0f) / (BE1::Max(kernelSampleCount, 1.0f) * kernelAreaScale);
+
+    GpuTiming::ScopedTimer gpuScope(gpuTiming, mainCommandList, GpuTiming::Tag::ConvolutionBloomMultiplySpectrum);
 
     return renderSystem->gpuFFT.DispatchMultiplyPackedDualRealSpectrum2D(mainCommandList, frameData,
         currentVisCamera->fftBloomKernelSpectrumBuffer,
@@ -468,6 +486,8 @@ bool RenderBackend::DispatchConvolutionBloomResolve() {
         RHI::Renderer::MakeBufferBarrier(spatialBuffer, RHI::GPUResourceState::Undefined, RHI::GPUResourceState::ShaderResourceCompute),
         RHI::Renderer::MakeTextureBarrier(outputTexture, RHI::GPUResourceState::ShaderResource, RHI::GPUResourceState::UnorderedAccess)
     };
+    GpuTiming::ScopedTimer gpuScope(gpuTiming, mainCommandList, GpuTiming::Tag::ConvolutionBloomResolve);
+
     RHI::renderer->Barrier(mainCommandList, startBarriers, COUNT_OF(startBarriers));
 
     RHI::renderer->SetPSO(mainCommandList, frameConvolutionBloomResolvePSO);
@@ -496,6 +516,8 @@ bool RenderBackend::DispatchConvolutionBloomFFT(RHI::Buffer *inputBuffer, RHI::B
         return false;
     }
 
+    GpuTiming::ScopedTimer gpuScope(gpuTiming, mainCommandList, GpuTiming::Tag::ConvolutionBloomFFT);
+
     return renderSystem->gpuFFT.DispatchFFTDualReal2D(mainCommandList, frameData, inputBuffer, outputBuffer, currentVisCamera->fftBloomWorkBuffer, fftSizeEnum, PlaneCount);
 }
 
@@ -506,6 +528,8 @@ bool RenderBackend::DispatchConvolutionBloomIFFT(RHI::Buffer *inputBuffer, RHI::
     if (!GpuFFT::GetGpuFFTSize(currentVisCamera->fftBloomSize, fftSizeEnum)) {
         return false;
     }
+
+    GpuTiming::ScopedTimer gpuScope(gpuTiming, mainCommandList, GpuTiming::Tag::ConvolutionBloomIFFT);
 
     return renderSystem->gpuFFT.DispatchIFFTDualReal2D(mainCommandList, frameData, inputBuffer, outputBuffer, currentVisCamera->fftBloomScreenSpectrumBuffer, fftSizeEnum, PlaneCount);
 }
@@ -556,6 +580,8 @@ bool RenderBackend::DispatchToneMapping(bool useBloom) {
         RHI::Renderer::MakeBufferBarrier(luminanceBuffer, RHI::GPUResourceState::UnorderedAccess, RHI::GPUResourceState::ShaderResourceCompute),
         RHI::Renderer::MakeTextureBarrier(outputTexture, RHI::GPUResourceState::ShaderResource, RHI::GPUResourceState::UnorderedAccess)
     };
+    GpuTiming::ScopedTimer gpuScope(gpuTiming, mainCommandList, GpuTiming::Tag::ToneMapping);
+
     RHI::renderer->Barrier(mainCommandList, startBarriers, COUNT_OF(startBarriers));
 
     RHI::renderer->SetPSO(mainCommandList, frameToneMappingPSO);

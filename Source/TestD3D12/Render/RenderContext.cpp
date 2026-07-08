@@ -25,8 +25,6 @@
 
 RenderContext *         RenderContext::activeContext = nullptr;
 
-static constexpr int    GpuStatUpdateSampleCount = 16;
-
 static uint32_t GetMainRTSampleCountFromCVar() {
     const int sampleCount = r_msaa.GetInteger();
 
@@ -166,16 +164,29 @@ void RenderContext::WaitAllFrameFences() {
     }
 }
 
-void RenderContext::UpdateGpuFrameTime(float frameMsec) {
-    statGpuElapsedMsec += frameMsec;
-    statGpuSampleCount++;
+void RenderContext::UpdateGpuTagFrameTimes(const float tagFrameMsec[static_cast<int>(GpuTiming::Tag::Count)]) {
+    static constexpr int GpuStatUpdateSampleCount = 16;
 
-    if (statGpuSampleCount >= GpuStatUpdateSampleCount) {
-        statGpuAverageMsec.store(statGpuElapsedMsec / statGpuSampleCount);
+    for (int tagIndex = 0; tagIndex < static_cast<int>(GpuTiming::Tag::Count); ++tagIndex) {
+        statGpuTagElapsedMsec[tagIndex] += tagFrameMsec[tagIndex];
+        statGpuTagSampleCount[tagIndex]++;
 
-        statGpuElapsedMsec = 0.0f;
-        statGpuSampleCount = 0;
+        // GpuStatUpdateSampleCount 만큼 frame time 을 누적해서 평균을 계산한다.
+        if (statGpuTagSampleCount[tagIndex] >= GpuStatUpdateSampleCount) {
+            statGpuTagAverageMsec[tagIndex].store(statGpuTagElapsedMsec[tagIndex] / statGpuTagSampleCount[tagIndex]);
+
+            statGpuTagElapsedMsec[tagIndex] = 0.0f;
+            statGpuTagSampleCount[tagIndex] = 0;
+        }
     }
+}
+
+float RenderContext::GetStatGpuTagAverageMsec(GpuTiming::Tag tag) const {
+    const int tagIndex = static_cast<int>(tag);
+    if (tagIndex < 0 || tagIndex >= static_cast<int>(GpuTiming::Tag::Count)) {
+        return 0.0f;
+    }
+    return statGpuTagAverageMsec[tagIndex].load();
 }
 
 void RenderContext::SetRenderStats(uint32_t renderObjectCount, uint32_t visibleObjectCount, uint32_t drawCount, uint64_t drawTriangleCount, uint32_t instanceTableAllocCount, uint32_t instanceTableUploadBytes) {

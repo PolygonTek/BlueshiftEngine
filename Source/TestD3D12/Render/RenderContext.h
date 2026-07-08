@@ -15,6 +15,7 @@
 #pragma once
 
 #include "RHI/RHI.h"
+#include "GpuTiming.h"
 #include "RenderFrameData.h"
 #include "Render/ShaderPipeline/ShaderPipeline.h"
 #include "Render/Texture/TextureStreamingFeedback.h"
@@ -42,6 +43,7 @@ class RenderBackend;
 class RenderContext {
     friend class RenderSystem;
     friend class RenderBackend;
+    friend class GpuTiming;
     friend class RenderFrameData;
 
 public:
@@ -64,7 +66,8 @@ public:
     uint32_t                        GetHeight() const { return swapChain->GetHeight(); }
     const BE1::Color4 &             GetBaseClearColor() const { return baseClearColor; }
 
-    float                           GetStatGpuAverageMsec() const { return statGpuAverageMsec.load(); }
+    float                           GetStatGpuAverageMsec() const { return GetStatGpuTagAverageMsec(GpuTiming::Tag::GpuFrame); }
+    float                           GetStatGpuTagAverageMsec(GpuTiming::Tag tag) const;
     uint32_t                        GetStatRenderObjectCount() const { return statRenderObjectCount.load(); }
     uint32_t                        GetStatVisibleObjectCount() const { return statVisibleObjectCount.load(); }
     uint32_t                        GetStatDrawCount() const { return statDrawCount.load(); }
@@ -119,7 +122,7 @@ private:
     void                            EndImGui();
     void                            FlushPendingScreenshots(RenderFrameData *frameData);
     void                            EnsureTextureStreamingFeedbackCapacity(uint32_t requiredCapacity);
-    void                            UpdateGpuFrameTime(float frameMsec);
+    void                            UpdateGpuTagFrameTimes(const float tagFrameMsec[static_cast<int>(GpuTiming::Tag::Count)]);
     void                            SetRenderStats(uint32_t renderObjectCount, uint32_t visibleObjectCount, uint32_t drawCount, uint64_t drawTriangleCount, uint32_t instanceTableAllocCount, uint32_t instanceTableUploadBytes);
 
     void *                          windowHandle = nullptr;
@@ -155,9 +158,9 @@ private:
     SharedPtr<Font>                 currentFont;
 
     uint32_t                        gpuTimingSampleFrameCount = 0;
-    float                           statGpuElapsedMsec = 0.0f;
-    int                             statGpuSampleCount = 0;
-    std::atomic<float>              statGpuAverageMsec = 0.0f;
+    float                           statGpuTagElapsedMsec[static_cast<int>(GpuTiming::Tag::Count)] = {};
+    int                             statGpuTagSampleCount[static_cast<int>(GpuTiming::Tag::Count)] = {};
+    std::atomic<float>              statGpuTagAverageMsec[static_cast<int>(GpuTiming::Tag::Count)] = {};
     std::atomic<uint32_t>           statRenderObjectCount = 0;
     std::atomic<uint32_t>           statVisibleObjectCount = 0;
     std::atomic<uint32_t>           statDrawCount = 0;

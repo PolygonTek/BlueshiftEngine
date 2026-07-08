@@ -173,6 +173,8 @@ bool RenderBackend::DispatchGenHiZ() {
         return false;
     }
 
+    GpuTiming::ScopedTimer gpuScope(gpuTiming, mainCommandList, GpuTiming::Tag::GenHiZ);
+
     // First batch: copy depth to mip 0, then generate consecutive fast 2x2 reductions while mip dimensions stay even.
     RHI::GPUBarrier startBarriers[5];
     uint32_t startBarrierCount = 0;

@@ -80,12 +80,6 @@ void App::BuildImGuiStatsPlotWindow() {
     }
 
     const int latestSampleIndex = (imguiStatsPlotWriteIndex + ImGuiStatsPlotHistoryLength - 1) % ImGuiStatsPlotHistoryLength;
-    for (int seriesIndex = 0; seriesIndex < ImGuiStatsPlotSeriesCount; ++seriesIndex) {
-        ImGui::ColorButton(statNames[seriesIndex], statColors[seriesIndex], ImGuiColorEditFlags_NoTooltip | ImGuiColorEditFlags_NoDragDrop, ImVec2(fontSize, fontSize));
-        ImGui::SameLine();
-        ImGui::Text("%s %.2f ms", statNames[seriesIndex], imguiStatsPlotSamples[seriesIndex][latestSampleIndex]);
-    }
-
     float maxMsec = 1.0f;
     for (int seriesIndex = 0; seriesIndex < ImGuiStatsPlotSeriesCount; ++seriesIndex) {
         for (int sampleOffset = 0; sampleOffset < imguiStatsPlotSampleCount; ++sampleOffset) {
@@ -97,9 +91,12 @@ void App::BuildImGuiStatsPlotWindow() {
     }
     maxMsec *= 1.15f;
 
-    ImGui::Text("Scale 0.00 - %.2f ms", maxMsec);
-
-    const ImVec2 plotSize(ImGui::GetContentRegionAvail().x, fontSize * 12.0f);
+    const float contentWidth = ImGui::GetContentRegionAvail().x;
+    const float timingInfoWidth = fontSize * 11.0f;
+    const float plotSpacing = ImGui::GetStyle().ItemSpacing.x;
+    const bool showTimingInfoRight = contentWidth >= fontSize * 16.0f;
+    const float plotWidth = showTimingInfoRight ? BE1::Max(contentWidth - timingInfoWidth - plotSpacing, fontSize * 6.0f) : contentWidth;
+    const ImVec2 plotSize(plotWidth, fontSize * 12.0f);
     ImGui::InvisibleButton("##StatsPlotCanvas", plotSize);
 
     const ImVec2 plotMin = ImGui::GetItemRectMin();
@@ -137,6 +134,116 @@ void App::BuildImGuiStatsPlotWindow() {
 
                 drawList->AddLine(ImVec2(x0, y0), ImVec2(x1, y1), color, 1.5f);
             }
+        }
+    }
+
+    if (showTimingInfoRight) {
+        ImGui::SameLine();
+    }
+    ImGui::BeginGroup();
+    ImGui::Text("Scale");
+    ImGui::Text("0.00 - %.2f ms", maxMsec);
+    ImGui::Spacing();
+    for (int seriesIndex = 0; seriesIndex < ImGuiStatsPlotSeriesCount; ++seriesIndex) {
+        ImGui::ColorButton(statNames[seriesIndex], statColors[seriesIndex], ImGuiColorEditFlags_NoTooltip | ImGuiColorEditFlags_NoDragDrop, ImVec2(fontSize, fontSize));
+        ImGui::SameLine();
+        ImGui::Text("%s %.2f ms", statNames[seriesIndex], imguiStatsPlotSamples[seriesIndex][latestSampleIndex]);
+    }
+    ImGui::EndGroup();
+
+    if (mainRenderContext) {
+        ImGui::Separator();
+        ImGui::Text("GPU Timing Breakdown");
+
+        struct GpuTimingTagRow {
+            int                 tagIndex;
+            GpuTiming::Tag      tag;
+            float               msec;
+        };
+
+        GpuTimingTagRow rows[static_cast<int>(GpuTiming::Tag::Count)];
+        int rowCount = 0;
+        for (int tagIndex = 0; tagIndex < static_cast<int>(GpuTiming::Tag::Count); ++tagIndex) {
+            const GpuTiming::Tag tag = static_cast<GpuTiming::Tag>(tagIndex);
+            const float tagMsec = mainRenderContext->GetStatGpuTagAverageMsec(tag);
+            if (tagMsec <= 0.001f) {
+                continue;
+            }
+
+            GpuTimingTagRow &row = rows[rowCount++];
+            row.tagIndex = tagIndex;
+            row.tag = tag;
+            row.msec = tagMsec;
+        }
+
+        if (rowCount > 0) {
+            const ImGuiTableFlags tableFlags =
+                ImGuiTableFlags_Sortable |
+                ImGuiTableFlags_SortTristate |
+                ImGuiTableFlags_RowBg |
+                ImGuiTableFlags_BordersInnerV |
+                ImGuiTableFlags_Resizable |
+                ImGuiTableFlags_SizingStretchProp;
+
+            if (ImGui::BeginTable("GpuTimingBreakdownTable", 3, tableFlags)) {
+                ImGui::TableSetupColumn("Index", ImGuiTableColumnFlags_WidthFixed | ImGuiTableColumnFlags_PreferSortAscending, fontSize * 4.0f);
+                ImGui::TableSetupColumn("Tag", ImGuiTableColumnFlags_WidthStretch | ImGuiTableColumnFlags_PreferSortAscending);
+                ImGui::TableSetupColumn("Avg ms", ImGuiTableColumnFlags_WidthFixed | ImGuiTableColumnFlags_PreferSortDescending, fontSize * 7.0f);
+                ImGui::TableHeadersRow();
+
+                ImGuiTableSortSpecs *sortSpecs = ImGui::TableGetSortSpecs();
+                if (sortSpecs && sortSpecs->SpecsCount > 0) {
+                    const ImGuiTableColumnSortSpecs &sortSpec = sortSpecs->Specs[0];
+
+                    auto compareRows = [](const GpuTimingTagRow &lhs, const GpuTimingTagRow &rhs, const ImGuiTableColumnSortSpecs &sortSpec) {
+                        int result = 0;
+                        switch (sortSpec.ColumnIndex) {
+                        case 0:
+                            result = lhs.tagIndex - rhs.tagIndex;
+                            break;
+                        case 1:
+                            result = strcmp(GpuTiming::TagName(lhs.tag), GpuTiming::TagName(rhs.tag));
+                            break;
+                        case 2:
+                            result = lhs.msec < rhs.msec ? -1 : (lhs.msec > rhs.msec ? 1 : 0);
+                            break;
+                        default:
+                            break;
+                        }
+                        if (result == 0) {
+                            result = lhs.tagIndex - rhs.tagIndex;
+                        }
+                        return sortSpec.SortDirection == ImGuiSortDirection_Descending ? result > 0 : result < 0;
+                    };
+
+                    for (int rowIndex = 1; rowIndex < rowCount; ++rowIndex) {
+                        const GpuTimingTagRow row = rows[rowIndex];
+                        int insertIndex = rowIndex;
+                        while (insertIndex > 0 && compareRows(row, rows[insertIndex - 1], sortSpec)) {
+                            rows[insertIndex] = rows[insertIndex - 1];
+                            --insertIndex;
+                        }
+                        rows[insertIndex] = row;
+                    }
+
+                    sortSpecs->SpecsDirty = false;
+                }
+
+                for (int rowIndex = 0; rowIndex < rowCount; ++rowIndex) {
+                    const GpuTimingTagRow &row = rows[rowIndex];
+                    ImGui::TableNextRow();
+                    ImGui::TableSetColumnIndex(0);
+                    ImGui::Text("%d", row.tagIndex);
+                    ImGui::TableSetColumnIndex(1);
+                    ImGui::TextUnformatted(GpuTiming::TagName(row.tag));
+                    ImGui::TableSetColumnIndex(2);
+                    ImGui::Text("%.3f", row.msec);
+                }
+
+                ImGui::EndTable();
+            }
+        } else {
+            ImGui::Text("No GPU tag samples yet");
         }
     }
 
@@ -378,7 +485,7 @@ void App::BuildImGuiOverlay() {
     };
     bool hiZDebugPreviewOpen = false;
 
-    ImGui::SetNextWindowSizeConstraints(ImVec2(fontSize * 29.0f, fontSize * 8.0f), ImVec2(FLT_MAX, FLT_MAX));
+    ImGui::SetNextWindowSizeConstraints(ImVec2(fontSize * 27.0f, fontSize * 8.0f), ImVec2(FLT_MAX, FLT_MAX));
     ImGui::Begin("TestD3D12", nullptr, ImGuiWindowFlags_AlwaysAutoResize);
 
     if (ImGui::BeginTabBar("TestD3D12Tabs")) {
@@ -514,19 +621,19 @@ void App::BuildImGuiOverlay() {
                 if (useBloom) {
                     float bloomThreshold = r_bloomThreshold.GetFloat();
                     ImGui::SetNextItemWidth(fontSize * 12.0f);
-                    if (ImGui::SliderFloat("Bloom threshold", &bloomThreshold, 0.0f, 10.0f, "%.2f")) {
+                    if (ImGui::SliderFloat("Threshold", &bloomThreshold, 0.0f, 10.0f, "%.2f")) {
                         r_bloomThreshold.SetFloat(bloomThreshold);
                     }
 
                     float bloomSoftThreshold = r_bloomSoftThreshold.GetFloat();
                     ImGui::SetNextItemWidth(fontSize * 12.0f);
-                    if (ImGui::SliderFloat("Bloom soft threshold", &bloomSoftThreshold, 0.0f, 5.0f, "%.2f")) {
+                    if (ImGui::SliderFloat("Soft threshold", &bloomSoftThreshold, 0.0f, 5.0f, "%.2f")) {
                         r_bloomSoftThreshold.SetFloat(bloomSoftThreshold);
                     }
 
                     float bloomIntensity = r_bloomIntensity.GetFloat();
                     ImGui::SetNextItemWidth(fontSize * 12.0f);
-                    if (ImGui::SliderFloat("Bloom intensity", &bloomIntensity, 0.0f, 2.0f, "%.3f")) {
+                    if (ImGui::SliderFloat("Intensity", &bloomIntensity, 0.0f, 2.0f, "%.3f")) {
                         r_bloomIntensity.SetFloat(bloomIntensity);
                     }
                 }
@@ -534,7 +641,7 @@ void App::BuildImGuiOverlay() {
                 if (usePyramidBloom) {
                     int pyramidBloomPrefilterQuality = BE1::Clamp(r_pyramidBloomPrefilterQuality.GetInteger(), 0, 1);
                     ImGui::SetNextItemWidth(fontSize * 12.0f);
-                    if (ImGui::Combo("Bloom prefilter quality", &pyramidBloomPrefilterQuality,
+                    if (ImGui::Combo("Prefilter quality", &pyramidBloomPrefilterQuality,
                         "Rotated Grid 5 Tap\0"
                         "Jimenez 13 Tap\0")) {
                         r_pyramidBloomPrefilterQuality.SetInteger(pyramidBloomPrefilterQuality);
@@ -542,25 +649,25 @@ void App::BuildImGuiOverlay() {
 
                     float pyramidBloomScatter = r_pyramidBloomScatter.GetFloat();
                     ImGui::SetNextItemWidth(fontSize * 12.0f);
-                    if (ImGui::SliderFloat("Bloom scatter", &pyramidBloomScatter, 0.0f, 1.0f, "%.3f")) {
+                    if (ImGui::SliderFloat("Scatter", &pyramidBloomScatter, 0.0f, 1.0f, "%.3f")) {
                         r_pyramidBloomScatter.SetFloat(pyramidBloomScatter);
                     }
 
                     float pyramidBloomPrefilterRadius = r_pyramidBloomPrefilterRadius.GetFloat();
                     ImGui::SetNextItemWidth(fontSize * 12.0f);
-                    if (ImGui::SliderFloat("Bloom prefilter radius", &pyramidBloomPrefilterRadius, 0.0f, 5.0f, "%.2f")) {
+                    if (ImGui::SliderFloat("Prefilter radius", &pyramidBloomPrefilterRadius, 0.0f, 5.0f, "%.2f")) {
                         r_pyramidBloomPrefilterRadius.SetFloat(pyramidBloomPrefilterRadius);
                     }
 
                     float pyramidBloomDownsampleRadius = r_pyramidBloomDownsampleRadius.GetFloat();
                     ImGui::SetNextItemWidth(fontSize * 12.0f);
-                    if (ImGui::SliderFloat("Bloom downsample radius", &pyramidBloomDownsampleRadius, 0.0f, 5.0f, "%.2f")) {
+                    if (ImGui::SliderFloat("Downsample radius", &pyramidBloomDownsampleRadius, 0.0f, 5.0f, "%.2f")) {
                         r_pyramidBloomDownsampleRadius.SetFloat(pyramidBloomDownsampleRadius);
                     }
 
                     float pyramidBloomUpsampleRadius = r_pyramidBloomUpsampleRadius.GetFloat();
                     ImGui::SetNextItemWidth(fontSize * 12.0f);
-                    if (ImGui::SliderFloat("Bloom upsample radius", &pyramidBloomUpsampleRadius, 0.0f, 5.0f, "%.2f")) {
+                    if (ImGui::SliderFloat("Upsample radius", &pyramidBloomUpsampleRadius, 0.0f, 5.0f, "%.2f")) {
                         r_pyramidBloomUpsampleRadius.SetFloat(pyramidBloomUpsampleRadius);
                     }
                 }
@@ -570,7 +677,7 @@ void App::BuildImGuiOverlay() {
                     int convolutionBloomFFTMaxSize = r_convolutionBloomFFTMaxSize.GetInteger();
                     int convolutionBloomFFTMaxSizeIndex = convolutionBloomFFTMaxSize <= 256 ? 0 : (convolutionBloomFFTMaxSize <= 512 ? 1 : 2);
                     ImGui::SetNextItemWidth(fontSize * 12.0f);
-                    if (ImGui::Combo("Bloom FFT max size", &convolutionBloomFFTMaxSizeIndex,
+                    if (ImGui::Combo("FFT max size", &convolutionBloomFFTMaxSizeIndex,
                         "256\0"
                         "512\0"
                         "1024\0")) {
@@ -580,7 +687,7 @@ void App::BuildImGuiOverlay() {
                     int convolutionBloomKernelSource = app_convolutionBloomKernelSource.GetInteger();
                     const char *currentKernelSourceName = convolutionBloomKernelSource == static_cast<int>(App::ConvolutionBloomKernelSource::GenerateFromAperture) ? "From Aperture" : "Preset";
                     ImGui::SetNextItemWidth(fontSize * 12.0f);
-                    if (ImGui::BeginCombo("Bloom kernel source", currentKernelSourceName)) {
+                    if (ImGui::BeginCombo("Kernel source", currentKernelSourceName)) {
                         const bool presetSelected = convolutionBloomKernelSource == static_cast<int>(App::ConvolutionBloomKernelSource::Preset);
                         if (ImGui::Selectable("Preset", presetSelected)) {
                             if (!presetSelected) {
@@ -608,7 +715,7 @@ void App::BuildImGuiOverlay() {
                         char currentKernelName[32];
                         GetConvolutionBloomKernelPresetName(app_convolutionBloomKernelPreset.GetInteger(), currentKernelName, sizeof(currentKernelName));
                         ImGui::SetNextItemWidth(fontSize * 12.0f);
-                        if (ImGui::BeginCombo("Bloom kernel preset", currentKernelName)) {
+                        if (ImGui::BeginCombo("Kernel preset", currentKernelName)) {
                             for (int kernelPreset = 0; kernelPreset < App::ConvolutionBloomKernelPresetCount; ++kernelPreset) {
                                 char kernelName[32];
                                 GetConvolutionBloomKernelPresetName(kernelPreset, kernelName, sizeof(kernelName));
@@ -628,7 +735,7 @@ void App::BuildImGuiOverlay() {
                     } else if (convolutionBloomKernelSource == static_cast<int>(App::ConvolutionBloomKernelSource::GenerateFromAperture)) {
                         int convolutionBloomAperturePreset = app_convolutionBloomAperturePreset.GetInteger();
                         ImGui::SetNextItemWidth(fontSize * 12.0f);
-                        if (ImGui::Combo("Bloom aperture preset", &convolutionBloomAperturePreset,
+                        if (ImGui::Combo("Aperture preset", &convolutionBloomAperturePreset,
                             "Triangle\0"
                             "Square\0"
                             "Horz Rectangle\0"
@@ -652,38 +759,38 @@ void App::BuildImGuiOverlay() {
 
                     float convolutionBloomKernelRotation = r_convolutionBloomKernelRotation.GetFloat();
                     ImGui::SetNextItemWidth(fontSize * 12.0f);
-                    if (ImGui::SliderFloat("Bloom kernel rotation", &convolutionBloomKernelRotation, -180.0f, 180.0f, "%.1f deg")) {
+                    if (ImGui::SliderFloat("Kernel rotation", &convolutionBloomKernelRotation, -180.0f, 180.0f, "%.1f deg")) {
                         r_convolutionBloomKernelRotation.SetFloat(convolutionBloomKernelRotation);
                     }
 
                     float convolutionBloomKernelSizeScale = r_convolutionBloomKernelSizeScale.GetFloat();
                     ImGui::SetNextItemWidth(fontSize * 12.0f);
-                    if (ImGui::SliderFloat("Bloom kernel size scale", &convolutionBloomKernelSizeScale, 0.01f, 10.0f, "%.3f")) {
+                    if (ImGui::SliderFloat("Kernel size scale", &convolutionBloomKernelSizeScale, 0.01f, 10.0f, "%.3f")) {
                         r_convolutionBloomKernelSizeScale.SetFloat(BE1::Max(convolutionBloomKernelSizeScale, 0.01f));
                     }
 
                     float convolutionBloomKernelScale = r_convolutionBloomKernelScale.GetFloat();
                     ImGui::SetNextItemWidth(fontSize * 12.0f);
-                    if (ImGui::SliderFloat("Bloom kernel scale", &convolutionBloomKernelScale, 0.0f, 10.0f, "%.4f")) {
+                    if (ImGui::SliderFloat("Kernel scale", &convolutionBloomKernelScale, 0.0f, 10.0f, "%.4f")) {
                         r_convolutionBloomKernelScale.SetFloat(BE1::Max(convolutionBloomKernelScale, 0.0f));
                     }
 
                     float convolutionBloomPaddingTrim = r_convolutionBloomPaddingTrim.GetFloat();
                     ImGui::SetNextItemWidth(fontSize * 12.0f);
-                    if (ImGui::SliderFloat("Bloom padding trim", &convolutionBloomPaddingTrim, 0.0f, 0.25f, "%.3f")) {
+                    if (ImGui::SliderFloat("Padding trim", &convolutionBloomPaddingTrim, 0.0f, 0.25f, "%.3f")) {
                         r_convolutionBloomPaddingTrim.SetFloat(BE1::Min(BE1::Max(convolutionBloomPaddingTrim, 0.0f), 0.25f));
                     }
 
                     if (convolutionBloomKernelSource == static_cast<int>(App::ConvolutionBloomKernelSource::GenerateFromAperture)) {
                         float convolutionBloomDiffractionPSFScale = r_convolutionBloomDiffractionPSFScale.GetFloat();
                         ImGui::SetNextItemWidth(fontSize * 12.0f);
-                        if (ImGui::SliderFloat("Bloom diffraction PSF scale", &convolutionBloomDiffractionPSFScale, 0.0f, 100.0f, "%.3f")) {
+                        if (ImGui::SliderFloat("Diffraction PSF scale", &convolutionBloomDiffractionPSFScale, 0.0f, 100.0f, "%.3f")) {
                             r_convolutionBloomDiffractionPSFScale.SetFloat(BE1::Max(convolutionBloomDiffractionPSFScale, 0.0f));
                         }
 
                         float convolutionBloomDispersionAmount = r_convolutionBloomDispersionAmount.GetFloat();
                         ImGui::SetNextItemWidth(fontSize * 12.0f);
-                        if (ImGui::SliderFloat("Bloom dispersion amount", &convolutionBloomDispersionAmount, 0.0f, 10.0f, "%.3f")) {
+                        if (ImGui::SliderFloat("Dispersion amount", &convolutionBloomDispersionAmount, 0.0f, 10.0f, "%.3f")) {
                             r_convolutionBloomDispersionAmount.SetFloat(BE1::Max(convolutionBloomDispersionAmount, 0.0f));
                         }
 
