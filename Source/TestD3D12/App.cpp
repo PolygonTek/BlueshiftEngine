@@ -160,11 +160,13 @@ void App::Render(uint64_t frameUsec) {
 
     renderSystem->UpdateFrame();
 
-    //renderWorld->ClearDebugLines();
+    renderWorld->BeginFrame();
 
     RenderScene();
 
     RenderGUI();
+
+    renderWorld->EndFrame();
 
     if (pendingConvolutionBloomKernelGeneration) {
         EnqueuePendingConvolutionBloomKernelGeneration();

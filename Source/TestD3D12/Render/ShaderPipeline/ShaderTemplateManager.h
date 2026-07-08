@@ -51,6 +51,7 @@ public:
 
     SharedPtr<ShaderTemplate>       fullscreenImageShaderTemplate;
     SharedPtr<ShaderTemplate>       depthShaderTemplate;
+    SharedPtr<ShaderTemplate>       depthVelocityShaderTemplate;
     SharedPtr<ShaderTemplate>       unlitShaderTemplate;
     SharedPtr<ShaderTemplate>       litShaderTemplate;
 

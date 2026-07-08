@@ -25,7 +25,7 @@
 static constexpr uint32_t MaxSkinningJointsPerTask = 1024;
 
 static const Material *GetVisObjectMaterial(const VisObject *visObject, int materialIndex) {
-    if (materialIndex >= 0 && materialIndex < visObject->numMaterials) {
+    if (visObject->materials && materialIndex >= 0 && static_cast<uint32_t>(materialIndex) < visObject->numMaterials) {
         return visObject->materials[materialIndex];
     }
     return materialManager.defaultLitMaterial.get();
@@ -187,6 +187,7 @@ void RenderWorld::RenderScene(RenderCamera *renderCamera) {
     visCamera->rtColorMSAATexture = renderCamera->GetRTColorMSAATexture();
     visCamera->depthTexture = renderCamera->GetDepthTexture();
     visCamera->rtNormalTexture = renderCamera->GetRTNormalTexture();
+    visCamera->rtVelocityTexture = renderCamera->GetRTVelocityTexture();
 
     visCamera->generateHiZ = requestHiZGeneration;
     if (visCamera->generateHiZ) {
@@ -296,7 +297,9 @@ void RenderWorld::DrawCamera(RenderFrameData *frameData, const RenderCamera *ren
     viewCount++;
 }
 
-VisObject *RenderWorld::RegisterVisObject(RenderFrameData *frameData, const RenderObject *renderObject) {
+VisObject *RenderWorld::RegisterVisObject(RenderFrameData *frameData, RenderObject *renderObject) {
+    assert(frameActive);
+
     if (IsVisObjectRegistered(renderObject)) {
         return nullptr;
     }
@@ -311,10 +314,13 @@ VisObject *RenderWorld::RegisterVisObject(RenderFrameData *frameData, const Rend
     if (renderObject->desc.meshInstance) {
         visObject->meshInstance = frameData->RetainMeshInstance(renderObject->desc.meshInstance);
     }
-    assert(renderObject->desc.materials.Count() <= COUNT_OF(visObject->materials));
-    visObject->numMaterials = renderObject->desc.materials.Count();
-    for (int i = 0; i < visObject->numMaterials; ++i) {
-        visObject->materials[i] = frameData->RetainMaterial(renderObject->desc.materials[i]);
+    const int numMaterials = renderObject->desc.materials.Count();
+    visObject->numMaterials = static_cast<uint32_t>(numMaterials);
+    if (numMaterials > 0) {
+        visObject->materials = (const Material **)frameData->MemAlloc(numMaterials * sizeof(visObject->materials[0]));
+        for (int i = 0; i < numMaterials; ++i) {
+            visObject->materials[i] = frameData->RetainMaterial(renderObject->desc.materials[i]);
+        }
     }
     if (renderObject->desc.numVerts > 0 && renderObject->desc.numIndexes > 0) {
         visObject->numVerts = renderObject->desc.numVerts;
@@ -344,6 +350,17 @@ VisObject *RenderWorld::RegisterVisObject(RenderFrameData *frameData, const Rend
     return visObject;
 }
 
+void RenderWorld::SetVisObjectWorldMatrices(const RenderObject *renderObject, VisObject *visObject) {
+    visObject->worldMatrix = renderObject->GetWorldMatrix();
+
+    // 바로 직전 프레임에 prevWorldMatrix 를 세팅했었다면, 움직이던 오브젝트이므로 prevWorldMatrix 를 그대로 사용한다.
+    const bool hasContinuousPrevWorldMatrix = renderWorldFrameIndex > 0 &&
+        renderObject->prevWorldMatrixValid &&
+        renderObject->prevWorldMatrixFrameIndex == renderWorldFrameIndex - 1;
+
+    visObject->prevWorldMatrix = hasContinuousPrevWorldMatrix ? renderObject->prevWorldMatrix : renderObject->desc.worldMatrix;
+}
+
 void RenderWorld::FindVisObjects(RenderFrameData *frameData, const RenderCamera *renderCamera, VisCamera *visCamera) {
     PROFILER_CPU_SCOPED_EVENT("RenderWorld::FindVisObjects");
 
@@ -356,7 +373,7 @@ void RenderWorld::FindVisObjects(RenderFrameData *frameData, const RenderCamera 
     // 쿼리 콜백 함수의 리턴값이 true 라면, 다음 쿼리를 진행한다.
     auto addVisibleObjects = [this, frameData, renderCamera, visCamera](int32_t proxyId) -> bool {
         const DbvtProxy *proxy = (const DbvtProxy *)objectDbvt.GetUserData(proxyId);
-        const RenderObject *renderObject = proxy->renderObject;
+        RenderObject *renderObject = proxy->renderObject;
         if (!renderObject) {
             return true;
         }
@@ -366,7 +383,9 @@ void RenderWorld::FindVisObjects(RenderFrameData *frameData, const RenderCamera 
             return true;
         }
 
-        visObject->worldMatrix = renderObject->GetWorldMatrix();
+        renderObject->visibleFrameIndex = renderWorldFrameIndex;
+
+        SetVisObjectWorldMatrices(renderObject, visObject);
         visObject->cameraVisible = true;
 
         visCamera->worldAABB.AddAABB(proxy->worldAABB);
@@ -376,7 +395,7 @@ void RenderWorld::FindVisObjects(RenderFrameData *frameData, const RenderCamera 
     objectDbvt.QueryFrustum(renderCamera->frustum, addVisibleObjects);
 
     for (int objectIndex : dynamicObjectIndices) {
-        const RenderObject *renderObject = renderObjects[objectIndex];
+        RenderObject *renderObject = renderObjects[objectIndex];
 
         if (!r_skipFrustumCulling.GetBool()) {
             if (renderCamera->frustum.CullAABB(renderObject->worldAABB)) {
@@ -389,14 +408,16 @@ void RenderWorld::FindVisObjects(RenderFrameData *frameData, const RenderCamera 
             continue;
         }
 
-        visObject->worldMatrix = renderObject->GetWorldMatrix();
+        renderObject->visibleFrameIndex = renderWorldFrameIndex;
+
+        SetVisObjectWorldMatrices(renderObject, visObject);
         visObject->cameraVisible = true;
 
         visCamera->worldAABB.AddAABB(renderObject->worldAABB);
     }
 #else
     // 등록된 모든 RenderObject 들을 개별 Culling 해서 프레임 데이터에 VisObject 로 등록한다.
-    for (const RenderObject *renderObject : renderObjects) {
+    for (RenderObject *renderObject : renderObjects) {
         if (!renderObject) {
             continue;
         }
@@ -412,7 +433,9 @@ void RenderWorld::FindVisObjects(RenderFrameData *frameData, const RenderCamera 
             continue;
         }
 
-        visObject->worldMatrix = renderObject->GetWorldMatrix();
+        renderObject->visibleFrameIndex = renderWorldFrameIndex;
+
+        SetVisObjectWorldMatrices(renderObject, visObject);
         visObject->cameraVisible = true;
 
         visCamera->worldAABB.AddAABB(renderObject->worldAABB);
@@ -691,6 +714,7 @@ void RenderWorld::AddSkyBoxMeshes(RenderFrameData *frameData, const RenderCamera
     }
 
     visObject->worldMatrix.SetTRS(renderCamera->GetDesc().origin, BE1::Mat3::identity, BE1::Vec3(10, 10, 10));
+    visObject->prevWorldMatrix = visObject->worldMatrix;
     visObject->cameraVisible = true;
     Material *material = frameData->RetainMaterial(skyboxMaterial);
 
@@ -744,6 +768,7 @@ void RenderWorld::DrawGUICamera(RenderFrameData *frameData, uint32_t screenWidth
 
     VisObject *visObject = frameData->AllocVisObject();
     visObject->worldMatrix.SetIdentity();
+    visObject->prevWorldMatrix.SetIdentity();
 
     guiMesh.CacheIndexes(frameData->GetThreadData(0));
 

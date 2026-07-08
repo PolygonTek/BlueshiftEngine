@@ -80,7 +80,12 @@ private:
 
     void                            UpdateFramePSOs();
 
-    void                            DrawCamera3D();
+    void                            ExecuteDrawCamera2D(RHI::ClearFlag clearFlags, const BE1::Color4 &clearColor, float clearDepth);
+    void                            ExecuteDrawCamera3D(RHI::ClearFlag clearFlags, const BE1::Color4 &clearColor, bool useExplicitClearColor);
+
+    void                            DrawCamera3D(bool skipDepthPrepasses);
+    void                            DrawCamera3DDepthPrepass();
+    void                            DrawCamera3DDepthVelocityPrepass();
     void                            DrawCamera2D();
 
     void                            PostProcessAndBlitToSwapChain();

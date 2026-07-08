@@ -18,15 +18,15 @@
 #include "Render/ShaderPipeline/ShaderPermutationKey.h"
 #include "Render/ShaderPipeline/ShaderPipelineCache.h"
 #include "Render/ShaderPipeline/ShaderTemplate.h"
-#include "Render/ShaderPipeline/ShaderTemplateManager.h"
 #include "Render/ShaderPipeline/VertexInputLayoutFactory.h"
 
-void RenderPassDepthPSOResolver::Begin(const RenderPass *renderPass, uint32_t initialPSOEntryCapacity) {
+void RenderPassDepthPSOResolver::Begin(const RenderPass *renderPass, uint32_t initialPSOEntryCapacity, const SharedPtr<ShaderTemplate> &shaderTemplate) {
     assert(renderPass);
 
     passFeatureSet = renderPass->featureSet;
     basePipelineDesc = renderPass->graphicsPipelineDesc;
     baseInputLayoutId = renderPass->baseInputLayoutId;
+    this->shaderTemplate = shaderTemplate;
 
     memset(pipelineDescValid, 0, sizeof(pipelineDescValid));
 
@@ -78,7 +78,7 @@ ShaderPermutationKey RenderPassDepthPSOResolver::GetPermutationKey(ShaderTemplat
         }
     }
 
-    // Depth shader template 은 property define 이 없으므로 featureSet 만으로 permutation key 를 만든다.
+    // Depth 계열 shader template 은 property define 이 없으므로 featureSet 만으로 permutation key 를 만든다.
     ShaderPermutationKey permutationKey = ShaderPermutationKey::GeneratePermutationKey({}, featureSet);
 
     // ShaderTemplate::PrepareShaderCompileData 에서 permutation 을 찾을 수 있도록 featureSet 별로 한 번만 RegisterPermutation 한다.
@@ -104,13 +104,12 @@ RenderPassDepthPSOResolver::ResolveResult RenderPassDepthPSOResolver::Resolve(co
         result.inputLayoutId = VertexInputLayoutFactory::GetIdForVertexWeights(baseInputLayoutId, maxVertexWeights);
     }
 
-    SharedPtr<ShaderTemplate> depthShaderTemplate = shaderTemplateManager.depthShaderTemplate;
-    if (!depthShaderTemplate) {
+    if (!shaderTemplate) {
         return result;
     }
 
     ShaderFeatureSet featureSet = BuildDepthFeatureSet(visSurf->baseFeatureSet | passFeatureSet);
-    featureSet = depthShaderTemplate->MaskSupportedFeatures(featureSet);
+    featureSet = shaderTemplate->MaskSupportedFeatures(featureSet);
 
     int hashKey;
     if (PSOEntry *entry = FindPSOEntry(featureSet, result.inputLayoutId, hashKey)) {
@@ -121,8 +120,8 @@ RenderPassDepthPSOResolver::ResolveResult RenderPassDepthPSOResolver::Resolve(co
     // hash 에 존재하지 않는다면, input layout 에 맞는 graphics pipeline desc 를 준비하고,
     const GraphicsPipelineDesc &graphicsPipelineDesc = GetGraphicsPipelineDesc(result.inputLayoutId);
 
-    ShaderPermutationKey permutationKey = GetPermutationKey(depthShaderTemplate.get(), featureSet);
-    result.pso = ShaderPipeline::GetReadyPSO(shaderPipelineCache.GetGraphicsPipeline(depthShaderTemplate, permutationKey, graphicsPipelineDesc));
+    ShaderPermutationKey permutationKey = GetPermutationKey(shaderTemplate.get(), featureSet);
+    result.pso = ShaderPipeline::GetReadyPSO(shaderPipelineCache.GetGraphicsPipeline(shaderTemplate, permutationKey, graphicsPipelineDesc));
 
     // featureSet, input layout id 로 새 PSO entry 를 추가한다.
     RenderPassDepthPSOResolver::PSOEntry &entry = psoEntries.Alloc();

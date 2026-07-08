@@ -19,6 +19,7 @@
 #include "RenderFrameData.h"
 #include "RenderInternal.h"
 #include "Render/Material/Material.h"
+#include "Render/ShaderPipeline/ShaderTemplateManager.h"
 #include "Render/ShaderPipeline/VertexInputLayoutFactory.h"
 
 static uint64_t BuildOpaqueSortKey(const VisSurf *visSurf, RHI::PipelineState *pso) {
@@ -90,7 +91,6 @@ RenderPass *RenderPassBuilder::AllocRenderPass(VisCamera *visCamera, RenderPassT
 
     renderPass->graphicsPipelineDesc = {};
     renderPass->graphicsPipelineDesc.inputLayout = &VertexInputLayoutFactory::Get(passBaseInputLayoutId);
-    RenderContext::activeContext->GetMainRenderDest(renderPass->graphicsPipelineDesc.renderDest);
 
     renderPass->maxDrawSurfs = maxDrawSurfs;
     renderPass->numDrawSurfs = 0;
@@ -105,7 +105,6 @@ static RHI::DepthStencilStateType GetDepthState(const RHI::ProjectionPolicy &pro
     if (projectionPolicy.reverseZ) {
         return write ? RHI::DepthStencilStateType::GEqualWrite : RHI::DepthStencilStateType::GEqualNoWrite;
     }
-
     return write ? RHI::DepthStencilStateType::LEqualWrite : RHI::DepthStencilStateType::LEqualNoWrite;
 }
 
@@ -141,27 +140,52 @@ void RenderPassBuilder::BuildMain(RenderFrameData *frameData, VisCamera *visCame
     AllocRenderPassDrawSurfs(frameData, visCamera, numDepthDrawSurfs + numOpaqueDrawSurfs + numSkyboxDrawSurfs + numBlendDrawSurfs);
 
     // AllocRenderPass 호출 순서대로 백엔드에서 RenderPass 가 렌더링된다.
-    RenderPass *depthPass = AllocRenderPass(visCamera, RenderPassType::DepthPrepass, {}, VertexInputLayoutId::XyzStColor, numDepthDrawSurfs);
+    const bool useDepthVelocityPrepass = useDepthPrepass && visCamera->rtVelocityTexture && !visCamera->rtColorMSAATexture;
+    const RenderPassType depthPassType = useDepthVelocityPrepass ? RenderPassType::DepthVelocityPrepass : RenderPassType::DepthPrepass;
+    RenderPass *depthPass = AllocRenderPass(visCamera, depthPassType, {}, VertexInputLayoutId::XyzStColor, numDepthDrawSurfs);
     if (depthPass) {
         depthPass->graphicsPipelineDesc.depthStencilStateType = GetDepthState(visCamera->projectionPolicy, true);
-        depthPSOResolver.Begin(depthPass, BE1::Min(numDepthDrawSurfs, 16));
+        if (depthPass->type == RenderPassType::DepthVelocityPrepass) {
+            RHI::RenderDest &renderDest = depthPass->graphicsPipelineDesc.renderDest;
+            renderDest = RHI::RenderDest();
+            renderDest.renderTargetCount = 1;
+            renderDest.renderTargetFormats[0] = visCamera->rtVelocityTexture->GetFormat();
+            renderDest.depthStencilFormat = RenderContext::activeContext->GetMainRTDepthFormat();
+            renderDest.sampleCount = 1;
+
+            depthVelocityPSOResolver.Begin(depthPass, BE1::Min(numDepthDrawSurfs, 16), shaderTemplateManager.depthVelocityShaderTemplate);
+        } else {
+            RHI::RenderDest &renderDest = depthPass->graphicsPipelineDesc.renderDest;
+            renderDest = RHI::RenderDest();
+            renderDest.renderTargetCount = 0;
+            renderDest.depthStencilFormat = RenderContext::activeContext->GetMainRTDepthFormat();
+            renderDest.sampleCount = 1;
+
+            depthPSOResolver.Begin(depthPass, BE1::Min(numDepthDrawSurfs, 16), shaderTemplateManager.depthShaderTemplate);
+        }
     }
 
     RenderPass *opaquePass = AllocRenderPass(visCamera, RenderPassType::Opaque, {}, VertexInputLayoutId::XyzStColorNormalTangent, numOpaqueDrawSurfs);
     if (opaquePass) {
         opaquePass->graphicsPipelineDesc.depthStencilStateType = GetDepthState(visCamera->projectionPolicy, !useDepthPrepass);
+        RenderContext::activeContext->GetMainRenderDest(opaquePass->graphicsPipelineDesc.renderDest);
+
         opaquePSOResolver.Begin(opaquePass, BE1::Min(numOpaqueDrawSurfs, 1024));
     }
 
     RenderPass *skyboxPass = AllocRenderPass(visCamera, RenderPassType::Skybox, {}, VertexInputLayoutId::XyzStColor, numSkyboxDrawSurfs);
     if (skyboxPass) {
         skyboxPass->graphicsPipelineDesc.depthStencilStateType = GetDepthState(visCamera->projectionPolicy, false);
+        RenderContext::activeContext->GetMainRenderDest(skyboxPass->graphicsPipelineDesc.renderDest);
+
         skyboxPSOResolver.Begin(skyboxPass, BE1::Min(numSkyboxDrawSurfs, 1));
     }
 
     RenderPass *blendPass = AllocRenderPass(visCamera, RenderPassType::Transparent, {}, VertexInputLayoutId::XyzStColorNormalTangent, numBlendDrawSurfs);
     if (blendPass) {
         blendPass->graphicsPipelineDesc.depthStencilStateType = GetDepthState(visCamera->projectionPolicy, false);
+        RenderContext::activeContext->GetMainRenderDest(blendPass->graphicsPipelineDesc.renderDest);
+
         blendPSOResolver.Begin(blendPass, BE1::Min(numBlendDrawSurfs, 256));
     }
 
@@ -182,8 +206,13 @@ void RenderPassBuilder::BuildMain(RenderFrameData *frameData, VisCamera *visCame
             }
         } else {
             if (depthPass) {
-                const RenderPassDepthPSOResolver::ResolveResult rr = depthPSOResolver.Resolve(visSurf);
-                AddRenderPassDrawSurf(depthPass, visSurf, BuildDepthSortKey(visSurf, visCamera), rr.inputLayoutId, rr.pso);
+                if (depthPass->type == RenderPassType::DepthVelocityPrepass) {
+                    const RenderPassDepthPSOResolver::ResolveResult rr = depthVelocityPSOResolver.Resolve(visSurf);
+                    AddRenderPassDrawSurf(depthPass, visSurf, BuildDepthSortKey(visSurf, visCamera), rr.inputLayoutId, rr.pso);
+                } else {
+                    const RenderPassDepthPSOResolver::ResolveResult rr = depthPSOResolver.Resolve(visSurf);
+                    AddRenderPassDrawSurf(depthPass, visSurf, BuildDepthSortKey(visSurf, visCamera), rr.inputLayoutId, rr.pso);
+                }
             }
             if (opaquePass) {
                 const RenderPassPSOResolver::ResolveResult rr = opaquePSOResolver.Resolve(visSurf, visSurf->baseFeatureSet | opaquePass->featureSet);

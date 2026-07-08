@@ -216,6 +216,17 @@ const void *RenderBackend::ExecuteBeginContext(const void *data) {
     return (const void *)(cmd + 1);
 }
 
+static const RenderPass *FindRenderPass(const VisCamera *visCamera, RenderPassType passType) {
+    for (uint32_t passIndex = 0; passIndex < visCamera->numRenderPasses; ++passIndex) {
+        const RenderPass *renderPass = &visCamera->renderPasses[passIndex];
+        if (renderPass->type == passType) {
+            return renderPass;
+        }
+    }
+
+    return nullptr;
+}
+
 const void *RenderBackend::ExecuteDrawCamera(const void *data) {
     PROFILER_CPU_SCOPED_EVENT("RenderBackend::ExecuteDrawCamera");
 
@@ -279,75 +290,124 @@ const void *RenderBackend::ExecuteDrawCamera(const void *data) {
     }
 
     if (currentVisCamera->is2D) {
-        const RHI::ClearFlag swapChainClearFlags = BE1::HasFlag(clearFlags, RHI::ClearFlag::Color) ? RHI::ClearFlag::Color : RHI::ClearFlag::None;
-        RHI::renderer->BeginRenderPass(mainCommandList, currentContext->swapChain, nullptr, clearColor, clearDepth, 0, swapChainClearFlags);
-
-        DrawCamera2D();
-
-        RHI::renderer->EndRenderPass(mainCommandList);
+        ExecuteDrawCamera2D(clearFlags, clearColor, clearDepth);
     } else {
-        bool hiZCullingPrepared = false;
-        if (currentVisCamera->hiZOcclusionCulling) {
-            hiZCullingPrepared = PrepareHiZCulling();
-        }
-
-        RHI::RenderPassImage::LoadAction colorLoadAction = BE1::HasFlag(clearFlags, RHI::ClearFlag::Color) ? RHI::RenderPassImage::LoadAction::Clear : RHI::RenderPassImage::LoadAction::Load;
-        if (currentVisCamera->clearMethod == RenderCameraClearMethod::Skybox) {
-            colorLoadAction = RHI::RenderPassImage::LoadAction::DontCare;
-        }
-        RHI::RenderPassImage::LoadAction depthLoadAction = BE1::HasFlag(clearFlags, RHI::ClearFlag::Depth) ? RHI::RenderPassImage::LoadAction::Clear : RHI::RenderPassImage::LoadAction::Load;
-        RHI::ClearValue clearColorValue = RHI::ClearValue::Color(clearColor[0], clearColor[1], clearColor[2], clearColor[3]);
-        RHI::RenderPassImage depthImage = RHI::RenderPassImage::DepthStencil(currentVisCamera->depthTexture, RHI::ViewID::PrimaryID, depthLoadAction, RHI::RenderPassImage::StoreAction::Store,
-            RHI::GPUResourceState::ShaderResource, RHI::GPUResourceState::DepthWrite, RHI::GPUResourceState::ShaderResource);
-
-        if (currentVisCamera->rtColorMSAATexture) {
-            RHI::RenderPassImage colorImage = RHI::RenderPassImage::Color(currentVisCamera->rtColorMSAATexture, RHI::ViewID::PrimaryID, colorLoadAction);
-            if (useExplicitClearColor) {
-                colorImage = colorImage.WithClearValue(clearColorValue);
-            }
-
-            RHI::RenderPassImage renderPassImages[] = {
-                colorImage,
-                depthImage,
-                RHI::RenderPassImage::ResolveColor(currentVisCamera->rtColorTexture, RHI::ViewID::PrimaryID, 0)
-            };
-            RHI::renderer->BeginRenderPass(mainCommandList, renderPassImages, COUNT_OF(renderPassImages));
-        } else {
-            RHI::RenderPassImage colorImage = RHI::RenderPassImage::Color(currentVisCamera->rtColorTexture, RHI::ViewID::PrimaryID, colorLoadAction);
-            if (useExplicitClearColor) {
-                colorImage = colorImage.WithClearValue(clearColorValue);
-            }
-
-            RHI::RenderPassImage renderPassImages[] = {
-                colorImage,
-                depthImage
-            };
-            RHI::renderer->BeginRenderPass(mainCommandList, renderPassImages, COUNT_OF(renderPassImages));
-        }
-
-        DrawCamera3D();
-
-        RHI::renderer->EndRenderPass(mainCommandList);
-
-        if (hiZCullingPrepared) {
-            FinishHiZCulling();
-        }
-
-        if (currentVisCamera->generateHiZ && !r_hiZOcclusionCullingFreeze.GetBool()) {
-            DispatchGenHiZ();
-        }
-
-        if (currentVisCamera->hiZDebugPreview) {
-            DispatchHiZDebugPreview();
-        }
-
-        PostProcessAndBlitToSwapChain();
+        ExecuteDrawCamera3D(clearFlags, clearColor, useExplicitClearColor);
     }
 
     // command list 에 기록을 마치고 실행
     mainCommandList->CloseAndExecute();
 
     return (const void *)(cmd + 1);
+}
+
+void RenderBackend::ExecuteDrawCamera2D(RHI::ClearFlag clearFlags, const BE1::Color4 &clearColor, float clearDepth) {
+    PROFILER_CPU_SCOPED_EVENT("RenderBackend::ExecuteDrawCamera2D");
+
+    const RHI::ClearFlag swapChainClearFlags = BE1::HasFlag(clearFlags, RHI::ClearFlag::Color) ? RHI::ClearFlag::Color : RHI::ClearFlag::None;
+    RHI::renderer->BeginRenderPass(mainCommandList, currentContext->swapChain, nullptr, clearColor, clearDepth, 0, swapChainClearFlags);
+
+    DrawCamera2D();
+
+    RHI::renderer->EndRenderPass(mainCommandList);
+}
+
+void RenderBackend::ExecuteDrawCamera3D(RHI::ClearFlag clearFlags, const BE1::Color4 &clearColor, bool useExplicitClearColor) {
+    PROFILER_CPU_SCOPED_EVENT("RenderBackend::ExecuteDrawCamera3D");
+
+    bool hiZCullingPrepared = false;
+    if (currentVisCamera->hiZOcclusionCulling) {
+        hiZCullingPrepared = PrepareHiZCulling();
+    }
+
+    RHI::RenderPassImage::LoadAction depthLoadAction = BE1::HasFlag(clearFlags, RHI::ClearFlag::Depth) ? RHI::RenderPassImage::LoadAction::Clear : RHI::RenderPassImage::LoadAction::Load;
+
+    const RenderPass *depthPrepass = FindRenderPass(currentVisCamera, RenderPassType::DepthPrepass);
+    const RenderPass *depthVelocityPrepass = FindRenderPass(currentVisCamera, RenderPassType::DepthVelocityPrepass);
+
+    // depth prepass or depth velocity prepass
+    if (depthPrepass || depthVelocityPrepass) {
+        RHI::RenderPassImage depthImage = RHI::RenderPassImage::DepthStencil(currentVisCamera->depthTexture, RHI::ViewID::PrimaryID, depthLoadAction, RHI::RenderPassImage::StoreAction::Store,
+            RHI::GPUResourceState::ShaderResource, RHI::GPUResourceState::DepthWrite, RHI::GPUResourceState::ShaderResource);
+
+        if (depthPrepass) {
+            RHI::RenderPassImage renderPassImages[] = {
+                depthImage
+            };
+            RHI::renderer->BeginRenderPass(mainCommandList, renderPassImages, COUNT_OF(renderPassImages));
+
+            DrawCamera3DDepthPrepass();
+        } else if (depthVelocityPrepass) {
+            RHI::RenderPassImage velocityImage = RHI::RenderPassImage::Color(currentVisCamera->rtVelocityTexture, RHI::ViewID::PrimaryID, RHI::RenderPassImage::LoadAction::Clear);
+            velocityImage = velocityImage.WithClearValue(RHI::ClearValue::Color(0.0f, 0.0f, 0.0f, 0.0f));
+
+            RHI::RenderPassImage renderPassImages[] = {
+                velocityImage,
+                depthImage
+            };
+            RHI::renderer->BeginRenderPass(mainCommandList, renderPassImages, COUNT_OF(renderPassImages));
+
+            DrawCamera3DDepthVelocityPrepass();
+        }
+
+        RHI::renderer->EndRenderPass(mainCommandList);
+
+        depthLoadAction = RHI::RenderPassImage::LoadAction::Load;
+    }
+
+    RHI::ClearValue clearColorValue = RHI::ClearValue::Color(clearColor[0], clearColor[1], clearColor[2], clearColor[3]);
+    RHI::RenderPassImage::LoadAction colorLoadAction = BE1::HasFlag(clearFlags, RHI::ClearFlag::Color) ? RHI::RenderPassImage::LoadAction::Clear : RHI::RenderPassImage::LoadAction::Load;
+    if (currentVisCamera->clearMethod == RenderCameraClearMethod::Skybox) {
+        colorLoadAction = RHI::RenderPassImage::LoadAction::DontCare;
+    }
+
+    // 나머지 모든 render pass 를 렌더링한다.
+    if (currentVisCamera->rtColorMSAATexture) {
+        RHI::RenderPassImage depthImage = RHI::RenderPassImage::DepthStencil(currentVisCamera->depthTexture, RHI::ViewID::PrimaryID, depthLoadAction, RHI::RenderPassImage::StoreAction::Store,
+            RHI::GPUResourceState::ShaderResource, RHI::GPUResourceState::DepthWrite, RHI::GPUResourceState::ShaderResource);
+        RHI::RenderPassImage colorImage = RHI::RenderPassImage::Color(currentVisCamera->rtColorMSAATexture, RHI::ViewID::PrimaryID, colorLoadAction);
+        if (useExplicitClearColor) {
+            colorImage = colorImage.WithClearValue(clearColorValue);
+        }
+
+        RHI::RenderPassImage renderPassImages[] = {
+            colorImage,
+            depthImage,
+            RHI::RenderPassImage::ResolveColor(currentVisCamera->rtColorTexture, RHI::ViewID::PrimaryID, 0)
+        };
+        RHI::renderer->BeginRenderPass(mainCommandList, renderPassImages, COUNT_OF(renderPassImages));
+    } else {
+        RHI::RenderPassImage depthImage = RHI::RenderPassImage::DepthStencil(currentVisCamera->depthTexture, RHI::ViewID::PrimaryID, depthLoadAction, RHI::RenderPassImage::StoreAction::Store,
+            RHI::GPUResourceState::ShaderResource, RHI::GPUResourceState::DepthWrite, RHI::GPUResourceState::ShaderResource);
+        RHI::RenderPassImage colorImage = RHI::RenderPassImage::Color(currentVisCamera->rtColorTexture, RHI::ViewID::PrimaryID, colorLoadAction);
+        if (useExplicitClearColor) {
+            colorImage = colorImage.WithClearValue(clearColorValue);
+        }
+
+        RHI::RenderPassImage renderPassImages[] = {
+            colorImage,
+            depthImage
+        };
+        RHI::renderer->BeginRenderPass(mainCommandList, renderPassImages, COUNT_OF(renderPassImages));
+    }
+
+    DrawCamera3D(depthPrepass || depthVelocityPrepass);
+
+    RHI::renderer->EndRenderPass(mainCommandList);
+
+    if (hiZCullingPrepared) {
+        FinishHiZCulling();
+    }
+
+    if (currentVisCamera->generateHiZ && !r_hiZOcclusionCullingFreeze.GetBool()) {
+        DispatchGenHiZ();
+    }
+
+    if (currentVisCamera->hiZDebugPreview) {
+        DispatchHiZDebugPreview();
+    }
+
+    PostProcessAndBlitToSwapChain();
 }
 
 void RenderBackend::PostProcessAndBlitToSwapChain() {
@@ -522,22 +582,51 @@ const void *RenderBackend::ExecuteSwapBuffers(const void *data) {
     return (const void *)(cmd + 1);
 }
 
-void RenderBackend::DrawCamera3D() {
+void RenderBackend::DrawCamera3D(bool skipDepthPrepasses) {
     PROFILER_CPU_SCOPED_EVENT("RenderBackend::DrawCamera3D");
 
     for (uint32_t passIndex = 0; passIndex < currentVisCamera->numRenderPasses; ++passIndex) {
         const RenderPass *renderPass = &currentVisCamera->renderPasses[passIndex];
+        if (skipDepthPrepasses) {
+            if (renderPass->type == RenderPassType::DepthPrepass || renderPass->type == RenderPassType::DepthVelocityPrepass) {
+                continue;
+            }
+        }
+
         switch (renderPass->type) {
         case RenderPassType::Skybox:
             DrawSkyPass(renderPass);
             break;
         case RenderPassType::DepthPrepass:
+        case RenderPassType::DepthVelocityPrepass:
         case RenderPassType::Opaque:
         case RenderPassType::Transparent:
             DrawGenericPass(renderPass);
             break;
         default:
             break;
+        }
+    }
+}
+
+void RenderBackend::DrawCamera3DDepthPrepass() {
+    PROFILER_CPU_SCOPED_EVENT("RenderBackend::DrawCamera3DDepthPrepass");
+
+    for (uint32_t passIndex = 0; passIndex < currentVisCamera->numRenderPasses; ++passIndex) {
+        const RenderPass *renderPass = &currentVisCamera->renderPasses[passIndex];
+        if (renderPass->type == RenderPassType::DepthPrepass) {
+            DrawGenericPass(renderPass);
+        }
+    }
+}
+
+void RenderBackend::DrawCamera3DDepthVelocityPrepass() {
+    PROFILER_CPU_SCOPED_EVENT("RenderBackend::DrawCamera3DDepthVelocityPrepass");
+
+    for (uint32_t passIndex = 0; passIndex < currentVisCamera->numRenderPasses; ++passIndex) {
+        const RenderPass *renderPass = &currentVisCamera->renderPasses[passIndex];
+        if (renderPass->type == RenderPassType::DepthVelocityPrepass) {
+            DrawGenericPass(renderPass);
         }
     }
 }
@@ -573,13 +662,15 @@ void RenderBackend::SetPassVertexBuffers(RHI::CommandList *commandList, const Re
 }
 
 static bool IsHiZCullRenderPass(RenderPassType passType) {
-    return passType == RenderPassType::DepthPrepass || passType == RenderPassType::Opaque;
+    return passType == RenderPassType::DepthPrepass || passType == RenderPassType::DepthVelocityPrepass || passType == RenderPassType::Opaque;
 }
 
 static GpuTiming::Tag GpuTagForRenderPass(RenderPassType passType) {
     switch (passType) {
     case RenderPassType::DepthPrepass:
         return GpuTiming::Tag::DepthPrepass;
+    case RenderPassType::DepthVelocityPrepass:
+        return GpuTiming::Tag::DepthVelocityPrepass;
     case RenderPassType::Opaque:
         return GpuTiming::Tag::OpaquePass;
     case RenderPassType::Skybox:

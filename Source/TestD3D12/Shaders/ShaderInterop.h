@@ -244,6 +244,7 @@ struct SurfaceDrawParams {
 
 struct ShaderSurface {
     row_major float3x4 worldMatrix;
+    row_major float3x4 prevWorldMatrix;
     float4 localBoundingSphere;
     uint shaderMaterialIndex;
     uint padding0;

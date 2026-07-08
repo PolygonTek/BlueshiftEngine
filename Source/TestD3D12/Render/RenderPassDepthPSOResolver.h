@@ -33,7 +33,7 @@ public:
         RHI::PipelineState *        pso = nullptr;
     };
 
-    void                            Begin(const RenderPass *renderPass, uint32_t initialPSOEntryCapacity);
+    void                            Begin(const RenderPass *renderPass, uint32_t initialPSOEntryCapacity, const SharedPtr<ShaderTemplate> &shaderTemplate);
 
     ResolveResult                   Resolve(const VisSurf *visSurf);
 
@@ -63,6 +63,7 @@ private:
     ShaderFeatureSet                passFeatureSet;                             // RenderPass 의 feature set
     VertexInputLayoutId             baseInputLayoutId;                          // RenderPass 의 기반 input layout id
     GraphicsPipelineDesc            basePipelineDesc;                           // RenderPass 의 기반 graphics pipeline desc
+    SharedPtr<ShaderTemplate>       shaderTemplate;
 
     GraphicsPipelineDesc            pipelineDescs[NumInputLayouts];             // input layout 별로 graphics pipeline desc 를 캐시한다.
     bool                            pipelineDescValid[NumInputLayouts] = {};    // input layout 별로 graphics pipeline desc 가 유효한지 여부

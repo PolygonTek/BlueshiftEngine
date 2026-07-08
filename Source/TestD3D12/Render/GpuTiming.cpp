@@ -21,6 +21,7 @@ const char *GpuTiming::TagName(Tag tag) {
     static const char *tagNames[static_cast<int>(GpuTiming::Tag::Count)] = {
         "GPU Frame",
         "Depth Prepass",
+        "Depth Velocity Prepass",
         "Opaque Pass",
         "Sky Pass",
         "Transparent Pass",

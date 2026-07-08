@@ -59,6 +59,7 @@ struct RenderPassDrawSurf {
 
 enum class RenderPassType : uint8_t {
     DepthPrepass,
+    DepthVelocityPrepass,
     Shadow,
     Opaque,
     Skybox,
@@ -118,6 +119,7 @@ struct VisCamera {
     RHI::Texture *              rtColorMSAATexture = nullptr;
     RHI::Texture *              depthTexture = nullptr;
     RHI::Texture *              rtNormalTexture = nullptr;
+    RHI::Texture *              rtVelocityTexture = nullptr;
 
     bool                        generateHiZ = false;
     RHI::Texture *              hiZTexture = nullptr;
@@ -180,14 +182,15 @@ struct VisCamera {
 // 따라서 공유 자윈이 파괴되는 걸 방지하기 위해, 한 프레임 렌더링이 끝난 후 릴리즈하는 구조로 되어있다.
 struct VisObject {
     ALIGN_AS32 BE1::Mat3x4      worldMatrix;
+    ALIGN_AS32 BE1::Mat3x4      prevWorldMatrix;
 
     uint32_t                    index;
 
     MeshInstance *              meshInstance = nullptr;     ///< Mesh instance
     const Skeleton *            skeleton = nullptr;         ///< Skeleton information for skeletal mesh
 
-    uint32_t                    numMaterials;
-    const Material *            materials[32];
+    uint32_t                    numMaterials = 0;
+    const Material **           materials = nullptr;
 
     int                         numVerts = 0;
     BE1::VertexGeneric *        verts = nullptr;

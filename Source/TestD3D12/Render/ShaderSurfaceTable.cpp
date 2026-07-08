@@ -76,8 +76,8 @@ void ShaderSurfaceTable::Build(const VisSurf *visSurf, ShaderSurface &outShaderS
     assert(visSurf);
     assert(visSurf->space);
 
-    static_assert(sizeof(outShaderSurface.worldMatrix) == sizeof(visSurf->space->worldMatrix));
     BE1::simdProcessor->Memcpy(&outShaderSurface.worldMatrix, &visSurf->space->worldMatrix, sizeof(outShaderSurface.worldMatrix));
+    BE1::simdProcessor->Memcpy(&outShaderSurface.prevWorldMatrix, &visSurf->space->prevWorldMatrix, sizeof(outShaderSurface.prevWorldMatrix));
 
     if (visSurf->subMesh) {
         const BE1::Sphere &sphere = visSurf->subMesh->GetBoundingSphere();

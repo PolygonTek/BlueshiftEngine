@@ -39,6 +39,7 @@ private:
     void                            RadixSortDrawSurfs(const RenderPassDrawSurf **drawSurfs, uint32_t numDrawSurfs, const RenderPassDrawSurf **tempDrawSurfs);
 
     RenderPassDepthPSOResolver      depthPSOResolver;
+    RenderPassDepthPSOResolver      depthVelocityPSOResolver;
     RenderPassPSOResolver           opaquePSOResolver;
     RenderPassPSOResolver           blendPSOResolver;
     RenderPassPSOResolver           skyboxPSOResolver;

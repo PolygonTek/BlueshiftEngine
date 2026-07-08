@@ -37,4 +37,18 @@ ShaderMaterial GetShaderMaterial(uint shaderMaterialIndex) {
     return GetShaderMaterialTable(frameConstants.shaderMaterialTableIndex)[shaderMaterialIndex];
 }
 
+float4 CalcClipPosition(row_major float3x4 worldMatrix, float4 localPosition, row_major float4x4 viewProjMatrix) {
+    float4 positionWS = float4(mul(worldMatrix, localPosition), 1.0);
+    return mul(viewProjMatrix, positionWS);
+}
+
+float2 CalcVelocity(float4 currentClipPosition, float4 prevClipPosition) {
+    float2 currentNDC = currentClipPosition.xy / currentClipPosition.w;
+    float2 prevNDC = prevClipPosition.xy / prevClipPosition.w;
+
+    float2 currentUV = float2(currentNDC.x * 0.5 + 0.5, 0.5 - currentNDC.y * 0.5);
+    float2 prevUV = float2(prevNDC.x * 0.5 + 0.5, 0.5 - prevNDC.y * 0.5);
+    return currentUV - prevUV;
+}
+
 #endif

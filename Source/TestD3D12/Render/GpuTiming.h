@@ -33,6 +33,7 @@ public:
     enum class Tag : uint8_t {
         GpuFrame,
         DepthPrepass,
+        DepthVelocityPrepass,
         OpaquePass,
         SkyPass,
         TransparentPass,

@@ -32,6 +32,23 @@ RenderWorld::RenderWorld() {
     renderWorldGroupId = BE1::Engine::taskManager->CreateGroupId();
 }
 
+void RenderWorld::BeginFrame() {
+    assert(BE1::Engine::IsInMainThread());
+    assert(!frameActive);
+
+    frameActive = true;
+    renderWorldFrameIndex++;
+
+    //ClearDebugLines();
+}
+
+void RenderWorld::EndFrame() {
+    assert(BE1::Engine::IsInMainThread());
+    assert(frameActive);
+
+    frameActive = false;
+}
+
 void RenderWorld::ClearScene() {
 #ifdef USE_DBVT
     objectDbvt.Clear();
@@ -249,8 +266,12 @@ void RenderWorld::UpdateRenderObject(int index, const RenderObject::Desc &desc, 
         CreateObjectProxy(renderObject);
 #endif
     } else {
-#ifdef USE_DBVT
         const bool transformChanged = BE1::HasFlag(updateFlags, RenderObject::Desc::UpdateFlag::Transform);
+        if (transformChanged) {
+            CapturePrevWorldMatrix(renderObject);
+        }
+
+#ifdef USE_DBVT
         const bool boundsChanged = BE1::HasFlag(updateFlags, RenderObject::Desc::UpdateFlag::Bounds);
         const bool meshChanged = BE1::HasFlag(updateFlags, RenderObject::Desc::UpdateFlag::Mesh);
 
@@ -295,4 +316,24 @@ void RenderWorld::RemoveRenderObject(int index) {
 
     delete renderObjects[index];
     renderObjects[index] = nullptr;
+}
+
+void RenderWorld::CapturePrevWorldMatrix(RenderObject *renderObject) {
+    assert(renderObject);
+
+    const uint64_t previousFrameIndex = frameActive ? renderWorldFrameIndex - 1 : renderWorldFrameIndex;
+    if (previousFrameIndex == 0) {
+        return;
+    }
+    // 직전 프레임에 렌더링되지 않은 오브젝트는 이전 월드 매트릭스를 캡처하지 않는다.
+    if (renderObject->visibleFrameIndex != previousFrameIndex) {
+        return;
+    }
+    if (renderObject->prevWorldMatrixValid && renderObject->prevWorldMatrixFrameIndex == previousFrameIndex) {
+        return;
+    }
+
+    renderObject->prevWorldMatrix = renderObject->desc.worldMatrix;
+    renderObject->prevWorldMatrixValid = true;
+    renderObject->prevWorldMatrixFrameIndex = previousFrameIndex;
 }

@@ -70,6 +70,9 @@ class RenderWorld {
 public:
     RenderWorld();
 
+    void                        BeginFrame();
+    void                        EndFrame();
+
     void                        ClearScene();
 
     RenderObject *              GetRenderObject(int index) const;
@@ -117,7 +120,9 @@ private:
     };
 
     bool                        IsVisObjectRegistered(const RenderObject *renderObject) const;
-    VisObject *                 RegisterVisObject(RenderFrameData *frameData, const RenderObject *renderObject);
+    VisObject *                 RegisterVisObject(RenderFrameData *frameData, RenderObject *renderObject);
+    void                        CapturePrevWorldMatrix(RenderObject *renderObject);
+    void                        SetVisObjectWorldMatrices(const RenderObject *renderObject, VisObject *visObject);
     void                        FindVisObjects(RenderFrameData *frameData, const RenderCamera *renderCamera, VisCamera *visCamera);
     void                        AddMeshes(RenderFrameData *frameData, const RenderCamera *renderCamera, VisCamera *visCamera);
     void                        UpdateVisibleSkinningJointCaches(RenderFrameData *frameData);
@@ -152,6 +157,8 @@ private:
 
     BE1::Array<RenderObject *>  renderObjects;      /// The array of pointers to all render objects managed by the world.
 
+    bool                        frameActive = false;
+    uint64_t                    renderWorldFrameIndex = 0;
     uint32_t                    viewCount = 0;      ///< Counter used to track how many views (or scene renderings) have been issued.
 
 #ifdef USE_DBVT
