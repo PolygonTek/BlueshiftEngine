@@ -67,7 +67,7 @@ static bool PrepareStageShader(const ShaderCompileData &compileData, RHI::Shader
 
     outShader = RHI::renderer->CreateShaderFromFile(stageSource.shaderModel, shaderStage, stageSource.filename, stageSource.entryPoint, compileDefines.Count() > 0 ? &compileDefines : nullptr);
     if (!outShader) {
-        BE_WARNLOG("ShaderPipeline::PrepareStageShader: failed to compile shader '%s'\n", stageSource.filename.c_str());
+        BE_FATALERROR("ShaderPipeline::PrepareStageShader: failed to compile shader '%s'\n", stageSource.filename.c_str());
         return false;
     }
     return true;

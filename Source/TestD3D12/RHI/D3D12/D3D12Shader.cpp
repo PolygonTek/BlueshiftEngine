@@ -752,7 +752,11 @@ RHI::Shader *D3D12Renderer::CreateShader(RHI::ShaderModel shaderModel, RHI::Shad
         RHI::ShaderCompileOutput compileOutput = {};
         bool compileSucceeded = CompileShader(&compileInput, &compileOutput);
         if (!compileOutput.errorMessage.IsEmpty()) {
-            BE_WARNLOG(compileOutput.errorMessage);
+            if (compileSucceeded) {
+                BE_ERRLOG("%s", compileOutput.errorMessage.c_str());
+            } else {
+                BE_FATALERROR("%s", compileOutput.errorMessage.c_str());
+            }
         }
         if (!compileSucceeded) {
             return nullptr;

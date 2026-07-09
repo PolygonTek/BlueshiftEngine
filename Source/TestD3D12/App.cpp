@@ -312,7 +312,7 @@ void App::ChangeGameObjectCount(uint32_t countX, uint32_t countY, uint32_t count
 void App::UpdateGameObjects() {
     PROFILER_CPU_SCOPED_EVENT("App::UpdateGameObjects");
 
-    //RotateGameObjects();
+    RotateGameObjects();
 }
 
 void App::RotateGameObjects() {
@@ -323,14 +323,14 @@ void App::RotateGameObjects() {
     const float goStartY = -goSpacing * (goCountY - 1) * 0.5f;
     const float goStartZ = -goSpacing * (goCountZ - 1) * 0.5f;
 
-    float zRotationSpeed = 0.25f;
+    float zRotationSpeed = 1.25f;
 
     for (int z = 0; z < goCountZ; ++z) {
         for (int y = 0; y < goCountY; ++y) {
             for (int x = 0; x < goCountX; ++x) {
                 int index = goCountX * goCountY * z + goCountX * y + x;
 
-                float t = 0;//elapsedSeconds + index * 0.1f;
+                float t = elapsedSeconds + index * 0.1f;
 
                 GameObject *gameObject = gameObjects[index];
                 gameObject->renderObjectDesc.worldMatrix.SetTranslationRotation(BE1::Vec3(goStartX + goSpacing * x, goStartY + goSpacing * y, goStartZ + goSpacing * z), BE1::Mat3::FromRotationZ(t * zRotationSpeed), false);
