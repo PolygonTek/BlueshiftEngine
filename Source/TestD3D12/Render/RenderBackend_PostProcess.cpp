@@ -189,7 +189,7 @@ bool RenderBackend::DispatchTAAResolve() {
     taaResolveParams.projectionDepthParams = float2(currentVisCamera->projectionDepthA, currentVisCamera->projectionDepthB);
     taaResolveParams.ndcDepthScaleBias = float2(currentVisCamera->ndcDepthScale, currentVisCamera->ndcDepthBias);
     taaResolveParams.depthFallbackThreshold = r_taaDepthFallbackThreshold.GetFloat();
-    taaResolveParams.maxSubpixelCurrentWeight = r_taaMaxSubpixelCurrentWeight.GetFloat();
+    taaResolveParams.maxSubpixelCurrentWeight = r_taaSubpixelWeight.GetFloat();
 
     RHI::ConstantBuffer *taaResolveConstantBuffer = frameData->GetThreadData(0)->AllocConstant(sizeof(TAAResolveParams), &taaResolveParams);
     if (!taaResolveConstantBuffer) {

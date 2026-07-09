@@ -486,7 +486,7 @@ void App::BuildImGuiOverlay() {
     };
     bool hiZDebugPreviewOpen = false;
 
-    ImGui::SetNextWindowSizeConstraints(ImVec2(fontSize * 28.0f, fontSize * 8.0f), ImVec2(FLT_MAX, FLT_MAX));
+    ImGui::SetNextWindowSizeConstraints(ImVec2(fontSize * 29.0f, fontSize * 8.0f), ImVec2(FLT_MAX, FLT_MAX));
     ImGui::Begin("TestD3D12", nullptr, ImGuiWindowFlags_AlwaysAutoResize);
 
     if (ImGui::BeginTabBar("TestD3D12Tabs")) {
@@ -533,6 +533,18 @@ void App::BuildImGuiOverlay() {
             bool depthPrepass = r_depthPrepass.GetBool();
             if (ImGui::Checkbox("Depth prepass", &depthPrepass)) {
                 r_depthPrepass.SetBool(depthPrepass);
+            }
+
+            static constexpr int msaaSampleCounts[] = { 1, 2, 4, 8 };
+            int msaaSampleCount = r_msaa.GetInteger();
+            int msaaSampleCountIndex = msaaSampleCount >= 8 ? 3 : (msaaSampleCount >= 4 ? 2 : (msaaSampleCount >= 2 ? 1 : 0));
+            ImGui::SetNextItemWidth(fontSize * 12.0f);
+            if (ImGui::Combo("MSAA", &msaaSampleCountIndex,
+                "Off\0"
+                "2x\0"
+                "4x\0"
+                "8x\0")) {
+                r_msaa.SetInteger(msaaSampleCounts[msaaSampleCountIndex]);
             }
 
             if (roundedCollapsingHeader("Skip options##RenderSkipOptionsHeader")) {
@@ -594,19 +606,7 @@ void App::BuildImGuiOverlay() {
                 }
             }
 
-            if (roundedCollapsingHeader("Anti-aliasing##AntiAliasingHeader")) {
-                static constexpr int msaaSampleCounts[] = { 1, 2, 4, 8 };
-                int msaaSampleCount = r_msaa.GetInteger();
-                int msaaSampleCountIndex = msaaSampleCount >= 8 ? 3 : (msaaSampleCount >= 4 ? 2 : (msaaSampleCount >= 2 ? 1 : 0));
-                ImGui::SetNextItemWidth(fontSize * 12.0f);
-                if (ImGui::Combo("MSAA", &msaaSampleCountIndex,
-                    "Off\0"
-                    "2x\0"
-                    "4x\0"
-                    "8x\0")) {
-                    r_msaa.SetInteger(msaaSampleCounts[msaaSampleCountIndex]);
-                }
-
+            if (roundedCollapsingHeader("Temporal AA##TemporalAAHeader")) {
                 bool taa = r_taa.GetBool();
                 if (ImGui::Checkbox("TAA", &taa)) {
                     r_taa.SetBool(taa);
@@ -629,10 +629,10 @@ void App::BuildImGuiOverlay() {
                     r_taaHistoryWeight.SetFloat(taaHistoryWeight);
                 }
 
-                float taaMaxSubpixelCurrentWeight = BE1::Clamp(r_taaMaxSubpixelCurrentWeight.GetFloat(), r_taaMaxSubpixelCurrentWeight.GetMinValue(), r_taaMaxSubpixelCurrentWeight.GetMaxValue());
+                float taaSubpixelWeight = BE1::Clamp(r_taaSubpixelWeight.GetFloat(), r_taaSubpixelWeight.GetMinValue(), r_taaSubpixelWeight.GetMaxValue());
                 ImGui::SetNextItemWidth(fontSize * 12.0f);
-                if (ImGui::SliderFloat("TAA max subpixel current weight", &taaMaxSubpixelCurrentWeight, r_taaMaxSubpixelCurrentWeight.GetMinValue(), r_taaMaxSubpixelCurrentWeight.GetMaxValue(), "%.3f")) {
-                    r_taaMaxSubpixelCurrentWeight.SetFloat(taaMaxSubpixelCurrentWeight);
+                if (ImGui::SliderFloat("TAA subpixel weight", &taaSubpixelWeight, r_taaSubpixelWeight.GetMinValue(), r_taaSubpixelWeight.GetMaxValue(), "%.3f")) {
+                    r_taaSubpixelWeight.SetFloat(taaSubpixelWeight);
                 }
 
                 float taaDepthFallbackThreshold = BE1::Clamp(r_taaDepthFallbackThreshold.GetFloat(), r_taaDepthFallbackThreshold.GetMinValue(), r_taaDepthFallbackThreshold.GetMaxValue());
@@ -658,19 +658,19 @@ void App::BuildImGuiOverlay() {
                 if (useBloom) {
                     float bloomThreshold = r_bloomThreshold.GetFloat();
                     ImGui::SetNextItemWidth(fontSize * 12.0f);
-                    if (ImGui::SliderFloat("Threshold", &bloomThreshold, 0.0f, 10.0f, "%.2f")) {
+                    if (ImGui::SliderFloat("Bloom threshold", &bloomThreshold, 0.0f, 10.0f, "%.2f")) {
                         r_bloomThreshold.SetFloat(bloomThreshold);
                     }
 
                     float bloomSoftThreshold = r_bloomSoftThreshold.GetFloat();
                     ImGui::SetNextItemWidth(fontSize * 12.0f);
-                    if (ImGui::SliderFloat("Soft threshold", &bloomSoftThreshold, 0.0f, 5.0f, "%.2f")) {
+                    if (ImGui::SliderFloat("Bloom soft threshold", &bloomSoftThreshold, 0.0f, 5.0f, "%.2f")) {
                         r_bloomSoftThreshold.SetFloat(bloomSoftThreshold);
                     }
 
                     float bloomIntensity = r_bloomIntensity.GetFloat();
                     ImGui::SetNextItemWidth(fontSize * 12.0f);
-                    if (ImGui::SliderFloat("Intensity", &bloomIntensity, 0.0f, 2.0f, "%.3f")) {
+                    if (ImGui::SliderFloat("Bloom intensity", &bloomIntensity, 0.0f, 2.0f, "%.3f")) {
                         r_bloomIntensity.SetFloat(bloomIntensity);
                     }
                 }
@@ -678,7 +678,7 @@ void App::BuildImGuiOverlay() {
                 if (usePyramidBloom) {
                     int pyramidBloomPrefilterQuality = BE1::Clamp(r_pyramidBloomPrefilterQuality.GetInteger(), 0, 1);
                     ImGui::SetNextItemWidth(fontSize * 12.0f);
-                    if (ImGui::Combo("Prefilter quality", &pyramidBloomPrefilterQuality,
+                    if (ImGui::Combo("Bloom prefilter quality", &pyramidBloomPrefilterQuality,
                         "Rotated Grid 5 Tap\0"
                         "Jimenez 13 Tap\0")) {
                         r_pyramidBloomPrefilterQuality.SetInteger(pyramidBloomPrefilterQuality);
@@ -686,25 +686,25 @@ void App::BuildImGuiOverlay() {
 
                     float pyramidBloomScatter = r_pyramidBloomScatter.GetFloat();
                     ImGui::SetNextItemWidth(fontSize * 12.0f);
-                    if (ImGui::SliderFloat("Scatter", &pyramidBloomScatter, 0.0f, 1.0f, "%.3f")) {
+                    if (ImGui::SliderFloat("Bloom scatter", &pyramidBloomScatter, 0.0f, 1.0f, "%.3f")) {
                         r_pyramidBloomScatter.SetFloat(pyramidBloomScatter);
                     }
 
                     float pyramidBloomPrefilterRadius = r_pyramidBloomPrefilterRadius.GetFloat();
                     ImGui::SetNextItemWidth(fontSize * 12.0f);
-                    if (ImGui::SliderFloat("Prefilter radius", &pyramidBloomPrefilterRadius, 0.0f, 5.0f, "%.2f")) {
+                    if (ImGui::SliderFloat("Bloom prefilter radius", &pyramidBloomPrefilterRadius, 0.0f, 5.0f, "%.2f")) {
                         r_pyramidBloomPrefilterRadius.SetFloat(pyramidBloomPrefilterRadius);
                     }
 
                     float pyramidBloomDownsampleRadius = r_pyramidBloomDownsampleRadius.GetFloat();
                     ImGui::SetNextItemWidth(fontSize * 12.0f);
-                    if (ImGui::SliderFloat("Downsample radius", &pyramidBloomDownsampleRadius, 0.0f, 5.0f, "%.2f")) {
+                    if (ImGui::SliderFloat("Bloom downsample radius", &pyramidBloomDownsampleRadius, 0.0f, 5.0f, "%.2f")) {
                         r_pyramidBloomDownsampleRadius.SetFloat(pyramidBloomDownsampleRadius);
                     }
 
                     float pyramidBloomUpsampleRadius = r_pyramidBloomUpsampleRadius.GetFloat();
                     ImGui::SetNextItemWidth(fontSize * 12.0f);
-                    if (ImGui::SliderFloat("Upsample radius", &pyramidBloomUpsampleRadius, 0.0f, 5.0f, "%.2f")) {
+                    if (ImGui::SliderFloat("Bloom upsample radius", &pyramidBloomUpsampleRadius, 0.0f, 5.0f, "%.2f")) {
                         r_pyramidBloomUpsampleRadius.SetFloat(pyramidBloomUpsampleRadius);
                     }
                 }
@@ -714,7 +714,7 @@ void App::BuildImGuiOverlay() {
                     int convolutionBloomFFTMaxSize = r_convolutionBloomFFTMaxSize.GetInteger();
                     int convolutionBloomFFTMaxSizeIndex = convolutionBloomFFTMaxSize <= 256 ? 0 : (convolutionBloomFFTMaxSize <= 512 ? 1 : 2);
                     ImGui::SetNextItemWidth(fontSize * 12.0f);
-                    if (ImGui::Combo("FFT max size", &convolutionBloomFFTMaxSizeIndex,
+                    if (ImGui::Combo("Bloom FFT max size", &convolutionBloomFFTMaxSizeIndex,
                         "256\0"
                         "512\0"
                         "1024\0")) {
@@ -724,7 +724,7 @@ void App::BuildImGuiOverlay() {
                     int convolutionBloomKernelSource = app_convolutionBloomKernelSource.GetInteger();
                     const char *currentKernelSourceName = convolutionBloomKernelSource == static_cast<int>(App::ConvolutionBloomKernelSource::GenerateFromAperture) ? "From Aperture" : "Preset";
                     ImGui::SetNextItemWidth(fontSize * 12.0f);
-                    if (ImGui::BeginCombo("Kernel source", currentKernelSourceName)) {
+                    if (ImGui::BeginCombo("Bloom kernel source", currentKernelSourceName)) {
                         const bool presetSelected = convolutionBloomKernelSource == static_cast<int>(App::ConvolutionBloomKernelSource::Preset);
                         if (ImGui::Selectable("Preset", presetSelected)) {
                             if (!presetSelected) {
@@ -752,7 +752,7 @@ void App::BuildImGuiOverlay() {
                         char currentKernelName[32];
                         GetConvolutionBloomKernelPresetName(app_convolutionBloomKernelPreset.GetInteger(), currentKernelName, sizeof(currentKernelName));
                         ImGui::SetNextItemWidth(fontSize * 12.0f);
-                        if (ImGui::BeginCombo("Kernel preset", currentKernelName)) {
+                        if (ImGui::BeginCombo("Bloom kernel preset", currentKernelName)) {
                             for (int kernelPreset = 0; kernelPreset < App::ConvolutionBloomKernelPresetCount; ++kernelPreset) {
                                 char kernelName[32];
                                 GetConvolutionBloomKernelPresetName(kernelPreset, kernelName, sizeof(kernelName));
@@ -772,7 +772,7 @@ void App::BuildImGuiOverlay() {
                     } else if (convolutionBloomKernelSource == static_cast<int>(App::ConvolutionBloomKernelSource::GenerateFromAperture)) {
                         int convolutionBloomAperturePreset = app_convolutionBloomAperturePreset.GetInteger();
                         ImGui::SetNextItemWidth(fontSize * 12.0f);
-                        if (ImGui::Combo("Aperture preset", &convolutionBloomAperturePreset,
+                        if (ImGui::Combo("Bloom aperture preset", &convolutionBloomAperturePreset,
                             "Triangle\0"
                             "Square\0"
                             "Horz Rectangle\0"
@@ -796,38 +796,38 @@ void App::BuildImGuiOverlay() {
 
                     float convolutionBloomKernelRotation = r_convolutionBloomKernelRotation.GetFloat();
                     ImGui::SetNextItemWidth(fontSize * 12.0f);
-                    if (ImGui::SliderFloat("Kernel rotation", &convolutionBloomKernelRotation, -180.0f, 180.0f, "%.1f deg")) {
+                    if (ImGui::SliderFloat("Bloom kernel rotation", &convolutionBloomKernelRotation, -180.0f, 180.0f, "%.1f deg")) {
                         r_convolutionBloomKernelRotation.SetFloat(convolutionBloomKernelRotation);
                     }
 
                     float convolutionBloomKernelSizeScale = r_convolutionBloomKernelSizeScale.GetFloat();
                     ImGui::SetNextItemWidth(fontSize * 12.0f);
-                    if (ImGui::SliderFloat("Kernel size scale", &convolutionBloomKernelSizeScale, 0.01f, 10.0f, "%.3f")) {
+                    if (ImGui::SliderFloat("Bloom kernel size scale", &convolutionBloomKernelSizeScale, 0.01f, 10.0f, "%.3f")) {
                         r_convolutionBloomKernelSizeScale.SetFloat(BE1::Max(convolutionBloomKernelSizeScale, 0.01f));
                     }
 
                     float convolutionBloomKernelScale = r_convolutionBloomKernelScale.GetFloat();
                     ImGui::SetNextItemWidth(fontSize * 12.0f);
-                    if (ImGui::SliderFloat("Kernel scale", &convolutionBloomKernelScale, 0.0f, 10.0f, "%.4f")) {
+                    if (ImGui::SliderFloat("Bloom kernel scale", &convolutionBloomKernelScale, 0.0f, 10.0f, "%.4f")) {
                         r_convolutionBloomKernelScale.SetFloat(BE1::Max(convolutionBloomKernelScale, 0.0f));
                     }
 
                     float convolutionBloomPaddingTrim = r_convolutionBloomPaddingTrim.GetFloat();
                     ImGui::SetNextItemWidth(fontSize * 12.0f);
-                    if (ImGui::SliderFloat("Padding trim", &convolutionBloomPaddingTrim, 0.0f, 0.25f, "%.3f")) {
+                    if (ImGui::SliderFloat("Bloom padding trim", &convolutionBloomPaddingTrim, 0.0f, 0.25f, "%.3f")) {
                         r_convolutionBloomPaddingTrim.SetFloat(BE1::Min(BE1::Max(convolutionBloomPaddingTrim, 0.0f), 0.25f));
                     }
 
                     if (convolutionBloomKernelSource == static_cast<int>(App::ConvolutionBloomKernelSource::GenerateFromAperture)) {
                         float convolutionBloomDiffractionPSFScale = r_convolutionBloomDiffractionPSFScale.GetFloat();
                         ImGui::SetNextItemWidth(fontSize * 12.0f);
-                        if (ImGui::SliderFloat("Diffraction PSF scale", &convolutionBloomDiffractionPSFScale, 0.0f, 100.0f, "%.3f")) {
+                        if (ImGui::SliderFloat("Bloom diffraction PSF scale", &convolutionBloomDiffractionPSFScale, 0.0f, 100.0f, "%.3f")) {
                             r_convolutionBloomDiffractionPSFScale.SetFloat(BE1::Max(convolutionBloomDiffractionPSFScale, 0.0f));
                         }
 
                         float convolutionBloomDispersionAmount = r_convolutionBloomDispersionAmount.GetFloat();
                         ImGui::SetNextItemWidth(fontSize * 12.0f);
-                        if (ImGui::SliderFloat("Dispersion amount", &convolutionBloomDispersionAmount, 0.0f, 10.0f, "%.3f")) {
+                        if (ImGui::SliderFloat("Bloom dispersion amount", &convolutionBloomDispersionAmount, 0.0f, 10.0f, "%.3f")) {
                             r_convolutionBloomDispersionAmount.SetFloat(BE1::Max(convolutionBloomDispersionAmount, 0.0f));
                         }
 
