@@ -1,6 +1,7 @@
 #ifndef __COMMON_HLSLI__
 #define __COMMON_HLSLI__
 
+#include "MathConstants.hlsli"
 #include "ShaderInterop.h"
 
 #ifndef half
@@ -102,6 +103,17 @@ inline float3 ReconstructPosition(in float2 uv, in float depth, in float4x4 invV
     return worldPosition.xyz / worldPosition.w;
 }
 
+// í˜„ì¬ í”½ì…€ì˜ í‘œë©´ì„ ì´ì „ í”„ë ˆì„ ì¹´ë©”ë¼ë¡œ reprojection í–ˆì„ ë•Œì˜ depth ë¥¼ êµ¬í•œë‹¤.
+inline float ComputeReprojectedPreviousDepth(in float2 uv, in float currentDepth, in float4x4 invViewProjMatrix, in float4x4 prevViewProjMatrix) {
+    const float2 ndcXY = uv * float2(2.0, -2.0) + float2(-1.0, 1.0);
+    const float4 currentClipPosition = float4(ndcXY, currentDepth, 1.0);
+    float4 worldPosition = mul(invViewProjMatrix, currentClipPosition);
+    worldPosition /= worldPosition.w;
+
+    const float4 previousClipPosition = mul(prevViewProjMatrix, worldPosition);
+    return previousClipPosition.z / previousClipPosition.w;
+}
+
 inline float SafeSignedDenominator(float value) {
     const float minAbsValue = 1.0e-6;
     if (abs(value) >= minAbsValue) {
@@ -115,7 +127,7 @@ inline float SafeSignedDenominator(float value) {
 inline float LinearizePerspectiveDepth(float ndcDepth, float projDepthA, float projDepthB) {
     // ndcZ = (A * viewZ + B) / (-viewZ)
     // viewZ = -B / (ndcZ + A)
-    // projection matrix ´Â ¿À¸¥¼Õ ÁÂÇ¥°èÀÌ¹Ç·Î À½¼ö ¹æÇâÀÌ Ä«¸Ş¶ó ¾ÕÂÊÀÌ´Ù. ±×·¯¹Ç·Î preview ¸¦ À§ÇØ¼­ µÚÁı´Â´Ù.
+    // projection matrix ëŠ” ì˜¤ë¥¸ì† ì¢Œí‘œê³„ì´ë¯€ë¡œ ìŒìˆ˜ ë°©í–¥ì´ ì¹´ë©”ë¼ ì•ìª½ì´ë‹¤. ê·¸ëŸ¬ë¯€ë¡œ preview ë¥¼ ìœ„í•´ì„œ ë’¤ì§‘ëŠ”ë‹¤.
     // viewDistance = -viewZ = B / (ndcZ + A)
     return projDepthB / SafeSignedDenominator(ndcDepth + projDepthA);
 }
@@ -125,7 +137,7 @@ inline float LinearizePerspectiveDepth(float ndcDepth, float projDepthA, float p
 inline float LinearizeOrthogonalDepth(float ndcDepth, float projDepthA, float projDepthB) {
     // ndcZ = (A * viewZ + B) / 1
     // viewZ = (ndcZ - B) / A
-    // projection matrix ´Â ¿À¸¥¼Õ ÁÂÇ¥°èÀÌ¹Ç·Î À½¼ö ¹æÇâÀÌ Ä«¸Ş¶ó ¾ÕÂÊÀÌ´Ù. ±×·¯¹Ç·Î preview ¸¦ À§ÇØ¼­ µÚÁı´Â´Ù.
+    // projection matrix ëŠ” ì˜¤ë¥¸ì† ì¢Œí‘œê³„ì´ë¯€ë¡œ ìŒìˆ˜ ë°©í–¥ì´ ì¹´ë©”ë¼ ì•ìª½ì´ë‹¤. ê·¸ëŸ¬ë¯€ë¡œ preview ë¥¼ ìœ„í•´ì„œ ë’¤ì§‘ëŠ”ë‹¤.
     // viewDistance = -viewZ = (B - ndcZ) / A
     return (projDepthB - ndcDepth) / SafeSignedDenominator(projDepthA);
 }

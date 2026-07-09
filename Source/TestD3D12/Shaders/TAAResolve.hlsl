@@ -1,6 +1,10 @@
 #include "Common.hlsli"
 #include "Colors.hlsli"
 
+#ifndef USE_NEIGHBORHOOD_COLOR_BOUNDS
+#define USE_NEIGHBORHOOD_COLOR_BOUNDS 1
+#endif
+
 #ifndef USE_YCOCG_CLAMP
 #define USE_YCOCG_CLAMP 1
 #endif
@@ -32,7 +36,6 @@ cbuffer TAAResolveCB : register(b0) {
     TAAResolveParams taaResolveParams;
 }
 
-static const float TAAResolveMinColorBoxRange = 1e-5;
 static const float TAAResolveDepthFallbackVelocityThreshold = 0.01;
 
 Texture2D<float4> currentColorTexture : register(t0);
@@ -41,6 +44,9 @@ Texture2D<float> depthTexture : register(t2);
 Texture2D<float4> previousColorHistoryTexture : register(t3);
 Texture2D<float> previousDepthTexture : register(t4);
 RWTexture2D<float4> outputColorHistoryTexture : register(u0);
+
+#if USE_NEIGHBORHOOD_COLOR_BOUNDS
+static const float TAAResolveMinColorBoxRange = 1e-5;
 
 void AccumulateNeighborhoodColorBounds(int2 sampleCoord, int2 maxPixelCoord, inout float3 colorMin, inout float3 colorMax) {
     const int2 clampedCoord = clamp(sampleCoord, int2(0, 0), maxPixelCoord);
@@ -71,10 +77,7 @@ void ComputeNeighborhoodColorBounds(uint2 pixelCoord, float3 centerColor, out fl
         }
     }
 }
-
-float LoadCurrentDepth(int2 pixelCoord, int2 maxPixelCoord) {
-    return depthTexture.Load(int3(clamp(pixelCoord, int2(0, 0), maxPixelCoord), 0));
-}
+#endif
 
 float LinearizeDepth(float deviceDepth) {
     const float ndcDepth = deviceDepth * taaResolveParams.ndcDepthScaleBias.x + taaResolveParams.ndcDepthScaleBias.y;
@@ -83,6 +86,10 @@ float LinearizeDepth(float deviceDepth) {
         return LinearizeOrthogonalDepth(ndcDepth, taaResolveParams.projectionDepthParams.x, taaResolveParams.projectionDepthParams.y);
     }
     return LinearizePerspectiveDepth(ndcDepth, taaResolveParams.projectionDepthParams.x, taaResolveParams.projectionDepthParams.y);
+}
+
+float LoadCurrentDepth(int2 pixelCoord, int2 maxPixelCoord) {
+    return depthTexture.Load(int3(clamp(pixelCoord, int2(0, 0), maxPixelCoord), 0));
 }
 
 float LoadPreviousDepth(float2 previousUV) {
@@ -123,17 +130,6 @@ int2 FindClosestDepthPixelCoord(uint2 pixelCoord, out float centerDepth) {
 }
 #endif
 
-// 현재 픽셀의 표면을 이전 프레임 카메라로 reprojection 했을 때의 depth 를 구한다.
-/*float ComputeReprojectedPreviousDepth(float2 uv, float currentDepth) {
-    const float2 ndcXY = uv * float2(2.0, -2.0) + float2(-1.0, 1.0);
-    const float4 currentClipPosition = float4(ndcXY, currentDepth, 1.0);
-    float4 worldPosition = mul(taaResolveParams.invViewProjMatrix, currentClipPosition);
-    worldPosition /= worldPosition.w;
-
-    const float4 previousClipPosition = mul(taaResolveParams.prevViewProjMatrix, worldPosition);
-    return previousClipPosition.z / previousClipPosition.w;
-}*/
-
 [RootSignature(COMMON_ROOT_SIGNATURE)]
 [numthreads(TAAResolveBlockSizeX, TAAResolveBlockSizeY, 1)]
 void CSMain(uint3 dispatchThreadId : SV_DispatchThreadID) {
@@ -172,19 +168,7 @@ void CSMain(uint3 dispatchThreadId : SV_DispatchThreadID) {
             }
 #endif
 
-#if USE_YCOCG_CLAMP
-            float3 centerColor = RGBToYCoCg(currentColor.rgb);
-#else
-            float3 centerColor = currentColor.rgb;
-#endif
-            float3 colorMin;
-            float3 colorMax;
-            ComputeNeighborhoodColorBounds(pixelCoord, centerColor, colorMin, colorMax);
-
             float3 historyColor = previousColorHistoryTexture.SampleLevel(linearClampSampler, previousUV, 0).rgb;
-#if USE_YCOCG_CLAMP
-            historyColor = RGBToYCoCg(historyColor);
-#endif
 
             float historyWeight = saturate(taaResolveParams.historyWeight);
 
@@ -196,6 +180,17 @@ void CSMain(uint3 dispatchThreadId : SV_DispatchThreadID) {
             const float currentWeight = max(baseCurrentWeight, lerp(baseCurrentWeight, taaResolveParams.maxSubpixelCurrentWeight, subpixelCorrection));
             historyWeight = 1.0 - currentWeight;
 #endif
+
+#if USE_NEIGHBORHOOD_COLOR_BOUNDS
+#if USE_YCOCG_CLAMP
+            float3 centerColor = RGBToYCoCg(currentColor.rgb);
+            historyColor = RGBToYCoCg(historyColor);
+#else
+            float3 centerColor = currentColor.rgb;
+#endif
+            float3 colorMin;
+            float3 colorMax;
+            ComputeNeighborhoodColorBounds(pixelCoord, centerColor, colorMin, colorMax);
 
 #if USE_ADAPTIVE_WEIGHT
             // history color 가 color bounds 밖으로 벗어난 정도에 따라 historyWeight 를 줄인다.
@@ -212,6 +207,7 @@ void CSMain(uint3 dispatchThreadId : SV_DispatchThreadID) {
 #if USE_YCOCG_CLAMP
             historyColor = max(YCoCgToRGB(historyColor), float3(0.0, 0.0, 0.0));
 #endif
+#endif // USE_NEIGHBORHOOD_COLOR_BOUNDS
             resolvedColor.rgb = lerp(currentColor.rgb, historyColor, historyWeight);
         }
     }
