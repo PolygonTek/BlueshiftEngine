@@ -126,6 +126,20 @@ float3 YCbCrToRGB(float3 c) {
     return float3(R, G, B);
 }
 
+float3 RGBToYCoCg(float3 color) {
+    float Y  =  0.25 * color.r + 0.50 * color.g + 0.25 * color.b;
+    float Co =  0.50 * color.r + 0.00 * color.g - 0.50 * color.b;
+    float Cg = -0.25 * color.r + 0.50 * color.g - 0.25 * color.b;
+    return float3(Y, Co, Cg);
+}
+
+float3 YCoCgToRGB(float3 color) {
+    float R = color.x + color.y - color.z;
+    float G = color.x + color.z;
+    float B = color.x - color.y - color.z;
+    return float3(R, G, B);
+}
+
 float4 EncodeRGBE(float3 color) {
     float maxChannel = max(max(color.r, color.g), color.b);
     float exponent = ceil(log2(max(maxChannel, 1e-8)));

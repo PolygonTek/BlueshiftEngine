@@ -29,6 +29,13 @@ extern BE1::CVar    r_skipPostProcess;
 
 extern BE1::CVar    r_depthPrepass;
 extern BE1::CVar    r_msaa;
+extern BE1::CVar    r_taa;
+extern BE1::CVar    r_taaJitter;
+extern BE1::CVar    r_taaJitterSampleCount;
+extern BE1::CVar    r_taaHistoryWeight;
+extern BE1::CVar    r_taaMaxSubpixelCurrentWeight;
+extern BE1::CVar    r_taaDepthFallbackThreshold;
+
 extern BE1::CVar    r_hiZOcclusionCulling;
 extern BE1::CVar    r_hiZOcclusionCullingFreeze;
 extern BE1::CVar    r_hiZDebugPreview;

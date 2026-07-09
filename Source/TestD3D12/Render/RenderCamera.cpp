@@ -15,6 +15,7 @@
 #include "Precompiled.h"
 #include "RenderCamera.h"
 #include "RenderCvars.h"
+#include "Math/Hammersley.h"
 #include "RHI/RHI.h"
 #include "Shaders/ShaderInterop.h"
 #include "Render/Texture/TextureManager.h"
@@ -80,6 +81,8 @@ void RenderCamera::Update(const RenderCameraDesc &desc) {
 
     viewProjMatrix = projMatrix * viewMatrix;
     invViewProjMatrix = viewProjMatrix.Inverse();
+    jitteredViewProjMatrix = viewProjMatrix;
+    jitteredInvViewProjMatrix = invViewProjMatrix;
 }
 
 void RenderCamera::CalcConvolutionBloomKernelParams(const BE1::Image &kernelImage, float &normalizationFactor, BE1::Vec2 &kernelExtents) {
@@ -666,6 +669,8 @@ void RenderCamera::EnsureRenderTextures(uint32_t width, uint32_t height, RHI::Fo
     }
 
     DestroyPostProcessColorTexture();
+    DestroyColorHistoryTextures();
+    DestroyDepthHistoryTextures();
     DestroyPyramidBloomTextures();
     DestroyConvolutionBloomResources();
     DestroyConvolutionBloomOutputTexture();
@@ -691,8 +696,9 @@ static uint32_t SelectBloomFFTSize(uint32_t renderWidth, uint32_t renderHeight, 
     return 0;
 }
 
-void RenderCamera::EnsurePostProcessResources() {
-    if (BE1::HasFlag(desc.flags, RenderCameraFlag::SkipPostProcess)) {
+void RenderCamera::EnsurePostProcessResources(bool skipPostProcess, bool useHistoryTextures, RenderBloomMode bloomMode) {
+    if (skipPostProcess) {
+        DestroyPostProcessResources();
         return;
     }
 
@@ -706,7 +712,18 @@ void RenderCamera::EnsurePostProcessResources() {
         return;
     }
 
-    const RenderBloomMode bloomMode = static_cast<RenderBloomMode>(BE1::Clamp(r_bloom.GetInteger(), static_cast<int>(RenderBloomMode::Off), static_cast<int>(RenderBloomMode::Convolution)));
+    if (useHistoryTextures) {
+        if (!EnsureColorHistoryTextures(renderWidth, renderHeight, renderColorFormat)) {
+            DestroyColorHistoryTextures();
+        }
+        if (!EnsureDepthHistoryTextures(renderWidth, renderHeight)) {
+            DestroyDepthHistoryTextures();
+        }
+    } else {
+        DestroyColorHistoryTextures();
+        DestroyDepthHistoryTextures();
+    }
+
     const bool useConvolutionBloom = bloomMode == RenderBloomMode::Convolution;
     if (bloomMode == RenderBloomMode::Pyramid) {
         DestroyConvolutionBloomResources();
@@ -782,12 +799,82 @@ void RenderCamera::EnsurePostProcessResources() {
 
 void RenderCamera::InvalidateTemporalHistory() {
     temporalHistoryInvalidated = true;
-    hasPreviousHiZ = false;
+    temporalFrameIndex = 0;
+    temporalJitterSampleCount = 0;
+    temporalJitterActive = false;
+    historyValid = false;
+
+    currentJitter = BE1::Vec2::zero;
+    previousJitter = BE1::Vec2::zero;
+    previousJitteredViewProjMatrix = viewProjMatrix;
+    previousJitteredInvViewProjMatrix = invViewProjMatrix;
+    previousHiZValid = false;
+}
+
+void RenderCamera::UpdateTemporalJitter(bool enableJitter, uint32_t sampleCount) {
+    static constexpr uint32_t MaxTemporalJitterSampleCount = 64;
+
+    const bool requestedJitter = enableJitter && sampleCount > 1;
+    const uint32_t requestedSampleCount = requestedJitter ? BE1::Min(sampleCount, MaxTemporalJitterSampleCount) : 0;
+    const bool jitterSettingChanged = temporalJitterActive != requestedJitter || temporalJitterSampleCount != requestedSampleCount;
+
+    if (jitterSettingChanged) {
+        temporalHistoryInvalidated = true;
+        temporalFrameIndex = 0;
+        previousJitter = BE1::Vec2::zero;
+        previousJitteredViewProjMatrix = viewProjMatrix;
+        previousJitteredInvViewProjMatrix = invViewProjMatrix;
+    }
+
+    temporalJitterActive = requestedJitter;
+    temporalJitterSampleCount = requestedSampleCount;
+
+    if (!requestedJitter) {
+        currentJitter = BE1::Vec2::zero;
+        previousJitter = BE1::Vec2::zero;
+        temporalFrameIndex = 0;
+
+        jitteredViewProjMatrix = viewProjMatrix;
+        jitteredInvViewProjMatrix = invViewProjMatrix;
+        return;
+    }
+
+    // 이전 프레임의 jitter offset 을 저장한다.
+    previousJitter = jitterSettingChanged ? BE1::Vec2::zero : currentJitter;
+
+    // deterministic offset 이 Vec2::zero 이므로 0 번 샘플은 (0, 0) 이다.
+    // jitter 로 변환하면 (-0.5, -0.5) 이 되어 최대 offset 이 되므로 1 번 샘플부터 사용한다.
+    static const BE1::Hammersley<MaxTemporalJitterSampleCount + 1> jitterSamples(2, 3, BE1::Vec2::zero);
+    const uint32_t sampleIndex = (temporalFrameIndex % temporalJitterSampleCount) + 1;
+    const BE1::Vec2 &sample = jitterSamples.GetSample(sampleIndex);
+
+    currentJitter = BE1::Vec2(sample.x - 0.5f, sample.y - 0.5f);
+
+    assert(renderWidth > 0 && renderHeight > 0);
+    const float ndcJitterX = currentJitter.x * (2.0f / static_cast<float>(renderWidth));
+    const float ndcJitterY = currentJitter.y * (-2.0f / static_cast<float>(renderHeight));
+
+    jitteredViewProjMatrix = viewProjMatrix;
+
+    // newClip.x = (row0 + row3 * ndcJitterX) dot position
+    // newClip.y = (row1 + row3 * ndcJitterY) dot position
+    // newMatrixRow0 = row0 + row3 * ndcJitterX
+    // newMatrixRow1 = row1 + row3 * ndcJitterY
+    for (int i = 0; i < 4; ++i) {
+        jitteredViewProjMatrix[0][i] += viewProjMatrix[3][i] * ndcJitterX;
+        jitteredViewProjMatrix[1][i] += viewProjMatrix[3][i] * ndcJitterY;
+    }
+
+    jitteredInvViewProjMatrix = jitteredViewProjMatrix.Inverse();
+
+    temporalFrameIndex++;
 }
 
 void RenderCamera::DestroyPostProcessResources() {
     DestroyLuminanceBuffer();
     DestroyPostProcessColorTexture();
+    DestroyColorHistoryTextures();
+    DestroyDepthHistoryTextures();
     DestroyPyramidBloomTextures();
     DestroyConvolutionBloomResources();
     DestroyConvolutionBloomOutputTexture();
@@ -1122,7 +1209,7 @@ void RenderCamera::DestroyRenderTextures() {
         hiZMipHeights[mipLevel] = 0;
     }
     hiZMipCount = 0;
-    hasPreviousHiZ = false;
+    previousHiZValid = false;
 
     renderWidth = 0;
     renderHeight = 0;
@@ -1158,6 +1245,119 @@ void RenderCamera::DestroyPostProcessColorTexture() {
         RHI::renderer->DestroyTexture(postProcessColorTexture);
         postProcessColorTexture = nullptr;
     }
+}
+
+bool RenderCamera::EnsureColorHistoryTextures(uint32_t width, uint32_t height, RHI::Format colorFormat) {
+    if (colorHistoryTextures[0] &&
+        colorHistoryTextures[1] &&
+        colorHistoryTextures[0]->GetWidth() == width &&
+        colorHistoryTextures[0]->GetHeight() == height &&
+        colorHistoryTextures[0]->GetFormat() == colorFormat &&
+        colorHistoryTextures[1]->GetWidth() == width &&
+        colorHistoryTextures[1]->GetHeight() == height &&
+        colorHistoryTextures[1]->GetFormat() == colorFormat) {
+        return true;
+    }
+
+    return CreateColorHistoryTextures(width, height, colorFormat);
+}
+
+bool RenderCamera::CreateColorHistoryTextures(uint32_t width, uint32_t height, RHI::Format colorFormat) {
+    DestroyColorHistoryTextures();
+
+    if (width == 0 || height == 0) {
+        return false;
+    }
+
+    BE1::Image::Format colorHistoryImageFormat = BE1::Image::Format::Unknown;
+    if (!RHI::Renderer::RHIFormatToImageFormat(colorFormat, &colorHistoryImageFormat, nullptr)) {
+        BE_WARNLOG("RenderCamera::CreateColorHistoryTextures: failed to convert color history texture format\n");
+        return false;
+    }
+
+    SharedPtr<BE1::Image> colorHistoryImage = MakeShared<BE1::Image>();
+    colorHistoryImage->InitFromMemory(width, height, 1, 1, 1, colorHistoryImageFormat, BE1::Image::GammaSpace::Linear, nullptr, BE1::Image::Flag::None);
+
+    for (uint32_t textureIndex = 0; textureIndex < 2; ++textureIndex) {
+        colorHistoryTextures[textureIndex] = RHI::renderer->CreateTexture(RHI::TextureType::Texture2D, RHI::TextureFlag::ShaderResource | RHI::TextureFlag::UnorderedAccess, colorHistoryImage, RHI::TextureMipInitMode::FromImage, {}, 1, RHI::GPUResourceState::ShaderResource);
+        if (!colorHistoryTextures[textureIndex]) {
+            BE_WARNLOG("RenderCamera::CreateColorHistoryTextures: failed to create color history texture %i\n", textureIndex);
+            DestroyColorHistoryTextures();
+            return false;
+        }
+
+        RHI::renderer->SetName(colorHistoryTextures[textureIndex], BE1::va("RenderCamera::colorHistoryTextures[%i]", textureIndex));
+    }
+
+    currentHistoryTextureIndex = 0;
+    historyValid = false;
+
+    return true;
+}
+
+void RenderCamera::DestroyColorHistoryTextures() {
+    for (uint32_t textureIndex = 0; textureIndex < 2; ++textureIndex) {
+        if (colorHistoryTextures[textureIndex]) {
+            RHI::renderer->DestroyTexture(colorHistoryTextures[textureIndex]);
+            colorHistoryTextures[textureIndex] = nullptr;
+        }
+    }
+
+    currentHistoryTextureIndex = 0;
+    historyValid = false;
+}
+
+bool RenderCamera::EnsureDepthHistoryTextures(uint32_t width, uint32_t height) {
+    if (depthHistoryTextures[0] &&
+        depthHistoryTextures[1] &&
+        depthHistoryTextures[0]->GetWidth() == width &&
+        depthHistoryTextures[0]->GetHeight() == height &&
+        depthHistoryTextures[1]->GetWidth() == width &&
+        depthHistoryTextures[1]->GetHeight() == height) {
+        return true;
+    }
+
+    return CreateDepthHistoryTextures(width, height);
+}
+
+bool RenderCamera::CreateDepthHistoryTextures(uint32_t width, uint32_t height) {
+    DestroyDepthHistoryTextures();
+
+    if (width == 0 || height == 0) {
+        return false;
+    }
+
+    const BE1::Image::Format depthHistoryImageFormat = RHI::renderer->ToUAVImageFormat(BE1::Image::Format::R32_FLOAT);
+    SharedPtr<BE1::Image> depthHistoryImage = MakeShared<BE1::Image>();
+    depthHistoryImage->InitFromMemory(width, height, 1, 1, 1, depthHistoryImageFormat, BE1::Image::GammaSpace::Linear, nullptr, BE1::Image::Flag::None);
+
+    for (uint32_t textureIndex = 0; textureIndex < 2; ++textureIndex) {
+        depthHistoryTextures[textureIndex] = RHI::renderer->CreateTexture(RHI::TextureType::Texture2D, RHI::TextureFlag::ShaderResource | RHI::TextureFlag::UnorderedAccess, depthHistoryImage, RHI::TextureMipInitMode::AllocateEmpty, {}, 1, RHI::GPUResourceState::ShaderResource);
+        if (!depthHistoryTextures[textureIndex]) {
+            BE_WARNLOG("RenderCamera::CreateDepthHistoryTextures: failed to create depth history texture %i\n", textureIndex);
+            DestroyDepthHistoryTextures();
+            return false;
+        }
+
+        RHI::renderer->SetName(depthHistoryTextures[textureIndex], BE1::va("RenderCamera::depthHistoryTextures[%i]", textureIndex));
+    }
+
+    currentHistoryTextureIndex = 0;
+    historyValid = false;
+
+    return true;
+}
+
+void RenderCamera::DestroyDepthHistoryTextures() {
+    for (uint32_t textureIndex = 0; textureIndex < 2; ++textureIndex) {
+        if (depthHistoryTextures[textureIndex]) {
+            RHI::renderer->DestroyTexture(depthHistoryTextures[textureIndex]);
+            depthHistoryTextures[textureIndex] = nullptr;
+        }
+    }
+
+    currentHistoryTextureIndex = 0;
+    historyValid = false;
 }
 
 bool RenderCamera::CreatePyramidBloomTextures(uint32_t width, uint32_t height, uint32_t requestedBloomMipMaxLevelCount) {

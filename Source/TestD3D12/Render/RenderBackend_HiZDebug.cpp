@@ -35,10 +35,10 @@ bool RenderBackend::DispatchHiZDebugPreview() {
     HiZDebugPreviewParams hiZDebugPreviewParams = {};
     hiZDebugPreviewParams.inputSize = uint2(inputWidth, inputHeight);
     hiZDebugPreviewParams.outputSize = uint2(outputWidth, outputHeight);
-    hiZDebugPreviewParams.projectionDepthParams = float2(currentVisCamera->hiZDebugProjectionDepthA, currentVisCamera->hiZDebugProjectionDepthB);
-    hiZDebugPreviewParams.ndcDepthScaleBias = float2(currentVisCamera->hiZDebugNDCDepthScale, currentVisCamera->hiZDebugNDCDepthBias);
+    hiZDebugPreviewParams.projectionDepthParams = float2(currentVisCamera->projectionDepthA, currentVisCamera->projectionDepthB);
+    hiZDebugPreviewParams.ndcDepthScaleBias = float2(currentVisCamera->ndcDepthScale, currentVisCamera->ndcDepthBias);
     hiZDebugPreviewParams.linearDepthScale = currentVisCamera->hiZDebugLinearDepthScale;
-    hiZDebugPreviewParams.orthogonal = currentVisCamera->hiZDebugOrthogonal;
+    hiZDebugPreviewParams.orthogonal = currentVisCamera->projectionOrthogonal ? 1u : 0u;
 
     RHI::ConstantBuffer *hiZDebugPreviewConstantBuffer = frameData->GetThreadData(0)->AllocConstant(sizeof(HiZDebugPreviewParams), &hiZDebugPreviewParams);
     if (!hiZDebugPreviewConstantBuffer) {

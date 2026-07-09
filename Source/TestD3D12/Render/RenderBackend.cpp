@@ -128,6 +128,17 @@ bool RenderBackend::UploadFrameConstants() {
     return true;
 }
 
+static void RemoveProjectionJitter(BE1::Mat4 &unjitteredViewProjMatrix, const BE1::Vec2 &jitterNDC) {
+    if (jitterNDC.x == 0.0f && jitterNDC.y == 0.0f) {
+        return;
+    }
+
+    for (int i = 0; i < 4; ++i) {
+        unjitteredViewProjMatrix[0][i] -= unjitteredViewProjMatrix[3][i] * jitterNDC.x;
+        unjitteredViewProjMatrix[1][i] -= unjitteredViewProjMatrix[3][i] * jitterNDC.y;
+    }
+}
+
 bool RenderBackend::UploadCameraConstants() {
     PROFILER_CPU_SCOPED_EVENT("RenderBackend::UploadCameraConstants");
 
@@ -141,11 +152,20 @@ bool RenderBackend::UploadCameraConstants() {
     }
 
     CameraConstants *constants = reinterpret_cast<CameraConstants *>(cameraConstantBuffer->mappedPtr);
-    static_assert(sizeof(constants->viewProjMatrix) == sizeof(currentVisCamera->viewProjMatrix));
+
+    ALIGN_AS32 BE1::Mat4 unjitteredViewProjMatrix = currentVisCamera->viewProjMatrix;
+    ALIGN_AS32 BE1::Mat4 prevUnjitteredViewProjMatrix = currentVisCamera->prevViewProjMatrix;
+
+    // jittered view projection matrix 에서 jittering 제거
+    RemoveProjectionJitter(unjitteredViewProjMatrix, currentVisCamera->jitterNDC);
+    RemoveProjectionJitter(prevUnjitteredViewProjMatrix, currentVisCamera->prevJitterNDC);
+
     BE1::simdProcessor->Memcpy(&constants->viewProjMatrix, &currentVisCamera->viewProjMatrix, sizeof(constants->viewProjMatrix));
     BE1::simdProcessor->Memcpy(&constants->invViewProjMatrix, &currentVisCamera->invViewProjMatrix, sizeof(constants->invViewProjMatrix));
+    BE1::simdProcessor->Memcpy(&constants->unjitteredViewProjMatrix, &unjitteredViewProjMatrix, sizeof(constants->unjitteredViewProjMatrix));
     BE1::simdProcessor->Memcpy(&constants->prevViewProjMatrix, &currentVisCamera->prevViewProjMatrix, sizeof(constants->prevViewProjMatrix));
     BE1::simdProcessor->Memcpy(&constants->prevInvViewProjMatrix, &currentVisCamera->prevInvViewProjMatrix, sizeof(constants->prevInvViewProjMatrix));
+    BE1::simdProcessor->Memcpy(&constants->prevUnjitteredViewProjMatrix, &prevUnjitteredViewProjMatrix, sizeof(constants->prevUnjitteredViewProjMatrix));
     BE1::simdProcessor->Memcpy(&constants->hiZCullViewProjMatrix, &currentVisCamera->hiZCullViewProjMatrix, sizeof(constants->hiZCullViewProjMatrix));
     constants->surfaceTableIndex = frameData->GetShaderSurfaceTableBindlessIndex();
     constants->ndcFarZ = currentVisCamera->projectionPolicy.GetNDCFarZ();
@@ -162,7 +182,10 @@ void RenderBackend::UpdateFramePSOs() {
     frameGenHiZMipOddDimPSO = ShaderPipeline::GetReadyPSO(renderSystem->genHiZMipOddDimPipeline);
     frameHiZCullInstancesPSO = ShaderPipeline::GetReadyPSO(renderSystem->hiZCullInstancesPipeline);
     frameHiZDebugPreviewPSO = ShaderPipeline::GetReadyPSO(renderSystem->hiZDebugPreviewPipeline);
+    frameDepthHistoryResolvePSO = ShaderPipeline::GetReadyPSO(renderSystem->depthHistoryResolvePipeline);
+    frameDepthHistoryResolveMSAAPSO = ShaderPipeline::GetReadyPSO(renderSystem->depthHistoryResolveMSAAPipeline);
     frameToneMappingPSO = ShaderPipeline::GetReadyPSO(renderSystem->toneMappingPipeline);
+    frameTAAResolvePSO = ShaderPipeline::GetReadyPSO(renderSystem->taaResolvePipeline);
     frameLuminancePass1PSO = ShaderPipeline::GetReadyPSO(renderSystem->luminancePass1Pipeline);
     frameLuminancePass2PSO = ShaderPipeline::GetReadyPSO(renderSystem->luminancePass2Pipeline);
     frameBloomPrefilterPSO = ShaderPipeline::GetReadyPSO(renderSystem->bloomPrefilterPipeline);
@@ -413,16 +436,25 @@ void RenderBackend::ExecuteDrawCamera3D(RHI::ClearFlag clearFlags, const BE1::Co
 void RenderBackend::PostProcessAndBlitToSwapChain() {
     const RHI::Texture *finalColorTexture = currentVisCamera->rtColorTexture;
 
-    if (!r_skipPostProcess.GetBool() && !BE1::HasFlag(currentVisCamera->flags, RenderCameraFlag::SkipPostProcess)) {
-        const bool hasLuminance = DispatchLuminance();
-        const bool hasBloom = hasLuminance && DispatchBloom();
+    currentPostProcessInputTexture = currentVisCamera->rtColorTexture;
 
-        if (hasLuminance && DispatchToneMapping(hasBloom)) {
-            finalColorTexture = currentVisCamera->postProcessColorTexture;
+    if (!r_skipPostProcess.GetBool() && !BE1::HasFlag(currentVisCamera->flags, RenderCameraFlag::SkipPostProcess)) {
+        if (DispatchDepthHistoryResolve() && DispatchTAAResolve()) {
+            currentPostProcessInputTexture = currentVisCamera->colorHistoryTextures[currentVisCamera->currentHistoryTextureIndex];
+            finalColorTexture = currentPostProcessInputTexture;
+        }
+
+        if (DispatchLuminance()) {
+            const bool hasBloom = DispatchBloom();
+
+            if (DispatchToneMapping(hasBloom)) {
+                finalColorTexture = currentVisCamera->postProcessColorTexture;
+            }
         }
     }
 
     BlitRectToSwapChain(finalColorTexture, currentVisCamera->outputRect);
+    currentPostProcessInputTexture = nullptr;
 }
 
 void RenderBackend::BlitRectToSwapChain(const RHI::Texture *texture, const BE1::Rect &rect) {

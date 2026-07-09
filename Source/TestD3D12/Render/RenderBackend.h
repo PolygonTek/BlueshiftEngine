@@ -111,8 +111,10 @@ private:
     void                            FinishHiZCulling();
     bool                            DispatchGenHiZ();
     bool                            DispatchHiZDebugPreview();
+    bool                            DispatchDepthHistoryResolve();
 
     bool                            DispatchLuminance();
+    bool                            DispatchTAAResolve();
     bool                            DispatchBloom();
     bool                            DispatchPyramidBloom();
     bool                            DispatchConvolutionBloom();
@@ -145,7 +147,10 @@ private:
     RHI::PipelineState *            frameGenHiZMipOddDimPSO = nullptr;
     RHI::PipelineState *            frameHiZCullInstancesPSO = nullptr;
     RHI::PipelineState *            frameHiZDebugPreviewPSO = nullptr;
+    RHI::PipelineState *            frameDepthHistoryResolvePSO = nullptr;
+    RHI::PipelineState *            frameDepthHistoryResolveMSAAPSO = nullptr;
     RHI::PipelineState *            frameToneMappingPSO = nullptr;
+    RHI::PipelineState *            frameTAAResolvePSO = nullptr;
     RHI::PipelineState *            frameLuminancePass1PSO = nullptr;
     RHI::PipelineState *            frameLuminancePass2PSO = nullptr;
     RHI::PipelineState *            frameBloomPrefilterPSO = nullptr;
@@ -159,6 +164,7 @@ private:
     RHI::ConstantBuffer *           cameraConstantBuffer = nullptr;
 
     const VisCamera *               currentVisCamera = nullptr;
+    RHI::Texture *                  currentPostProcessInputTexture = nullptr;
 
     uint32_t                        drawGroupId = -1;
     BE1::Array<DrawSurfsTaskDesc>   drawSurfsTaskDescs;

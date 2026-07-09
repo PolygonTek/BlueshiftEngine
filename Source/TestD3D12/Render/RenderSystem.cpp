@@ -160,8 +160,11 @@ void RenderSystem::InitComputePipelines() {
     genHiZMipOddDimShaderTemplate = CreateComputeShaderTemplate("_genHiZMipOddDimShader", computeShaderModel, "GenHiZMip/GenHiZMipOddDim.hlsl", baseDir);
     hiZCullInstancesShaderTemplate = CreateComputeShaderTemplate("_hiZCullInstancesShader", computeShaderModel, "HiZCullInstances.hlsl", baseDir);
     hiZDebugPreviewShaderTemplate = CreateComputeShaderTemplate("_hiZDebugPreviewShader", computeShaderModel, "HiZDebugPreview.hlsl", baseDir);
+    depthHistoryResolveShaderTemplate = CreateComputeShaderTemplate("_depthHistoryResolveShader", computeShaderModel, "DepthHistoryResolve.hlsl", baseDir);
+    depthHistoryResolveMSAAShaderTemplate = CreateComputeShaderTemplate("_depthHistoryResolveMSAAShader", computeShaderModel, "DepthHistoryResolve.hlsl", baseDir, "DEPTH_HISTORY_RESOLVE_MSAA=1");
 
     toneMappingShaderTemplate = CreateComputeShaderTemplate("_toneMappingShader", computeShaderModel, "ToneMapping/ToneMapping.hlsl", baseDir);
+    taaResolveShaderTemplate = CreateComputeShaderTemplate("_taaResolveShader", computeShaderModel, "TAAResolve.hlsl", baseDir);
     luminancePass1ShaderTemplate = CreateComputeShaderTemplate("_luminancePass1Shader", computeShaderModel, "ToneMapping/LuminancePass1.hlsl", baseDir);
     luminancePass2ShaderTemplate = CreateComputeShaderTemplate("_luminancePass2Shader", computeShaderModel, "ToneMapping/LuminancePass2.hlsl", baseDir);
 
@@ -187,8 +190,11 @@ void RenderSystem::EnsureComputePipelines() {
     EnsureComputePipeline(genHiZMipOddDimShaderTemplate, genHiZMipOddDimPipeline);
     EnsureComputePipeline(hiZCullInstancesShaderTemplate, hiZCullInstancesPipeline);
     EnsureComputePipeline(hiZDebugPreviewShaderTemplate, hiZDebugPreviewPipeline);
+    EnsureComputePipeline(depthHistoryResolveShaderTemplate, depthHistoryResolvePipeline);
+    EnsureComputePipeline(depthHistoryResolveMSAAShaderTemplate, depthHistoryResolveMSAAPipeline);
 
     EnsureComputePipeline(toneMappingShaderTemplate, toneMappingPipeline);
+    EnsureComputePipeline(taaResolveShaderTemplate, taaResolvePipeline);
     EnsureComputePipeline(luminancePass1ShaderTemplate, luminancePass1Pipeline);
     EnsureComputePipeline(luminancePass2ShaderTemplate, luminancePass2Pipeline);
 
@@ -212,8 +218,11 @@ void RenderSystem::ReleaseComputePipelines() {
     genHiZMipOddDimPipeline.reset();
     hiZCullInstancesPipeline.reset();
     hiZDebugPreviewPipeline.reset();
+    depthHistoryResolvePipeline.reset();
+    depthHistoryResolveMSAAPipeline.reset();
 
     toneMappingPipeline.reset();
+    taaResolvePipeline.reset();
     luminancePass1Pipeline.reset();
     luminancePass2Pipeline.reset();
 
@@ -235,8 +244,11 @@ void RenderSystem::ReleaseComputePipelines() {
     genHiZMipOddDimShaderTemplate.reset();
     hiZCullInstancesShaderTemplate.reset();
     hiZDebugPreviewShaderTemplate.reset();
+    depthHistoryResolveShaderTemplate.reset();
+    depthHistoryResolveMSAAShaderTemplate.reset();
 
     toneMappingShaderTemplate.reset();
+    taaResolveShaderTemplate.reset();
     luminancePass1ShaderTemplate.reset();
     luminancePass2ShaderTemplate.reset();
 

@@ -1,4 +1,4 @@
-#include "ShaderInterop.h"
+#include "Common.hlsli"
 
 #define COMMON_ROOT_SIGNATURE "RootFlags(0), " \
     "DescriptorTable(SRV(t0), UAV(u0)), " \
@@ -11,32 +11,13 @@ cbuffer HiZDebugPreviewCB : register(b0) {
 Texture2D<float> inputHiZTexture : register(t0);
 RWTexture2D<float4> outputPreviewTexture : register(u0);
 
-float SafeSignedDenominator(float value) {
-    const float minAbsValue = 1.0e-6;
-    if (abs(value) >= minAbsValue) {
-        return value;
-    }
-    return value < 0.0 ? -minAbsValue : minAbsValue;
-}
-
 float LinearizeDepth(float deviceDepth) {
     const float ndcDepth = deviceDepth * hiZDebugPreviewParams.ndcDepthScaleBias.x + hiZDebugPreviewParams.ndcDepthScaleBias.y;
-    const float projDepthA = hiZDebugPreviewParams.projectionDepthParams.x; // projection matrix [2][2]
-    const float projDepthB = hiZDebugPreviewParams.projectionDepthParams.y; // projection matrix [2][3]
-
+    
     if (hiZDebugPreviewParams.orthogonal != 0) {
-        // ndcZ = (A * viewZ + B) / 1
-        // viewZ = (ndcZ - B) / A
-        // projection matrix 는 오른손 좌표계이므로 음수 방향이 카메라 앞쪽이다. 그러므로 preview 를 위해서 뒤집는다.
-        // viewDistance = -viewZ = (B - ndcZ) / A
-        return (projDepthB - ndcDepth) / SafeSignedDenominator(projDepthA);
+        return LinearizeOrthogonalDepth(ndcDepth, hiZDebugPreviewParams.projectionDepthParams.x, hiZDebugPreviewParams.projectionDepthParams.y);
     }
-
-    // ndcZ = (A * viewZ + B) / (-viewZ)
-    // viewZ = -B / (ndcZ + A)
-    // projection matrix 는 오른손 좌표계이므로 음수 방향이 카메라 앞쪽이다. 그러므로 preview 를 위해서 뒤집는다.
-    // viewDistance = -viewZ = B / (ndcZ + A)
-    return projDepthB / SafeSignedDenominator(ndcDepth + projDepthA);
+    return LinearizePerspectiveDepth(ndcDepth, hiZDebugPreviewParams.projectionDepthParams.x, hiZDebugPreviewParams.projectionDepthParams.y);
 }
 
 [RootSignature(COMMON_ROOT_SIGNATURE)]

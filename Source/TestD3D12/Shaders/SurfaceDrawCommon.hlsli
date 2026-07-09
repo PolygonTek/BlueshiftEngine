@@ -2,6 +2,7 @@
 #define __SURFACEDRAWCOMMON_HLSLI__
 
 #include "Common.hlsli"
+#include "CommonBindless.hlsli"
 
 #define ROOT_SIGNATURE_SURFACE_DRAW_RESOURCES \
     "SRV(t0), " \

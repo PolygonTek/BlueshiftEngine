@@ -29,6 +29,7 @@ const char *GpuTiming::TagName(Tag tag) {
         "Hi-Z Culling",
         "Gen Hi-Z",
         "Hi-Z Debug Preview",
+        "Depth History Resolve",
         "Luminance Pass 1",
         "Luminance Pass 2",
         "Bloom Prefilter",
@@ -40,6 +41,7 @@ const char *GpuTiming::TagName(Tag tag) {
         "Conv Bloom Multiply Spectrum",
         "Conv Bloom IFFT",
         "Conv Bloom Resolve",
+        "TAA Resolve",
         "Tone Mapping",
         "Blit To SwapChain",
         "ImGui Overlay"

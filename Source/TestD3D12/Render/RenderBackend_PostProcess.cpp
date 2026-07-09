@@ -59,7 +59,7 @@ bool RenderBackend::DispatchLuminance() {
     luminancePass2Params.luminanceAdaptationRate = BE1::Max(r_toneMapLuminanceAdaptationRate.GetFloat(), 0.0f);
     luminancePass2Params.middleGray = BE1::Max(r_toneMapMiddleGray.GetFloat(), 0.0f);
 
-    RHI::Texture *inputTexture = currentVisCamera->rtColorTexture;
+    RHI::Texture *inputTexture = currentPostProcessInputTexture ? currentPostProcessInputTexture : currentVisCamera->rtColorTexture;
 
     // Pass 1 : Log Luminance 히스토그램 계산
     {
@@ -100,6 +100,140 @@ bool RenderBackend::DispatchLuminance() {
     return true;
 }
 
+bool RenderBackend::DispatchDepthHistoryResolve() {
+    PROFILER_CPU_SCOPED_EVENT("RenderBackend::DispatchDepthHistoryResolve");
+
+    if (!currentVisCamera->taaResolve) {
+        return false;
+    }
+
+    RHI::Texture *inputDepthTexture = currentVisCamera->depthTexture;
+    RHI::Texture *outputDepthTexture = currentVisCamera->depthHistoryTextures[currentVisCamera->currentHistoryTextureIndex];
+
+    const uint32_t outputW = outputDepthTexture->GetWidth();
+    const uint32_t outputH = outputDepthTexture->GetHeight();
+    if (outputW == 0 || outputH == 0) {
+        return false;
+    }
+
+    RHI::PipelineState *depthHistoryResolvePSO = inputDepthTexture->GetSampleCount() > 1 ? frameDepthHistoryResolveMSAAPSO : frameDepthHistoryResolvePSO;
+    if (!depthHistoryResolvePSO) {
+        return false;
+    }
+
+    DepthHistoryResolveParams depthHistoryResolveParams = {};
+    depthHistoryResolveParams.outputSize = uint2(outputW, outputH);
+    depthHistoryResolveParams.useMinDepth = currentVisCamera->projectionPolicy.reverseZ ? 0u : 1u;
+
+    RHI::ConstantBuffer *depthHistoryResolveConstantBuffer = frameData->GetThreadData(0)->AllocConstant(sizeof(DepthHistoryResolveParams), &depthHistoryResolveParams);
+    if (!depthHistoryResolveConstantBuffer) {
+        return false;
+    }
+
+    RHI::GPUBarrier startBarriers[] = {
+        RHI::Renderer::MakeTextureBarrier(inputDepthTexture, RHI::GPUResourceState::ShaderResource, RHI::GPUResourceState::ShaderResourceCompute),
+        RHI::Renderer::MakeTextureBarrier(outputDepthTexture, RHI::GPUResourceState::ShaderResource, RHI::GPUResourceState::UnorderedAccess)
+    };
+    GpuTiming::ScopedTimer gpuScope(gpuTiming, mainCommandList, GpuTiming::Tag::DepthHistoryResolve);
+
+    RHI::renderer->Barrier(mainCommandList, startBarriers, COUNT_OF(startBarriers));
+
+    RHI::renderer->SetPSO(mainCommandList, depthHistoryResolvePSO);
+    RHI::renderer->SetConstantBuffer(mainCommandList, 0, depthHistoryResolveConstantBuffer);
+    RHI::renderer->SetTexture(mainCommandList, 0, false, inputDepthTexture);
+    RHI::renderer->SetTexture(mainCommandList, 0, true, outputDepthTexture);
+
+    const uint32_t threadGroupCountX = (outputW + DepthHistoryResolveBlockSizeX - 1) / DepthHistoryResolveBlockSizeX;
+    const uint32_t threadGroupCountY = (outputH + DepthHistoryResolveBlockSizeY - 1) / DepthHistoryResolveBlockSizeY;
+    RHI::renderer->Dispatch(mainCommandList, threadGroupCountX, threadGroupCountY, 1);
+
+    RHI::GPUBarrier endBarriers[] = {
+        RHI::Renderer::MakeTextureBarrier(inputDepthTexture, RHI::GPUResourceState::ShaderResourceCompute, RHI::GPUResourceState::ShaderResource),
+        RHI::Renderer::MakeTextureBarrier(outputDepthTexture, RHI::GPUResourceState::UnorderedAccess, RHI::GPUResourceState::ShaderResource)
+    };
+    RHI::renderer->Barrier(mainCommandList, endBarriers, COUNT_OF(endBarriers));
+
+    return true;
+}
+
+bool RenderBackend::DispatchTAAResolve() {
+    PROFILER_CPU_SCOPED_EVENT("RenderBackend::DispatchTAAResolve");
+
+    if (!currentVisCamera->taaResolve || !frameTAAResolvePSO) {
+        return false;
+    }
+
+    const uint32_t outputW = currentVisCamera->renderWidth;
+    const uint32_t outputH = currentVisCamera->renderHeight;
+    if (outputW == 0 || outputH == 0) {
+        return false;
+    }
+
+    RHI::Texture *inputTexture = currentPostProcessInputTexture ? currentPostProcessInputTexture : currentVisCamera->rtColorTexture;
+    RHI::Texture *velocityTexture = currentVisCamera->rtVelocityTexture;
+    RHI::Texture *depthTexture = currentVisCamera->depthHistoryTextures[currentVisCamera->currentHistoryTextureIndex];
+    RHI::Texture *previousColorHistoryTexture = currentVisCamera->colorHistoryTextures[currentVisCamera->currentHistoryTextureIndex ^ 1];
+    RHI::Texture *previousDepthTexture = currentVisCamera->depthHistoryTextures[currentVisCamera->currentHistoryTextureIndex ^ 1];
+    RHI::Texture *outputColorHistoryTexture = currentVisCamera->colorHistoryTextures[currentVisCamera->currentHistoryTextureIndex];
+    if (!inputTexture || !velocityTexture || !depthTexture || !previousColorHistoryTexture || !previousDepthTexture || !outputColorHistoryTexture) {
+        return false;
+    }
+
+    TAAResolveParams taaResolveParams = {};
+    taaResolveParams.outputSize = uint2(outputW, outputH);
+    taaResolveParams.outputTexelSize = float2(1.0f / outputW, 1.0f / outputH);
+    taaResolveParams.historyWeight = r_taaHistoryWeight.GetFloat();
+    taaResolveParams.historyValid = currentVisCamera->historyValid ? 1u : 0u;
+    taaResolveParams.useMinDepth = currentVisCamera->projectionPolicy.reverseZ ? 0u : 1u;
+    taaResolveParams.orthogonal = currentVisCamera->projectionOrthogonal ? 1u : 0u;
+    taaResolveParams.projectionDepthParams = float2(currentVisCamera->projectionDepthA, currentVisCamera->projectionDepthB);
+    taaResolveParams.ndcDepthScaleBias = float2(currentVisCamera->ndcDepthScale, currentVisCamera->ndcDepthBias);
+    taaResolveParams.depthFallbackThreshold = r_taaDepthFallbackThreshold.GetFloat();
+    taaResolveParams.maxSubpixelCurrentWeight = r_taaMaxSubpixelCurrentWeight.GetFloat();
+
+    RHI::ConstantBuffer *taaResolveConstantBuffer = frameData->GetThreadData(0)->AllocConstant(sizeof(TAAResolveParams), &taaResolveParams);
+    if (!taaResolveConstantBuffer) {
+        return false;
+    }
+
+    RHI::GPUBarrier startBarriers[] = {
+        RHI::Renderer::MakeTextureBarrier(inputTexture, RHI::GPUResourceState::ShaderResource, RHI::GPUResourceState::ShaderResourceCompute),
+        RHI::Renderer::MakeTextureBarrier(velocityTexture, RHI::GPUResourceState::ShaderResource, RHI::GPUResourceState::ShaderResourceCompute),
+        RHI::Renderer::MakeTextureBarrier(depthTexture, RHI::GPUResourceState::ShaderResource, RHI::GPUResourceState::ShaderResourceCompute),
+        RHI::Renderer::MakeTextureBarrier(previousColorHistoryTexture, RHI::GPUResourceState::ShaderResource, RHI::GPUResourceState::ShaderResourceCompute),
+        RHI::Renderer::MakeTextureBarrier(previousDepthTexture, RHI::GPUResourceState::ShaderResource, RHI::GPUResourceState::ShaderResourceCompute),
+        RHI::Renderer::MakeTextureBarrier(outputColorHistoryTexture, RHI::GPUResourceState::ShaderResource, RHI::GPUResourceState::UnorderedAccess)
+    };
+    GpuTiming::ScopedTimer gpuScope(gpuTiming, mainCommandList, GpuTiming::Tag::TAAResolve);
+
+    RHI::renderer->Barrier(mainCommandList, startBarriers, COUNT_OF(startBarriers));
+
+    RHI::renderer->SetPSO(mainCommandList, frameTAAResolvePSO);
+    RHI::renderer->SetConstantBuffer(mainCommandList, 0, taaResolveConstantBuffer);
+    RHI::renderer->SetTexture(mainCommandList, 0, false, inputTexture);
+    RHI::renderer->SetTexture(mainCommandList, 1, false, velocityTexture);
+    RHI::renderer->SetTexture(mainCommandList, 2, false, depthTexture);
+    RHI::renderer->SetTexture(mainCommandList, 3, false, previousColorHistoryTexture);
+    RHI::renderer->SetTexture(mainCommandList, 4, false, previousDepthTexture);
+    RHI::renderer->SetTexture(mainCommandList, 0, true, outputColorHistoryTexture);
+
+    const uint32_t threadGroupCountX = (taaResolveParams.outputSize.x + TAAResolveBlockSizeX - 1) / TAAResolveBlockSizeX;
+    const uint32_t threadGroupCountY = (taaResolveParams.outputSize.y + TAAResolveBlockSizeY - 1) / TAAResolveBlockSizeY;
+    RHI::renderer->Dispatch(mainCommandList, threadGroupCountX, threadGroupCountY, 1);
+
+    RHI::GPUBarrier endBarriers[] = {
+        RHI::Renderer::MakeTextureBarrier(inputTexture, RHI::GPUResourceState::ShaderResourceCompute, RHI::GPUResourceState::ShaderResource),
+        RHI::Renderer::MakeTextureBarrier(velocityTexture, RHI::GPUResourceState::ShaderResourceCompute, RHI::GPUResourceState::ShaderResource),
+        RHI::Renderer::MakeTextureBarrier(depthTexture, RHI::GPUResourceState::ShaderResourceCompute, RHI::GPUResourceState::ShaderResource),
+        RHI::Renderer::MakeTextureBarrier(previousColorHistoryTexture, RHI::GPUResourceState::ShaderResourceCompute, RHI::GPUResourceState::ShaderResource),
+        RHI::Renderer::MakeTextureBarrier(previousDepthTexture, RHI::GPUResourceState::ShaderResourceCompute, RHI::GPUResourceState::ShaderResource),
+        RHI::Renderer::MakeTextureBarrier(outputColorHistoryTexture, RHI::GPUResourceState::UnorderedAccess, RHI::GPUResourceState::ShaderResource)
+    };
+    RHI::renderer->Barrier(mainCommandList, endBarriers, COUNT_OF(endBarriers));
+
+    return true;
+}
+
 bool RenderBackend::DispatchBloom() {
     PROFILER_CPU_SCOPED_EVENT("RenderBackend::DispatchBloom");
 
@@ -121,7 +255,7 @@ bool RenderBackend::DispatchPyramidBloom() {
         return false;
     }
 
-    RHI::Texture *inputColorTexture = currentVisCamera->rtColorTexture;
+    RHI::Texture *inputColorTexture = currentPostProcessInputTexture ? currentPostProcessInputTexture : currentVisCamera->rtColorTexture;
     RHI::Texture *bloomDownTexture = currentVisCamera->bloomDownTexture;
     RHI::Texture *bloomUpTexture = currentVisCamera->bloomUpTexture;
 
@@ -390,7 +524,7 @@ bool RenderBackend::DispatchConvolutionBloomScreenPrefilter() {
         return false;
     }
 
-    RHI::Texture *inputTexture = currentVisCamera->rtColorTexture;
+    RHI::Texture *inputTexture = currentPostProcessInputTexture ? currentPostProcessInputTexture : currentVisCamera->rtColorTexture;
     RHI::Buffer *outputBuffer = currentVisCamera->fftBloomScreenSpatialBuffer;
 
     RHI::GPUBarrier startBarriers[] = {
@@ -560,10 +694,11 @@ bool RenderBackend::DispatchToneMapping(bool useBloom) {
     }
 
     RHI::Buffer *luminanceBuffer = currentVisCamera->luminanceBuffer;
-    RHI::Texture *inputTexture = currentVisCamera->rtColorTexture;
+    RHI::Texture *inputTexture = currentPostProcessInputTexture ? currentPostProcessInputTexture : currentVisCamera->rtColorTexture;
     RHI::Texture *outputTexture = currentVisCamera->postProcessColorTexture;
     RHI::Texture *bloomTexture = inputTexture;
     RHI::ViewID bloomViewID = RHI::ViewID::PrimaryID;
+
     if (useBloom) {
         const RenderBloomMode bloomMode = static_cast<RenderBloomMode>(BE1::Clamp(r_bloom.GetInteger(), static_cast<int>(RenderBloomMode::Off), static_cast<int>(RenderBloomMode::Convolution)));
         const bool useConvolutionBloom = bloomMode == RenderBloomMode::Convolution;

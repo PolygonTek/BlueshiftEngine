@@ -86,12 +86,15 @@ struct VisCamera {
     static constexpr int        MaxRenderPasses = 8;
 
     ALIGN_AS32 BE1::Mat4        viewMatrix;
-    ALIGN_AS32 BE1::Mat4        viewProjMatrix;
-    ALIGN_AS32 BE1::Mat4        invViewProjMatrix;
-    ALIGN_AS32 BE1::Mat4        prevViewProjMatrix;
-    ALIGN_AS32 BE1::Mat4        prevInvViewProjMatrix;
+    ALIGN_AS32 BE1::Mat4        viewProjMatrix;         // jittered
+    ALIGN_AS32 BE1::Mat4        invViewProjMatrix;      // inverse jittered
+    ALIGN_AS32 BE1::Mat4        prevViewProjMatrix;     // jittered previous
+    ALIGN_AS32 BE1::Mat4        prevInvViewProjMatrix;  // inverse jittered previous
     ALIGN_AS32 BE1::Mat4        hiZCullViewProjMatrix;
     ALIGN_AS32 BE1::AABB        worldAABB;
+
+    BE1::Vec2                   jitterNDC = BE1::Vec2::zero;
+    BE1::Vec2                   prevJitterNDC = BE1::Vec2::zero;
 
     uint32_t                    index = ~0;
 
@@ -113,6 +116,11 @@ struct VisCamera {
     RenderCameraClearColorMode  clearColorMode;
     BE1::Color4                 clearColor;
     RHI::ProjectionPolicy       projectionPolicy;
+    float                       projectionDepthA = 0.0f;
+    float                       projectionDepthB = 0.0f;
+    bool                        projectionOrthogonal = false;
+    float                       ndcDepthScale = 1.0f;
+    float                       ndcDepthBias = 0.0f;
     RenderCameraFlag            flags = RenderCameraFlag::NoFlag;
 
     RHI::Texture *              rtColorTexture = nullptr;
@@ -120,6 +128,11 @@ struct VisCamera {
     RHI::Texture *              depthTexture = nullptr;
     RHI::Texture *              rtNormalTexture = nullptr;
     RHI::Texture *              rtVelocityTexture = nullptr;
+    RHI::Texture *              postProcessColorTexture = nullptr;
+    RHI::Texture *              colorHistoryTextures[2] = {};
+    RHI::Texture *              depthHistoryTextures[2] = {};
+    uint32_t                    currentHistoryTextureIndex = 0;
+    bool                        historyValid = false;
 
     bool                        generateHiZ = false;
     RHI::Texture *              hiZTexture = nullptr;
@@ -134,14 +147,9 @@ struct VisCamera {
 
     bool                        hiZDebugPreview = false;
     RHI::Texture *              hiZDebugPreviewTexture = nullptr;
-    float                       hiZDebugProjectionDepthA = 0.0f;
-    float                       hiZDebugProjectionDepthB = 0.0f;
-    float                       hiZDebugNDCDepthScale = 1.0f;
-    float                       hiZDebugNDCDepthBias = 0.0f;
     float                       hiZDebugLinearDepthScale = 1.0f;
-    uint32_t                    hiZDebugOrthogonal = 0;
 
-    RHI::Texture *              postProcessColorTexture = nullptr;
+    bool                        taaResolve = false;
     RHI::Buffer *               luminanceBuffer = nullptr;
 
     RHI::Texture *              bloomDownTexture = nullptr;

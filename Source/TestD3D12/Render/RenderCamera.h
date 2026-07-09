@@ -15,6 +15,7 @@
 #pragma once
 
 #include "RHI/RHI.h"
+#include "RenderCvars.h"
 
 class RenderWorld;
 class Texture;
@@ -138,7 +139,7 @@ public:
     void                        SetConvolutionBloomPaddingTrim(float paddingTrim);
 
     void                        EnsureRenderTextures(uint32_t width, uint32_t height, RHI::Format colorFormat, RHI::Format depthFormat, uint32_t sampleCount, const BE1::Color4 &optimizedClearColor);
-    void                        EnsurePostProcessResources();
+    void                        EnsurePostProcessResources(bool skipPostProcess, bool useHistoryTextures, RenderBloomMode bloomMode);
 
     void                        InvalidateTemporalHistory();
 
@@ -149,6 +150,14 @@ public:
     RHI::Texture *              GetDepthTexture() const { return depthTexture; }
     RHI::Texture *              GetRTNormalTexture() const { return rtNormalTexture; }
     RHI::Texture *              GetRTVelocityTexture() const { return rtVelocityTexture; }
+    RHI::Texture *              GetColorHistoryTexture(uint32_t index) const { return colorHistoryTextures[index % 2]; }
+    RHI::Texture *              GetCurrentColorHistoryTexture() const { return colorHistoryTextures[currentHistoryTextureIndex]; }
+    RHI::Texture *              GetPreviousColorHistoryTexture() const { return colorHistoryTextures[currentHistoryTextureIndex ^ 1]; }
+    RHI::Texture *              GetDepthHistoryTexture(uint32_t index) const { return depthHistoryTextures[index % 2]; }
+    RHI::Texture *              GetCurrentDepthHistoryTexture() const { return depthHistoryTextures[currentHistoryTextureIndex]; }
+    RHI::Texture *              GetPreviousDepthHistoryTexture() const { return depthHistoryTextures[currentHistoryTextureIndex ^ 1]; }
+    uint32_t                    GetCurrentHistoryTextureIndex() const { return currentHistoryTextureIndex; }
+    bool                        IsHistoryValid() const { return historyValid && !temporalHistoryInvalidated; }
 
     RHI::Texture *              GetHiZTexture() const { return hiZTexture; }
     const RHI::ViewID *         GetHiZMipSRVs() const { return hiZMipSRVs; }
@@ -157,7 +166,7 @@ public:
     const uint32_t *            GetHiZMipHeights() const { return hiZMipHeights; }
     uint32_t                    GetHiZMipCount() const { return hiZMipCount; }
     RHI::Texture *              GetHiZDebugPreviewTexture() const { return hiZDebugPreviewTexture; }
-    bool                        HasPreviousHiZ() const { return hasPreviousHiZ; }
+    bool                        IsPreviousHiZValid() const { return previousHiZValid; }
     RHI::Buffer *               GetHiZCullVisibleInstanceBuffer() const { return hiZCullVisibleInstanceBuffer; }
     RHI::Buffer *               GetHiZCullIndirectArgsBuffer() const { return hiZCullIndirectArgsBuffer; }
 
@@ -211,6 +220,12 @@ private:
     bool                        CreateRTVelocityTexture(uint32_t width, uint32_t height);
     bool                        CreatePostProcessColorTexture(uint32_t width, uint32_t height);
     void                        DestroyPostProcessColorTexture();
+    bool                        EnsureColorHistoryTextures(uint32_t width, uint32_t height, RHI::Format colorFormat);
+    bool                        CreateColorHistoryTextures(uint32_t width, uint32_t height, RHI::Format colorFormat);
+    void                        DestroyColorHistoryTextures();
+    bool                        EnsureDepthHistoryTextures(uint32_t width, uint32_t height);
+    bool                        CreateDepthHistoryTextures(uint32_t width, uint32_t height);
+    void                        DestroyDepthHistoryTextures();
     bool                        CreatePyramidBloomTextures(uint32_t width, uint32_t height, uint32_t requestedBloomMipMaxLevelCount);
     void                        DestroyPyramidBloomTextures();
     bool                        CreateConvolutionBloomResources(uint32_t size);
@@ -221,6 +236,7 @@ private:
     void                        MarkConvolutionBloomKernelClean() { fftBloomKernelDirty = false; }
     void                        CreateLuminanceBuffer();
     void                        DestroyLuminanceBuffer();
+    void                        UpdateTemporalJitter(bool enableJitter, uint32_t sampleCount);
 
     RenderCameraDesc            desc;
     BE1::Frustum                frustum;
@@ -230,11 +246,24 @@ private:
 
     ALIGN_AS32 BE1::Mat4        viewMatrix;
     ALIGN_AS32 BE1::Mat4        projMatrix;
+
     ALIGN_AS32 BE1::Mat4        viewProjMatrix;
     ALIGN_AS32 BE1::Mat4        invViewProjMatrix;
+    ALIGN_AS32 BE1::Mat4        jitteredViewProjMatrix;
+    ALIGN_AS32 BE1::Mat4        jitteredInvViewProjMatrix;
+
     ALIGN_AS32 BE1::Mat4        previousViewProjMatrix;
     ALIGN_AS32 BE1::Mat4        previousInvViewProjMatrix;
+    ALIGN_AS32 BE1::Mat4        previousJitteredViewProjMatrix;
+    ALIGN_AS32 BE1::Mat4        previousJitteredInvViewProjMatrix;
+
     ALIGN_AS32 BE1::Mat4        hiZCullViewProjMatrix;
+
+    BE1::Vec2                   currentJitter = BE1::Vec2::zero;
+    BE1::Vec2                   previousJitter = BE1::Vec2::zero;
+    uint32_t                    temporalFrameIndex = 0;
+    uint32_t                    temporalJitterSampleCount = 0;
+    bool                        temporalJitterActive = false;
     bool                        previousMatrixValid = false;
     bool                        temporalHistoryInvalidated = false;
 
@@ -249,6 +278,8 @@ private:
     RHI::Texture *              depthTexture = nullptr;
     RHI::Texture *              rtNormalTexture = nullptr;
     RHI::Texture *              rtVelocityTexture = nullptr;
+    RHI::Texture *              postProcessColorTexture = nullptr;
+
     RHI::Texture *              hiZTexture = nullptr;
     RHI::ViewID                 hiZMipSRVs[RenderHiZMaxLevelCount] = {};
     RHI::ViewID                 hiZMipUAVs[RenderHiZMaxLevelCount] = {};
@@ -256,10 +287,14 @@ private:
     uint32_t                    hiZMipHeights[RenderHiZMaxLevelCount] = {};
     uint32_t                    hiZMipCount = 0;
     RHI::Texture *              hiZDebugPreviewTexture = nullptr;
-    bool                        hasPreviousHiZ = false;
     RHI::Buffer *               hiZCullVisibleInstanceBuffer = nullptr;
     RHI::Buffer *               hiZCullIndirectArgsBuffer = nullptr;
-    RHI::Texture *              postProcessColorTexture = nullptr;
+    bool                        previousHiZValid = false;
+
+    RHI::Texture *              colorHistoryTextures[2] = {};
+    RHI::Texture *              depthHistoryTextures[2] = {};
+    uint32_t                    currentHistoryTextureIndex = 0;
+    bool                        historyValid = false;
 
     RHI::Texture *              bloomDownTexture = nullptr;
     RHI::Texture *              bloomUpTexture = nullptr;

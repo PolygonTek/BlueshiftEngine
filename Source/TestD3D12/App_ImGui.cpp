@@ -486,7 +486,7 @@ void App::BuildImGuiOverlay() {
     };
     bool hiZDebugPreviewOpen = false;
 
-    ImGui::SetNextWindowSizeConstraints(ImVec2(fontSize * 27.0f, fontSize * 8.0f), ImVec2(FLT_MAX, FLT_MAX));
+    ImGui::SetNextWindowSizeConstraints(ImVec2(fontSize * 28.0f, fontSize * 8.0f), ImVec2(FLT_MAX, FLT_MAX));
     ImGui::Begin("TestD3D12", nullptr, ImGuiWindowFlags_AlwaysAutoResize);
 
     if (ImGui::BeginTabBar("TestD3D12Tabs")) {
@@ -533,18 +533,6 @@ void App::BuildImGuiOverlay() {
             bool depthPrepass = r_depthPrepass.GetBool();
             if (ImGui::Checkbox("Depth prepass", &depthPrepass)) {
                 r_depthPrepass.SetBool(depthPrepass);
-            }
-
-            static constexpr int msaaSampleCounts[] = { 1, 2, 4, 8 };
-            int msaaSampleCount = r_msaa.GetInteger();
-            int msaaSampleCountIndex = msaaSampleCount >= 8 ? 3 : (msaaSampleCount >= 4 ? 2 : (msaaSampleCount >= 2 ? 1 : 0));
-            ImGui::SetNextItemWidth(fontSize * 12.0f);
-            if (ImGui::Combo("MSAA", &msaaSampleCountIndex,
-                "Off\0"
-                "2x\0"
-                "4x\0"
-                "8x\0")) {
-                r_msaa.SetInteger(msaaSampleCounts[msaaSampleCountIndex]);
             }
 
             if (roundedCollapsingHeader("Skip options##RenderSkipOptionsHeader")) {
@@ -603,6 +591,54 @@ void App::BuildImGuiOverlay() {
                     }
                 } else {
                     ImGui::TextUnformatted("Hi-Z texture is unavailable.");
+                }
+            }
+
+            if (roundedCollapsingHeader("Anti-aliasing##AntiAliasingHeader")) {
+                static constexpr int msaaSampleCounts[] = { 1, 2, 4, 8 };
+                int msaaSampleCount = r_msaa.GetInteger();
+                int msaaSampleCountIndex = msaaSampleCount >= 8 ? 3 : (msaaSampleCount >= 4 ? 2 : (msaaSampleCount >= 2 ? 1 : 0));
+                ImGui::SetNextItemWidth(fontSize * 12.0f);
+                if (ImGui::Combo("MSAA", &msaaSampleCountIndex,
+                    "Off\0"
+                    "2x\0"
+                    "4x\0"
+                    "8x\0")) {
+                    r_msaa.SetInteger(msaaSampleCounts[msaaSampleCountIndex]);
+                }
+
+                bool taa = r_taa.GetBool();
+                if (ImGui::Checkbox("TAA", &taa)) {
+                    r_taa.SetBool(taa);
+                }
+
+                bool taaJitter = r_taaJitter.GetBool();
+                if (ImGui::Checkbox("TAA jitter", &taaJitter)) {
+                    r_taaJitter.SetBool(taaJitter);
+                }
+
+                int taaJitterSampleCount = BE1::Clamp(r_taaJitterSampleCount.GetInteger(), static_cast<int>(r_taaJitterSampleCount.GetMinValue()), static_cast<int>(r_taaJitterSampleCount.GetMaxValue()));
+                ImGui::SetNextItemWidth(fontSize * 12.0f);
+                if (ImGui::SliderInt("TAA jitter samples", &taaJitterSampleCount, static_cast<int>(r_taaJitterSampleCount.GetMinValue()), static_cast<int>(r_taaJitterSampleCount.GetMaxValue()))) {
+                    r_taaJitterSampleCount.SetInteger(taaJitterSampleCount);
+                }
+
+                float taaHistoryWeight = BE1::Clamp(r_taaHistoryWeight.GetFloat(), r_taaHistoryWeight.GetMinValue(), r_taaHistoryWeight.GetMaxValue());
+                ImGui::SetNextItemWidth(fontSize * 12.0f);
+                if (ImGui::SliderFloat("TAA history weight", &taaHistoryWeight, r_taaHistoryWeight.GetMinValue(), r_taaHistoryWeight.GetMaxValue(), "%.3f")) {
+                    r_taaHistoryWeight.SetFloat(taaHistoryWeight);
+                }
+
+                float taaMaxSubpixelCurrentWeight = BE1::Clamp(r_taaMaxSubpixelCurrentWeight.GetFloat(), r_taaMaxSubpixelCurrentWeight.GetMinValue(), r_taaMaxSubpixelCurrentWeight.GetMaxValue());
+                ImGui::SetNextItemWidth(fontSize * 12.0f);
+                if (ImGui::SliderFloat("TAA max subpixel current weight", &taaMaxSubpixelCurrentWeight, r_taaMaxSubpixelCurrentWeight.GetMinValue(), r_taaMaxSubpixelCurrentWeight.GetMaxValue(), "%.3f")) {
+                    r_taaMaxSubpixelCurrentWeight.SetFloat(taaMaxSubpixelCurrentWeight);
+                }
+
+                float taaDepthFallbackThreshold = BE1::Clamp(r_taaDepthFallbackThreshold.GetFloat(), r_taaDepthFallbackThreshold.GetMinValue(), r_taaDepthFallbackThreshold.GetMaxValue());
+                ImGui::SetNextItemWidth(fontSize * 12.0f);
+                if (ImGui::DragFloat("TAA depth fallback threshold", &taaDepthFallbackThreshold, 0.05f, r_taaDepthFallbackThreshold.GetMinValue(), r_taaDepthFallbackThreshold.GetMaxValue(), "%.3f")) {
+                    r_taaDepthFallbackThreshold.SetFloat(taaDepthFallbackThreshold);
                 }
             }
 

@@ -156,20 +156,34 @@ void RenderWorld::RenderScene(RenderCamera *renderCamera) {
     const uint32_t renderWidth = renderCamera->desc.renderWidth > 0 ? renderCamera->desc.renderWidth : (outputRect.w > 0 ? static_cast<uint32_t>(outputRect.w) : 0);
     const uint32_t renderHeight = renderCamera->desc.renderHeight > 0 ? renderCamera->desc.renderHeight : (outputRect.h > 0 ? static_cast<uint32_t>(outputRect.h) : 0);
 
+    if (renderWidth <= 0 || renderHeight <= 0) {
+        return;
+    }
+
+    renderCamera->EnsureRenderTextures(renderWidth, renderHeight, renderContext->GetMainRTColorFormat(), renderContext->GetMainRTDepthFormat(), renderContext->GetMainRTSampleCount(), renderContext->GetBaseClearColor());
+
+    const bool skipPostProcess = r_skipPostProcess.GetBool() || BE1::HasFlag(renderCamera->desc.flags, RenderCameraFlag::SkipPostProcess);
+    const bool temporalHistoryEnabled = !BE1::HasFlag(renderCamera->desc.flags, RenderCameraFlag::DisableTemporalHistory);
+    const bool useTAA = temporalHistoryEnabled && r_taa.GetBool() && !skipPostProcess;
+    const RenderBloomMode bloomMode = static_cast<RenderBloomMode>(BE1::Clamp(r_bloom.GetInteger(), static_cast<int>(RenderBloomMode::Off), static_cast<int>(RenderBloomMode::Convolution)));
+
+    renderCamera->EnsurePostProcessResources(skipPostProcess, useTAA, bloomMode);
+
+    const bool temporalJitterEnabled = useTAA && r_taaJitter.GetBool();
+    const uint32_t temporalJitterSampleCount = static_cast<uint32_t>(BE1::Max(r_taaJitterSampleCount.GetInteger(), 1));
+
+    renderCamera->UpdateTemporalJitter(temporalJitterEnabled, temporalJitterSampleCount);
+
+    const bool canUseHiZ = renderCamera->GetDepthTexture() != nullptr;
+    const bool requestHiZOcclusionCulling = !BE1::HasFlag(renderCamera->desc.flags, RenderCameraFlag::DisableHiZCulling) && canUseHiZ && r_hiZOcclusionCulling.GetBool();
+    const bool requestHiZDebugPreview = canUseHiZ && r_hiZDebugPreview.GetBool() && renderCamera->EnsureHiZDebugPreviewTexture(renderWidth, renderHeight);
+    const bool requestHiZGeneration = requestHiZOcclusionCulling;
+
     // RenderCamera 정보를 기반으로 프레임 데이터에 필요한 VisCamera 를 구성한다.
     VisCamera *visCamera = frameData->AllocVisCamera();
     if (!visCamera) {
         return;
     }
-
-    renderCamera->EnsureRenderTextures(renderWidth, renderHeight, renderContext->GetMainRTColorFormat(), renderContext->GetMainRTDepthFormat(), renderContext->GetMainRTSampleCount(), renderContext->GetBaseClearColor());
-    renderCamera->EnsurePostProcessResources();
-
-    const RenderBloomMode bloomMode = static_cast<RenderBloomMode>(BE1::Clamp(r_bloom.GetInteger(), static_cast<int>(RenderBloomMode::Off), static_cast<int>(RenderBloomMode::Convolution)));
-    const bool canUseHiZ = renderCamera->GetDepthTexture() != nullptr;
-    const bool requestHiZOcclusionCulling = !BE1::HasFlag(renderCamera->desc.flags, RenderCameraFlag::DisableHiZCulling) && canUseHiZ && r_hiZOcclusionCulling.GetBool();
-    const bool requestHiZDebugPreview = canUseHiZ && r_hiZDebugPreview.GetBool() && renderCamera->EnsureHiZDebugPreviewTexture(renderWidth, renderHeight);
-    const bool requestHiZGeneration = requestHiZOcclusionCulling;
 
     visCamera->maxVisSurfs = VisCamera::MaxVisSurfs;
     visCamera->visSurfs = (const VisSurf **)frameData->MemAlloc(visCamera->maxVisSurfs * sizeof(VisSurf *));
@@ -182,6 +196,18 @@ void RenderWorld::RenderScene(RenderCamera *renderCamera) {
     visCamera->clearColorMode = renderCamera->desc.clearColorMode;
     visCamera->clearColor = renderCamera->desc.clearColor;
     visCamera->projectionPolicy = renderCamera->desc.projectionPolicy;
+    visCamera->projectionDepthA = renderCamera->projMatrix[2][2];
+    visCamera->projectionDepthB = renderCamera->projMatrix[2][3];
+    visCamera->projectionOrthogonal = renderCamera->desc.orthogonal;
+
+    if (visCamera->projectionPolicy.IsZNegativeOneToOne()) {
+        visCamera->ndcDepthScale = 2.0f;
+        visCamera->ndcDepthBias = -1.0f;
+    } else {
+        visCamera->ndcDepthScale = 1.0f;
+        visCamera->ndcDepthBias = 0.0f;
+    }
+
     visCamera->flags = renderCamera->desc.flags;
     visCamera->rtColorTexture = renderCamera->GetRTColorTexture();
     visCamera->rtColorMSAATexture = renderCamera->GetRTColorMSAATexture();
@@ -201,7 +227,7 @@ void RenderWorld::RenderScene(RenderCamera *renderCamera) {
             visCamera->hiZMipHeights[mipLevel] = renderCamera->GetHiZMipHeights()[mipLevel];
         }
 
-        visCamera->hiZOcclusionCulling = renderCamera->HasPreviousHiZ() && requestHiZOcclusionCulling;
+        visCamera->hiZOcclusionCulling = renderCamera->IsPreviousHiZValid() && requestHiZOcclusionCulling;
         if (visCamera->hiZOcclusionCulling) {
             visCamera->hiZCullVisibleInstanceBuffer = renderCamera->GetHiZCullVisibleInstanceBuffer();
             visCamera->hiZCullIndirectArgsBuffer = renderCamera->GetHiZCullIndirectArgsBuffer();
@@ -210,42 +236,53 @@ void RenderWorld::RenderScene(RenderCamera *renderCamera) {
         visCamera->hiZDebugPreview = requestHiZDebugPreview;
         if (visCamera->hiZDebugPreview) {
             visCamera->hiZDebugPreviewTexture = renderCamera->GetHiZDebugPreviewTexture();
-            visCamera->hiZDebugProjectionDepthA = renderCamera->projMatrix[2][2];
-            visCamera->hiZDebugProjectionDepthB = renderCamera->projMatrix[2][3];
-            visCamera->hiZDebugNDCDepthScale = renderCamera->desc.projectionPolicy.IsZNegativeOneToOne() ? 2.0f : 1.0f;
-            visCamera->hiZDebugNDCDepthBias = renderCamera->desc.projectionPolicy.IsZNegativeOneToOne() ? -1.0f : 0.0f;
             visCamera->hiZDebugLinearDepthScale = renderCamera->desc.zFar > 0.0f ? 1.0f / renderCamera->desc.zFar : 1.0f;
-            visCamera->hiZDebugOrthogonal = renderCamera->desc.orthogonal ? 1u : 0u;
         }
     }
 
     visCamera->postProcessColorTexture = renderCamera->GetPostProcessColorTexture();
+    visCamera->colorHistoryTextures[0] = renderCamera->GetColorHistoryTexture(0);
+    visCamera->colorHistoryTextures[1] = renderCamera->GetColorHistoryTexture(1);
+    visCamera->depthHistoryTextures[0] = renderCamera->GetDepthHistoryTexture(0);
+    visCamera->depthHistoryTextures[1] = renderCamera->GetDepthHistoryTexture(1);
+    visCamera->currentHistoryTextureIndex = renderCamera->GetCurrentHistoryTextureIndex();
+    visCamera->historyValid = renderCamera->IsHistoryValid();
     visCamera->luminanceBuffer = renderCamera->GetLuminanceBuffer();
 
-    if (bloomMode == RenderBloomMode::Pyramid) {
-        SetupPyramidBloom(frameData, renderCamera, visCamera);
-    } else if (bloomMode == RenderBloomMode::Convolution) {
-        SetupConvolutionBloom(frameData, renderCamera, visCamera);
+    if (!skipPostProcess) {
+        if (bloomMode == RenderBloomMode::Pyramid) {
+            SetupPyramidBloom(frameData, renderCamera, visCamera);
+        } else if (bloomMode == RenderBloomMode::Convolution) {
+            SetupConvolutionBloom(frameData, renderCamera, visCamera);
+        }
     }
 
     visCamera->worldAABB.Clear();
     visCamera->is2D = false;
     visCamera->viewMatrix = renderCamera->viewMatrix;
-    visCamera->viewProjMatrix = renderCamera->viewProjMatrix;
-    visCamera->invViewProjMatrix = renderCamera->invViewProjMatrix;
 
-    const bool temporalHistoryEnabled = !BE1::HasFlag(renderCamera->desc.flags, RenderCameraFlag::DisableTemporalHistory);
+    const BE1::Vec2 jitterToNDCScale(2.0f / static_cast<float>(renderWidth), -2.0f / static_cast<float>(renderHeight));
+
+    // Rasterization 은 jittered 행렬을 사용하고, velocity 계산용 unjittered 행렬은 backend 에서 jitter 를 제거해 복원한다.
+    visCamera->viewProjMatrix = renderCamera->jitteredViewProjMatrix;
+    visCamera->invViewProjMatrix = renderCamera->jitteredInvViewProjMatrix;
+    visCamera->jitterNDC = renderCamera->currentJitter * jitterToNDCScale;
+
     const bool usePreviousMatrix = temporalHistoryEnabled && renderCamera->previousMatrixValid && !renderCamera->temporalHistoryInvalidated;
 
     if (usePreviousMatrix) {
-        visCamera->prevViewProjMatrix = renderCamera->previousViewProjMatrix;
-        visCamera->prevInvViewProjMatrix = renderCamera->previousInvViewProjMatrix;
+        visCamera->prevViewProjMatrix = renderCamera->previousJitteredViewProjMatrix;
+        visCamera->prevInvViewProjMatrix = renderCamera->previousJitteredInvViewProjMatrix;
+        visCamera->prevJitterNDC = renderCamera->previousJitter * jitterToNDCScale;
     } else {
-        visCamera->prevViewProjMatrix = renderCamera->viewProjMatrix;
-        visCamera->prevInvViewProjMatrix = renderCamera->invViewProjMatrix;
+        visCamera->prevViewProjMatrix = renderCamera->jitteredViewProjMatrix;
+        visCamera->prevInvViewProjMatrix = renderCamera->jitteredInvViewProjMatrix;
+        visCamera->prevJitterNDC = visCamera->jitterNDC;
     }
 
-    if (!r_hiZOcclusionCullingFreeze.GetBool() || !renderCamera->hasPreviousHiZ) {
+    visCamera->taaResolve = useTAA;
+
+    if (!r_hiZOcclusionCullingFreeze.GetBool() || !renderCamera->previousHiZValid) {
         renderCamera->hiZCullViewProjMatrix = visCamera->prevViewProjMatrix;
     }
     visCamera->hiZCullViewProjMatrix = renderCamera->hiZCullViewProjMatrix;
@@ -255,12 +292,21 @@ void RenderWorld::RenderScene(RenderCamera *renderCamera) {
     if (temporalHistoryEnabled) {
         renderCamera->previousViewProjMatrix = renderCamera->viewProjMatrix;
         renderCamera->previousInvViewProjMatrix = renderCamera->invViewProjMatrix;
+        renderCamera->previousJitteredViewProjMatrix = renderCamera->jitteredViewProjMatrix;
+        renderCamera->previousJitteredInvViewProjMatrix = renderCamera->jitteredInvViewProjMatrix;
         renderCamera->previousMatrixValid = true;
         renderCamera->temporalHistoryInvalidated = false;
+
+        if (visCamera->taaResolve) {
+            renderCamera->historyValid = true;
+            renderCamera->currentHistoryTextureIndex ^= 1;
+        } else {
+            renderCamera->historyValid = false;
+        }
     }
 
     if (!r_hiZOcclusionCullingFreeze.GetBool()) {
-        renderCamera->hasPreviousHiZ = visCamera->generateHiZ;
+        renderCamera->previousHiZValid = visCamera->generateHiZ;
     }
 }
 
@@ -760,8 +806,22 @@ void RenderWorld::DrawGUICamera(RenderFrameData *frameData, uint32_t screenWidth
     visCamera->viewMatrix = BE1::Mat4::identity;
     visCamera->viewProjMatrix.SetOrthoRH(0, screenWidth, screenHeight, 0, -1.0, 1.0, true); // Y 를 뒤집는다.
     visCamera->invViewProjMatrix = visCamera->viewProjMatrix.Inverse();
+    visCamera->projectionDepthA = visCamera->viewProjMatrix[2][2];
+    visCamera->projectionDepthB = visCamera->viewProjMatrix[2][3];
+    visCamera->projectionOrthogonal = true;
+
+    if (visCamera->projectionPolicy.IsZNegativeOneToOne()) {
+        visCamera->ndcDepthScale = 2.0f;
+        visCamera->ndcDepthBias = -1.0f;
+    } else {
+        visCamera->ndcDepthScale = 1.0f;
+        visCamera->ndcDepthBias = 0.0f;
+    }
+
     visCamera->prevViewProjMatrix = visCamera->viewProjMatrix;
     visCamera->prevInvViewProjMatrix = visCamera->invViewProjMatrix;
+    visCamera->jitterNDC = BE1::Vec2::zero;
+    visCamera->prevJitterNDC = BE1::Vec2::zero;
     visCamera->hiZCullViewProjMatrix = visCamera->viewProjMatrix;
     visCamera->worldAABB.Clear();
     visCamera->is2D = true;

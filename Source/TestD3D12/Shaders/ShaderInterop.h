@@ -52,6 +52,9 @@ static const uint GenMip3DBlockSizeZ = 8;
 static const uint MipGenOptionBitPreserveCoverage = 1 << 0;
 static const uint MipGenOptionBitSRGB = 1 << 1;
 
+static const uint DepthHistoryResolveBlockSizeX = 16;
+static const uint DepthHistoryResolveBlockSizeY = 16;
+
 static const uint LuminanceBlockSize = 32;
 static const uint LuminanceHistogramBinCount = LuminanceBlockSize * LuminanceBlockSize;
 static const uint LuminanceBufferOffsetExposure = 0;
@@ -60,6 +63,9 @@ static const uint LuminanceBufferOffsetHistogram = LuminanceBufferOffsetLuminanc
 
 static const uint ToneMappingBlockSizeX = 16;
 static const uint ToneMappingBlockSizeY = 16;
+
+static const uint TAAResolveBlockSizeX = 16;
+static const uint TAAResolveBlockSizeY = 16;
 
 static const uint ToneMappingOperatorLinear = 0;
 static const uint ToneMappingOperatorExponential = 1;
@@ -136,6 +142,26 @@ struct ToneMappingParams {
     uint toneMappingOperator;
     float bloomIntensity;
     float padding0;
+};
+
+struct TAAResolveParams {
+    uint2 outputSize;
+    float2 outputTexelSize;
+    float historyWeight;
+    uint historyValid;
+    uint useMinDepth;
+    uint orthogonal;
+    float2 projectionDepthParams;
+    float2 ndcDepthScaleBias;
+    float depthFallbackThreshold;
+    float maxSubpixelCurrentWeight;
+    float2 padding0;
+};
+
+struct DepthHistoryResolveParams {
+    uint2 outputSize;
+    uint useMinDepth;
+    uint padding0;
 };
 
 struct FullscreenImageParams {
@@ -229,9 +255,14 @@ struct FrameConstants {
 struct CameraConstants {
     row_major float4x4 viewProjMatrix;
     row_major float4x4 invViewProjMatrix;
+    row_major float4x4 unjitteredViewProjMatrix;
+
     row_major float4x4 prevViewProjMatrix;
     row_major float4x4 prevInvViewProjMatrix;
+    row_major float4x4 prevUnjitteredViewProjMatrix;
+
     row_major float4x4 hiZCullViewProjMatrix;
+
     uint surfaceTableIndex;
     float ndcFarZ;
     uint padding1;
@@ -245,6 +276,7 @@ struct SurfaceDrawParams {
 struct ShaderSurface {
     row_major float3x4 worldMatrix;
     row_major float3x4 prevWorldMatrix;
+
     float4 localBoundingSphere;
     uint shaderMaterialIndex;
     uint padding0;
