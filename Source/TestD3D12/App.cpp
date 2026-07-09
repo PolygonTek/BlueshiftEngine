@@ -65,6 +65,10 @@ void App::Init(void *mainWindowHandle) {
     cameraDistance = targetCameraDistance;
     cameraCenter = targetCameraCenter;
 
+    const BE1::Mat3 targetCameraAxis = BE1::Angles(0.0f, targetCameraPitch, targetCameraYaw).ToMat3();
+    targetCameraOrigin = targetCameraCenter - targetCameraAxis[0] * targetCameraDistance;
+    cameraOrigin = targetCameraOrigin;
+
     app_convolutionBloomKernelPreset.SetModified();
     app_convolutionBloomAperturePreset.SetModified();
     app_convolutionBloomKernelSource.SetModified();
@@ -343,18 +347,91 @@ void App::RotateGameObjects() {
 
 void App::UpdateCamera(uint64_t frameUsec) {
     constexpr float CameraSmoothingSpeed = 18.0f;
+    constexpr float CameraFlyFastSpeedScale = 4.0f;
 
     float dt = (float)MICRO2SEC((double)frameUsec);
     float alpha = 1.0f - BE1::Math::Exp(-CameraSmoothingSpeed * dt);
 
+    if (cameraControlMode == CameraControlMode::Fly) {
+        const BE1::Mat3 targetCameraAxis = BE1::Angles(0.0f, targetCameraPitch, targetCameraYaw).ToMat3();
+        BE1::Vec3 moveDir = BE1::Vec3::zero;
+
+        if (IsCameraMoveFlagSet(CameraMoveFlag::Forward)) {
+            moveDir = moveDir + targetCameraAxis[0];
+        }
+        if (IsCameraMoveFlagSet(CameraMoveFlag::Backward)) {
+            moveDir = moveDir - targetCameraAxis[0];
+        }
+        if (IsCameraMoveFlagSet(CameraMoveFlag::Left)) {
+            moveDir = moveDir + targetCameraAxis[1];
+        }
+        if (IsCameraMoveFlagSet(CameraMoveFlag::Right)) {
+            moveDir = moveDir - targetCameraAxis[1];
+        }
+        if (IsCameraMoveFlagSet(CameraMoveFlag::Up)) {
+            moveDir = moveDir + targetCameraAxis[2];
+        }
+        if (IsCameraMoveFlagSet(CameraMoveFlag::Down)) {
+            moveDir = moveDir - targetCameraAxis[2];
+        }
+
+        const float moveDirLengthSqr = moveDir.LengthSqr();
+        if (moveDirLengthSqr > 0.0f) {
+            const float speedScale = IsCameraMoveFlagSet(CameraMoveFlag::Fast) ? CameraFlyFastSpeedScale : 1.0f;
+            moveDir = moveDir * BE1::Math::InvSqrt(moveDirLengthSqr);
+            targetCameraOrigin = targetCameraOrigin + moveDir * (cameraFlySpeed * speedScale * dt);
+        }
+    }
+
     cameraYaw += (targetCameraYaw - cameraYaw) * alpha;
     cameraPitch += (targetCameraPitch - cameraPitch) * alpha;
     cameraDistance += (targetCameraDistance - cameraDistance) * alpha;
-    cameraCenter = cameraCenter + (targetCameraCenter - cameraCenter) * alpha;
+
+    if (cameraControlMode == CameraControlMode::Fly) {
+        cameraOrigin = cameraOrigin + (targetCameraOrigin - cameraOrigin) * alpha;
+    } else {
+        cameraCenter = cameraCenter + (targetCameraCenter - cameraCenter) * alpha;
+    }
+}
+
+void App::SetCameraControlMode(CameraControlMode mode) {
+    if (cameraControlMode == mode) {
+        return;
+    }
+
+    const BE1::Mat3 cameraAxis = BE1::Angles(0.0f, cameraPitch, cameraYaw).ToMat3();
+    const BE1::Mat3 targetCameraAxis = BE1::Angles(0.0f, targetCameraPitch, targetCameraYaw).ToMat3();
+
+    if (mode == CameraControlMode::Fly) {
+        cameraOrigin = cameraCenter - cameraAxis[0] * cameraDistance;
+        targetCameraOrigin = targetCameraCenter - targetCameraAxis[0] * targetCameraDistance;
+    } else {
+        cameraCenter = cameraOrigin + cameraAxis[0] * cameraDistance;
+        targetCameraCenter = targetCameraOrigin + targetCameraAxis[0] * targetCameraDistance;
+    }
+
+    cameraControlMode = mode;
+}
+
+bool App::IsCameraMoveFlagSet(CameraMoveFlag flag) const {
+    return (cameraMoveFlags & static_cast<uint32_t>(flag)) != 0;
+}
+
+void App::SetCameraMoveFlag(CameraMoveFlag flag, bool enabled) {
+    const uint32_t flagBit = static_cast<uint32_t>(flag);
+    if (enabled) {
+        cameraMoveFlags |= flagBit;
+    } else {
+        cameraMoveFlags &= ~flagBit;
+    }
+}
+
+void App::ClearCameraMoveFlags() {
+    cameraMoveFlags = 0;
 }
 
 void App::AddCameraMouseDelta(int deltaX, int deltaY) {
-    constexpr float MouseSensitivity = 0.18f;
+    constexpr float MouseSensitivity = 0.16f;
 
     targetCameraYaw -= deltaX * MouseSensitivity;
     targetCameraPitch += deltaY * MouseSensitivity;
@@ -390,6 +467,15 @@ void App::AddCameraDistance(int delta) {
     BE1::Clamp(targetCameraDistance, 1.0f, 1000.0f);
 }
 
+void App::GetCameraOriginAxis(BE1::Vec3 &outOrigin, BE1::Mat3 &outAxis) const {
+    outAxis = BE1::Angles(0.0f, cameraPitch, cameraYaw).ToMat3();
+    if (cameraControlMode == CameraControlMode::Fly) {
+        outOrigin = cameraOrigin;
+    } else {
+        outOrigin = cameraCenter - outAxis[0] * cameraDistance;
+    }
+}
+
 void App::TakeScreenshot() {
     BE1::cmdSystem.BufferCommandText(BE1::CmdSystem::Execution::Now, "screenshot");
 }
@@ -407,8 +493,7 @@ void App::RenderScene() {
     cameraDesc.outputRect.Set(0, 0, w, h);
     cameraDesc.renderWidth = w;
     cameraDesc.renderHeight = h;
-    cameraDesc.axis = BE1::Angles(0.0f, cameraPitch, cameraYaw).ToMat3();
-    cameraDesc.origin = cameraCenter - cameraDesc.axis[0] * cameraDistance;
+    GetCameraOriginAxis(cameraDesc.origin, cameraDesc.axis);
     RenderCamera::CalculateFov(60, 16.0f / 9.0f, aspectRatio, &cameraDesc.fovX, &cameraDesc.fovY);
     cameraDesc.zNear = BE1::MeterToUnit(0.1f);
     cameraDesc.zFar = BE1::MeterToUnit(2000.0f);

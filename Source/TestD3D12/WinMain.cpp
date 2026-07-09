@@ -56,6 +56,36 @@ static void SystemError(int errLevel, const char* text) {
     }
 }
 
+static bool SetCameraMoveFlagFromKey(WPARAM key, bool enabled) {
+    switch (key) {
+    case 'W':
+        app.SetCameraMoveFlag(App::CameraMoveFlag::Forward, enabled);
+        return true;
+    case 'S':
+        app.SetCameraMoveFlag(App::CameraMoveFlag::Backward, enabled);
+        return true;
+    case 'A':
+        app.SetCameraMoveFlag(App::CameraMoveFlag::Left, enabled);
+        return true;
+    case 'D':
+        app.SetCameraMoveFlag(App::CameraMoveFlag::Right, enabled);
+        return true;
+    case 'E':
+        app.SetCameraMoveFlag(App::CameraMoveFlag::Up, enabled);
+        return true;
+    case 'Q':
+        app.SetCameraMoveFlag(App::CameraMoveFlag::Down, enabled);
+        return true;
+    case VK_SHIFT:
+    case VK_LSHIFT:
+    case VK_RSHIFT:
+        app.SetCameraMoveFlag(App::CameraMoveFlag::Fast, enabled);
+        return true;
+    default:
+        return false;
+    }
+}
+
 static HWND CreateRenderWindow(const TCHAR* title, const TCHAR* classname, int width, int height, bool fullscreen) {
     int style = WS_VISIBLE;
     int styleEx;
@@ -334,9 +364,37 @@ LRESULT CALLBACK MainWndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lPar
         return 0;
     case WM_TIMER:
         break;
+    case WM_KILLFOCUS:
+        app.ClearCameraMoveFlags();
+        if (mouseDragMode != MouseDragMode::None) {
+            mouseDragMode = MouseDragMode::None;
+            if (GetCapture() == hwnd) {
+                ReleaseCapture();
+            }
+        }
+        break;
     case WM_KEYDOWN:
         if (wParam == VK_F11) {
             app.TakeScreenshot();
+            return 0;
+        }
+
+        // 마우스 드래그 모드가 있을 때는 ImGui 키보드 캡쳐보다 먼저 실행한다.
+        if (mouseDragMode != MouseDragMode::None && SetCameraMoveFlagFromKey(wParam, true)) {
+            return 0;
+        }
+
+#ifdef ENABLE_IMGUI
+        if (renderContext && renderContext->ImGuiWantsCaptureKeyboard()) {
+            return 0;
+        }
+#endif
+        if (SetCameraMoveFlagFromKey(wParam, true)) {
+            return 0;
+        }
+        break;
+    case WM_KEYUP:
+        if (SetCameraMoveFlagFromKey(wParam, false)) {
             return 0;
         }
 #ifdef ENABLE_IMGUI
@@ -395,7 +453,7 @@ LRESULT CALLBACK MainWndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lPar
             POINTS p = MAKEPOINTS(lParam);
             int deltaX = p.x - lastMouseX;
             int deltaY = p.y - lastMouseY;
-            if (mouseDragMode == MouseDragMode::Look) {
+            if (mouseDragMode == MouseDragMode::Look || (mouseDragMode == MouseDragMode::Pan && app.GetCameraControlMode() == App::CameraControlMode::Fly)) {
                 app.AddCameraMouseDelta(deltaX, deltaY);
             } else {
                 app.AddCameraPanDelta(deltaX, deltaY);

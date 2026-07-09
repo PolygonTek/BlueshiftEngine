@@ -515,6 +515,43 @@ void App::BuildImGuiOverlay() {
             ImGui::EndTabItem();
         }
 
+        if (ImGui::BeginTabItem("Scene")) {
+            int cameraControlModeIndex = static_cast<int>(cameraControlMode);
+            ImGui::SetNextItemWidth(fontSize * 10.0f);
+            if (ImGui::Combo("Camera", &cameraControlModeIndex,
+                "Orbit\0"
+                "Fly\0")) {
+                SetCameraControlMode(static_cast<CameraControlMode>(cameraControlModeIndex));
+            }
+
+            if (cameraControlMode == CameraControlMode::Fly) {
+                ImGui::SetNextItemWidth(fontSize * 10.0f);
+                if (ImGui::DragFloat("Fly Speed", &cameraFlySpeed, 1.0f, 1.0f, 1000.0f, "%.1f")) {
+                    cameraFlySpeed = BE1::Max(cameraFlySpeed, 1.0f);
+                }
+            }
+
+            ImGui::Separator();
+
+            ImGui::SetNextItemWidth(fontSize * 10.0f);
+            ImGui::SliderInt("Count X", &imguiGoCountX, 1, 50);
+            const bool applyCountX = ImGui::IsItemDeactivatedAfterEdit();
+
+            ImGui::SetNextItemWidth(fontSize * 10.0f);
+            ImGui::SliderInt("Count Y", &imguiGoCountY, 1, 50);
+            const bool applyCountY = ImGui::IsItemDeactivatedAfterEdit();
+
+            ImGui::SetNextItemWidth(fontSize * 10.0f);
+            ImGui::SliderInt("Count Z", &imguiGoCountZ, 1, 50);
+            const bool applyCountZ = ImGui::IsItemDeactivatedAfterEdit();
+
+            if ((applyCountX || applyCountY || applyCountZ) && (static_cast<uint32_t>(imguiGoCountX) != goCountX || static_cast<uint32_t>(imguiGoCountY) != goCountY || static_cast<uint32_t>(imguiGoCountZ) != goCountZ)) {
+                ChangeGameObjectCount(static_cast<uint32_t>(imguiGoCountX), static_cast<uint32_t>(imguiGoCountY), static_cast<uint32_t>(imguiGoCountZ));
+            }
+
+            ImGui::EndTabItem();
+        }
+
         if (ImGui::BeginTabItem("Render")) {
             bool showFps = app_showFps.GetBool();
             if (ImGui::Checkbox("Show FPS", &showFps)) {
@@ -900,26 +937,6 @@ void App::BuildImGuiOverlay() {
 
             if (roundedCollapsingHeader("Texture Viewer##TextureViewerHeader")) {
                 BuildImGuiTextureViewer();
-            }
-
-            ImGui::EndTabItem();
-        }
-
-        if (ImGui::BeginTabItem("Scene")) {
-            ImGui::SetNextItemWidth(fontSize * 10.0f);
-            ImGui::SliderInt("Count X", &imguiGoCountX, 1, 50);
-            const bool applyCountX = ImGui::IsItemDeactivatedAfterEdit();
-
-            ImGui::SetNextItemWidth(fontSize * 10.0f);
-            ImGui::SliderInt("Count Y", &imguiGoCountY, 1, 50);
-            const bool applyCountY = ImGui::IsItemDeactivatedAfterEdit();
-
-            ImGui::SetNextItemWidth(fontSize * 10.0f);
-            ImGui::SliderInt("Count Z", &imguiGoCountZ, 1, 50);
-            const bool applyCountZ = ImGui::IsItemDeactivatedAfterEdit();
-
-            if ((applyCountX || applyCountY || applyCountZ) && (static_cast<uint32_t>(imguiGoCountX) != goCountX || static_cast<uint32_t>(imguiGoCountY) != goCountY || static_cast<uint32_t>(imguiGoCountZ) != goCountZ)) {
-                ChangeGameObjectCount(static_cast<uint32_t>(imguiGoCountX), static_cast<uint32_t>(imguiGoCountY), static_cast<uint32_t>(imguiGoCountZ));
             }
 
             ImGui::EndTabItem();

@@ -26,6 +26,21 @@ class Font;
 
 class App {
 public:
+    enum class CameraControlMode {
+        Orbit,
+        Fly
+    };
+
+    enum class CameraMoveFlag : uint32_t {
+        Forward                     = BIT(0),
+        Backward                    = BIT(1),
+        Left                        = BIT(2),
+        Right                       = BIT(3),
+        Up                          = BIT(4),
+        Down                        = BIT(5),
+        Fast                        = BIT(6)
+    };
+
     enum class ConvolutionBloomKernelSource {
         Preset,
         GenerateFromAperture,
@@ -63,9 +78,17 @@ public:
 
     RenderContext *                 GetMainRenderContext() const { return mainRenderContext; }
 
+    CameraControlMode               GetCameraControlMode() const { return cameraControlMode; }
+    void                            SetCameraControlMode(CameraControlMode mode);
+    bool                            IsCameraMoveFlagSet(CameraMoveFlag flag) const;
+    void                            SetCameraMoveFlag(CameraMoveFlag flag, bool enabled);
+    void                            ClearCameraMoveFlags();
+
     void                            AddCameraMouseDelta(int deltaX, int deltaY);
     void                            AddCameraPanDelta(int deltaX, int deltaY);
     void                            AddCameraDistance(int delta);
+
+    void                            GetCameraOriginAxis(BE1::Vec3 &origin, BE1::Mat3 &axis) const;
 
     void                            TakeScreenshot();
 
@@ -123,13 +146,19 @@ private:
 
     float                           targetCameraYaw = 0.0f;
     float                           targetCameraPitch = 45.0f;
-    float                           targetCameraDistance = 205.0f;
+    float                           targetCameraDistance = 220.0f;
     BE1::Vec3                       targetCameraCenter = BE1::Vec3::origin;
+    BE1::Vec3                       targetCameraOrigin = BE1::Vec3::origin;
 
     float                           cameraYaw;
     float                           cameraPitch;
     float                           cameraDistance;
     BE1::Vec3                       cameraCenter = BE1::Vec3::origin;
+    BE1::Vec3                       cameraOrigin = BE1::Vec3::origin;
+
+    CameraControlMode               cameraControlMode = CameraControlMode::Orbit;
+    uint32_t                        cameraMoveFlags = 0;
+    float                           cameraFlySpeed = 30.0f;
 
     uint32_t                        goCountX = 1;
     uint32_t                        goCountY = 1;
