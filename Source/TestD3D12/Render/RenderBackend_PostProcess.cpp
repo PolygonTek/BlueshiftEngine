@@ -692,6 +692,10 @@ bool RenderBackend::DispatchFinalPostProcess(bool useToneMapping, bool useBloom)
     if (finalPostProcessParams.chromaticAberration > 0.0f) {
         finalPostProcessParams.flags |= FinalPostProcessFlagChromaticAberration;
     }
+    finalPostProcessParams.vignetteIntensity = BE1::Clamp(r_vignette.GetFloat(), 0.0f, 1.0f);
+    if (finalPostProcessParams.vignetteIntensity > 0.0f) {
+        finalPostProcessParams.flags |= FinalPostProcessFlagVignette;
+    }
 
     RHI::ConstantBuffer *finalPostProcessConstantBuffer = frameData->GetThreadData(0)->AllocConstant(sizeof(FinalPostProcessParams), &finalPostProcessParams);
     if (!finalPostProcessConstantBuffer) {

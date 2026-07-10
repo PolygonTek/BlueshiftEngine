@@ -52,5 +52,12 @@ void CSMain(uint3 dispatchThreadId : SV_DispatchThreadID) {
         color = ToneMap(color * exposure, finalPostProcessParams.toneMappingOperator);
     }
 
+    if ((finalPostProcessParams.flags & FinalPostProcessFlagVignette) != 0) {
+        float2 uv = (float2(pixelCoord) + 0.5) * finalPostProcessParams.outputTexelSize;
+        float2 centerOffset = uv * 2.0 - 1.0;
+        float vignette = smoothstep(0.25, 1.0, dot(centerOffset, centerOffset));
+        color *= 1.0 - vignette * finalPostProcessParams.vignetteIntensity;
+    }
+
     outputTexture[pixelCoord] = float4(saturate(color), saturate(hdrColor.a));
 }

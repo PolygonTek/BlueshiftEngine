@@ -929,6 +929,12 @@ void App::BuildImGuiOverlay() {
                 if (ImGui::SliderFloat("Chromatic aberration", &chromaticAberration, 0.0f, 16.0f, "%.2f px")) {
                     r_chromaticAberration.SetFloat(chromaticAberration);
                 }
+
+                float vignette = r_vignette.GetFloat();
+                ImGui::SetNextItemWidth(fontSize * 12.0f);
+                if (ImGui::SliderFloat("Vignette", &vignette, 0.0f, 1.0f, "%.3f")) {
+                    r_vignette.SetFloat(vignette);
+                }
             }
 
             if (roundedCollapsingHeader("Texture Streaming##TextureStreamingHeader")) {
