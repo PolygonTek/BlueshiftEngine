@@ -1,4 +1,5 @@
 #include "../ShaderInterop.h"
+#include "../Colors.hlsli"
 
 #define COMMON_ROOT_SIGNATURE "RootFlags(0), " \
     "DescriptorTable(SRV(t0), UAV(u0)), " \
@@ -26,7 +27,7 @@ void CSMain(uint3 dispatchThreadId : SV_DispatchThreadID) {
     float4 apertureSample = apertureSourceTexture.SampleLevel(linearClampSampler, uv, 0);
 
     // grayscale 로 바꿔서 complex 버퍼에 저장한다.
-    float aperture = dot(max(apertureSample.rgb, float3(0.0, 0.0, 0.0)), float3(0.2126, 0.7152, 0.0722)) * saturate(apertureSample.a);
+    float aperture = GetLuma(max(apertureSample.rgb, float3(0.0, 0.0, 0.0))) * saturate(apertureSample.a);
 
     uint outputIndex = outputCoord.y * bloomParams.outputSize.x + outputCoord.x;
     apertureSpatialBuffer[outputIndex] = float2(aperture, 0.0);

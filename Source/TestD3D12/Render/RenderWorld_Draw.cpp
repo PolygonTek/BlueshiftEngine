@@ -282,6 +282,7 @@ void RenderWorld::RenderScene(RenderCamera *renderCamera) {
 
     visCamera->taaResolve = useTAA;
 
+    // freeze 가 되면 prevViewProjMatrix 를 유지하기 위해서 hiZCullViewProjMatrix 에 복사한다.
     if (!r_hiZOcclusionCullingFreeze.GetBool() || !renderCamera->previousHiZValid) {
         renderCamera->hiZCullViewProjMatrix = visCamera->prevViewProjMatrix;
     }

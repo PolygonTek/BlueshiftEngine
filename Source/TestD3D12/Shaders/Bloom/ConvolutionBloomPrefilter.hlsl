@@ -1,4 +1,5 @@
 #include "../ShaderInterop.h"
+#include "../Colors.hlsli"
 
 #define COMMON_ROOT_SIGNATURE "RootFlags(0), " \
     "DescriptorTable(SRV(t0), UAV(u0)), " \
@@ -20,7 +21,7 @@ half3 ApplyBloomThreshold(half3 color) {
         return color;
     }
 
-    half luminance = dot(color, half3(0.2127, 0.7152, 0.0722));
+    half luminance = GetLuma(color);
     half contribution = max(luminance - threshold, half(0.0));
     half softThreshold = half(BP_BLOOM_SOFT_THRESHOLD);
     if (softThreshold > half(0.0)) {

@@ -155,7 +155,8 @@ struct TAAResolveParams {
     float2 ndcDepthScaleBias;
     float depthFallbackThreshold;
     float maxSubpixelCurrentWeight;
-    float2 padding0;
+    float luminanceWeight;
+    float padding0;
 };
 
 struct DepthHistoryResolveParams {

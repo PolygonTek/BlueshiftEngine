@@ -33,6 +33,10 @@
 #define USE_SUBPIXEL_CORRECTION 1
 #endif
 
+#ifndef USE_LUMINANCE_WEIGHTING
+#define USE_LUMINANCE_WEIGHTING 1
+#endif
+
 #ifndef USE_DEPTH_DISOCCLUSION_FALLBACK
 #define USE_DEPTH_DISOCCLUSION_FALLBACK 1
 #endif
@@ -203,6 +207,14 @@ void CSMain(uint3 dispatchThreadId : SV_DispatchThreadID) {
             const float baseCurrentWeight = 1.0 - historyWeight;
             const float currentWeight = max(baseCurrentWeight, lerp(baseCurrentWeight, taaResolveParams.maxSubpixelCurrentWeight, subpixelCorrection));
             historyWeight = 1.0 - currentWeight;
+#endif
+
+#if USE_LUMINANCE_WEIGHTING
+            // history 와 current 의 luminance 차이가 클수록 history 비중을 낮춘다.
+            const float currentLuma = GetLuma(max(currentColor.rgb, float3(0.0, 0.0, 0.0)));
+            const float historyLuma = GetLuma(max(historyColor.rgb, float3(0.0, 0.0, 0.0)));
+            const float luminanceMismatch = saturate(abs(historyLuma - currentLuma) / max(max(currentLuma, historyLuma), 1.0e-5));
+            historyWeight *= lerp(1.0, 1.0 - luminanceMismatch, saturate(taaResolveParams.luminanceWeight));
 #endif
 
 #if USE_NEIGHBORHOOD_COLOR_BOUNDS

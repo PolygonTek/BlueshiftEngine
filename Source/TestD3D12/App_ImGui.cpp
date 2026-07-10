@@ -672,6 +672,12 @@ void App::BuildImGuiOverlay() {
                     r_taaSubpixelWeight.SetFloat(taaSubpixelWeight);
                 }
 
+                float taaLuminanceWeight = BE1::Clamp(r_taaLuminanceWeight.GetFloat(), r_taaLuminanceWeight.GetMinValue(), r_taaLuminanceWeight.GetMaxValue());
+                ImGui::SetNextItemWidth(fontSize * 12.0f);
+                if (ImGui::SliderFloat("TAA luminance weight", &taaLuminanceWeight, r_taaLuminanceWeight.GetMinValue(), r_taaLuminanceWeight.GetMaxValue(), "%.3f")) {
+                    r_taaLuminanceWeight.SetFloat(taaLuminanceWeight);
+                }
+
                 float taaDepthFallbackThreshold = BE1::Clamp(r_taaDepthFallbackThreshold.GetFloat(), r_taaDepthFallbackThreshold.GetMinValue(), r_taaDepthFallbackThreshold.GetMaxValue());
                 ImGui::SetNextItemWidth(fontSize * 12.0f);
                 if (ImGui::DragFloat("TAA depth fallback threshold", &taaDepthFallbackThreshold, 0.05f, r_taaDepthFallbackThreshold.GetMinValue(), r_taaDepthFallbackThreshold.GetMaxValue(), "%.3f")) {

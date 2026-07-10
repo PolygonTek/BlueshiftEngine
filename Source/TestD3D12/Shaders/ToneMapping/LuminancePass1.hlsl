@@ -1,4 +1,5 @@
 #include "../Common.hlsli"
+#include "../Colors.hlsli"
 
 #define COMMON_ROOT_SIGNATURE "RootFlags(0), " \
     "DescriptorTable(SRV(t0), UAV(u0)), " \
@@ -27,7 +28,7 @@ void CSMain(uint3 dispatchThreadId : SV_DispatchThreadID, uint groupIndex : SV_G
         // 절반 크기로 중앙을 샘플링하여 downsample 된 inputTexture 를 샘플링하는 효과
         const float2 sampleUV = (dispatchThreadId.xy + 0.5) * luminancePass1Params.sampleSizeRcp;
         half3 color = half3(inputTexture.SampleLevel(linearClampSampler, sampleUV, 0).rgb);
-        half luminance = dot(color, half3(0.2127h, 0.7152h, 0.0722h));
+        half luminance = GetLuma(color);
 
         // luminance 값에 log 를 취하고 적절한 범위로 clamp 한 후 양자화하여 binIndex 를 구한다.
         uint binIndex = 0;
