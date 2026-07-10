@@ -5,6 +5,18 @@
 #define USE_NEIGHBORHOOD_COLOR_BOUNDS 1
 #endif
 
+#ifndef USE_PLUS_NEIGHBORHOOD
+#define USE_PLUS_NEIGHBORHOOD 0
+#endif
+
+#ifndef USE_DIAGONAL_NEIGHBORHOOD
+#define USE_DIAGONAL_NEIGHBORHOOD 1
+#endif
+
+#if USE_PLUS_NEIGHBORHOOD && USE_DIAGONAL_NEIGHBORHOOD
+#error USE_PLUS_NEIGHBORHOOD and USE_DIAGONAL_NEIGHBORHOOD are mutually exclusive.
+#endif
+
 #ifndef USE_YCOCG_CLAMP
 #define USE_YCOCG_CLAMP 1
 #endif
@@ -59,7 +71,7 @@ void AccumulateNeighborhoodColorBounds(int2 sampleCoord, int2 maxPixelCoord, ino
     colorMax = max(colorMax, sampleColor);
 }
 
-// pixelCoord 주변 3x3 box 영역의 color bounds 를 구한다.
+// pixelCoord 주변 neighborhood 영역의 color bounds 를 구한다.
 void ComputeNeighborhoodColorBounds(uint2 pixelCoord, float3 centerColor, out float3 colorMin, out float3 colorMax) {
     const int2 baseCoord = int2(pixelCoord);
     const int2 maxPixelCoord = int2(taaResolveParams.outputSize.x, taaResolveParams.outputSize.y) - 1;
@@ -67,6 +79,17 @@ void ComputeNeighborhoodColorBounds(uint2 pixelCoord, float3 centerColor, out fl
     colorMin = centerColor;
     colorMax = centerColor;
 
+#if USE_PLUS_NEIGHBORHOOD
+    AccumulateNeighborhoodColorBounds(baseCoord + int2(-1, 0), maxPixelCoord, colorMin, colorMax);
+    AccumulateNeighborhoodColorBounds(baseCoord + int2( 1, 0), maxPixelCoord, colorMin, colorMax);
+    AccumulateNeighborhoodColorBounds(baseCoord + int2( 0,-1), maxPixelCoord, colorMin, colorMax);
+    AccumulateNeighborhoodColorBounds(baseCoord + int2( 0, 1), maxPixelCoord, colorMin, colorMax);
+#elif USE_DIAGONAL_NEIGHBORHOOD
+    AccumulateNeighborhoodColorBounds(baseCoord + int2(-1,-1), maxPixelCoord, colorMin, colorMax);
+    AccumulateNeighborhoodColorBounds(baseCoord + int2( 1,-1), maxPixelCoord, colorMin, colorMax);
+    AccumulateNeighborhoodColorBounds(baseCoord + int2(-1, 1), maxPixelCoord, colorMin, colorMax);
+    AccumulateNeighborhoodColorBounds(baseCoord + int2( 1, 1), maxPixelCoord, colorMin, colorMax);
+#else
     [unroll]
     for (int sampleY = -1; sampleY <= 1; ++sampleY) {
         [unroll]
@@ -76,6 +99,7 @@ void ComputeNeighborhoodColorBounds(uint2 pixelCoord, float3 centerColor, out fl
             }
         }
     }
+#endif
 }
 #endif
 

@@ -129,6 +129,7 @@ struct VisCamera {
     RHI::Texture *              rtNormalTexture = nullptr;
     RHI::Texture *              rtVelocityTexture = nullptr;
     RHI::Texture *              postProcessColorTexture = nullptr;
+
     RHI::Texture *              colorHistoryTextures[2] = {};
     RHI::Texture *              depthHistoryTextures[2] = {};
     uint32_t                    currentHistoryTextureIndex = 0;

@@ -38,7 +38,7 @@ ShaderMaterial GetShaderMaterial(uint shaderMaterialIndex) {
     return GetShaderMaterialTable(frameConstants.shaderMaterialTableIndex)[shaderMaterialIndex];
 }
 
-float4 CalcClipPosition(row_major float3x4 worldMatrix, float4 localPosition, row_major float4x4 viewProjMatrix) {
+float4 CalcClipPosition(float4 localPosition, row_major float3x4 worldMatrix, row_major float4x4 viewProjMatrix) {
     float4 positionWS = float4(mul(worldMatrix, localPosition), 1.0);
     return mul(viewProjMatrix, positionWS);
 }

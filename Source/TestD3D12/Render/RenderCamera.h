@@ -280,6 +280,11 @@ private:
     RHI::Texture *              rtVelocityTexture = nullptr;
     RHI::Texture *              postProcessColorTexture = nullptr;
 
+    RHI::Texture *              colorHistoryTextures[2] = {};
+    RHI::Texture *              depthHistoryTextures[2] = {};
+    uint32_t                    currentHistoryTextureIndex = 0;
+    bool                        historyValid = false;
+
     RHI::Texture *              hiZTexture = nullptr;
     RHI::ViewID                 hiZMipSRVs[RenderHiZMaxLevelCount] = {};
     RHI::ViewID                 hiZMipUAVs[RenderHiZMaxLevelCount] = {};
@@ -290,11 +295,6 @@ private:
     RHI::Buffer *               hiZCullVisibleInstanceBuffer = nullptr;
     RHI::Buffer *               hiZCullIndirectArgsBuffer = nullptr;
     bool                        previousHiZValid = false;
-
-    RHI::Texture *              colorHistoryTextures[2] = {};
-    RHI::Texture *              depthHistoryTextures[2] = {};
-    uint32_t                    currentHistoryTextureIndex = 0;
-    bool                        historyValid = false;
 
     RHI::Texture *              bloomDownTexture = nullptr;
     RHI::Texture *              bloomUpTexture = nullptr;

@@ -27,9 +27,9 @@ PSInput VSMain(VSInput input) {
 
     ShaderSurface shaderSurface = GetShaderSurfaceByInstanceID(input.instanceID);
 
-    float4 currentPosition = CalcClipPosition(shaderSurface.worldMatrix, input.position, cameraConstants.viewProjMatrix);
-    float4 currentVelocityPosition = CalcClipPosition(shaderSurface.worldMatrix, input.position, cameraConstants.unjitteredViewProjMatrix);
-    float4 prevVelocityPosition = CalcClipPosition(shaderSurface.prevWorldMatrix, input.position, cameraConstants.prevUnjitteredViewProjMatrix);
+    float4 currentPosition = CalcClipPosition(input.position, shaderSurface.worldMatrix, cameraConstants.viewProjMatrix);
+    float4 currentVelocityPosition = CalcClipPosition(input.position, shaderSurface.worldMatrix, cameraConstants.unjitteredViewProjMatrix);
+    float4 prevVelocityPosition = CalcClipPosition(input.position, shaderSurface.prevWorldMatrix, cameraConstants.prevUnjitteredViewProjMatrix);
 
     result.position = currentPosition;
     result.currentPosition = currentVelocityPosition;
