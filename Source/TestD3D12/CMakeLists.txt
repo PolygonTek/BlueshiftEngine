@@ -124,8 +124,6 @@ set(SRC_FILES
     Render/RenderCvars.cpp
     Render/ConvolutionBloomKernelGenerator.h
     Render/ConvolutionBloomKernelGenerator.cpp
-    Render/LinearSamplingKernel.h
-    Render/LinearSamplingKernel.cpp
     Render/GpuTiming.h
     Render/GpuTiming.cpp
     Render/RenderContext.h

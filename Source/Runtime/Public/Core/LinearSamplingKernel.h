@@ -1,3 +1,4 @@
+// Copyright(c) 2017 POLYGONTEK
 // 
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -13,12 +14,14 @@
 
 #pragma once
 
-#include "Math/Vector2.h"
+#include "Math/Math.h"
 
-class LinearSamplingKernelBase {
+BE_NAMESPACE_BEGIN
+
+class BE_API LinearSamplingKernelBase {
 protected:
     static void             ComputeGaussianWeights(int kernelSize, float *weights);
-    static void             ComputeLinearSamplingWeightsAndOffsets(int kernelSize, const float *weights, float *linearWeights, BE1::Vec2 *hOffsets, BE1::Vec2 *vOffsets);
+    static void             ComputeLinearSamplingWeightsAndOffsets(int kernelSize, const float *weights, float *linearWeights, Vec2 *hOffsets, Vec2 *vOffsets);
 };
 
 template <int KernelSize>
@@ -32,14 +35,14 @@ public:
     void                    BuildGaussian();
 
     const float *           GetSampleWeights() const { return sampleWeights; }
-    const BE1::Vec2 *       GetHorizontalOffsets() const { return hOffsets; }
-    const BE1::Vec2 *       GetVerticalOffsets() const { return vOffsets; }
+    const Vec2 *            GetHorizontalOffsets() const { return hOffsets; }
+    const Vec2 *            GetVerticalOffsets() const { return vOffsets; }
 
 private:
     float                   inputWeights[KernelSize];       // discrete weights
     float                   sampleWeights[SampleCount];     // linear sampling weights
-    BE1::Vec2               hOffsets[SampleCount];          // 1D horizontal linear sampling offsets
-    BE1::Vec2               vOffsets[SampleCount];          // 1D vertical linear sampling offsets
+    Vec2                    hOffsets[SampleCount];          // 1D horizontal linear sampling offsets
+    Vec2                    vOffsets[SampleCount];          // 1D vertical linear sampling offsets
 };
 
 template <int KernelSize>
@@ -47,3 +50,5 @@ BE_INLINE void LinearSamplingKernel<KernelSize>::BuildGaussian() {
     ComputeGaussianWeights(KernelSize, inputWeights);
     ComputeLinearSamplingWeightsAndOffsets(KernelSize, inputWeights, sampleWeights, hOffsets, vOffsets);
 }
+
+BE_NAMESPACE_END

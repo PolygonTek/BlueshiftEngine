@@ -46,6 +46,7 @@ set(COMMON_ENGINE_FILES
     Public/Core/CVars.h
     Public/Core/Timespan.h
     Public/Core/DateTime.h
+    Public/Core/LinearSamplingKernel.h
     Public/Core/MinMaxCurve.h
     Public/Core/Dict.h
     Public/Core/Expr.h
@@ -308,6 +309,7 @@ set(COMMON_ENGINE_FILES
     Private/Core/CVars.cpp
     Private/Core/Timespan.cpp
     Private/Core/DateTime.cpp
+    Private/Core/LinearSamplingKernel.cpp
     Private/Core/Dict.cpp
     Private/Core/Expr.cpp
     Private/Core/MinMaxCurve.cpp

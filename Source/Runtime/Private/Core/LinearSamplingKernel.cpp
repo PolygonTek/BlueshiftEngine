@@ -1,3 +1,4 @@
+// Copyright(c) 2017 POLYGONTEK
 // 
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,7 +13,9 @@
 // limitations under the License.
 
 #include "Precompiled.h"
-#include "LinearSamplingKernel.h"
+#include "Core/LinearSamplingKernel.h"
+
+BE_NAMESPACE_BEGIN
 
 // Generate Gaussian weights based on kernel size.
 void LinearSamplingKernelBase::ComputeGaussianWeights(int kernelSize, float *weights) {
@@ -24,7 +27,7 @@ void LinearSamplingKernelBase::ComputeGaussianWeights(int kernelSize, float *wei
 
     for (int i = 0; i < kernelSize; ++i) {
         const float x = (float)i - kernelSize * 0.5f + 0.5f;
-        weights[i] = BE1::Math::Exp(-x * x / coeff);
+        weights[i] = Math::Exp(-x * x / coeff);
         weightSum += weights[i];
     }
 
@@ -37,7 +40,7 @@ void LinearSamplingKernelBase::ComputeGaussianWeights(int kernelSize, float *wei
 
 // Generate weights and offsets for filter, taking advantage of linear texture filtering.
 // Reference: GPU Gems 2, Chapter 20. Fast Third Order Texture Filtering
-void LinearSamplingKernelBase::ComputeLinearSamplingWeightsAndOffsets(int kernelSize, const float *weights, float *linearWeights, BE1::Vec2 *hOffsets, BE1::Vec2 *vOffsets) {
+void LinearSamplingKernelBase::ComputeLinearSamplingWeightsAndOffsets(int kernelSize, const float *weights, float *linearWeights, Vec2 *hOffsets, Vec2 *vOffsets) {
     assert(kernelSize > 0 && (kernelSize & 1) == 1);
 
     const int linearKernelSize = (kernelSize + 1) >> 1;
@@ -56,7 +59,9 @@ void LinearSamplingKernelBase::ComputeLinearSamplingWeightsAndOffsets(int kernel
         assert(offset >= 0.0f && offset <= 1.0f);
 
         const float sampleOffset = sampleIndex - kernelRadius + offset;
-        hOffsets[i] = BE1::Vec2(sampleOffset, 0.0f);
-        vOffsets[i] = BE1::Vec2(0.0f, sampleOffset);
+        hOffsets[i] = Vec2(sampleOffset, 0.0f);
+        vOffsets[i] = Vec2(0.0f, sampleOffset);
     }
 }
+
+BE_NAMESPACE_END
