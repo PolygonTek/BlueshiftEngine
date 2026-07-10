@@ -48,13 +48,6 @@ struct enable_bitmask_operators<DrawTextFlag> {
     static constexpr bool enable = true;
 };
 
-/// Proxy node in the dynamic bounding volume tree.
-struct DbvtProxy {
-    BE1::AABB                   worldAABB;              ///< World bounding volume for this proxy node.
-    RenderObject *              renderObject;           ///< Associated render object.
-    int32_t                     id;                     ///< Proxy id.
-};
-
 /*
 ---------------------------------------------------------------------------------------------------
 
@@ -137,19 +130,6 @@ private:
     void                        SetupPyramidBloom(RenderFrameData *frameData, RenderCamera *renderCamera, VisCamera *visCamera);
     void                        SetupConvolutionBloom(RenderFrameData *frameData, RenderCamera *renderCamera, VisCamera *visCamera);
 
-#ifdef USE_DBVT
-    void                        CreateObjectProxy(RenderObject *renderObject);
-    void                        UpdateObjectProxy(RenderObject *renderObject, const BE1::Mat3x4 &worldMatrix, const BE1::Vec3 &displacementVector);
-    void                        InsertObjectProxyToDbvt(RenderObject *renderObject);
-    void                        RemoveObjectProxyFromDbvt(RenderObject *renderObject);
-    void                        RegisterDynamicObject(RenderObject *renderObject);
-    void                        UnregisterDynamicObject(RenderObject *renderObject);
-    void                        RegisterPendingObjectProxy(RenderObject *renderObject);
-    void                        UnregisterPendingObjectProxy(RenderObject *renderObject);
-    void                        UpdatePendingObjectProxies();
-    void                        UpdateSleepingObjectProxies();
-#endif
-
     void                        DrawCamera(RenderFrameData *frameData, const RenderCamera *renderCamera, VisCamera *visCamera);
     void                        DrawGUICamera(RenderFrameData *frameData, uint32_t screenWidth, uint32_t screenHeight, GuiMesh &guiMesh);
 
@@ -159,13 +139,7 @@ private:
 
     bool                        frameActive = false;
     uint64_t                    renderWorldFrameIndex = 0;
-    uint32_t                    viewCount = 0;      ///< Counter used to track how many views (or scene renderings) have been issued.
-
-#ifdef USE_DBVT
-    BE1::DynamicAABBTree        objectDbvt;         ///< Dynamic bounding volume tree (DBVT) for render objects.
-    BE1::Array<int>             pendingObjectProxyObjects;
-    BE1::Array<int>             dynamicObjectIndices;
-#endif
+    uint64_t                    viewCount = 0;      ///< Counter used to track how many views (or scene renderings) have been issued.
 
     uint32_t                    renderWorldGroupId = -1;
     BE1::Array<SkinningJointCacheTaskDesc> skinningJointCacheTaskDescs;
@@ -180,6 +154,6 @@ private:
 };
 
 BE_INLINE bool RenderWorld::IsVisObjectRegistered(const RenderObject *renderObject) const {
-    // 현재 프레임에 이미 등록된 VisObject 인지 체크
-    return renderObject->visObject && renderObject->viewCount == viewCount;
+    // 현재 view 에 이미 등록된 VisObject 인지 체크
+    return renderObject->viewCount == viewCount;
 }

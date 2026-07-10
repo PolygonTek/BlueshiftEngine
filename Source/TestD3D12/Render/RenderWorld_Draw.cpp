@@ -314,12 +314,6 @@ void RenderWorld::RenderScene(RenderCamera *renderCamera) {
 void RenderWorld::DrawCamera(RenderFrameData *frameData, const RenderCamera *renderCamera, VisCamera *visCamera) {
     PROFILER_CPU_SCOPED_EVENT("RenderWorld::DrawCamera");
 
-#ifdef USE_DBVT
-    UpdatePendingObjectProxies();
-    UpdateSleepingObjectProxies();
-#endif
-
-    // objectDbvt 에서 카메라 frustum 으로 쿼리해서 보이는 RenderObject 들을 찾아낸다.
     // 보이는 RenderObject 들로 프레임 데이터에 VisObject 들을 등록한다.
     FindVisObjects(frameData, renderCamera, visCamera);
 
@@ -355,7 +349,6 @@ VisObject *RenderWorld::RegisterVisObject(RenderFrameData *frameData, RenderObje
     if (!visObject) {
         return nullptr;
     }
-    renderObject->visObject = visObject;
     renderObject->viewCount = viewCount;
 
     if (renderObject->desc.meshInstance) {
@@ -415,54 +408,6 @@ void RenderWorld::FindVisObjects(RenderFrameData *frameData, const RenderCamera 
 
     visCamera->worldAABB.Clear();
 
-#ifdef USE_DBVT
-    // Frustum 에 교차된 RenderObject 들을 추려내서 프레임 데이터에 VisObject 로 등록한다.
-    // 쿼리 콜백 함수의 리턴값이 true 라면, 다음 쿼리를 진행한다.
-    auto addVisibleObjects = [this, frameData, renderCamera, visCamera](int32_t proxyId) -> bool {
-        const DbvtProxy *proxy = (const DbvtProxy *)objectDbvt.GetUserData(proxyId);
-        RenderObject *renderObject = proxy->renderObject;
-        if (!renderObject) {
-            return true;
-        }
-
-        VisObject *visObject = RegisterVisObject(frameData, renderObject);
-        if (!visObject) {
-            return true;
-        }
-
-        renderObject->visibleFrameIndex = renderWorldFrameIndex;
-
-        SetVisObjectWorldMatrices(renderObject, visObject);
-        visObject->cameraVisible = true;
-
-        visCamera->worldAABB.AddAABB(proxy->worldAABB);
-        return true;
-    };
-
-    objectDbvt.QueryFrustum(renderCamera->frustum, addVisibleObjects);
-
-    for (int objectIndex : dynamicObjectIndices) {
-        RenderObject *renderObject = renderObjects[objectIndex];
-
-        if (!r_skipFrustumCulling.GetBool()) {
-            if (renderCamera->frustum.CullAABB(renderObject->worldAABB)) {
-                continue;
-            }
-        }
-
-        VisObject *visObject = RegisterVisObject(frameData, renderObject);
-        if (!visObject) {
-            continue;
-        }
-
-        renderObject->visibleFrameIndex = renderWorldFrameIndex;
-
-        SetVisObjectWorldMatrices(renderObject, visObject);
-        visObject->cameraVisible = true;
-
-        visCamera->worldAABB.AddAABB(renderObject->worldAABB);
-    }
-#else
     // 등록된 모든 RenderObject 들을 개별 Culling 해서 프레임 데이터에 VisObject 로 등록한다.
     for (RenderObject *renderObject : renderObjects) {
         if (!renderObject) {
@@ -487,7 +432,6 @@ void RenderWorld::FindVisObjects(RenderFrameData *frameData, const RenderCamera 
 
         visCamera->worldAABB.AddAABB(renderObject->worldAABB);
     }
-#endif
 
     frameData->AddObjectStats(static_cast<uint32_t>(renderObjects.Count()), frameData->NumVisObjects() - startVisibleObjectCount);
 }

@@ -27,11 +27,6 @@ static const BE1::AABB &GetEffectiveLocalAABB(const RenderObject::Desc &desc) {
 }
 
 RenderObject::~RenderObject() {
-#ifdef USE_DBVT
-    if (proxy) {
-        Mem_Free(proxy);
-    }
-#endif
 }
 
 void RenderObject::Update(const RenderObject::Desc &src, RenderObject::Desc::UpdateFlag flags) {

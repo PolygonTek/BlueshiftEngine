@@ -16,10 +16,6 @@
 #include "RenderWorld.h"
 #include "Render/Mesh/MeshInstance.h"
 
-#ifdef USE_DBVT
-static constexpr uint32_t DynamicObjectSleepDelayMsec = 3000;
-#endif
-
 RenderWorld::RenderWorld() {
     renderObjects.Reserve(65536);
     renderObjects.SetGranularity(4096);
@@ -50,12 +46,6 @@ void RenderWorld::EndFrame() {
 }
 
 void RenderWorld::ClearScene() {
-#ifdef USE_DBVT
-    objectDbvt.Clear();
-    pendingObjectProxyObjects.Clear();
-    dynamicObjectIndices.Clear();
-#endif
-
     for (RenderObject *renderObject : renderObjects) {
         SAFE_DELETE(renderObject);
     }
@@ -77,171 +67,6 @@ RenderObject *RenderWorld::GetRenderObject(int index) const {
     return renderObject;
 }
 
-#ifdef USE_DBVT
-void RenderWorld::CreateObjectProxy(RenderObject *renderObject) {
-    if (!renderObject) {
-        return;
-    }
-
-    renderObject->proxy = (DbvtProxy *)Mem_Alloc(sizeof(DbvtProxy));
-    renderObject->proxy->renderObject = renderObject;
-    renderObject->proxy->worldAABB = renderObject->GetWorldAABB();
-    renderObject->proxy->id = -1;
-
-    InsertObjectProxyToDbvt(renderObject);
-
-    const BE1::AABB *localAABB = &renderObject->desc.aabb;
-    if (localAABB->IsCleared() && renderObject->desc.meshInstance && !renderObject->desc.meshInstance->IsSourceReady()) {
-        const SharedPtr<Mesh> &sourceMesh = renderObject->desc.meshInstance->GetSourceMesh();
-        if (!sourceMesh || sourceMesh->GetState() != Mesh::State::Failed) {
-            RegisterPendingObjectProxy(renderObject);
-        }
-    }
-}
-
-void RenderWorld::UpdateObjectProxy(RenderObject *renderObject, const BE1::Mat3x4 &worldMatrix, const BE1::Vec3 &displacementVector) {
-    if (!renderObject || !renderObject->proxy) {
-        return;
-    }
-
-    const BE1::AABB *localAABB = &renderObject->desc.aabb;
-    if (localAABB->IsCleared() && renderObject->desc.meshInstance) {
-        if (renderObject->desc.meshInstance->IsSourceReady()) {
-            localAABB = &renderObject->desc.meshInstance->GetAABB();
-            UnregisterPendingObjectProxy(renderObject);
-        } else {
-            const SharedPtr<Mesh> &sourceMesh = renderObject->desc.meshInstance->GetSourceMesh();
-            if (sourceMesh && sourceMesh->GetState() == Mesh::State::Failed) {
-                UnregisterPendingObjectProxy(renderObject);
-            } else {
-                RegisterPendingObjectProxy(renderObject);
-            }
-        }
-    } else {
-        UnregisterPendingObjectProxy(renderObject);
-    }
-
-    BE1::AABB worldAABB = BE1::AABB::empty;
-    if (!localAABB->IsCleared()) {
-        worldAABB.SetFromTransformedAABBFast(*localAABB, worldMatrix);
-    }
-
-    renderObject->worldAABB = worldAABB;
-    if (renderObject->proxy->worldAABB == worldAABB) {
-        return;
-    }
-
-    renderObject->proxy->worldAABB = worldAABB;
-    if (renderObject->objectProxyInDbvt) {
-        objectDbvt.MoveProxy(renderObject->proxy->id, renderObject->proxy->worldAABB, BE1::MeterToUnit(0.5f), displacementVector);
-    }
-}
-
-void RenderWorld::InsertObjectProxyToDbvt(RenderObject *renderObject) {
-    if (!renderObject || !renderObject->proxy || renderObject->objectProxyInDbvt) {
-        return;
-    }
-
-    renderObject->proxy->id = objectDbvt.CreateProxy(renderObject->proxy->worldAABB, BE1::MeterToUnit(0.0f), renderObject->proxy);
-    renderObject->objectProxyInDbvt = true;
-}
-
-void RenderWorld::RemoveObjectProxyFromDbvt(RenderObject *renderObject) {
-    if (!renderObject || !renderObject->proxy || !renderObject->objectProxyInDbvt) {
-        return;
-    }
-
-    objectDbvt.DestroyProxy(renderObject->proxy->id);
-    renderObject->proxy->id = -1;
-    renderObject->objectProxyInDbvt = false;
-}
-
-void RenderWorld::RegisterDynamicObject(RenderObject *renderObject) {
-    if (!renderObject || renderObject->dynamicObjectRegistered) {
-        return;
-    }
-
-    RemoveObjectProxyFromDbvt(renderObject);
-    dynamicObjectIndices.Append(renderObject->index);
-    renderObject->dynamicObjectRegistered = true;
-}
-
-void RenderWorld::UnregisterDynamicObject(RenderObject *renderObject) {
-    if (!renderObject || !renderObject->dynamicObjectRegistered) {
-        return;
-    }
-
-    dynamicObjectIndices.RemoveFast(renderObject->index);
-    renderObject->dynamicObjectRegistered = false;
-}
-
-void RenderWorld::RegisterPendingObjectProxy(RenderObject *renderObject) {
-    if (!renderObject || renderObject->objectProxyPending) {
-        return;
-    }
-
-    pendingObjectProxyObjects.Append(renderObject->index);
-    renderObject->objectProxyPending = true;
-}
-
-void RenderWorld::UnregisterPendingObjectProxy(RenderObject *renderObject) {
-    if (!renderObject || !renderObject->objectProxyPending) {
-        return;
-    }
-
-    pendingObjectProxyObjects.RemoveFast(renderObject->index);
-    renderObject->objectProxyPending = false;
-}
-
-void RenderWorld::UpdatePendingObjectProxies() {
-    BE1::Array<int> pendingObjects;
-    pendingObjects.Swap(pendingObjectProxyObjects);
-
-    for (int objectIndex : pendingObjects) {
-        if (!renderObjects.IsValidIndex(objectIndex)) {
-            continue;
-        }
-
-        RenderObject *renderObject = renderObjects[objectIndex];
-        if (!renderObject) {
-            continue;
-        }
-
-        renderObject->objectProxyPending = false;
-        UpdateObjectProxy(renderObject, renderObject->desc.worldMatrix, BE1::Vec3::zero);
-    }
-}
-
-void RenderWorld::UpdateSleepingObjectProxies() {
-    const uint32_t currentMsec = BE1::PlatformTime::Milliseconds();
-
-    const int numDynamicObjectIndices = dynamicObjectIndices.Count();
-    for (int i = 0; i < numDynamicObjectIndices;) {
-        const int objectIndex = dynamicObjectIndices[i];
-        if (!renderObjects.IsValidIndex(objectIndex)) {
-            dynamicObjectIndices.RemoveIndexFast(i);
-            continue;
-        }
-
-        RenderObject *renderObject = renderObjects[objectIndex];
-        if (!renderObject) {
-            dynamicObjectIndices.RemoveIndexFast(i);
-            continue;
-        }
-
-        if (currentMsec - renderObject->lastTransformUpdateMsec < DynamicObjectSleepDelayMsec) {
-            i++;
-            continue;
-        }
-
-        renderObject->dynamicObjectRegistered = false;
-        dynamicObjectIndices.RemoveIndexFast(i);
-        InsertObjectProxyToDbvt(renderObject);
-    }
-}
-
-#endif
-
 int RenderWorld::AddRenderObject(const RenderObject::Desc &desc) {
     assert(BE1::Engine::IsInMainThread());
 
@@ -261,36 +86,13 @@ void RenderWorld::UpdateRenderObject(int index, const RenderObject::Desc &desc, 
         renderObject->index = index;
         renderObjects[index] = renderObject;
         renderObject->Update(desc, updateFlags);
-
-#ifdef USE_DBVT
-        CreateObjectProxy(renderObject);
-#endif
     } else {
         const bool transformChanged = BE1::HasFlag(updateFlags, RenderObject::Desc::UpdateFlag::Transform);
         if (transformChanged) {
             CapturePrevWorldMatrix(renderObject);
         }
 
-#ifdef USE_DBVT
-        const bool boundsChanged = BE1::HasFlag(updateFlags, RenderObject::Desc::UpdateFlag::Bounds);
-        const bool meshChanged = BE1::HasFlag(updateFlags, RenderObject::Desc::UpdateFlag::Mesh);
-
-        BE1::Vec3 displacementVector = BE1::Vec3::zero;
-        if (transformChanged) {
-            const BE1::Mat3x4 &newWorldMatrix = desc.worldMatrix;
-            displacementVector = newWorldMatrix.ToTranslationVec3() - renderObject->desc.worldMatrix.ToTranslationVec3();
-        }
-#endif
         renderObject->Update(desc, updateFlags);
-#ifdef USE_DBVT
-        if (transformChanged || boundsChanged || meshChanged) {
-            if (transformChanged) {
-                renderObject->lastTransformUpdateMsec = BE1::PlatformTime::Milliseconds();
-                RegisterDynamicObject(renderObject);
-            }
-            UpdateObjectProxy(renderObject, renderObject->desc.worldMatrix, displacementVector);
-        }
-#endif
     }
 }
 
@@ -308,12 +110,6 @@ void RenderWorld::RemoveRenderObject(int index) {
         return;
     }
 
-#ifdef USE_DBVT
-    UnregisterPendingObjectProxy(renderObject);
-    UnregisterDynamicObject(renderObject);
-    RemoveObjectProxyFromDbvt(renderObject);
-#endif
-
     delete renderObjects[index];
     renderObjects[index] = nullptr;
 }
@@ -325,6 +121,7 @@ void RenderWorld::CapturePrevWorldMatrix(RenderObject *renderObject) {
     if (previousFrameIndex == 0) {
         return;
     }
+
     // 직전 프레임에 렌더링되지 않은 오브젝트는 이전 월드 매트릭스를 캡처하지 않는다.
     if (renderObject->visibleFrameIndex != previousFrameIndex) {
         return;

@@ -40,9 +40,6 @@
 // 텍스쳐 밉맵 스트리밍 시스템 사용 여부
 #define USE_MIPMAP_STREAMING
 
-// DBVT 사용 여부
-//#define USE_DBVT
-
 template <typename T>
 using SharedPtr = std::shared_ptr<T>;
 

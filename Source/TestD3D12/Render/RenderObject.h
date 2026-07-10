@@ -14,7 +14,6 @@
 
 #pragma once
 
-struct DbvtProxy;
 struct VisObject;
 class MeshInstance;
 class Texture;
@@ -158,19 +157,9 @@ private:
     bool                            prevWorldMatrixValid = false;
     uint64_t                        prevWorldMatrixFrameIndex = 0;
     uint64_t                        visibleFrameIndex = 0;
-
     int                             index = -1;                     // RenderWorld::renderObjects 의 인덱스
 
-#ifdef USE_DBVT
-    DbvtProxy *                     proxy = nullptr;                // proxy for render object
-    bool                            objectProxyPending = false;
-    bool                            objectProxyInDbvt = false;
-    bool                            dynamicObjectRegistered = false;
-    uint32_t                        lastTransformUpdateMsec = 0;
-#endif
-
-    mutable uint32_t                viewCount = 0;                  // 현재 실행 중인 DrawCamera or DrawGUICamera 함수의 실행 카운터
-    mutable VisObject *             visObject = nullptr;            // viewCount 가 현재 RenderWorld::viewCount 와 같아야 valid 하다.
+    mutable uint64_t                viewCount = uint64_t(-1);       // 마지막으로 VisObject 에 등록된 DrawCamera or DrawGUICamera 함수의 실행 카운터
 };
 
 BE_INLINE RenderObject::TextDesc &RenderObject::Desc::GetTextDesc() {
