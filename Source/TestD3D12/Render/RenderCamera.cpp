@@ -15,35 +15,11 @@
 #include "Precompiled.h"
 #include "RenderCamera.h"
 #include "RenderCvars.h"
+#include "RenderUtils.h"
 #include "Math/Hammersley.h"
 #include "RHI/RHI.h"
 #include "Shaders/ShaderInterop.h"
 #include "Render/Texture/TextureManager.h"
-
-static void SetViewMatrix(const BE1::Mat3 &viewAxis, const BE1::Vec3 &viewOrigin, float *rowMajor4x4ViewMatrix) {
-    // left axis
-    rowMajor4x4ViewMatrix[0] = -viewAxis[1].x;
-    rowMajor4x4ViewMatrix[1] = -viewAxis[1].y;
-    rowMajor4x4ViewMatrix[2] = -viewAxis[1].z;
-    rowMajor4x4ViewMatrix[3] = -viewAxis[1].Dot(-viewOrigin);
-
-    // up axis
-    rowMajor4x4ViewMatrix[4] = viewAxis[2].x;
-    rowMajor4x4ViewMatrix[5] = viewAxis[2].y;
-    rowMajor4x4ViewMatrix[6] = viewAxis[2].z;
-    rowMajor4x4ViewMatrix[7] = viewAxis[2].Dot(-viewOrigin);
-
-    // forward axis
-    rowMajor4x4ViewMatrix[8] = -viewAxis[0].x;
-    rowMajor4x4ViewMatrix[9] = -viewAxis[0].y;
-    rowMajor4x4ViewMatrix[10] = -viewAxis[0].z;
-    rowMajor4x4ViewMatrix[11] = -viewAxis[0].Dot(-viewOrigin);
-
-    rowMajor4x4ViewMatrix[12] = 0.0f;
-    rowMajor4x4ViewMatrix[13] = 0.0f;
-    rowMajor4x4ViewMatrix[14] = 0.0f;
-    rowMajor4x4ViewMatrix[15] = 1.0f;
-}
 
 void RenderCamera::Update(const RenderCameraDesc &desc) {
     this->desc = desc;
@@ -52,7 +28,7 @@ void RenderCamera::Update(const RenderCameraDesc &desc) {
     const bool reverseZ = desc.projectionPolicy.reverseZ;
     const bool infiniteZFar = desc.projectionPolicy.infiniteZFar;
 
-    SetViewMatrix(desc.axis, desc.origin, viewMatrix);
+    SetViewMatrixFromEngineAxis(desc.axis, desc.origin, viewMatrix);
 
     if (desc.orthogonal) {
         // Set bounding volume for orthogonal view.

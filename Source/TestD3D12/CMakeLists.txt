@@ -124,6 +124,8 @@ set(SRC_FILES
     Render/RenderCvars.cpp
     Render/ConvolutionBloomKernelGenerator.h
     Render/ConvolutionBloomKernelGenerator.cpp
+    Render/LinearSamplingKernel.h
+    Render/LinearSamplingKernel.cpp
     Render/GpuTiming.h
     Render/GpuTiming.cpp
     Render/RenderContext.h
@@ -154,6 +156,8 @@ set(SRC_FILES
     Render/RenderWorld_DebugTools.cpp
     Render/RenderCamera.h
     Render/RenderCamera.cpp
+    Render/RenderUtils.h
+    Render/RenderUtils.cpp
     Render/RenderInternal.h
     Render/RenderPassDepthPSOResolver.h
     Render/RenderPassDepthPSOResolver.cpp
