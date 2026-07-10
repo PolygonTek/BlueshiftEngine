@@ -923,6 +923,12 @@ void App::BuildImGuiOverlay() {
                 if (ImGui::SliderFloat("Middle gray", &middleGray, 0.0f, 2.0f, "%.3f")) {
                     r_toneMapMiddleGray.SetFloat(middleGray);
                 }
+
+                float chromaticAberration = r_chromaticAberration.GetFloat();
+                ImGui::SetNextItemWidth(fontSize * 12.0f);
+                if (ImGui::SliderFloat("Chromatic aberration", &chromaticAberration, 0.0f, 16.0f, "%.2f px")) {
+                    r_chromaticAberration.SetFloat(chromaticAberration);
+                }
             }
 
             if (roundedCollapsingHeader("Texture Streaming##TextureStreamingHeader")) {

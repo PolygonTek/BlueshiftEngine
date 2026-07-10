@@ -54,7 +54,7 @@ public:
         ConvolutionBloomIFFT,
         ConvolutionBloomResolve,
         TAAResolve,
-        ToneMapping,
+        FinalPostProcess,
         BlitToSwapChain,
         ImGuiOverlay,
         Count

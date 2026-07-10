@@ -61,8 +61,11 @@ static const uint LuminanceBufferOffsetExposure = 0;
 static const uint LuminanceBufferOffsetLuminance = LuminanceBufferOffsetExposure + 4;
 static const uint LuminanceBufferOffsetHistogram = LuminanceBufferOffsetLuminance + 4;
 
-static const uint ToneMappingBlockSizeX = 16;
-static const uint ToneMappingBlockSizeY = 16;
+static const uint FinalPostProcessBlockSizeX = 16;
+static const uint FinalPostProcessBlockSizeY = 16;
+
+static const uint FinalPostProcessFlagToneMapping = 1u << 0;
+static const uint FinalPostProcessFlagChromaticAberration = 1u << 1;
 
 static const uint TAAResolveBlockSizeX = 16;
 static const uint TAAResolveBlockSizeY = 16;
@@ -135,13 +138,13 @@ struct LuminancePass2Params {
     float3 padding0;
 };
 
-struct ToneMappingParams {
+struct FinalPostProcessParams {
     uint2 outputSize;
     float2 outputTexelSize;
-    float exposureScale;
+    uint flags;
     uint toneMappingOperator;
     float bloomIntensity;
-    float padding0;
+    float chromaticAberration;
 };
 
 struct TAAResolveParams {

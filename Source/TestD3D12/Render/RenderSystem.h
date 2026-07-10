@@ -109,7 +109,7 @@ private:
     SharedPtr<ShaderTemplate>       hiZDebugPreviewShaderTemplate;
     SharedPtr<ShaderTemplate>       depthHistoryResolveShaderTemplate;
     SharedPtr<ShaderTemplate>       depthHistoryResolveMSAAShaderTemplate;
-    SharedPtr<ShaderTemplate>       toneMappingShaderTemplate;
+    SharedPtr<ShaderTemplate>       finalPostProcessShaderTemplate;
     SharedPtr<ShaderTemplate>       taaResolveShaderTemplate;
     SharedPtr<ShaderTemplate>       luminancePass1ShaderTemplate;
     SharedPtr<ShaderTemplate>       luminancePass2ShaderTemplate;
@@ -134,7 +134,7 @@ private:
     SharedPtr<ShaderPipeline>       hiZDebugPreviewPipeline;
     SharedPtr<ShaderPipeline>       depthHistoryResolvePipeline;
     SharedPtr<ShaderPipeline>       depthHistoryResolveMSAAPipeline;
-    SharedPtr<ShaderPipeline>       toneMappingPipeline;
+    SharedPtr<ShaderPipeline>       finalPostProcessPipeline;
     SharedPtr<ShaderPipeline>       taaResolvePipeline;
     SharedPtr<ShaderPipeline>       luminancePass1Pipeline;
     SharedPtr<ShaderPipeline>       luminancePass2Pipeline;

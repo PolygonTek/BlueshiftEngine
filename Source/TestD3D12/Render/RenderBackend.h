@@ -124,7 +124,7 @@ private:
     bool                            DispatchConvolutionBloomResolve();
     bool                            DispatchConvolutionBloomFFT(RHI::Buffer *inputBuffer, RHI::Buffer *outputBuffer);
     bool                            DispatchConvolutionBloomIFFT(RHI::Buffer *inputBuffer, RHI::Buffer *outputBuffer);
-    bool                            DispatchToneMapping(bool useBloom);
+    bool                            DispatchFinalPostProcess(bool useToneMapping, bool useBloom);
 
     uint32_t                        FindSurfaceInstanceBatchEnd(const RenderPassDrawSurf **drawSurfs, uint32_t numDrawSurfs, uint32_t startIndex) const;
     RHI::Buffer *                   AllocInstanceToShaderSurfaceTable(RHI::FrameThreadData *frameThreadData, const RenderPassDrawSurf **drawSurfs, uint32_t instanceCount) const;
@@ -149,7 +149,7 @@ private:
     RHI::PipelineState *            frameHiZDebugPreviewPSO = nullptr;
     RHI::PipelineState *            frameDepthHistoryResolvePSO = nullptr;
     RHI::PipelineState *            frameDepthHistoryResolveMSAAPSO = nullptr;
-    RHI::PipelineState *            frameToneMappingPSO = nullptr;
+    RHI::PipelineState *            frameFinalPostProcessPSO = nullptr;
     RHI::PipelineState *            frameTAAResolvePSO = nullptr;
     RHI::PipelineState *            frameLuminancePass1PSO = nullptr;
     RHI::PipelineState *            frameLuminancePass2PSO = nullptr;

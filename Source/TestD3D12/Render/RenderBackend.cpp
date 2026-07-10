@@ -184,7 +184,7 @@ void RenderBackend::UpdateFramePSOs() {
     frameHiZDebugPreviewPSO = ShaderPipeline::GetReadyPSO(renderSystem->hiZDebugPreviewPipeline);
     frameDepthHistoryResolvePSO = ShaderPipeline::GetReadyPSO(renderSystem->depthHistoryResolvePipeline);
     frameDepthHistoryResolveMSAAPSO = ShaderPipeline::GetReadyPSO(renderSystem->depthHistoryResolveMSAAPipeline);
-    frameToneMappingPSO = ShaderPipeline::GetReadyPSO(renderSystem->toneMappingPipeline);
+    frameFinalPostProcessPSO = ShaderPipeline::GetReadyPSO(renderSystem->finalPostProcessPipeline);
     frameTAAResolvePSO = ShaderPipeline::GetReadyPSO(renderSystem->taaResolvePipeline);
     frameLuminancePass1PSO = ShaderPipeline::GetReadyPSO(renderSystem->luminancePass1Pipeline);
     frameLuminancePass2PSO = ShaderPipeline::GetReadyPSO(renderSystem->luminancePass2Pipeline);
@@ -444,12 +444,11 @@ void RenderBackend::PostProcessAndBlitToSwapChain() {
             finalColorTexture = currentPostProcessInputTexture;
         }
 
-        if (DispatchLuminance()) {
-            const bool hasBloom = DispatchBloom();
+        const bool useToneMapping = DispatchLuminance();
+        const bool useBloom = DispatchBloom();
 
-            if (DispatchToneMapping(hasBloom)) {
-                finalColorTexture = currentVisCamera->postProcessColorTexture;
-            }
+        if (DispatchFinalPostProcess(useToneMapping, useBloom)) {
+            finalColorTexture = currentVisCamera->postProcessColorTexture;
         }
     }
 

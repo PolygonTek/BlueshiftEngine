@@ -669,10 +669,10 @@ bool RenderBackend::DispatchConvolutionBloomIFFT(RHI::Buffer *inputBuffer, RHI::
     return renderSystem->gpuFFT.DispatchIFFTDualReal2D(mainCommandList, frameData, inputBuffer, outputBuffer, currentVisCamera->fftBloomScreenSpectrumBuffer, fftSizeEnum, PlaneCount);
 }
 
-bool RenderBackend::DispatchToneMapping(bool useBloom) {
-    PROFILER_CPU_SCOPED_EVENT("RenderBackend::DispatchToneMapping");
+bool RenderBackend::DispatchFinalPostProcess(bool useToneMapping, bool useBloom) {
+    PROFILER_CPU_SCOPED_EVENT("RenderBackend::DispatchFinalPostProcess");
 
-    if (!r_toneMapping.GetBool()) {
+    if (!frameFinalPostProcessPSO) {
         return false;
     }
 
@@ -682,15 +682,19 @@ bool RenderBackend::DispatchToneMapping(bool useBloom) {
         return false;
     }
 
-    ToneMappingParams toneMappingParams = {};
-    toneMappingParams.outputSize = uint2(outputW, outputH);
-    toneMappingParams.outputTexelSize = float2(1.0f / outputW, 1.0f / outputH);
-    toneMappingParams.exposureScale = 1.0f;
-    toneMappingParams.toneMappingOperator = static_cast<uint32_t>(BE1::Clamp(r_toneMapOp.GetInteger(), static_cast<int>(ToneMappingOperatorLinear), static_cast<int>(ToneMappingOperatorFilmicGT)));
-    toneMappingParams.bloomIntensity = useBloom ? BE1::Max(r_bloomIntensity.GetFloat(), 0.0f) : 0.0f;
+    FinalPostProcessParams finalPostProcessParams = {};
+    finalPostProcessParams.outputSize = uint2(outputW, outputH);
+    finalPostProcessParams.outputTexelSize = float2(1.0f / outputW, 1.0f / outputH);
+    finalPostProcessParams.flags = useToneMapping ? FinalPostProcessFlagToneMapping : 0u;
+    finalPostProcessParams.toneMappingOperator = static_cast<uint32_t>(BE1::Clamp(r_toneMapOp.GetInteger(), static_cast<int>(ToneMappingOperatorLinear), static_cast<int>(ToneMappingOperatorFilmicGT)));
+    finalPostProcessParams.bloomIntensity = useBloom ? BE1::Max(r_bloomIntensity.GetFloat(), 0.0f) : 0.0f;
+    finalPostProcessParams.chromaticAberration = BE1::Max(r_chromaticAberration.GetFloat(), 0.0f);
+    if (finalPostProcessParams.chromaticAberration > 0.0f) {
+        finalPostProcessParams.flags |= FinalPostProcessFlagChromaticAberration;
+    }
 
-    RHI::ConstantBuffer *toneMappingConstantBuffer = frameData->GetThreadData(0)->AllocConstant(sizeof(ToneMappingParams), &toneMappingParams);
-    if (!toneMappingConstantBuffer) {
+    RHI::ConstantBuffer *finalPostProcessConstantBuffer = frameData->GetThreadData(0)->AllocConstant(sizeof(FinalPostProcessParams), &finalPostProcessParams);
+    if (!finalPostProcessConstantBuffer) {
         return false;
     }
 
@@ -716,11 +720,11 @@ bool RenderBackend::DispatchToneMapping(bool useBloom) {
         RHI::Renderer::MakeBufferBarrier(luminanceBuffer, RHI::GPUResourceState::UnorderedAccess, RHI::GPUResourceState::ShaderResourceCompute),
         RHI::Renderer::MakeTextureBarrier(outputTexture, RHI::GPUResourceState::ShaderResource, RHI::GPUResourceState::UnorderedAccess)
     };
-    GpuTiming::ScopedTimer gpuScope(gpuTiming, mainCommandList, GpuTiming::Tag::ToneMapping);
+    GpuTiming::ScopedTimer gpuScope(gpuTiming, mainCommandList, GpuTiming::Tag::FinalPostProcess);
 
     RHI::renderer->Barrier(mainCommandList, startBarriers, COUNT_OF(startBarriers));
 
-    RHI::renderer->SetPSO(mainCommandList, frameToneMappingPSO);
+    RHI::renderer->SetPSO(mainCommandList, frameFinalPostProcessPSO);
     RHI::renderer->SetTexture(mainCommandList, 0, false, inputTexture);
     RHI::renderer->SetBuffer(mainCommandList, 1, false, luminanceBuffer);
 
@@ -728,10 +732,10 @@ bool RenderBackend::DispatchToneMapping(bool useBloom) {
     RHI::renderer->SetTexture(mainCommandList, 2, false, bloomTexture, bloomViewID);
 
     RHI::renderer->SetTexture(mainCommandList, 0, true, outputTexture);
-    RHI::renderer->SetConstantBuffer(mainCommandList, 0, toneMappingConstantBuffer);
+    RHI::renderer->SetConstantBuffer(mainCommandList, 0, finalPostProcessConstantBuffer);
 
-    const uint32_t threadGroupCountX = (toneMappingParams.outputSize.x + ToneMappingBlockSizeX - 1) / ToneMappingBlockSizeX;
-    const uint32_t threadGroupCountY = (toneMappingParams.outputSize.y + ToneMappingBlockSizeY - 1) / ToneMappingBlockSizeY;
+    const uint32_t threadGroupCountX = (finalPostProcessParams.outputSize.x + FinalPostProcessBlockSizeX - 1) / FinalPostProcessBlockSizeX;
+    const uint32_t threadGroupCountY = (finalPostProcessParams.outputSize.y + FinalPostProcessBlockSizeY - 1) / FinalPostProcessBlockSizeY;
     RHI::renderer->Dispatch(mainCommandList, threadGroupCountX, threadGroupCountY, 1);
 
     RHI::GPUBarrier endBarriers[] = {

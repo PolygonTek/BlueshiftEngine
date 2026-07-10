@@ -163,7 +163,7 @@ void RenderSystem::InitComputePipelines() {
     depthHistoryResolveShaderTemplate = CreateComputeShaderTemplate("_depthHistoryResolveShader", computeShaderModel, "DepthHistoryResolve.hlsl", baseDir);
     depthHistoryResolveMSAAShaderTemplate = CreateComputeShaderTemplate("_depthHistoryResolveMSAAShader", computeShaderModel, "DepthHistoryResolve.hlsl", baseDir, "DEPTH_HISTORY_RESOLVE_MSAA=1");
 
-    toneMappingShaderTemplate = CreateComputeShaderTemplate("_toneMappingShader", computeShaderModel, "ToneMapping/ToneMapping.hlsl", baseDir);
+    finalPostProcessShaderTemplate = CreateComputeShaderTemplate("_finalPostProcessShader", computeShaderModel, "FinalPostProcess.hlsl", baseDir);
     taaResolveShaderTemplate = CreateComputeShaderTemplate("_taaResolveShader", computeShaderModel, "TAAResolve.hlsl", baseDir);
     luminancePass1ShaderTemplate = CreateComputeShaderTemplate("_luminancePass1Shader", computeShaderModel, "ToneMapping/LuminancePass1.hlsl", baseDir);
     luminancePass2ShaderTemplate = CreateComputeShaderTemplate("_luminancePass2Shader", computeShaderModel, "ToneMapping/LuminancePass2.hlsl", baseDir);
@@ -193,7 +193,7 @@ void RenderSystem::EnsureComputePipelines() {
     EnsureComputePipeline(depthHistoryResolveShaderTemplate, depthHistoryResolvePipeline);
     EnsureComputePipeline(depthHistoryResolveMSAAShaderTemplate, depthHistoryResolveMSAAPipeline);
 
-    EnsureComputePipeline(toneMappingShaderTemplate, toneMappingPipeline);
+    EnsureComputePipeline(finalPostProcessShaderTemplate, finalPostProcessPipeline);
     EnsureComputePipeline(taaResolveShaderTemplate, taaResolvePipeline);
     EnsureComputePipeline(luminancePass1ShaderTemplate, luminancePass1Pipeline);
     EnsureComputePipeline(luminancePass2ShaderTemplate, luminancePass2Pipeline);
@@ -221,7 +221,7 @@ void RenderSystem::ReleaseComputePipelines() {
     depthHistoryResolvePipeline.reset();
     depthHistoryResolveMSAAPipeline.reset();
 
-    toneMappingPipeline.reset();
+    finalPostProcessPipeline.reset();
     taaResolvePipeline.reset();
     luminancePass1Pipeline.reset();
     luminancePass2Pipeline.reset();
@@ -247,7 +247,7 @@ void RenderSystem::ReleaseComputePipelines() {
     depthHistoryResolveShaderTemplate.reset();
     depthHistoryResolveMSAAShaderTemplate.reset();
 
-    toneMappingShaderTemplate.reset();
+    finalPostProcessShaderTemplate.reset();
     taaResolveShaderTemplate.reset();
     luminancePass1ShaderTemplate.reset();
     luminancePass2ShaderTemplate.reset();

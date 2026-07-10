@@ -53,6 +53,7 @@ extern BE1::CVar    r_toneMapLuminanceLogMin;
 extern BE1::CVar    r_toneMapLuminanceLogMax;
 extern BE1::CVar    r_toneMapLuminanceAdaptationRate;
 extern BE1::CVar    r_toneMapMiddleGray;
+extern BE1::CVar    r_chromaticAberration;
 
 extern BE1::CVar    r_bloom;
 extern BE1::CVar    r_bloomIntensity;

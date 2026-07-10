@@ -42,7 +42,7 @@ const char *GpuTiming::TagName(Tag tag) {
         "Conv Bloom IFFT",
         "Conv Bloom Resolve",
         "TAA Resolve",
-        "Tone Mapping",
+        "Final Post Process",
         "Blit To SwapChain",
         "ImGui Overlay"
     };
