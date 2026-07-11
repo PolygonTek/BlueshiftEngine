@@ -15,6 +15,7 @@
 #include "Precompiled.h"
 #include "RHI/RHI.h"
 #include "GpuFFT.h"
+#include "ColorGradingLUTGenerator.h"
 #include "ConvolutionBloomKernelGenerator.h"
 
 class RenderContext;
@@ -22,6 +23,7 @@ class RenderBackend;
 class RenderFrameData;
 class ShaderPipeline;
 class ShaderTemplate;
+class Texture;
 
 /*
 ---------------------------------------------------------------------------------------------------
@@ -65,6 +67,9 @@ public:
 
     RenderBackend *                 GetBackend() const { return backEnd; }
 
+    const SharedPtr<Texture> &      GetColorGradingLUTTexture() const { return colorGradingLUTTexture; }
+    void                            RequestColorGradingLUTUpdate() { colorGradingLUTDirty = true; }
+
     ConvolutionBloomKernelGenerator &GetConvolutionBloomKernelGenerator() { return convolutionBloomKernelGenerator; }
     const ConvolutionBloomKernelGenerator &GetConvolutionBloomKernelGenerator() const { return convolutionBloomKernelGenerator; }
 
@@ -79,6 +84,9 @@ private:
     void                            InitComputePipelines();
     void                            EnsureComputePipelines();
     void                            ReleaseComputePipelines();
+    bool                            CreateColorGradingLUT();
+    void                            UpdateColorGradingLUT();
+    void                            DestroyColorGradingLUT();
 
     void                            MarkRenderCompleted(RenderFrameData *frameData);
     bool                            WaitSubmittedFrame(SubmittedFrame &submittedFrame);
@@ -152,6 +160,10 @@ private:
     SharedPtr<ShaderPipeline>       convolutionBloomApplyDispersionPipeline;
 
     ConvolutionBloomKernelGenerator convolutionBloomKernelGenerator;
+
+    BE1::Image                      colorGradingLUTImage;
+    SharedPtr<Texture>              colorGradingLUTTexture;
+    bool                            colorGradingLUTDirty = false;
 
     GpuFFT                          gpuFFT;
 };

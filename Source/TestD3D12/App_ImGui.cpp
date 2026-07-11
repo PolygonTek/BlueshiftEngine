@@ -955,6 +955,67 @@ void App::BuildImGuiOverlay() {
                 }
             }
 
+            if (roundedCollapsingHeader("Color grading##ColorGradingHeader")) {
+                bool colorGrading = r_colorGrading.GetBool();
+                if (ImGui::Checkbox("Color grading", &colorGrading)) {
+                    r_colorGrading.SetBool(colorGrading);
+                }
+
+                bool colorGradingLUTChanged = false;
+
+                float colorGradingSaturation = r_colorGradingSaturation.GetFloat();
+                ImGui::SetNextItemWidth(fontSize * 12.0f);
+                if (ImGui::SliderFloat("Color grading saturation", &colorGradingSaturation,
+                    r_colorGradingSaturation.GetMinValue(), r_colorGradingSaturation.GetMaxValue(), "%.3f")) {
+                    r_colorGradingSaturation.SetFloat(colorGradingSaturation);
+                    colorGradingLUTChanged = true;
+                }
+
+                float colorGradingContrast = r_colorGradingContrast.GetFloat();
+                ImGui::SetNextItemWidth(fontSize * 12.0f);
+                if (ImGui::SliderFloat("Color grading contrast", &colorGradingContrast,
+                    r_colorGradingContrast.GetMinValue(), r_colorGradingContrast.GetMaxValue(), "%.3f")) {
+                    r_colorGradingContrast.SetFloat(colorGradingContrast);
+                    colorGradingLUTChanged = true;
+                }
+
+                float colorGradingGamma = r_colorGradingGamma.GetFloat();
+                ImGui::SetNextItemWidth(fontSize * 12.0f);
+                if (ImGui::SliderFloat("Color grading gamma", &colorGradingGamma,
+                    r_colorGradingGamma.GetMinValue(), r_colorGradingGamma.GetMaxValue(), "%.3f")) {
+                    r_colorGradingGamma.SetFloat(colorGradingGamma);
+                    colorGradingLUTChanged = true;
+                }
+
+                float colorGradingGain = r_colorGradingGain.GetFloat();
+                ImGui::SetNextItemWidth(fontSize * 12.0f);
+                if (ImGui::SliderFloat("Color grading gain", &colorGradingGain,
+                    r_colorGradingGain.GetMinValue(), r_colorGradingGain.GetMaxValue(), "%.3f")) {
+                    r_colorGradingGain.SetFloat(colorGradingGain);
+                    colorGradingLUTChanged = true;
+                }
+
+                float colorGradingTint[3] = {
+                    r_colorGradingTintR.GetFloat(),
+                    r_colorGradingTintG.GetFloat(),
+                    r_colorGradingTintB.GetFloat()
+                };
+                ImGui::SetNextItemWidth(fontSize * 12.0f);
+                if (ImGui::ColorEdit3("Color tint", colorGradingTint, ImGuiColorEditFlags_Float | ImGuiColorEditFlags_HDR)) {
+                    BE1::Clamp(colorGradingTint[0], r_colorGradingTintR.GetMinValue(), r_colorGradingTintR.GetMaxValue());
+                    BE1::Clamp(colorGradingTint[1], r_colorGradingTintG.GetMinValue(), r_colorGradingTintG.GetMaxValue());
+                    BE1::Clamp(colorGradingTint[2], r_colorGradingTintB.GetMinValue(), r_colorGradingTintB.GetMaxValue());
+                    r_colorGradingTintR.SetFloat(colorGradingTint[0]);
+                    r_colorGradingTintG.SetFloat(colorGradingTint[1]);
+                    r_colorGradingTintB.SetFloat(colorGradingTint[2]);
+                    colorGradingLUTChanged = true;
+                }
+
+                if (colorGradingLUTChanged) {
+                    renderSystem->RequestColorGradingLUTUpdate();
+                }
+            }
+
             if (roundedCollapsingHeader("Image effects##PostProcessImageEffectsHeader")) {
                 float chromaticAberration = r_chromaticAberration.GetFloat();
                 ImGui::SetNextItemWidth(fontSize * 12.0f);

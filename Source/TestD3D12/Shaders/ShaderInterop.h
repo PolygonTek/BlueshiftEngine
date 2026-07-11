@@ -63,9 +63,11 @@ static const uint LuminanceBufferOffsetHistogram = LuminanceBufferOffsetLuminanc
 
 static const uint FinalPostProcessBlockSizeX = 16;
 static const uint FinalPostProcessBlockSizeY = 16;
+static const uint ColorGradingLUTSize = 32;
 
 static const uint FinalPostProcessFlagToneMapping = 1u << 0;
 static const uint FinalPostProcessFlagDithering = 1u << 1;
+static const uint FinalPostProcessFlagColorGrading = 1u << 2;
 
 static const uint TAAResolveBlockSizeX = 16;
 static const uint TAAResolveBlockSizeY = 16;

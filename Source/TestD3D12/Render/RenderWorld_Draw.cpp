@@ -16,6 +16,7 @@
 #include "RenderWorld.h"
 #include "RenderCvars.h"
 #include "RenderContext.h"
+#include "RenderSystem.h"
 #include "RenderCamera.h"
 #include "RenderInternal.h"
 #include "Render/Material/MaterialManager.h"
@@ -250,6 +251,10 @@ void RenderWorld::RenderScene(RenderCamera *renderCamera) {
     visCamera->luminanceBuffer = renderCamera->GetLuminanceBuffer();
 
     if (!skipPostProcess) {
+        // 초기 LUT upload request 는 backend frame 실행 전에 처리되므로 Pending 상태의 RHI 포인터도 프레임에 전달할 수 있다.
+        Texture *colorGradingLUTTexture = frameData->RetainTexture(renderSystem->GetColorGradingLUTTexture());
+        visCamera->colorGradingLUTTexture = colorGradingLUTTexture ? colorGradingLUTTexture->GetRHITexture() : nullptr;
+
         if (bloomMode == RenderBloomMode::Pyramid) {
             SetupPyramidBloom(frameData, renderCamera, visCamera);
         } else if (bloomMode == RenderBloomMode::Convolution) {

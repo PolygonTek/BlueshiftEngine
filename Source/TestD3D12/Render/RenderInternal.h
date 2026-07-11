@@ -152,6 +152,7 @@ struct VisCamera {
 
     bool                        taaResolve = false;
     RHI::Buffer *               luminanceBuffer = nullptr;
+    RHI::Texture *              colorGradingLUTTexture = nullptr;
 
     RHI::Texture *              bloomDownTexture = nullptr;
     RHI::Texture *              bloomUpTexture = nullptr;

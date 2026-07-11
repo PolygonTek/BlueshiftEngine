@@ -3,7 +3,7 @@
 #include "ToneMapping/ToneMapOperators.hlsli"
 
 #define COMMON_ROOT_SIGNATURE "RootFlags(0), " \
-    "DescriptorTable(SRV(t0), SRV(t1), SRV(t2), UAV(u0)), " \
+    "DescriptorTable(SRV(t0), SRV(t1), SRV(t2), SRV(t3), UAV(u0)), " \
     "CBV(b0), " \
     "StaticSampler(s100, addressU = TEXTURE_ADDRESS_CLAMP, addressV = TEXTURE_ADDRESS_CLAMP, addressW = TEXTURE_ADDRESS_CLAMP, filter = FILTER_MIN_MAG_MIP_LINEAR)"
 
@@ -16,6 +16,7 @@ cbuffer FinalPostProcessCB : register(b0) {
 Texture2D<float4> inputTexture : register(t0);
 ByteAddressBuffer luminanceBuffer : register(t1);
 Texture2D<float4> bloomTexture : register(t2);
+Texture3D<float4> colorGradingLUTTexture : register(t3);
 RWTexture2D<float4> outputTexture : register(u0);
 
 float InterleavedGradientNoise(uint2 pixelCoord) {
@@ -54,6 +55,12 @@ void CSMain(uint3 dispatchThreadId : SV_DispatchThreadID) {
     if ((finalPostProcessParams.flags & FinalPostProcessFlagToneMapping) != 0) {
         float exposure = luminanceBuffer.Load<float>(LuminanceBufferOffsetExposure);
         color = ToneMap(color * exposure, finalPostProcessParams.toneMappingOperator);
+    }
+
+    if ((finalPostProcessParams.flags & FinalPostProcessFlagColorGrading) != 0) {
+        float lutSize = (float)ColorGradingLUTSize;
+        float3 lutCoord = (saturate(color) * (lutSize - 1.0) + 0.5) / lutSize;
+        color = colorGradingLUTTexture.SampleLevel(linearClampSampler, lutCoord, 0).rgb;
     }
 
     if (finalPostProcessParams.vignetteIntensity > 0.0) {

@@ -49,6 +49,15 @@ CVAR_MINMAX(r_toneMapLuminanceAdaptationRate, "1.1", BE1::CVar::Flag::Float, "to
 CVAR_MINMAX(r_toneMapMiddleGray, "0.18", BE1::CVar::Flag::Float, "tone mapping middle gray", 0.0f, 10.0f);
 CVAR_MINMAX(r_whiteBalanceTemperature, "6500", BE1::CVar::Flag::Float, "white balance color temperature in Kelvin", 1000.0f, 15000.0f);
 
+CVAR(r_colorGrading, "0", BE1::CVar::Flag::Bool, "enable 3D LUT color grading");
+CVAR_MINMAX(r_colorGradingSaturation, "1", BE1::CVar::Flag::Float, "color grading saturation", 0.0f, 2.0f);
+CVAR_MINMAX(r_colorGradingContrast, "1", BE1::CVar::Flag::Float, "color grading contrast", 0.0f, 2.0f);
+CVAR_MINMAX(r_colorGradingGamma, "1", BE1::CVar::Flag::Float, "color grading gamma", 0.1f, 4.0f);
+CVAR_MINMAX(r_colorGradingGain, "1", BE1::CVar::Flag::Float, "color grading gain", 0.0f, 4.0f);
+CVAR_MINMAX(r_colorGradingTintR, "1", BE1::CVar::Flag::Float, "color grading tint red multiplier", 0.0f, 2.0f);
+CVAR_MINMAX(r_colorGradingTintG, "1", BE1::CVar::Flag::Float, "color grading tint green multiplier", 0.0f, 2.0f);
+CVAR_MINMAX(r_colorGradingTintB, "1", BE1::CVar::Flag::Float, "color grading tint blue multiplier", 0.0f, 2.0f);
+
 CVAR_MINMAX(r_chromaticAberration, "0", BE1::CVar::Flag::Float, "chromatic aberration channel offset at the screen edge in pixels", 0.0f, 32.0f);
 CVAR_MINMAX(r_vignette, "0", BE1::CVar::Flag::Float, "vignette intensity", 0.0f, 1.0f);
 CVAR(r_dithering, "1", BE1::CVar::Flag::Bool, "enable final output dithering");

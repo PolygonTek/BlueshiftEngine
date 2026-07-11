@@ -55,6 +55,15 @@ extern BE1::CVar    r_toneMapLuminanceAdaptationRate;
 extern BE1::CVar    r_toneMapMiddleGray;
 extern BE1::CVar    r_whiteBalanceTemperature;
 
+extern BE1::CVar    r_colorGrading;
+extern BE1::CVar    r_colorGradingSaturation;
+extern BE1::CVar    r_colorGradingContrast;
+extern BE1::CVar    r_colorGradingGamma;
+extern BE1::CVar    r_colorGradingGain;
+extern BE1::CVar    r_colorGradingTintR;
+extern BE1::CVar    r_colorGradingTintG;
+extern BE1::CVar    r_colorGradingTintB;
+
 extern BE1::CVar    r_chromaticAberration;
 extern BE1::CVar    r_vignette;
 extern BE1::CVar    r_dithering;

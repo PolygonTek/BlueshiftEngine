@@ -16,6 +16,7 @@
 #include "RenderSystem.h"
 #include "RenderContext.h"
 #include "RenderBackend.h"
+#include "RenderCvars.h"
 #include "RHI/RHI.h"
 #include "Sampler.h"
 #include "Render/Texture/TextureManager.h"
@@ -44,6 +45,8 @@ void RenderSystem::Init(void *mainWindowHandle) {
     samplerManager.Init();
 
     textureManager.Init();
+
+    CreateColorGradingLUT();
 
     shaderTemplateManager.Init();
 
@@ -103,6 +106,8 @@ void RenderSystem::Shutdown() {
 
     VertexInputLayoutFactory::Shutdown();
 
+    DestroyColorGradingLUT();
+
     textureManager.Shutdown();
 
     samplerManager.Shutdown();
@@ -110,6 +115,141 @@ void RenderSystem::Shutdown() {
     RHI::renderer->Shutdown();
 
     RHI::DestroyRenderer();
+}
+
+void RenderSystem::UpdateFrame() {
+    textureManager.UpdateFrame();
+
+    if (colorGradingLUTDirty) {
+        UpdateColorGradingLUT();
+    }
+
+    shaderTemplateManager.UpdateFrame();
+
+    materialManager.UpdateFrame();
+
+    meshManager.UpdateFrame();
+
+    skeletonManager.UpdateFrame();
+
+    animManager.UpdateFrame();
+
+    fontManager.UpdateFrame();
+
+    RHI::renderer->GetMemoryUsage(videoMemoryUsage);
+    assert(videoMemoryUsage.budgetBytes > 0);
+
+    for (RenderContext *renderContext : renderContexts) {
+        renderContext->textureStreamingFeedback.ConsumeCompletedReadbacks([](const uint32_t *feedbackData, uint32_t capacity) {
+            materialManager.ApplyStreamingFeedback(feedbackData, capacity);
+            });
+    }
+}
+
+RenderContext *RenderSystem::CreateRenderContext(void *windowHandle, bool isMain) {
+    RenderContext *renderContext = new RenderContext;
+    renderContexts.Append(renderContext);
+
+    const BE1::Color4 baseClearColor = BE1::Color4::darkBlue;
+
+    renderContext->Init(windowHandle, baseClearColor);
+
+    if (isMain) {
+        assert(!mainRenderContext);
+        mainRenderContext = renderContext;
+    }
+
+    return renderContext;
+}
+
+void RenderSystem::DestroyRenderContext(RenderContext *renderContext) {
+    if (IsUsingRenderThread()) {
+        for (RenderFrameData &frameData : renderContext->frames) {
+            WaitRenderCompleted(&frameData);
+        }
+    }
+
+    if (renderContext == mainRenderContext) {
+        mainRenderContext = nullptr;
+    }
+
+    renderContext->Shutdown();
+
+    backEnd->DiscardGpuFrameTimings(renderContext);
+
+    renderContexts.Remove(renderContext);
+    delete renderContext;
+}
+
+RenderContext *RenderSystem::FindRenderContextByWindowHandle(void *windowHandle) const {
+    for (RenderContext *renderContext : renderContexts) {
+        if (renderContext->GetWindowHandle() == windowHandle) {
+            return renderContext;
+        }
+    }
+    return nullptr;
+}
+
+void RenderSystem::SubmitFrame(RenderContext *renderContext, RenderFrameData *frameData) {
+    assert(renderContext);
+    assert(frameData);
+
+    if (IsUsingRenderThread()) {
+        BE1::ScopedWriteLock lock(frameSyncLock);
+
+        // 주어진 프레임에 대한 (메인 스레드의) 업데이트가 완료되어,
+        // (렌더 스레드의) 렌더링이 완료되기를 기다리는 상태로 변경.
+        assert(frameData->frameSyncState == FrameSyncState::RenderCompleted);
+        frameData->frameSyncState = FrameSyncState::UpdateCompleted;
+
+        SubmittedFrame submittedFrame;
+        submittedFrame.renderContext = renderContext;
+        submittedFrame.frameData = frameData;
+        submittedFrames.Append(submittedFrame);
+
+        // 렌더 스레드에게 업데이트가 완료되었다고 신호를 보낸다.
+        BE1::PlatformCondition::Signal(updateCompletedCondition);
+    } else {
+        // 이전에 사용이 완료된 리소스들을 해제한다.
+        RHI::renderer->FreeRetiredResources(false);
+
+        // 리소스 요청 처리
+        RHI::renderer->ProcessResourceRequests(frameData->GetThreadData(0));
+
+        // 현재 프레임 데이터로 렌더링 백엔드를 실행한다.
+        backEnd->Execute(frameData);
+
+        // 이번 프레임에 Release/Delete 를 요청한 리소스들을 retiredResources 목록에 추가한다.
+        RHI::renderer->DrainReleaseRequestsToRetireList();
+    }
+}
+
+bool RenderSystem::WaitRenderCompleted(const RenderFrameData *frameData) {
+    PROFILER_CPU_SCOPED_EVENT("RenderSystem::WaitRenderCompleted");
+
+    assert(BE1::Engine::IsInMainThread());
+
+    if (!IsUsingRenderThread()) {
+        return true;
+    }
+
+    {
+        BE1::ScopedReadLock lock(frameSyncLock);
+
+        // 주어진 프레임에 대한 (렌더 스레드의) 렌더링이 완료되기를 기다린다.
+        BE1::PlatformCondition::Wait(renderCompletedCondition, frameSyncLock, false, [frameData] {
+            return frameData->frameSyncState == FrameSyncState::RenderCompleted;
+            });
+    }
+    return true;
+}
+
+void RenderSystem::RequestScreenshot(RenderContext *renderContext, const char *filename) {
+    if (!renderContext) {
+        return;
+    }
+
+    renderContext->RequestScreenshot(filename);
 }
 
 static SharedPtr<ShaderTemplate> CreateComputeShaderTemplate(const char *hashName, RHI::ShaderModel shaderModel, const char *filename, const char *baseDir, const char *baseDefine = nullptr) {
@@ -265,63 +405,62 @@ void RenderSystem::ReleaseComputePipelines() {
     convolutionBloomApplyDispersionShaderTemplate.reset();
 }
 
-void RenderSystem::UpdateFrame() {
-    textureManager.UpdateFrame();
-
-    shaderTemplateManager.UpdateFrame();
-
-    materialManager.UpdateFrame();
-
-    meshManager.UpdateFrame();
-
-    skeletonManager.UpdateFrame();
-
-    animManager.UpdateFrame();
-
-    fontManager.UpdateFrame();
-
-    RHI::renderer->GetMemoryUsage(videoMemoryUsage);
-    assert(videoMemoryUsage.budgetBytes > 0);
-
-    for (RenderContext *renderContext : renderContexts) {
-        renderContext->textureStreamingFeedback.ConsumeCompletedReadbacks([](const uint32_t *feedbackData, uint32_t capacity) {
-            materialManager.ApplyStreamingFeedback(feedbackData, capacity);
-        });
-    }
+static ColorGradingLUTGenerator::Settings MakeColorGradingLUTSettingsFromCVars() {
+    ColorGradingLUTGenerator::Settings settings;
+    settings.saturation = r_colorGradingSaturation.GetFloat();
+    settings.contrast = r_colorGradingContrast.GetFloat();
+    settings.gamma = r_colorGradingGamma.GetFloat();
+    settings.gain = r_colorGradingGain.GetFloat();
+    settings.tint.Set(r_colorGradingTintR.GetFloat(), r_colorGradingTintG.GetFloat(), r_colorGradingTintB.GetFloat());
+    return settings;
 }
 
-void RenderSystem::SubmitFrame(RenderContext *renderContext, RenderFrameData *frameData) {
-    assert(renderContext);
-    assert(frameData);
+bool RenderSystem::CreateColorGradingLUT() {
+    // cvars 로 settings 를 채우고, color grading 3D LUT image 를 생성한다.
+    const ColorGradingLUTGenerator::Settings settings = MakeColorGradingLUTSettingsFromCVars();
+    ColorGradingLUTGenerator::Generate(settings, colorGradingLUTImage);
 
-    if (IsUsingRenderThread()) {
-        BE1::ScopedWriteLock lock(frameSyncLock);
+    // CreateTexture 의 초기 업로드가 렌더 스레드에서 처리될 수 있으므로, 이후 갱신에 재사용할 CPU image 와 분리한다.
+    SharedPtr<BE1::Image> textureImage = MakeShared<BE1::Image>(colorGradingLUTImage);
 
-        // 주어진 프레임에 대한 (메인 스레드의) 업데이트가 완료되어,
-        // (렌더 스레드의) 렌더링이 완료되기를 기다리는 상태로 변경.
-        assert(frameData->frameSyncState == FrameSyncState::RenderCompleted);
-        frameData->frameSyncState = FrameSyncState::UpdateCompleted;
-
-        SubmittedFrame submittedFrame;
-        submittedFrame.renderContext = renderContext;
-        submittedFrame.frameData = frameData;
-        submittedFrames.Append(submittedFrame);
-
-        // 렌더 스레드에게 업데이트가 완료되었다고 신호를 보낸다.
-        BE1::PlatformCondition::Signal(updateCompletedCondition);
-    } else {
-        // 이전에 사용이 완료된 리소스들을 해제한다.
-        RHI::renderer->FreeRetiredResources(false);
-
-        // 리소스 요청 처리
-        RHI::renderer->ProcessResourceRequests(frameData->GetThreadData(0));
-
-        // 현재 프레임 데이터로 렌더링 백엔드를 실행한다.
-        backEnd->Execute(frameData);
-
-        // 이번 프레임에 Release/Delete 를 요청한 리소스들을 retiredResources 목록에 추가한다.
-        RHI::renderer->DrainReleaseRequestsToRetireList();
+    // color grading 3D LUT texture 생성
+    colorGradingLUTTexture = textureManager.AllocTexture("_Generated/ColorGradingLUT");
+    if (!colorGradingLUTTexture->Create(RHI::TextureType::Texture3D, textureImage, Texture::Flag::HighQuality | Texture::Flag::NoMipmaps | Texture::Flag::Compute)) {
+        BE_WARNLOG("RenderSystem::CreateColorGradingLUT: failed to create LUT texture\n");
+        colorGradingLUTTexture.reset();
+        colorGradingLUTImage.Clear();
+        return false;
     }
+
+    colorGradingLUTDirty = false;
+    return true;
+}
+
+void RenderSystem::UpdateColorGradingLUT() {
+    if (!colorGradingLUTTexture || !colorGradingLUTTexture->IsReadyForRendering()) {
+        return;
+    }
+
+    const ColorGradingLUTGenerator::Settings settings = MakeColorGradingLUTSettingsFromCVars();
+    ColorGradingLUTGenerator::Generate(settings, colorGradingLUTImage);
+
+    if (!colorGradingLUTTexture->Update3D(0, 0, 0, 0,
+        ColorGradingLUTGenerator::LUTSize,
+        ColorGradingLUTGenerator::LUTSize,
+        ColorGradingLUTGenerator::LUTSize,
+        colorGradingLUTImage.GetFormat(),
+        colorGradingLUTImage.GetPixels())) {
+        BE_WARNLOG("RenderSystem::UpdateColorGradingLUT: failed to update LUT texture\n");
+        return;
+    }
+
+    colorGradingLUTDirty = false;
+}
+
+void RenderSystem::DestroyColorGradingLUT() {
+    colorGradingLUTTexture.reset();
+    colorGradingLUTImage.Clear();
+    colorGradingLUTDirty = false;
 }
 
 void RenderSystem::InitRenderThread() {
@@ -358,26 +497,6 @@ void RenderSystem::ShutdownRenderThread() {
     submittedFrames.SetCount(0, false);
     submittedFrameReadIndex = 0;
     isStoppingRenderThread = false;
-}
-
-bool RenderSystem::WaitRenderCompleted(const RenderFrameData *frameData) {
-    PROFILER_CPU_SCOPED_EVENT("RenderSystem::WaitRenderCompleted");
-
-    assert(BE1::Engine::IsInMainThread());
-
-    if (!IsUsingRenderThread()) {
-        return true;
-    }
-
-    {
-        BE1::ScopedReadLock lock(frameSyncLock);
-
-        // 주어진 프레임에 대한 (렌더 스레드의) 렌더링이 완료되기를 기다린다.
-        BE1::PlatformCondition::Wait(renderCompletedCondition, frameSyncLock, false, [frameData] {
-            return frameData->frameSyncState == FrameSyncState::RenderCompleted;
-        });
-    }
-    return true;
 }
 
 void RenderSystem::MarkRenderCompleted(RenderFrameData *frameData) {
@@ -455,58 +574,6 @@ unsigned int RenderSystem::RenderThreadProc(void *param) {
     }
 
     return 0;
-}
-
-RenderContext *RenderSystem::CreateRenderContext(void *windowHandle, bool isMain) {
-    RenderContext *renderContext = new RenderContext;
-    renderContexts.Append(renderContext);
-
-    const BE1::Color4 baseClearColor = BE1::Color4::darkBlue;
-
-    renderContext->Init(windowHandle, baseClearColor);
-
-    if (isMain) {
-        assert(!mainRenderContext);
-        mainRenderContext = renderContext;
-    }
-
-    return renderContext;
-}
-
-RenderContext *RenderSystem::FindRenderContextByWindowHandle(void *windowHandle) const {
-    for (RenderContext *renderContext : renderContexts) {
-        if (renderContext->GetWindowHandle() == windowHandle) {
-            return renderContext;
-        }
-    }
-    return nullptr;
-}
-
-void RenderSystem::DestroyRenderContext(RenderContext *renderContext) {
-    if (IsUsingRenderThread()) {
-        for (RenderFrameData &frameData : renderContext->frames) {
-            WaitRenderCompleted(&frameData);
-        }
-    }
-
-    if (renderContext == mainRenderContext) {
-        mainRenderContext = nullptr;
-    }
-
-    renderContext->Shutdown();
-
-    backEnd->DiscardGpuFrameTimings(renderContext);
-
-    renderContexts.Remove(renderContext);
-    delete renderContext;
-}
-
-void RenderSystem::RequestScreenshot(RenderContext *renderContext, const char *filename) {
-    if (!renderContext) {
-        return;
-    }
-
-    renderContext->RequestScreenshot(filename);
 }
 
 // mainRenderContext 에 대한 스크린샷을 찍는 Cmd 함수

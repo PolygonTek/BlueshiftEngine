@@ -122,6 +122,8 @@ set(SRC_FILES
     Render/Texture/TextureManager.cpp
     Render/RenderCvars.h
     Render/RenderCvars.cpp
+    Render/ColorGradingLUTGenerator.h
+    Render/ColorGradingLUTGenerator.cpp
     Render/ConvolutionBloomKernelGenerator.h
     Render/ConvolutionBloomKernelGenerator.cpp
     Render/GpuTiming.h

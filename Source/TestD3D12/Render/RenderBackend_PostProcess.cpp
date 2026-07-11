@@ -676,6 +676,13 @@ bool RenderBackend::DispatchFinalPostProcess(bool useToneMapping, bool useBloom)
         return false;
     }
 
+    RHI::Texture *colorGradingLUTTexture = currentVisCamera->colorGradingLUTTexture;
+    if (!colorGradingLUTTexture) {
+        return false;
+    }
+    assert(colorGradingLUTTexture->GetStatus() == RHI::GPUResourceStatus::Ready);
+    const bool useColorGrading = r_colorGrading.GetBool();
+
     const uint32_t outputW = currentVisCamera->renderWidth;
     const uint32_t outputH = currentVisCamera->renderHeight;
     if (outputW == 0 || outputH == 0) {
@@ -701,6 +708,9 @@ bool RenderBackend::DispatchFinalPostProcess(bool useToneMapping, bool useBloom)
 
     if (r_dithering.GetBool()) {
         finalPostProcessParams.flags |= FinalPostProcessFlagDithering;
+    }
+    if (useColorGrading) {
+        finalPostProcessParams.flags |= FinalPostProcessFlagColorGrading;
     }
 
     RHI::ConstantBuffer *finalPostProcessConstantBuffer = frameData->GetThreadData(0)->AllocConstant(sizeof(FinalPostProcessParams), &finalPostProcessParams);
@@ -740,6 +750,7 @@ bool RenderBackend::DispatchFinalPostProcess(bool useToneMapping, bool useBloom)
 
     // useBloom 이 꺼져있으면, 더미 텍스쳐로 그냥 inputTexture 를 바인딩한다. (어차피 사용안함)
     RHI::renderer->SetTexture(mainCommandList, 2, false, bloomTexture, bloomViewID);
+    RHI::renderer->SetTexture(mainCommandList, 3, false, colorGradingLUTTexture);
 
     RHI::renderer->SetTexture(mainCommandList, 0, true, outputTexture);
     RHI::renderer->SetConstantBuffer(mainCommandList, 0, finalPostProcessConstantBuffer);
