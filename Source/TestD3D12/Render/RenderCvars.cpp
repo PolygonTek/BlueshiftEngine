@@ -58,6 +58,7 @@ CVAR_MINMAX(r_colorGradingTintR, "1", BE1::CVar::Flag::Float, "color grading tin
 CVAR_MINMAX(r_colorGradingTintG, "1", BE1::CVar::Flag::Float, "color grading tint green multiplier", 0.0f, 2.0f);
 CVAR_MINMAX(r_colorGradingTintB, "1", BE1::CVar::Flag::Float, "color grading tint blue multiplier", 0.0f, 2.0f);
 
+CVAR_MINMAX(r_lensDistortion, "0", BE1::CVar::Flag::Float, "lens distortion strength (positive = barrel, negative = pincushion)", -0.5f, 0.5f);
 CVAR_MINMAX(r_chromaticAberration, "0", BE1::CVar::Flag::Float, "chromatic aberration channel offset at the screen edge in pixels", 0.0f, 32.0f);
 CVAR_MINMAX(r_vignette, "0", BE1::CVar::Flag::Float, "vignette intensity", 0.0f, 1.0f);
 CVAR(r_dithering, "1", BE1::CVar::Flag::Bool, "enable final output dithering");

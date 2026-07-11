@@ -64,6 +64,7 @@ extern BE1::CVar    r_colorGradingTintR;
 extern BE1::CVar    r_colorGradingTintG;
 extern BE1::CVar    r_colorGradingTintB;
 
+extern BE1::CVar    r_lensDistortion;
 extern BE1::CVar    r_chromaticAberration;
 extern BE1::CVar    r_vignette;
 extern BE1::CVar    r_dithering;

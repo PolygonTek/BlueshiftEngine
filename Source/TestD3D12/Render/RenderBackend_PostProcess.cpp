@@ -697,6 +697,11 @@ bool RenderBackend::DispatchFinalPostProcess(bool useToneMapping, bool useBloom)
     finalPostProcessParams.bloomIntensity = useBloom ? BE1::Max(r_bloomIntensity.GetFloat(), 0.0f) : 0.0f;
     finalPostProcessParams.chromaticAberration = BE1::Max(r_chromaticAberration.GetFloat(), 0.0f);
     finalPostProcessParams.vignetteIntensity = BE1::Clamp(r_vignette.GetFloat(), 0.0f, 1.0f);
+    finalPostProcessParams.lensDistortion = BE1::Clamp(r_lensDistortion.GetFloat(), r_lensDistortion.GetMinValue(), r_lensDistortion.GetMaxValue());
+    finalPostProcessParams.lensDistortionFitScale = 1.0f - BE1::Max(finalPostProcessParams.lensDistortion, 0.0f);
+    const float outputWidth = static_cast<float>(outputW);
+    const float outputHeight = static_cast<float>(outputH);
+    finalPostProcessParams.lensDistortionRadiusSqScale = 4.0f / (outputWidth * outputWidth + outputHeight * outputHeight);
 
     // 선택한 색온도의 광원 아래에서 촬영된 white 가 6500K 기준 white 로 보이도록 RGB gain 을 계산한다.
     static const BE1::Color3 referenceWhite = BE1::Color3::FromColorTemperature(6500.0f);

@@ -148,7 +148,11 @@ struct FinalPostProcessParams {
     float bloomIntensity;
     float chromaticAberration;
     float vignetteIntensity;
+    float lensDistortion;
+    float lensDistortionFitScale;
+    float lensDistortionRadiusSqScale;
     float3 whiteBalance;
+    float padding0;
 };
 
 struct TAAResolveParams {

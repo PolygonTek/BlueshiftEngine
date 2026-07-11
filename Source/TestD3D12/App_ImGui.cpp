@@ -1017,6 +1017,12 @@ void App::BuildImGuiOverlay() {
             }
 
             if (roundedCollapsingHeader("Image effects##PostProcessImageEffectsHeader")) {
+                float lensDistortion = r_lensDistortion.GetFloat();
+                ImGui::SetNextItemWidth(fontSize * 12.0f);
+                if (ImGui::SliderFloat("Lens distortion", &lensDistortion, r_lensDistortion.GetMinValue(), r_lensDistortion.GetMaxValue(), "%.3f")) {
+                    r_lensDistortion.SetFloat(lensDistortion);
+                }
+
                 float chromaticAberration = r_chromaticAberration.GetFloat();
                 ImGui::SetNextItemWidth(fontSize * 12.0f);
                 if (ImGui::SliderFloat("Chromatic aberration", &chromaticAberration, 0.0f, 16.0f, "%.2f px")) {

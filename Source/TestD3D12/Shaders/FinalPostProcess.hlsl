@@ -31,23 +31,33 @@ void CSMain(uint3 dispatchThreadId : SV_DispatchThreadID) {
         return;
     }
 
-    float4 hdrColor = inputTexture.Load(int3(pixelCoord, 0));
+    float2 uv = (float2(pixelCoord) + 0.5) * finalPostProcessParams.outputTexelSize;
+    float2 centerOffset = uv - 0.5;
+    float2 centerOffsetPixels = centerOffset * float2(finalPostProcessParams.outputSize);
+    float2 inputUv = uv;
+
+    float4 hdrColor;
+    if (finalPostProcessParams.lensDistortion != 0.0) {
+        float normalizedRadiusSq = dot(centerOffsetPixels, centerOffsetPixels) * finalPostProcessParams.lensDistortionRadiusSqScale;
+        float radialScale = finalPostProcessParams.lensDistortionFitScale / (1.0 - finalPostProcessParams.lensDistortion * normalizedRadiusSq);
+        inputUv = 0.5 + centerOffset * radialScale;
+        hdrColor = inputTexture.SampleLevel(linearClampSampler, inputUv, 0);
+    } else {
+        hdrColor = inputTexture.Load(int3(pixelCoord, 0));
+    }
 
     if (finalPostProcessParams.chromaticAberration > 0.0) {
-        float2 uv = (float2(pixelCoord) + 0.5) * finalPostProcessParams.outputTexelSize;
-        float2 centerOffsetPixels = (uv - 0.5) * float2(finalPostProcessParams.outputSize);
         float centerDistance = length(centerOffsetPixels);
-        float normalizedRadius = saturate(length(uv - 0.5) * 2.0);
+        float normalizedRadius = saturate(length(centerOffset) * 2.0);
         float2 radialDirection = centerOffsetPixels / max(centerDistance, 0.0001);
         float2 sampleOffset = radialDirection * finalPostProcessParams.outputTexelSize * finalPostProcessParams.chromaticAberration * normalizedRadius * normalizedRadius;
 
-        hdrColor.r = inputTexture.SampleLevel(linearClampSampler, uv - sampleOffset, 0).r;
-        hdrColor.b = inputTexture.SampleLevel(linearClampSampler, uv + sampleOffset, 0).b;
+        hdrColor.r = inputTexture.SampleLevel(linearClampSampler, inputUv - sampleOffset, 0).r;
+        hdrColor.b = inputTexture.SampleLevel(linearClampSampler, inputUv + sampleOffset, 0).b;
     }
 
     if (finalPostProcessParams.bloomIntensity > 0.0) {
-        float2 uv = (float2(pixelCoord) + 0.5) * finalPostProcessParams.outputTexelSize;
-        hdrColor.rgb += bloomTexture.SampleLevel(linearClampSampler, uv, 0).rgb * finalPostProcessParams.bloomIntensity;
+        hdrColor.rgb += bloomTexture.SampleLevel(linearClampSampler, inputUv, 0).rgb * finalPostProcessParams.bloomIntensity;
     }
 
     float3 color = max(hdrColor.rgb * finalPostProcessParams.whiteBalance, float3(0.0, 0.0, 0.0));
@@ -64,9 +74,8 @@ void CSMain(uint3 dispatchThreadId : SV_DispatchThreadID) {
     }
 
     if (finalPostProcessParams.vignetteIntensity > 0.0) {
-        float2 uv = (float2(pixelCoord) + 0.5) * finalPostProcessParams.outputTexelSize;
-        float2 centerOffset = uv * 2.0 - 1.0;
-        float vignette = smoothstep(0.25, 1.0, dot(centerOffset, centerOffset));
+        float2 vignetteOffset = centerOffset * 2.0;
+        float vignette = smoothstep(0.25, 1.0, dot(vignetteOffset, vignetteOffset));
         color *= 1.0 - vignette * finalPostProcessParams.vignetteIntensity;
     }
 
