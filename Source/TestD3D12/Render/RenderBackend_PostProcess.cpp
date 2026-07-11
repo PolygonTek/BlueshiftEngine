@@ -690,6 +690,15 @@ bool RenderBackend::DispatchFinalPostProcess(bool useToneMapping, bool useBloom)
     finalPostProcessParams.bloomIntensity = useBloom ? BE1::Max(r_bloomIntensity.GetFloat(), 0.0f) : 0.0f;
     finalPostProcessParams.chromaticAberration = BE1::Max(r_chromaticAberration.GetFloat(), 0.0f);
     finalPostProcessParams.vignetteIntensity = BE1::Clamp(r_vignette.GetFloat(), 0.0f, 1.0f);
+
+    // 선택한 색온도의 광원 아래에서 촬영된 white 가 6500K 기준 white 로 보이도록 RGB gain 을 계산한다.
+    static const BE1::Color3 referenceWhite = BE1::Color3::FromColorTemperature(6500.0f);
+    const BE1::Color3 sourceWhite = BE1::Color3::FromColorTemperature(BE1::Clamp(r_whiteBalanceTemperature.GetFloat(), 1000.0f, 15000.0f));
+    finalPostProcessParams.whiteBalance = float3(
+        referenceWhite.r / BE1::Max(sourceWhite.r, referenceWhite.r * 0.01f),
+        referenceWhite.g / BE1::Max(sourceWhite.g, referenceWhite.g * 0.01f),
+        referenceWhite.b / BE1::Max(sourceWhite.b, referenceWhite.b * 0.01f));
+
     if (r_dithering.GetBool()) {
         finalPostProcessParams.flags |= FinalPostProcessFlagDithering;
     }

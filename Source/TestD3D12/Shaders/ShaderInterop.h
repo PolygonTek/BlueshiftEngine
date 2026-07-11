@@ -146,7 +146,7 @@ struct FinalPostProcessParams {
     float bloomIntensity;
     float chromaticAberration;
     float vignetteIntensity;
-    float3 padding0;
+    float3 whiteBalance;
 };
 
 struct TAAResolveParams {

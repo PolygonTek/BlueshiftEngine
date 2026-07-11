@@ -49,7 +49,7 @@ void CSMain(uint3 dispatchThreadId : SV_DispatchThreadID) {
         hdrColor.rgb += bloomTexture.SampleLevel(linearClampSampler, uv, 0).rgb * finalPostProcessParams.bloomIntensity;
     }
 
-    float3 color = max(hdrColor.rgb, float3(0.0, 0.0, 0.0));
+    float3 color = max(hdrColor.rgb * finalPostProcessParams.whiteBalance, float3(0.0, 0.0, 0.0));
 
     if ((finalPostProcessParams.flags & FinalPostProcessFlagToneMapping) != 0) {
         float exposure = luminanceBuffer.Load<float>(LuminanceBufferOffsetExposure);

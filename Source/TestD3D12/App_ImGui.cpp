@@ -947,6 +947,12 @@ void App::BuildImGuiOverlay() {
                 if (ImGui::SliderFloat("Middle gray", &middleGray, 0.0f, 2.0f, "%.3f")) {
                     r_toneMapMiddleGray.SetFloat(middleGray);
                 }
+
+                float whiteBalanceTemperature = r_whiteBalanceTemperature.GetFloat();
+                ImGui::SetNextItemWidth(fontSize * 12.0f);
+                if (ImGui::SliderFloat("White balance temperature", &whiteBalanceTemperature, 1000.0f, 15000.0f, "%.0f K")) {
+                    r_whiteBalanceTemperature.SetFloat(whiteBalanceTemperature);
+                }
             }
 
             if (roundedCollapsingHeader("Image effects##PostProcessImageEffectsHeader")) {
