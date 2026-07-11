@@ -689,12 +689,9 @@ bool RenderBackend::DispatchFinalPostProcess(bool useToneMapping, bool useBloom)
     finalPostProcessParams.toneMappingOperator = static_cast<uint32_t>(BE1::Clamp(r_toneMapOp.GetInteger(), static_cast<int>(ToneMappingOperatorLinear), static_cast<int>(ToneMappingOperatorFilmicGT)));
     finalPostProcessParams.bloomIntensity = useBloom ? BE1::Max(r_bloomIntensity.GetFloat(), 0.0f) : 0.0f;
     finalPostProcessParams.chromaticAberration = BE1::Max(r_chromaticAberration.GetFloat(), 0.0f);
-    if (finalPostProcessParams.chromaticAberration > 0.0f) {
-        finalPostProcessParams.flags |= FinalPostProcessFlagChromaticAberration;
-    }
     finalPostProcessParams.vignetteIntensity = BE1::Clamp(r_vignette.GetFloat(), 0.0f, 1.0f);
-    if (finalPostProcessParams.vignetteIntensity > 0.0f) {
-        finalPostProcessParams.flags |= FinalPostProcessFlagVignette;
+    if (r_dithering.GetBool()) {
+        finalPostProcessParams.flags |= FinalPostProcessFlagDithering;
     }
 
     RHI::ConstantBuffer *finalPostProcessConstantBuffer = frameData->GetThreadData(0)->AllocConstant(sizeof(FinalPostProcessParams), &finalPostProcessParams);

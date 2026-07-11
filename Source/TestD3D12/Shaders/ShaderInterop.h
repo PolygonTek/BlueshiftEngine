@@ -65,8 +65,7 @@ static const uint FinalPostProcessBlockSizeX = 16;
 static const uint FinalPostProcessBlockSizeY = 16;
 
 static const uint FinalPostProcessFlagToneMapping = 1u << 0;
-static const uint FinalPostProcessFlagChromaticAberration = 1u << 1;
-static const uint FinalPostProcessFlagVignette = 1u << 2;
+static const uint FinalPostProcessFlagDithering = 1u << 1;
 
 static const uint TAAResolveBlockSizeX = 16;
 static const uint TAAResolveBlockSizeY = 16;

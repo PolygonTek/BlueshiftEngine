@@ -47,8 +47,10 @@ CVAR(r_toneMapLuminanceLogMin, "-10", BE1::CVar::Flag::Float, "tone mapping lumi
 CVAR(r_toneMapLuminanceLogMax, "2", BE1::CVar::Flag::Float, "tone mapping luminance histogram maximum log2 luminance");
 CVAR_MINMAX(r_toneMapLuminanceAdaptationRate, "1.1", BE1::CVar::Flag::Float, "tone mapping luminance adaptation rate", 0.0f, 100.0f);
 CVAR_MINMAX(r_toneMapMiddleGray, "0.18", BE1::CVar::Flag::Float, "tone mapping middle gray", 0.0f, 10.0f);
+
 CVAR_MINMAX(r_chromaticAberration, "0", BE1::CVar::Flag::Float, "chromatic aberration channel offset at the screen edge in pixels", 0.0f, 32.0f);
 CVAR_MINMAX(r_vignette, "0", BE1::CVar::Flag::Float, "vignette intensity", 0.0f, 1.0f);
+CVAR(r_dithering, "1", BE1::CVar::Flag::Bool, "enable final output dithering");
 
 CVAR_MINMAX(r_bloom, "2", BE1::CVar::Flag::Integer | BE1::CVar::Flag::Archive, "bloom mode (0 = off, 1 = pyramid, 2 = convolution)", RenderBloomMode::Off, RenderBloomMode::Convolution);
 CVAR_MINMAX(r_bloomIntensity, "0.15", BE1::CVar::Flag::Float, "final bloom composite intensity", 0.0f, 10.0f);

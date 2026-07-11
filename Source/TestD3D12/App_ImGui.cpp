@@ -599,11 +599,6 @@ void App::BuildImGuiOverlay() {
                 if (ImGui::Checkbox("Skip draw camera 3D", &skipDrawCamera3D)) {
                     r_skipDrawCamera3D.SetBool(skipDrawCamera3D);
                 }
-
-                bool skipPostProcess = r_skipPostProcess.GetBool();
-                if (ImGui::Checkbox("Skip post process", &skipPostProcess)) {
-                    r_skipPostProcess.SetBool(skipPostProcess);
-                }
             }
 
             const bool hiZHeaderOpen = roundedCollapsingHeader("Hi-Z##HiZHeader");
@@ -683,6 +678,35 @@ void App::BuildImGuiOverlay() {
                 if (ImGui::DragFloat("TAA depth fallback threshold", &taaDepthFallbackThreshold, 0.05f, r_taaDepthFallbackThreshold.GetMinValue(), r_taaDepthFallbackThreshold.GetMaxValue(), "%.3f")) {
                     r_taaDepthFallbackThreshold.SetFloat(taaDepthFallbackThreshold);
                 }
+            }
+
+            if (roundedCollapsingHeader("Texture Streaming##TextureStreamingHeader")) {
+                int streamInDelay = r_textureStreamingStreamInDelay.GetInteger();
+                ImGui::SetNextItemWidth(fontSize * 6.0f);
+                if (ImGui::InputInt("Texture stream-in delay", &streamInDelay)) {
+                    r_textureStreamingStreamInDelay.SetInteger(BE1::Max(0, streamInDelay));
+                }
+
+                int maxLevelReduction = r_textureStreamingMaxLevelReduction.GetInteger();
+                ImGui::SetNextItemWidth(fontSize * 6.0f);
+                if (ImGui::SliderInt("Texture max level reduction", &maxLevelReduction,
+                        static_cast<int>(r_textureStreamingMaxLevelReduction.GetMinValue()),
+                        static_cast<int>(r_textureStreamingMaxLevelReduction.GetMaxValue()))) {
+                    r_textureStreamingMaxLevelReduction.SetInteger(maxLevelReduction);
+                }
+            }
+
+            if (roundedCollapsingHeader("Texture Viewer##TextureViewerHeader")) {
+                BuildImGuiTextureViewer();
+            }
+
+            ImGui::EndTabItem();
+        }
+
+        if (ImGui::BeginTabItem("Post Process")) {
+            bool postProcessing = !r_skipPostProcess.GetBool();
+            if (ImGui::Checkbox("Post processing", &postProcessing)) {
+                r_skipPostProcess.SetBool(!postProcessing);
             }
 
             if (roundedCollapsingHeader("Bloom##BloomHeader")) {
@@ -923,7 +947,9 @@ void App::BuildImGuiOverlay() {
                 if (ImGui::SliderFloat("Middle gray", &middleGray, 0.0f, 2.0f, "%.3f")) {
                     r_toneMapMiddleGray.SetFloat(middleGray);
                 }
+            }
 
+            if (roundedCollapsingHeader("Image effects##PostProcessImageEffectsHeader")) {
                 float chromaticAberration = r_chromaticAberration.GetFloat();
                 ImGui::SetNextItemWidth(fontSize * 12.0f);
                 if (ImGui::SliderFloat("Chromatic aberration", &chromaticAberration, 0.0f, 16.0f, "%.2f px")) {
@@ -935,26 +961,11 @@ void App::BuildImGuiOverlay() {
                 if (ImGui::SliderFloat("Vignette", &vignette, 0.0f, 1.0f, "%.3f")) {
                     r_vignette.SetFloat(vignette);
                 }
-            }
 
-            if (roundedCollapsingHeader("Texture Streaming##TextureStreamingHeader")) {
-                int streamInDelay = r_textureStreamingStreamInDelay.GetInteger();
-                ImGui::SetNextItemWidth(fontSize * 6.0f);
-                if (ImGui::InputInt("Texture stream-in delay", &streamInDelay)) {
-                    r_textureStreamingStreamInDelay.SetInteger(BE1::Max(0, streamInDelay));
+                bool dithering = r_dithering.GetBool();
+                if (ImGui::Checkbox("Dithering", &dithering)) {
+                    r_dithering.SetBool(dithering);
                 }
-
-                int maxLevelReduction = r_textureStreamingMaxLevelReduction.GetInteger();
-                ImGui::SetNextItemWidth(fontSize * 6.0f);
-                if (ImGui::SliderInt("Texture max level reduction", &maxLevelReduction,
-                        static_cast<int>(r_textureStreamingMaxLevelReduction.GetMinValue()),
-                        static_cast<int>(r_textureStreamingMaxLevelReduction.GetMaxValue()))) {
-                    r_textureStreamingMaxLevelReduction.SetInteger(maxLevelReduction);
-                }
-            }
-
-            if (roundedCollapsingHeader("Texture Viewer##TextureViewerHeader")) {
-                BuildImGuiTextureViewer();
             }
 
             ImGui::EndTabItem();
