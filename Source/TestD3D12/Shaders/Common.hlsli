@@ -1,7 +1,17 @@
 #ifndef __COMMON_HLSLI__
 #define __COMMON_HLSLI__
 
-#include "MathConstants.hlsli"
+#define FLT_EPSILON     1.192092896e-07 // Smallest positive number, such that 1.0 + FLT_EPSILON != 1.0
+#define FLT_MIN         1.175494351e-38 // Minimum representable positive floating-point number
+#define FLT_MAX         3.402823466e+38 // Maximum representable floating-point number
+
+#define PI              3.14159265358979323846
+#define TWO_PI          6.28318530717958647692
+#define SQRT2           1.41421356237309504880
+#define FLT_MAX         3.402823466e+38
+#define FLT_EPSILON     1.192092896e-07
+#define GOLDEN_RATIO    1.6180339887
+
 #include "ShaderInterop.h"
 
 #ifndef half
@@ -34,6 +44,13 @@
     SamplerState anisoClampSampler : register(s106); \
     SamplerState anisoWrapSampler : register(s107); \
     SamplerState anisoMirrorSampler : register(s108);
+
+// Interleaved gradient function from Jimenez 2014
+// http://www.iryoku.com/next-generation-post-processing-in-call-of-duty-advanced-warfare
+float InterleavedGradientNoise(uint2 pixelCoord) {
+    float f = dot(float2(0.06711056, 0.00583715), pixelCoord);
+    return frac(52.9829189 * frac(f));
+}
 
 // from https://github.com/GPUOpen-Effects/FidelityFX-Denoiser/blob/master/ffx-shadows-dnsr/ffx_denoiser_shadows_util.h
 //  LANE TO 8x8 MAPPING

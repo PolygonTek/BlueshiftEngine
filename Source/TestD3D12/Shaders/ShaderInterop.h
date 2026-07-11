@@ -152,7 +152,7 @@ struct FinalPostProcessParams {
     float lensDistortionFitScale;
     float lensDistortionRadiusSqScale;
     float3 whiteBalance;
-    float padding0;
+    float bloomDirtIntensity;
 };
 
 struct TAAResolveParams {

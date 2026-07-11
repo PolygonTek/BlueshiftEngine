@@ -740,6 +740,13 @@ void App::BuildImGuiOverlay() {
                     if (ImGui::SliderFloat("Bloom intensity", &bloomIntensity, 0.0f, 2.0f, "%.3f")) {
                         r_bloomIntensity.SetFloat(bloomIntensity);
                     }
+
+                    float bloomDirtIntensity = r_bloomDirtIntensity.GetFloat();
+                    ImGui::SetNextItemWidth(fontSize * 12.0f);
+                    if (ImGui::SliderFloat("Bloom dirt intensity", &bloomDirtIntensity,
+                        r_bloomDirtIntensity.GetMinValue(), r_bloomDirtIntensity.GetMaxValue(), "%.3f")) {
+                        r_bloomDirtIntensity.SetFloat(bloomDirtIntensity);
+                    }
                 }
 
                 if (usePyramidBloom) {

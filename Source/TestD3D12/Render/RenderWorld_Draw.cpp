@@ -255,6 +255,9 @@ void RenderWorld::RenderScene(RenderCamera *renderCamera) {
         Texture *colorGradingLUTTexture = frameData->RetainTexture(renderSystem->GetColorGradingLUTTexture());
         visCamera->colorGradingLUTTexture = colorGradingLUTTexture ? colorGradingLUTTexture->GetRHITexture() : nullptr;
 
+        Texture *bloomDirtMaskTexture = frameData->RetainTexture(renderCamera->GetBloomDirtMaskTexture());
+        visCamera->bloomDirtMaskTexture = bloomDirtMaskTexture ? bloomDirtMaskTexture->GetRHITexture() : nullptr;
+
         if (bloomMode == RenderBloomMode::Pyramid) {
             SetupPyramidBloom(frameData, renderCamera, visCamera);
         } else if (bloomMode == RenderBloomMode::Convolution) {

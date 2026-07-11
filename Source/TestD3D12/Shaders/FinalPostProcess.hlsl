@@ -1,9 +1,9 @@
-#include "ShaderInterop.h"
+#include "Common.hlsli"
 #include "ColorSpaceUtility.hlsli"
 #include "ToneMapping/ToneMapOperators.hlsli"
 
 #define COMMON_ROOT_SIGNATURE "RootFlags(0), " \
-    "DescriptorTable(SRV(t0), SRV(t1), SRV(t2), SRV(t3), UAV(u0)), " \
+    "DescriptorTable(SRV(t0), SRV(t1), SRV(t2), SRV(t3), SRV(t4), UAV(u0)), " \
     "CBV(b0), " \
     "StaticSampler(s100, addressU = TEXTURE_ADDRESS_CLAMP, addressV = TEXTURE_ADDRESS_CLAMP, addressW = TEXTURE_ADDRESS_CLAMP, filter = FILTER_MIN_MAG_MIP_LINEAR)"
 
@@ -17,11 +17,8 @@ Texture2D<float4> inputTexture : register(t0);
 ByteAddressBuffer luminanceBuffer : register(t1);
 Texture2D<float4> bloomTexture : register(t2);
 Texture3D<float4> colorGradingLUTTexture : register(t3);
+Texture2D<float4> bloomDirtMaskTexture : register(t4);
 RWTexture2D<float4> outputTexture : register(u0);
-
-float InterleavedGradientNoise(uint2 pixelCoord) {
-    return frac(52.9829189 * frac(dot(float2(pixelCoord), float2(0.06711056, 0.00583715))));
-}
 
 [RootSignature(COMMON_ROOT_SIGNATURE)]
 [numthreads(FinalPostProcessBlockSizeX, FinalPostProcessBlockSizeY, 1)]
@@ -57,7 +54,12 @@ void CSMain(uint3 dispatchThreadId : SV_DispatchThreadID) {
     }
 
     if (finalPostProcessParams.bloomIntensity > 0.0) {
-        hdrColor.rgb += bloomTexture.SampleLevel(linearClampSampler, inputUv, 0).rgb * finalPostProcessParams.bloomIntensity;
+        float3 bloomColor = bloomTexture.SampleLevel(linearClampSampler, inputUv, 0).rgb * finalPostProcessParams.bloomIntensity;
+        if (finalPostProcessParams.bloomDirtIntensity > 0.0) {
+            float3 dirtMask = bloomDirtMaskTexture.SampleLevel(linearClampSampler, uv, 0).rgb;
+            bloomColor += bloomColor * dirtMask * finalPostProcessParams.bloomDirtIntensity;
+        }
+        hdrColor.rgb += bloomColor;
     }
 
     float3 color = max(hdrColor.rgb * finalPostProcessParams.whiteBalance, float3(0.0, 0.0, 0.0));
@@ -75,7 +77,7 @@ void CSMain(uint3 dispatchThreadId : SV_DispatchThreadID) {
 
     if (finalPostProcessParams.vignetteIntensity > 0.0) {
         float2 vignetteOffset = centerOffset * 2.0;
-        float vignette = smoothstep(0.25, 1.0, dot(vignetteOffset, vignetteOffset));
+        float vignette = smoothstep(0.8, 1.5, dot(vignetteOffset, vignetteOffset));
         color *= 1.0 - vignette * finalPostProcessParams.vignetteIntensity;
     }
 

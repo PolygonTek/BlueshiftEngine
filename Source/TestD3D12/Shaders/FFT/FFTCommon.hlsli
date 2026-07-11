@@ -1,7 +1,7 @@
 #ifndef __FFT_COMMON_HLSLI__
 #define __FFT_COMMON_HLSLI__
 
-#include "../MathConstants.hlsli"
+#include "../Common.hlsli"
 
 float2 ComplexMul(float2 a, float2 b) {
     return float2(a.x * b.x - a.y * b.y, a.x * b.y + a.y * b.x);

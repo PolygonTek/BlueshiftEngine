@@ -134,6 +134,7 @@ public:
     bool                        SetConvolutionBloomKernelFromImage(const char *textureName, const BE1::Image &kernelImage);
     bool                        SetConvolutionBloomKernelFromFile(const char *filename);
     void                        SetConvolutionBloomKernelTexture(const SharedPtr<Texture> &texture, float normalizationFactor, const BE1::Vec2 &kernelExtents);
+    void                        SetBloomDirtMaskTexture(const SharedPtr<Texture> &texture) { bloomDirtMaskTexture = texture; }
     void                        SetConvolutionBloomKernelRotation(float rotation);
     void                        SetConvolutionBloomKernelSizeScale(float sizeScale);
     void                        SetConvolutionBloomPaddingTrim(float paddingTrim);
@@ -182,6 +183,7 @@ public:
     const uint32_t *            GetBloomMipWidths() const { return bloomMipWidths; }
     const uint32_t *            GetBloomMipHeights() const { return bloomMipHeights; }
     uint32_t                    GetBloomMipCount() const { return bloomMipCount; }
+    const SharedPtr<Texture> &  GetBloomDirtMaskTexture() const { return bloomDirtMaskTexture; }
 
     uint32_t                    GetFFTBloomSize() const { return fftBloomSize; }
     RHI::Buffer *               GetFFTBloomScreenSpatialBuffer() const { return fftBloomScreenSpatialBuffer; }
@@ -306,6 +308,7 @@ private:
     RHI::ViewID                 bloomUpMipUAVs[RenderBloomUpMaxLevelCount] = {};
     uint32_t                    bloomMipCount = 0;
     uint32_t                    bloomMipMaxLevelCount = 0;
+    SharedPtr<Texture>          bloomDirtMaskTexture;
 
     uint32_t                    fftBloomSize = 0;
     SharedPtr<Texture>          fftBloomKernelSourceTexture;

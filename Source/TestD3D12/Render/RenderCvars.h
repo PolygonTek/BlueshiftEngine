@@ -70,9 +70,10 @@ extern BE1::CVar    r_vignette;
 extern BE1::CVar    r_dithering;
 
 extern BE1::CVar    r_bloom;
-extern BE1::CVar    r_bloomIntensity;
 extern BE1::CVar    r_bloomThreshold;
 extern BE1::CVar    r_bloomSoftThreshold;
+extern BE1::CVar    r_bloomIntensity;
+extern BE1::CVar    r_bloomDirtIntensity;
 
 extern BE1::CVar    r_pyramidBloomPrefilterQuality;
 extern BE1::CVar    r_pyramidBloomScatter;

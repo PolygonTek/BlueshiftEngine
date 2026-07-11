@@ -683,6 +683,14 @@ bool RenderBackend::DispatchFinalPostProcess(bool useToneMapping, bool useBloom)
     assert(colorGradingLUTTexture->GetStatus() == RHI::GPUResourceStatus::Ready);
     const bool useColorGrading = r_colorGrading.GetBool();
 
+    RHI::Texture *bloomDirtMaskTexture = currentVisCamera->bloomDirtMaskTexture;
+    const float bloomIntensity = useBloom ? BE1::Max(r_bloomIntensity.GetFloat(), 0.0f) : 0.0f;
+    const float bloomDirtIntensity = BE1::Clamp(r_bloomDirtIntensity.GetFloat(), r_bloomDirtIntensity.GetMinValue(), r_bloomDirtIntensity.GetMaxValue());
+    const bool useBloomDirtMask = bloomIntensity > 0.0f && bloomDirtMaskTexture && bloomDirtIntensity > 0.0f;
+    if (useBloomDirtMask) {
+        assert(bloomDirtMaskTexture->GetStatus() == RHI::GPUResourceStatus::Ready);
+    }
+
     const uint32_t outputW = currentVisCamera->renderWidth;
     const uint32_t outputH = currentVisCamera->renderHeight;
     if (outputW == 0 || outputH == 0) {
@@ -694,7 +702,8 @@ bool RenderBackend::DispatchFinalPostProcess(bool useToneMapping, bool useBloom)
     finalPostProcessParams.outputTexelSize = float2(1.0f / outputW, 1.0f / outputH);
     finalPostProcessParams.flags = useToneMapping ? FinalPostProcessFlagToneMapping : 0u;
     finalPostProcessParams.toneMappingOperator = static_cast<uint32_t>(BE1::Clamp(r_toneMapOp.GetInteger(), static_cast<int>(ToneMappingOperatorLinear), static_cast<int>(ToneMappingOperatorFilmicGT)));
-    finalPostProcessParams.bloomIntensity = useBloom ? BE1::Max(r_bloomIntensity.GetFloat(), 0.0f) : 0.0f;
+    finalPostProcessParams.bloomIntensity = bloomIntensity;
+    finalPostProcessParams.bloomDirtIntensity = useBloomDirtMask ? bloomDirtIntensity : 0.0f;
     finalPostProcessParams.chromaticAberration = BE1::Max(r_chromaticAberration.GetFloat(), 0.0f);
     finalPostProcessParams.vignetteIntensity = BE1::Clamp(r_vignette.GetFloat(), 0.0f, 1.0f);
     finalPostProcessParams.lensDistortion = BE1::Clamp(r_lensDistortion.GetFloat(), r_lensDistortion.GetMinValue(), r_lensDistortion.GetMaxValue());
@@ -756,6 +765,7 @@ bool RenderBackend::DispatchFinalPostProcess(bool useToneMapping, bool useBloom)
     // useBloom 이 꺼져있으면, 더미 텍스쳐로 그냥 inputTexture 를 바인딩한다. (어차피 사용안함)
     RHI::renderer->SetTexture(mainCommandList, 2, false, bloomTexture, bloomViewID);
     RHI::renderer->SetTexture(mainCommandList, 3, false, colorGradingLUTTexture);
+    RHI::renderer->SetTexture(mainCommandList, 4, false, useBloomDirtMask ? bloomDirtMaskTexture : inputTexture);
 
     RHI::renderer->SetTexture(mainCommandList, 0, true, outputTexture);
     RHI::renderer->SetConstantBuffer(mainCommandList, 0, finalPostProcessConstantBuffer);
