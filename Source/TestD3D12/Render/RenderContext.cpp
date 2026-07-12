@@ -128,10 +128,17 @@ void RenderContext::OnResize(int width, int height) {
     guiMesh.SetClipRect(BE1::Rect(0, 0, width, height));
 }
 
-void RenderContext::GetMainRenderDest(RHI::RenderDest &renderDest) const {
+void RenderContext::GetMainRenderDest(RHI::RenderDest &renderDest, bool outputNormal, bool outputVelocity) const {
+    renderDest = RHI::RenderDest();
     renderDest.renderTargetCount = 1;
     renderDest.depthStencilFormat = GetMainRTDepthFormat();
     renderDest.renderTargetFormats[0] = GetMainRTColorFormat();
+    if (outputNormal) {
+        renderDest.renderTargetFormats[renderDest.renderTargetCount++] = RHI::Format::R16G16_FLOAT;
+    }
+    if (outputVelocity) {
+        renderDest.renderTargetFormats[renderDest.renderTargetCount++] = RHI::Format::R16G16_FLOAT;
+    }
     renderDest.sampleCount = GetMainRTSampleCount();
 }
 

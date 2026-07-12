@@ -77,6 +77,7 @@ class RenderCamera {
 public:
     ~RenderCamera() {
         DestroyPostProcessResources();
+        DestroyHiZResources();
         DestroyRenderTextures();
     }
 
@@ -139,8 +140,8 @@ public:
     void                        SetConvolutionBloomKernelSizeScale(float sizeScale);
     void                        SetConvolutionBloomPaddingTrim(float paddingTrim);
 
-    void                        EnsureRenderTextures(uint32_t width, uint32_t height, RHI::Format colorFormat, RHI::Format depthFormat, uint32_t sampleCount, const BE1::Color4 &optimizedClearColor);
-    void                        EnsurePostProcessResources(bool skipPostProcess, bool useHistoryTextures, RenderBloomMode bloomMode);
+    bool                        EnsureRenderTextures(uint32_t width, uint32_t height, RHI::Format colorFormat, RHI::Format depthFormat, uint32_t sampleCount, bool needDepthHistory, const BE1::Color4 &optimizedClearColor);
+    void                        EnsurePostProcessResources(bool skipPostProcess, bool needColorHistory, bool needDepthHistory, RenderBloomMode bloomMode);
 
     void                        InvalidateTemporalHistory();
 
@@ -148,9 +149,11 @@ public:
     uint32_t                    GetRenderHeight() const { return renderHeight; }
     RHI::Texture *              GetRTColorTexture() const { return rtColorTexture; }
     RHI::Texture *              GetRTColorMSAATexture() const { return rtColorMSAATexture; }
-    RHI::Texture *              GetDepthTexture() const { return depthTexture; }
+    RHI::Texture *              GetDepthTexture() const { return depthHistoryAsRenderTarget ? depthHistoryTextures[currentHistoryTextureIndex] : depthTexture; }
     RHI::Texture *              GetRTNormalTexture() const { return rtNormalTexture; }
+    RHI::Texture *              GetRTNormalMSAATexture() const { return rtNormalMSAATexture; }
     RHI::Texture *              GetRTVelocityTexture() const { return rtVelocityTexture; }
+    RHI::Texture *              GetRTVelocityMSAATexture() const { return rtVelocityMSAATexture; }
     RHI::Texture *              GetColorHistoryTexture(uint32_t index) const { return colorHistoryTextures[index % 2]; }
     RHI::Texture *              GetCurrentColorHistoryTexture() const { return colorHistoryTextures[currentHistoryTextureIndex]; }
     RHI::Texture *              GetPreviousColorHistoryTexture() const { return colorHistoryTextures[currentHistoryTextureIndex ^ 1]; }
@@ -208,18 +211,21 @@ public:
 
 private:
     void                        DestroyPostProcessResources();
-    bool                        CreateRenderTextures(uint32_t width, uint32_t height, RHI::Format colorFormat, RHI::Format depthFormat, uint32_t sampleCount, const BE1::Color4 &optimizedClearColor);
+    bool                        CreateRenderTextures(uint32_t width, uint32_t height, RHI::Format colorFormat, RHI::Format depthFormat, uint32_t sampleCount, bool needDepthHistory, const BE1::Color4 &optimizedClearColor);
     void                        DestroyRenderTextures();
     bool                        CreateRTColorTextures(uint32_t width, uint32_t height, RHI::Format colorFormat, uint32_t sampleCount, const BE1::Color4 &optimizedClearColor);
     bool                        CreateDepthTexture(uint32_t width, uint32_t height, RHI::Format depthFormat, uint32_t sampleCount);
+    void                        EnsureHiZResources(uint32_t width, uint32_t height, bool needHiZTexture, bool needHiZCullResources, bool needHiZDebugPreview);
     bool                        CreateHiZTexture(uint32_t width, uint32_t height);
+    void                        DestroyHiZTexture();
+    void                        DestroyHiZResources();
     bool                        EnsureHiZDebugPreviewTexture(uint32_t width, uint32_t height);
     bool                        CreateHiZDebugPreviewTexture(uint32_t width, uint32_t height);
     void                        DestroyHiZDebugPreviewTexture();
     bool                        CreateHiZCullResources();
     void                        DestroyHiZCullResources();
-    bool                        CreateRTNormalTexture(uint32_t width, uint32_t height, uint32_t sampleCount);
-    bool                        CreateRTVelocityTexture(uint32_t width, uint32_t height);
+    bool                        CreateRTNormalTextures(uint32_t width, uint32_t height, uint32_t sampleCount);
+    bool                        CreateRTVelocityTextures(uint32_t width, uint32_t height, uint32_t sampleCount);
     bool                        CreatePostProcessColorTexture(uint32_t width, uint32_t height);
     void                        DestroyPostProcessColorTexture();
     bool                        EnsureColorHistoryTextures(uint32_t width, uint32_t height, RHI::Format colorFormat);
@@ -227,6 +233,7 @@ private:
     void                        DestroyColorHistoryTextures();
     bool                        EnsureDepthHistoryTextures(uint32_t width, uint32_t height);
     bool                        CreateDepthHistoryTextures(uint32_t width, uint32_t height);
+    bool                        CreateDepthHistoryRenderTargets(uint32_t width, uint32_t height, RHI::Format depthFormat);
     void                        DestroyDepthHistoryTextures();
     bool                        CreatePyramidBloomTextures(uint32_t width, uint32_t height, uint32_t requestedBloomMipMaxLevelCount);
     void                        DestroyPyramidBloomTextures();
@@ -279,11 +286,14 @@ private:
     RHI::Texture *              rtColorMSAATexture = nullptr;
     RHI::Texture *              depthTexture = nullptr;
     RHI::Texture *              rtNormalTexture = nullptr;
+    RHI::Texture *              rtNormalMSAATexture = nullptr;
     RHI::Texture *              rtVelocityTexture = nullptr;
+    RHI::Texture *              rtVelocityMSAATexture = nullptr;
     RHI::Texture *              postProcessColorTexture = nullptr;
 
     RHI::Texture *              colorHistoryTextures[2] = {};
     RHI::Texture *              depthHistoryTextures[2] = {};
+    bool                        depthHistoryAsRenderTarget = false;
     uint32_t                    currentHistoryTextureIndex = 0;
     bool                        historyValid = false;
 

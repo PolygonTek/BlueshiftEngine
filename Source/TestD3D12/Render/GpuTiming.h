@@ -33,7 +33,6 @@ public:
     enum class Tag : uint8_t {
         GpuFrame,
         DepthPrepass,
-        DepthVelocityPrepass,
         OpaquePass,
         SkyPass,
         TransparentPass,
@@ -41,6 +40,7 @@ public:
         HiZCulling,
         GenHiZ,
         HiZDebugPreview,
+        SurfaceOutputMSAAResolve,
         DepthHistoryResolve,
         LuminancePass1,
         LuminancePass2,

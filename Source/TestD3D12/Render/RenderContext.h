@@ -86,7 +86,7 @@ public:
     RHI::Format                     GetMainRTColorFormat() const { return mainRTColorFormat; }
     RHI::Format                     GetMainRTDepthFormat() const { return mainRTDepthFormat; }
     uint32_t                        GetMainRTSampleCount() const { return mainRTSampleCount; }
-    void                            GetMainRenderDest(RHI::RenderDest &renderDest) const;
+    void                            GetMainRenderDest(RHI::RenderDest &renderDest, bool outputNormal, bool outputVelocity) const;
     void                            GetSwapChainRenderDest(RHI::RenderDest &renderDest) const;
 
     const RenderFrameData *         GetCurrentFrontendFrameData() const { return &frames[currentFrontendFrameIndex]; }

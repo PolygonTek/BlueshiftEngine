@@ -25,6 +25,10 @@ bool ShaderFeatureSet::HasFeature(ShaderFeature feature) const {
         return !!(flags & GpuSkinningWeight4);
     case ShaderFeature::GpuSkinningWeight8:
         return !!(flags & GpuSkinningWeight8);
+    case ShaderFeature::OutputNormal:
+        return !!(flags & OutputNormal);
+    case ShaderFeature::OutputVelocity:
+        return !!(flags & OutputVelocity);
     default:
         return false;
     }
@@ -43,6 +47,12 @@ void ShaderFeatureSet::EnableFeature(ShaderFeature feature) {
         break;
     case ShaderFeature::GpuSkinningWeight8:
         flags = (flags & ~GpuSkinningWeightMask) | GpuSkinningWeight8;
+        break;
+    case ShaderFeature::OutputNormal:
+        flags |= OutputNormal;
+        break;
+    case ShaderFeature::OutputVelocity:
+        flags |= OutputVelocity;
         break;
     default:
         break;

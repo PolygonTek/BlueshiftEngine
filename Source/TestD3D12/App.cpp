@@ -321,7 +321,7 @@ void App::ChangeGameObjectCount(uint32_t countX, uint32_t countY, uint32_t count
 void App::UpdateGameObjects() {
     PROFILER_CPU_SCOPED_EVENT("App::UpdateGameObjects");
 
-    RotateGameObjects();
+    //RotateGameObjects();
 }
 
 void App::RotateGameObjects() {

@@ -59,7 +59,6 @@ struct RenderPassDrawSurf {
 
 enum class RenderPassType : uint8_t {
     DepthPrepass,
-    DepthVelocityPrepass,
     Shadow,
     Opaque,
     Skybox,
@@ -122,12 +121,16 @@ struct VisCamera {
     float                       ndcDepthScale = 1.0f;
     float                       ndcDepthBias = 0.0f;
     RenderCameraFlag            flags = RenderCameraFlag::NoFlag;
+    bool                        needNormalOutput = false;
+    bool                        needVelocityOutput = false;
 
     RHI::Texture *              rtColorTexture = nullptr;
     RHI::Texture *              rtColorMSAATexture = nullptr;
     RHI::Texture *              depthTexture = nullptr;
     RHI::Texture *              rtNormalTexture = nullptr;
+    RHI::Texture *              rtNormalMSAATexture = nullptr;
     RHI::Texture *              rtVelocityTexture = nullptr;
+    RHI::Texture *              rtVelocityMSAATexture = nullptr;
     RHI::Texture *              postProcessColorTexture = nullptr;
 
     RHI::Texture *              colorHistoryTextures[2] = {};

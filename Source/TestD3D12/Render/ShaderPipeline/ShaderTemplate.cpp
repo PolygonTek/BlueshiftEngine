@@ -575,7 +575,9 @@ static bool ParseShaderFeature(const BE1::Str &token, ShaderFeature &outFeature)
         { "perforated",         ShaderFeature::Perforated },
         { "gpuSkinningWeight1", ShaderFeature::GpuSkinningWeight1 },
         { "gpuSkinningWeight4", ShaderFeature::GpuSkinningWeight4 },
-        { "gpuSkinningWeight8", ShaderFeature::GpuSkinningWeight8 }
+        { "gpuSkinningWeight8", ShaderFeature::GpuSkinningWeight8 },
+        { "outputNormal",       ShaderFeature::OutputNormal },
+        { "outputVelocity",     ShaderFeature::OutputVelocity }
     };
 
     for (const FeatureName &featureName : FeatureNames) {

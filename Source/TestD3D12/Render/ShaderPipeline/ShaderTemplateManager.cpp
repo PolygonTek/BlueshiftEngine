@@ -244,11 +244,6 @@ void ShaderTemplateManager::CreateEngineShaderTemplates() {
         BE_FATALERROR("ShaderTemplateManager::CreateEngineShaderTemplates: failed to load depth shader template");
     }
 
-    depthVelocityShaderTemplate = GetShaderTemplate("Source/TestD3D12/Shaders/DepthVelocity");
-    if (!depthVelocityShaderTemplate) {
-        BE_FATALERROR("ShaderTemplateManager::CreateEngineShaderTemplates: failed to load depth velocity shader template");
-    }
-
     unlitShaderTemplate = GetShaderTemplate("Source/TestD3D12/Shaders/Unlit");
     if (!unlitShaderTemplate) {
         BE_FATALERROR("ShaderTemplateManager::CreateEngineShaderTemplates: failed to load unlit shader template");
@@ -266,9 +261,6 @@ void ShaderTemplateManager::DestroyEngineShaderTemplates() {
     }
     if (depthShaderTemplate) {
         depthShaderTemplate.reset();
-    }
-    if (depthVelocityShaderTemplate) {
-        depthVelocityShaderTemplate.reset();
     }
     if (unlitShaderTemplate) {
         unlitShaderTemplate.reset();

@@ -54,6 +54,8 @@ static const uint MipGenOptionBitSRGB = 1 << 1;
 
 static const uint DepthHistoryResolveBlockSizeX = 16;
 static const uint DepthHistoryResolveBlockSizeY = 16;
+static const uint SurfaceOutputMSAAResolveBlockSizeX = 16;
+static const uint SurfaceOutputMSAAResolveBlockSizeY = 16;
 
 static const uint LuminanceBlockSize = 32;
 static const uint LuminanceHistogramBinCount = LuminanceBlockSize * LuminanceBlockSize;
@@ -171,6 +173,12 @@ struct TAAResolveParams {
 };
 
 struct DepthHistoryResolveParams {
+    uint2 outputSize;
+    uint useMinDepth;
+    uint padding0;
+};
+
+struct SurfaceOutputMSAAResolveParams {
     uint2 outputSize;
     uint useMinDepth;
     uint padding0;

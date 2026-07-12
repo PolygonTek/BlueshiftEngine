@@ -21,7 +21,6 @@ const char *GpuTiming::TagName(Tag tag) {
     static const char *tagNames[static_cast<int>(GpuTiming::Tag::Count)] = {
         "GPU Frame",
         "Depth Prepass",
-        "Depth Velocity Prepass",
         "Opaque Pass",
         "Sky Pass",
         "Transparent Pass",
@@ -29,6 +28,7 @@ const char *GpuTiming::TagName(Tag tag) {
         "Hi-Z Culling",
         "Gen Hi-Z",
         "Hi-Z Debug Preview",
+        "Surface Output MSAA Resolve",
         "Depth History Resolve",
         "Luminance Pass 1",
         "Luminance Pass 2",

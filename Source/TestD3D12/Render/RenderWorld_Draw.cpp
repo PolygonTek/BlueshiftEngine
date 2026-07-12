@@ -161,23 +161,32 @@ void RenderWorld::RenderScene(RenderCamera *renderCamera) {
         return;
     }
 
-    renderCamera->EnsureRenderTextures(renderWidth, renderHeight, renderContext->GetMainRTColorFormat(), renderContext->GetMainRTDepthFormat(), renderContext->GetMainRTSampleCount(), renderContext->GetBaseClearColor());
-
     const bool skipPostProcess = r_skipPostProcess.GetBool() || BE1::HasFlag(renderCamera->desc.flags, RenderCameraFlag::SkipPostProcess);
     const bool temporalHistoryEnabled = !BE1::HasFlag(renderCamera->desc.flags, RenderCameraFlag::DisableTemporalHistory);
     const bool useTAA = temporalHistoryEnabled && r_taa.GetBool() && !skipPostProcess;
+    const bool needColorHistory = useTAA;
+    const bool needDepthHistory = useTAA;
+    const bool needHiZCullResources = !BE1::HasFlag(renderCamera->desc.flags, RenderCameraFlag::DisableHiZCulling) && r_hiZOcclusionCulling.GetBool();
+    const bool needHiZTexture = needHiZCullResources;
+    const bool needHiZDebugPreview = needHiZTexture && r_hiZDebugPreview.GetBool();
+
     const RenderBloomMode bloomMode = static_cast<RenderBloomMode>(BE1::Clamp(r_bloom.GetInteger(), static_cast<int>(RenderBloomMode::Off), static_cast<int>(RenderBloomMode::Convolution)));
 
-    renderCamera->EnsurePostProcessResources(skipPostProcess, useTAA, bloomMode);
+    if (!renderCamera->EnsureRenderTextures(renderWidth, renderHeight, renderContext->GetMainRTColorFormat(), renderContext->GetMainRTDepthFormat(), renderContext->GetMainRTSampleCount(), needDepthHistory, renderContext->GetBaseClearColor())) {
+        return;
+    }
+
+    renderCamera->EnsureHiZResources(renderWidth, renderHeight, needHiZTexture, needHiZCullResources, needHiZDebugPreview);
+    renderCamera->EnsurePostProcessResources(skipPostProcess, needColorHistory, needDepthHistory, bloomMode);
 
     const bool temporalJitterEnabled = useTAA && r_taaJitter.GetBool();
     const uint32_t temporalJitterSampleCount = static_cast<uint32_t>(BE1::Max(r_taaJitterSampleCount.GetInteger(), 1));
 
     renderCamera->UpdateTemporalJitter(temporalJitterEnabled, temporalJitterSampleCount);
 
-    const bool canUseHiZ = renderCamera->GetDepthTexture() != nullptr;
-    const bool requestHiZOcclusionCulling = !BE1::HasFlag(renderCamera->desc.flags, RenderCameraFlag::DisableHiZCulling) && canUseHiZ && r_hiZOcclusionCulling.GetBool();
-    const bool requestHiZDebugPreview = canUseHiZ && r_hiZDebugPreview.GetBool() && renderCamera->EnsureHiZDebugPreviewTexture(renderWidth, renderHeight);
+    const bool canUseHiZ = renderCamera->GetDepthTexture() && renderCamera->GetHiZTexture();
+    const bool requestHiZOcclusionCulling = canUseHiZ && needHiZCullResources && renderCamera->GetHiZCullVisibleInstanceBuffer() && renderCamera->GetHiZCullIndirectArgsBuffer();
+    const bool requestHiZDebugPreview = canUseHiZ && needHiZDebugPreview && renderCamera->GetHiZDebugPreviewTexture();
     const bool requestHiZGeneration = requestHiZOcclusionCulling;
 
     // RenderCamera 정보를 기반으로 프레임 데이터에 필요한 VisCamera 를 구성한다.
@@ -210,11 +219,15 @@ void RenderWorld::RenderScene(RenderCamera *renderCamera) {
     }
 
     visCamera->flags = renderCamera->desc.flags;
+    visCamera->needNormalOutput = false;
+    visCamera->needVelocityOutput = useTAA;
     visCamera->rtColorTexture = renderCamera->GetRTColorTexture();
     visCamera->rtColorMSAATexture = renderCamera->GetRTColorMSAATexture();
     visCamera->depthTexture = renderCamera->GetDepthTexture();
     visCamera->rtNormalTexture = renderCamera->GetRTNormalTexture();
+    visCamera->rtNormalMSAATexture = renderCamera->GetRTNormalMSAATexture();
     visCamera->rtVelocityTexture = renderCamera->GetRTVelocityTexture();
+    visCamera->rtVelocityMSAATexture = renderCamera->GetRTVelocityMSAATexture();
 
     visCamera->generateHiZ = requestHiZGeneration;
     if (visCamera->generateHiZ) {

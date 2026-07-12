@@ -101,18 +101,33 @@ static HWND CreateRenderWindow(const TCHAR* title, const TCHAR* classname, int w
 
     RECT rect;
     ::SetRect(&rect, 0, 0, width, height);
-    ::AdjustWindowRect(&rect, style, 0);
+    ::AdjustWindowRect(&rect, style, FALSE);
+
+    windowRect.w = rect.right - rect.left;
+    windowRect.h = rect.bottom - rect.top;
 
     if (fullscreen) {
         windowRect.x = 0;
         windowRect.y = 0;
     } else {
-        windowRect.x = CW_USEDEFAULT;
-        windowRect.y = CW_USEDEFAULT;
-    }
+        RECT workArea;
+        if (!::SystemParametersInfo(SPI_GETWORKAREA, 0, &workArea, 0)) {
+            const int screenWidth = ::GetSystemMetrics(SM_CXSCREEN);
+            const int screenHeight = ::GetSystemMetrics(SM_CYSCREEN);
 
-    windowRect.w = rect.right - rect.left;
-    windowRect.h = rect.bottom - rect.top;
+            ::SetRect(&workArea, 0, 0, screenWidth, screenHeight);
+        }
+
+        const int workAreaWidth = workArea.right - workArea.left;
+        const int workAreaHeight = workArea.bottom - workArea.top;
+
+        // Limit the full window size, including the title bar and borders, to the work area.
+        windowRect.w = BE1::Min(windowRect.w, workAreaWidth);
+        windowRect.h = BE1::Min(windowRect.h, workAreaHeight);
+
+        windowRect.x = workArea.left + ((workAreaWidth - windowRect.w) >> 1);
+        windowRect.y = workArea.top + ((workAreaHeight - windowRect.h) >> 1);
+    }
 
     HWND hwnd = ::CreateWindowEx(
         styleEx,

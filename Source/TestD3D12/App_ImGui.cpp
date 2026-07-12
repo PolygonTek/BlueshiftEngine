@@ -498,6 +498,8 @@ void App::BuildImGuiOverlay() {
                 renderSystem && renderSystem->IsUsingRenderThread() ? "Enabled" : "Disabled");
             ImGui::Text("Task Threads: %u",
                 BE1::Engine::taskManager ? BE1::Engine::taskManager->NumThreads() : 0);
+            ImGui::Text("Window Resolution: %u x %u",
+                mainRenderContext->GetWidth(), mainRenderContext->GetHeight());
             ImGui::Separator();
 
             if (RHI::renderer) {

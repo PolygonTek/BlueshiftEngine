@@ -82,13 +82,14 @@ private:
 
     void                            ExecuteDrawCamera2D(RHI::ClearFlag clearFlags, const BE1::Color4 &clearColor, float clearDepth);
     void                            ExecuteDrawCamera3D(RHI::ClearFlag clearFlags, const BE1::Color4 &clearColor, bool useExplicitClearColor);
+    void                            ExecuteDrawCamera3DDepthPrepass(RHI::RenderPassImage::LoadAction depthLoadAction);
+    void                            ExecuteDrawCamera3DMainPass(RHI::ClearFlag clearFlags, const BE1::Color4 &clearColor, bool useExplicitClearColor, RHI::RenderPassImage::LoadAction depthLoadAction, bool skipDepthPrepasses);
 
     void                            DrawCamera3D(bool skipDepthPrepasses);
     void                            DrawCamera3DDepthPrepass();
-    void                            DrawCamera3DDepthVelocityPrepass();
     void                            DrawCamera2D();
 
-    void                            PostProcessAndBlitToSwapChain();
+    void                            PostProcessAndBlitToSwapChain(bool surfaceOutputsReady);
     void                            BlitRectToSwapChain(const RHI::Texture *texture, const BE1::Rect &rect);
 
     void                            DrawGenericPass(const RenderPass *renderPass);
@@ -111,6 +112,7 @@ private:
     void                            FinishHiZCulling();
     bool                            DispatchGenHiZ();
     bool                            DispatchHiZDebugPreview();
+    bool                            DispatchSurfaceOutputMSAAResolve();
     bool                            DispatchDepthHistoryResolve();
 
     bool                            DispatchLuminance();
@@ -148,7 +150,9 @@ private:
     RHI::PipelineState *            frameHiZCullInstancesPSO = nullptr;
     RHI::PipelineState *            frameHiZDebugPreviewPSO = nullptr;
     RHI::PipelineState *            frameDepthHistoryResolvePSO = nullptr;
-    RHI::PipelineState *            frameDepthHistoryResolveMSAAPSO = nullptr;
+    RHI::PipelineState *            frameSurfaceOutputMSAAResolveNormalPSO = nullptr;
+    RHI::PipelineState *            frameSurfaceOutputMSAAResolveVelocityPSO = nullptr;
+    RHI::PipelineState *            frameSurfaceOutputMSAAResolveNormalVelocityPSO = nullptr;
     RHI::PipelineState *            frameFinalPostProcessPSO = nullptr;
     RHI::PipelineState *            frameTAAResolvePSO = nullptr;
     RHI::PipelineState *            frameLuminancePass1PSO = nullptr;

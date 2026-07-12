@@ -9,6 +9,9 @@ struct VSInput {
     float4 position : POSITION;
     float2 texCoord : TEXCOORD0;
     float4 color : COLOR;
+#ifdef OUTPUT_NORMAL
+    float4 normal : NORMAL;
+#endif
     uint instanceID : SV_InstanceID;
 };
 
@@ -17,6 +20,13 @@ struct PSInput {
     float4 color : COLOR;
     float2 texCoord : TEXCOORD0;
     nointerpolation uint shaderMaterialIndex : TEXCOORD1;
+#ifdef OUTPUT_VELOCITY
+    float4 currentVelocityPosition : TEXCOORD2;
+    float4 prevVelocityPosition : TEXCOORD3;
+#endif
+#ifdef OUTPUT_NORMAL
+    float3 worldNormal : TEXCOORD4;
+#endif
 };
 
 [RootSignature(COMMON_ROOT_SIGNATURE)]
@@ -30,12 +40,19 @@ PSInput VSMain(VSInput input) {
     result.color = input.color;
     result.texCoord = input.texCoord;
     result.shaderMaterialIndex = shaderSurface.shaderMaterialIndex;
+#ifdef OUTPUT_VELOCITY
+    result.currentVelocityPosition = mul(cameraConstants.unjitteredViewProjMatrix, positionWS);
+    result.prevVelocityPosition = CalcClipPosition(input.position, shaderSurface.prevWorldMatrix, cameraConstants.prevUnjitteredViewProjMatrix);
+#endif
+#ifdef OUTPUT_NORMAL
+    result.worldNormal = TransformSurfaceNormal(input.normal.xyz, shaderSurface.worldMatrix);
+#endif
 
     return result;
 }
 
 [RootSignature(COMMON_ROOT_SIGNATURE)]
-float4 PSMain(PSInput input) : SV_TARGET {
+SurfacePSOutput PSMain(PSInput input) {
     ShaderMaterial shaderMaterial = GetShaderMaterial(input.shaderMaterialIndex);
 
     if (frameConstants.feedbackBufferIndex != 0 && shaderMaterial.streamingMaterialIndex != TextureStreamingInvalidIndex) {
@@ -43,5 +60,13 @@ float4 PSMain(PSInput input) : SV_TARGET {
     }
 
     float4 textureColor = GetTexture2D(shaderMaterial.baseColorTextureIndex).Sample(linearWrapSampler, input.texCoord);
-    return textureColor * shaderMaterial.baseColorFactor * input.color;
+    SurfacePSOutput result;
+    result.color = textureColor * shaderMaterial.baseColorFactor * input.color;
+#ifdef OUTPUT_NORMAL
+    result.normal = EncodeOctahedralNormal(normalize(input.worldNormal));
+#endif
+#ifdef OUTPUT_VELOCITY
+    result.velocity = CalcVelocity(input.currentVelocityPosition, input.prevVelocityPosition);
+#endif
+    return result;
 }

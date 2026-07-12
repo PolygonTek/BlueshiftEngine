@@ -140,56 +140,55 @@ void RenderPassBuilder::BuildMain(RenderFrameData *frameData, VisCamera *visCame
     AllocRenderPassDrawSurfs(frameData, visCamera, numDepthDrawSurfs + numOpaqueDrawSurfs + numSkyboxDrawSurfs + numBlendDrawSurfs);
 
     // AllocRenderPass 호출 순서대로 백엔드에서 RenderPass 가 렌더링된다.
-    const bool useDepthVelocityPrepass = useDepthPrepass && visCamera->rtVelocityTexture && !visCamera->rtColorMSAATexture;
-    const RenderPassType depthPassType = useDepthVelocityPrepass ? RenderPassType::DepthVelocityPrepass : RenderPassType::DepthPrepass;
-    RenderPass *depthPass = AllocRenderPass(visCamera, depthPassType, {}, VertexInputLayoutId::XyzStColor, numDepthDrawSurfs);
+    // 1. DepthPrepass RenderPass 를 할당한다.
+    RenderPass *depthPass = AllocRenderPass(visCamera, RenderPassType::DepthPrepass, {}, VertexInputLayoutId::XyzStColor, numDepthDrawSurfs);
     if (depthPass) {
         depthPass->graphicsPipelineDesc.depthStencilStateType = GetDepthState(visCamera->projectionPolicy, true);
-        if (depthPass->type == RenderPassType::DepthVelocityPrepass) {
-            RHI::RenderDest &renderDest = depthPass->graphicsPipelineDesc.renderDest;
-            renderDest = RHI::RenderDest();
-            renderDest.renderTargetCount = 1;
-            renderDest.renderTargetFormats[0] = visCamera->rtVelocityTexture->GetFormat();
-            renderDest.depthStencilFormat = RenderContext::activeContext->GetMainRTDepthFormat();
-            renderDest.sampleCount = 1;
+        RHI::RenderDest &renderDest = depthPass->graphicsPipelineDesc.renderDest;
+        renderDest = RHI::RenderDest();
+        renderDest.renderTargetCount = 0;
+        renderDest.depthStencilFormat = RenderContext::activeContext->GetMainRTDepthFormat();
+        renderDest.sampleCount = visCamera->depthTexture->GetSampleCount();
 
-            depthVelocityPSOResolver.Begin(depthPass, BE1::Min(numDepthDrawSurfs, 16), shaderTemplateManager.depthVelocityShaderTemplate);
-        } else {
-            RHI::RenderDest &renderDest = depthPass->graphicsPipelineDesc.renderDest;
-            renderDest = RHI::RenderDest();
-            renderDest.renderTargetCount = 0;
-            renderDest.depthStencilFormat = RenderContext::activeContext->GetMainRTDepthFormat();
-            renderDest.sampleCount = 1;
-
-            depthPSOResolver.Begin(depthPass, BE1::Min(numDepthDrawSurfs, 16), shaderTemplateManager.depthShaderTemplate);
-        }
+        depthPSOResolver.Begin(depthPass, BE1::Min(numDepthDrawSurfs, 16), shaderTemplateManager.depthShaderTemplate);
     }
 
-    RenderPass *opaquePass = AllocRenderPass(visCamera, RenderPassType::Opaque, {}, VertexInputLayoutId::XyzStColorNormalTangent, numOpaqueDrawSurfs);
+    ShaderFeatureSet opaquePassFeatureSet;
+    if (visCamera->needNormalOutput) {
+        opaquePassFeatureSet.EnableFeature(ShaderFeature::OutputNormal);
+    }
+    if (visCamera->needVelocityOutput) {
+        opaquePassFeatureSet.EnableFeature(ShaderFeature::OutputVelocity);
+    }
+
+    // 2. Opaque RenderPass 를 할당한다.
+    RenderPass *opaquePass = AllocRenderPass(visCamera, RenderPassType::Opaque, opaquePassFeatureSet, VertexInputLayoutId::XyzStColorNormalTangent, numOpaqueDrawSurfs);
     if (opaquePass) {
         opaquePass->graphicsPipelineDesc.depthStencilStateType = GetDepthState(visCamera->projectionPolicy, !useDepthPrepass);
-        RenderContext::activeContext->GetMainRenderDest(opaquePass->graphicsPipelineDesc.renderDest);
+        RenderContext::activeContext->GetMainRenderDest(opaquePass->graphicsPipelineDesc.renderDest, visCamera->needNormalOutput, visCamera->needVelocityOutput);
 
         opaquePSOResolver.Begin(opaquePass, BE1::Min(numOpaqueDrawSurfs, 1024));
     }
 
+    // 3. Skybox RenderPass 를 할당한다.
     RenderPass *skyboxPass = AllocRenderPass(visCamera, RenderPassType::Skybox, {}, VertexInputLayoutId::XyzStColor, numSkyboxDrawSurfs);
     if (skyboxPass) {
         skyboxPass->graphicsPipelineDesc.depthStencilStateType = GetDepthState(visCamera->projectionPolicy, false);
-        RenderContext::activeContext->GetMainRenderDest(skyboxPass->graphicsPipelineDesc.renderDest);
+        RenderContext::activeContext->GetMainRenderDest(skyboxPass->graphicsPipelineDesc.renderDest, visCamera->needNormalOutput, visCamera->needVelocityOutput);
 
         skyboxPSOResolver.Begin(skyboxPass, BE1::Min(numSkyboxDrawSurfs, 1));
     }
 
+    // 4. Blend RenderPass 를 할당한다.
     RenderPass *blendPass = AllocRenderPass(visCamera, RenderPassType::Transparent, {}, VertexInputLayoutId::XyzStColorNormalTangent, numBlendDrawSurfs);
     if (blendPass) {
         blendPass->graphicsPipelineDesc.depthStencilStateType = GetDepthState(visCamera->projectionPolicy, false);
-        RenderContext::activeContext->GetMainRenderDest(blendPass->graphicsPipelineDesc.renderDest);
+        RenderContext::activeContext->GetMainRenderDest(blendPass->graphicsPipelineDesc.renderDest, visCamera->needNormalOutput, visCamera->needVelocityOutput);
 
         blendPSOResolver.Begin(blendPass, BE1::Min(numBlendDrawSurfs, 256));
     }
 
-    // 카메라에 보이는 모든 surfaces 를 순회한다.
+    // 카메라에 보이는 모든 surfaces 를 순회하면서, 각 render pass 에 visible surfaces 를 추가한다.
     for (int i = 0; i < visCamera->numVisSurfs; ++i) {
         const VisSurf *visSurf = visCamera->visSurfs[i];
 
@@ -206,13 +205,8 @@ void RenderPassBuilder::BuildMain(RenderFrameData *frameData, VisCamera *visCame
             }
         } else {
             if (depthPass) {
-                if (depthPass->type == RenderPassType::DepthVelocityPrepass) {
-                    const RenderPassDepthPSOResolver::ResolveResult rr = depthVelocityPSOResolver.Resolve(visSurf);
-                    AddRenderPassDrawSurf(depthPass, visSurf, BuildDepthSortKey(visSurf, visCamera), rr.inputLayoutId, rr.pso);
-                } else {
-                    const RenderPassDepthPSOResolver::ResolveResult rr = depthPSOResolver.Resolve(visSurf);
-                    AddRenderPassDrawSurf(depthPass, visSurf, BuildDepthSortKey(visSurf, visCamera), rr.inputLayoutId, rr.pso);
-                }
+                const RenderPassDepthPSOResolver::ResolveResult rr = depthPSOResolver.Resolve(visSurf);
+                AddRenderPassDrawSurf(depthPass, visSurf, BuildDepthSortKey(visSurf, visCamera), rr.inputLayoutId, rr.pso);
             }
             if (opaquePass) {
                 const RenderPassPSOResolver::ResolveResult rr = opaquePSOResolver.Resolve(visSurf, visSurf->baseFeatureSet | opaquePass->featureSet);
@@ -221,6 +215,7 @@ void RenderPassBuilder::BuildMain(RenderFrameData *frameData, VisCamera *visCame
         }
     }
 
+    // 필요한 경우 각 render pass 마다 surface 들을 sorting 한다.
     if (depthPass) {
         SortRenderPassDrawSurfs(frameData, depthPass);
     }
