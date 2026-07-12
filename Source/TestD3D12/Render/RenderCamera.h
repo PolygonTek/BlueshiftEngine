@@ -83,9 +83,13 @@ public:
 
     const RenderCameraDesc &    GetDesc() const { return desc; }
 
+                                /// Returns orthogonal projection oriented box bounds.
     const BE1::OBB              GetBox() const { return box; }
 
+                                /// Returns perspective projection frustum bounds.
     const BE1::Frustum &        GetFrustum() const { return frustum; }
+
+                                /// Returns perspective projection frustum planes.
     const BE1::Plane &          GetFrustumPlane(int index) const { return frustumPlanes[index]; }
 
     const BE1::Mat4 &           GetViewMatrix() const { return viewMatrix; }
@@ -251,7 +255,7 @@ private:
     BE1::Frustum                frustum;
     BE1::Plane                  frustumPlanes[6];
     BE1::Vec3                   frustumPoints[8];
-    BE1::OBB                    box;
+    BE1::OBB                    box; // for orthogoanl projection
 
     ALIGN_AS32 BE1::Mat4        viewMatrix;
     ALIGN_AS32 BE1::Mat4        projMatrix;

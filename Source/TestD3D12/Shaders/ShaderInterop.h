@@ -155,6 +155,8 @@ struct FinalPostProcessParams {
     float lensDistortionRadiusSqScale;
     float3 whiteBalance;
     float bloomDirtIntensity;
+    float2 bloomDirtUvScale;
+    float2 padding0;
 };
 
 struct TAAResolveParams {

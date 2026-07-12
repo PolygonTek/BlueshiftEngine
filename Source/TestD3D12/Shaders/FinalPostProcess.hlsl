@@ -56,7 +56,8 @@ void CSMain(uint3 dispatchThreadId : SV_DispatchThreadID) {
     if (finalPostProcessParams.bloomIntensity > 0.0) {
         float3 bloomColor = bloomTexture.SampleLevel(linearClampSampler, inputUv, 0).rgb * finalPostProcessParams.bloomIntensity;
         if (finalPostProcessParams.bloomDirtIntensity > 0.0) {
-            float3 dirtMask = bloomDirtMaskTexture.SampleLevel(linearClampSampler, uv, 0).rgb;
+            float2 dirtUv = centerOffset * finalPostProcessParams.bloomDirtUvScale + 0.5;
+            float3 dirtMask = bloomDirtMaskTexture.SampleLevel(linearClampSampler, dirtUv, 0).rgb;
             bloomColor += bloomColor * dirtMask * finalPostProcessParams.bloomDirtIntensity;
         }
         hdrColor.rgb += bloomColor;

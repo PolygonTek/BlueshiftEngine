@@ -778,6 +778,16 @@ bool RenderBackend::DispatchFinalPostProcess(bool useToneMapping, bool useBloom)
     finalPostProcessParams.toneMappingOperator = static_cast<uint32_t>(BE1::Clamp(r_toneMapOp.GetInteger(), static_cast<int>(ToneMappingOperatorLinear), static_cast<int>(ToneMappingOperatorFilmicGT)));
     finalPostProcessParams.bloomIntensity = bloomIntensity;
     finalPostProcessParams.bloomDirtIntensity = useBloomDirtMask ? bloomDirtIntensity : 0.0f;
+    finalPostProcessParams.bloomDirtUvScale = float2(1.0f, 1.0f);
+    if (useBloomDirtMask) {
+        const float outputAspectRatio = static_cast<float>(outputW) / static_cast<float>(outputH);
+        const float dirtAspectRatio = static_cast<float>(bloomDirtMaskTexture->GetWidth()) / static_cast<float>(bloomDirtMaskTexture->GetHeight());
+        if (outputAspectRatio > dirtAspectRatio) {
+            finalPostProcessParams.bloomDirtUvScale.y = dirtAspectRatio / outputAspectRatio;
+        } else {
+            finalPostProcessParams.bloomDirtUvScale.x = outputAspectRatio / dirtAspectRatio;
+        }
+    }
     finalPostProcessParams.chromaticAberration = BE1::Max(r_chromaticAberration.GetFloat(), 0.0f);
     finalPostProcessParams.vignetteIntensity = BE1::Clamp(r_vignette.GetFloat(), 0.0f, 1.0f);
     finalPostProcessParams.lensDistortion = BE1::Clamp(r_lensDistortion.GetFloat(), r_lensDistortion.GetMinValue(), r_lensDistortion.GetMaxValue());
