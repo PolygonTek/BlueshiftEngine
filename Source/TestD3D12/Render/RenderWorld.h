@@ -114,7 +114,7 @@ private:
         int32_t                 threadIndex = -1;
         RenderWorld *           renderWorld = nullptr;
         RenderFrameData *       frameData = nullptr;
-        VisObject **            visObjects = nullptr;
+        VisObject *             firstVisObject = nullptr;
         uint32_t                numVisObjects = 0;
     };
 
@@ -125,9 +125,9 @@ private:
     void                        FindVisObjects(RenderFrameData *frameData, const RenderCamera *renderCamera, VisCamera *visCamera);
     void                        AddMeshes(RenderFrameData *frameData, const RenderCamera *renderCamera, VisCamera *visCamera);
     void                        UpdateVisibleSkinningJointCaches(RenderFrameData *frameData);
-    void                        UpdateSkinningJointCaches(RenderFrameData *frameData, VisObject **visObjects, uint32_t numVisObjects, uint32_t numSkinningJoints);
-    void                        UpdateSkinningJointCachesWithoutTask(RenderFrameData *frameData, VisObject **visObjects, uint32_t numVisObjects);
-    void                        UpdateSkinningJointCachesWithTask(RenderFrameData *frameData, VisObject **visObjects, uint32_t numVisObjects, uint32_t numSkinningJoints, uint32_t numTasks);
+    void                        UpdateSkinningJointCaches(RenderFrameData *frameData, VisObject *firstVisObject, uint32_t numVisObjects, uint32_t numSkinningJoints);
+    void                        UpdateSkinningJointCachesWithoutTask(RenderFrameData *frameData, VisObject *firstVisObject, uint32_t numVisObjects);
+    void                        UpdateSkinningJointCachesWithTask(RenderFrameData *frameData, VisObject *firstVisObject, uint32_t numVisObjects, uint32_t numSkinningJoints, uint32_t numTasks);
     void                        UpdateSkinningJointCachesByTask(RenderWorld::SkinningJointCacheTaskDesc *taskDesc);
     static void                 UpdateSkinningJointCachesByTaskFunction(void *data);
     void                        AddTextMeshes(RenderFrameData *frameData, const RenderCamera *renderCamera, VisCamera *visCamera);

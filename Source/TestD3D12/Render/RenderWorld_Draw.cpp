@@ -460,7 +460,7 @@ void RenderWorld::FindVisObjects(RenderFrameData *frameData, const RenderCamera 
     frameData->AddObjectStats(static_cast<uint32_t>(renderObjects.Count()), frameData->NumVisObjects() - startVisibleObjectCount);
 }
 
-void RenderWorld::UpdateSkinningJointCaches(RenderFrameData *frameData, VisObject **visObjects, uint32_t numVisObjects, uint32_t numSkinningJoints) {
+void RenderWorld::UpdateSkinningJointCaches(RenderFrameData *frameData, VisObject *firstVisObject, uint32_t numVisObjects, uint32_t numSkinningJoints) {
     if (numVisObjects == 0 || numSkinningJoints == 0) {
         return;
     }
@@ -470,23 +470,24 @@ void RenderWorld::UpdateSkinningJointCaches(RenderFrameData *frameData, VisObjec
     numTasks = BE1::Min(BE1::Engine::taskManager->NumThreads(), numTasks);
 
     if (numTasks > 1) {
-        UpdateSkinningJointCachesWithTask(frameData, visObjects, numVisObjects, numSkinningJoints, numTasks);
+        UpdateSkinningJointCachesWithTask(frameData, firstVisObject, numVisObjects, numSkinningJoints, numTasks);
     } else {
-        UpdateSkinningJointCachesWithoutTask(frameData, visObjects, numVisObjects);
+        UpdateSkinningJointCachesWithoutTask(frameData, firstVisObject, numVisObjects);
     }
 #else
-    UpdateSkinningJointCachesWithoutTask(frameData, visObjects, numVisObjects);
+    UpdateSkinningJointCachesWithoutTask(frameData, firstVisObject, numVisObjects);
 #endif
 }
 
-void RenderWorld::UpdateSkinningJointCachesWithoutTask(RenderFrameData *frameData, VisObject **visObjects, uint32_t numVisObjects) {
+void RenderWorld::UpdateSkinningJointCachesWithoutTask(RenderFrameData *frameData, VisObject *firstVisObject, uint32_t numVisObjects) {
     PROFILER_CPU_SCOPED_EVENT("RenderWorld::UpdateSkinningJointCachesWithoutTask");
 
     RHI::FrameThreadData *frameThreadData = frameData->GetThreadData(0);
+    VisObject *visObject = firstVisObject;
 
     for (uint32_t visObjectIndex = 0; visObjectIndex < numVisObjects; ++visObjectIndex) {
-        VisObject *visObject = visObjects[visObjectIndex];
         visObject->meshInstance->UpdateSkinningJointCache(frameThreadData, visObject->skeleton);
+        visObject = visObject->nextSkinnedObject;
     }
 }
 
@@ -494,10 +495,11 @@ void RenderWorld::UpdateSkinningJointCachesByTask(RenderWorld::SkinningJointCach
     PROFILER_CPU_SCOPED_EVENT("RenderWorld::UpdateSkinningJointCachesByTask");
 
     RHI::FrameThreadData *frameThreadData = taskDesc->frameData->GetThreadData(taskDesc->threadIndex);
+    VisObject *visObject = taskDesc->firstVisObject;
 
     for (uint32_t visObjectIndex = 0; visObjectIndex < taskDesc->numVisObjects; ++visObjectIndex) {
-        VisObject *visObject = taskDesc->visObjects[visObjectIndex];
         visObject->meshInstance->UpdateSkinningJointCache(frameThreadData, visObject->skeleton);
+        visObject = visObject->nextSkinnedObject;
     }
 }
 
@@ -506,42 +508,45 @@ void RenderWorld::UpdateSkinningJointCachesByTaskFunction(void *data) {
     taskDesc->renderWorld->UpdateSkinningJointCachesByTask(taskDesc);
 }
 
-void RenderWorld::UpdateSkinningJointCachesWithTask(RenderFrameData *frameData, VisObject **visObjects, uint32_t numVisObjects, uint32_t numSkinningJoints, uint32_t numTasks) {
+void RenderWorld::UpdateSkinningJointCachesWithTask(RenderFrameData *frameData, VisObject *firstVisObject, uint32_t numVisObjects, uint32_t numSkinningJoints, uint32_t numTasks) {
     PROFILER_CPU_SCOPED_EVENT("RenderWorld::UpdateSkinningJointCachesWithTask");
 
     uint32_t targetJointsPerTask = (numSkinningJoints + numTasks - 1) / numTasks;
-    uint32_t startIndex = 0;
+    VisObject *startVisObject = firstVisObject;
+    uint32_t remainingVisObjects = numVisObjects;
 
     skinningJointCacheTaskDescs.Reserve(numTasks);
     skinningJointCacheTaskDescs.SetCount(0, false);
 
-    while (startIndex < numVisObjects && skinningJointCacheTaskDescs.Count() + 1 < (int)numTasks) {
-        uint32_t endIndex = startIndex;
+    while (startVisObject && skinningJointCacheTaskDescs.Count() + 1 < (int)numTasks) {
+        VisObject *endVisObject = startVisObject;
+        uint32_t numTaskVisObjects = 0;
         uint32_t numTaskJoints = 0;
 
         do {
-            VisObject *visObject = visObjects[endIndex];
-            numTaskJoints += BE1::Max(1, visObject->meshInstance->NumSkinningMatrices());
-            endIndex++;
-        } while (endIndex < numVisObjects && numTaskJoints < targetJointsPerTask);
+            numTaskJoints += BE1::Max(1, endVisObject->meshInstance->NumSkinningMatrices());
+            endVisObject = endVisObject->nextSkinnedObject;
+            numTaskVisObjects++;
+        } while (numTaskVisObjects < remainingVisObjects && numTaskJoints < targetJointsPerTask);
 
         SkinningJointCacheTaskDesc &taskDesc = skinningJointCacheTaskDescs.Alloc();
         taskDesc.threadIndex = skinningJointCacheTaskDescs.Count() - 1;
         taskDesc.renderWorld = this;
         taskDesc.frameData = frameData;
-        taskDesc.visObjects = &visObjects[startIndex];
-        taskDesc.numVisObjects = endIndex - startIndex;
+        taskDesc.firstVisObject = startVisObject;
+        taskDesc.numVisObjects = numTaskVisObjects;
 
-        startIndex = endIndex;
+        startVisObject = endVisObject;
+        remainingVisObjects -= numTaskVisObjects;
     }
 
-    if (startIndex < numVisObjects) {
+    if (startVisObject) {
         SkinningJointCacheTaskDesc &taskDesc = skinningJointCacheTaskDescs.Alloc();
         taskDesc.threadIndex = skinningJointCacheTaskDescs.Count() - 1;
         taskDesc.renderWorld = this;
         taskDesc.frameData = frameData;
-        taskDesc.visObjects = &visObjects[startIndex];
-        taskDesc.numVisObjects = numVisObjects - startIndex;
+        taskDesc.firstVisObject = startVisObject;
+        taskDesc.numVisObjects = remainingVisObjects;
     }
 
     for (int taskIndex = 0; taskIndex < skinningJointCacheTaskDescs.Count(); ++taskIndex) {
@@ -559,28 +564,31 @@ void RenderWorld::UpdateVisibleSkinningJointCaches(RenderFrameData *frameData) {
 
     uint32_t numSkinnedVisObjects = 0;
     uint32_t numSkinningJoints = 0;
-    VisObject **skinnedVisObjects = (VisObject **)_alloca(numVisObjects * sizeof(skinnedVisObjects[0]));
+    VisObject *firstSkinnedObject = nullptr;
+    VisObject *lastSkinnedObject = nullptr;
 
-    for (uint32_t visObjectIndex = 0; visObjectIndex < numVisObjects; ++visObjectIndex) {
-        VisObject *visObject = frameData->GetVisObjects() + visObjectIndex;
-        if (!visObject->cameraVisible) {
-            continue;
-        }
-        if (!visObject->skeleton) {
-            continue;
-        }
-        if (!visObject->meshInstance) {
-            continue;
-        }
-        if (!visObject->meshInstance->EnsureCurrent()) {
+    for (VisObject &visObjectRef : frameData->GetVisObjects()) {
+        VisObject *visObject = &visObjectRef;
+        if (!visObject->cameraVisible ||
+            !visObject->skeleton ||
+            !visObject->meshInstance ||
+            !visObject->meshInstance->EnsureCurrent()) {
             continue;
         }
 
-        skinnedVisObjects[numSkinnedVisObjects++] = visObject;
+        visObject->nextSkinnedObject = nullptr;
+        if (lastSkinnedObject) {
+            lastSkinnedObject->nextSkinnedObject = visObject;
+        } else {
+            firstSkinnedObject = visObject;
+        }
+        lastSkinnedObject = visObject;
+
+        numSkinnedVisObjects++;
         numSkinningJoints += visObject->meshInstance->NumSkinningMatrices();
     }
 
-    UpdateSkinningJointCaches(frameData, skinnedVisObjects, numSkinnedVisObjects, numSkinningJoints);
+    UpdateSkinningJointCaches(frameData, firstSkinnedObject, numSkinnedVisObjects, numSkinningJoints);
 }
 
 void RenderWorld::AddMeshes(RenderFrameData *frameData, const RenderCamera *renderCamera, VisCamera *visCamera) {
@@ -588,9 +596,8 @@ void RenderWorld::AddMeshes(RenderFrameData *frameData, const RenderCamera *rend
 
     UpdateVisibleSkinningJointCaches(frameData);
 
-    const int numVisObjects = frameData->NumVisObjects();
-    for (int i = 0; i < numVisObjects; ++i) {
-        VisObject *visObject = frameData->GetVisObjects() + i;
+    for (VisObject &visObjectRef : frameData->GetVisObjects()) {
+        VisObject *visObject = &visObjectRef;
         if (!visObject->cameraVisible) {
             continue;
         }
@@ -630,9 +637,8 @@ void RenderWorld::AddMeshes(RenderFrameData *frameData, const RenderCamera *rend
 void RenderWorld::AddTextMeshes(RenderFrameData *frameData, const RenderCamera *renderCamera, VisCamera *visCamera) {
     PROFILER_CPU_SCOPED_EVENT("RenderWorld::AddTextMeshes");
 
-    const int numVisObjects = frameData->NumVisObjects();
-    for (int i = 0; i < numVisObjects; ++i) {
-        VisObject *visObject = frameData->GetVisObjects() + i;
+    for (VisObject &visObjectRef : frameData->GetVisObjects()) {
+        VisObject *visObject = &visObjectRef;
         if (!visObject->cameraVisible) {
             continue;
         }
@@ -678,9 +684,8 @@ void RenderWorld::AddTextMeshes(RenderFrameData *frameData, const RenderCamera *
 void RenderWorld::AddRawMeshes(RenderFrameData *frameData, const RenderCamera *renderCamera, VisCamera *visCamera) {
     PROFILER_CPU_SCOPED_EVENT("RenderWorld::AddRawMeshes");
 
-    const int numVisObjects = frameData->NumVisObjects();
-    for (int i = 0; i < numVisObjects; ++i) {
-        VisObject *visObject = frameData->GetVisObjects() + i;
+    for (VisObject &visObjectRef : frameData->GetVisObjects()) {
+        VisObject *visObject = &visObjectRef;
         if (!visObject->cameraVisible) {
             continue;
         }

@@ -223,6 +223,7 @@ struct VisObject {
 
     bool                        cameraVisible = false;
     bool                        shadowVisible = false;
+    VisObject *                 nextSkinnedObject = nullptr;
 };
 
 struct VisLight {

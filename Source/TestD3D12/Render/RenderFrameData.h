@@ -91,7 +91,7 @@ struct PendingImGuiOverlay {
 /*
 ---------------------------------------------------------------------------------------------------
 
-    RenderFrameData
+    Render Frame Data
 
     한 프레임의 렌더링에 필요한 데이터들을 관리한다.
 
@@ -111,6 +111,46 @@ class RenderFrameData {
     friend class RenderContext;
 
 public:
+    struct Chunk {
+        Chunk *                     next = nullptr;
+        void *                      elements = nullptr;
+        uint32_t                    count = 0;
+    };
+
+    template<typename T>
+    class ChunkIterator {
+    public:
+        ChunkIterator() = default;
+        explicit ChunkIterator(Chunk *chunk) { SetChunk(chunk); }
+
+        T &                         operator*() const { return *current; }
+        T *                         operator->() const { return current; }
+
+        ChunkIterator &             operator++();
+
+        bool                        operator==(const ChunkIterator &rhs) const { return current == rhs.current; }
+        bool                        operator!=(const ChunkIterator &rhs) const { return current != rhs.current; }
+
+    private:
+        void                        SetChunk(Chunk *chunk);
+
+        T *                         current = nullptr;
+        T *                         end = nullptr;
+        Chunk *                     nextChunk = nullptr;
+    };
+
+    template<typename T>
+    class ChunkRange {
+    public:
+        explicit ChunkRange(Chunk *firstChunk) : firstChunk(firstChunk) {}
+
+        ChunkIterator<T>            begin() const { return ChunkIterator<T>(firstChunk); }
+        ChunkIterator<T>            end() const { return ChunkIterator<T>(); }
+
+    private:
+        Chunk *                     firstChunk;
+    };
+
     void                            Init(int32_t frameIndex, int32_t numFrames);
     void                            Shutdown();
 
@@ -126,11 +166,11 @@ public:
     [[nodiscard]] VisCamera *       AllocVisCamera();
 
     uint32_t                        NumVisObjects() const { return numVisObjects; }
-    VisObject *                     GetVisObjects() const { return visObjects; }
+    ChunkRange<VisObject>           GetVisObjects() const { return ChunkRange<VisObject>(firstVisObjectChunk); }
     [[nodiscard]] VisObject *       AllocVisObject();
 
     uint32_t                        NumVisLights() const { return numVisLights; }
-    VisLight *                      GetVisLights() const { return visLights; }
+    ChunkRange<VisLight>            GetVisLights() const { return ChunkRange<VisLight>(firstVisLightChunk); }
     [[nodiscard]] VisLight *        AllocVisLight();
 
                                     // 렌더 커맨드 버퍼 리턴
@@ -205,12 +245,10 @@ private:
 
     void                            InitVisCameras(uint32_t maxVisCameras);
     void                            FreeVisCameras();
-
-    void                            InitVisObjects(int maxVisObjects);
     void                            FreeVisObjects();
-
-    void                            InitVisLights(int maxVisLights);
     void                            FreeVisLights();
+
+    [[nodiscard]] Chunk *           AllocChunk(uint32_t elementSize, uint32_t elementCount);
 
     void                            ClearRetainedMaterials();
     void                            ClearRetainedMeshInstances();
@@ -225,12 +263,12 @@ private:
     uint32_t                        maxVisCameras = 0;
     uint32_t                        numVisCameras = 0;
     VisCamera *                     visCameras = nullptr;
-    uint32_t                        maxVisObjects = 0;
     uint32_t                        numVisObjects = 0;
-    VisObject *                     visObjects = nullptr;
-    uint32_t                        maxVisLights = 0;
+    Chunk *                         firstVisObjectChunk = nullptr;
+    Chunk *                         lastVisObjectChunk = nullptr;
     uint32_t                        numVisLights = 0;
-    VisLight *                      visLights = nullptr;
+    Chunk *                         firstVisLightChunk = nullptr;
+    Chunk *                         lastVisLightChunk = nullptr;
 
     RenderCommandBuffer             commands;
     PendingImGuiOverlay             pendingImGuiOverlay;
@@ -260,6 +298,29 @@ private:
     BE1::Array<SharedPtr<Font>>     retainedFonts;
     BE1::Array<SharedPtr<Texture>>  retainedTextures;
 };
+
+template<typename T>
+BE_INLINE RenderFrameData::ChunkIterator<T> &RenderFrameData::ChunkIterator<T>::operator++() {
+    current++;
+    if (current == end) {
+        SetChunk(nextChunk);
+    }
+    return *this;
+}
+
+template<typename T>
+BE_INLINE void RenderFrameData::ChunkIterator<T>::SetChunk(RenderFrameData::Chunk *chunk) {
+    if (!chunk) {
+        current = nullptr;
+        end = nullptr;
+        nextChunk = nullptr;
+        return;
+    }
+
+    current = static_cast<T *>(chunk->elements);
+    end = current + chunk->count;
+    nextChunk = chunk->next;
+}
 
 BE_INLINE void RenderFrameData::AddObjectStats(uint32_t renderObjectCount, uint32_t visibleObjectCount) {
     if (!statEnabled) {

@@ -23,6 +23,8 @@ uint64_t                    RenderFrameData::globalFrameSerial = 0;
 static constexpr uint32_t   MaxRenderTaskThreads = 32;
 static constexpr uint32_t   MaxMemSizePerBlock = 0x4000000;
 static constexpr uint32_t   MemAlignSize = 32;
+static constexpr uint32_t   VisObjectChunkCapacity = 4096;
+static constexpr uint32_t   VisLightChunkCapacity = 1024;
 
 void RenderFrameData::CmdBeginContext(RenderContext *context) {
     BeginContextRenderCommand *cmd = (BeginContextRenderCommand *)GetCommandBuffer(sizeof(BeginContextRenderCommand));
@@ -197,10 +199,6 @@ void RenderFrameData::BeginFrameMemAllocs() {
     }
 
     InitVisCameras(16);
-
-    InitVisLights(10000);
-
-    InitVisObjects(100000);
 }
 
 void *RenderFrameData::MemAlloc(int size) {
@@ -254,50 +252,42 @@ void RenderFrameData::FreeVisCameras() {
     numVisCameras = 0;
 }
 
-// TODO: 한번에 할당하지 않고, AllocVisObject 에서 최대 개수를 넘어가도 새로운 chunk 를 할당하는 방식으로 수정할 것
-void RenderFrameData::InitVisObjects(int maxVisObjects) {
-    assert(!visObjects);
-
-    this->maxVisObjects = maxVisObjects;
-    this->numVisObjects = 0;
-    this->visObjects = (VisObject *)MemAlloc(sizeof(VisObject) * maxVisObjects);
-}
-
 void RenderFrameData::FreeVisObjects() {
-    if (!visObjects) {
-        return;
+    for (Chunk *chunk = firstVisObjectChunk; chunk; chunk = chunk->next) {
+        VisObject *visObjects = static_cast<VisObject *>(chunk->elements);
+        for (uint32_t i = 0; i < chunk->count; ++i) {
+            visObjects[i].~VisObject();
+        }
     }
 
-    // 소멸자 호출
-    for (int i = 0; i < numVisObjects; ++i) {
-        (visObjects + i)->~VisObject();
-    }
-
-    visObjects = nullptr;
+    firstVisObjectChunk = nullptr;
+    lastVisObjectChunk = nullptr;
     numVisObjects = 0;
 }
 
-// TODO: 한번에 할당하지 않고, AllocVisLight 에서 최대 개수를 넘어가도 새로운 chunk 를 할당하는 방식으로 수정할 것
-void RenderFrameData::InitVisLights(int maxVisLights) {
-    assert(!visLights);
+void RenderFrameData::FreeVisLights() {
+    for (Chunk *chunk = firstVisLightChunk; chunk; chunk = chunk->next) {
+        VisLight *visLights = static_cast<VisLight *>(chunk->elements);
+        for (uint32_t i = 0; i < chunk->count; ++i) {
+            visLights[i].~VisLight();
+        }
+    }
 
-    this->maxVisLights = maxVisLights;
-    this->numVisLights = 0;
-    this->visLights = (VisLight *)MemAlloc(sizeof(VisLight) * maxVisLights);
+    firstVisLightChunk = nullptr;
+    lastVisLightChunk = nullptr;
+    numVisLights = 0;
 }
 
-void RenderFrameData::FreeVisLights() {
-    if (!visLights) {
-        return;
-    }
+RenderFrameData::Chunk *RenderFrameData::AllocChunk(uint32_t elementSize, uint32_t elementCount) {
+    const uint32_t elementsOffset = BE1::AlignUp(static_cast<uint32_t>(sizeof(Chunk)), MemAlignSize);
+    const uint64_t allocationSize = elementsOffset + static_cast<uint64_t>(elementSize) * elementCount;
+    assert(allocationSize <= MaxMemSizePerBlock);
 
-    // 소멸자 호출
-    for (int i = 0; i < numVisLights; ++i) {
-        (visLights + i)->~VisLight();
-    }
-
-    visLights = nullptr;
-    numVisLights = 0;
+    Chunk *chunk = static_cast<Chunk *>(MemAlloc(static_cast<int>(allocationSize)));
+    chunk->next = nullptr;
+    chunk->elements = reinterpret_cast<byte *>(chunk) + elementsOffset;
+    chunk->count = 0;
+    return chunk;
 }
 
 void RenderFrameData::ClearRetainedMaterials() {
@@ -429,12 +419,19 @@ VisCamera *RenderFrameData::AllocVisCamera() {
 }
 
 VisObject *RenderFrameData::AllocVisObject() {
-    if (numVisObjects + 1 > maxVisObjects) {
-        return nullptr;
+    if (!lastVisObjectChunk || lastVisObjectChunk->count >= VisObjectChunkCapacity) {
+        Chunk *newChunk = AllocChunk(sizeof(VisObject), VisObjectChunkCapacity);
+        if (lastVisObjectChunk) {
+            lastVisObjectChunk->next = newChunk;
+        } else {
+            firstVisObjectChunk = newChunk;
+        }
+        lastVisObjectChunk = newChunk;
     }
 
     // placement new 생성자 호출
-    VisObject *newVisObject = &visObjects[numVisObjects];
+    VisObject *visObjects = static_cast<VisObject *>(lastVisObjectChunk->elements);
+    VisObject *newVisObject = &visObjects[lastVisObjectChunk->count++];
     new (newVisObject) VisObject();
     
     newVisObject->index = numVisObjects++;
@@ -443,12 +440,19 @@ VisObject *RenderFrameData::AllocVisObject() {
 }
 
 VisLight *RenderFrameData::AllocVisLight() {
-    if (numVisLights + 1 > maxVisLights) {
-        return nullptr;
+    if (!lastVisLightChunk || lastVisLightChunk->count >= VisLightChunkCapacity) {
+        Chunk *newChunk = AllocChunk(sizeof(VisLight), VisLightChunkCapacity);
+        if (lastVisLightChunk) {
+            lastVisLightChunk->next = newChunk;
+        } else {
+            firstVisLightChunk = newChunk;
+        }
+        lastVisLightChunk = newChunk;
     }
 
     // placement new 생성자 호출
-    VisLight *newVisLight = &visLights[numVisLights];
+    VisLight *visLights = static_cast<VisLight *>(lastVisLightChunk->elements);
+    VisLight *newVisLight = &visLights[lastVisLightChunk->count++];
     new (newVisLight) VisLight();
 
     newVisLight->index = numVisLights++;
