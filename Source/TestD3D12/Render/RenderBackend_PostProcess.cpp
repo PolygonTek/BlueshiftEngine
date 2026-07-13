@@ -37,14 +37,17 @@ bool RenderBackend::DispatchLuminance() {
         return false;
     }
 
+    RHI::Buffer *luminanceBuffer = currentVisCamera->luminanceBuffer;
+    if (!luminanceBuffer) {
+        return false;
+    }
+
     const uint32_t sampleW = BE1::Max(inputW / 2, 1u);
     const uint32_t sampleH = BE1::Max(inputH / 2, 1u);
 
     const float lumLogMin = r_toneMapLuminanceLogMin.GetFloat();
     const float lumLogMax = BE1::Max(r_toneMapLuminanceLogMax.GetFloat(), lumLogMin + 0.0001f);
     const float lumLogRange = lumLogMax - lumLogMin;
-
-    RHI::Buffer *luminanceBuffer = currentVisCamera->luminanceBuffer;
 
     LuminancePass1Params luminancePass1Params = {};
     luminancePass1Params.sampleSize = uint2(sampleW, sampleH);
