@@ -492,6 +492,7 @@ void App::RenderScene() {
 
     RenderCameraDesc cameraDesc;
     cameraDesc.projectionPolicy = RHI::renderer->GetProjectionPolicy();
+    cameraDesc.infiniteZFar = true;
     cameraDesc.clearMethod = RenderCameraClearMethod::Skybox;
     //cameraDesc.clearColorMode = RenderCameraClearColorMode::RenderTargetDefault;
     cameraDesc.orthogonal = false;

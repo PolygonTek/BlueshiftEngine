@@ -26,7 +26,6 @@ void RenderCamera::Update(const RenderCameraDesc &desc) {
 
     const bool zNegativeOneToOne = desc.projectionPolicy.IsZNegativeOneToOne();
     const bool reverseZ = desc.projectionPolicy.reverseZ;
-    const bool infiniteZFar = desc.projectionPolicy.infiniteZFar;
 
     SetViewMatrixFromEngineAxis(desc.axis, desc.origin, viewMatrix);
 
@@ -52,13 +51,45 @@ void RenderCamera::Update(const RenderCameraDesc &desc) {
         frustum.ToPoints(frustumPoints);
 
         // 원근 투영 행렬을 계산한다. viewMatrix 가 오른손 좌표계이므로, 오른손 좌표계용 투영 행렬을 계산한다.
-        projMatrix.SetPerspectiveRH(desc.fovY, desc.fovX / desc.fovY, desc.zNear, desc.zFar, zNegativeOneToOne, reverseZ, infiniteZFar);
+        projMatrix.SetPerspectiveRH(desc.fovY, desc.fovX / desc.fovY, desc.zNear, desc.zFar, zNegativeOneToOne, reverseZ, desc.infiniteZFar);
     }
 
     viewProjMatrix = projMatrix * viewMatrix;
     invViewProjMatrix = viewProjMatrix.Inverse();
     jitteredViewProjMatrix = viewProjMatrix;
     jitteredInvViewProjMatrix = invViewProjMatrix;
+}
+
+bool RenderCamera::Cull(const BE1::AABB &bounds) const {
+    if (desc.orthogonal) {
+        return !box.IsIntersectAABB(bounds);
+    }
+
+    return frustum.CullAABB(bounds);
+}
+
+bool RenderCamera::Cull(const BE1::OBB &bounds) const {
+    if (desc.orthogonal) {
+        return !box.IsIntersectOBB(bounds);
+    }
+
+    return frustum.CullOBB(bounds);
+}
+
+bool RenderCamera::Cull(const BE1::Sphere &bounds) const {
+    if (desc.orthogonal) {
+        return !box.IsIntersectSphere(bounds);
+    }
+
+    return frustum.CullSphere(bounds);
+}
+
+bool RenderCamera::Cull(const BE1::Frustum &bounds) const {
+    if (desc.orthogonal) {
+        return bounds.CullOBB(box);
+    }
+
+    return frustum.CullFrustum(bounds);
 }
 
 void RenderCamera::CalcConvolutionBloomKernelParams(const BE1::Image &kernelImage, float &normalizationFactor, BE1::Vec2 &kernelExtents) {

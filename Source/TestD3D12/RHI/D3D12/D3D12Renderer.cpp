@@ -42,7 +42,6 @@ void D3D12Renderer::Init(const void *mainWindowHandle) {
 
     projectionPolicy.clipDepthRange = RHI::ClipDepthRange::ZeroToOne;
     projectionPolicy.reverseZ = true;
-    projectionPolicy.infiniteZFar = true;
 
 #if defined(_DEBUG) || defined(_DEVELOPMENT)
     const bool requestDebugLayer = d3d12_debugLayer.GetBool();

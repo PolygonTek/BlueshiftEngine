@@ -26,38 +26,35 @@ static const BE1::AABB &GetEffectiveLocalAABB(const RenderObject::Desc &desc) {
     return desc.aabb;
 }
 
-RenderObject::~RenderObject() {
-}
-
-void RenderObject::Update(const RenderObject::Desc &src, RenderObject::Desc::UpdateFlag flags) {
-    if (BE1::HasFlag(flags, Desc::UpdateFlag::Transform)) {
+void RenderObject::Update(const RenderObject::Desc &src, RenderObject::Desc::UpdateFlag updateFlags) {
+    if (BE1::HasFlag(updateFlags, Desc::UpdateFlag::Transform)) {
         desc.worldMatrix = src.worldMatrix;
     }
 
-    if (BE1::HasFlag(flags, Desc::UpdateFlag::Bounds)) {
+    if (BE1::HasFlag(updateFlags, Desc::UpdateFlag::Bounds)) {
         desc.aabb = src.aabb;
     }
 
-    if (BE1::HasFlag(flags, Desc::UpdateFlag::Mesh)) {
+    if (BE1::HasFlag(updateFlags, Desc::UpdateFlag::Mesh)) {
         desc.meshInstance = src.meshInstance;
     }
 
-    if (BE1::HasFlag(flags, Desc::UpdateFlag::Materials)) {
+    if (BE1::HasFlag(updateFlags, Desc::UpdateFlag::Materials)) {
         desc.materials = src.materials;
     }
 
     if (src.text) {
-        if (BE1::HasFlag(flags, Desc::UpdateFlag::Font)) {
+        if (BE1::HasFlag(updateFlags, Desc::UpdateFlag::Font)) {
             RenderObject::TextDesc &textDesc = desc.GetTextDesc();
             textDesc.font = src.text->font;
         }
 
-        if (BE1::HasFlag(flags, Desc::UpdateFlag::Text)) {
+        if (BE1::HasFlag(updateFlags, Desc::UpdateFlag::Text)) {
             RenderObject::TextDesc &textDesc = desc.GetTextDesc();
             textDesc.text = src.text->text;
         }
 
-        if (BE1::HasFlag(flags, Desc::UpdateFlag::TextStyle)) {
+        if (BE1::HasFlag(updateFlags, Desc::UpdateFlag::TextStyle)) {
             RenderObject::TextDesc &textDesc = desc.GetTextDesc();
             textDesc.textRect = src.text->textRect;
             textDesc.textShadowOffset = src.text->textShadowOffset;
@@ -68,7 +65,7 @@ void RenderObject::Update(const RenderObject::Desc &src, RenderObject::Desc::Upd
         }
     }
 
-    if (BE1::HasAnyFlag(flags, Desc::UpdateFlag::Transform | Desc::UpdateFlag::Bounds | Desc::UpdateFlag::Mesh)) {
+    if (BE1::HasAnyFlag(updateFlags, Desc::UpdateFlag::Transform | Desc::UpdateFlag::Bounds | Desc::UpdateFlag::Mesh)) {
         const BE1::AABB &localAABB = GetEffectiveLocalAABB(desc);
         if (localAABB.IsCleared()) {
             worldAABB = BE1::AABB::empty;

@@ -532,7 +532,9 @@ namespace RHI {
     struct ProjectionPolicy {
         ClipDepthRange                  clipDepthRange = ClipDepthRange::ZeroToOne;
         bool                            reverseZ = false;
-        bool                            infiniteZFar = false;
+
+        bool                            operator==(const ProjectionPolicy &rhs) const { return clipDepthRange == rhs.clipDepthRange && reverseZ == rhs.reverseZ; }
+        bool                            operator!=(const ProjectionPolicy &rhs) const { return clipDepthRange != rhs.clipDepthRange || reverseZ != rhs.reverseZ; }
 
         bool                            IsZNegativeOneToOne() const { return clipDepthRange == ClipDepthRange::NegativeOneToOne; }
         float                           GetNDCFarZ() const { return reverseZ ? (IsZNegativeOneToOne() ? -1.0f : 0.0f) : 1.0f; }

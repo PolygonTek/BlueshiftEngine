@@ -89,8 +89,8 @@ public:
     };
 
     struct Desc {
-        enum class UpdateFlag : uint32_t {
-            All                     = 0xFFFFFFFF,
+        enum class UpdateFlag : uint16_t {
+            All                     = 0xFFFF,
             Transform               = BIT(0),
             Bounds                  = BIT(1),
             Mesh                    = BIT(2),
@@ -133,7 +133,7 @@ public:
     };
 
     RenderObject() = default;
-    ~RenderObject();
+    ~RenderObject() = default;
 
                                     /// Returns object index in world.
     int                             GetIndex() const { return index; }
@@ -147,19 +147,20 @@ public:
                                     /// Returns AABB in world space.
     const BE1::AABB &               GetWorldAABB() const { return worldAABB; }
 
-                                    /// Update this render object.
-    void                            Update(const Desc &desc, Desc::UpdateFlag flags);
-
 private:
+                                    /// Update this render object.
+    void                            Update(const Desc &desc, Desc::UpdateFlag updateFlags);
+
     Desc                            desc;
     BE1::AABB                       worldAABB = BE1::AABB::empty;
+
     BE1::Mat3x4                     prevWorldMatrix = BE1::Mat3x4::identity;
     bool                            prevWorldMatrixValid = false;
     uint64_t                        prevWorldMatrixFrameIndex = 0;
     uint64_t                        visibleFrameIndex = 0;
-    int                             index = -1;                     // RenderWorld::renderObjects 의 인덱스
 
-    mutable uint64_t                viewCount = uint64_t(-1);       // 마지막으로 VisObject 에 등록된 DrawCamera or DrawGUICamera 함수의 실행 카운터
+    int                             index = -1;                     // RenderWorld::renderObjects 의 인덱스
+    uint64_t                        viewCount = uint64_t(-1);       // 마지막으로 VisObject 에 등록된 DrawCamera or DrawGUICamera 함수의 실행 카운터
 };
 
 BE_INLINE RenderObject::TextDesc &RenderObject::Desc::GetTextDesc() {

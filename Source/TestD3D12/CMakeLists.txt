@@ -148,6 +148,8 @@ set(SRC_FILES
     Render/RenderBackend_PostProcess.cpp
     Render/RenderBackend_DrawGenericSurf.cpp
     Render/RenderBackend_DrawSkySurf.cpp
+    Render/RenderLight.h
+    Render/RenderLight.cpp
     Render/RenderObject.h
     Render/RenderObject.cpp
     Render/RenderWorld.h

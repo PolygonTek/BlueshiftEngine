@@ -14,6 +14,7 @@
 
 #pragma once
 
+#include "RenderLight.h"
 #include "RenderObject.h"
 #include "Render/Mesh/GuiMesh.h"
 #include "RenderPassBuilder.h"
@@ -72,6 +73,11 @@ public:
     int                         AddRenderObject(const RenderObject::Desc &desc);
     void                        UpdateRenderObject(int index, const RenderObject::Desc &desc, RenderObject::Desc::UpdateFlag updateFlags);
     void                        RemoveRenderObject(int index);
+
+    RenderLight *               GetRenderLight(int index) const;
+    int                         AddRenderLight(const RenderLight::Desc &desc);
+    void                        UpdateRenderLight(int index, const RenderLight::Desc &desc, RenderLight::Desc::UpdateFlag updateFlags);
+    void                        RemoveRenderLight(int index);
 
     void                        SetSkyboxMaterial(SharedPtr<Material> skyboxMaterial);
 
@@ -136,6 +142,7 @@ private:
     void                        AddVisSurf(RenderFrameData *frameData, VisCamera *visCamera, VisLight *visLight, VisObject *visObject, const Material *material, SubMesh *subMesh, VisSurfFlag flags);
 
     BE1::Array<RenderObject *>  renderObjects;      /// The array of pointers to all render objects managed by the world.
+    BE1::Array<RenderLight *>   renderLights;       /// The array of pointers to all render lights managed by the world.
 
     bool                        frameActive = false;
     uint64_t                    renderWorldFrameIndex = 0;

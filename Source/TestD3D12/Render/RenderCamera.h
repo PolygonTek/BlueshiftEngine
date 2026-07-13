@@ -68,6 +68,7 @@ struct RenderCameraDesc {
     float                       zNear;                  ///< Near distance in z axis
     float                       zFar;                   ///< Finite visibility/culling far distance; ignored by infinite-far perspective projection
     RHI::ProjectionPolicy       projectionPolicy;       ///< Graphics API projection convention used for shader-visible matrices
+    bool                        infiniteZFar = false;   ///< Use an infinite far plane for perspective projection
     bool                        orthogonal = false;     ///< True for orthogonal projection or false for perspective projection
 };
 
@@ -95,6 +96,12 @@ public:
     const BE1::Mat4 &           GetViewMatrix() const { return viewMatrix; }
     const BE1::Mat4 &           GetProjMatrix() const { return projMatrix; }
     const BE1::Mat4 &           GetViewProjMatrix() const { return viewProjMatrix; }
+
+                                /// Returns true if the bounds are outside the camera view volume.
+    bool                        Cull(const BE1::AABB &bounds) const;
+    bool                        Cull(const BE1::OBB &bounds) const;
+    bool                        Cull(const BE1::Sphere &bounds) const;
+    bool                        Cull(const BE1::Frustum &bounds) const;
 
                                 /// Transforms world coordinates to normalized device coordinates.
     bool                        TransformWorldToNDC(const BE1::Vec3 &worldCoords, BE1::Vec3 &normalizedDeviceCoords) const;

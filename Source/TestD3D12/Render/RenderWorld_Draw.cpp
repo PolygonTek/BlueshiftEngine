@@ -71,6 +71,8 @@ void RenderWorld::AddVisSurf(RenderFrameData *frameData, VisCamera *visCamera, V
 }
 
 void RenderWorld::SetSkyboxMaterial(SharedPtr<Material> skyboxMaterial) {
+    assert(!frameActive);
+
     this->skyboxMaterial = skyboxMaterial;
 }
 
@@ -150,6 +152,7 @@ void RenderWorld::RenderScene(RenderCamera *renderCamera) {
     PROFILER_CPU_SCOPED_EVENT("RenderWorld::RenderScene");
 
     assert(BE1::Engine::IsInMainThread());
+    assert(frameActive);
 
     RenderFrameData *frameData = RenderContext::activeContext->GetCurrentFrontendFrameData();
     RenderContext *renderContext = RenderContext::activeContext;
@@ -436,7 +439,7 @@ void RenderWorld::FindVisObjects(RenderFrameData *frameData, const RenderCamera 
         }
 
         if (!r_skipFrustumCulling.GetBool()) {
-            if (renderCamera->frustum.CullAABB(renderObject->worldAABB)) {
+            if (renderCamera->Cull(renderObject->worldAABB)) {
                 continue;
             }
         }
@@ -737,6 +740,7 @@ void RenderWorld::RenderGUI(GuiMesh &guiMesh) {
     PROFILER_CPU_SCOPED_EVENT("RenderWorld::RenderGUI");
 
     assert(BE1::Engine::IsInMainThread());
+    assert(frameActive);
 
     if (guiMesh.NumSurfaces() == 0) {
         return;

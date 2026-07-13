@@ -22,6 +22,7 @@
 #include "Render/Mesh/MeshInstance.h"
 #include "RenderObject.h"
 #include "RenderCamera.h"
+#include "RenderLight.h"
 
 class Texture;
 
@@ -225,5 +226,22 @@ struct VisObject {
 };
 
 struct VisLight {
+    ALIGN_AS32 BE1::Mat4        viewProjScaleBiasMatrix;
+    ALIGN_AS32 BE1::Mat3x4      fallOffMatrix;
+
     uint32_t                    index;
+
+    BE1::Mat3                   axis;
+    BE1::Vec3                   origin;
+    BE1::Vec3                   size;
+    BE1::Color3                 lightColor;                 ///< Linear RGB light color multiplied by intensity
+    BE1::Rect                   screenClipRect;             ///< Screen clipping rectangle in top-left coordinates
+
+    float                       zNear;
+    float                       fallOffExponent;
+    float                       shadowOffsetFactor;
+    float                       shadowOffsetUnits;
+
+    RenderLight::Type           type;
+    RenderLight::Flag           flags;
 };

@@ -46,10 +46,18 @@ void RenderWorld::EndFrame() {
 }
 
 void RenderWorld::ClearScene() {
+    assert(BE1::Engine::IsInMainThread());
+    assert(!frameActive);
+
     for (RenderObject *renderObject : renderObjects) {
         SAFE_DELETE(renderObject);
     }
     renderObjects.Clear();
+
+    for (RenderLight *renderLight : renderLights) {
+        SAFE_DELETE(renderLight);
+    }
+    renderLights.Clear();
 }
 
 RenderObject *RenderWorld::GetRenderObject(int index) const {
@@ -69,35 +77,47 @@ RenderObject *RenderWorld::GetRenderObject(int index) const {
 
 int RenderWorld::AddRenderObject(const RenderObject::Desc &desc) {
     assert(BE1::Engine::IsInMainThread());
+    assert(!frameActive);
 
     int index = renderObjects.FindNull();
     if (index == -1) {
         index = renderObjects.Append(nullptr);
     }
 
-    UpdateRenderObject(index, desc, RenderObject::Desc::UpdateFlag::All);
+    RenderObject *renderObject = new RenderObject;
+    renderObject->index = index;
+    renderObjects[index] = renderObject;
+
+    renderObject->Update(desc, RenderObject::Desc::UpdateFlag::All);
     return index;
 }
 
 void RenderWorld::UpdateRenderObject(int index, const RenderObject::Desc &desc, RenderObject::Desc::UpdateFlag updateFlags) {
+    assert(BE1::Engine::IsInMainThread());
+    assert(!frameActive);
+
+    if (!renderObjects.IsValidIndex(index)) {
+        BE_WARNLOG("RenderWorld::UpdateRenderObject: invalid index %i\n", index);
+        return;
+    }
+
     RenderObject *renderObject = renderObjects[index];
     if (!renderObject) {
-        renderObject = new RenderObject;
-        renderObject->index = index;
-        renderObjects[index] = renderObject;
-        renderObject->Update(desc, updateFlags);
-    } else {
-        const bool transformChanged = BE1::HasFlag(updateFlags, RenderObject::Desc::UpdateFlag::Transform);
-        if (transformChanged) {
-            CapturePrevWorldMatrix(renderObject);
-        }
-
-        renderObject->Update(desc, updateFlags);
+        BE_WARNLOG("RenderWorld::UpdateRenderObject: index %i is nullptr\n", index);
+        return;
     }
+
+    const bool transformChanged = BE1::HasFlag(updateFlags, RenderObject::Desc::UpdateFlag::Transform);
+    if (transformChanged) {
+        CapturePrevWorldMatrix(renderObject);
+    }
+
+    renderObject->Update(desc, updateFlags);
 }
 
 void RenderWorld::RemoveRenderObject(int index) {
     assert(BE1::Engine::IsInMainThread());
+    assert(!frameActive);
 
     if (!renderObjects.IsValidIndex(index)) {
         BE_WARNLOG("RenderWorld::RemoveRenderObject: invalid index %i\n", index);
@@ -114,10 +134,77 @@ void RenderWorld::RemoveRenderObject(int index) {
     renderObjects[index] = nullptr;
 }
 
-void RenderWorld::CapturePrevWorldMatrix(RenderObject *renderObject) {
-    assert(renderObject);
+RenderLight *RenderWorld::GetRenderLight(int index) const {
+    if (index < 0 || index >= renderLights.Count()) {
+        BE_WARNLOG("RenderWorld::GetRenderLight: index %i > %i\n", index, renderLights.Count() - 1);
+        return nullptr;
+    }
 
-    const uint64_t previousFrameIndex = frameActive ? renderWorldFrameIndex - 1 : renderWorldFrameIndex;
+    RenderLight *renderLight = renderLights[index];
+    if (!renderLight) {
+        BE_WARNLOG("RenderWorld::GetRenderLight: index %i is nullptr\n", index);
+        return nullptr;
+    }
+
+    return renderLight;
+}
+
+int RenderWorld::AddRenderLight(const RenderLight::Desc &desc) {
+    assert(BE1::Engine::IsInMainThread());
+    assert(!frameActive);
+
+    int index = renderLights.FindNull();
+    if (index == -1) {
+        index = renderLights.Append(nullptr);
+    }
+
+    RenderLight *renderLight = new RenderLight;
+    renderLight->index = index;
+    renderLights[index] = renderLight;
+
+    renderLight->Update(desc, RenderLight::Desc::UpdateFlag::All);
+    return index;
+}
+
+void RenderWorld::UpdateRenderLight(int index, const RenderLight::Desc &desc, RenderLight::Desc::UpdateFlag updateFlags) {
+    assert(BE1::Engine::IsInMainThread());
+    assert(!frameActive);
+
+    if (!renderLights.IsValidIndex(index)) {
+        BE_WARNLOG("RenderWorld::UpdateRenderLight: invalid index %i\n", index);
+        return;
+    }
+
+    RenderLight *renderLight = renderLights[index];
+    if (!renderLight) {
+        BE_WARNLOG("RenderWorld::UpdateRenderLight: index %i is nullptr\n", index);
+        return;
+    }
+
+    renderLight->Update(desc, updateFlags);
+}
+
+void RenderWorld::RemoveRenderLight(int index) {
+    assert(BE1::Engine::IsInMainThread());
+    assert(!frameActive);
+
+    if (!renderLights.IsValidIndex(index)) {
+        BE_WARNLOG("RenderWorld::RemoveRenderLight: invalid index %i\n", index);
+        return;
+    }
+
+    RenderLight *renderLight = renderLights[index];
+    if (!renderLight) {
+        BE_WARNLOG("RenderWorld::RemoveRenderLight: index %i is nullptr\n", index);
+        return;
+    }
+
+    delete renderLights[index];
+    renderLights[index] = nullptr;
+}
+
+void RenderWorld::CapturePrevWorldMatrix(RenderObject *renderObject) {
+    const uint64_t previousFrameIndex = renderWorldFrameIndex;
     if (previousFrameIndex == 0) {
         return;
     }
@@ -126,6 +213,7 @@ void RenderWorld::CapturePrevWorldMatrix(RenderObject *renderObject) {
     if (renderObject->visibleFrameIndex != previousFrameIndex) {
         return;
     }
+
     if (renderObject->prevWorldMatrixValid && renderObject->prevWorldMatrixFrameIndex == previousFrameIndex) {
         return;
     }

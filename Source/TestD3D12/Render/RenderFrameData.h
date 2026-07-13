@@ -25,6 +25,7 @@ class MeshInstance;
 class Font;
 struct VisCamera;
 struct VisObject;
+struct VisLight;
 enum class DrawTextFlag : uint16_t;
 
 enum class FrameSyncState : uint8_t {
@@ -128,6 +129,10 @@ public:
     VisObject *                     GetVisObjects() const { return visObjects; }
     [[nodiscard]] VisObject *       AllocVisObject();
 
+    uint32_t                        NumVisLights() const { return numVisLights; }
+    VisLight *                      GetVisLights() const { return visLights; }
+    [[nodiscard]] VisLight *        AllocVisLight();
+
                                     // 렌더 커맨드 버퍼 리턴
     RenderCommandBuffer *           GetCommands() { return &commands; }
 
@@ -204,6 +209,9 @@ private:
     void                            InitVisObjects(int maxVisObjects);
     void                            FreeVisObjects();
 
+    void                            InitVisLights(int maxVisLights);
+    void                            FreeVisLights();
+
     void                            ClearRetainedMaterials();
     void                            ClearRetainedMeshInstances();
     void                            ClearRetainedFonts();
@@ -220,6 +228,9 @@ private:
     uint32_t                        maxVisObjects = 0;
     uint32_t                        numVisObjects = 0;
     VisObject *                     visObjects = nullptr;
+    uint32_t                        maxVisLights = 0;
+    uint32_t                        numVisLights = 0;
+    VisLight *                      visLights = nullptr;
 
     RenderCommandBuffer             commands;
     PendingImGuiOverlay             pendingImGuiOverlay;

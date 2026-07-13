@@ -86,6 +86,8 @@ void RenderFrameData::Shutdown() {
     delete [] threadData;
     threadData = nullptr;
 
+    FreeVisLights();
+
     FreeVisObjects();
 
     FreeVisCameras();
@@ -171,6 +173,8 @@ RenderFrameData::MemBlock *RenderFrameData::AllocMemBlock() {
 void RenderFrameData::BeginFrameMemAllocs() {
     FreeVisCameras();
 
+    FreeVisLights();
+
     FreeVisObjects();
 
     ClearRetainedMaterials();
@@ -194,7 +198,9 @@ void RenderFrameData::BeginFrameMemAllocs() {
 
     InitVisCameras(16);
 
-    InitVisObjects(0x20000);
+    InitVisLights(10000);
+
+    InitVisObjects(100000);
 }
 
 void *RenderFrameData::MemAlloc(int size) {
@@ -269,6 +275,29 @@ void RenderFrameData::FreeVisObjects() {
 
     visObjects = nullptr;
     numVisObjects = 0;
+}
+
+// TODO: 한번에 할당하지 않고, AllocVisLight 에서 최대 개수를 넘어가도 새로운 chunk 를 할당하는 방식으로 수정할 것
+void RenderFrameData::InitVisLights(int maxVisLights) {
+    assert(!visLights);
+
+    this->maxVisLights = maxVisLights;
+    this->numVisLights = 0;
+    this->visLights = (VisLight *)MemAlloc(sizeof(VisLight) * maxVisLights);
+}
+
+void RenderFrameData::FreeVisLights() {
+    if (!visLights) {
+        return;
+    }
+
+    // 소멸자 호출
+    for (int i = 0; i < numVisLights; ++i) {
+        (visLights + i)->~VisLight();
+    }
+
+    visLights = nullptr;
+    numVisLights = 0;
 }
 
 void RenderFrameData::ClearRetainedMaterials() {
@@ -411,6 +440,20 @@ VisObject *RenderFrameData::AllocVisObject() {
     newVisObject->index = numVisObjects++;
 
     return newVisObject;
+}
+
+VisLight *RenderFrameData::AllocVisLight() {
+    if (numVisLights + 1 > maxVisLights) {
+        return nullptr;
+    }
+
+    // placement new 생성자 호출
+    VisLight *newVisLight = &visLights[numVisLights];
+    new (newVisLight) VisLight();
+
+    newVisLight->index = numVisLights++;
+
+    return newVisLight;
 }
 
 void *RenderFrameData::GetCommandBuffer(uint32_t bytes) {
