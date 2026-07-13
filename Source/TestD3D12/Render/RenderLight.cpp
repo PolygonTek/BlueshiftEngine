@@ -69,15 +69,15 @@ void RenderLight::Update(const RenderLight::Desc &src, Desc::UpdateFlag updateFl
             ALIGN_AS32 BE1::Mat4 fallOffProjMatrix;
             fallOffProjMatrix.SetOrthoRH(-effectiveSize[1], effectiveSize[1], -effectiveSize[2], effectiveSize[2], -effectiveSize[0], effectiveSize[0], true, false);
             fallOffMatrix = fallOffProjMatrix * viewMatrix;
-        } else if (desc.type == Type::Directional) {
-            // Set bounding volume for box light.
+        } else if (desc.type == Type::BoxDir) {
+            // Set bounding volume for box-directional light.
             worldOBB = BE1::OBB(desc.origin + desc.axis[0] * effectiveSize[0] * 0.5f, BE1::Vec3(effectiveSize[0] * 0.5f, effectiveSize[1], effectiveSize[2]), desc.axis);
 
-            // Calculate box light orthogonal projection matrix.
+            // Calculate box-directional light orthogonal projection matrix.
             const BE1::Vec3 &obbExtents = worldOBB.Extents();
             projMatrix.SetOrthoRH(-obbExtents[1], obbExtents[1], -obbExtents[2], obbExtents[2], 0, 2 * obbExtents[0], zNegativeOneToOne, reverseZ);
 
-            // No fall-off for directional light.
+            // No fall-off for box-directional light.
             fallOffMatrix = BE1::Mat3x4(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
         } else if (desc.type == Type::Spot) {
             const float zNear = BE1::Max(desc.zNear, MinLightSize);
@@ -114,7 +114,7 @@ void RenderLight::Update(const RenderLight::Desc &src, Desc::UpdateFlag updateFl
             BE1::Vec4(0.0f, 0.0f, 0.0f, 1.0f));
         viewProjScaleBiasMatrix = textureScaleBiasMatrix * projMatrix * viewMatrix;
 
-        if (desc.type == Type::Point || desc.type == Type::Directional) {
+        if (desc.type == Type::Point || desc.type == Type::BoxDir) {
             worldAABB = worldOBB.ToAABB();
         } else if (desc.type == Type::Spot) {
             worldAABB = worldFrustum.ToOBB().ToAABB();
@@ -123,7 +123,7 @@ void RenderLight::Update(const RenderLight::Desc &src, Desc::UpdateFlag updateFl
 }
 
 bool RenderLight::IsIntersectAABB(const BE1::AABB &aabb) const {
-    if (desc.type == Type::Directional || desc.type == Type::Point) {
+    if (desc.type == Type::BoxDir || desc.type == Type::Point) {
         if (this->worldOBB.IsIntersectAABB(aabb)) {
             return true;
         }
@@ -142,7 +142,7 @@ bool RenderLight::IsIntersectAABB(const BE1::AABB &aabb) const {
 }
 
 bool RenderLight::IsIntersectOBB(const BE1::OBB &obb) const {
-    if (desc.type == Type::Directional || desc.type == Type::Point) {
+    if (desc.type == Type::BoxDir || desc.type == Type::Point) {
         if (this->worldOBB.IsIntersectOBB(obb)) {
             return true;
         }
@@ -161,7 +161,7 @@ bool RenderLight::IsIntersectOBB(const BE1::OBB &obb) const {
 }
 
 bool RenderLight::Cull(const RenderCamera &camera) const {
-    if (desc.type == Type::Directional) {
+    if (desc.type == Type::BoxDir) {
         return camera.Cull(worldOBB);
     }
 
@@ -183,7 +183,7 @@ bool RenderLight::Cull(const RenderCamera &camera) const {
 }
 
 bool RenderLight::ComputeScreenClipRect(const RenderCamera &camera, BE1::Rect &clipRect) const {
-    if (desc.type == Type::Directional) {
+    if (desc.type == Type::BoxDir) {
         return camera.CalcClipRectFromOBB(worldOBB, clipRect);
     }
 

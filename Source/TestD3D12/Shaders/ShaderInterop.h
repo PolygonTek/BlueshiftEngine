@@ -269,9 +269,13 @@ struct FrameConstants {
     float elapsedPrevTime;
     uint frameCount;
     uint shaderMaterialTableIndex;
+    uint shaderPointLightTableIndex;
+    uint shaderSpotLightTableIndex;
+    uint shaderBoxDirLightTableIndex;
     uint feedbackBufferIndex;
     uint padding0;
     uint padding1;
+    uint padding2;
 };
 
 struct CameraConstants {
@@ -287,8 +291,12 @@ struct CameraConstants {
 
     uint surfaceTableIndex;
     float ndcFarZ;
-    uint padding1;
-    uint padding2;
+    uint firstPointLightIndex;
+    uint numPointLights;
+    uint firstSpotLightIndex;
+    uint numSpotLights;
+    uint firstBoxDirLightIndex;
+    uint numBoxDirLights;
 };
 
 struct SurfaceDrawParams {
@@ -314,6 +322,47 @@ struct ShaderMaterial {
     float4 baseColorFactor;
     float alphaCutoff;
     float3 padding0;
+};
+
+struct ShaderPointLight {
+    row_major float3x4 fallOffMatrix;
+
+    float3 origin;
+    float fallOffExponent;
+    float3 size;
+    uint flags;
+    float3 lightColor;
+    float padding0;
+    int4 screenClipRect;
+};
+
+struct ShaderSpotLight {
+    row_major float4x4 viewProjScaleBiasMatrix;
+    row_major float3x4 fallOffMatrix;
+
+    float3 origin;
+    float fallOffExponent;
+    float3 direction;
+    float zNear;
+    float3 size;
+    uint flags;
+    float3 lightColor;
+    float padding0;
+    int4 screenClipRect;
+};
+
+struct ShaderBoxDirLight {
+    row_major float4x4 worldToLightVolumeMatrix;
+
+    float3 origin;
+    uint flags;
+    float3 direction;
+    float padding0;
+    float3 size;
+    float padding1;
+    float3 lightColor;
+    float padding2;
+    int4 screenClipRect;
 };
 
 #endif // SHADERINTEROP_H

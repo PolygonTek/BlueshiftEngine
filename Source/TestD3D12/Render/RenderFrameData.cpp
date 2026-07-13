@@ -73,6 +73,10 @@ void RenderFrameData::Init(int32_t frameIndex, int32_t numFrames) {
         BE_WARNLOG("RenderFrameData::Init: failed to initialize shader material table\n");
     }
 
+    if (!shaderLightTable.Init()) {
+        BE_WARNLOG("RenderFrameData::Init: failed to initialize shader light table\n");
+    }
+
     if (!shaderSurfaceTable.Init()) {
         BE_WARNLOG("RenderFrameData::Init: failed to initialize shader surface table\n");
     }
@@ -103,6 +107,7 @@ void RenderFrameData::Shutdown() {
     ClearRetainedTextures();
 
     shaderMaterialTable.Shutdown();
+    shaderLightTable.Shutdown();
     shaderSurfaceTable.Shutdown();
 
     ClearMemBlocks();
@@ -188,6 +193,7 @@ void RenderFrameData::BeginFrameMemAllocs() {
     ClearRetainedTextures();
 
     shaderMaterialTable.Clear();
+    shaderLightTable.Clear();
     shaderSurfaceTable.Clear();
 
     // Reset the mem allocation to the first block.
@@ -276,6 +282,9 @@ void RenderFrameData::FreeVisLights() {
     firstVisLightChunk = nullptr;
     lastVisLightChunk = nullptr;
     numVisLights = 0;
+    numVisPointLights = 0;
+    numVisSpotLights = 0;
+    numVisBoxDirLights = 0;
 }
 
 RenderFrameData::Chunk *RenderFrameData::AllocChunk(uint32_t elementSize, uint32_t elementCount) {
@@ -439,7 +448,7 @@ VisObject *RenderFrameData::AllocVisObject() {
     return newVisObject;
 }
 
-VisLight *RenderFrameData::AllocVisLight() {
+VisLight *RenderFrameData::AllocVisLight(RenderLight::Type type) {
     if (!lastVisLightChunk || lastVisLightChunk->count >= VisLightChunkCapacity) {
         Chunk *newChunk = AllocChunk(sizeof(VisLight), VisLightChunkCapacity);
         if (lastVisLightChunk) {
@@ -456,6 +465,23 @@ VisLight *RenderFrameData::AllocVisLight() {
     new (newVisLight) VisLight();
 
     newVisLight->index = numVisLights++;
+    newVisLight->type = type;
+
+    switch (type) {
+    case RenderLight::Type::Point:
+        newVisLight->typeIndex = numVisPointLights++;
+        break;
+    case RenderLight::Type::Spot:
+        newVisLight->typeIndex = numVisSpotLights++;
+        break;
+    case RenderLight::Type::BoxDir:
+        newVisLight->typeIndex = numVisBoxDirLights++;
+        break;
+    default:
+        assert(0);
+        newVisLight->typeIndex = 0;
+        break;
+    }
 
     return newVisLight;
 }

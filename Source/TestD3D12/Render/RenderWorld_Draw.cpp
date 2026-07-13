@@ -338,6 +338,9 @@ void RenderWorld::RenderScene(RenderCamera *renderCamera) {
 void RenderWorld::DrawCamera(RenderFrameData *frameData, const RenderCamera *renderCamera, VisCamera *visCamera) {
     PROFILER_CPU_SCOPED_EVENT("RenderWorld::DrawCamera");
 
+    // 보이는 RenderLight 들로 프레임 데이터에 VisLight 들을 등록한다.
+    FindVisLights(frameData, renderCamera, visCamera);
+
     // 보이는 RenderObject 들로 프레임 데이터에 VisObject 들을 등록한다.
     FindVisObjects(frameData, renderCamera, visCamera);
 
@@ -362,10 +365,80 @@ void RenderWorld::DrawCamera(RenderFrameData *frameData, const RenderCamera *ren
     viewCount++;
 }
 
+VisLight *RenderWorld::RegisterVisLight(RenderFrameData *frameData, RenderLight *renderLight) {
+    assert(frameActive);
+
+    if (IsVisLightRegisteredInCurrentView(renderLight)) {
+        return nullptr;
+    }
+
+    VisLight *visLight = frameData->AllocVisLight(renderLight->desc.type);
+    if (!visLight) {
+        return nullptr;
+    }
+    renderLight->viewCount = viewCount;
+
+    visLight->viewProjScaleBiasMatrix = renderLight->viewProjScaleBiasMatrix;
+    visLight->fallOffMatrix = renderLight->fallOffMatrix;
+    visLight->axis = renderLight->desc.axis;
+    visLight->origin = renderLight->desc.origin;
+    visLight->size = renderLight->desc.size;
+    visLight->lightColor = renderLight->desc.linearColor * renderLight->desc.intensity;
+    visLight->zNear = renderLight->desc.zNear;
+    visLight->fallOffExponent = renderLight->desc.fallOffExponent;
+    visLight->shadowOffsetFactor = renderLight->desc.shadowOffsetFactor;
+    visLight->shadowOffsetUnits = renderLight->desc.shadowOffsetUnits;
+    visLight->type = renderLight->desc.type;
+    visLight->flags = renderLight->desc.flags;
+
+    return visLight;
+}
+
+void RenderWorld::FindVisLights(RenderFrameData *frameData, const RenderCamera *renderCamera, VisCamera *visCamera) {
+    PROFILER_CPU_SCOPED_EVENT("RenderWorld::FindVisLights");
+
+    const bool skipViewCulling = r_skipViewCulling.GetBool();
+
+    visCamera->firstPointLightIndex = frameData->NumVisPointLights();
+    visCamera->firstSpotLightIndex = frameData->NumVisSpotLights();
+    visCamera->firstBoxDirLightIndex = frameData->NumVisBoxDirLights();
+
+    // 등록된 모든 RenderLight 들을 개별 Culling 해서 프레임 데이터에 VisLight 로 등록한다.
+    for (RenderLight *renderLight : renderLights) {
+        if (!renderLight) {
+            continue;
+        }
+
+        if (!skipViewCulling) {
+            if (renderLight->Cull(*renderCamera)) {
+                continue;
+            }
+        }
+
+        BE1::Rect screenClipRect;
+        if (!renderLight->ComputeScreenClipRect(*renderCamera, screenClipRect)) {
+            continue;
+        }
+
+        VisLight *visLight = RegisterVisLight(frameData, renderLight);
+        if (!visLight) {
+            continue;
+        }
+
+        visLight->screenClipRect = screenClipRect;
+
+        renderLight->visibleFrameIndex = renderWorldFrameIndex;
+    }
+
+    visCamera->numPointLights = frameData->NumVisPointLights() - visCamera->firstPointLightIndex;
+    visCamera->numSpotLights = frameData->NumVisSpotLights() - visCamera->firstSpotLightIndex;
+    visCamera->numBoxDirLights = frameData->NumVisBoxDirLights() - visCamera->firstBoxDirLightIndex;
+}
+
 VisObject *RenderWorld::RegisterVisObject(RenderFrameData *frameData, RenderObject *renderObject) {
     assert(frameActive);
 
-    if (IsVisObjectRegistered(renderObject)) {
+    if (IsVisObjectRegisteredInCurrentView(renderObject)) {
         return nullptr;
     }
 
@@ -428,6 +501,8 @@ void RenderWorld::SetVisObjectWorldMatrices(const RenderObject *renderObject, Vi
 void RenderWorld::FindVisObjects(RenderFrameData *frameData, const RenderCamera *renderCamera, VisCamera *visCamera) {
     PROFILER_CPU_SCOPED_EVENT("RenderWorld::FindVisObjects");
 
+    const bool skipViewCulling = r_skipViewCulling.GetBool();
+
     const uint32_t startVisibleObjectCount = frameData->NumVisObjects();
 
     visCamera->worldAABB.Clear();
@@ -438,7 +513,7 @@ void RenderWorld::FindVisObjects(RenderFrameData *frameData, const RenderCamera 
             continue;
         }
 
-        if (!r_skipFrustumCulling.GetBool()) {
+        if (!skipViewCulling) {
             if (renderCamera->Cull(renderObject->worldAABB)) {
                 continue;
             }
@@ -594,6 +669,8 @@ void RenderWorld::UpdateVisibleSkinningJointCaches(RenderFrameData *frameData) {
 void RenderWorld::AddMeshes(RenderFrameData *frameData, const RenderCamera *renderCamera, VisCamera *visCamera) {
     PROFILER_CPU_SCOPED_EVENT("RenderWorld::AddMeshes");
 
+    const bool skipViewCulling = r_skipViewCulling.GetBool();
+
     UpdateVisibleSkinningJointCaches(frameData);
 
     for (VisObject &visObjectRef : frameData->GetVisObjects()) {
@@ -610,7 +687,7 @@ void RenderWorld::AddMeshes(RenderFrameData *frameData, const RenderCamera *rend
 
         VisSurfFlag flags = VisSurfFlag::CameraVisible;
         const int numSurfaces = visObject->meshInstance->NumSurfaces();
-        const bool cullSurfaces = !r_skipFrustumCulling.GetBool() && numSurfaces > 1;
+        const bool cullSurfaces = !skipViewCulling && numSurfaces > 1;
 
         for (int meshSurfIndex = 0; meshSurfIndex < numSurfaces; ++meshSurfIndex) {
             const Mesh::Surface *meshSurf = visObject->meshInstance->GetSurface(meshSurfIndex);

@@ -587,9 +587,9 @@ void App::BuildImGuiOverlay() {
             }
 
             if (roundedCollapsingHeader("Skip options##RenderSkipOptionsHeader")) {
-                bool skipCulling = r_skipFrustumCulling.GetBool();
-                if (ImGui::Checkbox("Skip frustum culling", &skipCulling)) {
-                    r_skipFrustumCulling.SetBool(skipCulling);
+                bool skipCulling = r_skipViewCulling.GetBool();
+                if (ImGui::Checkbox("Skip view culling", &skipCulling)) {
+                    r_skipViewCulling.SetBool(skipCulling);
                 }
 
                 bool skipDrawCamera2D = r_skipDrawCamera2D.GetBool();

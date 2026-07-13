@@ -118,7 +118,10 @@ private:
         uint32_t                numVisObjects = 0;
     };
 
-    bool                        IsVisObjectRegistered(const RenderObject *renderObject) const;
+    bool                        IsVisLightRegisteredInCurrentView(const RenderLight *renderLight) const;
+    VisLight *                  RegisterVisLight(RenderFrameData *frameData, RenderLight *renderLight);
+    void                        FindVisLights(RenderFrameData *frameData, const RenderCamera *renderCamera, VisCamera *visCamera);
+    bool                        IsVisObjectRegisteredInCurrentView(const RenderObject *renderObject) const;
     VisObject *                 RegisterVisObject(RenderFrameData *frameData, RenderObject *renderObject);
     void                        CapturePrevWorldMatrix(RenderObject *renderObject);
     void                        SetVisObjectWorldMatrices(const RenderObject *renderObject, VisObject *visObject);
@@ -160,7 +163,12 @@ private:
     BE1::Color4                 debugFillColor;
 };
 
-BE_INLINE bool RenderWorld::IsVisObjectRegistered(const RenderObject *renderObject) const {
+BE_INLINE bool RenderWorld::IsVisLightRegisteredInCurrentView(const RenderLight *renderLight) const {
+    // 현재 view 에 이미 등록된 VisLight 인지 체크
+    return renderLight->viewCount == viewCount;
+}
+
+BE_INLINE bool RenderWorld::IsVisObjectRegisteredInCurrentView(const RenderObject *renderObject) const {
     // 현재 view 에 이미 등록된 VisObject 인지 체크
     return renderObject->viewCount == viewCount;
 }

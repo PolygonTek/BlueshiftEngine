@@ -16,7 +16,7 @@
 #include "RenderCvars.h"
 #include "RenderCamera.h"
 
-CVAR(r_skipFrustumCulling, "0", BE1::CVar::Flag::Bool, "skip frustum culling for render objects and mesh surfaces");
+CVAR(r_skipViewCulling, "0", BE1::CVar::Flag::Bool, "skip camera view culling for render lights, objects and mesh surfaces");
 CVAR(r_skipDrawCamera2D, "0", BE1::CVar::Flag::Bool, "skip 2D draw camera render commands");
 CVAR(r_skipDrawCamera3D, "0", BE1::CVar::Flag::Bool, "skip 3D draw camera render commands");
 CVAR(r_skipPostProcess, "0", BE1::CVar::Flag::Bool, "skip post process dispatches");

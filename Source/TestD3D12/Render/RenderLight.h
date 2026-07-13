@@ -25,7 +25,7 @@ public:
     enum class Type : uint8_t {
         Point,
         Spot,
-        Directional
+        BoxDir                      ///< Finite box-volume light with a constant direction along axis[0]
     };
 
     enum class Flag : uint8_t {
@@ -64,7 +64,7 @@ public:
                                     /// Returns light index in world.
     int                             GetIndex() const { return index; }
 
-                                    /// Returns light type which is one of the [Point, Spot, Directional].
+                                    /// Returns light type which is one of the [Point, Spot, Box].
     Type                            GetType() const { return desc.type; }
 
                                     /// Returns light origin in world space.
@@ -112,7 +112,7 @@ private:
 
     Desc                            desc;
 
-    BE1::OBB                        worldOBB;                       // bounding volume for point/directional light
+    BE1::OBB                        worldOBB;                       // bounding volume for point/box-dir light
     BE1::Frustum                    worldFrustum;                   // bounding volume for spot light
     BE1::AABB                       worldAABB = BE1::AABB::empty;
 

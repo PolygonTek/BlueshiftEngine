@@ -136,6 +136,8 @@ set(SRC_FILES
     Render/GpuFFT.cpp
     Render/ShaderMaterialTable.h
     Render/ShaderMaterialTable.cpp
+    Render/ShaderLightTable.h
+    Render/ShaderLightTable.cpp
     Render/ShaderSurfaceTable.h
     Render/ShaderSurfaceTable.cpp
     Render/RenderSystem.h

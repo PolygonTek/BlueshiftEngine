@@ -97,6 +97,12 @@ struct VisCamera {
     BE1::Vec2                   prevJitterNDC = BE1::Vec2::zero;
 
     uint32_t                    index = ~0;
+    uint32_t                    firstPointLightIndex = 0;
+    uint32_t                    numPointLights = 0;
+    uint32_t                    firstSpotLightIndex = 0;
+    uint32_t                    numSpotLights = 0;
+    uint32_t                    firstBoxDirLightIndex = 0;
+    uint32_t                    numBoxDirLights = 0;
 
     uint32_t                    maxVisSurfs = 0;
     uint32_t                    numVisSurfs = 0;
@@ -191,15 +197,15 @@ struct VisCamera {
     bool                        is2D;
 };
 
-// 한 프레임 렌더링에서만 유효한 렌더링 객체.
-// 매 프레임 외부 렌더링 객체로부터 복사되어 생성되고, 생성될 때 어떠한 힙 할당도 일어나지 않는다.
-// 외부에서 공유받은 자원은 렌더링할 동안은 내부적으로 유지되어야 한다.
-// 따라서 공유 자윈이 파괴되는 걸 방지하기 위해, 한 프레임 렌더링이 끝난 후 릴리즈하는 구조로 되어있다.
+// 한 프레임 렌더링에서만 유효한 카메라별 렌더링 객체.
+// 하나의 RenderObject 가 여러 카메라에 보이면 각 카메라 (view) 마다 별도의 VisObject 로 등록된다.
+// RenderObject 의 렌더링 데이터를 프레임 메모리에 복사하여 생성하므로 별도의 힙 할당은 발생하지 않는다.
+// 참조하는 공유 자원은 렌더링 중 파괴되지 않도록 프레임이 끝날 때까지 유지한 후 해제한다.
 struct VisObject {
     ALIGN_AS32 BE1::Mat3x4      worldMatrix;
     ALIGN_AS32 BE1::Mat3x4      prevWorldMatrix;
 
-    uint32_t                    index;
+    uint32_t                    index;                      ///< VisObject index
 
     MeshInstance *              meshInstance = nullptr;     ///< Mesh instance
     const Skeleton *            skeleton = nullptr;         ///< Skeleton information for skeletal mesh
@@ -226,11 +232,15 @@ struct VisObject {
     VisObject *                 nextSkinnedObject = nullptr;
 };
 
+// 한 프레임 렌더링에서만 유효한 카메라별 렌더링 광원.
+// 하나의 RenderLight 가 여러 카메라에 보이면 각 카메라 (view) 마다 별도의 VisLight 로 등록된다.
+// RenderLight 의 렌더링 데이터를 프레임 메모리에 복사하여 생성하므로 별도의 힙 할당은 발생하지 않는다.
 struct VisLight {
     ALIGN_AS32 BE1::Mat4        viewProjScaleBiasMatrix;
     ALIGN_AS32 BE1::Mat3x4      fallOffMatrix;
 
-    uint32_t                    index;
+    uint32_t                    index;                      ///< VisLight index
+    uint32_t                    typeIndex;                  ///< VisLight index for same light type
 
     BE1::Mat3                   axis;
     BE1::Vec3                   origin;

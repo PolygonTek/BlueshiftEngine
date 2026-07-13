@@ -15,6 +15,8 @@
 #pragma once
 
 #include "RHI/RHI.h"
+#include "RenderLight.h"
+#include "ShaderLightTable.h"
 #include "ShaderMaterialTable.h"
 #include "ShaderSurfaceTable.h"
 
@@ -170,8 +172,11 @@ public:
     [[nodiscard]] VisObject *       AllocVisObject();
 
     uint32_t                        NumVisLights() const { return numVisLights; }
+    uint32_t                        NumVisPointLights() const { return numVisPointLights; }
+    uint32_t                        NumVisSpotLights() const { return numVisSpotLights; }
+    uint32_t                        NumVisBoxDirLights() const { return numVisBoxDirLights; }
     ChunkRange<VisLight>            GetVisLights() const { return ChunkRange<VisLight>(firstVisLightChunk); }
-    [[nodiscard]] VisLight *        AllocVisLight();
+    [[nodiscard]] VisLight *        AllocVisLight(RenderLight::Type type);
 
                                     // 렌더 커맨드 버퍼 리턴
     RenderCommandBuffer *           GetCommands() { return &commands; }
@@ -211,11 +216,15 @@ public:
 
     uint32_t                        GetShaderMaterialTableBindlessIndex() const { return shaderMaterialTable.GetBindlessIndex(); }
     uint32_t                        GetShaderSurfaceTableBindlessIndex() const { return shaderSurfaceTable.GetBindlessIndex(); }
+    uint32_t                        GetShaderPointLightTableBindlessIndex() const { return shaderLightTable.GetPointLightBindlessIndex(); }
+    uint32_t                        GetShaderSpotLightTableBindlessIndex() const { return shaderLightTable.GetSpotLightBindlessIndex(); }
+    uint32_t                        GetShaderBoxDirLightTableBindlessIndex() const { return shaderLightTable.GetBoxDirLightBindlessIndex(); }
 
                                     // 셰이더 머티리얼 테이블에 머티리얼을 등록하고, 테이블 인덱스를 리턴한다.
     uint32_t                        RegisterShaderMaterial(const Material *material) { return shaderMaterialTable.Register(material); }
 
     bool                            UploadShaderMaterialTable(RHI::FrameThreadData *frameThreadData, RHI::CommandList *commandList) { return shaderMaterialTable.Upload(frameThreadData, commandList, true); }
+    bool                            UploadShaderLightTable(RHI::FrameThreadData *frameThreadData, RHI::CommandList *commandList) { return shaderLightTable.Upload(frameThreadData, commandList, this, true); }
     bool                            UploadShaderSurfaceTable(RHI::FrameThreadData *frameThreadData, RHI::CommandList *commandList, const VisCamera *visCamera) { return shaderSurfaceTable.Upload(frameThreadData, commandList, visCamera, false); }
     bool                            EnsureShaderSurfaceTableCapacity() { return shaderSurfaceTable.EnsureBufferCapacity(maxShaderSurfaceCount); }
 
@@ -263,10 +272,15 @@ private:
     uint32_t                        maxVisCameras = 0;
     uint32_t                        numVisCameras = 0;
     VisCamera *                     visCameras = nullptr;
+
     uint32_t                        numVisObjects = 0;
     Chunk *                         firstVisObjectChunk = nullptr;
     Chunk *                         lastVisObjectChunk = nullptr;
+
     uint32_t                        numVisLights = 0;
+    uint32_t                        numVisPointLights = 0;
+    uint32_t                        numVisSpotLights = 0;
+    uint32_t                        numVisBoxDirLights = 0;
     Chunk *                         firstVisLightChunk = nullptr;
     Chunk *                         lastVisLightChunk = nullptr;
 
@@ -291,6 +305,7 @@ private:
     int                             numRenderTaskThreads = 0;
 
     ShaderMaterialTable             shaderMaterialTable;
+    ShaderLightTable                shaderLightTable;
     ShaderSurfaceTable              shaderSurfaceTable;
 
     BE1::Array<SharedPtr<Material>> retainedMaterials;

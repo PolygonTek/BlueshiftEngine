@@ -22,7 +22,7 @@ enum RenderBloomMode {
     Convolution = 2
 };
 
-extern BE1::CVar    r_skipFrustumCulling;
+extern BE1::CVar    r_skipViewCulling;
 extern BE1::CVar    r_skipDrawCamera2D;
 extern BE1::CVar    r_skipDrawCamera3D;
 extern BE1::CVar    r_skipPostProcess;

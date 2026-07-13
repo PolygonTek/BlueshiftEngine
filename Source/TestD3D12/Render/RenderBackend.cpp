@@ -121,9 +121,13 @@ bool RenderBackend::UploadFrameConstants() {
     constants->elapsedPrevTime = frameData->GetElapsedPrevTime();
     constants->frameCount = frameData->GetFrameCount();
     constants->shaderMaterialTableIndex = frameData->GetShaderMaterialTableBindlessIndex();
+    constants->shaderPointLightTableIndex = frameData->GetShaderPointLightTableBindlessIndex();
+    constants->shaderSpotLightTableIndex = frameData->GetShaderSpotLightTableBindlessIndex();
+    constants->shaderBoxDirLightTableIndex = frameData->GetShaderBoxDirLightTableBindlessIndex();
     constants->feedbackBufferIndex = currentContext->textureStreamingFeedback.GetBindlessIndex();
     constants->padding0 = 0;
     constants->padding1 = 0;
+    constants->padding2 = 0;
 
     return true;
 }
@@ -169,8 +173,12 @@ bool RenderBackend::UploadCameraConstants() {
     BE1::simdProcessor->Memcpy(&constants->hiZCullViewProjMatrix, &currentVisCamera->hiZCullViewProjMatrix, sizeof(constants->hiZCullViewProjMatrix));
     constants->surfaceTableIndex = frameData->GetShaderSurfaceTableBindlessIndex();
     constants->ndcFarZ = currentVisCamera->projectionPolicy.GetNDCFarZ();
-    constants->padding1 = 0;
-    constants->padding2 = 0;
+    constants->firstPointLightIndex = currentVisCamera->firstPointLightIndex;
+    constants->numPointLights = currentVisCamera->numPointLights;
+    constants->firstSpotLightIndex = currentVisCamera->firstSpotLightIndex;
+    constants->numSpotLights = currentVisCamera->numSpotLights;
+    constants->firstBoxDirLightIndex = currentVisCamera->firstBoxDirLightIndex;
+    constants->numBoxDirLights = currentVisCamera->numBoxDirLights;
 
     return true;
 }
@@ -229,6 +237,13 @@ const void *RenderBackend::ExecuteBeginContext(const void *data) {
     // 등록된 ShaderMaterial 테이블을 GPU 에 업로드한다.
     if (!frameData->UploadShaderMaterialTable(frameData->GetThreadData(0), mainCommandList)) {
         BE_WARNLOG("RenderBackend::ExecuteBeginContext: failed to upload shader material table\n");
+        mainCommandList->CloseAndExecute();
+        return (const void *)(cmd + 1);
+    }
+
+    // 카메라들이 참조할 타입별 ShaderLight 테이블을 GPU 에 한 번 업로드한다.
+    if (!frameData->UploadShaderLightTable(frameData->GetThreadData(0), mainCommandList)) {
+        BE_WARNLOG("RenderBackend::ExecuteBeginContext: failed to upload shader light table\n");
         mainCommandList->CloseAndExecute();
         return (const void *)(cmd + 1);
     }
