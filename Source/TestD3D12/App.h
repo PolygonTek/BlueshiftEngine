@@ -18,10 +18,8 @@ class RenderContext;
 class RenderFrameData;
 class RenderWorld;
 class RenderCamera;
-class GameObject;
+class Scene;
 class Texture;
-class Material;
-class Mesh;
 class Font;
 
 class App {
@@ -71,9 +69,6 @@ public:
 
     void                            OnResize(int width, int height);
 
-    void                            InitGameObjects(uint32_t countX, uint32_t countY, uint32_t countZ);
-    void                            ClearGameObjects();
-    void                            ChangeGameObjectCount(uint32_t countX, uint32_t countY, uint32_t countZ);
     void                            UpdateCamera(uint64_t frameUsec);
 
     RenderContext *                 GetMainRenderContext() const { return mainRenderContext; }
@@ -100,10 +95,12 @@ private:
     void                            CheckModifiedCVars();
     void                            GetConvolutionBloomKernelPresetName(int presetIndex, char *buffer, int bufferSize) const;
     void                            SetConvolutionBloomKernelPreset(int presetIndex);
-    void                            RotateGameObjects();
+    void                            RequestSceneChange(int sceneIndex);
+    void                            ProcessPendingSceneChange();
+    void                            ChangeScene(int sceneIndex);
+    void                            DestroyScene();
     void                            UpdateGameFrameTime(uint64_t frameUsec);
     void                            UpdateRenderFrontendFrameTime(uint64_t frameUsec);
-    void                            UpdateGameObjects();
     void                            RenderScene();
     void                            RenderGUI();
 
@@ -117,18 +114,17 @@ private:
     RenderContext *                 mainRenderContext = nullptr;
     RenderCamera *                  renderCamera = nullptr;
     RenderWorld *                   renderWorld = nullptr;
+    Scene *                         scene = nullptr;
+    int                             sceneIndex = -1;
+    int                             pendingSceneIndex = -1;
 
     SharedPtr<Font>                 mainFont;
-    SharedPtr<Material>             mainSkyboxMaterial;
     SharedPtr<Texture>              convolutionBloomApertureTexture;
     SharedPtr<Texture>              convolutionBloomGeneratedKernelTexture;
-    SharedPtr<Mesh>                 testMesh;
 
     bool                            pendingConvolutionBloomKernelGeneration = false;
     const RenderFrameData *         pendingConvolutionBloomKernelReadbackFrameData = nullptr;
     uint32_t                        convolutionBloomGeneratedKernelSerial = 0;
-
-    BE1::Array<GameObject *>        gameObjects;
 
     uint64_t                        elapsedUsec = 0;
 
@@ -160,17 +156,10 @@ private:
     uint32_t                        cameraMoveFlags = 0;
     float                           cameraFlySpeed = 30.0f;
 
-    uint32_t                        goCountX = 1;
-    uint32_t                        goCountY = 1;
-    uint32_t                        goCountZ = 1;
-
 #ifdef ENABLE_IMGUI
     static constexpr int            ImGuiStatsPlotSeriesCount = 5;
     static constexpr int            ImGuiStatsPlotHistoryLength = 300;
 
-    int                             imguiGoCountX = 1;
-    int                             imguiGoCountY = 1;
-    int                             imguiGoCountZ = 1;
     bool                            imguiShowDemoWindow = false;
     bool                            imguiShowStatsPlotWindow = false;
     float                           imguiStatsPlotSamples[ImGuiStatsPlotSeriesCount][ImGuiStatsPlotHistoryLength] = {};

@@ -63,12 +63,19 @@ struct enable_bitmask_operators<DrawTextFlag> {
 
 class RenderWorld {
 public:
+    enum class ClearFlag : uint8_t {
+        None                    = 0,
+        RenderObjects           = BIT(0),
+        RenderLights            = BIT(1),
+        All                     = BIT(0) | BIT(1)
+    };
+
     RenderWorld();
 
     void                        BeginFrame();
     void                        EndFrame();
 
-    void                        ClearScene();
+    void                        ClearScene(ClearFlag clearFlags = ClearFlag::All);
 
     RenderObject *              GetRenderObject(int index) const;
     int                         AddRenderObject(const RenderObject::Desc &desc);
@@ -163,6 +170,11 @@ private:
 
     BE1::Color4                 debugLineColor;
     BE1::Color4                 debugFillColor;
+};
+
+template<>
+struct enable_bitmask_operators<RenderWorld::ClearFlag> {
+    static constexpr bool enable = true;
 };
 
 BE_INLINE bool RenderWorld::IsVisLightRegisteredInCurrentView(const RenderLight *renderLight) const {

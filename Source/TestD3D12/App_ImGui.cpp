@@ -18,10 +18,10 @@
 #include "Render/RenderCvars.h"
 #include "Render/RenderContext.h"
 #include "Render/RenderBackend.h"
-#include "Render/RenderWorld.h"
 #include "Render/RenderCamera.h"
 #include "Render/Texture/Texture.h"
-#include "GameObject.h"
+#include "Scene.h"
+#include "SceneRegistry.h"
 #include "App.h"
 
 #ifdef ENABLE_IMGUI
@@ -35,6 +35,8 @@ extern BE1::CVar       app_convolutionBloomKernelPreset;
 extern BE1::CVar       app_convolutionBloomAperturePreset;
 
 #ifdef ENABLE_IMGUI
+static const ImVec4    ImGuiWarningTextColor(1.0f, 1.0f, 0.0f, 1.0f);
+
 void App::UpdateImGuiStatsPlotHistory() {
     const float stats[ImGuiStatsPlotSeriesCount] = {
         statFrameAverageMsec,
@@ -394,7 +396,7 @@ void App::BuildImGuiTextureViewer() {
     }
 
     if (entryCount == 0) {
-        ImGui::TextUnformatted("No texture is available.");
+        ImGui::TextColored(ImGuiWarningTextColor, "No texture is available.");
         return;
     }
 
@@ -465,7 +467,7 @@ void App::BuildImGuiTextureViewer() {
     }
 
     if (!DrawImGuiTexturePreview(texture, viewID, fontSize * 24.0f, true)) {
-        ImGui::TextUnformatted("Preview is unavailable.");
+        ImGui::TextColored(ImGuiWarningTextColor, "Preview is unavailable.");
     }
 }
 
@@ -490,40 +492,33 @@ void App::BuildImGuiOverlay() {
     ImGui::Begin("TestD3D12", nullptr, ImGuiWindowFlags_AlwaysAutoResize);
 
     if (ImGui::BeginTabBar("TestD3D12Tabs")) {
-        if (ImGui::BeginTabItem("System")) {
-            ImGui::Text("CPU Cores: %i physical / %i logical",
-                BE1::PlatformSystem::NumCPUCores(),
-                BE1::PlatformSystem::NumCPUCoresIncludingHyperthreads());
-            ImGui::Text("Render Thread: %s",
-                renderSystem && renderSystem->IsUsingRenderThread() ? "Enabled" : "Disabled");
-            ImGui::Text("Task Threads: %u",
-                BE1::Engine::taskManager ? BE1::Engine::taskManager->NumThreads() : 0);
-            ImGui::Text("Resolution: %u x %u",
-                mainRenderContext->GetWidth(), mainRenderContext->GetHeight());
-            ImGui::Separator();
+        if (ImGui::BeginTabItem("Scene")) {
+            int selectedSceneIndex = pendingSceneIndex != -1 ? pendingSceneIndex : sceneIndex;
+            ImGui::SetNextItemWidth(fontSize * 10.0f);
+            if (ImGui::BeginCombo("Scene", SceneRegistry::GetName(selectedSceneIndex))) {
+                for (int index = 0; index < SceneRegistry::GetCount(); ++index) {
+                    const bool selected = index == selectedSceneIndex;
+                    if (ImGui::Selectable(SceneRegistry::GetName(index), selected)) {
+                        RequestSceneChange(index);
+                        selectedSceneIndex = index;
+                    }
 
-            if (RHI::renderer) {
-                const RHI::RendererInfo &rendererInfo = RHI::renderer->GetRendererInfo();
-
-                ImGui::Text("GPU Adapter: %s", rendererInfo.name);
-                ImGui::Text("Vendor ID: 0x%04X", rendererInfo.vendorId);
-                ImGui::Text("Device ID: 0x%04X", rendererInfo.deviceId);
-                ImGui::Separator();
-                ImGui::Text("Dedicated VRAM: %s", BE1::Str::FormatBytes(rendererInfo.dedicatedVideoMemoryBytes).c_str());
-                ImGui::Text("Dedicated System Memory: %s", BE1::Str::FormatBytes(rendererInfo.dedicatedSystemMemoryBytes).c_str());
-                ImGui::Text("Shared System Memory: %s", BE1::Str::FormatBytes(rendererInfo.sharedSystemMemoryBytes).c_str());
+                    if (selected) {
+                        ImGui::SetItemDefaultFocus();
+                    }
+                }
+                ImGui::EndCombo();
             }
 
-            ImGui::EndTabItem();
-        }
+            ImGui::Separator();
 
-        if (ImGui::BeginTabItem("Scene")) {
-            int cameraControlModeIndex = static_cast<int>(cameraControlMode);
-            ImGui::SetNextItemWidth(fontSize * 10.0f);
-            if (ImGui::Combo("Camera", &cameraControlModeIndex,
-                "Orbit\0"
-                "Fly\0")) {
-                SetCameraControlMode(static_cast<CameraControlMode>(cameraControlModeIndex));
+            ImGui::TextUnformatted("Camera Mode");
+            if (ImGui::RadioButton("Orbit", cameraControlMode == CameraControlMode::Orbit)) {
+                SetCameraControlMode(CameraControlMode::Orbit);
+            }
+            ImGui::SameLine();
+            if (ImGui::RadioButton("Fly", cameraControlMode == CameraControlMode::Fly)) {
+                SetCameraControlMode(CameraControlMode::Fly);
             }
 
             if (cameraControlMode == CameraControlMode::Fly) {
@@ -535,20 +530,8 @@ void App::BuildImGuiOverlay() {
 
             ImGui::Separator();
 
-            ImGui::SetNextItemWidth(fontSize * 10.0f);
-            ImGui::SliderInt("Count X", &imguiGoCountX, 1, 50);
-            const bool applyCountX = ImGui::IsItemDeactivatedAfterEdit();
-
-            ImGui::SetNextItemWidth(fontSize * 10.0f);
-            ImGui::SliderInt("Count Y", &imguiGoCountY, 1, 50);
-            const bool applyCountY = ImGui::IsItemDeactivatedAfterEdit();
-
-            ImGui::SetNextItemWidth(fontSize * 10.0f);
-            ImGui::SliderInt("Count Z", &imguiGoCountZ, 1, 50);
-            const bool applyCountZ = ImGui::IsItemDeactivatedAfterEdit();
-
-            if ((applyCountX || applyCountY || applyCountZ) && (static_cast<uint32_t>(imguiGoCountX) != goCountX || static_cast<uint32_t>(imguiGoCountY) != goCountY || static_cast<uint32_t>(imguiGoCountZ) != goCountZ)) {
-                ChangeGameObjectCount(static_cast<uint32_t>(imguiGoCountX), static_cast<uint32_t>(imguiGoCountY), static_cast<uint32_t>(imguiGoCountZ));
+            if (pendingSceneIndex == -1) {
+                scene->BuildImGui();
             }
 
             ImGui::EndTabItem();
@@ -633,10 +616,10 @@ void App::BuildImGuiOverlay() {
                     ImGui::Spacing();
                     const RHI::Texture *hiZDebugPreviewTexture = renderCamera ? renderCamera->GetHiZDebugPreviewTexture() : nullptr;
                     if (!DrawImGuiTexturePreview(hiZDebugPreviewTexture, RHI::ViewID::PrimaryID, fontSize * 24.0f, true)) {
-                        ImGui::TextUnformatted("Hi-Z preview is unavailable.");
+                        ImGui::TextColored(ImGuiWarningTextColor, "Hi-Z preview is unavailable.");
                     }
                 } else {
-                    ImGui::TextUnformatted("Hi-Z texture is unavailable.");
+                    ImGui::TextColored(ImGuiWarningTextColor, "Hi-Z texture is unavailable.");
                 }
             }
 
@@ -1048,6 +1031,33 @@ void App::BuildImGuiOverlay() {
                 if (ImGui::Checkbox("Dithering", &dithering)) {
                     r_dithering.SetBool(dithering);
                 }
+            }
+
+            ImGui::EndTabItem();
+        }
+
+        if (ImGui::BeginTabItem("System")) {
+            ImGui::Text("CPU Cores: %i physical / %i logical",
+                BE1::PlatformSystem::NumCPUCores(),
+                BE1::PlatformSystem::NumCPUCoresIncludingHyperthreads());
+            ImGui::Text("Render Thread: %s",
+                renderSystem && renderSystem->IsUsingRenderThread() ? "Enabled" : "Disabled");
+            ImGui::Text("Task Threads: %u",
+                BE1::Engine::taskManager ? BE1::Engine::taskManager->NumThreads() : 0);
+            ImGui::Text("Resolution: %u x %u",
+                mainRenderContext->GetWidth(), mainRenderContext->GetHeight());
+            ImGui::Separator();
+
+            if (RHI::renderer) {
+                const RHI::RendererInfo &rendererInfo = RHI::renderer->GetRendererInfo();
+
+                ImGui::Text("GPU Adapter: %s", rendererInfo.name);
+                ImGui::Text("Vendor ID: 0x%04X", rendererInfo.vendorId);
+                ImGui::Text("Device ID: 0x%04X", rendererInfo.deviceId);
+                ImGui::Separator();
+                ImGui::Text("Dedicated VRAM: %s", BE1::Str::FormatBytes(rendererInfo.dedicatedVideoMemoryBytes).c_str());
+                ImGui::Text("Dedicated System Memory: %s", BE1::Str::FormatBytes(rendererInfo.dedicatedSystemMemoryBytes).c_str());
+                ImGui::Text("Shared System Memory: %s", BE1::Str::FormatBytes(rendererInfo.sharedSystemMemoryBytes).c_str());
             }
 
             ImGui::EndTabItem();

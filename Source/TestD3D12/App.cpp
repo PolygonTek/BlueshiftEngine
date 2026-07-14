@@ -19,15 +19,12 @@
 #include "Render/RenderCvars.h"
 #include "Render/RenderWorld.h"
 #include "Render/RenderCamera.h"
-#include "Render/Texture/TextureManager.h"
 #include "Render/Material/MaterialManager.h"
-#include "Render/Mesh/MeshManager.h"
-#include "Render/Mesh/MeshInstance.h"
-#include "Render/Animation/Skeleton.h"
-#include "Render/Animation/Anim.h"
+#include "Render/Texture/TextureManager.h"
 #include "Render/Font/FontManager.h"
 #include "LoadingSystem.h"
-#include "GameObject.h"
+#include "Scene.h"
+#include "SceneRegistry.h"
 #include "App.h"
 
 BE1::CVar       app_showFps("app_showFps", "1", BE1::CVar::Flag::Bool, "show FPS");
@@ -50,11 +47,8 @@ void App::Init(void *mainWindowHandle) {
 
     mainFont = fontManager.GetFont("Data/EngineFonts/consola.ttf", 22);
 
-    //mainSkyboxMaterial = materialManager.GetMaterial("_defaultSkyboxMaterial");
-    mainSkyboxMaterial = materialManager.GetMaterial("Source/TestD3D12/Materials/skybox.material");
-
     renderWorld = new RenderWorld;
-    renderWorld->SetSkyboxMaterial(mainSkyboxMaterial);
+    renderWorld->SetSkyboxMaterial(materialManager.GetMaterial("_defaultSkyboxMaterial"));
 
     renderCamera = new RenderCamera;
 
@@ -62,8 +56,6 @@ void App::Init(void *mainWindowHandle) {
     if (bloomDirtMaskTexture && bloomDirtMaskTexture != textureManager.defaultTexture) {
         renderCamera->SetBloomDirtMaskTexture(bloomDirtMaskTexture);
     }
- 
-    InitGameObjects(32, 32, 10);
 
     cameraYaw = targetCameraYaw;
     cameraPitch = targetCameraPitch;
@@ -77,10 +69,12 @@ void App::Init(void *mainWindowHandle) {
     app_convolutionBloomKernelPreset.SetModified();
     app_convolutionBloomAperturePreset.SetModified();
     app_convolutionBloomKernelSource.SetModified();
+
+    ChangeScene(0);
 }
 
 void App::Shutdown() {
-    ClearGameObjects();
+    DestroyScene();
 
     SAFE_DELETE(renderCamera);
     SAFE_DELETE(renderWorld);
@@ -89,7 +83,6 @@ void App::Shutdown() {
     convolutionBloomGeneratedKernelTexture.reset();
 
     mainFont.reset();
-    mainSkyboxMaterial.reset();
 
     loadingSystem.Shutdown();
 
@@ -109,9 +102,11 @@ void App::Update(uint64_t frameUsec) {
 
     loadingSystem.ProcessLoadCompletions();
 
+    ProcessPendingSceneChange();
+
     elapsedUsec += frameUsec;
 
-    UpdateGameObjects();
+    scene->Update(elapsedUsec);
 
     UpdateCamera(frameUsec);
 
@@ -121,6 +116,48 @@ void App::Update(uint64_t frameUsec) {
 
     uint64_t t1 = BE1::PlatformTime::Microseconds();
     UpdateGameFrameTime(t1 - t0);
+}
+
+void App::RequestSceneChange(int sceneIndex) {
+    assert(sceneIndex >= 0 && sceneIndex < SceneRegistry::GetCount());
+
+    pendingSceneIndex = sceneIndex != this->sceneIndex ? sceneIndex : -1;
+}
+
+void App::ProcessPendingSceneChange() {
+    if (pendingSceneIndex == -1) {
+        return;
+    }
+
+    const int nextSceneIndex = pendingSceneIndex;
+    pendingSceneIndex = -1;
+
+    ChangeScene(nextSceneIndex);
+}
+
+void App::ChangeScene(int sceneIndex) {
+    assert(sceneIndex >= 0 && sceneIndex < SceneRegistry::GetCount());
+
+    if (sceneIndex == this->sceneIndex) {
+        return;
+    }
+
+    DestroyScene();
+
+    scene = SceneRegistry::Create(sceneIndex);
+    scene->Init(renderWorld);
+    this->sceneIndex = sceneIndex;
+}
+
+void App::DestroyScene() {
+    if (!scene) {
+        return;
+    }
+
+    scene->Shutdown();
+    SAFE_DELETE(scene);
+
+    sceneIndex = -1;
 }
 
 void App::CheckModifiedCVars() {
@@ -232,121 +269,6 @@ void App::UpdateRenderFrontendFrameTime(uint64_t frameUsec) {
 void App::OnResize(int width, int height) {
     if (mainRenderContext) {
         mainRenderContext->OnResize(width, height);
-    }
-}
-
-void App::InitGameObjects(uint32_t countX, uint32_t countY, uint32_t countZ) {
-    goCountX = countX;
-    goCountY = countY;
-    goCountZ = countZ;
-
-#ifdef ENABLE_IMGUI
-    imguiGoCountX = static_cast<int>(countX);
-    imguiGoCountY = static_cast<int>(countY);
-    imguiGoCountZ = static_cast<int>(countZ);
-#endif
-
-    uint32_t goCount = goCountX * goCountY * goCountZ;
-    gameObjects.Reserve(goCount);
-
-    testMesh = meshManager.GetMesh("_defaultBoxMesh");
-
-    const BE1::Str textureFilenames[] = {
-        "Data/Test/Brick_Wall_Worn.dds",
-        "Data/Test/Construction_Gravel.dds",
-        "Data/Test/Dry_Cracked_Mud.dds",
-        "Data/Test/Flagstone_Wall.dds",
-        "Data/Test/Lawn_Grass.dds",
-        "Data/Test/Roman_Stone_Floor.dds",
-        "Data/Test/Stone_Floor.dds",
-        "Data/Test/Stone_Tiles_Facade.dds",
-        "Data/Test/Arid_Gravel_Ground.dds",
-        "Data/Test/yd0kejgga.dds",
-        "Data/Test/T_sc2nbisc.dds",
-        "Data/Test/Gouged_Rock_Cliff.dds",
-        "Data/Test/Scratched_Polypropylene_Plastic.dds",
-        "Data/Test/Rippled_Sand.dds",
-        "Data/Test/Dirty_Sidewalk_Tiles.dds",
-        "Data/Test/Curated_Stone_Facade.dds",
-    };
-
-    for (int i = 0; i < goCount; ++i) {
-        GameObject *gameObject = new GameObject;
-        gameObjects.Append(gameObject);
-
-        RenderObject::Desc &desc = gameObject->renderObjectDesc;
-        desc.worldMatrix.SetIdentity();
-        desc.meshInstance = testMesh->GetStaticInstance();
-        desc.aabb = testMesh->GetAABB();
-        desc.materials.SetCount(1);
-        desc.materials[0] = materialManager.GetSingleTextureMaterial(textureFilenames[BE1::Math::RandomRange(0, COUNT_OF(textureFilenames) - 1)]);
-
-        gameObject->renderObjectHandle = renderWorld->AddRenderObject(gameObject->renderObjectDesc);
-    }
-
-    // Text 오브젝트
-    /*GameObject *gameObject = new GameObject;
-    gameObjects.Append(gameObject);
-
-    RenderObject::Desc &desc = gameObject->renderObjectDesc;
-    desc.worldMatrix.SetTRS(BE1::Vec3(0, 0, 10), BE1::Mat3::identity, BE1::Vec3::one);
-    RenderObject::TextDesc &textDesc = desc.GetTextDesc();
-    textDesc.font = mainFont;
-    textDesc.text = "Hello World";
-    textDesc.textParams.bits.textAnchor = (uint16_t)RenderObject::TextAnchor::MiddleCenter;
-
-    gameObject->renderObjectHandle = renderWorld->AddRenderObject(gameObject->renderObjectDesc);*/
-
-    RotateGameObjects();
-}
-
-void App::ClearGameObjects() {
-    for (GameObject *gameObject : gameObjects) {
-        renderWorld->RemoveRenderObject(gameObject->renderObjectHandle);
-    }
-    renderWorld->ClearScene();
-
-    gameObjects.DeleteContents(true);
-    gameObjects.Clear();
-
-    testMesh.reset();
-}
-
-void App::ChangeGameObjectCount(uint32_t countX, uint32_t countY, uint32_t countZ) {
-    ClearGameObjects();
-
-    InitGameObjects(countX, countY, countZ);
-}
-
-void App::UpdateGameObjects() {
-    PROFILER_CPU_SCOPED_EVENT("App::UpdateGameObjects");
-
-    //RotateGameObjects();
-}
-
-void App::RotateGameObjects() {
-    float elapsedSeconds = (float)MICRO2SEC((double)elapsedUsec);
-
-    const float goSpacing = 4;//1.414214f;
-    const float goStartX = -goSpacing * (goCountX - 1) * 0.5f;
-    const float goStartY = -goSpacing * (goCountY - 1) * 0.5f;
-    const float goStartZ = -goSpacing * (goCountZ - 1) * 0.5f;
-
-    float zRotationSpeed = 1.25f;
-
-    for (int z = 0; z < goCountZ; ++z) {
-        for (int y = 0; y < goCountY; ++y) {
-            for (int x = 0; x < goCountX; ++x) {
-                int index = goCountX * goCountY * z + goCountX * y + x;
-
-                float t = elapsedSeconds + index * 0.1f;
-
-                GameObject *gameObject = gameObjects[index];
-                gameObject->renderObjectDesc.worldMatrix.SetTranslationRotation(BE1::Vec3(goStartX + goSpacing * x, goStartY + goSpacing * y, goStartZ + goSpacing * z), BE1::Mat3::FromRotationZ(t * zRotationSpeed), false);
-
-                renderWorld->UpdateRenderObject(gameObject->renderObjectHandle, gameObject->renderObjectDesc, RenderObject::Desc::UpdateFlag::Transform);
-            }
-        }
     }
 }
 

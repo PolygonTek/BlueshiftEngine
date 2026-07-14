@@ -13,6 +13,13 @@ set(SRC_FILES
     LoadingSystem.cpp
     GameObject.h
     GameObject.cpp
+    GameLight.h
+    GameLight.cpp
+    Scene.h
+    SceneRegistry.h
+    SceneRegistry.cpp
+    SceneTest.h
+    SceneTest.cpp
     WinMain.cpp
     WinResource.h
     WinRes/small.ico

@@ -45,19 +45,23 @@ void RenderWorld::EndFrame() {
     frameActive = false;
 }
 
-void RenderWorld::ClearScene() {
+void RenderWorld::ClearScene(ClearFlag clearFlags) {
     assert(BE1::Engine::IsInMainThread());
     assert(!frameActive);
 
-    for (RenderObject *renderObject : renderObjects) {
-        SAFE_DELETE(renderObject);
+    if (BE1::HasFlag(clearFlags, ClearFlag::RenderObjects)) {
+        for (RenderObject *renderObject : renderObjects) {
+            SAFE_DELETE(renderObject);
+        }
+        renderObjects.Clear();
     }
-    renderObjects.Clear();
 
-    for (RenderLight *renderLight : renderLights) {
-        SAFE_DELETE(renderLight);
+    if (BE1::HasFlag(clearFlags, ClearFlag::RenderLights)) {
+        for (RenderLight *renderLight : renderLights) {
+            SAFE_DELETE(renderLight);
+        }
+        renderLights.Clear();
     }
-    renderLights.Clear();
 }
 
 RenderObject *RenderWorld::GetRenderObject(int index) const {
