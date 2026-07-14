@@ -20,6 +20,17 @@
 
 class Material;
 
+/*
+---------------------------------------------------------------------------------------------------
+
+    Shader Material Table
+
+    등록된 Material 데이터를 ShaderMaterial 테이블로 구성해 GPU 에 업로드한다.
+    테이블은 bindless SRV 로 셰이더에 제공한다.
+
+---------------------------------------------------------------------------------------------------
+*/
+
 class ShaderMaterialTable {
 public:
     bool                            Init(uint32_t initialCapacity = 256);
@@ -28,6 +39,7 @@ public:
     void                            Clear();
 
     uint32_t                        Register(const Material *material);
+
     bool                            EnsureBufferCapacity(uint32_t count);
 
     bool                            Upload(RHI::FrameThreadData *frameThreadData, RHI::CommandList *commandList, bool allowResize);

@@ -121,16 +121,16 @@ public:
                                 /// Un-transforms pixel coordinates to world coordinates.
     bool                        UntransformPixelToWorld(const BE1::Vec3 &pixelCoords, BE1::Vec3 &worldCoords) const;
 
-                                /// Calculates clipping rectangle from bounding sphere (Different camera axis with Eric Lengyel's method)
+                                /// Calculates a screen rectangle clipped to the camera output rectangle from bounding sphere (Different camera axis with Eric Lengyel's method)
     bool                        CalcClipRectFromSphere(const BE1::Sphere &sphere, BE1::Rect &clipRect) const;
 
-                                /// Calculates clipping rectangle from axis-aligned bounding box.
+                                /// Calculates a screen rectangle clipped to the camera output rectangle from axis-aligned bounding box.
     bool                        CalcClipRectFromAABB(const BE1::AABB &aabb, BE1::Rect &clipRect) const;
     
-                                /// Calculates clipping rectangle from oriented bounding box.
+                                /// Calculates a screen rectangle clipped to the camera output rectangle from oriented bounding box.
     bool                        CalcClipRectFromOBB(const BE1::OBB &obb, BE1::Rect &clipRect) const;
     
-                                /// Calculates clipping rectangle from bounding frustum.
+                                /// Calculates a screen rectangle clipped to the camera output rectangle from bounding frustum.
     bool                        CalcClipRectFromFrustum(const BE1::Frustum &frustum, BE1::Rect &clipRect) const;
 
     bool                        CalcDepthBoundsFromPoints(int numPoints, const BE1::Vec3 *points, const BE1::Mat4 &mvp, float *depthMin, float *depthMax) const;

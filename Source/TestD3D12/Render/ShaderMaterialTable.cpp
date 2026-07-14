@@ -33,16 +33,22 @@ void ShaderMaterialTable::Clear() {
     dirty = false;
 }
 
-void ShaderMaterialTable::DestroyBuffers() {
-    if (buffer) {
-        RHI::renderer->DestroyBuffer(buffer);
-        buffer = nullptr;
+uint32_t ShaderMaterialTable::Register(const Material *material) {
+    assert(material);
+
+    int hash = materialHash.GenerateHash(material);
+    for (int index = materialHash.First(hash); index != -1; index = materialHash.Next(index)) {
+        if (materials[index] == material) {
+            return index;
+        }
     }
 
-    bufferView = RHI::ViewID::InvalidID;
-    bufferState = RHI::GPUResourceState::Undefined;
-    bufferCapacity = 0;
-    bufferBindlessIndex = 0;
+    uint32_t newShaderMaterialIndex = materials.Count();
+    materials.Append(material);
+    materialHash.Add(hash, newShaderMaterialIndex);
+    dirty = true;
+
+    return newShaderMaterialIndex;
 }
 
 bool ShaderMaterialTable::EnsureBufferCapacity(uint32_t count) {
@@ -58,7 +64,7 @@ bool ShaderMaterialTable::EnsureBufferCapacity(uint32_t count) {
 
     DestroyBuffers();
 
-    // 디폴트 버퍼를 생성한다.
+    // GPU 디폴트 버퍼를 생성한다.
     uint32_t bufferSize = newCapacity * sizeof(ShaderMaterial);
     buffer = RHI::renderer->CreateBuffer(RHI::BufferUsage::Default, RHI::BufferFlag::ShaderResource, bufferSize, nullptr);
     if (!buffer) {
@@ -78,6 +84,57 @@ bool ShaderMaterialTable::EnsureBufferCapacity(uint32_t count) {
     bufferState = RHI::GPUResourceState::Undefined;
     bufferBindlessIndex = buffer->GetBindlessIndex(RHI::ViewType::SRV, bufferView);
     return true;
+}
+
+bool ShaderMaterialTable::Upload(RHI::FrameThreadData *frameThreadData, RHI::CommandList *commandList, bool allowResize) {
+    PROFILER_CPU_SCOPED_EVENT("ShaderMaterialTable::Upload");
+
+    if (!dirty || materials.Count() == 0) {
+        return true;
+    }
+
+    const int numMaterials = materials.Count();
+    if (numMaterials > bufferCapacity) {
+        assert(allowResize);
+        if (!allowResize) {
+            return false;
+        }
+        if (!EnsureBufferCapacity(numMaterials)) {
+            return false;
+        }
+    }
+
+    RHI::Buffer *uploadBuffer = frameThreadData->AllocStructuredBuffer(sizeof(ShaderMaterial), numMaterials, nullptr);
+    if (!uploadBuffer) {
+        return false;
+    }
+
+    ShaderMaterial *shaderMaterials = reinterpret_cast<ShaderMaterial *>(uploadBuffer->mappedPtr);
+    for (int materialIndex = 0; materialIndex < numMaterials; materialIndex++) {
+        Build(materials[materialIndex], shaderMaterials[materialIndex]);
+    }
+
+    const uint32_t uploadSize = numMaterials * sizeof(ShaderMaterial);
+
+    RHI::renderer->Barrier(commandList, RHI::Renderer::MakeBufferBarrier(buffer, bufferState, RHI::GPUResourceState::CopyDst));
+    RHI::renderer->CopyBuffer(commandList, buffer, 0, uploadBuffer, 0, uploadSize);
+    RHI::renderer->Barrier(commandList, RHI::Renderer::MakeBufferBarrier(buffer, RHI::GPUResourceState::CopyDst, RHI::GPUResourceState::ShaderResource));
+
+    bufferState = RHI::GPUResourceState::ShaderResource;
+    dirty = false;
+    return true;
+}
+
+void ShaderMaterialTable::DestroyBuffers() {
+    if (buffer) {
+        RHI::renderer->DestroyBuffer(buffer);
+        buffer = nullptr;
+    }
+
+    bufferView = RHI::ViewID::InvalidID;
+    bufferState = RHI::GPUResourceState::Undefined;
+    bufferCapacity = 0;
+    bufferBindlessIndex = 0;
 }
 
 static const Texture *GetDefaultMaterialTexture() {
@@ -137,61 +194,4 @@ void ShaderMaterialTable::Build(const Material *material, ShaderMaterial &outSha
     outShaderMaterial.baseColorFactor = float4(1.0f, 1.0f, 1.0f, 1.0f);
     outShaderMaterial.alphaCutoff = GetMaterialAlphaCutoff(material);
     outShaderMaterial.padding0 = float3(0.0f, 0.0f, 0.0f);
-}
-
-uint32_t ShaderMaterialTable::Register(const Material *material) {
-    assert(material);
-
-    int hash = materialHash.GenerateHash(material);
-    for (int index = materialHash.First(hash); index != -1; index = materialHash.Next(index)) {
-        if (materials[index] == material) {
-            return index;
-        }
-    }
-
-    uint32_t newShaderMaterialIndex = materials.Count();
-    materials.Append(material);
-    materialHash.Add(hash, newShaderMaterialIndex);
-    dirty = true;
-
-    return newShaderMaterialIndex;
-}
-
-bool ShaderMaterialTable::Upload(RHI::FrameThreadData *frameThreadData, RHI::CommandList *commandList, bool allowResize) {
-    PROFILER_CPU_SCOPED_EVENT("ShaderMaterialTable::Upload");
-
-    if (!dirty || materials.Count() == 0) {
-        return true;
-    }
-
-    const int numMaterials = materials.Count();
-    if (numMaterials > bufferCapacity) {
-        assert(allowResize);
-        if (!allowResize) {
-            return false;
-        }
-        if (!EnsureBufferCapacity(numMaterials)) {
-            return false;
-        }
-    }
-
-    RHI::Buffer *uploadBuffer = frameThreadData->AllocStructuredBuffer(sizeof(ShaderMaterial), numMaterials, nullptr);
-    if (!uploadBuffer) {
-        return false;
-    }
-
-    ShaderMaterial *shaderMaterials = reinterpret_cast<ShaderMaterial *>(uploadBuffer->mappedPtr);
-    for (int materialIndex = 0; materialIndex < numMaterials; materialIndex++) {
-        Build(materials[materialIndex], shaderMaterials[materialIndex]);
-    }
-
-    const uint32_t uploadSize = numMaterials * sizeof(ShaderMaterial);
-
-    RHI::renderer->Barrier(commandList, RHI::Renderer::MakeBufferBarrier(buffer, bufferState, RHI::GPUResourceState::CopyDst));
-    RHI::renderer->CopyBuffer(commandList, buffer, 0, uploadBuffer, 0, uploadSize);
-    RHI::renderer->Barrier(commandList, RHI::Renderer::MakeBufferBarrier(buffer, RHI::GPUResourceState::CopyDst, RHI::GPUResourceState::ShaderResource));
-
-    bufferState = RHI::GPUResourceState::ShaderResource;
-    dirty = false;
-    return true;
 }

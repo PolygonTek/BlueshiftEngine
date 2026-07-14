@@ -100,6 +100,9 @@ public:
                                     /// Check intersection of OBB and light bounding volume.
     bool                            IsIntersectOBB(const BE1::OBB &obb) const;
 
+                                    /// Calculates minimum / maximum values by projecting light bounding volume onto the given axis.
+    void                            ProjectOnAxis(const BE1::Vec3 &axis, float &min, float &max) const;
+
                                     /// Camera culling of light bounding volume.
     bool                            Cull(const RenderCamera &camera) const;
 

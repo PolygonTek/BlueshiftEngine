@@ -27,18 +27,6 @@ void ShaderSurfaceTable::Shutdown() {
 void ShaderSurfaceTable::Clear() {
 }
 
-void ShaderSurfaceTable::DestroyBuffers() {
-    if (buffer) {
-        RHI::renderer->DestroyBuffer(buffer);
-        buffer = nullptr;
-    }
-
-    bufferView = RHI::ViewID::InvalidID;
-    bufferState = RHI::GPUResourceState::Undefined;
-    bufferCapacity = 0;
-    bufferBindlessIndex = 0;
-}
-
 bool ShaderSurfaceTable::EnsureBufferCapacity(uint32_t count) {
     if (count <= bufferCapacity) {
         return true;
@@ -52,6 +40,8 @@ bool ShaderSurfaceTable::EnsureBufferCapacity(uint32_t count) {
     DestroyBuffers();
 
     const uint32_t bufferSize = newCapacity * sizeof(ShaderSurface);
+
+    // GPU 디폴트 버퍼를 생성한다.
     buffer = RHI::renderer->CreateBuffer(RHI::BufferUsage::Default, RHI::BufferFlag::ShaderResource, bufferSize, nullptr);
     if (!buffer) {
         DestroyBuffers();
@@ -72,35 +62,12 @@ bool ShaderSurfaceTable::EnsureBufferCapacity(uint32_t count) {
     return true;
 }
 
-void ShaderSurfaceTable::Build(const VisSurf *visSurf, ShaderSurface &outShaderSurface) const {
-    assert(visSurf);
-    assert(visSurf->space);
-
-    BE1::simdProcessor->Memcpy(&outShaderSurface.worldMatrix, &visSurf->space->worldMatrix, sizeof(outShaderSurface.worldMatrix));
-    BE1::simdProcessor->Memcpy(&outShaderSurface.prevWorldMatrix, &visSurf->space->prevWorldMatrix, sizeof(outShaderSurface.prevWorldMatrix));
-
-    if (visSurf->subMesh) {
-        const BE1::Sphere &sphere = visSurf->subMesh->GetBoundingSphere();
-        const BE1::Vec3 &sphereCenter = sphere.Center();
-        outShaderSurface.localBoundingSphere = float4(sphereCenter.x, sphereCenter.y, sphereCenter.z, sphere.Radius());
-    } else {
-        outShaderSurface.localBoundingSphere = float4(0.0f, 0.0f, 0.0f, 0.0f);
-    }
-    outShaderSurface.shaderMaterialIndex = visSurf->shaderMaterialIndex;
-    outShaderSurface.padding0 = 0;
-    outShaderSurface.padding1 = 0;
-    outShaderSurface.padding2 = 0;
-}
-
 bool ShaderSurfaceTable::Upload(RHI::FrameThreadData *frameThreadData, RHI::CommandList *commandList, const VisCamera *visCamera, bool allowResize) {
     PROFILER_CPU_SCOPED_EVENT("ShaderSurfaceTable::Upload");
 
-    if (!visCamera || visCamera->numVisSurfs == 0) {
+    if (visCamera->numVisSurfs == 0) {
         Clear();
         return true;
-    }
-    if (!frameThreadData || !commandList) {
-        return false;
     }
 
     const uint32_t surfaceCount = visCamera->numVisSurfs;
@@ -135,4 +102,36 @@ bool ShaderSurfaceTable::Upload(RHI::FrameThreadData *frameThreadData, RHI::Comm
 
     bufferState = RHI::GPUResourceState::ShaderResource;
     return true;
+}
+
+void ShaderSurfaceTable::DestroyBuffers() {
+    if (buffer) {
+        RHI::renderer->DestroyBuffer(buffer);
+        buffer = nullptr;
+    }
+
+    bufferView = RHI::ViewID::InvalidID;
+    bufferState = RHI::GPUResourceState::Undefined;
+    bufferCapacity = 0;
+    bufferBindlessIndex = 0;
+}
+
+void ShaderSurfaceTable::Build(const VisSurf *visSurf, ShaderSurface &outShaderSurface) const {
+    assert(visSurf);
+    assert(visSurf->space);
+
+    BE1::simdProcessor->Memcpy(&outShaderSurface.worldMatrix, &visSurf->space->worldMatrix, sizeof(outShaderSurface.worldMatrix));
+    BE1::simdProcessor->Memcpy(&outShaderSurface.prevWorldMatrix, &visSurf->space->prevWorldMatrix, sizeof(outShaderSurface.prevWorldMatrix));
+
+    if (visSurf->subMesh) {
+        const BE1::Sphere &sphere = visSurf->subMesh->GetBoundingSphere();
+        const BE1::Vec3 &sphereCenter = sphere.Center();
+        outShaderSurface.localBoundingSphere = float4(sphereCenter.x, sphereCenter.y, sphereCenter.z, sphere.Radius());
+    } else {
+        outShaderSurface.localBoundingSphere = float4(0.0f, 0.0f, 0.0f, 0.0f);
+    }
+    outShaderSurface.shaderMaterialIndex = visSurf->shaderMaterialIndex;
+    outShaderSurface.padding0 = 0;
+    outShaderSurface.padding1 = 0;
+    outShaderSurface.padding2 = 0;
 }

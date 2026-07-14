@@ -23,6 +23,7 @@ struct VisSurf;
 struct VisCamera;
 struct VisLight;
 struct VisObject;
+struct RenderCameraDesc;
 class RenderFrameData;
 class RenderCamera;
 class Texture;
@@ -121,6 +122,7 @@ private:
     bool                        IsVisLightRegisteredInCurrentView(const RenderLight *renderLight) const;
     VisLight *                  RegisterVisLight(RenderFrameData *frameData, RenderLight *renderLight);
     void                        FindVisLights(RenderFrameData *frameData, const RenderCamera *renderCamera, VisCamera *visCamera);
+    static void                 BuildLightZBins(RenderFrameData *frameData, const RenderCameraDesc &cameraDesc, VisCamera *visCamera);
     bool                        IsVisObjectRegisteredInCurrentView(const RenderObject *renderObject) const;
     VisObject *                 RegisterVisObject(RenderFrameData *frameData, RenderObject *renderObject);
     void                        CapturePrevWorldMatrix(RenderObject *renderObject);

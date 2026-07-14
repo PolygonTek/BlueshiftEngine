@@ -299,6 +299,7 @@ void RenderSystem::InitComputePipelines() {
     genHiZMipBatchShaderTemplate = CreateComputeShaderTemplate("_genHiZMipBatchShader", computeShaderModel, "GenHiZMip/GenHiZMipBatch.hlsl", baseDir);
     genHiZMipOddDimShaderTemplate = CreateComputeShaderTemplate("_genHiZMipOddDimShader", computeShaderModel, "GenHiZMip/GenHiZMipOddDim.hlsl", baseDir);
     hiZCullInstancesShaderTemplate = CreateComputeShaderTemplate("_hiZCullInstancesShader", computeShaderModel, "HiZCullInstances.hlsl", baseDir);
+    lightCullingShaderTemplate = CreateComputeShaderTemplate("_lightCullingShader", computeShaderModel, "LightCulling.hlsl", baseDir);
     hiZDebugPreviewShaderTemplate = CreateComputeShaderTemplate("_hiZDebugPreviewShader", computeShaderModel, "HiZDebugPreview.hlsl", baseDir);
     depthHistoryResolveShaderTemplate = CreateComputeShaderTemplate("_depthHistoryResolveShader", computeShaderModel, "DepthHistoryResolve.hlsl", baseDir);
     surfaceOutputMSAAResolveNormalShaderTemplate = CreateComputeShaderTemplate("_surfaceOutputMSAAResolveNormalShader", computeShaderModel, "SurfaceOutputMSAAResolve.hlsl", baseDir, "SURFACE_OUTPUT_MSAA_RESOLVE_MODE=1");
@@ -331,6 +332,7 @@ void RenderSystem::EnsureComputePipelines() {
     EnsureComputePipeline(genHiZMipBatchShaderTemplate, genHiZMipBatchPipeline);
     EnsureComputePipeline(genHiZMipOddDimShaderTemplate, genHiZMipOddDimPipeline);
     EnsureComputePipeline(hiZCullInstancesShaderTemplate, hiZCullInstancesPipeline);
+    EnsureComputePipeline(lightCullingShaderTemplate, lightCullingPipeline);
     EnsureComputePipeline(hiZDebugPreviewShaderTemplate, hiZDebugPreviewPipeline);
     EnsureComputePipeline(depthHistoryResolveShaderTemplate, depthHistoryResolvePipeline);
     EnsureComputePipeline(surfaceOutputMSAAResolveNormalShaderTemplate, surfaceOutputMSAAResolveNormalPipeline);
@@ -361,6 +363,7 @@ void RenderSystem::ReleaseComputePipelines() {
     genHiZMipBatchPipeline.reset();
     genHiZMipOddDimPipeline.reset();
     hiZCullInstancesPipeline.reset();
+    lightCullingPipeline.reset();
     hiZDebugPreviewPipeline.reset();
     depthHistoryResolvePipeline.reset();
     surfaceOutputMSAAResolveNormalPipeline.reset();

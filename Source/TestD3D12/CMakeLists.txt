@@ -138,6 +138,8 @@ set(SRC_FILES
     Render/ShaderMaterialTable.cpp
     Render/ShaderLightTable.h
     Render/ShaderLightTable.cpp
+    Render/ShaderLightCullingTable.h
+    Render/ShaderLightCullingTable.cpp
     Render/ShaderSurfaceTable.h
     Render/ShaderSurfaceTable.cpp
     Render/RenderSystem.h

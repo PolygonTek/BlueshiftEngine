@@ -25,6 +25,7 @@
 #include "RenderLight.h"
 
 class Texture;
+struct VisLight;
 
 enum class VisSurfFlag : uint8_t {
     None                        = 0,
@@ -97,16 +98,23 @@ struct VisCamera {
     BE1::Vec2                   prevJitterNDC = BE1::Vec2::zero;
 
     uint32_t                    index = ~0;
-    uint32_t                    firstPointLightIndex = 0;
-    uint32_t                    numPointLights = 0;
-    uint32_t                    firstSpotLightIndex = 0;
-    uint32_t                    numSpotLights = 0;
-    uint32_t                    firstBoxDirLightIndex = 0;
-    uint32_t                    numBoxDirLights = 0;
+
+    uint32_t                    maxVisLights = 0;
+    uint32_t                    numVisLights = 0;
+    const VisLight **           visLights = nullptr;    // 카메라에 보이는 모든 광원의 pointer array
+    uint32_t *                  lightZBins = nullptr;   // packed min/max visible light IDs for each linear-depth Z-bin
+    float                       lightZBinScale = 0.0f;  // zBinIndex = viewZ * lightZBinScale + lightZBinBias
+    float                       lightZBinBias = 0.0f;   // zBinIndex = viewZ * lightZBinScale + lightZBinBias
+    uint32_t                    shaderLightRefOffset = ~0u;
+    uint32_t                    shaderLightZBinOffset = ~0u;
+    uint32_t                    shaderLightTileMaskOffset = ~0u;
+    uint32_t                    lightTileCountX = 0;
+    uint32_t                    lightTileCountY = 0;
+    uint32_t                    lightMaskWordCount = 0;
 
     uint32_t                    maxVisSurfs = 0;
     uint32_t                    numVisSurfs = 0;
-    const VisSurf **            visSurfs = nullptr; // 카메라에 보이는 모든 surfaces 와 shadow surfaces
+    const VisSurf **            visSurfs = nullptr;     // 카메라에 보이는 모든 surfaces 와 shadow surfaces
 
     uint32_t                    numRenderPasses = 0;
     RenderPass *                renderPasses = nullptr;
@@ -245,8 +253,12 @@ struct VisLight {
     BE1::Mat3                   axis;
     BE1::Vec3                   origin;
     BE1::Vec3                   size;
+
     BE1::Color3                 lightColor;                 ///< Linear RGB light color multiplied by intensity
     BE1::Rect                   screenClipRect;             ///< Screen clipping rectangle in top-left coordinates
+
+    float                       viewZMin;                   ///< Minimum positive-forward linear view Z
+    float                       viewZMax;                   ///< Maximum positive-forward linear view Z
 
     float                       zNear;
     float                       fallOffExponent;

@@ -20,6 +20,17 @@
 class RenderFrameData;
 struct VisLight;
 
+/*
+---------------------------------------------------------------------------------------------------
+
+    Shader Light Table
+
+    이번 프레임의 visible light 데이터를 타입별 테이블로 구성해 GPU 에 업로드한다.
+    각 타입별 테이블은 bindless SRV 로 셰이더에 제공한다.
+
+---------------------------------------------------------------------------------------------------
+*/
+
 class ShaderLightTable {
 public:
     bool                            Init(uint32_t initialPointLightCapacity = 1024, uint32_t initialSpotLightCapacity = 256, uint32_t initialBoxDirLightCapacity = 64);
@@ -28,6 +39,7 @@ public:
     void                            Clear();
 
     bool                            EnsureBufferCapacity(uint32_t pointLightCount, uint32_t spotLightCount, uint32_t boxDirLightCount);
+
     bool                            Upload(RHI::FrameThreadData *frameThreadData, RHI::CommandList *commandList, const RenderFrameData *frameData, bool allowResize);
 
     uint32_t                        GetPointLightBindlessIndex() const { return pointLightBuffer.bindlessIndex; }
@@ -43,9 +55,9 @@ private:
         uint32_t                    bindlessIndex = 0;
     };
 
-    void                            DestroyBuffer(TableBuffer &tableBuffer);
     bool                            EnsureBufferCapacity(TableBuffer &tableBuffer, uint32_t count, uint32_t elementSize, const char *name);
     void                            UploadBuffer(RHI::CommandList *commandList, TableBuffer &tableBuffer, RHI::Buffer *uploadBuffer, uint32_t uploadSize);
+    void                            DestroyBuffer(TableBuffer &tableBuffer);
 
     void                            Build(const VisLight &visLight, ShaderPointLight &shaderLight) const;
     void                            Build(const VisLight &visLight, ShaderSpotLight &shaderLight) const;

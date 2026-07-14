@@ -16,6 +16,7 @@
 
 #include "RHI/RHI.h"
 #include "RenderLight.h"
+#include "ShaderLightCullingTable.h"
 #include "ShaderLightTable.h"
 #include "ShaderMaterialTable.h"
 #include "ShaderSurfaceTable.h"
@@ -177,6 +178,10 @@ public:
     uint32_t                        NumVisBoxDirLights() const { return numVisBoxDirLights; }
     ChunkRange<VisLight>            GetVisLights() const { return ChunkRange<VisLight>(firstVisLightChunk); }
     [[nodiscard]] VisLight *        AllocVisLight(RenderLight::Type type);
+    [[nodiscard]] uint32_t          ReserveLightZBins();
+    uint32_t                        GetLightZBinCount() const { return lightZBinCount; }
+    [[nodiscard]] uint32_t          ReserveLightTileMasks(uint32_t count);
+    uint32_t                        GetLightTileMaskCount() const { return lightTileMaskCount; }
 
                                     // 렌더 커맨드 버퍼 리턴
     RenderCommandBuffer *           GetCommands() { return &commands; }
@@ -219,12 +224,17 @@ public:
     uint32_t                        GetShaderPointLightTableBindlessIndex() const { return shaderLightTable.GetPointLightBindlessIndex(); }
     uint32_t                        GetShaderSpotLightTableBindlessIndex() const { return shaderLightTable.GetSpotLightBindlessIndex(); }
     uint32_t                        GetShaderBoxDirLightTableBindlessIndex() const { return shaderLightTable.GetBoxDirLightBindlessIndex(); }
+    uint32_t                        GetShaderLightRefTableBindlessIndex() const { return shaderLightCullingTable.GetLightRefBindlessIndex(); }
+    uint32_t                        GetShaderLightZBinTableBindlessIndex() const { return shaderLightCullingTable.GetLightZBinBindlessIndex(); }
+    uint32_t                        GetShaderLightTileMaskTableBindlessIndex() const { return shaderLightCullingTable.GetLightTileMaskBindlessIndex(); }
 
                                     // 셰이더 머티리얼 테이블에 머티리얼을 등록하고, 테이블 인덱스를 리턴한다.
     uint32_t                        RegisterShaderMaterial(const Material *material) { return shaderMaterialTable.Register(material); }
 
     bool                            UploadShaderMaterialTable(RHI::FrameThreadData *frameThreadData, RHI::CommandList *commandList) { return shaderMaterialTable.Upload(frameThreadData, commandList, true); }
     bool                            UploadShaderLightTable(RHI::FrameThreadData *frameThreadData, RHI::CommandList *commandList) { return shaderLightTable.Upload(frameThreadData, commandList, this, true); }
+    bool                            UploadShaderLightCullingTable(RHI::FrameThreadData *frameThreadData, RHI::CommandList *commandList) { return shaderLightCullingTable.Upload(frameThreadData, commandList, this, true); }
+    bool                            DispatchLightCulling(RHI::FrameThreadData *frameThreadData, RHI::CommandList *commandList, RHI::PipelineState *pipelineState) { return shaderLightCullingTable.DispatchLightCulling(frameThreadData, commandList, pipelineState, this); }
     bool                            UploadShaderSurfaceTable(RHI::FrameThreadData *frameThreadData, RHI::CommandList *commandList, const VisCamera *visCamera) { return shaderSurfaceTable.Upload(frameThreadData, commandList, visCamera, false); }
     bool                            EnsureShaderSurfaceTableCapacity() { return shaderSurfaceTable.EnsureBufferCapacity(maxShaderSurfaceCount); }
 
@@ -283,6 +293,8 @@ private:
     uint32_t                        numVisBoxDirLights = 0;
     Chunk *                         firstVisLightChunk = nullptr;
     Chunk *                         lastVisLightChunk = nullptr;
+    uint32_t                        lightZBinCount = 0;
+    uint32_t                        lightTileMaskCount = 0;
 
     RenderCommandBuffer             commands;
     PendingImGuiOverlay             pendingImGuiOverlay;
@@ -306,6 +318,7 @@ private:
 
     ShaderMaterialTable             shaderMaterialTable;
     ShaderLightTable                shaderLightTable;
+    ShaderLightCullingTable         shaderLightCullingTable;
     ShaderSurfaceTable              shaderSurfaceTable;
 
     BE1::Array<SharedPtr<Material>> retainedMaterials;

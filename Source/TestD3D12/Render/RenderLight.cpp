@@ -160,6 +160,32 @@ bool RenderLight::IsIntersectOBB(const BE1::OBB &obb) const {
     return false;
 }
 
+void RenderLight::ProjectOnAxis(const BE1::Vec3 &axis, float &min, float &max) const {
+    if (desc.type == Type::BoxDir) {
+        worldOBB.ProjectOnAxis(axis, min, max);
+        return;
+    }
+
+    if (desc.type == Type::Spot) {
+        worldFrustum.ProjectOnAxis(axis, min, max);
+        return;
+    }
+
+    if (desc.type == Type::Point) {
+        const BE1::Vec3 &radius = worldOBB.Extents();
+        if (radius.x == radius.y && radius.x == radius.z) {
+            BE1::Sphere(desc.origin, radius.x).ProjectOnAxis(axis, min, max);
+            return;
+        }
+
+        worldOBB.ProjectOnAxis(axis, min, max);
+        return;
+    }
+
+    assert(0);
+    min = max = 0.0f;
+}
+
 bool RenderLight::Cull(const RenderCamera &camera) const {
     if (desc.type == Type::BoxDir) {
         return camera.Cull(worldOBB);

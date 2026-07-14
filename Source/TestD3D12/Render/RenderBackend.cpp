@@ -124,10 +124,10 @@ bool RenderBackend::UploadFrameConstants() {
     constants->shaderPointLightTableIndex = frameData->GetShaderPointLightTableBindlessIndex();
     constants->shaderSpotLightTableIndex = frameData->GetShaderSpotLightTableBindlessIndex();
     constants->shaderBoxDirLightTableIndex = frameData->GetShaderBoxDirLightTableBindlessIndex();
+    constants->shaderLightRefTableIndex = frameData->GetShaderLightRefTableBindlessIndex();
+    constants->shaderLightZBinTableIndex = frameData->GetShaderLightZBinTableBindlessIndex();
+    constants->shaderLightTileMaskTableIndex = frameData->GetShaderLightTileMaskTableBindlessIndex();
     constants->feedbackBufferIndex = currentContext->textureStreamingFeedback.GetBindlessIndex();
-    constants->padding0 = 0;
-    constants->padding1 = 0;
-    constants->padding2 = 0;
 
     return true;
 }
@@ -171,14 +171,23 @@ bool RenderBackend::UploadCameraConstants() {
     BE1::simdProcessor->Memcpy(&constants->prevInvViewProjMatrix, &currentVisCamera->prevInvViewProjMatrix, sizeof(constants->prevInvViewProjMatrix));
     BE1::simdProcessor->Memcpy(&constants->prevUnjitteredViewProjMatrix, &prevUnjitteredViewProjMatrix, sizeof(constants->prevUnjitteredViewProjMatrix));
     BE1::simdProcessor->Memcpy(&constants->hiZCullViewProjMatrix, &currentVisCamera->hiZCullViewProjMatrix, sizeof(constants->hiZCullViewProjMatrix));
+
     constants->surfaceTableIndex = frameData->GetShaderSurfaceTableBindlessIndex();
     constants->ndcFarZ = currentVisCamera->projectionPolicy.GetNDCFarZ();
-    constants->firstPointLightIndex = currentVisCamera->firstPointLightIndex;
-    constants->numPointLights = currentVisCamera->numPointLights;
-    constants->firstSpotLightIndex = currentVisCamera->firstSpotLightIndex;
-    constants->numSpotLights = currentVisCamera->numSpotLights;
-    constants->firstBoxDirLightIndex = currentVisCamera->firstBoxDirLightIndex;
-    constants->numBoxDirLights = currentVisCamera->numBoxDirLights;
+    constants->projectionDepthA = currentVisCamera->projectionDepthA;
+    constants->projectionDepthB = currentVisCamera->projectionDepthB;
+    constants->projectionOrthogonal = currentVisCamera->projectionOrthogonal ? 1u : 0u;
+    constants->numLights = currentVisCamera->numVisLights;
+    constants->lightRefOffset = currentVisCamera->shaderLightRefOffset;
+    constants->lightZBinOffset = currentVisCamera->shaderLightZBinOffset;
+    constants->lightZBinScale = currentVisCamera->lightZBinScale;
+    constants->lightZBinBias = currentVisCamera->lightZBinBias;
+    constants->lightTileMaskOffset = currentVisCamera->shaderLightTileMaskOffset;
+    constants->lightTileCountX = currentVisCamera->lightTileCountX;
+    constants->lightTileCountY = currentVisCamera->lightTileCountY;
+    constants->lightMaskWordCount = currentVisCamera->lightMaskWordCount;
+    constants->padding0 = 0;
+    constants->padding1 = 0;
 
     return true;
 }
@@ -189,6 +198,7 @@ void RenderBackend::UpdateFramePSOs() {
     frameGenHiZMipBatchPSO = ShaderPipeline::GetReadyPSO(renderSystem->genHiZMipBatchPipeline);
     frameGenHiZMipOddDimPSO = ShaderPipeline::GetReadyPSO(renderSystem->genHiZMipOddDimPipeline);
     frameHiZCullInstancesPSO = ShaderPipeline::GetReadyPSO(renderSystem->hiZCullInstancesPipeline);
+    frameLightCullingPSO = ShaderPipeline::GetReadyPSO(renderSystem->lightCullingPipeline);
     frameHiZDebugPreviewPSO = ShaderPipeline::GetReadyPSO(renderSystem->hiZDebugPreviewPipeline);
     frameDepthHistoryResolvePSO = ShaderPipeline::GetReadyPSO(renderSystem->depthHistoryResolvePipeline);
     frameSurfaceOutputMSAAResolveNormalPSO = ShaderPipeline::GetReadyPSO(renderSystem->surfaceOutputMSAAResolveNormalPipeline);
@@ -241,9 +251,23 @@ const void *RenderBackend::ExecuteBeginContext(const void *data) {
         return (const void *)(cmd + 1);
     }
 
-    // 카메라들이 참조할 타입별 ShaderLight 테이블을 GPU 에 한 번 업로드한다.
+    // 각 카메라 별로 참조할 타입별 ShaderLight 테이블을 GPU 에 업로드한다.
     if (!frameData->UploadShaderLightTable(frameData->GetThreadData(0), mainCommandList)) {
         BE_WARNLOG("RenderBackend::ExecuteBeginContext: failed to upload shader light table\n");
+        mainCommandList->CloseAndExecute();
+        return (const void *)(cmd + 1);
+    }
+
+    // 각 카메라 별로 visible light 참조 테이블과 z-bin 테이블을 GPU 에 업로드한다.
+    if (!frameData->UploadShaderLightCullingTable(frameData->GetThreadData(0), mainCommandList)) {
+        BE_WARNLOG("RenderBackend::ExecuteBeginContext: failed to upload shader light culling table\n");
+        mainCommandList->CloseAndExecute();
+        return (const void *)(cmd + 1);
+    }
+
+    // 각 카메라의 visible light 화면 영역을 tile 단위 flat bit mask 로 변환한다.
+    if (!frameData->DispatchLightCulling(frameData->GetThreadData(0), mainCommandList, frameLightCullingPSO)) {
+        BE_WARNLOG("RenderBackend::ExecuteBeginContext: failed to build shader light tile masks\n");
         mainCommandList->CloseAndExecute();
         return (const void *)(cmd + 1);
     }

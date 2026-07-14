@@ -100,6 +100,24 @@ static const uint HiZCullThreadCount = 64;
 static const uint HiZCullIndirectArgInstanceCountOffset = 4;
 static const uint HiZCullIndirectArgSize = 20;
 
+static const uint ShaderLightTypeBitCount = 2;
+static const uint ShaderLightTypeMask = (1u << ShaderLightTypeBitCount) - 1u;
+static const uint ShaderLightTypePoint = 0;
+static const uint ShaderLightTypeSpot = 1;
+static const uint ShaderLightTypeBoxDir = 2;
+static const uint ShaderLightTileSize = 32;
+static const uint ShaderLightTileCoordBitCount = 16;
+static const uint ShaderLightTileCoordMask = (1u << ShaderLightTileCoordBitCount) - 1u;
+static const uint ShaderLightMaskWordBits = 32;
+static const uint ShaderLightMaskWordShift = 5;
+static const uint ShaderLightCullingThreadGroupSizeX = 8;
+static const uint ShaderLightCullingThreadGroupSizeY = 8;
+static const uint ShaderLightZBinCount = 4096;
+static const uint ShaderLightZBinMaxLightCount = 1u << 16;
+static const uint ShaderLightZBinIndexMask = ShaderLightZBinMaxLightCount - 1u;
+static const uint ShaderLightZBinEmpty = ShaderLightZBinIndexMask; // min ID = 0xFFFF, max ID = 0
+static const uint ShaderLightInvalidOffset = 0xFFFFFFFFu;
+
 static const uint MultiplySpectrum2DBlockSize = 256;
 
 static const uint FFTRadix2_256StageCount = 8;
@@ -263,6 +281,17 @@ struct FFTStageParams {
     uint padding1;
 };
 
+struct ShaderLightCullingParams {
+    uint numLights;
+    uint lightRefOffset;
+    uint lightTileMaskOffset;
+    uint lightTileCountX;
+    uint lightTileCountY;
+    uint lightMaskWordCount;
+    uint padding0;
+    uint padding1;
+};
+
 struct FrameConstants {
     float frameTime;
     float elapsedTime;
@@ -272,10 +301,10 @@ struct FrameConstants {
     uint shaderPointLightTableIndex;
     uint shaderSpotLightTableIndex;
     uint shaderBoxDirLightTableIndex;
+    uint shaderLightRefTableIndex;
+    uint shaderLightZBinTableIndex;
+    uint shaderLightTileMaskTableIndex;
     uint feedbackBufferIndex;
-    uint padding0;
-    uint padding1;
-    uint padding2;
 };
 
 struct CameraConstants {
@@ -291,13 +320,27 @@ struct CameraConstants {
 
     uint surfaceTableIndex;
     float ndcFarZ;
-    uint firstPointLightIndex;
-    uint numPointLights;
-    uint firstSpotLightIndex;
-    uint numSpotLights;
-    uint firstBoxDirLightIndex;
-    uint numBoxDirLights;
+    float projectionDepthA;
+    float projectionDepthB;
+    uint projectionOrthogonal;
+    uint numLights;
+    uint lightRefOffset;
+    uint lightZBinOffset;
+    float lightZBinScale;
+    float lightZBinBias;
+    uint lightTileMaskOffset;
+    uint lightTileCountX;
+    uint lightTileCountY;
+    uint lightMaskWordCount;
+    uint padding0;
+    uint padding1;
 };
+
+#ifdef __cplusplus
+static_assert(sizeof(ShaderLightCullingParams) == 32, "ShaderLightCullingParams must match the HLSL constant-buffer layout");
+static_assert(sizeof(FrameConstants) == 48, "FrameConstants must match the HLSL constant-buffer layout");
+static_assert(sizeof(CameraConstants) == 512, "CameraConstants must match the HLSL constant-buffer layout");
+#endif
 
 struct SurfaceDrawParams {
     uint instanceBaseOffset;
@@ -323,6 +366,16 @@ struct ShaderMaterial {
     float alphaCutoff;
     float3 padding0;
 };
+
+struct ShaderLightRef {
+    uint packedLightRef; // low 2 bits: light type, remaining bits: type-local light index
+    uint packedTileMin;  // low 16 bits: tile X, high 16 bits: tile Y
+    uint packedTileMax;  // low 16 bits: tile X, high 16 bits: tile Y
+};
+
+#ifdef __cplusplus
+static_assert(sizeof(ShaderLightRef) == 12, "ShaderLightRef must remain a tightly packed StructuredBuffer element");
+#endif
 
 struct ShaderPointLight {
     row_major float3x4 fallOffMatrix;

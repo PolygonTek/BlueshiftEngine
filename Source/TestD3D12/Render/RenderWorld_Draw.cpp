@@ -19,9 +19,15 @@
 #include "RenderSystem.h"
 #include "RenderCamera.h"
 #include "RenderInternal.h"
+#include "RenderUtils.h"
 #include "Render/Material/MaterialManager.h"
 #include "Render/Mesh/MeshManager.h"
 #include "Render/Texture/Texture.h"
+#include "Shaders/ShaderInterop.h"
+
+static_assert(static_cast<uint32_t>(RenderLight::Type::Point) == ShaderLightTypePoint);
+static_assert(static_cast<uint32_t>(RenderLight::Type::Spot) == ShaderLightTypeSpot);
+static_assert(static_cast<uint32_t>(RenderLight::Type::BoxDir) == ShaderLightTypeBoxDir);
 
 static constexpr uint32_t MaxSkinningJointsPerTask = 1024;
 
@@ -398,10 +404,18 @@ void RenderWorld::FindVisLights(RenderFrameData *frameData, const RenderCamera *
     PROFILER_CPU_SCOPED_EVENT("RenderWorld::FindVisLights");
 
     const bool skipViewCulling = r_skipViewCulling.GetBool();
+    const RenderCameraDesc &cameraDesc = renderCamera->GetDesc();
+    const BE1::Vec3 &viewZAxis = cameraDesc.axis[EngineAxis::Forward];
+    const float viewZOffset = -viewZAxis.Dot(cameraDesc.origin);
 
-    visCamera->firstPointLightIndex = frameData->NumVisPointLights();
-    visCamera->firstSpotLightIndex = frameData->NumVisSpotLights();
-    visCamera->firstBoxDirLightIndex = frameData->NumVisBoxDirLights();
+    // 현재 카메라의 visible light 참조가 시작되는 프레임 공용 ShaderLightRef 테이블의 오프셋을 기록한다.
+    visCamera->shaderLightRefOffset = frameData->NumVisLights();
+
+    // RenderWorld 에 등록된 renderLights 개수만큼 미리 visCamera->visLights 를 할당
+    visCamera->maxVisLights = static_cast<uint32_t>(renderLights.Count());
+    if (visCamera->maxVisLights > 0) {
+        visCamera->visLights = (const VisLight **)frameData->MemAlloc(visCamera->maxVisLights * sizeof(visCamera->visLights[0]));
+    }
 
     // 등록된 모든 RenderLight 들을 개별 Culling 해서 프레임 데이터에 VisLight 로 등록한다.
     for (RenderLight *renderLight : renderLights) {
@@ -415,6 +429,19 @@ void RenderWorld::FindVisLights(RenderFrameData *frameData, const RenderCamera *
             }
         }
 
+        // 라이트의 bounding volume 을 camera forward axis 에 투영해서 linear view Z min/max (화면 안쪽이 양수) 를 계산한다.
+        float viewZMin;
+        float viewZMax;
+        renderLight->ProjectOnAxis(viewZAxis, viewZMin, viewZMax);
+        viewZMin += viewZOffset;
+        viewZMax += viewZOffset;
+
+        // 라이트가 카메라 [zNear, zFar] 범위 밖에 있으면 제외
+        if (viewZMax < cameraDesc.zNear || viewZMin > cameraDesc.zFar) {
+            continue;
+        }
+
+        // 라이트의 clipRect 를 계산하고, 화면 밖이라면 제외
         BE1::Rect screenClipRect;
         if (!renderLight->ComputeScreenClipRect(*renderCamera, screenClipRect)) {
             continue;
@@ -426,13 +453,113 @@ void RenderWorld::FindVisLights(RenderFrameData *frameData, const RenderCamera *
         }
 
         visLight->screenClipRect = screenClipRect;
+        visLight->viewZMin = viewZMin;
+        visLight->viewZMax = viewZMax;
+
+        assert(visCamera->numVisLights < visCamera->maxVisLights);
+        visCamera->visLights[visCamera->numVisLights++] = visLight;
 
         renderLight->visibleFrameIndex = renderWorldFrameIndex;
     }
 
-    visCamera->numPointLights = frameData->NumVisPointLights() - visCamera->firstPointLightIndex;
-    visCamera->numSpotLights = frameData->NumVisSpotLights() - visCamera->firstSpotLightIndex;
-    visCamera->numBoxDirLights = frameData->NumVisBoxDirLights() - visCamera->firstBoxDirLightIndex;
+    // 현재 카메라의 visible lights 를 z 에 따라 정렬하고, z-bins 를 작성한다.
+    BuildLightZBins(frameData, cameraDesc, visCamera);
+
+    if (visCamera->lightZBins) {
+        // 현재 카메라의 Z-bin 이 시작되는 프레임 공용 light Z-bin 테이블 오프셋을 예약한다.
+        visCamera->shaderLightZBinOffset = frameData->ReserveLightZBins();
+    }
+
+    if (visCamera->numVisLights > 0) {
+        assert(visCamera->renderWidth > 0 && visCamera->renderHeight > 0);
+
+        // 렌더링 화면에 필요한 타일 개수와 타일 별 필요한 비트 마스크 워드의 개수를 구한다.
+        visCamera->lightTileCountX = (visCamera->renderWidth + ShaderLightTileSize - 1) / ShaderLightTileSize;
+        visCamera->lightTileCountY = (visCamera->renderHeight + ShaderLightTileSize - 1) / ShaderLightTileSize;
+        visCamera->lightMaskWordCount = (visCamera->numVisLights + ShaderLightMaskWordBits - 1) / ShaderLightMaskWordBits;
+
+        // 전체 타일에 필요한 비트 마스크 워드의 개수를 구한다.
+        const uint64_t lightTileMaskCount = static_cast<uint64_t>(visCamera->lightTileCountX) * visCamera->lightTileCountY * visCamera->lightMaskWordCount;
+
+        if (lightTileMaskCount <= UINT32_MAX) {
+            // 현재 카메라의 타일 마스크 워드가 시작되는 프레임 공용 테이블 오프셋을 예약한다.
+            visCamera->shaderLightTileMaskOffset = frameData->ReserveLightTileMasks(static_cast<uint32_t>(lightTileMaskCount));
+        }
+    }
+}
+
+static BE_INLINE uint32_t PackLightZBin(uint32_t minLightIndex, uint32_t maxLightIndex) {
+    assert(minLightIndex <= ShaderLightZBinIndexMask);
+    assert(maxLightIndex <= ShaderLightZBinIndexMask);
+    return (maxLightIndex << 16) | minLightIndex;
+}
+
+void RenderWorld::BuildLightZBins(RenderFrameData *frameData, const RenderCameraDesc &cameraDesc, VisCamera *visCamera) {
+    PROFILER_CPU_SCOPED_EVENT("RenderWorld::BuildLightZBins");
+
+    const uint32_t numVisLights = visCamera->numVisLights;
+    if (numVisLights == 0) {
+        return;
+    }
+
+    if (numVisLights > 1) {
+        // viewZMin, viewZMax 순으로 오름차순 정렬하고, 두 값이 같으면 index 가 작은 라이트를 먼저 배치해 순서를 고정한다.
+        std::sort(visCamera->visLights, visCamera->visLights + numVisLights, [](const VisLight *lhs, const VisLight *rhs) {
+            if (lhs->viewZMin < rhs->viewZMin) {
+                return true;
+            }
+            if (lhs->viewZMin > rhs->viewZMin) {
+                return false;
+            }
+            if (lhs->viewZMax < rhs->viewZMax) {
+                return true;
+            }
+            if (lhs->viewZMax > rhs->viewZMax) {
+                return false;
+            }
+            return lhs->index < rhs->index;
+        });
+    }
+
+    // Z-bin light index 는 16 비트로 패킹된다. 오버플로가 발생하면 라이트를 누락하지 않고 GPU 경로에서
+    // 폴백할 수 있도록 정렬된 라이트 목록은 유지하고 lightZBins 는 null 로 둔다.
+    if (numVisLights > ShaderLightZBinMaxLightCount) {
+        return;
+    }
+
+    if (cameraDesc.zFar <= cameraDesc.zNear) {
+        return;
+    }
+
+    const float viewZRange = cameraDesc.zFar - cameraDesc.zNear;
+    const float zBinSize = viewZRange / static_cast<float>(ShaderLightZBinCount);
+
+    // linear view Z 를 Z-bin index 로 변환하기 위한 scale 과 bias 를 미리 계산한다.
+    visCamera->lightZBinScale = static_cast<float>(ShaderLightZBinCount) / viewZRange;
+    visCamera->lightZBinBias = -cameraDesc.zNear * visCamera->lightZBinScale;
+    visCamera->lightZBins = (uint32_t *)frameData->MemAlloc(ShaderLightZBinCount * sizeof(visCamera->lightZBins[0]));
+
+    uint32_t startLightIndex = 0;
+    uint32_t endLightIndex = 0;
+
+    // 각 Z-bin 의 라이트 범위 [startLightIndex, endLightIndex) 를 패킹한다. (endLightIndex 의 라이트는 포함되지 않는다)
+    for (uint32_t zBinIndex = 0; zBinIndex < ShaderLightZBinCount; ++zBinIndex) {
+        const float zBinMin = cameraDesc.zNear + static_cast<float>(zBinIndex) * zBinSize;
+        const float zBinMax = zBinIndex + 1 == ShaderLightZBinCount ? cameraDesc.zFar : zBinMin + zBinSize;
+
+        while (startLightIndex < numVisLights && visCamera->visLights[startLightIndex]->viewZMax < zBinMin) {
+            ++startLightIndex;
+        }
+        while (endLightIndex < numVisLights && visCamera->visLights[endLightIndex]->viewZMin <= zBinMax) {
+            ++endLightIndex;
+        }
+
+        if (startLightIndex < endLightIndex) {
+            visCamera->lightZBins[zBinIndex] = PackLightZBin(startLightIndex, endLightIndex - 1);
+        } else {
+            visCamera->lightZBins[zBinIndex] = ShaderLightZBinEmpty;
+        }
+    }
 }
 
 VisObject *RenderWorld::RegisterVisObject(RenderFrameData *frameData, RenderObject *renderObject) {
@@ -879,6 +1006,10 @@ void RenderWorld::DrawGUICamera(RenderFrameData *frameData, uint32_t screenWidth
     visCamera->is2D = true;
 
     VisObject *visObject = frameData->AllocVisObject();
+    if (!visObject) {
+        return;
+    }
+
     visObject->worldMatrix.SetIdentity();
     visObject->prevWorldMatrix.SetIdentity();
 

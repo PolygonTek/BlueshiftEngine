@@ -53,6 +53,7 @@ StructuredBuffer<ShaderMaterial> GetShaderMaterialTable(uint index) { return Res
 StructuredBuffer<ShaderPointLight> GetShaderPointLightTable(uint index) { return ResourceDescriptorHeap[index]; }
 StructuredBuffer<ShaderSpotLight> GetShaderSpotLightTable(uint index) { return ResourceDescriptorHeap[index]; }
 StructuredBuffer<ShaderBoxDirLight> GetShaderBoxDirLightTable(uint index) { return ResourceDescriptorHeap[index]; }
+StructuredBuffer<ShaderLightRef> GetShaderLightRefTable(uint index) { return ResourceDescriptorHeap[index]; }
 RWTexture2D<float4> GetRWTexture2D(uint index) { return ResourceDescriptorHeap[index]; }
 RWTexture2D<uint> GetRWTexture2DUInt(uint index) { return ResourceDescriptorHeap[index]; }
 RWTexture2D<uint2> GetRWTexture2DUInt2(uint index) { return ResourceDescriptorHeap[index]; }
@@ -106,6 +107,7 @@ SamplerState GetSampler(uint index) { return SamplerDescriptorHeap[index]; }
     "DescriptorTable(SRV(t0, numDescriptors = unbounded, space = 29, flags = DESCRIPTORS_VOLATILE)), " \
     "DescriptorTable(SRV(t0, numDescriptors = unbounded, space = 30, flags = DESCRIPTORS_VOLATILE)), " \
     "DescriptorTable(SRV(t0, numDescriptors = unbounded, space = 31, flags = DESCRIPTORS_VOLATILE)), " \
+    "DescriptorTable(SRV(t0, numDescriptors = unbounded, space = 32, flags = DESCRIPTORS_VOLATILE)), " \
     "DescriptorTable(UAV(u0, numDescriptors = unbounded, space = 50, flags = DESCRIPTORS_VOLATILE)), " \
     "DescriptorTable(UAV(u0, numDescriptors = unbounded, space = 51, flags = DESCRIPTORS_VOLATILE)), " \
     "DescriptorTable(UAV(u0, numDescriptors = unbounded, space = 52, flags = DESCRIPTORS_VOLATILE)), " \
@@ -155,6 +157,7 @@ StructuredBuffer<ShaderMaterial> bindlessShaderMaterialTable[] : register(t0, sp
 StructuredBuffer<ShaderPointLight> bindlessShaderPointLightTable[] : register(t0, space29);
 StructuredBuffer<ShaderSpotLight> bindlessShaderSpotLightTable[] : register(t0, space30);
 StructuredBuffer<ShaderBoxDirLight> bindlessShaderBoxDirLightTable[] : register(t0, space31);
+StructuredBuffer<ShaderLightRef> bindlessShaderLightRefTable[] : register(t0, space32);
 RWTexture2D<float4> bindlessRWTexture2DTable[] : register(u0, space50);
 RWTexture2D<uint> bindlessRWTexture2DUIntTable[] : register(u0, space51);
 RWTexture2D<uint2> bindlessRWTexture2DUInt2Table[] : register(u0, space52);
@@ -204,6 +207,7 @@ StructuredBuffer<ShaderMaterial> GetShaderMaterialTable(uint index) { return bin
 StructuredBuffer<ShaderPointLight> GetShaderPointLightTable(uint index) { return bindlessShaderPointLightTable[index]; }
 StructuredBuffer<ShaderSpotLight> GetShaderSpotLightTable(uint index) { return bindlessShaderSpotLightTable[index]; }
 StructuredBuffer<ShaderBoxDirLight> GetShaderBoxDirLightTable(uint index) { return bindlessShaderBoxDirLightTable[index]; }
+StructuredBuffer<ShaderLightRef> GetShaderLightRefTable(uint index) { return bindlessShaderLightRefTable[index]; }
 RWTexture2D<float4> GetRWTexture2D(uint index) { return bindlessRWTexture2DTable[index]; }
 RWTexture2D<uint> GetRWTexture2DUInt(uint index) { return bindlessRWTexture2DUIntTable[index]; }
 RWTexture2D<uint2> GetRWTexture2DUInt2(uint index) { return bindlessRWTexture2DUInt2Table[index]; }

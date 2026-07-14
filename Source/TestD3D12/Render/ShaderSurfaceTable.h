@@ -20,6 +20,17 @@
 struct VisCamera;
 struct VisSurf;
 
+/*
+---------------------------------------------------------------------------------------------------
+
+    Shader Surface Table
+
+    현재 카메라의 visible surface 데이터를 ShaderSurface 테이블로 구성해 GPU 에 업로드한다.
+    테이블은 bindless SRV 로 셰이더에 제공한다.
+
+---------------------------------------------------------------------------------------------------
+*/
+
 class ShaderSurfaceTable {
 public:
     bool                            Init(uint32_t initialCapacity = 1024);

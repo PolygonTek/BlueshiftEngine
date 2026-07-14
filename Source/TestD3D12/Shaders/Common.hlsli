@@ -63,8 +63,8 @@ float InterleavedGradientNoise(uint2 pixelCoord) {
 //  22 23 2a 2b 32 33 3a 3b
 //  24 25 2c 2d 34 35 3c 3d
 //  26 27 2e 2f 36 37 3e 3f 
-inline uint BitfieldExtract(uint src, uint off, uint bits) { uint mask = (1 << bits) - 1; return (src >> off) & mask; } // ABfe
-inline uint BitfieldInsert(uint src, uint ins, uint bits) { uint mask = (1 << bits) - 1; return (ins & mask) | (src & (~mask)); } // ABfiM
+inline uint BitfieldExtract(uint src, uint off, uint bits) { uint mask = (1u << bits) - 1u; return (src >> off) & mask; } // ABfe
+inline uint BitfieldInsert(uint src, uint ins, uint bits) { uint mask = (1u << bits) - 1u; return (ins & mask) | (src & (~mask)); } // ABfiM
 inline uint2 RemapLane8x8(uint lane) {
     return uint2(BitfieldInsert(BitfieldExtract(lane, 2u, 3u), lane, 1u),
         BitfieldInsert(BitfieldExtract(lane, 3u, 3u),

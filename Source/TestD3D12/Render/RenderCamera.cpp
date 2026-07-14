@@ -542,6 +542,11 @@ bool RenderCamera::CalcClipRectFromOBB(const BE1::OBB &obb, BE1::Rect &clipRect)
         }
     }
 
+    BE1::Clamp(bounds[0][1], -1.0f, 1.0f);
+    BE1::Clamp(bounds[1][1], -1.0f, 1.0f);
+    BE1::Clamp(bounds[0][2], -1.0f, 1.0f);
+    BE1::Clamp(bounds[1][2], -1.0f, 1.0f);
+
     if (bounds[1][1] - bounds[0][1] <= 0) {
         return false;
     }
@@ -571,6 +576,11 @@ bool RenderCamera::CalcClipRectFromFrustum(const BE1::Frustum &frustum, BE1::Rec
             return false;
         }
     }
+
+    BE1::Clamp(bounds[0][1], -1.0f, 1.0f);
+    BE1::Clamp(bounds[1][1], -1.0f, 1.0f);
+    BE1::Clamp(bounds[0][2], -1.0f, 1.0f);
+    BE1::Clamp(bounds[1][2], -1.0f, 1.0f);
 
     if (bounds[1][1] - bounds[0][1] <= 0) {
         return false;

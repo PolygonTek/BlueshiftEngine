@@ -114,6 +114,7 @@ private:
     SharedPtr<ShaderTemplate>       genHiZMipBatchShaderTemplate;
     SharedPtr<ShaderTemplate>       genHiZMipOddDimShaderTemplate;
     SharedPtr<ShaderTemplate>       hiZCullInstancesShaderTemplate;
+    SharedPtr<ShaderTemplate>       lightCullingShaderTemplate;
     SharedPtr<ShaderTemplate>       hiZDebugPreviewShaderTemplate;
     SharedPtr<ShaderTemplate>       depthHistoryResolveShaderTemplate;
     SharedPtr<ShaderTemplate>       surfaceOutputMSAAResolveNormalShaderTemplate;
@@ -141,6 +142,7 @@ private:
     SharedPtr<ShaderPipeline>       genHiZMipBatchPipeline;
     SharedPtr<ShaderPipeline>       genHiZMipOddDimPipeline;
     SharedPtr<ShaderPipeline>       hiZCullInstancesPipeline;
+    SharedPtr<ShaderPipeline>       lightCullingPipeline;
     SharedPtr<ShaderPipeline>       hiZDebugPreviewPipeline;
     SharedPtr<ShaderPipeline>       depthHistoryResolvePipeline;
     SharedPtr<ShaderPipeline>       surfaceOutputMSAAResolveNormalPipeline;

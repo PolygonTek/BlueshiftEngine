@@ -23,6 +23,9 @@ uint64_t                    RenderFrameData::globalFrameSerial = 0;
 static constexpr uint32_t   MaxRenderTaskThreads = 32;
 static constexpr uint32_t   MaxMemSizePerBlock = 0x4000000;
 static constexpr uint32_t   MemAlignSize = 32;
+static constexpr uint32_t   MaxVisCamera = 1u << 4;
+static constexpr uint32_t   MaxVisObjects = 1u << 20;
+static constexpr uint32_t   MaxVisLights = 1u << 17;
 static constexpr uint32_t   VisObjectChunkCapacity = 4096;
 static constexpr uint32_t   VisLightChunkCapacity = 1024;
 
@@ -77,6 +80,10 @@ void RenderFrameData::Init(int32_t frameIndex, int32_t numFrames) {
         BE_WARNLOG("RenderFrameData::Init: failed to initialize shader light table\n");
     }
 
+    if (!shaderLightCullingTable.Init()) {
+        BE_WARNLOG("RenderFrameData::Init: failed to initialize shader light culling table\n");
+    }
+
     if (!shaderSurfaceTable.Init()) {
         BE_WARNLOG("RenderFrameData::Init: failed to initialize shader surface table\n");
     }
@@ -108,6 +115,7 @@ void RenderFrameData::Shutdown() {
 
     shaderMaterialTable.Shutdown();
     shaderLightTable.Shutdown();
+    shaderLightCullingTable.Shutdown();
     shaderSurfaceTable.Shutdown();
 
     ClearMemBlocks();
@@ -127,6 +135,8 @@ void RenderFrameData::BeginFrame() {
     statRenderObjectCount = 0;
     statVisibleObjectCount = 0;
     maxShaderSurfaceCount = 0;
+    lightZBinCount = 0;
+    lightTileMaskCount = 0;
 
     // 스레드 별로 사용할 자원을 초기화한다.
     for (int32_t threadIndex = 0; threadIndex < numRenderTaskThreads; ++threadIndex) {
@@ -204,7 +214,7 @@ void RenderFrameData::BeginFrameMemAllocs() {
         block->used = 0;
     }
 
-    InitVisCameras(16);
+    InitVisCameras(MaxVisCamera);
 }
 
 void *RenderFrameData::MemAlloc(int size) {
@@ -414,7 +424,8 @@ void RenderFrameData::ClearPendingImGuiOverlay() {
 }
 
 VisCamera *RenderFrameData::AllocVisCamera() {
-    if (numVisCameras + 1 > maxVisCameras) {
+    if (numVisCameras >= maxVisCameras) {
+        assert(0);
         return nullptr;
     }
 
@@ -428,6 +439,11 @@ VisCamera *RenderFrameData::AllocVisCamera() {
 }
 
 VisObject *RenderFrameData::AllocVisObject() {
+    if (numVisObjects >= MaxVisObjects) {
+        assert(0);
+        return nullptr;
+    }
+
     if (!lastVisObjectChunk || lastVisObjectChunk->count >= VisObjectChunkCapacity) {
         Chunk *newChunk = AllocChunk(sizeof(VisObject), VisObjectChunkCapacity);
         if (lastVisObjectChunk) {
@@ -449,6 +465,11 @@ VisObject *RenderFrameData::AllocVisObject() {
 }
 
 VisLight *RenderFrameData::AllocVisLight(RenderLight::Type type) {
+    if (numVisLights >= MaxVisLights) {
+        assert(0);
+        return nullptr;
+    }
+
     if (!lastVisLightChunk || lastVisLightChunk->count >= VisLightChunkCapacity) {
         Chunk *newChunk = AllocChunk(sizeof(VisLight), VisLightChunkCapacity);
         if (lastVisLightChunk) {
@@ -484,6 +505,22 @@ VisLight *RenderFrameData::AllocVisLight(RenderLight::Type type) {
     }
 
     return newVisLight;
+}
+
+uint32_t RenderFrameData::ReserveLightZBins() {
+    assert(ShaderLightZBinCount <= UINT32_MAX - lightZBinCount);
+
+    const uint32_t offset = lightZBinCount;
+    lightZBinCount += ShaderLightZBinCount;
+    return offset;
+}
+
+uint32_t RenderFrameData::ReserveLightTileMasks(uint32_t count) {
+    assert(count <= UINT32_MAX - lightTileMaskCount);
+
+    const uint32_t offset = lightTileMaskCount;
+    lightTileMaskCount += count;
+    return offset;
 }
 
 void *RenderFrameData::GetCommandBuffer(uint32_t bytes) {
