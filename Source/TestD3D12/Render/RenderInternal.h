@@ -80,6 +80,18 @@ struct RenderPass {
     RenderPassDrawSurf *        drawSurfStorage;
 };
 
+struct LightCulling {
+    uint32_t                    tileCountX = 0;         // X 축 타일 개수
+    uint32_t                    tileCountY = 0;         // Y 축 타일 개수
+    uint32_t                    wordCountPerTile = 0;   // 타일 당 마스크 워드 개수
+    uint32_t *                  zBins = nullptr;        // packed min/max visible light IDs for each linear-depth Z-bin
+    float                       zBinScale = 0.0f;       // zBinIndex = viewZ * zBinScale + zBinBias
+    float                       zBinBias = 0.0f;        // zBinIndex = viewZ * zBinScale + zBinBias
+    uint32_t                    lightRefTableOffset = ~0u;
+    uint32_t                    tileMaskWordTableOffset = ~0u;
+    uint32_t                    zBinTableOffset = ~0u;
+};
+
 // 한 프레임 렌더링에서만 유효한 렌더링 카메라
 // 매 프레임 생성되고, 생성될 때 어떠한 힙 할당도 일어나지 않는다.
 struct VisCamera {
@@ -102,19 +114,12 @@ struct VisCamera {
     uint32_t                    maxVisLights = 0;
     uint32_t                    numVisLights = 0;
     const VisLight **           visLights = nullptr;    // 카메라에 보이는 모든 광원의 pointer array
-    uint32_t *                  lightZBins = nullptr;   // packed min/max visible light IDs for each linear-depth Z-bin
-    float                       lightZBinScale = 0.0f;  // zBinIndex = viewZ * lightZBinScale + lightZBinBias
-    float                       lightZBinBias = 0.0f;   // zBinIndex = viewZ * lightZBinScale + lightZBinBias
-    uint32_t                    shaderLightRefOffset = ~0u;
-    uint32_t                    shaderLightZBinOffset = ~0u;
-    uint32_t                    shaderLightTileMaskOffset = ~0u;
-    uint32_t                    lightTileCountX = 0;
-    uint32_t                    lightTileCountY = 0;
-    uint32_t                    lightMaskWordCount = 0;
 
     uint32_t                    maxVisSurfs = 0;
     uint32_t                    numVisSurfs = 0;
     const VisSurf **            visSurfs = nullptr;     // 카메라에 보이는 모든 surfaces 와 shadow surfaces
+
+    LightCulling                lightCulling;
 
     uint32_t                    numRenderPasses = 0;
     RenderPass *                renderPasses = nullptr;
@@ -252,10 +257,11 @@ struct VisLight {
 
     BE1::Mat3                   axis;
     BE1::Vec3                   origin;
-    BE1::Vec3                   size;
+    BE1::Vec3                   size;                       ///< Point: x is radius. Spot/BoxDir: shape extents
 
     BE1::Color3                 lightColor;                 ///< Linear RGB light color multiplied by intensity
-    BE1::Rect                   screenClipRect;             ///< Screen clipping rectangle in top-left coordinates
+    uint32_t                    packedTileMin;              ///< Packed minimum light-culling tile coordinate
+    uint32_t                    packedTileMax;              ///< Packed maximum light-culling tile coordinate
 
     float                       viewZMin;                   ///< Minimum positive-forward linear view Z
     float                       viewZMax;                   ///< Maximum positive-forward linear view Z

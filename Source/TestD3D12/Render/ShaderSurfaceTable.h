@@ -42,15 +42,19 @@ public:
 
     bool                            Upload(RHI::FrameThreadData *frameThreadData, RHI::CommandList *commandList, const VisCamera *visCamera, bool allowResize);
 
-    uint32_t                        GetBindlessIndex() const { return bufferBindlessIndex; }
+    uint32_t                        GetBindlessIndex() const { return tableBuffer.bindlessIndex; }
 
 private:
-    void                            DestroyBuffers();
+    struct TableBuffer {
+        RHI::Buffer *               buffer = nullptr;
+        RHI::ViewID                 view = RHI::ViewID::InvalidID;
+        RHI::GPUResourceState       state = RHI::GPUResourceState::Undefined;
+        uint32_t                    capacity = 0;
+        uint32_t                    bindlessIndex = 0;
+    };
+
+    void                            DestroyBuffer();
     void                            Build(const VisSurf *visSurf, ShaderSurface &outShaderSurface) const;
 
-    RHI::Buffer *                   buffer = nullptr;
-    RHI::ViewID                     bufferView = RHI::ViewID::InvalidID;
-    RHI::GPUResourceState           bufferState = RHI::GPUResourceState::Undefined;
-    uint32_t                        bufferCapacity = 0;
-    uint32_t                        bufferBindlessIndex = 0;
+    TableBuffer                     tableBuffer;
 };

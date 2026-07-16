@@ -569,6 +569,21 @@ void App::BuildImGuiOverlay() {
                 r_msaa.SetInteger(msaaSampleCounts[msaaSampleCountIndex]);
             }
 
+            bool lightCullingZBin = r_lightCullingZBin.GetBool();
+            if (ImGui::Checkbox("Light culling Z-bin", &lightCullingZBin)) {
+                r_lightCullingZBin.SetBool(lightCullingZBin);
+            }
+
+            int lightCullingDebugMode = BE1::Clamp(r_lightCullingDebug.GetInteger(),
+                static_cast<int>(r_lightCullingDebug.GetMinValue()), static_cast<int>(r_lightCullingDebug.GetMaxValue()));
+            ImGui::SetNextItemWidth(fontSize * 12.0f);
+            if (ImGui::Combo("Light culling debug", &lightCullingDebugMode,
+                "Off\0"
+                "Tile mask\0"
+                "Tile mask + Z-bin\0")) {
+                r_lightCullingDebug.SetInteger(lightCullingDebugMode);
+            }
+
             if (roundedCollapsingHeader("Skip options##RenderSkipOptionsHeader")) {
                 bool skipCulling = r_skipViewCulling.GetBool();
                 if (ImGui::Checkbox("Skip view culling", &skipCulling)) {

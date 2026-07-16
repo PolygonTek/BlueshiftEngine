@@ -23,7 +23,7 @@ bool ShaderMaterialTable::Init(uint32_t initialCapacity) {
 }
 
 void ShaderMaterialTable::Shutdown() {
-    DestroyBuffers();
+    DestroyBuffer();
 }
 
 void ShaderMaterialTable::Clear() {
@@ -52,37 +52,37 @@ uint32_t ShaderMaterialTable::Register(const Material *material) {
 }
 
 bool ShaderMaterialTable::EnsureBufferCapacity(uint32_t count) {
-    if (count <= bufferCapacity) {
+    if (count <= tableBuffer.capacity) {
         return true;
     }
 
     // 초기 개수는 256 으로 시작해서, 필요한 용량이 될 때까지 2배씩 늘린다.
-    uint32_t newCapacity = bufferCapacity > 0 ? bufferCapacity : 256;
+    uint32_t newCapacity = tableBuffer.capacity > 0 ? tableBuffer.capacity : 256;
     while (newCapacity < count) {
         newCapacity <<= 1;
     }
 
-    DestroyBuffers();
+    DestroyBuffer();
 
     // GPU 디폴트 버퍼를 생성한다.
     uint32_t bufferSize = newCapacity * sizeof(ShaderMaterial);
-    buffer = RHI::renderer->CreateBuffer(RHI::BufferUsage::Default, RHI::BufferFlag::ShaderResource, bufferSize, nullptr);
-    if (!buffer) {
-        DestroyBuffers();
+    tableBuffer.buffer = RHI::renderer->CreateBuffer(RHI::BufferUsage::Default, RHI::BufferFlag::ShaderResource, bufferSize, nullptr);
+    if (!tableBuffer.buffer) {
+        DestroyBuffer();
         return false;
     }
 
-    RHI::renderer->SetName(buffer, "shaderMaterialTableBuffer");
+    RHI::renderer->SetName(tableBuffer.buffer, "shaderMaterialTableBuffer");
 
-    bufferView = RHI::renderer->CreateView(buffer, RHI::ViewType::SRV, RHI::Format::Unknown, sizeof(ShaderMaterial), 0, bufferSize);
-    if (!bufferView.IsValid()) {
-        DestroyBuffers();
+    tableBuffer.view = RHI::renderer->CreateView(tableBuffer.buffer, RHI::ViewType::SRV, RHI::Format::Unknown, sizeof(ShaderMaterial), 0, bufferSize);
+    if (!tableBuffer.view.IsValid()) {
+        DestroyBuffer();
         return false;
     }
 
-    bufferCapacity = newCapacity;
-    bufferState = RHI::GPUResourceState::Undefined;
-    bufferBindlessIndex = buffer->GetBindlessIndex(RHI::ViewType::SRV, bufferView);
+    tableBuffer.capacity = newCapacity;
+    tableBuffer.state = RHI::GPUResourceState::Undefined;
+    tableBuffer.bindlessIndex = tableBuffer.buffer->GetBindlessIndex(RHI::ViewType::SRV, tableBuffer.view);
     return true;
 }
 
@@ -94,7 +94,7 @@ bool ShaderMaterialTable::Upload(RHI::FrameThreadData *frameThreadData, RHI::Com
     }
 
     const int numMaterials = materials.Count();
-    if (numMaterials > bufferCapacity) {
+    if (numMaterials > tableBuffer.capacity) {
         assert(allowResize);
         if (!allowResize) {
             return false;
@@ -116,25 +116,25 @@ bool ShaderMaterialTable::Upload(RHI::FrameThreadData *frameThreadData, RHI::Com
 
     const uint32_t uploadSize = numMaterials * sizeof(ShaderMaterial);
 
-    RHI::renderer->Barrier(commandList, RHI::Renderer::MakeBufferBarrier(buffer, bufferState, RHI::GPUResourceState::CopyDst));
-    RHI::renderer->CopyBuffer(commandList, buffer, 0, uploadBuffer, 0, uploadSize);
-    RHI::renderer->Barrier(commandList, RHI::Renderer::MakeBufferBarrier(buffer, RHI::GPUResourceState::CopyDst, RHI::GPUResourceState::ShaderResource));
+    RHI::renderer->Barrier(commandList, RHI::Renderer::MakeBufferBarrier(tableBuffer.buffer, tableBuffer.state, RHI::GPUResourceState::CopyDst));
+    RHI::renderer->CopyBuffer(commandList, tableBuffer.buffer, 0, uploadBuffer, 0, uploadSize);
+    RHI::renderer->Barrier(commandList, RHI::Renderer::MakeBufferBarrier(tableBuffer.buffer, RHI::GPUResourceState::CopyDst, RHI::GPUResourceState::ShaderResource));
 
-    bufferState = RHI::GPUResourceState::ShaderResource;
+    tableBuffer.state = RHI::GPUResourceState::ShaderResource;
     dirty = false;
     return true;
 }
 
-void ShaderMaterialTable::DestroyBuffers() {
-    if (buffer) {
-        RHI::renderer->DestroyBuffer(buffer);
-        buffer = nullptr;
+void ShaderMaterialTable::DestroyBuffer() {
+    if (tableBuffer.buffer) {
+        RHI::renderer->DestroyBuffer(tableBuffer.buffer);
+        tableBuffer.buffer = nullptr;
     }
 
-    bufferView = RHI::ViewID::InvalidID;
-    bufferState = RHI::GPUResourceState::Undefined;
-    bufferCapacity = 0;
-    bufferBindlessIndex = 0;
+    tableBuffer.view = RHI::ViewID::InvalidID;
+    tableBuffer.state = RHI::GPUResourceState::Undefined;
+    tableBuffer.capacity = 0;
+    tableBuffer.bindlessIndex = 0;
 }
 
 static const Texture *GetDefaultMaterialTexture() {

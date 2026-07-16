@@ -132,11 +132,9 @@ void RenderFrameData::BeginFrame() {
     elapsedPrevTime = 0.0f;
     frameCount = 0;
     statEnabled = false;
-    statRenderObjectCount = 0;
-    statVisibleObjectCount = 0;
     maxShaderSurfaceCount = 0;
     lightZBinCount = 0;
-    lightTileMaskCount = 0;
+    lightTileMaskWordCount = 0;
 
     // 스레드 별로 사용할 자원을 초기화한다.
     for (int32_t threadIndex = 0; threadIndex < numRenderTaskThreads; ++threadIndex) {
@@ -515,11 +513,11 @@ uint32_t RenderFrameData::ReserveLightZBins() {
     return offset;
 }
 
-uint32_t RenderFrameData::ReserveLightTileMasks(uint32_t count) {
-    assert(count <= UINT32_MAX - lightTileMaskCount);
+uint32_t RenderFrameData::ReserveLightTileMaskWords(uint32_t count) {
+    assert(count <= UINT32_MAX - lightTileMaskWordCount);
 
-    const uint32_t offset = lightTileMaskCount;
-    lightTileMaskCount += count;
+    const uint32_t offset = lightTileMaskWordCount;
+    lightTileMaskWordCount += count;
     return offset;
 }
 

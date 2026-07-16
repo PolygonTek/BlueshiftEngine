@@ -100,6 +100,8 @@ static const uint HiZCullThreadCount = 64;
 static const uint HiZCullIndirectArgInstanceCountOffset = 4;
 static const uint HiZCullIndirectArgSize = 20;
 
+static const uint ShaderSurfaceFlagNonUniformScale = 1u << 0;
+
 static const uint ShaderLightTypeBitCount = 2;
 static const uint ShaderLightTypeMask = (1u << ShaderLightTypeBitCount) - 1u;
 static const uint ShaderLightTypePoint = 0;
@@ -117,6 +119,12 @@ static const uint ShaderLightZBinMaxLightCount = 1u << 16;
 static const uint ShaderLightZBinIndexMask = ShaderLightZBinMaxLightCount - 1u;
 static const uint ShaderLightZBinEmpty = ShaderLightZBinIndexMask; // min ID = 0xFFFF, max ID = 0
 static const uint ShaderLightInvalidOffset = 0xFFFFFFFFu;
+static const uint ShaderLightCullingDebugModeNone = 0;
+static const uint ShaderLightCullingDebugModeTileMask = 1;
+static const uint ShaderLightCullingDebugModeTileMaskAndZBin = 2;
+
+static const uint ShaderCameraFlagProjectionOrthogonal = 1u << 0;
+static const uint ShaderCameraFlagUseLightZBin = 1u << 1;
 
 static const uint MultiplySpectrum2DBlockSize = 256;
 
@@ -283,14 +291,18 @@ struct FFTStageParams {
 
 struct ShaderLightCullingParams {
     uint numLights;
-    uint lightRefOffset;
-    uint lightTileMaskOffset;
-    uint lightTileCountX;
-    uint lightTileCountY;
-    uint lightMaskWordCount;
+    uint lightRefTableOffset;
+    uint tileMaskWordTableOffset;
+    uint tileCountX;
+    uint tileCountY;
+    uint wordCountPerTile;
     uint padding0;
     uint padding1;
 };
+
+#ifdef __cplusplus
+static_assert(sizeof(ShaderLightCullingParams) == 32, "ShaderLightCullingParams must match the HLSL constant-buffer layout");
+#endif
 
 struct FrameConstants {
     float frameTime;
@@ -303,9 +315,13 @@ struct FrameConstants {
     uint shaderBoxDirLightTableIndex;
     uint shaderLightRefTableIndex;
     uint shaderLightZBinTableIndex;
-    uint shaderLightTileMaskTableIndex;
+    uint shaderLightTileMaskWordTableIndex;
     uint feedbackBufferIndex;
 };
+
+#ifdef __cplusplus
+static_assert(sizeof(FrameConstants) == 48, "FrameConstants must match the HLSL constant-buffer layout");
+#endif
 
 struct CameraConstants {
     row_major float4x4 viewProjMatrix;
@@ -322,23 +338,22 @@ struct CameraConstants {
     float ndcFarZ;
     float projectionDepthA;
     float projectionDepthB;
-    uint projectionOrthogonal;
+    uint flags;
+
     uint numLights;
-    uint lightRefOffset;
-    uint lightZBinOffset;
-    float lightZBinScale;
-    float lightZBinBias;
-    uint lightTileMaskOffset;
-    uint lightTileCountX;
-    uint lightTileCountY;
-    uint lightMaskWordCount;
+    uint lightCullingLightRefTableOffset;
+    uint lightCullingTileMaskWordTableOffset;
+    uint lightCullingZBinTableOffset;
+    float lightCullingZBinScale;
+    float lightCullingZBinBias;
+    uint lightCullingTileCountX;
+    uint lightCullingTileCountY;
+    uint lightCullingWordCountPerTile;
+    uint lightCullingDebugMode;
     uint padding0;
-    uint padding1;
 };
 
 #ifdef __cplusplus
-static_assert(sizeof(ShaderLightCullingParams) == 32, "ShaderLightCullingParams must match the HLSL constant-buffer layout");
-static_assert(sizeof(FrameConstants) == 48, "FrameConstants must match the HLSL constant-buffer layout");
 static_assert(sizeof(CameraConstants) == 512, "CameraConstants must match the HLSL constant-buffer layout");
 #endif
 
@@ -352,7 +367,7 @@ struct ShaderSurface {
 
     float4 localBoundingSphere;
     uint shaderMaterialIndex;
-    uint padding0;
+    uint flags;
     uint padding1;
     uint padding2;
 };
@@ -378,21 +393,23 @@ static_assert(sizeof(ShaderLightRef) == 12, "ShaderLightRef must remain a tightl
 #endif
 
 struct ShaderPointLight {
-    row_major float3x4 fallOffMatrix;
-
+    float4 worldToProjectionU;
+    float4 worldToProjectionV;
     float3 origin;
-    float fallOffExponent;
-    float3 size;
-    uint flags;
+    float invRadiusSquared;
     float3 lightColor;
-    float padding0;
-    int4 screenClipRect;
+    float fallOffExponent;
+    uint flags;
+    float3 padding0;
 };
+
+#ifdef __cplusplus
+static_assert(sizeof(ShaderPointLight) == 80, "ShaderPointLight must remain a tightly packed StructuredBuffer element");
+#endif
 
 struct ShaderSpotLight {
     row_major float4x4 viewProjScaleBiasMatrix;
     row_major float3x4 fallOffMatrix;
-
     float3 origin;
     float fallOffExponent;
     float3 direction;
@@ -401,21 +418,18 @@ struct ShaderSpotLight {
     uint flags;
     float3 lightColor;
     float padding0;
-    int4 screenClipRect;
 };
 
 struct ShaderBoxDirLight {
     row_major float4x4 worldToLightVolumeMatrix;
-
     float3 origin;
     uint flags;
     float3 direction;
-    float padding0;
+    float fallOffExponent;
     float3 size;
     float padding1;
     float3 lightColor;
     float padding2;
-    int4 screenClipRect;
 };
 
 #endif // SHADERINTEROP_H

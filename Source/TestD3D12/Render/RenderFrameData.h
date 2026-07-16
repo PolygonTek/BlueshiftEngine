@@ -180,8 +180,8 @@ public:
     [[nodiscard]] VisLight *        AllocVisLight(RenderLight::Type type);
     [[nodiscard]] uint32_t          ReserveLightZBins();
     uint32_t                        GetLightZBinCount() const { return lightZBinCount; }
-    [[nodiscard]] uint32_t          ReserveLightTileMasks(uint32_t count);
-    uint32_t                        GetLightTileMaskCount() const { return lightTileMaskCount; }
+    [[nodiscard]] uint32_t          ReserveLightTileMaskWords(uint32_t count);
+    uint32_t                        GetLightTileMaskWordCount() const { return lightTileMaskWordCount; }
 
                                     // 렌더 커맨드 버퍼 리턴
     RenderCommandBuffer *           GetCommands() { return &commands; }
@@ -210,9 +210,6 @@ public:
 
     bool                            IsStatEnabled() const { return statEnabled; }
     void                            SetStatEnabled(bool enabled) { statEnabled = enabled; }
-    void                            AddObjectStats(uint32_t renderObjectCount, uint32_t visibleObjectCount);
-    uint32_t                        GetStatRenderObjectCount() const { return statRenderObjectCount; }
-    uint32_t                        GetStatVisibleObjectCount() const { return statVisibleObjectCount; }
 
     Material *                      RetainMaterial(const SharedPtr<Material> &material);
     MeshInstance *                  RetainMeshInstance(const SharedPtr<MeshInstance> &meshInstance);
@@ -226,7 +223,7 @@ public:
     uint32_t                        GetShaderBoxDirLightTableBindlessIndex() const { return shaderLightTable.GetBoxDirLightBindlessIndex(); }
     uint32_t                        GetShaderLightRefTableBindlessIndex() const { return shaderLightCullingTable.GetLightRefBindlessIndex(); }
     uint32_t                        GetShaderLightZBinTableBindlessIndex() const { return shaderLightCullingTable.GetLightZBinBindlessIndex(); }
-    uint32_t                        GetShaderLightTileMaskTableBindlessIndex() const { return shaderLightCullingTable.GetLightTileMaskBindlessIndex(); }
+    uint32_t                        GetShaderLightTileMaskWordTableBindlessIndex() const { return shaderLightCullingTable.GetLightTileMaskWordBindlessIndex(); }
 
                                     // 셰이더 머티리얼 테이블에 머티리얼을 등록하고, 테이블 인덱스를 리턴한다.
     uint32_t                        RegisterShaderMaterial(const Material *material) { return shaderMaterialTable.Register(material); }
@@ -293,8 +290,9 @@ private:
     uint32_t                        numVisBoxDirLights = 0;
     Chunk *                         firstVisLightChunk = nullptr;
     Chunk *                         lastVisLightChunk = nullptr;
+
     uint32_t                        lightZBinCount = 0;
-    uint32_t                        lightTileMaskCount = 0;
+    uint32_t                        lightTileMaskWordCount = 0;
 
     RenderCommandBuffer             commands;
     PendingImGuiOverlay             pendingImGuiOverlay;
@@ -309,8 +307,7 @@ private:
     uint32_t                        frameCount = 0;
 
     bool                            statEnabled = false;
-    uint32_t                        statRenderObjectCount = 0;
-    uint32_t                        statVisibleObjectCount = 0;
+
     uint32_t                        maxShaderSurfaceCount = 0;
 
     RHI::FrameThreadData **         threadData = nullptr;
@@ -348,15 +345,6 @@ BE_INLINE void RenderFrameData::ChunkIterator<T>::SetChunk(RenderFrameData::Chun
     current = static_cast<T *>(chunk->elements);
     end = current + chunk->count;
     nextChunk = chunk->next;
-}
-
-BE_INLINE void RenderFrameData::AddObjectStats(uint32_t renderObjectCount, uint32_t visibleObjectCount) {
-    if (!statEnabled) {
-        return;
-    }
-
-    statRenderObjectCount += renderObjectCount;
-    statVisibleObjectCount += visibleObjectCount;
 }
 
 BE_INLINE void RenderFrameData::CmdSwapBuffers() {

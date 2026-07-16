@@ -46,7 +46,32 @@ class RenderContext {
     friend class GpuTiming;
     friend class RenderFrameData;
 
+    template <typename T>
+    using PlainStatValue = T;
+
+    template <typename T>
+    using AtomicStatValue = std::atomic<T>;
+
+    template <template <typename> class Value>
+    struct StatsT {
+        Value<uint32_t>             visibleCameraCount = 0;
+        Value<uint32_t>             visibleObjectCount = 0;
+        Value<uint32_t>             visibleLightCount = 0;
+        Value<uint32_t>             visiblePointLightCount = 0;
+        Value<uint32_t>             visibleSpotLightCount = 0;
+        Value<uint32_t>             visibleBoxDirLightCount = 0;
+        Value<uint32_t>             drawCount = 0;
+        Value<uint64_t>             drawTriangleCount = 0;
+        Value<uint32_t>             instanceTableAllocCount = 0;
+        Value<uint32_t>             instanceTableUploadBytes = 0;
+        Value<uint32_t>             lightCullingZBinCount = 0;
+        Value<uint32_t>             lightCullingTileMaskWordCount = 0;
+        Value<uint64_t>             lightCullingThreadGroupCount = 0;
+    };
+
 public:
+    using Stats = StatsT<PlainStatValue>;
+
     RenderContext() = default;
 
     void                            Init(void *windowHandle, const BE1::Color4 &baseClearColor = BE1::Color4::black);
@@ -68,12 +93,7 @@ public:
 
     float                           GetStatGpuAverageMsec() const { return GetStatGpuTagAverageMsec(GpuTiming::Tag::GpuFrame); }
     float                           GetStatGpuTagAverageMsec(GpuTiming::Tag tag) const;
-    uint32_t                        GetStatRenderObjectCount() const { return statRenderObjectCount.load(); }
-    uint32_t                        GetStatVisibleObjectCount() const { return statVisibleObjectCount.load(); }
-    uint32_t                        GetStatDrawCount() const { return statDrawCount.load(); }
-    uint64_t                        GetStatDrawTriangleCount() const { return statDrawTriangleCount.load(); }
-    uint32_t                        GetStatInstanceTableAllocCount() const { return statInstanceTableAllocCount.load(); }
-    uint32_t                        GetStatInstanceTableUploadBytes() const { return statInstanceTableUploadBytes.load(); }
+    Stats                           GetStats() const;
 
     void                            OnResize(int width, int height);
 
@@ -112,6 +132,8 @@ public:
     static RenderContext *          activeContext;
 
 private:
+    using AtomicStats = StatsT<AtomicStatValue>;
+
     struct PendingScreenshot {
         char                        filename[BE1::MaxAbsolutePath] = {};
     };
@@ -123,7 +145,7 @@ private:
     void                            FlushPendingScreenshots(RenderFrameData *frameData);
     void                            EnsureTextureStreamingFeedbackCapacity(uint32_t requiredCapacity);
     void                            UpdateGpuTagFrameTimes(const float tagFrameMsec[static_cast<int>(GpuTiming::Tag::Count)]);
-    void                            SetRenderStats(uint32_t renderObjectCount, uint32_t visibleObjectCount, uint32_t drawCount, uint64_t drawTriangleCount, uint32_t instanceTableAllocCount, uint32_t instanceTableUploadBytes);
+    void                            SetStats(const Stats &stats);
 
     void *                          windowHandle = nullptr;
     RHI::SwapChain *                swapChain = nullptr;
@@ -161,12 +183,9 @@ private:
     float                           statGpuTagElapsedMsec[static_cast<int>(GpuTiming::Tag::Count)] = {};
     int                             statGpuTagSampleCount[static_cast<int>(GpuTiming::Tag::Count)] = {};
     std::atomic<float>              statGpuTagAverageMsec[static_cast<int>(GpuTiming::Tag::Count)] = {};
-    std::atomic<uint32_t>           statRenderObjectCount = 0;
-    std::atomic<uint32_t>           statVisibleObjectCount = 0;
-    std::atomic<uint32_t>           statDrawCount = 0;
-    std::atomic<uint64_t>           statDrawTriangleCount = 0;
-    std::atomic<uint32_t>           statInstanceTableAllocCount = 0;
-    std::atomic<uint32_t>           statInstanceTableUploadBytes = 0;
+
+    AtomicStats                     stats;
+    std::atomic<uint32_t>           statSequence = 0;
 };
 
 template <typename BuildFunc>

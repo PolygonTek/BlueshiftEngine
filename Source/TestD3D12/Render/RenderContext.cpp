@@ -196,13 +196,54 @@ float RenderContext::GetStatGpuTagAverageMsec(GpuTiming::Tag tag) const {
     return statGpuTagAverageMsec[tagIndex].load();
 }
 
-void RenderContext::SetRenderStats(uint32_t renderObjectCount, uint32_t visibleObjectCount, uint32_t drawCount, uint64_t drawTriangleCount, uint32_t instanceTableAllocCount, uint32_t instanceTableUploadBytes) {
-    statRenderObjectCount.store(renderObjectCount);
-    statVisibleObjectCount.store(visibleObjectCount);
-    statDrawCount.store(drawCount);
-    statDrawTriangleCount.store(drawTriangleCount);
-    statInstanceTableAllocCount.store(instanceTableAllocCount);
-    statInstanceTableUploadBytes.store(instanceTableUploadBytes);
+RenderContext::Stats RenderContext::GetStats() const {
+    Stats snapshot;
+
+    while (1) {
+        const uint32_t sequence = statSequence.load();
+        if (sequence & 1) {
+            continue;
+        }
+
+        snapshot.visibleCameraCount = stats.visibleCameraCount.load();
+        snapshot.visibleObjectCount = stats.visibleObjectCount.load();
+        snapshot.visibleLightCount = stats.visibleLightCount.load();
+        snapshot.visiblePointLightCount = stats.visiblePointLightCount.load();
+        snapshot.visibleSpotLightCount = stats.visibleSpotLightCount.load();
+        snapshot.visibleBoxDirLightCount = stats.visibleBoxDirLightCount.load();
+        snapshot.drawCount = stats.drawCount.load();
+        snapshot.drawTriangleCount = stats.drawTriangleCount.load();
+        snapshot.instanceTableAllocCount = stats.instanceTableAllocCount.load();
+        snapshot.instanceTableUploadBytes = stats.instanceTableUploadBytes.load();
+        snapshot.lightCullingZBinCount = stats.lightCullingZBinCount.load();
+        snapshot.lightCullingTileMaskWordCount = stats.lightCullingTileMaskWordCount.load();
+        snapshot.lightCullingThreadGroupCount = stats.lightCullingThreadGroupCount.load();
+
+        if (sequence == statSequence.load()) {
+            return snapshot;
+        }
+    }
+}
+
+void RenderContext::SetStats(const Stats &snapshot) {
+    // 홀수 sequence 는 백엔드가 통계 스냅숏을 갱신 중임을 나타낸다.
+    statSequence.fetch_add(1);
+
+    stats.visibleCameraCount.store(snapshot.visibleCameraCount);
+    stats.visibleObjectCount.store(snapshot.visibleObjectCount);
+    stats.visibleLightCount.store(snapshot.visibleLightCount);
+    stats.visiblePointLightCount.store(snapshot.visiblePointLightCount);
+    stats.visibleSpotLightCount.store(snapshot.visibleSpotLightCount);
+    stats.visibleBoxDirLightCount.store(snapshot.visibleBoxDirLightCount);
+    stats.drawCount.store(snapshot.drawCount);
+    stats.drawTriangleCount.store(snapshot.drawTriangleCount);
+    stats.instanceTableAllocCount.store(snapshot.instanceTableAllocCount);
+    stats.instanceTableUploadBytes.store(snapshot.instanceTableUploadBytes);
+    stats.lightCullingZBinCount.store(snapshot.lightCullingZBinCount);
+    stats.lightCullingTileMaskWordCount.store(snapshot.lightCullingTileMaskWordCount);
+    stats.lightCullingThreadGroupCount.store(snapshot.lightCullingThreadGroupCount);
+
+    statSequence.fetch_add(1);
 }
 
 void RenderContext::RequestScreenshot(const char *filename) {

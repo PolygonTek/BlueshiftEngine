@@ -27,6 +27,9 @@ extern BE1::CVar    r_skipDrawCamera2D;
 extern BE1::CVar    r_skipDrawCamera3D;
 extern BE1::CVar    r_skipPostProcess;
 
+extern BE1::CVar    r_lightCullingZBin;
+extern BE1::CVar    r_lightCullingDebug;
+
 extern BE1::CVar    r_depthPrepass;
 extern BE1::CVar    r_msaa;
 extern BE1::CVar    r_taa;

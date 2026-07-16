@@ -37,6 +37,7 @@ public:
         SkyPass,
         TransparentPass,
         GuiPass,
+        LightCulling,
         HiZCulling,
         GenHiZ,
         HiZDebugPreview,

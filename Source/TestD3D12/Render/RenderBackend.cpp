@@ -109,6 +109,37 @@ void RenderBackend::RecordDrawStats(uint32_t drawCount, uint64_t drawTriangleCou
     statInstanceTableUploadBytes += instanceTableUploadBytes;
 }
 
+void RenderBackend::UpdateFrameStats() {
+    RenderContext::Stats stats;
+    stats.visibleCameraCount = frameData->NumVisCameras();
+    stats.visibleObjectCount = frameData->NumVisObjects();
+    stats.visibleLightCount = frameData->NumVisLights();
+    stats.visiblePointLightCount = frameData->NumVisPointLights();
+    stats.visibleSpotLightCount = frameData->NumVisSpotLights();
+    stats.visibleBoxDirLightCount = frameData->NumVisBoxDirLights();
+    stats.drawCount = statDrawCount;
+    stats.drawTriangleCount = statDrawTriangleCount;
+    stats.instanceTableAllocCount = statInstanceTableAllocCount;
+    stats.instanceTableUploadBytes = statInstanceTableUploadBytes;
+    stats.lightCullingZBinCount = frameData->GetLightZBinCount();
+    stats.lightCullingTileMaskWordCount = frameData->GetLightTileMaskWordCount();
+
+    const VisCamera *visCameras = frameData->GetVisCameras();
+    for (uint32_t cameraIndex = 0; cameraIndex < frameData->NumVisCameras(); ++cameraIndex) {
+        const VisCamera &visCamera = visCameras[cameraIndex];
+        if (visCamera.lightCulling.wordCountPerTile == 0) {
+            continue;
+        }
+
+        const uint32_t threadGroupCountX = (visCamera.lightCulling.tileCountX + ShaderLightCullingThreadGroupSizeX - 1) / ShaderLightCullingThreadGroupSizeX;
+        const uint32_t threadGroupCountY = (visCamera.lightCulling.tileCountY + ShaderLightCullingThreadGroupSizeY - 1) / ShaderLightCullingThreadGroupSizeY;
+
+        stats.lightCullingThreadGroupCount += static_cast<uint64_t>(threadGroupCountX) * threadGroupCountY * visCamera.lightCulling.wordCountPerTile;
+    }
+
+    currentContext->SetStats(stats);
+}
+
 bool RenderBackend::UploadFrameConstants() {
     frameConstantBuffer = frameData->GetThreadData(0)->AllocConstant(sizeof(FrameConstants));
     if (!frameConstantBuffer) {
@@ -126,7 +157,7 @@ bool RenderBackend::UploadFrameConstants() {
     constants->shaderBoxDirLightTableIndex = frameData->GetShaderBoxDirLightTableBindlessIndex();
     constants->shaderLightRefTableIndex = frameData->GetShaderLightRefTableBindlessIndex();
     constants->shaderLightZBinTableIndex = frameData->GetShaderLightZBinTableBindlessIndex();
-    constants->shaderLightTileMaskTableIndex = frameData->GetShaderLightTileMaskTableBindlessIndex();
+    constants->shaderLightTileMaskWordTableIndex = frameData->GetShaderLightTileMaskWordTableBindlessIndex();
     constants->feedbackBufferIndex = currentContext->textureStreamingFeedback.GetBindlessIndex();
 
     return true;
@@ -157,6 +188,14 @@ bool RenderBackend::UploadCameraConstants() {
 
     CameraConstants *constants = reinterpret_cast<CameraConstants *>(cameraConstantBuffer->mappedPtr);
 
+    uint32_t flags = 0;
+    if (currentVisCamera->projectionOrthogonal) {
+        flags |= ShaderCameraFlagProjectionOrthogonal;
+    }
+    if (r_lightCullingZBin.GetBool()) {
+        flags |= ShaderCameraFlagUseLightZBin;
+    }
+
     ALIGN_AS32 BE1::Mat4 unjitteredViewProjMatrix = currentVisCamera->viewProjMatrix;
     ALIGN_AS32 BE1::Mat4 prevUnjitteredViewProjMatrix = currentVisCamera->prevViewProjMatrix;
 
@@ -176,18 +215,18 @@ bool RenderBackend::UploadCameraConstants() {
     constants->ndcFarZ = currentVisCamera->projectionPolicy.GetNDCFarZ();
     constants->projectionDepthA = currentVisCamera->projectionDepthA;
     constants->projectionDepthB = currentVisCamera->projectionDepthB;
-    constants->projectionOrthogonal = currentVisCamera->projectionOrthogonal ? 1u : 0u;
+    constants->flags = flags;
     constants->numLights = currentVisCamera->numVisLights;
-    constants->lightRefOffset = currentVisCamera->shaderLightRefOffset;
-    constants->lightZBinOffset = currentVisCamera->shaderLightZBinOffset;
-    constants->lightZBinScale = currentVisCamera->lightZBinScale;
-    constants->lightZBinBias = currentVisCamera->lightZBinBias;
-    constants->lightTileMaskOffset = currentVisCamera->shaderLightTileMaskOffset;
-    constants->lightTileCountX = currentVisCamera->lightTileCountX;
-    constants->lightTileCountY = currentVisCamera->lightTileCountY;
-    constants->lightMaskWordCount = currentVisCamera->lightMaskWordCount;
+    constants->lightCullingLightRefTableOffset = currentVisCamera->lightCulling.lightRefTableOffset;
+    constants->lightCullingTileMaskWordTableOffset = currentVisCamera->lightCulling.tileMaskWordTableOffset;
+    constants->lightCullingZBinTableOffset = currentVisCamera->lightCulling.zBinTableOffset;
+    constants->lightCullingZBinScale = currentVisCamera->lightCulling.zBinScale;
+    constants->lightCullingZBinBias = currentVisCamera->lightCulling.zBinBias;
+    constants->lightCullingTileCountX = currentVisCamera->lightCulling.tileCountX;
+    constants->lightCullingTileCountY = currentVisCamera->lightCulling.tileCountY;
+    constants->lightCullingWordCountPerTile = currentVisCamera->lightCulling.wordCountPerTile;
+    constants->lightCullingDebugMode = static_cast<uint32_t>(r_lightCullingDebug.GetInteger());
     constants->padding0 = 0;
-    constants->padding1 = 0;
 
     return true;
 }
@@ -266,7 +305,7 @@ const void *RenderBackend::ExecuteBeginContext(const void *data) {
     }
 
     // 각 카메라의 visible light 화면 영역을 tile 단위 flat bit mask 로 변환한다.
-    if (!frameData->DispatchLightCulling(frameData->GetThreadData(0), mainCommandList, frameLightCullingPSO)) {
+    if (!DispatchLightCulling()) {
         BE_WARNLOG("RenderBackend::ExecuteBeginContext: failed to build shader light tile masks\n");
         mainCommandList->CloseAndExecute();
         return (const void *)(cmd + 1);
@@ -631,7 +670,7 @@ const void *RenderBackend::ExecuteSwapBuffers(const void *data) {
     gpuTiming.SetFrameFence(fenceValue);
 
     if (frameData->IsStatEnabled()) {
-        currentContext->SetRenderStats(frameData->GetStatRenderObjectCount(), frameData->GetStatVisibleObjectCount(), statDrawCount, statDrawTriangleCount, statInstanceTableAllocCount, statInstanceTableUploadBytes);
+        UpdateFrameStats();
     }
 
 #ifdef USE_MIPMAP_STREAMING
@@ -795,6 +834,12 @@ void RenderBackend::DrawGuiPass(const RenderPass *renderPass) {
     GpuTiming::ScopedTimer gpuScope(gpuTiming, mainCommandList, GpuTiming::Tag::GuiPass);
 
     DrawGenericSurfacesWithoutTask(renderPass->drawSurfs, numDrawSurfs);
+}
+
+bool RenderBackend::DispatchLightCulling() {
+    GpuTiming::ScopedTimer gpuScope(gpuTiming, mainCommandList, GpuTiming::Tag::LightCulling);
+
+    return frameData->DispatchLightCulling(frameData->GetThreadData(0), mainCommandList, frameLightCullingPSO);
 }
 
 static bool CanBatchSurfaceInstances(const RenderPassDrawSurf *baseDrawSurf, const RenderPassDrawSurf *drawSurf) {

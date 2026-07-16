@@ -344,19 +344,22 @@ void RenderWorld::RenderScene(RenderCamera *renderCamera) {
 void RenderWorld::DrawCamera(RenderFrameData *frameData, const RenderCamera *renderCamera, VisCamera *visCamera) {
     PROFILER_CPU_SCOPED_EVENT("RenderWorld::DrawCamera");
 
-    // 보이는 RenderLight 들로 프레임 데이터에 VisLight 들을 등록한다.
+    // RenderLight 중에서 컬링한 라이트를 프레임 데이터에 VisLight 로 등록한다.
     FindVisLights(frameData, renderCamera, visCamera);
 
-    // 보이는 RenderObject 들로 프레임 데이터에 VisObject 들을 등록한다.
+    // visibleLights 들로 GPU light culling 데이터를 구성한다.
+    BuildLightCullingData(frameData, renderCamera, visCamera);
+
+    // RenderObject 중에서 컬링한 오브젝트를 프레임 데이터에 VisObject 로 등록한다.
     FindVisObjects(frameData, renderCamera, visCamera);
 
-    // 보이는 VisObject 에서 mesh surface 들을 visCamera->visSurfs 에 추가한다.
+    // visObjects 중에서 mesh surface 들을 visCamera->visSurfs 에 추가한다.
     AddMeshes(frameData, renderCamera, visCamera);
 
-    // 보이는 visObjects 중에 raw mesh 를 visCamera->visSurfs 에 추가한다.
+    // visObjects 중에서 raw mesh 를 visCamera->visSurfs 에 추가한다.
     //AddRawMeshes(frameData, renderCamera, visCamera);
 
-    // 보이는 visObjects 중에 text mesh 를 visCamera->visSurfs 에 추가한다.
+    // visObjects 중에서 text mesh 를 visCamera->visSurfs 에 추가한다.
     AddTextMeshes(frameData, renderCamera, visCamera);
 
     // Add drawing surface of skybox.
@@ -384,9 +387,17 @@ VisLight *RenderWorld::RegisterVisLight(RenderFrameData *frameData, RenderLight 
     }
     renderLight->viewCount = viewCount;
 
-    visLight->viewProjScaleBiasMatrix = renderLight->viewProjScaleBiasMatrix;
-    visLight->fallOffMatrix = renderLight->fallOffMatrix;
-    visLight->axis = renderLight->desc.axis;
+    if (renderLight->desc.type == RenderLight::Type::Point) {
+        visLight->viewProjScaleBiasMatrix[0] = renderLight->viewProjScaleBiasMatrix[0];
+        visLight->viewProjScaleBiasMatrix[1] = renderLight->viewProjScaleBiasMatrix[1];
+    } else if (renderLight->desc.type == RenderLight::Type::Spot) {
+        visLight->viewProjScaleBiasMatrix = renderLight->viewProjScaleBiasMatrix;
+        visLight->fallOffMatrix = renderLight->fallOffMatrix;
+        visLight->axis = renderLight->desc.axis;
+    } else if (renderLight->desc.type == RenderLight::Type::BoxDir) {
+        visLight->viewProjScaleBiasMatrix = renderLight->viewProjScaleBiasMatrix;
+        visLight->axis = renderLight->desc.axis;
+    }
     visLight->origin = renderLight->desc.origin;
     visLight->size = renderLight->desc.size;
     visLight->lightColor = renderLight->desc.linearColor * renderLight->desc.intensity;
@@ -409,7 +420,7 @@ void RenderWorld::FindVisLights(RenderFrameData *frameData, const RenderCamera *
     const float viewZOffset = -viewZAxis.Dot(cameraDesc.origin);
 
     // 현재 카메라의 visible light 참조가 시작되는 프레임 공용 ShaderLightRef 테이블의 오프셋을 기록한다.
-    visCamera->shaderLightRefOffset = frameData->NumVisLights();
+    visCamera->lightCulling.lightRefTableOffset = frameData->NumVisLights();
 
     // RenderWorld 에 등록된 renderLights 개수만큼 미리 visCamera->visLights 를 할당
     visCamera->maxVisLights = static_cast<uint32_t>(renderLights.Count());
@@ -452,38 +463,106 @@ void RenderWorld::FindVisLights(RenderFrameData *frameData, const RenderCamera *
             continue;
         }
 
-        visLight->screenClipRect = screenClipRect;
         visLight->viewZMin = viewZMin;
         visLight->viewZMax = viewZMax;
 
-        assert(visCamera->numVisLights < visCamera->maxVisLights);
+        ComputeLightTileRange(visCamera, screenClipRect, visLight->packedTileMin, visLight->packedTileMax);
+
         visCamera->visLights[visCamera->numVisLights++] = visLight;
 
         renderLight->visibleFrameIndex = renderWorldFrameIndex;
     }
+}
 
-    // 현재 카메라의 visible lights 를 z 에 따라 정렬하고, z-bins 를 작성한다.
-    BuildLightZBins(frameData, cameraDesc, visCamera);
+static BE_INLINE uint32_t PackLightTileCoord(uint32_t x, uint32_t y) {
+    assert(x <= ShaderLightTileCoordMask);
+    assert(y <= ShaderLightTileCoordMask);
+    return x | (y << ShaderLightTileCoordBitCount);
+}
 
-    if (visCamera->lightZBins) {
-        // 현재 카메라의 Z-bin 이 시작되는 프레임 공용 light Z-bin 테이블 오프셋을 예약한다.
-        visCamera->shaderLightZBinOffset = frameData->ReserveLightZBins();
+void RenderWorld::ComputeLightTileRange(const VisCamera *visCamera, const BE1::Rect &screenClipRect, uint32_t &packedTileMin, uint32_t &packedTileMax) {
+    if (visCamera->outputRect.w <= 0 || visCamera->outputRect.h <= 0 || visCamera->renderWidth == 0 || visCamera->renderHeight == 0) {
+        assert(0);
+        packedTileMin = 0;
+        packedTileMax = 0;
+        return;
+    }
+
+    const int64_t outputMinX = visCamera->outputRect.x;
+    const int64_t outputMinY = visCamera->outputRect.y;
+    const int64_t outputMaxX = outputMinX + visCamera->outputRect.w;
+    const int64_t outputMaxY = outputMinY + visCamera->outputRect.h;
+
+    int64_t clipMinX = screenClipRect.x;
+    int64_t clipMinY = screenClipRect.y;
+    int64_t clipMaxX = static_cast<int64_t>(screenClipRect.x) + screenClipRect.w;
+    int64_t clipMaxY = static_cast<int64_t>(screenClipRect.y) + screenClipRect.h;
+
+    // 1 픽셀보다 작은 투영 영역은 정수 Rect 에서 크기가 0 이 될 수 있으므로 최소 한 픽셀을 보수적으로 포함한다.
+    if (clipMinX >= clipMaxX && screenClipRect.w == 0) {
+        clipMinX = std::min(std::max<int64_t>(screenClipRect.x, outputMinX), outputMaxX - 1);
+        clipMaxX = clipMinX + 1;
+    }
+    if (clipMinY >= clipMaxY && screenClipRect.h == 0) {
+        clipMinY = std::min(std::max<int64_t>(screenClipRect.y, outputMinY), outputMaxY - 1);
+        clipMaxY = clipMinY + 1;
+    }
+
+    if (clipMinX >= clipMaxX || clipMinY >= clipMaxY) {
+        assert(0);
+        packedTileMin = 0;
+        packedTileMax = 0;
+        return;
+    }
+
+    const uint64_t outputWidth = static_cast<uint64_t>(visCamera->outputRect.w);
+    const uint64_t outputHeight = static_cast<uint64_t>(visCamera->outputRect.h);
+    const uint64_t renderWidth = visCamera->renderWidth;
+    const uint64_t renderHeight = visCamera->renderHeight;
+
+    // screenClipRect 는 outputRect 좌표계이므로, 동적 해상도를 반영한 렌더 타겟 좌표계로 변환한다.
+    const uint64_t renderMinX = static_cast<uint64_t>(clipMinX - outputMinX) * renderWidth / outputWidth;
+    const uint64_t renderMinY = static_cast<uint64_t>(clipMinY - outputMinY) * renderHeight / outputHeight;
+    const uint64_t renderMaxX = (static_cast<uint64_t>(clipMaxX - outputMinX) * renderWidth + outputWidth - 1) / outputWidth;
+    const uint64_t renderMaxY = (static_cast<uint64_t>(clipMaxY - outputMinY) * renderHeight + outputHeight - 1) / outputHeight;
+
+    // 렌더 타겟 좌표계 기준으로 타일 좌표 (MinX, MinY, MaxX, MaxY) 를 구한다.
+    const uint32_t tileMinX = static_cast<uint32_t>(renderMinX / ShaderLightTileSize);
+    const uint32_t tileMinY = static_cast<uint32_t>(renderMinY / ShaderLightTileSize);
+    const uint32_t tileMaxX = static_cast<uint32_t>((renderMaxX - 1) / ShaderLightTileSize);
+    const uint32_t tileMaxY = static_cast<uint32_t>((renderMaxY - 1) / ShaderLightTileSize);
+
+    packedTileMin = PackLightTileCoord(tileMinX, tileMinY);
+    packedTileMax = PackLightTileCoord(tileMaxX, tileMaxY);
+}
+
+void RenderWorld::BuildLightCullingData(RenderFrameData *frameData, const RenderCamera *renderCamera, VisCamera *visCamera) {
+    PROFILER_CPU_SCOPED_EVENT("RenderWorld::BuildLightCullingData");
+
+    // 현재 카메라의 visible lights 를 minmax z 에 따라 정렬하고, z-bins 를 작성한다.
+    BuildLightZBins(frameData, renderCamera->GetDesc(), visCamera);
+
+    if (visCamera->lightCulling.zBins) {
+        // 현재 카메라의 Z-bin 이 시작되는 프레임 공용 light Z-bin 테이블을 예약한다.
+        visCamera->lightCulling.zBinTableOffset = frameData->ReserveLightZBins();
     }
 
     if (visCamera->numVisLights > 0) {
         assert(visCamera->renderWidth > 0 && visCamera->renderHeight > 0);
 
-        // 렌더링 화면에 필요한 타일 개수와 타일 별 필요한 비트 마스크 워드의 개수를 구한다.
-        visCamera->lightTileCountX = (visCamera->renderWidth + ShaderLightTileSize - 1) / ShaderLightTileSize;
-        visCamera->lightTileCountY = (visCamera->renderHeight + ShaderLightTileSize - 1) / ShaderLightTileSize;
-        visCamera->lightMaskWordCount = (visCamera->numVisLights + ShaderLightMaskWordBits - 1) / ShaderLightMaskWordBits;
+        // 렌더링 화면에 필요한 타일 개수
+        visCamera->lightCulling.tileCountX = (visCamera->renderWidth + ShaderLightTileSize - 1) / ShaderLightTileSize;
+        visCamera->lightCulling.tileCountY = (visCamera->renderHeight + ShaderLightTileSize - 1) / ShaderLightTileSize;
 
-        // 전체 타일에 필요한 비트 마스크 워드의 개수를 구한다.
-        const uint64_t lightTileMaskCount = static_cast<uint64_t>(visCamera->lightTileCountX) * visCamera->lightTileCountY * visCamera->lightMaskWordCount;
+        // 각 타일이 필요한 비트 마스크 워드의 개수
+        visCamera->lightCulling.wordCountPerTile = (visCamera->numVisLights + ShaderLightMaskWordBits - 1) / ShaderLightMaskWordBits;
 
-        if (lightTileMaskCount <= UINT32_MAX) {
-            // 현재 카메라의 타일 마스크 워드가 시작되는 프레임 공용 테이블 오프셋을 예약한다.
-            visCamera->shaderLightTileMaskOffset = frameData->ReserveLightTileMasks(static_cast<uint32_t>(lightTileMaskCount));
+        // 전체 타일에 필요한 비트 마스크 워드의 개수
+        const uint64_t lightTileMaskWordCount = static_cast<uint64_t>(visCamera->lightCulling.tileCountX) * visCamera->lightCulling.tileCountY * visCamera->lightCulling.wordCountPerTile;
+
+        if (lightTileMaskWordCount <= UINT32_MAX) {
+            // 현재 카메라의 타일 마스크 워드가 시작되는 프레임 공용 테이블을 예약한다.
+            visCamera->lightCulling.tileMaskWordTableOffset = frameData->ReserveLightTileMaskWords(static_cast<uint32_t>(lightTileMaskWordCount));
         }
     }
 }
@@ -522,7 +601,7 @@ void RenderWorld::BuildLightZBins(RenderFrameData *frameData, const RenderCamera
     }
 
     // Z-bin light index 는 16 비트로 패킹된다. 오버플로가 발생하면 라이트를 누락하지 않고 GPU 경로에서
-    // 폴백할 수 있도록 정렬된 라이트 목록은 유지하고 lightZBins 는 null 로 둔다.
+    // 폴백할 수 있도록 정렬된 라이트 목록은 유지하고 lightCulling.zBins 는 nullptr 로 둔다.
     if (numVisLights > ShaderLightZBinMaxLightCount) {
         return;
     }
@@ -535,9 +614,9 @@ void RenderWorld::BuildLightZBins(RenderFrameData *frameData, const RenderCamera
     const float zBinSize = viewZRange / static_cast<float>(ShaderLightZBinCount);
 
     // linear view Z 를 Z-bin index 로 변환하기 위한 scale 과 bias 를 미리 계산한다.
-    visCamera->lightZBinScale = static_cast<float>(ShaderLightZBinCount) / viewZRange;
-    visCamera->lightZBinBias = -cameraDesc.zNear * visCamera->lightZBinScale;
-    visCamera->lightZBins = (uint32_t *)frameData->MemAlloc(ShaderLightZBinCount * sizeof(visCamera->lightZBins[0]));
+    visCamera->lightCulling.zBinScale = static_cast<float>(ShaderLightZBinCount) / viewZRange;
+    visCamera->lightCulling.zBinBias = -cameraDesc.zNear * visCamera->lightCulling.zBinScale;
+    visCamera->lightCulling.zBins = (uint32_t *)frameData->MemAlloc(ShaderLightZBinCount * sizeof(visCamera->lightCulling.zBins[0]));
 
     uint32_t startLightIndex = 0;
     uint32_t endLightIndex = 0;
@@ -555,9 +634,9 @@ void RenderWorld::BuildLightZBins(RenderFrameData *frameData, const RenderCamera
         }
 
         if (startLightIndex < endLightIndex) {
-            visCamera->lightZBins[zBinIndex] = PackLightZBin(startLightIndex, endLightIndex - 1);
+            visCamera->lightCulling.zBins[zBinIndex] = PackLightZBin(startLightIndex, endLightIndex - 1);
         } else {
-            visCamera->lightZBins[zBinIndex] = ShaderLightZBinEmpty;
+            visCamera->lightCulling.zBins[zBinIndex] = ShaderLightZBinEmpty;
         }
     }
 }
@@ -658,8 +737,6 @@ void RenderWorld::FindVisObjects(RenderFrameData *frameData, const RenderCamera 
 
         visCamera->worldAABB.AddAABB(renderObject->worldAABB);
     }
-
-    frameData->AddObjectStats(static_cast<uint32_t>(renderObjects.Count()), frameData->NumVisObjects() - startVisibleObjectCount);
 }
 
 void RenderWorld::UpdateSkinningJointCaches(RenderFrameData *frameData, VisObject *firstVisObject, uint32_t numVisObjects, uint32_t numSkinningJoints) {

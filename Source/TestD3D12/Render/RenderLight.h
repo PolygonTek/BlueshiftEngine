@@ -46,7 +46,7 @@ public:
 
         BE1::Vec3                   origin = BE1::Vec3::origin;         ///< Light position in world space
         BE1::Mat3                   axis = BE1::Mat3::identity;         ///< Light orientation
-        BE1::Vec3                   size = BE1::Vec3::one;              ///< Light extents for each axis
+        BE1::Vec3                   size = BE1::Vec3::one;              ///< Point: size[0] is radius. Spot/BoxDir: shape extents
 
         float                       zNear = 1.0f;                       ///< Near distance for spot light
         RHI::ProjectionPolicy       projectionPolicy;                   ///< projection convention used for shader-visible matrices
@@ -73,14 +73,8 @@ public:
                                     /// Returns extent for each axis.
     const BE1::Vec3 &               GetExtents() const { return desc.size; }
 
-                                    /// Returns radius for each axis. Valid only for point light.
-    const BE1::Vec3 &               GetRadius() const { return desc.size; }
-
-                                    /// Returns maximum radius of each axis. Valid only for point light.
-    const float                     GetMajorRadius() const { return BE1::Max3(desc.size.x, desc.size.y, desc.size.z); }
-
-                                    /// Is the radius the same for each axis? Valid only for point light.
-    bool                            IsRadiusUniform() const { return (desc.size.x == desc.size.y && desc.size.x == desc.size.z) ? true : false; }
+                                    /// Returns radius. Valid only for point light.
+    float                           GetRadius() const { return desc.size[0]; }
 
                                     /// Returns AABB in world space.
     const BE1::AABB &               GetWorldAABB() const { return worldAABB; }
@@ -115,7 +109,8 @@ private:
 
     Desc                            desc;
 
-    BE1::OBB                        worldOBB;                       // bounding volume for point/box-dir light
+    BE1::Sphere                     worldSphere;                    // bounding volume for point light
+    BE1::OBB                        worldOBB;                       // bounding volume for box-dir light
     BE1::Frustum                    worldFrustum;                   // bounding volume for spot light
     BE1::AABB                       worldAABB = BE1::AABB::empty;
 

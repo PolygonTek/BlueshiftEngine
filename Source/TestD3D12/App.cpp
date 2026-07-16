@@ -460,21 +460,26 @@ void App::RenderGUI() {
         const float statRenderFrontendMsec = statRenderFrontendAverageMsec;
         const float statRenderBackendMsec = renderSystem->GetBackend()->GetStatRenderAverageMsec();
         const float statGpuMsec = mainRenderContext->GetStatGpuAverageMsec();
-        const uint32_t statRenderObjectCount = mainRenderContext->GetStatRenderObjectCount();
-        const uint32_t statVisibleObjectCount = mainRenderContext->GetStatVisibleObjectCount();
-        const uint32_t statDrawCount = mainRenderContext->GetStatDrawCount();
-        const uint64_t statDrawTriangleCount = mainRenderContext->GetStatDrawTriangleCount();
-        const uint32_t statInstanceTableAllocCount = mainRenderContext->GetStatInstanceTableAllocCount();
-        const uint32_t statInstanceTableUploadBytes = mainRenderContext->GetStatInstanceTableUploadBytes();
+
+        const RenderContext::Stats renderStats = mainRenderContext->GetStats();
+
+        const uint64_t statLightCullingZBinBytes = static_cast<uint64_t>(renderStats.lightCullingZBinCount) * sizeof(uint32_t);
+        const uint64_t statLightCullingTileMaskBytes = static_cast<uint64_t>(renderStats.lightCullingTileMaskWordCount) * sizeof(uint32_t);
 
         mainRenderContext->DrawString(x, y, BE1::va("Frame: %.2f ms", statFrameAverageMsec), DrawTextFlag::Right | DrawTextFlag::AddOutlines); y += textLineHeight;
         mainRenderContext->DrawString(x, y, BE1::va("Game: %.2f ms", statGameAverageMsec), DrawTextFlag::Right | DrawTextFlag::AddOutlines); y += textLineHeight;
         mainRenderContext->DrawString(x, y, BE1::va("Render Frontend: %.2f ms", statRenderFrontendMsec), DrawTextFlag::Right | DrawTextFlag::AddOutlines); y += textLineHeight;
         mainRenderContext->DrawString(x, y, BE1::va("Render Backend: %.2f ms", statRenderBackendMsec), DrawTextFlag::Right | DrawTextFlag::AddOutlines); y += textLineHeight;
         mainRenderContext->DrawString(x, y, BE1::va("GPU: %.2f ms", statGpuMsec), DrawTextFlag::Right | DrawTextFlag::AddOutlines); y += textLineHeight;
-        mainRenderContext->DrawString(x, y, BE1::va("Objects: %u, Visible: %u", statRenderObjectCount, statVisibleObjectCount), DrawTextFlag::Right | DrawTextFlag::AddOutlines); y += textLineHeight;
-        mainRenderContext->DrawString(x, y, BE1::va("Draws: %u, Tris: %llu", statDrawCount, statDrawTriangleCount), DrawTextFlag::Right | DrawTextFlag::AddOutlines); y += textLineHeight;
-        mainRenderContext->DrawString(x, y, BE1::va("Instance Tables: %u, Upload: %s", statInstanceTableAllocCount, BE1::Str::FormatBytes(statInstanceTableUploadBytes).c_str()), DrawTextFlag::Right | DrawTextFlag::AddOutlines); y += textLineHeight;
+
+        mainRenderContext->DrawString(x, y, BE1::va("Objects: %u, Draws: %u, Tris: %llu", renderStats.visibleObjectCount, renderStats.drawCount, renderStats.drawTriangleCount), DrawTextFlag::Right | DrawTextFlag::AddOutlines); y += textLineHeight;
+        mainRenderContext->DrawString(x, y, BE1::va("Instance Tables: %u, Upload: %s", renderStats.instanceTableAllocCount, BE1::Str::FormatBytes(renderStats.instanceTableUploadBytes).c_str()), DrawTextFlag::Right | DrawTextFlag::AddOutlines); y += textLineHeight;
+
+        mainRenderContext->DrawString(x, y, BE1::va("Lights: %u (Point: %u, Spot: %u, BoxDir: %u)", renderStats.visibleLightCount, renderStats.visiblePointLightCount, renderStats.visibleSpotLightCount, renderStats.visibleBoxDirLightCount), DrawTextFlag::Right | DrawTextFlag::AddOutlines); y += textLineHeight;
+        mainRenderContext->DrawString(x, y, BE1::va("Light Culling Thread Groups: %llu", renderStats.lightCullingThreadGroupCount), DrawTextFlag::Right | DrawTextFlag::AddOutlines); y += textLineHeight;
+        mainRenderContext->DrawString(x, y, BE1::va("Light Culling Z-bins: %u, Memory: %s", renderStats.lightCullingZBinCount, BE1::Str::FormatBytes(statLightCullingZBinBytes).c_str()), DrawTextFlag::Right | DrawTextFlag::AddOutlines); y += textLineHeight;
+        mainRenderContext->DrawString(x, y, BE1::va("Light Culling Tile Masks: %u words, Memory: %s", renderStats.lightCullingTileMaskWordCount, BE1::Str::FormatBytes(statLightCullingTileMaskBytes).c_str()), DrawTextFlag::Right | DrawTextFlag::AddOutlines); y += textLineHeight;
+
         mainRenderContext->DrawString(x, y, BE1::va("Video Memory: %s / %s", BE1::Str::FormatBytes(videoMemUsageBytes).c_str(), BE1::Str::FormatBytes(videoMemBudgetBytes).c_str()), DrawTextFlag::Right | DrawTextFlag::AddOutlines); y += textLineHeight;
         mainRenderContext->DrawString(x, y, BE1::va("Mipmap Streaming: %s / %s", BE1::Str::FormatBytes(textureStreamingUsageBytes).c_str(), BE1::Str::FormatBytes(textureStreamingBudgetBytes).c_str()), DrawTextFlag::Right | DrawTextFlag::AddOutlines); y += textLineHeight;
     }

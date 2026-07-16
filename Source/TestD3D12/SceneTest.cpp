@@ -86,7 +86,7 @@ void SceneTest::InitGameObjects(uint32_t countX, uint32_t countY, uint32_t count
 
     testMesh = meshManager.GetMesh("_defaultBoxMesh");
 
-    static constexpr const char *TextureFilenames[] = {
+    static constexpr const char *textureFilenames[] = {
         "Data/Test/Brick_Wall_Worn.dds",
         "Data/Test/Construction_Gravel.dds",
         "Data/Test/Dry_Cracked_Mud.dds",
@@ -116,7 +116,7 @@ void SceneTest::InitGameObjects(uint32_t countX, uint32_t countY, uint32_t count
                 desc.meshInstance = testMesh->GetStaticInstance();
                 desc.aabb = testMesh->GetAABB();
                 desc.materials.SetCount(1);
-                desc.materials[0] = materialManager.GetSingleTextureMaterial(TextureFilenames[BE1::Math::RandomRange(0, COUNT_OF(TextureFilenames) - 1)]);
+                desc.materials[0] = materialManager.GetSingleTextureMaterial(textureFilenames[BE1::Math::RandomRange(0, COUNT_OF(textureFilenames) - 1)]);
 
                 gameObject->renderObjectHandle = renderWorld->AddRenderObject(desc);
             }
@@ -152,18 +152,16 @@ void SceneTest::InitGameLights(uint32_t countX, uint32_t countY, uint32_t countZ
     const uint32_t lightCount = lightCountX * lightCountY * lightCountZ;
     gameLights.Reserve(lightCount);
 
-    constexpr float spacing = 16.0f;
-    constexpr float radius = 12.0f;
-    constexpr float jitterRange = spacing * 0.35f;
-    constexpr float minColorTemperature = 2200.0f;
-    constexpr float maxColorTemperature = 8000.0f;
-    constexpr float miredScale = 1000000.0f;
-    constexpr float minMired = miredScale / maxColorTemperature;
-    constexpr float maxMired = miredScale / minColorTemperature;
+    const float spacingX = ((float)objectCountX / lightCountX) * 4.0f;
+    const float spacingY = ((float)objectCountY / lightCountY) * 4.0f;
+    const float spacingZ = ((float)objectCountZ / lightCountZ) * 4.0f;
+    constexpr float radius = 10.0f;
+    constexpr float minLightIntensity = 1.0f;
+    constexpr float maxLightIntensity = 5.0f;
 
-    const float startX = -spacing * (lightCountX - 1) * 0.5f;
-    const float startY = -spacing * (lightCountY - 1) * 0.5f;
-    const float startZ = -spacing * (lightCountZ - 1) * 0.5f;
+    const float startX = -spacingX * (lightCountX - 1) * 0.5f;
+    const float startY = -spacingY * (lightCountY - 1) * 0.5f;
+    const float startZ = -spacingZ * (lightCountZ - 1) * 0.5f;
 
     BE1::RNG rng(1);
 
@@ -175,23 +173,17 @@ void SceneTest::InitGameLights(uint32_t countX, uint32_t countY, uint32_t countZ
                 desc.type = RenderLight::Type::Point;
                 desc.flags = RenderLight::Flag::None;
                 desc.origin.Set(
-                    startX + spacing * x + rng.GetNextFloat(-jitterRange, jitterRange),
-                    startY + spacing * y + rng.GetNextFloat(-jitterRange, jitterRange),
-                    startZ + spacing * z + rng.GetNextFloat(-jitterRange, jitterRange));
+                    startX + spacingX * x,
+                    startY + spacingY * y,
+                    startZ + spacingZ * z + 2.0f);
                 gameLight.baseOriginZ = desc.origin.z;
-                desc.size.Set(radius, radius, radius);
+                desc.size[0] = radius;
                 desc.projectionPolicy = RHI::renderer->GetProjectionPolicy();
 
-                // Reciprocal color-temperature sampling distributes the visible warm/cool variation more evenly.
-                const float mired = rng.GetNextFloat(minMired, maxMired);
-                const float colorTemperature = miredScale / mired;
-                const BE1::Color3 color = BE1::Color3::FromColorTemperature(colorTemperature);
-                const float colorScale = BE1::Max3(color.r, color.g, color.b);
-                const float baseIntensity = rng.GetNextFloat(1.0f, 5.0f);
-                assert(colorScale > 0.0f);
-
-                desc.linearColor = color / colorScale;
-                desc.intensity = baseIntensity * colorScale;
+                // 밝기와 색상을 독립적으로 무작위 선택한다.
+                desc.intensity = rng.GetNextFloat(minLightIntensity, maxLightIntensity);
+                const float hue = rng.GetNextFloat();
+                desc.linearColor = BE1::Color3::FromHSL(hue, 1.0f, 0.5f).SRGBToLinear();
 
                 gameLight.renderLightHandle = renderWorld->AddRenderLight(desc);
             }
@@ -247,8 +239,8 @@ void SceneTest::AnimateGameObjects(uint64_t elapsedUsec) {
 void SceneTest::AnimateGameLights(uint64_t elapsedUsec) {
     const float elapsedSeconds = (float)MICRO2SEC((double)elapsedUsec);
 
-    constexpr float movementAmplitude = 4.0f;
-    constexpr float movementSpeed = 3.0f;
+    const float movementAmplitude = 4.0f;
+    constexpr float movementSpeed = 1.0f;
     constexpr float phaseStep = 0.37f;
 
     for (int index = 0; index < gameLights.Count(); ++index) {

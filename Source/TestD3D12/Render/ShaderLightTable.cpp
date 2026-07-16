@@ -186,15 +186,15 @@ void ShaderLightTable::DestroyBuffer(TableBuffer &tableBuffer) {
 }
 
 void ShaderLightTable::Build(const VisLight &visLight, ShaderPointLight &shaderLight) const {
-    BE1::simdProcessor->Memcpy(&shaderLight.fallOffMatrix, &visLight.fallOffMatrix, sizeof(shaderLight.fallOffMatrix));
+    BE1::simdProcessor->Memcpy(&shaderLight.worldToProjectionU, &visLight.viewProjScaleBiasMatrix[0], sizeof(shaderLight.worldToProjectionU) * 2);
 
+    const float invRadius = 1.0f / visLight.size[0];
     shaderLight.origin = float3(visLight.origin.x, visLight.origin.y, visLight.origin.z);
-    shaderLight.fallOffExponent = visLight.fallOffExponent;
-    shaderLight.size = float3(visLight.size.x, visLight.size.y, visLight.size.z);
-    shaderLight.flags = static_cast<uint32_t>(visLight.flags);
+    shaderLight.invRadiusSquared = invRadius * invRadius;
     shaderLight.lightColor = float3(visLight.lightColor.r, visLight.lightColor.g, visLight.lightColor.b);
-    shaderLight.padding0 = 0.0f;
-    shaderLight.screenClipRect = int4(visLight.screenClipRect.x, visLight.screenClipRect.y, visLight.screenClipRect.w, visLight.screenClipRect.h);
+    shaderLight.fallOffExponent = visLight.fallOffExponent;
+    shaderLight.flags = static_cast<uint32_t>(visLight.flags);
+    shaderLight.padding0 = float3(0.0f, 0.0f, 0.0f);
 }
 
 void ShaderLightTable::Build(const VisLight &visLight, ShaderSpotLight &shaderLight) const {
@@ -210,7 +210,6 @@ void ShaderLightTable::Build(const VisLight &visLight, ShaderSpotLight &shaderLi
     shaderLight.flags = static_cast<uint32_t>(visLight.flags);
     shaderLight.lightColor = float3(visLight.lightColor.r, visLight.lightColor.g, visLight.lightColor.b);
     shaderLight.padding0 = 0.0f;
-    shaderLight.screenClipRect = int4(visLight.screenClipRect.x, visLight.screenClipRect.y, visLight.screenClipRect.w, visLight.screenClipRect.h);
 }
 
 void ShaderLightTable::Build(const VisLight &visLight, ShaderBoxDirLight &shaderLight) const {
@@ -220,10 +219,9 @@ void ShaderLightTable::Build(const VisLight &visLight, ShaderBoxDirLight &shader
     shaderLight.origin = float3(visLight.origin.x, visLight.origin.y, visLight.origin.z);
     shaderLight.flags = static_cast<uint32_t>(visLight.flags);
     shaderLight.direction = float3(direction.x, direction.y, direction.z);
-    shaderLight.padding0 = 0.0f;
+    shaderLight.fallOffExponent = visLight.fallOffExponent;
     shaderLight.size = float3(visLight.size.x, visLight.size.y, visLight.size.z);
     shaderLight.padding1 = 0.0f;
     shaderLight.lightColor = float3(visLight.lightColor.r, visLight.lightColor.g, visLight.lightColor.b);
     shaderLight.padding2 = 0.0f;
-    shaderLight.screenClipRect = int4(visLight.screenClipRect.x, visLight.screenClipRect.y, visLight.screenClipRect.w, visLight.screenClipRect.h);
 }

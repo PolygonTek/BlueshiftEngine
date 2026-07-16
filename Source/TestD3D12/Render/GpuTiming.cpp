@@ -25,6 +25,7 @@ const char *GpuTiming::TagName(Tag tag) {
         "Sky Pass",
         "Transparent Pass",
         "GUI Pass",
+        "Light Culling",
         "Hi-Z Culling",
         "Gen Hi-Z",
         "Hi-Z Debug Preview",

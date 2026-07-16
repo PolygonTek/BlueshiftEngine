@@ -1,4 +1,7 @@
 #include "SurfaceDrawCommon.hlsli"
+#include "LightCullingCommon.hlsli"
+#include "LightCullingDebug.hlsli"
+#include "ForwardLighting.hlsli"
 
 #define COMMON_ROOT_SIGNATURE ROOT_SIGNATURE_GRAPHICS_ROOT_FLAGS \
     ROOT_SIGNATURE_BINDLESS_DESCRIPTOR_TABLES \
@@ -19,12 +22,11 @@ struct PSInput {
     float4 color : COLOR;
     float2 texCoord : TEXCOORD0;
     nointerpolation uint shaderMaterialIndex : TEXCOORD1;
+    float3 worldPosition : TEXCOORD2;
+    float3 worldNormal : TEXCOORD3;
 #ifdef OUTPUT_VELOCITY
-    float4 currentVelocityPosition : TEXCOORD2;
-    float4 prevVelocityPosition : TEXCOORD3;
-#endif
-#ifdef OUTPUT_NORMAL
-    float3 worldNormal : TEXCOORD4;
+    float4 currentVelocityPosition : TEXCOORD4;
+    float4 prevVelocityPosition : TEXCOORD5;
 #endif
 };
 
@@ -39,12 +41,11 @@ PSInput VSMain(VSInput input) {
     result.color = input.color;
     result.texCoord = input.texCoord;
     result.shaderMaterialIndex = shaderSurface.shaderMaterialIndex;
+    result.worldPosition = positionWS.xyz;
+    result.worldNormal = TransformSurfaceNormal(input.normal.xyz, shaderSurface.worldMatrix, (shaderSurface.flags & ShaderSurfaceFlagNonUniformScale) != 0);
 #ifdef OUTPUT_VELOCITY
     result.currentVelocityPosition = mul(cameraConstants.unjitteredViewProjMatrix, positionWS);
     result.prevVelocityPosition = CalcClipPosition(input.position, shaderSurface.prevWorldMatrix, cameraConstants.prevUnjitteredViewProjMatrix);
-#endif
-#ifdef OUTPUT_NORMAL
-    result.worldNormal = TransformSurfaceNormal(input.normal.xyz, shaderSurface.worldMatrix);
 #endif
 
     return result;
@@ -59,13 +60,23 @@ SurfacePSOutput PSMain(PSInput input) {
     }
 
     float4 textureColor = GetTexture2D(shaderMaterial.baseColorTextureIndex).Sample(linearWrapSampler, input.texCoord);
+    const float3 worldNormal = normalize(input.worldNormal);
+
     SurfacePSOutput result;
     result.color = textureColor * shaderMaterial.baseColorFactor * input.color;
 #ifdef OUTPUT_NORMAL
-    result.normal = EncodeOctahedralNormal(normalize(input.worldNormal));
+    result.normal = EncodeOctahedralNormal(worldNormal);
 #endif
 #ifdef OUTPUT_VELOCITY
     result.velocity = CalcVelocity(input.currentVelocityPosition, input.prevVelocityPosition);
 #endif
+
+    if (cameraConstants.lightCullingDebugMode != ShaderLightCullingDebugModeNone) {
+        result.color.rgb = VisualizeLightCulling((uint2)input.position.xy, input.position.z, cameraConstants.lightCullingDebugMode);
+        return result;
+    }
+
+    const float3 lighting = EvaluateLit((uint2)input.position.xy, input.position.z, input.worldPosition, worldNormal);
+    result.color.rgb *= lighting;
     return result;
 }

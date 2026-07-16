@@ -8,25 +8,26 @@ cbuffer ShaderLightCullingCB : register(b0) {
     ShaderLightCullingParams lightCullingParams;
 }
 
+// 라이트 index 로 2D 타일 범위를 나타내는 배열
 StructuredBuffer<ShaderLightRef> lightRefs : register(t0);
 
-// 타일 좌표와 light word 인덱스에 대응하는 word-local bit mask 배열
-RWBuffer<uint> lightTileMasks : register(u0);
+RWBuffer<uint> lightTileMaskWords : register(u0);
 
+// 각 2D 타일 별로 영향을 받는 라이트들의 index 를 tile mask words 테이블로 추려낸다.
 [RootSignature(COMMON_ROOT_SIGNATURE)]
 [numthreads(ShaderLightCullingThreadGroupSizeX, ShaderLightCullingThreadGroupSizeY, 1)]
 void CSMain(uint3 dispatchThreadId : SV_DispatchThreadID) {
     const uint2 tileCoord = dispatchThreadId.xy;
     const uint maskWordIndex = dispatchThreadId.z;
 
-    if (tileCoord.x >= lightCullingParams.lightTileCountX || tileCoord.y >= lightCullingParams.lightTileCountY) {
+    if (tileCoord.x >= lightCullingParams.tileCountX || tileCoord.y >= lightCullingParams.tileCountY) {
         return;
     }
 
     // 비트 마스크 워드 별 첫번째 라이트 인덱스
     const uint firstLightIndex = maskWordIndex << ShaderLightMaskWordShift;
 
-    uint lightMask = 0;
+    uint maskWord = 0;
 
     [unroll]
     for (uint bitIndex = 0; bitIndex < ShaderLightMaskWordBits; ++bitIndex) {
@@ -35,19 +36,19 @@ void CSMain(uint3 dispatchThreadId : SV_DispatchThreadID) {
             break;
         }
 
-        // 현재 라이트 참조
-        const ShaderLightRef lightRef = lightRefs[lightCullingParams.lightRefOffset + lightIndex];
+        // 현재 라이트의 타일 범위를 구한다.
+        const ShaderLightRef lightRef = lightRefs[lightCullingParams.lightRefTableOffset + lightIndex];
         const uint2 tileMin = uint2(lightRef.packedTileMin & ShaderLightTileCoordMask, lightRef.packedTileMin >> ShaderLightTileCoordBitCount);
         const uint2 tileMax = uint2(lightRef.packedTileMax & ShaderLightTileCoordMask, lightRef.packedTileMax >> ShaderLightTileCoordBitCount);
 
-        // 현재 2D 타일 안에 라이트가 들어와 있다면, 라이트 비트 마스크에 비트를 추가한다.
+        // 현재 타일 안에 라이트가 들어와 있다면, bitmask word 에 비트를 추가한다.
         if (tileCoord.x >= tileMin.x && tileCoord.y >= tileMin.y && tileCoord.x <= tileMax.x && tileCoord.y <= tileMax.y) {
-            lightMask |= 1u << bitIndex;
+            maskWord |= 1u << bitIndex;
         }
     }
 
-    // (tileCoord, maskWordIndex) -> tileMaskIndex
-    const uint tileIndex = lightCullingParams.lightTileCountX * tileCoord.y + tileCoord.x;
-    const uint tileMaskIndex = lightCullingParams.lightTileMaskOffset + tileIndex * lightCullingParams.lightMaskWordCount + maskWordIndex;
-    lightTileMasks[tileMaskIndex] = lightMask;
+    // (tileCoord, maskWordIndex) -> tileMaskWordIndex
+    const uint tileIndex = lightCullingParams.tileCountX * tileCoord.y + tileCoord.x;
+    const uint tileMaskWordIndex = lightCullingParams.tileMaskWordTableOffset + tileIndex * lightCullingParams.wordCountPerTile + maskWordIndex;
+    lightTileMaskWords[tileMaskWordIndex] = maskWord;
 }

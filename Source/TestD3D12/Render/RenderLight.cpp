@@ -18,6 +18,8 @@
 #include "RenderUtils.h"
 
 void RenderLight::Update(const RenderLight::Desc &src, Desc::UpdateFlag updateFlags) {
+    constexpr float MinLightSize = 0.01f;
+
     assert(src.type == desc.type || BE1::HasFlag(updateFlags, Desc::UpdateFlag::Shape));
     assert(src.linearColor.r >= 0.0f && src.linearColor.r <= 1.0f);
     assert(src.linearColor.g >= 0.0f && src.linearColor.g <= 1.0f);
@@ -45,6 +47,10 @@ void RenderLight::Update(const RenderLight::Desc &src, Desc::UpdateFlag updateFl
     if (BE1::HasFlag(updateFlags, Desc::UpdateFlag::Shape)) {
         desc.type = src.type;
         desc.size = src.size;
+        if (desc.type == Type::Point) {
+            const float radius = BE1::Max(desc.size[0], MinLightSize);
+            desc.size.Set(radius, radius, radius);
+        }
         desc.zNear = src.zNear;
     }
 
@@ -52,23 +58,18 @@ void RenderLight::Update(const RenderLight::Desc &src, Desc::UpdateFlag updateFl
         const bool zNegativeOneToOne = desc.projectionPolicy.IsZNegativeOneToOne();
         const bool reverseZ = desc.projectionPolicy.reverseZ;
 
-        constexpr float MinLightSize = 0.01f;
         const BE1::Vec3 effectiveSize(
             BE1::Max(desc.size[0], MinLightSize),
             BE1::Max(desc.size[1], MinLightSize),
             BE1::Max(desc.size[2], MinLightSize));
 
         if (desc.type == Type::Point) {
-            // Set bounding volume for point light.
-            worldOBB = BE1::OBB(desc.origin, effectiveSize, desc.axis);
+            // Point lights always use a spherical bounding volume and radial fall-off.
+            worldSphere = BE1::Sphere(desc.origin, effectiveSize[0]);
 
-            // Calculate point light orthogonal projection matrix.
-            projMatrix.SetOrthoRH(-effectiveSize[1], effectiveSize[1], -effectiveSize[2], effectiveSize[2], -effectiveSize[0], effectiveSize[0], zNegativeOneToOne, reverseZ);
-
-            // Calculate light fall-off matrix.
-            ALIGN_AS32 BE1::Mat4 fallOffProjMatrix;
-            fallOffProjMatrix.SetOrthoRH(-effectiveSize[1], effectiveSize[1], -effectiveSize[2], effectiveSize[2], -effectiveSize[0], effectiveSize[0], true, false);
-            fallOffMatrix = fallOffProjMatrix * viewMatrix;
+            // Project a planar texture through the spherical light volume along axis[0].
+            const float radius = effectiveSize[0];
+            projMatrix.SetOrthoRH(-radius, radius, -radius, radius, -radius, radius, zNegativeOneToOne, reverseZ);
         } else if (desc.type == Type::BoxDir) {
             // Set bounding volume for box-directional light.
             worldOBB = BE1::OBB(desc.origin + desc.axis[0] * effectiveSize[0] * 0.5f, BE1::Vec3(effectiveSize[0] * 0.5f, effectiveSize[1], effectiveSize[2]), desc.axis);
@@ -76,9 +77,6 @@ void RenderLight::Update(const RenderLight::Desc &src, Desc::UpdateFlag updateFl
             // Calculate box-directional light orthogonal projection matrix.
             const BE1::Vec3 &obbExtents = worldOBB.Extents();
             projMatrix.SetOrthoRH(-obbExtents[1], obbExtents[1], -obbExtents[2], obbExtents[2], 0, 2 * obbExtents[0], zNegativeOneToOne, reverseZ);
-
-            // No fall-off for box-directional light.
-            fallOffMatrix = BE1::Mat3x4(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
         } else if (desc.type == Type::Spot) {
             const float zNear = BE1::Max(desc.zNear, MinLightSize);
             const float zFar = BE1::Max(effectiveSize[0], zNear + MinLightSize);
@@ -114,7 +112,9 @@ void RenderLight::Update(const RenderLight::Desc &src, Desc::UpdateFlag updateFl
             BE1::Vec4(0.0f, 0.0f, 0.0f, 1.0f));
         viewProjScaleBiasMatrix = textureScaleBiasMatrix * projMatrix * viewMatrix;
 
-        if (desc.type == Type::Point || desc.type == Type::BoxDir) {
+        if (desc.type == Type::Point) {
+            worldAABB = worldSphere.ToAABB();
+        } else if (desc.type == Type::BoxDir) {
             worldAABB = worldOBB.ToAABB();
         } else if (desc.type == Type::Spot) {
             worldAABB = worldFrustum.ToOBB().ToAABB();
@@ -123,11 +123,12 @@ void RenderLight::Update(const RenderLight::Desc &src, Desc::UpdateFlag updateFl
 }
 
 bool RenderLight::IsIntersectAABB(const BE1::AABB &aabb) const {
-    if (desc.type == Type::BoxDir || desc.type == Type::Point) {
-        if (this->worldOBB.IsIntersectAABB(aabb)) {
-            return true;
-        }
-        return false;
+    if (desc.type == Type::Point) {
+        return worldSphere.IsIntersectAABB(aabb);
+    }
+
+    if (desc.type == Type::BoxDir) {
+        return worldOBB.IsIntersectAABB(aabb);
     }
 
     if (desc.type == Type::Spot) {
@@ -142,11 +143,12 @@ bool RenderLight::IsIntersectAABB(const BE1::AABB &aabb) const {
 }
 
 bool RenderLight::IsIntersectOBB(const BE1::OBB &obb) const {
-    if (desc.type == Type::BoxDir || desc.type == Type::Point) {
-        if (this->worldOBB.IsIntersectOBB(obb)) {
-            return true;
-        }
-        return false;
+    if (desc.type == Type::Point) {
+        return obb.IsIntersectSphere(worldSphere);
+    }
+
+    if (desc.type == Type::BoxDir) {
+        return worldOBB.IsIntersectOBB(obb);
     }
 
     if (desc.type == Type::Spot) {
@@ -172,13 +174,7 @@ void RenderLight::ProjectOnAxis(const BE1::Vec3 &axis, float &min, float &max) c
     }
 
     if (desc.type == Type::Point) {
-        const BE1::Vec3 &radius = worldOBB.Extents();
-        if (radius.x == radius.y && radius.x == radius.z) {
-            BE1::Sphere(desc.origin, radius.x).ProjectOnAxis(axis, min, max);
-            return;
-        }
-
-        worldOBB.ProjectOnAxis(axis, min, max);
+        worldSphere.ProjectOnAxis(axis, min, max);
         return;
     }
 
@@ -196,12 +192,7 @@ bool RenderLight::Cull(const RenderCamera &camera) const {
     }
 
     if (desc.type == Type::Point) {
-        const BE1::Vec3 &radius = worldOBB.Extents();
-        if (radius.x == radius.y && radius.x == radius.z) {
-            return camera.Cull(BE1::Sphere(desc.origin, radius.x));
-        }
-
-        return camera.Cull(worldOBB);
+        return camera.Cull(worldSphere);
     }
 
     assert(0);
@@ -218,12 +209,7 @@ bool RenderLight::ComputeScreenClipRect(const RenderCamera &camera, BE1::Rect &c
     }
 
     if (desc.type == Type::Point) {
-        const BE1::Vec3 &radius = worldOBB.Extents();
-        if (radius.x == radius.y && radius.x == radius.z) {
-            return camera.CalcClipRectFromSphere(BE1::Sphere(desc.origin, radius.x), clipRect);
-        }
-
-        return camera.CalcClipRectFromOBB(worldOBB, clipRect);
+        return camera.CalcClipRectFromSphere(worldSphere, clipRect);
     }
 
     assert(0);
