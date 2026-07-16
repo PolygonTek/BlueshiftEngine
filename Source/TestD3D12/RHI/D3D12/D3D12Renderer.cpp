@@ -127,7 +127,8 @@ void D3D12Renderer::Init(const void *mainWindowHandle) {
     BE1::PlatformWinUtils::UCS2ToUTF8(dxgiAdapterDesc.Description, temp, COUNT_OF(temp));
     adapterName = temp;
 
-    BE1::Str::Copynz(rendererInfo.name, adapterName.c_str(), COUNT_OF(rendererInfo.name));
+    rendererInfo.backendName = "DirectX 12";
+    BE1::Str::Copynz(rendererInfo.deviceName, adapterName.c_str(), COUNT_OF(rendererInfo.deviceName));
     rendererInfo.vendorId = vendorId;
     rendererInfo.deviceId = deviceId;
     rendererInfo.dedicatedVideoMemoryBytes = dedicatedVideoMemSize;

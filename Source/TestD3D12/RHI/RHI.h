@@ -516,7 +516,8 @@ namespace RHI {
     struct RendererInfo {
         static constexpr int            MaxNameLength = 128;
 
-        char                            name[MaxNameLength] = {};
+        const char *                    backendName = "Unknown";
+        char                            deviceName[MaxNameLength] = {};
         uint32_t                        vendorId = 0;
         uint32_t                        deviceId = 0;
         uint64_t                        dedicatedVideoMemoryBytes = 0;
@@ -1217,6 +1218,7 @@ namespace RHI {
     };
 
     extern Renderer *                   renderer;
+
     bool                                CreateRenderer(GraphicsAPI graphicsAPI = GraphicsAPI::Default);
     void                                DestroyRenderer();
 

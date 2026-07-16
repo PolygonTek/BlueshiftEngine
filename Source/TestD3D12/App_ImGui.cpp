@@ -1066,7 +1066,8 @@ void App::BuildImGuiOverlay() {
             if (RHI::renderer) {
                 const RHI::RendererInfo &rendererInfo = RHI::renderer->GetRendererInfo();
 
-                ImGui::Text("GPU Adapter: %s", rendererInfo.name);
+                ImGui::Text("RHI Backend: %s", rendererInfo.backendName);
+                ImGui::Text("GPU Adapter: %s", rendererInfo.deviceName);
                 ImGui::Text("Vendor ID: 0x%04X", rendererInfo.vendorId);
                 ImGui::Text("Device ID: 0x%04X", rendererInfo.deviceId);
                 ImGui::Separator();
