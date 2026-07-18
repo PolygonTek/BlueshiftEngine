@@ -898,6 +898,12 @@ void App::BuildImGuiOverlay() {
                     }
 
                     if (convolutionBloomKernelSource == static_cast<int>(App::ConvolutionBloomKernelSource::GenerateFromAperture)) {
+                        float convolutionBloomApertureScale = r_convolutionBloomApertureScale.GetFloat();
+                        ImGui::SetNextItemWidth(fontSize * 12.0f);
+                        if (ImGui::SliderFloat("Bloom aperture scale", &convolutionBloomApertureScale, 0.02f, 1.0f, "%.3f")) {
+                            r_convolutionBloomApertureScale.SetFloat(BE1::Min(BE1::Max(convolutionBloomApertureScale, 0.02f), 1.0f));
+                        }
+
                         float convolutionBloomDiffractionPSFScale = r_convolutionBloomDiffractionPSFScale.GetFloat();
                         ImGui::SetNextItemWidth(fontSize * 12.0f);
                         if (ImGui::SliderFloat("Bloom diffraction PSF scale", &convolutionBloomDiffractionPSFScale, 0.0f, 100.0f, "%.3f")) {

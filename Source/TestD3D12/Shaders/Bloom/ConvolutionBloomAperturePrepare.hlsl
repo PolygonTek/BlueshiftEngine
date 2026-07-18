@@ -23,11 +23,18 @@ void CSMain(uint3 dispatchThreadId : SV_DispatchThreadID) {
         return;
     }
 
-    float2 uv = (float2(outputCoord) + 0.5) * bloomParams.outputTexelSize;
-    float4 apertureSample = apertureSourceTexture.SampleLevel(linearClampSampler, uv, 0);
+    float2 outputUv = (float2(outputCoord) + 0.5) * bloomParams.outputTexelSize;
+    float apertureScale = max(BP_BLOOM_APERTURE_SCALE, 0.0001);
+    float2 apertureUv = (outputUv - 0.5) / apertureScale + 0.5;
 
-    // grayscale 로 바꿔서 complex 버퍼에 저장한다.
-    float aperture = GetLuma(max(apertureSample.rgb, float3(0.0, 0.0, 0.0))) * saturate(apertureSample.a);
+    // FFT 영역 중앙에 축소된 aperture 를 배치하고 그 바깥은 0 으로 채운다.
+    float aperture = 0.0;
+    if (all(apertureUv >= 0.0) && all(apertureUv <= 1.0)) {
+        float4 apertureSample = apertureSourceTexture.SampleLevel(linearClampSampler, apertureUv, 0);
+
+        // grayscale 로 바꿔서 complex 버퍼에 저장한다.
+        aperture = GetLuma(max(apertureSample.rgb, float3(0.0, 0.0, 0.0))) * saturate(apertureSample.a);
+    }
 
     uint outputIndex = outputCoord.y * bloomParams.outputSize.x + outputCoord.x;
     apertureSpatialBuffer[outputIndex] = float2(aperture, 0.0);

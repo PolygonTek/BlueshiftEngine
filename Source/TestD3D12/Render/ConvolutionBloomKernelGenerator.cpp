@@ -39,6 +39,16 @@ void ConvolutionBloomKernelGenerator::SetApertureTexture(const SharedPtr<Texture
     kernelDirty = true;
 }
 
+void ConvolutionBloomKernelGenerator::SetApertureScale(float scale) {
+    scale = BE1::Min(BE1::Max(scale, 0.02f), 1.0f);
+    if (apertureScale == scale) {
+        return;
+    }
+
+    apertureScale = scale;
+    kernelDirty = true;
+}
+
 void ConvolutionBloomKernelGenerator::SetDiffractionPSFScale(float scale) {
     scale = BE1::Max(scale, 0.0f);
     if (diffractionPSFScale == scale) {
@@ -313,6 +323,7 @@ bool ConvolutionBloomKernelGenerator::DispatchAperturePrepare(RHI::CommandList *
     bloomParams.outputSize = uint2(outputW, outputH);
     bloomParams.inputTexelSize = float2(1.0f / inputW, 1.0f / inputH);
     bloomParams.outputTexelSize = float2(1.0f / outputW, 1.0f / outputH);
+    bloomParams.params0 = float4(apertureScale, 0.0f, 0.0f, 0.0f);
 
     RHI::ConstantBuffer *bloomConstantBuffer = frameData->GetThreadData(0)->AllocConstant(sizeof(BloomParams), &bloomParams);
     if (!bloomConstantBuffer) {

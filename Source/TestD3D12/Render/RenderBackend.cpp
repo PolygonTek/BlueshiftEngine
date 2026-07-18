@@ -632,6 +632,7 @@ const void *RenderBackend::ExecuteGenerateConvolutionBloomKernel(const void *dat
     const GenerateConvolutionBloomKernelRenderCommand *cmd = reinterpret_cast<const GenerateConvolutionBloomKernelRenderCommand *>(data);
 
     ConvolutionBloomKernelGenerator &kernelGenerator = renderSystem->GetConvolutionBloomKernelGenerator();
+    kernelGenerator.SetApertureScale(cmd->apertureScale);
     kernelGenerator.SetDiffractionPSFScale(cmd->diffractionPSFScale);
     kernelGenerator.SetDispersionAmount(cmd->dispersionAmount);
 

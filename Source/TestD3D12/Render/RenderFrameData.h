@@ -74,6 +74,7 @@ struct ScreenShotRenderCommand {
 
 struct GenerateConvolutionBloomKernelRenderCommand {
     RenderCommandId                 commandId;
+    float                           apertureScale;
     float                           diffractionPSFScale;
     float                           dispersionAmount;
 };
@@ -193,7 +194,7 @@ public:
     void                            CmdDrawCamera(const VisCamera *camera);
     void                            CmdSwapBuffers();
     void                            CmdScreenshot(int x, int y, int width, int height, const char *filename);
-    void                            CmdGenerateConvolutionBloomKernel(float diffractionPSFScale, float dispersionAmount);
+    void                            CmdGenerateConvolutionBloomKernel(float apertureScale, float diffractionPSFScale, float dispersionAmount);
     void                            CmdEnd();
 
     bool                            HasPendingImGuiOverlay() const { return pendingImGuiOverlay.overlay != nullptr; }
@@ -374,13 +375,14 @@ BE_INLINE void RenderFrameData::CmdScreenshot(int x, int y, int width, int heigh
     BE1::Str::Copynz(cmd->filename, filename, COUNT_OF(cmd->filename));
 }
 
-BE_INLINE void RenderFrameData::CmdGenerateConvolutionBloomKernel(float diffractionPSFScale, float dispersionAmount) {
+BE_INLINE void RenderFrameData::CmdGenerateConvolutionBloomKernel(float apertureScale, float diffractionPSFScale, float dispersionAmount) {
     GenerateConvolutionBloomKernelRenderCommand *cmd = (GenerateConvolutionBloomKernelRenderCommand *)GetCommandBuffer(sizeof(GenerateConvolutionBloomKernelRenderCommand));
     if (!cmd) {
         return;
     }
 
     cmd->commandId = RenderCommandId::GenerateConvolutionBloomKernel;
+    cmd->apertureScale = apertureScale;
     cmd->diffractionPSFScale = diffractionPSFScale;
     cmd->dispersionAmount = dispersionAmount;
 }

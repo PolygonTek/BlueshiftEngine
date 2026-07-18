@@ -548,7 +548,7 @@ void App::EnqueuePendingConvolutionBloomKernelGeneration() {
     }
 
     RenderFrameData *frameData = mainRenderContext->GetCurrentFrontendFrameData();
-    frameData->CmdGenerateConvolutionBloomKernel(r_convolutionBloomDiffractionPSFScale.GetFloat(), r_convolutionBloomDispersionAmount.GetFloat());
+    frameData->CmdGenerateConvolutionBloomKernel(r_convolutionBloomApertureScale.GetFloat(), r_convolutionBloomDiffractionPSFScale.GetFloat(), r_convolutionBloomDispersionAmount.GetFloat());
 
     pendingConvolutionBloomKernelGeneration = false;
     pendingConvolutionBloomKernelReadbackFrameData = frameData;

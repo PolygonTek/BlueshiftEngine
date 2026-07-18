@@ -93,5 +93,6 @@ extern BE1::CVar    r_convolutionBloomKernelSizeScale;
 extern BE1::CVar    r_convolutionBloomKernelScale;
 extern BE1::CVar    r_convolutionBloomKernelRotation;
 extern BE1::CVar    r_convolutionBloomPaddingTrim;
+extern BE1::CVar    r_convolutionBloomApertureScale;
 extern BE1::CVar    r_convolutionBloomDiffractionPSFScale;
 extern BE1::CVar    r_convolutionBloomDispersionAmount;

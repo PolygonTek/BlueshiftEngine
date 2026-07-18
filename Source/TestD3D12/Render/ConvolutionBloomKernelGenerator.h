@@ -38,6 +38,9 @@ public:
     void                            SetApertureTexture(const SharedPtr<Texture> &texture);
     const SharedPtr<Texture> &      GetApertureTexture() const { return apertureSourceTexture; }
 
+    void                            SetApertureScale(float scale);
+    float                           GetApertureScale() const { return apertureScale; }
+
     void                            SetDiffractionPSFScale(float scale);
     float                           GetDiffractionPSFScale() const { return diffractionPSFScale; }
 
@@ -72,6 +75,7 @@ private:
 
     SharedPtr<Texture>              apertureSourceTexture;
     bool                            kernelDirty = true;
+    float                           apertureScale = 0.2f;
     float                           diffractionPSFScale = 1.0f;
     float                           dispersionAmount = 1.0f;
 
