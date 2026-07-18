@@ -122,8 +122,13 @@ public:
     void                            SetTextLineSpacing(float lineSpacing);
     void                            SetTextShadowColor(const BE1::Color4 &shadowColor);
     void                            SetTextShadowOffset(float shadowOffsetX, float shadowOffsetY);
+    const BE1::Rect &               GetClipRect() const { assert(!guiClipRectStack.IsEmpty()); return guiClipRectStack.Last(); }
+    void                            PushClipRect(const BE1::Rect &clipRect);
+    void                            PopClipRect();
     void                            DrawPic(float x, float y, float w, float h, const SharedPtr<Material> &material);
     void                            DrawStretchPic(float x, float y, float w, float h, float s1, float t1, float s2, float t2, const SharedPtr<Material> &material);
+    void                            DrawSlicedPic(float x, float y, float w, float h, float imageWidth, float imageHeight, const GuiMesh::SliceBorder &border, const SharedPtr<Material> &material);
+    void                            DrawStretchSlicedPic(float x, float y, float w, float h, float s1, float t1, float s2, float t2, float imageWidth, float imageHeight, const GuiMesh::SliceBorder &border, const SharedPtr<Material> &material);
     void                            DrawBar(float x, float y, float w, float h);
     void                            DrawRect(float x, float y, float w, float h);
     void                            DrawText(const BE1::Rect &rect, float x, float y, const char *text, DrawTextFlag flags);
@@ -144,6 +149,7 @@ private:
     void                            EndImGui();
     void                            FlushPendingScreenshots(RenderFrameData *frameData);
     void                            EnsureTextureStreamingFeedbackCapacity(uint32_t requiredCapacity);
+    void                            ResetGuiClipRect(int width, int height);
     void                            UpdateGpuTagFrameTimes(const float tagFrameMsec[static_cast<int>(GpuTiming::Tag::Count)]);
     void                            SetStats(const Stats &stats);
 
@@ -172,6 +178,7 @@ private:
     TextureStreamingFeedback        textureStreamingFeedback;
 
     GuiMesh                         guiMesh;            ///< System GUI mesh
+    BE1::Array<BE1::Rect>           guiClipRectStack;
     BE1::Color4                     currentColor = BE1::Color4(1, 1, 1, 1);
     BE1::Color4                     currentTextShadowColor = BE1::Color4(0, 0, 0, 0);
     float                           currentTextScale = 1.0f;

@@ -78,8 +78,9 @@ void RenderContext::Init(void *windowHandle, const BE1::Color4 &baseClearColor) 
         BE_WARNLOG("RenderContext::Init: failed to initialize texture streaming feedback\n");
     }
 
+    guiClipRectStack.Reserve(16);
     guiMesh.SetCoordFrame(GuiMesh::CoordFrame::CoordFrame2D);
-    guiMesh.SetClipRect(BE1::Rect(0, 0, backBufferWidth, backBufferHeight));
+    ResetGuiClipRect(backBufferWidth, backBufferHeight);
 }
 
 void RenderContext::Shutdown() {
@@ -125,7 +126,7 @@ void RenderContext::OnResize(int width, int height) {
     // 스왑 체인의 크기 조정
     swapChain->Resize(width, height);
 
-    guiMesh.SetClipRect(BE1::Rect(0, 0, width, height));
+    ResetGuiClipRect(width, height);
 }
 
 void RenderContext::GetMainRenderDest(RHI::RenderDest &renderDest, bool outputNormal, bool outputVelocity) const {
@@ -300,6 +301,7 @@ void RenderContext::BeginFrame(float frameTime, float elapsedTime, float elapsed
     currentFrontendFrameIndex = frameCount % COUNT_OF(frames);
     RenderFrameData *frameData = GetCurrentFrontendFrameData();
     mainRTSampleCount = GetMainRTSampleCountFromCVar();
+    ResetGuiClipRect(GetWidth(), GetHeight());
 
     if (renderSystem->IsUsingRenderThread()) {
         // 현재 프론트엔드 프레임의 렌더 스레드 작업이 끝날 때까지 기다린다.
@@ -318,6 +320,7 @@ void RenderContext::EndFrame() {
     PROFILER_CPU_SCOPED_EVENT("RenderContext::EndFrame");
 
     assert(BE1::Engine::IsInMainThread());
+    assert(guiClipRectStack.Count() == 1);
 
     RenderContext::activeContext = nullptr;
 
@@ -395,6 +398,40 @@ void RenderContext::DrawStretchPic(float x, float y, float w, float h, float s1,
 
     frameData->RetainMaterial(material);
     guiMesh.DrawPic(frameData->GetThreadData(0), x, y, w, h, s1, t1, s2, t2, currentColor.ToUInt32(), material ? material.get() : nullptr);
+}
+
+void RenderContext::DrawSlicedPic(float x, float y, float w, float h, float imageWidth, float imageHeight, const GuiMesh::SliceBorder &border, const SharedPtr<Material> &material) {
+    DrawStretchSlicedPic(x, y, w, h, 0.0f, 0.0f, 1.0f, 1.0f, imageWidth, imageHeight, border, material);
+}
+
+void RenderContext::DrawStretchSlicedPic(float x, float y, float w, float h, float s1, float t1, float s2, float t2, float imageWidth, float imageHeight, const GuiMesh::SliceBorder &border, const SharedPtr<Material> &material) {
+    RenderFrameData *frameData = GetCurrentFrontendFrameData();
+
+    frameData->RetainMaterial(material);
+    guiMesh.DrawSlicedPic(frameData->GetThreadData(0), x, y, w, h, s1, t1, s2, t2, imageWidth, imageHeight, border, currentColor.ToUInt32(), material ? material.get() : nullptr);
+}
+
+void RenderContext::ResetGuiClipRect(int width, int height) {
+    guiClipRectStack.SetCount(1, false);
+    guiClipRectStack[0].Set(0, 0, width, height);
+    guiMesh.SetClipRect(guiClipRectStack[0]);
+}
+
+void RenderContext::PushClipRect(const BE1::Rect &clipRect) {
+    assert(!guiClipRectStack.IsEmpty());
+
+    guiClipRectStack.Append(guiClipRectStack.Last().Intersect(clipRect));
+    guiMesh.SetClipRect(guiClipRectStack.Last());
+}
+
+void RenderContext::PopClipRect() {
+    assert(guiClipRectStack.Count() > 1);
+    if (guiClipRectStack.Count() <= 1) {
+        return;
+    }
+
+    guiClipRectStack.SetCount(guiClipRectStack.Count() - 1, false);
+    guiMesh.SetClipRect(guiClipRectStack.Last());
 }
 
 void RenderContext::DrawBar(float x, float y, float w, float h) {

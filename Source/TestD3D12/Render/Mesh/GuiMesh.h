@@ -36,6 +36,13 @@ public:
         RHI::IndexBuffer *  indexBuffer = nullptr;
     };
 
+    struct SliceBorder {
+        float               left = 0;
+        float               top = 0;
+        float               right = 0;
+        float               bottom = 0;
+    };
+
     GuiMesh() = default;
 
     CoordFrame              GetCoordFrame() const { return coordFrame; }
@@ -46,9 +53,11 @@ public:
 
     void                    Clear();
 
-    void                    SetClipRect(const BE1::Rect &clipRect) { this->clipRect = clipRect; }
+    void                    ClearClipRect() { clipRectEnabled = false; }
+    void                    SetClipRect(const BE1::Rect &clipRect) { this->clipRect = clipRect; clipRectEnabled = true; }
 
     void                    DrawPic(RHI::FrameThreadData *frameThreadData, float x, float y, float w, float h, float s1, float t1, float s2, float t2, uint32_t color, const Material *material);
+    void                    DrawSlicedPic(RHI::FrameThreadData *frameThreadData, float x, float y, float w, float h, float s1, float t1, float s2, float t2, float imageWidth, float imageHeight, const SliceBorder &border, uint32_t color, const Material *material);
     float                   DrawChar(RHI::FrameThreadData *frameThreadData, float x, float y, char32_t unicodeChar);
 
     void                    DrawText2D(RHI::FrameThreadData *frameThreadData, const BE1::Rect &rect, int x, int y, int lineSpacing, float textScale,
@@ -65,6 +74,8 @@ public:
 
 private:
     void                    PrepareNewSurf();
+    bool                    BuildPicVerts(float x, float y, float w, float h, float s1, float t1, float s2, float t2, uint32_t color, BE1::VertexGeneric *verts) const;
+    void                    DrawQuads(RHI::FrameThreadData *frameThreadData, const BE1::VertexGeneric *verts, int numQuads, const Material *material);
     void                    DrawQuad(RHI::FrameThreadData *frameThreadData, const BE1::VertexGeneric *verts, const Material *material);
     float                   GetTextOutlineSpacing() const { return currentTextAddOutlines ? currentTextScale : 0.0f; }
     float                   GetTextCharAdvanceX(char32_t unicodeChar) const;
@@ -74,6 +85,7 @@ private:
 
     CoordFrame              coordFrame = CoordFrame::CoordFrame2D;
     BE1::Rect               clipRect = BE1::Rect::zero;
+    bool                    clipRectEnabled = false;
 
     const Font *            currentFont = nullptr;
     float                   currentTextScale = 1.0f;

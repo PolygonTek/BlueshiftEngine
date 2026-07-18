@@ -36,12 +36,16 @@ void GuiMesh::PrepareNewSurf() {
     currentSurf = &newSurf;
 }
 
-void GuiMesh::DrawPic(RHI::FrameThreadData *frameThreadData, float x, float y, float w, float h, float s1, float t1, float s2, float t2, uint32_t color, const Material *material) {
-    if (!material) {
-        material = materialManager.defaultUnlitMaterial.get();
+bool GuiMesh::BuildPicVerts(float x, float y, float w, float h, float s1, float t1, float s2, float t2, uint32_t color, BE1::VertexGeneric *verts) const {
+    if (w <= 0 || h <= 0) {
+        return false;
     }
 
-    if (coordFrame == CoordFrame::CoordFrame2D && !clipRect.IsEmpty()) {
+    if (coordFrame == CoordFrame::CoordFrame2D && clipRectEnabled) {
+        if (clipRect.IsEmpty()) {
+            return false;
+        }
+
         const float cx = clipRect.x - x;
         if (cx > 0) {
             s1 += (s2 - s1) * cx / w;
@@ -71,10 +75,8 @@ void GuiMesh::DrawPic(RHI::FrameThreadData *frameThreadData, float x, float y, f
 
     if (w <= 0 || h <= 0) {
         // Completely clipped away.
-        return;
+        return false;
     }
-
-    ALIGN_AS16 BE1::VertexGeneric localVerts[4];
 
     if (coordFrame == CoordFrame::CoordFrame2D) {
         // 2D frame
@@ -82,20 +84,20 @@ void GuiMesh::DrawPic(RHI::FrameThreadData *frameThreadData, float x, float y, f
         //  |
         //  |
         // +Y
-        localVerts[0].xyz.Set(x, y, 0);
-        localVerts[1].xyz.Set(x, y + h, 0);
-        localVerts[2].xyz.Set(x + w, y + h, 0);
-        localVerts[3].xyz.Set(x + w, y, 0);
+        verts[0].xyz.Set(x, y, 0);
+        verts[1].xyz.Set(x, y + h, 0);
+        verts[2].xyz.Set(x + w, y + h, 0);
+        verts[3].xyz.Set(x + w, y, 0);
     } else {
         // 3D frame
         // +Z
         //  |
         //  |
         //  +-----> +Y
-        localVerts[0].xyz = BE1::Coords2D::To3D(x, -y);
-        localVerts[1].xyz = BE1::Coords2D::To3D(x, -(y + h));
-        localVerts[2].xyz = BE1::Coords2D::To3D(x + w, -(y + h));
-        localVerts[3].xyz = BE1::Coords2D::To3D(x + w, -y);
+        verts[0].xyz = BE1::Coords2D::To3D(x, -y);
+        verts[1].xyz = BE1::Coords2D::To3D(x, -(y + h));
+        verts[2].xyz = BE1::Coords2D::To3D(x + w, -(y + h));
+        verts[3].xyz = BE1::Coords2D::To3D(x + w, -y);
     }
 
     // TODO: SIMD optimization
@@ -104,37 +106,115 @@ void GuiMesh::DrawPic(RHI::FrameThreadData *frameThreadData, float x, float y, f
     const BE1::float16_t hs2 = BE1::F16Converter::FromF32(s2);
     const BE1::float16_t ht2 = BE1::F16Converter::FromF32(t2);
 
-    localVerts[0].st[0] = hs1;
-    localVerts[0].st[1] = ht1;
-    *reinterpret_cast<uint32_t *>(localVerts[0].color) = color;
+    verts[0].st[0] = hs1;
+    verts[0].st[1] = ht1;
+    *reinterpret_cast<uint32_t *>(verts[0].color) = color;
 
-    localVerts[1].st[0] = hs1;
-    localVerts[1].st[1] = ht2;
-    *reinterpret_cast<uint32_t *>(localVerts[1].color) = color;
+    verts[1].st[0] = hs1;
+    verts[1].st[1] = ht2;
+    *reinterpret_cast<uint32_t *>(verts[1].color) = color;
 
-    localVerts[2].st[0] = hs2;
-    localVerts[2].st[1] = ht2;
-    *reinterpret_cast<uint32_t *>(localVerts[2].color) = color;
+    verts[2].st[0] = hs2;
+    verts[2].st[1] = ht2;
+    *reinterpret_cast<uint32_t *>(verts[2].color) = color;
 
-    localVerts[3].st[0] = hs2;
-    localVerts[3].st[1] = ht1;
-    *reinterpret_cast<uint32_t *>(localVerts[3].color) = color;
+    verts[3].st[0] = hs2;
+    verts[3].st[1] = ht1;
+    *reinterpret_cast<uint32_t *>(verts[3].color) = color;
+
+    return true;
+}
+
+void GuiMesh::DrawPic(RHI::FrameThreadData *frameThreadData, float x, float y, float w, float h, float s1, float t1, float s2, float t2, uint32_t color, const Material *material) {
+    if (!material) {
+        material = materialManager.defaultUnlitMaterial.get();
+    }
+
+    ALIGN_AS16 BE1::VertexGeneric localVerts[4];
+    if (!BuildPicVerts(x, y, w, h, s1, t1, s2, t2, color, localVerts)) {
+        return;
+    }
 
     DrawQuad(frameThreadData, localVerts, material);
 }
 
-void GuiMesh::DrawQuad(RHI::FrameThreadData *frameThreadData, const BE1::VertexGeneric *verts, const Material *material) {
-    if (!verts || !material) {
+void GuiMesh::DrawSlicedPic(RHI::FrameThreadData *frameThreadData, float x, float y, float w, float h, float s1, float t1, float s2, float t2,
+    float imageWidth, float imageHeight, const SliceBorder &border, uint32_t color, const Material *material) {
+    if (w <= 0 || h <= 0 || imageWidth <= 0 || imageHeight <= 0) {
         return;
     }
+
+    if (!material) {
+        material = materialManager.defaultUnlitMaterial.get();
+    }
+
+    const float borderLeft = BE1::Max(border.left, 0.0f);
+    const float borderTop = BE1::Max(border.top, 0.0f);
+    const float borderRight = BE1::Max(border.right, 0.0f);
+    const float borderBottom = BE1::Max(border.bottom, 0.0f);
+
+    float dstBorderScaleX = 1.0f;
+    const float dstBorderWidth = borderLeft + borderRight;
+    if (dstBorderWidth > w) {
+        dstBorderScaleX = w / dstBorderWidth;
+    }
+
+    float dstBorderScaleY = 1.0f;
+    const float dstBorderHeight = borderTop + borderBottom;
+    if (dstBorderHeight > h) {
+        dstBorderScaleY = h / dstBorderHeight;
+    }
+
+    const float sourceWidth = BE1::Math::Fabs(s2 - s1) * imageWidth;
+    const float sourceHeight = BE1::Math::Fabs(t2 - t1) * imageHeight;
+
+    float srcBorderScaleX = 1.0f;
+    if (dstBorderWidth > sourceWidth) {
+        srcBorderScaleX = sourceWidth / dstBorderWidth;
+    }
+
+    float srcBorderScaleY = 1.0f;
+    if (dstBorderHeight > sourceHeight) {
+        srcBorderScaleY = sourceHeight / dstBorderHeight;
+    }
+
+    const float sDirection = s2 >= s1 ? 1.0f : -1.0f;
+    const float tDirection = t2 >= t1 ? 1.0f : -1.0f;
+    const float positionsX[4] = { x, x + borderLeft * dstBorderScaleX, x + w - borderRight * dstBorderScaleX, x + w };
+    const float positionsY[4] = { y, y + borderTop * dstBorderScaleY, y + h - borderBottom * dstBorderScaleY, y + h };
+    const float texCoordsS[4] = { s1, s1 + sDirection * borderLeft * srcBorderScaleX / imageWidth, s2 - sDirection * borderRight * srcBorderScaleX / imageWidth, s2 };
+    const float texCoordsT[4] = { t1, t1 + tDirection * borderTop * srcBorderScaleY / imageHeight, t2 - tDirection * borderBottom * srcBorderScaleY / imageHeight, t2 };
+
+    ALIGN_AS16 BE1::VertexGeneric localVerts[9 * 4];
+    int numQuads = 0;
+
+    for (int row = 0; row < 3; ++row) {
+        for (int column = 0; column < 3; ++column) {
+            BE1::VertexGeneric *quadVerts = &localVerts[numQuads * 4];
+            if (BuildPicVerts(positionsX[column], positionsY[row], positionsX[column + 1] - positionsX[column], positionsY[row + 1] - positionsY[row], texCoordsS[column], texCoordsT[row], texCoordsS[column + 1], texCoordsT[row + 1], color, quadVerts)) {
+                numQuads++;
+            }
+        }
+    }
+
+    DrawQuads(frameThreadData, localVerts, numQuads, material);
+}
+
+void GuiMesh::DrawQuads(RHI::FrameThreadData *frameThreadData, const BE1::VertexGeneric *verts, int numQuads, const Material *material) {
+    if (!verts || numQuads <= 0 || !material) {
+        return;
+    }
+
+    const int numVerts = numQuads * 4;
+    const int numIndexes = numQuads * 6;
 
     // 다이나믹 버텍스 버퍼에 Quad 버텍스 데이터를 복사하기만 하고, 실제로 draw 하지는 않는다.
     // 다이나믹 인덱스 버퍼는 CacheIndexes() 에서 모든 Quad 에 대한 인덱스 데이터가 한꺼번에 만들어진다.
     if (currentSurf && material == currentSurf->material) {
         assert(currentSurf->vertexBuffer);
-        if (frameThreadData->AppendVertex(currentSurf->vertexBuffer, sizeof(BE1::VertexGeneric), 4, verts)) {
-            currentSurf->numVerts += 4;
-            currentSurf->numIndexes += 6;
+        if (frameThreadData->AppendVertex(currentSurf->vertexBuffer, sizeof(BE1::VertexGeneric), numVerts, verts)) {
+            currentSurf->numVerts += numVerts;
+            currentSurf->numIndexes += numIndexes;
             return;
         }
     }
@@ -142,9 +222,13 @@ void GuiMesh::DrawQuad(RHI::FrameThreadData *frameThreadData, const BE1::VertexG
     PrepareNewSurf();
 
     currentSurf->material = material;
-    currentSurf->vertexBuffer = frameThreadData->AllocVertex(sizeof(BE1::VertexGeneric), 4, verts);
-    currentSurf->numVerts += 4;
-    currentSurf->numIndexes += 6;
+    currentSurf->vertexBuffer = frameThreadData->AllocVertex(sizeof(BE1::VertexGeneric), numVerts, verts);
+    currentSurf->numVerts += numVerts;
+    currentSurf->numIndexes += numIndexes;
+}
+
+void GuiMesh::DrawQuad(RHI::FrameThreadData *frameThreadData, const BE1::VertexGeneric *verts, const Material *material) {
+    DrawQuads(frameThreadData, verts, 1, material);
 }
 
 float GuiMesh::GetTextCharAdvanceX(char32_t unicodeChar) const {
