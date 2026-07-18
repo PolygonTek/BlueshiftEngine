@@ -34,6 +34,10 @@ static_assert(static_cast<uint32_t>(RenderLight::Type::BoxDir) == ShaderLightTyp
 
 static constexpr uint32_t MaxSkinningJointsPerTask = 1024;
 
+static BE_INLINE bool IsRenderLayerVisible(uint32_t layerMask, uint8_t layer) {
+    return layer < 32 && (layerMask & BIT(layer)) != 0;
+}
+
 static const Material *GetVisObjectMaterial(const VisObject *visObject, int materialIndex) {
     if (visObject->materials && materialIndex >= 0 && static_cast<uint32_t>(materialIndex) < visObject->numMaterials) {
         return visObject->materials[materialIndex];
@@ -486,6 +490,7 @@ void RenderWorld::FindVisObjects(RenderFrameData *frameData, const RenderCamera 
     PROFILER_CPU_SCOPED_EVENT("RenderWorld::FindVisObjects");
 
     const bool skipViewCulling = r_skipViewCulling.GetBool();
+    const uint32_t layerMask = renderCamera->GetDesc().layerMask;
 
     const uint32_t startVisibleObjectCount = frameData->NumVisObjects();
 
@@ -494,6 +499,10 @@ void RenderWorld::FindVisObjects(RenderFrameData *frameData, const RenderCamera 
     // 등록된 모든 RenderObject 들을 개별 Culling 해서 프레임 데이터에 VisObject 로 등록한다.
     for (RenderObject *renderObject : renderObjects) {
         if (!renderObject) {
+            continue;
+        }
+
+        if (!IsRenderLayerVisible(layerMask, renderObject->desc.layer)) {
             continue;
         }
 
@@ -823,7 +832,13 @@ void RenderWorld::FindVisLights(RenderFrameData *frameData, const RenderCamera *
             continue;
         }
 
+        if (!IsRenderLayerVisible(cameraDesc.layerMask, renderLight->desc.layer)) {
+            continue;
+        }
+
         if (renderLight->desc.type == RenderLight::Type::Directional) {
+            visCamera->directionalLightVisible = true;
+
             // Directional light 는 모든 카메라가 공유하는 프레임 단위 Primary light 하나만 등록한다.
             if (frameData->GetPrimaryDirectionalLight()) {
                 continue;
@@ -833,6 +848,7 @@ void RenderWorld::FindVisLights(RenderFrameData *frameData, const RenderCamera *
             if (!visLight) {
                 continue;
             }
+
         } else {
             if (!skipViewCulling) {
                 if (renderLight->Cull(*renderCamera)) {

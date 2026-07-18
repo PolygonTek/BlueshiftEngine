@@ -27,6 +27,9 @@ static const BE1::AABB &GetEffectiveLocalAABB(const RenderObject::Desc &desc) {
 }
 
 void RenderObject::Update(const RenderObject::Desc &src, RenderObject::Desc::UpdateFlag updateFlags) {
+    desc.flags = src.flags;
+    desc.layer = src.layer;
+
     if (BE1::HasFlag(updateFlags, Desc::UpdateFlag::Transform)) {
         desc.worldMatrix = src.worldMatrix;
     }

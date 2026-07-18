@@ -44,6 +44,7 @@ public:
  
         Type                        type = Type::Point;
         Flag                        flags = Flag::None;
+        uint8_t                     layer = 0;                          ///< Render layer bit index in [0, 31]
 
         BE1::Vec3                   origin = BE1::Vec3::origin;         ///< Light position in world space
         BE1::Mat3                   axis = BE1::Mat3::identity;         ///< Light orientation

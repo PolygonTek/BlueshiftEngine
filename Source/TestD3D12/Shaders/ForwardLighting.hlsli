@@ -135,7 +135,10 @@ float3 EvaluateLit(uint2 pixelCoord, float ndcDepth, float3 worldPosition, float
     }
 #endif
 
-    float3 directDiffuse = EvaluateDirectionalLightDiffuse(frameConstants.directionalLight, worldNormal);
+    float3 directDiffuse = 0.0f;
+    if ((cameraConstants.flags & ShaderCameraFlagUseDirectionalLight) != 0) {
+        directDiffuse = EvaluateDirectionalLightDiffuse(frameConstants.directionalLight, worldNormal);
+    }
 
 #if SHADER_LIGHT_USE_WAVE_OPS
     const bool useZBin = (cameraConstants.flags & ShaderCameraFlagUseLightZBin) != 0;

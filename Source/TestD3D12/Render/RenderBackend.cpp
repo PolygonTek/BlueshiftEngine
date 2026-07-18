@@ -211,6 +211,9 @@ bool RenderBackend::UploadCameraConstants() {
     if (r_lightCullingZBin.GetBool()) {
         flags |= ShaderCameraFlagUseLightZBin;
     }
+    if (currentVisCamera->directionalLightVisible) {
+        flags |= ShaderCameraFlagUseDirectionalLight;
+    }
 
     ALIGN_AS32 BE1::Mat4 unjitteredViewProjMatrix = currentVisCamera->viewProjMatrix;
     ALIGN_AS32 BE1::Mat4 prevUnjitteredViewProjMatrix = currentVisCamera->prevViewProjMatrix;

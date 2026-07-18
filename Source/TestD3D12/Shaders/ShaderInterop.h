@@ -125,6 +125,7 @@ static const uint ShaderLightCullingDebugModeTileMaskAndZBin = 2;
 
 static const uint ShaderCameraFlagProjectionOrthogonal = 1u << 0;
 static const uint ShaderCameraFlagUseLightZBin = 1u << 1;
+static const uint ShaderCameraFlagUseDirectionalLight = 1u << 2;
 
 static const uint MultiplySpectrum2DBlockSize = 256;
 

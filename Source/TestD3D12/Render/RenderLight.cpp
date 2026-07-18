@@ -26,6 +26,7 @@ void RenderLight::Update(const RenderLight::Desc &src, Desc::UpdateFlag updateFl
     assert(src.linearColor.b >= 0.0f && src.linearColor.b <= 1.0f);
 
     desc.flags = src.flags;
+    desc.layer = src.layer;
 
     if (desc.projectionPolicy != src.projectionPolicy) {
         updateFlags |= Desc::UpdateFlag::Shape;

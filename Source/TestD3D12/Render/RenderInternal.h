@@ -169,6 +169,7 @@ struct VisCamera {
     float                       ndcDepthScale = 1.0f;
     float                       ndcDepthBias = 0.0f;
     RenderCameraFlag            flags = RenderCameraFlag::NoFlag;
+    bool                        directionalLightVisible = false;
     bool                        needNormalOutput = false;
     bool                        needVelocityOutput = false;
 

@@ -51,6 +51,7 @@ enum class RenderCameraClearColorMode : uint8_t {
 struct RenderCameraDesc {
     int                         time = 0;               ///< Time in milliseconds for shader effects and other time dependent rendering issues
     RenderCameraFlag            flags = RenderCameraFlag::NoFlag;
+    uint32_t                    layerMask = ~0u;        ///< Bit mask of visible RenderObject and RenderLight layers
 
     BE1::Rect                   outputRect;             ///< Output rectangle in the swapchain.
     uint32_t                    renderWidth = 0;        ///< Local render target width. Falls back to outputRect.w if zero.

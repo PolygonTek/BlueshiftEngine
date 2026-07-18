@@ -25,6 +25,12 @@ class RenderObject {
     friend class RenderWorld;
 
 public:
+    enum class Flag : uint8_t {
+        None                        = 0,
+        CastShadows                 = BIT(0),
+        ReceiveShadows              = BIT(1),
+    };
+
     enum class TextDrawMode : uint8_t {
         Normal,
         DropShadows,
@@ -102,6 +108,9 @@ public:
 
         TextDesc &                  GetTextDesc();
 
+        Flag                        flags = Flag::None;
+        uint8_t                     layer = 0;              ///< Render layer bit index in [0, 31]
+
         //
         // Transform info
         //
@@ -169,6 +178,11 @@ BE_INLINE RenderObject::TextDesc &RenderObject::Desc::GetTextDesc() {
     }
     return *text;
 }
+
+template<>
+struct enable_bitmask_operators<RenderObject::Flag> {
+    static constexpr bool enable = true;
+};
 
 template<>
 struct enable_bitmask_operators<RenderObject::Desc::UpdateFlag> {
