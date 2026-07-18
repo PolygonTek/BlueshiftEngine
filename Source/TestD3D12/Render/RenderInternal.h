@@ -135,13 +135,13 @@ struct VisCamera {
 
     uint32_t                    index = ~0;
 
-    uint32_t                    maxVisLights = 0;
-    uint32_t                    numVisLights = 0;
-    const VisLight **           visLights = nullptr;        // 카메라에 보이는 모든 광원의 포인터 배열
-
     uint32_t                    maxVisSurfs = 0;
     uint32_t                    numVisSurfs = 0;
     const VisSurf **            visSurfs = nullptr;         // 카메라에 보이는 모든 surfaces 와 shadow surfaces
+
+    uint32_t                    maxVisLocalLights = 0;
+    uint32_t                    numVisLocalLights = 0;
+    const VisLight **           visLocalLights = nullptr;   // 카메라에 보이는 local light 포인터 배열
 
     const DebugDrawData *       debugDrawData = nullptr;
     RHI::PipelineState *        debugDrawPSOs[DebugDrawData::MaxBatches] = {};

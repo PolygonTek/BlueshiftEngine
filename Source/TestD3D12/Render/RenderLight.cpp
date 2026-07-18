@@ -55,6 +55,12 @@ void RenderLight::Update(const RenderLight::Desc &src, Desc::UpdateFlag updateFl
     }
 
     if (BE1::HasAnyFlag(updateFlags, Desc::UpdateFlag::Transform | Desc::UpdateFlag::Shape)) {
+        // Directional lights have no finite volume, projection, or distance fall-off.
+        if (desc.type == Type::Directional) {
+            worldAABB = BE1::AABB::empty;
+            return;
+        }
+
         const bool zNegativeOneToOne = desc.projectionPolicy.IsZNegativeOneToOne();
         const bool reverseZ = desc.projectionPolicy.reverseZ;
 

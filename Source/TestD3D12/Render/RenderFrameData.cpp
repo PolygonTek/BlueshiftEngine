@@ -290,9 +290,11 @@ void RenderFrameData::FreeVisLights() {
     firstVisLightChunk = nullptr;
     lastVisLightChunk = nullptr;
     numVisLights = 0;
+    numVisLocalLights = 0;
     numVisPointLights = 0;
     numVisSpotLights = 0;
     numVisBoxDirLights = 0;
+    primaryDirectionalLight = nullptr;
 }
 
 RenderFrameData::Chunk *RenderFrameData::AllocChunk(uint32_t elementSize, uint32_t elementCount) {
@@ -452,9 +454,10 @@ VisObject *RenderFrameData::AllocVisObject() {
         lastVisObjectChunk = newChunk;
     }
 
-    // placement new 생성자 호출
     VisObject *visObjects = static_cast<VisObject *>(lastVisObjectChunk->elements);
     VisObject *newVisObject = &visObjects[lastVisObjectChunk->count++];
+
+    // placement new 생성자 호출
     new (newVisObject) VisObject();
     
     newVisObject->index = numVisObjects++;
@@ -463,6 +466,11 @@ VisObject *RenderFrameData::AllocVisObject() {
 }
 
 VisLight *RenderFrameData::AllocVisLight(RenderLight::Type type) {
+    if (type == RenderLight::Type::Directional && primaryDirectionalLight) {
+        assert(0);
+        return nullptr;
+    }
+
     if (numVisLights >= MaxVisLights) {
         assert(0);
         return nullptr;
@@ -478,9 +486,10 @@ VisLight *RenderFrameData::AllocVisLight(RenderLight::Type type) {
         lastVisLightChunk = newChunk;
     }
 
-    // placement new 생성자 호출
     VisLight *visLights = static_cast<VisLight *>(lastVisLightChunk->elements);
     VisLight *newVisLight = &visLights[lastVisLightChunk->count++];
+
+    // placement new 생성자 호출
     new (newVisLight) VisLight();
 
     newVisLight->index = numVisLights++;
@@ -488,13 +497,20 @@ VisLight *RenderFrameData::AllocVisLight(RenderLight::Type type) {
 
     switch (type) {
     case RenderLight::Type::Point:
+        numVisLocalLights++;
         newVisLight->typeIndex = numVisPointLights++;
         break;
     case RenderLight::Type::Spot:
+        numVisLocalLights++;
         newVisLight->typeIndex = numVisSpotLights++;
         break;
     case RenderLight::Type::BoxDir:
+        numVisLocalLights++;
         newVisLight->typeIndex = numVisBoxDirLights++;
+        break;
+    case RenderLight::Type::Directional:
+        newVisLight->typeIndex = 0;
+        primaryDirectionalLight = newVisLight;
         break;
     default:
         assert(0);

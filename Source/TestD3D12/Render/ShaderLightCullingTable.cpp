@@ -102,7 +102,7 @@ bool ShaderLightCullingTable::EnsureBufferCapacity(TableBuffer &tableBuffer, uin
 bool ShaderLightCullingTable::Upload(RHI::FrameThreadData *frameThreadData, RHI::CommandList *commandList, const RenderFrameData *frameData, bool allowResize) {
     PROFILER_CPU_SCOPED_EVENT("ShaderLightCullingTable::Upload");
 
-    const uint32_t lightRefCount = frameData->NumVisLights();
+    const uint32_t lightRefCount = frameData->NumVisLocalLights();
     const uint32_t numLightCullingZBins = frameData->NumLightCullingZBins();
     const uint32_t numLightCullingWords = frameData->NumLightCullingWords();
 
@@ -144,14 +144,14 @@ bool ShaderLightCullingTable::Upload(RHI::FrameThreadData *frameThreadData, RHI:
     for (uint32_t cameraIndex = 0; cameraIndex < frameData->NumVisCameras(); ++cameraIndex) {
         const VisCamera &visCamera = visCameras[cameraIndex];
 
-        if (visCamera.numVisLights > 0) {
-            if (visCamera.lightCulling.lightRefTableOffset > lightRefCount || visCamera.numVisLights > lightRefCount - visCamera.lightCulling.lightRefTableOffset) {
+        if (visCamera.numVisLocalLights > 0) {
+            if (visCamera.lightCulling.lightRefTableOffset > lightRefCount || visCamera.numVisLocalLights > lightRefCount - visCamera.lightCulling.lightRefTableOffset) {
                 assert(0);
                 return false;
             }
 
-            for (uint32_t lightIndex = 0; lightIndex < visCamera.numVisLights; ++lightIndex) {
-                BuildLightRef(visCamera.visLights[lightIndex], shaderLightRefs[visCamera.lightCulling.lightRefTableOffset + lightIndex]);
+            for (uint32_t lightIndex = 0; lightIndex < visCamera.numVisLocalLights; ++lightIndex) {
+                BuildLightRef(visCamera.visLocalLights[lightIndex], shaderLightRefs[visCamera.lightCulling.lightRefTableOffset + lightIndex]);
             }
         }
 
@@ -178,7 +178,7 @@ bool ShaderLightCullingTable::DispatchLightCulling(RHI::FrameThreadData *frameTh
         return true;
     }
 
-    if (!pipelineState || frameData->NumVisLights() > lightRefBuffer.capacity || numLightCullingWords > lightTileWordBuffer.capacity) {
+    if (!pipelineState || frameData->NumVisLocalLights() > lightRefBuffer.capacity || numLightCullingWords > lightTileWordBuffer.capacity) {
         return false;
     }
 
@@ -190,8 +190,8 @@ bool ShaderLightCullingTable::DispatchLightCulling(RHI::FrameThreadData *frameTh
         }
 
         const uint32_t cameraTileWordCount = visCamera.lightCulling.tileCountX * visCamera.lightCulling.tileCountY * visCamera.lightCulling.wordsPerTile;
-        if (visCamera.lightCulling.lightRefTableOffset > frameData->NumVisLights() ||
-            visCamera.numVisLights > frameData->NumVisLights() - visCamera.lightCulling.lightRefTableOffset ||
+        if (visCamera.lightCulling.lightRefTableOffset > frameData->NumVisLocalLights() ||
+            visCamera.numVisLocalLights > frameData->NumVisLocalLights() - visCamera.lightCulling.lightRefTableOffset ||
             visCamera.lightCulling.tileWordTableOffset > numLightCullingWords ||
             cameraTileWordCount > numLightCullingWords - visCamera.lightCulling.tileWordTableOffset) {
             assert(0);
@@ -225,7 +225,7 @@ bool ShaderLightCullingTable::DispatchLightCulling(RHI::FrameThreadData *frameTh
         }
 
         ShaderLightCullingParams *params = reinterpret_cast<ShaderLightCullingParams *>(constantBuffer->mappedPtr);
-        params->numLights = visCamera.numVisLights;
+        params->numLocalLights = visCamera.numVisLocalLights;
         params->lightRefTableOffset = visCamera.lightCulling.lightRefTableOffset;
         params->tileWordTableOffset = visCamera.lightCulling.tileWordTableOffset;
         params->tileCountX = visCamera.lightCulling.tileCountX;

@@ -40,11 +40,17 @@ private:
     void                        ChangeGameLightCount(uint32_t countX, uint32_t countY, uint32_t countZ);
     void                        AnimateGameObjects(uint64_t elapsedUsec);
     void                        AnimateGameLights(uint64_t elapsedUsec);
+    void                        UpdateDirectionalLightDirection();
 
     RenderWorld *               renderWorld = nullptr;
     SharedPtr<Mesh>             testMesh;
     BE1::Array<GameObject *>    gameObjects;
+    GameLight                   directionalLight;
     BE1::Array<GameLight>       gameLights;
+
+    float                       directionalLightAzimuth = 145.0f;
+    float                       directionalLightElevation = 55.0f;
+    bool                        directionalLightEnabled = true;
 
     uint32_t                    objectCountX = 1;
     uint32_t                    objectCountY = 1;

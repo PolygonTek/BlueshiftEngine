@@ -162,6 +162,20 @@ bool RenderBackend::UploadFrameConstants() {
     constants->shaderLightTileWordTableIndex = frameData->GetShaderLightTileWordTableBindlessIndex();
     constants->feedbackBufferIndex = currentContext->textureStreamingFeedback.GetBindlessIndex();
 
+    ShaderDirectionalLight &shaderDirectionalLight = constants->directionalLight;
+    const VisLight *primaryDirectionalLight = frameData->GetPrimaryDirectionalLight();
+    if (primaryDirectionalLight) {
+        const BE1::Vec3 &direction = primaryDirectionalLight->axis[0];
+        shaderDirectionalLight.direction = float3(direction.x, direction.y, direction.z);
+        shaderDirectionalLight.flags = static_cast<uint32_t>(primaryDirectionalLight->flags);
+        shaderDirectionalLight.lightColor = float3(primaryDirectionalLight->lightColor.r, primaryDirectionalLight->lightColor.g, primaryDirectionalLight->lightColor.b);
+    } else {
+        shaderDirectionalLight.direction = float3(0.0f, 0.0f, 0.0f);
+        shaderDirectionalLight.flags = 0;
+        shaderDirectionalLight.lightColor = float3(0.0f, 0.0f, 0.0f);
+    }
+    shaderDirectionalLight.padding0 = 0.0f;
+
     return true;
 }
 
@@ -218,7 +232,7 @@ bool RenderBackend::UploadCameraConstants() {
     constants->projectionDepthA = currentVisCamera->projectionDepthA;
     constants->projectionDepthB = currentVisCamera->projectionDepthB;
     constants->flags = flags;
-    constants->numLights = currentVisCamera->numVisLights;
+    constants->numLocalLights = currentVisCamera->numVisLocalLights;
     constants->lightCullingLightRefTableOffset = currentVisCamera->lightCulling.lightRefTableOffset;
     constants->lightCullingZBinTableOffset = currentVisCamera->lightCulling.zBinTableOffset;
     constants->lightCullingTileWordTableOffset = currentVisCamera->lightCulling.tileWordTableOffset;
@@ -292,7 +306,7 @@ const void *RenderBackend::ExecuteBeginContext(const void *data) {
         return (const void *)(cmd + 1);
     }
 
-    // 각 카메라 별로 참조할 타입별 ShaderLight 테이블을 GPU 에 업로드한다.
+    // 각 카메라 별로 참조할 local ShaderLight 테이블을 GPU 에 업로드한다.
     if (!frameData->UploadShaderLightTable(frameData->GetThreadData(0), mainCommandList)) {
         BE_WARNLOG("RenderBackend::ExecuteBeginContext: failed to upload shader light table\n");
         mainCommandList->CloseAndExecute();

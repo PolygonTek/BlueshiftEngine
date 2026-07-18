@@ -70,14 +70,24 @@ static RHI::InputLayout CreateXyzStColorInputLayout() {
     return inputLayout;
 }
 
+static constexpr RHI::InputLayoutElement::Format GetNormalTangentFormat() {
+#ifdef COMPRESSED_VERTEX_NORMAL_TANGENTS
+    return RHI::InputLayoutElement::Format::UByte4N;
+#else
+    return RHI::InputLayoutElement::Format::Half4;
+#endif
+}
+
 static RHI::InputLayout CreateXyzStColorNormalTangentInputLayout() {
+    constexpr RHI::InputLayoutElement::Format normalTangentFormat = GetNormalTangentFormat();
+
     RHI::InputLayout inputLayout;
     inputLayout.elements = {
         { "POSITION", 0, OFFSET_OF(BE1::VertexGenericLit, xyz), 0, RHI::InputLayoutElement::Format::Float3 },
         { "TEXCOORD", 0, OFFSET_OF(BE1::VertexGenericLit, st), 0, RHI::InputLayoutElement::Format::Half2 },
         { "COLOR", 0, OFFSET_OF(BE1::VertexGenericLit, color), 0, RHI::InputLayoutElement::Format::UByte4N },
-        { "NORMAL", 0, OFFSET_OF(BE1::VertexGenericLit, normal), 0, RHI::InputLayoutElement::Format::UByte4N },
-        { "TEXCOORD", 1, OFFSET_OF(BE1::VertexGenericLit, tangent), 0, RHI::InputLayoutElement::Format::UByte4N },
+        { "NORMAL", 0, OFFSET_OF(BE1::VertexGenericLit, normal), 0, normalTangentFormat },
+        { "TEXCOORD", 1, OFFSET_OF(BE1::VertexGenericLit, tangent), 0, normalTangentFormat },
     };
     return inputLayout;
 }

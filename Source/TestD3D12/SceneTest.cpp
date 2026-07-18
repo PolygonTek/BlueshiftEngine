@@ -24,12 +24,18 @@
 #endif
 
 void SceneTest::Init(RenderWorld *renderWorld) {
-    assert(!this->renderWorld);
-    assert(renderWorld);
-
     this->renderWorld = renderWorld;
 
     renderWorld->SetSkyboxMaterial(materialManager.GetMaterial("Source/TestD3D12/Materials/skybox.material"));
+
+    RenderLight::Desc &directionalLightDesc = directionalLight.renderLightDesc;
+    directionalLightDesc.type = RenderLight::Type::Directional;
+    directionalLightDesc.flags = RenderLight::Flag::None;
+    directionalLightDesc.linearColor = BE1::Color3::white;
+    directionalLightDesc.intensity = 2.0f;
+    directionalLightDesc.projectionPolicy = RHI::renderer->GetProjectionPolicy();
+    directionalLightEnabled = true;
+    UpdateDirectionalLightDirection();
 
     InitGameObjects(50, 50, 4);
     InitGameLights(32, 32, 1);
@@ -169,6 +175,10 @@ void SceneTest::InitGameLights(uint32_t countX, uint32_t countY, uint32_t countZ
 
     BE1::RNG rng(1);
 
+    if (directionalLightEnabled) {
+        directionalLight.renderLightHandle = renderWorld->AddRenderLight(directionalLight.renderLightDesc);
+    }
+
     for (uint32_t z = 0; z < lightCountZ; ++z) {
         for (uint32_t y = 0; y < lightCountY; ++y) {
             for (uint32_t x = 0; x < lightCountX; ++x) {
@@ -205,6 +215,7 @@ void SceneTest::ClearGameObjects() {
 void SceneTest::ClearGameLights() {
     renderWorld->ClearScene(RenderWorld::ClearFlag::RenderLights);
 
+    directionalLight.renderLightHandle = -1;
     gameLights.Clear();
 }
 
@@ -259,6 +270,11 @@ void SceneTest::AnimateGameLights(uint64_t elapsedUsec) {
     }
 }
 
+void SceneTest::UpdateDirectionalLightDirection() {
+    // The UI describes the direction toward the sun or moon, while axis[0] is the direction in which light rays travel.
+    directionalLight.renderLightDesc.axis = BE1::Angles(0.0f, directionalLightElevation, directionalLightAzimuth + 180.0f).ToMat3();
+}
+
 #ifdef ENABLE_IMGUI
 void SceneTest::BuildImGui() {
     const float itemWidth = ImGui::GetFontSize() * 10.0f;
@@ -284,7 +300,7 @@ void SceneTest::BuildImGui() {
     }
 
     ImGui::Spacing();
-    ImGui::Text("Lights (%i)", gameLights.Count());
+    ImGui::Text("Point Lights (%i)", gameLights.Count());
     ImGui::Checkbox("Animate Lights", &animateLights);
 
     ImGui::SetNextItemWidth(itemWidth);
@@ -303,5 +319,56 @@ void SceneTest::BuildImGui() {
         (static_cast<uint32_t>(imguiLightCountX) != lightCountX || static_cast<uint32_t>(imguiLightCountY) != lightCountY || static_cast<uint32_t>(imguiLightCountZ) != lightCountZ)) {
         pendingLightCountChange = true;
     }
+
+    ImGui::Spacing();
+    ImGui::Text("Directional Light");
+
+    if (ImGui::Checkbox("Enabled##DirectionalLight", &directionalLightEnabled)) {
+        if (directionalLightEnabled) {
+            directionalLight.renderLightHandle = renderWorld->AddRenderLight(directionalLight.renderLightDesc);
+        } else if (directionalLight.renderLightHandle >= 0) {
+            renderWorld->RemoveRenderLight(directionalLight.renderLightHandle);
+            directionalLight.renderLightHandle = -1;
+        }
+    }
+
+    ImGui::BeginDisabled(!directionalLightEnabled);
+    ImGui::TextDisabled("Azimuth: 0 = +X, 90 = +Y; Elevation: 0 = horizon");
+
+    bool directionalLightChanged = false;
+    bool directionalLightDirectionChanged = false;
+
+    ImGui::SetNextItemWidth(itemWidth);
+    if (ImGui::SliderFloat("Azimuth##DirectionalLight", &directionalLightAzimuth, 0.0f, 360.0f, "%.1f deg")) {
+        directionalLightDirectionChanged = true;
+    }
+
+    ImGui::SetNextItemWidth(itemWidth);
+    if (ImGui::SliderFloat("Elevation##DirectionalLight", &directionalLightElevation, -90.0f, 90.0f, "%.1f deg")) {
+        directionalLightDirectionChanged = true;
+    }
+
+    RenderLight::Desc &directionalLightDesc = directionalLight.renderLightDesc;
+
+    ImGui::SetNextItemWidth(itemWidth);
+    if (ImGui::ColorEdit3("Color##DirectionalLight", directionalLightDesc.linearColor.Ptr(), ImGuiColorEditFlags_Float)) {
+        directionalLightChanged = true;
+    }
+
+    ImGui::SetNextItemWidth(itemWidth);
+    if (ImGui::SliderFloat("Intensity##DirectionalLight", &directionalLightDesc.intensity, 0.0f, 10.0f, "%.3f")) {
+        directionalLightChanged = true;
+    }
+
+    if (directionalLightDirectionChanged) {
+        UpdateDirectionalLightDirection();
+        directionalLightChanged = true;
+    }
+
+    if (directionalLightChanged) {
+        renderWorld->UpdateRenderLight(directionalLight.renderLightHandle, directionalLightDesc, RenderLight::Desc::UpdateFlag::Transform);
+    }
+
+    ImGui::EndDisabled();
 }
 #endif

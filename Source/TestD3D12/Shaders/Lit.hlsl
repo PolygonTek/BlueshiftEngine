@@ -42,7 +42,7 @@ PSInput VSMain(VSInput input) {
     result.texCoord = input.texCoord;
     result.shaderMaterialIndex = shaderSurface.shaderMaterialIndex;
     result.worldPosition = positionWS.xyz;
-    result.worldNormal = TransformSurfaceNormal(input.normal.xyz, shaderSurface.worldMatrix, (shaderSurface.flags & ShaderSurfaceFlagNonUniformScale) != 0);
+    result.worldNormal = TransformSurfaceNormal(DecodeVertexNormal(input.normal.xyz), shaderSurface.worldMatrix, (shaderSurface.flags & ShaderSurfaceFlagNonUniformScale) != 0);
 #ifdef OUTPUT_VELOCITY
     result.currentVelocityPosition = mul(cameraConstants.unjitteredViewProjMatrix, positionWS);
     result.prevVelocityPosition = CalcClipPosition(input.position, shaderSurface.prevWorldMatrix, cameraConstants.prevUnjitteredViewProjMatrix);

@@ -159,7 +159,7 @@ void RenderBackend::DrawDebugLights() {
     PROFILER_CPU_SCOPED_EVENT("RenderBackend::DrawDebugLights");
 
     RHI::PipelineState *pipelineState = currentVisCamera->debugDrawPSOs[static_cast<int>(DebugDrawPipelineId::DepthTestedLines)];
-    if (!currentVisCamera->showDebugLights || currentVisCamera->numVisLights == 0 || !pipelineState) {
+    if (!currentVisCamera->showDebugLights || currentVisCamera->numVisLocalLights == 0 || !pipelineState) {
         return;
     }
 
@@ -167,8 +167,8 @@ void RenderBackend::DrawDebugLights() {
     float unitRadiusToPixelsScale = 0.0f;
     uint64_t numVerts = 0;
 
-    for (uint32_t lightIndex = 0; lightIndex < currentVisCamera->numVisLights; ++lightIndex) {
-        const VisLight *visLight = currentVisCamera->visLights[lightIndex];
+    for (uint32_t lightIndex = 0; lightIndex < currentVisCamera->numVisLocalLights; ++lightIndex) {
+        const VisLight *visLight = currentVisCamera->visLocalLights[lightIndex];
         if (!visLight) {
             continue;
         }
@@ -209,8 +209,8 @@ void RenderBackend::DrawDebugLights() {
     DebugDrawVertex *vertexPtr = reinterpret_cast<DebugDrawVertex *>(vertexBuffer->mappedPtr);
     DebugDrawVertex *const firstVertexPtr = vertexPtr;
 
-    for (uint32_t lightIndex = 0; lightIndex < currentVisCamera->numVisLights; ++lightIndex) {
-        const VisLight *visLight = currentVisCamera->visLights[lightIndex];
+    for (uint32_t lightIndex = 0; lightIndex < currentVisCamera->numVisLocalLights; ++lightIndex) {
+        const VisLight *visLight = currentVisCamera->visLocalLights[lightIndex];
         if (!visLight) {
             continue;
         }

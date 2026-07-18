@@ -25,7 +25,8 @@ public:
     enum class Type : uint8_t {
         Point,
         Spot,
-        BoxDir                      ///< Finite box-volume light with a constant direction along axis[0]
+        BoxDir,                     ///< Finite box-volume light with a constant direction along axis[0]
+        Directional                 ///< Infinite-distance light whose rays travel along axis[0]
     };
 
     enum class Flag : uint8_t {
@@ -64,7 +65,7 @@ public:
                                     /// Returns light index in world.
     int                             GetIndex() const { return index; }
 
-                                    /// Returns light type which is one of the [Point, Spot, Box].
+                                    /// Returns light type which is one of the [Point, Spot, BoxDir, Directional].
     Type                            GetType() const { return desc.type; }
 
                                     /// Returns light origin in world space.

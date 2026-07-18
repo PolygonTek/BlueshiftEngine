@@ -173,9 +173,11 @@ public:
     [[nodiscard]] VisObject *       AllocVisObject();
 
     uint32_t                        NumVisLights() const { return numVisLights; }
+    uint32_t                        NumVisLocalLights() const { return numVisLocalLights; }
     uint32_t                        NumVisPointLights() const { return numVisPointLights; }
     uint32_t                        NumVisSpotLights() const { return numVisSpotLights; }
     uint32_t                        NumVisBoxDirLights() const { return numVisBoxDirLights; }
+    const VisLight *                GetPrimaryDirectionalLight() const { return primaryDirectionalLight; }
     ChunkRange<VisLight>            GetVisLights() const { return ChunkRange<VisLight>(firstVisLightChunk); }
     [[nodiscard]] VisLight *        AllocVisLight(RenderLight::Type type);
     [[nodiscard]] uint32_t          ReserveLightCullingZBins();
@@ -285,9 +287,11 @@ private:
     Chunk *                         lastVisObjectChunk = nullptr;
 
     uint32_t                        numVisLights = 0;
+    uint32_t                        numVisLocalLights = 0;
     uint32_t                        numVisPointLights = 0;
     uint32_t                        numVisSpotLights = 0;
     uint32_t                        numVisBoxDirLights = 0;
+    VisLight *                      primaryDirectionalLight = nullptr;
     Chunk *                         firstVisLightChunk = nullptr;
     Chunk *                         lastVisLightChunk = nullptr;
 

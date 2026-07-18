@@ -89,6 +89,11 @@ float3 EvaluateBoxDirLightDiffuse(ShaderBoxDirLight boxDirLight, float3 worldPos
     return boxDirLight.lightColor * NdotL * fallOff;
 }
 
+float3 EvaluateDirectionalLightDiffuse(ShaderDirectionalLight directionalLight, float3 worldNormal) {
+    const float NdotL = saturate(dot(worldNormal, -directionalLight.direction));
+    return directionalLight.lightColor * NdotL;
+}
+
 float3 EvaluateShaderLightDiffuse(uint packedLightRef, float3 worldPosition, float3 worldNormal) {
     const uint lightType = packedLightRef & ShaderLightTypeMask;
     const uint lightTypeIndex = packedLightRef >> ShaderLightTypeBitCount;
@@ -128,10 +133,13 @@ float3 EvaluateLit(uint2 pixelCoord, float ndcDepth, float3 worldPosition, float
     if (IsHelperLane()) {
         return 0.0f;
     }
+#endif
 
+    float3 directDiffuse = EvaluateDirectionalLightDiffuse(frameConstants.directionalLight, worldNormal);
+
+#if SHADER_LIGHT_USE_WAVE_OPS
     const bool useZBin = (cameraConstants.flags & ShaderCameraFlagUseLightZBin) != 0;
     ShaderLightIterator lightIterator = BeginShaderLightIteration(pixelCoord, ndcDepth, useZBin, true);
-    float3 directDiffuse = 0.0f;
 
     const bool hasLights = lightIterator.nextWordIndex < lightIterator.endWordIndex;
 
@@ -168,7 +176,6 @@ float3 EvaluateLit(uint2 pixelCoord, float ndcDepth, float3 worldPosition, float
     const bool useZBin = (cameraConstants.flags & ShaderCameraFlagUseLightZBin) != 0;
     ShaderLightIterator lightIterator = BeginShaderLightIteration(pixelCoord, ndcDepth, useZBin, false);
     ShaderLightRef shaderLightRef;
-    float3 directDiffuse = 0.0f;
 
     [loop]
     while (NextShaderLight(lightIterator, shaderLightRef)) {

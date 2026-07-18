@@ -153,9 +153,23 @@ RenderLight *RenderWorld::GetRenderLight(int index) const {
     return renderLight;
 }
 
+static bool HasDirectionalLight(const BE1::Array<RenderLight *> &renderLights, const RenderLight *excludedLight = nullptr) {
+    for (const RenderLight *renderLight : renderLights) {
+        if (renderLight && renderLight != excludedLight && renderLight->GetType() == RenderLight::Type::Directional) {
+            return true;
+        }
+    }
+    return false;
+}
+
 int RenderWorld::AddRenderLight(const RenderLight::Desc &desc) {
     assert(BE1::Engine::IsInMainThread());
     assert(!frameActive);
+
+    if (desc.type == RenderLight::Type::Directional && HasDirectionalLight(renderLights)) {
+        BE_WARNLOG("RenderWorld::AddRenderLight: only one directional light is supported\n");
+        return -1;
+    }
 
     int index = renderLights.FindNull();
     if (index == -1) {
@@ -182,6 +196,15 @@ void RenderWorld::UpdateRenderLight(int index, const RenderLight::Desc &desc, Re
     RenderLight *renderLight = renderLights[index];
     if (!renderLight) {
         BE_WARNLOG("RenderWorld::UpdateRenderLight: index %i is nullptr\n", index);
+        return;
+    }
+
+    // 이미 Directional Light 가 존재하는데 다른 Light 를 Directional 로 바꿀 수는 없다.
+    if (BE1::HasFlag(updateFlags, RenderLight::Desc::UpdateFlag::Shape) &&
+        desc.type == RenderLight::Type::Directional &&
+        renderLight->GetType() != RenderLight::Type::Directional &&
+        HasDirectionalLight(renderLights, renderLight)) {
+        BE_WARNLOG("RenderWorld::UpdateRenderLight: only one directional light is supported\n");
         return;
     }
 

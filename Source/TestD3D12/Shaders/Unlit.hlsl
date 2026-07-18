@@ -45,7 +45,7 @@ PSInput VSMain(VSInput input) {
     result.prevVelocityPosition = CalcClipPosition(input.position, shaderSurface.prevWorldMatrix, cameraConstants.prevUnjitteredViewProjMatrix);
 #endif
 #ifdef OUTPUT_NORMAL
-    result.worldNormal = TransformSurfaceNormal(input.normal.xyz, shaderSurface.worldMatrix, (shaderSurface.flags & ShaderSurfaceFlagNonUniformScale) != 0);
+    result.worldNormal = TransformSurfaceNormal(DecodeVertexNormal(input.normal.xyz), shaderSurface.worldMatrix, (shaderSurface.flags & ShaderSurfaceFlagNonUniformScale) != 0);
 #endif
 
     return result;

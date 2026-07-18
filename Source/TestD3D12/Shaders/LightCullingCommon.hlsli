@@ -63,11 +63,11 @@ ShaderLightIterator BeginShaderLightIteration(uint2 pixelCoord, float ndcDepth, 
     iterator.maxLightIndex = 0;
     iterator.lightMask = 0;
 
-    if (cameraConstants.numLights == 0 || cameraConstants.lightCullingLightRefTableOffset == ShaderLightInvalidOffset) {
+    if (cameraConstants.numLocalLights == 0 || cameraConstants.lightCullingLightRefTableOffset == ShaderLightInvalidOffset) {
         return iterator;
     }
 
-    iterator.maxLightIndex = cameraConstants.numLights - 1;
+    iterator.maxLightIndex = cameraConstants.numLocalLights - 1;
 
     // Z-bin 을 사용할 수 있다면, minLightIndex 와 maxLightIndex 를 현재 픽셀의 linear view Z 와 겹치는 라이트 범위로 제한한다.
     if (useZBin && cameraConstants.lightCullingZBinTableOffset != ShaderLightInvalidOffset) {
@@ -80,12 +80,12 @@ ShaderLightIterator BeginShaderLightIteration(uint2 pixelCoord, float ndcDepth, 
         const uint maxLightIndex = packedLightRange >> 16;
 
         // Z-bin 이 비어있는 경우
-        if (minLightIndex > maxLightIndex || minLightIndex >= cameraConstants.numLights) {
+        if (minLightIndex > maxLightIndex || minLightIndex >= cameraConstants.numLocalLights) {
             return iterator;
         }
 
         iterator.minLightIndex = minLightIndex;
-        iterator.maxLightIndex = min(maxLightIndex, cameraConstants.numLights - 1);
+        iterator.maxLightIndex = min(maxLightIndex, cameraConstants.numLocalLights - 1);
     }
 
     // 나중에 테스트할 mask word index 의 범위를 기록한다.

@@ -45,7 +45,6 @@ bool ShaderLightTable::EnsureBufferCapacity(uint32_t pointLightCount, uint32_t s
     if (!EnsureBufferCapacity(boxDirLightBuffer, boxDirLightCount, sizeof(ShaderBoxDirLight), "shaderBoxDirLightTableBuffer")) {
         return false;
     }
-
     return true;
 }
 
@@ -113,6 +112,8 @@ bool ShaderLightTable::Upload(RHI::FrameThreadData *frameThreadData, RHI::Comman
         case RenderLight::Type::BoxDir:
             assert(visLight.typeIndex < boxDirLightCount);
             Build(visLight, shaderBoxDirLights[visLight.typeIndex]);
+            break;
+        case RenderLight::Type::Directional:
             break;
         default:
             assert(0);

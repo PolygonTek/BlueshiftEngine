@@ -32,7 +32,7 @@ void CSMain(uint3 dispatchThreadId : SV_DispatchThreadID) {
     [unroll]
     for (uint bitIndex = 0; bitIndex < ShaderLightWordBits; ++bitIndex) {
         const uint lightIndex = firstLightIndex + bitIndex;
-        if (lightIndex >= lightCullingParams.numLights) {
+        if (lightIndex >= lightCullingParams.numLocalLights) {
             break;
         }
 
