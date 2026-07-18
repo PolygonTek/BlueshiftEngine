@@ -54,6 +54,9 @@ private:
     uint32_t                    lightCountY = 1;
     uint32_t                    lightCountZ = 1;
 
+    bool                        animateObjects = true;
+    bool                        animateLights = true;
+
 #ifdef ENABLE_IMGUI
     int                         imguiObjectCountX = 1;
     int                         imguiObjectCountY = 1;

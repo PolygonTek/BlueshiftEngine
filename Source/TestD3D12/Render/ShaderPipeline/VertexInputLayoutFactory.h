@@ -21,6 +21,7 @@ enum class VertexInputLayoutId : uint8_t {
     XyzSkinning1,
     XyzSkinning4,
     XyzSkinning8,
+    XyzColor,
     XyzSt,
     XyzStSkinning1,
     XyzStSkinning4,

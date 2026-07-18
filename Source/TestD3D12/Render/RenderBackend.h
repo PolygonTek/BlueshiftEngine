@@ -72,6 +72,8 @@ private:
         uint32_t                    instanceTableUploadBytes = 0;
     };
 
+    void                            InitDebugDraw();
+
     const void *                    ExecuteBeginContext(const void *data);
     const void *                    ExecuteDrawCamera(const void *data);
     const void *                    ExecuteScreenshot(const void *data);
@@ -95,6 +97,8 @@ private:
     void                            DrawGenericPass(const RenderPass *renderPass);
     void                            DrawSkyPass(const RenderPass *renderPass);
     void                            DrawGuiPass(const RenderPass *renderPass);
+    void                            DrawDebugLights();
+    void                            DrawDebugPrimitives();
 
     void                            UploadStaticDataToGPU(const RenderPass *renderPass) const;
     void                            SetPassVertexBuffers(RHI::CommandList *commandList, const RenderPassDrawSurf *drawSurf) const;

@@ -110,8 +110,8 @@ static const uint ShaderLightTypeBoxDir = 2;
 static const uint ShaderLightTileSize = 32;
 static const uint ShaderLightTileCoordBitCount = 16;
 static const uint ShaderLightTileCoordMask = (1u << ShaderLightTileCoordBitCount) - 1u;
-static const uint ShaderLightMaskWordBits = 32;
-static const uint ShaderLightMaskWordShift = 5;
+static const uint ShaderLightWordBits = 32;
+static const uint ShaderLightWordShift = 5;
 static const uint ShaderLightCullingThreadGroupSizeX = 8;
 static const uint ShaderLightCullingThreadGroupSizeY = 8;
 static const uint ShaderLightZBinCount = 4096;
@@ -292,10 +292,10 @@ struct FFTStageParams {
 struct ShaderLightCullingParams {
     uint numLights;
     uint lightRefTableOffset;
-    uint tileMaskWordTableOffset;
+    uint tileWordTableOffset;
     uint tileCountX;
     uint tileCountY;
-    uint wordCountPerTile;
+    uint wordsPerTile;
     uint padding0;
     uint padding1;
 };
@@ -315,7 +315,7 @@ struct FrameConstants {
     uint shaderBoxDirLightTableIndex;
     uint shaderLightRefTableIndex;
     uint shaderLightZBinTableIndex;
-    uint shaderLightTileMaskWordTableIndex;
+    uint shaderLightTileWordTableIndex;
     uint feedbackBufferIndex;
 };
 
@@ -342,13 +342,13 @@ struct CameraConstants {
 
     uint numLights;
     uint lightCullingLightRefTableOffset;
-    uint lightCullingTileMaskWordTableOffset;
     uint lightCullingZBinTableOffset;
+    uint lightCullingTileWordTableOffset;
     float lightCullingZBinScale;
     float lightCullingZBinBias;
     uint lightCullingTileCountX;
     uint lightCullingTileCountY;
-    uint lightCullingWordCountPerTile;
+    uint lightCullingWordsPerTile;
     uint lightCullingDebugMode;
     uint padding0;
 };

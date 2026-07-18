@@ -18,12 +18,15 @@
 #include "RenderObject.h"
 #include "Render/Mesh/GuiMesh.h"
 #include "RenderPassBuilder.h"
+#include "DebugDrawPipeline.h"
+#include "DebugDrawVertex.h"
 
 struct VisSurf;
 struct VisCamera;
 struct VisLight;
 struct VisObject;
 struct RenderCameraDesc;
+struct DebugDrawData;
 class RenderFrameData;
 class RenderCamera;
 class Texture;
@@ -75,6 +78,10 @@ public:
     void                        BeginFrame();
     void                        EndFrame();
 
+                                /// 프레임이 활성화되어 있으면 현재 프레임 인덱스를, 그렇지 않으면 다음 프레임 인덱스를 반환한다.
+    uint64_t                    GetCurrentOrNextFrameIndex() const { return frameActive ? frameIndex : frameIndex + 1; }
+    uint64_t                    GetCurrentFrameIndex() const { return frameIndex; }
+
     void                        ClearScene(ClearFlag clearFlags = ClearFlag::All);
 
     RenderObject *              GetRenderObject(int index) const;
@@ -92,9 +99,18 @@ public:
     void                        RenderScene(RenderCamera *renderCamera);
     void                        RenderGUI(GuiMesh &guiMesh);
 
+    void                        SetDebugColor(const BE1::Color4 &lineColor, const BE1::Color4 &fillColor);
+    void                        ClearDebugPrimitives();
+
+                                /// 디버그 프리미티브는 메인 스레드에서만 등록할 수 있다. 프레임이 활성화되지 않은 상태에서 등록하면 다음 프레임을 대상으로 한다.
+                                /// lifeTime은 밀리초 단위이며 0 이상이어야 한다. 0 이면 해당 프리미티브는 대상 프레임 동안만 유지된다.
+    void                        DrawDebugPoint(const BE1::Vec3 &origin, float size, bool depthTest = false, int lifeTime = 0);
     void                        DrawDebugLine(const BE1::Vec3 &start, const BE1::Vec3 &end, bool depthTest = false, int lifeTime = 0);
+    void                        DrawDebugPolyline(const BE1::Vec3 *points, uint32_t numPoints, bool closed = false, bool depthTest = false, int lifeTime = 0);
+    void                        DrawDebugAxis(const BE1::Vec3 &origin, const BE1::Mat3 &axis, float size, bool depthTest = false, int lifeTime = 0);
     void                        DrawDebugTriangle(const BE1::Vec3 &a, const BE1::Vec3 &b, const BE1::Vec3 &c, bool twoSided = true, bool depthTest = false, int lifeTime = 0);
     void                        DrawDebugQuad(const BE1::Vec3 &origin, const BE1::Vec3 &right, const BE1::Vec3 &up, float size, bool twoSided = true, bool depthTest = false, int lifeTime = 0);
+    void                        DrawDebugPlane(const BE1::Vec3 &origin, const BE1::Vec3 &normal, float size, bool depthTest = false, int lifeTime = 0);
     void                        DrawDebugCircle(const BE1::Vec3 &origin, const BE1::Vec3 &dir, const float radius, bool twoSided = true, bool depthTest = false, int lifeTime = 0);
     void                        DrawDebugHollowCircle(const BE1::Vec3 &origin, const BE1::Vec3 &dir, const float radius1, const float radius2, bool twoSided = true, bool depthTest = false, int lifeTime = 0);
     void                        DrawDebugArc(const BE1::Vec3 &origin, const BE1::Vec3 &right, const BE1::Vec3 &up, const float radius, float angle1, float angle2, bool drawSector, bool twoSided = true, bool depthTest = false, int lifeTime = 0);
@@ -108,7 +124,7 @@ public:
     void                        DrawDebugFrustum(const BE1::Frustum &frustum, bool showFromOrigin, bool twoSided = true, bool depthTest = false, int lifeTime = 0);
     void                        DrawDebugCone(const BE1::Vec3 &origin, const BE1::Mat3 &axis, float height, float radius1, float radius2, bool drawCap, bool twoSided = true, bool depthTest = false, int lifeTime = 0);
     void                        DrawDebugCone(const BE1::Vec3 &apex, const BE1::Vec3 &bottom, float radius1, float radius2, bool drawCap, bool twoSided = true, bool depthTest = false, int lifeTime = 0);
-    void                        DrawDebugConeSimple(const BE1::Vec3 &origin, const BE1::Mat3 &axis, float height, float radius1, float radius2, bool drawCap, bool twoSided = true, bool depthTest = false, int lifeTime = 0);
+    void                        DrawDebugConeSimple(const BE1::Vec3 &origin, const BE1::Mat3 &axis, float height, float radius1, float radius2, bool depthTest = false, int lifeTime = 0);
     void                        DrawDebugCylinder(const BE1::Vec3 &center, const BE1::Mat3 &axis, float height, float radius, bool twoSided = true, bool depthTest = false, int lifeTime = 0);
     void                        DrawDebugCylinder(const BE1::Vec3 &top, const BE1::Vec3 &bottom, float radius, bool twoSided = true, bool depthTest = false, int lifeTime = 0);
     void                        DrawDebugCylinderSimple(const BE1::Vec3 &center, const BE1::Mat3 &axis, float height, float radius, bool depthTest = false, int lifeTime = 0);
@@ -118,6 +134,20 @@ public:
     void                        DrawDebugArrow(const BE1::Vec3 &start, const BE1::Vec3 &end, float coneSize, float coneRadius, bool depthTest = false, int lifeTime = 0);
 
 private:
+    struct DebugPrimitiveRange {
+        uint32_t                firstVertex = 0;
+        uint32_t                numVerts = 0;
+        uint64_t                expireFrameIndex = ~uint64_t(0);
+        uint64_t                expireTimeUsec = 0;
+    };
+
+    struct DebugPrimitiveBucket {
+        DebugPrimitiveBucket() : vertices(256), primitives(64) {}
+
+        BE1::Array<DebugDrawVertex> vertices;
+        BE1::Array<DebugPrimitiveRange> primitives;
+    };
+
     struct SkinningJointCacheTaskDesc {
         int32_t                 threadIndex = -1;
         RenderWorld *           renderWorld = nullptr;
@@ -128,11 +158,6 @@ private:
 
     bool                        IsVisLightRegisteredInCurrentView(const RenderLight *renderLight) const;
     VisLight *                  RegisterVisLight(RenderFrameData *frameData, RenderLight *renderLight);
-    void                        FindVisLights(RenderFrameData *frameData, const RenderCamera *renderCamera, VisCamera *visCamera);
-    static void                 ComputeLightTileRange(const VisCamera *visCamera, const BE1::Rect &screenClipRect, uint32_t &packedTileMin, uint32_t &packedTileMax);
-    static void                 BuildLightCullingData(RenderFrameData *frameData, const RenderCamera *renderCamera, VisCamera *visCamera);
-    static void                 BuildLightZBins(RenderFrameData *frameData, const RenderCameraDesc &cameraDesc, VisCamera *visCamera);
-    bool                        IsVisObjectRegisteredInCurrentView(const RenderObject *renderObject) const;
     VisObject *                 RegisterVisObject(RenderFrameData *frameData, RenderObject *renderObject);
     void                        CapturePrevWorldMatrix(RenderObject *renderObject);
     void                        SetVisObjectWorldMatrices(const RenderObject *renderObject, VisObject *visObject);
@@ -147,8 +172,21 @@ private:
     void                        AddTextMeshes(RenderFrameData *frameData, const RenderCamera *renderCamera, VisCamera *visCamera);
     void                        AddRawMeshes(RenderFrameData *frameData, const RenderCamera *renderCamera, VisCamera *visCamera);
     void                        AddSkyBoxMeshes(RenderFrameData *frameData, const RenderCamera *renderCamera, VisCamera *visCamera);
+    void                        FindVisLights(RenderFrameData *frameData, const RenderCamera *renderCamera, VisCamera *visCamera);
+    static void                 ComputeLightTileRange(const VisCamera *visCamera, const BE1::Rect &screenClipRect, uint32_t &packedTileMin, uint32_t &packedTileMax);
+    static void                 BuildLightCullingData(RenderFrameData *frameData, const RenderCamera *renderCamera, VisCamera *visCamera);
+    static void                 BuildLightZBins(RenderFrameData *frameData, const RenderCameraDesc &cameraDesc, VisCamera *visCamera);
+    bool                        IsVisObjectRegisteredInCurrentView(const RenderObject *renderObject) const;
     void                        SetupPyramidBloom(RenderFrameData *frameData, RenderCamera *renderCamera, VisCamera *visCamera);
     void                        SetupConvolutionBloom(RenderFrameData *frameData, RenderCamera *renderCamera, VisCamera *visCamera);
+
+    DebugDrawVertex *           ReserveDebugVertices(DebugDrawPipelineId pipelineId, uint32_t numVerts, const BE1::Color4 &color, int lifeTime);
+    DebugDrawVertex *           ReserveDebugLineVertices(uint32_t numVerts, bool depthTest, int lifeTime);
+    DebugDrawVertex *           ReserveDebugFillVertices(uint32_t numVerts, bool twoSided, bool depthTest, int lifeTime);
+    void                        ExpireDebugPrimitives(uint64_t currentTimeUsec);
+    void                        BuildDebugDraw(RenderFrameData *frameData, VisCamera *visCamera);
+    const DebugDrawData *       BuildDebugDrawData(RenderFrameData *frameData);
+    void                        PrepareDebugDrawPipelines(VisCamera *visCamera);
 
     void                        DrawCamera(RenderFrameData *frameData, const RenderCamera *renderCamera, VisCamera *visCamera);
     void                        DrawGUICamera(RenderFrameData *frameData, uint32_t screenWidth, uint32_t screenHeight, GuiMesh &guiMesh);
@@ -159,7 +197,7 @@ private:
     BE1::Array<RenderLight *>   renderLights;       /// The array of pointers to all render lights managed by the world.
 
     bool                        frameActive = false;
-    uint64_t                    renderWorldFrameIndex = 0;
+    uint64_t                    frameIndex = 0;
     uint64_t                    viewCount = 0;      ///< Counter used to track how many views (or scene renderings) have been issued.
 
     uint32_t                    renderWorldGroupId = -1;
@@ -170,8 +208,12 @@ private:
 
     RenderPassBuilder           renderPassBuilder;
 
-    BE1::Color4                 debugLineColor;
-    BE1::Color4                 debugFillColor;
+    BE1::Color4                 debugLineColor;     ///< Current debug line color
+    BE1::Color4                 debugFillColor;     ///< Current debug fill color
+    DebugPrimitiveBucket        debugPrimitiveBuckets[static_cast<int>(DebugDrawPipelineId::Count)];
+    uint32_t                    debugPrimitiveCount = 0;
+    uint32_t                    debugPrimitiveVertexCount = 0;
+    uint64_t                    debugCapacityWarningFrameIndex = ~uint64_t(0);
 };
 
 template<>

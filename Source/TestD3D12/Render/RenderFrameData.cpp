@@ -133,8 +133,8 @@ void RenderFrameData::BeginFrame() {
     frameCount = 0;
     statEnabled = false;
     maxShaderSurfaceCount = 0;
-    lightZBinCount = 0;
-    lightTileMaskWordCount = 0;
+    numLightCullingZBins = 0;
+    numLightCullingWords = 0;
 
     // 스레드 별로 사용할 자원을 초기화한다.
     for (int32_t threadIndex = 0; threadIndex < numRenderTaskThreads; ++threadIndex) {
@@ -505,19 +505,19 @@ VisLight *RenderFrameData::AllocVisLight(RenderLight::Type type) {
     return newVisLight;
 }
 
-uint32_t RenderFrameData::ReserveLightZBins() {
-    assert(ShaderLightZBinCount <= UINT32_MAX - lightZBinCount);
+uint32_t RenderFrameData::ReserveLightCullingZBins() {
+    assert(ShaderLightZBinCount <= UINT32_MAX - numLightCullingZBins);
 
-    const uint32_t offset = lightZBinCount;
-    lightZBinCount += ShaderLightZBinCount;
+    const uint32_t offset = numLightCullingZBins;
+    numLightCullingZBins += ShaderLightZBinCount;
     return offset;
 }
 
-uint32_t RenderFrameData::ReserveLightTileMaskWords(uint32_t count) {
-    assert(count <= UINT32_MAX - lightTileMaskWordCount);
+uint32_t RenderFrameData::ReserveLightCullingWords(uint32_t count) {
+    assert(count <= UINT32_MAX - numLightCullingWords);
 
-    const uint32_t offset = lightTileMaskWordCount;
-    lightTileMaskWordCount += count;
+    const uint32_t offset = numLightCullingWords;
+    numLightCullingWords += count;
     return offset;
 }
 

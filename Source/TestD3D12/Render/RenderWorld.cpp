@@ -33,9 +33,9 @@ void RenderWorld::BeginFrame() {
     assert(!frameActive);
 
     frameActive = true;
-    renderWorldFrameIndex++;
+    frameIndex++;
 
-    //ClearDebugLines();
+    ExpireDebugPrimitives(BE1::PlatformTime::Microseconds());
 }
 
 void RenderWorld::EndFrame() {
@@ -208,7 +208,7 @@ void RenderWorld::RemoveRenderLight(int index) {
 }
 
 void RenderWorld::CapturePrevWorldMatrix(RenderObject *renderObject) {
-    const uint64_t previousFrameIndex = renderWorldFrameIndex;
+    const uint64_t previousFrameIndex = frameIndex;
     if (previousFrameIndex == 0) {
         return;
     }

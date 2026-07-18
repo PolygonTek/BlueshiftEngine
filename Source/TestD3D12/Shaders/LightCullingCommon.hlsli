@@ -9,9 +9,9 @@
 #endif
 
 struct ShaderLightIterator {
-    uint tileMaskWordBaseIndex;
-    uint nextMaskWordIndex;
-    uint endMaskWordIndex;
+    uint tileWordBaseIndex;
+    uint nextWordIndex;
+    uint endWordIndex;
     uint currentWordFirstLightIndex;
     uint minLightIndex;
     uint maxLightIndex;
@@ -39,25 +39,25 @@ uint LoadLightZBin(uint address, bool waveCoherent) {
     return GetBufferUInt(frameConstants.shaderLightZBinTableIndex)[address];
 }
 
-uint LoadLightTileMaskWord(uint address, bool waveCoherent) {
+uint LoadLightTileWord(uint address, bool waveCoherent) {
 #if SHADER_LIGHT_USE_WAVE_OPS
     // 모든 Wave 가 같은 mask word 만 읽는다면 Wave 당 한번만 읽는다.
     if (waveCoherent && WaveActiveAllEqual(address)) {
         uint lightMask = 0;
         if (WaveIsFirstLane()) {
-            lightMask = GetBufferUInt(frameConstants.shaderLightTileMaskWordTableIndex)[address];
+            lightMask = GetBufferUInt(frameConstants.shaderLightTileWordTableIndex)[address];
         }
         return WaveReadLaneFirst(lightMask);
     }
 #endif
-    return GetBufferUInt(frameConstants.shaderLightTileMaskWordTableIndex)[address];
+    return GetBufferUInt(frameConstants.shaderLightTileWordTableIndex)[address];
 }
 
 ShaderLightIterator BeginShaderLightIteration(uint2 pixelCoord, float ndcDepth, bool useZBin, bool waveCoherent) {
     ShaderLightIterator iterator;
-    iterator.tileMaskWordBaseIndex = ShaderLightInvalidOffset;
-    iterator.nextMaskWordIndex = 0;
-    iterator.endMaskWordIndex = 0;
+    iterator.tileWordBaseIndex = ShaderLightInvalidOffset;
+    iterator.nextWordIndex = 0;
+    iterator.endWordIndex = 0;
     iterator.currentWordFirstLightIndex = 0;
     iterator.minLightIndex = 0;
     iterator.maxLightIndex = 0;
@@ -89,30 +89,30 @@ ShaderLightIterator BeginShaderLightIteration(uint2 pixelCoord, float ndcDepth, 
     }
 
     // 나중에 테스트할 mask word index 의 범위를 기록한다.
-    iterator.nextMaskWordIndex = iterator.minLightIndex >> ShaderLightMaskWordShift;
-    iterator.endMaskWordIndex = (iterator.maxLightIndex >> ShaderLightMaskWordShift) + 1;
+    iterator.nextWordIndex = iterator.minLightIndex >> ShaderLightWordShift;
+    iterator.endWordIndex = (iterator.maxLightIndex >> ShaderLightWordShift) + 1;
 
-    if (cameraConstants.lightCullingTileMaskWordTableOffset != ShaderLightInvalidOffset) {
+    if (cameraConstants.lightCullingTileWordTableOffset != ShaderLightInvalidOffset) {
         const uint2 tileCoord = pixelCoord / ShaderLightTileSize;
         const uint tileIndex = tileCoord.y * cameraConstants.lightCullingTileCountX + tileCoord.x;
 
         // 현재 픽셀이 속한 타일의 mask word base index 를 기록한다.
-        iterator.tileMaskWordBaseIndex = cameraConstants.lightCullingTileMaskWordTableOffset + tileIndex * cameraConstants.lightCullingWordCountPerTile;
+        iterator.tileWordBaseIndex = cameraConstants.lightCullingTileWordTableOffset + tileIndex * cameraConstants.lightCullingWordsPerTile;
     }
 
     return iterator;
 }
 
-uint LoadShaderLightMask(ShaderLightIterator iterator, uint maskWordIndex, bool waveCoherent) {
-    const uint firstMaskWordIndex = iterator.minLightIndex >> ShaderLightMaskWordShift;
-    if (maskWordIndex < firstMaskWordIndex || maskWordIndex >= iterator.endMaskWordIndex) {
+uint LoadShaderLightMask(ShaderLightIterator iterator, uint wordIndex, bool waveCoherent) {
+    const uint firstWordIndex = iterator.minLightIndex >> ShaderLightWordShift;
+    if (wordIndex < firstWordIndex || wordIndex >= iterator.endWordIndex) {
         return 0;
     }
 
-    const uint currentWordFirstLightIndex = maskWordIndex << ShaderLightMaskWordShift;
+    const uint currentWordFirstLightIndex = wordIndex << ShaderLightWordShift;
     uint lightMask = 0xFFFFFFFFu;
-    if (iterator.tileMaskWordBaseIndex != ShaderLightInvalidOffset) {
-        lightMask = LoadLightTileMaskWord(iterator.tileMaskWordBaseIndex + maskWordIndex, waveCoherent);
+    if (iterator.tileWordBaseIndex != ShaderLightInvalidOffset) {
+        lightMask = LoadLightTileWord(iterator.tileWordBaseIndex + wordIndex, waveCoherent);
     }
 
     // 첫번째 mask word 에서 Z-bin 범위 밖의 비트를 제거한다.
@@ -121,7 +121,7 @@ uint LoadShaderLightMask(ShaderLightIterator iterator, uint maskWordIndex, bool 
     }
 
     // 마지막 mask word 에서 Z-bin 범위 밖의 비트를 제거한다.
-    const uint currentWordLastLightIndex = currentWordFirstLightIndex + ShaderLightMaskWordBits - 1;
+    const uint currentWordLastLightIndex = currentWordFirstLightIndex + ShaderLightWordBits - 1;
     if (currentWordLastLightIndex > iterator.maxLightIndex) {
         const uint validBitCount = iterator.maxLightIndex - currentWordFirstLightIndex + 1;
         lightMask &= (1u << validBitCount) - 1u;
@@ -131,11 +131,11 @@ uint LoadShaderLightMask(ShaderLightIterator iterator, uint maskWordIndex, bool 
 }
 
 bool LoadNextShaderLightMask(inout ShaderLightIterator iterator) {
-    while (iterator.nextMaskWordIndex < iterator.endMaskWordIndex) {
-        const uint maskWordIndex = iterator.nextMaskWordIndex++;
-        iterator.currentWordFirstLightIndex = maskWordIndex << ShaderLightMaskWordShift;
+    while (iterator.nextWordIndex < iterator.endWordIndex) {
+        const uint wordIndex = iterator.nextWordIndex++;
+        iterator.currentWordFirstLightIndex = wordIndex << ShaderLightWordShift;
 
-        iterator.lightMask = LoadShaderLightMask(iterator, maskWordIndex, false);
+        iterator.lightMask = LoadShaderLightMask(iterator, wordIndex, false);
         if (iterator.lightMask != 0) {
             return true;
         }

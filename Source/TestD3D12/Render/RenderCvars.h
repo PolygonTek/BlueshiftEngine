@@ -27,6 +27,9 @@ extern BE1::CVar    r_skipDrawCamera2D;
 extern BE1::CVar    r_skipDrawCamera3D;
 extern BE1::CVar    r_skipPostProcess;
 
+extern BE1::CVar    r_debugDrawMaxPrimitives;
+extern BE1::CVar    r_debugDrawMaxVertices;
+extern BE1::CVar    r_showLights2;
 extern BE1::CVar    r_lightCullingZBin;
 extern BE1::CVar    r_lightCullingDebug;
 

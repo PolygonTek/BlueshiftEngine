@@ -20,6 +20,8 @@ set(SRC_FILES
     SceneRegistry.cpp
     SceneTest.h
     SceneTest.cpp
+    SceneDebugDraw.h
+    SceneDebugDraw.cpp
     WinMain.cpp
     WinResource.h
     WinRes/small.ico
@@ -151,12 +153,15 @@ set(SRC_FILES
     Render/ShaderSurfaceTable.cpp
     Render/RenderSystem.h
     Render/RenderSystem.cpp
+    Render/DebugDrawPipeline.h
+    Render/DebugDrawVertex.h
     Render/RenderBackend.h
     Render/RenderBackend.cpp
     Render/RenderBackend_HiZCulling.cpp
     Render/RenderBackend_GenHiZ.cpp
     Render/RenderBackend_HiZDebug.cpp
     Render/RenderBackend_PostProcess.cpp
+    Render/RenderBackend_DebugDraw.cpp
     Render/RenderBackend_DrawGenericSurf.cpp
     Render/RenderBackend_DrawSkySurf.cpp
     Render/RenderLight.h

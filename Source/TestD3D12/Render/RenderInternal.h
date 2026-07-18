@@ -23,6 +23,7 @@
 #include "RenderObject.h"
 #include "RenderCamera.h"
 #include "RenderLight.h"
+#include "DebugDrawPipeline.h"
 
 class Texture;
 struct VisLight;
@@ -80,16 +81,39 @@ struct RenderPass {
     RenderPassDrawSurf *        drawSurfStorage;
 };
 
+// 같은 debug draw pipeline 을 사용하는 프리미티브들을 하나의 배치로 묶는다.
+struct DebugDrawBatch {
+    DebugDrawPipelineId         pipelineId = DebugDrawPipelineId::DepthTestedOneSidedFill;
+    uint32_t                    firstVertex = 0;
+    uint32_t                    numVerts = 0;
+};
+
+struct DebugDrawData {
+    // 최대 6 종의 배치가 가능
+    // 1. TriangleList, depthTest, one-sided
+    // 2. TriangleList, depthTest, two-sided
+    // 3. LineList, depthTest
+    // 4. TriangleList, no depthTest, one-sided
+    // 5. TriangleList, no depthTest, two-sided
+    // 6. LineList, no depthTest
+    static constexpr uint32_t   MaxBatches = static_cast<uint32_t>(DebugDrawPipelineId::Count);
+
+    RHI::VertexBuffer *         vertexBuffer = nullptr;
+    uint32_t                    numVerts = 0;
+    uint32_t                    numBatches = 0;
+    DebugDrawBatch              batches[MaxBatches];
+};
+
 struct LightCulling {
-    uint32_t                    tileCountX = 0;         // X 축 타일 개수
-    uint32_t                    tileCountY = 0;         // Y 축 타일 개수
-    uint32_t                    wordCountPerTile = 0;   // 타일 당 마스크 워드 개수
-    uint32_t *                  zBins = nullptr;        // packed min/max visible light IDs for each linear-depth Z-bin
-    float                       zBinScale = 0.0f;       // zBinIndex = viewZ * zBinScale + zBinBias
-    float                       zBinBias = 0.0f;        // zBinIndex = viewZ * zBinScale + zBinBias
-    uint32_t                    lightRefTableOffset = ~0u;
-    uint32_t                    tileMaskWordTableOffset = ~0u;
-    uint32_t                    zBinTableOffset = ~0u;
+    uint32_t                    tileCountX = 0;             // X 축 타일 개수
+    uint32_t                    tileCountY = 0;             // Y 축 타일 개수
+    uint32_t                    wordsPerTile = 0;           // 타일 당 마스크 워드 개수
+    uint32_t *                  zBins = nullptr;            // packed min/max visible light IDs for each linear-depth Z-bin
+    float                       zBinScale = 0.0f;           // zBinIndex = viewZ * zBinScale + zBinBias
+    float                       zBinBias = 0.0f;            // zBinIndex = viewZ * zBinScale + zBinBias
+    uint32_t                    lightRefTableOffset = ~0u;  // 현재 카메라가 셰이더에서 사용할 라이트 참조 테이블 오프셋
+    uint32_t                    zBinTableOffset = ~0u;      // 현재 카메라가 셰이더에서 사용할 라이트 z-bin 테이블 오프셋
+    uint32_t                    tileWordTableOffset = ~0u;  // 현재 카메라가 셰이더에서 사용할 라이트 bitmask word 테이블 오프셋
 };
 
 // 한 프레임 렌더링에서만 유효한 렌더링 카메라
@@ -99,10 +123,10 @@ struct VisCamera {
     static constexpr int        MaxRenderPasses = 8;
 
     ALIGN_AS32 BE1::Mat4        viewMatrix;
-    ALIGN_AS32 BE1::Mat4        viewProjMatrix;         // jittered
-    ALIGN_AS32 BE1::Mat4        invViewProjMatrix;      // inverse jittered
-    ALIGN_AS32 BE1::Mat4        prevViewProjMatrix;     // jittered previous
-    ALIGN_AS32 BE1::Mat4        prevInvViewProjMatrix;  // inverse jittered previous
+    ALIGN_AS32 BE1::Mat4        viewProjMatrix;             // jittered
+    ALIGN_AS32 BE1::Mat4        invViewProjMatrix;          // inverse jittered
+    ALIGN_AS32 BE1::Mat4        prevViewProjMatrix;         // jittered previous
+    ALIGN_AS32 BE1::Mat4        prevInvViewProjMatrix;      // inverse jittered previous
     ALIGN_AS32 BE1::Mat4        hiZCullViewProjMatrix;
     ALIGN_AS32 BE1::AABB        worldAABB;
 
@@ -113,11 +137,15 @@ struct VisCamera {
 
     uint32_t                    maxVisLights = 0;
     uint32_t                    numVisLights = 0;
-    const VisLight **           visLights = nullptr;    // 카메라에 보이는 모든 광원의 pointer array
+    const VisLight **           visLights = nullptr;        // 카메라에 보이는 모든 광원의 포인터 배열
 
     uint32_t                    maxVisSurfs = 0;
     uint32_t                    numVisSurfs = 0;
-    const VisSurf **            visSurfs = nullptr;     // 카메라에 보이는 모든 surfaces 와 shadow surfaces
+    const VisSurf **            visSurfs = nullptr;         // 카메라에 보이는 모든 surfaces 와 shadow surfaces
+
+    const DebugDrawData *       debugDrawData = nullptr;
+    RHI::PipelineState *        debugDrawPSOs[DebugDrawData::MaxBatches] = {};
+    bool                        showDebugLights = false;
 
     LightCulling                lightCulling;
 

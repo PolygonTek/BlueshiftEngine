@@ -31,8 +31,8 @@ void SceneTest::Init(RenderWorld *renderWorld) {
 
     renderWorld->SetSkyboxMaterial(materialManager.GetMaterial("Source/TestD3D12/Materials/skybox.material"));
 
-    InitGameObjects(32, 32, 10);
-    InitGameLights(16, 16, 4);
+    InitGameObjects(50, 50, 4);
+    InitGameLights(32, 32, 1);
 }
 
 void SceneTest::Shutdown() {
@@ -61,8 +61,12 @@ void SceneTest::Update(uint64_t elapsedUsec) {
     }
 #endif
 
-    AnimateGameObjects(elapsedUsec);
-    AnimateGameLights(elapsedUsec);
+    if (animateObjects) {
+        AnimateGameObjects(elapsedUsec);
+    }
+    if (animateLights) {
+        AnimateGameLights(elapsedUsec);
+    }
 }
 
 void SceneTest::InitGameObjects(uint32_t countX, uint32_t countY, uint32_t countZ) {
@@ -260,6 +264,7 @@ void SceneTest::BuildImGui() {
     const float itemWidth = ImGui::GetFontSize() * 10.0f;
 
     ImGui::Text("Objects (%i)", gameObjects.Count());
+    ImGui::Checkbox("Animate Objects", &animateObjects);
 
     ImGui::SetNextItemWidth(itemWidth);
     ImGui::SliderInt("Count X##Objects", &imguiObjectCountX, 1, 50);
@@ -280,6 +285,7 @@ void SceneTest::BuildImGui() {
 
     ImGui::Spacing();
     ImGui::Text("Lights (%i)", gameLights.Count());
+    ImGui::Checkbox("Animate Lights", &animateLights);
 
     ImGui::SetNextItemWidth(itemWidth);
     ImGui::SliderInt("Count X##Lights", &imguiLightCountX, 1, 50);

@@ -50,6 +50,7 @@ public:
     ReloadedDelegate                shaderTemplateReloaded;
 
     SharedPtr<ShaderTemplate>       fullscreenImageShaderTemplate;
+    SharedPtr<ShaderTemplate>       debugDrawShaderTemplate;
     SharedPtr<ShaderTemplate>       depthShaderTemplate;
     SharedPtr<ShaderTemplate>       unlitShaderTemplate;
     SharedPtr<ShaderTemplate>       litShaderTemplate;

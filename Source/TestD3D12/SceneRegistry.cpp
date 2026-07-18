@@ -14,6 +14,7 @@
 
 #include "Precompiled.h"
 #include "SceneTest.h"
+#include "SceneDebugDraw.h"
 #include "SceneRegistry.h"
 
 using SceneFactory = Scene *(*)();
@@ -27,8 +28,13 @@ static Scene *CreateSceneTest() {
     return new SceneTest;
 }
 
+static Scene *CreateSceneDebugDraw() {
+    return new SceneDebugDraw;
+}
+
 static constexpr SceneEntry SceneEntries[] = {
     { "Test", CreateSceneTest },
+    { "Debug Draw", CreateSceneDebugDraw },
 };
 
 int SceneRegistry::GetCount() {

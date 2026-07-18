@@ -65,7 +65,7 @@ class RenderContext {
         Value<uint32_t>             instanceTableAllocCount = 0;
         Value<uint32_t>             instanceTableUploadBytes = 0;
         Value<uint32_t>             lightCullingZBinCount = 0;
-        Value<uint32_t>             lightCullingTileMaskWordCount = 0;
+        Value<uint32_t>             lightCullingWordCount = 0;
         Value<uint64_t>             lightCullingThreadGroupCount = 0;
     };
 

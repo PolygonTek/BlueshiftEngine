@@ -25,6 +25,8 @@ void RenderBackend::Init() {
     drawGroupId = BE1::Engine::taskManager->CreateGroupId();
 #endif
 
+    InitDebugDraw();
+
     gpuTiming.Init();
 }
 
@@ -121,20 +123,20 @@ void RenderBackend::UpdateFrameStats() {
     stats.drawTriangleCount = statDrawTriangleCount;
     stats.instanceTableAllocCount = statInstanceTableAllocCount;
     stats.instanceTableUploadBytes = statInstanceTableUploadBytes;
-    stats.lightCullingZBinCount = frameData->GetLightZBinCount();
-    stats.lightCullingTileMaskWordCount = frameData->GetLightTileMaskWordCount();
+    stats.lightCullingZBinCount = frameData->NumLightCullingZBins();
+    stats.lightCullingWordCount = frameData->NumLightCullingWords();
 
     const VisCamera *visCameras = frameData->GetVisCameras();
     for (uint32_t cameraIndex = 0; cameraIndex < frameData->NumVisCameras(); ++cameraIndex) {
         const VisCamera &visCamera = visCameras[cameraIndex];
-        if (visCamera.lightCulling.wordCountPerTile == 0) {
+        if (visCamera.lightCulling.wordsPerTile == 0) {
             continue;
         }
 
         const uint32_t threadGroupCountX = (visCamera.lightCulling.tileCountX + ShaderLightCullingThreadGroupSizeX - 1) / ShaderLightCullingThreadGroupSizeX;
         const uint32_t threadGroupCountY = (visCamera.lightCulling.tileCountY + ShaderLightCullingThreadGroupSizeY - 1) / ShaderLightCullingThreadGroupSizeY;
 
-        stats.lightCullingThreadGroupCount += static_cast<uint64_t>(threadGroupCountX) * threadGroupCountY * visCamera.lightCulling.wordCountPerTile;
+        stats.lightCullingThreadGroupCount += static_cast<uint64_t>(threadGroupCountX) * threadGroupCountY * visCamera.lightCulling.wordsPerTile;
     }
 
     currentContext->SetStats(stats);
@@ -157,7 +159,7 @@ bool RenderBackend::UploadFrameConstants() {
     constants->shaderBoxDirLightTableIndex = frameData->GetShaderBoxDirLightTableBindlessIndex();
     constants->shaderLightRefTableIndex = frameData->GetShaderLightRefTableBindlessIndex();
     constants->shaderLightZBinTableIndex = frameData->GetShaderLightZBinTableBindlessIndex();
-    constants->shaderLightTileMaskWordTableIndex = frameData->GetShaderLightTileMaskWordTableBindlessIndex();
+    constants->shaderLightTileWordTableIndex = frameData->GetShaderLightTileWordTableBindlessIndex();
     constants->feedbackBufferIndex = currentContext->textureStreamingFeedback.GetBindlessIndex();
 
     return true;
@@ -218,13 +220,13 @@ bool RenderBackend::UploadCameraConstants() {
     constants->flags = flags;
     constants->numLights = currentVisCamera->numVisLights;
     constants->lightCullingLightRefTableOffset = currentVisCamera->lightCulling.lightRefTableOffset;
-    constants->lightCullingTileMaskWordTableOffset = currentVisCamera->lightCulling.tileMaskWordTableOffset;
     constants->lightCullingZBinTableOffset = currentVisCamera->lightCulling.zBinTableOffset;
+    constants->lightCullingTileWordTableOffset = currentVisCamera->lightCulling.tileWordTableOffset;
     constants->lightCullingZBinScale = currentVisCamera->lightCulling.zBinScale;
     constants->lightCullingZBinBias = currentVisCamera->lightCulling.zBinBias;
     constants->lightCullingTileCountX = currentVisCamera->lightCulling.tileCountX;
     constants->lightCullingTileCountY = currentVisCamera->lightCulling.tileCountY;
-    constants->lightCullingWordCountPerTile = currentVisCamera->lightCulling.wordCountPerTile;
+    constants->lightCullingWordsPerTile = currentVisCamera->lightCulling.wordsPerTile;
     constants->lightCullingDebugMode = static_cast<uint32_t>(r_lightCullingDebug.GetInteger());
     constants->padding0 = 0;
 
@@ -713,6 +715,8 @@ void RenderBackend::DrawCamera3D(bool skipDepthPrepasses) {
             break;
         }
     }
+
+    DrawDebugPrimitives();
 }
 
 void RenderBackend::DrawCamera3DDepthPrepass() {

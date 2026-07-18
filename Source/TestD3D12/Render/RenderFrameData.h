@@ -178,10 +178,10 @@ public:
     uint32_t                        NumVisBoxDirLights() const { return numVisBoxDirLights; }
     ChunkRange<VisLight>            GetVisLights() const { return ChunkRange<VisLight>(firstVisLightChunk); }
     [[nodiscard]] VisLight *        AllocVisLight(RenderLight::Type type);
-    [[nodiscard]] uint32_t          ReserveLightZBins();
-    uint32_t                        GetLightZBinCount() const { return lightZBinCount; }
-    [[nodiscard]] uint32_t          ReserveLightTileMaskWords(uint32_t count);
-    uint32_t                        GetLightTileMaskWordCount() const { return lightTileMaskWordCount; }
+    [[nodiscard]] uint32_t          ReserveLightCullingZBins();
+    uint32_t                        NumLightCullingZBins() const { return numLightCullingZBins; }
+    [[nodiscard]] uint32_t          ReserveLightCullingWords(uint32_t count);
+    uint32_t                        NumLightCullingWords() const { return numLightCullingWords; }
 
                                     // 렌더 커맨드 버퍼 리턴
     RenderCommandBuffer *           GetCommands() { return &commands; }
@@ -223,7 +223,7 @@ public:
     uint32_t                        GetShaderBoxDirLightTableBindlessIndex() const { return shaderLightTable.GetBoxDirLightBindlessIndex(); }
     uint32_t                        GetShaderLightRefTableBindlessIndex() const { return shaderLightCullingTable.GetLightRefBindlessIndex(); }
     uint32_t                        GetShaderLightZBinTableBindlessIndex() const { return shaderLightCullingTable.GetLightZBinBindlessIndex(); }
-    uint32_t                        GetShaderLightTileMaskWordTableBindlessIndex() const { return shaderLightCullingTable.GetLightTileMaskWordBindlessIndex(); }
+    uint32_t                        GetShaderLightTileWordTableBindlessIndex() const { return shaderLightCullingTable.GetLightTileWordBindlessIndex(); }
 
                                     // 셰이더 머티리얼 테이블에 머티리얼을 등록하고, 테이블 인덱스를 리턴한다.
     uint32_t                        RegisterShaderMaterial(const Material *material) { return shaderMaterialTable.Register(material); }
@@ -291,8 +291,8 @@ private:
     Chunk *                         firstVisLightChunk = nullptr;
     Chunk *                         lastVisLightChunk = nullptr;
 
-    uint32_t                        lightZBinCount = 0;
-    uint32_t                        lightTileMaskWordCount = 0;
+    uint32_t                        numLightCullingZBins = 0;
+    uint32_t                        numLightCullingWords = 0;
 
     RenderCommandBuffer             commands;
     PendingImGuiOverlay             pendingImGuiOverlay;

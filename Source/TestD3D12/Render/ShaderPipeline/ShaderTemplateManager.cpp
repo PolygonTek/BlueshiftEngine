@@ -239,6 +239,11 @@ void ShaderTemplateManager::CreateEngineShaderTemplates() {
         BE_FATALERROR("ShaderTemplateManager::CreateEngineShaderTemplates: failed to load fullscreen image shader template");
     }
 
+    debugDrawShaderTemplate = GetShaderTemplate("Source/TestD3D12/Shaders/DebugDraw");
+    if (!debugDrawShaderTemplate) {
+        BE_FATALERROR("ShaderTemplateManager::CreateEngineShaderTemplates: failed to load debug draw shader template");
+    }
+
     depthShaderTemplate = GetShaderTemplate("Source/TestD3D12/Shaders/Depth");
     if (!depthShaderTemplate) {
         BE_FATALERROR("ShaderTemplateManager::CreateEngineShaderTemplates: failed to load depth shader template");
@@ -258,6 +263,9 @@ void ShaderTemplateManager::CreateEngineShaderTemplates() {
 void ShaderTemplateManager::DestroyEngineShaderTemplates() {
     if (fullscreenImageShaderTemplate) {
         fullscreenImageShaderTemplate.reset();
+    }
+    if (debugDrawShaderTemplate) {
+        debugDrawShaderTemplate.reset();
     }
     if (depthShaderTemplate) {
         depthShaderTemplate.reset();

@@ -30,9 +30,10 @@ static constexpr int RenderHiZCullMaxBatchCount = RenderHiZCullMaxVisibleInstanc
 enum class RenderCameraFlag : uint8_t {
     NoFlag                      = 0,
     WireframeMode               = BIT(0),
-    SkipPostProcess             = BIT(1),
-    DisableTemporalHistory      = BIT(2),
-    DisableHiZCulling           = BIT(3)
+    SkipDebugDraw               = BIT(1),
+    SkipPostProcess             = BIT(2),
+    DisableTemporalHistory      = BIT(3),
+    DisableHiZCulling           = BIT(4)
 };
 
 enum class RenderCameraClearMethod : uint8_t {

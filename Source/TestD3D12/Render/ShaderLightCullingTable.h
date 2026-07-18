@@ -37,7 +37,7 @@ public:
     bool                            Init(uint32_t initialLightRefCapacity = 1024, uint32_t initialZBinCapacity = ShaderLightZBinCount, uint32_t initialLightTileMaskCapacity = 16384);
     void                            Shutdown();
 
-    bool                            EnsureBufferCapacity(uint32_t lightRefCount, uint32_t lightZBinCount, uint32_t lightTileMaskWordCount);
+    bool                            EnsureBufferCapacity(uint32_t lightRefCount, uint32_t numLightCullingZBins, uint32_t numLightCullingWords);
 
     bool                            Upload(RHI::FrameThreadData *frameThreadData, RHI::CommandList *commandList, const RenderFrameData *frameData, bool allowResize);
 
@@ -46,7 +46,7 @@ public:
 
     uint32_t                        GetLightRefBindlessIndex() const { return lightRefBuffer.bindlessIndex; }
     uint32_t                        GetLightZBinBindlessIndex() const { return lightZBinBuffer.bindlessIndex; }
-    uint32_t                        GetLightTileMaskWordBindlessIndex() const { return lightTileMaskWordBuffer.bindlessIndex; }
+    uint32_t                        GetLightTileWordBindlessIndex() const { return lightTileWordBuffer.bindlessIndex; }
 
 private:
     struct TableBuffer {
@@ -66,5 +66,5 @@ private:
 
     TableBuffer                     lightRefBuffer;
     TableBuffer                     lightZBinBuffer;
-    TableBuffer                     lightTileMaskWordBuffer;
+    TableBuffer                     lightTileWordBuffer;
 };

@@ -39,10 +39,14 @@ void RenderCamera::Update(const RenderCameraDesc &desc) {
         // 직교 투영 행렬을 계산한다. viewMatrix 가 오른손 좌표계이므로, 오른손 좌표계용 투영 행렬을 계산한다.
         projMatrix.SetOrthoRH(-desc.sizeX, desc.sizeX, -desc.sizeY, desc.sizeY, desc.zNear, desc.zFar, zNegativeOneToOne, reverseZ);
     } else {
+        const float tanHalfFovX = BE1::Math::Tan(DEG2RAD(desc.fovX * 0.5f));
+        const float tanHalfFovY = BE1::Math::Tan(DEG2RAD(desc.fovY * 0.5f));
+        const float aspectRatio = tanHalfFovX / tanHalfFovY;
+
         // Set bounding frustum for perspective view.
         frustum.SetOrigin(desc.origin);
         frustum.SetAxis(desc.axis);
-        frustum.SetSize(desc.zNear, desc.zFar, desc.zFar * BE1::Math::Tan(DEG2RAD(desc.fovX) * 0.5f), desc.zFar * BE1::Math::Tan(DEG2RAD(desc.fovY) * 0.5f));
+        frustum.SetSize(desc.zNear, desc.zFar, desc.zFar * tanHalfFovX, desc.zFar * tanHalfFovY);
 
         // Calculate view frustum planes.
         frustum.ToPlanes(frustumPlanes);
@@ -51,7 +55,7 @@ void RenderCamera::Update(const RenderCameraDesc &desc) {
         frustum.ToPoints(frustumPoints);
 
         // 원근 투영 행렬을 계산한다. viewMatrix 가 오른손 좌표계이므로, 오른손 좌표계용 투영 행렬을 계산한다.
-        projMatrix.SetPerspectiveRH(desc.fovY, desc.fovX / desc.fovY, desc.zNear, desc.zFar, zNegativeOneToOne, reverseZ, desc.infiniteZFar);
+        projMatrix.SetPerspectiveRH(desc.fovY, aspectRatio, desc.zNear, desc.zFar, zNegativeOneToOne, reverseZ, desc.infiniteZFar);
     }
 
     viewProjMatrix = projMatrix * viewMatrix;

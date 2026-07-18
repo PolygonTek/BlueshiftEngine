@@ -216,7 +216,7 @@ RenderContext::Stats RenderContext::GetStats() const {
         snapshot.instanceTableAllocCount = stats.instanceTableAllocCount.load();
         snapshot.instanceTableUploadBytes = stats.instanceTableUploadBytes.load();
         snapshot.lightCullingZBinCount = stats.lightCullingZBinCount.load();
-        snapshot.lightCullingTileMaskWordCount = stats.lightCullingTileMaskWordCount.load();
+        snapshot.lightCullingWordCount = stats.lightCullingWordCount.load();
         snapshot.lightCullingThreadGroupCount = stats.lightCullingThreadGroupCount.load();
 
         if (sequence == statSequence.load()) {
@@ -240,7 +240,7 @@ void RenderContext::SetStats(const Stats &snapshot) {
     stats.instanceTableAllocCount.store(snapshot.instanceTableAllocCount);
     stats.instanceTableUploadBytes.store(snapshot.instanceTableUploadBytes);
     stats.lightCullingZBinCount.store(snapshot.lightCullingZBinCount);
-    stats.lightCullingTileMaskWordCount.store(snapshot.lightCullingTileMaskWordCount);
+    stats.lightCullingWordCount.store(snapshot.lightCullingWordCount);
     stats.lightCullingThreadGroupCount.store(snapshot.lightCullingThreadGroupCount);
 
     statSequence.fetch_add(1);

@@ -142,7 +142,7 @@ private:
 
     float                           targetCameraYaw = 0.0f;
     float                           targetCameraPitch = 45.0f;
-    float                           targetCameraDistance = 220.0f;
+    float                           targetCameraDistance = 300.0f;
     BE1::Vec3                       targetCameraCenter = BE1::Vec3::origin;
     BE1::Vec3                       targetCameraOrigin = BE1::Vec3::origin;
 

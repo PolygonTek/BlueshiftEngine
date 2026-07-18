@@ -133,25 +133,25 @@ float3 EvaluateLit(uint2 pixelCoord, float ndcDepth, float3 worldPosition, float
     ShaderLightIterator lightIterator = BeginShaderLightIteration(pixelCoord, ndcDepth, useZBin, true);
     float3 directDiffuse = 0.0f;
 
-    const bool hasLights = lightIterator.nextMaskWordIndex < lightIterator.endMaskWordIndex;
+    const bool hasLights = lightIterator.nextWordIndex < lightIterator.endWordIndex;
 
     // 모든 lane 이 동일한 반복을 수행하도록 각 lane 의 light mask word 범위를 모두 포함하는 Wave 단위 반복 범위를 구한다.
-    const uint laneFirstMaskWordIndex = hasLights ? lightIterator.nextMaskWordIndex : 0xFFFFFFFFu;
-    const uint laneEndMaskWordIndex = hasLights ? lightIterator.endMaskWordIndex : 0;
-    const uint waveFirstMaskWordIndex = WaveActiveMin(laneFirstMaskWordIndex);
-    const uint waveEndMaskWordIndex = WaveActiveMax(laneEndMaskWordIndex);
+    const uint laneFirstWordIndex = hasLights ? lightIterator.nextWordIndex : 0xFFFFFFFFu;
+    const uint laneEndWordIndex = hasLights ? lightIterator.endWordIndex : 0;
+    const uint waveFirstWordIndex = WaveActiveMin(laneFirstWordIndex);
+    const uint waveEndWordIndex = WaveActiveMax(laneEndWordIndex);
 
     [loop]
-    for (uint maskWordIndex = waveFirstMaskWordIndex; maskWordIndex < waveEndMaskWordIndex; ++maskWordIndex) {
+    for (uint wordIndex = waveFirstWordIndex; wordIndex < waveEndWordIndex; ++wordIndex) {
         // 모든 lane 의 light mask 를 합친다.
-        const uint laneLightMask = LoadShaderLightMask(lightIterator, maskWordIndex, true);
+        const uint laneLightMask = LoadShaderLightMask(lightIterator, wordIndex, true);
         uint waveLightMask = WaveActiveBitOr(laneLightMask);
 
         [loop]
         while (waveLightMask != 0) {
             const uint bitIndex = firstbitlow(waveLightMask);
             const uint lightBit = 1u << bitIndex;
-            const uint lightIndex = (maskWordIndex << ShaderLightMaskWordShift) + bitIndex;
+            const uint lightIndex = (wordIndex << ShaderLightWordShift) + bitIndex;
             const uint packedLightRef = LoadWaveShaderLightRef(lightIndex);
 
             // 현재 lane 의 tile 및 Z-bin 에 포함된 light 만 실제로 계산한다.

@@ -548,6 +548,11 @@ void App::BuildImGuiOverlay() {
                 app_showStats.SetBool(showRenderStats);
             }
 
+            bool showLights = r_showLights2.GetBool();
+            if (ImGui::Checkbox("Show lights", &showLights)) {
+                r_showLights2.SetBool(showLights);
+            }
+
             if (ImGui::Button(imguiShowStatsPlotWindow ? "Hide Stats Plot" : "Show Stats Plot")) {
                 imguiShowStatsPlotWindow = !imguiShowStatsPlotWindow;
             }

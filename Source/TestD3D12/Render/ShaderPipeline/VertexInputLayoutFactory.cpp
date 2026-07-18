@@ -42,6 +42,15 @@ static RHI::InputLayout CreateXyzInputLayout() {
     return inputLayout;
 }
 
+static RHI::InputLayout CreateXyzColorInputLayout() {
+    RHI::InputLayout inputLayout;
+    inputLayout.elements = {
+        { "POSITION", 0, 0,                 0, RHI::InputLayoutElement::Format::Float3 },
+        { "COLOR",    0, sizeof(float) * 3, 0, RHI::InputLayoutElement::Format::UByte4N },
+    };
+    return inputLayout;
+}
+
 static RHI::InputLayout CreateXyzStInputLayout() {
     RHI::InputLayout inputLayout;
     inputLayout.elements = {
@@ -150,6 +159,7 @@ void VertexInputLayoutFactory::Init() {
     inputLayouts[static_cast<int>(VertexInputLayoutId::XyzSkinning1)] = CreateSkinnedInputLayout(VertexInputLayoutId::XyzSkinning1);
     inputLayouts[static_cast<int>(VertexInputLayoutId::XyzSkinning4)] = CreateSkinnedInputLayout(VertexInputLayoutId::XyzSkinning4);
     inputLayouts[static_cast<int>(VertexInputLayoutId::XyzSkinning8)] = CreateSkinnedInputLayout(VertexInputLayoutId::XyzSkinning8);
+    inputLayouts[static_cast<int>(VertexInputLayoutId::XyzColor)] = CreateXyzColorInputLayout();
     inputLayouts[static_cast<int>(VertexInputLayoutId::XyzSt)] = CreateXyzStInputLayout();
     inputLayouts[static_cast<int>(VertexInputLayoutId::XyzStSkinning1)] = CreateSkinnedInputLayout(VertexInputLayoutId::XyzStSkinning1);
     inputLayouts[static_cast<int>(VertexInputLayoutId::XyzStSkinning4)] = CreateSkinnedInputLayout(VertexInputLayoutId::XyzStSkinning4);

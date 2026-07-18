@@ -29,19 +29,19 @@ bool ShaderLightCullingTable::Init(uint32_t initialLightRefCapacity, uint32_t in
 void ShaderLightCullingTable::Shutdown() {
     DestroyBuffer(lightRefBuffer);
     DestroyBuffer(lightZBinBuffer);
-    DestroyBuffer(lightTileMaskWordBuffer);
+    DestroyBuffer(lightTileWordBuffer);
 }
 
-bool ShaderLightCullingTable::EnsureBufferCapacity(uint32_t lightRefCount, uint32_t lightZBinCount, uint32_t lightTileMaskWordCount) {
+bool ShaderLightCullingTable::EnsureBufferCapacity(uint32_t lightRefCount, uint32_t numLightCullingZBins, uint32_t numLightCullingWords) {
     if (!EnsureBufferCapacity(lightRefBuffer, lightRefCount, sizeof(ShaderLightRef), RHI::Format::Unknown, sizeof(ShaderLightRef), false, "shaderLightRefTableBuffer")) {
         return false;
     }
 
-    if (!EnsureBufferCapacity(lightZBinBuffer, lightZBinCount, sizeof(uint32_t), RHI::Format::R32_UINT, 0, false, "shaderLightZBinTableBuffer")) {
+    if (!EnsureBufferCapacity(lightZBinBuffer, numLightCullingZBins, sizeof(uint32_t), RHI::Format::R32_UINT, 0, false, "shaderLightZBinTableBuffer")) {
         return false;
     }
 
-    if (!EnsureBufferCapacity(lightTileMaskWordBuffer, lightTileMaskWordCount, sizeof(uint32_t), RHI::Format::R32_UINT, 0, true, "shaderLightTileMaskTableBuffer")) {
+    if (!EnsureBufferCapacity(lightTileWordBuffer, numLightCullingWords, sizeof(uint32_t), RHI::Format::R32_UINT, 0, true, "shaderLightTileWordTableBuffer")) {
         return false;
     }
 
@@ -103,17 +103,17 @@ bool ShaderLightCullingTable::Upload(RHI::FrameThreadData *frameThreadData, RHI:
     PROFILER_CPU_SCOPED_EVENT("ShaderLightCullingTable::Upload");
 
     const uint32_t lightRefCount = frameData->NumVisLights();
-    const uint32_t lightZBinCount = frameData->GetLightZBinCount();
-    const uint32_t lightTileMaskWordCount = frameData->GetLightTileMaskWordCount();
+    const uint32_t numLightCullingZBins = frameData->NumLightCullingZBins();
+    const uint32_t numLightCullingWords = frameData->NumLightCullingWords();
 
-    if (lightRefCount == 0 && lightZBinCount == 0 && lightTileMaskWordCount == 0) {
+    if (lightRefCount == 0 && numLightCullingZBins == 0 && numLightCullingWords == 0) {
         return true;
     }
 
-    // NOTE: lightTileMaskWordBuffer 는 업로드 대상은 아니지만 여기서 EnsureBufferCapacity 는 해준다.
-    if (lightRefCount > lightRefBuffer.capacity || lightZBinCount > lightZBinBuffer.capacity || lightTileMaskWordCount > lightTileMaskWordBuffer.capacity) {
+    // NOTE: lightTileWordBuffer 는 업로드 대상은 아니지만 여기서 EnsureBufferCapacity 는 해준다.
+    if (lightRefCount > lightRefBuffer.capacity || numLightCullingZBins > lightZBinBuffer.capacity || numLightCullingWords > lightTileWordBuffer.capacity) {
         assert(allowResize);
-        if (!allowResize || !EnsureBufferCapacity(lightRefCount, lightZBinCount, lightTileMaskWordCount)) {
+        if (!allowResize || !EnsureBufferCapacity(lightRefCount, numLightCullingZBins, numLightCullingWords)) {
             return false;
         }
     }
@@ -132,8 +132,8 @@ bool ShaderLightCullingTable::Upload(RHI::FrameThreadData *frameThreadData, RHI:
     RHI::Buffer *zBinUploadBuffer = nullptr;
     uint32_t *shaderLightZBins = nullptr;
 
-    if (lightZBinCount > 0) {
-        zBinUploadBuffer = frameThreadData->AllocStructuredBuffer(sizeof(uint32_t), lightZBinCount, nullptr);
+    if (numLightCullingZBins > 0) {
+        zBinUploadBuffer = frameThreadData->AllocStructuredBuffer(sizeof(uint32_t), numLightCullingZBins, nullptr);
         if (!zBinUploadBuffer || !zBinUploadBuffer->mappedPtr) {
             return false;
         }
@@ -156,7 +156,7 @@ bool ShaderLightCullingTable::Upload(RHI::FrameThreadData *frameThreadData, RHI:
         }
 
         if (visCamera.lightCulling.zBins) {
-            if (visCamera.lightCulling.zBinTableOffset > lightZBinCount || ShaderLightZBinCount > lightZBinCount - visCamera.lightCulling.zBinTableOffset) {
+            if (visCamera.lightCulling.zBinTableOffset > numLightCullingZBins || ShaderLightZBinCount > numLightCullingZBins - visCamera.lightCulling.zBinTableOffset) {
                 assert(0);
                 return false;
             }
@@ -166,34 +166,34 @@ bool ShaderLightCullingTable::Upload(RHI::FrameThreadData *frameThreadData, RHI:
     }
 
     UploadBuffer(commandList, lightRefBuffer, lightRefUploadBuffer, lightRefCount * sizeof(ShaderLightRef));
-    UploadBuffer(commandList, lightZBinBuffer, zBinUploadBuffer, lightZBinCount * sizeof(uint32_t));
+    UploadBuffer(commandList, lightZBinBuffer, zBinUploadBuffer, numLightCullingZBins * sizeof(uint32_t));
     return true;
 }
 
 bool ShaderLightCullingTable::DispatchLightCulling(RHI::FrameThreadData *frameThreadData, RHI::CommandList *commandList, RHI::PipelineState *pipelineState, const RenderFrameData *frameData) {
     PROFILER_CPU_SCOPED_EVENT("ShaderLightCullingTable::DispatchLightCulling");
 
-    const uint32_t lightTileMaskWordCount = frameData->GetLightTileMaskWordCount();
-    if (lightTileMaskWordCount == 0) {
+    const uint32_t numLightCullingWords = frameData->NumLightCullingWords();
+    if (numLightCullingWords == 0) {
         return true;
     }
 
-    if (!pipelineState || frameData->NumVisLights() > lightRefBuffer.capacity || lightTileMaskWordCount > lightTileMaskWordBuffer.capacity) {
+    if (!pipelineState || frameData->NumVisLights() > lightRefBuffer.capacity || numLightCullingWords > lightTileWordBuffer.capacity) {
         return false;
     }
 
     const VisCamera *visCameras = frameData->GetVisCameras();
     for (uint32_t cameraIndex = 0; cameraIndex < frameData->NumVisCameras(); ++cameraIndex) {
         const VisCamera &visCamera = visCameras[cameraIndex];
-        if (visCamera.lightCulling.wordCountPerTile == 0) {
+        if (visCamera.lightCulling.wordsPerTile == 0) {
             continue;
         }
 
-        const uint32_t cameraTileMaskWordCount = visCamera.lightCulling.tileCountX * visCamera.lightCulling.tileCountY * visCamera.lightCulling.wordCountPerTile;
+        const uint32_t cameraTileWordCount = visCamera.lightCulling.tileCountX * visCamera.lightCulling.tileCountY * visCamera.lightCulling.wordsPerTile;
         if (visCamera.lightCulling.lightRefTableOffset > frameData->NumVisLights() ||
             visCamera.numVisLights > frameData->NumVisLights() - visCamera.lightCulling.lightRefTableOffset ||
-            visCamera.lightCulling.tileMaskWordTableOffset > lightTileMaskWordCount ||
-            cameraTileMaskWordCount > lightTileMaskWordCount - visCamera.lightCulling.tileMaskWordTableOffset) {
+            visCamera.lightCulling.tileWordTableOffset > numLightCullingWords ||
+            cameraTileWordCount > numLightCullingWords - visCamera.lightCulling.tileWordTableOffset) {
             assert(0);
             return false;
         }
@@ -201,21 +201,21 @@ bool ShaderLightCullingTable::DispatchLightCulling(RHI::FrameThreadData *frameTh
 
     RHI::GPUBarrier startBarriers[] = {
         RHI::Renderer::MakeBufferBarrier(lightRefBuffer.buffer, lightRefBuffer.state, RHI::GPUResourceState::ShaderResourceCompute),
-        RHI::Renderer::MakeBufferBarrier(lightTileMaskWordBuffer.buffer, lightTileMaskWordBuffer.state, RHI::GPUResourceState::UnorderedAccess)
+        RHI::Renderer::MakeBufferBarrier(lightTileWordBuffer.buffer, lightTileWordBuffer.state, RHI::GPUResourceState::UnorderedAccess)
     };
     RHI::renderer->Barrier(commandList, startBarriers, COUNT_OF(startBarriers));
 
     lightRefBuffer.state = RHI::GPUResourceState::ShaderResourceCompute;
-    lightTileMaskWordBuffer.state = RHI::GPUResourceState::UnorderedAccess;
+    lightTileWordBuffer.state = RHI::GPUResourceState::UnorderedAccess;
 
     RHI::renderer->SetPSO(commandList, pipelineState);
     RHI::renderer->SetBuffer(commandList, 0, false, lightRefBuffer.buffer, lightRefBuffer.view);
-    RHI::renderer->SetBuffer(commandList, 0, true, lightTileMaskWordBuffer.buffer, lightTileMaskWordBuffer.uavView);
+    RHI::renderer->SetBuffer(commandList, 0, true, lightTileWordBuffer.buffer, lightTileWordBuffer.uavView);
 
     // 전체 카메라에 대해서 라이트 컬링 컴퓨트 셰이더를 실행한다.
     for (uint32_t cameraIndex = 0; cameraIndex < frameData->NumVisCameras(); ++cameraIndex) {
         const VisCamera &visCamera = visCameras[cameraIndex];
-        if (visCamera.lightCulling.wordCountPerTile == 0) {
+        if (visCamera.lightCulling.wordsPerTile == 0) {
             continue;
         }
 
@@ -227,10 +227,10 @@ bool ShaderLightCullingTable::DispatchLightCulling(RHI::FrameThreadData *frameTh
         ShaderLightCullingParams *params = reinterpret_cast<ShaderLightCullingParams *>(constantBuffer->mappedPtr);
         params->numLights = visCamera.numVisLights;
         params->lightRefTableOffset = visCamera.lightCulling.lightRefTableOffset;
-        params->tileMaskWordTableOffset = visCamera.lightCulling.tileMaskWordTableOffset;
+        params->tileWordTableOffset = visCamera.lightCulling.tileWordTableOffset;
         params->tileCountX = visCamera.lightCulling.tileCountX;
         params->tileCountY = visCamera.lightCulling.tileCountY;
-        params->wordCountPerTile = visCamera.lightCulling.wordCountPerTile;
+        params->wordsPerTile = visCamera.lightCulling.wordsPerTile;
         params->padding0 = 0;
         params->padding1 = 0;
 
@@ -240,17 +240,17 @@ bool ShaderLightCullingTable::DispatchLightCulling(RHI::FrameThreadData *frameTh
         // Z 축은 한 스레드 그룹이 하나의 mask word 를 처리하는 것을 기준으로 스레드 그룹 개수를 계산.
         const uint32_t threadGroupCountX = (visCamera.lightCulling.tileCountX + ShaderLightCullingThreadGroupSizeX - 1) / ShaderLightCullingThreadGroupSizeX;
         const uint32_t threadGroupCountY = (visCamera.lightCulling.tileCountY + ShaderLightCullingThreadGroupSizeY - 1) / ShaderLightCullingThreadGroupSizeY;
-        RHI::renderer->Dispatch(commandList, threadGroupCountX, threadGroupCountY, visCamera.lightCulling.wordCountPerTile);
+        RHI::renderer->Dispatch(commandList, threadGroupCountX, threadGroupCountY, visCamera.lightCulling.wordsPerTile);
     }
 
     RHI::GPUBarrier endBarriers[] = {
         RHI::Renderer::MakeBufferBarrier(lightRefBuffer.buffer, RHI::GPUResourceState::ShaderResourceCompute, RHI::GPUResourceState::ShaderResource),
-        RHI::Renderer::MakeBufferBarrier(lightTileMaskWordBuffer.buffer, RHI::GPUResourceState::UnorderedAccess, RHI::GPUResourceState::ShaderResource)
+        RHI::Renderer::MakeBufferBarrier(lightTileWordBuffer.buffer, RHI::GPUResourceState::UnorderedAccess, RHI::GPUResourceState::ShaderResource)
     };
     RHI::renderer->Barrier(commandList, endBarriers, COUNT_OF(endBarriers));
 
     lightRefBuffer.state = RHI::GPUResourceState::ShaderResource;
-    lightTileMaskWordBuffer.state = RHI::GPUResourceState::ShaderResource;
+    lightTileWordBuffer.state = RHI::GPUResourceState::ShaderResource;
     return true;
 }
 
