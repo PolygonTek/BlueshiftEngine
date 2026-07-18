@@ -357,9 +357,6 @@ void RenderWorld::DrawCamera(RenderFrameData *frameData, const RenderCamera *ren
     // visObjects 중에서 mesh surface 들을 visCamera->visSurfs 에 추가한다.
     AddMeshes(frameData, renderCamera, visCamera);
 
-    // visObjects 중에서 raw mesh 를 visCamera->visSurfs 에 추가한다.
-    //AddRawMeshes(frameData, renderCamera, visCamera);
-
     // RenderLight 중에서 컬링한 라이트를 프레임 데이터에 VisLight 로 등록한다.
     FindVisLights(frameData, renderCamera, visCamera);
 
@@ -395,6 +392,7 @@ VisLight *RenderWorld::RegisterVisLight(RenderFrameData *frameData, RenderLight 
     if (!visLight) {
         return nullptr;
     }
+
     renderLight->viewCount = viewCount;
 
     if (renderLight->desc.type == RenderLight::Type::Point) {
@@ -439,6 +437,7 @@ VisObject *RenderWorld::RegisterVisObject(RenderFrameData *frameData, RenderObje
     if (renderObject->desc.meshInstance) {
         visObject->meshInstance = frameData->RetainMeshInstance(renderObject->desc.meshInstance);
     }
+
     const int numMaterials = renderObject->desc.materials.Count();
     visObject->numMaterials = static_cast<uint32_t>(numMaterials);
     if (numMaterials > 0) {
@@ -446,12 +445,6 @@ VisObject *RenderWorld::RegisterVisObject(RenderFrameData *frameData, RenderObje
         for (int i = 0; i < numMaterials; ++i) {
             visObject->materials[i] = frameData->RetainMaterial(renderObject->desc.materials[i]);
         }
-    }
-    if (renderObject->desc.numVerts > 0 && renderObject->desc.numIndexes > 0) {
-        visObject->numVerts = renderObject->desc.numVerts;
-        visObject->verts = renderObject->desc.verts;
-        visObject->numIndexes = renderObject->desc.numIndexes;
-        visObject->indexes = renderObject->desc.indexes;
     }
     if (renderObject->desc.text) {
         RenderObject::TextDesc &textDesc = *(renderObject->desc.text);
@@ -674,9 +667,11 @@ void RenderWorld::AddMeshes(RenderFrameData *frameData, const RenderCamera *rend
         if (!visObject->cameraVisible) {
             continue;
         }
+
         if (!visObject->meshInstance) {
             continue;
         }
+
         if (!visObject->meshInstance->EnsureCurrent()) {
             continue;
         }
@@ -715,6 +710,7 @@ void RenderWorld::AddTextMeshes(RenderFrameData *frameData, const RenderCamera *
         if (!visObject->cameraVisible) {
             continue;
         }
+
         if (!visObject->text) {
             continue;
         }
@@ -751,38 +747,6 @@ void RenderWorld::AddTextMeshes(RenderFrameData *frameData, const RenderCamera *
 
             AddVisSurf(frameData, visCamera, nullptr, visObject, guiSurf->material, subMesh, VisSurfFlag::None);
         }
-    }
-}
-
-void RenderWorld::AddRawMeshes(RenderFrameData *frameData, const RenderCamera *renderCamera, VisCamera *visCamera) {
-    PROFILER_CPU_SCOPED_EVENT("RenderWorld::AddRawMeshes");
-
-    for (VisObject &visObjectRef : frameData->GetVisObjects()) {
-        VisObject *visObject = &visObjectRef;
-        if (!visObject->cameraVisible) {
-            continue;
-        }
-        if (visObject->numVerts <= 0 || visObject->numIndexes <= 0) {
-            continue;
-        }
-
-        RHI::FrameThreadData *frameThreadData = frameData->GetThreadData(0);
-        RHI::VertexBuffer *vertexBuffer = frameThreadData->AllocVertex(sizeof(visObject->verts[0]), visObject->numVerts, visObject->verts);
-        RHI::IndexBuffer *indexBuffer = frameThreadData->AllocIndex(sizeof(visObject->indexes[0]), visObject->numIndexes, visObject->indexes);
-        if (!vertexBuffer || !indexBuffer) {
-            continue;
-        }
-
-        // Copy this SubMesh to the temporary frame data to use in the backend.
-        SubMesh *subMesh = (SubMesh *)frameData->MemAlloc(sizeof(SubMesh));
-        new (subMesh) SubMesh();
-
-        subMesh->numVerts = visObject->numVerts;
-        subMesh->numIndexes = visObject->numIndexes;
-        subMesh->vertexBuffer = vertexBuffer;
-        subMesh->indexBuffer = indexBuffer;
-
-        AddVisSurf(frameData, visCamera, nullptr, visObject, GetVisObjectMaterial(visObject, 0), subMesh, VisSurfFlag::None);
     }
 }
 

@@ -255,11 +255,6 @@ struct VisObject {
     uint32_t                    numMaterials = 0;
     const Material **           materials = nullptr;
 
-    int                         numVerts = 0;
-    BE1::VertexGeneric *        verts = nullptr;
-    int                         numIndexes = 0;
-    BE1::VertIndex *            indexes = nullptr;
-
     Font *                      font = nullptr;
     const char *                text = nullptr;
     BE1::RectF                  textRect;

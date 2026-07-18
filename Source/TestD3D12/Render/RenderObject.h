@@ -110,35 +110,13 @@ public:
         TextDesc &                  GetTextDesc();
 
         Flag                        flags = Flag::None;
-        uint8_t                     layer = 0;              ///< Render layer bit index in [0, 31]
+        uint8_t                     layer = 0;                  ///< Render layer bit index in [0, 31]
 
-        //
-        // Transform info
-        //
         BE1::Mat3x4                 worldMatrix = BE1::Mat3x4::identity;
-        BE1::AABB                   aabb = BE1::AABB::empty; ///< non-scaled AABB in local space
+        BE1::AABB                   aabb = BE1::AABB::empty;    ///< non-scaled AABB in local space
 
-        //
-        // static/skinned mesh
-        //
         SharedPtr<MeshInstance>     meshInstance;
-
-        //
-        // Raw indexed triangles rendering (typically for GUI rendering)
-        //
-        int                         numVerts = 0;
-        BE1::VertexGeneric *        verts = nullptr;
-        int                         numIndexes = 0;
-        BE1::VertIndex *            indexes = nullptr;
-
-        //
-        // Text rendering
-        //
         UniquePtr<TextDesc>         text;
-
-        //
-        // Materials
-        //
         BE1::Array<SharedPtr<Material>> materials;
     };
 
