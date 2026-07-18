@@ -29,6 +29,7 @@ public:
         None                        = 0,
         CastShadows                 = BIT(0),
         ReceiveShadows              = BIT(1),
+        Static                      = BIT(2),
     };
 
     enum class TextDrawMode : uint8_t {

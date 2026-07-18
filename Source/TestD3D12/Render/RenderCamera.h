@@ -33,7 +33,8 @@ enum class RenderCameraFlag : uint8_t {
     SkipDebugDraw               = BIT(1),
     SkipPostProcess             = BIT(2),
     DisableTemporalHistory      = BIT(3),
-    DisableHiZCulling           = BIT(4)
+    DisableHiZCulling           = BIT(4),
+    StaticOnly                  = BIT(5)
 };
 
 enum class RenderCameraClearMethod : uint8_t {

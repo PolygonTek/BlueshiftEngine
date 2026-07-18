@@ -490,7 +490,8 @@ void RenderWorld::FindVisObjects(RenderFrameData *frameData, const RenderCamera 
     PROFILER_CPU_SCOPED_EVENT("RenderWorld::FindVisObjects");
 
     const bool skipViewCulling = r_skipViewCulling.GetBool();
-    const uint32_t layerMask = renderCamera->GetDesc().layerMask;
+    const RenderCameraDesc &cameraDesc = renderCamera->GetDesc();
+    const bool staticOnly = BE1::HasFlag(cameraDesc.flags, RenderCameraFlag::StaticOnly);
 
     const uint32_t startVisibleObjectCount = frameData->NumVisObjects();
 
@@ -502,7 +503,11 @@ void RenderWorld::FindVisObjects(RenderFrameData *frameData, const RenderCamera 
             continue;
         }
 
-        if (!IsRenderLayerVisible(layerMask, renderObject->desc.layer)) {
+        if (!IsRenderLayerVisible(cameraDesc.layerMask, renderObject->desc.layer)) {
+            continue;
+        }
+
+        if (staticOnly && !BE1::HasFlag(renderObject->desc.flags, RenderObject::Flag::Static)) {
             continue;
         }
 
@@ -814,6 +819,7 @@ void RenderWorld::FindVisLights(RenderFrameData *frameData, const RenderCamera *
 
     const bool skipViewCulling = r_skipViewCulling.GetBool();
     const RenderCameraDesc &cameraDesc = renderCamera->GetDesc();
+    const bool staticOnly = BE1::HasFlag(cameraDesc.flags, RenderCameraFlag::StaticOnly);
     const BE1::Vec3 &viewZAxis = cameraDesc.axis[EngineAxis::Forward];
     const float viewZOffset = -viewZAxis.Dot(cameraDesc.origin);
 
@@ -833,6 +839,10 @@ void RenderWorld::FindVisLights(RenderFrameData *frameData, const RenderCamera *
         }
 
         if (!IsRenderLayerVisible(cameraDesc.layerMask, renderLight->desc.layer)) {
+            continue;
+        }
+
+        if (staticOnly && !BE1::HasFlag(renderLight->desc.flags, RenderLight::Flag::Static)) {
             continue;
         }
 

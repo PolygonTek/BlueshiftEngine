@@ -165,7 +165,7 @@ void SceneTest::InitGameLights(uint32_t countX, uint32_t countY, uint32_t countZ
     const float spacingX = ((float)objectCountX / lightCountX) * 4.0f;
     const float spacingY = ((float)objectCountY / lightCountY) * 4.0f;
     const float spacingZ = ((float)objectCountZ / lightCountZ) * 4.0f;
-    constexpr float radius = 10.0f;
+    constexpr float radius = 8.0f;
     constexpr float minLightIntensity = 1.0f;
     constexpr float maxLightIntensity = 5.0f;
 
