@@ -391,13 +391,13 @@ const void *RenderBackend::ExecuteDrawCamera(const void *data) {
     float clearDepth = currentVisCamera->projectionPolicy.GetDepthClearValue();
     bool useExplicitClearColor = false;
 
-    if (currentVisCamera->clearMethod == RenderCameraClearMethod::Color) {
+    if (currentVisCamera->clearMethod == RenderCamera::ClearMethod::Color) {
         clearFlags |= (RHI::ClearFlag::Color | RHI::ClearFlag::Depth);
-        if (currentVisCamera->clearColorMode == RenderCameraClearColorMode::Explicit) {
+        if (currentVisCamera->clearColorMode == RenderCamera::ClearColorMode::Explicit) {
             clearColor = currentVisCamera->clearColor;
             useExplicitClearColor = true;
         }
-    } else if (currentVisCamera->clearMethod == RenderCameraClearMethod::DepthOnly || currentVisCamera->clearMethod == RenderCameraClearMethod::Skybox) {
+    } else if (currentVisCamera->clearMethod == RenderCamera::ClearMethod::DepthOnly || currentVisCamera->clearMethod == RenderCamera::ClearMethod::Skybox) {
         clearFlags |= RHI::ClearFlag::Depth;
     }
 
@@ -483,7 +483,7 @@ void RenderBackend::ExecuteDrawCamera3DMainPass(RHI::ClearFlag clearFlags, const
     RHI::RenderPassImage::LoadAction depthLoadAction, bool skipDepthPrepasses) {
     RHI::ClearValue clearColorValue = RHI::ClearValue::Color(clearColor[0], clearColor[1], clearColor[2], clearColor[3]);
     RHI::RenderPassImage::LoadAction colorLoadAction = BE1::HasFlag(clearFlags, RHI::ClearFlag::Color) ? RHI::RenderPassImage::LoadAction::Clear : RHI::RenderPassImage::LoadAction::Load;
-    if (currentVisCamera->clearMethod == RenderCameraClearMethod::Skybox) {
+    if (currentVisCamera->clearMethod == RenderCamera::ClearMethod::Skybox) {
         colorLoadAction = RHI::RenderPassImage::LoadAction::DontCare;
     }
 
@@ -528,7 +528,7 @@ void RenderBackend::PostProcessAndBlitToSwapChain(bool surfaceOutputsReady) {
 
     currentPostProcessInputTexture = currentVisCamera->rtColorTexture;
 
-    if (!r_skipPostProcess.GetBool() && !BE1::HasFlag(currentVisCamera->flags, RenderCameraFlag::SkipPostProcess)) {
+    if (!r_skipPostProcess.GetBool() && !BE1::HasFlag(currentVisCamera->flags, RenderCamera::Flag::SkipPostProcess)) {
         bool depthHistoryReady = true;
         if (currentVisCamera->taaResolve && currentVisCamera->depthTexture->GetSampleCount() > 1) {
             depthHistoryReady = DispatchDepthHistoryResolve();

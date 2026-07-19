@@ -14,6 +14,7 @@
 
 #pragma once
 
+#include "Core/Allocator.h"
 #include "RHI/RHI.h"
 #include "RenderLight.h"
 #include "ShaderLightCullingTable.h"
@@ -86,6 +87,9 @@ struct SwapBuffersRenderCommand {
 struct EndRenderCommand {
     RenderCommandId                 commandId;
 };
+
+static_assert(sizeof(RenderCommandId) == 1, "Render command IDs must remain byte-sized");
+static_assert(sizeof(EndRenderCommand) == sizeof(RenderCommandId), "End command must contain only its command ID");
 
 struct PendingImGuiOverlay {
     RHI::ImGuiOverlay *             overlay = nullptr;
@@ -162,8 +166,8 @@ public:
                                     // 할당된 메모리는 다음 프레임에서 재사용될 때 일괄적으로 해제된다.
                                     // 현재는 프론트엔드에서 이번 프레임의 렌더 데이터를 구성하는 동안에만 사용한다.
                                     // 프론트엔드/백엔드 또는 여러 스레드에서 동시에 할당하려면 별도의 동기화가 필요하다.
-    [[nodiscard]] void *            MemAlloc(int size);
-    [[nodiscard]] void *            ClearedMemAlloc(int size);
+    [[nodiscard]] void *            MemAlloc(int size) { return frameArena.Alloc(size); }
+    [[nodiscard]] void *            ClearedMemAlloc(int size) { return frameArena.ClearedAlloc(size); }
 
     uint32_t                        NumVisCameras() const { return numVisCameras; }
     VisCamera *                     GetVisCameras() const { return visCameras; }
@@ -181,10 +185,11 @@ public:
     const VisLight *                GetPrimaryDirectionalLight() const { return primaryDirectionalLight; }
     ChunkRange<VisLight>            GetVisLights() const { return ChunkRange<VisLight>(firstVisLightChunk); }
     [[nodiscard]] VisLight *        AllocVisLight(RenderLight::Type type);
-    [[nodiscard]] uint32_t          ReserveLightCullingZBins();
+
     uint32_t                        NumLightCullingZBins() const { return numLightCullingZBins; }
-    [[nodiscard]] uint32_t          ReserveLightCullingWords(uint32_t count);
+    [[nodiscard]] uint32_t          ReserveLightCullingZBins();
     uint32_t                        NumLightCullingWords() const { return numLightCullingWords; }
+    [[nodiscard]] uint32_t          ReserveLightCullingWords(uint32_t count);
 
                                     // 렌더 커맨드 버퍼 리턴
     RenderCommandBuffer *           GetCommands() { return &commands; }
@@ -248,19 +253,8 @@ public:
     void                            WaitFrameFence() const { RHI::renderer->WaitFence(RHI::CommandQueueType::Graphics, frameFenceValue); }
 
 private:
-    struct MemBlock {
-        MemBlock *                  next;
-        int32_t                     size;
-        int32_t                     used;
-        byte *                      base;
-    };
-
-    void                            InitMemBlocks();
-    void                            ClearMemBlocks();
-    [[nodiscard]] MemBlock *        AllocMemBlock();
-
-                                    // 이번 프레임의 임시 시스템 메모리 할당 초기화 (메인 스레드에서 호출됨)
-    void                            BeginFrameMemAllocs();
+                                    // 이번 프레임의 데이터를 초기화한다. (메인 스레드에서 호출됨)
+    void                            ResetFrameData();
 
     void                            InitVisCameras(uint32_t maxVisCameras);
     void                            FreeVisCameras();
@@ -274,10 +268,9 @@ private:
     void                            ClearRetainedFonts();
     void                            ClearRetainedTextures();
 
-    [[nodiscard]] void *            GetCommandBuffer(uint32_t bytes);
+    [[nodiscard]] void *            GetCommandBuffer(uint32_t bytes, uint32_t reservedBytes);
 
-    MemBlock *                      headBlock = nullptr;
-    MemBlock *                      currentBlock = nullptr;
+    BE1::LinearAllocator            frameArena;
 
     uint32_t                        maxVisCameras = 0;
     uint32_t                        numVisCameras = 0;
@@ -353,7 +346,7 @@ BE_INLINE void RenderFrameData::ChunkIterator<T>::SetChunk(RenderFrameData::Chun
 }
 
 BE_INLINE void RenderFrameData::CmdSwapBuffers() {
-    SwapBuffersRenderCommand *cmd = (SwapBuffersRenderCommand *)GetCommandBuffer(sizeof(SwapBuffersRenderCommand));
+    SwapBuffersRenderCommand *cmd = (SwapBuffersRenderCommand *)GetCommandBuffer(sizeof(SwapBuffersRenderCommand), sizeof(EndRenderCommand));
     if (!cmd) {
         return;
     }
@@ -362,7 +355,7 @@ BE_INLINE void RenderFrameData::CmdSwapBuffers() {
 }
 
 BE_INLINE void RenderFrameData::CmdScreenshot(int x, int y, int width, int height, const char *filename) {
-    ScreenShotRenderCommand *cmd = (ScreenShotRenderCommand *)GetCommandBuffer(sizeof(ScreenShotRenderCommand));
+    ScreenShotRenderCommand *cmd = (ScreenShotRenderCommand *)GetCommandBuffer(sizeof(ScreenShotRenderCommand), sizeof(EndRenderCommand));
     if (!cmd) {
         return;
     }
@@ -376,7 +369,7 @@ BE_INLINE void RenderFrameData::CmdScreenshot(int x, int y, int width, int heigh
 }
 
 BE_INLINE void RenderFrameData::CmdGenerateConvolutionBloomKernel(float apertureScale, float diffractionPSFScale, float dispersionAmount) {
-    GenerateConvolutionBloomKernelRenderCommand *cmd = (GenerateConvolutionBloomKernelRenderCommand *)GetCommandBuffer(sizeof(GenerateConvolutionBloomKernelRenderCommand));
+    GenerateConvolutionBloomKernelRenderCommand *cmd = (GenerateConvolutionBloomKernelRenderCommand *)GetCommandBuffer(sizeof(GenerateConvolutionBloomKernelRenderCommand), sizeof(EndRenderCommand));
     if (!cmd) {
         return;
     }
@@ -388,8 +381,9 @@ BE_INLINE void RenderFrameData::CmdGenerateConvolutionBloomKernel(float aperture
 }
 
 BE_INLINE void RenderFrameData::CmdEnd() {
-    EndRenderCommand *cmd = (EndRenderCommand *)GetCommandBuffer(sizeof(EndRenderCommand));
+    EndRenderCommand *cmd = (EndRenderCommand *)GetCommandBuffer(sizeof(EndRenderCommand), 0);
     if (!cmd) {
+        BE_FATALERROR("RenderFrameData::CmdEnd: command buffer tail reservation was violated\n");
         return;
     }
 

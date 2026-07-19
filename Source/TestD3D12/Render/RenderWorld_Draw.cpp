@@ -177,12 +177,12 @@ void RenderWorld::RenderScene(RenderCamera *renderCamera) {
         return;
     }
 
-    const bool skipPostProcess = r_skipPostProcess.GetBool() || BE1::HasFlag(renderCamera->desc.flags, RenderCameraFlag::SkipPostProcess);
-    const bool temporalHistoryEnabled = !BE1::HasFlag(renderCamera->desc.flags, RenderCameraFlag::DisableTemporalHistory);
+    const bool skipPostProcess = r_skipPostProcess.GetBool() || BE1::HasFlag(renderCamera->desc.flags, RenderCamera::Flag::SkipPostProcess);
+    const bool temporalHistoryEnabled = !BE1::HasFlag(renderCamera->desc.flags, RenderCamera::Flag::DisableTemporalHistory);
     const bool useTAA = temporalHistoryEnabled && r_taa.GetBool() && !skipPostProcess;
     const bool needColorHistory = useTAA;
     const bool needDepthHistory = useTAA;
-    const bool needHiZCullResources = !BE1::HasFlag(renderCamera->desc.flags, RenderCameraFlag::DisableHiZCulling) && r_hiZOcclusionCulling.GetBool();
+    const bool needHiZCullResources = !BE1::HasFlag(renderCamera->desc.flags, RenderCamera::Flag::DisableHiZCulling) && r_hiZOcclusionCulling.GetBool();
     const bool needHiZTexture = needHiZCullResources;
     const bool needHiZDebugPreview = needHiZTexture && r_hiZDebugPreview.GetBool();
 
@@ -483,8 +483,8 @@ void RenderWorld::FindVisObjects(RenderFrameData *frameData, const RenderCamera 
     PROFILER_CPU_SCOPED_EVENT("RenderWorld::FindVisObjects");
 
     const bool skipViewCulling = r_skipViewCulling.GetBool();
-    const RenderCameraDesc &cameraDesc = renderCamera->GetDesc();
-    const bool staticOnly = BE1::HasFlag(cameraDesc.flags, RenderCameraFlag::StaticOnly);
+    const RenderCamera::Desc &cameraDesc = renderCamera->GetDesc();
+    const bool staticOnly = BE1::HasFlag(cameraDesc.flags, RenderCamera::Flag::StaticOnly);
 
     const uint32_t startVisibleObjectCount = frameData->NumVisObjects();
 
@@ -753,7 +753,7 @@ void RenderWorld::AddTextMeshes(RenderFrameData *frameData, const RenderCamera *
 void RenderWorld::AddSkyBoxMeshes(RenderFrameData *frameData, const RenderCamera *renderCamera, VisCamera *visCamera) {
     PROFILER_CPU_SCOPED_EVENT("RenderWorld::AddSkyBoxMeshes");
 
-    if (renderCamera->GetDesc().clearMethod != RenderCameraClearMethod::Skybox) {
+    if (renderCamera->GetDesc().clearMethod != RenderCamera::ClearMethod::Skybox) {
         return;
     }
     if (!skyboxMaterial || !meshManager.defaultBoxMesh || !meshManager.defaultBoxMesh->IsReady()) {
@@ -782,8 +782,8 @@ void RenderWorld::FindVisLights(RenderFrameData *frameData, const RenderCamera *
     PROFILER_CPU_SCOPED_EVENT("RenderWorld::FindVisLights");
 
     const bool skipViewCulling = r_skipViewCulling.GetBool();
-    const RenderCameraDesc &cameraDesc = renderCamera->GetDesc();
-    const bool staticOnly = BE1::HasFlag(cameraDesc.flags, RenderCameraFlag::StaticOnly);
+    const RenderCamera::Desc &cameraDesc = renderCamera->GetDesc();
+    const bool staticOnly = BE1::HasFlag(cameraDesc.flags, RenderCamera::Flag::StaticOnly);
     const BE1::Vec3 &viewZAxis = cameraDesc.axis[EngineAxis::Forward];
     const float viewZOffset = -viewZAxis.Dot(cameraDesc.origin);
 
@@ -935,7 +935,7 @@ void RenderWorld::BuildLightCullingData(RenderFrameData *frameData, const Render
     PROFILER_CPU_SCOPED_EVENT("RenderWorld::BuildLightCullingData");
 
     // 현재 카메라의 visible lights 를 minmax z 에 따라 정렬하고, z-bins 를 작성한다.
-    BuildLightZBins(frameData, renderCamera->GetDesc(), visCamera);
+    BuildLightZBins(frameData, renderCamera, visCamera);
 
     if (visCamera->lightCulling.zBins) {
         // 현재 카메라의 Z-bin 이 시작되는 프레임 공용 light Z-bin 테이블을 예약한다.
@@ -968,8 +968,10 @@ static BE_INLINE uint32_t PackLightZBin(uint32_t minLightIndex, uint32_t maxLigh
     return (maxLightIndex << 16) | minLightIndex;
 }
 
-void RenderWorld::BuildLightZBins(RenderFrameData *frameData, const RenderCameraDesc &cameraDesc, VisCamera *visCamera) {
+void RenderWorld::BuildLightZBins(RenderFrameData *frameData, const RenderCamera *renderCamera, VisCamera *visCamera) {
     PROFILER_CPU_SCOPED_EVENT("RenderWorld::BuildLightZBins");
+
+    const RenderCamera::Desc &cameraDesc = renderCamera->GetDesc();
 
     const uint32_t numVisLocalLights = visCamera->numVisLocalLights;
     if (numVisLocalLights == 0) {
@@ -1039,7 +1041,7 @@ void RenderWorld::BuildLightZBins(RenderFrameData *frameData, const RenderCamera
 void RenderWorld::BuildDebugDraw(RenderFrameData *frameData, VisCamera *visCamera) {
     PROFILER_CPU_SCOPED_EVENT("RenderWorld::BuildDebugDraw");
 
-    if (BE1::HasFlag(visCamera->flags, RenderCameraFlag::SkipDebugDraw)) {
+    if (BE1::HasFlag(visCamera->flags, RenderCamera::Flag::SkipDebugDraw)) {
         return;
     }
 
@@ -1187,9 +1189,9 @@ void RenderWorld::DrawGUICamera(RenderFrameData *frameData, uint32_t screenWidth
     visCamera->outputRect = BE1::Rect(0, 0, screenWidth, screenHeight);
     visCamera->renderWidth = screenWidth;
     visCamera->renderHeight = screenHeight;
-    visCamera->clearMethod = RenderCameraClearMethod::NoClear;
+    visCamera->clearMethod = RenderCamera::ClearMethod::NoClear;
     visCamera->projectionPolicy = RHI::renderer->GetProjectionPolicy();
-    visCamera->flags = RenderCameraFlag::SkipPostProcess;
+    visCamera->flags = RenderCamera::Flag::SkipPostProcess;
     //visCamera->time = BE1::PlatformTime::Milliseconds();
     //visCamera->orthogonal = true;
     //visCamera->zNear = 0.0f;

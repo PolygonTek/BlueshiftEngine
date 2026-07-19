@@ -21,8 +21,8 @@
 
 uint64_t                    RenderFrameData::globalFrameSerial = 0;
 static constexpr uint32_t   MaxRenderTaskThreads = 32;
-static constexpr uint32_t   MaxMemSizePerBlock = 0x4000000;
-static constexpr uint32_t   MemAlignSize = 32;
+static constexpr size_t     FrameMemoryBlockSize = 0x4000000;
+static constexpr int        FrameMemoryAlignment = 32;
 static constexpr uint32_t   MaxVisCamera = 1u << 4;
 static constexpr uint32_t   MaxVisObjects = 1u << 20;
 static constexpr uint32_t   MaxVisLights = 1u << 17;
@@ -30,7 +30,7 @@ static constexpr uint32_t   VisObjectChunkCapacity = 4096;
 static constexpr uint32_t   VisLightChunkCapacity = 1024;
 
 void RenderFrameData::CmdBeginContext(RenderContext *context) {
-    BeginContextRenderCommand *cmd = (BeginContextRenderCommand *)GetCommandBuffer(sizeof(BeginContextRenderCommand));
+    BeginContextRenderCommand *cmd = (BeginContextRenderCommand *)GetCommandBuffer(sizeof(BeginContextRenderCommand), sizeof(EndRenderCommand));
     if (!cmd) {
         return;
     }
@@ -41,7 +41,7 @@ void RenderFrameData::CmdBeginContext(RenderContext *context) {
 }
 
 void RenderFrameData::CmdDrawCamera(const VisCamera *camera) {
-    DrawCameraRenderCommand *cmd = (DrawCameraRenderCommand *)GetCommandBuffer(sizeof(DrawCameraRenderCommand));
+    DrawCameraRenderCommand *cmd = (DrawCameraRenderCommand *)GetCommandBuffer(sizeof(DrawCameraRenderCommand), sizeof(EndRenderCommand));
     if (!cmd) {
         return;
     }
@@ -55,7 +55,7 @@ void RenderFrameData::CmdDrawCamera(const VisCamera *camera) {
 }
 
 void RenderFrameData::Init(int32_t frameIndex, int32_t numFrames) {
-    InitMemBlocks();
+    frameArena.Init(FrameMemoryBlockSize, FrameMemoryAlignment);
 
 #ifdef USE_RENDER_TASK
     // 렌더 태스크 스레드 개수는 태스크 매니져의 스레드 개수를 넘을 수 없다.
@@ -118,7 +118,7 @@ void RenderFrameData::Shutdown() {
     shaderLightCullingTable.Shutdown();
     shaderSurfaceTable.Shutdown();
 
-    ClearMemBlocks();
+    frameArena.Shutdown();
 }
 
 void RenderFrameData::BeginFrame() {
@@ -143,49 +143,19 @@ void RenderFrameData::BeginFrame() {
 
     frameSerial = ++globalFrameSerial;
 
-    // 프레임 메모리를 초기화한다.
-    BeginFrameMemAllocs();
+    // 프레임 데이터를 초기화한다.
+    ResetFrameData();
 }
 
 void RenderFrameData::EndFrame() {
     // 커맨드 버퍼에 커맨드의 끝을 기록.
-    *(uint32_t *)(commands.buffer + commands.used) = static_cast<uint32_t>(RenderCommandId::End);
+    CmdEnd();
 
     // 커맨드 버퍼 비우기.
     commands.used = 0;
 }
 
-void RenderFrameData::InitMemBlocks() {
-    headBlock = AllocMemBlock();
-    currentBlock = headBlock;
-}
-
-void RenderFrameData::ClearMemBlocks() {
-    MemBlock *nextBlock;
-
-    for (MemBlock *block = headBlock; block; block = nextBlock) {
-        nextBlock = block->next;
-        Mem_Free(block);
-    }
-
-    headBlock = nullptr;
-    currentBlock = nullptr;
-}
-
-RenderFrameData::MemBlock *RenderFrameData::AllocMemBlock() {
-    MemBlock *block = (MemBlock *)Mem_Alloc(sizeof(*block) + MemAlignSize - 1 + MaxMemSizePerBlock);
-    if (!block) {
-        BE_FATALERROR("RenderFrameData::AllocMemBlock: failed to allocate memory");
-    }
-
-    block->next = nullptr;
-    block->size = MaxMemSizePerBlock;
-    block->used = 0;
-    block->base = (byte *)BE1::AlignUp((intptr_t)block + sizeof(*block), MemAlignSize);
-    return block;
-}
-
-void RenderFrameData::BeginFrameMemAllocs() {
+void RenderFrameData::ResetFrameData() {
     FreeVisCameras();
 
     FreeVisLights();
@@ -204,44 +174,9 @@ void RenderFrameData::BeginFrameMemAllocs() {
     shaderLightTable.Clear();
     shaderSurfaceTable.Clear();
 
-    // Reset the mem allocation to the first block.
-    currentBlock = headBlock;
-
-    // Clear all the blocks.
-    for (MemBlock *block = headBlock; block; block = block->next) {
-        block->used = 0;
-    }
+    frameArena.Reset();
 
     InitVisCameras(MaxVisCamera);
-}
-
-void *RenderFrameData::MemAlloc(int size) {
-    size = BE1::AlignUp(size, MemAlignSize);
-    if (size > MaxMemSizePerBlock) {
-        BE_FATALERROR("RenderFrameData::MemAlloc: %i exceeded MaxMemSizePerBlock", size);
-    }
-
-    for (MemBlock *block = currentBlock; block; block = block->next) {
-        if (block->size - block->used >= size) {
-            void *alloc = block->base + block->used;
-            block->used += size;
-            currentBlock = block;
-            return alloc;
-        }
-    }
-
-    MemBlock *newBlock = AllocMemBlock();
-    currentBlock->next = newBlock;
-    currentBlock = newBlock;
-    currentBlock->used = size;
-
-    return currentBlock->base;
-}
-
-void *RenderFrameData::ClearedMemAlloc(int size) {
-    void *mem = MemAlloc(size);
-    BE1::simdProcessor->Memset(mem, 0, size);
-    return mem;
 }
 
 void RenderFrameData::InitVisCameras(uint32_t maxVisCameras) {
@@ -298,9 +233,9 @@ void RenderFrameData::FreeVisLights() {
 }
 
 RenderFrameData::Chunk *RenderFrameData::AllocChunk(uint32_t elementSize, uint32_t elementCount) {
-    const uint32_t elementsOffset = BE1::AlignUp(static_cast<uint32_t>(sizeof(Chunk)), MemAlignSize);
+    const uint32_t elementsOffset = BE1::AlignUp(static_cast<uint32_t>(sizeof(Chunk)), FrameMemoryAlignment);
     const uint64_t allocationSize = elementsOffset + static_cast<uint64_t>(elementSize) * elementCount;
-    assert(allocationSize <= MaxMemSizePerBlock);
+    assert(allocationSize <= INT_MAX);
 
     Chunk *chunk = static_cast<Chunk *>(MemAlloc(static_cast<int>(allocationSize)));
     chunk->next = nullptr;
@@ -537,15 +472,18 @@ uint32_t RenderFrameData::ReserveLightCullingWords(uint32_t count) {
     return offset;
 }
 
-void *RenderFrameData::GetCommandBuffer(uint32_t bytes) {
+void *RenderFrameData::GetCommandBuffer(uint32_t bytes, uint32_t reservedBytes) {
     RenderCommandBuffer *cmds = GetCommands();
 
-    if (cmds->used + bytes + sizeof(RenderCommandId) >= RenderCommandBuffer::BufferSize) {
+    assert(cmds->used <= RenderCommandBuffer::BufferSize);
+
+    const uint32_t availableBytes = RenderCommandBuffer::BufferSize - cmds->used;
+    if (bytes > availableBytes || reservedBytes > availableBytes - bytes) {
         BE_WARNLOG("RenderFrameData::GetCommandBuffer: not enough command buffer space\n");
         return nullptr;
     }
 
+    void *commandBuffer = cmds->buffer + cmds->used;
     cmds->used += bytes;
-
-    return cmds->buffer + cmds->used - bytes;
+    return commandBuffer;
 }

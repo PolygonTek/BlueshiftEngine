@@ -17,10 +17,10 @@
 #include "RHI/RHI.h"
 #include "GpuTiming.h"
 #include "RenderFrameData.h"
-#include "Render/ShaderPipeline/ShaderPipeline.h"
 #include "Render/Texture/TextureStreamingFeedback.h"
 #include "Render/Mesh/GuiMesh.h"
 
+class ShaderPipeline;
 class RenderBackend;
 
 /*

@@ -227,6 +227,127 @@ BE_INLINE void BlockAllocator<T, N>::FreeEmptyBlocks() {
     }
 }
 
+/// Block based linear allocator for variable size allocations.
+/// Allocated memory stays valid until Reset() or Shutdown().
+class LinearAllocator {
+public:
+    LinearAllocator() = default;
+    LinearAllocator(size_t blockSize, int alignment = 32);
+    LinearAllocator(const LinearAllocator &rhs) = delete;
+    ~LinearAllocator();
+
+    LinearAllocator &       operator=(const LinearAllocator &rhs) = delete;
+
+    void                    Init(size_t blockSize, int alignment = 32);
+    void                    Shutdown();
+    void                    Reset();
+
+    [[nodiscard]] void *    Alloc(size_t size);
+    [[nodiscard]] void *    ClearedAlloc(size_t size);
+
+    size_t                  GetBlockSize() const { return blockSize; }
+    int                     GetAlignment() const { return alignment; }
+
+private:
+    struct Block {
+        Block *             next;
+        size_t              size;
+        size_t              used;
+        byte *              base;
+    };
+
+    [[nodiscard]] Block *   AllocBlock(size_t minimumSize);
+
+    Block *                 headBlock = nullptr;
+    Block *                 currentBlock = nullptr;
+    size_t                  blockSize = 0;
+    int                     alignment = 0;
+};
+
+BE_INLINE LinearAllocator::LinearAllocator(size_t blockSize, int alignment) {
+    Init(blockSize, alignment);
+}
+
+BE_INLINE LinearAllocator::~LinearAllocator() {
+    Shutdown();
+}
+
+BE_INLINE void LinearAllocator::Init(size_t blockSize, int alignment) {
+    assert(!headBlock && !currentBlock);
+    assert(blockSize > 0);
+    assert(alignment > 0 && (alignment & (alignment - 1)) == 0);
+
+    this->blockSize = blockSize;
+    this->alignment = alignment;
+    headBlock = AllocBlock(blockSize);
+    currentBlock = headBlock;
+}
+
+BE_INLINE void LinearAllocator::Shutdown() {
+    Block *nextBlock;
+
+    for (Block *block = headBlock; block; block = nextBlock) {
+        nextBlock = block->next;
+        Mem_Free(block);
+    }
+
+    headBlock = nullptr;
+    currentBlock = nullptr;
+    blockSize = 0;
+    alignment = 0;
+}
+
+BE_INLINE void LinearAllocator::Reset() {
+    assert(headBlock);
+
+    currentBlock = headBlock;
+
+    for (Block *block = headBlock; block; block = block->next) {
+        block->used = 0;
+    }
+}
+
+BE_INLINE LinearAllocator::Block *LinearAllocator::AllocBlock(size_t minimumSize) {
+    const size_t size = Max(blockSize, minimumSize);
+    Block *block = (Block *)Mem_Alloc(sizeof(*block) + alignment - 1 + size);
+    assert(block);
+
+    block->next = nullptr;
+    block->size = size;
+    block->used = 0;
+    block->base = (byte *)AlignUp((uintptr_t)block + sizeof(*block), alignment);
+    return block;
+}
+
+BE_INLINE void *LinearAllocator::Alloc(size_t size) {
+    assert(currentBlock);
+
+    const size_t alignedSize = AlignUp(size, alignment);
+    Block *lastBlock = currentBlock;
+
+    for (Block *block = currentBlock; block; block = block->next) {
+        lastBlock = block;
+        if (block->size - block->used >= alignedSize) {
+            void *alloc = block->base + block->used;
+            block->used += alignedSize;
+            currentBlock = block;
+            return alloc;
+        }
+    }
+
+    Block *newBlock = AllocBlock(alignedSize);
+    lastBlock->next = newBlock;
+    currentBlock = newBlock;
+    currentBlock->used = alignedSize;
+    return currentBlock->base;
+}
+
+BE_INLINE void *LinearAllocator::ClearedAlloc(size_t size) {
+    void *mem = Alloc(size);
+    memset(mem, 0, size);
+    return mem;
+}
+
 /// BlockAllocator based allocator for transient objects.
 /// Returned object addresses stay valid until Reset() or Shutdown().
 template <typename T, int N>

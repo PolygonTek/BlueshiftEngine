@@ -27,65 +27,62 @@ static constexpr int RenderHiZCullMaxInstanceCount = 2048;
 static constexpr int RenderHiZCullMaxVisibleInstanceCount = 0x40000;
 static constexpr int RenderHiZCullMaxBatchCount = RenderHiZCullMaxVisibleInstanceCount;
 
-enum class RenderCameraFlag : uint8_t {
-    NoFlag                      = 0,
-    WireframeMode               = BIT(0),
-    SkipDebugDraw               = BIT(1),
-    SkipPostProcess             = BIT(2),
-    DisableTemporalHistory      = BIT(3),
-    DisableHiZCulling           = BIT(4),
-    StaticOnly                  = BIT(5)
-};
-
-enum class RenderCameraClearMethod : uint8_t {
-    NoClear,
-    DepthOnly,
-    Color,
-    Skybox
-};
-
-enum class RenderCameraClearColorMode : uint8_t {
-    RenderTargetDefault,
-    Explicit
-};
-
-struct RenderCameraDesc {
-    int                         time = 0;               ///< Time in milliseconds for shader effects and other time dependent rendering issues
-    RenderCameraFlag            flags = RenderCameraFlag::NoFlag;
-    uint32_t                    layerMask = ~0u;        ///< Bit mask of visible RenderObject and RenderLight layers
-
-    BE1::Rect                   outputRect;             ///< Output rectangle in the swapchain.
-    uint32_t                    renderWidth = 0;        ///< Local render target width. Falls back to outputRect.w if zero.
-    uint32_t                    renderHeight = 0;       ///< Local render target height. Falls back to outputRect.h if zero.
-    BE1::Vec3                   origin;                 ///< View origin
-    BE1::Mat3                   axis;                   ///< View axis [FORWARD, LEFT, UP]
-
-    RenderCameraClearMethod     clearMethod = RenderCameraClearMethod::Color; ///< Clearing method before rendering view
-    RenderCameraClearColorMode  clearColorMode = RenderCameraClearColorMode::RenderTargetDefault; ///< Source of color clear value
-    BE1::Color4                 clearColor = BE1::Color4::black; ///< Clearing color is needed if clearing method is set to 'ColorClear'
-
-    float                       fovX;                   ///< Perspective projection FOV in horizontal axis
-    float                       fovY;                   ///< Perspective projection FOV in vertical axis
-    float                       sizeX;                  ///< Orthogonal projection size in horizontal axis
-    float                       sizeY;                  ///< Orthogonal projection size in vertical axis
-    float                       zNear;                  ///< Near distance in z axis
-    float                       zFar;                   ///< Finite visibility/culling far distance; ignored by infinite-far perspective projection
-    RHI::ProjectionPolicy       projectionPolicy;       ///< Graphics API projection convention used for shader-visible matrices
-    bool                        infiniteZFar = false;   ///< Use an infinite far plane for perspective projection
-    bool                        orthogonal = false;     ///< True for orthogonal projection or false for perspective projection
-};
-
 class RenderCamera {
     friend class RenderWorld;
 
 public:
-    ~RenderCamera() {
-        DestroyPostProcessResources();
-        DestroyHiZResources();
-        DestroyRenderTextures();
-    }
+    enum class Flag : uint8_t {
+        None                    = 0,
+        WireframeMode           = BIT(0),
+        SkipDebugDraw           = BIT(1),
+        SkipPostProcess         = BIT(2),
+        DisableTemporalHistory  = BIT(3),
+        DisableHiZCulling       = BIT(4),
+        StaticOnly              = BIT(5)
+    };
 
-    const RenderCameraDesc &    GetDesc() const { return desc; }
+    enum class ClearMethod : uint8_t {
+        NoClear,
+        DepthOnly,
+        Color,
+        Skybox
+    };
+
+    enum class ClearColorMode : uint8_t {
+        RenderTargetDefault,
+        Explicit
+    };
+
+    struct Desc {
+        int                     time = 0;               ///< Time in milliseconds for shader effects and other time dependent rendering issues
+        Flag                    flags = Flag::None;
+        uint32_t                layerMask = ~0u;        ///< Bit mask of visible RenderObject and RenderLight layers
+
+        BE1::Rect               outputRect;             ///< Output rectangle in the swapchain.
+        uint32_t                renderWidth = 0;        ///< Local render target width. Falls back to outputRect.w if zero.
+        uint32_t                renderHeight = 0;       ///< Local render target height. Falls back to outputRect.h if zero.
+        BE1::Vec3               origin;                 ///< View origin
+        BE1::Mat3               axis;                   ///< View axis [FORWARD, LEFT, UP]
+
+        ClearMethod             clearMethod = ClearMethod::Color; ///< Clearing method before rendering view
+        ClearColorMode          clearColorMode = ClearColorMode::RenderTargetDefault; ///< Source of color clear value
+        BE1::Color4             clearColor = BE1::Color4::black; ///< Clearing color is needed if clearing method is set to 'ColorClear'
+
+        float                   fovX;                   ///< Perspective projection FOV in horizontal axis
+        float                   fovY;                   ///< Perspective projection FOV in vertical axis
+        float                   sizeX;                  ///< Orthogonal projection size in horizontal axis
+        float                   sizeY;                  ///< Orthogonal projection size in vertical axis
+        float                   zNear;                  ///< Near distance in z axis
+        float                   zFar;                   ///< Finite visibility/culling far distance; ignored by infinite-far perspective projection
+        RHI::ProjectionPolicy   projectionPolicy;       ///< Graphics API projection convention used for shader-visible matrices
+        bool                    infiniteZFar = false;   ///< Use an infinite far plane for perspective projection
+        bool                    orthogonal = false;     ///< True for orthogonal projection or false for perspective projection
+    };
+
+    RenderCamera() = default;
+    ~RenderCamera();
+
+    const Desc &                GetDesc() const { return desc; }
 
                                 /// Returns orthogonal projection oriented box bounds.
     const BE1::OBB              GetBox() const { return box; }
@@ -142,7 +139,7 @@ public:
     bool                        CalcDepthBoundsFromOBB(const BE1::OBB &box, const BE1::Mat4 &mvp, float *depthMin, float *depthMax) const;
     bool                        CalcDepthBoundsFromFrustum(const BE1::Frustum &frustum, const BE1::Mat4 &mvp, float *depthMin, float *depthMax) const;
 
-    void                        Update(const RenderCameraDesc &desc);
+    void                        Update(const Desc &desc);
 
     static void                 CalcConvolutionBloomKernelParams(const BE1::Image &kernelImage, float &normalizationFactor, BE1::Vec2 &kernelExtents);
 
@@ -261,7 +258,7 @@ private:
     void                        DestroyLuminanceBuffer();
     void                        UpdateTemporalJitter(bool enableJitter, uint32_t sampleCount);
 
-    RenderCameraDesc            desc;
+    Desc                        desc;
     BE1::Frustum                frustum;
     BE1::Plane                  frustumPlanes[6];
     BE1::Vec3                   frustumPoints[8];
@@ -357,6 +354,6 @@ private:
 };
 
 template<>
-struct enable_bitmask_operators<RenderCameraFlag> {
+struct enable_bitmask_operators<RenderCamera::Flag> {
     static constexpr bool enable = true;
 };

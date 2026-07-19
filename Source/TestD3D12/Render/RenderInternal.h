@@ -159,8 +159,8 @@ struct VisCamera {
     BE1::Rect                   outputRect;
     uint32_t                    renderWidth = 0;
     uint32_t                    renderHeight = 0;
-    RenderCameraClearMethod     clearMethod;
-    RenderCameraClearColorMode  clearColorMode;
+    RenderCamera::ClearMethod   clearMethod;
+    RenderCamera::ClearColorMode clearColorMode;
     BE1::Color4                 clearColor;
     RHI::ProjectionPolicy       projectionPolicy;
     float                       projectionDepthA = 0.0f;
@@ -168,7 +168,7 @@ struct VisCamera {
     bool                        projectionOrthogonal = false;
     float                       ndcDepthScale = 1.0f;
     float                       ndcDepthBias = 0.0f;
-    RenderCameraFlag            flags = RenderCameraFlag::NoFlag;
+    RenderCamera::Flag          flags = RenderCamera::Flag::None;
     bool                        directionalLightVisible = false;
     bool                        needNormalOutput = false;
     bool                        needVelocityOutput = false;

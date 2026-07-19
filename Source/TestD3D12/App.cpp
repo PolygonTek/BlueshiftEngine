@@ -412,11 +412,11 @@ void App::RenderScene() {
     uint32_t h = mainRenderContext->GetHeight();
     float aspectRatio = (float)w / h;
 
-    RenderCameraDesc cameraDesc;
+    RenderCamera::Desc cameraDesc;
     cameraDesc.projectionPolicy = RHI::renderer->GetProjectionPolicy();
     cameraDesc.infiniteZFar = true;
-    cameraDesc.clearMethod = RenderCameraClearMethod::Skybox;
-    //cameraDesc.clearColorMode = RenderCameraClearColorMode::RenderTargetDefault;
+    cameraDesc.clearMethod = RenderCamera::ClearMethod::Skybox;
+    //cameraDesc.clearColorMode = RenderCamera::ClearColorMode::RenderTargetDefault;
     cameraDesc.orthogonal = false;
     cameraDesc.outputRect.Set(0, 0, w, h);
     cameraDesc.renderWidth = w;

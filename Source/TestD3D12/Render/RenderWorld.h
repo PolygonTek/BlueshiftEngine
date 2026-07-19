@@ -25,7 +25,6 @@ struct VisSurf;
 struct VisCamera;
 struct VisLight;
 struct VisObject;
-struct RenderCameraDesc;
 struct DebugDrawData;
 class RenderFrameData;
 class RenderCamera;
@@ -174,7 +173,7 @@ private:
     void                        FindVisLights(RenderFrameData *frameData, const RenderCamera *renderCamera, VisCamera *visCamera);
     static void                 ComputeLightTileRange(const VisCamera *visCamera, const BE1::Rect &screenClipRect, uint32_t &packedTileMin, uint32_t &packedTileMax);
     static void                 BuildLightCullingData(RenderFrameData *frameData, const RenderCamera *renderCamera, VisCamera *visCamera);
-    static void                 BuildLightZBins(RenderFrameData *frameData, const RenderCameraDesc &cameraDesc, VisCamera *visCamera);
+    static void                 BuildLightZBins(RenderFrameData *frameData, const RenderCamera *renderCamera, VisCamera *visCamera);
     bool                        IsVisObjectRegisteredInCurrentView(const RenderObject *renderObject) const;
     void                        SetupPyramidBloom(RenderFrameData *frameData, RenderCamera *renderCamera, VisCamera *visCamera);
     void                        SetupConvolutionBloom(RenderFrameData *frameData, RenderCamera *renderCamera, VisCamera *visCamera);

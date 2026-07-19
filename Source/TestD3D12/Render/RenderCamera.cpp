@@ -21,7 +21,13 @@
 #include "Shaders/ShaderInterop.h"
 #include "Render/Texture/TextureManager.h"
 
-void RenderCamera::Update(const RenderCameraDesc &desc) {
+RenderCamera::~RenderCamera() {
+    DestroyPostProcessResources();
+    DestroyHiZResources();
+    DestroyRenderTextures();
+}
+
+void RenderCamera::Update(const Desc &desc) {
     this->desc = desc;
 
     const bool zNegativeOneToOne = desc.projectionPolicy.IsZNegativeOneToOne();
