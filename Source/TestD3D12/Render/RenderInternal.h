@@ -157,6 +157,11 @@ struct VisCamera {
     RenderPassDrawSurf *        renderPassDrawSurfStorage = nullptr; // RenderPass 들이 나눠 쓰는 draw surf pool
 
     BE1::Rect                   outputRect;
+    RHI::Texture *              outputTexture = nullptr;
+    RHI::ViewID                 outputViewID = RHI::ViewID::PrimaryID;
+    RHI::GPUResourceState       outputBeforeState = RHI::GPUResourceState::ShaderResource;
+    RHI::GPUResourceState       outputAfterState = RHI::GPUResourceState::ShaderResource;
+    RHI::PipelineState *        outputImagePSO = nullptr;
     uint32_t                    renderWidth = 0;
     uint32_t                    renderHeight = 0;
     RenderCamera::ClearMethod   clearMethod;

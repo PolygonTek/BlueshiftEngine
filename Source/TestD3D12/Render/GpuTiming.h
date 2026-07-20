@@ -56,7 +56,7 @@ public:
         ConvolutionBloomResolve,
         TAAResolve,
         FinalPostProcess,
-        BlitToSwapChain,
+        BlitToOutput,
         ImGuiOverlay,
         Count
     };
@@ -82,6 +82,9 @@ public:
 
     void                            BeginFrame(RHI::CommandList *commandList, const RenderFrameData *frameData, RenderContext *renderContext);
     void                            EndFrame(RHI::CommandList *commandList);
+
+                                    // 현재 프레임의 GPU 타이밍 측정이 활성화되어 있는지 리턴한다.
+    bool                            IsFrameActive() const { return currentFrameSlotIndex >= 0; }
 
     void                            SetFrameFence(uint64_t fenceValue);
 

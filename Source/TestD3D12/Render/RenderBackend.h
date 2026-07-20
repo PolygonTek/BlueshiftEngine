@@ -78,6 +78,7 @@ private:
     const void *                    ExecuteDrawCamera(const void *data);
     const void *                    ExecuteScreenshot(const void *data);
     const void *                    ExecuteGenerateConvolutionBloomKernel(const void *data);
+    const void *                    ExecuteFinalizeFrame(const void *data);
     const void *                    ExecuteSwapBuffers(const void *data);
 
     void                            UpdateFramePSOs();
@@ -91,7 +92,9 @@ private:
     void                            DrawCamera3DDepthPrepass();
     void                            DrawCamera2D();
 
-    void                            PostProcessAndBlitToSwapChain(bool surfaceOutputsReady);
+    void                            PostProcessAndBlitToOutput(bool surfaceOutputsReady);
+    void                            BlitTextureToRenderTarget(const RHI::Texture *texture, const RHI::Texture *renderTargetTexture, RHI::ViewID renderTargetViewID,
+                                        RHI::GPUResourceState renderTargetBeforeState, RHI::GPUResourceState renderTargetAfterState, const BE1::Rect &destinationRect, RHI::PipelineState *imagePSO);
     void                            BlitTextureToSwapChain(const RHI::Texture *texture, const BE1::Rect &destinationRect);
 
     void                            DrawGenericPass(const RenderPass *renderPass);
@@ -148,6 +151,9 @@ private:
     RenderContext *                 currentContext = nullptr;
     RHI::CommandList *              mainCommandList = nullptr;
     uint32_t                        frameCount = 0;
+    bool                            gpuTimingEnabled = false;
+    bool                            textureStreamingFeedbackEnabled = false;
+    bool                            swapChainOutputEnabled = false;
 
     RHI::PipelineState *            frameImagePSO = nullptr;
     RHI::PipelineState *            frameGenHiZMipFirstBatchPSO = nullptr;

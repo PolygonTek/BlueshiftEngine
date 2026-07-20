@@ -64,6 +64,9 @@ void RenderBackend::Execute(RenderFrameData *frameData) {
         case RenderCommandId::GenerateConvolutionBloomKernel:
             data = ExecuteGenerateConvolutionBloomKernel(data);
             continue;
+        case RenderCommandId::FinalizeFrame:
+            data = ExecuteFinalizeFrame(data);
+            continue;
         case RenderCommandId::SwapBuffers:
             data = ExecuteSwapBuffers(data);
             continue;
@@ -160,7 +163,7 @@ bool RenderBackend::UploadFrameConstants() {
     constants->shaderLightRefTableIndex = frameData->GetShaderLightRefTableBindlessIndex();
     constants->shaderLightZBinTableIndex = frameData->GetShaderLightZBinTableBindlessIndex();
     constants->shaderLightTileWordTableIndex = frameData->GetShaderLightTileWordTableBindlessIndex();
-    constants->feedbackBufferIndex = currentContext->textureStreamingFeedback.GetBindlessIndex();
+    constants->feedbackBufferIndex = textureStreamingFeedbackEnabled ? currentContext->textureStreamingFeedback.GetBindlessIndex() : 0;
 
     ShaderDirectionalLight &shaderDirectionalLight = constants->directionalLight;
     const VisLight *primaryDirectionalLight = frameData->GetPrimaryDirectionalLight();
@@ -281,6 +284,9 @@ const void *RenderBackend::ExecuteBeginContext(const void *data) {
 
     currentContext = cmd->renderContext;
     frameImagePSO = cmd->imagePSO;
+    gpuTimingEnabled = cmd->gpuTiming;
+    textureStreamingFeedbackEnabled = cmd->textureStreamingFeedback;
+    swapChainOutputEnabled = cmd->swapChainOutput;
 
     statDrawCount = 0;
     statDrawTriangleCount = 0;
@@ -289,10 +295,14 @@ const void *RenderBackend::ExecuteBeginContext(const void *data) {
 
     mainCommandList = frameData->GetThreadData(0)->BeginCommandList(RHI::CommandQueueType::Graphics);
 
-    gpuTiming.BeginFrame(mainCommandList, frameData, currentContext);
+    if (gpuTimingEnabled) {
+        gpuTiming.BeginFrame(mainCommandList, frameData, currentContext);
+    }
 
 #ifdef USE_MIPMAP_STREAMING
-    currentContext->textureStreamingFeedback.ClearBuffer(mainCommandList);
+    if (textureStreamingFeedbackEnabled) {
+        currentContext->textureStreamingFeedback.ClearBuffer(mainCommandList);
+    }
 #endif
 
     // 이번 프레임의 카메라들이 참조할 ShaderSurface 테이블 용량을 미리 확보한다.
@@ -416,6 +426,11 @@ const void *RenderBackend::ExecuteDrawCamera(const void *data) {
 void RenderBackend::ExecuteDrawCamera2D(RHI::ClearFlag clearFlags, const BE1::Color4 &clearColor, float clearDepth) {
     PROFILER_CPU_SCOPED_EVENT("RenderBackend::ExecuteDrawCamera2D");
 
+    if (!swapChainOutputEnabled) {
+        BE_WARNLOG("RenderBackend::ExecuteDrawCamera2D: swap chain output is disabled\n");
+        return;
+    }
+
     const RHI::ClearFlag swapChainClearFlags = BE1::HasFlag(clearFlags, RHI::ClearFlag::Color) ? RHI::ClearFlag::Color : RHI::ClearFlag::None;
     RHI::renderer->BeginRenderPass(mainCommandList, currentContext->swapChain, nullptr, clearColor, clearDepth, 0, swapChainClearFlags);
 
@@ -462,7 +477,7 @@ void RenderBackend::ExecuteDrawCamera3D(RHI::ClearFlag clearFlags, const BE1::Co
         DispatchHiZDebugPreview();
     }
 
-    PostProcessAndBlitToSwapChain(surfaceOutputsReady);
+    PostProcessAndBlitToOutput(surfaceOutputsReady);
 }
 
 void RenderBackend::ExecuteDrawCamera3DDepthPrepass(RHI::RenderPassImage::LoadAction depthLoadAction) {
@@ -523,7 +538,7 @@ void RenderBackend::ExecuteDrawCamera3DMainPass(RHI::ClearFlag clearFlags, const
     RHI::renderer->EndRenderPass(mainCommandList);
 }
 
-void RenderBackend::PostProcessAndBlitToSwapChain(bool surfaceOutputsReady) {
+void RenderBackend::PostProcessAndBlitToOutput(bool surfaceOutputsReady) {
     const RHI::Texture *finalColorTexture = currentVisCamera->rtColorTexture;
 
     currentPostProcessInputTexture = currentVisCamera->rtColorTexture;
@@ -547,12 +562,68 @@ void RenderBackend::PostProcessAndBlitToSwapChain(bool surfaceOutputsReady) {
         }
     }
 
-    BlitTextureToSwapChain(finalColorTexture, currentVisCamera->outputRect);
+    if (currentVisCamera->outputTexture) {
+        if (finalColorTexture != currentVisCamera->outputTexture) {
+            BlitTextureToRenderTarget(finalColorTexture, currentVisCamera->outputTexture, currentVisCamera->outputViewID, currentVisCamera->outputBeforeState, currentVisCamera->outputAfterState, currentVisCamera->outputRect, currentVisCamera->outputImagePSO);
+        }
+    } else if (swapChainOutputEnabled) {
+        BlitTextureToSwapChain(finalColorTexture, currentVisCamera->outputRect);
+    } else {
+        BE_WARNLOG("RenderBackend::PostProcessAndBlitToOutput: no output render target was specified\n");
+    }
     currentPostProcessInputTexture = nullptr;
 }
 
-void RenderBackend::BlitTextureToSwapChain(const RHI::Texture *texture, const BE1::Rect &destRect) {
-    if (!texture) {
+void RenderBackend::BlitTextureToRenderTarget(const RHI::Texture *srcTexture, const RHI::Texture *renderTargetTexture, RHI::ViewID renderTargetViewID,
+    RHI::GPUResourceState renderTargetBeforeState, RHI::GPUResourceState renderTargetAfterState, const BE1::Rect &destRect, RHI::PipelineState *imagePSO) {
+    if (!srcTexture || !renderTargetTexture || !currentVisCamera->outputImagePSO) {
+        return;
+    }
+
+    RHI::TextureViewInfo renderTargetViewInfo;
+    if (!renderTargetTexture->GetViewInfo(RHI::ViewType::RTV, renderTargetViewID, renderTargetViewInfo)) {
+        return;
+    }
+
+    const uint32_t w = renderTargetViewInfo.width;
+    const uint32_t h = renderTargetViewInfo.height;
+    if (w == 0 || h == 0 || destRect.w <= 0 || destRect.h <= 0) {
+        return;
+    }
+
+    const int outputX0 = BE1::Max(destRect.x, 0);
+    const int outputY0 = BE1::Max(destRect.y, 0);
+    const int outputX1 = BE1::Min(destRect.x + destRect.w, static_cast<int>(w));
+    const int outputY1 = BE1::Min(destRect.y + destRect.h, static_cast<int>(h));
+    if (outputX1 <= outputX0 || outputY1 <= outputY0) {
+        return;
+    }
+
+    const uint32_t outputW = static_cast<uint32_t>(outputX1 - outputX0);
+    const uint32_t outputH = static_cast<uint32_t>(outputY1 - outputY0);
+
+    FullscreenImageParams imageParams = {};
+    imageParams.texCoordScale = float2(static_cast<float>(outputW) / destRect.w, static_cast<float>(outputH) / destRect.h);
+    imageParams.texCoordOffset = float2(static_cast<float>(outputX0 - destRect.x) / destRect.w, static_cast<float>(outputY0 - destRect.y) / destRect.h);
+
+    BE1::Rect outputRect(outputX0, outputY0, outputW, outputH);
+
+    GpuTiming::ScopedTimer gpuScope(gpuTiming, mainCommandList, GpuTiming::Tag::BlitToOutput);
+
+    RHI::RenderPassImage outputImage = RHI::RenderPassImage::Color(renderTargetTexture, renderTargetViewID, RHI::RenderPassImage::LoadAction::Load, RHI::RenderPassImage::StoreAction::Store, renderTargetBeforeState, renderTargetAfterState);
+    RHI::renderer->BeginRenderPass(mainCommandList, &outputImage, 1);
+    RHI::renderer->SetViewport(mainCommandList, outputRect);
+    RHI::renderer->SetScissorRect(mainCommandList, outputRect);
+    RHI::renderer->SetPSO(mainCommandList, currentVisCamera->outputImagePSO);
+    RHI::renderer->SetTexture(mainCommandList, 0, false, srcTexture);
+    RHI::renderer->SetConstants(mainCommandList, 0, &imageParams, sizeof(imageParams), 0);
+    RHI::renderer->Draw(mainCommandList, 3, 0);
+    RecordDrawStats(1, 1, 0, 0);
+    RHI::renderer->EndRenderPass(mainCommandList);
+}
+
+void RenderBackend::BlitTextureToSwapChain(const RHI::Texture *srcTexture, const BE1::Rect &destRect) {
+    if (!srcTexture) {
         return;
     }
 
@@ -587,13 +658,13 @@ void RenderBackend::BlitTextureToSwapChain(const RHI::Texture *texture, const BE
 
     BE1::Rect outputRect(outputX0, outputY0, outputW, outputH);
 
-    GpuTiming::ScopedTimer gpuScope(gpuTiming, mainCommandList, GpuTiming::Tag::BlitToSwapChain);
+    GpuTiming::ScopedTimer gpuScope(gpuTiming, mainCommandList, GpuTiming::Tag::BlitToOutput);
 
     RHI::renderer->BeginRenderPass(mainCommandList, currentContext->swapChain, nullptr);
     RHI::renderer->SetViewport(mainCommandList, outputRect);
     RHI::renderer->SetScissorRect(mainCommandList, outputRect);
     RHI::renderer->SetPSO(mainCommandList, frameImagePSO);
-    RHI::renderer->SetTexture(mainCommandList, 0, false, texture);
+    RHI::renderer->SetTexture(mainCommandList, 0, false, srcTexture);
     RHI::renderer->SetConstants(mainCommandList, 0, &imageParams, sizeof(imageParams), 0);
     RHI::renderer->Draw(mainCommandList, 3, 0);
     RecordDrawStats(1, 1, 0, 0);
@@ -651,43 +722,58 @@ const void *RenderBackend::ExecuteGenerateConvolutionBloomKernel(const void *dat
     return (const void *)(cmd + 1);
 }
 
-const void *RenderBackend::ExecuteSwapBuffers(const void *data) {
-    PROFILER_CPU_SCOPED_EVENT("RenderBackend::ExecuteSwapBuffers");
+const void *RenderBackend::ExecuteFinalizeFrame(const void *data) {
+    PROFILER_CPU_SCOPED_EVENT("RenderBackend::ExecuteFinalizeFrame");
 
-    const SwapBuffersRenderCommand *cmd = reinterpret_cast<const SwapBuffersRenderCommand *>(data);
+    const FinalizeFrameRenderCommand *cmd = reinterpret_cast<const FinalizeFrameRenderCommand *>(data);
+    const bool renderImGuiOverlay = cmd->renderImGuiOverlay && frameData->HasPendingImGuiOverlay();
+    const bool finishGpuTiming = gpuTimingEnabled && gpuTiming.IsFrameActive();
 
-    mainCommandList = frameData->GetThreadData(0)->BeginCommandList(RHI::CommandQueueType::Graphics);
-
+    bool needsCommandList = renderImGuiOverlay || finishGpuTiming;
 #ifdef USE_MIPMAP_STREAMING
-    TextureStreamingFeedback::ReadbackFrame *readbackFrame = currentContext->textureStreamingFeedback.Resolve(mainCommandList);
+    needsCommandList |= textureStreamingFeedbackEnabled;
+    TextureStreamingFeedback::ReadbackFrame *readbackFrame = nullptr;
 #endif
 
-    const bool hasPendingImGuiOverlay = frameData->HasPendingImGuiOverlay();
-    if (hasPendingImGuiOverlay) {
-        GpuTiming::ScopedTimer gpuScope(gpuTiming, mainCommandList, GpuTiming::Tag::ImGuiOverlay);
+    if (needsCommandList) {
+        mainCommandList = frameData->GetThreadData(0)->BeginCommandList(RHI::CommandQueueType::Graphics);
 
-        BE1::Rect viewportRect(0, 0, currentContext->GetWidth(), currentContext->GetHeight());
+#ifdef USE_MIPMAP_STREAMING
+        if (textureStreamingFeedbackEnabled) {
+            readbackFrame = currentContext->textureStreamingFeedback.Resolve(mainCommandList);
+        }
+#endif
 
-        // 뷰포트 & ScissorRect 의 초기값 설정
-        RHI::renderer->SetViewport(mainCommandList, viewportRect);
-        RHI::renderer->SetScissorRect(mainCommandList, viewportRect);
+        if (renderImGuiOverlay) {
+            GpuTiming::ScopedTimer gpuScope(gpuTiming, mainCommandList, GpuTiming::Tag::ImGuiOverlay);
 
-        RHI::renderer->BeginRenderPass(mainCommandList, currentContext->swapChain, nullptr);
+            BE1::Rect viewportRect(0, 0, currentContext->GetWidth(), currentContext->GetHeight());
 
-        frameData->RenderPendingImGuiOverlay(mainCommandList);
+            // 뷰포트 & ScissorRect 의 초기값 설정
+            RHI::renderer->SetViewport(mainCommandList, viewportRect);
+            RHI::renderer->SetScissorRect(mainCommandList, viewportRect);
 
-        RHI::renderer->EndRenderPass(mainCommandList);
+            RHI::renderer->BeginRenderPass(mainCommandList, currentContext->swapChain, nullptr);
+
+            frameData->RenderPendingImGuiOverlay(mainCommandList);
+
+            RHI::renderer->EndRenderPass(mainCommandList);
+        }
+
+        if (finishGpuTiming) {
+            gpuTiming.EndFrame(mainCommandList);
+        }
+
+        mainCommandList->CloseAndExecute();
     }
-
-    gpuTiming.EndFrame(mainCommandList);
-
-    mainCommandList->CloseAndExecute();
 
     // 이번 백엔드 프레임에서 수행하는 렌더링 커맨드들에 대한 펜스를 친다.
     uint64_t fenceValue = RHI::renderer->SignalFence(RHI::CommandQueueType::Graphics);
     frameData->SetFrameFenceValue(fenceValue);
 
-    gpuTiming.SetFrameFence(fenceValue);
+    if (gpuTimingEnabled) {
+        gpuTiming.SetFrameFence(fenceValue);
+    }
 
     if (frameData->IsStatEnabled()) {
         UpdateFrameStats();
@@ -698,6 +784,14 @@ const void *RenderBackend::ExecuteSwapBuffers(const void *data) {
         readbackFrame->SetReadbackFenceValue(fenceValue);
     }
 #endif
+
+    return (const void *)(cmd + 1);
+}
+
+const void *RenderBackend::ExecuteSwapBuffers(const void *data) {
+    PROFILER_CPU_SCOPED_EVENT("RenderBackend::ExecuteSwapBuffers");
+
+    const SwapBuffersRenderCommand *cmd = reinterpret_cast<const SwapBuffersRenderCommand *>(data);
 
     // 백버퍼를 전면버퍼와 교환한다.
     currentContext->GetSwapChain()->SwapBuffers(r_vsync.GetBool());

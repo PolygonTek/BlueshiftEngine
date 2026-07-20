@@ -72,13 +72,24 @@ class RenderContext {
 public:
     using Stats = StatsT<PlainStatValue>;
 
+    struct FrameOptions {
+        float                       frameTime = 0.0f;
+        float                       elapsedTime = 0.0f;
+        float                       elapsedPrevTime = 0.0f;
+        bool                        statEnabled = false;
+        bool                        gpuTiming = false;
+        bool                        textureStreamingFeedback = false;
+        bool                        swapChainOutput = false;
+    };
+
     RenderContext() = default;
 
     void                            Init(void *windowHandle, const BE1::Color4 &baseClearColor = BE1::Color4::black);
     void                            Shutdown();
 
-    void                            BeginFrame(float frameTime, float elapsedTime, float elapsedPrevTime, bool statEnabled);
+    bool                            BeginFrame(const FrameOptions &options);
     void                            EndFrame();
+
     template <typename BuildFunc>
     void                            RenderImGui(const BuildFunc &buildFunc);
 
@@ -167,6 +178,7 @@ private:
     RenderFrameData                 frames[NumFrames] = {};
     uint32_t                        currentFrontendFrameIndex = 0;
     uint32_t                        frameCount = 0;
+    FrameOptions                    activeFrameOptions;
     BE1::Array<PendingScreenshot>   pendingScreenshots;
 
     RHI::Format                     mainRTColorFormat = RHI::Format::R8G8B8A8_UNORM;

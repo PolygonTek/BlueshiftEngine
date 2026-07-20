@@ -43,6 +43,7 @@ enum class RenderCommandId : uint8_t {
     DrawCamera,
     ScreenShot,
     GenerateConvolutionBloomKernel,
+    FinalizeFrame,
     SwapBuffers
 };
 
@@ -57,6 +58,9 @@ struct BeginContextRenderCommand {
     RenderCommandId                 commandId;
     RenderContext *                 renderContext;
     RHI::PipelineState *            imagePSO;
+    bool                            gpuTiming;
+    bool                            textureStreamingFeedback;
+    bool                            swapChainOutput;
 };
 
 struct DrawCameraRenderCommand {
@@ -78,6 +82,11 @@ struct GenerateConvolutionBloomKernelRenderCommand {
     float                           apertureScale;
     float                           diffractionPSFScale;
     float                           dispersionAmount;
+};
+
+struct FinalizeFrameRenderCommand {
+    RenderCommandId                 commandId;
+    bool                            renderImGuiOverlay;
 };
 
 struct SwapBuffersRenderCommand {
@@ -195,8 +204,9 @@ public:
     RenderCommandBuffer *           GetCommands() { return &commands; }
 
                                     // 렌더 커맨드들..
-    void                            CmdBeginContext(RenderContext *context);
+    void                            CmdBeginContext(RenderContext *context, bool gpuTiming, bool textureStreamingFeedback, bool swapChainOutput);
     void                            CmdDrawCamera(const VisCamera *camera);
+    void                            CmdFinalizeFrame(bool renderImGuiOverlay);
     void                            CmdSwapBuffers();
     void                            CmdScreenshot(int x, int y, int width, int height, const char *filename);
     void                            CmdGenerateConvolutionBloomKernel(float apertureScale, float diffractionPSFScale, float dispersionAmount);
@@ -268,7 +278,7 @@ private:
     void                            ClearRetainedFonts();
     void                            ClearRetainedTextures();
 
-    [[nodiscard]] void *            GetCommandBuffer(uint32_t bytes, uint32_t reservedBytes);
+    [[nodiscard]] void *            GetCommandBuffer(uint32_t bytes);
 
     BE1::LinearAllocator            frameArena;
 
@@ -343,51 +353,6 @@ BE_INLINE void RenderFrameData::ChunkIterator<T>::SetChunk(RenderFrameData::Chun
     current = static_cast<T *>(chunk->elements);
     end = current + chunk->count;
     nextChunk = chunk->next;
-}
-
-BE_INLINE void RenderFrameData::CmdSwapBuffers() {
-    SwapBuffersRenderCommand *cmd = (SwapBuffersRenderCommand *)GetCommandBuffer(sizeof(SwapBuffersRenderCommand), sizeof(EndRenderCommand));
-    if (!cmd) {
-        return;
-    }
-
-    cmd->commandId = RenderCommandId::SwapBuffers;
-}
-
-BE_INLINE void RenderFrameData::CmdScreenshot(int x, int y, int width, int height, const char *filename) {
-    ScreenShotRenderCommand *cmd = (ScreenShotRenderCommand *)GetCommandBuffer(sizeof(ScreenShotRenderCommand), sizeof(EndRenderCommand));
-    if (!cmd) {
-        return;
-    }
-
-    cmd->commandId = RenderCommandId::ScreenShot;
-    cmd->x = x;
-    cmd->y = y;
-    cmd->width = width;
-    cmd->height = height;
-    BE1::Str::Copynz(cmd->filename, filename, COUNT_OF(cmd->filename));
-}
-
-BE_INLINE void RenderFrameData::CmdGenerateConvolutionBloomKernel(float apertureScale, float diffractionPSFScale, float dispersionAmount) {
-    GenerateConvolutionBloomKernelRenderCommand *cmd = (GenerateConvolutionBloomKernelRenderCommand *)GetCommandBuffer(sizeof(GenerateConvolutionBloomKernelRenderCommand), sizeof(EndRenderCommand));
-    if (!cmd) {
-        return;
-    }
-
-    cmd->commandId = RenderCommandId::GenerateConvolutionBloomKernel;
-    cmd->apertureScale = apertureScale;
-    cmd->diffractionPSFScale = diffractionPSFScale;
-    cmd->dispersionAmount = dispersionAmount;
-}
-
-BE_INLINE void RenderFrameData::CmdEnd() {
-    EndRenderCommand *cmd = (EndRenderCommand *)GetCommandBuffer(sizeof(EndRenderCommand), 0);
-    if (!cmd) {
-        BE_FATALERROR("RenderFrameData::CmdEnd: command buffer tail reservation was violated\n");
-        return;
-    }
-
-    cmd->commandId = RenderCommandId::End;
 }
 
 BE_INLINE void RenderFrameData::SetFrameTiming(float frameTime, float elapsedTime, float elapsedPrevTime, uint32_t frameCount) {

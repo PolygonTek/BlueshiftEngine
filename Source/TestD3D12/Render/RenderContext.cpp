@@ -284,20 +284,24 @@ void RenderContext::EnsureTextureStreamingFeedbackCapacity(uint32_t requiredCapa
     }
 }
 
-void RenderContext::BeginFrame(float frameTime, float elapsedTime, float elapsedPrevTime, bool statEnabled) {
+bool RenderContext::BeginFrame(const FrameOptions &options) {
     PROFILER_CPU_SCOPED_EVENT("RenderContext::BeginFrame");
 
     assert(BE1::Engine::IsInMainThread());
 
     if (RenderContext::activeContext) {
-        BE_ERRLOG("RenderContext::BeginFrame: Make sure to call EndFrame() before calling BeginFrame again\n");
-        return;
+        // BeginFrame/EndFrame 은 중첩할 수 없다.
+        BE_ERRLOG("RenderContext::BeginFrame: a frame is already active\n");
+        return false;
+    }
+
+    if (options.swapChainOutput) {
+        ResetGuiClipRect(GetWidth(), GetHeight());
     }
 
     currentFrontendFrameIndex = frameCount % COUNT_OF(frames);
     RenderFrameData *frameData = GetCurrentFrontendFrameData();
     mainRTSampleCount = GetMainRTSampleCountFromCVar();
-    ResetGuiClipRect(GetWidth(), GetHeight());
 
     if (renderSystem->IsUsingRenderThread()) {
         // 현재 프런트엔드 프레임의 렌더 스레드 작업이 끝날 때까지 기다린다.
@@ -305,32 +309,50 @@ void RenderContext::BeginFrame(float frameTime, float elapsedTime, float elapsed
     }
 
     frameData->BeginFrame();
-    frameData->SetFrameTiming(frameTime, elapsedTime, elapsedPrevTime, frameCount);
-    frameData->SetStatEnabled(statEnabled);
-    frameData->CmdBeginContext(this);
+    frameData->SetFrameTiming(options.frameTime, options.elapsedTime, options.elapsedPrevTime, frameCount);
+    frameData->SetStatEnabled(options.statEnabled);
+    frameData->CmdBeginContext(this, options.gpuTiming, options.textureStreamingFeedback, options.swapChainOutput);
+
+    activeFrameOptions = options;
 
     RenderContext::activeContext = this;
+    return true;
 }
 
 void RenderContext::EndFrame() {
     PROFILER_CPU_SCOPED_EVENT("RenderContext::EndFrame");
 
     assert(BE1::Engine::IsInMainThread());
-    assert(guiClipRectStack.Count() == 1);
 
-    RenderContext::activeContext = nullptr;
+    if (RenderContext::activeContext != this) {
+        BE_ERRLOG("RenderContext::EndFrame: this context has no active frame\n");
+        return;
+    }
 
     RenderFrameData *frameData = GetCurrentFrontendFrameData();
-
-    FlushPendingScreenshots(frameData);
+    if (activeFrameOptions.swapChainOutput) {
+        assert(guiClipRectStack.Count() == 1);
+        FlushPendingScreenshots(frameData);
+    } else {
+        frameData->ClearPendingImGuiOverlay();
+    }
 
 #ifdef USE_MIPMAP_STREAMING
-    EnsureTextureStreamingFeedbackCapacity(materialManager.GetStreamingMaterialCount());
+    if (activeFrameOptions.textureStreamingFeedback) {
+        EnsureTextureStreamingFeedbackCapacity(materialManager.GetStreamingMaterialCount());
+    }
 #endif
 
-    frameData->CmdSwapBuffers();
+    frameData->CmdFinalizeFrame(activeFrameOptions.swapChainOutput);
+
+    if (activeFrameOptions.swapChainOutput) {
+        frameData->CmdSwapBuffers();
+    }
+
     frameData->EndFrame();
 
+    RenderContext::activeContext = nullptr;
+    activeFrameOptions = {};
     frameCount++;
 
     renderSystem->SubmitFrame(this, frameData);
@@ -351,7 +373,7 @@ void RenderContext::EndImGui() {
     }
     void *imguiDrawData = imguiOverlay->EndFrameCapture();
     if (imguiDrawData) {
-        // RenderBackend::ExecuteSwapBuffers 에서 렌더링하기 위해 캡쳐 데이터를 세팅한다.
+        // RenderBackend::ExecuteFinalizeFrame 에서 렌더링하기 위해 캡쳐 데이터를 세팅한다.
         GetCurrentFrontendFrameData()->SetPendingImGuiOverlay(imguiOverlay, imguiDrawData);
     }
 #endif

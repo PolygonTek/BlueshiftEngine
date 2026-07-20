@@ -58,7 +58,11 @@ public:
         Flag                    flags = Flag::None;
         uint32_t                layerMask = ~0u;        ///< Bit mask of visible RenderObject and RenderLight layers
 
-        BE1::Rect               outputRect;             ///< Output rectangle in the swapchain.
+        BE1::Rect               outputRect;             ///< Output rectangle in outputTexture, or in the swap chain when outputTexture is null.
+        RHI::Texture *          outputTexture = nullptr; ///< Optional final output render target. The caller must keep it alive until rendering completes.
+        RHI::ViewID             outputViewID = RHI::ViewID::PrimaryID;
+        RHI::GPUResourceState   outputBeforeState = RHI::GPUResourceState::ShaderResource;
+        RHI::GPUResourceState   outputAfterState = RHI::GPUResourceState::ShaderResource;
         uint32_t                renderWidth = 0;        ///< Local render target width. Falls back to outputRect.w if zero.
         uint32_t                renderHeight = 0;       ///< Local render target height. Falls back to outputRect.h if zero.
         BE1::Vec3               origin;                 ///< View origin

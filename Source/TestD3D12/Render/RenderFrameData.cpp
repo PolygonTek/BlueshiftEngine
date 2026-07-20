@@ -29,31 +29,6 @@ static constexpr uint32_t   MaxVisLights = 1u << 17;
 static constexpr uint32_t   VisObjectChunkCapacity = 4096;
 static constexpr uint32_t   VisLightChunkCapacity = 1024;
 
-void RenderFrameData::CmdBeginContext(RenderContext *context) {
-    BeginContextRenderCommand *cmd = (BeginContextRenderCommand *)GetCommandBuffer(sizeof(BeginContextRenderCommand), sizeof(EndRenderCommand));
-    if (!cmd) {
-        return;
-    }
-
-    cmd->commandId = RenderCommandId::BeginContext;
-    cmd->renderContext = context;
-    cmd->imagePSO = ShaderPipeline::GetReadyPSO(context->imagePipeline);
-}
-
-void RenderFrameData::CmdDrawCamera(const VisCamera *camera) {
-    DrawCameraRenderCommand *cmd = (DrawCameraRenderCommand *)GetCommandBuffer(sizeof(DrawCameraRenderCommand), sizeof(EndRenderCommand));
-    if (!cmd) {
-        return;
-    }
-
-    cmd->commandId = RenderCommandId::DrawCamera;
-    cmd->visCamera = camera;
-
-    if (camera) {
-        maxShaderSurfaceCount = BE1::Max(maxShaderSurfaceCount, camera->numVisSurfs);
-    }
-}
-
 void RenderFrameData::Init(int32_t frameIndex, int32_t numFrames) {
     frameArena.Init(FrameMemoryBlockSize, FrameMemoryAlignment);
 
@@ -472,13 +447,13 @@ uint32_t RenderFrameData::ReserveLightCullingWords(uint32_t count) {
     return offset;
 }
 
-void *RenderFrameData::GetCommandBuffer(uint32_t bytes, uint32_t reservedBytes) {
+void *RenderFrameData::GetCommandBuffer(uint32_t bytes) {
     RenderCommandBuffer *cmds = GetCommands();
 
     assert(cmds->used <= RenderCommandBuffer::BufferSize);
 
     const uint32_t availableBytes = RenderCommandBuffer::BufferSize - cmds->used;
-    if (bytes > availableBytes || reservedBytes > availableBytes - bytes) {
+    if (bytes > availableBytes) {
         BE_WARNLOG("RenderFrameData::GetCommandBuffer: not enough command buffer space\n");
         return nullptr;
     }
@@ -486,4 +461,88 @@ void *RenderFrameData::GetCommandBuffer(uint32_t bytes, uint32_t reservedBytes) 
     void *commandBuffer = cmds->buffer + cmds->used;
     cmds->used += bytes;
     return commandBuffer;
+}
+
+void RenderFrameData::CmdBeginContext(RenderContext *context, bool gpuTiming, bool textureStreamingFeedback, bool swapChainOutput) {
+    BeginContextRenderCommand *cmd = (BeginContextRenderCommand *)GetCommandBuffer(sizeof(BeginContextRenderCommand));
+    if (!cmd) {
+        return;
+    }
+
+    cmd->commandId = RenderCommandId::BeginContext;
+    cmd->renderContext = context;
+    cmd->imagePSO = ShaderPipeline::GetReadyPSO(context->imagePipeline);
+    cmd->gpuTiming = gpuTiming;
+    cmd->textureStreamingFeedback = textureStreamingFeedback;
+    cmd->swapChainOutput = swapChainOutput;
+}
+
+void RenderFrameData::CmdDrawCamera(const VisCamera *camera) {
+    DrawCameraRenderCommand *cmd = (DrawCameraRenderCommand *)GetCommandBuffer(sizeof(DrawCameraRenderCommand));
+    if (!cmd) {
+        return;
+    }
+
+    cmd->commandId = RenderCommandId::DrawCamera;
+    cmd->visCamera = camera;
+
+    if (camera) {
+        maxShaderSurfaceCount = BE1::Max(maxShaderSurfaceCount, camera->numVisSurfs);
+    }
+}
+
+void RenderFrameData::CmdFinalizeFrame(bool renderImGuiOverlay) {
+    FinalizeFrameRenderCommand *cmd = (FinalizeFrameRenderCommand *)GetCommandBuffer(sizeof(FinalizeFrameRenderCommand));
+    if (!cmd) {
+        BE_FATALERROR("RenderFrameData::CmdFinalizeFrame: failed to allocate command buffer\n");
+        return;
+    }
+
+    cmd->commandId = RenderCommandId::FinalizeFrame;
+    cmd->renderImGuiOverlay = renderImGuiOverlay;
+}
+
+void RenderFrameData::CmdSwapBuffers() {
+    SwapBuffersRenderCommand *cmd = (SwapBuffersRenderCommand *)GetCommandBuffer(sizeof(SwapBuffersRenderCommand));
+    if (!cmd) {
+        return;
+    }
+
+    cmd->commandId = RenderCommandId::SwapBuffers;
+}
+
+void RenderFrameData::CmdScreenshot(int x, int y, int width, int height, const char *filename) {
+    ScreenShotRenderCommand *cmd = (ScreenShotRenderCommand *)GetCommandBuffer(sizeof(ScreenShotRenderCommand));
+    if (!cmd) {
+        return;
+    }
+
+    cmd->commandId = RenderCommandId::ScreenShot;
+    cmd->x = x;
+    cmd->y = y;
+    cmd->width = width;
+    cmd->height = height;
+    BE1::Str::Copynz(cmd->filename, filename, COUNT_OF(cmd->filename));
+}
+
+void RenderFrameData::CmdGenerateConvolutionBloomKernel(float apertureScale, float diffractionPSFScale, float dispersionAmount) {
+    GenerateConvolutionBloomKernelRenderCommand *cmd = (GenerateConvolutionBloomKernelRenderCommand *)GetCommandBuffer(sizeof(GenerateConvolutionBloomKernelRenderCommand));
+    if (!cmd) {
+        return;
+    }
+
+    cmd->commandId = RenderCommandId::GenerateConvolutionBloomKernel;
+    cmd->apertureScale = apertureScale;
+    cmd->diffractionPSFScale = diffractionPSFScale;
+    cmd->dispersionAmount = dispersionAmount;
+}
+
+void RenderFrameData::CmdEnd() {
+    EndRenderCommand *cmd = (EndRenderCommand *)GetCommandBuffer(sizeof(EndRenderCommand));
+    if (!cmd) {
+        BE_FATALERROR("RenderFrameData::CmdEnd: failed to allocate command buffer\n");
+        return;
+    }
+
+    cmd->commandId = RenderCommandId::End;
 }

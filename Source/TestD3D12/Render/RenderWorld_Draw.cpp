@@ -161,6 +161,23 @@ void RenderWorld::SetupConvolutionBloom(RenderFrameData *frameData, RenderCamera
     }
 }
 
+static RHI::PipelineState *GetOutputImagePSO(const RHI::Texture *outputTexture, RHI::ViewID outputViewID) {
+    RHI::TextureViewInfo outputViewInfo;
+    if (!outputTexture || !outputTexture->GetViewInfo(RHI::ViewType::RTV, outputViewID, outputViewInfo)) {
+        return nullptr;
+    }
+
+    GraphicsPipelineDesc graphicsPipelineDesc;
+    graphicsPipelineDesc.renderDest.renderTargetCount = 1;
+    graphicsPipelineDesc.renderDest.renderTargetFormats[0] = outputViewInfo.format;
+    graphicsPipelineDesc.renderDest.sampleCount = outputTexture->GetSampleCount();
+    graphicsPipelineDesc.depthStencilStateType = RHI::DepthStencilStateType::Disabled;
+    graphicsPipelineDesc.blendStateType = RHI::BlendStateType::Disabled;
+
+    const SharedPtr<ShaderPipeline> imagePipeline = shaderPipelineCache.GetGraphicsPipeline(shaderTemplateManager.fullscreenImageShaderTemplate, ShaderPermutationKey(), graphicsPipelineDesc, false);
+    return ShaderPipeline::GetReadyPSO(imagePipeline);
+}
+
 void RenderWorld::RenderScene(RenderCamera *renderCamera) {
     PROFILER_CPU_SCOPED_EVENT("RenderWorld::RenderScene");
 
@@ -175,6 +192,20 @@ void RenderWorld::RenderScene(RenderCamera *renderCamera) {
 
     if (renderWidth <= 0 || renderHeight <= 0) {
         return;
+    }
+
+    RHI::PipelineState *outputImagePSO = nullptr;
+    if (renderCamera->desc.outputTexture) {
+        if (!renderCamera->desc.outputTexture->HasValidView(RHI::ViewType::RTV, renderCamera->desc.outputViewID)) {
+            BE_WARNLOG("RenderWorld::RenderScene: output texture has no valid render target view\n");
+            return;
+        }
+
+        outputImagePSO = GetOutputImagePSO(renderCamera->desc.outputTexture, renderCamera->desc.outputViewID);
+        if (!outputImagePSO) {
+            BE_WARNLOG("RenderWorld::RenderScene: output image pipeline is not ready\n");
+            return;
+        }
     }
 
     const bool skipPostProcess = r_skipPostProcess.GetBool() || BE1::HasFlag(renderCamera->desc.flags, RenderCamera::Flag::SkipPostProcess);
@@ -216,6 +247,11 @@ void RenderWorld::RenderScene(RenderCamera *renderCamera) {
     visCamera->numRenderPasses = 0;
     visCamera->renderPasses = (RenderPass *)frameData->MemAlloc(VisCamera::MaxRenderPasses * sizeof(RenderPass));
     visCamera->outputRect = outputRect;
+    visCamera->outputTexture = renderCamera->desc.outputTexture;
+    visCamera->outputViewID = renderCamera->desc.outputViewID;
+    visCamera->outputBeforeState = renderCamera->desc.outputBeforeState;
+    visCamera->outputAfterState = renderCamera->desc.outputAfterState;
+    visCamera->outputImagePSO = outputImagePSO;
     visCamera->renderWidth = renderWidth;
     visCamera->renderHeight = renderHeight;
     visCamera->clearMethod = renderCamera->desc.clearMethod;

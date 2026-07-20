@@ -204,7 +204,16 @@ void App::Render(uint64_t frameUsec) {
 
     ProcessPendingConvolutionBloomKernelReadback();
 
-    mainRenderContext->BeginFrame(frameTime, elapsedTime, elapsedPrevTime, statEnabled);
+    RenderContext::FrameOptions frameOptions;
+    frameOptions.frameTime = frameTime;
+    frameOptions.elapsedTime = elapsedTime;
+    frameOptions.elapsedPrevTime = elapsedPrevTime;
+    frameOptions.statEnabled = statEnabled;
+    frameOptions.gpuTiming = statEnabled;
+    frameOptions.textureStreamingFeedback = true;
+    frameOptions.swapChainOutput = true;
+
+    mainRenderContext->BeginFrame(frameOptions);
 
     uint64_t t0 = BE1::PlatformTime::Microseconds();
 

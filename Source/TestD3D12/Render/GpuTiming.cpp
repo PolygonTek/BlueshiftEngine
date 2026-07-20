@@ -44,7 +44,7 @@ const char *GpuTiming::TagName(Tag tag) {
         "Conv Bloom Resolve",
         "TAA Resolve",
         "Final Post Process",
-        "Blit To SwapChain",
+        "Blit To Output",
         "ImGui Overlay"
     };
     static_assert(COUNT_OF(tagNames) == static_cast<size_t>(GpuTiming::Tag::Count), "GpuTiming tag name table must match Tag::Count");
