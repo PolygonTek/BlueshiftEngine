@@ -33,6 +33,7 @@ extern BE1::CVar    r_showLights2;
 extern BE1::CVar    r_lightCullingZBin;
 extern BE1::CVar    r_lightCullingDebug;
 
+extern BE1::CVar    r_vsync;
 extern BE1::CVar    r_depthPrepass;
 extern BE1::CVar    r_msaa;
 extern BE1::CVar    r_taa;

@@ -555,6 +555,11 @@ void App::BuildImGuiOverlay() {
                 imguiShowStatsPlotWindow = !imguiShowStatsPlotWindow;
             }
 
+            bool vsync = r_vsync.GetBool();
+            if (ImGui::Checkbox("VSync", &vsync)) {
+                r_vsync.SetBool(vsync);
+            }
+
             bool depthPrepass = r_depthPrepass.GetBool();
             if (ImGui::Checkbox("Depth prepass", &depthPrepass)) {
                 r_depthPrepass.SetBool(depthPrepass);

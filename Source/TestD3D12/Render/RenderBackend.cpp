@@ -700,7 +700,7 @@ const void *RenderBackend::ExecuteSwapBuffers(const void *data) {
 #endif
 
     // 백버퍼를 전면버퍼와 교환한다.
-    currentContext->GetSwapChain()->SwapBuffers(false);
+    currentContext->GetSwapChain()->SwapBuffers(r_vsync.GetBool());
 
     PROFILER_FRAME_MARK();
 
