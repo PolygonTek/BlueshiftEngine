@@ -44,8 +44,17 @@ void Texture::InternalData::Swap(InternalData &rhs) {
     BE1::Swap(flags, rhs.flags);
 }
 
-bool Texture::IsReadyForRendering() const {
-    return IsReady() && internalData.rhiTexture && internalData.rhiTexture->GetStatus() == RHI::GPUResourceStatus::Ready;
+RHI::Texture *Texture::GetReadyRHITexture() const {
+    if (!IsReady()) {
+        return nullptr;
+    }
+
+    RHI::Texture *texture = internalData.rhiTexture;
+    if (!texture || texture->GetStatus() != RHI::GPUResourceStatus::Ready) {
+        return nullptr;
+    }
+
+    return texture;
 }
 
 Texture::Flag Texture::ApplyTextureHints(Flag baseFlags, BE1::Image::Flag textureHints) {

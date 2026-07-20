@@ -41,9 +41,11 @@ public:
     ID3D12Resource *                GetCurrentBackBuffer() const { return backBuffers[currentBackBufferIndex]; }
     const D3D12_CPU_DESCRIPTOR_HANDLE &GetCurrentBackBufferRTVDescriptorHandle() const { return backBufferRTVs[currentBackBufferIndex]; }
 
-    static constexpr int            NumSwapChainBuffers = 3;
+    static constexpr int            NumSwapChainBuffers = 2; // 3 으로 하면 input lag 이 느껴질 수 있음
 
 private:
+    void                            ReleaseRTVs();
+
     IDXGISwapChain3 *               dxgiSwapChain = nullptr;
     DXGI_FORMAT                     swapChainFormat = DXGI_FORMAT_UNKNOWN;
     DXGI_FORMAT                     rtvFormat = DXGI_FORMAT_UNKNOWN;

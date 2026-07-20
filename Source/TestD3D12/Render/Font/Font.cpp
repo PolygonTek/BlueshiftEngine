@@ -17,29 +17,37 @@
 #include "Render/Font/Font.h"
 #include "FontFace.h"
 
+Font::~Font() {
+}
+
 void Font::Purge() {
-    SAFE_DELETE(fontFace);
+    fontFace.reset();
+    fontType = Type::None;
 }
 
 bool Font::Load(const char *filename) {
     Purge();
 
+    UniquePtr<FontFace> newFontFace;
+    Type newFontType;
+    uint32_t loadFontSize;
+
     if (BE1::Str::CheckExtension(filename, ".font")) {
-        fontFace = new BitmapFontFace;
-        if (!fontFace->Load(filename, 0/*fontSize*/)) {
-            delete fontFace;
-            return false;
-        }
-        fontType = Type::Bitmap;
-        return true;
+        newFontFace = MakeUnique<BitmapFontFace>();
+        newFontType = Type::Bitmap;
+        loadFontSize = 0;
+    } else {
+        newFontFace = MakeUnique<TrueTypeFontFace>();
+        newFontType = Type::TrueType;
+        loadFontSize = fontSize;
     }
 
-    fontFace = new TrueTypeFontFace;
-    if (!fontFace->Load(filename, fontSize)) {
-        delete fontFace;
+    if (!newFontFace->Load(filename, loadFontSize)) {
         return false;
     }
-    fontType = Type::TrueType;
+
+    fontFace = std::move(newFontFace);
+    fontType = newFontType;
     return true;
 }
 

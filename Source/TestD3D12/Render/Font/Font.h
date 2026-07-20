@@ -53,7 +53,7 @@ public:
     };
 
     Font() = default;
-    ~Font() { Purge(); }
+    ~Font();
 
     const char *            GetName() const { return name.c_str(); }
     const char *            GetHashName() const { return hashName.c_str(); }
@@ -88,5 +88,5 @@ private:
     Type                    fontType = Type::None;
     uint32_t                fontSize = 0;
     uint64_t                retainedFrameSerial = 0;
-    FontFace *              fontFace = nullptr;
+    UniquePtr<FontFace>     fontFace;
 };

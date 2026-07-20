@@ -18,6 +18,7 @@
 #include "LoadingSystem.h"
 #include "Render/ShaderPipeline/ShaderTemplateManager.h"
 #include "Render/ShaderPipeline/ShaderPipelineCache.h"
+#include "Render/RenderSystem.h"
 #include "Asset/GuidMapper.h"
 #include "IO/FileSystem.h"
 #include "Render/Texture/TextureManager.h"
@@ -122,6 +123,8 @@ void Material::InvalidatePermutationKeys() const {
 }
 
 bool Material::SetPropertyValue(int propertyIndex, const ShaderTemplate::PropertyValue &value) {
+    assert(BE1::Engine::IsInMainThread());
+
     if (!internalData.shaderTemplate) {
         return false;
     }
@@ -131,20 +134,38 @@ bool Material::SetPropertyValue(int propertyIndex, const ShaderTemplate::Propert
         return false;
     }
 
-    ShaderTemplate::PropertyValue newValue = value;
-    if (properties[propertyIndex].IsTexture() && value.GetType() == BE1::Variant::Type::Str) {
-        newValue = BE1::resourceGuidMapper.GetOrCreateGuid(value.As<BE1::Str>());
+    const ShaderPropertyInfo &propertyInfo = properties[propertyIndex];
+    ShaderTemplate::PropertyValue newValue;
+    if (propertyInfo.IsTexture()) {
+        if (value.GetType() == BE1::Variant::Type::Str) {
+            newValue = BE1::resourceGuidMapper.GetOrCreateGuid(value.As<BE1::Str>());
+        } else if (value.GetType() == BE1::Variant::Type::Guid) {
+            newValue = value;
+        } else {
+            BE_WARNLOG("Material::SetPropertyValue: texture property '%s' in material '%s' requires a Guid or Str value\n", propertyInfo.GetName(), hashName.c_str());
+            return false;
+        }
+    } else {
+        if (value.GetType() != propertyInfo.GetType()) {
+            BE_WARNLOG("Material::SetPropertyValue: property '%s' type mismatch in material '%s'\n", propertyInfo.GetName(), hashName.c_str());
+            return false;
+        }
+        newValue = value;
     }
 
     if (internalData.propertyValues[propertyIndex] == newValue) {
         return true;
     }
+
+    // 렌더 백엔드에서 이전 프레임의 material 데이터 사용을 마칠 때까지 기다린다.
+    renderSystem->WaitAllRenderCompleted();
+
     internalData.propertyValues[propertyIndex] = newValue;
 
-    if (properties[propertyIndex].IsShaderDefine()) {
+    if (propertyInfo.IsShaderDefine()) {
         InvalidatePermutationKeys();
     }
-    if (properties[propertyIndex].IsTexture()) {
+    if (propertyInfo.IsTexture()) {
         UpdateTextureProperties();
     }
 

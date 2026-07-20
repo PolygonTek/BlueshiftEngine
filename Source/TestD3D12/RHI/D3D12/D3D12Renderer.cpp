@@ -214,9 +214,6 @@ void D3D12Renderer::Init(const void *mainWindowHandle) {
         BE_FATALERROR("CreateFence failed, ERROR: 0x%x", hr);
     }
 
-    // Fence 를 대기하기 위한 이벤트 객체 생성
-    graphicsQueueFence.eventHandle = CreateEvent(nullptr, FALSE, FALSE, nullptr);
-
     // Compute 커맨드 큐용 Fence
     D3D12QueueFence &computeQueueFence = queueFences[to_int(RHI::CommandQueueType::Compute)];
 
@@ -225,9 +222,6 @@ void D3D12Renderer::Init(const void *mainWindowHandle) {
     if (FAILED(hr)) {
         BE_FATALERROR("CreateFence failed, ERROR: 0x%x", hr);
     }
-
-    // Fence 를 대기하기 위한 이벤트 객체 생성
-    computeQueueFence.eventHandle = CreateEvent(nullptr, FALSE, FALSE, nullptr);
 
     // Graphics CommandQueue 생성
     D3D12_COMMAND_QUEUE_DESC queueDesc = {};
@@ -336,6 +330,10 @@ void D3D12Renderer::Init(const void *mainWindowHandle) {
     releaseRequestMutex = BE1::PlatformMutex::Create();
     resourceRequestMutex = BE1::PlatformMutex::Create();
     psoMapMutex = BE1::PlatformMutex::Create();
+
+    for (D3D12QueueFence &queueFence : queueFences) {
+        queueFence.signalMutex = BE1::PlatformMutex::Create();
+    }
 
     InitDefaultStates();
 
@@ -592,6 +590,12 @@ void D3D12Renderer::Shutdown() {
     SAFE_RELEASE(drawIndexedInstancedIndirectCommandSignature);
     SAFE_RELEASE(dispatchIndirectCommandSignature);
     SAFE_RELEASE(dispatchMeshIndirectCommandSignature);
+
+    for (D3D12QueueFence &queueFence : queueFences) {
+        BE1::PlatformMutex::Destroy(queueFence.signalMutex);
+        queueFence.signalMutex = nullptr;
+    }
+
     SAFE_RELEASE(commandQueues[to_int(RHI::CommandQueueType::Graphics)]);
     SAFE_RELEASE(commandQueues[to_int(RHI::CommandQueueType::Compute)]);
     SAFE_RELEASE(queueFences[to_int(RHI::CommandQueueType::Graphics)].fence);
@@ -644,6 +648,9 @@ void D3D12Renderer::GetMemoryUsage(RHI::MemoryUsage &memoryUsage) const {
 uint64_t D3D12Renderer::SignalFence(RHI::CommandQueueType queueType) {
     D3D12QueueFence &queueFence = queueFences[to_int(queueType)];
 
+    // fence 값의 증가 순서와 command queue 에 signal 이 기록되는 순서를 일치시킨다.
+    BE1::ScopedLock lock(queueFence.signalMutex);
+
     queueFence.value++;
     commandQueues[to_int(queueType)]->Signal(queueFence.fence, queueFence.value);
 
@@ -659,8 +666,11 @@ void D3D12Renderer::WaitFence(RHI::CommandQueueType queueType, uint64_t expected
     D3D12QueueFence &queueFence = queueFences[to_int(queueType)];
 
     if (queueFence.fence->GetCompletedValue() < expectedFenceValue) {
-        queueFence.fence->SetEventOnCompletion(expectedFenceValue, queueFence.eventHandle);
-        WaitForSingleObject(queueFence.eventHandle, INFINITE);
+        // event 핸들이 nullptr 이므로, SetEventOnCompletion 함수는 시그널이 올 때까지 대기한다.
+        HRESULT hr = queueFence.fence->SetEventOnCompletion(expectedFenceValue, nullptr);
+        if (FAILED(hr)) {
+            BE_FATALERROR("SetEventOnCompletion failed, ERROR: 0x%x", hr);
+        }
     }
 }
 
@@ -988,14 +998,15 @@ void D3D12Renderer::SetViewport(RHI::CommandList *commandList, const BE1::Rect &
 }
 
 void D3D12Renderer::SetScissorRect(RHI::CommandList *commandList, const BE1::Rect &scissorRect) {
-    static_assert(sizeof(BE1::Rect) == sizeof(D3D12_RECT));
-    static_assert(offsetof(BE1::Rect, x) == offsetof(D3D12_RECT, left));
-    static_assert(offsetof(BE1::Rect, y) == offsetof(D3D12_RECT, top));
-    static_assert(offsetof(BE1::Rect, w) == offsetof(D3D12_RECT, right));
-    static_assert(offsetof(BE1::Rect, h) == offsetof(D3D12_RECT, bottom));
+    D3D12_RECT d3d12ScissorRect = {
+        scissorRect.x,
+        scissorRect.y,
+        scissorRect.X2(),
+        scissorRect.Y2()
+    };
 
     D3D12CommandList *_commandList = static_cast<D3D12CommandList *>(commandList);
-    _commandList->GetGraphicsCommandList()->RSSetScissorRects(1, (D3D12_RECT *)&scissorRect);
+    _commandList->GetGraphicsCommandList()->RSSetScissorRects(1, &d3d12ScissorRect);
 }
 
 void D3D12Renderer::SetDepthBounds(RHI::CommandList *commandList, float depthMin, float depthMax) {
@@ -1243,7 +1254,7 @@ void D3D12Renderer::ReadPixels(RHI::CommandList *commandList, const RHI::SwapCha
     int dstPitch = static_cast<int>(BE1::Image::MemRequired(width, 1, 1, 1, 1, backBufferFormat));
 
     for (UINT y = 0; y < height; ++y) {
-        BE1::simdProcessor->Memcpy(dstPtr, srcPtr, srcPitch);
+        BE1::simdProcessor->Memcpy(dstPtr, srcPtr, dstPitch);
         srcPtr += srcPitch;
         dstPtr += dstPitch;
     }

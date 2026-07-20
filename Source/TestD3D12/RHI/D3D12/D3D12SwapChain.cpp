@@ -35,7 +35,7 @@ RHI::SwapChain *D3D12Renderer::CreateSwapChain(HWND hwnd, uint32_t width, uint32
     swapChainDesc.Scaling = DXGI_SCALING_NONE;
     swapChainDesc.SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD;
     swapChainDesc.AlphaMode = DXGI_ALPHA_MODE_UNSPECIFIED;
-    swapChainDesc.Flags = DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH;
+    swapChainDesc.Flags = DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH | DXGI_SWAP_CHAIN_FLAG_FRAME_LATENCY_WAITABLE_OBJECT;
 
     if (supportsTearing) {
         swapChainDesc.Flags |= DXGI_SWAP_CHAIN_FLAG_ALLOW_TEARING;
@@ -61,6 +61,11 @@ RHI::SwapChain *D3D12Renderer::CreateSwapChain(HWND hwnd, uint32_t width, uint32
         BE_FATALERROR("Failed to create swapchain, ERROR: 0x%x", hr);
     }
 
+    hr = dxgiSwapChain3->SetMaximumFrameLatency(1);
+    if (FAILED(hr)) {
+        BE_FATALERROR("SetMaximumFrameLatency failed, ERROR: 0x%x", hr);
+    }
+
     //IDXGIOutput *dxgiOutput = nullptr;
     //hr = dxgiSwapChain3->GetContainingOutput(&dxgiOutput);
 
@@ -79,10 +84,23 @@ void D3D12Renderer::DestroySwapChain(RHI::SwapChain *swapChain) {
 }
 
 void D3D12SwapChain::Release() {
+    ReleaseRTVs();
+
     for (int bufferIndex = 0; bufferIndex < COUNT_OF(backBuffers); ++bufferIndex) {
         SAFE_RELEASE(backBuffers[bufferIndex]);
     }
     SAFE_RELEASE(dxgiSwapChain);
+}
+
+void D3D12SwapChain::ReleaseRTVs() {
+    D3D12DescriptorPool *rtvDescriptorPool = D3D12Renderer::GetRenderer()->rtvDescriptorPool;
+
+    for (int bufferIndex = 0; bufferIndex < COUNT_OF(backBufferRTVs); ++bufferIndex) {
+        if (backBufferRTVs[bufferIndex].ptr != 0) {
+            rtvDescriptorPool->Free(backBufferRTVs[bufferIndex]);
+            backBufferRTVs[bufferIndex] = {};
+        }
+    }
 }
 
 void D3D12SwapChain::CreateRTVs() {
@@ -94,10 +112,9 @@ void D3D12SwapChain::CreateRTVs() {
         rtvFormat = D3D12Renderer::ToSRGBFormat(swapChainFormat);
     }
 
+    ReleaseRTVs();
+
     for (int bufferIndex = 0; bufferIndex < COUNT_OF(backBuffers); ++bufferIndex) {
-        if (backBufferRTVs[bufferIndex].ptr != 0) {
-            D3D12Renderer::GetRenderer()->rtvDescriptorPool->Free(backBufferRTVs[bufferIndex]);
-        }
         D3D12Renderer::GetRenderer()->rtvDescriptorPool->Alloc(&backBufferRTVs[bufferIndex], nullptr);
 
         // 스왑 체인의 백버퍼 리소스를 가져온다.
@@ -121,7 +138,7 @@ void D3D12SwapChain::Resize(uint32_t width, uint32_t height) {
         SAFE_RELEASE(backBuffers[bufferIndex]);
     }
 
-    UINT swapChainFlags = DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH;
+    UINT swapChainFlags = DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH | DXGI_SWAP_CHAIN_FLAG_FRAME_LATENCY_WAITABLE_OBJECT;
     if (D3D12Renderer::GetRenderer()->supportsTearing) {
         swapChainFlags |= DXGI_SWAP_CHAIN_FLAG_ALLOW_TEARING;
     }

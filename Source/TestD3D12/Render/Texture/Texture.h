@@ -114,7 +114,8 @@ public:
     const Streaming *               GetStreaming() const { return &streaming; }
     Streaming *                     GetStreaming() { return &streaming; }
 
-    bool                            IsReadyForRendering() const;
+    RHI::Texture *                  GetReadyRHITexture() const;
+    bool                            IsReadyForRendering() const { return GetReadyRHITexture() != nullptr; }
 
     uint64_t                        MemRequired(bool includingMipmaps) const;
     uint64_t                        MemRequiredStreaming(int firstMip) const;
@@ -185,6 +186,8 @@ private:
 
     BE1::Str                        hashName;
     BE1::Str                        name;
+    Flag                            requestedFlags = Flag::None;
+    bool                            hasRequestedFlags = false;
     std::atomic<State>              state = State::Empty;
     std::atomic<uint32_t>           loadSerial = 0;
     uint32_t                        index = 0;

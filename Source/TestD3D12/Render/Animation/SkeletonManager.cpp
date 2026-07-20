@@ -82,18 +82,18 @@ SharedPtr<Skeleton> SkeletonManager::GetSkeleton(const char *hashName, bool asyn
         return defaultSkeleton;
     }
 
-    const bool useAsync = async && LoadingSystem::IsAsyncAllowed();
+    const bool useAsyncLoading = async && LoadingSystem::IsAsyncAllowed();
 
     SharedPtr<Skeleton> skeleton = FindSkeleton(hashName);
     if (skeleton) {
-        if (!useAsync && !skeleton->WaitReady()) {
+        if (!useAsyncLoading && !skeleton->WaitReady()) {
             return defaultSkeleton;
         }
         return skeleton;
     }
 
     skeleton = AllocSkeleton(hashName);
-    bool loaded = useAsync ? skeleton->LoadAsync(hashName) : skeleton->Load(hashName);
+    bool loaded = useAsyncLoading ? skeleton->LoadAsync(hashName) : skeleton->Load(hashName);
     if (!loaded) {
         skeletonHashMap.Remove(skeleton->hashName);
         return defaultSkeleton;

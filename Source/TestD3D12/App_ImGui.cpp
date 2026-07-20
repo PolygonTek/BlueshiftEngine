@@ -487,9 +487,9 @@ void App::BuildImGuiOverlay() {
     bool hiZDebugPreviewOpen = false;
 
     ImGui::SetNextWindowSizeConstraints(ImVec2(fontSize * 29.0f, fontSize * 8.0f), ImVec2(FLT_MAX, FLT_MAX));
-    ImGui::Begin("TestD3D12", nullptr, ImGuiWindowFlags_AlwaysAutoResize);
+    ImGui::Begin("Blueshift Renderer Demo", nullptr, ImGuiWindowFlags_AlwaysAutoResize);
 
-    if (ImGui::BeginTabBar("TestD3D12Tabs")) {
+    if (ImGui::BeginTabBar("Tabs")) {
         if (ImGui::BeginTabItem("Scene")) {
             int selectedSceneIndex = pendingSceneIndex != -1 ? pendingSceneIndex : sceneIndex;
             ImGui::SetNextItemWidth(fontSize * 10.0f);

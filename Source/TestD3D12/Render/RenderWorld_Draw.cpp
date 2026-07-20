@@ -1182,6 +1182,10 @@ void RenderWorld::DrawGUICamera(RenderFrameData *frameData, uint32_t screenWidth
     PROFILER_CPU_SCOPED_EVENT("RenderWorld::DrawGUICamera");
 
     VisCamera *visCamera = frameData->AllocVisCamera();
+    if (!visCamera) {
+        return;
+    }
+
     visCamera->maxVisSurfs = guiMesh.NumSurfaces();
     visCamera->visSurfs = (const VisSurf **)frameData->MemAlloc(visCamera->maxVisSurfs * sizeof(VisSurf *));
     visCamera->numRenderPasses = 0;

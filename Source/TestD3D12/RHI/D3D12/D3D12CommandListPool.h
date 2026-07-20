@@ -14,9 +14,10 @@
 
 #pragma once
 
+#include "Core/Allocator.h"
 #include "D3D12Common.h"
+#include "D3D12CommandList.h"
 
-class D3D12CommandList;
 class D3D12RootBindingData;
 
 /*
@@ -24,7 +25,7 @@ class D3D12RootBindingData;
 
     Command List Pool
 
-    - 같은 타입의 커맨드 리스트들을 미리 생성하여 보관한다.
+    - 같은 타입의 커맨드 리스트들을 미리 생성하고, 부족하면 블럭 단위로 추가 생성하여 보관한다.
     - 풀에서 커맨드 리스트를 할당받아 사용한 후, 다시 풀에 반환하여 재사용한다.
     - 같은 풀에서 병렬로 커맨드 리스트를 할당/반환할 수 없다. (not thread-safe)
     - 같은 풀은 한 스레드에서 순차적으로 사용하는 것을 전제로 한다. (멀티 스레드에서 동시에 같은 풀에서 커맨드 리스트를 할당/반환하는 것은 허용하지 않음)
@@ -39,12 +40,10 @@ class D3D12CommandListPool {
 
 public:
     D3D12CommandListPool() = default;
-    D3D12CommandListPool(D3D12RootBindingData *rootBindingData, D3D12_COMMAND_LIST_TYPE commandListType, uint32_t maxPrimaryCommandLists, uint32_t maxSecondaryCommandLists = 0) {
-        Init(rootBindingData, commandListType, maxPrimaryCommandLists, maxSecondaryCommandLists);
-    }
+    D3D12CommandListPool(D3D12RootBindingData *rootBindingData, D3D12_COMMAND_LIST_TYPE commandListType, uint32_t initialPrimaryCommandLists, uint32_t initialSecondaryCommandLists = 0);
     ~D3D12CommandListPool() { Shutdown(); }
 
-    void                            Init(D3D12RootBindingData *rootBindingData, D3D12_COMMAND_LIST_TYPE commandListType, uint32_t maxPrimaryCommandLists, uint32_t maxSecondaryCommandLists = 0);
+    void                            Init(D3D12RootBindingData *rootBindingData, D3D12_COMMAND_LIST_TYPE commandListType, uint32_t initialPrimaryCommandLists, uint32_t initialSecondaryCommandLists = 0);
     void                            Shutdown();
 
     D3D12RootBindingData *          GetRootBindingData() const { return rootBindingData; }
@@ -59,10 +58,20 @@ public:
     int                             UsedCount() const { return usedCount; }
 
 private:
+    static constexpr int            CommandListBlockSize = 8;
+
+    void                            AddCommandLists(RHI::CommandListKind kind, uint32_t count);
+
     D3D12RootBindingData *          rootBindingData = nullptr;
     BE1::LinkList<D3D12CommandList> freeCommandLists[to_int(RHI::CommandListKind::Count)];
-    D3D12CommandList *              commandListPool = nullptr;
+    BE1::BlockAllocator<D3D12CommandList, CommandListBlockSize> commandListAllocator;
+    BE1::Array<D3D12CommandList *>  commandLists;
     D3D12_COMMAND_LIST_TYPE         commandListType = D3D12_COMMAND_LIST_TYPE_NONE;
-    uint32_t                        maxCommandLists = 0;
+    bool                            supportedKinds[to_int(RHI::CommandListKind::Count)] = {};
+    uint32_t                        allocatedCounts[to_int(RHI::CommandListKind::Count)] = {};
     int                             usedCount = 0;
 };
+
+BE_INLINE D3D12CommandListPool::D3D12CommandListPool(D3D12RootBindingData *rootBindingData, D3D12_COMMAND_LIST_TYPE commandListType, uint32_t initialPrimaryCommandLists, uint32_t initialSecondaryCommandLists) {
+    Init(rootBindingData, commandListType, initialPrimaryCommandLists, initialSecondaryCommandLists);
+}

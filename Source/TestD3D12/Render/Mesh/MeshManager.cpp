@@ -143,18 +143,18 @@ SharedPtr<Mesh> MeshManager::GetMesh(const char *hashName, bool async) {
         return defaultMesh;
     }
 
-    const bool useAsync = async && LoadingSystem::IsAsyncAllowed();
+    const bool useAsyncLoading = async && LoadingSystem::IsAsyncAllowed();
 
     SharedPtr<Mesh> mesh = FindMesh(hashName);
     if (mesh) {
-        if (!useAsync && !mesh->WaitReady()) {
+        if (!useAsyncLoading && !mesh->WaitReady()) {
             return defaultMesh;
         }
         return mesh;
     }
 
     mesh = AllocMesh(hashName);
-    bool loaded = useAsync ? mesh->LoadAsync(hashName) : mesh->Load(hashName);
+    bool loaded = useAsyncLoading ? mesh->LoadAsync(hashName) : mesh->Load(hashName);
     if (!loaded) {
         BE_WARNLOG("Couldn't load mesh '%s'\n", hashName);
 

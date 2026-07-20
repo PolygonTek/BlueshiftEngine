@@ -286,7 +286,7 @@ public:
     struct D3D12QueueFence {
         ID3D12Fence *                   fence = nullptr;
         uint64_t                        value = 0;
-        HANDLE                          eventHandle = nullptr;
+        BE1::PlatformMutex *            signalMutex = nullptr;
     };
 
     ID3D12Device5 *                     device = nullptr;

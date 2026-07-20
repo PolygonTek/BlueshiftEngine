@@ -106,13 +106,13 @@ static constexpr D3D12_STENCIL_OP ToD3D12StencilOp(RHI::StencilOp stencilOp) {
     case RHI::StencilOp::Replace:
         return D3D12_STENCIL_OP_REPLACE;
     case RHI::StencilOp::Incr:
-        return D3D12_STENCIL_OP_INCR;
-    case RHI::StencilOp::Decr:
-        return D3D12_STENCIL_OP_DECR;
-    case RHI::StencilOp::IncrWrap:
         return D3D12_STENCIL_OP_INCR_SAT;
-    case RHI::StencilOp::DecrWrap:
+    case RHI::StencilOp::Decr:
         return D3D12_STENCIL_OP_DECR_SAT;
+    case RHI::StencilOp::IncrWrap:
+        return D3D12_STENCIL_OP_INCR;
+    case RHI::StencilOp::DecrWrap:
+        return D3D12_STENCIL_OP_DECR;
     case RHI::StencilOp::Invert:
         return D3D12_STENCIL_OP_INVERT;
     }

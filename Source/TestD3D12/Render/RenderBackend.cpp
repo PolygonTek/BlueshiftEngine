@@ -531,7 +531,7 @@ void RenderBackend::PostProcessAndBlitToSwapChain(bool surfaceOutputsReady) {
     if (!r_skipPostProcess.GetBool() && !BE1::HasFlag(currentVisCamera->flags, RenderCamera::Flag::SkipPostProcess)) {
         bool depthHistoryReady = true;
         if (currentVisCamera->taaResolve && currentVisCamera->depthTexture->GetSampleCount() > 1) {
-            depthHistoryReady = DispatchDepthHistoryResolve();
+            depthHistoryReady = DispatchCurrentDepthMSAAResolve();
         }
 
         if (surfaceOutputsReady && depthHistoryReady && DispatchTAAResolve()) {
@@ -547,11 +547,11 @@ void RenderBackend::PostProcessAndBlitToSwapChain(bool surfaceOutputsReady) {
         }
     }
 
-    BlitRectToSwapChain(finalColorTexture, currentVisCamera->outputRect);
+    BlitTextureToSwapChain(finalColorTexture, currentVisCamera->outputRect);
     currentPostProcessInputTexture = nullptr;
 }
 
-void RenderBackend::BlitRectToSwapChain(const RHI::Texture *texture, const BE1::Rect &rect) {
+void RenderBackend::BlitTextureToSwapChain(const RHI::Texture *texture, const BE1::Rect &destRect) {
     if (!texture) {
         return;
     }
@@ -566,14 +566,14 @@ void RenderBackend::BlitRectToSwapChain(const RHI::Texture *texture, const BE1::
         return;
     }
 
-    if (rect.w <= 0 || rect.h <= 0) {
+    if (destRect.w <= 0 || destRect.h <= 0) {
         return;
     }
 
-    const int outputX0 = BE1::Max(rect.x, 0);
-    const int outputY0 = BE1::Max(rect.y, 0);
-    const int outputX1 = BE1::Min(rect.x + rect.w, static_cast<int>(w));
-    const int outputY1 = BE1::Min(rect.y + rect.h, static_cast<int>(h));
+    const int outputX0 = BE1::Max(destRect.x, 0);
+    const int outputY0 = BE1::Max(destRect.y, 0);
+    const int outputX1 = BE1::Min(destRect.x + destRect.w, static_cast<int>(w));
+    const int outputY1 = BE1::Min(destRect.y + destRect.h, static_cast<int>(h));
     if (outputX1 <= outputX0 || outputY1 <= outputY0) {
         return;
     }
@@ -582,8 +582,8 @@ void RenderBackend::BlitRectToSwapChain(const RHI::Texture *texture, const BE1::
     const uint32_t outputH = static_cast<uint32_t>(outputY1 - outputY0);
 
     FullscreenImageParams imageParams = {};
-    imageParams.texCoordScale = float2(static_cast<float>(outputW) / rect.w, static_cast<float>(outputH) / rect.h);
-    imageParams.texCoordOffset = float2(static_cast<float>(outputX0 - rect.x) / rect.w, static_cast<float>(outputY0 - rect.y) / rect.h);
+    imageParams.texCoordScale = float2(static_cast<float>(outputW) / destRect.w, static_cast<float>(outputH) / destRect.h);
+    imageParams.texCoordOffset = float2(static_cast<float>(outputX0 - destRect.x) / destRect.w, static_cast<float>(outputY0 - destRect.y) / destRect.h);
 
     BE1::Rect outputRect(outputX0, outputY0, outputW, outputH);
 

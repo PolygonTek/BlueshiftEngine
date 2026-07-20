@@ -29,9 +29,9 @@
 #include "Render/Animation/SkeletonManager.h"
 #include "Render/Animation/AnimManager.h"
 
-RenderSystem *          renderSystem = nullptr;
-
 thread_local bool       RenderSystem::isRenderThread = false;
+
+RenderSystem *          renderSystem = nullptr;
 
 void RenderSystem::Init(void *mainWindowHandle) {
     BE1::cmdSystem.AddCommand("screenshot", Cmd_ScreenShot);
@@ -542,6 +542,8 @@ void RenderSystem::ShutdownRenderThread() {
 }
 
 void RenderSystem::MarkRenderCompleted(RenderFrameData *frameData) {
+    assert(!IsUsingRenderThread() || RenderSystem::IsInRenderThread());
+
     BE1::ScopedWriteLock lock(frameSyncLock);
 
     // 주어진 프레임에 대한 (렌더 스레드의) 렌더링이 완료되어,
@@ -555,6 +557,8 @@ void RenderSystem::MarkRenderCompleted(RenderFrameData *frameData) {
 
 bool RenderSystem::WaitSubmittedFrame(SubmittedFrame &submittedFrame) {
     PROFILER_CPU_SCOPED_EVENT("RenderSystem::WaitSubmittedFrame");
+
+    assert(!IsUsingRenderThread() || RenderSystem::IsInRenderThread());
 
     {
         BE1::ScopedWriteLock lock(frameSyncLock);
@@ -582,6 +586,7 @@ bool RenderSystem::WaitSubmittedFrame(SubmittedFrame &submittedFrame) {
 
 unsigned int RenderSystem::RenderThreadProc(void *param) {
     BE1::PlatformThread::SetCurrentThreadName("RenderSystem::RenderThreadProc");
+
     isRenderThread = true;
 
     BE1::SIMD::SetDenormalFlushMode(true);

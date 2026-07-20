@@ -85,18 +85,25 @@ SharedPtr<Texture> TextureManager::GetTexture(const char *hashName, Texture::Fla
         return defaultTexture;
     }
 
-    const bool useAsync = async && LoadingSystem::IsAsyncAllowed();
+    const bool useAsyncLoading = async && LoadingSystem::IsAsyncAllowed();
 
     SharedPtr<Texture> texture = FindTexture(hashName);
     if (texture) {
-        if (!useAsync && !texture->WaitReady()) {
+        if (texture->hasRequestedFlags && texture->requestedFlags != flags) {
+            BE_WARNLOG("TextureManager::GetTexture: texture '%s' was requested with different flags (first: 0x%04x, new: 0x%04x)\n", hashName, static_cast<unsigned int>(texture->requestedFlags), static_cast<unsigned int>(flags));
+        }
+
+        if (!useAsyncLoading && !texture->WaitReady()) {
             return defaultTexture;
         }
         return texture;
     }
 
     texture = AllocTexture(hashName);
-    bool loaded = useAsync ? texture->LoadAsync(hashName, flags) : texture->Load(hashName, flags);
+    texture->requestedFlags = flags;
+    texture->hasRequestedFlags = true;
+
+    bool loaded = useAsyncLoading ? texture->LoadAsync(hashName, flags) : texture->Load(hashName, flags);
     if (!loaded) {
         textureHashMap.Remove(texture->hashName);
         return defaultTexture;

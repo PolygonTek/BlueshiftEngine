@@ -80,18 +80,18 @@ SharedPtr<Anim> AnimManager::GetAnim(const char *hashName, bool async) {
         return nullptr;
     }
 
-    const bool useAsync = async && LoadingSystem::IsAsyncAllowed();
+    const bool useAsyncLoading = async && LoadingSystem::IsAsyncAllowed();
 
     SharedPtr<Anim> anim = FindAnim(hashName);
     if (anim) {
-        if (!useAsync && !anim->WaitReady()) {
+        if (!useAsyncLoading && !anim->WaitReady()) {
             return nullptr;
         }
         return anim;
     }
 
     anim = AllocAnim(hashName);
-    bool loaded = useAsync ? anim->LoadAsync(hashName) : anim->Load(hashName);
+    bool loaded = useAsyncLoading ? anim->LoadAsync(hashName) : anim->Load(hashName);
     if (!loaded) {
         BE_WARNLOG("Couldn't load anim '%s'\n", hashName);
         animHashMap.Remove(anim->hashName);

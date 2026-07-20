@@ -75,6 +75,8 @@ public:
     const SharedPtr<Texture> *      GetPropertyTexture(int propertyIndex) const;
     const SharedPtr<Texture> *      GetPropertyTexture(const char *propertyName) const;
     const SharedPtr<Texture> *      GetPropertyTexture(ShaderTemplate::StandardProperty standardProperty) const;
+
+                                    // 메인 스레드에서 property 값을 안전하게 변경하기 위해 이전 프레임 렌더링 완료 후 적용된다.
     bool                            SetPropertyValue(int propertyIndex, const ShaderTemplate::PropertyValue &value);
     bool                            SetPropertyValue(const char *propertyName, const ShaderTemplate::PropertyValue &value);
 

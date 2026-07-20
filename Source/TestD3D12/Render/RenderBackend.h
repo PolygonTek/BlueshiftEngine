@@ -92,7 +92,7 @@ private:
     void                            DrawCamera2D();
 
     void                            PostProcessAndBlitToSwapChain(bool surfaceOutputsReady);
-    void                            BlitRectToSwapChain(const RHI::Texture *texture, const BE1::Rect &rect);
+    void                            BlitTextureToSwapChain(const RHI::Texture *texture, const BE1::Rect &destinationRect);
 
     void                            DrawGenericPass(const RenderPass *renderPass);
     void                            DrawSkyPass(const RenderPass *renderPass);
@@ -117,7 +117,7 @@ private:
     bool                            DispatchGenHiZ();
     bool                            DispatchHiZDebugPreview();
     bool                            DispatchSurfaceOutputMSAAResolve();
-    bool                            DispatchDepthHistoryResolve();
+    bool                            DispatchCurrentDepthMSAAResolve();
 
     bool                            DispatchLuminance();
     bool                            DispatchTAAResolve();

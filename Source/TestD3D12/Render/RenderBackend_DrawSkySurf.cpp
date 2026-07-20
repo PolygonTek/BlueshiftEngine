@@ -17,46 +17,31 @@
 #include "RenderInternal.h"
 #include "Render/Texture/TextureManager.h"
 
-static const Texture *GetReadyTexture(const SharedPtr<Texture> *texture) {
-    if (!texture || !*texture || !(*texture)->IsReadyForRendering()) {
-        return nullptr;
-    }
-
-    return texture->get();
-}
-
-static const Texture *GetReadyMaterialTexture(const Material *material, ShaderTemplate::StandardProperty standardProperty) {
+static RHI::Texture *GetReadyMaterialRHITexture(const Material *material, ShaderTemplate::StandardProperty standardProperty) {
     if (!material) {
         return nullptr;
     }
 
-    return GetReadyTexture(material->GetPropertyTexture(standardProperty));
+    const SharedPtr<Texture> *texture = material->GetPropertyTexture(standardProperty);
+    return texture && *texture ? (*texture)->GetReadyRHITexture() : nullptr;
 }
 
-static const Texture *GetReadyDefault2DTexture() {
-    if (textureManager.defaultTexture && textureManager.defaultTexture->IsReadyForRendering()) {
-        return textureManager.defaultTexture.get();
-    }
-    if (textureManager.whiteTexture && textureManager.whiteTexture->IsReadyForRendering()) {
-        return textureManager.whiteTexture.get();
-    }
-    return nullptr;
-}
-
-static bool BindTexturePropertyOrDefault2D(RHI::CommandList *commandList, int shaderRegister, const Material *material, ShaderTemplate::StandardProperty standardProperty) {
-    const Texture *texture = GetReadyMaterialTexture(material, standardProperty);
+static bool BindTextureProperty(RHI::CommandList *commandList, int shaderRegister, const Material *material, ShaderTemplate::StandardProperty standardProperty) {
+    RHI::Texture *texture = GetReadyMaterialRHITexture(material, standardProperty);
     if (!texture) {
-        texture = GetReadyDefault2DTexture();
+        texture = textureManager.defaultTexture ? textureManager.defaultTexture->GetReadyRHITexture() : nullptr;
     }
+
     if (!texture) {
         return false;
     }
-    if (texture->GetType() != RHI::TextureType::Texture2D) {
-        BE_WARNLOG("Skybox texture '%s' is not Texture2D\n", texture->GetHashName());
+
+    if (texture->type != RHI::TextureType::Texture2D) {
+        BE_WARNLOG("Skybox texture is not Texture2D\n");
         return false;
     }
 
-    RHI::renderer->SetTexture(commandList, shaderRegister, false, texture->GetRHITexture());
+    RHI::renderer->SetTexture(commandList, shaderRegister, false, texture);
     return true;
 }
 
@@ -67,27 +52,28 @@ static bool BindSkyboxTextures(RHI::CommandList *commandList, const Material *ma
 
     // SkyboxCubemap
     if (material->FindPropertyIndex(ShaderTemplate::StandardProperty::SkyCubeMap) >= 0) {
-        const Texture *texture = GetReadyMaterialTexture(material, ShaderTemplate::StandardProperty::SkyCubeMap);
+        RHI::Texture *texture = GetReadyMaterialRHITexture(material, ShaderTemplate::StandardProperty::SkyCubeMap);
         if (!texture) {
             return false;
         }
-        if (texture->GetType() != RHI::TextureType::TextureCube) {
-            BE_WARNLOG("Skybox cubemap texture '%s' is not TextureCube\n", texture->GetHashName());
+
+        if (texture->type != RHI::TextureType::TextureCube) {
+            BE_WARNLOG("Skybox cubemap texture is not TextureCube\n");
             return false;
         }
 
-        RHI::renderer->SetTexture(commandList, 1, false, texture->GetRHITexture());
+        RHI::renderer->SetTexture(commandList, 1, false, texture);
         return true;
     }
 
     // SkyboxSixSided
     if (material->FindPropertyIndex(ShaderTemplate::StandardProperty::SkyBackMap) >= 0) {
-        return BindTexturePropertyOrDefault2D(commandList, 1, material, ShaderTemplate::StandardProperty::SkyBackMap) &&
-            BindTexturePropertyOrDefault2D(commandList, 2, material, ShaderTemplate::StandardProperty::SkyFrontMap) &&
-            BindTexturePropertyOrDefault2D(commandList, 3, material, ShaderTemplate::StandardProperty::SkyRightMap) &&
-            BindTexturePropertyOrDefault2D(commandList, 4, material, ShaderTemplate::StandardProperty::SkyLeftMap) &&
-            BindTexturePropertyOrDefault2D(commandList, 5, material, ShaderTemplate::StandardProperty::SkyTopMap) &&
-            BindTexturePropertyOrDefault2D(commandList, 6, material, ShaderTemplate::StandardProperty::SkyDownMap);
+        return BindTextureProperty(commandList, 1, material, ShaderTemplate::StandardProperty::SkyBackMap) &&
+            BindTextureProperty(commandList, 2, material, ShaderTemplate::StandardProperty::SkyFrontMap) &&
+            BindTextureProperty(commandList, 3, material, ShaderTemplate::StandardProperty::SkyRightMap) &&
+            BindTextureProperty(commandList, 4, material, ShaderTemplate::StandardProperty::SkyLeftMap) &&
+            BindTextureProperty(commandList, 5, material, ShaderTemplate::StandardProperty::SkyTopMap) &&
+            BindTextureProperty(commandList, 6, material, ShaderTemplate::StandardProperty::SkyDownMap);
     }
 
     return true;

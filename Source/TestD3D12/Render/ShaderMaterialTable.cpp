@@ -158,14 +158,6 @@ static const Texture *ResolveMaterialBaseColorTexture(const Material *material) 
     return textureManager.defaultTexture.get();
 }
 
-static const RHI::Texture *GetReadyRHITexture(const Texture *texture) {
-    if (!texture || !texture->IsReadyForRendering()) {
-        return nullptr;
-    }
-
-    return texture->GetRHITexture();
-}
-
 static float GetMaterialAlphaCutoff(const Material *material) {
     static constexpr float DefaultAlphaCutoff = 0.5f;
 
@@ -181,10 +173,10 @@ static float GetMaterialAlphaCutoff(const Material *material) {
 
 void ShaderMaterialTable::Build(const Material *material, ShaderMaterial &outShaderMaterial) const {
     const Texture *texture = ResolveMaterialBaseColorTexture(material);
-    const RHI::Texture *rhiTexture = GetReadyRHITexture(texture);
+    const RHI::Texture *rhiTexture = texture->GetReadyRHITexture();
     if (!rhiTexture) {
         texture = GetDefaultMaterialTexture();
-        rhiTexture = GetReadyRHITexture(texture);
+        rhiTexture = texture->GetReadyRHITexture();
     }
 
     outShaderMaterial.baseColorTextureIndex = rhiTexture ? rhiTexture->GetBindlessIndex(RHI::ViewType::SRV) : 0;
