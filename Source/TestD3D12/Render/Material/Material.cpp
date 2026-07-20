@@ -15,6 +15,7 @@
 #include "Precompiled.h"
 #include "Material.h"
 #include "MaterialManager.h"
+#include "LoadingSystem.h"
 #include "Render/ShaderPipeline/ShaderTemplateManager.h"
 #include "Render/ShaderPipeline/ShaderPipelineCache.h"
 #include "Asset/GuidMapper.h"
@@ -330,18 +331,22 @@ ShaderPipeline *Material::GetGraphicsPipeline(const ShaderFeatureSet &featureSet
 
 bool Material::Create(const char *text, const char *baseDir) {
     InternalData newInternalData;
-    if (!Parse(text, baseDir, newInternalData)) {
+    if (!Parse(text, baseDir, hashName.c_str(), newInternalData)) {
         return false;
     }
 
+    ApplyPrepared(newInternalData);
+    return true;
+}
+
+void Material::ApplyPrepared(InternalData &newInternalData) {
     Purge();
 
     internalData.Swap(newInternalData);
     UpdateTextureProperties();
-    return true;
 }
 
-bool Material::Parse(const char *text, const char *baseDir, InternalData &outInternalData) {
+bool Material::Parse(const char *text, const char *baseDir, const char *materialName, InternalData &outInternalData) {
     outInternalData.Purge();
 
     if (!text) {
@@ -350,7 +355,7 @@ bool Material::Parse(const char *text, const char *baseDir, InternalData &outInt
 
     BE1::Lexer lexer;
     lexer.Init(BE1::Lexer::Flag::NoErrors);
-    lexer.Load(text, BE1::Str::Length(text), hashName);
+    lexer.Load(text, BE1::Str::Length(text), materialName);
 
     // '{'
     if (!lexer.ExpectPunctuation(BE1::Lexer::PuncType::BraceOpen)) {
@@ -368,48 +373,48 @@ bool Material::Parse(const char *text, const char *baseDir, InternalData &outInt
         } else if (!token.Icmp("noShadow")) {
             outInternalData.flags |= Flag::NoShadow;
         } else if (!token.Icmp("cull")) {
-            if (!ParseCull(lexer, outInternalData)) {
+            if (!ParseCull(lexer, materialName, outInternalData)) {
                 return false;
             }
         } else if (!token.Icmp("renderingMode")) {
-            if (!ParseRenderingMode(lexer, outInternalData)) {
+            if (!ParseRenderingMode(lexer, materialName, outInternalData)) {
                 return false;
             }
         } else if (!token.Icmp("blendType")) {
-            if (!ParseBlendType(lexer, outInternalData)) {
+            if (!ParseBlendType(lexer, materialName, outInternalData)) {
                 return false;
             }
         } else if (!token.Icmp("shaderTemplate")) {
-            if (!ParseShaderTemplate(lexer, baseDir, outInternalData)) {
+            if (!ParseShaderTemplate(lexer, baseDir, materialName, outInternalData)) {
                 return false;
             }
         } else if (!token.Icmp("properties")) {
-            if (!ParseProperties(lexer, outInternalData)) {
+            if (!ParseProperties(lexer, materialName, outInternalData)) {
                 return false;
             }
         } else {
-            BE_WARNLOG("unknown token '%s' in material '%s'\n", token.c_str(), hashName.c_str());
+            BE_WARNLOG("unknown token '%s' in material '%s'\n", token.c_str(), materialName);
             lexer.SkipRestOfLine();
         }
     }
 
     if (!closed) {
-        BE_WARNLOG("Material::Parse: missing closing brace in material '%s'\n", hashName.c_str());
+        BE_WARNLOG("Material::Parse: missing closing brace in material '%s'\n", materialName);
         return false;
     }
 
     if (!outInternalData.shaderTemplate) {
-        BE_WARNLOG("Material::Parse: material '%s' has no shader template\n", hashName.c_str());
+        BE_WARNLOG("Material::Parse: material '%s' has no shader template\n", materialName);
         return false;
     }
 
     return true;
 }
 
-bool Material::ParseCull(BE1::Lexer &lexer, InternalData &outInternalData) {
+bool Material::ParseCull(BE1::Lexer &lexer, const char *materialName, InternalData &outInternalData) {
     BE1::Str token;
     if (!lexer.ReadToken(&token, false)) {
-        BE_WARNLOG("Material::ParseCull: missing cullMode value in material '%s'\n", hashName.c_str());
+        BE_WARNLOG("Material::ParseCull: missing cullMode value in material '%s'\n", materialName);
         return false;
     }
 
@@ -420,17 +425,17 @@ bool Material::ParseCull(BE1::Lexer &lexer, InternalData &outInternalData) {
     } else if (!token.Icmp("front") || !token.Icmp("frontSide") || !token.Icmp("frontSided")) {
         outInternalData.cullMode = RHI::CullMode::Front;
     } else {
-        BE_WARNLOG("Material::ParseCull: unknown cullMode '%s' in material '%s'\n", token.c_str(), hashName.c_str());
+        BE_WARNLOG("Material::ParseCull: unknown cullMode '%s' in material '%s'\n", token.c_str(), materialName);
         return false;
     }
 
     return true;
 }
 
-bool Material::ParseRenderingMode(BE1::Lexer &lexer, InternalData &outInternalData) {
+bool Material::ParseRenderingMode(BE1::Lexer &lexer, const char *materialName, InternalData &outInternalData) {
     BE1::Str renderingModeString;
     if (!lexer.ReadToken(&renderingModeString, false)) {
-        BE_WARNLOG("Material::ParseRenderingMode: missing renderingMode value in material '%s'\n", hashName.c_str());
+        BE_WARNLOG("Material::ParseRenderingMode: missing renderingMode value in material '%s'\n", materialName);
         return false;
     }
 
@@ -442,17 +447,17 @@ bool Material::ParseRenderingMode(BE1::Lexer &lexer, InternalData &outInternalDa
         outInternalData.renderingMode = RenderingMode::Blend;
         outInternalData.blendType = RHI::BlendStateType::AlphaBlend; // 기본 블렌딩 타입 설정
     } else {
-        BE_WARNLOG("Material::ParseRenderingMode: unknown renderingMode '%s' in material '%s'\n", renderingModeString.c_str(), hashName.c_str());
+        BE_WARNLOG("Material::ParseRenderingMode: unknown renderingMode '%s' in material '%s'\n", renderingModeString.c_str(), materialName);
         return false;
     }
 
     return true;
 }
 
-bool Material::ParseBlendType(BE1::Lexer &lexer, InternalData &outInternalData) {
+bool Material::ParseBlendType(BE1::Lexer &lexer, const char *materialName, InternalData &outInternalData) {
     BE1::Str token;
     if (!lexer.ReadToken(&token, false)) {
-        BE_WARNLOG("Material::ParseBlendType: missing blendType value in material '%s'\n", hashName.c_str());
+        BE_WARNLOG("Material::ParseBlendType: missing blendType value in material '%s'\n", materialName);
         return false;
     }
 
@@ -467,16 +472,16 @@ bool Material::ParseBlendType(BE1::Lexer &lexer, InternalData &outInternalData) 
     } else if (!token.Icmp("modulate2x")) {
         outInternalData.blendType = RHI::BlendStateType::Modulate2X;
     } else {
-        BE_WARNLOG("Material::ParseBlendType: unknown blendType '%s' in material '%s'\n", token.c_str(), hashName.c_str());
+        BE_WARNLOG("Material::ParseBlendType: unknown blendType '%s' in material '%s'\n", token.c_str(), materialName);
         return false;
     }
 
     return true;
 }
 
-bool Material::ParseShaderTemplate(BE1::Lexer &lexer, const char *baseDir, InternalData &outInternalData) {
+bool Material::ParseShaderTemplate(BE1::Lexer &lexer, const char *baseDir, const char *materialName, InternalData &outInternalData) {
     if (outInternalData.shaderTemplate) {
-        BE_WARNLOG("Material::ParseShaderTemplate: duplicated shaderTemplate in material '%s'\n", hashName.c_str());
+        BE_WARNLOG("Material::ParseShaderTemplate: duplicated shaderTemplate in material '%s'\n", materialName);
         return false;
     }
 
@@ -493,7 +498,7 @@ bool Material::ParseShaderTemplate(BE1::Lexer &lexer, const char *baseDir, Inter
     }
 
     if (!shaderTemplate) {
-        BE_WARNLOG("Material::ParseShaderTemplate: shader template '%s' was not found while parsing material '%s'\n", shaderTemplateName.c_str(), hashName.c_str());
+        BE_WARNLOG("Material::ParseShaderTemplate: shader template '%s' was not found while parsing material '%s'\n", shaderTemplateName.c_str(), materialName);
         return false;
     }
 
@@ -503,12 +508,12 @@ bool Material::ParseShaderTemplate(BE1::Lexer &lexer, const char *baseDir, Inter
     return true;
 }
 
-bool Material::ParseProperties(BE1::Lexer &lexer, InternalData &outInternalData) {
+bool Material::ParseProperties(BE1::Lexer &lexer, const char *materialName, InternalData &outInternalData) {
     BE1::Str token;
     bool closed = false;
 
     if (!outInternalData.shaderTemplate) {
-        BE_WARNLOG("Material::ParseProperties: properties block must appear after shaderTemplate in material '%s'\n", hashName.c_str());
+        BE_WARNLOG("Material::ParseProperties: properties block must appear after shaderTemplate in material '%s'\n", materialName);
         return false;
     }
 
@@ -531,13 +536,13 @@ bool Material::ParseProperties(BE1::Lexer &lexer, InternalData &outInternalData)
         BE1::Str propertyName = token;
         BE1::Str valueString;
         if (!lexer.ReadToken(&valueString, false)) {
-            BE_WARNLOG("Material::ParseProperties: missing value for property '%s' in material '%s'\n", propertyName.c_str(), hashName.c_str());
+            BE_WARNLOG("Material::ParseProperties: missing value for property '%s' in material '%s'\n", propertyName.c_str(), materialName);
             return false;
         }
 
         int propertyIndex = outInternalData.shaderTemplate->FindPropertyIndex(propertyName.c_str());
         if (propertyIndex < 0) {
-            BE_WARNLOG("Material::ParseProperties: unknown property '%s' in material '%s'\n", propertyName.c_str(), hashName.c_str());
+            BE_WARNLOG("Material::ParseProperties: unknown property '%s' in material '%s'\n", propertyName.c_str(), materialName);
             continue;
         }
 
@@ -549,7 +554,7 @@ bool Material::ParseProperties(BE1::Lexer &lexer, InternalData &outInternalData)
     }
 
     if (!closed) {
-        BE_WARNLOG("Material::ParseProperties: missing closing brace in material '%s'\n", hashName.c_str());
+        BE_WARNLOG("Material::ParseProperties: missing closing brace in material '%s'\n", materialName);
         return false;
     }
 
@@ -600,7 +605,7 @@ void Material::RemapShaderTemplateProperties(const BE1::Array<ShaderPropertyInfo
     InvalidatePermutationKeys();
 }
 
-bool Material::Load(const char *filename) {
+bool Material::Prepare(const char *filename, InternalData &outInternalData) {
     BE1::Str exactFilename = filename;
     exactFilename.DefaultFileExtension(".material");
 
@@ -627,15 +632,25 @@ bool Material::Load(const char *filename) {
 
     BE1::Str baseDir = exactFilename;
     baseDir.StripFileName();
-    if (!Create(data + lexer.GetCurrentOffset(), baseDir)) {
+    if (!Parse(data + lexer.GetCurrentOffset(), baseDir, materialName.c_str(), outInternalData)) {
         BE1::fileSystem.FreeFile(data);
         return false;
     }
 
     BE1::fileSystem.FreeFile(data);
 
-    internalData.flags |= Flag::LoadedFromFile;
+    outInternalData.flags |= Flag::LoadedFromFile;
 
+    return true;
+}
+
+bool Material::Load(const char *filename) {
+    InternalData newInternalData;
+    if (!Prepare(filename, newInternalData)) {
+        return false;
+    }
+
+    ApplyPrepared(newInternalData);
     return true;
 }
 
@@ -645,5 +660,12 @@ bool Material::Reload() {
         return false;
     }
 
-    return Load(hashName);
+    InternalData newInternalData;
+    if (!Prepare(hashName.c_str(), newInternalData)) {
+        return true;
+    }
+
+    loadingSystem.QueueMaterialReload(shared_from_this(), newInternalData);
+    loadingSystem.ProcessPendingReloads();
+    return true;
 }

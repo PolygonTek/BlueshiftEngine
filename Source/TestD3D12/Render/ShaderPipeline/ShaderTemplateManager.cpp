@@ -13,6 +13,7 @@
 // limitations under the License.
 
 #include "Precompiled.h"
+#include "Render/RenderContext.h"
 #include "ShaderTemplateManager.h"
 #include "ShaderPipelineCache.h"
 
@@ -38,7 +39,7 @@ void ShaderTemplateManager::Shutdown() {
     DestroyEngineShaderTemplates();
 
     shaderTemplateHashMap.Clear();
-    shaderTemplateReloaded.Clear();
+    ShaderTemplate::reloaded.Clear();
 
     {
         BE1::ScopedLock lock(globalDefinesMutex);
@@ -52,6 +53,13 @@ void ShaderTemplateManager::Shutdown() {
 }
 
 void ShaderTemplateManager::UpdateFrame() {
+    CleanExpiredShaderTemplates();
+}
+
+void ShaderTemplateManager::ProcessPendingGlobalDefineChanges() {
+    assert(BE1::Engine::IsInMainThread());
+    assert(RenderContext::activeContext == nullptr);
+
     uint32_t globalDefineModCountSnapshot;
     {
         BE1::ScopedLock lock(globalDefinesMutex);
@@ -63,8 +71,6 @@ void ShaderTemplateManager::UpdateFrame() {
         shaderPipelineCache.RebuildAllPipelines();
         lastInvalidatedGlobalDefineModCount = globalDefineModCountSnapshot;
     }
-
-    CleanExpiredShaderTemplates();
 }
 
 SharedPtr<ShaderTemplate> ShaderTemplateManager::AllocShaderTemplate(const char *hashName) {

@@ -262,7 +262,11 @@ bool Anim::Reload() {
         return false;
     }
 
-    return Load(hashName);
+    if (!ReloadAsync()) {
+        return false;
+    }
+
+    return WaitLoadComplete();
 }
 
 bool Anim::ReloadAsync() {
@@ -315,6 +319,7 @@ bool Anim::WaitLoadComplete() {
 
     while (currentState == State::Loading || currentState == State::Reloading) {
         loadingSystem.ProcessLoadCompletions();
+        loadingSystem.ProcessPendingReloads();
         currentState = GetState();
 
         if (currentState == State::Loading || currentState == State::Reloading) {

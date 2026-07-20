@@ -20,6 +20,7 @@
 #include "Render/RenderWorld.h"
 #include "Render/RenderCamera.h"
 #include "Render/Material/MaterialManager.h"
+#include "Render/ShaderPipeline/ShaderTemplateManager.h"
 #include "Render/Texture/TextureManager.h"
 #include "Render/Font/FontManager.h"
 #include "LoadingSystem.h"
@@ -101,6 +102,9 @@ void App::Update(uint64_t frameUsec) {
     uint64_t t0 = BE1::PlatformTime::Microseconds();
 
     loadingSystem.ProcessLoadCompletions();
+    loadingSystem.ProcessPendingReloads();
+
+    shaderTemplateManager.ProcessPendingGlobalDefineChanges();
 
     ProcessPendingSceneChange();
 
@@ -528,9 +532,7 @@ void App::SetConvolutionBloomAperturePreset(App::AperturePreset aperturePreset) 
     }
 
     convolutionBloomApertureTexture = textureManager.GetTexture(filename, Texture::Flag::HighQuality | Texture::Flag::NoMipmaps);
-    if (renderSystem) {
-        renderSystem->GetConvolutionBloomKernelGenerator().SetApertureTexture(convolutionBloomApertureTexture);
-    }
+    renderSystem->GetConvolutionBloomKernelGenerator().SetApertureTexture(convolutionBloomApertureTexture);
 }
 
 void App::RequestConvolutionBloomKernelGeneration() {
@@ -564,7 +566,7 @@ void App::ProcessPendingConvolutionBloomKernelReadback() {
         return;
     }
 
-    renderSystem->WaitRenderCompleted(pendingConvolutionBloomKernelReadbackFrameData);
+    renderSystem->WaitFrameRenderCompleted(pendingConvolutionBloomKernelReadbackFrameData);
 
     BE1::Image kernelImage;
     if (!renderSystem->GetConvolutionBloomKernelGenerator().ReadKernelImage(kernelImage)) {

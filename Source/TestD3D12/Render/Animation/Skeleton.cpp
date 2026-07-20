@@ -203,7 +203,12 @@ bool Skeleton::Reload() {
         BE_WARNLOG("Skeleton::Reload: skeleton '%s' is not ready\n", GetHashName());
         return false;
     }
-    return Load(hashName);
+
+    if (!ReloadAsync()) {
+        return false;
+    }
+
+    return WaitLoadComplete();
 }
 
 bool Skeleton::ReloadAsync() {
@@ -252,6 +257,7 @@ bool Skeleton::WaitLoadComplete() {
 
     while (currentState == State::Loading || currentState == State::Reloading) {
         loadingSystem.ProcessLoadCompletions();
+        loadingSystem.ProcessPendingReloads();
         currentState = GetState();
 
         if (currentState == State::Loading || currentState == State::Reloading) {

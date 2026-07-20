@@ -16,6 +16,8 @@
 #include "ShaderPipeline.h"
 #include "ShaderTemplate.h"
 #include "LoadingSystem.h"
+#include "Render/RenderContext.h"
+#include "Render/RenderSystem.h"
 
 uint64_t GraphicsPipelineDesc::GenerateInputLayoutHash(const RHI::InputLayout *inputLayout) {
     if (!inputLayout) {
@@ -211,6 +213,8 @@ bool ShaderPipeline::PreparePSO(const ShaderCompileData &compileData, RHI::Pipel
 }
 
 bool ShaderPipeline::Build(const SharedPtr<ShaderTemplate> &shaderTemplate) {
+    assert(!pso);
+
     if (!shaderTemplate) {
         return false;
     }
@@ -233,14 +237,69 @@ bool ShaderPipeline::Build(const SharedPtr<ShaderTemplate> &shaderTemplate) {
 }
 
 void ShaderPipeline::BuildAsync(const SharedPtr<ShaderTemplate> &shaderTemplate) {
+    assert(!pso);
+
     if (!shaderTemplate) {
         return;
     }
 
-    state = pso ? State::Rebuilding : State::Building;
+    state = State::Building;
 
     if (!EnqueueBuild(shaderTemplate)) {
-        state = pso ? State::Ready : State::Failed;
+        state = State::Failed;
+    }
+}
+
+bool ShaderPipeline::Rebuild(const SharedPtr<ShaderTemplate> &shaderTemplate) {
+    if (!shaderTemplate) {
+        return false;
+    }
+
+    if (GetState() != State::Ready) {
+        BE_WARNLOG("ShaderPipeline::Rebuild: shader pipeline for shader template '%s' permutation 0x%llx is not ready\n", shaderTemplate->GetHashName(), shaderPermutationKey.hash);
+        return false;
+    }
+
+    assert(pso);
+    assert(BE1::Engine::IsInMainThread());
+    assert(RenderContext::activeContext == nullptr);
+
+    ShaderCompileData compileData;
+    if (!shaderTemplate->PrepareShaderCompileData(shaderPermutationKey, compileData)) {
+        return false;
+    }
+
+    RHI::PipelineState *preparedPSO = nullptr;
+    if (!PreparePSO(compileData, preparedPSO)) {
+        return false;
+    }
+
+    BumpBuildSerial(); // 진행 중인 async completion 무효화
+    state = State::Rebuilding;
+
+    renderSystem->WaitAllRenderCompleted();
+
+    SetPSO(preparedPSO);
+    state = State::Ready;
+    return true;
+}
+
+void ShaderPipeline::RebuildAsync(const SharedPtr<ShaderTemplate> &shaderTemplate) {
+    if (!shaderTemplate) {
+        return;
+    }
+
+    if (!IsReady()) {
+        BE_WARNLOG("ShaderPipeline::RebuildAsync: shader pipeline for shader template '%s' permutation 0x%llx is not ready\n", shaderTemplate->GetHashName(), shaderPermutationKey.hash);
+        return;
+    }
+
+    assert(pso);
+
+    state = State::Rebuilding;
+
+    if (!EnqueueBuild(shaderTemplate)) {
+        state = State::Ready;
     }
 }
 
@@ -292,6 +351,7 @@ bool ShaderPipeline::WaitLoadComplete() {
 
     while (currentState == State::Building || currentState == State::Rebuilding) {
         loadingSystem.ProcessLoadCompletions();
+        loadingSystem.ProcessPendingReloads();
         currentState = GetState();
 
         if (currentState == State::Building || currentState == State::Rebuilding) {

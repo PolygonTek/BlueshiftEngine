@@ -21,7 +21,7 @@ MaterialManager     materialManager;
 void MaterialManager::Init() {
     materialHashMap.Init(1024, 1024, 1024);
 
-    shaderTemplateReloadedHandle = shaderTemplateManager.shaderTemplateReloaded.Add<MaterialManager, &MaterialManager::OnShaderTemplateReloaded>(this);
+    shaderTemplateReloadedHandle = ShaderTemplate::reloaded.Add<MaterialManager, &MaterialManager::OnShaderTemplateReloaded>(this);
 
     expiredMaterialHashMapCursor = 0;
 
@@ -34,7 +34,7 @@ void MaterialManager::Shutdown() {
     DestroyEngineMaterials();
 
     if (shaderTemplateReloadedHandle.IsValid()) {
-        shaderTemplateManager.shaderTemplateReloaded.Remove(shaderTemplateReloadedHandle);
+        ShaderTemplate::reloaded.Remove(shaderTemplateReloadedHandle);
         shaderTemplateReloadedHandle.Clear();
     }
 

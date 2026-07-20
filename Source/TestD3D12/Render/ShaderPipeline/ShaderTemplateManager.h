@@ -16,7 +16,6 @@
 
 #include "Containers/HashMap.h"
 #include "Containers/StrArray.h"
-#include "Core/Delegate.h"
 #include "ShaderTemplate.h"
 
 /*
@@ -31,12 +30,12 @@ class ShaderTemplateManager {
     friend class ShaderTemplate;
 
 public:
-    using ReloadedDelegate = BE1::MulticastDelegate<void(const ShaderTemplate *, const BE1::Array<ShaderPropertyInfo> &)>;
-
     void                            Init();
     void                            Shutdown();
 
     void                            UpdateFrame();
+
+    void                            ProcessPendingGlobalDefineChanges();
 
     SharedPtr<ShaderTemplate>       AllocShaderTemplate(const char *hashName);
     SharedPtr<ShaderTemplate>       FindShaderTemplate(const char *hashName) const;
@@ -46,8 +45,6 @@ public:
     void                            AddGlobalDefine(const char *define);
     void                            RemoveGlobalDefine(const char *define);
     uint32_t                        CopyGlobalDefines(BE1::StrArray &outDefines) const;
-
-    ReloadedDelegate                shaderTemplateReloaded;
 
     SharedPtr<ShaderTemplate>       fullscreenImageShaderTemplate;
     SharedPtr<ShaderTemplate>       debugDrawShaderTemplate;

@@ -389,11 +389,9 @@ void App::BuildImGuiTextureViewer() {
         AddImGuiTextureViewerEntry(entries, MaxTextureViewerEntries, entryCount, "Bloom Convolution Output", renderCamera->GetFFTBloomConvolutionOutputTexture());
     }
 
-    if (renderSystem) {
-        const ConvolutionBloomKernelGenerator &kernelGenerator = renderSystem->GetConvolutionBloomKernelGenerator();
-        AddImGuiTextureViewerEntry(entries, MaxTextureViewerEntries, entryCount, "Bloom Diffraction PSF", kernelGenerator.GetDiffractionPSFTexture());
-        AddImGuiTextureViewerEntry(entries, MaxTextureViewerEntries, entryCount, "Generated Bloom Kernel", kernelGenerator.GetKernelTexture());
-    }
+    const ConvolutionBloomKernelGenerator &kernelGenerator = renderSystem->GetConvolutionBloomKernelGenerator();
+    AddImGuiTextureViewerEntry(entries, MaxTextureViewerEntries, entryCount, "Bloom Diffraction PSF", kernelGenerator.GetDiffractionPSFTexture());
+    AddImGuiTextureViewerEntry(entries, MaxTextureViewerEntries, entryCount, "Generated Bloom Kernel", kernelGenerator.GetKernelTexture());
 
     if (entryCount == 0) {
         ImGui::TextColored(ImGuiWarningTextColor, "No texture is available.");

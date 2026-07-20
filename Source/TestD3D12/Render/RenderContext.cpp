@@ -114,9 +114,7 @@ void RenderContext::Shutdown() {
 void RenderContext::OnResize(int width, int height) {
     // 모든 프레임에 대해서 렌더 스레드가 렌더링을 완료할 때까지 기다린다.
     if (renderSystem->IsUsingRenderThread()) {
-        for (RenderFrameData &frameData : frames) {
-            renderSystem->WaitRenderCompleted(&frameData);
-        }
+        renderSystem->WaitContextRenderCompleted(this);
     }
 
     // GPU 명령들이 완료될 때까지 기다린다.
@@ -276,9 +274,7 @@ void RenderContext::EnsureTextureStreamingFeedbackCapacity(uint32_t requiredCapa
     }
 
     if (renderSystem->IsUsingRenderThread()) {
-        for (RenderFrameData &frameData : frames) {
-            renderSystem->WaitRenderCompleted(&frameData);
-        }
+        renderSystem->WaitContextRenderCompleted(this);
     }
 
     WaitAllFrameFences();
@@ -304,8 +300,8 @@ void RenderContext::BeginFrame(float frameTime, float elapsedTime, float elapsed
     ResetGuiClipRect(GetWidth(), GetHeight());
 
     if (renderSystem->IsUsingRenderThread()) {
-        // 현재 프론트엔드 프레임의 렌더 스레드 작업이 끝날 때까지 기다린다.
-        renderSystem->WaitRenderCompleted(frameData);
+        // 현재 프런트엔드 프레임의 렌더 스레드 작업이 끝날 때까지 기다린다.
+        renderSystem->WaitFrameRenderCompleted(frameData);
     }
 
     frameData->BeginFrame();

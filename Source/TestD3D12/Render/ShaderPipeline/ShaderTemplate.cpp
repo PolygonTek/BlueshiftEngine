@@ -16,8 +16,11 @@
 #include "ShaderTemplate.h"
 #include "ShaderTemplateManager.h"
 #include "ShaderPipelineCache.h"
+#include "LoadingSystem.h"
 #include "Asset/GuidMapper.h"
 #include "IO/FileSystem.h"
+
+ShaderTemplate::ReloadedDelegate ShaderTemplate::reloaded;
 
 static constexpr const char *StandardPropertyNames[] = {
     "alphaCutoff",
@@ -43,6 +46,7 @@ void ShaderTemplate::InternalData::Purge() {
         stageSource = ShaderStageSource();
     }
 
+    inheritedShaderTemplateName.Clear();
     baseDefines.Clear();
     for (BE1::StrArray &defines : featureDefines) {
         defines.Clear();
@@ -57,6 +61,7 @@ void ShaderTemplate::InternalData::Swap(InternalData &rhs) {
         BE1::Swap(stageSources[i], rhs.stageSources[i]);
     }
 
+    BE1::Swap(inheritedShaderTemplateName, rhs.inheritedShaderTemplateName);
     baseDefines.Swap(rhs.baseDefines);
     for (int i = 0; i < to_int(ShaderFeature::Count); i++) {
         featureDefines[i].Swap(rhs.featureDefines[i]);
@@ -333,25 +338,29 @@ ShaderPermutationKey ShaderTemplate::RegisterPermutation(const BE1::Array<Proper
 bool ShaderTemplate::Create(const char *text, const char *baseDir) {
     InternalData newInternalData;
 
-    if (!Parse(text, baseDir, newInternalData)) {
+    if (!Parse(text, baseDir, hashName.c_str(), newInternalData)) {
         return false;
     }
 
+    ApplyPrepared(newInternalData);
+    return true;
+}
+
+void ShaderTemplate::ApplyPrepared(InternalData &newInternalData) {
     Purge();
 
     internalData.Swap(newInternalData);
 
     // default property 값 + empty featureSet 조합으로 permutation 을 등록한다.
     RegisterPermutation();
-    return true;
 }
 
-bool ShaderTemplate::Parse(const char *text, const char *baseDir, InternalData &outInternalData) {
+bool ShaderTemplate::Parse(const char *text, const char *baseDir, const char *shaderTemplateName, InternalData &outInternalData) {
     outInternalData.Purge();
 
     BE1::Lexer lexer;
     lexer.Init(BE1::Lexer::Flag::NoErrors);
-    lexer.Load(text, BE1::Str::Length(text), hashName);
+    lexer.Load(text, BE1::Str::Length(text), shaderTemplateName);
 
     // '{'
     if (!lexer.ExpectPunctuation(BE1::Lexer::PuncType::BraceOpen)) {
@@ -371,33 +380,33 @@ bool ShaderTemplate::Parse(const char *text, const char *baseDir, InternalData &
         } else if (!token.Icmp("skySurface")) {
             outInternalData.flags |= Flag::SkySurface;
         } else if (!token.Icmp("inheritProperties")) {
-            if (!ParseInheritProperties(lexer, baseDir, outInternalData)) {
+            if (!ParseInheritProperties(lexer, baseDir, shaderTemplateName, outInternalData)) {
                 return false;
             }
         } else if (!token.Icmp("baseDefines")) {
-            if (!ParseBaseDefines(lexer, outInternalData)) {
+            if (!ParseBaseDefines(lexer, shaderTemplateName, outInternalData)) {
                 return false;
             }
         } else if (!token.Icmp("features")) {
-            if (!ParseFeatures(lexer, outInternalData)) {
+            if (!ParseFeatures(lexer, shaderTemplateName, outInternalData)) {
                 return false;
             }
         } else if (!token.Icmp("stages")) {
-            if (!ParseStages(lexer, baseDir, outInternalData)) {
+            if (!ParseStages(lexer, baseDir, shaderTemplateName, outInternalData)) {
                 return false;
             }
         } else if (!token.Icmp("properties")) {
-            if (!ParseProperties(lexer, outInternalData)) {
+            if (!ParseProperties(lexer, shaderTemplateName, outInternalData)) {
                 return false;
             }
         } else {
-            BE_WARNLOG("unknown token '%s' in shader template '%s'\n", token.c_str(), hashName.c_str());
+            BE_WARNLOG("unknown token '%s' in shader template '%s'\n", token.c_str(), shaderTemplateName);
             return false;
         }
     }
 
     if (!closed) {
-        BE_WARNLOG("ShaderTemplate::Parse: missing closing brace in shader template '%s'\n", hashName.c_str());
+        BE_WARNLOG("ShaderTemplate::Parse: missing closing brace in shader template '%s'\n", shaderTemplateName);
         return false;
     }
 
@@ -410,7 +419,7 @@ bool ShaderTemplate::Parse(const char *text, const char *baseDir, InternalData &
     }
 
     if (!hasShaderStage) {
-        BE_WARNLOG("ShaderTemplate::Parse: shader template '%s' has no shader stages\n", hashName.c_str());
+        BE_WARNLOG("ShaderTemplate::Parse: shader template '%s' has no shader stages\n", shaderTemplateName);
         return false;
     }
 
@@ -488,9 +497,14 @@ static BE1::Str ResolveShaderStageFilename(const char *baseDir, const char *file
     return resolvedFilename;
 }
 
-bool ShaderTemplate::ParseInheritProperties(BE1::Lexer &lexer, const char *baseDir, InternalData &outInternalData) {
+bool ShaderTemplate::ParseInheritProperties(BE1::Lexer &lexer, const char *baseDir, const char *shaderTemplateName, InternalData &outInternalData) {
     BE1::Str inheritedName;
     if (!lexer.ExpectTokenType(BE1::Lexer::TokenType::String, &inheritedName)) {
+        return false;
+    }
+
+    if (!outInternalData.inheritedShaderTemplateName.IsEmpty()) {
+        BE_WARNLOG("ShaderTemplate::ParseInheritProperties: shader template '%s' cannot inherit properties from multiple shader templates\n", shaderTemplateName);
         return false;
     }
 
@@ -502,20 +516,21 @@ bool ShaderTemplate::ParseInheritProperties(BE1::Lexer &lexer, const char *baseD
     }
 
     if (!inheritedShaderTemplate) {
-        BE_WARNLOG("ShaderTemplate::ParseInheritProperties: shader template '%s' was not found while parsing shader template '%s'\n", inheritedName.c_str(), hashName.c_str());
+        BE_WARNLOG("ShaderTemplate::ParseInheritProperties: shader template '%s' was not found while parsing shader template '%s'\n", inheritedName.c_str(), shaderTemplateName);
         return false;
     }
 
     const char *duplicatedPropertyName = nullptr;
     if (!outInternalData.CopyPropertiesFrom(inheritedShaderTemplate->internalData, &duplicatedPropertyName)) {
-        BE_WARNLOG("ShaderTemplate::ParseInheritProperties: duplicated property name '%s' in shader template '%s'\n", duplicatedPropertyName ? duplicatedPropertyName : "", hashName.c_str());
+        BE_WARNLOG("ShaderTemplate::ParseInheritProperties: duplicated property name '%s' in shader template '%s'\n", duplicatedPropertyName ? duplicatedPropertyName : "", shaderTemplateName);
         return false;
     }
 
+    outInternalData.inheritedShaderTemplateName = inheritedShaderTemplate->GetHashName();
     return true;
 }
 
-bool ShaderTemplate::ParseBaseDefines(BE1::Lexer &lexer, InternalData &outInternalData) {
+bool ShaderTemplate::ParseBaseDefines(BE1::Lexer &lexer, const char *shaderTemplateName, InternalData &outInternalData) {
     BE1::Str token;
     bool closed = false;
 
@@ -539,7 +554,7 @@ bool ShaderTemplate::ParseBaseDefines(BE1::Lexer &lexer, InternalData &outIntern
             if (nextToken == "=") {
                 BE1::Str valueToken;
                 if (!lexer.ReadToken(&valueToken, false)) {
-                    BE_WARNLOG("ShaderTemplate::ParseBaseDefines: missing value for base define '%s' in shader template '%s'\n", define.c_str(), hashName.c_str());
+                    BE_WARNLOG("ShaderTemplate::ParseBaseDefines: missing value for base define '%s' in shader template '%s'\n", define.c_str(), shaderTemplateName);
                     return false;
                 }
                 define.Append("=");
@@ -550,7 +565,7 @@ bool ShaderTemplate::ParseBaseDefines(BE1::Lexer &lexer, InternalData &outIntern
         }
 
         if (HasDefine(outInternalData.baseDefines, define.c_str())) {
-            BE_WARNLOG("ShaderTemplate::ParseBaseDefines: duplicated base define name '%s' in shader template '%s'\n", define.c_str(), hashName.c_str());
+            BE_WARNLOG("ShaderTemplate::ParseBaseDefines: duplicated base define name '%s' in shader template '%s'\n", define.c_str(), shaderTemplateName);
             return false;
         }
 
@@ -558,7 +573,7 @@ bool ShaderTemplate::ParseBaseDefines(BE1::Lexer &lexer, InternalData &outIntern
     }
 
     if (!closed) {
-        BE_WARNLOG("ShaderTemplate::ParseBaseDefines: missing closing brace in shader template '%s'\n", hashName.c_str());
+        BE_WARNLOG("ShaderTemplate::ParseBaseDefines: missing closing brace in shader template '%s'\n", shaderTemplateName);
         return false;
     }
 
@@ -590,7 +605,7 @@ static bool ParseShaderFeature(const BE1::Str &token, ShaderFeature &outFeature)
     return false;
 }
 
-bool ShaderTemplate::ParseFeatures(BE1::Lexer &lexer, InternalData &outInternalData) {
+bool ShaderTemplate::ParseFeatures(BE1::Lexer &lexer, const char *shaderTemplateName, InternalData &outInternalData) {
     BE1::Str token;
     bool closed = false;
     bool declaredFeatures[to_int(ShaderFeature::Count)] = {};
@@ -607,13 +622,13 @@ bool ShaderTemplate::ParseFeatures(BE1::Lexer &lexer, InternalData &outInternalD
 
         ShaderFeature feature = ShaderFeature::Count;
         if (!ParseShaderFeature(token, feature)) {
-            BE_WARNLOG("ShaderTemplate::ParseFeatures: unknown feature '%s' in shader template '%s'\n", token.c_str(), hashName.c_str());
+            BE_WARNLOG("ShaderTemplate::ParseFeatures: unknown feature '%s' in shader template '%s'\n", token.c_str(), shaderTemplateName);
             return false;
         }
 
         int featureIndex = to_int(feature);
         if (declaredFeatures[featureIndex]) {
-            BE_WARNLOG("ShaderTemplate::ParseFeatures: duplicated feature '%s' in shader template '%s'\n", token.c_str(), hashName.c_str());
+            BE_WARNLOG("ShaderTemplate::ParseFeatures: duplicated feature '%s' in shader template '%s'\n", token.c_str(), shaderTemplateName);
             return false;
         }
         declaredFeatures[featureIndex] = true;
@@ -642,7 +657,7 @@ bool ShaderTemplate::ParseFeatures(BE1::Lexer &lexer, InternalData &outInternalD
                 if (nextToken == "=") {
                     BE1::Str valueToken;
                     if (!lexer.ReadToken(&valueToken, false)) {
-                        BE_WARNLOG("ShaderTemplate::ParseFeatures: missing value for feature define '%s' in shader template '%s'\n", define.c_str(), hashName.c_str());
+                        BE_WARNLOG("ShaderTemplate::ParseFeatures: missing value for feature define '%s' in shader template '%s'\n", define.c_str(), shaderTemplateName);
                         return false;
                     }
                     define.Append("=");
@@ -653,7 +668,7 @@ bool ShaderTemplate::ParseFeatures(BE1::Lexer &lexer, InternalData &outInternalD
             }
 
             if (HasDefine(featureDefines, define.c_str())) {
-                BE_WARNLOG("ShaderTemplate::ParseFeatures: duplicated feature define name '%s' in shader template '%s'\n", define.c_str(), hashName.c_str());
+                BE_WARNLOG("ShaderTemplate::ParseFeatures: duplicated feature define name '%s' in shader template '%s'\n", define.c_str(), shaderTemplateName);
                 return false;
             }
 
@@ -661,20 +676,20 @@ bool ShaderTemplate::ParseFeatures(BE1::Lexer &lexer, InternalData &outInternalD
         }
 
         if (!featureClosed) {
-            BE_WARNLOG("ShaderTemplate::ParseFeatures: missing closing brace in feature '%s' in shader template '%s'\n", token.c_str(), hashName.c_str());
+            BE_WARNLOG("ShaderTemplate::ParseFeatures: missing closing brace in feature '%s' in shader template '%s'\n", token.c_str(), shaderTemplateName);
             return false;
         }
     }
 
     if (!closed) {
-        BE_WARNLOG("ShaderTemplate::ParseFeatures: missing closing brace in shader template '%s'\n", hashName.c_str());
+        BE_WARNLOG("ShaderTemplate::ParseFeatures: missing closing brace in shader template '%s'\n", shaderTemplateName);
         return false;
     }
 
     return true;
 }
 
-bool ShaderTemplate::ParseStages(BE1::Lexer &lexer, const char *baseDir, InternalData &outInternalData) {
+bool ShaderTemplate::ParseStages(BE1::Lexer &lexer, const char *baseDir, const char *shaderTemplateName, InternalData &outInternalData) {
     BE1::Str token;
     bool closed = false;
 
@@ -696,7 +711,7 @@ bool ShaderTemplate::ParseStages(BE1::Lexer &lexer, const char *baseDir, Interna
 
         RHI::ShaderStage shaderStage = RHI::ShaderStage::Count;
         if (!ParseShaderStage(token, shaderStage)) {
-            BE_WARNLOG("unknown shader stage '%s' in shader template '%s'\n", token.c_str(), hashName.c_str());
+            BE_WARNLOG("unknown shader stage '%s' in shader template '%s'\n", token.c_str(), shaderTemplateName);
             return false;
         }
 
@@ -707,7 +722,7 @@ bool ShaderTemplate::ParseStages(BE1::Lexer &lexer, const char *baseDir, Interna
 
         RHI::ShaderModel shaderModel = RHI::ShaderModel::SM_6_0;
         if (!ParseShaderModel(shaderModelName, shaderModel)) {
-            BE_WARNLOG("unknown shader model '%s' in shader template '%s'\n", shaderModelName.c_str(), hashName.c_str());
+            BE_WARNLOG("unknown shader model '%s' in shader template '%s'\n", shaderModelName.c_str(), shaderTemplateName);
             return false;
         }
 
@@ -726,14 +741,14 @@ bool ShaderTemplate::ParseStages(BE1::Lexer &lexer, const char *baseDir, Interna
     }
 
     if (!closed) {
-        BE_WARNLOG("ShaderTemplate::ParseStages: missing closing brace in shader template '%s'\n", hashName.c_str());
+        BE_WARNLOG("ShaderTemplate::ParseStages: missing closing brace in shader template '%s'\n", shaderTemplateName);
         return false;
     }
 
     return true;
 }
 
-bool ShaderTemplate::ParseProperties(BE1::Lexer &lexer, InternalData &outInternalData) {
+bool ShaderTemplate::ParseProperties(BE1::Lexer &lexer, const char *shaderTemplateName, InternalData &outInternalData) {
     BE1::Str token;
     bool closed = false;
 
@@ -748,7 +763,7 @@ bool ShaderTemplate::ParseProperties(BE1::Lexer &lexer, InternalData &outInterna
         } else {
             if (outInternalData.FindProperty(token)) {
                 assert(0);
-                BE_WARNLOG("duplicated property name '%s' in shader template '%s'\n", token.c_str(), hashName.c_str());
+                BE_WARNLOG("duplicated property name '%s' in shader template '%s'\n", token.c_str(), shaderTemplateName);
                 return false;
             }
 
@@ -756,20 +771,20 @@ bool ShaderTemplate::ParseProperties(BE1::Lexer &lexer, InternalData &outInterna
 
             ShaderPropertyInfo shaderPropInfo;
             if (!shaderPropInfo.Parse(lexer)) {
-                BE_WARNLOG("error occurred in parsing property propInfo in shader '%s'\n", hashName.c_str());
+                BE_WARNLOG("error occurred in parsing property propInfo in shader '%s'\n", shaderTemplateName);
                 lexer.SkipRestOfLine();
                 continue;
             }
 
             if (!outInternalData.AddProperty(shaderPropInfo)) {
-                BE_WARNLOG("duplicated property name '%s' in shader template '%s'\n", shaderPropInfo.GetName(), hashName.c_str());
+                BE_WARNLOG("duplicated property name '%s' in shader template '%s'\n", shaderPropInfo.GetName(), shaderTemplateName);
                 return false;
             }
         }
     }
 
     if (!closed) {
-        BE_WARNLOG("ShaderTemplate::ParseProperties: missing closing brace in shader template '%s'\n", hashName.c_str());
+        BE_WARNLOG("ShaderTemplate::ParseProperties: missing closing brace in shader template '%s'\n", shaderTemplateName);
         return false;
     }
 
@@ -982,7 +997,7 @@ bool ShaderPropertyInfo::Parse(BE1::Lexer &lexer) {
     return true;
 }
 
-bool ShaderTemplate::Load(const char *filename) {
+bool ShaderTemplate::Prepare(const char *filename, InternalData &outInternalData) {
     BE1::Str exactFilename = filename;
     exactFilename.DefaultFileExtension(".shader");
 
@@ -1001,23 +1016,33 @@ bool ShaderTemplate::Load(const char *filename) {
         return false;
     }
 
-    BE1::Str name;
-    if (!lexer.ReadToken(&name)) {
+    BE1::Str shaderTemplateName;
+    if (!lexer.ReadToken(&shaderTemplateName)) {
         BE1::fileSystem.FreeFile(data);
         return false;
     }
 
     BE1::Str baseDir = exactFilename;
     baseDir.StripFileName();
-    if (!Create(data + lexer.GetCurrentOffset(), baseDir)) {
+    if (!Parse(data + lexer.GetCurrentOffset(), baseDir, shaderTemplateName.c_str(), outInternalData)) {
         BE1::fileSystem.FreeFile(data);
         return false;
     }
 
     BE1::fileSystem.FreeFile(data);
 
-    internalData.flags |= ShaderTemplate::Flag::LoadedFromFile;
+    outInternalData.flags |= ShaderTemplate::Flag::LoadedFromFile;
 
+    return true;
+}
+
+bool ShaderTemplate::Load(const char *filename) {
+    InternalData newInternalData;
+    if (!Prepare(filename, newInternalData)) {
+        return false;
+    }
+
+    ApplyPrepared(newInternalData);
     return true;
 }
 
@@ -1027,16 +1052,13 @@ bool ShaderTemplate::Reload() {
         return false;
     }
 
-    BE1::Array<ShaderPropertyInfo> oldProperties = internalData.properties;
-
-    if (!Load(hashName)) {
-        return false;
+    InternalData newInternalData;
+    if (!Prepare(hashName.c_str(), newInternalData)) {
+        return true;
     }
 
-    // 외부 material shader template reload 대응용 알림이다.
-    // Reload 중 Purge 로 pipeline cache 는 이미 비워졌으므로 material 은 필요할 때 GetGraphicsPipeline 를 통해 새 pipeline 을 다시 얻는다.
-    shaderTemplateManager.shaderTemplateReloaded(this, oldProperties);
-
+    loadingSystem.QueueShaderTemplateReload(shared_from_this(), newInternalData);
+    loadingSystem.ProcessPendingReloads();
     return true;
 }
 

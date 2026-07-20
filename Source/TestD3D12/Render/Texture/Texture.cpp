@@ -426,7 +426,11 @@ bool Texture::Reload() {
         return false;
     }
 
-    return Load(hashName, internalData.flags);
+    if (!ReloadAsync()) {
+        return false;
+    }
+
+    return WaitLoadComplete();
 }
 
 bool Texture::ReloadAsync() {
@@ -484,6 +488,7 @@ bool Texture::WaitLoadComplete() {
 
     while (currentState == State::Loading || currentState == State::Reloading) {
         loadingSystem.ProcessLoadCompletions();
+        loadingSystem.ProcessPendingReloads();
         currentState = GetState();
 
         if (currentState == State::Loading || currentState == State::Reloading) {

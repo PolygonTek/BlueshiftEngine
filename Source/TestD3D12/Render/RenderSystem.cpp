@@ -31,6 +31,8 @@
 
 RenderSystem *          renderSystem = nullptr;
 
+thread_local bool       RenderSystem::isRenderThread = false;
+
 void RenderSystem::Init(void *mainWindowHandle) {
     BE1::cmdSystem.AddCommand("screenshot", Cmd_ScreenShot);
 
@@ -164,9 +166,7 @@ RenderContext *RenderSystem::CreateRenderContext(void *windowHandle, bool isMain
 
 void RenderSystem::DestroyRenderContext(RenderContext *renderContext) {
     if (IsUsingRenderThread()) {
-        for (RenderFrameData &frameData : renderContext->frames) {
-            WaitRenderCompleted(&frameData);
-        }
+        WaitContextRenderCompleted(renderContext);
     }
 
     if (renderContext == mainRenderContext) {
@@ -224,8 +224,8 @@ void RenderSystem::SubmitFrame(RenderContext *renderContext, RenderFrameData *fr
     }
 }
 
-bool RenderSystem::WaitRenderCompleted(const RenderFrameData *frameData) {
-    PROFILER_CPU_SCOPED_EVENT("RenderSystem::WaitRenderCompleted");
+bool RenderSystem::WaitFrameRenderCompleted(const RenderFrameData *frameData) {
+    PROFILER_CPU_SCOPED_EVENT("RenderSystem::WaitFrameRenderCompleted");
 
     assert(BE1::Engine::IsInMainThread());
 
@@ -239,9 +239,40 @@ bool RenderSystem::WaitRenderCompleted(const RenderFrameData *frameData) {
         // 주어진 프레임에 대한 (렌더 스레드의) 렌더링이 완료되기를 기다린다.
         BE1::PlatformCondition::Wait(renderCompletedCondition, frameSyncLock, false, [frameData] {
             return frameData->frameSyncState == FrameSyncState::RenderCompleted;
-            });
+        });
     }
     return true;
+}
+
+bool RenderSystem::WaitContextRenderCompleted(const RenderContext *renderContext) {
+    PROFILER_CPU_SCOPED_EVENT("RenderSystem::WaitContextRenderCompleted");
+
+    assert(BE1::Engine::IsInMainThread());
+
+    if (!renderContext) {
+        return false;
+    }
+
+    for (const RenderFrameData &frameData : renderContext->frames) {
+        if (!WaitFrameRenderCompleted(&frameData)) {
+            return false;
+        }
+    }
+    return true;
+}
+
+void RenderSystem::WaitAllRenderCompleted() {
+    PROFILER_CPU_SCOPED_EVENT("RenderSystem::WaitAllRenderCompleted");
+
+    assert(BE1::Engine::IsInMainThread());
+
+    if (!IsUsingRenderThread()) {
+        return;
+    }
+
+    for (RenderContext *renderContext : renderContexts) {
+        WaitContextRenderCompleted(renderContext);
+    }
 }
 
 void RenderSystem::RequestScreenshot(RenderContext *renderContext, const char *filename) {
@@ -551,6 +582,7 @@ bool RenderSystem::WaitSubmittedFrame(SubmittedFrame &submittedFrame) {
 
 unsigned int RenderSystem::RenderThreadProc(void *param) {
     BE1::PlatformThread::SetCurrentThreadName("RenderSystem::RenderThreadProc");
+    isRenderThread = true;
 
     BE1::SIMD::SetDenormalFlushMode(true);
 

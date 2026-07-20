@@ -16,6 +16,8 @@
 #include "LoadingSystem.h"
 #include "Core/CVars.h"
 #include "Platform/PlatformProcess.h"
+#include "Render/RenderContext.h"
+#include "Render/RenderSystem.h"
 #include "Render/Texture/TextureManager.h"
 
 LoadingSystem      loadingSystem;
@@ -74,6 +76,15 @@ void LoadingSystem::Stop() {
         }
         completions.Clear();
     }
+
+    // reloadCompletions 은 메인스레드에서 쌓이기 때문에 락이 필요없음
+    for (LoadCompletion &completion : reloadCompletions) {
+        DiscardCompletion(completion);
+    }
+    reloadCompletions.Clear();
+
+    pendingMaterialReloads.Clear();
+    pendingShaderTemplateReloads.Clear();
 }
 
 bool LoadingSystem::EnqueueTextureLoad(SharedPtr<Texture> texture, const char *filename, Texture::Flag flags, bool isReload, uint32_t serial, LoadPriority priority) {
@@ -619,6 +630,45 @@ bool LoadingSystem::ProcessShaderPipelineBuildRequest(const LoadRequest &request
     return true;
 }
 
+void LoadingSystem::QueueMaterialReload(SharedPtr<Material> material, Material::InternalData &newInternalData) {
+    assert(BE1::Engine::IsInMainThread());
+
+    if (!material) {
+        return;
+    }
+
+    for (PendingMaterialReload &pendingReload : pendingMaterialReloads) {
+        if (pendingReload.material.get() == material.get()) {
+            pendingReload.internalData.Swap(newInternalData);
+            return;
+        }
+    }
+
+    PendingMaterialReload &pendingReload = pendingMaterialReloads.Alloc();
+    pendingReload.material = std::move(material);
+    pendingReload.internalData.Swap(newInternalData);
+}
+
+void LoadingSystem::QueueShaderTemplateReload(SharedPtr<ShaderTemplate> shaderTemplate, ShaderTemplate::InternalData &newInternalData) {
+    assert(BE1::Engine::IsInMainThread());
+
+    if (!shaderTemplate) {
+        return;
+    }
+
+    for (PendingShaderTemplateReload &pendingReload : pendingShaderTemplateReloads) {
+        if (pendingReload.shaderTemplate.get() == shaderTemplate.get()) {
+            pendingReload.internalData.Swap(newInternalData);
+            return;
+        }
+    }
+
+    PendingShaderTemplateReload &pendingReload = pendingShaderTemplateReloads.Alloc();
+    pendingReload.shaderTemplate = std::move(shaderTemplate);
+    pendingReload.internalData.Swap(newInternalData);
+    pendingReload.oldProperties = pendingReload.shaderTemplate->GetProperties();
+}
+
 void LoadingSystem::ProcessLoadCompletions() {
     assert(BE1::Engine::IsInMainThread());
 
@@ -629,27 +679,168 @@ void LoadingSystem::ProcessLoadCompletions() {
     }
 
     for (LoadCompletion &completion : localCompletions) {
-        if (completion.texture) {
-            if (!ProcessTextureLoadCompletion(completion)) {
-                continue;
-            }
-        } else if (completion.mesh) {
-            if (!ProcessMeshLoadCompletion(completion)) {
-                continue;
-            }
-        } else if (completion.skeleton) {
-            if (!ProcessSkeletonLoadCompletion(completion)) {
-                continue;
-            }
-        } else if (completion.anim) {
-            if (!ProcessAnimLoadCompletion(completion)) {
-                continue;
-            }
-        } else if (completion.shaderPipeline) {
-            if (!ProcessShaderPipelineBuildCompletion(completion)) {
-                continue;
-            }
+        // 리로딩/리빌딩 처리는 여기서 완료 처리를 하지 않고, ProcessPendingReloads() 로 미룬다.
+        if (IsLiveResourceReplacement(completion)) {
+            reloadCompletions.Append(std::move(completion));
+            continue;
         }
+
+        ProcessLoadCompletion(completion);
+    }
+}
+
+void LoadingSystem::ProcessPendingReloads() {
+    PROFILER_CPU_SCOPED_EVENT("LoadingSystem::ProcessPendingReloads");
+
+    assert(BE1::Engine::IsInMainThread());
+
+    if (reloadCompletions.IsEmpty() && pendingMaterialReloads.IsEmpty() && pendingShaderTemplateReloads.IsEmpty()) {
+        return;
+    }
+
+    BE1::Array<LoadCompletion> localCompletions;
+    localCompletions.Swap(reloadCompletions);
+
+    BE1::Array<PendingMaterialReload> localMaterialReloads;
+    localMaterialReloads.Swap(pendingMaterialReloads);
+
+    BE1::Array<PendingShaderTemplateReload> localShaderTemplateReloads;
+    localShaderTemplateReloads.Swap(pendingShaderTemplateReloads);
+
+    // 리로드 전에 폐기 대상인 completion 은 제거한다.
+    for (int i = 0; i < localCompletions.Count();) {
+        if (TryDiscardInvalidReloadCompletion(localCompletions[i])) {
+            localCompletions.RemoveIndexFast(i);
+        } else {
+            i++;
+        }
+    }
+
+    if (localCompletions.IsEmpty() && localMaterialReloads.IsEmpty() && localShaderTemplateReloads.IsEmpty()) {
+        return;
+    }
+
+    // 렌더 프런트엔드 프레임 작성 중에는 기존 리소스를 교체하면 안 된다.
+    assert(RenderContext::activeContext == nullptr);
+
+    // 모든 렌더 스레드가 자원 사용을 마치기를 기다린다.
+    renderSystem->WaitAllRenderCompleted();
+
+    for (LoadCompletion &completion : localCompletions) {
+        ProcessLoadCompletion(completion);
+    }
+
+    ProcessMaterialReloads(localMaterialReloads);
+    ProcessShaderTemplateReloads(localShaderTemplateReloads);
+}
+
+void LoadingSystem::ProcessMaterialReloads(BE1::Array<PendingMaterialReload> &pendingReloads) {
+    for (PendingMaterialReload &pendingReload : pendingReloads) {
+        pendingReload.material->ApplyPrepared(pendingReload.internalData);
+    }
+}
+
+void LoadingSystem::ProcessShaderTemplateReloads(BE1::Array<PendingShaderTemplateReload> &pendingReloads) {
+    // 부모 ShaderTemplate 이 리로드되어도 이를 상속한 자식 ShaderTemplate 은 자동으로 리로드하지 않는다.
+    for (PendingShaderTemplateReload &pendingReload : pendingReloads) {
+        pendingReload.shaderTemplate->ApplyPrepared(pendingReload.internalData);
+
+        // 외부 material shader template reload 대응용 알림이다.
+        // Reload 중 Purge 로 pipeline cache 는 이미 비워졌으므로 material 은 필요할 때 GetGraphicsPipeline 를 통해 새 pipeline 을 다시 얻는다.
+        ShaderTemplate::reloaded(pendingReload.shaderTemplate.get(), pendingReload.oldProperties);
+    }
+}
+
+bool LoadingSystem::TryDiscardInvalidReloadCompletion(LoadCompletion &completion) {
+    if (completion.texture) {
+        if (completion.serial != completion.texture->GetLoadSerial()) {
+            DiscardCompletion(completion);
+            return true;
+        }
+
+        if (!completion.success) {
+            DiscardCompletion(completion);
+            completion.texture->SetState(completion.isReload ? Texture::State::Ready : Texture::State::Failed);
+            return true;
+        }
+
+        return false;
+    }
+
+    if (completion.mesh) {
+        if (completion.serial != completion.mesh->GetLoadSerial()) {
+            DiscardCompletion(completion);
+            return true;
+        }
+
+        if (!completion.success) {
+            DiscardCompletion(completion);
+            completion.mesh->SetState(completion.isReload ? Mesh::State::Ready : Mesh::State::Failed);
+            return true;
+        }
+
+        return false;
+    }
+
+    if (completion.skeleton) {
+        if (completion.serial != completion.skeleton->GetLoadSerial()) {
+            DiscardCompletion(completion);
+            return true;
+        }
+
+        if (!completion.success) {
+            DiscardCompletion(completion);
+            completion.skeleton->SetState(completion.isReload ? Skeleton::State::Ready : Skeleton::State::Failed);
+            return true;
+        }
+
+        return false;
+    }
+
+    if (completion.anim) {
+        if (completion.serial != completion.anim->GetLoadSerial()) {
+            DiscardCompletion(completion);
+            return true;
+        }
+
+        if (!completion.success) {
+            DiscardCompletion(completion);
+            completion.anim->SetState(completion.isReload ? Anim::State::Ready : Anim::State::Failed);
+            return true;
+        }
+
+        return false;
+    }
+
+    if (completion.shaderPipeline) {
+        if (completion.serial != completion.shaderPipeline->GetBuildSerial()) {
+            DiscardCompletion(completion);
+            return true;
+        }
+
+        if (!completion.success || !completion.pso) {
+            DiscardCompletion(completion);
+            completion.shaderPipeline->SetState(completion.shaderPipeline->GetPSO() ? ShaderPipeline::State::Ready : ShaderPipeline::State::Failed);
+            return true;
+        }
+
+        return false;
+    }
+
+    return true;
+}
+
+void LoadingSystem::ProcessLoadCompletion(LoadCompletion &completion) {
+    if (completion.texture) {
+        ProcessTextureLoadCompletion(completion);
+    } else if (completion.mesh) {
+        ProcessMeshLoadCompletion(completion);
+    } else if (completion.skeleton) {
+        ProcessSkeletonLoadCompletion(completion);
+    } else if (completion.anim) {
+        ProcessAnimLoadCompletion(completion);
+    } else if (completion.shaderPipeline) {
+        ProcessShaderPipelineBuildCompletion(completion);
     }
 }
 
@@ -802,6 +993,18 @@ bool LoadingSystem::ProcessShaderPipelineBuildCompletion(LoadCompletion &complet
     // 빌드가 성공했으므로 Ready 상태로 바꿔준다.
     shaderPipeline->SetState(ShaderPipeline::State::Ready);
     return true;
+}
+
+bool LoadingSystem::IsLiveResourceReplacement(const LoadCompletion &completion) {
+    if (completion.isStreamingReplacement) {
+        return false;
+    }
+
+    if (completion.isReload) {
+        return true;
+    }
+
+    return completion.shaderPipeline && completion.shaderPipeline->GetState() == ShaderPipeline::State::Rebuilding;
 }
 
 bool LoadingSystem::IsHigherPriority(const LoadRequest &lhs, const LoadRequest &rhs) {

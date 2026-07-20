@@ -16,10 +16,12 @@
 
 #include "Containers/HashIndex.h"
 #include "Containers/HashMap.h"
+#include "Core/Delegate.h"
 #include "Core/Property.h"
 #include "ShaderPipeline.h"
 
 class ShaderTemplateManager;
+class LoadingSystem;
 
 struct ShaderPropertyInfo : public BE1::PropertyInfo {
     enum class ShaderFlag : uint8_t {
@@ -78,8 +80,11 @@ struct ShaderPropertyInfo : public BE1::PropertyInfo {
 
 class ShaderTemplate : public std::enable_shared_from_this<ShaderTemplate> {
     friend class ShaderTemplateManager;
+    friend class LoadingSystem;
 
 public:
+    using ReloadedDelegate = BE1::MulticastDelegate<void(const ShaderTemplate *, const BE1::Array<ShaderPropertyInfo> &)>;
+
     enum class Flag : uint8_t {
         None                        = 0,
         LitSurface                  = BIT(1),
@@ -133,7 +138,7 @@ public:
 
     bool                            Create(const char *text, const char *baseDir);
 
-    bool                            Load(const char *filename);
+                                    // 리로드 완료 후 리소스를 사용할 수 있으면 true 를 반환한다. 새 데이터 로딩 성공 여부와는 무관하다.
     bool                            Reload();
 
                                     // defines (shader define properties) + featureSet flags 으로 permutation 을 등록하고 그 key 를 리턴한다.
@@ -143,6 +148,8 @@ public:
 
                                     // 셰이더 컴파일에 필요한 정보들을 준비한다.
     bool                            PrepareShaderCompileData(ShaderPermutationKey permutationKey, ShaderCompileData &outCompileData) const;
+
+    static ReloadedDelegate         reloaded;
 
 private:
     struct InternalData {
@@ -163,6 +170,7 @@ private:
         void                        RefreshStandardPropertyIndices();
 
         ShaderStageSource           stageSources[to_int(RHI::ShaderStage::Count)] = {};
+        BE1::Str                    inheritedShaderTemplateName;
         BE1::StrArray               baseDefines;
         BE1::StrArray               featureDefines[to_int(ShaderFeature::Count)] = {};
         BE1::Array<ShaderPropertyInfo> properties;
@@ -179,12 +187,17 @@ private:
 
     void                            Purge();
 
-    bool                            Parse(const char *text, const char *baseDir, InternalData &outInternalData);
-    bool                            ParseInheritProperties(BE1::Lexer &lexer, const char *baseDir, InternalData &outInternalData);
-    bool                            ParseBaseDefines(BE1::Lexer &lexer, InternalData &outInternalData);
-    bool                            ParseFeatures(BE1::Lexer &lexer, InternalData &outInternalData);
-    bool                            ParseStages(BE1::Lexer &lexer, const char *baseDir, InternalData &outInternalData);
-    bool                            ParseProperties(BE1::Lexer &lexer, InternalData &outInternalData);
+    static bool                     Prepare(const char *filename, InternalData &outInternalData);
+    void                            ApplyPrepared(InternalData &newInternalData);
+
+    bool                            Load(const char *filename);
+
+    static bool                     Parse(const char *text, const char *baseDir, const char *shaderTemplateName, InternalData &outInternalData);
+    static bool                     ParseInheritProperties(BE1::Lexer &lexer, const char *baseDir, const char *shaderTemplateName, InternalData &outInternalData);
+    static bool                     ParseBaseDefines(BE1::Lexer &lexer, const char *shaderTemplateName, InternalData &outInternalData);
+    static bool                     ParseFeatures(BE1::Lexer &lexer, const char *shaderTemplateName, InternalData &outInternalData);
+    static bool                     ParseStages(BE1::Lexer &lexer, const char *baseDir, const char *shaderTemplateName, InternalData &outInternalData);
+    static bool                     ParseProperties(BE1::Lexer &lexer, const char *shaderTemplateName, InternalData &outInternalData);
 
     ShaderPermutation *             FindPermutation(ShaderPermutationKey permutationKey) const;
     void                            ClearPermutations();

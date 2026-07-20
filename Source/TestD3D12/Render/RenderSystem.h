@@ -54,6 +54,8 @@ public:
     const RHI::MemoryUsage &        GetVideoMemoryUsage() const { return videoMemoryUsage; }
     bool                            IsUsingRenderThread() const { return !!renderThread; }
 
+    static bool                     IsInRenderThread() { return isRenderThread; }
+
     [[nodiscard]] RenderContext *   CreateRenderContext(void *windowHandle, bool isMain = false);
     void                            DestroyRenderContext(RenderContext *renderContext);
     RenderContext *                 FindRenderContextByWindowHandle(void *windowHandle) const;
@@ -61,7 +63,14 @@ public:
                                     // 프레임 데이터를 렌더 스레드에 제출한다. 제출된 프레임 데이터는 렌더 스레드에서 순서대로 처리된다.
     void                            SubmitFrame(RenderContext *renderContext, RenderFrameData *frameData);
 
-    bool                            WaitRenderCompleted(const RenderFrameData *frameData);
+                                    // 주어진 프레임 데이터의 렌더링이 완료될 때까지 기다린다.
+    bool                            WaitFrameRenderCompleted(const RenderFrameData *frameData);
+
+                                    // 주어진 렌더 컨텍스트의 모든 프레임 렌더링이 완료될 때까지 기다린다.
+    bool                            WaitContextRenderCompleted(const RenderContext *renderContext);
+
+                                    // 모든 렌더 컨텍스트의 모든 프레임 렌더링이 완료될 때까지 기다린다.
+    void                            WaitAllRenderCompleted();
 
     void                            RequestScreenshot(RenderContext *renderContext, const char *filename);
 
@@ -108,6 +117,7 @@ private:
     BE1::PlatformCondition *        updateCompletedCondition = nullptr;
     BE1::PlatformThread *           renderThread = nullptr;
     bool                            isStoppingRenderThread = false;
+    static thread_local bool        isRenderThread;
 
     SharedPtr<ShaderTemplate>       genHiZMipFirstBatchShaderTemplate;
     SharedPtr<ShaderTemplate>       genHiZMipFirstBatchMSAAShaderTemplate;

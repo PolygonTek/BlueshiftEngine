@@ -18,6 +18,7 @@
 #include "Shaders/ShaderInterop.h"
 
 class MaterialManager;
+class LoadingSystem;
 class Texture;
 
 /*
@@ -30,6 +31,7 @@ class Texture;
 
 class Material : public std::enable_shared_from_this<Material> {
     friend class MaterialManager;
+    friend class LoadingSystem;
 
 public:
     enum class Flag : uint16_t {
@@ -90,7 +92,7 @@ public:
 
     bool                            Create(const char *text, const char *baseDir);
 
-    bool                            Load(const char *filename);
+                                    // 리로드 완료 후 리소스를 사용할 수 있으면 true 를 반환한다. 새 데이터 로딩 성공 여부와는 무관하다.
     bool                            Reload();
 
 private:
@@ -119,12 +121,17 @@ private:
 
     void                            Purge();
 
-    bool                            Parse(const char *text, const char *baseDir, InternalData &outInternalData);
-    bool                            ParseCull(BE1::Lexer &lexer, InternalData &outInternalData);
-    bool                            ParseRenderingMode(BE1::Lexer &lexer, InternalData &outInternalData);
-    bool                            ParseBlendType(BE1::Lexer &lexer, InternalData &outInternalData);
-    bool                            ParseShaderTemplate(BE1::Lexer &lexer, const char *baseDir, InternalData &outInternalData);
-    bool                            ParseProperties(BE1::Lexer &lexer, InternalData &outInternalData);
+    static bool                     Prepare(const char *filename, InternalData &outInternalData);
+    void                            ApplyPrepared(InternalData &newInternalData);
+
+    bool                            Load(const char *filename);
+
+    static bool                     Parse(const char *text, const char *baseDir, const char *materialName, InternalData &outInternalData);
+    static bool                     ParseCull(BE1::Lexer &lexer, const char *materialName, InternalData &outInternalData);
+    static bool                     ParseRenderingMode(BE1::Lexer &lexer, const char *materialName, InternalData &outInternalData);
+    static bool                     ParseBlendType(BE1::Lexer &lexer, const char *materialName, InternalData &outInternalData);
+    static bool                     ParseShaderTemplate(BE1::Lexer &lexer, const char *baseDir, const char *materialName, InternalData &outInternalData);
+    static bool                     ParseProperties(BE1::Lexer &lexer, const char *materialName, InternalData &outInternalData);
 
     void                            UpdateTextureProperties();
     void                            RemapShaderTemplateProperties(const BE1::Array<ShaderPropertyInfo> &oldProperties);

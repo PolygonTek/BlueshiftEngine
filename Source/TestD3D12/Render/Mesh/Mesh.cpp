@@ -86,7 +86,12 @@ bool Mesh::Reload() {
         BE_WARNLOG("Mesh::Reload: mesh '%s' is not ready\n", GetHashName());
         return false;
     }
-    return Load(hashName);
+
+    if (!ReloadAsync()) {
+        return false;
+    }
+
+    return WaitLoadComplete();
 }
 
 bool Mesh::ReloadAsync() {
@@ -135,6 +140,7 @@ bool Mesh::WaitLoadComplete() {
 
     while (currentState == State::Loading || currentState == State::Reloading) {
         loadingSystem.ProcessLoadCompletions();
+        loadingSystem.ProcessPendingReloads();
         currentState = GetState();
 
         if (currentState == State::Loading || currentState == State::Reloading) {

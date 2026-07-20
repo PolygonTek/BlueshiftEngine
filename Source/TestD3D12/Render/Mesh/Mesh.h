@@ -103,10 +103,10 @@ public:
 
     void                            Reset();
 
-    bool                            Load(const char *filename);
-    bool                            LoadAsync(const char *filename);
-
+                                    // 리로드 완료 후 리소스를 사용할 수 있으면 true 를 반환한다. 새 데이터 로딩 성공 여부와는 무관하다.
     bool                            Reload();
+
+                                    // 비동기 리로드 요청 등록에 성공하면 true 를 반환하며, 완료 전까지 기존 리소스를 계속 사용할 수 있다.
     bool                            ReloadAsync();
 
                                     // 최초 로딩 중이면 완료될 때까지 기다리고, 리로딩 중이면 기존 Mesh 를 사용할 수 있으므로 Ready 로 간주한다.
@@ -175,6 +175,9 @@ private:
 
     static bool                     Prepare(const char *filename, InternalData &outInternalData);
     void                            ApplyPrepared(InternalData &newInternalData);
+
+    bool                            Load(const char *filename);
+    bool                            LoadAsync(const char *filename);
 
     uint32_t                        BumpDataSerial() { return dataSerial.fetch_add(1) + 1; }
 

@@ -124,6 +124,8 @@ private:
 
     bool                            Build(const SharedPtr<ShaderTemplate> &shaderTemplate);
     void                            BuildAsync(const SharedPtr<ShaderTemplate> &shaderTemplate);
+    bool                            Rebuild(const SharedPtr<ShaderTemplate> &shaderTemplate);
+    void                            RebuildAsync(const SharedPtr<ShaderTemplate> &shaderTemplate);
     bool                            EnqueueBuild(const SharedPtr<ShaderTemplate> &shaderTemplate);
 
     const Type                      type = Type::Graphics;  // PSO 빌드에 필요한 정보 (생성자에서 한번 정해지면 변하지 않는다)

@@ -78,9 +78,10 @@ public:
     float                   TextWidth(const BE1::Str &text, int maxLen, bool allowLineBreak = false, bool allowColoredText = false, float xScale = 1.0f, float charSpacing = 0.0f) const;
 
     void                    Purge();
-    bool                    Load(const char *filename);
 
 private:
+    bool                    Load(const char *filename);
+
     BE1::Str                hashName;
     BE1::Str                name;
 

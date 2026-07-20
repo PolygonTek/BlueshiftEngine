@@ -131,10 +131,10 @@ public:
 
     bool                            Create(RHI::TextureType textureType, SharedPtr<const BE1::Image> srcImage, Texture::Flag flags);
 
-    bool                            Load(const char *filename, Texture::Flag flags);
-    bool                            LoadAsync(const char *filename, Texture::Flag flags);
-
+                                    // 리로드 완료 후 리소스를 사용할 수 있으면 true 를 반환한다. 새 데이터 로딩 성공 여부와는 무관하다.
     bool                            Reload();
+
+                                    // 비동기 리로드 요청 등록에 성공하면 true 를 반환하며, 완료 전까지 기존 리소스를 계속 사용할 수 있다.
     bool                            ReloadAsync();
 
                                     // 최초 로딩 중이면 완료될 때까지 기다리고, 리로딩 중이면 기존 Texture 를 사용할 수 있으므로 Ready 로 간주한다.
@@ -173,6 +173,9 @@ private:
                                     /// Prepares a texture directly from an already-final image without resizing, format conversion, or mip generation.
     static bool                     PrepareDirect(RHI::TextureType textureType, SharedPtr<const BE1::Image> srcImage, Texture::Flag flags, InternalData &outInternalData);
     void                            ApplyPrepared(InternalData &newInternalData);
+
+    bool                            Load(const char *filename, Texture::Flag flags);
+    bool                            LoadAsync(const char *filename, Texture::Flag flags);
 
     static RHI::Texture *           CreateRHITexture(RHI::TextureType textureType, RHI::TextureFlag flags, SharedPtr<const BE1::Image> srcImage, BE1::Image::Format dstFormat, bool generateMipmapsOnCPU, RHI::TextureMipInitMode mipInitMode, RHI::GPUResourceState initialState);
 
