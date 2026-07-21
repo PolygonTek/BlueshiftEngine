@@ -43,9 +43,10 @@ public:
         NormalMap                   = BIT(4),   ///< Normal map
         NonPowerOfTwo               = BIT(5),   ///< Texture dimensions are not power-of-two
         Streaming                   = BIT(6),   ///< Texture streaming loading (only DDS file, with async loading)
-        UnorderedAccess             = BIT(7),   ///< Texture accessible via UAV
-        Compute                     = BIT(8),   ///< Create as a compute resource in its initial update
-        LoadedFromFile              = BIT(9)    ///< Indicates the texture was loaded from a file (used internally)
+        RenderTarget                = BIT(7),   ///< Texture accessible as a render target
+        UnorderedAccess             = BIT(8),   ///< Texture accessible via UAV
+        Compute                     = BIT(9),   ///< Create as a compute resource in its initial update
+        LoadedFromFile              = BIT(10)   ///< Indicates the texture was loaded from a file (used internally)
     };
 
     enum class State : uint8_t {

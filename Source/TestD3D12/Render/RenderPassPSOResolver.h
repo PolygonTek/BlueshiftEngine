@@ -34,7 +34,7 @@ public:
 
     void                            Begin(const RenderPass *renderPass, uint32_t initialPSOEntryCapacity);
 
-    ResolveResult                   Resolve(const VisSurf *visSurf, const ShaderFeatureSet &featureSet);
+    ResolveResult                   Resolve(const VisSurf *visSurf, const ShaderFeatureSet &featureSet, bool async = true);
 
 private:
     struct PSOEntry {

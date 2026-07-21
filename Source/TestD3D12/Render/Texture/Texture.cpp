@@ -300,6 +300,9 @@ bool Texture::Prepare(RHI::TextureType textureType, SharedPtr<const BE1::Image> 
     }
 
     RHI::TextureFlag resourceFlags = RHI::TextureFlag::ShaderResource;
+    if (BE1::HasFlag(flags, Texture::Flag::RenderTarget)) {
+        resourceFlags |= RHI::TextureFlag::RenderTarget;
+    }
     if (useUAV) {
         resourceFlags |= RHI::TextureFlag::UnorderedAccess;
 
@@ -346,6 +349,9 @@ bool Texture::PrepareDirect(RHI::TextureType textureType, SharedPtr<const BE1::I
     flags = Texture::ApplyTextureHints(flags, srcImage->GetTextureHints());
 
     RHI::TextureFlag resourceFlags = RHI::TextureFlag::ShaderResource;
+    if (BE1::HasFlag(flags, Texture::Flag::RenderTarget)) {
+        resourceFlags |= RHI::TextureFlag::RenderTarget;
+    }
     if (BE1::HasFlag(flags, Texture::Flag::UnorderedAccess)) {
         resourceFlags |= RHI::TextureFlag::UnorderedAccess;
 

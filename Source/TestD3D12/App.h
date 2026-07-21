@@ -109,6 +109,9 @@ private:
     void                            BuildImGuiTextureViewer();
     void                            UpdateImGuiStatsPlotHistory();
     void                            BuildImGuiStatsPlotWindow();
+
+    bool                            pendingScreenshotCapture = false;
+    bool                            pendingEnvShotCapture = false;
 #endif
 
     RenderContext *                 mainRenderContext = nullptr;

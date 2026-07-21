@@ -35,7 +35,7 @@ public:
 
     void                            Begin(const RenderPass *renderPass, uint32_t initialPSOEntryCapacity, const SharedPtr<ShaderTemplate> &shaderTemplate);
 
-    ResolveResult                   Resolve(const VisSurf *visSurf);
+    ResolveResult                   Resolve(const VisSurf *visSurf, bool async = true);
 
 private:
     struct PSOEntry {

@@ -610,7 +610,10 @@ void RenderBackend::BlitTextureToRenderTarget(const RHI::Texture *srcTexture, co
 
     GpuTiming::ScopedTimer gpuScope(gpuTiming, mainCommandList, GpuTiming::Tag::BlitToOutput);
 
-    RHI::RenderPassImage outputImage = RHI::RenderPassImage::Color(renderTargetTexture, renderTargetViewID, RHI::RenderPassImage::LoadAction::Load, RHI::RenderPassImage::StoreAction::Store, renderTargetBeforeState, renderTargetAfterState);
+    // RTV 전체를 덮어쓰는 경우 이전 내용을 보존하지 않아 초기화되지 않은 렌더 타겟도 안전하게 사용할 수 있다.
+    const bool overwriteWholeTarget = outputX0 == 0 && outputY0 == 0 && outputW == w && outputH == h;
+    const RHI::RenderPassImage::LoadAction loadAction = overwriteWholeTarget ? RHI::RenderPassImage::LoadAction::DontCare : RHI::RenderPassImage::LoadAction::Load;
+    RHI::RenderPassImage outputImage = RHI::RenderPassImage::Color(renderTargetTexture, renderTargetViewID, loadAction, RHI::RenderPassImage::StoreAction::Store, renderTargetBeforeState, renderTargetAfterState);
     RHI::renderer->BeginRenderPass(mainCommandList, &outputImage, 1);
     RHI::renderer->SetViewport(mainCommandList, outputRect);
     RHI::renderer->SetScissorRect(mainCommandList, outputRect);

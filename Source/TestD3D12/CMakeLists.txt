@@ -129,6 +129,8 @@ set(SRC_FILES
     Render/Texture/Texture.cpp
     Render/Texture/TextureManager.h
     Render/Texture/TextureManager.cpp
+    Render/RenderCapture.h
+    Render/RenderCapture.cpp
     Render/RenderCvars.h
     Render/RenderCvars.cpp
     Render/ColorGradingLUTGenerator.h

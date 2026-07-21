@@ -1098,6 +1098,16 @@ void App::BuildImGuiOverlay() {
             ImGui::Text("Keyboard capture: %s", ImGui::GetIO().WantCaptureKeyboard ? "true" : "false");
             ImGui::Separator();
 
+            if (ImGui::Button("Take screenshot")) {
+                pendingScreenshotCapture = true;
+            }
+
+            ImGui::SameLine();
+
+            if (ImGui::Button("Take envshot")) {
+                pendingEnvShotCapture = true;
+            }
+
             if (ImGui::Button(imguiShowDemoWindow ? "Hide ImGui Demo" : "Show ImGui Demo")) {
                 imguiShowDemoWindow = !imguiShowDemoWindow;
             }

@@ -33,12 +33,13 @@ class RenderCamera {
 public:
     enum class Flag : uint8_t {
         None                    = 0,
-        WireframeMode           = BIT(0),
-        SkipDebugDraw           = BIT(1),
-        SkipPostProcess         = BIT(2),
-        DisableTemporalHistory  = BIT(3),
-        DisableHiZCulling       = BIT(4),
-        StaticOnly              = BIT(5)
+        WireframeMode           = BIT(0),               ///< Surface 를 와이어프레임으로 렌더링한다.
+        SkipDebugDraw           = BIT(1),               ///< Debug primitive 렌더링을 생략한다.
+        SkipPostProcess         = BIT(2),               ///< Post-process 렌더링을 생략한다.
+        DisableTemporalHistory  = BIT(3),               ///< Temporal history 사용과 갱신을 비활성화한다.
+        DisableHiZCulling       = BIT(4),               ///< Hi-Z 기반 occlusion culling 을 비활성화한다.
+        ForceSyncPassPSOBuild   = BIT(5),               ///< Render pass PSO 를 강제로 동기적으로 빌드한다.
+        StaticOnly              = BIT(6)                ///< Static render object 만 렌더링한다.
     };
 
     enum class ClearMethod : uint8_t {

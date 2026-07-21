@@ -116,6 +116,8 @@ void RenderPassBuilder::BuildMain(RenderFrameData *frameData, VisCamera *visCame
     }
 
     const bool useDepthPrepass = r_depthPrepass.GetBool();
+    const bool allowAsyncPSOBuild = !BE1::HasFlag(visCamera->flags, RenderCamera::Flag::ForceSyncPassPSOBuild);
+
     int numDepthDrawSurfs = 0;
     int numOpaqueDrawSurfs = 0;
     int numSkyboxDrawSurfs = 0;
@@ -195,21 +197,21 @@ void RenderPassBuilder::BuildMain(RenderFrameData *frameData, VisCamera *visCame
         // 각 surface 의 특성 (material, featureSet, maxVertexWeights) 에 따라 PSO, inputLayoutId 를 얻고, RenderPassDrawSurf 를 추가한다.
         if (BE1::HasFlag(visSurf->flags, VisSurfFlag::Skybox)) {
             if (skyboxPass) {
-                const RenderPassPSOResolver::ResolveResult rr = skyboxPSOResolver.Resolve(visSurf, visSurf->baseFeatureSet | skyboxPass->featureSet);
+                const RenderPassPSOResolver::ResolveResult rr = skyboxPSOResolver.Resolve(visSurf, visSurf->baseFeatureSet | skyboxPass->featureSet, allowAsyncPSOBuild);
                 AddRenderPassDrawSurf(skyboxPass, visSurf, 0, rr.inputLayoutId, rr.pso);
             }
         } else if (visSurf->material->GetRenderingMode() == Material::RenderingMode::Blend) {
             if (blendPass) {
-                const RenderPassPSOResolver::ResolveResult rr = blendPSOResolver.Resolve(visSurf, visSurf->baseFeatureSet | blendPass->featureSet);
+                const RenderPassPSOResolver::ResolveResult rr = blendPSOResolver.Resolve(visSurf, visSurf->baseFeatureSet | blendPass->featureSet, allowAsyncPSOBuild);
                 AddRenderPassDrawSurf(blendPass, visSurf, BuildTransparentSortKey(visSurf, visCamera), rr.inputLayoutId, rr.pso);
             }
         } else {
             if (depthPass) {
-                const RenderPassDepthPSOResolver::ResolveResult rr = depthPSOResolver.Resolve(visSurf);
+                const RenderPassDepthPSOResolver::ResolveResult rr = depthPSOResolver.Resolve(visSurf, allowAsyncPSOBuild);
                 AddRenderPassDrawSurf(depthPass, visSurf, BuildDepthSortKey(visSurf, visCamera), rr.inputLayoutId, rr.pso);
             }
             if (opaquePass) {
-                const RenderPassPSOResolver::ResolveResult rr = opaquePSOResolver.Resolve(visSurf, visSurf->baseFeatureSet | opaquePass->featureSet);
+                const RenderPassPSOResolver::ResolveResult rr = opaquePSOResolver.Resolve(visSurf, visSurf->baseFeatureSet | opaquePass->featureSet, allowAsyncPSOBuild);
                 AddRenderPassDrawSurf(opaquePass, visSurf, BuildOpaqueSortKey(visSurf, rr.pso), rr.inputLayoutId, rr.pso);
             }
         }

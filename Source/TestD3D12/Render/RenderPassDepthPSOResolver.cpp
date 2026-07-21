@@ -92,7 +92,7 @@ ShaderPermutationKey RenderPassDepthPSOResolver::GetPermutationKey(ShaderTemplat
     return permutationKey;
 }
 
-RenderPassDepthPSOResolver::ResolveResult RenderPassDepthPSOResolver::Resolve(const VisSurf *visSurf) {
+RenderPassDepthPSOResolver::ResolveResult RenderPassDepthPSOResolver::Resolve(const VisSurf *visSurf, bool async) {
     assert(visSurf);
     assert(visSurf->subMesh);
 
@@ -121,7 +121,7 @@ RenderPassDepthPSOResolver::ResolveResult RenderPassDepthPSOResolver::Resolve(co
     const GraphicsPipelineDesc &graphicsPipelineDesc = GetGraphicsPipelineDesc(result.inputLayoutId);
 
     ShaderPermutationKey permutationKey = GetPermutationKey(shaderTemplate.get(), featureSet);
-    result.pso = ShaderPipeline::GetReadyPSO(shaderPipelineCache.GetGraphicsPipeline(shaderTemplate, permutationKey, graphicsPipelineDesc));
+    result.pso = ShaderPipeline::GetReadyPSO(shaderPipelineCache.GetGraphicsPipeline(shaderTemplate, permutationKey, graphicsPipelineDesc, async));
 
     // featureSet, input layout id 로 새 PSO entry 를 추가한다.
     RenderPassDepthPSOResolver::PSOEntry &entry = psoEntries.Alloc();

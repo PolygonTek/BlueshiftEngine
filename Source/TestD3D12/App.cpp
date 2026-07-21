@@ -16,6 +16,7 @@
 #include "Render/RenderSystem.h"
 #include "Render/RenderContext.h"
 #include "Render/RenderBackend.h"
+#include "Render/RenderCapture.h"
 #include "Render/RenderCvars.h"
 #include "Render/RenderWorld.h"
 #include "Render/RenderCamera.h"
@@ -196,6 +197,55 @@ void App::Render(uint64_t frameUsec) {
     const float frameTime = (float)MICRO2SEC((double)frameUsec);
     const float elapsedTime = (float)MICRO2SEC((double)elapsedUsec);
     const float elapsedPrevTime = (float)MICRO2SEC((double)(elapsedUsec - frameUsec));
+
+#ifdef ENABLE_IMGUI
+    if (pendingScreenshotCapture || pendingEnvShotCapture) {
+        BE1::Vec3 cameraOrigin;
+        BE1::Mat3 cameraAxis;
+        GetCameraOriginAxis(cameraOrigin, cameraAxis);
+
+        const BE1::Str documentDir = BE1::fileSystem.GetUserDocumentDir();
+
+        if (pendingScreenshotCapture) {
+            pendingScreenshotCapture = false;
+
+            char path[BE1::MaxAbsolutePath];
+            int fileIndex;
+            for (fileIndex = 0; fileIndex < 1000; ++fileIndex) {
+                BE1::Str::snPrintf(path, sizeof(path), "%s/Screenshots/scene_capture_%03i.png", documentDir.c_str(), fileIndex);
+                if (!BE1::fileSystem.FileExists(path)) {
+                    break;
+                }
+            }
+
+            if (fileIndex < 1000) {
+                RenderCapture::TakeScreenShot(path, mainRenderContext, renderWorld, ~0u, cameraOrigin, cameraAxis, 60.0f, false,
+                    static_cast<int>(mainRenderContext->GetWidth()), static_cast<int>(mainRenderContext->GetHeight()));
+            } else {
+                BE_WARNLOG("App::Render: too many scene capture files exist\n");
+            }
+        }
+
+        if (pendingEnvShotCapture) {
+            pendingEnvShotCapture = false;
+
+            char path[BE1::MaxAbsolutePath];
+            int fileIndex;
+            for (fileIndex = 0; fileIndex < 1000; ++fileIndex) {
+                BE1::Str::snPrintf(path, sizeof(path), "%s/Screenshots/env_capture_%03i.dds", documentDir.c_str(), fileIndex);
+                if (!BE1::fileSystem.FileExists(path)) {
+                    break;
+                }
+            }
+
+            if (fileIndex < 1000) {
+                RenderCapture::TakeEnvShot(path, mainRenderContext, renderWorld, ~0u, false, cameraOrigin, true, 256);
+            } else {
+                BE_WARNLOG("App::Render: too many environment capture files exist\n");
+            }
+        }
+    }
+#endif
 
     bool statEnabled = app_showStats.GetBool();
 #ifdef ENABLE_IMGUI

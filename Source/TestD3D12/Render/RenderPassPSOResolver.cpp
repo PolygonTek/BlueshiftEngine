@@ -63,7 +63,7 @@ RenderPassPSOResolver::PSOEntry *RenderPassPSOResolver::FindPSOEntry(const Mater
     return nullptr;
 }
 
-RenderPassPSOResolver::ResolveResult RenderPassPSOResolver::Resolve(const VisSurf *visSurf, const ShaderFeatureSet &featureSet) {
+RenderPassPSOResolver::ResolveResult RenderPassPSOResolver::Resolve(const VisSurf *visSurf, const ShaderFeatureSet &featureSet, bool async) {
     assert(visSurf);
     assert(visSurf->material);
     assert(visSurf->subMesh);
@@ -87,7 +87,7 @@ RenderPassPSOResolver::ResolveResult RenderPassPSOResolver::Resolve(const VisSur
     const GraphicsPipelineDesc &graphicsPipelineDesc = GetGraphicsPipelineDesc(result.inputLayoutId);
 
     // material->GetGraphicsPipeline 호출로 새 ShaderPipeline 을 얻고, 준비된 PSO 까지 얻는다.
-    result.pso = ShaderPipeline::GetReadyPSO(material->GetGraphicsPipeline(featureSet, graphicsPipelineDesc));
+    result.pso = ShaderPipeline::GetReadyPSO(material->GetGraphicsPipeline(featureSet, graphicsPipelineDesc, async));
 
     // material pointer, featureSet, input layout id 로 새 PSO entry 를 추가한다.
     RenderPassPSOResolver::PSOEntry &entry = psoEntries.Alloc();
