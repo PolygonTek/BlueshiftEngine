@@ -18,7 +18,7 @@
 
 BE_NAMESPACE_BEGIN
 
-void R_EnvCubeMapFaceToOpenGLAxis(Graphics::CubeMapFace::Enum face, Mat3 &axis) {
+void R_CubeMapFaceToViewAxis(Graphics::CubeMapFace::Enum face, Mat3 &axis) {
     switch (face) {
     case Graphics::CubeMapFace::PositiveX:
         axis[0] = Vec3( 1.0f,  0.0f,  0.0f);
@@ -50,18 +50,6 @@ void R_EnvCubeMapFaceToOpenGLAxis(Graphics::CubeMapFace::Enum face, Mat3 &axis) 
         axis[1] = Vec3( 1.0f,  0.0f,  0.0f);
         axis[2] = Vec3( 0.0f, -1.0f,  0.0f);
         break;
-    }
-}
-
-void R_EnvCubeMapFaceToEngineAxis(Graphics::CubeMapFace::Enum face, Mat3 &axis) {
-    Mat3 glAxis;
-
-    R_EnvCubeMapFaceToOpenGLAxis(face, glAxis);
-
-    for (int i = 0; i < 3; i++) {
-        axis[i].x = glAxis[i].z;
-        axis[i].y = glAxis[i].x;
-        axis[i].z = glAxis[i].y;
     }
 }
 

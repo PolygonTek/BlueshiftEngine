@@ -606,6 +606,11 @@ void RenderBackend::BlitTextureToRenderTarget(const RHI::Texture *srcTexture, co
     imageParams.texCoordScale = float2(static_cast<float>(outputW) / destRect.w, static_cast<float>(outputH) / destRect.h);
     imageParams.texCoordOffset = float2(static_cast<float>(outputX0 - destRect.x) / destRect.w, static_cast<float>(outputY0 - destRect.y) / destRect.h);
 
+    if (BE1::HasFlag(currentVisCamera->flags, RenderCamera::Flag::FlipOutputTextureY)) {
+        imageParams.texCoordScale.y = -imageParams.texCoordScale.y;
+        imageParams.texCoordOffset.y = 1.0f - imageParams.texCoordOffset.y;
+    }
+
     BE1::Rect outputRect(outputX0, outputY0, outputW, outputH);
 
     GpuTiming::ScopedTimer gpuScope(gpuTiming, mainCommandList, GpuTiming::Tag::BlitToOutput);

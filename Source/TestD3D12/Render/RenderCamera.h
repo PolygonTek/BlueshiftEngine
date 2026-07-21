@@ -39,7 +39,8 @@ public:
         DisableTemporalHistory  = BIT(3),               ///< Temporal history 사용과 갱신을 비활성화한다.
         DisableHiZCulling       = BIT(4),               ///< Hi-Z 기반 occlusion culling 을 비활성화한다.
         ForceSyncPassPSOBuild   = BIT(5),               ///< Render pass PSO 를 강제로 동기적으로 빌드한다.
-        StaticOnly              = BIT(6)                ///< Static render object 만 렌더링한다.
+        FlipOutputTextureY      = BIT(6),               ///< output texture 에 최종 렌더링할 때 Y축을 뒤집는다.
+        StaticOnly              = BIT(7)                ///< Static render object 만 렌더링한다.
     };
 
     enum class ClearMethod : uint8_t {

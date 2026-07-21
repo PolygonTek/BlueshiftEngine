@@ -62,7 +62,8 @@ vec3 DecodeViewNormal(vec4 enc4) {
     return n;
 }
 
-vec3 FaceToGLCubeMapCoords(int faceIndex, int x, int y, int cubeMapSize) {
+// Returns the engine-axis direction corresponding to the center of a cubemap face texel.
+vec3 CubeMapFaceToDirection(int faceIndex, int x, int y, int cubeMapSize) {
     float invSize = 1.0 / float(cubeMapSize);
 
     float sc = (2.0 * (float(x) + 0.5) * invSize) - 1.0;

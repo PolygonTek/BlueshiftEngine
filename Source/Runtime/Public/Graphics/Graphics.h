@@ -205,16 +205,24 @@ public:
         };
     };
 
+    /// Cube map faces in engine axis order. The numeric order matches Image::CubeMapFace.
     struct CubeMapFace {
         enum Enum {
-            PositiveX,
-            NegativeX,
-            PositiveY,
-            NegativeY,
-            PositiveZ,
-            NegativeZ
+            PositiveX = 0,      ///< Face centered on the engine +X axis.
+            NegativeX = 1,      ///< Face centered on the engine -X axis.
+            PositiveY = 2,      ///< Face centered on the engine +Y axis.
+            NegativeY = 3,      ///< Face centered on the engine -Y axis.
+            PositiveZ = 4,      ///< Face centered on the engine +Z axis.
+            NegativeZ = 5       ///< Face centered on the engine -Z axis.
         };
     };
+
+    static_assert(CubeMapFace::PositiveX == 0 &&
+        CubeMapFace::NegativeX == 1 &&
+        CubeMapFace::PositiveY == 2 &&
+        CubeMapFace::NegativeY == 3 &&
+        CubeMapFace::PositiveZ == 4 &&
+        CubeMapFace::NegativeZ == 5, "Unexpected cube map face order");
 
     struct TextureFilter {
         enum Enum {

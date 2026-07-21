@@ -649,6 +649,8 @@ bool Image::LoadDDSFromMemory(const char *name, const byte *data, size_t size) {
     this->alloced = true;
 
     if (isCube) {
+        // DDS cubemap slices use Image::CubeMapFace order and engine-axis orientation.
+        // Copy face texels verbatim without remapping, rotating, or flipping them.
         for (int mipLevel = 0; mipLevel < numMipLevels; mipLevel++) {
             size_t sliceSize = SizeInBytesForSlice(mipLevel);
 
@@ -742,6 +744,7 @@ bool Image::LoadDDSMipRangeData(File *fp, int32_t originalWidth, int32_t origina
     fp->Seek(seekStart + static_cast<int64_t>(seekOffset));
 
     // NOTE: DDS 는 mip-major order 로 저장되고, Image 는 slice-major order 로 저장된다.
+    // Cubemap face 순서와 방향은 동일하므로 texel 을 변환하지 않고 그대로 읽는다.
     for (int mipLevel = 0; mipLevel < numMipLevels; mipLevel++) {
         size_t sliceSize = SizeInBytesForSlice(mipLevel);
 
@@ -868,6 +871,12 @@ bool Image::WriteDDS(File *fp) const {
         return false;
     }
 
+    const bool isCubemap = HasFlag(flags, Flag::CubeMap);
+    if (isCubemap && (arraySize < 6 || arraySize % 6 != 0)) {
+        BE_WARNLOG("Image::WriteDDS: cubemap array size must be a positive multiple of 6\n");
+        return false;
+    }
+
     fp->WriteUInt32(DDS_MAGIC);
 
     DdsFileHeader header;
@@ -891,7 +900,7 @@ bool Image::WriteDDS(File *fp) const {
         header.depth = depth;
     }
 
-    if (HasFlag(flags, Flag::CubeMap)) {
+    if (isCubemap) {
         header.ddsCaps.caps1 |= DDSCAPS_COMPLEX;
         header.ddsCaps.caps2 |= DDSCAPS2_CUBEMAP | DDSCAPS2_CUBEMAP_ALL_FACES;
     }
@@ -909,8 +918,8 @@ bool Image::WriteDDS(File *fp) const {
     DdsFileHeaderDX10 dx10Header;
     memset(&dx10Header, 0, sizeof(dx10Header));
     dx10Header.resourceDimension = depth > 1 ? DX10_RESOURCE_DIMENSION_TEXTURE3D : DX10_RESOURCE_DIMENSION_TEXTURE2D;
-    dx10Header.miscFlag = HasFlag(flags, Flag::CubeMap) ? DX10_RESOURCE_MISC_TEXTURECUBE : 0;
-    dx10Header.arraySize = arraySize / (HasFlag(flags, Flag::CubeMap) ? 6 : 1);
+    dx10Header.miscFlag = isCubemap ? DX10_RESOURCE_MISC_TEXTURECUBE : 0;
+    dx10Header.arraySize = arraySize / (isCubemap ? 6 : 1);
     dx10Header.miscFlag2 = DX10_RESOURCE_MISC2_UNKNOWN;
 
     switch (format) {
@@ -1234,6 +1243,7 @@ bool Image::WriteDDS(File *fp) const {
     // Mip0: Face0, Face1, Face2, ...
     // Mip1: Face0, Face1, Face2, ...
     // 반면, Image 의 데이터는 slice-major order 로 되어있다.
+    // Cubemap 은 Image::CubeMapFace 순서와 engine-axis 방향을 그대로 저장한다.
     if (arraySize > 1) {
         for (int mipLevel = 0; mipLevel < numMipLevels; mipLevel++) {
             size_t sliceSize = SizeInBytesForSlice(mipLevel);

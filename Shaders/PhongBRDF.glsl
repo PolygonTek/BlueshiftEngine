@@ -89,10 +89,10 @@ vec3 DirectLit_PhongFresnel() {
 #if defined(INDIRECT_LIGHTING)
 
 vec3 IndirectLit_PhongFresnel() {
-    vec3 d = texCUBE(probe0DiffuseCubeMap, shading.n.yzx).rgb;
+    vec3 d = texCUBE(probe0DiffuseCubeMap, shading.n).rgb;
 #ifdef PROBE_BLENDING
     d *= probeLerp;
-    d += texCUBE(probe1DiffuseCubeMap, shading.n.yzx).rgb * (1.0 - probeLerp);
+    d += texCUBE(probe1DiffuseCubeMap, shading.n).rgb * (1.0 - probeLerp);
 #endif
 
     vec3 Cd = shading.diffuse.rgb * d;
@@ -102,10 +102,10 @@ vec3 IndirectLit_PhongFresnel() {
     float specularMipLevel = -(8.0 / 11.0) * log2(shading.specularPower) + 8.0;
     
     // This is single cubemap texture lookup with Phong not Blinn-Phong
-    vec3 s = texCUBElod(probe0SpecularCubeMap, vec4(shading.s0.yzx, specularMipLevel)).rgb;
+    vec3 s = texCUBElod(probe0SpecularCubeMap, vec4(shading.s0, specularMipLevel)).rgb;
 #ifdef PROBE_BLENDING
     s *= probeLerp;
-    s += texCUBElod(probe1SpecularCubeMap, vec4(shading.s1.yzx, specularMipLevel)).rgb * (1.0 - probeLerp);
+    s += texCUBElod(probe1SpecularCubeMap, vec4(shading.s1, specularMipLevel)).rgb * (1.0 - probeLerp);
 #endif
 
     vec3 F = F_SchlickRoughness(shading.specular.rgb, shading.roughness, shading.ndotv);

@@ -207,15 +207,22 @@ public:
         TextureHintsMask    = NormalMap | NoMipmaps | NoCompression | NoStreaming
     };
 
-    /// Cube map face
+    /// Cube map face in engine axis order. The numeric order matches serialized DDS face slices.
     enum class CubeMapFace : uint8_t {
-        PositiveX,
-        NegativeX,
-        PositiveY,
-        NegativeY,
-        PositiveZ,
-        NegativeZ
+        PositiveX = 0,      ///< Face centered on the engine +X axis.
+        NegativeX = 1,      ///< Face centered on the engine -X axis.
+        PositiveY = 2,      ///< Face centered on the engine +Y axis.
+        NegativeY = 3,      ///< Face centered on the engine -Y axis.
+        PositiveZ = 4,      ///< Face centered on the engine +Z axis.
+        NegativeZ = 5       ///< Face centered on the engine -Z axis.
     };
+
+    static_assert(static_cast<uint8_t>(CubeMapFace::PositiveX) == 0 &&
+        static_cast<uint8_t>(CubeMapFace::NegativeX) == 1 &&
+        static_cast<uint8_t>(CubeMapFace::PositiveY) == 2 &&
+        static_cast<uint8_t>(CubeMapFace::NegativeY) == 3 &&
+        static_cast<uint8_t>(CubeMapFace::PositiveZ) == 4 &&
+        static_cast<uint8_t>(CubeMapFace::NegativeZ) == 5, "Unexpected cube map face order");
 
     /// Sample wrap mode
     enum class SampleWrapMode : uint8_t {
@@ -350,9 +357,9 @@ public:
     byte *              GetPixels(int32_t mipLevel, int32_t sliceIndex) const;
 
                         /// Returns linearly interpolated Color4 sample with the given 2D coordinates.
-    Color4              Sample2D(const Vec2 &st, SampleWrapMode wrapModeS = SampleWrapMode::Clamp, SampleWrapMode wrapModeT = SampleWrapMode::Clamp, SampleFilter filter = SampleFilter::Bilinear, int32_t mipLevel = 0) const;
+    Color4              Sample2D(const Vec2 &uv, SampleWrapMode wrapModeU = SampleWrapMode::Clamp, SampleWrapMode wrapModeV = SampleWrapMode::Clamp, SampleFilter filter = SampleFilter::Bilinear, int32_t mipLevel = 0) const;
                         /// Returns linearly interpolated Color4 sample with the given cubemap coordinates.
-    Color4              SampleCube(const Vec3 &str, SampleFilter filter = SampleFilter::Bilinear, int32_t mipLevel = 0) const;
+    Color4              SampleCube(const Vec3 &direction, SampleFilter filter = SampleFilter::Bilinear, int32_t mipLevel = 0) const;
 
                         /// Returns number of pixels with the given mipmap levels.
     uint64_t            NumPixels(int32_t firstMipLevel = 0, int32_t numMipLevels = 1) const;
@@ -497,10 +504,10 @@ public:
                         /// Convert RGB to luminance with RGB in linear space with sRGB primaries and D65 white point.
     static float        GetLuminance(const Color3 &linearColor);
 
-                        /// Converts 2D face coordinates to cube map coordinates.
-    static Vec3         FaceToCubeMapCoords(CubeMapFace cubeMapFace, float s, float t);
-                        /// Converts cube map coordinates to 2D face coordinates.
-    static CubeMapFace  CubeMapToFaceCoords(const Vec3 &cubeMapCoords, float &s, float &t);
+                        /// Converts 2D face coordinates to a direction in engine axes.
+    static Vec3         FaceToCubeMapCoords(CubeMapFace cubeMapFace, float u, float v);
+                        /// Converts a direction in engine axes to 2D face coordinates.
+    static CubeMapFace  CubeMapToFaceCoords(const Vec3 &direction, float &u, float &v);
 
     static float        CubeMapTexelSolidAngle(float x, float y, int32_t size);
 
@@ -522,8 +529,8 @@ private:
     template <typename T>
     T                   WrapCoord(T coord, T maxCoord, SampleWrapMode wrapMode) const;
 
-    Color4              Sample2DNearest(const byte *src, const Vec2 &st, SampleWrapMode wrapModeS, SampleWrapMode wrapModeT) const;
-    Color4              Sample2DBilinear(const byte *src, const Vec2 &st, SampleWrapMode wrapModeS, SampleWrapMode wrapModeT) const;
+    Color4              Sample2DNearest(const byte *src, const Vec2 &uv, SampleWrapMode wrapModeU, SampleWrapMode wrapModeV) const;
+    Color4              Sample2DBilinear(const byte *src, const Vec2 &uv, SampleWrapMode wrapModeU, SampleWrapMode wrapModeV) const;
 
     bool                WriteDDS(File *fp) const;
     bool                WritePVR(File *fp) const;

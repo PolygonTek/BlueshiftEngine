@@ -101,7 +101,7 @@ void Set2DCropMatrix(float xmin, float xmax, float ymin, float ymax, BE1::Mat4 &
     cropMatrix[3][3] = 1.0f;
 }
 
-static void EnvCubeMapFaceToOpenGLAxis(RHI::CubemapFace cubemapFace, BE1::Mat3 &axis) {
+void CubeMapFaceToViewAxis(RHI::CubemapFace cubemapFace, BE1::Mat3 &axis) {
     switch (cubemapFace) {
     case RHI::CubemapFace::PositiveX:
         axis[0] = BE1::Vec3(1.0f, 0.0f, 0.0f);
@@ -136,17 +136,6 @@ static void EnvCubeMapFaceToOpenGLAxis(RHI::CubemapFace cubemapFace, BE1::Mat3 &
     default:
         assert(0);
         break;
-    }
-}
-
-void EnvCubeMapFaceToEngineAxis(RHI::CubemapFace cubemapFace, BE1::Mat3 &axis) {
-    BE1::Mat3 axisGL;
-    EnvCubeMapFaceToOpenGLAxis(cubemapFace, axisGL);
-
-    for (int i = 0; i < 3; i++) {
-        axis[i].x = axisGL[i].z;
-        axis[i].y = axisGL[i].x;
-        axis[i].z = axisGL[i].y;
     }
 }
 

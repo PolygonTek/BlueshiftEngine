@@ -32,11 +32,8 @@ struct AxisIndex {
     };
 };
 
-// Converts environment cubemap face to OpenGL axis for rendering.
-void    R_EnvCubeMapFaceToOpenGLAxis(Graphics::CubeMapFace::Enum face, Mat3 &axis);
-
-// Converts environment cubemap face to engine axis for rendering.
-void    R_EnvCubeMapFaceToEngineAxis(Graphics::CubeMapFace::Enum face, Mat3 &axis);
+// Converts an engine cubemap face to the view axis used to render its texels.
+void    R_CubeMapFaceToViewAxis(Graphics::CubeMapFace::Enum face, Mat3 &axis);
 
 // Sets view matrix with the given origin and axis.
 void    R_SetViewMatrix(const Mat3 &viewaxis, const Vec3 &vieworg, float *viewMatrix);

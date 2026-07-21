@@ -175,7 +175,7 @@ vec3 DirectLit_Standard() {
 #if defined(INDIRECT_LIGHTING)
 
 vec3 GetDiffuseEnv(samplerCube diffuseProbeCubeMap, vec3 N, vec3 albedo) {
-    vec3 d = texCUBE(diffuseProbeCubeMap, N.yzx).rgb;
+    vec3 d = texCUBE(diffuseProbeCubeMap, N).rgb;
 
 #if USE_GAMMA_SPACE == 1
     d = LinearToGamma(d);
@@ -189,7 +189,7 @@ float LinearRoughnessToMipLevel(float linearRoughness, float maxLevel) {
 
 vec3 GetSpecularEnvFirstSum(samplerCube specularProbeCubeMap, float specularProbeCubeMapMaxMipLevel, vec3 S, float linearRoughness) {
     vec4 sampleVec = vec4(S, LinearRoughnessToMipLevel(linearRoughness, specularProbeCubeMapMaxMipLevel));
-    vec4 preLD = texCUBElod(specularProbeCubeMap, sampleVec.yzxw);
+    vec4 preLD = texCUBElod(specularProbeCubeMap, sampleVec);
 
 #if USE_GAMMA_SPACE == 1
     preLD.rgb = LinearToGamma(preLD.rgb);

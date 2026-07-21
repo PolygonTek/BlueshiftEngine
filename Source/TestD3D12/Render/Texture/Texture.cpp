@@ -572,6 +572,7 @@ bool Texture::GetCubeImageFromCubeTexture(const Texture *cubeTexture, int numMip
     BE1::Image::GammaSpace gammaSpace = BE1::Image::NeedFloatConversion(cubeTexture->internalData.format) ? BE1::Image::GammaSpace::Linear : BE1::Image::GammaSpace::sRGB;
     BE1::Image faceImages[6];
 
+    // RHI 와 Image 는 동일한 엔진 좌표계의 큐브맵 면 순서를 사용하므로 각 면을 그대로 읽는다.
     for (int faceIndex = 0; faceIndex < 6; faceIndex++) {
         faceImages[faceIndex].Create2D(cubeTexture->GetWidth(), cubeTexture->GetWidth(), numMipLevels, cubeTexture->GetFormat(), gammaSpace, nullptr, BE1::Image::Flag::None);
 

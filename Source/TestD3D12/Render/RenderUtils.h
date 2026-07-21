@@ -33,8 +33,8 @@ void SetViewMatrixFromEngineAxis(const BE1::Mat3 &viewAxis, const BE1::Vec3 &vie
 // 2D 영역을 정규화된 크롭 행렬로 만든다.
 void Set2DCropMatrix(float xmin, float xmax, float ymin, float ymax, BE1::Mat4 &cropMatrix);
 
-// environment cubemap face 에 대응하는 엔진 좌표계 축을 만든다.
-void EnvCubeMapFaceToEngineAxis(RHI::CubemapFace cubemapFace, BE1::Mat3 &axis);
+// EngineAxis cubemap face 를 렌더링할 view axis 를 만든다.
+void CubeMapFaceToViewAxis(RHI::CubemapFace cubemapFace, BE1::Mat3 &axis);
 
 // 삼각형의 position/UV 로 tangent, bitangent, handedness 를 계산한다.
 void TangentsFromTriangle(const BE1::Vec3 &p0, const BE1::Vec3 &p1, const BE1::Vec3 &p2, const BE1::Vec2 &uv0, const BE1::Vec2 &uv1, const BE1::Vec2 &uv2, BE1::Vec3 &tangent, BE1::Vec3 &bitangent, float *handedness);

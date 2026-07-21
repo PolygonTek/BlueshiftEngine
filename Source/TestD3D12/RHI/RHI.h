@@ -216,14 +216,22 @@ namespace RHI {
         Texture3D,
     };
 
+    /// Cube map faces in texture array slice order.
     enum class CubemapFace : uint8_t {
-        PositiveX,
-        NegativeX,
-        PositiveY,
-        NegativeY,
-        PositiveZ,
-        NegativeZ
+        PositiveX = 0,      ///< Positive X face.
+        NegativeX = 1,      ///< Negative X face.
+        PositiveY = 2,      ///< Positive Y face.
+        NegativeY = 3,      ///< Negative Y face.
+        PositiveZ = 4,      ///< Positive Z face.
+        NegativeZ = 5       ///< Negative Z face.
     };
+
+    static_assert(static_cast<uint8_t>(CubemapFace::PositiveX) == 0 &&
+        static_cast<uint8_t>(CubemapFace::NegativeX) == 1 &&
+        static_cast<uint8_t>(CubemapFace::PositiveY) == 2 &&
+        static_cast<uint8_t>(CubemapFace::NegativeY) == 3 &&
+        static_cast<uint8_t>(CubemapFace::PositiveZ) == 4 &&
+        static_cast<uint8_t>(CubemapFace::NegativeZ) == 5, "Unexpected cube map face order");
 
     enum class ViewType : uint8_t {
         SRV,                    // Shader Resource View

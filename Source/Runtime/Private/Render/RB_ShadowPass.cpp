@@ -358,7 +358,8 @@ static void RB_ShadowCubeMapPass(const VisLight *visLight, const Frustum &viewFr
     backEnd.projMatrix = backEnd.shadowProjectionMatrix;
 
     for (int faceIndex = Graphics::CubeMapFace::PositiveX; faceIndex <= Graphics::CubeMapFace::NegativeZ; faceIndex++) {
-        R_EnvCubeMapFaceToOpenGLAxis((Graphics::CubeMapFace::Enum)faceIndex, axis);
+        // Use the same engine-axis face convention for shadow rendering and cubemap sampling.
+        R_CubeMapFaceToViewAxis((Graphics::CubeMapFace::Enum)faceIndex, axis);
 
         lightFrustum.SetAxis(axis);
 

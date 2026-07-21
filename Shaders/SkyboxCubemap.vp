@@ -29,10 +29,8 @@ void main() {
     dir.y = s * v.x + c * v.y;
     dir.z = v.z;
 
-    // Convert z-up axis to GL axis
-    v2f_texCoord.x = dir.y;
-    v2f_texCoord.y = dir.z;
-    v2f_texCoord.z = dir.x;
+    // Cubemap sampling uses engine-axis directions directly.
+    v2f_texCoord = dir;
 
     v2f_color = (in_color * vertexColorScale + vertexColorAdd) * constantColor;
 

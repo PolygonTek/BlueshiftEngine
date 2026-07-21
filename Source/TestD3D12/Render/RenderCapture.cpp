@@ -216,10 +216,15 @@ static bool CaptureEnvCubeFacesToTexture(RenderContext *renderContext, RenderWor
 
     for (uint32_t faceIndex = 0; faceIndex < faceCount; ++faceIndex) {
         BE1::Mat3 axis;
-        EnvCubeMapFaceToEngineAxis(faces[faceIndex], axis);
+        CubeMapFaceToViewAxis(faces[faceIndex], axis);
 
         RenderCamera::Desc cameraDesc;
         SetupCaptureCameraDesc(cameraDesc, layerMask, staticOnly, colorClear, clearColor, origin, axis, 90.0f, 90.0f, zNear, zFar, faceSize, faceSize, targetRHITexture, faceViewIDs[faceIndex]);
+
+        // Cubemap 렌더링과 샘플링 모두 EngineAxis (오른손 좌표계) 를 사용한다.
+        // 다만 카메라 출력과 cubemap face 의 세로축 방향이 반대이므로, cubemap face 에 저장할 때 최종 blit 의 Y를 반전시킨다.
+        cameraDesc.flags |= RenderCamera::Flag::FlipOutputTextureY;
+
         renderCamera.Update(cameraDesc);
 
         renderWorld->RenderScene(&renderCamera);

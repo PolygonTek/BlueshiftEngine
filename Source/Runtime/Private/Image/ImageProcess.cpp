@@ -31,12 +31,12 @@ Image &Image::FlipY() {
     byte *src = pic;
 
     for (int mipLevel = 0; mipLevel < numMipLevels; mipLevel++) {
-        int w = GetWidth(mipLevel);
-        int h = GetHeight(mipLevel);
-        size_t sliceSize = SizeInBytes(mipLevel);
+        const int w = GetWidth(mipLevel);
+        const int h = GetHeight(mipLevel);
+        const size_t sliceSize = SizeInBytes(mipLevel);
 
-        int h2 = h / 2;
-        int pitch = static_cast<int>(Image::MemRequired(w, 1, 1, 1, 1, format));
+        const int h2 = h / 2;
+        const int pitch = static_cast<int>(Image::MemRequired(w, 1, 1, 1, 1, format));
 
         for (int y = 0; y < h2; y++) {
             simdProcessor->Memcpy(tmp, src + y*pitch, pitch);
@@ -55,17 +55,17 @@ Image &Image::FlipX() {
         return *this;
     }
 
-    int bpp = BytesPerPixel();
+    const int bpp = BytesPerPixel();
     byte *tmp = (byte *)Mem_Alloc16(bpp);
     byte *src = pic;
 
     for (int mipLevel = 0; mipLevel < numMipLevels; mipLevel++) {
-        int w = GetWidth(mipLevel);
-        int h = GetHeight(mipLevel);
-        size_t sliceSize = SizeInBytes(mipLevel);
+        const int w = GetWidth(mipLevel);
+        const int h = GetHeight(mipLevel);
+        const size_t sliceSize = SizeInBytes(mipLevel);
 
-        int w2 = w / 2;
-        int pitch = bpp * w;
+        const int w2 = w / 2;
+        const int pitch = bpp * w;
 
         for (int y = 0; y < h; y++) {
             for (int x = 0; x < w2; x++) {
@@ -87,8 +87,8 @@ Image &Image::AdjustBrightness(float factor) {
         return *this;
     }
 
-    int bpp = Image::BytesPerPixel(format);
-    uint64_t numPixels = NumPixels(0, numMipLevels);
+    const int bpp = Image::BytesPerPixel(format);
+    const uint64_t numPixels = NumPixels(0, numMipLevels);
 
     byte *ptr = pic;
 
@@ -144,12 +144,12 @@ Image &Image::ApplyGammaRampTableRGB888(const uint16_t table[768]) {
         return *this;
     }
 
-    uint64_t numPixels = NumPixels(0, numMipLevels);
+    const uint64_t numPixels = NumPixels(0, numMipLevels);
 
     for (uint64_t i = 0; i < numPixels; i++) {
-        uint16_t r = table[pic[0] + 0];
-        uint16_t g = table[pic[1] + 256];
-        uint16_t b = table[pic[2] + 512];
+        const uint16_t r = table[pic[0] + 0];
+        const uint16_t g = table[pic[1] + 256];
+        const uint16_t b = table[pic[2] + 512];
     
         pic[0] = (r * 255) / 65535;
         pic[1] = (g * 255) / 65535;
@@ -170,28 +170,28 @@ Image Image::MakeDilation() const {
     Image image;
     image.Create2D(width, height, 1, format, gammaSpace, nullptr, Flag::None);
 
-    int bpp = BytesPerPixel();
+    const int bpp = BytesPerPixel();
 
     const int dx[] = { -1, 0, 1, 0 };
     const int dy[] = { 0, 1, 0, -1 };
     
     for (int y = 0; y < height; y++) {
         for (int x = 0; x < width; x++) {
-            int offset = (y * width + x) * bpp;
+            const int offset = (y * width + x) * bpp;
             float maxColor[4];
             for (int ch = 0; ch < bpp; ch++) {
                 maxColor[ch] = pic[offset + ch];
             }
 
             for (int d = 0; d < 4; d++) {
-                int cx = x + dx[d];
-                int cy = y + dy[d];
+                const int cx = x + dx[d];
+                const int cy = y + dy[d];
 
                 if (cx < 0 || cx >= width || cy < 0 || cy >= height) {
                     continue;
                 }
 
-                int doffset = (cy * width + cx) * bpp;
+                const int doffset = (cy * width + cx) * bpp;
                 for (int ch = 0; ch < bpp; ch++) {
                     float c = pic[doffset + ch];
                     if (maxColor[ch] < c) {
@@ -218,28 +218,28 @@ Image Image::MakeErosion() const {
     Image image;
     image.Create2D(width, height, 1, format, gammaSpace, nullptr, Flag::None);
 
-    int bpp = BytesPerPixel();
+    const int bpp = BytesPerPixel();
 
     const int dx[] = { -1, 0, 1, 0 };
     const int dy[] = { 0, 1, 0, -1 };
 
     for (int y = 0; y < height; y++) {
         for (int x = 0; x < width; x++) {
-            int offset = (y * width + x) * bpp;
+            const int offset = (y * width + x) * bpp;
             float minColor[4];
             for (int ch = 0; ch < bpp; ch++) {
                 minColor[ch] = pic[offset + ch];
             }
 
             for (int d = 0; d < 4; d++) {
-                int cx = x + dx[d];
-                int cy = y + dy[d];
+                const int cx = x + dx[d];
+                const int cy = y + dy[d];
 
                 if (cx < 0 || cx >= width || cy < 0 || cy >= height) {
                     continue;
                 }
 
-                int doffset = (cy * width + cx) * bpp;
+                const int doffset = (cy * width + cx) * bpp;
                 for (int ch = 0; ch < bpp; ch++) {
                     float c = pic[doffset + ch];
                     if (minColor[ch] > c) {
@@ -263,12 +263,12 @@ Image Image::MakeSDF(int32_t spread) const {
 
     for (int centerY = 0; centerY < height; centerY++) {
         for (int centerX = 0; centerX < width; centerX++) {
-            bool base = !!pic[centerY * width + centerX];
+            const bool base = !!pic[centerY * width + centerX];
 
-            int startX = Max(0, centerX - spread);
-            int endX = Min(width - 1, centerX + spread);
-            int startY = Max(0, centerY - spread);
-            int endY = Min(height - 1, centerY + spread);
+            const int startX = Max(0, centerX - spread);
+            const int endX = Min(width - 1, centerX + spread);
+            const int startY = Max(0, centerY - spread);
+            const int endY = Min(height - 1, centerY + spread);
 
             int nearestSquaredDist = spread * spread;
 
@@ -286,7 +286,7 @@ Image Image::MakeSDF(int32_t spread) const {
                 }
             }
 
-            int value = base ? 255 : 255 * (1.0f - Math::Sqrt(nearestSquaredDist) / spread);
+            const int value = base ? 255 : 255 * (1.0f - Math::Sqrt(nearestSquaredDist) / spread);
 
             image.pic[centerY * width + centerX] = value;
         }
@@ -296,7 +296,7 @@ Image Image::MakeSDF(int32_t spread) const {
 }
 
 Image &Image::SwapRedAlphaRGBA8888() {
-    uint64_t numPixels = NumPixels(0, numMipLevels);
+    const uint64_t numPixels = NumPixels(0, numMipLevels);
 
     for (uint64_t i = 0; i < numPixels; i++) {
         pic[3] = pic[0];
@@ -313,7 +313,7 @@ Image Image::MakeNormalMapRGBA8888(float bumpiness) const {
 
     byte *dstPtr = image.pic;
 
-    float inv255 = 1.0f / 255.0f;
+    constexpr float inv255 = 1.0f / 255.0f;
     
     for (int y = 0; y < height; y++) {
         for (int x = 0; x < width; x++) {
@@ -360,7 +360,7 @@ Image &Image::AddNormalMapRGBA8888(const Image &normalMap) {
     byte *src2_ptr = normalMap.pic;
     byte *dstPtr = this->pic;
 
-    float inv255 = 1.0f / 255.0f;
+    constexpr float inv255 = 1.0f / 255.0f;
 
     for (int y = 0; y < height; y++) {
         for (int x = 0; x < width; x++) {
@@ -435,7 +435,7 @@ static BE_INLINE half MipMapSample(half value) {
 
 template <typename T>
 static void BuildMipMap1D(T *dst, const T *src, int width, int numComponents, int alphaComponentIndex, bool preserveCoverage) {
-    int xOff = (width < 2) ? 0 : numComponents;
+    const int xOff = (width < 2) ? 0 : numComponents;
     float a0 = 0;
     float a1 = 0;
     float alphaSum = 0;
@@ -473,8 +473,8 @@ static void BuildMipMap1D(T *dst, const T *src, int width, int numComponents, in
 
 template <typename T>
 static void BuildMipMap2D(T *dst, const T *src, int width, int height, int numComponents, int alphaComponentIndex, bool preserveCoverage) {
-    int xOff = (width  < 2) ? 0 : numComponents;
-    int yOff = (height < 2) ? 0 : numComponents * width;
+    const int xOff = (width  < 2) ? 0 : numComponents;
+    const int yOff = (height < 2) ? 0 : numComponents * width;
     float a0 = 0;
     float a1 = 0;
     float a2 = 0;
@@ -523,9 +523,9 @@ static void BuildMipMap2D(T *dst, const T *src, int width, int height, int numCo
 
 template <typename T>
 static void BuildMipMap3D(T *dst, const T *src, int width, int height, int depth, int numComponents, int alphaComponentIndex, bool preserveCoverage) {
-    int xOff = (width  < 2) ? 0 : numComponents;
-    int yOff = (height < 2) ? 0 : numComponents * width;
-    int zOff = (depth  < 2) ? 0 : numComponents * width * height;
+    const int xOff = (width  < 2) ? 0 : numComponents;
+    const int yOff = (height < 2) ? 0 : numComponents * width;
+    const int zOff = (depth  < 2) ? 0 : numComponents * width * height;
     float a0 = 0;
     float a1 = 0;
     float a2 = 0;
@@ -603,7 +603,7 @@ static void BuildMipMap(T *dst, const T *src, int width, int height, int depth, 
 }
 
 static void BuildMipMap1DWithGamma(byte *dst, const byte *src, int width, int numComponents, int alphaComponentIndex, bool preserveCoverage, const float (&gammaToLinear)[256], float (*linearToGamma)(float)) {
-    int xOff = (width < 2) ? 0 : numComponents;
+    const int xOff = (width < 2) ? 0 : numComponents;
     float a0 = 0;
     float a1 = 0;
     float alphaSum = 0;
@@ -640,8 +640,8 @@ static void BuildMipMap1DWithGamma(byte *dst, const byte *src, int width, int nu
 }
 
 static void BuildMipMap2DWithGamma(byte *dst, const byte *src, int width, int height, int numComponents, int alphaComponentIndex, bool preserveCoverage, const float (&gammaToLinear)[256], float (*linearToGamma)(float)) {
-    int xOff = (width < 2) ? 0 : numComponents;
-    int yOff = (height < 2) ? 0 : numComponents * width;
+    const int xOff = (width < 2) ? 0 : numComponents;
+    const int yOff = (height < 2) ? 0 : numComponents * width;
     float a0 = 0;
     float a1 = 0;
     float a2 = 0;
@@ -689,9 +689,9 @@ static void BuildMipMap2DWithGamma(byte *dst, const byte *src, int width, int he
 }
 
 static void BuildMipMap3DWithGamma(byte *dst, const byte *src, int width, int height, int depth, int numComponents, int alphaComponentIndex, bool preserveCoverage, const float (&gammaToLinear)[256], float (*linearToGamma)(float)) {
-    int xOff = (width < 2) ? 0 : numComponents;
-    int yOff = (height < 2) ? 0 : numComponents * width;
-    int zOff = (depth < 2) ? 0 : numComponents * width * height;
+    const int xOff = (width < 2) ? 0 : numComponents;
+    const int yOff = (height < 2) ? 0 : numComponents * width;
+    const int zOff = (depth < 2) ? 0 : numComponents * width * height;
     float a0 = 0;
     float a1 = 0;
     float a2 = 0;
@@ -802,16 +802,16 @@ Image &Image::GenerateMipmaps(bool preserveAlphaCoverage) {
 
     preserveAlphaCoverage = preserveAlphaCoverage && HasAlpha();
 
-    int alphaComponentIndex = GetAlphaComponentIndex(format);
-    int numComponents = NumComponents();
-    int numSlices = GetArraySize();
+    const int alphaComponentIndex = GetAlphaComponentIndex(format);
+    const int numComponents = NumComponents();
+    const int numSlices = GetArraySize();
 
     for (int sliceIndex = 0; sliceIndex < numSlices; sliceIndex++) {
         for (int mipLevel = 1; mipLevel < numMipLevels; mipLevel++) {
-            int srcMipLevel = mipLevel - 1;
-            int w = GetWidth(srcMipLevel);
-            int h = GetHeight(srcMipLevel);
-            int d = GetDepth(srcMipLevel);
+            const int srcMipLevel = mipLevel - 1;
+            const int w = GetWidth(srcMipLevel);
+            const int h = GetHeight(srcMipLevel);
+            const int d = GetDepth(srcMipLevel);
 
             const byte *src = GetPixels(srcMipLevel, sliceIndex);
             byte *dst = GetPixels(mipLevel, sliceIndex);

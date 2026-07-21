@@ -764,7 +764,8 @@ void RenderSystem::CaptureEnvCubeFaceRT(RenderWorld *renderWorld, int layerMask,
     // Use any render context
     RenderContext *renderContext = renderSystem.renderContexts[0];
 
-    R_EnvCubeMapFaceToEngineAxis((Graphics::CubeMapFace::Enum)faceIndex, cameraDef.axis);
+    // Render directly into the matching engine-axis cubemap face.
+    R_CubeMapFaceToViewAxis((Graphics::CubeMapFace::Enum)faceIndex, cameraDef.axis);
 
     renderCamera.Update(&cameraDef);
 
@@ -830,7 +831,7 @@ void RenderSystem::GenerateSHConvolvIrradianceEnvCubeRT(const Texture *envCubeTe
                 float s = (x + 0.5f) * invSize;
                 float t = (y + 0.5f) * invSize;
 
-                // Gets sample direction for each faces.
+                // Get the engine-axis direction for this cubemap texel.
                 Vec3 dir = Image::FaceToCubeMapCoords((Image::CubeMapFace)faceIndex, s, t).Normalized();
 
                 // 9 terms are required for order 3 SH basis functions.

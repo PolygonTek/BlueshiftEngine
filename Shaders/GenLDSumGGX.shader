@@ -23,7 +23,7 @@ shader "GenLDSumGGX" {
             int targetFaceX = int(min(floor(v2f_texCoord.x * float(targetCubeMapSize)), float(targetCubeMapSize) - 1.0));
             int targetFaceY = int(min(floor(v2f_texCoord.y * float(targetCubeMapSize)), float(targetCubeMapSize) - 1.0));
 
-            vec3 N = FaceToGLCubeMapCoords(targetCubeMapFace, targetFaceX, targetFaceY, targetCubeMapSize).xyz;
+            vec3 N = CubeMapFaceToDirection(targetCubeMapFace, targetFaceX, targetFaceY, targetCubeMapSize);
 
             float linearRoughness = roughness * roughness;
 

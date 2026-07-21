@@ -39,9 +39,7 @@ PSInput VSMain(VSInput input) {
     dir.y = s * v.x + c * v.y;
     dir.z = v.z;
 
-    result.texCoord.x = dir.y;
-    result.texCoord.y = dir.z;
-    result.texCoord.z = dir.x;
+    result.texCoord = dir;
 
     float4 positionWS = float4(mul(shaderSurface.worldMatrix, input.position), 1.0);
     result.position = mul(cameraConstants.viewProjMatrix, positionWS);

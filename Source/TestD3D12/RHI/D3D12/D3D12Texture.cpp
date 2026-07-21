@@ -1505,6 +1505,7 @@ bool D3D12Renderer::GetTextureImage3D(RHI::Texture *texture, int mipLevel, BE1::
 }
 
 bool D3D12Renderer::GetTextureImageCubeFace(RHI::Texture *texture, RHI::CubemapFace face, int mipLevel, BE1::Image::Format imageFormat, void *outPixels) {
+    // RHI cubemap face 를 texel 변환 없이 D3D12 array slice 에 직접 대응한다.
     return GetTextureImage(texture, mipLevel, to_int(face), imageFormat, outPixels);
 }
 
@@ -1644,6 +1645,7 @@ bool D3D12Renderer::SetTextureSubImage3D(RHI::Texture *texture, int mipLevel, in
 }
 
 bool D3D12Renderer::SetTextureSubImageCubeFace(RHI::Texture *texture, RHI::CubemapFace face, int mipLevel, int x, int y, int width, int height, BE1::Image::Format imageFormat, const void *pixels) {
+    // RHI cubemap face 를 texel 변환 없이 D3D12 array slice 에 직접 대응한다.
     return SetTextureSubImage(texture, mipLevel, to_int(face), x, y, 0, width, height, 1, imageFormat, pixels);
 }
 

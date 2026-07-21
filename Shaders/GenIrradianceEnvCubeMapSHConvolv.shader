@@ -32,8 +32,8 @@ shader "GenIrradianceEnvCubeMapSHConvolv" {
             int x = int(min(floor(v2f_texCoord.x * float(targetCubeMapSize)), float(targetCubeMapSize) - 1.0));
             int y = int(min(floor(v2f_texCoord.y * float(targetCubeMapSize)), float(targetCubeMapSize) - 1.0));
 
-            // z-up world normal direction
-            vec3 dir = FaceToGLCubeMapCoords(targetCubeMapFace, x, y, targetCubeMapSize).zxy;
+            // Engine-axis world normal direction
+            vec3 dir = CubeMapFaceToDirection(targetCubeMapFace, x, y, targetCubeMapSize);
             vec3 dirSq = dir * dir;
 
             vec3 p1 = lambertCoeff[1] * SH_CONST2 * dir.yzx;

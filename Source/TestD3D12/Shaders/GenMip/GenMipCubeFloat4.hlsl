@@ -17,7 +17,8 @@ RWTexture2DArray<MIP_OUTPUT_FORMAT> outputTexture : register(u0);
 TextureCube<MIP_OUTPUT_FORMAT> inputTexture : register(t0);
 SamplerState linearSampler : register(s0);
 
-inline float3 ToCubeMapCoords(in uint faceIndex, in float2 uv) {
+// Returns the sampling direction corresponding to a cubemap face coordinate.
+inline float3 CubeMapFaceToDirection(in uint faceIndex, in float2 uv) {
     // get uv in [-1, 1] range:
     uv = uv * 2 - 1;
 
@@ -52,7 +53,7 @@ void CSMain(uint3 dispatchThreadId : SV_DispatchThreadID) {
 
     // 텍셀의 중앙값으로 uv 를 계산하여 2x2 블럭의 중심으로 선형 샘플링을 한다.
     float2 uv = ((float2)dstCoord.xy + 0.5) * mipGenParams.dstSizeRcp.xy;
-    float3 n = ToCubeMapCoords(dstCoord.z, uv);
+    float3 direction = CubeMapFaceToDirection(dstCoord.z, uv);
 
-    outputTexture[dstCoord] = inputTexture.SampleLevel(linearSampler, n, 0);
+    outputTexture[dstCoord] = inputTexture.SampleLevel(linearSampler, direction, 0);
 }

@@ -122,7 +122,7 @@ Image &Image::Create(int32_t width, int32_t height, int32_t depth, int32_t numSl
     this->gammaSpace = gammaSpace;
     this->flags = flags;
     
-    size_t size = SizeInBytes(0, this->numMipLevels);
+    const size_t size = SizeInBytes(0, this->numMipLevels);
     this->pic = (byte *)Mem_Alloc256(size);
     this->alloced = true;
     
@@ -145,7 +145,7 @@ Image &Image::CreateCubeFrom6Faces(const Image *images) {
     this->gammaSpace = images[0].gammaSpace;
     this->flags = images[0].flags | Flag::CubeMap;
 
-    size_t bytesForFace = SizeInBytesForSlice(0, numMipLevels);
+    const size_t bytesForFace = SizeInBytesForSlice(0, numMipLevels);
     this->pic = (byte *)Mem_Alloc256(bytesForFace * 6);
     this->alloced = true;
     
@@ -182,30 +182,30 @@ Image &Image::CreateCubeFromEquirectangular(const Image &equirectangularImage, i
 
     const ImageFormatInfo *formatInfo = GetImageFormatInfo(format);
 
-    float invSize = 1.0f / (faceSize - 1);
+    const float invSize = 1.0f / (faceSize - 1);
 
     for (int faceIndex = 0; faceIndex < 6; faceIndex++) {
         byte *dst = GetPixels(0, faceIndex);
 
         for (int dstY = 0; dstY < faceSize; dstY++) {
             for (int dstX = 0; dstX < faceSize; dstX++) {
-                float dstS = (dstX + 0.5f) * invSize;
-                float dstT = (dstY + 0.5f) * invSize;
+                const float dstU = (dstX + 0.5f) * invSize;
+                const float dstV = (dstY + 0.5f) * invSize;
 
-                Vec3 dir = FaceToCubeMapCoords((Image::CubeMapFace)faceIndex, dstS, dstT);
+                const Vec3 direction = FaceToCubeMapCoords((Image::CubeMapFace)faceIndex, dstU, dstV);
 
                 float theta, phi;
-                dir.ToSpherical(theta, phi);
+                direction.ToSpherical(theta, phi);
 
                 // Environment equirectangular image has reversed phi.
                 phi = Math::TwoPi - phi;
 
                 // Convert range [-1/4 pi, 7/4 pi] to [0.0, 1.0].
-                float srcS = Math::Fract((phi + Math::OneFourthPi) * Math::InvTwoPi);
+                const float srcU = Math::Fract((phi + Math::OneFourthPi) * Math::InvTwoPi);
                 // Convert range [0, pi] to [0.0, 1.0].
-                float srcT = Math::Fract(theta * Math::InvPi);
+                const float srcV = Math::Fract(theta * Math::InvPi);
 
-                Color4 color = equirectangularImage.Sample2D(Vec2(srcS, srcT), Image::SampleWrapMode::Repeat, Image::SampleWrapMode::Clamp, Image::SampleFilter::Bilinear);
+                const Color4 color = equirectangularImage.Sample2D(Vec2(srcU, srcV), Image::SampleWrapMode::Repeat, Image::SampleWrapMode::Clamp, Image::SampleFilter::Bilinear);
 
                 // Convert color from float format to destination format.
                 formatInfo->packRGBA32F((const byte *)&color, &dst[(dstY * width + dstX) * BytesPerPixel()], 1);
@@ -228,7 +228,7 @@ Image &Image::CreateEquirectangularFromCube(const Image &cubeImage) {
     this->gammaSpace = cubeImage.gammaSpace;
     this->flags = cubeImage.flags & ~Flag::CubeMap;
 
-    size_t size = SizeInBytes(0, numMipLevels);
+    const size_t size = SizeInBytes(0, numMipLevels);
     this->pic = (byte *)Mem_Alloc256(size);
     this->alloced = true;
 
@@ -238,18 +238,18 @@ Image &Image::CreateEquirectangularFromCube(const Image &cubeImage) {
 
     for (int dstY = 0; dstY < height; dstY++) {
         for (int dstX = 0; dstX < width; dstX++) {
-            float dstS = (float)dstX / (width - 1);
-            float dstT = (float)dstY / (height - 1);
+            const float dstU = (float)dstX / (width - 1);
+            const float dstV = (float)dstY / (height - 1);
 
             // Convert range [0.0, 1.0] to [0, pi].
-            float theta = dstT * Math::Pi;
+            const float theta = dstV * Math::Pi;
             // Convert range [0.0, 1.0] to [-1/4 pi, 7/4 pi].
-            float phi = dstS * Math::TwoPi - Math::OneFourthPi;
+            const float phi = dstU * Math::TwoPi - Math::OneFourthPi;
 
-            Vec3 dir;
-            dir.SetFromSpherical(1.0f, theta, phi);
+            Vec3 direction;
+            direction.SetFromSpherical(1.0f, theta, phi);
 
-            Color4 color = cubeImage.SampleCube(dir, Image::SampleFilter::Bilinear);
+            const Color4 color = cubeImage.SampleCube(direction, Image::SampleFilter::Bilinear);
 
             // Convert color from float format to destination format.
             formatInfo->packRGBA32F((const byte *)&color, &dst[(dstY * width + dstX) * BytesPerPixel()], 1);
@@ -267,7 +267,7 @@ Image &Image::CopyFrom(const Image &srcImage, int32_t firstMipLevel, int32_t num
     for (int sliceIndex = 0; sliceIndex < arraySize; sliceIndex++) {
         byte *src = srcImage.GetPixels(firstMipLevel, sliceIndex);
         byte *dst = GetPixels(firstMipLevel, sliceIndex);
-        size_t bytesForFace = srcImage.SizeInBytesForSlice(firstMipLevel, numMipLevels);
+        const size_t bytesForFace = srcImage.SizeInBytesForSlice(firstMipLevel, numMipLevels);
 
         simdProcessor->Memcpy(dst, src, static_cast<int>(bytesForFace));
     }
@@ -331,17 +331,17 @@ void Image::Clear() {
     }
 }
 
-Color4 Image::Sample2DNearest(const byte *src, const Vec2 &st, SampleWrapMode wrapModeS, SampleWrapMode wrapModeT) const {
+Color4 Image::Sample2DNearest(const byte *src, const Vec2 &uv, SampleWrapMode wrapModeU, SampleWrapMode wrapModeV) const {
     const ImageFormatInfo *formatInfo = GetImageFormatInfo(format);
 
-    int bpp = BytesPerPixel();
-    int pitch = width * bpp;
+    const int bpp = BytesPerPixel();
+    const int pitch = width * bpp;
 
-    float x = WrapCoord(st[0] * (width - 1), (float)(width - 1), wrapModeS);
-    float y = WrapCoord(st[1] * (height - 1), (float)(height - 1), wrapModeT);
+    const float x = WrapCoord(uv[0] * (width - 1), (float)(width - 1), wrapModeU);
+    const float y = WrapCoord(uv[1] * (height - 1), (float)(height - 1), wrapModeV);
 
-    int iX = Math::Round(x);
-    int iY = Math::Round(y);
+    const int iX = Math::Round(x);
+    const int iY = Math::Round(y);
 
     ALIGN_AS16 Color4 outputColor;
 
@@ -350,22 +350,22 @@ Color4 Image::Sample2DNearest(const byte *src, const Vec2 &st, SampleWrapMode wr
     return outputColor;
 }
 
-Color4 Image::Sample2DBilinear(const byte *src, const Vec2 &st, SampleWrapMode wrapModeS, SampleWrapMode wrapModeT) const {
+Color4 Image::Sample2DBilinear(const byte *src, const Vec2 &uv, SampleWrapMode wrapModeU, SampleWrapMode wrapModeV) const {
     const ImageFormatInfo *formatInfo = GetImageFormatInfo(format);
 
-    int bpp = BytesPerPixel();
-    int pitch = width * bpp;
+    const int bpp = BytesPerPixel();
+    const int pitch = width * bpp;
 
-    float x = WrapCoord(st[0] * (width - 1), (float)(width - 1), wrapModeS);
-    float y = WrapCoord(st[1] * (height - 1), (float)(height - 1), wrapModeT);
+    const float x = WrapCoord(uv[0] * (width - 1), (float)(width - 1), wrapModeU);
+    const float y = WrapCoord(uv[1] * (height - 1), (float)(height - 1), wrapModeV);
 
-    int iX0 = (int)x;
-    int iX1 = WrapCoord(iX0 + 1, width - 1, wrapModeS);
-    float fracX = x - (float)iX0;
+    const int iX0 = (int)x;
+    const int iX1 = WrapCoord(iX0 + 1, width - 1, wrapModeU);
+    const float fracX = x - (float)iX0;
 
-    int iY0 = (int)y;
-    int iY1 = WrapCoord(iY0 + 1, height - 1, wrapModeT);
-    float fracY = y - (float)iY0;
+    const int iY0 = (int)y;
+    const int iY1 = WrapCoord(iY0 + 1, height - 1, wrapModeV);
+    const float fracY = y - (float)iY0;
 
     const byte *srcY0 = &src[iY0 * pitch];
     const byte *srcY1 = &src[iY1 * pitch];
@@ -397,8 +397,8 @@ Color4 Image::Sample2DBilinear(const byte *src, const Vec2 &st, SampleWrapMode w
     store_ps(result, (float *)outputColor);
 #else
     for (int i = 0; i < 4; i++) {
-        float a = Math::Lerp(rgba32f[0][i], rgba32f[1][i], fracX);
-        float b = Math::Lerp(rgba32f[2][i], rgba32f[3][i], fracX);
+        const float a = Math::Lerp(rgba32f[0][i], rgba32f[1][i], fracX);
+        const float b = Math::Lerp(rgba32f[2][i], rgba32f[3][i], fracX);
 
         outputColor[i] = Math::Lerp(a, b, fracY);
     }
@@ -407,7 +407,7 @@ Color4 Image::Sample2DBilinear(const byte *src, const Vec2 &st, SampleWrapMode w
     return outputColor;
 }
 
-Color4 Image::Sample2D(const Vec2 &st, SampleWrapMode wrapModeS, SampleWrapMode wrapModeT, SampleFilter filter, int32_t mipLevel) const {
+Color4 Image::Sample2D(const Vec2 &uv, SampleWrapMode wrapModeU, SampleWrapMode wrapModeV, SampleFilter filter, int32_t mipLevel) const {
     if (IsCompressed()) {
         assert(0);
         return Color4::zero;
@@ -418,15 +418,15 @@ Color4 Image::Sample2D(const Vec2 &st, SampleWrapMode wrapModeS, SampleWrapMode 
     const byte *src = GetPixels(mipLevel);
 
     if (filter == SampleFilter::Nearest) {
-        outputColor = Sample2DNearest(src, st, wrapModeS, wrapModeT);
+        outputColor = Sample2DNearest(src, uv, wrapModeU, wrapModeV);
     } else if (filter == SampleFilter::Bilinear) {
-        outputColor = Sample2DBilinear(src, st, wrapModeS, wrapModeT);
+        outputColor = Sample2DBilinear(src, uv, wrapModeU, wrapModeV);
     }
 
     return outputColor;
 }
 
-Color4 Image::SampleCube(const Vec3 &str, SampleFilter filter, int32_t mipLevel) const {
+Color4 Image::SampleCube(const Vec3 &direction, SampleFilter filter, int32_t mipLevel) const {
     if (IsCompressed()) {
         assert(0);
         return Color4::zero;
@@ -434,87 +434,84 @@ Color4 Image::SampleCube(const Vec3 &str, SampleFilter filter, int32_t mipLevel)
 
     Color4 outputColor = Color4(0, 0, 0, 1);
 
-    Vec2 st;
-    CubeMapFace cubeMapFace = CubeMapToFaceCoords(str, st[0], st[1]);
-    st[0] *= width;
-    st[1] *= height;
+    Vec2 uv;
+    CubeMapFace cubeMapFace = CubeMapToFaceCoords(direction, uv[0], uv[1]);
+    uv[0] *= width;
+    uv[1] *= height;
 
     const byte *src = GetPixels(mipLevel, (int)cubeMapFace);
 
     if (filter == SampleFilter::Nearest) {
-        outputColor = Sample2DNearest(src, st, SampleWrapMode::Clamp, SampleWrapMode::Clamp);
+        outputColor = Sample2DNearest(src, uv, SampleWrapMode::Clamp, SampleWrapMode::Clamp);
     } else if (filter == SampleFilter::Bilinear) {
-        outputColor = Sample2DBilinear(src, st, SampleWrapMode::Clamp, SampleWrapMode::Clamp);
+        outputColor = Sample2DBilinear(src, uv, SampleWrapMode::Clamp, SampleWrapMode::Clamp);
     }
 
     return outputColor;
 }
 
-Vec3 Image::FaceToCubeMapCoords(CubeMapFace cubeMapFace, float s, float t) {
-    float sc = s * 2.0f - 1.0f;
-    float tc = t * 2.0f - 1.0f;
+Vec3 Image::FaceToCubeMapCoords(CubeMapFace cubeMapFace, float u, float v) {
+    const float signedU = u * 2.0f - 1.0f;
+    const float signedV = v * 2.0f - 1.0f;
 
-    Vec3 glCubeMapCoords;
+    Vec3 direction;
     switch (cubeMapFace) {
-    case CubeMapFace::PositiveX: glCubeMapCoords = Vec3(+1.0f, -tc, -sc); break; // +Y direction in z-up axis.
-    case CubeMapFace::NegativeX: glCubeMapCoords = Vec3(-1.0f, -tc, +sc); break; // -Y direction in z-up axis.
-    case CubeMapFace::PositiveY: glCubeMapCoords = Vec3(+sc, +1.0f, +tc); break; // +Z direction in z-up axis.
-    case CubeMapFace::NegativeY: glCubeMapCoords = Vec3(+sc, -1.0f, -tc); break; // -Z direction in z-up axis.
-    case CubeMapFace::PositiveZ: glCubeMapCoords = Vec3(+sc, -tc, +1.0f); break; // +X direction in z-up axis.
-    case CubeMapFace::NegativeZ: glCubeMapCoords = Vec3(-sc, -tc, -1.0f); break; // -X direction in z-up axis.
+    case CubeMapFace::PositiveX: direction = Vec3(+1.0f, -signedV, -signedU); break;
+    case CubeMapFace::NegativeX: direction = Vec3(-1.0f, -signedV, +signedU); break;
+    case CubeMapFace::PositiveY: direction = Vec3(+signedU, +1.0f, +signedV); break;
+    case CubeMapFace::NegativeY: direction = Vec3(+signedU, -1.0f, -signedV); break;
+    case CubeMapFace::PositiveZ: direction = Vec3(+signedU, -signedV, +1.0f); break;
+    case CubeMapFace::NegativeZ: direction = Vec3(-signedU, -signedV, -1.0f); break;
     default:
         assert(0);
-        glCubeMapCoords = Vec3::zero;
+        direction = Vec3::zero;
         break;
     }
-    // Convert cubemap coordinates from GL axis to z-up axis.
-    return Vec3(glCubeMapCoords.z, glCubeMapCoords.x, glCubeMapCoords.y);
+
+    return direction;
 }
 
-Image::CubeMapFace Image::CubeMapToFaceCoords(const Vec3 &cubeMapCoords, float &s, float &t) {
-    // Convert cubemap coordinates from z-up axis to GL axis.
-    Vec3 glCubeMapCoords = Vec3(cubeMapCoords.y, cubeMapCoords.z, cubeMapCoords.x);
-
-    int faceIndex = glCubeMapCoords.Abs().MaxComponentIndex();
-    float majorAxis = glCubeMapCoords[faceIndex];
+Image::CubeMapFace Image::CubeMapToFaceCoords(const Vec3 &direction, float &u, float &v) {
+    int faceIndex = direction.Abs().MaxComponentIndex();
+    float majorAxis = direction[faceIndex];
     faceIndex = (faceIndex << 1) + IEEE_FLT_SIGNBITSET(majorAxis);
-    float sc, tc;
+    float signedU, signedV;
 
     switch (faceIndex) {
     case CubeMapFace::PositiveX:
-        sc = -glCubeMapCoords.z;
-        tc = -glCubeMapCoords.y;
+        signedU = -direction.z;
+        signedV = -direction.y;
         break;
     case CubeMapFace::NegativeX:
-        sc = +glCubeMapCoords.z;
-        tc = -glCubeMapCoords.y;
+        signedU = +direction.z;
+        signedV = -direction.y;
         break;
     case CubeMapFace::PositiveY:
-        sc = +glCubeMapCoords.x;
-        tc = +glCubeMapCoords.z;
+        signedU = +direction.x;
+        signedV = +direction.z;
         break;
     case CubeMapFace::NegativeY:
-        sc = +glCubeMapCoords.x;
-        tc = -glCubeMapCoords.z;
+        signedU = +direction.x;
+        signedV = -direction.z;
         break;
     case CubeMapFace::PositiveZ:
-        sc = +glCubeMapCoords.x;
-        tc = -glCubeMapCoords.y;
+        signedU = +direction.x;
+        signedV = -direction.y;
         break;
     case CubeMapFace::NegativeZ:
-        sc = -glCubeMapCoords.x;
-        tc = -glCubeMapCoords.y;
+        signedU = -direction.x;
+        signedV = -direction.y;
         break;
     default:
         assert(0);
-        sc = 0;
-        tc = 0;
+        signedU = 0;
+        signedV = 0;
         break;
     }
 
-    float ama = Math::Fabs(majorAxis);
-    s = (sc / ama + 1.0f) * 0.5f;
-    t = (tc / ama + 1.0f) * 0.5f;
+    const float ama = Math::Fabs(majorAxis);
+    u = (signedU / ama + 1.0f) * 0.5f;
+    v = (signedV / ama + 1.0f) * 0.5f;
 
     return (CubeMapFace)faceIndex;
 }
@@ -524,19 +521,19 @@ static float AreaElement(float x, float y) {
 }
 
 float Image::CubeMapTexelSolidAngle(float x, float y, int32_t size) {
-    float invSize = 1.0f / size;
+    const float invSize = 1.0f / size;
 
     // Scale up to [-1, 1] range (inclusive), offset by 0.5 to point to texel center.
     // CHECK: is half pixel correct ?
-    float s = (2.0f * ((float)x + 0.5f) * invSize) - 1.0f;
-    float t = (2.0f * ((float)y + 0.5f) * invSize) - 1.0f;
+    const float s = (2.0f * ((float)x + 0.5f) * invSize) - 1.0f;
+    const float t = (2.0f * ((float)y + 0.5f) * invSize) - 1.0f;
 
     // s and t are the -1..1 texture coordinate on the current face.
     // Get projected area for this texel
-    float x0 = s - invSize;
-    float y0 = t - invSize;
-    float x1 = s + invSize;
-    float y1 = t + invSize;
+    const float x0 = s - invSize;
+    const float y0 = t - invSize;
+    const float x1 = s + invSize;
+    const float y1 = t + invSize;
     return AreaElement(x0, y0) - AreaElement(x0, y1) - AreaElement(x1, y0) + AreaElement(x1, y1);
 }
 
