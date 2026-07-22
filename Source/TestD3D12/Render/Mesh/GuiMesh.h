@@ -15,7 +15,7 @@
 #pragma once
 
 #include "RHI/RHI.h"
-#include "Render/RenderObject.h"
+#include "Render/Frontend/RenderObject.h"
 
 class Material;
 class Font;

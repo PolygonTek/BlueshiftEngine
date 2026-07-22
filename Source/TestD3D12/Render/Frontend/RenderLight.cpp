@@ -15,7 +15,7 @@
 #include "Precompiled.h"
 #include "RenderLight.h"
 #include "RenderCamera.h"
-#include "RenderUtils.h"
+#include "Render/RenderUtils.h"
 
 void RenderLight::Update(const RenderLight::Desc &src, Desc::UpdateFlag updateFlags) {
     constexpr float MinLightSize = 0.01f;

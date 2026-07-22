@@ -16,7 +16,7 @@
 
 #include "Core/Allocator.h"
 #include "RHI/RHI.h"
-#include "RenderLight.h"
+#include "Render/Frontend/RenderLight.h"
 #include "ShaderLightCullingTable.h"
 #include "ShaderLightTable.h"
 #include "ShaderMaterialTable.h"

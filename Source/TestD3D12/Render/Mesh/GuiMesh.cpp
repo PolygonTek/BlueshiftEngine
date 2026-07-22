@@ -17,7 +17,7 @@
 #include "Render/Material/MaterialManager.h"
 #include "Render/Font/Font.h"
 #include "Core/Vec4Color.h"
-#include "Render/RenderWorld.h"
+#include "Render/Frontend/RenderWorld.h"
 
 void GuiMesh::Clear() {
     surfaces.SetCount(0, false);

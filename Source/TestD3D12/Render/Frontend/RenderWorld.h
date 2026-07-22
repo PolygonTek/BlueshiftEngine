@@ -18,8 +18,8 @@
 #include "RenderObject.h"
 #include "Render/Mesh/GuiMesh.h"
 #include "RenderPassBuilder.h"
-#include "DebugDrawPipeline.h"
-#include "DebugDrawVertex.h"
+#include "Render/DebugDrawPipeline.h"
+#include "Render/DebugDrawVertex.h"
 
 struct VisSurf;
 struct VisCamera;

@@ -14,9 +14,9 @@
 
 #include "Precompiled.h"
 #include "RenderBackend.h"
-#include "RenderSystem.h"
-#include "RenderCvars.h"
-#include "RenderInternal.h"
+#include "Render/RenderSystem.h"
+#include "Render/RenderCvars.h"
+#include "Render/RenderInternal.h"
 #include "Shaders/ShaderInterop.h"
 
 bool RenderBackend::DispatchHiZDebugPreview() {

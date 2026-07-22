@@ -14,8 +14,8 @@
 
 #include "Precompiled.h"
 #include "RenderBackend.h"
-#include "DebugDrawVertex.h"
-#include "RenderInternal.h"
+#include "Render/DebugDrawVertex.h"
+#include "Render/RenderInternal.h"
 
 static constexpr uint32_t DebugLightCircleLowSegments = 12;
 static constexpr uint32_t DebugLightCircleMediumSegments = 24;

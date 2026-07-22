@@ -14,10 +14,10 @@
 
 #include "Precompiled.h"
 #include "RenderBackend.h"
-#include "RenderCvars.h"
-#include "RenderContext.h"
-#include "RenderSystem.h"
-#include "RenderInternal.h"
+#include "Render/RenderCvars.h"
+#include "Render/RenderContext.h"
+#include "Render/RenderSystem.h"
+#include "Render/RenderInternal.h"
 #include "Shaders/ShaderInterop.h"
 
 void RenderBackend::Init() {

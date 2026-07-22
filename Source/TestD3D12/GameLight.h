@@ -14,7 +14,7 @@
 
 #pragma once
 
-#include "Render/RenderLight.h"
+#include "Render/Frontend/RenderLight.h"
 
 class GameLight {
 public:

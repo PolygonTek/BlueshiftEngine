@@ -14,11 +14,11 @@
 
 #include "Precompiled.h"
 #include "RenderCapture.h"
-#include "RenderCamera.h"
+#include "Render/Frontend/RenderCamera.h"
 #include "RenderContext.h"
 #include "RenderSystem.h"
 #include "RenderUtils.h"
-#include "RenderWorld.h"
+#include "Render/Frontend/RenderWorld.h"
 #include "Render/Texture/Texture.h"
 
 static void SetupCameraDesc(RenderCamera::Desc &cameraDesc, uint32_t layerMask, bool staticOnly, bool colorClear, const BE1::Color4 &clearColor,

@@ -14,7 +14,7 @@
 
 #include "Precompiled.h"
 #include "RenderWorld.h"
-#include "RenderCvars.h"
+#include "Render/RenderCvars.h"
 
 static constexpr uint32_t DebugCircleSegments = 48;
 static constexpr uint32_t DebugEllipseSegments = 64;

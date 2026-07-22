@@ -14,8 +14,8 @@
 
 #include "Precompiled.h"
 #include "RenderCamera.h"
-#include "RenderCvars.h"
-#include "RenderUtils.h"
+#include "Render/RenderCvars.h"
+#include "Render/RenderUtils.h"
 #include "Math/Hammersley.h"
 #include "RHI/RHI.h"
 #include "Shaders/ShaderInterop.h"

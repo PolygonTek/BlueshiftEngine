@@ -13,7 +13,7 @@
 // limitations under the License.
 
 #include "Precompiled.h"
-#include "Render/RenderWorld.h"
+#include "Render/Frontend/RenderWorld.h"
 #include "Render/Material/MaterialManager.h"
 #include "SceneDebugDraw.h"
 

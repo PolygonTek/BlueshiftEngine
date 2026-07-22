@@ -14,7 +14,7 @@
 
 #include "Precompiled.h"
 #include "RenderPassDepthPSOResolver.h"
-#include "RenderInternal.h"
+#include "Render/RenderInternal.h"
 #include "Render/ShaderPipeline/ShaderPermutationKey.h"
 #include "Render/ShaderPipeline/ShaderPipelineCache.h"
 #include "Render/ShaderPipeline/ShaderTemplate.h"

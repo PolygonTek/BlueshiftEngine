@@ -161,34 +161,34 @@ set(SRC_FILES
     Render/RenderSystem.cpp
     Render/DebugDrawPipeline.h
     Render/DebugDrawVertex.h
-    Render/RenderBackend.h
-    Render/RenderBackend.cpp
-    Render/RenderBackend_HiZCulling.cpp
-    Render/RenderBackend_GenHiZ.cpp
-    Render/RenderBackend_HiZDebug.cpp
-    Render/RenderBackend_PostProcess.cpp
-    Render/RenderBackend_DebugDraw.cpp
-    Render/RenderBackend_DrawGenericSurf.cpp
-    Render/RenderBackend_DrawSkySurf.cpp
-    Render/RenderLight.h
-    Render/RenderLight.cpp
-    Render/RenderObject.h
-    Render/RenderObject.cpp
-    Render/RenderWorld.h
-    Render/RenderWorld.cpp
-    Render/RenderWorld_Draw.cpp
-    Render/RenderWorld_DebugTools.cpp
-    Render/RenderCamera.h
-    Render/RenderCamera.cpp
+    Render/Backend/RenderBackend.h
+    Render/Backend/RenderBackend.cpp
+    Render/Backend/RenderBackend_HiZCulling.cpp
+    Render/Backend/RenderBackend_GenHiZ.cpp
+    Render/Backend/RenderBackend_HiZDebug.cpp
+    Render/Backend/RenderBackend_PostProcess.cpp
+    Render/Backend/RenderBackend_DebugDraw.cpp
+    Render/Backend/RenderBackend_DrawGenericSurf.cpp
+    Render/Backend/RenderBackend_DrawSkySurf.cpp
+    Render/Frontend/RenderLight.h
+    Render/Frontend/RenderLight.cpp
+    Render/Frontend/RenderObject.h
+    Render/Frontend/RenderObject.cpp
+    Render/Frontend/RenderWorld.h
+    Render/Frontend/RenderWorld.cpp
+    Render/Frontend/RenderWorld_Draw.cpp
+    Render/Frontend/RenderWorld_DebugTools.cpp
+    Render/Frontend/RenderCamera.h
+    Render/Frontend/RenderCamera.cpp
     Render/RenderUtils.h
     Render/RenderUtils.cpp
     Render/RenderInternal.h
-    Render/RenderPassDepthPSOResolver.h
-    Render/RenderPassDepthPSOResolver.cpp
-    Render/RenderPassPSOResolver.h
-    Render/RenderPassPSOResolver.cpp
-    Render/RenderPassBuilder.h
-    Render/RenderPassBuilder.cpp
+    Render/Frontend/RenderPassDepthPSOResolver.h
+    Render/Frontend/RenderPassDepthPSOResolver.cpp
+    Render/Frontend/RenderPassPSOResolver.h
+    Render/Frontend/RenderPassPSOResolver.cpp
+    Render/Frontend/RenderPassBuilder.h
+    Render/Frontend/RenderPassBuilder.cpp
     Render/Sampler.h
     Render/Sampler.cpp
     Shaders/ShaderInterop.h)

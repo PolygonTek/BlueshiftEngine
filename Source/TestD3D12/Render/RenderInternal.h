@@ -20,9 +20,9 @@
 #include "Render/Font/Font.h"
 #include "Render/Mesh/Mesh.h"
 #include "Render/Mesh/MeshInstance.h"
-#include "RenderObject.h"
-#include "RenderCamera.h"
-#include "RenderLight.h"
+#include "Render/Frontend/RenderObject.h"
+#include "Render/Frontend/RenderCamera.h"
+#include "Render/Frontend/RenderLight.h"
 #include "DebugDrawPipeline.h"
 
 class Texture;

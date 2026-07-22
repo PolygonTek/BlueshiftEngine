@@ -14,9 +14,9 @@
 
 #include "Precompiled.h"
 #include "RenderBackend.h"
-#include "RenderCvars.h"
-#include "RenderSystem.h"
-#include "RenderInternal.h"
+#include "Render/RenderCvars.h"
+#include "Render/RenderSystem.h"
+#include "Render/RenderInternal.h"
 #include "Shaders/ShaderInterop.h"
 
 // 히스토그램 기반 luminance 계산: https://www.alextardif.com/HistogramLuminance.html

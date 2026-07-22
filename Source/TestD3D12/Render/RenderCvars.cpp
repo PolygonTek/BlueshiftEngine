@@ -14,7 +14,7 @@
 
 #include "Precompiled.h"
 #include "RenderCvars.h"
-#include "RenderCamera.h"
+#include "Render/Frontend/RenderCamera.h"
 
 CVAR(r_skipViewCulling, "0", BE1::CVar::Flag::Bool, "skip camera view culling for render lights, objects and mesh surfaces");
 CVAR(r_skipDrawCamera2D, "0", BE1::CVar::Flag::Bool, "skip 2D draw camera render commands");

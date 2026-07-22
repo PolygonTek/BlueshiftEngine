@@ -15,8 +15,8 @@
 #pragma once
 
 #include "RHI/RHI.h"
-#include "Render/RenderPassDepthPSOResolver.h"
-#include "Render/RenderPassPSOResolver.h"
+#include "RenderPassDepthPSOResolver.h"
+#include "RenderPassPSOResolver.h"
 #include "Render/ShaderPipeline/VertexInputLayoutFactory.h"
 
 class RenderFrameData;

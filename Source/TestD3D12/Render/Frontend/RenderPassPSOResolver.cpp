@@ -14,7 +14,7 @@
 
 #include "Precompiled.h"
 #include "RenderPassPSOResolver.h"
-#include "RenderInternal.h"
+#include "Render/RenderInternal.h"
 #include "Render/Material/Material.h"
 #include "Render/ShaderPipeline/ShaderPipeline.h"
 #include "Render/ShaderPipeline/VertexInputLayoutFactory.h"

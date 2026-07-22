@@ -14,7 +14,7 @@
 
 #include "Precompiled.h"
 #include "RenderBackend.h"
-#include "RenderInternal.h"
+#include "Render/RenderInternal.h"
 #include "Render/Texture/TextureManager.h"
 
 static RHI::Texture *GetReadyMaterialRHITexture(const Material *material, ShaderTemplate::StandardProperty standardProperty) {
