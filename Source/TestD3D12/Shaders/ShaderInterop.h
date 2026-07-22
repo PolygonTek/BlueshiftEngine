@@ -55,8 +55,8 @@ static const uint MipGenOptionBitSRGB = 1 << 1;
 static const uint IBLIntegrationBlockSizeX = 8;
 static const uint IBLIntegrationBlockSizeY = 8;
 
-static const uint DepthHistoryResolveBlockSizeX = 16;
-static const uint DepthHistoryResolveBlockSizeY = 16;
+static const uint DepthMSAAResolveBlockSizeX = 16;
+static const uint DepthMSAAResolveBlockSizeY = 16;
 static const uint SurfaceOutputMSAAResolveBlockSizeX = 16;
 static const uint SurfaceOutputMSAAResolveBlockSizeY = 16;
 
@@ -230,7 +230,7 @@ struct TAAResolveParams {
     float padding0;
 };
 
-struct DepthHistoryResolveParams {
+struct DepthMSAAResolveParams {
     uint2 outputSize;
     uint useMinDepth;
     uint padding0;

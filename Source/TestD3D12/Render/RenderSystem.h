@@ -134,7 +134,7 @@ private:
     SharedPtr<ShaderTemplate>       hiZCullInstancesShaderTemplate;
     SharedPtr<ShaderTemplate>       lightCullingShaderTemplate;
     SharedPtr<ShaderTemplate>       hiZDebugPreviewShaderTemplate;
-    SharedPtr<ShaderTemplate>       depthHistoryResolveShaderTemplate;
+    SharedPtr<ShaderTemplate>       depthMSAAResolveShaderTemplate;
     SharedPtr<ShaderTemplate>       surfaceOutputMSAAResolveNormalShaderTemplate;
     SharedPtr<ShaderTemplate>       surfaceOutputMSAAResolveVelocityShaderTemplate;
     SharedPtr<ShaderTemplate>       surfaceOutputMSAAResolveNormalVelocityShaderTemplate;
@@ -162,7 +162,7 @@ private:
     SharedPtr<ShaderPipeline>       hiZCullInstancesPipeline;
     SharedPtr<ShaderPipeline>       lightCullingPipeline;
     SharedPtr<ShaderPipeline>       hiZDebugPreviewPipeline;
-    SharedPtr<ShaderPipeline>       depthHistoryResolvePipeline;
+    SharedPtr<ShaderPipeline>       depthMSAAResolvePipeline;
     SharedPtr<ShaderPipeline>       surfaceOutputMSAAResolveNormalPipeline;
     SharedPtr<ShaderPipeline>       surfaceOutputMSAAResolveVelocityPipeline;
     SharedPtr<ShaderPipeline>       surfaceOutputMSAAResolveNormalVelocityPipeline;

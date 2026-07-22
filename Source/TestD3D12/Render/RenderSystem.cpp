@@ -302,7 +302,7 @@ void RenderSystem::InitComputePipelines() {
     hiZCullInstancesShaderTemplate = shaderTemplateManager.CreateComputeShaderTemplate("_hiZCullInstancesShader", computeShaderModel, "HiZCullInstances.hlsl", baseDir);
     lightCullingShaderTemplate = shaderTemplateManager.CreateComputeShaderTemplate("_lightCullingShader", computeShaderModel, "LightCulling.hlsl", baseDir);
     hiZDebugPreviewShaderTemplate = shaderTemplateManager.CreateComputeShaderTemplate("_hiZDebugPreviewShader", computeShaderModel, "HiZDebugPreview.hlsl", baseDir);
-    depthHistoryResolveShaderTemplate = shaderTemplateManager.CreateComputeShaderTemplate("_depthHistoryResolveShader", computeShaderModel, "DepthHistoryResolve.hlsl", baseDir);
+    depthMSAAResolveShaderTemplate = shaderTemplateManager.CreateComputeShaderTemplate("_depthMSAAResolveShader", computeShaderModel, "DepthMSAAResolve.hlsl", baseDir);
     surfaceOutputMSAAResolveNormalShaderTemplate = shaderTemplateManager.CreateComputeShaderTemplate("_surfaceOutputMSAAResolveNormalShader", computeShaderModel, "SurfaceOutputMSAAResolve.hlsl", baseDir, "CSMain", "SURFACE_OUTPUT_MSAA_RESOLVE_MODE=1");
     surfaceOutputMSAAResolveVelocityShaderTemplate = shaderTemplateManager.CreateComputeShaderTemplate("_surfaceOutputMSAAResolveVelocityShader", computeShaderModel, "SurfaceOutputMSAAResolve.hlsl", baseDir, "CSMain", "SURFACE_OUTPUT_MSAA_RESOLVE_MODE=2");
     surfaceOutputMSAAResolveNormalVelocityShaderTemplate = shaderTemplateManager.CreateComputeShaderTemplate("_surfaceOutputMSAAResolveNormalVelocityShader", computeShaderModel, "SurfaceOutputMSAAResolve.hlsl", baseDir, "CSMain", "SURFACE_OUTPUT_MSAA_RESOLVE_MODE=3");
@@ -335,7 +335,7 @@ void RenderSystem::EnsureComputePipelines() {
     EnsureComputePipeline(hiZCullInstancesShaderTemplate, hiZCullInstancesPipeline);
     EnsureComputePipeline(lightCullingShaderTemplate, lightCullingPipeline);
     EnsureComputePipeline(hiZDebugPreviewShaderTemplate, hiZDebugPreviewPipeline);
-    EnsureComputePipeline(depthHistoryResolveShaderTemplate, depthHistoryResolvePipeline);
+    EnsureComputePipeline(depthMSAAResolveShaderTemplate, depthMSAAResolvePipeline);
     EnsureComputePipeline(surfaceOutputMSAAResolveNormalShaderTemplate, surfaceOutputMSAAResolveNormalPipeline);
     EnsureComputePipeline(surfaceOutputMSAAResolveVelocityShaderTemplate, surfaceOutputMSAAResolveVelocityPipeline);
     EnsureComputePipeline(surfaceOutputMSAAResolveNormalVelocityShaderTemplate, surfaceOutputMSAAResolveNormalVelocityPipeline);
@@ -366,7 +366,7 @@ void RenderSystem::ReleaseComputePipelines() {
     hiZCullInstancesPipeline.reset();
     lightCullingPipeline.reset();
     hiZDebugPreviewPipeline.reset();
-    depthHistoryResolvePipeline.reset();
+    depthMSAAResolvePipeline.reset();
     surfaceOutputMSAAResolveNormalPipeline.reset();
     surfaceOutputMSAAResolveVelocityPipeline.reset();
     surfaceOutputMSAAResolveNormalVelocityPipeline.reset();
@@ -394,7 +394,7 @@ void RenderSystem::ReleaseComputePipelines() {
     genHiZMipOddDimShaderTemplate.reset();
     hiZCullInstancesShaderTemplate.reset();
     hiZDebugPreviewShaderTemplate.reset();
-    depthHistoryResolveShaderTemplate.reset();
+    depthMSAAResolveShaderTemplate.reset();
     surfaceOutputMSAAResolveNormalShaderTemplate.reset();
     surfaceOutputMSAAResolveVelocityShaderTemplate.reset();
     surfaceOutputMSAAResolveNormalVelocityShaderTemplate.reset();

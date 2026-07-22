@@ -4,8 +4,8 @@
     "DescriptorTable(SRV(t0), UAV(u0)), " \
     "CBV(b0)"
 
-cbuffer DepthHistoryResolveCB : register(b0) {
-    DepthHistoryResolveParams depthHistoryResolveParams;
+cbuffer DepthMSAAResolveCB : register(b0) {
+    DepthMSAAResolveParams depthMSAAResolveParams;
 }
 
 Texture2DMS<float> inputDepthTexture : register(t0);
@@ -20,16 +20,16 @@ float LoadResolvedDepth(uint2 pixelCoord) {
     float depth = inputDepthTexture.Load(int2(pixelCoord), 0);
     for (uint sampleIndex = 1; sampleIndex < sampleCount; ++sampleIndex) {
         const float sampleDepth = inputDepthTexture.Load(int2(pixelCoord), sampleIndex);
-        depth = depthHistoryResolveParams.useMinDepth != 0 ? min(depth, sampleDepth) : max(depth, sampleDepth);
+        depth = depthMSAAResolveParams.useMinDepth != 0 ? min(depth, sampleDepth) : max(depth, sampleDepth);
     }
     return depth;
 }
 
 [RootSignature(COMMON_ROOT_SIGNATURE)]
-[numthreads(DepthHistoryResolveBlockSizeX, DepthHistoryResolveBlockSizeY, 1)]
+[numthreads(DepthMSAAResolveBlockSizeX, DepthMSAAResolveBlockSizeY, 1)]
 void CSMain(uint3 dispatchThreadId : SV_DispatchThreadID) {
     const uint2 pixelCoord = dispatchThreadId.xy;
-    if (any(pixelCoord >= depthHistoryResolveParams.outputSize)) {
+    if (any(pixelCoord >= depthMSAAResolveParams.outputSize)) {
         return;
     }
 

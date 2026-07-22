@@ -261,7 +261,7 @@ void RenderBackend::UpdateFramePSOs() {
     frameHiZCullInstancesPSO = ShaderPipeline::GetReadyPSO(renderSystem->hiZCullInstancesPipeline);
     frameLightCullingPSO = ShaderPipeline::GetReadyPSO(renderSystem->lightCullingPipeline);
     frameHiZDebugPreviewPSO = ShaderPipeline::GetReadyPSO(renderSystem->hiZDebugPreviewPipeline);
-    frameDepthHistoryResolvePSO = ShaderPipeline::GetReadyPSO(renderSystem->depthHistoryResolvePipeline);
+    frameDepthMSAAResolvePSO = ShaderPipeline::GetReadyPSO(renderSystem->depthMSAAResolvePipeline);
     frameSurfaceOutputMSAAResolveNormalPSO = ShaderPipeline::GetReadyPSO(renderSystem->surfaceOutputMSAAResolveNormalPipeline);
     frameSurfaceOutputMSAAResolveVelocityPSO = ShaderPipeline::GetReadyPSO(renderSystem->surfaceOutputMSAAResolveVelocityPipeline);
     frameSurfaceOutputMSAAResolveNormalVelocityPSO = ShaderPipeline::GetReadyPSO(renderSystem->surfaceOutputMSAAResolveNormalVelocityPipeline);

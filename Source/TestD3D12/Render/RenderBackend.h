@@ -163,7 +163,7 @@ private:
     RHI::PipelineState *            frameHiZCullInstancesPSO = nullptr;
     RHI::PipelineState *            frameLightCullingPSO = nullptr;
     RHI::PipelineState *            frameHiZDebugPreviewPSO = nullptr;
-    RHI::PipelineState *            frameDepthHistoryResolvePSO = nullptr;
+    RHI::PipelineState *            frameDepthMSAAResolvePSO = nullptr;
     RHI::PipelineState *            frameSurfaceOutputMSAAResolveNormalPSO = nullptr;
     RHI::PipelineState *            frameSurfaceOutputMSAAResolveVelocityPSO = nullptr;
     RHI::PipelineState *            frameSurfaceOutputMSAAResolveNormalVelocityPSO = nullptr;

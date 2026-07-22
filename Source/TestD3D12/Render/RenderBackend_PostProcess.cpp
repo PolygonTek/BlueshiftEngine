@@ -196,17 +196,17 @@ bool RenderBackend::DispatchCurrentDepthMSAAResolve() {
         return false;
     }
 
-    RHI::PipelineState *depthHistoryResolvePSO = frameDepthHistoryResolvePSO;
-    if (!depthHistoryResolvePSO) {
+    RHI::PipelineState *depthMSAAResolvePSO = frameDepthMSAAResolvePSO;
+    if (!depthMSAAResolvePSO) {
         return false;
     }
 
-    DepthHistoryResolveParams depthHistoryResolveParams = {};
-    depthHistoryResolveParams.outputSize = uint2(outputW, outputH);
-    depthHistoryResolveParams.useMinDepth = currentVisCamera->projectionPolicy.reverseZ ? 0u : 1u;
+    DepthMSAAResolveParams depthMSAAResolveParams = {};
+    depthMSAAResolveParams.outputSize = uint2(outputW, outputH);
+    depthMSAAResolveParams.useMinDepth = currentVisCamera->projectionPolicy.reverseZ ? 0u : 1u;
 
-    RHI::ConstantBuffer *depthHistoryResolveConstantBuffer = frameData->GetThreadData(0)->AllocConstant(sizeof(DepthHistoryResolveParams), &depthHistoryResolveParams);
-    if (!depthHistoryResolveConstantBuffer) {
+    RHI::ConstantBuffer *depthMSAAResolveConstantBuffer = frameData->GetThreadData(0)->AllocConstant(sizeof(DepthMSAAResolveParams), &depthMSAAResolveParams);
+    if (!depthMSAAResolveConstantBuffer) {
         return false;
     }
 
@@ -214,17 +214,17 @@ bool RenderBackend::DispatchCurrentDepthMSAAResolve() {
         RHI::Renderer::MakeTextureBarrier(inputDepthTexture, RHI::GPUResourceState::ShaderResource, RHI::GPUResourceState::ShaderResourceCompute),
         RHI::Renderer::MakeTextureBarrier(outputDepthTexture, RHI::GPUResourceState::ShaderResource, RHI::GPUResourceState::UnorderedAccess)
     };
-    GpuTiming::ScopedTimer gpuScope(gpuTiming, mainCommandList, GpuTiming::Tag::DepthHistoryResolve);
+    GpuTiming::ScopedTimer gpuScope(gpuTiming, mainCommandList, GpuTiming::Tag::DepthMSAAResolve);
 
     RHI::renderer->Barrier(mainCommandList, startBarriers, COUNT_OF(startBarriers));
 
-    RHI::renderer->SetPSO(mainCommandList, depthHistoryResolvePSO);
-    RHI::renderer->SetConstantBuffer(mainCommandList, 0, depthHistoryResolveConstantBuffer);
+    RHI::renderer->SetPSO(mainCommandList, depthMSAAResolvePSO);
+    RHI::renderer->SetConstantBuffer(mainCommandList, 0, depthMSAAResolveConstantBuffer);
     RHI::renderer->SetTexture(mainCommandList, 0, false, inputDepthTexture);
     RHI::renderer->SetTexture(mainCommandList, 0, true, outputDepthTexture);
 
-    const uint32_t threadGroupCountX = (outputW + DepthHistoryResolveBlockSizeX - 1) / DepthHistoryResolveBlockSizeX;
-    const uint32_t threadGroupCountY = (outputH + DepthHistoryResolveBlockSizeY - 1) / DepthHistoryResolveBlockSizeY;
+    const uint32_t threadGroupCountX = (outputW + DepthMSAAResolveBlockSizeX - 1) / DepthMSAAResolveBlockSizeX;
+    const uint32_t threadGroupCountY = (outputH + DepthMSAAResolveBlockSizeY - 1) / DepthMSAAResolveBlockSizeY;
     RHI::renderer->Dispatch(mainCommandList, threadGroupCountX, threadGroupCountY, 1);
 
     RHI::GPUBarrier endBarriers[] = {

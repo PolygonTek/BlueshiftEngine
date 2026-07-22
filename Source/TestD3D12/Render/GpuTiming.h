@@ -42,7 +42,7 @@ public:
         GenHiZ,
         HiZDebugPreview,
         SurfaceOutputMSAAResolve,
-        DepthHistoryResolve,
+        DepthMSAAResolve,
         LuminancePass1,
         LuminancePass2,
         BloomPrefilter,
