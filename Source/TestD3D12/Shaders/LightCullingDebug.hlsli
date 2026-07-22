@@ -30,4 +30,4 @@ float3 VisualizeLightCulling(uint2 pixelCoord, float ndcDepth, uint debugMode) {
     return LightCountToHeatMap(CountShaderLights(pixelCoord, ndcDepth, useZBin));
 }
 
-#endif
+#endif // __LIGHT_CULLING_DEBUG_HLSLI__

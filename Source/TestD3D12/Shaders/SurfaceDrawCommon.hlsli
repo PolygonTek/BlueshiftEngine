@@ -1,5 +1,5 @@
-#ifndef __SURFACEDRAWCOMMON_HLSLI__
-#define __SURFACEDRAWCOMMON_HLSLI__
+#ifndef __SURFACE_DRAW_COMMON_HLSLI__
+#define __SURFACE_DRAW_COMMON_HLSLI__
 
 #include "Common.hlsli"
 #include "CommonBindless.hlsli"
@@ -107,4 +107,4 @@ struct SurfacePSOutput {
 #endif
 };
 
-#endif
+#endif // __SURFACE_DRAW_COMMON_HLSLI__

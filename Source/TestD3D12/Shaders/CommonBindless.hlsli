@@ -228,4 +228,4 @@ SamplerState GetSampler(uint index) { return bindlessSamplerTable[index]; }
 
 #endif
 
-#endif
+#endif // __COMMON_BINDLESS_HLSLI__

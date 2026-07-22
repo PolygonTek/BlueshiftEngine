@@ -42,4 +42,4 @@ float2 PackDCNyquistRowProduct(uint rowBase, uint columnIndex, uint fftSize) {
     return outputA + float2(-outputB.y, outputB.x);
 }
 
-#endif
+#endif // __MULTIPLY_PACKED_SPECTRUM_2D_COMMON_HLSLI__

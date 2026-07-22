@@ -171,4 +171,4 @@ bool NextShaderLight(inout ShaderLightIterator iterator, out ShaderLightRef shad
     return true;
 }
 
-#endif
+#endif // __LIGHT_CULLING_COMMON_HLSLI__

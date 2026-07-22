@@ -175,4 +175,4 @@ inline float LinearizeOrthogonalDepth(float ndcDepth, float projDepthA, float pr
     return (projDepthB - ndcDepth) / SafeSignedDenominator(projDepthA);
 }
 
-#endif
+#endif // __COMMON_HLSLI__

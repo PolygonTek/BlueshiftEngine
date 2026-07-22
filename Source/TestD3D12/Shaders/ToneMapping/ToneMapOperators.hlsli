@@ -175,4 +175,4 @@ float3 ToneMap(float3 color, uint toneMappingOperator) {
     }
 }
 
-#endif
+#endif // __TONE_MAP_OPERATORS_HLSLI__

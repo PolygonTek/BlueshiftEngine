@@ -224,4 +224,4 @@ float3 SampleCIE1931CMF(float wavelengthNm) {
     return float3(x, y, z);
 }
 
-#endif
+#endif // __COLORS_HLSLI__

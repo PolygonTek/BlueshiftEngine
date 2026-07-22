@@ -122,4 +122,4 @@ float2 RealIFFTPreProcess(float2 value, float2 mirrorValue, float2 Wk) {
     return X_e + float2(-X_o.y, X_o.x);
 }
 
-#endif
+#endif // __FFT_COMMON_HLSLI__

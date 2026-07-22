@@ -189,4 +189,4 @@ float3 EvaluateLit(uint2 pixelCoord, float ndcDepth, float3 worldPosition, float
 #endif
 }
 
-#endif
+#endif // __FORWARD_LIGHTING_HLSLI__

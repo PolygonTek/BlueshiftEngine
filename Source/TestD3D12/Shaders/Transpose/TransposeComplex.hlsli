@@ -1,5 +1,5 @@
-#ifndef _TRANSPOSECOMPLEX_HLSLI_
-#define _TRANSPOSECOMPLEX_HLSLI_
+#ifndef _TRANSPOSE_COMPLEX_HLSLI_
+#define _TRANSPOSE_COMPLEX_HLSLI_
 
 #include "../ShaderInterop.h"
 
@@ -49,4 +49,4 @@ void CSMain(uint3 groupId : SV_GroupID, uint3 groupThreadId : SV_GroupThreadID) 
     outputBuffer[dstIndex] = tile[groupThreadId.x][groupThreadId.y];
 }
 
-#endif
+#endif // _TRANSPOSE_COMPLEX_HLSLI_

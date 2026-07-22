@@ -452,7 +452,7 @@ bool IBLGenerator::DispatchCopyLDMip0(RHI::CommandList *commandList, const RHI::
     mipGenParams.dstSize = uint3(outputViewInfo.width, outputViewInfo.height, 0);
     mipGenParams.dstSizeRcp = float3(1.0f / outputViewInfo.width, 1.0f / outputViewInfo.height, 0.0f);
 
-    // Mip UAV 가 참조하는 6개 face(array slice) 만 개별적으로 transition 한다.
+    // Mip UAV 가 참조하는 6개 face (array slice) 만 개별적으로 transition 한다.
     RHI::GPUBarrier startBarriers[1 + 6];
     startBarriers[0] = RHI::Renderer::MakeTextureBarrier(radianceCubeMap, RHI::GPUResourceState::ShaderResource, RHI::GPUResourceState::ShaderResourceCompute);
     for (uint32_t faceIndex = 0; faceIndex < 6; faceIndex++) {
