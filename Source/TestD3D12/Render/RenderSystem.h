@@ -18,7 +18,7 @@
 #include "GpuSphericalHarmonics.h"
 #include "ColorGradingLUTGenerator.h"
 #include "ConvolutionBloomKernelGenerator.h"
-#include "IBLGenerator.h"
+#include "IBLBaker.h"
 
 class RenderContext;
 class RenderBackend;
@@ -87,8 +87,8 @@ public:
     GpuSphericalHarmonics &         GetGpuSphericalHarmonics() { return gpuSphericalHarmonics; }
     const GpuSphericalHarmonics &   GetGpuSphericalHarmonics() const { return gpuSphericalHarmonics; }
 
-    IBLGenerator &                  GetIBLGenerator() { return iblGenerator; }
-    const IBLGenerator &            GetIBLGenerator() const { return iblGenerator; }
+    IBLBaker &                      GetIBLBaker() { return iblBaker; }
+    const IBLBaker &                GetIBLBaker() const { return iblBaker; }
 
 private:
     struct SubmittedFrame {
@@ -191,7 +191,7 @@ private:
 
     GpuFFT                          gpuFFT;
     GpuSphericalHarmonics           gpuSphericalHarmonics;
-    IBLGenerator                    iblGenerator;
+    IBLBaker                        iblBaker;
 };
 
 extern RenderSystem *               renderSystem;

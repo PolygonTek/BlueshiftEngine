@@ -13,7 +13,7 @@
 // limitations under the License.
 
 #include "Precompiled.h"
-#include "IBLGenerator.h"
+#include "IBLBaker.h"
 #include "RenderSystem.h"
 #include "Image/Image.h"
 #include "Render/ShaderPipeline/ShaderPipeline.h"
@@ -21,7 +21,7 @@
 #include "Render/ShaderPipeline/ShaderTemplateManager.h"
 #include "Shaders/ShaderInterop.h"
 
-void IBLGenerator::Init() {
+void IBLBaker::Init() {
     const char *baseDir = "Source/TestD3D12/Shaders";
     const RHI::ShaderModel shaderModel = RHI::ShaderModel::SM_6_6;
 
@@ -36,7 +36,7 @@ void IBLGenerator::Init() {
     genDFGSumGGXPipeline = shaderPipelineCache.GetComputePipeline(genDFGSumGGXShaderTemplate, ShaderPermutationKey());
 }
 
-void IBLGenerator::Shutdown() {
+void IBLBaker::Shutdown() {
     genDiffuseIrradiancePipeline.reset();
     genLDSumPhongSpecularPipeline.reset();
     genLDSumGGXPipeline.reset();
@@ -66,8 +66,8 @@ static bool GetOutputMipViewInfo(RHI::Texture *texture, RHI::ViewID outputUAV, u
     return true;
 }
 
-bool IBLGenerator::GenerateDiffuseIrradiance(RHI::CommandList *commandList, const RHI::Texture *radianceCubeMap, RHI::Texture *outputCubeMap, RHI::ViewID outputUAV) {
-    PROFILER_CPU_SCOPED_EVENT("IBLGenerator::GenerateDiffuseIrradiance");
+bool IBLBaker::GenerateDiffuseIrradiance(RHI::CommandList *commandList, const RHI::Texture *radianceCubeMap, RHI::Texture *outputCubeMap, RHI::ViewID outputUAV) {
+    PROFILER_CPU_SCOPED_EVENT("IBLBaker::GenerateDiffuseIrradiance");
 
     if (!radianceCubeMap || !outputCubeMap || radianceCubeMap == outputCubeMap ||
         radianceCubeMap->GetStatus() != RHI::GPUResourceStatus::Ready || outputCubeMap->GetStatus() != RHI::GPUResourceStatus::Ready ||
@@ -114,8 +114,8 @@ bool IBLGenerator::GenerateDiffuseIrradiance(RHI::CommandList *commandList, cons
     return true;
 }
 
-bool IBLGenerator::GenerateDiffuseIrradianceSH(RHI::CommandList *commandList, const RHI::Texture *radianceCubeMap, RHI::Texture *outputCubeMap, RHI::ViewID outputUAV) {
-    PROFILER_CPU_SCOPED_EVENT("IBLGenerator::GenerateDiffuseIrradianceSH");
+bool IBLBaker::GenerateDiffuseIrradianceSH(RHI::CommandList *commandList, const RHI::Texture *radianceCubeMap, RHI::Texture *outputCubeMap, RHI::ViewID outputUAV) {
+    PROFILER_CPU_SCOPED_EVENT("IBLBaker::GenerateDiffuseIrradianceSH");
 
     if (!radianceCubeMap || !outputCubeMap || radianceCubeMap == outputCubeMap ||
         radianceCubeMap->GetStatus() != RHI::GPUResourceStatus::Ready || outputCubeMap->GetStatus() != RHI::GPUResourceStatus::Ready ||
@@ -155,7 +155,7 @@ bool IBLGenerator::GenerateDiffuseIrradianceSH(RHI::CommandList *commandList, co
     return filtered;
 }
 
-bool IBLGenerator::GenerateLDSumPhongSpecular(RHI::CommandList *commandList, const RHI::Texture *radianceCubeMap, int32_t maxSpecularPower, RHI::Texture *outputCubeMap, const RHI::ViewID *outputMipUAVs) {
+bool IBLBaker::GenerateLDSumPhongSpecular(RHI::CommandList *commandList, const RHI::Texture *radianceCubeMap, int32_t maxSpecularPower, RHI::Texture *outputCubeMap, const RHI::ViewID *outputMipUAVs) {
     if (!outputCubeMap || !outputMipUAVs || maxSpecularPower <= 0) {
         return false;
     }
@@ -169,8 +169,8 @@ bool IBLGenerator::GenerateLDSumPhongSpecular(RHI::CommandList *commandList, con
     return true;
 }
 
-bool IBLGenerator::GenerateLDSumPhongSpecularMip(RHI::CommandList *commandList, const RHI::Texture *radianceCubeMap, int32_t maxSpecularPower, RHI::Texture *outputCubeMap, RHI::ViewID outputMipUAV, uint32_t mipLevel) {
-    PROFILER_CPU_SCOPED_EVENT("IBLGenerator::GenerateLDSumPhongSpecularMip");
+bool IBLBaker::GenerateLDSumPhongSpecularMip(RHI::CommandList *commandList, const RHI::Texture *radianceCubeMap, int32_t maxSpecularPower, RHI::Texture *outputCubeMap, RHI::ViewID outputMipUAV, uint32_t mipLevel) {
+    PROFILER_CPU_SCOPED_EVENT("IBLBaker::GenerateLDSumPhongSpecularMip");
 
     if (!radianceCubeMap || !outputCubeMap || radianceCubeMap == outputCubeMap || maxSpecularPower <= 0 ||
         radianceCubeMap->GetStatus() != RHI::GPUResourceStatus::Ready || outputCubeMap->GetStatus() != RHI::GPUResourceStatus::Ready ||
@@ -231,7 +231,7 @@ bool IBLGenerator::GenerateLDSumPhongSpecularMip(RHI::CommandList *commandList, 
     return true;
 }
 
-bool IBLGenerator::GenerateLDSumGGX(RHI::CommandList *commandList, const RHI::Texture *radianceCubeMap, RHI::Texture *outputCubeMap, const RHI::ViewID *outputMipUAVs) {
+bool IBLBaker::GenerateLDSumGGX(RHI::CommandList *commandList, const RHI::Texture *radianceCubeMap, RHI::Texture *outputCubeMap, const RHI::ViewID *outputMipUAVs) {
     if (!outputCubeMap || !outputMipUAVs) {
         return false;
     }
@@ -245,8 +245,8 @@ bool IBLGenerator::GenerateLDSumGGX(RHI::CommandList *commandList, const RHI::Te
     return true;
 }
 
-bool IBLGenerator::GenerateLDSumGGXMip(RHI::CommandList *commandList, const RHI::Texture *radianceCubeMap, RHI::Texture *outputCubeMap, RHI::ViewID outputMipUAV, uint32_t mipLevel) {
-    PROFILER_CPU_SCOPED_EVENT("IBLGenerator::GenerateLDSumGGXMip");
+bool IBLBaker::GenerateLDSumGGXMip(RHI::CommandList *commandList, const RHI::Texture *radianceCubeMap, RHI::Texture *outputCubeMap, RHI::ViewID outputMipUAV, uint32_t mipLevel) {
+    PROFILER_CPU_SCOPED_EVENT("IBLBaker::GenerateLDSumGGXMip");
 
     if (!radianceCubeMap || !outputCubeMap || radianceCubeMap == outputCubeMap ||
         radianceCubeMap->GetStatus() != RHI::GPUResourceStatus::Ready || outputCubeMap->GetStatus() != RHI::GPUResourceStatus::Ready ||
@@ -276,8 +276,8 @@ bool IBLGenerator::GenerateLDSumGGXMip(RHI::CommandList *commandList, const RHI:
     return DispatchGenerateLDMip(commandList, radianceCubeMap, outputCubeMap, outputMipUAV, outputViewInfo, mipLevel);
 }
 
-bool IBLGenerator::GenerateDFGSumGGX(RHI::CommandList *commandList, RHI::Texture *outputTexture, RHI::ViewID outputUAV) {
-    PROFILER_CPU_SCOPED_EVENT("IBLGenerator::GenerateDFGSumGGX");
+bool IBLBaker::GenerateDFGSumGGX(RHI::CommandList *commandList, RHI::Texture *outputTexture, RHI::ViewID outputUAV) {
+    PROFILER_CPU_SCOPED_EVENT("IBLBaker::GenerateDFGSumGGX");
 
     if (!outputTexture || outputTexture->type != RHI::TextureType::Texture2D || outputTexture->GetSampleCount() != 1) {
         return false;
@@ -306,8 +306,8 @@ bool IBLGenerator::GenerateDFGSumGGX(RHI::CommandList *commandList, RHI::Texture
     return true;
 }
 
-bool IBLGenerator::GenerateDFGSumGGXToImage(RHI::FrameThreadData *frameThreadData, int32_t size, BE1::Image &outImage) {
-    PROFILER_CPU_SCOPED_EVENT("IBLGenerator::GenerateDFGSumGGXToImage");
+bool IBLBaker::GenerateDFGSumGGXToImage(RHI::FrameThreadData *frameThreadData, int32_t size, BE1::Image &outImage) {
+    PROFILER_CPU_SCOPED_EVENT("IBLBaker::GenerateDFGSumGGXToImage");
 
     outImage.Clear();
 
@@ -327,7 +327,7 @@ bool IBLGenerator::GenerateDFGSumGGXToImage(RHI::FrameThreadData *frameThreadDat
     if (!texture) {
         return false;
     }
-    RHI::renderer->SetName(texture, "IBLGenerator::DFGSumGGXTexture");
+    RHI::renderer->SetName(texture, "IBLBaker::DFGSumGGXTexture");
 
     // 이 함수가 생성한 command list 만 닫고 제출하므로 호출자의 recording scope 에 영향을 주지 않는다.
     RHI::CommandList *commandList = frameThreadData->BeginCommandList(RHI::CommandQueueType::Graphics);
@@ -351,7 +351,7 @@ bool IBLGenerator::GenerateDFGSumGGXToImage(RHI::FrameThreadData *frameThreadDat
     return true;
 }
 
-bool IBLGenerator::GenerateDFGSumGGXToFile(RHI::FrameThreadData *frameThreadData, int32_t size, const char *filename) {
+bool IBLBaker::GenerateDFGSumGGXToFile(RHI::FrameThreadData *frameThreadData, int32_t size, const char *filename) {
     if (!filename || !filename[0]) {
         return false;
     }
@@ -364,7 +364,7 @@ bool IBLGenerator::GenerateDFGSumGGXToFile(RHI::FrameThreadData *frameThreadData
     BE1::Str outputPath = filename;
     outputPath.SetFileExtension(".dds");
     if (!image.WriteDDS(outputPath.c_str())) {
-        BE_WARNLOG("IBLGenerator::GenerateDFGSumGGXToFile: failed to write \"%s\"\n", outputPath.c_str());
+        BE_WARNLOG("IBLBaker::GenerateDFGSumGGXToFile: failed to write \"%s\"\n", outputPath.c_str());
         return false;
     }
 
@@ -372,7 +372,7 @@ bool IBLGenerator::GenerateDFGSumGGXToFile(RHI::FrameThreadData *frameThreadData
     return true;
 }
 
-bool IBLGenerator::DispatchGenerateLDMip(RHI::CommandList *commandList, const RHI::Texture *radianceCubeMap, RHI::Texture *outputCubeMap, RHI::ViewID outputMipUAV, const RHI::TextureViewInfo &outputViewInfo, uint32_t mipLevel) {
+bool IBLBaker::DispatchGenerateLDMip(RHI::CommandList *commandList, const RHI::Texture *radianceCubeMap, RHI::Texture *outputCubeMap, RHI::ViewID outputMipUAV, const RHI::TextureViewInfo &outputViewInfo, uint32_t mipLevel) {
     RHI::PipelineState *pso = ShaderPipeline::GetReadyPSO(genLDSumGGXPipeline);
     if (!pso) {
         return false;

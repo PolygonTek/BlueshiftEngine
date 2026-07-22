@@ -424,9 +424,9 @@ bool RenderCapture::CaptureDiffuseIrradianceEnvCubeToImage(RenderContext *render
     RHI::FrameThreadData *frameThreadData = renderContext->GetCurrentFrontendFrameData()->GetThreadData(0);
     RHI::CommandList *commandList = frameThreadData->BeginCommandList(RHI::CommandQueueType::Graphics);
 #if 1
-    bool generated = renderSystem->GetIBLGenerator().GenerateDiffuseIrradiance(commandList, radianceCubeTexture->GetRHITexture(), outputRHITexture, outputUAV);
+    bool generated = renderSystem->GetIBLBaker().GenerateDiffuseIrradiance(commandList, radianceCubeTexture->GetRHITexture(), outputRHITexture, outputUAV);
 #else
-    bool generated = renderSystem->GetIBLGenerator().GenerateDiffuseIrradianceSH(commandList, radianceCubeTexture->GetRHITexture(), outputRHITexture, outputUAV);
+    bool generated = renderSystem->GetIBLBaker().GenerateDiffuseIrradianceSH(commandList, radianceCubeTexture->GetRHITexture(), outputRHITexture, outputUAV);
 #endif
 
     commandList->CloseAndExecute();
@@ -526,9 +526,9 @@ bool RenderCapture::CaptureSpecularPrefilteredEnvCubeToImage(RenderContext *rend
     // GGX importance sampling 이 source LOD 를 선택할 수 있도록 캡처된 radiance cubemap 의 mip chain 을 먼저 만든다.
     RHI::renderer->GenerateMipChain(commandList, radianceRHITexture, radianceMipSRVs, radianceMipUAVs, false);
 #if 1
-    bool generated = renderSystem->GetIBLGenerator().GenerateLDSumGGX(commandList, radianceRHITexture, outputRHITexture, outputMipUAVs);
+    bool generated = renderSystem->GetIBLBaker().GenerateLDSumGGX(commandList, radianceRHITexture, outputRHITexture, outputMipUAVs);
 #else
-    bool generated = renderSystem->GetIBLGenerator().GenerateLDSumPhongSpecular(commandList, radianceRHITexture, 2048, outputRHITexture, outputMipUAVs);
+    bool generated = renderSystem->GetIBLBaker().GenerateLDSumPhongSpecular(commandList, radianceRHITexture, 2048, outputRHITexture, outputMipUAVs);
 #endif
 
     commandList->CloseAndExecute();

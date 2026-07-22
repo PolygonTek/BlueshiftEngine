@@ -56,7 +56,7 @@ void RenderSystem::Init(void *mainWindowHandle) {
 
     gpuSphericalHarmonics.Init();
 
-    iblGenerator.Init();
+    iblBaker.Init();
 
     InitComputePipelines();
 
@@ -104,7 +104,7 @@ void RenderSystem::Shutdown() {
 
     convolutionBloomKernelGenerator.Shutdown();
 
-    iblGenerator.Shutdown();
+    iblBaker.Shutdown();
 
     gpuSphericalHarmonics.Shutdown();
 

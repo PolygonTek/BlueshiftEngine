@@ -23,7 +23,7 @@ class ShaderTemplate;
 /*
 ---------------------------------------------------------------------------------------------------
 
-    Image-Based Lighting Generator
+    Image-Based Lighting Baker
 
     * Generate diffuse IBL
         - Lambert diffuse irradiance cubemap
@@ -46,7 +46,7 @@ class ShaderTemplate;
 ---------------------------------------------------------------------------------------------------
 */
 
-class IBLGenerator {
+class IBLBaker {
 public:
     void                            Init();
     void                            Shutdown();

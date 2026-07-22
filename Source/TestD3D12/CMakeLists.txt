@@ -137,8 +137,8 @@ set(SRC_FILES
     Render/ColorGradingLUTGenerator.cpp
     Render/ConvolutionBloomKernelGenerator.h
     Render/ConvolutionBloomKernelGenerator.cpp
-    Render/IBLGenerator.h
-    Render/IBLGenerator.cpp
+    Render/IBLBaker.h
+    Render/IBLBaker.cpp
     Render/GpuTiming.h
     Render/GpuTiming.cpp
     Render/RenderContext.h
