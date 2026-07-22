@@ -71,7 +71,7 @@ public:
                                     /// outputMipUAVs 는 출력 mip 수만큼 있어야 하며, 각 UAV 는 해당 mip 의 6개 face 를 포함해야 한다.
     bool                            GenerateLDSumGGX(RHI::CommandList *commandList, const RHI::Texture *radianceCubeMap, RHI::Texture *outputCubeMap, const RHI::ViewID *outputMipUAVs);
 
-                                    /// mip 0 은 radianceCubeMap 을 방향 기반으로 resampling 하고, 나머지 mip 은 GGX 적분을 수행한다.
+                                    /// mip 0 은 출력 texel footprint 에 맞는 radiance mip 을 방향 기반으로 sampling 하고, 나머지 mip 은 GGX 적분을 수행한다.
                                     /// radianceCubeMap 은 mipmap filtered sampling 을 위해 전체 mip chain 을 포함해야 한다.
     bool                            GenerateLDSumGGXMip(RHI::CommandList *commandList, const RHI::Texture *radianceCubeMap, RHI::Texture *outputCubeMap, RHI::ViewID outputMipUAV, uint32_t mipLevel);
 
@@ -86,15 +86,13 @@ public:
     bool                            GenerateDFGSumGGXToFile(RHI::FrameThreadData *frameThreadData, int32_t size, const char *filename);
 
 private:
-    bool                            DispatchCopyLDMip0(RHI::CommandList *commandList, const RHI::Texture *radianceCubeMap, RHI::Texture *outputCubeMap, RHI::ViewID outputMipUAV, const RHI::TextureViewInfo &outputViewInfo);
-    bool                            DispatchIntegrateLDMip(RHI::CommandList *commandList, const RHI::Texture *radianceCubeMap, RHI::Texture *outputCubeMap, RHI::ViewID outputMipUAV, const RHI::TextureViewInfo &outputViewInfo, uint32_t mipLevel);
+    bool                            DispatchGenerateLDMip(RHI::CommandList *commandList, const RHI::Texture *radianceCubeMap, RHI::Texture *outputCubeMap, RHI::ViewID outputMipUAV, const RHI::TextureViewInfo &outputViewInfo, uint32_t mipLevel);
 
     SharedPtr<ShaderTemplate>       genDiffuseIrradianceShaderTemplate;
     SharedPtr<ShaderTemplate>       projectCubemapSHShaderTemplate;
     SharedPtr<ShaderTemplate>       genDiffuseIrradianceSHShaderTemplate;
     SharedPtr<ShaderTemplate>       genLDSumPhongSpecularShaderTemplate;
     SharedPtr<ShaderTemplate>       genLDSumGGXShaderTemplate;
-    SharedPtr<ShaderTemplate>       copyCubemapShaderTemplate;
     SharedPtr<ShaderTemplate>       genDFGSumGGXShaderTemplate;
 
     SharedPtr<ShaderPipeline>       genDiffuseIrradiancePipeline;
@@ -102,7 +100,6 @@ private:
     SharedPtr<ShaderPipeline>       genDiffuseIrradianceSHPipeline;
     SharedPtr<ShaderPipeline>       genLDSumPhongSpecularPipeline;
     SharedPtr<ShaderPipeline>       genLDSumGGXPipeline;
-    SharedPtr<ShaderPipeline>       copyCubemapPipeline;
     SharedPtr<ShaderPipeline>       genDFGSumGGXPipeline;
 
                                     // SH projection 의 face별 9 개 계수를 저장하는 재사용 scratch buffer.

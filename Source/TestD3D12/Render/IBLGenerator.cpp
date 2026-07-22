@@ -32,7 +32,6 @@ void IBLGenerator::Init() {
     genDiffuseIrradianceSHShaderTemplate = shaderTemplateManager.CreateComputeShaderTemplate("_genDiffuseIrradianceSHShader", shaderModel, "PBR/GenDiffuseIrradianceSH.hlsl", baseDir);
     genLDSumPhongSpecularShaderTemplate = shaderTemplateManager.CreateComputeShaderTemplate("_genLDSumPhongSpecularShader", shaderModel, "PBR/GenLDSumPhongSpecular.hlsl", baseDir);
     genLDSumGGXShaderTemplate = shaderTemplateManager.CreateComputeShaderTemplate("_genLDSumGGXShader", shaderModel, "PBR/GenLDSumGGX.hlsl", baseDir);
-    copyCubemapShaderTemplate = shaderTemplateManager.CreateComputeShaderTemplate("_copyCubemapForIBLShader", shaderModel, "GenMip/GenMipCubeFloat4.hlsl", baseDir);
     genDFGSumGGXShaderTemplate = shaderTemplateManager.CreateComputeShaderTemplate("_genDFGSumGGXShader", shaderModel, "PBR/GenDFGSumGGX.hlsl", baseDir);
 
     genDiffuseIrradiancePipeline = shaderPipelineCache.GetComputePipeline(genDiffuseIrradianceShaderTemplate, ShaderPermutationKey());
@@ -40,7 +39,6 @@ void IBLGenerator::Init() {
     genDiffuseIrradianceSHPipeline = shaderPipelineCache.GetComputePipeline(genDiffuseIrradianceSHShaderTemplate, ShaderPermutationKey());
     genLDSumPhongSpecularPipeline = shaderPipelineCache.GetComputePipeline(genLDSumPhongSpecularShaderTemplate, ShaderPermutationKey());
     genLDSumGGXPipeline = shaderPipelineCache.GetComputePipeline(genLDSumGGXShaderTemplate, ShaderPermutationKey());
-    copyCubemapPipeline = shaderPipelineCache.GetComputePipeline(copyCubemapShaderTemplate, ShaderPermutationKey());
     genDFGSumGGXPipeline = shaderPipelineCache.GetComputePipeline(genDFGSumGGXShaderTemplate, ShaderPermutationKey());
 
     const uint32_t coefficientBufferSize = SHCoefficientBufferElementCount * sizeof(float) * 4;
@@ -73,7 +71,6 @@ void IBLGenerator::Shutdown() {
     genDiffuseIrradianceSHPipeline.reset();
     genLDSumPhongSpecularPipeline.reset();
     genLDSumGGXPipeline.reset();
-    copyCubemapPipeline.reset();
     genDFGSumGGXPipeline.reset();
 
     genDiffuseIrradianceShaderTemplate.reset();
@@ -81,7 +78,6 @@ void IBLGenerator::Shutdown() {
     genDiffuseIrradianceSHShaderTemplate.reset();
     genLDSumPhongSpecularShaderTemplate.reset();
     genLDSumGGXShaderTemplate.reset();
-    copyCubemapShaderTemplate.reset();
     genDFGSumGGXShaderTemplate.reset();
 }
 
@@ -316,8 +312,7 @@ bool IBLGenerator::GenerateLDSumGGXMip(RHI::CommandList *commandList, const RHI:
         radianceCubeMap->GetStatus() != RHI::GPUResourceStatus::Ready || outputCubeMap->GetStatus() != RHI::GPUResourceStatus::Ready ||
         radianceCubeMap->type != RHI::TextureType::TextureCube || outputCubeMap->type != RHI::TextureType::TextureCube ||
         radianceCubeMap->GetArraySize() != 6 || outputCubeMap->GetArraySize() != 6 ||
-        radianceCubeMap->GetWidth() == 0 || radianceCubeMap->GetWidth() != radianceCubeMap->GetHeight() ||
-        outputCubeMap->GetWidth() == 0 || outputCubeMap->GetWidth() != outputCubeMap->GetHeight() ||
+        radianceCubeMap->GetWidth() == 0 || outputCubeMap->GetWidth() == 0 ||
         outputCubeMap->GetSampleCount() != 1 || mipLevel >= outputCubeMap->GetMipLevelCount()) {
         return false;
     }
@@ -338,12 +333,7 @@ bool IBLGenerator::GenerateLDSumGGXMip(RHI::CommandList *commandList, const RHI:
         return false;
     }
 
-    // Roughness 0 에서는 적분 대신 source mip 0 을 방향 기반으로 sampling 한다.
-    // Texture copy 와 달리 outputCubeMap 의 base resolution 이 달라도 올바르게 resampling 된다.
-    if (mipLevel == 0) {
-        return DispatchCopyLDMip0(commandList, radianceCubeMap, outputCubeMap, outputMipUAV, outputViewInfo);
-    }
-    return DispatchIntegrateLDMip(commandList, radianceCubeMap, outputCubeMap, outputMipUAV, outputViewInfo, mipLevel);
+    return DispatchGenerateLDMip(commandList, radianceCubeMap, outputCubeMap, outputMipUAV, outputViewInfo, mipLevel);
 }
 
 bool IBLGenerator::GenerateDFGSumGGX(RHI::CommandList *commandList, RHI::Texture *outputTexture, RHI::ViewID outputUAV) {
@@ -442,58 +432,19 @@ bool IBLGenerator::GenerateDFGSumGGXToFile(RHI::FrameThreadData *frameThreadData
     return true;
 }
 
-bool IBLGenerator::DispatchCopyLDMip0(RHI::CommandList *commandList, const RHI::Texture *radianceCubeMap, RHI::Texture *outputCubeMap, RHI::ViewID outputMipUAV, const RHI::TextureViewInfo &outputViewInfo) {
-    RHI::PipelineState *pso = ShaderPipeline::GetReadyPSO(copyCubemapPipeline);
-    if (!pso) {
-        return false;
-    }
-
-    MipGenParams mipGenParams = {};
-    mipGenParams.dstSize = uint3(outputViewInfo.width, outputViewInfo.height, 0);
-    mipGenParams.dstSizeRcp = float3(1.0f / outputViewInfo.width, 1.0f / outputViewInfo.height, 0.0f);
-
-    // Mip UAV 가 참조하는 6개 face (array slice) 만 개별적으로 transition 한다.
-    RHI::GPUBarrier startBarriers[1 + 6];
-    startBarriers[0] = RHI::Renderer::MakeTextureBarrier(radianceCubeMap, RHI::GPUResourceState::ShaderResource, RHI::GPUResourceState::ShaderResourceCompute);
-    for (uint32_t faceIndex = 0; faceIndex < 6; faceIndex++) {
-        startBarriers[1 + faceIndex] = RHI::Renderer::MakeTextureBarrier(outputCubeMap, RHI::GPUResourceState::ShaderResource, RHI::GPUResourceState::UnorderedAccess, faceIndex, 0);
-    }
-    RHI::renderer->Barrier(commandList, startBarriers, COUNT_OF(startBarriers));
-
-    RHI::renderer->SetPSO(commandList, pso);
-    RHI::renderer->SetTexture(commandList, 0, false, radianceCubeMap);
-    RHI::renderer->SetTexture(commandList, 0, true, outputCubeMap, outputMipUAV);
-    RHI::renderer->SetConstants(commandList, 0, &mipGenParams, sizeof(mipGenParams), 0);
-
-    const uint32_t threadGroupCountX = (outputViewInfo.width + GenMip2DBlockSizeX - 1) / GenMip2DBlockSizeX;
-    const uint32_t threadGroupCountY = (outputViewInfo.height + GenMip2DBlockSizeY - 1) / GenMip2DBlockSizeY;
-    RHI::renderer->Dispatch(commandList, threadGroupCountX, threadGroupCountY, 6);
-
-    RHI::GPUBarrier endBarriers[1 + 6];
-    endBarriers[0] = RHI::Renderer::MakeTextureBarrier(radianceCubeMap, RHI::GPUResourceState::ShaderResourceCompute, RHI::GPUResourceState::ShaderResource);
-    for (uint32_t faceIndex = 0; faceIndex < 6; faceIndex++) {
-        endBarriers[1 + faceIndex] = RHI::Renderer::MakeTextureBarrier(outputCubeMap, RHI::GPUResourceState::UnorderedAccess, RHI::GPUResourceState::ShaderResource, faceIndex, 0);
-    }
-    RHI::renderer->Barrier(commandList, endBarriers, COUNT_OF(endBarriers));
-    return true;
-}
-
-bool IBLGenerator::DispatchIntegrateLDMip(RHI::CommandList *commandList, const RHI::Texture *radianceCubeMap, RHI::Texture *outputCubeMap, RHI::ViewID outputMipUAV, const RHI::TextureViewInfo &outputViewInfo, uint32_t mipLevel) {
+bool IBLGenerator::DispatchGenerateLDMip(RHI::CommandList *commandList, const RHI::Texture *radianceCubeMap, RHI::Texture *outputCubeMap, RHI::ViewID outputMipUAV, const RHI::TextureViewInfo &outputViewInfo, uint32_t mipLevel) {
     RHI::PipelineState *pso = ShaderPipeline::GetReadyPSO(genLDSumGGXPipeline);
     if (!pso) {
         return false;
     }
 
     const uint32_t mipLevelCount = outputCubeMap->GetMipLevelCount();
-    if (mipLevelCount <= 1) {
-        return false;
-    }
-
     GenLDSumGGXParams params = {};
     params.radianceCubeMapSize = radianceCubeMap->GetWidth();
+    params.minRadianceMipLevel = BE1::Max(BE1::Math::Log(2.0f, static_cast<float>(radianceCubeMap->GetWidth()) / static_cast<float>(outputViewInfo.width)), 0.0f);
 
     // Perceptual roughness 를 mip chain 에 선형 배분하고 shader 에서 제곱하여 linear roughness 로 변환한다.
-    params.roughness = static_cast<float>(mipLevel) / static_cast<float>(mipLevelCount - 1);
+    params.roughness = mipLevelCount > 1 ? static_cast<float>(mipLevel) / static_cast<float>(mipLevelCount - 1) : 0.0f;
 
     // Mip UAV 가 참조하는 6개 face(array slice) 만 개별적으로 transition 한다.
     RHI::GPUBarrier startBarriers[1 + 6];

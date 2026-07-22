@@ -159,10 +159,11 @@ struct MipGenParams {
 struct GenLDSumGGXParams {
     uint radianceCubeMapSize;
     float roughness;
+    float minRadianceMipLevel;
 };
 
 #ifdef __cplusplus
-static_assert(sizeof(GenLDSumGGXParams) == 8, "GenLDSumGGXParams must match the HLSL root constants");
+static_assert(sizeof(GenLDSumGGXParams) == 12, "GenLDSumGGXParams must match the HLSL root constants");
 #endif
 
 struct GenLDSumPhongSpecularParams {

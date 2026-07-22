@@ -120,8 +120,9 @@ float3 IntegrateLDPhongSpecular(float3 S, float specularPower, TextureCube<float
 
 // Computes the LD term (first sum in "Real Shading in Unreal Engine 4", page 6).
 // N must be normalized and linearRoughness must be greater than or equal to MinLinearRoughness.
-// When USE_MIPMAP_FILTERED_SAMPLING is defined, radianceCubeMapSize must be greater than 0.
-float3 IntegrateLD(float3 N, float linearRoughness, TextureCube<float4> radianceCubeMap, SamplerState radianceSampler, float radianceCubeMapSize) {
+// When USE_MIPMAP_FILTERED_SAMPLING is defined, radianceCubeMapSize must be greater than 0 and
+// minRadianceMipLevel specifies the minimum footprint required by the output texel.
+float3 IntegrateLD(float3 N, float linearRoughness, TextureCube<float4> radianceCubeMap, SamplerState radianceSampler, float radianceCubeMapSize, float minRadianceMipLevel) {
     const float3x3 tangentToWorld = GetLocalFrame(N);
     const uint sampleCount = IntegrateLDSampleGridSize * IntegrateLDSampleGridSize;
     const float sampleGridSizeRcp = rcp((float)IntegrateLDSampleGridSize);
@@ -167,7 +168,7 @@ float3 IntegrateLD(float3 N, float linearRoughness, TextureCube<float4> radiance
 
             // Solid angle associated with a sample.
             const float omegaS = rcp((float)sampleCount * pdf);
-            const float mipLevel = clamp(0.5f * log2(omegaS * invOmegaP) + 1.0f, 0.0f, maxMipLevel);
+            const float mipLevel = clamp(0.5f * log2(omegaS * invOmegaP) + 1.0f, minRadianceMipLevel, maxMipLevel);
 #else
             const float mipLevel = 0.0f;
 #endif
