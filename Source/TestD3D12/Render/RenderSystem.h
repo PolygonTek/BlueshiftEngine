@@ -15,6 +15,7 @@
 #include "Precompiled.h"
 #include "RHI/RHI.h"
 #include "GpuFFT.h"
+#include "GpuSphericalHarmonics.h"
 #include "ColorGradingLUTGenerator.h"
 #include "ConvolutionBloomKernelGenerator.h"
 #include "IBLGenerator.h"
@@ -82,6 +83,9 @@ public:
 
     ConvolutionBloomKernelGenerator &GetConvolutionBloomKernelGenerator() { return convolutionBloomKernelGenerator; }
     const ConvolutionBloomKernelGenerator &GetConvolutionBloomKernelGenerator() const { return convolutionBloomKernelGenerator; }
+
+    GpuSphericalHarmonics &         GetGpuSphericalHarmonics() { return gpuSphericalHarmonics; }
+    const GpuSphericalHarmonics &   GetGpuSphericalHarmonics() const { return gpuSphericalHarmonics; }
 
     IBLGenerator &                  GetIBLGenerator() { return iblGenerator; }
     const IBLGenerator &            GetIBLGenerator() const { return iblGenerator; }
@@ -186,6 +190,7 @@ private:
     bool                            colorGradingLUTDirty = false;
 
     GpuFFT                          gpuFFT;
+    GpuSphericalHarmonics           gpuSphericalHarmonics;
     IBLGenerator                    iblGenerator;
 };
 

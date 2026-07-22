@@ -174,6 +174,14 @@ struct GenLDSumPhongSpecularParams {
 static_assert(sizeof(GenLDSumPhongSpecularParams) == 4, "GenLDSumPhongSpecularParams must match the HLSL root constants");
 #endif
 
+struct ReconstructCubemapSHParams {
+    float3 bandFactors;
+};
+
+#ifdef __cplusplus
+static_assert(sizeof(ReconstructCubemapSHParams) == 12, "ReconstructCubemapSHParams must match the HLSL root constants");
+#endif
+
 struct LuminancePass1Params {
     uint2 sampleSize;
     float2 sampleSizeRcp;

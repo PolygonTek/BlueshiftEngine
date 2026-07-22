@@ -89,22 +89,12 @@ private:
     bool                            DispatchGenerateLDMip(RHI::CommandList *commandList, const RHI::Texture *radianceCubeMap, RHI::Texture *outputCubeMap, RHI::ViewID outputMipUAV, const RHI::TextureViewInfo &outputViewInfo, uint32_t mipLevel);
 
     SharedPtr<ShaderTemplate>       genDiffuseIrradianceShaderTemplate;
-    SharedPtr<ShaderTemplate>       projectCubemapSHShaderTemplate;
-    SharedPtr<ShaderTemplate>       genDiffuseIrradianceSHShaderTemplate;
     SharedPtr<ShaderTemplate>       genLDSumPhongSpecularShaderTemplate;
     SharedPtr<ShaderTemplate>       genLDSumGGXShaderTemplate;
     SharedPtr<ShaderTemplate>       genDFGSumGGXShaderTemplate;
 
     SharedPtr<ShaderPipeline>       genDiffuseIrradiancePipeline;
-    SharedPtr<ShaderPipeline>       projectCubemapSHPipeline;
-    SharedPtr<ShaderPipeline>       genDiffuseIrradianceSHPipeline;
     SharedPtr<ShaderPipeline>       genLDSumPhongSpecularPipeline;
     SharedPtr<ShaderPipeline>       genLDSumGGXPipeline;
     SharedPtr<ShaderPipeline>       genDFGSumGGXPipeline;
-
-                                    // SH projection 의 face별 9 개 계수를 저장하는 재사용 scratch buffer.
-    RHI::Buffer *                   shCoefficientBuffer = nullptr;
-    RHI::ViewID                     shCoefficientSRV = RHI::ViewID::InvalidID;
-    RHI::ViewID                     shCoefficientUAV = RHI::ViewID::InvalidID;
-    RHI::GPUResourceState           shCoefficientBufferState = RHI::GPUResourceState::Undefined;
 };

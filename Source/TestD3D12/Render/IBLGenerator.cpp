@@ -14,68 +14,35 @@
 
 #include "Precompiled.h"
 #include "IBLGenerator.h"
+#include "RenderSystem.h"
 #include "Image/Image.h"
 #include "Render/ShaderPipeline/ShaderPipeline.h"
 #include "Render/ShaderPipeline/ShaderPipelineCache.h"
 #include "Render/ShaderPipeline/ShaderTemplateManager.h"
 #include "Shaders/ShaderInterop.h"
 
-static constexpr uint32_t SHCoefficientCount = 9;
-static constexpr uint32_t SHCoefficientBufferElementCount = 6 * SHCoefficientCount;
-
 void IBLGenerator::Init() {
     const char *baseDir = "Source/TestD3D12/Shaders";
     const RHI::ShaderModel shaderModel = RHI::ShaderModel::SM_6_6;
 
     genDiffuseIrradianceShaderTemplate = shaderTemplateManager.CreateComputeShaderTemplate("_genDiffuseIrradianceShader", shaderModel, "PBR/GenDiffuseIrradiance.hlsl", baseDir);
-    projectCubemapSHShaderTemplate = shaderTemplateManager.CreateComputeShaderTemplate("_projectCubemapSHShader", shaderModel, "PBR/ProjectCubemapSH.hlsl", baseDir);
-    genDiffuseIrradianceSHShaderTemplate = shaderTemplateManager.CreateComputeShaderTemplate("_genDiffuseIrradianceSHShader", shaderModel, "PBR/GenDiffuseIrradianceSH.hlsl", baseDir);
     genLDSumPhongSpecularShaderTemplate = shaderTemplateManager.CreateComputeShaderTemplate("_genLDSumPhongSpecularShader", shaderModel, "PBR/GenLDSumPhongSpecular.hlsl", baseDir);
     genLDSumGGXShaderTemplate = shaderTemplateManager.CreateComputeShaderTemplate("_genLDSumGGXShader", shaderModel, "PBR/GenLDSumGGX.hlsl", baseDir);
     genDFGSumGGXShaderTemplate = shaderTemplateManager.CreateComputeShaderTemplate("_genDFGSumGGXShader", shaderModel, "PBR/GenDFGSumGGX.hlsl", baseDir);
 
     genDiffuseIrradiancePipeline = shaderPipelineCache.GetComputePipeline(genDiffuseIrradianceShaderTemplate, ShaderPermutationKey());
-    projectCubemapSHPipeline = shaderPipelineCache.GetComputePipeline(projectCubemapSHShaderTemplate, ShaderPermutationKey());
-    genDiffuseIrradianceSHPipeline = shaderPipelineCache.GetComputePipeline(genDiffuseIrradianceSHShaderTemplate, ShaderPermutationKey());
     genLDSumPhongSpecularPipeline = shaderPipelineCache.GetComputePipeline(genLDSumPhongSpecularShaderTemplate, ShaderPermutationKey());
     genLDSumGGXPipeline = shaderPipelineCache.GetComputePipeline(genLDSumGGXShaderTemplate, ShaderPermutationKey());
     genDFGSumGGXPipeline = shaderPipelineCache.GetComputePipeline(genDFGSumGGXShaderTemplate, ShaderPermutationKey());
-
-    const uint32_t coefficientBufferSize = SHCoefficientBufferElementCount * sizeof(float) * 4;
-    shCoefficientBuffer = RHI::renderer->CreateBuffer(RHI::BufferUsage::Default, RHI::BufferFlag::ShaderResource | RHI::BufferFlag::UnorderedAccess, coefficientBufferSize, nullptr);
-    if (shCoefficientBuffer) {
-        RHI::renderer->SetName(shCoefficientBuffer, "IBLGenerator::SHCoefficientBuffer");
-        shCoefficientSRV = RHI::renderer->CreateView(shCoefficientBuffer, RHI::ViewType::SRV, RHI::Format::Unknown, sizeof(float) * 4, 0, coefficientBufferSize);
-        shCoefficientUAV = RHI::renderer->CreateView(shCoefficientBuffer, RHI::ViewType::UAV, RHI::Format::Unknown, sizeof(float) * 4, 0, coefficientBufferSize);
-
-        if (!shCoefficientSRV.IsValid() || !shCoefficientUAV.IsValid()) {
-            RHI::renderer->DestroyBuffer(shCoefficientBuffer);
-            shCoefficientBuffer = nullptr;
-            shCoefficientSRV = RHI::ViewID::InvalidID;
-            shCoefficientUAV = RHI::ViewID::InvalidID;
-        }
-    }
 }
 
 void IBLGenerator::Shutdown() {
-    if (shCoefficientBuffer) {
-        RHI::renderer->DestroyBuffer(shCoefficientBuffer);
-        shCoefficientBuffer = nullptr;
-    }
-    shCoefficientSRV = RHI::ViewID::InvalidID;
-    shCoefficientUAV = RHI::ViewID::InvalidID;
-    shCoefficientBufferState = RHI::GPUResourceState::Undefined;
-
     genDiffuseIrradiancePipeline.reset();
-    projectCubemapSHPipeline.reset();
-    genDiffuseIrradianceSHPipeline.reset();
     genLDSumPhongSpecularPipeline.reset();
     genLDSumGGXPipeline.reset();
     genDFGSumGGXPipeline.reset();
 
     genDiffuseIrradianceShaderTemplate.reset();
-    projectCubemapSHShaderTemplate.reset();
-    genDiffuseIrradianceSHShaderTemplate.reset();
     genLDSumPhongSpecularShaderTemplate.reset();
     genLDSumGGXShaderTemplate.reset();
     genDFGSumGGXShaderTemplate.reset();
@@ -106,8 +73,7 @@ bool IBLGenerator::GenerateDiffuseIrradiance(RHI::CommandList *commandList, cons
         radianceCubeMap->GetStatus() != RHI::GPUResourceStatus::Ready || outputCubeMap->GetStatus() != RHI::GPUResourceStatus::Ready ||
         radianceCubeMap->type != RHI::TextureType::TextureCube || outputCubeMap->type != RHI::TextureType::TextureCube ||
         radianceCubeMap->GetArraySize() != 6 || outputCubeMap->GetArraySize() != 6 ||
-        radianceCubeMap->GetWidth() == 0 || radianceCubeMap->GetWidth() != radianceCubeMap->GetHeight() ||
-        outputCubeMap->GetWidth() == 0 || outputCubeMap->GetWidth() != outputCubeMap->GetHeight() ||
+        radianceCubeMap->GetWidth() == 0 || outputCubeMap->GetWidth() == 0 ||
         outputCubeMap->GetSampleCount() != 1) {
         return false;
     }
@@ -155,11 +121,8 @@ bool IBLGenerator::GenerateDiffuseIrradianceSH(RHI::CommandList *commandList, co
         radianceCubeMap->GetStatus() != RHI::GPUResourceStatus::Ready || outputCubeMap->GetStatus() != RHI::GPUResourceStatus::Ready ||
         radianceCubeMap->type != RHI::TextureType::TextureCube || outputCubeMap->type != RHI::TextureType::TextureCube ||
         radianceCubeMap->GetArraySize() != 6 || outputCubeMap->GetArraySize() != 6 ||
-        radianceCubeMap->GetWidth() == 0 || radianceCubeMap->GetWidth() != radianceCubeMap->GetHeight() ||
-        outputCubeMap->GetWidth() == 0 || outputCubeMap->GetWidth() != outputCubeMap->GetHeight() ||
-        outputCubeMap->GetSampleCount() != 1 ||
-        !shCoefficientBuffer || shCoefficientBuffer->GetStatus() != RHI::GPUResourceStatus::Ready ||
-        !shCoefficientSRV.IsValid() || !shCoefficientUAV.IsValid()) {
+        radianceCubeMap->GetWidth() == 0 || outputCubeMap->GetWidth() == 0 ||
+        outputCubeMap->GetSampleCount() != 1) {
         return false;
     }
 
@@ -169,49 +132,27 @@ bool IBLGenerator::GenerateDiffuseIrradianceSH(RHI::CommandList *commandList, co
         return false;
     }
 
-    RHI::PipelineState *projectPSO = ShaderPipeline::GetReadyPSO(projectCubemapSHPipeline);
-    RHI::PipelineState *reconstructPSO = ShaderPipeline::GetReadyPSO(genDiffuseIrradianceSHPipeline);
-    if (!projectPSO || !reconstructPSO) {
-        return false;
-    }
-
-    RHI::GPUBarrier projectBarriers[] = {
-        RHI::Renderer::MakeTextureBarrier(radianceCubeMap, RHI::GPUResourceState::ShaderResource, RHI::GPUResourceState::ShaderResourceCompute),
-        RHI::Renderer::MakeBufferBarrier(shCoefficientBuffer, shCoefficientBufferState, RHI::GPUResourceState::UnorderedAccess)
-    };
-    RHI::renderer->Barrier(commandList, projectBarriers, COUNT_OF(projectBarriers));
-
-    RHI::renderer->SetPSO(commandList, projectPSO);
-    RHI::renderer->SetTexture(commandList, 0, false, radianceCubeMap);
-    RHI::renderer->SetBuffer(commandList, 0, true, shCoefficientBuffer, shCoefficientUAV);
-    RHI::renderer->Dispatch(commandList, 6, 1, 1);
-
-    // Projection 결과를 다음 compute pass 에서 읽을 수 있도록 전이한다.
-    RHI::GPUBarrier reconstructBarriers[1 + 6];
-    reconstructBarriers[0] = RHI::Renderer::MakeBufferBarrier(shCoefficientBuffer, RHI::GPUResourceState::UnorderedAccess, RHI::GPUResourceState::ShaderResourceCompute);
+    RHI::GPUBarrier filterBarriers[1 + 6];
+    filterBarriers[0] = RHI::Renderer::MakeTextureBarrier(radianceCubeMap, RHI::GPUResourceState::ShaderResource, RHI::GPUResourceState::ShaderResourceCompute);
     for (uint32_t faceIndex = 0; faceIndex < 6; faceIndex++) {
-        reconstructBarriers[1 + faceIndex] = RHI::Renderer::MakeTextureBarrier(outputCubeMap, RHI::GPUResourceState::ShaderResource, RHI::GPUResourceState::UnorderedAccess, faceIndex, 0);
+        filterBarriers[1 + faceIndex] = RHI::Renderer::MakeTextureBarrier(outputCubeMap, RHI::GPUResourceState::ShaderResource, RHI::GPUResourceState::UnorderedAccess, faceIndex, 0);
     }
-    RHI::renderer->Barrier(commandList, reconstructBarriers, COUNT_OF(reconstructBarriers));
+    RHI::renderer->Barrier(commandList, filterBarriers, COUNT_OF(filterBarriers));
 
-    RHI::renderer->SetPSO(commandList, reconstructPSO);
-    RHI::renderer->SetBuffer(commandList, 0, false, shCoefficientBuffer, shCoefficientSRV);
-    RHI::renderer->SetTexture(commandList, 0, true, outputCubeMap, outputUAV);
+    // radiance cubemap 을 3-band SH 로 투영하고 Lambert convolution 하여 diffuse irradiance cubemap 으로 재구성한다.
+    // clamped cosine / PI 커널의 투영 ZH 계수에 sqrt(4 PI / (2l + 1)) 를 곱한 band 별 SH convolution factor.
+    // xyz 는 각각 l = 0, 1, 2 에 대응하며 값은 1, 2/3, 1/4 이다.
+    const BE1::Vec3 lambertBandFactors(1.0f, 2.0f / 3.0f, 1.0f / 4.0f);
+    const bool filtered = renderSystem->GetGpuSphericalHarmonics().FilterCubemapSH3(commandList, radianceCubeMap, outputCubeMap, outputUAV, lambertBandFactors);
 
-    const uint32_t threadGroupCountX = (outputViewInfo.width + IBLIntegrationBlockSizeX - 1) / IBLIntegrationBlockSizeX;
-    const uint32_t threadGroupCountY = (outputViewInfo.height + IBLIntegrationBlockSizeY - 1) / IBLIntegrationBlockSizeY;
-    RHI::renderer->Dispatch(commandList, threadGroupCountX, threadGroupCountY, 6);
-
-    RHI::GPUBarrier endBarriers[2 + 6];
+    RHI::GPUBarrier endBarriers[1 + 6];
     endBarriers[0] = RHI::Renderer::MakeTextureBarrier(radianceCubeMap, RHI::GPUResourceState::ShaderResourceCompute, RHI::GPUResourceState::ShaderResource);
-    endBarriers[1] = RHI::Renderer::MakeBufferBarrier(shCoefficientBuffer, RHI::GPUResourceState::ShaderResourceCompute, RHI::GPUResourceState::ShaderResource);
     for (uint32_t faceIndex = 0; faceIndex < 6; faceIndex++) {
-        endBarriers[2 + faceIndex] = RHI::Renderer::MakeTextureBarrier(outputCubeMap, RHI::GPUResourceState::UnorderedAccess, RHI::GPUResourceState::ShaderResource, faceIndex, 0);
+        endBarriers[1 + faceIndex] = RHI::Renderer::MakeTextureBarrier(outputCubeMap, RHI::GPUResourceState::UnorderedAccess, RHI::GPUResourceState::ShaderResource, faceIndex, 0);
     }
     RHI::renderer->Barrier(commandList, endBarriers, COUNT_OF(endBarriers));
 
-    shCoefficientBufferState = RHI::GPUResourceState::ShaderResource;
-    return true;
+    return filtered;
 }
 
 bool IBLGenerator::GenerateLDSumPhongSpecular(RHI::CommandList *commandList, const RHI::Texture *radianceCubeMap, int32_t maxSpecularPower, RHI::Texture *outputCubeMap, const RHI::ViewID *outputMipUAVs) {
@@ -235,8 +176,7 @@ bool IBLGenerator::GenerateLDSumPhongSpecularMip(RHI::CommandList *commandList, 
         radianceCubeMap->GetStatus() != RHI::GPUResourceStatus::Ready || outputCubeMap->GetStatus() != RHI::GPUResourceStatus::Ready ||
         radianceCubeMap->type != RHI::TextureType::TextureCube || outputCubeMap->type != RHI::TextureType::TextureCube ||
         radianceCubeMap->GetArraySize() != 6 || outputCubeMap->GetArraySize() != 6 ||
-        radianceCubeMap->GetWidth() == 0 || radianceCubeMap->GetWidth() != radianceCubeMap->GetHeight() ||
-        outputCubeMap->GetWidth() == 0 || outputCubeMap->GetWidth() != outputCubeMap->GetHeight() ||
+        radianceCubeMap->GetWidth() == 0 || outputCubeMap->GetWidth() == 0 ||
         outputCubeMap->GetSampleCount() != 1 || mipLevel >= outputCubeMap->GetMipLevelCount()) {
         return false;
     }
