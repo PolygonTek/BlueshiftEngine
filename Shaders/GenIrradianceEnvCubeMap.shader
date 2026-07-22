@@ -23,7 +23,7 @@ shader "GenIrradianceEnvCubeMap" {
             vec3 N = CubeMapFaceToDirection(targetCubeMapFace, targetFaceX, targetFaceY, targetCubeMapSize);
 
             vec3 color = vec3(0.0);
-        #if 1 // Quasi Monte Carlo integration
+        #if 1 // Cosine-weighted midpoint quadrature
             const float sampleCount = 32.0 * 32.0;
             const float inc = 1.0 / 32.0;
 
@@ -31,7 +31,9 @@ shader "GenIrradianceEnvCubeMap" {
 
             for (float y = 0.0; y < 1.0; y += inc) {
                 for (float x = 0.0; x < 1.0; x += inc) {
-                    vec3 L = tangentToWorld * ImportanceSampleLambert(vec2(x, y));
+                    vec2 xi = vec2(x, y) + vec2(0.5 * inc);
+                    vec3 L = tangentToWorld * ImportanceSampleLambert(xi);
+
                     // BRDF = 1 / PI
                     // PDF = NdotL / PI
                     //

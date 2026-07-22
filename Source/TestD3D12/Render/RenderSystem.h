@@ -17,6 +17,7 @@
 #include "GpuFFT.h"
 #include "ColorGradingLUTGenerator.h"
 #include "ConvolutionBloomKernelGenerator.h"
+#include "IBLGenerator.h"
 
 class RenderContext;
 class RenderBackend;
@@ -64,10 +65,10 @@ public:
     void                            SubmitFrame(RenderContext *renderContext, RenderFrameData *frameData);
 
                                     // 주어진 프레임 데이터의 렌더링이 완료될 때까지 기다린다.
-    bool                            WaitFrameRenderCompleted(const RenderFrameData *frameData);
+    void                            WaitFrameRenderCompleted(const RenderFrameData *frameData);
 
                                     // 주어진 렌더 컨텍스트의 모든 프레임 렌더링이 완료될 때까지 기다린다.
-    bool                            WaitContextRenderCompleted(const RenderContext *renderContext);
+    void                            WaitContextRenderCompleted(const RenderContext *renderContext);
 
                                     // 모든 렌더 컨텍스트의 모든 프레임 렌더링이 완료될 때까지 기다린다.
     void                            WaitAllRenderCompleted();
@@ -81,6 +82,9 @@ public:
 
     ConvolutionBloomKernelGenerator &GetConvolutionBloomKernelGenerator() { return convolutionBloomKernelGenerator; }
     const ConvolutionBloomKernelGenerator &GetConvolutionBloomKernelGenerator() const { return convolutionBloomKernelGenerator; }
+
+    IBLGenerator &                  GetIBLGenerator() { return iblGenerator; }
+    const IBLGenerator &            GetIBLGenerator() const { return iblGenerator; }
 
 private:
     struct SubmittedFrame {
@@ -182,6 +186,7 @@ private:
     bool                            colorGradingLUTDirty = false;
 
     GpuFFT                          gpuFFT;
+    IBLGenerator                    iblGenerator;
 };
 
 extern RenderSystem *               renderSystem;

@@ -509,6 +509,12 @@ public:
                         /// Converts a direction in engine axes to 2D face coordinates.
     static CubeMapFace  CubeMapToFaceCoords(const Vec3 &direction, float &u, float &v);
 
+                        /// Converts equirectangular UV coordinates to a direction in engine axes.
+    static Vec3         EquirectangularUVToDirection(float u, float v);
+                        /// Converts a direction in engine axes to equirectangular UV coordinates.
+    static Vec2         DirectionToEquirectangularUV(const Vec3 &direction);
+
+                        /// Returns the solid angle in steradians of the given cubemap texel.
     static float        CubeMapTexelSolidAngle(float x, float y, int32_t size);
 
     static Image        ImageFromFile(const char *filename);

@@ -263,8 +263,7 @@ bool Image::ConvertFormat(Format dstFormat, Image &dstImage, GammaSpace dstGamma
 
     if (srcImage->IsCompressed()) {
         // If the source image is compressed, decompress it first.
-        unpackedSrcImage.Create(srcImage->width, srcImage->height, srcImage->depth, srcImage->arraySize, numDstMipmaps,
-            srcImage->NeedFloatConversion() ? Format::R32G32B32A32_FLOAT : Format::R8G8B8A8, srcImage->gammaSpace, nullptr, srcImage->flags);
+        unpackedSrcImage.Create(srcImage->width, srcImage->height, srcImage->depth, srcImage->arraySize, numDstMipmaps, srcImage->NeedFloatConversion() ? Format::R32G32B32A32_FLOAT : Format::R8G8B8A8, srcImage->gammaSpace, nullptr, srcImage->flags);
 
         DecompressImage(*this, unpackedSrcImage);
 
@@ -275,8 +274,7 @@ bool Image::ConvertFormat(Format dstFormat, Image &dstImage, GammaSpace dstGamma
         srcImage = &unpackedSrcImage;
     } else if (mipmapRegenerationMode != MipmapGenerationMode::NoMipmaps) {
         if (!srcImage->IsPacked()) {
-            unpackedSrcImage.Create(srcImage->width, srcImage->height, srcImage->depth, srcImage->arraySize, numDstMipmaps,
-                srcImage->format, srcImage->gammaSpace, nullptr, srcImage->flags);
+            unpackedSrcImage.Create(srcImage->width, srcImage->height, srcImage->depth, srcImage->arraySize, numDstMipmaps, srcImage->format, srcImage->gammaSpace, nullptr, srcImage->flags);
 
             // Copy only the first level of the source image for mipmap generation.
             unpackedSrcImage.CopyFrom(*srcImage, 0, 1);

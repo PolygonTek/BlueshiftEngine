@@ -38,6 +38,7 @@ public:
     void                            ProcessPendingGlobalDefineChanges();
 
     SharedPtr<ShaderTemplate>       AllocShaderTemplate(const char *hashName);
+    SharedPtr<ShaderTemplate>       CreateComputeShaderTemplate(const char *hashName, RHI::ShaderModel shaderModel, const char *filename, const char *baseDir, const char *entryPoint = "CSMain", const char *baseDefines = nullptr);
     SharedPtr<ShaderTemplate>       FindShaderTemplate(const char *hashName) const;
     SharedPtr<ShaderTemplate>       GetShaderTemplate(const char *hashName);
 

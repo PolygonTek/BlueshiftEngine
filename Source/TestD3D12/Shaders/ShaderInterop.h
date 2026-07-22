@@ -52,6 +52,9 @@ static const uint GenMip3DBlockSizeZ = 8;
 static const uint MipGenOptionBitPreserveCoverage = 1 << 0;
 static const uint MipGenOptionBitSRGB = 1 << 1;
 
+static const uint IBLIntegrationBlockSizeX = 8;
+static const uint IBLIntegrationBlockSizeY = 8;
+
 static const uint DepthHistoryResolveBlockSizeX = 16;
 static const uint DepthHistoryResolveBlockSizeY = 16;
 static const uint SurfaceOutputMSAAResolveBlockSizeX = 16;
@@ -152,6 +155,23 @@ struct MipGenParams {
     float3 dstSizeRcp;
     uint flags;
 };
+
+struct GenLDSumGGXParams {
+    uint radianceCubeMapSize;
+    float roughness;
+};
+
+#ifdef __cplusplus
+static_assert(sizeof(GenLDSumGGXParams) == 8, "GenLDSumGGXParams must match the HLSL root constants");
+#endif
+
+struct GenLDSumPhongSpecularParams {
+    float specularPower;
+};
+
+#ifdef __cplusplus
+static_assert(sizeof(GenLDSumPhongSpecularParams) == 4, "GenLDSumPhongSpecularParams must match the HLSL root constants");
+#endif
 
 struct LuminancePass1Params {
     uint2 sampleSize;

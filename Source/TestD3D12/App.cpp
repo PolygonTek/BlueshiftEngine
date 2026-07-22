@@ -54,7 +54,7 @@ void App::Init(void *mainWindowHandle) {
 
     renderCamera = new RenderCamera;
 
-    SharedPtr<Texture> bloomDirtMaskTexture = textureManager.GetTexture("Data/EngineTextures/LensDirt02.png", Texture::Flag::HighQuality | Texture::Flag::NonPowerOfTwo | Texture::Flag::NoMipmaps | Texture::Flag::Compute, false);
+    SharedPtr<Texture> bloomDirtMaskTexture = textureManager.GetTexture("Data/EngineTextures/LensDirt/LensDirt01.png", Texture::Flag::HighQuality | Texture::Flag::NonPowerOfTwo | Texture::Flag::NoMipmaps | Texture::Flag::Compute, false);
     if (bloomDirtMaskTexture && bloomDirtMaskTexture != textureManager.defaultTexture) {
         renderCamera->SetBloomDirtMaskTexture(bloomDirtMaskTexture);
     }
@@ -199,7 +199,8 @@ void App::Render(uint64_t frameUsec) {
     const float elapsedPrevTime = (float)MICRO2SEC((double)(elapsedUsec - frameUsec));
 
 #ifdef ENABLE_IMGUI
-    if (pendingScreenshotCapture || pendingEnvShotCapture) {
+    if (pendingScreenshotCapture || pendingEnvShotCapture ||
+        pendingDiffuseIrradianceEnvShotCapture || pendingSpecularPrefilteredEnvShotCapture) {
         BE1::Vec3 cameraOrigin;
         BE1::Mat3 cameraAxis;
         GetCameraOriginAxis(cameraOrigin, cameraAxis);
@@ -219,8 +220,8 @@ void App::Render(uint64_t frameUsec) {
             }
 
             if (fileIndex < 1000) {
-                RenderCapture::TakeScreenShot(path, mainRenderContext, renderWorld, ~0u, cameraOrigin, cameraAxis, 60.0f, false,
-                    static_cast<int>(mainRenderContext->GetWidth()), static_cast<int>(mainRenderContext->GetHeight()));
+                RenderCapture::CaptureSceneToFile(mainRenderContext, renderWorld, ~0u, false, BE1::Color4::black,
+                    cameraOrigin, cameraAxis, 60.0f, false, static_cast<int>(mainRenderContext->GetWidth()), static_cast<int>(mainRenderContext->GetHeight()), path);
             } else {
                 BE_WARNLOG("App::Render: too many scene capture files exist\n");
             }
@@ -239,9 +240,50 @@ void App::Render(uint64_t frameUsec) {
             }
 
             if (fileIndex < 1000) {
-                RenderCapture::TakeEnvShot(path, mainRenderContext, renderWorld, ~0u, false, cameraOrigin, true, 256);
+                RenderCapture::CaptureEnvCubeToFile(mainRenderContext, renderWorld, ~0u, false, false, BE1::Color4::black,
+                    cameraOrigin, BE1::CmToUnit(5.0f), BE1::MeterToUnit(100.0f), true, 256, path);
             } else {
                 BE_WARNLOG("App::Render: too many environment capture files exist\n");
+            }
+        }
+
+        if (pendingDiffuseIrradianceEnvShotCapture) {
+            pendingDiffuseIrradianceEnvShotCapture = false;
+
+            char path[BE1::MaxAbsolutePath];
+            int fileIndex;
+            for (fileIndex = 0; fileIndex < 1000; ++fileIndex) {
+                BE1::Str::snPrintf(path, sizeof(path), "%s/Screenshots/diffuse_irradiance_capture_%03i.dds", documentDir.c_str(), fileIndex);
+                if (!BE1::fileSystem.FileExists(path)) {
+                    break;
+                }
+            }
+
+            if (fileIndex < 1000) {
+                RenderCapture::CaptureDiffuseIrradianceEnvCubeToFile(mainRenderContext, renderWorld, ~0u, false,
+                    cameraOrigin, BE1::CmToUnit(5.0f), BE1::MeterToUnit(100.0f), true, 16, 256, path);
+            } else {
+                BE_WARNLOG("App::Render: too many diffuse irradiance environment capture files exist\n");
+            }
+        }
+
+        if (pendingSpecularPrefilteredEnvShotCapture) {
+            pendingSpecularPrefilteredEnvShotCapture = false;
+
+            char path[BE1::MaxAbsolutePath];
+            int fileIndex;
+            for (fileIndex = 0; fileIndex < 1000; ++fileIndex) {
+                BE1::Str::snPrintf(path, sizeof(path), "%s/Screenshots/specular_prefiltered_capture_%03i.dds", documentDir.c_str(), fileIndex);
+                if (!BE1::fileSystem.FileExists(path)) {
+                    break;
+                }
+            }
+
+            if (fileIndex < 1000) {
+                RenderCapture::CaptureSpecularPrefilteredEnvCubeToFile(mainRenderContext, renderWorld, ~0u, false,
+                    cameraOrigin, BE1::CmToUnit(5.0f), BE1::MeterToUnit(100.0f), true, 256, 256, path);
+            } else {
+                BE_WARNLOG("App::Render: too many specular prefiltered environment capture files exist\n");
             }
         }
     }
@@ -264,6 +306,22 @@ void App::Render(uint64_t frameUsec) {
     frameOptions.swapChainOutput = true;
 
     mainRenderContext->BeginFrame(frameOptions);
+
+#ifdef ENABLE_IMGUI
+    if (pendingDFGSumGGXGeneration) {
+        pendingDFGSumGGXGeneration = false;
+
+        const BE1::Str documentDir = BE1::fileSystem.GetUserDocumentDir();
+
+        char path[BE1::MaxAbsolutePath];
+        BE1::Str::snPrintf(path, sizeof(path), "%s/Screenshots/DFGSumGGX.dds", documentDir.c_str());
+
+        if (!renderSystem->GetIBLGenerator().GenerateDFGSumGGXToFile(
+            mainRenderContext->GetCurrentFrontendFrameData()->GetThreadData(0), 256, path)) {
+            BE_WARNLOG("App::Render: failed to generate GGX DFG LUT\n");
+        }
+    }
+#endif
 
     uint64_t t0 = BE1::PlatformTime::Microseconds();
 

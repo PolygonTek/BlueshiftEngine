@@ -134,10 +134,6 @@ bool ConvolutionBloomKernelGenerator::ReadKernelImage(BE1::Image &outImage) cons
     static constexpr BE1::Image::Format KernelImageFormat = BE1::Image::Format::R16G16B16A16_FLOAT;
 
     outImage.Create2D(width, height, 1, KernelImageFormat, BE1::Image::GammaSpace::Linear, nullptr, BE1::Image::Flag::None);
-    if (outImage.IsEmpty()) {
-        return false;
-    }
-
     if (!RHI::renderer->GetTextureImage2D(kernelTexture, 0, KernelImageFormat, outImage.GetPixels())) {
         outImage.Clear();
         return false;

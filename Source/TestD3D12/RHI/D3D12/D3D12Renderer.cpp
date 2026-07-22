@@ -2843,15 +2843,17 @@ bool D3D12Renderer::CanGenerateMipmapsOnGPU(RHI::TextureType textureType, BE1::I
         return false;
     }
 
+    const bool isR11G11B10Float = imageFormat == BE1::Image::Format::R11G11B10_FLOAT;
+
     if (BE1::Image::IsCompressed(imageFormat) ||
-        BE1::Image::IsPacked(imageFormat) ||
+        (BE1::Image::IsPacked(imageFormat) && !isR11G11B10Float) ||
         BE1::Image::IsDepthFormat(imageFormat) ||
         BE1::Image::IsDepthStencilFormat(imageFormat)) {
         return false;
     }
 
-    // 현재 D3D12 mip generation compute shader 는 Float4 / UNorm4 텍스쳐만 지원한다.
-    if (BE1::Image::NumComponents(imageFormat) != 4) {
+    // 현재 D3D12 mip generation compute shader 는 Float4 / UNorm4 및 R11G11B10 float 텍스쳐를 지원한다.
+    if (BE1::Image::NumComponents(imageFormat) != 4 && !isR11G11B10Float) {
         return false;
     }
 

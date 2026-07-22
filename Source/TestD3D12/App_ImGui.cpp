@@ -1098,14 +1098,24 @@ void App::BuildImGuiOverlay() {
             ImGui::Text("Keyboard capture: %s", ImGui::GetIO().WantCaptureKeyboard ? "true" : "false");
             ImGui::Separator();
 
-            if (ImGui::Button("Take screenshot")) {
+            if (ImGui::Button("Capture scene")) {
                 pendingScreenshotCapture = true;
             }
 
-            ImGui::SameLine();
-
-            if (ImGui::Button("Take envshot")) {
+            if (ImGui::Button("Capture environment cubemap")) {
                 pendingEnvShotCapture = true;
+            }
+
+            if (ImGui::Button("Capture diffuse irradiance cubemap")) {
+                pendingDiffuseIrradianceEnvShotCapture = true;
+            }
+
+            if (ImGui::Button("Capture specular prefiltered cubemap")) {
+                pendingSpecularPrefilteredEnvShotCapture = true;
+            }
+
+            if (ImGui::Button("Generate GGX DFG LUT")) {
+                pendingDFGSumGGXGeneration = true;
             }
 
             if (ImGui::Button(imguiShowDemoWindow ? "Hide ImGui Demo" : "Show ImGui Demo")) {

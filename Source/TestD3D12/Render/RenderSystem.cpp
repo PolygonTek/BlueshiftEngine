@@ -54,6 +54,8 @@ void RenderSystem::Init(void *mainWindowHandle) {
 
     gpuFFT.Init();
 
+    iblGenerator.Init();
+
     InitComputePipelines();
 
     convolutionBloomKernelGenerator.Init();
@@ -99,6 +101,8 @@ void RenderSystem::Shutdown() {
     ReleaseComputePipelines();
 
     convolutionBloomKernelGenerator.Shutdown();
+
+    iblGenerator.Shutdown();
 
     gpuFFT.Shutdown();
 
@@ -224,13 +228,13 @@ void RenderSystem::SubmitFrame(RenderContext *renderContext, RenderFrameData *fr
     }
 }
 
-bool RenderSystem::WaitFrameRenderCompleted(const RenderFrameData *frameData) {
+void RenderSystem::WaitFrameRenderCompleted(const RenderFrameData *frameData) {
     PROFILER_CPU_SCOPED_EVENT("RenderSystem::WaitFrameRenderCompleted");
 
     assert(BE1::Engine::IsInMainThread());
 
     if (!IsUsingRenderThread()) {
-        return true;
+        return;
     }
 
     {
@@ -241,24 +245,16 @@ bool RenderSystem::WaitFrameRenderCompleted(const RenderFrameData *frameData) {
             return frameData->frameSyncState == FrameSyncState::RenderCompleted;
         });
     }
-    return true;
 }
 
-bool RenderSystem::WaitContextRenderCompleted(const RenderContext *renderContext) {
+void RenderSystem::WaitContextRenderCompleted(const RenderContext *renderContext) {
     PROFILER_CPU_SCOPED_EVENT("RenderSystem::WaitContextRenderCompleted");
 
     assert(BE1::Engine::IsInMainThread());
 
-    if (!renderContext) {
-        return false;
-    }
-
     for (const RenderFrameData &frameData : renderContext->frames) {
-        if (!WaitFrameRenderCompleted(&frameData)) {
-            return false;
-        }
+        WaitFrameRenderCompleted(&frameData);
     }
-    return true;
 }
 
 void RenderSystem::WaitAllRenderCompleted() {
@@ -283,36 +279,6 @@ void RenderSystem::RequestScreenshot(RenderContext *renderContext, const char *f
     renderContext->RequestScreenshot(filename);
 }
 
-static SharedPtr<ShaderTemplate> CreateComputeShaderTemplate(const char *hashName, RHI::ShaderModel shaderModel, const char *filename, const char *baseDir, const char *baseDefine = nullptr) {
-    BE1::Str shaderTemplateText;
-    if (baseDefine && baseDefine[0]) {
-        shaderTemplateText.sPrintf(
-            "{\n"
-            "    baseDefines {\n"
-            "        %s\n"
-            "    }\n"
-            "    stages {\n"
-            "        compute %s \"%s\" \"%s\"\n"
-            "    }\n"
-            "}\n",
-            baseDefine, RHI::Renderer::ShaderModelName(shaderModel), filename, "CSMain");
-    } else {
-        shaderTemplateText.sPrintf(
-            "{\n"
-            "    stages {\n"
-            "        compute %s \"%s\" \"%s\"\n"
-            "    }\n"
-            "}\n",
-            RHI::Renderer::ShaderModelName(shaderModel), filename, "CSMain");
-    }
-
-    SharedPtr<ShaderTemplate> shaderTemplate = shaderTemplateManager.AllocShaderTemplate(hashName);
-    if (!shaderTemplate->Create(shaderTemplateText.c_str(), baseDir)) {
-        BE_FATALERROR("RenderSystem::CreateComputeShaderTemplate: failed to create shader template '%s'", hashName);
-    }
-    return shaderTemplate;
-}
-
 static void EnsureComputePipeline(const SharedPtr<ShaderTemplate> &shaderTemplate, SharedPtr<ShaderPipeline> &pipeline) {
     if (pipeline && pipeline->GetState() != ShaderPipeline::State::Empty) {
         return;
@@ -325,34 +291,34 @@ void RenderSystem::InitComputePipelines() {
     const char *baseDir = "Source/TestD3D12/Shaders";
     const RHI::ShaderModel computeShaderModel = RHI::ShaderModel::SM_6_6;
 
-    genHiZMipFirstBatchShaderTemplate = CreateComputeShaderTemplate("_genHiZMipFirstBatchShader", computeShaderModel, "GenHiZMip/GenHiZMipFirstBatch.hlsl", baseDir);
-    genHiZMipFirstBatchMSAAShaderTemplate = CreateComputeShaderTemplate("_genHiZMipFirstBatchMSAAShader", computeShaderModel, "GenHiZMip/GenHiZMipFirstBatch.hlsl", baseDir, "GEN_HIZ_DEPTH_MSAA=1");
-    genHiZMipBatchShaderTemplate = CreateComputeShaderTemplate("_genHiZMipBatchShader", computeShaderModel, "GenHiZMip/GenHiZMipBatch.hlsl", baseDir);
-    genHiZMipOddDimShaderTemplate = CreateComputeShaderTemplate("_genHiZMipOddDimShader", computeShaderModel, "GenHiZMip/GenHiZMipOddDim.hlsl", baseDir);
-    hiZCullInstancesShaderTemplate = CreateComputeShaderTemplate("_hiZCullInstancesShader", computeShaderModel, "HiZCullInstances.hlsl", baseDir);
-    lightCullingShaderTemplate = CreateComputeShaderTemplate("_lightCullingShader", computeShaderModel, "LightCulling.hlsl", baseDir);
-    hiZDebugPreviewShaderTemplate = CreateComputeShaderTemplate("_hiZDebugPreviewShader", computeShaderModel, "HiZDebugPreview.hlsl", baseDir);
-    depthHistoryResolveShaderTemplate = CreateComputeShaderTemplate("_depthHistoryResolveShader", computeShaderModel, "DepthHistoryResolve.hlsl", baseDir);
-    surfaceOutputMSAAResolveNormalShaderTemplate = CreateComputeShaderTemplate("_surfaceOutputMSAAResolveNormalShader", computeShaderModel, "SurfaceOutputMSAAResolve.hlsl", baseDir, "SURFACE_OUTPUT_MSAA_RESOLVE_MODE=1");
-    surfaceOutputMSAAResolveVelocityShaderTemplate = CreateComputeShaderTemplate("_surfaceOutputMSAAResolveVelocityShader", computeShaderModel, "SurfaceOutputMSAAResolve.hlsl", baseDir, "SURFACE_OUTPUT_MSAA_RESOLVE_MODE=2");
-    surfaceOutputMSAAResolveNormalVelocityShaderTemplate = CreateComputeShaderTemplate("_surfaceOutputMSAAResolveNormalVelocityShader", computeShaderModel, "SurfaceOutputMSAAResolve.hlsl", baseDir, "SURFACE_OUTPUT_MSAA_RESOLVE_MODE=3");
+    genHiZMipFirstBatchShaderTemplate = shaderTemplateManager.CreateComputeShaderTemplate("_genHiZMipFirstBatchShader", computeShaderModel, "GenHiZMip/GenHiZMipFirstBatch.hlsl", baseDir);
+    genHiZMipFirstBatchMSAAShaderTemplate = shaderTemplateManager.CreateComputeShaderTemplate("_genHiZMipFirstBatchMSAAShader", computeShaderModel, "GenHiZMip/GenHiZMipFirstBatch.hlsl", baseDir, "CSMain", "GEN_HIZ_DEPTH_MSAA=1");
+    genHiZMipBatchShaderTemplate = shaderTemplateManager.CreateComputeShaderTemplate("_genHiZMipBatchShader", computeShaderModel, "GenHiZMip/GenHiZMipBatch.hlsl", baseDir);
+    genHiZMipOddDimShaderTemplate = shaderTemplateManager.CreateComputeShaderTemplate("_genHiZMipOddDimShader", computeShaderModel, "GenHiZMip/GenHiZMipOddDim.hlsl", baseDir);
+    hiZCullInstancesShaderTemplate = shaderTemplateManager.CreateComputeShaderTemplate("_hiZCullInstancesShader", computeShaderModel, "HiZCullInstances.hlsl", baseDir);
+    lightCullingShaderTemplate = shaderTemplateManager.CreateComputeShaderTemplate("_lightCullingShader", computeShaderModel, "LightCulling.hlsl", baseDir);
+    hiZDebugPreviewShaderTemplate = shaderTemplateManager.CreateComputeShaderTemplate("_hiZDebugPreviewShader", computeShaderModel, "HiZDebugPreview.hlsl", baseDir);
+    depthHistoryResolveShaderTemplate = shaderTemplateManager.CreateComputeShaderTemplate("_depthHistoryResolveShader", computeShaderModel, "DepthHistoryResolve.hlsl", baseDir);
+    surfaceOutputMSAAResolveNormalShaderTemplate = shaderTemplateManager.CreateComputeShaderTemplate("_surfaceOutputMSAAResolveNormalShader", computeShaderModel, "SurfaceOutputMSAAResolve.hlsl", baseDir, "CSMain", "SURFACE_OUTPUT_MSAA_RESOLVE_MODE=1");
+    surfaceOutputMSAAResolveVelocityShaderTemplate = shaderTemplateManager.CreateComputeShaderTemplate("_surfaceOutputMSAAResolveVelocityShader", computeShaderModel, "SurfaceOutputMSAAResolve.hlsl", baseDir, "CSMain", "SURFACE_OUTPUT_MSAA_RESOLVE_MODE=2");
+    surfaceOutputMSAAResolveNormalVelocityShaderTemplate = shaderTemplateManager.CreateComputeShaderTemplate("_surfaceOutputMSAAResolveNormalVelocityShader", computeShaderModel, "SurfaceOutputMSAAResolve.hlsl", baseDir, "CSMain", "SURFACE_OUTPUT_MSAA_RESOLVE_MODE=3");
 
-    finalPostProcessShaderTemplate = CreateComputeShaderTemplate("_finalPostProcessShader", computeShaderModel, "FinalPostProcess.hlsl", baseDir);
-    taaResolveShaderTemplate = CreateComputeShaderTemplate("_taaResolveShader", computeShaderModel, "TAAResolve.hlsl", baseDir);
-    luminancePass1ShaderTemplate = CreateComputeShaderTemplate("_luminancePass1Shader", computeShaderModel, "ToneMapping/LuminancePass1.hlsl", baseDir);
-    luminancePass2ShaderTemplate = CreateComputeShaderTemplate("_luminancePass2Shader", computeShaderModel, "ToneMapping/LuminancePass2.hlsl", baseDir);
+    finalPostProcessShaderTemplate = shaderTemplateManager.CreateComputeShaderTemplate("_finalPostProcessShader", computeShaderModel, "FinalPostProcess.hlsl", baseDir);
+    taaResolveShaderTemplate = shaderTemplateManager.CreateComputeShaderTemplate("_taaResolveShader", computeShaderModel, "TAAResolve.hlsl", baseDir);
+    luminancePass1ShaderTemplate = shaderTemplateManager.CreateComputeShaderTemplate("_luminancePass1Shader", computeShaderModel, "ToneMapping/LuminancePass1.hlsl", baseDir);
+    luminancePass2ShaderTemplate = shaderTemplateManager.CreateComputeShaderTemplate("_luminancePass2Shader", computeShaderModel, "ToneMapping/LuminancePass2.hlsl", baseDir);
 
-    bloomPrefilterShaderTemplate = CreateComputeShaderTemplate("_bloomPrefilterShader", computeShaderModel, "Bloom/BloomPrefilter.hlsl", baseDir);
-    bloomDownsampleShaderTemplate = CreateComputeShaderTemplate("_bloomDownsampleShader", computeShaderModel, "Bloom/BloomDownsample.hlsl", baseDir);
-    bloomUpsampleShaderTemplate = CreateComputeShaderTemplate("_bloomUpsampleShader", computeShaderModel, "Bloom/BloomUpsample.hlsl", baseDir);
+    bloomPrefilterShaderTemplate = shaderTemplateManager.CreateComputeShaderTemplate("_bloomPrefilterShader", computeShaderModel, "Bloom/BloomPrefilter.hlsl", baseDir);
+    bloomDownsampleShaderTemplate = shaderTemplateManager.CreateComputeShaderTemplate("_bloomDownsampleShader", computeShaderModel, "Bloom/BloomDownsample.hlsl", baseDir);
+    bloomUpsampleShaderTemplate = shaderTemplateManager.CreateComputeShaderTemplate("_bloomUpsampleShader", computeShaderModel, "Bloom/BloomUpsample.hlsl", baseDir);
 
-    convolutionBloomPrefilterShaderTemplate = CreateComputeShaderTemplate("_convolutionBloomPrefilterShader", computeShaderModel, "Bloom/ConvolutionBloomPrefilter.hlsl", baseDir);
-    convolutionBloomKernelPrepareShaderTemplate = CreateComputeShaderTemplate("_convolutionBloomKernelPrepareShader", computeShaderModel, "Bloom/ConvolutionBloomKernelPrepare.hlsl", baseDir);
-    convolutionBloomResolveShaderTemplate = CreateComputeShaderTemplate("_convolutionBloomResolveShader", computeShaderModel, "Bloom/ConvolutionBloomResolve.hlsl", baseDir);
-    convolutionBloomAperturePrepareShaderTemplate = CreateComputeShaderTemplate("_convolutionBloomAperturePrepareShader", computeShaderModel, "Bloom/ConvolutionBloomAperturePrepare.hlsl", baseDir);
-    convolutionBloomReduceApertureEnergyShaderTemplate = CreateComputeShaderTemplate("_convolutionBloomReduceApertureEnergyShader", computeShaderModel, "Bloom/ConvolutionBloomReduceApertureEnergy.hlsl", baseDir);
-    convolutionBloomResolveDiffractionPSFShaderTemplate = CreateComputeShaderTemplate("_convolutionBloomResolveDiffractionPSFShader", computeShaderModel, "Bloom/ConvolutionBloomResolveDiffractionPSF.hlsl", baseDir);
-    convolutionBloomApplyDispersionShaderTemplate = CreateComputeShaderTemplate("_convolutionBloomApplyDispersionShader", computeShaderModel, "Bloom/ConvolutionBloomApplyDispersion.hlsl", baseDir);
+    convolutionBloomPrefilterShaderTemplate = shaderTemplateManager.CreateComputeShaderTemplate("_convolutionBloomPrefilterShader", computeShaderModel, "Bloom/ConvolutionBloomPrefilter.hlsl", baseDir);
+    convolutionBloomKernelPrepareShaderTemplate = shaderTemplateManager.CreateComputeShaderTemplate("_convolutionBloomKernelPrepareShader", computeShaderModel, "Bloom/ConvolutionBloomKernelPrepare.hlsl", baseDir);
+    convolutionBloomResolveShaderTemplate = shaderTemplateManager.CreateComputeShaderTemplate("_convolutionBloomResolveShader", computeShaderModel, "Bloom/ConvolutionBloomResolve.hlsl", baseDir);
+    convolutionBloomAperturePrepareShaderTemplate = shaderTemplateManager.CreateComputeShaderTemplate("_convolutionBloomAperturePrepareShader", computeShaderModel, "Bloom/ConvolutionBloomAperturePrepare.hlsl", baseDir);
+    convolutionBloomReduceApertureEnergyShaderTemplate = shaderTemplateManager.CreateComputeShaderTemplate("_convolutionBloomReduceApertureEnergyShader", computeShaderModel, "Bloom/ConvolutionBloomReduceApertureEnergy.hlsl", baseDir);
+    convolutionBloomResolveDiffractionPSFShaderTemplate = shaderTemplateManager.CreateComputeShaderTemplate("_convolutionBloomResolveDiffractionPSFShader", computeShaderModel, "Bloom/ConvolutionBloomResolveDiffractionPSF.hlsl", baseDir);
+    convolutionBloomApplyDispersionShaderTemplate = shaderTemplateManager.CreateComputeShaderTemplate("_convolutionBloomApplyDispersionShader", computeShaderModel, "Bloom/ConvolutionBloomApplyDispersion.hlsl", baseDir);
 
     EnsureComputePipelines();
 }

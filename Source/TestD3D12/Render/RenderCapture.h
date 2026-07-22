@@ -30,31 +30,47 @@ class Texture;
 
 class RenderCapture {
 public:
-                    // 지정된 텍스쳐에 씬을 렌더링하는 독립 프레임을 제출한다.
-    static bool     CaptureSceneToTexture(RenderContext *renderContext, RenderWorld *renderWorld, uint32_t layerMask, bool colorClear, const BE1::Color4 &clearColor,
-                        const BE1::Vec3 &origin, const BE1::Mat3 &axis, float fov, int width, int height, const SharedPtr<Texture> &targetTexture, bool waitForCompletion = false);
+                        // 씬을 지정된 텍스쳐에 렌더링한다.
+    static bool         RenderSceneToTexture(RenderContext *renderContext, RenderWorld *renderWorld, uint32_t layerMask, bool colorClear, const BE1::Color4 &clearColor,
+                            const BE1::Vec3 &origin, const BE1::Mat3 &axis, float fov, int width, int height, const SharedPtr<Texture> &targetTexture, bool waitForCompletion = false);
 
-                    // 씬을 임시 렌더 타겟에 렌더링하고 CPU 이미지로 읽어온다.
-    static bool     CaptureSceneToImage(RenderContext *renderContext, RenderWorld *renderWorld, uint32_t layerMask, bool colorClear, const BE1::Color4 &clearColor,
-                        const BE1::Vec3 &origin, const BE1::Mat3 &axis, float fov, bool useHDR, int width, int height, BE1::Image &outImage);
+                        // 씬을 임시 렌더 타겟 텍스쳐에 렌더링하여 캡처하고, CPU 이미지로 읽어온다.
+    static bool         CaptureSceneToImage(RenderContext *renderContext, RenderWorld *renderWorld, uint32_t layerMask, bool colorClear, const BE1::Color4 &clearColor,
+                            const BE1::Vec3 &origin, const BE1::Mat3 &axis, float fov, bool useHDR, int width, int height, BE1::Image &outImage);
 
-                    // cubemap 의 지정된 face 에 씬을 렌더링하는 독립 프레임을 제출한다.
-    static bool     CaptureEnvCubeFaceToTexture(RenderContext *renderContext, RenderWorld *renderWorld, uint32_t layerMask, bool staticOnly, bool colorClear, const BE1::Color4 &clearColor,
-                        const BE1::Vec3 &origin, float zNear, float zFar, const SharedPtr<Texture> &targetCubeTexture, RHI::CubemapFace face, bool waitForCompletion = false);
+                        // CaptureSceneToImage 함수로 생성한 image 를 파일로 저장한다. 확장자가 없으면 png 를 사용한다.
+    static bool         CaptureSceneToFile(RenderContext *renderContext, RenderWorld *renderWorld, uint32_t layerMask, bool colorClear, const BE1::Color4 &clearColor,
+                            const BE1::Vec3 &origin, const BE1::Mat3 &axis, float fov, bool useHDR, int width, int height, const char *filename);
 
-                    // cubemap 의 여섯 face 에 씬을 하나의 독립 프레임으로 렌더링한다.
-    static bool     CaptureEnvCubeToTexture(RenderContext *renderContext, RenderWorld *renderWorld, uint32_t layerMask, bool staticOnly, bool colorClear, const BE1::Color4 &clearColor,
-                        const BE1::Vec3 &origin, float zNear, float zFar, const SharedPtr<Texture> &targetCubeTexture, bool waitForCompletion = false);
+                        // 씬을 지정된 cubemap face 에 렌더링한다.
+    static bool         RenderEnvCubeFaceToTexture(RenderContext *renderContext, RenderWorld *renderWorld, uint32_t layerMask, bool staticOnly, bool colorClear, const BE1::Color4 &clearColor,
+                            const BE1::Vec3 &origin, float zNear, float zFar, const SharedPtr<Texture> &targetCubeTexture, RHI::CubemapFace face, bool waitForCompletion = false);
 
-                    // 씬을 임시 cubemap 렌더 타겟에 렌더링하고 CPU 이미지로 읽어온다.
-    static bool     CaptureEnvCubeToImage(RenderContext *renderContext, RenderWorld *renderWorld, uint32_t layerMask, bool staticOnly, bool colorClear, const BE1::Color4 &clearColor,
-                        const BE1::Vec3 &origin, float zNear, float zFar, bool useHDR, int size, BE1::Image &outImage);
+                        // 씬을 지정된 cubemap 의 각 face 에 렌더링한다.
+    static bool         RenderEnvCubeToTexture(RenderContext *renderContext, RenderWorld *renderWorld, uint32_t layerMask, bool staticOnly, bool colorClear, const BE1::Color4 &clearColor,
+                            const BE1::Vec3 &origin, float zNear, float zFar, const SharedPtr<Texture> &targetCubeTexture, bool waitForCompletion = false);
 
-                    // 씬을 캡처해서 이미지 파일로 저장한다. 확장자가 없으면 png 를 사용한다.
-    static bool     TakeScreenShot(const char *filename, RenderContext *renderContext, RenderWorld *renderWorld, uint32_t layerMask,
-                        const BE1::Vec3 &origin, const BE1::Mat3 &axis, float fov, bool useHDR, int width, int height);
+                        // 씬을 임시 cubemap 렌더 타겟 텍스쳐에 렌더링하여 캡처하고, CPU 이미지로 읽어온다.
+    static bool         CaptureEnvCubeToImage(RenderContext *renderContext, RenderWorld *renderWorld, uint32_t layerMask, bool staticOnly, bool colorClear, const BE1::Color4 &clearColor,
+                            const BE1::Vec3 &origin, float zNear, float zFar, bool useHDR, int size, BE1::Image &outImage);
 
-                    // 환경 cubemap 을 캡처해서 이미지 파일로 저장한다. 확장자가 없으면 dds 를 사용한다.
-    static bool     TakeEnvShot(const char *filename, RenderContext *renderContext, RenderWorld *renderWorld, uint32_t layerMask, bool staticOnly,
-                        const BE1::Vec3 &origin, bool useHDR, int size = 256);
+                        // CaptureEnvCubeToImage 함수로 생성한 image 를 파일로 저장한다. 확장자가 없으면 dds 를 사용한다.
+    static bool         CaptureEnvCubeToFile(RenderContext *renderContext, RenderWorld *renderWorld, uint32_t layerMask, bool staticOnly, bool colorClear, const BE1::Color4 &clearColor,
+                            const BE1::Vec3 &origin, float zNear, float zFar, bool useHDR, int size, const char *filename);
+
+                        // 씬을 임시 cubemap 렌더 타겟 텍스쳐에 렌더링하여 캡처하고, Lambert diffuse irradiance cubemap 으로 적분하여 CPU 이미지로 읽어온다.
+    static bool         CaptureDiffuseIrradianceEnvCubeToImage(RenderContext *renderContext, RenderWorld *renderWorld, uint32_t layerMask, bool staticOnly,
+                            const BE1::Vec3 &origin, float zNear, float zFar, bool useHDR, int size, int envSize, BE1::Image &outImage);
+
+                        // CaptureDiffuseIrradianceEnvCubeToImage 함수로 생성한 image 를 dds 파일로 저장한다.
+    static bool         CaptureDiffuseIrradianceEnvCubeToFile(RenderContext *renderContext, RenderWorld *renderWorld, uint32_t layerMask, bool staticOnly,
+                            const BE1::Vec3 &origin, float zNear, float zFar, bool useHDR, int size, int envSize, const char *filename);
+
+                        // 씬을 임시 cubemap 렌더 타겟 텍스쳐에 렌더링하여 캡처하고, specular prefiltered cubemap 의 전체 mip chain 을 생성하여 CPU 이미지로 읽어온다.
+    static bool         CaptureSpecularPrefilteredEnvCubeToImage(RenderContext *renderContext, RenderWorld *renderWorld, uint32_t layerMask, bool staticOnly,
+                            const BE1::Vec3 &origin, float zNear, float zFar, bool useHDR, int size, int envSize, BE1::Image &outImage);
+
+                        // CaptureSpecularPrefilteredEnvCubeToImage 함수로 생성한 image 를 dds 파일로 저장한다.
+    static bool         CaptureSpecularPrefilteredEnvCubeToFile(RenderContext *renderContext, RenderWorld *renderWorld, uint32_t layerMask, bool staticOnly,
+                            const BE1::Vec3 &origin, float zNear, float zFar, bool useHDR, int size, int envSize, const char *filename);
 };

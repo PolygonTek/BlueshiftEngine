@@ -1711,8 +1711,8 @@ void D3D12Renderer::GenerateMipChain(RHI::CommandList *commandList, const RHI::T
         return;
     }
 
-    // packed 포맷이나 압축 포맷은 지원하지 않는다.
-    if (BE1::Image::IsPacked(_texture->srcFormat) || BE1::Image::IsCompressed(_texture->srcFormat)) {
+    // 포맷과 장치의 typed UAV load/store 지원 여부를 함께 확인한다.
+    if (!CanGenerateMipmapsOnGPU(_texture->type, _texture->srcFormat, _texture->GetArraySize())) {
         return;
     }
 

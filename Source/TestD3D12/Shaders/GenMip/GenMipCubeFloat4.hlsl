@@ -1,4 +1,5 @@
 #include "../ShaderInterop.h"
+#include "../Cubemap.hlsli"
 
 #define COMMON_ROOT_SIGNATURE "RootFlags(0), " \
     "DescriptorTable(SRV(t0), UAV(u0)), " \
@@ -16,29 +17,6 @@ cbuffer MipGenCB : register(b0) {
 RWTexture2DArray<MIP_OUTPUT_FORMAT> outputTexture : register(u0);
 TextureCube<MIP_OUTPUT_FORMAT> inputTexture : register(t0);
 SamplerState linearSampler : register(s0);
-
-// Returns the sampling direction corresponding to a cubemap face coordinate.
-inline float3 CubeMapFaceToDirection(in uint faceIndex, in float2 uv) {
-    // get uv in [-1, 1] range:
-    uv = uv * 2 - 1;
-
-    switch (faceIndex) {
-    case 0:
-        return float3(1.0, -uv.y, -uv.x);
-    case 1:
-        return float3(-1.0, -uv.y, uv.x);
-    case 2:
-        return float3(uv.x, 1.0, uv.y);
-    case 3:
-        return float3(uv.x, -1.0, -uv.y);
-    case 4:
-        return float3(uv.x, -uv.y, 1.0);
-    case 5:
-        return float3(-uv.x, -uv.y, -1.0);
-    default:
-        return float3(0, 0, 0);
-    }
-}
 
 [RootSignature(COMMON_ROOT_SIGNATURE)]
 [numthreads(GenMip2DBlockSizeX, GenMip2DBlockSizeY, 1)]

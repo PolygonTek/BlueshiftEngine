@@ -182,7 +182,7 @@ Image &Image::CreateCubeFromEquirectangular(const Image &equirectangularImage, i
 
     const ImageFormatInfo *formatInfo = GetImageFormatInfo(format);
 
-    const float invSize = 1.0f / (faceSize - 1);
+    const float invSize = 1.0f / faceSize;
 
     for (int faceIndex = 0; faceIndex < 6; faceIndex++) {
         byte *dst = GetPixels(0, faceIndex);
@@ -193,19 +193,9 @@ Image &Image::CreateCubeFromEquirectangular(const Image &equirectangularImage, i
                 const float dstV = (dstY + 0.5f) * invSize;
 
                 const Vec3 direction = FaceToCubeMapCoords((Image::CubeMapFace)faceIndex, dstU, dstV);
+                const Vec2 srcUV = DirectionToEquirectangularUV(direction);
 
-                float theta, phi;
-                direction.ToSpherical(theta, phi);
-
-                // Environment equirectangular image has reversed phi.
-                phi = Math::TwoPi - phi;
-
-                // Convert range [-1/4 pi, 7/4 pi] to [0.0, 1.0].
-                const float srcU = Math::Fract((phi + Math::OneFourthPi) * Math::InvTwoPi);
-                // Convert range [0, pi] to [0.0, 1.0].
-                const float srcV = Math::Fract(theta * Math::InvPi);
-
-                const Color4 color = equirectangularImage.Sample2D(Vec2(srcU, srcV), Image::SampleWrapMode::Repeat, Image::SampleWrapMode::Clamp, Image::SampleFilter::Bilinear);
+                const Color4 color = equirectangularImage.Sample2D(srcUV, Image::SampleWrapMode::Repeat, Image::SampleWrapMode::Clamp, Image::SampleFilter::Bilinear);
 
                 // Convert color from float format to destination format.
                 formatInfo->packRGBA32F((const byte *)&color, &dst[(dstY * width + dstX) * BytesPerPixel()], 1);
@@ -241,13 +231,7 @@ Image &Image::CreateEquirectangularFromCube(const Image &cubeImage) {
             const float dstU = (float)dstX / (width - 1);
             const float dstV = (float)dstY / (height - 1);
 
-            // Convert range [0.0, 1.0] to [0, pi].
-            const float theta = dstV * Math::Pi;
-            // Convert range [0.0, 1.0] to [-1/4 pi, 7/4 pi].
-            const float phi = dstU * Math::TwoPi - Math::OneFourthPi;
-
-            Vec3 direction;
-            direction.SetFromSpherical(1.0f, theta, phi);
+            const Vec3 direction = EquirectangularUVToDirection(dstU, dstV);
 
             const Color4 color = cubeImage.SampleCube(direction, Image::SampleFilter::Bilinear);
 
@@ -514,6 +498,32 @@ Image::CubeMapFace Image::CubeMapToFaceCoords(const Vec3 &direction, float &u, f
     v = (signedV / ama + 1.0f) * 0.5f;
 
     return (CubeMapFace)faceIndex;
+}
+
+Vec3 Image::EquirectangularUVToDirection(float u, float v) {
+    // Convert range [0.0, 1.0] to [0, pi].
+    const float theta = v * Math::Pi;
+
+    // Environment equirectangular images have reversed phi.
+    // Convert range [0.0, 1.0] to [1/4 pi, -7/4 pi].
+    const float phi = Math::OneFourthPi - u * Math::TwoPi;
+
+    Vec3 direction;
+    direction.SetFromSpherical(1.0f, theta, phi);
+    return direction;
+}
+
+Vec2 Image::DirectionToEquirectangularUV(const Vec3 &direction) {
+    float theta, phi;
+    direction.ToSpherical(theta, phi);
+
+    // Reverse phi, rotate it by 1/4 pi and wrap it to [0.0, 1.0].
+    const float u = Math::Fract((Math::OneFourthPi - phi) * Math::InvTwoPi);
+
+    // Convert range [0, pi] to [0.0, 1.0].
+    const float v = theta * Math::InvPi;
+
+    return Vec2(u, v);
 }
 
 static float AreaElement(float x, float y) {

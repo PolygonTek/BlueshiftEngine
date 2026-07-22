@@ -112,6 +112,9 @@ private:
 
     bool                            pendingScreenshotCapture = false;
     bool                            pendingEnvShotCapture = false;
+    bool                            pendingDiffuseIrradianceEnvShotCapture = false;
+    bool                            pendingSpecularPrefilteredEnvShotCapture = false;
+    bool                            pendingDFGSumGGXGeneration = false;
 #endif
 
     RenderContext *                 mainRenderContext = nullptr;

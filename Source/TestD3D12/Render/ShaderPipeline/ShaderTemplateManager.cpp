@@ -94,6 +94,40 @@ SharedPtr<ShaderTemplate> ShaderTemplateManager::AllocShaderTemplate(const char 
     return shaderTemplate;
 }
 
+SharedPtr<ShaderTemplate> ShaderTemplateManager::CreateComputeShaderTemplate(const char *hashName, RHI::ShaderModel shaderModel, const char *filename, const char *baseDir, const char *entryPoint, const char *baseDefines) {
+    if (!filename || !filename[0] || !baseDir || !baseDir[0] || !entryPoint || !entryPoint[0]) {
+        BE_FATALERROR("ShaderTemplateManager::CreateComputeShaderTemplate: invalid compute shader source");
+    }
+
+    BE1::Str shaderTemplateText;
+    if (baseDefines && baseDefines[0]) {
+        shaderTemplateText.sPrintf(
+            "{\n"
+            "    baseDefines {\n"
+            "        %s\n"
+            "    }\n"
+            "    stages {\n"
+            "        compute %s \"%s\" \"%s\"\n"
+            "    }\n"
+            "}\n",
+            baseDefines, RHI::Renderer::ShaderModelName(shaderModel), filename, entryPoint);
+    } else {
+        shaderTemplateText.sPrintf(
+            "{\n"
+            "    stages {\n"
+            "        compute %s \"%s\" \"%s\"\n"
+            "    }\n"
+            "}\n",
+            RHI::Renderer::ShaderModelName(shaderModel), filename, entryPoint);
+    }
+
+    SharedPtr<ShaderTemplate> shaderTemplate = AllocShaderTemplate(hashName);
+    if (!shaderTemplate->Create(shaderTemplateText.c_str(), baseDir)) {
+        BE_FATALERROR("ShaderTemplateManager::CreateComputeShaderTemplate: failed to create shader template '%s'", hashName);
+    }
+    return shaderTemplate;
+}
+
 SharedPtr<ShaderTemplate> ShaderTemplateManager::FindShaderTemplate(const char *hashName) const {
     if (!hashName || !hashName[0]) {
         return nullptr;
