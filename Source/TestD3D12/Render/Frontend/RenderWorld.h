@@ -14,6 +14,7 @@
 
 #pragma once
 
+#include "EnvironmentLight.h"
 #include "RenderLight.h"
 #include "RenderObject.h"
 #include "Render/Mesh/GuiMesh.h"
@@ -64,6 +65,8 @@ struct enable_bitmask_operators<DrawTextFlag> {
 */
 
 class RenderWorld {
+    friend class ProbeBakeSystem;
+
 public:
     enum class ClearFlag : uint8_t {
         None                    = 0,
@@ -73,6 +76,7 @@ public:
     };
 
     RenderWorld();
+    ~RenderWorld();
 
     void                        BeginFrame();
     void                        EndFrame();
@@ -92,6 +96,13 @@ public:
     int                         AddRenderLight(const RenderLight::Desc &desc);
     void                        UpdateRenderLight(int index, const RenderLight::Desc &desc, RenderLight::Desc::UpdateFlag updateFlags);
     void                        RemoveRenderLight(int index);
+
+    const EnvironmentLight *    GetEnvironmentLight() const { return hasEnvironmentLight ? &environmentLight : nullptr; }
+    bool                        AddEnvironmentLight(const EnvironmentLight::Desc &desc);
+    void                        UpdateEnvironmentLight(const EnvironmentLight::Desc &desc);
+    bool                        SetEnvironmentLightBakedCubeMaps(const SharedPtr<Texture> &diffuseIrradianceCubeMap, const SharedPtr<Texture> &specularPrefilteredCubeMap);
+    void                        RequestEnvironmentLightCubemapRegeneration(const BE1::Vec3 &captureOrigin = BE1::Vec3::origin);
+    void                        RemoveEnvironmentLight();
 
     void                        SetSkyboxMaterial(SharedPtr<Material> skyboxMaterial);
 
@@ -193,6 +204,8 @@ private:
 
     BE1::Array<RenderObject *>  renderObjects;      /// The array of pointers to all render objects managed by the world.
     BE1::Array<RenderLight *>   renderLights;       /// The array of pointers to all render lights managed by the world.
+    EnvironmentLight            environmentLight;
+    bool                        hasEnvironmentLight = false;
 
     bool                        frameActive = false;
     uint64_t                    frameIndex = 0;

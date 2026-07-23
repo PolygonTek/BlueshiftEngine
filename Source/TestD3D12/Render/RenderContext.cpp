@@ -296,6 +296,12 @@ bool RenderContext::BeginFrame(const FrameOptions &options) {
     }
 
     if (options.swapChainOutput) {
+        // RenderCapture 는 활성 프레임 안에서 실행할 수 없으므로 필요한 radiance 캡처를 먼저 처리한다.
+        renderSystem->PrepareProbeBakes(this);
+        assert(!RenderContext::activeContext);
+    }
+
+    if (options.swapChainOutput) {
         ResetGuiClipRect(GetWidth(), GetHeight());
     }
 
@@ -309,6 +315,15 @@ bool RenderContext::BeginFrame(const FrameOptions &options) {
     }
 
     frameData->BeginFrame();
+
+    // BeginFrame 에서 frame fence 완료를 기다렸으므로, 렌더 커맨드에 밀어 넣었던 render work 들을 안전하게 완료한다.
+    renderSystem->CompleteRenderWorks(frameData);
+
+    if (options.swapChainOutput && this == renderSystem->mainRenderContext) {
+        // 대기 중인 render work 들을 렌더 커맨드에 (CmdBeginContext 전에) 밀어 넣는다.
+        renderSystem->AttachPendingRenderWorks(frameData);
+    }
+
     frameData->SetFrameTiming(options.frameTime, options.elapsedTime, options.elapsedPrevTime, frameCount);
     frameData->SetStatEnabled(options.statEnabled);
     frameData->CmdBeginContext(this, options.gpuTiming, options.textureStreamingFeedback, options.swapChainOutput);

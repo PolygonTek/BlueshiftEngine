@@ -86,6 +86,11 @@ void RenderWorld::AddVisSurf(RenderFrameData *frameData, VisCamera *visCamera, V
 void RenderWorld::SetSkyboxMaterial(SharedPtr<Material> skyboxMaterial) {
     assert(!frameActive);
 
+    if (this->skyboxMaterial != skyboxMaterial && hasEnvironmentLight && !environmentLight.GetDesc().radianceCubeMap) {
+        environmentLight.MarkRegenerationNeeded();
+        renderSystem->GetProbeBakeSystem().CancelEnvironmentLightProbeBake(this);
+    }
+
     this->skyboxMaterial = skyboxMaterial;
 }
 
@@ -246,6 +251,29 @@ void RenderWorld::RenderScene(RenderCamera *renderCamera) {
     visCamera->visSurfs = (const VisSurf **)frameData->MemAlloc(visCamera->maxVisSurfs * sizeof(VisSurf *));
     visCamera->numRenderPasses = 0;
     visCamera->renderPasses = (RenderPass *)frameData->MemAlloc(VisCamera::MaxRenderPasses * sizeof(RenderPass));
+    visCamera->origin = renderCamera->desc.origin;
+    visCamera->axis = renderCamera->desc.axis;
+
+    if (hasEnvironmentLight) {
+        const EnvironmentLight::Desc &environmentLightDesc = environmentLight.GetDesc();
+        visCamera->environmentLightAxis = environmentLightDesc.axis;
+        visCamera->environmentLightColor = environmentLightDesc.linearColor;
+        visCamera->environmentLightIntensity = environmentLightDesc.intensity;
+
+        Texture *diffuseIrradianceCubeMap = frameData->RetainTexture(environmentLight.GetDiffuseIrradianceCubeMap());
+        RHI::Texture *rhiDiffuseIrradianceCubeMap = diffuseIrradianceCubeMap ? diffuseIrradianceCubeMap->GetReadyRHITexture() : nullptr;
+        if (rhiDiffuseIrradianceCubeMap && rhiDiffuseIrradianceCubeMap->type == RHI::TextureType::TextureCube) {
+            visCamera->environmentLightDiffuseIrradianceCubeMap = rhiDiffuseIrradianceCubeMap;
+        }
+
+        Texture *specularCubeMap = frameData->RetainTexture(environmentLight.GetSpecularPrefilteredCubeMap());
+        RHI::Texture *rhiSpecularCubeMap = specularCubeMap ? specularCubeMap->GetReadyRHITexture() : nullptr;
+        if (rhiSpecularCubeMap && rhiSpecularCubeMap->type == RHI::TextureType::TextureCube) {
+            visCamera->environmentLightSpecularCubeMap = rhiSpecularCubeMap;
+            visCamera->environmentLightSpecularMipCount = rhiSpecularCubeMap->GetMipLevelCount();
+        }
+    }
+
     visCamera->outputRect = outputRect;
     visCamera->outputTexture = renderCamera->desc.outputTexture;
     visCamera->outputViewID = renderCamera->desc.outputViewID;
@@ -1226,6 +1254,8 @@ void RenderWorld::DrawGUICamera(RenderFrameData *frameData, uint32_t screenWidth
     visCamera->visSurfs = (const VisSurf **)frameData->MemAlloc(visCamera->maxVisSurfs * sizeof(VisSurf *));
     visCamera->numRenderPasses = 0;
     visCamera->renderPasses = (RenderPass *)frameData->MemAlloc(VisCamera::MaxRenderPasses * sizeof(RenderPass));
+    visCamera->origin = BE1::Vec3::origin;
+    visCamera->axis = BE1::Mat3::identity;
     visCamera->outputRect = BE1::Rect(0, 0, screenWidth, screenHeight);
     visCamera->renderWidth = screenWidth;
     visCamera->renderHeight = screenHeight;

@@ -19,6 +19,8 @@
 #include "ColorGradingLUTGenerator.h"
 #include "ConvolutionBloomKernelGenerator.h"
 #include "IBLBaker.h"
+#include "ProbeBakeSystem.h"
+#include "RenderWork/RenderWorkQueue.h"
 
 class RenderContext;
 class RenderBackend;
@@ -44,8 +46,9 @@ class Texture;
 
 class RenderSystem {
     friend class RenderFrameData;
+    friend class RenderContext;
     friend class RenderBackend;
-    friend class ConvolutionBloomKernelGenerator;
+    friend class ProbeBakeSystem;
 
 public:
     void                            Init(void *mainWindowHandle);
@@ -83,12 +86,21 @@ public:
 
     ConvolutionBloomKernelGenerator &GetConvolutionBloomKernelGenerator() { return convolutionBloomKernelGenerator; }
     const ConvolutionBloomKernelGenerator &GetConvolutionBloomKernelGenerator() const { return convolutionBloomKernelGenerator; }
+    uint64_t                        RequestConvolutionBloomKernelGeneration(const SharedPtr<Texture> &apertureTexture, float apertureScale, float diffractionPSFScale, float dispersionAmount);
+    void                            CompleteConvolutionBloomKernelGeneration(uint64_t requestSerial, bool succeeded);
+    bool                            GetConvolutionBloomKernelGenerationResult(uint64_t requestSerial, bool &succeeded) const;
+
+    GpuFFT &                        GetGpuFFT() { return gpuFFT; }
+    const GpuFFT &                  GetGpuFFT() const { return gpuFFT; }
 
     GpuSphericalHarmonics &         GetGpuSphericalHarmonics() { return gpuSphericalHarmonics; }
     const GpuSphericalHarmonics &   GetGpuSphericalHarmonics() const { return gpuSphericalHarmonics; }
 
     IBLBaker &                      GetIBLBaker() { return iblBaker; }
     const IBLBaker &                GetIBLBaker() const { return iblBaker; }
+
+    ProbeBakeSystem &               GetProbeBakeSystem() { return probeBakeSystem; }
+    const ProbeBakeSystem &         GetProbeBakeSystem() const { return probeBakeSystem; }
 
 private:
     struct SubmittedFrame {
@@ -105,6 +117,17 @@ private:
     void                            UpdateColorGradingLUT();
     void                            DestroyColorGradingLUT();
 
+    void                            PrepareProbeBakes(RenderContext *renderContext);
+
+                                    // render work 를 대기 큐에 추가한다.
+    void                            SubmitRenderWork(UniquePtr<RenderWork> work);
+
+                                    // 완료된 frameData 의 render work 를 완료 처리한다.
+    void                            CompleteRenderWorks(RenderFrameData *frameData);
+
+                                    // 대기 중인 render work 를 메인 스왑 체인 프레임의 렌더 커맨드에 밀어 넣는다.
+    void                            AttachPendingRenderWorks(RenderFrameData *frameData);
+
     void                            MarkRenderCompleted(RenderFrameData *frameData);
     bool                            WaitSubmittedFrame(SubmittedFrame &submittedFrame);
 
@@ -119,6 +142,7 @@ private:
 
     BE1::Array<SubmittedFrame>      submittedFrames;
     int                             submittedFrameReadIndex = 0;
+    RenderWorkQueue                 renderWorkQueue;
 
     BE1::PlatformSRWLock *          frameSyncLock = nullptr;
     BE1::PlatformCondition *        renderCompletedCondition = nullptr;
@@ -150,10 +174,6 @@ private:
     SharedPtr<ShaderTemplate>       convolutionBloomPrefilterShaderTemplate;
     SharedPtr<ShaderTemplate>       convolutionBloomKernelPrepareShaderTemplate;
     SharedPtr<ShaderTemplate>       convolutionBloomResolveShaderTemplate;
-    SharedPtr<ShaderTemplate>       convolutionBloomAperturePrepareShaderTemplate;
-    SharedPtr<ShaderTemplate>       convolutionBloomReduceApertureEnergyShaderTemplate;
-    SharedPtr<ShaderTemplate>       convolutionBloomResolveDiffractionPSFShaderTemplate;
-    SharedPtr<ShaderTemplate>       convolutionBloomApplyDispersionShaderTemplate;
 
     SharedPtr<ShaderPipeline>       genHiZMipFirstBatchPipeline;
     SharedPtr<ShaderPipeline>       genHiZMipFirstBatchMSAAPipeline;
@@ -178,12 +198,11 @@ private:
     SharedPtr<ShaderPipeline>       convolutionBloomPrefilterPipeline;
     SharedPtr<ShaderPipeline>       convolutionBloomKernelPreparePipeline;
     SharedPtr<ShaderPipeline>       convolutionBloomResolvePipeline;
-    SharedPtr<ShaderPipeline>       convolutionBloomAperturePreparePipeline;
-    SharedPtr<ShaderPipeline>       convolutionBloomReduceApertureEnergyPipeline;
-    SharedPtr<ShaderPipeline>       convolutionBloomResolveDiffractionPSFPipeline;
-    SharedPtr<ShaderPipeline>       convolutionBloomApplyDispersionPipeline;
 
     ConvolutionBloomKernelGenerator convolutionBloomKernelGenerator;
+    uint64_t                        nextConvolutionBloomKernelGenerationSerial = 0;
+    uint64_t                        completedConvolutionBloomKernelGenerationSerial = 0;
+    bool                            completedConvolutionBloomKernelGenerationSucceeded = false;
 
     BE1::Image                      colorGradingLUTImage;
     SharedPtr<Texture>              colorGradingLUTTexture;
@@ -192,6 +211,7 @@ private:
     GpuFFT                          gpuFFT;
     GpuSphericalHarmonics           gpuSphericalHarmonics;
     IBLBaker                        iblBaker;
+    ProbeBakeSystem                 probeBakeSystem;
 };
 
 extern RenderSystem *               renderSystem;

@@ -14,6 +14,7 @@
 
 #include "Precompiled.h"
 #include "RenderBackend.h"
+#include "Render/RenderWork/RenderWork.h"
 #include "Render/RenderCvars.h"
 #include "Render/RenderContext.h"
 #include "Render/RenderSystem.h"
@@ -52,6 +53,9 @@ void RenderBackend::Execute(RenderFrameData *frameData) {
         RenderCommandId cmdId = *reinterpret_cast<const RenderCommandId *>(data);
 
         switch (cmdId) {
+        case RenderCommandId::RenderWork:
+            data = ExecuteRenderWork(data);
+            continue;
         case RenderCommandId::BeginContext:
             data = ExecuteBeginContext(data);
             continue;
@@ -60,9 +64,6 @@ void RenderBackend::Execute(RenderFrameData *frameData) {
             continue;
         case RenderCommandId::ScreenShot:
             data = ExecuteScreenshot(data);
-            continue;
-        case RenderCommandId::GenerateConvolutionBloomKernel:
-            data = ExecuteGenerateConvolutionBloomKernel(data);
             continue;
         case RenderCommandId::FinalizeFrame:
             data = ExecuteFinalizeFrame(data);
@@ -250,6 +251,22 @@ bool RenderBackend::UploadCameraConstants() {
     constants->lightCullingDebugMode = static_cast<uint32_t>(r_lightCullingDebug.GetInteger());
     constants->padding0 = 0;
 
+    constants->cameraOrigin = float3(currentVisCamera->origin.x, currentVisCamera->origin.y, currentVisCamera->origin.z);
+    constants->padding1 = 0.0f;
+
+    const BE1::Mat3 &environmentLightAxis = currentVisCamera->environmentLightAxis;
+    constants->environmentLightAxis = float3x4(
+        environmentLightAxis[0].x, environmentLightAxis[0].y, environmentLightAxis[0].z, 0.0f,
+        environmentLightAxis[1].x, environmentLightAxis[1].y, environmentLightAxis[1].z, 0.0f,
+        environmentLightAxis[2].x, environmentLightAxis[2].y, environmentLightAxis[2].z, 0.0f);
+    constants->environmentLightColor = float3(currentVisCamera->environmentLightColor.r, currentVisCamera->environmentLightColor.g, currentVisCamera->environmentLightColor.b);
+    constants->environmentLightIntensity = currentVisCamera->environmentLightIntensity;
+
+    constants->environmentLightDiffuseIrradianceCubeMapIndex = currentVisCamera->environmentLightDiffuseIrradianceCubeMap ? currentVisCamera->environmentLightDiffuseIrradianceCubeMap->GetBindlessIndex(RHI::ViewType::SRV) : 0;
+    constants->environmentLightSpecularCubeMapIndex = currentVisCamera->environmentLightSpecularCubeMap ? currentVisCamera->environmentLightSpecularCubeMap->GetBindlessIndex(RHI::ViewType::SRV) : 0;
+    constants->environmentLightSpecularMipCount = currentVisCamera->environmentLightSpecularMipCount;
+    constants->padding2 = 0;
+
     return true;
 }
 
@@ -275,6 +292,30 @@ void RenderBackend::UpdateFramePSOs() {
     frameConvolutionBloomPrefilterPSO = ShaderPipeline::GetReadyPSO(renderSystem->convolutionBloomPrefilterPipeline);
     frameConvolutionBloomKernelPreparePSO = ShaderPipeline::GetReadyPSO(renderSystem->convolutionBloomKernelPreparePipeline);
     frameConvolutionBloomResolvePSO = ShaderPipeline::GetReadyPSO(renderSystem->convolutionBloomResolvePipeline);
+}
+
+const void *RenderBackend::ExecuteRenderWork(const void *data) {
+    PROFILER_CPU_SCOPED_EVENT("RenderBackend::ExecuteRenderWork");
+
+    const RenderWorkRenderCommand *cmd = reinterpret_cast<const RenderWorkRenderCommand *>(data);
+    RenderWork *renderWork = cmd->renderWork;
+    if (!renderWork) {
+        return (const void *)(cmd + 1);
+    }
+
+    RHI::FrameThreadData *frameThreadData = frameData->GetThreadData(0);
+    RHI::CommandList *commandList = frameThreadData->BeginCommandList(RHI::CommandQueueType::Graphics);
+
+    // render work 의 커맨드 리스트를 기록한다.
+    if (renderWork->RecordCommands(frameThreadData, commandList)) {
+        commandList->CloseAndExecute();
+
+        // 커맨드 리스트를 그래픽스 큐에 제출했음을 표시한다.
+        renderWork->MarkSubmitted();
+    } else {
+        commandList->Close();
+    }
+    return (const void *)(cmd + 1);
 }
 
 const void *RenderBackend::ExecuteBeginContext(const void *data) {
@@ -701,31 +742,6 @@ const void *RenderBackend::ExecuteScreenshot(const void *data) {
     BE1::Str filename = cmd->filename;
     filename.DefaultFileExtension(".png");
     screenImage.Write(filename);
-
-    return (const void *)(cmd + 1);
-}
-
-const void *RenderBackend::ExecuteGenerateConvolutionBloomKernel(const void *data) {
-    PROFILER_CPU_SCOPED_EVENT("RenderBackend::ExecuteGenerateConvolutionBloomKernel");
-
-    const GenerateConvolutionBloomKernelRenderCommand *cmd = reinterpret_cast<const GenerateConvolutionBloomKernelRenderCommand *>(data);
-
-    ConvolutionBloomKernelGenerator &kernelGenerator = renderSystem->GetConvolutionBloomKernelGenerator();
-    kernelGenerator.SetApertureScale(cmd->apertureScale);
-    kernelGenerator.SetDiffractionPSFScale(cmd->diffractionPSFScale);
-    kernelGenerator.SetDispersionAmount(cmd->dispersionAmount);
-
-    if (!kernelGenerator.IsKernelDirty() && kernelGenerator.HasResources()) {
-        return (const void *)(cmd + 1);
-    }
-
-    mainCommandList = frameData->GetThreadData(0)->BeginCommandList(RHI::CommandQueueType::Graphics);
-
-    if (!kernelGenerator.GenerateKernel(mainCommandList, frameData)) {
-        BE_WARNLOG("RenderBackend::ExecuteGenerateConvolutionBloomKernel: failed to generate convolution bloom kernel\n");
-    }
-
-    mainCommandList->CloseAndExecute();
 
     return (const void *)(cmd + 1);
 }

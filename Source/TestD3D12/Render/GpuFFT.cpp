@@ -14,7 +14,7 @@
 
 #include "Precompiled.h"
 #include "GpuFFT.h"
-#include "RenderFrameData.h"
+#include "Render/ShaderPipeline/ShaderPipeline.h"
 #include "Render/ShaderPipeline/ShaderTemplateManager.h"
 #include "Render/ShaderPipeline/ShaderPipelineCache.h"
 #include "Shaders/ShaderInterop.h"
@@ -38,8 +38,12 @@ struct FFTDispatchEntry {
 static FFTDispatchEntry     fftDispatchTable[static_cast<uint32_t>(GpuFFT::FFTSize::Count)];
 
 void GpuFFT::Init() {
+    pipelinesReady = false;
+    pipelineBuildFailed = false;
+
     const char *baseDir = "Source/TestD3D12/Shaders";
     const RHI::ShaderModel shaderModel = RHI::ShaderModel::SM_6_6;
+    constexpr bool asyncPipelineBuild = true;
 
     fftComplex256ShaderTemplate = shaderTemplateManager.CreateComputeShaderTemplate("_fftComplex256Shader", shaderModel, "FFT/FFTComplex256.hlsl", baseDir);
     fftComplex512ShaderTemplate = shaderTemplateManager.CreateComputeShaderTemplate("_fftComplex512Shader", shaderModel, "FFT/FFTComplex512.hlsl", baseDir);
@@ -79,43 +83,43 @@ void GpuFFT::Init() {
     transposeComplex1024x2048ShaderTemplate = shaderTemplateManager.CreateComputeShaderTemplate("_transposeComplex1024x2048Shader", shaderModel, "Transpose/TransposeComplex1024x2048.hlsl", baseDir);
     transposeComplex2048x1024ShaderTemplate = shaderTemplateManager.CreateComputeShaderTemplate("_transposeComplex2048x1024Shader", shaderModel, "Transpose/TransposeComplex2048x1024.hlsl", baseDir);
 
-    fftComplex256Pipeline = shaderPipelineCache.GetComputePipeline(fftComplex256ShaderTemplate, ShaderPermutationKey());
-    fftComplex512Pipeline = shaderPipelineCache.GetComputePipeline(fftComplex512ShaderTemplate, ShaderPermutationKey());
-    fftComplex1024Pipeline = shaderPipelineCache.GetComputePipeline(fftComplex1024ShaderTemplate, ShaderPermutationKey());
-    fftComplex2048Pipeline = shaderPipelineCache.GetComputePipeline(fftComplex2048ShaderTemplate, ShaderPermutationKey());
+    fftComplex256Pipeline = shaderPipelineCache.GetComputePipeline(fftComplex256ShaderTemplate, ShaderPermutationKey(), asyncPipelineBuild);
+    fftComplex512Pipeline = shaderPipelineCache.GetComputePipeline(fftComplex512ShaderTemplate, ShaderPermutationKey(), asyncPipelineBuild);
+    fftComplex1024Pipeline = shaderPipelineCache.GetComputePipeline(fftComplex1024ShaderTemplate, ShaderPermutationKey(), asyncPipelineBuild);
+    fftComplex2048Pipeline = shaderPipelineCache.GetComputePipeline(fftComplex2048ShaderTemplate, ShaderPermutationKey(), asyncPipelineBuild);
 
-    fftReal512Pipeline = shaderPipelineCache.GetComputePipeline(fftReal512ShaderTemplate, ShaderPermutationKey());
-    fftReal1024Pipeline = shaderPipelineCache.GetComputePipeline(fftReal1024ShaderTemplate, ShaderPermutationKey());
-    fftReal2048Pipeline = shaderPipelineCache.GetComputePipeline(fftReal2048ShaderTemplate, ShaderPermutationKey());
+    fftReal512Pipeline = shaderPipelineCache.GetComputePipeline(fftReal512ShaderTemplate, ShaderPermutationKey(), asyncPipelineBuild);
+    fftReal1024Pipeline = shaderPipelineCache.GetComputePipeline(fftReal1024ShaderTemplate, ShaderPermutationKey(), asyncPipelineBuild);
+    fftReal2048Pipeline = shaderPipelineCache.GetComputePipeline(fftReal2048ShaderTemplate, ShaderPermutationKey(), asyncPipelineBuild);
 
-    ifftReal512Pipeline = shaderPipelineCache.GetComputePipeline(ifftReal512ShaderTemplate, ShaderPermutationKey());
-    ifftReal1024Pipeline = shaderPipelineCache.GetComputePipeline(ifftReal1024ShaderTemplate, ShaderPermutationKey());
-    ifftReal2048Pipeline = shaderPipelineCache.GetComputePipeline(ifftReal2048ShaderTemplate, ShaderPermutationKey());
+    ifftReal512Pipeline = shaderPipelineCache.GetComputePipeline(ifftReal512ShaderTemplate, ShaderPermutationKey(), asyncPipelineBuild);
+    ifftReal1024Pipeline = shaderPipelineCache.GetComputePipeline(ifftReal1024ShaderTemplate, ShaderPermutationKey(), asyncPipelineBuild);
+    ifftReal2048Pipeline = shaderPipelineCache.GetComputePipeline(ifftReal2048ShaderTemplate, ShaderPermutationKey(), asyncPipelineBuild);
 
-    fftDualReal256Pipeline = shaderPipelineCache.GetComputePipeline(fftDualReal256ShaderTemplate, ShaderPermutationKey());
-    fftDualReal512Pipeline = shaderPipelineCache.GetComputePipeline(fftDualReal512ShaderTemplate, ShaderPermutationKey());
-    fftDualReal1024Pipeline = shaderPipelineCache.GetComputePipeline(fftDualReal1024ShaderTemplate, ShaderPermutationKey());
-    fftDualReal2048Pipeline = shaderPipelineCache.GetComputePipeline(fftDualReal2048ShaderTemplate, ShaderPermutationKey());
+    fftDualReal256Pipeline = shaderPipelineCache.GetComputePipeline(fftDualReal256ShaderTemplate, ShaderPermutationKey(), asyncPipelineBuild);
+    fftDualReal512Pipeline = shaderPipelineCache.GetComputePipeline(fftDualReal512ShaderTemplate, ShaderPermutationKey(), asyncPipelineBuild);
+    fftDualReal1024Pipeline = shaderPipelineCache.GetComputePipeline(fftDualReal1024ShaderTemplate, ShaderPermutationKey(), asyncPipelineBuild);
+    fftDualReal2048Pipeline = shaderPipelineCache.GetComputePipeline(fftDualReal2048ShaderTemplate, ShaderPermutationKey(), asyncPipelineBuild);
 
-    ifftDualReal256Pipeline = shaderPipelineCache.GetComputePipeline(ifftDualReal256ShaderTemplate, ShaderPermutationKey());
-    ifftDualReal512Pipeline = shaderPipelineCache.GetComputePipeline(ifftDualReal512ShaderTemplate, ShaderPermutationKey());
-    ifftDualReal1024Pipeline = shaderPipelineCache.GetComputePipeline(ifftDualReal1024ShaderTemplate, ShaderPermutationKey());
-    ifftDualReal2048Pipeline = shaderPipelineCache.GetComputePipeline(ifftDualReal2048ShaderTemplate, ShaderPermutationKey());
+    ifftDualReal256Pipeline = shaderPipelineCache.GetComputePipeline(ifftDualReal256ShaderTemplate, ShaderPermutationKey(), asyncPipelineBuild);
+    ifftDualReal512Pipeline = shaderPipelineCache.GetComputePipeline(ifftDualReal512ShaderTemplate, ShaderPermutationKey(), asyncPipelineBuild);
+    ifftDualReal1024Pipeline = shaderPipelineCache.GetComputePipeline(ifftDualReal1024ShaderTemplate, ShaderPermutationKey(), asyncPipelineBuild);
+    ifftDualReal2048Pipeline = shaderPipelineCache.GetComputePipeline(ifftDualReal2048ShaderTemplate, ShaderPermutationKey(), asyncPipelineBuild);
 
-    multiplyComplexSpectrum2DPipeline = shaderPipelineCache.GetComputePipeline(multiplyComplexSpectrum2DShaderTemplate, ShaderPermutationKey());
-    multiplyPackedRealSpectrum2DPipeline = shaderPipelineCache.GetComputePipeline(multiplyPackedRealSpectrum2DShaderTemplate, ShaderPermutationKey());
-    multiplyPackedDualRealSpectrum2DPipeline = shaderPipelineCache.GetComputePipeline(multiplyPackedDualRealSpectrum2DShaderTemplate, ShaderPermutationKey());
+    multiplyComplexSpectrum2DPipeline = shaderPipelineCache.GetComputePipeline(multiplyComplexSpectrum2DShaderTemplate, ShaderPermutationKey(), asyncPipelineBuild);
+    multiplyPackedRealSpectrum2DPipeline = shaderPipelineCache.GetComputePipeline(multiplyPackedRealSpectrum2DShaderTemplate, ShaderPermutationKey(), asyncPipelineBuild);
+    multiplyPackedDualRealSpectrum2DPipeline = shaderPipelineCache.GetComputePipeline(multiplyPackedDualRealSpectrum2DShaderTemplate, ShaderPermutationKey(), asyncPipelineBuild);
 
-    transposeComplex256Pipeline = shaderPipelineCache.GetComputePipeline(transposeComplex256ShaderTemplate, ShaderPermutationKey());
-    transposeComplex512Pipeline = shaderPipelineCache.GetComputePipeline(transposeComplex512ShaderTemplate, ShaderPermutationKey());
-    transposeComplex1024Pipeline = shaderPipelineCache.GetComputePipeline(transposeComplex1024ShaderTemplate, ShaderPermutationKey());
-    transposeComplex2048Pipeline = shaderPipelineCache.GetComputePipeline(transposeComplex2048ShaderTemplate, ShaderPermutationKey());
-    transposeComplex256x512Pipeline = shaderPipelineCache.GetComputePipeline(transposeComplex256x512ShaderTemplate, ShaderPermutationKey());
-    transposeComplex512x256Pipeline = shaderPipelineCache.GetComputePipeline(transposeComplex512x256ShaderTemplate, ShaderPermutationKey());
-    transposeComplex512x1024Pipeline = shaderPipelineCache.GetComputePipeline(transposeComplex512x1024ShaderTemplate, ShaderPermutationKey());
-    transposeComplex1024x512Pipeline = shaderPipelineCache.GetComputePipeline(transposeComplex1024x512ShaderTemplate, ShaderPermutationKey());
-    transposeComplex1024x2048Pipeline = shaderPipelineCache.GetComputePipeline(transposeComplex1024x2048ShaderTemplate, ShaderPermutationKey());
-    transposeComplex2048x1024Pipeline = shaderPipelineCache.GetComputePipeline(transposeComplex2048x1024ShaderTemplate, ShaderPermutationKey());
+    transposeComplex256Pipeline = shaderPipelineCache.GetComputePipeline(transposeComplex256ShaderTemplate, ShaderPermutationKey(), asyncPipelineBuild);
+    transposeComplex512Pipeline = shaderPipelineCache.GetComputePipeline(transposeComplex512ShaderTemplate, ShaderPermutationKey(), asyncPipelineBuild);
+    transposeComplex1024Pipeline = shaderPipelineCache.GetComputePipeline(transposeComplex1024ShaderTemplate, ShaderPermutationKey(), asyncPipelineBuild);
+    transposeComplex2048Pipeline = shaderPipelineCache.GetComputePipeline(transposeComplex2048ShaderTemplate, ShaderPermutationKey(), asyncPipelineBuild);
+    transposeComplex256x512Pipeline = shaderPipelineCache.GetComputePipeline(transposeComplex256x512ShaderTemplate, ShaderPermutationKey(), asyncPipelineBuild);
+    transposeComplex512x256Pipeline = shaderPipelineCache.GetComputePipeline(transposeComplex512x256ShaderTemplate, ShaderPermutationKey(), asyncPipelineBuild);
+    transposeComplex512x1024Pipeline = shaderPipelineCache.GetComputePipeline(transposeComplex512x1024ShaderTemplate, ShaderPermutationKey(), asyncPipelineBuild);
+    transposeComplex1024x512Pipeline = shaderPipelineCache.GetComputePipeline(transposeComplex1024x512ShaderTemplate, ShaderPermutationKey(), asyncPipelineBuild);
+    transposeComplex1024x2048Pipeline = shaderPipelineCache.GetComputePipeline(transposeComplex1024x2048ShaderTemplate, ShaderPermutationKey(), asyncPipelineBuild);
+    transposeComplex2048x1024Pipeline = shaderPipelineCache.GetComputePipeline(transposeComplex2048x1024ShaderTemplate, ShaderPermutationKey(), asyncPipelineBuild);
 
     fftRealTwiddle512Buffer = CreateRealFFTTwiddleBuffer(512);
     fftRealTwiddle1024Buffer = CreateRealFFTTwiddleBuffer(1024);
@@ -175,6 +179,9 @@ void GpuFFT::Init() {
 }
 
 void GpuFFT::Shutdown() {
+    pipelinesReady = false;
+    pipelineBuildFailed = false;
+
     for (uint32_t i = 0; i < static_cast<uint32_t>(FFTSize::Count); i++) {
         fftDispatchTable[i] = FFTDispatchEntry{};
     }
@@ -271,6 +278,85 @@ void GpuFFT::Shutdown() {
     }
 }
 
+void GpuFFT::UpdatePipelineBuildState() {
+    if (pipelinesReady || pipelineBuildFailed) {
+        return;
+    }
+
+    const ShaderPipeline *pipelines[] = {
+        fftComplex256Pipeline.get(),
+        fftComplex512Pipeline.get(),
+        fftComplex1024Pipeline.get(),
+        fftComplex2048Pipeline.get(),
+
+        fftReal512Pipeline.get(),
+        fftReal1024Pipeline.get(),
+        fftReal2048Pipeline.get(),
+
+        ifftReal512Pipeline.get(),
+        ifftReal1024Pipeline.get(),
+        ifftReal2048Pipeline.get(),
+
+        fftDualReal256Pipeline.get(),
+        fftDualReal512Pipeline.get(),
+        fftDualReal1024Pipeline.get(),
+        fftDualReal2048Pipeline.get(),
+
+        ifftDualReal256Pipeline.get(),
+        ifftDualReal512Pipeline.get(),
+        ifftDualReal1024Pipeline.get(),
+        ifftDualReal2048Pipeline.get(),
+
+        multiplyComplexSpectrum2DPipeline.get(),
+        multiplyPackedRealSpectrum2DPipeline.get(),
+        multiplyPackedDualRealSpectrum2DPipeline.get(),
+
+        transposeComplex256Pipeline.get(),
+        transposeComplex512Pipeline.get(),
+        transposeComplex1024Pipeline.get(),
+        transposeComplex2048Pipeline.get(),
+        transposeComplex256x512Pipeline.get(),
+        transposeComplex512x256Pipeline.get(),
+        transposeComplex512x1024Pipeline.get(),
+        transposeComplex1024x512Pipeline.get(),
+        transposeComplex1024x2048Pipeline.get(),
+        transposeComplex2048x1024Pipeline.get()
+    };
+
+    bool allReady = true;
+
+    for (const ShaderPipeline *pipeline : pipelines) {
+        if (!pipeline) {
+            pipelineBuildFailed = true;
+            break;
+        }
+
+        switch (pipeline->GetState()) {
+        case ShaderPipeline::State::Ready:
+        case ShaderPipeline::State::Rebuilding:
+            break;
+        case ShaderPipeline::State::Building:
+            allReady = false;
+            break;
+        case ShaderPipeline::State::Empty:
+        case ShaderPipeline::State::Failed:
+            pipelineBuildFailed = true;
+            break;
+        }
+
+        if (pipelineBuildFailed) {
+            break;
+        }
+    }
+
+    if (pipelineBuildFailed) {
+        BE_WARNLOG("GpuFFT::UpdatePipelineBuildState: pipeline build failed\n");
+        return;
+    }
+
+    pipelinesReady = allReady;
+}
+
 bool GpuFFT::GetGpuFFTSize(uint32_t fftSizeValue, GpuFFT::FFTSize &fftSize) {
     switch (fftSizeValue) {
     case 256:
@@ -292,7 +378,7 @@ bool GpuFFT::GetGpuFFTSize(uint32_t fftSizeValue, GpuFFT::FFTSize &fftSize) {
     return false;
 }
 
-bool GpuFFT::DispatchFFTComplex1D(RHI::CommandList *commandList, RenderFrameData *frameData, RHI::Buffer *inputBuffer, RHI::Buffer *outputBuffer, FFTSize fftSize, uint32_t fftBlockCount) {
+bool GpuFFT::DispatchFFTComplex1D(RHI::CommandList *commandList, RHI::FrameThreadData *frameThreadData, RHI::Buffer *inputBuffer, RHI::Buffer *outputBuffer, FFTSize fftSize, uint32_t fftBlockCount) {
     PROFILER_CPU_SCOPED_EVENT("GpuFFT::DispatchFFTComplex1D");
 
     const uint32_t fftSizeIndex = static_cast<uint32_t>(fftSize);
@@ -307,8 +393,6 @@ bool GpuFFT::DispatchFFTComplex1D(RHI::CommandList *commandList, RenderFrameData
         return false;
     }
 
-    RHI::FrameThreadData *frameThreadData = frameData->GetThreadData(0);
-
     if (!DispatchFFTComplexFused(commandList, frameThreadData, pso, inputBuffer, outputBuffer, fftBlockCount, RHI::GPUResourceState::Undefined, RHI::GPUResourceState::Undefined, -1.0f, 1.0f)) {
         return false;
     }
@@ -322,7 +406,7 @@ bool GpuFFT::DispatchFFTComplex1D(RHI::CommandList *commandList, RenderFrameData
     return true;
 }
 
-bool GpuFFT::DispatchIFFTComplex1D(RHI::CommandList *commandList, RenderFrameData *frameData, RHI::Buffer *inputBuffer, RHI::Buffer *outputBuffer, FFTSize fftSize, uint32_t fftBlockCount) {
+bool GpuFFT::DispatchIFFTComplex1D(RHI::CommandList *commandList, RHI::FrameThreadData *frameThreadData, RHI::Buffer *inputBuffer, RHI::Buffer *outputBuffer, FFTSize fftSize, uint32_t fftBlockCount) {
     PROFILER_CPU_SCOPED_EVENT("GpuFFT::DispatchIFFTComplex1D");
 
     const uint32_t fftSizeIndex = static_cast<uint32_t>(fftSize);
@@ -336,8 +420,6 @@ bool GpuFFT::DispatchIFFTComplex1D(RHI::CommandList *commandList, RenderFrameDat
     if (!pso) {
         return false;
     }
-
-    RHI::FrameThreadData *frameThreadData = frameData->GetThreadData(0);
 
     const float scale = 1.0f / static_cast<float>(entry.fftSize);
     if (!DispatchFFTComplexFused(commandList, frameThreadData, pso, inputBuffer, outputBuffer, fftBlockCount, RHI::GPUResourceState::Undefined, RHI::GPUResourceState::Undefined, 1.0f, scale)) {
@@ -353,7 +435,7 @@ bool GpuFFT::DispatchIFFTComplex1D(RHI::CommandList *commandList, RenderFrameDat
     return true;
 }
 
-bool GpuFFT::DispatchFFTComplex2D(RHI::CommandList *commandList, RenderFrameData *frameData, RHI::Buffer *inputBuffer, RHI::Buffer *outputBuffer, RHI::Buffer *workBuffer, FFTSize fftSize, uint32_t planeCount) {
+bool GpuFFT::DispatchFFTComplex2D(RHI::CommandList *commandList, RHI::FrameThreadData *frameThreadData, RHI::Buffer *inputBuffer, RHI::Buffer *outputBuffer, RHI::Buffer *workBuffer, FFTSize fftSize, uint32_t planeCount) {
     PROFILER_CPU_SCOPED_EVENT("GpuFFT::DispatchFFTComplex2D");
 
     const uint32_t fftSizeIndex = static_cast<uint32_t>(fftSize);
@@ -368,8 +450,6 @@ bool GpuFFT::DispatchFFTComplex2D(RHI::CommandList *commandList, RenderFrameData
     if (!fftPso || !transposePso) {
         return false;
     }
-
-    RHI::FrameThreadData *frameThreadData = frameData->GetThreadData(0);
 
     const uint32_t FFTBlockCount = entry.fftSize * planeCount;
     const uint32_t TransposeTileCount = entry.fftSize / TransposeComplexTileSize;
@@ -413,7 +493,7 @@ bool GpuFFT::DispatchFFTComplex2D(RHI::CommandList *commandList, RenderFrameData
     return true;
 }
 
-bool GpuFFT::DispatchIFFTComplex2D(RHI::CommandList *commandList, RenderFrameData *frameData, RHI::Buffer *inputBuffer, RHI::Buffer *outputBuffer, RHI::Buffer *workBuffer, FFTSize fftSize, uint32_t planeCount) {
+bool GpuFFT::DispatchIFFTComplex2D(RHI::CommandList *commandList, RHI::FrameThreadData *frameThreadData, RHI::Buffer *inputBuffer, RHI::Buffer *outputBuffer, RHI::Buffer *workBuffer, FFTSize fftSize, uint32_t planeCount) {
     PROFILER_CPU_SCOPED_EVENT("GpuFFT::DispatchIFFTComplex2D");
 
     const uint32_t fftSizeIndex = static_cast<uint32_t>(fftSize);
@@ -428,8 +508,6 @@ bool GpuFFT::DispatchIFFTComplex2D(RHI::CommandList *commandList, RenderFrameDat
     if (!fftPso || !transposePso) {
         return false;
     }
-
-    RHI::FrameThreadData *frameThreadData = frameData->GetThreadData(0);
 
     const uint32_t FFTBlockCount = entry.fftSize * planeCount;
     const uint32_t TransposeTileCount = entry.fftSize / TransposeComplexTileSize;
@@ -522,7 +600,7 @@ bool GpuFFT::DispatchIFFTReal1D(RHI::CommandList *commandList, RHI::Buffer *inpu
     return DispatchIFFTRealFused(commandList, pso, twiddleBuffer, inputBuffer, outputBuffer, nullptr, fftBlockCount, RHI::GPUResourceState::Undefined, RHI::GPUResourceState::Undefined);
 }
 
-bool GpuFFT::DispatchFFTReal2D(RHI::CommandList *commandList, RenderFrameData *frameData, RHI::Buffer *inputBuffer, RHI::Buffer *outputBuffer, RHI::Buffer *workBuffer, FFTSize fftSize, uint32_t planeCount) {
+bool GpuFFT::DispatchFFTReal2D(RHI::CommandList *commandList, RHI::FrameThreadData *frameThreadData, RHI::Buffer *inputBuffer, RHI::Buffer *outputBuffer, RHI::Buffer *workBuffer, FFTSize fftSize, uint32_t planeCount) {
     PROFILER_CPU_SCOPED_EVENT("GpuFFT::DispatchFFTReal2D");
 
     const uint32_t fftSizeIndex = static_cast<uint32_t>(fftSize);
@@ -539,8 +617,6 @@ bool GpuFFT::DispatchFFTReal2D(RHI::CommandList *commandList, RenderFrameData *f
     if (!realPso || !complexPso || !transposePso || !twiddleBuffer) {
         return false;
     }
-
-    RHI::FrameThreadData *frameThreadData = frameData->GetThreadData(0);
 
     const uint32_t packedSize = entry.fftSize / 2;
     const uint32_t RealFFTBlockCount = entry.fftSize * planeCount;
@@ -585,7 +661,7 @@ bool GpuFFT::DispatchFFTReal2D(RHI::CommandList *commandList, RenderFrameData *f
     return true;
 }
 
-bool GpuFFT::DispatchIFFTReal2D(RHI::CommandList *commandList, RenderFrameData *frameData, RHI::Buffer *inputBuffer, RHI::Buffer *outputBuffer, RHI::Buffer *workBuffer, FFTSize fftSize, uint32_t planeCount) {
+bool GpuFFT::DispatchIFFTReal2D(RHI::CommandList *commandList, RHI::FrameThreadData *frameThreadData, RHI::Buffer *inputBuffer, RHI::Buffer *outputBuffer, RHI::Buffer *workBuffer, FFTSize fftSize, uint32_t planeCount) {
     PROFILER_CPU_SCOPED_EVENT("GpuFFT::DispatchIFFTReal2D");
 
     const uint32_t fftSizeIndex = static_cast<uint32_t>(fftSize);
@@ -602,8 +678,6 @@ bool GpuFFT::DispatchIFFTReal2D(RHI::CommandList *commandList, RenderFrameData *
     if (!realPso || !complexPso || !transposePso || !twiddleBuffer) {
         return false;
     }
-
-    RHI::FrameThreadData *frameThreadData = frameData->GetThreadData(0);
 
     const uint32_t packedSize = entry.fftSize / 2;
     const uint32_t RealFFTBlockCount = entry.fftSize * planeCount;
@@ -684,7 +758,7 @@ bool GpuFFT::DispatchIFFTDualReal1D(RHI::CommandList *commandList, RHI::Buffer *
     return DispatchIFFTDualRealFused(commandList, pso, inputBuffer, outputBuffer, nullptr, fftBlockCount, RHI::GPUResourceState::Undefined, RHI::GPUResourceState::Undefined);
 }
 
-bool GpuFFT::DispatchFFTDualReal2D(RHI::CommandList *commandList, RenderFrameData *frameData, RHI::Buffer *inputBuffer, RHI::Buffer *outputBuffer, RHI::Buffer *workBuffer, FFTSize fftSize, uint32_t planeCount) {
+bool GpuFFT::DispatchFFTDualReal2D(RHI::CommandList *commandList, RHI::FrameThreadData *frameThreadData, RHI::Buffer *inputBuffer, RHI::Buffer *outputBuffer, RHI::Buffer *workBuffer, FFTSize fftSize, uint32_t planeCount) {
     PROFILER_CPU_SCOPED_EVENT("GpuFFT::DispatchFFTDualReal2D");
 
     const uint32_t fftSizeIndex = static_cast<uint32_t>(fftSize);
@@ -700,8 +774,6 @@ bool GpuFFT::DispatchFFTDualReal2D(RHI::CommandList *commandList, RenderFrameDat
     if (!dualRealPso || !complexPso || !transposePso) {
         return false;
     }
-
-    RHI::FrameThreadData *frameThreadData = frameData->GetThreadData(0);
 
     const uint32_t FFTBlockCount = entry.fftSize * planeCount;
     const uint32_t TransposeTileCount = entry.fftSize / TransposeComplexTileSize;
@@ -744,7 +816,7 @@ bool GpuFFT::DispatchFFTDualReal2D(RHI::CommandList *commandList, RenderFrameDat
     return true;
 }
 
-bool GpuFFT::DispatchIFFTDualReal2D(RHI::CommandList *commandList, RenderFrameData *frameData, RHI::Buffer *inputBuffer, RHI::Buffer *outputBuffer, RHI::Buffer *workBuffer, FFTSize fftSize, uint32_t planeCount) {
+bool GpuFFT::DispatchIFFTDualReal2D(RHI::CommandList *commandList, RHI::FrameThreadData *frameThreadData, RHI::Buffer *inputBuffer, RHI::Buffer *outputBuffer, RHI::Buffer *workBuffer, FFTSize fftSize, uint32_t planeCount) {
     PROFILER_CPU_SCOPED_EVENT("GpuFFT::DispatchIFFTDualReal2D");
 
     const uint32_t fftSizeIndex = static_cast<uint32_t>(fftSize);
@@ -760,8 +832,6 @@ bool GpuFFT::DispatchIFFTDualReal2D(RHI::CommandList *commandList, RenderFrameDa
     if (!complexPso || !dualRealPso || !transposePso) {
         return false;
     }
-
-    RHI::FrameThreadData *frameThreadData = frameData->GetThreadData(0);
 
     const uint32_t FFTBlockCount = entry.fftSize * planeCount;
     const uint32_t TransposeTileCount = entry.fftSize / TransposeComplexTileSize;
@@ -792,7 +862,7 @@ bool GpuFFT::DispatchIFFTDualReal2D(RHI::CommandList *commandList, RenderFrameDa
     return DispatchIFFTDualRealFused(commandList, dualRealPso, transposeOutput, outputBuffer, verticalOutput, FFTBlockCount, RHI::GPUResourceState::UnorderedAccess, RHI::GPUResourceState::ShaderResourceCompute);
 }
 
-bool GpuFFT::DispatchMultiplyComplexSpectrum2D(RHI::CommandList *commandList, RenderFrameData *frameData, RHI::Buffer *lhsSpectrumBuffer, RHI::Buffer *rhsSpectrumBuffer, RHI::Buffer *outputSpectrumBuffer, uint32_t fftSize, uint32_t planeCount, float scale) {
+bool GpuFFT::DispatchMultiplyComplexSpectrum2D(RHI::CommandList *commandList, RHI::FrameThreadData *frameThreadData, RHI::Buffer *lhsSpectrumBuffer, RHI::Buffer *rhsSpectrumBuffer, RHI::Buffer *outputSpectrumBuffer, uint32_t fftSize, uint32_t planeCount, float scale) {
     PROFILER_CPU_SCOPED_EVENT("GpuFFT::DispatchMultiplyComplexSpectrum2D");
 
     assert(outputSpectrumBuffer != lhsSpectrumBuffer);
@@ -820,7 +890,6 @@ bool GpuFFT::DispatchMultiplyComplexSpectrum2D(RHI::CommandList *commandList, Re
     multiplyParams.planeCount = planeCount;
     multiplyParams.scale = scale;
 
-    RHI::FrameThreadData *frameThreadData = frameData->GetThreadData(0);
     RHI::ConstantBuffer *multiplyConstantBuffer = frameThreadData->AllocConstant(sizeof(MultiplySpectrum2DParams), &multiplyParams);
     if (!multiplyConstantBuffer) {
         return false;
@@ -852,7 +921,7 @@ bool GpuFFT::DispatchMultiplyComplexSpectrum2D(RHI::CommandList *commandList, Re
     return true;
 }
 
-bool GpuFFT::DispatchMultiplyPackedRealSpectrum2D(RHI::CommandList *commandList, RenderFrameData *frameData, RHI::Buffer *lhsSpectrumBuffer, RHI::Buffer *rhsSpectrumBuffer, RHI::Buffer *outputSpectrumBuffer, uint32_t fftSize, uint32_t planeCount, float scale) {
+bool GpuFFT::DispatchMultiplyPackedRealSpectrum2D(RHI::CommandList *commandList, RHI::FrameThreadData *frameThreadData, RHI::Buffer *lhsSpectrumBuffer, RHI::Buffer *rhsSpectrumBuffer, RHI::Buffer *outputSpectrumBuffer, uint32_t fftSize, uint32_t planeCount, float scale) {
     PROFILER_CPU_SCOPED_EVENT("GpuFFT::DispatchMultiplyPackedRealSpectrum2D");
 
     assert(outputSpectrumBuffer != lhsSpectrumBuffer);
@@ -881,7 +950,6 @@ bool GpuFFT::DispatchMultiplyPackedRealSpectrum2D(RHI::CommandList *commandList,
     multiplyParams.planeCount = planeCount;
     multiplyParams.scale = scale;
 
-    RHI::FrameThreadData *frameThreadData = frameData->GetThreadData(0);
     RHI::ConstantBuffer *multiplyConstantBuffer = frameThreadData->AllocConstant(sizeof(MultiplySpectrum2DParams), &multiplyParams);
     if (!multiplyConstantBuffer) {
         return false;
@@ -913,7 +981,7 @@ bool GpuFFT::DispatchMultiplyPackedRealSpectrum2D(RHI::CommandList *commandList,
     return true;
 }
 
-bool GpuFFT::DispatchMultiplyPackedDualRealSpectrum2D(RHI::CommandList *commandList, RenderFrameData *frameData, RHI::Buffer *lhsSpectrumBuffer, RHI::Buffer *rhsSpectrumBuffer, RHI::Buffer *outputSpectrumBuffer, uint32_t fftSize, uint32_t planeCount, float scale) {
+bool GpuFFT::DispatchMultiplyPackedDualRealSpectrum2D(RHI::CommandList *commandList, RHI::FrameThreadData *frameThreadData, RHI::Buffer *lhsSpectrumBuffer, RHI::Buffer *rhsSpectrumBuffer, RHI::Buffer *outputSpectrumBuffer, uint32_t fftSize, uint32_t planeCount, float scale) {
     PROFILER_CPU_SCOPED_EVENT("GpuFFT::DispatchMultiplyPackedDualRealSpectrum2D");
 
     assert(outputSpectrumBuffer != lhsSpectrumBuffer);
@@ -941,7 +1009,6 @@ bool GpuFFT::DispatchMultiplyPackedDualRealSpectrum2D(RHI::CommandList *commandL
     multiplyParams.planeCount = planeCount;
     multiplyParams.scale = scale;
 
-    RHI::FrameThreadData *frameThreadData = frameData->GetThreadData(0);
     RHI::ConstantBuffer *multiplyConstantBuffer = frameThreadData->AllocConstant(sizeof(MultiplySpectrum2DParams), &multiplyParams);
     if (!multiplyConstantBuffer) {
         return false;

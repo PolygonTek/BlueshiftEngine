@@ -147,15 +147,36 @@ static const Texture *GetDefaultMaterialTexture() {
     return nullptr;
 }
 
-static const Texture *ResolveMaterialBaseColorTexture(const Material *material) {
+static const Texture *ResolveMaterialTexture(const Material *material, ShaderTemplate::StandardProperty standardProperty, const Texture *fallbackTexture) {
     if (material) {
-        const SharedPtr<Texture> *textureProperty = material->GetPropertyTexture(ShaderTemplate::StandardProperty::BaseColorTexture);
+        const SharedPtr<Texture> *textureProperty = material->GetPropertyTexture(standardProperty);
         if (textureProperty && *textureProperty) {
             return textureProperty->get();
         }
     }
+    return fallbackTexture;
+}
 
-    return textureManager.defaultTexture.get();
+static uint32_t GetMaterialTextureIndex(const Material *material, ShaderTemplate::StandardProperty standardProperty, const Texture *fallbackTexture) {
+    const Texture *texture = ResolveMaterialTexture(material, standardProperty, fallbackTexture);
+    const RHI::Texture *rhiTexture = texture ? texture->GetReadyRHITexture() : nullptr;
+    if (!rhiTexture) {
+        texture = GetDefaultMaterialTexture();
+        rhiTexture = texture ? texture->GetReadyRHITexture() : nullptr;
+    }
+    return rhiTexture ? rhiTexture->GetBindlessIndex(RHI::ViewType::SRV) : 0;
+}
+
+static float GetMaterialFactor(const Material *material, ShaderTemplate::StandardProperty standardProperty) {
+    static constexpr float DefaultFactor = 1.0f;
+
+    if (material) {
+        const ShaderTemplate::PropertyValue *propertyValue = material->GetPropertyValue(standardProperty);
+        if (propertyValue && propertyValue->GetType() == BE1::Variant::Type::Float) {
+            return BE1::Clamp(propertyValue->As<float>(), 0.0f, 1.0f);
+        }
+    }
+    return DefaultFactor;
 }
 
 static float GetMaterialAlphaCutoff(const Material *material) {
@@ -167,23 +188,19 @@ static float GetMaterialAlphaCutoff(const Material *material) {
             return propertyValue->As<float>();
         }
     }
-
     return DefaultAlphaCutoff;
 }
 
 void ShaderMaterialTable::Build(const Material *material, ShaderMaterial &outShaderMaterial) const {
-    const Texture *texture = ResolveMaterialBaseColorTexture(material);
-    const RHI::Texture *rhiTexture = texture->GetReadyRHITexture();
-    if (!rhiTexture) {
-        texture = GetDefaultMaterialTexture();
-        rhiTexture = texture->GetReadyRHITexture();
-    }
-
-    outShaderMaterial.baseColorTextureIndex = rhiTexture ? rhiTexture->GetBindlessIndex(RHI::ViewType::SRV) : 0;
+    outShaderMaterial.baseColorFactor = float4(1.0f, 1.0f, 1.0f, 1.0f);
+    outShaderMaterial.baseColorTextureIndex = GetMaterialTextureIndex(material, ShaderTemplate::StandardProperty::BaseColorTexture, textureManager.defaultTexture.get());
     outShaderMaterial.normalTextureIndex = 0;
     outShaderMaterial.emissiveTextureIndex = 0;
+    outShaderMaterial.metallicTextureIndex = GetMaterialTextureIndex(material, ShaderTemplate::StandardProperty::MetallicTexture, textureManager.whiteTexture.get());
+    outShaderMaterial.roughnessTextureIndex = GetMaterialTextureIndex(material, ShaderTemplate::StandardProperty::RoughnessTexture, textureManager.whiteTexture.get());
     outShaderMaterial.streamingMaterialIndex = material ? material->GetStreamingListIndex() : TextureStreamingInvalidIndex;
-    outShaderMaterial.baseColorFactor = float4(1.0f, 1.0f, 1.0f, 1.0f);
+    outShaderMaterial.metallicFactor = GetMaterialFactor(material, ShaderTemplate::StandardProperty::MetallicFactor);
+    outShaderMaterial.roughnessFactor = GetMaterialFactor(material, ShaderTemplate::StandardProperty::RoughnessFactor);
     outShaderMaterial.alphaCutoff = GetMaterialAlphaCutoff(material);
     outShaderMaterial.padding0 = float3(0.0f, 0.0f, 0.0f);
 }

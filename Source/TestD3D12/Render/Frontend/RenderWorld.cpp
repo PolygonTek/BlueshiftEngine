@@ -14,6 +14,7 @@
 
 #include "Precompiled.h"
 #include "RenderWorld.h"
+#include "Render/RenderSystem.h"
 #include "Render/Mesh/MeshInstance.h"
 
 RenderWorld::RenderWorld() {
@@ -26,6 +27,12 @@ RenderWorld::RenderWorld() {
     debugFillColor.Set(0, 0, 0, 0);
 
     renderWorldGroupId = BE1::Engine::taskManager->CreateGroupId();
+}
+
+RenderWorld::~RenderWorld() {
+    if (renderSystem) {
+        renderSystem->GetProbeBakeSystem().CancelEnvironmentLightProbeBake(this);
+    }
 }
 
 void RenderWorld::BeginFrame() {
@@ -61,6 +68,10 @@ void RenderWorld::ClearScene(ClearFlag clearFlags) {
             SAFE_DELETE(renderLight);
         }
         renderLights.Clear();
+
+        renderSystem->GetProbeBakeSystem().CancelEnvironmentLightProbeBake(this);
+        environmentLight.Reset();
+        hasEnvironmentLight = false;
     }
 }
 
@@ -228,6 +239,78 @@ void RenderWorld::RemoveRenderLight(int index) {
 
     delete renderLights[index];
     renderLights[index] = nullptr;
+}
+
+bool RenderWorld::AddEnvironmentLight(const EnvironmentLight::Desc &desc) {
+    assert(BE1::Engine::IsInMainThread());
+    assert(!frameActive);
+
+    if (hasEnvironmentLight) {
+        BE_WARNLOG("RenderWorld::AddEnvironmentLight: only one environment light is supported\n");
+        return false;
+    }
+
+    environmentLight.Update(desc);
+    hasEnvironmentLight = true;
+    return true;
+}
+
+void RenderWorld::UpdateEnvironmentLight(const EnvironmentLight::Desc &desc) {
+    assert(BE1::Engine::IsInMainThread());
+    assert(!frameActive);
+
+    if (!hasEnvironmentLight) {
+        BE_WARNLOG("RenderWorld::UpdateEnvironmentLight: no environment light has been added\n");
+        return;
+    }
+
+    const bool radianceCubeMapChanged = environmentLight.GetDesc().radianceCubeMap != desc.radianceCubeMap;
+    environmentLight.Update(desc);
+
+    if (radianceCubeMapChanged) {
+        renderSystem->GetProbeBakeSystem().CancelEnvironmentLightProbeBake(this);
+    }
+}
+
+bool RenderWorld::SetEnvironmentLightBakedCubeMaps(const SharedPtr<Texture> &diffuseIrradianceCubeMap, const SharedPtr<Texture> &specularPrefilteredCubeMap) {
+    assert(BE1::Engine::IsInMainThread());
+    assert(!frameActive);
+
+    if (!hasEnvironmentLight) {
+        BE_WARNLOG("RenderWorld::SetEnvironmentLightBakedCubeMaps: no environment light has been added\n");
+        return false;
+    }
+
+    environmentLight.SetBakedCubeMaps(diffuseIrradianceCubeMap, specularPrefilteredCubeMap);
+    renderSystem->GetProbeBakeSystem().CancelEnvironmentLightProbeBake(this);
+    return true;
+}
+
+void RenderWorld::RequestEnvironmentLightCubemapRegeneration(const BE1::Vec3 &captureOrigin) {
+    assert(BE1::Engine::IsInMainThread());
+    assert(!frameActive);
+
+    if (!hasEnvironmentLight) {
+        BE_WARNLOG("RenderWorld::RequestEnvironmentLightCubemapRegeneration: no environment light has been added\n");
+        return;
+    }
+
+    environmentLight.MarkRegenerationNeeded();
+    renderSystem->GetProbeBakeSystem().ScheduleEnvironmentLightProbeBake(this, captureOrigin);
+}
+
+void RenderWorld::RemoveEnvironmentLight() {
+    assert(BE1::Engine::IsInMainThread());
+    assert(!frameActive);
+
+    if (!hasEnvironmentLight) {
+        BE_WARNLOG("RenderWorld::RemoveEnvironmentLight: no environment light has been added\n");
+        return;
+    }
+
+    renderSystem->GetProbeBakeSystem().CancelEnvironmentLightProbeBake(this);
+    environmentLight.Reset();
+    hasEnvironmentLight = false;
 }
 
 void RenderWorld::CapturePrevWorldMatrix(RenderObject *renderObject) {

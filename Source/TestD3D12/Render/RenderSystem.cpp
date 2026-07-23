@@ -14,6 +14,7 @@
 
 #include "Precompiled.h"
 #include "RenderSystem.h"
+#include "RenderWork/ConvolutionBloomKernelRenderWork.h"
 #include "RenderContext.h"
 #include "Render/Backend/RenderBackend.h"
 #include "RenderCvars.h"
@@ -58,6 +59,8 @@ void RenderSystem::Init(void *mainWindowHandle) {
 
     iblBaker.Init();
 
+    probeBakeSystem.Init();
+
     InitComputePipelines();
 
     convolutionBloomKernelGenerator.Init();
@@ -81,6 +84,12 @@ void RenderSystem::Init(void *mainWindowHandle) {
 }
 
 void RenderSystem::Shutdown() {
+    WaitAllRenderCompleted();
+    RHI::renderer->Finish(RHI::CommandQueueType::Graphics);
+
+    renderWorkQueue.CompleteAllAttachedWorks();
+    renderWorkQueue.CancelPendingWorks();
+
 #ifdef USE_RENDER_THREAD
     ShutdownRenderThread();
 #endif
@@ -103,6 +112,8 @@ void RenderSystem::Shutdown() {
     ReleaseComputePipelines();
 
     convolutionBloomKernelGenerator.Shutdown();
+
+    probeBakeSystem.Shutdown();
 
     iblBaker.Shutdown();
 
@@ -146,13 +157,18 @@ void RenderSystem::UpdateFrame() {
 
     fontManager.UpdateFrame();
 
+    gpuFFT.UpdatePipelineBuildState();
+    gpuSphericalHarmonics.UpdatePipelineBuildState();
+    iblBaker.UpdatePipelineBuildState();
+    convolutionBloomKernelGenerator.UpdatePipelineBuildState();
+
     RHI::renderer->GetMemoryUsage(videoMemoryUsage);
     assert(videoMemoryUsage.budgetBytes > 0);
 
     for (RenderContext *renderContext : renderContexts) {
         renderContext->textureStreamingFeedback.ConsumeCompletedReadbacks([](const uint32_t *feedbackData, uint32_t capacity) {
             materialManager.ApplyStreamingFeedback(feedbackData, capacity);
-            });
+        });
     }
 }
 
@@ -182,6 +198,8 @@ void RenderSystem::DestroyRenderContext(RenderContext *renderContext) {
     }
 
     renderContext->Shutdown();
+
+    renderWorkQueue.CompleteAttachedWorks(renderContext->frames, COUNT_OF(renderContext->frames));
 
     backEnd->DiscardGpuFrameTimings(renderContext);
 
@@ -283,6 +301,68 @@ void RenderSystem::RequestScreenshot(RenderContext *renderContext, const char *f
     renderContext->RequestScreenshot(filename);
 }
 
+void RenderSystem::SubmitRenderWork(UniquePtr<RenderWork> work) {
+    assert(BE1::Engine::IsInMainThread());
+
+    renderWorkQueue.Submit(std::move(work));
+}
+
+void RenderSystem::CompleteRenderWorks(RenderFrameData *frameData) {
+    assert(BE1::Engine::IsInMainThread());
+
+    renderWorkQueue.CompleteAttachedWorks(frameData);
+}
+
+void RenderSystem::AttachPendingRenderWorks(RenderFrameData *frameData) {
+    assert(BE1::Engine::IsInMainThread());
+
+    static constexpr int MaxRenderWorksPerFrame = 1;
+    renderWorkQueue.AttachPendingWorks(frameData, MaxRenderWorksPerFrame);
+}
+
+uint64_t RenderSystem::RequestConvolutionBloomKernelGeneration(const SharedPtr<Texture> &apertureTexture, float apertureScale, float diffractionPSFScale, float dispersionAmount) {
+    assert(BE1::Engine::IsInMainThread());
+
+    if (!apertureTexture) {
+        return 0;
+    }
+
+    const uint64_t requestSerial = ++nextConvolutionBloomKernelGenerationSerial;
+    UniquePtr<RenderWork> renderWork = MakeUnique<ConvolutionBloomKernelRenderWork>(requestSerial, apertureTexture, apertureScale, diffractionPSFScale, dispersionAmount);
+    SubmitRenderWork(std::move(renderWork));
+    return requestSerial;
+}
+
+void RenderSystem::CompleteConvolutionBloomKernelGeneration(uint64_t requestSerial, bool succeeded) {
+    assert(BE1::Engine::IsInMainThread());
+    assert(requestSerial > completedConvolutionBloomKernelGenerationSerial);
+
+    completedConvolutionBloomKernelGenerationSerial = requestSerial;
+    completedConvolutionBloomKernelGenerationSucceeded = succeeded;
+}
+
+bool RenderSystem::GetConvolutionBloomKernelGenerationResult(uint64_t requestSerial, bool &succeeded) const {
+    assert(BE1::Engine::IsInMainThread());
+
+    // 요청 시리얼을 체크해서 이전에 요청한 것은 false 를 리턴하게 한다.
+    if (requestSerial == 0 || completedConvolutionBloomKernelGenerationSerial != requestSerial) {
+        return false;
+    }
+
+    succeeded = completedConvolutionBloomKernelGenerationSucceeded;
+    return true;
+}
+
+void RenderSystem::PrepareProbeBakes(RenderContext *renderContext) {
+    assert(BE1::Engine::IsInMainThread());
+
+    if (renderContext != mainRenderContext) {
+        return;
+    }
+
+    probeBakeSystem.Prepare(renderContext);
+}
+
 static void EnsureComputePipeline(const SharedPtr<ShaderTemplate> &shaderTemplate, SharedPtr<ShaderPipeline> &pipeline) {
     if (pipeline && pipeline->GetState() != ShaderPipeline::State::Empty) {
         return;
@@ -319,10 +399,6 @@ void RenderSystem::InitComputePipelines() {
     convolutionBloomPrefilterShaderTemplate = shaderTemplateManager.CreateComputeShaderTemplate("_convolutionBloomPrefilterShader", computeShaderModel, "Bloom/ConvolutionBloomPrefilter.hlsl", baseDir);
     convolutionBloomKernelPrepareShaderTemplate = shaderTemplateManager.CreateComputeShaderTemplate("_convolutionBloomKernelPrepareShader", computeShaderModel, "Bloom/ConvolutionBloomKernelPrepare.hlsl", baseDir);
     convolutionBloomResolveShaderTemplate = shaderTemplateManager.CreateComputeShaderTemplate("_convolutionBloomResolveShader", computeShaderModel, "Bloom/ConvolutionBloomResolve.hlsl", baseDir);
-    convolutionBloomAperturePrepareShaderTemplate = shaderTemplateManager.CreateComputeShaderTemplate("_convolutionBloomAperturePrepareShader", computeShaderModel, "Bloom/ConvolutionBloomAperturePrepare.hlsl", baseDir);
-    convolutionBloomReduceApertureEnergyShaderTemplate = shaderTemplateManager.CreateComputeShaderTemplate("_convolutionBloomReduceApertureEnergyShader", computeShaderModel, "Bloom/ConvolutionBloomReduceApertureEnergy.hlsl", baseDir);
-    convolutionBloomResolveDiffractionPSFShaderTemplate = shaderTemplateManager.CreateComputeShaderTemplate("_convolutionBloomResolveDiffractionPSFShader", computeShaderModel, "Bloom/ConvolutionBloomResolveDiffractionPSF.hlsl", baseDir);
-    convolutionBloomApplyDispersionShaderTemplate = shaderTemplateManager.CreateComputeShaderTemplate("_convolutionBloomApplyDispersionShader", computeShaderModel, "Bloom/ConvolutionBloomApplyDispersion.hlsl", baseDir);
 
     EnsureComputePipelines();
 }
@@ -352,10 +428,6 @@ void RenderSystem::EnsureComputePipelines() {
     EnsureComputePipeline(convolutionBloomPrefilterShaderTemplate, convolutionBloomPrefilterPipeline);
     EnsureComputePipeline(convolutionBloomKernelPrepareShaderTemplate, convolutionBloomKernelPreparePipeline);
     EnsureComputePipeline(convolutionBloomResolveShaderTemplate, convolutionBloomResolvePipeline);
-    EnsureComputePipeline(convolutionBloomAperturePrepareShaderTemplate, convolutionBloomAperturePreparePipeline);
-    EnsureComputePipeline(convolutionBloomReduceApertureEnergyShaderTemplate, convolutionBloomReduceApertureEnergyPipeline);
-    EnsureComputePipeline(convolutionBloomResolveDiffractionPSFShaderTemplate, convolutionBloomResolveDiffractionPSFPipeline);
-    EnsureComputePipeline(convolutionBloomApplyDispersionShaderTemplate, convolutionBloomApplyDispersionPipeline);
 }
 
 void RenderSystem::ReleaseComputePipelines() {
@@ -383,10 +455,6 @@ void RenderSystem::ReleaseComputePipelines() {
     convolutionBloomPrefilterPipeline.reset();
     convolutionBloomKernelPreparePipeline.reset();
     convolutionBloomResolvePipeline.reset();
-    convolutionBloomAperturePreparePipeline.reset();
-    convolutionBloomReduceApertureEnergyPipeline.reset();
-    convolutionBloomResolveDiffractionPSFPipeline.reset();
-    convolutionBloomApplyDispersionPipeline.reset();
 
     genHiZMipFirstBatchShaderTemplate.reset();
     genHiZMipFirstBatchMSAAShaderTemplate.reset();
@@ -411,10 +479,6 @@ void RenderSystem::ReleaseComputePipelines() {
     convolutionBloomPrefilterShaderTemplate.reset();
     convolutionBloomKernelPrepareShaderTemplate.reset();
     convolutionBloomResolveShaderTemplate.reset();
-    convolutionBloomAperturePrepareShaderTemplate.reset();
-    convolutionBloomReduceApertureEnergyShaderTemplate.reset();
-    convolutionBloomResolveDiffractionPSFShaderTemplate.reset();
-    convolutionBloomApplyDispersionShaderTemplate.reset();
 }
 
 static ColorGradingLUTGenerator::Settings MakeColorGradingLUTSettingsFromCVars() {

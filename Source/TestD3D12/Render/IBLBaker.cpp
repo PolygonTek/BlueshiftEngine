@@ -22,21 +22,28 @@
 #include "Shaders/ShaderInterop.h"
 
 void IBLBaker::Init() {
+    pipelinesReady = false;
+    pipelineBuildFailed = false;
+
     const char *baseDir = "Source/TestD3D12/Shaders";
     const RHI::ShaderModel shaderModel = RHI::ShaderModel::SM_6_6;
+    constexpr bool asyncPipelineBuild = true;
 
     genDiffuseIrradianceShaderTemplate = shaderTemplateManager.CreateComputeShaderTemplate("_genDiffuseIrradianceShader", shaderModel, "PBR/GenDiffuseIrradiance.hlsl", baseDir);
     genLDSumPhongSpecularShaderTemplate = shaderTemplateManager.CreateComputeShaderTemplate("_genLDSumPhongSpecularShader", shaderModel, "PBR/GenLDSumPhongSpecular.hlsl", baseDir);
     genLDSumGGXShaderTemplate = shaderTemplateManager.CreateComputeShaderTemplate("_genLDSumGGXShader", shaderModel, "PBR/GenLDSumGGX.hlsl", baseDir);
     genDFGSumGGXShaderTemplate = shaderTemplateManager.CreateComputeShaderTemplate("_genDFGSumGGXShader", shaderModel, "PBR/GenDFGSumGGX.hlsl", baseDir);
 
-    genDiffuseIrradiancePipeline = shaderPipelineCache.GetComputePipeline(genDiffuseIrradianceShaderTemplate, ShaderPermutationKey());
-    genLDSumPhongSpecularPipeline = shaderPipelineCache.GetComputePipeline(genLDSumPhongSpecularShaderTemplate, ShaderPermutationKey());
-    genLDSumGGXPipeline = shaderPipelineCache.GetComputePipeline(genLDSumGGXShaderTemplate, ShaderPermutationKey());
-    genDFGSumGGXPipeline = shaderPipelineCache.GetComputePipeline(genDFGSumGGXShaderTemplate, ShaderPermutationKey());
+    genDiffuseIrradiancePipeline = shaderPipelineCache.GetComputePipeline(genDiffuseIrradianceShaderTemplate, ShaderPermutationKey(), asyncPipelineBuild);
+    genLDSumPhongSpecularPipeline = shaderPipelineCache.GetComputePipeline(genLDSumPhongSpecularShaderTemplate, ShaderPermutationKey(), asyncPipelineBuild);
+    genLDSumGGXPipeline = shaderPipelineCache.GetComputePipeline(genLDSumGGXShaderTemplate, ShaderPermutationKey(), asyncPipelineBuild);
+    genDFGSumGGXPipeline = shaderPipelineCache.GetComputePipeline(genDFGSumGGXShaderTemplate, ShaderPermutationKey(), asyncPipelineBuild);
 }
 
 void IBLBaker::Shutdown() {
+    pipelinesReady = false;
+    pipelineBuildFailed = false;
+
     genDiffuseIrradiancePipeline.reset();
     genLDSumPhongSpecularPipeline.reset();
     genLDSumGGXPipeline.reset();
@@ -46,6 +53,52 @@ void IBLBaker::Shutdown() {
     genLDSumPhongSpecularShaderTemplate.reset();
     genLDSumGGXShaderTemplate.reset();
     genDFGSumGGXShaderTemplate.reset();
+}
+
+void IBLBaker::UpdatePipelineBuildState() {
+    if (pipelinesReady || pipelineBuildFailed) {
+        return;
+    }
+
+    const ShaderPipeline *pipelines[] = {
+        genDiffuseIrradiancePipeline.get(),
+        genLDSumPhongSpecularPipeline.get(),
+        genLDSumGGXPipeline.get(),
+        genDFGSumGGXPipeline.get()
+    };
+
+    bool allReady = true;
+
+    for (const ShaderPipeline *pipeline : pipelines) {
+        if (!pipeline) {
+            pipelineBuildFailed = true;
+            break;
+        }
+
+        switch (pipeline->GetState()) {
+        case ShaderPipeline::State::Ready:
+        case ShaderPipeline::State::Rebuilding:
+            break;
+        case ShaderPipeline::State::Building:
+            allReady = false;
+            break;
+        case ShaderPipeline::State::Empty:
+        case ShaderPipeline::State::Failed:
+            pipelineBuildFailed = true;
+            break;
+        }
+
+        if (pipelineBuildFailed) {
+            break;
+        }
+    }
+
+    if (pipelineBuildFailed) {
+        BE_WARNLOG("IBLBaker::UpdatePipelineBuildState: pipeline build failed\n");
+        return;
+    }
+
+    pipelinesReady = allReady;
 }
 
 static bool GetOutputMipViewInfo(RHI::Texture *texture, RHI::ViewID outputUAV, uint32_t mipLevel, uint32_t requiredSliceCount, RHI::TextureViewInfo &outViewInfo) {

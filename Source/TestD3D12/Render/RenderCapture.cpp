@@ -107,13 +107,6 @@ static bool CreateIBLCubemapTexture(int size, bool useHDR, bool renderTarget, bo
     return true;
 }
 
-static bool EnsurePrimaryTextureSRV(RHI::Texture *texture) {
-    if (texture->HasValidView(RHI::ViewType::SRV, RHI::ViewID::PrimaryID)) {
-        return true;
-    }
-    return RHI::renderer->CreateView(texture, RHI::ViewType::SRV, RHI::Format::Auto, 0, texture->GetArraySize(), 0, texture->GetMipLevelCount()).IsPrimary();
-}
-
 static bool CreateTextureMipViews(RHI::Texture *texture, RHI::ViewType viewType, RHI::ViewID *outViewIDs) {
     const uint32_t mipLevelCount = texture->GetMipLevelCount();
 
@@ -415,18 +408,13 @@ bool RenderCapture::CaptureDiffuseIrradianceEnvCubeToImage(RenderContext *render
     }
 
     RHI::Texture *outputRHITexture = diffuseIrradianceCubeTexture->GetRHITexture();
-    RHI::ViewID outputUAV = outputRHITexture->HasValidView(RHI::ViewType::UAV, RHI::ViewID::PrimaryID) ? RHI::ViewID::PrimaryID : RHI::renderer->CreateView(outputRHITexture, RHI::ViewType::UAV, RHI::Format::Auto, 0, 6, 0, 1);
-    if (!outputUAV.IsValid()) {
-        BE_WARNLOG("RenderCapture::CaptureDiffuseIrradianceEnvCubeToImage: failed to create output UAV\n");
-        return false;
-    }
 
     RHI::FrameThreadData *frameThreadData = renderContext->GetCurrentFrontendFrameData()->GetThreadData(0);
     RHI::CommandList *commandList = frameThreadData->BeginCommandList(RHI::CommandQueueType::Graphics);
 #if 1
-    bool generated = renderSystem->GetIBLBaker().GenerateDiffuseIrradiance(commandList, radianceCubeTexture->GetRHITexture(), outputRHITexture, outputUAV);
+    bool generated = renderSystem->GetIBLBaker().GenerateDiffuseIrradiance(commandList, radianceCubeTexture->GetRHITexture(), outputRHITexture);
 #else
-    bool generated = renderSystem->GetIBLBaker().GenerateDiffuseIrradianceSH(commandList, radianceCubeTexture->GetRHITexture(), outputRHITexture, outputUAV);
+    bool generated = renderSystem->GetIBLBaker().GenerateDiffuseIrradianceSH(commandList, radianceCubeTexture->GetRHITexture(), outputRHITexture);
 #endif
 
     commandList->CloseAndExecute();
@@ -501,10 +489,6 @@ bool RenderCapture::CaptureSpecularPrefilteredEnvCubeToImage(RenderContext *rend
 
     RHI::Texture *radianceRHITexture = radianceCubeTexture->GetRHITexture();
     RHI::Texture *outputRHITexture = specularPrefilteredCubeTexture->GetRHITexture();
-    if (!EnsurePrimaryTextureSRV(radianceRHITexture)) {
-        BE_WARNLOG("RenderCapture::CaptureSpecularPrefilteredEnvCubeToImage: failed to create radiance SRV\n");
-        return false;
-    }
 
     const uint32_t radianceMipLevelCount = radianceRHITexture->GetMipLevelCount();
     const uint32_t outputMipLevelCount = outputRHITexture->GetMipLevelCount();

@@ -15,7 +15,6 @@
 #pragma once
 
 class RenderContext;
-class RenderFrameData;
 class RenderWorld;
 class RenderCamera;
 class Scene;
@@ -90,8 +89,7 @@ public:
 private:
     void                            SetConvolutionBloomAperturePreset(AperturePreset aperturePreset);
     void                            RequestConvolutionBloomKernelGeneration();
-    void                            EnqueuePendingConvolutionBloomKernelGeneration();
-    void                            ProcessPendingConvolutionBloomKernelReadback();
+    void                            ProcessConvolutionBloomKernelGenerationResult();
     void                            CheckModifiedCVars();
     void                            GetConvolutionBloomKernelPresetName(int presetIndex, char *buffer, int bufferSize) const;
     void                            SetConvolutionBloomKernelPreset(int presetIndex);
@@ -101,6 +99,7 @@ private:
     void                            DestroyScene();
     void                            UpdateGameFrameTime(uint64_t frameUsec);
     void                            UpdateRenderFrontendFrameTime(uint64_t frameUsec);
+    void                            RenderPendingCaptureRequests();
     void                            RenderScene();
     void                            RenderGUI();
 
@@ -128,8 +127,8 @@ private:
     SharedPtr<Texture>              convolutionBloomApertureTexture;
     SharedPtr<Texture>              convolutionBloomGeneratedKernelTexture;
 
-    bool                            pendingConvolutionBloomKernelGeneration = false;
-    const RenderFrameData *         pendingConvolutionBloomKernelReadbackFrameData = nullptr;
+    bool                            convolutionBloomKernelRegenerationRequested = false;
+    uint64_t                        convolutionBloomKernelGenerationRequestSerial = 0;
     uint32_t                        convolutionBloomGeneratedKernelSerial = 0;
 
     uint64_t                        elapsedUsec = 0;

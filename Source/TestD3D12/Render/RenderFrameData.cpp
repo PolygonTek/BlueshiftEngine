@@ -463,6 +463,21 @@ void *RenderFrameData::GetCommandBuffer(uint32_t bytes) {
     return commandBuffer;
 }
 
+bool RenderFrameData::CmdRenderWork(RenderWork *renderWork) {
+    if (!renderWork) {
+        return false;
+    }
+
+    RenderWorkRenderCommand *cmd = (RenderWorkRenderCommand *)GetCommandBuffer(sizeof(RenderWorkRenderCommand));
+    if (!cmd) {
+        return false;
+    }
+
+    cmd->commandId = RenderCommandId::RenderWork;
+    cmd->renderWork = renderWork;
+    return true;
+}
+
 void RenderFrameData::CmdBeginContext(RenderContext *context, bool gpuTiming, bool textureStreamingFeedback, bool swapChainOutput) {
     BeginContextRenderCommand *cmd = (BeginContextRenderCommand *)GetCommandBuffer(sizeof(BeginContextRenderCommand));
     if (!cmd) {
@@ -523,18 +538,6 @@ void RenderFrameData::CmdScreenshot(int x, int y, int width, int height, const c
     cmd->width = width;
     cmd->height = height;
     BE1::Str::Copynz(cmd->filename, filename, COUNT_OF(cmd->filename));
-}
-
-void RenderFrameData::CmdGenerateConvolutionBloomKernel(float apertureScale, float diffractionPSFScale, float dispersionAmount) {
-    GenerateConvolutionBloomKernelRenderCommand *cmd = (GenerateConvolutionBloomKernelRenderCommand *)GetCommandBuffer(sizeof(GenerateConvolutionBloomKernelRenderCommand));
-    if (!cmd) {
-        return;
-    }
-
-    cmd->commandId = RenderCommandId::GenerateConvolutionBloomKernel;
-    cmd->apertureScale = apertureScale;
-    cmd->diffractionPSFScale = diffractionPSFScale;
-    cmd->dispersionAmount = dispersionAmount;
 }
 
 void RenderFrameData::CmdEnd() {

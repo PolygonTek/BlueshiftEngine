@@ -41,12 +41,13 @@ public:
         NoMipmaps                   = BIT(2),   ///< Do not use mipmaps
         AllocateEmptyMipmaps        = BIT(3),   ///< Allocate mipmap levels without initial data
         NormalMap                   = BIT(4),   ///< Normal map
-        NonPowerOfTwo               = BIT(5),   ///< Texture dimensions are not power-of-two
-        Streaming                   = BIT(6),   ///< Texture streaming loading (only DDS file, with async loading)
-        RenderTarget                = BIT(7),   ///< Texture accessible as a render target
-        UnorderedAccess             = BIT(8),   ///< Texture accessible via UAV
-        Compute                     = BIT(9),   ///< Create as a compute resource in its initial update
-        LoadedFromFile              = BIT(10)   ///< Indicates the texture was loaded from a file (used internally)
+        LinearColorSpace            = BIT(5),   ///< Treat source file texels as linear data
+        NonPowerOfTwo               = BIT(6),   ///< Texture dimensions are not power-of-two
+        Streaming                   = BIT(7),   ///< Texture streaming loading (only DDS file, with async loading)
+        RenderTarget                = BIT(8),   ///< Texture accessible as a render target
+        UnorderedAccess             = BIT(9),   ///< Texture accessible via UAV
+        Compute                     = BIT(10),  ///< Create as a compute resource in its initial update
+        LoadedFromFile              = BIT(11)   ///< Indicates the texture was loaded from a file (used internally)
     };
 
     enum class State : uint8_t {

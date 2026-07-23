@@ -400,6 +400,10 @@ bool Texture::Load(const char *filename, Texture::Flag flags) {
         return false;
     }
 
+    if (BE1::HasFlag(flags, Texture::Flag::LinearColorSpace)) {
+        image->SetGammaSpace(BE1::Image::GammaSpace::Linear);
+    }
+
     RHI::TextureType textureType;
 
     if (image->GetDepth() > 1) {

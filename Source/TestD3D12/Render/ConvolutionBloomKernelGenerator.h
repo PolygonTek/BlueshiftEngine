@@ -17,8 +17,9 @@
 #include "Precompiled.h"
 #include "RHI/RHI.h"
 
-class RenderFrameData;
 class Texture;
+class ShaderPipeline;
+class ShaderTemplate;
 
 /*
 ---------------------------------------------------------------------------------------------------
@@ -35,6 +36,11 @@ public:
     void                            Init();
     void                            Shutdown();
 
+    void                            UpdatePipelineBuildState();
+
+    bool                            ArePipelinesReady() const { return pipelinesReady; }
+    bool                            HasPipelineBuildFailed() const { return pipelineBuildFailed; }
+
     void                            SetApertureTexture(const SharedPtr<Texture> &texture);
     const SharedPtr<Texture> &      GetApertureTexture() const { return apertureSourceTexture; }
 
@@ -47,7 +53,7 @@ public:
     void                            SetDispersionAmount(float amount);
     float                           GetDispersionAmount() const { return dispersionAmount; }
 
-    bool                            GenerateKernel(RHI::CommandList *commandList, RenderFrameData *frameData);
+    bool                            GenerateKernel(RHI::CommandList *commandList, RHI::FrameThreadData *frameThreadData);
     bool                            ReadKernelImage(BE1::Image &outImage) const;
 
     bool                            EnsureResources();
@@ -67,11 +73,11 @@ public:
     RHI::Texture *                  GetKernelTexture() const { return kernelTexture; }
 
 private:
-    bool                            DispatchAperturePrepare(RHI::CommandList *commandList, RenderFrameData *frameData);
-    bool                            DispatchReduceApertureEnergy(RHI::CommandList *commandList, RenderFrameData *frameData, RHI::Buffer **outEnergyBuffer);
-    bool                            DispatchReduceApertureEnergyPass(RHI::CommandList *commandList, RenderFrameData *frameData, RHI::Buffer *inputBuffer, RHI::Buffer *outputBuffer, uint32_t inputElementCount, bool inputIsPartialEnergy, RHI::GPUResourceState inputState);
-    bool                            DispatchResolveDiffractionPSF(RHI::CommandList *commandList, RenderFrameData *frameData, RHI::Buffer *apertureEnergyBuffer);
-    bool                            DispatchApplyDispersion(RHI::CommandList *commandList, RenderFrameData *frameData);
+    bool                            DispatchAperturePrepare(RHI::CommandList *commandList, RHI::FrameThreadData *frameThreadData);
+    bool                            DispatchReduceApertureEnergy(RHI::CommandList *commandList, RHI::FrameThreadData *frameThreadData, RHI::Buffer **outEnergyBuffer);
+    bool                            DispatchReduceApertureEnergyPass(RHI::CommandList *commandList, RHI::FrameThreadData *frameThreadData, RHI::Buffer *inputBuffer, RHI::Buffer *outputBuffer, uint32_t inputElementCount, bool inputIsPartialEnergy, RHI::GPUResourceState inputState);
+    bool                            DispatchResolveDiffractionPSF(RHI::CommandList *commandList, RHI::FrameThreadData *frameThreadData, RHI::Buffer *apertureEnergyBuffer);
+    bool                            DispatchApplyDispersion(RHI::CommandList *commandList, RHI::FrameThreadData *frameThreadData);
 
     SharedPtr<Texture>              apertureSourceTexture;
     bool                            kernelDirty = true;
@@ -86,4 +92,17 @@ private:
     RHI::Buffer *                   apertureEnergyBuffer1 = nullptr;
     RHI::Texture *                  diffractionPSFTexture = nullptr;
     RHI::Texture *                  kernelTexture = nullptr;
+
+    SharedPtr<ShaderTemplate>       aperturePrepareShaderTemplate;
+    SharedPtr<ShaderTemplate>       reduceApertureEnergyShaderTemplate;
+    SharedPtr<ShaderTemplate>       resolveDiffractionPSFShaderTemplate;
+    SharedPtr<ShaderTemplate>       applyDispersionShaderTemplate;
+
+    SharedPtr<ShaderPipeline>       aperturePreparePipeline;
+    SharedPtr<ShaderPipeline>       reduceApertureEnergyPipeline;
+    SharedPtr<ShaderPipeline>       resolveDiffractionPSFPipeline;
+    SharedPtr<ShaderPipeline>       applyDispersionPipeline;
+
+    bool                            pipelinesReady = false;
+    bool                            pipelineBuildFailed = false;
 };

@@ -17,6 +17,7 @@
 
 #ifdef __cplusplus
 
+#include <cstddef>
 #include <DirectXMath.h>
 
 using float2 = DirectX::XMFLOAT2;
@@ -434,10 +435,26 @@ struct CameraConstants {
     uint lightCullingWordsPerTile;
     uint lightCullingDebugMode;
     uint padding0;
+
+    float3 cameraOrigin;
+    float padding1;
+
+    row_major float3x4 environmentLightAxis;
+    float3 environmentLightColor;
+    float environmentLightIntensity;
+
+    uint environmentLightDiffuseIrradianceCubeMapIndex;
+    uint environmentLightSpecularCubeMapIndex;
+    uint environmentLightSpecularMipCount;
+    uint padding2;
 };
 
 #ifdef __cplusplus
-static_assert(sizeof(CameraConstants) == 512, "CameraConstants must match the HLSL constant-buffer layout");
+static_assert(offsetof(CameraConstants, cameraOrigin) == 512, "CameraConstants camera data must follow the existing layout");
+static_assert(offsetof(CameraConstants, environmentLightAxis) == 528, "CameraConstants environment axis must match the HLSL constant-buffer layout");
+static_assert(offsetof(CameraConstants, environmentLightColor) == 576, "CameraConstants environment color must match the HLSL constant-buffer layout");
+static_assert(offsetof(CameraConstants, environmentLightDiffuseIrradianceCubeMapIndex) == 592, "CameraConstants environment texture indices must match the HLSL constant-buffer layout");
+static_assert(sizeof(CameraConstants) == 608, "CameraConstants must match the HLSL constant-buffer layout");
 #endif
 
 struct SurfaceDrawParams {
@@ -456,14 +473,22 @@ struct ShaderSurface {
 };
 
 struct ShaderMaterial {
+    float4 baseColorFactor;
     uint baseColorTextureIndex;
     uint normalTextureIndex;
     uint emissiveTextureIndex;
+    uint metallicTextureIndex;
+    uint roughnessTextureIndex;
     uint streamingMaterialIndex;
-    float4 baseColorFactor;
+    float metallicFactor;
+    float roughnessFactor;
     float alphaCutoff;
     float3 padding0;
 };
+
+#ifdef __cplusplus
+static_assert(sizeof(ShaderMaterial) == 64, "ShaderMaterial must remain a tightly packed StructuredBuffer element");
+#endif
 
 struct ShaderLightRef {
     uint packedLightRef; // low 2 bits: light type, remaining bits: type-local light index

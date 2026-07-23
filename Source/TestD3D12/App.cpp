@@ -198,103 +198,14 @@ void App::Render(uint64_t frameUsec) {
     const float elapsedTime = (float)MICRO2SEC((double)elapsedUsec);
     const float elapsedPrevTime = (float)MICRO2SEC((double)(elapsedUsec - frameUsec));
 
-#ifdef ENABLE_IMGUI
-    if (pendingScreenshotCapture || pendingEnvShotCapture ||
-        pendingDiffuseIrradianceEnvShotCapture || pendingSpecularPrefilteredEnvShotCapture) {
-        BE1::Vec3 cameraOrigin;
-        BE1::Mat3 cameraAxis;
-        GetCameraOriginAxis(cameraOrigin, cameraAxis);
+    ProcessConvolutionBloomKernelGenerationResult();
 
-        const BE1::Str documentDir = BE1::fileSystem.GetUserDocumentDir();
-
-        if (pendingScreenshotCapture) {
-            pendingScreenshotCapture = false;
-
-            char path[BE1::MaxAbsolutePath];
-            int fileIndex;
-            for (fileIndex = 0; fileIndex < 1000; ++fileIndex) {
-                BE1::Str::snPrintf(path, sizeof(path), "%s/Screenshots/scene_capture_%03i.png", documentDir.c_str(), fileIndex);
-                if (!BE1::fileSystem.FileExists(path)) {
-                    break;
-                }
-            }
-
-            if (fileIndex < 1000) {
-                RenderCapture::CaptureSceneToFile(mainRenderContext, renderWorld, ~0u, false, BE1::Color4::black,
-                    cameraOrigin, cameraAxis, 60.0f, false, static_cast<int>(mainRenderContext->GetWidth()), static_cast<int>(mainRenderContext->GetHeight()), path);
-            } else {
-                BE_WARNLOG("App::Render: too many scene capture files exist\n");
-            }
-        }
-
-        if (pendingEnvShotCapture) {
-            pendingEnvShotCapture = false;
-
-            char path[BE1::MaxAbsolutePath];
-            int fileIndex;
-            for (fileIndex = 0; fileIndex < 1000; ++fileIndex) {
-                BE1::Str::snPrintf(path, sizeof(path), "%s/Screenshots/env_capture_%03i.dds", documentDir.c_str(), fileIndex);
-                if (!BE1::fileSystem.FileExists(path)) {
-                    break;
-                }
-            }
-
-            if (fileIndex < 1000) {
-                RenderCapture::CaptureEnvCubeToFile(mainRenderContext, renderWorld, ~0u, false, false, BE1::Color4::black,
-                    cameraOrigin, BE1::CmToUnit(5.0f), BE1::MeterToUnit(100.0f), true, 256, path);
-            } else {
-                BE_WARNLOG("App::Render: too many environment capture files exist\n");
-            }
-        }
-
-        if (pendingDiffuseIrradianceEnvShotCapture) {
-            pendingDiffuseIrradianceEnvShotCapture = false;
-
-            char path[BE1::MaxAbsolutePath];
-            int fileIndex;
-            for (fileIndex = 0; fileIndex < 1000; ++fileIndex) {
-                BE1::Str::snPrintf(path, sizeof(path), "%s/Screenshots/diffuse_irradiance_capture_%03i.dds", documentDir.c_str(), fileIndex);
-                if (!BE1::fileSystem.FileExists(path)) {
-                    break;
-                }
-            }
-
-            if (fileIndex < 1000) {
-                RenderCapture::CaptureDiffuseIrradianceEnvCubeToFile(mainRenderContext, renderWorld, ~0u, false,
-                    cameraOrigin, BE1::CmToUnit(5.0f), BE1::MeterToUnit(100.0f), true, 16, 256, path);
-            } else {
-                BE_WARNLOG("App::Render: too many diffuse irradiance environment capture files exist\n");
-            }
-        }
-
-        if (pendingSpecularPrefilteredEnvShotCapture) {
-            pendingSpecularPrefilteredEnvShotCapture = false;
-
-            char path[BE1::MaxAbsolutePath];
-            int fileIndex;
-            for (fileIndex = 0; fileIndex < 1000; ++fileIndex) {
-                BE1::Str::snPrintf(path, sizeof(path), "%s/Screenshots/specular_prefiltered_capture_%03i.dds", documentDir.c_str(), fileIndex);
-                if (!BE1::fileSystem.FileExists(path)) {
-                    break;
-                }
-            }
-
-            if (fileIndex < 1000) {
-                RenderCapture::CaptureSpecularPrefilteredEnvCubeToFile(mainRenderContext, renderWorld, ~0u, false,
-                    cameraOrigin, BE1::CmToUnit(5.0f), BE1::MeterToUnit(100.0f), true, 256, 256, path);
-            } else {
-                BE_WARNLOG("App::Render: too many specular prefiltered environment capture files exist\n");
-            }
-        }
-    }
-#endif
+    RenderPendingCaptureRequests();
 
     bool statEnabled = app_showStats.GetBool();
 #ifdef ENABLE_IMGUI
     statEnabled |= imguiShowStatsPlotWindow;
 #endif
-
-    ProcessPendingConvolutionBloomKernelReadback();
 
     RenderContext::FrameOptions frameOptions;
     frameOptions.frameTime = frameTime;
@@ -307,7 +218,6 @@ void App::Render(uint64_t frameUsec) {
 
     mainRenderContext->BeginFrame(frameOptions);
 
-#ifdef ENABLE_IMGUI
     if (pendingDFGSumGGXGeneration) {
         pendingDFGSumGGXGeneration = false;
 
@@ -316,12 +226,10 @@ void App::Render(uint64_t frameUsec) {
         char path[BE1::MaxAbsolutePath];
         BE1::Str::snPrintf(path, sizeof(path), "%s/Screenshots/DFGSumGGX.dds", documentDir.c_str());
 
-        if (!renderSystem->GetIBLBaker().GenerateDFGSumGGXToFile(
-            mainRenderContext->GetCurrentFrontendFrameData()->GetThreadData(0), 256, path)) {
+        if (!renderSystem->GetIBLBaker().GenerateDFGSumGGXToFile(mainRenderContext->GetCurrentFrontendFrameData()->GetThreadData(0), 256, path)) {
             BE_WARNLOG("App::Render: failed to generate GGX DFG LUT\n");
         }
     }
-#endif
 
     uint64_t t0 = BE1::PlatformTime::Microseconds();
 
@@ -334,10 +242,6 @@ void App::Render(uint64_t frameUsec) {
     RenderGUI();
 
     renderWorld->EndFrame();
-
-    if (pendingConvolutionBloomKernelGeneration) {
-        EnqueuePendingConvolutionBloomKernelGeneration();
-    }
 
     mainRenderContext->EndFrame();
 
@@ -528,6 +432,94 @@ void App::TakeScreenshot() {
     BE1::cmdSystem.BufferCommandText(BE1::CmdSystem::Execution::Now, "screenshot");
 }
 
+void App::RenderPendingCaptureRequests() {
+    if (!pendingScreenshotCapture && !pendingEnvShotCapture && !pendingDiffuseIrradianceEnvShotCapture && !pendingSpecularPrefilteredEnvShotCapture) {
+        return;
+    }
+
+    BE1::Vec3 cameraOrigin;
+    BE1::Mat3 cameraAxis;
+    GetCameraOriginAxis(cameraOrigin, cameraAxis);
+
+    const BE1::Str documentDir = BE1::fileSystem.GetUserDocumentDir();
+
+    if (pendingScreenshotCapture) {
+        pendingScreenshotCapture = false;
+
+        char path[BE1::MaxAbsolutePath];
+        int fileIndex;
+        for (fileIndex = 0; fileIndex < 1000; ++fileIndex) {
+            BE1::Str::snPrintf(path, sizeof(path), "%s/Screenshots/scene_capture_%03i.png", documentDir.c_str(), fileIndex);
+            if (!BE1::fileSystem.FileExists(path)) {
+                break;
+            }
+        }
+
+        if (fileIndex < 1000) {
+            RenderCapture::CaptureSceneToFile(mainRenderContext, renderWorld, ~0u, false, BE1::Color4::black, cameraOrigin, cameraAxis, 60.0f, false, static_cast<int>(mainRenderContext->GetWidth()), static_cast<int>(mainRenderContext->GetHeight()), path);
+        } else {
+            BE_WARNLOG("App::RenderPendingCaptureRequests: too many scene capture files exist\n");
+        }
+    }
+
+    if (pendingEnvShotCapture) {
+        pendingEnvShotCapture = false;
+
+        char path[BE1::MaxAbsolutePath];
+        int fileIndex;
+        for (fileIndex = 0; fileIndex < 1000; ++fileIndex) {
+            BE1::Str::snPrintf(path, sizeof(path), "%s/Screenshots/env_capture_%03i.dds", documentDir.c_str(), fileIndex);
+            if (!BE1::fileSystem.FileExists(path)) {
+                break;
+            }
+        }
+
+        if (fileIndex < 1000) {
+            RenderCapture::CaptureEnvCubeToFile(mainRenderContext, renderWorld, ~0u, false, false, BE1::Color4::black, cameraOrigin, BE1::CmToUnit(5.0f), BE1::MeterToUnit(100.0f), true, 256, path);
+        } else {
+            BE_WARNLOG("App::RenderPendingCaptureRequests: too many environment capture files exist\n");
+        }
+    }
+
+    if (pendingDiffuseIrradianceEnvShotCapture) {
+        pendingDiffuseIrradianceEnvShotCapture = false;
+
+        char path[BE1::MaxAbsolutePath];
+        int fileIndex;
+        for (fileIndex = 0; fileIndex < 1000; ++fileIndex) {
+            BE1::Str::snPrintf(path, sizeof(path), "%s/Screenshots/diffuse_irradiance_capture_%03i.dds", documentDir.c_str(), fileIndex);
+            if (!BE1::fileSystem.FileExists(path)) {
+                break;
+            }
+        }
+
+        if (fileIndex < 1000) {
+            RenderCapture::CaptureDiffuseIrradianceEnvCubeToFile(mainRenderContext, renderWorld, ~0u, false, cameraOrigin, BE1::CmToUnit(5.0f), BE1::MeterToUnit(100.0f), true, 16, 256, path);
+        } else {
+            BE_WARNLOG("App::RenderPendingCaptureRequests: too many diffuse irradiance environment capture files exist\n");
+        }
+    }
+
+    if (pendingSpecularPrefilteredEnvShotCapture) {
+        pendingSpecularPrefilteredEnvShotCapture = false;
+
+        char path[BE1::MaxAbsolutePath];
+        int fileIndex;
+        for (fileIndex = 0; fileIndex < 1000; ++fileIndex) {
+            BE1::Str::snPrintf(path, sizeof(path), "%s/Screenshots/specular_prefiltered_capture_%03i.dds", documentDir.c_str(), fileIndex);
+            if (!BE1::fileSystem.FileExists(path)) {
+                break;
+            }
+        }
+
+        if (fileIndex < 1000) {
+            RenderCapture::CaptureSpecularPrefilteredEnvCubeToFile(mainRenderContext, renderWorld, ~0u, false, cameraOrigin, BE1::CmToUnit(5.0f), BE1::MeterToUnit(100.0f), true, 256, 256, path);
+        } else {
+            BE_WARNLOG("App::RenderPendingCaptureRequests: too many specular prefiltered environment capture files exist\n");
+        }
+    }
+}
+
 void App::RenderScene() {
     uint32_t w = mainRenderContext->GetWidth();
     uint32_t h = mainRenderContext->GetHeight();
@@ -649,46 +641,53 @@ void App::SetConvolutionBloomAperturePreset(App::AperturePreset aperturePreset) 
     }
 
     convolutionBloomApertureTexture = textureManager.GetTexture(filename, Texture::Flag::HighQuality | Texture::Flag::NoMipmaps);
-    renderSystem->GetConvolutionBloomKernelGenerator().SetApertureTexture(convolutionBloomApertureTexture);
 }
 
 void App::RequestConvolutionBloomKernelGeneration() {
-    pendingConvolutionBloomKernelGeneration = true;
+    if (app_convolutionBloomKernelSource.GetInteger() != static_cast<int>(App::ConvolutionBloomKernelSource::GenerateFromAperture)) {
+        return;
+    }
+
+    if (convolutionBloomKernelGenerationRequestSerial != 0) {
+        convolutionBloomKernelRegenerationRequested = true;
+        return;
+    }
+
+    const uint64_t requestSerial = renderSystem->RequestConvolutionBloomKernelGeneration(convolutionBloomApertureTexture,
+        r_convolutionBloomApertureScale.GetFloat(), r_convolutionBloomDiffractionPSFScale.GetFloat(), r_convolutionBloomDispersionAmount.GetFloat());
+    if (requestSerial == 0) {
+        return;
+    }
+
+    convolutionBloomKernelRegenerationRequested = false;
+    convolutionBloomKernelGenerationRequestSerial = requestSerial;
 }
 
-void App::EnqueuePendingConvolutionBloomKernelGeneration() {
-    if (app_convolutionBloomKernelSource.GetInteger() != static_cast<int>(App::ConvolutionBloomKernelSource::GenerateFromAperture)) {
-        pendingConvolutionBloomKernelGeneration = false;
-        return;
-    }
-
-    if (!convolutionBloomApertureTexture || !convolutionBloomApertureTexture->IsReadyForRendering()) {
-        return;
-    }
-
-    RenderFrameData *frameData = mainRenderContext->GetCurrentFrontendFrameData();
-    frameData->CmdGenerateConvolutionBloomKernel(r_convolutionBloomApertureScale.GetFloat(), r_convolutionBloomDiffractionPSFScale.GetFloat(), r_convolutionBloomDispersionAmount.GetFloat());
-
-    pendingConvolutionBloomKernelGeneration = false;
-    pendingConvolutionBloomKernelReadbackFrameData = frameData;
-}
-
-void App::ProcessPendingConvolutionBloomKernelReadback() {
-    if (!pendingConvolutionBloomKernelReadbackFrameData) {
+void App::ProcessConvolutionBloomKernelGenerationResult() {
+    if (convolutionBloomKernelGenerationRequestSerial == 0) {
         return;
     }
 
     if (app_convolutionBloomKernelSource.GetInteger() != static_cast<int>(App::ConvolutionBloomKernelSource::GenerateFromAperture)) {
-        pendingConvolutionBloomKernelReadbackFrameData = nullptr;
+        convolutionBloomKernelRegenerationRequested = false;
+        convolutionBloomKernelGenerationRequestSerial = 0;
         return;
     }
 
-    renderSystem->WaitFrameRenderCompleted(pendingConvolutionBloomKernelReadbackFrameData);
+    bool generationSucceeded = false;
+    if (!renderSystem->GetConvolutionBloomKernelGenerationResult(convolutionBloomKernelGenerationRequestSerial, generationSucceeded)) {
+        return;
+    }
+    convolutionBloomKernelGenerationRequestSerial = 0;
+
+    if (!generationSucceeded) {
+        BE_WARNLOG("App::ProcessConvolutionBloomKernelGenerationResult: failed to generate convolution bloom kernel\n");
+        return;
+    }
 
     BE1::Image kernelImage;
     if (!renderSystem->GetConvolutionBloomKernelGenerator().ReadKernelImage(kernelImage)) {
-        BE_WARNLOG("App::ProcessPendingConvolutionBloomKernelReadback: failed to read generated convolution bloom kernel\n");
-        pendingConvolutionBloomKernelReadbackFrameData = nullptr;
+        BE_WARNLOG("App::ProcessConvolutionBloomKernelGenerationResult: failed to read generated convolution bloom kernel\n");
         return;
     }
 
@@ -697,10 +696,8 @@ void App::ProcessPendingConvolutionBloomKernelReadback() {
     if (renderCamera->SetConvolutionBloomKernelFromImage(kernelTextureName, kernelImage)) {
         convolutionBloomGeneratedKernelTexture = renderCamera->GetFFTBloomKernelTexture();
     } else {
-        BE_WARNLOG("App::ProcessPendingConvolutionBloomKernelReadback: failed to create generated convolution bloom kernel texture\n");
+        BE_WARNLOG("App::ProcessConvolutionBloomKernelGenerationResult: failed to create generated convolution bloom kernel texture\n");
     }
-
-    pendingConvolutionBloomKernelReadbackFrameData = nullptr;
 }
 
 void App::GetConvolutionBloomKernelPresetName(int presetIndex, char *buffer, int bufferSize) const {

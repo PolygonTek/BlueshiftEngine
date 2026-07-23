@@ -137,14 +137,25 @@ set(SRC_FILES
     Render/ColorGradingLUTGenerator.cpp
     Render/ConvolutionBloomKernelGenerator.h
     Render/ConvolutionBloomKernelGenerator.cpp
+    Render/RenderWork/ConvolutionBloomKernelRenderWork.h
+    Render/RenderWork/ConvolutionBloomKernelRenderWork.cpp
     Render/IBLBaker.h
     Render/IBLBaker.cpp
+    Render/ProbeBakeJob.h
+    Render/ProbeBakeJob.cpp
+    Render/RenderWork/ProbeBakeRenderWork.h
+    Render/RenderWork/ProbeBakeRenderWork.cpp
+    Render/ProbeBakeSystem.h
+    Render/ProbeBakeSystem.cpp
     Render/GpuTiming.h
     Render/GpuTiming.cpp
     Render/RenderContext.h
     Render/RenderContext.cpp
     Render/RenderFrameData.h
     Render/RenderFrameData.cpp
+    Render/RenderWork/RenderWork.h
+    Render/RenderWork/RenderWorkQueue.h
+    Render/RenderWork/RenderWorkQueue.cpp
     Render/GpuFFT.h
     Render/GpuFFT.cpp
     Render/GpuSphericalHarmonics.h
@@ -170,6 +181,8 @@ set(SRC_FILES
     Render/Backend/RenderBackend_DebugDraw.cpp
     Render/Backend/RenderBackend_DrawGenericSurf.cpp
     Render/Backend/RenderBackend_DrawSkySurf.cpp
+    Render/Frontend/EnvironmentLight.h
+    Render/Frontend/EnvironmentLight.cpp
     Render/Frontend/RenderLight.h
     Render/Frontend/RenderLight.cpp
     Render/Frontend/RenderObject.h

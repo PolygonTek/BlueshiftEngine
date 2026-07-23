@@ -185,6 +185,9 @@ static Texture::Flag GetTextureFlags(const ShaderPropertyInfo &propertyInfo) {
     if (propertyInfo.IsNormal()) {
         flags |= Texture::Flag::NormalMap;
     }
+    if (propertyInfo.IsNormal() || propertyInfo.IsLinear()) {
+        flags |= Texture::Flag::LinearColorSpace;
+    }
     if (propertyInfo.IsNoMipmaps()) {
         flags |= Texture::Flag::NoMipmaps;
     }

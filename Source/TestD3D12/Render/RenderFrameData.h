@@ -23,6 +23,7 @@
 #include "ShaderSurfaceTable.h"
 
 class RenderContext;
+class RenderWork;
 class Texture;
 class Material;
 class MeshInstance;
@@ -39,10 +40,10 @@ enum class FrameSyncState : uint8_t {
 
 enum class RenderCommandId : uint8_t {
     End,
+    RenderWork,
     BeginContext,
     DrawCamera,
     ScreenShot,
-    GenerateConvolutionBloomKernel,
     FinalizeFrame,
     SwapBuffers
 };
@@ -52,6 +53,11 @@ struct RenderCommandBuffer {
 
     byte                            buffer[BufferSize];
     uint32_t                        used = 0;
+};
+
+struct RenderWorkRenderCommand {
+    RenderCommandId                 commandId;
+    RenderWork *                    renderWork;
 };
 
 struct BeginContextRenderCommand {
@@ -75,13 +81,6 @@ struct ScreenShotRenderCommand {
     int                             width;
     int                             height;
     char                            filename[BE1::MaxAbsolutePath];
-};
-
-struct GenerateConvolutionBloomKernelRenderCommand {
-    RenderCommandId                 commandId;
-    float                           apertureScale;
-    float                           diffractionPSFScale;
-    float                           dispersionAmount;
 };
 
 struct FinalizeFrameRenderCommand {
@@ -204,12 +203,12 @@ public:
     RenderCommandBuffer *           GetCommands() { return &commands; }
 
                                     // 렌더 커맨드들..
+    bool                            CmdRenderWork(RenderWork *renderWork);
     void                            CmdBeginContext(RenderContext *context, bool gpuTiming, bool textureStreamingFeedback, bool swapChainOutput);
     void                            CmdDrawCamera(const VisCamera *camera);
     void                            CmdFinalizeFrame(bool renderImGuiOverlay);
     void                            CmdSwapBuffers();
     void                            CmdScreenshot(int x, int y, int width, int height, const char *filename);
-    void                            CmdGenerateConvolutionBloomKernel(float apertureScale, float diffractionPSFScale, float dispersionAmount);
     void                            CmdEnd();
 
     bool                            HasPendingImGuiOverlay() const { return pendingImGuiOverlay.overlay != nullptr; }

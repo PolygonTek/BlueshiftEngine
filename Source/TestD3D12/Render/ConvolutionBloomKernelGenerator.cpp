@@ -16,18 +16,95 @@
 #include "ConvolutionBloomKernelGenerator.h"
 #include "Render/Texture/Texture.h"
 #include "GpuFFT.h"
-#include "RenderFrameData.h"
 #include "RenderSystem.h"
 #include "Render/ShaderPipeline/ShaderPipeline.h"
+#include "Render/ShaderPipeline/ShaderPipelineCache.h"
+#include "Render/ShaderPipeline/ShaderTemplateManager.h"
 #include "Shaders/ShaderInterop.h"
 
 void ConvolutionBloomKernelGenerator::Init() {
+    pipelinesReady = false;
+    pipelineBuildFailed = false;
+
+    const char *baseDir = "Source/TestD3D12/Shaders";
+    const RHI::ShaderModel computeShaderModel = RHI::ShaderModel::SM_6_6;
+
+    aperturePrepareShaderTemplate = shaderTemplateManager.CreateComputeShaderTemplate("_convolutionBloomAperturePrepareShader", computeShaderModel, "Bloom/ConvolutionBloomAperturePrepare.hlsl", baseDir);
+    reduceApertureEnergyShaderTemplate = shaderTemplateManager.CreateComputeShaderTemplate("_convolutionBloomReduceApertureEnergyShader", computeShaderModel, "Bloom/ConvolutionBloomReduceApertureEnergy.hlsl", baseDir);
+    resolveDiffractionPSFShaderTemplate = shaderTemplateManager.CreateComputeShaderTemplate("_convolutionBloomResolveDiffractionPSFShader", computeShaderModel, "Bloom/ConvolutionBloomResolveDiffractionPSF.hlsl", baseDir);
+    applyDispersionShaderTemplate = shaderTemplateManager.CreateComputeShaderTemplate("_convolutionBloomApplyDispersionShader", computeShaderModel, "Bloom/ConvolutionBloomApplyDispersion.hlsl", baseDir);
+
+    static constexpr bool asyncPipelineBuild = true;
+    aperturePreparePipeline = shaderPipelineCache.GetComputePipeline(aperturePrepareShaderTemplate, ShaderPermutationKey(), asyncPipelineBuild);
+    reduceApertureEnergyPipeline = shaderPipelineCache.GetComputePipeline(reduceApertureEnergyShaderTemplate, ShaderPermutationKey(), asyncPipelineBuild);
+    resolveDiffractionPSFPipeline = shaderPipelineCache.GetComputePipeline(resolveDiffractionPSFShaderTemplate, ShaderPermutationKey(), asyncPipelineBuild);
+    applyDispersionPipeline = shaderPipelineCache.GetComputePipeline(applyDispersionShaderTemplate, ShaderPermutationKey(), asyncPipelineBuild);
+
     EnsureResources();
 }
 
+void ConvolutionBloomKernelGenerator::UpdatePipelineBuildState() {
+    if (pipelinesReady || pipelineBuildFailed) {
+        return;
+    }
+
+    const ShaderPipeline *pipelines[] = {
+        aperturePreparePipeline.get(),
+        reduceApertureEnergyPipeline.get(),
+        resolveDiffractionPSFPipeline.get(),
+        applyDispersionPipeline.get()
+    };
+
+    bool allReady = true;
+
+    for (const ShaderPipeline *pipeline : pipelines) {
+        if (!pipeline) {
+            pipelineBuildFailed = true;
+            break;
+        }
+
+        switch (pipeline->GetState()) {
+        case ShaderPipeline::State::Ready:
+        case ShaderPipeline::State::Rebuilding:
+            break;
+        case ShaderPipeline::State::Building:
+            allReady = false;
+            break;
+        case ShaderPipeline::State::Empty:
+        case ShaderPipeline::State::Failed:
+            pipelineBuildFailed = true;
+            break;
+        }
+
+        if (pipelineBuildFailed) {
+            break;
+        }
+    }
+
+    if (pipelineBuildFailed) {
+        BE_WARNLOG("ConvolutionBloomKernelGenerator::UpdatePipelineBuildState: pipeline build failed\n");
+        return;
+    }
+
+    pipelinesReady = allReady;
+}
+
 void ConvolutionBloomKernelGenerator::Shutdown() {
+    pipelinesReady = false;
+    pipelineBuildFailed = false;
+
     DestroyResources();
     apertureSourceTexture.reset();
+
+    aperturePreparePipeline.reset();
+    reduceApertureEnergyPipeline.reset();
+    resolveDiffractionPSFPipeline.reset();
+    applyDispersionPipeline.reset();
+
+    aperturePrepareShaderTemplate.reset();
+    reduceApertureEnergyShaderTemplate.reset();
+    resolveDiffractionPSFShaderTemplate.reset();
+    applyDispersionShaderTemplate.reset();
 }
 
 void ConvolutionBloomKernelGenerator::SetApertureTexture(const SharedPtr<Texture> &texture) {
@@ -69,7 +146,7 @@ void ConvolutionBloomKernelGenerator::SetDispersionAmount(float amount) {
     kernelDirty = true;
 }
 
-bool ConvolutionBloomKernelGenerator::GenerateKernel(RHI::CommandList *commandList, RenderFrameData *frameData) {
+bool ConvolutionBloomKernelGenerator::GenerateKernel(RHI::CommandList *commandList, RHI::FrameThreadData *frameThreadData) {
     PROFILER_CPU_SCOPED_EVENT("ConvolutionBloomKernelGenerator::GenerateKernel");
 
     if (!kernelDirty && HasResources()) {
@@ -85,12 +162,12 @@ bool ConvolutionBloomKernelGenerator::GenerateKernel(RHI::CommandList *commandLi
     }
 
     // aperture 버퍼 준비 (apertureSpatialBuffer 에 출력)
-    if (!DispatchAperturePrepare(commandList, frameData)) {
+    if (!DispatchAperturePrepare(commandList, frameThreadData)) {
         return false;
     }
 
     RHI::Buffer *apertureEnergyBuffer = nullptr;
-    if (!DispatchReduceApertureEnergy(commandList, frameData, &apertureEnergyBuffer)) {
+    if (!DispatchReduceApertureEnergy(commandList, frameThreadData, &apertureEnergyBuffer)) {
         return false;
     }
 
@@ -100,17 +177,17 @@ bool ConvolutionBloomKernelGenerator::GenerateKernel(RHI::CommandList *commandLi
     }
 
     // aperture 버퍼 FFT 하여 회절 (diffraction) 적용
-    if (!renderSystem->gpuFFT.DispatchFFTComplex2D(commandList, frameData, apertureSpatialBuffer, apertureSpectrumBuffer, workBuffer, fftSizeEnum, 1)) {
+    if (!renderSystem->GetGpuFFT().DispatchFFTComplex2D(commandList, frameThreadData, apertureSpatialBuffer, apertureSpectrumBuffer, workBuffer, fftSizeEnum, 1)) {
         return false;
     }
 
     // circular shift 와 abs(FFT)^2 을 적용해서 intensity 를 표현한다.
-    if (!DispatchResolveDiffractionPSF(commandList, frameData, apertureEnergyBuffer)) {
+    if (!DispatchResolveDiffractionPSF(commandList, frameThreadData, apertureEnergyBuffer)) {
         return false;
     }
 
     // 분산 (dispersion) 적용
-    if (!DispatchApplyDispersion(commandList, frameData)) {
+    if (!DispatchApplyDispersion(commandList, frameThreadData)) {
         return false;
     }
 
@@ -292,10 +369,10 @@ bool ConvolutionBloomKernelGenerator::HasResources() const {
         kernelTexture;
 }
 
-bool ConvolutionBloomKernelGenerator::DispatchAperturePrepare(RHI::CommandList *commandList, RenderFrameData *frameData) {
+bool ConvolutionBloomKernelGenerator::DispatchAperturePrepare(RHI::CommandList *commandList, RHI::FrameThreadData *frameThreadData) {
     PROFILER_CPU_SCOPED_EVENT("ConvolutionBloomKernelGenerator::DispatchAperturePrepare");
 
-    RHI::PipelineState *pso = ShaderPipeline::GetReadyPSO(renderSystem->convolutionBloomAperturePreparePipeline);
+    RHI::PipelineState *pso = ShaderPipeline::GetReadyPSO(aperturePreparePipeline);
     if (!pso) {
         return false;
     }
@@ -321,7 +398,7 @@ bool ConvolutionBloomKernelGenerator::DispatchAperturePrepare(RHI::CommandList *
     bloomParams.outputTexelSize = float2(1.0f / outputW, 1.0f / outputH);
     bloomParams.params0 = float4(apertureScale, 0.0f, 0.0f, 0.0f);
 
-    RHI::ConstantBuffer *bloomConstantBuffer = frameData->GetThreadData(0)->AllocConstant(sizeof(BloomParams), &bloomParams);
+    RHI::ConstantBuffer *bloomConstantBuffer = frameThreadData->AllocConstant(sizeof(BloomParams), &bloomParams);
     if (!bloomConstantBuffer) {
         return false;
     }
@@ -350,7 +427,7 @@ bool ConvolutionBloomKernelGenerator::DispatchAperturePrepare(RHI::CommandList *
     return true;
 }
 
-bool ConvolutionBloomKernelGenerator::DispatchReduceApertureEnergy(RHI::CommandList *commandList, RenderFrameData *frameData, RHI::Buffer **outEnergyBuffer) {
+bool ConvolutionBloomKernelGenerator::DispatchReduceApertureEnergy(RHI::CommandList *commandList, RHI::FrameThreadData *frameThreadData, RHI::Buffer **outEnergyBuffer) {
     PROFILER_CPU_SCOPED_EVENT("ConvolutionBloomKernelGenerator::DispatchReduceApertureEnergy");
 
     if (!outEnergyBuffer) {
@@ -378,7 +455,7 @@ bool ConvolutionBloomKernelGenerator::DispatchReduceApertureEnergy(RHI::CommandL
 
     for (;;) {
         RHI::Buffer *outputBuffer = energyBuffers[outputBufferIndex];
-        if (!DispatchReduceApertureEnergyPass(commandList, frameData, inputBuffer, outputBuffer, inputElementCount, inputIsPartialEnergy, inputState)) {
+        if (!DispatchReduceApertureEnergyPass(commandList, frameThreadData, inputBuffer, outputBuffer, inputElementCount, inputIsPartialEnergy, inputState)) {
             return false;
         }
 
@@ -396,10 +473,10 @@ bool ConvolutionBloomKernelGenerator::DispatchReduceApertureEnergy(RHI::CommandL
     }
 }
 
-bool ConvolutionBloomKernelGenerator::DispatchReduceApertureEnergyPass(RHI::CommandList *commandList, RenderFrameData *frameData, RHI::Buffer *inputBuffer, RHI::Buffer *outputBuffer, uint32_t inputElementCount, bool inputIsPartialEnergy, RHI::GPUResourceState inputState) {
+bool ConvolutionBloomKernelGenerator::DispatchReduceApertureEnergyPass(RHI::CommandList *commandList, RHI::FrameThreadData *frameThreadData, RHI::Buffer *inputBuffer, RHI::Buffer *outputBuffer, uint32_t inputElementCount, bool inputIsPartialEnergy, RHI::GPUResourceState inputState) {
     PROFILER_CPU_SCOPED_EVENT("ConvolutionBloomKernelGenerator::DispatchReduceApertureEnergyPass");
 
-    RHI::PipelineState *pso = ShaderPipeline::GetReadyPSO(renderSystem->convolutionBloomReduceApertureEnergyPipeline);
+    RHI::PipelineState *pso = ShaderPipeline::GetReadyPSO(reduceApertureEnergyPipeline);
     if (!pso || !inputBuffer || !outputBuffer || inputBuffer == outputBuffer || inputElementCount == 0) {
         return false;
     }
@@ -409,7 +486,7 @@ bool ConvolutionBloomKernelGenerator::DispatchReduceApertureEnergyPass(RHI::Comm
     bloomParams.inputSize = uint2(inputElementCount, inputIsPartialEnergy ? 1u : 0u);
     bloomParams.outputSize = uint2(outputElementCount, 1);
 
-    RHI::ConstantBuffer *bloomConstantBuffer = frameData->GetThreadData(0)->AllocConstant(sizeof(BloomParams), &bloomParams);
+    RHI::ConstantBuffer *bloomConstantBuffer = frameThreadData->AllocConstant(sizeof(BloomParams), &bloomParams);
     if (!bloomConstantBuffer) {
         return false;
     }
@@ -431,10 +508,10 @@ bool ConvolutionBloomKernelGenerator::DispatchReduceApertureEnergyPass(RHI::Comm
     return true;
 }
 
-bool ConvolutionBloomKernelGenerator::DispatchResolveDiffractionPSF(RHI::CommandList *commandList, RenderFrameData *frameData, RHI::Buffer *apertureEnergyBuffer) {
+bool ConvolutionBloomKernelGenerator::DispatchResolveDiffractionPSF(RHI::CommandList *commandList, RHI::FrameThreadData *frameThreadData, RHI::Buffer *apertureEnergyBuffer) {
     PROFILER_CPU_SCOPED_EVENT("ConvolutionBloomKernelGenerator::DispatchResolveDiffractionPSF");
 
-    RHI::PipelineState *pso = ShaderPipeline::GetReadyPSO(renderSystem->convolutionBloomResolveDiffractionPSFPipeline);
+    RHI::PipelineState *pso = ShaderPipeline::GetReadyPSO(resolveDiffractionPSFPipeline);
     if (!pso) {
         return false;
     }
@@ -460,7 +537,7 @@ bool ConvolutionBloomKernelGenerator::DispatchResolveDiffractionPSF(RHI::Command
     bloomParams.outputTexelSize = float2(1.0f / outputW, 1.0f / outputH);
     bloomParams.params0 = float4(BE1::Max(diffractionPSFScale, 0.0f), 0.0f, 0.0f, 0.0f);
 
-    RHI::ConstantBuffer *bloomConstantBuffer = frameData->GetThreadData(0)->AllocConstant(sizeof(BloomParams), &bloomParams);
+    RHI::ConstantBuffer *bloomConstantBuffer = frameThreadData->AllocConstant(sizeof(BloomParams), &bloomParams);
     if (!bloomConstantBuffer) {
         return false;
     }
@@ -492,10 +569,10 @@ bool ConvolutionBloomKernelGenerator::DispatchResolveDiffractionPSF(RHI::Command
     return true;
 }
 
-bool ConvolutionBloomKernelGenerator::DispatchApplyDispersion(RHI::CommandList *commandList, RenderFrameData *frameData) {
+bool ConvolutionBloomKernelGenerator::DispatchApplyDispersion(RHI::CommandList *commandList, RHI::FrameThreadData *frameThreadData) {
     PROFILER_CPU_SCOPED_EVENT("ConvolutionBloomKernelGenerator::DispatchApplyDispersion");
 
-    RHI::PipelineState *pso = ShaderPipeline::GetReadyPSO(renderSystem->convolutionBloomApplyDispersionPipeline);
+    RHI::PipelineState *pso = ShaderPipeline::GetReadyPSO(applyDispersionPipeline);
     if (!pso) {
         return false;
     }
@@ -528,7 +605,7 @@ bool ConvolutionBloomKernelGenerator::DispatchApplyDispersion(RHI::CommandList *
     bloomParams.params0 = float4(BE1::Max(dispersionAmount, 0.0f), MinWavelengthNm, MaxWavelengthNm, ReferenceWavelengthNm);
     bloomParams.params1 = float4(DispersionSampleCount, IntensityScale, 0.0f, 0.0f);
 
-    RHI::ConstantBuffer *bloomConstantBuffer = frameData->GetThreadData(0)->AllocConstant(sizeof(BloomParams), &bloomParams);
+    RHI::ConstantBuffer *bloomConstantBuffer = frameThreadData->AllocConstant(sizeof(BloomParams), &bloomParams);
     if (!bloomConstantBuffer) {
         return false;
     }

@@ -74,10 +74,10 @@ private:
 
     void                            InitDebugDraw();
 
+    const void *                    ExecuteRenderWork(const void *data);
     const void *                    ExecuteBeginContext(const void *data);
     const void *                    ExecuteDrawCamera(const void *data);
     const void *                    ExecuteScreenshot(const void *data);
-    const void *                    ExecuteGenerateConvolutionBloomKernel(const void *data);
     const void *                    ExecuteFinalizeFrame(const void *data);
     const void *                    ExecuteSwapBuffers(const void *data);
 

@@ -484,6 +484,10 @@ bool LoadingSystem::ProcessTextureLoadRequest(const LoadRequest &request) {
         return false;
     }
 
+    if (BE1::HasFlag(request.textureFlags, Texture::Flag::LinearColorSpace)) {
+        image->SetGammaSpace(BE1::Image::GammaSpace::Linear);
+    }
+
     int textureDepth = useMipRange ? mipRange.originalDepth : image->GetDepth();
 
     RHI::TextureType textureType;
@@ -539,6 +543,10 @@ bool LoadingSystem::ProcessTextureStreamingReplacementRequest(const LoadRequest 
         BE_WARNLOG("LoadingSystem::ProcessTextureStreamingReplacementRequest: couldn't load texture \"%s\"\n", request.filename.c_str());
         PushCompletion(std::move(completion));
         return false;
+    }
+
+    if (BE1::HasFlag(request.textureFlags, Texture::Flag::LinearColorSpace)) {
+        image->SetGammaSpace(BE1::Image::GammaSpace::Linear);
     }
 
     int textureDepth = mipRange.originalDepth;

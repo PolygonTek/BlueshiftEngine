@@ -6,6 +6,10 @@ shader "Lit" {
 
     properties {
         baseColorTexture("Base Color") : texture "2D" = "_whiteTexture"
+        metallicTexture("Metallic") : texture "2D" = "_whiteTexture" [linear]
+        roughnessTexture("Roughness") : texture "2D" = "_whiteTexture" [linear]
+        metallicFactor("Metallic Factor") : float range 0 1 0.01 = "1.0"
+        roughnessFactor("Roughness Factor") : float range 0 1 0.01 = "1.0"
     }
 
     features {

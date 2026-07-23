@@ -20,24 +20,28 @@
 #include "Shaders/ShaderInterop.h"
 
 void GpuSphericalHarmonics::Init() {
+    pipelinesReady = false;
+    pipelineBuildFailed = false;
+
     const char *baseDir = "Source/TestD3D12/Shaders";
     const RHI::ShaderModel shaderModel = RHI::ShaderModel::SM_6_6;
+    constexpr bool asyncPipelineBuild = true;
 
     sh2Resources.coefficientCount = SH2CoefficientCount;
     sh2Resources.projectShaderTemplate = shaderTemplateManager.CreateComputeShaderTemplate("_projectCubemapSH2Shader", shaderModel, "SphericalHarmonics/ProjectCubemapSH.hlsl", baseDir, "CSMain", "SH_BAND_COUNT=2");
     sh2Resources.reduceShaderTemplate = shaderTemplateManager.CreateComputeShaderTemplate("_reduceCubemapSH2Shader", shaderModel, "SphericalHarmonics/ReduceCubemapSH.hlsl", baseDir, "CSMain", "SH_BAND_COUNT=2");
     sh2Resources.reconstructShaderTemplate = shaderTemplateManager.CreateComputeShaderTemplate("_reconstructCubemapSH2Shader", shaderModel, "SphericalHarmonics/ReconstructCubemapSH.hlsl", baseDir, "CSMain", "SH_BAND_COUNT=2");
-    sh2Resources.projectPipeline = shaderPipelineCache.GetComputePipeline(sh2Resources.projectShaderTemplate, ShaderPermutationKey());
-    sh2Resources.reducePipeline = shaderPipelineCache.GetComputePipeline(sh2Resources.reduceShaderTemplate, ShaderPermutationKey());
-    sh2Resources.reconstructPipeline = shaderPipelineCache.GetComputePipeline(sh2Resources.reconstructShaderTemplate, ShaderPermutationKey());
+    sh2Resources.projectPipeline = shaderPipelineCache.GetComputePipeline(sh2Resources.projectShaderTemplate, ShaderPermutationKey(), asyncPipelineBuild);
+    sh2Resources.reducePipeline = shaderPipelineCache.GetComputePipeline(sh2Resources.reduceShaderTemplate, ShaderPermutationKey(), asyncPipelineBuild);
+    sh2Resources.reconstructPipeline = shaderPipelineCache.GetComputePipeline(sh2Resources.reconstructShaderTemplate, ShaderPermutationKey(), asyncPipelineBuild);
 
     sh3Resources.coefficientCount = SH3CoefficientCount;
     sh3Resources.projectShaderTemplate = shaderTemplateManager.CreateComputeShaderTemplate("_projectCubemapSH3Shader", shaderModel, "SphericalHarmonics/ProjectCubemapSH.hlsl", baseDir, "CSMain", "SH_BAND_COUNT=3");
     sh3Resources.reduceShaderTemplate = shaderTemplateManager.CreateComputeShaderTemplate("_reduceCubemapSH3Shader", shaderModel, "SphericalHarmonics/ReduceCubemapSH.hlsl", baseDir, "CSMain", "SH_BAND_COUNT=3");
     sh3Resources.reconstructShaderTemplate = shaderTemplateManager.CreateComputeShaderTemplate("_reconstructCubemapSH3Shader", shaderModel, "SphericalHarmonics/ReconstructCubemapSH.hlsl", baseDir, "CSMain", "SH_BAND_COUNT=3");
-    sh3Resources.projectPipeline = shaderPipelineCache.GetComputePipeline(sh3Resources.projectShaderTemplate, ShaderPermutationKey());
-    sh3Resources.reducePipeline = shaderPipelineCache.GetComputePipeline(sh3Resources.reduceShaderTemplate, ShaderPermutationKey());
-    sh3Resources.reconstructPipeline = shaderPipelineCache.GetComputePipeline(sh3Resources.reconstructShaderTemplate, ShaderPermutationKey());
+    sh3Resources.projectPipeline = shaderPipelineCache.GetComputePipeline(sh3Resources.projectShaderTemplate, ShaderPermutationKey(), asyncPipelineBuild);
+    sh3Resources.reducePipeline = shaderPipelineCache.GetComputePipeline(sh3Resources.reduceShaderTemplate, ShaderPermutationKey(), asyncPipelineBuild);
+    sh3Resources.reconstructPipeline = shaderPipelineCache.GetComputePipeline(sh3Resources.reconstructShaderTemplate, ShaderPermutationKey(), asyncPipelineBuild);
 
     faceSHCoefficientBuffer = RHI::renderer->CreateBuffer(RHI::BufferUsage::Default, RHI::BufferFlag::ShaderResource | RHI::BufferFlag::UnorderedAccess, FaceSH3CoefficientBufferSize, nullptr);
     if (!faceSHCoefficientBuffer) {
@@ -84,6 +88,9 @@ void GpuSphericalHarmonics::Init() {
 }
 
 void GpuSphericalHarmonics::Shutdown() {
+    pipelinesReady = false;
+    pipelineBuildFailed = false;
+
     if (shCoefficientBuffer) {
         RHI::renderer->DestroyBuffer(shCoefficientBuffer);
         shCoefficientBuffer = nullptr;
@@ -120,6 +127,54 @@ void GpuSphericalHarmonics::Shutdown() {
 
     sh2Resources.coefficientCount = 0;
     sh3Resources.coefficientCount = 0;
+}
+
+void GpuSphericalHarmonics::UpdatePipelineBuildState() {
+    if (pipelinesReady || pipelineBuildFailed) {
+        return;
+    }
+
+    const ShaderPipeline *pipelines[] = {
+        sh2Resources.projectPipeline.get(),
+        sh2Resources.reducePipeline.get(),
+        sh2Resources.reconstructPipeline.get(),
+        sh3Resources.projectPipeline.get(),
+        sh3Resources.reducePipeline.get(),
+        sh3Resources.reconstructPipeline.get()
+    };
+
+    bool allReady = true;
+
+    for (const ShaderPipeline *pipeline : pipelines) {
+        if (!pipeline) {
+            pipelineBuildFailed = true;
+            break;
+        }
+
+        switch (pipeline->GetState()) {
+        case ShaderPipeline::State::Ready:
+        case ShaderPipeline::State::Rebuilding:
+            break;
+        case ShaderPipeline::State::Building:
+            allReady = false;
+            break;
+        case ShaderPipeline::State::Empty:
+        case ShaderPipeline::State::Failed:
+            pipelineBuildFailed = true;
+            break;
+        }
+
+        if (pipelineBuildFailed) {
+            break;
+        }
+    }
+
+    if (pipelineBuildFailed) {
+        BE_WARNLOG("GpuSphericalHarmonics::UpdatePipelineBuildState: pipeline build failed\n");
+        return;
+    }
+
+    pipelinesReady = allReady;
 }
 
 static bool ValidateCubemapSHInput(const RHI::Texture *cubeMap, RHI::ViewID cubeMapSRV) {
