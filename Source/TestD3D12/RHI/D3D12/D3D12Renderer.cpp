@@ -451,16 +451,18 @@ void D3D12Renderer::CheckFeatures() {
 }
 
 void D3D12Renderer::InitGenMipmapsPSO() {
+    constexpr RHI::ShaderModel shaderModel = RHI::Renderer::MinimumShaderModel();
+
     // 2D 텍스쳐 용 밉맵 생성 컴퓨트 셰이더 PSO 생성
     {
-        RHI::Shader *cs = static_cast<RHI::Shader *>(CreateShaderFromFile(RHI::ShaderModel::SM_6_0, RHI::ShaderStage::Compute, "Source/TestD3D12/Shaders/GenMip/GenMip2DFloat4.hlsl", "CSMain"));
+        RHI::Shader *cs = static_cast<RHI::Shader *>(CreateShaderFromFile(shaderModel, RHI::ShaderStage::Compute, "Source/TestD3D12/Shaders/GenMip/GenMip2DFloat4.hlsl", "CSMain"));
         if (cs) {
             genMipmaps2DFloat4PSO = CreateComputePSO(cs);
             DestroyShader(cs, true);
         }
     }
     {
-        RHI::Shader *cs = static_cast<RHI::Shader *>(CreateShaderFromFile(RHI::ShaderModel::SM_6_0, RHI::ShaderStage::Compute, "Source/TestD3D12/Shaders/GenMip/GenMip2DUNorm4.hlsl", "CSMain"));
+        RHI::Shader *cs = static_cast<RHI::Shader *>(CreateShaderFromFile(shaderModel, RHI::ShaderStage::Compute, "Source/TestD3D12/Shaders/GenMip/GenMip2DUNorm4.hlsl", "CSMain"));
         if (cs) {
             genMipmaps2DUNorm4PSO = CreateComputePSO(cs);
             DestroyShader(cs, true);
@@ -468,14 +470,14 @@ void D3D12Renderer::InitGenMipmapsPSO() {
     }
     // 큐브맵 텍스쳐 용 밉맵 생성 컴퓨트 셰이더 PSO 생성
     {
-        RHI::Shader *cs = static_cast<RHI::Shader *>(CreateShaderFromFile(RHI::ShaderModel::SM_6_0, RHI::ShaderStage::Compute, "Source/TestD3D12/Shaders/GenMip/GenMipCubeFloat4.hlsl", "CSMain"));
+        RHI::Shader *cs = static_cast<RHI::Shader *>(CreateShaderFromFile(shaderModel, RHI::ShaderStage::Compute, "Source/TestD3D12/Shaders/GenMip/GenMipCubeFloat4.hlsl", "CSMain"));
         if (cs) {
             genMipmapsCubeFloat4PSO = CreateComputePSO(cs);
             DestroyShader(cs, true);
         }
     }
     {
-        RHI::Shader *cs = static_cast<RHI::Shader *>(CreateShaderFromFile(RHI::ShaderModel::SM_6_0, RHI::ShaderStage::Compute, "Source/TestD3D12/Shaders/GenMip/GenMipCubeUNorm4.hlsl", "CSMain"));
+        RHI::Shader *cs = static_cast<RHI::Shader *>(CreateShaderFromFile(shaderModel, RHI::ShaderStage::Compute, "Source/TestD3D12/Shaders/GenMip/GenMipCubeUNorm4.hlsl", "CSMain"));
         if (cs) {
             genMipmapsCubeUNorm4PSO = CreateComputePSO(cs);
             DestroyShader(cs, true);
@@ -483,14 +485,14 @@ void D3D12Renderer::InitGenMipmapsPSO() {
     }
     // 3D 텍스쳐 용 밉맵 생성 컴퓨트 셰이더 PSO 생성
     {
-        RHI::Shader *cs = static_cast<RHI::Shader *>(CreateShaderFromFile(RHI::ShaderModel::SM_6_0, RHI::ShaderStage::Compute, "Source/TestD3D12/Shaders/GenMip/GenMip3DFloat4.hlsl", "CSMain"));
+        RHI::Shader *cs = static_cast<RHI::Shader *>(CreateShaderFromFile(shaderModel, RHI::ShaderStage::Compute, "Source/TestD3D12/Shaders/GenMip/GenMip3DFloat4.hlsl", "CSMain"));
         if (cs) {
             genMipmaps3DFloat4PSO = CreateComputePSO(cs);
             DestroyShader(cs, true);
         }
     }
     {
-        RHI::Shader *cs = static_cast<RHI::Shader *>(CreateShaderFromFile(RHI::ShaderModel::SM_6_0, RHI::ShaderStage::Compute, "Source/TestD3D12/Shaders/GenMip/GenMip3DUNorm4.hlsl", "CSMain"));
+        RHI::Shader *cs = static_cast<RHI::Shader *>(CreateShaderFromFile(shaderModel, RHI::ShaderStage::Compute, "Source/TestD3D12/Shaders/GenMip/GenMip3DUNorm4.hlsl", "CSMain"));
         if (cs) {
             genMipmaps3DUNorm4PSO = CreateComputePSO(cs);
             DestroyShader(cs, true);
@@ -928,13 +930,21 @@ void D3D12Renderer::CreateDevice(IDXGIAdapter1 **adapterPtr) {
             }
 
             if (device) {
+                // SM 6.6 미만 디바이스는 제외
+                D3D12_FEATURE_DATA_SHADER_MODEL shaderModel = { D3D_SHADER_MODEL_6_6 };
+                const HRESULT shaderModelHr = device->CheckFeatureSupport(D3D12_FEATURE_SHADER_MODEL, &shaderModel, sizeof(shaderModel));
+                if (FAILED(shaderModelHr) || shaderModel.HighestShaderModel < D3D_SHADER_MODEL_6_6) {
+                    SAFE_RELEASE(device);
+                    continue;
+                }
+
                 break;
             }
         }
     }
 
     if (!device) {
-        BE_FATALERROR("Failed to create D3D12 device");
+        BE_FATALERROR("Failed to create a D3D12 device supporting Shader Model 6.6");
     }
 
     *adapterPtr = currentAdapter;

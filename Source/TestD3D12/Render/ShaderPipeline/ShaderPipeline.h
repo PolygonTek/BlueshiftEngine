@@ -36,7 +36,7 @@ struct GraphicsPipelineDesc {
 };
 
 struct ShaderStageSource {
-    RHI::ShaderModel                shaderModel = RHI::ShaderModel::SM_6_0;
+    RHI::ShaderModel                shaderModel = RHI::Renderer::MinimumShaderModel();
     BE1::Str                        filename;
     BE1::Str                        entryPoint;
 };

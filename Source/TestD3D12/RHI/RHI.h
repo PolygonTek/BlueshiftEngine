@@ -257,6 +257,7 @@ namespace RHI {
         SM_6_5,
         SM_6_6,
         SM_6_7,
+        SM_6_8,
     };
 
     enum class ShaderStage : uint8_t {
@@ -1072,6 +1073,7 @@ namespace RHI {
         static const char *             BufferFlagName(BufferFlag flag);
         static const char *             TextureFlagName(TextureFlag flag);
         static const char *             ShaderModelName(ShaderModel shaderModel);
+        static constexpr ShaderModel    MinimumShaderModel() { return ShaderModel::SM_6_6; }
 
         virtual bool                    IsSupportedImageFormat(BE1::Image::Format imageFormat) const = 0;
         virtual BE1::Image::Format      ToUncompressedImageFormat(BE1::Image::Format imageFormat) const = 0;

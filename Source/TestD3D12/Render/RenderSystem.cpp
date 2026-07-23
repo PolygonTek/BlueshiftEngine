@@ -373,7 +373,7 @@ static void EnsureComputePipeline(const SharedPtr<ShaderTemplate> &shaderTemplat
 
 void RenderSystem::InitComputePipelines() {
     const char *baseDir = "Source/TestD3D12/Shaders";
-    const RHI::ShaderModel computeShaderModel = RHI::ShaderModel::SM_6_6;
+    const RHI::ShaderModel computeShaderModel = RHI::Renderer::MinimumShaderModel();
 
     genHiZMipFirstBatchShaderTemplate = shaderTemplateManager.CreateComputeShaderTemplate("_genHiZMipFirstBatchShader", computeShaderModel, "GenHiZMip/GenHiZMipFirstBatch.hlsl", baseDir);
     genHiZMipFirstBatchMSAAShaderTemplate = shaderTemplateManager.CreateComputeShaderTemplate("_genHiZMipFirstBatchMSAAShader", computeShaderModel, "GenHiZMip/GenHiZMipFirstBatch.hlsl", baseDir, "CSMain", "GEN_HIZ_DEPTH_MSAA=1");

@@ -477,7 +477,8 @@ static bool ParseShaderModel(const BE1::Str &token, RHI::ShaderModel &outShaderM
         { "SM_6_4", RHI::ShaderModel::SM_6_4 },
         { "SM_6_5", RHI::ShaderModel::SM_6_5 },
         { "SM_6_6", RHI::ShaderModel::SM_6_6 },
-        { "SM_6_7", RHI::ShaderModel::SM_6_7 }
+        { "SM_6_7", RHI::ShaderModel::SM_6_7 },
+        { "SM_6_8", RHI::ShaderModel::SM_6_8 }
     };
 
     for (const ModelName &modelName : ModelNames) {
@@ -724,7 +725,7 @@ bool ShaderTemplate::ParseStages(BE1::Lexer &lexer, const char *baseDir, const c
             return false;
         }
 
-        RHI::ShaderModel shaderModel = RHI::ShaderModel::SM_6_0;
+        RHI::ShaderModel shaderModel = RHI::Renderer::MinimumShaderModel();
         if (!ParseShaderModel(shaderModelName, shaderModel)) {
             BE_WARNLOG("unknown shader model '%s' in shader template '%s'\n", shaderModelName.c_str(), shaderTemplateName);
             return false;

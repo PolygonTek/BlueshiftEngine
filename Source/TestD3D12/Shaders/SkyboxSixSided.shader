@@ -2,8 +2,8 @@ shader "Skybox/SixSided" {
     skySurface
 
     stages {
-        vertex SM_6_0 "SkyboxSixSided.hlsl" "VSMain"
-        fragment SM_6_0 "SkyboxSixSided.hlsl" "PSMain"
+        vertex SM_6_6 "SkyboxSixSided.hlsl" "VSMain"
+        fragment SM_6_6 "SkyboxSixSided.hlsl" "PSMain"
     }
 
     properties {

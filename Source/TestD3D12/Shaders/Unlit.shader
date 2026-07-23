@@ -1,7 +1,7 @@
 shader "Unlit" {
     stages {
-        vertex SM_6_0 "Unlit.hlsl" "VSMain"
-        fragment SM_6_0 "Unlit.hlsl" "PSMain"
+        vertex SM_6_6 "Unlit.hlsl" "VSMain"
+        fragment SM_6_6 "Unlit.hlsl" "PSMain"
     }
 
     properties {

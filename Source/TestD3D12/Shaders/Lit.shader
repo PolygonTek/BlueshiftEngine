@@ -1,7 +1,7 @@
 shader "Lit" {
     stages {
-        vertex SM_6_0 "Lit.hlsl" "VSMain"
-        fragment SM_6_0 "Lit.hlsl" "PSMain"
+        vertex SM_6_6 "Lit.hlsl" "VSMain"
+        fragment SM_6_6 "Lit.hlsl" "PSMain"
     }
 
     properties {

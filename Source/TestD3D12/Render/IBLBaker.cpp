@@ -26,7 +26,7 @@ void IBLBaker::Init() {
     pipelineBuildFailed = false;
 
     const char *baseDir = "Source/TestD3D12/Shaders";
-    const RHI::ShaderModel shaderModel = RHI::ShaderModel::SM_6_6;
+    const RHI::ShaderModel shaderModel = RHI::Renderer::MinimumShaderModel();
     constexpr bool asyncPipelineBuild = true;
 
     genDiffuseIrradianceShaderTemplate = shaderTemplateManager.CreateComputeShaderTemplate("_genDiffuseIrradianceShader", shaderModel, "PBR/GenDiffuseIrradiance.hlsl", baseDir);

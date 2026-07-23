@@ -2,8 +2,8 @@ shader "Skybox/Cubemap" {
     skySurface
 
     stages {
-        vertex SM_6_0 "Skybox.hlsl" "VSMain"
-        fragment SM_6_0 "Skybox.hlsl" "PSMain"
+        vertex SM_6_6 "Skybox.hlsl" "VSMain"
+        fragment SM_6_6 "Skybox.hlsl" "PSMain"
     }
 
     properties {

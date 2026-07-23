@@ -157,6 +157,9 @@ bool D3D12Renderer::CompileShaderDXC(const RHI::ShaderCompileInput *compileInput
     switch (compileInput->shaderStage) {
     case RHI::ShaderStage::Vertex:
         switch (compileInput->shaderModel) {
+        case RHI::ShaderModel::SM_6_8:
+            args.push_back(L"vs_6_8");
+            break;
         case RHI::ShaderModel::SM_6_7:
             args.push_back(L"vs_6_7");
             break;
@@ -186,6 +189,9 @@ bool D3D12Renderer::CompileShaderDXC(const RHI::ShaderCompileInput *compileInput
         break;
     case RHI::ShaderStage::Hull:
         switch (compileInput->shaderModel) {
+        case RHI::ShaderModel::SM_6_8:
+            args.push_back(L"hs_6_8");
+            break;
         case RHI::ShaderModel::SM_6_7:
             args.push_back(L"hs_6_7");
             break;
@@ -215,6 +221,9 @@ bool D3D12Renderer::CompileShaderDXC(const RHI::ShaderCompileInput *compileInput
         break;
     case RHI::ShaderStage::Domain:
         switch (compileInput->shaderModel) {
+        case RHI::ShaderModel::SM_6_8:
+            args.push_back(L"ds_6_8");
+            break;
         case RHI::ShaderModel::SM_6_7:
             args.push_back(L"ds_6_7");
             break;
@@ -244,6 +253,9 @@ bool D3D12Renderer::CompileShaderDXC(const RHI::ShaderCompileInput *compileInput
         break;
     case RHI::ShaderStage::Geometry:
         switch (compileInput->shaderModel) {
+        case RHI::ShaderModel::SM_6_8:
+            args.push_back(L"gs_6_8");
+            break;
         case RHI::ShaderModel::SM_6_7:
             args.push_back(L"gs_6_7");
             break;
@@ -273,6 +285,9 @@ bool D3D12Renderer::CompileShaderDXC(const RHI::ShaderCompileInput *compileInput
         break;
     case RHI::ShaderStage::Fragment:
         switch (compileInput->shaderModel) {
+        case RHI::ShaderModel::SM_6_8:
+            args.push_back(L"ps_6_8");
+            break;
         case RHI::ShaderModel::SM_6_7:
             args.push_back(L"ps_6_7");
             break;
@@ -302,6 +317,9 @@ bool D3D12Renderer::CompileShaderDXC(const RHI::ShaderCompileInput *compileInput
         break;
     case RHI::ShaderStage::Compute:
         switch (compileInput->shaderModel) {
+        case RHI::ShaderModel::SM_6_8:
+            args.push_back(L"cs_6_8");
+            break;
         case RHI::ShaderModel::SM_6_7:
             args.push_back(L"cs_6_7");
             break;
@@ -693,6 +711,9 @@ RHI::Shader *D3D12Renderer::CreateShader(RHI::ShaderModel shaderModel, RHI::Shad
         break;
     case RHI::ShaderModel::SM_6_7:
         shaderModelName = "SM67";
+        break;
+    case RHI::ShaderModel::SM_6_8:
+        shaderModelName = "SM68";
         break;
     default:
         return nullptr;

@@ -188,6 +188,7 @@ const char *RHI::Renderer::ShaderModelName(RHI::ShaderModel shaderModel) {
     case RHI::ShaderModel::SM_6_5: return "SM_6_5";
     case RHI::ShaderModel::SM_6_6: return "SM_6_6";
     case RHI::ShaderModel::SM_6_7: return "SM_6_7";
+    case RHI::ShaderModel::SM_6_8: return "SM_6_8";
     }
     return "Invalid";
 }

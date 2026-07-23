@@ -1,7 +1,7 @@
 shader "Depth" {
     stages {
-        vertex SM_6_0 "Depth.hlsl" "VSMain"
-        fragment SM_6_0 "Depth.hlsl" "PSMain"
+        vertex SM_6_6 "Depth.hlsl" "VSMain"
+        fragment SM_6_6 "Depth.hlsl" "PSMain"
     }
 
     features {

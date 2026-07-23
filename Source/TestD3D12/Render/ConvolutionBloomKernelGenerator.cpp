@@ -27,7 +27,7 @@ void ConvolutionBloomKernelGenerator::Init() {
     pipelineBuildFailed = false;
 
     const char *baseDir = "Source/TestD3D12/Shaders";
-    const RHI::ShaderModel computeShaderModel = RHI::ShaderModel::SM_6_6;
+    const RHI::ShaderModel computeShaderModel = RHI::Renderer::MinimumShaderModel();
 
     aperturePrepareShaderTemplate = shaderTemplateManager.CreateComputeShaderTemplate("_convolutionBloomAperturePrepareShader", computeShaderModel, "Bloom/ConvolutionBloomAperturePrepare.hlsl", baseDir);
     reduceApertureEnergyShaderTemplate = shaderTemplateManager.CreateComputeShaderTemplate("_convolutionBloomReduceApertureEnergyShader", computeShaderModel, "Bloom/ConvolutionBloomReduceApertureEnergy.hlsl", baseDir);

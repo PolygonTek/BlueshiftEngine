@@ -907,8 +907,8 @@ RHI::PipelineState *D3D12Renderer::CreateBasicPSO(ID3D12RootSignature *rootSigna
         return nullptr;
     }
 
-    D3D12Shader *vs = static_cast<D3D12Shader *>(CreateShader(RHI::ShaderModel::SM_5_0, RHI::ShaderStage::Vertex, shaderFilename, shaderText, shaderTextSize, "VSMain"));
-    D3D12Shader *ps = static_cast<D3D12Shader *>(CreateShader(RHI::ShaderModel::SM_5_0, RHI::ShaderStage::Fragment, shaderFilename, shaderText, shaderTextSize, "PSMain"));
+    D3D12Shader *vs = static_cast<D3D12Shader *>(CreateShader(RHI::Renderer::MinimumShaderModel(), RHI::ShaderStage::Vertex, shaderFilename, shaderText, shaderTextSize, "VSMain"));
+    D3D12Shader *ps = static_cast<D3D12Shader *>(CreateShader(RHI::Renderer::MinimumShaderModel(), RHI::ShaderStage::Fragment, shaderFilename, shaderText, shaderTextSize, "PSMain"));
 
     BE1::fileSystem.FreeFile(shaderText);
 
