@@ -38,14 +38,6 @@ void Engine::InitBase(uint32_t maxTaskCount, const char *baseDir, const streamOu
     logFuncPtr = logFunc;
     errFuncPtr = errFunc;
 
-#if defined(__WIN32__) && defined(_DEBUG)
-    _CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
-    //_CrtSetReportMode(_CRT_ERROR, _CRTDBG_MODE_DEBUG);
-
-    // NOTE: can be replaced by setting '({,,ucrtbased.dll}_crtBreakAlloc)' (msvc2015) in debug watch window
-    //_CrtSetBreakAlloc(286008);
-#endif
-
     ByteOrder::Init();
 
     cmdSystem.Init();

@@ -31,6 +31,11 @@ void SystemError(const int errLevel, const char *msg) {
 };
 
 int main(int argc, char *argv[]) {
+#if defined(__WIN32__) && defined(_DEBUG)
+    _CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
+    //_CrtSetReportMode(_CRT_ERROR, _CRTDBG_MODE_DEBUG);
+#endif
+
     BE1::Str workingDir = argv[0];
     workingDir.StripFileName();
     workingDir.AppendPath("../../.."); // Strip "TestBase.app/Contents/MacOS"
