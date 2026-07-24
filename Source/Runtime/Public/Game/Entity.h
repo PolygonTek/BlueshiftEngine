@@ -265,7 +265,9 @@ public:
                                 /// Sets local active state of this entity.
     void                        SetActive(bool active);
 
-                                ///
+                                /// Returns true if this entity's position in the hierarchy is locked.
+                                /// Locked entities cannot be removed or reordered in the editor, and locked descendants
+                                /// with a transform component are used to construct joint hierarchies.
     bool                        IsLockedInHierarchy() const { return lockedInHierarchy; }
 
                                 /// Returns AABB in local space.

@@ -167,6 +167,8 @@ private:
     Mat3x4                  GetWorldJointMatrix() const;
     void                    UpdateWorldJointMatrix() const;
     void                    WorldJointMatrixUpdated();
+                            /// Propagate an external world transform change through joint nodes without invalidating root-relative joint matrices.
+    void                    PropagateWorldMatrixInvalidationThroughJointHierarchy(const ComTransform *instigatedBy);
 
     Quat                    localRotation = Quat::identity; ///< Rotation in local space.
     Vec3                    localOrigin = Vec3::zero;       ///< Position in local space.

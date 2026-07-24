@@ -288,6 +288,35 @@ void ComTransform::InvalidateWorldMatrix(const ComTransform *instigatedBy) {
 
         if (childTransform->jointHierarchy == nullptr || childTransform->jointHierarchy == jointHierarchy) {
             childTransform->InvalidateWorldMatrix(instigatedBy);
+        } else {
+            childTransform->PropagateWorldMatrixInvalidationThroughJointHierarchy(instigatedBy);
+        }
+    }
+}
+
+void ComTransform::PropagateWorldMatrixInvalidationThroughJointHierarchy(const ComTransform *instigatedBy) {
+    // A joint matrix is relative to the joint hierarchy's external parent, so it remains valid when that parent moves.
+    // Components on the joint still need to be notified because the joint's absolute world transform has changed.
+    if (entity->NumComponents() > 1) {
+        EmitSignal(&SIG_TransformUpdated, this);
+    }
+
+    for (Entity *childEntity = entity->GetNode().GetFirstChild(); childEntity; childEntity = childEntity->GetNode().GetNextSibling()) {
+        // Don't update children that has rigid body. they will be updated by own.
+        if (instigatedBy && instigatedBy->physicsUpdating) {
+            if (childEntity->GetComponent(&ComRigidBody::metaObject) ||
+                childEntity->GetComponent(&ComVehicleWheel::metaObject)) {
+                continue;
+            }
+        }
+
+        ComTransform *childTransform = childEntity->GetTransform();
+
+        if (childTransform->jointHierarchy) {
+            childTransform->PropagateWorldMatrixInvalidationThroughJointHierarchy(instigatedBy);
+        } else {
+            // Only mark ordinary attachment transforms dirty. Their world matrices remain lazily evaluated.
+            childTransform->InvalidateWorldMatrix(instigatedBy);
         }
     }
 }
