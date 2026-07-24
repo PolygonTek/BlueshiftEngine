@@ -217,8 +217,8 @@ static void GetGLVersion(int *major, int *minor) {
 
 void OpenGLRHI::InitMainContext(WindowHandle windowHandle, const Settings *settings) {
     // Create main context
-    mainContext = new GLContext;
-    mainContext->state = new GLState;
+    mainContext = BE_NEW GLContext;
+    mainContext->state = BE_NEW GLState;
     mainContext->hwnd = CreateFakeWindow(); // Create fake window for global RC
     mainContext->hdc = GetDC(mainContext->hwnd);
 
@@ -328,7 +328,7 @@ static LRESULT CALLBACK NewWndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM l
 }
 
 RHI::Handle OpenGLRHI::CreateContext(RHI::WindowHandle windowHandle, bool useSharedContext) {
-    GLContext *ctx = new GLContext;
+    GLContext *ctx = BE_NEW GLContext;
 
     int handle = contextList.FindNull();
     if (handle == -1) {
@@ -364,7 +364,7 @@ RHI::Handle OpenGLRHI::CreateContext(RHI::WindowHandle windowHandle, bool useSha
             BE_FATALERROR("Couldn't create EGL window surface");
         }
     } else {
-        ctx->state = new GLState;
+        ctx->state = BE_NEW GLState;
 
         ctx->eglDisplay = mainContext->eglDisplay;
         /*ctx->eglDisplay = eglGetDisplay(ctx->hdc);

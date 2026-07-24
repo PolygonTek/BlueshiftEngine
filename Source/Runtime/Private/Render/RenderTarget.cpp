@@ -148,7 +148,7 @@ RenderTarget *RenderTarget::Create(int numColorTextures, const Texture **colorTe
         break;
     }
     
-    RenderTarget *rt = new RenderTarget;
+    RenderTarget *rt = BE_NEW RenderTarget;
     rt->rtHandle = graphics.CreateRenderTarget(rtType, width, height, numColorTextures, colorTextureHandles, depthStencilTextureHandle, flags);
 
     int i = 0;

@@ -83,7 +83,7 @@ static EGLConfig ChooseBestConfig(EGLDisplay eglDisplay, int inColorBits, int in
         BE_FATALERROR("Cannot query count of minimum matched EGL configs");
     }
 
-    EGLConfig *configs = new EGLConfig[maxConfigs];
+    EGLConfig *configs = BE_NEW EGLConfig[maxConfigs];
     //if (!eglGetConfigs(eglDisplay, configs, maxConfigs, &maxConfigs)) {
     if (!eglChooseConfig(eglDisplay, minAttribs, configs, maxConfigs, &maxConfigs)) {
         BE_FATALERROR("Cannot query all minimum matched EGL configs");
@@ -198,8 +198,8 @@ static void GetGLVersion(int *major, int *minor) {
 
 void GraphicsOpenGL::InitMainContext(WindowHandle windowHandle, const Settings *settings) {
     // Create main context
-    mainContext = new GLContext;
-    mainContext->state = new GLState;
+    mainContext = BE_NEW GLContext;
+    mainContext->state = BE_NEW GLState;
     mainContext->nativeWindow = (ANativeWindow *)windowHandle; // main context has no surface
 
     // Create EGL display connection
@@ -283,7 +283,7 @@ void GraphicsOpenGL::FreeMainContext() {
 }
 
 Graphics::Handle GraphicsOpenGL::CreateContext(Graphics::WindowHandle windowHandle, bool useSharedContext) {
-    GLContext *ctx = new GLContext;
+    GLContext *ctx = BE_NEW GLContext;
 
     int handle = contextList.FindNull();
     if (handle == -1) {
@@ -305,7 +305,7 @@ Graphics::Handle GraphicsOpenGL::CreateContext(Graphics::WindowHandle windowHand
         ctx->eglSurface = mainContext->eglSurface;
         ctx->defaultVAO = mainContext->defaultVAO;
     } else {
-        ctx->state = new GLState;
+        ctx->state = BE_NEW GLState;
 
         ctx->eglDisplay = mainContext->eglDisplay;
 

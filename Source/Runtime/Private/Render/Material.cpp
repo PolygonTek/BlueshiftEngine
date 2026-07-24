@@ -83,7 +83,7 @@ bool Material::Create(const char *text) {
         } else if (!token.Icmp("fogLight")) {
             type = Type::FogLight;
         } else if (!token.Icmp("pass")) {
-            pass = new ShaderPass;
+            pass = BE_NEW ShaderPass;
             if (!ParsePass(lexer, pass)) {
                 delete pass;
                 pass = nullptr;

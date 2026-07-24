@@ -41,9 +41,9 @@ void Mesh::Purge() {
 }
 
 Mesh::Surface *Mesh::AllocSurface(int numVerts, int numIndexes) {
-    Surface *surf = new Surface;
+    Surface *surf = BE_NEW Surface;
     surf->materialIndex = 0;
-    surf->subMesh       = new SubMesh;
+    surf->subMesh       = BE_NEW SubMesh;
     surf->drawSurf      = nullptr;
     surf->viewCount     = 0;
     
@@ -53,9 +53,9 @@ Mesh::Surface *Mesh::AllocSurface(int numVerts, int numIndexes) {
 }
 
 Mesh::Surface *Mesh::AllocInstantiatedSurface(const Surface *refSurf, int meshType) {
-    Surface *surf = new Surface;
+    Surface *surf = BE_NEW Surface;
     surf->materialIndex = refSurf->materialIndex;
-    surf->subMesh       = new SubMesh;
+    surf->subMesh       = BE_NEW SubMesh;
     surf->drawSurf      = nullptr;
     surf->viewCount     = 0;
 
@@ -86,7 +86,7 @@ void Mesh::Instantiate(Type::Enum meshType) {
         gpuSkinningEnabled = SkinningJointCache::CapableGPUJointSkinning((SkinningJointCache::SkinningMethod::Enum)renderGlobal.skinningMethod, numJoints);
 
         if (gpuSkinningEnabled) {
-            skinningJointCache = new SkinningJointCache(numJoints);
+            skinningJointCache = BE_NEW SkinningJointCache(numJoints);
         }
     }
 

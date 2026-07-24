@@ -84,47 +84,47 @@ void GraphicsOpenGL::Shutdown() {
 
 void GraphicsOpenGL::InitHandles() {
     contextList.SetGranularity(16);
-    GLContext *zeroContext = new GLContext;
+    GLContext *zeroContext = BE_NEW GLContext;
     memset(zeroContext, 0, sizeof(*zeroContext));
     contextList.Append(zeroContext);
 
     stencilStateList.SetGranularity(32);
-    GLStencilState *zeroStencilState = new GLStencilState;
+    GLStencilState *zeroStencilState = BE_NEW GLStencilState;
     memset(zeroStencilState, 0, sizeof(*zeroStencilState));
     stencilStateList.Append(zeroStencilState);
 
     bufferList.SetGranularity(1024);
-    GLBuffer *zeroBuffer = new GLBuffer;
+    GLBuffer *zeroBuffer = BE_NEW GLBuffer;
     memset(zeroBuffer, 0, sizeof(*zeroBuffer));
     bufferList.Append(zeroBuffer);
 
     syncList.SetGranularity(8);
-    GLSync *zeroSync = new GLSync;
+    GLSync *zeroSync = BE_NEW GLSync;
     memset(zeroSync, 0, sizeof(*zeroSync));
     syncList.Append(zeroSync);
 
     textureList.SetGranularity(1024);
-    GLTexture *zeroTexture = new GLTexture;
+    GLTexture *zeroTexture = BE_NEW GLTexture;
     memset(zeroTexture, 0, sizeof(*zeroTexture));
     textureList.Append(zeroTexture);
 
     shaderList.SetGranularity(1024);
-    GLShader *zeroShader = new GLShader;
+    GLShader *zeroShader = BE_NEW GLShader;
     memset(zeroShader, 0, sizeof(*zeroShader));
     shaderList.Append(zeroShader);
 
     vertexFormatList.SetGranularity(64);
-    GLVertexFormat *zeroVertexFormat = new GLVertexFormat;
+    GLVertexFormat *zeroVertexFormat = BE_NEW GLVertexFormat;
     memset(zeroVertexFormat, 0, sizeof(*zeroVertexFormat));
     vertexFormatList.Append(zeroVertexFormat);
 
     renderTargetList.SetGranularity(64);
-    GLRenderTarget *zeroRenderTarget = new GLRenderTarget;
+    GLRenderTarget *zeroRenderTarget = BE_NEW GLRenderTarget;
     memset(zeroRenderTarget, 0, sizeof(*zeroRenderTarget));
     renderTargetList.Append(zeroRenderTarget);
 
     queryList.SetGranularity(32);
-    GLQuery *zeroQuery = new GLQuery;
+    GLQuery *zeroQuery = BE_NEW GLQuery;
     memset(zeroQuery, 0, sizeof(*zeroQuery));
     queryList.Append(zeroQuery);
 }

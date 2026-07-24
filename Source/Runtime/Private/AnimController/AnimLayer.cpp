@@ -32,14 +32,14 @@ AnimLayer::AnimLayer(AnimController *animController, const AnimLayer *animLayer)
 
     for (const auto &entry : stateHashMap) {
         AnimState *otherState = entry.second;
-        AnimState *state = new AnimState(this, otherState);
+        AnimState *state = BE_NEW AnimState(this, otherState);
         stateHashMap.Set(state->name, state);
     }
     this->defaultStateNum = animLayer->defaultStateNum;
     
     for (int i = 0; i < blendTrees.Count(); i++) {
         AnimBlendTree *otherBlendTree = blendTrees[i];
-        AnimBlendTree *tree = new AnimBlendTree(this, otherBlendTree);
+        AnimBlendTree *tree = BE_NEW AnimBlendTree(this, otherBlendTree);
     }
     this->nodes = animLayer->nodes;
     this->leafs = animLayer->leafs;
@@ -68,7 +68,7 @@ size_t AnimLayer::Size() const {
 }
 
 AnimBlendTree *AnimLayer::CreateBlendTree(const char *name) {
-    AnimBlendTree *blendTree = new AnimBlendTree(this, INVALID_ANIM_NODE);
+    AnimBlendTree *blendTree = BE_NEW AnimBlendTree(this, INVALID_ANIM_NODE);
     blendTree->SetName(name);
 
     int index = blendTrees.FindNull();
@@ -96,7 +96,7 @@ int32_t AnimLayer::CreateNode(const Vec3 &blendSpaceVector, AnimBlendTree *animB
     if (index == -1) {
         index = nodes.Append(nullptr);
     }
-    nodes[index] = new AnimNode;
+    nodes[index] = BE_NEW AnimNode;
 
     animBlendTree->SetNodeNum(index);
 
@@ -113,7 +113,7 @@ int32_t AnimLayer::CreateLeaf(const Vec3 &blendSpaceVector, AnimClip *animClip) 
     if (index == -1) {
         index = leafs.Append(nullptr);
     }
-    leafs[index] = new AnimLeaf;
+    leafs[index] = BE_NEW AnimLeaf;
 
     AnimLeaf *childLeaf = leafs[index];
     childLeaf->blendSpaceVector = blendSpaceVector;
@@ -199,7 +199,7 @@ AnimState *AnimLayer::FindState(const char *name) const {
 }
 
 AnimState *AnimLayer::CreateState(const char *name) {
-    AnimState *state = new AnimState(this);
+    AnimState *state = BE_NEW AnimState(this);
     state->SetName(name);
     stateHashMap.Set(state->name, state);
     return state;
@@ -274,7 +274,7 @@ AnimLayer::AnimTransition *AnimLayer::CreateTransition(const char *srcStateName,
     AnimState *dstState = FindState(dstStateName);
     assert(dstState);
 
-    AnimTransition *transition = new AnimTransition;
+    AnimTransition *transition = BE_NEW AnimTransition;
     transition->srcState = srcState;
     transition->dstState = dstState;
     transition->hasExitTime = false;

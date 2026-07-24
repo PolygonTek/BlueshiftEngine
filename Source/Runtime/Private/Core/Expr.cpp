@@ -874,7 +874,7 @@ void ExprData::SetTable(const char *name, int numElements, const float *elements
 
     strcpy(tables[numTables].name, name);
     tables[numTables].numElements = numElements;
-    tables[numTables].elements = new float[numElements];
+    tables[numTables].elements = BE_NEW float[numElements];
     memcpy(tables[numTables].elements, elements, numElements * sizeof(float));
     tables[numTables].snap = snap;
     tables[numTables].wrap = wrap;

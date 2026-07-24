@@ -210,7 +210,7 @@ Texture *TextureManager::AllocTexture(const char *hashName) {
         BE_FATALERROR("%s texture already allocated", hashName);
     }
     
-    Texture *texture = new Texture;
+    Texture *texture = BE_NEW Texture;
     texture->hashName = hashName;
     texture->name = hashName;
     texture->name.StripPath();

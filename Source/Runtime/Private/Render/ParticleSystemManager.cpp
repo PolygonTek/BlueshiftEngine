@@ -39,7 +39,7 @@ ParticleSystem *ParticleSystemManager::AllocParticleSystem(const char *hashName)
         BE_FATALERROR("%s particleSystem already allocated", hashName);
     }
 
-    ParticleSystem *particleSystem = new ParticleSystem;
+    ParticleSystem *particleSystem = BE_NEW ParticleSystem;
     particleSystem->hashName = hashName;
     particleSystem->name = hashName;
     particleSystem->name.StripPath();

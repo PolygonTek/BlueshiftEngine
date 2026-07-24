@@ -395,7 +395,7 @@ BE_INLINE HashTable<KeyT, ValueT, BucketGranularity>::HashTable(int newTableSize
     tableSize = newTableSize;
     tableSizeMask = tableSize - 1;
 
-    heads = new THashBucket *[tableSize];
+    heads = BE_NEW THashBucket *[tableSize];
     memset(heads, 0, sizeof(*heads) * tableSize);
     
     numEntries = 0;

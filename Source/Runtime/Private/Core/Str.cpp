@@ -36,7 +36,7 @@ void Str::ReAllocate(int amount, bool keepOld) {
 #ifdef USE_STRING_DATA_ALLOCATOR
     char *newBuffer = stringDataAllocator.Alloc(alloced);
 #else
-    char *newBuffer = new char[alloced];
+    char *newBuffer = BE_NEW char[alloced];
 #endif
     if (keepOld && data && len > 0) {
         data[len] = '\0';

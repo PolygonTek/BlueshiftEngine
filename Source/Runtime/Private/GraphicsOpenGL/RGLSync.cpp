@@ -19,7 +19,7 @@
 BE_NAMESPACE_BEGIN
 
 Graphics::Handle GraphicsOpenGL::CreateSync() {
-    GLSync *sync = new GLSync;
+    GLSync *sync = BE_NEW GLSync;
 
     int handle = syncList.FindNull();
     if (handle == -1) {

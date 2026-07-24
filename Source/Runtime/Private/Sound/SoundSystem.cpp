@@ -184,7 +184,7 @@ Sound *SoundSystem::AllocSound(const char *hashName) {
         BE_FATALERROR("'%s' sound buffer already allocated", hashName);
     }
 
-    Sound *sound = new Sound;
+    Sound *sound = BE_NEW Sound;
     sound->refCount = 1;
     sound->hashName = hashName;
     sound->name = hashName;

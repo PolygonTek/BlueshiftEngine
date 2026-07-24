@@ -166,7 +166,7 @@ PlatformBaseFile *PlatformWinFile::OpenFileRead(const char *filename) {
     if (handle == INVALID_HANDLE_VALUE) {
         return nullptr;
     }
-    return new PlatformWinFile(handle);
+    return BE_NEW PlatformWinFile(handle);
 }
 
 PlatformBaseFile *PlatformWinFile::OpenFileWrite(const char *filename) {
@@ -181,7 +181,7 @@ PlatformBaseFile *PlatformWinFile::OpenFileWrite(const char *filename) {
         BE_WARNLOG("Failed to CreateFile %s: %s", filename, lastErrorText.c_str());
         return nullptr;
     }
-    return new PlatformWinFile(handle);
+    return BE_NEW PlatformWinFile(handle);
 }
 
 PlatformBaseFile *PlatformWinFile::OpenFileAppend(const char *filename) {
@@ -194,7 +194,7 @@ PlatformBaseFile *PlatformWinFile::OpenFileAppend(const char *filename) {
     if (handle == INVALID_HANDLE_VALUE) {
         return nullptr;
     }
-    return new PlatformWinFile(handle);
+    return BE_NEW PlatformWinFile(handle);
 }
 
 bool PlatformWinFile::FileExists(const char *filename) {
@@ -627,7 +627,7 @@ PlatformWinFileMapping *PlatformWinFileMapping::OpenFileRead(const char *filenam
 
     size_t size = (size_t)GetFileSize(fileHandle, 0);
 
-    return new PlatformWinFileMapping(fileHandle, fileMappingHandle, size, data);
+    return BE_NEW PlatformWinFileMapping(fileHandle, fileMappingHandle, size, data);
 }
 
 PlatformWinFileMapping *PlatformWinFileMapping::OpenFileReadWrite(const char *filename, int newSize) {
@@ -664,7 +664,7 @@ PlatformWinFileMapping *PlatformWinFileMapping::OpenFileReadWrite(const char *fi
         size = (size_t)GetFileSize(fileHandle, 0);
     }
 
-    return new PlatformWinFileMapping(fileHandle, fileMappingHandle, size, data);
+    return BE_NEW PlatformWinFileMapping(fileHandle, fileMappingHandle, size, data);
 }
 
 BE_NAMESPACE_END

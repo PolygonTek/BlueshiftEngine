@@ -31,13 +31,13 @@ PlatformAbstract *  platform = nullptr;
 
 void Platform::Init() {
 #ifdef __WIN32__
-    platform = new PlatformWin;
+    platform = BE_NEW PlatformWin;
 #elif defined __MACOSX__
-    platform = new PlatformMacOS;
+    platform = BE_NEW PlatformMacOS;
 #elif defined __IOS__
-    platform = new PlatformIOS;
+    platform = BE_NEW PlatformIOS;
 #elif defined __ANDROID__
-    platform = new PlatformAndroid;
+    platform = BE_NEW PlatformAndroid;
 #endif
 
     platform->Init();

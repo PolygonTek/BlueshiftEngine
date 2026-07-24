@@ -136,7 +136,7 @@ Mesh *MeshManager::AllocMesh(const char *hashName) {
         BE_FATALERROR("%s mesh already allocated", hashName);
     }
 
-    Mesh *mesh = new Mesh;
+    Mesh *mesh = BE_NEW Mesh;
     mesh->refCount = 1;
     mesh->hashName = hashName;
     mesh->name = hashName;
@@ -148,7 +148,7 @@ Mesh *MeshManager::AllocMesh(const char *hashName) {
 }
 
 Mesh *MeshManager::AllocInstantiatedMesh(Mesh *refMesh) {
-    Mesh *mesh = new Mesh;
+    Mesh *mesh = BE_NEW Mesh;
     mesh->refCount = 1;
     mesh->hashName = refMesh->hashName;
     mesh->name = refMesh->name;

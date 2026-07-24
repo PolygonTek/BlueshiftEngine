@@ -416,7 +416,7 @@ Shader *ShaderManager::AllocShader(const char *hashName) {
         BE_FATALERROR("%s shader already allocated", hashName);
     }
 
-    Shader *shader = new Shader;
+    Shader *shader = BE_NEW Shader;
     shader->hashName = hashName;
     shader->hashName.StripFileExtension(); // Remove '.shader'
     shader->name = hashName;

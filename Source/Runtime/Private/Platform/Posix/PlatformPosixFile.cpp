@@ -150,7 +150,7 @@ PlatformBaseFile *PlatformPosixFile::OpenFileRead(const char *filename) {
     if (!fp) {
         return nullptr;
     }
-    return new PlatformPosixFile(fp);
+    return BE_NEW PlatformPosixFile(fp);
 }
 
 PlatformBaseFile *PlatformPosixFile::OpenFileWrite(const char *filename) {
@@ -159,7 +159,7 @@ PlatformBaseFile *PlatformPosixFile::OpenFileWrite(const char *filename) {
     if (!fp) {
         return nullptr;
     }    
-    return new PlatformPosixFile(fp);
+    return BE_NEW PlatformPosixFile(fp);
 }
 
 PlatformBaseFile *PlatformPosixFile::OpenFileAppend(const char *filename) {
@@ -168,7 +168,7 @@ PlatformBaseFile *PlatformPosixFile::OpenFileAppend(const char *filename) {
     if (!fp) {
         return nullptr;
     }    
-    return new PlatformPosixFile(fp);
+    return BE_NEW PlatformPosixFile(fp);
 }
 
 bool PlatformPosixFile::FileExists(const char *filename) {
@@ -491,7 +491,7 @@ PlatformPosixFileMapping *PlatformPosixFileMapping::OpenFileRead(const char *fil
         return nullptr;
     }
 
-    return new PlatformPosixFileMapping(fd, size, data);
+    return BE_NEW PlatformPosixFileMapping(fd, size, data);
 }
 
 PlatformPosixFileMapping *PlatformPosixFileMapping::OpenFileReadWrite(const char *filename, int newSize) {
@@ -515,7 +515,7 @@ PlatformPosixFileMapping *PlatformPosixFileMapping::OpenFileReadWrite(const char
         return nullptr;
     }
 
-    return new PlatformPosixFileMapping(fd, size, data);
+    return BE_NEW PlatformPosixFileMapping(fd, size, data);
 }
 
 BE_NAMESPACE_END

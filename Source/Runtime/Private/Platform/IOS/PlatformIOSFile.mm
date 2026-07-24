@@ -68,7 +68,7 @@ PlatformBaseFile *PlatformIOSFile::OpenFileRead(const char *filename) {
         }
     }
     
-    return new PlatformIOSFile(fp);
+    return BE_NEW PlatformIOSFile(fp);
 }
 
 PlatformBaseFile *PlatformIOSFile::OpenFileWrite(const char *filename) {
@@ -78,7 +78,7 @@ PlatformBaseFile *PlatformIOSFile::OpenFileWrite(const char *filename) {
         return nullptr;
     }
     
-    return new PlatformIOSFile(fp);
+    return BE_NEW PlatformIOSFile(fp);
 }
 
 PlatformBaseFile *PlatformIOSFile::OpenFileAppend(const char *filename) {
@@ -88,7 +88,7 @@ PlatformBaseFile *PlatformIOSFile::OpenFileAppend(const char *filename) {
         return nullptr;
     }
     
-    return new PlatformIOSFile(fp);
+    return BE_NEW PlatformIOSFile(fp);
 }
 
 bool PlatformIOSFile::FileExists(const char *filename) {
@@ -261,7 +261,7 @@ PlatformIOSFileMapping *PlatformIOSFileMapping::OpenFileRead(const char *filenam
         return nullptr;
     }
 
-    return new PlatformIOSFileMapping(fd, size, data);
+    return BE_NEW PlatformIOSFileMapping(fd, size, data);
 }
 
 PlatformIOSFileMapping *PlatformIOSFileMapping::OpenFileReadWrite(const char *filename, int newSize) {
@@ -288,7 +288,7 @@ PlatformIOSFileMapping *PlatformIOSFileMapping::OpenFileReadWrite(const char *fi
         return nullptr;
     }
 
-    return new PlatformIOSFileMapping(fd, size, data);
+    return BE_NEW PlatformIOSFileMapping(fd, size, data);
 }
 
 BE_NAMESPACE_END

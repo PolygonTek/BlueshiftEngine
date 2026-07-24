@@ -166,7 +166,7 @@ Buffer *Buffer::Alloc()
 #elif defined __APPLE__
     newBuffer = (Buffer *) OSAtomicDequeue(&s_head, offsetof(Buffer, m_entry));
     if (!newBuffer)
-        newBuffer = new Buffer; // aligned_malloc
+        newBuffer = BE_NEW Buffer; // aligned_malloc
 #endif
     
 	newBuffer->m_dwSize = 0;

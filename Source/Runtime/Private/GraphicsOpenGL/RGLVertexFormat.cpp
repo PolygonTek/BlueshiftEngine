@@ -37,7 +37,7 @@ static constexpr int GLTypeSize[] = {
 };
 
 Graphics::Handle GraphicsOpenGL::CreateVertexFormat(int numElements, const VertexElement *elements) {
-    GLVertexFormat *vertexFormat = new GLVertexFormat;
+    GLVertexFormat *vertexFormat = BE_NEW GLVertexFormat;
     
     memset(vertexFormat->vertexSize, 0, sizeof(vertexFormat->vertexSize));
     memset(vertexFormat->vertexElements, 0, sizeof(vertexFormat->vertexElements));

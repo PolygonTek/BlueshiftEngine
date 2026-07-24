@@ -76,7 +76,7 @@ void Sound::Create(Pcm &pcm) {
 void Sound::CreateStatic(Pcm &pcm) {
     isStream = false;
 
-    soundBuffer = new SoundBuffer;
+    soundBuffer = BE_NEW SoundBuffer;
 
     int pcmDataSize = 0;
     byte *pcmData = nullptr;
@@ -138,7 +138,7 @@ Sound *Sound::Instantiate() {
     }
 
     // If not found, duplicate original sound buffer.
-    Sound *s = new Sound;
+    Sound *s = BE_NEW Sound;
     s->refCount = 1;
     s->DuplicateFrom(this);
     s->dupNode.SetOwner(s);
@@ -161,10 +161,10 @@ void Sound::DuplicateFrom(Sound *sound) {
     isStream        = sound->isStream;
 
     if (isStream) {
-        soundBuffer = new SoundBuffer;
+        soundBuffer = BE_NEW SoundBuffer;
         soundBuffer->CreateStreamBuffer(numChannels, bitsWidth, sampleRates);
     } else {
-        soundBuffer = new SoundBuffer;
+        soundBuffer = BE_NEW SoundBuffer;
         soundBuffer->DuplicateBuffer(sound->soundBuffer);
     }
 }

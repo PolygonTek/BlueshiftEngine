@@ -104,7 +104,7 @@ extern const EventDef EV_ImmediateDestroy;
 #define OBJECT_DECLARATION(visualname, classname, superclassname) \
     BE1::MetaObject *classname::GetMetaObject() const { return &classname::metaObject; } \
     BE1::Object *classname::CreateInstance(const BE1::Guid &guid) { \
-        classname *ptr = new classname; \
+        classname *ptr = BE_NEW classname; \
         if (!ptr->InitInstance(guid)) return nullptr;\
         return ptr; \
     } \

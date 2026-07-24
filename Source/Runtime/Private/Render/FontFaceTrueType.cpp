@@ -110,7 +110,7 @@ void TrueTypeFontFace::ClearGlyphCaches() {
 bool TrueTypeFontFace::Load(const char *filename, int fontSize) {
     Purge();
 
-    trueTypeFont = new TrueTypeFont;
+    trueTypeFont = BE_NEW TrueTypeFont;
     if (!trueTypeFont->Load(filename, fontSize)) {
         return false;
     }
@@ -231,7 +231,7 @@ FontGlyph *TrueTypeFontFace::CacheGlyph(char32_t unicodeChar, Font::RenderMode r
         ascender = ascender >> 6;
     }
 
-    FontGlyph *gl = new FontGlyph;
+    FontGlyph *gl = BE_NEW FontGlyph;
     gl->charCode    = unicodeChar;
     gl->width       = glyphWidth;
     gl->height      = glyphHeight;

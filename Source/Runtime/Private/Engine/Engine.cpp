@@ -71,7 +71,7 @@ void Engine::InitBase(uint32_t maxTaskCount, const char *baseDir, const streamOu
 
 #ifdef USE_TASK_MANAGER
     // Create the task manager with the given max task count.
-    taskManager = new TaskManager(maxTaskCount);
+    taskManager = BE_NEW TaskManager(maxTaskCount);
 
     // Start as many task threads as there are physical CPU cores.
     int numCores = PlatformSystem::NumCPUCores();

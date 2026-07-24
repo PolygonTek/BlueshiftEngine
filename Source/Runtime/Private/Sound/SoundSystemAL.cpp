@@ -111,7 +111,7 @@ bool SoundSystem::InitDevice(void *windowHandle) {
 
         ALenum error = alGetError();
         if (error == AL_NO_ERROR) {
-            SoundSource *source = new SoundSource;
+            SoundSource *source = BE_NEW SoundSource;
             source->alSourceId = alSourceId;
             sources.Append(source);
             freeSources.Append(source);

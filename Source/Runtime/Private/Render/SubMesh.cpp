@@ -1382,10 +1382,10 @@ const Mat3 SubMesh::CalculateInertiaTensor(const Vec3 &centroid, float mass) con
 void SubMesh::OptimizeIndexedTriangles() {
 #if 0
     // NOTE: consider if size of the index is greater than 16 bit number or not
-    PrimitiveGroup *srcPrimGroup = new PrimitiveGroup;
+    PrimitiveGroup *srcPrimGroup = BE_NEW PrimitiveGroup;
     srcPrimGroup->type = PrimType::PT_LIST;
     srcPrimGroup->numIndices = numIndexes;
-    srcPrimGroup->indices = new unsigned short [numIndexes];
+    srcPrimGroup->indices = BE_NEW unsigned short [numIndexes];
 
     for (int i = 0; i < numIndexes; i++) {
         srcPrimGroup->indices[i] = indexes[i];

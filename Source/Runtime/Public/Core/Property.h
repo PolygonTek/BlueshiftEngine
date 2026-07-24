@@ -392,21 +392,21 @@ public:
 
 #define REGISTER_ACCESSOR_PROPERTY(name, label, type, getter, setter, defaultValue, desc, flags) \
     Class::metaObject.RegisterProperty(BE1::PropertyInfo(name, label, BE1::VariantType<type>::GetType(), \
-        new BE1::PropertyAccessorImpl<Class, type>(&Class::getter, &Class::setter), defaultValue, desc, flags))
+        BE_NEW BE1::PropertyAccessorImpl<Class, type>(&Class::getter, &Class::setter), defaultValue, desc, flags))
 
 #define REGISTER_ACCESSOR_ARRAY_PROPERTY(name, label, type, getter, setter, getCount, setCount, defaultValue, desc, flags) \
     Class::metaObject.RegisterProperty(BE1::PropertyInfo(name, label, BE1::VariantType<type>::GetType(), \
-        new BE1::ArrayPropertyAccessorImpl<Class, type>(&Class::getter, &Class::setter, &Class::getCount, &Class::setCount), \
+        BE_NEW BE1::ArrayPropertyAccessorImpl<Class, type>(&Class::getter, &Class::setter, &Class::getCount, &Class::setCount), \
         defaultValue, desc, flags | BE1::PropertyInfo::Flag::Array))
 
 #define REGISTER_MIXED_ACCESSOR_PROPERTY(name, label, type, getter, setter, defaultValue, desc, flags) \
     Class::metaObject.RegisterProperty(BE1::PropertyInfo(name, label, BE1::VariantType<type>::GetType(), \
-        new BE1::PropertyAccessorImpl<Class, type, BE1::MixedPropertyTrait>(&Class::getter, &Class::setter), \
+        BE_NEW BE1::PropertyAccessorImpl<Class, type, BE1::MixedPropertyTrait>(&Class::getter, &Class::setter), \
         defaultValue, desc, flags))
 
 #define REGISTER_MIXED_ACCESSOR_ARRAY_PROPERTY(name, label, type, getter, setter, getCount, setCount, defaultValue, desc, flags) \
     Class::metaObject.RegisterProperty(BE1::PropertyInfo(name, label, BE1::VariantType<type>::GetType(), \
-        new BE1::ArrayPropertyAccessorImpl<Class, type, BE1::MixedPropertyTrait>(&Class::getter, &Class::setter, &Class::getCount, &Class::setCount), \
+        BE_NEW BE1::ArrayPropertyAccessorImpl<Class, type, BE1::MixedPropertyTrait>(&Class::getter, &Class::setter, &Class::getCount, &Class::setCount), \
         defaultValue, desc, flags | BE1::PropertyInfo::Flag::Array))
 
 BE_NAMESPACE_END

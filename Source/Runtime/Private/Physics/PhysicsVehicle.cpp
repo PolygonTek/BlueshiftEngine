@@ -48,7 +48,7 @@ PhysVehicle::PhysVehicle(PhysRigidBody *chassisBody) {
     this->vehicle = nullptr;
     this->physicsWorld = nullptr;
 
-    vehicleRayCaster = new MyVehicleRaycaster(nullptr);
+    vehicleRayCaster = BE_NEW MyVehicleRaycaster(nullptr);
     vehicle = new btRaycastVehicle(btRaycastVehicle::btVehicleTuning(), chassisBody->GetRigidBody(), vehicleRayCaster);
     vehicle->setCoordinateSystem(1, 2, 0);
 }

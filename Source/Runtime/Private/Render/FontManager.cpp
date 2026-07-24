@@ -55,7 +55,7 @@ Font *FontManager::AllocFont(const char *hashName, uint32_t fontSize) {
         BE_FATALERROR("%s font already allocated", hashName);
     }
 
-    Font *font = new Font;
+    Font *font = BE_NEW Font;
     font->hashName = hashName;
     font->name = hashName;
     font->name.StripPath();

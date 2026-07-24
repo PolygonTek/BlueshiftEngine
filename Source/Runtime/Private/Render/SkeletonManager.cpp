@@ -45,7 +45,7 @@ Skeleton *SkeletonManager::AllocSkeleton(const char *hashName) {
         BE_FATALERROR("%s skeleton already allocated", hashName);
     }
 
-    Skeleton *skeleton = new Skeleton;
+    Skeleton *skeleton = BE_NEW Skeleton;
     skeleton->hashName = hashName;
     skeleton->name = hashName;
     skeleton->name.StripPath();

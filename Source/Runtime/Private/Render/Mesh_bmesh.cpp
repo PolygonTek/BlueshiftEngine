@@ -38,7 +38,7 @@ bool Mesh::LoadBinaryMesh(const char *filename) {
 
     numJoints = bMeshHeader->numJoints;
     if (numJoints > 0) {
-        joints = new Joint[numJoints];
+        joints = BE_NEW Joint[numJoints];
 
         // --- joints ---
         for (int jointIndexes = 0; jointIndexes < numJoints; jointIndexes++) {

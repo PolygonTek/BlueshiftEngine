@@ -49,19 +49,19 @@ void Variant::SetType(Type::Enum type) {
 
     switch (type) {
     case Type::Str:
-        value.ptr1 = new Str();
+        value.ptr1 = BE_NEW Str();
         break;
     case Type::Mat3:
-        value.ptr1 = new Mat3();
+        value.ptr1 = BE_NEW Mat3();
         break;
     case Type::Mat3x4:
-        value.ptr1 = new Mat3x4();
+        value.ptr1 = BE_NEW Mat3x4();
         break;
     case Type::Mat4:
-        value.ptr1 = new Mat4();
+        value.ptr1 = BE_NEW Mat4();
         break;
     case Type::MinMaxCurve:
-        value.ptr1 = new MinMaxCurve();
+        value.ptr1 = BE_NEW MinMaxCurve();
         break;
     default:
         break;

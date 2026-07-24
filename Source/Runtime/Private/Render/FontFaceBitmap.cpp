@@ -45,7 +45,7 @@ Texture *BitmapFontFace::AddBitmap(const char *filename) {
 }
 
 FontGlyph *BitmapFontFace::AddGlyph(char32_t charCode, int width, int height, int offsetX, int offsetY, int advanceX, int advanceY, float s, float t, float s2, float t2, int materialIndex) {
-    FontGlyph *glyph = new FontGlyph;
+    FontGlyph *glyph = BE_NEW FontGlyph;
 
     glyph->charCode = charCode;
     glyph->width = width;

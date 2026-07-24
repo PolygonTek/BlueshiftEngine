@@ -121,7 +121,7 @@ void ComCamera::Init() {
     renderWorld = GetGameWorld()->GetRenderWorld();
 
     if (!renderCamera) {
-        renderCamera = new RenderCamera;
+        renderCamera = BE_NEW RenderCamera;
     }
 
     renderCameraDef.flags = RenderCamera::Flag::TexturedMode | RenderCamera::Flag::NoSubViews;

@@ -56,7 +56,7 @@ void LuaVM::Init() {
         Shutdown();
     }
 
-    state = new LuaCpp::State(true);
+    state = BE_NEW LuaCpp::State(true);
 
 #if 0
     int major, minor;

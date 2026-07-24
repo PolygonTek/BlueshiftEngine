@@ -608,7 +608,7 @@ bool Image::WritePVR(File *fp) const {
     metaDataBlock.DevFOURCC = PVRTEX3_IDENT;
     metaDataBlock.u32Key = ePVRTMetaDataTextureOrientation;
     metaDataBlock.u32DataSize = 3;
-    metaDataBlock.Data = new PVRTuint8[metaDataBlock.u32DataSize];
+    metaDataBlock.Data = BE_NEW PVRTuint8[metaDataBlock.u32DataSize];
     metaDataBlock.Data[0] = ePVRTOrientRight;
     metaDataBlock.Data[1] = ePVRTOrientUp;
     metaDataBlock.Data[2] = ePVRTOrientIn;

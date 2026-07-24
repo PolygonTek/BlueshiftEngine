@@ -127,8 +127,8 @@ void FileSystem::AddSearchPath(const char *path) {
         return;
     }
 
-    SearchPath *search = new SearchPath;
-    search->pathname = new char[MaxAbsolutePath];
+    SearchPath *search = BE_NEW SearchPath;
+    search->pathname = BE_NEW char[MaxAbsolutePath];
     strcpy(search->pathname, path);
     search->archive = nullptr;
     search->next = searchPath;
@@ -240,7 +240,7 @@ void FileSystem::AddSearchPath_ZIP(const char *path, const char *filename) {
         return;
     }
 
-    ZipArchive *archive = new ZipArchive;
+    ZipArchive *archive = BE_NEW ZipArchive;
         
     strcpy(archive->fullPath, fullpath);
     strcpy(archive->name, filename);
@@ -263,7 +263,7 @@ void FileSystem::AddSearchPath_ZIP(const char *path, const char *filename) {
 
         Str::ConvertPathSeperator(entryFilename, PATHSEPERATOR_CHAR);
 
-        ZipEntry *entry = new ZipEntry;
+        ZipEntry *entry = BE_NEW ZipEntry;
         strcpy(entry->name, entryFilename);
         entry->unzOffset = unzGetOffset(z_file);
         entry->compressedSize = z_entry_info.compressed_size;
@@ -275,7 +275,7 @@ void FileSystem::AddSearchPath_ZIP(const char *path, const char *filename) {
         unzGoToNextFile(z_file);
     }
 
-    SearchPath *search = new SearchPath;
+    SearchPath *search = BE_NEW SearchPath;
     search->archive = archive;
     search->next = searchPath;
     searchPath = search;
@@ -577,7 +577,7 @@ File *FileSystem::OpenFileRead(const char *filename, bool useSearchPath, size_t 
             BE_LOG("FileSystem::OpenFileRead: %s\n", filename);
         }
         
-        FileReal *file = new FileReal(filename, pf);
+        FileReal *file = BE_NEW FileReal(filename, pf);
         if (fileSize) {
             file->size = *fileSize = pf->Size(); //PlatformFile::FileSize(filename);
         }
@@ -615,7 +615,7 @@ File *FileSystem::OpenFileRead(const char *filename, bool useSearchPath, size_t 
 
                 unzSetOffset(archive->unzArchive, entry->unzOffset);
                 unzOpenCurrentFile(archive->unzArchive);
-                FileInZip *file = new FileInZip(filename, (void *)archive->unzArchive);
+                FileInZip *file = BE_NEW FileInZip(filename, (void *)archive->unzArchive);
 
                 if (fileSize) {
                     file->size = *fileSize = entry->uncompressedSize;
@@ -635,7 +635,7 @@ File *FileSystem::OpenFileRead(const char *filename, bool useSearchPath, size_t 
                     BE_LOG("FileSystem::OpenFileRead: %s (found in '%s')\n", relativePath.c_str(), s->pathname);
                 }
 
-                FileReal *file = new FileReal(relativePath, pf);
+                FileReal *file = BE_NEW FileReal(relativePath, pf);
                 
                 if (fileSize) {
                     file->size = *fileSize = pf->Size(); // PlatformFile::FileSize(filename);
@@ -676,7 +676,7 @@ File *FileSystem::OpenFileWrite(const char *filename) {
         }
     }
 
-    FileReal *file = new FileReal(filename, pf);
+    FileReal *file = BE_NEW FileReal(filename, pf);
     return file;
 }
 
@@ -696,7 +696,7 @@ File *FileSystem::OpenFileAppend(const char *filename) {
         return nullptr;
     }
 
-    FileReal *file = new FileReal(filename, pf);
+    FileReal *file = BE_NEW FileReal(filename, pf);
     return file;
 }
 

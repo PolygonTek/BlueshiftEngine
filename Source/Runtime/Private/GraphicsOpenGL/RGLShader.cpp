@@ -987,7 +987,7 @@ Graphics::Handle GraphicsOpenGL::CreateShader(const char *name, const char *vsTe
         qsort(uniformBlocks, numUniformBlocks, sizeof(uniformBlocks[0]), CompareUniformBlock);
     }
 
-    GLShader *shader = new GLShader;
+    GLShader *shader = BE_NEW GLShader;
     Str::Copynz(shader->name, name, COUNT_OF(shader->name));
     shader->programObject = programObject;
     shader->numUniformConstants = numUniformConstants;

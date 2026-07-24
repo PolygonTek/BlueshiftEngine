@@ -152,7 +152,7 @@ bool SoundSystem::InitDevice(void *windowHandle) {
 
     // Initialize sources.
     for (int sourceIndex = 0; sourceIndex < MaxSources; sourceIndex++) {
-        SoundSource *source = new SoundSource;
+        SoundSource *source = BE_NEW SoundSource;
         sources.Append(source);
         freeSources.Append(source);
     }

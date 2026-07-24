@@ -55,11 +55,11 @@ void ComSpline::Init() {
     Component::Init();
 
     if (!originCurve) {
-        originCurve = new Curve_BSpline<Vec3>();
+        originCurve = BE_NEW Curve_BSpline<Vec3>();
     }
 
     if (!anglesCurve) {
-        anglesCurve = new Curve_BSpline<Angles>();
+        anglesCurve = BE_NEW Curve_BSpline<Angles>();
     }
 
     // Mark as initialized

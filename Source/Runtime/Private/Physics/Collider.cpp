@@ -50,7 +50,7 @@ void Collider::Purge() {
 }
 
 CollisionMesh *Collider::AllocCollisionMesh(int numVerts, int numIndexes, bool materialIndexes) const {
-    CollisionMesh *collisionMesh    = new CollisionMesh;
+    CollisionMesh *collisionMesh    = BE_NEW CollisionMesh;
     collisionMesh->numVerts         = numVerts;
     collisionMesh->verts            = (Vec3 *)Mem_Alloc16(numVerts * sizeof(collisionMesh->verts[0]));
     collisionMesh->numIndexes       = numIndexes;
@@ -336,8 +336,8 @@ void Collider::CreateConvexDecomp(const Mesh *mesh, const Vec3 &scale, float mar
         size_t numPoints = myHACD.GetNPointsCH(i);
         size_t numTris = myHACD.GetNTrianglesCH(i);
                 
-        HACD::Vec3<HACD::Real> *chPoints = new HACD::Vec3<HACD::Real>[numPoints];
-        HACD::Vec3<long> *chTris = new HACD::Vec3<long>[numTris];
+        HACD::Vec3<HACD::Real> *chPoints = BE_NEW HACD::Vec3<HACD::Real>[numPoints];
+        HACD::Vec3<long> *chTris = BE_NEW HACD::Vec3<long>[numTris];
         myHACD.GetCH(i, chPoints, chTris);
 /*
         // to shrink

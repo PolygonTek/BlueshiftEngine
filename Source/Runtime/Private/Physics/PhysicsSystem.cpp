@@ -58,7 +58,7 @@ void PhysicsSystem::Shutdown() {
 }
 
 PhysicsWorld *PhysicsSystem::AllocPhysicsWorld() {
-    PhysicsWorld *physicsWorld = new PhysicsWorld;
+    PhysicsWorld *physicsWorld = BE_NEW PhysicsWorld;
     physicsWorlds.Append(physicsWorld);
 
     return physicsWorld;
@@ -158,7 +158,7 @@ PhysCollidable *PhysicsSystem::CreateCollidable(const PhysCollidableDesc &desc) 
 
             rigidBody->setSleepingThresholds(SystemUnitToPhysicsUnit(0.2f), 2.0f);
 
-            PhysRigidBody *rb = new PhysRigidBody(rigidBody, totalCentroid);
+            PhysRigidBody *rb = BE_NEW PhysRigidBody(rigidBody, totalCentroid);
             rb->SetRestitution(desc.restitution);
             rb->SetFriction(desc.friction);
             rb->SetRollingFriction(desc.rollingFriction);
@@ -182,7 +182,7 @@ PhysCollidable *PhysicsSystem::CreateCollidable(const PhysCollidableDesc &desc) 
             ghost->setCollisionFlags(ghost->getCollisionFlags() | btCollisionObject::CF_NO_CONTACT_RESPONSE);
             ghost->setActivationState(DISABLE_DEACTIVATION);
 
-            PhysSensor *sensor = new PhysSensor(ghost, totalCentroid);
+            PhysSensor *sensor = BE_NEW PhysSensor(ghost, totalCentroid);
 
             ghost->setUserPointer(sensor);
 
@@ -313,7 +313,7 @@ PhysCollidable *PhysicsSystem::CreateCollidable(const PhysCollidableDesc &desc) 
             softBody->setPose(true, true);
         }
 
-        PhysSoftBody *sb = new PhysSoftBody(softBody, totalCentroid);
+        PhysSoftBody *sb = BE_NEW PhysSoftBody(softBody, totalCentroid);
         sb->SetRestitution(desc.restitution);
         sb->SetFriction(desc.friction);
         sb->SetWindVelocity(desc.windVelocity);
@@ -380,44 +380,44 @@ PhysConstraint *PhysicsSystem::CreateConstraint(const PhysConstraintDesc &desc) 
     switch (desc.type) {
     case PhysConstraint::Type::Generic:
         if (!desc.bodyA) {
-            constraint = new PhysGenericConstraint(desc.bodyB, desc.anchorInB, desc.axisInB);
+            constraint = BE_NEW PhysGenericConstraint(desc.bodyB, desc.anchorInB, desc.axisInB);
         } else {
-            constraint = new PhysGenericConstraint(desc.bodyA, desc.anchorInA, desc.axisInA, desc.bodyB, desc.anchorInB, desc.axisInB);
+            constraint = BE_NEW PhysGenericConstraint(desc.bodyA, desc.anchorInA, desc.axisInA, desc.bodyB, desc.anchorInB, desc.axisInB);
         }
         break;
     case PhysConstraint::Type::GenericSpring:
         if (!desc.bodyA) {
-            constraint = new PhysGenericSpringConstraint(desc.bodyB, desc.anchorInB, desc.axisInB);
+            constraint = BE_NEW PhysGenericSpringConstraint(desc.bodyB, desc.anchorInB, desc.axisInB);
         } else {
-            constraint = new PhysGenericSpringConstraint(desc.bodyA, desc.anchorInA, desc.axisInA, desc.bodyB, desc.anchorInB, desc.axisInB);
+            constraint = BE_NEW PhysGenericSpringConstraint(desc.bodyA, desc.anchorInA, desc.axisInA, desc.bodyB, desc.anchorInB, desc.axisInB);
         }
         break;
     case PhysConstraint::Type::Point2Point:
         if (!desc.bodyA) {
-            constraint = new PhysP2PConstraint(desc.bodyB, desc.anchorInB);
+            constraint = BE_NEW PhysP2PConstraint(desc.bodyB, desc.anchorInB);
         } else {
-            constraint = new PhysP2PConstraint(desc.bodyA, desc.anchorInA, desc.bodyB, desc.anchorInB);
+            constraint = BE_NEW PhysP2PConstraint(desc.bodyA, desc.anchorInA, desc.bodyB, desc.anchorInB);
         }
         break;
     case PhysConstraint::Type::Hinge:
         if (!desc.bodyA) {
-            constraint = new PhysHingeConstraint(desc.bodyB, desc.anchorInB, desc.axisInB);
+            constraint = BE_NEW PhysHingeConstraint(desc.bodyB, desc.anchorInB, desc.axisInB);
         } else {
-            constraint = new PhysHingeConstraint(desc.bodyA, desc.anchorInA, desc.axisInA, desc.bodyB, desc.anchorInB, desc.axisInB);
+            constraint = BE_NEW PhysHingeConstraint(desc.bodyA, desc.anchorInA, desc.axisInA, desc.bodyB, desc.anchorInB, desc.axisInB);
         }
         break;
     case PhysConstraint::Type::Slider:
         if (!desc.bodyA) {
-            constraint = new PhysSliderConstraint(desc.bodyB, desc.anchorInB, desc.axisInB);
+            constraint = BE_NEW PhysSliderConstraint(desc.bodyB, desc.anchorInB, desc.axisInB);
         } else {
-            constraint = new PhysSliderConstraint(desc.bodyA, desc.anchorInA, desc.axisInA, desc.bodyB, desc.anchorInB, desc.axisInB);
+            constraint = BE_NEW PhysSliderConstraint(desc.bodyA, desc.anchorInA, desc.axisInA, desc.bodyB, desc.anchorInB, desc.axisInB);
         }
         break;
     case PhysConstraint::Type::SwingTwist:
         if (!desc.bodyA) {
-            constraint = new PhysSwingTwistConstraint(desc.bodyB, desc.anchorInB, desc.axisInB);
+            constraint = BE_NEW PhysSwingTwistConstraint(desc.bodyB, desc.anchorInB, desc.axisInB);
         } else {
-            constraint = new PhysSwingTwistConstraint(desc.bodyA, desc.anchorInA, desc.axisInA, desc.bodyB, desc.anchorInB, desc.axisInB);
+            constraint = BE_NEW PhysSwingTwistConstraint(desc.bodyA, desc.anchorInA, desc.axisInA, desc.bodyB, desc.anchorInB, desc.axisInB);
         }
         break;
     default:
@@ -441,7 +441,7 @@ void PhysicsSystem::DestroyConstraint(PhysConstraint *constraint) {
 }
 
 PhysVehicle *PhysicsSystem::CreateVehicle(const PhysVehicleDesc &desc) {
-    PhysVehicle *vehicle = new PhysVehicle(desc.chassisBody);
+    PhysVehicle *vehicle = BE_NEW PhysVehicle(desc.chassisBody);
 
     for (const PhysWheelDesc &wheelDesc : desc.wheels) {
         vehicle->AddWheel(wheelDesc.chassisLocalOrigin, wheelDesc.chassisLocalAxis, wheelDesc.radius,

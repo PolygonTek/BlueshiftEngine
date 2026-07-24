@@ -42,11 +42,11 @@ void HashIndex::Allocate(const int newHashSize, const int newIndexSize) {
     Free();
 
     hashSize = newHashSize;
-    hashTable = new int [hashSize];
+    hashTable = BE_NEW int [hashSize];
     memset(hashTable, 0xFF, hashSize * sizeof(hashTable[0]));
 
     indexSize = newIndexSize;
-    indexChain = new int [indexSize];
+    indexChain = BE_NEW int [indexSize];
     memset(indexChain, 0xFF, indexSize * sizeof(indexChain[0]));
     
     hashMask = hashSize - 1;
@@ -83,7 +83,7 @@ HashIndex &HashIndex::operator=(const HashIndex &rhs) {
                 }
 
                 hashSize = rhs.hashSize;
-                hashTable = new int[hashSize];
+                hashTable = BE_NEW int[hashSize];
             }
 
             if (rhs.indexSize != indexSize || indexChain == EmptyTable) {
@@ -92,7 +92,7 @@ HashIndex &HashIndex::operator=(const HashIndex &rhs) {
                 }
 
                 indexSize = rhs.indexSize;
-                indexChain = new int[indexSize];
+                indexChain = BE_NEW int[indexSize];
             }
             memcpy(hashTable, rhs.hashTable, hashSize * sizeof(hashTable[0]));
             memcpy(indexChain, rhs.indexChain, indexSize * sizeof(indexChain[0]));
@@ -136,7 +136,7 @@ void HashIndex::ResizeIndex(const int newIndexSize) {
     int *oldIndexChain = indexChain;
 
     // Allocate new index chain data.
-    indexChain = new int [newSize];
+    indexChain = BE_NEW int [newSize];
     // Copy old index chain data.
     memcpy(indexChain, oldIndexChain, indexSize * sizeof(int));
     // Fill -1 for redundant values.
@@ -154,7 +154,7 @@ float HashIndex::GetVariance() const {
 
     int totalItems = 0;
 
-    int *numHashItems = new int [hashSize];
+    int *numHashItems = BE_NEW int [hashSize];
 
     for (int i = 0; i < hashSize; i++) {
         numHashItems[i] = 0;

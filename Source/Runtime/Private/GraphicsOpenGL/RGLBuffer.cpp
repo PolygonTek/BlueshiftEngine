@@ -64,7 +64,7 @@ static const GLenum ToGLBufferTarget(Graphics::BufferType::Enum type) {
 Graphics::Handle GraphicsOpenGL::CreateBuffer(BufferType::Enum type, BufferUsage::Enum usage, int size, int pitch, const void *data) {
     GLenum target = ToGLBufferTarget(type);
 
-    GLBuffer *buffer = new GLBuffer;
+    GLBuffer *buffer = BE_NEW GLBuffer;
     buffer->type = type;
     buffer->usage = ToGLBufferUsage(usage);
     buffer->target = target;

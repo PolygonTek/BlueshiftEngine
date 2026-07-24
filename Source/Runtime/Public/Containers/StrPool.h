@@ -128,7 +128,7 @@ BE_INLINE const PoolStr *StrPool::AllocString(const char *string) {
         }
     }
     
-    PoolStr *poolStr = new PoolStr;
+    PoolStr *poolStr = BE_NEW PoolStr;
     *static_cast<Str *>(poolStr) = string;
     poolStr->pool = this;
     poolStr->refCount = 1;

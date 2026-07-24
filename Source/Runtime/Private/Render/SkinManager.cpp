@@ -44,7 +44,7 @@ Skin *SkinManager::AllocSkin(const char *hashName) {
         BE_FATALERROR("%s skin already allocated", hashName);
     }
     
-    Skin *skin = new Skin;
+    Skin *skin = BE_NEW Skin;
     skin->refCount = 1;
     skin->hashName = hashName;
     skinHashMap.Set(skin->hashName, skin);

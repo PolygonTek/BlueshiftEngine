@@ -61,7 +61,7 @@ bool SignalObject::Connect(const SignalDef *sigdef, SignalObject *receiver, Sign
         }
     }
 
-    Connection *con = new Connection;
+    Connection *con = BE_NEW Connection;
     con->signalDef = sigdef;
     con->connectionType = connectionType;
     con->sender = this;

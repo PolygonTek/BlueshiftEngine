@@ -186,7 +186,7 @@ Graphics::Handle GraphicsOpenGL::CreateRenderTarget(RenderTargetType::Enum type,
 
     gglBindFramebuffer(GL_FRAMEBUFFER, oldFBO);
 
-    GLRenderTarget *renderTarget = new GLRenderTarget;
+    GLRenderTarget *renderTarget = BE_NEW GLRenderTarget;
     renderTarget->type = type;
     renderTarget->flags = flags;
     renderTarget->numColorTextures = numColorTextures;

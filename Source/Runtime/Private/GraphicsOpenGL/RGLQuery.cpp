@@ -22,7 +22,7 @@ Graphics::Handle GraphicsOpenGL::CreateQuery(QueryType::Enum queryType) {
     GLuint id;
     gglGenQueries(1, &id);
 
-    GLQuery *query = new GLQuery;
+    GLQuery *query = BE_NEW GLQuery;
     query->queryType = queryType;
     query->id = id;
 

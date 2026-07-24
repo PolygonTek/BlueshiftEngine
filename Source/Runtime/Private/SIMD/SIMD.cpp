@@ -21,7 +21,7 @@ SIMDProcessor *     simdGeneric = nullptr;     // pointer to generic SIMD implem
 SIMDProcessor *     simdProcessor = nullptr;
 
 void SIMD::Init(bool forceGeneric) {
-    simdGeneric = new SIMD_Generic;
+    simdGeneric = BE_NEW SIMD_Generic;
 
     int cpuid = GetCpuInfo()->cpuid;
 
@@ -30,15 +30,15 @@ void SIMD::Init(bool forceGeneric) {
 #ifdef HAVE_X86_AVX_INTRIN
     } else if ((cpuid & CPUID_MMX) && (cpuid & CPUID_SSE) && (cpuid & CPUID_SSE2) && (cpuid & CPUID_SSE3) && (cpuid & CPUID_SSSE3) && 
         (cpuid & CPUID_SSE4_1) && (cpuid & CPUID_SSE4_2) && (cpuid & CPUID_AVX)) {
-        simdProcessor = new SIMD_8(CPUID_AVX);
+        simdProcessor = BE_NEW SIMD_8(CPUID_AVX);
 #endif
 #ifdef HAVE_X86_SSE_INTRIN
     } else if ((cpuid & CPUID_MMX) && (cpuid & CPUID_SSE) && (cpuid & CPUID_SSE2) && (cpuid & CPUID_SSE3) && (cpuid & CPUID_SSSE3)) {
-        simdProcessor = new SIMD_4(CPUID_SSSE3);
+        simdProcessor = BE_NEW SIMD_4(CPUID_SSSE3);
 #endif
 #ifdef HAVE_ARM_NEON_INTRIN
     } else if ((cpuid & CPUID_NEON)) {
-        simdProcessor = new SIMD_4(CPUID_NEON);
+        simdProcessor = BE_NEW SIMD_4(CPUID_NEON);
 #endif
     } else {
         simdProcessor = simdGeneric;

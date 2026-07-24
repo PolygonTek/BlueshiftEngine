@@ -50,7 +50,7 @@ AnimController *AnimControllerManager::AllocAnimController(const char *hashName)
         BE_FATALERROR("%s animController already allocated", hashName);
     }
 
-    AnimController *animController = new AnimController;
+    AnimController *animController = BE_NEW AnimController;
     animController->hashName = hashName;
     animController->name = hashName;
     animController->name.StripPath();
@@ -174,17 +174,17 @@ void AnimController::Copy(const AnimController *def) {
 
     animClips.SetCount(def->animClips.Count());
     for (int i = 0; i < animClips.Count(); i++) {
-        animClips[i] = new AnimClip(def->animClips[i]);
+        animClips[i] = BE_NEW AnimClip(def->animClips[i]);
     }
 
     animLayers.SetCount(def->animLayers.Count());
     for (int i = 0; i < animLayers.Count(); i++) {
-        animLayers[i] = new AnimLayer(this, def->animLayers[i]);
+        animLayers[i] = BE_NEW AnimLayer(this, def->animLayers[i]);
     }
 
     animParameters.SetCount(def->animParameters.Count());
     for (int i = 0; i < animParameters.Count(); i++) {
-        animParameters[i] = new AnimParm(def->animParameters[i]);
+        animParameters[i] = BE_NEW AnimParm(def->animParameters[i]);
     }
 
     joints.SetCount(def->joints.Count());
@@ -375,7 +375,7 @@ AnimClip *AnimController::LoadAnimClip(const Guid &animGuid) {
         animClip = animClips[animClipIndex];
         animClip->refCount++;
     } else {
-        animClip = new AnimClip;
+        animClip = BE_NEW AnimClip;
         animClip->refCount = 1;
         animClips.Append(animClip);
 
@@ -428,7 +428,7 @@ bool AnimController::DeleteParameter(AnimParm *animParm) {
 }
 
 AnimParm *AnimController::CreateParameter(const char *name, float defaultValue) {
-    AnimParm *animParm = new AnimParm(name, defaultValue);
+    AnimParm *animParm = BE_NEW AnimParm(name, defaultValue);
     animParameters.Append(animParm);
 
     return animParameters[animParameters.Count() - 1];
@@ -465,7 +465,7 @@ bool AnimController::DeleteAnimLayer(AnimLayer *animLayer) {
 }
 
 AnimLayer *AnimController::CreateAnimLayer(const char *name) {
-    AnimLayer *animLayer = new AnimLayer(this);
+    AnimLayer *animLayer = BE_NEW AnimLayer(this);
     animLayer->SetName(name);
     animLayers.Append(animLayer);
 
@@ -606,7 +606,7 @@ bool AnimController::ParseBaseAnimLayer(Lexer &lexer) {
         return false;
     }
 
-    AnimLayer *animLayer = new AnimLayer(this);
+    AnimLayer *animLayer = BE_NEW AnimLayer(this);
     animLayer->SetName("Base Layer");
     animLayer->SetBlending(AnimLayer::Blending::Override);
     animLayer->SetWeight(1.0f);
@@ -657,7 +657,7 @@ bool AnimController::ParseAnimLayer(Lexer &lexer) {
         return false;
     }
 
-    AnimLayer *animLayer = new AnimLayer(this);
+    AnimLayer *animLayer = BE_NEW AnimLayer(this);
     animLayer->SetName(token.c_str());
     animLayers.Append(animLayer);
 

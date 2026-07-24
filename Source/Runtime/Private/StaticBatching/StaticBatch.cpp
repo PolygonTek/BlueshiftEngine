@@ -37,7 +37,7 @@ StaticBatch::~StaticBatch() {
 }
 
 StaticBatch *StaticBatch::AllocStaticBatch(Entity *rootEntity) {
-    StaticBatch *staticBatch = new StaticBatch;
+    StaticBatch *staticBatch = BE_NEW StaticBatch;
     staticBatch->index = staticBatches.Append(staticBatch);
     staticBatch->rootEntity = rootEntity;
 

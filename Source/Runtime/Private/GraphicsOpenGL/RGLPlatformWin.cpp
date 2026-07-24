@@ -467,8 +467,8 @@ void GraphicsOpenGL::InitMainContext(WindowHandle windowHandle, const Settings *
     InitGLFunctions();
     
     // Create main context
-    mainContext = new GLContext;
-    mainContext->state = new GLState;
+    mainContext = BE_NEW GLContext;
+    mainContext->state = BE_NEW GLState;
     mainContext->hwnd = CreateFakeWindow(); // Create fake window for global RC
     mainContext->hdc = GetDC(mainContext->hwnd);
 
@@ -847,7 +847,7 @@ static LRESULT CALLBACK NewWndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM l
 }
 
 Graphics::Handle GraphicsOpenGL::CreateContext(Graphics::WindowHandle windowHandle, bool useSharedContext) {
-    GLContext *ctx = new GLContext;
+    GLContext *ctx = BE_NEW GLContext;
 
     int handle = contextList.FindNull();
     if (handle == -1) {
@@ -879,7 +879,7 @@ Graphics::Handle GraphicsOpenGL::CreateContext(Graphics::WindowHandle windowHand
         ctx->hrc = mainContext->hrc;
         ctx->defaultVAO = mainContext->defaultVAO;
     } else {
-        ctx->state = new GLState;
+        ctx->state = BE_NEW GLState;
 
         if (gwglCreateContextAttribsARB) {
             GLContextProfile contextProfile = CoreProfile;

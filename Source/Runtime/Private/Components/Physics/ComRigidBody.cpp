@@ -247,7 +247,7 @@ void ComRigidBody::CreateBody() {
 
     if (!collisionListener) {
         if (physicsDesc.mass > 0) {
-            collisionListener = new CollisionListener(this);
+            collisionListener = BE_NEW CollisionListener(this);
         }
     } else {
         // static rigid body can't have collision listener

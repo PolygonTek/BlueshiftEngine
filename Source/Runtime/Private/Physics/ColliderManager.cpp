@@ -26,7 +26,7 @@ void ColliderManager::Init() {
     colliderHashMap.Init(1024, 64, 64);
 
     // TODO
-    CollisionMaterial *cmat = new CollisionMaterial;
+    CollisionMaterial *cmat = BE_NEW CollisionMaterial;
     cmat->surfaceFlags = 1;
     materials.Append(cmat);
 }
@@ -53,7 +53,7 @@ void ColliderManager::Shutdown() {
 }
 
 Collider *ColliderManager::AllocUnnamedCollider() {
-    Collider *collider = new Collider;
+    Collider *collider = BE_NEW Collider;
     collider->refCount = 1;
 
     int index = unnamedColliders.FindNull();
@@ -73,7 +73,7 @@ Collider *ColliderManager::AllocCollider(const char *name) {
         BE_FATALERROR("%s collider already allocated", name);
     }
     
-    Collider *collider = new Collider;
+    Collider *collider = BE_NEW Collider;
     collider->name = name;
     collider->refCount = 1;
     colliderHashMap.Set(collider->name, collider);

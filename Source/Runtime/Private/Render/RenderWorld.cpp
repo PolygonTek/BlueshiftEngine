@@ -101,7 +101,7 @@ int RenderWorld::AddRenderObject(const RenderObject::State *def) {
 void RenderWorld::UpdateRenderObject(int handle, const RenderObject::State *def) {
     RenderObject *renderObject = renderObjects[handle];
     if (!renderObject) {
-        renderObject = new RenderObject(handle);
+        renderObject = BE_NEW RenderObject(handle);
         renderObjects[handle] = renderObject;
 
         renderObject->Update(def);
@@ -233,7 +233,7 @@ void RenderWorld::UpdateRenderLight(int handle, const RenderLight::State *def) {
 
     RenderLight *renderLight = renderLights[handle];
     if (!renderLight) {
-        renderLight = new RenderLight(handle);
+        renderLight = BE_NEW RenderLight(handle);
         renderLights[handle] = renderLight;
 
         renderLight->Update(def);
@@ -312,7 +312,7 @@ void RenderWorld::UpdateEnvProbe(int handle, const EnvProbe::State *def) {
 
     EnvProbe *envProbe = envProbes[handle];
     if (!envProbe) {
-        envProbe = new EnvProbe(this, handle);
+        envProbe = BE_NEW EnvProbe(this, handle);
         envProbes[handle] = envProbe;
 
         envProbe->Update(def);
@@ -385,7 +385,7 @@ void RenderWorld::AddDistantEnvProbe() {
         handle = envProbes.Append(nullptr);
     }
 
-    distantEnvProbe = new EnvProbe(this, handle);
+    distantEnvProbe = BE_NEW EnvProbe(this, handle);
     envProbes[handle] = distantEnvProbe;
     distantEnvProbe->Update(&def);
 }

@@ -178,7 +178,7 @@ void RenderSystem::RestoreGamma() {
 }
 
 RenderContext *RenderSystem::AllocRenderContext(bool isMainContext) {
-    RenderContext *rc = new RenderContext;
+    RenderContext *rc = BE_NEW RenderContext;
     renderContexts.Append(rc);
 
     if (isMainContext) {
@@ -233,7 +233,7 @@ void RenderSystem::EndCommands() {
 }
 
 RenderWorld *RenderSystem::AllocRenderWorld() {
-    RenderWorld *renderWorld = new RenderWorld;
+    RenderWorld *renderWorld = BE_NEW RenderWorld;
     renderWorld->index = renderWorldCount++;
 
     renderWorld->AddDistantEnvProbe();
@@ -709,7 +709,7 @@ void RenderSystem::CaptureScreenRT(RenderWorld *renderWorld, int layerMask,
 
 Texture *RenderSystem::CaptureScreenTexture(RenderWorld *renderWorld, int layerMask, 
     bool colorClear, const Color4 &clearColor, const Vec3 &origin, const Mat3 &axis, float fov, bool useHDR, int width, int height) {
-    Texture *screenTexture = new Texture;
+    Texture *screenTexture = BE_NEW Texture;
     screenTexture->CreateEmpty(Graphics::TextureType::Texture2D, width, height, 1, 1, 1, 
         useHDR ? Image::Format::R11G11B10_FLOAT : Image::Format::R8G8B8,
         Texture::Flag::Clamp | Texture::Flag::NoMipmaps | Texture::Flag::HighQuality);
@@ -792,7 +792,7 @@ void RenderSystem::CaptureEnvCubeRT(RenderWorld *renderWorld, int layerMask, int
 
 Texture *RenderSystem::CaptureEnvCubeTexture(RenderWorld *renderWorld, int layerMask, int staticMask, 
     bool colorClear, const Color4 &clearColor, const Vec3 &origin, float zNear, float zFar, bool useHDR, int size) {
-    Texture *envCubeTexture = new Texture;
+    Texture *envCubeTexture = BE_NEW Texture;
     envCubeTexture->CreateEmpty(Graphics::TextureType::TextureCubeMap, size, size, 1, 1, 1, 
         useHDR ? Image::Format::R11G11B10_FLOAT : Image::Format::R8G8B8,
         Texture::Flag::Clamp | Texture::Flag::NoMipmaps | Texture::Flag::HighQuality);
@@ -853,7 +853,7 @@ void RenderSystem::GenerateSHConvolvIrradianceEnvCubeRT(const Texture *envCubeTe
             }
         }
 
-        weightTextures[faceIndex] = new Texture;
+        weightTextures[faceIndex] = BE_NEW Texture;
         weightTextures[faceIndex]->Create(Graphics::TextureType::Texture2D,
             Image(envMapSize * 4, envMapSize * 4, 1, 1, 1, Image::Format::L32_FLOAT, Image::GammaSpace::Linear, (byte *)weightData, Image::Flag::None),
             Texture::Flag::Clamp | Texture::Flag::Nearest | Texture::Flag::NoMipmaps | Texture::Flag::HighQuality);
@@ -868,7 +868,7 @@ void RenderSystem::GenerateSHConvolvIrradianceEnvCubeRT(const Texture *envCubeTe
 
     Image image;
     image.Create2D(4, 4, 1, Image::Format::R32G32B32_FLOAT, Image::GammaSpace::Linear, nullptr, Image::Flag::None);
-    Texture *incidentCoeffTexture = new Texture;
+    Texture *incidentCoeffTexture = BE_NEW Texture;
     incidentCoeffTexture->Create(Graphics::TextureType::Texture2D, image, Texture::Flag::Clamp | Texture::Flag::Nearest | Texture::Flag::NoMipmaps | Texture::Flag::HighQuality);
 
     RenderTarget *incidentCoeffRT = RenderTarget::Create(incidentCoeffTexture, nullptr, 0);
@@ -1094,7 +1094,7 @@ void RenderSystem::GenerateGGXLDSumRT(const Texture *envCubeTexture, RenderTarge
 void RenderSystem::GenerateGGXDFGSumImage(int size, Image &integrationImage) const {
     Shader *genDFGSumGGXShader = shaderManager.GetShader("Shaders/GenDFGSumGGX")->InstantiateShader(Array<Shader::Define>());
 
-    Texture *integrationLutTexture = new Texture;
+    Texture *integrationLutTexture = BE_NEW Texture;
     integrationLutTexture->CreateEmpty(Graphics::TextureType::Texture2D, size, size, 1, 1, 1, Image::Format::R16G16_FLOAT,
         Texture::Flag::Clamp | Texture::Flag::Nearest | Texture::Flag::NoMipmaps | Texture::Flag::HighQuality);
 
@@ -1161,7 +1161,7 @@ void RenderSystem::TakeEnvShot(const char *filename, RenderWorld *renderWorld, i
 void RenderSystem::TakeIrradianceEnvShot(const char *filename, RenderWorld *renderWorld, int layerMask, int staticMask, const Vec3 &origin, bool useHDR, int size, int envSize) {
     Texture *envCubeTexture = CaptureEnvCubeTexture(renderWorld, layerMask, staticMask, false, Color4::black, origin, CmToUnit(5.0f), MeterToUnit(100.0f), useHDR, envSize);
 
-    Texture *irradianceEnvCubeTexture = new Texture;
+    Texture *irradianceEnvCubeTexture = BE_NEW Texture;
     irradianceEnvCubeTexture->CreateEmpty(Graphics::TextureType::TextureCubeMap, size, size, 1, 1, 1, 
         useHDR ? Image::Format::R11G11B10_FLOAT : Image::Format::R8G8B8,
         Texture::Flag::Clamp | Texture::Flag::Nearest | Texture::Flag::NoMipmaps | Texture::Flag::HighQuality);
@@ -1194,7 +1194,7 @@ void RenderSystem::TakePrefilteredEnvShot(const char *filename, RenderWorld *ren
 
     int numMipLevels = Math::Log(2, size) + 1;
 
-    Texture *prefilteredCubeTexture = new Texture;
+    Texture *prefilteredCubeTexture = BE_NEW Texture;
     prefilteredCubeTexture->CreateEmpty(Graphics::TextureType::TextureCubeMap, size, size, 1, 1, numMipLevels,
         useHDR ? Image::Format::R11G11B10_FLOAT : Image::Format::R8G8B8,
         Texture::Flag::Clamp | Texture::Flag::Nearest | Texture::Flag::NoMipmaps | Texture::Flag::HighQuality);

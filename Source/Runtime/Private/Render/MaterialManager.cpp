@@ -159,7 +159,7 @@ Material *MaterialManager::AllocMaterial(const char *hashName) {
         BE_FATALERROR("Material exceed maximum limits %i", MaterialManager::MaxCount);
     }
     
-    Material *material = new Material;
+    Material *material = BE_NEW Material;
     material->hashName = hashName;
     material->name = hashName;
     material->name.StripPath();

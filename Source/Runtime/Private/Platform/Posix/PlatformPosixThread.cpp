@@ -98,7 +98,7 @@ PlatformPosixThread *PlatformPosixThread::Start(threadFunc_t startProc, void *pa
     }
 
     pthread_t tid;
-    ThreadStartupData *startup = new ThreadStartupData;
+    ThreadStartupData *startup = BE_NEW ThreadStartupData;
     startup->startProc = startProc;
     startup->param = param;
 
@@ -110,7 +110,7 @@ PlatformPosixThread *PlatformPosixThread::Start(threadFunc_t startProc, void *pa
     Posix_SetThreadAffinity(tid, affinity);
     Posix_SetThreadPriority(tid, priority);
     
-    PlatformPosixThread *posixThread = new PlatformPosixThread;
+    PlatformPosixThread *posixThread = BE_NEW PlatformPosixThread;
     posixThread->thread = tid;
     return posixThread;
 }
@@ -169,7 +169,7 @@ void PlatformPosixThread::JoinAll(int numThreads, PlatformPosixThread *posixThre
 }
 
 PlatformPosixMutex *PlatformPosixMutex::Create(int spinCount) {
-    PlatformPosixMutex *posixMutex = new PlatformPosixMutex;
+    PlatformPosixMutex *posixMutex = BE_NEW PlatformPosixMutex;
     pthread_mutexattr_t attr;
     pthread_mutexattr_init(&attr);
     pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_RECURSIVE);
@@ -207,7 +207,7 @@ void PlatformPosixMutex::Unlock(PlatformPosixMutex *posixMutex) {
 }
 
 PlatformPosixSRWLock *PlatformPosixSRWLock::Create() {
-    PlatformPosixSRWLock *posixLock = new PlatformPosixSRWLock;
+    PlatformPosixSRWLock *posixLock = BE_NEW PlatformPosixSRWLock;
     pthread_rwlock_init(&lock, nullptr);
     pthread_mutexattr_t attr;
     pthread_mutexattr_init(&attr);
@@ -248,7 +248,7 @@ void PlatformPosixSRWLock::ReleaseWriteLock(PlatformPosixSRWLock *posixLock) {
 }
 
 PlatformPosixCondition *PlatformPosixCondition::Create() {
-    PlatformPosixCondition *posixCondition = new PlatformPosixCondition;
+    PlatformPosixCondition *posixCondition = BE_NEW PlatformPosixCondition;
     pthread_cond_init(&posixCondition->cond, nullptr);
     return posixCondition;
 }

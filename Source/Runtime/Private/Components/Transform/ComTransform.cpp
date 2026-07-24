@@ -490,7 +490,7 @@ bool ComTransform::ConstructJointHierarchy() {
         return false;
     }
 
-    jointHierarchy = new JointHierarchy(this, matrixCount);
+    jointHierarchy = BE_NEW JointHierarchy(this, matrixCount);
     jointHierarchy->AddRefCount();
 
     int32_t currentIndex = 0;

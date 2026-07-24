@@ -88,7 +88,7 @@ void Skeleton::CreateDefaultSkeleton() {
 
     numJoints = 1;
 
-    joints = new Joint[1];
+    joints = BE_NEW Joint[1];
     joints[0].name = "root";
     joints[0].parent = nullptr;
 
@@ -131,7 +131,7 @@ bool Skeleton::Load(const char *filename) {
 
     numJoints = bSkelHeader->numJoints;
     if (numJoints > 0) {
-        joints = new Joint[numJoints];
+        joints = BE_NEW Joint[numJoints];
         bindPoses = (JointPose *)Mem_Alloc16(sizeof(JointPose) * numJoints);
         invBindPoseMats = (Mat3x4 *)Mem_Alloc16(sizeof(Mat3x4) * numJoints);
         jointParents = (int *)Mem_Alloc16(sizeof(int) * numJoints);

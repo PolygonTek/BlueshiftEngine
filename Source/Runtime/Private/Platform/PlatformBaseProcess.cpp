@@ -90,7 +90,7 @@ bool PlatformBaseProcess::ExecuteProcess(const char *appPath, const char *args, 
 
     int32_t exitCode;
     const int bufferSize = 32768;
-    char *buffer = new char[bufferSize];
+    char *buffer = BE_NEW char[bufferSize];
     bool firstOutput = true;
 
     while (1) {

@@ -235,8 +235,8 @@ static void GetGLVersion(int *major, int *minor) {
 }
 
 void OpenGLRHI::InitMainContext(WindowHandle windowHandle, const Settings *settings) {
-	mainContext = new GLContext;
-	mainContext->state = new GLState;
+	mainContext = BE_NEW GLContext;
+	mainContext->state = BE_NEW GLState;
     
     //// Create EAGLContext
     //mainContext->eaglContext = [[EAGLContext alloc] initWithAPI:kEAGLRenderingAPIOpenGLES3];
@@ -283,7 +283,7 @@ void OpenGLRHI::FreeMainContext() {
 }
 
 RHI::Handle OpenGLRHI::CreateContext(RHI::WindowHandle windowHandle, bool useSharedContext) {
-	GLContext *ctx = new GLContext;
+	GLContext *ctx = BE_NEW GLContext;
 
 	int handle = contextList.FindNull();
 	if (handle == -1) {
@@ -300,7 +300,7 @@ RHI::Handle OpenGLRHI::CreateContext(RHI::WindowHandle windowHandle, bool useSha
 		ctx->state = mainContext->state;
         //ctx->eaglContext = mainContext->eaglContext;
     } else {
-        ctx->state = new GLState;
+        ctx->state = BE_NEW GLState;
 		//ctx->eaglContext =  [[EAGLContext alloc] initWithAPI:kEAGLRenderingAPIOpenGLES3 sharegroup : [mainContext->eaglContext sharegroup]];
         //if (!ctx->eaglContext) {
         //    BLib::Error(FatalErr, L"Couldn't create main EAGLContext");

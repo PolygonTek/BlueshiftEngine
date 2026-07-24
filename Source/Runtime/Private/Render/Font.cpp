@@ -27,7 +27,7 @@ bool Font::Load(const char *filename) {
     Purge();
 
     if (Str::CheckExtension(filename, ".font")) {
-        fontFace = new BitmapFontFace;
+        fontFace = BE_NEW BitmapFontFace;
         if (!fontFace->Load(filename, 0/*fontSize*/)) {
             delete fontFace;
             return false;
@@ -36,7 +36,7 @@ bool Font::Load(const char *filename) {
         return true;
     }
 
-    fontFace = new TrueTypeFontFace;
+    fontFace = BE_NEW TrueTypeFontFace;
     if (!fontFace->Load(filename, fontSize)) {
         delete fontFace;
         return false;

@@ -196,12 +196,12 @@ PlatformBaseFile *PlatformAndroidFile::OpenFileRead(const char *filename) {
     Str normalizedFilename = NormalizeFilename(filename);
     FILE *fp = fopen(normalizedFilename.c_str(), "rb");
     if (fp) {
-        return new PlatformAndroidFile(fp);
+        return BE_NEW PlatformAndroidFile(fp);
     }
     // Read by asset manager
     AAsset *asset = AAssetManager_open(AndroidJNI::activity->assetManager, filename, AASSET_MODE_RANDOM);
     if (asset) {
-        return new PlatformAndroidFile(asset);
+        return BE_NEW PlatformAndroidFile(asset);
     }        
     return nullptr;
 }
@@ -212,7 +212,7 @@ PlatformBaseFile *PlatformAndroidFile::OpenFileWrite(const char *filename) {
     if (!fp) {
         return nullptr;
     }
-    return new PlatformAndroidFile(fp);
+    return BE_NEW PlatformAndroidFile(fp);
 }
 
 PlatformBaseFile *PlatformAndroidFile::OpenFileAppend(const char *filename) {
@@ -221,7 +221,7 @@ PlatformBaseFile *PlatformAndroidFile::OpenFileAppend(const char *filename) {
     if (!fp) {
         return nullptr;
     }
-    return new PlatformAndroidFile(fp);
+    return BE_NEW PlatformAndroidFile(fp);
 }
 
 bool PlatformAndroidFile::FileExists(const char *filename) {
@@ -588,7 +588,7 @@ PlatformAndroidFileMapping *PlatformAndroidFileMapping::OpenFileRead(const char 
     }
     assert(((size_t)data & pageMask) == 0);
 
-    auto newFileMapping = new PlatformAndroidFileMapping(fd, size, (byte *)data + alignBytes);
+    auto newFileMapping = BE_NEW PlatformAndroidFileMapping(fd, size, (byte *)data + alignBytes);
     newFileMapping->alignBytes = alignBytes;
 
     return newFileMapping;
@@ -615,7 +615,7 @@ PlatformAndroidFileMapping *PlatformAndroidFileMapping::OpenFileReadWrite(const 
         return nullptr;
     }
 
-    return new PlatformAndroidFileMapping(fd, size, data);
+    return BE_NEW PlatformAndroidFileMapping(fd, size, data);
 }
 
 BE_NAMESPACE_END

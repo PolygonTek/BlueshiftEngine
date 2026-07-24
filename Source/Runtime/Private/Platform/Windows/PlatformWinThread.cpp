@@ -96,7 +96,7 @@ PlatformWinThread *PlatformWinThread::Start(threadFunc_t startProc, void *param,
     }
     Win_SetThreadPriority(threadHandle, priority);
 
-    PlatformWinThread *winThread = new PlatformWinThread;
+    PlatformWinThread *winThread = BE_NEW PlatformWinThread;
     winThread->threadHandle = threadHandle;
     return winThread;
 }
@@ -179,7 +179,7 @@ void PlatformWinThread::JoinAll(int numThreads, PlatformWinThread *winThreads[])
 }
 
 PlatformWinMutex *PlatformWinMutex::Create(int spinCount) {
-    PlatformWinMutex *winMutex = new PlatformWinMutex;
+    PlatformWinMutex *winMutex = BE_NEW PlatformWinMutex;
     InitializeCriticalSectionAndSpinCount(&winMutex->cs, spinCount);
     return winMutex;
 }
@@ -205,7 +205,7 @@ void PlatformWinMutex::Unlock(PlatformWinMutex *winMutex) {
 }
 
 PlatformWinSRWLock *PlatformWinSRWLock::Create() {
-    PlatformWinSRWLock *winLock = new PlatformWinSRWLock;
+    PlatformWinSRWLock *winLock = BE_NEW PlatformWinSRWLock;
     InitializeSRWLock(&winLock->srwLock);
     return winLock;
 }
@@ -239,7 +239,7 @@ void PlatformWinSRWLock::ReleaseWriteLock(PlatformWinSRWLock *lock) {
 }
 
 PlatformWinCondition *PlatformWinCondition::Create() {
-    PlatformWinCondition *winCondition = new PlatformWinCondition;
+    PlatformWinCondition *winCondition = BE_NEW PlatformWinCondition;
     InitializeConditionVariable(&winCondition->condVar);
     return winCondition;
 }

@@ -144,7 +144,9 @@
 #if defined(__WIN32__) && defined(_DEBUG)
 #define _CRTDBG_MAP_ALLOC
 #include <crtdbg.h>
-#define DEBUG_NEW new(_NORMAL_BLOCK, __FILE__, __LINE__)
+#define BE_NEW new(_NORMAL_BLOCK, __FILE__, __LINE__)
+#else
+#define BE_NEW new
 #endif
 
 // C runtime header files.

@@ -104,7 +104,7 @@ Graphics::Handle GraphicsOpenGL::CreateTexture(TextureType::Enum type) {
     GLuint object;
     gglGenTextures(1, &object);
 
-    GLTexture *texture = new GLTexture;
+    GLTexture *texture = BE_NEW GLTexture;
     texture->type   = type;
     texture->target = ToGLTextureTarget(type);
     texture->object = object;

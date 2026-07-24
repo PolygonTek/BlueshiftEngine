@@ -92,7 +92,7 @@ PlatformAndroidThread *PlatformAndroidThread::Start(threadFunc_t startProc, void
     }
 
     pthread_t tid;
-    ThreadStartupData *startup = new ThreadStartupData;
+    ThreadStartupData *startup = BE_NEW ThreadStartupData;
     startup->startProc = startProc;
     startup->param = param;
     startup->affinity = affinity;
@@ -104,7 +104,7 @@ PlatformAndroidThread *PlatformAndroidThread::Start(threadFunc_t startProc, void
 
     Android_SetThreadPriority(&tid, priority);
     
-    PlatformAndroidThread *androidThread = new PlatformAndroidThread;
+    PlatformAndroidThread *androidThread = BE_NEW PlatformAndroidThread;
     androidThread->thread = tid;
     return androidThread;
 }
@@ -154,7 +154,7 @@ void PlatformAndroidThread::JoinAll(int numThreads, PlatformAndroidThread *andro
 }
 
 PlatformAndroidMutex *PlatformAndroidMutex::Create(int spinCount) {
-    PlatformAndroidMutex *androidMutex = new PlatformAndroidMutex;
+    PlatformAndroidMutex *androidMutex = BE_NEW PlatformAndroidMutex;
     pthread_mutexattr_t attr;
     pthread_mutexattr_init(&attr);
     pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_RECURSIVE);
@@ -188,7 +188,7 @@ void PlatformAndroidMutex::Unlock(PlatformAndroidMutex *androidMutex) {
 }
 
 PlatformAndroidSRWLock *PlatformAndroidSRWLock::Create() {
-    PlatformAndroidSRWLock *androidLock = new PlatformAndroidSRWLock;
+    PlatformAndroidSRWLock *androidLock = BE_NEW PlatformAndroidSRWLock;
     pthread_rwlock_init(&lock, nullptr);
     pthread_mutexattr_t attr;
     pthread_mutexattr_init(&attr);
@@ -229,7 +229,7 @@ void PlatformAndroidSRWLock::ReleaseWriteLock(PlatformAndroidSRWLock *androidLoc
 }
 
 PlatformAndroidCondition *PlatformAndroidCondition::Create() {
-    PlatformAndroidCondition *androidCondition = new PlatformAndroidCondition;
+    PlatformAndroidCondition *androidCondition = BE_NEW PlatformAndroidCondition;
     pthread_cond_init(&androidCondition->cond, nullptr);
     return androidCondition;
 }

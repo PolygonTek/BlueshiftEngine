@@ -138,7 +138,7 @@ int32_t BE1::TaskManager::AddTask(Lambda &&lambda, int32_t groupId, bool withWak
     };
 
     // Allocate memory for lambda and store it in a unique_ptr for automatic cleanup.
-    std::unique_ptr<Lambda> lambdaPtr(new Lambda(std::forward<Lambda>(lambda)));
+    std::unique_ptr<Lambda> lambdaPtr(BE_NEW Lambda(std::forward<Lambda>(lambda)));
     void *data = lambdaPtr.get();
 
     int32_t taskId = AddTask(&LambdaWrapper::Call, data, groupId, withWake);

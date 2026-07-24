@@ -385,7 +385,7 @@ void GraphicsOpenGL::SetLineWidth(float width) {
 }
 
 Graphics::Handle GraphicsOpenGL::CreateStencilState(int readMask, int writeMask, StencilFunc::Enum funcBack, int failBack, int zfailBack, int zpassBack, StencilFunc::Enum funcFront, int failFront, int zfailFront, int zpassFront) {
-    GLStencilState *stencilState = new GLStencilState;
+    GLStencilState *stencilState = BE_NEW GLStencilState;
     stencilState->readMask  = readMask;
     stencilState->writeMask = writeMask;
     stencilState->func[0]   = toGLStencilFunc[funcBack];

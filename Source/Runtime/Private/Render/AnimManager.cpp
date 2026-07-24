@@ -38,7 +38,7 @@ Anim *AnimManager::AllocAnim(const char *hashName) {
         BE_FATALERROR("%s anim already allocated", hashName);
     }
     
-    Anim *anim = new Anim;
+    Anim *anim = BE_NEW Anim;
     anim->hashName = hashName;
     anim->name = hashName;
     anim->name.StripPath();
