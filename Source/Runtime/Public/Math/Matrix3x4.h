@@ -278,11 +278,13 @@ public:
     Mat3                ToMat3() const;
                         /// Returns 4x4 square matrix.
     Mat4                ToMat4() const;
-                        /// Returns scale part.
+                        /// Returns scale magnitudes.
     Vec3                ToScaleVec3() const;
+                        /// Returns signed scale, representing reflections with three negative components.
+    Vec3                ToSignedScaleVec3() const;
                         /// Returns translation vector part.
     Vec3                ToTranslationVec3() const;
-                        /// Returns rotation part in 3x3 matrix.
+                        /// Returns the rotation part as a 3x3 matrix with scale and reflection removed.
     Mat3                ToRotationMat3() const;
 
                         /// Returns "_00 _01 _02 _03 _10 _11 _12 _13 _20 _21 _22 _23".
@@ -403,7 +405,7 @@ BE_INLINE void Mat3x4::SetTranslation(const Vec3 &t) {
 }
 
 BE_INLINE Mat3x4 &Mat3x4::RemoveScale() {
-    Vec3 invScale = 1.0f / ToScaleVec3();
+    Vec3 invScale = 1.0f / ToSignedScaleVec3();
 
     mat[0][0] *= invScale.x;
     mat[0][1] *= invScale.y;
@@ -571,7 +573,7 @@ BE_INLINE Vec3 Mat3x4::ToTranslationVec3() const {
 }
 
 BE_INLINE Mat3 Mat3x4::ToRotationMat3() const {
-    Vec3 invScale = 1.0f / ToScaleVec3();
+    Vec3 invScale = 1.0f / ToSignedScaleVec3();
     Mat3 rotation = ToMat3();
     rotation[0] *= invScale.x;
     rotation[1] *= invScale.y;

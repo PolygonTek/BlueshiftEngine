@@ -716,7 +716,7 @@ Mat3x4 Mat3x4::operator*(const Mat3x4 &rhs) const & {
 
 void Mat3x4::SetRotation(const Mat3 &rotation, bool keepScale) {
     if (keepScale) {
-        Vec3 scale = ToScaleVec3();
+        Vec3 scale = ToSignedScaleVec3();
 
         mat[0][0] = rotation[0][0] * scale[0];
         mat[0][1] = rotation[1][0] * scale[1];
@@ -776,7 +776,7 @@ void Mat3x4::SetScale(const Vec3 &scale, bool keepRotation) {
 
 void Mat3x4::SetTranslationRotation(const Vec3 &translation, const Mat3 &rotation, bool keepScale) {
     if (keepScale) {
-        Vec3 scale = ToScaleVec3();
+        Vec3 scale = ToSignedScaleVec3();
 
         mat[0][0] = rotation[0][0] * scale[0];
         mat[0][1] = rotation[1][0] * scale[1];
@@ -838,10 +838,7 @@ void Mat3x4::GetTRS(Vec3 &translation, Mat3 &rotation, Vec3 &scale) const {
     translation.z = mat[2][3];
 
     rotation = ToMat3();
-
-    scale.x = rotation[0].Length();
-    scale.y = rotation[1].Length();
-    scale.z = rotation[2].Length();
+    scale = ToSignedScaleVec3();
     
     rotation[0] *= 1.f / scale.x;
     rotation[1] *= 1.f / scale.y;
@@ -1225,6 +1222,14 @@ Vec3 Mat3x4::ToScaleVec3() const {
 
     return dst;
 #endif
+}
+
+Vec3 Mat3x4::ToSignedScaleVec3() const {
+    Vec3 scale = ToScaleVec3();
+    if (Determinant() < 0.0f) {
+        scale = -scale;
+    }
+    return scale;
 }
 
 Mat4 Mat3x4::ToMat4() const {

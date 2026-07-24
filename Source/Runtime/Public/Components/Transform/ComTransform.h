@@ -196,7 +196,7 @@ BE_INLINE Vec3 ComTransform::GetLocalOrigin() const {
 BE_INLINE Vec3 ComTransform::GetLocalScale() const {
     if (jointHierarchy) {
         const Mat3x4 &localMatrix = jointHierarchy->GetLocalJointMatrix(jointHierarchyIndex);
-        return localMatrix.ToScaleVec3();
+        return localMatrix.ToSignedScaleVec3();
     }
     return localScale;
 }
@@ -242,17 +242,17 @@ BE_INLINE Vec3 ComTransform::GetOrigin() const {
 }
 
 BE_INLINE Vec3 ComTransform::GetScale() const {
-    return GetMatrix().ToScaleVec3();
+    return GetMatrix().ToSignedScaleVec3();
 }
 
 BE_INLINE Quat ComTransform::GetRotation() const {
-    Mat3 rotation = GetMatrix().ToMat3();
+    Mat3 rotation = GetMatrix().ToRotationMat3();
     rotation.OrthoNormalizeSelf();
     return rotation.ToQuat();
 }
 
 BE_INLINE Mat3 ComTransform::GetAxis() const {
-    Mat3 axis = GetMatrix().ToMat3();
+    Mat3 axis = GetMatrix().ToRotationMat3();
     axis.OrthoNormalizeSelf();
     return axis;
 }

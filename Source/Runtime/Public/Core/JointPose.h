@@ -77,28 +77,7 @@ BE_INLINE JointPose JointPose::operator-(const JointPose &baseJointPose) const {
 }
 
 BE_INLINE void JointPose::SetFromMat3x4(const Mat3x4 &mat) {
-    this->s[0] = Math::Sqrt(mat[0][0] * mat[0][0] + mat[1][0] * mat[1][0] + mat[2][0] * mat[2][0]);
-    this->s[1] = Math::Sqrt(mat[0][1] * mat[0][1] + mat[1][1] * mat[1][1] + mat[2][1] * mat[2][1]);
-    this->s[2] = Math::Sqrt(mat[0][2] * mat[0][2] + mat[1][2] * mat[1][2] + mat[2][2] * mat[2][2]);
-
-    this->t[0] = mat[0][3];
-    this->t[1] = mat[1][3];
-    this->t[2] = mat[2][3];
-
-    // Column major order 3x3 matrix that has rotation only.
-    Vec3 invS = 1.0f / this->s;
-    Mat3 r;
-    r[0][0] = mat[0][0] * invS.x;
-    r[0][1] = mat[1][0] * invS.x;
-    r[0][2] = mat[2][0] * invS.x;
-    r[1][0] = mat[0][1] * invS.y;
-    r[1][1] = mat[1][1] * invS.y;
-    r[1][2] = mat[2][1] * invS.y;
-    r[2][0] = mat[0][2] * invS.z;
-    r[2][1] = mat[1][2] * invS.z;
-    r[2][2] = mat[2][2] * invS.z;
-
-    this->q = r.ToQuat();
+    mat.GetTQS(this->t, this->q, this->s);
 }
 
 /*

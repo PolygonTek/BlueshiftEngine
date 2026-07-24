@@ -1484,6 +1484,10 @@ Vec3 Mat4::ToScaleVec3() const {
     return ToMat3x4().ToScaleVec3();
 }
 
+Vec3 Mat4::ToSignedScaleVec3() const {
+    return ToMat3x4().ToSignedScaleVec3();
+}
+
 Mat4 Mat4::FromString(const char *str) {
     Mat4 m;
     int count = sscanf(str, "%f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f",
