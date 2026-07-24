@@ -47,7 +47,7 @@ bool Image::LoadPNGFromMemory(const char *name, const byte *data, size_t size) {
     }
 
     if (setjmp(png_jmpbuf(png))) {
-        png_destroy_read_struct(&png, (png_infopp)nullptr, (png_infopp)nullptr);
+        png_destroy_read_struct(&png, &info, (png_infopp)nullptr);
         return false;
     }
 
@@ -104,7 +104,7 @@ bool Image::LoadPNGFromMemory(const char *name, const byte *data, size_t size) {
     // set a new exception handler
     if (setjmp(png_jmpbuf(png))) {
         Mem_AlignedFree(row_pointers);
-        png_destroy_read_struct(&png, (png_infopp)nullptr, (png_infopp)nullptr);
+        png_destroy_read_struct(&png, &info, (png_infopp)nullptr);
         return false;
     }
 
@@ -176,14 +176,14 @@ bool Image::WritePNG(File *fp) const {
             colorType = PNG_COLOR_TYPE_RGBA;
             bpp = 4;
             if (!ConvertFormat(Format::R8G8B8A8, convertedImage)) {
-                png_destroy_write_struct(&png, (png_infopp)nullptr);
+                png_destroy_write_struct(&png, &info);
                 return false;
             }
         } else {
             colorType = PNG_COLOR_TYPE_RGB;
             bpp = 3;
             if (!ConvertFormat(Format::R8G8B8, convertedImage)) {
-                png_destroy_write_struct(&png, (png_infopp)nullptr);
+                png_destroy_write_struct(&png, &info);
                 return false;
             }
         }
