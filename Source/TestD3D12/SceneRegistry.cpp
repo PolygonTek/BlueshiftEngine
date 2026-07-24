@@ -13,6 +13,7 @@
 // limitations under the License.
 
 #include "Precompiled.h"
+#include "ScenePbr.h"
 #include "SceneTest.h"
 #include "SceneDebugDraw.h"
 #include "SceneRegistry.h"
@@ -28,12 +29,17 @@ static Scene *CreateSceneTest() {
     return new SceneTest;
 }
 
+static Scene *CreateScenePbr() {
+    return new ScenePbr;
+}
+
 static Scene *CreateSceneDebugDraw() {
     return new SceneDebugDraw;
 }
 
 static constexpr SceneEntry SceneEntries[] = {
     { "Test", CreateSceneTest },
+    { "PBR", CreateScenePbr },
     { "Debug Draw", CreateSceneDebugDraw },
 };
 

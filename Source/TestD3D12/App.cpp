@@ -419,6 +419,11 @@ void App::AddCameraDistance(int delta) {
     BE1::Clamp(targetCameraDistance, 1.0f, 1000.0f);
 }
 
+void App::SetCameraDistance(float distance) {
+    BE1::Clamp(distance, 1.0f, 1000.0f);
+    targetCameraDistance = distance;
+}
+
 void App::GetCameraOriginAxis(BE1::Vec3 &outOrigin, BE1::Mat3 &outAxis) const {
     outAxis = BE1::Angles(0.0f, cameraPitch, cameraYaw).ToMat3();
     if (cameraControlMode == CameraControlMode::Fly) {

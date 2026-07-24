@@ -20,6 +20,8 @@ set(SRC_FILES
     SceneRegistry.cpp
     SceneTest.h
     SceneTest.cpp
+    ScenePbr.h
+    ScenePbr.cpp
     SceneDebugDraw.h
     SceneDebugDraw.cpp
     WinMain.cpp
