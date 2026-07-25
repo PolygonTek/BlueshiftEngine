@@ -1716,6 +1716,36 @@ void D3D12Renderer::GenerateMipChain(RHI::CommandList *commandList, const RHI::T
         return;
     }
 
+    RHI::GPUResourceState destinationMipInitialState = _texture->defaultState;
+
+    if (BE1::HasFlag(_texture->flags, RHI::TextureFlag::RenderTarget)) {
+        // 렌더 타겟은 Direct command list 에서 RENDER_TARGET 상태로 discard 해야 한다.
+        // 생성 대상 sub-mip 만 discard 해서 이미 기록된 mip 0 은 보존한다.
+        const uint32_t mipCountToDiscard = numMipmaps - 1;
+        const uint32_t arraySize = _texture->GetArraySize();
+        const uint32_t sliceCount = _texture->type == RHI::TextureType::TextureCube && arraySize == 6 ? 6 : 1;
+        const uint32_t barrierCount = mipCountToDiscard * sliceCount;
+        RHI::GPUBarrier *discardStartBarriers = (RHI::GPUBarrier *)_alloca(sizeof(RHI::GPUBarrier) * barrierCount);
+
+        uint32_t barrierIndex = 0;
+        for (uint32_t slice = 0; slice < sliceCount; ++slice) {
+            for (uint32_t mipLevel = 1; mipLevel < numMipmaps; ++mipLevel) {
+                discardStartBarriers[barrierIndex++] = RHI::Renderer::MakeTextureBarrier(texture, _texture->defaultState, RHI::GPUResourceState::RenderTarget, slice, mipLevel);
+            }
+        }
+        Barrier(commandList, discardStartBarriers, barrierCount);
+
+        D3D12CommandList *_commandList = static_cast<D3D12CommandList *>(commandList);
+        for (uint32_t slice = 0; slice < sliceCount; ++slice) {
+            D3D12_DISCARD_REGION discardRegion = {};
+            discardRegion.FirstSubresource = D3D12CalcSubresource(1, slice, 0, numMipmaps, arraySize);
+            discardRegion.NumSubresources = mipCountToDiscard;
+            _commandList->GetGraphicsCommandList()->DiscardResource(_texture->GetResource(), &discardRegion);
+        }
+
+        destinationMipInitialState = RHI::GPUResourceState::RenderTarget;
+    }
+
     MipGenParams mipGenParams;
     mipGenParams.flags = 0;
 
@@ -1757,12 +1787,12 @@ void D3D12Renderer::GenerateMipChain(RHI::CommandList *commandList, const RHI::T
                 SetTexture(commandList, 0, false, texture, srvMipViewIDs[mipLevel]);
 
                 RHI::GPUBarrier startBarriers[] = {
-                    RHI::Renderer::MakeTextureBarrier(texture, _texture->defaultState, RHI::GPUResourceState::UnorderedAccess, 0, destMipLevel),
-                    RHI::Renderer::MakeTextureBarrier(texture, _texture->defaultState, RHI::GPUResourceState::UnorderedAccess, 1, destMipLevel),
-                    RHI::Renderer::MakeTextureBarrier(texture, _texture->defaultState, RHI::GPUResourceState::UnorderedAccess, 2, destMipLevel),
-                    RHI::Renderer::MakeTextureBarrier(texture, _texture->defaultState, RHI::GPUResourceState::UnorderedAccess, 3, destMipLevel),
-                    RHI::Renderer::MakeTextureBarrier(texture, _texture->defaultState, RHI::GPUResourceState::UnorderedAccess, 4, destMipLevel),
-                    RHI::Renderer::MakeTextureBarrier(texture, _texture->defaultState, RHI::GPUResourceState::UnorderedAccess, 5, destMipLevel)
+                    RHI::Renderer::MakeTextureBarrier(texture, destinationMipInitialState, RHI::GPUResourceState::UnorderedAccess, 0, destMipLevel),
+                    RHI::Renderer::MakeTextureBarrier(texture, destinationMipInitialState, RHI::GPUResourceState::UnorderedAccess, 1, destMipLevel),
+                    RHI::Renderer::MakeTextureBarrier(texture, destinationMipInitialState, RHI::GPUResourceState::UnorderedAccess, 2, destMipLevel),
+                    RHI::Renderer::MakeTextureBarrier(texture, destinationMipInitialState, RHI::GPUResourceState::UnorderedAccess, 3, destMipLevel),
+                    RHI::Renderer::MakeTextureBarrier(texture, destinationMipInitialState, RHI::GPUResourceState::UnorderedAccess, 4, destMipLevel),
+                    RHI::Renderer::MakeTextureBarrier(texture, destinationMipInitialState, RHI::GPUResourceState::UnorderedAccess, 5, destMipLevel)
                 };
                 Barrier(commandList, startBarriers, COUNT_OF(startBarriers));
 
@@ -1805,7 +1835,7 @@ void D3D12Renderer::GenerateMipChain(RHI::CommandList *commandList, const RHI::T
                 SetTexture(commandList, 0, false, texture, srvMipViewIDs[mipLevel]);
 
                 RHI::GPUBarrier startBarriers[] = {
-                    RHI::Renderer::MakeTextureBarrier(texture, _texture->defaultState, RHI::GPUResourceState::UnorderedAccess, 0, destMipLevel)
+                    RHI::Renderer::MakeTextureBarrier(texture, destinationMipInitialState, RHI::GPUResourceState::UnorderedAccess, 0, destMipLevel)
                 };
                 Barrier(commandList, startBarriers, COUNT_OF(startBarriers));
 
@@ -1846,7 +1876,7 @@ void D3D12Renderer::GenerateMipChain(RHI::CommandList *commandList, const RHI::T
             SetTexture(commandList, 0, false, texture, srvMipViewIDs[mipLevel]);
 
             RHI::GPUBarrier startBarriers[] = {
-                RHI::Renderer::MakeTextureBarrier(texture, _texture->defaultState, RHI::GPUResourceState::UnorderedAccess, 0, destMipLevel)
+                RHI::Renderer::MakeTextureBarrier(texture, destinationMipInitialState, RHI::GPUResourceState::UnorderedAccess, 0, destMipLevel)
             };
             Barrier(commandList, startBarriers, COUNT_OF(startBarriers));
 
