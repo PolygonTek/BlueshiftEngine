@@ -179,6 +179,40 @@ static float GetMaterialFactor(const Material *material, ShaderTemplate::Standar
     return DefaultFactor;
 }
 
+static float4 GetMaterialBaseColorFactor(const Material *material) {
+    if (material) {
+        const ShaderTemplate::PropertyValue *propertyValue = material->GetPropertyValue(ShaderTemplate::StandardProperty::BaseColorFactor);
+        if (propertyValue && propertyValue->GetType() == BE1::Variant::Type::Color4) {
+            const BE1::Color4 color = propertyValue->As<BE1::Color4>();
+            return float4(color.r, color.g, color.b, color.a);
+        }
+    }
+    return float4(1.0f, 1.0f, 1.0f, 1.0f);
+}
+
+static float3 GetMaterialEmissionColor(const Material *material) {
+    if (material) {
+        const ShaderTemplate::PropertyValue *propertyValue = material->GetPropertyValue(ShaderTemplate::StandardProperty::EmissionColor);
+        if (propertyValue && propertyValue->GetType() == BE1::Variant::Type::Color3) {
+            const BE1::Color3 color = propertyValue->As<BE1::Color3>();
+            return float3(color.r, color.g, color.b);
+        }
+    }
+    return float3(1.0f, 1.0f, 1.0f);
+}
+
+static float GetMaterialEmissionFactor(const Material *material) {
+    static constexpr float DefaultEmissionFactor = 1.0f;
+
+    if (material) {
+        const ShaderTemplate::PropertyValue *propertyValue = material->GetPropertyValue(ShaderTemplate::StandardProperty::EmissionFactor);
+        if (propertyValue && propertyValue->GetType() == BE1::Variant::Type::Float) {
+            return BE1::Clamp(propertyValue->As<float>(), 0.0f, 16.0f);
+        }
+    }
+    return DefaultEmissionFactor;
+}
+
 static float GetMaterialAlphaCutoff(const Material *material) {
     static constexpr float DefaultAlphaCutoff = 0.5f;
 
@@ -191,16 +225,38 @@ static float GetMaterialAlphaCutoff(const Material *material) {
     return DefaultAlphaCutoff;
 }
 
+static float GetMaterialHeightScale(const Material *material) {
+    static constexpr float DefaultHeightScale = 0.0f;
+
+    if (material) {
+        const ShaderTemplate::PropertyValue *propertyValue = material->GetPropertyValue(ShaderTemplate::StandardProperty::HeightScale);
+        if (propertyValue && propertyValue->GetType() == BE1::Variant::Type::Float) {
+            return BE1::Clamp(propertyValue->As<float>(), 0.0f, 1.0f);
+        }
+    }
+    return DefaultHeightScale;
+}
+
 void ShaderMaterialTable::Build(const Material *material, ShaderMaterial &outShaderMaterial) const {
-    outShaderMaterial.baseColorFactor = float4(1.0f, 1.0f, 1.0f, 1.0f);
-    outShaderMaterial.baseColorTextureIndex = GetMaterialTextureIndex(material, ShaderTemplate::StandardProperty::BaseColorTexture, textureManager.defaultTexture.get());
-    outShaderMaterial.normalTextureIndex = 0;
-    outShaderMaterial.emissiveTextureIndex = 0;
-    outShaderMaterial.metallicTextureIndex = GetMaterialTextureIndex(material, ShaderTemplate::StandardProperty::MetallicTexture, textureManager.whiteTexture.get());
-    outShaderMaterial.roughnessTextureIndex = GetMaterialTextureIndex(material, ShaderTemplate::StandardProperty::RoughnessTexture, textureManager.whiteTexture.get());
+    outShaderMaterial.baseColorFactor = GetMaterialBaseColorFactor(material);
+    outShaderMaterial.emissionColor = GetMaterialEmissionColor(material);
+    outShaderMaterial.emissionFactor = GetMaterialEmissionFactor(material);
+    outShaderMaterial.baseColorTextureIndex = GetMaterialTextureIndex(material, ShaderTemplate::StandardProperty::BaseColorMap, textureManager.defaultTexture.get());
+    outShaderMaterial.normalTextureIndex = GetMaterialTextureIndex(material, ShaderTemplate::StandardProperty::NormalMap, textureManager.flatNormalTexture.get());
+    outShaderMaterial.emissiveTextureIndex = GetMaterialTextureIndex(material, ShaderTemplate::StandardProperty::EmissiveMap, textureManager.blackTexture.get());
+    outShaderMaterial.metallicTextureIndex = GetMaterialTextureIndex(material, ShaderTemplate::StandardProperty::MetallicMap, textureManager.whiteTexture.get());
+    outShaderMaterial.roughnessTextureIndex = GetMaterialTextureIndex(material, ShaderTemplate::StandardProperty::RoughnessMap, textureManager.whiteTexture.get());
+    outShaderMaterial.aoTextureIndex = GetMaterialTextureIndex(material, ShaderTemplate::StandardProperty::AoMap, textureManager.whiteTexture.get());
+    outShaderMaterial.clearCoatTextureIndex = GetMaterialTextureIndex(material, ShaderTemplate::StandardProperty::ClearCoatMap, textureManager.whiteTexture.get());
+    outShaderMaterial.clearCoatRoughnessTextureIndex = GetMaterialTextureIndex(material, ShaderTemplate::StandardProperty::ClearCoatRoughnessMap, textureManager.whiteTexture.get());
+    outShaderMaterial.clearCoatNormalTextureIndex = GetMaterialTextureIndex(material, ShaderTemplate::StandardProperty::ClearCoatNormalMap, textureManager.flatNormalTexture.get());
+    outShaderMaterial.heightTextureIndex = GetMaterialTextureIndex(material, ShaderTemplate::StandardProperty::HeightMap, textureManager.whiteTexture.get());
     outShaderMaterial.streamingMaterialIndex = material ? material->GetStreamingListIndex() : TextureStreamingInvalidIndex;
     outShaderMaterial.metallicFactor = GetMaterialFactor(material, ShaderTemplate::StandardProperty::MetallicFactor);
     outShaderMaterial.roughnessFactor = GetMaterialFactor(material, ShaderTemplate::StandardProperty::RoughnessFactor);
+    outShaderMaterial.aoStrength = GetMaterialFactor(material, ShaderTemplate::StandardProperty::AoStrength);
     outShaderMaterial.alphaCutoff = GetMaterialAlphaCutoff(material);
-    outShaderMaterial.padding0 = float3(0.0f, 0.0f, 0.0f);
+    outShaderMaterial.clearCoatFactor = GetMaterialFactor(material, ShaderTemplate::StandardProperty::ClearCoatFactor);
+    outShaderMaterial.clearCoatRoughnessFactor = GetMaterialFactor(material, ShaderTemplate::StandardProperty::ClearCoatRoughnessFactor);
+    outShaderMaterial.heightScale = GetMaterialHeightScale(material);
 }

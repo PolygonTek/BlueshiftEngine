@@ -1,0 +1,24 @@
+material materialBall {
+    shaderTemplate "Source/TestD3D12/Shaders/Lit"
+
+    properties {
+        baseColorMap "Data/Test/export3dcoat_lambert3SG_color.dds"
+        _BASECOLOR "1"
+        normalMap "Data/Test/export3dcoat_lambert3SG_nmap.dds"
+        _NORMAL "1"
+        metallicMap "Data/Test/export3dcoat_lambert3SG_metalness.dds"
+        _METALLIC "1"
+        metallicFactor "1.0000"
+        roughnessMap "Data/Test/export3dcoat_lambert3SG_gloss.dds"
+        _ROUGHNESS "2"
+        roughnessFactor "1.0000"
+        _CLEARCOAT "0"
+        _CLEARCOAT_ROUGHNESS "0"
+        _CLEARCOAT_NORMAL "0"
+        _PARALLAX "0"
+        aoMap "Data/Test/materialball_ao.dds"
+        _AO "1"
+        aoStrength "1.0000"
+        _EMISSION "0"
+    }
+}

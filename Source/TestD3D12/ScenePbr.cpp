@@ -40,7 +40,7 @@ void ScenePbr::Init(RenderWorld *renderWorld) {
     materialBallDesc.meshInstance = materialBallMesh->GetStaticInstance();
     materialBallDesc.aabb = materialBallMesh->GetAABB();
     materialBallDesc.materials.SetCount(1);
-    materialBallDesc.materials[0] = materialManager.GetSingleTextureMaterial("Data/Test/Brick_Wall_Worn.dds");
+    materialBallDesc.materials[0] = materialManager.GetMaterial("Source/TestD3D12/Materials/materialBall.material");
     materialBall.renderObjectHandle = renderWorld->AddRenderObject(materialBallDesc);
 
     RenderLight::Desc &directionalLightDesc = directionalLight.renderLightDesc;

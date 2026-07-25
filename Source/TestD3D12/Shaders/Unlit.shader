@@ -5,7 +5,7 @@ shader "Unlit" {
     }
 
     properties {
-        baseColorTexture("Base Color") : texture "2D" = "_whiteTexture"
+        baseColorMap("Base Color") : texture "2D" = "_whiteTexture"
     }
 
     features {

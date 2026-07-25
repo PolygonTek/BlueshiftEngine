@@ -159,7 +159,7 @@ SharedPtr<Material> MaterialManager::GetSingleTextureMaterial(const char *textur
         text = BE1::va("{\n"
             "shaderTemplate \"Source/TestD3D12/Shaders/Lit\"\n"
             "properties {\n"
-            "   baseColorTexture \"%s\"\n"
+            "   baseColorMap \"%s\"\n"
             "}\n"
             "}", textureFilename);
         break;
@@ -170,7 +170,7 @@ SharedPtr<Material> MaterialManager::GetSingleTextureMaterial(const char *textur
             "blendType alphaBlend\n"
             "shaderTemplate \"Source/TestD3D12/Shaders/Unlit\"\n"
             "properties {\n"
-            "   baseColorTexture \"%s\"\n"
+            "   baseColorMap \"%s\"\n"
             "}\n"
             "}", textureFilename);
         break;
@@ -182,7 +182,7 @@ SharedPtr<Material> MaterialManager::GetSingleTextureMaterial(const char *textur
             "blendType alphaBlend\n"
             "shaderTemplate \"Source/TestD3D12/Shaders/Unlit\"\n"
             "properties {\n"
-            "   baseColorTexture \"%s\"\n"
+            "   baseColorMap \"%s\"\n"
             "}\n"
             "}", textureFilename);
         break;
@@ -288,7 +288,7 @@ void MaterialManager::CreateEngineMaterials() {
         shaderTemplate "Source/TestD3D12/Shaders/Lit"
 
         properties {
-            baseColorTexture "_defaultTexture"
+            baseColorMap "_defaultTexture"
         }
     }
     );
@@ -298,7 +298,7 @@ void MaterialManager::CreateEngineMaterials() {
             shaderTemplate "Source/TestD3D12/Shaders/Unlit"
 
             properties {
-                baseColorTexture "_defaultTexture"
+                baseColorMap "_defaultTexture"
             }
         }
     );
@@ -308,7 +308,7 @@ void MaterialManager::CreateEngineMaterials() {
         shaderTemplate "Source/TestD3D12/Shaders/Lit"
 
         properties {
-            baseColorTexture "_whiteTexture"
+            baseColorMap "_whiteTexture"
         }
     }
     );
@@ -318,7 +318,7 @@ void MaterialManager::CreateEngineMaterials() {
         shaderTemplate "Source/TestD3D12/Shaders/Unlit"
 
         properties {
-            baseColorTexture "_whiteTexture"
+            baseColorMap "_whiteTexture"
         }
     }
     );
@@ -330,7 +330,7 @@ void MaterialManager::CreateEngineMaterials() {
         blendType "AlphaBlend"
 
         properties {
-            baseColorTexture "_whiteTexture"
+            baseColorMap "_whiteTexture"
         }
     }
     );
@@ -342,7 +342,7 @@ void MaterialManager::CreateEngineMaterials() {
             blendType "AlphaBlend"
 
             properties {
-                baseColorTexture "_whiteTexture"
+                baseColorMap "_whiteTexture"
             }
         }
     );
