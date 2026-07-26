@@ -4,21 +4,15 @@ project(TestBase)
 
 set(ALL_FILES
     Main.cpp
-    TestContainer.h
+    Test.h
     TestContainer.cpp
-    TestRValue.h
     TestRValue.cpp
-    TestMath.h
     TestMath.cpp
-    TestThread.h
+    TestFloatConverter.cpp
     TestThread.cpp
-    TestTask.h
     TestTask.cpp
-    TestSIMD.h
     TestSIMD.cpp
-    TestCUDA.h
     TestCUDA.cpp
-    TestLua.h
     TestLua.cpp)
 
 auto_source_group(${ALL_FILES})

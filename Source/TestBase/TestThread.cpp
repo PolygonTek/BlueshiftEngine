@@ -13,7 +13,7 @@
 // limitations under the License.
 
 #include "BlueshiftEngine.h"
-#include "TestThread.h"
+#include "Test.h"
 
 static int count = 0;
 static BE1::PlatformMutex *count_mutex = nullptr;
@@ -32,7 +32,7 @@ static unsigned int CounterFunc(void *param) {
     return 0;
 }
 
-void TestThread() {
+void Test::TestThread() {
     count_mutex = BE1::PlatformMutex::Create();
 
     BE1::Array<BE1::PlatformThread *> threads;

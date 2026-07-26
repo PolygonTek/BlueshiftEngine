@@ -13,7 +13,7 @@
 // limitations under the License.
 
 #include "BlueshiftEngine.h"
-#include "TestTask.h"
+#include "Test.h"
 
 void TaskFunc1(void *data) {
     BE_LOG("TID: %i - Start TaskFunc1\n", BE1::PlatformThread::GetCurrentThreadId());
@@ -33,7 +33,7 @@ void TaskFunc3(void *data) {
     BE_LOG("TID: %i - End TaskFunc3\n", BE1::PlatformThread::GetCurrentThreadId());
 }
 
-void TestTask() {
+void Test::TestTask() {
     int32_t groupId = BE1::Engine::taskManager->CreateGroupId();
 
     BE1::Engine::taskManager->AddTask(TaskFunc1, nullptr, groupId);

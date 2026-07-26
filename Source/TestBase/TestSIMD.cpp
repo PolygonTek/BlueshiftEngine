@@ -13,7 +13,7 @@
 // limitations under the License.
 
 #include "BlueshiftEngine.h"
-#include "TestSIMD.h"
+#include "Test.h"
 
 #define TEST_COUNT          4096
 #define CUDA_TEST_COUNT     30
@@ -655,7 +655,7 @@ static void TestTransformJoints() {
     PrintClocksSIMD("TransformJoints", bestClocksGeneric, bestClocksSIMD);
 }
 
-void TestSIMD() {
+void Test::TestSIMD() {
     BE_LOG("Testing SIMD processors..\n");
 
     TestAdd();

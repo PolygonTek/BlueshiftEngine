@@ -13,6 +13,7 @@
 // limitations under the License.
 
 #include "BlueshiftEngine.h"
+#include "Test.h"
 
 //#define TEST_CUDA       1
 
@@ -161,7 +162,7 @@ void CUDA_TestMatrixMultiply() {
     Mem_Free(src1);
 }
 
-void TestCUDA() {
+void Test::TestCUDA() {
     BE1::Engine::Log(LOG_NORMAL, L"Testing CUDA kernels..\n");
 
     CUDA_TestAdd();

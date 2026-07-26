@@ -13,14 +13,7 @@
 // limitations under the License.
 
 #include "BlueshiftEngine.h"
-#include "TestContainer.h"
-#include "TestRValue.h"
-#include "TestMath.h"
-#include "TestThread.h"
-#include "TestTask.h"
-#include "TestSIMD.h"
-#include "TestCUDA.h"
-#include "TestLua.h"
+#include "Test.h"
 
 void SystemLog(const int logLevel, const char *msg) {
     printf("%s", msg);
@@ -47,23 +40,25 @@ int main(int argc, char *argv[]) {
     enginePath.CleanPath();
     BE1::Engine::InitBase(4096, enginePath, SystemLog, SystemError);
 
-    //TestContainer();
+    //Test::TestContainer();
 
-    //TestRValue();
+    //Test::TestRValue();
 
-    //TestMath();
+    //Test::TestMath();
 
-    TestSIMD();
+    Test::TestFloatConverter();
 
-    //TestThread();
+    Test::TestSIMD();
 
-    //TestTask();
+    //Test::TestThread();
+
+    //Test::TestTask();
 
 #if TEST_CUDA
     bool cudaSupported = MyCuda::Init();
     
     if (cudaSupported) {
-        TestCUDA();
+        Test::TestCUDA();
     }
 
     if (cudaSupported) {
@@ -71,7 +66,7 @@ int main(int argc, char *argv[]) {
     }
 #endif
 
-    //TestLua();
+    //Test::TestLua();
 
     BE1::Engine::ShutdownBase();
 }

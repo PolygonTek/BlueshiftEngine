@@ -13,7 +13,7 @@
 // limitations under the License.
 
 #include "BlueshiftEngine.h"
-#include "TestMath.h"
+#include "Test.h"
 
 void TestInverseMatrix() {
     BE1::Mat3 m3x3;
@@ -28,7 +28,7 @@ void TestInverseMatrix() {
     BE1::Mat3x4 m3x4InvInv = m3x4Inv.Inverse();
 }
 
-void TestMath() {
+void Test::TestMath() {
     //TestInverseMatrix();
     BE1::Mat3 m = BE1::Mat3::FromRotationZYX(DEG2RAD(120), DEG2RAD(-20), DEG2RAD(60));
 

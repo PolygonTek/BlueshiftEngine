@@ -14,7 +14,7 @@
 
 #include "BlueshiftEngine.h"
 #include "LuaCpp/LuaCpp.h"
-#include "TestLua.h"
+#include "Test.h"
 
 static void TestLuaFunction(LuaCpp::State &lua) {
     // Lua function that returns single value
@@ -323,7 +323,7 @@ static void TestCompile(LuaCpp::State &lua) {
     }
 }
 
-void TestLua() {
+void Test::TestLua() {
     LuaCpp::State lua(true);
 
     lua.HandleExceptionsWith([](int status, std::string msg, std::exception_ptr exception) {

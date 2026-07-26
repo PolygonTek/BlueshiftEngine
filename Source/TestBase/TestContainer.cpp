@@ -13,7 +13,7 @@
 // limitations under the License.
 
 #include "BlueshiftEngine.h"
-#include "TestContainer.h"
+#include "Test.h"
 
 class Bucket {
 public:
@@ -64,6 +64,6 @@ static void TestHashLinkMap() {
     }
 }
 
-void TestContainer() {
+void Test::TestContainer() {
     TestHashLinkMap();
 }

@@ -13,7 +13,7 @@
 // limitations under the License.
 
 #include "BlueshiftEngine.h"
-#include "TestRValue.h"
+#include "Test.h"
 
 class Number {
 public:
@@ -88,7 +88,7 @@ private:
     int n;
 };
 
-void TestRValue() {
+void Test::TestRValue() {
     int a = 1; // value assignment to lvalue.
     int &b = a; // lvalue reference.
     const int &c = 3; // const lvalue reference can reference rvalue.

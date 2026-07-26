@@ -14,4 +14,15 @@
 
 #pragma once
 
-void TestCUDA();
+class Test {
+public:
+    static void TestContainer();
+    static void TestRValue();
+    static void TestMath();
+    static void TestFloatConverter();
+    static void TestThread();
+    static void TestTask();
+    static void TestSIMD();
+    static void TestCUDA();
+    static void TestLua();
+};
