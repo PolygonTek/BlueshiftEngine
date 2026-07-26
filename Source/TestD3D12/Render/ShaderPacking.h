@@ -18,7 +18,7 @@
 #include <cstdint>
 
 #include "Math/FloatConverter.h"
-#include "Shaders/ShaderInterop.h"
+#include "Shaders/ShaderTypes.h"
 
 // Common.hlsli 와 같은 함수명과 bit layout 을 사용해 CPU 에서 shader parameter 를 패킹한다.
 class ShaderPacking {

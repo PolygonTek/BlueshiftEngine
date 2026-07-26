@@ -207,6 +207,7 @@ set(SRC_FILES
     Render/Frontend/RenderPassBuilder.cpp
     Render/Sampler.h
     Render/Sampler.cpp
+    Shaders/ShaderTypes.h
     Shaders/ShaderInterop.h)
 
 file(GLOB_RECURSE SHADER_FILES RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
