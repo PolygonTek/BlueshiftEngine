@@ -187,7 +187,6 @@ if (PLATFORM_WINDOWS)
         set(CMAKE_EXE_LINKER_FLAGS_DEBUG "${CMAKE_EXE_LINKER_FLAGS_DEBUG} /NODEFAULTLIB:\"msvcrt.lib\"")
     endif ()
 elseif (PLATFORM_ANDROID)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14")
     #set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=gnu++14 -fno-exceptions -fno-rtti")
 
     if (${ENGINE_ARCH} MATCHES "arm64")
@@ -220,7 +219,7 @@ elseif (PLATFORM_ANDROID)
 elseif (APPLE) 
     # Settings for macOS, iOS
     #set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=gnu99")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14 -stdlib=libc++")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -stdlib=libc++")
 
     add_compile_options("-Wno-unused-parameter")
     add_compile_options("-Wno-unused-variable")
