@@ -901,26 +901,31 @@ void App::BuildImGuiOverlay() {
                     }
 
                     if (convolutionBloomKernelSource == static_cast<int>(App::ConvolutionBloomKernelSource::GenerateFromAperture)) {
+                        bool regenerateConvolutionBloomKernel = false;
+
                         float convolutionBloomApertureScale = r_convolutionBloomApertureScale.GetFloat();
                         ImGui::SetNextItemWidth(fontSize * 12.0f);
                         if (ImGui::SliderFloat("Bloom aperture scale", &convolutionBloomApertureScale, 0.02f, 1.0f, "%.3f")) {
                             r_convolutionBloomApertureScale.SetFloat(BE1::Min(BE1::Max(convolutionBloomApertureScale, 0.02f), 1.0f));
                         }
+                        regenerateConvolutionBloomKernel |= ImGui::IsItemDeactivatedAfterEdit();
 
                         float convolutionBloomDiffractionPSFScale = r_convolutionBloomDiffractionPSFScale.GetFloat();
                         ImGui::SetNextItemWidth(fontSize * 12.0f);
                         if (ImGui::SliderFloat("Bloom diffraction PSF scale", &convolutionBloomDiffractionPSFScale, 0.0f, 100.0f, "%.3f")) {
                             r_convolutionBloomDiffractionPSFScale.SetFloat(BE1::Max(convolutionBloomDiffractionPSFScale, 0.0f));
                         }
+                        regenerateConvolutionBloomKernel |= ImGui::IsItemDeactivatedAfterEdit();
 
                         float convolutionBloomDispersionAmount = r_convolutionBloomDispersionAmount.GetFloat();
                         ImGui::SetNextItemWidth(fontSize * 12.0f);
                         if (ImGui::SliderFloat("Bloom dispersion amount", &convolutionBloomDispersionAmount, 0.0f, 10.0f, "%.3f")) {
                             r_convolutionBloomDispersionAmount.SetFloat(BE1::Max(convolutionBloomDispersionAmount, 0.0f));
                         }
+                        regenerateConvolutionBloomKernel |= ImGui::IsItemDeactivatedAfterEdit();
 
-                        if (ImGui::Button("Generate Bloom kernel")) {
-                            RequestConvolutionBloomKernelGeneration();
+                        if (regenerateConvolutionBloomKernel) {
+                            RegenerateConvolutionBloomKernel();
                         }
                     }
                 }

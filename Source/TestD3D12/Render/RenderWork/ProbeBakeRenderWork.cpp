@@ -22,6 +22,11 @@ ProbeBakeRenderWork::ProbeBakeRenderWork(uint64_t bakeSerial, const ProbeBakeJob
     : bakeSerial(bakeSerial), bakeJob(jobDesc), generateRadianceMipChain(generateRadianceMipChain) {
 }
 
+bool ProbeBakeRenderWork::IsReadyToAttach() const {
+    const SharedPtr<Texture> &radianceCubeMap = bakeJob.GetRadianceCubeMap();
+    return radianceCubeMap && radianceCubeMap->IsReadyForRendering();
+}
+
 bool ProbeBakeRenderWork::RecordCommands(RHI::FrameThreadData *frameThreadData, RHI::CommandList *commandList) {
     assert(!renderSystem->IsUsingRenderThread() || RenderSystem::IsInRenderThread());
 
@@ -55,6 +60,6 @@ bool ProbeBakeRenderWork::RecordCommands(RHI::FrameThreadData *frameThreadData, 
     return bakeJob.Execute(commandList);
 }
 
-void ProbeBakeRenderWork::OnCompleted(bool submitted) {
-    renderSystem->GetProbeBakeSystem().CompleteBake(bakeSerial, submitted, bakeJob.GetDiffuseIrradianceCubeMap(), bakeJob.GetSpecularPrefilteredCubeMap());
+void ProbeBakeRenderWork::OnCompleted(bool commandListSubmitted) {
+    renderSystem->GetProbeBakeSystem().CompleteBake(bakeSerial, commandListSubmitted, bakeJob.GetDiffuseIrradianceCubeMap(), bakeJob.GetSpecularPrefilteredCubeMap());
 }

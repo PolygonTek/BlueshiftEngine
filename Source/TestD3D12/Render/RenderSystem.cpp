@@ -301,10 +301,10 @@ void RenderSystem::RequestScreenshot(RenderContext *renderContext, const char *f
     renderContext->RequestScreenshot(filename);
 }
 
-void RenderSystem::SubmitRenderWork(UniquePtr<RenderWork> work) {
+void RenderSystem::EnqueueRenderWork(UniquePtr<RenderWork> work) {
     assert(BE1::Engine::IsInMainThread());
 
-    renderWorkQueue.Submit(std::move(work));
+    renderWorkQueue.Enqueue(std::move(work));
 }
 
 void RenderSystem::CompleteRenderWorks(RenderFrameData *frameData) {
@@ -329,7 +329,7 @@ uint64_t RenderSystem::RequestConvolutionBloomKernelGeneration(const SharedPtr<T
 
     const uint64_t requestSerial = ++nextConvolutionBloomKernelGenerationSerial;
     UniquePtr<RenderWork> renderWork = MakeUnique<ConvolutionBloomKernelRenderWork>(requestSerial, apertureTexture, apertureScale, diffractionPSFScale, dispersionAmount);
-    SubmitRenderWork(std::move(renderWork));
+    EnqueueRenderWork(std::move(renderWork));
     return requestSerial;
 }
 

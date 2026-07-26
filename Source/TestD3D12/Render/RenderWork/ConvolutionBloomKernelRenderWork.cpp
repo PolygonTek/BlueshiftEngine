@@ -26,10 +26,14 @@ ConvolutionBloomKernelRenderWork::ConvolutionBloomKernelRenderWork(uint64_t requ
     this->dispersionAmount = dispersionAmount;
 }
 
+bool ConvolutionBloomKernelRenderWork::IsReadyToAttach() const {
+    return apertureTexture && apertureTexture->IsReadyForRendering();
+}
+
 bool ConvolutionBloomKernelRenderWork::RecordCommands(RHI::FrameThreadData *frameThreadData, RHI::CommandList *commandList) {
     assert(!renderSystem->IsUsingRenderThread() || RenderSystem::IsInRenderThread());
 
-    if (!apertureTexture || !apertureTexture->IsReadyForRendering() || !apertureTexture->GetRHITexture()) {
+    if (!apertureTexture) {
         return false;
     }
 
@@ -41,6 +45,6 @@ bool ConvolutionBloomKernelRenderWork::RecordCommands(RHI::FrameThreadData *fram
     return kernelGenerator.GenerateKernel(commandList, frameThreadData);
 }
 
-void ConvolutionBloomKernelRenderWork::OnCompleted(bool submitted) {
-    renderSystem->CompleteConvolutionBloomKernelGeneration(requestSerial, submitted);
+void ConvolutionBloomKernelRenderWork::OnCompleted(bool commandListSubmitted) {
+    renderSystem->CompleteConvolutionBloomKernelGeneration(requestSerial, commandListSubmitted);
 }

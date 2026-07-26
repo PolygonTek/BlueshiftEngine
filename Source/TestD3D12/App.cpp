@@ -187,7 +187,7 @@ void App::CheckModifiedCVars() {
 
     if (app_convolutionBloomKernelSource.GetInteger() == static_cast<int>(App::ConvolutionBloomKernelSource::GenerateFromAperture) && (kernelSourceModified || aperturePresetModified)) {
         SetConvolutionBloomAperturePreset((App::AperturePreset)app_convolutionBloomAperturePreset.GetInteger());
-        RequestConvolutionBloomKernelGeneration();
+        RegenerateConvolutionBloomKernel();
     }
 }
 
@@ -648,13 +648,13 @@ void App::SetConvolutionBloomAperturePreset(App::AperturePreset aperturePreset) 
     convolutionBloomApertureTexture = textureManager.GetTexture(filename, Texture::Flag::HighQuality | Texture::Flag::NoMipmaps);
 }
 
-void App::RequestConvolutionBloomKernelGeneration() {
+void App::RegenerateConvolutionBloomKernel() {
     if (app_convolutionBloomKernelSource.GetInteger() != static_cast<int>(App::ConvolutionBloomKernelSource::GenerateFromAperture)) {
         return;
     }
 
     if (convolutionBloomKernelGenerationRequestSerial != 0) {
-        convolutionBloomKernelRegenerationRequested = true;
+        convolutionBloomKernelNeedsRegeneration = true;
         return;
     }
 
@@ -664,7 +664,7 @@ void App::RequestConvolutionBloomKernelGeneration() {
         return;
     }
 
-    convolutionBloomKernelRegenerationRequested = false;
+    convolutionBloomKernelNeedsRegeneration = false;
     convolutionBloomKernelGenerationRequestSerial = requestSerial;
 }
 
@@ -674,7 +674,7 @@ void App::ProcessConvolutionBloomKernelGenerationResult() {
     }
 
     if (app_convolutionBloomKernelSource.GetInteger() != static_cast<int>(App::ConvolutionBloomKernelSource::GenerateFromAperture)) {
-        convolutionBloomKernelRegenerationRequested = false;
+        convolutionBloomKernelNeedsRegeneration = false;
         convolutionBloomKernelGenerationRequestSerial = 0;
         return;
     }
@@ -684,6 +684,12 @@ void App::ProcessConvolutionBloomKernelGenerationResult() {
         return;
     }
     convolutionBloomKernelGenerationRequestSerial = 0;
+
+    // 결과를 받기 전에 다시 RegenerateConvolutionBloomKernel 이 호출되었으면, 다시 요청을 넣는다.
+    if (convolutionBloomKernelNeedsRegeneration) {
+        RegenerateConvolutionBloomKernel();
+        return;
+    }
 
     if (!generationSucceeded) {
         BE_WARNLOG("App::ProcessConvolutionBloomKernelGenerationResult: failed to generate convolution bloom kernel\n");

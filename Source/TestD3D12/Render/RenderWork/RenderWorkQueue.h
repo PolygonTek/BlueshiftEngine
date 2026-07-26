@@ -30,7 +30,7 @@ class RenderFrameData;
 class RenderWorkQueue {
 public:
                                     // render work 를 대기 목록에 추가한다.
-    void                            Submit(UniquePtr<RenderWork> work);
+    void                            Enqueue(UniquePtr<RenderWork> work);
 
                                     // 대기 중인 render work 를 최대 maxWorkCount 만큼 frameData 의 렌더 커맨드에 밀어 넣는다.
     int                             AttachPendingWorks(RenderFrameData *frameData, int maxWorkCount);

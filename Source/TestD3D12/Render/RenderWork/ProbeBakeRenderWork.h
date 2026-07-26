@@ -23,8 +23,9 @@ public:
     ProbeBakeRenderWork(uint64_t bakeSerial, const ProbeBakeJob::Desc &jobDesc, bool generateRadianceMipChain);
 
     virtual const char *            GetDebugName() const override { return "ProbeBakeRenderWork"; }
+    virtual bool                    IsReadyToAttach() const override;
     virtual bool                    RecordCommands(RHI::FrameThreadData *frameThreadData, RHI::CommandList *commandList) override;
-    virtual void                    OnCompleted(bool submitted) override;
+    virtual void                    OnCompleted(bool commandListSubmitted) override;
 
 private:
     uint64_t                        bakeSerial = 0;

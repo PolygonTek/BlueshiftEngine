@@ -311,7 +311,7 @@ const void *RenderBackend::ExecuteRenderWork(const void *data) {
         commandList->CloseAndExecute();
 
         // 커맨드 리스트를 그래픽스 큐에 제출했음을 표시한다.
-        renderWork->MarkSubmitted();
+        renderWork->MarkCommandListSubmitted();
     } else {
         commandList->Close();
     }

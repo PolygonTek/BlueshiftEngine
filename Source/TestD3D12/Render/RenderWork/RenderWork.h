@@ -43,6 +43,10 @@ public:
 
     virtual const char *            GetDebugName() const = 0;
 
+                                    // 메인 스레드에서 frame command 에 추가할 준비가 되었는지 검사한다.
+                                    // false 를 반환한 작업은 RenderWorkQueue 의 대기 목록에 유지된다.
+    virtual bool                    IsReadyToAttach() const { return true; }
+
                                     // 렌더 백엔드에서 커맨드 리스트를 기록한다.
                                     // true 를 반환하면 백엔드가 커맨드 리스트를 닫아 그래픽스 큐에 제출하고,
                                     // false 를 반환하면 제출하지 않고 닫기만 한다.
@@ -51,11 +55,12 @@ public:
                                     // 메인 스레드에서 한 번 호출된다.
                                     // 렌더 커맨드에 밀어 넣은 작업은 해당 프레임의 GPU 완료 후 호출되고,
                                     // 대기 중 취소된 작업은 즉시 OnCompleted(false) 로 호출된다.
-    virtual void                    OnCompleted(bool submitted) = 0;
+    virtual void                    OnCompleted(bool commandListSubmitted) = 0;
 
 private:
-    void                            MarkSubmitted() { submitted = true; }
-    bool                            WasSubmitted() const { return submitted; }
+    void                            MarkCommandListSubmitted() { commandListSubmitted = true; }
+    bool                            WasCommandListSubmitted() const { return commandListSubmitted; }
 
-    bool                            submitted = false;
+    bool                            commandListSubmitted = false;
+    uint64_t                        enqueueTimeUsec = 0;
 };

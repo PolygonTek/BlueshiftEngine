@@ -15,14 +15,18 @@
 #include "Precompiled.h"
 #include "RenderWorkQueue.h"
 #include "Render/RenderFrameData.h"
+#include "Platform/PlatformTime.h"
 
-void RenderWorkQueue::Submit(UniquePtr<RenderWork> work) {
+static constexpr uint64_t RenderWorkAttachTimeoutUsec = 30ULL * 1000 * 1000;
+
+void RenderWorkQueue::Enqueue(UniquePtr<RenderWork> work) {
     assert(BE1::Engine::IsInMainThread());
 
     if (!work) {
         return;
     }
 
+    work->enqueueTimeUsec = BE1::PlatformTime::Microseconds();
     pendingWorks.Append(std::move(work));
 }
 
@@ -33,14 +37,43 @@ int RenderWorkQueue::AttachPendingWorks(RenderFrameData *frameData, int maxWorkC
         return 0;
     }
 
+    const uint64_t currentTimeUsec = BE1::PlatformTime::Microseconds();
     int attachedWorkCount = 0;
 
     while (!pendingWorks.IsEmpty() && attachedWorkCount < maxWorkCount) {
-        UniquePtr<RenderWork> work = pendingWorks.TakeFirst();
+        int readyWorkIndex = -1;
+
+        for (int index = 0; index < pendingWorks.Count();) {
+            RenderWork *work = pendingWorks[index].get();
+
+            if (work->IsReadyToAttach()) {
+                if (readyWorkIndex < 0) {
+                    readyWorkIndex = index;
+                }
+                index++;
+                continue;
+            }
+
+            if (currentTimeUsec - work->enqueueTimeUsec < RenderWorkAttachTimeoutUsec) {
+                index++;
+                continue;
+            }
+
+            UniquePtr<RenderWork> timedOutWork = pendingWorks.TakeAt(index);
+
+            BE_WARNLOG("RenderWorkQueue::AttachPendingWorks: '%s' timed out waiting to become ready\n", timedOutWork->GetDebugName());
+            timedOutWork->OnCompleted(false);
+        }
+
+        if (readyWorkIndex < 0) {
+            break;
+        }
+
+        UniquePtr<RenderWork> work = pendingWorks.TakeAt(readyWorkIndex);
 
         if (!frameData->CmdRenderWork(work.get())) {
             // 렌더 커맨드에 밀어 넣지 못했다면, 다시 대기 목록으로 되돌린다.
-            pendingWorks.Insert(std::move(work), 0);
+            pendingWorks.Insert(std::move(work), readyWorkIndex);
             break;
         }
 
@@ -59,9 +92,10 @@ void RenderWorkQueue::CompleteAttachedWork(AttachedWork &attachedWork) {
         return;
     }
 
-    const bool wasSubmitted = attachedWork.renderWork->WasSubmitted();
+    // RecordCommands 에 실패한 경우에는 여기서 OnCompleted(false) 를 호출한다.
+    const bool commandListSubmitted = attachedWork.renderWork->WasCommandListSubmitted();
 
-    attachedWork.renderWork->OnCompleted(wasSubmitted);
+    attachedWork.renderWork->OnCompleted(commandListSubmitted);
     attachedWork.renderWork.reset();
     attachedWork.frameData = nullptr;
 }

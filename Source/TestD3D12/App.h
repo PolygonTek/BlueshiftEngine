@@ -89,7 +89,7 @@ public:
 
 private:
     void                            SetConvolutionBloomAperturePreset(AperturePreset aperturePreset);
-    void                            RequestConvolutionBloomKernelGeneration();
+    void                            RegenerateConvolutionBloomKernel();
     void                            ProcessConvolutionBloomKernelGenerationResult();
     void                            CheckModifiedCVars();
     void                            GetConvolutionBloomKernelPresetName(int presetIndex, char *buffer, int bufferSize) const;
@@ -128,7 +128,7 @@ private:
     SharedPtr<Texture>              convolutionBloomApertureTexture;
     SharedPtr<Texture>              convolutionBloomGeneratedKernelTexture;
 
-    bool                            convolutionBloomKernelRegenerationRequested = false;
+    bool                            convolutionBloomKernelNeedsRegeneration = false;
     uint64_t                        convolutionBloomKernelGenerationRequestSerial = 0;
     uint32_t                        convolutionBloomGeneratedKernelSerial = 0;
 

@@ -24,8 +24,9 @@ public:
     ConvolutionBloomKernelRenderWork(uint64_t requestSerial, const SharedPtr<Texture> &apertureTexture, float apertureScale, float diffractionPSFScale, float dispersionAmount);
 
     virtual const char *            GetDebugName() const override { return "ConvolutionBloomKernelRenderWork"; }
+    virtual bool                    IsReadyToAttach() const override;
     virtual bool                    RecordCommands(RHI::FrameThreadData *frameThreadData, RHI::CommandList *commandList) override;
-    virtual void                    OnCompleted(bool submitted) override;
+    virtual void                    OnCompleted(bool commandListSubmitted) override;
 
 private:
     uint64_t                        requestSerial = 0;

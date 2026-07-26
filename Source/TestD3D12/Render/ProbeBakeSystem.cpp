@@ -163,7 +163,7 @@ void ProbeBakeSystem::Prepare(RenderContext *renderContext) {
     activeEnvironmentLightRequest = request;
     activeBakeSerial = bakeSerial;
 
-    renderSystem->SubmitRenderWork(std::move(renderWork));
+    renderSystem->EnqueueRenderWork(std::move(renderWork));
 }
 
 void ProbeBakeSystem::CompleteBake(uint64_t bakeSerial, bool succeeded, const SharedPtr<Texture> &diffuseCubeMap, const SharedPtr<Texture> &specularCubeMap) {

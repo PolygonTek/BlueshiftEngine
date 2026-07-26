@@ -120,7 +120,7 @@ private:
     void                            PrepareProbeBakes(RenderContext *renderContext);
 
                                     // render work 를 대기 큐에 추가한다.
-    void                            SubmitRenderWork(UniquePtr<RenderWork> work);
+    void                            EnqueueRenderWork(UniquePtr<RenderWork> work);
 
                                     // 완료된 frameData 의 render work 를 완료 처리한다.
     void                            CompleteRenderWorks(RenderFrameData *frameData);
