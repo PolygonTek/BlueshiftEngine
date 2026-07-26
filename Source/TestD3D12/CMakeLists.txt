@@ -162,6 +162,7 @@ set(SRC_FILES
     Render/GpuFFT.cpp
     Render/GpuSphericalHarmonics.h
     Render/GpuSphericalHarmonics.cpp
+    Render/ShaderPacking.h
     Render/ShaderMaterialTable.h
     Render/ShaderMaterialTable.cpp
     Render/ShaderLightTable.h

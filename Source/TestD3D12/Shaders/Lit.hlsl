@@ -63,7 +63,7 @@ SurfacePSOutput PSMain(PSInput input) {
     const float3 worldNormal = normalize(input.worldNormal);
 
     SurfacePSOutput result;
-    result.color = textureColor * shaderMaterial.baseColorFactor * input.color;
+    result.color = textureColor * UnpackShaderMaterialBaseColorFactor(shaderMaterial) * input.color;
 #ifdef OUTPUT_NORMAL
     result.normal = EncodeOctahedralNormal(worldNormal);
 #endif

@@ -61,7 +61,7 @@ SurfacePSOutput PSMain(PSInput input) {
 
     float4 textureColor = GetTexture2D(shaderMaterial.baseColorTextureIndex).Sample(linearWrapSampler, input.texCoord);
     SurfacePSOutput result;
-    result.color = textureColor * shaderMaterial.baseColorFactor * input.color;
+    result.color = textureColor * UnpackShaderMaterialBaseColorFactor(shaderMaterial) * input.color;
 #ifdef OUTPUT_NORMAL
     result.normal = EncodeOctahedralNormal(normalize(input.worldNormal));
 #endif

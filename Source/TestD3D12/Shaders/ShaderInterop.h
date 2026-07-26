@@ -473,10 +473,6 @@ struct ShaderSurface {
 };
 
 struct ShaderMaterial {
-    float4 baseColorFactor;
-    float3 emissionColor;
-    float emissionFactor;
-
     uint baseColorTextureIndex;
     uint normalTextureIndex;
     uint emissiveTextureIndex;
@@ -487,19 +483,20 @@ struct ShaderMaterial {
     uint clearCoatRoughnessTextureIndex;
     uint clearCoatNormalTextureIndex;
     uint heightTextureIndex;
-    uint streamingMaterialIndex;
 
-    float metallicFactor;
-    float roughnessFactor;
-    float aoStrength;
+    uint packedBaseColorFactor;
     float alphaCutoff;
-    float clearCoatFactor;
-    float clearCoatRoughnessFactor;
+    uint2 packedEmissionColorFactor;
+    uint packedMetallicRoughnessFactors;
+    float aoStrength;
+    uint packedClearCoatFactors;
     float heightScale;
+
+    uint streamingMaterialIndex;
 };
 
 #ifdef __cplusplus
-static_assert(sizeof(ShaderMaterial) == 104, "ShaderMaterial must remain a tightly packed StructuredBuffer element");
+static_assert(sizeof(ShaderMaterial) == 76, "ShaderMaterial must remain a tightly packed StructuredBuffer element");
 #endif
 
 struct ShaderLightRef {
