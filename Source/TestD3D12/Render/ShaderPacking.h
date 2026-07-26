@@ -16,8 +16,8 @@
 
 #include <cmath>
 #include <cstdint>
-#include <DirectXPackedVector.h>
 
+#include "Math/FloatConverter.h"
 #include "Shaders/ShaderInterop.h"
 
 // Common.hlsli 와 같은 함수명과 bit layout 을 사용해 CPU 에서 shader parameter 를 패킹한다.
@@ -67,8 +67,8 @@ private:
     static float        Saturate(float value) { return value < 0.0f ? 0.0f : (value > 1.0f ? 1.0f : value); }
     static uint         QuantizeUNorm(float value, uint maxValue) { return static_cast<uint>(std::floor(Saturate(value) * static_cast<float>(maxValue) + 0.5f)); }
     static float        DequantizeUNorm(uint value, uint maxValue) { return static_cast<float>(value) / static_cast<float>(maxValue); }
-    static uint         FloatToHalfBits(float value) { return static_cast<uint>(DirectX::PackedVector::XMConvertFloatToHalf(value)); }
-    static float        HalfBitsToFloat(uint value) { return DirectX::PackedVector::XMConvertHalfToFloat(static_cast<DirectX::PackedVector::HALF>(value & 0xFFFFu)); }
+    static uint         FloatToHalfBits(float value) { return static_cast<uint>(BE1::F16Converter::FromF32(value, BE1::DenormalMode::Preserve)); }
+    static float        HalfBitsToFloat(uint value) { return BE1::F16Converter::ToF32(static_cast<BE1::float16_t>(value & 0xFFFFu)); }
 };
 
 BE_INLINE uint ShaderPacking::PackUnitVector3ToRGB8UNorm(const float3 &value) {
