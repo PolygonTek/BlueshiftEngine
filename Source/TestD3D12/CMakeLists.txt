@@ -18,8 +18,8 @@ set(SRC_FILES
     Scene.h
     SceneRegistry.h
     SceneRegistry.cpp
-    SceneTest.h
-    SceneTest.cpp
+    SceneMatrix.h
+    SceneMatrix.cpp
     ScenePbr.h
     ScenePbr.cpp
     SceneDebugDraw.h

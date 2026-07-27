@@ -20,7 +20,7 @@
 
 class Mesh;
 
-class SceneTest : public Scene {
+class SceneMatrix : public Scene {
 public:
     void                        Init(RenderWorld *renderWorld) override;
     void                        Shutdown() override;

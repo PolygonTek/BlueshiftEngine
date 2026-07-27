@@ -17,13 +17,13 @@
 #include "Render/Material/MaterialManager.h"
 #include "Render/Mesh/MeshManager.h"
 #include "Render/Mesh/MeshInstance.h"
-#include "SceneTest.h"
+#include "SceneMatrix.h"
 
 #ifdef ENABLE_IMGUI
 #include "imgui/imgui.h"
 #endif
 
-void SceneTest::Init(RenderWorld *renderWorld) {
+void SceneMatrix::Init(RenderWorld *renderWorld) {
     this->renderWorld = renderWorld;
 
     renderWorld->SetSkyboxMaterial(materialManager.GetMaterial("Source/TestD3D12/Materials/skybox.material"));
@@ -41,7 +41,7 @@ void SceneTest::Init(RenderWorld *renderWorld) {
     InitGameLights(32, 32, 1);
 }
 
-void SceneTest::Shutdown() {
+void SceneMatrix::Shutdown() {
     if (!renderWorld) {
         return;
     }
@@ -52,8 +52,8 @@ void SceneTest::Shutdown() {
     renderWorld = nullptr;
 }
 
-void SceneTest::Update(uint64_t elapsedUsec) {
-    PROFILER_CPU_SCOPED_EVENT("SceneTest::Update");
+void SceneMatrix::Update(uint64_t elapsedUsec) {
+    PROFILER_CPU_SCOPED_EVENT("SceneMatrix::Update");
 
 #ifdef ENABLE_IMGUI
     if (pendingObjectCountChange) {
@@ -75,7 +75,7 @@ void SceneTest::Update(uint64_t elapsedUsec) {
     }
 }
 
-void SceneTest::InitGameObjects(uint32_t countX, uint32_t countY, uint32_t countZ) {
+void SceneMatrix::InitGameObjects(uint32_t countX, uint32_t countY, uint32_t countZ) {
     objectCountX = countX;
     objectCountY = countY;
     objectCountZ = countZ;
@@ -148,7 +148,7 @@ void SceneTest::InitGameObjects(uint32_t countX, uint32_t countY, uint32_t count
 
 }
 
-void SceneTest::InitGameLights(uint32_t countX, uint32_t countY, uint32_t countZ) {
+void SceneMatrix::InitGameLights(uint32_t countX, uint32_t countY, uint32_t countZ) {
     lightCountX = countX;
     lightCountY = countY;
     lightCountZ = countZ;
@@ -205,33 +205,33 @@ void SceneTest::InitGameLights(uint32_t countX, uint32_t countY, uint32_t countZ
     }
 }
 
-void SceneTest::ClearGameObjects() {
+void SceneMatrix::ClearGameObjects() {
     renderWorld->ClearScene(RenderWorld::ClearFlag::RenderObjects);
 
     gameObjects.DeleteContents(true);
     testMesh.reset();
 }
 
-void SceneTest::ClearGameLights() {
+void SceneMatrix::ClearGameLights() {
     renderWorld->ClearScene(RenderWorld::ClearFlag::RenderLights);
 
     directionalLight.renderLightHandle = -1;
     gameLights.Clear();
 }
 
-void SceneTest::ChangeGameObjectCount(uint32_t countX, uint32_t countY, uint32_t countZ) {
+void SceneMatrix::ChangeGameObjectCount(uint32_t countX, uint32_t countY, uint32_t countZ) {
     ClearGameObjects();
 
     InitGameObjects(countX, countY, countZ);
 }
 
-void SceneTest::ChangeGameLightCount(uint32_t countX, uint32_t countY, uint32_t countZ) {
+void SceneMatrix::ChangeGameLightCount(uint32_t countX, uint32_t countY, uint32_t countZ) {
     ClearGameLights();
 
     InitGameLights(countX, countY, countZ);
 }
 
-void SceneTest::AnimateGameObjects(uint64_t elapsedUsec) {
+void SceneMatrix::AnimateGameObjects(uint64_t elapsedUsec) {
     const float elapsedSeconds = (float)MICRO2SEC((double)elapsedUsec);
 
     const float zRotationSpeed = 1.25f;
@@ -251,7 +251,7 @@ void SceneTest::AnimateGameObjects(uint64_t elapsedUsec) {
     }
 }
 
-void SceneTest::AnimateGameLights(uint64_t elapsedUsec) {
+void SceneMatrix::AnimateGameLights(uint64_t elapsedUsec) {
     const float elapsedSeconds = (float)MICRO2SEC((double)elapsedUsec);
 
     const float movementAmplitude = 4.0f;
@@ -270,13 +270,13 @@ void SceneTest::AnimateGameLights(uint64_t elapsedUsec) {
     }
 }
 
-void SceneTest::UpdateDirectionalLightDirection() {
+void SceneMatrix::UpdateDirectionalLightDirection() {
     // The UI describes the direction toward the sun or moon, while axis[0] is the direction in which light rays travel.
     directionalLight.renderLightDesc.axis = BE1::Angles(0.0f, directionalLightElevation, directionalLightAzimuth + 180.0f).ToMat3();
 }
 
 #ifdef ENABLE_IMGUI
-void SceneTest::BuildImGui() {
+void SceneMatrix::BuildImGui() {
     const float itemWidth = ImGui::GetFontSize() * 17.0f;
 
     ImGui::Text("Objects (%i)", gameObjects.Count());

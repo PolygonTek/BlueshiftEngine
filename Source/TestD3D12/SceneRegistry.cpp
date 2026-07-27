@@ -14,7 +14,7 @@
 
 #include "Precompiled.h"
 #include "ScenePbr.h"
-#include "SceneTest.h"
+#include "SceneMatrix.h"
 #include "SceneDebugDraw.h"
 #include "SceneRegistry.h"
 
@@ -25,8 +25,8 @@ struct SceneEntry {
     SceneFactory    factory;
 };
 
-static Scene *CreateSceneTest() {
-    return new SceneTest;
+static Scene *CreateSceneMatrix() {
+    return new SceneMatrix;
 }
 
 static Scene *CreateScenePbr() {
@@ -38,7 +38,7 @@ static Scene *CreateSceneDebugDraw() {
 }
 
 static constexpr SceneEntry SceneEntries[] = {
-    { "Test", CreateSceneTest },
+    { "Matrix", CreateSceneMatrix },
     { "PBR", CreateScenePbr },
     { "Debug Draw", CreateSceneDebugDraw },
 };
