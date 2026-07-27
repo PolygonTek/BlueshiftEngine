@@ -648,22 +648,9 @@ bool Image::LoadDDSFromMemory(const char *name, const byte *data, size_t size) {
     this->pic = (byte *)Mem_Alloc256(bufSize);
     this->alloced = true;
 
-    if (isCube) {
-        // DDS cubemap slices use Image::CubeMapFace order and engine-axis orientation.
-        // Copy face texels verbatim without remapping, rotating, or flipping them.
-        for (int mipLevel = 0; mipLevel < numMipLevels; mipLevel++) {
-            size_t sliceSize = SizeInBytesForSlice(mipLevel);
-
-            for (int sliceIndex = 0; sliceIndex < arraySize; sliceIndex++) {
-                byte *dest = GetPixels(mipLevel, sliceIndex);
-
-                simdProcessor->Memcpy(dest, ptr, static_cast<int>(sliceSize));
-                ptr += sliceSize;
-            }
-        }
-    } else {
-        simdProcessor->Memcpy(this->pic, ptr, static_cast<int>(bufSize));
-    }
+    // DDS 와 Image 는 모두 slice-major order 로 데이터를 저장한다.
+    // Cubemap face 순서와 방향도 동일하므로 payload 를 그대로 복사한다.
+    simdProcessor->Memcpy(this->pic, ptr, static_cast<int>(bufSize));
 
     return true;
 }
@@ -737,26 +724,24 @@ bool Image::LoadDDSMipRangeData(File *fp, int32_t originalWidth, int32_t origina
     this->pic = (byte *)Mem_Alloc256(bufSize);
     this->alloced = true;
 
-    int seekStart = fp->Tell();
-    uint64_t seekOffset = Image::MemRequired(originalWidth, originalHeight, originalDepth, firstMip, arraySize, format);
+    const int64_t payloadOffset = fp->Tell();
+    const uint64_t sourceSliceSize = Image::MemRequired(originalWidth, originalHeight, originalDepth, originalMipLevels, 1, format);
+    const uint64_t sourceMipOffset = Image::MemRequired(originalWidth, originalHeight, originalDepth, firstMip, 1, format);
+    const size_t mipRangeSize = SizeInBytesForSlice(0, numMipLevels);
 
+    // DDS 와 Image 는 모두 slice-major order 이므로 각 source slice 의 요청된 mip 범위를 연속으로 읽는다.
     // NOTE: fp 가 zip 으로 압축된 파일인 경우 Seek 을 사용할 수 없음에 주의
-    fp->Seek(seekStart + static_cast<int64_t>(seekOffset));
+    for (int sliceIndex = 0; sliceIndex < arraySize; sliceIndex++) {
+        const uint64_t sourceOffset = sourceSliceSize * sliceIndex + sourceMipOffset;
+        fp->Seek(payloadOffset + static_cast<int64_t>(sourceOffset));
 
-    // NOTE: DDS 는 mip-major order 로 저장되고, Image 는 slice-major order 로 저장된다.
-    // Cubemap face 순서와 방향은 동일하므로 texel 을 변환하지 않고 그대로 읽는다.
-    for (int mipLevel = 0; mipLevel < numMipLevels; mipLevel++) {
-        size_t sliceSize = SizeInBytesForSlice(mipLevel);
-
-        for (int sliceIndex = 0; sliceIndex < arraySize; sliceIndex++) {
-            byte *dest = GetPixels(mipLevel, sliceIndex);
-            size_t readSize = fp->Read(dest, sliceSize);
-            if (readSize != sliceSize) {
-                Mem_AlignedFree(this->pic);
-                this->pic = nullptr;
-                this->alloced = false;
-                return false;
-            }
+        byte *dest = GetPixels(0, sliceIndex);
+        const size_t readSize = fp->Read(dest, mipRangeSize);
+        if (readSize != mipRangeSize) {
+            Mem_AlignedFree(this->pic);
+            this->pic = nullptr;
+            this->alloced = false;
+            return false;
         }
     }
 
@@ -910,7 +895,7 @@ bool Image::WriteDDS(File *fp) const {
         header.pitchOrLinearSize = static_cast<uint32_t>(SizeInBytesForSlice());
     } else {
         header.flags |= DDSD_PITCH;
-        header.pitchOrLinearSize = (width * BytesPerPixel() + 7) / 8;
+        header.pitchOrLinearSize = width * BytesPerPixel();
     }
 
     header.ddsPixelFormat.size = sizeof(header.ddsPixelFormat);
@@ -1239,24 +1224,9 @@ bool Image::WriteDDS(File *fp) const {
         fp->Write(&dx10Header, sizeof(dx10Header));
     }
 
-    // NOTE: DDS 파일은 mip-major order 로 저장된다.
-    // Mip0: Face0, Face1, Face2, ...
-    // Mip1: Face0, Face1, Face2, ...
-    // 반면, Image 의 데이터는 slice-major order 로 되어있다.
+    // DDS 와 Image 는 모두 slice-major order 이며 각 slice 의 전체 mip chain 이 연속으로 저장된다.
     // Cubemap 은 Image::CubeMapFace 순서와 engine-axis 방향을 그대로 저장한다.
-    if (arraySize > 1) {
-        for (int mipLevel = 0; mipLevel < numMipLevels; mipLevel++) {
-            size_t sliceSize = SizeInBytesForSlice(mipLevel);
-
-            for (int sliceIndex = 0; sliceIndex < arraySize; sliceIndex++) {
-                const byte *slicePtr = GetPixels(mipLevel, sliceIndex);
-
-                fp->Write(slicePtr, sliceSize);
-            }
-        }
-    } else {
-        fp->Write(pic, SizeInBytes(0, numMipLevels));
-    }
+    fp->Write(pic, SizeInBytes(0, numMipLevels));
 
     return true;
 }
