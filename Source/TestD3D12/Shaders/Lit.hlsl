@@ -2,6 +2,17 @@
 #include "LightCullingCommon.hlsli"
 #include "LightCullingDebug.hlsli"
 #include "ForwardLighting.hlsli"
+#include "PBR/ParallaxMapping.hlsli"
+#include "PBR/ShadingParams.hlsli"
+#ifdef INDIRECT_LIGHTING
+    #include "PBR/ImageBasedLighting.hlsli"
+#endif
+
+#if _PARALLAX != 0 || _NORMAL != 0 || (_CLEARCOAT != 0 && _CLEARCOAT_NORMAL != 0)
+    #define USE_SURFACE_TANGENT_FRAME 1
+#else
+    #define USE_SURFACE_TANGENT_FRAME 0
+#endif
 
 #define COMMON_ROOT_SIGNATURE ROOT_SIGNATURE_GRAPHICS_ROOT_FLAGS \
     ROOT_SIGNATURE_BINDLESS_DESCRIPTOR_TABLES \
@@ -24,9 +35,12 @@ struct PSInput {
     nointerpolation uint shaderMaterialIndex : TEXCOORD1;
     float3 worldPosition : TEXCOORD2;
     float3 worldNormal : TEXCOORD3;
+#if USE_SURFACE_TANGENT_FRAME
+    float4 worldTangent : TEXCOORD4;
+#endif
 #ifdef OUTPUT_VELOCITY
-    float4 currentVelocityPosition : TEXCOORD4;
-    float4 prevVelocityPosition : TEXCOORD5;
+    float4 currentVelocityPosition : TEXCOORD5;
+    float4 prevVelocityPosition : TEXCOORD6;
 #endif
 };
 
@@ -43,6 +57,9 @@ PSInput VSMain(VSInput input) {
     result.shaderMaterialIndex = shaderSurface.shaderMaterialIndex;
     result.worldPosition = positionWS.xyz;
     result.worldNormal = TransformSurfaceNormal(DecodeVertexNormal(input.normal.xyz), shaderSurface.worldMatrix, (shaderSurface.flags & ShaderSurfaceFlagNonUniformScale) != 0);
+#if USE_SURFACE_TANGENT_FRAME
+    result.worldTangent = TransformSurfaceTangent(DecodeVertexTangent(input.tangent), shaderSurface.worldMatrix);
+#endif
 #ifdef OUTPUT_VELOCITY
     result.currentVelocityPosition = mul(cameraConstants.unjitteredViewProjMatrix, positionWS);
     result.prevVelocityPosition = CalcClipPosition(input.position, shaderSurface.prevWorldMatrix, cameraConstants.prevUnjitteredViewProjMatrix);
@@ -55,17 +72,61 @@ PSInput VSMain(VSInput input) {
 SurfacePSOutput PSMain(PSInput input) {
     ShaderMaterial shaderMaterial = GetShaderMaterial(input.shaderMaterialIndex);
 
+    float2 texCoordDx = 0.0f;
+    float2 texCoordDy = 0.0f;
+    bool hasTexCoordGradients = false;
+
     if (frameConstants.feedbackBufferIndex != 0 && shaderMaterial.streamingMaterialIndex != TextureStreamingInvalidIndex) {
-        WriteMipmapFeedback(GetRWBufferUInt(frameConstants.feedbackBufferIndex), shaderMaterial.streamingMaterialIndex, ddx_coarse(input.texCoord.xy), ddy_coarse(input.texCoord.xy));
+        texCoordDx = ddx_coarse(input.texCoord);
+        texCoordDy = ddy_coarse(input.texCoord);
+        hasTexCoordGradients = true;
+
+        WriteMipmapFeedback(GetRWBufferUInt(frameConstants.feedbackBufferIndex), shaderMaterial.streamingMaterialIndex, texCoordDx, texCoordDy);
     }
 
-    float4 textureColor = GetTexture2D(shaderMaterial.baseColorTextureIndex).Sample(linearWrapSampler, input.texCoord);
     const float3 worldNormal = normalize(input.worldNormal);
 
+#if USE_SURFACE_TANGENT_FRAME
+    float3 worldTangent = input.worldTangent.xyz - worldNormal * dot(worldNormal, input.worldTangent.xyz);
+    const float worldTangentLengthSquared = dot(worldTangent, worldTangent);
+    worldTangent = worldTangentLengthSquared > FLT_MIN ? worldTangent * rsqrt(worldTangentLengthSquared) : float3(1.0f, 0.0f, 0.0f);
+
+    const float3 worldBitangent = cross(worldNormal, worldTangent) * input.worldTangent.w;
+    const float3x3 tangentToWorld = float3x3(worldTangent, worldBitangent, worldNormal);
+#endif
+
+    const float3 viewDir = normalize(cameraConstants.cameraOrigin - input.worldPosition);
+    float2 baseTc = input.texCoord;
+
+#if _PARALLAX != 0
+    const float3 viewTS = mul(tangentToWorld, viewDir);
+    if (!hasTexCoordGradients) {
+        texCoordDx = ddx_coarse(input.texCoord);
+        texCoordDy = ddy_coarse(input.texCoord);
+    }
+
+    baseTc = ParallaxMapping(GetTexture2D(shaderMaterial.heightTextureIndex), linearWrapSampler, baseTc, shaderMaterial.heightScale, viewTS, texCoordDx, texCoordDy);
+#endif
+
+    float4 baseColor = UnpackShaderMaterialBaseColorFactor(shaderMaterial) * input.color;
+#if _BASECOLOR != 0
+    baseColor *= GetTexture2D(shaderMaterial.baseColorTextureIndex).Sample(linearWrapSampler, baseTc);
+#endif
+
+#ifdef PERFORATED
+    clip(baseColor.a - shaderMaterial.alphaCutoff);
+#endif
+
+#if _NORMAL != 0 || (_CLEARCOAT != 0 && _CLEARCOAT_NORMAL != 0)
+    const ShadingParams shading = PrepareShadingParams(shaderMaterial, baseColor, baseTc, viewDir, worldNormal, tangentToWorld, linearWrapSampler);
+#else
+    const ShadingParams shading = PrepareShadingParams(shaderMaterial, baseColor, baseTc, viewDir, worldNormal, linearWrapSampler);
+#endif
+
     SurfacePSOutput result;
-    result.color = textureColor * UnpackShaderMaterialBaseColorFactor(shaderMaterial) * input.color;
+    result.color = baseColor;
 #ifdef OUTPUT_NORMAL
-    result.normal = EncodeOctahedralNormal(worldNormal);
+    result.normal = EncodeOctahedralNormal(shading.normal);
 #endif
 #ifdef OUTPUT_VELOCITY
     result.velocity = CalcVelocity(input.currentVelocityPosition, input.prevVelocityPosition);
@@ -76,7 +137,14 @@ SurfacePSOutput PSMain(PSInput input) {
         return result;
     }
 
-    const float3 lighting = EvaluateLit((uint2)input.position.xy, input.position.z, input.worldPosition, worldNormal);
-    result.color.rgb *= lighting;
+    float3 lighting = EvaluateDirectLighting((uint2)input.position.xy, input.position.z, input.worldPosition, shading);
+
+#ifdef INDIRECT_LIGHTING
+    const ImageBasedLightingSample environmentLightSample = SampleEnvironmentLight(shading);
+    const ImageBasedLightingDFG dfg = SampleImageBasedLightingDFG(shading);
+    lighting += EvaluateStandardImageBasedLighting(shading, environmentLightSample, dfg);
+#endif
+
+    result.color.rgb = lighting + shading.emission;
     return result;
 }

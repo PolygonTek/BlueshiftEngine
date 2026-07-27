@@ -491,8 +491,9 @@ void App::BuildImGuiOverlay() {
 
     if (ImGui::BeginTabBar("Tabs")) {
         if (ImGui::BeginTabItem("Scene")) {
+            const float itemWidth = fontSize * 17.0f;
             int selectedSceneIndex = pendingSceneIndex != -1 ? pendingSceneIndex : sceneIndex;
-            ImGui::SetNextItemWidth(fontSize * 10.0f);
+            ImGui::SetNextItemWidth(itemWidth);
             if (ImGui::BeginCombo("Scene", SceneRegistry::GetName(selectedSceneIndex))) {
                 for (int index = 0; index < SceneRegistry::GetCount(); ++index) {
                     const bool selected = index == selectedSceneIndex;
@@ -520,7 +521,7 @@ void App::BuildImGuiOverlay() {
             }
 
             if (cameraControlMode == CameraControlMode::Fly) {
-                ImGui::SetNextItemWidth(fontSize * 10.0f);
+                ImGui::SetNextItemWidth(itemWidth);
                 if (ImGui::DragFloat("Fly Speed", &cameraFlySpeed, 1.0f, 1.0f, 1000.0f, "%.1f")) {
                     cameraFlySpeed = BE1::Max(cameraFlySpeed, 1.0f);
                 }

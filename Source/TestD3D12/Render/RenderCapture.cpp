@@ -411,7 +411,7 @@ bool RenderCapture::CaptureDiffuseIrradianceEnvCubeToImage(RenderContext *render
 
     RHI::FrameThreadData *frameThreadData = renderContext->GetCurrentFrontendFrameData()->GetThreadData(0);
     RHI::CommandList *commandList = frameThreadData->BeginCommandList(RHI::CommandQueueType::Graphics);
-#if 1
+#if 0
     bool generated = renderSystem->GetIBLBaker().GenerateDiffuseIrradiance(commandList, radianceCubeTexture->GetRHITexture(), outputRHITexture);
 #else
     bool generated = renderSystem->GetIBLBaker().GenerateDiffuseIrradianceSH(commandList, radianceCubeTexture->GetRHITexture(), outputRHITexture);

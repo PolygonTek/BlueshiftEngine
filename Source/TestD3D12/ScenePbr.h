@@ -19,6 +19,8 @@
 #include "GameLight.h"
 
 class Mesh;
+class Material;
+class ShaderTemplate;
 
 class ScenePbr : public Scene {
 public:
@@ -33,14 +35,20 @@ public:
 
 private:
     void                        UpdateDirectionalLightDirection();
+    void                        UpdateEnvironmentLightRotation();
 
     RenderWorld *               renderWorld = nullptr;
-    SharedPtr<Mesh>             materialBallMesh;
+    SharedPtr<Mesh>             testMesh;
+    SharedPtr<Material>         testMaterial;
+    SharedPtr<ShaderTemplate>   litShaderTemplate;
+    SharedPtr<ShaderTemplate>   litDirectShaderTemplate;
     GameObject                  materialBall;
     GameLight                   directionalLight;
 
     float                       directionalLightAzimuth = 145.0f;
     float                       directionalLightElevation = 55.0f;
+    float                       environmentLightRotation = 0.0f;
+    bool                        indirectLightingEnabled = true;
     bool                        directionalLightEnabled = true;
     bool                        environmentLightAdded = false;
 };

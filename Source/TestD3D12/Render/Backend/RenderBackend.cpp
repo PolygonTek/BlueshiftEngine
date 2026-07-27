@@ -19,6 +19,7 @@
 #include "Render/RenderContext.h"
 #include "Render/RenderSystem.h"
 #include "Render/RenderInternal.h"
+#include "Render/Texture/Texture.h"
 #include "Shaders/ShaderInterop.h"
 
 void RenderBackend::Init() {
@@ -165,6 +166,12 @@ bool RenderBackend::UploadFrameConstants() {
     constants->shaderLightZBinTableIndex = frameData->GetShaderLightZBinTableBindlessIndex();
     constants->shaderLightTileWordTableIndex = frameData->GetShaderLightTileWordTableBindlessIndex();
     constants->feedbackBufferIndex = textureStreamingFeedbackEnabled ? currentContext->textureStreamingFeedback.GetBindlessIndex() : 0;
+
+    const RHI::Texture *dfgSumGGXTexture = renderSystem->dfgSumGGXTexture ? renderSystem->dfgSumGGXTexture->GetReadyRHITexture() : nullptr;
+    constants->dfgSumGGXTextureIndex = dfgSumGGXTexture ? dfgSumGGXTexture->GetBindlessIndex(RHI::ViewType::SRV) : 0;
+    constants->padding0 = 0;
+    constants->padding1 = 0;
+    constants->padding2 = 0;
 
     ShaderDirectionalLight &shaderDirectionalLight = constants->directionalLight;
     const VisLight *primaryDirectionalLight = frameData->GetPrimaryDirectionalLight();

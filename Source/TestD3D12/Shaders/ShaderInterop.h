@@ -387,11 +387,17 @@ struct FrameConstants {
     uint shaderLightZBinTableIndex;
     uint shaderLightTileWordTableIndex;
     uint feedbackBufferIndex;
+    uint dfgSumGGXTextureIndex;
+    uint padding0;
+    uint padding1;
+    uint padding2;
     ShaderDirectionalLight directionalLight;
 };
 
 #ifdef __cplusplus
-static_assert(sizeof(FrameConstants) == 80, "FrameConstants must match the HLSL constant-buffer layout");
+static_assert(offsetof(FrameConstants, dfgSumGGXTextureIndex) == 48, "FrameConstants DFG LUT index must match the HLSL constant-buffer layout");
+static_assert(offsetof(FrameConstants, directionalLight) == 64, "FrameConstants directional light must match the HLSL constant-buffer layout");
+static_assert(sizeof(FrameConstants) == 96, "FrameConstants must match the HLSL constant-buffer layout");
 #endif
 
 struct CameraConstants {

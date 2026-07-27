@@ -79,7 +79,11 @@ bool ProbeBakeJob::Execute(RHI::CommandList *commandList) {
             return false;
         }
 
+#if 0
         if (!renderSystem->GetIBLBaker().GenerateDiffuseIrradiance(commandList, radianceRHITexture, diffuseRHITexture)) {
+#else
+        if (!renderSystem->GetIBLBaker().GenerateDiffuseIrradianceSH(commandList, radianceRHITexture, diffuseRHITexture)) {
+#endif
             BE_WARNLOG("ProbeBakeJob::Execute: failed to generate the diffuse irradiance cubemap\n");
             return false;
         }

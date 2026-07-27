@@ -63,6 +63,14 @@ float3 DecodeVertexNormal(float3 normal) {
 #endif
 }
 
+float4 DecodeVertexTangent(float4 tangent) {
+#ifdef COMPRESSED_VERTEX_NORMAL_TANGENTS
+    return float4(tangent.xyz * 2.0f - 1.0f, tangent.w < 0.5f ? -1.0f : 1.0f);
+#else
+    return float4(tangent.xyz, tangent.w < 0.0f ? -1.0f : 1.0f);
+#endif
+}
+
 float4 CalcClipPosition(float4 localPosition, row_major float3x4 worldMatrix, row_major float4x4 viewProjMatrix) {
     float4 positionWS = float4(mul(worldMatrix, localPosition), 1.0);
     return mul(viewProjMatrix, positionWS);
@@ -89,6 +97,20 @@ float3 TransformSurfaceNormal(float3 localNormal, row_major float3x4 worldMatrix
 
     const float lengthSquared = dot(worldNormal, worldNormal);
     return lengthSquared > FLT_MIN ? worldNormal * rsqrt(lengthSquared) : float3(0.0, 0.0, 1.0);
+}
+
+float4 TransformSurfaceTangent(float4 localTangent, row_major float3x4 worldMatrix) {
+    float3 worldTangent = mul((float3x3)worldMatrix, localTangent.xyz);
+    const float lengthSquared = dot(worldTangent, worldTangent);
+    worldTangent = lengthSquared > FLT_MIN ? worldTangent * rsqrt(lengthSquared) : float3(1.0f, 0.0f, 0.0f);
+
+    const float3 row0 = worldMatrix[0].xyz;
+    const float3 row1 = worldMatrix[1].xyz;
+    const float3 row2 = worldMatrix[2].xyz;
+    const float determinant = dot(row0, cross(row1, row2));
+    const float handedness = determinant < 0.0f ? -localTangent.w : localTangent.w;
+
+    return float4(worldTangent, handedness);
 }
 
 float2 EncodeOctahedralNormal(float3 normal) {

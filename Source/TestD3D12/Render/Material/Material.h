@@ -61,6 +61,8 @@ public:
 
     uint32_t                        GetIndex() const { return index; }
     const SharedPtr<ShaderTemplate> &GetShaderTemplate() const { return internalData.shaderTemplate; }
+                                    // shader template 을 교체하고 이름과 타입이 같은 기존 프로퍼티 값을 유지한다.
+    bool                            SetShaderTemplate(const SharedPtr<ShaderTemplate> &shaderTemplate);
     bool                            IsSkySurface() const { return internalData.shaderTemplate && internalData.shaderTemplate->IsSkySurface(); }
     RHI::CullMode                   GetCullMode() const { return internalData.cullMode; }
     RenderingMode                   GetRenderingMode() const { return internalData.renderingMode; }

@@ -277,7 +277,7 @@ void SceneTest::UpdateDirectionalLightDirection() {
 
 #ifdef ENABLE_IMGUI
 void SceneTest::BuildImGui() {
-    const float itemWidth = ImGui::GetFontSize() * 10.0f;
+    const float itemWidth = ImGui::GetFontSize() * 17.0f;
 
     ImGui::Text("Objects (%i)", gameObjects.Count());
     ImGui::Checkbox("Animate Objects", &animateObjects);

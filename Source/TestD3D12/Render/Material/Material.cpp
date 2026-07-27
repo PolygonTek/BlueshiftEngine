@@ -78,6 +78,35 @@ int Material::FindPropertyIndex(ShaderTemplate::StandardProperty standardPropert
     return internalData.shaderTemplate->GetStandardPropertyIndex(standardProperty);
 }
 
+bool Material::SetShaderTemplate(const SharedPtr<ShaderTemplate> &shaderTemplate) {
+    assert(BE1::Engine::IsInMainThread());
+
+    if (!shaderTemplate) {
+        return false;
+    }
+    if (internalData.shaderTemplate == shaderTemplate) {
+        return true;
+    }
+
+    // Remap 이 끝날 때까지 이전 template 의 프로퍼티 정보를 유지한다.
+    SharedPtr<ShaderTemplate> oldShaderTemplate = internalData.shaderTemplate;
+
+    // 렌더 백엔드에서 이전 프레임의 material 데이터 사용을 마칠 때까지 기다린다.
+    renderSystem->WaitAllRenderCompleted();
+
+    internalData.shaderTemplate = shaderTemplate;
+
+    if (oldShaderTemplate) {
+        RemapShaderTemplateProperties(oldShaderTemplate->GetProperties());
+    } else {
+        internalData.shaderTemplate->InitDefaultPropertyValues(internalData.propertyValues);
+        UpdateTextureProperties();
+        InvalidatePermutationKeys();
+    }
+
+    return true;
+}
+
 const ShaderTemplate::PropertyValue *Material::GetPropertyValue(int propertyIndex) const {
     if (propertyIndex < 0 || propertyIndex >= internalData.propertyValues.Count()) {
         return nullptr;

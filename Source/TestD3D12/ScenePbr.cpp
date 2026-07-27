@@ -14,11 +14,14 @@
 
 #include "Precompiled.h"
 #include "App.h"
+#include "Asset/GuidMapper.h"
 #include "Render/Frontend/EnvironmentLight.h"
 #include "Render/Frontend/RenderWorld.h"
+#include "Render/Material/Material.h"
 #include "Render/Material/MaterialManager.h"
 #include "Render/Mesh/MeshManager.h"
 #include "Render/Mesh/MeshInstance.h"
+#include "Render/ShaderPipeline/ShaderTemplateManager.h"
 #include "ScenePbr.h"
 
 #ifdef ENABLE_IMGUI
@@ -33,14 +36,18 @@ void ScenePbr::Init(RenderWorld *renderWorld) {
     renderWorld->SetSkyboxMaterial(materialManager.defaultSkyboxMaterial);
     app.SetCameraDistance(10.0f);
 
-    materialBallMesh = meshManager.GetMesh("Data/Test/MaterialBall.bmesh", false);
+    testMesh = meshManager.GetMesh("Data/Test/MaterialBall.bmesh", false);
 
     RenderObject::Desc &materialBallDesc = materialBall.renderObjectDesc;
-    materialBallDesc.worldMatrix.SetTranslationRotation(BE1::Vec3(0, 0, -materialBallMesh->GetAABB().Center().z), BE1::Mat3::FromRotationZ(DEG2RAD(180.0f)), false);
-    materialBallDesc.meshInstance = materialBallMesh->GetStaticInstance();
-    materialBallDesc.aabb = materialBallMesh->GetAABB();
+    materialBallDesc.worldMatrix.SetTranslationRotation(BE1::Vec3(0, 0, -testMesh->GetAABB().Center().z), BE1::Mat3::FromRotationZ(DEG2RAD(180.0f)), false);
+    materialBallDesc.meshInstance = testMesh->GetStaticInstance();
+    materialBallDesc.aabb = testMesh->GetAABB();
     materialBallDesc.materials.SetCount(1);
-    materialBallDesc.materials[0] = materialManager.GetMaterial("Source/TestD3D12/Materials/materialBall.material");
+    testMaterial = materialManager.GetMaterial("Source/TestD3D12/Materials/materialBall.material");
+    litShaderTemplate = shaderTemplateManager.GetShaderTemplate("Source/TestD3D12/Shaders/Lit");
+    litDirectShaderTemplate = shaderTemplateManager.GetShaderTemplate("Source/TestD3D12/Shaders/LitDirect");
+    indirectLightingEnabled = true;
+    materialBallDesc.materials[0] = testMaterial;
     materialBall.renderObjectHandle = renderWorld->AddRenderObject(materialBallDesc);
 
     RenderLight::Desc &directionalLightDesc = directionalLight.renderLightDesc;
@@ -69,7 +76,10 @@ void ScenePbr::Shutdown() {
         renderWorld->RemoveRenderObject(materialBall.renderObjectHandle);
         materialBall.renderObjectHandle = -1;
     }
-    materialBallMesh.reset();
+    testMesh.reset();
+    testMaterial.reset();
+    litShaderTemplate.reset();
+    litDirectShaderTemplate.reset();
 
     if (directionalLight.renderLightHandle >= 0) {
         renderWorld->RemoveRenderLight(directionalLight.renderLightHandle);
@@ -93,10 +103,156 @@ void ScenePbr::UpdateDirectionalLightDirection() {
     directionalLight.renderLightDesc.axis = BE1::Angles(0.0f, directionalLightElevation, directionalLightAzimuth + 180.0f).ToMat3();
 }
 
-#ifdef ENABLE_IMGUI
-void ScenePbr::BuildImGui() {
-    const float itemWidth = ImGui::GetFontSize() * 10.0f;
+void ScenePbr::UpdateEnvironmentLightRotation() {
+    const EnvironmentLight *environmentLight = renderWorld->GetEnvironmentLight();
+    if (!environmentLight) {
+        return;
+    }
 
+    EnvironmentLight::Desc environmentLightDesc = environmentLight->GetDesc();
+    environmentLightDesc.axis = BE1::Mat3::FromRotationZ(DEG2RAD(environmentLightRotation));
+    renderWorld->UpdateEnvironmentLight(environmentLightDesc);
+}
+
+#ifdef ENABLE_IMGUI
+static bool IsMaterialPropertyVisible(Material *material, const ShaderPropertyInfo &propertyInfo) {
+    for (int conditionIndex = 0; conditionIndex < propertyInfo.conditions.Count(); ++conditionIndex) {
+        const ShaderPropertyInfo::Condition &condition = propertyInfo.conditions[conditionIndex];
+        const ShaderTemplate::PropertyValue *conditionValue = material->GetPropertyValue(condition.name.c_str());
+        if (!conditionValue ||
+            conditionValue->GetType() != BE1::Variant::Type::Int ||
+            !condition.valueList.Find(conditionValue->As<int>())) {
+            return false;
+        }
+    }
+
+    return true;
+}
+
+static void DrawMaterialProperties(Material *material, float itemWidth) {
+    const SharedPtr<ShaderTemplate> &shaderTemplate = material->GetShaderTemplate();
+    if (!shaderTemplate) {
+        return;
+    }
+
+    const BE1::Array<ShaderPropertyInfo> &properties = shaderTemplate->GetProperties();
+    for (int propertyIndex = 0; propertyIndex < properties.Count(); ++propertyIndex) {
+        const ShaderPropertyInfo &propertyInfo = properties[propertyIndex];
+        if (propertyInfo.IsHidden() || !IsMaterialPropertyVisible(material, propertyInfo)) {
+            continue;
+        }
+
+        const ShaderTemplate::PropertyValue *propertyValue = material->GetPropertyValue(propertyIndex);
+        if (!propertyValue) {
+            continue;
+        }
+
+        ImGui::PushID(propertyInfo.GetName());
+
+        switch (propertyInfo.GetType()) {
+        case BE1::Variant::Type::Bool: {
+            bool value = propertyValue->As<bool>();
+            if (ImGui::Checkbox(propertyInfo.GetLabel(), &value)) {
+                material->SetPropertyValue(propertyIndex, value);
+            }
+            break;
+        }
+        case BE1::Variant::Type::Int: {
+            int value = propertyValue->As<int>();
+            const BE1::Array<BE1::Str> &enumValues = propertyInfo.GetEnum();
+            ImGui::SetNextItemWidth(itemWidth);
+            if (enumValues.Count() > 0) {
+                const char *previewValue = value >= 0 && value < enumValues.Count() ? enumValues[value].c_str() : "";
+                if (ImGui::BeginCombo(propertyInfo.GetLabel(), previewValue)) {
+                    for (int enumIndex = 0; enumIndex < enumValues.Count(); ++enumIndex) {
+                        const bool selected = value == enumIndex;
+                        if (ImGui::Selectable(enumValues[enumIndex].c_str(), selected)) {
+                            material->SetPropertyValue(propertyIndex, enumIndex);
+                        }
+                        if (selected) {
+                            ImGui::SetItemDefaultFocus();
+                        }
+                    }
+                    ImGui::EndCombo();
+                }
+            } else if (propertyInfo.IsRanged()) {
+                if (ImGui::SliderInt(propertyInfo.GetLabel(), &value, static_cast<int>(propertyInfo.GetMinValue()), static_cast<int>(propertyInfo.GetMaxValue()))) {
+                    material->SetPropertyValue(propertyIndex, value);
+                }
+            } else if (ImGui::InputInt(propertyInfo.GetLabel(), &value)) {
+                material->SetPropertyValue(propertyIndex, value);
+            }
+            break;
+        }
+        case BE1::Variant::Type::Float: {
+            float value = propertyValue->As<float>();
+            ImGui::SetNextItemWidth(itemWidth);
+            const bool changed = propertyInfo.IsRanged()
+                ? ImGui::SliderFloat(propertyInfo.GetLabel(), &value, propertyInfo.GetMinValue(), propertyInfo.GetMaxValue(), "%.3f")
+                : ImGui::InputFloat(propertyInfo.GetLabel(), &value);
+            if (changed) {
+                material->SetPropertyValue(propertyIndex, value);
+            }
+            break;
+        }
+        case BE1::Variant::Type::Color3: {
+            BE1::Color3 color = propertyValue->As<BE1::Color3>();
+            ImGui::SetNextItemWidth(itemWidth);
+            if (ImGui::ColorEdit3(propertyInfo.GetLabel(), color.Ptr(), ImGuiColorEditFlags_Float)) {
+                material->SetPropertyValue(propertyIndex, color);
+            }
+            break;
+        }
+        case BE1::Variant::Type::Color4: {
+            BE1::Color4 color = propertyValue->As<BE1::Color4>();
+            ImGui::SetNextItemWidth(itemWidth);
+            if (ImGui::ColorEdit4(propertyInfo.GetLabel(), color.Ptr(), ImGuiColorEditFlags_Float)) {
+                material->SetPropertyValue(propertyIndex, color);
+            }
+            break;
+        }
+        case BE1::Variant::Type::Guid: {
+            const BE1::Guid textureGuid = propertyValue->As<BE1::Guid>();
+            BE1::Str texturePath = textureGuid.IsZero() ? "" : BE1::resourceGuidMapper.Get(textureGuid);
+            if (texturePath.IsEmpty()) {
+                texturePath = "<none>";
+            }
+
+            ImGui::SetNextItemWidth(itemWidth);
+            ImGui::InputText(propertyInfo.GetLabel(), &texturePath[0], texturePath.Length() + 1,
+                ImGuiInputTextFlags_ReadOnly | ImGuiInputTextFlags_ElideLeft);
+            if (ImGui::IsItemHovered(ImGuiHoveredFlags_ForTooltip)) {
+                ImGui::SetTooltip("%s", texturePath.c_str());
+            }
+            break;
+        }
+        default:
+            break;
+        }
+
+        ImGui::PopID();
+    }
+}
+
+void ScenePbr::BuildImGui() {
+    const float itemWidth = ImGui::GetFontSize() * 17.0f;
+
+    ImGui::Text("Material Ball");
+
+    if (testMaterial) {
+        if (ImGui::Checkbox("Indirect Lighting", &indirectLightingEnabled)) {
+            const SharedPtr<ShaderTemplate> &shaderTemplate = indirectLightingEnabled ? litShaderTemplate : litDirectShaderTemplate;
+            if (!testMaterial->SetShaderTemplate(shaderTemplate)) {
+                indirectLightingEnabled = !indirectLightingEnabled;
+            }
+        }
+
+        DrawMaterialProperties(testMaterial.get(), itemWidth);
+    } else {
+        ImGui::TextDisabled("Material is unavailable.");
+    }
+
+    ImGui::Separator();
     ImGui::Text("Directional Light");
 
     if (ImGui::Checkbox("Enabled##DirectionalLight", &directionalLightEnabled)) {
@@ -145,6 +301,16 @@ void ScenePbr::BuildImGui() {
         renderWorld->UpdateRenderLight(directionalLight.renderLightHandle, directionalLightDesc, RenderLight::Desc::UpdateFlag::Transform);
     }
 
+    ImGui::EndDisabled();
+
+    ImGui::Separator();
+    ImGui::Text("Environment Light");
+
+    ImGui::BeginDisabled(!environmentLightAdded);
+    ImGui::SetNextItemWidth(itemWidth);
+    if (ImGui::SliderFloat("Rotation##EnvironmentLight", &environmentLightRotation, 0.0f, 360.0f, "%.1f deg")) {
+        UpdateEnvironmentLightRotation();
+    }
     ImGui::EndDisabled();
 }
 #endif

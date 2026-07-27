@@ -49,6 +49,12 @@ void RenderSystem::Init(void *mainWindowHandle) {
 
     textureManager.Init();
 
+    dfgSumGGXTexture = textureManager.GetTexture("Data/EngineTextures/DFGSumGGX.dds", Texture::Flag::HighQuality | Texture::Flag::NoMipmaps | Texture::Flag::LinearColorSpace, false);
+    if (dfgSumGGXTexture == textureManager.defaultTexture) {
+        BE_WARNLOG("RenderSystem::Init: failed to load the GGX DFG LUT texture\n");
+        dfgSumGGXTexture.reset();
+    }
+
     CreateColorGradingLUT();
 
     shaderTemplateManager.Init();
@@ -128,6 +134,8 @@ void RenderSystem::Shutdown() {
     VertexInputLayoutFactory::Shutdown();
 
     DestroyColorGradingLUT();
+
+    dfgSumGGXTexture.reset();
 
     textureManager.Shutdown();
 

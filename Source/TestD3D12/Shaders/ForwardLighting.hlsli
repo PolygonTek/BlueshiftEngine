@@ -3,6 +3,7 @@
 
 #include "ShaderInterop.h"
 #include "LightCullingCommon.hlsli"
+#include "PBR/StandardBRDF.hlsli"
 
 bool GetLightVolumePosition(float4 projectedPosition, out float3 volumePosition) {
     if (projectedPosition.w <= 0.0f) {
@@ -25,7 +26,7 @@ float CalcLightFallOff(row_major float3x4 fallOffMatrix, float fallOffExponent, 
     return pow(fallOff, fallOffExponent);
 }
 
-float3 EvaluateLocalLightDiffuse(float3 lightOrigin, float3 lightColor, row_major float3x4 fallOffMatrix, float fallOffExponent, float3 worldPosition, float3 worldNormal) {
+float3 EvaluateLocalLight(float3 lightOrigin, float3 lightColor, row_major float3x4 fallOffMatrix, float fallOffExponent, float3 worldPosition, in ShadingParams shading) {
     const float attenuation = CalcLightFallOff(fallOffMatrix, fallOffExponent, worldPosition);
     if (attenuation <= 0.0f) {
         return 0.0f;
@@ -38,8 +39,7 @@ float3 EvaluateLocalLightDiffuse(float3 lightOrigin, float3 lightColor, row_majo
     }
 
     const float3 lightDir = lightVector * rsqrt(lightDistanceSquared);
-    const float NdotL = saturate(dot(worldNormal, lightDir));
-    return lightColor * NdotL * attenuation;
+    return lightColor * attenuation * EvaluateStandardDirectBRDF(shading, lightDir);
 }
 
 float2 CalcPointLightProjectionUV(ShaderPointLight pointLight, float3 worldPosition) {
@@ -47,7 +47,7 @@ float2 CalcPointLightProjectionUV(ShaderPointLight pointLight, float3 worldPosit
     return float2(dot(pointLight.worldToProjectionU, position), dot(pointLight.worldToProjectionV, position));
 }
 
-float3 EvaluatePointLightDiffuse(ShaderPointLight pointLight, float3 worldPosition, float3 worldNormal) {
+float3 EvaluatePointLight(ShaderPointLight pointLight, float3 worldPosition, in ShadingParams shading) {
     const float3 lightVector = pointLight.origin - worldPosition;
     const float lightDistanceSquared = dot(lightVector, lightVector);
     if (lightDistanceSquared <= FLT_MIN) {
@@ -61,19 +61,18 @@ float3 EvaluatePointLightDiffuse(ShaderPointLight pointLight, float3 worldPositi
     }
 
     const float3 lightDir = lightVector * rsqrt(lightDistanceSquared);
-    const float NdotL = saturate(dot(worldNormal, lightDir));
-    return pointLight.lightColor * NdotL * attenuation;
+    return pointLight.lightColor * attenuation * EvaluateStandardDirectBRDF(shading, lightDir);
 }
 
-float3 EvaluateSpotLightDiffuse(ShaderSpotLight spotLight, float3 worldPosition, float3 worldNormal) {
+float3 EvaluateSpotLight(ShaderSpotLight spotLight, float3 worldPosition, in ShadingParams shading) {
     const float4 projectedPosition = mul(spotLight.viewProjScaleBiasMatrix, float4(worldPosition, 1.0f));
     if (!IsInsideLightVolume(projectedPosition)) {
         return 0.0f;
     }
-    return EvaluateLocalLightDiffuse(spotLight.origin, spotLight.lightColor, spotLight.fallOffMatrix, spotLight.fallOffExponent, worldPosition, worldNormal);
+    return EvaluateLocalLight(spotLight.origin, spotLight.lightColor, spotLight.fallOffMatrix, spotLight.fallOffExponent, worldPosition, shading);
 }
 
-float3 EvaluateBoxDirLightDiffuse(ShaderBoxDirLight boxDirLight, float3 worldPosition, float3 worldNormal) {
+float3 EvaluateBoxDirLight(ShaderBoxDirLight boxDirLight, float3 worldPosition, in ShadingParams shading) {
     const float4 projectedPosition = mul(boxDirLight.worldToLightVolumeMatrix, float4(worldPosition, 1.0f));
     float3 volumePosition;
     if (!GetLightVolumePosition(projectedPosition, volumePosition)) {
@@ -85,32 +84,32 @@ float3 EvaluateBoxDirLightDiffuse(ShaderBoxDirLight boxDirLight, float3 worldPos
     const float boxDistance = max(boxDistance3.x, max(boxDistance3.y, boxDistance3.z));
     const float fallOff = pow(saturate(1.0f - boxDistance * boxDistance), boxDirLight.fallOffExponent);
 
-    const float NdotL = saturate(dot(worldNormal, -boxDirLight.direction));
-    return boxDirLight.lightColor * NdotL * fallOff;
+    const float3 lightDir = -boxDirLight.direction;
+    return boxDirLight.lightColor * fallOff * EvaluateStandardDirectBRDF(shading, lightDir);
 }
 
-float3 EvaluateDirectionalLightDiffuse(ShaderDirectionalLight directionalLight, float3 worldNormal) {
-    const float NdotL = saturate(dot(worldNormal, -directionalLight.direction));
-    return directionalLight.lightColor * NdotL;
+float3 EvaluateDirectionalLight(ShaderDirectionalLight directionalLight, in ShadingParams shading) {
+    const float3 lightDir = -directionalLight.direction;
+    return directionalLight.lightColor * EvaluateStandardDirectBRDF(shading, lightDir);
 }
 
-float3 EvaluateShaderLightDiffuse(uint packedLightRef, float3 worldPosition, float3 worldNormal) {
+float3 EvaluateShaderLight(uint packedLightRef, float3 worldPosition, in ShadingParams shading) {
     const uint lightType = packedLightRef & ShaderLightTypeMask;
     const uint lightTypeIndex = packedLightRef >> ShaderLightTypeBitCount;
 
     if (lightType == ShaderLightTypePoint) {
         const ShaderPointLight pointLight = GetShaderPointLightTable(frameConstants.shaderPointLightTableIndex)[lightTypeIndex];
-        return EvaluatePointLightDiffuse(pointLight, worldPosition, worldNormal);
+        return EvaluatePointLight(pointLight, worldPosition, shading);
     }
 
     if (lightType == ShaderLightTypeSpot) {
         const ShaderSpotLight spotLight = GetShaderSpotLightTable(frameConstants.shaderSpotLightTableIndex)[lightTypeIndex];
-        return EvaluateSpotLightDiffuse(spotLight, worldPosition, worldNormal);
+        return EvaluateSpotLight(spotLight, worldPosition, shading);
     }
 
     if (lightType == ShaderLightTypeBoxDir) {
         const ShaderBoxDirLight boxDirLight = GetShaderBoxDirLightTable(frameConstants.shaderBoxDirLightTableIndex)[lightTypeIndex];
-        return EvaluateBoxDirLightDiffuse(boxDirLight, worldPosition, worldNormal);
+        return EvaluateBoxDirLight(boxDirLight, worldPosition, shading);
     }
 
     return 0.0f;
@@ -127,7 +126,7 @@ uint LoadWaveShaderLightRef(uint lightIndex) {
 }
 #endif
 
-float3 EvaluateLit(uint2 pixelCoord, float ndcDepth, float3 worldPosition, float3 worldNormal) {
+float3 EvaluateDirectLighting(uint2 pixelCoord, float ndcDepth, float3 worldPosition, in ShadingParams shading) {
 #if SHADER_LIGHT_USE_WAVE_OPS
     // Helper lane 은 wave 연산에 참여하지 않으므로 wave 결과에 의존하는 반복문에서 제외한다.
     if (IsHelperLane()) {
@@ -135,9 +134,9 @@ float3 EvaluateLit(uint2 pixelCoord, float ndcDepth, float3 worldPosition, float
     }
 #endif
 
-    float3 directDiffuse = 0.0f;
+    float3 directLighting = 0.0f;
     if ((cameraConstants.flags & ShaderCameraFlagUseDirectionalLight) != 0) {
-        directDiffuse = EvaluateDirectionalLightDiffuse(frameConstants.directionalLight, worldNormal);
+        directLighting = EvaluateDirectionalLight(frameConstants.directionalLight, shading);
     }
 
 #if SHADER_LIGHT_USE_WAVE_OPS
@@ -167,14 +166,14 @@ float3 EvaluateLit(uint2 pixelCoord, float ndcDepth, float3 worldPosition, float
 
             // 현재 lane 의 tile 및 Z-bin 에 포함된 light 만 실제로 계산한다.
             if ((laneLightMask & lightBit) != 0) {
-                directDiffuse += EvaluateShaderLightDiffuse(packedLightRef, worldPosition, worldNormal);
+                directLighting += EvaluateShaderLight(packedLightRef, worldPosition, shading);
             }
 
             waveLightMask &= ~lightBit;
         }
     }
 
-    return directDiffuse;
+    return directLighting;
 #else
     const bool useZBin = (cameraConstants.flags & ShaderCameraFlagUseLightZBin) != 0;
     ShaderLightIterator lightIterator = BeginShaderLightIteration(pixelCoord, ndcDepth, useZBin, false);
@@ -182,10 +181,10 @@ float3 EvaluateLit(uint2 pixelCoord, float ndcDepth, float3 worldPosition, float
 
     [loop]
     while (NextShaderLight(lightIterator, shaderLightRef)) {
-        directDiffuse += EvaluateShaderLightDiffuse(shaderLightRef.packedLightRef, worldPosition, worldNormal);
+        directLighting += EvaluateShaderLight(shaderLightRef.packedLightRef, worldPosition, shading);
     }
 
-    return directDiffuse;
+    return directLighting;
 #endif
 }
 

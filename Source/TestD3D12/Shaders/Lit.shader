@@ -4,18 +4,23 @@ shader "Lit" {
         fragment SM_6_6 "Lit.hlsl" "PSMain"
     }
 
+    baseDefines {
+        INDIRECT_LIGHTING=1
+    }
+
     properties {
         _BASECOLOR("Base Color") : enum "Color;Texture" = "1" [shaderDefine]
-        baseColorFactor("Base Color Factor") : color4 = "1 1 1 1"
         baseColorMap("Base Color Map") : texture "2D" = "_whiteTexture" (condition _BASECOLOR 1)
+        baseColorFactor("Base Color Factor") : color4 = "1 1 1 1"
+        alphaCutoff("Alpha Cutoff") : float range 0 1 0.001 = "0.5"
         _METALLIC("Metallic") : enum "Factor;Texture (R);Texture (G);Texture (B);Texture (A)" = "0" [shaderDefine]
         metallicMap("Metallic Map") : texture "2D" = "_whiteTexture" (condition _METALLIC 1 2 3 4) [linear]
         metallicFactor("Metallic Factor") : float range 0 1 0.01 = "1.0"
         _ROUGHNESS("Roughness") : enum "Factor;Texture (R);Inverted Texture (R);From Metallic Map (R);From Metallic Map (G);From Metallic Map (B);From Metallic Map (A)" = "0" [shaderDefine]
         roughnessMap("Roughness Map") : texture "2D" = "_whiteTexture" (condition _ROUGHNESS 1 2) [linear]
         roughnessFactor("Roughness Factor") : float range 0 1 0.01 = "1.0"
-        _NORMAL("Normal") : enum "Vertex;Texture;Texture + Detail Texture" = "0" [shaderDefine]
-        normalMap("Normal Map") : texture "2D" = "_flatNormalTexture" (condition _NORMAL 1 2) [normal]
+        _NORMAL("Normal") : enum "Vertex;Texture" = "0" [shaderDefine]
+        normalMap("Normal Map") : texture "2D" = "_flatNormalTexture" (condition _NORMAL 1) [normal]
         _CLEARCOAT("Clear Coat") : enum "None;Factor;Texture (R);From Metallic Map (R);From Metallic Map (G);From Metallic Map (B);From Metallic Map (A)" = "0" [shaderDefine]
         clearCoatMap("Clear Coat Map") : texture "2D" = "_whiteTexture" (condition _CLEARCOAT 2) [linear]
         clearCoatFactor("Clear Coat Factor") : float range 0 1 0.01 = "1.0" (condition _CLEARCOAT 1 2 3 4 5 6)
@@ -37,6 +42,10 @@ shader "Lit" {
     }
 
     features {
+        perforated {
+            PERFORATED=1
+        }
+
         outputNormal {
             OUTPUT_NORMAL=1
         }

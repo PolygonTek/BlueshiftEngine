@@ -208,6 +208,8 @@ private:
     SharedPtr<Texture>              colorGradingLUTTexture;
     bool                            colorGradingLUTDirty = false;
 
+    SharedPtr<Texture>              dfgSumGGXTexture;
+
     GpuFFT                          gpuFFT;
     GpuSphericalHarmonics           gpuSphericalHarmonics;
     IBLBaker                        iblBaker;

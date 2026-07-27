@@ -139,7 +139,7 @@ void ProbeBakeSystem::Prepare(RenderContext *renderContext) {
 
         radiancePrepared = CreateRadianceCubemap(radianceCubemapSize, true, radianceCubeMap);
         if (radiancePrepared) {
-            radiancePrepared = RenderCapture::RenderEnvCubeToTexture(renderContext, request.renderWorld, 0, false, false, BE1::Color4::black, request.captureOrigin, BE1::CmToUnit(5.0f), BE1::MeterToUnit(100.0f), radianceCubeMap, true);
+            radiancePrepared = RenderCapture::RenderEnvCubeToTexture(renderContext, request.renderWorld, 0, true, false, BE1::Color4::black, request.captureOrigin, BE1::CmToUnit(5.0f), BE1::MeterToUnit(100.0f), radianceCubeMap, true);
         }
         generateRadianceMipChain = radiancePrepared;
     }
