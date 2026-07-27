@@ -13,6 +13,7 @@
 // limitations under the License.
 
 #include "Precompiled.h"
+#include "App.h"
 #include "Render/Frontend/RenderWorld.h"
 #include "Render/Material/MaterialManager.h"
 #include "SceneDebugDraw.h"
@@ -22,10 +23,10 @@
 #endif
 
 void SceneDebugDraw::Init(RenderWorld *renderWorld) {
-    assert(!this->renderWorld);
-    assert(renderWorld);
-
     this->renderWorld = renderWorld;
+
+    app.SetCameraDistance(150.0f);
+
     renderWorld->ClearDebugPrimitives();
     renderWorld->SetSkyboxMaterial(materialManager.defaultSkyboxMaterial);
 }

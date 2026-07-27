@@ -98,6 +98,7 @@ private:
     void                            ProcessPendingSceneChange();
     void                            ChangeScene(int sceneIndex);
     void                            DestroyScene();
+    void                            ResetCamera();
     void                            UpdateGameFrameTime(uint64_t frameUsec);
     void                            UpdateRenderFrontendFrameTime(uint64_t frameUsec);
     void                            RenderPendingCaptureRequests();

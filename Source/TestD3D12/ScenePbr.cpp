@@ -29,12 +29,10 @@
 #endif
 
 void ScenePbr::Init(RenderWorld *renderWorld) {
-    assert(!this->renderWorld);
-    assert(renderWorld);
-
     this->renderWorld = renderWorld;
+
     renderWorld->SetSkyboxMaterial(materialManager.defaultSkyboxMaterial);
-    app.SetCameraDistance(10.0f);
+    app.SetCameraDistance(5.0f);
 
     testMesh = meshManager.GetMesh("Data/Test/MaterialBall.bmesh", false);
 

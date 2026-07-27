@@ -148,6 +148,7 @@ void App::ChangeScene(int sceneIndex) {
     }
 
     DestroyScene();
+    ResetCamera();
 
     scene = SceneRegistry::Create(sceneIndex);
     scene->Init(renderWorld);
@@ -163,6 +164,16 @@ void App::DestroyScene() {
     SAFE_DELETE(scene);
 
     sceneIndex = -1;
+}
+
+void App::ResetCamera() {
+    targetCameraYaw = 0.0f;
+    targetCameraPitch = 45.0f;
+    targetCameraDistance = 300.0f;
+    targetCameraCenter = BE1::Vec3::origin;
+
+    const BE1::Mat3 targetCameraAxis = BE1::Angles(0.0f, targetCameraPitch, targetCameraYaw).ToMat3();
+    targetCameraOrigin = targetCameraCenter - targetCameraAxis[0] * targetCameraDistance;
 }
 
 void App::CheckModifiedCVars() {
