@@ -66,6 +66,22 @@ static uint64_t BuildTransparentSortKey(const VisSurf *visSurf, const VisCamera 
     return BuildFloatSortKey(GetViewCenterZ(visSurf, visCamera));
 }
 
+static ShaderFeatureSet BuildSurfaceFeatureSet(const VisSurf *visSurf, const RenderPass *renderPass, bool directLighting, bool indirectLighting) {
+    ShaderFeatureSet featureSet = visSurf->baseFeatureSet | renderPass->featureSet;
+    const SharedPtr<ShaderTemplate> &shaderTemplate = visSurf->material->GetShaderTemplate();
+    if (!shaderTemplate) {
+        return featureSet;
+    }
+
+    if (directLighting && shaderTemplate->SupportsFeature(ShaderFeature::DirectLighting)) {
+        featureSet.EnableFeature(ShaderFeature::DirectLighting);
+    }
+    if (indirectLighting && shaderTemplate->SupportsFeature(ShaderFeature::IndirectLighting)) {
+        featureSet.EnableFeature(ShaderFeature::IndirectLighting);
+    }
+    return featureSet;
+}
+
 void RenderPassBuilder::AllocRenderPassDrawSurfs(RenderFrameData *frameData, VisCamera *visCamera, uint32_t maxDrawSurfs) {
     assert(!visCamera->renderPassDrawSurfs);
     assert(!visCamera->renderPassDrawSurfStorage);
@@ -117,6 +133,8 @@ void RenderPassBuilder::BuildMain(RenderFrameData *frameData, VisCamera *visCame
 
     const bool useDepthPrepass = r_depthPrepass.GetBool();
     const bool allowAsyncPSOBuild = !BE1::HasFlag(visCamera->flags, RenderCamera::Flag::ForceSyncPassPSOBuild);
+    const bool directLighting = visCamera->directionalLightVisible || visCamera->numVisLocalLights > 0;
+    const bool indirectLighting = visCamera->environmentLightDiffuseIrradianceCubeMap && visCamera->environmentLightSpecularCubeMap;
 
     int numDepthDrawSurfs = 0;
     int numOpaqueDrawSurfs = 0;
@@ -202,7 +220,8 @@ void RenderPassBuilder::BuildMain(RenderFrameData *frameData, VisCamera *visCame
             }
         } else if (visSurf->material->GetRenderingMode() == Material::RenderingMode::Blend) {
             if (blendPass) {
-                const RenderPassPSOResolver::ResolveResult rr = blendPSOResolver.Resolve(visSurf, visSurf->baseFeatureSet | blendPass->featureSet, allowAsyncPSOBuild);
+                const ShaderFeatureSet featureSet = BuildSurfaceFeatureSet(visSurf, blendPass, directLighting, indirectLighting);
+                const RenderPassPSOResolver::ResolveResult rr = blendPSOResolver.Resolve(visSurf, featureSet, allowAsyncPSOBuild);
                 AddRenderPassDrawSurf(blendPass, visSurf, BuildTransparentSortKey(visSurf, visCamera), rr.inputLayoutId, rr.pso);
             }
         } else {
@@ -211,7 +230,8 @@ void RenderPassBuilder::BuildMain(RenderFrameData *frameData, VisCamera *visCame
                 AddRenderPassDrawSurf(depthPass, visSurf, BuildDepthSortKey(visSurf, visCamera), rr.inputLayoutId, rr.pso);
             }
             if (opaquePass) {
-                const RenderPassPSOResolver::ResolveResult rr = opaquePSOResolver.Resolve(visSurf, visSurf->baseFeatureSet | opaquePass->featureSet, allowAsyncPSOBuild);
+                const ShaderFeatureSet featureSet = BuildSurfaceFeatureSet(visSurf, opaquePass, directLighting, indirectLighting);
+                const RenderPassPSOResolver::ResolveResult rr = opaquePSOResolver.Resolve(visSurf, featureSet, allowAsyncPSOBuild);
                 AddRenderPassDrawSurf(opaquePass, visSurf, BuildOpaqueSortKey(visSurf, rr.pso), rr.inputLayoutId, rr.pso);
             }
         }
@@ -246,7 +266,7 @@ void RenderPassBuilder::BuildGUI(RenderFrameData *frameData, VisCamera *visCamer
 
     for (uint32_t i = 0; i < visCamera->numVisSurfs; ++i) {
         const VisSurf *visSurf = visCamera->visSurfs[i];
-        ShaderFeatureSet featureSet = visSurf->baseFeatureSet | guiPass->featureSet;
+        const ShaderFeatureSet featureSet = visSurf->baseFeatureSet | guiPass->featureSet;
         const RenderPassPSOResolver::ResolveResult rr = guiPSOResolver.Resolve(visSurf, featureSet);
 
         AddRenderPassDrawSurf(guiPass, visSurf, i, rr.inputLayoutId, rr.pso);

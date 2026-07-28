@@ -23,6 +23,8 @@ enum class ShaderFeature : uint8_t {
     GpuSkinningWeight8,
     OutputNormal,
     OutputVelocity,
+    DirectLighting,
+    IndirectLighting,
     Count
 };
 
@@ -34,6 +36,8 @@ struct ShaderFeatureSet {
         GpuSkinningWeight8          = 1u << 3,
         OutputNormal                = 1u << 4,
         OutputVelocity              = 1u << 5,
+        DirectLighting              = 1u << 6,
+        IndirectLighting            = 1u << 7,
         GpuSkinningWeightMask       = GpuSkinningWeight1 | GpuSkinningWeight4 | GpuSkinningWeight8
     };
 

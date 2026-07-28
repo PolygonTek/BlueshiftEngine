@@ -4,10 +4,6 @@ shader "Lit" {
         fragment SM_6_6 "Lit.hlsl" "PSMain"
     }
 
-    baseDefines {
-        INDIRECT_LIGHTING=1
-    }
-
     properties {
         _BASECOLOR("Base Color") : enum "Color;Texture" = "1" [shaderDefine]
         baseColorMap("Base Color Map") : texture "2D" = "_whiteTexture" (condition _BASECOLOR 1)
@@ -42,6 +38,14 @@ shader "Lit" {
     }
 
     features {
+        directLighting {
+            DIRECT_LIGHTING=1
+        }
+
+        indirectLighting {
+            INDIRECT_LIGHTING=1
+        }
+
         perforated {
             PERFORATED=1
         }

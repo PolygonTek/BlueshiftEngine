@@ -610,7 +610,9 @@ static bool ParseShaderFeature(const BE1::Str &token, ShaderFeature &outFeature)
         { "gpuSkinningWeight4", ShaderFeature::GpuSkinningWeight4 },
         { "gpuSkinningWeight8", ShaderFeature::GpuSkinningWeight8 },
         { "outputNormal",       ShaderFeature::OutputNormal },
-        { "outputVelocity",     ShaderFeature::OutputVelocity }
+        { "outputVelocity",     ShaderFeature::OutputVelocity },
+        { "directLighting",     ShaderFeature::DirectLighting },
+        { "indirectLighting",   ShaderFeature::IndirectLighting }
     };
 
     for (const FeatureName &featureName : FeatureNames) {

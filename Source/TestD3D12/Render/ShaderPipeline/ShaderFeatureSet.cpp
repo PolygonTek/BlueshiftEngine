@@ -29,6 +29,10 @@ bool ShaderFeatureSet::HasFeature(ShaderFeature feature) const {
         return !!(flags & OutputNormal);
     case ShaderFeature::OutputVelocity:
         return !!(flags & OutputVelocity);
+    case ShaderFeature::DirectLighting:
+        return !!(flags & DirectLighting);
+    case ShaderFeature::IndirectLighting:
+        return !!(flags & IndirectLighting);
     default:
         return false;
     }
@@ -53,6 +57,12 @@ void ShaderFeatureSet::EnableFeature(ShaderFeature feature) {
         break;
     case ShaderFeature::OutputVelocity:
         flags |= OutputVelocity;
+        break;
+    case ShaderFeature::DirectLighting:
+        flags |= DirectLighting;
+        break;
+    case ShaderFeature::IndirectLighting:
+        flags |= IndirectLighting;
         break;
     default:
         break;

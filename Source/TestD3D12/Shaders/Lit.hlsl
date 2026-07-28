@@ -4,7 +4,7 @@
 #include "ForwardLighting.hlsli"
 #include "PBR/ParallaxMapping.hlsli"
 #include "PBR/ShadingParams.hlsli"
-#if defined(INDIRECT_LIGHTING) || USE_MULTIPLE_SCATTERING_COMPENSATION
+#if defined(INDIRECT_LIGHTING) || (defined(DIRECT_LIGHTING) && USE_MULTIPLE_SCATTERING_COMPENSATION)
     #include "PBR/ImageBasedLighting.hlsli"
 #endif
 
@@ -137,11 +137,11 @@ SurfacePSOutput PSMain(PSInput input) {
         return result;
     }
 
-#if defined(INDIRECT_LIGHTING) || USE_MULTIPLE_SCATTERING_COMPENSATION
+#if defined(INDIRECT_LIGHTING) || (defined(DIRECT_LIGHTING) && USE_MULTIPLE_SCATTERING_COMPENSATION)
     const ImageBasedLightingDFG dfg = SampleImageBasedLightingDFG(shading);
 #endif
 
-#if USE_MULTIPLE_SCATTERING_COMPENSATION
+#if USE_MULTIPLE_SCATTERING_COMPENSATION && (defined(DIRECT_LIGHTING) || defined(INDIRECT_LIGHTING))
     shading.energyCompensation = GetMultipleScatteringEnergyCompensation(dfg.baseLayer.x, shading.specularF0);
 
     #if _CLEARCOAT != 0
@@ -149,7 +149,11 @@ SurfacePSOutput PSMain(PSInput input) {
     #endif
 #endif
 
-    float3 lighting = EvaluateDirectLighting((uint2)input.position.xy, input.position.z, input.worldPosition, shading);
+    float3 lighting = 0.0f;
+
+#ifdef DIRECT_LIGHTING
+    lighting += EvaluateDirectLighting((uint2)input.position.xy, input.position.z, input.worldPosition, shading);
+#endif
 
 #ifdef INDIRECT_LIGHTING
     const ImageBasedLightingSample environmentLightSample = SampleEnvironmentLight(shading);

@@ -6,6 +6,10 @@ shader "LitDirect" {
         fragment SM_6_6 "Lit.hlsl" "PSMain"
     }
 
+    baseDefines {
+        DIRECT_LIGHTING=1
+    }
+
     features {
         perforated {
             PERFORATED=1
