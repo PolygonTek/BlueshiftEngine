@@ -30,6 +30,8 @@ CVAR_MINMAX(r_lightCullingDebug, "0", BE1::CVar::Flag::Integer, "light culling d
 CVAR(r_vsync, "0", BE1::CVar::Flag::Bool | BE1::CVar::Flag::Archive, "synchronize presentation to the vertical refresh rate");
 CVAR(r_frameComposition, "1", BE1::CVar::Flag::Bool, "route swap chain output through the frame composition texture");
 CVAR(r_depthPrepass, "0", BE1::CVar::Flag::Bool, "enable depth prepass");
+CVAR(r_specularEnergyCompensation2, "1", BE1::CVar::Flag::Bool | BE1::CVar::Flag::Archive, "use energy compensation for multiple scattering in a microfacet model");
+
 CVAR_MINMAX(r_msaa, "1", BE1::CVar::Flag::Integer | BE1::CVar::Flag::Archive, "MSAA sample count (1 = off, 2/4/8 = enabled)", 0, 8);
 CVAR(r_taa, "0", BE1::CVar::Flag::Bool | BE1::CVar::Flag::Archive, "enable temporal anti-aliasing");
 CVAR(r_taaJitter, "1", BE1::CVar::Flag::Bool, "enable temporal projection jitter");

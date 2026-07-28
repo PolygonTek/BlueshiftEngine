@@ -5,7 +5,7 @@
 #include "BRDFLibrary.hlsli"
 
 #ifndef USE_MULTIPLE_SCATTERING_COMPENSATION
-    #define USE_MULTIPLE_SCATTERING_COMPENSATION 1
+    #define USE_MULTIPLE_SCATTERING_COMPENSATION 0
 #endif
 
 struct ShadingParams {

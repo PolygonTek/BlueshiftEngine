@@ -14,10 +14,13 @@
 
 #include "Precompiled.h"
 #include "Render/RenderContext.h"
+#include "Render/RenderCvars.h"
 #include "ShaderTemplateManager.h"
 #include "ShaderPipelineCache.h"
 
 ShaderTemplateManager       shaderTemplateManager;
+
+static constexpr char       SpecularEnergyCompensationDefine[] = "USE_MULTIPLE_SCATTERING_COMPENSATION=1";
 
 void ShaderTemplateManager::Init() {
     shaderTemplateHashMap.Init(128, 128, 128);
@@ -59,6 +62,19 @@ void ShaderTemplateManager::UpdateFrame() {
 void ShaderTemplateManager::ProcessPendingGlobalDefineChanges() {
     assert(BE1::Engine::IsInMainThread());
     assert(RenderContext::activeContext == nullptr);
+
+    if (r_specularEnergyCompensation2.IsModified()) {
+        r_specularEnergyCompensation2.ClearModified();
+
+        const bool defineExists = FindGlobalDefine(SpecularEnergyCompensationDefine);
+        if (r_specularEnergyCompensation2.GetBool()) {
+            if (!defineExists) {
+                AddGlobalDefine(SpecularEnergyCompensationDefine);
+            }
+        } else if (defineExists) {
+            RemoveGlobalDefine(SpecularEnergyCompensationDefine);
+        }
+    }
 
     uint32_t globalDefineModCountSnapshot;
     {
@@ -168,6 +184,10 @@ void ShaderTemplateManager::InitGlobalDefines() {
 
     AddGlobalDefine(BE1::va("CSM_COUNT=%i", 4));
     AddGlobalDefine(BE1::va("CASCADE_SELECTION_METHOD=%i", 1));
+
+    if (r_specularEnergyCompensation2.GetBool()) {
+        AddGlobalDefine(SpecularEnergyCompensationDefine);
+    }
 }
 
 static int GetDefineNameLength(const char *define) {
