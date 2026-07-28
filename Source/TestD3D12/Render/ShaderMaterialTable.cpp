@@ -17,6 +17,8 @@
 #include "RenderInternal.h"
 #include "ShaderPacking.h"
 #include "Render/Material/Material.h"
+#include "Render/Sampler.h"
+#include "Render/SamplerManager.h"
 #include "Render/Texture/TextureManager.h"
 
 bool ShaderMaterialTable::Init(uint32_t initialCapacity) {
@@ -250,6 +252,13 @@ void ShaderMaterialTable::Build(const Material *material, ShaderMaterial &outSha
     outShaderMaterial.clearCoatNormalTextureIndex = GetMaterialTextureIndex(material, ShaderTemplate::StandardProperty::ClearCoatNormalMap, textureManager.flatNormalTexture.get());
     outShaderMaterial.heightTextureIndex = GetMaterialTextureIndex(material, ShaderTemplate::StandardProperty::HeightMap, textureManager.whiteTexture.get());
 
+    const Sampler *sampler = material ? material->GetSampler() : nullptr;
+    if (!sampler) {
+        sampler = samplerManager.defaultSampler;
+    }
+    outShaderMaterial.samplerIndex = sampler->GetBindlessIndex();
+    outShaderMaterial.streamingMaterialIndex = material ? material->GetStreamingListIndex() : TextureStreamingInvalidIndex;
+
     outShaderMaterial.packedBaseColorFactor = ShaderPacking::PackFloat4ToRGBA8UNorm(GetMaterialBaseColorFactor(material));
     outShaderMaterial.alphaCutoff = GetMaterialAlphaCutoff(material);
 
@@ -266,6 +275,4 @@ void ShaderMaterialTable::Build(const Material *material, ShaderMaterial &outSha
         GetMaterialFactor(material, ShaderTemplate::StandardProperty::ClearCoatFactor),
         GetMaterialFactor(material, ShaderTemplate::StandardProperty::ClearCoatRoughnessFactor)));
     outShaderMaterial.heightScale = GetMaterialHeightScale(material);
-
-    outShaderMaterial.streamingMaterialIndex = material ? material->GetStreamingListIndex() : TextureStreamingInvalidIndex;
 }

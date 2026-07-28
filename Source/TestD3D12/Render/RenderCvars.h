@@ -52,6 +52,8 @@ extern BE1::CVar    r_hiZOcclusionCullingFreeze;
 extern BE1::CVar    r_hiZDebugPreview;
 extern BE1::CVar    r_hiZDebugPreviewMipLevel;
 
+extern BE1::CVar    r_textureFilter;
+extern BE1::CVar    r_textureMaxAnisotropy;
 extern BE1::CVar    r_textureStreamingStreamInDelay;
 extern BE1::CVar    r_textureStreamingMaxRequestsPerFrame;
 extern BE1::CVar    r_textureStreamingMaxLevelReduction;

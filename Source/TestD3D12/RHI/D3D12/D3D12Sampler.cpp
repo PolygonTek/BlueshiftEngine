@@ -111,7 +111,11 @@ RHI::Sampler *D3D12Renderer::CreateSampler(const RHI::SamplerDesc *desc) {
 }
 
 void D3D12Renderer::DestroySampler(RHI::Sampler *sampler, bool immediate) {
-    delete sampler;
+    if (immediate) {
+        delete sampler;
+    } else {
+        DeleteGPUObject(sampler);
+    }
 }
 
 void D3D12Renderer::RecreateSampler(RHI::Sampler* sampler, const RHI::SamplerDesc *desc) {

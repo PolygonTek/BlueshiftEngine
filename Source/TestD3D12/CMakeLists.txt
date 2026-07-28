@@ -206,7 +206,8 @@ set(SRC_FILES
     Render/Frontend/RenderPassBuilder.h
     Render/Frontend/RenderPassBuilder.cpp
     Render/Sampler.h
-    Render/Sampler.cpp
+    Render/SamplerManager.h
+    Render/SamplerManager.cpp
     Shaders/ShaderTypes.h
     Shaders/ShaderInterop.h)
 

@@ -19,6 +19,7 @@
 
 class MaterialManager;
 class LoadingSystem;
+class Sampler;
 class Texture;
 
 /*
@@ -34,6 +35,8 @@ class Material : public std::enable_shared_from_this<Material> {
     friend class LoadingSystem;
 
 public:
+    ~Material() { Purge(); }
+
     enum class Flag : uint16_t {
         None                        = 0,
         NoShadow                    = BIT(0),
@@ -65,6 +68,8 @@ public:
     bool                            SetShaderTemplate(const SharedPtr<ShaderTemplate> &shaderTemplate);
     bool                            IsSkySurface() const { return internalData.shaderTemplate && internalData.shaderTemplate->IsSkySurface(); }
     RHI::CullMode                   GetCullMode() const { return internalData.cullMode; }
+    RHI::TextureAddressMode         GetTextureAddressMode() const { return internalData.textureAddressMode; }
+    const Sampler *                 GetSampler() const { return sampler; }
     RenderingMode                   GetRenderingMode() const { return internalData.renderingMode; }
     RHI::BlendStateType             GetBlendType() const { return internalData.blendType; }
     Flag                            GetFlags() const { return internalData.flags; }
@@ -113,6 +118,7 @@ private:
         BE1::Array<ShaderTemplate::PropertyValue> propertyValues;
         BE1::Array<TextureProperty> textureProperties;
         RHI::CullMode               cullMode = RHI::CullMode::Back;
+        RHI::TextureAddressMode     textureAddressMode = RHI::TextureAddressMode::Repeat;
         RenderingMode               renderingMode = RenderingMode::Opaque;
         RHI::BlendStateType         blendType = RHI::BlendStateType::Disabled;
         Flag                        flags = Flag::None;
@@ -132,11 +138,13 @@ private:
 
     static bool                     Parse(const char *text, const char *baseDir, const char *materialName, InternalData &outInternalData);
     static bool                     ParseCull(BE1::Lexer &lexer, const char *materialName, InternalData &outInternalData);
+    static bool                     ParseTextureAddressMode(BE1::Lexer &lexer, const char *materialName, InternalData &outInternalData);
     static bool                     ParseRenderingMode(BE1::Lexer &lexer, const char *materialName, InternalData &outInternalData);
     static bool                     ParseBlendType(BE1::Lexer &lexer, const char *materialName, InternalData &outInternalData);
     static bool                     ParseShaderTemplate(BE1::Lexer &lexer, const char *baseDir, const char *materialName, InternalData &outInternalData);
     static bool                     ParseProperties(BE1::Lexer &lexer, const char *materialName, InternalData &outInternalData);
 
+    void                            UpdateSampler();
     void                            UpdateTextureProperties();
     void                            RemapShaderTemplateProperties(const BE1::Array<ShaderPropertyInfo> &oldProperties);
     bool                            HasStreamingTextureProperties() const;
@@ -147,6 +155,7 @@ private:
     uint32_t                        index = 0;
     uint64_t                        retainedFrameSerial = 0;
     InternalData                    internalData;
+    Sampler *                       sampler = nullptr;
     uint32_t                        streamingListIndex = TextureStreamingInvalidIndex;
 
     mutable BE1::Array<CachedPermutationKey> cachedPermutationKeys;

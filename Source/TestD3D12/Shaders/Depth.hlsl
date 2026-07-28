@@ -38,8 +38,9 @@ PSInput VSMain(VSInput input) {
 void PSMain(PSInput input) {
 #ifdef PERFORATED
     ShaderMaterial shaderMaterial = GetShaderMaterial(input.shaderMaterialIndex);
+    SamplerState materialSampler = GetSampler(shaderMaterial.samplerIndex);
 
-    float4 textureColor = GetTexture2D(shaderMaterial.baseColorTextureIndex).Sample(linearWrapSampler, input.texCoord);
+    float4 textureColor = GetTexture2D(shaderMaterial.baseColorTextureIndex).Sample(materialSampler, input.texCoord);
     const float baseColorAlpha = shaderMaterial.GetBaseColorFactor().a;
     clip(textureColor.a * baseColorAlpha * input.color.a - shaderMaterial.alphaCutoff);
 #endif

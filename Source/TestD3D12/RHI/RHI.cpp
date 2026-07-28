@@ -66,6 +66,17 @@ const char *RHI::Renderer::TextureTypeName(RHI::TextureType textureType) {
     return "Invalid";
 }
 
+const char *RHI::Renderer::TextureFilterName(RHI::TextureFilter textureFilter) {
+    switch (textureFilter) {
+    case RHI::TextureFilter::NearestMipmapNearest: return "NearestMipmapNearest";
+    case RHI::TextureFilter::LinearMipmapNearest: return "LinearMipmapNearest";
+    case RHI::TextureFilter::NearestMipmapLinear: return "NearestMipmapLinear";
+    case RHI::TextureFilter::LinearMipmapLinear: return "LinearMipmapLinear";
+    case RHI::TextureFilter::Anisotropic: return "Anisotropic";
+    }
+    return "Invalid";
+}
+
 const char *RHI::Renderer::FormatName(RHI::Format format) {
 #define RHI_FORMAT_NAME(x) case RHI::Format::x: return #x
     switch (format) {

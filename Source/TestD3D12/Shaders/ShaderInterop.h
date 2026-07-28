@@ -478,6 +478,8 @@ struct ShaderMaterial {
     uint clearCoatRoughnessTextureIndex;
     uint clearCoatNormalTextureIndex;
     uint heightTextureIndex;
+    uint samplerIndex;
+    uint streamingMaterialIndex;
 
     uint packedBaseColorFactor;
     float alphaCutoff;
@@ -486,8 +488,6 @@ struct ShaderMaterial {
     float aoStrength;
     uint packedClearCoatFactors;
     float heightScale;
-
-    uint streamingMaterialIndex;
 
 #ifndef __cplusplus
     inline float4 GetBaseColorFactor() { return UnpackRGBA8UNormToFloat4(packedBaseColorFactor); }
@@ -498,7 +498,7 @@ struct ShaderMaterial {
 };
 
 #ifdef __cplusplus
-static_assert(sizeof(ShaderMaterial) == 76, "ShaderMaterial must remain a tightly packed StructuredBuffer element");
+static_assert(sizeof(ShaderMaterial) == 80, "ShaderMaterial must remain a tightly packed StructuredBuffer element");
 #endif
 
 struct ShaderLightRef {

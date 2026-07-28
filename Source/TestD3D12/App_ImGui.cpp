@@ -699,6 +699,33 @@ void App::BuildImGuiOverlay() {
                 }
             }
 
+            if (roundedCollapsingHeader("Texture Sampling##TextureSamplingHeader")) {
+                int textureFilterIndex = r_textureFilter.GetInteger();
+                const RHI::TextureFilter textureFilter = static_cast<RHI::TextureFilter>(textureFilterIndex);
+
+                ImGui::SetNextItemWidth(fontSize * 14.0f);
+                if (ImGui::BeginCombo("Texture filter", RHI::Renderer::TextureFilterName(textureFilter))) {
+                    for (int index = 0; index < static_cast<int>(RHI::TextureFilter::Count); index++) {
+                        const bool selected = textureFilterIndex == index;
+                        if (ImGui::Selectable(RHI::Renderer::TextureFilterName(static_cast<RHI::TextureFilter>(index)), selected)) {
+                            r_textureFilter.SetInteger(index);
+                        }
+                        if (selected) {
+                            ImGui::SetItemDefaultFocus();
+                        }
+                    }
+                    ImGui::EndCombo();
+                }
+
+                int maxAnisotropy = r_textureMaxAnisotropy.GetInteger();
+                ImGui::SetNextItemWidth(fontSize * 14.0f);
+                if (ImGui::SliderInt("Texture max anisotropy", &maxAnisotropy,
+                        static_cast<int>(r_textureMaxAnisotropy.GetMinValue()),
+                        static_cast<int>(r_textureMaxAnisotropy.GetMaxValue()))) {
+                    r_textureMaxAnisotropy.SetInteger(maxAnisotropy);
+                }
+            }
+
             if (roundedCollapsingHeader("Texture Streaming##TextureStreamingHeader")) {
                 int streamInDelay = r_textureStreamingStreamInDelay.GetInteger();
                 ImGui::SetNextItemWidth(fontSize * 6.0f);

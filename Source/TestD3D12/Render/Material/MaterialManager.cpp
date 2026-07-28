@@ -14,6 +14,8 @@
 
 #include "Precompiled.h"
 #include "MaterialManager.h"
+#include "Render/RenderCvars.h"
+#include "Render/RenderSystem.h"
 #include "Render/ShaderPipeline/ShaderTemplateManager.h"
 
 MaterialManager     materialManager;
@@ -44,6 +46,36 @@ void MaterialManager::Shutdown() {
 
 void MaterialManager::UpdateFrame() {
     CleanExpiredMaterials();
+
+    // Material sampler 갱신 처리
+    const bool textureFilterModified = r_textureFilter.IsModified();
+    const bool textureMaxAnisotropyModified = r_textureMaxAnisotropy.IsModified();
+    if (!textureFilterModified && !textureMaxAnisotropyModified) {
+        return;
+    }
+
+    r_textureFilter.ClearModified();
+    r_textureMaxAnisotropy.ClearModified();
+
+    const RHI::TextureFilter textureFilter = static_cast<RHI::TextureFilter>(r_textureFilter.GetInteger());
+    if (!textureFilterModified && textureFilter != RHI::TextureFilter::Anisotropic) {
+        return;
+    }
+
+    // Material sampler 갱신 시 기존 sampler 를 해제하므로 GPU 가 사용을 완료할 때까지 기다린다.
+    renderSystem->WaitAllRenderCompleted();
+    RHI::renderer->Finish(RHI::CommandQueueType::Graphics);
+
+    const int numMaterials = materialHashMap.Count();
+    for (int i = 0; i < numMaterials; i++) {
+        const auto *entry = materialHashMap.GetByIndex(i);
+        assert(entry);
+
+        SharedPtr<Material> material = entry->second.lock();
+        if (material) {
+            material->UpdateSampler();
+        }
+    }
 }
 
 void MaterialManager::ApplyStreamingFeedback(const uint32_t *feedbackData, uint32_t feedbackCapacity) {

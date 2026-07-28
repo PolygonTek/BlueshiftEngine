@@ -134,7 +134,8 @@ namespace RHI {
         LinearMipmapNearest,    // Min/Mag : Linear, Mip : Point
         NearestMipmapLinear,    // Min/Mag : Point, Mip : Linear
         LinearMipmapLinear,     // Min/Mag/Mip : Linear
-        Anisotropic
+        Anisotropic,
+        Count
     };
 
     enum class TextureAddressMode : uint8_t {
@@ -1069,6 +1070,7 @@ namespace RHI {
         static bool                     IsStencilFormat(Format format);
         static bool                     IsDepthStencilFormat(Format format);
         static const char *             TextureTypeName(TextureType textureType);
+        static const char *             TextureFilterName(TextureFilter textureFilter);
         static const char *             FormatName(Format format);
         static const char *             BufferFlagName(BufferFlag flag);
         static const char *             TextureFlagName(TextureFlag flag);

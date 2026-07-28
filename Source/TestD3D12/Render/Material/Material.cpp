@@ -18,7 +18,9 @@
 #include "LoadingSystem.h"
 #include "Render/ShaderPipeline/ShaderTemplateManager.h"
 #include "Render/ShaderPipeline/ShaderPipelineCache.h"
+#include "Render/RenderCvars.h"
 #include "Render/RenderSystem.h"
+#include "Render/SamplerManager.h"
 #include "Asset/GuidMapper.h"
 #include "IO/FileSystem.h"
 #include "Render/Texture/TextureManager.h"
@@ -28,6 +30,7 @@ void Material::InternalData::Purge() {
     propertyValues.Clear();
     textureProperties.Clear();
     cullMode = RHI::CullMode::Back;
+    textureAddressMode = RHI::TextureAddressMode::Repeat;
     renderingMode = RenderingMode::Opaque;
     blendType = RHI::BlendStateType::Disabled;
     flags = Flag::None;
@@ -38,6 +41,7 @@ void Material::InternalData::Swap(InternalData &rhs) {
     propertyValues.Swap(rhs.propertyValues);
     textureProperties.Swap(rhs.textureProperties);
     BE1::Swap(cullMode, rhs.cullMode);
+    BE1::Swap(textureAddressMode, rhs.textureAddressMode);
     BE1::Swap(renderingMode, rhs.renderingMode);
     BE1::Swap(blendType, rhs.blendType);
     BE1::Swap(flags, rhs.flags);
@@ -45,6 +49,12 @@ void Material::InternalData::Swap(InternalData &rhs) {
 
 void Material::Purge() {
     materialManager.UnregisterStreamingMaterial(this);
+
+    if (sampler) {
+        samplerManager.ReleaseSampler(sampler);
+        sampler = nullptr;
+    }
+
     internalData.Purge();
     InvalidatePermutationKeys();
 }
@@ -232,6 +242,27 @@ static SharedPtr<Texture> GetFallbackTexture(const ShaderPropertyInfo &propertyI
     return textureManager.whiteTexture ? textureManager.whiteTexture : textureManager.defaultTexture;
 }
 
+void Material::UpdateSampler() {
+    const int filterIndex = r_textureFilter.GetInteger();
+    const RHI::TextureFilter filter = static_cast<RHI::TextureFilter>(filterIndex);
+
+    uint8_t maxAnisotropy = 1;
+    if (filter == RHI::TextureFilter::Anisotropic) {
+        maxAnisotropy = static_cast<uint8_t>(r_textureMaxAnisotropy.GetInteger());
+    }
+
+    Sampler *newSampler = samplerManager.GetSampler(filter, internalData.textureAddressMode, internalData.textureAddressMode, internalData.textureAddressMode, maxAnisotropy, RHI::TextureBorderColor::OpaqueBlack);
+    if (!newSampler) {
+        BE_WARNLOG("Material::UpdateSampler: failed to create sampler for material '%s'\n", GetHashName());
+        return;
+    }
+
+    if (sampler) {
+        samplerManager.ReleaseSampler(sampler);
+    }
+    sampler = newSampler;
+}
+
 // 프로퍼티 중에 텍스쳐 프로퍼티만 골라서 internalData.textureProperties 배열을 업데이트한다.
 void Material::UpdateTextureProperties() {
     internalData.textureProperties.Clear();
@@ -397,6 +428,7 @@ void Material::ApplyPrepared(InternalData &newInternalData) {
 
     internalData.Swap(newInternalData);
     UpdateTextureProperties();
+    UpdateSampler();
 }
 
 bool Material::Parse(const char *text, const char *baseDir, const char *materialName, InternalData &outInternalData) {
@@ -427,6 +459,10 @@ bool Material::Parse(const char *text, const char *baseDir, const char *material
             outInternalData.flags |= Flag::NoShadow;
         } else if (!token.Icmp("cull")) {
             if (!ParseCull(lexer, materialName, outInternalData)) {
+                return false;
+            }
+        } else if (!token.Icmp("textureAddressMode")) {
+            if (!ParseTextureAddressMode(lexer, materialName, outInternalData)) {
                 return false;
             }
         } else if (!token.Icmp("renderingMode")) {
@@ -479,6 +515,31 @@ bool Material::ParseCull(BE1::Lexer &lexer, const char *materialName, InternalDa
         outInternalData.cullMode = RHI::CullMode::Front;
     } else {
         BE_WARNLOG("Material::ParseCull: unknown cullMode '%s' in material '%s'\n", token.c_str(), materialName);
+        return false;
+    }
+
+    return true;
+}
+
+bool Material::ParseTextureAddressMode(BE1::Lexer &lexer, const char *materialName, InternalData &outInternalData) {
+    BE1::Str token;
+    if (!lexer.ReadToken(&token, false)) {
+        BE_WARNLOG("Material::ParseTextureAddressMode: missing textureAddressMode value in material '%s'\n", materialName);
+        return false;
+    }
+
+    if (!token.Icmp("repeat")) {
+        outInternalData.textureAddressMode = RHI::TextureAddressMode::Repeat;
+    } else if (!token.Icmp("clamp")) {
+        outInternalData.textureAddressMode = RHI::TextureAddressMode::Clamp;
+    } else if (!token.Icmp("mirroredRepeat")) {
+        outInternalData.textureAddressMode = RHI::TextureAddressMode::MirroredRepeat;
+    } else if (!token.Icmp("mirroredClamp")) {
+        outInternalData.textureAddressMode = RHI::TextureAddressMode::MirroredClamp;
+    } else if (!token.Icmp("clampToBorder")) {
+        outInternalData.textureAddressMode = RHI::TextureAddressMode::ClampToBorder;
+    } else {
+        BE_WARNLOG("Material::ParseTextureAddressMode: unknown textureAddressMode '%s' in material '%s'\n", token.c_str(), materialName);
         return false;
     }
 

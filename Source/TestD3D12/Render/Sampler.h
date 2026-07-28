@@ -41,47 +41,10 @@ public:
     uint32_t                    GetMaxAnisotropy() const { return hash.bits.maxAnisotropy; }
     RHI::TextureBorderColor     GetBorderColor() const { return (RHI::TextureBorderColor)hash.bits.borderColor; }
     RHI::Sampler *              GetRHISampler() const { return sampler; }
+    uint32_t                    GetBindlessIndex() const { return sampler->GetBindlessIndex(); }
 
 private:
     Hasher                      hash;
     mutable int32_t             refCount = 0;
     RHI::Sampler *              sampler = nullptr;
 };
-
-class SamplerManager {
-    friend class Sampler;
-
-public:
-    void                        Init();
-    void                        Shutdown();
-
-    Sampler *                   FindSampler(uint32_t hash) const;
-    Sampler *                   FindSampler(RHI::TextureFilter filter,
-                                    RHI::TextureAddressMode addressModeU = RHI::TextureAddressMode::Clamp,
-                                    RHI::TextureAddressMode addressModeV = RHI::TextureAddressMode::Clamp,
-                                    RHI::TextureAddressMode addressModeW = RHI::TextureAddressMode::Clamp,
-                                    uint8_t maxAnisotropy = 1, RHI::TextureBorderColor borderColor = RHI::TextureBorderColor::OpaqueBlack) const;
-    Sampler *                   GetSampler(RHI::TextureFilter filter,
-                                    RHI::TextureAddressMode addressModeU = RHI::TextureAddressMode::Clamp,
-                                    RHI::TextureAddressMode addressModeV = RHI::TextureAddressMode::Clamp,
-                                    RHI::TextureAddressMode addressModeW = RHI::TextureAddressMode::Clamp,
-                                    uint8_t maxAnisotropy = 1, RHI::TextureBorderColor borderColor = RHI::TextureBorderColor::OpaqueBlack);
-    void                        ReleaseSampler(Sampler *sampler);
-    void                        DestroySampler(Sampler *sampler);
-
-                                // 샘플러의 전역 설정 변경 함수들은 마지막에 UpdateSamplers 를 호출해줘야 반영된다.
-    void                        SetMipLODBias(float bias);
-    void                        SetMinLOD(float minLod);
-    void                        SetMaxLOD(float maxLod);
-    void                        UpdateSamplers();
-
-private:
-    float                       mipLodBias = 0.0f;
-    float                       minLod = 0.0f;
-    float                       maxLod = std::numeric_limits<float>::max();
-    bool                        needUpdateSamplers = false;
-
-    BE1::HashMap<uint32_t, Sampler *> samplerHashMap;
-};
-
-extern SamplerManager           samplerManager;

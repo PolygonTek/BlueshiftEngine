@@ -54,12 +54,13 @@ PSInput VSMain(VSInput input) {
 [RootSignature(COMMON_ROOT_SIGNATURE)]
 SurfacePSOutput PSMain(PSInput input) {
     ShaderMaterial shaderMaterial = GetShaderMaterial(input.shaderMaterialIndex);
+    SamplerState materialSampler = GetSampler(shaderMaterial.samplerIndex);
 
     if (frameConstants.feedbackBufferIndex != 0 && shaderMaterial.streamingMaterialIndex != TextureStreamingInvalidIndex) {
         WriteMipmapFeedback(GetRWBufferUInt(frameConstants.feedbackBufferIndex), shaderMaterial.streamingMaterialIndex, ddx_coarse(input.texCoord.xy), ddy_coarse(input.texCoord.xy));
     }
 
-    float4 textureColor = GetTexture2D(shaderMaterial.baseColorTextureIndex).Sample(linearWrapSampler, input.texCoord);
+    float4 textureColor = GetTexture2D(shaderMaterial.baseColorTextureIndex).Sample(materialSampler, input.texCoord);
     SurfacePSOutput result;
     result.color = textureColor * shaderMaterial.GetBaseColorFactor() * input.color;
 #ifdef OUTPUT_NORMAL

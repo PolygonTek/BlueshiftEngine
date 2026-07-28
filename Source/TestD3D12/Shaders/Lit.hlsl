@@ -71,6 +71,7 @@ PSInput VSMain(VSInput input) {
 [RootSignature(COMMON_ROOT_SIGNATURE)]
 SurfacePSOutput PSMain(PSInput input) {
     ShaderMaterial shaderMaterial = GetShaderMaterial(input.shaderMaterialIndex);
+    SamplerState materialSampler = GetSampler(shaderMaterial.samplerIndex);
 
     float2 texCoordDx = 0.0f;
     float2 texCoordDy = 0.0f;
@@ -105,12 +106,12 @@ SurfacePSOutput PSMain(PSInput input) {
         texCoordDy = ddy_coarse(input.texCoord);
     }
 
-    baseTc = ParallaxMapping(GetTexture2D(shaderMaterial.heightTextureIndex), linearWrapSampler, baseTc, shaderMaterial.heightScale, viewTS, texCoordDx, texCoordDy);
+    baseTc = ParallaxMapping(GetTexture2D(shaderMaterial.heightTextureIndex), materialSampler, baseTc, shaderMaterial.heightScale, viewTS, texCoordDx, texCoordDy);
 #endif
 
     float4 baseColor = shaderMaterial.GetBaseColorFactor() * input.color;
 #if _BASECOLOR != 0
-    baseColor *= GetTexture2D(shaderMaterial.baseColorTextureIndex).Sample(linearWrapSampler, baseTc);
+    baseColor *= GetTexture2D(shaderMaterial.baseColorTextureIndex).Sample(materialSampler, baseTc);
 #endif
 
 #ifdef PERFORATED
@@ -118,9 +119,9 @@ SurfacePSOutput PSMain(PSInput input) {
 #endif
 
 #if _NORMAL != 0 || (_CLEARCOAT != 0 && _CLEARCOAT_NORMAL != 0)
-    ShadingParams shading = PrepareShadingParams(shaderMaterial, baseColor, baseTc, viewDir, worldNormal, tangentToWorld, linearWrapSampler);
+    ShadingParams shading = PrepareShadingParams(shaderMaterial, baseColor, baseTc, viewDir, worldNormal, tangentToWorld, materialSampler);
 #else
-    ShadingParams shading = PrepareShadingParams(shaderMaterial, baseColor, baseTc, viewDir, worldNormal, linearWrapSampler);
+    ShadingParams shading = PrepareShadingParams(shaderMaterial, baseColor, baseTc, viewDir, worldNormal, materialSampler);
 #endif
 
     SurfacePSOutput result;

@@ -19,7 +19,7 @@
 #include "Render/Backend/RenderBackend.h"
 #include "RenderCvars.h"
 #include "RHI/RHI.h"
-#include "Sampler.h"
+#include "SamplerManager.h"
 #include "Render/Texture/TextureManager.h"
 #include "Render/ShaderPipeline/ShaderTemplateManager.h"
 #include "Render/ShaderPipeline/ShaderPipelineCache.h"

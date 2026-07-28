@@ -15,7 +15,6 @@
 #include "Precompiled.h"
 #include "Texture.h"
 #include "TextureManager.h"
-#include "Render/Sampler.h"
 #include "LoadingSystem.h"
 
 Texture::InternalData &Texture::InternalData::operator=(InternalData &&rhs) noexcept {

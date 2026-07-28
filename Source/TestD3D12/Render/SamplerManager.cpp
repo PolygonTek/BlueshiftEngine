@@ -13,15 +13,30 @@
 // limitations under the License.
 
 #include "Precompiled.h"
+#include "SamplerManager.h"
 #include "Sampler.h"
 
 SamplerManager      samplerManager;
 
 void SamplerManager::Init() {
     samplerHashMap.Init(512, 512, 512);
+
+    defaultSampler = GetSampler(RHI::TextureFilter::LinearMipmapLinear,
+        RHI::TextureAddressMode::Repeat,
+        RHI::TextureAddressMode::Repeat,
+        RHI::TextureAddressMode::Repeat);
+    if (!defaultSampler) {
+        BE_FATALERROR("SamplerManager::Init: failed to create default sampler\n");
+    }
 }
 
 void SamplerManager::Shutdown() {
+    defaultSampler = nullptr;
+
+    for (const auto &entry : samplerHashMap) {
+        RHI::renderer->DestroySampler(entry.second->sampler, true);
+    }
+
     samplerHashMap.DeleteContents(true);
 }
 
@@ -38,7 +53,7 @@ Sampler *SamplerManager::FindSampler(RHI::TextureFilter filter,
     RHI::TextureAddressMode addressModeV,
     RHI::TextureAddressMode addressModeW,
     uint8_t maxAnisotropy, RHI::TextureBorderColor borderColor) const {
-    Sampler::Hasher hasher;
+    Sampler::Hasher hasher = {};
     hasher.bits.filter = (uint32_t)filter;
     hasher.bits.addressModeU = (uint32_t)addressModeU;
     hasher.bits.addressModeV = (uint32_t)addressModeV;
@@ -53,7 +68,7 @@ Sampler *SamplerManager::GetSampler(RHI::TextureFilter filter,
     RHI::TextureAddressMode addressModeV,
     RHI::TextureAddressMode addressModeW,
     uint8_t maxAnisotropy, RHI::TextureBorderColor borderColor) {
-    Sampler::Hasher hasher;
+    Sampler::Hasher hasher = {};
     hasher.bits.filter = (uint32_t)filter;
     hasher.bits.addressModeU = (uint32_t)addressModeU;
     hasher.bits.addressModeV = (uint32_t)addressModeV;
@@ -72,12 +87,18 @@ Sampler *SamplerManager::GetSampler(RHI::TextureFilter filter,
     samplerDesc.addressModeV = addressModeV;
     samplerDesc.addressModeW = addressModeW;
     samplerDesc.maxAnisotropy = maxAnisotropy;
+    samplerDesc.borderColor = borderColor;
     samplerDesc.mipLodBias = mipLodBias;
     samplerDesc.minLod = minLod;
     samplerDesc.maxLod = maxLod;
 
+    RHI::Sampler *rhiSampler = RHI::renderer->CreateSampler(&samplerDesc);
+    if (!rhiSampler) {
+        return nullptr;
+    }
+
     sampler = new Sampler;
-    sampler->sampler = RHI::renderer->CreateSampler(&samplerDesc);
+    sampler->sampler = rhiSampler;
     sampler->refCount = 1;
     sampler->hash = hasher;
     samplerHashMap.Set(hasher.value, sampler);
@@ -135,6 +156,9 @@ void SamplerManager::UpdateSamplers() {
     if (!needUpdateSamplers) {
         return;
     }
+
+    // Sampler descriptor 를 갱신하므로 GPU 가 기존 descriptor 사용을 마칠 때까지 기다린다.
+    RHI::renderer->Finish(RHI::CommandQueueType::Graphics);
 
     for (const auto &entry : samplerHashMap) {
         Sampler *sampler = entry.second;
