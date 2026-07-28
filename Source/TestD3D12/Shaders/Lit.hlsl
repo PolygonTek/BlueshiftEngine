@@ -108,7 +108,7 @@ SurfacePSOutput PSMain(PSInput input) {
     baseTc = ParallaxMapping(GetTexture2D(shaderMaterial.heightTextureIndex), linearWrapSampler, baseTc, shaderMaterial.heightScale, viewTS, texCoordDx, texCoordDy);
 #endif
 
-    float4 baseColor = UnpackShaderMaterialBaseColorFactor(shaderMaterial) * input.color;
+    float4 baseColor = shaderMaterial.GetBaseColorFactor() * input.color;
 #if _BASECOLOR != 0
     baseColor *= GetTexture2D(shaderMaterial.baseColorTextureIndex).Sample(linearWrapSampler, baseTc);
 #endif

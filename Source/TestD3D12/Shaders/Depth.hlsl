@@ -40,7 +40,7 @@ void PSMain(PSInput input) {
     ShaderMaterial shaderMaterial = GetShaderMaterial(input.shaderMaterialIndex);
 
     float4 textureColor = GetTexture2D(shaderMaterial.baseColorTextureIndex).Sample(linearWrapSampler, input.texCoord);
-    const float baseColorAlpha = UnpackShaderMaterialBaseColorFactor(shaderMaterial).a;
+    const float baseColorAlpha = shaderMaterial.GetBaseColorFactor().a;
     clip(textureColor.a * baseColorAlpha * input.color.a - shaderMaterial.alphaCutoff);
 #endif
 }

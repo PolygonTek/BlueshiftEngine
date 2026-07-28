@@ -26,6 +26,8 @@
 
 #else
 
+#include "ShaderPacking.hlsli"
+
 #endif // __cplusplus
 
 static const uint TextureStreamingFeedbackResolution = 16384;
@@ -486,6 +488,13 @@ struct ShaderMaterial {
     float heightScale;
 
     uint streamingMaterialIndex;
+
+#ifndef __cplusplus
+    inline float4 GetBaseColorFactor() { return UnpackRGBA8UNormToFloat4(packedBaseColorFactor); }
+    inline float4 GetEmissionColorFactor() { return UnpackRGBA16FToFloat4(packedEmissionColorFactor); }
+    inline float2 GetMetallicRoughnessFactors() { return UnpackRG16UNormToFloat2(packedMetallicRoughnessFactors); }
+    inline float2 GetClearCoatFactors() { return UnpackRG16UNormToFloat2(packedClearCoatFactors); }
+#endif
 };
 
 #ifdef __cplusplus

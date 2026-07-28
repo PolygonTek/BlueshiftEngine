@@ -66,7 +66,7 @@ ShadingParams PrepareShadingParams(ShaderMaterial shaderMaterial, float4 baseCol
     shading.normalDotView = max(dot(shading.normal, shading.viewDir), 1e-4f);
     shading.reflectionDir = reflect(-shading.viewDir, shading.normal);
 
-    const float2 metallicRoughnessFactors = UnpackRG16UNormToFloat2(shaderMaterial.packedMetallicRoughnessFactors);
+    const float2 metallicRoughnessFactors = shaderMaterial.GetMetallicRoughnessFactors();
 
 #if _METALLIC != 0 || _ROUGHNESS >= 3 || _AO >= 2 || _CLEARCOAT >= 3 || (_CLEARCOAT != 0 && _CLEARCOAT_ROUGHNESS >= 2)
     const float4 metallicSample = GetTexture2D(shaderMaterial.metallicTextureIndex).Sample(materialSampler, texCoord);
@@ -109,7 +109,8 @@ ShadingParams PrepareShadingParams(ShaderMaterial shaderMaterial, float4 baseCol
     shading.diffuseColor = shading.baseColor.rgb * (1.0f - shading.metallic);
 
 #if _CLEARCOAT != 0
-    const float2 clearCoatFactors = UnpackRG16UNormToFloat2(shaderMaterial.packedClearCoatFactors);
+    // clear coat factor 와 clear coat roughness factor 를 복원한다.
+    const float2 clearCoatFactors = shaderMaterial.GetClearCoatFactors();
 
     #if _CLEARCOAT == 1
         shading.clearCoat = clearCoatFactors.x;
@@ -176,7 +177,7 @@ ShadingParams PrepareShadingParams(ShaderMaterial shaderMaterial, float4 baseCol
 #if _EMISSION == 0
     shading.emission = 0.0f;
 #else
-    const float4 emissionColorFactor = UnpackRGBA16FToFloat4(shaderMaterial.packedEmissionColorFactor);
+    const float4 emissionColorFactor = shaderMaterial.GetEmissionColorFactor();
     shading.emission = emissionColorFactor.rgb * emissionColorFactor.a;
 
     #if _EMISSION == 2

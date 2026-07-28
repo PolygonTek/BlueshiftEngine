@@ -38,23 +38,6 @@ ShaderMaterial GetShaderMaterial(uint shaderMaterialIndex) {
     return GetShaderMaterialTable(frameConstants.shaderMaterialTableIndex)[shaderMaterialIndex];
 }
 
-float4 UnpackShaderMaterialBaseColorFactor(ShaderMaterial shaderMaterial) {
-    return UnpackRGBA8UNormToFloat4(shaderMaterial.packedBaseColorFactor);
-}
-
-float4 UnpackShaderMaterialEmissionColorFactor(ShaderMaterial shaderMaterial) {
-    return UnpackRGBA16FToFloat4(shaderMaterial.packedEmissionColorFactor);
-}
-
-float2 UnpackShaderMaterialMetallicRoughnessFactors(ShaderMaterial shaderMaterial) {
-    return UnpackRG16UNormToFloat2(shaderMaterial.packedMetallicRoughnessFactors);
-}
-
-// clear coat factor 와 clear coat roughness factor 를 복원한다.
-float2 UnpackShaderMaterialClearCoatFactors(ShaderMaterial shaderMaterial) {
-    return UnpackRG16UNormToFloat2(shaderMaterial.packedClearCoatFactors);
-}
-
 float3 DecodeVertexNormal(float3 normal) {
 #ifdef COMPRESSED_VERTEX_NORMAL_TANGENTS
     return normal * 2.0f - 1.0f;
