@@ -13,7 +13,7 @@
 // limitations under the License.
 
 #include "Precompiled.h"
-#include "ScenePbr.h"
+#include "SceneMaterialBall.h"
 #include "SceneMatrix.h"
 #include "SceneDebugDraw.h"
 #include "SceneRegistry.h"
@@ -29,8 +29,8 @@ static Scene *CreateSceneMatrix() {
     return new SceneMatrix;
 }
 
-static Scene *CreateScenePbr() {
-    return new ScenePbr;
+static Scene *CreateSceneMaterialBall() {
+    return new SceneMaterialBall;
 }
 
 static Scene *CreateSceneDebugDraw() {
@@ -39,7 +39,7 @@ static Scene *CreateSceneDebugDraw() {
 
 static constexpr SceneEntry SceneEntries[] = {
     { "Matrix", CreateSceneMatrix },
-    { "PBR", CreateScenePbr },
+    { "Material Ball", CreateSceneMaterialBall },
     { "Debug Draw", CreateSceneDebugDraw },
 };
 

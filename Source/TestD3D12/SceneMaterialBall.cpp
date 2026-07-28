@@ -22,17 +22,25 @@
 #include "Render/Mesh/MeshManager.h"
 #include "Render/Mesh/MeshInstance.h"
 #include "Render/ShaderPipeline/ShaderTemplateManager.h"
-#include "ScenePbr.h"
+#include "SceneMaterialBall.h"
 
 #ifdef ENABLE_IMGUI
 #include "imgui/imgui.h"
 #endif
 
-void ScenePbr::Init(RenderWorld *renderWorld) {
+void SceneMaterialBall::Init(RenderWorld *renderWorld) {
     this->renderWorld = renderWorld;
 
     renderWorld->SetSkyboxMaterial(materialManager.defaultSkyboxMaterial);
+
     app.SetCameraDistance(5.0f);
+
+    indirectLightingEnabled = true;
+    directionalLightEnabled = true;
+
+    testMaterial = materialManager.GetMaterial("Source/TestD3D12/Materials/materialBall.material");
+    litShaderTemplate = shaderTemplateManager.GetShaderTemplate("Source/TestD3D12/Shaders/Lit");
+    litDirectShaderTemplate = shaderTemplateManager.GetShaderTemplate("Source/TestD3D12/Shaders/LitDirect");
 
     testMesh = meshManager.GetMesh("Data/Test/MaterialBall.bmesh", false);
 
@@ -41,10 +49,6 @@ void ScenePbr::Init(RenderWorld *renderWorld) {
     materialBallDesc.meshInstance = testMesh->GetStaticInstance();
     materialBallDesc.aabb = testMesh->GetAABB();
     materialBallDesc.materials.SetCount(1);
-    testMaterial = materialManager.GetMaterial("Source/TestD3D12/Materials/materialBall.material");
-    litShaderTemplate = shaderTemplateManager.GetShaderTemplate("Source/TestD3D12/Shaders/Lit");
-    litDirectShaderTemplate = shaderTemplateManager.GetShaderTemplate("Source/TestD3D12/Shaders/LitDirect");
-    indirectLightingEnabled = true;
     materialBallDesc.materials[0] = testMaterial;
     materialBall.renderObjectHandle = renderWorld->AddRenderObject(materialBallDesc);
 
@@ -54,7 +58,6 @@ void ScenePbr::Init(RenderWorld *renderWorld) {
     directionalLightDesc.linearColor = BE1::Color3::white;
     directionalLightDesc.intensity = 2.0f;
     directionalLightDesc.projectionPolicy = RHI::renderer->GetProjectionPolicy();
-    directionalLightEnabled = true;
     UpdateDirectionalLightDirection();
     directionalLight.renderLightHandle = renderWorld->AddRenderLight(directionalLightDesc);
 
@@ -65,7 +68,7 @@ void ScenePbr::Init(RenderWorld *renderWorld) {
     }
 }
 
-void ScenePbr::Shutdown() {
+void SceneMaterialBall::Shutdown() {
     if (!renderWorld) {
         return;
     }
@@ -92,16 +95,16 @@ void ScenePbr::Shutdown() {
     renderWorld = nullptr;
 }
 
-void ScenePbr::Update(uint64_t elapsedUsec) {
-    PROFILER_CPU_SCOPED_EVENT("ScenePbr::Update");
+void SceneMaterialBall::Update(uint64_t elapsedUsec) {
+    PROFILER_CPU_SCOPED_EVENT("SceneMaterialBall::Update");
 }
 
-void ScenePbr::UpdateDirectionalLightDirection() {
+void SceneMaterialBall::UpdateDirectionalLightDirection() {
     // The UI describes the direction toward the sun or moon, while axis[0] is the direction in which light rays travel.
     directionalLight.renderLightDesc.axis = BE1::Angles(0.0f, directionalLightElevation, directionalLightAzimuth + 180.0f).ToMat3();
 }
 
-void ScenePbr::UpdateEnvironmentLightRotation() {
+void SceneMaterialBall::UpdateEnvironmentLightRotation() {
     const EnvironmentLight *environmentLight = renderWorld->GetEnvironmentLight();
     if (!environmentLight) {
         return;
@@ -232,10 +235,10 @@ static void DrawMaterialProperties(Material *material, float itemWidth) {
     }
 }
 
-void ScenePbr::BuildImGui() {
+void SceneMaterialBall::BuildImGui() {
     const float itemWidth = ImGui::GetFontSize() * 17.0f;
 
-    ImGui::Text("Material Ball");
+    ImGui::Text("Materials");
 
     if (testMaterial) {
         if (ImGui::Checkbox("Indirect Lighting", &indirectLightingEnabled)) {

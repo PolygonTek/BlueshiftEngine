@@ -22,7 +22,7 @@ class Mesh;
 class Material;
 class ShaderTemplate;
 
-class ScenePbr : public Scene {
+class SceneMaterialBall : public Scene {
 public:
     void                        Init(RenderWorld *renderWorld) override;
     void                        Shutdown() override;

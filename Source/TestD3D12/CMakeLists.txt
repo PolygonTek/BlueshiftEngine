@@ -20,8 +20,8 @@ set(SRC_FILES
     SceneRegistry.cpp
     SceneMatrix.h
     SceneMatrix.cpp
-    ScenePbr.h
-    ScenePbr.cpp
+    SceneMaterialBall.h
+    SceneMaterialBall.cpp
     SceneDebugDraw.h
     SceneDebugDraw.cpp
     WinMain.cpp
