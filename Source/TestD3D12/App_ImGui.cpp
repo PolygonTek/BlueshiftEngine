@@ -561,6 +561,11 @@ void App::BuildImGuiOverlay() {
                 r_vsync.SetBool(vsync);
             }
 
+            bool frameComposition = r_frameComposition.GetBool();
+            if (ImGui::Checkbox("Frame composition", &frameComposition)) {
+                r_frameComposition.SetBool(frameComposition);
+            }
+
             bool depthPrepass = r_depthPrepass.GetBool();
             if (ImGui::Checkbox("Depth prepass", &depthPrepass)) {
                 r_depthPrepass.SetBool(depthPrepass);

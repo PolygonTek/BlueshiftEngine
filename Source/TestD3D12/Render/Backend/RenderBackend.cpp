@@ -335,7 +335,7 @@ const void *RenderBackend::ExecuteBeginContext(const void *data) {
     gpuTimingEnabled = cmd->gpuTiming;
     textureStreamingFeedbackEnabled = cmd->textureStreamingFeedback;
     swapChainOutputEnabled = cmd->swapChainOutput;
-
+    frameCompositionEnabled = swapChainOutputEnabled && r_frameComposition.GetBool() && currentContext->frameCompositionTexture;
     statDrawCount = 0;
     statDrawTriangleCount = 0;
     statInstanceTableAllocCount = 0;
@@ -345,6 +345,22 @@ const void *RenderBackend::ExecuteBeginContext(const void *data) {
 
     if (gpuTimingEnabled) {
         gpuTiming.BeginFrame(mainCommandList, frameData, currentContext);
+    }
+
+    if (swapChainOutputEnabled && currentContext->frameCompositionTexture) {
+        if (frameCompositionEnabled && currentContext->frameCompositionTextureNeedsClear) {
+            // 새로 생성되었거나 다시 활성화된 frameCompositionTexture 는 실제로 처음 사용할 때 한 번만 초기화한다.
+            const BE1::Color4 &clearColor = currentContext->GetBaseClearColor();
+            RHI::RenderPassImage outputImage = RHI::RenderPassImage::Color(currentContext->frameCompositionTexture, RHI::ViewID::PrimaryID,
+                RHI::RenderPassImage::LoadAction::Clear, RHI::RenderPassImage::StoreAction::Store, RHI::GPUResourceState::ShaderResource, RHI::GPUResourceState::ShaderResource);
+            outputImage = outputImage.WithClearValue(RHI::ClearValue::Color(clearColor[0], clearColor[1], clearColor[2], clearColor[3]));
+            RHI::renderer->BeginRenderPass(mainCommandList, &outputImage, 1);
+            RHI::renderer->EndRenderPass(mainCommandList);
+            currentContext->frameCompositionTextureNeedsClear = false;
+        } else if (!frameCompositionEnabled) {
+            // 비활성화된 동안 합성 텍스처의 내용은 갱신되지 않으므로, 다시 사용할 때 초기화한다.
+            currentContext->frameCompositionTextureNeedsClear = true;
+        }
     }
 
 #ifdef USE_MIPMAP_STREAMING
@@ -479,8 +495,17 @@ void RenderBackend::ExecuteDrawCamera2D(RHI::ClearFlag clearFlags, const BE1::Co
         return;
     }
 
-    const RHI::ClearFlag swapChainClearFlags = BE1::HasFlag(clearFlags, RHI::ClearFlag::Color) ? RHI::ClearFlag::Color : RHI::ClearFlag::None;
-    RHI::renderer->BeginRenderPass(mainCommandList, currentContext->swapChain, nullptr, clearColor, clearDepth, 0, swapChainClearFlags);
+    // 백버퍼에 바로 그리지 않고, frameCompositionTexture 에 그린다.
+    RHI::Texture *frameCompositionTexture = frameCompositionEnabled ? currentContext->GetFrameCompositionTexture() : nullptr;
+    if (frameCompositionTexture) {
+        const RHI::RenderPassImage::LoadAction loadAction = BE1::HasFlag(clearFlags, RHI::ClearFlag::Color) ? RHI::RenderPassImage::LoadAction::Clear : RHI::RenderPassImage::LoadAction::Load;
+        RHI::RenderPassImage outputImage = RHI::RenderPassImage::Color(frameCompositionTexture, RHI::ViewID::PrimaryID, loadAction, RHI::RenderPassImage::StoreAction::Store, RHI::GPUResourceState::ShaderResource, RHI::GPUResourceState::ShaderResource);
+        outputImage = outputImage.WithClearValue(RHI::ClearValue::Color(clearColor[0], clearColor[1], clearColor[2], clearColor[3]));
+        RHI::renderer->BeginRenderPass(mainCommandList, &outputImage, 1);
+    } else {
+        const RHI::ClearFlag swapChainClearFlags = BE1::HasFlag(clearFlags, RHI::ClearFlag::Color) ? RHI::ClearFlag::Color : RHI::ClearFlag::None;
+        RHI::renderer->BeginRenderPass(mainCommandList, currentContext->swapChain, nullptr, clearColor, clearDepth, 0, swapChainClearFlags);
+    }
 
     DrawCamera2D();
 
@@ -615,7 +640,13 @@ void RenderBackend::PostProcessAndBlitToOutput(bool surfaceOutputsReady) {
             BlitTextureToRenderTarget(finalColorTexture, currentVisCamera->outputTexture, currentVisCamera->outputViewID, currentVisCamera->outputBeforeState, currentVisCamera->outputAfterState, currentVisCamera->outputRect, currentVisCamera->outputImagePSO);
         }
     } else if (swapChainOutputEnabled) {
-        BlitTextureToSwapChain(finalColorTexture, currentVisCamera->outputRect);
+        // 백버퍼에 바로 blit 하지 않고, frameCompositionTexture 에 먼저 blit 한다.
+        RHI::Texture *frameCompositionTexture = frameCompositionEnabled ? currentContext->GetFrameCompositionTexture() : nullptr;
+        if (frameCompositionTexture) {
+            BlitTextureToRenderTarget(finalColorTexture, frameCompositionTexture, RHI::ViewID::PrimaryID, RHI::GPUResourceState::ShaderResource, RHI::GPUResourceState::ShaderResource, currentVisCamera->outputRect, frameImagePSO);
+        } else {
+            BlitTextureToSwapChain(finalColorTexture, currentVisCamera->outputRect);
+        }
     } else {
         BE_WARNLOG("RenderBackend::PostProcessAndBlitToOutput: no output render target was specified\n");
     }
@@ -624,7 +655,7 @@ void RenderBackend::PostProcessAndBlitToOutput(bool surfaceOutputsReady) {
 
 void RenderBackend::BlitTextureToRenderTarget(const RHI::Texture *srcTexture, const RHI::Texture *renderTargetTexture, RHI::ViewID renderTargetViewID,
     RHI::GPUResourceState renderTargetBeforeState, RHI::GPUResourceState renderTargetAfterState, const BE1::Rect &destRect, RHI::PipelineState *imagePSO) {
-    if (!srcTexture || !renderTargetTexture || !currentVisCamera->outputImagePSO) {
+    if (!srcTexture || !renderTargetTexture || !imagePSO) {
         return;
     }
 
@@ -670,7 +701,7 @@ void RenderBackend::BlitTextureToRenderTarget(const RHI::Texture *srcTexture, co
     RHI::renderer->BeginRenderPass(mainCommandList, &outputImage, 1);
     RHI::renderer->SetViewport(mainCommandList, outputRect);
     RHI::renderer->SetScissorRect(mainCommandList, outputRect);
-    RHI::renderer->SetPSO(mainCommandList, currentVisCamera->outputImagePSO);
+    RHI::renderer->SetPSO(mainCommandList, imagePSO);
     RHI::renderer->SetTexture(mainCommandList, 0, false, srcTexture);
     RHI::renderer->SetConstants(mainCommandList, 0, &imageParams, sizeof(imageParams), 0);
     RHI::renderer->Draw(mainCommandList, 3, 0);
@@ -759,8 +790,9 @@ const void *RenderBackend::ExecuteFinalizeFrame(const void *data) {
     const FinalizeFrameRenderCommand *cmd = reinterpret_cast<const FinalizeFrameRenderCommand *>(data);
     const bool renderImGuiOverlay = cmd->renderImGuiOverlay && frameData->HasPendingImGuiOverlay();
     const bool finishGpuTiming = gpuTimingEnabled && gpuTiming.IsFrameActive();
+    RHI::Texture *frameCompositionTexture = frameCompositionEnabled ? currentContext->GetFrameCompositionTexture() : nullptr;
 
-    bool needsCommandList = renderImGuiOverlay || finishGpuTiming;
+    bool needsCommandList = renderImGuiOverlay || finishGpuTiming || frameCompositionTexture;
 #ifdef USE_MIPMAP_STREAMING
     needsCommandList |= textureStreamingFeedbackEnabled;
     TextureStreamingFeedback::ReadbackFrame *readbackFrame = nullptr;
@@ -784,11 +816,22 @@ const void *RenderBackend::ExecuteFinalizeFrame(const void *data) {
             RHI::renderer->SetViewport(mainCommandList, viewportRect);
             RHI::renderer->SetScissorRect(mainCommandList, viewportRect);
 
-            RHI::renderer->BeginRenderPass(mainCommandList, currentContext->swapChain, nullptr);
+            if (frameCompositionTexture) {
+                RHI::RenderPassImage outputImage = RHI::RenderPassImage::Color(frameCompositionTexture, RHI::ViewID::PrimaryID, RHI::RenderPassImage::LoadAction::Load,
+                    RHI::RenderPassImage::StoreAction::Store, RHI::GPUResourceState::ShaderResource, RHI::GPUResourceState::ShaderResource);
+                RHI::renderer->BeginRenderPass(mainCommandList, &outputImage, 1);
+            } else {
+                RHI::renderer->BeginRenderPass(mainCommandList, currentContext->swapChain, nullptr);
+            }
 
             frameData->RenderPendingImGuiOverlay(mainCommandList);
 
             RHI::renderer->EndRenderPass(mainCommandList);
+        }
+
+        if (frameCompositionTexture) {
+            BE1::Rect outputRect(0, 0, currentContext->GetWidth(), currentContext->GetHeight());
+            BlitTextureToSwapChain(frameCompositionTexture, outputRect);
         }
 
         if (finishGpuTiming) {

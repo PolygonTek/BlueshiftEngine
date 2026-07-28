@@ -72,6 +72,10 @@ void RenderContext::Init(void *windowHandle, const BE1::Color4 &baseClearColor) 
     mainRTSampleCount = GetMainRTSampleCountFromCVar();
     this->baseClearColor = !RHI::Renderer::IsSRGBFormat(mainRTColorFormat) ? baseClearColor.SRGBToLinear() : baseClearColor;
 
+    if (!CreateFrameCompositionTexture()) {
+        BE_WARNLOG("RenderContext::Init: failed to create frame composition texture\n");
+    }
+
     InitPipelines();
 
     if (!textureStreamingFeedback.Init()) {
@@ -102,6 +106,8 @@ void RenderContext::Shutdown() {
 
     ReleasePipelines();
 
+    DestroyFrameCompositionTexture();
+
     for (RenderFrameData &frameData : frames) {
         frameData.Shutdown();
     }
@@ -124,7 +130,48 @@ void RenderContext::OnResize(int width, int height) {
     // 스왑 체인의 크기 조정
     swapChain->Resize(width, height);
 
+    if (!CreateFrameCompositionTexture()) {
+        BE_WARNLOG("RenderContext::OnResize: failed to create frame composition texture\n");
+    }
+
     ResetGuiClipRect(width, height);
+}
+
+bool RenderContext::CreateFrameCompositionTexture() {
+    DestroyFrameCompositionTexture();
+
+    const uint32_t width = swapChain->GetWidth();
+    const uint32_t height = swapChain->GetHeight();
+    if (width == 0 || height == 0) {
+        return false;
+    }
+
+    BE1::Image::Format imageFormat = BE1::Image::Format::Unknown;
+    bool isSRGB = false;
+    if (!RHI::Renderer::RHIFormatToImageFormat(swapChain->GetRTVFormat(), &imageFormat, &isSRGB)) {
+        return false;
+    }
+
+    SharedPtr<BE1::Image> image = MakeShared<BE1::Image>();
+    image->InitFromMemory(width, height, 1, 1, 1, imageFormat, isSRGB ? BE1::Image::GammaSpace::sRGB : BE1::Image::GammaSpace::Linear, nullptr, BE1::Image::Flag::None);
+
+    const RHI::ClearValue clearValue = RHI::ClearValue::Color(baseClearColor[0], baseClearColor[1], baseClearColor[2], baseClearColor[3]);
+    frameCompositionTexture = RHI::renderer->CreateTexture(RHI::TextureType::Texture2D, RHI::TextureFlag::RenderTarget | RHI::TextureFlag::ShaderResource, image, RHI::TextureMipInitMode::FromImage, clearValue, 1, RHI::GPUResourceState::ShaderResource);
+    if (!frameCompositionTexture) {
+        return false;
+    }
+
+    RHI::renderer->SetName(frameCompositionTexture, "RenderContext::frameCompositionTexture");
+    frameCompositionTextureNeedsClear = true;
+    return true;
+}
+
+void RenderContext::DestroyFrameCompositionTexture() {
+    if (frameCompositionTexture) {
+        RHI::renderer->DestroyTexture(frameCompositionTexture, true);
+        frameCompositionTexture = nullptr;
+    }
+    frameCompositionTextureNeedsClear = false;
 }
 
 void RenderContext::GetMainRenderDest(RHI::RenderDest &renderDest, bool outputNormal, bool outputVelocity) const {
@@ -347,7 +394,6 @@ void RenderContext::EndFrame() {
     RenderFrameData *frameData = GetCurrentFrontendFrameData();
     if (activeFrameOptions.swapChainOutput) {
         assert(guiClipRectStack.Count() == 1);
-        FlushPendingScreenshots(frameData);
     } else {
         frameData->ClearPendingImGuiOverlay();
     }
@@ -361,6 +407,8 @@ void RenderContext::EndFrame() {
     frameData->CmdFinalizeFrame(activeFrameOptions.swapChainOutput);
 
     if (activeFrameOptions.swapChainOutput) {
+        FlushPendingScreenshots(frameData);
+
         frameData->CmdSwapBuffers();
     }
 

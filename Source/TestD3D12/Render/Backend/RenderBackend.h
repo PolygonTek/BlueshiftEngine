@@ -154,7 +154,7 @@ private:
     bool                            gpuTimingEnabled = false;
     bool                            textureStreamingFeedbackEnabled = false;
     bool                            swapChainOutputEnabled = false;
-
+    bool                            frameCompositionEnabled = false;
     RHI::PipelineState *            frameImagePSO = nullptr;
     RHI::PipelineState *            frameGenHiZMipFirstBatchPSO = nullptr;
     RHI::PipelineState *            frameGenHiZMipFirstBatchMSAAPSO = nullptr;

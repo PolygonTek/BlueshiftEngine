@@ -95,6 +95,7 @@ public:
 
     void *                          GetWindowHandle() const { return windowHandle; }
     RHI::SwapChain *                GetSwapChain() const { return swapChain; }
+    RHI::Texture *                  GetFrameCompositionTexture() const { return frameCompositionTexture; }
 
     GuiMesh &                       GetGuiMesh() { return guiMesh; }
 
@@ -156,6 +157,8 @@ private:
 
     void                            InitPipelines();
     void                            ReleasePipelines();
+    bool                            CreateFrameCompositionTexture();
+    void                            DestroyFrameCompositionTexture();
     bool                            BeginImGui();
     void                            EndImGui();
     void                            FlushPendingScreenshots(RenderFrameData *frameData);
@@ -166,6 +169,8 @@ private:
 
     void *                          windowHandle = nullptr;
     RHI::SwapChain *                swapChain = nullptr;
+    RHI::Texture *                  frameCompositionTexture = nullptr; ///< Scene, GUI, ImGui 를 합성한 뒤 프레임 끝에 백버퍼로 출력한다.
+    bool                            frameCompositionTextureNeedsClear = false;
     RHI::ImGuiOverlay *             imguiOverlay = nullptr;
     BE1::Color4                     baseClearColor = BE1::Color4::black;
 
