@@ -192,6 +192,7 @@ bool D3D12ImGuiOverlay::Init(void *mainWindowHandle, RHI::SwapChain *swapChain) 
     style.FontSizeBase = imguiBaseFontSize * dpiScale;
     style.FontScaleMain = 1.0f;
     style.FontScaleDpi = 1.0f;
+    style.WindowRounding = imguiBaseFontSize * 0.25f;
     style.ScaleAllSizes(dpiScale);
 
     ImFontConfig fontConfig;

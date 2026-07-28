@@ -479,7 +479,7 @@ void App::BuildImGuiOverlay() {
     ImGui::StyleColorsDark();
 
     const auto roundedCollapsingHeader = [fontSize](const char *label) {
-        ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, fontSize * 0.3f);
+        ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, fontSize * 0.25f);
         const bool isOpen = ImGui::CollapsingHeader(label);
         ImGui::PopStyleVar();
         return isOpen;
