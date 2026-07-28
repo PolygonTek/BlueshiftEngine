@@ -73,6 +73,10 @@ float3 EvaluateStandardImageBasedLighting(in ShadingParams shading, in ImageBase
     float3 diffuse = sample.diffuseIrradiance * shading.diffuseColor * (1.0f - fresnel);
     float3 specular = sample.specularRadiance * GetSpecularEnvSecondSum(dfg.baseLayer, shading.specularF0);
 
+#if USE_MULTIPLE_SCATTERING_COMPENSATION
+    specular *= shading.energyCompensation;
+#endif
+
     diffuse *= shading.ambientOcclusion;
     specular *= GetSpecularOcclusionFromAmbientOcclusion(shading.normalDotView, shading.ambientOcclusion, shading.roughness);
 
@@ -83,6 +87,11 @@ float3 EvaluateStandardImageBasedLighting(in ShadingParams shading, in ImageBase
     const float baseLayerAttenuation = 1.0f - clearCoatFresnel;
 
     float3 clearCoatSpecular = sample.clearCoatSpecularRadiance * GetSpecularEnvSecondSum(dfg.clearCoat, float3(0.04f, 0.04f, 0.04f)) * shading.clearCoat;
+
+#if USE_MULTIPLE_SCATTERING_COMPENSATION
+    clearCoatSpecular *= shading.clearCoatEnergyCompensation;
+#endif
+
     clearCoatSpecular *= GetSpecularOcclusionFromAmbientOcclusion(clearCoatNormalDotView, shading.ambientOcclusion, shading.clearCoatRoughness);
 
     return (diffuse + specular) * baseLayerAttenuation * baseLayerAttenuation + clearCoatSpecular;

@@ -128,6 +128,19 @@ float ClearCoatBRDF(float NdotH, float VdotH, float clearCoatReflectivity, float
     return D * G * F;
 }
 
+#if USE_MULTIPLE_SCATTERING_COMPENSATION
+// Compensates for energy lost by single-scattering microfacet BRDFs.
+// Use a scalar F0 for achromatic lobes such as clear coat.
+float GetMultipleScatteringEnergyCompensation(float dfgFirstSum, float F0) {
+    return 1.0f + F0 * (rcp(dfgFirstSum) - 1.0f);
+}
+
+// Use an RGB F0 for colored lobes such as the standard material base layer.
+float3 GetMultipleScatteringEnergyCompensation(float dfgFirstSum, float3 F0) {
+    return 1.0f + F0 * (rcp(dfgFirstSum) - 1.0f);
+}
+#endif
+
 // 단위 incident radiance 에 대한 standard material 의 direct lighting 응답을 계산한다.
 float3 EvaluateStandardDirectBRDF(in ShadingParams shading, float3 lightDir) {
     const float3 halfVectorUnnormalized = lightDir + shading.viewDir;
@@ -144,16 +157,24 @@ float3 EvaluateStandardDirectBRDF(in ShadingParams shading, float3 lightDir) {
     const float fresnelSecondFactor = F_SecondFactorSchlickSG(VdotH);
 
     float3 specularFresnel;
-    const float3 specular = SpecularBRDF(NdotL, shading.normalDotView, NdotH, VdotH, shading.roughness, shading.linearRoughness, shading.specularF0, fresnelSecondFactor, specularFresnel);
+    float3 specular = SpecularBRDF(NdotL, shading.normalDotView, NdotH, VdotH, shading.roughness, shading.linearRoughness, shading.specularF0, fresnelSecondFactor, specularFresnel);
     const float3 diffuse = DiffuseBRDF(NdotL, shading.normalDotView, LdotV, VdotH, shading.diffuseColor, shading.linearRoughness, 0.0f) * (1.0f - specularFresnel);
+
+#if USE_MULTIPLE_SCATTERING_COMPENSATION
+    specular *= shading.energyCompensation;
+#endif
 
 #if _CLEARCOAT != 0
     const float clearCoatNdotL = saturate(dot(shading.clearCoatNormal, lightDir));
     const float clearCoatNdotH = saturate(dot(shading.clearCoatNormal, halfVector));
 
     float clearCoatFresnel;
-    const float clearCoatSpecular = ClearCoatBRDF(clearCoatNdotH, VdotH, shading.clearCoat, shading.clearCoatLinearRoughness, fresnelSecondFactor, clearCoatFresnel);
+    float clearCoatSpecular = ClearCoatBRDF(clearCoatNdotH, VdotH, shading.clearCoat, shading.clearCoatLinearRoughness, fresnelSecondFactor, clearCoatFresnel);
     const float baseLayerAttenuation = 1.0f - clearCoatFresnel;
+
+#if USE_MULTIPLE_SCATTERING_COMPENSATION
+    clearCoatSpecular *= shading.clearCoatEnergyCompensation;
+#endif
 
     return ((diffuse + specular) * baseLayerAttenuation * baseLayerAttenuation * NdotL + clearCoatSpecular * clearCoatNdotL) * PI;
 #else

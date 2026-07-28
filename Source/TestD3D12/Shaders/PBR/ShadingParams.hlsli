@@ -4,10 +4,17 @@
 #include "../CommonBindless.hlsli"
 #include "BRDFLibrary.hlsli"
 
+#ifndef USE_MULTIPLE_SCATTERING_COMPENSATION
+    #define USE_MULTIPLE_SCATTERING_COMPENSATION 1
+#endif
+
 struct ShadingParams {
     float4 baseColor;
     float3 diffuseColor;
     float3 specularF0;
+#if USE_MULTIPLE_SCATTERING_COMPENSATION
+    float3 energyCompensation;
+#endif
     float metallic;
     float roughness;
     float linearRoughness;
@@ -25,6 +32,9 @@ struct ShadingParams {
     float clearCoatRoughness;
     float clearCoatLinearRoughness;
     float3 clearCoatNormal;
+#if USE_MULTIPLE_SCATTERING_COMPENSATION
+    float clearCoatEnergyCompensation;
+#endif
 #endif
 };
 
