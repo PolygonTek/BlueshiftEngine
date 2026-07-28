@@ -23,6 +23,9 @@
 #include "imgui/imgui.h"
 #endif
 
+static constexpr float lightSpacing = 6.0f;
+static constexpr float lightOriginZOffset = 2.0f;
+
 void SceneMatrix::Init(RenderWorld *renderWorld) {
     this->renderWorld = renderWorld;
 
@@ -162,16 +165,13 @@ void SceneMatrix::InitGameLights(uint32_t countX, uint32_t countY, uint32_t coun
     const uint32_t lightCount = lightCountX * lightCountY * lightCountZ;
     gameLights.Reserve(lightCount);
 
-    const float spacingX = ((float)objectCountX / lightCountX) * 4.0f;
-    const float spacingY = ((float)objectCountY / lightCountY) * 4.0f;
-    const float spacingZ = ((float)objectCountZ / lightCountZ) * 4.0f;
     constexpr float radius = 8.0f;
     constexpr float minLightIntensity = 1.0f;
     constexpr float maxLightIntensity = 5.0f;
 
-    const float startX = -spacingX * (lightCountX - 1) * 0.5f;
-    const float startY = -spacingY * (lightCountY - 1) * 0.5f;
-    const float startZ = -spacingZ * (lightCountZ - 1) * 0.5f;
+    const float startX = -lightSpacing * (lightCountX - 1) * 0.5f;
+    const float startY = -lightSpacing * (lightCountY - 1) * 0.5f;
+    const float startZ = -lightSpacing * (lightCountZ - 1) * 0.5f;
 
     BE1::RNG rng(1);
 
@@ -187,10 +187,9 @@ void SceneMatrix::InitGameLights(uint32_t countX, uint32_t countY, uint32_t coun
                 desc.type = RenderLight::Type::Point;
                 desc.flags = RenderLight::Flag::None;
                 desc.origin.Set(
-                    startX + spacingX * x,
-                    startY + spacingY * y,
-                    startZ + spacingZ * z + 2.0f);
-                gameLight.baseOriginZ = desc.origin.z;
+                    startX + lightSpacing * x,
+                    startY + lightSpacing * y,
+                    startZ + lightSpacing * z + lightOriginZOffset);
                 desc.size[0] = radius;
                 desc.projectionPolicy = RHI::renderer->GetProjectionPolicy();
 
@@ -257,16 +256,23 @@ void SceneMatrix::AnimateGameLights(uint64_t elapsedUsec) {
     const float movementAmplitude = 4.0f;
     constexpr float movementSpeed = 1.0f;
     constexpr float phaseStep = 0.37f;
+    const uint32_t lightsPerLayer = lightCountX * lightCountY;
+    const float startZ = -lightSpacing * (lightCountZ - 1) * 0.5f;
 
-    for (int index = 0; index < gameLights.Count(); ++index) {
-        const float phase = index * phaseStep;
+    int index = 0;
+    for (uint32_t z = 0; z < lightCountZ; ++z) {
+        const float baseOriginZ = startZ + lightSpacing * z + lightOriginZOffset;
 
-        GameLight &gameLight = gameLights[index];
-        RenderLight::Desc &desc = gameLight.renderLightDesc;
+        for (uint32_t i = 0; i < lightsPerLayer; ++i, ++index) {
+            const float phase = index * phaseStep;
 
-        desc.origin.z = gameLight.baseOriginZ + BE1::Math::Sin(elapsedSeconds * movementSpeed + phase) * movementAmplitude;
+            GameLight &gameLight = gameLights[index];
+            RenderLight::Desc &desc = gameLight.renderLightDesc;
 
-        renderWorld->UpdateRenderLight(gameLight.renderLightHandle, desc, RenderLight::Desc::UpdateFlag::Transform);
+            desc.origin.z = baseOriginZ + BE1::Math::Sin(elapsedSeconds * movementSpeed + phase) * movementAmplitude;
+
+            renderWorld->UpdateRenderLight(gameLight.renderLightHandle, desc, RenderLight::Desc::UpdateFlag::Transform);
+        }
     }
 }
 

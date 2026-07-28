@@ -20,5 +20,4 @@ class GameLight {
 public:
     RenderLight::Desc       renderLightDesc;
     int                     renderLightHandle = -1;
-    float                   baseOriginZ = 0.0f;
 };
