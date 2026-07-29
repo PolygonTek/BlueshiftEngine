@@ -30,10 +30,10 @@ void CSMain(uint3 dispatchThreadId : SV_DispatchThreadID) {
     // FFT 영역 중앙에 축소된 aperture 를 배치하고 그 바깥은 0 으로 채운다.
     float aperture = 0.0;
     if (all(apertureUv >= 0.0) && all(apertureUv <= 1.0)) {
-        float4 apertureSample = apertureSourceTexture.SampleLevel(linearClampSampler, apertureUv, 0);
+        float4 apertureSample = apertureSourceTexture.SampleLevel(linearClampSampler, apertureUv, BP_BLOOM_APERTURE_MIP_LEVEL);
 
         // grayscale 로 변환한다.
-        aperture = GetLuma(max(apertureSample.rgb, float3(0.0, 0.0, 0.0))) * saturate(apertureSample.a);
+        aperture = GetLuma(max(apertureSample.rgb, float3(0.0, 0.0, 0.0)));
     }
 
     uint outputIndex = outputCoord.y * bloomParams.outputSize.x + outputCoord.x;

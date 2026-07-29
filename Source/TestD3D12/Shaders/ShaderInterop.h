@@ -258,6 +258,7 @@ struct BloomParams {
 #define BP_BLOOM_KERNEL_ROTATION_SIN bloomParams.params0.y
 #define BP_BLOOM_KERNEL_SPATIAL_SCALE bloomParams.params0.zw
 #define BP_BLOOM_APERTURE_SCALE bloomParams.params0.x
+#define BP_BLOOM_APERTURE_MIP_LEVEL bloomParams.params0.y
 #define BP_BLOOM_DIFFRACTION_PSF_SCALE bloomParams.params0.x
 #define BP_BLOOM_DISPERSION_AMOUNT bloomParams.params0.x
 #define BP_BLOOM_DISPERSION_MIN_WAVELENGTH_NM bloomParams.params0.y

@@ -656,7 +656,7 @@ void App::SetConvolutionBloomAperturePreset(App::AperturePreset aperturePreset) 
         return;
     }
 
-    convolutionBloomApertureTexture = textureManager.GetTexture(filename, Texture::Flag::HighQuality | Texture::Flag::NoMipmaps);
+    convolutionBloomApertureTexture = textureManager.GetTexture(filename, Texture::Flag::HighQuality | Texture::Flag::LinearColorSpace);
 }
 
 void App::RegenerateConvolutionBloomKernel() {
