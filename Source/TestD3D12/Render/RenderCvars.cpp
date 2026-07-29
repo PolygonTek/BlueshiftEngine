@@ -38,8 +38,8 @@ CVAR(r_taa, "0", BE1::CVar::Flag::Bool | BE1::CVar::Flag::Archive, "enable tempo
 CVAR(r_taaJitter, "1", BE1::CVar::Flag::Bool, "enable temporal projection jitter");
 CVAR_MINMAX(r_taaJitterSampleCount, "16", BE1::CVar::Flag::Integer, "temporal projection jitter sample count", 1, 64);
 CVAR_MINMAX(r_taaHistoryWeight, "0.9", BE1::CVar::Flag::Float, "temporal anti-aliasing history blend weight", 0.0f, 1.0f);
-CVAR_MINMAX(r_taaColorBoxSigma, "1.0", BE1::CVar::Flag::Float, "temporal anti-aliasing variance color box sigma scale", 0.0f, 15.0f);
-CVAR_MINMAX(r_taaSubpixelWeight, "0.8", BE1::CVar::Flag::Float, "temporal anti-aliasing maximum subpixel current frame weight", 0.0f, 1.0f);
+CVAR_MINMAX(r_taaColorBoxSigma, "2.0", BE1::CVar::Flag::Float, "temporal anti-aliasing variance color box sigma scale", 0.0f, 15.0f);
+CVAR_MINMAX(r_taaSubpixelWeight, "0.5", BE1::CVar::Flag::Float, "temporal anti-aliasing maximum subpixel current frame weight", 0.0f, 1.0f);
 CVAR_MINMAX(r_taaLuminanceWeight, "0.25", BE1::CVar::Flag::Float, "temporal anti-aliasing luminance mismatch history rejection weight", 0.0f, 1.0f);
 CVAR_MINMAX(r_taaDepthFallbackThreshold, "1.0", BE1::CVar::Flag::Float, "temporal anti-aliasing depth fallback linear depth threshold", 0.0f, 10000.0f);
 
@@ -48,7 +48,7 @@ CVAR(r_hiZOcclusionCullingFreeze, "0", BE1::CVar::Flag::Bool, "freeze Hi-Z occlu
 CVAR(r_hiZDebugPreview, "0", BE1::CVar::Flag::Bool, "enable Hi-Z debug preview texture update");
 CVAR_MINMAX(r_hiZDebugPreviewMipLevel, "0", BE1::CVar::Flag::Integer, "Hi-Z debug preview mip level", 0, RenderHiZMaxLevelCount - 1);
 
-CVAR_MINMAX(r_textureFilter, "3", BE1::CVar::Flag::Integer | BE1::CVar::Flag::Archive, "texture filtering mode for material samplers", 0, static_cast<int>(RHI::TextureFilter::Count) - 1);
+CVAR_MINMAX(r_textureFilter, "4", BE1::CVar::Flag::Integer | BE1::CVar::Flag::Archive, "texture filtering mode for material samplers", 0, static_cast<int>(RHI::TextureFilter::Count) - 1);
 CVAR_MINMAX(r_textureMaxAnisotropy, "8", BE1::CVar::Flag::Integer | BE1::CVar::Flag::Archive, "maximum anisotropy for material samplers", 1, 16);
 CVAR(r_textureStreamingStreamInDelay, "0", BE1::CVar::Flag::Integer, "texture streaming frame delay before loading higher-resolution mips");
 CVAR(r_textureStreamingMaxRequestsPerFrame, "256", BE1::CVar::Flag::Integer, "maximum texture streaming requests per frame");

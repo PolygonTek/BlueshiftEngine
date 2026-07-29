@@ -16,12 +16,23 @@
 #error Invalid TAA_COLOR_BOUNDS_MODE.
 #endif
 
+#define TAA_HISTORY_FILTER_MODE_BILINEAR 0
+#define TAA_HISTORY_FILTER_MODE_CATMULL_ROM 1
+
+#ifndef TAA_HISTORY_FILTER_MODE
+#define TAA_HISTORY_FILTER_MODE TAA_HISTORY_FILTER_MODE_BILINEAR
+#endif
+
+#if TAA_HISTORY_FILTER_MODE != TAA_HISTORY_FILTER_MODE_BILINEAR && TAA_HISTORY_FILTER_MODE != TAA_HISTORY_FILTER_MODE_CATMULL_ROM
+#error Invalid TAA_HISTORY_FILTER_MODE.
+#endif
+
 #ifndef USE_PLUS_NEIGHBORHOOD
 #define USE_PLUS_NEIGHBORHOOD 0
 #endif
 
 #ifndef USE_DIAGONAL_NEIGHBORHOOD
-#define USE_DIAGONAL_NEIGHBORHOOD 1
+#define USE_DIAGONAL_NEIGHBORHOOD 0
 #endif
 
 #if USE_PLUS_NEIGHBORHOOD && USE_DIAGONAL_NEIGHBORHOOD
@@ -71,6 +82,47 @@ Texture2D<float> depthTexture : register(t2);
 Texture2D<float4> previousColorHistoryTexture : register(t3);
 Texture2D<float> previousDepthTexture : register(t4);
 RWTexture2D<float4> outputColorHistoryTexture : register(u0);
+
+#if TAA_HISTORY_FILTER_MODE == TAA_HISTORY_FILTER_MODE_CATMULL_ROM
+// 4x4 Catmull-Rom filter 를 bilinear 9 tap 으로 축약하여 history 를 재구성한다.
+float3 SamplePreviousColorHistoryCatmullRom(float2 uv) {
+    const float2 textureSize = float2(taaResolveParams.outputSize.x, taaResolveParams.outputSize.y);
+    const float2 samplePos = uv * textureSize;
+    const float2 centerTexelPos = floor(samplePos - 0.5) + 0.5;
+    const float2 f = samplePos - centerTexelPos;
+    const float2 f2 = f * f;
+    const float2 f3 = f2 * f;
+
+    const float2 weight0 = f2 - 0.5 * (f3 + f);
+    const float2 weight1 = 1.5 * f3 - 2.5 * f2 + 1.0;
+    const float2 weight3 = 0.5 * (f3 - f2);
+    const float2 weight2 = 1.0 - weight0 - weight1 - weight3;
+    const float2 weight12 = weight1 + weight2;
+
+    const float2 uv0 = (centerTexelPos - 1.0) * taaResolveParams.outputTexelSize;
+    const float2 uv12 = (centerTexelPos + weight2 / weight12) * taaResolveParams.outputTexelSize;
+    const float2 uv3 = (centerTexelPos + 2.0) * taaResolveParams.outputTexelSize;
+
+    float3 historyColor = previousColorHistoryTexture.SampleLevel(linearClampSampler, float2(uv0.x, uv0.y), 0).rgb * (weight0.x * weight0.y);
+    historyColor += previousColorHistoryTexture.SampleLevel(linearClampSampler, float2(uv0.x, uv12.y), 0).rgb * (weight0.x * weight12.y);
+    historyColor += previousColorHistoryTexture.SampleLevel(linearClampSampler, float2(uv0.x, uv3.y), 0).rgb * (weight0.x * weight3.y);
+    historyColor += previousColorHistoryTexture.SampleLevel(linearClampSampler, float2(uv12.x, uv0.y), 0).rgb * (weight12.x * weight0.y);
+    historyColor += previousColorHistoryTexture.SampleLevel(linearClampSampler, float2(uv12.x, uv12.y), 0).rgb * (weight12.x * weight12.y);
+    historyColor += previousColorHistoryTexture.SampleLevel(linearClampSampler, float2(uv12.x, uv3.y), 0).rgb * (weight12.x * weight3.y);
+    historyColor += previousColorHistoryTexture.SampleLevel(linearClampSampler, float2(uv3.x, uv0.y), 0).rgb * (weight3.x * weight0.y);
+    historyColor += previousColorHistoryTexture.SampleLevel(linearClampSampler, float2(uv3.x, uv12.y), 0).rgb * (weight3.x * weight12.y);
+    historyColor += previousColorHistoryTexture.SampleLevel(linearClampSampler, float2(uv3.x, uv3.y), 0).rgb * (weight3.x * weight3.y);
+    return historyColor;
+}
+#endif
+
+float3 SamplePreviousColorHistory(float2 uv) {
+#if TAA_HISTORY_FILTER_MODE == TAA_HISTORY_FILTER_MODE_BILINEAR
+    return previousColorHistoryTexture.SampleLevel(linearClampSampler, uv, 0).rgb;
+#elif TAA_HISTORY_FILTER_MODE == TAA_HISTORY_FILTER_MODE_CATMULL_ROM
+    return SamplePreviousColorHistoryCatmullRom(uv);
+#endif
+}
 
 #if USE_NEIGHBORHOOD_COLOR_BOUNDS
 static const float TAAResolveMinColorBoxRange = 1e-5;
@@ -248,12 +300,12 @@ void CSMain(uint3 dispatchThreadId : SV_DispatchThreadID) {
             }
 #endif
 
-            float3 historyColor = previousColorHistoryTexture.SampleLevel(linearClampSampler, previousUV, 0).rgb;
+            float3 historyColor = SamplePreviousColorHistory(previousUV);
 
             float historyWeight = saturate(taaResolveParams.historyWeight);
 
 #if USE_SUBPIXEL_CORRECTION
-            // subpixel 이동이 클수록 current color 비중을 높여 history linear sampling 으로 생기는 blur 를 줄인다.
+            // subpixel 이동이 클수록 current color 비중을 높여 history 재구성 sampling 으로 생기는 blur 를 줄인다.
             const float2 velocityPixels = abs(velocity) * float2(taaResolveParams.outputSize.x, taaResolveParams.outputSize.y);
             const float subpixelCorrection = frac(max(velocityPixels.x, velocityPixels.y)) * 0.5;
             const float baseCurrentWeight = 1.0 - historyWeight;
