@@ -357,19 +357,19 @@ void GpuFFT::UpdatePipelineBuildState() {
     pipelinesReady = allReady;
 }
 
-bool GpuFFT::GetGpuFFTSize(uint32_t fftSizeValue, GpuFFT::FFTSize &fftSize) {
+bool GpuFFT::GetGpuFFTSize(uint32_t fftSizeValue, GpuFFT::FFTSize &fftSizeEnum) {
     switch (fftSizeValue) {
     case 256:
-        fftSize = GpuFFT::FFTSize::FFT256;
+        fftSizeEnum = GpuFFT::FFTSize::FFT256;
         return true;
     case 512:
-        fftSize = GpuFFT::FFTSize::FFT512;
+        fftSizeEnum = GpuFFT::FFTSize::FFT512;
         return true;
     case 1024:
-        fftSize = GpuFFT::FFTSize::FFT1024;
+        fftSizeEnum = GpuFFT::FFTSize::FFT1024;
         return true;
     case 2048:
-        fftSize = GpuFFT::FFTSize::FFT2048;
+        fftSizeEnum = GpuFFT::FFTSize::FFT2048;
         return true;
     default:
         assert(false);
@@ -908,7 +908,7 @@ bool GpuFFT::DispatchMultiplyComplexSpectrum2D(RHI::CommandList *commandList, RH
     RHI::renderer->SetBuffer(commandList, 0, true, outputSpectrumBuffer);
     RHI::renderer->SetConstantBuffer(commandList, 0, multiplyConstantBuffer);
 
-    const uint32_t threadGroupCount = (elementCount + MultiplySpectrum2DBlockSize - 1) / MultiplySpectrum2DBlockSize;
+    const uint32_t threadGroupCount = BE1::DivCeil(elementCount, MultiplySpectrum2DBlockSize);
     RHI::renderer->Dispatch(commandList, threadGroupCount, 1, 1);
 
     RHI::GPUBarrier endBarriers[] = {
@@ -968,7 +968,7 @@ bool GpuFFT::DispatchMultiplyPackedRealSpectrum2D(RHI::CommandList *commandList,
     RHI::renderer->SetBuffer(commandList, 0, true, outputSpectrumBuffer);
     RHI::renderer->SetConstantBuffer(commandList, 0, multiplyConstantBuffer);
 
-    const uint32_t threadGroupCount = (elementCount + MultiplySpectrum2DBlockSize - 1) / MultiplySpectrum2DBlockSize;
+    const uint32_t threadGroupCount = BE1::DivCeil(elementCount, MultiplySpectrum2DBlockSize);
     RHI::renderer->Dispatch(commandList, threadGroupCount, 1, 1);
 
     RHI::GPUBarrier endBarriers[] = {
@@ -1027,7 +1027,7 @@ bool GpuFFT::DispatchMultiplyPackedDualRealSpectrum2D(RHI::CommandList *commandL
     RHI::renderer->SetBuffer(commandList, 0, true, outputSpectrumBuffer);
     RHI::renderer->SetConstantBuffer(commandList, 0, multiplyConstantBuffer);
 
-    const uint32_t threadGroupCount = (elementCount + MultiplySpectrum2DBlockSize - 1) / MultiplySpectrum2DBlockSize;
+    const uint32_t threadGroupCount = BE1::DivCeil(elementCount, MultiplySpectrum2DBlockSize);
     RHI::renderer->Dispatch(commandList, threadGroupCount, 1, 1);
 
     RHI::GPUBarrier endBarriers[] = {

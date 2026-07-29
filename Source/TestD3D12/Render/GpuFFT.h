@@ -72,7 +72,7 @@ public:
     bool                        ArePipelinesReady() const { return pipelinesReady; }
     bool                        HasPipelineBuildFailed() const { return pipelineBuildFailed; }
 
-    static bool                 GetGpuFFTSize(uint32_t fftSizeValue, GpuFFT::FFTSize &fftSize);
+    static bool                 GetGpuFFTSize(uint32_t fftSizeValue, GpuFFT::FFTSize &fftSizeEnum);
 
                                 // fftSize-point complex buffers -> fftSize-point complex buffers (256/512/1024/2048)
     bool                        DispatchFFTComplex1D(RHI::CommandList *commandList, RHI::FrameThreadData *frameThreadData, RHI::Buffer *inputBuffer, RHI::Buffer *outputBuffer, FFTSize fftSize, uint32_t fftBlockCount);

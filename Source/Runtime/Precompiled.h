@@ -733,6 +733,16 @@ constexpr bool HasFlag(E lhs, E rhs) { return (lhs & rhs) == rhs; }
 template<typename E>
 constexpr bool HasAnyFlag(E lhs, E rhs) { return std::underlying_type_t<E>(lhs & rhs) != 0; }
 
+/// Returns the quotient of dividend and divisor, rounded up.
+template <typename T, typename U>
+constexpr T DivCeil(T dividend, U divisor) {
+    static_assert(std::is_integral_v<T> && std::is_unsigned_v<T>);
+    static_assert(std::is_integral_v<U> && std::is_unsigned_v<U>);
+
+    assert(divisor != 0);
+    return static_cast<T>(dividend / divisor + (dividend % divisor != 0));
+}
+
 /// Tests if the value is aligned.
 template <typename T>
 constexpr bool IsAligned(const T &x, int n) { return IsPowerOf2(n) ? ((x & (n - 1)) == 0) : ((x % n) == 0); }

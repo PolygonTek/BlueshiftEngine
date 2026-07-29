@@ -299,8 +299,8 @@ bool GpuSphericalHarmonics::ReconstructCubemapSH(RHI::CommandList *commandList, 
     RHI::renderer->SetTexture(commandList, 0, true, outputCubeMap, outputUAV);
     RHI::renderer->SetConstants(commandList, 0, &params, sizeof(params), 0);
 
-    const uint32_t threadGroupCountX = (outputViewInfo.width + IBLIntegrationBlockSizeX - 1) / IBLIntegrationBlockSizeX;
-    const uint32_t threadGroupCountY = (outputViewInfo.height + IBLIntegrationBlockSizeY - 1) / IBLIntegrationBlockSizeY;
+    const uint32_t threadGroupCountX = BE1::DivCeil(outputViewInfo.width, IBLIntegrationBlockSizeX);
+    const uint32_t threadGroupCountY = BE1::DivCeil(outputViewInfo.height, IBLIntegrationBlockSizeY);
     RHI::renderer->Dispatch(commandList, threadGroupCountX, threadGroupCountY, 6);
     return true;
 }

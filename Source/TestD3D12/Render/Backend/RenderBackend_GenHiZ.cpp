@@ -78,8 +78,8 @@ static bool DispatchFastHiZReductionBatch(RHI::FrameThreadData *frameThreadData,
 
     RHI::renderer->SetConstantBuffer(commandList, 0, hiZMipGenConstantBuffer);
 
-    const uint32_t threadGroupCountX = (outputWidth + GenHiZMipBlockSizeX - 1) / GenHiZMipBlockSizeX;
-    const uint32_t threadGroupCountY = (outputHeight + GenHiZMipBlockSizeY - 1) / GenHiZMipBlockSizeY;
+    const uint32_t threadGroupCountX = BE1::DivCeil(outputWidth, GenHiZMipBlockSizeX);
+    const uint32_t threadGroupCountY = BE1::DivCeil(outputHeight, GenHiZMipBlockSizeY);
     RHI::renderer->Dispatch(commandList, threadGroupCountX, threadGroupCountY, 1);
 
     RHI::GPUBarrier endBarriers[5];
@@ -127,8 +127,8 @@ static bool DispatchOddDimHiZReduction(RHI::FrameThreadData *frameThreadData, RH
     RHI::renderer->SetTexture(commandList, 0, true, hiZTexture, visCamera->hiZMipUAVs[outputMipLevel]);
     RHI::renderer->SetConstantBuffer(commandList, 0, hiZMipGenConstantBuffer);
 
-    const uint32_t threadGroupCountX = (outputWidth + GenHiZMipBlockSizeX - 1) / GenHiZMipBlockSizeX;
-    const uint32_t threadGroupCountY = (outputHeight + GenHiZMipBlockSizeY - 1) / GenHiZMipBlockSizeY;
+    const uint32_t threadGroupCountX = BE1::DivCeil(outputWidth, GenHiZMipBlockSizeX);
+    const uint32_t threadGroupCountY = BE1::DivCeil(outputHeight, GenHiZMipBlockSizeY);
     RHI::renderer->Dispatch(commandList, threadGroupCountX, threadGroupCountY, 1);
 
     RHI::GPUBarrier endBarriers[] = {
@@ -194,8 +194,8 @@ bool RenderBackend::DispatchGenHiZ() {
 
     RHI::renderer->SetConstantBuffer(mainCommandList, 0, hiZMipGenConstantBuffer);
 
-    uint32_t threadGroupCountX = (currentVisCamera->hiZMipWidths[0] + GenHiZMipBlockSizeX - 1) / GenHiZMipBlockSizeX;
-    uint32_t threadGroupCountY = (currentVisCamera->hiZMipHeights[0] + GenHiZMipBlockSizeY - 1) / GenHiZMipBlockSizeY;
+    uint32_t threadGroupCountX = BE1::DivCeil(currentVisCamera->hiZMipWidths[0], GenHiZMipBlockSizeX);
+    uint32_t threadGroupCountY = BE1::DivCeil(currentVisCamera->hiZMipHeights[0], GenHiZMipBlockSizeY);
     RHI::renderer->Dispatch(mainCommandList, threadGroupCountX, threadGroupCountY, 1);
 
     RHI::GPUBarrier endBarriers[5];

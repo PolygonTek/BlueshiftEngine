@@ -138,8 +138,8 @@ void RenderBackend::UpdateFrameStats() {
             continue;
         }
 
-        const uint32_t threadGroupCountX = (visCamera.lightCulling.tileCountX + ShaderLightCullingThreadGroupSizeX - 1) / ShaderLightCullingThreadGroupSizeX;
-        const uint32_t threadGroupCountY = (visCamera.lightCulling.tileCountY + ShaderLightCullingThreadGroupSizeY - 1) / ShaderLightCullingThreadGroupSizeY;
+        const uint32_t threadGroupCountX = BE1::DivCeil(visCamera.lightCulling.tileCountX, ShaderLightCullingThreadGroupSizeX);
+        const uint32_t threadGroupCountY = BE1::DivCeil(visCamera.lightCulling.tileCountY, ShaderLightCullingThreadGroupSizeY);
 
         stats.lightCullingThreadGroupCount += static_cast<uint64_t>(threadGroupCountX) * threadGroupCountY * visCamera.lightCulling.wordsPerTile;
     }

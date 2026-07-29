@@ -58,8 +58,8 @@ bool RenderBackend::DispatchHiZDebugPreview() {
     RHI::renderer->SetTexture(mainCommandList, 0, true, currentVisCamera->hiZDebugPreviewTexture);
     RHI::renderer->SetConstantBuffer(mainCommandList, 0, hiZDebugPreviewConstantBuffer);
 
-    const uint32_t threadGroupCountX = (outputWidth + HiZDebugPreviewBlockSizeX - 1) / HiZDebugPreviewBlockSizeX;
-    const uint32_t threadGroupCountY = (outputHeight + HiZDebugPreviewBlockSizeY - 1) / HiZDebugPreviewBlockSizeY;
+    const uint32_t threadGroupCountX = BE1::DivCeil(outputWidth, HiZDebugPreviewBlockSizeX);
+    const uint32_t threadGroupCountY = BE1::DivCeil(outputHeight, HiZDebugPreviewBlockSizeY);
     RHI::renderer->Dispatch(mainCommandList, threadGroupCountX, threadGroupCountY, 1);
 
     RHI::GPUBarrier endBarriers[] = {

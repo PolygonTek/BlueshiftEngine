@@ -75,8 +75,8 @@ bool RenderBackend::DispatchLuminance() {
         RHI::renderer->SetBuffer(mainCommandList, 0, true, luminanceBuffer);
         RHI::renderer->SetConstants(mainCommandList, 1, &luminancePass1Params, sizeof(luminancePass1Params), 0);
 
-        const uint32_t threadGroupCountX = (luminancePass1Params.sampleSize.x + LuminanceBlockSize - 1) / LuminanceBlockSize;
-        const uint32_t threadGroupCountY = (luminancePass1Params.sampleSize.y + LuminanceBlockSize - 1) / LuminanceBlockSize;
+        const uint32_t threadGroupCountX = BE1::DivCeil(luminancePass1Params.sampleSize.x, LuminanceBlockSize);
+        const uint32_t threadGroupCountY = BE1::DivCeil(luminancePass1Params.sampleSize.y, LuminanceBlockSize);
         RHI::renderer->Dispatch(mainCommandList, threadGroupCountX, threadGroupCountY, 1);
     }
 
@@ -161,8 +161,8 @@ bool RenderBackend::DispatchSurfaceOutputMSAAResolve() {
         RHI::renderer->SetTexture(mainCommandList, uavSlot++, true, currentVisCamera->rtVelocityTexture);
     }
 
-    const uint32_t threadGroupCountX = (resolveParams.outputSize.x + SurfaceOutputMSAAResolveBlockSizeX - 1) / SurfaceOutputMSAAResolveBlockSizeX;
-    const uint32_t threadGroupCountY = (resolveParams.outputSize.y + SurfaceOutputMSAAResolveBlockSizeY - 1) / SurfaceOutputMSAAResolveBlockSizeY;
+    const uint32_t threadGroupCountX = BE1::DivCeil(resolveParams.outputSize.x, SurfaceOutputMSAAResolveBlockSizeX);
+    const uint32_t threadGroupCountY = BE1::DivCeil(resolveParams.outputSize.y, SurfaceOutputMSAAResolveBlockSizeY);
     RHI::renderer->Dispatch(mainCommandList, threadGroupCountX, threadGroupCountY, 1);
 
     RHI::GPUBarrier endBarriers[5];
@@ -223,8 +223,8 @@ bool RenderBackend::DispatchCurrentDepthMSAAResolve() {
     RHI::renderer->SetTexture(mainCommandList, 0, false, inputDepthTexture);
     RHI::renderer->SetTexture(mainCommandList, 0, true, outputDepthTexture);
 
-    const uint32_t threadGroupCountX = (outputW + DepthMSAAResolveBlockSizeX - 1) / DepthMSAAResolveBlockSizeX;
-    const uint32_t threadGroupCountY = (outputH + DepthMSAAResolveBlockSizeY - 1) / DepthMSAAResolveBlockSizeY;
+    const uint32_t threadGroupCountX = BE1::DivCeil(outputW, DepthMSAAResolveBlockSizeX);
+    const uint32_t threadGroupCountY = BE1::DivCeil(outputH, DepthMSAAResolveBlockSizeY);
     RHI::renderer->Dispatch(mainCommandList, threadGroupCountX, threadGroupCountY, 1);
 
     RHI::GPUBarrier endBarriers[] = {
@@ -301,8 +301,8 @@ bool RenderBackend::DispatchTAAResolve() {
     RHI::renderer->SetTexture(mainCommandList, 4, false, previousDepthTexture);
     RHI::renderer->SetTexture(mainCommandList, 0, true, outputColorHistoryTexture);
 
-    const uint32_t threadGroupCountX = (taaResolveParams.outputSize.x + TAAResolveBlockSizeX - 1) / TAAResolveBlockSizeX;
-    const uint32_t threadGroupCountY = (taaResolveParams.outputSize.y + TAAResolveBlockSizeY - 1) / TAAResolveBlockSizeY;
+    const uint32_t threadGroupCountX = BE1::DivCeil(taaResolveParams.outputSize.x, TAAResolveBlockSizeX);
+    const uint32_t threadGroupCountY = BE1::DivCeil(taaResolveParams.outputSize.y, TAAResolveBlockSizeY);
     RHI::renderer->Dispatch(mainCommandList, threadGroupCountX, threadGroupCountY, 1);
 
     RHI::GPUBarrier endBarriers[6];
@@ -384,8 +384,8 @@ bool RenderBackend::DispatchPyramidBloom() {
         RHI::renderer->SetTexture(mainCommandList, 0, true, currentVisCamera->bloomDownTexture, currentVisCamera->bloomDownMipUAVs[outputMipLevel]);
         RHI::renderer->SetConstantBuffer(mainCommandList, 0, bloomConstantBuffer);
 
-        const uint32_t threadGroupCountX = (outputWidth + BloomBlockSizeX - 1) / BloomBlockSizeX;
-        const uint32_t threadGroupCountY = (outputHeight + BloomBlockSizeY - 1) / BloomBlockSizeY;
+        const uint32_t threadGroupCountX = BE1::DivCeil(outputWidth, BloomBlockSizeX);
+        const uint32_t threadGroupCountY = BE1::DivCeil(outputHeight, BloomBlockSizeY);
         RHI::renderer->Dispatch(mainCommandList, threadGroupCountX, threadGroupCountY, 1);
 
         RHI::renderer->Barrier(mainCommandList, RHI::Renderer::MakeTextureBarrier(currentVisCamera->bloomDownTexture, RHI::GPUResourceState::UnorderedAccess, RHI::GPUResourceState::ShaderResource, 0, outputMipLevel));
@@ -440,8 +440,8 @@ bool RenderBackend::DispatchPyramidBloom() {
         RHI::renderer->SetTexture(mainCommandList, 0, true, currentVisCamera->bloomUpTexture, currentVisCamera->bloomUpMipUAVs[outputMipLevel]);
         RHI::renderer->SetConstantBuffer(mainCommandList, 0, bloomConstantBuffer);
 
-        const uint32_t threadGroupCountX = (outputWidth + BloomBlockSizeX - 1) / BloomBlockSizeX;
-        const uint32_t threadGroupCountY = (outputHeight + BloomBlockSizeY - 1) / BloomBlockSizeY;
+        const uint32_t threadGroupCountX = BE1::DivCeil(outputWidth, BloomBlockSizeX);
+        const uint32_t threadGroupCountY = BE1::DivCeil(outputHeight, BloomBlockSizeY);
         RHI::renderer->Dispatch(mainCommandList, threadGroupCountX, threadGroupCountY, 1);
 
         RHI::renderer->Barrier(mainCommandList, RHI::Renderer::MakeTextureBarrier(currentVisCamera->bloomUpTexture, RHI::GPUResourceState::UnorderedAccess, RHI::GPUResourceState::ShaderResource, 0, outputMipLevel));
@@ -568,8 +568,8 @@ bool RenderBackend::DispatchConvolutionBloomKernelPrepare() {
     RHI::renderer->SetBuffer(mainCommandList, 0, true, spatialBuffer);
     RHI::renderer->SetConstantBuffer(mainCommandList, 0, bloomConstantBuffer);
 
-    const uint32_t threadGroupCountX = (outputW + BloomBlockSizeX - 1) / BloomBlockSizeX;
-    const uint32_t threadGroupCountY = (outputH + BloomBlockSizeY - 1) / BloomBlockSizeY;
+    const uint32_t threadGroupCountX = BE1::DivCeil(outputW, BloomBlockSizeX);
+    const uint32_t threadGroupCountY = BE1::DivCeil(outputH, BloomBlockSizeY);
     RHI::renderer->Dispatch(mainCommandList, threadGroupCountX, threadGroupCountY, 1);
 
     RHI::GPUBarrier endBarriers[] = {
@@ -628,8 +628,8 @@ bool RenderBackend::DispatchConvolutionBloomScreenPrefilter() {
     RHI::renderer->SetBuffer(mainCommandList, 0, true, outputBuffer);
     RHI::renderer->SetConstantBuffer(mainCommandList, 0, bloomConstantBuffer);
 
-    const uint32_t threadGroupCountX = (outputW + BloomBlockSizeX - 1) / BloomBlockSizeX;
-    const uint32_t threadGroupCountY = (outputH + BloomBlockSizeY - 1) / BloomBlockSizeY;
+    const uint32_t threadGroupCountX = BE1::DivCeil(outputW, BloomBlockSizeX);
+    const uint32_t threadGroupCountY = BE1::DivCeil(outputH, BloomBlockSizeY);
     RHI::renderer->Dispatch(mainCommandList, threadGroupCountX, threadGroupCountY, 1);
 
     RHI::GPUBarrier endBarriers[] = {
@@ -717,8 +717,8 @@ bool RenderBackend::DispatchConvolutionBloomResolve() {
     RHI::renderer->SetTexture(mainCommandList, 0, true, outputTexture);
     RHI::renderer->SetConstantBuffer(mainCommandList, 0, bloomConstantBuffer);
 
-    const uint32_t threadGroupCountX = (outputW + BloomBlockSizeX - 1) / BloomBlockSizeX;
-    const uint32_t threadGroupCountY = (outputH + BloomBlockSizeY - 1) / BloomBlockSizeY;
+    const uint32_t threadGroupCountX = BE1::DivCeil(outputW, BloomBlockSizeX);
+    const uint32_t threadGroupCountY = BE1::DivCeil(outputH, BloomBlockSizeY);
     RHI::renderer->Dispatch(mainCommandList, threadGroupCountX, threadGroupCountY, 1);
 
     RHI::GPUBarrier endBarriers[] = {
@@ -867,8 +867,8 @@ bool RenderBackend::DispatchFinalPostProcess(bool useToneMapping, bool useBloom)
     RHI::renderer->SetTexture(mainCommandList, 0, true, outputTexture);
     RHI::renderer->SetConstantBuffer(mainCommandList, 0, finalPostProcessConstantBuffer);
 
-    const uint32_t threadGroupCountX = (finalPostProcessParams.outputSize.x + FinalPostProcessBlockSizeX - 1) / FinalPostProcessBlockSizeX;
-    const uint32_t threadGroupCountY = (finalPostProcessParams.outputSize.y + FinalPostProcessBlockSizeY - 1) / FinalPostProcessBlockSizeY;
+    const uint32_t threadGroupCountX = BE1::DivCeil(finalPostProcessParams.outputSize.x, FinalPostProcessBlockSizeX);
+    const uint32_t threadGroupCountY = BE1::DivCeil(finalPostProcessParams.outputSize.y, FinalPostProcessBlockSizeY);
     RHI::renderer->Dispatch(mainCommandList, threadGroupCountX, threadGroupCountY, 1);
 
     RHI::GPUBarrier endBarriers[] = {

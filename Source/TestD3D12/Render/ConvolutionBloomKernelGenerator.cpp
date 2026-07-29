@@ -153,7 +153,7 @@ bool ConvolutionBloomKernelGenerator::GenerateKernel(RHI::CommandList *commandLi
         return true;
     }
 
-    if (!apertureSourceTexture || !apertureSourceTexture->IsReadyForRendering() || !apertureSourceTexture->GetRHITexture()) {
+    if (!apertureSourceTexture || !apertureSourceTexture->IsReadyForRendering()) {
         return false;
     }
 
@@ -295,7 +295,7 @@ bool ConvolutionBloomKernelGenerator::EnsureResources() {
         return false;
     }
 
-    const uint64_t apertureEnergyElementCount = (pixelCount + ConvolutionBloomApertureEnergyReduceBlockSize - 1) / ConvolutionBloomApertureEnergyReduceBlockSize;
+    const uint64_t apertureEnergyElementCount = BE1::DivCeil(pixelCount, ConvolutionBloomApertureEnergyReduceBlockSize);
     apertureEnergyBuffer0 = CreateGeneratorStructuredBuffer("ConvolutionBloomKernelGenerator::apertureEnergyBuffer0", apertureEnergyElementCount);
     if (!apertureEnergyBuffer0) {
         DestroyResources();
@@ -360,13 +360,9 @@ void ConvolutionBloomKernelGenerator::DestroyResources() {
 }
 
 bool ConvolutionBloomKernelGenerator::HasResources() const {
-    return apertureSpatialBuffer &&
-        apertureSpectrumBuffer &&
-        workBuffer &&
-        apertureEnergyBuffer0 &&
-        apertureEnergyBuffer1 &&
-        diffractionPSFTexture &&
-        kernelTexture;
+    return apertureSpatialBuffer && apertureSpectrumBuffer && workBuffer &&
+        apertureEnergyBuffer0 && apertureEnergyBuffer1 &&
+        diffractionPSFTexture && kernelTexture;
 }
 
 bool ConvolutionBloomKernelGenerator::DispatchAperturePrepare(RHI::CommandList *commandList, RHI::FrameThreadData *frameThreadData) {
@@ -383,11 +379,11 @@ bool ConvolutionBloomKernelGenerator::DispatchAperturePrepare(RHI::CommandList *
         return false;
     }
 
-    const uint32_t inputW = sourceTexture->GetWidth();
-    const uint32_t inputH = sourceTexture->GetHeight();
     const uint32_t outputW = KernelSize;
     const uint32_t outputH = KernelSize;
-    if (inputW == 0 || inputH == 0 || outputW == 0 || outputH == 0) {
+    const uint32_t inputW = sourceTexture->GetWidth();
+    const uint32_t inputH = sourceTexture->GetHeight();
+    if (inputW == 0 || inputH == 0) {
         return false;
     }
 
@@ -414,8 +410,8 @@ bool ConvolutionBloomKernelGenerator::DispatchAperturePrepare(RHI::CommandList *
     RHI::renderer->SetBuffer(commandList, 0, true, outputBuffer);
     RHI::renderer->SetConstantBuffer(commandList, 0, bloomConstantBuffer);
 
-    const uint32_t threadGroupCountX = (outputW + BloomBlockSizeX - 1) / BloomBlockSizeX;
-    const uint32_t threadGroupCountY = (outputH + BloomBlockSizeY - 1) / BloomBlockSizeY;
+    const uint32_t threadGroupCountX = BE1::DivCeil(outputW, BloomBlockSizeX);
+    const uint32_t threadGroupCountY = BE1::DivCeil(outputH, BloomBlockSizeY);
     RHI::renderer->Dispatch(commandList, threadGroupCountX, threadGroupCountY, 1);
 
     RHI::GPUBarrier endBarriers[] = {
@@ -438,15 +434,12 @@ bool ConvolutionBloomKernelGenerator::DispatchReduceApertureEnergy(RHI::CommandL
         apertureEnergyBuffer0,
         apertureEnergyBuffer1
     };
+
     if (!apertureSpatialBuffer || !energyBuffers[0] || !energyBuffers[1]) {
         return false;
     }
 
     const uint64_t pixelCount = uint64_t(KernelSize) * uint64_t(KernelSize);
-    if (pixelCount == 0 || pixelCount > UINT32_MAX) {
-        return false;
-    }
-
     uint32_t inputElementCount = static_cast<uint32_t>(pixelCount);
     RHI::Buffer *inputBuffer = apertureSpatialBuffer;
     RHI::GPUResourceState inputState = RHI::GPUResourceState::Undefined;
@@ -459,7 +452,7 @@ bool ConvolutionBloomKernelGenerator::DispatchReduceApertureEnergy(RHI::CommandL
             return false;
         }
 
-        const uint32_t outputElementCount = (inputElementCount + ConvolutionBloomApertureEnergyReduceBlockSize - 1) / ConvolutionBloomApertureEnergyReduceBlockSize;
+        const uint32_t outputElementCount = BE1::DivCeil(inputElementCount, ConvolutionBloomApertureEnergyReduceBlockSize);
         if (outputElementCount <= 1) {
             *outEnergyBuffer = outputBuffer;
             return true;
@@ -481,7 +474,7 @@ bool ConvolutionBloomKernelGenerator::DispatchReduceApertureEnergyPass(RHI::Comm
         return false;
     }
 
-    const uint32_t outputElementCount = (inputElementCount + ConvolutionBloomApertureEnergyReduceBlockSize - 1) / ConvolutionBloomApertureEnergyReduceBlockSize;
+    const uint32_t outputElementCount = BE1::DivCeil(inputElementCount, ConvolutionBloomApertureEnergyReduceBlockSize);
     BloomParams bloomParams = {};
     bloomParams.inputSize = uint2(inputElementCount, inputIsPartialEnergy ? 1u : 0u);
     bloomParams.outputSize = uint2(outputElementCount, 1);
@@ -555,8 +548,8 @@ bool ConvolutionBloomKernelGenerator::DispatchResolveDiffractionPSF(RHI::Command
     RHI::renderer->SetTexture(commandList, 0, true, outputTexture);
     RHI::renderer->SetConstantBuffer(commandList, 0, bloomConstantBuffer);
 
-    const uint32_t threadGroupCountX = (outputW + BloomBlockSizeX - 1) / BloomBlockSizeX;
-    const uint32_t threadGroupCountY = (outputH + BloomBlockSizeY - 1) / BloomBlockSizeY;
+    const uint32_t threadGroupCountX = BE1::DivCeil(outputW, BloomBlockSizeX);
+    const uint32_t threadGroupCountY = BE1::DivCeil(outputH, BloomBlockSizeY);
     RHI::renderer->Dispatch(commandList, threadGroupCountX, threadGroupCountY, 1);
 
     RHI::GPUBarrier endBarriers[] = {
@@ -621,8 +614,8 @@ bool ConvolutionBloomKernelGenerator::DispatchApplyDispersion(RHI::CommandList *
     RHI::renderer->SetTexture(commandList, 0, true, outputTexture);
     RHI::renderer->SetConstantBuffer(commandList, 0, bloomConstantBuffer);
 
-    const uint32_t threadGroupCountX = (outputW + BloomBlockSizeX - 1) / BloomBlockSizeX;
-    const uint32_t threadGroupCountY = (outputH + BloomBlockSizeY - 1) / BloomBlockSizeY;
+    const uint32_t threadGroupCountX = BE1::DivCeil(outputW, BloomBlockSizeX);
+    const uint32_t threadGroupCountY = BE1::DivCeil(outputH, BloomBlockSizeY);
     RHI::renderer->Dispatch(commandList, threadGroupCountX, threadGroupCountY, 1);
 
     RHI::GPUBarrier endBarriers[] = {

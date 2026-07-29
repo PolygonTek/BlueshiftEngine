@@ -219,7 +219,7 @@ bool RenderBackend::DispatchHiZCullInstances(RHI::FrameThreadData *frameThreadDa
     RHI::renderer->SetConstantBuffer(commandList, 0, hiZCullConstantBuffer);
     RHI::renderer->SetConstantBuffer(commandList, 1, cameraConstantBuffer);
 
-    const uint32_t threadGroupCountX = (instanceCount + HiZCullThreadCount - 1) / HiZCullThreadCount;
+    const uint32_t threadGroupCountX = BE1::DivCeil(instanceCount, HiZCullThreadCount);
     RHI::renderer->Dispatch(commandList, threadGroupCountX, 1, 1);
 
     return true;

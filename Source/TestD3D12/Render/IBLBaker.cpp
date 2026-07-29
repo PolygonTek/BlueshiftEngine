@@ -154,8 +154,8 @@ bool IBLBaker::GenerateDiffuseIrradiance(RHI::CommandList *commandList, const RH
     RHI::renderer->SetTexture(commandList, 0, false, radianceCubeMap);
     RHI::renderer->SetTexture(commandList, 0, true, outputCubeMap, outputUAV);
 
-    const uint32_t threadGroupCountX = (outputViewInfo.width + IBLIntegrationBlockSizeX - 1) / IBLIntegrationBlockSizeX;
-    const uint32_t threadGroupCountY = (outputViewInfo.height + IBLIntegrationBlockSizeY - 1) / IBLIntegrationBlockSizeY;
+    const uint32_t threadGroupCountX = BE1::DivCeil(outputViewInfo.width, IBLIntegrationBlockSizeX);
+    const uint32_t threadGroupCountY = BE1::DivCeil(outputViewInfo.height, IBLIntegrationBlockSizeY);
     RHI::renderer->Dispatch(commandList, threadGroupCountX, threadGroupCountY, 6);
 
     RHI::GPUBarrier endBarriers[1 + 6];
@@ -271,8 +271,8 @@ bool IBLBaker::GenerateLDSumPhongSpecularMip(RHI::CommandList *commandList, cons
     RHI::renderer->SetTexture(commandList, 0, true, outputCubeMap, outputMipUAV);
     RHI::renderer->SetConstants(commandList, 0, &params, sizeof(params), 0);
 
-    const uint32_t threadGroupCountX = (outputViewInfo.width + IBLIntegrationBlockSizeX - 1) / IBLIntegrationBlockSizeX;
-    const uint32_t threadGroupCountY = (outputViewInfo.height + IBLIntegrationBlockSizeY - 1) / IBLIntegrationBlockSizeY;
+    const uint32_t threadGroupCountX = BE1::DivCeil(outputViewInfo.width, IBLIntegrationBlockSizeX);
+    const uint32_t threadGroupCountY = BE1::DivCeil(outputViewInfo.height, IBLIntegrationBlockSizeY);
     RHI::renderer->Dispatch(commandList, threadGroupCountX, threadGroupCountY, 6);
 
     RHI::GPUBarrier endBarriers[1 + 6];
@@ -351,8 +351,8 @@ bool IBLBaker::GenerateDFGSumGGX(RHI::CommandList *commandList, RHI::Texture *ou
     RHI::renderer->SetPSO(commandList, pso);
     RHI::renderer->SetTexture(commandList, 0, true, outputTexture, outputUAV);
 
-    const uint32_t threadGroupCountX = (outputViewInfo.width + IBLIntegrationBlockSizeX - 1) / IBLIntegrationBlockSizeX;
-    const uint32_t threadGroupCountY = (outputViewInfo.height + IBLIntegrationBlockSizeY - 1) / IBLIntegrationBlockSizeY;
+    const uint32_t threadGroupCountX = BE1::DivCeil(outputViewInfo.width, IBLIntegrationBlockSizeX);
+    const uint32_t threadGroupCountY = BE1::DivCeil(outputViewInfo.height, IBLIntegrationBlockSizeY);
     RHI::renderer->Dispatch(commandList, threadGroupCountX, threadGroupCountY, 1);
 
     RHI::renderer->Barrier(commandList, RHI::Renderer::MakeTextureBarrier(outputTexture, RHI::GPUResourceState::UnorderedAccess, RHI::GPUResourceState::ShaderResource, 0, 0));
@@ -452,8 +452,8 @@ bool IBLBaker::DispatchGenerateLDMip(RHI::CommandList *commandList, const RHI::T
     RHI::renderer->SetTexture(commandList, 0, true, outputCubeMap, outputMipUAV);
     RHI::renderer->SetConstants(commandList, 0, &params, sizeof(params), 0);
 
-    const uint32_t threadGroupCountX = (outputViewInfo.width + IBLIntegrationBlockSizeX - 1) / IBLIntegrationBlockSizeX;
-    const uint32_t threadGroupCountY = (outputViewInfo.height + IBLIntegrationBlockSizeY - 1) / IBLIntegrationBlockSizeY;
+    const uint32_t threadGroupCountX = BE1::DivCeil(outputViewInfo.width, IBLIntegrationBlockSizeX);
+    const uint32_t threadGroupCountY = BE1::DivCeil(outputViewInfo.height, IBLIntegrationBlockSizeY);
     RHI::renderer->Dispatch(commandList, threadGroupCountX, threadGroupCountY, 6);
 
     RHI::GPUBarrier endBarriers[1 + 6];

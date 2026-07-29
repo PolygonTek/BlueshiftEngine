@@ -32,10 +32,12 @@ void CSMain(uint3 dispatchThreadId : SV_DispatchThreadID) {
     if (all(apertureUv >= 0.0) && all(apertureUv <= 1.0)) {
         float4 apertureSample = apertureSourceTexture.SampleLevel(linearClampSampler, apertureUv, 0);
 
-        // grayscale 로 바꿔서 complex 버퍼에 저장한다.
+        // grayscale 로 변환한다.
         aperture = GetLuma(max(apertureSample.rgb, float3(0.0, 0.0, 0.0))) * saturate(apertureSample.a);
     }
 
     uint outputIndex = outputCoord.y * bloomParams.outputSize.x + outputCoord.x;
+
+    // complex output 버퍼에 저장한다.
     apertureSpatialBuffer[outputIndex] = float2(aperture, 0.0);
 }
