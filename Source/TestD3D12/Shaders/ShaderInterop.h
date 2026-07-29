@@ -217,7 +217,7 @@ struct TAAResolveParams {
     float depthFallbackThreshold;
     float maxSubpixelCurrentWeight;
     float luminanceWeight;
-    float padding0;
+    float colorBoxSigma;
 };
 
 struct DepthMSAAResolveParams {

@@ -43,6 +43,7 @@ extern BE1::CVar    r_taa;
 extern BE1::CVar    r_taaJitter;
 extern BE1::CVar    r_taaJitterSampleCount;
 extern BE1::CVar    r_taaHistoryWeight;
+extern BE1::CVar    r_taaColorBoxSigma;
 extern BE1::CVar    r_taaSubpixelWeight;
 extern BE1::CVar    r_taaLuminanceWeight;
 extern BE1::CVar    r_taaDepthFallbackThreshold;

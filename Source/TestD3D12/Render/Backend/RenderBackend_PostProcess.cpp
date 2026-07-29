@@ -272,6 +272,7 @@ bool RenderBackend::DispatchTAAResolve() {
     taaResolveParams.depthFallbackThreshold = r_taaDepthFallbackThreshold.GetFloat();
     taaResolveParams.maxSubpixelCurrentWeight = r_taaSubpixelWeight.GetFloat();
     taaResolveParams.luminanceWeight = r_taaLuminanceWeight.GetFloat();
+    taaResolveParams.colorBoxSigma = r_taaColorBoxSigma.GetFloat();
 
     RHI::ConstantBuffer *taaResolveConstantBuffer = frameData->GetThreadData(0)->AllocConstant(sizeof(TAAResolveParams), &taaResolveParams);
     if (!taaResolveConstantBuffer) {

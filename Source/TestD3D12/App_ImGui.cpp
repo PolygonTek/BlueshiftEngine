@@ -680,6 +680,12 @@ void App::BuildImGuiOverlay() {
                     r_taaHistoryWeight.SetFloat(taaHistoryWeight);
                 }
 
+                float taaColorBoxSigma = BE1::Clamp(r_taaColorBoxSigma.GetFloat(), r_taaColorBoxSigma.GetMinValue(), r_taaColorBoxSigma.GetMaxValue());
+                ImGui::SetNextItemWidth(fontSize * 12.0f);
+                if (ImGui::SliderFloat("TAA color box sigma", &taaColorBoxSigma, r_taaColorBoxSigma.GetMinValue(), r_taaColorBoxSigma.GetMaxValue(), "%.3f")) {
+                    r_taaColorBoxSigma.SetFloat(taaColorBoxSigma);
+                }
+
                 float taaSubpixelWeight = BE1::Clamp(r_taaSubpixelWeight.GetFloat(), r_taaSubpixelWeight.GetMinValue(), r_taaSubpixelWeight.GetMaxValue());
                 ImGui::SetNextItemWidth(fontSize * 12.0f);
                 if (ImGui::SliderFloat("TAA subpixel weight", &taaSubpixelWeight, r_taaSubpixelWeight.GetMinValue(), r_taaSubpixelWeight.GetMaxValue(), "%.3f")) {

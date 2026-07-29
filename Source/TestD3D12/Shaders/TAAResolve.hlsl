@@ -5,6 +5,17 @@
 #define USE_NEIGHBORHOOD_COLOR_BOUNDS 1
 #endif
 
+#define TAA_COLOR_BOUNDS_MODE_MIN_MAX 0
+#define TAA_COLOR_BOUNDS_MODE_VARIANCE 1
+
+#ifndef TAA_COLOR_BOUNDS_MODE
+#define TAA_COLOR_BOUNDS_MODE TAA_COLOR_BOUNDS_MODE_VARIANCE
+#endif
+
+#if TAA_COLOR_BOUNDS_MODE != TAA_COLOR_BOUNDS_MODE_MIN_MAX && TAA_COLOR_BOUNDS_MODE != TAA_COLOR_BOUNDS_MODE_VARIANCE
+#error Invalid TAA_COLOR_BOUNDS_MODE.
+#endif
+
 #ifndef USE_PLUS_NEIGHBORHOOD
 #define USE_PLUS_NEIGHBORHOOD 0
 #endif
@@ -64,19 +75,22 @@ RWTexture2D<float4> outputColorHistoryTexture : register(u0);
 #if USE_NEIGHBORHOOD_COLOR_BOUNDS
 static const float TAAResolveMinColorBoxRange = 1e-5;
 
-void AccumulateNeighborhoodColorBounds(int2 sampleCoord, int2 maxPixelCoord, inout float3 colorMin, inout float3 colorMax) {
+float3 LoadNeighborhoodColor(int2 sampleCoord, int2 maxPixelCoord) {
     const int2 clampedCoord = clamp(sampleCoord, int2(0, 0), maxPixelCoord);
     float3 sampleColor = currentColorTexture.Load(int3(clampedCoord, 0)).rgb;
 #if USE_YCOCG_CLAMP
     sampleColor = RGBToYCoCg(sampleColor);
 #endif
+    return sampleColor;
+}
 
+void AccumulateNeighborhoodColorBounds(int2 sampleCoord, int2 maxPixelCoord, inout float3 colorMin, inout float3 colorMax) {
+    const float3 sampleColor = LoadNeighborhoodColor(sampleCoord, maxPixelCoord);
     colorMin = min(colorMin, sampleColor);
     colorMax = max(colorMax, sampleColor);
 }
 
-// pixelCoord 주변 neighborhood 영역의 color bounds 를 구한다.
-void ComputeNeighborhoodColorBounds(uint2 pixelCoord, float3 centerColor, out float3 colorMin, out float3 colorMax) {
+void ComputeMinMaxNeighborhoodColorBounds(uint2 pixelCoord, float3 centerColor, out float3 colorMin, out float3 colorMax) {
     const int2 baseCoord = int2(pixelCoord);
     const int2 maxPixelCoord = int2(taaResolveParams.outputSize.x, taaResolveParams.outputSize.y) - 1;
 
@@ -103,6 +117,44 @@ void ComputeNeighborhoodColorBounds(uint2 pixelCoord, float3 centerColor, out fl
             }
         }
     }
+#endif
+}
+
+void ComputeVarianceNeighborhoodColorBounds(uint2 pixelCoord, float3 centerColor, out float3 colorMin, out float3 colorMax) {
+    const int2 baseCoord = int2(pixelCoord);
+    const int2 maxPixelCoord = int2(taaResolveParams.outputSize.x, taaResolveParams.outputSize.y) - 1;
+
+    float3 colorSum = centerColor;
+    float3 colorSquareSum = centerColor * centerColor;
+
+    [unroll]
+    for (int sampleY = -1; sampleY <= 1; ++sampleY) {
+        [unroll]
+        for (int sampleX = -1; sampleX <= 1; ++sampleX) {
+            if (sampleX != 0 || sampleY != 0) {
+                const float3 sampleColor = LoadNeighborhoodColor(baseCoord + int2(sampleX, sampleY), maxPixelCoord);
+                colorSum += sampleColor;
+                colorSquareSum += sampleColor * sampleColor;
+            }
+        }
+    }
+
+    static const float TAAResolveNeighborhoodSampleCountRcp = 1.0 / 9.0;
+    const float3 colorMean = colorSum * TAAResolveNeighborhoodSampleCountRcp;
+    const float3 colorVariance = max(colorSquareSum * TAAResolveNeighborhoodSampleCountRcp - colorMean * colorMean, float3(0.0, 0.0, 0.0));
+    const float3 colorSigma = sqrt(colorVariance);
+    const float colorBoxSigma = max(taaResolveParams.colorBoxSigma, 0.0);
+
+    colorMin = colorMean - colorBoxSigma * colorSigma;
+    colorMax = colorMean + colorBoxSigma * colorSigma;
+}
+
+// pixelCoord 주변 neighborhood 영역의 color bounds 를 선택한 방식으로 구한다.
+void ComputeNeighborhoodColorBounds(uint2 pixelCoord, float3 centerColor, out float3 colorMin, out float3 colorMax) {
+#if TAA_COLOR_BOUNDS_MODE == TAA_COLOR_BOUNDS_MODE_MIN_MAX
+    ComputeMinMaxNeighborhoodColorBounds(pixelCoord, centerColor, colorMin, colorMax);
+#elif TAA_COLOR_BOUNDS_MODE == TAA_COLOR_BOUNDS_MODE_VARIANCE
+    ComputeVarianceNeighborhoodColorBounds(pixelCoord, centerColor, colorMin, colorMax);
 #endif
 }
 #endif
