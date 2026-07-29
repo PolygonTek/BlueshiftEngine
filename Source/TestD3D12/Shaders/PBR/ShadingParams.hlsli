@@ -8,6 +8,9 @@
     #define USE_MULTIPLE_SCATTERING_COMPENSATION 0
 #endif
 
+static const float SpecularAAVariance = 0.15;
+static const float SpecularAAThreshold = 0.2;
+
 struct ShadingParams {
     float4 baseColor;
     float3 diffuseColor;
@@ -45,6 +48,17 @@ float3 DecodeTangentSpaceNormal(float2 encodedNormal) {
     return float3(normalXY, normalZ);
 }
 
+float ComputeSpecularAAKernelRoughness(float3 normal) {
+    const float3 normalDx = ddx(normal);
+    const float3 normalDy = ddy(normal);
+    const float normalVariance = SpecularAAVariance * (dot(normalDx, normalDx) + dot(normalDy, normalDy));
+    return min(2.0 * normalVariance, SpecularAAThreshold);
+}
+
+float ApplySpecularAA(float roughness, float kernelRoughness) {
+    return sqrt(saturate(roughness * roughness + kernelRoughness));
+}
+
 // material texture 를 샘플링하여 direct lighting 과 indirect lighting 에서 공유할 입력값을 준비한다.
 ShadingParams PrepareShadingParams(ShaderMaterial shaderMaterial, float4 baseColor, float2 texCoord, float3 viewDir, float3 normal,
 #if _NORMAL != 0 || (_CLEARCOAT != 0 && _CLEARCOAT_NORMAL != 0)
@@ -62,6 +76,11 @@ ShadingParams PrepareShadingParams(ShaderMaterial shaderMaterial, float4 baseCol
     const float3 normalTS = DecodeTangentSpaceNormal(encodedNormal);
     shading.normal = normalize(mul(normalTS, tangentToWorld));
 #endif
+
+    float specularAAKernelRoughness = 0.0;
+    if ((cameraConstants.flags & ShaderCameraFlagUseSpecularAA) != 0) {
+        specularAAKernelRoughness = ComputeSpecularAAKernelRoughness(shading.normal);
+    }
 
     shading.normalDotView = max(dot(shading.normal, shading.viewDir), 1e-4f);
     shading.reflectionDir = reflect(-shading.viewDir, shading.normal);
@@ -102,6 +121,9 @@ ShadingParams PrepareShadingParams(ShaderMaterial shaderMaterial, float4 baseCol
 
     shading.metallic = saturate(shading.metallic);
     shading.roughness = clamp(shading.roughness, MinRoughness, 1.0f);
+    if ((cameraConstants.flags & ShaderCameraFlagUseSpecularAA) != 0) {
+        shading.roughness = ApplySpecularAA(shading.roughness, specularAAKernelRoughness);
+    }
     shading.linearRoughness = shading.roughness * shading.roughness;
 
     // 0.04 의 기본 반사율은 대부분의 dielectric material 에 적합하다.
@@ -142,7 +164,6 @@ ShadingParams PrepareShadingParams(ShaderMaterial shaderMaterial, float4 baseCol
 
     shading.clearCoat = saturate(shading.clearCoat);
     shading.clearCoatRoughness = lerp(MinClearCoatRoughness, MaxClearCoatRoughness, saturate(shading.clearCoatRoughness));
-    shading.clearCoatLinearRoughness = shading.clearCoatRoughness * shading.clearCoatRoughness;
 
 #if _CLEARCOAT_NORMAL != 0
     const float2 encodedClearCoatNormal = GetTexture2D(shaderMaterial.clearCoatNormalTextureIndex).Sample(materialSampler, texCoord).xy;
@@ -151,6 +172,15 @@ ShadingParams PrepareShadingParams(ShaderMaterial shaderMaterial, float4 baseCol
 #else
     shading.clearCoatNormal = shading.normal;
 #endif
+
+    if ((cameraConstants.flags & ShaderCameraFlagUseSpecularAA) != 0) {
+        float clearCoatSpecularAAKernelRoughness = specularAAKernelRoughness;
+#if _CLEARCOAT_NORMAL != 0
+        clearCoatSpecularAAKernelRoughness = ComputeSpecularAAKernelRoughness(shading.clearCoatNormal);
+#endif
+        shading.clearCoatRoughness = ApplySpecularAA(shading.clearCoatRoughness, clearCoatSpecularAAKernelRoughness);
+    }
+    shading.clearCoatLinearRoughness = shading.clearCoatRoughness * shading.clearCoatRoughness;
 
     // IOR 1.5 인 clear coat layer 아래에 놓인 base layer 의 F0 를 보정한다.
     shading.specularF0 = lerp(shading.specularF0, F0ForAirInterfaceToF0ForClearCoat15(shading.specularF0), shading.clearCoat);

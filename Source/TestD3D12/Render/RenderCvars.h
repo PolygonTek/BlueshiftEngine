@@ -37,6 +37,7 @@ extern BE1::CVar    r_vsync;
 extern BE1::CVar    r_frameComposition;
 extern BE1::CVar    r_depthPrepass;
 extern BE1::CVar    r_specularEnergyCompensation2;
+extern BE1::CVar    r_specularAA;
 
 extern BE1::CVar    r_msaa;
 extern BE1::CVar    r_taa;

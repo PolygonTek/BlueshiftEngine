@@ -225,6 +225,9 @@ bool RenderBackend::UploadCameraConstants() {
     if (currentVisCamera->directionalLightVisible) {
         flags |= ShaderCameraFlagUseDirectionalLight;
     }
+    if (r_specularAA.GetBool()) {
+        flags |= ShaderCameraFlagUseSpecularAA;
+    }
 
     ALIGN_AS32 BE1::Mat4 unjitteredViewProjMatrix = currentVisCamera->viewProjMatrix;
     ALIGN_AS32 BE1::Mat4 prevUnjitteredViewProjMatrix = currentVisCamera->prevViewProjMatrix;

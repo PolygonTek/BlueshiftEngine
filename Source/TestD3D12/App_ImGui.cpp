@@ -576,6 +576,11 @@ void App::BuildImGuiOverlay() {
                 r_specularEnergyCompensation2.SetBool(specularEnergyCompensation);
             }
 
+            bool specularAA = r_specularAA.GetBool();
+            if (ImGui::Checkbox("Specular AA", &specularAA)) {
+                r_specularAA.SetBool(specularAA);
+            }
+
             static constexpr int msaaSampleCounts[] = { 1, 2, 4, 8 };
             int msaaSampleCount = r_msaa.GetInteger();
             int msaaSampleCountIndex = msaaSampleCount >= 8 ? 3 : (msaaSampleCount >= 4 ? 2 : (msaaSampleCount >= 2 ? 1 : 0));
