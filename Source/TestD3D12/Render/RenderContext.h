@@ -72,6 +72,8 @@ class RenderContext {
 public:
     using Stats = StatsT<PlainStatValue>;
 
+    static constexpr uint32_t       CSMCascadeCount = 4;
+
     struct FrameOptions {
         float                       frameTime = 0.0f;
         float                       elapsedTime = 0.0f;
@@ -96,6 +98,11 @@ public:
     void *                          GetWindowHandle() const { return windowHandle; }
     RHI::SwapChain *                GetSwapChain() const { return swapChain; }
     RHI::Texture *                  GetFrameCompositionTexture() const { return frameCompositionTexture; }
+    RHI::Texture *                  GetCSMDepthTexture() const { return csmDepthTexture; }
+    RHI::ViewID                     GetCSMDepthSRV() const { return csmDepthSRV; }
+    RHI::ViewID                     GetCSMDepthSliceDSV(uint32_t cascadeIndex) const { assert(cascadeIndex < CSMCascadeCount); return csmDepthSliceDSVs[cascadeIndex]; }
+    RHI::Format                     GetCSMDepthFormat() const { return RHI::Format::D24_UNORM_S8_UINT; }
+    uint32_t                        GetCSMResolution() const { return csmDepthTexture ? csmDepthTexture->GetWidth() : 0; }
 
     GuiMesh &                       GetGuiMesh() { return guiMesh; }
 
@@ -159,6 +166,9 @@ private:
     void                            ReleasePipelines();
     bool                            CreateFrameCompositionTexture();
     void                            DestroyFrameCompositionTexture();
+    bool                            EnsureCSMDepthTexture();
+    bool                            CreateCSMDepthTexture(uint32_t resolution);
+    void                            DestroyCSMDepthTexture();
     bool                            BeginImGui();
     void                            EndImGui();
     void                            FlushPendingScreenshots(RenderFrameData *frameData);
@@ -171,6 +181,9 @@ private:
     RHI::SwapChain *                swapChain = nullptr;
     RHI::Texture *                  frameCompositionTexture = nullptr; ///< Scene, GUI, ImGui 를 합성한 뒤 프레임 끝에 백버퍼로 출력한다.
     bool                            frameCompositionTextureNeedsClear = false;
+    RHI::Texture *                  csmDepthTexture = nullptr;
+    RHI::ViewID                     csmDepthSRV = RHI::ViewID::InvalidID;
+    RHI::ViewID                     csmDepthSliceDSVs[CSMCascadeCount] = {};
     RHI::ImGuiOverlay *             imguiOverlay = nullptr;
     BE1::Color4                     baseClearColor = BE1::Color4::black;
 

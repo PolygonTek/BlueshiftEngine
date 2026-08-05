@@ -30,6 +30,7 @@ Texture2D<float> GetTexture2DFloat(uint index) { return ResourceDescriptorHeap[i
 Texture2D<float2> GetTexture2DFloat2(uint index) { return ResourceDescriptorHeap[index]; }
 Texture2D<uint> GetTexture2DUInt(uint index) { return ResourceDescriptorHeap[index]; }
 Texture2D<uint4> GetTexture2DUInt4(uint index) { return ResourceDescriptorHeap[index]; }
+Texture2DArray<float> GetTexture2DArrayFloat(uint index) { return ResourceDescriptorHeap[index]; }
 Texture3D GetTexture3D(uint index) { return ResourceDescriptorHeap[index]; }
 Texture3D<half4> GetTexture3DHalf4(uint index) { return ResourceDescriptorHeap[index]; }
 TextureCube GetTextureCube(uint index) { return ResourceDescriptorHeap[index]; }
@@ -108,6 +109,7 @@ SamplerState GetSampler(uint index) { return SamplerDescriptorHeap[index]; }
     "DescriptorTable(SRV(t0, numDescriptors = unbounded, space = 30, flags = DESCRIPTORS_VOLATILE)), " \
     "DescriptorTable(SRV(t0, numDescriptors = unbounded, space = 31, flags = DESCRIPTORS_VOLATILE)), " \
     "DescriptorTable(SRV(t0, numDescriptors = unbounded, space = 32, flags = DESCRIPTORS_VOLATILE)), " \
+    "DescriptorTable(SRV(t0, numDescriptors = unbounded, space = 33, flags = DESCRIPTORS_VOLATILE)), " \
     "DescriptorTable(UAV(u0, numDescriptors = unbounded, space = 50, flags = DESCRIPTORS_VOLATILE)), " \
     "DescriptorTable(UAV(u0, numDescriptors = unbounded, space = 51, flags = DESCRIPTORS_VOLATILE)), " \
     "DescriptorTable(UAV(u0, numDescriptors = unbounded, space = 52, flags = DESCRIPTORS_VOLATILE)), " \
@@ -134,6 +136,7 @@ Texture2D<float> bindlessTexture2DFloatTable[] : register(t0, space5);
 Texture2D<float2> bindlessTexture2DFloat2Table[] : register(t0, space6);
 Texture2D<uint> bindlessTexture2DUIntTable[] : register(t0, space7);
 Texture2D<uint4> bindlessTexture2DUInt4Table[] : register(t0, space8);
+Texture2DArray<float> bindlessTexture2DArrayFloatTable[] : register(t0, space33);
 Texture3D bindlessTexture3DTable[] : register(t0, space9);
 Texture3D<half4> bindlessTexture3DHalf4Table[] : register(t0, space10);
 TextureCube bindlessTextureCubeTable[] : register(t0, space11);
@@ -184,6 +187,7 @@ Texture2D<float> GetTexture2DFloat(uint index) { return bindlessTexture2DFloatTa
 Texture2D<float2> GetTexture2DFloat2(uint index) { return bindlessTexture2DFloat2Table[index]; }
 Texture2D<uint> GetTexture2DUInt(uint index) { return bindlessTexture2DUIntTable[index]; }
 Texture2D<uint4> GetTexture2DUInt4(uint index) { return bindlessTexture2DUInt4Table[index]; }
+Texture2DArray<float> GetTexture2DArrayFloat(uint index) { return bindlessTexture2DArrayFloatTable[index]; }
 Texture3D GetTexture3D(uint index) { return bindlessTexture3DTable[index]; }
 Texture3D<half4> GetTexture3DHalf4(uint index) { return bindlessTexture3DHalf4Table[index]; }
 TextureCube GetTextureCube(uint index) { return bindlessTextureCubeTable[index]; }

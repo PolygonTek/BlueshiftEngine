@@ -33,6 +33,10 @@ struct GraphicsPipelineDesc {
     RHI::BlendStateType             blendStateType = RHI::BlendStateType::Disabled;
     RHI::PrimitiveTopology          primitiveTopology = RHI::PrimitiveTopology::TriangleList;
     uint32_t                        sampleMask = 0xffffffff;
+    bool                            depthBiasOverride = false;
+    float                           constantDepthBias = 0;
+    float                           depthBiasClamp = 0;
+    float                           slopeScaledDepthBias = 0;
 };
 
 struct ShaderStageSource {

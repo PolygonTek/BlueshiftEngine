@@ -50,7 +50,8 @@ inline float Pow5(float value) {
     "StaticSampler(s105, addressU = TEXTURE_ADDRESS_MIRROR, addressV = TEXTURE_ADDRESS_MIRROR, addressW = TEXTURE_ADDRESS_MIRROR, filter = FILTER_MIN_MAG_MIP_POINT)," \
     "StaticSampler(s106, addressU = TEXTURE_ADDRESS_CLAMP, addressV = TEXTURE_ADDRESS_CLAMP, addressW = TEXTURE_ADDRESS_CLAMP, filter = FILTER_ANISOTROPIC, maxAnisotropy = 16)," \
     "StaticSampler(s107, addressU = TEXTURE_ADDRESS_WRAP, addressV = TEXTURE_ADDRESS_WRAP, addressW = TEXTURE_ADDRESS_WRAP, filter = FILTER_ANISOTROPIC, maxAnisotropy = 16)," \
-    "StaticSampler(s108, addressU = TEXTURE_ADDRESS_MIRROR, addressV = TEXTURE_ADDRESS_MIRROR, addressW = TEXTURE_ADDRESS_MIRROR, filter = FILTER_ANISOTROPIC, maxAnisotropy = 16)"
+    "StaticSampler(s108, addressU = TEXTURE_ADDRESS_MIRROR, addressV = TEXTURE_ADDRESS_MIRROR, addressW = TEXTURE_ADDRESS_MIRROR, filter = FILTER_ANISOTROPIC, maxAnisotropy = 16)," \
+    "StaticSampler(s109, addressU = TEXTURE_ADDRESS_CLAMP, addressV = TEXTURE_ADDRESS_CLAMP, addressW = TEXTURE_ADDRESS_CLAMP, filter = FILTER_COMPARISON_MIN_MAG_LINEAR_MIP_POINT, comparisonFunc = COMPARISON_LESS_EQUAL)"
 
 #define DECLARE_COMMON_STATIC_SAMPLERS \
     SamplerState linearClampSampler : register(s100); \
@@ -61,7 +62,8 @@ inline float Pow5(float value) {
     SamplerState pointMirrorSampler : register(s105); \
     SamplerState anisoClampSampler : register(s106); \
     SamplerState anisoWrapSampler : register(s107); \
-    SamplerState anisoMirrorSampler : register(s108);
+    SamplerState anisoMirrorSampler : register(s108); \
+    SamplerComparisonState shadowComparisonSampler : register(s109);
 
 // Interleaved gradient function from Jimenez 2014
 // http://www.iryoku.com/next-generation-post-processing-in-call-of-duty-advanced-warfare

@@ -76,6 +76,10 @@ void RenderContext::Init(void *windowHandle, const BE1::Color4 &baseClearColor) 
         BE_WARNLOG("RenderContext::Init: failed to create frame composition texture\n");
     }
 
+    if (!EnsureCSMDepthTexture()) {
+        BE_WARNLOG("RenderContext::Init: failed to create CSM depth texture\n");
+    }
+
     InitPipelines();
 
     if (!textureStreamingFeedback.Init()) {
@@ -106,6 +110,7 @@ void RenderContext::Shutdown() {
 
     ReleasePipelines();
 
+    DestroyCSMDepthTexture();
     DestroyFrameCompositionTexture();
 
     for (RenderFrameData &frameData : frames) {
@@ -172,6 +177,66 @@ void RenderContext::DestroyFrameCompositionTexture() {
         frameCompositionTexture = nullptr;
     }
     frameCompositionTextureNeedsClear = false;
+}
+
+bool RenderContext::EnsureCSMDepthTexture() {
+    const uint32_t resolution = static_cast<uint32_t>(BE1::Max(r_csmResolution.GetInteger(), 1));
+    if (csmDepthTexture && csmDepthTexture->GetWidth() == resolution && csmDepthTexture->GetHeight() == resolution) {
+        return true;
+    }
+
+    return CreateCSMDepthTexture(resolution);
+}
+
+bool RenderContext::CreateCSMDepthTexture(uint32_t resolution) {
+    assert(resolution > 0);
+
+    SharedPtr<BE1::Image> depthImage = MakeShared<BE1::Image>();
+    depthImage->InitFromMemory(resolution, resolution, 1, CSMCascadeCount, 1, BE1::Image::Format::D24S8, BE1::Image::GammaSpace::Linear, nullptr, BE1::Image::Flag::None);
+
+    const RHI::TextureFlag textureFlags = RHI::TextureFlag::DepthStencil | RHI::TextureFlag::ShaderResource | RHI::TextureFlag::Typeless;
+    const RHI::ClearValue optimizedClearValue = RHI::ClearValue::DepthStencil(1.0f, 0);
+    RHI::Texture *newTexture = RHI::renderer->CreateTexture(RHI::TextureType::Texture2DArray, textureFlags, depthImage, RHI::TextureMipInitMode::FromImage, optimizedClearValue, 1, RHI::GPUResourceState::ShaderResource);
+    if (!newTexture) {
+        return false;
+    }
+
+    RHI::ViewID newSRV = RHI::renderer->CreateView(newTexture, RHI::ViewType::SRV, RHI::Format::Auto, 0, CSMCascadeCount, 0, 1);
+    RHI::ViewID newSliceDSVs[CSMCascadeCount] = {};
+    bool viewsCreated = newSRV.IsValid();
+    for (uint32_t cascadeIndex = 0; cascadeIndex < CSMCascadeCount && viewsCreated; ++cascadeIndex) {
+        newSliceDSVs[cascadeIndex] = RHI::renderer->CreateView(newTexture, RHI::ViewType::DSV, RHI::Format::Auto, cascadeIndex, 1, 0, 1);
+        viewsCreated = newSliceDSVs[cascadeIndex].IsValid();
+    }
+
+    if (!viewsCreated) {
+        RHI::renderer->DestroyTexture(newTexture);
+        return false;
+    }
+
+    RHI::renderer->SetName(newTexture, "RenderContext::csmDepthTexture");
+
+    // 기존 텍스쳐를 파괴하고 새 텍스쳐와 뷰를 설정한다.
+    DestroyCSMDepthTexture();
+
+    csmDepthTexture = newTexture;
+    csmDepthSRV = newSRV;
+    for (uint32_t cascadeIndex = 0; cascadeIndex < CSMCascadeCount; ++cascadeIndex) {
+        csmDepthSliceDSVs[cascadeIndex] = newSliceDSVs[cascadeIndex];
+    }
+    return true;
+}
+
+void RenderContext::DestroyCSMDepthTexture() {
+    if (csmDepthTexture) {
+        RHI::renderer->DestroyTexture(csmDepthTexture);
+        csmDepthTexture = nullptr;
+    }
+
+    csmDepthSRV = RHI::ViewID::InvalidID;
+    for (RHI::ViewID &sliceDSV : csmDepthSliceDSVs) {
+        sliceDSV = RHI::ViewID::InvalidID;
+    }
 }
 
 void RenderContext::GetMainRenderDest(RHI::RenderDest &renderDest, bool outputNormal, bool outputVelocity) const {
@@ -365,6 +430,11 @@ bool RenderContext::BeginFrame(const FrameOptions &options) {
 
     // BeginFrame 에서 frame fence 완료를 기다렸으므로, 렌더 커맨드에 밀어 넣었던 render work 들을 안전하게 완료한다.
     renderSystem->CompleteRenderWorks(frameData);
+
+    // CSM depth texture 가 없거나 해상도가 바뀌었으면 새로 생성한다.
+    if (!EnsureCSMDepthTexture()) {
+        BE_WARNLOG("RenderContext::BeginFrame: failed to create CSM depth texture\n");
+    }
 
     if (options.swapChainOutput && this == renderSystem->mainRenderContext) {
         // 대기 중인 render work 들을 렌더 커맨드에 (CmdBeginContext 전에) 밀어 넣는다.

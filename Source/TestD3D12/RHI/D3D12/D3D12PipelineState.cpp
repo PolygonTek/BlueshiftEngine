@@ -21,6 +21,19 @@
 #include "D3D12CommandList.h"
 #include "D3D12ShaderVisibleDescriptorHeap.h"
 #include "D3D12FrameThreadData.h"
+#include <cmath>
+#include <limits>
+
+static INT ToD3D12DepthBias(float constantDepthBias) {
+    const double roundedDepthBias = std::round(static_cast<double>(constantDepthBias));
+    if (roundedDepthBias <= static_cast<double>(std::numeric_limits<INT>::min())) {
+        return std::numeric_limits<INT>::min();
+    }
+    if (roundedDepthBias >= static_cast<double>(std::numeric_limits<INT>::max())) {
+        return std::numeric_limits<INT>::max();
+    }
+    return static_cast<INT>(roundedDepthBias);
+}
 
 static constexpr D3D12_FILL_MODE ToD3D12FillMode(RHI::FillMode fillMode) {
     switch (fillMode) {
@@ -595,7 +608,7 @@ RHI::PipelineState *D3D12Renderer::CreateGraphicsPSO(const RHI::PipelineStateDes
         rasterizerDesc.FillMode = ToD3D12FillMode(psDesc->rasterizerState->fillMode);
         rasterizerDesc.CullMode = ToD3D12CullMode(psDesc->rasterizerState->cullMode);
         rasterizerDesc.FrontCounterClockwise = TRUE;
-        rasterizerDesc.DepthBias = psDesc->rasterizerState->depthBias;
+        rasterizerDesc.DepthBias = ToD3D12DepthBias(psDesc->rasterizerState->constantDepthBias);
         rasterizerDesc.DepthBiasClamp = psDesc->rasterizerState->depthBiasClamp;
         rasterizerDesc.SlopeScaledDepthBias = psDesc->rasterizerState->slopeScaledDepthBias;
         rasterizerDesc.DepthClipEnable = psDesc->rasterizerState->depthClipEnabled;

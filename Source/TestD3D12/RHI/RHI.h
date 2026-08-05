@@ -419,7 +419,7 @@ namespace RHI {
     struct RasterizerState {
         FillMode                        fillMode = FillMode::Solid;
         CullMode                        cullMode = CullMode::None;
-        int32_t                         depthBias = 0;
+        float                           constantDepthBias = 0;
         float                           depthBiasClamp = 0;
         float                           slopeScaledDepthBias = 0;
         bool                            depthClipEnabled = false;
@@ -1295,7 +1295,7 @@ namespace std {
         size_t operator()(const RHI::RasterizerState &state) const {
             size_t hash = std::hash<uint8_t>()(static_cast<uint8_t>(state.fillMode));
             hash = hash_combine(hash, state.cullMode);
-            hash = hash_combine(hash, state.depthBias);
+            hash = hash_combine(hash, state.constantDepthBias);
             hash = hash_combine(hash, state.depthBiasClamp);
             hash = hash_combine(hash, state.slopeScaledDepthBias);
             hash = hash_combine(hash, state.depthClipEnabled);

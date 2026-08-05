@@ -34,6 +34,16 @@ CVAR(r_depthPrepass, "0", BE1::CVar::Flag::Bool, "enable depth prepass");
 CVAR(r_specularEnergyCompensation2, "1", BE1::CVar::Flag::Bool | BE1::CVar::Flag::Archive, "use energy compensation for multiple scattering in a microfacet model");
 CVAR(r_specularAA, "0", BE1::CVar::Flag::Bool | BE1::CVar::Flag::Archive, "enable screen-space specular anti-aliasing");
 
+CVAR_MINMAX(r_csmResolution, "1024", BE1::CVar::Flag::Integer | BE1::CVar::Flag::Archive, "cascade shadow map resolution", 128, 8192);
+CVAR(r_csmConstantDepthBias0, "1000.0", BE1::CVar::Flag::Float, "constant depth bias for CSM cascade 0");
+CVAR(r_csmConstantDepthBias1, "500.0", BE1::CVar::Flag::Float, "constant depth bias for CSM cascade 1");
+CVAR(r_csmConstantDepthBias2, "250.0", BE1::CVar::Flag::Float, "constant depth bias for CSM cascade 2");
+CVAR(r_csmConstantDepthBias3, "125.0", BE1::CVar::Flag::Float, "constant depth bias for CSM cascade 3");
+CVAR(r_csmSlopeScaledDepthBias0, "5.0", BE1::CVar::Flag::Float, "slope-scaled depth bias for CSM cascade 0");
+CVAR(r_csmSlopeScaledDepthBias1, "4.0", BE1::CVar::Flag::Float, "slope-scaled depth bias for CSM cascade 1");
+CVAR(r_csmSlopeScaledDepthBias2, "3.0", BE1::CVar::Flag::Float, "slope-scaled depth bias for CSM cascade 2");
+CVAR(r_csmSlopeScaledDepthBias3, "2.0", BE1::CVar::Flag::Float, "slope-scaled depth bias for CSM cascade 3");
+
 CVAR_MINMAX(r_msaa, "1", BE1::CVar::Flag::Integer | BE1::CVar::Flag::Archive, "MSAA sample count (1 = off, 2/4/8 = enabled)", 0, 8);
 CVAR(r_taa, "0", BE1::CVar::Flag::Bool | BE1::CVar::Flag::Archive, "enable temporal anti-aliasing");
 CVAR(r_taaJitter, "1", BE1::CVar::Flag::Bool, "enable temporal projection jitter");

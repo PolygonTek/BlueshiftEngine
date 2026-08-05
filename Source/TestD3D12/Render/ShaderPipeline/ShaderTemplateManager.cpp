@@ -182,7 +182,7 @@ void ShaderTemplateManager::InitGlobalDefines() {
     AddGlobalDefine("COMPRESSED_VERTEX_NORMAL_TANGENTS");
 #endif
 
-    AddGlobalDefine(BE1::va("CSM_COUNT=%i", 4));
+    AddGlobalDefine(BE1::va("CSM_COUNT=%i", static_cast<int>(RenderContext::CSMCascadeCount)));
     AddGlobalDefine(BE1::va("CASCADE_SELECTION_METHOD=%i", 1));
 
     if (r_specularEnergyCompensation2.GetBool()) {

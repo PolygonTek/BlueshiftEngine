@@ -39,6 +39,16 @@ extern BE1::CVar    r_depthPrepass;
 extern BE1::CVar    r_specularEnergyCompensation2;
 extern BE1::CVar    r_specularAA;
 
+extern BE1::CVar    r_csmResolution;
+extern BE1::CVar    r_csmConstantDepthBias0;
+extern BE1::CVar    r_csmConstantDepthBias1;
+extern BE1::CVar    r_csmConstantDepthBias2;
+extern BE1::CVar    r_csmConstantDepthBias3;
+extern BE1::CVar    r_csmSlopeScaledDepthBias0;
+extern BE1::CVar    r_csmSlopeScaledDepthBias1;
+extern BE1::CVar    r_csmSlopeScaledDepthBias2;
+extern BE1::CVar    r_csmSlopeScaledDepthBias3;
+
 extern BE1::CVar    r_msaa;
 extern BE1::CVar    r_taa;
 extern BE1::CVar    r_taaJitter;
