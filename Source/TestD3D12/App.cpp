@@ -246,6 +246,12 @@ void App::Render(uint64_t frameUsec) {
 
     renderSystem->UpdateFrame();
 
+#ifdef ENABLE_IMGUI
+    mainRenderContext->RenderImGui([this]() {
+        BuildImGuiOverlay();
+    });
+#endif
+
     renderWorld->BeginFrame();
 
     RenderScene();
@@ -614,12 +620,6 @@ void App::RenderGUI() {
     }
 
     renderWorld->RenderGUI(mainRenderContext->GetGuiMesh());
-
-#ifdef ENABLE_IMGUI
-    mainRenderContext->RenderImGui([this]() {
-        BuildImGuiOverlay();
-    });
-#endif
 }
 
 void App::SetConvolutionBloomAperturePreset(App::AperturePreset aperturePreset) {

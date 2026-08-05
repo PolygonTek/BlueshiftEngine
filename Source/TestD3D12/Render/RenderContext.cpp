@@ -423,6 +423,8 @@ void RenderContext::EndFrame() {
 
 bool RenderContext::BeginImGui() {
 #ifdef ENABLE_IMGUI
+    assert(BE1::Engine::IsInMainThread());
+
     return imguiOverlay && imguiOverlay->BeginFrameCapture();
 #else
     return false;
@@ -431,6 +433,8 @@ bool RenderContext::BeginImGui() {
 
 void RenderContext::EndImGui() {
 #ifdef ENABLE_IMGUI
+    assert(BE1::Engine::IsInMainThread());
+
     if (!imguiOverlay) {
         return;
     }
