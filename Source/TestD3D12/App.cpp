@@ -54,7 +54,7 @@ void App::Init(void *mainWindowHandle) {
 
     renderCamera = new RenderCamera;
 
-    SharedPtr<Texture> bloomDirtMaskTexture = textureManager.GetTexture("Data/EngineTextures/LensDirt/LensDirt01.png", Texture::Flag::HighQuality | Texture::Flag::NonPowerOfTwo | Texture::Flag::NoMipmaps | Texture::Flag::Compute, false);
+    SharedPtr<Texture> bloomDirtMaskTexture = textureManager.GetTexture("Data/EngineTextures/LensDirt/LensDirt02.png", Texture::Flag::HighQuality | Texture::Flag::NonPowerOfTwo | Texture::Flag::NoMipmaps | Texture::Flag::Compute, false);
     if (bloomDirtMaskTexture && bloomDirtMaskTexture != textureManager.defaultTexture) {
         renderCamera->SetBloomDirtMaskTexture(bloomDirtMaskTexture);
     }

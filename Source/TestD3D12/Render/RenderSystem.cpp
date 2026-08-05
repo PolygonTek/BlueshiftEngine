@@ -376,7 +376,7 @@ static void EnsureComputePipeline(const SharedPtr<ShaderTemplate> &shaderTemplat
         return;
     }
 
-    pipeline = shaderPipelineCache.GetComputePipeline(shaderTemplate, ShaderPermutationKey());
+    pipeline = shaderPipelineCache.GetComputePipeline(shaderTemplate, ShaderPermutationKey(), false);
 }
 
 void RenderSystem::InitComputePipelines() {

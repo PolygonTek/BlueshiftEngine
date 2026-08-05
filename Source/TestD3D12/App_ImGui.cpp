@@ -374,24 +374,28 @@ void App::BuildImGuiTextureViewer() {
     static int selectedTextureIndex = 0;
     static int selectedViewIndex = 0;
 
-    constexpr int MaxTextureViewerEntries = 10;
+    constexpr int MaxTextureViewerEntries = 16;
     ImGuiTextureViewerEntry entries[MaxTextureViewerEntries];
     int entryCount = 0;
 
     if (renderCamera) {
+        const RHI::Texture *depthTexture = renderCamera->GetDepthTexture();
+
         AddImGuiTextureViewerEntry(entries, MaxTextureViewerEntries, entryCount, "Color", renderCamera->GetRTColorTexture());
-        AddImGuiTextureViewerEntry(entries, MaxTextureViewerEntries, entryCount, "Depth", renderCamera->GetDepthTexture());
+        AddImGuiTextureViewerEntry(entries, MaxTextureViewerEntries, entryCount, "Depth", depthTexture);
         AddImGuiTextureViewerEntry(entries, MaxTextureViewerEntries, entryCount, "Velocity", renderCamera->GetRTVelocityTexture());
         AddImGuiTextureViewerEntry(entries, MaxTextureViewerEntries, entryCount, "Normal", renderCamera->GetRTNormalTexture());
         AddImGuiTextureViewerEntry(entries, MaxTextureViewerEntries, entryCount, "Post Process Color", renderCamera->GetPostProcessColorTexture());
         AddImGuiTextureViewerEntry(entries, MaxTextureViewerEntries, entryCount, "Bloom Down", renderCamera->GetBloomDownTexture());
         AddImGuiTextureViewerEntry(entries, MaxTextureViewerEntries, entryCount, "Bloom Up", renderCamera->GetBloomUpTexture());
+
+        const SharedPtr<Texture> &bloomDirtMaskTexture = renderCamera->GetBloomDirtMaskTexture();
+        AddImGuiTextureViewerEntry(entries, MaxTextureViewerEntries, entryCount, "Bloom Dirt Mask", bloomDirtMaskTexture ? bloomDirtMaskTexture->GetReadyRHITexture() : nullptr);
+
+        const SharedPtr<Texture> &fftBloomKernelTexture = renderCamera->GetFFTBloomKernelTexture();
+        AddImGuiTextureViewerEntry(entries, MaxTextureViewerEntries, entryCount, "FFT Bloom Kernel", fftBloomKernelTexture ? fftBloomKernelTexture->GetReadyRHITexture() : nullptr);
         AddImGuiTextureViewerEntry(entries, MaxTextureViewerEntries, entryCount, "Bloom Convolution Output", renderCamera->GetFFTBloomConvolutionOutputTexture());
     }
-
-    const ConvolutionBloomKernelGenerator &kernelGenerator = renderSystem->GetConvolutionBloomKernelGenerator();
-    AddImGuiTextureViewerEntry(entries, MaxTextureViewerEntries, entryCount, "Bloom Diffraction PSF", kernelGenerator.GetDiffractionPSFTexture());
-    AddImGuiTextureViewerEntry(entries, MaxTextureViewerEntries, entryCount, "Generated Bloom Kernel", kernelGenerator.GetKernelTexture());
 
     if (entryCount == 0) {
         ImGui::TextColored(ImGuiWarningTextColor, "No texture is available.");
