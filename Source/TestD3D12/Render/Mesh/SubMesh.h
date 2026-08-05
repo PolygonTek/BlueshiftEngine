@@ -61,6 +61,8 @@ public:
         EdgesCalculated     = BIT(2)    ///< Edges have been calculated.
     };
 
+    friend constexpr std::true_type EnableBitmaskEnum(Flag) noexcept { return {}; }
+
     ~SubMesh() { Purge(); }
 
     int32_t                 GetID() const { return subMeshId; }
@@ -147,11 +149,6 @@ private:
     mutable RHI::IndexBuffer *indexBuffer = nullptr;            ///< RHI index buffer.
 
     Flag                    flags = Flag::None;
-};
-
-template<>
-struct enable_bitmask_operators<SubMesh::Flag> {
-    static constexpr bool enable = true;
 };
 
 BE_INLINE int SubMesh::VertexWeightSize() const {

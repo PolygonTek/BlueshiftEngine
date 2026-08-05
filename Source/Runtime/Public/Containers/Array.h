@@ -38,8 +38,6 @@ BE_NAMESPACE_BEGIN
 /// Templated dynamic array
 template <typename T>
 class Array {
-    static_assert(std::is_default_constructible<T>::value, "Array requires default-constructible elements");
-
 public:
     static constexpr int DefaultGranularity = 16;
 
@@ -317,6 +315,7 @@ BE_INLINE Array<T> &Array<T>::operator=(const Array<T> &rhs) {
     granularity = rhs.granularity;
 
     if (capacity) {
+        static_assert(std::is_default_constructible<T>::value, "Array requires default-constructible elements");
         elements = BE_NEW T[capacity];
         for (int i = 0; i < count; i++) {
             elements[i] = rhs.elements[i];
@@ -459,6 +458,7 @@ BE_INLINE void Array<T>::Resize(int newCapacity) {
         count = capacity;
     }
 
+    static_assert(std::is_default_constructible<T>::value, "Array requires default-constructible elements");
     elements = BE_NEW T[capacity];
     for (int i = 0; i < count; i++) {
         elements[i] = std::move(temp[i]);
@@ -487,6 +487,7 @@ BE_INLINE void Array<T>::Resize(int newCapacity, int newGranularity) {
         count = capacity;
     }
 
+    static_assert(std::is_default_constructible<T>::value, "Array requires default-constructible elements");
     elements = BE_NEW T[capacity];
     for (int i = 0; i < count; i++) {
         elements[i] = std::move(temp[i]);

@@ -37,7 +37,7 @@ static_assert(static_cast<int>(VertexInputLayoutId::XyzStColorNormalTangentSkinn
 static RHI::InputLayout CreateXyzInputLayout() {
     RHI::InputLayout inputLayout;
     inputLayout.elements = {
-        { "POSITION", 0, OFFSET_OF(BE1::VertexGeneric, xyz), 0, RHI::InputLayoutElement::Format::Float3 },
+        { "POSITION", 0, offsetof(BE1::VertexGeneric, xyz), 0, RHI::InputLayoutElement::Format::Float3 },
     };
     return inputLayout;
 }
@@ -54,8 +54,8 @@ static RHI::InputLayout CreateXyzColorInputLayout() {
 static RHI::InputLayout CreateXyzStInputLayout() {
     RHI::InputLayout inputLayout;
     inputLayout.elements = {
-        { "POSITION", 0, OFFSET_OF(BE1::VertexGeneric, xyz), 0, RHI::InputLayoutElement::Format::Float3 },
-        { "TEXCOORD", 0, OFFSET_OF(BE1::VertexGeneric, st), 0, RHI::InputLayoutElement::Format::Half2 },
+        { "POSITION", 0, offsetof(BE1::VertexGeneric, xyz), 0, RHI::InputLayoutElement::Format::Float3 },
+        { "TEXCOORD", 0, offsetof(BE1::VertexGeneric, st), 0, RHI::InputLayoutElement::Format::Half2 },
     };
     return inputLayout;
 }
@@ -63,9 +63,9 @@ static RHI::InputLayout CreateXyzStInputLayout() {
 static RHI::InputLayout CreateXyzStColorInputLayout() {
     RHI::InputLayout inputLayout;
     inputLayout.elements = {
-        { "POSITION", 0, OFFSET_OF(BE1::VertexGeneric, xyz), 0, RHI::InputLayoutElement::Format::Float3 },
-        { "TEXCOORD", 0, OFFSET_OF(BE1::VertexGeneric, st), 0, RHI::InputLayoutElement::Format::Half2 },
-        { "COLOR", 0, OFFSET_OF(BE1::VertexGeneric, color), 0, RHI::InputLayoutElement::Format::UByte4N },
+        { "POSITION", 0, offsetof(BE1::VertexGeneric, xyz), 0, RHI::InputLayoutElement::Format::Float3 },
+        { "TEXCOORD", 0, offsetof(BE1::VertexGeneric, st), 0, RHI::InputLayoutElement::Format::Half2 },
+        { "COLOR", 0, offsetof(BE1::VertexGeneric, color), 0, RHI::InputLayoutElement::Format::UByte4N },
     };
     return inputLayout;
 }
@@ -83,11 +83,11 @@ static RHI::InputLayout CreateXyzStColorNormalTangentInputLayout() {
 
     RHI::InputLayout inputLayout;
     inputLayout.elements = {
-        { "POSITION", 0, OFFSET_OF(BE1::VertexGenericLit, xyz), 0, RHI::InputLayoutElement::Format::Float3 },
-        { "TEXCOORD", 0, OFFSET_OF(BE1::VertexGenericLit, st), 0, RHI::InputLayoutElement::Format::Half2 },
-        { "COLOR", 0, OFFSET_OF(BE1::VertexGenericLit, color), 0, RHI::InputLayoutElement::Format::UByte4N },
-        { "NORMAL", 0, OFFSET_OF(BE1::VertexGenericLit, normal), 0, normalTangentFormat },
-        { "TEXCOORD", 1, OFFSET_OF(BE1::VertexGenericLit, tangent), 0, normalTangentFormat },
+        { "POSITION", 0, offsetof(BE1::VertexGenericLit, xyz), 0, RHI::InputLayoutElement::Format::Float3 },
+        { "TEXCOORD", 0, offsetof(BE1::VertexGenericLit, st), 0, RHI::InputLayoutElement::Format::Half2 },
+        { "COLOR", 0, offsetof(BE1::VertexGenericLit, color), 0, RHI::InputLayoutElement::Format::UByte4N },
+        { "NORMAL", 0, offsetof(BE1::VertexGenericLit, normal), 0, normalTangentFormat },
+        { "TEXCOORD", 1, offsetof(BE1::VertexGenericLit, tangent), 0, normalTangentFormat },
     };
     return inputLayout;
 }
@@ -104,23 +104,23 @@ static void AppendSkinningInputLayoutElements(RHI::InputLayout &inputLayout, Ver
     case VertexInputLayoutId::XyzStSkinning1:
     case VertexInputLayoutId::XyzStColorSkinning1:
     case VertexInputLayoutId::XyzStColorNormalTangentSkinning1:
-        inputLayout.elements.Append(RHI::InputLayoutElement{ "BLENDINDICES", 0, static_cast<uint32_t>(OFFSET_OF(BE1::VertexWeight1, jointIndex)), 1, RHI::InputLayoutElement::Format::UInt1 });
+        inputLayout.elements.Append(RHI::InputLayoutElement{ "BLENDINDICES", 0, static_cast<uint32_t>(offsetof(BE1::VertexWeight1, jointIndex)), 1, RHI::InputLayoutElement::Format::UInt1 });
         break;
     case VertexInputLayoutId::XyzSkinning4:
     case VertexInputLayoutId::XyzStSkinning4:
     case VertexInputLayoutId::XyzStColorSkinning4:
     case VertexInputLayoutId::XyzStColorNormalTangentSkinning4:
-        inputLayout.elements.Append(RHI::InputLayoutElement{ "BLENDINDICES", 0, static_cast<uint32_t>(OFFSET_OF(BE1::VertexWeight4, jointIndexes[0])), 1, RHI::InputLayoutElement::Format::UByte4 });
-        inputLayout.elements.Append(RHI::InputLayoutElement{ "BLENDWEIGHT", 0, static_cast<uint32_t>(OFFSET_OF(BE1::VertexWeight4, jointWeights[0])), 1, jointWeightFormat });
+        inputLayout.elements.Append(RHI::InputLayoutElement{ "BLENDINDICES", 0, static_cast<uint32_t>(offsetof(BE1::VertexWeight4, jointIndexes[0])), 1, RHI::InputLayoutElement::Format::UByte4 });
+        inputLayout.elements.Append(RHI::InputLayoutElement{ "BLENDWEIGHT", 0, static_cast<uint32_t>(offsetof(BE1::VertexWeight4, jointWeights[0])), 1, jointWeightFormat });
         break;
     case VertexInputLayoutId::XyzSkinning8:
     case VertexInputLayoutId::XyzStSkinning8:
     case VertexInputLayoutId::XyzStColorSkinning8:
     case VertexInputLayoutId::XyzStColorNormalTangentSkinning8:
-        inputLayout.elements.Append(RHI::InputLayoutElement{ "BLENDINDICES", 0, static_cast<uint32_t>(OFFSET_OF(BE1::VertexWeight8, jointIndexes[0])), 1, RHI::InputLayoutElement::Format::UByte4 });
-        inputLayout.elements.Append(RHI::InputLayoutElement{ "BLENDINDICES", 1, static_cast<uint32_t>(OFFSET_OF(BE1::VertexWeight8, jointIndexes[4])), 1, RHI::InputLayoutElement::Format::UByte4 });
-        inputLayout.elements.Append(RHI::InputLayoutElement{ "BLENDWEIGHT", 0, static_cast<uint32_t>(OFFSET_OF(BE1::VertexWeight8, jointWeights[0])), 1, jointWeightFormat });
-        inputLayout.elements.Append(RHI::InputLayoutElement{ "BLENDWEIGHT", 1, static_cast<uint32_t>(OFFSET_OF(BE1::VertexWeight8, jointWeights[4])), 1, jointWeightFormat });
+        inputLayout.elements.Append(RHI::InputLayoutElement{ "BLENDINDICES", 0, static_cast<uint32_t>(offsetof(BE1::VertexWeight8, jointIndexes[0])), 1, RHI::InputLayoutElement::Format::UByte4 });
+        inputLayout.elements.Append(RHI::InputLayoutElement{ "BLENDINDICES", 1, static_cast<uint32_t>(offsetof(BE1::VertexWeight8, jointIndexes[4])), 1, RHI::InputLayoutElement::Format::UByte4 });
+        inputLayout.elements.Append(RHI::InputLayoutElement{ "BLENDWEIGHT", 0, static_cast<uint32_t>(offsetof(BE1::VertexWeight8, jointWeights[0])), 1, jointWeightFormat });
+        inputLayout.elements.Append(RHI::InputLayoutElement{ "BLENDWEIGHT", 1, static_cast<uint32_t>(offsetof(BE1::VertexWeight8, jointWeights[4])), 1, jointWeightFormat });
         break;
     default:
         assert(0);

@@ -785,8 +785,9 @@ static int GetAlphaComponentIndex(Image::Format format) {
     case Image::Format::R16G16B16A16_FLOAT:
     case Image::Format::R32G32B32A32_FLOAT:
         return 3;
+    default:
+        return -1;
     }
-    return -1;
 }
 
 Image &Image::GenerateMipmaps(bool preserveAlphaCoverage) {

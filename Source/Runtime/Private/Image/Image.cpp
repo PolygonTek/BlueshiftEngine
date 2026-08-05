@@ -461,7 +461,7 @@ Image::CubeMapFace Image::CubeMapToFaceCoords(const Vec3 &direction, float &u, f
     faceIndex = (faceIndex << 1) + IEEE_FLT_SIGNBITSET(majorAxis);
     float signedU, signedV;
 
-    switch (faceIndex) {
+    switch (static_cast<CubeMapFace>(faceIndex)) {
     case CubeMapFace::PositiveX:
         signedU = -direction.z;
         signedV = -direction.y;

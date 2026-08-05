@@ -82,13 +82,13 @@ bool Anim::LoadBinaryAnim(const char *filename) {
     baseFrame.SetCount(numJoints);
 
      for (int jointIndex = 0; jointIndex < numJoints; jointIndex++) {
-        memcpy(&baseFrame[jointIndex].q, ptr, sizeof(baseFrame[jointIndex].q));
+        baseFrame[jointIndex].q = *reinterpret_cast<const Quat *>(ptr);
         ptr += sizeof(baseFrame[jointIndex].q);
 
-        memcpy(&baseFrame[jointIndex].t, ptr, sizeof(baseFrame[jointIndex].t));
+        baseFrame[jointIndex].t = *reinterpret_cast<const Vec3 *>(ptr);
         ptr += sizeof(baseFrame[jointIndex].t);
 
-        memcpy(&baseFrame[jointIndex].s, ptr, sizeof(baseFrame[jointIndex].s));
+        baseFrame[jointIndex].s = *reinterpret_cast<const Vec3 *>(ptr);
         ptr += sizeof(baseFrame[jointIndex].s);
     }
 

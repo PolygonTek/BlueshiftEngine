@@ -603,12 +603,14 @@ namespace RHI {
 
     class GPUObject {
     public:
-        virtual ~GPUObject() = 0 {}
+        virtual ~GPUObject() = 0;
     };
+
+    inline GPUObject::~GPUObject() = default;
 
     class GPUResource : public GPUObject {
     public:
-        ~GPUResource() = 0 {}
+        ~GPUResource() = default;
 
         virtual void *                  GetNativeResource() const = 0;
         virtual const void *            GetNativeBufferObject() const { return nullptr; }
@@ -935,7 +937,7 @@ namespace RHI {
 
     class SwapChain {
     public:
-        virtual ~SwapChain() = 0 {}
+        virtual ~SwapChain() = default;
 
         virtual bool                    IsSupportsHDR() const = 0;
         virtual Format                  GetFormat() const = 0;
@@ -962,7 +964,7 @@ namespace RHI {
     class FrameThreadData;
     class CommandList {
     public:
-        virtual ~CommandList() = 0 {}
+        virtual ~CommandList() = default;
 
                                         // 커맨드 리스트를 재사용하기 위해 Reset() 함수를 호출하여 초기화한다.
         virtual void                    Reset(bool resetCacheStates = true, const CommandList *primaryCommandList = nullptr) = 0;
@@ -987,7 +989,7 @@ namespace RHI {
 
     class FrameThreadData {
     public:
-        virtual ~FrameThreadData() = 0 {}
+        virtual ~FrameThreadData() = default;
 
         virtual void                    Reset() = 0;
 
@@ -1043,7 +1045,7 @@ namespace RHI {
 
     class Renderer {
     public:
-        virtual ~Renderer() = 0 {}
+        virtual ~Renderer() = default;
 
         virtual void                    Init(const void *mainWindowHandle);
         virtual void                    Shutdown();
@@ -1248,32 +1250,32 @@ namespace RHI {
 };
 
 template<>
-struct enable_bitmask_operators<RHI::ClearFlag> {
+struct BE1::enable_bitmask_operators<RHI::ClearFlag> {
     static constexpr bool enable = true;
 };
 
 template<>
-struct enable_bitmask_operators<RHI::ColorWriteMask> {
+struct BE1::enable_bitmask_operators<RHI::ColorWriteMask> {
     static constexpr bool enable = true;
 };
 
 template<>
-struct enable_bitmask_operators<RHI::BufferFlag> {
+struct BE1::enable_bitmask_operators<RHI::BufferFlag> {
     static constexpr bool enable = true;
 };
 
 template<>
-struct enable_bitmask_operators<RHI::TextureFlag> {
+struct BE1::enable_bitmask_operators<RHI::TextureFlag> {
     static constexpr bool enable = true;
 };
 
 template<>
-struct enable_bitmask_operators<RHI::GPUResourceState> {
+struct BE1::enable_bitmask_operators<RHI::GPUResourceState> {
     static constexpr bool enable = true;
 };
 
 template<>
-struct enable_bitmask_operators<RHI::RenderPassFlag> {
+struct BE1::enable_bitmask_operators<RHI::RenderPassFlag> {
     static constexpr bool enable = true;
 };
 

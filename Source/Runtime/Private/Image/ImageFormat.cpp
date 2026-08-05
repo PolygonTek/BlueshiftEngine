@@ -65,22 +65,6 @@ static void LA88ToRGBA8888(const byte *src, byte *dst, int numPixels) {
     }
 }
 
-static void LA1616ToRGBA8888(const byte *src, byte *dst, int numPixels) {
-    const uint16_t *srcPtr = reinterpret_cast<const uint16_t *>(src);
-    const uint16_t *srcEnd = srcPtr + numPixels * 2;
-    byte *dstPtr = dst;
-    byte l, a;
-
-    for (; srcPtr < srcEnd; srcPtr += 2, dstPtr += 4) {
-        l = srcPtr[0] >> 8;
-        a = srcPtr[1] >> 8;
-        dstPtr[0] = l;
-        dstPtr[1] = l;
-        dstPtr[2] = l;
-        dstPtr[3] = a;
-    }
-}
-
 static void R8ToRGBA8888(const byte *src, byte *dst, int numPixels) {
     const byte *srcPtr = src;
     const byte *srcEnd = srcPtr + numPixels;
@@ -434,17 +418,6 @@ static void RGBA8888ToLA88(const byte *src, byte *dst, int numPixels) {
     }
 }
 
-static void RGBA8888ToLA1616(const byte *src, byte *dst, int numPixels) {
-    const byte *srcPtr = src;
-    const byte *srcEnd = srcPtr + numPixels * 4;
-    uint16_t *dstPtr = reinterpret_cast<uint16_t *>(dst);
-
-    for (; srcPtr < srcEnd; srcPtr += 4, dstPtr += 2) {
-        dstPtr[0] = (((uint16_t)(0.299f * srcPtr[0] + 0.587f * srcPtr[1] + 0.114f * srcPtr[2])) << 8);
-        dstPtr[1] = (((uint16_t)srcPtr[3]) << 8);
-    }
-}
-
 static void RGBA8888ToR8(const byte *src, byte *dst, int numPixels) {
     const byte *srcPtr = src;
     const byte *srcEnd = srcPtr + numPixels * 4;
@@ -780,23 +753,6 @@ static void L24X8ToRGBA32F(const byte *src, byte *dst, int numPixels) {
         dstPtr[1] = l;
         dstPtr[2] = l;
         dstPtr[3] = 1.0f;
-    }
-}
-
-static void LA1616ToRGBA32F(const byte *src, byte *dst, int numPixels) {
-    const float invNorm = 1.0f / UINT16_MAX;
-    const uint16_t *srcPtr = reinterpret_cast<const uint16_t *>(src);
-    const uint16_t *srcEnd = srcPtr + numPixels * 2;
-    float *dstPtr = reinterpret_cast<float *>(dst);
-    float l, a;
-
-    for (; srcPtr < srcEnd; srcPtr += 2, dstPtr += 4) {
-        l = srcPtr[0] * invNorm;
-        a = srcPtr[1] * invNorm;
-        dstPtr[0] = l;
-        dstPtr[1] = l;
-        dstPtr[2] = l;
-        dstPtr[3] = a;
     }
 }
 
@@ -1797,16 +1753,50 @@ static void RGBA32FToRGBA32F(const byte *src, byte *dst, int numPixels) {
     memcpy(dst, src, sizeof(float) * 4 * numPixels);
 }
 
+static BE_INLINE int32_t RoundToSInt32(float value) {
+    const float rounded = Math::Round(value);
+
+    constexpr float minValue = -2147483648.0f;
+    constexpr float maxExclusive = 2147483648.0f;
+
+    if (std::isnan(rounded)) {
+        return 0;
+    }
+    if (rounded <= minValue) {
+        return INT32_MIN;
+    }
+    if (rounded >= maxExclusive) {
+        return INT32_MAX;
+    }
+
+    return static_cast<int32_t>(rounded);
+}
+
+static BE_INLINE uint32_t RoundToUInt32(float value) {
+    const float rounded = Math::Round(value);
+
+    constexpr float maxExclusive = 4294967296.0f;
+
+    if (std::isnan(rounded) || rounded <= 0.0f) {
+        return 0;
+    }
+    if (rounded >= maxExclusive) {
+        return UINT32_MAX;
+    }
+
+    return static_cast<uint32_t>(rounded);
+}
+
 static void RGBA32FToRGBA32SInt(const byte *src, byte *dst, int numPixels) {
     const float *srcPtr = reinterpret_cast<const float *>(src);
     const float *srcEnd = srcPtr + numPixels * 4;
     int32_t *dstPtr = reinterpret_cast<int32_t *>(dst);
 
     for (; srcPtr < srcEnd; srcPtr += 4, dstPtr += 4) {
-        dstPtr[0] = Clamp<float>(Math::Round(srcPtr[0]), INT32_MIN, INT32_MAX);
-        dstPtr[1] = Clamp<float>(Math::Round(srcPtr[1]), INT32_MIN, INT32_MAX);
-        dstPtr[2] = Clamp<float>(Math::Round(srcPtr[2]), INT32_MIN, INT32_MAX);
-        dstPtr[3] = Clamp<float>(Math::Round(srcPtr[3]), INT32_MIN, INT32_MAX);
+        dstPtr[0] = RoundToSInt32(srcPtr[0]);
+        dstPtr[1] = RoundToSInt32(srcPtr[1]);
+        dstPtr[2] = RoundToSInt32(srcPtr[2]);
+        dstPtr[3] = RoundToSInt32(srcPtr[3]);
     }
 }
 
@@ -1816,10 +1806,10 @@ static void RGBA32FToRGBA32UInt(const byte *src, byte *dst, int numPixels) {
     uint32_t *dstPtr = reinterpret_cast<uint32_t *>(dst);
 
     for (; srcPtr < srcEnd; srcPtr += 4, dstPtr += 4) {
-        dstPtr[0] = Clamp<float>(Math::Round(srcPtr[0]), 0, UINT32_MAX);
-        dstPtr[1] = Clamp<float>(Math::Round(srcPtr[1]), 0, UINT32_MAX);
-        dstPtr[2] = Clamp<float>(Math::Round(srcPtr[2]), 0, UINT32_MAX);
-        dstPtr[3] = Clamp<float>(Math::Round(srcPtr[3]), 0, UINT32_MAX);
+        dstPtr[0] = RoundToUInt32(srcPtr[0]);
+        dstPtr[1] = RoundToUInt32(srcPtr[1]);
+        dstPtr[2] = RoundToUInt32(srcPtr[2]);
+        dstPtr[3] = RoundToUInt32(srcPtr[3]);
     }
 }
 
@@ -1916,17 +1906,6 @@ static void RGBA32FToL24X8(const byte *src, byte *dst, int numPixels) {
 
     for (; srcPtr < srcEnd; srcPtr += 4, dstPtr += 1) {
         dstPtr[0] = Clamp<int>((0.299f * srcPtr[0] + 0.587f * srcPtr[1] + 0.114f * srcPtr[2]) * 0x00FFFFFF, 0, 0x00FFFFFF);
-    }
-}
-
-static void RGBA32FToLA1616(const byte *src, byte *dst, int numPixels) {
-    const float *srcPtr = reinterpret_cast<const float *>(src);
-    const float *srcEnd = srcPtr + numPixels * 4;
-    uint16_t *dstPtr = reinterpret_cast<uint16_t *>(dst);
-
-    for (; srcPtr < srcEnd; srcPtr += 4, dstPtr += 2) {
-        dstPtr[0] = Clamp<int>((0.299f * srcPtr[0] + 0.587f * srcPtr[1] + 0.114f * srcPtr[2]) * 65535.0f, 0, 65535);
-        dstPtr[1] = Clamp<int>(srcPtr[3] * 65535.0f, 0, 65535);
     }
 }
 
@@ -2666,7 +2645,7 @@ static void RGBA32FToR32SInt(const byte *src, byte *dst, int numPixels) {
     int32_t *dstPtr = reinterpret_cast<int32_t *>(dst);
 
     for (; srcPtr < srcEnd; srcPtr += 4, dstPtr += 1) {
-        dstPtr[0] = Clamp<float>(Math::Round(srcPtr[0]), INT32_MIN, INT32_MAX);
+        dstPtr[0] = RoundToSInt32(srcPtr[0]);
     }
 }
 
@@ -2676,7 +2655,7 @@ static void RGBA32FToR32UInt(const byte *src, byte *dst, int numPixels) {
     uint32_t *dstPtr = reinterpret_cast<uint32_t *>(dst);
 
     for (; srcPtr < srcEnd; srcPtr += 4, dstPtr += 1) {
-        dstPtr[0] = Clamp<float>(Math::Round(srcPtr[0]), 0, UINT32_MAX);
+        dstPtr[0] = RoundToUInt32(srcPtr[0]);
     }
 }
 
@@ -2697,8 +2676,8 @@ static void RGBA32FToRG32SInt(const byte *src, byte *dst, int numPixels) {
     int32_t *dstPtr = reinterpret_cast<int32_t *>(dst);
 
     for (; srcPtr < srcEnd; srcPtr += 4, dstPtr += 2) {
-        dstPtr[0] = Clamp<float>(Math::Round(srcPtr[0]), INT32_MIN, INT32_MAX);
-        dstPtr[1] = Clamp<float>(Math::Round(srcPtr[1]), INT32_MIN, INT32_MAX);
+        dstPtr[0] = RoundToSInt32(srcPtr[0]);
+        dstPtr[1] = RoundToSInt32(srcPtr[1]);
     }
 }
 
@@ -2708,8 +2687,8 @@ static void RGBA32FToRG32UInt(const byte *src, byte *dst, int numPixels) {
     uint32_t *dstPtr = reinterpret_cast<uint32_t *>(dst);
 
     for (; srcPtr < srcEnd; srcPtr += 4, dstPtr += 2) {
-        dstPtr[0] = Clamp<float>(Math::Round(srcPtr[0]), 0, UINT32_MAX);
-        dstPtr[1] = Clamp<float>(Math::Round(srcPtr[1]), 0, UINT32_MAX);
+        dstPtr[0] = RoundToUInt32(srcPtr[0]);
+        dstPtr[1] = RoundToUInt32(srcPtr[1]);
     }
 }
 
@@ -2731,9 +2710,9 @@ static void RGBA32FToRGB32SInt(const byte *src, byte *dst, int numPixels) {
     int32_t *dstPtr = reinterpret_cast<int32_t *>(dst);
 
     for (; srcPtr < srcEnd; srcPtr += 4, dstPtr += 3) {
-        dstPtr[0] = Clamp<float>(Math::Round(srcPtr[0]), INT32_MIN, INT32_MAX);
-        dstPtr[1] = Clamp<float>(Math::Round(srcPtr[1]), INT32_MIN, INT32_MAX);
-        dstPtr[2] = Clamp<float>(Math::Round(srcPtr[2]), INT32_MIN, INT32_MAX);
+        dstPtr[0] = RoundToSInt32(srcPtr[0]);
+        dstPtr[1] = RoundToSInt32(srcPtr[1]);
+        dstPtr[2] = RoundToSInt32(srcPtr[2]);
     }
 }
 
@@ -2743,9 +2722,9 @@ static void RGBA32FToRGB32UInt(const byte *src, byte *dst, int numPixels) {
     uint32_t *dstPtr = reinterpret_cast<uint32_t *>(dst);
 
     for (; srcPtr < srcEnd; srcPtr += 4, dstPtr += 3) {
-        dstPtr[0] = Clamp<float>(Math::Round(srcPtr[0]), 0, UINT32_MAX);
-        dstPtr[1] = Clamp<float>(Math::Round(srcPtr[1]), 0, UINT32_MAX);
-        dstPtr[2] = Clamp<float>(Math::Round(srcPtr[2]), 0, UINT32_MAX);
+        dstPtr[0] = RoundToUInt32(srcPtr[0]);
+        dstPtr[1] = RoundToUInt32(srcPtr[1]);
+        dstPtr[2] = RoundToUInt32(srcPtr[2]);
     }
 }
 

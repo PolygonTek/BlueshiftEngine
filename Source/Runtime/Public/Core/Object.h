@@ -35,7 +35,11 @@ BE_NAMESPACE_BEGIN
 
 class CmdArgs;
 class PropertyInfo;
+#if defined(_MSC_VER)
+class __single_inheritance Object;
+#else
 class Object;
+#endif
 class EventDef;
 
 using ObjectPtr = Object*;

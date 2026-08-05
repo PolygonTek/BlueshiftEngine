@@ -50,6 +50,8 @@ public:
         LoadedFromFile              = BIT(11)   ///< Indicates the texture was loaded from a file (used internally)
     };
 
+    friend constexpr std::true_type EnableBitmaskEnum(Flag) noexcept { return {}; }
+
     enum class State : uint8_t {
         Empty,
         Loading,
@@ -196,9 +198,4 @@ private:
     uint64_t                        retainedFrameSerial = 0;
     Streaming                       streaming;
     InternalData                    internalData;
-};
-
-template<>
-struct enable_bitmask_operators<Texture::Flag> {
-    static constexpr bool enable = true;
 };

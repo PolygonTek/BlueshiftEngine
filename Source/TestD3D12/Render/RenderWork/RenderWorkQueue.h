@@ -14,7 +14,6 @@
 
 #pragma once
 
-#include "Precompiled.h"
 #include "RenderWork.h"
 
 class RenderFrameData;

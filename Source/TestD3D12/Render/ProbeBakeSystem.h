@@ -14,7 +14,6 @@
 
 #pragma once
 
-#include "Precompiled.h"
 #include "ProbeBakeJob.h"
 
 class RenderContext;

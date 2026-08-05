@@ -14,7 +14,6 @@
 
 #pragma once
 
-#include "Precompiled.h"
 #include "Render/ProbeBakeJob.h"
 #include "RenderWork.h"
 

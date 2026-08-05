@@ -177,6 +177,8 @@ public:
         Compressed          = BIT(8)
     };
 
+    friend constexpr std::true_type EnableBitmaskEnum(FormatType) noexcept { return {}; }
+
     /// Enum for the different kinds of gamma spaces we expect to need to convert from/to.
     enum class GammaSpace : uint8_t {
         DontCare,
@@ -206,6 +208,8 @@ public:
         NoStreaming         = BIT(4),
         TextureHintsMask    = NormalMap | NoMipmaps | NoCompression | NoStreaming
     };
+
+    friend constexpr std::true_type EnableBitmaskEnum(Flag) noexcept { return {}; }
 
     /// Cube map face in engine axis order. The numeric order matches serialized DDS face slices.
     enum class CubeMapFace : uint8_t {
@@ -320,7 +324,7 @@ public:
                         /// Returns true if image format needs floating conversion in order to not lose precision.
     bool                NeedFloatConversion() const { return Image::NeedFloatConversion(format); }
                         /// Returns true if image is cube map.
-    bool                IsCubeMap() const { return !!(HasFlag(flags, Flag::CubeMap)); }
+    bool                IsCubeMap() const { return HasFlag(flags, Flag::CubeMap); }
 
                         /// Returns image width.
     int32_t             GetWidth() const { return width; }
@@ -569,16 +573,6 @@ private:
     GammaSpace          gammaSpace = GammaSpace::sRGB;  ///< Gamma space enum
     Flag                flags = Flag::None;             ///< Image flags
     bool                alloced = false;                ///< Is memory allocated ?
-};
-
-template<>
-struct enable_bitmask_operators<Image::FormatType> {
-    static const bool enable = true;
-};
-
-template<>
-struct enable_bitmask_operators<Image::Flag> {
-    static const bool enable = true;
 };
 
 BE_INLINE Image::Flag Image::GetTextureHints() const {

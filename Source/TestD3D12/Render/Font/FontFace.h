@@ -31,7 +31,7 @@ class TrueTypeFont;
 
 class FontFace {
 public:
-    virtual ~FontFace() = 0 {}
+    virtual ~FontFace() = default;
 
     virtual FontGlyph *     GetGlyph(char32_t unicodeChar, Font::RenderMode renderMode) const = 0;
 

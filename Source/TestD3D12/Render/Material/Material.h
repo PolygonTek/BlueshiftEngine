@@ -43,6 +43,8 @@ public:
         LoadedFromFile              = BIT(3)
     };
 
+    friend constexpr std::true_type EnableBitmaskEnum(Flag) noexcept { return {}; }
+
     enum class RenderingMode : uint8_t {
         Opaque,
         AlphaCutoff,
@@ -159,9 +161,4 @@ private:
     uint32_t                        streamingListIndex = TextureStreamingInvalidIndex;
 
     mutable BE1::Array<CachedPermutationKey> cachedPermutationKeys;
-};
-
-template<>
-struct enable_bitmask_operators<Material::Flag> {
-    static constexpr bool enable = true;
 };

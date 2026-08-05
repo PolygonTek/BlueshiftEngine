@@ -1,7 +1,11 @@
 ################################################################################
 # Top-level CMakeLists.txt file for Blueshift Engine
 ################################################################################
-cmake_minimum_required(VERSION 3.5)
+cmake_minimum_required(VERSION 3.10)
+
+# Keep bundled subprojects with older minimum-version declarations compatible
+# with modern CMake policy requirements without modifying third-party sources.
+set(CMAKE_POLICY_VERSION_MINIMUM 3.10)
 
 if (COMMAND cmake_policy)
     if (POLICY CMP0025)

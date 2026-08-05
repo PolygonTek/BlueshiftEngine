@@ -49,7 +49,7 @@ enum class DrawTextFlag : uint16_t {
 };
 
 template<>
-struct enable_bitmask_operators<DrawTextFlag> {
+struct BE1::enable_bitmask_operators<DrawTextFlag> {
     static constexpr bool enable = true;
 };
 
@@ -74,6 +74,8 @@ public:
         RenderLights            = BIT(1),
         All                     = BIT(0) | BIT(1)
     };
+
+    friend constexpr std::true_type EnableBitmaskEnum(ClearFlag) noexcept { return {}; }
 
     RenderWorld();
     ~RenderWorld();
@@ -225,11 +227,6 @@ private:
     uint32_t                    debugPrimitiveCount = 0;
     uint32_t                    debugPrimitiveVertexCount = 0;
     uint64_t                    debugCapacityWarningFrameIndex = ~uint64_t(0);
-};
-
-template<>
-struct enable_bitmask_operators<RenderWorld::ClearFlag> {
-    static constexpr bool enable = true;
 };
 
 BE_INLINE bool RenderWorld::IsVisLightRegisteredInCurrentView(const RenderLight *renderLight) const {

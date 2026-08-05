@@ -16,6 +16,7 @@
 #include "RenderBackend.h"
 #include "Render/RenderSystem.h"
 #include "Render/RenderInternal.h"
+#include "Render/RenderFrameData.h"
 
 void RenderBackend::DrawGenericSurfaces(const RenderPassDrawSurf **drawSurfs, uint32_t numDrawSurfs, const SurfaceInstanceBatch *hiZCullBatches, uint32_t hiZCullBatchCount) {
     PROFILER_CPU_SCOPED_EVENT("RenderBackend::DrawGenericSurfaces");

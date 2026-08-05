@@ -48,6 +48,8 @@ public:
         SortAndMerge                = BIT(5)
     };
 
+    friend constexpr std::true_type EnableBitmaskEnum(FinishFlag) noexcept { return {}; }
+
     enum class State : uint8_t {
         Empty,
         Loading,
@@ -199,9 +201,4 @@ private:
     std::atomic<uint32_t>           dataSerial = 0;
     InternalData                    internalData;
     WeakPtr<MeshInstance>           staticMeshInstance;
-};
-
-template<>
-struct enable_bitmask_operators<Mesh::FinishFlag> {
-    static constexpr bool enable = true;
 };

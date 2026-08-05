@@ -267,51 +267,6 @@ struct return_type<R(C:: *)(Args...) const volatile> { using type = R; };
 template <typename T>
 using return_type_t = typename return_type<T>::type;
 
-// Enable enum flags:
-// https://www.justsoftwaresolutions.co.uk/cplusplus/using-enum-classes-as-bitfields.html
-template<typename E>
-struct enable_bitmask_operators {
-    static constexpr bool enable = false;
-};
-
-// Bit OR
-template<typename E>
-constexpr typename std::enable_if_t<enable_bitmask_operators<E>::enable, E> operator|(E lhs, E rhs) {
-    typedef typename std::underlying_type_t<E> underlying;
-    return static_cast<E>(static_cast<underlying>(lhs) | static_cast<underlying>(rhs));
-}
-
-// Assignment Bit OR
-template<typename E>
-constexpr typename std::enable_if_t<enable_bitmask_operators<E>::enable, E &> operator|=(E &lhs, E rhs) {
-    typedef typename std::underlying_type_t<E> underlying;
-    lhs = static_cast<E>(static_cast<underlying>(lhs) | static_cast<underlying>(rhs));
-    return lhs;
-}
-
-// Bit AND
-template<typename E>
-constexpr typename std::enable_if_t<enable_bitmask_operators<E>::enable, E> operator&(E lhs, E rhs) {
-    typedef typename std::underlying_type_t<E> underlying;
-    return static_cast<E>(static_cast<underlying>(lhs) & static_cast<underlying>(rhs));
-}
-
-// Assignment Bit AND
-template<typename E>
-constexpr typename std::enable_if_t<enable_bitmask_operators<E>::enable, E &> operator&=(E &lhs, E rhs) {
-    typedef typename std::underlying_type_t<E> underlying;
-    lhs = static_cast<E>(static_cast<underlying>(lhs) & static_cast<underlying>(rhs));
-    return lhs;
-}
-
-// Bit NOT
-template<typename E>
-constexpr typename std::enable_if_t<enable_bitmask_operators<E>::enable, E> operator~(E rhs) {
-    typedef typename std::underlying_type_t<E> underlying;
-    rhs = static_cast<E>(~static_cast<underlying>(rhs));
-    return rhs;
-}
-
 #define BE BE1
 #define BE_NAMESPACE_BEGIN namespace BE {
 #define BE_NAMESPACE_END }
@@ -343,8 +298,6 @@ constexpr typename std::enable_if_t<enable_bitmask_operators<E>::enable, E> oper
 #define _ARG_PATTERN_MATCH(_1, _2, _3, _4, _5, _6, _7, _8, n, ...) n
 
 #define COUNT_OF(a)                 ((int)(sizeof(a) / sizeof((a)[0])))
-
-#define OFFSET_OF(type, member)     ((intptr_t)&((type *)0)->member)
 
 #ifndef BIT
     #define BIT(num)                (1 << (num))
@@ -725,13 +678,31 @@ BE_FORCE_INLINE constexpr int16_t BE_API    HighByte(word w) { return ((w >> 8) 
 
 BE_FORCE_INLINE constexpr bool BE_API       IsPowerOf2(int x) { return x && ((x & (x - 1)) == 0); }
 
-/// Checks if all bits in the specified flag(s) (rhs) are set in the target flags (lhs).
+// Enable enum flags:
+// https://www.justsoftwaresolutions.co.uk/cplusplus/using-enum-classes-as-bitfields.html
+template<typename E, typename = void>
+struct enable_bitmask_operators {
+    static constexpr bool enable = false;
+};
+
 template<typename E>
-constexpr bool HasFlag(E lhs, E rhs) { return (lhs & rhs) == rhs; }
+struct enable_bitmask_operators<E, std::void_t<decltype(EnableBitmaskEnum(std::declval<E>()))>> {
+    static constexpr bool enable = std::is_enum_v<E> && std::is_same_v<decltype(EnableBitmaskEnum(std::declval<E>())), std::true_type>;
+};
+
+/// Checks if all bits in the specified flag(s) (rhs) are set in the target flags (lhs).
+template<typename E, std::enable_if_t<enable_bitmask_operators<E>::enable, int> = 0>
+constexpr bool HasFlag(E lhs, E rhs) noexcept {
+    using underlying = std::underlying_type_t<E>;
+    return (static_cast<underlying>(lhs) & static_cast<underlying>(rhs)) == static_cast<underlying>(rhs);
+}
 
 /// Checks if any bits in the specified flag(s) (rhs) are set in the target flags (lhs).
-template<typename E>
-constexpr bool HasAnyFlag(E lhs, E rhs) { return std::underlying_type_t<E>(lhs & rhs) != 0; }
+template<typename E, std::enable_if_t<enable_bitmask_operators<E>::enable, int> = 0>
+constexpr bool HasAnyFlag(E lhs, E rhs) noexcept {
+    using underlying = std::underlying_type_t<E>;
+    return (static_cast<underlying>(lhs) & static_cast<underlying>(rhs)) != 0;
+}
 
 /// Returns the quotient of dividend and divisor, rounded up.
 template <typename T, typename U>
@@ -913,3 +884,41 @@ void BE_CDECL BE_API Assert(bool expr);
 #endif
 
 BE_NAMESPACE_END
+
+// Bit OR
+template<typename E>
+constexpr typename std::enable_if_t<BE1::enable_bitmask_operators<E>::enable, E> operator|(E lhs, E rhs) {
+    typedef typename std::underlying_type_t<E> underlying;
+    return static_cast<E>(static_cast<underlying>(lhs) | static_cast<underlying>(rhs));
+}
+
+// Assignment Bit OR
+template<typename E>
+constexpr typename std::enable_if_t<BE1::enable_bitmask_operators<E>::enable, E &> operator|=(E &lhs, E rhs) {
+    typedef typename std::underlying_type_t<E> underlying;
+    lhs = static_cast<E>(static_cast<underlying>(lhs) | static_cast<underlying>(rhs));
+    return lhs;
+}
+
+// Bit AND
+template<typename E>
+constexpr typename std::enable_if_t<BE1::enable_bitmask_operators<E>::enable, E> operator&(E lhs, E rhs) {
+    typedef typename std::underlying_type_t<E> underlying;
+    return static_cast<E>(static_cast<underlying>(lhs) & static_cast<underlying>(rhs));
+}
+
+// Assignment Bit AND
+template<typename E>
+constexpr typename std::enable_if_t<BE1::enable_bitmask_operators<E>::enable, E &> operator&=(E &lhs, E rhs) {
+    typedef typename std::underlying_type_t<E> underlying;
+    lhs = static_cast<E>(static_cast<underlying>(lhs) & static_cast<underlying>(rhs));
+    return lhs;
+}
+
+// Bit NOT
+template<typename E>
+constexpr typename std::enable_if_t<BE1::enable_bitmask_operators<E>::enable, E> operator~(E rhs) {
+    typedef typename std::underlying_type_t<E> underlying;
+    rhs = static_cast<E>(~static_cast<underlying>(rhs));
+    return rhs;
+}

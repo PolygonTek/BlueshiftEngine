@@ -16,6 +16,7 @@
 #include "RenderBackend.h"
 #include "Render/RenderSystem.h"
 #include "Render/RenderInternal.h"
+#include "Render/RenderFrameData.h"
 #include "Shaders/ShaderInterop.h"
 
 // width, height 가 1 이거나 둘 다 짝수이면 true 를 반환한다.

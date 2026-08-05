@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "Precompiled.h"
 #include "RHI/RHI.h"
 #include "GpuFFT.h"
 #include "GpuSphericalHarmonics.h"

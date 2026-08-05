@@ -17,6 +17,7 @@
 #include "Render/RenderSystem.h"
 #include "Render/RenderCvars.h"
 #include "Render/RenderInternal.h"
+#include "Render/RenderFrameData.h"
 #include "Shaders/ShaderInterop.h"
 
 bool RenderBackend::DispatchHiZDebugPreview() {

@@ -14,11 +14,9 @@
 
 #pragma once
 
-#include "Precompiled.h"
 #include "RHI/RHI.h"
 #include "Render/GpuTiming.h"
 #include "Render/Frontend/RenderCamera.h"
-#include "Render/RenderFrameData.h"
 
 class RenderFrameData;
 class RenderContext;

@@ -14,7 +14,6 @@
 
 #pragma once
 
-#include "Precompiled.h"
 #include "RHI/RHI.h"
 #include "GpuFFT.h"
 

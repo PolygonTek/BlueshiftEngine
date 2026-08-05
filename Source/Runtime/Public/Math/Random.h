@@ -91,9 +91,7 @@ BE_INLINE uint64_t RNG::MapUInt64(uint64_t value, uint64_t range) {
     }
 
 #if defined(_MSC_VER) && defined(_M_X64)
-    uint64_t high;
-    ::_umul128(value, range, &high);
-    return high;
+    return ::__umulh(value, range);
 #elif defined(__SIZEOF_INT128__)
     return uint64_t((static_cast<__uint128_t>(value) * static_cast<__uint128_t>(range)) >> 64);
 #else

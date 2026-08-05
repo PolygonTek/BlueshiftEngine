@@ -35,12 +35,16 @@ public:
         CastShadows                 = BIT(1)
     };
 
+    friend constexpr std::true_type EnableBitmaskEnum(Flag) noexcept { return {}; }
+
     struct Desc {
         enum class UpdateFlag : uint16_t {
             All                     = 0xFFFF,
             Transform               = BIT(0),   // origin, axis
             Shape                   = BIT(1),   // type, size, zNear
         };
+
+        friend constexpr std::true_type EnableBitmaskEnum(UpdateFlag) noexcept { return {}; }
  
         Type                        type = Type::Point;
         Flag                        flags = Flag::None;
@@ -124,14 +128,4 @@ private:
     uint64_t                        visibleFrameIndex = 0;
     int                             index = -1;                     // RenderWorld::renderLights 의 인덱스
     uint64_t                        viewCount = uint64_t(-1);       // 마지막으로 VisLight 에 등록된 DrawCamera or DrawGUICamera 함수의 실행 카운터
-};
-
-template<>
-struct enable_bitmask_operators<RenderLight::Flag> {
-    static constexpr bool enable = true;
-};
-
-template<>
-struct enable_bitmask_operators<RenderLight::Desc::UpdateFlag> {
-    static constexpr bool enable = true;
 };

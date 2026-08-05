@@ -14,7 +14,6 @@
 
 #pragma once
 
-#include "Precompiled.h"
 
 class Texture;
 
@@ -36,6 +35,8 @@ public:
         SpecularPrefiltered         = BIT(1),
         All                         = DiffuseIrradiance | SpecularPrefiltered
     };
+
+    friend constexpr std::true_type EnableBitmaskEnum(OutputFlag) noexcept { return {}; }
 
     struct Desc {
         SharedPtr<Texture>          radianceCubeMap;                    ///< 필수 입력 radiance cubemap
@@ -63,9 +64,4 @@ private:
     Desc                            desc;
     SharedPtr<Texture>              diffuseIrradianceCubeMap;
     SharedPtr<Texture>              specularPrefilteredCubeMap;
-};
-
-template<>
-struct enable_bitmask_operators<ProbeBakeJob::OutputFlag> {
-    static constexpr bool enable = true;
 };

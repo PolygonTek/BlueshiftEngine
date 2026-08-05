@@ -131,7 +131,7 @@ void Collider::CreateCone(const Vec3 &center, float radius, float height, Axis::
     Purge();
 
     type = Type::Cone;
-    btConeShape *coneShape;
+    btConeShape *coneShape = nullptr;
     if (axis == Axis::X) {
         coneShape = new btConeShapeX(
             SystemUnitToPhysicsUnit(radius),

@@ -34,6 +34,8 @@ struct ShaderPropertyInfo : public BE1::PropertyInfo {
         NoMipmaps                   = BIT(5)
     };
 
+    friend constexpr std::true_type EnableBitmaskEnum(ShaderFlag) noexcept { return {}; }
+
     enum class TextureType : uint8_t {
         None,
         Texture2D,
@@ -65,7 +67,6 @@ struct ShaderPropertyInfo : public BE1::PropertyInfo {
     TextureType                     textureType = TextureType::None;
     BE1::Array<Condition>           conditions;
 };
-
 /*
 ---------------------------------------------------------------------------------------------------
 
@@ -91,6 +92,8 @@ public:
         SkySurface                  = BIT(2),
         LoadedFromFile              = BIT(3)
     };
+
+    friend constexpr std::true_type EnableBitmaskEnum(Flag) noexcept { return {}; }
 
     enum class StandardProperty : uint8_t {
         AlphaCutoff,
@@ -227,14 +230,4 @@ private:
     InternalData                    internalData;
 
     mutable BE1::HashMap<uint64_t, ShaderPermutation *> permutationMap;
-};
-
-template<>
-struct enable_bitmask_operators<ShaderTemplate::Flag> {
-    static constexpr bool enable = true;
-};
-
-template<>
-struct enable_bitmask_operators<ShaderPropertyInfo::ShaderFlag> {
-    static constexpr bool enable = true;
 };

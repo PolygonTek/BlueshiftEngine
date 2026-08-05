@@ -44,6 +44,8 @@ public:
         StaticOnly              = BIT(7)                ///< Static render object 만 렌더링한다.
     };
 
+    friend constexpr std::true_type EnableBitmaskEnum(Flag) noexcept { return {}; }
+
     enum class ClearMethod : uint8_t {
         NoClear,
         DepthOnly,
@@ -365,9 +367,4 @@ private:
     uint32_t                    fftBloomConvolutionOutputMipCount = 0;
 
     RHI::Buffer *               luminanceBuffer = nullptr;
-};
-
-template<>
-struct enable_bitmask_operators<RenderCamera::Flag> {
-    static constexpr bool enable = true;
 };

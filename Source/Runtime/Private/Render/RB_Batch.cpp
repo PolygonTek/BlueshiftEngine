@@ -773,10 +773,10 @@ void RenderBackEnd::DrawDebugTangentSpace(int tangentIndex) const {
     g_rsd.showTangentSpaceProg->SetParameter1i("tangentIndex", tangentIndex);
 
     GL_SelectTexture(0);
-    GL_ArrayOffset(BGL_TEXTURE_COORD_ARRAY, 4, BGL_FLOAT, false, sizeof(cDrawVert), OFFSET_OF(cDrawVert, tangent));
+    GL_ArrayOffset(BGL_TEXTURE_COORD_ARRAY, 4, BGL_FLOAT, false, sizeof(cDrawVert), offsetof(cDrawVert, tangent));
 
     bglEnableClientState(GL_NORMAL_ARRAY);
-    GL_ArrayOffset(BGL_NORMAL_ARRAY, 3, BGL_FLOAT, false, sizeof(cDrawVert), OFFSET_OF(cDrawVert, normal));
+    GL_ArrayOffset(BGL_NORMAL_ARRAY, 3, BGL_FLOAT, false, sizeof(cDrawVert), offsetof(cDrawVert, normal));
 
     GL_ArrayOffset(BGL_VERTEX_ARRAY, 3, BGL_FLOAT, false, sizeof(cDrawVert), 0);
 

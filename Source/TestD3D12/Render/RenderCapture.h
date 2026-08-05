@@ -14,7 +14,6 @@
 
 #pragma once
 
-#include "Precompiled.h"
 
 class RenderContext;
 class RenderWorld;

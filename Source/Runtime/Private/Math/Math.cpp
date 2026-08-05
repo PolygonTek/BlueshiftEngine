@@ -17,8 +17,7 @@
 
 BE_NAMESPACE_BEGIN
 
-static const uint32_t SmallestNonDenormal       = 1 << IEEE_FLT_MANTISSA_BITS;
-static const uint32_t NanValue                  = 0x7f800000;
+static const uint32_t SmallestNonDenormal           = 1 << IEEE_FLT_MANTISSA_BITS;
 
 const float     Math::FloatSmallestNonDenormal      = *reinterpret_cast<const float *>(&SmallestNonDenormal);    // 1.1754944e-038f
 

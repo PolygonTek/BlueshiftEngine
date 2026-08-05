@@ -15,6 +15,7 @@
 #include "Precompiled.h"
 #include "RenderBackend.h"
 #include "Render/RenderInternal.h"
+#include "Render/RenderFrameData.h"
 #include "Shaders/ShaderInterop.h"
 
 static bool IsHiZCullRenderPass(RenderPassType passType) {

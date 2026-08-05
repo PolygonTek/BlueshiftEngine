@@ -32,6 +32,8 @@ public:
         Static                      = BIT(2),
     };
 
+    friend constexpr std::true_type EnableBitmaskEnum(Flag) noexcept { return {}; }
+
     enum class TextDrawMode : uint8_t {
         Normal,
         DropShadows,
@@ -107,6 +109,8 @@ public:
             TextStyle               = BIT(6)
         };
 
+        friend constexpr std::true_type EnableBitmaskEnum(UpdateFlag) noexcept { return {}; }
+
         TextDesc &                  GetTextDesc();
 
         Flag                        flags = Flag::None;
@@ -157,13 +161,3 @@ BE_INLINE RenderObject::TextDesc &RenderObject::Desc::GetTextDesc() {
     }
     return *text;
 }
-
-template<>
-struct enable_bitmask_operators<RenderObject::Flag> {
-    static constexpr bool enable = true;
-};
-
-template<>
-struct enable_bitmask_operators<RenderObject::Desc::UpdateFlag> {
-    static constexpr bool enable = true;
-};

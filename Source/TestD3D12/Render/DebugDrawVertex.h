@@ -22,4 +22,4 @@ struct DebugDrawVertex {
 };
 
 static_assert(sizeof(DebugDrawVertex) == sizeof(float) * 3 + sizeof(uint32_t));
-static_assert(OFFSET_OF(DebugDrawVertex, color) == sizeof(float) * 3);
+static_assert(offsetof(DebugDrawVertex, color) == sizeof(float) * 3);

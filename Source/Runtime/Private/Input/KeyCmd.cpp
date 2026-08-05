@@ -399,11 +399,9 @@ void KeyCmdSystem::KeyEvent(KeyCode keynum, bool down) {
 //--------------------------------------------------------------------------------------------------
 
 void KeyCmdSystem::Cmd_ListBinds(const CmdArgs &args) {
-    int count = 0;
     for (int i = 0; i < 256; i++) {
         if (keyCmdSystem.keyList[i].binding) {
             BE_LOG("%s \"%s\"\n", KeyCmdSystem::KeynumToString((KeyCode)i), keyCmdSystem.keyList[i].binding);
-            count++;
         }
     }
 }
