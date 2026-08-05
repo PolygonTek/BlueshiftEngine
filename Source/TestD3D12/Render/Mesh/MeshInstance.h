@@ -24,7 +24,7 @@
 
     원본 Mesh 에 렌더링 인스턴스별 상태를 덧붙여 관리한다.
     Static 인스턴스는 Mesh 의 surface 데이터를 그대로 참조하고,
-    Skinned 인스턴스는 source mesh data serial 에 맞춰 joint matrix 와 GPU skinning joint cache 를 갱신한다.
+    Skinned 인스턴스는 원본 Mesh 의 data serial 에 맞춰 joint matrix 와 GPU skinning joint cache 를 갱신한다.
 
 ---------------------------------------------------------------------------------------------------
 */
@@ -49,10 +49,16 @@ public:
     bool                            IsSkinned() const { return type == Type::Skinned; }
     bool                            IsStatic() const { return type == Type::Static; }
 
+                                    // 원본 메시를 리턴한다.
     const SharedPtr<Mesh> &         GetSourceMesh() const { return sourceMesh; }
 
+                                    // 원본 메시가 준비되었는지 여부를 리턴한다.
     bool                            IsSourceReady() const;
-    bool                            IsSourceDirty() const;
+
+                                    // 원본 메시의 변경 사항을 인스턴스에 반영해야 하는지 여부를 리턴한다.
+    bool                            NeedsRefreshFromSource() const;
+
+                                    // 원본 메시가 수정되었으면, 인스턴스의 skinning matrix 와 joint cache 를 갱신한다.
     bool                            EnsureCurrent();
 
     int                             NumSurfaces() const;

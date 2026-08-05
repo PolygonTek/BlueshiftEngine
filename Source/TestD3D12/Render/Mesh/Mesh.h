@@ -26,8 +26,9 @@ class LoadingSystem;
 
     Mesh
 
-    A class for managing 3D mesh data.
-    A mesh consists of one or more surfaces, each containing its own sub-mesh and material information.
+    3D 메시 데이터를 나타낸다.
+    Mesh 는 하나 이상의 Surface 로 구성된다.
+    각 Surface 는 지오메트리를 저장하는 SubMesh 와 Material 인덱스를 가진다.
 
 ---------------------------------------------------------------------------------------------------
 */
@@ -88,6 +89,7 @@ public:
                                     // 이미 진행 중인 로딩 completion 무효화
     uint32_t                        BumpLoadSerial() { return loadSerial.fetch_add(1) + 1; }
 
+                                    // 현재 적용된 메시 데이터의 시리얼 번호.
     uint32_t                        GetDataSerial() const { return dataSerial.load(); }
 
     int                             NumSurfaces() const { assert(IsReady()); return internalData.surfaces.Count(); }
@@ -179,6 +181,7 @@ private:
     bool                            Load(const char *filename);
     bool                            LoadAsync(const char *filename);
 
+                                    // 실제 메시 데이터가 교체되었음을 표시한다.
     uint32_t                        BumpDataSerial() { return dataSerial.fetch_add(1) + 1; }
 
     void                            CreateDefaultBox();

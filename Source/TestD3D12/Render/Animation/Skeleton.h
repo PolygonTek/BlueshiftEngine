@@ -20,6 +20,7 @@ class LoadingSystem;
 class Joint {
 public:
     Joint() = default;
+
     BE1::Str                        name;
     Joint *                         parent = nullptr;
 };

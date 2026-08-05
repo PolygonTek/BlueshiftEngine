@@ -19,6 +19,7 @@ void MeshInstance::Reset() {
     type = Type::Static;
     sourceMesh.reset();
     sourceDataSerial = InvalidDataSerial;
+
     skinningMatrices.Clear();
     skinningJointCache.reset();
 }
@@ -53,33 +54,41 @@ bool MeshInstance::IsSourceReady() const {
     if (!sourceMesh || sourceMesh->GetState() != Mesh::State::Ready) {
         return false;
     }
-
     return true;
 }
 
-bool MeshInstance::IsSourceDirty() const {
-    return sourceMesh &&
-        sourceMesh->GetState() == Mesh::State::Ready &&
-        sourceDataSerial != sourceMesh->GetDataSerial();
+bool MeshInstance::NeedsRefreshFromSource() const {
+    if (sourceMesh && sourceMesh->GetState() == Mesh::State::Ready && sourceDataSerial != sourceMesh->GetDataSerial()) {
+        return true;
+    }
+    return false;
 }
 
 bool MeshInstance::EnsureCurrent() {
-    if (!IsSourceReady()) {
+    // 원본 메시가 준비가 되었는지 확인
+    if (!sourceMesh || sourceMesh->GetState() != Mesh::State::Ready) {
         return false;
     }
 
-    if (!IsSourceDirty()) {
+    // Static 메시 인스턴스는 원본 메시가 수정되었는지 여부와 상관없이 항상 최신 상태로 간주한다. (즉, Static 메시 인스턴스는 원본 메시가 수정되었더라도 갱신할 필요가 없다)
+    if (IsStatic()) {
         return true;
     }
 
+    // 원본 메시가 수정되었는지 확인
+    if (sourceDataSerial != sourceMesh->GetDataSerial()) {
+        return true;
+    }
+
+    // 원본 메시가 수정되었으면, 인스턴스의 skinning matrix 와 joint cache 를 갱신
     return RefreshFromSource();
 }
 
 bool MeshInstance::RefreshFromSource() {
-    if (!IsSourceReady()) {
-        return false;
-    }
+    // 호출자는 sourceMesh 가 Ready 상태임을 보장해야 한다.
+    assert(sourceMesh);
 
+    // Skinned 메시 인스턴스인 경우에만 인스턴스 데이터들을 갱신한다.
     if (type == Type::Skinned) {
         if (!HasSkinningData()) {
             return false;
