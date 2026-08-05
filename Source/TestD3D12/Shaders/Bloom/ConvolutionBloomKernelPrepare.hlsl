@@ -47,7 +47,7 @@ void CSMain(uint3 dispatchThreadId : SV_DispatchThreadID) {
     if (all(rotatedCoord >= 0.0) && all(rotatedCoord < bloomParams.outputSize)) {
         // 출력 버퍼 기준 좌표를 소스 텍스쳐 좌표로 변환
         float2 uv = rotatedCoord * bloomParams.outputTexelSize;
-        color = max(kernelSourceTexture.SampleLevel(linearClampSampler, uv, 0).rgb, float3(0.0, 0.0, 0.0));
+        color = max(kernelSourceTexture.SampleLevel(linearClampSampler, uv, BP_BLOOM_KERNEL_MIP_LEVEL).rgb, float3(0.0, 0.0, 0.0));
     }
 
     // buffer 의 앞쪽에는 rg 배열만 담고, 이후에 b0 배열을 담는다. (패킹된 FFTDualReal 셰이더를 사용하기에 유리)

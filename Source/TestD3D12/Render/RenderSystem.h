@@ -86,7 +86,7 @@ public:
 
     ConvolutionBloomKernelGenerator &GetConvolutionBloomKernelGenerator() { return convolutionBloomKernelGenerator; }
     const ConvolutionBloomKernelGenerator &GetConvolutionBloomKernelGenerator() const { return convolutionBloomKernelGenerator; }
-    uint64_t                        RequestConvolutionBloomKernelGeneration(const SharedPtr<Texture> &apertureTexture, float apertureScale, float diffractionPSFScale, float dispersionAmount);
+    uint64_t                        RequestConvolutionBloomKernelGeneration(const SharedPtr<Texture> &apertureTexture, float apertureScale, float dispersionAmount);
     void                            CompleteConvolutionBloomKernelGeneration(uint64_t requestSerial, bool succeeded);
     bool                            GetConvolutionBloomKernelGenerationResult(uint64_t requestSerial, bool &succeeded) const;
 
@@ -171,7 +171,7 @@ private:
     SharedPtr<ShaderTemplate>       bloomDownsampleShaderTemplate;
     SharedPtr<ShaderTemplate>       bloomUpsampleShaderTemplate;
 
-    SharedPtr<ShaderTemplate>       convolutionBloomPrefilterShaderTemplate;
+    SharedPtr<ShaderTemplate>       convolutionBloomScreenPrepareShaderTemplate;
     SharedPtr<ShaderTemplate>       convolutionBloomKernelPrepareShaderTemplate;
     SharedPtr<ShaderTemplate>       convolutionBloomResolveShaderTemplate;
 
@@ -180,8 +180,9 @@ private:
     SharedPtr<ShaderPipeline>       genHiZMipBatchPipeline;
     SharedPtr<ShaderPipeline>       genHiZMipOddDimPipeline;
     SharedPtr<ShaderPipeline>       hiZCullInstancesPipeline;
-    SharedPtr<ShaderPipeline>       lightCullingPipeline;
     SharedPtr<ShaderPipeline>       hiZDebugPreviewPipeline;
+
+    SharedPtr<ShaderPipeline>       lightCullingPipeline;
     SharedPtr<ShaderPipeline>       depthMSAAResolvePipeline;
     SharedPtr<ShaderPipeline>       surfaceOutputMSAAResolveNormalPipeline;
     SharedPtr<ShaderPipeline>       surfaceOutputMSAAResolveVelocityPipeline;
@@ -195,7 +196,7 @@ private:
     SharedPtr<ShaderPipeline>       bloomDownsamplePipeline;
     SharedPtr<ShaderPipeline>       bloomUpsamplePipeline;
 
-    SharedPtr<ShaderPipeline>       convolutionBloomPrefilterPipeline;
+    SharedPtr<ShaderPipeline>       convolutionBloomScreenPreparePipeline;
     SharedPtr<ShaderPipeline>       convolutionBloomKernelPreparePipeline;
     SharedPtr<ShaderPipeline>       convolutionBloomResolvePipeline;
 

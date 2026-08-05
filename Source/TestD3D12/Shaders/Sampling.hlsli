@@ -61,13 +61,15 @@ half3 SampleJimenez13Tap(Texture2D<float4> texture, float2 uv, float2 offset) {
     half3 l = half3(texture.SampleLevel(SAMPLING_LINEAR_CLAMP_SAMPLER, uv + offset * float2( 0.0,  1.0), 0).rgb);
     half3 m = half3(texture.SampleLevel(SAMPLING_LINEAR_CLAMP_SAMPLER, uv + offset * float2( 1.0,  1.0), 0).rgb);
 
-    half3 color = (d + e + i + j) * half(0.5);
-    color += (a + b + g + f) * half(0.125);
-    color += (b + c + h + g) * half(0.125);
-    color += (f + g + l + k) * half(0.125);
-    color += (g + h + m + l) * half(0.125);
+    half2 div = (1.0 / 4.0) * half2(0.5, 0.125);
 
-    return color * half(0.25);
+    half3 color = (d + e + i + j) * div.x;
+    color += (a + b + g + f) * div.y;
+    color += (b + c + h + g) * div.y;
+    color += (f + g + l + k) * div.y;
+    color += (g + h + m + l) * div.y;
+
+    return color;
 }
 
 // 3x3 tent filter.

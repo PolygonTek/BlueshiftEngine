@@ -21,7 +21,7 @@ class Texture;
 
 class ConvolutionBloomKernelRenderWork : public RenderWork {
 public:
-    ConvolutionBloomKernelRenderWork(uint64_t requestSerial, const SharedPtr<Texture> &apertureTexture, float apertureScale, float diffractionPSFScale, float dispersionAmount);
+    ConvolutionBloomKernelRenderWork(uint64_t requestSerial, const SharedPtr<Texture> &apertureTexture, float apertureScale, float dispersionAmount);
 
     virtual const char *            GetDebugName() const override { return "ConvolutionBloomKernelRenderWork"; }
     virtual bool                    IsReadyToAttach() const override;
@@ -32,6 +32,5 @@ private:
     uint64_t                        requestSerial = 0;
     SharedPtr<Texture>              apertureTexture;
     float                           apertureScale = 0.0f;
-    float                           diffractionPSFScale = 0.0f;
     float                           dispersionAmount = 0.0f;
 };

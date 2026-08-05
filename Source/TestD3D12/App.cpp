@@ -670,7 +670,7 @@ void App::RegenerateConvolutionBloomKernel() {
     }
 
     const uint64_t requestSerial = renderSystem->RequestConvolutionBloomKernelGeneration(convolutionBloomApertureTexture,
-        r_convolutionBloomApertureScale.GetFloat(), r_convolutionBloomDiffractionPSFScale.GetFloat(), r_convolutionBloomDispersionAmount.GetFloat());
+        r_convolutionBloomApertureScale.GetFloat(), r_convolutionBloomDispersionAmount.GetFloat());
     if (requestSerial == 0) {
         return;
     }
@@ -707,6 +707,7 @@ void App::ProcessConvolutionBloomKernelGenerationResult() {
         return;
     }
 
+    // 생성된 kernel 이미지를 CPU 로 읽는다.
     BE1::Image kernelImage;
     if (!renderSystem->GetConvolutionBloomKernelGenerator().ReadKernelImage(kernelImage)) {
         BE_WARNLOG("App::ProcessConvolutionBloomKernelGenerationResult: failed to read generated convolution bloom kernel\n");

@@ -16,6 +16,7 @@
 
 #include "Precompiled.h"
 #include "RHI/RHI.h"
+#include "GpuFFT.h"
 
 class Texture;
 class ShaderPipeline;
@@ -46,9 +47,6 @@ public:
 
     void                            SetApertureScale(float scale);
     float                           GetApertureScale() const { return apertureScale; }
-
-    void                            SetDiffractionPSFScale(float scale);
-    float                           GetDiffractionPSFScale() const { return diffractionPSFScale; }
 
     void                            SetDispersionAmount(float amount);
     float                           GetDispersionAmount() const { return dispersionAmount; }
@@ -82,8 +80,8 @@ private:
     SharedPtr<Texture>              apertureSourceTexture;
     bool                            kernelDirty = true;
     float                           apertureScale = 0.2f;
-    float                           diffractionPSFScale = 1.0f;
     float                           dispersionAmount = 1.0f;
+    GpuFFT::FFTSize                 fftSizeEnum = GpuFFT::FFTSize::Count;
 
     RHI::Buffer *                   apertureSpatialBuffer = nullptr;
     RHI::Buffer *                   apertureSpectrumBuffer = nullptr;

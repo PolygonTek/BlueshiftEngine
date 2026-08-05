@@ -15,7 +15,6 @@
 #include "Precompiled.h"
 #include "ConvolutionBloomKernelGenerator.h"
 #include "Render/Texture/Texture.h"
-#include "GpuFFT.h"
 #include "RenderSystem.h"
 #include "Render/ShaderPipeline/ShaderPipeline.h"
 #include "Render/ShaderPipeline/ShaderPipelineCache.h"
@@ -25,6 +24,11 @@
 void ConvolutionBloomKernelGenerator::Init() {
     pipelinesReady = false;
     pipelineBuildFailed = false;
+
+    // 커널 사이즈로 유효한 FFT size enum 얻기
+    if (!GpuFFT::GetGpuFFTSize(KernelSize, fftSizeEnum)) {
+        BE_FATALERROR("ConvolutionBloomKernelGenerator::Init: invalid kernel size %u\n", KernelSize);
+    }
 
     const char *baseDir = "Source/TestD3D12/Shaders";
     const RHI::ShaderModel computeShaderModel = RHI::Renderer::MinimumShaderModel();
@@ -126,18 +130,8 @@ void ConvolutionBloomKernelGenerator::SetApertureScale(float scale) {
     kernelDirty = true;
 }
 
-void ConvolutionBloomKernelGenerator::SetDiffractionPSFScale(float scale) {
-    scale = BE1::Max(scale, 0.0f);
-    if (diffractionPSFScale == scale) {
-        return;
-    }
-
-    diffractionPSFScale = scale;
-    kernelDirty = true;
-}
-
 void ConvolutionBloomKernelGenerator::SetDispersionAmount(float amount) {
-    amount = BE1::Max(amount, 0.0f);
+    amount = BE1::Min(BE1::Max(amount, 0.0f), 1.0f);
     if (dispersionAmount == amount) {
         return;
     }
@@ -162,21 +156,19 @@ bool ConvolutionBloomKernelGenerator::GenerateKernel(RHI::CommandList *commandLi
     }
 
     // aperture 버퍼 준비 (apertureSpatialBuffer 에 출력)
+    // aperture 텍스쳐를 가운데 축소 스케일해서 배치한다. 작은 조리개일 수록 빛이 많이 퍼지는 광학적 특성 때문에
+    // 축소할 수록 푸리에 변환 결과인 회절 패턴이 넓어진다.
     if (!DispatchAperturePrepare(commandList, frameThreadData)) {
         return false;
     }
 
+    // Aperture spatial buffer 의 complex sample 들의 크기의 제곱을 모두 더해 aperture energy 를 계산한다.
     RHI::Buffer *apertureEnergyBuffer = nullptr;
     if (!DispatchReduceApertureEnergy(commandList, frameThreadData, &apertureEnergyBuffer)) {
         return false;
     }
 
-    GpuFFT::FFTSize fftSizeEnum;
-    if (!GpuFFT::GetGpuFFTSize(KernelSize, fftSizeEnum)) {
-        return false;
-    }
-
-    // aperture 버퍼 FFT 하여 회절 (diffraction) 적용
+    // aperture 버퍼에 FFT 를 적용하여 회절 (diffraction) 패턴을 만든다. (apertureSpectrumBuffer 에 출력)
     if (!renderSystem->GetGpuFFT().DispatchFFTComplex2D(commandList, frameThreadData, apertureSpatialBuffer, apertureSpectrumBuffer, workBuffer, fftSizeEnum, 1)) {
         return false;
     }
@@ -534,7 +526,6 @@ bool ConvolutionBloomKernelGenerator::DispatchResolveDiffractionPSF(RHI::Command
     bloomParams.outputSize = uint2(outputW, outputH);
     bloomParams.inputTexelSize = float2(1.0f / inputW, 1.0f / inputH);
     bloomParams.outputTexelSize = float2(1.0f / outputW, 1.0f / outputH);
-    bloomParams.params0 = float4(BE1::Max(diffractionPSFScale, 0.0f), 0.0f, 0.0f, 0.0f);
 
     RHI::ConstantBuffer *bloomConstantBuffer = frameThreadData->AllocConstant(sizeof(BloomParams), &bloomParams);
     if (!bloomConstantBuffer) {

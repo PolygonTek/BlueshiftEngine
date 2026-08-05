@@ -152,6 +152,11 @@ void RenderWorld::SetupConvolutionBloom(RenderFrameData *frameData, RenderCamera
     visCamera->fftBloomConvolutionOutputTexture = renderCamera->GetFFTBloomConvolutionOutputTexture();
     visCamera->fftBloomConvolutionOutputWidth = renderCamera->GetFFTBloomConvolutionOutputWidth();
     visCamera->fftBloomConvolutionOutputHeight = renderCamera->GetFFTBloomConvolutionOutputHeight();
+    visCamera->fftBloomConvolutionOutputMipCount = renderCamera->GetFFTBloomConvolutionOutputMipCount();
+    for (uint32_t mipLevel = 0; mipLevel < RenderConvolutionBloomMaxMipLevelCount; ++mipLevel) {
+        visCamera->fftBloomConvolutionOutputMipSRVs[mipLevel] = renderCamera->GetFFTBloomConvolutionOutputMipSRVs()[mipLevel];
+        visCamera->fftBloomConvolutionOutputMipUAVs[mipLevel] = renderCamera->GetFFTBloomConvolutionOutputMipUAVs()[mipLevel];
+    }
     visCamera->fftBloomKernelRotation = renderCamera->GetFFTBloomKernelRotation();
     visCamera->fftBloomKernelSizeScale = renderCamera->GetFFTBloomKernelSizeScale();
     visCamera->fftBloomPaddingTrim = renderCamera->GetFFTBloomPaddingTrim();

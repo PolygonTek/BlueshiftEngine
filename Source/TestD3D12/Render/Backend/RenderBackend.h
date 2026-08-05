@@ -129,6 +129,7 @@ private:
     bool                            DispatchConvolutionBloom();
     bool                            DispatchConvolutionBloomKernelPrepare();
     bool                            DispatchConvolutionBloomScreenPrefilter();
+    bool                            DispatchConvolutionBloomScreenPrepare();
     bool                            DispatchConvolutionBloomMultiplySpectrum();
     bool                            DispatchConvolutionBloomResolve();
     bool                            DispatchConvolutionBloomFFT(RHI::Buffer *inputBuffer, RHI::Buffer *outputBuffer);
@@ -174,7 +175,7 @@ private:
     RHI::PipelineState *            frameBloomPrefilterPSO = nullptr;
     RHI::PipelineState *            frameBloomDownsamplePSO = nullptr;
     RHI::PipelineState *            frameBloomUpsamplePSO = nullptr;
-    RHI::PipelineState *            frameConvolutionBloomPrefilterPSO = nullptr;
+    RHI::PipelineState *            frameConvolutionBloomScreenPreparePSO = nullptr;
     RHI::PipelineState *            frameConvolutionBloomKernelPreparePSO = nullptr;
     RHI::PipelineState *            frameConvolutionBloomResolvePSO = nullptr;
 

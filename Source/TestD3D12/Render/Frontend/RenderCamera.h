@@ -22,6 +22,7 @@ class Texture;
 
 static constexpr int RenderBloomDownMaxLevelCount = 8;
 static constexpr int RenderBloomUpMaxLevelCount = RenderBloomDownMaxLevelCount - 1;
+static constexpr int RenderConvolutionBloomMaxMipLevelCount = 16;
 static constexpr int RenderHiZMaxLevelCount = 16;
 static constexpr int RenderHiZCullMaxInstanceCount = 2048;
 static constexpr int RenderHiZCullMaxVisibleInstanceCount = 0x40000;
@@ -147,6 +148,7 @@ public:
 
     void                        Update(const Desc &desc);
 
+                                /// Calculates the texel-density-independent luminance normalization factor and effective normalized extents of a convolution bloom kernel image.
     static void                 CalcConvolutionBloomKernelParams(const BE1::Image &kernelImage, float &normalizationFactor, BE1::Vec2 &kernelExtents);
 
     bool                        SetConvolutionBloomKernelFromImage(const char *textureName, const BE1::Image &kernelImage);
@@ -217,6 +219,9 @@ public:
     RHI::Texture *              GetFFTBloomConvolutionOutputTexture() const { return fftBloomConvolutionOutputTexture; }
     uint32_t                    GetFFTBloomConvolutionOutputWidth() const { return fftBloomConvolutionOutputWidth; }
     uint32_t                    GetFFTBloomConvolutionOutputHeight() const { return fftBloomConvolutionOutputHeight; }
+    const RHI::ViewID *         GetFFTBloomConvolutionOutputMipSRVs() const { return fftBloomConvolutionOutputMipSRVs; }
+    const RHI::ViewID *         GetFFTBloomConvolutionOutputMipUAVs() const { return fftBloomConvolutionOutputMipUAVs; }
+    uint32_t                    GetFFTBloomConvolutionOutputMipCount() const { return fftBloomConvolutionOutputMipCount; }
     bool                        IsFFTBloomKernelDirty() const { return fftBloomKernelDirty; }
     float                       GetFFTBloomKernelRotation() const { return fftBloomKernelRotation; }
     float                       GetFFTBloomKernelSizeScale() const { return fftBloomKernelSizeScale; }
@@ -355,6 +360,9 @@ private:
     RHI::Texture *              fftBloomConvolutionOutputTexture = nullptr;
     uint32_t                    fftBloomConvolutionOutputWidth = 0;
     uint32_t                    fftBloomConvolutionOutputHeight = 0;
+    RHI::ViewID                 fftBloomConvolutionOutputMipSRVs[RenderConvolutionBloomMaxMipLevelCount] = {};
+    RHI::ViewID                 fftBloomConvolutionOutputMipUAVs[RenderConvolutionBloomMaxMipLevelCount] = {};
+    uint32_t                    fftBloomConvolutionOutputMipCount = 0;
 
     RHI::Buffer *               luminanceBuffer = nullptr;
 };

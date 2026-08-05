@@ -50,7 +50,9 @@ void CSMain(uint3 dispatchThreadId : SV_DispatchThreadID) {
         float wavelengthNm = BP_BLOOM_DISPERSION_MIN_WAVELENGTH_NM + (float(sampleIndex) + 0.5) * deltaWavelengthNm;
         float3 cmf = SampleCIE1931CMF(wavelengthNm) * deltaWavelengthNm; // 모든 파장에 대한 적분식이므로 deltaWavelengthNm 를 곱한다.
 
-        float dispersionScale = max(1.0 + BP_BLOOM_DISPERSION_AMOUNT * (wavelengthNm / referenceWavelengthNm - 1.0), 0.0001);
+        // amount 0 은 분산이 없고, amount 1 은 wavelength/reference 비율을 그대로 사용한다.
+        float wavelengthScale = wavelengthNm / referenceWavelengthNm;
+        float dispersionScale = lerp(1.0, wavelengthScale, saturate(BP_BLOOM_DISPERSION_AMOUNT));
         float2 sourceUv = 0.5 + centeredUv / dispersionScale;
 
         // 2D radial scale 로 인해 변하는 면적을 보정해서 파장별 PSF 의 총 에너지를 일정하게 유지한다.

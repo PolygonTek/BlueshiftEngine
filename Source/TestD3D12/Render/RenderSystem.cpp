@@ -328,7 +328,7 @@ void RenderSystem::AttachPendingRenderWorks(RenderFrameData *frameData) {
     renderWorkQueue.AttachPendingWorks(frameData, MaxRenderWorksPerFrame);
 }
 
-uint64_t RenderSystem::RequestConvolutionBloomKernelGeneration(const SharedPtr<Texture> &apertureTexture, float apertureScale, float diffractionPSFScale, float dispersionAmount) {
+uint64_t RenderSystem::RequestConvolutionBloomKernelGeneration(const SharedPtr<Texture> &apertureTexture, float apertureScale, float dispersionAmount) {
     assert(BE1::Engine::IsInMainThread());
 
     if (!apertureTexture) {
@@ -336,7 +336,7 @@ uint64_t RenderSystem::RequestConvolutionBloomKernelGeneration(const SharedPtr<T
     }
 
     const uint64_t requestSerial = ++nextConvolutionBloomKernelGenerationSerial;
-    UniquePtr<RenderWork> renderWork = MakeUnique<ConvolutionBloomKernelRenderWork>(requestSerial, apertureTexture, apertureScale, diffractionPSFScale, dispersionAmount);
+    UniquePtr<RenderWork> renderWork = MakeUnique<ConvolutionBloomKernelRenderWork>(requestSerial, apertureTexture, apertureScale, dispersionAmount);
     EnqueueRenderWork(std::move(renderWork));
     return requestSerial;
 }
@@ -388,8 +388,9 @@ void RenderSystem::InitComputePipelines() {
     genHiZMipBatchShaderTemplate = shaderTemplateManager.CreateComputeShaderTemplate("_genHiZMipBatchShader", computeShaderModel, "GenHiZMip/GenHiZMipBatch.hlsl", baseDir);
     genHiZMipOddDimShaderTemplate = shaderTemplateManager.CreateComputeShaderTemplate("_genHiZMipOddDimShader", computeShaderModel, "GenHiZMip/GenHiZMipOddDim.hlsl", baseDir);
     hiZCullInstancesShaderTemplate = shaderTemplateManager.CreateComputeShaderTemplate("_hiZCullInstancesShader", computeShaderModel, "HiZCullInstances.hlsl", baseDir);
-    lightCullingShaderTemplate = shaderTemplateManager.CreateComputeShaderTemplate("_lightCullingShader", computeShaderModel, "LightCulling.hlsl", baseDir);
     hiZDebugPreviewShaderTemplate = shaderTemplateManager.CreateComputeShaderTemplate("_hiZDebugPreviewShader", computeShaderModel, "HiZDebugPreview.hlsl", baseDir);
+
+    lightCullingShaderTemplate = shaderTemplateManager.CreateComputeShaderTemplate("_lightCullingShader", computeShaderModel, "LightCulling.hlsl", baseDir);
     depthMSAAResolveShaderTemplate = shaderTemplateManager.CreateComputeShaderTemplate("_depthMSAAResolveShader", computeShaderModel, "DepthMSAAResolve.hlsl", baseDir);
     surfaceOutputMSAAResolveNormalShaderTemplate = shaderTemplateManager.CreateComputeShaderTemplate("_surfaceOutputMSAAResolveNormalShader", computeShaderModel, "SurfaceOutputMSAAResolve.hlsl", baseDir, "CSMain", "SURFACE_OUTPUT_MSAA_RESOLVE_MODE=1");
     surfaceOutputMSAAResolveVelocityShaderTemplate = shaderTemplateManager.CreateComputeShaderTemplate("_surfaceOutputMSAAResolveVelocityShader", computeShaderModel, "SurfaceOutputMSAAResolve.hlsl", baseDir, "CSMain", "SURFACE_OUTPUT_MSAA_RESOLVE_MODE=2");
@@ -404,7 +405,7 @@ void RenderSystem::InitComputePipelines() {
     bloomDownsampleShaderTemplate = shaderTemplateManager.CreateComputeShaderTemplate("_bloomDownsampleShader", computeShaderModel, "Bloom/BloomDownsample.hlsl", baseDir);
     bloomUpsampleShaderTemplate = shaderTemplateManager.CreateComputeShaderTemplate("_bloomUpsampleShader", computeShaderModel, "Bloom/BloomUpsample.hlsl", baseDir);
 
-    convolutionBloomPrefilterShaderTemplate = shaderTemplateManager.CreateComputeShaderTemplate("_convolutionBloomPrefilterShader", computeShaderModel, "Bloom/ConvolutionBloomPrefilter.hlsl", baseDir);
+    convolutionBloomScreenPrepareShaderTemplate = shaderTemplateManager.CreateComputeShaderTemplate("_convolutionBloomScreenPrepareShader", computeShaderModel, "Bloom/ConvolutionBloomScreenPrepare.hlsl", baseDir);
     convolutionBloomKernelPrepareShaderTemplate = shaderTemplateManager.CreateComputeShaderTemplate("_convolutionBloomKernelPrepareShader", computeShaderModel, "Bloom/ConvolutionBloomKernelPrepare.hlsl", baseDir);
     convolutionBloomResolveShaderTemplate = shaderTemplateManager.CreateComputeShaderTemplate("_convolutionBloomResolveShader", computeShaderModel, "Bloom/ConvolutionBloomResolve.hlsl", baseDir);
 
@@ -417,8 +418,9 @@ void RenderSystem::EnsureComputePipelines() {
     EnsureComputePipeline(genHiZMipBatchShaderTemplate, genHiZMipBatchPipeline);
     EnsureComputePipeline(genHiZMipOddDimShaderTemplate, genHiZMipOddDimPipeline);
     EnsureComputePipeline(hiZCullInstancesShaderTemplate, hiZCullInstancesPipeline);
-    EnsureComputePipeline(lightCullingShaderTemplate, lightCullingPipeline);
     EnsureComputePipeline(hiZDebugPreviewShaderTemplate, hiZDebugPreviewPipeline);
+
+    EnsureComputePipeline(lightCullingShaderTemplate, lightCullingPipeline);
     EnsureComputePipeline(depthMSAAResolveShaderTemplate, depthMSAAResolvePipeline);
     EnsureComputePipeline(surfaceOutputMSAAResolveNormalShaderTemplate, surfaceOutputMSAAResolveNormalPipeline);
     EnsureComputePipeline(surfaceOutputMSAAResolveVelocityShaderTemplate, surfaceOutputMSAAResolveVelocityPipeline);
@@ -433,7 +435,7 @@ void RenderSystem::EnsureComputePipelines() {
     EnsureComputePipeline(bloomDownsampleShaderTemplate, bloomDownsamplePipeline);
     EnsureComputePipeline(bloomUpsampleShaderTemplate, bloomUpsamplePipeline);
 
-    EnsureComputePipeline(convolutionBloomPrefilterShaderTemplate, convolutionBloomPrefilterPipeline);
+    EnsureComputePipeline(convolutionBloomScreenPrepareShaderTemplate, convolutionBloomScreenPreparePipeline);
     EnsureComputePipeline(convolutionBloomKernelPrepareShaderTemplate, convolutionBloomKernelPreparePipeline);
     EnsureComputePipeline(convolutionBloomResolveShaderTemplate, convolutionBloomResolvePipeline);
 }
@@ -444,8 +446,9 @@ void RenderSystem::ReleaseComputePipelines() {
     genHiZMipBatchPipeline.reset();
     genHiZMipOddDimPipeline.reset();
     hiZCullInstancesPipeline.reset();
-    lightCullingPipeline.reset();
     hiZDebugPreviewPipeline.reset();
+
+    lightCullingPipeline.reset();
     depthMSAAResolvePipeline.reset();
     surfaceOutputMSAAResolveNormalPipeline.reset();
     surfaceOutputMSAAResolveVelocityPipeline.reset();
@@ -460,7 +463,7 @@ void RenderSystem::ReleaseComputePipelines() {
     bloomDownsamplePipeline.reset();
     bloomUpsamplePipeline.reset();
 
-    convolutionBloomPrefilterPipeline.reset();
+    convolutionBloomScreenPreparePipeline.reset();
     convolutionBloomKernelPreparePipeline.reset();
     convolutionBloomResolvePipeline.reset();
 
@@ -484,7 +487,7 @@ void RenderSystem::ReleaseComputePipelines() {
     bloomDownsampleShaderTemplate.reset();
     bloomUpsampleShaderTemplate.reset();
 
-    convolutionBloomPrefilterShaderTemplate.reset();
+    convolutionBloomScreenPrepareShaderTemplate.reset();
     convolutionBloomKernelPrepareShaderTemplate.reset();
     convolutionBloomResolveShaderTemplate.reset();
 }

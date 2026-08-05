@@ -15,6 +15,8 @@ StructuredBuffer<float2> apertureEnergyBuffer : register(t1);
 // 입력 FFT 버퍼로 abs(FFT)^2 후에 circular shift 하는 출력 텍스처
 RWTexture2D<float> outputTexture : register(u0);
 
+static const float DiffractionPSFStoragePeak = 32768.0;
+
 [RootSignature(COMMON_ROOT_SIGNATURE)]
 [numthreads(BloomBlockSizeX, BloomBlockSizeY, 1)]
 void CSMain(uint3 dispatchThreadId : SV_DispatchThreadID) {
@@ -33,10 +35,12 @@ void CSMain(uint3 dispatchThreadId : SV_DispatchThreadID) {
 
     // FFTComplex2D 출력은 transposed 상태이므로 (x, y) spectrum 을 y + x * width 위치에서 읽는다.
     uint spectrumIndex = spectrumCoord.x * bloomParams.inputSize.y + spectrumCoord.y;
-
+    
+    // 비정규화 forward FFT 에서 abs(FFT)^2 / apertureEnergy 의 이론적 상한은 2D FFT sample count (width * height) 이다.
+    // R16F 저장 범위와 정밀도를 안정적으로 사용하도록 해상도와 무관하게 최대값을 DiffractionPSFStoragePeak 로 맞춘다.
     float2 field = diffractionSpectrumBuffer[spectrumIndex];
     float apertureEnergy = max(apertureEnergyBuffer[0].x, 0.000001);
-    float intensity = dot(field, field) * BP_BLOOM_DIFFRACTION_PSF_SCALE / apertureEnergy;
-
+    float pixelCount = float(bloomParams.inputSize.x) * float(bloomParams.inputSize.y);
+    float intensity = dot(field, field) / apertureEnergy * (DiffractionPSFStoragePeak / pixelCount);
     outputTexture[pixelCoord] = max(intensity, 0.0);
 }

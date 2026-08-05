@@ -50,6 +50,7 @@ public:
         BloomUpsample,
         ConvolutionBloomKernelPrepare,
         ConvolutionBloomScreenPrefilter,
+        ConvolutionBloomScreenPrepare,
         ConvolutionBloomFFT,
         ConvolutionBloomMultiplySpectrum,
         ConvolutionBloomIFFT,

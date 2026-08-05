@@ -242,6 +242,9 @@ struct VisCamera {
     RHI::Texture *              fftBloomConvolutionOutputTexture = nullptr;
     uint32_t                    fftBloomConvolutionOutputWidth = 0;
     uint32_t                    fftBloomConvolutionOutputHeight = 0;
+    RHI::ViewID                 fftBloomConvolutionOutputMipSRVs[RenderConvolutionBloomMaxMipLevelCount] = {};
+    RHI::ViewID                 fftBloomConvolutionOutputMipUAVs[RenderConvolutionBloomMaxMipLevelCount] = {};
+    uint32_t                    fftBloomConvolutionOutputMipCount = 0;
     float                       fftBloomKernelRotation = 0.0f;
     float                       fftBloomKernelSizeScale = 1.0f;
     float                       fftBloomPaddingTrim = 0.0f;

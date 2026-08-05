@@ -18,16 +18,20 @@
 #include "Render/RenderSystem.h"
 #include "Render/Texture/Texture.h"
 
-ConvolutionBloomKernelRenderWork::ConvolutionBloomKernelRenderWork(uint64_t requestSerial, const SharedPtr<Texture> &apertureTexture, float apertureScale, float diffractionPSFScale, float dispersionAmount) {
+ConvolutionBloomKernelRenderWork::ConvolutionBloomKernelRenderWork(uint64_t requestSerial, const SharedPtr<Texture> &apertureTexture, float apertureScale, float dispersionAmount) {
     this->requestSerial = requestSerial;
     this->apertureTexture = apertureTexture;
     this->apertureScale = apertureScale;
-    this->diffractionPSFScale = diffractionPSFScale;
     this->dispersionAmount = dispersionAmount;
 }
 
 bool ConvolutionBloomKernelRenderWork::IsReadyToAttach() const {
-    return apertureTexture && apertureTexture->IsReadyForRendering();
+    if (!apertureTexture || !apertureTexture->IsReadyForRendering()) {
+        return false;
+    }
+
+    const ConvolutionBloomKernelGenerator &kernelGenerator = renderSystem->GetConvolutionBloomKernelGenerator();
+    return kernelGenerator.ArePipelinesReady();
 }
 
 bool ConvolutionBloomKernelRenderWork::RecordCommands(RHI::FrameThreadData *frameThreadData, RHI::CommandList *commandList) {
@@ -40,7 +44,6 @@ bool ConvolutionBloomKernelRenderWork::RecordCommands(RHI::FrameThreadData *fram
     ConvolutionBloomKernelGenerator &kernelGenerator = renderSystem->GetConvolutionBloomKernelGenerator();
     kernelGenerator.SetApertureTexture(apertureTexture);
     kernelGenerator.SetApertureScale(apertureScale);
-    kernelGenerator.SetDiffractionPSFScale(diffractionPSFScale);
     kernelGenerator.SetDispersionAmount(dispersionAmount);
     return kernelGenerator.GenerateKernel(commandList, frameThreadData);
 }

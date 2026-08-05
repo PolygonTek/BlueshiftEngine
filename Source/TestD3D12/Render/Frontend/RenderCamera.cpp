@@ -113,7 +113,7 @@ void RenderCamera::CalcConvolutionBloomKernelParams(const BE1::Image &kernelImag
         return;
     }
 
-    const float pixelCount = static_cast<float>(width) * static_cast<float>(height);
+    const float pixelCount = static_cast<float>(width * height);
 
     // 원본 kernel 의 luminanceSum 은 source texel 개수에 묶인 discrete sum 이다.
     const float luminanceSum = kernelImage.ComputeLuminanceSum(0, 0, true);
@@ -154,7 +154,7 @@ void RenderCamera::CalcConvolutionBloomKernelParams(const BE1::Image &kernelImag
 }
 
 bool RenderCamera::SetConvolutionBloomKernelFromImage(const char *textureName, const BE1::Image &kernelImage) {
-    if (!textureName || !textureName[0] || kernelImage.IsEmpty()) {
+    if (kernelImage.IsEmpty()) {
         return false;
     }
     if (textureManager.FindTexture(textureName)) {
@@ -168,7 +168,7 @@ bool RenderCamera::SetConvolutionBloomKernelFromImage(const char *textureName, c
 
     SharedPtr<BE1::Image> textureImage = MakeShared<BE1::Image>(kernelImage);
     SharedPtr<Texture> texture = textureManager.AllocTexture(textureName);
-    if (!texture->Create(RHI::TextureType::Texture2D, textureImage, Texture::Flag::HighQuality | Texture::Flag::NoMipmaps)) {
+    if (!texture->Create(RHI::TextureType::Texture2D, textureImage, Texture::Flag::HighQuality)) {
         return false;
     }
 
@@ -190,7 +190,7 @@ bool RenderCamera::SetConvolutionBloomKernelFromFile(const char *filename) {
     BE1::Vec2 kernelExtents;
     CalcConvolutionBloomKernelParams(kernelImage, normalizationFactor, kernelExtents);
 
-    SharedPtr<Texture> texture = textureManager.GetTexture(filename, Texture::Flag::HighQuality | Texture::Flag::NoMipmaps);
+    SharedPtr<Texture> texture = textureManager.GetTexture(filename, Texture::Flag::HighQuality);
     if (!texture) {
         return false;
     }
@@ -1750,9 +1750,10 @@ bool RenderCamera::CreateConvolutionBloomOutputTexture(uint32_t width, uint32_t 
     }
 
     const BE1::Image::Format imageFormat = RHI::renderer->ToUAVImageFormat(BE1::Image::Format::R11G11B10_FLOAT);
+    const uint32_t mipLevelCount = static_cast<uint32_t>(BE1::Min(BE1::Image::MaxMipLevels(width, height, 1), RenderConvolutionBloomMaxMipLevelCount));
 
     SharedPtr<BE1::Image> image = MakeShared<BE1::Image>();
-    image->InitFromMemory(width, height, 1, 1, 1, imageFormat, BE1::Image::GammaSpace::Linear, nullptr, BE1::Image::Flag::None);
+    image->InitFromMemory(width, height, 1, 1, mipLevelCount, imageFormat, BE1::Image::GammaSpace::Linear, nullptr, BE1::Image::Flag::None);
 
     fftBloomConvolutionOutputTexture = RHI::renderer->CreateTexture(RHI::TextureType::Texture2D, RHI::TextureFlag::ShaderResource | RHI::TextureFlag::UnorderedAccess, image, RHI::TextureMipInitMode::FromImage, {}, 1, RHI::GPUResourceState::ShaderResource);
     if (!fftBloomConvolutionOutputTexture) {
@@ -1762,8 +1763,19 @@ bool RenderCamera::CreateConvolutionBloomOutputTexture(uint32_t width, uint32_t 
 
     RHI::renderer->SetName(fftBloomConvolutionOutputTexture, "RenderCamera::fftBloomConvolutionOutputTexture");
 
+    for (uint32_t mipLevel = 0; mipLevel < mipLevelCount; ++mipLevel) {
+        fftBloomConvolutionOutputMipSRVs[mipLevel] = RHI::renderer->CreateView(fftBloomConvolutionOutputTexture, RHI::ViewType::SRV, RHI::Format::Auto, 0, 1, mipLevel, 1);
+        fftBloomConvolutionOutputMipUAVs[mipLevel] = RHI::renderer->CreateView(fftBloomConvolutionOutputTexture, RHI::ViewType::UAV, RHI::Format::Auto, 0, 1, mipLevel, 1);
+        if (!fftBloomConvolutionOutputMipSRVs[mipLevel].IsValid() || !fftBloomConvolutionOutputMipUAVs[mipLevel].IsValid()) {
+            BE_WARNLOG("RenderCamera::CreateConvolutionBloomOutputTexture: failed to create mip %u views\n", mipLevel);
+            DestroyConvolutionBloomOutputTexture();
+            return false;
+        }
+    }
+
     fftBloomConvolutionOutputWidth = width;
     fftBloomConvolutionOutputHeight = height;
+    fftBloomConvolutionOutputMipCount = mipLevelCount;
 
     return true;
 }
@@ -1776,6 +1788,11 @@ void RenderCamera::DestroyConvolutionBloomOutputTexture() {
 
     fftBloomConvolutionOutputWidth = 0;
     fftBloomConvolutionOutputHeight = 0;
+    fftBloomConvolutionOutputMipCount = 0;
+    for (uint32_t mipLevel = 0; mipLevel < RenderConvolutionBloomMaxMipLevelCount; ++mipLevel) {
+        fftBloomConvolutionOutputMipSRVs[mipLevel] = RHI::ViewID::InvalidID;
+        fftBloomConvolutionOutputMipUAVs[mipLevel] = RHI::ViewID::InvalidID;
+    }
 }
 
 void RenderCamera::CreateLuminanceBuffer() {

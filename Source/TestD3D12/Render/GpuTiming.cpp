@@ -38,6 +38,7 @@ const char *GpuTiming::TagName(Tag tag) {
         "Bloom Upsample",
         "Conv Bloom Kernel Prepare",
         "Conv Bloom Screen Prefilter",
+        "Conv Bloom Screen Prepare",
         "Conv Bloom FFT",
         "Conv Bloom Multiply Spectrum",
         "Conv Bloom IFFT",
