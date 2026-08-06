@@ -1,9 +1,9 @@
 #ifndef __FORWARD_LIGHTING_HLSLI__
 #define __FORWARD_LIGHTING_HLSLI__
 
-#include "ShaderInterop.h"
+#include "../ShaderInterop.h"
 #include "LightCullingCommon.hlsli"
-#include "PBR/StandardBRDF.hlsli"
+#include "../PBR/StandardBRDF.hlsli"
 
 bool GetLightVolumePosition(float4 projectedPosition, out float3 volumePosition) {
     if (projectedPosition.w <= 0.0f) {

@@ -43,7 +43,7 @@ float3 ApplySRGBCurve( float3 x )
 float3 RemoveSRGBCurve( float3 x )
 {
     // Approximately pow(x, 2.2)
-    return select(x < 0.04045, x / 12.92, pow( (x + 0.055) / 1.055, 2.4 ));
+    return select(x < 0.04045, x / 12.92, pow((x + 0.055) / 1.055, 2.4));
 }
 
 // These functions avoid pow() to efficiently approximate sRGB with an error < 0.4%.

@@ -14,9 +14,9 @@
 
 #pragma once
 
-#include "Scene.h"
-#include "GameObject.h"
-#include "GameLight.h"
+#include "Scene/Scene.h"
+#include "Scene/GameObject.h"
+#include "Scene/GameLight.h"
 
 class Mesh;
 class Material;

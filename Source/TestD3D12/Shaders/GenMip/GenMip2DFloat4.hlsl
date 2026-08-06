@@ -1,5 +1,5 @@
 #include "../ShaderInterop.h"
-#include "../ColorSpaceUtility.hlsli"
+#include "../Colors.hlsli"
 
 #define GEN_MIP_WITH_GATHER
 
@@ -74,7 +74,7 @@ void CSMain(uint3 dispatchThreadId : SV_DispatchThreadID) {
 
     // 텍스쳐가 sRGB 포맷이라면 sRGB 값으로 변환한다.
     if (mipGenParams.flags & MipGenOptionBitSRGB) {
-        color.rgb = ApplySRGBCurve_Fast(color.rgb);
+        color.rgb = LinearToGammaApprox(color.rgb);
     }
 
     // 출력 텍스쳐에 저장

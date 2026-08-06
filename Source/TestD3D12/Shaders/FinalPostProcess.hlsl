@@ -1,5 +1,4 @@
 #include "Common.hlsli"
-#include "ColorSpaceUtility.hlsli"
 #include "ToneMapping/ToneMapOperators.hlsli"
 
 #define COMMON_ROOT_SIGNATURE "RootFlags(0), " \

@@ -1,8 +1,8 @@
 #ifndef __LIGHT_CULLING_COMMON_HLSLI__
 #define __LIGHT_CULLING_COMMON_HLSLI__
 
-#include "ShaderInterop.h"
-#include "SurfaceDrawCommon.hlsli"
+#include "../ShaderInterop.h"
+#include "../SurfaceDrawCommon.hlsli"
 
 #ifndef SHADER_LIGHT_USE_WAVE_OPS
 #define SHADER_LIGHT_USE_WAVE_OPS 0

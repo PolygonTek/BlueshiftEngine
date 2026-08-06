@@ -22,7 +22,7 @@
 #include "Render/Mesh/MeshManager.h"
 #include "Render/Mesh/MeshInstance.h"
 #include "Render/ShaderPipeline/ShaderTemplateManager.h"
-#include "SceneMaterialBall.h"
+#include "Scene/SceneMaterialBall.h"
 
 #ifdef ENABLE_IMGUI
 #include "imgui/imgui.h"

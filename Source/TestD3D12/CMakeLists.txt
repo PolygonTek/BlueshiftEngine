@@ -11,19 +11,19 @@ set(SRC_FILES
     App_ImGui.cpp
     LoadingSystem.h
     LoadingSystem.cpp
-    GameObject.h
-    GameObject.cpp
-    GameLight.h
-    GameLight.cpp
-    Scene.h
-    SceneRegistry.h
-    SceneRegistry.cpp
-    SceneMatrix.h
-    SceneMatrix.cpp
-    SceneMaterialBall.h
-    SceneMaterialBall.cpp
-    SceneDebugDraw.h
-    SceneDebugDraw.cpp
+    Scene/GameObject.h
+    Scene/GameObject.cpp
+    Scene/GameLight.h
+    Scene/GameLight.cpp
+    Scene/Scene.h
+    Scene/SceneRegistry.h
+    Scene/SceneRegistry.cpp
+    Scene/SceneMatrix.h
+    Scene/SceneMatrix.cpp
+    Scene/SceneMaterialBall.h
+    Scene/SceneMaterialBall.cpp
+    Scene/SceneDebugDraw.h
+    Scene/SceneDebugDraw.cpp
     WinMain.cpp
     WinResource.h
     WinRes/small.ico

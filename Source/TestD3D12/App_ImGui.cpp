@@ -20,8 +20,8 @@
 #include "Render/Backend/RenderBackend.h"
 #include "Render/Frontend/RenderCamera.h"
 #include "Render/Texture/Texture.h"
-#include "Scene.h"
-#include "SceneRegistry.h"
+#include "Scene/Scene.h"
+#include "Scene/SceneRegistry.h"
 #include "App.h"
 
 #ifdef ENABLE_IMGUI

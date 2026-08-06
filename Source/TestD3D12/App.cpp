@@ -25,8 +25,8 @@
 #include "Render/Texture/TextureManager.h"
 #include "Render/Font/FontManager.h"
 #include "LoadingSystem.h"
-#include "Scene.h"
-#include "SceneRegistry.h"
+#include "Scene/Scene.h"
+#include "Scene/SceneRegistry.h"
 #include "App.h"
 
 BE1::CVar       app_showFps("app_showFps", "1", BE1::CVar::Flag::Bool, "show FPS");

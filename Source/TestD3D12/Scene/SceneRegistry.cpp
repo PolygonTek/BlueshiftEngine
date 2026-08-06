@@ -13,10 +13,10 @@
 // limitations under the License.
 
 #include "Precompiled.h"
-#include "SceneMaterialBall.h"
-#include "SceneMatrix.h"
-#include "SceneDebugDraw.h"
-#include "SceneRegistry.h"
+#include "Scene/SceneMaterialBall.h"
+#include "Scene/SceneMatrix.h"
+#include "Scene/SceneDebugDraw.h"
+#include "Scene/SceneRegistry.h"
 
 using SceneFactory = Scene *(*)();
 

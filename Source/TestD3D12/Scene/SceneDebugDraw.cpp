@@ -16,7 +16,7 @@
 #include "App.h"
 #include "Render/Frontend/RenderWorld.h"
 #include "Render/Material/MaterialManager.h"
-#include "SceneDebugDraw.h"
+#include "Scene/SceneDebugDraw.h"
 
 #ifdef ENABLE_IMGUI
 #include "imgui/imgui.h"

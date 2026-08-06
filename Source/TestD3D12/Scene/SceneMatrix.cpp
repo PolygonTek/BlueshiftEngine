@@ -17,7 +17,7 @@
 #include "Render/Material/MaterialManager.h"
 #include "Render/Mesh/MeshManager.h"
 #include "Render/Mesh/MeshInstance.h"
-#include "SceneMatrix.h"
+#include "Scene/SceneMatrix.h"
 
 #ifdef ENABLE_IMGUI
 #include "imgui/imgui.h"

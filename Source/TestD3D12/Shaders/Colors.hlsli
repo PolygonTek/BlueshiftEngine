@@ -1,15 +1,24 @@
 #ifndef __COLORS_HLSLI__
 #define __COLORS_HLSLI__
 
+// Converts sRGB-encoded values to linear RGB.
 inline float3 GammaToLinear(float3 sRGB) {
-    // Approximate version from http://chilliant.blogspot.com.au/2012/08/srgb-approximations-for-hlsl.html?m=1
+    return select(sRGB < 0.04045, sRGB / 12.92, pow((sRGB + 0.055) / 1.055, 2.4));
+}
+
+// Converts linear RGB values to sRGB encoding.
+inline float3 LinearToGamma(float3 linRGB) {
+    return select(linRGB < 0.0031308, 12.92 * linRGB, 1.055 * pow(linRGB, 1.0 / 2.4) - 0.055);
+}
+
+// Approximate version from http://chilliant.blogspot.com.au/2012/08/srgb-approximations-for-hlsl.html?m=1
+inline float3 GammaToLinearApprox(float3 sRGB) {
     return sRGB * (sRGB * (sRGB * 0.305306011 + 0.682171111) + 0.012522878);
 }
 
-inline float3 LinearToGamma(float3 linRGB) {
-    linRGB = max(linRGB, float3(0.0, 0.0, 0.0));
-    // An almost-perfect approximation from http://chilliant.blogspot.com.au/2012/08/srgb-approximations-for-hlsl.html?m=1
-    return max(1.055 * pow(linRGB, float3(0.416666667, 0.416666667, 0.416666667)) - 0.055, float3(0.0, 0.0, 0.0));
+// Fast sRGB approximation from MiniEngine's ColorSpaceUtility.hlsli.
+inline float3 LinearToGammaApprox(float3 linRGB) {
+    return select(linRGB < 0.0031308, 12.92 * linRGB, 1.13005 * sqrt(linRGB - 0.00228) - 0.13448 * linRGB + 0.005719);
 }
 
 // Compute the luminance of a linear float rgb color.
@@ -41,16 +50,27 @@ inline float3 XYZToLinearRGB(float3 XYZ) {
 // Converts a color from XYZ to xyY space (Y is luminosity).
 inline float3 XYZToxyY(float3 xyz) {
     float Y = xyz.y;
-    float x = xyz.x / (xyz.x + xyz.y + xyz.z);
-    float y = xyz.y / (xyz.x + xyz.y + xyz.z);
+    float sum = xyz.x + xyz.y + xyz.z;
+    if (sum <= 0.0) {
+        return float3(0.0, 0.0, 0.0);
+    }
+
+    float sumRcp = rcp(sum);
+    float x = xyz.x * sumRcp;
+    float y = xyz.y * sumRcp;
     return float3(x, y, Y);
 }
 
 // Converts a color from xyY space to XYZ space.
 inline float3 xyYToXYZ(float3 xyY) {
     float Y = xyY.z;
-    float x = Y * xyY.x / xyY.y;
-    float z = Y * (1.0 - xyY.x - xyY.y) / xyY.y;
+    if (xyY.y <= 0.0) {
+        return float3(0.0, 0.0, 0.0);
+    }
+
+    float scale = Y / xyY.y;
+    float x = scale * xyY.x;
+    float z = scale * (1.0 - xyY.x - xyY.y);
     return float3(x, Y, z);
 }
 
@@ -86,25 +106,17 @@ inline float3 HSVToRGB(float3 c) {
     return c.z * lerp(K.xxx, saturate(p - K.xxx), c.y);
 }
 
-inline float3 RGBToYUV(float3 rgb) {
-    float3 yuv;
-    yuv.x = dot(rgb, float3(0.299, 0.587, 0.114));
-    yuv.y = (rgb.z - yuv.x) * 0.565;
-    yuv.z = (rgb.x - yuv.x) * 0.713;
-    return yuv;
-}
-
-inline float3 YUVToRGB(float3 yuv) {
-    float3 rgb;
-    rgb.r = yuv.x + 1.403 * yuv.z;
-    rgb.g = yuv.x - 0.344 * yuv.y - 1.403 * yuv.z;
-    rgb.b = yuv.x + 1.770 * yuv.y;
-    return rgb;
-}
-
+//
+// RGB / CMYK conversions
+// RGB and CMYK components use [0, 1].
+//
 inline float4 RGBToCMYK(float3 rgb) {
     float4 cmyk = float4(float3(1.0, 1.0, 1.0) - rgb, 0.0);
     cmyk.w = min(min(cmyk.x, cmyk.y), cmyk.z);
+    if (cmyk.w >= 1.0) {
+        return float4(0.0, 0.0, 0.0, 1.0);
+    }
+
     cmyk.xyz = (cmyk.xyz - cmyk.w) / (1.0 - cmyk.w);
     return cmyk;
 }
@@ -116,24 +128,29 @@ inline float3 CMYKToRGB(float4 cmyk) {
 
 //
 // RGB / Full-range YCbCr conversions (ITU-R BT.601)
+// RGB and Y use [0, 1], while Cb and Cr are zero-centered in [-0.5, 0.5].
 //
 inline float3 RGBToYCbCr(float3 c) {
-    float Y  =  0.299 * c.r + 0.587 * c.g + 0.114 * c.b;
-    float Cb = -0.169 * c.r - 0.331 * c.g + 0.500 * c.b;
-    float Cr =  0.500 * c.r - 0.419 * c.g - 0.081 * c.b;
+    float Y  =  0.299000 * c.r + 0.587000 * c.g + 0.114000 * c.b;
+    float Cb = -0.168736 * c.r - 0.331264 * c.g + 0.500000 * c.b;
+    float Cr =  0.500000 * c.r - 0.418688 * c.g - 0.081312 * c.b;
     return float3(Y, Cb, Cr);
 }
 
 inline float3 YCbCrToRGB(float3 c) {
-    float R = c.x + 0.000 * c.y + 1.403 * c.z;
-    float G = c.x - 0.344 * c.y - 0.714 * c.z;
-    float B = c.x - 1.773 * c.y + 0.000 * c.z;
+    float R = c.x + 1.402000 * c.z;
+    float G = c.x - 0.344136 * c.y - 0.714136 * c.z;
+    float B = c.x + 1.772000 * c.y;
     return float3(R, G, B);
 }
 
+//
+// RGB / YCoCg conversions
+// RGB and Y use [0, 1], while Co and Cg are zero-centered in [-0.5, 0.5].
+//
 inline float3 RGBToYCoCg(float3 color) {
     float Y  =  0.25 * color.r + 0.50 * color.g + 0.25 * color.b;
-    float Co =  0.50 * color.r + 0.00 * color.g - 0.50 * color.b;
+    float Co =  0.50 * color.r - 0.50 * color.b;
     float Cg = -0.25 * color.r + 0.50 * color.g - 0.25 * color.b;
     return float3(Y, Co, Cg);
 }
@@ -145,6 +162,11 @@ inline float3 YCoCgToRGB(float3 color) {
     return float3(R, G, B);
 }
 
+//
+// RGBE encoding for HDR
+// Non-negative RGB values share a base-2 exponent stored in the alpha channel.
+// RGB stores the normalized mantissa, while A stores the exponent biased by 128 and scaled by 1/256.
+//
 inline float4 EncodeRGBE(float3 color) {
     float maxChannel = max(max(color.r, color.g), color.b);
     float exponent = ceil(log2(max(maxChannel, 1e-8)));
@@ -188,22 +210,27 @@ inline float3 DecodeLogLuv(float4 vLogLuv) {
     return max(vRGB, float3(0.0, 0.0, 0.0));
 }
 
+// Encodes a float in the [0, 1) range into four normalized channels.
 inline float4 EncodeFloatToRGBA(float v) {
-    float4 enc = float4(1.0, 255.0, 65025.0, 160581375.0) * v;
+    float4 enc = float4(1.0, 255.0, 65025.0, 16581375.0) * v;
     enc = frac(enc);
     enc -= enc.yzww * float4(1.0/255.0, 1.0/255.0, 1.0/255.0, 0.0);
     return enc;
 }
 
-inline float DecodeFloatToRGBA(float4 rgba) {
-    return dot(rgba, float4(1.0, 1.0/255.0, 1.0/65025.0, 1.0/160581375.0));
+inline float DecodeFloatFromRGBA(float4 rgba) {
+    return dot(rgba, float4(1.0, 1.0/255.0, 1.0/65025.0, 1.0/16581375.0));
 }
 
 inline float CIE1931Gaussian(float t) {
     return exp(-0.5 * t * t);
 }
 
-float3 SampleCIE1931CMF(float wavelengthNm) {
+//
+// CIE 1931 2-degree color matching function
+// Returns an approximate XYZ response for a wavelength in nanometers, or zero outside [360, 830] nm.
+//
+inline float3 SampleCIE1931CMF(float wavelengthNm) {
     if (wavelengthNm < 360.0 || wavelengthNm > 830.0) {
         return float3(0.0, 0.0, 0.0);
     }
@@ -222,6 +249,49 @@ float3 SampleCIE1931CMF(float wavelengthNm) {
     float z = 1.217 * CIE1931Gaussian(t1) + 0.681 * CIE1931Gaussian(t2);
 
     return float3(x, y, z);
+}
+
+//
+// HDR10 color space conversions
+// Rec.709 / Rec.2020 conversions assume linear RGB values.
+// ST.2084 (PQ) uses normalized absolute luminance, where 1.0 represents 10,000 nits.
+//
+inline float3 ApplyREC2084Curve(float3 L) {
+    const float m1 = 2610.0 / 4096.0 / 4.0;
+    const float m2 = 2523.0 / 4096.0 * 128.0;
+    const float c1 = 3424.0 / 4096.0;
+    const float c2 = 2413.0 / 4096.0 * 32.0;
+    const float c3 = 2392.0 / 4096.0 * 32.0;
+    float3 Lp = pow(L, m1);
+    return pow((c1 + c2 * Lp) / (1.0 + c3 * Lp), m2);
+}
+
+inline float3 RemoveREC2084Curve(float3 N) {
+    const float m1 = 2610.0 / 4096.0 / 4.0;
+    const float m2 = 2523.0 / 4096.0 * 128.0;
+    const float c1 = 3424.0 / 4096.0;
+    const float c2 = 2413.0 / 4096.0 * 32.0;
+    const float c3 = 2392.0 / 4096.0 * 32.0;
+    float3 Np = pow(N, 1.0 / m2);
+    return pow(max(Np - c1, 0.0) / (c2 - c3 * Np), 1.0 / m1);
+}
+
+inline float3 REC709toREC2020(float3 RGB709) {
+    static const float3x3 conversionMatrix = {
+        0.627402, 0.329292, 0.043306,
+        0.069095, 0.919544, 0.011360,
+        0.016394, 0.088028, 0.895578
+    };
+    return mul(conversionMatrix, RGB709);
+}
+
+inline float3 REC2020toREC709(float3 RGB2020) {
+    static const float3x3 conversionMatrix = {
+         1.660496, -0.587656, -0.072840,
+        -0.124547,  1.132895, -0.008348,
+        -0.018154, -0.100597,  1.118751
+    };
+    return mul(conversionMatrix, RGB2020);
 }
 
 #endif // __COLORS_HLSLI__

@@ -13,4 +13,4 @@
 // limitations under the License.
 
 #include "Precompiled.h"
-#include "GameObject.h"
+#include "Scene/GameLight.h"

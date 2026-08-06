@@ -14,7 +14,7 @@
 
 #pragma once
 
-#include "Scene.h"
+#include "Scene/Scene.h"
 
 class SceneDebugDraw : public Scene {
 public:

@@ -1,9 +1,10 @@
 #include "SurfaceDrawCommon.hlsli"
-#include "LightCullingCommon.hlsli"
-#include "LightCullingDebug.hlsli"
-#include "ForwardLighting.hlsli"
+#include "Lighting/LightCullingCommon.hlsli"
+#include "Lighting/LightCullingDebug.hlsli"
+#include "Lighting/ForwardLighting.hlsli"
 #include "PBR/ParallaxMapping.hlsli"
 #include "PBR/ShadingParams.hlsli"
+
 #if defined(INDIRECT_LIGHTING) || (defined(DIRECT_LIGHTING) && USE_MULTIPLE_SCATTERING_COMPENSATION)
     #include "PBR/ImageBasedLighting.hlsli"
 #endif

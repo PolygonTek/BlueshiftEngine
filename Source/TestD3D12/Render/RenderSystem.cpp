@@ -383,14 +383,14 @@ void RenderSystem::InitComputePipelines() {
     const char *baseDir = "Source/TestD3D12/Shaders";
     const RHI::ShaderModel computeShaderModel = RHI::Renderer::MinimumShaderModel();
 
-    genHiZMipFirstBatchShaderTemplate = shaderTemplateManager.CreateComputeShaderTemplate("_genHiZMipFirstBatchShader", computeShaderModel, "GenHiZMip/GenHiZMipFirstBatch.hlsl", baseDir);
-    genHiZMipFirstBatchMSAAShaderTemplate = shaderTemplateManager.CreateComputeShaderTemplate("_genHiZMipFirstBatchMSAAShader", computeShaderModel, "GenHiZMip/GenHiZMipFirstBatch.hlsl", baseDir, "CSMain", "GEN_HIZ_DEPTH_MSAA=1");
-    genHiZMipBatchShaderTemplate = shaderTemplateManager.CreateComputeShaderTemplate("_genHiZMipBatchShader", computeShaderModel, "GenHiZMip/GenHiZMipBatch.hlsl", baseDir);
-    genHiZMipOddDimShaderTemplate = shaderTemplateManager.CreateComputeShaderTemplate("_genHiZMipOddDimShader", computeShaderModel, "GenHiZMip/GenHiZMipOddDim.hlsl", baseDir);
-    hiZCullInstancesShaderTemplate = shaderTemplateManager.CreateComputeShaderTemplate("_hiZCullInstancesShader", computeShaderModel, "HiZCullInstances.hlsl", baseDir);
-    hiZDebugPreviewShaderTemplate = shaderTemplateManager.CreateComputeShaderTemplate("_hiZDebugPreviewShader", computeShaderModel, "HiZDebugPreview.hlsl", baseDir);
+    genHiZMipFirstBatchShaderTemplate = shaderTemplateManager.CreateComputeShaderTemplate("_genHiZMipFirstBatchShader", computeShaderModel, "HiZ/GenHiZMipFirstBatch.hlsl", baseDir);
+    genHiZMipFirstBatchMSAAShaderTemplate = shaderTemplateManager.CreateComputeShaderTemplate("_genHiZMipFirstBatchMSAAShader", computeShaderModel, "HiZ/GenHiZMipFirstBatch.hlsl", baseDir, "CSMain", "GEN_HIZ_DEPTH_MSAA=1");
+    genHiZMipBatchShaderTemplate = shaderTemplateManager.CreateComputeShaderTemplate("_genHiZMipBatchShader", computeShaderModel, "HiZ/GenHiZMipBatch.hlsl", baseDir);
+    genHiZMipOddDimShaderTemplate = shaderTemplateManager.CreateComputeShaderTemplate("_genHiZMipOddDimShader", computeShaderModel, "HiZ/GenHiZMipOddDim.hlsl", baseDir);
+    hiZCullInstancesShaderTemplate = shaderTemplateManager.CreateComputeShaderTemplate("_hiZCullInstancesShader", computeShaderModel, "HiZ/HiZCullInstances.hlsl", baseDir);
+    hiZDebugPreviewShaderTemplate = shaderTemplateManager.CreateComputeShaderTemplate("_hiZDebugPreviewShader", computeShaderModel, "HiZ/HiZDebugPreview.hlsl", baseDir);
 
-    lightCullingShaderTemplate = shaderTemplateManager.CreateComputeShaderTemplate("_lightCullingShader", computeShaderModel, "LightCulling.hlsl", baseDir);
+    lightCullingShaderTemplate = shaderTemplateManager.CreateComputeShaderTemplate("_lightCullingShader", computeShaderModel, "Lighting/LightCulling.hlsl", baseDir);
     depthMSAAResolveShaderTemplate = shaderTemplateManager.CreateComputeShaderTemplate("_depthMSAAResolveShader", computeShaderModel, "DepthMSAAResolve.hlsl", baseDir);
     surfaceOutputMSAAResolveNormalShaderTemplate = shaderTemplateManager.CreateComputeShaderTemplate("_surfaceOutputMSAAResolveNormalShader", computeShaderModel, "SurfaceOutputMSAAResolve.hlsl", baseDir, "CSMain", "SURFACE_OUTPUT_MSAA_RESOLVE_MODE=1");
     surfaceOutputMSAAResolveVelocityShaderTemplate = shaderTemplateManager.CreateComputeShaderTemplate("_surfaceOutputMSAAResolveVelocityShader", computeShaderModel, "SurfaceOutputMSAAResolve.hlsl", baseDir, "CSMain", "SURFACE_OUTPUT_MSAA_RESOLVE_MODE=2");
