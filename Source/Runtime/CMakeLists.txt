@@ -66,6 +66,7 @@ set(COMMON_ENGINE_FILES
     Public/Core/Vertex.h 
 
     Public/Image/Image.h 
+    Public/Image/BayerMatrix.h
     Public/Image/BCCodec.h
     Public/Image/BCDecoder.h
     Public/Image/BCEncoder.h

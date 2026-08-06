@@ -14,6 +14,7 @@
 
 #include "Precompiled.h"
 #include "RenderBackend.h"
+#include "Image/BayerMatrix.h"
 #include "Render/RenderWork/RenderWork.h"
 #include "Render/RenderCvars.h"
 #include "Render/RenderContext.h"
@@ -778,13 +779,6 @@ static void CopySDRScreenshotRegion(const BE1::Image &srcImage, const BE1::Rect 
 }
 
 static void ConvertHDRScreenshotRegionToSDR(const BE1::Image &srcImage, const BE1::Rect &srcRect, float maxDisplayLinearValue, BE1::Image &dstImage) {
-    static constexpr byte Bayer4x4[16] = {
-         0,  8,  2, 10,
-        12,  4, 14,  6,
-         3, 11,  1,  9,
-        15,  7, 13,  5
-    };
-
     const float whiteLevel = BE1::Max(maxDisplayLinearValue, 1.0f);
     const float whiteLevelSquared = whiteLevel * whiteLevel;
 
@@ -801,19 +795,23 @@ static void ConvertHDRScreenshotRegionToSDR(const BE1::Image &srcImage, const BE
             linearColor.r = BE1::Max(static_cast<float>(srcPtr[0]), 0.0f);
             linearColor.g = BE1::Max(static_cast<float>(srcPtr[1]), 0.0f);
             linearColor.b = BE1::Max(static_cast<float>(srcPtr[2]), 0.0f);
+
+            // HDR color 의 luminance 를 extended Reinhard 커브로 SDR 범위에 톤 매핑하기 위해 luminanceScale 을 계산한다.
             const float luminance = BE1::Image::GetLuminance(linearColor);
             const float mappedLuminance = luminance * (1.0f + luminance / whiteLevelSquared) / (1.0f + luminance);
             const float luminanceScale = luminance > 0.0f ? mappedLuminance / luminance : 0.0f;
 
-            const int bayerIndex = ((srcY & 3) << 2) | ((srcRect.x + x) & 3);
-            const float dither = ((static_cast<float>(Bayer4x4[bayerIndex]) + 0.5f) / 16.0f - 0.5f) / 255.0f;
+            // 원본 화면 좌표로 4x4 Bayer 패턴을 반복하여 8 비트 양자화 간격에 맞춘 dither 를 구한다.
+            const float dither = BE1::BayerMatrix<4>::GetDitherOffset(srcRect.x + x, srcY, 1.0f / 255.0f);
+
+            // sRGB 변환 후 dither 를 더해 8 비트 저장 시 나타나는 밴딩을 완화한다.
             const float sRGBR = BE1::Clamp01(BE1::Image::LinearToGamma(BE1::Clamp01(linearColor.r * luminanceScale)) + dither);
             const float sRGBG = BE1::Clamp01(BE1::Image::LinearToGamma(BE1::Clamp01(linearColor.g * luminanceScale)) + dither);
             const float sRGBB = BE1::Clamp01(BE1::Image::LinearToGamma(BE1::Clamp01(linearColor.b * luminanceScale)) + dither);
 
-            dst[0] = BE1::Math::Ftob(sRGBB * 255.0f);
-            dst[1] = BE1::Math::Ftob(sRGBG * 255.0f);
-            dst[2] = BE1::Math::Ftob(sRGBR * 255.0f);
+            dst[0] = BE1::Math::Ftob(sRGBB * 255.0f + 0.5f);
+            dst[1] = BE1::Math::Ftob(sRGBG * 255.0f + 0.5f);
+            dst[2] = BE1::Math::Ftob(sRGBR * 255.0f + 0.5f);
         }
     }
 }
