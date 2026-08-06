@@ -143,6 +143,14 @@ void Error(int errLevel, const char *fmt, ...) {
     Str::vsnPrintf(buffer, COUNT_OF(buffer), fmt, args);
     va_end(args);
 
+#if defined(__WIN32__) && defined(_DEBUG)
+    if (errLevel == ErrorLevel::Fatal) {
+        // FatalError 는 엔진 종료 과정을 건너뛰므로 남아 있는 할당을 메모리 릭으로 보고하지 않는다.
+        const int crtDbgFlag = _CrtSetDbgFlag(_CRTDBG_REPORT_FLAG);
+        _CrtSetDbgFlag(crtDbgFlag & ~_CRTDBG_LEAK_CHECK_DF);
+    }
+#endif
+
     (*errFuncPtr)(errLevel, buffer);
 }
 
