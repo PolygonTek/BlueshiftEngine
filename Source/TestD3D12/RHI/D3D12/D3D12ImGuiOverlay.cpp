@@ -134,9 +134,9 @@ void D3D12ImGuiOverlay::UpdateCaptureState() {
     cachedWantsCaptureKeyboard.store(io.WantCaptureKeyboard, std::memory_order_relaxed);
 }
 
-RHI::ImGuiOverlay *D3D12Renderer::CreateImGuiOverlay(void *windowHandle, RHI::SwapChain *swapChain) {
+RHI::ImGuiOverlay *D3D12Renderer::CreateImGuiOverlay(void *windowHandle, RHI::Format renderTargetFormat) {
     D3D12ImGuiOverlay *overlay = new D3D12ImGuiOverlay;
-    if (!overlay->Init(windowHandle, swapChain)) {
+    if (!overlay->Init(windowHandle, renderTargetFormat)) {
         delete overlay;
         return nullptr;
     }
@@ -153,12 +153,12 @@ void D3D12Renderer::DestroyImGuiOverlay(RHI::ImGuiOverlay *overlay) {
     delete _overlay;
 }
 
-bool D3D12ImGuiOverlay::Init(void *mainWindowHandle, RHI::SwapChain *swapChain) {
+bool D3D12ImGuiOverlay::Init(void *mainWindowHandle, RHI::Format renderTargetFormat) {
     if (initialized) {
         return true;
     }
-    if (!mainWindowHandle || !swapChain) {
-        BE_WARNLOG("D3D12ImGuiOverlay::Init: invalid window handle or swap chain\n");
+    if (!mainWindowHandle || renderTargetFormat == RHI::Format::Unknown) {
+        BE_WARNLOG("D3D12ImGuiOverlay::Init: invalid window handle or render target format\n");
         return false;
     }
 
@@ -167,7 +167,7 @@ bool D3D12ImGuiOverlay::Init(void *mainWindowHandle, RHI::SwapChain *swapChain) 
         BE_WARNLOG("D3D12ImGuiOverlay::Init: D3D12 renderer is not ready\n");
         return false;
     }
-    rtvFormat = swapChain->GetRTVFormat();
+    rtvFormat = renderTargetFormat;
 
     IMGUI_CHECKVERSION();
 
@@ -207,7 +207,7 @@ bool D3D12ImGuiOverlay::Init(void *mainWindowHandle, RHI::SwapChain *swapChain) 
         return false;
     }
 
-    if (!renderer->InitImGuiOverlayRenderer(this, swapChain)) {
+    if (!renderer->InitImGuiOverlayRenderer(this, renderTargetFormat)) {
         BE_WARNLOG("D3D12ImGuiOverlay::Init: ImGui renderer initialization failed\n");
         ImGui_ImplWin32_Shutdown();
         ImGui::DestroyContext(context);
@@ -257,6 +257,33 @@ void D3D12ImGuiOverlay::Shutdown() {
     rtvFormat = RHI::Format::Unknown;
     cachedWantsCaptureMouse.store(false, std::memory_order_relaxed);
     cachedWantsCaptureKeyboard.store(false, std::memory_order_relaxed);
+}
+
+bool D3D12ImGuiOverlay::SetRenderTargetFormat(RHI::Format renderTargetFormat) {
+    if (!initialized || !context || renderTargetFormat == RHI::Format::Unknown || frameStarted) {
+        return false;
+    }
+    if (rtvFormat == renderTargetFormat) {
+        return true;
+    }
+
+    D3D12Renderer *renderer = D3D12Renderer::GetRenderer();
+    if (!renderer) {
+        return false;
+    }
+
+    std::lock_guard<std::recursive_mutex> contextLock(imguiContextMutex);
+    ImGuiContext *previousContext = ImGui::GetCurrentContext();
+    ImGui::SetCurrentContext(context);
+
+    renderer->ShutdownImGuiOverlayRenderer(this);
+    const bool initializedRenderer = renderer->InitImGuiOverlayRenderer(this, renderTargetFormat);
+    if (initializedRenderer) {
+        rtvFormat = renderTargetFormat;
+    }
+
+    ImGui::SetCurrentContext(previousContext);
+    return initializedRenderer;
 }
 
 bool D3D12ImGuiOverlay::BeginFrameCapture() {

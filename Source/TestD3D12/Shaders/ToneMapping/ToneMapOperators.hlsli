@@ -136,8 +136,8 @@ float3 ToneMapFilmicUchimura(float3 x, float P, float a, float m, float l, float
     return T * w0 + L * w1 + S * w2;
 }
 
-float3 ToneMapFilmicGT(float3 x) {
-    const float P = 1.0;    // max display brightness
+float3 ToneMapFilmicGT(float3 x, float maxDisplayLinearValue) {
+    const float P = max(maxDisplayLinearValue, 1.0); // max display brightness in paper-white-relative linear units
     const float a = 1.0;    // contrast
     const float m = 0.22;   // linear section start
     const float l = 0.4;    // linear section length
@@ -168,7 +168,7 @@ float3 ToneMap(float3 color, uint toneMappingOperator) {
     case ToneMappingOperatorFilmicUncharted2:
         return ToneMapFilmicUncharted2(color);
     case ToneMappingOperatorFilmicGT:
-        return ToneMapFilmicGT(color);
+        return ToneMapFilmicGT(color, 1.0);
     case ToneMappingOperatorFilmicACES:
     default:
         return ToneMapFilmicACES(color);

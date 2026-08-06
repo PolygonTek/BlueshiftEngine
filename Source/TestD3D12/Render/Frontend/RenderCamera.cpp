@@ -738,7 +738,7 @@ static uint32_t SelectBloomFFTSize(uint32_t renderWidth, uint32_t renderHeight, 
     return 0;
 }
 
-void RenderCamera::EnsurePostProcessResources(bool skipPostProcess, bool needColorHistory, bool needDepthHistory, RenderBloomMode bloomMode) {
+void RenderCamera::EnsurePostProcessResources(bool skipPostProcess, RHI::Format colorFormat, bool needColorHistory, bool needDepthHistory, RenderBloomMode bloomMode) {
     if (skipPostProcess) {
         DestroyPostProcessResources();
         return;
@@ -749,7 +749,7 @@ void RenderCamera::EnsurePostProcessResources(bool skipPostProcess, bool needCol
         return;
     }
 
-    if (!postProcessColorTexture && !CreatePostProcessColorTexture(renderWidth, renderHeight)) {
+    if ((!postProcessColorTexture || postProcessColorTexture->GetFormat() != colorFormat) && !CreatePostProcessColorTexture(renderWidth, renderHeight, colorFormat)) {
         DestroyPostProcessResources();
         return;
     }
@@ -1346,15 +1346,17 @@ void RenderCamera::DestroyRenderTextures() {
     renderSampleCount = 1;
 }
 
-bool RenderCamera::CreatePostProcessColorTexture(uint32_t width, uint32_t height) {
+bool RenderCamera::CreatePostProcessColorTexture(uint32_t width, uint32_t height, RHI::Format colorFormat) {
     DestroyPostProcessColorTexture();
 
-    if (width == 0 || height == 0) {
+    if (width == 0 || height == 0 || colorFormat == RHI::Format::Unknown) {
         return false;
     }
 
     BE1::Image::Format postProcessColorImageFormat = BE1::Image::Format::Unknown;
-    RHI::Renderer::RHIFormatToImageFormat(RHI::Format::R8G8B8A8_UNORM, &postProcessColorImageFormat, nullptr);
+    if (!RHI::Renderer::RHIFormatToImageFormat(colorFormat, &postProcessColorImageFormat, nullptr)) {
+        return false;
+    }
 
     SharedPtr<BE1::Image> postProcessColorImage = MakeShared<BE1::Image>();
     postProcessColorImage->InitFromMemory(width, height, 1, 1, 1, postProcessColorImageFormat, BE1::Image::GammaSpace::Linear, nullptr, BE1::Image::Flag::None);

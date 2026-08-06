@@ -162,7 +162,7 @@ public:
     void                        SetConvolutionBloomPaddingTrim(float paddingTrim);
 
     bool                        EnsureRenderTextures(uint32_t width, uint32_t height, RHI::Format colorFormat, RHI::Format depthFormat, uint32_t sampleCount, bool needDepthHistory, const BE1::Color4 &optimizedClearColor);
-    void                        EnsurePostProcessResources(bool skipPostProcess, bool needColorHistory, bool needDepthHistory, RenderBloomMode bloomMode);
+    void                        EnsurePostProcessResources(bool skipPostProcess, RHI::Format colorFormat, bool needColorHistory, bool needDepthHistory, RenderBloomMode bloomMode);
 
     void                        InvalidateTemporalHistory();
 
@@ -250,7 +250,7 @@ private:
     void                        DestroyHiZCullResources();
     bool                        CreateRTNormalTextures(uint32_t width, uint32_t height, uint32_t sampleCount);
     bool                        CreateRTVelocityTextures(uint32_t width, uint32_t height, uint32_t sampleCount);
-    bool                        CreatePostProcessColorTexture(uint32_t width, uint32_t height);
+    bool                        CreatePostProcessColorTexture(uint32_t width, uint32_t height, RHI::Format colorFormat);
     void                        DestroyPostProcessColorTexture();
     bool                        EnsureColorHistoryTextures(uint32_t width, uint32_t height, RHI::Format colorFormat);
     bool                        CreateColorHistoryTextures(uint32_t width, uint32_t height, RHI::Format colorFormat);

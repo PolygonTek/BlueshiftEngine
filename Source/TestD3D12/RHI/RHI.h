@@ -935,11 +935,27 @@ namespace RHI {
         }
     };
 
+    struct DisplayInfo {
+        bool                            hdrActive = false;
+        float                           minLuminanceNits = 0.0f;
+        float                           maxLuminanceNits = 0.0f;
+        float                           maxFullFrameLuminanceNits = 0.0f;
+    };
+
     class SwapChain {
     public:
+        enum class ColorSpace : uint8_t {
+            SDR,
+            HDR10
+        };
+
         virtual ~SwapChain() = default;
 
-        virtual bool                    IsSupportsHDR() const = 0;
+        virtual bool                    IsHDRActive() const = 0;
+        virtual bool                    GetDisplayInfo(DisplayInfo &displayInfo) const = 0;
+        virtual bool                    IsColorSpaceSupported(ColorSpace colorSpace) const = 0;
+        virtual bool                    SetColorSpace(ColorSpace colorSpace) = 0;
+        virtual ColorSpace              GetColorSpace() const = 0;
         virtual Format                  GetFormat() const = 0;
         virtual Format                  GetRTVFormat() const = 0;
         virtual uint32_t                GetWidth() const = 0;
@@ -978,6 +994,8 @@ namespace RHI {
     class ImGuiOverlay {
     public:
         virtual ~ImGuiOverlay() = default;
+
+        virtual bool                    SetRenderTargetFormat(Format renderTargetFormat) = 0;
 
         virtual bool                    BeginFrameCapture() = 0;
         virtual void *                  EndFrameCapture() = 0;
@@ -1089,7 +1107,7 @@ namespace RHI {
         virtual SwapChain *             CreateSwapChain(HWND hwnd, uint32_t width, uint32_t height, Format format) = 0;
         virtual void                    DestroySwapChain(SwapChain *swapChain) = 0;
 
-        virtual ImGuiOverlay *          CreateImGuiOverlay(void *windowHandle, SwapChain *swapChain) = 0;
+        virtual ImGuiOverlay *          CreateImGuiOverlay(void *windowHandle, Format renderTargetFormat) = 0;
         virtual void                    DestroyImGuiOverlay(ImGuiOverlay *overlay) = 0;
         virtual void                    RenderImGuiDrawData(FrameThreadData *frameThreadData, CommandList *commandList, ImGuiOverlay *overlay, void *userData) = 0;
         virtual void                    FreeImGuiDrawData(ImGuiOverlay *overlay, void *userData) = 0;

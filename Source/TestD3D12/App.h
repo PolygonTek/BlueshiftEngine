@@ -67,6 +67,7 @@ public:
     void                            UpdateFrameTime(uint64_t frameUsec);
 
     void                            OnResize(int width, int height);
+    void                            OnDisplayChange();
 
     void                            UpdateCamera(uint64_t frameUsec);
 

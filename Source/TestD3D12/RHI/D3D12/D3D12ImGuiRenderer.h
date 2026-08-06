@@ -29,7 +29,7 @@ public:
 
     bool                            IsInitialized() const { return initialized; }
 
-    bool                            InitOverlay(D3D12ImGuiOverlay *overlay, RHI::SwapChain *swapChain);
+    bool                            InitOverlay(D3D12ImGuiOverlay *overlay, RHI::Format renderTargetFormat);
     void                            ShutdownOverlay(D3D12ImGuiOverlay *overlay);
     bool                            UpdateTextures(D3D12ImGuiOverlay *overlay, ImVector<ImTextureData *> *textures);
 

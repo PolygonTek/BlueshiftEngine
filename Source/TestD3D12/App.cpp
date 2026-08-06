@@ -314,6 +314,12 @@ void App::OnResize(int width, int height) {
     }
 }
 
+void App::OnDisplayChange() {
+    if (mainRenderContext) {
+        mainRenderContext->OnDisplayChange();
+    }
+}
+
 void App::UpdateCamera(uint64_t frameUsec) {
     constexpr float CameraSmoothingSpeed = 18.0f;
     constexpr float CameraFlyFastSpeedScale = 4.0f;

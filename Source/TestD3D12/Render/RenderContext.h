@@ -74,6 +74,16 @@ public:
 
     static constexpr uint32_t       CSMCascadeCount = 4;
 
+    struct DisplayOutputSettings {
+        float                       paperWhiteNits = 200.0f;            // 출력 1.0 이 의미하는 절대 휘도
+        float                       minLuminanceNits = 0.0f;            // 디스플레이의 최소 휘도
+        float                       peakLuminanceNits = 1000.0f;        // 최대 휘도
+        float                       maxFullFrameLuminanceNits = 0.0f;   // 디스플레이의 최대 전체 프레임 휘도
+        float                       maxDisplayLinearValue = 5.0f;       // 최대 선형 값
+        bool                        hdr10Requested = false;
+        bool                        hdrDisplayActive = false;
+    };
+
     struct FrameOptions {
         float                       frameTime = 0.0f;
         float                       elapsedTime = 0.0f;
@@ -97,6 +107,7 @@ public:
 
     void *                          GetWindowHandle() const { return windowHandle; }
     RHI::SwapChain *                GetSwapChain() const { return swapChain; }
+    const DisplayOutputSettings &   GetDisplayOutputSettings() const { return displayOutputSettings; }
     RHI::Texture *                  GetFrameCompositionTexture() const { return frameCompositionTexture; }
     RHI::Texture *                  GetCSMDepthTexture() const { return csmDepthTexture; }
     RHI::ViewID                     GetCSMDepthSRV() const { return csmDepthSRV; }
@@ -115,6 +126,7 @@ public:
     Stats                           GetStats() const;
 
     void                            OnResize(int width, int height);
+    void                            OnDisplayChange();
 
     void                            RequestScreenshot(const char *filename);
 
@@ -124,6 +136,7 @@ public:
 
     RHI::Format                     GetMainRTColorFormat() const { return mainRTColorFormat; }
     RHI::Format                     GetMainRTDepthFormat() const { return mainRTDepthFormat; }
+    RHI::Format                     GetPostProcessColorFormat() const;
     uint32_t                        GetMainRTSampleCount() const { return mainRTSampleCount; }
     void                            GetMainRenderDest(RHI::RenderDest &renderDest, bool outputNormal, bool outputVelocity) const;
     void                            GetSwapChainRenderDest(RHI::RenderDest &renderDest) const;
@@ -164,7 +177,12 @@ private:
 
     void                            InitPipelines();
     void                            ReleasePipelines();
-    bool                            CreateFrameCompositionTexture();
+    void                            CreateSwapChain(uint32_t width, uint32_t height, bool tryHDR10);
+    void                            UpdateDisplayOutput();
+    void                            RecreateDisplayOutput(bool tryHDR10);
+    void                            UpdateDisplayOutputSettings();
+    RHI::Format                     GetFrameCompositionColorFormat() const;
+    void                            CreateFrameCompositionTexture();
     void                            DestroyFrameCompositionTexture();
     bool                            EnsureCSMDepthTexture();
     bool                            CreateCSMDepthTexture(uint32_t resolution);
@@ -179,6 +197,9 @@ private:
 
     void *                          windowHandle = nullptr;
     RHI::SwapChain *                swapChain = nullptr;
+    DisplayOutputSettings           displayOutputSettings;
+    float                           cachedHDRPeakNitsOverride = 0.0f;
+    bool                            displayOutputDirty = false;
     RHI::Texture *                  frameCompositionTexture = nullptr; ///< Scene, GUI, ImGui 를 합성한 뒤 프레임 끝에 백버퍼로 출력한다.
     bool                            frameCompositionTextureNeedsClear = false;
     RHI::Texture *                  csmDepthTexture = nullptr;
@@ -204,6 +225,7 @@ private:
     uint32_t                        mainRTSampleCount = 1;
 
     SharedPtr<ShaderPipeline>       imagePipeline;
+    SharedPtr<ShaderPipeline>       hdr10OutputPipeline;
 
     TextureStreamingFeedback        textureStreamingFeedback;
 

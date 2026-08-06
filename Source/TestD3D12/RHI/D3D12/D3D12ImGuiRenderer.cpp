@@ -50,7 +50,7 @@ static ImDrawCallback           imguiSetSamplerNearestCallback = nullptr;
 static constexpr uint32_t       LinearOutputPipelineStateKeyBit = 0x80000000u;
 
 static bool RequiresLinearOutput(DXGI_FORMAT rtvFormat) {
-    return D3D12Renderer::IsSRGBFormat(rtvFormat) || D3D12Renderer::IsHDRSwapChainFormat(rtvFormat);
+    return rtvFormat == DXGI_FORMAT_R16G16B16A16_FLOAT || D3D12Renderer::IsSRGBFormat(rtvFormat) || D3D12Renderer::IsHDRSwapChainFormat(rtvFormat);
 }
 
 static uint32_t MakePipelineStateKey(DXGI_FORMAT rtvFormat, bool linearOutput) {
@@ -625,8 +625,8 @@ bool D3D12ImGuiRenderer::UpdateTexture(D3D12ImGuiOverlay *overlay, ImTextureData
     return true;
 }
 
-bool D3D12ImGuiRenderer::InitOverlay(D3D12ImGuiOverlay *overlay, RHI::SwapChain *swapChain) {
-    if (!initialized || !overlay || !swapChain) {
+bool D3D12ImGuiRenderer::InitOverlay(D3D12ImGuiOverlay *overlay, RHI::Format renderTargetFormat) {
+    if (!initialized || !overlay || renderTargetFormat == RHI::Format::Unknown) {
         return false;
     }
 
@@ -640,7 +640,7 @@ bool D3D12ImGuiRenderer::InitOverlay(D3D12ImGuiOverlay *overlay, RHI::SwapChain 
     initInfo.Device = renderer->GetDevice();
     initInfo.CommandQueue = renderer->commandQueues[to_int(RHI::CommandQueueType::Graphics)];
     initInfo.NumFramesInFlight = D3D12SwapChain::NumSwapChainBuffers;
-    initInfo.RTVFormat = D3D12Renderer::RHIFormatToDXGIFormat(swapChain->GetRTVFormat());
+    initInfo.RTVFormat = D3D12Renderer::RHIFormatToDXGIFormat(renderTargetFormat);
     initInfo.DSVFormat = DXGI_FORMAT_UNKNOWN;
     initInfo.UserData = overlay;
     initInfo.SrvDescriptorHeap = renderer->resShaderVisibleDescriptorHeap.GetDescriptorHeap();
@@ -859,11 +859,11 @@ void D3D12Renderer::FreeImGuiDrawData(RHI::ImGuiOverlay *overlay, void *userData
     imguiRenderer->FreeDrawData(overlay, userData);
 }
 
-bool D3D12Renderer::InitImGuiOverlayRenderer(D3D12ImGuiOverlay *overlay, RHI::SwapChain *swapChain) {
+bool D3D12Renderer::InitImGuiOverlayRenderer(D3D12ImGuiOverlay *overlay, RHI::Format renderTargetFormat) {
     if (!imguiRenderer) {
         return false;
     }
-    return imguiRenderer->InitOverlay(overlay, swapChain);
+    return imguiRenderer->InitOverlay(overlay, renderTargetFormat);
 }
 
 void D3D12Renderer::ShutdownImGuiOverlayRenderer(D3D12ImGuiOverlay *overlay) {

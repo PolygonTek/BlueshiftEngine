@@ -476,7 +476,11 @@ bool D3D12Renderer::CompileShaderDXC(const RHI::ShaderCompileInput *compileInput
 
     // Shader 컴파일
     Microsoft::WRL::ComPtr<IDxcResult> dxcResult;
-    dxcCompiler->Compile(&source, argv.data(), (UINT32)args.size(), customIncludeHandler.Get(), IID_PPV_ARGS(&dxcResult));
+    HRESULT hr = dxcCompiler->Compile(&source, argv.data(), (UINT32)args.size(), customIncludeHandler.Get(), IID_PPV_ARGS(&dxcResult));
+    if (FAILED(hr) || !dxcResult) {
+        compileOutput->errorMessage = BE1::va("DXC Compile failed, HRESULT: 0x%08x\n", static_cast<uint32_t>(hr));
+        return false;
+    }
 
     // 경고 & 에러 메시지를 받아온다.
     IDxcBlobUtf8 *dxcErrorBlob = nullptr;
@@ -486,10 +490,15 @@ bool D3D12Renderer::CompileShaderDXC(const RHI::ShaderCompileInput *compileInput
         dxcErrorBlob->Release();
     }
 
-    HRESULT hrStatus;
-    dxcResult->GetStatus(&hrStatus);
+    HRESULT hrStatus = E_FAIL;
+    hr = dxcResult->GetStatus(&hrStatus);
+    if (FAILED(hr)) {
+        compileOutput->errorMessage += BE1::va("DXC GetStatus failed, HRESULT: 0x%08x\n", static_cast<uint32_t>(hr));
+        return false;
+    }
     if (FAILED(hrStatus)) {
         // 컴파일 실패
+        compileOutput->errorMessage += BE1::va("DXC shader compilation failed, HRESULT: 0x%08x\n", static_cast<uint32_t>(hrStatus));
         return false;
     }
 
@@ -772,15 +781,13 @@ RHI::Shader *D3D12Renderer::CreateShader(RHI::ShaderModel shaderModel, RHI::Shad
 
         RHI::ShaderCompileOutput compileOutput = {};
         bool compileSucceeded = CompileShader(&compileInput, &compileOutput);
-        if (!compileOutput.errorMessage.IsEmpty()) {
-            if (compileSucceeded) {
-                BE_ERRLOG("%s", compileOutput.errorMessage.c_str());
-            } else {
-                BE_FATALERROR("%s", compileOutput.errorMessage.c_str());
-            }
-        }
         if (!compileSucceeded) {
+            const char *errorMessage = compileOutput.errorMessage.IsEmpty() ? "No compiler diagnostic was provided.\n" : compileOutput.errorMessage.c_str();
+            BE_FATALERROR("Failed to compile shader '%s' (%s, %s/%s):\n%s", sourceName, entryPoint, shaderStageName, shaderModelName, errorMessage);
             return nullptr;
+        }
+        if (!compileOutput.errorMessage.IsEmpty()) {
+            BE_ERRLOG("Shader compiler message for '%s' (%s, %s/%s):\n%s", sourceName, entryPoint, shaderStageName, shaderModelName, compileOutput.errorMessage.c_str());
         }
 
         compiledShaderData = compileOutput.compiledShaderData;

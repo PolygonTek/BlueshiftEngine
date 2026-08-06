@@ -34,7 +34,10 @@ extern BE1::CVar    r_lightCullingZBin;
 extern BE1::CVar    r_lightCullingDebug;
 
 extern BE1::CVar    r_vsync;
-extern BE1::CVar    r_frameComposition;
+extern BE1::CVar    r_hdr10;
+extern BE1::CVar    r_hdrPaperWhiteNits;
+extern BE1::CVar    r_hdrPeakNits;
+
 extern BE1::CVar    r_depthPrepass;
 extern BE1::CVar    r_specularEnergyCompensation2;
 extern BE1::CVar    r_specularAA;

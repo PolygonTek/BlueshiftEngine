@@ -14,6 +14,7 @@
 
 #include "Precompiled.h"
 #include "RenderBackend.h"
+#include "Render/RenderContext.h"
 #include "Render/RenderCvars.h"
 #include "Render/RenderSystem.h"
 #include "Render/RenderInternal.h"
@@ -880,6 +881,10 @@ bool RenderBackend::DispatchFinalPostProcess(bool useToneMapping, bool useBloom)
     finalPostProcessParams.outputTexelSize = float2(1.0f / outputW, 1.0f / outputH);
     finalPostProcessParams.flags = useToneMapping ? FinalPostProcessFlagToneMapping : 0u;
     finalPostProcessParams.toneMappingOperator = static_cast<uint32_t>(BE1::Clamp(r_toneMapOp.GetInteger(), static_cast<int>(ToneMappingOperatorLinear), static_cast<int>(ToneMappingOperatorFilmicGT)));
+    const RenderContext::DisplayOutputSettings &displayOutputSettings = currentContext->GetDisplayOutputSettings();
+    const bool hdr10Output = currentContext->GetSwapChain()->GetColorSpace() == RHI::SwapChain::ColorSpace::HDR10;
+    finalPostProcessParams.paperWhiteNits = displayOutputSettings.paperWhiteNits;
+    finalPostProcessParams.maxDisplayLinearValue = displayOutputSettings.maxDisplayLinearValue;
     finalPostProcessParams.bloomIntensity = bloomIntensity;
     finalPostProcessParams.bloomDirtIntensity = useBloomDirtMask ? bloomDirtIntensity : 0.0f;
     finalPostProcessParams.bloomDirtUvScale = float2(1.0f, 1.0f);
@@ -908,7 +913,10 @@ bool RenderBackend::DispatchFinalPostProcess(bool useToneMapping, bool useBloom)
         referenceWhite.g / BE1::Max(sourceWhite.g, referenceWhite.g * 0.01f),
         referenceWhite.b / BE1::Max(sourceWhite.b, referenceWhite.b * 0.01f));
 
-    if (r_dithering.GetBool()) {
+    if (hdr10Output) {
+        finalPostProcessParams.flags |= FinalPostProcessFlagHDR10Output;
+    }
+    if (r_dithering.GetBool() && !hdr10Output) {
         finalPostProcessParams.flags |= FinalPostProcessFlagDithering;
     }
     if (useColorGrading) {

@@ -335,10 +335,10 @@ const void *RenderBackend::ExecuteBeginContext(const void *data) {
 
     currentContext = cmd->renderContext;
     frameImagePSO = cmd->imagePSO;
+    frameHDR10OutputPSO = cmd->hdr10OutputPSO;
     gpuTimingEnabled = cmd->gpuTiming;
     textureStreamingFeedbackEnabled = cmd->textureStreamingFeedback;
     swapChainOutputEnabled = cmd->swapChainOutput;
-    frameCompositionEnabled = swapChainOutputEnabled && r_frameComposition.GetBool() && currentContext->frameCompositionTexture;
     statDrawCount = 0;
     statDrawTriangleCount = 0;
     statInstanceTableAllocCount = 0;
@@ -350,8 +350,8 @@ const void *RenderBackend::ExecuteBeginContext(const void *data) {
         gpuTiming.BeginFrame(mainCommandList, frameData, currentContext);
     }
 
-    if (swapChainOutputEnabled && currentContext->frameCompositionTexture) {
-        if (frameCompositionEnabled && currentContext->frameCompositionTextureNeedsClear) {
+    if (swapChainOutputEnabled) {
+        if (currentContext->frameCompositionTextureNeedsClear) {
             // 새로 생성되었거나 다시 활성화된 frameCompositionTexture 는 실제로 처음 사용할 때 한 번만 초기화한다.
             const BE1::Color4 &clearColor = currentContext->GetBaseClearColor();
             RHI::RenderPassImage outputImage = RHI::RenderPassImage::Color(currentContext->frameCompositionTexture, RHI::ViewID::PrimaryID,
@@ -360,10 +360,10 @@ const void *RenderBackend::ExecuteBeginContext(const void *data) {
             RHI::renderer->BeginRenderPass(mainCommandList, &outputImage, 1);
             RHI::renderer->EndRenderPass(mainCommandList);
             currentContext->frameCompositionTextureNeedsClear = false;
-        } else if (!frameCompositionEnabled) {
-            // 비활성화된 동안 합성 텍스처의 내용은 갱신되지 않으므로, 다시 사용할 때 초기화한다.
-            currentContext->frameCompositionTextureNeedsClear = true;
         }
+    } else {
+        // 스왑 체인 출력이 비활성화된 동안 합성 텍스처는 갱신되지 않는다.
+        currentContext->frameCompositionTextureNeedsClear = true;
     }
 
 #ifdef USE_MIPMAP_STREAMING
@@ -465,7 +465,6 @@ const void *RenderBackend::ExecuteDrawCamera(const void *data) {
 
     RHI::ClearFlag clearFlags = RHI::ClearFlag::None;
     BE1::Color4 clearColor = currentContext->baseClearColor;
-    float clearDepth = currentVisCamera->projectionPolicy.GetDepthClearValue();
     bool useExplicitClearColor = false;
 
     if (currentVisCamera->clearMethod == RenderCamera::ClearMethod::Color) {
@@ -479,7 +478,7 @@ const void *RenderBackend::ExecuteDrawCamera(const void *data) {
     }
 
     if (currentVisCamera->is2D) {
-        ExecuteDrawCamera2D(clearFlags, clearColor, clearDepth);
+        ExecuteDrawCamera2D(clearFlags, clearColor);
     } else {
         ExecuteDrawCamera3D(clearFlags, clearColor, useExplicitClearColor);
     }
@@ -490,7 +489,7 @@ const void *RenderBackend::ExecuteDrawCamera(const void *data) {
     return (const void *)(cmd + 1);
 }
 
-void RenderBackend::ExecuteDrawCamera2D(RHI::ClearFlag clearFlags, const BE1::Color4 &clearColor, float clearDepth) {
+void RenderBackend::ExecuteDrawCamera2D(RHI::ClearFlag clearFlags, const BE1::Color4 &clearColor) {
     PROFILER_CPU_SCOPED_EVENT("RenderBackend::ExecuteDrawCamera2D");
 
     if (!swapChainOutputEnabled) {
@@ -499,16 +498,11 @@ void RenderBackend::ExecuteDrawCamera2D(RHI::ClearFlag clearFlags, const BE1::Co
     }
 
     // 백버퍼에 바로 그리지 않고, frameCompositionTexture 에 그린다.
-    RHI::Texture *frameCompositionTexture = frameCompositionEnabled ? currentContext->GetFrameCompositionTexture() : nullptr;
-    if (frameCompositionTexture) {
-        const RHI::RenderPassImage::LoadAction loadAction = BE1::HasFlag(clearFlags, RHI::ClearFlag::Color) ? RHI::RenderPassImage::LoadAction::Clear : RHI::RenderPassImage::LoadAction::Load;
-        RHI::RenderPassImage outputImage = RHI::RenderPassImage::Color(frameCompositionTexture, RHI::ViewID::PrimaryID, loadAction, RHI::RenderPassImage::StoreAction::Store, RHI::GPUResourceState::ShaderResource, RHI::GPUResourceState::ShaderResource);
-        outputImage = outputImage.WithClearValue(RHI::ClearValue::Color(clearColor[0], clearColor[1], clearColor[2], clearColor[3]));
-        RHI::renderer->BeginRenderPass(mainCommandList, &outputImage, 1);
-    } else {
-        const RHI::ClearFlag swapChainClearFlags = BE1::HasFlag(clearFlags, RHI::ClearFlag::Color) ? RHI::ClearFlag::Color : RHI::ClearFlag::None;
-        RHI::renderer->BeginRenderPass(mainCommandList, currentContext->swapChain, nullptr, clearColor, clearDepth, 0, swapChainClearFlags);
-    }
+    RHI::Texture *frameCompositionTexture = currentContext->GetFrameCompositionTexture();
+    const RHI::RenderPassImage::LoadAction loadAction = BE1::HasFlag(clearFlags, RHI::ClearFlag::Color) ? RHI::RenderPassImage::LoadAction::Clear : RHI::RenderPassImage::LoadAction::Load;
+    RHI::RenderPassImage outputImage = RHI::RenderPassImage::Color(frameCompositionTexture, RHI::ViewID::PrimaryID, loadAction, RHI::RenderPassImage::StoreAction::Store, RHI::GPUResourceState::ShaderResource, RHI::GPUResourceState::ShaderResource);
+    outputImage = outputImage.WithClearValue(RHI::ClearValue::Color(clearColor[0], clearColor[1], clearColor[2], clearColor[3]));
+    RHI::renderer->BeginRenderPass(mainCommandList, &outputImage, 1);
 
     DrawCamera2D();
 
@@ -644,12 +638,8 @@ void RenderBackend::PostProcessAndBlitToOutput(bool surfaceOutputsReady) {
         }
     } else if (swapChainOutputEnabled) {
         // 백버퍼에 바로 blit 하지 않고, frameCompositionTexture 에 먼저 blit 한다.
-        RHI::Texture *frameCompositionTexture = frameCompositionEnabled ? currentContext->GetFrameCompositionTexture() : nullptr;
-        if (frameCompositionTexture) {
-            BlitTextureToRenderTarget(finalColorTexture, frameCompositionTexture, RHI::ViewID::PrimaryID, RHI::GPUResourceState::ShaderResource, RHI::GPUResourceState::ShaderResource, currentVisCamera->outputRect, frameImagePSO);
-        } else {
-            BlitTextureToSwapChain(finalColorTexture, currentVisCamera->outputRect);
-        }
+        RHI::Texture *frameCompositionTexture = currentContext->GetFrameCompositionTexture();
+        BlitTextureToRenderTarget(finalColorTexture, frameCompositionTexture, RHI::ViewID::PrimaryID, RHI::GPUResourceState::ShaderResource, RHI::GPUResourceState::ShaderResource, currentVisCamera->outputRect, frameImagePSO);
     } else {
         BE_WARNLOG("RenderBackend::PostProcessAndBlitToOutput: no output render target was specified\n");
     }
@@ -717,7 +707,9 @@ void RenderBackend::BlitTextureToSwapChain(const RHI::Texture *srcTexture, const
         return;
     }
 
-    if (!frameImagePSO) {
+    const bool hdr10Output = currentContext->GetSwapChain()->GetColorSpace() == RHI::SwapChain::ColorSpace::HDR10;
+    RHI::PipelineState *outputPSO = hdr10Output ? frameHDR10OutputPSO : frameImagePSO;
+    if (!outputPSO) {
         return;
     }
 
@@ -753,12 +745,77 @@ void RenderBackend::BlitTextureToSwapChain(const RHI::Texture *srcTexture, const
     RHI::renderer->BeginRenderPass(mainCommandList, currentContext->swapChain, nullptr);
     RHI::renderer->SetViewport(mainCommandList, outputRect);
     RHI::renderer->SetScissorRect(mainCommandList, outputRect);
-    RHI::renderer->SetPSO(mainCommandList, frameImagePSO);
+    RHI::renderer->SetPSO(mainCommandList, outputPSO);
     RHI::renderer->SetTexture(mainCommandList, 0, false, srcTexture);
-    RHI::renderer->SetConstants(mainCommandList, 0, &imageParams, sizeof(imageParams), 0);
+    if (hdr10Output) {
+        const RenderContext::DisplayOutputSettings &displayOutputSettings = currentContext->GetDisplayOutputSettings();
+        HDR10OutputParams hdr10OutputParams = {};
+        hdr10OutputParams.texCoordScale = imageParams.texCoordScale;
+        hdr10OutputParams.texCoordOffset = imageParams.texCoordOffset;
+        hdr10OutputParams.paperWhiteNits = displayOutputSettings.paperWhiteNits;
+        hdr10OutputParams.maxDisplayLinearValue = displayOutputSettings.maxDisplayLinearValue;
+        RHI::renderer->SetConstants(mainCommandList, 0, &hdr10OutputParams, sizeof(hdr10OutputParams), 0);
+    } else {
+        RHI::renderer->SetConstants(mainCommandList, 0, &imageParams, sizeof(imageParams), 0);
+    }
     RHI::renderer->Draw(mainCommandList, 3, 0);
     RecordDrawStats(1, 1, 0, 0);
     RHI::renderer->EndRenderPass(mainCommandList);
+}
+
+static void CopySDRScreenshotRegion(const BE1::Image &srcImage, const BE1::Rect &srcRect, BE1::Image &dstImage) {
+    static constexpr int bpp = 3;
+    const int srcPitch = srcImage.GetWidth() * bpp;
+    const int dstPitch = dstImage.GetWidth() * bpp;
+    const byte *src = srcImage.GetPixels() + srcRect.y * srcPitch + srcRect.x * bpp;
+    byte *dst = dstImage.GetPixels();
+
+    for (int y = 0; y < srcRect.h; ++y) {
+        BE1::simdProcessor->Memcpy(dst, src, dstPitch);
+        src += srcPitch;
+        dst += dstPitch;
+    }
+}
+
+static void ConvertHDRScreenshotRegionToSDR(const BE1::Image &srcImage, const BE1::Rect &srcRect, float maxDisplayLinearValue, BE1::Image &dstImage) {
+    static constexpr byte Bayer4x4[16] = {
+         0,  8,  2, 10,
+        12,  4, 14,  6,
+         3, 11,  1,  9,
+        15,  7, 13,  5
+    };
+
+    const float whiteLevel = BE1::Max(maxDisplayLinearValue, 1.0f);
+    const float whiteLevelSquared = whiteLevel * whiteLevel;
+
+    const BE1::half *src = reinterpret_cast<const BE1::half *>(srcImage.GetPixels());
+    const int sourceWidth = srcImage.GetWidth();
+    byte *dst = dstImage.GetPixels();
+
+    for (int y = 0; y < srcRect.h; ++y) {
+        const int srcY = srcRect.y + y;
+        const BE1::half *srcPtr = src + (srcY * sourceWidth + srcRect.x) * 4;
+
+        for (int x = 0; x < srcRect.w; ++x, srcPtr += 4, dst += 3) {
+            BE1::Color3 linearColor;
+            linearColor.r = BE1::Max(static_cast<float>(srcPtr[0]), 0.0f);
+            linearColor.g = BE1::Max(static_cast<float>(srcPtr[1]), 0.0f);
+            linearColor.b = BE1::Max(static_cast<float>(srcPtr[2]), 0.0f);
+            const float luminance = BE1::Image::GetLuminance(linearColor);
+            const float mappedLuminance = luminance * (1.0f + luminance / whiteLevelSquared) / (1.0f + luminance);
+            const float luminanceScale = luminance > 0.0f ? mappedLuminance / luminance : 0.0f;
+
+            const int bayerIndex = ((srcY & 3) << 2) | ((srcRect.x + x) & 3);
+            const float dither = ((static_cast<float>(Bayer4x4[bayerIndex]) + 0.5f) / 16.0f - 0.5f) / 255.0f;
+            const float sRGBR = BE1::Clamp01(BE1::Image::LinearToGamma(BE1::Clamp01(linearColor.r * luminanceScale)) + dither);
+            const float sRGBG = BE1::Clamp01(BE1::Image::LinearToGamma(BE1::Clamp01(linearColor.g * luminanceScale)) + dither);
+            const float sRGBB = BE1::Clamp01(BE1::Image::LinearToGamma(BE1::Clamp01(linearColor.b * luminanceScale)) + dither);
+
+            dst[0] = BE1::Math::Ftob(sRGBB * 255.0f);
+            dst[1] = BE1::Math::Ftob(sRGBG * 255.0f);
+            dst[2] = BE1::Math::Ftob(sRGBR * 255.0f);
+        }
+    }
 }
 
 const void *RenderBackend::ExecuteScreenshot(const void *data) {
@@ -769,15 +826,30 @@ const void *RenderBackend::ExecuteScreenshot(const void *data) {
     // 캡쳐 영역 Rect
     BE1::Rect captureRect(cmd->x, cmd->y, cmd->width, cmd->height);
 
-    // SwapChain 백버퍼를 캡쳐해서 저장할 빈 이미지 (메모리) 를 생성한다.
+    // 최종 합성 결과를 저장할 8-bit sRGB 이미지를 생성한다.
     BE1::Image screenImage;
     screenImage.Create2D(captureRect.w, captureRect.h, 1, BE1::Image::Format::B8G8R8, BE1::Image::GammaSpace::sRGB, nullptr, BE1::Image::Flag::None);
 
-    RHI::CommandList *commandList = frameData->GetThreadData(0)->AllocGraphicsCommandList();
-    commandList->Reset(true);
+    RHI::Texture *frameCompositionTexture = currentContext->GetFrameCompositionTexture();
+    const int frameWidth = static_cast<int>(frameCompositionTexture->GetWidth());
+    const int frameHeight = static_cast<int>(frameCompositionTexture->GetHeight());
+    const bool hdr10Output = currentContext->GetSwapChain()->GetColorSpace() == RHI::SwapChain::ColorSpace::HDR10;
+    if (hdr10Output) {
+        // HDR 합성 텍스처는 paper-white-relative 선형 Rec.709 이다.
+        // 디스플레이 피크를 white point 로 사용하는 extended Reinhard 커브로 SDR 범위에 압축한 뒤 sRGB 로 인코딩한다.
+        BE1::Image compositionImage;
+        compositionImage.Create2D(frameWidth, frameHeight, 1, BE1::Image::Format::R16G16B16A16_FLOAT, BE1::Image::GammaSpace::Linear, nullptr, BE1::Image::Flag::None);
+        RHI::renderer->GetTextureImage2D(frameCompositionTexture, 0, compositionImage.GetFormat(), compositionImage.GetPixels());
 
-    // 백버퍼의 내용을 (필요하다면 지정된 포맷으로 컨버팅하여) screenImage 에 저장한다.
-    RHI::renderer->ReadPixels(commandList, currentContext->GetSwapChain(), captureRect.x, captureRect.y, captureRect.w, captureRect.h, BE1::Image::Format::B8G8R8, screenImage.GetPixels());
+        ConvertHDRScreenshotRegionToSDR(compositionImage, captureRect, currentContext->GetDisplayOutputSettings().maxDisplayLinearValue, screenImage);
+    } else {
+        // SDR 합성 텍스처에는 최종 sRGB 값이 저장되어 있으므로 색 변환 없이 캡쳐 영역만 복사한다.
+        BE1::Image compositionImage;
+        compositionImage.Create2D(frameWidth, frameHeight, 1, BE1::Image::Format::B8G8R8, BE1::Image::GammaSpace::sRGB, nullptr, BE1::Image::Flag::None);
+        RHI::renderer->GetTextureImage2D(frameCompositionTexture, 0, compositionImage.GetFormat(), compositionImage.GetPixels());
+
+        CopySDRScreenshotRegion(compositionImage, captureRect, screenImage);
+    }
 
     // 이제 이미지 파일로 저장한다.
     BE1::Str filename = cmd->filename;
@@ -793,7 +865,7 @@ const void *RenderBackend::ExecuteFinalizeFrame(const void *data) {
     const FinalizeFrameRenderCommand *cmd = reinterpret_cast<const FinalizeFrameRenderCommand *>(data);
     const bool renderImGuiOverlay = cmd->renderImGuiOverlay && frameData->HasPendingImGuiOverlay();
     const bool finishGpuTiming = gpuTimingEnabled && gpuTiming.IsFrameActive();
-    RHI::Texture *frameCompositionTexture = frameCompositionEnabled ? currentContext->GetFrameCompositionTexture() : nullptr;
+    RHI::Texture *frameCompositionTexture = swapChainOutputEnabled ? currentContext->GetFrameCompositionTexture() : nullptr;
 
     bool needsCommandList = renderImGuiOverlay || finishGpuTiming || frameCompositionTexture;
 #ifdef USE_MIPMAP_STREAMING
@@ -819,20 +891,16 @@ const void *RenderBackend::ExecuteFinalizeFrame(const void *data) {
             RHI::renderer->SetViewport(mainCommandList, viewportRect);
             RHI::renderer->SetScissorRect(mainCommandList, viewportRect);
 
-            if (frameCompositionTexture) {
-                RHI::RenderPassImage outputImage = RHI::RenderPassImage::Color(frameCompositionTexture, RHI::ViewID::PrimaryID, RHI::RenderPassImage::LoadAction::Load,
-                    RHI::RenderPassImage::StoreAction::Store, RHI::GPUResourceState::ShaderResource, RHI::GPUResourceState::ShaderResource);
-                RHI::renderer->BeginRenderPass(mainCommandList, &outputImage, 1);
-            } else {
-                RHI::renderer->BeginRenderPass(mainCommandList, currentContext->swapChain, nullptr);
-            }
+            RHI::RenderPassImage outputImage = RHI::RenderPassImage::Color(frameCompositionTexture, RHI::ViewID::PrimaryID, RHI::RenderPassImage::LoadAction::Load,
+                RHI::RenderPassImage::StoreAction::Store, RHI::GPUResourceState::ShaderResource, RHI::GPUResourceState::ShaderResource);
+            RHI::renderer->BeginRenderPass(mainCommandList, &outputImage, 1);
 
             frameData->RenderPendingImGuiOverlay(mainCommandList);
 
             RHI::renderer->EndRenderPass(mainCommandList);
         }
 
-        if (frameCompositionTexture) {
+        if (swapChainOutputEnabled) {
             BE1::Rect outputRect(0, 0, currentContext->GetWidth(), currentContext->GetHeight());
             BlitTextureToSwapChain(frameCompositionTexture, outputRect);
         }

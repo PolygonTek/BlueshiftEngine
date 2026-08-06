@@ -36,21 +36,19 @@ LRESULT CALLBACK            MainWndProc(HWND hwnd, UINT message, WPARAM wParam, 
 
 static constexpr const char *appConfigFilename = "Config/TestD3D12.cfg";
 
-static void SystemLog(int logLevel, const char* text) {
-    int len = BE1::PlatformWinUtils::UTF8ToUCS2(text, nullptr, 0);
-    wchar_t* wText = (wchar_t *)alloca(sizeof(wchar_t) * len);
-    BE1::PlatformWinUtils::UTF8ToUCS2(text, wText, len);
+static void SystemLog(int logLevel, const char *text) {
+    wchar_t wideText[16384];
+    BE1::PlatformWinUtils::UTF8ToUCS2(text, wideText, COUNT_OF(wideText));
 
-    OutputDebugString(wText);
+    OutputDebugString(wideText);
 }
 
-static void SystemError(int errLevel, const char* text) {
-    int len = BE1::PlatformWinUtils::UTF8ToUCS2(text, nullptr, 0);
-    wchar_t* wText = (wchar_t *)alloca(sizeof(wchar_t) * len);
-    BE1::PlatformWinUtils::UTF8ToUCS2(text, wText, len);
+static void SystemError(int errLevel, const char *text) {
+    wchar_t wideText[16384];
+    BE1::PlatformWinUtils::UTF8ToUCS2(text, wideText, COUNT_OF(wideText));
 
     HWND hwnd = FindWindow(mainWindowClassName, nullptr);
-    MessageBox(hwnd, wText, L"Error", MB_OK);
+    MessageBox(hwnd, wideText, L"Error", MB_OK);
     if (errLevel == BE1::ErrorLevel::Fatal) {
         exit(0);
     }
@@ -86,7 +84,7 @@ static bool SetCameraMoveFlagFromKey(WPARAM key, bool enabled) {
     }
 }
 
-static HWND CreateRenderWindow(const TCHAR* title, const TCHAR* classname, int width, int height, bool fullscreen) {
+static HWND CreateRenderWindow(const TCHAR *title, const TCHAR *classname, int width, int height, bool fullscreen) {
     int style = WS_VISIBLE;
     int styleEx;
     BE1::Rect windowRect;
@@ -183,7 +181,7 @@ static void ChangeRenderWindow(HWND hwnd, int width, int height, bool fullscreen
     ::SetFocus(hwnd);
 }
 
-static HWND CreateMainWindow(const TCHAR* title, int width, int height) {
+static HWND CreateMainWindow(const TCHAR *title, int width, int height) {
     HINSTANCE hInstance = GetModuleHandle(nullptr);
 
     WNDCLASSEX wcex;
@@ -383,6 +381,10 @@ LRESULT CALLBACK MainWndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lPar
             app.OnResize(LOWORD(lParam), HIWORD(lParam));
         }
         return 0;
+    case WM_MOVE:
+    case WM_DISPLAYCHANGE:
+        app.OnDisplayChange();
+        break;
     case WM_TIMER:
         break;
     case WM_KILLFOCUS:

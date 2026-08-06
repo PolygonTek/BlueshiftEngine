@@ -70,6 +70,7 @@ RHI::SwapChain *D3D12Renderer::CreateSwapChain(HWND hwnd, uint32_t width, uint32
     //hr = dxgiSwapChain3->GetContainingOutput(&dxgiOutput);
 
     D3D12SwapChain *swapChain = new D3D12SwapChain;
+    swapChain->hwnd = hwnd;
     swapChain->swapChainFormat = dxgiFormat;
     swapChain->width = width;
     swapChain->height = height;
@@ -90,6 +91,7 @@ void D3D12SwapChain::Release() {
         SAFE_RELEASE(backBuffers[bufferIndex]);
     }
     SAFE_RELEASE(dxgiSwapChain);
+    hwnd = nullptr;
 }
 
 void D3D12SwapChain::ReleaseRTVs() {
@@ -165,27 +167,132 @@ void D3D12SwapChain::SwapBuffers(bool vsync) {
     currentBackBufferIndex = dxgiSwapChain->GetCurrentBackBufferIndex();
 }
 
-bool D3D12SwapChain::IsSupportsHDR() const {
-    // HDR display query: https://docs.microsoft.com/en-us/windows/win32/direct3darticles/high-dynamic-range
-    Microsoft::WRL::ComPtr<IDXGIOutput> dxgiOutput;
-    if (SUCCEEDED(dxgiSwapChain->GetContainingOutput(&dxgiOutput))) {
-        Microsoft::WRL::ComPtr<IDXGIOutput6> output6;
-        if (SUCCEEDED(dxgiOutput.As(&output6))) {
-            DXGI_OUTPUT_DESC1 desc1;
-            if (SUCCEEDED(output6->GetDesc1(&desc1))) {
-                if (desc1.ColorSpace == DXGI_COLOR_SPACE_RGB_FULL_G2084_NONE_P2020) {
-                    return true;
-                }
-            }
-        }
-    }
-    return false;
-}
-
 RHI::Format D3D12SwapChain::GetFormat() const {
     return D3D12Renderer::DXGIFormatToRHIFormat(swapChainFormat);
 }
 
 RHI::Format D3D12SwapChain::GetRTVFormat() const {
     return D3D12Renderer::DXGIFormatToRHIFormat(rtvFormat);
+}
+
+bool D3D12SwapChain::GetDisplayInfo(RHI::DisplayInfo &displayInfo) const {
+    return D3D12Renderer::GetRenderer()->GetDisplayInfo(hwnd, displayInfo);
+}
+
+bool D3D12Renderer::RefreshDXGIFactory() {
+    // DXGI Factory가 보유한 Adapter/Output 열거 정보가 아직 최신인지 확인한다.
+    if (dxgiFactory->IsCurrent()) {
+        return true;
+    }
+
+    IDXGIFactory4 *newFactory = nullptr;
+    const HRESULT hr = CreateDXGIFactory2(validationLayerEnabled ? DXGI_CREATE_FACTORY_DEBUG : 0, IID_PPV_ARGS(&newFactory));
+    if (FAILED(hr)) {
+        BE_WARNLOG("D3D12Renderer::RefreshDXGIFactory: CreateDXGIFactory2 failed, ERROR: 0x%x\n", hr);
+        return false;
+    }
+
+    SAFE_RELEASE(dxgiFactory);
+    dxgiFactory = newFactory;
+    return true;
+}
+
+bool D3D12Renderer::GetDisplayInfo(HWND hwnd, RHI::DisplayInfo &displayInfo) {
+    displayInfo = {};
+
+    if (!hwnd || !RefreshDXGIFactory()) {
+        return false;
+    }
+
+    // Advanced Color display query: https://learn.microsoft.com/windows/win32/direct3darticles/high-dynamic-range
+    // 갱신된 DXGI Factory 에서 윈도우가 가장 많이 걸쳐 있는 모니터의 출력 정보를 다시 찾는다.
+    const HMONITOR monitor = MonitorFromWindow(hwnd, MONITOR_DEFAULTTONEAREST);
+    if (!monitor) {
+        return false;
+    }
+
+    for (UINT adapterIndex = 0; ; ++adapterIndex) {
+        Microsoft::WRL::ComPtr<IDXGIAdapter1> adapter;
+        const HRESULT adapterResult = dxgiFactory->EnumAdapters1(adapterIndex, &adapter);
+        if (adapterResult == DXGI_ERROR_NOT_FOUND) {
+            break;
+        }
+        if (FAILED(adapterResult)) {
+            return false;
+        }
+
+        for (UINT outputIndex = 0; ; ++outputIndex) {
+            Microsoft::WRL::ComPtr<IDXGIOutput> output;
+            const HRESULT outputResult = adapter->EnumOutputs(outputIndex, &output);
+            if (outputResult == DXGI_ERROR_NOT_FOUND) {
+                break;
+            }
+            if (FAILED(outputResult)) {
+                return false;
+            }
+
+            DXGI_OUTPUT_DESC outputDesc = {};
+            if (FAILED(output->GetDesc(&outputDesc)) || outputDesc.Monitor != monitor) {
+                continue;
+            }
+
+            Microsoft::WRL::ComPtr<IDXGIOutput6> output6;
+            if (FAILED(output.As(&output6))) {
+                return false;
+            }
+
+            DXGI_OUTPUT_DESC1 outputDesc1 = {};
+            if (FAILED(output6->GetDesc1(&outputDesc1))) {
+                return false;
+            }
+
+            displayInfo.hdrActive = outputDesc1.ColorSpace == DXGI_COLOR_SPACE_RGB_FULL_G2084_NONE_P2020;
+            displayInfo.minLuminanceNits = outputDesc1.MinLuminance;
+            displayInfo.maxLuminanceNits = outputDesc1.MaxLuminance;
+            displayInfo.maxFullFrameLuminanceNits = outputDesc1.MaxFullFrameLuminance;
+            return true;
+        }
+    }
+
+    return false;
+}
+
+bool D3D12SwapChain::IsHDRActive() const {
+    RHI::DisplayInfo displayInfo;
+    return GetDisplayInfo(displayInfo) && displayInfo.hdrActive;
+}
+
+static DXGI_COLOR_SPACE_TYPE ToDXGIColorSpace(RHI::SwapChain::ColorSpace colorSpace) {
+    switch (colorSpace) {
+    case RHI::SwapChain::ColorSpace::HDR10:
+        return DXGI_COLOR_SPACE_RGB_FULL_G2084_NONE_P2020;
+    case RHI::SwapChain::ColorSpace::SDR:
+    default:
+        return DXGI_COLOR_SPACE_RGB_FULL_G22_NONE_P709;
+    }
+}
+
+bool D3D12SwapChain::IsColorSpaceSupported(RHI::SwapChain::ColorSpace colorSpace) const {
+    if (colorSpace == RHI::SwapChain::ColorSpace::HDR10 && swapChainFormat != DXGI_FORMAT_R10G10B10A2_UNORM) {
+        return false;
+    }
+
+    UINT colorSpaceSupport = 0;
+    HRESULT hr = dxgiSwapChain->CheckColorSpaceSupport(ToDXGIColorSpace(colorSpace), &colorSpaceSupport);
+    return SUCCEEDED(hr) && (colorSpaceSupport & DXGI_SWAP_CHAIN_COLOR_SPACE_SUPPORT_FLAG_PRESENT) != 0;
+}
+
+bool D3D12SwapChain::SetColorSpace(RHI::SwapChain::ColorSpace colorSpace) {
+    if (!IsColorSpaceSupported(colorSpace)) {
+        return false;
+    }
+
+    HRESULT hr = dxgiSwapChain->SetColorSpace1(ToDXGIColorSpace(colorSpace));
+    if (FAILED(hr)) {
+        BE_WARNLOG("D3D12SwapChain::SetColorSpace: SetColorSpace1 failed, ERROR: 0x%x\n", hr);
+        return false;
+    }
+
+    this->colorSpace = colorSpace;
+    return true;
 }

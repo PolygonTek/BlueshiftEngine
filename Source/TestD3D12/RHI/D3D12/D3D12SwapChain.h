@@ -29,11 +29,16 @@ public:
 
     void                            CreateRTVs();
 
-    virtual bool                    IsSupportsHDR() const override;
     virtual RHI::Format             GetFormat() const override;
     virtual RHI::Format             GetRTVFormat() const override;
     virtual uint32_t                GetWidth() const override { return width; }
     virtual uint32_t                GetHeight() const override { return height; }
+
+    virtual bool                    GetDisplayInfo(RHI::DisplayInfo &displayInfo) const override;
+    virtual bool                    IsHDRActive() const override;
+    virtual bool                    IsColorSpaceSupported(RHI::SwapChain::ColorSpace colorSpace) const override;
+    virtual RHI::SwapChain::ColorSpace GetColorSpace() const override { return colorSpace; }
+    virtual bool                    SetColorSpace(RHI::SwapChain::ColorSpace colorSpace) override;
 
     virtual void                    Resize(uint32_t width, uint32_t height) override;
     virtual void                    SwapBuffers(bool vsync) override;
@@ -46,7 +51,9 @@ public:
 private:
     void                            ReleaseRTVs();
 
+    HWND                            hwnd = nullptr;
     IDXGISwapChain3 *               dxgiSwapChain = nullptr;
+    RHI::SwapChain::ColorSpace      colorSpace = RHI::SwapChain::ColorSpace::SDR;
     DXGI_FORMAT                     swapChainFormat = DXGI_FORMAT_UNKNOWN;
     DXGI_FORMAT                     rtvFormat = DXGI_FORMAT_UNKNOWN;
     ID3D12Resource *                backBuffers[NumSwapChainBuffers] = {};

@@ -81,7 +81,7 @@ private:
 
     void                            UpdateFramePSOs();
 
-    void                            ExecuteDrawCamera2D(RHI::ClearFlag clearFlags, const BE1::Color4 &clearColor, float clearDepth);
+    void                            ExecuteDrawCamera2D(RHI::ClearFlag clearFlags, const BE1::Color4 &clearColor);
     void                            ExecuteDrawCamera3D(RHI::ClearFlag clearFlags, const BE1::Color4 &clearColor, bool useExplicitClearColor);
     void                            ExecuteDrawCamera3DDepthPrepass(RHI::RenderPassImage::LoadAction depthLoadAction);
     void                            ExecuteDrawCamera3DMainPass(RHI::ClearFlag clearFlags, const BE1::Color4 &clearColor, bool useExplicitClearColor, RHI::RenderPassImage::LoadAction depthLoadAction, bool skipDepthPrepasses);
@@ -153,8 +153,8 @@ private:
     bool                            gpuTimingEnabled = false;
     bool                            textureStreamingFeedbackEnabled = false;
     bool                            swapChainOutputEnabled = false;
-    bool                            frameCompositionEnabled = false;
     RHI::PipelineState *            frameImagePSO = nullptr;
+    RHI::PipelineState *            frameHDR10OutputPSO = nullptr;
     RHI::PipelineState *            frameGenHiZMipFirstBatchPSO = nullptr;
     RHI::PipelineState *            frameGenHiZMipFirstBatchMSAAPSO = nullptr;
     RHI::PipelineState *            frameGenHiZMipBatchPSO = nullptr;

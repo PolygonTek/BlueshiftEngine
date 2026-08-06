@@ -59,22 +59,20 @@ void RenderContext::Init(void *windowHandle, const BE1::Color4 &baseClearColor) 
     uint32_t backBufferWidth = rc.right;
     uint32_t backBufferHeight = rc.bottom;
 
-    // 스왑 체인 (백버퍼) 생성
-    RHI::Format swapChainFormat = RHI::Format::R8G8B8A8_UNORM;
-    swapChain = RHI::renderer->CreateSwapChain(hwnd, backBufferWidth, backBufferHeight, swapChainFormat);
+    CreateSwapChain(backBufferWidth, backBufferHeight, r_hdr10.GetBool());
 
-#ifdef ENABLE_IMGUI
-    // ImGui 오버레이 객체 생성
-    imguiOverlay = RHI::renderer->CreateImGuiOverlay(windowHandle, swapChain);
-#endif
+    UpdateDisplayOutputSettings();
 
     mainRTColorFormat = RHI::Format::R16G16B16A16_FLOAT;
     mainRTSampleCount = GetMainRTSampleCountFromCVar();
     this->baseClearColor = !RHI::Renderer::IsSRGBFormat(mainRTColorFormat) ? baseClearColor.SRGBToLinear() : baseClearColor;
 
-    if (!CreateFrameCompositionTexture()) {
-        BE_WARNLOG("RenderContext::Init: failed to create frame composition texture\n");
-    }
+    CreateFrameCompositionTexture();
+
+#ifdef ENABLE_IMGUI
+    // ImGui 는 최종 출력 변환 전의 프레임 합성 텍스처 포맷으로 렌더링한다.
+    imguiOverlay = RHI::renderer->CreateImGuiOverlay(windowHandle, frameCompositionTexture->GetFormat());
+#endif
 
     if (!EnsureCSMDepthTexture()) {
         BE_WARNLOG("RenderContext::Init: failed to create CSM depth texture\n");
@@ -122,6 +120,58 @@ void RenderContext::Shutdown() {
     windowHandle = nullptr;
 }
 
+void RenderContext::CreateSwapChain(uint32_t width, uint32_t height, bool tryHDR10) {
+    assert(!swapChain);
+
+    HWND hwnd = reinterpret_cast<HWND>(windowHandle);
+
+    // HDR10 이 요청된 경우 10-bit RGB 스왑 체인을 우선 생성한다.
+    const RHI::Format swapChainFormat = tryHDR10 ? RHI::Format::R10G10B10A2_UNORM : RHI::Format::R8G8B8A8_UNORM;
+    swapChain = RHI::renderer->CreateSwapChain(hwnd, width, height, swapChainFormat);
+
+    if (tryHDR10) {
+        // 실제 디스플레이와 color space 설정이 지원될 때만 유지한다.
+        const bool hdr10Active = swapChain->IsHDRActive() && swapChain->SetColorSpace(RHI::SwapChain::ColorSpace::HDR10);
+        if (hdr10Active) {
+            BE_LOG("HDR10 output enabled\n");
+        } else {
+            // SDR 출력 경로에서는 기존 8-bit RGBA 스왑 체인으로 폴백한다.
+            BE_LOG("HDR10 output unavailable; falling back to SDR\n");
+            RHI::renderer->DestroySwapChain(swapChain);
+            swapChain = RHI::renderer->CreateSwapChain(hwnd, width, height, RHI::Format::R8G8B8A8_UNORM);
+        }
+    }
+}
+
+void RenderContext::UpdateDisplayOutputSettings() {
+    DisplayOutputSettings settings;
+    settings.hdr10Requested = r_hdr10.GetBool();
+    settings.paperWhiteNits = r_hdrPaperWhiteNits.GetFloat();
+
+    RHI::DisplayInfo displayInfo;
+    if (swapChain->GetDisplayInfo(displayInfo)) {
+        settings.hdrDisplayActive = displayInfo.hdrActive; // Windows HDR 활성화 여부
+        settings.minLuminanceNits = displayInfo.minLuminanceNits; // 디스플레이의 최소 휘도 (니트 단위)
+        settings.maxFullFrameLuminanceNits = displayInfo.maxFullFrameLuminanceNits; // 디스플레이의 최대 전체 프레임 휘도 (니트 단위)
+    }
+
+    const float peakLuminanceOverrideNits = BE1::Max(r_hdrPeakNits.GetFloat(), 0.0f);
+    cachedHDRPeakNitsOverride = peakLuminanceOverrideNits;
+    if (peakLuminanceOverrideNits > 0.0f) {
+        settings.peakLuminanceNits = peakLuminanceOverrideNits; // r_hdrPeakNits 으로 오버라이드된 최대 휘도 (니트 단위)
+    } else if (displayInfo.maxLuminanceNits > 0.0f) {
+        settings.peakLuminanceNits = displayInfo.maxLuminanceNits; // 디스플레이의 최대 휘도 (니트 단위)
+    } else {
+        static constexpr float DefaultHDRPeakLuminanceNits = 1000.0f;
+        settings.peakLuminanceNits = DefaultHDRPeakLuminanceNits; // 디스플레이의 최대 휘도를 알 수 없는 경우 기본값으로 1000 니트 사용
+    }
+
+    // 최대 선형 값 계산 (최대 휘도 / 종이 흰색 휘도)
+    settings.maxDisplayLinearValue = settings.peakLuminanceNits / settings.paperWhiteNits;
+
+    displayOutputSettings = settings;
+}
+
 void RenderContext::OnResize(int width, int height) {
     // 모든 프레임에 대해서 렌더 스레드가 렌더링을 완료할 때까지 기다린다.
     if (renderSystem->IsUsingRenderThread()) {
@@ -135,40 +185,123 @@ void RenderContext::OnResize(int width, int height) {
     // 스왑 체인의 크기 조정
     swapChain->Resize(width, height);
 
-    if (!CreateFrameCompositionTexture()) {
-        BE_WARNLOG("RenderContext::OnResize: failed to create frame composition texture\n");
-    }
+    CreateFrameCompositionTexture();
+
+    displayOutputDirty = true;
 
     ResetGuiClipRect(width, height);
 }
 
-bool RenderContext::CreateFrameCompositionTexture() {
+void RenderContext::OnDisplayChange() {
+    displayOutputDirty = true;
+}
+
+void RenderContext::RecreateDisplayOutput(bool tryHDR10) {
+    assert(!RenderContext::activeContext);
+
+    if (renderSystem->IsUsingRenderThread()) {
+        renderSystem->WaitContextRenderCompleted(this);
+    }
+
+    RHI::renderer->Finish(RHI::CommandQueueType::Graphics);
+    RHI::renderer->Finish(RHI::CommandQueueType::Compute);
+
+    const uint32_t width = swapChain->GetWidth();
+    const uint32_t height = swapChain->GetHeight();
+
+#ifdef ENABLE_IMGUI
+    for (RenderFrameData &frameData : frames) {
+        frameData.ClearPendingImGuiOverlay();
+    }
+#endif
+
+    ReleasePipelines();
+    DestroyFrameCompositionTexture();
+
+    RHI::renderer->DestroySwapChain(swapChain);
+    swapChain = nullptr;
+
+    CreateSwapChain(width, height, tryHDR10);
+    UpdateDisplayOutputSettings();
+
+    CreateFrameCompositionTexture();
+
+#ifdef ENABLE_IMGUI
+    if (imguiOverlay && !imguiOverlay->SetRenderTargetFormat(frameCompositionTexture->GetFormat())) {
+        BE_FATALERROR("RenderContext::RecreateDisplayOutput: failed to update the ImGui render target format\n");
+    }
+#endif
+
+    InitPipelines();
+    ResetGuiClipRect(width, height);
+}
+
+void RenderContext::UpdateDisplayOutput() {
+    static constexpr uint32_t DisplayOutputPollFrameInterval = 60;
+
+    const bool hdrOutputSettingsChanged =
+        displayOutputSettings.hdr10Requested != r_hdr10.GetBool() ||
+        displayOutputSettings.paperWhiteNits != r_hdrPaperWhiteNits.GetFloat() ||
+        cachedHDRPeakNitsOverride != BE1::Max(r_hdrPeakNits.GetFloat(), 0.0f);
+
+    // Windows HDR 상태 변경 알림을 놓치지 않도록 저빈도로 현재 출력 정보를 다시 확인한다.
+    const bool periodicDisplayOutputPoll = frameCount % DisplayOutputPollFrameInterval == 0;
+
+    if (!displayOutputDirty && !hdrOutputSettingsChanged && !periodicDisplayOutputPoll) {
+        return;
+    }
+
+    RHI::DisplayInfo displayInfo;
+    const bool displayInfoAvailable = swapChain->GetDisplayInfo(displayInfo);
+    const bool hdr10Requested = r_hdr10.GetBool(); // HDR10 출력이 요청되었는지 여부
+    if (hdr10Requested && !displayInfoAvailable) {
+        UpdateDisplayOutputSettings();
+        displayOutputDirty = false;
+        return;
+    }
+
+    // 현재 스왑 체인이 HDR10 색 공간으로 설정되어 있는지 여부
+    const bool hdr10Active = swapChain->GetColorSpace() == RHI::SwapChain::ColorSpace::HDR10;
+
+    // HDR10 출력이 요청되었고, 디스플레이가 HDR 모드로 활성화되어 있는지 여부
+    const bool desiredHDR10 = hdr10Requested && displayInfo.hdrActive;
+
+    if (hdr10Active != desiredHDR10) {
+        RecreateDisplayOutput(desiredHDR10);
+    } else {
+        UpdateDisplayOutputSettings();
+    }
+
+    displayOutputDirty = false;
+}
+
+void RenderContext::CreateFrameCompositionTexture() {
     DestroyFrameCompositionTexture();
 
     const uint32_t width = swapChain->GetWidth();
     const uint32_t height = swapChain->GetHeight();
-    if (width == 0 || height == 0) {
-        return false;
-    }
+    assert(width > 0 && height > 0);
 
     BE1::Image::Format imageFormat = BE1::Image::Format::Unknown;
     bool isSRGB = false;
-    if (!RHI::Renderer::RHIFormatToImageFormat(swapChain->GetRTVFormat(), &imageFormat, &isSRGB)) {
-        return false;
-    }
+    RHI::Renderer::RHIFormatToImageFormat(GetFrameCompositionColorFormat(), &imageFormat, &isSRGB);
 
     SharedPtr<BE1::Image> image = MakeShared<BE1::Image>();
     image->InitFromMemory(width, height, 1, 1, 1, imageFormat, isSRGB ? BE1::Image::GammaSpace::sRGB : BE1::Image::GammaSpace::Linear, nullptr, BE1::Image::Flag::None);
 
     const RHI::ClearValue clearValue = RHI::ClearValue::Color(baseClearColor[0], baseClearColor[1], baseClearColor[2], baseClearColor[3]);
     frameCompositionTexture = RHI::renderer->CreateTexture(RHI::TextureType::Texture2D, RHI::TextureFlag::RenderTarget | RHI::TextureFlag::ShaderResource, image, RHI::TextureMipInitMode::FromImage, clearValue, 1, RHI::GPUResourceState::ShaderResource);
-    if (!frameCompositionTexture) {
-        return false;
-    }
+    assert(frameCompositionTexture);
 
     RHI::renderer->SetName(frameCompositionTexture, "RenderContext::frameCompositionTexture");
     frameCompositionTextureNeedsClear = true;
-    return true;
+}
+
+RHI::Format RenderContext::GetFrameCompositionColorFormat() const {
+    if (swapChain->GetColorSpace() == RHI::SwapChain::ColorSpace::HDR10) {
+        return RHI::Format::R16G16B16A16_FLOAT;
+    }
+    return swapChain->GetRTVFormat();
 }
 
 void RenderContext::DestroyFrameCompositionTexture() {
@@ -253,10 +386,18 @@ void RenderContext::GetMainRenderDest(RHI::RenderDest &renderDest, bool outputNo
     renderDest.sampleCount = GetMainRTSampleCount();
 }
 
+RHI::Format RenderContext::GetPostProcessColorFormat() const {
+    if (swapChain->GetColorSpace() == RHI::SwapChain::ColorSpace::HDR10) {
+        // HDR 최종 포스트 프로세스는 1.0 을 초과하는 paper-white-relative 선형 값을 보존해야 한다.
+        return RHI::Format::R16G16B16A16_FLOAT;
+    }
+    return RHI::Format::R8G8B8A8_UNORM;
+}
+
 void RenderContext::GetSwapChainRenderDest(RHI::RenderDest &renderDest) const {
     renderDest = RHI::RenderDest();
     renderDest.renderTargetCount = 1;
-    renderDest.renderTargetFormats[0] = swapChain->GetRTVFormat();
+    renderDest.renderTargetFormats[0] = frameCompositionTexture->GetFormat();
     renderDest.sampleCount = 1;
 }
 
@@ -270,10 +411,14 @@ void RenderContext::InitPipelines() {
     graphicsPipelineDesc.blendStateType = RHI::BlendStateType::Disabled;
 
     imagePipeline = shaderPipelineCache.GetGraphicsPipeline(shaderTemplateManager.fullscreenImageShaderTemplate, ShaderPermutationKey(), graphicsPipelineDesc);
+
+    graphicsPipelineDesc.renderDest.renderTargetFormats[0] = swapChain->GetRTVFormat();
+    hdr10OutputPipeline = shaderPipelineCache.GetGraphicsPipeline(shaderTemplateManager.hdr10OutputShaderTemplate, ShaderPermutationKey(), graphicsPipelineDesc);
 }
 
 void RenderContext::ReleasePipelines() {
     imagePipeline.reset();
+    hdr10OutputPipeline.reset();
 }
 
 void RenderContext::WaitAllFrameFences() {
@@ -406,6 +551,8 @@ bool RenderContext::BeginFrame(const FrameOptions &options) {
         BE_ERRLOG("RenderContext::BeginFrame: a frame is already active\n");
         return false;
     }
+
+    UpdateDisplayOutput();
 
     if (options.swapChainOutput) {
         // RenderCapture 는 활성 프레임 안에서 실행할 수 없으므로 필요한 radiance 캡처를 먼저 처리한다.

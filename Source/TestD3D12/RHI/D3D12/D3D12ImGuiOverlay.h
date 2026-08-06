@@ -22,12 +22,14 @@ struct ImDrawData;
 
 class D3D12ImGuiOverlay : public RHI::ImGuiOverlay {
 public:
-    bool                            Init(void *mainWindowHandle, RHI::SwapChain *swapChain);
+    bool                            Init(void *mainWindowHandle, RHI::Format renderTargetFormat);
     void                            Shutdown();
 
     bool                            IsInitialized() const { return initialized; }
 
     RHI::Format                     GetRTVFormat() const { return rtvFormat; }
+
+    virtual bool                    SetRenderTargetFormat(RHI::Format renderTargetFormat) override;
 
     virtual bool                    BeginFrameCapture() override;
     virtual void *                  EndFrameCapture() override;

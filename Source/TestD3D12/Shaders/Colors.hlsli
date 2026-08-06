@@ -277,7 +277,7 @@ inline float3 RemoveREC2084Curve(float3 N) {
 }
 
 inline float3 REC709toREC2020(float3 RGB709) {
-    static const float3x3 conversionMatrix = {
+    const float3x3 conversionMatrix = {
         0.627402, 0.329292, 0.043306,
         0.069095, 0.919544, 0.011360,
         0.016394, 0.088028, 0.895578
@@ -286,7 +286,7 @@ inline float3 REC709toREC2020(float3 RGB709) {
 }
 
 inline float3 REC2020toREC709(float3 RGB2020) {
-    static const float3x3 conversionMatrix = {
+    const float3x3 conversionMatrix = {
          1.660496, -0.587656, -0.072840,
         -0.124547,  1.132895, -0.008348,
         -0.018154, -0.100597,  1.118751

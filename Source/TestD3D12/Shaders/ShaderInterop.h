@@ -63,6 +63,7 @@ static const uint ColorGradingLUTSize = 32;
 static const uint FinalPostProcessFlagToneMapping = 1u << 0;
 static const uint FinalPostProcessFlagDithering = 1u << 1;
 static const uint FinalPostProcessFlagColorGrading = 1u << 2;
+static const uint FinalPostProcessFlagHDR10Output = 1u << 3;
 
 static const uint TAAResolveBlockSizeX = 16;
 static const uint TAAResolveBlockSizeY = 16;
@@ -203,8 +204,13 @@ struct FinalPostProcessParams {
     float3 whiteBalance;
     float bloomDirtIntensity;
     float2 bloomDirtUvScale;
-    float2 padding0;
+    float paperWhiteNits;           // Absolute luminance represented by linear 1.0.
+    float maxDisplayLinearValue;    // Peak luminance in paper-white-relative linear units.
 };
+
+#ifdef __cplusplus
+static_assert(sizeof(FinalPostProcessParams) == 80, "FinalPostProcessParams must match the HLSL constant-buffer layout");
+#endif
 
 struct TAAResolveParams {
     uint2 outputSize;
@@ -237,6 +243,17 @@ struct FullscreenImageParams {
     float2 texCoordScale;
     float2 texCoordOffset;
 };
+
+struct HDR10OutputParams {
+    float2 texCoordScale;
+    float2 texCoordOffset;
+    float paperWhiteNits;
+    float maxDisplayLinearValue;
+};
+
+#ifdef __cplusplus
+static_assert(sizeof(HDR10OutputParams) == 24, "HDR10OutputParams must match the HLSL root constants");
+#endif
 
 struct BloomParams {
     uint2 inputSize;

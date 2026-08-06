@@ -31,8 +31,9 @@ void CSMain(uint3 dispatchThreadId : SV_DispatchThreadID) {
     float2 centerOffset = uv - 0.5;
     float2 centerOffsetPixels = centerOffset * float2(finalPostProcessParams.outputSize);
     float2 inputUv = uv;
-
     float4 hdrColor;
+
+    // 렌즈 왜곡 적용
     if (finalPostProcessParams.lensDistortion != 0.0) {
         float normalizedRadiusSq = dot(centerOffsetPixels, centerOffsetPixels) * finalPostProcessParams.lensDistortionRadiusSqScale;
         float radialScale = finalPostProcessParams.lensDistortionFitScale / (1.0 - finalPostProcessParams.lensDistortion * normalizedRadiusSq);
@@ -42,6 +43,7 @@ void CSMain(uint3 dispatchThreadId : SV_DispatchThreadID) {
         hdrColor = inputTexture.Load(int3(pixelCoord, 0));
     }
 
+    // 크로마틱 수차 적용
     if (finalPostProcessParams.chromaticAberration > 0.0) {
         float centerDistance = length(centerOffsetPixels);
         float normalizedRadius = saturate(length(centerOffset) * 2.0);
@@ -52,6 +54,7 @@ void CSMain(uint3 dispatchThreadId : SV_DispatchThreadID) {
         hdrColor.b = inputTexture.SampleLevel(linearClampSampler, inputUv + sampleOffset, 0).b;
     }
 
+    // 블룸 효과 적용
     if (finalPostProcessParams.bloomIntensity > 0.0) {
         float3 bloomColor = bloomTexture.SampleLevel(linearClampSampler, inputUv, 0).rgb * finalPostProcessParams.bloomIntensity;
         if (finalPostProcessParams.bloomDirtIntensity > 0.0) {
@@ -62,29 +65,44 @@ void CSMain(uint3 dispatchThreadId : SV_DispatchThreadID) {
         hdrColor.rgb += bloomColor;
     }
 
+    // 화이트 밸런스 적용
     float3 color = max(hdrColor.rgb * finalPostProcessParams.whiteBalance, float3(0.0, 0.0, 0.0));
 
+    bool hdr10Output = (finalPostProcessParams.flags & FinalPostProcessFlagHDR10Output) != 0;
+    float maxOutputLinearValue = hdr10Output ? max(finalPostProcessParams.maxDisplayLinearValue, 1.0) : 1.0;
+
+    // 톤 매핑 적용
     if ((finalPostProcessParams.flags & FinalPostProcessFlagToneMapping) != 0) {
         float exposure = luminanceBuffer.Load<float>(LuminanceBufferOffsetExposure);
-        color = ToneMap(color * exposure, finalPostProcessParams.toneMappingOperator);
+        float3 exposedColor = color * exposure;
+        // HDR10 출력 시에는 Filmic GT 톤 매핑 적용, 그렇지 않으면 선택한 톤 매핑 연산자 적용
+        color = hdr10Output ? ToneMapFilmicGT(exposedColor, maxOutputLinearValue) : ToneMap(exposedColor, finalPostProcessParams.toneMappingOperator);
     }
 
+    // 컬러 그레이딩 적용
     if ((finalPostProcessParams.flags & FinalPostProcessFlagColorGrading) != 0) {
+        float colorScale = hdr10Output ? max(max(color.r, color.g), max(color.b, 1.0)) : 1.0;
         float lutSize = (float)ColorGradingLUTSize;
-        float3 lutCoord = (saturate(color) * (lutSize - 1.0) + 0.5) / lutSize;
-        color = colorGradingLUTTexture.SampleLevel(linearClampSampler, lutCoord, 0).rgb;
+        float3 lutCoord = (saturate(color / colorScale) * (lutSize - 1.0) + 0.5) / lutSize;
+        color = colorGradingLUTTexture.SampleLevel(linearClampSampler, lutCoord, 0).rgb * colorScale;
     }
 
+    // 비네팅 효과 적용
     if (finalPostProcessParams.vignetteIntensity > 0.0) {
         float2 vignetteOffset = centerOffset * 2.0;
         float vignette = smoothstep(0.8, 1.5, dot(vignetteOffset, vignetteOffset));
         color *= 1.0 - vignette * finalPostProcessParams.vignetteIntensity;
     }
 
+    // 디더링 적용
     if ((finalPostProcessParams.flags & FinalPostProcessFlagDithering) != 0) {
         float dither = (InterleavedGradientNoise(pixelCoord) - 0.5) / 255.0;
         color += dither;
     }
 
-    outputTexture[pixelCoord] = float4(saturate(color), saturate(hdrColor.a));
+    if (hdr10Output) {
+        outputTexture[pixelCoord] = float4(clamp(color, 0.0, maxOutputLinearValue), saturate(hdrColor.a));
+    } else {
+        outputTexture[pixelCoord] = float4(saturate(color), saturate(hdrColor.a));
+    }
 }

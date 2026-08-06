@@ -29,7 +29,10 @@ CVAR(r_lightCullingZBin, "1", BE1::CVar::Flag::Bool, "enable light Z-bin culling
 CVAR_MINMAX(r_lightCullingDebug, "0", BE1::CVar::Flag::Integer, "light culling debug view (0 = off, 1 = tile mask, 2 = tile mask and Z-bin)", 0, 2);
 
 CVAR(r_vsync, "0", BE1::CVar::Flag::Bool | BE1::CVar::Flag::Archive, "synchronize presentation to the vertical refresh rate");
-CVAR(r_frameComposition, "1", BE1::CVar::Flag::Bool, "route swap chain output through the frame composition texture");
+CVAR(r_hdr10, "1", BE1::CVar::Flag::Bool | BE1::CVar::Flag::Archive, "enable HDR10 output when supported");
+CVAR_MINMAX(r_hdrPaperWhiteNits, "200", BE1::CVar::Flag::Float | BE1::CVar::Flag::Archive, "HDR paper white luminance in nits", 80.0f, 500.0f);
+CVAR_MINMAX(r_hdrPeakNits, "0", BE1::CVar::Flag::Float | BE1::CVar::Flag::Archive, "HDR peak luminance in nits (0 = use the display value)", 0.0f, 10000.0f);
+
 CVAR(r_depthPrepass, "0", BE1::CVar::Flag::Bool, "enable depth prepass");
 CVAR(r_specularEnergyCompensation2, "1", BE1::CVar::Flag::Bool | BE1::CVar::Flag::Archive, "use energy compensation for multiple scattering in a microfacet model");
 CVAR(r_specularAA, "0", BE1::CVar::Flag::Bool | BE1::CVar::Flag::Archive, "enable screen-space specular anti-aliasing");
@@ -39,7 +42,7 @@ CVAR(r_csmConstantDepthBias0, "1000.0", BE1::CVar::Flag::Float, "constant depth 
 CVAR(r_csmConstantDepthBias1, "500.0", BE1::CVar::Flag::Float, "constant depth bias for CSM cascade 1");
 CVAR(r_csmConstantDepthBias2, "250.0", BE1::CVar::Flag::Float, "constant depth bias for CSM cascade 2");
 CVAR(r_csmConstantDepthBias3, "125.0", BE1::CVar::Flag::Float, "constant depth bias for CSM cascade 3");
-CVAR(r_csmSlopeScaledDepthBias0, "5.0", BE1::CVar::Flag::Float, "slope-scaled depth bias for CSM cascade 0");
+CVAR(r_csmSlopeScaledDepthBias0, "5.0", BE1::CVar::Flag::Float, "slope-scaled depth bias for CSM cascade 0"); 
 CVAR(r_csmSlopeScaledDepthBias1, "4.0", BE1::CVar::Flag::Float, "slope-scaled depth bias for CSM cascade 1");
 CVAR(r_csmSlopeScaledDepthBias2, "3.0", BE1::CVar::Flag::Float, "slope-scaled depth bias for CSM cascade 2");
 CVAR(r_csmSlopeScaledDepthBias3, "2.0", BE1::CVar::Flag::Float, "slope-scaled depth bias for CSM cascade 3");

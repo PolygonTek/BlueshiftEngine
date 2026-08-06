@@ -72,13 +72,15 @@ public:
 
     virtual RHI::SwapChain *            CreateSwapChain(HWND hwnd, uint32_t width, uint32_t height, RHI::Format format) override;
     virtual void                        DestroySwapChain(RHI::SwapChain *swapChain) override;
+    bool                                RefreshDXGIFactory();
+    bool                                GetDisplayInfo(HWND hwnd, RHI::DisplayInfo &displayInfo);
 
-    virtual RHI::ImGuiOverlay *         CreateImGuiOverlay(void *windowHandle, RHI::SwapChain *swapChain) override;
+    virtual RHI::ImGuiOverlay *         CreateImGuiOverlay(void *windowHandle, RHI::Format renderTargetFormat) override;
     virtual void                        DestroyImGuiOverlay(RHI::ImGuiOverlay *overlay) override;
     virtual void                        RenderImGuiDrawData(RHI::FrameThreadData *frameThreadData, RHI::CommandList *commandList, RHI::ImGuiOverlay *overlay, void *userData) override;
     virtual void                        FreeImGuiDrawData(RHI::ImGuiOverlay *overlay, void *userData) override;
 
-    bool                                InitImGuiOverlayRenderer(D3D12ImGuiOverlay *overlay, RHI::SwapChain *swapChain);
+    bool                                InitImGuiOverlayRenderer(D3D12ImGuiOverlay *overlay, RHI::Format renderTargetFormat);
     void                                ShutdownImGuiOverlayRenderer(D3D12ImGuiOverlay *overlay);
     bool                                UpdateImGuiOverlayTextures(D3D12ImGuiOverlay *overlay, ImVector<ImTextureData *> *textures);
 

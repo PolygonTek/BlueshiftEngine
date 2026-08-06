@@ -9,8 +9,8 @@ struct PSInput {
     float2 texCoord : TEXCOORD0;
 };
 
-Texture2D defaultTexture : register(t0);
-SamplerState defaultSampler : register(s0);
+Texture2D inputTexture : register(t0);
+SamplerState inputSampler : register(s0);
 
 cbuffer FullscreenImageCB : register(b0) {
     FullscreenImageParams imageParams;
@@ -23,11 +23,11 @@ PSInput VSMain(uint vertexID : SV_VertexID) {
     // Creates a full screen CCW triangle from 3 vertices
     result.position.x = (float)(vertexID % 2) * 4.0 - 1.0;
     result.position.y = (float)(vertexID / 2) * 4.0 - 1.0;
-    result.position.z = 0;
-    result.position.w = 1;
+    result.position.z = 0.0;
+    result.position.w = 1.0;
 
-    result.texCoord.x = (float)(vertexID % 2) * 2;
-    result.texCoord.y = 1.0f - (float)(vertexID / 2) * 2;
+    result.texCoord.x = (float)(vertexID % 2) * 2.0;
+    result.texCoord.y = 1.0 - (float)(vertexID / 2) * 2.0;
 
     return result;
 }
@@ -35,5 +35,5 @@ PSInput VSMain(uint vertexID : SV_VertexID) {
 [RootSignature(COMMON_ROOT_SIGNATURE)]
 float4 PSMain(PSInput input) : SV_TARGET {
     float2 texCoord = input.texCoord * imageParams.texCoordScale + imageParams.texCoordOffset;
-    return defaultTexture.Sample(defaultSampler, texCoord);
+    return inputTexture.Sample(inputSampler, texCoord);
 }

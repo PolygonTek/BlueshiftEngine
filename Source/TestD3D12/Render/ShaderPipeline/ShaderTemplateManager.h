@@ -48,6 +48,7 @@ public:
     uint32_t                        CopyGlobalDefines(BE1::StrArray &outDefines) const;
 
     SharedPtr<ShaderTemplate>       fullscreenImageShaderTemplate;
+    SharedPtr<ShaderTemplate>       hdr10OutputShaderTemplate;
     SharedPtr<ShaderTemplate>       debugDrawShaderTemplate;
     SharedPtr<ShaderTemplate>       depthShaderTemplate;
     SharedPtr<ShaderTemplate>       unlitShaderTemplate;

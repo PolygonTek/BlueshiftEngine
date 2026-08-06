@@ -234,7 +234,7 @@ void RenderWorld::RenderScene(RenderCamera *renderCamera) {
     }
 
     renderCamera->EnsureHiZResources(renderWidth, renderHeight, needHiZTexture, needHiZCullResources, needHiZDebugPreview);
-    renderCamera->EnsurePostProcessResources(skipPostProcess, needColorHistory, needDepthHistory, bloomMode);
+    renderCamera->EnsurePostProcessResources(skipPostProcess, renderContext->GetPostProcessColorFormat(), needColorHistory, needDepthHistory, bloomMode);
 
     const bool temporalJitterEnabled = useTAA && r_taaJitter.GetBool();
     const uint32_t temporalJitterSampleCount = static_cast<uint32_t>(BE1::Max(r_taaJitterSampleCount.GetInteger(), 1));

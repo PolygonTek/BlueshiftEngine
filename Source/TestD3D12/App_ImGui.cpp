@@ -565,9 +565,16 @@ void App::BuildImGuiOverlay() {
                 r_vsync.SetBool(vsync);
             }
 
-            bool frameComposition = r_frameComposition.GetBool();
-            if (ImGui::Checkbox("Frame composition", &frameComposition)) {
-                r_frameComposition.SetBool(frameComposition);
+            bool hdr10 = r_hdr10.GetBool();
+            if (ImGui::Checkbox("HDR10", &hdr10)) {
+                r_hdr10.SetBool(hdr10);
+            }
+            if (hdr10) {
+                float hdrPaperWhiteNits = BE1::Clamp(r_hdrPaperWhiteNits.GetFloat(), r_hdrPaperWhiteNits.GetMinValue(), r_hdrPaperWhiteNits.GetMaxValue());
+                ImGui::SetNextItemWidth(fontSize * 12.0f);
+                if (ImGui::SliderFloat("HDR paper white", &hdrPaperWhiteNits, r_hdrPaperWhiteNits.GetMinValue(), r_hdrPaperWhiteNits.GetMaxValue(), "%.0f nits")) {
+                    r_hdrPaperWhiteNits.SetFloat(hdrPaperWhiteNits);
+                }
             }
 
             bool depthPrepass = r_depthPrepass.GetBool();
@@ -989,8 +996,11 @@ void App::BuildImGuiOverlay() {
                     r_toneMapping.SetBool(toneMapping);
                 }
 
-                int toneMapOp = BE1::Clamp(r_toneMapOp.GetInteger(), static_cast<int>(ToneMappingOperatorLinear), static_cast<int>(ToneMappingOperatorFilmicGT));
+                const bool hdr10Output = mainRenderContext && mainRenderContext->GetSwapChain()->GetColorSpace() == RHI::SwapChain::ColorSpace::HDR10;
+                int toneMapOp = hdr10Output ? static_cast<int>(ToneMappingOperatorFilmicGT) :
+                    BE1::Clamp(r_toneMapOp.GetInteger(), static_cast<int>(ToneMappingOperatorLinear), static_cast<int>(ToneMappingOperatorFilmicGT));
                 ImGui::SetNextItemWidth(fontSize * 12.0f);
+                ImGui::BeginDisabled(hdr10Output);
                 if (ImGui::Combo("Tone map operator", &toneMapOp,
                     "Linear\0"
                     "Exponential\0"
@@ -1005,6 +1015,7 @@ void App::BuildImGuiOverlay() {
                     "Filmic GT\0\0")) {
                     r_toneMapOp.SetInteger(toneMapOp);
                 }
+                ImGui::EndDisabled();
 
                 float luminanceLogMin = r_toneMapLuminanceLogMin.GetFloat();
                 float luminanceLogMax = r_toneMapLuminanceLogMax.GetFloat();
@@ -1154,6 +1165,10 @@ void App::BuildImGuiOverlay() {
             ImGui::Text("Mouse capture: %s", ImGui::GetIO().WantCaptureMouse ? "true" : "false");
             ImGui::Text("Keyboard capture: %s", ImGui::GetIO().WantCaptureKeyboard ? "true" : "false");
             ImGui::Separator();
+
+            if (ImGui::Button("Take screenshot")) {
+                TakeScreenshot();
+            }
 
             if (ImGui::Button("Capture scene")) {
                 pendingScreenshotCapture = true;

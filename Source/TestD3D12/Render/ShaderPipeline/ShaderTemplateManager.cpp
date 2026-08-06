@@ -299,6 +299,11 @@ void ShaderTemplateManager::CreateEngineShaderTemplates() {
         BE_FATALERROR("ShaderTemplateManager::CreateEngineShaderTemplates: failed to load fullscreen image shader template");
     }
 
+    hdr10OutputShaderTemplate = GetShaderTemplate("Source/TestD3D12/Shaders/HDR10Output");
+    if (!hdr10OutputShaderTemplate) {
+        BE_FATALERROR("ShaderTemplateManager::CreateEngineShaderTemplates: failed to load HDR10 output shader template");
+    }
+
     debugDrawShaderTemplate = GetShaderTemplate("Source/TestD3D12/Shaders/DebugDraw");
     if (!debugDrawShaderTemplate) {
         BE_FATALERROR("ShaderTemplateManager::CreateEngineShaderTemplates: failed to load debug draw shader template");
@@ -323,6 +328,9 @@ void ShaderTemplateManager::CreateEngineShaderTemplates() {
 void ShaderTemplateManager::DestroyEngineShaderTemplates() {
     if (fullscreenImageShaderTemplate) {
         fullscreenImageShaderTemplate.reset();
+    }
+    if (hdr10OutputShaderTemplate) {
+        hdr10OutputShaderTemplate.reset();
     }
     if (debugDrawShaderTemplate) {
         debugDrawShaderTemplate.reset();
