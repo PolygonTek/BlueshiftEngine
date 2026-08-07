@@ -29,7 +29,7 @@ CVAR(r_lightCullingZBin, "1", BE1::CVar::Flag::Bool, "enable light Z-bin culling
 CVAR_MINMAX(r_lightCullingDebug, "0", BE1::CVar::Flag::Integer, "light culling debug view (0 = off, 1 = tile mask, 2 = tile mask and Z-bin)", 0, 2);
 
 CVAR(r_vsync, "0", BE1::CVar::Flag::Bool | BE1::CVar::Flag::Archive, "synchronize presentation to the vertical refresh rate");
-CVAR(r_hdr10, "1", BE1::CVar::Flag::Bool | BE1::CVar::Flag::Archive, "enable HDR10 output when supported");
+CVAR(r_hdrOutput, "1", BE1::CVar::Flag::Bool | BE1::CVar::Flag::Archive, "enable HDR output when supported");
 CVAR_MINMAX(r_hdrPaperWhiteNits, "200", BE1::CVar::Flag::Float | BE1::CVar::Flag::Archive, "HDR paper white luminance in nits", 80.0f, 500.0f);
 CVAR_MINMAX(r_hdrPeakNits, "0", BE1::CVar::Flag::Float | BE1::CVar::Flag::Archive, "HDR peak luminance in nits (0 = use the display value)", 0.0f, 10000.0f);
 

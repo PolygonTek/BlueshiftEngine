@@ -70,6 +70,7 @@ public:
     virtual bool                        CanGenerateMipmapsOnGPU(RHI::TextureType textureType, BE1::Image::Format imageFormat, int arraySize) const override;
     bool                                IsSupportedUAVFormat(DXGI_FORMAT format) const;
 
+    virtual RHI::SwapChain::ColorSpace  GetHDRColorSpace() const override { return RHI::SwapChain::ColorSpace::BT2020PQ; }
     virtual RHI::SwapChain *            CreateSwapChain(HWND hwnd, uint32_t width, uint32_t height, RHI::Format format) override;
     virtual void                        DestroySwapChain(RHI::SwapChain *swapChain) override;
     bool                                RefreshDXGIFactory();

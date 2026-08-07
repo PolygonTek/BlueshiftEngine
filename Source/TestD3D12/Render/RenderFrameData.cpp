@@ -487,7 +487,7 @@ void RenderFrameData::CmdBeginContext(RenderContext *context, bool gpuTiming, bo
     cmd->commandId = RenderCommandId::BeginContext;
     cmd->renderContext = context;
     cmd->imagePSO = ShaderPipeline::GetReadyPSO(context->imagePipeline);
-    cmd->hdr10OutputPSO = ShaderPipeline::GetReadyPSO(context->hdr10OutputPipeline);
+    cmd->hdrOutputPSO = ShaderPipeline::GetReadyPSO(context->hdrOutputPipeline);
     cmd->gpuTiming = gpuTiming;
     cmd->textureStreamingFeedback = textureStreamingFeedback;
     cmd->swapChainOutput = swapChainOutput;

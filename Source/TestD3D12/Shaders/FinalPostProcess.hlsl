@@ -68,20 +68,20 @@ void CSMain(uint3 dispatchThreadId : SV_DispatchThreadID) {
     // 화이트 밸런스 적용
     float3 color = max(hdrColor.rgb * finalPostProcessParams.whiteBalance, float3(0.0, 0.0, 0.0));
 
-    bool hdr10Output = (finalPostProcessParams.flags & FinalPostProcessFlagHDR10Output) != 0;
-    float maxOutputLinearValue = hdr10Output ? max(finalPostProcessParams.maxDisplayLinearValue, 1.0) : 1.0;
+    bool hdrOutput = (finalPostProcessParams.flags & FinalPostProcessFlagHDROutput) != 0;
+    float maxOutputLinearValue = hdrOutput ? max(finalPostProcessParams.maxDisplayLinearValue, 1.0) : 1.0;
 
     // 톤 매핑 적용
     if ((finalPostProcessParams.flags & FinalPostProcessFlagToneMapping) != 0) {
         float exposure = luminanceBuffer.Load<float>(LuminanceBufferOffsetExposure);
         float3 exposedColor = color * exposure;
-        // HDR10 출력 시에는 Filmic GT 톤 매핑 적용, 그렇지 않으면 선택한 톤 매핑 연산자 적용
-        color = hdr10Output ? ToneMapFilmicGT(exposedColor, maxOutputLinearValue) : ToneMap(exposedColor, finalPostProcessParams.toneMappingOperator);
+        // HDR 출력 시에는 Filmic GT 톤 매핑 적용, 그렇지 않으면 선택한 톤 매핑 연산자 적용
+        color = hdrOutput ? ToneMapFilmicGT(exposedColor, maxOutputLinearValue) : ToneMap(exposedColor, finalPostProcessParams.toneMappingOperator);
     }
 
     // 컬러 그레이딩 적용
     if ((finalPostProcessParams.flags & FinalPostProcessFlagColorGrading) != 0) {
-        float colorScale = hdr10Output ? max(max(color.r, color.g), max(color.b, 1.0)) : 1.0;
+        float colorScale = hdrOutput ? max(max(color.r, color.g), max(color.b, 1.0)) : 1.0;
         float lutSize = (float)ColorGradingLUTSize;
         float3 lutCoord = (saturate(color / colorScale) * (lutSize - 1.0) + 0.5) / lutSize;
         color = colorGradingLUTTexture.SampleLevel(linearClampSampler, lutCoord, 0).rgb * colorScale;
@@ -100,7 +100,7 @@ void CSMain(uint3 dispatchThreadId : SV_DispatchThreadID) {
         color += dither;
     }
 
-    if (hdr10Output) {
+    if (hdrOutput) {
         outputTexture[pixelCoord] = float4(clamp(color, 0.0, maxOutputLinearValue), saturate(hdrColor.a));
     } else {
         outputTexture[pixelCoord] = float4(saturate(color), saturate(hdrColor.a));

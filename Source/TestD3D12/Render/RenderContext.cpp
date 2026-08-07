@@ -59,7 +59,7 @@ void RenderContext::Init(void *windowHandle, const BE1::Color4 &baseClearColor) 
     uint32_t backBufferWidth = rc.right;
     uint32_t backBufferHeight = rc.bottom;
 
-    CreateSwapChain(backBufferWidth, backBufferHeight, r_hdr10.GetBool());
+    CreateSwapChain(backBufferWidth, backBufferHeight, r_hdrOutput.GetBool());
 
     UpdateDisplayOutputSettings();
 
@@ -120,23 +120,21 @@ void RenderContext::Shutdown() {
     windowHandle = nullptr;
 }
 
-void RenderContext::CreateSwapChain(uint32_t width, uint32_t height, bool tryHDR10) {
+void RenderContext::CreateSwapChain(uint32_t width, uint32_t height, bool hdrOutputRequested) {
     assert(!swapChain);
 
     HWND hwnd = reinterpret_cast<HWND>(windowHandle);
 
-    // HDR10 이 요청된 경우 10-bit RGB 스왑 체인을 우선 생성한다.
-    const RHI::Format swapChainFormat = tryHDR10 ? RHI::Format::R10G10B10A2_UNORM : RHI::Format::R8G8B8A8_UNORM;
-    swapChain = RHI::renderer->CreateSwapChain(hwnd, width, height, swapChainFormat);
+    const RHI::SwapChain::ColorSpace requestedColorSpace = hdrOutputRequested ? RHI::renderer->GetHDRColorSpace() : RHI::SwapChain::ColorSpace::SRGB;
+    swapChain = RHI::renderer->CreateSwapChain(hwnd, width, height, RHI::SwapChain::GetFormatForColorSpace(requestedColorSpace));
 
-    if (tryHDR10) {
-        // 실제 디스플레이와 color space 설정이 지원될 때만 유지한다.
-        const bool hdr10Active = swapChain->IsHDRActive() && swapChain->SetColorSpace(RHI::SwapChain::ColorSpace::HDR10);
-        if (hdr10Active) {
-            BE_LOG("HDR10 output enabled\n");
+    if (requestedColorSpace != RHI::SwapChain::ColorSpace::SRGB) {
+        // 실제 HDR 출력과 HDR color space 설정이 지원되는지 체크한다.
+        const bool hdrOutputActive = swapChain->IsHDROutputAvailable() && swapChain->SetColorSpace(requestedColorSpace);
+        if (hdrOutputActive) {
+            BE_LOG("%s output enabled\n", RHI::SwapChain::GetColorSpaceName(requestedColorSpace));
         } else {
-            // SDR 출력 경로에서는 기존 8-bit RGBA 스왑 체인으로 폴백한다.
-            BE_LOG("HDR10 output unavailable; falling back to SDR\n");
+            BE_LOG("%s output unavailable; falling back to SDR\n", RHI::SwapChain::GetColorSpaceName(requestedColorSpace));
             RHI::renderer->DestroySwapChain(swapChain);
             swapChain = RHI::renderer->CreateSwapChain(hwnd, width, height, RHI::Format::R8G8B8A8_UNORM);
         }
@@ -144,30 +142,37 @@ void RenderContext::CreateSwapChain(uint32_t width, uint32_t height, bool tryHDR
 }
 
 void RenderContext::UpdateDisplayOutputSettings() {
+    static constexpr float DefaultHDRPeakLuminanceNits = 1000.0f;
+
     DisplayOutputSettings settings;
-    settings.hdr10Requested = r_hdr10.GetBool();
+    settings.hdrOutputRequested = r_hdrOutput.GetBool();
     settings.paperWhiteNits = r_hdrPaperWhiteNits.GetFloat();
 
     RHI::DisplayInfo displayInfo;
     if (swapChain->GetDisplayInfo(displayInfo)) {
-        settings.hdrDisplayActive = displayInfo.hdrActive; // Windows HDR 활성화 여부
+        settings.hdrDisplayActive = displayInfo.hdrActive; // 현재 디스플레이의 HDR 출력 활성화 여부
         settings.minLuminanceNits = displayInfo.minLuminanceNits; // 디스플레이의 최소 휘도 (니트 단위)
         settings.maxFullFrameLuminanceNits = displayInfo.maxFullFrameLuminanceNits; // 디스플레이의 최대 전체 프레임 휘도 (니트 단위)
     }
 
     const float peakLuminanceOverrideNits = BE1::Max(r_hdrPeakNits.GetFloat(), 0.0f);
     cachedHDRPeakNitsOverride = peakLuminanceOverrideNits;
+
     if (peakLuminanceOverrideNits > 0.0f) {
-        settings.peakLuminanceNits = peakLuminanceOverrideNits; // r_hdrPeakNits 으로 오버라이드된 최대 휘도 (니트 단위)
-    } else if (displayInfo.maxLuminanceNits > 0.0f) {
-        settings.peakLuminanceNits = displayInfo.maxLuminanceNits; // 디스플레이의 최대 휘도 (니트 단위)
+        // r_hdrPeakNits 으로 오버라이드된 최대 휘도
+        settings.peakLuminanceNits = peakLuminanceOverrideNits;
+        settings.maxDisplayLinearValue = settings.peakLuminanceNits / settings.paperWhiteNits;
+    } else if (displayInfo.maxLinearOutputValue > 0.0f) {
+        // 플랫폼이 기준 흰색에 상대적인 선형 출력 상한을 직접 제공하면 그 값을 우선 사용한다.
+        settings.maxDisplayLinearValue = displayInfo.maxLinearOutputValue;
+        settings.peakLuminanceNits = displayInfo.maxLuminanceNits > 0.0f ? displayInfo.maxLuminanceNits : settings.paperWhiteNits * settings.maxDisplayLinearValue;
     } else {
-        static constexpr float DefaultHDRPeakLuminanceNits = 1000.0f;
-        settings.peakLuminanceNits = DefaultHDRPeakLuminanceNits; // 디스플레이의 최대 휘도를 알 수 없는 경우 기본값으로 1000 니트 사용
+        // 디스플레이의 최대 휘도 (디스플레이의 최대 휘도를 알 수 없는 경우 기본값으로 1000 니트 사용)
+        settings.peakLuminanceNits = displayInfo.maxLuminanceNits > 0.0f ? displayInfo.maxLuminanceNits : DefaultHDRPeakLuminanceNits;
+        settings.maxDisplayLinearValue = settings.peakLuminanceNits / settings.paperWhiteNits;
     }
 
-    // 최대 선형 값 계산 (최대 휘도 / 종이 흰색 휘도)
-    settings.maxDisplayLinearValue = settings.peakLuminanceNits / settings.paperWhiteNits;
+    settings.maxDisplayLinearValue = BE1::Max(settings.maxDisplayLinearValue, 1.0f);
 
     displayOutputSettings = settings;
 }
@@ -196,7 +201,7 @@ void RenderContext::OnDisplayChange() {
     displayOutputDirty = true;
 }
 
-void RenderContext::RecreateDisplayOutput(bool tryHDR10) {
+void RenderContext::RecreateDisplayOutput(bool hdrOutputRequested) {
     assert(!RenderContext::activeContext);
 
     if (renderSystem->IsUsingRenderThread()) {
@@ -221,7 +226,7 @@ void RenderContext::RecreateDisplayOutput(bool tryHDR10) {
     RHI::renderer->DestroySwapChain(swapChain);
     swapChain = nullptr;
 
-    CreateSwapChain(width, height, tryHDR10);
+    CreateSwapChain(width, height, hdrOutputRequested);
     UpdateDisplayOutputSettings();
 
     CreateFrameCompositionTexture();
@@ -239,35 +244,38 @@ void RenderContext::RecreateDisplayOutput(bool tryHDR10) {
 void RenderContext::UpdateDisplayOutput() {
     static constexpr uint32_t DisplayOutputPollFrameInterval = 60;
 
-    const bool hdrOutputSettingsChanged =
-        displayOutputSettings.hdr10Requested != r_hdr10.GetBool() ||
+    const bool hdrOutputRequested = r_hdrOutput.GetBool();
+    const bool hdrOutputRequestChanged = displayOutputSettings.hdrOutputRequested != hdrOutputRequested;
+    const bool hdrOutputSettingsChanged = hdrOutputRequestChanged ||
         displayOutputSettings.paperWhiteNits != r_hdrPaperWhiteNits.GetFloat() ||
         cachedHDRPeakNitsOverride != BE1::Max(r_hdrPeakNits.GetFloat(), 0.0f);
 
-    // Windows HDR 상태 변경 알림을 놓치지 않도록 저빈도로 현재 출력 정보를 다시 확인한다.
+    // 디스플레이 HDR 상태 변경 알림을 놓치지 않도록 저빈도로 현재 출력 정보를 다시 확인한다.
     const bool periodicDisplayOutputPoll = frameCount % DisplayOutputPollFrameInterval == 0;
 
     if (!displayOutputDirty && !hdrOutputSettingsChanged && !periodicDisplayOutputPoll) {
         return;
     }
 
-    RHI::DisplayInfo displayInfo;
-    const bool displayInfoAvailable = swapChain->GetDisplayInfo(displayInfo);
-    const bool hdr10Requested = r_hdr10.GetBool(); // HDR10 출력이 요청되었는지 여부
-    if (hdr10Requested && !displayInfoAvailable) {
+    if (hdrOutputRequestChanged) {
+        RecreateDisplayOutput(hdrOutputRequested);
+        displayOutputDirty = false;
+        return;
+    }
+
+    if (!hdrOutputRequested) {
         UpdateDisplayOutputSettings();
         displayOutputDirty = false;
         return;
     }
 
-    // 현재 스왑 체인이 HDR10 색 공간으로 설정되어 있는지 여부
-    const bool hdr10Active = swapChain->GetColorSpace() == RHI::SwapChain::ColorSpace::HDR10;
+    const RHI::SwapChain::ColorSpace hdrColorSpace = RHI::renderer->GetHDRColorSpace();
+    const RHI::SwapChain::ColorSpace currentColorSpace = swapChain->GetColorSpace();
+    const bool hdrOutputActive = currentColorSpace == hdrColorSpace;
+    const bool desiredHDROutput = swapChain->IsHDROutputAvailable();
 
-    // HDR10 출력이 요청되었고, 디스플레이가 HDR 모드로 활성화되어 있는지 여부
-    const bool desiredHDR10 = hdr10Requested && displayInfo.hdrActive;
-
-    if (hdr10Active != desiredHDR10) {
-        RecreateDisplayOutput(desiredHDR10);
+    if (hdrOutputActive != desiredHDROutput) {
+        RecreateDisplayOutput(desiredHDROutput);
     } else {
         UpdateDisplayOutputSettings();
     }
@@ -298,7 +306,7 @@ void RenderContext::CreateFrameCompositionTexture() {
 }
 
 RHI::Format RenderContext::GetFrameCompositionColorFormat() const {
-    if (swapChain->GetColorSpace() == RHI::SwapChain::ColorSpace::HDR10) {
+    if (RHI::SwapChain::IsHDRColorSpace(swapChain->GetColorSpace())) {
         return RHI::Format::R16G16B16A16_FLOAT;
     }
     return swapChain->GetRTVFormat();
@@ -387,7 +395,7 @@ void RenderContext::GetMainRenderDest(RHI::RenderDest &renderDest, bool outputNo
 }
 
 RHI::Format RenderContext::GetPostProcessColorFormat() const {
-    if (swapChain->GetColorSpace() == RHI::SwapChain::ColorSpace::HDR10) {
+    if (RHI::SwapChain::IsHDRColorSpace(swapChain->GetColorSpace())) {
         // HDR 최종 포스트 프로세스는 1.0 을 초과하는 paper-white-relative 선형 값을 보존해야 한다.
         return RHI::Format::R16G16B16A16_FLOAT;
     }
@@ -412,13 +420,28 @@ void RenderContext::InitPipelines() {
 
     imagePipeline = shaderPipelineCache.GetGraphicsPipeline(shaderTemplateManager.fullscreenImageShaderTemplate, ShaderPermutationKey(), graphicsPipelineDesc);
 
-    graphicsPipelineDesc.renderDest.renderTargetFormats[0] = swapChain->GetRTVFormat();
-    hdr10OutputPipeline = shaderPipelineCache.GetGraphicsPipeline(shaderTemplateManager.hdr10OutputShaderTemplate, ShaderPermutationKey(), graphicsPipelineDesc);
+    const SharedPtr<ShaderTemplate> *hdrOutputShaderTemplate = nullptr;
+    switch (swapChain->GetColorSpace()) {
+    case RHI::SwapChain::ColorSpace::BT2020PQ:
+        hdrOutputShaderTemplate = &shaderTemplateManager.hdr10OutputShaderTemplate;
+        break;
+    case RHI::SwapChain::ColorSpace::DisplayP3LinearEDR:
+        hdrOutputShaderTemplate = &shaderTemplateManager.displayP3EDROutputShaderTemplate;
+        break;
+    case RHI::SwapChain::ColorSpace::SRGB:
+    default:
+        break;
+    }
+
+    if (hdrOutputShaderTemplate) {
+        graphicsPipelineDesc.renderDest.renderTargetFormats[0] = swapChain->GetRTVFormat();
+        hdrOutputPipeline = shaderPipelineCache.GetGraphicsPipeline(*hdrOutputShaderTemplate, ShaderPermutationKey(), graphicsPipelineDesc);
+    }
 }
 
 void RenderContext::ReleasePipelines() {
     imagePipeline.reset();
-    hdr10OutputPipeline.reset();
+    hdrOutputPipeline.reset();
 }
 
 void RenderContext::WaitAllFrameFences() {

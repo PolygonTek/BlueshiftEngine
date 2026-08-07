@@ -565,11 +565,11 @@ void App::BuildImGuiOverlay() {
                 r_vsync.SetBool(vsync);
             }
 
-            bool hdr10 = r_hdr10.GetBool();
-            if (ImGui::Checkbox("HDR10", &hdr10)) {
-                r_hdr10.SetBool(hdr10);
+            bool hdrOutput = r_hdrOutput.GetBool();
+            if (ImGui::Checkbox("HDR output", &hdrOutput)) {
+                r_hdrOutput.SetBool(hdrOutput);
             }
-            if (hdr10) {
+            if (hdrOutput) {
                 float hdrPaperWhiteNits = BE1::Clamp(r_hdrPaperWhiteNits.GetFloat(), r_hdrPaperWhiteNits.GetMinValue(), r_hdrPaperWhiteNits.GetMaxValue());
                 ImGui::SetNextItemWidth(fontSize * 12.0f);
                 if (ImGui::SliderFloat("HDR paper white", &hdrPaperWhiteNits, r_hdrPaperWhiteNits.GetMinValue(), r_hdrPaperWhiteNits.GetMaxValue(), "%.0f nits")) {
@@ -996,11 +996,11 @@ void App::BuildImGuiOverlay() {
                     r_toneMapping.SetBool(toneMapping);
                 }
 
-                const bool hdr10Output = mainRenderContext && mainRenderContext->GetSwapChain()->GetColorSpace() == RHI::SwapChain::ColorSpace::HDR10;
-                int toneMapOp = hdr10Output ? static_cast<int>(ToneMappingOperatorFilmicGT) :
+                const bool hdrOutput = mainRenderContext && RHI::SwapChain::IsHDRColorSpace(mainRenderContext->GetSwapChain()->GetColorSpace());
+                int toneMapOp = hdrOutput ? static_cast<int>(ToneMappingOperatorFilmicGT) :
                     BE1::Clamp(r_toneMapOp.GetInteger(), static_cast<int>(ToneMappingOperatorLinear), static_cast<int>(ToneMappingOperatorFilmicGT));
                 ImGui::SetNextItemWidth(fontSize * 12.0f);
-                ImGui::BeginDisabled(hdr10Output);
+                ImGui::BeginDisabled(hdrOutput);
                 if (ImGui::Combo("Tone map operator", &toneMapOp,
                     "Linear\0"
                     "Exponential\0"

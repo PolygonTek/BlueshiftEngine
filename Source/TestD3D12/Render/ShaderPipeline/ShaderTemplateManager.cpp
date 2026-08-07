@@ -299,9 +299,14 @@ void ShaderTemplateManager::CreateEngineShaderTemplates() {
         BE_FATALERROR("ShaderTemplateManager::CreateEngineShaderTemplates: failed to load fullscreen image shader template");
     }
 
-    hdr10OutputShaderTemplate = GetShaderTemplate("Source/TestD3D12/Shaders/HDR10Output");
+    hdr10OutputShaderTemplate = GetShaderTemplate("Source/TestD3D12/Shaders/HDROutput/HDR10Output");
     if (!hdr10OutputShaderTemplate) {
         BE_FATALERROR("ShaderTemplateManager::CreateEngineShaderTemplates: failed to load HDR10 output shader template");
+    }
+
+    displayP3EDROutputShaderTemplate = GetShaderTemplate("Source/TestD3D12/Shaders/HDROutput/DisplayP3EDROutput");
+    if (!displayP3EDROutputShaderTemplate) {
+        BE_FATALERROR("ShaderTemplateManager::CreateEngineShaderTemplates: failed to load Display P3 EDR output shader template");
     }
 
     debugDrawShaderTemplate = GetShaderTemplate("Source/TestD3D12/Shaders/DebugDraw");
@@ -331,6 +336,9 @@ void ShaderTemplateManager::DestroyEngineShaderTemplates() {
     }
     if (hdr10OutputShaderTemplate) {
         hdr10OutputShaderTemplate.reset();
+    }
+    if (displayP3EDROutputShaderTemplate) {
+        displayP3EDROutputShaderTemplate.reset();
     }
     if (debugDrawShaderTemplate) {
         debugDrawShaderTemplate.reset();

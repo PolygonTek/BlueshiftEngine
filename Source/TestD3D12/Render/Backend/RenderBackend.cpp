@@ -336,7 +336,7 @@ const void *RenderBackend::ExecuteBeginContext(const void *data) {
 
     currentContext = cmd->renderContext;
     frameImagePSO = cmd->imagePSO;
-    frameHDR10OutputPSO = cmd->hdr10OutputPSO;
+    frameHDROutputPSO = cmd->hdrOutputPSO;
     gpuTimingEnabled = cmd->gpuTiming;
     textureStreamingFeedbackEnabled = cmd->textureStreamingFeedback;
     swapChainOutputEnabled = cmd->swapChainOutput;
@@ -708,8 +708,8 @@ void RenderBackend::BlitTextureToSwapChain(const RHI::Texture *srcTexture, const
         return;
     }
 
-    const bool hdr10Output = currentContext->GetSwapChain()->GetColorSpace() == RHI::SwapChain::ColorSpace::HDR10;
-    RHI::PipelineState *outputPSO = hdr10Output ? frameHDR10OutputPSO : frameImagePSO;
+    const RHI::SwapChain::ColorSpace outputColorSpace = currentContext->GetSwapChain()->GetColorSpace();
+    RHI::PipelineState *outputPSO = RHI::SwapChain::IsHDRColorSpace(outputColorSpace) ? frameHDROutputPSO : frameImagePSO;
     if (!outputPSO) {
         return;
     }
@@ -748,7 +748,7 @@ void RenderBackend::BlitTextureToSwapChain(const RHI::Texture *srcTexture, const
     RHI::renderer->SetScissorRect(mainCommandList, outputRect);
     RHI::renderer->SetPSO(mainCommandList, outputPSO);
     RHI::renderer->SetTexture(mainCommandList, 0, false, srcTexture);
-    if (hdr10Output) {
+    if (outputColorSpace == RHI::SwapChain::ColorSpace::BT2020PQ) {
         const RenderContext::DisplayOutputSettings &displayOutputSettings = currentContext->GetDisplayOutputSettings();
         HDR10OutputParams hdr10OutputParams = {};
         hdr10OutputParams.texCoordScale = imageParams.texCoordScale;
@@ -756,6 +756,13 @@ void RenderBackend::BlitTextureToSwapChain(const RHI::Texture *srcTexture, const
         hdr10OutputParams.paperWhiteNits = displayOutputSettings.paperWhiteNits;
         hdr10OutputParams.maxDisplayLinearValue = displayOutputSettings.maxDisplayLinearValue;
         RHI::renderer->SetConstants(mainCommandList, 0, &hdr10OutputParams, sizeof(hdr10OutputParams), 0);
+    } else if (outputColorSpace == RHI::SwapChain::ColorSpace::DisplayP3LinearEDR) {
+        const RenderContext::DisplayOutputSettings &displayOutputSettings = currentContext->GetDisplayOutputSettings();
+        DisplayP3EDROutputParams displayP3EDROutputParams = {};
+        displayP3EDROutputParams.texCoordScale = imageParams.texCoordScale;
+        displayP3EDROutputParams.texCoordOffset = imageParams.texCoordOffset;
+        displayP3EDROutputParams.maxDisplayLinearValue = displayOutputSettings.maxDisplayLinearValue;
+        RHI::renderer->SetConstants(mainCommandList, 0, &displayP3EDROutputParams, sizeof(displayP3EDROutputParams), 0);
     } else {
         RHI::renderer->SetConstants(mainCommandList, 0, &imageParams, sizeof(imageParams), 0);
     }
@@ -831,8 +838,8 @@ const void *RenderBackend::ExecuteScreenshot(const void *data) {
     RHI::Texture *frameCompositionTexture = currentContext->GetFrameCompositionTexture();
     const int frameWidth = static_cast<int>(frameCompositionTexture->GetWidth());
     const int frameHeight = static_cast<int>(frameCompositionTexture->GetHeight());
-    const bool hdr10Output = currentContext->GetSwapChain()->GetColorSpace() == RHI::SwapChain::ColorSpace::HDR10;
-    if (hdr10Output) {
+    const bool hdrOutput = RHI::SwapChain::IsHDRColorSpace(currentContext->GetSwapChain()->GetColorSpace());
+    if (hdrOutput) {
         // HDR 합성 텍스처는 paper-white-relative 선형 Rec.709 이다.
         // 디스플레이 피크를 white point 로 사용하는 extended Reinhard 커브로 SDR 범위에 압축한 뒤 sRGB 로 인코딩한다.
         BE1::Image compositionImage;

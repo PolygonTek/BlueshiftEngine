@@ -64,7 +64,7 @@ struct BeginContextRenderCommand {
     RenderCommandId                 commandId;
     RenderContext *                 renderContext;
     RHI::PipelineState *            imagePSO;
-    RHI::PipelineState *            hdr10OutputPSO;
+    RHI::PipelineState *            hdrOutputPSO;
     bool                            gpuTiming;
     bool                            textureStreamingFeedback;
     bool                            swapChainOutput;

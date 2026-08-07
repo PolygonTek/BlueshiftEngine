@@ -34,7 +34,7 @@ extern BE1::CVar    r_lightCullingZBin;
 extern BE1::CVar    r_lightCullingDebug;
 
 extern BE1::CVar    r_vsync;
-extern BE1::CVar    r_hdr10;
+extern BE1::CVar    r_hdrOutput;
 extern BE1::CVar    r_hdrPaperWhiteNits;
 extern BE1::CVar    r_hdrPeakNits;
 

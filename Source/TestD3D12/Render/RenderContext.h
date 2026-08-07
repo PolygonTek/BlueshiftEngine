@@ -80,7 +80,7 @@ public:
         float                       peakLuminanceNits = 1000.0f;        // 최대 휘도
         float                       maxFullFrameLuminanceNits = 0.0f;   // 디스플레이의 최대 전체 프레임 휘도
         float                       maxDisplayLinearValue = 5.0f;       // 최대 선형 값
-        bool                        hdr10Requested = false;
+        bool                        hdrOutputRequested = false;
         bool                        hdrDisplayActive = false;
     };
 
@@ -177,9 +177,9 @@ private:
 
     void                            InitPipelines();
     void                            ReleasePipelines();
-    void                            CreateSwapChain(uint32_t width, uint32_t height, bool tryHDR10);
+    void                            CreateSwapChain(uint32_t width, uint32_t height, bool hdrOutputRequested);
     void                            UpdateDisplayOutput();
-    void                            RecreateDisplayOutput(bool tryHDR10);
+    void                            RecreateDisplayOutput(bool hdrOutputRequested);
     void                            UpdateDisplayOutputSettings();
     RHI::Format                     GetFrameCompositionColorFormat() const;
     void                            CreateFrameCompositionTexture();
@@ -225,7 +225,7 @@ private:
     uint32_t                        mainRTSampleCount = 1;
 
     SharedPtr<ShaderPipeline>       imagePipeline;
-    SharedPtr<ShaderPipeline>       hdr10OutputPipeline;
+    SharedPtr<ShaderPipeline>       hdrOutputPipeline;
 
     TextureStreamingFeedback        textureStreamingFeedback;
 

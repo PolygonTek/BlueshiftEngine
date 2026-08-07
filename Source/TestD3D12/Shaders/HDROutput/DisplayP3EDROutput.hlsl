@@ -1,5 +1,5 @@
-#include "Common.hlsli"
-#include "Colors.hlsli"
+#include "../Common.hlsli"
+#include "../Colors.hlsli"
 
 #define COMMON_ROOT_SIGNATURE "DescriptorTable(SRV(t0)), " \
     "RootConstants(num32BitConstants=6, b0), " \
@@ -13,8 +13,8 @@ struct PSInput {
 Texture2D<float4> inputTexture : register(t0);
 SamplerState inputSampler : register(s0);
 
-cbuffer HDR10OutputCB : register(b0) {
-    HDR10OutputParams outputParams;
+cbuffer DisplayP3EDROutputCB : register(b0) {
+    DisplayP3EDROutputParams outputParams;
 }
 
 [RootSignature(COMMON_ROOT_SIGNATURE)]
@@ -38,15 +38,11 @@ float4 PSMain(PSInput input) : SV_TARGET {
     float2 texCoord = input.texCoord * outputParams.texCoordScale + outputParams.texCoordOffset;
     float4 inputColor = inputTexture.Sample(inputSampler, texCoord);
 
-    // The source uses paper-white-relative linear Rec.709 values. Convert to absolute Rec.2020
-    // luminance normalized to PQ's 10,000-nit range before applying the ST.2084 curve.
-    float3 linearRec709 = clamp(inputColor.rgb, 0.0, outputParams.maxDisplayLinearValue);
-    float3 linearRec2020 = REC709toREC2020(linearRec709);
-    float3 pqColor = ApplyREC2084Curve(saturate(linearRec2020 * (outputParams.paperWhiteNits / 10000.0)));
+    // 입력은 페이퍼 화이트 기준의 선형 Rec.709 값을 사용한다.
+    // P3-D65 원색으로 변환한 뒤 선형 EDR 출력 범위로 제한한다.
+    float maxLinearValue = max(outputParams.maxDisplayLinearValue, 1.0);
+    float3 linearRec709 = clamp(inputColor.rgb, 0.0, maxLinearValue);
+    float3 linearP3D65 = REC709toP3D65(linearRec709);
 
-    // Dither in encoded signal space immediately before quantization to RGB10.
-    float dither = (InterleavedGradientNoise(uint2(input.position.xy)) - 0.5) / 1023.0;
-    pqColor = saturate(pqColor + dither);
-
-    return float4(pqColor, saturate(inputColor.a));
+    return float4(clamp(linearP3D65, 0.0, maxLinearValue), saturate(inputColor.a));
 }

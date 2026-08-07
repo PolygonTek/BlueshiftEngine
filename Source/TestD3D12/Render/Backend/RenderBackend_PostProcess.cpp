@@ -882,7 +882,7 @@ bool RenderBackend::DispatchFinalPostProcess(bool useToneMapping, bool useBloom)
     finalPostProcessParams.flags = useToneMapping ? FinalPostProcessFlagToneMapping : 0u;
     finalPostProcessParams.toneMappingOperator = static_cast<uint32_t>(BE1::Clamp(r_toneMapOp.GetInteger(), static_cast<int>(ToneMappingOperatorLinear), static_cast<int>(ToneMappingOperatorFilmicGT)));
     const RenderContext::DisplayOutputSettings &displayOutputSettings = currentContext->GetDisplayOutputSettings();
-    const bool hdr10Output = currentContext->GetSwapChain()->GetColorSpace() == RHI::SwapChain::ColorSpace::HDR10;
+    const bool hdrOutput = RHI::SwapChain::IsHDRColorSpace(currentContext->GetSwapChain()->GetColorSpace());
     finalPostProcessParams.paperWhiteNits = displayOutputSettings.paperWhiteNits;
     finalPostProcessParams.maxDisplayLinearValue = displayOutputSettings.maxDisplayLinearValue;
     finalPostProcessParams.bloomIntensity = bloomIntensity;
@@ -913,10 +913,10 @@ bool RenderBackend::DispatchFinalPostProcess(bool useToneMapping, bool useBloom)
         referenceWhite.g / BE1::Max(sourceWhite.g, referenceWhite.g * 0.01f),
         referenceWhite.b / BE1::Max(sourceWhite.b, referenceWhite.b * 0.01f));
 
-    if (hdr10Output) {
-        finalPostProcessParams.flags |= FinalPostProcessFlagHDR10Output;
+    if (hdrOutput) {
+        finalPostProcessParams.flags |= FinalPostProcessFlagHDROutput;
     }
-    if (r_dithering.GetBool() && !hdr10Output) {
+    if (r_dithering.GetBool() && !hdrOutput) {
         finalPostProcessParams.flags |= FinalPostProcessFlagDithering;
     }
     if (useColorGrading) {

@@ -49,6 +49,7 @@ public:
 
     SharedPtr<ShaderTemplate>       fullscreenImageShaderTemplate;
     SharedPtr<ShaderTemplate>       hdr10OutputShaderTemplate;
+    SharedPtr<ShaderTemplate>       displayP3EDROutputShaderTemplate;
     SharedPtr<ShaderTemplate>       debugDrawShaderTemplate;
     SharedPtr<ShaderTemplate>       depthShaderTemplate;
     SharedPtr<ShaderTemplate>       unlitShaderTemplate;

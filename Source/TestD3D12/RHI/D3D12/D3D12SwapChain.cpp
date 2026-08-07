@@ -257,23 +257,26 @@ bool D3D12Renderer::GetDisplayInfo(HWND hwnd, RHI::DisplayInfo &displayInfo) {
     return false;
 }
 
-bool D3D12SwapChain::IsHDRActive() const {
+bool D3D12SwapChain::IsHDROutputAvailable() const {
     RHI::DisplayInfo displayInfo;
     return GetDisplayInfo(displayInfo) && displayInfo.hdrActive;
 }
 
 static DXGI_COLOR_SPACE_TYPE ToDXGIColorSpace(RHI::SwapChain::ColorSpace colorSpace) {
     switch (colorSpace) {
-    case RHI::SwapChain::ColorSpace::HDR10:
+    case RHI::SwapChain::ColorSpace::BT2020PQ:
         return DXGI_COLOR_SPACE_RGB_FULL_G2084_NONE_P2020;
-    case RHI::SwapChain::ColorSpace::SDR:
+    case RHI::SwapChain::ColorSpace::SRGB:
     default:
         return DXGI_COLOR_SPACE_RGB_FULL_G22_NONE_P709;
     }
 }
 
 bool D3D12SwapChain::IsColorSpaceSupported(RHI::SwapChain::ColorSpace colorSpace) const {
-    if (colorSpace == RHI::SwapChain::ColorSpace::HDR10 && swapChainFormat != DXGI_FORMAT_R10G10B10A2_UNORM) {
+    if (colorSpace == RHI::SwapChain::ColorSpace::DisplayP3LinearEDR) {
+        return false;
+    }
+    if (colorSpace == RHI::SwapChain::ColorSpace::BT2020PQ && swapChainFormat != DXGI_FORMAT_R10G10B10A2_UNORM) {
         return false;
     }
 

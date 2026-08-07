@@ -52,6 +52,30 @@ namespace RHI {
     }
 }
 
+RHI::Format RHI::SwapChain::GetFormatForColorSpace(RHI::SwapChain::ColorSpace colorSpace) {
+    switch (colorSpace) {
+    case RHI::SwapChain::ColorSpace::BT2020PQ:
+        return RHI::Format::R10G10B10A2_UNORM;
+    case RHI::SwapChain::ColorSpace::DisplayP3LinearEDR:
+        return RHI::Format::R16G16B16A16_FLOAT;
+    case RHI::SwapChain::ColorSpace::SRGB:
+    default:
+        return RHI::Format::R8G8B8A8_UNORM;
+    }
+}
+
+const char *RHI::SwapChain::GetColorSpaceName(RHI::SwapChain::ColorSpace colorSpace) {
+    switch (colorSpace) {
+    case RHI::SwapChain::ColorSpace::BT2020PQ:
+        return "HDR10";
+    case RHI::SwapChain::ColorSpace::DisplayP3LinearEDR:
+        return "Display P3 EDR";
+    case RHI::SwapChain::ColorSpace::SRGB:
+    default:
+        return "SDR";
+    }
+}
+
 const char *RHI::Renderer::TextureTypeName(RHI::TextureType textureType) {
     switch (textureType) {
     case RHI::TextureType::Unknown: return "Unknown";

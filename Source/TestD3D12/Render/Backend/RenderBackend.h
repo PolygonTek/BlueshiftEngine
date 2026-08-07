@@ -154,7 +154,7 @@ private:
     bool                            textureStreamingFeedbackEnabled = false;
     bool                            swapChainOutputEnabled = false;
     RHI::PipelineState *            frameImagePSO = nullptr;
-    RHI::PipelineState *            frameHDR10OutputPSO = nullptr;
+    RHI::PipelineState *            frameHDROutputPSO = nullptr;
     RHI::PipelineState *            frameGenHiZMipFirstBatchPSO = nullptr;
     RHI::PipelineState *            frameGenHiZMipFirstBatchMSAAPSO = nullptr;
     RHI::PipelineState *            frameGenHiZMipBatchPSO = nullptr;

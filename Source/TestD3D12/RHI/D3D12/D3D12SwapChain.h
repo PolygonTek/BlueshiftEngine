@@ -35,7 +35,7 @@ public:
     virtual uint32_t                GetHeight() const override { return height; }
 
     virtual bool                    GetDisplayInfo(RHI::DisplayInfo &displayInfo) const override;
-    virtual bool                    IsHDRActive() const override;
+    virtual bool                    IsHDROutputAvailable() const override;
     virtual bool                    IsColorSpaceSupported(RHI::SwapChain::ColorSpace colorSpace) const override;
     virtual RHI::SwapChain::ColorSpace GetColorSpace() const override { return colorSpace; }
     virtual bool                    SetColorSpace(RHI::SwapChain::ColorSpace colorSpace) override;
@@ -53,7 +53,7 @@ private:
 
     HWND                            hwnd = nullptr;
     IDXGISwapChain3 *               dxgiSwapChain = nullptr;
-    RHI::SwapChain::ColorSpace      colorSpace = RHI::SwapChain::ColorSpace::SDR;
+    RHI::SwapChain::ColorSpace      colorSpace = RHI::SwapChain::ColorSpace::SRGB;
     DXGI_FORMAT                     swapChainFormat = DXGI_FORMAT_UNKNOWN;
     DXGI_FORMAT                     rtvFormat = DXGI_FORMAT_UNKNOWN;
     ID3D12Resource *                backBuffers[NumSwapChainBuffers] = {};

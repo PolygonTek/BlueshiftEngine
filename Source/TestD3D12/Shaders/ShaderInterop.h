@@ -63,7 +63,7 @@ static const uint ColorGradingLUTSize = 32;
 static const uint FinalPostProcessFlagToneMapping = 1u << 0;
 static const uint FinalPostProcessFlagDithering = 1u << 1;
 static const uint FinalPostProcessFlagColorGrading = 1u << 2;
-static const uint FinalPostProcessFlagHDR10Output = 1u << 3;
+static const uint FinalPostProcessFlagHDROutput = 1u << 3;
 
 static const uint TAAResolveBlockSizeX = 16;
 static const uint TAAResolveBlockSizeY = 16;
@@ -251,8 +251,16 @@ struct HDR10OutputParams {
     float maxDisplayLinearValue;
 };
 
+struct DisplayP3EDROutputParams {
+    float2 texCoordScale;
+    float2 texCoordOffset;
+    float maxDisplayLinearValue;
+    float padding0;
+};
+
 #ifdef __cplusplus
 static_assert(sizeof(HDR10OutputParams) == 24, "HDR10OutputParams must match the HLSL root constants");
+static_assert(sizeof(DisplayP3EDROutputParams) == 24, "DisplayP3EDROutputParams must match the HLSL root constants");
 #endif
 
 struct BloomParams {

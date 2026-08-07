@@ -936,22 +936,28 @@ namespace RHI {
     };
 
     struct DisplayInfo {
-        bool                            hdrActive = false;
-        float                           minLuminanceNits = 0.0f;
-        float                           maxLuminanceNits = 0.0f;
-        float                           maxFullFrameLuminanceNits = 0.0f;
+        bool                            hdrActive = false;                  // 현재 디스플레이의 HDR 출력 활성화 여부
+        float                           minLuminanceNits = 0.0f;            // 디스플레이가 표현할 수 있는 최소 휘도 (니트 단위)
+        float                           maxLuminanceNits = 0.0f;            // 디스플레이가 표현할 수 있는 최대 피크 휘도 (니트 단위)
+        float                           maxFullFrameLuminanceNits = 0.0f;   // 디스플레이가 전체 화면에서 유지할 수 있는 최대 휘도 (니트 단위)
+        float                           maxLinearOutputValue = 0.0f;        // 기준 흰색 1.0 에 상대적인 현재 선형 출력 상한 (0 = 정보 미제공)
     };
 
     class SwapChain {
     public:
         enum class ColorSpace : uint8_t {
-            SDR,
-            HDR10
+            SRGB,                       // sRGB (Rec. 709)
+            BT2020PQ,                   // HDR10 (Rec. 2020 with PQ transfer function)
+            DisplayP3LinearEDR          // P3 D65 (Display P3) with linear transfer function, used for HDR on Apple platforms
         };
+
+        static constexpr bool           IsHDRColorSpace(ColorSpace colorSpace) { return colorSpace != ColorSpace::SRGB; }
+        static Format                   GetFormatForColorSpace(ColorSpace colorSpace);
+        static const char *             GetColorSpaceName(ColorSpace colorSpace);
 
         virtual ~SwapChain() = default;
 
-        virtual bool                    IsHDRActive() const = 0;
+        virtual bool                    IsHDROutputAvailable() const = 0;
         virtual bool                    GetDisplayInfo(DisplayInfo &displayInfo) const = 0;
         virtual bool                    IsColorSpaceSupported(ColorSpace colorSpace) const = 0;
         virtual bool                    SetColorSpace(ColorSpace colorSpace) = 0;
@@ -1104,6 +1110,7 @@ namespace RHI {
         virtual BE1::Image::Format      ToUAVImageFormat(BE1::Image::Format inFormat) const = 0;
         virtual bool                    CanGenerateMipmapsOnGPU(TextureType textureType, BE1::Image::Format imageFormat, int arraySize) const = 0;
 
+        virtual SwapChain::ColorSpace   GetHDRColorSpace() const = 0;
         virtual SwapChain *             CreateSwapChain(HWND hwnd, uint32_t width, uint32_t height, Format format) = 0;
         virtual void                    DestroySwapChain(SwapChain *swapChain) = 0;
 

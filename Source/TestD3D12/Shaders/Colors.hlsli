@@ -252,10 +252,28 @@ inline float3 SampleCIE1931CMF(float wavelengthNm) {
 }
 
 //
-// HDR10 color space conversions
-// Rec.709 / Rec.2020 conversions assume linear RGB values.
+// Display output color space conversions
+// Rec.709 / P3-D65 / Rec.2020 conversions assume linear RGB values.
 // ST.2084 (PQ) uses normalized absolute luminance, where 1.0 represents 10,000 nits.
 //
+inline float3 REC709toP3D65(float3 RGB709) {
+    const float3x3 conversionMatrix = {
+        0.822462, 0.177538, 0.000000,
+        0.033194, 0.966806, 0.000000,
+        0.017083, 0.072397, 0.910520
+    };
+    return mul(conversionMatrix, RGB709);
+}
+
+inline float3 P3D65toREC709(float3 RGBP3D65) {
+    const float3x3 conversionMatrix = {
+         1.224940, -0.224940, 0.000000,
+        -0.042057,  1.042057, 0.000000,
+        -0.019638, -0.078636, 1.098274
+    };
+    return mul(conversionMatrix, RGBP3D65);
+}
+
 inline float3 ApplyREC2084Curve(float3 L) {
     const float m1 = 2610.0 / 4096.0 / 4.0;
     const float m2 = 2523.0 / 4096.0 * 128.0;
