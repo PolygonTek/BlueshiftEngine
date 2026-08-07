@@ -102,9 +102,10 @@ bool RenderCamera::Cull(const BE1::Frustum &bounds) const {
     return frustum.CullFrustum(bounds);
 }
 
-void RenderCamera::CalcConvolutionBloomKernelParams(const BE1::Image &kernelImage, float &normalizationFactor, BE1::Vec2 &kernelExtents) {
-    normalizationFactor = 1.0f;
-    kernelExtents = BE1::Vec2(1.0f, 1.0f);
+// 원본 컨볼루션 커널 이미지에서 normalized extents 와 평균 luminance 의 역수를 계산한다.
+void RenderCamera::CalcConvolutionBloomKernelParams(const BE1::Image &kernelImage, BE1::Vec2 &outNormalizedKernelExtents, float &outInverseAverageLuminance) {
+    outInverseAverageLuminance = 1.0f;
+    outNormalizedKernelExtents = BE1::Vec2(1.0f, 1.0f);
 
     const int width = kernelImage.GetWidth();
     const int height = kernelImage.GetHeight();
@@ -113,19 +114,17 @@ void RenderCamera::CalcConvolutionBloomKernelParams(const BE1::Image &kernelImag
         return;
     }
 
+    // 원본 kernel 이미지의 픽셀 개수
     const float pixelCount = static_cast<float>(width * height);
 
-    // 원본 kernel 의 luminanceSum 은 source texel 개수에 묶인 discrete sum 이다.
+    // 원본 kernel 이미지의 luminanceSum
     const float luminanceSum = kernelImage.ComputeLuminanceSum(0, 0, true);
     if (!std::isfinite(luminanceSum) || luminanceSum <= 0.000001f) {
         return;
     }
 
-    // FFT kernel 은 fftSize^2 샘플로 다시 resize 되므로, pixelCount 를 곱해 texel 밀도 의존성을 제거한다.
-    normalizationFactor = pixelCount / luminanceSum;
-
-    // 바운딩 박스를 계산할 때 luminance average 에 대한 상대 threshold 를 기반으로 계산한다.
-    const float averageLuminance = luminanceSum / BE1::Max(pixelCount, 1.0f);
+    // 바운딩 박스를 계산할 때 luminance average 의 0.1% 정도를 threshold 로 사용한다.
+    const float averageLuminance = luminanceSum / pixelCount;
     const float luminanceThreshold = BE1::Max(averageLuminance * 0.001f, 0.0f);
 
     BE1::Rect bounds;
@@ -135,22 +134,23 @@ void RenderCamera::CalcConvolutionBloomKernelParams(const BE1::Image &kernelImag
 
     const float centerX = static_cast<float>(width) * 0.5f;
     const float centerY = static_cast<float>(height) * 0.5f;
-    if (centerX <= 0.0f || centerY <= 0.0f) {
-        return;
-    }
-
     const float minX = (static_cast<float>(bounds.x) + 0.5f - centerX) / centerX;
-    const float maxX = (static_cast<float>(bounds.x + bounds.w - 1) + 0.5f - centerX) / centerX;
     const float minY = (static_cast<float>(bounds.y) + 0.5f - centerY) / centerY;
+    const float maxX = (static_cast<float>(bounds.x + bounds.w - 1) + 0.5f - centerX) / centerX;
     const float maxY = (static_cast<float>(bounds.y + bounds.h - 1) + 0.5f - centerY) / centerY;
 
-    const float texelGuardX = 1.0f / static_cast<float>(width);
-    const float texelGuardY = 1.0f / static_cast<float>(height);
+    // 한 texel 여유를 준다.
+    const float texelSizeX = 1.0f / static_cast<float>(width);
+    const float texelSizeY = 1.0f / static_cast<float>(height);
 
-    // 컨볼루션 커널 이미지에서 실제 normalized extents 를 계산한다.
-    kernelExtents = BE1::Vec2(
-        BE1::Min(BE1::Max(BE1::Math::Fabs(minX), BE1::Math::Fabs(maxX)) + texelGuardX, 1.0f),
-        BE1::Min(BE1::Max(BE1::Math::Fabs(minY), BE1::Math::Fabs(maxY)) + texelGuardY, 1.0f));
+    const float kernelExtentX = BE1::Max(BE1::Math::Fabs(minX), BE1::Math::Fabs(maxX)) + texelSizeX;
+    const float kernelExtentY = BE1::Max(BE1::Math::Fabs(minY), BE1::Math::Fabs(maxY)) + texelSizeY;
+
+    // normalized extents 를 계산한다.
+    outNormalizedKernelExtents = BE1::Vec2(BE1::Min(kernelExtentX, 1.0f), BE1::Min(kernelExtentY, 1.0f));
+
+    // 평균 luminance 의 역수
+    outInverseAverageLuminance = 1.0f / averageLuminance;
 }
 
 bool RenderCamera::SetConvolutionBloomKernelFromImage(const char *textureName, const BE1::Image &kernelImage) {
@@ -162,9 +162,9 @@ bool RenderCamera::SetConvolutionBloomKernelFromImage(const char *textureName, c
         return false;
     }
 
-    float normalizationFactor;
-    BE1::Vec2 kernelExtents;
-    CalcConvolutionBloomKernelParams(kernelImage, normalizationFactor, kernelExtents);
+    BE1::Vec2 normalizedKernelExtents;
+    float inverseAverageLuminance;
+    CalcConvolutionBloomKernelParams(kernelImage, normalizedKernelExtents, inverseAverageLuminance);
 
     SharedPtr<BE1::Image> textureImage = MakeShared<BE1::Image>(kernelImage);
     SharedPtr<Texture> texture = textureManager.AllocTexture(textureName);
@@ -172,7 +172,7 @@ bool RenderCamera::SetConvolutionBloomKernelFromImage(const char *textureName, c
         return false;
     }
 
-    SetConvolutionBloomKernelTexture(texture, normalizationFactor, kernelExtents);
+    SetConvolutionBloomKernelTexture(texture, normalizedKernelExtents, inverseAverageLuminance);
     return true;
 }
 
@@ -186,29 +186,29 @@ bool RenderCamera::SetConvolutionBloomKernelFromFile(const char *filename) {
         return false;
     }
 
-    float normalizationFactor;
-    BE1::Vec2 kernelExtents;
-    CalcConvolutionBloomKernelParams(kernelImage, normalizationFactor, kernelExtents);
+    BE1::Vec2 normalizedKernelExtents;
+    float inverseAverageLuminance;
+    CalcConvolutionBloomKernelParams(kernelImage, normalizedKernelExtents, inverseAverageLuminance);
 
     SharedPtr<Texture> texture = textureManager.GetTexture(filename, Texture::Flag::HighQuality);
     if (!texture) {
         return false;
     }
 
-    SetConvolutionBloomKernelTexture(texture, normalizationFactor, kernelExtents);
+    SetConvolutionBloomKernelTexture(texture, normalizedKernelExtents, inverseAverageLuminance);
     return true;
 }
 
-void RenderCamera::SetConvolutionBloomKernelTexture(const SharedPtr<Texture> &texture, float normalizationFactor, const BE1::Vec2 &kernelExtents) {
+void RenderCamera::SetConvolutionBloomKernelTexture(const SharedPtr<Texture> &texture, const BE1::Vec2 &normalizedKernelExtents, float inverseAverageLuminance) {
     if (fftBloomKernelSourceTexture != texture) {
         fftBloomKernelSourceTexture = texture;
         fftBloomKernelDirty = true;
     }
-    if (fftBloomKernelExtents != kernelExtents) {
-        fftBloomKernelExtents = kernelExtents;
+    if (fftBloomKernelNormalizedExtents != normalizedKernelExtents) {
+        fftBloomKernelNormalizedExtents = normalizedKernelExtents;
         fftBloomKernelDirty = true;
     }
-    fftBloomKernelNormalizationFactor = normalizationFactor;
+    fftBloomKernelInverseAverageLuminance = inverseAverageLuminance;
 }
 
 void RenderCamera::SetConvolutionBloomKernelRotation(float rotation) {
@@ -220,18 +220,18 @@ void RenderCamera::SetConvolutionBloomKernelRotation(float rotation) {
     fftBloomKernelDirty = true;
 }
 
-void RenderCamera::SetConvolutionBloomKernelSizeScale(float sizeScale) {
-    sizeScale = BE1::Max(sizeScale, 0.01f);
-    if (fftBloomKernelSizeScale == sizeScale) {
+void RenderCamera::SetConvolutionBloomKernelScale(float scale) {
+    scale = BE1::Max(scale, 0.01f);
+    if (fftBloomKernelScale == scale) {
         return;
     }
 
-    fftBloomKernelSizeScale = sizeScale;
+    fftBloomKernelScale = scale;
     fftBloomKernelDirty = true;
 }
 
 void RenderCamera::SetConvolutionBloomPaddingTrim(float paddingTrim) {
-    paddingTrim = BE1::Min(BE1::Max(paddingTrim, 0.0f), 0.25f);
+    paddingTrim = BE1::Min(BE1::Max(paddingTrim, 0.0f), 0.5f);
     if (fftBloomPaddingTrim == paddingTrim) {
         return;
     }
@@ -240,68 +240,74 @@ void RenderCamera::SetConvolutionBloomPaddingTrim(float paddingTrim) {
     fftBloomKernelDirty = true;
 }
 
-// aspect ratio 에 맞춰서 fftSize x fftSize 에 안에 fit 된 content 를 convolution padding 을 고려했을 때 얼만큼의 크기가 되어야 하는지를 계산한다.
-void RenderCamera::UpdateConvolutionBloomGuardedContentRect() {
-    const uint32_t inputW = renderWidth;
-    const uint32_t inputH = renderHeight;
-    const uint32_t fftSize = fftBloomSize;
-    const BE1::Vec2 &kernelExtents = fftBloomKernelExtents;
-    const float kernelSizeScale = BE1::Max(fftBloomKernelSizeScale, 0.01f);
-    const float kernelRotation = fftBloomKernelRotation;
-    const float paddingTrim = BE1::Min(BE1::Max(fftBloomPaddingTrim, 0.0f), 0.25f);
+BE1::Vec2 RenderCamera::CalcNormalizedKernelExtents() const {
+    // 커널의 회전 각도에 따른 sin, cos 계산
+    float rotationSin;
+    float rotationCos;
+    BE1::Math::SinCos(DEG2RAD(fftBloomKernelRotation), rotationSin, rotationCos);
 
-    if (inputW == 0 || inputH == 0 || fftSize == 0) {
-        fftBloomGuardedContentRect = BE1::RectF(0.0f, 0.0f, 0.0f, 0.0f);
-        fftBloomKernelSpatialScale = BE1::Vec2(1.0f, 1.0f);
+    const float absCos = BE1::Math::Fabs(rotationCos);
+    const float absSin = BE1::Math::Fabs(rotationSin);
+
+    // 외부에서 임의로 입력한 커널의 회전과 스케일이 고려된 normalized kernel extent 계산하기
+    BE1::Vec2 normalizedKernelExtents = fftBloomKernelNormalizedExtents;
+    const float scaledKernelExtentX = normalizedKernelExtents.x * fftBloomKernelScale;
+    const float scaledKernelExtentY = normalizedKernelExtents.y * fftBloomKernelScale;
+    normalizedKernelExtents.x = scaledKernelExtentX * absCos + scaledKernelExtentY * absSin;
+    normalizedKernelExtents.y = scaledKernelExtentX * absSin + scaledKernelExtentY * absCos;
+
+    return normalizedKernelExtents;
+}
+
+// convolution 을 위한 zero 패딩을 포함한 커널과 컨텐츠가 fftBloomSize x fftBloomSize 로 고정된 상황에서
+// 그에 맞춰서 역으로 content 와 kernel 을 얼마나 줄여야 하는지를 계산한다.
+void RenderCamera::UpdateConvolutionBloomMapping() {
+    if (renderWidth == 0 || renderHeight == 0 || fftBloomSize == 0) {
+        fftBloomMappedContentRect = BE1::RectF(0.0f, 0.0f, 0.0f, 0.0f);
+        fftBloomMappedKernelScale = BE1::Vec2(1.0f, 1.0f);
         return;
     }
 
-    // fftSize x fftSize 안에서 content aspect ratio 에 맞춘 내부 크기 
-    float aspectFitContentW = static_cast<float>(fftSize);
-    float aspectFitContentH = static_cast<float>(fftSize);
-    if (inputW >= inputH) {
-        aspectFitContentH = aspectFitContentW * static_cast<float>(inputH) / static_cast<float>(inputW);
+    // normalized kernel extent 계산
+    const BE1::Vec2 normalizedKernelExtents = CalcNormalizedKernelExtents();
+
+    // content 의 aspect ratio 를 유지하면서 fftBloomSize x fftBloomSize 안에 fit 된 크기 계산
+    float aspectFitContentW;
+    float aspectFitContentH;
+    if (renderWidth >= renderHeight) {
+        aspectFitContentW = static_cast<float>(fftBloomSize);
+        aspectFitContentH = static_cast<float>(fftBloomSize * renderHeight) / static_cast<float>(renderWidth);
     } else {
-        aspectFitContentW = aspectFitContentH * static_cast<float>(inputW) / static_cast<float>(inputH);
+        aspectFitContentW = static_cast<float>(fftBloomSize * renderWidth) / static_cast<float>(renderHeight);
+        aspectFitContentH = static_cast<float>(fftBloomSize);
     }
 
-    float rotationSin;
-    float rotationCos;
-    BE1::Math::SinCos(DEG2RAD(kernelRotation), rotationSin, rotationCos);
+    // normalized content extent 계산
+    const float normalizedContentExtentX = aspectFitContentW / static_cast<float>(fftBloomSize);
+    const float normalizedContentExtentY = aspectFitContentH / static_cast<float>(fftBloomSize);
 
-    // 회전된 normalized kernel extent 계산하기
-    const float absCos = BE1::Math::Fabs(rotationCos);
-    const float absSin = BE1::Math::Fabs(rotationSin);
-    const float scaledKernelExtentX = BE1::Max(kernelExtents.x, 0.0f) * kernelSizeScale;
-    const float scaledKernelExtentY = BE1::Max(kernelExtents.y, 0.0f) * kernelSizeScale;
-    const float projectedKernelExtentX = scaledKernelExtentX * absCos + scaledKernelExtentY * absSin;
-    const float projectedKernelExtentY = scaledKernelExtentX * absSin + scaledKernelExtentY * absCos;
+    // support extent (= content extent + kernel extent) 계산
+    const float supportExtentX = normalizedContentExtentX + normalizedKernelExtents.x;
+    const float supportExtentY = normalizedContentExtentY + normalizedKernelExtents.y;
 
-    // normalized content extent
-    const float normalizedContentExtentX = aspectFitContentW / static_cast<float>(fftSize);
-    const float normalizedContentExtentY = aspectFitContentH / static_cast<float>(fftSize);
+    // supportExtents 가 normalized [0, 1] 영역 내부로 들어오도록 scale 을 계산한다.
+    // paddingTrim 만큼 normalized 영역 밖으로 support 가 나가는 것을 허용한다.
+    const float allowedSupportExtent = 1.0f + fftBloomPaddingTrim;
+    const float convolutionExtentX = BE1::Max(supportExtentX, allowedSupportExtent);
+    const float convolutionExtentY = BE1::Max(supportExtentY, allowedSupportExtent);
+    const float scaleX = allowedSupportExtent / convolutionExtentX;
+    const float scaleY = allowedSupportExtent / convolutionExtentY;
 
-    // normalized support extent (= content extent + rotated kernel extent)
-    const float normalizedSupportExtentX = normalizedContentExtentX + projectedKernelExtentX;
-    const float normalizedSupportExtentY = normalizedContentExtentY + projectedKernelExtentY;
+    // 컨벌루션에 필요한 패딩을 고려한 실제 content 크기와 오프셋을 계산한다.
+    const float contentW = BE1::Max(aspectFitContentW * scaleX, 1.0f);
+    const float contentH = BE1::Max(aspectFitContentH * scaleY, 1.0f);
+    const float contentX = (static_cast<float>(fftBloomSize) - contentW) * 0.5f;
+    const float contentY = (static_cast<float>(fftBloomSize) - contentH) * 0.5f;
+    fftBloomMappedContentRect = BE1::RectF(contentX, contentY, contentW, contentH);
 
-    // paddingTrim 만큼 FFT 영역 밖으로 support 가 나가는 것을 허용해 content padding 을 줄인다.
-    const float allowedSupportExtent = 1.0f + paddingTrim;
-    const float scaleX = allowedSupportExtent / BE1::Max(normalizedSupportExtentX, allowedSupportExtent);
-    const float scaleY = allowedSupportExtent / BE1::Max(normalizedSupportExtentY, allowedSupportExtent);
-
-    // fftSize x fftSize 안에서 컨벌루션에 필요한 패딩을 고려한 실제 content 크기와 오프셋
-    const float guardedContentW = BE1::Max(aspectFitContentW * scaleX, 1.0f);
-    const float guardedContentH = BE1::Max(aspectFitContentH * scaleY, 1.0f);
-    const float guardedContentX = (static_cast<float>(fftSize) - guardedContentW) * 0.5f;
-    const float guardedContentY = (static_cast<float>(fftSize) - guardedContentH) * 0.5f;
-
-    fftBloomGuardedContentRect = BE1::RectF(guardedContentX, guardedContentY, guardedContentW, guardedContentH);
-
-    // guardedContentW x guardedContentH 가 실제로 aspectFitContentW x aspectFitContentH 에 비해서 얼마나 줄어들었는지 그 scale 값을 계산한다.
-    fftBloomKernelSpatialScale = BE1::Vec2(
-        (guardedContentW / aspectFitContentW) * kernelSizeScale,
-        (guardedContentH / aspectFitContentH) * kernelSizeScale);
+    // 컨벌루션에 필요한 패딩을 고려한 커널의 축소 스케일을 계산한다.
+    fftBloomMappedKernelScale.x = (contentW / aspectFitContentW) * fftBloomKernelScale;
+    fftBloomMappedKernelScale.y = (contentH / aspectFitContentH) * fftBloomKernelScale;
 }
 
 static float NDCZToDeviceDepth(float ndcZ, const RHI::ProjectionPolicy &projectionPolicy) {
@@ -1739,8 +1745,8 @@ void RenderCamera::DestroyConvolutionBloomResources() {
         fftBloomWorkBuffer = nullptr;
     }
     fftBloomSize = 0;
-    fftBloomGuardedContentRect = BE1::RectF(0.0f, 0.0f, 0.0f, 0.0f);
-    fftBloomKernelSpatialScale = BE1::Vec2(1.0f, 1.0f);
+    fftBloomMappedContentRect = BE1::RectF(0.0f, 0.0f, 0.0f, 0.0f);
+    fftBloomMappedKernelScale = BE1::Vec2(1.0f, 1.0f);
     fftBloomKernelDirty = true;
 }
 

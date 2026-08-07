@@ -554,15 +554,15 @@ bool RenderBackend::DispatchConvolutionBloomKernelPrepare() {
     float rotationCos;
     BE1::Math::SinCos(DEG2RAD(currentVisCamera->fftBloomKernelRotation), rotationSin, rotationCos);
 
-    // 회전과 비균일 spatial scale 을 적용한 뒤 출력 texel 하나가 덮는 source kernel texel footprint 로 mip level 을 계산한다.
-    const float kernelSpatialScaleX = BE1::Max(currentVisCamera->fftBloomKernelSpatialScale.x, 0.0001f);
-    const float kernelSpatialScaleY = BE1::Max(currentVisCamera->fftBloomKernelSpatialScale.y, 0.0001f);
+    // 회전과 non-uniform kernel scale 을 적용한 뒤 출력 texel 하나가 덮는 source kernel texel footprint 로 mip level 을 계산한다.
+    const float mappedKernelScaleX = BE1::Max(currentVisCamera->fftBloomMappedKernelScale.x, 0.0001f);
+    const float mappedKernelScaleY = BE1::Max(currentVisCamera->fftBloomMappedKernelScale.y, 0.0001f);
     const float sourceToOutputScaleX = static_cast<float>(inputW) / static_cast<float>(outputW);
     const float sourceToOutputScaleY = static_cast<float>(inputH) / static_cast<float>(outputH);
-    const float sourceFootprintXX = sourceToOutputScaleX * rotationCos / kernelSpatialScaleX;
-    const float sourceFootprintXY = sourceToOutputScaleY * rotationSin / kernelSpatialScaleX;
-    const float sourceFootprintYX = sourceToOutputScaleX * rotationSin / kernelSpatialScaleY;
-    const float sourceFootprintYY = sourceToOutputScaleY * rotationCos / kernelSpatialScaleY;
+    const float sourceFootprintXX = sourceToOutputScaleX * rotationCos / mappedKernelScaleX;
+    const float sourceFootprintXY = sourceToOutputScaleY * rotationSin / mappedKernelScaleX;
+    const float sourceFootprintYX = sourceToOutputScaleX * rotationSin / mappedKernelScaleY;
+    const float sourceFootprintYY = sourceToOutputScaleY * rotationCos / mappedKernelScaleY;
     const float sourceFootprintX = BE1::Math::Sqrt(sourceFootprintXX * sourceFootprintXX + sourceFootprintXY * sourceFootprintXY);
     const float sourceFootprintY = BE1::Math::Sqrt(sourceFootprintYX * sourceFootprintYX + sourceFootprintYY * sourceFootprintYY);
     const float kernelMipLevel = BE1::Max(BE1::Math::Log(2.0f, BE1::Max(sourceFootprintX, sourceFootprintY)), 0.0f);
@@ -572,7 +572,7 @@ bool RenderBackend::DispatchConvolutionBloomKernelPrepare() {
     bloomParams.outputSize = uint2(outputW, outputH);
     bloomParams.inputTexelSize = float2(1.0f / inputW, 1.0f / inputH);
     bloomParams.outputTexelSize = float2(1.0f / outputW, 1.0f / outputH);
-    bloomParams.params0 = float4(rotationCos, rotationSin, currentVisCamera->fftBloomKernelSpatialScale.x, currentVisCamera->fftBloomKernelSpatialScale.y);
+    bloomParams.params0 = float4(rotationCos, rotationSin, currentVisCamera->fftBloomMappedKernelScale.x, currentVisCamera->fftBloomMappedKernelScale.y);
     bloomParams.params1.x = kernelMipLevel;
 
     RHI::ConstantBuffer *bloomConstantBuffer = frameData->GetThreadData(0)->AllocConstant(sizeof(BloomParams), &bloomParams);
@@ -678,8 +678,8 @@ bool RenderBackend::DispatchConvolutionBloomScreenPrepare() {
     const uint32_t outputW = currentVisCamera->fftBloomSize;
     const uint32_t outputH = currentVisCamera->fftBloomSize;
     const uint32_t mipLevelCount = currentVisCamera->fftBloomConvolutionOutputMipCount;
-    const float contentW = BE1::Max(currentVisCamera->fftBloomGuardedContentRect.w, 1.0f);
-    const float contentH = BE1::Max(currentVisCamera->fftBloomGuardedContentRect.h, 1.0f);
+    const float contentW = BE1::Max(currentVisCamera->fftBloomMappedContentRect.w, 1.0f);
+    const float contentH = BE1::Max(currentVisCamera->fftBloomMappedContentRect.h, 1.0f);
     if (inputW == 0 || inputH == 0 || outputW == 0 || outputH == 0 || mipLevelCount == 0) {
         return false;
     }
@@ -694,10 +694,10 @@ bool RenderBackend::DispatchConvolutionBloomScreenPrepare() {
     bloomParams.outputTexelSize = float2(1.0f / outputW, 1.0f / outputH);
     bloomParams.params0.z = screenMipLevel;
     bloomParams.params1 = float4(
-        currentVisCamera->fftBloomGuardedContentRect.x,
-        currentVisCamera->fftBloomGuardedContentRect.y,
-        currentVisCamera->fftBloomGuardedContentRect.w,
-        currentVisCamera->fftBloomGuardedContentRect.h);
+        currentVisCamera->fftBloomMappedContentRect.x,
+        currentVisCamera->fftBloomMappedContentRect.y,
+        currentVisCamera->fftBloomMappedContentRect.w,
+        currentVisCamera->fftBloomMappedContentRect.h);
 
     RHI::ConstantBuffer *bloomConstantBuffer = frameData->GetThreadData(0)->AllocConstant(sizeof(BloomParams), &bloomParams);
     if (!bloomConstantBuffer) {
@@ -743,13 +743,12 @@ bool RenderBackend::DispatchConvolutionBloomMultiplySpectrum() {
     const uint32_t fftSize = currentVisCamera->fftBloomSize;
     constexpr uint32_t ColorPairCount = 2; // RG, B0
 
-    // content guard padding 때문에 줄어든 kernel footprint 의 면적만큼 커널 에너지를 보정한다.
-    const float kernelAreaScale = BE1::Max(currentVisCamera->fftBloomKernelSpatialScale.x * currentVisCamera->fftBloomKernelSpatialScale.y, 0.000001f);
-
-    // sourcePixelCount 를 곱해둔 factor 를 현재 FFT kernel 샘플 수로 나눈다.
-    // 이렇게 해서 FFT size 에 독립적이 되도록 커널 에너지를 보정한다.
-    const float kernelSampleCount = static_cast<float>(fftSize) * static_cast<float>(fftSize);
-    const float kernelGain = BE1::Max(r_convolutionBloomKernelGain.GetFloat(), 0.0f) * BE1::Max(currentVisCamera->fftBloomKernelNormalizationFactor, 0.0f) / (BE1::Max(kernelSampleCount, 1.0f) * kernelAreaScale);
+    // padding 때문에 줄어든 kernel footprint 의 면적만큼 커널 에너지를 보정한다.
+    const float kernelAreaScale = BE1::Max(currentVisCamera->fftBloomMappedKernelScale.x * currentVisCamera->fftBloomMappedKernelScale.y, 0.000001f);
+    const float kernelSampleCount = static_cast<float>(fftSize * fftSize) * kernelAreaScale;
+    const float kernelNormalizationFactor = currentVisCamera->fftBloomKernelInverseAverageLuminance / kernelSampleCount;
+    const float kernelGain = BE1::Max(r_convolutionBloomKernelGain.GetFloat(), 0.0f);
+    const float kernelSpectrumScale = kernelGain * kernelNormalizationFactor;
 
     GpuTiming::ScopedTimer gpuScope(gpuTiming, mainCommandList, GpuTiming::Tag::ConvolutionBloomMultiplySpectrum);
 
@@ -759,7 +758,7 @@ bool RenderBackend::DispatchConvolutionBloomMultiplySpectrum() {
         currentVisCamera->fftBloomWorkBuffer,
         fftSize,
         ColorPairCount,
-        kernelGain);
+        kernelSpectrumScale);
 }
 
 bool RenderBackend::DispatchConvolutionBloomResolve() {
@@ -783,10 +782,10 @@ bool RenderBackend::DispatchConvolutionBloomResolve() {
     bloomParams.outputSize = uint2(outputW, outputH);
     bloomParams.outputTexelSize = float2(1.0f / outputW, 1.0f / outputH);
     bloomParams.params1 = float4(
-        currentVisCamera->fftBloomGuardedContentRect.x,
-        currentVisCamera->fftBloomGuardedContentRect.y,
-        currentVisCamera->fftBloomGuardedContentRect.w,
-        currentVisCamera->fftBloomGuardedContentRect.h);
+        currentVisCamera->fftBloomMappedContentRect.x,
+        currentVisCamera->fftBloomMappedContentRect.y,
+        currentVisCamera->fftBloomMappedContentRect.w,
+        currentVisCamera->fftBloomMappedContentRect.h);
 
     RHI::ConstantBuffer *bloomConstantBuffer = frameData->GetThreadData(0)->AllocConstant(sizeof(BloomParams), &bloomParams);
     if (!bloomConstantBuffer) {

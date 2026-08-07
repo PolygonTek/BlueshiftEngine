@@ -106,7 +106,7 @@ CVAR_MINMAX(r_pyramidBloomMipCount, "6", BE1::CVar::Flag::Integer, "pyramid bloo
 
 CVAR_MINMAX(r_convolutionBloomFFTMaxSize, "1024", BE1::CVar::Flag::Integer | BE1::CVar::Flag::Archive, "maximum convolution bloom FFT texture axis size", 256, 1024);
 CVAR_MINMAX(r_convolutionBloomPrefilterRadius, "1.5", BE1::CVar::Flag::Float, "convolution bloom prefilter sample radius", 0.0f, 10.0f);
-CVAR_MINMAX(r_convolutionBloomKernelSizeScale, "1.0", BE1::CVar::Flag::Float, "convolution bloom kernel spatial size scale", 0.01f, 10.0f);
+CVAR_MINMAX(r_convolutionBloomKernelScale, "1.0", BE1::CVar::Flag::Float, "convolution bloom kernel scale", 0.01f, 10.0f);
 CVAR_MINMAX(r_convolutionBloomKernelGain, "1.0", BE1::CVar::Flag::Float, "convolution bloom normalized kernel gain", 0.0f, 10.0f);
 CVAR(r_convolutionBloomKernelRotation, "0", BE1::CVar::Flag::Float, "convolution bloom kernel rotation in degrees");
 CVAR_MINMAX(r_convolutionBloomPaddingTrim, "0.03", BE1::CVar::Flag::Float, "convolution bloom padding reduction as fraction of FFT size", 0.0f, 0.5f);

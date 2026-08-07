@@ -124,7 +124,7 @@ void RenderWorld::SetupConvolutionBloom(RenderFrameData *frameData, RenderCamera
     }
 
     renderCamera->SetConvolutionBloomKernelRotation(r_convolutionBloomKernelRotation.GetFloat());
-    renderCamera->SetConvolutionBloomKernelSizeScale(r_convolutionBloomKernelSizeScale.GetFloat());
+    renderCamera->SetConvolutionBloomKernelScale(r_convolutionBloomKernelScale.GetFloat());
     renderCamera->SetConvolutionBloomPaddingTrim(r_convolutionBloomPaddingTrim.GetFloat());
 
     const uint32_t fftBloomSize = renderCamera->GetFFTBloomSize();
@@ -139,7 +139,7 @@ void RenderWorld::SetupConvolutionBloom(RenderFrameData *frameData, RenderCamera
         }
         fftBloomKernelSourceRHITexture = fftBloomKernelSourceTexture->GetRHITexture();
 
-        renderCamera->UpdateConvolutionBloomGuardedContentRect();
+        renderCamera->UpdateConvolutionBloomMapping();
     }
 
     visCamera->fftBloomSize = fftBloomSize;
@@ -158,12 +158,12 @@ void RenderWorld::SetupConvolutionBloom(RenderFrameData *frameData, RenderCamera
         visCamera->fftBloomConvolutionOutputMipUAVs[mipLevel] = renderCamera->GetFFTBloomConvolutionOutputMipUAVs()[mipLevel];
     }
     visCamera->fftBloomKernelRotation = renderCamera->GetFFTBloomKernelRotation();
-    visCamera->fftBloomKernelSizeScale = renderCamera->GetFFTBloomKernelSizeScale();
+    visCamera->fftBloomKernelScale = renderCamera->GetFFTBloomKernelScale();
     visCamera->fftBloomPaddingTrim = renderCamera->GetFFTBloomPaddingTrim();
-    visCamera->fftBloomKernelExtents = renderCamera->GetFFTBloomKernelExtents();
-    visCamera->fftBloomGuardedContentRect = renderCamera->GetFFTBloomGuardedContentRect();
-    visCamera->fftBloomKernelSpatialScale = renderCamera->GetFFTBloomKernelSpatialScale();
-    visCamera->fftBloomKernelNormalizationFactor = renderCamera->GetFFTBloomKernelNormalizationFactor();
+    visCamera->fftBloomKernelNormalizedExtents = renderCamera->GetFFTBloomKernelNormalizedExtents();
+    visCamera->fftBloomMappedContentRect = renderCamera->GetFFTBloomMappedContentRect();
+    visCamera->fftBloomMappedKernelScale = renderCamera->GetFFTBloomMappedKernelScale();
+    visCamera->fftBloomKernelInverseAverageLuminance = renderCamera->GetFFTBloomKernelInverseAverageLuminance();
     visCamera->fftBloomKernelDirty = updateFFTBloomKernelBuffer;
 
     if (updateFFTBloomKernelBuffer) {

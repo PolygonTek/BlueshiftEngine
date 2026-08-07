@@ -111,7 +111,7 @@ extern BE1::CVar    r_pyramidBloomMipCount;
 
 extern BE1::CVar    r_convolutionBloomFFTMaxSize;
 extern BE1::CVar    r_convolutionBloomPrefilterRadius;
-extern BE1::CVar    r_convolutionBloomKernelSizeScale;
+extern BE1::CVar    r_convolutionBloomKernelScale;
 extern BE1::CVar    r_convolutionBloomKernelGain;
 extern BE1::CVar    r_convolutionBloomKernelRotation;
 extern BE1::CVar    r_convolutionBloomPaddingTrim;

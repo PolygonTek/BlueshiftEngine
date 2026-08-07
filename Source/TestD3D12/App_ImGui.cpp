@@ -948,10 +948,10 @@ void App::BuildImGuiOverlay() {
                         r_convolutionBloomKernelRotation.SetFloat(convolutionBloomKernelRotation);
                     }
 
-                    float convolutionBloomKernelSizeScale = r_convolutionBloomKernelSizeScale.GetFloat();
+                    float convolutionBloomKernelScale = r_convolutionBloomKernelScale.GetFloat();
                     ImGui::SetNextItemWidth(fontSize * 12.0f);
-                    if (ImGui::SliderFloat("Bloom kernel size scale", &convolutionBloomKernelSizeScale, r_convolutionBloomKernelSizeScale.GetMinValue(), r_convolutionBloomKernelSizeScale.GetMaxValue(), "%.3f")) {
-                        r_convolutionBloomKernelSizeScale.SetFloat(convolutionBloomKernelSizeScale);
+                    if (ImGui::SliderFloat("Bloom kernel scale", &convolutionBloomKernelScale, r_convolutionBloomKernelScale.GetMinValue(), r_convolutionBloomKernelScale.GetMaxValue(), "%.3f")) {
+                        r_convolutionBloomKernelScale.SetFloat(convolutionBloomKernelScale);
                     }
 
                     float convolutionBloomKernelGain = r_convolutionBloomKernelGain.GetFloat();

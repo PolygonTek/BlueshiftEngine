@@ -36,8 +36,8 @@ void CSMain(uint3 dispatchThreadId : SV_DispatchThreadID) {
     float2 halfSize = bloomParams.outputSize * 0.5;
  
     // content padding 으로 줄어든 만큼 kernel 도 줄여 resolve 후 screen-space radius 가 커지지 않도록 한다.
-    float2 kernelSpatialScale = max(BP_BLOOM_KERNEL_SPATIAL_SCALE, float2(0.0001, 0.0001));
-    float2 centeredCoord = (sourceCoord - halfSize) / kernelSpatialScale;
+    float2 mappedKernelScale = max(BP_BLOOM_MAPPED_KERNEL_SCALE, float2(0.0001, 0.0001));
+    float2 centeredCoord = (sourceCoord - halfSize) / mappedKernelScale;
     float2 rotatedCoord = float2(
         centeredCoord.x * BP_BLOOM_KERNEL_ROTATION_COS + centeredCoord.y * BP_BLOOM_KERNEL_ROTATION_SIN,
         centeredCoord.y * BP_BLOOM_KERNEL_ROTATION_COS - centeredCoord.x * BP_BLOOM_KERNEL_ROTATION_SIN) + halfSize;

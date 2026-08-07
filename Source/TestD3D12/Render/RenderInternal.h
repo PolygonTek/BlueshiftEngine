@@ -246,12 +246,12 @@ struct VisCamera {
     RHI::ViewID                 fftBloomConvolutionOutputMipUAVs[RenderConvolutionBloomMaxMipLevelCount] = {};
     uint32_t                    fftBloomConvolutionOutputMipCount = 0;
     float                       fftBloomKernelRotation = 0.0f;
-    float                       fftBloomKernelSizeScale = 1.0f;
+    float                       fftBloomKernelScale = 1.0f;
     float                       fftBloomPaddingTrim = 0.0f;
-    BE1::Vec2                   fftBloomKernelExtents = BE1::Vec2(1.0f, 1.0f);
-    BE1::RectF                  fftBloomGuardedContentRect = BE1::RectF(0.0f, 0.0f, 0.0f, 0.0f);
-    BE1::Vec2                   fftBloomKernelSpatialScale = BE1::Vec2(1.0f, 1.0f);
-    float                       fftBloomKernelNormalizationFactor = 1.0f;
+    BE1::Vec2                   fftBloomKernelNormalizedExtents = BE1::Vec2(1.0f, 1.0f);
+    BE1::RectF                  fftBloomMappedContentRect = BE1::RectF(0.0f, 0.0f, 0.0f, 0.0f);
+    BE1::Vec2                   fftBloomMappedKernelScale = BE1::Vec2(1.0f, 1.0f);
+    float                       fftBloomKernelInverseAverageLuminance = 1.0f;
     bool                        fftBloomKernelDirty = true;
 
     bool                        is2D;

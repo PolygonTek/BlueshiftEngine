@@ -150,15 +150,15 @@ public:
 
     void                        Update(const Desc &desc);
 
-                                /// Calculates the texel-density-independent luminance normalization factor and effective normalized extents of a convolution bloom kernel image.
-    static void                 CalcConvolutionBloomKernelParams(const BE1::Image &kernelImage, float &normalizationFactor, BE1::Vec2 &kernelExtents);
+                                /// Calculates the effective normalized extents and inverse average luminance of a convolution bloom kernel image.
+    static void                 CalcConvolutionBloomKernelParams(const BE1::Image &kernelImage, BE1::Vec2 &outNormalizedKernelExtents, float &inverseAverageLuminance);
 
     bool                        SetConvolutionBloomKernelFromImage(const char *textureName, const BE1::Image &kernelImage);
     bool                        SetConvolutionBloomKernelFromFile(const char *filename);
-    void                        SetConvolutionBloomKernelTexture(const SharedPtr<Texture> &texture, float normalizationFactor, const BE1::Vec2 &kernelExtents);
+    void                        SetConvolutionBloomKernelTexture(const SharedPtr<Texture> &texture, const BE1::Vec2 &normalizedKernelExtents, float inverseAverageLuminance);
     void                        SetBloomDirtMaskTexture(const SharedPtr<Texture> &texture) { bloomDirtMaskTexture = texture; }
     void                        SetConvolutionBloomKernelRotation(float rotation);
-    void                        SetConvolutionBloomKernelSizeScale(float sizeScale);
+    void                        SetConvolutionBloomKernelScale(float scale);
     void                        SetConvolutionBloomPaddingTrim(float paddingTrim);
 
     bool                        EnsureRenderTextures(uint32_t width, uint32_t height, RHI::Format colorFormat, RHI::Format depthFormat, uint32_t sampleCount, bool needDepthHistory, const BE1::Color4 &optimizedClearColor);
@@ -213,8 +213,8 @@ public:
     RHI::Buffer *               GetFFTBloomScreenSpatialBuffer() const { return fftBloomScreenSpatialBuffer; }
     RHI::Buffer *               GetFFTBloomScreenSpectrumBuffer() const { return fftBloomScreenSpectrumBuffer; }
     const SharedPtr<Texture> &  GetFFTBloomKernelTexture() const { return fftBloomKernelSourceTexture; }
-    float                       GetFFTBloomKernelNormalizationFactor() const { return fftBloomKernelNormalizationFactor; }
-    const BE1::Vec2 &           GetFFTBloomKernelExtents() const { return fftBloomKernelExtents; }
+    float                       GetFFTBloomKernelInverseAverageLuminance() const { return fftBloomKernelInverseAverageLuminance; }
+    const BE1::Vec2 &           GetFFTBloomKernelNormalizedExtents() const { return fftBloomKernelNormalizedExtents; }
     RHI::Buffer *               GetFFTBloomKernelSpatialBuffer() const { return fftBloomKernelSpatialBuffer; }
     RHI::Buffer *               GetFFTBloomKernelSpectrumBuffer() const { return fftBloomKernelSpectrumBuffer; }
     RHI::Buffer *               GetFFTBloomWorkBuffer() const { return fftBloomWorkBuffer; }
@@ -226,10 +226,10 @@ public:
     uint32_t                    GetFFTBloomConvolutionOutputMipCount() const { return fftBloomConvolutionOutputMipCount; }
     bool                        IsFFTBloomKernelDirty() const { return fftBloomKernelDirty; }
     float                       GetFFTBloomKernelRotation() const { return fftBloomKernelRotation; }
-    float                       GetFFTBloomKernelSizeScale() const { return fftBloomKernelSizeScale; }
+    float                       GetFFTBloomKernelScale() const { return fftBloomKernelScale; }
     float                       GetFFTBloomPaddingTrim() const { return fftBloomPaddingTrim; }
-    const BE1::RectF &          GetFFTBloomGuardedContentRect() const { return fftBloomGuardedContentRect; }
-    const BE1::Vec2 &           GetFFTBloomKernelSpatialScale() const { return fftBloomKernelSpatialScale; }
+    const BE1::RectF &          GetFFTBloomMappedContentRect() const { return fftBloomMappedContentRect; }
+    const BE1::Vec2 &           GetFFTBloomMappedKernelScale() const { return fftBloomMappedKernelScale; }
 
     static void                 CalculateFov(float fromFovX, float fromAspectRatio, float toAspectRatio, float *toFovX, float *toFovY);
 
@@ -265,7 +265,8 @@ private:
     void                        DestroyConvolutionBloomResources();
     bool                        CreateConvolutionBloomOutputTexture(uint32_t width, uint32_t height);
     void                        DestroyConvolutionBloomOutputTexture();
-    void                        UpdateConvolutionBloomGuardedContentRect();
+    BE1::Vec2                   CalcNormalizedKernelExtents() const;
+    void                        UpdateConvolutionBloomMapping();
     void                        MarkConvolutionBloomKernelClean() { fftBloomKernelDirty = false; }
     void                        CreateLuminanceBuffer();
     void                        DestroyLuminanceBuffer();
@@ -346,14 +347,14 @@ private:
 
     uint32_t                    fftBloomSize = 0;
     SharedPtr<Texture>          fftBloomKernelSourceTexture;
-    float                       fftBloomKernelNormalizationFactor = 1.0f;
-    BE1::Vec2                   fftBloomKernelExtents = BE1::Vec2(1.0f, 1.0f);
+    float                       fftBloomKernelInverseAverageLuminance = 1.0f;
+    BE1::Vec2                   fftBloomKernelNormalizedExtents = BE1::Vec2(1.0f, 1.0f);
     RHI::Buffer *               fftBloomKernelSpatialBuffer = nullptr;
     RHI::Buffer *               fftBloomKernelSpectrumBuffer = nullptr;
-    BE1::RectF                  fftBloomGuardedContentRect = BE1::RectF(0.0f, 0.0f, 0.0f, 0.0f);
-    BE1::Vec2                   fftBloomKernelSpatialScale = BE1::Vec2(1.0f, 1.0f);
+    BE1::RectF                  fftBloomMappedContentRect = BE1::RectF(0.0f, 0.0f, 0.0f, 0.0f); // fftBloomSize x fftBloomSize 공간에서 convolution padding 을 확보한 뒤 content 가 배치되는 픽셀 단위 영역
+    BE1::Vec2                   fftBloomMappedKernelScale = BE1::Vec2(1.0f, 1.0f); // content padding 에 따른 축소율과 fftBloomKernelScale 을 반영해 FFT 공간의 kernel 에 적용할 최종 X/Y scale
     float                       fftBloomKernelRotation = 0.0f;
-    float                       fftBloomKernelSizeScale = 1.0f;
+    float                       fftBloomKernelScale = 1.0f;
     float                       fftBloomPaddingTrim = 0.0f;
     bool                        fftBloomKernelDirty = true;
     RHI::Buffer *               fftBloomScreenSpatialBuffer = nullptr;
