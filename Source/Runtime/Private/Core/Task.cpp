@@ -40,6 +40,8 @@ TaskManager::~TaskManager() {
 }
 
 void TaskManager::Start(int numThreads, bool useAffinity) {
+    ScopedLock lock(taskMutex);
+
     // Return if the threads already started.
     if (!threads.IsEmpty()) {
         return;
@@ -54,7 +56,8 @@ void TaskManager::Start(int numThreads, bool useAffinity) {
     tailTaskIndex = 0;
     headTaskIndex = 0;
     activeTaskCount = 0;
-    nextTaskId = 0;
+    groupActiveTaskCount.Clear();
+    stopping = false;
 
     threads.Reserve(numThreads);
 
@@ -66,14 +69,15 @@ void TaskManager::Start(int numThreads, bool useAffinity) {
 }
 
 void TaskManager::Stop() {
-    // Return if the threads already stopped.
-    if (threads.IsEmpty()) {
-        return;
-    }
-
     // Set the stopping and wake all the task threads.
     {
         ScopedLock lock(taskMutex);
+
+        // Return if the threads already stopped.
+        if (threads.IsEmpty()) {
+            return;
+        }
+
         stopping = true;
         PlatformCondition::Broadcast(taskCondition);
     }
@@ -81,9 +85,24 @@ void TaskManager::Stop() {
     // Wait until finishing all the task threads.
     PlatformThread::JoinAll(threads.Count(), threads.Ptr());
 
-    threads.Clear();
+    {
+        ScopedLock lock(taskMutex);
 
-    stopping = false;
+        assert(IsTaskEmpty());
+        assert(activeTaskCount == 0);
+
+        threads.Clear();
+
+        headTaskIndex = 0;
+        tailTaskIndex = 0;
+        activeTaskCount = 0;
+        groupActiveTaskCount.Clear();
+        stopping = false;
+
+        // Wake any waiters after resetting the task lifecycle state.
+        PlatformCondition::Broadcast(finishCondition);
+        PlatformCondition::Broadcast(groupFinishCondition);
+    }
 }
 
 int32_t TaskManager::CreateGroupId() {
@@ -91,20 +110,23 @@ int32_t TaskManager::CreateGroupId() {
     return nextGroupId++;
 }
 
-int32_t TaskManager::AddTask(TaskFunc taskFunction, void *data, int32_t groupId, bool withWake) {
+bool TaskManager::AddTask(TaskFunc taskFunction, void *data, int32_t groupId, bool withWake) {
     // Lock to add the task.
     ScopedLock lock(taskMutex);
+
+    if (stopping || threads.IsEmpty()) {
+        BE_ERRLOG("TaskManager::AddTask: Task manager is not running, task rejected\n");
+        return false;
+    }
 
     int nextTaskIndex = (tailTaskIndex + 1) % taskRingBuffer.Count();
     if (nextTaskIndex == headTaskIndex) {
         BE_ERRLOG("TaskManager::AddTask: Task queue is full, task rejected\n");
-        return -1;
+        return false;
     }
 
     Task &task = taskRingBuffer[tailTaskIndex];
-    task.id = nextTaskId++;
     task.groupId = groupId;
-    task.state = TaskState::Ready;
     task.function = taskFunction;
     task.data = data;
 
@@ -121,23 +143,26 @@ int32_t TaskManager::AddTask(TaskFunc taskFunction, void *data, int32_t groupId,
         PlatformCondition::Signal(taskCondition);
     }
 
-    return task.id;
+    return true;
 }
 
-int32_t TaskManager::AddTask(TaskWorker *taskWorker, int32_t groupId, bool withWake) {
+bool TaskManager::AddTask(TaskWorker *taskWorker, int32_t groupId, bool withWake) {
     // Lock to add the task.
     ScopedLock lock(taskMutex);
+
+    if (stopping || threads.IsEmpty()) {
+        BE_ERRLOG("TaskManager::AddTask: Task manager is not running, task rejected\n");
+        return false;
+    }
 
     int nextTaskIndex = (tailTaskIndex + 1) % taskRingBuffer.Count();
     if (nextTaskIndex == headTaskIndex) {
         BE_ERRLOG("TaskManager::AddTask: Task queue is full, task rejected\n");
-        return -1;
+        return false;
     }
 
     Task &task = taskRingBuffer[tailTaskIndex];
-    task.id = nextTaskId++;
     task.groupId = groupId;
-    task.state = TaskState::Ready;
     task.function = nullptr;
     task.data = taskWorker;
 
@@ -145,11 +170,16 @@ int32_t TaskManager::AddTask(TaskWorker *taskWorker, int32_t groupId, bool withW
 
     ++activeTaskCount;
 
+    // If valid groupId, increment groupActiveCount
+    if (groupId >= 0) {
+        groupActiveTaskCount[groupId]++;
+    }
+
     if (withWake) {
         PlatformCondition::Signal(taskCondition);
     }
 
-    return task.id;
+    return true;
 }
 
 void TaskManager::WaitFinish(int32_t groupId, bool withWake) {
@@ -224,56 +254,15 @@ bool TaskManager::TimedWaitFinishAll(int ms, bool withWake) {
     });
 }
 
-bool TaskManager::IsTaskRunning(int32_t taskId) const {
-    ScopedLock lock(taskMutex);
-
-    for (int taskIndex = headTaskIndex; taskIndex != tailTaskIndex; taskIndex = (taskIndex + 1) % taskRingBuffer.Count()) {
-        const Task &task = taskRingBuffer[taskIndex];
-
-        if (task.id == taskId) {
-            return task.state == TaskState::Running;
-        }
-    }
-    return false;
-}
-
-bool TaskManager::IsTaskRunning(const Array<int32_t>& taskIds) const {
-    ScopedLock lock(taskMutex);
-
-    const int numTaskIds = taskIds.Count();
-    for (int i = 0; i < numTaskIds; ++i) {
-        int32_t taskId = taskIds[i];
-        bool taskIdFound = false;
-
-        for (int taskIndex = headTaskIndex; taskIndex != tailTaskIndex; taskIndex = (taskIndex + 1) % taskRingBuffer.Count()) {
-            const Task &task = taskRingBuffer[taskIndex];
-
-            if (task.id == taskId) {
-                taskIdFound = true;
-
-                if (task.state != TaskState::Running) {
-                    return false;
-                }
-                break;
-            }
-        }
-
-        if (!taskIdFound) {
-            return false;
-        }
-    }
-    return true;
-}
-
-Task *TaskManager::GetTaskInternal() {
-    Task *task = &taskRingBuffer[headTaskIndex];
+Task TaskManager::GetTaskInternal() {
+    Task task = taskRingBuffer[headTaskIndex];
     headTaskIndex = (headTaskIndex + 1) % taskRingBuffer.Count();
 
     return task;
 }
 
 void TaskManager::Run() {
-    Task *task = nullptr;
+    Task task;
 
     while (1) {
         // Lock to get the task.
@@ -283,10 +272,10 @@ void TaskManager::Run() {
             // Wait for task condition variable.
             PlatformCondition::Wait(taskCondition, taskMutex, [this] {
                 return !IsTaskEmpty() || stopping;
-                });
+            });
 
-            if (stopping) {
-                // Exit loop when stopping condition is met.
+            if (stopping && IsTaskEmpty()) {
+                // Exit after all queued tasks have finished when stopping.
                 break;
             }
 
@@ -294,13 +283,11 @@ void TaskManager::Run() {
             task = GetTaskInternal();
         }
 
-        task->state = TaskState::Running;
-
         // Do the task.
-        if (task->function) {
-            task->function(task->data);
+        if (task.function) {
+            task.function(task.data);
         } else {
-            TaskWorker *taskWorker = reinterpret_cast<TaskWorker *>(task->data);
+            TaskWorker *taskWorker = reinterpret_cast<TaskWorker *>(task.data);
             taskWorker->DoWork();
             delete taskWorker;
         }
@@ -313,9 +300,9 @@ void TaskManager::Run() {
             --activeTaskCount;
 
             // Decrease active task count in the given group.
-            if (task->groupId >= 0) {
+            if (task.groupId >= 0) {
                 int32_t *groupTaskCountPtr;
-                if (groupActiveTaskCount.Get(task->groupId, &groupTaskCountPtr)) {
+                if (groupActiveTaskCount.Get(task.groupId, &groupTaskCountPtr)) {
                     --(*groupTaskCountPtr);
 
                     if (*groupTaskCountPtr <= 0) {

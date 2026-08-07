@@ -600,7 +600,7 @@ void RenderWorld::UpdateSkinningJointCaches(RenderFrameData *frameData, VisObjec
 
 #ifdef USE_RENDER_TASK
     uint32_t numTasks = (numSkinningJoints + MaxSkinningJointsPerTask - 1) / MaxSkinningJointsPerTask;
-    numTasks = BE1::Min(BE1::Engine::taskManager->NumThreads(), numTasks);
+    numTasks = BE1::Min(frameData->NumRenderTaskThreads(), numTasks);
 
     if (numTasks > 1) {
         UpdateSkinningJointCachesWithTask(frameData, firstVisObject, numVisObjects, numSkinningJoints, numTasks);
@@ -683,7 +683,10 @@ void RenderWorld::UpdateSkinningJointCachesWithTask(RenderFrameData *frameData, 
     }
 
     for (int taskIndex = 0; taskIndex < skinningJointCacheTaskDescs.Count(); ++taskIndex) {
-        BE1::Engine::taskManager->AddTask(RenderWorld::UpdateSkinningJointCachesByTaskFunction, &skinningJointCacheTaskDescs[taskIndex], renderWorldGroupId, false);
+        SkinningJointCacheTaskDesc &taskDesc = skinningJointCacheTaskDescs[taskIndex];
+        if (!BE1::Engine::taskManager->AddTask(RenderWorld::UpdateSkinningJointCachesByTaskFunction, &taskDesc, renderWorldGroupId, false)) {
+            UpdateSkinningJointCachesByTask(&taskDesc);
+        }
     }
 
     BE1::Engine::taskManager->WaitFinish(renderWorldGroupId, true);

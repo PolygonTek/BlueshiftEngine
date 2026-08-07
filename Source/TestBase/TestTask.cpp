@@ -36,19 +36,39 @@ void TaskFunc3(void *data) {
 void Test::TestTask() {
     int32_t groupId = BE1::Engine::taskManager->CreateGroupId();
 
-    BE1::Engine::taskManager->AddTask(TaskFunc1, nullptr, groupId);
-    BE1::Engine::taskManager->AddTask(TaskFunc2, nullptr, groupId);
-    BE1::Engine::taskManager->AddTask(TaskFunc3, nullptr, groupId);
+    BE_ASSERT(BE1::Engine::taskManager->AddTask(TaskFunc1, nullptr, groupId));
+    BE_ASSERT(BE1::Engine::taskManager->AddTask(TaskFunc2, nullptr, groupId));
+    BE_ASSERT(BE1::Engine::taskManager->AddTask(TaskFunc3, nullptr, groupId));
     BE1::Engine::taskManager->WaitFinish(groupId);
 
-    BE1::Engine::taskManager->AddTask([]() {
+    BE_ASSERT(BE1::Engine::taskManager->AddTask([]() {
         TaskFunc1(nullptr);
-    }, groupId);
-    BE1::Engine::taskManager->AddTask([]() {
+    }, groupId));
+    BE_ASSERT(BE1::Engine::taskManager->AddTask([]() {
         TaskFunc2(nullptr);
-    }, groupId);
-    BE1::Engine::taskManager->AddTask([]() {
+    }, groupId));
+    BE_ASSERT(BE1::Engine::taskManager->AddTask([]() {
         TaskFunc3(nullptr);
-    }, groupId);
+    }, groupId));
+    BE1::Engine::taskManager->WaitFinish(groupId);
+
+    const uint32_t numThreads = BE1::Engine::taskManager->NumThreads();
+    std::atomic<int32_t> drainedTaskCount = 0;
+
+    for (int i = 0; i < 3; ++i) {
+        BE_ASSERT(BE1::Engine::taskManager->AddTask([&drainedTaskCount]() {
+            drainedTaskCount.fetch_add(1, std::memory_order_relaxed);
+        }, groupId, false));
+    }
+
+    BE1::Engine::taskManager->Stop();
+    BE_ASSERT(drainedTaskCount.load(std::memory_order_relaxed) == 3);
+
+    BE1::Engine::taskManager->Start(numThreads);
+
+    const int32_t newGroupId = BE1::Engine::taskManager->CreateGroupId();
+    BE_ASSERT(newGroupId != groupId);
+
+    BE_ASSERT(BE1::Engine::taskManager->AddTask(TaskFunc1, nullptr, groupId));
     BE1::Engine::taskManager->WaitFinish(groupId);
 }

@@ -128,7 +128,7 @@ void PlatformAndroidThread::Yield() {
 }
 
 void PlatformAndroidThread::Detach(PlatformAndroidThread *androidThread) {
-    pthread_detach(&androidThread->thread);
+    pthread_detach(androidThread->thread);
 }
 
 void PlatformAndroidThread::Join(PlatformAndroidThread *androidThread) {

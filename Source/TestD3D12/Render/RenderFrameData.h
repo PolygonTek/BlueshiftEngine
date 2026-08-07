@@ -217,6 +217,9 @@ public:
     void                            RenderPendingImGuiOverlay(RHI::CommandList *commandList);
     void                            ClearPendingImGuiOverlay();
 
+                                    // 렌더 태스크 스레드 개수 얻기
+    uint32_t                        NumRenderTaskThreads() const { return static_cast<uint32_t>(numRenderTaskThreads); }
+
                                     // 렌더 태스크의 스레드 별 데이터 얻기
     RHI::FrameThreadData *          GetThreadData(int32_t threadIndex) { assert(threadIndex >= 0 && threadIndex < numRenderTaskThreads); return threadData[threadIndex]; }
 

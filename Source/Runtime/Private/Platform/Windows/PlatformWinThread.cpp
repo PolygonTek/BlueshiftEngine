@@ -165,11 +165,25 @@ void PlatformWinThread::Join(PlatformWinThread *winThread) {
 }
 
 void PlatformWinThread::JoinAll(int numThreads, PlatformWinThread *winThreads[]) {
-    HANDLE *threadHandles = (HANDLE *)_alloca(sizeof(HANDLE) * numThreads);
-    for (int i = 0; i < numThreads; i++) {
-        threadHandles[i] = winThreads[i]->threadHandle;
-    }    
-    WaitForMultipleObjects(numThreads, threadHandles, TRUE, INFINITE);
+    if (numThreads <= 0) {
+        return;
+    }
+
+    static constexpr int MaxWaitHandles = MAXIMUM_WAIT_OBJECTS;
+    HANDLE threadHandles[MaxWaitHandles];
+
+    for (int baseIndex = 0; baseIndex < numThreads; baseIndex += MaxWaitHandles) {
+        const int batchCount = Min(MaxWaitHandles, numThreads - baseIndex);
+
+        for (int batchIndex = 0; batchIndex < batchCount; ++batchIndex) {
+            threadHandles[batchIndex] = winThreads[baseIndex + batchIndex]->threadHandle;
+        }
+
+        const DWORD waitResult = WaitForMultipleObjects(batchCount, threadHandles, TRUE, INFINITE);
+        if (waitResult == WAIT_FAILED) {
+            BE_FATALERROR("PlatformWinThread::JoinAll: WaitForMultipleObjects failed (%u)", static_cast<unsigned int>(GetLastError()));
+        }
+    }
     
     for (int i = 0; i < numThreads; i++) {
         PlatformWinThread *winThread = winThreads[i];

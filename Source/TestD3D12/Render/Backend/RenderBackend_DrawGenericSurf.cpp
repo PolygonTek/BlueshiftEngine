@@ -25,7 +25,7 @@ void RenderBackend::DrawGenericSurfaces(const RenderPassDrawSurf **drawSurfs, ui
 
 #ifdef USE_RENDER_TASK
     // numDrawSurfs 가 많으면 태스크로 나눠서 그린다.
-    if (numDrawSurfs > MaxInstancesPerDraw && BE1::Engine::taskManager->NumThreads() > 1) {
+    if (numDrawSurfs > MaxInstancesPerDraw && frameData->NumRenderTaskThreads() > 1) {
         DrawGenericSurfacesWithTask(drawSurfs, numDrawSurfs, hiZCullBatches, hiZCullBatchCount);
     } else {
         DrawGenericSurfacesWithoutTask(drawSurfs, numDrawSurfs, hiZCullBatches, hiZCullBatchCount);
@@ -176,7 +176,7 @@ void RenderBackend::DrawGenericSurfacesWithTask(const RenderPassDrawSurf **drawS
     PROFILER_CPU_SCOPED_EVENT("RenderBackend::DrawGenericSurfacesWithTask");
 
     // numDrawSurfs 로 만들어 질 수 있는 최대 태스크 개수를 계산한다.
-    const uint32_t maxTasks = BE1::Min(BE1::Engine::taskManager->NumThreads(), (numDrawSurfs + MaxInstancesPerDraw - 1) / MaxInstancesPerDraw);
+    const uint32_t maxTasks = BE1::Min(frameData->NumRenderTaskThreads(), (numDrawSurfs + MaxInstancesPerDraw - 1) / MaxInstancesPerDraw);
 
     // 태스크 당 처리하는 목표 DrawSurfs 개수 (인스턴싱 경계에 걸리지 않도록 더 추가될 수 있다)
     const uint32_t targetDrawSurfsPerTask = (numDrawSurfs + maxTasks - 1) / maxTasks;
@@ -225,7 +225,9 @@ void RenderBackend::DrawGenericSurfacesWithTask(const RenderPassDrawSurf **drawS
         currentThreadDesc.instanceTableAllocCount = 0;
         currentThreadDesc.instanceTableUploadBytes = 0;
 
-        BE1::Engine::taskManager->AddTask(RenderBackend::DrawGenericSurfacesByTaskFunction, &currentThreadDesc, drawGroupId, false);
+        if (!BE1::Engine::taskManager->AddTask(RenderBackend::DrawGenericSurfacesByTaskFunction, &currentThreadDesc, drawGroupId, false)) {
+            DrawGenericSurfacesByTask(&currentThreadDesc);
+        }
 
         startIndex = endIndex;
     }

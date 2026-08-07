@@ -22,13 +22,9 @@ BE_NAMESPACE_BEGIN
 
 class BE_API TaskWorker {
 public:
-    virtual void                DoWork() = 0;
-};
+    virtual ~TaskWorker() = default;
 
-enum class TaskState : uint8_t {
-    Ready,
-    Running,
-    Waiting
+    virtual void                DoWork() = 0;
 };
 
 using TaskFunc = void (*)(void *data);
@@ -36,9 +32,7 @@ using TaskFunc = void (*)(void *data);
 struct Task {
     TaskFunc                    function;
     void *                      data;
-    int32_t                     id;
     int32_t                     groupId = -1;
-    TaskState                   state;
 };
 
 class BE_API TaskManager {
@@ -51,33 +45,28 @@ public:
                                 /// Returns number of threads.
     uint32_t                    NumThreads() const { return threads.Count(); }
 
-                                /// Is task list empty ?
-    bool                        IsTaskEmpty() const { return headTaskIndex == tailTaskIndex; }
-
-                                /// Is stopping now ?
-    bool                        IsStopping() const { return (bool)stopping; }
-
-                                /// Returns number of active tasks.
-    int64_t                     NumActiveTasks() const { return activeTaskCount; }
-
                                 /// Starts task threads.
     void                        Start(int numThreads = 0, bool useAffinity = false);
 
-                                /// Stops all the tasks.
+                                /// Finishes all queued tasks and stops the task threads.
     void                        Stop();
 
                                 /// Creates a new group ID.
     int32_t                     CreateGroupId();
 
                                 /// Adds a task with the given task worker object.
-    int32_t                     AddTask(TaskWorker *taskWorker, int32_t groupId = -1, bool withWake = true);
+                                /// Ownership transfers to the task manager only on successful submission.
+                                /// Returns true on success, or false if the task was rejected.
+    [[nodiscard]] bool          AddTask(TaskWorker *taskWorker, int32_t groupId = -1, bool withWake = true);
 
                                 /// Adds a task with the given task function.
-    int32_t                     AddTask(TaskFunc function, void *data, int32_t groupId = -1, bool withWake = true);
+                                /// Returns true on success, or false if the task was rejected.
+    [[nodiscard]] bool          AddTask(TaskFunc function, void *data, int32_t groupId = -1, bool withWake = true);
 
                                 /// Adds a task with a lambda function.
+                                /// Returns true on success, or false if the task was rejected.
     template <typename Lambda>
-    int32_t                     AddTask(Lambda &&lambda, int32_t groupId = -1, bool withWake = true);
+    [[nodiscard]] bool          AddTask(Lambda &&lambda, int32_t groupId = -1, bool withWake = true);
 
                                 /// Waits until finishing all tasks in the given group.
     void                        WaitFinish(int32_t groupId, bool withWake = false);
@@ -95,12 +84,9 @@ public:
                                 /// Returns false if a timeout occurs.
     bool                        TimedWaitFinishAll(int msec, bool withWake = false);
 
-                                /// Check if task is running with the given task id.
-    bool                        IsTaskRunning(int32_t taskId) const;
-    bool                        IsTaskRunning(const Array<int32_t> &taskIds) const;
-
 private:
-    Task *                      GetTaskInternal();
+    bool                        IsTaskEmpty() const { return headTaskIndex == tailTaskIndex; }
+    Task                        GetTaskInternal();
     void                        Run();
 
     static unsigned int         ThreadProc(void *param);
@@ -111,7 +97,6 @@ private:
 
     int32_t                     activeTaskCount = 0;            ///< Number of tasks in active state.
     HashTable<int32_t, int32_t> groupActiveTaskCount;           ///< Tracks how many tasks are active in each group.
-    int32_t                     nextTaskId = 0;
     int32_t                     nextGroupId = 0;
     bool                        stopping = false;
 
@@ -124,7 +109,7 @@ private:
 };
 
 template <typename Lambda>
-int32_t BE1::TaskManager::AddTask(Lambda &&lambda, int32_t groupId, bool withWake) {
+bool BE1::TaskManager::AddTask(Lambda &&lambda, int32_t groupId, bool withWake) {
     if constexpr (std::is_convertible_v<Lambda, TaskFunc>) {
         return AddTask(static_cast<TaskFunc>(lambda), nullptr, groupId, withWake);
     }
@@ -141,12 +126,14 @@ int32_t BE1::TaskManager::AddTask(Lambda &&lambda, int32_t groupId, bool withWak
     std::unique_ptr<Lambda> lambdaPtr(BE_NEW Lambda(std::forward<Lambda>(lambda)));
     void *data = lambdaPtr.get();
 
-    int32_t taskId = AddTask(&LambdaWrapper::Call, data, groupId, withWake);
+    bool submitted = AddTask(&LambdaWrapper::Call, data, groupId, withWake);
 
-    // Release ownership as the task manager is now responsible for cleaning up.
-    lambdaPtr.release();
+    if (submitted) {
+        // Transfer ownership only after the task manager accepts the task.
+        lambdaPtr.release();
+    }
 
-    return taskId;
+    return submitted;
 }
 
 BE_NAMESPACE_END

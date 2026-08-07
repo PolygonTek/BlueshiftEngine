@@ -32,6 +32,14 @@ static unsigned int CounterFunc(void *param) {
     return 0;
 }
 
+#if defined(__WIN32__)
+static unsigned int JoinAllThreadFunc(void *param) {
+    BE1::PlatformProcess::Sleep(0.05f);
+    static_cast<BE1::PlatformAtomic<int> *>(param)->Add(1);
+    return 0;
+}
+#endif
+
 void Test::TestThread() {
     count_mutex = BE1::PlatformMutex::Create();
 
@@ -41,4 +49,17 @@ void Test::TestThread() {
 
     BE1::PlatformThread::Join(threads[0]);
     BE1::PlatformThread::Join(threads[1]);
+
+#if defined(__WIN32__)
+    BE1::PlatformAtomic<int> joinedThreadCount(0);
+    BE1::Array<BE1::PlatformThread *> joinAllThreads;
+    joinAllThreads.Reserve(MAXIMUM_WAIT_OBJECTS + 1);
+
+    for (int i = 0; i < MAXIMUM_WAIT_OBJECTS + 1; ++i) {
+        joinAllThreads.Append(BE1::PlatformThread::Start(JoinAllThreadFunc, &joinedThreadCount));
+    }
+
+    BE1::PlatformThread::JoinAll(joinAllThreads.Count(), joinAllThreads.Ptr());
+    BE_ASSERT(joinedThreadCount.GetValue() == joinAllThreads.Count());
+#endif
 }
