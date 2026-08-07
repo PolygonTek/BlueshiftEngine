@@ -148,8 +148,9 @@ void RenderContext::UpdateDisplayOutputSettings() {
     settings.hdrOutputRequested = r_hdrOutput.GetBool();
     settings.paperWhiteNits = r_hdrPaperWhiteNits.GetFloat();
 
-    RHI::DisplayInfo displayInfo;
-    if (swapChain->GetDisplayInfo(displayInfo)) {
+    displayInfo = {};
+    displayInfoAvailable = swapChain->GetDisplayInfo(displayInfo);
+    if (displayInfoAvailable) {
         settings.hdrDisplayActive = displayInfo.hdrActive; // 현재 디스플레이의 HDR 출력 활성화 여부
         settings.minLuminanceNits = displayInfo.minLuminanceNits; // 디스플레이의 최소 휘도 (니트 단위)
         settings.maxFullFrameLuminanceNits = displayInfo.maxFullFrameLuminanceNits; // 디스플레이의 최대 전체 프레임 휘도 (니트 단위)

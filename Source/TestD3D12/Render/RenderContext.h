@@ -107,6 +107,7 @@ public:
 
     void *                          GetWindowHandle() const { return windowHandle; }
     RHI::SwapChain *                GetSwapChain() const { return swapChain; }
+    bool                            GetDisplayInfo(RHI::DisplayInfo &displayInfo) const { displayInfo = this->displayInfo; return displayInfoAvailable; }
     const DisplayOutputSettings &   GetDisplayOutputSettings() const { return displayOutputSettings; }
     RHI::Texture *                  GetFrameCompositionTexture() const { return frameCompositionTexture; }
     RHI::Texture *                  GetCSMDepthTexture() const { return csmDepthTexture; }
@@ -197,6 +198,8 @@ private:
 
     void *                          windowHandle = nullptr;
     RHI::SwapChain *                swapChain = nullptr;
+    RHI::DisplayInfo                displayInfo;
+    bool                            displayInfoAvailable = false;
     DisplayOutputSettings           displayOutputSettings;
     float                           cachedHDRPeakNitsOverride = 0.0f;
     bool                            displayOutputDirty = false;

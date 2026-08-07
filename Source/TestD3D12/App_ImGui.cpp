@@ -1158,6 +1158,23 @@ void App::BuildImGuiOverlay() {
                 ImGui::Text("Shared System Memory: %s", BE1::Str::FormatBytes(rendererInfo.sharedSystemMemoryBytes).c_str());
             }
 
+            ImGui::Separator();
+
+            RHI::DisplayInfo displayInfo;
+            if (mainRenderContext->GetDisplayInfo(displayInfo)) {
+                ImGui::Text("HDR Active: %s", displayInfo.hdrActive ? "Yes" : "No");
+                ImGui::Text("Min Luminance: %.3f nits", displayInfo.minLuminanceNits);
+                ImGui::Text("Max Luminance: %.1f nits", displayInfo.maxLuminanceNits);
+                ImGui::Text("Max Full-Frame Luminance: %.1f nits", displayInfo.maxFullFrameLuminanceNits);
+                if (displayInfo.maxLinearOutputValue > 0.0f) {
+                    ImGui::Text("Max Linear Output Value: %.3f", displayInfo.maxLinearOutputValue);
+                } else {
+                    ImGui::TextUnformatted("Max Linear Output Value: N/A");
+                }
+            } else {
+                ImGui::TextUnformatted("Display Info: Unavailable");
+            }
+
             ImGui::EndTabItem();
         }
 
