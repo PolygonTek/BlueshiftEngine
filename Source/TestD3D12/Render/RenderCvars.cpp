@@ -109,7 +109,7 @@ CVAR_MINMAX(r_convolutionBloomPrefilterRadius, "1.5", BE1::CVar::Flag::Float, "c
 CVAR_MINMAX(r_convolutionBloomKernelScale, "1.0", BE1::CVar::Flag::Float, "convolution bloom kernel scale", 0.01f, 10.0f);
 CVAR_MINMAX(r_convolutionBloomKernelGain, "1.0", BE1::CVar::Flag::Float, "convolution bloom normalized kernel gain", 0.0f, 10.0f);
 CVAR(r_convolutionBloomKernelRotation, "0", BE1::CVar::Flag::Float, "convolution bloom kernel rotation in degrees");
-CVAR_MINMAX(r_convolutionBloomPaddingTrim, "0.03", BE1::CVar::Flag::Float, "convolution bloom padding reduction as fraction of FFT size", 0.0f, 0.5f);
+CVAR_MINMAX(r_convolutionBloomPaddingTrim, "0.125", BE1::CVar::Flag::Float, "convolution bloom padding reduction as fraction of FFT size", 0.0f, 0.5f);
 CVAR_MINMAX(r_convolutionBloomApertureScale, "0.2", BE1::CVar::Flag::Float, "convolution bloom aperture size within the FFT domain", 0.02f, 1.0f);
 CVAR_MINMAX(r_convolutionBloomDispersionAmount, "1.0", BE1::CVar::Flag::Float, "convolution bloom diffraction dispersion amount", 0.0f, 1.0f);
 CVAR(r_convolutionBloomDebug, "1", BE1::CVar::Flag::Bool, "save convolution bloom kernel bounds debug image");

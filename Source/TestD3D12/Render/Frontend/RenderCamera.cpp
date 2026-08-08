@@ -801,18 +801,23 @@ bool RenderCamera::EnsureRenderTextures(uint32_t width, uint32_t height, RHI::Fo
 }
 
 static uint32_t SelectBloomFFTSize(uint32_t renderWidth, uint32_t renderHeight, uint32_t maxSize) {
-    // 화면 크기 중 긴 축을 기준으로 FFTSize 계산
-    const uint32_t maxAxis = BE1::Min(BE1::Max(renderWidth, renderHeight), maxSize);
-    if (maxAxis >= 1024 && maxSize >= 1024) {
-        return 1024;
+    if (renderWidth == 0 || renderHeight == 0) {
+        return 0;
     }
-    if (maxAxis >= 512 && maxSize >= 512) {
-        return 512;
+
+    // Convolution bloom 은 절반 해상도로 prefilter 한 화면을 FFT 입력으로 사용하므로, FFT 크기도 절반 해상도의 긴 축을 기준으로 선택한다.
+    const uint32_t inputWidth = renderWidth > 1 ? renderWidth >> 1 : 1;
+    const uint32_t inputHeight = renderHeight > 1 ? renderHeight >> 1 : 1;
+    const uint32_t inputMaxAxis = BE1::Max(inputWidth, inputHeight);
+
+    uint32_t fftSize = 256;
+    if (inputMaxAxis >= 1024) {
+        fftSize = 1024;
+    } else if (inputMaxAxis >= 512) {
+        fftSize = 512;
     }
-    if (maxAxis > 0) {
-        return 256;
-    }
-    return 0;
+
+    return BE1::Min(fftSize, maxSize);
 }
 
 void RenderCamera::EnsurePostProcessResources(bool skipPostProcess, RHI::Format colorFormat, bool needColorHistory, bool needDepthHistory, RenderBloomMode bloomMode) {
