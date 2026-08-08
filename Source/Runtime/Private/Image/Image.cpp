@@ -678,8 +678,8 @@ float Image::ComputeLuminanceSum(int32_t mipLevel, int32_t sliceIndex, bool igno
     return static_cast<float>(sum);
 }
 
-bool Image::ComputeLuminanceBounds(int32_t mipLevel, int32_t sliceIndex, float luminanceThreshold, bool ignoreNegativeValues, Rect &bounds) const {
-    bounds = Rect(0, 0, 0, 0);
+bool Image::ComputeLuminanceBounds(int32_t mipLevel, int32_t sliceIndex, float luminanceThreshold, bool ignoreNegativeValues, Rect &outBounds) const {
+    outBounds = Rect(0, 0, 0, 0);
 
     if (IsEmpty() ||
         mipLevel < 0 || mipLevel >= numMipLevels ||
@@ -693,7 +693,7 @@ bool Image::ComputeLuminanceBounds(int32_t mipLevel, int32_t sliceIndex, float l
         if (!ConvertFormat(Format::R32G32B32A32_FLOAT, linearImage, GammaSpace::Linear)) {
             return false;
         }
-        return linearImage.ComputeLuminanceBounds(mipLevel, sliceIndex, luminanceThreshold, ignoreNegativeValues, bounds);
+        return linearImage.ComputeLuminanceBounds(mipLevel, sliceIndex, luminanceThreshold, ignoreNegativeValues, outBounds);
     }
 
     const int32_t w = GetWidth(mipLevel);
@@ -736,7 +736,106 @@ bool Image::ComputeLuminanceBounds(int32_t mipLevel, int32_t sliceIndex, float l
         return false;
     }
 
-    bounds = Rect(minX, minY, maxX - minX + 1, maxY - minY + 1);
+    outBounds = Rect(minX, minY, maxX - minX + 1, maxY - minY + 1);
+    return true;
+}
+
+bool Image::ComputeLuminanceEnergyBounds(int32_t mipLevel, int32_t sliceIndex, float retainedEnergyFraction, bool ignoreNegativeValues, Rect &outBounds, float &outLuminanceSum) const {
+    outBounds = Rect(0, 0, 0, 0);
+    outLuminanceSum = 0.0f;
+
+    if (IsEmpty() ||
+        mipLevel < 0 || mipLevel >= numMipLevels ||
+        sliceIndex < 0 || sliceIndex >= arraySize ||
+        !std::isfinite(retainedEnergyFraction) || retainedEnergyFraction <= 0.0f || retainedEnergyFraction > 1.0f) {
+        return false;
+    }
+
+    const ImageFormatInfo *formatInfo = GetImageFormatInfo(format);
+    if (IsCompressed()) {
+        Image linearImage;
+        if (!ConvertFormat(Format::R32G32B32A32_FLOAT, linearImage, GammaSpace::Linear)) {
+            return false;
+        }
+        return linearImage.ComputeLuminanceEnergyBounds(mipLevel, sliceIndex, retainedEnergyFraction, ignoreNegativeValues, outBounds, outLuminanceSum);
+    }
+
+    const int32_t w = GetWidth(mipLevel);
+    const int32_t h = GetHeight(mipLevel);
+    const int32_t d = GetDepth(mipLevel);
+    const int32_t bpp = BytesPerPixel();
+    const byte *src = GetPixels(mipLevel, sliceIndex);
+
+    Array<double> columnEnergies;
+    columnEnergies.SetCount(w);
+    for (double &energy : columnEnergies) {
+        energy = 0.0;
+    }
+
+    Array<double> rowEnergies;
+    rowEnergies.SetCount(h);
+    for (double &energy : rowEnergies) {
+        energy = 0.0;
+    }
+
+    double totalEnergy = 0.0;
+    for (int32_t z = 0; z < d; z++) {
+        for (int32_t y = 0; y < h; y++) {
+            const byte *srcPtr = src + (static_cast<size_t>(z) * h + y) * w * bpp;
+            for (int32_t x = 0; x < w; x++) {
+                ALIGN_AS16 Color4 color;
+                formatInfo->unpackRGBA32F(srcPtr, reinterpret_cast<byte *>(&color), 1);
+                ConvertColorRGBToLinear(gammaSpace, color);
+
+                float luminance = GetLuminance(color.ToColor3());
+                if (std::isfinite(luminance)) {
+                    if (ignoreNegativeValues) {
+                        luminance = Max(luminance, 0.0f);
+                    }
+                    totalEnergy += luminance;
+                    columnEnergies[x] += luminance;
+                    rowEnergies[y] += luminance;
+                }
+                srcPtr += bpp;
+            }
+        }
+    }
+
+    outLuminanceSum = static_cast<float>(totalEnergy);
+    if (!std::isfinite(totalEnergy) || totalEnergy <= 0.0 || !std::isfinite(outLuminanceSum)) {
+        outLuminanceSum = 0.0f;
+        return false;
+    }
+
+    const double axisDiscardBudget = totalEnergy * (1.0 - static_cast<double>(retainedEnergyFraction)) * 0.5;
+
+    int32_t minX = 0;
+    int32_t maxX = w - 1;
+    double discardedX = 0.0;
+    while (minX + 1 < maxX) {
+        const double pairEnergy = columnEnergies[minX] + columnEnergies[maxX];
+        if (discardedX + pairEnergy > axisDiscardBudget) {
+            break;
+        }
+        discardedX += pairEnergy;
+        minX++;
+        maxX--;
+    }
+
+    int32_t minY = 0;
+    int32_t maxY = h - 1;
+    double discardedY = 0.0;
+    while (minY + 1 < maxY) {
+        const double pairEnergy = rowEnergies[minY] + rowEnergies[maxY];
+        if (discardedY + pairEnergy > axisDiscardBudget) {
+            break;
+        }
+        discardedY += pairEnergy;
+        minY++;
+        maxY--;
+    }
+
+    outBounds = Rect(minX, minY, maxX - minX + 1, maxY - minY + 1);
     return true;
 }
 

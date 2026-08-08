@@ -112,3 +112,4 @@ CVAR(r_convolutionBloomKernelRotation, "0", BE1::CVar::Flag::Float, "convolution
 CVAR_MINMAX(r_convolutionBloomPaddingTrim, "0.03", BE1::CVar::Flag::Float, "convolution bloom padding reduction as fraction of FFT size", 0.0f, 0.5f);
 CVAR_MINMAX(r_convolutionBloomApertureScale, "0.2", BE1::CVar::Flag::Float, "convolution bloom aperture size within the FFT domain", 0.02f, 1.0f);
 CVAR_MINMAX(r_convolutionBloomDispersionAmount, "1.0", BE1::CVar::Flag::Float, "convolution bloom diffraction dispersion amount", 0.0f, 1.0f);
+CVAR(r_convolutionBloomDebug, "1", BE1::CVar::Flag::Bool, "save convolution bloom kernel bounds debug image");

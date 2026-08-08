@@ -102,6 +102,73 @@ bool RenderCamera::Cull(const BE1::Frustum &bounds) const {
     return frustum.CullFrustum(bounds);
 }
 
+static void WriteConvolutionBloomKernelBoundsDebugImage(const BE1::Image &kernelImage, const BE1::Rect &bounds) {
+    BE1::Image debugImage;
+    if (!kernelImage.ConvertFormat(BE1::Image::Format::R32G32B32A32_FLOAT, debugImage, BE1::Image::GammaSpace::Linear)) {
+        BE_WARNLOG("WriteConvolutionBloomKernelBoundsDebugImage: failed to convert kernel image\n");
+        return;
+    }
+
+    const int width = debugImage.GetWidth();
+    const int height = debugImage.GetHeight();
+    float *debugPixels = reinterpret_cast<float *>(debugImage.GetPixels());
+    const size_t debugPixelCount = static_cast<size_t>(width) * static_cast<size_t>(height);
+
+    float boundsColorScale = 1.0f;
+    for (size_t pixelIndex = 0; pixelIndex < debugPixelCount; pixelIndex++) {
+        const float *pixel = debugPixels + pixelIndex * 4;
+        for (int componentIndex = 0; componentIndex < 3; componentIndex++) {
+            if (std::isfinite(pixel[componentIndex])) {
+                boundsColorScale = BE1::Max(boundsColorScale, pixel[componentIndex]);
+            }
+        }
+    }
+
+    auto SetBoundsPixel = [debugPixels, width, boundsColorScale](int x, int y) {
+        float *pixel = debugPixels + (static_cast<size_t>(y) * static_cast<size_t>(width) + static_cast<size_t>(x)) * 4;
+        pixel[0] = boundsColorScale;
+        pixel[1] = 0.0f;
+        pixel[2] = 0.0f;
+        pixel[3] = 1.0f;
+    };
+
+    const int minX = bounds.x;
+    const int minY = bounds.y;
+    const int maxX = bounds.x + bounds.w - 1;
+    const int maxY = bounds.y + bounds.h - 1;
+    const int boundsThickness = BE1::Max(BE1::Min(width, height) / 512, 1);
+
+    for (int thicknessOffset = 0; thicknessOffset < boundsThickness; thicknessOffset++) {
+        const int x0 = minX + thicknessOffset;
+        const int y0 = minY + thicknessOffset;
+        const int x1 = maxX - thicknessOffset;
+        const int y1 = maxY - thicknessOffset;
+        if (x0 > x1 || y0 > y1) {
+            break;
+        }
+
+        for (int x = x0; x <= x1; x++) {
+            SetBoundsPixel(x, y0);
+            SetBoundsPixel(x, y1);
+        }
+        for (int y = y0 + 1; y < y1; y++) {
+            SetBoundsPixel(x0, y);
+            SetBoundsPixel(x1, y);
+        }
+    }
+
+    const BE1::Str documentDir = BE1::fileSystem.GetUserDocumentDir();
+    char path[BE1::MaxAbsolutePath];
+    BE1::Str::snPrintf(path, sizeof(path), "%s/Screenshots/convolution_bloom_kernel_bounds.hdr", documentDir.c_str());
+
+    if (!debugImage.WriteHDR(path)) {
+        BE_WARNLOG("WriteConvolutionBloomKernelBoundsDebugImage: failed to write \"%s\"\n", path);
+        return;
+    }
+
+    BE_LOG("Convolution bloom kernel bounds debug image saved to \"%s\"\n", path);
+}
+
 // 원본 컨볼루션 커널 이미지에서 normalized extents 와 평균 luminance 의 역수를 계산한다.
 void RenderCamera::CalcConvolutionBloomKernelParams(const BE1::Image &kernelImage, BE1::Vec2 &outNormalizedKernelExtents, float &outInverseAverageLuminance) {
     outInverseAverageLuminance = 1.0f;
@@ -117,19 +184,23 @@ void RenderCamera::CalcConvolutionBloomKernelParams(const BE1::Image &kernelImag
     // 원본 kernel 이미지의 픽셀 개수
     const float pixelCount = static_cast<float>(width * height);
 
-    // 원본 kernel 이미지의 luminanceSum
-    const float luminanceSum = kernelImage.ComputeLuminanceSum(0, 0, true);
+    // 전체 luminance 에너지의 99.98% 이상을 보존하는 대칭 바운딩 박스를 계산한다.
+    static constexpr float retainedKernelEnergyFraction = 0.9998f;
+    float luminanceSum;
+    BE1::Rect bounds;
+    if (!kernelImage.ComputeLuminanceEnergyBounds(0, 0, retainedKernelEnergyFraction, true, bounds, luminanceSum)) {
+        return;
+    }
+
     if (!std::isfinite(luminanceSum) || luminanceSum <= 0.000001f) {
         return;
     }
 
-    // 바운딩 박스를 계산할 때 luminance average 의 0.1% 정도를 threshold 로 사용한다.
     const float averageLuminance = luminanceSum / pixelCount;
-    const float luminanceThreshold = BE1::Max(averageLuminance * 0.001f, 0.0f);
 
-    BE1::Rect bounds;
-    if (!kernelImage.ComputeLuminanceBounds(0, 0, luminanceThreshold, true, bounds)) {
-        return;
+    if (r_convolutionBloomDebug.GetBool()) {
+        // 계산된 kernel bounds 를 원본 HDR 범위를 유지한 채 확인할 수 있도록 디버그 이미지에 표시한다.
+        WriteConvolutionBloomKernelBoundsDebugImage(kernelImage, bounds);
     }
 
     const float centerX = static_cast<float>(width) * 0.5f;

@@ -373,7 +373,9 @@ public:
                         /// Returns luminance sum in linear space for the given mip level and slice.
     float               ComputeLuminanceSum(int32_t mipLevel = 0, int32_t sliceIndex = 0, bool ignoreNegativeValues = false) const;
                         /// Returns luminance bounds in linear space for the given mip level and slice.
-    bool                ComputeLuminanceBounds(int32_t mipLevel, int32_t sliceIndex, float luminanceThreshold, bool ignoreNegativeValues, Rect &bounds) const;
+    bool                ComputeLuminanceBounds(int32_t mipLevel, int32_t sliceIndex, float luminanceThreshold, bool ignoreNegativeValues, Rect &outBounds) const;
+                        /// Returns centered luminance bounds that retain at least the given fraction of total luminance in linear space.
+    bool                ComputeLuminanceEnergyBounds(int32_t mipLevel, int32_t sliceIndex, float retainedEnergyFraction, bool ignoreNegativeValues, Rect &outBounds, float &outLuminanceSum) const;
 
                         /// Returns number of bytes with the given mipmap levels.
     size_t              SizeInBytes(int32_t firstMipLevel = 0, int32_t numMipLevels = 1) const;
