@@ -188,7 +188,8 @@ struct LuminancePass2Params {
     float luminancePixelCount;
     float luminanceAdaptationRate;
     float middleGray;
-    float3 padding0;
+    float exposureCompensation;
+    float2 padding0;
 };
 
 struct FinalPostProcessParams {

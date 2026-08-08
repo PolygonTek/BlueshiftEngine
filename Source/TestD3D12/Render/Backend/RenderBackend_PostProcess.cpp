@@ -63,6 +63,7 @@ bool RenderBackend::DispatchLuminance() {
     luminancePass2Params.luminancePixelCount = static_cast<float>(sampleW * sampleH);
     luminancePass2Params.luminanceAdaptationRate = BE1::Max(r_toneMapLuminanceAdaptationRate.GetFloat(), 0.0f);
     luminancePass2Params.middleGray = BE1::Max(r_toneMapMiddleGray.GetFloat(), 0.0f);
+    luminancePass2Params.exposureCompensation = r_toneMapExposureCompensation.GetFloat();
 
     RHI::Texture *inputTexture = currentPostProcessInputTexture ? currentPostProcessInputTexture : currentVisCamera->rtColorTexture;
 

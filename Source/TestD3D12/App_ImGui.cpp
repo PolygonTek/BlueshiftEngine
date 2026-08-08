@@ -1038,6 +1038,12 @@ void App::BuildImGuiOverlay() {
                     r_toneMapMiddleGray.SetFloat(middleGray);
                 }
 
+                float exposureCompensation = r_toneMapExposureCompensation.GetFloat();
+                ImGui::SetNextItemWidth(fontSize * 12.0f);
+                if (ImGui::SliderFloat("Exposure compensation", &exposureCompensation, r_toneMapExposureCompensation.GetMinValue(), r_toneMapExposureCompensation.GetMaxValue(), "%.2f EV")) {
+                    r_toneMapExposureCompensation.SetFloat(exposureCompensation);
+                }
+
                 float whiteBalanceTemperature = r_whiteBalanceTemperature.GetFloat();
                 ImGui::SetNextItemWidth(fontSize * 12.0f);
                 if (ImGui::SliderFloat("White balance temperature", &whiteBalanceTemperature, r_whiteBalanceTemperature.GetMinValue(), r_whiteBalanceTemperature.GetMaxValue(), "%.0f K")) {

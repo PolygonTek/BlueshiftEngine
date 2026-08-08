@@ -52,8 +52,9 @@ void CSMain(uint binIndex : SV_GroupIndex) {
         // 보간된 luminance 값 저장 (다음 프레임에 사용)
         luminanceHistogram.Store<float>(LuminanceBufferOffsetLuminance, adaptedLuminance);
 
-        // exposure 값 저장
-        luminanceHistogram.Store<float>(LuminanceBufferOffsetExposure, luminancePass2Params.middleGray / max(adaptedLuminance, 0.0001));
+        // 자동 노출에 EV 단위의 노출 보정을 적용하여 저장한다.
+        float exposureScale = exp2(luminancePass2Params.exposureCompensation);
+        luminanceHistogram.Store<float>(LuminanceBufferOffsetExposure, (luminancePass2Params.middleGray / max(adaptedLuminance, 0.0001)) * exposureScale);
     }
 
     // clear histogram for next frame
