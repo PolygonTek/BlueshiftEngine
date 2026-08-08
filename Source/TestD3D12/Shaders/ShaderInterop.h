@@ -79,6 +79,7 @@ static const uint ToneMappingOperatorFilmicACES = 7;
 static const uint ToneMappingOperatorFilmicUnreal3 = 8;
 static const uint ToneMappingOperatorFilmicUncharted2 = 9;
 static const uint ToneMappingOperatorFilmicGT = 10;
+static const uint ToneMappingOperatorPBRNeutral = 11;
 
 static const uint BloomBlockSizeX = 16;
 static const uint BloomBlockSizeY = 16;
