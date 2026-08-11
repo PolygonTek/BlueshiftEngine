@@ -242,9 +242,9 @@ BE_FORCE_INLINE ssef shuffle_ps<2, 3, 2, 3>(const ssef &a) { return _mm_movehl_p
 
 // _mm_moveldup_ps and _mm_movehdup_ps are better than shuffle, since they don't destroy the input operands (under non-AVX).
 template <> 
-BE_FORCE_INLINE ssef shuffle_ps<0, 0, 2, 2>(const ssef &a) { return _mm_movehdup_ps(a); }
+BE_FORCE_INLINE ssef shuffle_ps<0, 0, 2, 2>(const ssef &a) { return _mm_moveldup_ps(a); }
 template <> 
-BE_FORCE_INLINE ssef shuffle_ps<1, 1, 3, 3>(const ssef &a) { return _mm_moveldup_ps(a); }
+BE_FORCE_INLINE ssef shuffle_ps<1, 1, 3, 3>(const ssef &a) { return _mm_movehdup_ps(a); }
 
 // Shuffles two 4x32 bits floats using template parameters. ax, bx = [0, 3].
 template <size_t a0, size_t a1, size_t b0, size_t b1>

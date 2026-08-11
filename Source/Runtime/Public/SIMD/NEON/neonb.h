@@ -24,7 +24,7 @@ BE_FORCE_INLINE neonb set_b32(bool a, bool b, bool c, bool d) {
 }
 
 BE_FORCE_INLINE neonb ps_to_b32(const neonf &a) {
-    return vcvtq_u32_f32(a);
+    return vreinterpretq_u32_f32(a);
 }
 
 BE_FORCE_INLINE neonb operator!(const neonb &a) { return vmvnq_u32(a); }
@@ -42,7 +42,7 @@ BE_FORCE_INLINE neonb operator==(const neonb &a, const neonb &b) { return vceqq_
 
 // Selects 4x32 bits using mask.
 BE_FORCE_INLINE neonb select_b32(const neonb &a, const neonb &b, const neonb &mask) {
-    return vbslq_u32(mask, a, b);
+    return vbslq_u32(mask, b, a);
 }
 
 // Unpacks to (a0, b0, a1, b1).

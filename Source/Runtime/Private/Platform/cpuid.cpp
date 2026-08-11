@@ -122,7 +122,8 @@ void DetectCpu() {
     if (osUsesXSAVE_XRSTORE && cpuAVXSupport) {
         // Check if the OS will save the YMM registers.
         unsigned long long xcrFeatureMask = _xgetbv(_XCR_XFEATURE_ENABLED_MASK);
-        if (xcrFeatureMask & 0x6) {
+        // Both XMM (bit 1) and YMM (bit 2) state must be enabled by the OS.
+        if ((xcrFeatureMask & 0x6) == 0x6) {
             cpuInfo.cpuid |= CPUID_AVX;
         }
     }

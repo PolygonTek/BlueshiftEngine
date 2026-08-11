@@ -167,7 +167,8 @@ if (PLATFORM_WINDOWS)
         set(FLAGS_AVX "${FLAGS_SSE42} /arch:AVX -D__AVX__")
         set(FLAGS_AVX2 "${FLAGS_SSE42} /arch:AVX2 -D__AVX__ -D__AVX2__")
 
-        add_definitions(${FLAGS_AVX}) # AVX2 is not supported on older AMD machines including Mac Pro etc.
+        # Desktop x86 builds use AVX as the baseline ISA.
+        add_definitions(${FLAGS_AVX})
 
         # Enable Function-Level Linking
         add_definitions("/Gy")
@@ -220,7 +221,14 @@ elseif (PLATFORM_ANDROID)
     add_compile_options("-Wlogical-not-parentheses")
     add_compile_options("-Wshift-overflow")
     add_compile_options("-Wno-tautological-undefined-compare")
-elseif (APPLE) 
+elseif (PLATFORM_LINUX)
+    if (CMAKE_SYSTEM_PROCESSOR MATCHES "^(x86_64|AMD64|amd64)$")
+        # Desktop x86 builds use AVX as the baseline ISA.
+        set(FLAGS_SIMD "-mavx")
+        set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${FLAGS_SIMD}")
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${FLAGS_SIMD}")
+    endif ()
+elseif (APPLE)
     # Settings for macOS, iOS
     #set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=gnu99")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -stdlib=libc++")
@@ -249,6 +257,7 @@ elseif (APPLE)
         set(FLAGS_AVX "-mavx")
         set(FLAGS_AVX2 "-mf16c -mavx2 -mfma -mlzcnt -mbmi -mbmi2")
 
+        # Desktop x86 builds use AVX as the baseline ISA.
         set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${FLAGS_AVX}")
         set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${FLAGS_AVX}")
     endif ()

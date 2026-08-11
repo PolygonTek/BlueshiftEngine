@@ -129,7 +129,7 @@ set(COMMON_ENGINE_FILES
     Public/SIMD/SSE/sseb.h
     Public/SIMD/SSE/ssef.h
     Public/SIMD/SSE/ssei.h
-    Public/SIMD/SSE/smmintrin_emu.h
+    Public/SIMD/SSE/sse41_emu.h
     Public/SIMD/NEON/neon.h
     Public/SIMD/NEON/neonb.h
     Public/SIMD/NEON/neonf.h

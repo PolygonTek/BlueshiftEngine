@@ -159,7 +159,7 @@ BE_FORCE_INLINE avxf operator|(const avxf &a, const avxi &b) { return _mm256_or_
 BE_FORCE_INLINE avxf operator^(const avxf &a, const avxf &b) { return _mm256_xor_ps(a, b); }
 BE_FORCE_INLINE avxf operator^(const avxf &a, const avxi &b) { return _mm256_xor_ps(a, _mm256_castsi256_ps(b)); }
 
-BE_FORCE_INLINE avxf operator==(const avxf &a, const avxf &b) { return _mm256_cmp_ps(a, b, _CMP_EQ_UQ); }
+BE_FORCE_INLINE avxf operator==(const avxf &a, const avxf &b) { return _mm256_cmp_ps(a, b, _CMP_EQ_OQ); }
 BE_FORCE_INLINE avxf operator==(const avxf &a, const float &b) { return a == set1_256ps(b); }
 BE_FORCE_INLINE avxf operator==(const float &a, const avxf &b) { return set1_256ps(a) == b; }
 
@@ -167,19 +167,19 @@ BE_FORCE_INLINE avxf operator!=(const avxf &a, const avxf &b) { return _mm256_cm
 BE_FORCE_INLINE avxf operator!=(const avxf &a, const float &b) { return a != set1_256ps(b); }
 BE_FORCE_INLINE avxf operator!=(const float &a, const avxf &b) { return set1_256ps(a) != b; }
 
-BE_FORCE_INLINE avxf operator<(const avxf &a, const avxf &b) { return _mm256_cmp_ps(a, b, _CMP_NGE_UQ); }
+BE_FORCE_INLINE avxf operator<(const avxf &a, const avxf &b) { return _mm256_cmp_ps(a, b, _CMP_LT_OQ); }
 BE_FORCE_INLINE avxf operator<(const avxf &a, const float &b) { return a < set1_256ps(b); }
 BE_FORCE_INLINE avxf operator<(const float &a, const avxf &b) { return set1_256ps(a) < b; }
 
-BE_FORCE_INLINE avxf operator>(const avxf &a, const avxf &b) { return _mm256_cmp_ps(a, b, _CMP_NLE_UQ); }
+BE_FORCE_INLINE avxf operator>(const avxf &a, const avxf &b) { return _mm256_cmp_ps(a, b, _CMP_GT_OQ); }
 BE_FORCE_INLINE avxf operator>(const avxf &a, const float &b) { return a > set1_256ps(b); }
 BE_FORCE_INLINE avxf operator>(const float &a, const avxf &b) { return set1_256ps(a) > b; }
 
-BE_FORCE_INLINE avxf operator>=(const avxf &a, const avxf &b) { return _mm256_cmp_ps(a, b, _CMP_NLT_UQ); }
+BE_FORCE_INLINE avxf operator>=(const avxf &a, const avxf &b) { return _mm256_cmp_ps(a, b, _CMP_GE_OQ); }
 BE_FORCE_INLINE avxf operator>=(const avxf &a, const float &b) { return a >= set1_256ps(b); }
 BE_FORCE_INLINE avxf operator>=(const float &a, const avxf &b) { return set1_256ps(a) >= b; }
 
-BE_FORCE_INLINE avxf operator<=(const avxf &a, const avxf &b) { return _mm256_cmp_ps(a, b, _CMP_NGT_UQ); }
+BE_FORCE_INLINE avxf operator<=(const avxf &a, const avxf &b) { return _mm256_cmp_ps(a, b, _CMP_LE_OQ); }
 BE_FORCE_INLINE avxf operator<=(const avxf &a, const float &b) { return a <= set1_256ps(b); }
 BE_FORCE_INLINE avxf operator<=(const float &a, const avxf &b) { return set1_256ps(a) <= b; }
 

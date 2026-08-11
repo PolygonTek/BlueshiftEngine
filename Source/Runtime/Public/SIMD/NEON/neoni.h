@@ -62,11 +62,15 @@ BE_FORCE_INLINE void storent_si128(const neoni &a, int32_t *dst) {
 }
 
 BE_FORCE_INLINE neoni ps_to_epi32(const neonf &a) {
-    return vcvtq_s32_f32(a);
+#if defined(__ARM64__)
+    return vcvtnq_s32_f32(a);
+#else
+    return vcvtq_s32_f32(round_ps(a));
+#endif
 }
 
 BE_FORCE_INLINE neoni abs_epi32(const neoni &a) {
-    return vqabsq_s32(a);
+    return vabsq_s32(a);
 }
 
 BE_FORCE_INLINE neoni operator+(const neoni &a) { return a; }
@@ -97,7 +101,9 @@ BE_FORCE_INLINE neoni operator^(const neoni &a, const neoni &b) { return veorq_u
 BE_FORCE_INLINE neoni operator^(const neoni &a, const int32_t &b) { return a ^ set1_epi32(b); }
 BE_FORCE_INLINE neoni operator^(const int32_t &a, const neoni &b) { return set1_epi32(a) ^ b; }
 
-BE_FORCE_INLINE neoni operator<<(const neoni &a, const int32_t &n) { return vshlq_u32(a, vdupq_n_s32(n)); }
+// Shifts signed 32-bit lanes left. Arithmetic and logical left shifts produce identical bit patterns.
+BE_FORCE_INLINE neoni operator<<(const neoni &a, const int32_t &n) { return vshlq_s32(a, vdupq_n_s32(n)); }
+// Shifts signed 32-bit lanes right with sign extension.
 BE_FORCE_INLINE neoni operator>>(const neoni &a, const int32_t &n) { return vshlq_s32(a, vdupq_n_s32(-n)); }
 
 BE_FORCE_INLINE neoni operator==(const neoni &a, const neoni &b) { return vceqq_u32(a, b); }
@@ -139,16 +145,18 @@ BE_FORCE_INLINE neoni &operator&=(neoni &a, const int32_t &b) { return a = a & b
 BE_FORCE_INLINE neoni &operator|=(neoni &a, const neoni &b) { return a = a | b; }
 BE_FORCE_INLINE neoni &operator|=(neoni &a, const int32_t &b) { return a = a | b; }
 
+// Compound signed left shift. Arithmetic and logical left shifts produce identical bit patterns.
 BE_FORCE_INLINE neoni &operator<<=(neoni &a, const int32_t &b) { return a = a << b; }
+// Compound signed right shift with sign extension.
 BE_FORCE_INLINE neoni &operator>>=(neoni &a, const int32_t &b) { return a = a >> b; }
 
-// Shifts right arithmetic.
+// Shifts signed 32-bit lanes right with sign extension.
 BE_FORCE_INLINE neoni sra_epi32(const neoni &a, const int32_t &b) { return vshlq_s32(a, vdupq_n_s32(-b)); }
 
-// Shifts right logical.
+// Shifts 32-bit lanes right with zero fill.
 BE_FORCE_INLINE neoni srl_epi32(const neoni &a, const int32_t &b) { return vshlq_u32(a, vdupq_n_s32(-b)); }
 
-// Shifts left logical.
+// Shifts 32-bit lanes left with zero fill. Arithmetic and logical left shifts produce identical bit patterns.
 BE_FORCE_INLINE neoni sll_epi32(const neoni &a, const int32_t &b) { return vshlq_u32(a, vdupq_n_s32(b)); }
 
 // Unpacks to (a0, b0, a1, b1).
@@ -187,7 +195,7 @@ BE_FORCE_INLINE const neoni insert_epi32(const neoni &a, const int32_t b) {
 
 // Selects 4x32 bits integer using mask.
 BE_FORCE_INLINE neoni select_epi32(const neoni &a, const neoni &b, const neonb &mask) {
-    return vbslq_s32(mask, a, b);
+    return vbslq_s32(mask, b, a);
 }
 
 BE_FORCE_INLINE neoni min_epi32(const neoni &a, const neoni &b) { return vminq_s32(a, b); }

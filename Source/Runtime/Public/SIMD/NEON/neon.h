@@ -204,7 +204,7 @@ BE_FORCE_INLINE float32x4_t bx_vshufq_f32_3202(float32x4_t a, float32x4_t b) {
 BE_FORCE_INLINE float32x4_t bx_vshufq_f32_3232(float32x4_t a, float32x4_t b) {
     float32x2_t a32 = vget_high_f32(a);
     float32x2_t b32 = vget_high_f32(b);
-    return vcombine_f32(b32, a32);
+    return vcombine_f32(a32, b32);
 }
 
 BE_FORCE_INLINE float32x4_t bx_vshufq_f32_1133(float32x4_t a, float32x4_t b) {
@@ -251,29 +251,29 @@ BE_FORCE_INLINE int32x4_t bx_vshufq_s8(int32x4_t a, int32x4_t b) {
 #else
     uint8_t *tbl = (uint8_t *)&a;  // input a
     uint8_t *idx = (uint8_t *)&b;  // input b
-    int32_t r[4];
+    uint32_t r[4];
 
-    r[0] = ((idx[3] & 0x80) ? 0 : tbl[idx[3] % 16]) << 24;
-    r[0] |= ((idx[2] & 0x80) ? 0 : tbl[idx[2] % 16]) << 16;
-    r[0] |= ((idx[1] & 0x80) ? 0 : tbl[idx[1] % 16]) << 8;
-    r[0] |= ((idx[0] & 0x80) ? 0 : tbl[idx[0] % 16]);
+    r[0] = (uint32_t)((idx[3] & 0x80) ? 0 : tbl[idx[3] % 16]) << 24;
+    r[0] |= (uint32_t)((idx[2] & 0x80) ? 0 : tbl[idx[2] % 16]) << 16;
+    r[0] |= (uint32_t)((idx[1] & 0x80) ? 0 : tbl[idx[1] % 16]) << 8;
+    r[0] |= (uint32_t)((idx[0] & 0x80) ? 0 : tbl[idx[0] % 16]);
 
-    r[1] = ((idx[7] & 0x80) ? 0 : tbl[idx[7] % 16]) << 24;
-    r[1] |= ((idx[6] & 0x80) ? 0 : tbl[idx[6] % 16]) << 16;
-    r[1] |= ((idx[5] & 0x80) ? 0 : tbl[idx[5] % 16]) << 8;
-    r[1] |= ((idx[4] & 0x80) ? 0 : tbl[idx[4] % 16]);
+    r[1] = (uint32_t)((idx[7] & 0x80) ? 0 : tbl[idx[7] % 16]) << 24;
+    r[1] |= (uint32_t)((idx[6] & 0x80) ? 0 : tbl[idx[6] % 16]) << 16;
+    r[1] |= (uint32_t)((idx[5] & 0x80) ? 0 : tbl[idx[5] % 16]) << 8;
+    r[1] |= (uint32_t)((idx[4] & 0x80) ? 0 : tbl[idx[4] % 16]);
 
-    r[2] = ((idx[11] & 0x80) ? 0 : tbl[idx[11] % 16]) << 24;
-    r[2] |= ((idx[10] & 0x80) ? 0 : tbl[idx[10] % 16]) << 16;
-    r[2] |= ((idx[9] & 0x80) ? 0 : tbl[idx[9] % 16]) << 8;
-    r[2] |= ((idx[8] & 0x80) ? 0 : tbl[idx[8] % 16]);
+    r[2] = (uint32_t)((idx[11] & 0x80) ? 0 : tbl[idx[11] % 16]) << 24;
+    r[2] |= (uint32_t)((idx[10] & 0x80) ? 0 : tbl[idx[10] % 16]) << 16;
+    r[2] |= (uint32_t)((idx[9] & 0x80) ? 0 : tbl[idx[9] % 16]) << 8;
+    r[2] |= (uint32_t)((idx[8] & 0x80) ? 0 : tbl[idx[8] % 16]);
 
-    r[3] = ((idx[15] & 0x80) ? 0 : tbl[idx[15] % 16]) << 24;
-    r[3] |= ((idx[14] & 0x80) ? 0 : tbl[idx[14] % 16]) << 16;
-    r[3] |= ((idx[13] & 0x80) ? 0 : tbl[idx[13] % 16]) << 8;
-    r[3] |= ((idx[12] & 0x80) ? 0 : tbl[idx[12] % 16]);
+    r[3] = (uint32_t)((idx[15] & 0x80) ? 0 : tbl[idx[15] % 16]) << 24;
+    r[3] |= (uint32_t)((idx[14] & 0x80) ? 0 : tbl[idx[14] % 16]) << 16;
+    r[3] |= (uint32_t)((idx[13] & 0x80) ? 0 : tbl[idx[13] % 16]) << 8;
+    r[3] |= (uint32_t)((idx[12] & 0x80) ? 0 : tbl[idx[12] % 16]);
 
-    return vld1q_s32(r);
+    return vreinterpretq_s32_u32(vld1q_u32(r));
 #endif
 }
 

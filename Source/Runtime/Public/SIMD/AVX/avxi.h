@@ -100,8 +100,10 @@ BE_FORCE_INLINE avxi operator^(const avxi &a, const avxi &b) { return bx_mm256_x
 BE_FORCE_INLINE avxi operator^(const avxi &a, const int32_t &b) { return a ^ set1_256epi32(b); }
 BE_FORCE_INLINE avxi operator^(const int32_t &a, const avxi &b) { return set1_256epi32(a) ^ b; }
 
+// Shifts signed 32-bit lanes left. Arithmetic and logical left shifts produce identical bit patterns.
 BE_FORCE_INLINE avxi operator<<(const avxi &a, const int32_t &n) { return bx_mm256_slli_epi32(a, n); }
-BE_FORCE_INLINE avxi operator>>(const avxi &a, const int32_t &n) { return bx_mm256_srli_epi32(a, n); }
+// Shifts signed 32-bit lanes right with sign extension.
+BE_FORCE_INLINE avxi operator>>(const avxi &a, const int32_t &n) { return bx_mm256_srai_epi32(a, n); }
 
 BE_FORCE_INLINE avxi operator==(const avxi &a, const avxi &b) { return bx_mm256_cmpeq_epi32(a, b); }
 BE_FORCE_INLINE avxi operator==(const avxi &a, const int32_t &b) { return a == set1_256epi32(b); }
@@ -142,16 +144,18 @@ BE_FORCE_INLINE avxi &operator&=(avxi &a, const int32_t &b) { return a = a & b; 
 BE_FORCE_INLINE avxi &operator|=(avxi &a, const avxi &b) { return a = a | b; }
 BE_FORCE_INLINE avxi &operator|=(avxi &a, const int32_t &b) { return a = a | b; }
 
+// Compound signed left shift. Arithmetic and logical left shifts produce identical bit patterns.
 BE_FORCE_INLINE avxi &operator<<=(avxi &a, const int32_t &b) { return a = a << b; }
+// Compound signed right shift with sign extension.
 BE_FORCE_INLINE avxi &operator>>=(avxi &a, const int32_t &b) { return a = a >> b; }
 
-// Shifts right arithmetic.
+// Shifts signed 32-bit lanes right with sign extension.
 BE_FORCE_INLINE avxi sra_256epi32(const avxi &a, const int32_t &b) { return bx_mm256_srai_epi32(a, b); }
 
-// Shifts right logical.
+// Shifts 32-bit lanes right with zero fill.
 BE_FORCE_INLINE avxi srl_256epi32(const avxi &a, const int32_t &b) { return bx_mm256_srli_epi32(a, b); }
 
-// Shifts left logical.
+// Shifts 32-bit lanes left with zero fill. Arithmetic and logical left shifts produce identical bit patterns.
 BE_FORCE_INLINE avxi sll_256epi32(const avxi &a, const int32_t &b) { return bx_mm256_slli_epi32(a, b); }
 
 // Unpacks to (a0, b0, a1, b1, a4, b4, a5, b5).
@@ -202,7 +206,7 @@ BE_FORCE_INLINE ssei extract_256epi32(const avxi &a) { return _mm256_extractf128
 
 // Inserts lower 128 bits of b to a in [128*dst, 128*dst+127] bits. dst = [0, 1].
 template <size_t i>
-BE_FORCE_INLINE avxi insert_256epi32(const avxi &a, const ssef &b) { return _mm256_insertf128_si256(a, b, i); }
+BE_FORCE_INLINE avxi insert_256epi32(const avxi &a, const ssei &b) { return _mm256_insertf128_si256(a, b, i); }
 
 // Selects 8x32 bits integer using mask.
 BE_FORCE_INLINE avxi select_256epi32(const avxi &a, const avxi &b, const avxb &mask) {

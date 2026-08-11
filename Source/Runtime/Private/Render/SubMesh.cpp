@@ -230,13 +230,31 @@ void SubMesh::CacheStaticDataToGpu() {
     }
 }
 
+static void TransformJointWeightedVerts(VertexGenericLit *verts, const int numVerts, const Mat3x4 *joints, const Vec4 *weights, const int *index) {
+    const byte *jointsPtr = (const byte *)joints;
+    Vec3 v;
+    int i, j;
+
+    for (j = i = 0; i < numVerts; i++) {
+        v = (*((const Mat3x4 *)(jointsPtr + index[j * 2 + 0])) * weights[j]).ToVec3();
+        while (index[j * 2 + 1] == 0) {
+            j++;
+            v += (*((const Mat3x4 *)(jointsPtr + index[j * 2 + 0])) * weights[j]).ToVec3();
+        }
+
+        j++;
+
+        verts[i].xyz = v;
+    }
+}
+
 void SubMesh::CacheDynamicDataToGpu(const Mat3x4 *joints, const Material *material) {
     if (bufferCacheManager.IsCached(vertexCache)) {
         return;
     }
 
     if (joints && jointWeightVerts) {
-        simdProcessor->TransformVerts(verts, numVerts, joints, jointWeightVerts, reinterpret_cast<int *>(jointWeights), numJointWeights);
+        TransformJointWeightedVerts(verts, numVerts, joints, jointWeightVerts, reinterpret_cast<const int *>(jointWeights));
     }
 
     // NOTE: No need normals and tangents for VertexGeneric

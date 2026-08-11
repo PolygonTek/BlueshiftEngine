@@ -21,6 +21,10 @@ SIMDProcessor *     simdGeneric = nullptr;     // pointer to generic SIMD implem
 SIMDProcessor *     simdProcessor = nullptr;
 
 void SIMD::Init(bool forceGeneric) {
+    if (simdGeneric || simdProcessor) {
+        Shutdown();
+    }
+
     simdGeneric = BE_NEW SIMD_Generic;
 
     int cpuid = GetCpuInfo()->cpuid;
@@ -59,26 +63,40 @@ void SIMD::SetDenormalFlushMode(bool toZero) {
         _MM_SET_DENORMALS_ZERO_MODE(toZero ? _MM_DENORMALS_ZERO_ON : _MM_DENORMALS_ZERO_OFF);
     }
 #elif defined(HAVE_ARM_NEON_INTRIN)
-    // Activate FTZ and DAZ modes by setting the FZ bit
-    static constexpr uint64_t FP_FZ = 1 << 24;
-    uint64_t val;
+    // Arm FZ flushes both subnormal inputs and subnormal results for affected FP operations.
+#if defined(__ARM64__)
+    using FPControl = uint64_t;
+#else
+    using FPControl = uint32_t;
+#endif
+    static constexpr FPControl FP_FZ = (FPControl)1 << 24;
+    FPControl val;
+#if defined(__ARM64__)
     asm volatile("mrs %0, fpcr" : "=r" (val));
+#else
+    asm volatile("vmrs %0, fpscr" : "=r" (val));
+#endif
     if (toZero) {
         val |= FP_FZ;
     } else {
         val &= ~FP_FZ;
     }
+#if defined(__ARM64__)
     asm volatile("msr fpcr, %0" : /* no output */ : "r" (val));
+#else
+    asm volatile("vmsr fpscr, %0" : /* no output */ : "r" (val));
+#endif
 #endif
 }
 
 void SIMD::Shutdown() {
     if (simdProcessor != simdGeneric) {
         delete simdProcessor;
-        simdProcessor = nullptr;
     }
-    
+
     delete simdGeneric;
+
+    simdProcessor = nullptr;
     simdGeneric = nullptr;
 }
 

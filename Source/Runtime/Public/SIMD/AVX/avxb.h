@@ -58,8 +58,8 @@ BE_FORCE_INLINE avxb unpackhi_256b32(const avxb &a, const avxb &b) { return _mm2
 
 BE_FORCE_INLINE size_t movemask_256b32(const avxb &a) { return _mm256_movemask_ps(a); }
 
-BE_FORCE_INLINE bool reduce_and_256b32(const avxb &a) { return _mm256_movemask_ps(a) == 0xf; }
+BE_FORCE_INLINE bool reduce_and_256b32(const avxb &a) { return _mm256_movemask_ps(a) == 0xff; }
 BE_FORCE_INLINE bool reduce_or_256b32(const avxb &a) { return !_mm256_testz_ps(a, a); }
-BE_FORCE_INLINE bool all_256b32(const avxb &b) { return _mm256_movemask_ps(b) == 0xf; }
+BE_FORCE_INLINE bool all_256b32(const avxb &b) { return _mm256_movemask_ps(b) == 0xff; }
 BE_FORCE_INLINE bool any_256b32(const avxb &b) { return !_mm256_testz_ps(b, b); }
 BE_FORCE_INLINE bool none_256b32(const avxb &b) { return _mm256_testz_ps(b, b) != 0; }

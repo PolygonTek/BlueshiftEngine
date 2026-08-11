@@ -82,91 +82,12 @@ float BE_FASTCALL SIMD_Generic::Sum(const float *src, const int count) {
     return ret;
 }
 
-void BE_FASTCALL SIMD_Generic::TransposeMat4x4(float *dst, const float *src) {
-    dst[0] = src[0];
-    dst[1] = src[4];
-    dst[2] = src[8];
-    dst[3] = src[12];
-
-    dst[4] = src[1];
-    dst[5] = src[5];
-    dst[6] = src[9];
-    dst[7] = src[13];
-    
-    dst[8] = src[2];
-    dst[9] = src[6];
-    dst[10] = src[10];
-    dst[11] = src[14];
-
-    dst[12] = src[3];
-    dst[13] = src[7];
-    dst[14] = src[11];
-    dst[15] = src[15];
-}
-
-void BE_FASTCALL SIMD_Generic::MulMat3x4RM(float *dst, const float *src0, const float *src1) {
-    // row 0
-    dst[0] = src0[0] * src1[0] + src0[1] * src1[4] + src0[2] * src1[8];
-    dst[1] = src0[0] * src1[1] + src0[1] * src1[5] + src0[2] * src1[9];
-    dst[2] = src0[0] * src1[2] + src0[1] * src1[6] + src0[2] * src1[10];
-    dst[3] = src0[0] * src1[3] + src0[1] * src1[7] + src0[2] * src1[11] + src0[3];
-
-    // row 1
-    dst[4] = src0[4] * src1[0] + src0[5] * src1[4] + src0[6] * src1[8];
-    dst[5] = src0[4] * src1[1] + src0[5] * src1[5] + src0[6] * src1[9];
-    dst[6] = src0[4] * src1[2] + src0[5] * src1[6] + src0[6] * src1[10];
-    dst[7] = src0[4] * src1[3] + src0[5] * src1[7] + src0[6] * src1[11] + src0[7];
-
-    // row 2
-    dst[8] = src0[8] * src1[0] + src0[9] * src1[4] + src0[10] * src1[8];
-    dst[9] = src0[8] * src1[1] + src0[9] * src1[5] + src0[10] * src1[9];
-    dst[10] = src0[8] * src1[2] + src0[9] * src1[6] + src0[10] * src1[10];
-    dst[11] = src0[8] * src1[3] + src0[9] * src1[7] + src0[10] * src1[11] + src0[11];
-}
-
-void BE_FASTCALL SIMD_Generic::MulMat4x4RM(float *dst, const float *src0, const float *src1) {
-    // row 0
-    dst[0] = src0[0] * src1[0] + src0[1] * src1[4] + src0[2] * src1[8] + src0[3] * src1[12];
-    dst[1] = src0[0] * src1[1] + src0[1] * src1[5] + src0[2] * src1[9] + src0[3] * src1[13];
-    dst[2] = src0[0] * src1[2] + src0[1] * src1[6] + src0[2] * src1[10] + src0[3] * src1[14];
-    dst[3] = src0[0] * src1[3] + src0[1] * src1[7] + src0[2] * src1[11] + src0[3] * src1[15];
-
-    // row 1
-    dst[4] = src0[4] * src1[0] + src0[5] * src1[4] + src0[6] * src1[8] + src0[7] * src1[12];
-    dst[5] = src0[4] * src1[1] + src0[5] * src1[5] + src0[6] * src1[9] + src0[7] * src1[13];
-    dst[6] = src0[4] * src1[2] + src0[5] * src1[6] + src0[6] * src1[10] + src0[7] * src1[14];
-    dst[7] = src0[4] * src1[3] + src0[5] * src1[7] + src0[6] * src1[11] + src0[7] * src1[15];
-
-    // row 2
-    dst[8] = src0[8] * src1[0] + src0[9] * src1[4] + src0[10] * src1[8] + src0[11] * src1[12];
-    dst[9] = src0[8] * src1[1] + src0[9] * src1[5] + src0[10] * src1[9] + src0[11] * src1[13];
-    dst[10] = src0[8] * src1[2] + src0[9] * src1[6] + src0[10] * src1[10] + src0[11] * src1[14];
-    dst[11] = src0[8] * src1[3] + src0[9] * src1[7] + src0[10] * src1[11] + src0[11] * src1[15];
-
-    // row 3
-    dst[12] = src0[12] * src1[0] + src0[13] * src1[4] + src0[14] * src1[8] + src0[15] * src1[12];
-    dst[13] = src0[12] * src1[1] + src0[13] * src1[5] + src0[14] * src1[9] + src0[15] * src1[13];
-    dst[14] = src0[12] * src1[2] + src0[13] * src1[6] + src0[14] * src1[10] + src0[15] * src1[14];
-    dst[15] = src0[12] * src1[3] + src0[13] * src1[7] + src0[14] * src1[11] + src0[15] * src1[15];
-}
-
-void BE_FASTCALL SIMD_Generic::MulMat4x4RMVec4(float *dst, const float *src0, const float *src1) {
-    dst[0] = src0[0] * src1[0] + src0[1] * src1[1] + src0[2] * src1[2] + src0[3] * src1[3];
-    dst[1] = src0[4] * src1[0] + src0[5] * src1[1] + src0[6] * src1[2] + src0[7] * src1[3];
-    dst[2] = src0[8] * src1[0] + src0[9] * src1[1] + src0[10] * src1[2] + src0[11] * src1[3];
-    dst[3] = src0[12] * src1[0] + src0[13] * src1[1] + src0[14] * src1[2] + src0[15] * src1[3];
-}
-
 void BE_FASTCALL SIMD_Generic::Memcpy(void *dst, const void *src, const int count) {
     memcpy(dst, src, count);
 }
 
 void BE_FASTCALL SIMD_Generic::Memset(void *dst, const int val, const int count) {
     memset(dst, val, count);
-}
-
-void BE_FASTCALL SIMD_Generic::MemcpyStream(void *dst, const void *src, const int count) {
-    memcpy(dst, src, count);
 }
 
 void BE_FASTCALL SIMD_Generic::DecompressJoints(JointPose *joints, const CompressedJointPose *compressedJoints, const int *index, const int numJoints) {
@@ -208,7 +129,11 @@ void BE_FASTCALL SIMD_Generic::AdditiveBlendJoints(JointPose *joints, const Join
         j = index[i];
         joints[j].q.SetFromSlerp(joints[j].q, blendJoints[j].q * joints[j].q, fraction);
         joints[j].t += blendJoints[j].t * fraction;
-        joints[j].s *= blendJoints[j].s * fraction;
+        Vec3 &jointScale = joints[j].s;
+        const Vec3 &blendScale = blendJoints[j].s;
+        jointScale.x *= 1.0f + (blendScale.x - 1.0f) * fraction;
+        jointScale.y *= 1.0f + (blendScale.y - 1.0f) * fraction;
+        jointScale.z *= 1.0f + (blendScale.z - 1.0f) * fraction;
     }
 }
 
@@ -270,24 +195,6 @@ void BE_FASTCALL SIMD_Generic::MultiplyJoints(Mat3x4 *result, const Mat3x4 *join
 
     for (i = 0; i < numJoints; i++) {
         result[i] = joints1[i] * joints2[i];
-    }
-}
-
-void BE_FASTCALL SIMD_Generic::TransformVerts(VertexGenericLit *verts, const int numVerts, const Mat3x4 *joints, const Vec4 *base, const int *index, const int numWeights) {
-    const byte *jointsPtr = (byte *)joints;
-    Vec3 v;
-    int i, j;
-
-    for (j = i = 0; i < numVerts; i++) {
-        v = (*((Mat3x4 *)(jointsPtr + index[j * 2 + 0])) * base[j]).ToVec3();
-        while (index[j * 2 + 1] == 0) {
-            j++;
-            v += (*((Mat3x4 *)(jointsPtr + index[j * 2 + 0])) * base[j]).ToVec3();
-        }
-
-        j++;
-
-        verts[i].xyz = v;
     }
 }
 

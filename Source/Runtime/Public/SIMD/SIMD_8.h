@@ -31,29 +31,28 @@ public:
 
     virtual void BE_FASTCALL            Add(float *dst, const float constant, const float *src, const int count) override;
     virtual void BE_FASTCALL            Add(float *dst, const float *src0, const float *src1, const int count) override;
+
     virtual void BE_FASTCALL            Sub(float *dst, const float constant, const float *src, const int count) override;
     virtual void BE_FASTCALL            Sub(float *dst, const float *src0, const float *src1, const int count) override;
+
     virtual void BE_FASTCALL            Mul(float *dst, const float constant, const float *src, const int count) override;
     virtual void BE_FASTCALL            Mul(float *dst, const float *src0, const float *src1, const int count) override;
+
     virtual void BE_FASTCALL            Div(float *dst, const float constant, const float *src, const int count) override;
     virtual void BE_FASTCALL            Div(float *dst, const float *src0, const float *src1, const int count) override;
 
-    virtual void BE_FASTCALL            MulMat3x4RM(float *dst, const float *src0, const float *src1) override;
-    virtual void BE_FASTCALL            MulMat4x4RM(float *dst, const float *src0, const float *src1) override;
+    virtual float BE_FASTCALL           Sum(const float *src, const int count) override;
 
+    virtual void BE_FASTCALL            BlendJoints(JointPose *joints, const JointPose *blendJoints, const float fraction, const int *index, const int numJoints) override;
+    virtual void BE_FASTCALL            BlendJointsFast(JointPose *joints, const JointPose *blendJoints, const float fraction, const int *index, const int numJoints) override;
+    virtual void BE_FASTCALL            AdditiveBlendJoints(JointPose *joints, const JointPose *blendJoints, const float fraction, const int *index, const int numJoints) override;
     virtual void BE_FASTCALL            TransformJoints(Mat3x4 *jointMats, const int *parents, const int firstJoint, const int lastJoint) override;
     virtual void BE_FASTCALL            TransformJoints(const Mat3x4 *localJointMats, Mat3x4 *worldJointMats, const int *parents, const int firstJoint, const int lastJoint) override;
+    virtual void BE_FASTCALL            UntransformJoints(Mat3x4 *jointMats, const int *parents, const int firstJoint, const int lastJoint) override;
     virtual void BE_FASTCALL            MultiplyJoints(Mat3x4 *result, const Mat3x4 *joints1, const Mat3x4 *joints2, const int numJoints) override;
 
     virtual void BE_FASTCALL            Memcpy(void *dst, const void *src, const int size) override;
-    virtual void BE_FASTCALL            MemcpyStream(void *dst, const void *src, const int size) override;
     virtual void BE_FASTCALL            Memset(void *dst, const int val, const int count) override;
-
-    static void                         Memcpy64B(void *dst, const void *src, const int size);
-    static void                         Memcpy2KB(void *dst, const void *src, const int size);
-    static void                         MemcpyStream64B(void *dst, const void *src, const int size);
-    static void                         MemcpyStream2KB(void *dst, const void *src, const int size);
-    static void                         MemcpyStreamTemp2KB(void *dst, const void *src, const int size);
 
     static const simd8f                 F8_zero;
     static const simd8f                 F8_one;
@@ -70,6 +69,18 @@ public:
     static const simd8f                 F8_sign_bit;
     static const simd8f                 F8_mask_xxx0xxx0;
     static const simd8f                 F8_mask_000x000x;
+
+private:
+    static BE_FORCE_INLINE void         Memcpy64B(void *dst, const void *src, const int size);
+    static BE_FORCE_INLINE void         Memcpy2KB(void *dst, const void *src, const int size);
+
+    static BE_FORCE_INLINE void         LoadJointQuats8(const JointPose *joints, const int *index, simd8f &qx, simd8f &qy, simd8f &qz, simd8f &qw);
+    static BE_FORCE_INLINE void         StoreJointQuats8(JointPose *joints, const int *index, const simd8f &qx, const simd8f &qy, const simd8f &qz, const simd8f &qw);
+    static BE_FORCE_INLINE void         LerpJointValues2(float *values0, float *values1, const float *blendValues0, const float *blendValues1, const simd8f &lerp);
+    static BE_FORCE_INLINE void         AdditiveBlendJointTranslations2(float *translations0, float *translations1, const float *blendTranslations0, const float *blendTranslations1, const simd8f &lerp);
+    static BE_FORCE_INLINE void         AdditiveBlendJointScales2(float *scales0, float *scales1, const float *blendScales0, const float *blendScales1, const simd8f &lerp);
+    static BE_FORCE_INLINE void         SlerpJointQuats8(simd8f &fromX, simd8f &fromY, simd8f &fromZ, simd8f &fromW, const simd8f &toX, const simd8f &toY, const simd8f &toZ, const simd8f &toW, const simd8f &lerp);
+    static BE_FORCE_INLINE void         NlerpJointQuats8(simd8f &fromX, simd8f &fromY, simd8f &fromZ, simd8f &fromW, const simd8f &toX, const simd8f &toY, const simd8f &toZ, const simd8f &toW, const simd8f &scaledLerp);
 };
 
 // Dual linear combination.
@@ -121,13 +132,6 @@ BE_FORCE_INLINE void transpose8x8(const simd8f &r0, const simd8f &r1, const simd
     c5 = shuffle_256ps<1, 3>(h1, h5);
     c6 = shuffle_256ps<1, 3>(h2, h6);
     c7 = shuffle_256ps<1, 3>(h3, h7);
-    simd8f l02 = unpacklo_256ps(r0, r2);
-    simd8f h02 = unpackhi_256ps(r0, r2);
-    simd8f l13 = unpacklo_256ps(r1, r3);
-    simd8f h13 = unpackhi_256ps(r1, r3);
-    c0 = unpacklo_256ps(l02, l13);
-    c1 = unpackhi_256ps(l02, l13);
-    c2 = unpacklo_256ps(h02, h13);
 }
 
 BE_NAMESPACE_END

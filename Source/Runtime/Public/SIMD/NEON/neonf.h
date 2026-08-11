@@ -82,15 +82,15 @@ BE_FORCE_INLINE neonf rcp12_ps(const neonf &a) {
 BE_FORCE_INLINE neonf rcp16_ps(const neonf &a) {
     neonf r = vrecpeq_f32(a);
     // Newton-Raphson approximation to improve precision.
-    return vrecpsq_f32(r, a);
+    return vmulq_f32(vrecpsq_f32(a, r), r);
 }
 
 // Reciprocal with close to full precision.
 BE_FORCE_INLINE neonf rcp32_ps(const neonf &a) {
     neonf r = vrecpeq_f32(a);
     // Newton-Raphson approximation to improve precision.
-    r = vrecpsq_f32(r, a);
-    return vrecpsq_f32(r, a);
+    r = vmulq_f32(vrecpsq_f32(a, r), r);
+    return vmulq_f32(vrecpsq_f32(a, r), r);
 }
 
 // Divide with at least 16 bits precision.
@@ -112,15 +112,15 @@ BE_FORCE_INLINE neonf rsqrt12_ps(const neonf &a) {
 BE_FORCE_INLINE neonf rsqrt16_ps(const neonf &a) {
     neonf r = vrsqrteq_f32(a);
     // Newton-Raphson approximation to improve precision.
-    return vrsqrtsq_f32(r, a);
+    return vmulq_f32(vrsqrtsq_f32(vmulq_f32(a, r), r), r);
 }
 
 // Reciprocal square root with close to full precision.
 BE_FORCE_INLINE neonf rsqrt32_ps(const neonf &a) {
     neonf r = vrsqrteq_f32(a);
     // Newton-Raphson approximation to improve precision.
-    r = vrsqrtsq_f32(r, a);
-    return vrsqrtsq_f32(r, a);
+    r = vmulq_f32(vrsqrtsq_f32(vmulq_f32(a, r), r), r);
+    return vmulq_f32(vrsqrtsq_f32(vmulq_f32(a, r), r), r);
 }
 
 BE_FORCE_INLINE neonf operator+(const neonf &a) { return a; }
@@ -218,10 +218,49 @@ BE_FORCE_INLINE neonf hadd_ps(const neonf &a, const neonf &b) {
 #endif
 }
 
-BE_FORCE_INLINE neonf floor_ps(const neonf &a) { return neonf(floorf(a[0]), floorf(a[1]), floorf(a[2]), floorf(a[3])); }
-BE_FORCE_INLINE neonf ceil_ps(const neonf &a) { return neonf(ceilf(a[0]), ceilf(a[1]), ceilf(a[2]), ceilf(a[3])); }
-BE_FORCE_INLINE neonf trunc_ps(const neonf &a) { return neonf(truncf(a[0]), truncf(a[1]), truncf(a[2]), truncf(a[3])); }
-BE_FORCE_INLINE neonf round_ps(const neonf &a) { return neonf(roundf(a[0]), roundf(a[1]), roundf(a[2]), roundf(a[3])); }
+BE_FORCE_INLINE neonf floor_ps(const neonf &a) {
+#if defined(__ARM64__)
+    return vrndmq_f32(a);
+#else
+    return neonf(floorf(a[0]), floorf(a[1]), floorf(a[2]), floorf(a[3]));
+#endif
+}
+
+BE_FORCE_INLINE neonf ceil_ps(const neonf &a) {
+#if defined(__ARM64__)
+    return vrndpq_f32(a);
+#else
+    return neonf(ceilf(a[0]), ceilf(a[1]), ceilf(a[2]), ceilf(a[3]));
+#endif
+}
+
+BE_FORCE_INLINE neonf trunc_ps(const neonf &a) {
+#if defined(__ARM64__)
+    return vrndq_f32(a);
+#else
+    return neonf(truncf(a[0]), truncf(a[1]), truncf(a[2]), truncf(a[3]));
+#endif
+}
+
+#if !defined(__ARM64__)
+BE_FORCE_INLINE float bx_roundeven_f32(float value) {
+    const float lower = floorf(value);
+    const float fraction = value - lower;
+
+    if (fraction > 0.5f || (fraction == 0.5f && ((int32_t)lower & 1))) {
+        return lower + 1.0f;
+    }
+    return lower;
+}
+#endif
+
+BE_FORCE_INLINE neonf round_ps(const neonf &a) {
+#if defined(__ARM64__)
+    return vrndnq_f32(a);
+#else
+    return neonf(bx_roundeven_f32(a[0]), bx_roundeven_f32(a[1]), bx_roundeven_f32(a[2]), bx_roundeven_f32(a[3]));
+#endif
+}
 
 BE_FORCE_INLINE neonf frac_ps(const neonf &a) { return a - floor_ps(a); }
 
@@ -426,7 +465,7 @@ BE_FORCE_INLINE neonf insert_ps(const neonf &a, float b) {
 
 // Select 4x32 bits floats using mask.
 BE_FORCE_INLINE neonf select_ps(const neonf &a, const neonf &b, const neonb &mask) {
-    return vbslq_f32(mask, a, b);
+    return vbslq_f32(mask, b, a);
 }
 
 BE_FORCE_INLINE neonf min_ps(const neonf &a, const neonf &b) { return vminq_f32(a, b); }

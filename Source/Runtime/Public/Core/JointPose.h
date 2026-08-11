@@ -155,7 +155,7 @@ BE_INLINE Vec3 CompressedJointPose::ToTranslation() const {
 }
 
 BE_INLINE Vec3 CompressedJointPose::ToScale() const {
-    return Vec3(ShortToScale(t[0]), ShortToScale(t[1]), ShortToScale(t[2]));
+    return Vec3(ShortToScale(s[0]), ShortToScale(s[1]), ShortToScale(s[2]));
 }
 
 BE_NAMESPACE_END

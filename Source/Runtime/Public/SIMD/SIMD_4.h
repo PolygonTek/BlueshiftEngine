@@ -33,33 +33,25 @@ public:
 
     virtual void BE_FASTCALL            Add(float *dst, const float constant, const float *src, const int count) override;
     virtual void BE_FASTCALL            Add(float *dst, const float *src0, const float *src1, const int count) override;
+
     virtual void BE_FASTCALL            Sub(float *dst, const float constant, const float *src, const int count) override;
     virtual void BE_FASTCALL            Sub(float *dst, const float *src0, const float *src1, const int count) override;
+
     virtual void BE_FASTCALL            Mul(float *dst, const float constant, const float *src, const int count) override;
     virtual void BE_FASTCALL            Mul(float *dst, const float *src0, const float *src1, const int count) override;
+
     virtual void BE_FASTCALL            Div(float *dst, const float constant, const float *src, const int count) override;
     virtual void BE_FASTCALL            Div(float *dst, const float *src0, const float *src1, const int count) override;
 
     virtual float BE_FASTCALL           Sum(const float *src, const int count) override;
 
-    virtual void BE_FASTCALL            TransposeMat4x4(float *dst, const float *src) override;
-
-    virtual void BE_FASTCALL            MulMat3x4RM(float *dst, const float *src0, const float *src1) override;
-    virtual void BE_FASTCALL            MulMat4x4RM(float *dst, const float *src0, const float *src1) override;
-    virtual void BE_FASTCALL            MulMat4x4RMVec4(float *dst, const float *src0, const float *src1) override;
-
     virtual void BE_FASTCALL            Memcpy(void *dst, const void *src, const int size) override;
-    virtual void BE_FASTCALL            MemcpyStream(void *dst, const void *src, const int size) override;
     virtual void BE_FASTCALL            Memset(void *dst, const int val, const int size) override;
 
-    static void                         Memcpy64B(void *dst, const void *src, const int size);
-    static void                         Memcpy2KB(void *dst, const void *src, const int size);
-    static void                         MemcpyStream64B(void *dst, const void *src, const int size);
-    static void                         MemcpyStream2KB(void *dst, const void *src, const int size);
-    static void                         MemcpyStreamTemp2KB(void *dst, const void *src, const int size);
-
+    virtual void BE_FASTCALL            DecompressJoints(JointPose *joints, const CompressedJointPose *compressedJoints, const int *index, const int numJoints) override;
     virtual void BE_FASTCALL            BlendJoints(JointPose *joints, const JointPose *blendJoints, const float fraction, const int *index, const int numJoints) override;
     virtual void BE_FASTCALL            BlendJointsFast(JointPose *joints, const JointPose *blendJoints, const float fraction, const int *index, const int numJoints) override;
+    virtual void BE_FASTCALL            AdditiveBlendJoints(JointPose *joints, const JointPose *blendJoints, const float fraction, const int *index, const int numJoints) override;
     virtual void BE_FASTCALL            ConvertJointPosesToJointMats(Mat3x4 *jointMats, const JointPose *jointPoses, const int numJoints) override;
     virtual void BE_FASTCALL            ConvertJointMatsToJointPoses(JointPose *jointPoses, const Mat3x4 *jointMats, const int numJoints) override;
     virtual void BE_FASTCALL            TransformJoints(Mat3x4 *jointMats, const int *parents, const int firstJoint, const int lastJoint) override;
@@ -82,6 +74,15 @@ public:
     static const simd4f                 F4_sign_bit;
     static const simd4f                 F4_mask_xxx0;
     static const simd4f                 F4_mask_000x;
+
+private:
+    static BE_FORCE_INLINE void         Memcpy64B(void *dst, const void *src, const int size);
+    static BE_FORCE_INLINE void         Memcpy2KB(void *dst, const void *src, const int size);
+
+    static BE_FORCE_INLINE void         LoadJointQuats4(const JointPose *joints, const int *index, simd4f &qx, simd4f &qy, simd4f &qz, simd4f &qw);
+    static BE_FORCE_INLINE void         StoreJointQuats4(JointPose *joints, const int *index, const simd4f &qx, const simd4f &qy, const simd4f &qz, const simd4f &qw);
+    static BE_FORCE_INLINE void         SlerpJointQuats4(simd4f &fromX, simd4f &fromY, simd4f &fromZ, simd4f &fromW, const simd4f &toX, const simd4f &toY, const simd4f &toZ, const simd4f &toW, const simd4f &lerp);
+    static BE_FORCE_INLINE void         NlerpJointQuats4(simd4f &fromX, simd4f &fromY, simd4f &fromZ, simd4f &fromW, const simd4f &toX, const simd4f &toY, const simd4f &toZ, const simd4f &toW, const simd4f &scaledLerp);
 };
 
 // Cross product.

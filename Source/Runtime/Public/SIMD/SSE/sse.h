@@ -30,10 +30,13 @@
 #include <tmmintrin.h>
 #endif
 
+extern const __m128     _mm_lookupmask_ps[16];
+extern const __m128d    _mm_lookupmask_pd[4];
+
 #if defined(__SSE4_1__) || defined(__SSE4_2__)
 #include <smmintrin.h>
 #else
-#include "smmintrin_emu.h"
+#include "sse41_emu.h"
 #endif
 
 #if defined(__AES__) || defined(__PCLMUL__)
@@ -58,7 +61,7 @@
 
 // Shifts load for two 128 bits.
 // dst = (a >> imm*8) | (b << (16 - imm)*8)
-#define bx_mm_sld_si128(a, b, imm)      _mm_or_si128(_mm_srli_si128(a, imm), _mm_slli_si128(b, 16 - (imm))))
+#define bx_mm_sld_si128(a, b, imm)      _mm_or_si128(_mm_srli_si128(a, imm), _mm_slli_si128(b, 16 - (imm)))
 
 #ifdef __FMA__
     // dst = a * b + c
@@ -79,9 +82,6 @@
     // dst = -(a * b) - c
     #define bx_mm_nmsub_ps(a, b, c)     _mm_sub_ps(bx_mm_neg_ps(_mm_mul_ps(a, b)), c)
 #endif
-
-extern const __m128     _mm_lookupmask_ps[16];
-extern const __m128d    _mm_lookupmask_pd[4];
 
 BE_FORCE_INLINE void prefetchL1(const void *ptr) { _mm_prefetch((const char *)ptr, _MM_HINT_T0); }
 BE_FORCE_INLINE void prefetchL2(const void *ptr) { _mm_prefetch((const char *)ptr, _MM_HINT_T1); }
@@ -111,11 +111,11 @@ struct ssef {
     BE_FORCE_INLINE ssef(const ssef &other) { m128 = other.m128; }
     BE_FORCE_INLINE ssef &operator=(const ssef &rhs) { m128 = rhs.m128; return *this; }
 
-    BE_FORCE_INLINE operator const ssei &() const { return *this; };
-    BE_FORCE_INLINE operator ssei &() { return *this; };
+    BE_FORCE_INLINE operator const ssei &() const { return *reinterpret_cast<const ssei *>(this); };
+    BE_FORCE_INLINE operator ssei &() { return *reinterpret_cast<ssei *>(this); };
 
-    BE_FORCE_INLINE operator const sseb &() const { return *this; };
-    BE_FORCE_INLINE operator sseb &() { return *this; };
+    BE_FORCE_INLINE operator const sseb &() const { return *reinterpret_cast<const sseb *>(this); };
+    BE_FORCE_INLINE operator sseb &() { return *reinterpret_cast<sseb *>(this); };
 
     BE_FORCE_INLINE operator const __m128 &() const { return m128; };
     BE_FORCE_INLINE operator __m128 &() { return m128; };

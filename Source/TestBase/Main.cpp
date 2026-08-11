@@ -15,11 +15,11 @@
 #include "BlueshiftEngine.h"
 #include "Test.h"
 
-void SystemLog(const int logLevel, const char *msg) {
+static void SystemLog(const int logLevel, const char *msg) {
     printf("%s", msg);
 }
 
-void SystemError(const int errLevel, const char *msg) {
+static void SystemError(const int errLevel, const char *msg) {
     printf("ERROR: %s", msg);
 };
 

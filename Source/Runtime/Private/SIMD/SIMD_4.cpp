@@ -42,7 +42,7 @@ void BE_FASTCALL SIMD_4::Add(float *dst, const float constant, const float *src,
     float *dstPtr = dst;
     const float *srcPtr = src;
 
-    if (count > 16) {
+    if (count >= 16) {
         assert_16_byte_aligned(dst);
         assert_16_byte_aligned(src);
 
@@ -50,7 +50,6 @@ void BE_FASTCALL SIMD_4::Add(float *dst, const float constant, const float *src,
 
         int c16 = count >> 4;
         while (c16 > 0) {
-            //prefetchNTA(srcPtr + 16);
 
             simd4f x0 = c + load_ps(srcPtr + 0);
             simd4f x1 = c + load_ps(srcPtr + 4);
@@ -82,15 +81,13 @@ void BE_FASTCALL SIMD_4::Add(float *dst, const float *src0, const float *src1, c
     const float *src0_ptr = src0;
     const float *src1_ptr = src1;
 
-    if (count > 16) {
+    if (count >= 16) {
         assert_16_byte_aligned(dst);
         assert_16_byte_aligned(src0);
         assert_16_byte_aligned(src1);
 
         int c16 = count >> 4;
         while (c16 > 0) {
-            //prefetchNTA(src0_ptr + 16);
-            //prefetchNTA(src1_ptr + 16);
 
             simd4f x0 = load_ps(src0_ptr + 0);
             simd4f x1 = load_ps(src0_ptr + 4);
@@ -127,7 +124,7 @@ void BE_FASTCALL SIMD_4::Sub(float *dst, const float constant, const float *src,
     float *dstPtr = dst;
     const float *srcPtr = src;
 
-    if (count > 16) {
+    if (count >= 16) {
         assert_16_byte_aligned(dst);
         assert_16_byte_aligned(src);
 
@@ -135,7 +132,6 @@ void BE_FASTCALL SIMD_4::Sub(float *dst, const float constant, const float *src,
 
         int c16 = count >> 4;
         while (c16 > 0) {
-            //prefetchNTA(src0_ptr + 16);
 
             simd4f x0 = c - load_ps(srcPtr + 0);
             simd4f x1 = c - load_ps(srcPtr + 4);
@@ -156,7 +152,7 @@ void BE_FASTCALL SIMD_4::Sub(float *dst, const float constant, const float *src,
     }
 
     while (count > 0) {
-        *dstPtr++ = constant + *srcPtr++;
+        *dstPtr++ = constant - *srcPtr++;
         count--;
     }
 }
@@ -167,15 +163,13 @@ void BE_FASTCALL SIMD_4::Sub(float *dst, const float *src0, const float *src1, c
     const float *src0_ptr = src0;
     const float *src1_ptr = src1;
 
-    if (count > 16) {
+    if (count >= 16) {
         assert_16_byte_aligned(dst);
         assert_16_byte_aligned(src0);
         assert_16_byte_aligned(src1);
 
         int c16 = count >> 4;
         while (c16 > 0) {
-            //prefetchNTA(src0_ptr + 16);
-            //prefetchNTA(src1_ptr + 16);
 
             simd4f x0 = load_ps(src0_ptr + 0);
             simd4f x1 = load_ps(src0_ptr + 4);
@@ -202,7 +196,7 @@ void BE_FASTCALL SIMD_4::Sub(float *dst, const float *src0, const float *src1, c
     }
 
     while (count > 0) {
-        *dstPtr++ = *src0_ptr++ + *src1_ptr++;
+        *dstPtr++ = *src0_ptr++ - *src1_ptr++;
         count--;
     }
 }
@@ -212,7 +206,7 @@ void BE_FASTCALL SIMD_4::Mul(float *dst, const float constant, const float *src,
     float *dstPtr = dst;
     const float *srcPtr = src;
 
-    if (count > 16) {
+    if (count >= 16) {
         assert_16_byte_aligned(dst);
         assert_16_byte_aligned(src);
 
@@ -220,7 +214,6 @@ void BE_FASTCALL SIMD_4::Mul(float *dst, const float constant, const float *src,
 
         int c16 = count >> 4;
         while (c16 > 0) {
-            //prefetchNTA(src0_ptr + 16);
 
             simd4f x0 = c * load_ps(srcPtr + 0);
             simd4f x1 = c * load_ps(srcPtr + 4);
@@ -241,7 +234,7 @@ void BE_FASTCALL SIMD_4::Mul(float *dst, const float constant, const float *src,
     }
 
     while (count > 0) {
-        *dstPtr++ = constant + *srcPtr++;
+        *dstPtr++ = constant * *srcPtr++;
         count--;
     }
 }
@@ -252,15 +245,13 @@ void BE_FASTCALL SIMD_4::Mul(float *dst, const float *src0, const float *src1, c
     const float *src0_ptr = src0;
     const float *src1_ptr = src1;
 
-    if (count > 16) {
+    if (count >= 16) {
         assert_16_byte_aligned(dst);
         assert_16_byte_aligned(src0);
         assert_16_byte_aligned(src1);
 
         int c16 = count >> 4;
         while (c16 > 0) {
-            //prefetchNTA(src0_ptr + 16);
-            //prefetchNTA(src1_ptr + 16);
 
             simd4f x0 = load_ps(src0_ptr + 0);
             simd4f x1 = load_ps(src0_ptr + 4);
@@ -287,7 +278,7 @@ void BE_FASTCALL SIMD_4::Mul(float *dst, const float *src0, const float *src1, c
     }
 
     while (count > 0) {
-        *dstPtr++ = *src0_ptr++ + *src1_ptr++;
+        *dstPtr++ = *src0_ptr++ * *src1_ptr++;
         count--;
     }
 }
@@ -297,7 +288,7 @@ void BE_FASTCALL SIMD_4::Div(float *dst, const float constant, const float *src,
     float *dstPtr = dst;
     const float *srcPtr = src;
 
-    if (count > 16) {
+    if (count >= 16) {
         assert_16_byte_aligned(dst);
         assert_16_byte_aligned(src);
         
@@ -305,7 +296,6 @@ void BE_FASTCALL SIMD_4::Div(float *dst, const float constant, const float *src,
 
         int c16 = count >> 4;
         while (c16 > 0) {
-            //prefetchNTA(src0_ptr + 16);
 
             simd4f x0 = c / load_ps(srcPtr + 0);
             simd4f x1 = c / load_ps(srcPtr + 4);
@@ -326,7 +316,7 @@ void BE_FASTCALL SIMD_4::Div(float *dst, const float constant, const float *src,
     }
 
     while (count > 0) {
-        *dstPtr++ = constant + *srcPtr++;
+        *dstPtr++ = constant / *srcPtr++;
         count--;
     }
 }
@@ -337,15 +327,13 @@ void BE_FASTCALL SIMD_4::Div(float *dst, const float *src0, const float *src1, c
     const float *src0_ptr = src0;
     const float *src1_ptr = src1;
 
-    if (count > 16) {
+    if (count >= 16) {
         assert_16_byte_aligned(dst);
         assert_16_byte_aligned(src0);
         assert_16_byte_aligned(src1);
 
         int c16 = count >> 4;
         while (c16 > 0) {
-            //prefetchNTA(src0_ptr + 16);
-            //prefetchNTA(src1_ptr + 16);
 
             simd4f x0 = load_ps(src0_ptr + 0);
             simd4f x1 = load_ps(src0_ptr + 4);
@@ -372,7 +360,7 @@ void BE_FASTCALL SIMD_4::Div(float *dst, const float *src0, const float *src1, c
     }
 
     while (count > 0) {
-        *dstPtr++ = *src0_ptr++ + *src1_ptr++;
+        *dstPtr++ = *src0_ptr++ / *src1_ptr++;
         count--;
     }
 }
@@ -381,18 +369,40 @@ float BE_FASTCALL SIMD_4::Sum(const float *src, const int count0) {
     int count = count0;
     const float *srcPtr = src;
     float ret = 0;
-    
-    if (count > 4) {
+
+    if (count >= 4) {
         assert_16_byte_aligned(src);
 
-        int c4 = count >> 2;
-        while (c4 > 0) {
-            ret += extract_ps<0>(sum_ps(load_ps(srcPtr)));
-            srcPtr += 4;
-            c4--;
+        simd4f total = setzero_ps();
+
+        if (count >= 16) {
+            simd4f sum0 = setzero_ps();
+            simd4f sum1 = setzero_ps();
+            simd4f sum2 = setzero_ps();
+            simd4f sum3 = setzero_ps();
+
+            int c16 = count >> 4;
+            while (c16 > 0) {
+                sum0 += load_ps(srcPtr + 0);
+                sum1 += load_ps(srcPtr + 4);
+                sum2 += load_ps(srcPtr + 8);
+                sum3 += load_ps(srcPtr + 12);
+
+                srcPtr += 16;
+                c16--;
+            }
+
+            total = (sum0 + sum1) + (sum2 + sum3);
+            count &= 15;
         }
 
-        count &= 3;
+        while (count >= 4) {
+            total += load_ps(srcPtr);
+            srcPtr += 4;
+            count -= 4;
+        }
+
+        ret = extract_ps<0>(sum_ps(total));
     }
 
     while (count > 0) {
@@ -403,86 +413,173 @@ float BE_FASTCALL SIMD_4::Sum(const float *src, const int count0) {
     return ret;
 }
 
-void BE_FASTCALL SIMD_4::TransposeMat4x4(float *dst, const float *src) {
-    assert_16_byte_aligned(dst);
-    assert_16_byte_aligned(src);
-
-    simd4f r0 = load_ps(src + 0);
-    simd4f r1 = load_ps(src + 4);
-    simd4f r2 = load_ps(src + 8);
-    simd4f r3 = load_ps(src + 12);
-
-#if 0
-    _MM_TRANSPOSE4_PS(r0, r1, r2, r3);
+static BE_FORCE_INLINE simd4f LoadSignedShort4(const short *src) {
+#if defined(HAVE_X86_SSE_INTRIN)
+    const __m128i packed = _mm_loadl_epi64((const __m128i *)src);
+    const __m128i sign = _mm_srai_epi16(packed, 15);
+    return _mm_cvtepi32_ps(_mm_unpacklo_epi16(packed, sign));
 #else
-    // Slightly faster than _MM_TRANSPOSE4_PS().
-    transpose4x4(r0, r1, r2, r3);
+    return vcvtq_f32_s32(vmovl_s16(vld1_s16(src)));
 #endif
-
-    store_ps(r0, dst);
-    store_ps(r1, dst + 4);
-    store_ps(r2, dst + 8);
-    store_ps(r3, dst + 12);
 }
 
-void BE_FASTCALL SIMD_4::MulMat3x4RM(float *dst, const float *src0, const float *src1) {
-    assert_16_byte_aligned(dst);
-    assert_16_byte_aligned(src0);
-    assert_16_byte_aligned(src1);
+void BE_FASTCALL SIMD_4::DecompressJoints(JointPose *joints, const CompressedJointPose *compressedJoints, const int *index, const int numJoints) {
+    assert_16_byte_aligned(joints);
 
-    simd4f ar0 = load_ps(src0);
-    simd4f ar1 = load_ps(src0 + 4);
-    simd4f ar2 = load_ps(src0 + 8);
+    const simd4f quatScale = set1_ps(1.0f / 32767.0f);
+    const simd4f translationScale = set1_ps(1.0f / (32767.0f / CompressedJointPose::MaxBoneTranslation));
+    const simd4f jointScale = set1_ps(1.0f / (32767.0f / CompressedJointPose::MaxBoneScale));
 
-    simd4f br0 = load_ps(src1);
-    simd4f br1 = load_ps(src1 + 4);
-    simd4f br2 = load_ps(src1 + 8);
+    for (int i = 0; i < numJoints; i++) {
+        const int j = index[i];
+        const CompressedJointPose &compressed = compressedJoints[j];
 
-    simd4f cr0 = lincomb3x4(ar0, br0, br1, br2);
-    simd4f cr1 = lincomb3x4(ar1, br0, br1, br2);
-    simd4f cr2 = lincomb3x4(ar2, br0, br1, br2);
+        simd4f q = LoadSignedShort4(compressed.q) * quatScale;
+        q &= SIMD_4::F4_mask_xxx0;
+        const simd4f qw = sqrt_ps(abs_ps(SIMD_4::F4_one - sum_ps(q * q)));
+        q |= qw & SIMD_4::F4_mask_000x;
 
-    store_ps(cr0, dst);
-    store_ps(cr1, dst + 4);
-    store_ps(cr2, dst + 8);
+        simd4f t = LoadSignedShort4(compressed.t) * translationScale;
+        t &= SIMD_4::F4_mask_xxx0;
+
+        simd4f s = shuffle_ps<1, 2, 3, 0>(LoadSignedShort4(compressed.t + 2)) * jointScale;
+        s &= SIMD_4::F4_mask_xxx0;
+
+        store_ps(q, joints[j].q);
+        store_ps(t, joints[j].t);
+        store_ps(s, joints[j].s);
+    }
 }
 
-void BE_FASTCALL SIMD_4::MulMat4x4RM(float *dst, const float *src0, const float *src1) {
-    assert_16_byte_aligned(dst);
-    assert_16_byte_aligned(src0);
-    assert_16_byte_aligned(src1);
-    
-    simd4f ar0 = load_ps(src0);
-    simd4f ar1 = load_ps(src0 + 4);
-    simd4f ar2 = load_ps(src0 + 8);
-    simd4f ar3 = load_ps(src0 + 12);
-
-    simd4f br0 = load_ps(src1);
-    simd4f br1 = load_ps(src1 + 4);
-    simd4f br2 = load_ps(src1 + 8);
-    simd4f br3 = load_ps(src1 + 12);
-
-    simd4f cr0 = lincomb4x4(ar0, br0, br1, br2, br3);
-    simd4f cr1 = lincomb4x4(ar1, br0, br1, br2, br3);
-    simd4f cr2 = lincomb4x4(ar2, br0, br1, br2, br3);
-    simd4f cr3 = lincomb4x4(ar3, br0, br1, br2, br3);
-
-    store_ps(cr0, dst);
-    store_ps(cr1, dst + 4);
-    store_ps(cr2, dst + 8);
-    store_ps(cr3, dst + 12);
+BE_FORCE_INLINE void SIMD_4::LoadJointQuats4(const JointPose *joints, const int *index, simd4f &qx, simd4f &qy, simd4f &qz, simd4f &qw) {
+    qx = load_ps(joints[index[0]].q);
+    qy = load_ps(joints[index[1]].q);
+    qz = load_ps(joints[index[2]].q);
+    qw = load_ps(joints[index[3]].q);
+    transpose4x4(qx, qy, qz, qw);
 }
 
-void BE_FASTCALL SIMD_4::MulMat4x4RMVec4(float *dst, const float *src0, const float *src1) {
-    assert_16_byte_aligned(dst);
-    assert_16_byte_aligned(src0);
-    assert_16_byte_aligned(src1);
+BE_FORCE_INLINE void SIMD_4::StoreJointQuats4(JointPose *joints, const int *index, const simd4f &qx, const simd4f &qy, const simd4f &qz, const simd4f &qw) {
+    simd4f q0 = qx;
+    simd4f q1 = qy;
+    simd4f q2 = qz;
+    simd4f q3 = qw;
+    transpose4x4(q0, q1, q2, q3);
+    store_ps(q0, joints[index[0]].q);
+    store_ps(q1, joints[index[1]].q);
+    store_ps(q2, joints[index[2]].q);
+    store_ps(q3, joints[index[3]].q);
+}
 
-    simd4f v = load_ps(src1);
+BE_FORCE_INLINE void SIMD_4::SlerpJointQuats4(simd4f &fromX, simd4f &fromY, simd4f &fromZ, simd4f &fromW, const simd4f &toX, const simd4f &toY, const simd4f &toZ, const simd4f &toW, const simd4f &lerp) {
+    const simd4f vector_float_rsqrt_c0 = set1_ps(-3.0f);
+    const simd4f vector_float_rsqrt_c1 = set1_ps(-0.5f);
+    const simd4f vector_float_tiny = set1_ps(1e-10f);
+    const simd4f vector_float_half_pi = set1_ps(Math::HalfPi);
 
-    simd4f result = mat4x4rowmajor_mul_vec4(src0, v);
+    const simd4f vector_float_sin_c0 = set1_ps(-2.39e-08f);
+    const simd4f vector_float_sin_c1 = set1_ps(2.7526e-06f);
+    const simd4f vector_float_sin_c2 = set1_ps(-1.98409e-04f);
+    const simd4f vector_float_sin_c3 = set1_ps(8.3333315e-03f);
+    const simd4f vector_float_sin_c4 = set1_ps(-1.666666664e-01f);
 
-    store_ps(result, dst);
+    const simd4f vector_float_atan_c0 = set1_ps(0.0028662257f);
+    const simd4f vector_float_atan_c1 = set1_ps(-0.0161657367f);
+    const simd4f vector_float_atan_c2 = set1_ps(0.0429096138f);
+    const simd4f vector_float_atan_c3 = set1_ps(-0.0752896400f);
+    const simd4f vector_float_atan_c4 = set1_ps(0.1065626393f);
+    const simd4f vector_float_atan_c5 = set1_ps(-0.1420889944f);
+    const simd4f vector_float_atan_c6 = set1_ps(0.1999355085f);
+    const simd4f vector_float_atan_c7 = set1_ps(-0.3333314528f);
+
+    simd4f cosom = fromX * toX;
+    cosom = madd_ps(fromY, toY, cosom);
+    cosom = madd_ps(fromZ, toZ, cosom);
+    cosom = madd_ps(fromW, toW, cosom);
+
+    const simd4f sign = cosom & SIMD_4::F4_sign_bit;
+    cosom ^= sign;
+
+    simd4f sinSqr = nmadd_ps(cosom, cosom, SIMD_4::F4_one);
+    sinSqr = max_ps(sinSqr, vector_float_tiny);
+
+    const simd4f rsqrt = rsqrt12_ps(sinSqr);
+    const simd4f rsqrtSqr = rsqrt * rsqrt;
+    const simd4f rsqrtHalf = rsqrt * vector_float_rsqrt_c1;
+    const simd4f rsqrtTerm = madd_ps(sinSqr, rsqrtSqr, vector_float_rsqrt_c0);
+    const simd4f invSin = rsqrtHalf * rsqrtTerm;
+
+    const simd4f sin = sinSqr * invSin;
+    const simd4f minSinCos = min_ps(sin, cosom);
+    const simd4f maxSinCos = max_ps(sin, cosom);
+    const simd4f swapMask = (minSinCos == cosom);
+    const simd4f atanSign = swapMask & SIMD_4::F4_sign_bit;
+    const simd4f atanOffset = swapMask & vector_float_half_pi;
+
+    const simd4f reciprocalEstimate = rcp12_ps(maxSinCos);
+    const simd4f reciprocal = nmadd_ps(maxSinCos * reciprocalEstimate, reciprocalEstimate, reciprocalEstimate + reciprocalEstimate);
+    const simd4f atanInput = (minSinCos * reciprocal) ^ atanSign;
+    const simd4f atanInputSqr = atanInput * atanInput;
+
+    simd4f atanPolynomial = madd_ps(atanInputSqr, vector_float_atan_c0, vector_float_atan_c1);
+    atanPolynomial = madd_ps(atanPolynomial, atanInputSqr, vector_float_atan_c2);
+    atanPolynomial = madd_ps(atanPolynomial, atanInputSqr, vector_float_atan_c3);
+    atanPolynomial = madd_ps(atanPolynomial, atanInputSqr, vector_float_atan_c4);
+    atanPolynomial = madd_ps(atanPolynomial, atanInputSqr, vector_float_atan_c5);
+    atanPolynomial = madd_ps(atanPolynomial, atanInputSqr, vector_float_atan_c6);
+    atanPolynomial = madd_ps(atanPolynomial, atanInputSqr, vector_float_atan_c7);
+    atanPolynomial = madd_ps(atanPolynomial, atanInputSqr, SIMD_4::F4_one);
+
+    const simd4f omega = madd_ps(atanPolynomial, atanInput, atanOffset);
+    const simd4f omegaTo = lerp * omega;
+    const simd4f omegaFrom = omega - omegaTo;
+    const simd4f omegaFromSqr = omegaFrom * omegaFrom;
+    const simd4f omegaToSqr = omegaTo * omegaTo;
+
+    simd4f sinFrom = madd_ps(omegaFromSqr, vector_float_sin_c0, vector_float_sin_c1);
+    simd4f sinTo = madd_ps(omegaToSqr, vector_float_sin_c0, vector_float_sin_c1);
+    sinFrom = madd_ps(sinFrom, omegaFromSqr, vector_float_sin_c2);
+    sinTo = madd_ps(sinTo, omegaToSqr, vector_float_sin_c2);
+    sinFrom = madd_ps(sinFrom, omegaFromSqr, vector_float_sin_c3);
+    sinTo = madd_ps(sinTo, omegaToSqr, vector_float_sin_c3);
+    sinFrom = madd_ps(sinFrom, omegaFromSqr, vector_float_sin_c4);
+    sinTo = madd_ps(sinTo, omegaToSqr, vector_float_sin_c4);
+    sinFrom = madd_ps(sinFrom, omegaFromSqr, SIMD_4::F4_one) * omegaFrom * invSin;
+    sinTo = madd_ps(sinTo, omegaToSqr, SIMD_4::F4_one) * omegaTo * invSin;
+    sinTo ^= sign;
+
+    fromX = madd_ps(toX, sinTo, fromX * sinFrom);
+    fromY = madd_ps(toY, sinTo, fromY * sinFrom);
+    fromZ = madd_ps(toZ, sinTo, fromZ * sinFrom);
+    fromW = madd_ps(toW, sinTo, fromW * sinFrom);
+}
+
+BE_FORCE_INLINE void SIMD_4::NlerpJointQuats4(simd4f &fromX, simd4f &fromY, simd4f &fromZ, simd4f &fromW, const simd4f &toX, const simd4f &toY, const simd4f &toZ, const simd4f &toW, const simd4f &scaledLerp) {
+    const simd4f vector_float_rsqrt_c0 = set1_ps(-3.0f);
+    const simd4f vector_float_rsqrt_c1 = set1_ps(-0.5f);
+
+    simd4f cosom = fromX * toX;
+    cosom = madd_ps(fromY, toY, cosom);
+    cosom = madd_ps(fromZ, toZ, cosom);
+    cosom = madd_ps(fromW, toW, cosom);
+
+    const simd4f scale = scaledLerp ^ (cosom & SIMD_4::F4_sign_bit);
+    fromX = madd_ps(scale, toX, fromX);
+    fromY = madd_ps(scale, toY, fromY);
+    fromZ = madd_ps(scale, toZ, fromZ);
+    fromW = madd_ps(scale, toW, fromW);
+
+    simd4f lengthSqr = fromX * fromX;
+    lengthSqr = madd_ps(fromY, fromY, lengthSqr);
+    lengthSqr = madd_ps(fromZ, fromZ, lengthSqr);
+    lengthSqr = madd_ps(fromW, fromW, lengthSqr);
+
+    const simd4f rsqrt = rsqrt12_ps(lengthSqr);
+    const simd4f invLength = (rsqrt * vector_float_rsqrt_c1) * madd_ps(lengthSqr, rsqrt * rsqrt, vector_float_rsqrt_c0);
+    fromX *= invLength;
+    fromY *= invLength;
+    fromZ *= invLength;
+    fromW *= invLength;
 }
 
 void BE_FASTCALL SIMD_4::BlendJoints(JointPose *joints, const JointPose *blendJoints, const float fraction, const int *index, const int numJoints) {
@@ -500,26 +597,6 @@ void BE_FASTCALL SIMD_4::BlendJoints(JointPose *joints, const JointPose *blendJo
     }
 
     const simd4f vlerp = { fraction, fraction, fraction, fraction };
-
-    const simd4f vector_float_rsqrt_c0 = { -3.0f, -3.0f, -3.0f, -3.0f };
-    const simd4f vector_float_rsqrt_c1 = { -0.5f, -0.5f, -0.5f, -0.5f };
-    const simd4f vector_float_tiny = { 1e-10f, 1e-10f, 1e-10f, 1e-10f };
-    const simd4f vector_float_half_pi = { Math::HalfPi, Math::HalfPi, Math::HalfPi, Math::HalfPi };
-
-    const simd4f vector_float_sin_c0 = { -2.39e-08f, -2.39e-08f, -2.39e-08f, -2.39e-08f };
-    const simd4f vector_float_sin_c1 = { 2.7526e-06f, 2.7526e-06f, 2.7526e-06f, 2.7526e-06f };
-    const simd4f vector_float_sin_c2 = { -1.98409e-04f, -1.98409e-04f, -1.98409e-04f, -1.98409e-04f };
-    const simd4f vector_float_sin_c3 = { 8.3333315e-03f, 8.3333315e-03f, 8.3333315e-03f, 8.3333315e-03f };
-    const simd4f vector_float_sin_c4 = { -1.666666664e-01f, -1.666666664e-01f, -1.666666664e-01f, -1.666666664e-01f };
-
-    const simd4f vector_float_atan_c0 = { 0.0028662257f, 0.0028662257f, 0.0028662257f, 0.0028662257f };
-    const simd4f vector_float_atan_c1 = { -0.0161657367f, -0.0161657367f, -0.0161657367f, -0.0161657367f };
-    const simd4f vector_float_atan_c2 = { 0.0429096138f, 0.0429096138f, 0.0429096138f, 0.0429096138f };
-    const simd4f vector_float_atan_c3 = { -0.0752896400f, -0.0752896400f, -0.0752896400f, -0.0752896400f };
-    const simd4f vector_float_atan_c4 = { 0.1065626393f, 0.1065626393f, 0.1065626393f, 0.1065626393f };
-    const simd4f vector_float_atan_c5 = { -0.1420889944f, -0.1420889944f, -0.1420889944f, -0.1420889944f };
-    const simd4f vector_float_atan_c6 = { 0.1999355085f, 0.1999355085f, 0.1999355085f, 0.1999355085f };
-    const simd4f vector_float_atan_c7 = { -0.3333314528f, -0.3333314528f, -0.3333314528f, -0.3333314528f };
 
     int i = 0;
     for (; i < numJoints - 3; i += 4) {
@@ -581,106 +658,12 @@ void BE_FASTCALL SIMD_4::BlendJoints(JointPose *joints, const JointPose *blendJo
         store_ps(jsd_0, (float *)joints[n3].s);
 
         // Blend quaternions.
-        simd4f jqa_0 = load_ps(joints[n0].q);
-        simd4f jqb_0 = load_ps(joints[n1].q);
-        simd4f jqc_0 = load_ps(joints[n2].q);
-        simd4f jqd_0 = load_ps(joints[n3].q);
-
-        transpose4x4(jqa_0, jqb_0, jqc_0, jqd_0);
-
-        simd4f bqa_0 = load_ps(blendJoints[n0].q);
-        simd4f bqb_0 = load_ps(blendJoints[n1].q);
-        simd4f bqc_0 = load_ps(blendJoints[n2].q);
-        simd4f bqd_0 = load_ps(blendJoints[n3].q);
-
-        transpose4x4(bqa_0, bqb_0, bqc_0, bqd_0);
-
-        simd4f cosoma_0 = jqa_0 * bqa_0;
-        simd4f cosomb_0 = jqb_0 * bqb_0;
-        simd4f cosomc_0 = jqc_0 * bqc_0;
-        simd4f cosomd_0 = jqd_0 * bqd_0;
-
-        simd4f cosome_0 = cosoma_0 + cosomb_0;
-        simd4f cosomf_0 = cosomc_0 + cosomd_0;
-        simd4f cosomg_0 = cosome_0 + cosomf_0;
-
-        simd4f sign_0 = cosomg_0 & SIMD_4::F4_sign_bit;
-        simd4f cosom_0 = cosomg_0 ^ sign_0;
-        simd4f ss_0 = nmadd_ps(cosom_0, cosom_0, SIMD_4::F4_one);
-
-        ss_0 = max_ps(ss_0, vector_float_tiny);
-
-        simd4f rs_0 = rsqrt12_ps(ss_0);
-        simd4f sq_0 = rs_0 * rs_0;
-        simd4f sh_0 = rs_0 * vector_float_rsqrt_c1;
-        simd4f sx_0 = madd_ps(ss_0, sq_0, vector_float_rsqrt_c0);
-        simd4f sinom_0 = sh_0 * sx_0;                       // sinom = sqrt( ss );
-
-        ss_0 *= sinom_0;
-
-        simd4f min_0 = min_ps(ss_0, cosom_0);
-        simd4f max_0 = max_ps(ss_0, cosom_0);
-        simd4f mask_0 = (min_0 == cosom_0);
-        simd4f masksign_0 = mask_0 & SIMD_4::F4_sign_bit;
-        simd4f maskPI_0 = mask_0 & vector_float_half_pi;
-
-        simd4f rcpa_0 = rcp12_ps(max_0);
-        simd4f rcpb_0 = max_0 * rcpa_0;
-        simd4f rcpd_0 = rcpa_0 + rcpa_0;
-        simd4f rcp_0 = nmadd_ps(rcpb_0, rcpa_0, rcpd_0);    // 1 / y or 1 / x
-        simd4f ata_0 = min_0 * rcp_0;                       // x / y or y / x
-
-        simd4f atb_0 = ata_0 ^ masksign_0;                  // -x / y or y / x
-        simd4f atc_0 = atb_0 * atb_0;
-        simd4f atd_0 = madd_ps(atc_0, vector_float_atan_c0, vector_float_atan_c1);
-
-        atd_0 = madd_ps(atd_0, atc_0, vector_float_atan_c2);
-        atd_0 = madd_ps(atd_0, atc_0, vector_float_atan_c3);
-        atd_0 = madd_ps(atd_0, atc_0, vector_float_atan_c4);
-        atd_0 = madd_ps(atd_0, atc_0, vector_float_atan_c5);
-        atd_0 = madd_ps(atd_0, atc_0, vector_float_atan_c6);
-        atd_0 = madd_ps(atd_0, atc_0, vector_float_atan_c7);
-        atd_0 = madd_ps(atd_0, atc_0, SIMD_4::F4_one);
-
-        simd4f omega_a_0 = madd_ps(atd_0, atb_0, maskPI_0);
-        simd4f omega_b_0 = vlerp * omega_a_0;
-        omega_a_0 -= omega_b_0;
-
-        simd4f sinsa_0 = omega_a_0 * omega_a_0;
-        simd4f sinsb_0 = omega_b_0 * omega_b_0;
-        simd4f sina_0 = madd_ps(sinsa_0, vector_float_sin_c0, vector_float_sin_c1);
-        simd4f sinb_0 = madd_ps(sinsb_0, vector_float_sin_c0, vector_float_sin_c1);
-        sina_0 = madd_ps(sina_0, sinsa_0, vector_float_sin_c2);
-        sinb_0 = madd_ps(sinb_0, sinsb_0, vector_float_sin_c2);
-        sina_0 = madd_ps(sina_0, sinsa_0, vector_float_sin_c3);
-        sinb_0 = madd_ps(sinb_0, sinsb_0, vector_float_sin_c3);
-        sina_0 = madd_ps(sina_0, sinsa_0, vector_float_sin_c4);
-        sinb_0 = madd_ps(sinb_0, sinsb_0, vector_float_sin_c4);
-        sina_0 = madd_ps(sina_0, sinsa_0, SIMD_4::F4_one);
-        sinb_0 = madd_ps(sinb_0, sinsb_0, SIMD_4::F4_one);
-        sina_0 = sina_0 * omega_a_0;
-        sinb_0 = sinb_0 * omega_b_0;
-        simd4f scalea_0 = sina_0 * sinom_0;
-        simd4f scaleb_0 = sinb_0 * sinom_0;
-
-        scaleb_0 = scaleb_0 ^ sign_0;
-
-        jqa_0 *= scalea_0;
-        jqb_0 *= scalea_0;
-        jqc_0 *= scalea_0;
-        jqd_0 *= scalea_0;
-
-        jqa_0 = madd_ps(bqa_0, scaleb_0, jqa_0);
-        jqb_0 = madd_ps(bqb_0, scaleb_0, jqb_0);
-        jqc_0 = madd_ps(bqc_0, scaleb_0, jqc_0);
-        jqd_0 = madd_ps(bqd_0, scaleb_0, jqd_0);
-
-        transpose4x4(jqa_0, jqb_0, jqc_0, jqd_0);
-
-        store_ps(jqa_0, (float *)joints[n0].q);
-        store_ps(jqb_0, (float *)joints[n1].q);
-        store_ps(jqc_0, (float *)joints[n2].q);
-        store_ps(jqd_0, (float *)joints[n3].q);
+        simd4f jqx, jqy, jqz, jqw;
+        simd4f bqx, bqy, bqz, bqw;
+        LoadJointQuats4(joints, index + i, jqx, jqy, jqz, jqw);
+        LoadJointQuats4(blendJoints, index + i, bqx, bqy, bqz, bqw);
+        SlerpJointQuats4(jqx, jqy, jqz, jqw, bqx, bqy, bqz, bqw, vlerp);
+        StoreJointQuats4(joints, index + i, jqx, jqy, jqz, jqw);
     }
 
     for (; i < numJoints; i++) {
@@ -712,7 +695,7 @@ void BE_FASTCALL SIMD_4::BlendJoints(JointPose *joints, const JointPose *blendJo
 
         cosom = jointQuat.x * blendQuat.x + jointQuat.y * blendQuat.y + jointQuat.z * blendQuat.z + jointQuat.w * blendQuat.w;
 
-        signBit = (*(uint32_t *)&cosom) & (1 << 31);
+        signBit = (*(uint32_t *)&cosom) & 0x80000000u;
 
         (*(uint32_t *)&cosom) ^= signBit;
 
@@ -745,9 +728,6 @@ void BE_FASTCALL SIMD_4::BlendJointsFast(JointPose *joints, const JointPose *ble
         }
         return;
     }
-
-    const simd4f vector_float_rsqrt_c0 = { -3.0f, -3.0f, -3.0f, -3.0f };
-    const simd4f vector_float_rsqrt_c1 = { -0.5f, -0.5f, -0.5f, -0.5f };
 
     const float scaledLerp = fraction / (1.0f - fraction);
     const simd4f vlerp = { fraction, fraction, fraction, fraction };
@@ -813,64 +793,12 @@ void BE_FASTCALL SIMD_4::BlendJointsFast(JointPose *joints, const JointPose *ble
         store_ps(jsd_0, (float *)joints[n3].s);
 
         // Blend quaternions.
-        simd4f jqa_0 = load_ps(joints[n0].q);
-        simd4f jqb_0 = load_ps(joints[n1].q);
-        simd4f jqc_0 = load_ps(joints[n2].q);
-        simd4f jqd_0 = load_ps(joints[n3].q);
-
-        transpose4x4(jqa_0, jqb_0, jqc_0, jqd_0);
-
-        simd4f bqa_0 = load_ps(blendJoints[n0].q);
-        simd4f bqb_0 = load_ps(blendJoints[n1].q);
-        simd4f bqc_0 = load_ps(blendJoints[n2].q);
-        simd4f bqd_0 = load_ps(blendJoints[n3].q);
-
-        transpose4x4(bqa_0, bqb_0, bqc_0, bqd_0);
-
-        simd4f cosoma_0 = jqa_0 * bqa_0;
-        simd4f cosomb_0 = jqb_0 * bqb_0;
-        simd4f cosomc_0 = jqc_0 * bqc_0;
-        simd4f cosomd_0 = jqd_0 * bqd_0;
-
-        simd4f cosome_0 = cosoma_0 + cosomb_0;
-        simd4f cosomf_0 = cosomc_0 + cosomd_0;
-        simd4f cosom_0 = cosome_0 + cosomf_0;
-
-        simd4f sign_0 = cosom_0 & SIMD_4::F4_sign_bit;
-
-        simd4f scale_0 = vscaledLerp ^ sign_0;
-
-        jqa_0 = madd_ps(scale_0, bqa_0, jqa_0);
-        jqb_0 = madd_ps(scale_0, bqb_0, jqb_0);
-        jqc_0 = madd_ps(scale_0, bqc_0, jqc_0);
-        jqd_0 = madd_ps(scale_0, bqd_0, jqd_0);
-
-        simd4f da_0 = jqa_0 * jqa_0;
-        simd4f db_0 = jqb_0 * jqb_0;
-        simd4f dc_0 = jqc_0 * jqc_0;
-        simd4f dd_0 = jqd_0 * jqd_0;
-
-        simd4f de_0 = da_0 + db_0;
-        simd4f df_0 = dc_0 + dd_0;
-        simd4f d_0 = de_0 + df_0;
-
-        simd4f rs_0 = rsqrt12_ps(d_0);
-        simd4f sq_0 = rs_0 * rs_0;
-        simd4f sh_0 = rs_0 * vector_float_rsqrt_c1;
-        simd4f sx_0 = madd_ps(d_0, sq_0, vector_float_rsqrt_c0);
-        simd4f s_0 = sh_0 * sx_0;
-
-        jqa_0 *= s_0;
-        jqb_0 *= s_0;
-        jqc_0 *= s_0;
-        jqd_0 *= s_0;
-
-        transpose4x4(jqa_0, jqb_0, jqc_0, jqd_0);
-
-        store_ps(jqa_0, (float *)joints[n0].q);
-        store_ps(jqb_0, (float *)joints[n1].q);
-        store_ps(jqc_0, (float *)joints[n2].q);
-        store_ps(jqd_0, (float *)joints[n3].q);
+        simd4f jqx, jqy, jqz, jqw;
+        simd4f bqx, bqy, bqz, bqw;
+        LoadJointQuats4(joints, index + i, jqx, jqy, jqz, jqw);
+        LoadJointQuats4(blendJoints, index + i, bqx, bqy, bqz, bqw);
+        NlerpJointQuats4(jqx, jqy, jqz, jqw, bqx, bqy, bqz, bqw, vscaledLerp);
+        StoreJointQuats4(joints, index + i, jqx, jqy, jqz, jqw);
     }
 
     for (; i < numJoints; i++) {
@@ -882,6 +810,13 @@ void BE_FASTCALL SIMD_4::BlendJointsFast(JointPose *joints, const JointPose *ble
         jointPos[0] += fraction * (blendPos[0] - jointPos[0]);
         jointPos[1] += fraction * (blendPos[1] - jointPos[1]);
         jointPos[2] += fraction * (blendPos[2] - jointPos[2]);
+
+        Vec3 &jointScale = joints[n].s;
+        const Vec3 &blendScale = blendJoints[n].s;
+
+        jointScale[0] += fraction * (blendScale[0] - jointScale[0]);
+        jointScale[1] += fraction * (blendScale[1] - jointScale[1]);
+        jointScale[2] += fraction * (blendScale[2] - jointScale[2]);
 
         Quat &jointQuat = joints[n].q;
         const Quat &blendQuat = blendJoints[n].q;
@@ -906,6 +841,86 @@ void BE_FASTCALL SIMD_4::BlendJointsFast(JointPose *joints, const JointPose *ble
         jointQuat.y *= s;
         jointQuat.z *= s;
         jointQuat.w *= s;
+    }
+}
+
+void BE_FASTCALL SIMD_4::AdditiveBlendJoints(JointPose *joints, const JointPose *blendJoints, const float fraction, const int *index, const int numJoints) {
+    assert_16_byte_aligned(joints);
+    assert_16_byte_aligned(blendJoints);
+
+    if (fraction <= 0.0f) {
+        return;
+    } else if (fraction >= 1.0f) {
+        SIMD_Generic::AdditiveBlendJoints(joints, blendJoints, 1.0f, index, numJoints);
+        return;
+    }
+
+    const simd4f lerp = set1_ps(fraction);
+
+    int i = 0;
+    for (; i + 3 < numJoints; i += 4) {
+        const int n0 = index[i + 0];
+        const int n1 = index[i + 1];
+        const int n2 = index[i + 2];
+        const int n3 = index[i + 3];
+
+        simd4f jt0 = load_ps(joints[n0].t);
+        simd4f jt1 = load_ps(joints[n1].t);
+        simd4f jt2 = load_ps(joints[n2].t);
+        simd4f jt3 = load_ps(joints[n3].t);
+
+        jt0 = madd_ps(load_ps(blendJoints[n0].t), lerp, jt0);
+        jt1 = madd_ps(load_ps(blendJoints[n1].t), lerp, jt1);
+        jt2 = madd_ps(load_ps(blendJoints[n2].t), lerp, jt2);
+        jt3 = madd_ps(load_ps(blendJoints[n3].t), lerp, jt3);
+
+        store_ps(jt0, joints[n0].t);
+        store_ps(jt1, joints[n1].t);
+        store_ps(jt2, joints[n2].t);
+        store_ps(jt3, joints[n3].t);
+
+        simd4f js0 = load_ps(joints[n0].s);
+        simd4f js1 = load_ps(joints[n1].s);
+        simd4f js2 = load_ps(joints[n2].s);
+        simd4f js3 = load_ps(joints[n3].s);
+
+        const simd4f scale0 = madd_ps(load_ps(blendJoints[n0].s) - SIMD_4::F4_one, lerp, SIMD_4::F4_one);
+        const simd4f scale1 = madd_ps(load_ps(blendJoints[n1].s) - SIMD_4::F4_one, lerp, SIMD_4::F4_one);
+        const simd4f scale2 = madd_ps(load_ps(blendJoints[n2].s) - SIMD_4::F4_one, lerp, SIMD_4::F4_one);
+        const simd4f scale3 = madd_ps(load_ps(blendJoints[n3].s) - SIMD_4::F4_one, lerp, SIMD_4::F4_one);
+
+        store_ps(js0 * scale0, joints[n0].s);
+        store_ps(js1 * scale1, joints[n1].s);
+        store_ps(js2 * scale2, joints[n2].s);
+        store_ps(js3 * scale3, joints[n3].s);
+
+        simd4f jqx, jqy, jqz, jqw;
+        simd4f bqx, bqy, bqz, bqw;
+        LoadJointQuats4(joints, index + i, jqx, jqy, jqz, jqw);
+        LoadJointQuats4(blendJoints, index + i, bqx, bqy, bqz, bqw);
+
+        simd4f targetX = madd_ps(bqx, jqw, bqy * jqz);
+        targetX = nmadd_ps(bqz, jqy, targetX);
+        targetX = madd_ps(bqw, jqx, targetX);
+
+        simd4f targetY = nmadd_ps(bqx, jqz, bqy * jqw);
+        targetY = madd_ps(bqz, jqx, targetY);
+        targetY = madd_ps(bqw, jqy, targetY);
+
+        simd4f targetZ = madd_ps(bqx, jqy, bqz * jqw);
+        targetZ = nmadd_ps(bqy, jqx, targetZ);
+        targetZ = madd_ps(bqw, jqz, targetZ);
+
+        simd4f targetW = nmadd_ps(bqx, jqx, bqw * jqw);
+        targetW = nmadd_ps(bqy, jqy, targetW);
+        targetW = nmadd_ps(bqz, jqz, targetW);
+
+        SlerpJointQuats4(jqx, jqy, jqz, jqw, targetX, targetY, targetZ, targetW, lerp);
+        StoreJointQuats4(joints, index + i, jqx, jqy, jqz, jqw);
+    }
+
+    if (i < numJoints) {
+        SIMD_Generic::AdditiveBlendJoints(joints, blendJoints, fraction, index + i, numJoints - i);
     }
 }
 
@@ -1070,10 +1085,138 @@ void BE_FASTCALL SIMD_4::ConvertJointPosesToJointMats(Mat3x4 *jointMats, const J
 }
 
 void BE_FASTCALL SIMD_4::ConvertJointMatsToJointPoses(JointPose *jointPoses, const Mat3x4 *jointMats, const int numJoints) {
-    // TODO: Implement this with SIMD code.
-    int i;
+    assert_16_byte_aligned(jointPoses);
+    assert_16_byte_aligned(jointMats);
+    assert(sizeof(JointPose) == sizeof(float) * 12);
+    assert(sizeof(Mat3x4) == sizeof(float) * 12);
 
-    for (i = 0; i < numJoints; i++) {
+    const float *jointMatPtr = (const float *)jointMats;
+    float *jointPosePtr = (float *)jointPoses;
+
+    const simd4f vector_float_zero = setzero_ps();
+    const simd4f vector_float_one = set1_ps(1.0f);
+    const simd4f vector_float_half = set1_ps(0.5f);
+
+    int i = 0;
+    for (; i + 3 < numJoints; i += 4) {
+        simd4f m00 = load_ps(&jointMatPtr[(i + 0) * 12 + 0]);
+        simd4f m01 = load_ps(&jointMatPtr[(i + 1) * 12 + 0]);
+        simd4f m02 = load_ps(&jointMatPtr[(i + 2) * 12 + 0]);
+        simd4f m03 = load_ps(&jointMatPtr[(i + 3) * 12 + 0]);
+        transpose4x4(m00, m01, m02, m03);
+
+        simd4f m10 = load_ps(&jointMatPtr[(i + 0) * 12 + 4]);
+        simd4f m11 = load_ps(&jointMatPtr[(i + 1) * 12 + 4]);
+        simd4f m12 = load_ps(&jointMatPtr[(i + 2) * 12 + 4]);
+        simd4f m13 = load_ps(&jointMatPtr[(i + 3) * 12 + 4]);
+        transpose4x4(m10, m11, m12, m13);
+
+        simd4f m20 = load_ps(&jointMatPtr[(i + 0) * 12 + 8]);
+        simd4f m21 = load_ps(&jointMatPtr[(i + 1) * 12 + 8]);
+        simd4f m22 = load_ps(&jointMatPtr[(i + 2) * 12 + 8]);
+        simd4f m23 = load_ps(&jointMatPtr[(i + 3) * 12 + 8]);
+        transpose4x4(m20, m21, m22, m23);
+
+        simd4f scaleX = sqrt_ps(m00 * m00 + m10 * m10 + m20 * m20);
+        simd4f scaleY = sqrt_ps(m01 * m01 + m11 * m11 + m21 * m21);
+        simd4f scaleZ = sqrt_ps(m02 * m02 + m12 * m12 + m22 * m22);
+
+        const simd4f det2_01_01 = m00 * m11 - m01 * m10;
+        const simd4f det2_01_02 = m00 * m12 - m02 * m10;
+        const simd4f det2_01_12 = m01 * m12 - m02 * m11;
+        const simd4f determinant = m20 * det2_01_12 - m21 * det2_01_02 + m22 * det2_01_01;
+        const simd4b negativeScaleMask = determinant < vector_float_zero;
+        scaleX = select_ps(scaleX, -scaleX, negativeScaleMask);
+        scaleY = select_ps(scaleY, -scaleY, negativeScaleMask);
+        scaleZ = select_ps(scaleZ, -scaleZ, negativeScaleMask);
+
+        const simd4f invScaleX = vector_float_one / scaleX;
+        const simd4f invScaleY = vector_float_one / scaleY;
+        const simd4f invScaleZ = vector_float_one / scaleZ;
+        const simd4f r00 = m00 * invScaleX;
+        const simd4f r01 = m01 * invScaleY;
+        const simd4f r02 = m02 * invScaleZ;
+        const simd4f r10 = m10 * invScaleX;
+        const simd4f r11 = m11 * invScaleY;
+        const simd4f r12 = m12 * invScaleZ;
+        const simd4f r20 = m20 * invScaleX;
+        const simd4f r21 = m21 * invScaleY;
+        const simd4f r22 = m22 * invScaleZ;
+
+        const simd4f trace = r00 + r11 + r22;
+        const simd4b traceMask = trace > vector_float_zero;
+        const simd4b diagonal1Mask = r11 > r00;
+        const simd4f maxDiagonal01 = select_ps(r00, r11, diagonal1Mask);
+        const simd4b diagonal2Mask = r22 > maxDiagonal01;
+        const simd4b negativeTraceMask = !traceMask;
+        const simd4b case0Mask = negativeTraceMask & !diagonal1Mask & !diagonal2Mask;
+        const simd4b case1Mask = negativeTraceMask & diagonal1Mask & !diagonal2Mask;
+        const simd4b case2Mask = negativeTraceMask & diagonal2Mask;
+
+        const simd4f traceT = trace + vector_float_one;
+        const simd4f traceSafeT = select_ps(vector_float_one, traceT, traceMask);
+        const simd4f traceS = sqrt_ps(vector_float_one / traceSafeT) * vector_float_half;
+        simd4f quatX = (r21 - r12) * traceS;
+        simd4f quatY = (r02 - r20) * traceS;
+        simd4f quatZ = (r10 - r01) * traceS;
+        simd4f quatW = traceSafeT * traceS;
+
+        const simd4f case0T = r00 - r11 - r22 + vector_float_one;
+        const simd4f case0SafeT = select_ps(vector_float_one, case0T, case0Mask);
+        const simd4f case0S = sqrt_ps(vector_float_one / case0SafeT) * vector_float_half;
+        quatX = select_ps(quatX, case0SafeT * case0S, case0Mask);
+        quatY = select_ps(quatY, (r10 + r01) * case0S, case0Mask);
+        quatZ = select_ps(quatZ, (r20 + r02) * case0S, case0Mask);
+        quatW = select_ps(quatW, (r21 - r12) * case0S, case0Mask);
+
+        const simd4f case1T = r11 - r22 - r00 + vector_float_one;
+        const simd4f case1SafeT = select_ps(vector_float_one, case1T, case1Mask);
+        const simd4f case1S = sqrt_ps(vector_float_one / case1SafeT) * vector_float_half;
+        quatX = select_ps(quatX, (r01 + r10) * case1S, case1Mask);
+        quatY = select_ps(quatY, case1SafeT * case1S, case1Mask);
+        quatZ = select_ps(quatZ, (r21 + r12) * case1S, case1Mask);
+        quatW = select_ps(quatW, (r02 - r20) * case1S, case1Mask);
+
+        const simd4f case2T = r22 - r00 - r11 + vector_float_one;
+        const simd4f case2SafeT = select_ps(vector_float_one, case2T, case2Mask);
+        const simd4f case2S = sqrt_ps(vector_float_one / case2SafeT) * vector_float_half;
+        quatX = select_ps(quatX, (r02 + r20) * case2S, case2Mask);
+        quatY = select_ps(quatY, (r12 + r21) * case2S, case2Mask);
+        quatZ = select_ps(quatZ, case2SafeT * case2S, case2Mask);
+        quatW = select_ps(quatW, (r10 - r01) * case2S, case2Mask);
+
+        simd4f q0 = quatX;
+        simd4f q1 = quatY;
+        simd4f q2 = quatZ;
+        simd4f q3 = quatW;
+        transpose4x4(q0, q1, q2, q3);
+        store_ps(q0, &jointPosePtr[(i + 0) * 12 + 0]);
+        store_ps(q1, &jointPosePtr[(i + 1) * 12 + 0]);
+        store_ps(q2, &jointPosePtr[(i + 2) * 12 + 0]);
+        store_ps(q3, &jointPosePtr[(i + 3) * 12 + 0]);
+
+        simd4f t0 = m03;
+        simd4f t1 = m13;
+        simd4f t2 = m23;
+        simd4f t3 = vector_float_zero;
+        transpose4x4(t0, t1, t2, t3);
+        store_ps(t0, &jointPosePtr[(i + 0) * 12 + 4]);
+        store_ps(t1, &jointPosePtr[(i + 1) * 12 + 4]);
+        store_ps(t2, &jointPosePtr[(i + 2) * 12 + 4]);
+        store_ps(t3, &jointPosePtr[(i + 3) * 12 + 4]);
+
+        simd4f s0 = scaleX;
+        simd4f s1 = scaleY;
+        simd4f s2 = scaleZ;
+        simd4f s3 = vector_float_zero;
+        transpose4x4(s0, s1, s2, s3);
+        store_ps(s0, &jointPosePtr[(i + 0) * 12 + 8]);
+        store_ps(s1, &jointPosePtr[(i + 1) * 12 + 8]);
+        store_ps(s2, &jointPosePtr[(i + 2) * 12 + 8]);
+        store_ps(s3, &jointPosePtr[(i + 3) * 12 + 8]);
+    }
+
+    for (; i < numJoints; i++) {
         jointPoses[i].SetFromMat3x4(jointMats[i]);
     }
 }
@@ -1081,11 +1224,10 @@ void BE_FASTCALL SIMD_4::ConvertJointMatsToJointPoses(JointPose *jointPoses, con
 void BE_FASTCALL SIMD_4::TransformJoints(Mat3x4 *jointMats, const int *parents, const int firstJointIndex, const int lastJointIndex) {
     assert_16_byte_aligned(jointMats);
 
-    const float *__restrict firstMatrix = jointMats->Ptr() + firstJointIndex * 3 * 4;
-
-    simd4f pma = load_ps(firstMatrix + 0);
-    simd4f pmb = load_ps(firstMatrix + 4);
-    simd4f pmc = load_ps(firstMatrix + 8);
+    simd4f pma;
+    simd4f pmb;
+    simd4f pmc;
+    int cachedJointIndex = -1;
 
     for (int i = firstJointIndex; i <= lastJointIndex; i++) {
         const int parentIndex = parents[i];
@@ -1096,7 +1238,7 @@ void BE_FASTCALL SIMD_4::TransformJoints(Mat3x4 *jointMats, const int *parents, 
         const float *__restrict parentMatrix = jointMats->Ptr() + parentIndex * 3 * 4;
         float *__restrict childMatrix = jointMats->Ptr() + i * 3 * 4;
 
-        if (parentIndex != i - 1) {
+        if (parentIndex != cachedJointIndex) {
             pma = load_ps(parentMatrix + 0);
             pmb = load_ps(parentMatrix + 4);
             pmc = load_ps(parentMatrix + 8);
@@ -1113,6 +1255,8 @@ void BE_FASTCALL SIMD_4::TransformJoints(Mat3x4 *jointMats, const int *parents, 
         store_ps(pma, childMatrix + 0);
         store_ps(pmb, childMatrix + 4);
         store_ps(pmc, childMatrix + 8);
+
+        cachedJointIndex = i;
     }
 }
 
@@ -1324,7 +1468,7 @@ void BE_FASTCALL SIMD_4::Memcpy(void *dst, const void *src, const int size) {
         byte *dstPtr = (byte *)dst;
 
         // Copy up to the first 16 byte aligned boundary.
-        int remainingSize = ((intptr_t)dstPtr) & 15;
+        int remainingSize = (16 - (((intptr_t)dstPtr) & 15)) & 15;
         if (remainingSize > 0) {
             memcpy(dstPtr, srcPtr, remainingSize);
             dstPtr += remainingSize;
@@ -1353,211 +1497,6 @@ void BE_FASTCALL SIMD_4::Memcpy(void *dst, const void *src, const int size) {
         memcpy(dstPtr, srcPtr, remainingSize);
     } else {
         // Use the regular one if we cannot copy 16 byte aligned.
-        memcpy(dst, src, size);
-    }
-#endif
-}
-
-void SIMD_4::MemcpyStream64B(void *dst, const void *src, const int count) {
-    assert_16_byte_aligned(src);
-    assert_16_byte_aligned(dst);
-
-    const byte *srcPtr = (byte *)src;
-    byte *dstPtr = (byte *)dst;
-    simd4i r0, r1, r2, r3;
-
-    int c64 = count >> 6;
-    while (c64 > 0) {
-        if (c64 > 1) {
-            // Loads one cache line (64B) of data from next 64B block of memory to CPU prefetch buffer.
-            prefetchNTA(srcPtr + 64);
-        }
-
-        r0 = load_si128((const int32_t *)srcPtr);
-        r1 = load_si128((const int32_t *)(srcPtr + 16));
-        r2 = load_si128((const int32_t *)(srcPtr + 32));
-        r3 = load_si128((const int32_t *)(srcPtr + 48));
-
-        storent_si128(r0, (int32_t *)dstPtr);
-        storent_si128(r1, (int32_t *)(dstPtr + 16));
-        storent_si128(r2, (int32_t *)(dstPtr + 32));
-        storent_si128(r3, (int32_t *)(dstPtr + 48));
-
-        srcPtr += 64;
-        dstPtr += 64;
-
-        c64--;
-    }
-}
-
-void SIMD_4::MemcpyStream2KB(void *dst, const void *src, const int count) {
-    assert_16_byte_aligned(src);
-    assert_16_byte_aligned(dst);
-
-    const byte *srcPtr = (byte *)src;
-    byte *dstPtr = (byte *)dst;
-    simd4i r0, r1, r2, r3, r4, r5, r6, r7;
-
-    int c128;
-    int c2k = count >> 11;
-    while (c2k > 0) {
-        c128 = 16;
-        while (c128 > 0) {
-            // Loads two cache lines (64B x 2) of data from next 128B block of memory to CPU prefetch buffer.
-            prefetchNTA(srcPtr + 128);
-            prefetchNTA(srcPtr + 192);
-
-            r0 = load_si128((const int32_t *)srcPtr);
-            r1 = load_si128((const int32_t *)(srcPtr + 16));
-            r2 = load_si128((const int32_t *)(srcPtr + 32));
-            r3 = load_si128((const int32_t *)(srcPtr + 48));
-            r4 = load_si128((const int32_t *)(srcPtr + 64));
-            r5 = load_si128((const int32_t *)(srcPtr + 80));
-            r6 = load_si128((const int32_t *)(srcPtr + 96));
-            r7 = load_si128((const int32_t *)(srcPtr + 112));
-
-            storent_si128(r0, (int32_t *)dstPtr);
-            storent_si128(r1, (int32_t *)(dstPtr + 16));
-            storent_si128(r2, (int32_t *)(dstPtr + 32));
-            storent_si128(r3, (int32_t *)(dstPtr + 48));
-            storent_si128(r4, (int32_t *)(dstPtr + 64));
-            storent_si128(r5, (int32_t *)(dstPtr + 80));
-            storent_si128(r6, (int32_t *)(dstPtr + 96));
-            storent_si128(r7, (int32_t *)(dstPtr + 112));
-
-            srcPtr += 128;
-            dstPtr += 128;
-
-            c128--;
-        }
-
-        c2k--;
-    }
-}
-
-void SIMD_4::MemcpyStreamTemp2KB(void *dst, const void *src, const int count) {
-    assert_16_byte_aligned(src);
-    assert_16_byte_aligned(dst);
-
-    byte *tbuf = (byte *)_alloca16(2048);
-    const byte *srcPtr;
-    const byte *srcNext = (byte *)src;
-    byte *dstPtr = (byte *)dst;
-    byte *dstNext;
-    simd4i r0, r1, r2, r3, r4, r5, r6, r7;
-
-    int c128;
-    int c2k = count >> 11;
-    while (c2k > 0) {
-        // copy 2k into temporary buffer
-        dstNext = dstPtr;
-        srcPtr = srcNext;
-        dstPtr = tbuf;
-
-        c128 = 16;
-        while (c128 > 0) {
-            // Loads two cache lines (64B x 2) of data from next 128B block of memory to CPU prefetch buffer.
-            prefetchNTA(srcPtr + 128);
-            prefetchNTA(srcPtr + 192);
-
-            r0 = load_si128((const int32_t *)(srcPtr + 0));
-            r1 = load_si128((const int32_t *)(srcPtr + 16));
-            r2 = load_si128((const int32_t *)(srcPtr + 32));
-            r3 = load_si128((const int32_t *)(srcPtr + 48));
-            r4 = load_si128((const int32_t *)(srcPtr + 64));
-            r5 = load_si128((const int32_t *)(srcPtr + 80));
-            r6 = load_si128((const int32_t *)(srcPtr + 96));
-            r7 = load_si128((const int32_t *)(srcPtr + 112));
-
-            store_si128(r0, (int32_t *)(dstPtr + 0));
-            store_si128(r1, (int32_t *)(dstPtr + 16));
-            store_si128(r2, (int32_t *)(dstPtr + 32));
-            store_si128(r3, (int32_t *)(dstPtr + 48));
-            store_si128(r4, (int32_t *)(dstPtr + 64));
-            store_si128(r5, (int32_t *)(dstPtr + 80));
-            store_si128(r6, (int32_t *)(dstPtr + 96));
-            store_si128(r7, (int32_t *)(dstPtr + 112));
-
-            srcPtr += 128;
-            dstPtr += 128;
-
-            c128--;
-        }
-
-        // Now copy from L1 to system memory
-        srcNext = srcPtr;
-        srcPtr = tbuf;
-        dstPtr = dstNext;
-
-        c128 = 16;
-        while (c128 > 0) {
-            r0 = load_si128((const int32_t *)(srcPtr + 0));
-            r1 = load_si128((const int32_t *)(srcPtr + 16));
-            r2 = load_si128((const int32_t *)(srcPtr + 32));
-            r3 = load_si128((const int32_t *)(srcPtr + 48));
-            r4 = load_si128((const int32_t *)(srcPtr + 64));
-            r5 = load_si128((const int32_t *)(srcPtr + 80));
-            r6 = load_si128((const int32_t *)(srcPtr + 96));
-            r7 = load_si128((const int32_t *)(srcPtr + 112));
-
-            storent_si128(r0, (int32_t *)(dstPtr + 0));
-            storent_si128(r1, (int32_t *)(dstPtr + 16));
-            storent_si128(r2, (int32_t *)(dstPtr + 32));
-            storent_si128(r3, (int32_t *)(dstPtr + 48));
-            storent_si128(r4, (int32_t *)(dstPtr + 64));
-            storent_si128(r5, (int32_t *)(dstPtr + 80));
-            storent_si128(r6, (int32_t *)(dstPtr + 96));
-            storent_si128(r7, (int32_t *)(dstPtr + 112));
-
-            srcPtr += 128;
-            dstPtr += 128;
-
-            c128--;
-        }
-
-        c2k--;
-    }
-}
-
-void BE_FASTCALL SIMD_4::MemcpyStream(void *dst, const void *src, const int size) {
-#if 0
-    memcpy(dst, src, size);
-#else
-    assert_16_byte_aligned(src);
-    assert_16_byte_aligned(dst);
-
-    if (size > 4096) {
-        const byte *srcPtr = (const byte *)src;
-        byte *dstPtr = (byte *)dst;
-
-        int remainingSize = size;
-
-        // If there are multiple blocks of 2kB, ..
-        if (remainingSize & ~4095) {
-            SIMD_4::MemcpyStreamTemp2KB(dstPtr, srcPtr, remainingSize);
-            srcPtr += (remainingSize & ~2047);
-            dstPtr += (remainingSize & ~2047);
-            remainingSize &= 2047;
-        }
-
-        // If there are blocks of 64 bytes, ..
-        if (remainingSize & ~63) {
-            SIMD_4::MemcpyStream64B(dstPtr, srcPtr, remainingSize);
-            srcPtr += (remainingSize & ~63);
-            dstPtr += (remainingSize & ~63);
-            remainingSize &= 63;
-        }
-
-        // Ensure completion of asynchronous non-temporal store operations.
-        sfence();
-
-        // Copy any remaining bytes
-        while (remainingSize > 0) {
-            *dstPtr++ = *srcPtr++;
-            remainingSize--;
-        }
-    } else {
-        // Use the regular one if we cannot copy 16 byte aligned
         memcpy(dst, src, size);
     }
 #endif

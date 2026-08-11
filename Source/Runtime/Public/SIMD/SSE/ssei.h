@@ -73,7 +73,7 @@ BE_FORCE_INLINE ssei abs_epi32(const ssei &a) {
 }
 
 BE_FORCE_INLINE ssei operator+(const ssei &a) { return a; }
-BE_FORCE_INLINE ssei operator-(const ssei &a) { return bx_mm_neg_ps(a); }
+BE_FORCE_INLINE ssei operator-(const ssei &a) { return _mm_sub_epi32(_mm_setzero_si128(), a); }
 BE_FORCE_INLINE ssei operator~(const ssei &a) { return bx_mm_inv_si128(a); }
 
 BE_FORCE_INLINE ssei operator+(const ssei &a, const ssei &b) { return _mm_add_epi32(a, b); }
@@ -100,7 +100,9 @@ BE_FORCE_INLINE ssei operator^(const ssei &a, const ssei &b) { return _mm_xor_si
 BE_FORCE_INLINE ssei operator^(const ssei &a, const int32_t &b) { return a ^ set1_epi32(b); }
 BE_FORCE_INLINE ssei operator^(const int32_t &a, const ssei &b) { return set1_epi32(a) ^ b; }
 
+// Shifts signed 32-bit lanes left. Arithmetic and logical left shifts produce identical bit patterns.
 BE_FORCE_INLINE ssei operator<<(const ssei &a, const int32_t &n) { return _mm_slli_epi32(a, n); }
+// Shifts signed 32-bit lanes right with sign extension.
 BE_FORCE_INLINE ssei operator>>(const ssei &a, const int32_t &n) { return _mm_srai_epi32(a, n); }
 
 BE_FORCE_INLINE ssei operator==(const ssei &a, const ssei &b) { return _mm_cmpeq_epi32(a, b); }
@@ -142,16 +144,18 @@ BE_FORCE_INLINE ssei &operator&=(ssei &a, const int32_t &b) { return a = a & b; 
 BE_FORCE_INLINE ssei &operator|=(ssei &a, const ssei &b) { return a = a | b; }
 BE_FORCE_INLINE ssei &operator|=(ssei &a, const int32_t &b) { return a = a | b; }
 
+// Compound signed left shift. Arithmetic and logical left shifts produce identical bit patterns.
 BE_FORCE_INLINE ssei &operator<<=(ssei &a, const int32_t &b) { return a = a << b; }
+// Compound signed right shift with sign extension.
 BE_FORCE_INLINE ssei &operator>>=(ssei &a, const int32_t &b) { return a = a >> b; }
 
-// Shifts right arithmetic.
+// Shifts signed 32-bit lanes right with sign extension.
 BE_FORCE_INLINE ssei sra_epi32(const ssei &a, const int32_t &b) { return _mm_srai_epi32(a, b); }
 
-// Shifts right logical.
+// Shifts 32-bit lanes right with zero fill.
 BE_FORCE_INLINE ssei srl_epi32(const ssei &a, const int32_t &b) { return _mm_srli_epi32(a, b); }
 
-// Shifts left logical.
+// Shifts 32-bit lanes left with zero fill. Arithmetic and logical left shifts produce identical bit patterns.
 BE_FORCE_INLINE ssei sll_epi32(const ssei &a, const int32_t &b) { return _mm_slli_epi32(a, b); }
 
 // Unpacks to (a0, b0, a1, b1).
@@ -186,7 +190,7 @@ BE_FORCE_INLINE int extract_epi8(const ssei &a) { return _mm_extract_epi8(a, src
 template <size_t src>
 BE_FORCE_INLINE int extract_epi32(const ssei &a) { return a.i32[src & 3]; }
 template <size_t src>
-BE_FORCE_INLINE int extract_epi8(const ssei &a) { return a.i8[src & 3]; }
+BE_FORCE_INLINE int extract_epi8(const ssei &a) { return a.i8[src & 15]; }
 #endif
 
 template <> 
