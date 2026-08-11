@@ -100,11 +100,11 @@ floating point bit layouts according to the IEEE 754-1985 and 754-2008 standard
 #define NANO2SEC(t)                 ((t) * BE1::Math::MulNanoToSecond)
 
 // degree <-> short value
-#define ANGLE2SHORT(x)              (BE1::Math::FtoiFast((x) * 65536.0f / 360.0f) & 65535)
+#define ANGLE2SHORT(x)              (BE1::Math::Ftoi((x) * 65536.0f / 360.0f) & 65535)
 #define SHORT2ANGLE(x)              ((x) * (360.0f / 65536.0f))
 
 // degree <-> byte value            
-#define ANGLE2BYTE(x)               (BE1::Math::FtoiFast((x) * 256.0f / 360.0f) & 255)
+#define ANGLE2BYTE(x)               (BE1::Math::Ftoi((x) * 256.0f / 360.0f) & 255)
 #define BYTE2ANGLE(x)               ((x) * (360.0f / 256.0f))
 
 #define C_FLOAT_TO_INT(x)           (int)(x)
@@ -307,8 +307,6 @@ public:
 
                                 /// Float to int conversion.
     static int                  Ftoi(float f);
-                                /// Fast float to int conversion but uses current FPU round mode (default round nearest).
-    static int                  FtoiFast(float f);
                                 /// Float to char conversion.
     static int8_t               Ftoi8(float f);
                                 /// Float to short conversion.
@@ -961,26 +959,6 @@ BE_INLINE int Math::Ftoi(float f) {
     return (int)f;
 }
 
-BE_INLINE int Math::FtoiFast(float f) {
-#ifdef HAVE_X86_SSE_INTRIN
-    // If a converted result is larger than the maximum signed doubleword integer,
-    // the floating-point invalid exception is raised, and if this exception is masked,
-    // the indefinite integer value (80000000H) is returned.
-    __m128 x = _mm_load_ss(&f);
-    return _mm_cvttss_si32(x);
-#elif 0 // round chop (C/C++ standard)
-    int i = *reinterpret_cast<int *>(&f);
-    int s = i >> IEEE_FLT_SIGN_BIT;
-    int e = ((i >> IEEE_FLT_MANTISSA_BITS) & ((1 << IEEE_FLT_EXPONENT_BITS) - 1)) - IEEE_FLT_EXPONENT_BIAS;
-    int m = (i & ((1 << IEEE_FLT_MANTISSA_BITS) - 1)) | (1 << IEEE_FLT_MANTISSA_BITS);
-    int shift = e - IEEE_FLT_MANTISSA_BITS;
-    return ((((m >> -shift) | (m << shift)) & ~(e >> 31)) ^ s) - s;
-#else
-    // If a converted result is larger than the maximum signed doubleword integer the result is undefined.
-    return C_FLOAT_TO_INT(f);
-#endif
-}
-
 BE_INLINE int8_t Math::Ftoi8(float f) {
 #ifdef HAVE_X86_SSE_INTRIN
     __m128 x = _mm_load_ss(&f);
@@ -1072,7 +1050,6 @@ BE_INLINE double Math::Factorial(unsigned int n) {
         result = result * double(n);
         n--;
     }
-
     return result;
 }
 
@@ -1092,7 +1069,6 @@ BE_INLINE float Math::AngleNormalize180(float angle) {
     if (angle > 180.0f) {
         angle -= 360.0f;
     }
-
     return angle;
 }
 

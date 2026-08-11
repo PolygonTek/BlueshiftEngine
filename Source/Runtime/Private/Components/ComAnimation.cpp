@@ -99,7 +99,7 @@ void ComAnimation::LateInit() {
 }
 
 void ComAnimation::Update() {
-    int currentTime = (GetGameWorld()->GetTime() - playStartTime) * GetTimeScale() + Math::FtoiFast(SEC2MILLI(GetTimeOffset()));
+    int currentTime = (GetGameWorld()->GetTime() - playStartTime) * GetTimeScale() + Math::Ftoi(SEC2MILLI(GetTimeOffset()));
 
     UpdateAnim(currentTime);
 }

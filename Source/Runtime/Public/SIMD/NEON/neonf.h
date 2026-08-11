@@ -532,8 +532,7 @@ BE_FORCE_INLINE void transpose4x4(neonf &r0, neonf &r1, neonf &r2, neonf &r3) {
 }
 
 // M(4x4) * v(4)
-BE_FORCE_INLINE neonf mat4x4rowmajor_mul_vec4(const float *mat, const neonf &v) {
-    assert_16_byte_aligned(mat);
+BE_FORCE_INLINE neonf mat4x4rowmajor_mul_vec4_impl(const float *mat, const neonf &v) {
     // Transpose matrix at load time to get in registers in column-major format.
     float32x4x4_t cm = vld4q_f32((const float32_t *)mat);
     neonf result = vmulq_lane_f32(cm.val[0], vget_low_f32(v), 0);
@@ -542,6 +541,11 @@ BE_FORCE_INLINE neonf mat4x4rowmajor_mul_vec4(const float *mat, const neonf &v) 
     return vmlaq_lane_f32(result, cm.val[3], vget_high_f32(v), 1);
 }
 
+BE_FORCE_INLINE neonf mat4x4rowmajor_mul_vec4(const float *mat, const neonf &v) {
+    assert_16_byte_aligned(mat);
+    return mat4x4rowmajor_mul_vec4_impl(mat, v);
+}
+
 BE_FORCE_INLINE neonf mat4x4rowmajoru_mul_vec4(const float *mat, const neonf &v) {
-    return mat4x4rowmajor_mul_vec4(mat, v);
+    return mat4x4rowmajor_mul_vec4_impl(mat, v);
 }

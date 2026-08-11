@@ -1013,7 +1013,7 @@ void BE_FASTCALL SIMD_8::AdditiveBlendJoints(JointPose *joints, const JointPose 
 }
 
 void BE_FASTCALL SIMD_8::TransformJoints(Mat3x4 *jointMats, const int *parents, const int firstJoint, const int lastJoint) {
-    assert_32_byte_aligned(jointMats);
+    assert_16_byte_aligned(jointMats);
 
     simd8f pmab;
     simd4f pmc;
@@ -1033,9 +1033,9 @@ void BE_FASTCALL SIMD_8::TransformJoints(Mat3x4 *jointMats, const int *parents, 
             pmc = load_ps(parentMatrix + 8);
         }
 
-        simd8f cmaa = broadcast_256ps((simd4f *)(childMatrix + 0));
-        simd8f cmbb = broadcast_256ps((simd4f *)(childMatrix + 4));
-        simd8f cmcc = broadcast_256ps((simd4f *)(childMatrix + 8));
+        simd8f cmaa = broadcast_256ps(reinterpret_cast<const simd4f *>(childMatrix + 0));
+        simd8f cmbb = broadcast_256ps(reinterpret_cast<const simd4f *>(childMatrix + 4));
+        simd8f cmcc = broadcast_256ps(reinterpret_cast<const simd4f *>(childMatrix + 8));
 
         pmab = lincomb2x3x4(pmab, cmaa, cmbb, cmcc);
         pmc = lincomb3x4(pmc, extract_256ps<0>(cmaa), extract_256ps<0>(cmbb), extract_256ps<0>(cmcc));
@@ -1048,7 +1048,8 @@ void BE_FASTCALL SIMD_8::TransformJoints(Mat3x4 *jointMats, const int *parents, 
 }
 
 void BE_FASTCALL SIMD_8::TransformJoints(const Mat3x4 *localJointMats, Mat3x4 *worldJointMats, const int *parents, const int firstJointIndex, const int lastJointIndex) {
-    assert_32_byte_aligned(worldJointMats);
+    assert_16_byte_aligned(localJointMats);
+    assert_16_byte_aligned(worldJointMats);
 
     for (int i = firstJointIndex; i <= lastJointIndex; i++) {
         const int parentIndex = parents[i];
@@ -1064,9 +1065,9 @@ void BE_FASTCALL SIMD_8::TransformJoints(const Mat3x4 *localJointMats, Mat3x4 *w
         simd8f pmab = loadu_256ps(parentWorldMatrix + 0);
         simd4f pmc = load_ps(parentWorldMatrix + 8);
 
-        simd8f cmaa = broadcast_256ps((simd4f *)(childLocalMatrix + 0));
-        simd8f cmbb = broadcast_256ps((simd4f *)(childLocalMatrix + 4));
-        simd8f cmcc = broadcast_256ps((simd4f *)(childLocalMatrix + 8));
+        simd8f cmaa = broadcast_256ps(reinterpret_cast<const simd4f *>(childLocalMatrix + 0));
+        simd8f cmbb = broadcast_256ps(reinterpret_cast<const simd4f *>(childLocalMatrix + 4));
+        simd8f cmcc = broadcast_256ps(reinterpret_cast<const simd4f *>(childLocalMatrix + 8));
 
         pmab = lincomb2x3x4(pmab, cmaa, cmbb, cmcc);
         pmc = lincomb3x4(pmc, extract_256ps<0>(cmaa), extract_256ps<0>(cmbb), extract_256ps<0>(cmcc));
@@ -1131,9 +1132,9 @@ void BE_FASTCALL SIMD_8::MultiplyJoints(Mat3x4 *result, const Mat3x4 *joints1, c
         result[i] = joints1[i] * joints2[i];
     }
 #else
-    assert_32_byte_aligned(result);
-    assert_32_byte_aligned(joints1);
-    assert_32_byte_aligned(joints2);
+    assert_16_byte_aligned(result);
+    assert_16_byte_aligned(joints1);
+    assert_16_byte_aligned(joints2);
 
     const float *joint1Ptr = (float *)joints1;
     const float *joint2Ptr = (float *)joints2;
@@ -1145,9 +1146,9 @@ void BE_FASTCALL SIMD_8::MultiplyJoints(Mat3x4 *result, const Mat3x4 *joints1, c
         simd8f ar01 = loadu_256ps(&joint1Ptr[i * 12 + 0]);
         simd4f ar2 = loadu_ps(&joint1Ptr[i * 12 + 8]);
 
-        simd8f br00 = broadcast_256ps((simd4f *)&joint2Ptr[i * 12 + 0]);
-        simd8f br11 = broadcast_256ps((simd4f *)&joint2Ptr[i * 12 + 4]);
-        simd8f br22 = broadcast_256ps((simd4f *)&joint2Ptr[i * 12 + 8]);
+        simd8f br00 = broadcast_256ps(reinterpret_cast<const simd4f *>(&joint2Ptr[i * 12 + 0]));
+        simd8f br11 = broadcast_256ps(reinterpret_cast<const simd4f *>(&joint2Ptr[i * 12 + 4]));
+        simd8f br22 = broadcast_256ps(reinterpret_cast<const simd4f *>(&joint2Ptr[i * 12 + 8]));
 
         storeu_256ps(lincomb2x3x4(ar01, br00, br11, br22), &resultPtr[i * 12 + 0]);
         store_ps(lincomb3x4(ar2, extract_256ps<0>(br00), extract_256ps<0>(br11), extract_256ps<0>(br22)), &resultPtr[i * 12 + 8]);

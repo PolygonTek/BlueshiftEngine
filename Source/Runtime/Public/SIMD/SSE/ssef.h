@@ -417,7 +417,6 @@ BE_FORCE_INLINE ssef mat4x4rowmajor_mul_vec4(const float *mat, const ssef &v) {
 
 // M(4x4 - unaligned mem) * v(4)
 BE_FORCE_INLINE ssef mat4x4rowmajoru_mul_vec4(const float *mat, const ssef &v) {
-    assert_16_byte_aligned(mat);
     ssef ar0 = loadu_ps(mat);
     ssef ar1 = loadu_ps(mat + 4);
     ssef ar2 = loadu_ps(mat + 8);

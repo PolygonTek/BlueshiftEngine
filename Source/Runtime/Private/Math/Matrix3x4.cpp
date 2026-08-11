@@ -364,9 +364,9 @@ Mat3x4 Mat3x4::operator*(float rhs) const & {
     dst[0][0] = mat[0][0] * rhs;
     dst[0][1] = mat[0][1] * rhs;
     dst[0][2] = mat[0][2] * rhs;
-    dst[0][3] = mat[0][3] * rhs,
+    dst[0][3] = mat[0][3] * rhs;
 
-    dst[1][0] = mat[1][1] * rhs;
+    dst[1][0] = mat[1][0] * rhs;
     dst[1][1] = mat[1][1] * rhs;
     dst[1][2] = mat[1][2] * rhs;
     dst[1][3] = mat[1][3] * rhs;
@@ -615,9 +615,13 @@ Mat3x4 &Mat3x4::operator*=(const Mat3x4 &rhs) {
     simd8f ar01 = loadu_256ps(mat[0]);
     simd4f ar2 = loadu_ps(mat[2]);
 
-    simd8f br00 = broadcast_256ps((simd4f *)&rhs.mat[0]);
-    simd8f br11 = broadcast_256ps((simd4f *)&rhs.mat[1]);
-    simd8f br22 = broadcast_256ps((simd4f *)&rhs.mat[2]);
+    simd4f br0 = loadu_ps(rhs.mat[0]);
+    simd4f br1 = loadu_ps(rhs.mat[1]);
+    simd4f br2 = loadu_ps(rhs.mat[2]);
+
+    simd8f br00 = set2x128_256ps(br0.m128, br0.m128);
+    simd8f br11 = set2x128_256ps(br1.m128, br1.m128);
+    simd8f br22 = set2x128_256ps(br2.m128, br2.m128);
 
     storeu_256ps(lincomb2x3x4(ar01, br00, br11, br22), &mat[0][0]);
     storeu_ps(lincomb3x4(ar2, extract_256ps<0>(br00), extract_256ps<0>(br11), extract_256ps<0>(br22)), &mat[2][0]);
@@ -673,9 +677,13 @@ Mat3x4 Mat3x4::operator*(const Mat3x4 &rhs) const & {
     simd8f ar01 = loadu_256ps(mat[0]);
     simd4f ar2 = loadu_ps(mat[2]);
 
-    simd8f br00 = broadcast_256ps((simd4f *)&rhs.mat[0]);
-    simd8f br11 = broadcast_256ps((simd4f *)&rhs.mat[1]);
-    simd8f br22 = broadcast_256ps((simd4f *)&rhs.mat[2]);
+    simd4f br0 = loadu_ps(rhs.mat[0]);
+    simd4f br1 = loadu_ps(rhs.mat[1]);
+    simd4f br2 = loadu_ps(rhs.mat[2]);
+
+    simd8f br00 = set2x128_256ps(br0.m128, br0.m128);
+    simd8f br11 = set2x128_256ps(br1.m128, br1.m128);
+    simd8f br22 = set2x128_256ps(br2.m128, br2.m128);
 
     store_256ps(lincomb2x3x4(ar01, br00, br11, br22), &dst[0][0]);
     store_ps(lincomb3x4(ar2, extract_256ps<0>(br00), extract_256ps<0>(br11), extract_256ps<0>(br22)), &dst[2][0]);
@@ -909,18 +917,18 @@ void Mat3x4::InverseOrthogonalSelf() {
     simd4f m1 = loadu_ps(mat[1]);
     simd4f m2 = loadu_ps(mat[2]);
 
-    simd4f inv_s = rcp32_ps(madd_ps(m0, m0, madd_ps(m1, m1, _mm_mul_ps(m2, m2))));
+    simd4f inv_s = rcp32_ps(madd_ps(m0, m0, madd_ps(m1, m1, m2 * m2)));
     inv_s[3] = 1.0f;
 
     simd4f tx = shuffle_ps<3, 3, 3, 3>(m0);
     simd4f ty = shuffle_ps<3, 3, 3, 3>(m1);
     simd4f tz = shuffle_ps<3, 3, 3, 3>(m2);
 
-    m0 = _mm_mul_ps(m0, inv_s);
-    m1 = _mm_mul_ps(m1, inv_s);
-    m2 = _mm_mul_ps(m2, inv_s);
+    m0 = m0 * inv_s;
+    m1 = m1 * inv_s;
+    m2 = m2 * inv_s;
 
-    simd4f invT = _mm_mul_ps(m0, tx);
+    simd4f invT = m0 * tx;
     invT = madd_ps(m1, ty, invT);
     invT = nmsub_ps(m2, tz, invT);
 
@@ -929,9 +937,9 @@ void Mat3x4::InverseOrthogonalSelf() {
     simd4f l2t = unpacklo_ps(m2, invT); // m20, invTx, m21, invTy
     simd4f h2t = unpackhi_ps(m2, invT); // m22, invTz, m23, [invTw]
 
-    m0 = _mm_movelh_ps(l01, l2t); // m00, m10, m20, invTx
-    m1 = _mm_movehl_ps(l2t, l01); // m01, m11, m21, invTy
-    m2 = _mm_movelh_ps(h01, h2t); // m02, m12, m22, invTz
+    m0 = shuffle_ps<0, 1, 0, 1>(l01, l2t); // m00, m10, m20, invTx
+    m1 = shuffle_ps<2, 3, 2, 3>(l01, l2t); // m01, m11, m21, invTy
+    m2 = shuffle_ps<0, 1, 0, 1>(h01, h2t); // m02, m12, m22, invTz
 
     storeu_ps(m0, mat[0]);
     storeu_ps(m1, mat[1]);
@@ -985,11 +993,11 @@ void Mat3x4::InverseOrthogonalUniformScaleSelf() {
     simd4f ty = shuffle_ps<3, 3, 3, 3>(m1);
     simd4f tz = shuffle_ps<3, 3, 3, 3>(m2);
 
-    m0 = _mm_mul_ps(m0, inv_s);
-    m1 = _mm_mul_ps(m1, inv_s);
-    m2 = _mm_mul_ps(m2, inv_s);
-        
-    simd4f invT = _mm_mul_ps(m0, tx);
+    m0 = m0 * inv_s;
+    m1 = m1 * inv_s;
+    m2 = m2 * inv_s;
+
+    simd4f invT = m0 * tx;
     invT = madd_ps(m1, ty, invT);
     invT = nmsub_ps(m2, tz, invT);
 
@@ -998,9 +1006,9 @@ void Mat3x4::InverseOrthogonalUniformScaleSelf() {
     simd4f l2t = unpacklo_ps(m2, invT); // m20, invTx, m21, invTy
     simd4f h2t = unpackhi_ps(m2, invT); // m22, invTz, m23, [invTw]
 
-    m0 = _mm_movelh_ps(l01, l2t); // m00, m10, m20, invTx
-    m1 = _mm_movehl_ps(l2t, l01); // m01, m11, m21, invTy
-    m2 = _mm_movelh_ps(h01, h2t); // m02, m12, m22, invTz
+    m0 = shuffle_ps<0, 1, 0, 1>(l01, l2t); // m00, m10, m20, invTx
+    m1 = shuffle_ps<2, 3, 2, 3>(l01, l2t); // m01, m11, m21, invTy
+    m2 = shuffle_ps<0, 1, 0, 1>(h01, h2t); // m02, m12, m22, invTz
 
     storeu_ps(m0, mat[0]);
     storeu_ps(m1, mat[1]);
@@ -1049,7 +1057,7 @@ void Mat3x4::InverseOrthogonalNoScaleSelf() {
     simd4f ty = shuffle_ps<3, 3, 3, 3>(m1);
     simd4f tz = shuffle_ps<3, 3, 3, 3>(m2);
 
-    simd4f invT = _mm_mul_ps(m0, tx);
+    simd4f invT = m0 * tx;
     invT = madd_ps(m1, ty, invT);
     invT = nmsub_ps(m2, tz, invT);
 
@@ -1058,9 +1066,9 @@ void Mat3x4::InverseOrthogonalNoScaleSelf() {
     simd4f l2t = unpacklo_ps(m2, invT); // m20, invTx, m21, invTy
     simd4f h2t = unpackhi_ps(m2, invT); // m22, invTz, m23, [invTw]
 
-    m0 = _mm_movelh_ps(l01, l2t); // m00, m10, m20, invTx
-    m1 = _mm_movehl_ps(l2t, l01); // m01, m11, m21, invTy
-    m2 = _mm_movelh_ps(h01, h2t); // m02, m12, m22, invTz
+    m0 = shuffle_ps<0, 1, 0, 1>(l01, l2t); // m00, m10, m20, invTx
+    m1 = shuffle_ps<2, 3, 2, 3>(l01, l2t); // m01, m11, m21, invTy
+    m2 = shuffle_ps<0, 1, 0, 1>(h01, h2t); // m02, m12, m22, invTz
 
     storeu_ps(m0, mat[0]);
     storeu_ps(m1, mat[1]);
@@ -1095,9 +1103,13 @@ Mat3x4 &Mat3x4::TransformSelf(const Mat3x4 &a) {
     simd8f ar01 = loadu_256ps(a.mat[0]);
     simd4f ar2 = loadu_ps(a.mat[2]);
 
-    simd8f br00 = broadcast_256ps((simd4f *)&mat[0]);
-    simd8f br11 = broadcast_256ps((simd4f *)&mat[1]);
-    simd8f br22 = broadcast_256ps((simd4f *)&mat[2]);
+    simd4f br0 = loadu_ps(mat[0]);
+    simd4f br1 = loadu_ps(mat[1]);
+    simd4f br2 = loadu_ps(mat[2]);
+
+    simd8f br00 = set2x128_256ps(br0.m128, br0.m128);
+    simd8f br11 = set2x128_256ps(br1.m128, br1.m128);
+    simd8f br22 = set2x128_256ps(br2.m128, br2.m128);
 
     storeu_256ps(lincomb2x3x4(ar01, br00, br11, br22), &mat[0][0]);
     storeu_ps(lincomb3x4(ar2, extract_256ps<0>(br00), extract_256ps<0>(br11), extract_256ps<0>(br22)), &mat[2][0]);

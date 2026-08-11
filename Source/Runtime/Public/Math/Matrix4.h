@@ -288,7 +288,7 @@ public:
 
                         /// Returns scaling matrix.
     static Mat4         FromScale(float sx, float sy, float sz);
-    static Mat4         FromScale(const Vec3 &s) { return FromTranslation(s.x, s.y, s.z); }
+    static Mat4         FromScale(const Vec3 &s) { return FromScale(s.x, s.y, s.z); }
 
     static Mat4         FromOuterProduct(const Vec4 &a, const Vec4 &b);
 

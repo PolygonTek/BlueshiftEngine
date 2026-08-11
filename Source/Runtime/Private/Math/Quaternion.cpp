@@ -24,15 +24,15 @@ Quat Quat::operator*(const Quat &a) const & {
 #if defined(ENABLE_SIMD4_INTRIN)
     const simd4f signx = simd4i(0, 0x80000000, 0, 0x80000000); // [+ - + -]
     const simd4f signy = simd4i(0, 0, 0x80000000, 0x80000000); // [+ + - -]
-    const simd4f signz = simd4i(0x80000000, 0, 0, 0x80000000); // [+ + - -]
+    const simd4f signz = simd4i(0x80000000, 0, 0, 0x80000000); // [- + + -]
 
-    simd4f q = load_ps(*this);
+    simd4f q = loadu_ps(*this);
     simd4f qx = signx ^ shuffle_ps<0, 0, 0, 0>(q);
     simd4f qy = signy ^ shuffle_ps<1, 1, 1, 1>(q);
     simd4f qz = signz ^ shuffle_ps<2, 2, 2, 2>(q);
     simd4f qw = shuffle_ps<3, 3, 3, 3>(q);
 
-    simd4f a4 = load_ps(a);
+    simd4f a4 = loadu_ps(a);
     simd4f a3 = shuffle_ps<1, 0, 3, 2>(a4);
     simd4f a2 = shuffle_ps<2, 3, 0, 1>(a4);
     simd4f a1 = shuffle_ps<3, 2, 1, 0>(a4);
@@ -56,18 +56,18 @@ Quat Quat::operator*(const Quat &a) const & {
 
 Quat Quat::operator/(const Quat &a) const & {
 #if defined(ENABLE_SIMD4_INTRIN)
-    const simd4f signx = simd4i(0, 0, 0x80000000, 0); // [+ + + -]
+    const simd4f signx = simd4i(0, 0, 0x80000000, 0); // [+ + - +]
     const simd4f signy = simd4i(0x80000000, 0, 0, 0); // [- + + +]
     const simd4f signz = simd4i(0, 0x80000000, 0, 0); // [+ - + +]
     const simd4f signw = simd4i(0x80000000, 0x80000000, 0x80000000, 0); // [- - - +]
 
-    simd4f q = load_ps(*this);
+    simd4f q = loadu_ps(*this);
     simd4f qx = signx ^ shuffle_ps<0, 0, 0, 0>(q);
     simd4f qy = signy ^ shuffle_ps<1, 1, 1, 1>(q);
     simd4f qz = signz ^ shuffle_ps<2, 2, 2, 2>(q);
     simd4f qw = signw ^ shuffle_ps<3, 3, 3, 3>(q);
 
-    simd4f a4 = load_ps(a);
+    simd4f a4 = loadu_ps(a);
     simd4f a3 = shuffle_ps<1, 0, 3, 2>(a4);
     simd4f a2 = shuffle_ps<2, 3, 0, 1>(a4);
     simd4f a1 = shuffle_ps<3, 2, 1, 0>(a4);

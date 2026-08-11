@@ -63,7 +63,7 @@ void Sound::Create(Pcm &pcm) {
     sampleRates     = pcm.SampleRates();
     bitsWidth       = pcm.BitsWidth();
     bytes           = pcm.DataSize();
-    duration        = Math::FtoiFast(SEC2MILLI(pcm.Duration()));
+    duration        = Math::Ftoi(SEC2MILLI(pcm.Duration()));
     playingTime     = 0;
 
     if (pcm.DataSize() <= 0x10000) {
