@@ -39,9 +39,12 @@ float4 PSMain(PSInput input) : SV_TARGET {
     float4 inputColor = inputTexture.Sample(inputSampler, texCoord);
 
     // 입력은 페이퍼 화이트 기준의 선형 Rec.709 값을 사용한다.
-    // ST.2084 곡선을 적용하기 전에 절대 Rec.2020 휘도로 변환하고 PQ 의 10,000 니트 범위를 기준으로 정규화한다.
     float3 linearRec709 = clamp(inputColor.rgb, 0.0, outputParams.maxDisplayLinearValue);
+
+    // 선형 Rec.709 값을 선형 Rec.2020 색 공간으로 변환한다.
     float3 linearRec2020 = REC709toREC2020(linearRec709);
+
+    // 절대 휘도로 변환한 뒤 PQ 의 10,000 니트 범위로 정규화하여 ST.2084 곡선을 적용한다.
     float3 pqColor = ApplyREC2084Curve(saturate(linearRec2020 * (outputParams.paperWhiteNits / 10000.0)));
 
     // RGB10 으로 양자화하기 직전에 인코딩된 신호 공간에서 디더링한다.
