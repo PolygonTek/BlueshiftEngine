@@ -109,7 +109,6 @@ set(COMMON_ENGINE_FILES
     Public/Math/RGBE9995.h
     Public/Math/Rotation.h
     Public/Math/Size.h
-    Public/Math/SizeF.h
     Public/Math/Sphere.h
     Public/Math/SphericalHarmonics.h
     Public/Math/Vector.h
@@ -385,8 +384,6 @@ set(COMMON_ENGINE_FILES
     Private/Math/Matrix3.cpp
     Private/Math/Point.cpp
     Private/Math/PointF.cpp
-    Private/Math/Size.cpp
-    Private/Math/SizeF.cpp
     Private/Math/Vector2.cpp
 
     Private/SIMD/SIMD.cpp

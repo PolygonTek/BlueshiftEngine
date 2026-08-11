@@ -30,7 +30,6 @@
 #include "Math/Point.h"
 #include "Math/PointF.h"
 #include "Math/Size.h"
-#include "Math/SizeF.h"
 #include "Math/Rect.h"
 #include "Math/RectF.h"
 #include "Math/Color.h"
