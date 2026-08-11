@@ -28,7 +28,9 @@
 
 BE_NAMESPACE_BEGIN
 
-class Rect;
+template <typename T>
+class RectT;
+using Rect = RectT<int>;
 class Vec2;
 class Vec4;
 class Vec4;

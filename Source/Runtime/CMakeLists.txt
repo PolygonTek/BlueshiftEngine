@@ -99,13 +99,11 @@ set(COMMON_ENGINE_FILES
     Public/Math/Plane.h
     Public/Math/Pluecker.h
     Public/Math/Point.h
-    Public/Math/PointF.h
     Public/Math/Quaternion.h
     Public/Math/Random.h
     Public/Math/Ray.h
     Public/Math/Triangle.h
     Public/Math/Rect.h
-    Public/Math/RectF.h
     Public/Math/RGBE9995.h
     Public/Math/Rotation.h
     Public/Math/Size.h
@@ -365,8 +363,6 @@ set(COMMON_ENGINE_FILES
     Private/Math/OBB.cpp
     Private/Math/Ray.cpp
     Private/Math/Triangle.cpp
-    Private/Math/Rect.cpp
-    Private/Math/RectF.cpp
     Private/Math/CQuaternion.cpp
     Private/Math/SphericalHarmonics.cpp
     Private/Math/Math.cpp
@@ -382,8 +378,6 @@ set(COMMON_ENGINE_FILES
     Private/Math/Sphere.cpp
     Private/Math/Cylinder.cpp
     Private/Math/Matrix3.cpp
-    Private/Math/Point.cpp
-    Private/Math/PointF.cpp
     Private/Math/Vector2.cpp
 
     Private/SIMD/SIMD.cpp

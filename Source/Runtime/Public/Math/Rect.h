@@ -23,225 +23,455 @@
 */
 
 #include "Core/Str.h"
+#include "Math/Point.h"
+#include "Math/Size.h"
+#include <cassert>
+#include <cstdio>
+#include <type_traits>
+#include <utility>
 
 BE_NAMESPACE_BEGIN
 
-class Point;
-class RectF;
+#ifdef QRECT_H
+template <typename T>
+struct RectQtType;
 
-/// A 2D integral (x,y), (w,h) - rectangle.
-class BE_API Rect {
+template <>
+struct RectQtType<int> {
+    using Type = QRect;
+};
+
+template <>
+struct RectQtType<float> {
+    using Type = QRectF;
+};
+#endif
+
+/// A 2D (x, y), (w, h) rectangle with the given scalar type.
+template <typename T>
+class RectT {
+    static_assert(std::is_same<T, int>::value || std::is_same<T, float>::value, "RectT supports only int and float scalar types");
+
+    static constexpr T MinValue(const T &a, const T &b) { return (a < b) ? a : b; }
+    static constexpr T MaxValue(const T &a, const T &b) { return (a > b) ? a : b; }
+
 public:
+    using Scalar = T;
+    using PointType = PointT<T>;
+    using SizeType = SizeT<T>;
+
     /// The default constructor does not initialize any members of this class.
-    Rect() = default;
+    RectT() = default;
     /// Constructs from coordinates.
-    constexpr Rect(int x, int y, int w, int h);
+    constexpr RectT(T x, T y, T w, T h);
     /// Assignment operator.
-    Rect &operator=(const Rect &rhs);
+    RectT &operator=(const RectT &rhs) = default;
 
 #ifdef QRECT_H
-    /// Constructs from a QRect.
-    Rect(const QRect &qrect) {
-        this->x = qrect.x();
-        this->y = qrect.y();
-        this->w = qrect.width();
-        this->h = qrect.height();
+    using QtType = typename RectQtType<T>::Type;
+
+    /// Constructs from the matching Qt rectangle type.
+    RectT(const QtType &qrect) {
+        this->x = static_cast<T>(qrect.x());
+        this->y = static_cast<T>(qrect.y());
+        this->w = static_cast<T>(qrect.width());
+        this->h = static_cast<T>(qrect.height());
     }
 #endif
 
     /// Constructs from a point.
-    explicit constexpr Rect(const Point &p);
+    explicit constexpr RectT(const PointType &p);
 
                         /// Returns the x-coordinate of edge of the rectangle.
-    int                 X2() const { return x + w; }
+    T                   X2() const { return x + w; }
                         /// Returns the y-coordinate of edge of the rectangle.
-    int                 Y2() const { return y + h; }
+    T                   Y2() const { return y + h; }
 
                         /// Returns a point of this rect with the given index.
-    Point               GetPoint(int index) const;
+    PointType           GetPoint(int index) const;
 
                         /// Returns a center point of this rect.
-    Point               GetCenter() const { return Point(x + (w >> 1), y + (h >> 1)); }
+    PointType           GetCenter() const;
 
                         /// Returns size of this rect.
-    Size                GetSize() const { return Size(w, h); }
+    SizeType            GetSize() const { return SizeType(w, h); }
 
-                        /// Casts this Rect to a C array.
+                        /// Casts this RectT to a C array.
                         /// This function simply returns a C pointer view to this data structure.
-    const int *         Ptr() const { return (const int *)&x; }
-    int *               Ptr() { return (int *)&x; }
-                        /// Casts this Rect to a C array.
+    const T *           Ptr() const { return (const T *)&x; }
+    T *                 Ptr() { return (T *)&x; }
+                        /// Casts this RectT to a C array.
                         /// This function simply returns a C pointer view to this data structure.
                         /// This function is identical to the member function Ptr().
-                        operator const int *() const { return (const int *)&x; }
-                        operator int *() { return (int *)&x; }
+                        operator const T *() const { return (const T *)&x; }
+                        operator T *() { return (T *)&x; }
 
-                        /// Accesses an element of this Rect using array notation.
-    int                 operator[](int index) const;
-    int &               operator[](int index);
+                        /// Accesses an element of this RectT using array notation.
+    T                   operator[](int index) const;
+    T &                 operator[](int index);
 
                         /// Compare with another one.
-    bool                operator==(const Rect &rhs) const { return (x != rhs.x || y != rhs.y || w != rhs.w || h != rhs.h) ? false : true; }
+    bool                operator==(const RectT &rhs) const { return (x != rhs.x || y != rhs.y || w != rhs.w || h != rhs.h) ? false : true; }
                         /// Compare with another one.
-    bool                operator!=(const Rect &rhs) const { return (x != rhs.x || y != rhs.y || w != rhs.w || h != rhs.h) ? true : false; }
+    bool                operator!=(const RectT &rhs) const { return (x != rhs.x || y != rhs.y || w != rhs.w || h != rhs.h) ? true : false; }
 
                         /// Returns if this rectangle is empty.
     bool                IsEmpty() const { return (w <= 0 || h <= 0) ? true : false; }
 
                         /// Tests whether a point is inside.
-    bool                IsContainPoint(const Point &pt) const;
+    bool                IsContainPoint(const PointType &pt) const;
                         /// Tests whether a point is inside.
-    bool                IsContainPoint(const int x, const int y) const;
+    bool                IsContainPoint(T x, T y) const;
                         /// Tests whether a rect is inside.
-    bool                IsContainRect(const Rect &a) const;
+    bool                IsContainRect(const RectT &a) const;
                         /// Tests whether a rect is inside.
-    bool                IsContainRect(const int x, const int y, const int w, const int h) const;
+    bool                IsContainRect(T x, T y, T w, T h) const;
                         /// Tests whether a rect is intersect.
-    bool                IsIntersectRect(const Rect &a) const;
+    bool                IsIntersectRect(const RectT &a) const;
                         /// Tests whether a rect is intersect.
-    bool                IsIntersectRect(const int x, const int y, const int w, const int h) const;
+    bool                IsIntersectRect(T x, T y, T w, T h) const;
 
-    void                Set(int x, int y, int w, int h);
-    void                SetPosition(const Point &position);
-    void                SetSize(const Size &size);
-    void                SetFrom4Coords(int x, int y, int x2, int y2);
+    void                Set(T x, T y, T w, T h);
+    void                SetPosition(const PointType &position);
+    void                SetSize(const SizeType &size);
+    void                SetFrom4Coords(T x, T y, T x2, T y2);
 
-    Rect                Add(const Rect &a) const &;
-    Rect &&             Add(const Rect &a) && { AddSelf(a); return std::move(*this); }
-    Rect &              Add(const Rect &a, const Rect &b);
-    Rect &              AddSelf(const Rect &a);
+    RectT               Add(const RectT &a) const &;
+    RectT &&            Add(const RectT &a) && { AddSelf(a); return std::move(*this); }
+    RectT &             Add(const RectT &a, const RectT &b);
+    RectT &             AddSelf(const RectT &a);
 
-    Rect                AddPoint(const Point &a) const &;
-    Rect &&             AddPoint(const Point &a) && { AddPointSelf(a); return std::move(*this); }
-    Rect &              AddPoint(const Point &a, const Point &b);
-    Rect &              AddPointSelf(const Point &a);
+    RectT               AddPoint(const PointType &a) const &;
+    RectT &&            AddPoint(const PointType &a) && { AddPointSelf(a); return std::move(*this); }
+    RectT &             AddPoint(const PointType &a, const PointType &b);
+    RectT &             AddPointSelf(const PointType &a);
 
-    Rect                Intersect(const Rect &a) const &;
-    Rect &&             Intersect(const Rect &a) && { IntersectSelf(a); return std::move(*this); }
-    Rect &              Intersect(const Rect &a, const Rect &b);
-    Rect &              IntersectSelf(const Rect &a);
+    RectT               Intersect(const RectT &a) const &;
+    RectT &&            Intersect(const RectT &a) && { IntersectSelf(a); return std::move(*this); }
+    RectT &             Intersect(const RectT &a, const RectT &b);
+    RectT &             IntersectSelf(const RectT &a);
 
-    Rect                Move(int x, int y) const &;
-    Rect &&             Move(int x, int y) && { MoveSelf(x, y); return std::move(*this); }
-    Rect &              MoveSelf(int x, int y);
+    RectT               Move(T x, T y) const &;
+    RectT &&            Move(T x, T y) && { MoveSelf(x, y); return std::move(*this); }
+    RectT &             MoveSelf(T x, T y);
 
-    Rect                Shrink(int ax, int ay) const &;
-    Rect &&             Shrink(int ax, int ay) && { ShrinkSelf(ax, ay); return std::move(*this); }
-    Rect &              ShrinkSelf(int ax, int ay);
+    RectT               Shrink(T ax, T ay) const &;
+    RectT &&            Shrink(T ax, T ay) && { ShrinkSelf(ax, ay); return std::move(*this); }
+    RectT &             ShrinkSelf(T ax, T ay);
 
-    Rect                Expand(int ax, int ay) const &;
-    Rect &&             Expand(int ax, int ay) && { ExpandSelf(ax, ay); return std::move(*this); }
-    Rect &              ExpandSelf(int ax, int ay);
+    RectT               Expand(T ax, T ay) const &;
+    RectT &&            Expand(T ax, T ay) && { ExpandSelf(ax, ay); return std::move(*this); }
+    RectT &             ExpandSelf(T ax, T ay);
 
-    RectF               ToRectF() const;
+    RectT<int>          ToRect() const;
+    RectT<float>        ToRectF() const;
 
                         /// Returns "x y w h".
     const char *        ToString() const;
+                        /// Returns "x y w h" with the given precision for floating point rectangles.
+    const char *        ToString(int precision) const;
 
                         /// Creates from the string.
-    static Rect         FromString(const char *str);
+    static RectT        FromString(const char *str);
 
                         /// Returns dimension of this type.
     constexpr int       GetDimension() const { return 4; }
 
 #ifdef QRECT_H
-    QRect               ToQRect() const { return QRect(x, y, w, h); }
+    QRect               ToQRect() const { return QRect(static_cast<int>(x), static_cast<int>(y), static_cast<int>(w), static_cast<int>(h)); }
+    QRectF              ToQRectF() const { return QRectF(static_cast<qreal>(x), static_cast<qreal>(y), static_cast<qreal>(w), static_cast<qreal>(h)); }
 #endif
 
-    static const Rect   zero;
+    static const RectT  zero;
 
-    int                 x;
-    int                 y;
-    int                 w;
-    int                 h;
+    T                   x;
+    T                   y;
+    T                   w;
+    T                   h;
 };
 
-BE_INLINE constexpr Rect::Rect(int inX, int inY, int inW, int inH) :
+template <typename T>
+BE_INLINE constexpr RectT<T>::RectT(T inX, T inY, T inW, T inH) :
     x(inX), y(inY), w(inW), h(inH) {
 }
 
-BE_INLINE constexpr Rect::Rect(const Point &p) :
-    x(p.x), y(p.y), w(1), h(1) {
+template <typename T>
+BE_INLINE constexpr RectT<T>::RectT(const PointType &p) :
+    x(p.x), y(p.y), w(T(1)), h(T(1)) {
 }
 
-BE_INLINE Point Rect::GetPoint(int index) const {
+template <typename T>
+BE_INLINE typename RectT<T>::PointType RectT<T>::GetPoint(int index) const {
     switch (index) {
-    case 0: return Point(x, y);
-    case 1: return Point(x + w, y);
-    case 2: return Point(x + w, y + h);
-    case 3: return Point(x, y + h);
+    case 0: return PointType(x, y);
+    case 1: return PointType(x + w, y);
+    case 2: return PointType(x + w, y + h);
+    case 3: return PointType(x, y + h);
     }
-    return Point::zero;
+    return PointType::zero;
 }
 
-BE_INLINE Rect &Rect::operator=(const Rect &rhs) {
-    x = rhs.x;
-    y = rhs.y;
-    w = rhs.w;
-    h = rhs.h;
-    return *this;
+template <typename T>
+BE_INLINE typename RectT<T>::PointType RectT<T>::GetCenter() const {
+    if constexpr (std::is_same<T, int>::value) {
+        return PointType(x + (w >> 1), y + (h >> 1));
+    } else {
+        return PointType(x + (w * 0.5f), y + (h * 0.5f));
+    }
 }
 
-BE_INLINE int Rect::operator[](int index) const {
+template <typename T>
+BE_INLINE T RectT<T>::operator[](int index) const {
     assert(index >= 0 && index < 4);
-    return ((int *)this)[index];
+    return ((const T *)this)[index];
 }
 
-BE_INLINE int &Rect::operator[](int index) {
+template <typename T>
+BE_INLINE T &RectT<T>::operator[](int index) {
     assert(index >= 0 && index < 4);
-    return ((int *)this)[index];
+    return ((T *)this)[index];
 }
 
-BE_INLINE bool Rect::IsContainPoint(const Point &pt) const {
+template <typename T>
+BE_INLINE bool RectT<T>::IsContainPoint(const PointType &pt) const {
     return (pt.x < x || pt.y < y || pt.x >= x + w || pt.y >= y + h) ? false : true;
 }
 
-BE_INLINE bool Rect::IsContainPoint(const int x, const int y) const {
+template <typename T>
+BE_INLINE bool RectT<T>::IsContainPoint(T x, T y) const {
     return (x < this->x || y < this->y || x >= this->x + this->w || y >= this->y + this->h) ? false : true;
 }
 
-BE_INLINE bool Rect::IsContainRect(const Rect &a) const {
+template <typename T>
+BE_INLINE bool RectT<T>::IsContainRect(const RectT &a) const {
     return (a.x < x || a.y < y || a.x + a.w > x + w || a.y + a.h > y + h) ? false : true;
 }
 
-BE_INLINE bool Rect::IsContainRect(const int x, const int y, const int w, const int h) const {
+template <typename T>
+BE_INLINE bool RectT<T>::IsContainRect(T x, T y, T w, T h) const {
     return (x < this->x || y < this->y || x + w > this->x + this->w || y + h > this->y + this->h) ? false : true;
 }
 
-BE_INLINE bool Rect::IsIntersectRect(const Rect &a) const {
+template <typename T>
+BE_INLINE bool RectT<T>::IsIntersectRect(const RectT &a) const {
     return (a.x + a.w < x || a.y + a.h < y || a.x >= x + w || a.y >= y + h) ? false : true;
 }
 
-BE_INLINE bool Rect::IsIntersectRect(const int x, const int y, const int w, const int h) const {
+template <typename T>
+BE_INLINE bool RectT<T>::IsIntersectRect(T x, T y, T w, T h) const {
     return (x + w < this->x || y + h < this->y || x >= this->x + this->w || y >= this->y + this->h) ? false : true;
 }
 
-BE_INLINE void Rect::Set(int x, int y, int w, int h) {
+template <typename T>
+BE_INLINE void RectT<T>::Set(T x, T y, T w, T h) {
     this->x = x;
     this->y = y;
     this->w = w;
     this->h = h;
 }
 
-BE_INLINE void Rect::SetPosition(const Point &position) {
+template <typename T>
+BE_INLINE void RectT<T>::SetPosition(const PointType &position) {
     this->x = position.x;
     this->y = position.y;
 }
 
-BE_INLINE void Rect::SetSize(const Size &size) {
+template <typename T>
+BE_INLINE void RectT<T>::SetSize(const SizeType &size) {
     this->w = size.w;
     this->h = size.h;
 }
 
-BE_INLINE void Rect::SetFrom4Coords(int x, int y, int x2, int y2) {
+template <typename T>
+BE_INLINE void RectT<T>::SetFrom4Coords(T x, T y, T x2, T y2) {
     this->x = x;
     this->y = y;
     this->w = x2 - x;
     this->h = y2 - y;
 }
 
-BE_INLINE const char *Rect::ToString() const {
-    return Str::IntegerArrayToString((const int *)(*this), GetDimension());
+template <typename T>
+BE_INLINE RectT<T> RectT<T>::Add(const RectT &a) const & {
+    RectT rc;
+    rc.x = MinValue(a.x, x);
+    rc.y = MinValue(a.y, y);
+    rc.w = MaxValue(a.x + a.w, x + w) - rc.x;
+    rc.h = MaxValue(a.y + a.h, y + h) - rc.y;
+    return rc;
 }
+
+template <typename T>
+BE_INLINE RectT<T> &RectT<T>::Add(const RectT &a, const RectT &b) {
+    x = MinValue(a.x, b.x);
+    y = MinValue(a.y, b.y);
+    w = MaxValue(a.x + a.w, b.x + b.w) - x;
+    h = MaxValue(a.y + a.h, b.y + b.h) - y;
+    return *this;
+}
+
+template <typename T>
+BE_INLINE RectT<T> &RectT<T>::AddSelf(const RectT &a) {
+    w = MaxValue(a.x + a.w, x + w);
+    h = MaxValue(a.y + a.h, y + h);
+    x = MinValue(a.x, x);
+    y = MinValue(a.y, y);
+    w -= x;
+    h -= y;
+    return *this;
+}
+
+template <typename T>
+BE_INLINE RectT<T> RectT<T>::AddPoint(const PointType &a) const & {
+    RectT rc;
+    rc.x = MinValue(a.x, x);
+    rc.y = MinValue(a.y, y);
+    rc.w = MaxValue(a.x, x + w) - rc.x;
+    rc.h = MaxValue(a.y, y + h) - rc.y;
+    return rc;
+}
+
+template <typename T>
+BE_INLINE RectT<T> &RectT<T>::AddPoint(const PointType &a, const PointType &b) {
+    x = MinValue(a.x, b.x);
+    y = MinValue(a.y, b.y);
+    w = MaxValue(a.x, b.x) - x;
+    h = MaxValue(a.y, b.y) - y;
+    return *this;
+}
+
+template <typename T>
+BE_INLINE RectT<T> &RectT<T>::AddPointSelf(const PointType &a) {
+    w = MaxValue(a.x, x + w);
+    h = MaxValue(a.y, y + h);
+    x = MinValue(a.x, x);
+    y = MinValue(a.y, y);
+    w -= x;
+    h -= y;
+    return *this;
+}
+
+template <typename T>
+BE_INLINE RectT<T> RectT<T>::Intersect(const RectT &a) const & {
+    RectT rc;
+    rc.x = MaxValue(a.x, x);
+    rc.y = MaxValue(a.y, y);
+    rc.w = MinValue(a.x + a.w, x + w) - rc.x;
+    rc.h = MinValue(a.y + a.h, y + h) - rc.y;
+    return rc;
+}
+
+template <typename T>
+BE_INLINE RectT<T> &RectT<T>::Intersect(const RectT &a, const RectT &b) {
+    x = MaxValue(a.x, b.x);
+    y = MaxValue(a.y, b.y);
+    w = MinValue(a.x + a.w, b.x + b.w) - x;
+    h = MinValue(a.y + a.h, b.y + b.h) - y;
+    return *this;
+}
+
+template <typename T>
+BE_INLINE RectT<T> &RectT<T>::IntersectSelf(const RectT &a) {
+    w = MinValue(a.x + a.w, x + w);
+    h = MinValue(a.y + a.h, y + h);
+    x = MaxValue(a.x, x);
+    y = MaxValue(a.y, y);
+    w -= x;
+    h -= y;
+    return *this;
+}
+
+template <typename T>
+BE_INLINE RectT<T> RectT<T>::Move(T ax, T ay) const & {
+    return RectT(x + ax, y + ay, w, h);
+}
+
+template <typename T>
+BE_INLINE RectT<T> &RectT<T>::MoveSelf(T ax, T ay) {
+    x += ax;
+    y += ay;
+    return *this;
+}
+
+template <typename T>
+BE_INLINE RectT<T> RectT<T>::Shrink(T ax, T ay) const & {
+    return RectT(x + ax, y + ay, w - ax * T(2), h - ay * T(2));
+}
+
+template <typename T>
+BE_INLINE RectT<T> &RectT<T>::ShrinkSelf(T ax, T ay) {
+    x += ax;
+    y += ay;
+    w -= ax * T(2);
+    h -= ay * T(2);
+    return *this;
+}
+
+template <typename T>
+BE_INLINE RectT<T> RectT<T>::Expand(T ax, T ay) const & {
+    return RectT(x - ax, y - ay, w + ax * T(2), h + ay * T(2));
+}
+
+template <typename T>
+BE_INLINE RectT<T> &RectT<T>::ExpandSelf(T ax, T ay) {
+    x -= ax;
+    y -= ay;
+    w += ax * T(2);
+    h += ay * T(2);
+    return *this;
+}
+
+template <typename T>
+BE_INLINE RectT<int> RectT<T>::ToRect() const {
+    return RectT<int>(static_cast<int>(x), static_cast<int>(y), static_cast<int>(w), static_cast<int>(h));
+}
+
+template <typename T>
+BE_INLINE RectT<float> RectT<T>::ToRectF() const {
+    return RectT<float>(static_cast<float>(x), static_cast<float>(y), static_cast<float>(w), static_cast<float>(h));
+}
+
+template <typename T>
+BE_INLINE const char *RectT<T>::ToString() const {
+    if constexpr (std::is_same<T, int>::value) {
+        return Str::IntegerArrayToString(Ptr(), GetDimension());
+    } else {
+        return ToString(4);
+    }
+}
+
+template <typename T>
+BE_INLINE const char *RectT<T>::ToString(int precision) const {
+    if constexpr (std::is_same<T, int>::value) {
+        return Str::IntegerArrayToString(Ptr(), GetDimension());
+    } else {
+        return Str::FloatArrayToString(Ptr(), GetDimension(), precision);
+    }
+}
+
+template <typename T>
+BE_INLINE RectT<T> RectT<T>::FromString(const char *str) {
+    RectT r;
+    int count;
+
+    if constexpr (std::is_same<T, int>::value) {
+        count = std::sscanf(str, "%i %i %i %i", &r.x, &r.y, &r.w, &r.h);
+    } else {
+        count = std::sscanf(str, "%f %f %f %f", &r.x, &r.y, &r.w, &r.h);
+    }
+
+    assert(count == r.GetDimension());
+    return r;
+}
+
+template <typename T>
+inline const RectT<T> RectT<T>::zero = RectT<T>(T(0), T(0), T(0), T(0));
+
+using Rect = RectT<int>;
+using RectF = RectT<float>;
+
+static_assert(std::is_standard_layout<Rect>::value, "Rect must remain standard-layout");
+static_assert(std::is_standard_layout<RectF>::value, "RectF must remain standard-layout");
+static_assert(sizeof(Rect) == sizeof(int) * 4, "Rect layout changed");
+static_assert(sizeof(RectF) == sizeof(float) * 4, "RectF layout changed");
 
 BE_NAMESPACE_END

@@ -16,7 +16,9 @@
 
 BE_NAMESPACE_BEGIN
 
-class Point;
+template <typename T>
+class PointT;
+using Point = PointT<int>;
 
 class Platform {
 public:

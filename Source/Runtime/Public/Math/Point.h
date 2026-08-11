@@ -23,178 +23,262 @@
 */
 
 #include "Core/Str.h"
+#include "Math/MathCommon.h"
+#include "Math/Vector2.h"
+#include <cassert>
+#include <cstdio>
+#include <type_traits>
+#include <utility>
 
 BE_NAMESPACE_BEGIN
 
-class PointF;
+#ifdef QPOINT_H
+template <typename T>
+struct PointQtType;
 
-/// A 2D integral (x,y) - point.
-class BE_API Point {
+template <>
+struct PointQtType<int> {
+    using Type = QPoint;
+};
+
+template <>
+struct PointQtType<float> {
+    using Type = QPointF;
+};
+#endif
+
+/// A 2D (x, y) point with the given scalar type.
+template <typename T>
+class PointT {
+    static_assert(std::is_same<T, int>::value || std::is_same<T, float>::value, "PointT supports only int and float scalar types");
+
 public:
+    using Scalar = T;
+
     /// The default constructor does not initialize any members of this class.
-    Point() = default;
-    /// Constructs a Point with the value (x, y).
-    constexpr Point(int x, int y);
+    PointT() = default;
+    /// Constructs a PointT with the value (x, y).
+    constexpr PointT(T x, T y);
     /// Assignment operator.
-    Point &operator=(const Point &rhs);
+    PointT &operator=(const PointT &rhs) = default;
 
 #ifdef QPOINT_H
-    /// Constructs from a QPoint.
-    Point(const QPoint &qpoint) {
-        this->x = qpoint.x();
-        this->y = qpoint.y();
+    using QtType = typename PointQtType<T>::Type;
+
+    /// Constructs from the matching Qt point type.
+    PointT(const QtType &qpoint) {
+        this->x = static_cast<T>(qpoint.x());
+        this->y = static_cast<T>(qpoint.y());
     }
 #endif
 
-    /// Constructs a Point from a C array, to the value (data[0], data[1]).
-    explicit constexpr Point(int data[2]);
-    /// Copy constructor.
-    explicit Point(const Vec2 &v);
+    /// Constructs a PointT from a C array, to the value (data[0], data[1]).
+    explicit constexpr PointT(T data[2]);
+    /// Constructs from a Vec2.
+    explicit PointT(const Vec2 &v);
 
-                        /// Casts this Point to a C array.
+                        /// Casts this PointT to a C array.
                         /// This function simply returns a C pointer view to this data structure.
-    const int *         Ptr() const { return (const int *)&x; }
-    int *               Ptr() { return (int *)&x; }
-                        /// Casts this Point to a C array.
+    const T *           Ptr() const { return (const T *)&x; }
+    T *                 Ptr() { return (T *)&x; }
+                        /// Casts this PointT to a C array.
                         /// This function simply returns a C pointer view to this data structure.
                         /// This function is identical to the member function Ptr().
-                        operator const int *() const { return (const int *)&x; }
-                        operator int *() { return (int *)&x; }
+                        operator const T *() const { return (const T *)&x; }
+                        operator T *() { return (T *)&x; }
 
-                        /// Accesses an element of this Point using array notation.
-    int                 operator[](int index) const;
-    int &               operator[](int index);
+                        /// Accesses an element of this PointT using array notation.
+    T                   operator[](int index) const;
+    T &                 operator[](int index);
 
                         /// Unary operator + allows this structure to be used in an expression '+p'.
-    Point               operator+() const { return *this; }
+    PointT              operator+() const { return *this; }
 
-                        /// Performs an unary negation of this Point.
-    Point               operator-() const & { return Point(-x, -y); }
-    Point &&            operator-() && { x = -x; y = -y; return std::move(*this); }
+                        /// Performs an unary negation of this PointT.
+    PointT              operator-() const & { return PointT(-x, -y); }
+    PointT &&           operator-() && { x = -x; y = -y; return std::move(*this); }
 
                         /// Adds a point to this point.
-    Point               operator+(const Point &rhs) const & { return Point(x + rhs.x, y + rhs.y); }
-    Point &&            operator+(const Point &rhs) && { *this += rhs; return std::move(*this); }
+    PointT              operator+(const PointT &rhs) const & { return PointT(x + rhs.x, y + rhs.y); }
+    PointT &&           operator+(const PointT &rhs) && { *this += rhs; return std::move(*this); }
 
                         /// Subtracts a point from this point.
-    Point               operator-(const Point &rhs) const & { return Point(x - rhs.x, y - rhs.y); }
-    Point &&            operator-(const Point &rhs) && { *this -= rhs; return std::move(*this); }
+    PointT              operator-(const PointT &rhs) const & { return PointT(x - rhs.x, y - rhs.y); }
+    PointT &&           operator-(const PointT &rhs) && { *this -= rhs; return std::move(*this); }
 
                         /// Multiplies this point by a scalar.
-    Point               operator*(float rhs) const & { return Point(x * rhs, y * rhs); }
-    Point &&            operator*(float rhs) && { *this *= rhs; return std::move(*this); }
+    PointT              operator*(float rhs) const & { return PointT(x * rhs, y * rhs); }
+    PointT &&           operator*(float rhs) && { *this *= rhs; return std::move(*this); }
 
                         /// Adds a point to this point, in-place.
-    Point &             operator+=(const Point &rhs);
+    PointT &            operator+=(const PointT &rhs);
 
                         /// Subtracts a point from this point, in-place.
-    Point &             operator-=(const Point &rhs);
+    PointT &            operator-=(const PointT &rhs);
 
                         /// Multiplies this point by a scalar, in-place.
-    Point &             operator*=(float rhs);
+    PointT &            operator*=(float rhs);
 
                         /// Compare with another one.
-    bool                operator==(const Point &rhs) const { return (x != rhs.x || y != rhs.y) ? false : true; }
+    bool                operator==(const PointT &rhs) const { return (x != rhs.x || y != rhs.y) ? false : true; }
                         /// Compare with another one.
-    bool                operator!=(const Point &rhs) const { return (x != rhs.x || y != rhs.y) ? true : false; }
+    bool                operator!=(const PointT &rhs) const { return (x != rhs.x || y != rhs.y) ? true : false; }
 
-    void                Set(int x, int y);
+    void                Set(T x, T y);
 
                         /// Computes the distance between this point and the given point.
-    float               Distance(const Point &other) const;
+    float               Distance(const PointT &other) const;
                         /// Computes the squared distance between this point and the given point.
-    float               DistanceSqr(const Point &other) const;
+    float               DistanceSqr(const PointT &other) const;
 
-    PointF              ToPointF() const;
+    PointT<int>         ToPoint() const;
+    PointT<float>       ToPointF() const;
 
                         /// Converts this point to Vec2.
-    Vec2                ToVec2() const { return Vec2(x, y); }
+    Vec2                ToVec2() const { return Vec2(static_cast<float>(x), static_cast<float>(y)); }
 
 #ifdef QPOINT_H
-    QPoint              ToQPoint() const { return QPoint(x, y); }
+    QPoint              ToQPoint() const { return QPoint(static_cast<int>(x), static_cast<int>(y)); }
+    QPointF             ToQPointF() const { return QPointF(static_cast<qreal>(x), static_cast<qreal>(y)); }
 #endif
 
                         /// Returns "x y".
     const char *        ToString() const;
+                        /// Returns "x y" with the given precision for floating point points.
+    const char *        ToString(int precision) const;
 
                         /// Creates from the string.
-    static Point        FromString(const char *str);
+    static PointT       FromString(const char *str);
 
                         /// Returns dimension of this type.
     constexpr int       GetDimension() const { return 2; }
 
-    static const Point  zero;
+    static const PointT zero;
 
-    int                 x;
-    int                 y;
+    T                   x;
+    T                   y;
 };
 
-BE_INLINE constexpr Point::Point(int inX, int inY) :
+template <typename T>
+BE_INLINE constexpr PointT<T>::PointT(T inX, T inY) :
     x(inX), y(inY) {
 }
 
-BE_INLINE constexpr Point::Point(int data[2]) :
+template <typename T>
+BE_INLINE constexpr PointT<T>::PointT(T data[2]) :
     x(data[0]), y(data[1]) {
 }
 
-BE_INLINE Point::Point(const Vec2 &v) {
-    x = (int)v.x;
-    y = (int)v.y;
+template <typename T>
+BE_INLINE PointT<T>::PointT(const Vec2 &v) :
+    x(static_cast<T>(v.x)), y(static_cast<T>(v.y)) {
 }
 
-BE_INLINE Point &Point::operator=(const Point &rhs) {
-    x = rhs.x;
-    y = rhs.y;
-    return *this;
-}
-
-BE_INLINE int Point::operator[](int index) const {
+template <typename T>
+BE_INLINE T PointT<T>::operator[](int index) const {
     assert(index >= 0 && index < 2);
-    return ((int *)this)[index];
+    return ((const T *)this)[index];
 }
 
-BE_INLINE int &Point::operator[](int index) {
+template <typename T>
+BE_INLINE T &PointT<T>::operator[](int index) {
     assert(index >= 0 && index < 2);
-    return ((int *)this)[index];
+    return ((T *)this)[index];
 }
 
-BE_INLINE Point &Point::operator+=(const Point &rhs) {
+template <typename T>
+BE_INLINE PointT<T> &PointT<T>::operator+=(const PointT &rhs) {
     x += rhs.x;
     y += rhs.y;
     return *this;
 }
 
-BE_INLINE Point &Point::operator-=(const Point &rhs) {
+template <typename T>
+BE_INLINE PointT<T> &PointT<T>::operator-=(const PointT &rhs) {
     x -= rhs.x;
     y -= rhs.y;
     return *this;
 }
 
-BE_INLINE Point &Point::operator*=(float rhs) {
+template <typename T>
+BE_INLINE PointT<T> &PointT<T>::operator*=(float rhs) {
     x *= rhs;
     y *= rhs;
     return *this;
 }
 
-BE_INLINE void Point::Set(int x, int y) {
+template <typename T>
+BE_INLINE void PointT<T>::Set(T x, T y) {
     this->x = x;
     this->y = y;
 }
 
-BE_INLINE float Point::Distance(const Point &other) const {
+template <typename T>
+BE_INLINE float PointT<T>::Distance(const PointT &other) const {
     float dx = x - other.x;
     float dy = y - other.y;
     return Math::Sqrt(dx * dx + dy * dy);
 }
 
-BE_INLINE float Point::DistanceSqr(const Point &other) const {
+template <typename T>
+BE_INLINE float PointT<T>::DistanceSqr(const PointT &other) const {
     float dx = x - other.x;
     float dy = y - other.y;
-    return (dx * dx + dy * dy);
+    return dx * dx + dy * dy;
 }
 
-BE_INLINE const char *Point::ToString() const {
-    return Str::IntegerArrayToString((const int *)(*this), GetDimension());
+template <typename T>
+BE_INLINE PointT<int> PointT<T>::ToPoint() const {
+    return PointT<int>(static_cast<int>(x), static_cast<int>(y));
 }
+
+template <typename T>
+BE_INLINE PointT<float> PointT<T>::ToPointF() const {
+    return PointT<float>(static_cast<float>(x), static_cast<float>(y));
+}
+
+template <typename T>
+BE_INLINE const char *PointT<T>::ToString() const {
+    if constexpr (std::is_same<T, int>::value) {
+        return Str::IntegerArrayToString(Ptr(), GetDimension());
+    } else {
+        return ToString(4);
+    }
+}
+
+template <typename T>
+BE_INLINE const char *PointT<T>::ToString(int precision) const {
+    if constexpr (std::is_same<T, int>::value) {
+        return Str::IntegerArrayToString(Ptr(), GetDimension());
+    } else {
+        return Str::FloatArrayToString(Ptr(), GetDimension(), precision);
+    }
+}
+
+template <typename T>
+BE_INLINE PointT<T> PointT<T>::FromString(const char *str) {
+    PointT p;
+    int count;
+
+    if constexpr (std::is_same<T, int>::value) {
+        count = std::sscanf(str, "%i %i", &p.x, &p.y);
+    } else {
+        count = std::sscanf(str, "%f %f", &p.x, &p.y);
+    }
+
+    assert(count == p.GetDimension());
+    return p;
+}
+
+template <typename T>
+inline const PointT<T> PointT<T>::zero = PointT<T>(T(0), T(0));
+
+using Point = PointT<int>;
+using PointF = PointT<float>;
+
+static_assert(std::is_standard_layout<Point>::value, "Point must remain standard-layout");
+static_assert(std::is_standard_layout<PointF>::value, "PointF must remain standard-layout");
+static_assert(sizeof(Point) == sizeof(int) * 2, "Point layout changed");
+static_assert(sizeof(PointF) == sizeof(float) * 2, "PointF layout changed");
 
 BE_NAMESPACE_END

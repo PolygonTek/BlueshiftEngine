@@ -18,8 +18,12 @@
 
 BE_NAMESPACE_BEGIN
 
-class Point;
-class Rect;
+template <typename T>
+class PointT;
+using Point = PointT<int>;
+template <typename T>
+class RectT;
+using Rect = RectT<int>;
 class Vec3;
 class Mat3;
 class Mat4;
