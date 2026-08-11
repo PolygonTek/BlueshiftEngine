@@ -40,8 +40,13 @@ public:
     struct Desc {
         enum class UpdateFlag : uint16_t {
             All                     = 0xFFFF,
-            Transform               = BIT(0),   // origin, axis
-            Shape                   = BIT(1),   // type, size, zNear
+            Flags                   = BIT(0),   // flags
+            Layer                   = BIT(1),   // layer
+            Transform               = BIT(2),   // origin, axis
+            Shape                   = BIT(3),   // type, size, zNear
+            ProjectionPolicy        = BIT(4),   // projectionPolicy
+            Lighting                = BIT(5),   // linearColor, intensity, fallOffExponent
+            Shadow                  = BIT(6)    // shadowOffsetFactor, shadowOffsetUnits
         };
 
         friend constexpr std::true_type EnableBitmaskEnum(UpdateFlag) noexcept { return {}; }
@@ -112,6 +117,15 @@ public:
 private:
                                     /// Update this render light.
     void                            Update(const Desc &desc, Desc::UpdateFlag flags);
+    void                            UpdateFlags(Flag flags);
+    void                            UpdateLayer(uint8_t layer);
+    void                            UpdateTransform(const BE1::Vec3 &origin, const BE1::Mat3 &axis);
+    void                            UpdateShape(Type type, const BE1::Vec3 &size, float zNear);
+    void                            UpdateProjectionPolicy(const RHI::ProjectionPolicy &projectionPolicy);
+    void                            UpdateLighting(const BE1::Color3 &linearColor, float intensity, float fallOffExponent);
+    void                            UpdateShadow(float shadowOffsetFactor, float shadowOffsetUnits);
+    void                            UpdateViewMatrix();
+    void                            UpdateProjectionAndBounds();
 
     Desc                            desc;
 

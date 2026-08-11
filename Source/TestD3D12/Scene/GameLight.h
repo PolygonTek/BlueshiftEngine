@@ -18,6 +18,17 @@
 
 class GameLight {
 public:
-    RenderLight::Desc       renderLightDesc;
-    int                     renderLightHandle = -1;
+    RenderLight::Type           type = RenderLight::Type::Point;
+    RenderLight::Flag           flags = RenderLight::Flag::None;
+    uint8_t                     layer = 0;
+    BE1::Vec3                   origin = BE1::Vec3::origin;
+    BE1::Mat3                   axis = BE1::Mat3::identity;
+    BE1::Vec3                   size = BE1::Vec3::one;
+    float                       zNear = 1.0f;
+    BE1::Color3                 linearColor = BE1::Color3::white;
+    float                       intensity = 1.0f;
+    float                       fallOffExponent = 1.25f;
+    float                       shadowOffsetFactor = 3.0f;
+    float                       shadowOffsetUnits = 200.0f;
+    int                         renderLightHandle = -1;
 };

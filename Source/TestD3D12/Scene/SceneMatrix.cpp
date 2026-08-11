@@ -31,12 +31,10 @@ void SceneMatrix::Init(RenderWorld *renderWorld) {
 
     renderWorld->SetSkyboxMaterial(materialManager.GetMaterial("Source/TestD3D12/Materials/skybox.material"));
 
-    RenderLight::Desc &directionalLightDesc = directionalLight.renderLightDesc;
-    directionalLightDesc.type = RenderLight::Type::Directional;
-    directionalLightDesc.flags = RenderLight::Flag::None;
-    directionalLightDesc.linearColor = BE1::Color3::white;
-    directionalLightDesc.intensity = 2.0f;
-    directionalLightDesc.projectionPolicy = RHI::renderer->GetProjectionPolicy();
+    directionalLight.type = RenderLight::Type::Directional;
+    directionalLight.flags = RenderLight::Flag::None;
+    directionalLight.linearColor = BE1::Color3::white;
+    directionalLight.intensity = 2.0f;
     directionalLightEnabled = true;
     UpdateDirectionalLightDirection();
 
@@ -124,8 +122,10 @@ void SceneMatrix::InitGameObjects(uint32_t countX, uint32_t countY, uint32_t cou
                 GameObject *gameObject = new GameObject;
                 gameObjects.Append(gameObject);
 
-                RenderObject::Desc &desc = gameObject->renderObjectDesc;
-                desc.worldMatrix.SetTranslation(BE1::Vec3(startX + spacing * x, startY + spacing * y, startZ + spacing * z));
+                gameObject->worldMatrix.SetTranslation(BE1::Vec3(startX + spacing * x, startY + spacing * y, startZ + spacing * z));
+
+                RenderObject::Desc desc;
+                desc.worldMatrix = gameObject->worldMatrix;
                 desc.meshInstance = testMesh->GetStaticInstance();
                 desc.aabb = testMesh->GetAABB();
                 desc.materials.SetCount(1);
@@ -140,14 +140,16 @@ void SceneMatrix::InitGameObjects(uint32_t countX, uint32_t countY, uint32_t cou
     /*GameObject *gameObject = new GameObject;
     gameObjects.Append(gameObject);
 
-    RenderObject::Desc &desc = gameObject->renderObjectDesc;
-    desc.worldMatrix.SetTRS(BE1::Vec3(0, 0, 10), BE1::Mat3::identity, BE1::Vec3::one);
+    gameObject->worldMatrix.SetTRS(BE1::Vec3(0, 0, 10), BE1::Mat3::identity, BE1::Vec3::one);
+
+    RenderObject::Desc desc;
+    desc.worldMatrix = gameObject->worldMatrix;
     RenderObject::TextDesc &textDesc = desc.GetTextDesc();
     textDesc.font = mainFont;
     textDesc.text = "Hello World";
     textDesc.textParams.bits.textAnchor = (uint16_t)RenderObject::TextAnchor::MiddleCenter;
 
-    gameObject->renderObjectHandle = renderWorld->AddRenderObject(gameObject->renderObjectDesc);*/
+    gameObject->renderObjectHandle = renderWorld->AddRenderObject(desc);*/
 
 }
 
@@ -174,31 +176,58 @@ void SceneMatrix::InitGameLights(uint32_t countX, uint32_t countY, uint32_t coun
     const float startZ = -lightSpacing * (lightCountZ - 1) * 0.5f;
 
     BE1::RNG rng(1);
+    const RHI::ProjectionPolicy &projectionPolicy = RHI::renderer->GetProjectionPolicy();
 
     if (directionalLightEnabled) {
-        directionalLight.renderLightHandle = renderWorld->AddRenderLight(directionalLight.renderLightDesc);
+        RenderLight::Desc desc;
+        desc.type = directionalLight.type;
+        desc.flags = directionalLight.flags;
+        desc.layer = directionalLight.layer;
+        desc.origin = directionalLight.origin;
+        desc.axis = directionalLight.axis;
+        desc.size = directionalLight.size;
+        desc.zNear = directionalLight.zNear;
+        desc.projectionPolicy = projectionPolicy;
+        desc.linearColor = directionalLight.linearColor;
+        desc.intensity = directionalLight.intensity;
+        desc.fallOffExponent = directionalLight.fallOffExponent;
+        desc.shadowOffsetFactor = directionalLight.shadowOffsetFactor;
+        desc.shadowOffsetUnits = directionalLight.shadowOffsetUnits;
+        directionalLight.renderLightHandle = renderWorld->AddRenderLight(desc);
     }
 
     for (uint32_t z = 0; z < lightCountZ; ++z) {
         for (uint32_t y = 0; y < lightCountY; ++y) {
             for (uint32_t x = 0; x < lightCountX; ++x) {
                 GameLight &gameLight = gameLights.Alloc();
-                RenderLight::Desc &desc = gameLight.renderLightDesc;
-                desc.type = RenderLight::Type::Point;
-                desc.flags = RenderLight::Flag::None;
-                desc.origin.Set(
+                gameLight.type = RenderLight::Type::Point;
+                gameLight.flags = RenderLight::Flag::None;
+                gameLight.origin.Set(
                     startX + lightSpacing * x,
                     startY + lightSpacing * y,
                     startZ + lightSpacing * z + lightOriginZOffset);
-                desc.size[0] = radius;
-                desc.projectionPolicy = RHI::renderer->GetProjectionPolicy();
+                gameLight.size[0] = radius;
 
                 // 밝기와 색상을 독립적으로 무작위 선택한다.
-                desc.intensity = rng.GetNextFloat(minLightIntensity, maxLightIntensity);
+                gameLight.intensity = rng.GetNextFloat(minLightIntensity, maxLightIntensity);
                 const float hue = rng.GetNextFloat();
-                desc.linearColor = BE1::Color3::FromHSL(hue, 1.0f, 0.5f).SRGBToLinear();
+                gameLight.linearColor = BE1::Color3::FromHSL(hue, 1.0f, 0.5f).SRGBToLinear();
 
-                gameLight.renderLightHandle = renderWorld->AddRenderLight(desc);
+                RenderLight::Desc renderLightDesc;
+                renderLightDesc.type = gameLight.type;
+                renderLightDesc.flags = gameLight.flags;
+                renderLightDesc.layer = gameLight.layer;
+                renderLightDesc.origin = gameLight.origin;
+                renderLightDesc.axis = gameLight.axis;
+                renderLightDesc.size = gameLight.size;
+                renderLightDesc.zNear = gameLight.zNear;
+                renderLightDesc.projectionPolicy = projectionPolicy;
+                renderLightDesc.linearColor = gameLight.linearColor;
+                renderLightDesc.intensity = gameLight.intensity;
+                renderLightDesc.fallOffExponent = gameLight.fallOffExponent;
+                renderLightDesc.shadowOffsetFactor = gameLight.shadowOffsetFactor;
+                renderLightDesc.shadowOffsetUnits = gameLight.shadowOffsetUnits;
+                gameLight.renderLightHandle = renderWorld->AddRenderLight(renderLightDesc);
             }
         }
     }
@@ -242,9 +271,9 @@ void SceneMatrix::AnimateGameObjects(uint64_t elapsedUsec) {
                 const float t = elapsedSeconds + index * 0.1f;
 
                 GameObject *gameObject = gameObjects[index];
-                gameObject->renderObjectDesc.worldMatrix.SetRotation(BE1::Mat3::FromRotationZ(t * zRotationSpeed), false);
+                gameObject->worldMatrix.SetRotation(BE1::Mat3::FromRotationZ(t * zRotationSpeed), false);
 
-                renderWorld->UpdateRenderObject(gameObject->renderObjectHandle, gameObject->renderObjectDesc, RenderObject::Desc::UpdateFlag::Transform);
+                renderWorld->UpdateRenderObjectTransform(gameObject->renderObjectHandle, gameObject->worldMatrix);
             }
         }
     }
@@ -267,18 +296,16 @@ void SceneMatrix::AnimateGameLights(uint64_t elapsedUsec) {
             const float phase = index * phaseStep;
 
             GameLight &gameLight = gameLights[index];
-            RenderLight::Desc &desc = gameLight.renderLightDesc;
+            gameLight.origin.z = baseOriginZ + BE1::Math::Sin(elapsedSeconds * movementSpeed + phase) * movementAmplitude;
 
-            desc.origin.z = baseOriginZ + BE1::Math::Sin(elapsedSeconds * movementSpeed + phase) * movementAmplitude;
-
-            renderWorld->UpdateRenderLight(gameLight.renderLightHandle, desc, RenderLight::Desc::UpdateFlag::Transform);
+            renderWorld->UpdateRenderLightTransform(gameLight.renderLightHandle, gameLight.origin, gameLight.axis);
         }
     }
 }
 
 void SceneMatrix::UpdateDirectionalLightDirection() {
     // The UI describes the direction toward the sun or moon, while axis[0] is the direction in which light rays travel.
-    directionalLight.renderLightDesc.axis = BE1::Angles(0.0f, directionalLightElevation, directionalLightAzimuth + 180.0f).ToMat3();
+    directionalLight.axis = BE1::Angles(0.0f, directionalLightElevation, directionalLightAzimuth + 180.0f).ToMat3();
 }
 
 #ifdef ENABLE_IMGUI
@@ -331,7 +358,21 @@ void SceneMatrix::BuildImGui() {
 
     if (ImGui::Checkbox("Enabled##DirectionalLight", &directionalLightEnabled)) {
         if (directionalLightEnabled) {
-            directionalLight.renderLightHandle = renderWorld->AddRenderLight(directionalLight.renderLightDesc);
+            RenderLight::Desc desc;
+            desc.type = directionalLight.type;
+            desc.flags = directionalLight.flags;
+            desc.layer = directionalLight.layer;
+            desc.origin = directionalLight.origin;
+            desc.axis = directionalLight.axis;
+            desc.size = directionalLight.size;
+            desc.zNear = directionalLight.zNear;
+            desc.projectionPolicy = RHI::renderer->GetProjectionPolicy();
+            desc.linearColor = directionalLight.linearColor;
+            desc.intensity = directionalLight.intensity;
+            desc.fallOffExponent = directionalLight.fallOffExponent;
+            desc.shadowOffsetFactor = directionalLight.shadowOffsetFactor;
+            desc.shadowOffsetUnits = directionalLight.shadowOffsetUnits;
+            directionalLight.renderLightHandle = renderWorld->AddRenderLight(desc);
         } else if (directionalLight.renderLightHandle >= 0) {
             renderWorld->RemoveRenderLight(directionalLight.renderLightHandle);
             directionalLight.renderLightHandle = -1;
@@ -341,7 +382,7 @@ void SceneMatrix::BuildImGui() {
     ImGui::BeginDisabled(!directionalLightEnabled);
     ImGui::TextDisabled("Azimuth: 0 = +X, 90 = +Y; Elevation: 0 = horizon");
 
-    bool directionalLightChanged = false;
+    bool directionalLightLightingChanged = false;
     bool directionalLightDirectionChanged = false;
 
     ImGui::SetNextItemWidth(itemWidth);
@@ -354,25 +395,23 @@ void SceneMatrix::BuildImGui() {
         directionalLightDirectionChanged = true;
     }
 
-    RenderLight::Desc &directionalLightDesc = directionalLight.renderLightDesc;
-
     ImGui::SetNextItemWidth(itemWidth);
-    if (ImGui::ColorEdit3("Color##DirectionalLight", directionalLightDesc.linearColor.Ptr(), ImGuiColorEditFlags_Float)) {
-        directionalLightChanged = true;
+    if (ImGui::ColorEdit3("Color##DirectionalLight", directionalLight.linearColor.Ptr(), ImGuiColorEditFlags_Float)) {
+        directionalLightLightingChanged = true;
     }
 
     ImGui::SetNextItemWidth(itemWidth);
-    if (ImGui::SliderFloat("Intensity##DirectionalLight", &directionalLightDesc.intensity, 0.0f, 10.0f, "%.3f")) {
-        directionalLightChanged = true;
+    if (ImGui::SliderFloat("Intensity##DirectionalLight", &directionalLight.intensity, 0.0f, 10.0f, "%.3f")) {
+        directionalLightLightingChanged = true;
     }
 
     if (directionalLightDirectionChanged) {
         UpdateDirectionalLightDirection();
-        directionalLightChanged = true;
+        renderWorld->UpdateRenderLightTransform(directionalLight.renderLightHandle, directionalLight.origin, directionalLight.axis);
     }
 
-    if (directionalLightChanged) {
-        renderWorld->UpdateRenderLight(directionalLight.renderLightHandle, directionalLightDesc, RenderLight::Desc::UpdateFlag::Transform);
+    if (directionalLightLightingChanged) {
+        renderWorld->UpdateRenderLightLighting(directionalLight.renderLightHandle, directionalLight.linearColor, directionalLight.intensity, directionalLight.fallOffExponent);
     }
 
     ImGui::EndDisabled();

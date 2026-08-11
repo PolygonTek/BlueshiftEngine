@@ -14,10 +14,10 @@
 
 #pragma once
 
-#include "Render/Frontend/RenderObject.h"
+#include "Math/Matrix.h"
 
 class GameObject {
 public:
-    RenderObject::Desc      renderObjectDesc;
+    BE1::Mat3x4             worldMatrix = BE1::Mat3x4::identity;
     int                     renderObjectHandle = -1;
 };

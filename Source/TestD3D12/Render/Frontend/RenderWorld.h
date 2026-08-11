@@ -92,11 +92,27 @@ public:
     RenderObject *              GetRenderObject(int index) const;
     int                         AddRenderObject(const RenderObject::Desc &desc);
     void                        UpdateRenderObject(int index, const RenderObject::Desc &desc, RenderObject::Desc::UpdateFlag updateFlags);
+    void                        UpdateRenderObjectFlags(int index, RenderObject::Flag flags);
+    void                        UpdateRenderObjectLayer(int index, uint8_t layer);
+    void                        UpdateRenderObjectTransform(int index, const BE1::Mat3x4 &worldMatrix);
+    void                        UpdateRenderObjectBounds(int index, const BE1::AABB &aabb);
+    void                        UpdateRenderObjectMesh(int index, const SharedPtr<MeshInstance> &meshInstance);
+    void                        UpdateRenderObjectMaterials(int index, const BE1::Array<SharedPtr<Material>> &materials);
+    void                        UpdateRenderObjectFont(int index, const SharedPtr<Font> &font);
+    void                        UpdateRenderObjectText(int index, const BE1::Str &text);
+    void                        UpdateRenderObjectTextStyle(int index, const RenderObject::TextDesc &textDesc);
     void                        RemoveRenderObject(int index);
 
     RenderLight *               GetRenderLight(int index) const;
     int                         AddRenderLight(const RenderLight::Desc &desc);
     void                        UpdateRenderLight(int index, const RenderLight::Desc &desc, RenderLight::Desc::UpdateFlag updateFlags);
+    void                        UpdateRenderLightFlags(int index, RenderLight::Flag flags);
+    void                        UpdateRenderLightLayer(int index, uint8_t layer);
+    void                        UpdateRenderLightTransform(int index, const BE1::Vec3 &origin, const BE1::Mat3 &axis);
+    void                        UpdateRenderLightShape(int index, RenderLight::Type type, const BE1::Vec3 &size, float zNear);
+    void                        UpdateRenderLightProjectionPolicy(int index, const RHI::ProjectionPolicy &projectionPolicy);
+    void                        UpdateRenderLightLighting(int index, const BE1::Color3 &linearColor, float intensity, float fallOffExponent);
+    void                        UpdateRenderLightShadow(int index, float shadowOffsetFactor, float shadowOffsetUnits);
     void                        RemoveRenderLight(int index);
 
     const EnvironmentLight *    GetEnvironmentLight() const { return hasEnvironmentLight ? &environmentLight : nullptr; }
@@ -171,6 +187,8 @@ private:
     bool                        IsVisLightRegisteredInCurrentView(const RenderLight *renderLight) const;
     VisLight *                  RegisterVisLight(RenderFrameData *frameData, RenderLight *renderLight);
     VisObject *                 RegisterVisObject(RenderFrameData *frameData, RenderObject *renderObject);
+    RenderObject *              GetRenderObjectForUpdate(int index, const char *functionName) const;
+    RenderLight *               GetRenderLightForUpdate(int index, const char *functionName) const;
     void                        CapturePrevWorldMatrix(RenderObject *renderObject);
     void                        SetVisObjectWorldMatrices(const RenderObject *renderObject, VisObject *visObject);
     void                        FindVisObjects(RenderFrameData *frameData, const RenderCamera *renderCamera, VisCamera *visCamera);

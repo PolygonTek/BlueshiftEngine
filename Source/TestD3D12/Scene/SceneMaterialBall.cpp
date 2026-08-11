@@ -44,22 +44,37 @@ void SceneMaterialBall::Init(RenderWorld *renderWorld) {
 
     testMesh = meshManager.GetMesh("Data/Test/MaterialBall.bmesh", false);
 
-    RenderObject::Desc &materialBallDesc = materialBall.renderObjectDesc;
-    materialBallDesc.worldMatrix.SetTranslationRotation(BE1::Vec3(0, 0, -testMesh->GetAABB().Center().z), BE1::Mat3::FromRotationZ(DEG2RAD(180.0f)), false);
+    materialBall.worldMatrix.SetTranslationRotation(BE1::Vec3(0, 0, -testMesh->GetAABB().Center().z), BE1::Mat3::FromRotationZ(DEG2RAD(180.0f)), false);
+
+    RenderObject::Desc materialBallDesc;
+    materialBallDesc.worldMatrix = materialBall.worldMatrix;
     materialBallDesc.meshInstance = testMesh->GetStaticInstance();
     materialBallDesc.aabb = testMesh->GetAABB();
     materialBallDesc.materials.SetCount(1);
     materialBallDesc.materials[0] = testMaterial;
     materialBall.renderObjectHandle = renderWorld->AddRenderObject(materialBallDesc);
 
-    RenderLight::Desc &directionalLightDesc = directionalLight.renderLightDesc;
-    directionalLightDesc.type = RenderLight::Type::Directional;
-    directionalLightDesc.flags = RenderLight::Flag::None;
-    directionalLightDesc.linearColor = BE1::Color3::white;
-    directionalLightDesc.intensity = 2.0f;
-    directionalLightDesc.projectionPolicy = RHI::renderer->GetProjectionPolicy();
+    directionalLight.type = RenderLight::Type::Directional;
+    directionalLight.flags = RenderLight::Flag::None;
+    directionalLight.linearColor = BE1::Color3::white;
+    directionalLight.intensity = 2.0f;
     UpdateDirectionalLightDirection();
-    directionalLight.renderLightHandle = renderWorld->AddRenderLight(directionalLightDesc);
+
+    RenderLight::Desc renderLightDesc;
+    renderLightDesc.type = directionalLight.type;
+    renderLightDesc.flags = directionalLight.flags;
+    renderLightDesc.layer = directionalLight.layer;
+    renderLightDesc.origin = directionalLight.origin;
+    renderLightDesc.axis = directionalLight.axis;
+    renderLightDesc.size = directionalLight.size;
+    renderLightDesc.zNear = directionalLight.zNear;
+    renderLightDesc.projectionPolicy = RHI::renderer->GetProjectionPolicy();
+    renderLightDesc.linearColor = directionalLight.linearColor;
+    renderLightDesc.intensity = directionalLight.intensity;
+    renderLightDesc.fallOffExponent = directionalLight.fallOffExponent;
+    renderLightDesc.shadowOffsetFactor = directionalLight.shadowOffsetFactor;
+    renderLightDesc.shadowOffsetUnits = directionalLight.shadowOffsetUnits;
+    directionalLight.renderLightHandle = renderWorld->AddRenderLight(renderLightDesc);
 
     EnvironmentLight::Desc environmentLightDesc;
     environmentLightAdded = renderWorld->AddEnvironmentLight(environmentLightDesc);
@@ -101,7 +116,7 @@ void SceneMaterialBall::Update(uint64_t elapsedUsec) {
 
 void SceneMaterialBall::UpdateDirectionalLightDirection() {
     // The UI describes the direction toward the sun or moon, while axis[0] is the direction in which light rays travel.
-    directionalLight.renderLightDesc.axis = BE1::Angles(0.0f, directionalLightElevation, directionalLightAzimuth + 180.0f).ToMat3();
+    directionalLight.axis = BE1::Angles(0.0f, directionalLightElevation, directionalLightAzimuth + 180.0f).ToMat3();
 }
 
 void SceneMaterialBall::UpdateEnvironmentLightRotation() {
@@ -258,7 +273,21 @@ void SceneMaterialBall::BuildImGui() {
 
     if (ImGui::Checkbox("Enabled##DirectionalLight", &directionalLightEnabled)) {
         if (directionalLightEnabled) {
-            directionalLight.renderLightHandle = renderWorld->AddRenderLight(directionalLight.renderLightDesc);
+            RenderLight::Desc desc;
+            desc.type = directionalLight.type;
+            desc.flags = directionalLight.flags;
+            desc.layer = directionalLight.layer;
+            desc.origin = directionalLight.origin;
+            desc.axis = directionalLight.axis;
+            desc.size = directionalLight.size;
+            desc.zNear = directionalLight.zNear;
+            desc.projectionPolicy = RHI::renderer->GetProjectionPolicy();
+            desc.linearColor = directionalLight.linearColor;
+            desc.intensity = directionalLight.intensity;
+            desc.fallOffExponent = directionalLight.fallOffExponent;
+            desc.shadowOffsetFactor = directionalLight.shadowOffsetFactor;
+            desc.shadowOffsetUnits = directionalLight.shadowOffsetUnits;
+            directionalLight.renderLightHandle = renderWorld->AddRenderLight(desc);
         } else if (directionalLight.renderLightHandle >= 0) {
             renderWorld->RemoveRenderLight(directionalLight.renderLightHandle);
             directionalLight.renderLightHandle = -1;
@@ -268,7 +297,7 @@ void SceneMaterialBall::BuildImGui() {
     ImGui::BeginDisabled(!directionalLightEnabled);
     ImGui::TextDisabled("Azimuth: 0 = +X, 90 = +Y; Elevation: 0 = horizon");
 
-    bool directionalLightChanged = false;
+    bool directionalLightLightingChanged = false;
     bool directionalLightDirectionChanged = false;
 
     ImGui::SetNextItemWidth(itemWidth);
@@ -281,25 +310,23 @@ void SceneMaterialBall::BuildImGui() {
         directionalLightDirectionChanged = true;
     }
 
-    RenderLight::Desc &directionalLightDesc = directionalLight.renderLightDesc;
-
     ImGui::SetNextItemWidth(itemWidth);
-    if (ImGui::ColorEdit3("Color##DirectionalLight", directionalLightDesc.linearColor.Ptr(), ImGuiColorEditFlags_Float)) {
-        directionalLightChanged = true;
+    if (ImGui::ColorEdit3("Color##DirectionalLight", directionalLight.linearColor.Ptr(), ImGuiColorEditFlags_Float)) {
+        directionalLightLightingChanged = true;
     }
 
     ImGui::SetNextItemWidth(itemWidth);
-    if (ImGui::SliderFloat("Intensity##DirectionalLight", &directionalLightDesc.intensity, 0.0f, 10.0f, "%.3f")) {
-        directionalLightChanged = true;
+    if (ImGui::SliderFloat("Intensity##DirectionalLight", &directionalLight.intensity, 0.0f, 10.0f, "%.3f")) {
+        directionalLightLightingChanged = true;
     }
 
     if (directionalLightDirectionChanged) {
         UpdateDirectionalLightDirection();
-        directionalLightChanged = true;
+        renderWorld->UpdateRenderLightTransform(directionalLight.renderLightHandle, directionalLight.origin, directionalLight.axis);
     }
 
-    if (directionalLightChanged) {
-        renderWorld->UpdateRenderLight(directionalLight.renderLightHandle, directionalLightDesc, RenderLight::Desc::UpdateFlag::Transform);
+    if (directionalLightLightingChanged) {
+        renderWorld->UpdateRenderLightLighting(directionalLight.renderLightHandle, directionalLight.linearColor, directionalLight.intensity, directionalLight.fallOffExponent);
     }
 
     ImGui::EndDisabled();

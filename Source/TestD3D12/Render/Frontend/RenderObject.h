@@ -100,13 +100,16 @@ public:
     struct Desc {
         enum class UpdateFlag : uint16_t {
             All                     = 0xFFFF,
-            Transform               = BIT(0),
-            Bounds                  = BIT(1),
-            Mesh                    = BIT(2),
-            Materials               = BIT(3),
-            Font                    = BIT(4),
-            Text                    = BIT(5),
-            TextStyle               = BIT(6)
+            Flags                   = BIT(0),
+            Layer                   = BIT(1),
+            Transform               = BIT(2),
+            Bounds                  = BIT(3),
+            Mesh                    = BIT(4),
+            Materials               = BIT(5),
+            Font                    = BIT(6),
+            Text                    = BIT(7),
+            TextStyle               = BIT(8),
+            
         };
 
         friend constexpr std::true_type EnableBitmaskEnum(UpdateFlag) noexcept { return {}; }
@@ -142,6 +145,16 @@ public:
 private:
                                     /// Update this render object.
     void                            Update(const Desc &desc, Desc::UpdateFlag updateFlags);
+    void                            UpdateFlags(Flag flags);
+    void                            UpdateLayer(uint8_t layer);
+    void                            UpdateTransform(const BE1::Mat3x4 &worldMatrix);
+    void                            UpdateBounds(const BE1::AABB &aabb);
+    void                            UpdateMesh(const SharedPtr<MeshInstance> &meshInstance);
+    void                            UpdateMaterials(const BE1::Array<SharedPtr<Material>> &materials);
+    void                            UpdateFont(const SharedPtr<Font> &font);
+    void                            UpdateText(const BE1::Str &text);
+    void                            UpdateTextStyle(const TextDesc &textDesc);
+    void                            UpdateWorldAABB();
 
     Desc                            desc;
     BE1::AABB                       worldAABB = BE1::AABB::empty;

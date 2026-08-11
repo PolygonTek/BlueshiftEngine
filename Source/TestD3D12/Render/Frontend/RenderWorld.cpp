@@ -107,18 +107,27 @@ int RenderWorld::AddRenderObject(const RenderObject::Desc &desc) {
     return index;
 }
 
-void RenderWorld::UpdateRenderObject(int index, const RenderObject::Desc &desc, RenderObject::Desc::UpdateFlag updateFlags) {
+RenderObject *RenderWorld::GetRenderObjectForUpdate(int index, const char *functionName) const {
     assert(BE1::Engine::IsInMainThread());
     assert(!frameActive);
 
     if (!renderObjects.IsValidIndex(index)) {
-        BE_WARNLOG("RenderWorld::UpdateRenderObject: invalid index %i\n", index);
-        return;
+        BE_WARNLOG("%s: invalid index %i\n", functionName, index);
+        return nullptr;
     }
 
     RenderObject *renderObject = renderObjects[index];
     if (!renderObject) {
-        BE_WARNLOG("RenderWorld::UpdateRenderObject: index %i is nullptr\n", index);
+        BE_WARNLOG("%s: index %i is nullptr\n", functionName, index);
+        return nullptr;
+    }
+
+    return renderObject;
+}
+
+void RenderWorld::UpdateRenderObject(int index, const RenderObject::Desc &desc, RenderObject::Desc::UpdateFlag updateFlags) {
+    RenderObject *renderObject = GetRenderObjectForUpdate(index, "RenderWorld::UpdateRenderObject");
+    if (!renderObject) {
         return;
     }
 
@@ -128,6 +137,72 @@ void RenderWorld::UpdateRenderObject(int index, const RenderObject::Desc &desc, 
     }
 
     renderObject->Update(desc, updateFlags);
+}
+
+void RenderWorld::UpdateRenderObjectFlags(int index, RenderObject::Flag flags) {
+    RenderObject *renderObject = GetRenderObjectForUpdate(index, "RenderWorld::UpdateRenderObjectFlags");
+    if (renderObject) {
+        renderObject->UpdateFlags(flags);
+    }
+}
+
+void RenderWorld::UpdateRenderObjectLayer(int index, uint8_t layer) {
+    RenderObject *renderObject = GetRenderObjectForUpdate(index, "RenderWorld::UpdateRenderObjectLayer");
+    if (renderObject) {
+        renderObject->UpdateLayer(layer);
+    }
+}
+
+void RenderWorld::UpdateRenderObjectTransform(int index, const BE1::Mat3x4 &worldMatrix) {
+    RenderObject *renderObject = GetRenderObjectForUpdate(index, "RenderWorld::UpdateRenderObjectTransform");
+    if (!renderObject) {
+        return;
+    }
+
+    CapturePrevWorldMatrix(renderObject);
+    renderObject->UpdateTransform(worldMatrix);
+}
+
+void RenderWorld::UpdateRenderObjectBounds(int index, const BE1::AABB &aabb) {
+    RenderObject *renderObject = GetRenderObjectForUpdate(index, "RenderWorld::UpdateRenderObjectBounds");
+    if (renderObject) {
+        renderObject->UpdateBounds(aabb);
+    }
+}
+
+void RenderWorld::UpdateRenderObjectMesh(int index, const SharedPtr<MeshInstance> &meshInstance) {
+    RenderObject *renderObject = GetRenderObjectForUpdate(index, "RenderWorld::UpdateRenderObjectMesh");
+    if (renderObject) {
+        renderObject->UpdateMesh(meshInstance);
+    }
+}
+
+void RenderWorld::UpdateRenderObjectMaterials(int index, const BE1::Array<SharedPtr<Material>> &materials) {
+    RenderObject *renderObject = GetRenderObjectForUpdate(index, "RenderWorld::UpdateRenderObjectMaterials");
+    if (renderObject) {
+        renderObject->UpdateMaterials(materials);
+    }
+}
+
+void RenderWorld::UpdateRenderObjectFont(int index, const SharedPtr<Font> &font) {
+    RenderObject *renderObject = GetRenderObjectForUpdate(index, "RenderWorld::UpdateRenderObjectFont");
+    if (renderObject) {
+        renderObject->UpdateFont(font);
+    }
+}
+
+void RenderWorld::UpdateRenderObjectText(int index, const BE1::Str &text) {
+    RenderObject *renderObject = GetRenderObjectForUpdate(index, "RenderWorld::UpdateRenderObjectText");
+    if (renderObject) {
+        renderObject->UpdateText(text);
+    }
+}
+
+void RenderWorld::UpdateRenderObjectTextStyle(int index, const RenderObject::TextDesc &textDesc) {
+    RenderObject *renderObject = GetRenderObjectForUpdate(index, "RenderWorld::UpdateRenderObjectTextStyle");
+    if (renderObject) {
+        renderObject->UpdateTextStyle(textDesc);
+    }
 }
 
 void RenderWorld::RemoveRenderObject(int index) {
@@ -195,18 +270,27 @@ int RenderWorld::AddRenderLight(const RenderLight::Desc &desc) {
     return index;
 }
 
-void RenderWorld::UpdateRenderLight(int index, const RenderLight::Desc &desc, RenderLight::Desc::UpdateFlag updateFlags) {
+RenderLight *RenderWorld::GetRenderLightForUpdate(int index, const char *functionName) const {
     assert(BE1::Engine::IsInMainThread());
     assert(!frameActive);
 
     if (!renderLights.IsValidIndex(index)) {
-        BE_WARNLOG("RenderWorld::UpdateRenderLight: invalid index %i\n", index);
-        return;
+        BE_WARNLOG("%s: invalid index %i\n", functionName, index);
+        return nullptr;
     }
 
     RenderLight *renderLight = renderLights[index];
     if (!renderLight) {
-        BE_WARNLOG("RenderWorld::UpdateRenderLight: index %i is nullptr\n", index);
+        BE_WARNLOG("%s: index %i is nullptr\n", functionName, index);
+        return nullptr;
+    }
+
+    return renderLight;
+}
+
+void RenderWorld::UpdateRenderLight(int index, const RenderLight::Desc &desc, RenderLight::Desc::UpdateFlag updateFlags) {
+    RenderLight *renderLight = GetRenderLightForUpdate(index, "RenderWorld::UpdateRenderLight");
+    if (!renderLight) {
         return;
     }
 
@@ -220,6 +304,65 @@ void RenderWorld::UpdateRenderLight(int index, const RenderLight::Desc &desc, Re
     }
 
     renderLight->Update(desc, updateFlags);
+}
+
+void RenderWorld::UpdateRenderLightFlags(int index, RenderLight::Flag flags) {
+    RenderLight *renderLight = GetRenderLightForUpdate(index, "RenderWorld::UpdateRenderLightFlags");
+    if (renderLight) {
+        renderLight->UpdateFlags(flags);
+    }
+}
+
+void RenderWorld::UpdateRenderLightLayer(int index, uint8_t layer) {
+    RenderLight *renderLight = GetRenderLightForUpdate(index, "RenderWorld::UpdateRenderLightLayer");
+    if (renderLight) {
+        renderLight->UpdateLayer(layer);
+    }
+}
+
+void RenderWorld::UpdateRenderLightTransform(int index, const BE1::Vec3 &origin, const BE1::Mat3 &axis) {
+    RenderLight *renderLight = GetRenderLightForUpdate(index, "RenderWorld::UpdateRenderLightTransform");
+    if (renderLight) {
+        renderLight->UpdateTransform(origin, axis);
+    }
+}
+
+void RenderWorld::UpdateRenderLightShape(int index, RenderLight::Type type, const BE1::Vec3 &size, float zNear) {
+    RenderLight *renderLight = GetRenderLightForUpdate(index, "RenderWorld::UpdateRenderLightShape");
+    if (!renderLight) {
+        return;
+    }
+
+    // 이미 Directional Light 가 존재하는데 다른 Light 를 Directional 로 바꿀 수는 없다.
+    if (type == RenderLight::Type::Directional &&
+        renderLight->GetType() != RenderLight::Type::Directional &&
+        HasDirectionalLight(renderLights, renderLight)) {
+        BE_WARNLOG("RenderWorld::UpdateRenderLightShape: only one directional light is supported\n");
+        return;
+    }
+
+    renderLight->UpdateShape(type, size, zNear);
+}
+
+void RenderWorld::UpdateRenderLightProjectionPolicy(int index, const RHI::ProjectionPolicy &projectionPolicy) {
+    RenderLight *renderLight = GetRenderLightForUpdate(index, "RenderWorld::UpdateRenderLightProjectionPolicy");
+    if (renderLight) {
+        renderLight->UpdateProjectionPolicy(projectionPolicy);
+    }
+}
+
+void RenderWorld::UpdateRenderLightLighting(int index, const BE1::Color3 &linearColor, float intensity, float fallOffExponent) {
+    RenderLight *renderLight = GetRenderLightForUpdate(index, "RenderWorld::UpdateRenderLightLighting");
+    if (renderLight) {
+        renderLight->UpdateLighting(linearColor, intensity, fallOffExponent);
+    }
+}
+
+void RenderWorld::UpdateRenderLightShadow(int index, float shadowOffsetFactor, float shadowOffsetUnits) {
+    RenderLight *renderLight = GetRenderLightForUpdate(index, "RenderWorld::UpdateRenderLightShadow");
+    if (renderLight) {
+        renderLight->UpdateShadow(shadowOffsetFactor, shadowOffsetUnits);
+    }
 }
 
 void RenderWorld::RemoveRenderLight(int index) {
