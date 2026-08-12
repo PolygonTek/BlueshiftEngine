@@ -455,7 +455,7 @@ BE_INLINE float Vec2::Normalize() {
 
 BE_INLINE float Vec2::NormalizeFast() {
     float sqrLength = x * x + y * y;
-    float invLength = Math::RSqrt(sqrLength);
+    float invLength = Math::InvSqrtFast(sqrLength);
 
     x *= invLength;
     y *= invLength;
@@ -590,7 +590,7 @@ BE_INLINE void Vec2::SetFromPolar(float radius, float theta) {
 
 BE_INLINE float Vec2::ToPolar(float &theta) const {
     float radius = Math::Sqrt(x * x + y * y);
-    theta = Math::ATan(y, x);
+    theta = Math::ATan2(y, x);
     return radius;
 }
 
@@ -603,7 +603,7 @@ BE_INLINE void Vec2::SetFromAngle(float theta) {
 }
 
 BE_INLINE float Vec2::ToAngle() const {
-    return Math::ATan(y, x);
+    return Math::ATan2(y, x);
 }
 
 BE_NAMESPACE_END

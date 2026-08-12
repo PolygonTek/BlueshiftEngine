@@ -17,27 +17,6 @@
 
 BE_NAMESPACE_BEGIN
 
-static const uint32_t SmallestNonDenormal           = 1 << IEEE_FLT_MANTISSA_BITS;
-
-const float     Math::FloatSmallestNonDenormal      = *reinterpret_cast<const float *>(&SmallestNonDenormal);    // 1.1754944e-038f
-
-bool            Math::initialized = false;
-uint32_t        Math::iSqrt[SQRT_TABLE_SIZE];       // inverse square root lookup table
-
-void Math::Init() {
-    union _flint fi, fo;
-
-    for (int i = 0; i < SQRT_TABLE_SIZE; i++) {
-        fi.i        = ((EXP_BIAS-1) << EXP_POS) | (i << LOOKUP_POS);
-        fo.f        = (float)(1.0 / sqrt(fi.f));
-        iSqrt[i]    = ((uint32_t)(((fo.i + (1<<(SEED_POS-2))) >> SEED_POS) & 0xFF)) << SEED_POS;
-    }
-    
-    iSqrt[SQRT_TABLE_SIZE / 2] = ((uint32_t)(0xFF)) << (SEED_POS);
-
-    initialized = true;
-}
-
 int Math::FloatToBits(float f, int exponentBits, int mantissaBits) {
     assert(exponentBits >= 2 && exponentBits <= 8);
     assert(mantissaBits >= 2 && mantissaBits <= 23);

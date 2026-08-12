@@ -17,7 +17,7 @@
 
 BE_NAMESPACE_BEGIN
 
-// NOTE: Math::Infinity is big number not real float INFINITY.
+// NOTE: Math::BigNumber is a large finite value, not real float infinity.
 const AABB AABB::empty(Vec3::infinity, -Vec3::infinity);
 const AABB AABB::zero(Vec3::zero, Vec3::zero);
 
@@ -197,11 +197,11 @@ bool AABB::IsIntersectPlane(const Plane &plane) const {
     Vec3 extents = b[1] - center;
 
     // Compute the projection interval radius of the AABB onto L(t) = aabb.center + t * plane.normal;
-    float r = extents[0] * Math::Abs(plane.normal[0]) + extents[1] * Math::Abs(plane.normal[1]) + extents[2] * Math::Abs(plane.normal[2]);
+    float r = extents[0] * Math::Fabs(plane.normal[0]) + extents[1] * Math::Fabs(plane.normal[1]) + extents[2] * Math::Fabs(plane.normal[2]);
     // Compute the distance of the box center from plane.
     float s = plane.Distance(center);
 
-    return Math::Abs(s) <= r;
+    return Math::Fabs(s) <= r;
 }
 
 bool AABB::IsIntersectOBB(const OBB &obb, float epsilon) const {
@@ -260,13 +260,13 @@ float AABB::IntersectRay(const Ray &ray) const {
 }
 
 void AABB::SetFromPoints(const Vec3 *points, int numPoints) {
-    b[0][0] = Math::Infinity;
-    b[0][1] = Math::Infinity;
-    b[0][2] = Math::Infinity;
+    b[0][0] = Math::BigNumber;
+    b[0][1] = Math::BigNumber;
+    b[0][2] = Math::BigNumber;
 
-    b[1][0] = -Math::Infinity;
-    b[1][1] = -Math::Infinity;
-    b[1][2] = -Math::Infinity;
+    b[1][0] = -Math::BigNumber;
+    b[1][1] = -Math::BigNumber;
+    b[1][2] = -Math::BigNumber;
 
     for (int i = 0; i < numPoints; i++)	{
         for (int j = 0; j < 3; j++)	{

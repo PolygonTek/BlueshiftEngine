@@ -44,7 +44,7 @@ int main(int argc, char *argv[]) {
 
     //Test::TestRValue();
 
-    //Test::TestMath();
+    Test::TestMath();
 
     Test::TestFloatConverter();
 

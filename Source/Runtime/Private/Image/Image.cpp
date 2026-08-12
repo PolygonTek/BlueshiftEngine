@@ -527,7 +527,7 @@ Vec2 Image::DirectionToEquirectangularUV(const Vec3 &direction) {
 }
 
 static float AreaElement(float x, float y) {
-    return Math::ATan(x * y, Math::Sqrt(x * x + y * y + 1.0f));
+    return Math::ATan2(x * y, Math::Sqrt(x * x + y * y + 1.0f));
 }
 
 float Image::CubeMapTexelSolidAngle(float x, float y, int32_t size) {

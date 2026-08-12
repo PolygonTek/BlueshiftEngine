@@ -172,7 +172,7 @@ Quat &Quat::SetFromSlerp(const Quat &from, const Quat &to, float t) {
     }
 
     // calc cosine
-    float cosom = from.Dot(to);
+    float cosom = from.x * to.x + from.y * to.y + from.z * to.z + from.w * to.w;
 
     // adjust signs (if necessary)
     Quat temp;
@@ -194,9 +194,9 @@ Quat &Quat::SetFromSlerp(const Quat &from, const Quat &to, float t) {
 #else
         scale0 = 1.0f - cosom * cosom;
         float sinom = Math::InvSqrt(scale0);
-        float omega = Math::ATan16(scale0 * sinom, cosom);
-        scale0 = Math::Sin16((1.0f - t) * omega) * sinom;
-        scale1 = Math::Sin16(t * omega) * sinom;
+        float omega = Math::ATan2Fast(scale0 * sinom, cosom);
+        scale0 = Math::SinFast((1.0f - t) * omega) * sinom;
+        scale1 = Math::SinFast(t * omega) * sinom;
 #endif
     } else {
         // "from" and "to" quaternions are very close 

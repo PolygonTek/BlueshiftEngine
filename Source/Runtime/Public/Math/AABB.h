@@ -223,7 +223,7 @@ public:
                         /// Returns dimension of this type.
     constexpr int       GetDimension() const { return 6; }
 
-    static const AABB   empty;  ///< (Infinity, Infinity, Infinity) (-Infinity, -Infinity, -Infinity)
+    static const AABB   empty;  ///< (BigNumber, BigNumber, BigNumber) (-BigNumber, -BigNumber, -BigNumber)
     static const AABB   zero;   ///< (0 0 0) (0 0 0)
 
     Vec3                b[2];   ///< Minimum/Maximum values for each axis.
@@ -311,8 +311,8 @@ BE_INLINE AABB &AABB::operator+=(const AABB &rhs) {
 }
 
 BE_INLINE void AABB::Clear() {
-    b[0][0] = b[0][1] = b[0][2] = Math::Infinity;
-    b[1][0] = b[1][1] = b[1][2] = -Math::Infinity;
+    b[0][0] = b[0][1] = b[0][2] = Math::BigNumber;
+    b[1][0] = b[1][1] = b[1][2] = -Math::BigNumber;
 }
 
 BE_INLINE void AABB::SetZero() {

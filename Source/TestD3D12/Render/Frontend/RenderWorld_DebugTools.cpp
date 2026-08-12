@@ -62,7 +62,7 @@ static void BuildDebugRing(BE1::Vec3 *points, uint32_t numSegments, const BE1::V
         const float angle = BE1::Math::TwoPi * static_cast<float>(segmentIndex) / static_cast<float>(numSegments);
         float s;
         float c;
-        BE1::Math::SinCos(angle, s, c);
+        BE1::Math::SinCosFast(angle, s, c);
         points[segmentIndex] = origin + xRadius * c + yRadius * s;
     }
 }
@@ -494,7 +494,7 @@ void RenderWorld::DrawDebugArc(const BE1::Vec3 &origin, const BE1::Vec3 &right, 
         float sinAngle;
         float cosAngle;
         const float angle = startAngle + deltaRadians * static_cast<float>(pointIndex) / static_cast<float>(numSegments);
-        BE1::Math::SinCos(angle, sinAngle, cosAngle);
+        BE1::Math::SinCosFast(angle, sinAngle, cosAngle);
         points[pointIndex] = origin + xRadius * cosAngle + yRadius * sinAngle;
     }
 
@@ -579,7 +579,7 @@ void RenderWorld::DrawDebugHemisphere(const BE1::Vec3 &origin, const BE1::Mat3 &
         float sinTheta;
         float cosTheta;
         const float theta = BE1::Math::Pi * static_cast<float>(ringIndex + 1) / 12.0f;
-        BE1::Math::SinCos(theta, sinTheta, cosTheta);
+        BE1::Math::SinCosFast(theta, sinTheta, cosTheta);
         BuildDebugRing(rings[ringIndex], DebugVolumeSegments,
             origin + axis[2] * (cosTheta * radius),
             axis[0] * (sinTheta * radius),
@@ -694,7 +694,7 @@ void RenderWorld::DrawDebugSphere(const BE1::Vec3 &origin, const BE1::Mat3 &axis
         float sinTheta;
         float cosTheta;
         const float theta = BE1::Math::Pi * static_cast<float>(ringIndex + 1) / 12.0f;
-        BE1::Math::SinCos(theta, sinTheta, cosTheta);
+        BE1::Math::SinCosFast(theta, sinTheta, cosTheta);
         BuildDebugRing(rings[ringIndex], DebugVolumeSegments,
             origin + axis[2] * (cosTheta * radius),
             axis[0] * (sinTheta * radius),
@@ -1073,7 +1073,7 @@ void RenderWorld::DrawDebugCapsule(const BE1::Vec3 &center, const BE1::Mat3 &axi
         float sinTheta;
         float cosTheta;
         const float theta = BE1::Math::Pi * static_cast<float>(ringIndex + 1) / 12.0f;
-        BE1::Math::SinCos(theta, sinTheta, cosTheta);
+        BE1::Math::SinCosFast(theta, sinTheta, cosTheta);
         BuildDebugRing(rings[ringIndex], DebugVolumeSegments,
             topCenter + axis[2] * (cosTheta * radius),
             axis[0] * (sinTheta * radius),
@@ -1083,7 +1083,7 @@ void RenderWorld::DrawDebugCapsule(const BE1::Vec3 &center, const BE1::Mat3 &axi
         float sinTheta;
         float cosTheta;
         const float theta = BE1::Math::Pi * (6.0f + static_cast<float>(ringIndex)) / 12.0f;
-        BE1::Math::SinCos(theta, sinTheta, cosTheta);
+        BE1::Math::SinCosFast(theta, sinTheta, cosTheta);
         BuildDebugRing(rings[DebugHemisphereRings + ringIndex], DebugVolumeSegments,
             bottomCenter + axis[2] * (cosTheta * radius),
             axis[0] * (sinTheta * radius),
@@ -1219,7 +1219,7 @@ void RenderWorld::DrawDebugCapsuleSimple(const BE1::Vec3 &center, const BE1::Mat
                     float sinAngle;
                     float cosAngle;
                     const float angle = BE1::Math::Pi * static_cast<float>(segmentIndex) / static_cast<float>(arcSegments);
-                    BE1::Math::SinCos(angle, sinAngle, cosAngle);
+                    BE1::Math::SinCosFast(angle, sinAngle, cosAngle);
                     const BE1::Vec3 point = hemisphereCenter + right * (cosAngle * radius) + hemisphereUp * (sinAngle * radius);
                     lineVerts[vertexIndex++].xyz = previousPoint;
                     lineVerts[vertexIndex++].xyz = point;

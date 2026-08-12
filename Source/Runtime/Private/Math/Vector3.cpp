@@ -23,7 +23,7 @@ ALIGN_AS32 const Vec3 Vec3::one(1.0f, 1.0f, 1.0f);
 ALIGN_AS32 const Vec3 Vec3::unitX(1.0f, 0.0f, 0.0f);
 ALIGN_AS32 const Vec3 Vec3::unitY(0.0f, 1.0f, 0.0f);
 ALIGN_AS32 const Vec3 Vec3::unitZ(0.0f, 0.0f, 1.0f);
-ALIGN_AS32 const Vec3 Vec3::infinity(Math::Infinity, Math::Infinity, Math::Infinity);
+ALIGN_AS32 const Vec3 Vec3::infinity(Math::BigNumber, Math::BigNumber, Math::BigNumber);
 
 bool Vec3::FixDegenerateNormal() {
     if (x == 0.0f) {
@@ -198,7 +198,7 @@ Vec3 Vec3::FromCosineSampleHemisphere(float u1, float u2) {
 // Mapping unit square to the point on unit hemisphere that has powered cosine weighted distribution
 Vec3 Vec3::FromPowerCosineSampleHemisphere(float u1, float u2, float power) {
     float z = Math::Pow(u1, 1.0f / (power + 1.0f));
-    float r = Math::Sqrt(1 - z * z);
+    float r = Math::Sqrt(1.0f - z * z);
     float s, c;
     Math::SinCos(Math::TwoPi * u2, s, c);
     return Vec3(r * c, r * s, z);

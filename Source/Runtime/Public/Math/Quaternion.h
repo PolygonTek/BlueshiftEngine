@@ -428,10 +428,12 @@ BE_INLINE float Quat::CalcW() const {
 }
 
 BE_INLINE Vec3 Quat::Axis() const {
-    // Convert cos to sin via the identity sin^2 + cos^2 = 1, and fuse reciprocal and square root to the same instruction,
-    // since we are about to divide by it.
-    float rcpSinAngle = Math::RSqrt(1.0f - w * w);
-    return Vec3(x, y, z) * rcpSinAngle;
+    Vec3 axis(x, y, z);
+    float sqrLength = axis.LengthSqr();
+    if (sqrLength < std::numeric_limits<float>::min()) {
+        return Vec3::zero;  
+    }
+    return axis * Math::InvSqrt(sqrLength);
 }
 
 BE_INLINE float Quat::Angle() const {

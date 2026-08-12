@@ -332,7 +332,7 @@ static void RB_GenerateOcclusionMapHierarchy() {
     int h = backEnd.ctx->homRT->GetHeight();
 
     float size = Max(w, h);
-    int numLevels = Math::Log(2.0f, size);
+    int numLevels = Math::Log2(size);
     
     Shader *shader = ShaderManager::generateHomShader;
 
@@ -413,7 +413,7 @@ static void RB_QueryOccludeeAABBs(int numAmbientOccludees, const AABB *occludeeA
     shader->SetConstant4x4f("viewProjectionMatrix", true, backEnd.camera->def->GetViewProjMatrix());
     shader->SetConstant2f("viewportSize", Vec2(backEnd.ctx->homRT->GetWidth(), backEnd.ctx->homRT->GetHeight()));
     int size = Max(backEnd.ctx->homRT->GetWidth(), backEnd.ctx->homRT->GetHeight());
-    int maxLevel = Math::Log(2, size) - 1;
+    int maxLevel = Math::Log2(static_cast<float>(size)) - 1;
     shader->SetConstant1i("maxLevel", maxLevel);
 
     graphics.SetViewport(Rect(0, 0, backEnd.homCullingOutputRT->GetWidth(), backEnd.homCullingOutputRT->GetHeight()));
@@ -770,7 +770,7 @@ static void RB_DrawDebugHOMap() {
     float h = 100.0f;
 
     float size = Max(backEnd.ctx->homRT->GetWidth(), backEnd.ctx->homRT->GetHeight());
-    int numLevels = Math::Log(2, size);
+    int numLevels = Math::Log2(size);
 
     graphics.SetStateBits(Graphics::ColorWrite);
 

@@ -325,7 +325,7 @@ void App::UpdateCamera(uint64_t frameUsec) {
     constexpr float CameraFlyFastSpeedScale = 4.0f;
 
     float dt = (float)MICRO2SEC((double)frameUsec);
-    float alpha = 1.0f - BE1::Math::Exp(-CameraSmoothingSpeed * dt);
+    float alpha = 1.0f - BE1::Math::ExpFast(-CameraSmoothingSpeed * dt);
 
     if (cameraControlMode == CameraControlMode::Fly) {
         const BE1::Mat3 targetCameraAxis = BE1::Angles(0.0f, targetCameraPitch, targetCameraYaw).ToMat3();
@@ -353,7 +353,7 @@ void App::UpdateCamera(uint64_t frameUsec) {
         const float moveDirLengthSqr = moveDir.LengthSqr();
         if (moveDirLengthSqr > 0.0f) {
             const float speedScale = IsCameraMoveFlagSet(CameraMoveFlag::Fast) ? CameraFlyFastSpeedScale : 1.0f;
-            moveDir = moveDir * BE1::Math::InvSqrt(moveDirLengthSqr);
+            moveDir = moveDir * BE1::Math::InvSqrtFast(moveDirLengthSqr);
             targetCameraOrigin = targetCameraOrigin + moveDir * (cameraFlySpeed * speedScale * dt);
         }
     }

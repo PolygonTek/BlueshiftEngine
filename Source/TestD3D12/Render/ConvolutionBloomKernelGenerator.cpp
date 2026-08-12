@@ -383,7 +383,7 @@ bool ConvolutionBloomKernelGenerator::DispatchAperturePrepare(RHI::CommandList *
     const float sourceTexelsPerOutputTexelX = static_cast<float>(inputW) / (static_cast<float>(outputW) * clampedApertureScale);
     const float sourceTexelsPerOutputTexelY = static_cast<float>(inputH) / (static_cast<float>(outputH) * clampedApertureScale);
     const float sourceTexelsPerOutputTexel = BE1::Max(sourceTexelsPerOutputTexelX, sourceTexelsPerOutputTexelY);
-    const float apertureMipLevel = BE1::Max(BE1::Math::Log(2.0f, sourceTexelsPerOutputTexel), 0.0f);
+    const float apertureMipLevel = BE1::Max(BE1::Math::Log2(sourceTexelsPerOutputTexel), 0.0f);
 
     BloomParams bloomParams = {};
     bloomParams.inputSize = uint2(inputW, inputH);

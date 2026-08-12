@@ -717,7 +717,7 @@ void Mat3::ToRotationXZY(float &ex, float &ez, float &ey) const {
         }
     } else {
         // Not a unique solution: y + x = atan2(-mat[0][2], mat[2][2]);
-        ez = -Math::Pi / 2.f;
+        ez = -Math::HalfPi;
         ex = atan2(-mat[0][2], mat[2][2]);
         ey = 0;
     }

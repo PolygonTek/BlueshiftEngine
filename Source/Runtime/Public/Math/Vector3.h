@@ -584,7 +584,7 @@ BE_INLINE float Vec3::Normalize() {
 
 BE_INLINE float Vec3::NormalizeFast() {
     float sqrLength = x * x + y * y + z * z;
-    float invLength = Math::RSqrt(sqrLength);
+    float invLength = Math::InvSqrtFast(sqrLength);
 
     x *= invLength;
     y *= invLength;
@@ -791,7 +791,7 @@ BE_INLINE void Vec3::SetFromSpherical(float radius, float theta, float phi) {
 BE_INLINE float Vec3::ToSpherical(float &theta, float &phi) const {
     float radius = Math::Sqrt(x * x + y * y + z * z);
     theta = Math::ACos(z / radius);
-    phi = Math::ATan(y, x);
+    phi = Math::ATan2(y, x);
     return radius;
 }
 

@@ -702,9 +702,9 @@ void BE_FASTCALL SIMD_4::BlendJoints(JointPose *joints, const JointPose *blendJo
         scale0 = 1.0f - cosom * cosom;
         scale0 = (scale0 <= 0.0f) ? 1e-10f : scale0;
         sinom = Math::InvSqrt(scale0);
-        omega = Math::ATan16(scale0 * sinom, cosom);
-        scale0 = Math::Sin16((1.0f - fraction) * omega) * sinom;
-        scale1 = Math::Sin16(fraction * omega) * sinom;
+        omega = Math::ATan2Fast(scale0 * sinom, cosom);
+        scale0 = Math::SinFast((1.0f - fraction) * omega) * sinom;
+        scale1 = Math::SinFast(fraction * omega) * sinom;
 
         (*(uint32_t *)&scale1) ^= signBit;
 

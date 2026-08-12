@@ -36,7 +36,7 @@ static void PrintClocksSIMD(const char *string, uint64_t clocksGeneric, uint64_t
 
 static void RandomFloatArrayInit(float *dst, int count, float minimum, float maximum) {
     for (int i = 0; i < count; i++) {
-        dst[i] = BE1::Math::Random(minimum, maximum);
+        dst[i] = BE1::RNG::GetRandom(minimum, maximum);
     }
 }
 
@@ -720,9 +720,9 @@ static void RandomJointPoseArrayInit(BE1::JointPose *joints, int numJoints, bool
 
     for (int i = 0; i < numJoints; i++) {
         joints[i].q.Set(
-            BE1::Math::Random(-1.0f, 1.0f),
-            BE1::Math::Random(-1.0f, 1.0f),
-            BE1::Math::Random(-1.0f, 1.0f),
+            BE1::RNG::GetRandom(-1.0f, 1.0f),
+            BE1::RNG::GetRandom(-1.0f, 1.0f),
+            BE1::RNG::GetRandom(-1.0f, 1.0f),
             1.0f);
         joints[i].q.Normalize();
         if (alternateQuaternionSign && (i & 1)) {
@@ -730,13 +730,13 @@ static void RandomJointPoseArrayInit(BE1::JointPose *joints, int numJoints, bool
         }
 
         joints[i].t.Set(
-            BE1::Math::Random(-10.0f, 10.0f),
-            BE1::Math::Random(-10.0f, 10.0f),
-            BE1::Math::Random(-10.0f, 10.0f));
+            BE1::RNG::GetRandom(-10.0f, 10.0f),
+            BE1::RNG::GetRandom(-10.0f, 10.0f),
+            BE1::RNG::GetRandom(-10.0f, 10.0f));
         joints[i].s.Set(
-            BE1::Math::Random(0.5f, 1.5f),
-            BE1::Math::Random(0.5f, 1.5f),
-            BE1::Math::Random(0.5f, 1.5f));
+            BE1::RNG::GetRandom(0.5f, 1.5f),
+            BE1::RNG::GetRandom(0.5f, 1.5f),
+            BE1::RNG::GetRandom(0.5f, 1.5f));
     }
 }
 
@@ -837,9 +837,9 @@ static void TestSIMD4JointOpsCorrectness() {
         compressedJoints[i].q[0] = BE1::CompressedJointPose::QuatToShort(sourceJoints[i].q.x);
         compressedJoints[i].q[1] = BE1::CompressedJointPose::QuatToShort(sourceJoints[i].q.y);
         compressedJoints[i].q[2] = BE1::CompressedJointPose::QuatToShort(sourceJoints[i].q.z);
-        compressedJoints[i].t[0] = BE1::CompressedJointPose::TranslationToShort(BE1::Math::Random(-3.0f, 3.0f));
-        compressedJoints[i].t[1] = BE1::CompressedJointPose::TranslationToShort(BE1::Math::Random(-3.0f, 3.0f));
-        compressedJoints[i].t[2] = BE1::CompressedJointPose::TranslationToShort(BE1::Math::Random(-3.0f, 3.0f));
+        compressedJoints[i].t[0] = BE1::CompressedJointPose::TranslationToShort(BE1::RNG::GetRandom(-3.0f, 3.0f));
+        compressedJoints[i].t[1] = BE1::CompressedJointPose::TranslationToShort(BE1::RNG::GetRandom(-3.0f, 3.0f));
+        compressedJoints[i].t[2] = BE1::CompressedJointPose::TranslationToShort(BE1::RNG::GetRandom(-3.0f, 3.0f));
         compressedJoints[i].s[0] = BE1::CompressedJointPose::ScaleToShort(sourceJoints[i].s.x);
         compressedJoints[i].s[1] = BE1::CompressedJointPose::ScaleToShort(sourceJoints[i].s.y);
         compressedJoints[i].s[2] = BE1::CompressedJointPose::ScaleToShort(sourceJoints[i].s.z);
@@ -1110,7 +1110,7 @@ static void TestTransformJoints() {
 
     parents[0] = -1;
     for (int i = 1; i < COUNT_OF(parents); i++) {
-        parents[i] = BE1::Math::RandomRange(0, i - 1);
+        parents[i] = BE1::RNG::GetRandom(0, i - 1);
     }
 
     RandomFloatArrayInit((float *)jointMatrix, 12 * COUNT_OF(jointMatrix), -100.0f, 100.0f);
@@ -1150,12 +1150,12 @@ static void TestUntransformJoints() {
     parents[0] = -1;
     worldJointMatrix[0] = BE1::Mat3x4::identity;
     for (int i = 1; i < COUNT_OF(parents); i++) {
-        parents[i] = BE1::Math::RandomRange(0, i - 1);
+        parents[i] = BE1::RNG::GetRandom(0, i - 1);
         worldJointMatrix[i] = BE1::Mat3x4::identity;
         worldJointMatrix[i].SetTranslation(BE1::Vec3(
-            BE1::Math::RandomRange(-100.0f, 100.0f),
-            BE1::Math::RandomRange(-100.0f, 100.0f),
-            BE1::Math::RandomRange(-100.0f, 100.0f)));
+            BE1::RNG::GetRandom(-100.0f, 100.0f),
+            BE1::RNG::GetRandom(-100.0f, 100.0f),
+            BE1::RNG::GetRandom(-100.0f, 100.0f)));
     }
     BE1::simdGeneric->TransformJoints(worldJointMatrix, parents, 0, COUNT_OF(worldJointMatrix) - 1);
 

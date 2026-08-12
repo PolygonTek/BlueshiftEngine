@@ -99,7 +99,7 @@ void RB_DrawCircle(const Vec3 &origin, const Vec3 &left, const Vec3 &up, const f
     int size = (segments + 1) * sizeof(Vec3);
     Vec3 *verts = (Vec3 *)_alloca32(size);
     for (int i = 0; i < segments + 1; i++) {
-        Math::SinCos(Math::TwoPi * i / segments, s, c);
+        Math::SinCosFast(Math::TwoPi * i / segments, s, c);
         verts[i] = origin + radius * (left * c + up * s);
     }
 

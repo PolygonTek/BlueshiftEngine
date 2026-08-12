@@ -566,7 +566,7 @@ bool RenderBackend::DispatchConvolutionBloomKernelPrepare() {
     const float sourceFootprintYY = sourceToOutputScaleY * rotationCos / mappedKernelScaleY;
     const float sourceFootprintX = BE1::Math::Sqrt(sourceFootprintXX * sourceFootprintXX + sourceFootprintXY * sourceFootprintXY);
     const float sourceFootprintY = BE1::Math::Sqrt(sourceFootprintYX * sourceFootprintYX + sourceFootprintYY * sourceFootprintYY);
-    const float kernelMipLevel = BE1::Max(BE1::Math::Log(2.0f, BE1::Max(sourceFootprintX, sourceFootprintY)), 0.0f);
+    const float kernelMipLevel = BE1::Max(BE1::Math::Log2(BE1::Max(sourceFootprintX, sourceFootprintY)), 0.0f);
 
     BloomParams bloomParams = {};
     bloomParams.inputSize = uint2(inputW, inputH);
@@ -686,7 +686,7 @@ bool RenderBackend::DispatchConvolutionBloomScreenPrepare() {
     }
 
     const float sourceTexelsPerOutputTexel = BE1::Max(static_cast<float>(inputW) / contentW, static_cast<float>(inputH) / contentH);
-    const float screenMipLevel = BE1::Min(BE1::Max(BE1::Math::Log(2.0f, sourceTexelsPerOutputTexel), 0.0f), static_cast<float>(mipLevelCount - 1));
+    const float screenMipLevel = BE1::Min(BE1::Max(BE1::Math::Log2(sourceTexelsPerOutputTexel), 0.0f), static_cast<float>(mipLevelCount - 1));
 
     BloomParams bloomParams = {};
     bloomParams.inputSize = uint2(inputW, inputH);

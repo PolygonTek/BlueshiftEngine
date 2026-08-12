@@ -59,8 +59,6 @@ void Engine::InitBase(uint32_t maxTaskCount, const char *baseDir, const streamOu
 
     PlatformTime::Init();
 
-    Math::Init();
-
 #ifdef USE_TASK_MANAGER
     // Create the task manager with the given max task count.
     taskManager = BE_NEW TaskManager(maxTaskCount);

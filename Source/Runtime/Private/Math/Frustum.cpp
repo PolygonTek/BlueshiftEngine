@@ -555,8 +555,8 @@ bool Frustum::LocalRayIntersection(const Vec3 &start, const Vec3 &dir, float &sc
     float upScale = dUp * invFar;
     Vec3 end = start + dir;
 
-    scale1 = Math::Infinity;
-    scale2 = -Math::Infinity;
+    scale1 = Math::BigNumber;
+    scale2 = -Math::BigNumber;
 
     // test near plane
     if (dNear > 0.0f) {
@@ -1038,8 +1038,8 @@ bool Frustum::FromProjection(const OBB &box, const Vec3 &projectionOrigin, const
         }
 
         if (j == 0) {
-            dir += Math::Tan16(0.5f * (Math::ATan16(points[minY].y, points[minY].x) + Math::ATan16(points[maxY].y, points[maxY].x))) * axis[1];
-            dir += Math::Tan16(0.5f * (Math::ATan16(points[minZ].z, points[minZ].x) + Math::ATan16(points[maxZ].z, points[maxZ].x))) * axis[2];
+            dir += Math::TanFast(0.5f * (Math::ATan2Fast(points[minY].y, points[minY].x) + Math::ATan2Fast(points[maxY].y, points[maxY].x))) * axis[1];
+            dir += Math::TanFast(0.5f * (Math::ATan2Fast(points[minZ].z, points[minZ].x) + Math::ATan2Fast(points[maxZ].z, points[maxZ].x))) * axis[2];
             dir.Normalize();
         }
     }
@@ -1079,8 +1079,8 @@ bool Frustum::FromProjection(const OBB &box, const Vec3 &projectionOrigin, const
         }
 
         if (j == 0) {
-            dir += Math::Tan16(0.5f * (Math::ATan16(b[1][1]) + Math::ATan16(b[0][1]))) * axis[1];
-            dir += Math::Tan16(0.5f * (Math::ATan16(b[1][2]) + Math::ATan16(b[0][2]))) * axis[2];
+            dir += Math::TanFast(0.5f * (Math::ATanFast(b[1][1]) + Math::ATanFast(b[0][1]))) * axis[1];
+            dir += Math::TanFast(0.5f * (Math::ATanFast(b[1][2]) + Math::ATanFast(b[0][2]))) * axis[2];
             dir.Normalize();
         }
     }
@@ -1667,8 +1667,8 @@ bool Frustum::AABBRayIntersection(const AABB &bounds, const Vec3 &start, const V
     float d1, d2, f;
     int startInside = 1;
 
-    scale1 = Math::Infinity;
-    scale2 = -Math::Infinity;
+    scale1 = Math::BigNumber;
+    scale2 = -Math::BigNumber;
 
     Vec3 end = start + dir;
 
@@ -2041,8 +2041,8 @@ bool Frustum::ClipLine(const Vec3 localPoints[8], const Vec3 points[8], int star
     Vec3 localDir = localEnd - localStart;
 
     startClip = endClip = -1;
-    float scale1 = Math::Infinity;
-    float scale2 = -Math::Infinity;
+    float scale1 = Math::BigNumber;
+    float scale2 = -Math::BigNumber;
 
     float fstart = dFar * localStart.y;
     float fend = dFar * localEnd.y;

@@ -23,19 +23,21 @@ void LuaVM::RegisterMath(LuaCpp::Module &module) {
 
     _Math["pi"] = Math::Pi;
     _Math["e"] = Math::E;
-    _Math["inf"] = Math::Infinity;
-    _Math["inv_sqrt"].SetFunc(Math::InvSqrt);
-    _Math["sqrt"].SetFunc(Math::Sqrt);
-    _Math["sin"].SetFunc(Math::Sin);
-    _Math["cos"].SetFunc(Math::Cos);
-    _Math["tan"].SetFunc(Math::Tan);
-    _Math["asin"].SetFunc(Math::ASin);
-    _Math["acos"].SetFunc(Math::ACos);
+    _Math["big_number"] = Math::BigNumber;
+    _Math["inv_sqrt"].SetFunc(static_cast<float (*)(float)>(&Math::InvSqrt));
+    _Math["sqrt"].SetFunc(static_cast<float (*)(float)>(&Math::Sqrt));
+    _Math["sin"].SetFunc(static_cast<float (*)(float)>(&Math::Sin));
+    _Math["cos"].SetFunc(static_cast<float (*)(float)>(&Math::Cos));
+    _Math["tan"].SetFunc(static_cast<float (*)(float)>(&Math::Tan));
+    _Math["asin"].SetFunc(static_cast<float (*)(float)>(&Math::ASin));
+    _Math["acos"].SetFunc(static_cast<float (*)(float)>(&Math::ACos));
     _Math["atan"].SetFunc(static_cast<float(*)(float)>(&Math::ATan));
-    _Math["atan2"].SetFunc(static_cast<float(*)(float, float)>(&Math::ATan));
-    _Math["pow"].SetFunc(Math::Pow);
-    _Math["exp"].SetFunc(Math::Exp);
-    _Math["ln"].SetFunc(static_cast<float (*)(float)>(&Math::Ln));
+    _Math["atan2"].SetFunc(static_cast<float(*)(float, float)>(&Math::ATan2));
+    _Math["exp"].SetFunc(static_cast<float (*)(float)>(&Math::Exp));
+    _Math["log"].SetFunc(static_cast<float (*)(float)>(&Math::Log));
+    _Math["log2"].SetFunc(static_cast<float (*)(float)>(&Math::Log2));
+    _Math["log10"].SetFunc(static_cast<float (*)(float)>(&Math::Log10));
+    _Math["pow"].SetFunc(static_cast<float (*)(float, float)>(&Math::Pow));
     _Math["is_power_of_two"].SetFunc(Math::IsPowerOfTwo);
     _Math["abs"].SetFunc(Math::Abs);
     _Math["fabs"].SetFunc(Math::Fabs);
@@ -50,7 +52,7 @@ void LuaVM::RegisterMath(LuaCpp::Module &module) {
     _Math["angle_normalize_360"].SetFunc(Math::AngleNormalize360);
     _Math["angle_normalize_180"].SetFunc(Math::AngleNormalize180);
     _Math["angle_delta"].SetFunc(Math::AngleDelta);
-    _Math["random"].SetFunc(Math::Random);
+    _Math["random"].SetFunc(static_cast<float (*)(float, float)>(&RNG::GetRandom));
     _Math["lerp"].SetFunc(Math::Lerp<float>);
 }
 

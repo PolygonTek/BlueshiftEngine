@@ -170,7 +170,7 @@ void RenderLight::UpdateProjectionAndBounds() {
         worldFrustum.SetAxis(desc.axis);
         worldFrustum.SetSize(zNear, zFar, left, up);
 
-        const float yFov = RAD2DEG(BE1::Math::ATan(worldFrustum.GetUp(), worldFrustum.GetFarDistance())) * 2.0f;
+        const float yFov = RAD2DEG(BE1::Math::ATan2(worldFrustum.GetUp(), worldFrustum.GetFarDistance())) * 2.0f;
 
         // Calculate spot light perspective projection matrix.
         const float aspect = worldFrustum.GetLeft() / worldFrustum.GetUp();

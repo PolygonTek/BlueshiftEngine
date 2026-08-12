@@ -63,7 +63,7 @@ static float GetUnitRadiusToPixelsScale(const VisCamera *visCamera) {
 
 static uint32_t GetDebugPointLightCircleSegments(const VisCamera *visCamera, const VisLight *visLight, float unitRadiusToPixelsScale) {
     const BE1::Vec4 centerClip = visCamera->viewProjMatrix * BE1::Vec4(visLight->origin, 1.0f);
-    if (centerClip.w > BE1::Math::FloatSmallestNonDenormal) {
+    if (centerClip.w > std::numeric_limits<float>::min()) {
         const float radius = BE1::Max(visLight->size[0], MinDebugLightSize);
         const float radiusPixels = radius * unitRadiusToPixelsScale / centerClip.w;
 

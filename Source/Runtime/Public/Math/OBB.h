@@ -244,7 +244,7 @@ BE_INLINE bool OBB::Equals(const OBB &a, const float epsilon) const {
 
 BE_INLINE void OBB::Clear() {
     center.SetFromScalar(0);
-    extents[0] = extents[1] = extents[2] = -Math::Infinity;
+    extents[0] = extents[1] = extents[2] = -Math::BigNumber;
     axis.SetIdentity();
 }
 

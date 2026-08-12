@@ -595,7 +595,7 @@ void TextureManager::Cmd_ConvertNormalAR2RGB(const CmdArgs &args) {
             data2Ptr[1] = data1Ptr[0];
             float x = ((float)data1Ptr[3] / 255.0f) * 2.0f - 1.0f;
             float y = ((float)data1Ptr[0] / 255.0f) * 2.0f - 1.0f;
-            data2Ptr[2] = (byte)(255 * (Math::Sqrt(Math::Fabs(1.0 - x * x - y * y)) * 0.5f + 0.5f));
+            data2Ptr[2] = (byte)(255 * (Math::Sqrt(Math::Fabs(1.0f - x * x - y * y)) * 0.5f + 0.5f));
         }
 
         image2.FlipY();

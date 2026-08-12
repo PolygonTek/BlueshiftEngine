@@ -72,8 +72,8 @@ void RenderLight::Update(const RenderLight::State *stateDef) {
         worldFrustum.SetAxis(state.axis);
         worldFrustum.SetSize(Max(state.zNear, 0.01f), state.size[0], state.size[1], state.size[2]);
 
-        float xFov = RAD2DEG(Math::ATan(worldFrustum.GetLeft(), worldFrustum.GetFarDistance())) * 2.0f;
-        float yFov = RAD2DEG(Math::ATan(worldFrustum.GetUp(), worldFrustum.GetFarDistance())) * 2.0f;
+        float xFov = RAD2DEG(Math::ATan2(worldFrustum.GetLeft(), worldFrustum.GetFarDistance())) * 2.0f;
+        float yFov = RAD2DEG(Math::ATan2(worldFrustum.GetUp(), worldFrustum.GetFarDistance())) * 2.0f;
 
         // Calculate spot light perspective projection matrix.
         float aspect = Math::Tan(DEG2RAD(xFov) * 0.5f) / Math::Tan(DEG2RAD(yFov) * 0.5f);

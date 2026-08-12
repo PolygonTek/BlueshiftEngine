@@ -378,7 +378,7 @@ void Mesh::CreateGeosphere(const BE1::Vec3 &origin, float radius, int numSubdivi
     BE1::VertexGenericLit *v = surf->subMesh->verts;
     for (int i = 0; i < COUNT_OF(icosa_verts); i++) {
         BE1::Vec3 n = icosa_verts[i].Normalized();
-        float theta = BE1::Math::ATan(n.y, n.x);
+        float theta = BE1::Math::ATan2(n.y, n.x);
         float phi = BE1::Math::ACos(n.z);
         float s = theta * BE1::Math::InvPi;
         float t = phi * BE1::Math::InvPi;

@@ -480,7 +480,7 @@ void ComEnvironmentProbe::BakeSpecularProbeTexture() {
     Texture *specularSumTexture = reflectionProbe->GetSpecularSumCubeTexture();
 
     Image specularSumImage;
-    int numMipLevels = Math::Log(2, specularSumTexture->GetWidth()) + 1;
+    int numMipLevels = Math::Log2(static_cast<float>(specularSumTexture->GetWidth())) + 1;
     Texture::GetCubeImageFromCubeTexture(specularSumTexture, numMipLevels, specularSumImage);
 
     // Convert format to RGB_11F_11F_10F if texture format is HDR

@@ -434,7 +434,7 @@ bool IBLBaker::DispatchGenerateLDMip(RHI::CommandList *commandList, const RHI::T
     const uint32_t mipLevelCount = outputCubeMap->GetMipLevelCount();
     GenLDSumGGXParams params = {};
     params.radianceCubeMapSize = radianceCubeMap->GetWidth();
-    params.minRadianceMipLevel = BE1::Max(BE1::Math::Log(2.0f, static_cast<float>(radianceCubeMap->GetWidth()) / static_cast<float>(outputViewInfo.width)), 0.0f);
+    params.minRadianceMipLevel = BE1::Max(BE1::Math::Log2(static_cast<float>(radianceCubeMap->GetWidth()) / static_cast<float>(outputViewInfo.width)), 0.0f);
 
     // Perceptual roughness 를 mip chain 에 선형 배분하고 shader 에서 제곱하여 linear roughness 로 변환한다.
     params.roughness = mipLevelCount > 1 ? static_cast<float>(mipLevel) / static_cast<float>(mipLevelCount - 1) : 0.0f;

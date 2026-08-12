@@ -423,7 +423,7 @@ void SoundSource::SetVolume(float volume) {
     } else if (volume >= 1.0f) {
         volumeMillibel = 0;
     } else {
-        volumeMillibel = Clamp<int64_t>((int64_t)(2000.0f * Math::Log(10, volume)), minVolumeMillibel, 0);
+        volumeMillibel = Clamp<int64_t>((int64_t)(2000.0f * Math::Log10Fast(volume)), minVolumeMillibel, 0);
     }
     SLresult result = (*slVolume)->SetVolumeLevel(slVolume, volumeMillibel);
     assert(SL_RESULT_SUCCESS == result);

@@ -286,7 +286,7 @@ Image Image::MakeSDF(int32_t spread) const {
                 }
             }
 
-            const int value = base ? 255 : 255 * (1.0f - Math::Sqrt(nearestSquaredDist) / spread);
+            const int value = base ? 255 : 255 * (1.0f - Math::Sqrt(static_cast<float>(nearestSquaredDist)) / spread);
 
             image.pic[centerY * width + centerX] = value;
         }

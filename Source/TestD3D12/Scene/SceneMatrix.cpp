@@ -129,7 +129,7 @@ void SceneMatrix::InitGameObjects(uint32_t countX, uint32_t countY, uint32_t cou
                 desc.meshInstance = testMesh->GetStaticInstance();
                 desc.aabb = testMesh->GetAABB();
                 desc.materials.SetCount(1);
-                desc.materials[0] = materialManager.GetSingleTextureMaterial(textureFilenames[BE1::Math::RandomRange(0, COUNT_OF(textureFilenames) - 1)]);
+                desc.materials[0] = materialManager.GetSingleTextureMaterial(textureFilenames[BE1::RNG::GetRandom(0, COUNT_OF(textureFilenames) - 1)]);
 
                 gameObject->renderObjectHandle = renderWorld->AddRenderObject(desc);
             }
@@ -296,7 +296,7 @@ void SceneMatrix::AnimateGameLights(uint64_t elapsedUsec) {
             const float phase = index * phaseStep;
 
             GameLight &gameLight = gameLights[index];
-            gameLight.origin.z = baseOriginZ + BE1::Math::Sin(elapsedSeconds * movementSpeed + phase) * movementAmplitude;
+            gameLight.origin.z = baseOriginZ + BE1::Math::SinFast(elapsedSeconds * movementSpeed + phase) * movementAmplitude;
 
             renderWorld->UpdateRenderLightTransform(gameLight.renderLightHandle, gameLight.origin, gameLight.axis);
         }

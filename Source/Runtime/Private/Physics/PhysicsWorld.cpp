@@ -747,7 +747,7 @@ bool PhysicsWorld::ClosestConvexTest(const btCollisionObject *me, const btConvex
         const btCollisionObject *m_me;
     };
 
-    if (origin.DistanceSqr(dest) < Math::FloatEpsilon) {
+    if (origin.DistanceSqr(dest) < FLT_EPSILON) {
         return false;
     }
 
@@ -832,7 +832,7 @@ bool PhysicsWorld::AllHitsConvexTest(const btCollisionObject *me, const btConvex
         const btCollisionObject *m_me;
     };
 
-    if (origin.DistanceSqr(dest) < Math::FloatEpsilon) {
+    if (origin.DistanceSqr(dest) < FLT_EPSILON) {
         return false;
     }
 

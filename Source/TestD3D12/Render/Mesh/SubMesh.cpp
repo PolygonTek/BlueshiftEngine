@@ -734,7 +734,7 @@ bool SubMesh::IntersectRay(const BE1::Ray &ray, bool ignoreBackFace, float *hitD
         return false;
     }
 
-    float minDist = BE1::Math::Infinity;
+    float minDist = BE1::Math::BigNumber;
     BE1::Vec3 minDistNormal = BE1::Vec3::unitX;
 
     byte *sidedness = (byte *)_alloca(numEdges * sizeof(byte));
@@ -792,7 +792,7 @@ bool SubMesh::IntersectRay(const BE1::Ray &ray, bool ignoreBackFace, float *hitD
         }
     }
 
-    if (minDist == BE1::Math::Infinity) {
+    if (minDist == BE1::Math::BigNumber) {
         return false;
     }
 

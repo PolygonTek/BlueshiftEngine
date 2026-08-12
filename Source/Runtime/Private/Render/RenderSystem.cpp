@@ -642,7 +642,7 @@ void RenderSystem::ScheduleToRefreshEnvProbe(RenderWorld *renderWorld, int probe
     EnvProbeJob job;
     job.renderWorld = renderWorld;
     job.envProbe = renderWorld->GetEnvProbe(probeHandle);
-    job.specularProbeCubemapMaxLevel = Math::Log(2, job.envProbe->GetSize());
+    job.specularProbeCubemapMaxLevel = Math::Log2(static_cast<float>(job.envProbe->GetSize()));
 
     envProbeJobs.Append(std::move(job));
 }
@@ -651,7 +651,7 @@ void RenderSystem::ForceToRefreshEnvProbe(RenderWorld *renderWorld, int probeHan
     EnvProbeJob job;
     job.renderWorld = renderWorld;
     job.envProbe = renderWorld->GetEnvProbe(probeHandle);
-    job.specularProbeCubemapMaxLevel = Math::Log(2, job.envProbe->GetSize());
+    job.specularProbeCubemapMaxLevel = Math::Log2(static_cast<float>(job.envProbe->GetSize()));
 
     job.envProbe->bounces = 0;
 
@@ -974,7 +974,7 @@ void RenderSystem::GeneratePhongSpecularLDSumRT(const Texture *envCubeTexture, i
 
     int size = targetCubeRT->GetWidth();
 
-    int numMipLevels = Math::Log(2, size) + 1;
+    int numMipLevels = Math::Log2(static_cast<float>(size)) + 1;
 
     // power drop range [maxSpecularPower, 2]
     float powerDropOnMip = Math::Pow(maxSpecularPower, -1.0f / numMipLevels);
@@ -1084,7 +1084,7 @@ void RenderSystem::GenerateGGXLDSumRTLevel(const Texture *envCubeTexture, Render
 
 void RenderSystem::GenerateGGXLDSumRT(const Texture *envCubeTexture, RenderTarget *targetCubeRT) const {
     int size = targetCubeRT->GetWidth();
-    int numMipLevels = Math::Log(2, size) + 1;
+    int numMipLevels = Math::Log2(static_cast<float>(size)) + 1;
 
     for (int mipLevel = 0; mipLevel < numMipLevels; mipLevel++) {
         GenerateGGXLDSumRTLevel(envCubeTexture, targetCubeRT, numMipLevels, mipLevel);
@@ -1192,7 +1192,7 @@ void RenderSystem::TakeIrradianceEnvShot(const char *filename, RenderWorld *rend
 void RenderSystem::TakePrefilteredEnvShot(const char *filename, RenderWorld *renderWorld, int layerMask, int staticMask, const Vec3 &origin, bool useHDR, int size, int envSize) {
     Texture *envCubeTexture = CaptureEnvCubeTexture(renderWorld, layerMask, staticMask, false, Color4::black, origin, CmToUnit(5.0f), MeterToUnit(100.0f), useHDR, envSize);
 
-    int numMipLevels = Math::Log(2, size) + 1;
+    int numMipLevels = Math::Log2(static_cast<float>(size)) + 1;
 
     Texture *prefilteredCubeTexture = BE_NEW Texture;
     prefilteredCubeTexture->CreateEmpty(Graphics::TextureType::TextureCubeMap, size, size, 1, 1, numMipLevels,

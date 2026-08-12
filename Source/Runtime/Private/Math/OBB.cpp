@@ -235,7 +235,7 @@ bool OBB::AddOBB(const OBB &a) {
     }
 
     // 가장 작은 volume 의 aabb 를 구한다.
-    float bestv = Math::Infinity;
+    float bestv = Math::BigNumber;
     int besti = 0;
     for (int i = 0; i < 4; i++) {
         float v = aabbs[i].Volume();
@@ -718,13 +718,13 @@ bool OBB::IsIntersectLine(const Vec3 &start, const Vec3 &end) const {
 
 bool OBB::IsIntersectPlane(const Plane &plane) const {
     // Compute the projection interval radius of the OBB onto L(t) = center + t * plane.normal;
-    float r = extents[0] * Math::Abs(axis[0].Dot(plane.normal)) +
-              extents[1] * Math::Abs(axis[1].Dot(plane.normal)) +
-              extents[2] * Math::Abs(axis[2].Dot(plane.normal));
+    float r = extents[0] * Math::Fabs(axis[0].Dot(plane.normal)) +
+              extents[1] * Math::Fabs(axis[1].Dot(plane.normal)) +
+              extents[2] * Math::Fabs(axis[2].Dot(plane.normal));
     // Compute the distance of the box center from plane.
     float s = plane.Distance(center);
 
-    return Math::Abs(s) <= r;
+    return Math::Fabs(s) <= r;
 }
 
 bool OBB::IntersectRay(const Ray &ray, float *hitDistMin, float *hitDistMax) const {

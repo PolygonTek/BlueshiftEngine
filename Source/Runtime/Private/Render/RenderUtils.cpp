@@ -271,17 +271,17 @@ void R_GenerateSphereTriangleStripVerts(const Sphere &sphere, int lats, int long
 
     for (int i = 0; i < lats; i++) {
         float lat0  = Math::Pi * (0.5f + (float)(i) / lats);
-        float z0    = Math::Sin(lat0) * sphere.radius;
-        float r0    = Math::Cos(lat0) * sphere.radius;
+        float z0    = Math::SinFast(lat0) * sphere.radius;
+        float r0    = Math::CosFast(lat0) * sphere.radius;
 
         float lat1  = Math::Pi * (0.5f + (float)(i+1) / lats);
-        float z1    = Math::Sin(lat1) * sphere.radius;
-        float r1    = Math::Cos(lat1) * sphere.radius;
+        float z1    = Math::SinFast(lat1) * sphere.radius;
+        float r1    = Math::CosFast(lat1) * sphere.radius;
 
         for (int j = 0; j < longs; j++) {
             float lng = Math::TwoPi * (float)j / longs;
-            float x = Math::Cos(lng);
-            float y = Math::Sin(lng);
+            float x = Math::CosFast(lng);
+            float y = Math::SinFast(lng);
 
             *vptr++ = sphere.center + Vec3(x * r0, y * r0, z0);
             *vptr++ = sphere.center + Vec3(x * r1, y * r1, z1);

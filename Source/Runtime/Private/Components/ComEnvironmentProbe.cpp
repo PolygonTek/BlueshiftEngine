@@ -523,7 +523,7 @@ Str ComEnvironmentProbe::WriteSpecularProbeTexture(const Str &probesDir) const {
     const Texture *specularProbeTexture = GetSpecularProbeTexture();
 
     Image specularProbeImage;
-    int numMipLevels = Math::Log(2, specularProbeTexture->GetWidth()) + 1;
+    int numMipLevels = Math::Log2(static_cast<float>(specularProbeTexture->GetWidth())) + 1;
     Texture::GetCubeImageFromCubeTexture(specularProbeTexture, numMipLevels, specularProbeImage);
 
     Str specularProbeFilename = probesDir;

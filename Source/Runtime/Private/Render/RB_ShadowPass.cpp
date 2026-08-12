@@ -562,8 +562,8 @@ static void RB_ProjectedShadowMapPass(const VisLight *visLight, const Frustum &v
         return;
     }
 
-    float xFov = RAD2DEG(Math::ATan(visLight->def->GetWorldFrustum().GetLeft(), dFar)) * 2.0f;
-    float yFov = RAD2DEG(Math::ATan(visLight->def->GetWorldFrustum().GetUp(), dFar)) * 2.0f;
+    float xFov = RAD2DEG(Math::ATan2(visLight->def->GetWorldFrustum().GetLeft(), dFar)) * 2.0f;
+    float yFov = RAD2DEG(Math::ATan2(visLight->def->GetWorldFrustum().GetUp(), dFar)) * 2.0f;
 
     float aspect = Math::Tan(DEG2RAD(xFov) * 0.5f) / Math::Tan(DEG2RAD(yFov) * 0.5f);
     backEnd.shadowProjectionMatrix.SetPerspectiveRH(yFov, aspect, dNear, dFar, true);

@@ -270,9 +270,9 @@ void GraphicsOpenGL::AdjustTextureSize(TextureType::Enum type, bool useNPOT, int
         d = inDepth;
     } else {
         // Fit multiplier size of 2.
-        w = Math::RoundUpPowerOfTwo(inWidth);
-        h = Math::RoundUpPowerOfTwo(inHeight);
-        d = Math::RoundUpPowerOfTwo(inDepth);
+        w = static_cast<int>(Math::RoundUpPowerOfTwo(static_cast<uint32_t>(inWidth)));
+        h = static_cast<int>(Math::RoundUpPowerOfTwo(static_cast<uint32_t>(inHeight)));
+        d = static_cast<int>(Math::RoundUpPowerOfTwo(static_cast<uint32_t>(inDepth)));
     }
 
     switch (type) {

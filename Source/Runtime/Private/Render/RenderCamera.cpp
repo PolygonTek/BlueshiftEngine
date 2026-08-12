@@ -374,8 +374,8 @@ bool RenderCamera::CalcClipRectFromFrustum(const Frustum &frustum, Rect &clipRec
 }
 
 bool RenderCamera::CalcDepthBoundsFromPoints(int numPoints, const Vec3 *points, const Mat4 &mvp, float *depthMin, float *depthMax) const {
-    float localMin = Math::Infinity;
-    float localMax = -Math::Infinity;
+    float localMin = Math::BigNumber;
+    float localMax = -Math::BigNumber;
 
     for (int i = 0; i < numPoints; i++) {
         const Vec3 &v = points[i];
@@ -383,7 +383,7 @@ bool RenderCamera::CalcDepthBoundsFromPoints(int numPoints, const Vec3 *points, 
         float cz = v[0] * mvp[2][0] + v[1] * mvp[2][1] + v[2] * mvp[2][2] + mvp[2][3];
         float cw = v[0] * mvp[3][0] + v[1] * mvp[3][1] + v[2] * mvp[3][2] + mvp[3][3];
 
-        if (cw > Math::FloatSmallestNonDenormal) {
+        if (cw > std::numeric_limits<float>::min()) {
             cz = cz / cw;
         } else {
             cz = -1.0f;

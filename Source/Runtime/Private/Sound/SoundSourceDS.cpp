@@ -260,7 +260,7 @@ void SoundSource::SetVolume(float volume) {
     } else if (volume >= 1.0f) {
         logVolume = 0;
     } else {
-        logVolume = Clamp<LONG>((LONG)(2000.0f * Math::Log(10, volume)), DSBVOLUME_MIN, 0);
+        logVolume = Clamp<LONG>((LONG)(2000.0f * Math::Log10Fast(volume)), DSBVOLUME_MIN, 0);
     }
 
     dsBuffer->SetVolume(logVolume);

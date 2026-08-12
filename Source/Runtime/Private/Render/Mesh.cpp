@@ -242,7 +242,7 @@ bool Mesh::IsIntersectLine(const Vec3 &start, const Vec3 &end, bool backFaceCull
 }
 
 bool Mesh::IntersectRay(const Ray &ray, bool ignoreBackFace, float *hitDist, Vec3 *hitNormal) const {
-    float minDist = Math::Infinity;
+    float minDist = Math::BigNumber;
     Vec3 minDistNormal = Vec3::unitX;
 
     for (int surfaceIndex = 0; surfaceIndex < surfaces.Count(); surfaceIndex++) {
@@ -262,7 +262,7 @@ bool Mesh::IntersectRay(const Ray &ray, bool ignoreBackFace, float *hitDist, Vec
         }
     }
 
-    if (minDist == Math::Infinity) {
+    if (minDist == Math::BigNumber) {
         return false;
     }
 

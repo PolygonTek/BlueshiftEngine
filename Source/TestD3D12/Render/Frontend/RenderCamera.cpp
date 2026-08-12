@@ -690,8 +690,8 @@ bool RenderCamera::CalcDepthBoundsFromPoints(int numPoints, const BE1::Vec3 *poi
     const float ndcMax = 1.0f;
     const float clippedNearZ = desc.projectionPolicy.reverseZ ? ndcMax : ndcMin;
 
-    float localMin = BE1::Math::Infinity;
-    float localMax = -BE1::Math::Infinity;
+    float localMin = BE1::Math::BigNumber;
+    float localMax = -BE1::Math::BigNumber;
 
     for (int i = 0; i < numPoints; ++i) {
         const BE1::Vec3 &v = points[i];
@@ -699,7 +699,7 @@ bool RenderCamera::CalcDepthBoundsFromPoints(int numPoints, const BE1::Vec3 *poi
         float cz = v[0] * mvp[2][0] + v[1] * mvp[2][1] + v[2] * mvp[2][2] + mvp[2][3];
         float cw = v[0] * mvp[3][0] + v[1] * mvp[3][1] + v[2] * mvp[3][2] + mvp[3][3];
 
-        if (cw > BE1::Math::FloatSmallestNonDenormal) {
+        if (cw > std::numeric_limits<float>::min()) {
             cz = cz / cw;
         } else {
             cz = clippedNearZ;

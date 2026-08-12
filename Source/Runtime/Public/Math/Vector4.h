@@ -434,7 +434,7 @@ BE_INLINE float Vec4::Normalize() {
 
 BE_INLINE float Vec4::NormalizeFast() {
     float sqrLength = x * x + y * y + z * z + w * w;
-    float invLength = Math::RSqrt(sqrLength);
+    float invLength = Math::InvSqrtFast(sqrLength);
 
     x *= invLength;
     y *= invLength;

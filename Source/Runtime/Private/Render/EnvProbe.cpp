@@ -120,19 +120,19 @@ void EnvProbe::Update(const EnvProbe::State *stateDef) {
         // Use baked specular probe cubemap.
         specularProbeTexture = state.bakedSpecularProbeTexture;
         specularProbeTexture->AddRefCount();
-        specularProbeTextureMaxMipLevel = Math::Log(2, specularProbeTexture->GetWidth());
+        specularProbeTextureMaxMipLevel = Math::Log2(static_cast<float>(specularProbeTexture->GetWidth()));
     } else {
         if (!specularProbeTexture) {
             // Create default specular probe cubemap.
             int size = ToActualResolution(state.resolution);
-            int numMipLevels = Math::Log(2, size) + 1;
+            int numMipLevels = Math::Log2(static_cast<float>(size)) + 1;
 
             specularProbeTexture = textureManager.AllocTexture(va("SpecularProbe-%s", state.guid.ToString()));
             specularProbeTexture->CreateEmpty(Graphics::TextureType::TextureCubeMap, size, size, 1, 1, numMipLevels,
                 state.useHDR ? Image::Format::R16G16B16A16_FLOAT : Image::Format::R8G8B8A8,
                 Texture::Flag::Clamp | Texture::Flag::Trilinear | Texture::Flag::HighQuality);
 
-            specularProbeTextureMaxMipLevel = Math::Log(2, specularProbeTexture->GetWidth());
+            specularProbeTextureMaxMipLevel = Math::Log2(static_cast<float>(specularProbeTexture->GetWidth()));
 
             resourceGuidMapper.Set(Guid::CreateGuid(), specularProbeTexture->GetHashName());
         }
@@ -187,7 +187,7 @@ void EnvProbeJob::RevalidateDiffuseProbeRT(bool clearToBlack) {
 
 void EnvProbeJob::RevalidateSpecularProbeRT(bool clearToBlack) {
     int size = envProbe->GetSize();
-    int numMipLevels = Math::Log(2, size) + 1;
+    int numMipLevels = Math::Log2(static_cast<float>(size)) + 1;
     Image::Format format = envProbe->state.useHDR ? Image::Format::R16G16B16A16_FLOAT : Image::Format::R8G8B8A8;
 
     // Recreate specular probe texture if it need to.
@@ -228,7 +228,7 @@ void EnvProbeJob::RevalidateSpecularProbeRT(bool clearToBlack) {
 
 void EnvProbeJob::RevalidateEnvProbeRT() {
     int size = envProbe->GetSize();
-    int numMipLevels = Math::Log(2, size) + 1;
+    int numMipLevels = Math::Log2(static_cast<float>(size)) + 1;
     Image::Format format = envProbe->state.useHDR ? Image::Format::R16G16B16A16_FLOAT : Image::Format::R8G8B8A8;
 
     if (!envProbe->envProbeTexture) {
@@ -258,7 +258,7 @@ void EnvProbeJob::RevalidateEnvProbeRT() {
 
 void EnvProbeJob::RevalidateEnvProbeTexture() {
     int size = envProbe->GetSize();
-    int numMipLevels = Math::Log(2, size) + 1;
+    int numMipLevels = Math::Log2(static_cast<float>(size)) + 1;
     Image::Format format = envProbe->state.useHDR ? Image::Format::R16G16B16A16_FLOAT : Image::Format::R8G8B8A8;
 
     if (!envProbe->envProbeTexture) {
