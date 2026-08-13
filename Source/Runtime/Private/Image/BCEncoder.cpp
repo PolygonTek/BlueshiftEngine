@@ -16,7 +16,6 @@
 #include "Core/Task.h"
 #include "Math/Math.h"
 #include "Image/BCEncoder.h"
-#include "Eigen/Eigen/Dense"
 
 BE_NAMESPACE_BEGIN
 
@@ -83,159 +82,15 @@ void BCEncoder::GetMinMaxAlpha(const byte *colorBlock, const int alphaOffset, by
     maxColor[alphaOffset] = (byte)alphaMax;
 }
 
-static Vec3 GetMultiplicity1Evector(const float matrix[6], float evalue) {
-    // compute A - e*I
-    float m[6];
-    m[0] = matrix[0] - evalue;
-    m[1] = matrix[1];
-    m[2] = matrix[2];
-    m[3] = matrix[3] - evalue;
-    m[4] = matrix[4];
-    m[5] = matrix[5] - evalue;
-
-    // compute cofactor matrix
-    float u[6];
-    u[0] = m[3] * m[5] - m[4] * m[4];
-    u[1] = m[2] * m[4] - m[1] * m[5];
-    u[2] = m[1] * m[4] - m[2] * m[3];
-    u[3] = m[0] * m[5] - m[2] * m[2];
-    u[4] = m[1] * m[2] - m[4] * m[0];
-    u[5] = m[0] * m[3] - m[1] * m[1];
-
-    // find the largest component
-    float mc = std::fabs(u[0]);
-    int mi = 0;
-    for (int i = 1; i < 6; ++i) {
-        float c = std::fabs(u[i]);
-        if (c > mc) {
-            mc = c;
-            mi = i;
-        }
-    }
-
-    // pick the column with this component
-    switch (mi) {
-    case 0:
-        return Vec3(u[0], u[1], u[2]);
-    case 1:
-    case 3:
-        return Vec3(u[1], u[3], u[4]);
-    default:
-        return Vec3(u[2], u[4], u[5]);
-    }
-}
-
-static Vec3 GetMultiplicity2Evector(const float matrix[6], float evalue) {
-    // compute A - e*I
-    float m[6];
-    m[0] = matrix[0] - evalue;
-    m[1] = matrix[1];
-    m[2] = matrix[2];
-    m[3] = matrix[3] - evalue;
-    m[4] = matrix[4];
-    m[5] = matrix[5] - evalue;
-
-    // find the largest component
-    float mc = std::fabs(m[0]);
-    int mi = 0;
-    for (int i = 1; i < 6; ++i) {
-        float c = std::fabs(m[i]);
-        if (c > mc) {
-            mc = c;
-            mi = i;
-        }
-    }
-
-    // pick the first eigenvector based on this index
-    switch (mi) {
-    case 0:
-    case 1:
-        return Vec3(-m[1], m[0], 0.0f);
-    case 2:
-        return Vec3(m[2], 0.0f, -m[0]);
-    case 3:
-    case 4:
-        return Vec3(0.0f, -m[4], m[3]);
-    default:
-        return Vec3(0.0f, -m[5], m[4]);
-    }
-}
-
-// Symmetric 3x3 matrix
-// m[0] m[1] m[2]
-//      m[3] m[4]
-//           m[5]
-static Vec3 ComputePrincipalComponent(const float matrix[6]) {
-    // Compute the cubic coefficients
-    // x^3 - c2 * x^2 + c1 * x + c0 = 0
-    float c0 = matrix[0] * matrix[4] * matrix[4] + matrix[3] * matrix[2] * matrix[2] + matrix[5] * matrix[1] * matrix[1] - matrix[0] * matrix[3] * matrix[5] - 2.0f * matrix[1] * matrix[2] * matrix[4];
-    float c1 = matrix[0] * matrix[3] + matrix[0] * matrix[5] + matrix[3] * matrix[5] - matrix[1] * matrix[1] - matrix[2] * matrix[2] - matrix[4] * matrix[4];
-    float c2 = matrix[0] + matrix[3] + matrix[5];
-    
-    // Compute the quadratic coefficients
-    // x = t + c2 / 3
-    // t^3 + p * t + q = 0
-    float p = c1 - (1.0f / 3.0f) * c2 * c2;
-    float q = (-2.0f / 27.0f) * c2 * c2 * c2 + (1.0f / 3.0f) * c1 * c2 + c0;
-
-    // Compute the root count check
-    float d = 0.25f * q * q + (1.0f / 27.0f) * p * p * p;
-
-    // Test the multiplicity
-    if (d > FLT_EPSILON) {
-        // Only one root, which implies we have a multiple of the identity
-        return Vec3(1.0f);
-    } else if (d < -FLT_EPSILON) {
-        // Three distinct roots
-        float theta = std::atan2(std::sqrt(-d), -0.5f * q);
-        float rho = std::sqrt(0.25f * q * q - d);
-
-        float rt = std::pow(rho, 1.0f / 3.0f);
-        float ct = std::cos(theta / 3.0f);
-        float st = std::sin(theta / 3.0f);
-
-        float l1 = (1.0f / 3.0f) * c2 + 2.0f * rt * ct;
-        float l2 = (1.0f / 3.0f) * c2 - rt * (ct + Math::SqrtThree * st);
-        float l3 = (1.0f / 3.0f) * c2 - rt * (ct - Math::SqrtThree * st);
-
-        // Pick the larger
-        if (std::fabs(l2) > std::fabs(l1)) {
-            l1 = l2;
-        }
-        if (std::fabs(l3) > std::fabs(l1)) {
-            l1 = l3;
-        }
-
-        // Get the eigenvector
-        return GetMultiplicity1Evector(matrix, l1);
-    } else { // if (d >= -FLT_EPSILON && d <= FLT_EPSILON) {
-        // Two roots
-        float rt;
-        if (q < 0.0f) {
-            rt = -std::pow(-0.5f * q, 1.0f / 3.0f);
-        } else {
-            rt = std::pow(0.5f * q, 1.0f / 3.0f);
-        }
-
-        float l1 = (1.0f / 3.0f) * c2 + rt; // repeated
-        float l2 = (1.0f / 3.0f) * c2 - 2.0f * rt;
-
-        // Get the eigenvector
-        if (std::fabs(l1) > std::fabs(l2)) {
-            return GetMultiplicity2Evector(matrix, l1);
-        } else {
-            return GetMultiplicity1Evector(matrix, l2);
-        }
-    }
-}
-
 void BCEncoder::GetMinMaxColorHQ(const byte *colorBlock, byte *minColor, byte *maxColor) {
     // Normalize colors and compute mean vector
     Vec3 points[16];
     Vec3 centroid = Vec3::zero;
 
     for (int i = 0; i < 16; i++) {
-        points[i] = RGB888ToVec3(&colorBlock[i * 4]);
+        const byte *color = &colorBlock[i * 4];
+
+        points[i] = RGB888ToVec3(color);
 
         centroid += points[i];
     }
@@ -255,23 +110,19 @@ void BCEncoder::GetMinMaxColorHQ(const byte *colorBlock, byte *minColor, byte *m
         covMatrix[5] += a.z * a.z;
     }
 
-    // Compute principal axis from covariance matrix
-    // TODO: compare to https://en.wikipedia.org/wiki/Eigenvalue_algorithm
-#if 1
-    Vec3 principalAxis = ComputePrincipalComponent(covMatrix);
-    float l = principalAxis.Normalize();
-    if (l == 0.0f || IEEE_FLT_IS_NAN(l)) {
-        principalAxis.Set(1.0f, 1.0f, 1.0f);
-        principalAxis.Normalize();
+    // The scatter matrix differs from population covariance only by a positive scale,
+    // so it has the same principal axes and avoids an unnecessary normalization.
+    Mat3 scatterMatrix(
+        covMatrix[0], covMatrix[1], covMatrix[2],
+        covMatrix[1], covMatrix[3], covMatrix[4],
+        covMatrix[2], covMatrix[4], covMatrix[5]);
+
+    PrincipalComponents3 principalComponents;
+    Vec3 principalAxis(1.0f / Math::SqrtThree);
+
+    if (principalComponents.SetFromCovariance(scatterMatrix)) {
+        principalAxis = principalComponents.axes[0];
     }
-#else
-    Eigen::Matrix3f m;
-    m << covMatrix[0], covMatrix[1], covMatrix[2],
-         covMatrix[1], covMatrix[3], covMatrix[4],
-         covMatrix[2], covMatrix[4], covMatrix[5];
-    Eigen::SelfAdjointEigenSolver<Eigen::Matrix3f> eigSolver(m);
-    Vec3 principalAxis(eigSolver.eigenvectors().col(2).data());
-#endif
 
     // Compute bounds relative to principle axis
     float bounds[2] = { 99999.0f, -99999.0f };
