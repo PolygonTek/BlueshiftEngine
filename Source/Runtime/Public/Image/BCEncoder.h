@@ -50,7 +50,7 @@ private:
                             /// Also finds the minimum and maximum alpha values.
     static void             GetMinMaxBBox(const byte *colorBlock, byte *minColor, byte *maxColor);
     static void             GetMinMaxAlpha(const byte *colorBlock, const int alphaOffset, byte *minColor, byte *maxColor);
-    static void             GetMinMaxColorHQ(const byte *colorBlock, byte *minColor, byte *maxColor);
+    static void             GetMinMaxColorHQ(const byte *colorBlock, byte *minColor, byte *maxColor, const bool ignoreTransparentPixels = false);
 
     static void             InsetColorsBBox(byte *minColor, byte *maxColor);
     static void             InsetNormalsBBoxBC5(byte *minNormal, byte *maxNormal);
@@ -67,7 +67,7 @@ private:
     static void             Compute4BitsAlpha(const byte *colorBlock, const int alphaOffset, uint16_t *out);
 
     static void             ComputeColorIndicesFast(const byte *colorBlock, const byte *maxColor, const byte *minColor, uint32_t *out);
-    static int              ComputeColorIndices(const byte *colorBlock, const uint16_t color0, const uint16_t color1, uint32_t &result);
+    static int              ComputeColorIndices(const byte *colorBlock, const uint16_t color0, const uint16_t color1, uint32_t &result, const bool usePunchThroughAlpha = false);
 
     static void             EncodeBC1BlockFast(const byte *src, byte **dstPtr);
     static void             EncodeBC2BlockFast(const byte *src, byte **dstPtr);

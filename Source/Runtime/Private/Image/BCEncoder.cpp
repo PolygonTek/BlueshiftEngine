@@ -82,24 +82,37 @@ void BCEncoder::GetMinMaxAlpha(const byte *colorBlock, const int alphaOffset, by
     maxColor[alphaOffset] = (byte)alphaMax;
 }
 
-void BCEncoder::GetMinMaxColorHQ(const byte *colorBlock, byte *minColor, byte *maxColor) {
+void BCEncoder::GetMinMaxColorHQ(const byte *colorBlock, byte *minColor, byte *maxColor, const bool ignoreTransparentPixels) {
     // Normalize colors and compute mean vector
     Vec3 points[16];
     Vec3 centroid = Vec3::zero;
+    int numPoints = 0;
 
     for (int i = 0; i < 16; i++) {
         const byte *color = &colorBlock[i * 4];
 
-        points[i] = RGB888ToVec3(color);
+        if (ignoreTransparentPixels && color[3] < 128) {
+            continue;
+        }
 
-        centroid += points[i];
+        points[numPoints] = RGB888ToVec3(color);
+        centroid += points[numPoints];
+        numPoints++;
     }
-    centroid /= 16.0f;
+
+    // Endpoint RGB does not matter when the entire BC1 block is transparent.
+    if (numPoints == 0) {
+        minColor[0] = minColor[1] = minColor[2] = 0;
+        maxColor[0] = maxColor[1] = maxColor[2] = 0;
+        return;
+    }
+
+    centroid /= (float)numPoints;
 
     // Compute symmetric covariance matrix
     float covMatrix[6] = { 0, };
 
-    for (int i = 0; i < 16; i++) {
+    for (int i = 0; i < numPoints; i++) {
         Vec3 a = points[i] - centroid;
 
         covMatrix[0] += a.x * a.x;
@@ -124,10 +137,10 @@ void BCEncoder::GetMinMaxColorHQ(const byte *colorBlock, byte *minColor, byte *m
         principalAxis = principalComponents.axes[0];
     }
 
-    // Compute bounds relative to principle axis
+    // Compute bounds relative to principal axis
     float bounds[2] = { 99999.0f, -99999.0f };
 
-    for (int i = 0; i < 16; i++) {
+    for (int i = 0; i < numPoints; i++) {
         float p = principalAxis.Dot(points[i] - centroid);
         if (p < bounds[0]) {
             bounds[0] = p;
@@ -406,7 +419,7 @@ void BCEncoder::ComputeColorIndicesFast(const byte *colorBlock, const byte *maxC
     *out = result;
 }
 
-int BCEncoder::ComputeColorIndices(const byte *colorBlock, const uint16_t color0, const uint16_t color1, uint32_t &result) {
+int BCEncoder::ComputeColorIndices(const byte *colorBlock, const uint16_t color0, const uint16_t color1, uint32_t &result, const bool usePunchThroughAlpha) {
     ALIGN_AS32 byte colors[4][4];
     ALIGN_AS32 uint32_t indexes[16];
 
@@ -429,11 +442,22 @@ int BCEncoder::ComputeColorIndices(const byte *colorBlock, const uint16_t color0
         colors[3][2] = 0;
     }
 
+    assert(!usePunchThroughAlpha || color0 <= color1);
+
     int error = 0;
+    const int numColors = usePunchThroughAlpha ? 3 : 4;
+
     for (int i = 0; i < 16; i++) {
+        const byte *color = &colorBlock[i * 4];
+
+        if (usePunchThroughAlpha && color[3] < 128) {
+            indexes[i] = 3;
+            continue;
+        }
+
         unsigned int bestError = 256 * 256 * 4;
-        for (int j = 0; j < 4; j++) {
-            unsigned int d = ColorDistance(&colorBlock[i * 4], &colors[j][0]);
+        for (int j = 0; j < numColors; j++) {
+            unsigned int d = ColorDistance(color, &colors[j][0]);
             if (d < bestError) {
                 bestError = d;
                 indexes[i] = j;
@@ -565,18 +589,27 @@ void BCEncoder::EncodeBC1BlockHQ(const byte *colorBlock, byte **dstPtr) {
 
     bool transparent = false;
     for (int i = 0; i < 16; i++) {
-        if (colorBlock[3] < 128) {
+        if (colorBlock[i * 4 + 3] < 128) {
             transparent = true;
             break;
         }
     }
 
-    GetMinMaxColorHQ(colorBlock, minColor, maxColor);
+    GetMinMaxColorHQ(colorBlock, minColor, maxColor, transparent);
 
     uint16_t maxColor565 = RGB888To565(maxColor);
     uint16_t minColor565 = RGB888To565(minColor);
 
     if (!transparent) {
+        // Equal endpoints select BC1 punch-through alpha mode, so separate them for opaque blocks.
+        if (maxColor565 == minColor565) {
+            if (maxColor565 < 0xFFFF) {
+                maxColor565++;
+            } else {
+                minColor565--;
+            }
+        }
+
         bcColorBlock.color0 = maxColor565;
         bcColorBlock.color1 = minColor565;
     } else {
@@ -584,7 +617,7 @@ void BCEncoder::EncodeBC1BlockHQ(const byte *colorBlock, byte **dstPtr) {
         bcColorBlock.color1 = maxColor565;
     }
 
-    ComputeColorIndices(colorBlock, bcColorBlock.color0, bcColorBlock.color1, bcColorBlock.indexes);
+    ComputeColorIndices(colorBlock, bcColorBlock.color0, bcColorBlock.color1, bcColorBlock.indexes, transparent);
 
     memcpy(*dstPtr, &bcColorBlock, sizeof(bcColorBlock));
     *dstPtr += sizeof(bcColorBlock);
