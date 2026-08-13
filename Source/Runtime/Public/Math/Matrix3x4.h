@@ -156,8 +156,19 @@ public:
                         /// Exact compare, no epsilon.
     bool                operator!=(const Mat3x4 &rhs) const;
 
+                        /// Tests if every element is finite.
+    bool                IsFinite() const { return mat[0].IsFinite() && mat[1].IsFinite() && mat[2].IsFinite(); }
                         /// Tests if this is the identity matrix, up to the given epsilon.
     bool                IsIdentity(const float epsilon = MATRIX_EPSILON) const;
+
+                        /// Returns the minimum component.
+    float               MinComponent() const { return Min3(mat[0].MinComponent(), mat[1].MinComponent(), mat[2].MinComponent()); }
+                        /// Returns the maximum component.
+    float               MaxComponent() const { return Max3(mat[0].MaxComponent(), mat[1].MaxComponent(), mat[2].MaxComponent()); }
+                        /// Returns the minimum absolute component.
+    float               MinAbsComponent() const { return Min3(mat[0].MinAbsComponent(), mat[1].MinAbsComponent(), mat[2].MinAbsComponent()); }
+                        /// Returns the maximum absolute component.
+    float               MaxAbsComponent() const { return Max3(mat[0].MaxAbsComponent(), mat[1].MaxAbsComponent(), mat[2].MaxAbsComponent()); }
 
                         /// Sets all the element of this matrix to zero.
     void                SetZero();

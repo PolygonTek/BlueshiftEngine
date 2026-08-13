@@ -200,6 +200,8 @@ public:
                         /// Exact compare, no epsilon
     bool                operator!=(const Vec4 &rhs) const { return !Equals(rhs); }
 
+                        /// Tests if every component is finite.
+    bool                IsFinite() const { return !IEEE_FLT_IS_NAN(x) && !IEEE_FLT_IS_NAN(y) && !IEEE_FLT_IS_NAN(z) && !IEEE_FLT_IS_NAN(w); }
                         /// Tests if this is the zero vector, up to the given epsilon.
     bool                IsZero(const float epsilon = 0.0f) const;
 
@@ -222,6 +224,8 @@ public:
 
                         /// Computes the length of this vector.
     float               Length() const;
+                        /// Computes the length without overflowing intermediate squares.
+    float               SafeLength() const;
 
                         /// Computes the squared length of this vector.
     float               LengthSqr() const;
@@ -229,6 +233,9 @@ public:
                         /// Normalizes this vector.
                         /// @return Length of this vector
     float               Normalize();
+                        /// Safely normalizes this vector without overflowing intermediate squares.
+                        /// @return False if this vector cannot be normalized.
+    bool                SafeNormalize();
                         /// Normalizes this vector fast but approximately.
                         /// @return Length of this vector
     float               NormalizeFast();
@@ -416,32 +423,68 @@ BE_INLINE float Vec4::Length() const {
     return (float)Math::Sqrt(x * x + y * y + z * z + w * w);
 }
 
+BE_INLINE float Vec4::SafeLength() const {
+    float scale = MaxAbsComponent();
+    if (scale == 0.0f || IEEE_FLT_IS_NAN(scale)) {
+        return scale;
+    }
+
+    float scaledX = x / scale;
+    float scaledY = y / scale;
+    float scaledZ = z / scale;
+    float scaledW = w / scale;
+    return scale * Math::Sqrt(scaledX * scaledX + scaledY * scaledY + scaledZ * scaledZ + scaledW * scaledW);
+}
+
 BE_INLINE float Vec4::LengthSqr() const {
     return x * x + y * y + z * z + w * w;
 }
 
 BE_INLINE float Vec4::Normalize() {
-    float sqrLength = x * x + y * y + z * z + w * w;
-    float invLength = Math::InvSqrt(sqrLength);
+    float squaredLength = x * x + y * y + z * z + w * w;
+    float invLength = Math::InvSqrt(squaredLength);
 
     x *= invLength;
     y *= invLength;
     z *= invLength;
     w *= invLength;
 
-    return invLength * sqrLength;
+    return invLength * squaredLength;
+}
+
+BE_INLINE bool Vec4::SafeNormalize() {
+    float scale = MaxAbsComponent();
+    if (scale == 0.0f || IEEE_FLT_IS_NAN(scale)) {
+        return false;
+    }
+
+    x /= scale;
+    y /= scale;
+    z /= scale;
+    w /= scale;
+    float lengthSqr = LengthSqr();
+    if (lengthSqr <= 0.0f || IEEE_FLT_IS_NAN(lengthSqr)) {
+        return false;
+    }
+
+    float invLength = Math::InvSqrt(lengthSqr);
+    x *= invLength;
+    y *= invLength;
+    z *= invLength;
+    w *= invLength;
+    return IsFinite();
 }
 
 BE_INLINE float Vec4::NormalizeFast() {
-    float sqrLength = x * x + y * y + z * z + w * w;
-    float invLength = Math::InvSqrtFast(sqrLength);
+    float squaredLength = x * x + y * y + z * z + w * w;
+    float invLength = Math::InvSqrtFast(squaredLength);
 
     x *= invLength;
     y *= invLength;
     z *= invLength;
     w *= invLength;
 
-    return invLength * sqrLength;
+    return invLength * squaredLength;
 }
 
 BE_INLINE Vec4 Vec4::Normalized() const & {

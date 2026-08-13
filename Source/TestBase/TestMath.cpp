@@ -846,10 +846,253 @@ static void TestFloatToIntegerConversions() {
 
 #undef VERIFY_FLOAT_TO_INTEGER
 
+static void TestEigenAnalysis() {
+    const float epsilon = 1e-4f;
+    BE1::Mat2 symmetric2(2.0f, 1.0f, 1.0f, 2.0f);
+    BE1::Vec2 eigenValues2;
+    BE1::Mat2 eigenVectors2;
+    assert(symmetric2.EigenDecomposeSymmetric(eigenValues2, eigenVectors2));
+    assert(eigenValues2.Equals(BE1::Vec2(3.0f, 1.0f), epsilon));
+
+    for (int i = 0; i < 2; i++) {
+        BE1::Vec2 eigenVector(eigenVectors2[0][i], eigenVectors2[1][i]);
+        BE1::Vec2 residual = symmetric2 * eigenVector - eigenVector * eigenValues2[i];
+        assert(residual.Length() <= epsilon);
+    }
+
+    BE1::Mat2 diagonal2(1.0f, 0.0f, 0.0f, 5.0f);
+    assert(diagonal2.EigenDecomposeSymmetric(eigenValues2, eigenVectors2));
+    assert(eigenValues2.Equals(BE1::Vec2(5.0f, 1.0f), epsilon));
+
+    for (int i = 0; i < 2; i++) {
+        BE1::Vec2 eigenVector(eigenVectors2[0][i], eigenVectors2[1][i]);
+        BE1::Vec2 residual = diagonal2 * eigenVector - eigenVector * eigenValues2[i];
+        assert(residual.Length() <= epsilon);
+    }
+
+    BE1::Vec2 unchangedValues2(7.0f, 8.0f);
+    BE1::Mat2 unchangedVectors2 = BE1::Mat2::identity;
+    BE1::Mat2 nonSymmetric2(1.0f, 2.0f, 0.0f, 1.0f);
+    assert(!nonSymmetric2.EigenDecomposeSymmetric(unchangedValues2, unchangedVectors2));
+    assert(unchangedValues2.Equals(BE1::Vec2(7.0f, 8.0f)));
+    assert(unchangedVectors2.Equals(BE1::Mat2::identity));
+
+    BE1::Mat3 diagonal(
+        BE1::Vec3(5.0f, 0.0f, 0.0f),
+        BE1::Vec3(0.0f, 3.0f, 0.0f),
+        BE1::Vec3(0.0f, 0.0f, 1.0f));
+
+    BE1::Vec3 eigenValues;
+    BE1::Mat3 eigenVectors;
+    assert(diagonal.EigenDecomposeSymmetric(eigenValues, eigenVectors));
+    assert(eigenValues.Equals(BE1::Vec3(5.0f, 3.0f, 1.0f), epsilon));
+
+    for (int i = 0; i < 3; i++) {
+        BE1::Vec3 residual = diagonal * eigenVectors[i] - eigenVectors[i] * eigenValues[i];
+        assert(residual.Length() <= epsilon);
+    }
+
+    BE1::Mat3 symmetric(
+        BE1::Vec3(2.0f, 1.0f, 0.0f),
+        BE1::Vec3(1.0f, 2.0f, 0.0f),
+        BE1::Vec3(0.0f, 0.0f, 1.0f));
+    assert(symmetric.EigenDecomposeSymmetric(eigenValues, eigenVectors));
+    assert(eigenValues.Equals(BE1::Vec3(3.0f, 1.0f, 1.0f), epsilon));
+
+    for (int i = 0; i < 3; i++) {
+        BE1::Vec3 residual = symmetric * eigenVectors[i] - eigenVectors[i] * eigenValues[i];
+        assert(residual.Length() <= epsilon);
+    }
+
+    BE1::EigenPair3 powerResult;
+    assert(BE1::EigenSolver3::PowerIteration(diagonal, BE1::Vec3::one, powerResult, 32, 1e-5f));
+    assert(BE1::Math::Fabs(powerResult.eigenValue - 5.0f) <= epsilon);
+    assert(BE1::Math::Fabs(powerResult.eigenVector.x) >= 1.0f - epsilon);
+
+    BE1::EigenPair3 inversePowerResult;
+    assert(BE1::EigenSolver3::InversePowerIteration(
+        diagonal, 0.0f, BE1::Vec3::one, inversePowerResult, 32, 1e-5f));
+    assert(BE1::Math::Fabs(inversePowerResult.eigenValue - 1.0f) <= epsilon);
+    assert(BE1::Math::Fabs(inversePowerResult.eigenVector.z) >= 1.0f - epsilon);
+
+    BE1::EigenPair3 rayleighResult;
+    assert(BE1::EigenSolver3::RayleighQuotientIteration(
+        diagonal, BE1::Vec3(0.05f, 1.0f, 0.1f), rayleighResult, 8, 1e-5f));
+    assert(BE1::Math::Fabs(rayleighResult.eigenValue - 3.0f) <= epsilon);
+    assert(BE1::Math::Fabs(rayleighResult.eigenVector.y) >= 1.0f - epsilon);
+
+    assert(BE1::EigenSolver3::RayleighQuotientIteration(
+        diagonal, BE1::Vec3(1.0f, 0.0f, 0.0f), rayleighResult, 8, 1e-5f));
+    assert(rayleighResult.numIterations == 0);
+    assert(BE1::Math::Fabs(rayleighResult.eigenValue - 5.0f) <= epsilon);
+
+    BE1::Mat4 diagonal4(
+        BE1::Vec4(7.0f, 0.0f, 0.0f, 0.0f),
+        BE1::Vec4(0.0f, 4.0f, 0.0f, 0.0f),
+        BE1::Vec4(0.0f, 0.0f, 2.0f, 0.0f),
+        BE1::Vec4(0.0f, 0.0f, 0.0f, 1.0f));
+
+    BE1::EigenPair4 powerResult4;
+    assert(BE1::EigenSolver4::PowerIteration(diagonal4, BE1::Vec4::one, powerResult4, 48, 1e-5f));
+    assert(BE1::Math::Fabs(powerResult4.eigenValue - 7.0f) <= epsilon);
+    assert(BE1::Math::Fabs(powerResult4.eigenVector.x) >= 1.0f - epsilon);
+
+    BE1::EigenPair4 inversePowerResult4;
+    assert(BE1::EigenSolver4::InversePowerIteration(
+        diagonal4, 0.0f, BE1::Vec4::one, inversePowerResult4, 32, 1e-5f));
+    assert(BE1::Math::Fabs(inversePowerResult4.eigenValue - 1.0f) <= epsilon);
+    assert(BE1::Math::Fabs(inversePowerResult4.eigenVector.w) >= 1.0f - epsilon);
+
+    const BE1::Mat4 pivoted4(
+        BE1::Vec4(0.0f, 1.0f, 0.0f, 0.0f),
+        BE1::Vec4(1.0f, 0.0f, 0.0f, 0.0f),
+        BE1::Vec4(0.0f, 0.0f, 2.0f, 0.0f),
+        BE1::Vec4(0.0f, 0.0f, 0.0f, 3.0f));
+    assert(BE1::EigenSolver4::InversePowerIteration(
+        pivoted4, 0.25f, BE1::Vec4::one, inversePowerResult4, 32, 1e-5f));
+    assert(BE1::Math::Fabs(inversePowerResult4.eigenValue - 1.0f) <= epsilon);
+
+    BE1::EigenPair4 rayleighResult4;
+    assert(BE1::EigenSolver4::RayleighQuotientIteration(
+        diagonal4, BE1::Vec4(0.02f, 1.0f, 0.1f, 0.03f), rayleighResult4, 8, 1e-5f));
+    assert(BE1::Math::Fabs(rayleighResult4.eigenValue - 4.0f) <= epsilon);
+    assert(BE1::Math::Fabs(rayleighResult4.eigenVector.y) >= 1.0f - epsilon);
+
+    BE1::EigenPair4 unchangedResult4 = rayleighResult4;
+    assert(!BE1::EigenSolver4::RayleighQuotientIteration(
+        BE1::Mat4::identity, BE1::Vec4::one, unchangedResult4, 0, 1e-5f));
+    assert(unchangedResult4.eigenVector.Equals(rayleighResult4.eigenVector));
+
+    BE1::Mat3 svdInput3(
+        BE1::Vec3(3.0f, 0.0f, 0.0f),
+        BE1::Vec3(1.0f, 2.0f, 0.0f),
+        BE1::Vec3(0.0f, 1.0f, 0.0f));
+    BE1::Mat3 svdU3;
+    BE1::Vec3 singularValues3;
+    BE1::Mat3 svdV3;
+    assert(svdInput3.SingularValueDecompose(svdU3, singularValues3, svdV3));
+    assert(singularValues3[0] >= singularValues3[1]);
+    assert(singularValues3[1] >= singularValues3[2]);
+    assert(singularValues3[2] == 0.0f);
+
+    BE1::Mat3 singularMatrix3(
+        BE1::Vec3(singularValues3[0], 0.0f, 0.0f),
+        BE1::Vec3(0.0f, singularValues3[1], 0.0f),
+        BE1::Vec3(0.0f, 0.0f, singularValues3[2]));
+    BE1::Mat3 reconstructed3 = svdU3 * singularMatrix3;
+    reconstructed3 *= svdV3.Transpose();
+    assert(reconstructed3.Equals(svdInput3, 5e-4f));
+    assert((svdU3.Transpose() * svdU3).Equals(BE1::Mat3::identity, 5e-4f));
+    assert((svdV3.Transpose() * svdV3).Equals(BE1::Mat3::identity, 5e-4f));
+
+    BE1::Mat4 svdInput4(
+        BE1::Vec4(4.0f, 1.0f, 0.0f, 0.0f),
+        BE1::Vec4(0.0f, 3.0f, 1.0f, 0.0f),
+        BE1::Vec4(0.0f, 0.0f, 2.0f, 1.0f),
+        BE1::Vec4(0.0f, 0.0f, 0.0f, 0.0f));
+    BE1::Mat4 svdU4;
+    BE1::Vec4 singularValues4;
+    BE1::Mat4 svdV4;
+    assert(svdInput4.SingularValueDecompose(svdU4, singularValues4, svdV4));
+    assert(singularValues4[0] >= singularValues4[1]);
+    assert(singularValues4[1] >= singularValues4[2]);
+    assert(singularValues4[2] >= singularValues4[3]);
+    assert(singularValues4[3] == 0.0f);
+
+    BE1::Mat4 singularMatrix4(
+        BE1::Vec4(singularValues4[0], 0.0f, 0.0f, 0.0f),
+        BE1::Vec4(0.0f, singularValues4[1], 0.0f, 0.0f),
+        BE1::Vec4(0.0f, 0.0f, singularValues4[2], 0.0f),
+        BE1::Vec4(0.0f, 0.0f, 0.0f, singularValues4[3]));
+    BE1::Mat4 reconstructed4 = svdU4 * singularMatrix4;
+    reconstructed4 *= svdV4.Transpose();
+    assert(reconstructed4.Equals(svdInput4, 5e-4f));
+    assert((svdU4.Transpose() * svdU4).Equals(BE1::Mat4::identity, 5e-4f));
+    assert((svdV4.Transpose() * svdV4).Equals(BE1::Mat4::identity, 5e-4f));
+
+    // The shifted matrix requires a row pivot in its first column.
+    BE1::Mat3 pivoted(
+        BE1::Vec3(0.0f, 1.0f, 0.0f),
+        BE1::Vec3(1.0f, 0.0f, 0.0f),
+        BE1::Vec3(0.0f, 0.0f, 2.0f));
+    assert(BE1::EigenSolver3::InversePowerIteration(
+        pivoted, 0.25f, BE1::Vec3(1.0f, 2.0f, 1.0f), inversePowerResult, 32, 1e-5f));
+    assert(BE1::Math::Fabs(inversePowerResult.eigenValue - 1.0f) <= epsilon);
+
+    BE1::CovarianceAccumulator3 covarianceA;
+    covarianceA.AddPoint(BE1::Vec3(-1.0f, 0.0f, 0.0f));
+
+    BE1::CovarianceAccumulator3 covarianceB;
+    covarianceB.AddPoint(BE1::Vec3(1.0f, 0.0f, 0.0f));
+    covarianceA.Merge(covarianceB);
+
+    assert(covarianceA.Count() == 2);
+    assert(covarianceA.Mean().Equals(BE1::Vec3::zero, epsilon));
+
+    BE1::Mat3 covariance = covarianceA.PopulationCovariance();
+    assert(BE1::Math::Fabs(covariance[0][0] - 1.0f) <= epsilon);
+
+    BE1::CovarianceAccumulator2 covariance2A;
+    covariance2A.AddPoint(BE1::Vec2(-1.0f, -2.0f));
+
+    BE1::CovarianceAccumulator2 covariance2B;
+    covariance2B.AddPoint(BE1::Vec2(1.0f, 2.0f));
+    covariance2A.Merge(covariance2B);
+
+    assert(covariance2A.Count() == 2);
+    assert(covariance2A.Mean().Equals(BE1::Vec2::zero, epsilon));
+    BE1::Mat2 covariance2 = covariance2A.PopulationCovariance();
+    assert(covariance2.Equals(BE1::Mat2(1.0f, 2.0f, 2.0f, 4.0f), epsilon));
+    BE1::Mat2 sampleCovariance2 = covariance2A.SampleCovariance();
+    assert(sampleCovariance2.Equals(BE1::Mat2(2.0f, 4.0f, 4.0f, 8.0f), epsilon));
+    assert(covariance2.EigenDecomposeSymmetric(eigenValues2, eigenVectors2));
+    assert(eigenValues2.Equals(BE1::Vec2(5.0f, 0.0f), epsilon));
+    for (int i = 0; i < 2; i++) {
+        BE1::Vec2 eigenVector(eigenVectors2[0][i], eigenVectors2[1][i]);
+        BE1::Vec2 residual = covariance2 * eigenVector - eigenVector * eigenValues2[i];
+        assert(residual.Length() <= epsilon);
+    }
+    BE1::PrincipalComponents2 principalComponents2;
+    assert(principalComponents2.SetFromCovariance(covariance2));
+    assert(principalComponents2.eigenValues.Equals(BE1::Vec2(5.0f, 0.0f), epsilon));
+    assert(principalComponents2.rank == 1);
+    BE1::Vec2 principalAxis2(principalComponents2.axes[0][0], principalComponents2.axes[1][0]);
+    BE1::Vec2 expectedPrincipalAxis2(1.0f, 2.0f);
+    expectedPrincipalAxis2.Normalize();
+    assert(principalAxis2.Equals(expectedPrincipalAxis2, epsilon));
+
+    BE1::PrincipalComponents2 isotropicComponents2;
+    assert(isotropicComponents2.SetFromCovariance(BE1::Mat2(2.0f, 0.0f, 0.0f, 2.0f)));
+    assert(isotropicComponents2.eigenValues.Equals(BE1::Vec2(2.0f, 2.0f), epsilon));
+    assert(isotropicComponents2.axes.Equals(BE1::Mat2::identity));
+    assert(isotropicComponents2.rank == 2);
+
+    BE1::PrincipalComponents2 zeroComponents2;
+    assert(zeroComponents2.SetFromCovariance(BE1::Mat2::zero));
+    assert(zeroComponents2.eigenValues.Equals(BE1::Vec2::zero));
+    assert(zeroComponents2.axes.Equals(BE1::Mat2::identity));
+    assert(zeroComponents2.rank == 0);
+
+    BE1::PrincipalComponents2 unchangedComponents2 = principalComponents2;
+    assert(!unchangedComponents2.SetFromCovariance(BE1::Mat2(1.0f, 0.0f, 0.0f, -1.0f)));
+    assert(unchangedComponents2.eigenValues.Equals(principalComponents2.eigenValues));
+    assert(unchangedComponents2.axes.Equals(principalComponents2.axes));
+    assert(unchangedComponents2.rank == principalComponents2.rank);
+
+    assert(BE1::Math::Fabs(covariance[1][1]) <= epsilon);
+    assert(BE1::Math::Fabs(covariance[2][2]) <= epsilon);
+
+    BE1::PrincipalComponents3 principalComponents;
+    assert(principalComponents.SetFromCovariance(covariance));
+    assert(principalComponents.rank == 1);
+    assert(BE1::Math::Fabs(principalComponents.axes[0].x) >= 1.0f - epsilon);
+}
+
 void Test::TestMath() {
     TestSquareRootContract();
     TestIntegerLog2();
     TestFloatToIntegerConversions();
+    TestEigenAnalysis();
 
     //TestInverseMatrix();
     BE1::Mat3 m = BE1::Mat3::FromRotationZYX(DEG2RAD(120), DEG2RAD(-20), DEG2RAD(60));

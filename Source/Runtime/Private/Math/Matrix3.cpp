@@ -14,6 +14,7 @@
 
 #include "Precompiled.h"
 #include "Math/Math.h"
+#include "JacobiSVD.h"
 
 BE_NAMESPACE_BEGIN
 
@@ -181,6 +182,221 @@ bool Mat3::InverseSelf() {
     return true;
 #endif
 }
+
+// Applies a Jacobi similarity rotation in the p-q plane to eliminate matrix[p][q].
+// matrix uses conventional row-major indexing, while eigenVectors stores the
+// accumulated rotations in its columns so they converge to the eigenvectors.
+static void JacobiRotateSymmetric3x3(float matrix[3][3], Mat3 &eigenVectors, int p, int q) {
+    float app = matrix[p][p];
+    float aqq = matrix[q][q];
+    float apq = matrix[p][q];
+
+    if (apq == 0.0f) {
+        return;
+    }
+
+    float tau = (aqq - app) / (2.0f * apq);
+    float absTau = Math::Fabs(tau);
+    float sign = tau >= 0.0f ? 1.0f : -1.0f;
+    float t;
+
+    // Evaluate tan(theta) without squaring a potentially large tau.
+    if (absTau > 1.0f) {
+        float invTau = 1.0f / absTau;
+        t = sign * invTau / (1.0f + Math::Sqrt(1.0f + invTau * invTau));
+    } else {
+        t = sign / (absTau + Math::Sqrt(1.0f + absTau * absTau));
+    }
+
+    float c = 1.0f / Math::Sqrt(1.0f + t * t);
+    float s = t * c;
+
+    // Rotate the remaining row-column pairs while explicitly preserving symmetry.
+    for (int i = 0; i < 3; i++) {
+        if (i == p || i == q) {
+            continue;
+        }
+
+        float aip = matrix[i][p];
+        float aiq = matrix[i][q];
+
+        matrix[i][p] = matrix[p][i] = c * aip - s * aiq;
+        matrix[i][q] = matrix[q][i] = s * aip + c * aiq;
+    }
+
+    // Update the diagonal pair and make the eliminated off-diagonal term exact.
+    matrix[p][p] = app - t * apq;
+    matrix[q][q] = aqq + t * apq;
+    matrix[p][q] = matrix[q][p] = 0.0f;
+
+    // Accumulate the same rotation into the corresponding eigenvector columns.
+    Vec3 eigenVectorP = eigenVectors[p];
+    Vec3 eigenVectorQ = eigenVectors[q];
+    eigenVectors[p] = c * eigenVectorP - s * eigenVectorQ;
+    eigenVectors[q] = s * eigenVectorP + c * eigenVectorQ;
+}
+
+bool Mat3::EigenDecomposeSymmetric(Vec3 &eigenValues, Mat3 &eigenVectors, float epsilon) const {
+    if (epsilon <= 0.0f || IEEE_FLT_IS_NAN(epsilon)) {
+        return false;
+    }
+
+    for (int column = 0; column < 3; column++) {
+        for (int row = 0; row < 3; row++) {
+            float value = mat[column][row];
+            if (IEEE_FLT_IS_NAN(value)) {
+                return false;
+            }
+        }
+    }
+
+    if (!IsSymmetric(epsilon)) {
+        return false;
+    }
+
+    // Jacobi rotation below uses conventional row-major indexing internally.
+    float matrix[3][3];
+    for (int row = 0; row < 3; row++) {
+        for (int column = 0; column < 3; column++) {
+            matrix[row][column] = 0.5f * mat[column][row] + 0.5f * mat[row][column];
+        }
+    }
+
+    Mat3 vectors = Mat3::identity;
+    const int maxIterations = 32;
+    bool converged = false;
+
+    for (int iteration = 0; iteration < maxIterations; iteration++) {
+        int p = 0;
+        int q = 1;
+        float maxOffDiagonal = Math::Fabs(matrix[0][1]);
+
+        float offDiagonal = Math::Fabs(matrix[0][2]);
+        if (offDiagonal > maxOffDiagonal) {
+            p = 0;
+            q = 2;
+            maxOffDiagonal = offDiagonal;
+        }
+
+        offDiagonal = Math::Fabs(matrix[1][2]);
+        if (offDiagonal > maxOffDiagonal) {
+            p = 1;
+            q = 2;
+            maxOffDiagonal = offDiagonal;
+        }
+
+        if (IEEE_FLT_IS_NAN(maxOffDiagonal)) {
+            return false;
+        }
+
+        float matrixScale = maxOffDiagonal;
+        for (int i = 0; i < 3; i++) {
+            float diagonal = Math::Fabs(matrix[i][i]);
+            if (IEEE_FLT_IS_NAN(diagonal)) {
+                return false;
+            }
+            if (diagonal > matrixScale) {
+                matrixScale = diagonal;
+            }
+        }
+
+        if (maxOffDiagonal <= epsilon * matrixScale) {
+            converged = true;
+            break;
+        }
+
+        JacobiRotateSymmetric3x3(matrix, vectors, p, q);
+    }
+
+    if (!converged) {
+        float maxOffDiagonal = Math::Fabs(matrix[0][1]);
+        float offDiagonal = Math::Fabs(matrix[0][2]);
+        if (offDiagonal > maxOffDiagonal) {
+            maxOffDiagonal = offDiagonal;
+        }
+        offDiagonal = Math::Fabs(matrix[1][2]);
+        if (offDiagonal > maxOffDiagonal) {
+            maxOffDiagonal = offDiagonal;
+        }
+
+        float matrixScale = maxOffDiagonal;
+        for (int i = 0; i < 3; i++) {
+            float diagonal = Math::Fabs(matrix[i][i]);
+            if (IEEE_FLT_IS_NAN(diagonal)) {
+                return false;
+            }
+            if (diagonal > matrixScale) {
+                matrixScale = diagonal;
+            }
+        }
+
+        if (IEEE_FLT_IS_NAN(maxOffDiagonal) || maxOffDiagonal > epsilon * matrixScale) {
+            return false;
+        }
+    }
+
+    Vec3 values(matrix[0][0], matrix[1][1], matrix[2][2]);
+
+    // Sort eigenvalues in descending order and keep their eigenvectors paired.
+    for (int i = 0; i < 2; i++) {
+        int maxIndex = i;
+        for (int j = i + 1; j < 3; j++) {
+            if (values[j] > values[maxIndex]) {
+                maxIndex = j;
+            }
+        }
+
+        if (maxIndex != i) {
+            float value = values[i];
+            values[i] = values[maxIndex];
+            values[maxIndex] = value;
+
+            Vec3 vector = vectors[i];
+            vectors[i] = vectors[maxIndex];
+            vectors[maxIndex] = vector;
+        }
+    }
+
+    // Sorting columns can change handedness; eigenvector signs are arbitrary.
+    if (vectors.Determinant() < 0.0f) {
+        vectors[2] *= -1.0f;
+    }
+
+    eigenValues = values;
+    eigenVectors = vectors;
+    return true;
+}
+
+bool Mat3::SingularValueDecompose(Mat3 &leftVectors, Vec3 &singularValues, Mat3 &rightVectors, float tolerance) const {
+    float input[3][3];
+    for (int row = 0; row < 3; row++) {
+        for (int column = 0; column < 3; column++) {
+            input[row][column] = mat[column][row];
+        }
+    }
+
+    float outputU[3][3];
+    float outputSingularValues[3];
+    float outputV[3][3];
+    if (!JacobiSVD::Decompose<3>(input, outputU, outputSingularValues, outputV, tolerance)) {
+        return false;
+    }
+
+    Mat3 u(
+        Vec3(outputU[0][0], outputU[1][0], outputU[2][0]),
+        Vec3(outputU[0][1], outputU[1][1], outputU[2][1]),
+        Vec3(outputU[0][2], outputU[1][2], outputU[2][2]));
+    Mat3 v(
+        Vec3(outputV[0][0], outputV[1][0], outputV[2][0]),
+        Vec3(outputV[0][1], outputV[1][1], outputV[2][1]),
+        Vec3(outputV[0][2], outputV[1][2], outputV[2][2]));
+
+    leftVectors = u;
+    singularValues.Set(outputSingularValues[0], outputSingularValues[1], outputSingularValues[2]);
+    rightVectors = v;
+    return true;
+}
+
 
 //------------------------------------------------
 //  

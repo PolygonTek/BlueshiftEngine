@@ -157,6 +157,8 @@ public:
                         /// Exact compare, no epsilon.
     bool                operator!=(const Mat3 &rhs) const { return !Equals(rhs); }
 
+                        /// Tests if every element is finite.
+    bool                IsFinite() const { return mat[0].IsFinite() && mat[1].IsFinite() && mat[2].IsFinite(); }
                         /// Tests if this is the identity matrix, up to the given epsilon.
     bool                IsIdentity(const float epsilon = MATRIX_EPSILON) const;
                         /// Tests if this is the upper triangular matrix, up to the given epsilon.
@@ -169,6 +171,15 @@ public:
     bool                IsDiagonal(const float epsilon = MATRIX_EPSILON) const;
                         /// Tests if this is the singular matrix.
     bool                IsSingular() const;
+
+                        /// Returns the minimum component.
+    float               MinComponent() const { return Min3(mat[0].MinComponent(), mat[1].MinComponent(), mat[2].MinComponent()); }
+                        /// Returns the maximum component.
+    float               MaxComponent() const { return Max3(mat[0].MaxComponent(), mat[1].MaxComponent(), mat[2].MaxComponent()); }
+                        /// Returns the minimum absolute component.
+    float               MinAbsComponent() const { return Min3(mat[0].MinAbsComponent(), mat[1].MinAbsComponent(), mat[2].MinAbsComponent()); }
+                        /// Returns the maximum absolute component.
+    float               MaxAbsComponent() const { return Max3(mat[0].MaxAbsComponent(), mat[1].MaxAbsComponent(), mat[2].MaxAbsComponent()); }
 
                         /// Sets all the element of this matrix to zero.
     void                SetZero();
@@ -204,6 +215,21 @@ public:
                         /// Inverts this matrix, in-place.
                         /// @return False if determinant is zero.
     bool                InverseSelf();
+
+                        /// Decomposes this symmetric matrix into eigenvalues and eigenvectors.
+                        /// Eigenvalues are sorted in descending order and the corresponding
+                        /// orthonormal eigenvectors are stored in the columns of eigenVectors.
+                        /// On failure, the output parameters are left unchanged.
+                        /// @return False if this matrix is not finite and symmetric, epsilon is
+                        /// not positive, or the iteration fails to converge.
+    bool                EigenDecomposeSymmetric(Vec3 &eigenValues, Mat3 &eigenVectors, float epsilon = MATRIX_EPSILON) const;
+
+                        /// Computes A = U * diag(singularValues) * V^T using one-sided Jacobi SVD.
+                        /// Singular values are non-negative and sorted in descending order.
+                        /// Numerically zero singular values may be clamped to zero and their
+                        /// corresponding left singular vectors complete an orthonormal basis.
+                        /// On failure, the output parameters are left unchanged.
+    bool                SingularValueDecompose(Mat3 &leftVectors, Vec3 &singularValues, Mat3 &rightVectors, float tolerance = MATRIX_EPSILON) const;
 
                         /// Orthonormalizes the basis formed by the column vectors of this matrix.
     Mat3                OrthoNormalize() const &;

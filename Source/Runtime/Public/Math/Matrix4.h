@@ -168,6 +168,8 @@ public:
                         /// Exact compare, no epsilon.
     bool                operator!=(const Mat4 &rhs) const { return !Equals(rhs); }
 
+                        /// Tests if every element is finite.
+    bool                IsFinite() const { return mat[0].IsFinite() && mat[1].IsFinite() && mat[2].IsFinite() && mat[3].IsFinite(); }
                         /// Tests if this is the identity matrix, up to the given epsilon.
     bool                IsIdentity(const float epsilon = MATRIX_EPSILON) const;
                         /// Tests if this is the upper triangular matrix, up to the given epsilon.
@@ -182,6 +184,15 @@ public:
     bool                IsSingular(const float epsilon = MATRIX_EPSILON) const;
                         /// Tests if this is the affine transform matrix, up to the given epsilon.
     bool                IsAffine(const float epsilon = MATRIX_EPSILON) const;
+
+                        /// Returns the minimum component.
+    float               MinComponent() const { return Min(Min(mat[0].MinComponent(), mat[1].MinComponent()), Min(mat[2].MinComponent(), mat[3].MinComponent())); }
+                        /// Returns the maximum component.
+    float               MaxComponent() const { return Max(Max(mat[0].MaxComponent(), mat[1].MaxComponent()), Max(mat[2].MaxComponent(), mat[3].MaxComponent())); }
+                        /// Returns the minimum absolute component.
+    float               MinAbsComponent() const { return Min(Min(mat[0].MinAbsComponent(), mat[1].MinAbsComponent()), Min(mat[2].MinAbsComponent(), mat[3].MinAbsComponent())); }
+                        /// Returns the maximum absolute component.
+    float               MaxAbsComponent() const { return Max(Max(mat[0].MaxAbsComponent(), mat[1].MaxAbsComponent()), Max(mat[2].MaxAbsComponent(), mat[3].MaxAbsComponent())); }
 
                         /// Sets all the element of this matrix to zero.
     void                SetZero();
@@ -234,6 +245,13 @@ public:
                         /// Inverts this matrix, in-place.
                         /// @return False if determinant is zero.
     bool                InverseSelf();
+
+                        /// Computes A = U * diag(singularValues) * V^T using one-sided Jacobi SVD.
+                        /// Singular values are non-negative and sorted in descending order.
+                        /// Numerically zero singular values may be clamped to zero and their
+                        /// corresponding left singular vectors complete an orthonormal basis.
+                        /// On failure, the output parameters are left unchanged.
+    bool                SingularValueDecompose(Mat4 &leftVectors, Vec4 &singularValues, Mat4 &rightVectors, float tolerance = MATRIX_EPSILON) const;
 
                         /// Inverts a affine matrix. (affine matrix means equivalent to a 3x4 matrix)
                         /// If a matrix M is made up of only translation, rotation, reflection, scaling and shearing,

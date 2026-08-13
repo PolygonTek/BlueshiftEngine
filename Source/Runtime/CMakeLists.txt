@@ -80,6 +80,8 @@ set(COMMON_ENGINE_FILES
     Public/Math/Color4.h
     Public/Math/CQuaternion.h
     Public/Math/Curve.h
+    Public/Math/EigenSolver3.h
+    Public/Math/EigenSolver4.h
     Public/Math/Hermite.h
     Public/Math/Cylinder.h
     Public/Math/FloatConverter.h
@@ -99,6 +101,7 @@ set(COMMON_ENGINE_FILES
     Public/Math/Plane.h
     Public/Math/Pluecker.h
     Public/Math/Point.h
+    Public/Math/PrincipalComponents.h
     Public/Math/Quaternion.h
     Public/Math/Random.h
     Public/Math/Ray.h
@@ -106,6 +109,7 @@ set(COMMON_ENGINE_FILES
     Public/Math/Rect.h
     Public/Math/RGBE9995.h
     Public/Math/Rotation.h
+    Public/Math/CovarianceAccumulator.h
     Public/Math/Size.h
     Public/Math/Sphere.h
     Public/Math/SphericalHarmonics.h
@@ -377,7 +381,11 @@ set(COMMON_ENGINE_FILES
     Private/Math/Pluecker.cpp
     Private/Math/Sphere.cpp
     Private/Math/Cylinder.cpp
+    Private/Math/JacobiSVD.h
+    Private/Math/EigenSolver3.cpp
+    Private/Math/EigenSolver4.cpp
     Private/Math/Matrix3.cpp
+    Private/Math/PrincipalComponents.cpp
     Private/Math/Vector2.cpp
 
     Private/SIMD/SIMD.cpp

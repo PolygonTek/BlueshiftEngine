@@ -429,11 +429,11 @@ BE_INLINE float Quat::CalcW() const {
 
 BE_INLINE Vec3 Quat::Axis() const {
     Vec3 axis(x, y, z);
-    float sqrLength = axis.LengthSqr();
-    if (sqrLength < std::numeric_limits<float>::min()) {
+    float squaredLength = axis.LengthSqr();
+    if (squaredLength < std::numeric_limits<float>::min()) {
         return Vec3::zero;  
     }
-    return axis * Math::InvSqrt(sqrLength);
+    return axis * Math::InvSqrt(squaredLength);
 }
 
 BE_INLINE float Quat::Angle() const {
@@ -455,7 +455,7 @@ BE_INLINE float Quat::LengthSqr() const {
 BE_INLINE Quat &Quat::Normalize() {
     float len = Length();
     if (len != 0.0f) {
-        float invlength = 1 / len;
+        float invlength = 1.0f / len;
         x *= invlength;
         y *= invlength;
         z *= invlength;

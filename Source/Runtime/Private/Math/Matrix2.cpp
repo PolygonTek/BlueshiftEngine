@@ -128,6 +128,78 @@ bool Mat2::InverseSelf() {
 #endif
 }
 
+bool Mat2::EigenDecomposeSymmetric(Vec2 &eigenValues, Mat2 &eigenVectors, float epsilon) const {
+    if (epsilon <= 0.0f || IEEE_FLT_IS_NAN(epsilon)) {
+        return false;
+    }
+
+    for (int row = 0; row < 2; row++) {
+        for (int column = 0; column < 2; column++) {
+            float value = mat[row][column];
+            if (IEEE_FLT_IS_NAN(value)) {
+                return false;
+            }
+        }
+    }
+
+    if (!IsSymmetric(epsilon)) {
+        return false;
+    }
+
+    float diagonal0 = mat[0][0];
+    float diagonal1 = mat[1][1];
+    float offDiagonal = 0.5f * mat[0][1] + 0.5f * mat[1][0];
+    float halfTrace = 0.5f * diagonal0 + 0.5f * diagonal1;
+    float halfDifference = 0.5f * diagonal0 - 0.5f * diagonal1;
+
+    // Compute hypot(halfDifference, offDiagonal) without squaring unscaled values.
+    float absHalfDifference = Math::Fabs(halfDifference);
+    float absOffDiagonal = Math::Fabs(offDiagonal);
+    float scale = absHalfDifference > absOffDiagonal ? absHalfDifference : absOffDiagonal;
+    float radius = 0.0f;
+    if (scale > 0.0f) {
+        float scaledHalfDifference = halfDifference / scale;
+        float scaledOffDiagonal = offDiagonal / scale;
+        radius = scale * Math::Sqrt(scaledHalfDifference * scaledHalfDifference + scaledOffDiagonal * scaledOffDiagonal);
+    }
+
+    Vec2 values(halfTrace + radius, halfTrace - radius);
+    if (IEEE_FLT_IS_NAN(radius) || IEEE_FLT_IS_NAN(values.x) || IEEE_FLT_IS_NAN(values.y)) {
+        return false;
+    }
+
+    Mat2 vectors;
+    if (radius == 0.0f) {
+        vectors = Mat2::identity;
+    } else {
+        // Select the form that avoids cancellation when constructing the major eigenvector.
+        Vec2 majorVector = halfDifference >= 0.0f ? Vec2(radius + halfDifference, offDiagonal) : Vec2(offDiagonal, radius - halfDifference);
+
+        float absX = Math::Fabs(majorVector.x);
+        float absY = Math::Fabs(majorVector.y);
+        float vectorScale = absX > absY ? absX : absY;
+        if (vectorScale == 0.0f || IEEE_FLT_IS_NAN(vectorScale)) {
+            return false;
+        }
+
+        majorVector *= 1.0f / vectorScale;
+        float lengthSqr = majorVector.LengthSqr();
+        if (lengthSqr <= 0.0f || IEEE_FLT_IS_NAN(lengthSqr)) {
+            return false;
+        }
+        majorVector *= Math::InvSqrt(lengthSqr);
+
+        // Mat2 is row-major, so explicitly place the orthonormal vectors in columns.
+        vectors = Mat2(
+            majorVector.x, -majorVector.y,
+            majorVector.y,  majorVector.x);
+    }
+
+    eigenValues = values;
+    eigenVectors = vectors;
+    return true;
+}
+
 Mat2 Mat2::FromString(const char *str) {
     Mat2 m;
     int count = sscanf(str, "%f %f %f %f", &m[0].x, &m[0].y, &m[1].x, &m[1].y);

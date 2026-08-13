@@ -14,6 +14,7 @@
 
 #include "Precompiled.h"
 #include "Math/Math.h"
+#include "JacobiSVD.h"
 
 BE_NAMESPACE_BEGIN
 
@@ -1504,6 +1505,38 @@ Vec3 Mat4::ToScaleVec3() const {
 
 Vec3 Mat4::ToSignedScaleVec3() const {
     return ToMat3x4().ToSignedScaleVec3();
+}
+
+bool Mat4::SingularValueDecompose(Mat4 &leftVectors, Vec4 &singularValues, Mat4 &rightVectors, float tolerance) const {
+    float input[4][4];
+    for (int row = 0; row < 4; row++) {
+        for (int column = 0; column < 4; column++) {
+            input[row][column] = mat[row][column];
+        }
+    }
+
+    float outputU[4][4];
+    float outputSingularValues[4];
+    float outputV[4][4];
+    if (!JacobiSVD::Decompose<4>(input, outputU, outputSingularValues, outputV, tolerance)) {
+        return false;
+    }
+
+    Mat4 u(
+        Vec4(outputU[0][0], outputU[0][1], outputU[0][2], outputU[0][3]),
+        Vec4(outputU[1][0], outputU[1][1], outputU[1][2], outputU[1][3]),
+        Vec4(outputU[2][0], outputU[2][1], outputU[2][2], outputU[2][3]),
+        Vec4(outputU[3][0], outputU[3][1], outputU[3][2], outputU[3][3]));
+    Mat4 v(
+        Vec4(outputV[0][0], outputV[0][1], outputV[0][2], outputV[0][3]),
+        Vec4(outputV[1][0], outputV[1][1], outputV[1][2], outputV[1][3]),
+        Vec4(outputV[2][0], outputV[2][1], outputV[2][2], outputV[2][3]),
+        Vec4(outputV[3][0], outputV[3][1], outputV[3][2], outputV[3][3]));
+
+    leftVectors = u;
+    singularValues.Set(outputSingularValues[0], outputSingularValues[1], outputSingularValues[2], outputSingularValues[3]);
+    rightVectors = v;
+    return true;
 }
 
 Mat4 Mat4::FromString(const char *str) {
