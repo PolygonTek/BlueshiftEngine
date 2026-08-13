@@ -881,75 +881,42 @@ int OBB::GetParallelProjectionSilhouetteVerts(const Vec3 &projectionDir, Vec3 si
 }
 
 void OBB::SetFromPoints(const Vec3 *points, int numPoints) {
-#if 0
-    // compute mean of points
-    center = points[0];
-    for (int i = 1; i < numPoints; i++) {
-        center += points[i];
+    if (!points || numPoints <= 0) {
+        Clear();
+        return;
     }
-    float invNumPoints = 1.0f / numPoints;
-    center *= invNumPoints;
 
-    // compute covariances of points
-    float covXX = 0.0f; 
-    float covXY = 0.0f;
-    float covXZ = 0.0f;
-    float covYY = 0.0f; 
-    float covYZ = 0.0f;
-    float covZZ = 0.0f;
+    if (numPoints == 1) {
+        center = points[0];
+        extents.SetFromScalar(0.0f);
+        axis.SetIdentity();
+        return;
+    }
 
+    // Compute the mean and covariance of the point cloud in one pass.
+    CovarianceAccumulator3 covariance;
     for (int i = 0; i < numPoints; i++) {
-        Vec3 diff = points[i] - center;
-        covXX += diff.x * diff.x;
-        covXY += diff.x * diff.y;
-        covXZ += diff.x * diff.z;
-        covYY += diff.y * diff.y;
-        covYZ += diff.y * diff.z;
-        covZZ += diff.z * diff.z;
+        covariance.AddPoint(points[i]);
     }
-    covXX *= invNumPoints;
-    covXY *= invNumPoints;
-    covXZ *= invNumPoints;
-    covYY *= invNumPoints;
-    covYZ *= invNumPoints;
-    covZZ *= invNumPoints;
 
-    // compute eigenvectors for covariance matrix
-    MatX eigenVectors;
-    VecX eigenValues;
-    eigenVectors.SetData(3, 3, MATX_ALLOCA(3 * 3));
-    eigenValues.SetData(3, VECX_ALLOCA(3));
-
-    eigenVectors[0][0] = covXX;
-    eigenVectors[0][1] = covXY;
-    eigenVectors[0][2] = covXZ;
-    eigenVectors[1][0] = covXY;
-    eigenVectors[1][1] = covYY;
-    eigenVectors[1][2] = covYZ;
-    eigenVectors[2][0] = covXZ;
-    eigenVectors[2][1] = covYZ;
-    eigenVectors[2][2] = covZZ;
-    eigenVectors.Eigen_SolveSymmetric(eigenValues);
-    eigenVectors.Eigen_SortIncreasing(eigenValues);
-
-    axis[0] = eigenVectors[0];
-    axis[1] = eigenVectors[1];
-    axis[2] = eigenVectors[2];
-
-    extents[0] = eigenValues[0];
-    extents[1] = eigenValues[0];
-    extents[2] = eigenValues[0];
-
-    // refine by calculating the aabb of the points projected onto the axis and adjusting the center and extents
-    AABB aabb;
-    aabb.Clear();
-    for (int i = 0; i < numPoints; i++)	{
-        aabb.AddPoint(Vec3(points[i].Dot(axis[0]), points[i].Dot(axis[1]), points[i].Dot(axis[2])));
+    // Use the principal components as the OBB axes. Fall back to world axes if PCA fails.
+    PrincipalComponents3 principalComponents;
+    if (principalComponents.SetFromCovariance(covariance.PopulationCovariance())) {
+        axis = principalComponents.axes;
+    } else {
+        axis.SetIdentity();
     }
-    center = (aabb[0] + aabb[1]) * 0.5f;
-    extents = aabb[1] - center;
-    center = axis * center;
-#endif
+
+    // Fit exact bounds in PCA space, relative to the mean to preserve precision far from the origin.
+    const Vec3 &mean = covariance.Mean();
+    AABB localBounds(axis.TransposedMulVec(points[0] - mean));
+    for (int i = 1; i < numPoints; i++) {
+        localBounds.AddPoint(axis.TransposedMulVec(points[i] - mean));
+    }
+
+    Vec3 localCenter = (localBounds[0] + localBounds[1]) * 0.5f;
+    center = mean + axis * localCenter;
+    extents = localBounds[1] - localCenter;
 }
 
 bool OBB::ProjectionBounds(const Sphere &sphere, AABB &projectionBounds) const {
