@@ -48,6 +48,9 @@ public:
     virtual void BE_FASTCALL            Memcpy(void *dst, const void *src, const int size) override;
     virtual void BE_FASTCALL            Memset(void *dst, const int val, const int size) override;
 
+    virtual void BE_FASTCALL            TransformPoints(Vec3 *points, const Mat3x4 &matrix, const int count) override;
+    virtual void BE_FASTCALL            TransformDirections(Vec3 *directions, const Mat3x4 &matrix, const int count) override;
+
     virtual void BE_FASTCALL            DecompressJoints(JointPose *joints, const CompressedJointPose *compressedJoints, const int *index, const int numJoints) override;
     virtual void BE_FASTCALL            BlendJoints(JointPose *joints, const JointPose *blendJoints, const float fraction, const int *index, const int numJoints) override;
     virtual void BE_FASTCALL            BlendJointsFast(JointPose *joints, const JointPose *blendJoints, const float fraction, const int *index, const int numJoints) override;

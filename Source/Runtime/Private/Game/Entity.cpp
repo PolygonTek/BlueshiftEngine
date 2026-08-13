@@ -670,7 +670,7 @@ const AABB Entity::GetWorldAABBFast(bool includingChildren) const {
     }
 
     AABB worldAABB;
-    worldAABB.SetFromTransformedAABBFast(localAABB, transform->GetMatrix());
+    worldAABB.SetFromTransformedAABB(localAABB, transform->GetMatrix());
     return worldAABB;
 }
 

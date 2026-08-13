@@ -63,7 +63,7 @@ public:
                         /// Exact compare, no epsilon.
     bool                operator!=(const Line &rhs) const { return !Equals(rhs); }
 
-                        /// Gets a point along the line at the given distance.
+                        /// Gets a point along the line at the given fraction.
     Vec3                GetPoint(float fraction) const { return pos + dir * fraction; }
 
                         /// Translates this line with the given translation offset.
@@ -72,7 +72,7 @@ public:
                         /// Translates this line with the given translation offset, in-place.
     Line &              TranslateSelf(const Vec3 &translation);
 
-                        /// Applies a transformation to this line, in-place.
+                        /// Applies an affine transformation to this line, in-place.
     void                Transform(const Mat3 &transform);
     void                Transform(const Mat3x4 &transform);
     void                Transform(const Mat4 &transform);
@@ -105,7 +105,7 @@ public:
     constexpr int       GetDimension() const { return 3+3; }
 
     Vec3                pos;    ///< Specifies the origin of this line.
-    Vec3                dir;    ///< The normalized direction vector of this ray.
+    Vec3                dir;    ///< The normalized direction vector of this line.
 };
 
 BE_INLINE Line::Line(const Vec3 &inPos, const Vec3 &inDir) :
@@ -155,8 +155,10 @@ BE_INLINE void Line::Transform(const Mat3x4 &transform) {
 }
 
 BE_INLINE void Line::Transform(const Mat4 &transform) {
+    assert(transform.IsAffine());
     pos = transform.TransformPos(pos);
     dir = transform.TransformDir(dir);
+    dir.Normalize();
 }
 
 BE_INLINE void Line::Transform(const Quat &transform) {

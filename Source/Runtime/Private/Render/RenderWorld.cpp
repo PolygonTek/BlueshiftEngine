@@ -124,7 +124,7 @@ void RenderWorld::UpdateRenderObject(int handle, const RenderObject::State *def)
                 meshSurfProxy->renderObject = renderObject;
                 meshSurfProxy->mesh = def->mesh;
                 meshSurfProxy->meshSurfIndex = surfaceIndex;
-                meshSurfProxy->worldAABB.SetFromTransformedAABBFast(meshSurf->subMesh->GetAABB(), def->worldMatrix);
+                meshSurfProxy->worldAABB.SetFromTransformedAABB(meshSurf->subMesh->GetAABB(), def->worldMatrix);
                 meshSurfProxy->id = staticMeshDbvt.CreateProxy(renderObject->meshSurfProxies[surfaceIndex].worldAABB, MeterToUnit(0.0f), &renderObject->meshSurfProxies[surfaceIndex]);
             }
         }
@@ -138,7 +138,7 @@ void RenderWorld::UpdateRenderObject(int handle, const RenderObject::State *def)
         if (proxyMoved) {
             displacement = def->worldMatrix.ToTranslationVec3() - renderObject->state.worldMatrix.ToTranslationVec3();
 
-            renderObject->proxy->worldAABB.SetFromTransformedAABBFast(def->aabb, def->worldMatrix);
+            renderObject->proxy->worldAABB.SetFromTransformedAABB(def->aabb, def->worldMatrix);
             objectDbvt.MoveProxy(renderObject->proxy->id, renderObject->proxy->worldAABB, MeterToUnit(0.5f), displacement);
         }
 
@@ -161,13 +161,13 @@ void RenderWorld::UpdateRenderObject(int handle, const RenderObject::State *def)
                         meshSurfProxy->renderObject = renderObject;
                         meshSurfProxy->mesh = def->mesh;
                         meshSurfProxy->meshSurfIndex = surfaceIndex;
-                        meshSurfProxy->worldAABB.SetFromTransformedAABBFast(meshSurf->subMesh->GetAABB(), def->worldMatrix);
+                        meshSurfProxy->worldAABB.SetFromTransformedAABB(meshSurf->subMesh->GetAABB(), def->worldMatrix);
                         meshSurfProxy->id = staticMeshDbvt.CreateProxy(renderObject->meshSurfProxies[surfaceIndex].worldAABB, MeterToUnit(0.0f), &renderObject->meshSurfProxies[surfaceIndex]);
                     }
                 } else {
                     if (proxyMoved) {
                         for (int surfaceIndex = 0; surfaceIndex < def->mesh->NumSurfaces(); surfaceIndex++) {
-                            renderObject->meshSurfProxies[surfaceIndex].worldAABB.SetFromTransformedAABBFast(def->mesh->GetSurface(surfaceIndex)->subMesh->GetAABB(), def->worldMatrix);
+                            renderObject->meshSurfProxies[surfaceIndex].worldAABB.SetFromTransformedAABB(def->mesh->GetSurface(surfaceIndex)->subMesh->GetAABB(), def->worldMatrix);
                             staticMeshDbvt.MoveProxy(renderObject->meshSurfProxies[surfaceIndex].id, renderObject->meshSurfProxies[surfaceIndex].worldAABB, MeterToUnit(0.5f), displacement);
                         }
                     }

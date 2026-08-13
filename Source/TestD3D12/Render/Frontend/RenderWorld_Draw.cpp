@@ -762,7 +762,7 @@ void RenderWorld::AddMeshes(RenderFrameData *frameData, const RenderCamera *rend
                 const BE1::AABB &localAABB = meshSurf->subMesh->GetBoundingBox();
                 if (!localAABB.IsCleared()) {
                     BE1::AABB worldAABB;
-                    worldAABB.SetFromTransformedAABBFast(localAABB, visObject->worldMatrix);
+                    worldAABB.SetFromTransformedAABB(localAABB, visObject->worldMatrix);
 
                     if (renderCamera->frustum.CullAABB(worldAABB)) {
                         continue;

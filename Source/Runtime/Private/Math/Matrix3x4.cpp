@@ -504,83 +504,11 @@ Vec3 Mat3x4::TransformDir(const Vec3 &rhs) const {
 }
 
 void Mat3x4::BatchTransformPos(Vec3 *posArray, int numElements) const {
-#if defined(ENABLE_SIMD4_INTRIN)
-    simd4f ar0 = loadu_ps(mat[0]);
-    simd4f ar1 = loadu_ps(mat[1]);
-    simd4f ar2 = loadu_ps(mat[2]);
-
-    Vec3 *ptr = posArray;
-
-    for (int i = 0; i < numElements; i++) {
-        simd4f v = set_ps(ptr->x, ptr->y, ptr->z, 1.0f);
-
-        simd4f x = ar0 * v;
-        simd4f y = ar1 * v;
-        simd4f z = ar2 * v;
-        simd4f tmp1 = hadd_ps(x, y); // x0+x1, x2+x3, y0+y1, y2+y3
-        simd4f tmp2 = hadd_ps(z, SIMD_4::F4_zero); // z0+z1, z2+z3, 0, 0
-        simd4f result = hadd_ps(tmp1, tmp2); // x0+x1+x2+x3, y0+y1+y2+y3, z0+z1+z2+z3, 0
-
-        ptr->x = result[0];
-        ptr->y = result[1];
-        ptr->z = result[2];
-
-        ptr++;
-    }
-#else
-    Vec3 *ptr = posArray;
-
-    for (int i = 0; i < numElements; i++) {
-        Vec3 *dst = (Vec3 *)ptr;
-        Vec3 pos = *(Vec3 *)ptr;
-
-        (*dst)[0] = mat[0][0] * pos[0] + mat[0][1] * pos[1] + mat[0][2] * pos[2] + mat[0][3];
-        (*dst)[1] = mat[1][0] * pos[0] + mat[1][1] * pos[1] + mat[1][2] * pos[2] + mat[1][3];
-        (*dst)[2] = mat[2][0] * pos[0] + mat[2][1] * pos[1] + mat[2][2] * pos[2] + mat[2][3];
-
-        ptr++;
-    }
-#endif
+    simdProcessor->TransformPoints(posArray, *this, numElements);
 }
 
 void Mat3x4::BatchTransformDir(Vec3 *dirArray, int numElements) const {
-#if defined(ENABLE_SIMD4_INTRIN)
-    simd4f ar0 = loadu_ps(mat[0]);
-    simd4f ar1 = loadu_ps(mat[1]);
-    simd4f ar2 = loadu_ps(mat[2]);
-
-    Vec3 *ptr = dirArray;
-
-    for (int i = 0; i < numElements; i++) {
-        simd4f v = set_ps(ptr->x, ptr->y, ptr->z, 0.0f);
-
-        simd4f x = ar0 * v;
-        simd4f y = ar1 * v;
-        simd4f z = ar2 * v;
-        simd4f tmp1 = hadd_ps(x, y); // x0+x1, x2+x3, y0+y1, y2+y3
-        simd4f tmp2 = hadd_ps(z, SIMD_4::F4_zero); // z0+z1, z2+z3, 0, 0
-        simd4f result = hadd_ps(tmp1, tmp2); // x0+x1+x2+x3, y0+y1+y2+y3, z0+z1+z2+z3, 0
-
-        ptr->x = result[0];
-        ptr->y = result[1];
-        ptr->z = result[2];
-
-        ptr++;
-    }
-#else
-    Vec3 *ptr = dirArray;
-
-    for (int i = 0; i < numElements; i++) {
-        Vec3 *dst = (Vec3 *)ptr;
-        Vec3 dir = *(Vec3 *)ptr;
-
-        (*dst)[0] = mat[0][0] * dir[0] + mat[0][1] * dir[1] + mat[0][2] * dir[2];
-        (*dst)[1] = mat[1][0] * dir[0] + mat[1][1] * dir[1] + mat[1][2] * dir[2];
-        (*dst)[2] = mat[2][0] * dir[0] + mat[2][1] * dir[1] + mat[2][2] * dir[2];
-
-        ptr++;
-    }
-#endif
+    simdProcessor->TransformDirections(dirArray, *this, numElements);
 }
 
 Vec4 Mat3x4::TransposedMulVec(const Vec4 &rhs) const {

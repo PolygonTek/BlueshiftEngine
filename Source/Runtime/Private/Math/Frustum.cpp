@@ -62,12 +62,12 @@ float Frustum::PlaneDistance(const Plane &plane) const {
     float min, max;
 
     ProjectOnAxis(plane.normal, min, max);
-    if (min + plane[3] > 0.0f) {
-        return min + plane[3];
+    if (min - plane.offset > 0.0f) {
+        return min - plane.offset;
     }
 
-    if (max + plane[3] < 0.0f) {
-        return max + plane[3];
+    if (max - plane.offset < 0.0f) {
+        return max - plane.offset;
     }
 
     return 0.0f;
@@ -77,11 +77,11 @@ int Frustum::PlaneSide(const Plane &plane, const float epsilon) const {
     float min, max;
 
     ProjectOnAxis(plane.normal, min, max);
-    if (min + plane[3] > epsilon) {
+    if (min - plane.offset > epsilon) {
         return Plane::Side::Front;
     }
 
-    if (max + plane[3] < epsilon) {
+    if (max - plane.offset < -epsilon) {
         return Plane::Side::Back;
     }
 
@@ -858,10 +858,10 @@ bool Frustum::IsIntersectSphere(const Sphere &sphere) const {
     case VORONOI_INDEX(0, 0, 0): return true;
     case VORONOI_INDEX(1, 0, 0): return (dNear - p.x < r);
     case VORONOI_INDEX(2, 0, 0): return (p.x - dFar < r);
-    case VORONOI_INDEX(0, 1, 0): d = dFar * p.y - dLeft * p.x; return (d * d < r * r * (dFar * dFar + dLeft * dLeft));
-    case VORONOI_INDEX(0, 2, 0): d = -dFar * p.z - dLeft * p.x; return (d * d < r * r * (dFar * dFar + dLeft * dLeft));
-    case VORONOI_INDEX(0, 0, 1): d = dFar * p.z - dUp * p.x; return (d * d < r * r * (dFar * dFar + dUp * dUp));
-    case VORONOI_INDEX(0, 0, 2): d = -dFar * p.z - dUp * p.x; return (d * d < r * r * (dFar * dFar + dUp * dUp));
+    case VORONOI_INDEX(0, 1, 0): d = -dFar * p.y - dLeft * p.x; return (d * d < r * r * (dFar * dFar + dLeft * dLeft));
+    case VORONOI_INDEX(0, 2, 0): d = dFar * p.y - dLeft * p.x; return (d * d < r * r * (dFar * dFar + dLeft * dLeft));
+    case VORONOI_INDEX(0, 0, 1): d = -dFar * p.z - dUp * p.x; return (d * d < r * r * (dFar * dFar + dUp * dUp));
+    case VORONOI_INDEX(0, 0, 2): d = dFar * p.z - dUp * p.x; return (d * d < r * r * (dFar * dFar + dUp * dUp));
     default:
         ToIndexPoints(points);
         switch(index) {
@@ -943,11 +943,13 @@ bool Frustum::IntersectRay(const Ray &ray, float *hitDistMin, float *hitDistMax)
     Vec3 localDir = axis.TransposedMulVec(ray.dir);
     float scale1, scale2;
 
-    if (!LocalRayIntersection(localOrigin, localDir, scale1, scale2)) {
-        if (scale1 > scale2) {
-            return false;
-        }
+    LocalRayIntersection(localOrigin, localDir, scale1, scale2);
+    if (scale1 > scale2 || scale2 < 0.0f) {
+        return false;
     }
+
+    scale1 = Max(scale1, 0.0f);
+
     if (hitDistMin) {
         *hitDistMin = scale1;
     }
@@ -1254,27 +1256,22 @@ Sphere Frustum::ToMinimumSphere() const {
 
 // planes point outwards
 void Frustum::ToPlanes(Plane planes[6]) const {
-    int i;
-    Vec3 scaled[2];
-    Vec3 points[4];
+    planes[0] = Plane(-axis[0], origin + axis[0] * dNear);
+    planes[1] = Plane( axis[0], origin + axis[0] * dFar);
 
-    planes[0].normal = -axis[0];
-    planes[0].offset = dNear;
-    planes[1].normal = axis[0];
-    planes[1].offset = -dFar;
+    const float invUpLength = Math::InvSqrt(dFar * dFar + dUp * dUp);
+    const Vec3 upForward = axis[0] * (-dUp * invUpLength);
+    const Vec3 upNormal = axis[2] * (dFar * invUpLength);
 
-    scaled[0] = axis[1] * dLeft;
-    scaled[1] = axis[2] * dUp;
-    points[0] = scaled[0] + scaled[1];
-    points[1] = -scaled[0] + scaled[1];
-    points[2] = -scaled[0] - scaled[1];
-    points[3] = scaled[0] - scaled[1];
+    planes[2] = Plane(upForward + upNormal, origin);
+    planes[4] = Plane(upForward - upNormal, origin);
 
-    for (i = 0; i < 4; i++) {
-        planes[i+2].normal = points[i].Cross(points[(i+1)&3] - points[i]);
-        planes[i+2].Normalize();
-        planes[i+2].FitThroughPoint(points[i]);
-    }
+    const float invLeftLength = Math::InvSqrt(dFar * dFar + dLeft * dLeft);
+    const Vec3 leftForward = axis[0] * (-dLeft * invLeftLength);
+    const Vec3 leftNormal = axis[1] * (dFar * invLeftLength);
+
+    planes[3] = Plane(leftForward - leftNormal, origin);
+    planes[5] = Plane(leftForward + leftNormal, origin);
 }
 
 void Frustum::ToPoints(Vec3 points[8]) const {

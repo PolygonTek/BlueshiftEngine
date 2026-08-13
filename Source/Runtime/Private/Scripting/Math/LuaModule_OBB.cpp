@@ -53,7 +53,7 @@ void LuaVM::RegisterOBB(LuaCpp::Module &module) {
         "distance_squared", &OBB::DistanceSqr,
         "distance", &OBB::Distance,
         "is_contain_point", &OBB::IsContainPoint,
-        "is_intersect_aabb", &OBB::IsIntersectOBB,
+        "is_intersect_aabb", &OBB::IsIntersectAABB,
         "is_intersect_sphere", &OBB::IsIntersectSphere,
         "is_intersect_line", &OBB::IsIntersectLine,
         "intersect_ray", static_cast<float(OBB::*)(const Ray&)const>(&OBB::IntersectRay),

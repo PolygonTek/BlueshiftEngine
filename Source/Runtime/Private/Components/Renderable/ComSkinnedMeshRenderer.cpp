@@ -158,7 +158,7 @@ void ComSkinnedMeshRenderer::UpdateVisuals() {
             for (int i = 0; i < jointAabbs.Count(); i++) {
                 if (!jointAabbs[i].IsCleared()) {
                     AABB aabb;
-                    aabb.SetFromTransformedAABBFast(jointAabbs[i], renderObjectDef.joints[i]);
+                    aabb.SetFromTransformedAABB(jointAabbs[i], renderObjectDef.joints[i]);
 
                     renderObjectDef.aabb += aabb;
                 }

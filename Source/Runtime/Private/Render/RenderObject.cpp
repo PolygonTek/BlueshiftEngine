@@ -48,7 +48,7 @@ void RenderObject::Update(const State *stateDef) {
     worldMatrix = state.worldMatrix;
     worldMatrixInverse = worldMatrix.InverseOrthogonal();
 
-    worldAABB.SetFromTransformedAABBFast(state.aabb, worldMatrix);
+    worldAABB.SetFromTransformedAABB(state.aabb, worldMatrix);
     worldOBB = OBB(state.aabb, worldMatrix);
 }
 

@@ -90,6 +90,61 @@ void BE_FASTCALL SIMD_Generic::Memset(void *dst, const int val, const int count)
     memset(dst, val, count);
 }
 
+void BE_FASTCALL SIMD_Generic::TransformPoints(Vec3 *points, const Mat3x4 &matrix, const int count) {
+    const float m00 = matrix[0][0];
+    const float m01 = matrix[0][1];
+    const float m02 = matrix[0][2];
+    const float m03 = matrix[0][3];
+    const float m10 = matrix[1][0];
+    const float m11 = matrix[1][1];
+    const float m12 = matrix[1][2];
+    const float m13 = matrix[1][3];
+    const float m20 = matrix[2][0];
+    const float m21 = matrix[2][1];
+    const float m22 = matrix[2][2];
+    const float m23 = matrix[2][3];
+
+    for (int i = 0; i < count; i++) {
+        const float x = points[i].x;
+        const float y = points[i].y;
+        const float z = points[i].z;
+
+        const float tx = m00 * x + m01 * y + m02 * z + m03;
+        const float ty = m10 * x + m11 * y + m12 * z + m13;
+        const float tz = m20 * x + m21 * y + m22 * z + m23;
+
+        points[i].x = tx;
+        points[i].y = ty;
+        points[i].z = tz;
+    }
+}
+
+void BE_FASTCALL SIMD_Generic::TransformDirections(Vec3 *directions, const Mat3x4 &matrix, const int count) {
+    const float m00 = matrix[0][0];
+    const float m01 = matrix[0][1];
+    const float m02 = matrix[0][2];
+    const float m10 = matrix[1][0];
+    const float m11 = matrix[1][1];
+    const float m12 = matrix[1][2];
+    const float m20 = matrix[2][0];
+    const float m21 = matrix[2][1];
+    const float m22 = matrix[2][2];
+
+    for (int i = 0; i < count; i++) {
+        const float x = directions[i].x;
+        const float y = directions[i].y;
+        const float z = directions[i].z;
+
+        const float tx = m00 * x + m01 * y + m02 * z;
+        const float ty = m10 * x + m11 * y + m12 * z;
+        const float tz = m20 * x + m21 * y + m22 * z;
+
+        directions[i].x = tx;
+        directions[i].y = ty;
+        directions[i].z = tz;
+    }
+}
+
 void BE_FASTCALL SIMD_Generic::DecompressJoints(JointPose *joints, const CompressedJointPose *compressedJoints, const int *index, const int numJoints) {
     for (int i = 0; i < numJoints; i++) {
         int j = index[i];

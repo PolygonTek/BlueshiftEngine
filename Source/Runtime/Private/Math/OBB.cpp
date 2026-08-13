@@ -138,7 +138,7 @@ bool OBB::AddPoint(const Vec3 &p) {
     // 첫번째 축은 p 방향으로 고른다.
     axis2[0] = (p - center).Normalized();
     // 두번째 축은 OBB 의 각 축에 투영해보고 가장 independant 한 벡터를 하나 고른다.
-    axis2[1] = axis[Min3Index(axis2[0].Dot(axis[0]), axis2[0].Dot(axis[1]), axis2[0].Dot(axis[2]))];
+    axis2[1] = axis[Min3Index(Math::Fabs(axis2[0].Dot(axis[0])), Math::Fabs(axis2[0].Dot(axis[1])), Math::Fabs(axis2[0].Dot(axis[2])))];
     // 첫번째 축에 투영해서 orthonormal 하게 만든다.
     axis2[1] = (axis2[1] - (axis2[1].Dot(axis2[0])) * axis2[0]).Normalized();
     // 세번째 축은 외적으로 얻는다.
@@ -251,7 +251,7 @@ bool OBB::AddOBB(const OBB &a) {
     center = ax[besti] * center;
     axis = ax[besti];
 
-    return false;
+    return true;
 }
 
 int OBB::PlaneSide(const Plane &plane, const float epsilon) const {
@@ -671,7 +671,7 @@ bool OBB::IsIntersectOBB(const OBB &b, float epsilon) const {
 bool OBB::IsIntersectSphere(const Sphere &sphere) const {
     Vec3 p;
     GetClosestPoint(sphere.Center(), p);
-    return p.DistanceSqr(sphere.Center()) < sphere.Radius() * sphere.Radius();
+    return p.DistanceSqr(sphere.Center()) <= sphere.Radius() * sphere.Radius();
 }
 
 bool OBB::IsIntersectLine(const Vec3 &start, const Vec3 &end) const {
@@ -728,7 +728,11 @@ bool OBB::IsIntersectPlane(const Plane &plane) const {
 }
 
 bool OBB::IntersectRay(const Ray &ray, float *hitDistMin, float *hitDistMax) const {
-    float tmin = -FLT_MAX;
+    if (IsCleared()) {
+        return false;
+    }
+
+    float tmin = 0.0f;
     float tmax = FLT_MAX;
 
     // For all three slabs.

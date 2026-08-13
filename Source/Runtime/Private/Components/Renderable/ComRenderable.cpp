@@ -151,7 +151,7 @@ bool ComRenderable::IntersectRay(const Ray &ray, bool backFaceCull, float *hitDi
 
     Ray localRay(localOrigin, localNormal);
 
-    if (!renderObjectDef.mesh->GetAABB().IntersectRay(localRay)) {
+    if (!renderObjectDef.mesh->GetAABB().IntersectRay(localRay, nullptr, nullptr)) {
         return false;
     }
 

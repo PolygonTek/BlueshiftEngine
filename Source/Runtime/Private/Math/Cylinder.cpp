@@ -196,10 +196,14 @@ OBB Cylinder::ToOBB() const {
     Vec3 dir = p[1] - p[0];
     float l = dir.Normalize();
 
+    if (l == 0.0f) {
+        return OBB(center, Vec3::FromScalar(radius), Mat3::identity);
+    }
+
     Vec3 left, up;
     dir.OrthogonalBasis(left, up);
     
-    return OBB(center, Vec3(l, radius, radius), Mat3(dir, left, up));
+    return OBB(center, Vec3(l * 0.5f, radius, radius), Mat3(dir, left, up));
 }
 
 BE_NAMESPACE_END

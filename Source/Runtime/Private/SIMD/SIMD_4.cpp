@@ -413,6 +413,260 @@ float BE_FASTCALL SIMD_4::Sum(const float *src, const int count0) {
     return ret;
 }
 
+void SIMD_4::Memcpy64B(void *dst, const void *src, const int count) {
+    assert_16_byte_aligned(src);
+    assert_16_byte_aligned(dst);
+
+    const byte *srcPtr = (byte *)src;
+    byte *dstPtr = (byte *)dst;
+    simd4i r0, r1, r2, r3;
+
+    int c64 = count >> 6;
+    while (c64 > 0) {
+        if (c64 > 1) {
+            // Loads one cache line (64B) of data from next 64B block of memory to CPU prefetch buffer.
+            prefetchNTA(srcPtr + 64);
+        }
+
+        r0 = load_si128((const int32_t *)srcPtr);
+        r1 = load_si128((const int32_t *)(srcPtr + 16));
+        r2 = load_si128((const int32_t *)(srcPtr + 32));
+        r3 = load_si128((const int32_t *)(srcPtr + 48));
+
+        store_si128(r0, (int32_t *)dstPtr);
+        store_si128(r1, (int32_t *)(dstPtr + 16));
+        store_si128(r2, (int32_t *)(dstPtr + 32));
+        store_si128(r3, (int32_t *)(dstPtr + 48));
+
+        srcPtr += 64;
+        dstPtr += 64;
+
+        c64--;
+    }
+}
+
+void SIMD_4::Memcpy2KB(void *dst, const void *src, const int count) {
+    assert_16_byte_aligned(src);
+    assert_16_byte_aligned(dst);
+
+    const byte *srcPtr = (byte *)src;
+    byte *dstPtr = (byte *)dst;
+    simd4i r0, r1, r2, r3, r4, r5, r6, r7;
+
+    int c128;
+    int c2k = count >> 11;
+    while (c2k > 0) {
+        c128 = 16;
+        while (c128 > 0) {
+            // Loads two cache lines (64B x 2) of data from next 128B block of memory to CPU prefetch buffer.
+            prefetchNTA(srcPtr + 128);
+            prefetchNTA(srcPtr + 192);
+
+            r0 = load_si128((const int32_t *)(srcPtr + 0));
+            r1 = load_si128((const int32_t *)(srcPtr + 16));
+            r2 = load_si128((const int32_t *)(srcPtr + 32));
+            r3 = load_si128((const int32_t *)(srcPtr + 48));
+            r4 = load_si128((const int32_t *)(srcPtr + 64));
+            r5 = load_si128((const int32_t *)(srcPtr + 80));
+            r6 = load_si128((const int32_t *)(srcPtr + 96));
+            r7 = load_si128((const int32_t *)(srcPtr + 112));
+
+            store_si128(r0, (int32_t *)(dstPtr + 0));
+            store_si128(r1, (int32_t *)(dstPtr + 16));
+            store_si128(r2, (int32_t *)(dstPtr + 32));
+            store_si128(r3, (int32_t *)(dstPtr + 48));
+            store_si128(r4, (int32_t *)(dstPtr + 64));
+            store_si128(r5, (int32_t *)(dstPtr + 80));
+            store_si128(r6, (int32_t *)(dstPtr + 96));
+            store_si128(r7, (int32_t *)(dstPtr + 112));
+
+            srcPtr += 128;
+            dstPtr += 128;
+
+            c128--;
+        }
+
+        c2k--;
+    }
+}
+
+// optimized memory copy routine that handles all alignment cases and block sizes efficiently
+void BE_FASTCALL SIMD_4::Memcpy(void *dst, const void *src, const int size) {
+#if 0
+    memcpy(dst, src, size);
+#else
+    if (size > 4096 && !(((intptr_t)dst ^ (intptr_t)src) & 15)) {
+        const byte *srcPtr = (const byte *)src;
+        byte *dstPtr = (byte *)dst;
+
+        // Copy up to the first 16 byte aligned boundary.
+        int remainingSize = (16 - (((intptr_t)dstPtr) & 15)) & 15;
+        if (remainingSize > 0) {
+            memcpy(dstPtr, srcPtr, remainingSize);
+            dstPtr += remainingSize;
+            srcPtr += remainingSize;
+        }
+
+        remainingSize = size - remainingSize;
+
+        // If there are multiple blocks of 2kB, ..
+        if (remainingSize & ~4095) {
+            SIMD_4::Memcpy2KB(dstPtr, srcPtr, remainingSize);
+            srcPtr += (remainingSize & ~2047);
+            dstPtr += (remainingSize & ~2047);
+            remainingSize &= 2047;
+        }
+
+        // If there are blocks of 64 bytes, ..
+        if (remainingSize & ~63) {
+            SIMD_4::Memcpy64B(dstPtr, srcPtr, remainingSize);
+            srcPtr += (remainingSize & ~63);
+            dstPtr += (remainingSize & ~63);
+            remainingSize &= 63;
+        }
+
+        // Copy any remaining bytes.
+        memcpy(dstPtr, srcPtr, remainingSize);
+    } else {
+        // Use the regular one if we cannot copy 16 byte aligned.
+        memcpy(dst, src, size);
+    }
+#endif
+}
+
+void BE_FASTCALL SIMD_4::Memset(void *dest0, const int val, const int count0) {
+#if 1
+    memset(dest0, val, count0);
+#else
+    byte *dest = (byte *)dest0;
+    int count = count0;
+
+    while (count > 0 && (((intptr_t)dest) & 15)) {
+        *dest = val;
+        dest++;
+        count--;
+    }
+
+    if (!count) {
+        return;
+    }
+
+    simd4i data = set1_epi8((char)val);
+
+    if (count >= 128) {
+        int c128 = count >> 7;
+        while (c128 > 0) {
+            store_si128(data, (int32_t *)dest);
+            store_si128(data, (int32_t *)(dest + 16));
+            store_si128(data, (int32_t *)(dest + 32));
+            store_si128(data, (int32_t *)(dest + 48));
+            store_si128(data, (int32_t *)(dest + 64));
+            store_si128(data, (int32_t *)(dest + 80));
+            store_si128(data, (int32_t *)(dest + 96));
+            store_si128(data, (int32_t *)(dest + 112));
+
+            dest += 128;
+            c128--;
+        }
+
+        count &= 127;
+    }
+
+    if (count >= 16) {
+        int c16 = count >> 4;
+        while (c16 > 0) {
+            store_si128(data, (int32_t *)dest);
+
+            dest += 16;
+            c16--;
+        }
+
+        count &= 15;
+    }
+
+    while (count > 0) {
+        *dest = val;
+        dest++;
+        count--;
+    }
+#endif
+}
+
+template <bool TransformPosition>
+static BE_FORCE_INLINE void TransformVec3Array(Vec3 *vectors, const Mat3x4 &matrix, const int count) {
+    static_assert(sizeof(Vec3) == sizeof(float) * 3, "SIMD batch transform requires tightly packed Vec3");
+
+    simd4f column0 = loadu_ps(matrix[0]);
+    simd4f column1 = loadu_ps(matrix[1]);
+    simd4f column2 = loadu_ps(matrix[2]);
+    simd4f column3 = SIMD_4::F4_zero;
+    transpose4x4(column0, column1, column2, column3);
+
+    int i = 0;
+    for (; i + 4 <= count; i += 4) {
+        // Load four tightly packed Vec3 values without reading beyond the final Vec3.
+        const simd4f v0 = loadu_ps(&vectors[i + 0].x);
+        const simd4f v1 = loadu_ps(&vectors[i + 1].x);
+        const simd4f v2 = loadu_ps(&vectors[i + 2].x);
+        const simd4f v3 = set_ps(vectors[i + 3].x, vectors[i + 3].y, vectors[i + 3].z, 0.0f);
+
+        simd4f r0 = shuffle_ps<0, 0, 0, 0>(v0) * column0;
+        r0 = madd_ps(shuffle_ps<1, 1, 1, 1>(v0), column1, r0);
+        r0 = madd_ps(shuffle_ps<2, 2, 2, 2>(v0), column2, r0);
+
+        simd4f r1 = shuffle_ps<0, 0, 0, 0>(v1) * column0;
+        r1 = madd_ps(shuffle_ps<1, 1, 1, 1>(v1), column1, r1);
+        r1 = madd_ps(shuffle_ps<2, 2, 2, 2>(v1), column2, r1);
+
+        simd4f r2 = shuffle_ps<0, 0, 0, 0>(v2) * column0;
+        r2 = madd_ps(shuffle_ps<1, 1, 1, 1>(v2), column1, r2);
+        r2 = madd_ps(shuffle_ps<2, 2, 2, 2>(v2), column2, r2);
+
+        simd4f r3 = shuffle_ps<0, 0, 0, 0>(v3) * column0;
+        r3 = madd_ps(shuffle_ps<1, 1, 1, 1>(v3), column1, r3);
+        r3 = madd_ps(shuffle_ps<2, 2, 2, 2>(v3), column2, r3);
+
+        if constexpr (TransformPosition) {
+            r0 += column3;
+            r1 += column3;
+            r2 += column3;
+            r3 += column3;
+        }
+
+        // Each vector store overlaps the next Vec3's x, which the following store repairs.
+        storeu_ps(r0, &vectors[i + 0].x);
+        storeu_ps(r1, &vectors[i + 1].x);
+        storeu_ps(r2, &vectors[i + 2].x);
+
+        vectors[i + 3].x = x_ps(r3);
+        vectors[i + 3].y = y_ps(r3);
+        vectors[i + 3].z = z_ps(r3);
+    }
+
+    for (; i < count; i++) {
+        const simd4f v = set_ps(vectors[i].x, vectors[i].y, vectors[i].z, 0.0f);
+        simd4f result = shuffle_ps<0, 0, 0, 0>(v) * column0;
+        result = madd_ps(shuffle_ps<1, 1, 1, 1>(v), column1, result);
+        result = madd_ps(shuffle_ps<2, 2, 2, 2>(v), column2, result);
+
+        if constexpr (TransformPosition) {
+            result += column3;
+        }
+
+        vectors[i].x = x_ps(result);
+        vectors[i].y = y_ps(result);
+        vectors[i].z = z_ps(result);
+    }
+}
+
+void BE_FASTCALL SIMD_4::TransformPoints(Vec3 *points, const Mat3x4 &matrix, const int count) {
+    TransformVec3Array<true>(points, matrix, count);
+}
+
+void BE_FASTCALL SIMD_4::TransformDirections(Vec3 *directions, const Mat3x4 &matrix, const int count) {
+    TransformVec3Array<false>(directions, matrix, count);
+}
+
 static BE_FORCE_INLINE simd4f LoadSignedShort4(const short *src) {
 #if defined(HAVE_X86_SSE_INTRIN)
     const __m128i packed = _mm_loadl_epi64((const __m128i *)src);
@@ -1377,185 +1631,6 @@ void BE_FASTCALL SIMD_4::MultiplyJoints(Mat3x4 *result, const Mat3x4 *joints1, c
         store_ps(lincomb3x4(ar0, br0, br1, br2), &resultPtr[i * 12 + 0]);
         store_ps(lincomb3x4(ar1, br0, br1, br2), &resultPtr[i * 12 + 4]);
         store_ps(lincomb3x4(ar2, br0, br1, br2), &resultPtr[i * 12 + 8]);
-    }
-#endif
-}
-
-void SIMD_4::Memcpy64B(void *dst, const void *src, const int count) {
-    assert_16_byte_aligned(src);
-    assert_16_byte_aligned(dst);
-
-    const byte *srcPtr = (byte *)src;
-    byte *dstPtr = (byte *)dst;
-    simd4i r0, r1, r2, r3;
-
-    int c64 = count >> 6;
-    while (c64 > 0) {
-        if (c64 > 1) {
-            // Loads one cache line (64B) of data from next 64B block of memory to CPU prefetch buffer.
-            prefetchNTA(srcPtr + 64);
-        }
-        
-        r0 = load_si128((const int32_t *)srcPtr);
-        r1 = load_si128((const int32_t *)(srcPtr + 16));
-        r2 = load_si128((const int32_t *)(srcPtr + 32));
-        r3 = load_si128((const int32_t *)(srcPtr + 48));
-
-        store_si128(r0, (int32_t *)dstPtr);
-        store_si128(r1, (int32_t *)(dstPtr + 16));
-        store_si128(r2, (int32_t *)(dstPtr + 32));
-        store_si128(r3, (int32_t *)(dstPtr + 48));
-
-        srcPtr += 64;
-        dstPtr += 64;
-
-        c64--;
-    }
-}
-
-void SIMD_4::Memcpy2KB(void *dst, const void *src, const int count) {
-    assert_16_byte_aligned(src);
-    assert_16_byte_aligned(dst);
-
-    const byte *srcPtr = (byte *)src;
-    byte *dstPtr = (byte *)dst;
-    simd4i r0, r1, r2, r3, r4, r5, r6, r7;
-
-    int c128;
-    int c2k = count >> 11;
-    while (c2k > 0) {
-        c128 = 16;
-        while (c128 > 0) {
-            // Loads two cache lines (64B x 2) of data from next 128B block of memory to CPU prefetch buffer.
-            prefetchNTA(srcPtr + 128);
-            prefetchNTA(srcPtr + 192);
-
-            r0 = load_si128((const int32_t *)(srcPtr + 0));
-            r1 = load_si128((const int32_t *)(srcPtr + 16));
-            r2 = load_si128((const int32_t *)(srcPtr + 32));
-            r3 = load_si128((const int32_t *)(srcPtr + 48));
-            r4 = load_si128((const int32_t *)(srcPtr + 64));
-            r5 = load_si128((const int32_t *)(srcPtr + 80));
-            r6 = load_si128((const int32_t *)(srcPtr + 96));
-            r7 = load_si128((const int32_t *)(srcPtr + 112));
-
-            store_si128(r0, (int32_t *)(dstPtr + 0));
-            store_si128(r1, (int32_t *)(dstPtr + 16));
-            store_si128(r2, (int32_t *)(dstPtr + 32));
-            store_si128(r3, (int32_t *)(dstPtr + 48));
-            store_si128(r4, (int32_t *)(dstPtr + 64));
-            store_si128(r5, (int32_t *)(dstPtr + 80));
-            store_si128(r6, (int32_t *)(dstPtr + 96));
-            store_si128(r7, (int32_t *)(dstPtr + 112));
-
-            srcPtr += 128;
-            dstPtr += 128;
-
-            c128--;
-        }
-
-        c2k--;
-    }
-}
-
-// optimized memory copy routine that handles all alignment cases and block sizes efficiently
-void BE_FASTCALL SIMD_4::Memcpy(void *dst, const void *src, const int size) {
-#if 0
-    memcpy(dst, src, size);
-#else
-    if (size > 4096 && !(((intptr_t)dst ^ (intptr_t)src) & 15)) {
-        const byte *srcPtr = (const byte *)src;
-        byte *dstPtr = (byte *)dst;
-
-        // Copy up to the first 16 byte aligned boundary.
-        int remainingSize = (16 - (((intptr_t)dstPtr) & 15)) & 15;
-        if (remainingSize > 0) {
-            memcpy(dstPtr, srcPtr, remainingSize);
-            dstPtr += remainingSize;
-            srcPtr += remainingSize;
-        }
-
-        remainingSize = size - remainingSize;
-
-        // If there are multiple blocks of 2kB, ..
-        if (remainingSize & ~4095) {
-            SIMD_4::Memcpy2KB(dstPtr, srcPtr, remainingSize);
-            srcPtr += (remainingSize & ~2047);
-            dstPtr += (remainingSize & ~2047);
-            remainingSize &= 2047;
-        }
-
-        // If there are blocks of 64 bytes, ..
-        if (remainingSize & ~63) {
-            SIMD_4::Memcpy64B(dstPtr, srcPtr, remainingSize);
-            srcPtr += (remainingSize & ~63);
-            dstPtr += (remainingSize & ~63);
-            remainingSize &= 63;
-        }
-
-        // Copy any remaining bytes.
-        memcpy(dstPtr, srcPtr, remainingSize);
-    } else {
-        // Use the regular one if we cannot copy 16 byte aligned.
-        memcpy(dst, src, size);
-    }
-#endif
-}
-
-void BE_FASTCALL SIMD_4::Memset(void *dest0, const int val, const int count0) {
-#if 1
-    memset(dest0, val, count0);
-#else
-    byte *dest = (byte *)dest0;
-    int count = count0;
-
-    while (count > 0 && (((intptr_t)dest) & 15)) {
-        *dest = val;
-        dest++;
-        count--;
-    }
-
-    if (!count) {
-        return;
-    }
-
-    simd4i data = set1_epi8((char)val);
-
-    if (count >= 128) {
-        int c128 = count >> 7;
-        while (c128 > 0) {
-            store_si128(data, (int32_t *)dest);
-            store_si128(data, (int32_t *)(dest + 16));
-            store_si128(data, (int32_t *)(dest + 32));
-            store_si128(data, (int32_t *)(dest + 48));
-            store_si128(data, (int32_t *)(dest + 64));
-            store_si128(data, (int32_t *)(dest + 80));
-            store_si128(data, (int32_t *)(dest + 96));
-            store_si128(data, (int32_t *)(dest + 112));
-
-            dest += 128;
-            c128--;
-        }
-
-        count &= 127;
-    }
-
-    if (count >= 16) {
-        int c16 = count >> 4;
-        while (c16 > 0) {
-            store_si128(data, (int32_t *)dest);
-
-            dest += 16;
-            c16--;
-        }
-
-        count &= 15;
-    }
-
-    while (count > 0) {
-        *dest = val;
-        dest++;
-        count--;
     }
 #endif
 }

@@ -591,6 +591,158 @@ static void TestSum() {
     PrintClocksSIMD("Sum 8192", bestClocksGeneric, bestClocksSIMD);
 }
 
+static void TestTransformPoints() {
+    static const int numVectors = 1024;
+    static const int benchmarkIterations = 64;
+    const int boundaryCounts[] = { 0, 1, 2, 3, 4, 5, 7, 8, 9, 15, 16, 17 };
+    const BE1::Mat3x4 matrix(
+        0.75f, -0.25f, 0.50f, 13.0f,
+        0.40f, 1.25f, -0.30f, -7.0f,
+        -0.60f, 0.20f, 0.90f, 3.5f);
+    ALIGN_AS32 BE1::Vec3 source[numVectors];
+    ALIGN_AS32 BE1::Vec3 expected[numVectors];
+    ALIGN_AS32 BE1::Vec3 actual[numVectors];
+    ALIGN_AS32 BE1::Vec3 member[numVectors];
+
+    RandomFloatArrayInit((float *)source, numVectors * 3, -100.0f, 100.0f);
+
+    for (int i = 0; i < COUNT_OF(boundaryCounts); i++) {
+        const int count = boundaryCounts[i];
+        memcpy(expected, source, sizeof(expected));
+        memcpy(actual, source, sizeof(actual));
+        memcpy(member, source, sizeof(member));
+
+        BE1::simdGeneric->TransformPoints(expected, matrix, count);
+        BE1::simdProcessor->TransformPoints(actual, matrix, count);
+        for (int j = 0; j < count; j++) {
+            member[j] = matrix.TransformPos(member[j]);
+        }
+        VerifyFloatArrayResults("TransformPoints boundary", (const float *)expected, (const float *)actual, count * 3);
+        VerifyFloatArrayResults("TransformPos loop boundary", (const float *)expected, (const float *)member, count * 3);
+    }
+
+    uint64_t bestClocksGeneric = 0;
+    for (int i = 0; i < TEST_COUNT; i++) {
+        memcpy(expected, source, sizeof(expected));
+
+        uint64_t startClocks = BE1::PlatformTime::Cycles();
+        for (int j = 0; j < benchmarkIterations; j++) {
+            BE1::simdGeneric->TransformPoints(expected, matrix, numVectors);
+        }
+        uint64_t endClocks = BE1::PlatformTime::Cycles();
+        GetBest(startClocks, endClocks, bestClocksGeneric);
+    }
+
+    PrintClocksGeneric("TransformPoints 1024 x 64", bestClocksGeneric);
+
+    uint64_t bestClocksMember = 0;
+    for (int i = 0; i < TEST_COUNT; i++) {
+        memcpy(member, source, sizeof(member));
+
+        uint64_t startClocks = BE1::PlatformTime::Cycles();
+        for (int j = 0; j < benchmarkIterations; j++) {
+            for (int k = 0; k < numVectors; k++) {
+                member[k] = matrix.TransformPos(member[k]);
+            }
+        }
+        uint64_t endClocks = BE1::PlatformTime::Cycles();
+        GetBest(startClocks, endClocks, bestClocksMember);
+    }
+
+    BE_LOG(" Member->TransformPos loop 1024 x 64: %" PRIu64 " clocks\n", bestClocksMember);
+
+    uint64_t bestClocksSIMD = 0;
+    for (int i = 0; i < TEST_COUNT; i++) {
+        memcpy(actual, source, sizeof(actual));
+
+        uint64_t startClocks = BE1::PlatformTime::Cycles();
+        for (int j = 0; j < benchmarkIterations; j++) {
+            BE1::simdProcessor->TransformPoints(actual, matrix, numVectors);
+        }
+        uint64_t endClocks = BE1::PlatformTime::Cycles();
+        GetBest(startClocks, endClocks, bestClocksSIMD);
+    }
+
+    PrintClocksSIMD("TransformPoints 1024 x 64", bestClocksGeneric, bestClocksSIMD);
+    BE_LOG("   SIMD batch vs member loop: %.2fx fast\n", (float)bestClocksMember / (float)bestClocksSIMD);
+}
+
+static void TestTransformDirections() {
+    static const int numVectors = 1024;
+    static const int benchmarkIterations = 64;
+    const int boundaryCounts[] = { 0, 1, 2, 3, 4, 5, 7, 8, 9, 15, 16, 17 };
+    const BE1::Mat3x4 matrix(
+        0.75f, -0.25f, 0.50f, 13.0f,
+        0.40f, 1.25f, -0.30f, -7.0f,
+        -0.60f, 0.20f, 0.90f, 3.5f);
+    ALIGN_AS32 BE1::Vec3 source[numVectors];
+    ALIGN_AS32 BE1::Vec3 expected[numVectors];
+    ALIGN_AS32 BE1::Vec3 actual[numVectors];
+    ALIGN_AS32 BE1::Vec3 member[numVectors];
+
+    RandomFloatArrayInit((float *)source, numVectors * 3, -100.0f, 100.0f);
+
+    for (int i = 0; i < COUNT_OF(boundaryCounts); i++) {
+        const int count = boundaryCounts[i];
+        memcpy(expected, source, sizeof(expected));
+        memcpy(actual, source, sizeof(actual));
+        memcpy(member, source, sizeof(member));
+
+        BE1::simdGeneric->TransformDirections(expected, matrix, count);
+        BE1::simdProcessor->TransformDirections(actual, matrix, count);
+        for (int j = 0; j < count; j++) {
+            member[j] = matrix.TransformDir(member[j]);
+        }
+        VerifyFloatArrayResults("TransformDirections boundary", (const float *)expected, (const float *)actual, count * 3);
+        VerifyFloatArrayResults("TransformDir loop boundary", (const float *)expected, (const float *)member, count * 3);
+    }
+
+    uint64_t bestClocksGeneric = 0;
+    for (int i = 0; i < TEST_COUNT; i++) {
+        memcpy(expected, source, sizeof(expected));
+
+        uint64_t startClocks = BE1::PlatformTime::Cycles();
+        for (int j = 0; j < benchmarkIterations; j++) {
+            BE1::simdGeneric->TransformDirections(expected, matrix, numVectors);
+        }
+        uint64_t endClocks = BE1::PlatformTime::Cycles();
+        GetBest(startClocks, endClocks, bestClocksGeneric);
+    }
+
+    PrintClocksGeneric("TransformDirections 1024 x 64", bestClocksGeneric);
+
+    uint64_t bestClocksMember = 0;
+    for (int i = 0; i < TEST_COUNT; i++) {
+        memcpy(member, source, sizeof(member));
+
+        uint64_t startClocks = BE1::PlatformTime::Cycles();
+        for (int j = 0; j < benchmarkIterations; j++) {
+            for (int k = 0; k < numVectors; k++) {
+                member[k] = matrix.TransformDir(member[k]);
+            }
+        }
+        uint64_t endClocks = BE1::PlatformTime::Cycles();
+        GetBest(startClocks, endClocks, bestClocksMember);
+    }
+
+    BE_LOG(" Member->TransformDir loop 1024 x 64: %" PRIu64 " clocks\n", bestClocksMember);
+
+    uint64_t bestClocksSIMD = 0;
+    for (int i = 0; i < TEST_COUNT; i++) {
+        memcpy(actual, source, sizeof(actual));
+
+        uint64_t startClocks = BE1::PlatformTime::Cycles();
+        for (int j = 0; j < benchmarkIterations; j++) {
+            BE1::simdProcessor->TransformDirections(actual, matrix, numVectors);
+        }
+        uint64_t endClocks = BE1::PlatformTime::Cycles();
+        GetBest(startClocks, endClocks, bestClocksSIMD);
+    }
+
+    PrintClocksSIMD("TransformDirections 1024 x 64", bestClocksGeneric, bestClocksSIMD);
+    BE_LOG("   SIMD batch vs member loop: %.2fx fast\n", (float)bestClocksMember / (float)bestClocksSIMD);
+}
+
 static void ClearCache() {
     size_t size = 1024 * 1024 * 512; // 512MB
     char *buffer = (char *)malloc(size);
@@ -1200,6 +1352,8 @@ void Test::TestSIMD() {
     TestMul();
     TestDiv();
     TestSum();
+    TestTransformPoints();
+    TestTransformDirections();
 #if defined(HAVE_X86_AVX_INTRIN)
     TestTranspose8x8();
 #endif

@@ -109,8 +109,7 @@ public:
     bool            IsIntersectLine(const Vec3 &p1, const Vec3 &p2) const;
 
                     /// Returns true if the ray intersects the bounds.
-                    /// The ray can intersect the bounds in both directions from the start point.
-                    /// If start is inside the frustum then hitDistMin < 0 and hitDistMax > 0.
+                    /// If the ray starts inside the frustum, hitDistMin is zero.
     bool            IntersectRay(const Ray &ray, float *hitDistMin, float *hitDistMax) const;
     float           IntersectRay(const Ray &ray) const;
 
@@ -212,7 +211,7 @@ BE_INLINE void Frustum::MoveFarDistance(float dFar) {
 }
 
 BE_INLINE Vec3 Frustum::GetCenter() const {
-    return (origin + axis[0] * ((dFar - dNear) * 0.5f));
+    return origin + axis[0] * ((dNear + dFar) * 0.5f);
 }
 
 BE_INLINE Frustum Frustum::Expand(float d) const & {

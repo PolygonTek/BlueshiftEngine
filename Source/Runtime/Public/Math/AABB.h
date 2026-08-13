@@ -201,12 +201,8 @@ public:
                         /// Sets AABB to enclose transformed AABB.
     void                SetFromTransformedAABB(const AABB &aabb, const Vec3 &origin, const Mat3 &axis);
 
-                        /// Sets AABB to enclose transformed AABB.
+                        /// Sets AABB to tightly enclose the affine-transformed AABB.
     void                SetFromTransformedAABB(const AABB &aabb, const Mat3x4 &transform);
-
-                        /// Sets AABB to enclose transformed AABB fast.
-                        /// This is not mathematically correct for non-uniform scaled transform matrix.
-    void                SetFromTransformedAABBFast(const AABB &aabb, const Mat3x4 &transform);
 
                         /// Calculates minimum / maximum value by projecting AABB onto the given axis.
     void                ProjectOnAxis(const Vec3 &axis, float &min, float &max) const;
@@ -320,6 +316,9 @@ BE_INLINE void AABB::SetZero() {
 }
 
 BE_INLINE float AABB::Area() const {
+    if (IsCleared()) {
+        return 0.0f;
+    }
     Vec3 d = b[1] - b[0];
     return (d.x * d.y + d.y * d.z + d.z * d.x) * 2.0f;
 }

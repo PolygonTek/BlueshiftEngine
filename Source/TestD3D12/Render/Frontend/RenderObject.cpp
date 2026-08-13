@@ -76,7 +76,7 @@ void RenderObject::UpdateWorldAABB() {
     if (localAABB.IsCleared()) {
         worldAABB = BE1::AABB::empty;
     } else {
-        worldAABB.SetFromTransformedAABBFast(localAABB, desc.worldMatrix);
+        worldAABB.SetFromTransformedAABB(localAABB, desc.worldMatrix);
     }
 }
 

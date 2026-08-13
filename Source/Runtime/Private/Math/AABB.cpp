@@ -209,7 +209,11 @@ bool AABB::IsIntersectOBB(const OBB &obb, float epsilon) const {
 }
 
 bool AABB::IntersectRay(const Ray &ray, float *hitDistMin, float *hitDistMax) const {
-    float tmin = -FLT_MAX;
+    if (IsCleared()) {
+        return false;
+    }
+
+    float tmin = 0.0f;
     float tmax = FLT_MAX;
 
     // For all three slabs.
@@ -306,6 +310,11 @@ void AABB::SetFromAABBTranslation(const AABB &aabb, const Vec3 &translation) {
 }
 
 void AABB::SetFromTransformedAABB(const AABB &aabb, const Vec3 &origin, const Mat3 &axis) {
+    if (aabb.IsCleared()) {
+        Clear();
+        return;
+    }
+
     Vec3 center = (aabb[0] + aabb[1]) * 0.5f;
     Vec3 extents = aabb[1] - center;
 
@@ -322,7 +331,12 @@ void AABB::SetFromTransformedAABB(const AABB &aabb, const Vec3 &origin, const Ma
     b[1] = center + rotatedExtents;
 }
 
-void AABB::SetFromTransformedAABBFast(const AABB &aabb, const Mat3x4 &transform) {
+void AABB::SetFromTransformedAABB(const AABB &aabb, const Mat3x4 &transform) {
+    if (aabb.IsCleared()) {
+        Clear();
+        return;
+    }
+
     Vec3 center = (aabb[0] + aabb[1]) * 0.5f;
     Vec3 extents = aabb[1] - center;
 
@@ -337,18 +351,6 @@ void AABB::SetFromTransformedAABBFast(const AABB &aabb, const Mat3x4 &transform)
     center = transform.TransformPos(center);
     b[0] = center - rotatedExtents;
     b[1] = center + rotatedExtents;
-}
-
-void AABB::SetFromTransformedAABB(const AABB &aabb, const Mat3x4 &transform) {
-    Vec3 points[8];
-    aabb.ToPoints(points);
-    transform.BatchTransformPos(points, COUNT_OF(points));
-
-    Clear();
-
-    for (int i = 0; i < 8; i++) {
-        AddPoint(points[i]);
-    }
 }
 
 void AABB::ProjectOnAxis(const Vec3 &axis, float &min, float &max) const {
@@ -548,9 +550,8 @@ bool AABB::IsIntersectTriangle(const Vec3 &_v0, const Vec3 &_v1, const Vec3 &_v2
     }
 
     // Compare in the normal axis of the triangle.
-    Vec3 n = f0.Cross(f1).Normalized();
-    Plane p = Plane(n, -n.Dot(_v0));
-    return PlaneSide(p, 0.0f) == Plane::Side::Cross ? true : false;
+    Vec3 n = f0.Cross(f1);
+    return Math::Fabs(n.Dot(v0)) <= e.AbsDot(n);
 }
 
 BE_NAMESPACE_END

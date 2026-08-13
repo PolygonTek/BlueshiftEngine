@@ -482,8 +482,6 @@ static void RB_TestOccludeeBounds(int numDrawSurfs, DrawSurf **drawSurfs) {
     int numAmbientOccludees = 0;
 
     Plane nearPlane = backEnd.camera->def->GetFrustumPlane(0);
-    nearPlane.Normalize();
-    nearPlane.TranslateSelf(backEnd.camera->def->GetState().origin);
     
     for (int i = 0; i < numDrawSurfs; i++) {
         const DrawSurf *surf = drawSurfs[i];
@@ -496,7 +494,7 @@ static void RB_TestOccludeeBounds(int numDrawSurfs, DrawSurf **drawSurfs) {
             }
             occludeeAABB[numAmbientOccludees] = space->def->GetWorldAABB();
         } else {
-            occludeeAABB[numAmbientOccludees].SetFromTransformedAABBFast(surf->subMesh->GetAABB(), space->def->GetWorldMatrix());
+            occludeeAABB[numAmbientOccludees].SetFromTransformedAABB(surf->subMesh->GetAABB(), space->def->GetWorldMatrix());
         }
         
         //BE_LOG("%.2f %.2f %.2f %.2f\n", nearPlane.a, nearPlane.b, nearPlane.c, nearPlane.d);

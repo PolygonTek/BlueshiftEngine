@@ -48,6 +48,7 @@ struct DominantTri;
 struct VertexGeneric;
 
 class Plane;
+class Vec3;
 class JointPose;
 class CompressedJointPose;
 class Mat3x4;
@@ -90,6 +91,9 @@ public:
 
     virtual void BE_FASTCALL            Memcpy(void *dst, const void *src, const int size) = 0;
     virtual void BE_FASTCALL            Memset(void *dst, const int val, const int size) = 0;
+
+    virtual void BE_FASTCALL            TransformPoints(Vec3 *points, const Mat3x4 &matrix, const int count) = 0;
+    virtual void BE_FASTCALL            TransformDirections(Vec3 *directions, const Mat3x4 &matrix, const int count) = 0;
 
     virtual void BE_FASTCALL            DecompressJoints(JointPose *joints, const CompressedJointPose *compressedJoints, const int *index, const int numJoints) = 0;
     virtual void BE_FASTCALL            BlendJoints(JointPose *joints, const JointPose *blendJoints, const float fraction, const int *index, const int numJoints) = 0;
