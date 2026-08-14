@@ -323,7 +323,7 @@ void BCDecoder::DecompressImageBC5(const byte *blocks, const int width, const in
                     float y = normals[i * 4 + 1];
                     float z = 1.0f - x * x - y * y;
                     if (z < 0.0f) z = 0.0f;
-                    normals[i * 4 + 2] = sqrt(z);
+                    normals[i * 4 + 2] = Math::Sqrt(z);
                 }
 
                 for (int i = 0; i < 16; i++) {

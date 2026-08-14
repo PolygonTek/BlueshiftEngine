@@ -366,31 +366,31 @@ void BCEncoder::ComputeColorIndicesFast(const byte *colorBlock, const byte *maxC
         c2 = colorBlock[i * 4 + 2];
 
         m = colors[0][0] - c0;
-        d0 = abs(m);
+        d0 = Math::Abs(m);
         m = colors[1][0] - c0;
-        d1 = abs(m);
+        d1 = Math::Abs(m);
         m = colors[2][0] - c0;
-        d2 = abs(m);
+        d2 = Math::Abs(m);
         m = colors[3][0] - c0;
-        d3 = abs(m);
+        d3 = Math::Abs(m);
 
         m = colors[0][1] - c1;
-        d0 += abs(m);
+        d0 += Math::Abs(m);
         m = colors[1][1] - c1;
-        d1 += abs(m);
+        d1 += Math::Abs(m);
         m = colors[2][1] - c1;
-        d2 += abs(m);
+        d2 += Math::Abs(m);
         m = colors[3][1] - c1;
-        d3 += abs(m);
+        d3 += Math::Abs(m);
 
         m = colors[0][2] - c2;
-        d0 += abs(m);
+        d0 += Math::Abs(m);
         m = colors[1][2] - c2;
-        d1 += abs(m);
+        d1 += Math::Abs(m);
         m = colors[2][2] - c2;
-        d2 += abs(m);
+        d2 += Math::Abs(m);
         m = colors[3][2] - c2;
-        d3 += abs(m);
+        d3 += Math::Abs(m);
 
 #if 0
         int b0 = d0 > d2;

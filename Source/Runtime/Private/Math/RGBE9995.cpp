@@ -61,7 +61,7 @@ RGBE9995 RGBE9995::FromColor3(float r, float g, float b) {
     assert(sharedExp >= 0);
 
     /* This pow function could be replaced by a table. */
-    double denom = pow(2, sharedExp - RGB9E5_EXP_BIAS - RGB9E5_MANTISSA_BITS);
+    double denom = Math::Pow(2.0, (double)(sharedExp - RGB9E5_EXP_BIAS - RGB9E5_MANTISSA_BITS));
 
     int maxm = Math::Round(maxRgb / denom);
     if (maxm == MAX_RGB9E5_MANTISSA + 1) {

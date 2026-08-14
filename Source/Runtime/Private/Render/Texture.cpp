@@ -389,7 +389,7 @@ void Texture::CreateFogTexture(int flags) {
     byte *dst = image.GetPixels();
 
     for (int s = 0; s < 256; s++) {
-        int c = sqrt(s / 255.0) * 255;
+        int c = Math::Sqrt(s / 255.0) * 255;
         dst[s] = Min(c, 255);
     }
 
@@ -410,7 +410,7 @@ void Texture::CreateFogEnterTexture(int flags) {
     byte *dst = image.GetPixels();
 
     for (int s = 0; s < 256; s++) {
-        int c = sqrt(s / 255.0) * 255;
+        int c = Math::Sqrt(s / 255.0) * 255;
         dst[s] = Min(c, 255);
     }
 

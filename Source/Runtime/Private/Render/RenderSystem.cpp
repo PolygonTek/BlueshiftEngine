@@ -164,7 +164,7 @@ void RenderSystem::SetGamma(double gamma) {
     double div = (double)(1.0 / 255.0);
 
     for (int i = 0; i < 256; i++) {
-        unsigned int value = (int)(65535 * pow((double)(i + 0.5) * div, one_gamma));
+        unsigned int value = (int)(65535 * Math::Pow((double)(i + 0.5) * div, one_gamma));
         Clamp(value, (unsigned int)0, (unsigned int)65535);
 
         ramp[i] = ramp[i + 256] = ramp[i + 512] = (unsigned short)value;

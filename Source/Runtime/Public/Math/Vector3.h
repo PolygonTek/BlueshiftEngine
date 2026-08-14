@@ -544,15 +544,15 @@ BE_INLINE bool Vec3::Equals(const Vec3 &a, const float epsilon) const {
 BE_INLINE bool Vec3::FixDenormals() {
     bool denormal = false;
 
-    if (fabs(x) < 1e-30f) {
+    if (Math::Fabs(x) < 1e-30f) {
         x = 0.0f;
         denormal = true;
     }
-    if (fabs(y) < 1e-30f) {
+    if (Math::Fabs(y) < 1e-30f) {
         y = 0.0f;
         denormal = true;
     }
-    if (fabs(z) < 1e-30f) {
+    if (Math::Fabs(z) < 1e-30f) {
         z = 0.0f;
         denormal = true;
     }

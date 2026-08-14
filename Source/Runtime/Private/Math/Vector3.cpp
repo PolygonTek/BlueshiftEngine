@@ -111,9 +111,9 @@ void Vec3::SetFromSLerp(const Vec3 &v1, const Vec3 &v2, const float t) {
 
     if ((1.0f - cosom) > LERP_DELTA) {
         float omega = acos(cosom);
-        float sinom = sin(omega);
-        scale0 = sin((1.0f - t) * omega) / sinom;
-        scale1 = sin(t * omega) / sinom;
+        float sinom = Math::Sin(omega);
+        scale0 = Math::Sin((1.0f - t) * omega) / sinom;
+        scale1 = Math::Sin(t * omega) / sinom;
     } else {
         scale0 = 1.0f - t;
         scale1 = t;
@@ -210,7 +210,7 @@ float Vec3::ComputeYaw() const {
     if (x == 0.0f && y == 0.0f) {
         yaw = 0.0f;
     } else {
-        yaw = RAD2DEG(atan2(y, x));
+        yaw = RAD2DEG(Math::ATan2(y, x));
         if (yaw < 0.0f) {
             yaw += 360.0f;
         }
@@ -231,7 +231,7 @@ float Vec3::ComputePitch() const {
         }
     } else {
         forward = (float)Math::Sqrt(x * x + y * y);
-        pitch = RAD2DEG(atan2(z, forward));
+        pitch = RAD2DEG(Math::ATan2(z, forward));
         if (pitch < 0.0f) {
             pitch += 360.0f;
         }
@@ -253,13 +253,13 @@ Angles Vec3::ToAngles() const {
             pitch = 270.0f;
         }
     } else {
-        yaw = RAD2DEG(atan2(y, x));
+        yaw = RAD2DEG(Math::ATan2(y, x));
         if (yaw < 0.0f) {
             yaw += 360.0f;
         }
 
         forward = (float)Math::Sqrt(x * x + y * y);
-        pitch = RAD2DEG(atan2(z, forward));
+        pitch = RAD2DEG(Math::ATan2(z, forward));
         if (pitch < 0.0f) {
             pitch += 360.0f;
         }

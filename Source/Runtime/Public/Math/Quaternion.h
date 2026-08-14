@@ -437,7 +437,7 @@ BE_INLINE float Quat::CalcW() const {
     // x*x + y*y + z*z = sin^2(theta/2)
     // 1 - sin^2(theta/2) = cos^2(theta/2)
     // Take the absolute value because floating point rounding may cause the dot of x, y, z to be larger than 1.
-    return sqrt(fabs(1.0f - (x * x + y * y + z * z)));
+    return Math::Sqrt(Math::Fabs(1.0f - (x * x + y * y + z * z)));
 }
 
 BE_INLINE Vec3 Quat::Axis() const {

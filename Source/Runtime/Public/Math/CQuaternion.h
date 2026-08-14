@@ -134,7 +134,7 @@ BE_INLINE bool CQuat::Equals(const CQuat &a, const float epsilon) const {
 
 BE_INLINE Quat CQuat::ToQuat() const {
     // take the absolute value because floating point rounding may cause the dot of x, y, z to be larger than 1
-    return Quat(x, y, z, sqrt(fabs(1.0f - (x * x + y * y + z * z))));
+    return Quat(x, y, z, Math::Sqrt(Math::Fabs(1.0f - (x * x + y * y + z * z))));
 }
 
 BE_INLINE const char *CQuat::ToString(int precision) const {
@@ -143,15 +143,15 @@ BE_INLINE const char *CQuat::ToString(int precision) const {
 
 BE_INLINE bool CQuat::FixDenormals() {
     bool denormal = false;
-    if (fabs(x) < 1e-30f) {
+    if (Math::Fabs(x) < 1e-30f) {
         x = 0.0f;
         denormal = true;
     }
-    if (fabs(y) < 1e-30f) {
+    if (Math::Fabs(y) < 1e-30f) {
         y = 0.0f;
         denormal = true;
     }
-    if (fabs(z) < 1e-30f) {
+    if (Math::Fabs(z) < 1e-30f) {
         z = 0.0f;
         denormal = true;
     }
