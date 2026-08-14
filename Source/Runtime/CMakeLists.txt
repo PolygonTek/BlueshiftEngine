@@ -81,8 +81,7 @@ set(COMMON_ENGINE_FILES
     Public/Math/Color4.h
     Public/Math/CQuaternion.h
     Public/Math/Curve.h
-    Public/Math/EigenSolver3.h
-    Public/Math/EigenSolver4.h
+    Public/Math/EigenSolver.h
     Public/Math/Hermite.h
     Public/Math/Cylinder.h
     Public/Math/FloatConverter.h
@@ -390,8 +389,7 @@ set(COMMON_ENGINE_FILES
     Private/Math/JacobiRotation.h
     Private/Math/JacobiSVD.h
     Private/Math/EigenSolverFixed.h
-    Private/Math/EigenSolver3.cpp
-    Private/Math/EigenSolver4.cpp
+    Private/Math/EigenSolver.cpp
     Private/Math/Matrix3.cpp
     Private/Math/PrincipalComponents.cpp
     Private/Math/Vector2.cpp
