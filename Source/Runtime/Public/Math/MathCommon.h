@@ -51,17 +51,53 @@ floating point bit layouts according to the IEEE 754-1985 and 754-2008 standard
 #define IEEE_FLT16_EXPONENT_BIAS    15
 #define IEEE_FLT16_SIGN_BIT         15
 
+// half-float bit detection
+#define IEEE_FLT16_SIGNBITSET(f)     ((*(const uint16_t *)&(f)) >> 15)
+#define IEEE_FLT16_SIGNBITNOTSET(f)  (((~(*(const uint16_t *)&(f))) & 0x8000) >> 15)
+#define IEEE_FLT16_NOTZERO(f)        ((*(const uint16_t *)&(f)) & 0x7fff)
+
+// half-float NaN, INF, IND, DENORMAL detection (INF, IND is included in NaN)
+#define IEEE_FLT16_IS_NAN(x)        (((*(const uint16_t *)&(x)) & 0x7c00) == 0x7c00)
+#define IEEE_FLT16_IS_INF(x)        (((*(const uint16_t *)&(x)) & 0x7fff) == 0x7c00)
+#define IEEE_FLT16_IS_IND(x)        ((*(const uint16_t *)&(x)) == 0xfe00)
+#define IEEE_FLT16_IS_DENORMAL(x)   (((*(const uint16_t *)&(x)) & 0x7c00) == 0x0000 && \
+                                    ((*(const uint16_t *)&(x)) & 0x03ff) != 0x0000)
+
 // IEEE single float - 32 bit
 #define IEEE_FLT_MANTISSA_BITS      23
 #define IEEE_FLT_EXPONENT_BITS      8
 #define IEEE_FLT_EXPONENT_BIAS      127
 #define IEEE_FLT_SIGN_BIT           31
 
+// float bit detection
+#define IEEE_FLT_SIGNBITSET(f)      ((*(const uint32_t *)&(f)) >> 31)
+#define IEEE_FLT_SIGNBITNOTSET(f)   ((~(*(const uint32_t *)&(f))) >> 31)
+#define IEEE_FLT_NOTZERO(f)         ((*(const uint32_t *)&(f)) & ~(1 << 31))
+
+// float NaN, INF, IND, DENORMAL detection (INF, IND is included in NaN)
+#define IEEE_FLT_IS_NAN(x)          (((*(const uint32_t *)&x) & 0x7f800000) == 0x7f800000)
+#define IEEE_FLT_IS_INF(x)          (((*(const uint32_t *)&x) & 0x7fffffff) == 0x7f800000)
+#define IEEE_FLT_IS_IND(x)          ((*(const uint32_t *)&x) == 0xffc00000)
+#define IEEE_FLT_IS_DENORMAL(x)     (((*(const uint32_t *)&x) & 0x7f800000) == 0x00000000 && \
+                                    ((*(const uint32_t *)&x) & 0x007fffff) != 0x00000000)
+
 // IEEE double - 64 bit
 #define IEEE_DBL_MANTISSA_BITS      52
 #define IEEE_DBL_EXPONENT_BITS      11
 #define IEEE_DBL_EXPONENT_BIAS      1023
 #define IEEE_DBL_SIGN_BIT           63
+
+// double bit detection
+#define IEEE_DBL_SIGNBITSET(d)      ((*(const uint64_t *)&(d)) >> 63)
+#define IEEE_DBL_SIGNBITNOTSET(d)   ((~(*(const uint64_t *)&(d))) >> 63)
+#define IEEE_DBL_NOTZERO(d)         ((*(const uint64_t *)&(d)) & ~(UINT64_C(1) << 63))
+
+// double NaN, INF, IND, DENORMAL detection (INF, IND is included in NaN)
+#define IEEE_DBL_IS_NAN(x)          (((*(const uint64_t *)&(x)) & UINT64_C(0x7ff0000000000000)) == UINT64_C(0x7ff0000000000000))
+#define IEEE_DBL_IS_INF(x)          (((*(const uint64_t *)&(x)) & UINT64_C(0x7fffffffffffffff)) == UINT64_C(0x7ff0000000000000))
+#define IEEE_DBL_IS_IND(x)          ((*(const uint64_t *)&(x)) == UINT64_C(0xfff8000000000000))
+#define IEEE_DBL_IS_DENORMAL(x)     (((*(const uint64_t *)&(x)) & UINT64_C(0x7ff0000000000000)) == UINT64_C(0) && \
+                                    ((*(const uint64_t *)&(x)) & UINT64_C(0x000fffffffffffff)) != UINT64_C(0))
 
 // IEEE double extended - 80 bit
 #define IEEE_DBLE_MANTISSA_BITS     64
@@ -75,17 +111,6 @@ floating point bit layouts according to the IEEE 754-1985 and 754-2008 standard
 #define IEEE_QDBL_EXPONENT_BIAS     16383
 #define IEEE_QDBL_SIGN_BIT          127
 
-// float bit detection
-#define IEEE_FLT_SIGNBITSET(f)      ((*(const uint32_t *)&(f)) >> 31)
-#define IEEE_FLT_SIGNBITNOTSET(f)   ((~(*(const uint32_t *)&(f))) >> 31)
-#define IEEE_FLT_NOTZERO(f)         ((*(const uint32_t *)&(f)) & ~(1 << 31))
-
-// float NaN, INF, IND, DENORMAL detection (INF, IND is included in NaN)
-#define IEEE_FLT_IS_NAN(x)          (((*(const uint32_t *)&x) & 0x7f800000) == 0x7f800000)
-#define IEEE_FLT_IS_INF(x)          (((*(const uint32_t *)&x) & 0x7fffffff) == 0x7f800000)
-#define IEEE_FLT_IS_IND(x)          ((*(const uint32_t *)&x) == 0xffc00000)
-#define IEEE_FLT_IS_DENORMAL(x)     (((*(const uint32_t *)&x) & 0x7f800000) == 0x00000000 && \
-                                    ((*(const uint32_t *)&x) & 0x007fffff) != 0x00000000)
 // degree <-> radian
 #define DEG2RAD(a)                  ((a) * BE1::Math::MulDegreeToRadian)
 #define RAD2DEG(a)                  ((a) * BE1::Math::MulRadianToDegree)
