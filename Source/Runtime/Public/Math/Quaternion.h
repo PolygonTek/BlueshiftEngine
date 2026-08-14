@@ -356,6 +356,18 @@ BE_INLINE Quat& Quat::operator-=(const Quat &a) {
 
 BE_INLINE Vec3 Quat::operator*(const Vec3 &a) const {
     assert(IsNormalized());
+#if defined(ENABLE_SIMD4_INTRIN)
+    const simd4f q = loadu_ps(Ptr());
+    const simd4f v = set_ps(a.x, a.y, a.z, 0.0f);
+    const simd4f dot = dot4_ps(q, v);
+    const simd4f twiceDot = dot + dot;
+    const simd4f twiceW = shuffle_ps<3, 3, 3, 3>(q + q);
+    const simd4f w = shuffle_ps<3, 3, 3, 3>(q);
+
+    simd4f result = madd_ps(twiceDot, q, (twiceW * w - SIMD_4::F4_one) * v);
+    result = madd_ps(twiceW, cross_ps(q, v), result);
+    return Vec3(x_ps(result), y_ps(result), z_ps(result));
+#else
 #if 0
     return ToMat3() * a;
 #else
@@ -367,6 +379,7 @@ BE_INLINE Vec3 Quat::operator*(const Vec3 &a) const {
         pm * a.x + vm * x + cm * (y * a.z - z * a.y),
         pm * a.y + vm * y + cm * (z * a.x - x * a.z),
         pm * a.z + vm * z + cm * (x * a.y - y * a.x));
+#endif
 #endif
 }
 

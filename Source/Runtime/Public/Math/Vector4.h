@@ -517,6 +517,12 @@ BE_INLINE void Vec4::Clamp(const Vec4 &min, const Vec4 &max) {
     } else if (z > max.z) {
         z = max.z;
     }
+
+    if (w < min.w) {
+        w = min.w;
+    } else if (w > max.w) {
+        w = max.w;
+    }
 }
 
 BE_INLINE float Vec4::Dot(const Vec4 &a) const {

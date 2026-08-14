@@ -1460,6 +1460,45 @@ Rotation Mat3::ToRotation() const {
 //
 //-------------------------------------------------------------------------------------------
 Quat Mat3::ToQuat() const {
+#if defined(ENABLE_SIMD4_INTRIN)
+    const float trace = mat[0][0] + mat[1][1] + mat[2][2];
+    float t;
+    simd4f numerator;
+
+    if (trace > 0.0f) {
+        t = trace + 1.0f;
+        numerator = set_ps(
+            mat[1][2] - mat[2][1],
+            mat[2][0] - mat[0][2],
+            mat[0][1] - mat[1][0],
+            t);
+    } else if (mat[0][0] >= mat[1][1] && mat[0][0] >= mat[2][2]) {
+        t = mat[0][0] - mat[1][1] - mat[2][2] + 1.0f;
+        numerator = set_ps(
+            t,
+            mat[0][1] + mat[1][0],
+            mat[0][2] + mat[2][0],
+            mat[1][2] - mat[2][1]);
+    } else if (mat[1][1] >= mat[2][2]) {
+        t = mat[1][1] - mat[2][2] - mat[0][0] + 1.0f;
+        numerator = set_ps(
+            mat[1][0] + mat[0][1],
+            t,
+            mat[1][2] + mat[2][1],
+            mat[2][0] - mat[0][2]);
+    } else {
+        t = mat[2][2] - mat[0][0] - mat[1][1] + 1.0f;
+        numerator = set_ps(
+            mat[2][0] + mat[0][2],
+            mat[2][1] + mat[1][2],
+            t,
+            mat[0][1] - mat[1][0]);
+    }
+
+    Quat q;
+    storeu_ps(numerator * set1_ps(Math::InvSqrt(t) * 0.5f), q.Ptr());
+    return q;
+#else
     constexpr int next[3] = { 1, 2, 0 };
     float s, t;
     Quat q;
@@ -1497,6 +1536,7 @@ Quat Mat3::ToQuat() const {
     }
 
     return q;
+#endif
 }
 
 bool Mat3::SetFromLookAt(const Vec3 &viewDir, const Vec3 &up) {

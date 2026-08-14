@@ -409,6 +409,37 @@ BE_INLINE Mat3 Mat3::operator-(const Mat3 &a) const & {
 }
 
 BE_INLINE Mat3 Mat3::operator*(const Mat3 &a) const & {
+#if defined(ENABLE_SIMD4_INTRIN)
+    const float *lhs = Ptr();
+    const float *rhs = a.Ptr();
+
+    const simd4f c0 = loadu_ps(lhs + 0);
+    const simd4f c1 = loadu_ps(lhs + 3);
+    const simd4f c2 = shuffle_ps<1, 2, 3, 0>(loadu_ps(lhs + 5));
+
+    Mat3 dst;
+    float *dstPtr = dst.Ptr();
+
+    simd4f v = loadu_ps(rhs + 0);
+    simd4f result = shuffle_ps<0, 0, 0, 0>(v) * c0;
+    result = madd_ps(shuffle_ps<1, 1, 1, 1>(v), c1, result);
+    result = madd_ps(shuffle_ps<2, 2, 2, 2>(v), c2, result);
+    storeu_ps(result, dstPtr + 0);
+
+    v = loadu_ps(rhs + 3);
+    result = shuffle_ps<0, 0, 0, 0>(v) * c0;
+    result = madd_ps(shuffle_ps<1, 1, 1, 1>(v), c1, result);
+    result = madd_ps(shuffle_ps<2, 2, 2, 2>(v), c2, result);
+    storeu_ps(result, dstPtr + 3);
+
+    v = shuffle_ps<1, 2, 3, 0>(loadu_ps(rhs + 5));
+    result = shuffle_ps<0, 0, 0, 0>(v) * c0;
+    result = madd_ps(shuffle_ps<1, 1, 1, 1>(v), c1, result);
+    result = madd_ps(shuffle_ps<2, 2, 2, 2>(v), c2, result);
+    dst[2].Set(x_ps(result), y_ps(result), z_ps(result));
+
+    return dst;
+#else
     Mat3 dst;
     float *dstPtr = dst.Ptr();
     const float *m1Ptr = Ptr();
@@ -424,6 +455,7 @@ BE_INLINE Mat3 Mat3::operator*(const Mat3 &a) const & {
         }
         m2Ptr += Rows;
     }
+#endif
     return dst;
 }
 
@@ -447,10 +479,22 @@ BE_INLINE Mat3 Mat3::TransposedMul(const Mat3 &a) const {
 }
 
 BE_INLINE Vec3 Mat3::operator*(const Vec3 &vec) const {
+#if defined(ENABLE_SIMD4_INTRIN)
+    const float *m = Ptr();
+    const simd4f c0 = loadu_ps(m + 0);
+    const simd4f c1 = loadu_ps(m + 3);
+    const simd4f c2 = shuffle_ps<1, 2, 3, 0>(loadu_ps(m + 5));
+
+    simd4f result = c0 * set1_ps(vec.x);
+    result = madd_ps(set1_ps(vec.y), c1, result);
+    result = madd_ps(set1_ps(vec.z), c2, result);
+    return Vec3(x_ps(result), y_ps(result), z_ps(result));
+#else
     return Vec3(
         mat[0].x * vec.x + mat[1].x * vec.y + mat[2].x * vec.z,
         mat[0].y * vec.x + mat[1].y * vec.y + mat[2].y * vec.z,
         mat[0].z * vec.x + mat[1].z * vec.y + mat[2].z * vec.z);
+#endif
 }
 
 BE_INLINE Vec3 Mat3::TransposedMulVec(const Vec3 &vec) const {
@@ -529,6 +573,32 @@ BE_INLINE Mat3 &Mat3::operator-=(const Mat3 &a) {
 }
 
 BE_INLINE Mat3 &Mat3::operator*=(const Mat3 &rhs) {
+#if defined(ENABLE_SIMD4_INTRIN)
+    float *lhs = Ptr();
+    const float *right = rhs.Ptr();
+
+    const simd4f c0 = loadu_ps(lhs + 0);
+    const simd4f c1 = loadu_ps(lhs + 3);
+    const simd4f c2 = shuffle_ps<1, 2, 3, 0>(loadu_ps(lhs + 5));
+
+    simd4f v = loadu_ps(right + 0);
+    simd4f result = shuffle_ps<0, 0, 0, 0>(v) * c0;
+    result = madd_ps(shuffle_ps<1, 1, 1, 1>(v), c1, result);
+    result = madd_ps(shuffle_ps<2, 2, 2, 2>(v), c2, result);
+    storeu_ps(result, lhs + 0);
+
+    v = loadu_ps(right + 3);
+    result = shuffle_ps<0, 0, 0, 0>(v) * c0;
+    result = madd_ps(shuffle_ps<1, 1, 1, 1>(v), c1, result);
+    result = madd_ps(shuffle_ps<2, 2, 2, 2>(v), c2, result);
+    storeu_ps(result, lhs + 3);
+
+    v = shuffle_ps<1, 2, 3, 0>(loadu_ps(right + 5));
+    result = shuffle_ps<0, 0, 0, 0>(v) * c0;
+    result = madd_ps(shuffle_ps<1, 1, 1, 1>(v), c1, result);
+    result = madd_ps(shuffle_ps<2, 2, 2, 2>(v), c2, result);
+    mat[2].Set(x_ps(result), y_ps(result), z_ps(result));
+#else
     float dst[3];
 
     dst[0] = mat[0][0] * rhs.mat[0][0] + mat[1][0] * rhs.mat[0][1] + mat[2][0] * rhs.mat[0][2];
@@ -551,6 +621,7 @@ BE_INLINE Mat3 &Mat3::operator*=(const Mat3 &rhs) {
     mat[0][2] = dst[0];
     mat[1][2] = dst[1];
     mat[2][2] = dst[2];
+#endif
 
     return *this;
 }

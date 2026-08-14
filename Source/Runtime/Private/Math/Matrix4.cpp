@@ -1427,7 +1427,7 @@ void Mat4::SetOrthoLH(float left, float right, float bottom, float top, float zN
 
 //--------------------------------------------------------------------------------------------
 //
-// * 한점을 주어진 평면으로 반사(reflection)시키는 행렬을 만든다
+// * 한점을 주어진 평면으로 반사 (reflection) 시키는 행렬을 만든다
 //
 // X = ( 2 * (-D*N) / (N*N) ) * N + D
 //
@@ -1464,6 +1464,20 @@ void Mat4::SetReflect(const Plane &plane) {
 
 void Mat4::SetTRS(const Vec3 &translation, const Mat3 &rotation, const Vec3 &scale) {
     // T * R * S
+#if defined(ENABLE_SIMD4_INTRIN)
+    const float *rotationPtr = rotation.Ptr();
+    simd4f column0 = loadu_ps(rotationPtr + 0) * set1_ps(scale.x);
+    simd4f column1 = loadu_ps(rotationPtr + 3) * set1_ps(scale.y);
+    simd4f column2 = shuffle_ps<1, 2, 3, 0>(loadu_ps(rotationPtr + 5)) * set1_ps(scale.z);
+    simd4f column3 = set_ps(translation.x, translation.y, translation.z, 0.0f);
+
+    transpose4x4(column0, column1, column2, column3);
+
+    storeu_ps(column0, Ptr() + 0);
+    storeu_ps(column1, Ptr() + 4);
+    storeu_ps(column2, Ptr() + 8);
+    storeu_ps(set_ps(0.0f, 0.0f, 0.0f, 1.0f), Ptr() + 12);
+#else
     mat[0][0] = rotation[0][0] * scale.x;
     mat[0][1] = rotation[1][0] * scale.y;
     mat[0][2] = rotation[2][0] * scale.z;
@@ -1483,10 +1497,55 @@ void Mat4::SetTRS(const Vec3 &translation, const Mat3 &rotation, const Vec3 &sca
     mat[3][1] = 0.0f;
     mat[3][2] = 0.0f;
     mat[3][3] = 1.0f;
+#endif
 }
 
 void Mat4::SetTQS(const Vec3 &translation, const Quat &rotation, const Vec3 &scale) {
+#if defined(ENABLE_SIMD4_INTRIN)
+    const simd4f firstSignBit = simd4i(0x80000000, 0x00000000, 0x00000000, 0x00000000);
+    const simd4f firstPosHalf = set_ps(0.5f, 0.0f, 0.0f, 0.0f);
+    const simd4f firstNegHalf = set_ps(-0.5f, 0.0f, 0.0f, 0.0f);
+    const simd4f quat2MatMad1 = set_ps(-1.0f, -1.0f, 1.0f, -1.0f);
+    const simd4f quat2MatMad2 = set_ps(-1.0f, 1.0f, -1.0f, -1.0f);
+    const simd4f quat2MatMad3 = set_ps(1.0f, -1.0f, -1.0f, 1.0f);
+
+    const simd4f q = loadu_ps(rotation.Ptr());
+    const simd4f d = q + q;
+    const simd4f t = set_ps(translation.x, translation.y, translation.z, 0.0f);
+    const simd4f s = set_ps(scale.x, scale.y, scale.z, 1.0f);
+
+    simd4f sa = shuffle_ps<1, 0, 0, 1>(q);
+    const simd4f sb = shuffle_ps<1, 1, 2, 2>(d);
+    const simd4f sc = shuffle_ps<2, 3, 3, 3>(q);
+    const simd4f sd = shuffle_ps<2, 2, 1, 0>(d);
+    sa ^= firstSignBit;
+
+    const simd4f ma = madd_ps(sa, sb, firstPosHalf);
+    const simd4f mb = madd_ps(sc, sd, firstNegHalf);
+    const simd4f mc = firstPosHalf - q * d;
+
+    const simd4f mf = shuffle_ps<1, 1, 0, 0>(ma, mc);
+    const simd4f md = shuffle_ps<2, 0, 2, 3>(mf, ma);
+    const simd4f me = shuffle_ps<0, 1, 2, 3>(ma, mb);
+
+    simd4f row0 = madd_ps(mb, quat2MatMad1, ma);
+    simd4f row1 = madd_ps(mb, quat2MatMad2, md);
+    simd4f row2 = madd_ps(me, quat2MatMad3, md);
+
+    const simd4f tx = shuffle_ps<2, 2, 0, 0>(row0, t);
+    const simd4f ty = shuffle_ps<3, 3, 1, 1>(row1, t);
+    const simd4f tz = shuffle_ps<0, 0, 2, 2>(row2, t);
+    row0 = shuffle_ps<0, 1, 0, 2>(row0, tx);
+    row1 = shuffle_ps<1, 0, 0, 2>(row1, ty);
+    row2 = shuffle_ps<2, 3, 0, 2>(row2, tz);
+
+    storeu_ps(row0 * s, Ptr() + 0);
+    storeu_ps(row1 * s, Ptr() + 4);
+    storeu_ps(row2 * s, Ptr() + 8);
+    storeu_ps(set_ps(0.0f, 0.0f, 0.0f, 1.0f), Ptr() + 12);
+#else
     SetTRS(translation, rotation.ToMat3(), scale);
+#endif
 }
 
 void Mat4::GetTRS(Vec3 &translation, Mat3 &rotation, Vec3 &scale) const {

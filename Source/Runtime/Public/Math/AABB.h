@@ -225,6 +225,10 @@ public:
     Vec3                b[2];   ///< Minimum/Maximum values for each axis.
 };
 
+#if defined(ENABLE_SIMD4_INTRIN)
+static_assert(sizeof(AABB) == sizeof(float) * 6, "SIMD AABB operations require tightly packed bounds");
+#endif
+
 BE_INLINE AABB::AABB(const Vec3 &mins, const Vec3 &maxs) {
     b[0] = mins;
     b[1] = maxs;
@@ -364,6 +368,23 @@ BE_INLINE bool AABB::AddPoint(const Vec3 &v) {
 }
 
 BE_INLINE bool AABB::AddAABB(const AABB &a) {
+#if defined(ENABLE_SIMD4_INTRIN)
+    float *boundsPtr = b[0].Ptr();
+    const float *aPtr = a.b[0].Ptr();
+
+    const simd4f bounds0 = loadu_ps(boundsPtr);
+    const simd4f a0 = loadu_ps(aPtr);
+    const simd4f bounds2 = loadu_ps(boundsPtr + 2);
+    const simd4f a2 = loadu_ps(aPtr + 2);
+
+    const simd4f merged0 = select_ps(min_ps(bounds0, a0), max_ps(bounds0, a0), set_b32(false, false, false, true));
+    const simd4f merged2 = select_ps(min_ps(bounds2, a2), max_ps(bounds2, a2), set_b32(false, true, true, true));
+    const bool expanded = any_b32(merged0 != bounds0) || any_b32(merged2 != bounds2);
+
+    storeu_ps(merged0, boundsPtr);
+    storeu_ps(merged2, boundsPtr + 2);
+    return expanded;
+#else
     bool expanded = false;
     if (a.b[0][0] < b[0][0]) {
         b[0][0] = a.b[0][0];
@@ -390,6 +411,7 @@ BE_INLINE bool AABB::AddAABB(const AABB &a) {
         expanded = true;
     }    
     return expanded;
+#endif
 }
 
 BE_INLINE AABB AABB::Intersect(const AABB &a) const & {
@@ -469,6 +491,18 @@ BE_INLINE bool AABB::IsContainAABB(const AABB &a) const {
 }
 
 BE_INLINE bool AABB::IsIntersectAABB(const AABB &a, bool ignoreBorders) const {
+#if defined(ENABLE_SIMD4_INTRIN)
+    const float *boundsPtr = b[0].Ptr();
+    const float *aPtr = a.b[0].Ptr();
+
+    const simd4f boundsMin = loadu_ps(boundsPtr);
+    const simd4f boundsMax = shuffle_ps<1, 2, 3, 0>(loadu_ps(boundsPtr + 2));
+    const simd4f aMin = loadu_ps(aPtr);
+    const simd4f aMax = shuffle_ps<1, 2, 3, 0>(loadu_ps(aPtr + 2));
+
+    const simd4b separated = ignoreBorders ? (aMax <= boundsMin) | (aMin >= boundsMax) : (aMax < boundsMin) | (aMin > boundsMax);
+    return (movemask_b32(separated) & 7) == 0;
+#else
     if (!ignoreBorders) {
         if (a.b[1][0] < b[0][0] || a.b[1][1] < b[0][1] || a.b[1][2] < b[0][2] ||
             a.b[0][0] > b[1][0] || a.b[0][1] > b[1][1] || a.b[0][2] > b[1][2]) {
@@ -481,6 +515,7 @@ BE_INLINE bool AABB::IsIntersectAABB(const AABB &a, bool ignoreBorders) const {
         }
     }
     return true;
+#endif
 }
 
 BE_INLINE bool AABB::IsIntersectSphere(const Sphere &s) const {

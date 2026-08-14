@@ -228,6 +228,17 @@ Quat &Quat::SetFromSlerpFast(const Quat &from, const Quat &to, float t) {
         return *this;
     }
 
+#if defined(ENABLE_SIMD4_INTRIN)
+    const simd4f fromQuat = loadu_ps(from.Ptr());
+    const simd4f toQuat = loadu_ps(to.Ptr());
+    const float cosom = x_ps(dot4_ps(fromQuat, toQuat));
+    const float scale0 = 1.0f - t;
+    const float scale1 = cosom >= 0.0f ? t : -t;
+
+    simd4f interpolated = madd_ps(toQuat, set1_ps(scale1), fromQuat * set1_ps(scale0));
+    interpolated *= SIMD_4::F4_one / sqrt_ps(dot4_ps(interpolated, interpolated));
+    storeu_ps(interpolated, Ptr());
+#else
     float cosom = from.x * to.x + from.y * to.y + from.z * to.z + from.w * to.w;
 
     float scale0 = 1.0f - t;
@@ -244,6 +255,7 @@ Quat &Quat::SetFromSlerpFast(const Quat &from, const Quat &to, float t) {
     y *= s;
     z *= s;
     w *= s;
+#endif
 
     return *this;
 }
@@ -268,6 +280,48 @@ Rotation Quat::ToRotation() const {
 }
 
 Mat3 Quat::ToMat3() const {
+#if defined(ENABLE_SIMD4_INTRIN)
+    const simd4f firstSignBit = simd4i(0x80000000, 0x00000000, 0x00000000, 0x00000000);
+    const simd4f firstPosHalf = set_ps(0.5f, 0.0f, 0.0f, 0.0f);
+    const simd4f firstNegHalf = set_ps(-0.5f, 0.0f, 0.0f, 0.0f);
+    const simd4f quat2MatMad1 = set_ps(-1.0f, -1.0f, 1.0f, -1.0f);
+    const simd4f quat2MatMad2 = set_ps(-1.0f, 1.0f, -1.0f, -1.0f);
+    const simd4f quat2MatMad3 = set_ps(1.0f, -1.0f, -1.0f, 1.0f);
+
+    const simd4f q = loadu_ps(Ptr());
+    const simd4f d = q + q;
+
+    simd4f sa = shuffle_ps<1, 0, 0, 1>(q);
+    const simd4f sb = shuffle_ps<1, 1, 2, 2>(d);
+    const simd4f sc = shuffle_ps<2, 3, 3, 3>(q);
+    const simd4f sd = shuffle_ps<2, 2, 1, 0>(d);
+    sa ^= firstSignBit;
+
+    const simd4f ma = madd_ps(sa, sb, firstPosHalf);
+    const simd4f mb = madd_ps(sc, sd, firstNegHalf);
+    const simd4f mc = firstPosHalf - q * d;
+
+    const simd4f mf = shuffle_ps<1, 1, 0, 0>(ma, mc);
+    const simd4f md = shuffle_ps<2, 0, 2, 3>(mf, ma);
+    const simd4f me = shuffle_ps<0, 1, 2, 3>(ma, mb);
+
+    const simd4f row0 = madd_ps(mb, quat2MatMad1, ma);
+    const simd4f row1 = madd_ps(mb, quat2MatMad2, md);
+    const simd4f row2 = madd_ps(me, quat2MatMad3, md);
+
+    simd4f temp = shuffle_ps<0, 0, 1, 1>(row0, row1);
+    const simd4f column0 = shuffle_ps<0, 2, 2, 2>(temp, row2);
+    temp = shuffle_ps<1, 1, 0, 0>(row0, row1);
+    const simd4f column1 = shuffle_ps<0, 2, 3, 3>(temp, row2);
+    temp = shuffle_ps<2, 2, 3, 3>(row0, row1);
+    const simd4f column2 = shuffle_ps<0, 2, 0, 0>(temp, row2);
+
+    Mat3 mat;
+    storeu_ps(column0, mat.Ptr() + 0);
+    storeu_ps(column1, mat.Ptr() + 3);
+    mat[2].Set(x_ps(column2), y_ps(column2), z_ps(column2));
+    return mat;
+#else
     float x2 = x + x;
     float y2 = y + y;
     float z2 = z + z;
@@ -298,6 +352,7 @@ Mat3 Quat::ToMat3() const {
     mat[2][2] = 1.0f - xx2 - yy2;
 
     return mat;
+#endif
 }
 
 Mat4 Quat::ToMat4() const {

@@ -748,6 +748,19 @@ void Mat3x4::SetTranslationRotation(const Vec3 &translation, const Mat3 &rotatio
 
 void Mat3x4::SetTRS(const Vec3 &translation, const Mat3 &rotation, const Vec3 &scale) {
     // T * R * S
+#if defined(ENABLE_SIMD4_INTRIN)
+    const float *rotationPtr = rotation.Ptr();
+    simd4f column0 = loadu_ps(rotationPtr + 0) * set1_ps(scale.x);
+    simd4f column1 = loadu_ps(rotationPtr + 3) * set1_ps(scale.y);
+    simd4f column2 = shuffle_ps<1, 2, 3, 0>(loadu_ps(rotationPtr + 5)) * set1_ps(scale.z);
+    simd4f column3 = set_ps(translation.x, translation.y, translation.z, 0.0f);
+
+    transpose4x4(column0, column1, column2, column3);
+
+    storeu_ps(column0, mat[0]);
+    storeu_ps(column1, mat[1]);
+    storeu_ps(column2, mat[2]);
+#else
     mat[0][0] = rotation[0][0] * scale.x;
     mat[0][1] = rotation[1][0] * scale.y;
     mat[0][2] = rotation[2][0] * scale.z;
@@ -762,10 +775,81 @@ void Mat3x4::SetTRS(const Vec3 &translation, const Mat3 &rotation, const Vec3 &s
     mat[2][1] = rotation[1][2] * scale.y;
     mat[2][2] = rotation[2][2] * scale.z;
     mat[2][3] = translation.z;
+#endif
 }
 
 void Mat3x4::SetTQS(const Vec3 &translation, const Quat &rotation, const Vec3 &scale) {
-    SetTRS(translation, rotation.ToMat3(), scale);
+#if defined(ENABLE_SIMD4_INTRIN)
+    const simd4f firstSignBit = simd4i(0x80000000, 0x00000000, 0x00000000, 0x00000000);
+    const simd4f firstPosHalf = set_ps(0.5f, 0.0f, 0.0f, 0.0f);
+    const simd4f firstNegHalf = set_ps(-0.5f, 0.0f, 0.0f, 0.0f);
+    const simd4f quat2MatMad1 = set_ps(-1.0f, -1.0f, 1.0f, -1.0f);
+    const simd4f quat2MatMad2 = set_ps(-1.0f, 1.0f, -1.0f, -1.0f);
+    const simd4f quat2MatMad3 = set_ps(1.0f, -1.0f, -1.0f, 1.0f);
+
+    const simd4f q = loadu_ps(rotation.Ptr());
+    const simd4f d = q + q;
+    const simd4f t = set_ps(translation.x, translation.y, translation.z, 0.0f);
+    const simd4f s = set_ps(scale.x, scale.y, scale.z, 1.0f);
+
+    simd4f sa = shuffle_ps<1, 0, 0, 1>(q);
+    const simd4f sb = shuffle_ps<1, 1, 2, 2>(d);
+    const simd4f sc = shuffle_ps<2, 3, 3, 3>(q);
+    const simd4f sd = shuffle_ps<2, 2, 1, 0>(d);
+    sa ^= firstSignBit;
+
+    const simd4f ma = sa * sb + firstPosHalf;
+    const simd4f mb = sc * sd + firstNegHalf;
+    const simd4f mc = firstPosHalf - q * d;
+
+    const simd4f mf = shuffle_ps<1, 1, 0, 0>(ma, mc);
+    const simd4f md = shuffle_ps<2, 0, 2, 3>(mf, ma);
+    const simd4f me = shuffle_ps<0, 1, 2, 3>(ma, mb);
+
+    simd4f row0 = mb * quat2MatMad1 + ma;
+    simd4f row1 = mb * quat2MatMad2 + md;
+    simd4f row2 = me * quat2MatMad3 + md;
+
+    const simd4f tx = shuffle_ps<2, 2, 0, 0>(row0, t);
+    const simd4f ty = shuffle_ps<3, 3, 1, 1>(row1, t);
+    const simd4f tz = shuffle_ps<0, 0, 2, 2>(row2, t);
+    row0 = shuffle_ps<0, 1, 0, 2>(row0, tx);
+    row1 = shuffle_ps<1, 0, 0, 2>(row1, ty);
+    row2 = shuffle_ps<2, 3, 0, 2>(row2, tz);
+
+    storeu_ps(row0 * s, Ptr() + 0);
+    storeu_ps(row1 * s, Ptr() + 4);
+    storeu_ps(row2 * s, Ptr() + 8);
+#else
+    const float x2 = rotation.x + rotation.x;
+    const float y2 = rotation.y + rotation.y;
+    const float z2 = rotation.z + rotation.z;
+
+    const float xx2 = rotation.x * x2;
+    const float xy2 = rotation.x * y2;
+    const float xz2 = rotation.x * z2;
+    const float yy2 = rotation.y * y2;
+    const float yz2 = rotation.y * z2;
+    const float zz2 = rotation.z * z2;
+    const float wx2 = rotation.w * x2;
+    const float wy2 = rotation.w * y2;
+    const float wz2 = rotation.w * z2;
+
+    mat[0][0] = (1.0f - yy2 - zz2) * scale.x;
+    mat[0][1] = (xy2 - wz2) * scale.y;
+    mat[0][2] = (xz2 + wy2) * scale.z;
+    mat[0][3] = translation.x;
+
+    mat[1][0] = (xy2 + wz2) * scale.x;
+    mat[1][1] = (1.0f - xx2 - zz2) * scale.y;
+    mat[1][2] = (yz2 - wx2) * scale.z;
+    mat[1][3] = translation.y;
+
+    mat[2][0] = (xz2 - wy2) * scale.x;
+    mat[2][1] = (yz2 + wx2) * scale.y;
+    mat[2][2] = (1.0f - xx2 - yy2) * scale.z;
+    mat[2][3] = translation.z;
+#endif
 }
 
 void Mat3x4::GetTRS(Vec3 &translation, Mat3 &rotation, Vec3 &scale) const {

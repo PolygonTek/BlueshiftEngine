@@ -337,6 +337,39 @@ void AABB::SetFromTransformedAABB(const AABB &aabb, const Mat3x4 &transform) {
         return;
     }
 
+#if defined(ENABLE_SIMD4_INTRIN)
+    const float *aabbPtr = aabb.b[0].Ptr();
+    const simd4f aabbMin = loadu_ps(aabbPtr) & SIMD_4::F4_mask_xxx0;
+    const simd4f aabbMax = shuffle_ps<1, 2, 3, 0>(loadu_ps(aabbPtr + 2)) & SIMD_4::F4_mask_xxx0;
+    const simd4f center = (aabbMin + aabbMax) * set1_ps(0.5f);
+    const simd4f extents = (aabbMax - aabbMin) * set1_ps(0.5f);
+
+    const float *matrixPtr = transform.Ptr();
+    simd4f column0 = loadu_ps(matrixPtr + 0);
+    simd4f column1 = loadu_ps(matrixPtr + 4);
+    simd4f column2 = loadu_ps(matrixPtr + 8);
+    simd4f column3 = setzero_ps();
+    transpose4x4(column0, column1, column2, column3);
+
+    simd4f transformedCenter = column0 * shuffle_ps<0, 0, 0, 0>(center);
+    transformedCenter = madd_ps(column1, shuffle_ps<1, 1, 1, 1>(center), transformedCenter);
+    transformedCenter = madd_ps(column2, shuffle_ps<2, 2, 2, 2>(center), transformedCenter);
+    transformedCenter += column3;
+
+    simd4f transformedExtents = abs_ps(column0) * shuffle_ps<0, 0, 0, 0>(extents);
+    transformedExtents = madd_ps(abs_ps(column1), shuffle_ps<1, 1, 1, 1>(extents), transformedExtents);
+    transformedExtents = madd_ps(abs_ps(column2), shuffle_ps<2, 2, 2, 2>(extents), transformedExtents);
+
+    const simd4f transformedMin = transformedCenter - transformedExtents;
+    const simd4f transformedMax = transformedCenter + transformedExtents;
+    const simd4f packed0 = insert_ps<0, 3>(transformedMin, transformedMax);
+    simd4f packed2 = shuffle_ps<2, 0, 1, 2>(transformedMin, transformedMax);
+    packed2 = insert_ps<0, 1>(packed2, transformedMax);
+
+    float *boundsPtr = b[0].Ptr();
+    storeu_ps(packed0, boundsPtr);
+    storeu_ps(packed2, boundsPtr + 2);
+#else
     Vec3 center = (aabb[0] + aabb[1]) * 0.5f;
     Vec3 extents = aabb[1] - center;
 
@@ -351,6 +384,7 @@ void AABB::SetFromTransformedAABB(const AABB &aabb, const Mat3x4 &transform) {
     center = transform.TransformPos(center);
     b[0] = center - rotatedExtents;
     b[1] = center + rotatedExtents;
+#endif
 }
 
 void AABB::ProjectOnAxis(const Vec3 &axis, float &min, float &max) const {
