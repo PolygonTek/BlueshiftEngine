@@ -183,6 +183,11 @@ public:
                         /// Returns the maximum absolute component.
     float               MaxAbsComponent() const { return Max3(mat[0].MaxAbsComponent(), mat[1].MaxAbsComponent(), mat[2].MaxAbsComponent()); }
 
+                        /// Returns the squared Frobenius norm of this matrix.
+    float               FrobeniusNormSqr() const;
+                        /// Returns the Frobenius norm of this matrix.
+    float               FrobeniusNorm() const;
+
                         /// Sets all the element of this matrix to zero.
     void                SetZero();
                         /// Sets this matrix to equal the identity.
@@ -679,6 +684,14 @@ BE_INLINE Mat3 &Mat3::operator*=(float rhs) {
     mat[2].z *= rhs;
 
     return *this;
+}
+
+BE_INLINE float Mat3::FrobeniusNormSqr() const {
+    return mat[0].LengthSqr() + mat[1].LengthSqr() + mat[2].LengthSqr();
+}
+
+BE_INLINE float Mat3::FrobeniusNorm() const {
+    return Math::Sqrt(FrobeniusNormSqr());
 }
 
 BE_INLINE float Mat3::Trace() const {

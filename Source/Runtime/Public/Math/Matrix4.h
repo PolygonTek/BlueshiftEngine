@@ -194,6 +194,11 @@ public:
                         /// Returns the maximum absolute component.
     float               MaxAbsComponent() const { return Max(Max(mat[0].MaxAbsComponent(), mat[1].MaxAbsComponent()), Max(mat[2].MaxAbsComponent(), mat[3].MaxAbsComponent())); }
 
+                        /// Returns the squared Frobenius norm of this matrix.
+    float               FrobeniusNormSqr() const;
+                        /// Returns the Frobenius norm of this matrix.
+    float               FrobeniusNorm() const;
+
                         /// Sets all the element of this matrix to zero.
     void                SetZero();
                         /// Sets this matrix to equal the identity.
@@ -612,6 +617,14 @@ BE_INLINE bool Mat4::IsAffine(const float epsilon) const {
         return false;
     }
     return true;
+}
+
+BE_INLINE float Mat4::FrobeniusNormSqr() const {
+    return mat[0].LengthSqr() + mat[1].LengthSqr() + mat[2].LengthSqr() + mat[3].LengthSqr();
+}
+
+BE_INLINE float Mat4::FrobeniusNorm() const {
+    return Math::Sqrt(FrobeniusNormSqr());
 }
 
 BE_INLINE float Mat4::Trace() const {

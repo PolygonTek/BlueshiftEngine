@@ -197,6 +197,11 @@ public:
                         /// Change tiny numbers to zero.
     bool                FixDenormals();
 
+                        /// Returns the squared Frobenius norm of this matrix.
+    float               FrobeniusNormSqr() const;
+                        /// Returns the Frobenius norm of this matrix.
+    float               FrobeniusNorm() const;
+
                         /// Decomposes this matrix to translation, rotation and scale parts.
     void                GetTRS(Vec3 &translation, Mat3 &rotation, Vec3 &scale) const;
                         /// Decomposes this matrix to translation, rotation and scale parts.
@@ -493,6 +498,14 @@ BE_INLINE bool Mat3x4::FixDenormals() {
     r |= mat[1].ToVec3().FixDenormals();
     r |= mat[2].ToVec3().FixDenormals();
     return r;
+}
+
+BE_INLINE float Mat3x4::FrobeniusNormSqr() const {
+    return mat[0].LengthSqr() + mat[1].LengthSqr() + mat[2].LengthSqr();
+}
+
+BE_INLINE float Mat3x4::FrobeniusNorm() const {
+    return Math::Sqrt(FrobeniusNormSqr());
 }
 
 BE_INLINE float Mat3x4::Determinant() const {

@@ -179,6 +179,11 @@ public:
                         /// Returns the maximum absolute component.
     float               MaxAbsComponent() const { return Max(mat[0].MaxAbsComponent(), mat[1].MaxAbsComponent()); }
 
+                        /// Returns the squared Frobenius norm of this matrix.
+    float               FrobeniusNormSqr() const;
+                        /// Returns the Frobenius norm of this matrix.
+    float               FrobeniusNorm() const;
+
                         /// Sets all the element of this matrix to zero.
     void                SetZero();
                         /// Sets this matrix to equal the identity.
@@ -432,6 +437,14 @@ BE_INLINE bool Mat2::IsDiagonal(const float epsilon) const {
 
 BE_INLINE bool Mat2::IsSingular() const {
     return Determinant() == 0 ? true : false;
+}
+
+BE_INLINE float Mat2::FrobeniusNormSqr() const {
+    return mat[0].LengthSqr() + mat[1].LengthSqr();
+}
+
+BE_INLINE float Mat2::FrobeniusNorm() const {
+    return Math::Sqrt(FrobeniusNormSqr());
 }
 
 BE_INLINE float Mat2::Trace() const {
