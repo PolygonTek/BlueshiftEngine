@@ -717,28 +717,15 @@ static void BenchmarkPow() {
 #endif
 }
 
-void TestInverseMatrix() {
-    BE1::Mat3 m3x3;
-    for (int i = 0; i < 3; i++) {
-        for (int j = 0; j < 3; j++) {
-            m3x3[i][j] = BE1::RNG::GetRandom(-1.0f, 1.0f);
-        }
-    }
-    BE1::Mat3x4 m3x4;
-    m3x4.SetTRS(BE1::Vec3(1, 2, 3), m3x3, BE1::Vec3(1, 2, 3));
-    BE1::Mat3x4 m3x4Inv = m3x4.Inverse();
-    BE1::Mat3x4 m3x4InvInv = m3x4Inv.Inverse();
-}
-
-static void VerifyIntegerLog2(bool expression, int line) {
+static void VerifyMathTest(bool expression, const char *testName, int line) {
     if (!expression) {
-        std::fprintf(stderr, "Integer logarithm verification failed at line %d\n", line);
-        BE_FATALERROR("Integer logarithm verification failed at line %d\n", line);
+        std::fprintf(stderr, "%s verification failed at line %d\n", testName, line);
+        BE_FATALERROR("%s verification failed at line %d\n", testName, line);
         std::abort();
     }
 }
 
-#define VERIFY_INTEGER_LOG2(expression) VerifyIntegerLog2((expression), __LINE__)
+#define VERIFY_INTEGER_LOG2(expression) VerifyMathTest((expression), __func__, __LINE__)
 
 static void TestIntegerLog2() {
     VERIFY_INTEGER_LOG2(BE1::Math::ILog2(1.0f) == 0);
@@ -763,15 +750,7 @@ static void TestIntegerLog2() {
 
 #undef VERIFY_INTEGER_LOG2
 
-static void VerifySquareRootContract(bool expression, int line) {
-    if (!expression) {
-        std::fprintf(stderr, "Square root contract verification failed at line %d\n", line);
-        BE_FATALERROR("Square root contract verification failed at line %d\n", line);
-        std::abort();
-    }
-}
-
-#define VERIFY_SQUARE_ROOT_CONTRACT(expression) VerifySquareRootContract((expression), __LINE__)
+#define VERIFY_SQUARE_ROOT_CONTRACT(expression) VerifyMathTest((expression), __func__, __LINE__)
 
 static void TestSquareRootContract() {
     const float floatInfinity = std::numeric_limits<float>::infinity();
@@ -803,13 +782,7 @@ static void TestSquareRootContract() {
 
 #undef VERIFY_SQUARE_ROOT_CONTRACT
 
-#define VERIFY_FLOAT_TO_INTEGER(expression) do { \
-    if (!(expression)) { \
-        std::fprintf(stderr, "Float-to-integer conversion verification failed at line %d\n", __LINE__); \
-        BE_FATALERROR("Float-to-integer conversion verification failed at line %d\n", __LINE__); \
-        std::abort(); \
-    } \
-} while (0)
+#define VERIFY_FLOAT_TO_INTEGER(expression) VerifyMathTest((expression), __func__, __LINE__)
 
 static void TestFloatToIntegerConversions() {
     const float infinity = std::numeric_limits<float>::infinity();
@@ -846,15 +819,7 @@ static void TestFloatToIntegerConversions() {
 
 #undef VERIFY_FLOAT_TO_INTEGER
 
-static void VerifyEigenAnalysis(bool expression, int line) {
-    if (!expression) {
-        std::fprintf(stderr, "Eigen analysis verification failed at line %d\n", line);
-        BE_FATALERROR("Eigen analysis verification failed at line %d\n", line);
-        std::abort();
-    }
-}
-
-#define VERIFY_EIGEN_ANALYSIS(expression) VerifyEigenAnalysis((expression), __LINE__)
+#define VERIFY_EIGEN_ANALYSIS(expression) VerifyMathTest((expression), __func__, __LINE__)
 
 static void TestEigenAnalysis() {
     const float epsilon = 1e-4f;
@@ -1028,6 +993,12 @@ static void TestEigenAnalysis() {
     VERIFY_EIGEN_ANALYSIS(BE1::EigenSolver3::InversePowerIteration(
         pivoted, 0.25f, BE1::Vec3(1.0f, 2.0f, 1.0f), inversePowerResult, 32, 1e-5f));
     VERIFY_EIGEN_ANALYSIS(BE1::Math::Fabs(inversePowerResult.eigenValue - 1.0f) <= epsilon);
+}
+
+static void TestCovarianceAndPrincipalComponents() {
+    const float epsilon = 1e-4f;
+    BE1::Vec2 eigenValues2;
+    BE1::Mat2 eigenVectors2;
 
     BE1::CovarianceAccumulator3 covarianceA;
     covarianceA.AddPoint(BE1::Vec3(-1.0f, 0.0f, 0.0f));
@@ -1096,6 +1067,12 @@ static void TestEigenAnalysis() {
     VERIFY_EIGEN_ANALYSIS(principalComponents.SetFromCovariance(covariance));
     VERIFY_EIGEN_ANALYSIS(principalComponents.rank == 1);
     VERIFY_EIGEN_ANALYSIS(BE1::Math::Fabs(principalComponents.axes[0].x) >= 1.0f - epsilon);
+}
+
+static void TestMatrixDecomposition() {
+    const float epsilon = 1e-4f;
+    BE1::Vec3 eigenValues;
+    BE1::Mat3 eigenVectors;
 
     const BE1::Mat2 asymmetric2(1.0f, 2.0f, 4.0f, 5.0f);
     const BE1::Mat2 expectedSymmetricPart2(1.0f, 3.0f, 3.0f, 5.0f);
@@ -1108,7 +1085,6 @@ static void TestEigenAnalysis() {
     BE1::Mat2 skewSymmetricPart2 = asymmetric2;
     VERIFY_EIGEN_ANALYSIS(symmetricPart2.SymmetrizeSelf().Equals(expectedSymmetricPart2));
     VERIFY_EIGEN_ANALYSIS(skewSymmetricPart2.SkewSymmetrizeSelf().Equals(expectedSkewSymmetricPart2));
-
 
     const BE1::Mat3 asymmetric(
         1.0f, 2.0f, 3.0f,
@@ -1155,6 +1131,7 @@ static void TestEigenAnalysis() {
     BE1::Mat4 skewSymmetricPart4 = asymmetric4;
     VERIFY_EIGEN_ANALYSIS(symmetricPart4.SymmetrizeSelf().Equals(expectedSymmetricPart4));
     VERIFY_EIGEN_ANALYSIS(skewSymmetricPart4.SkewSymmetrizeSelf().Equals(expectedSkewSymmetricPart4));
+
     const BE1::Mat3 expectedOrthogonal = BE1::Mat3::FromRotationZYX(
         DEG2RAD(35.0f), DEG2RAD(-20.0f), DEG2RAD(15.0f));
     const BE1::Mat3 expectedSymmetric(
@@ -1208,50 +1185,58 @@ static void TestEigenAnalysis() {
 
 #undef VERIFY_EIGEN_ANALYSIS
 
+#define VERIFY_ROTATION_CONVERSION(expression) VerifyMathTest((expression), __func__, __LINE__)
+
+static void TestRotationConversions() {
+    BE1::Mat3 m = BE1::Mat3::FromRotationZYX(DEG2RAD(120), DEG2RAD(-20), DEG2RAD(60));
+
+    BE1::Rotation r = m.ToRotation();
+    BE1::Mat3 m2 = r.ToMat3();
+    VERIFY_ROTATION_CONVERSION(m.Equals(m2, 0.0001f));
+
+    BE1::Quat q = m.ToQuat();
+    BE1::Mat3 m3 = q.ToMat3();
+    VERIFY_ROTATION_CONVERSION(m.Equals(m3, 0.0001f));
+
+    BE1::Angles a = m.ToAngles();
+    BE1::Mat3 m4 = a.ToMat3();
+    VERIFY_ROTATION_CONVERSION(m.Equals(m4, 0.0001f));
+
+    BE1::Rotation r2 = q.ToRotation();
+    BE1::Mat3 m5 = r2.ToMat3();
+    VERIFY_ROTATION_CONVERSION(m.Equals(m5, 0.0001f));
+
+    BE1::Angles a2 = q.ToAngles();
+    BE1::Mat3 m6 = a2.ToMat3();
+    VERIFY_ROTATION_CONVERSION(m.Equals(m6, 0.0001f));
+    VERIFY_ROTATION_CONVERSION(a.Equals(a2, 0.0001f));
+
+    BE1::Quat q2 = a.ToQuat();
+    BE1::Mat3 m7 = q2.ToMat3();
+    VERIFY_ROTATION_CONVERSION(m.Equals(m7, 0.0001f));
+    VERIFY_ROTATION_CONVERSION(q.Equals(q2, 0.0001f));
+
+    BE1::Angles a3 = r.ToAngles();
+    BE1::Mat3 m8 = a3.ToMat3();
+    VERIFY_ROTATION_CONVERSION(m.Equals(m8, 0.0001f));
+    VERIFY_ROTATION_CONVERSION(a.Equals(a3, 0.0001f));
+
+    BE1::Quat q3 = r.ToQuat();
+    BE1::Mat3 m9 = q3.ToMat3();
+    VERIFY_ROTATION_CONVERSION(m.Equals(m9, 0.0001f));
+    VERIFY_ROTATION_CONVERSION(q.Equals(q3, 0.0001f));
+}
+
+#undef VERIFY_ROTATION_CONVERSION
+
 void Test::TestMath() {
     TestSquareRootContract();
     TestIntegerLog2();
     TestFloatToIntegerConversions();
     TestEigenAnalysis();
-
-    //TestInverseMatrix();
-    BE1::Mat3 m = BE1::Mat3::FromRotationZYX(DEG2RAD(120), DEG2RAD(-20), DEG2RAD(60));
-
-    BE1::Rotation r = m.ToRotation();
-    BE1::Mat3 m2 = r.ToMat3();
-    assert(m.Equals(m2, 0.0001f));
-
-    BE1::Quat q = m.ToQuat();
-    BE1::Mat3 m3 = q.ToMat3();
-    assert(m.Equals(m3, 0.0001f));
-
-    BE1::Angles a = m.ToAngles();
-    BE1::Mat3 m4 = a.ToMat3();
-    assert(m.Equals(m4, 0.0001f));
-
-    BE1::Rotation r2 = q.ToRotation();
-    BE1::Mat3 m5 = r2.ToMat3();
-    assert(m.Equals(m5, 0.0001f));
-
-    BE1::Angles a2 = q.ToAngles();
-    BE1::Mat3 m6 = a2.ToMat3();
-    assert(m.Equals(m6, 0.0001f));
-    assert(a.Equals(a2, 0.0001f));
-
-    BE1::Quat q2 = a.ToQuat();
-    BE1::Mat3 m7 = q2.ToMat3();
-    assert(m.Equals(m7, 0.0001f));
-    assert(q.Equals(q2, 0.0001f));
-
-    BE1::Angles a3 = r.ToAngles();
-    BE1::Mat3 m8 = a3.ToMat3();
-    assert(m.Equals(m8, 0.0001f));
-    assert(a.Equals(a3, 0.0001f));
-
-    BE1::Quat q3 = r.ToQuat();
-    BE1::Mat3 m9 = q3.ToMat3();
-    assert(m.Equals(m9, 0.0001f));
-    assert(q.Equals(q3, 0.0001f));
+    TestCovarianceAndPrincipalComponents();
+    TestMatrixDecomposition();
+    TestRotationConversions();
 
     BenchmarkSqrt();
     BenchmarkInvSqrt();

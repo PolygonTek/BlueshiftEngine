@@ -420,6 +420,10 @@ typedef uint64_t    qword;  // 64 bits
 #define BE_FORCE_INLINE             __forceinline
 #define BE_INLINE                   inline
 
+#if defined(_MSC_VER)
+#define BE_NOINLINE                 __declspec(noinline)
+#endif
+
 #define BE_DEPRECATED               __declspec(deprecated("This is deprecated and will be removed in a future version."))
 
 #define CURRENT_FUNC                __FUNCTION__
@@ -524,6 +528,10 @@ typedef uint64_t    qword;  // 64 bits
 
 #define BE_FORCE_INLINE             inline //__attribute__((always_inline))
 #define BE_INLINE                   inline
+
+#if defined(__GNUC__) || defined(__clang__)
+#define BE_NOINLINE                 __attribute__((noinline))
+#endif
 
 #define BE_DEPRECATED               __attribute__((deprecated("This is deprecated and will be removed in a future version.")))
 

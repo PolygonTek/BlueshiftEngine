@@ -18,13 +18,14 @@
 #include <cstdio>
 #include <cstdlib>
 
-#define TEST_COUNT          4096
-#define CUDA_TEST_COUNT     30
+static constexpr int TestCount = 4096;
 
-#define GetBest(start, end, best) \
-    if (!best || end - start < best) { \
-        best = end - start; \
+static void GetBest(uint64_t start, uint64_t end, uint64_t &best) {
+    uint64_t elapsed = end - start;
+    if (!best || elapsed < best) {
+        best = elapsed;
     }
+}
 
 static void PrintClocksGeneric(const char *string, uint64_t clocks) {
     BE_LOG("Generic->%s: %" PRIu64 " clocks\n", string, clocks);
@@ -40,13 +41,15 @@ static void RandomFloatArrayInit(float *dst, int count, float minimum, float max
     }
 }
 
-#define VERIFY_SIMD_PRIMITIVE(expression) do { \
-    if (!(expression)) { \
-        std::fprintf(stderr, "SIMD primitive verification failed at line %d\n", __LINE__); \
-        BE_FATALERROR("SIMD primitive verification failed at line %d\n", __LINE__); \
-        std::abort(); \
-    } \
-} while (0)
+static void VerifySIMD(bool expression, int line) {
+    if (!expression) {
+        std::fprintf(stderr, "SIMD verification failed at line %d\n", line);
+        BE_FATALERROR("SIMD verification failed at line %d\n", line);
+        std::abort();
+    }
+}
+
+#define VERIFY_SIMD_PRIMITIVE(expression) VerifySIMD((expression), __LINE__)
 
 #if defined(HAVE_X86_SSE_INTRIN)
 static void TestSSEPrimitives() {
@@ -278,7 +281,7 @@ static void TestAdd() {
     RandomFloatArrayInit(src0, COUNT_OF(dst), -100.0f, 100.0f);
 
     bestClocksGeneric = 0;
-    for (int i = 0; i < TEST_COUNT; i++) {
+    for (int i = 0; i < TestCount; i++) {
         uint64_t startClocks = BE1::PlatformTime::Cycles();
         BE1::simdGeneric->Add(dst, c, src0, COUNT_OF(dst));
         uint64_t endClocks = BE1::PlatformTime::Cycles();
@@ -290,7 +293,7 @@ static void TestAdd() {
     RandomFloatArrayInit(src0, COUNT_OF(dst), -100.0f, 100.0f);
 
     bestClocksSIMD = 0;
-    for (int i = 0; i < TEST_COUNT; i++) {
+    for (int i = 0; i < TestCount; i++) {
         uint64_t startClocks = BE1::PlatformTime::Cycles();
         BE1::simdProcessor->Add(dst, c, src0, COUNT_OF(dst));
         uint64_t endClocks = BE1::PlatformTime::Cycles();
@@ -303,7 +306,7 @@ static void TestAdd() {
     RandomFloatArrayInit(src1, COUNT_OF(dst), -100.0f, 100.0f);
 
     bestClocksGeneric = 0;
-    for (int i = 0; i < TEST_COUNT; i++) {
+    for (int i = 0; i < TestCount; i++) {
         uint64_t startClocks = BE1::PlatformTime::Cycles();
         BE1::simdGeneric->Add(dst, src0, src1, COUNT_OF(dst));
         uint64_t endClocks = BE1::PlatformTime::Cycles();
@@ -316,7 +319,7 @@ static void TestAdd() {
     RandomFloatArrayInit(src1, COUNT_OF(dst), -100.0f, 100.0f);
 
     bestClocksSIMD = 0;
-    for (int i = 0; i < TEST_COUNT; i++) {
+    for (int i = 0; i < TestCount; i++) {
         uint64_t startClocks = BE1::PlatformTime::Cycles();
         BE1::simdProcessor->Add(dst, src0, src1, COUNT_OF(dst));
         uint64_t endClocks = BE1::PlatformTime::Cycles();
@@ -349,7 +352,7 @@ static void TestSub() {
     RandomFloatArrayInit(src0, COUNT_OF(dst), -100.0f, 100.0f);
 
     bestClocksGeneric = 0;
-    for (int i = 0; i < TEST_COUNT; i++) {
+    for (int i = 0; i < TestCount; i++) {
         uint64_t startClocks = BE1::PlatformTime::Cycles();
         BE1::simdGeneric->Sub(dst, c, src0, COUNT_OF(dst));
         uint64_t endClocks = BE1::PlatformTime::Cycles();
@@ -361,7 +364,7 @@ static void TestSub() {
     RandomFloatArrayInit(src0, COUNT_OF(dst), -100.0f, 100.0f);
 
     bestClocksSIMD = 0;
-    for (int i = 0; i < TEST_COUNT; i++) {
+    for (int i = 0; i < TestCount; i++) {
         uint64_t startClocks = BE1::PlatformTime::Cycles();
         BE1::simdProcessor->Sub(dst, c, src0, COUNT_OF(dst));
         uint64_t endClocks = BE1::PlatformTime::Cycles();
@@ -374,7 +377,7 @@ static void TestSub() {
     RandomFloatArrayInit(src1, COUNT_OF(dst), -100.0f, 100.0f);
 
     bestClocksGeneric = 0;
-    for (int i = 0; i < TEST_COUNT; i++) {
+    for (int i = 0; i < TestCount; i++) {
         uint64_t startClocks = BE1::PlatformTime::Cycles();
         BE1::simdGeneric->Sub(dst, src0, src1, COUNT_OF(dst));
         uint64_t endClocks = BE1::PlatformTime::Cycles();
@@ -387,7 +390,7 @@ static void TestSub() {
     RandomFloatArrayInit(src1, COUNT_OF(dst), -100.0f, 100.0f);
 
     bestClocksSIMD = 0;
-    for (int i = 0; i < TEST_COUNT; i++) {
+    for (int i = 0; i < TestCount; i++) {
         uint64_t startClocks = BE1::PlatformTime::Cycles();
         BE1::simdProcessor->Sub(dst, src0, src1, COUNT_OF(dst));
         uint64_t endClocks = BE1::PlatformTime::Cycles();
@@ -420,7 +423,7 @@ static void TestMul() {
     RandomFloatArrayInit(src0, COUNT_OF(dst), -100.0f, 100.0f);
 
     bestClocksGeneric = 0;
-    for (int i = 0; i < TEST_COUNT; i++) {
+    for (int i = 0; i < TestCount; i++) {
         uint64_t startClocks = BE1::PlatformTime::Cycles();
         BE1::simdGeneric->Mul(dst, c, src0, COUNT_OF(dst));
         uint64_t endClocks = BE1::PlatformTime::Cycles();
@@ -432,7 +435,7 @@ static void TestMul() {
     RandomFloatArrayInit(src0, COUNT_OF(dst), -100.0f, 100.0f);
 
     bestClocksSIMD = 0;
-    for (int i = 0; i < TEST_COUNT; i++) {
+    for (int i = 0; i < TestCount; i++) {
         uint64_t startClocks = BE1::PlatformTime::Cycles();
         BE1::simdProcessor->Mul(dst, c, src0, COUNT_OF(dst));
         uint64_t endClocks = BE1::PlatformTime::Cycles();
@@ -445,7 +448,7 @@ static void TestMul() {
     RandomFloatArrayInit(src1, COUNT_OF(dst), -100.0f, 100.0f);
 
     bestClocksGeneric = 0;
-    for (int i = 0; i < TEST_COUNT; i++) {
+    for (int i = 0; i < TestCount; i++) {
         uint64_t startClocks = BE1::PlatformTime::Cycles();
         BE1::simdGeneric->Mul(dst, src0, src1, COUNT_OF(dst));
         uint64_t endClocks = BE1::PlatformTime::Cycles();
@@ -458,7 +461,7 @@ static void TestMul() {
     RandomFloatArrayInit(src1, COUNT_OF(dst), -100.0f, 100.0f);
 
     bestClocksSIMD = 0;
-    for (int i = 0; i < TEST_COUNT; i++) {
+    for (int i = 0; i < TestCount; i++) {
         uint64_t startClocks = BE1::PlatformTime::Cycles();
         BE1::simdProcessor->Mul(dst, src0, src1, COUNT_OF(dst));
         uint64_t endClocks = BE1::PlatformTime::Cycles();
@@ -491,7 +494,7 @@ static void TestDiv() {
     RandomFloatArrayInit(src0, COUNT_OF(dst), -100.0f, 100.0f);
 
     bestClocksGeneric = 0;
-    for (int i = 0; i < TEST_COUNT; i++) {
+    for (int i = 0; i < TestCount; i++) {
         uint64_t startClocks = BE1::PlatformTime::Cycles();
         BE1::simdGeneric->Div(dst, c, src0, COUNT_OF(dst));
         uint64_t endClocks = BE1::PlatformTime::Cycles();
@@ -503,7 +506,7 @@ static void TestDiv() {
     RandomFloatArrayInit(src0, COUNT_OF(dst), -100.0f, 100.0f);
 
     bestClocksSIMD = 0;
-    for (int i = 0; i < TEST_COUNT; i++) {
+    for (int i = 0; i < TestCount; i++) {
         uint64_t startClocks = BE1::PlatformTime::Cycles();
         BE1::simdProcessor->Div(dst, c, src0, COUNT_OF(dst));
         uint64_t endClocks = BE1::PlatformTime::Cycles();
@@ -516,7 +519,7 @@ static void TestDiv() {
     RandomFloatArrayInit(src1, COUNT_OF(dst), -100.0f, 100.0f);
 
     bestClocksGeneric = 0;
-    for (int i = 0; i < TEST_COUNT; i++) {
+    for (int i = 0; i < TestCount; i++) {
         uint64_t startClocks = BE1::PlatformTime::Cycles();
         BE1::simdGeneric->Div(dst, src0, src1, COUNT_OF(dst));
         uint64_t endClocks = BE1::PlatformTime::Cycles();
@@ -529,7 +532,7 @@ static void TestDiv() {
     RandomFloatArrayInit(src1, COUNT_OF(dst), -100.0f, 100.0f);
 
     bestClocksSIMD = 0;
-    for (int i = 0; i < TEST_COUNT; i++) {
+    for (int i = 0; i < TestCount; i++) {
         uint64_t startClocks = BE1::PlatformTime::Cycles();
         BE1::simdProcessor->Div(dst, src0, src1, COUNT_OF(dst));
         uint64_t endClocks = BE1::PlatformTime::Cycles();
@@ -569,7 +572,7 @@ static void TestSum() {
     RandomFloatArrayInit(src, COUNT_OF(src), -100.0f, 100.0f);
 
     bestClocksGeneric = 0;
-    for (int i = 0; i < TEST_COUNT; i++) {
+    for (int i = 0; i < TestCount; i++) {
         uint64_t startClocks = BE1::PlatformTime::Cycles();
         sum = BE1::simdGeneric->Sum(src, COUNT_OF(src));
         uint64_t endClocks = BE1::PlatformTime::Cycles();
@@ -581,7 +584,7 @@ static void TestSum() {
     RandomFloatArrayInit(src, COUNT_OF(src), -100.0f, 100.0f);
 
     bestClocksSIMD = 0;
-    for (int i = 0; i < TEST_COUNT; i++) {
+    for (int i = 0; i < TestCount; i++) {
         uint64_t startClocks = BE1::PlatformTime::Cycles();
         sum = BE1::simdProcessor->Sum(src, COUNT_OF(src));
         uint64_t endClocks = BE1::PlatformTime::Cycles();
@@ -622,7 +625,7 @@ static void TestTransformPoints() {
     }
 
     uint64_t bestClocksGeneric = 0;
-    for (int i = 0; i < TEST_COUNT; i++) {
+    for (int i = 0; i < TestCount; i++) {
         memcpy(expected, source, sizeof(expected));
 
         uint64_t startClocks = BE1::PlatformTime::Cycles();
@@ -636,7 +639,7 @@ static void TestTransformPoints() {
     PrintClocksGeneric("TransformPoints 1024 x 64", bestClocksGeneric);
 
     uint64_t bestClocksMember = 0;
-    for (int i = 0; i < TEST_COUNT; i++) {
+    for (int i = 0; i < TestCount; i++) {
         memcpy(member, source, sizeof(member));
 
         uint64_t startClocks = BE1::PlatformTime::Cycles();
@@ -652,7 +655,7 @@ static void TestTransformPoints() {
     BE_LOG(" Member->TransformPos loop 1024 x 64: %" PRIu64 " clocks\n", bestClocksMember);
 
     uint64_t bestClocksSIMD = 0;
-    for (int i = 0; i < TEST_COUNT; i++) {
+    for (int i = 0; i < TestCount; i++) {
         memcpy(actual, source, sizeof(actual));
 
         uint64_t startClocks = BE1::PlatformTime::Cycles();
@@ -698,7 +701,7 @@ static void TestTransformDirections() {
     }
 
     uint64_t bestClocksGeneric = 0;
-    for (int i = 0; i < TEST_COUNT; i++) {
+    for (int i = 0; i < TestCount; i++) {
         memcpy(expected, source, sizeof(expected));
 
         uint64_t startClocks = BE1::PlatformTime::Cycles();
@@ -712,7 +715,7 @@ static void TestTransformDirections() {
     PrintClocksGeneric("TransformDirections 1024 x 64", bestClocksGeneric);
 
     uint64_t bestClocksMember = 0;
-    for (int i = 0; i < TEST_COUNT; i++) {
+    for (int i = 0; i < TestCount; i++) {
         memcpy(member, source, sizeof(member));
 
         uint64_t startClocks = BE1::PlatformTime::Cycles();
@@ -728,7 +731,7 @@ static void TestTransformDirections() {
     BE_LOG(" Member->TransformDir loop 1024 x 64: %" PRIu64 " clocks\n", bestClocksMember);
 
     uint64_t bestClocksSIMD = 0;
-    for (int i = 0; i < TEST_COUNT; i++) {
+    for (int i = 0; i < TestCount; i++) {
         memcpy(actual, source, sizeof(actual));
 
         uint64_t startClocks = BE1::PlatformTime::Cycles();
@@ -861,7 +864,7 @@ static void TestTranspose8x8() {
 
     for (int row = 0; row < 8; row++) {
         for (int column = 0; column < 8; column++) {
-            assert(dst[row * 8 + column] == src[column * 8 + row]);
+            VERIFY_SIMD_PRIMITIVE(dst[row * 8 + column] == src[column * 8 + row]);
         }
     }
 }
@@ -921,7 +924,7 @@ static void TestTransformJointsCorrectness() {
     BE1::simdProcessor->TransformJoints(actualJointMatrix, multipleRootParents, 0, 3);
 
     for (int i = 0; i < COUNT_OF(expectedJointMatrix); i++) {
-        assert(actualJointMatrix[i].Equals(expectedJointMatrix[i], 0.0001f));
+        VERIFY_SIMD_PRIMITIVE(actualJointMatrix[i].Equals(expectedJointMatrix[i], 0.0001f));
         expectedJointMatrix[i] = localJointMatrix[i];
         actualJointMatrix[i] = localJointMatrix[i];
     }
@@ -932,7 +935,7 @@ static void TestTransformJointsCorrectness() {
     BE1::simdProcessor->TransformJoints(actualJointMatrix, partialRangeParents, 2, 3);
 
     for (int i = 0; i < COUNT_OF(expectedJointMatrix); i++) {
-        assert(actualJointMatrix[i].Equals(expectedJointMatrix[i], 0.0001f));
+        VERIFY_SIMD_PRIMITIVE(actualJointMatrix[i].Equals(expectedJointMatrix[i], 0.0001f));
     }
 }
 
@@ -1088,7 +1091,7 @@ static void TestBlendJoints() {
         jointIndex[i] = i;
     }
 
-    for (int i = 0; i < TEST_COUNT; i++) {
+    for (int i = 0; i < TestCount; i++) {
         memcpy(jointWork, sourceJoints, sizeof(jointWork));
 
         uint64_t startClocks = BE1::PlatformTime::Cycles();
@@ -1099,7 +1102,7 @@ static void TestBlendJoints() {
 
     PrintClocksGeneric("BlendJoints 1024", bestClocksGeneric);
 
-    for (int i = 0; i < TEST_COUNT; i++) {
+    for (int i = 0; i < TestCount; i++) {
         memcpy(jointWork, sourceJoints, sizeof(jointWork));
 
         uint64_t startClocks = BE1::PlatformTime::Cycles();
@@ -1128,7 +1131,7 @@ static void TestBlendJointsFast() {
         jointIndex[i] = i;
     }
 
-    for (int i = 0; i < TEST_COUNT; i++) {
+    for (int i = 0; i < TestCount; i++) {
         memcpy(jointWork, sourceJoints, sizeof(jointWork));
 
         uint64_t startClocks = BE1::PlatformTime::Cycles();
@@ -1139,7 +1142,7 @@ static void TestBlendJointsFast() {
 
     PrintClocksGeneric("BlendJointsFast 1024", bestClocksGeneric);
 
-    for (int i = 0; i < TEST_COUNT; i++) {
+    for (int i = 0; i < TestCount; i++) {
         memcpy(jointWork, sourceJoints, sizeof(jointWork));
 
         uint64_t startClocks = BE1::PlatformTime::Cycles();
@@ -1173,7 +1176,7 @@ static void TestConvertJointPosesToJointMats() {
     uint64_t bestClocksGeneric = 0;
     uint64_t bestClocksSIMD = 0;
 
-    for (int i = 0; i < TEST_COUNT; i++) {
+    for (int i = 0; i < TestCount; i++) {
         uint64_t startClocks = BE1::PlatformTime::Cycles();
         BE1::simdGeneric->ConvertJointPosesToJointMats(expectedJointMats, jointPoses, numJoints);
         uint64_t endClocks = BE1::PlatformTime::Cycles();
@@ -1182,7 +1185,7 @@ static void TestConvertJointPosesToJointMats() {
 
     PrintClocksGeneric("ConvertJointPosesToJointMats 1024", bestClocksGeneric);
 
-    for (int i = 0; i < TEST_COUNT; i++) {
+    for (int i = 0; i < TestCount; i++) {
         uint64_t startClocks = BE1::PlatformTime::Cycles();
         BE1::simdProcessor->ConvertJointPosesToJointMats(actualJointMats, jointPoses, numJoints);
         uint64_t endClocks = BE1::PlatformTime::Cycles();
@@ -1232,7 +1235,7 @@ static void TestConvertJointMatsToJointPoses() {
     uint64_t bestClocksGeneric = 0;
     uint64_t bestClocksSIMD = 0;
 
-    for (int i = 0; i < TEST_COUNT; i++) {
+    for (int i = 0; i < TestCount; i++) {
         uint64_t startClocks = BE1::PlatformTime::Cycles();
         BE1::simdGeneric->ConvertJointMatsToJointPoses(expectedJointPoses, jointMats, numJoints);
         uint64_t endClocks = BE1::PlatformTime::Cycles();
@@ -1241,7 +1244,7 @@ static void TestConvertJointMatsToJointPoses() {
 
     PrintClocksGeneric("ConvertJointMatsToJointPoses 1024", bestClocksGeneric);
 
-    for (int i = 0; i < TEST_COUNT; i++) {
+    for (int i = 0; i < TestCount; i++) {
         uint64_t startClocks = BE1::PlatformTime::Cycles();
         BE1::simdProcessor->ConvertJointMatsToJointPoses(actualJointPoses, jointMats, numJoints);
         uint64_t endClocks = BE1::PlatformTime::Cycles();
@@ -1268,7 +1271,7 @@ static void TestTransformJoints() {
     RandomFloatArrayInit((float *)jointMatrix, 12 * COUNT_OF(jointMatrix), -100.0f, 100.0f);
 
     bestClocksGeneric = 0;
-    for (int i = 0; i < TEST_COUNT; i++) {
+    for (int i = 0; i < TestCount; i++) {
         uint64_t startClocks = BE1::PlatformTime::Cycles();
         BE1::simdGeneric->TransformJoints(jointMatrix, parents, 0, COUNT_OF(jointMatrix) - 1);
         uint64_t endClocks = BE1::PlatformTime::Cycles();
@@ -1280,7 +1283,7 @@ static void TestTransformJoints() {
     RandomFloatArrayInit((float *)jointMatrix, 12 * COUNT_OF(jointMatrix), -100.0f, 100.0f);
 
     bestClocksSIMD = 0;
-    for (int i = 0; i < TEST_COUNT; i++) {
+    for (int i = 0; i < TestCount; i++) {
         uint64_t startClocks = BE1::PlatformTime::Cycles();
         BE1::simdProcessor->TransformJoints(jointMatrix, parents, 0, COUNT_OF(jointMatrix) - 1);
         uint64_t endClocks = BE1::PlatformTime::Cycles();
@@ -1311,7 +1314,7 @@ static void TestUntransformJoints() {
     }
     BE1::simdGeneric->TransformJoints(worldJointMatrix, parents, 0, COUNT_OF(worldJointMatrix) - 1);
 
-    for (int i = 0; i < TEST_COUNT; i++) {
+    for (int i = 0; i < TestCount; i++) {
         memcpy(jointMatrix, worldJointMatrix, sizeof(jointMatrix));
 
         uint64_t startClocks = BE1::PlatformTime::Cycles();
@@ -1322,7 +1325,7 @@ static void TestUntransformJoints() {
 
     PrintClocksGeneric("UntransformJoints", bestClocksGeneric);
 
-    for (int i = 0; i < TEST_COUNT; i++) {
+    for (int i = 0; i < TestCount; i++) {
         memcpy(jointMatrix, worldJointMatrix, sizeof(jointMatrix));
 
         uint64_t startClocks = BE1::PlatformTime::Cycles();

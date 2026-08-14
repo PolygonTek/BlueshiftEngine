@@ -16,6 +16,7 @@
 #include "Test.h"
 
 //#define TEST_CUDA       1
+#define CUDA_TEST_COUNT 30
 
 #if TEST_CUDA
 #include "CUDA.h"
