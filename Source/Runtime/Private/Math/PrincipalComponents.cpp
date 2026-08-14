@@ -147,20 +147,17 @@ static bool SetPrincipalComponentsFromCovariance(const MatrixType &covariance, f
     return true;
 }
 
-void PrincipalComponents2::Clear() {
+template <typename VectorType, typename MatrixType>
+void PrincipalComponents<VectorType, MatrixType>::Clear() {
     ClearPrincipalComponents(eigenValues, axes, rank);
 }
 
-bool PrincipalComponents2::SetFromCovariance(const Mat2 &covariance, float relativeEpsilon) {
+template <typename VectorType, typename MatrixType>
+bool PrincipalComponents<VectorType, MatrixType>::SetFromCovariance(const MatrixType &covariance, float relativeEpsilon) {
     return SetPrincipalComponentsFromCovariance(covariance, relativeEpsilon, eigenValues, axes, rank);
 }
 
-void PrincipalComponents3::Clear() {
-    ClearPrincipalComponents(eigenValues, axes, rank);
-}
-
-bool PrincipalComponents3::SetFromCovariance(const Mat3 &covariance, float relativeEpsilon) {
-    return SetPrincipalComponentsFromCovariance(covariance, relativeEpsilon, eigenValues, axes, rank);
-}
+template struct PrincipalComponents<Vec2, Mat2>;
+template struct PrincipalComponents<Vec3, Mat3>;
 
 BE_NAMESPACE_END

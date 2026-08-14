@@ -22,36 +22,30 @@
 
     Principal Components
 
-    PrincipalComponents2 : Principal components of a symmetric positive-semidefinite 2x2 covariance matrix.
-    PrincipalComponents3 : Principal components of a symmetric positive-semidefinite 3x3 covariance matrix.
+    Extracts the principal axes, variances, and effective rank from a symmetric
+    positive-semidefinite covariance matrix.
 
 -------------------------------------------------------------------------------
 */
 
 BE_NAMESPACE_BEGIN
 
-struct BE_API PrincipalComponents2 {
-    PrincipalComponents2() { Clear(); }
+template <typename VectorType, typename MatrixType>
+struct BE_API PrincipalComponents {
+    PrincipalComponents() { Clear(); }
 
+                        // Resets the eigenvalues, axes, and rank to their default values.
     void                Clear();
 
-    bool                SetFromCovariance(const Mat2 &covariance, float relativeEpsilon = 1e-5f);
+                        // Computes the principal components from a covariance matrix.
+    bool                SetFromCovariance(const MatrixType &covariance, float relativeEpsilon = 1e-5f);
 
-    Vec2                eigenValues;
-    Mat2                axes;
+    VectorType          eigenValues;
+    MatrixType          axes;
     int                 rank;
 };
 
-struct BE_API PrincipalComponents3 {
-    PrincipalComponents3() { Clear(); }
-
-    void                Clear();
-
-    bool                SetFromCovariance(const Mat3 &covariance, float relativeEpsilon = 1e-5f);
-
-    Vec3                eigenValues;
-    Mat3                axes;
-    int                 rank;
-};
+using PrincipalComponents2 = PrincipalComponents<Vec2, Mat2>;
+using PrincipalComponents3 = PrincipalComponents<Vec3, Mat3>;
 
 BE_NAMESPACE_END
