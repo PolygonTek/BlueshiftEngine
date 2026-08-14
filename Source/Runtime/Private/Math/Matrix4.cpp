@@ -1694,14 +1694,14 @@ bool Mat4::QRDecomposeColumnPivoted(Mat4 &orthogonalFactor, Mat4 &upperTriangula
 }
 
 bool Mat4::EigenDecomposeSymmetric(Vec4 &eigenValues, Mat4 &eigenVectors, float epsilon) const {
-    if (epsilon <= 0.0f || IEEE_FLT_IS_NAN(epsilon)) {
+    if (epsilon <= 0.0f || !Math::IsFinite(epsilon)) {
         return false;
     }
 
     for (int row = 0; row < 4; row++) {
         for (int column = 0; column < 4; column++) {
             float value = mat[row][column];
-            if (IEEE_FLT_IS_NAN(value)) {
+            if (!Math::IsFinite(value)) {
                 return false;
             }
         }
@@ -1742,14 +1742,14 @@ bool Mat4::EigenDecomposeSymmetric(Vec4 &eigenValues, Mat4 &eigenVectors, float 
             }
         }
 
-        if (IEEE_FLT_IS_NAN(maxOffDiagonal)) {
+        if (!Math::IsFinite(maxOffDiagonal)) {
             return false;
         }
 
         float matrixScale = maxOffDiagonal;
         for (int i = 0; i < 4; i++) {
             float diagonal = Math::Fabs(matrix[i][i]);
-            if (IEEE_FLT_IS_NAN(diagonal)) {
+            if (!Math::IsFinite(diagonal)) {
                 return false;
             }
             if (diagonal > matrixScale) {
@@ -1773,7 +1773,7 @@ bool Mat4::EigenDecomposeSymmetric(Vec4 &eigenValues, Mat4 &eigenVectors, float 
 
         for (int row = 0; row < 4; row++) {
             float diagonal = Math::Fabs(matrix[row][row]);
-            if (IEEE_FLT_IS_NAN(diagonal)) {
+            if (!Math::IsFinite(diagonal)) {
                 return false;
             }
             if (diagonal > matrixScale) {
@@ -1782,7 +1782,7 @@ bool Mat4::EigenDecomposeSymmetric(Vec4 &eigenValues, Mat4 &eigenVectors, float 
 
             for (int column = row + 1; column < 4; column++) {
                 float offDiagonal = Math::Fabs(matrix[row][column]);
-                if (IEEE_FLT_IS_NAN(offDiagonal)) {
+                if (!Math::IsFinite(offDiagonal)) {
                     return false;
                 }
                 if (offDiagonal > maxOffDiagonal) {

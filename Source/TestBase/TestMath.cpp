@@ -1040,17 +1040,17 @@ static void TestMatrixConditionAndPseudoInverse() {
     VERIFY_EIGEN_ANALYSIS(rankOne2.PseudoInverse(pseudoInverse2));
     VerifyMoorePenroseConditions(rankOne2, pseudoInverse2, epsilon);
     VERIFY_EIGEN_ANALYSIS(rankOne2.ConditionNumber(condition2));
-    VERIFY_EIGEN_ANALYSIS(IEEE_FLT_IS_INF(condition2));
+    VERIFY_EIGEN_ANALYSIS(BE1::Math::IsInf(condition2));
 
     BE1::Mat2 zeroPseudoInverse = BE1::Mat2::identity;
     VERIFY_EIGEN_ANALYSIS(BE1::Mat2::zero.PseudoInverse(zeroPseudoInverse));
     VERIFY_EIGEN_ANALYSIS(zeroPseudoInverse.Equals(BE1::Mat2::zero));
     VERIFY_EIGEN_ANALYSIS(BE1::Mat2::zero.ConditionNumber(condition2));
-    VERIFY_EIGEN_ANALYSIS(IEEE_FLT_IS_INF(condition2));
+    VERIFY_EIGEN_ANALYSIS(BE1::Math::IsInf(condition2));
 
     const BE1::Mat2 threshold2(1.0f, 0.0f, 0.0f, 1e-5f);
     VERIFY_EIGEN_ANALYSIS(threshold2.ConditionNumber(condition2, 1e-4f));
-    VERIFY_EIGEN_ANALYSIS(IEEE_FLT_IS_INF(condition2));
+    VERIFY_EIGEN_ANALYSIS(BE1::Math::IsInf(condition2));
     VERIFY_EIGEN_ANALYSIS(threshold2.ConditionNumber(condition2, 1e-6f));
     VERIFY_EIGEN_ANALYSIS(BE1::Math::Fabs(condition2 - 1e5f) <= 20.0f);
 
@@ -1078,7 +1078,7 @@ static void TestMatrixConditionAndPseudoInverse() {
     VERIFY_EIGEN_ANALYSIS(rankOne3.PseudoInverse(pseudoInverse3));
     VerifyMoorePenroseConditions(rankOne3, pseudoInverse3, epsilon);
     VERIFY_EIGEN_ANALYSIS(rankOne3.ConditionNumber(condition3));
-    VERIFY_EIGEN_ANALYSIS(IEEE_FLT_IS_INF(condition3));
+    VERIFY_EIGEN_ANALYSIS(BE1::Math::IsInf(condition3));
 
     const BE1::Mat4 diagonal4(
         BE1::Vec4(8.0f, 0.0f, 0.0f, 0.0f),
@@ -1104,7 +1104,7 @@ static void TestMatrixConditionAndPseudoInverse() {
     VERIFY_EIGEN_ANALYSIS(rankOne4.PseudoInverse(pseudoInverse4));
     VerifyMoorePenroseConditions(rankOne4, pseudoInverse4, 2e-3f);
     VERIFY_EIGEN_ANALYSIS(rankOne4.ConditionNumber(condition4));
-    VERIFY_EIGEN_ANALYSIS(IEEE_FLT_IS_INF(condition4));
+    VERIFY_EIGEN_ANALYSIS(BE1::Math::IsInf(condition4));
 
     float unchangedCondition = -7.0f;
     BE1::Mat2 unchangedPseudoInverse = BE1::Mat2::identity;

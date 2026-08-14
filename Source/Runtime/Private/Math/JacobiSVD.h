@@ -95,7 +95,7 @@ static bool CompleteOrthonormalColumn(float matrix[N][N], int column) {
         }
     }
 
-    if (bestLengthSqr <= FLT_EPSILON || IEEE_FLT_IS_NAN(bestLengthSqr)) {
+    if (bestLengthSqr <= FLT_EPSILON || !Math::IsFinite(bestLengthSqr)) {
         return false;
     }
 
@@ -114,7 +114,7 @@ static bool CompleteOrthonormalColumn(float matrix[N][N], int column) {
 // Mat3 and Mat4 share this implementation, which uses only fixed-size stack storage.
 template <int N>
 static bool Decompose(const float input[N][N], float outputU[N][N], float outputSingularValues[N], float outputV[N][N], float tolerance) {
-    if (tolerance <= 0.0f || IEEE_FLT_IS_NAN(tolerance)) {
+    if (tolerance <= 0.0f || !Math::IsFinite(tolerance)) {
         return false;
     }
 
@@ -123,7 +123,7 @@ static bool Decompose(const float input[N][N], float outputU[N][N], float output
     for (int row = 0; row < N; row++) {
         for (int column = 0; column < N; column++) {
             float value = input[row][column];
-            if (IEEE_FLT_IS_NAN(value)) {
+            if (!Math::IsFinite(value)) {
                 return false;
             }
             float absValue = Math::Fabs(value);
@@ -198,7 +198,7 @@ static bool Decompose(const float input[N][N], float outputU[N][N], float output
     float scaledSingularValues[N];
     for (int column = 0; column < N; column++) {
         float lengthSqr = ColumnDot<N>(working, column, column);
-        if (lengthSqr < 0.0f || IEEE_FLT_IS_NAN(lengthSqr)) {
+        if (lengthSqr < 0.0f || !Math::IsFinite(lengthSqr)) {
             return false;
         }
         scaledSingularValues[column] = Math::Sqrt(lengthSqr);
@@ -279,7 +279,7 @@ static bool Decompose(const float input[N][N], float outputU[N][N], float output
             outputV[row][column] = rightVectors[row][column];
         }
         outputSingularValues[row] = scaledSingularValues[row] * matrixScale;
-        if (IEEE_FLT_IS_NAN(outputSingularValues[row])) {
+        if (!Math::IsFinite(outputSingularValues[row])) {
             return false;
         }
     }

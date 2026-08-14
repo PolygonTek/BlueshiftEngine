@@ -41,7 +41,7 @@ struct Factor {
 // pivoting. Input is normalized to keep the factorization scale independent.
 template <int N>
 static bool FactorizeArray(const float input[N][N], Factor<N> &factor, float tolerance) {
-    if (tolerance <= 0.0f || IEEE_FLT_IS_NAN(tolerance)) {
+    if (tolerance <= 0.0f || !Math::IsFinite(tolerance)) {
         return false;
     }
 
@@ -49,7 +49,7 @@ static bool FactorizeArray(const float input[N][N], Factor<N> &factor, float tol
     for (int row = 0; row < N; row++) {
         for (int column = 0; column < N; column++) {
             float value = input[row][column];
-            if (IEEE_FLT_IS_NAN(value)) {
+            if (!Math::IsFinite(value)) {
                 return false;
             }
 
@@ -84,7 +84,7 @@ static bool FactorizeArray(const float input[N][N], Factor<N> &factor, float tol
             }
         }
 
-        if (pivotAbs <= tolerance || IEEE_FLT_IS_NAN(pivotAbs)) {
+        if (pivotAbs <= tolerance || !Math::IsFinite(pivotAbs)) {
             return false;
         }
 
@@ -98,20 +98,20 @@ static bool FactorizeArray(const float input[N][N], Factor<N> &factor, float tol
         }
 
         float inversePivot = 1.0f / result.matrix[column][column];
-        if (IEEE_FLT_IS_NAN(inversePivot)) {
+        if (!Math::IsFinite(inversePivot)) {
             return false;
         }
 
         for (int row = column + 1; row < N; row++) {
             result.matrix[row][column] *= inversePivot;
             float multiplier = result.matrix[row][column];
-            if (IEEE_FLT_IS_NAN(multiplier)) {
+            if (!Math::IsFinite(multiplier)) {
                 return false;
             }
 
             for (int i = column + 1; i < N; i++) {
                 result.matrix[row][i] -= multiplier * result.matrix[column][i];
-                if (IEEE_FLT_IS_NAN(result.matrix[row][i])) {
+                if (!Math::IsFinite(result.matrix[row][i])) {
                     return false;
                 }
             }
@@ -142,7 +142,7 @@ static bool SolveFactorized(const Factor<N> &factor, const VectorType &rightHand
     float x[N];
     for (int i = 0; i < N; i++) {
         x[i] = rightHandSide[i] / factor.matrixScale;
-        if (IEEE_FLT_IS_NAN(x[i])) {
+        if (!Math::IsFinite(x[i])) {
             return false;
         }
     }
@@ -162,7 +162,7 @@ static bool SolveFactorized(const Factor<N> &factor, const VectorType &rightHand
         for (int j = 0; j < i; j++) {
             x[i] -= factor.matrix[i][j] * x[j];
         }
-        if (IEEE_FLT_IS_NAN(x[i])) {
+        if (!Math::IsFinite(x[i])) {
             return false;
         }
     }
@@ -173,7 +173,7 @@ static bool SolveFactorized(const Factor<N> &factor, const VectorType &rightHand
             x[i] -= factor.matrix[i][j] * x[j];
         }
         x[i] /= factor.matrix[i][i];
-        if (IEEE_FLT_IS_NAN(x[i])) {
+        if (!Math::IsFinite(x[i])) {
             return false;
         }
     }

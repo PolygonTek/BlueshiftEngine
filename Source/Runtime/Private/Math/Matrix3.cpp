@@ -255,14 +255,14 @@ bool Mat3::QRDecomposeColumnPivoted(Mat3 &orthogonalFactor, Mat3 &upperTriangula
 }
 
 bool Mat3::EigenDecomposeSymmetric(Vec3 &eigenValues, Mat3 &eigenVectors, float epsilon) const {
-    if (epsilon <= 0.0f || IEEE_FLT_IS_NAN(epsilon)) {
+    if (epsilon <= 0.0f || !Math::IsFinite(epsilon)) {
         return false;
     }
 
     for (int column = 0; column < 3; column++) {
         for (int row = 0; row < 3; row++) {
             float value = mat[column][row];
-            if (IEEE_FLT_IS_NAN(value)) {
+            if (!Math::IsFinite(value)) {
                 return false;
             }
         }
@@ -306,14 +306,14 @@ bool Mat3::EigenDecomposeSymmetric(Vec3 &eigenValues, Mat3 &eigenVectors, float 
             maxOffDiagonal = offDiagonal;
         }
 
-        if (IEEE_FLT_IS_NAN(maxOffDiagonal)) {
+        if (!Math::IsFinite(maxOffDiagonal)) {
             return false;
         }
 
         float matrixScale = maxOffDiagonal;
         for (int i = 0; i < 3; i++) {
             float diagonal = Math::Fabs(matrix[i][i]);
-            if (IEEE_FLT_IS_NAN(diagonal)) {
+            if (!Math::IsFinite(diagonal)) {
                 return false;
             }
             if (diagonal > matrixScale) {
@@ -345,7 +345,7 @@ bool Mat3::EigenDecomposeSymmetric(Vec3 &eigenValues, Mat3 &eigenVectors, float 
         float matrixScale = maxOffDiagonal;
         for (int i = 0; i < 3; i++) {
             float diagonal = Math::Fabs(matrix[i][i]);
-            if (IEEE_FLT_IS_NAN(diagonal)) {
+            if (!Math::IsFinite(diagonal)) {
                 return false;
             }
             if (diagonal > matrixScale) {
@@ -353,7 +353,7 @@ bool Mat3::EigenDecomposeSymmetric(Vec3 &eigenValues, Mat3 &eigenVectors, float 
             }
         }
 
-        if (IEEE_FLT_IS_NAN(maxOffDiagonal) || maxOffDiagonal > epsilon * matrixScale) {
+        if (!Math::IsFinite(maxOffDiagonal) || maxOffDiagonal > epsilon * matrixScale) {
             return false;
         }
     }
@@ -485,7 +485,7 @@ static bool PolarDecomposeWithSVD(const Mat3 &matrix, Mat3 &orthogonalFactor, Ma
 }
 
 bool Mat3::PolarDecompose(Mat3 &orthogonalFactor, Mat3 &symmetricFactor, float tolerance) const {
-    if (tolerance <= 0.0f || IEEE_FLT_IS_NAN(tolerance) || !IsFinite()) {
+    if (tolerance <= 0.0f || !Math::IsFinite(tolerance) || !IsFinite()) {
         return false;
     }
 
@@ -523,12 +523,12 @@ bool Mat3::PolarDecompose(Mat3 &orthogonalFactor, Mat3 &symmetricFactor, float t
 
         // Higham's 1/inf-norm scaling accelerates the initial Newton iterations.
         float normRatio = (inverseOneNorm / currentOneNorm) * (inverseInfinityNorm / currentInfinityNorm);
-        if (normRatio <= 0.0f || IEEE_FLT_IS_NAN(normRatio)) {
+        if (normRatio <= 0.0f || !Math::IsFinite(normRatio)) {
             break;
         }
 
         float gamma = Math::Sqrt(Math::Sqrt(normRatio));
-        if (gamma <= 0.0f || IEEE_FLT_IS_NAN(gamma)) {
+        if (gamma <= 0.0f || !Math::IsFinite(gamma)) {
             break;
         }
 

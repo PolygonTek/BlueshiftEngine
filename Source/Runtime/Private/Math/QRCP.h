@@ -46,7 +46,7 @@ static BE_FORCE_INLINE float TrailingColumnNorm(const float matrix[N][N], int fi
 // outputPermutation[j] identifies the original input column at pivoted column j.
 template <int N>
 static bool Decompose(const float input[N][N], float outputQ[N][N], float outputR[N][N], int outputPermutation[N], int &outputRank, float tolerance) {
-    if (tolerance <= 0.0f || IEEE_FLT_IS_NAN(tolerance)) {
+    if (tolerance <= 0.0f || !Math::IsFinite(tolerance)) {
         return false;
     }
 
@@ -54,7 +54,7 @@ static bool Decompose(const float input[N][N], float outputQ[N][N], float output
     for (int row = 0; row < N; row++) {
         for (int column = 0; column < N; column++) {
             float value = input[row][column];
-            if (IEEE_FLT_IS_NAN(value)) {
+            if (!Math::IsFinite(value)) {
                 return false;
             }
 
@@ -91,7 +91,7 @@ static bool Decompose(const float input[N][N], float outputQ[N][N], float output
                 }
             }
 
-            if (IEEE_FLT_IS_NAN(maxNorm)) {
+            if (!Math::IsFinite(maxNorm)) {
                 return false;
             }
 
@@ -131,7 +131,7 @@ static bool Decompose(const float input[N][N], float outputQ[N][N], float output
                 }
             }
 
-            if (vScale == 0.0f || IEEE_FLT_IS_NAN(vScale)) {
+            if (vScale == 0.0f || !Math::IsFinite(vScale)) {
                 return false;
             }
 
@@ -142,7 +142,7 @@ static bool Decompose(const float input[N][N], float outputQ[N][N], float output
             }
 
             float beta = 2.0f / vNormSqr;
-            if (IEEE_FLT_IS_NAN(beta)) {
+            if (!Math::IsFinite(beta)) {
                 return false;
             }
 
@@ -210,7 +210,7 @@ static bool Decompose(const float input[N][N], float outputQ[N][N], float output
         for (int column = 0; column < N; column++) {
             float qValue = q[row][column];
             float rValue = r[row][column] * matrixScale;
-            if (IEEE_FLT_IS_NAN(qValue) || IEEE_FLT_IS_NAN(rValue)) {
+            if (!Math::IsFinite(qValue) || !Math::IsFinite(rValue)) {
                 return false;
             }
             outputQ[row][column] = qValue;

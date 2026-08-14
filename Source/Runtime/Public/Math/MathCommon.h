@@ -56,7 +56,7 @@ floating point bit layouts according to the IEEE 754-1985 and 754-2008 standard
 #define IEEE_FLT16_SIGNBITNOTSET(f)  (((~(*(const uint16_t *)&(f))) & 0x8000) >> 15)
 #define IEEE_FLT16_NOTZERO(f)        ((*(const uint16_t *)&(f)) & 0x7fff)
 
-// half-float NaN, INF, IND, DENORMAL detection (INF, IND is included in NaN)
+// half-float non-finite, INF, IND and subnormal detection
 #define IEEE_FLT16_IS_NAN(x)        (((*(const uint16_t *)&(x)) & 0x7c00) == 0x7c00)
 #define IEEE_FLT16_IS_INF(x)        (((*(const uint16_t *)&(x)) & 0x7fff) == 0x7c00)
 #define IEEE_FLT16_IS_IND(x)        ((*(const uint16_t *)&(x)) == 0xfe00)
@@ -74,8 +74,8 @@ floating point bit layouts according to the IEEE 754-1985 and 754-2008 standard
 #define IEEE_FLT_SIGNBITNOTSET(f)   ((~(*(const uint32_t *)&(f))) >> 31)
 #define IEEE_FLT_NOTZERO(f)         ((*(const uint32_t *)&(f)) & ~(1 << 31))
 
-// float NaN, INF, IND, DENORMAL detection (INF, IND is included in NaN)
-#define IEEE_FLT_IS_NAN(x)          (((*(const uint32_t *)&x) & 0x7f800000) == 0x7f800000)
+// float non-finite, INF, IND and subnormal detection
+#define IEEE_FLT_IS_NON_FINITE(x)   (((*(const uint32_t *)&x) & 0x7f800000) == 0x7f800000)
 #define IEEE_FLT_IS_INF(x)          (((*(const uint32_t *)&x) & 0x7fffffff) == 0x7f800000)
 #define IEEE_FLT_IS_IND(x)          ((*(const uint32_t *)&x) == 0xffc00000)
 #define IEEE_FLT_IS_DENORMAL(x)     (((*(const uint32_t *)&x) & 0x7f800000) == 0x00000000 && \
@@ -92,8 +92,8 @@ floating point bit layouts according to the IEEE 754-1985 and 754-2008 standard
 #define IEEE_DBL_SIGNBITNOTSET(d)   ((~(*(const uint64_t *)&(d))) >> 63)
 #define IEEE_DBL_NOTZERO(d)         ((*(const uint64_t *)&(d)) & ~(UINT64_C(1) << 63))
 
-// double NaN, INF, IND, DENORMAL detection (INF, IND is included in NaN)
-#define IEEE_DBL_IS_NAN(x)          (((*(const uint64_t *)&(x)) & UINT64_C(0x7ff0000000000000)) == UINT64_C(0x7ff0000000000000))
+// double non-finite, INF, IND and subnormal detection
+#define IEEE_DBL_IS_NON_FINITE(x)   (((*(const uint64_t *)&(x)) & UINT64_C(0x7ff0000000000000)) == UINT64_C(0x7ff0000000000000))
 #define IEEE_DBL_IS_INF(x)          (((*(const uint64_t *)&(x)) & UINT64_C(0x7fffffffffffffff)) == UINT64_C(0x7ff0000000000000))
 #define IEEE_DBL_IS_IND(x)          ((*(const uint64_t *)&(x)) == UINT64_C(0xfff8000000000000))
 #define IEEE_DBL_IS_DENORMAL(x)     (((*(const uint64_t *)&(x)) & UINT64_C(0x7ff0000000000000)) == UINT64_C(0) && \
@@ -206,6 +206,21 @@ public:
     static constexpr float      MulMicroToSecond = 0.000001f;           ///< microseconds to seconds multiplier
     static constexpr float      MulSecondToNano = 1000000000.0f;        ///< seconds to nanoseconds multiplier
     static constexpr float      MulNanoToSecond = 0.000000001f;         ///< nanoseconds to seconds multiplier
+
+                                /// Returns true if the single-precision value is positive or negative infinity.
+    static bool                 IsInf(float f);
+                                /// Returns true if the double-precision value is positive or negative infinity.
+    static bool                 IsInf(double f);
+
+                                /// Returns true if the single-precision value is neither infinity nor NaN.
+    static bool                 IsFinite(float f);
+                                /// Returns true if the double-precision value is neither infinity nor NaN.
+    static bool                 IsFinite(double f);
+
+                                /// Returns true if the single-precision value is a non-zero subnormal value.
+    static bool                 IsSubnormal(float f);
+                                /// Returns true if the double-precision value is a non-zero subnormal value.
+    static bool                 IsSubnormal(double f);
 
                                 /// Single-precision square root. Negative and NaN inputs map to zero.
     static float                Sqrt(float x);
@@ -399,8 +414,31 @@ public:
                                 /// t is a Q0.7 fractional parameter in range [0, 127] (x = t / 128).
                                 /// The result is not clamped to the byte range.
     static int                  FixedCerp(int p0, int p1, int p2, int p3, int t);
-
 };
+
+BE_INLINE bool Math::IsInf(float f) {
+    return IEEE_FLT_IS_INF(f);
+}
+
+BE_INLINE bool Math::IsInf(double f) {
+    return IEEE_DBL_IS_INF(f);
+}
+
+BE_INLINE bool Math::IsFinite(float f) {
+    return !IEEE_FLT_IS_NON_FINITE(f);
+}
+
+BE_INLINE bool Math::IsFinite(double f) {
+    return !IEEE_DBL_IS_NON_FINITE(f);
+}
+
+BE_INLINE bool Math::IsSubnormal(float f) {
+    return IEEE_FLT_IS_DENORMAL(f);
+}
+
+BE_INLINE bool Math::IsSubnormal(double f) {
+    return IEEE_DBL_IS_DENORMAL(f);
+}
 
 BE_INLINE float Math::Sqrt(float x) {
     return (x >= 0.0f) ? sqrtf(x) : 0.0f;

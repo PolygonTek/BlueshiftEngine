@@ -195,14 +195,14 @@ bool Mat2::QRDecomposeColumnPivoted(Mat2 &orthogonalFactor, Mat2 &upperTriangula
 }
 
 bool Mat2::EigenDecomposeSymmetric(Vec2 &eigenValues, Mat2 &eigenVectors, float epsilon) const {
-    if (epsilon <= 0.0f || IEEE_FLT_IS_NAN(epsilon)) {
+    if (epsilon <= 0.0f || !Math::IsFinite(epsilon)) {
         return false;
     }
 
     for (int row = 0; row < 2; row++) {
         for (int column = 0; column < 2; column++) {
             float value = mat[row][column];
-            if (IEEE_FLT_IS_NAN(value)) {
+            if (!Math::IsFinite(value)) {
                 return false;
             }
         }
@@ -230,7 +230,7 @@ bool Mat2::EigenDecomposeSymmetric(Vec2 &eigenValues, Mat2 &eigenVectors, float 
     }
 
     Vec2 values(halfTrace + radius, halfTrace - radius);
-    if (IEEE_FLT_IS_NAN(radius) || IEEE_FLT_IS_NAN(values.x) || IEEE_FLT_IS_NAN(values.y)) {
+    if (!Math::IsFinite(radius) || !Math::IsFinite(values.x) || !Math::IsFinite(values.y)) {
         return false;
     }
 
@@ -244,13 +244,13 @@ bool Mat2::EigenDecomposeSymmetric(Vec2 &eigenValues, Mat2 &eigenVectors, float 
         float absX = Math::Fabs(majorVector.x);
         float absY = Math::Fabs(majorVector.y);
         float vectorScale = absX > absY ? absX : absY;
-        if (vectorScale == 0.0f || IEEE_FLT_IS_NAN(vectorScale)) {
+        if (vectorScale == 0.0f || !Math::IsFinite(vectorScale)) {
             return false;
         }
 
         majorVector *= 1.0f / vectorScale;
         float lengthSqr = majorVector.LengthSqr();
-        if (lengthSqr <= 0.0f || IEEE_FLT_IS_NAN(lengthSqr)) {
+        if (lengthSqr <= 0.0f || !Math::IsFinite(lengthSqr)) {
             return false;
         }
         majorVector *= Math::InvSqrt(lengthSqr);

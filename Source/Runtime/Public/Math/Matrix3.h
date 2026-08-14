@@ -781,7 +781,7 @@ BE_INLINE bool Mat3::IsSymmetric(const float epsilon) const {
 }
 
 BE_INLINE bool Mat3::IsOrthogonal(const float epsilon) const {
-    if (epsilon < 0.0f || IEEE_FLT_IS_NAN(epsilon) || !IsFinite()) {
+    if (epsilon < 0.0f || !Math::IsFinite(epsilon) || !IsFinite()) {
         return false;
     }
 

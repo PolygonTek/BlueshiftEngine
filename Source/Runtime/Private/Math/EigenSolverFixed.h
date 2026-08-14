@@ -28,7 +28,7 @@ static bool ComputeEigenPair(const MatrixType &matrix, const VectorType &eigenVe
     float eigenValue = eigenVector.Dot(transformed);
     float residual = (transformed - eigenVector * eigenValue).SafeLength();
 
-    if (IEEE_FLT_IS_NAN(eigenValue) || IEEE_FLT_IS_NAN(residual)) {
+    if (!Math::IsFinite(eigenValue) || !Math::IsFinite(residual)) {
         return false;
     }
 
@@ -41,7 +41,7 @@ static bool ComputeEigenPair(const MatrixType &matrix, const VectorType &eigenVe
 
 template <typename MatrixType, typename VectorType>
 static bool ValidateIterationInput(const MatrixType &matrix, const VectorType &initialVector, int maxIterations, float tolerance) {
-    return maxIterations > 0 && tolerance > 0.0f && !IEEE_FLT_IS_NAN(tolerance) && matrix.IsFinite() && initialVector.IsFinite();
+    return maxIterations > 0 && tolerance > 0.0f && Math::IsFinite(tolerance) && matrix.IsFinite() && initialVector.IsFinite();
 }
 
 // Factors A - shift * I with partial pivoting. Failure means the shifted
@@ -105,7 +105,7 @@ static bool PowerIteration(const MatrixType &matrix, const VectorType &initialVe
 template <int Dimension, typename MatrixType, typename VectorType, typename EigenPairType>
 static bool InversePowerIteration(const MatrixType &matrix, float shift, const VectorType &initialVector, EigenPairType &result, int maxIterations, float tolerance) {
     if (!ValidateIterationInput(matrix, initialVector, maxIterations, tolerance) ||
-        IEEE_FLT_IS_NAN(shift)) {
+        !Math::IsFinite(shift)) {
         return false;
     }
 

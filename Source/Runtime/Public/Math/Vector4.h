@@ -201,7 +201,7 @@ public:
     bool                operator!=(const Vec4 &rhs) const { return !Equals(rhs); }
 
                         /// Tests if every component is finite.
-    bool                IsFinite() const { return !IEEE_FLT_IS_NAN(x) && !IEEE_FLT_IS_NAN(y) && !IEEE_FLT_IS_NAN(z) && !IEEE_FLT_IS_NAN(w); }
+    bool                IsFinite() const { return Math::IsFinite(x) && Math::IsFinite(y) && Math::IsFinite(z) && Math::IsFinite(w); }
                         /// Tests if this is the zero vector, up to the given epsilon.
     bool                IsZero(const float epsilon = 0.0f) const;
 
@@ -425,7 +425,7 @@ BE_INLINE float Vec4::Length() const {
 
 BE_INLINE float Vec4::SafeLength() const {
     float scale = MaxAbsComponent();
-    if (scale == 0.0f || IEEE_FLT_IS_NAN(scale)) {
+    if (scale == 0.0f || !Math::IsFinite(scale)) {
         return scale;
     }
 
@@ -454,7 +454,7 @@ BE_INLINE float Vec4::Normalize() {
 
 BE_INLINE bool Vec4::SafeNormalize() {
     float scale = MaxAbsComponent();
-    if (scale == 0.0f || IEEE_FLT_IS_NAN(scale)) {
+    if (scale == 0.0f || !Math::IsFinite(scale)) {
         return false;
     }
 
@@ -463,7 +463,7 @@ BE_INLINE bool Vec4::SafeNormalize() {
     z /= scale;
     w /= scale;
     float lengthSqr = LengthSqr();
-    if (lengthSqr <= 0.0f || IEEE_FLT_IS_NAN(lengthSqr)) {
+    if (lengthSqr <= 0.0f || !Math::IsFinite(lengthSqr)) {
         return false;
     }
 

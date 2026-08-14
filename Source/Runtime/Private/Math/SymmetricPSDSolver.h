@@ -42,7 +42,7 @@ static bool SolveCholeskyFactor(const MatrixType &lowerTriangular, const VectorT
         }
 
         value /= GetMatrixElement(lowerTriangular, row, row);
-        if (IEEE_FLT_IS_NAN(value)) {
+        if (!Math::IsFinite(value)) {
             return false;
         }
         values[row] = value;
@@ -56,7 +56,7 @@ static bool SolveCholeskyFactor(const MatrixType &lowerTriangular, const VectorT
         }
 
         value /= GetMatrixElement(lowerTriangular, row, row);
-        if (IEEE_FLT_IS_NAN(value)) {
+        if (!Math::IsFinite(value)) {
             return false;
         }
         values[row] = value;
@@ -76,7 +76,7 @@ static bool SolveCholeskyFactor(const MatrixType &lowerTriangular, const VectorT
 
 template <int N, typename MatrixType, typename VectorType>
 static bool Solve(const MatrixType &matrix, const VectorType &rightHandSide, VectorType &solution, float tolerance) {
-    if (tolerance <= 0.0f || IEEE_FLT_IS_NAN(tolerance) || !rightHandSide.IsFinite()) {
+    if (tolerance <= 0.0f || !Math::IsFinite(tolerance) || !rightHandSide.IsFinite()) {
         return false;
     }
 

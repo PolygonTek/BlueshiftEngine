@@ -22,7 +22,7 @@ namespace Cholesky {
 // definite matrix. The implementation uses fixed-size row-major stack storage.
 template <int N>
 static bool Decompose(const float input[N][N], float outputLower[N][N], float tolerance) {
-    if (tolerance <= 0.0f || IEEE_FLT_IS_NAN(tolerance)) {
+    if (tolerance <= 0.0f || !Math::IsFinite(tolerance)) {
         return false;
     }
 
@@ -30,7 +30,7 @@ static bool Decompose(const float input[N][N], float outputLower[N][N], float to
     for (int row = 0; row < N; row++) {
         for (int column = 0; column < N; column++) {
             float value = input[row][column];
-            if (IEEE_FLT_IS_NAN(value)) {
+            if (!Math::IsFinite(value)) {
                 return false;
             }
 
@@ -48,7 +48,7 @@ static bool Decompose(const float input[N][N], float outputLower[N][N], float to
     for (int row = 1; row < N; row++) {
         for (int column = 0; column < row; column++) {
             float difference = input[row][column] - input[column][row];
-            if (IEEE_FLT_IS_NAN(difference) || Math::Fabs(difference) > tolerance) {
+            if (!Math::IsFinite(difference) || Math::Fabs(difference) > tolerance) {
                 return false;
             }
         }
@@ -71,7 +71,7 @@ static bool Decompose(const float input[N][N], float outputLower[N][N], float to
                 sum -= lower[row][k] * lower[column][k];
             }
 
-            if (IEEE_FLT_IS_NAN(sum)) {
+            if (!Math::IsFinite(sum)) {
                 return false;
             }
 
@@ -84,7 +84,7 @@ static bool Decompose(const float input[N][N], float outputLower[N][N], float to
                 lower[row][column] = Math::Sqrt(sum);
             } else {
                 lower[row][column] = sum / lower[column][column];
-                if (IEEE_FLT_IS_NAN(lower[row][column])) {
+                if (!Math::IsFinite(lower[row][column])) {
                     return false;
                 }
             }
@@ -92,7 +92,7 @@ static bool Decompose(const float input[N][N], float outputLower[N][N], float to
     }
 
     float lowerScale = Math::Sqrt(matrixScale);
-    if (IEEE_FLT_IS_NAN(lowerScale)) {
+    if (!Math::IsFinite(lowerScale)) {
         return false;
     }
 
@@ -100,7 +100,7 @@ static bool Decompose(const float input[N][N], float outputLower[N][N], float to
     for (int row = 0; row < N; row++) {
         for (int column = 0; column < N; column++) {
             float value = lower[row][column] * lowerScale;
-            if (IEEE_FLT_IS_NAN(value)) {
+            if (!Math::IsFinite(value)) {
                 return false;
             }
             outputLower[row][column] = value;

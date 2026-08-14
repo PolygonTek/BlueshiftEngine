@@ -105,7 +105,7 @@ static void ClearPrincipalComponents(VectorType &eigenValues, MatrixType &axes, 
 template <typename VectorType, typename MatrixType>
 static bool SetPrincipalComponentsFromCovariance(const MatrixType &covariance, float relativeEpsilon,
     VectorType &eigenValues, MatrixType &axes, int &rank) {
-    if (relativeEpsilon <= 0.0f || IEEE_FLT_IS_NAN(relativeEpsilon)) {
+    if (relativeEpsilon <= 0.0f || !Math::IsFinite(relativeEpsilon)) {
         return false;
     }
 
