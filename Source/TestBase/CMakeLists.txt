@@ -12,7 +12,6 @@ set(ALL_FILES
     TestThread.cpp
     TestTask.cpp
     TestSIMD.cpp
-    TestCUDA.cpp
     TestLua.cpp)
 
 auto_source_group(${ALL_FILES})

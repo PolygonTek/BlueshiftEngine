@@ -23,6 +23,5 @@ public:
     static void TestThread();
     static void TestTask();
     static void TestSIMD();
-    static void TestCUDA();
     static void TestLua();
 };

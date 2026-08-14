@@ -54,17 +54,6 @@ int main(int argc, char *argv[]) {
 
     //Test::TestTask();
 
-#if TEST_CUDA
-    bool cudaSupported = MyCuda::Init();
-    
-    if (cudaSupported) {
-        Test::TestCUDA();
-    }
-
-    if (cudaSupported) {
-        MyCuda::Shutdown();
-    }
-#endif
 
     //Test::TestLua();
 
