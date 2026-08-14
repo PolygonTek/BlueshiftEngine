@@ -198,6 +198,18 @@ public:
                         /// Transposes this matrix, in-place.
     Mat2 &              TransposeSelf();
 
+                        /// Returns the symmetric part, 0.5 * (A + A^T), of this matrix.
+    Mat2                Symmetrize() const &;
+    Mat2                Symmetrize() && { SymmetrizeSelf(); return std::move(*this); }
+                        /// Replaces this matrix with its symmetric part, 0.5 * (A + A^T).
+    Mat2 &              SymmetrizeSelf();
+
+                        /// Returns the skew-symmetric part, 0.5 * (A - A^T), of this matrix.
+    Mat2                SkewSymmetrize() const &;
+    Mat2                SkewSymmetrize() && { SkewSymmetrizeSelf(); return std::move(*this); }
+                        /// Replaces this matrix with its skew-symmetric part, 0.5 * (A - A^T).
+    Mat2 &              SkewSymmetrizeSelf();
+
                         /// Inverts this matrix.
     Mat2                Inverse() const &;
     Mat2 &&             Inverse() && { InverseSelf(); return std::move(*this); }
@@ -423,6 +435,34 @@ BE_INLINE Mat2 &Mat2::TransposeSelf() {
     float tmp = mat[0][1];
     mat[0][1] = mat[1][0];
     mat[1][0] = tmp;
+    return *this;
+}
+
+BE_INLINE Mat2 Mat2::Symmetrize() const & {
+    Mat2 symmetric = *this;
+    symmetric.SymmetrizeSelf();
+    return symmetric;
+}
+
+BE_INLINE Mat2 &Mat2::SymmetrizeSelf() {
+    float xy = 0.5f * (mat[0][1] + mat[1][0]);
+    mat[0][1] = mat[1][0] = xy;
+    return *this;
+}
+
+BE_INLINE Mat2 Mat2::SkewSymmetrize() const & {
+    Mat2 skewSymmetric = *this;
+    skewSymmetric.SkewSymmetrizeSelf();
+    return skewSymmetric;
+}
+
+BE_INLINE Mat2 &Mat2::SkewSymmetrizeSelf() {
+    float xy = 0.5f * (mat[0][1] - mat[1][0]);
+
+    mat[0][0] = mat[1][1] = 0.0f;
+    mat[0][1] = xy;
+    mat[1][0] = -xy;
+
     return *this;
 }
 

@@ -397,6 +397,129 @@ bool Mat3::SingularValueDecompose(Mat3 &leftVectors, Vec3 &singularValues, Mat3 
     return true;
 }
 
+static void MatrixNorms(const Mat3 &matrix, float &oneNorm, float &infinityNorm) {
+    float columnSums[3] = {};
+    float rowSums[3] = {};
+
+    for (int column = 0; column < 3; column++) {
+        for (int row = 0; row < 3; row++) {
+            float absValue = Math::Fabs(matrix[column][row]);
+            columnSums[column] += absValue;
+            rowSums[row] += absValue;
+        }
+    }
+
+    oneNorm = Max3(columnSums[0], columnSums[1], columnSums[2]);
+    infinityNorm = Max3(rowSums[0], rowSums[1], rowSums[2]);
+}
+
+static float MaxAbsDifference(const Mat3 &a, const Mat3 &b) {
+    float maxDifference = 0.0f;
+    for (int column = 0; column < 3; column++) {
+        for (int row = 0; row < 3; row++) {
+            maxDifference = Max(maxDifference, Math::Fabs(a[column][row] - b[column][row]));
+        }
+    }
+    return maxDifference;
+}
+
+static bool PolarDecomposeWithSVD(const Mat3 &matrix, Mat3 &orthogonalFactor, Mat3 &symmetricFactor, float tolerance) {
+    Mat3 leftVectors;
+    Vec3 singularValues;
+    Mat3 rightVectors;
+    if (!matrix.SingularValueDecompose(leftVectors, singularValues, rightVectors, tolerance)) {
+        return false;
+    }
+
+    Mat3 orthogonal = leftVectors * rightVectors.Transpose();
+    Mat3 singularValueMatrix(
+        Vec3(singularValues.x, 0.0f, 0.0f),
+        Vec3(0.0f, singularValues.y, 0.0f),
+        Vec3(0.0f, 0.0f, singularValues.z));
+    Mat3 symmetric = rightVectors * singularValueMatrix;
+    symmetric *= rightVectors.Transpose();
+    symmetric.SymmetrizeSelf();
+
+    orthogonalFactor = orthogonal;
+    symmetricFactor = symmetric;
+    return true;
+}
+
+bool Mat3::PolarDecompose(Mat3 &orthogonalFactor, Mat3 &symmetricFactor, float tolerance) const {
+    if (tolerance <= 0.0f || IEEE_FLT_IS_NAN(tolerance) || !IsFinite()) {
+        return false;
+    }
+
+    float matrixScale = MaxAbsComponent();
+    if (matrixScale == 0.0f) {
+        orthogonalFactor = Mat3::identity;
+        symmetricFactor = Mat3::zero;
+        return true;
+    }
+
+    Mat3 current = *this;
+    // Global scaling avoids overflow and underflow without changing the polar factors.
+    for (int column = 0; column < 3; column++) {
+        for (int row = 0; row < 3; row++) {
+            current[column][row] /= matrixScale;
+        }
+    }
+
+    const int maxIterations = 16;
+    bool converged = false;
+
+    for (int iteration = 0; iteration < maxIterations; iteration++) {
+        Mat3 inverseTranspose = current;
+        if (!inverseTranspose.InverseSelf()) {
+            break;
+        }
+        inverseTranspose.TransposeSelf();
+
+        float currentOneNorm;
+        float currentInfinityNorm;
+        float inverseOneNorm;
+        float inverseInfinityNorm;
+        MatrixNorms(current, currentOneNorm, currentInfinityNorm);
+        MatrixNorms(inverseTranspose, inverseOneNorm, inverseInfinityNorm);
+
+        // Higham's 1/inf-norm scaling accelerates the initial Newton iterations.
+        float normRatio = (inverseOneNorm / currentOneNorm) * (inverseInfinityNorm / currentInfinityNorm);
+        if (normRatio <= 0.0f || IEEE_FLT_IS_NAN(normRatio)) {
+            break;
+        }
+
+        float gamma = Math::Sqrt(Math::Sqrt(normRatio));
+        if (gamma <= 0.0f || IEEE_FLT_IS_NAN(gamma)) {
+            break;
+        }
+
+        Mat3 next = current * gamma;
+        next += inverseTranspose * (1.0f / gamma);
+        next *= 0.5f;
+        if (!next.IsFinite()) {
+            break;
+        }
+
+        float difference = MaxAbsDifference(next, current);
+        current = next;
+
+        if (difference <= tolerance * current.MaxAbsComponent() && current.IsOrthogonal(tolerance)) {
+            converged = true;
+            break;
+        }
+    }
+
+    if (!converged) {
+        return PolarDecomposeWithSVD(*this, orthogonalFactor, symmetricFactor, tolerance);
+    }
+
+    Mat3 symmetric = current.TransposedMul(*this);
+    symmetric.SymmetrizeSelf();
+
+    orthogonalFactor = current;
+    symmetricFactor = symmetric;
+    return true;
+}
 
 //------------------------------------------------
 //  

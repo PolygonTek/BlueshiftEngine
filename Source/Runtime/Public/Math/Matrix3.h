@@ -167,6 +167,8 @@ public:
     bool                IsLowerTriangular(const float epsilon = MATRIX_EPSILON) const;
                         /// Tests if this is the symmetric matrix, up to the given epsilon.
     bool                IsSymmetric(const float epsilon = MATRIX_EPSILON) const;
+                        /// Tests if this matrix is orthogonal, including reflection matrices.
+    bool                IsOrthogonal(const float epsilon = MATRIX_EPSILON) const;
                         /// Tests if this is the diagonal matrix, up to the given epsilon.
     bool                IsDiagonal(const float epsilon = MATRIX_EPSILON) const;
                         /// Tests if this is the singular matrix.
@@ -209,6 +211,18 @@ public:
                         /// Transposes this matrix, in-place.
     Mat3 &              TransposeSelf();
 
+                        /// Returns the symmetric part, 0.5 * (A + A^T), of this matrix.
+    Mat3                Symmetrize() const &;
+    Mat3                Symmetrize() && { SymmetrizeSelf(); return std::move(*this); }
+                        /// Replaces this matrix with its symmetric part, 0.5 * (A + A^T).
+    Mat3 &              SymmetrizeSelf();
+
+                        /// Returns the skew-symmetric part, 0.5 * (A - A^T), of this matrix.
+    Mat3                SkewSymmetrize() const &;
+    Mat3                SkewSymmetrize() && { SkewSymmetrizeSelf(); return std::move(*this); }
+                        /// Replaces this matrix with its skew-symmetric part, 0.5 * (A - A^T).
+    Mat3 &              SkewSymmetrizeSelf();
+
                         /// Inverts this matrix.
     Mat3                Inverse() const &;
     Mat3 &&             Inverse() && { InverseSelf(); return std::move(*this); }
@@ -230,6 +244,14 @@ public:
                         /// corresponding left singular vectors complete an orthonormal basis.
                         /// On failure, the output parameters are left unchanged.
     bool                SingularValueDecompose(Mat3 &leftVectors, Vec3 &singularValues, Mat3 &rightVectors, float tolerance = MATRIX_EPSILON) const;
+
+                        /// Computes the right polar decomposition A = Q * S, where Q is
+                        /// orthogonal and S is symmetric positive semi-definite.
+                        /// Q may contain a reflection when this matrix has negative determinant.
+                        /// Uses scaled Higham-Newton iteration with an SVD fallback for singular
+                        /// or numerically ill-conditioned matrices.
+                        /// On failure, the output parameters are left unchanged.
+    bool                PolarDecompose(Mat3 &orthogonalFactor, Mat3 &symmetricFactor, float tolerance = MATRIX_EPSILON) const;
 
                         /// Orthonormalizes the basis formed by the column vectors of this matrix.
     Mat3                OrthoNormalize() const &;
@@ -701,6 +723,26 @@ BE_INLINE bool Mat3::IsSymmetric(const float epsilon) const {
     return true;
 }
 
+BE_INLINE bool Mat3::IsOrthogonal(const float epsilon) const {
+    if (epsilon < 0.0f || IEEE_FLT_IS_NAN(epsilon) || !IsFinite()) {
+        return false;
+    }
+
+    if (Math::Fabs(mat[0].Dot(mat[0]) - 1.0f) > epsilon ||
+        Math::Fabs(mat[1].Dot(mat[1]) - 1.0f) > epsilon ||
+        Math::Fabs(mat[2].Dot(mat[2]) - 1.0f) > epsilon) {
+        return false;
+    }
+
+    if (Math::Fabs(mat[0].Dot(mat[1])) > epsilon ||
+        Math::Fabs(mat[0].Dot(mat[2])) > epsilon ||
+        Math::Fabs(mat[1].Dot(mat[2])) > epsilon) {
+        return false;
+    }
+
+    return true;
+}
+
 BE_INLINE bool Mat3::IsDiagonal(const float epsilon) const {
     if (Math::Fabs(mat[0][1]) > epsilon ||
         Math::Fabs(mat[0][2]) > epsilon ||
@@ -774,6 +816,46 @@ BE_INLINE Mat3 &Mat3::TransposeSelf() {
     float tmp2 = mat[1][2];
     mat[1][2] = mat[2][1];
     mat[2][1] = tmp2;
+
+    return *this;
+}
+
+BE_INLINE Mat3 Mat3::Symmetrize() const & {
+    Mat3 symmetric = *this;
+    symmetric.SymmetrizeSelf();
+    return symmetric;
+}
+
+BE_INLINE Mat3 &Mat3::SymmetrizeSelf() {
+    float xy = 0.5f * (mat[0][1] + mat[1][0]);
+    float xz = 0.5f * (mat[0][2] + mat[2][0]);
+    float yz = 0.5f * (mat[1][2] + mat[2][1]);
+
+    mat[0][1] = mat[1][0] = xy;
+    mat[0][2] = mat[2][0] = xz;
+    mat[1][2] = mat[2][1] = yz;
+
+    return *this;
+}
+
+BE_INLINE Mat3 Mat3::SkewSymmetrize() const & {
+    Mat3 skewSymmetric = *this;
+    skewSymmetric.SkewSymmetrizeSelf();
+    return skewSymmetric;
+}
+
+BE_INLINE Mat3 &Mat3::SkewSymmetrizeSelf() {
+    float xy = 0.5f * (mat[0][1] - mat[1][0]);
+    float xz = 0.5f * (mat[0][2] - mat[2][0]);
+    float yz = 0.5f * (mat[1][2] - mat[2][1]);
+
+    mat[0][0] = mat[1][1] = mat[2][2] = 0.0f;
+    mat[0][1] = xy;
+    mat[1][0] = -xy;
+    mat[0][2] = xz;
+    mat[2][0] = -xz;
+    mat[1][2] = yz;
+    mat[2][1] = -yz;
 
     return *this;
 }

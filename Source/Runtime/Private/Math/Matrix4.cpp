@@ -926,6 +926,61 @@ Mat4 &Mat4::TransposeSelf() {
     return *this;
 }
 
+Mat4 Mat4::Symmetrize() const & {
+    Mat4 symmetric = *this;
+    symmetric.SymmetrizeSelf();
+    return symmetric;
+}
+
+Mat4 &Mat4::SymmetrizeSelf() {
+    float xy = 0.5f * (mat[0][1] + mat[1][0]);
+    float xz = 0.5f * (mat[0][2] + mat[2][0]);
+    float xw = 0.5f * (mat[0][3] + mat[3][0]);
+    float yz = 0.5f * (mat[1][2] + mat[2][1]);
+    float yw = 0.5f * (mat[1][3] + mat[3][1]);
+    float zw = 0.5f * (mat[2][3] + mat[3][2]);
+
+    mat[0][1] = mat[1][0] = xy;
+    mat[0][2] = mat[2][0] = xz;
+    mat[0][3] = mat[3][0] = xw;
+    mat[1][2] = mat[2][1] = yz;
+    mat[1][3] = mat[3][1] = yw;
+    mat[2][3] = mat[3][2] = zw;
+
+    return *this;
+}
+
+Mat4 Mat4::SkewSymmetrize() const & {
+    Mat4 skewSymmetric = *this;
+    skewSymmetric.SkewSymmetrizeSelf();
+    return skewSymmetric;
+}
+
+Mat4 &Mat4::SkewSymmetrizeSelf() {
+    float xy = 0.5f * (mat[0][1] - mat[1][0]);
+    float xz = 0.5f * (mat[0][2] - mat[2][0]);
+    float xw = 0.5f * (mat[0][3] - mat[3][0]);
+    float yz = 0.5f * (mat[1][2] - mat[2][1]);
+    float yw = 0.5f * (mat[1][3] - mat[3][1]);
+    float zw = 0.5f * (mat[2][3] - mat[3][2]);
+
+    mat[0][0] = mat[1][1] = mat[2][2] = mat[3][3] = 0.0f;
+    mat[0][1] = xy;
+    mat[1][0] = -xy;
+    mat[0][2] = xz;
+    mat[2][0] = -xz;
+    mat[0][3] = xw;
+    mat[3][0] = -xw;
+    mat[1][2] = yz;
+    mat[2][1] = -yz;
+    mat[1][3] = yw;
+    mat[3][1] = -yw;
+    mat[2][3] = zw;
+    mat[3][2] = -zw;
+
+    return *this;
+}
+
 bool Mat4::InverseSelf() {
 #if 1
     // 84+4+16 = 104 multiplications

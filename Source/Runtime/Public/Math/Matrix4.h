@@ -239,6 +239,20 @@ public:
                         /// Transposes this matrix, in-place.
     Mat4 &              TransposeSelf();
 
+                        /// Returns the symmetric part, 0.5 * (A + A^T), of this matrix.
+                        /// This general matrix operation does not preserve affine form.
+    Mat4                Symmetrize() const &;
+    Mat4                Symmetrize() && { SymmetrizeSelf(); return std::move(*this); }
+                        /// Replaces this matrix with its symmetric part, 0.5 * (A + A^T).
+    Mat4 &              SymmetrizeSelf();
+
+                        /// Returns the skew-symmetric part, 0.5 * (A - A^T), of this matrix.
+                        /// This general matrix operation does not preserve affine form.
+    Mat4                SkewSymmetrize() const &;
+    Mat4                SkewSymmetrize() && { SkewSymmetrizeSelf(); return std::move(*this); }
+                        /// Replaces this matrix with its skew-symmetric part, 0.5 * (A - A^T).
+    Mat4 &              SkewSymmetrizeSelf();
+
                         /// Inverts this matrix.
     Mat4                Inverse() const &;
     Mat4 &&             Inverse() && { InverseSelf(); return std::move(*this); }
