@@ -26,6 +26,7 @@
 #include "Math/EigenSolver4.h"
 #include "Math/CovarianceAccumulator.h"
 #include "Math/PrincipalComponents.h"
+#include "Math/BestFit.h"
 #include "Math/Quaternion.h"
 #include "Math/CQuaternion.h"
 #include "Math/Angles.h"

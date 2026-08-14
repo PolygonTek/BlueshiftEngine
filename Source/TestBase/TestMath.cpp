@@ -1450,6 +1450,114 @@ static void TestMatrixDecomposition() {
 
 #undef VERIFY_EIGEN_ANALYSIS
 
+#define VERIFY_BEST_FIT(expression) VerifyMathTest((expression), __func__, __LINE__)
+
+static void TestBestFit() {
+    const float epsilon = 1e-4f;
+
+    BE1::Vec3 expectedLineDirection(2.0f, -1.0f, 0.5f);
+    expectedLineDirection.Normalize();
+    const BE1::Vec3 lineCenter(3.0f, -4.0f, 2.0f);
+    const BE1::Vec3 linePoints[] = {
+        lineCenter - expectedLineDirection * 3.0f,
+        lineCenter - expectedLineDirection,
+        lineCenter + expectedLineDirection,
+        lineCenter + expectedLineDirection * 3.0f
+    };
+
+    BE1::Line line;
+    VERIFY_BEST_FIT(BE1::BestFitLine(linePoints, 4, line));
+    VERIFY_BEST_FIT(line.pos.Equals(lineCenter, epsilon));
+    VERIFY_BEST_FIT(line.dir.Equals(expectedLineDirection, epsilon));
+
+    const BE1::Vec3 isotropicPoints[] = {
+        BE1::Vec3::unitX, -BE1::Vec3::unitX,
+        BE1::Vec3::unitY, -BE1::Vec3::unitY,
+        BE1::Vec3::unitZ, -BE1::Vec3::unitZ
+    };
+    const BE1::Line unchangedLine(BE1::Vec3(7.0f, 8.0f, 9.0f), BE1::Vec3::unitY);
+    BE1::Line ambiguousLine = unchangedLine;
+    VERIFY_BEST_FIT(!BE1::BestFitLine(isotropicPoints, 6, ambiguousLine));
+    VERIFY_BEST_FIT(ambiguousLine.Equals(unchangedLine));
+
+    BE1::Vec3 expectedPlaneNormal(1.0f, 2.0f, -1.0f);
+    expectedPlaneNormal.Normalize();
+    BE1::Vec3 planeAxis0(2.0f, -1.0f, 0.0f);
+    planeAxis0.Normalize();
+    BE1::Vec3 planeAxis1 = expectedPlaneNormal.Cross(planeAxis0);
+    planeAxis1.Normalize();
+    const BE1::Vec3 planeCenter(-2.0f, 1.0f, 5.0f);
+    const BE1::Vec3 planePoints[] = {
+        planeCenter + planeAxis0 * 2.0f,
+        planeCenter - planeAxis0 * 2.0f,
+        planeCenter + planeAxis0,
+        planeCenter - planeAxis0,
+        planeCenter + planeAxis1 * 3.0f,
+        planeCenter - planeAxis1 * 3.0f
+    };
+
+    BE1::Plane plane;
+    VERIFY_BEST_FIT(BE1::BestFitPlane(planePoints, 6, plane));
+    VERIFY_BEST_FIT(BE1::Math::Fabs(plane.normal.Dot(expectedPlaneNormal)) >= 1.0f - epsilon);
+    for (int i = 0; i < 6; i++) {
+        VERIFY_BEST_FIT(BE1::Math::Fabs(plane.Distance(planePoints[i])) <= epsilon);
+    }
+
+    const BE1::Vec3 collinearPoints[] = {
+        BE1::Vec3(-1.0f, 0.0f, 0.0f),
+        BE1::Vec3::zero,
+        BE1::Vec3(1.0f, 0.0f, 0.0f)
+    };
+    const BE1::Plane unchangedPlane(BE1::Vec3::unitZ, 4.0f);
+    BE1::Plane ambiguousPlane = unchangedPlane;
+    VERIFY_BEST_FIT(!BE1::BestFitPlane(collinearPoints, 3, ambiguousPlane));
+    VERIFY_BEST_FIT(ambiguousPlane.normal.Equals(unchangedPlane.normal));
+    VERIFY_BEST_FIT(ambiguousPlane.offset == unchangedPlane.offset);
+
+    const BE1::Vec3 sourcePoints[] = {
+        BE1::Vec3(-2.0f, -1.0f, 0.0f),
+        BE1::Vec3(3.0f, -1.0f, 1.0f),
+        BE1::Vec3(0.0f, 2.0f, -1.0f),
+        BE1::Vec3(1.0f, 1.0f, 3.0f),
+        BE1::Vec3(-1.0f, 0.0f, -2.0f),
+        BE1::Vec3(2.0f, 3.0f, 1.0f)
+    };
+    const BE1::Mat3 expectedRotation = BE1::Mat3::FromRotationZYX(DEG2RAD(37.0f), DEG2RAD(-21.0f), DEG2RAD(13.0f));
+    const BE1::Vec3 expectedTranslation(4.0f, -3.0f, 2.0f);
+    BE1::Vec3 targetPoints[6];
+    for (int i = 0; i < 6; i++) {
+        targetPoints[i] = expectedRotation * sourcePoints[i] + expectedTranslation;
+    }
+
+    BE1::Mat3x4 rigidTransform;
+    VERIFY_BEST_FIT(BE1::BestFitRigidTransform(sourcePoints, targetPoints, 6, rigidTransform));
+    VERIFY_BEST_FIT(rigidTransform.ToMat3().Equals(expectedRotation, 5e-4f));
+    VERIFY_BEST_FIT(rigidTransform.ToTranslationVec3().Equals(expectedTranslation, 5e-4f));
+    for (int i = 0; i < 6; i++) {
+        VERIFY_BEST_FIT(rigidTransform.TransformPos(sourcePoints[i]).Equals(targetPoints[i], 1e-3f));
+    }
+
+    BE1::Vec3 reflectedPoints[6];
+    for (int i = 0; i < 6; i++) {
+        reflectedPoints[i].Set(-sourcePoints[i].x, sourcePoints[i].y, sourcePoints[i].z);
+    }
+    BE1::Mat3x4 reflectionRejectedTransform;
+    VERIFY_BEST_FIT(BE1::BestFitRigidTransform(sourcePoints, reflectedPoints, 6, reflectionRejectedTransform));
+    VERIFY_BEST_FIT(reflectionRejectedTransform.ToMat3().Determinant() > 0.0f);
+
+    const BE1::Vec3 degenerateTargetPoints[] = {
+        BE1::Vec3(2.0f, 1.0f, 0.0f),
+        BE1::Vec3(3.0f, 1.0f, 0.0f),
+        BE1::Vec3(4.0f, 1.0f, 0.0f)
+    };
+    const BE1::Mat3x4 unchangedTransform(BE1::Mat3::identity, BE1::Vec3(8.0f, 9.0f, 10.0f));
+    BE1::Mat3x4 degenerateTransform = unchangedTransform;
+    VERIFY_BEST_FIT(!BE1::BestFitRigidTransform(collinearPoints, degenerateTargetPoints, 3, degenerateTransform));
+    VERIFY_BEST_FIT(degenerateTransform.Equals(unchangedTransform));
+}
+
+#undef VERIFY_BEST_FIT
+
 #define VERIFY_ROTATION_CONVERSION(expression) VerifyMathTest((expression), __func__, __LINE__)
 
 static void TestRotationConversions() {
@@ -1503,6 +1611,7 @@ void Test::TestMath() {
     TestSolveSymmetricPSD();
     TestMatrixSolve();
     TestCovarianceAndPrincipalComponents();
+    TestBestFit();
     TestMatrixDecomposition();
     TestRotationConversions();
 
