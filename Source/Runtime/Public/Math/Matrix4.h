@@ -260,6 +260,14 @@ public:
                         /// @return False if determinant is zero.
     bool                InverseSelf();
 
+                        /// Decomposes this symmetric matrix into eigenvalues and eigenvectors.
+                        /// Eigenvalues are sorted in descending order and the corresponding
+                        /// orthonormal eigenvectors are stored in the columns of eigenVectors.
+                        /// On failure, the output parameters are left unchanged.
+                        /// @return False if this matrix is not finite and symmetric, epsilon is
+                        /// not positive, or the iteration fails to converge.
+    bool                EigenDecomposeSymmetric(Vec4 &eigenValues, Mat4 &eigenVectors, float epsilon = MATRIX_EPSILON) const;
+
                         /// Computes A = U * diag(singularValues) * V^T using one-sided Jacobi SVD.
                         /// Singular values are non-negative and sorted in descending order.
                         /// Numerically zero singular values may be clamped to zero and their

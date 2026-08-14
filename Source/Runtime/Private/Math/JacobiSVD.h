@@ -14,6 +14,8 @@
 
 #pragma once
 
+#include "JacobiRotation.h"
+
 BE_NAMESPACE_BEGIN
 
 namespace JacobiSVD {
@@ -54,18 +56,6 @@ static bool ColumnsAreOrthogonal(const float matrix[N][N], float tolerance) {
         }
     }
     return true;
-}
-
-// Post-multiplies columns p and q by a Jacobi rotation. Applying the same rotation
-// to the working matrix and V preserves the relation working = input * V.
-template <int N>
-static void RotateColumns(float matrix[N][N], int p, int q, float c, float s) {
-    for (int row = 0; row < N; row++) {
-        float columnP = matrix[row][p];
-        float columnQ = matrix[row][q];
-        matrix[row][p] = c * columnP - s * columnQ;
-        matrix[row][q] = s * columnP + c * columnQ;
-    }
 }
 
 // Deterministically completes one column of an orthonormal basis. This is used for
@@ -183,25 +173,9 @@ static bool Decompose(const float input[N][N], float outputU[N][N], float output
                         continue;
                     }
 
-                    // Solve gamma * t^2 + (beta - alpha) * t - gamma = 0 for
-                    // t = tan(theta), choosing the root that gives the smaller rotation.
-                    float tau = (beta - alpha) / (2.0f * gamma);
-                    float absTau = Math::Fabs(tau);
-                    float sign = tau >= 0.0f ? 1.0f : -1.0f;
-                    float t;
-
-                    // Evaluate tan(theta) without squaring a potentially large tau.
-                    if (absTau > 1.0f) {
-                        float invTau = 1.0f / absTau;
-                        t = sign * invTau / (1.0f + Math::Sqrt(1.0f + invTau * invTau));
-                    } else {
-                        t = sign / (absTau + Math::Sqrt(1.0f + absTau * absTau));
-                    }
-
-                    float c = 1.0f / Math::Sqrt(1.0f + t * t);
-                    float s = t * c;
-                    RotateColumns<N>(working, p, q, c, s);
-                    RotateColumns<N>(rightVectors, p, q, c, s);
+                    JacobiRotation::Coefficients rotation = JacobiRotation::ComputeSymmetric(alpha, beta, gamma);
+                    JacobiRotation::RotateColumns<N>(working, p, q, rotation);
+                    JacobiRotation::RotateColumns<N>(rightVectors, p, q, rotation);
                     rotated = true;
                 }
             }

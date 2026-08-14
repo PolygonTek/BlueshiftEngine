@@ -14,6 +14,7 @@
 
 #include "Precompiled.h"
 #include "Math/Math.h"
+#include "JacobiRotation.h"
 #include "JacobiSVD.h"
 
 BE_NAMESPACE_BEGIN
@@ -1619,6 +1620,154 @@ Vec3 Mat4::ToScaleVec3() const {
 
 Vec3 Mat4::ToSignedScaleVec3() const {
     return ToMat3x4().ToSignedScaleVec3();
+}
+
+bool Mat4::EigenDecomposeSymmetric(Vec4 &eigenValues, Mat4 &eigenVectors, float epsilon) const {
+    if (epsilon <= 0.0f || IEEE_FLT_IS_NAN(epsilon)) {
+        return false;
+    }
+
+    for (int row = 0; row < 4; row++) {
+        for (int column = 0; column < 4; column++) {
+            float value = mat[row][column];
+            if (IEEE_FLT_IS_NAN(value)) {
+                return false;
+            }
+        }
+    }
+
+    if (!IsSymmetric(epsilon)) {
+        return false;
+    }
+
+    // Average the two triangles to remove the accepted symmetry tolerance error.
+    float matrix[4][4];
+    for (int row = 0; row < 4; row++) {
+        for (int column = 0; column < 4; column++) {
+            matrix[row][column] = 0.5f * mat[row][column] + 0.5f * mat[column][row];
+        }
+    }
+
+    float vectors[4][4] = {};
+    for (int i = 0; i < 4; i++) {
+        vectors[i][i] = 1.0f;
+    }
+    const int maxIterations = 64;
+    bool converged = false;
+
+    for (int iteration = 0; iteration < maxIterations; iteration++) {
+        int p = 0;
+        int q = 1;
+        float maxOffDiagonal = Math::Fabs(matrix[p][q]);
+
+        for (int row = 0; row < 3; row++) {
+            for (int column = row + 1; column < 4; column++) {
+                float offDiagonal = Math::Fabs(matrix[row][column]);
+                if (offDiagonal > maxOffDiagonal) {
+                    maxOffDiagonal = offDiagonal;
+                    p = row;
+                    q = column;
+                }
+            }
+        }
+
+        if (IEEE_FLT_IS_NAN(maxOffDiagonal)) {
+            return false;
+        }
+
+        float matrixScale = maxOffDiagonal;
+        for (int i = 0; i < 4; i++) {
+            float diagonal = Math::Fabs(matrix[i][i]);
+            if (IEEE_FLT_IS_NAN(diagonal)) {
+                return false;
+            }
+            if (diagonal > matrixScale) {
+                matrixScale = diagonal;
+            }
+        }
+
+        if (maxOffDiagonal <= epsilon * matrixScale) {
+            converged = true;
+            break;
+        }
+
+        JacobiRotation::Coefficients rotation = JacobiRotation::ComputeSymmetric(matrix[p][p], matrix[q][q], matrix[p][q]);
+        JacobiRotation::RotateSymmetric<4>(matrix, p, q, rotation);
+        JacobiRotation::RotateColumns<4>(vectors, p, q, rotation);
+    }
+
+    if (!converged) {
+        float maxOffDiagonal = 0.0f;
+        float matrixScale = 0.0f;
+
+        for (int row = 0; row < 4; row++) {
+            float diagonal = Math::Fabs(matrix[row][row]);
+            if (IEEE_FLT_IS_NAN(diagonal)) {
+                return false;
+            }
+            if (diagonal > matrixScale) {
+                matrixScale = diagonal;
+            }
+
+            for (int column = row + 1; column < 4; column++) {
+                float offDiagonal = Math::Fabs(matrix[row][column]);
+                if (IEEE_FLT_IS_NAN(offDiagonal)) {
+                    return false;
+                }
+                if (offDiagonal > maxOffDiagonal) {
+                    maxOffDiagonal = offDiagonal;
+                }
+            }
+        }
+
+        if (maxOffDiagonal > matrixScale) {
+            matrixScale = maxOffDiagonal;
+        }
+        if (maxOffDiagonal > epsilon * matrixScale) {
+            return false;
+        }
+    }
+
+    Vec4 values(matrix[0][0], matrix[1][1], matrix[2][2], matrix[3][3]);
+
+    // Sort eigenvalues in descending order and keep their eigenvectors paired.
+    for (int i = 0; i < 3; i++) {
+        int maxIndex = i;
+        for (int j = i + 1; j < 4; j++) {
+            if (values[j] > values[maxIndex]) {
+                maxIndex = j;
+            }
+        }
+
+        if (maxIndex != i) {
+            float value = values[i];
+            values[i] = values[maxIndex];
+            values[maxIndex] = value;
+
+            for (int row = 0; row < 4; row++) {
+                float component = vectors[row][i];
+                vectors[row][i] = vectors[row][maxIndex];
+                vectors[row][maxIndex] = component;
+            }
+        }
+    }
+
+    Mat4 resultVectors(
+        Vec4(vectors[0][0], vectors[0][1], vectors[0][2], vectors[0][3]),
+        Vec4(vectors[1][0], vectors[1][1], vectors[1][2], vectors[1][3]),
+        Vec4(vectors[2][0], vectors[2][1], vectors[2][2], vectors[2][3]),
+        Vec4(vectors[3][0], vectors[3][1], vectors[3][2], vectors[3][3]));
+
+    // Sorting columns can change orientation; eigenvector signs are arbitrary.
+    if (resultVectors.Determinant() < 0.0f) {
+        for (int row = 0; row < 4; row++) {
+            resultVectors[row][3] = -resultVectors[row][3];
+        }
+    }
+
+    eigenValues = values;
+    eigenVectors = resultVectors;
+    return true;
 }
 
 bool Mat4::SingularValueDecompose(Mat4 &leftVectors, Vec4 &singularValues, Mat4 &rightVectors, float tolerance) const {

@@ -14,6 +14,7 @@
 
 #include "Precompiled.h"
 #include "Math/Math.h"
+#include "JacobiRotation.h"
 #include "JacobiSVD.h"
 
 BE_NAMESPACE_BEGIN
@@ -183,59 +184,6 @@ bool Mat3::InverseSelf() {
 #endif
 }
 
-// Applies a Jacobi similarity rotation in the p-q plane to eliminate matrix[p][q].
-// matrix uses conventional row-major indexing, while eigenVectors stores the
-// accumulated rotations in its columns so they converge to the eigenvectors.
-static void JacobiRotateSymmetric3x3(float matrix[3][3], Mat3 &eigenVectors, int p, int q) {
-    float app = matrix[p][p];
-    float aqq = matrix[q][q];
-    float apq = matrix[p][q];
-
-    if (apq == 0.0f) {
-        return;
-    }
-
-    float tau = (aqq - app) / (2.0f * apq);
-    float absTau = Math::Fabs(tau);
-    float sign = tau >= 0.0f ? 1.0f : -1.0f;
-    float t;
-
-    // Evaluate tan(theta) without squaring a potentially large tau.
-    if (absTau > 1.0f) {
-        float invTau = 1.0f / absTau;
-        t = sign * invTau / (1.0f + Math::Sqrt(1.0f + invTau * invTau));
-    } else {
-        t = sign / (absTau + Math::Sqrt(1.0f + absTau * absTau));
-    }
-
-    float c = 1.0f / Math::Sqrt(1.0f + t * t);
-    float s = t * c;
-
-    // Rotate the remaining row-column pairs while explicitly preserving symmetry.
-    for (int i = 0; i < 3; i++) {
-        if (i == p || i == q) {
-            continue;
-        }
-
-        float aip = matrix[i][p];
-        float aiq = matrix[i][q];
-
-        matrix[i][p] = matrix[p][i] = c * aip - s * aiq;
-        matrix[i][q] = matrix[q][i] = s * aip + c * aiq;
-    }
-
-    // Update the diagonal pair and make the eliminated off-diagonal term exact.
-    matrix[p][p] = app - t * apq;
-    matrix[q][q] = aqq + t * apq;
-    matrix[p][q] = matrix[q][p] = 0.0f;
-
-    // Accumulate the same rotation into the corresponding eigenvector columns.
-    Vec3 eigenVectorP = eigenVectors[p];
-    Vec3 eigenVectorQ = eigenVectors[q];
-    eigenVectors[p] = c * eigenVectorP - s * eigenVectorQ;
-    eigenVectors[q] = s * eigenVectorP + c * eigenVectorQ;
-}
-
 bool Mat3::EigenDecomposeSymmetric(Vec3 &eigenValues, Mat3 &eigenVectors, float epsilon) const {
     if (epsilon <= 0.0f || IEEE_FLT_IS_NAN(epsilon)) {
         return false;
@@ -262,7 +210,10 @@ bool Mat3::EigenDecomposeSymmetric(Vec3 &eigenValues, Mat3 &eigenVectors, float 
         }
     }
 
-    Mat3 vectors = Mat3::identity;
+    float vectors[3][3] = {};
+    for (int i = 0; i < 3; i++) {
+        vectors[i][i] = 1.0f;
+    }
     const int maxIterations = 32;
     bool converged = false;
 
@@ -305,7 +256,9 @@ bool Mat3::EigenDecomposeSymmetric(Vec3 &eigenValues, Mat3 &eigenVectors, float 
             break;
         }
 
-        JacobiRotateSymmetric3x3(matrix, vectors, p, q);
+        JacobiRotation::Coefficients rotation = JacobiRotation::ComputeSymmetric(matrix[p][p], matrix[q][q], matrix[p][q]);
+        JacobiRotation::RotateSymmetric<3>(matrix, p, q, rotation);
+        JacobiRotation::RotateColumns<3>(vectors, p, q, rotation);
     }
 
     if (!converged) {
@@ -351,19 +304,27 @@ bool Mat3::EigenDecomposeSymmetric(Vec3 &eigenValues, Mat3 &eigenVectors, float 
             values[i] = values[maxIndex];
             values[maxIndex] = value;
 
-            Vec3 vector = vectors[i];
-            vectors[i] = vectors[maxIndex];
-            vectors[maxIndex] = vector;
+            for (int row = 0; row < 3; row++) {
+                float component = vectors[row][i];
+                vectors[row][i] = vectors[row][maxIndex];
+                vectors[row][maxIndex] = component;
+            }
         }
     }
 
+    // Mat3 stores columns, while the shared Jacobi helpers use row-major arrays.
+    Mat3 resultVectors(
+        Vec3(vectors[0][0], vectors[1][0], vectors[2][0]),
+        Vec3(vectors[0][1], vectors[1][1], vectors[2][1]),
+        Vec3(vectors[0][2], vectors[1][2], vectors[2][2]));
+
     // Sorting columns can change handedness; eigenvector signs are arbitrary.
-    if (vectors.Determinant() < 0.0f) {
-        vectors[2] *= -1.0f;
+    if (resultVectors.Determinant() < 0.0f) {
+        resultVectors[2] *= -1.0f;
     }
 
     eigenValues = values;
-    eigenVectors = vectors;
+    eigenVectors = resultVectors;
     return true;
 }
 
