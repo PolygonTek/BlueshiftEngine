@@ -29,12 +29,6 @@ BE_NAMESPACE_BEGIN
 template <typename T> 
 class Hermite {
 public:
-    enum BoundaryCondition {
-        ClampedBoundary,
-        NaturalBoundary,
-        CyclicBoundary
-    };
-
     enum TimeWrapMode {
         Clamp,
         Loop,
@@ -116,9 +110,6 @@ public:
     TimeWrapMode        GetMaxTimeWrapMode() const { return timeWrapModes[1]; }
     void                SetMaxTimeWrapMode(TimeWrapMode timeWrapMode) { timeWrapModes[1] = timeWrapMode; }
 
-                        /// Initializes Hermite spline with given boundary condition.
-    bool                Initialize(BoundaryCondition boundaryCondition);
-
                         /// Evaluates a point.
     T                   Evaluate(float t) const;
 
@@ -181,7 +172,7 @@ BE_INLINE Hermite<T>::Hermite() {
 
 template <typename T>
 BE_INLINE bool Hermite<T>::operator==(const Hermite<T> &rhs) const {
-    if (keys == rhs.keys && timeWrapModes[0] == rhs.timeWrapModes[0] && timeWrapModes[1] == timeWrapModes[1]) {
+    if (keys == rhs.keys && timeWrapModes[0] == rhs.timeWrapModes[0] && timeWrapModes[1] == rhs.timeWrapModes[1]) {
         return true;
     }
     return false;
@@ -189,10 +180,7 @@ BE_INLINE bool Hermite<T>::operator==(const Hermite<T> &rhs) const {
 
 template <typename T>
 BE_INLINE bool Hermite<T>::operator!=(const Hermite<T> &rhs) const {
-    if (keys == rhs.keys && timeWrapModes[0] == rhs.timeWrapModes[0] && timeWrapModes[1] == timeWrapModes[1]) {
-        return false;
-    }
-    return true;
+    return !(*this == rhs);
 }
 
 template <typename T>
@@ -287,12 +275,6 @@ BE_INLINE T Hermite<T>::GetMaxPoint() const {
         }
     }
     return maxPoint;
-}
-
-template <typename T>
-BE_INLINE bool Hermite<T>::Initialize(BoundaryCondition boundaryCondition) {
-    // TODO: implement this
-    return false;
 }
 
 template <typename T>
@@ -438,7 +420,7 @@ BE_INLINE T Hermite<T>::EvaluateSecondDerivative(float t) const {
     T a =  2.0f * k0.point - 2.0f * k1.point + outTangent + inTangent;
     T b = -3.0f * k0.point + 3.0f * k1.point - 2.0f * outTangent - inTangent;
 
-    return (2.0f * b + 6.0f * u * a) * invDt;
+    return (2.0f * b + 6.0f * u * a) * (invDt * invDt);
 }
 
 template <typename T>
@@ -565,7 +547,7 @@ BE_INLINE T Hermite<T>::Integrate(float t) const {
         }
     } else if (t > kn.time) {
         if (timeWrapModes[1] == TimeWrapMode::Clamp) {
-            return (t - kn.time) * kn.point;
+            return integrals.Last() + (t - kn.time) * kn.point;
         } else {
             float l = kn.time - k0.time;
             if (l == 0.0f) {

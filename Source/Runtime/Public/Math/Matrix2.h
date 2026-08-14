@@ -403,7 +403,7 @@ BE_INLINE bool Mat2::IsLowerTriangular(const float epsilon) const {
 }
 
 BE_INLINE bool Mat2::IsSymmetric(const float epsilon) const {
-    return (Math::Fabs(mat[0][1] - mat[1][0]) < epsilon);
+    return (Math::Fabs(mat[0][1] - mat[1][0]) <= epsilon);
 }
 
 BE_INLINE bool Mat2::IsDiagonal(const float epsilon) const {

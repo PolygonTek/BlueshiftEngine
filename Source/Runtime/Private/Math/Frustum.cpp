@@ -1883,33 +1883,9 @@ bool Frustum::ProjectionBounds(const OBB &box, AABB &projectionBounds) const {
 //#endif
 
 bool Frustum::ProjectionBounds(const Sphere &sphere, AABB &projectionBounds) const {
-    projectionBounds.Clear();
-
-    Vec3 center = axis.TransposedMulVec(sphere.Center() - origin);
-    float r = sphere.Radius();
-    float rs = r * r;
-    float sFar = dFar * dFar;
-
-    // test left/right planes
-    float d = dFar * Math::Fabs(center.y) - dLeft * center.x;
-    if ((d * d) > rs * (sFar + dLeft * dLeft)) {
-        return false;
-    }
-    
-    // test up/down planes
-    d = dFar * Math::Fabs(center.z) - dUp * center.x;
-    if ((d * d) > rs * (sFar + dUp * dUp)) {
-        return false;
-    }
-    
-    // FIXME: implement
-
-    // bounds that cover the whole frustum
-    projectionBounds[0].x = 0.0f;
-    projectionBounds[1].x = dFar;
-    projectionBounds[0].y = projectionBounds[0].z = -1.0f;
-    projectionBounds[1].y = projectionBounds[1].z = 1.0f;
-    return true;
+    // Project the sphere's enclosing box. This is conservative, but avoids false
+    // rejection and produces useful bounds without a separate sphere tangent solver.
+    return ProjectionBounds(sphere.ToAABB(), projectionBounds);
 }
 
 bool Frustum::ProjectionBounds(const Frustum &frustum, AABB &projectionBounds) const {

@@ -42,7 +42,15 @@ float Pluecker::Distance3DSqr(const Pluecker &a) const {
     dir[1] =  a.p[4] *  p[2] -  a.p[2] *  p[4];
     dir[2] =  a.p[2] * -p[5] - -a.p[5] *  p[2];
     if (dir[0] == 0.0f && dir[1] == 0.0f && dir[2] == 0.0f) {
-        return -1.0f;   // FIXME: implement for parallel lines
+        Vec3 start1, direction1;
+        Vec3 start2, direction2;
+        if (!ToRay(start1, direction1) || !a.ToRay(start2, direction2)) {
+            return -1.0f;
+        }
+
+        Vec3 separation = start2 - start1;
+        Vec3 perpendicular = separation.Cross(direction1);
+        return perpendicular.LengthSqr() / direction1.LengthSqr();
     }
 
     float d = a.p[4] * ( p[2]*dir[1] - -p[5]*dir[0]) +

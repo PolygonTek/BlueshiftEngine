@@ -82,7 +82,7 @@ public:
                         /// Adds a vector to this vector.
                         /// This function is identical to the member function Add().
     Vec4                operator+(const Vec4 &rhs) const & { return Vec4(x + rhs.x, y + rhs.y, z + rhs.z, w + rhs.w); }
-    Vec4 &&             operator+(const Vec4 &rhs) && { x += rhs.x; y += rhs.y; z += rhs.z; z += rhs.z; return std::move(*this); }
+    Vec4 &&             operator+(const Vec4 &rhs) && { x += rhs.x; y += rhs.y; z += rhs.z; w += rhs.w; return std::move(*this); }
 
                         /// Adds the vector (s, s, s, s) to this vector.
     Vec4                AddScalar(float s) const & { return *this + s; }
@@ -112,7 +112,7 @@ public:
     Vec4 &&             operator-(float rhs) && { x -= rhs; y -= rhs; z -= rhs; w -= rhs; return std::move(*this); }
                         /// Subtracts the vector v from vector (s, s, s, s).
     friend Vec4         operator-(float lhs, const Vec4 &rhs) { return Vec4(lhs - rhs.x, lhs - rhs.y, lhs - rhs.z, lhs - rhs.w); }
-    friend Vec4 &&      operator-(float lhs, Vec4 &&rhs) { rhs.x = lhs - rhs.x; rhs.y = lhs - rhs.y; rhs.z = lhs - rhs.z; rhs.z = lhs - rhs.z; return std::move(rhs); }
+    friend Vec4 &&      operator-(float lhs, Vec4 &&rhs) { rhs.x = lhs - rhs.x; rhs.y = lhs - rhs.y; rhs.z = lhs - rhs.z; rhs.w = lhs - rhs.w; return std::move(rhs); }
 
                         /// Multiplies this vector by a scalar.
     Vec4                Mul(float s) const & { return *this * s; }
