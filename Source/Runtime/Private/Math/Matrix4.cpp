@@ -18,6 +18,7 @@
 #include "QRCP.h"
 #include "JacobiRotation.h"
 #include "JacobiSVD.h"
+#include "SymmetricPSDSolver.h"
 
 BE_NAMESPACE_BEGIN
 
@@ -1647,6 +1648,10 @@ bool Mat4::CholeskyDecompose(Mat4 &lowerTriangular, float tolerance) const {
     return true;
 }
 
+bool Mat4::SolveSymmetricPSD(const Vec4 &rightHandSide, Vec4 &solution, float tolerance) const {
+    return SymmetricPSDSolver::Solve<4>(*this, rightHandSide, solution, tolerance);
+}
+
 bool Mat4::QRDecomposeColumnPivoted(Mat4 &orthogonalFactor, Mat4 &upperTriangularFactor, int columnPermutation[4], int &rank, float tolerance) const {
     float input[4][4];
     for (int row = 0; row < 4; row++) {
@@ -1861,6 +1866,14 @@ bool Mat4::SingularValueDecompose(Mat4 &leftVectors, Vec4 &singularValues, Mat4 
     singularValues.Set(outputSingularValues[0], outputSingularValues[1], outputSingularValues[2], outputSingularValues[3]);
     rightVectors = v;
     return true;
+}
+
+bool Mat4::ConditionNumber(float &conditionNumber, float tolerance) const {
+    return JacobiSVD::ComputeConditionNumber<4, Mat4, Vec4>(*this, conditionNumber, tolerance);
+}
+
+bool Mat4::PseudoInverse(Mat4 &pseudoInverse, float tolerance) const {
+    return JacobiSVD::ComputePseudoInverse<4, Mat4, Vec4>(*this, pseudoInverse, tolerance);
 }
 
 Mat4 Mat4::FromString(const char *str) {

@@ -272,6 +272,15 @@ public:
                         /// @return False if the input requirements are not met.
     bool                CholeskyDecompose(Mat4 &lowerTriangular, float tolerance = MATRIX_EPSILON) const;
 
+                        /// Solves A * x = b for this symmetric positive semi-definite matrix.
+                        /// Positive-definite matrices use Cholesky factorization. Numerically
+                        /// rank-deficient matrices return the minimum-norm least-squares solution
+                        /// using a symmetric eigendecomposition fallback.
+                        /// On failure, solution is left unchanged. rightHandSide may alias solution.
+                        /// @return False if the inputs are non-finite, tolerance is invalid, this
+                        /// matrix is non-symmetric or indefinite, or no finite solution is representable.
+    bool                SolveSymmetricPSD(const Vec4 &rightHandSide, Vec4 &solution, float tolerance = MATRIX_EPSILON) const;
+
                         /// Computes the column-pivoted QR factorization A * P = Q * R.
                         /// Q is orthogonal, and R is upper triangular with non-negative diagonal entries.
                         /// columnPermutation[j] is the original column represented by pivoted column j.
@@ -296,6 +305,17 @@ public:
                         /// corresponding left singular vectors complete an orthonormal basis.
                         /// On failure, the output parameters are left unchanged.
     bool                SingularValueDecompose(Mat4 &leftVectors, Vec4 &singularValues, Mat4 &rightVectors, float tolerance = MATRIX_EPSILON) const;
+
+                        /// Computes the spectral condition number sigmaMax / sigmaMin.
+                        /// Singular values at or below tolerance * sigmaMax are treated as zero.
+                        /// A numerically rank-deficient matrix returns positive infinity.
+                        /// On failure, conditionNumber is left unchanged.
+    bool                ConditionNumber(float &conditionNumber, float tolerance = MATRIX_EPSILON) const;
+
+                        /// Computes the Moore-Penrose pseudoinverse using SVD.
+                        /// Singular values at or below tolerance * sigmaMax are treated as zero.
+                        /// On failure, pseudoInverse is left unchanged.
+    bool                PseudoInverse(Mat4 &pseudoInverse, float tolerance = MATRIX_EPSILON) const;
 
                         /// Inverts a affine matrix. (affine matrix means equivalent to a 3x4 matrix)
                         /// If a matrix M is made up of only translation, rotation, reflection, scaling and shearing,

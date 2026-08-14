@@ -16,6 +16,8 @@
 #include "Math/Math.h"
 #include "Cholesky.h"
 #include "QRCP.h"
+#include "JacobiSVD.h"
+#include "SymmetricPSDSolver.h"
 
 BE_NAMESPACE_BEGIN
 
@@ -151,6 +153,10 @@ bool Mat2::CholeskyDecompose(Mat2 &lowerTriangular, float tolerance) const {
     return true;
 }
 
+bool Mat2::SolveSymmetricPSD(const Vec2 &rightHandSide, Vec2 &solution, float tolerance) const {
+    return SymmetricPSDSolver::Solve<2>(*this, rightHandSide, solution, tolerance);
+}
+
 bool Mat2::QRDecomposeColumnPivoted(Mat2 &orthogonalFactor, Mat2 &upperTriangularFactor, int columnPermutation[2], int &rank, float tolerance) const {
     float input[2][2];
     for (int row = 0; row < 2; row++) {
@@ -253,6 +259,42 @@ bool Mat2::EigenDecomposeSymmetric(Vec2 &eigenValues, Mat2 &eigenVectors, float 
     eigenValues = values;
     eigenVectors = vectors;
     return true;
+}
+
+bool Mat2::SingularValueDecompose(Mat2 &leftVectors, Vec2 &singularValues, Mat2 &rightVectors, float tolerance) const {
+    float input[2][2];
+    for (int row = 0; row < 2; row++) {
+        for (int column = 0; column < 2; column++) {
+            input[row][column] = mat[row][column];
+        }
+    }
+
+    float outputU[2][2];
+    float outputSingularValues[2];
+    float outputV[2][2];
+    if (!JacobiSVD::Decompose<2>(input, outputU, outputSingularValues, outputV, tolerance)) {
+        return false;
+    }
+
+    Mat2 u(
+        outputU[0][0], outputU[0][1],
+        outputU[1][0], outputU[1][1]);
+    Mat2 v(
+        outputV[0][0], outputV[0][1],
+        outputV[1][0], outputV[1][1]);
+
+    leftVectors = u;
+    singularValues.Set(outputSingularValues[0], outputSingularValues[1]);
+    rightVectors = v;
+    return true;
+}
+
+bool Mat2::ConditionNumber(float &conditionNumber, float tolerance) const {
+    return JacobiSVD::ComputeConditionNumber<2, Mat2, Vec2>(*this, conditionNumber, tolerance);
+}
+
+bool Mat2::PseudoInverse(Mat2 &pseudoInverse, float tolerance) const {
+    return JacobiSVD::ComputePseudoInverse<2, Mat2, Vec2>(*this, pseudoInverse, tolerance);
 }
 
 Mat2 Mat2::FromString(const char *str) {

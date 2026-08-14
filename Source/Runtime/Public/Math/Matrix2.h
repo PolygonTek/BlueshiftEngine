@@ -229,6 +229,15 @@ public:
                         /// @return False if the input requirements are not met.
     bool                CholeskyDecompose(Mat2 &lowerTriangular, float tolerance = MATRIX_EPSILON) const;
 
+                        /// Solves A * x = b for this symmetric positive semi-definite matrix.
+                        /// Positive-definite matrices use Cholesky factorization. Numerically
+                        /// rank-deficient matrices return the minimum-norm least-squares solution
+                        /// using a symmetric eigendecomposition fallback.
+                        /// On failure, solution is left unchanged. rightHandSide may alias solution.
+                        /// @return False if the inputs are non-finite, tolerance is invalid, this
+                        /// matrix is non-symmetric or indefinite, or no finite solution is representable.
+    bool                SolveSymmetricPSD(const Vec2 &rightHandSide, Vec2 &solution, float tolerance = MATRIX_EPSILON) const;
+
                         /// Computes the column-pivoted QR factorization A * P = Q * R.
                         /// Q is orthogonal, and R is upper triangular with non-negative diagonal entries.
                         /// columnPermutation[j] is the original column represented by pivoted column j.
@@ -245,6 +254,24 @@ public:
                         /// On failure, the output parameters are left unchanged.
                         /// @return False if this matrix is non-finite or non-symmetric.
     bool                EigenDecomposeSymmetric(Vec2 &eigenValues, Mat2 &eigenVectors, float epsilon = MATRIX_EPSILON) const;
+
+                        /// Computes A = U * diag(singularValues) * V^T using one-sided Jacobi SVD.
+                        /// Singular values are non-negative and sorted in descending order.
+                        /// Numerically zero singular values may be clamped to zero and their
+                        /// corresponding left singular vectors complete an orthonormal basis.
+                        /// On failure, the output parameters are left unchanged.
+    bool                SingularValueDecompose(Mat2 &leftVectors, Vec2 &singularValues, Mat2 &rightVectors, float tolerance = MATRIX_EPSILON) const;
+
+                        /// Computes the spectral condition number sigmaMax / sigmaMin.
+                        /// Singular values at or below tolerance * sigmaMax are treated as zero.
+                        /// A numerically rank-deficient matrix returns positive infinity.
+                        /// On failure, conditionNumber is left unchanged.
+    bool                ConditionNumber(float &conditionNumber, float tolerance = MATRIX_EPSILON) const;
+
+                        /// Computes the Moore-Penrose pseudoinverse using SVD.
+                        /// Singular values at or below tolerance * sigmaMax are treated as zero.
+                        /// On failure, pseudoInverse is left unchanged.
+    bool                PseudoInverse(Mat2 &pseudoInverse, float tolerance = MATRIX_EPSILON) const;
 
     static Mat2         FromOuterProduct(const Vec2 &a, const Vec2 &b);
 

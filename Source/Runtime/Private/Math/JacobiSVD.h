@@ -145,7 +145,7 @@ static bool Decompose(const float input[N][N], float outputU[N][N], float output
     }
 
     if (matrixScale > 0.0f) {
-        // Cyclic sweeps converge quickly for 3x3 and 4x4 matrices; the fixed upper
+        // Cyclic sweeps converge quickly for 2x2, 3x3, and 4x4 matrices; the fixed upper
         // bound prevents malformed inputs from causing an unbounded iteration.
         const int maxSweeps = 32;
         bool converged = false;
@@ -283,6 +283,50 @@ static bool Decompose(const float input[N][N], float outputU[N][N], float output
             return false;
         }
     }
+    return true;
+}
+
+template <int N, typename MatrixType, typename VectorType>
+static bool ComputeConditionNumber(const MatrixType &matrix, float &conditionNumber, float tolerance) {
+    MatrixType leftVectors;
+    VectorType singularValues;
+    MatrixType rightVectors;
+    if (!matrix.SingularValueDecompose(leftVectors, singularValues, rightVectors, tolerance)) {
+        return false;
+    }
+
+    float result = INFINITY;
+    if (singularValues[0] > 0.0f && singularValues[N - 1] > 0.0f) {
+        result = singularValues[0] / singularValues[N - 1];
+    }
+
+    conditionNumber = result;
+    return true;
+}
+
+template <int N, typename MatrixType, typename VectorType>
+static bool ComputePseudoInverse(const MatrixType &matrix, MatrixType &pseudoInverse, float tolerance) {
+    MatrixType leftVectors;
+    VectorType singularValues;
+    MatrixType rightVectors;
+    if (!matrix.SingularValueDecompose(leftVectors, singularValues, rightVectors, tolerance)) {
+        return false;
+    }
+
+    MatrixType inverseSingularValues = MatrixType::zero;
+    for (int i = 0; i < N; i++) {
+        if (singularValues[i] > 0.0f) {
+            inverseSingularValues[i][i] = 1.0f / singularValues[i];
+        }
+    }
+
+    MatrixType result = rightVectors * inverseSingularValues;
+    result *= leftVectors.Transpose();
+    if (!result.IsFinite()) {
+        return false;
+    }
+
+    pseudoInverse = result;
     return true;
 }
 

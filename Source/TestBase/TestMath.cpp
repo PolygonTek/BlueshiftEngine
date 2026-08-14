@@ -938,6 +938,23 @@ static void TestEigenAnalysis() {
         BE1::Mat4::identity, BE1::Vec4::one, unchangedResult4, 0, 1e-5f));
     VERIFY_EIGEN_ANALYSIS(unchangedResult4.eigenVector.Equals(rayleighResult4.eigenVector));
 
+    BE1::Mat2 svdInput2(3.0f, 1.0f, 0.0f, 0.0f);
+    BE1::Mat2 svdU2;
+    BE1::Vec2 singularValues2;
+    BE1::Mat2 svdV2;
+    VERIFY_EIGEN_ANALYSIS(svdInput2.SingularValueDecompose(svdU2, singularValues2, svdV2));
+    VERIFY_EIGEN_ANALYSIS(singularValues2[0] >= singularValues2[1]);
+    VERIFY_EIGEN_ANALYSIS(singularValues2[1] == 0.0f);
+
+    BE1::Mat2 singularMatrix2(
+        singularValues2[0], 0.0f,
+        0.0f, singularValues2[1]);
+    BE1::Mat2 reconstructed2 = svdU2 * singularMatrix2;
+    reconstructed2 *= svdV2.Transpose();
+    VERIFY_EIGEN_ANALYSIS(reconstructed2.Equals(svdInput2, 5e-4f));
+    VERIFY_EIGEN_ANALYSIS((svdU2.Transpose() * svdU2).Equals(BE1::Mat2::identity, 5e-4f));
+    VERIFY_EIGEN_ANALYSIS((svdV2.Transpose() * svdV2).Equals(BE1::Mat2::identity, 5e-4f));
+
     BE1::Mat3 svdInput3(
         BE1::Vec3(3.0f, 0.0f, 0.0f),
         BE1::Vec3(1.0f, 2.0f, 0.0f),
@@ -993,6 +1010,184 @@ static void TestEigenAnalysis() {
     VERIFY_EIGEN_ANALYSIS(BE1::EigenSolver3::InversePowerIteration(
         pivoted, 0.25f, BE1::Vec3(1.0f, 2.0f, 1.0f), inversePowerResult, 32, 1e-5f));
     VERIFY_EIGEN_ANALYSIS(BE1::Math::Fabs(inversePowerResult.eigenValue - 1.0f) <= epsilon);
+}
+
+template <typename MatrixType>
+static void VerifyMoorePenroseConditions(const MatrixType &matrix, const MatrixType &pseudoInverse, float epsilon) {
+    MatrixType matrixProjection = matrix * pseudoInverse;
+    MatrixType pseudoInverseProjection = pseudoInverse * matrix;
+
+    VERIFY_EIGEN_ANALYSIS((matrixProjection * matrix).Equals(matrix, epsilon));
+    VERIFY_EIGEN_ANALYSIS((pseudoInverseProjection * pseudoInverse).Equals(pseudoInverse, epsilon));
+    VERIFY_EIGEN_ANALYSIS(matrixProjection.Equals(matrixProjection.Transpose(), epsilon));
+    VERIFY_EIGEN_ANALYSIS(pseudoInverseProjection.Equals(pseudoInverseProjection.Transpose(), epsilon));
+}
+
+static void TestMatrixConditionAndPseudoInverse() {
+    const float epsilon = 1e-3f;
+
+    const BE1::Mat2 diagonal2(4.0f, 0.0f, 0.0f, 2.0f);
+    float condition2 = -1.0f;
+    VERIFY_EIGEN_ANALYSIS(diagonal2.ConditionNumber(condition2));
+    VERIFY_EIGEN_ANALYSIS(BE1::Math::Fabs(condition2 - 2.0f) <= epsilon);
+
+    BE1::Mat2 pseudoInverse2;
+    VERIFY_EIGEN_ANALYSIS(diagonal2.PseudoInverse(pseudoInverse2));
+    VERIFY_EIGEN_ANALYSIS(pseudoInverse2.Equals(BE1::Mat2(0.25f, 0.0f, 0.0f, 0.5f), epsilon));
+    VerifyMoorePenroseConditions(diagonal2, pseudoInverse2, epsilon);
+
+    const BE1::Mat2 rankOne2 = BE1::Mat2::FromOuterProduct(BE1::Vec2(1.0f, 2.0f), BE1::Vec2(3.0f, -1.0f));
+    VERIFY_EIGEN_ANALYSIS(rankOne2.PseudoInverse(pseudoInverse2));
+    VerifyMoorePenroseConditions(rankOne2, pseudoInverse2, epsilon);
+    VERIFY_EIGEN_ANALYSIS(rankOne2.ConditionNumber(condition2));
+    VERIFY_EIGEN_ANALYSIS(IEEE_FLT_IS_INF(condition2));
+
+    BE1::Mat2 zeroPseudoInverse = BE1::Mat2::identity;
+    VERIFY_EIGEN_ANALYSIS(BE1::Mat2::zero.PseudoInverse(zeroPseudoInverse));
+    VERIFY_EIGEN_ANALYSIS(zeroPseudoInverse.Equals(BE1::Mat2::zero));
+    VERIFY_EIGEN_ANALYSIS(BE1::Mat2::zero.ConditionNumber(condition2));
+    VERIFY_EIGEN_ANALYSIS(IEEE_FLT_IS_INF(condition2));
+
+    const BE1::Mat2 threshold2(1.0f, 0.0f, 0.0f, 1e-5f);
+    VERIFY_EIGEN_ANALYSIS(threshold2.ConditionNumber(condition2, 1e-4f));
+    VERIFY_EIGEN_ANALYSIS(IEEE_FLT_IS_INF(condition2));
+    VERIFY_EIGEN_ANALYSIS(threshold2.ConditionNumber(condition2, 1e-6f));
+    VERIFY_EIGEN_ANALYSIS(BE1::Math::Fabs(condition2 - 1e5f) <= 20.0f);
+
+    const BE1::Mat3 diagonal3(
+        BE1::Vec3(6.0f, 0.0f, 0.0f),
+        BE1::Vec3(0.0f, 3.0f, 0.0f),
+        BE1::Vec3(0.0f, 0.0f, 2.0f));
+    float condition3 = -1.0f;
+    VERIFY_EIGEN_ANALYSIS(diagonal3.ConditionNumber(condition3));
+    VERIFY_EIGEN_ANALYSIS(BE1::Math::Fabs(condition3 - 3.0f) <= epsilon);
+    VERIFY_EIGEN_ANALYSIS((diagonal3 * 10000.0f).ConditionNumber(condition3));
+    VERIFY_EIGEN_ANALYSIS(BE1::Math::Fabs(condition3 - 3.0f) <= epsilon);
+
+    BE1::Mat3 pseudoInverse3;
+    VERIFY_EIGEN_ANALYSIS(diagonal3.PseudoInverse(pseudoInverse3));
+    const BE1::Mat3 expectedPseudoInverse3(
+        BE1::Vec3(1.0f / 6.0f, 0.0f, 0.0f),
+        BE1::Vec3(0.0f, 1.0f / 3.0f, 0.0f),
+        BE1::Vec3(0.0f, 0.0f, 0.5f));
+    VERIFY_EIGEN_ANALYSIS(pseudoInverse3.Equals(expectedPseudoInverse3, epsilon));
+    VerifyMoorePenroseConditions(diagonal3, pseudoInverse3, epsilon);
+
+    const BE1::Mat3 rankOne3 = BE1::Mat3::FromOuterProduct(
+        BE1::Vec3(1.0f, 2.0f, -1.0f), BE1::Vec3(2.0f, -1.0f, 3.0f));
+    VERIFY_EIGEN_ANALYSIS(rankOne3.PseudoInverse(pseudoInverse3));
+    VerifyMoorePenroseConditions(rankOne3, pseudoInverse3, epsilon);
+    VERIFY_EIGEN_ANALYSIS(rankOne3.ConditionNumber(condition3));
+    VERIFY_EIGEN_ANALYSIS(IEEE_FLT_IS_INF(condition3));
+
+    const BE1::Mat4 diagonal4(
+        BE1::Vec4(8.0f, 0.0f, 0.0f, 0.0f),
+        BE1::Vec4(0.0f, 4.0f, 0.0f, 0.0f),
+        BE1::Vec4(0.0f, 0.0f, 2.0f, 0.0f),
+        BE1::Vec4(0.0f, 0.0f, 0.0f, 1.0f));
+    float condition4 = -1.0f;
+    VERIFY_EIGEN_ANALYSIS(diagonal4.ConditionNumber(condition4));
+    VERIFY_EIGEN_ANALYSIS(BE1::Math::Fabs(condition4 - 8.0f) <= epsilon);
+
+    BE1::Mat4 pseudoInverse4;
+    VERIFY_EIGEN_ANALYSIS(diagonal4.PseudoInverse(pseudoInverse4));
+    const BE1::Mat4 expectedPseudoInverse4(
+        BE1::Vec4(0.125f, 0.0f, 0.0f, 0.0f),
+        BE1::Vec4(0.0f, 0.25f, 0.0f, 0.0f),
+        BE1::Vec4(0.0f, 0.0f, 0.5f, 0.0f),
+        BE1::Vec4(0.0f, 0.0f, 0.0f, 1.0f));
+    VERIFY_EIGEN_ANALYSIS(pseudoInverse4.Equals(expectedPseudoInverse4, epsilon));
+    VerifyMoorePenroseConditions(diagonal4, pseudoInverse4, epsilon);
+
+    const BE1::Mat4 rankOne4 = BE1::Mat4::FromOuterProduct(
+        BE1::Vec4(1.0f, 2.0f, -1.0f, 0.5f), BE1::Vec4(2.0f, -1.0f, 3.0f, 4.0f));
+    VERIFY_EIGEN_ANALYSIS(rankOne4.PseudoInverse(pseudoInverse4));
+    VerifyMoorePenroseConditions(rankOne4, pseudoInverse4, 2e-3f);
+    VERIFY_EIGEN_ANALYSIS(rankOne4.ConditionNumber(condition4));
+    VERIFY_EIGEN_ANALYSIS(IEEE_FLT_IS_INF(condition4));
+
+    float unchangedCondition = -7.0f;
+    BE1::Mat2 unchangedPseudoInverse = BE1::Mat2::identity;
+    VERIFY_EIGEN_ANALYSIS(!diagonal2.ConditionNumber(unchangedCondition, 0.0f));
+    VERIFY_EIGEN_ANALYSIS(unchangedCondition == -7.0f);
+    VERIFY_EIGEN_ANALYSIS(!diagonal2.PseudoInverse(unchangedPseudoInverse, 0.0f));
+    VERIFY_EIGEN_ANALYSIS(unchangedPseudoInverse.Equals(BE1::Mat2::identity));
+
+    const BE1::Mat2 nonFinite2(INFINITY, 0.0f, 0.0f, 1.0f);
+    VERIFY_EIGEN_ANALYSIS(!nonFinite2.ConditionNumber(unchangedCondition));
+    VERIFY_EIGEN_ANALYSIS(unchangedCondition == -7.0f);
+    VERIFY_EIGEN_ANALYSIS(!nonFinite2.PseudoInverse(unchangedPseudoInverse));
+    VERIFY_EIGEN_ANALYSIS(unchangedPseudoInverse.Equals(BE1::Mat2::identity));
+}
+
+static void TestSolveSymmetricPSD() {
+    const float epsilon = 1e-3f;
+
+    const BE1::Mat2 positiveDefinite2(4.0f, 1.0f, 1.0f, 3.0f);
+    const BE1::Vec2 expected2(1.0f, 2.0f);
+    const BE1::Vec2 rightHandSide2 = positiveDefinite2 * expected2;
+    BE1::Vec2 solution2(7.0f, 8.0f);
+    VERIFY_EIGEN_ANALYSIS(positiveDefinite2.SolveSymmetricPSD(rightHandSide2, solution2));
+    VERIFY_EIGEN_ANALYSIS(solution2.Equals(expected2, epsilon));
+
+    BE1::Vec2 aliasedSolution2 = rightHandSide2;
+    VERIFY_EIGEN_ANALYSIS(positiveDefinite2.SolveSymmetricPSD(aliasedSolution2, aliasedSolution2));
+    VERIFY_EIGEN_ANALYSIS(aliasedSolution2.Equals(expected2, epsilon));
+
+    const BE1::Mat2 rankDeficient2(2.0f, 0.0f, 0.0f, 0.0f);
+    VERIFY_EIGEN_ANALYSIS(rankDeficient2.SolveSymmetricPSD(BE1::Vec2(4.0f, 3.0f), solution2));
+    VERIFY_EIGEN_ANALYSIS(solution2.Equals(BE1::Vec2(2.0f, 0.0f), epsilon));
+
+    solution2.Set(7.0f, 8.0f);
+    VERIFY_EIGEN_ANALYSIS(BE1::Mat2::zero.SolveSymmetricPSD(BE1::Vec2(2.0f, -3.0f), solution2));
+    VERIFY_EIGEN_ANALYSIS(solution2.Equals(BE1::Vec2::zero));
+
+    const BE1::Vec3 outerVector3(1.0f, -2.0f, 0.5f);
+    const BE1::Mat3 positiveDefinite3 =
+        BE1::Mat3::FromOuterProduct(outerVector3, outerVector3) + BE1::Mat3::identity * 2.0f;
+    const BE1::Vec3 expected3(0.5f, -1.0f, 2.0f);
+    const BE1::Vec3 rightHandSide3 = positiveDefinite3 * expected3;
+    BE1::Vec3 solution3;
+    VERIFY_EIGEN_ANALYSIS(positiveDefinite3.SolveSymmetricPSD(rightHandSide3, solution3));
+    VERIFY_EIGEN_ANALYSIS(solution3.Equals(expected3, epsilon));
+
+    const BE1::Mat3 rankDeficient3(
+        BE1::Vec3(3.0f, 0.0f, 0.0f),
+        BE1::Vec3(0.0f, 1.0f, 0.0f),
+        BE1::Vec3(0.0f, 0.0f, 0.0f));
+    VERIFY_EIGEN_ANALYSIS(rankDeficient3.SolveSymmetricPSD(BE1::Vec3(6.0f, -2.0f, 5.0f), solution3));
+    VERIFY_EIGEN_ANALYSIS(solution3.Equals(BE1::Vec3(2.0f, -2.0f, 0.0f), epsilon));
+
+    const BE1::Vec4 outerVector4(1.0f, 0.5f, -1.0f, 2.0f);
+    const BE1::Mat4 positiveDefinite4 =
+        BE1::Mat4::FromOuterProduct(outerVector4, outerVector4) + BE1::Mat4::identity * 1.5f;
+    const BE1::Vec4 expected4(1.0f, -2.0f, 0.5f, 3.0f);
+    const BE1::Vec4 rightHandSide4 = positiveDefinite4 * expected4;
+    BE1::Vec4 solution4;
+    VERIFY_EIGEN_ANALYSIS(positiveDefinite4.SolveSymmetricPSD(rightHandSide4, solution4));
+    VERIFY_EIGEN_ANALYSIS(solution4.Equals(expected4, epsilon));
+
+    const BE1::Mat4 rankDeficient4(
+        BE1::Vec4(4.0f, 0.0f, 0.0f, 0.0f),
+        BE1::Vec4(0.0f, 2.0f, 0.0f, 0.0f),
+        BE1::Vec4(0.0f, 0.0f, 1.0f, 0.0f),
+        BE1::Vec4(0.0f, 0.0f, 0.0f, 0.0f));
+    VERIFY_EIGEN_ANALYSIS(rankDeficient4.SolveSymmetricPSD(BE1::Vec4(8.0f, -4.0f, 3.0f, 7.0f), solution4));
+    VERIFY_EIGEN_ANALYSIS(solution4.Equals(BE1::Vec4(2.0f, -2.0f, 3.0f, 0.0f), epsilon));
+
+    const BE1::Vec2 unchangedSolution2(7.0f, 8.0f);
+    solution2 = unchangedSolution2;
+    VERIFY_EIGEN_ANALYSIS(!BE1::Mat2(1.0f, 0.0f, 0.0f, -1.0f).SolveSymmetricPSD(BE1::Vec2::one, solution2));
+    VERIFY_EIGEN_ANALYSIS(solution2.Equals(unchangedSolution2));
+
+    VERIFY_EIGEN_ANALYSIS(!BE1::Mat2(1.0f, 2.0f, 0.0f, 1.0f).SolveSymmetricPSD(BE1::Vec2::one, solution2));
+    VERIFY_EIGEN_ANALYSIS(solution2.Equals(unchangedSolution2));
+    VERIFY_EIGEN_ANALYSIS(!positiveDefinite2.SolveSymmetricPSD(BE1::Vec2::one, solution2, 0.0f));
+    VERIFY_EIGEN_ANALYSIS(solution2.Equals(unchangedSolution2));
+    VERIFY_EIGEN_ANALYSIS(!positiveDefinite2.SolveSymmetricPSD(BE1::Vec2(INFINITY, 0.0f), solution2));
+    VERIFY_EIGEN_ANALYSIS(solution2.Equals(unchangedSolution2));
+    VERIFY_EIGEN_ANALYSIS(!BE1::Mat2(INFINITY, 0.0f, 0.0f, 1.0f).SolveSymmetricPSD(BE1::Vec2::one, solution2));
+    VERIFY_EIGEN_ANALYSIS(solution2.Equals(unchangedSolution2));
 }
 
 static void TestCovarianceAndPrincipalComponents() {
@@ -1234,6 +1429,8 @@ void Test::TestMath() {
     TestIntegerLog2();
     TestFloatToIntegerConversions();
     TestEigenAnalysis();
+    TestMatrixConditionAndPseudoInverse();
+    TestSolveSymmetricPSD();
     TestCovarianceAndPrincipalComponents();
     TestMatrixDecomposition();
     TestRotationConversions();
