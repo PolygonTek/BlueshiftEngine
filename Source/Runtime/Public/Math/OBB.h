@@ -217,9 +217,21 @@ BE_INLINE OBB::OBB(const AABB &inAabb, const Vec3 &inOrigin, const Mat3 &inAxis)
 
 BE_INLINE OBB::OBB(const AABB &inAabb, const Mat3x4 &inTransform) {
     center = (inAabb[0] + inAabb[1]) * 0.5f;
-    extents = inAabb[1] - center;
+    Vec3 localExtents = inAabb[1] - center;
     center = inTransform.TransformPos(center);
-    axis = inTransform.ToMat3().OrthoNormalize();
+
+    Mat3 transformAxis = inTransform.ToMat3();
+    axis = transformAxis;
+    axis.OrthoNormalizeSelf();
+
+    // Project the transformed local half-axes onto the normalized OBB axes.
+    // This preserves scale and also encloses affine shear from transform hierarchies.
+    for (int i = 0; i < 3; i++) {
+        extents[i] =
+            Math::Fabs(localExtents[0] * transformAxis[0].Dot(axis[i])) +
+            Math::Fabs(localExtents[1] * transformAxis[1].Dot(axis[i])) +
+            Math::Fabs(localExtents[2] * transformAxis[2].Dot(axis[i]));
+    }
 }
 
 BE_INLINE OBB OBB::operator+(const OBB &a) const & {
