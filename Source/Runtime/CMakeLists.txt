@@ -385,6 +385,7 @@ set(COMMON_ENGINE_FILES
     Private/Math/QRCP.h
     Private/Math/JacobiRotation.h
     Private/Math/JacobiSVD.h
+    Private/Math/EigenSolverFixed.h
     Private/Math/EigenSolver3.cpp
     Private/Math/EigenSolver4.cpp
     Private/Math/Matrix3.cpp
