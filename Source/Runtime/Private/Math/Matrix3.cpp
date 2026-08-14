@@ -15,6 +15,7 @@
 #include "Precompiled.h"
 #include "Math/Math.h"
 #include "Cholesky.h"
+#include "LU.h"
 #include "QRCP.h"
 #include "JacobiRotation.h"
 #include "JacobiSVD.h"
@@ -185,6 +186,10 @@ bool Mat3::InverseSelf() {
 
     return true;
 #endif
+}
+
+bool Mat3::Solve(const Vec3 &rightHandSide, Vec3 &solution, float tolerance) const {
+    return LU::Solve<3>(*this, rightHandSide, solution, tolerance);
 }
 
 bool Mat3::CholeskyDecompose(Mat3 &lowerTriangular, float tolerance) const {

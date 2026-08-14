@@ -1190,6 +1190,76 @@ static void TestSolveSymmetricPSD() {
     VERIFY_EIGEN_ANALYSIS(solution2.Equals(unchangedSolution2));
 }
 
+static void TestMatrixSolve() {
+    const float epsilon = 1e-4f;
+
+    // The leading zero requires a row interchange at the first pivot.
+    const BE1::Mat2 pivoted2(0.0f, 2.0f, 1.0f, 3.0f);
+    const BE1::Vec2 expected2(2.0f, -1.0f);
+    const BE1::Vec2 rightHandSide2 = pivoted2 * expected2;
+    BE1::Vec2 solution2(7.0f, 8.0f);
+    VERIFY_EIGEN_ANALYSIS(pivoted2.Solve(rightHandSide2, solution2));
+    VERIFY_EIGEN_ANALYSIS(solution2.Equals(expected2, epsilon));
+
+    BE1::Vec2 aliasedSolution2 = rightHandSide2;
+    VERIFY_EIGEN_ANALYSIS(pivoted2.Solve(aliasedSolution2, aliasedSolution2));
+    VERIFY_EIGEN_ANALYSIS(aliasedSolution2.Equals(expected2, epsilon));
+
+    // General Solve accepts nonsingular symmetric-indefinite matrices.
+    const BE1::Mat2 indefinite2(1.0f, 0.0f, 0.0f, -2.0f);
+    const BE1::Vec2 indefiniteExpected2(-3.0f, 2.0f);
+    VERIFY_EIGEN_ANALYSIS(indefinite2.Solve(indefinite2 * indefiniteExpected2, solution2));
+    VERIFY_EIGEN_ANALYSIS(solution2.Equals(indefiniteExpected2, epsilon));
+
+    const BE1::Mat3 pivoted3(
+        BE1::Vec3(0.0f, 1.0f, 2.0f),
+        BE1::Vec3(2.0f, -1.0f, 1.0f),
+        BE1::Vec3(1.0f, 0.0f, 3.0f));
+    const BE1::Vec3 expected3(1.0f, -2.0f, 0.5f);
+    BE1::Vec3 solution3;
+    VERIFY_EIGEN_ANALYSIS(pivoted3.Solve(pivoted3 * expected3, solution3));
+    VERIFY_EIGEN_ANALYSIS(solution3.Equals(expected3, epsilon));
+
+    const BE1::Mat4 pivoted4(
+        BE1::Vec4(0.0f, 1.0f, 0.0f, 0.0f),
+        BE1::Vec4(1.0f, 2.0f, 1.0f, 0.0f),
+        BE1::Vec4(0.0f, 1.0f, 3.0f, 1.0f),
+        BE1::Vec4(0.0f, 0.0f, 1.0f, 4.0f));
+    const BE1::Vec4 expected4(1.0f, -2.0f, 0.5f, 3.0f);
+    BE1::Vec4 solution4;
+    VERIFY_EIGEN_ANALYSIS(pivoted4.Solve(pivoted4 * expected4, solution4));
+    VERIFY_EIGEN_ANALYSIS(solution4.Equals(expected4, epsilon));
+
+    const BE1::Mat2 smallScale2 = pivoted2 * 1e-20f;
+    VERIFY_EIGEN_ANALYSIS(smallScale2.Solve(smallScale2 * expected2, solution2));
+    VERIFY_EIGEN_ANALYSIS(solution2.Equals(expected2, epsilon));
+    const BE1::Mat2 largeScale2 = pivoted2 * 1e20f;
+    VERIFY_EIGEN_ANALYSIS(largeScale2.Solve(largeScale2 * expected2, solution2));
+    VERIFY_EIGEN_ANALYSIS(solution2.Equals(expected2, epsilon));
+
+    const BE1::Vec2 unchangedSolution2(7.0f, 8.0f);
+    solution2 = unchangedSolution2;
+    const BE1::Mat2 singular2(1.0f, 2.0f, 2.0f, 4.0f);
+    VERIFY_EIGEN_ANALYSIS(!singular2.Solve(BE1::Vec2::one, solution2));
+    VERIFY_EIGEN_ANALYSIS(solution2.Equals(unchangedSolution2));
+
+    const BE1::Mat2 nearSingular2(1.0f, 0.0f, 0.0f, 1e-7f);
+    const BE1::Vec2 nearSingularExpected2(2.0f, 3.0f);
+    const BE1::Vec2 nearSingularRightHandSide2 = nearSingular2 * nearSingularExpected2;
+    VERIFY_EIGEN_ANALYSIS(!nearSingular2.Solve(nearSingularRightHandSide2, solution2, 1e-6f));
+    VERIFY_EIGEN_ANALYSIS(solution2.Equals(unchangedSolution2));
+    VERIFY_EIGEN_ANALYSIS(nearSingular2.Solve(nearSingularRightHandSide2, solution2, 1e-8f));
+    VERIFY_EIGEN_ANALYSIS(solution2.Equals(nearSingularExpected2, epsilon));
+
+    solution2 = unchangedSolution2;
+    VERIFY_EIGEN_ANALYSIS(!pivoted2.Solve(rightHandSide2, solution2, 0.0f));
+    VERIFY_EIGEN_ANALYSIS(solution2.Equals(unchangedSolution2));
+    VERIFY_EIGEN_ANALYSIS(!pivoted2.Solve(BE1::Vec2(INFINITY, 0.0f), solution2));
+    VERIFY_EIGEN_ANALYSIS(solution2.Equals(unchangedSolution2));
+    VERIFY_EIGEN_ANALYSIS(!BE1::Mat2(INFINITY, 0.0f, 0.0f, 1.0f).Solve(BE1::Vec2::one, solution2));
+    VERIFY_EIGEN_ANALYSIS(solution2.Equals(unchangedSolution2));
+}
+
 static void TestCovarianceAndPrincipalComponents() {
     const float epsilon = 1e-4f;
     BE1::Vec2 eigenValues2;
@@ -1431,6 +1501,7 @@ void Test::TestMath() {
     TestEigenAnalysis();
     TestMatrixConditionAndPseudoInverse();
     TestSolveSymmetricPSD();
+    TestMatrixSolve();
     TestCovarianceAndPrincipalComponents();
     TestMatrixDecomposition();
     TestRotationConversions();

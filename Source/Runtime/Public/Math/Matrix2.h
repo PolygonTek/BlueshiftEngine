@@ -222,6 +222,13 @@ public:
                         /// @return False if determinant is zero.
     bool                InverseSelf();
 
+                        /// Solves A * x = b using Doolittle LU decomposition with partial pivoting.
+                        /// The matrix must be finite and numerically nonsingular relative to its
+                        /// largest-magnitude element and the requested tolerance.
+                        /// On failure, solution is left unchanged. rightHandSide may alias solution.
+                        /// @return False if the inputs are invalid or no finite solution is representable.
+    bool                Solve(const Vec2 &rightHandSide, Vec2 &solution, float tolerance = MATRIX_EPSILON) const;
+
                         /// Computes A = L * L^T, where L is lower triangular.
                         /// The matrix must be finite, symmetric, and numerically positive definite
                         /// relative to its largest-magnitude element and the requested tolerance.

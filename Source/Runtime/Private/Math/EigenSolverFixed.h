@@ -14,24 +14,14 @@
 
 #pragma once
 
+#include "LU.h"
+
 BE_NAMESPACE_BEGIN
 
 namespace EigenSolverFixed {
 
-static BE_FORCE_INLINE float GetMatrixElement(const Mat3 &matrix, int row, int column) {
-    return matrix[column][row];
-}
-
-static BE_FORCE_INLINE float GetMatrixElement(const Mat4 &matrix, int row, int column) {
-    return matrix[row][column];
-}
-
-template <int Dimension>
-struct LUFactor {
-    float matrix[Dimension][Dimension];
-    int pivotRows[Dimension];
-};
-
+// Uses the Rayleigh quotient as the eigenvalue estimate and ||A v - lambda v||
+// as the convergence residual for the normalized candidate vector.
 template <typename MatrixType, typename VectorType, typename EigenPairType>
 static bool ComputeEigenPair(const MatrixType &matrix, const VectorType &eigenVector, int numIterations, EigenPairType &result) {
     VectorType transformed = matrix * eigenVector;
@@ -54,104 +44,17 @@ static bool ValidateIterationInput(const MatrixType &matrix, const VectorType &i
     return maxIterations > 0 && tolerance > 0.0f && !IEEE_FLT_IS_NAN(tolerance) && matrix.IsFinite() && initialVector.IsFinite();
 }
 
+// Factors A - shift * I with partial pivoting. Failure means the shifted
+// system is non-finite or numerically singular at the selected shift.
 template <int Dimension, typename MatrixType>
-static bool FactorShiftedMatrix(const MatrixType &matrix, float shift, LUFactor<Dimension> &factor) {
-    float matrixScale = 0.0f;
+static bool FactorShiftedMatrix(const MatrixType &matrix, float shift, LU::Factor<Dimension> &factor) {
+    float shiftedMatrix[Dimension][Dimension];
     for (int row = 0; row < Dimension; row++) {
         for (int column = 0; column < Dimension; column++) {
-            float value = GetMatrixElement(matrix, row, column) - (row == column ? shift : 0.0f);
-            if (IEEE_FLT_IS_NAN(value)) {
-                return false;
-            }
-
-            factor.matrix[row][column] = value;
-            float absValue = Math::Fabs(value);
-            if (absValue > matrixScale) {
-                matrixScale = absValue;
-            }
+            shiftedMatrix[row][column] = LU::GetMatrixElement(matrix, row, column) - (row == column ? shift : 0.0f);
         }
     }
-
-    if (matrixScale == 0.0f) {
-        return false;
-    }
-
-    float pivotTolerance = FLT_EPSILON * matrixScale;
-
-    // LU decomposition with partial pivoting of A - shift * I.
-    for (int column = 0; column < Dimension; column++) {
-        int pivotRow = column;
-        float pivotAbs = Math::Fabs(factor.matrix[column][column]);
-
-        for (int row = column + 1; row < Dimension; row++) {
-            float candidateAbs = Math::Fabs(factor.matrix[row][column]);
-            if (candidateAbs > pivotAbs) {
-                pivotAbs = candidateAbs;
-                pivotRow = row;
-            }
-        }
-
-        if (pivotAbs <= pivotTolerance) {
-            return false;
-        }
-
-        factor.pivotRows[column] = pivotRow;
-        if (pivotRow != column) {
-            for (int i = 0; i < Dimension; i++) {
-                float value = factor.matrix[column][i];
-                factor.matrix[column][i] = factor.matrix[pivotRow][i];
-                factor.matrix[pivotRow][i] = value;
-            }
-        }
-
-        float inversePivot = 1.0f / factor.matrix[column][column];
-        for (int row = column + 1; row < Dimension; row++) {
-            factor.matrix[row][column] *= inversePivot;
-            float multiplier = factor.matrix[row][column];
-            for (int i = column + 1; i < Dimension; i++) {
-                factor.matrix[row][i] -= multiplier * factor.matrix[column][i];
-            }
-        }
-    }
-    return true;
-}
-
-template <int Dimension, typename VectorType>
-static bool SolveFactorizedMatrix(const LUFactor<Dimension> &factor, const VectorType &rightHandSide, VectorType &solution) {
-    float x[Dimension];
-    for (int i = 0; i < Dimension; i++) {
-        x[i] = rightHandSide[i];
-    }
-
-    // Apply the factorization's row permutations to the right-hand side.
-    for (int i = 0; i < Dimension; i++) {
-        int pivotRow = factor.pivotRows[i];
-        if (pivotRow != i) {
-            float value = x[i];
-            x[i] = x[pivotRow];
-            x[pivotRow] = value;
-        }
-    }
-
-    // Forward substitution for the unit-diagonal lower triangle.
-    for (int i = 1; i < Dimension; i++) {
-        for (int j = 0; j < i; j++) {
-            x[i] -= factor.matrix[i][j] * x[j];
-        }
-    }
-
-    // Back substitution for the upper triangle.
-    for (int i = Dimension - 1; i >= 0; i--) {
-        for (int j = i + 1; j < Dimension; j++) {
-            x[i] -= factor.matrix[i][j] * x[j];
-        }
-        x[i] /= factor.matrix[i][i];
-    }
-
-    for (int i = 0; i < Dimension; i++) {
-        solution[i] = x[i];
-    }
-    return solution.IsFinite();
+    return LU::FactorizeArray<Dimension>(shiftedMatrix, factor, FLT_EPSILON);
 }
 
 template <int Dimension, typename MatrixType, typename VectorType, typename EigenPairType>
@@ -177,6 +80,8 @@ static bool PowerIteration(const MatrixType &matrix, const VectorType &initialVe
     }
 
     float residualTolerance = tolerance * matrixScale;
+    // Repeated multiplication amplifies the eigenvector associated with the
+    // eigenvalue of largest magnitude.
     for (int iteration = 1; iteration <= maxIterations; iteration++) {
         VectorType nextVector = matrix * vector;
         if (!nextVector.SafeNormalize()) {
@@ -204,11 +109,13 @@ static bool InversePowerIteration(const MatrixType &matrix, float shift, const V
         return false;
     }
 
-    LUFactor<Dimension> factor;
+    LU::Factor<Dimension> factor;
     if (!FactorShiftedMatrix(matrix, shift, factor)) {
         return false;
     }
 
+    // The shift is fixed, so reuse its LU factors. Applying the inverse favors
+    // the eigenvector whose eigenvalue is closest to that shift.
     VectorType vector = initialVector;
     if (!vector.SafeNormalize()) {
         return false;
@@ -217,7 +124,7 @@ static bool InversePowerIteration(const MatrixType &matrix, float shift, const V
     float residualTolerance = tolerance * matrix.MaxAbsComponent();
     for (int iteration = 1; iteration <= maxIterations; iteration++) {
         VectorType nextVector;
-        if (!SolveFactorizedMatrix(factor, vector, nextVector) || !nextVector.SafeNormalize()) {
+        if (!LU::SolveFactorized(factor, vector, nextVector) || !nextVector.SafeNormalize()) {
             return false;
         }
 
@@ -263,13 +170,15 @@ static bool RayleighQuotientIteration(const MatrixType &matrix, const VectorType
     }
 
     for (int iteration = 1; iteration <= maxIterations; iteration++) {
-        LUFactor<Dimension> factor;
+        // The current Rayleigh quotient becomes the next shift, requiring a
+        // new factorization of the shifted system on every iteration.
+        LU::Factor<Dimension> factor;
         if (!FactorShiftedMatrix(matrix, candidate.eigenValue, factor)) {
             return false;
         }
 
         VectorType nextVector;
-        if (!SolveFactorizedMatrix(factor, vector, nextVector) || !nextVector.SafeNormalize()) {
+        if (!LU::SolveFactorized(factor, vector, nextVector) || !nextVector.SafeNormalize()) {
             return false;
         }
 

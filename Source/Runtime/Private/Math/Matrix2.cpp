@@ -15,6 +15,7 @@
 #include "Precompiled.h"
 #include "Math/Math.h"
 #include "Cholesky.h"
+#include "LU.h"
 #include "QRCP.h"
 #include "JacobiSVD.h"
 #include "SymmetricPSDSolver.h"
@@ -130,6 +131,10 @@ bool Mat2::InverseSelf() {
 
     return (s != 0.0f && !FLOAT_IS_NAN(s));
 #endif
+}
+
+bool Mat2::Solve(const Vec2 &rightHandSide, Vec2 &solution, float tolerance) const {
+    return LU::Solve<2>(*this, rightHandSide, solution, tolerance);
 }
 
 bool Mat2::CholeskyDecompose(Mat2 &lowerTriangular, float tolerance) const {

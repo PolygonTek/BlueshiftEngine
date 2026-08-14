@@ -15,6 +15,7 @@
 #include "Precompiled.h"
 #include "Math/Math.h"
 #include "Cholesky.h"
+#include "LU.h"
 #include "QRCP.h"
 #include "JacobiRotation.h"
 #include "JacobiSVD.h"
@@ -1623,6 +1624,10 @@ Vec3 Mat4::ToScaleVec3() const {
 
 Vec3 Mat4::ToSignedScaleVec3() const {
     return ToMat3x4().ToSignedScaleVec3();
+}
+
+bool Mat4::Solve(const Vec4 &rightHandSide, Vec4 &solution, float tolerance) const {
+    return LU::Solve<4>(*this, rightHandSide, solution, tolerance);
 }
 
 bool Mat4::CholeskyDecompose(Mat4 &lowerTriangular, float tolerance) const {
