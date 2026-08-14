@@ -15,6 +15,7 @@
 #include "Precompiled.h"
 #include "Math/Math.h"
 #include "Cholesky.h"
+#include "QRCP.h"
 #include "JacobiRotation.h"
 #include "JacobiSVD.h"
 
@@ -1643,6 +1644,42 @@ bool Mat4::CholeskyDecompose(Mat4 &lowerTriangular, float tolerance) const {
         Vec4(output[3][0], output[3][1], output[3][2], output[3][3]));
 
     lowerTriangular = lower;
+    return true;
+}
+
+bool Mat4::QRDecomposeColumnPivoted(Mat4 &orthogonalFactor, Mat4 &upperTriangularFactor, int columnPermutation[4], int &rank, float tolerance) const {
+    float input[4][4];
+    for (int row = 0; row < 4; row++) {
+        for (int column = 0; column < 4; column++) {
+            input[row][column] = mat[row][column];
+        }
+    }
+
+    float outputQ[4][4];
+    float outputR[4][4];
+    int outputPermutation[4];
+    int outputRank;
+    if (!QRCP::Decompose<4>(input, outputQ, outputR, outputPermutation, outputRank, tolerance)) {
+        return false;
+    }
+
+    Mat4 q(
+        Vec4(outputQ[0][0], outputQ[0][1], outputQ[0][2], outputQ[0][3]),
+        Vec4(outputQ[1][0], outputQ[1][1], outputQ[1][2], outputQ[1][3]),
+        Vec4(outputQ[2][0], outputQ[2][1], outputQ[2][2], outputQ[2][3]),
+        Vec4(outputQ[3][0], outputQ[3][1], outputQ[3][2], outputQ[3][3]));
+    Mat4 r(
+        Vec4(outputR[0][0], outputR[0][1], outputR[0][2], outputR[0][3]),
+        Vec4(outputR[1][0], outputR[1][1], outputR[1][2], outputR[1][3]),
+        Vec4(outputR[2][0], outputR[2][1], outputR[2][2], outputR[2][3]),
+        Vec4(outputR[3][0], outputR[3][1], outputR[3][2], outputR[3][3]));
+
+    orthogonalFactor = q;
+    upperTriangularFactor = r;
+    for (int i = 0; i < 4; i++) {
+        columnPermutation[i] = outputPermutation[i];
+    }
+    rank = outputRank;
     return true;
 }
 

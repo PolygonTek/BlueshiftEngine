@@ -221,14 +221,24 @@ public:
                         /// The matrix must be finite, symmetric, and numerically positive definite
                         /// relative to its largest-magnitude element and the requested tolerance.
                         /// On failure, lowerTriangular is left unchanged.
-                        /// @return False if the input requirements are not met or tolerance is not positive.
+                        /// @return False if the input requirements are not met.
     bool                CholeskyDecompose(Mat2 &lowerTriangular, float tolerance = MATRIX_EPSILON) const;
+
+                        /// Computes the column-pivoted QR factorization A * P = Q * R.
+                        /// Q is orthogonal, and R is upper triangular with non-negative diagonal entries.
+                        /// columnPermutation[j] is the original column represented by pivoted column j.
+                        /// rank is the numerical rank relative to the largest diagonal entry of R.
+                        /// Rank-deficient matrices are successfully decomposed.
+                        /// On failure, all output parameters are left unchanged.
+                        /// @return False if this matrix is not finite or the factors cannot be
+                        /// represented by finite floats.
+    bool                QRDecomposeColumnPivoted(Mat2 &orthogonalFactor, Mat2 &upperTriangularFactor, int columnPermutation[2], int &rank, float tolerance = MATRIX_EPSILON) const;
 
                         /// Decomposes this symmetric matrix into eigenvalues and eigenvectors.
                         /// Eigenvalues are sorted in descending order and the corresponding
                         /// orthonormal eigenvectors are stored in the columns of eigenVectors.
                         /// On failure, the output parameters are left unchanged.
-                        /// @return False if this matrix is not finite and symmetric or epsilon is not positive.
+                        /// @return False if this matrix is non-finite or non-symmetric.
     bool                EigenDecomposeSymmetric(Vec2 &eigenValues, Mat2 &eigenVectors, float epsilon = MATRIX_EPSILON) const;
 
     static Mat2         FromOuterProduct(const Vec2 &a, const Vec2 &b);

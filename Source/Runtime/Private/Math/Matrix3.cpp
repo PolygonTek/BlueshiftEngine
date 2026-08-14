@@ -15,6 +15,7 @@
 #include "Precompiled.h"
 #include "Math/Math.h"
 #include "Cholesky.h"
+#include "QRCP.h"
 #include "JacobiRotation.h"
 #include "JacobiSVD.h"
 
@@ -205,6 +206,41 @@ bool Mat3::CholeskyDecompose(Mat3 &lowerTriangular, float tolerance) const {
         Vec3(output[0][2], output[1][2], output[2][2]));
 
     lowerTriangular = lower;
+    return true;
+}
+
+bool Mat3::QRDecomposeColumnPivoted(Mat3 &orthogonalFactor, Mat3 &upperTriangularFactor, int columnPermutation[3], int &rank, float tolerance) const {
+    float input[3][3];
+    for (int row = 0; row < 3; row++) {
+        for (int column = 0; column < 3; column++) {
+            input[row][column] = mat[column][row];
+        }
+    }
+
+    float outputQ[3][3];
+    float outputR[3][3];
+    int outputPermutation[3];
+    int outputRank;
+    if (!QRCP::Decompose<3>(input, outputQ, outputR, outputPermutation, outputRank, tolerance)) {
+        return false;
+    }
+
+    // Mat3 stores columns, while the shared QRCP helper uses row-major arrays.
+    Mat3 q(
+        Vec3(outputQ[0][0], outputQ[1][0], outputQ[2][0]),
+        Vec3(outputQ[0][1], outputQ[1][1], outputQ[2][1]),
+        Vec3(outputQ[0][2], outputQ[1][2], outputQ[2][2]));
+    Mat3 r(
+        Vec3(outputR[0][0], outputR[1][0], outputR[2][0]),
+        Vec3(outputR[0][1], outputR[1][1], outputR[2][1]),
+        Vec3(outputR[0][2], outputR[1][2], outputR[2][2]));
+
+    orthogonalFactor = q;
+    upperTriangularFactor = r;
+    for (int i = 0; i < 3; i++) {
+        columnPermutation[i] = outputPermutation[i];
+    }
+    rank = outputRank;
     return true;
 }
 

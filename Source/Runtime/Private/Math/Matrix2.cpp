@@ -15,6 +15,7 @@
 #include "Precompiled.h"
 #include "Math/Math.h"
 #include "Cholesky.h"
+#include "QRCP.h"
 
 BE_NAMESPACE_BEGIN
 
@@ -147,6 +148,38 @@ bool Mat2::CholeskyDecompose(Mat2 &lowerTriangular, float tolerance) const {
         Vec2(output[1][0], output[1][1]));
 
     lowerTriangular = lower;
+    return true;
+}
+
+bool Mat2::QRDecomposeColumnPivoted(Mat2 &orthogonalFactor, Mat2 &upperTriangularFactor, int columnPermutation[2], int &rank, float tolerance) const {
+    float input[2][2];
+    for (int row = 0; row < 2; row++) {
+        for (int column = 0; column < 2; column++) {
+            input[row][column] = mat[row][column];
+        }
+    }
+
+    float outputQ[2][2];
+    float outputR[2][2];
+    int outputPermutation[2];
+    int outputRank;
+    if (!QRCP::Decompose<2>(input, outputQ, outputR, outputPermutation, outputRank, tolerance)) {
+        return false;
+    }
+
+    Mat2 q(
+        Vec2(outputQ[0][0], outputQ[0][1]),
+        Vec2(outputQ[1][0], outputQ[1][1]));
+    Mat2 r(
+        Vec2(outputR[0][0], outputR[0][1]),
+        Vec2(outputR[1][0], outputR[1][1]));
+
+    orthogonalFactor = q;
+    upperTriangularFactor = r;
+    for (int i = 0; i < 2; i++) {
+        columnPermutation[i] = outputPermutation[i];
+    }
+    rank = outputRank;
     return true;
 }
 
