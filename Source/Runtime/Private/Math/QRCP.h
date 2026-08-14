@@ -18,15 +18,28 @@ BE_NAMESPACE_BEGIN
 
 namespace QRCP {
 
-// Recomputes the squared norm of a column below the active diagonal. Fixed-size
-// matrices are small enough that this is preferable to an approximate norm downdate.
+// Recomputes the norm of a column below the active diagonal. Scaling by the largest
+// component prevents very small trailing columns from underflowing while squaring.
 template <int N>
-static BE_FORCE_INLINE float TrailingColumnNormSqr(const float matrix[N][N], int firstRow, int column) {
-    float normSqr = 0.0f;
+static BE_FORCE_INLINE float TrailingColumnNorm(const float matrix[N][N], int firstRow, int column) {
+    float scale = 0.0f;
     for (int row = firstRow; row < N; row++) {
-        normSqr += matrix[row][column] * matrix[row][column];
+        float absValue = Math::Fabs(matrix[row][column]);
+        if (absValue > scale) {
+            scale = absValue;
+        }
     }
-    return normSqr;
+
+    if (scale == 0.0f) {
+        return 0.0f;
+    }
+
+    float scaledNormSqr = 0.0f;
+    for (int row = firstRow; row < N; row++) {
+        float scaledValue = matrix[row][column] / scale;
+        scaledNormSqr += scaledValue * scaledValue;
+    }
+    return scale * Math::Sqrt(scaledNormSqr);
 }
 
 // Computes the column-pivoted Householder QR factorization input * P = Q * R.
@@ -68,22 +81,22 @@ static bool Decompose(const float input[N][N], float outputQ[N][N], float output
     if (matrixScale > 0.0f) {
         for (int k = 0; k < N - 1; k++) {
             int pivotColumn = k;
-            float maxNormSqr = TrailingColumnNormSqr<N>(r, k, k);
+            float maxNorm = TrailingColumnNorm<N>(r, k, k);
 
             for (int column = k + 1; column < N; column++) {
-                float normSqr = TrailingColumnNormSqr<N>(r, k, column);
-                if (normSqr > maxNormSqr) {
-                    maxNormSqr = normSqr;
+                float norm = TrailingColumnNorm<N>(r, k, column);
+                if (norm > maxNorm) {
+                    maxNorm = norm;
                     pivotColumn = column;
                 }
             }
 
-            if (IEEE_FLT_IS_NAN(maxNormSqr)) {
+            if (IEEE_FLT_IS_NAN(maxNorm)) {
                 return false;
             }
 
             // A zero maximum means every remaining trailing column is already zero.
-            if (maxNormSqr == 0.0f) {
+            if (maxNorm == 0.0f) {
                 break;
             }
 
@@ -99,22 +112,33 @@ static bool Decompose(const float input[N][N], float outputQ[N][N], float output
                 permutation[pivotColumn] = column;
             }
 
-            float norm = Math::Sqrt(maxNormSqr);
-            float alpha = r[k][k] >= 0.0f ? -norm : norm;
+            float alpha = r[k][k] >= 0.0f ? -maxNorm : maxNorm;
 
             // Choosing alpha with the opposite sign avoids cancellation in v[k].
             float v[N] = {};
-            float vNormSqr = 0.0f;
             for (int row = k; row < N; row++) {
                 v[row] = r[row][k];
             }
             v[k] -= alpha;
+
+            // H is invariant to scaling v. Normalize it by its largest component so
+            // v^T * v and its reciprocal stay representable for tiny trailing columns.
+            float vScale = 0.0f;
             for (int row = k; row < N; row++) {
-                vNormSqr += v[row] * v[row];
+                float absValue = Math::Fabs(v[row]);
+                if (absValue > vScale) {
+                    vScale = absValue;
+                }
             }
 
-            if (vNormSqr <= 0.0f || IEEE_FLT_IS_NAN(vNormSqr)) {
+            if (vScale == 0.0f || IEEE_FLT_IS_NAN(vScale)) {
                 return false;
+            }
+
+            float vNormSqr = 0.0f;
+            for (int row = k; row < N; row++) {
+                v[row] /= vScale;
+                vNormSqr += v[row] * v[row];
             }
 
             float beta = 2.0f / vNormSqr;
