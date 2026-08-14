@@ -217,6 +217,13 @@ public:
                         /// @return False if determinant is zero.
     bool                InverseSelf();
 
+                        /// Computes A = L * L^T, where L is lower triangular.
+                        /// The matrix must be finite, symmetric, and numerically positive definite
+                        /// relative to its largest-magnitude element and the requested tolerance.
+                        /// On failure, lowerTriangular is left unchanged.
+                        /// @return False if the input requirements are not met or tolerance is not positive.
+    bool                CholeskyDecompose(Mat2 &lowerTriangular, float tolerance = MATRIX_EPSILON) const;
+
                         /// Decomposes this symmetric matrix into eigenvalues and eigenvectors.
                         /// Eigenvalues are sorted in descending order and the corresponding
                         /// orthonormal eigenvectors are stored in the columns of eigenVectors.

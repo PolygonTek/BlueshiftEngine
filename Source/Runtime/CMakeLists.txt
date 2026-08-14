@@ -381,6 +381,7 @@ set(COMMON_ENGINE_FILES
     Private/Math/Pluecker.cpp
     Private/Math/Sphere.cpp
     Private/Math/Cylinder.cpp
+    Private/Math/Cholesky.h
     Private/Math/JacobiRotation.h
     Private/Math/JacobiSVD.h
     Private/Math/EigenSolver3.cpp

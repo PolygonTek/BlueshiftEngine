@@ -14,6 +14,7 @@
 
 #include "Precompiled.h"
 #include "Math/Math.h"
+#include "Cholesky.h"
 
 BE_NAMESPACE_BEGIN
 
@@ -126,6 +127,27 @@ bool Mat2::InverseSelf() {
 
     return (s != 0.0f && !FLOAT_IS_NAN(s));
 #endif
+}
+
+bool Mat2::CholeskyDecompose(Mat2 &lowerTriangular, float tolerance) const {
+    float input[2][2];
+    for (int row = 0; row < 2; row++) {
+        for (int column = 0; column < 2; column++) {
+            input[row][column] = mat[row][column];
+        }
+    }
+
+    float output[2][2];
+    if (!Cholesky::Decompose<2>(input, output, tolerance)) {
+        return false;
+    }
+
+    Mat2 lower(
+        Vec2(output[0][0], output[0][1]),
+        Vec2(output[1][0], output[1][1]));
+
+    lowerTriangular = lower;
+    return true;
 }
 
 bool Mat2::EigenDecomposeSymmetric(Vec2 &eigenValues, Mat2 &eigenVectors, float epsilon) const {

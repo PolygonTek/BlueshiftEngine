@@ -14,6 +14,7 @@
 
 #include "Precompiled.h"
 #include "Math/Math.h"
+#include "Cholesky.h"
 #include "JacobiRotation.h"
 #include "JacobiSVD.h"
 
@@ -182,6 +183,29 @@ bool Mat3::InverseSelf() {
 
     return true;
 #endif
+}
+
+bool Mat3::CholeskyDecompose(Mat3 &lowerTriangular, float tolerance) const {
+    float input[3][3];
+    for (int row = 0; row < 3; row++) {
+        for (int column = 0; column < 3; column++) {
+            input[row][column] = mat[column][row];
+        }
+    }
+
+    float output[3][3];
+    if (!Cholesky::Decompose<3>(input, output, tolerance)) {
+        return false;
+    }
+
+    // Mat3 stores columns, while the shared Cholesky helper uses row-major arrays.
+    Mat3 lower(
+        Vec3(output[0][0], output[1][0], output[2][0]),
+        Vec3(output[0][1], output[1][1], output[2][1]),
+        Vec3(output[0][2], output[1][2], output[2][2]));
+
+    lowerTriangular = lower;
+    return true;
 }
 
 bool Mat3::EigenDecomposeSymmetric(Vec3 &eigenValues, Mat3 &eigenVectors, float epsilon) const {

@@ -14,6 +14,7 @@
 
 #include "Precompiled.h"
 #include "Math/Math.h"
+#include "Cholesky.h"
 #include "JacobiRotation.h"
 #include "JacobiSVD.h"
 
@@ -1620,6 +1621,29 @@ Vec3 Mat4::ToScaleVec3() const {
 
 Vec3 Mat4::ToSignedScaleVec3() const {
     return ToMat3x4().ToSignedScaleVec3();
+}
+
+bool Mat4::CholeskyDecompose(Mat4 &lowerTriangular, float tolerance) const {
+    float input[4][4];
+    for (int row = 0; row < 4; row++) {
+        for (int column = 0; column < 4; column++) {
+            input[row][column] = mat[row][column];
+        }
+    }
+
+    float output[4][4];
+    if (!Cholesky::Decompose<4>(input, output, tolerance)) {
+        return false;
+    }
+
+    Mat4 lower(
+        Vec4(output[0][0], output[0][1], output[0][2], output[0][3]),
+        Vec4(output[1][0], output[1][1], output[1][2], output[1][3]),
+        Vec4(output[2][0], output[2][1], output[2][2], output[2][3]),
+        Vec4(output[3][0], output[3][1], output[3][2], output[3][3]));
+
+    lowerTriangular = lower;
+    return true;
 }
 
 bool Mat4::EigenDecomposeSymmetric(Vec4 &eigenValues, Mat4 &eigenVectors, float epsilon) const {
