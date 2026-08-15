@@ -32,8 +32,8 @@ void BCDecoder::DecodeColorBlock(const BCCodec::ColorBlock565 *block, byte *out,
     colors[0][3] = 255;
     colors[1][3] = 255;
 
-    // 4-color or 3-color & 1-transparent color block ?
-    if (block->color0 > block->color1) {
+    // BC2/BC3 always use four-color mode regardless of endpoint ordering.
+    if (!writeAlpha || block->color0 > block->color1) {
         // Four-color block: derive the other two colors
         // 00 = color_0, 01 = color_1, 10 = color_2, 11 = color_3
         colors[2][0] = (2 * colors[0][0] + 1 * colors[1][0]) / 3;
@@ -53,10 +53,10 @@ void BCDecoder::DecodeColorBlock(const BCCodec::ColorBlock565 *block, byte *out,
         colors[2][2] = (colors[0][2] + colors[1][2]) / 2;
         colors[2][3] = 255;
 
-        // random color to indicate alphas
+        // Transparent black.
         colors[3][0] = 0x00;
-        colors[3][1] = 255;
-        colors[3][2] = 255;
+        colors[3][1] = 0x00;
+        colors[3][2] = 0x00;
         colors[3][3] = 0x00;
     }
 
@@ -312,24 +312,13 @@ void BCDecoder::DecompressImageBC5(const byte *blocks, const int width, const in
                 BCDecoder::DecodeAlphaBlock(alphaBlock, unpackedBlock + 1);
                 blockPtr += sizeof(BCCodec::AlphaBlock3Bit);
 
-                float normals[16 * 4];
                 for (int i = 0; i < 16; i++) {
-                    normals[i * 4 + 0] = unpackedBlock[i * 4 + 0] / 255.0f * 2.0f - 1.0f;
-                    normals[i * 4 + 1] = unpackedBlock[i * 4 + 1] / 255.0f * 2.0f - 1.0f;
-                }
-
-                for (int i = 0; i < 16; i++) {
-                    float x = normals[i * 4 + 0];
-                    float y = normals[i * 4 + 1];
+                    float x = unpackedBlock[i * 4 + 0] / 255.0f * 2.0f - 1.0f;
+                    float y = unpackedBlock[i * 4 + 1] / 255.0f * 2.0f - 1.0f;
                     float z = 1.0f - x * x - y * y;
                     if (z < 0.0f) z = 0.0f;
-                    normals[i * 4 + 2] = Math::Sqrt(z);
-                }
 
-                for (int i = 0; i < 16; i++) {
-                    unpackedBlock[i * 4 + 0] = Math::Ftob((normals[i * 4 + 0] + 1.0f) / 2.0f * 255.0f);
-                    unpackedBlock[i * 4 + 1] = Math::Ftob((normals[i * 4 + 1] + 1.0f) / 2.0f * 255.0f);
-                    unpackedBlock[i * 4 + 2] = Math::Ftob((normals[i * 4 + 2] + 1.0f) / 2.0f * 255.0f);
+                    unpackedBlock[i * 4 + 2] = Math::Ftob((Math::Sqrt(z) + 1.0f) / 2.0f * 255.0f);
                     unpackedBlock[i * 4 + 3] = 255;
                 }
 
