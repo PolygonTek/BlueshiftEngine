@@ -986,7 +986,7 @@ BE_INLINE void Str::Chop(int n) {
     }
 
     data[len - n] = 0;
-    len = n;
+    len -= n;
 }
 
 BE_INLINE void Str::Fill(const char ch, int newLen) {
