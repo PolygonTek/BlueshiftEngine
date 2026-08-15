@@ -86,8 +86,11 @@ bool Image::LoadPVR2FromMemory(const char *name, const byte *data, size_t fileSi
     this->arraySize = Max(1, (int)header->dwNumSurfs);
     this->flags = (header->dwpfFlags & PVRTEX_CUBEMAP) ? Flag::CubeMap : Flag::None;
     
-    this->pic = (byte *)Mem_Alloc256(header->dwTextureDataSize);
-    simdProcessor->Memcpy(this->pic, ptr, header->dwTextureDataSize);
+    // Legacy PVR stores a complete mip chain for each surface, matching Image's slice-major layout.
+    const size_t textureDataSize = SizeInBytes(0, numMipLevels);
+
+    this->pic = (byte *)Mem_Alloc256(textureDataSize);
+    simdProcessor->Memcpy(this->pic, ptr, (int)textureDataSize);
     this->alloced = true;
     
     return true;
