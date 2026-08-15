@@ -35,7 +35,7 @@ static float QualityToEffort(Image::CompressionQuality compressionQuality) {
     return 0;
 }
 
-static void EncodeETC(const Image &srcImage, Image &dstImage, Image::CompressionQuality compressionQuality, Etc::Image::Format format, Etc::ErrorMetric errorMetric) {
+static bool EncodeETC(const Image &srcImage, Image &dstImage, Image::CompressionQuality compressionQuality, Etc::Image::Format format, Etc::ErrorMetric errorMetric) {
     assert(srcImage.GetFormat() == Image::Format::R8G8B8A8 || srcImage.GetFormat() == Image::Format::R32G32B32A32_FLOAT);
 
     Etc::ColorFloatRGBA *temp = nullptr;
@@ -44,80 +44,90 @@ static void EncodeETC(const Image &srcImage, Image &dstImage, Image::Compression
         temp = (Etc::ColorFloatRGBA *)Mem_Alloc16(srcImage.GetWidth() * srcImage.GetHeight() * sizeof(Etc::ColorFloatRGBA));
     }
 
-    float effort = QualityToEffort(compressionQuality);
+    const float effort = QualityToEffort(compressionQuality);
+    const int numMipmaps = srcImage.NumMipmaps();
+    const int numSlices = srcImage.GetArraySize();
 
-    int numMipmaps = srcImage.NumMipmaps();
+    for (int sliceIndex = 0; sliceIndex < numSlices; sliceIndex++) {
+        for (int mipLevel = 0; mipLevel < numMipmaps; mipLevel++) {
+            const int w = srcImage.GetWidth(mipLevel);
+            const int h = srcImage.GetHeight(mipLevel);
+            const int d = srcImage.GetDepth(mipLevel);
+            const size_t srcPlaneSize = static_cast<size_t>(w) * h * srcImage.BytesPerPixel();
+            const size_t dstPlaneSize = dstImage.SizeInBytesForSlice(mipLevel, 1) / d;
 
-    for (int mipLevel = 0; mipLevel < numMipmaps; mipLevel++) {
-        int w = srcImage.GetWidth(mipLevel);
-        int h = srcImage.GetHeight(mipLevel);
+            for (int z = 0; z < d; z++) {
+                byte *src = srcImage.GetPixels(mipLevel, sliceIndex) + z * srcPlaneSize;
+                byte *dst = dstImage.GetPixels(mipLevel, sliceIndex) + z * dstPlaneSize;
 
-        byte *src = srcImage.GetPixels(mipLevel);
-        byte *dst = dstImage.GetPixels(mipLevel);
+                Etc::ColorFloatRGBA *fsrc;
 
-        Etc::ColorFloatRGBA *fsrc;
+                if (temp) {
+                    // Convert byte RGBA_8_8_8_8 to float RGBA.
+                    Etc::ColorFloatRGBA *fsrcPtr = temp;
+                    for (byte *srcEnd = src + srcPlaneSize; src < srcEnd; src += 4) {
+                        *fsrcPtr++ = Etc::ColorFloatRGBA::ConvertFromRGBA8(src[0], src[1], src[2], src[3]);
+                    }
+                    fsrc = temp;
+                } else {
+                    fsrc = (Etc::ColorFloatRGBA *)src;
+                }
 
-        if (temp) {
-            // Convert byte RGBA_8_8_8_8 to float RGBA.
-            Etc::ColorFloatRGBA *fsrcPtr = temp;
-            for (byte *src_end = &src[w * h * 4]; src < src_end; src += 4) {
-                *fsrcPtr++ = Etc::ColorFloatRGBA::ConvertFromRGBA8(src[0], src[1], src[2], src[3]);
+                // Encode.
+                Etc::Image image((float *)fsrc, w, h, errorMetric);
+                image.m_bVerboseOutput = false;
+                const Etc::Image::EncodingStatus status = image.Encode(format, errorMetric, effort, MIN_JOBS, MAX_JOBS);
+                if (status >= Etc::Image::EncodingStatus::ERROR_THRESHOLD) {
+                    if (temp) {
+                        Mem_AlignedFree(temp);
+                    }
+                    return false;
+                }
+
+                // Write to destination memory.
+                const size_t encodedBytes = image.GetEncodingBitsBytes();
+                assert(encodedBytes == dstPlaneSize);
+                memcpy(dst, image.GetEncodingBits(), encodedBytes);
             }
-            fsrc = temp;
-        } else {
-            fsrc = (Etc::ColorFloatRGBA *)src;
         }
-
-        // Encode.
-        Etc::Image image((float *)fsrc, w, h, errorMetric);
-        image.m_bVerboseOutput = false;
-        Etc::Image::EncodingStatus status = image.Encode(format, errorMetric, effort, MIN_JOBS, MAX_JOBS);
-        if (status >= Etc::Image::EncodingStatus::ERROR_THRESHOLD) {
-            assert(0);
-            return;
-        }
-
-        // Write to destination memory.
-        size_t encodedBytes = image.GetEncodingBitsBytes();
-        assert(encodedBytes == dstImage.SizeInBytes(mipLevel));
-        memcpy(dst, image.GetEncodingBits(), encodedBytes);
     }
 
     if (temp) {
         Mem_AlignedFree(temp);
     }
+    return true;
 }
 
-void CompressETC1(const Image &srcImage, Image &dstImage, Image::CompressionQuality compressionQuality) {
-    EncodeETC(srcImage, dstImage, compressionQuality, Etc::Image::Format::ETC1, Etc::ErrorMetric::RGBX);
+bool CompressETC1(const Image &srcImage, Image &dstImage, Image::CompressionQuality compressionQuality) {
+    return EncodeETC(srcImage, dstImage, compressionQuality, Etc::Image::Format::ETC1, Etc::ErrorMetric::RGBX);
 }
 
-void CompressETC2_RGB8(const Image &srcImage, Image &dstImage, Image::CompressionQuality compressionQuality) {
-    EncodeETC(srcImage, dstImage, compressionQuality, Etc::Image::Format::RGB8, Etc::ErrorMetric::RGBX);
+bool CompressETC2_RGB8(const Image &srcImage, Image &dstImage, Image::CompressionQuality compressionQuality) {
+    return EncodeETC(srcImage, dstImage, compressionQuality, Etc::Image::Format::RGB8, Etc::ErrorMetric::RGBX);
 }
 
-void CompressETC2_RGBA1(const Image &srcImage, Image &dstImage, Image::CompressionQuality compressionQuality) {
-    EncodeETC(srcImage, dstImage, compressionQuality, Etc::Image::Format::RGB8A1, Etc::ErrorMetric::RGBA);
+bool CompressETC2_RGBA1(const Image &srcImage, Image &dstImage, Image::CompressionQuality compressionQuality) {
+    return EncodeETC(srcImage, dstImage, compressionQuality, Etc::Image::Format::RGB8A1, Etc::ErrorMetric::RGBA);
 }
 
-void CompressETC2_RGBA8(const Image &srcImage, Image &dstImage, Image::CompressionQuality compressionQuality) {
-    EncodeETC(srcImage, dstImage, compressionQuality, Etc::Image::Format::RGBA8, Etc::ErrorMetric::RGBA);
+bool CompressETC2_RGBA8(const Image &srcImage, Image &dstImage, Image::CompressionQuality compressionQuality) {
+    return EncodeETC(srcImage, dstImage, compressionQuality, Etc::Image::Format::RGBA8, Etc::ErrorMetric::RGBA);
 }
 
-void CompressEAC_R11(const Image &srcImage, Image &dstImage, Image::CompressionQuality compressionQuality) {
-    EncodeETC(srcImage, dstImage, compressionQuality, Etc::Image::Format::R11, Etc::ErrorMetric::NUMERIC);
+bool CompressEAC_R11(const Image &srcImage, Image &dstImage, Image::CompressionQuality compressionQuality) {
+    return EncodeETC(srcImage, dstImage, compressionQuality, Etc::Image::Format::R11, Etc::ErrorMetric::NUMERIC);
 }
 
-void CompressEAC_RG11(const Image &srcImage, Image &dstImage, Image::CompressionQuality compressionQuality) {
-    EncodeETC(srcImage, dstImage, compressionQuality, Etc::Image::Format::RG11, Etc::ErrorMetric::NORMALXYZ);
+bool CompressEAC_RG11(const Image &srcImage, Image &dstImage, Image::CompressionQuality compressionQuality) {
+    return EncodeETC(srcImage, dstImage, compressionQuality, Etc::Image::Format::RG11, Etc::ErrorMetric::NORMALXYZ);
 }
 
-void CompressEAC_Signed_R11(const Image &srcImage, Image &dstImage, Image::CompressionQuality compressionQuality) {
-    EncodeETC(srcImage, dstImage, compressionQuality, Etc::Image::Format::SIGNED_R11, Etc::ErrorMetric::NUMERIC);
+bool CompressEAC_Signed_R11(const Image &srcImage, Image &dstImage, Image::CompressionQuality compressionQuality) {
+    return EncodeETC(srcImage, dstImage, compressionQuality, Etc::Image::Format::SIGNED_R11, Etc::ErrorMetric::NUMERIC);
 }
 
-void CompressEAC_Signed_RG11(const Image &srcImage, Image &dstImage, Image::CompressionQuality compressionQuality) {
-    EncodeETC(srcImage, dstImage, compressionQuality, Etc::Image::Format::SIGNED_RG11, Etc::ErrorMetric::NORMALXYZ);
+bool CompressEAC_Signed_RG11(const Image &srcImage, Image &dstImage, Image::CompressionQuality compressionQuality) {
+    return EncodeETC(srcImage, dstImage, compressionQuality, Etc::Image::Format::SIGNED_RG11, Etc::ErrorMetric::NORMALXYZ);
 }
 
 BE_NAMESPACE_END

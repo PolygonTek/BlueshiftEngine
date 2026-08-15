@@ -44,34 +44,43 @@ bool Image::LoadPCXFromMemory(const char *name, const byte *data, size_t size) {
     const byte *ptr = data;
     PcxHeader *header = (PcxHeader *)ptr;
     ptr += sizeof(PcxHeader);
-    
+
     if (header->bpp != 8 || (header->planes != 1 && header->planes != 3)) {
         BE_WARNLOG("Image::LoadPCXFromMemory: bad PCX format %s\n", name);
         return false;
     }
-    
-    Create2D(header->xmax - header->xmin + 1, header->ymax - header->ymin + 1, 1, Format::R8G8B8, GammaSpace::sRGB, nullptr, Flag::None);
+
+    const int width = header->xmax - header->xmin + 1;
+    if (header->bpl < width) {
+        return false;
+    }
+
+    Create2D(width, header->ymax - header->ymin + 1, 1, Format::R8G8B8, GammaSpace::sRGB, nullptr, Flag::None);
 
     if (header->planes == 1) { // 8 bits paletted color
         const byte *palette = data + size - 768;
 
         for (int y = 0; y < this->height; y++) {
-            byte *dstptr = this->pic + this->height * this->width * 3;
-            for (int x = 0; x < this->width;) {
+            byte *dstptr = this->pic + y * this->width * 3;
+            for (int x = 0; x < header->bpl;) {
                 byte packet = *ptr++;
                 if ((packet & 0xc0) == 0xc0) {
-                    int length = (packet & 0x3f);
+                    int length = packet & 0x3f;
                     int index = *ptr++;
                     while (length--) {
-                        *dstptr++ = palette[index*3];
-                        *dstptr++ = palette[index*3+1];
-                        *dstptr++ = palette[index*3+2];
+                        if (x < this->width) {
+                            *dstptr++ = palette[index*3];
+                            *dstptr++ = palette[index*3+1];
+                            *dstptr++ = palette[index*3+2];
+                        }
                         x++;
                     }
                 } else {
-                    *dstptr++ = palette[packet*3];
-                    *dstptr++ = palette[packet*3+1];
-                    *dstptr++ = palette[packet*3+2];
+                    if (x < this->width) {
+                        *dstptr++ = palette[packet*3];
+                        *dstptr++ = palette[packet*3+1];
+                        *dstptr++ = palette[packet*3+2];
+                    }
                     x++;
                 }
             }
@@ -79,20 +88,24 @@ bool Image::LoadPCXFromMemory(const char *name, const byte *data, size_t size) {
     } else { // 24 bits color
         for (int y = 0; y < this->height; y++) {
             for (int c = 0; c <= 2; c++) {
-                byte *dstptr = this->pic + this->height * this->width * 3 + c;
-                for (int x = 0; x < this->width;) {
+                byte *dstptr = this->pic + y * this->width * 3 + c;
+                for (int x = 0; x < header->bpl;) {
                     byte packet = *ptr++;
                     if ((packet & 0xc0) == 0xc0) {
-                        int length = (packet & 0x3f);
+                        int length = packet & 0x3f;
                         int color = *ptr++;
                         while (length--) {
-                            *dstptr = color;
-                            dstptr += 3;
+                            if (x < this->width) {
+                                *dstptr = color;
+                                dstptr += 3;
+                            }
                             x++;
                         }
                     } else {
-                        *dstptr = packet;
-                        dstptr += 3;
+                        if (x < this->width) {
+                            *dstptr = packet;
+                            dstptr += 3;
+                        }
                         x++;
                     }
                 }
@@ -118,6 +131,8 @@ bool Image::WritePCX(File *fp) const {
         src = convertedImage.pic;
     }
 
+    const int bytesPerLine = (width + 1) & ~1;
+
     PcxHeader pcxfh;
     pcxfh.ident     = 10;
     pcxfh.version   = 5;
@@ -131,7 +146,7 @@ bool Image::WritePCX(File *fp) const {
     pcxfh.vres      = height;
     pcxfh.mode      = 1;
     pcxfh.planes    = 3;
-    pcxfh.bpl       = width;
+    pcxfh.bpl       = bytesPerLine;
     memset(pcxfh.palette, 0, 48);
     memset(pcxfh.extra, 0, 58);
 
@@ -143,8 +158,11 @@ bool Image::WritePCX(File *fp) const {
             byte run_c = 0;
             byte temp;
 
-            for (int x = 0; x < width; x++) {
-                byte dot = *(src + y * width * 3 + x * 3 + c);
+            for (int x = 0; x < bytesPerLine; x++) {
+                byte dot = 0;
+                if (x < width) {
+                    dot = *(src + y * width * 3 + x * 3 + c);
+                }
                 if (run_n == 0) {
                     run_n = 1;
                     run_c = dot;
@@ -177,7 +195,7 @@ bool Image::WritePCX(File *fp) const {
 bool Image::WritePCX(const char *filename) const {
     File *fp = fileSystem.OpenFile(filename, File::Mode::Write);
     if (!fp) {
-        BE_WARNLOG("Image::WritePCX: file open error\n");
+        BE_WARNLOG("Image::WritePCX: failed to open file '%s' for writing\n", filename);
         return false;
     }
 

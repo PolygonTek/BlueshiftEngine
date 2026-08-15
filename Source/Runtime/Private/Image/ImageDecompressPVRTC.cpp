@@ -688,47 +688,46 @@ static int pvrtcDecompress(PVRTuint8 *pCompressedData,
 
 /*!***********************************************************************
 @Function		PVRTDecompressPVRTC
-@Input			pCompressedData The PVRTC texture data to decompress
-@Input			Do2bitMode Signifies whether the data is PVRTC2 or PVRTC4
-@Input			XDim X dimension of the texture
-@Input			YDim Y dimension of the texture
-@Modified		pResultImage The decompressed texture data
-@Return			Returns the amount of data that was decompressed.
+@Input			srcImage The PVRTC texture data to decompress
+@Modified		dstImage The decompressed RGBA8888 image
+@Input			do2BitMode Signifies whether the PVRTC1 data uses 2bpp or 4bpp mode
 @Description	Decompresses PVRTC to RGBA 8888
 *************************************************************************/
-void DecompressPVRTC(const Image &srcImage, Image &dstImage, int Do2bitMode) {
+void DecompressPVRTC(const Image &srcImage, Image &dstImage, int do2BitMode) {
     assert(dstImage.GetFormat() == Image::Format::R8G8B8A8);
     assert(dstImage.GetPixels());
 
-    int XDim = srcImage.GetWidth();
-    int YDim = srcImage.GetHeight();
-    //Check the X and Y values are at least the minimum size.
-    int XTrueDim = PVRT_MAX(XDim, ((Do2bitMode == 1) ? 16 : 8));
-    int YTrueDim = PVRT_MAX(YDim, 8);
+    const int baseTrueWidth = PVRT_MAX(srcImage.GetWidth(), do2BitMode ? 16 : 8);
+    const int baseTrueHeight = PVRT_MAX(srcImage.GetHeight(), 8);
+    Pixel32 *decompressedData = (Pixel32 *)malloc(baseTrueWidth * baseTrueHeight * sizeof(Pixel32));
 
-    Pixel32* pDecompressedData = (Pixel32*)malloc(XTrueDim*YTrueDim*sizeof(Pixel32));
-    
-    //Decompress the surface.
-    const byte *pCompressedData = srcImage.GetPixels();
-    int retval = pvrtcDecompress((PVRTuint8*)pCompressedData, pDecompressedData, XTrueDim, YTrueDim, (Do2bitMode == 1 ? 2 : 4));
+    for (int sliceIndex = 0; sliceIndex < srcImage.GetArraySize(); sliceIndex++) {
+        for (int mipLevel = 0; mipLevel < srcImage.NumMipmaps(); mipLevel++) {
+            const int mipWidth = srcImage.GetWidth(mipLevel);
+            const int mipHeight = srcImage.GetHeight(mipLevel);
+            const int mipDepth = srcImage.GetDepth(mipLevel);
+            const int trueWidth = PVRT_MAX(mipWidth, do2BitMode ? 16 : 8);
+            const int trueHeight = PVRT_MAX(mipHeight, 8);
+            const size_t srcPlaneSize = srcImage.SizeInBytesForSlice(mipLevel, 1) / mipDepth;
+            const size_t dstPlaneSize = static_cast<size_t>(mipWidth) * mipHeight * 4;
 
-    const ImageFormatInfo *dstFormatInfo = GetImageFormatInfo(dstImage.GetFormat());
-    byte *dstPtr = dstImage.GetPixels();
+            const byte *compressedData = srcImage.GetPixels(mipLevel, sliceIndex);
+            byte *dst = dstImage.GetPixels(mipLevel, sliceIndex);
 
-    int dstPitch = XDim * 4;
+            for (int z = 0; z < mipDepth; z++) {
+                pvrtcDecompress((PVRTuint8 *)(compressedData + z * srcPlaneSize), decompressedData, trueWidth, trueHeight, do2BitMode ? 2 : 4);
 
-    //Loop through all the required pixels.
-    for (int y = 0; y < YDim; ++y) {
-        memcpy(dstPtr, (const byte *)(pDecompressedData + y * XTrueDim), dstPitch);
-        dstPtr += dstPitch;
+                byte *dstPtr = dst + z * dstPlaneSize;
+                const int dstPitch = mipWidth * 4;
+                for (int y = 0; y < mipHeight; y++) {
+                    memcpy(dstPtr, (const byte *)(decompressedData + y * trueWidth), dstPitch);
+                    dstPtr += dstPitch;
+                }
+            }
+        }
     }
 
-    if (dstImage.NumMipmaps() > 1) {
-        dstImage.GenerateMipmaps();
-    }
-
-    //Free the temporary buffer.
-    free(pDecompressedData);
+    free(decompressedData);
 }
 
 BE_NAMESPACE_END

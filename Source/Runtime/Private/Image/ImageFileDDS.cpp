@@ -635,6 +635,8 @@ bool Image::LoadDDSFromMemory(const char *name, const byte *data, size_t size) {
         }
     }
 
+    Clear();
+
     bool isCube = header->ddsCaps.caps2 & DDSCAPS2_CUBEMAP ? true : false;
 
     this->width = header->width;
@@ -710,8 +712,10 @@ bool Image::LoadDDSMipRangeData(File *fp, int32_t originalWidth, int32_t origina
     originalDepth = Max(1, originalDepth);
     originalMipLevels = Max(1, originalMipLevels);
 
-    Clamp(firstMip, 0, originalMipLevels - 1);
-    Clamp(mipCount, 1, originalMipLevels - firstMip);
+    firstMip = Clamp(firstMip, 0, originalMipLevels - 1);
+    mipCount = Clamp(mipCount, 1, originalMipLevels - firstMip);
+
+    Clear();
 
     this->width = BE1::Max(1, originalWidth >> firstMip);
     this->height = BE1::Max(1, originalHeight >> firstMip);
@@ -1234,7 +1238,7 @@ bool Image::WriteDDS(File *fp) const {
 bool Image::WriteDDS(const char *filename) const {
     File *fp = fileSystem.OpenFile(filename, File::Mode::Write);
     if (!fp) {
-        BE_WARNLOG("Image::WriteDDS: file open error\n");
+        BE_WARNLOG("Image::WriteDDS: failed to open file '%s' for writing\n", filename);
         return false;
     }
 

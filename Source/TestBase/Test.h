@@ -20,6 +20,7 @@ public:
     static void TestRValue();
     static void TestMath();
     static void TestFloatConverter();
+    static void TestImage();
     static void TestThread();
     static void TestTask();
     static void TestSIMD();

@@ -2804,9 +2804,9 @@ static const ImageFormatInfo imageFormatInfo[] = {
     { "R8G8B8_UINT",            3,  3,  8,  8,  8,  0,  Image::FormatType::UInt, nullptr, nullptr, RGB888UIntToRGBA32F, RGBA32FToRGB888UInt },
     { "B8G8R8",                 3,  3,  8,  8,  8,  0,  Image::FormatType::UNorm, BGR888ToRGBA8888, RGBA8888ToBGR888, BGR888ToRGBA32F, RGBA32FToBGR888 },
     { "R8G8B8A8",               4,  4,  8,  8,  8,  8,  Image::FormatType::UNorm, RGBA8888ToRGBA8888, RGBA8888ToRGBA8888, RGBA8888ToRGBA32F, RGBA32FToRGBA8888 },
-    { "R8G8B8A8_SNORM",         3,  4,  8,  8,  8,  8,  Image::FormatType::SNorm, nullptr, nullptr, RGBA8888SNormToRGBA32F, RGBA32FToRGBA8888SNorm },
-    { "R8G8B8A8_SINT",          3,  4,  8,  8,  8,  8,  Image::FormatType::SInt, nullptr, nullptr, RGBA8888SIntToRGBA32F, RGBA32FToRGBA8888SInt },
-    { "R8G8B8A8_UINT",          3,  4,  8,  8,  8,  8,  Image::FormatType::UInt, nullptr, nullptr, RGBA8888UIntToRGBA32F, RGBA32FToRGBA8888UInt },
+    { "R8G8B8A8_SNORM",         4,  4,  8,  8,  8,  8,  Image::FormatType::SNorm, nullptr, nullptr, RGBA8888SNormToRGBA32F, RGBA32FToRGBA8888SNorm },
+    { "R8G8B8A8_SINT",          4,  4,  8,  8,  8,  8,  Image::FormatType::SInt, nullptr, nullptr, RGBA8888SIntToRGBA32F, RGBA32FToRGBA8888SInt },
+    { "R8G8B8A8_UINT",          4,  4,  8,  8,  8,  8,  Image::FormatType::UInt, nullptr, nullptr, RGBA8888UIntToRGBA32F, RGBA32FToRGBA8888UInt },
     { "B8G8R8A8",               4,  4,  8,  8,  8,  8,  Image::FormatType::UNorm, BGRA8888ToRGBA8888, RGBA8888ToBGRA8888, BGRA8888ToRGBA32F, RGBA32FToBGRA8888 },
     { "A8B8G8R8",               4,  4,  8,  8,  8,  8,  Image::FormatType::UNorm, ABGR8888ToRGBA8888, RGBA8888ToABGR8888, ABGR8888ToRGBA32F, RGBA32FToABGR8888 },
     { "A8R8G8B8",               4,  4,  8,  8,  8,  8,  Image::FormatType::UNorm, ARGB8888ToRGBA8888, RGBA8888ToARGB8888, ARGB8888ToRGBA32F, RGBA32FToARGB8888 },
@@ -2832,7 +2832,7 @@ static const ImageFormatInfo imageFormatInfo[] = {
 
     // depth/stencil ------------------------------------------------------------------------------
     { "D16",                    2,  1,  0,  0,  0,  0,  Image::FormatType::UNorm | Image::FormatType::Depth, nullptr, nullptr, L16ToRGBA32F, RGBA32FToL16 },
-    { "D24X8",                  3,  1,  0,  0,  0,  0,  Image::FormatType::UNorm | Image::FormatType::Depth, nullptr, nullptr, L24X8ToRGBA32F, RGBA32FToL24X8 },
+    { "D24X8",                  4,  1,  0,  0,  0,  0,  Image::FormatType::UNorm | Image::FormatType::Depth, nullptr, nullptr, L24X8ToRGBA32F, RGBA32FToL24X8 },
     { "D24S8",                  4,  2,  0,  0,  0,  0,  Image::FormatType::UNorm | Image::FormatType::DepthStencil, nullptr, nullptr, L24X8ToRGBA32F, RGBA32FToL24X8 },
     { "D32_FLOAT",              4,  1,  0,  0,  0,  0,  Image::FormatType::Float | Image::FormatType::Depth, nullptr, nullptr, L32FToRGBA32F, RGBA32FToL32F },
     { "D32_FLOAT_S8X24",        8,  3,  0,  0,  0,  0,  Image::FormatType::Float | Image::FormatType::DepthStencil, nullptr, nullptr, L32FX32ToRGBA32F, RGBA32FToL32FX32 },
@@ -2853,7 +2853,7 @@ static const ImageFormatInfo imageFormatInfo[] = {
     { "BC2",                    16, 4,  0,  0,  0,  0,  Image::FormatType::UNorm | Image::FormatType::Compressed, nullptr, nullptr, nullptr, nullptr },
     { "BC3",                    16, 4,  0,  0,  0,  0,  Image::FormatType::UNorm | Image::FormatType::Compressed, nullptr, nullptr, nullptr, nullptr },
     { "BC3_XGBR",               16, 4,  0,  0,  0,  0,  Image::FormatType::UNorm | Image::FormatType::Compressed, nullptr, nullptr, nullptr, nullptr },
-    { "BC4",                    8,  2,  0,  0,  0,  0,  Image::FormatType::UNorm | Image::FormatType::Compressed, nullptr, nullptr, nullptr, nullptr },
+    { "BC4",                    8,  1,  0,  0,  0,  0,  Image::FormatType::UNorm | Image::FormatType::Compressed, nullptr, nullptr, nullptr, nullptr },
     { "BC5",                    16, 2,  0,  0,  0,  0,  Image::FormatType::UNorm | Image::FormatType::Compressed, nullptr, nullptr, nullptr, nullptr },
     { "BC6H_UF16",              16, 3,  0,  0,  0,  0,  Image::FormatType::Float | Image::FormatType::Compressed, nullptr, nullptr, nullptr, nullptr },
     { "BC6H_SF16",              16, 3,  0,  0,  0,  0,  Image::FormatType::Float | Image::FormatType::Compressed, nullptr, nullptr, nullptr, nullptr },
@@ -2882,6 +2882,8 @@ static const ImageFormatInfo imageFormatInfo[] = {
     { "ATCE",                   16, 4,  0,  0,  0,  0,  Image::FormatType::UNorm | Image::FormatType::Compressed, nullptr, nullptr, nullptr, nullptr },
     { "ATCI",                   16, 4,  0,  0,  0,  0,  Image::FormatType::UNorm | Image::FormatType::Compressed, nullptr, nullptr, nullptr, nullptr },
 };
+
+static_assert(sizeof(imageFormatInfo) / sizeof(imageFormatInfo[0]) == to_int(Image::Format::Count), "Unexpected image format table size");
 
 const ImageFormatInfo *GetImageFormatInfo(Image::Format imageFormat) {
     assert(imageFormat < Image::Format::Count);
@@ -2936,7 +2938,7 @@ bool CompressedFormatMinDimensions(Image::Format imageFormat, int &minWidth, int
     case Image::Format::ATCI: // Interpolated alpha
         minWidth = 4;
         minHeight = 4;
-        return false;
+        return true;
     default:
         return false;
     }
@@ -2969,7 +2971,7 @@ bool CompressedFormatBlockDimensions(Image::Format imageFormat, int &blockWidth,
         blockHeight = 4;
         return true;
     case Image::Format::PVRTC22A:
-        blockWidth = 4;
+        blockWidth = 8;
         blockHeight = 4;
         return true;
     case Image::Format::PVRTC24A:
@@ -2992,7 +2994,7 @@ bool CompressedFormatBlockDimensions(Image::Format imageFormat, int &blockWidth,
     case Image::Format::ATCI: // Interpolated alpha
         blockWidth = 4;
         blockHeight = 4;
-        return false;
+        return true;
     default:
         return false;
     }

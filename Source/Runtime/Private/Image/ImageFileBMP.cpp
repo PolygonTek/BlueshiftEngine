@@ -50,6 +50,10 @@ struct BmpInfoHeader {
 #pragma pack()
 
 bool Image::LoadBMPFromMemory(const char *name, const byte *data, size_t size) {
+    if (size < sizeof(BmpHeader) + sizeof(BmpInfoHeader)) {
+        return false;
+    }
+
     const byte *ptr = data;
     BmpHeader *bmfh = (BmpHeader *)ptr;
     ptr += sizeof(BmpHeader);
@@ -60,10 +64,23 @@ bool Image::LoadBMPFromMemory(const char *name, const byte *data, size_t size) {
     }
 
     BmpInfoHeader *bmih = (BmpInfoHeader *)ptr;
-    ptr += sizeof(BmpInfoHeader);
+
+    if (bmih->size < sizeof(BmpInfoHeader) || bmih->size > size - sizeof(BmpHeader)) {
+        return false;
+    }
 
     if (bmih->bpp != 8 && bmih->bpp != 16 && bmih->bpp != 24 && bmih->bpp != 32) {
         BE_WARNLOG("Image::LoadBMPFromMemory: unsupported color depth %s\n", name);
+        return false;
+    }
+
+    if (bmih->compression != 0) {
+        BE_WARNLOG("Image::LoadBMPFromMemory: unsupported compression %s\n", name);
+        return false;
+    }
+
+    const size_t infoEnd = sizeof(BmpHeader) + bmih->size;
+    if (bmfh->ofsBits < infoEnd || bmfh->ofsBits > size) {
         return false;
     }
 
@@ -76,23 +93,28 @@ bool Image::LoadBMPFromMemory(const char *name, const byte *data, size_t size) {
         h = -h;
     }
 
-    Create2D(w, h, 1, Image::Format::B8G8R8, Image::GammaSpace::sRGB, nullptr, Flag::None);
-
     int padbytes = (((bmih->bpp * w + 31) & ~31) - (bmih->bpp * w)) >> 3;
-    const byte *palette;
+    const byte *palette = nullptr;
 
     // 8 bits paletted color
     if (bmih->bpp == 8) {
-        int paletteSize;
+        size_t paletteSize;
         if (bmih->colorUsed > 0) {
             paletteSize = bmih->colorUsed * 4;
         } else {
             paletteSize = 256 * 4;
         }
-        
-        palette = ptr;
-        ptr += paletteSize;
+
+        if (paletteSize > bmfh->ofsBits - infoEnd) {
+            return false;
+        }
+
+        palette = data + infoEnd;
     }
+
+    Create2D(w, h, 1, Image::Format::B8G8R8, Image::GammaSpace::sRGB, nullptr, Flag::None);
+
+    ptr = data + bmfh->ofsBits;
 
     uint16_t packed;
     byte r, g, b;
@@ -110,7 +132,8 @@ bool Image::LoadBMPFromMemory(const char *name, const byte *data, size_t size) {
                     r = palette[4 * index + 2];
                     break;
                 case 16:
-                    packed = *(uint16_t *)ptr++;
+                    packed = *reinterpret_cast<const uint16_t *>(ptr);
+                    ptr += sizeof(packed);
                     b = ((packed) & 0x1f) << 3;
                     g = ((packed>>5) & 0x1f) << 3;
                     r = ((packed>>10) & 0x1f) << 3;
@@ -146,7 +169,8 @@ bool Image::LoadBMPFromMemory(const char *name, const byte *data, size_t size) {
                     r = palette[4 * index + 2];
                     break;
                 case 16:
-                    packed = *(uint16_t *)ptr++;
+                    packed = *reinterpret_cast<const uint16_t *>(ptr);
+                    ptr += sizeof(packed);
                     b = ((packed) & 0x1f) << 3;
                     g = ((packed>>5) & 0x1f) << 3;
                     r = ((packed>>10) & 0x1f) << 3;
@@ -191,7 +215,7 @@ bool Image::WriteBMP(File *fp) const {
 
     int pitch           = ((width * 24 + 31) / 32) << 2;
     int pad             = pitch - width * 3;
-    int bits_size       = pitch * height * 3;
+    int bits_size       = pitch * height;
     
     BmpHeader bmfh;
     BmpInfoHeader bmih;
@@ -229,7 +253,7 @@ bool Image::WriteBMP(File *fp) const {
 bool Image::WriteBMP(const char *filename) const {
     File *fp = fileSystem.OpenFile(filename, File::Mode::Write);
     if (!fp) {
-        BE_WARNLOG("Image::WriteBMP: file open error\n");
+        BE_WARNLOG("Image::WriteBMP: failed to open file '%s' for writing\n", filename);
         return false;
     }
 

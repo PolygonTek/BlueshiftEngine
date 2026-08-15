@@ -246,7 +246,7 @@ bool Image::WriteBTEX(const char *filename, PayloadFormat payloadFormat) const {
 
     File *fp = fileSystem.OpenFile(filename, File::Mode::Write);
     if (!fp) {
-        BE_WARNLOG("Image::WriteBTEX: file open error\n");
+        BE_WARNLOG("Image::WriteBTEX: failed to open file '%s' for writing\n", filename);
         return false;
     }
 
@@ -348,38 +348,37 @@ bool Image::Load(const char *filename) {
 
     byte *data;
     size_t size = fileSystem.LoadFile(name, true, (void **)&data);
-    if (data) {
-        // Call image loading function by cheking file extension.
-        if (name.CheckExtension(".btex")) {
-            LoadBTEXFromMemory(name, data, size);
-        } else if (name.CheckExtension(".dds")) {
-            LoadDDSFromMemory(name, data, size);
-        } else if (name.CheckExtension(".pvr")) {
-            LoadPVRFromMemory(name, data, size);
-        } else if (name.CheckExtension(".tga")) {
-            LoadTGAFromMemory(name, data, size);
-        } else if (name.CheckExtension(".jpg")) {
-            LoadJPGFromMemory(name, data, size);
-        } else if (name.CheckExtension(".png")) {
-            LoadPNGFromMemory(name, data, size);
-        } else if (name.CheckExtension(".bmp")) {
-            LoadBMPFromMemory(name, data, size);
-        } else if (name.CheckExtension(".pcx")) {
-            LoadPCXFromMemory(name, data, size);
-        } else if (name.CheckExtension(".hdr")) {
-            LoadHDRFromMemory(name, data, size);
-        } else if (name.CheckExtension(".exr")) {
-            LoadEXRFromMemory(name, data, size);
-        }
-
-        fileSystem.FreeFile(data);
-
-        if (pic) {
-            return true;
-        }
+    if (!data) {
+        return false;
     }
 
-    return false;
+    bool loaded = false;
+
+    // Call image loading function by cheking file extension.
+    if (name.CheckExtension(".btex")) {
+        loaded = LoadBTEXFromMemory(name, data, size);
+    } else if (name.CheckExtension(".dds")) {
+        loaded = LoadDDSFromMemory(name, data, size);
+    } else if (name.CheckExtension(".pvr")) {
+        loaded = LoadPVRFromMemory(name, data, size);
+    } else if (name.CheckExtension(".tga")) {
+        loaded = LoadTGAFromMemory(name, data, size);
+    } else if (name.CheckExtension(".jpg")) {
+        loaded = LoadJPGFromMemory(name, data, size);
+    } else if (name.CheckExtension(".png")) {
+        loaded = LoadPNGFromMemory(name, data, size);
+    } else if (name.CheckExtension(".bmp")) {
+        loaded = LoadBMPFromMemory(name, data, size);
+    } else if (name.CheckExtension(".pcx")) {
+        loaded = LoadPCXFromMemory(name, data, size);
+    } else if (name.CheckExtension(".hdr")) {
+        loaded = LoadHDRFromMemory(name, data, size);
+    } else if (name.CheckExtension(".exr")) {
+        loaded = LoadEXRFromMemory(name, data, size);
+    }
+
+    fileSystem.FreeFile(data);
+    return loaded;
 }
 
 bool Image::Write(const char *filename) const {

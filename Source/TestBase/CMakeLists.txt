@@ -9,6 +9,7 @@ set(ALL_FILES
     TestRValue.cpp
     TestMath.cpp
     TestFloatConverter.cpp
+    TestImage.cpp
     TestThread.cpp
     TestTask.cpp
     TestSIMD.cpp

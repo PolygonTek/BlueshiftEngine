@@ -48,6 +48,8 @@ int main(int argc, char *argv[]) {
 
     Test::TestFloatConverter();
 
+    Test::TestImage();
+
     Test::TestSIMD();
 
     //Test::TestThread();

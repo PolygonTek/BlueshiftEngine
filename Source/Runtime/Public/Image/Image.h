@@ -404,14 +404,15 @@ public:
                         /// Creates an equirectangular spherical image from cubic image.
     Image &             CreateEquirectangularFromCube(const Image &cubeImage);
 
-                        /// Copies image data from another.
-                        /// Nothing happen if source image dimensions are not match with this image.
-    Image &             CopyFrom(const Image &srcImage, int32_t firstMipLevel = 0, int32_t numMipLevels = 1);
+                        /// Copies raw image data from another.
+                        /// Nothing happens if source dimensions or mip storage sizes do not match this image.
+    Image &             CopyFrom(const Image &srcImage, int32_t firstMipLevel = 0, int32_t mipCount = 1);
 
                         /// Updates sub region.
     void                Update2D(int32_t mipLevel, int32_t x, int32_t y, int32_t width, int32_t height, const byte *data);
     
                         /// Generates all mipmaps this image has.
+                        /// If preserveAlphaCoverage is true, colors are alpha-weighted and alpha uses the maximum source sample.
     Image &             GenerateMipmaps(bool preserveAlphaCoverage = false);
 
                         /// Converts this image to the given target image.
@@ -538,11 +539,10 @@ private:
     bool                LoadDDSMipRangeForMaxDimension(File *fp, int32_t maxDimension, MipRange *outInfo);
     bool                LoadDDSMipRangeData(File *fp, int32_t originalWidth, int32_t originalHeight, int32_t originalDepth, int32_t ddsArraySize, int32_t originalMipLevels, bool isCubemap, int32_t firstMip, int32_t mipCount, MipRange *outInfo);
 
-    template <typename T>
-    T                   WrapCoord(T coord, T maxCoord, SampleWrapMode wrapMode) const;
+    int32_t             WrapCoord(int32_t coord, int32_t size, SampleWrapMode wrapMode) const;
 
-    Color4              Sample2DNearest(const byte *src, const Vec2 &uv, SampleWrapMode wrapModeU, SampleWrapMode wrapModeV) const;
-    Color4              Sample2DBilinear(const byte *src, const Vec2 &uv, SampleWrapMode wrapModeU, SampleWrapMode wrapModeV) const;
+    Color4              Sample2DNearest(const byte *src, int32_t sampleWidth, int32_t sampleHeight, const Vec2 &uv, SampleWrapMode wrapModeU, SampleWrapMode wrapModeV) const;
+    Color4              Sample2DBilinear(const byte *src, int32_t sampleWidth, int32_t sampleHeight, const Vec2 &uv, SampleWrapMode wrapModeU, SampleWrapMode wrapModeV) const;
 
     bool                WriteDDS(File *fp) const;
     bool                WritePVR(File *fp) const;
@@ -625,11 +625,14 @@ BE_INLINE int32_t Image::GetDepth(int32_t mipLevel) const {
 }
 
 BE_INLINE byte *Image::GetPixels(int32_t mipLevel) const {
-    return (mipLevel < numMipLevels) ? pic + SizeInBytes(0, mipLevel) : nullptr;
+    if (!pic || mipLevel < 0 || mipLevel >= numMipLevels) {
+        return nullptr;
+    }
+    return pic + SizeInBytesForSlice(0, mipLevel);
 }
 
 BE_INLINE byte *Image::GetPixels(int32_t mipLevel, int32_t sliceIndex) const {
-    if (mipLevel >= numMipLevels || sliceIndex >= arraySize) {
+    if (!pic || mipLevel < 0 || mipLevel >= numMipLevels || sliceIndex < 0 || sliceIndex >= arraySize) {
         return nullptr;
     }
     // Image 의 데이터는 Slice 우선순으로 저장되어 있다.
@@ -656,7 +659,7 @@ BE_INLINE Image &Image::Create2DArray(int32_t width, int32_t height, int32_t num
 }
 
 BE_INLINE float Image::GammaToLinear(float f) {
-    if (f <= 0.4045f) {
+    if (f <= 0.04045f) {
         return f / 12.92f;
     } else {
         return Math::Pow((f + 0.055f) / 1.055f, 2.4f);
@@ -696,14 +699,11 @@ BE_INLINE float Image::GetLuminance(const Color3 &linearRgb) {
     return linearRgb[0] * 0.2126729f + linearRgb[1] * 0.7151522f + linearRgb[2] * 0.0721750f;
 }
 
-template <typename T>
-BE_INLINE T Image::WrapCoord(T coord, T maxCoord, SampleWrapMode wrapMode) const {
+BE_INLINE int32_t Image::WrapCoord(int32_t coord, int32_t size, SampleWrapMode wrapMode) const {
     if (wrapMode == SampleWrapMode::Clamp) {
-        Clamp<T>(coord, 0, maxCoord);
-    } else if (wrapMode == SampleWrapMode::Repeat) {
-        Wrap<T>(coord, 0, maxCoord);
+        return Clamp(coord, 0, size - 1);
     }
-    return coord;
+    return Wrap(coord, 0, size);
 }
 
 BE_INLINE Image Image::ImageFromFile(const char *filename) {

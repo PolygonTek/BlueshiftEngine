@@ -378,7 +378,7 @@ bool Image::WriteHDR(File *fp) const {
 bool Image::WriteHDR(const char *filename) const {
     File *fp = fileSystem.OpenFile(filename, File::Mode::Write);
     if (!fp) {
-        BE_WARNLOG("Image::WriteHDR: file open error\n");
+        BE_WARNLOG("Image::WriteHDR: failed to open file '%s' for writing\n", filename);
         return false;
     }
 

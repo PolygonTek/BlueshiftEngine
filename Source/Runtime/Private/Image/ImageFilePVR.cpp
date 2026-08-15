@@ -77,11 +77,14 @@ bool Image::LoadPVR2FromMemory(const char *name, const byte *data, size_t fileSi
             return false;
     }
     
+    Clear();
+
     this->width = header->dwWidth;
     this->height = header->dwHeight;
     this->depth = 1;
-    this->numMipLevels = Max(1, (int)header->dwMipMapCount);
+    this->numMipLevels = (header->dwpfFlags & PVRTEX_MIPMAP) ? (int)header->dwMipMapCount + 1 : 1;
     this->arraySize = Max(1, (int)header->dwNumSurfs);
+    this->flags = (header->dwpfFlags & PVRTEX_CUBEMAP) ? Flag::CubeMap : Flag::None;
     
     this->pic = (byte *)Mem_Alloc256(header->dwTextureDataSize);
     simdProcessor->Memcpy(this->pic, ptr, header->dwTextureDataSize);
@@ -98,6 +101,42 @@ static bool IsSignedChannelType(uint32_t channelType) {
         return true;
     }
     return false;
+}
+
+static Image::Format SelectPVRChannelFormat(uint32_t channelType,
+    Image::Format unormFormat = Image::Format::Unknown,
+    Image::Format snormFormat = Image::Format::Unknown,
+    Image::Format sintFormat = Image::Format::Unknown,
+    Image::Format uintFormat = Image::Format::Unknown,
+    Image::Format floatFormat = Image::Format::Unknown) {
+    switch (channelType) {
+    case ePVRTVarTypeUnsignedByteNorm:
+    case ePVRTVarTypeUnsignedShortNorm:
+    case ePVRTVarTypeUnsignedIntegerNorm:
+        return unormFormat;
+    case ePVRTVarTypeSignedByteNorm:
+    case ePVRTVarTypeSignedShortNorm:
+    case ePVRTVarTypeSignedIntegerNorm:
+        return snormFormat;
+    case ePVRTVarTypeSignedByte:
+    case ePVRTVarTypeSignedShort:
+    case ePVRTVarTypeSignedInteger:
+        return sintFormat;
+    case ePVRTVarTypeUnsignedByte:
+    case ePVRTVarTypeUnsignedShort:
+    case ePVRTVarTypeUnsignedInteger:
+        return uintFormat;
+    case ePVRTVarTypeSignedFloat:
+    case ePVRTVarTypeUnsignedFloat:
+        return floatFormat;
+    default:
+        return Image::Format::Unknown;
+    }
+}
+
+static Image::Format SelectPVRFloatFormat(uint32_t channelType, Image::Format floatFormat) {
+    return SelectPVRChannelFormat(channelType, Image::Format::Unknown, Image::Format::Unknown,
+        Image::Format::Unknown, Image::Format::Unknown, floatFormat);
 }
 
 bool Image::LoadPVR3FromMemory(const char *name, const byte *data, size_t fileSize) {
@@ -155,151 +194,174 @@ bool Image::LoadPVR3FromMemory(const char *name, const byte *data, size_t fileSi
             break;
         default:
             BE_WARNLOG("Image::LoadPVR3FromMemory: Unsupported pixel format %s\n", name);
-            break;
+            return false;
         }
     } else {
+        const uint32_t channelType = header->u32ChannelType;
+
         switch (header->u64PixelFormat) {
         case PVRTGENPIXELID4('r', 'g', 'b', 'a', 8, 8, 8, 8):
-            this->format = Format::R8G8B8A8;
+            this->format = SelectPVRChannelFormat(channelType, Format::R8G8B8A8, Format::R8G8B8A8_SNORM, Format::R8G8B8A8_SINT, Format::R8G8B8A8_UINT);
             break;
         case PVRTGENPIXELID4('b', 'g', 'r', 'a', 8, 8, 8, 8):
-            this->format = Format::B8G8R8A8;
+            this->format = SelectPVRChannelFormat(channelType, Format::B8G8R8A8);
             break;
         case PVRTGENPIXELID4('a', 'r', 'g', 'b', 8, 8, 8, 8):
-            this->format = Format::A8R8G8B8;
+            this->format = SelectPVRChannelFormat(channelType, Format::A8R8G8B8);
             break;
         case PVRTGENPIXELID4('a', 'b', 'g', 'r', 8, 8, 8, 8):
-            this->format = Format::A8B8G8R8;
+            this->format = SelectPVRChannelFormat(channelType, Format::A8B8G8R8);
             break;
         case PVRTGENPIXELID4('r', 'g', 'b', 'x', 8, 8, 8, 8):
-            this->format = Format::R8G8B8X8;
+            this->format = SelectPVRChannelFormat(channelType, Format::R8G8B8X8);
             break;
         case PVRTGENPIXELID4('b', 'g', 'r', 'x', 8, 8, 8, 8):
-            this->format = Format::B8G8R8X8;
+            this->format = SelectPVRChannelFormat(channelType, Format::B8G8R8X8);
             break;
         case PVRTGENPIXELID3('r', 'g', 'b', 8, 8, 8):
-            this->format = Format::R8G8B8;
+            this->format = SelectPVRChannelFormat(channelType, Format::R8G8B8, Format::R8G8B8_SNORM, Format::R8G8B8_SINT, Format::R8G8B8_UINT);
             break;
         case PVRTGENPIXELID2('r', 'g', 8, 8):
-            this->format = Format::R8G8;
+            this->format = SelectPVRChannelFormat(channelType, Format::R8G8, Format::R8G8_SNORM, Format::R8G8_SINT, Format::R8G8_UINT);
             break;
         case PVRTGENPIXELID1('r', 8):
-            this->format = Format::R8;
+            this->format = SelectPVRChannelFormat(channelType, Format::R8, Format::R8_SNORM, Format::R8_SINT, Format::R8_UINT);
             break;
         case PVRTGENPIXELID2('l', 'a', 8, 8):
-            this->format = Format::L8A8;
+            this->format = SelectPVRChannelFormat(channelType, Format::L8A8);
             break;
         case PVRTGENPIXELID1('l', 8):
-            this->format = Format::L8;
+            this->format = SelectPVRChannelFormat(channelType, Format::L8);
             break;
         case PVRTGENPIXELID1('a', 8):
-            this->format = Format::A8;
+            this->format = SelectPVRChannelFormat(channelType, Format::A8);
             break;
         case PVRTGENPIXELID4('r', 'g', 'b', 'a', 4, 4, 4, 4):
-            this->format = Format::R4G4B4A4;
+            this->format = SelectPVRChannelFormat(channelType, Format::R4G4B4A4);
             break;
         case PVRTGENPIXELID4('b', 'g', 'r', 'a', 4, 4, 4, 4):
-            this->format = Format::B4G4R4A4;
+            this->format = SelectPVRChannelFormat(channelType, Format::B4G4R4A4);
             break;
         case PVRTGENPIXELID4('a', 'r', 'g', 'b', 4, 4, 4, 4):
-            this->format = Format::A4R4G4B4;
+            this->format = SelectPVRChannelFormat(channelType, Format::A4R4G4B4);
             break;
         case PVRTGENPIXELID4('a', 'b', 'g', 'r', 4, 4, 4, 4):
-            this->format = Format::A4B4G4R4;
+            this->format = SelectPVRChannelFormat(channelType, Format::A4B4G4R4);
             break;
         case PVRTGENPIXELID4('r', 'g', 'b', 'x', 4, 4, 4, 4):
-            this->format = Format::R4G4B4X4;
+            this->format = SelectPVRChannelFormat(channelType, Format::R4G4B4X4);
             break;
         case PVRTGENPIXELID4('b', 'g', 'r', 'x', 4, 4, 4, 4):
-            this->format = Format::B4G4R4X4;
+            this->format = SelectPVRChannelFormat(channelType, Format::B4G4R4X4);
             break;
         case PVRTGENPIXELID4('r', 'g', 'b', 'a', 5, 5, 5, 1):
-            this->format = Format::R5G5B5A1;
+            this->format = SelectPVRChannelFormat(channelType, Format::R5G5B5A1);
             break;
         case PVRTGENPIXELID4('b', 'g', 'r', 'a', 5, 5, 5, 1):
-            this->format = Format::B5G5R5A1;
+            this->format = SelectPVRChannelFormat(channelType, Format::B5G5R5A1);
             break;
         case PVRTGENPIXELID4('r', 'g', 'b', 'x', 5, 5, 5, 1):
-            this->format = Format::R5G5B5X1;
+            this->format = SelectPVRChannelFormat(channelType, Format::R5G5B5X1);
             break;
         case PVRTGENPIXELID4('a', 'r', 'g', 'b', 1, 5, 5, 5):
-            this->format = Format::A1R5G5B5;
+            this->format = SelectPVRChannelFormat(channelType, Format::A1R5G5B5);
             break;
         case PVRTGENPIXELID4('a', 'b', 'g', 'r', 1, 5, 5, 5):
-            this->format = Format::A1B5G5R5;
+            this->format = SelectPVRChannelFormat(channelType, Format::A1B5G5R5);
             break;
         case PVRTGENPIXELID3('r', 'g', 'b', 5, 6, 5):
-            this->format = Format::R5G6B5;
+            this->format = SelectPVRChannelFormat(channelType, Format::R5G6B5);
             break;
         case PVRTGENPIXELID3('b', 'g', 'r', 5, 6, 5):
-            this->format = Format::B5G6R5;
+            this->format = SelectPVRChannelFormat(channelType, Format::B5G6R5);
             break;
         case PVRTGENPIXELID3('r', 'g', 'b', 11, 11, 10):
-            this->format = Format::R11G11B10_FLOAT;
+            this->format = SelectPVRFloatFormat(channelType, Format::R11G11B10_FLOAT);
             break;
         case PVRTGENPIXELID4('r', 'g', 'b', 'a', 16, 16, 16, 16):
-            this->format = Format::R16G16B16A16_FLOAT;
+            this->format = SelectPVRChannelFormat(channelType, Format::R16G16B16A16, Format::R16G16B16A16_SNORM, Format::R16G16B16A16_SINT, Format::R16G16B16A16_UINT, Format::R16G16B16A16_FLOAT);
             break;
         case PVRTGENPIXELID3('r', 'g', 'b', 16, 16, 16):
-            this->format = Format::R16G16B16_FLOAT;
+            this->format = SelectPVRChannelFormat(channelType, Format::R16G16B16, Format::R16G16B16_SNORM, Format::R16G16B16_SINT, Format::R16G16B16_UINT, Format::R16G16B16_FLOAT);
             break;
         case PVRTGENPIXELID2('r', 'g', 16, 16):
-            this->format = Format::R16G16_FLOAT;
+            this->format = SelectPVRChannelFormat(channelType, Format::R16G16, Format::R16G16_SNORM, Format::R16G16_SINT, Format::R16G16_UINT, Format::R16G16_FLOAT);
             break;
         case PVRTGENPIXELID1('r', 16):
-            this->format = Format::R16_FLOAT;
+            this->format = SelectPVRChannelFormat(channelType, Format::R16, Format::R16_SNORM, Format::R16_SINT, Format::R16_UINT, Format::R16_FLOAT);
             break;
         case PVRTGENPIXELID2('l', 'a', 16, 16):
-            this->format = Format::L16A16_FLOAT;
+            this->format = SelectPVRFloatFormat(channelType, Format::L16A16_FLOAT);
             break;
         case PVRTGENPIXELID1('l', 16):
-            this->format = Format::L16_FLOAT;
+            this->format = SelectPVRFloatFormat(channelType, Format::L16_FLOAT);
             break;
         case PVRTGENPIXELID1('a', 16):
-            this->format = Format::A16_FLOAT;
+            this->format = SelectPVRFloatFormat(channelType, Format::A16_FLOAT);
             break;
         case PVRTGENPIXELID4('r', 'g', 'b', 'a', 32, 32, 32, 32):
-            this->format = Format::R32G32B32A32_FLOAT;
+            this->format = SelectPVRChannelFormat(channelType, Format::Unknown, Format::Unknown, Format::R32G32B32A32_SINT, Format::R32G32B32A32_UINT, Format::R32G32B32A32_FLOAT);
             break;
         case PVRTGENPIXELID3('r', 'g', 'b', 32, 32, 32):
-            this->format = Format::R32G32B32_FLOAT;
+            this->format = SelectPVRChannelFormat(channelType, Format::Unknown, Format::Unknown, Format::R32G32B32_SINT, Format::R32G32B32_UINT, Format::R32G32B32_FLOAT);
             break;
         case PVRTGENPIXELID2('r', 'g', 32, 32):
-            this->format = Format::R32G32_FLOAT;
+            this->format = SelectPVRChannelFormat(channelType, Format::Unknown, Format::Unknown, Format::R32G32_SINT, Format::R32G32_UINT, Format::R32G32_FLOAT);
             break;
         case PVRTGENPIXELID1('r', 32):
-            this->format = Format::R32_FLOAT;
+            this->format = SelectPVRChannelFormat(channelType, Format::Unknown, Format::Unknown, Format::R32_SINT, Format::R32_UINT, Format::R32_FLOAT);
             break;
         case PVRTGENPIXELID2('l', 'a', 32, 32):
-            this->format = Format::L32A32_FLOAT;
+            this->format = SelectPVRFloatFormat(channelType, Format::L32A32_FLOAT);
             break;
         case PVRTGENPIXELID1('l', 32):
-            this->format = Format::L32_FLOAT;
+            this->format = SelectPVRFloatFormat(channelType, Format::L32_FLOAT);
             break;
         case PVRTGENPIXELID1('a', 32):
-            this->format = Format::A32_FLOAT;
+            this->format = SelectPVRFloatFormat(channelType, Format::A32_FLOAT);
             break;
         default:
             BE_WARNLOG("Image::LoadPVR3FromMemory: Unsupported pixel format %s\n", name);
-            break;
+            return false;
+        }
+
+        if (this->format == Format::Unknown) {
+            BE_WARNLOG("Image::LoadPVR3FromMemory: Unsupported channel type %u in %s\n", channelType, name);
+            return false;
         }
     }
         
+    Clear();
+
     ptr += header->u32MetaDataSize;
     
+    const int numFaces = header->u32NumFaces;
+    const int numSurfaces = Max(1, (int)header->u32NumSurfaces);
+
     this->width = header->u32Width;
     this->height = header->u32Height;
     this->depth = header->u32Depth;
     this->gammaSpace = header->u32ColourSpace == ePVRTCSpacelRGB ? GammaSpace::Linear : GammaSpace::sRGB;
     this->numMipLevels = Max(1, (int)header->u32MIPMapCount);
-    this->arraySize = header->u32NumFaces * Max(1, (int)header->u32NumSurfaces);
-    this->flags = header->u32NumFaces == 6 ? Flag::CubeMap : Flag::None;
-    
-    size_t dataSize = fileSize - (ptr - data);
-    
+    this->arraySize = numFaces * numSurfaces;
+    this->flags = numFaces == 6 ? Flag::CubeMap : Flag::None;
+
+    const size_t dataSize = SizeInBytes(0, numMipLevels);
     this->pic = (byte *)Mem_Alloc256(dataSize);
-    simdProcessor->Memcpy(this->pic, ptr, (int)dataSize);
     this->alloced = true;
+
+    // PVR stores mip levels first, while Image stores the complete mip chain for each slice.
+    for (int mipLevel = 0; mipLevel < numMipLevels; mipLevel++) {
+        const size_t mipSize = SizeInBytesForSlice(mipLevel, 1);
+
+        for (int surfaceIndex = 0; surfaceIndex < numSurfaces; surfaceIndex++) {
+            for (int faceIndex = 0; faceIndex < numFaces; faceIndex++) {
+                const int sliceIndex = surfaceIndex * numFaces + faceIndex;
+                simdProcessor->Memcpy(GetPixels(mipLevel, sliceIndex), ptr, (int)mipSize);
+                ptr += mipSize;
+            }
+        }
+    }
     
     return true;
 }
@@ -322,14 +384,17 @@ bool Image::WritePVR(File *fp) const {
         return false;
     }
 
+    const int numFaces = HasFlag(flags, Flag::CubeMap) ? 6 : 1;
+    const int numSurfaces = arraySize / numFaces;
+
     PVRTextureHeaderV3 header;
     header.u32Version = PVRTEX3_IDENT;
     header.u32Flags = 0;
     header.u32Height = height;
     header.u32Width = width;
-    header.u32Depth = 1;
-    header.u32NumSurfaces = 1;
-    header.u32NumFaces = HasFlag(flags, Flag::CubeMap) ?  6 : 1;
+    header.u32Depth = depth;
+    header.u32NumSurfaces = numSurfaces;
+    header.u32NumFaces = numFaces;
     header.u32MIPMapCount = numMipLevels;
 
     switch (format) {
@@ -631,7 +696,17 @@ bool Image::WritePVR(File *fp) const {
     fp->Write(&header, sizeof(header));
 #endif
     
-    fp->Write(pic, SizeInBytes(0, numMipLevels));
+    // PVR stores mip levels before array surfaces and cubemap faces.
+    for (int mipLevel = 0; mipLevel < numMipLevels; mipLevel++) {
+        const size_t mipSize = SizeInBytesForSlice(mipLevel, 1);
+
+        for (int surfaceIndex = 0; surfaceIndex < numSurfaces; surfaceIndex++) {
+            for (int faceIndex = 0; faceIndex < numFaces; faceIndex++) {
+                const int sliceIndex = surfaceIndex * numFaces + faceIndex;
+                fp->Write(GetPixels(mipLevel, sliceIndex), mipSize);
+            }
+        }
+    }
 
     return true;
 }
@@ -639,7 +714,7 @@ bool Image::WritePVR(File *fp) const {
 bool Image::WritePVR(const char *filename) const {
     File *fp = fileSystem.OpenFile(filename, File::Mode::Write);
     if (!fp) {
-        BE_WARNLOG("Image::WritePVR: file open error\n");
+        BE_WARNLOG("Image::WritePVR: failed to open file '%s' for writing\n", filename);
         return false;
     }
 

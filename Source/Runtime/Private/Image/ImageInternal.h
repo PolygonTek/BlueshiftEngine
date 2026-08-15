@@ -58,14 +58,14 @@ void CompressBC3(const Image &srcImage, Image &dstImage, Image::CompressionQuali
 void CompressBC4(const Image &srcImage, Image &dstImage, Image::CompressionQuality compressionQuality);
 void CompressBC5(const Image &srcImage, Image &dstImage, Image::CompressionQuality compressionQuality);
 
-void CompressETC1(const Image &srcImage, Image &dstImage, Image::CompressionQuality compressionQuality);
-void CompressETC2_RGB8(const Image &srcImage, Image &dstImage, Image::CompressionQuality compressionQuality);
-void CompressETC2_RGBA1(const Image &srcImage, Image &dstImage, Image::CompressionQuality compressionQuality);
-void CompressETC2_RGBA8(const Image &srcImage, Image &dstImage, Image::CompressionQuality compressionQuality);
-void CompressEAC_R11(const Image &srcImage, Image &dstImage, Image::CompressionQuality compressionQuality);
-void CompressEAC_RG11(const Image &srcImage, Image &dstImage, Image::CompressionQuality compressionQuality);
-void CompressEAC_Signed_R11(const Image &srcImage, Image &dstImage, Image::CompressionQuality compressionQuality);
-void CompressEAC_Signed_RG11(const Image &srcImage, Image &dstImage, Image::CompressionQuality compressionQuality);
+bool CompressETC1(const Image &srcImage, Image &dstImage, Image::CompressionQuality compressionQuality);
+bool CompressETC2_RGB8(const Image &srcImage, Image &dstImage, Image::CompressionQuality compressionQuality);
+bool CompressETC2_RGBA1(const Image &srcImage, Image &dstImage, Image::CompressionQuality compressionQuality);
+bool CompressETC2_RGBA8(const Image &srcImage, Image &dstImage, Image::CompressionQuality compressionQuality);
+bool CompressEAC_R11(const Image &srcImage, Image &dstImage, Image::CompressionQuality compressionQuality);
+bool CompressEAC_RG11(const Image &srcImage, Image &dstImage, Image::CompressionQuality compressionQuality);
+bool CompressEAC_Signed_R11(const Image &srcImage, Image &dstImage, Image::CompressionQuality compressionQuality);
+bool CompressEAC_Signed_RG11(const Image &srcImage, Image &dstImage, Image::CompressionQuality compressionQuality);
 
 bool CompressedFormatBlockDimensions(Image::Format imageFormat, int &blockWidth, int &blockHeight);
 bool CompressedFormatMinDimensions(Image::Format imageFormat, int &minWidth, int &minHeight);

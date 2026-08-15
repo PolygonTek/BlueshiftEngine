@@ -57,7 +57,7 @@ float Image::pow22ToLinearTable[256] = {
     0.940600707035753, 0.948964938178195, 0.957369576199527, 0.96581465350313, 0.974300202388861, 0.982826255053791, 0.99139284359294, 1
 };
 
-// color <= 0.4045f ? color / 12.92 : Math::Pow((color + 0.055f) / 1.055f, 2.4f);
+// color <= 0.04045f ? color / 12.92 : Math::Pow((color + 0.055f) / 1.055f, 2.4f);
 float Image::sRGBToLinearTable[256] = {
     0, 0.000303526983548838, 0.000607053967097675, 0.000910580950646512, 0.00121410793419535, 0.00151763491774419, 0.00182116190129302, 0.00212468888484186, 
     0.0024282158683907, 0.00273174285193954, 0.00303526983548838, 0.00334653564113713, 0.00367650719436314, 0.00402471688178252, 0.00439144189356217, 0.00477695332960869,
@@ -243,51 +243,78 @@ Image &Image::CreateEquirectangularFromCube(const Image &cubeImage) {
     return *this;
 }
 
-Image &Image::CopyFrom(const Image &srcImage, int32_t firstMipLevel, int32_t numMipLevels) {
+Image &Image::CopyFrom(const Image &srcImage, int32_t firstMipLevel, int32_t mipCount) {
+    if (IsEmpty() || srcImage.IsEmpty()) {
+        return *this;
+    }
+
     if (srcImage.GetWidth() != width || srcImage.GetHeight() != height || srcImage.GetDepth() != depth || srcImage.IsCubeMap() != IsCubeMap() || srcImage.GetArraySize() != arraySize) {
         return *this;
     }
 
-    for (int sliceIndex = 0; sliceIndex < arraySize; sliceIndex++) {
-        byte *src = srcImage.GetPixels(firstMipLevel, sliceIndex);
-        byte *dst = GetPixels(firstMipLevel, sliceIndex);
-        const size_t bytesForFace = srcImage.SizeInBytesForSlice(firstMipLevel, numMipLevels);
+    if (firstMipLevel < 0 || mipCount <= 0 || firstMipLevel >= numMipLevels || firstMipLevel >= srcImage.numMipLevels || mipCount > srcImage.numMipLevels - firstMipLevel || mipCount > numMipLevels - firstMipLevel) {
+        return *this;
+    }
 
-        simdProcessor->Memcpy(dst, src, static_cast<int>(bytesForFace));
+    // Formats may differ, but each mip must occupy the same number of bytes for a safe raw copy.
+    for (int32_t mipLevel = firstMipLevel; mipLevel < firstMipLevel + mipCount; mipLevel++) {
+        if (srcImage.SizeInBytesForSlice(mipLevel, 1) != SizeInBytesForSlice(mipLevel, 1)) {
+            return *this;
+        }
+    }
+
+    const size_t bytesPerSlice = srcImage.SizeInBytesForSlice(firstMipLevel, mipCount);
+
+    for (int sliceIndex = 0; sliceIndex < arraySize; sliceIndex++) {
+        const byte *src = srcImage.GetPixels(firstMipLevel, sliceIndex);
+        byte *dst = GetPixels(firstMipLevel, sliceIndex);
+
+        simdProcessor->Memcpy(dst, src, static_cast<int>(bytesPerSlice));
     }
 
     return *this;
 }
 
 void Image::Update2D(int32_t mipLevel, int32_t x, int32_t y, int32_t width, int32_t height, const byte *data) {
-    int bpp = BytesPerPixel();
-    int srcPitch = width * bpp;
-    int dstPitch = GetWidth(mipLevel) * bpp;
-    int dstStartOffset = y * dstPitch + x * bpp;
-    size_t dstSize = SizeInBytes(mipLevel);
-
-    if (dstStartOffset + height * dstPitch > dstSize) {
+    if (!data || IsCompressed() || mipLevel < 0 || mipLevel >= numMipLevels || x < 0 || y < 0 || width <= 0 || height <= 0) {
         assert(0);
         return;
     }
 
-    byte *dstPtr = GetPixels(mipLevel) + dstStartOffset;
+    const int32_t mipWidth = GetWidth(mipLevel);
+    const int32_t mipHeight = GetHeight(mipLevel);
+    if (width > mipWidth - x || height > mipHeight - y) {
+        assert(0);
+        return;
+    }
+
+    const int bpp = BytesPerPixel();
+    const size_t srcPitch = static_cast<size_t>(width) * bpp;
+    const size_t dstPitch = static_cast<size_t>(mipWidth) * bpp;
+
+    byte *dstPtr = GetPixels(mipLevel) + static_cast<size_t>(y) * dstPitch + static_cast<size_t>(x) * bpp;
     const byte *srcPtr = data;
 
     while (height--) {
-        simdProcessor->Memcpy(dstPtr, srcPtr, srcPitch);
+        simdProcessor->Memcpy(dstPtr, srcPtr, static_cast<int>(srcPitch));
         dstPtr += dstPitch;
         srcPtr += srcPitch;
     }
 }
 
 Image &Image::operator=(const Image &rhs) {
+    if (this == &rhs) {
+        return *this;
+    }
     Clear();
     Create(rhs.width, rhs.height, rhs.depth, rhs.arraySize, rhs.numMipLevels, rhs.format, rhs.gammaSpace, rhs.pic, rhs.flags);
     return (*this);
 }
 
 Image &Image::operator=(Image &&rhs) noexcept {
+    if (this == &rhs) {
+        return *this;
+    }
     Clear();
 
     width = rhs.width;
@@ -310,22 +337,23 @@ Image &Image::operator=(Image &&rhs) noexcept {
 void Image::Clear() {
     if (alloced && pic) {
         Mem_AlignedFree(pic);
-        pic = nullptr;
-        alloced = false;
     }
+    pic = nullptr;
+    alloced = false;
 }
 
-Color4 Image::Sample2DNearest(const byte *src, const Vec2 &uv, SampleWrapMode wrapModeU, SampleWrapMode wrapModeV) const {
+Color4 Image::Sample2DNearest(const byte *src, int32_t sampleWidth, int32_t sampleHeight, const Vec2 &uv, SampleWrapMode wrapModeU, SampleWrapMode wrapModeV) const {
     const ImageFormatInfo *formatInfo = GetImageFormatInfo(format);
 
     const int bpp = BytesPerPixel();
-    const int pitch = width * bpp;
+    const int pitch = sampleWidth * bpp;
 
-    const float x = WrapCoord(uv[0] * (width - 1), (float)(width - 1), wrapModeU);
-    const float y = WrapCoord(uv[1] * (height - 1), (float)(height - 1), wrapModeV);
+    // Round(uv * size - 0.5f) is equivalent to Floor(uv * size).
+    const int x0 = static_cast<int>(Math::Floor(uv[0] * sampleWidth));
+    const int y0 = static_cast<int>(Math::Floor(uv[1] * sampleHeight));
 
-    const int iX = Math::Round(x);
-    const int iY = Math::Round(y);
+    const int iX = WrapCoord(x0, sampleWidth, wrapModeU);
+    const int iY = WrapCoord(y0, sampleHeight, wrapModeV);
 
     ALIGN_AS16 Color4 outputColor;
 
@@ -334,22 +362,25 @@ Color4 Image::Sample2DNearest(const byte *src, const Vec2 &uv, SampleWrapMode wr
     return outputColor;
 }
 
-Color4 Image::Sample2DBilinear(const byte *src, const Vec2 &uv, SampleWrapMode wrapModeU, SampleWrapMode wrapModeV) const {
+Color4 Image::Sample2DBilinear(const byte *src, int32_t sampleWidth, int32_t sampleHeight, const Vec2 &uv, SampleWrapMode wrapModeU, SampleWrapMode wrapModeV) const {
     const ImageFormatInfo *formatInfo = GetImageFormatInfo(format);
 
     const int bpp = BytesPerPixel();
-    const int pitch = width * bpp;
+    const int pitch = sampleWidth * bpp;
 
-    const float x = WrapCoord(uv[0] * (width - 1), (float)(width - 1), wrapModeU);
-    const float y = WrapCoord(uv[1] * (height - 1), (float)(height - 1), wrapModeV);
+    const float x = uv[0] * sampleWidth - 0.5f;
+    const float y = uv[1] * sampleHeight - 0.5f;
 
-    const int iX0 = (int)x;
-    const int iX1 = WrapCoord(iX0 + 1, width - 1, wrapModeU);
-    const float fracX = x - (float)iX0;
+    const int x0 = static_cast<int>(Math::Floor(x));
+    const int y0 = static_cast<int>(Math::Floor(y));
 
-    const int iY0 = (int)y;
-    const int iY1 = WrapCoord(iY0 + 1, height - 1, wrapModeV);
-    const float fracY = y - (float)iY0;
+    const int iX0 = WrapCoord(x0, sampleWidth, wrapModeU);
+    const int iX1 = WrapCoord(x0 + 1, sampleWidth, wrapModeU);
+    const int iY0 = WrapCoord(y0, sampleHeight, wrapModeV);
+    const int iY1 = WrapCoord(y0 + 1, sampleHeight, wrapModeV);
+
+    const float fracX = x - static_cast<float>(x0);
+    const float fracY = y - static_cast<float>(y0);
 
     const byte *srcY0 = &src[iY0 * pitch];
     const byte *srcY1 = &src[iY1 * pitch];
@@ -392,7 +423,7 @@ Color4 Image::Sample2DBilinear(const byte *src, const Vec2 &uv, SampleWrapMode w
 }
 
 Color4 Image::Sample2D(const Vec2 &uv, SampleWrapMode wrapModeU, SampleWrapMode wrapModeV, SampleFilter filter, int32_t mipLevel) const {
-    if (IsCompressed()) {
+    if (IsCompressed() || mipLevel < 0 || mipLevel >= numMipLevels) {
         assert(0);
         return Color4::zero;
     }
@@ -400,18 +431,20 @@ Color4 Image::Sample2D(const Vec2 &uv, SampleWrapMode wrapModeU, SampleWrapMode 
     Color4 outputColor = Color4(0, 0, 0, 1);
 
     const byte *src = GetPixels(mipLevel);
+    const int32_t sampleWidth = GetWidth(mipLevel);
+    const int32_t sampleHeight = GetHeight(mipLevel);
 
     if (filter == SampleFilter::Nearest) {
-        outputColor = Sample2DNearest(src, uv, wrapModeU, wrapModeV);
+        outputColor = Sample2DNearest(src, sampleWidth, sampleHeight, uv, wrapModeU, wrapModeV);
     } else if (filter == SampleFilter::Bilinear) {
-        outputColor = Sample2DBilinear(src, uv, wrapModeU, wrapModeV);
+        outputColor = Sample2DBilinear(src, sampleWidth, sampleHeight, uv, wrapModeU, wrapModeV);
     }
 
     return outputColor;
 }
 
 Color4 Image::SampleCube(const Vec3 &direction, SampleFilter filter, int32_t mipLevel) const {
-    if (IsCompressed()) {
+    if (IsCompressed() || !IsCubeMap() || arraySize < 6 || mipLevel < 0 || mipLevel >= numMipLevels) {
         assert(0);
         return Color4::zero;
     }
@@ -420,15 +453,15 @@ Color4 Image::SampleCube(const Vec3 &direction, SampleFilter filter, int32_t mip
 
     Vec2 uv;
     CubeMapFace cubeMapFace = CubeMapToFaceCoords(direction, uv[0], uv[1]);
-    uv[0] *= width;
-    uv[1] *= height;
 
     const byte *src = GetPixels(mipLevel, (int)cubeMapFace);
+    const int32_t sampleWidth = GetWidth(mipLevel);
+    const int32_t sampleHeight = GetHeight(mipLevel);
 
     if (filter == SampleFilter::Nearest) {
-        outputColor = Sample2DNearest(src, uv, SampleWrapMode::Clamp, SampleWrapMode::Clamp);
+        outputColor = Sample2DNearest(src, sampleWidth, sampleHeight, uv, SampleWrapMode::Clamp, SampleWrapMode::Clamp);
     } else if (filter == SampleFilter::Bilinear) {
-        outputColor = Sample2DBilinear(src, uv, SampleWrapMode::Clamp, SampleWrapMode::Clamp);
+        outputColor = Sample2DBilinear(src, sampleWidth, sampleHeight, uv, SampleWrapMode::Clamp, SampleWrapMode::Clamp);
     }
 
     return outputColor;
@@ -968,9 +1001,9 @@ bool Image::NeedFloatConversion(Image::Format imageFormat) {
 }
 
 uint64_t Image::MemRequired(int32_t width, int32_t height, int32_t depth, int32_t numMipmaps, int32_t numSlices, Image::Format imageFormat) {
-    int w = width;
-    int h = height;
-    int d = depth;
+    uint64_t w = width;
+    uint64_t h = height;
+    uint64_t d = depth;
 
     uint64_t size = 0;
     while (numMipmaps) {
@@ -984,16 +1017,14 @@ uint64_t Image::MemRequired(int32_t width, int32_t height, int32_t depth, int32_
             CompressedFormatMinDimensions(imageFormat, minWidth, minHeight);
 
             assert(blockWidth > 0 && blockHeight > 0 && minWidth > 0 && minHeight > 0);
-            if (blockWidth <= 0 || blockHeight <= 0 || minWidth <= 0 || minHeight <= 0) {
-                return 0;
-            }
 
-            int w2 = w + ((unsigned int)(-w) % minWidth);
-            int h2 = h + ((unsigned int)(-h) % minHeight);
+            uint64_t w2 = ((w + minWidth - 1) / minWidth) * minWidth;
+            uint64_t h2 = ((h + minHeight - 1) / minHeight) * minHeight;
             size += (w2 * h2 * d) / (blockWidth * blockHeight);
         } else {
             size += w * h * d;
         }
+
         w >>= 1;
         h >>= 1;
         d >>= 1;

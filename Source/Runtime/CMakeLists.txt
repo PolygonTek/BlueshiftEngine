@@ -346,6 +346,7 @@ set(COMMON_ENGINE_FILES
     Private/Image/ImageFilePNG.cpp
     Private/Image/ImageFileTGA.cpp
     Private/Image/ImageFormat.cpp
+    Private/Image/ImageMipmap.cpp
     Private/Image/ImageProcess.cpp
     Private/Image/ImageResize.cpp
     Private/Image/BCDecoder.cpp

@@ -228,7 +228,7 @@ bool Image::WritePNG(File *fp) const {
 bool Image::WritePNG(const char *filename) const {
     File *fp = fileSystem.OpenFile(filename, File::Mode::Write);
     if (!fp) {
-        BE_WARNLOG("Image::WritePNG: file open error\n");
+        BE_WARNLOG("Image::WritePNG: failed to open file '%s' for writing\n", filename);
         return false;
     }
 

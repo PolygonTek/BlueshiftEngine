@@ -109,21 +109,23 @@ bool Image::LoadTGAFromMemory(const char *name, const byte *data, size_t size) {
             return false;
         }
 
-        if ((header->colormap_index + header->colormap_length + 1) >= MAXCOLORS) {
+        if (header->colormap_index + header->colormap_length > MAXCOLORS) {
             return false;
         }
 
-        colormap = (byte *)Mem_Alloc(MAXCOLORS * header->colormap_bpp / 8);
+        colormap = (byte *)Mem_Alloc(MAXCOLORS * 4);
 
         for (i = header->colormap_index; i < header->colormap_index + header->colormap_length; i++)	{
             // read appropriate number of bytes, break into rgb & put in map
+            a = 255;
             switch (header->colormap_bpp) {
             case 8:         // grey scale, read and triplicate
                 r = g = b = *ptr++;
                 break;
             case 16:        // 5 bits each of red green and blue
             case 15:        // watch for byte order
-                packed = *(uint16_t *)ptr++;
+                packed = *reinterpret_cast<const uint16_t *>(ptr);
+                ptr += sizeof(packed);
                 b = ((packed) & 0x1f) << 3;
                 g = ((packed>>5) & 0x1f) << 3;
                 r = ((packed>>10) & 0x1f) << 3;
@@ -141,17 +143,16 @@ bool Image::LoadTGAFromMemory(const char *name, const byte *data, size_t size) {
                 break;
             }
 
-            unsigned int colormap_idx = i * header->colormap_bpp / 8;
+            unsigned int colormap_idx = i * 4;
             colormap[colormap_idx + 0] = b;
             colormap[colormap_idx + 1] = g;
             colormap[colormap_idx + 2] = r;
-            if (header->colormap_bpp == 32) {
-                colormap[colormap_idx + 3] = a;
-            }
+            colormap[colormap_idx + 3] = a;
         }
     }
 
-    Create2D(header->width, header->height, 1, header->bpp == 32 ? Format::B8G8R8A8 : Format::B8G8R8, GammaSpace::sRGB, nullptr, Flag::None);
+    const bool hasAlpha = has_colormap ? header->colormap_bpp == 32 : header->bpp == 32;
+    Create2D(header->width, header->height, 1, hasAlpha ? Format::B8G8R8A8 : Format::B8G8R8, GammaSpace::sRGB, nullptr, Flag::None);
 
     int byte_per_pixel = BytesPerPixel();
         
@@ -197,7 +198,8 @@ bool Image::LoadTGAFromMemory(const char *name, const byte *data, size_t size) {
                 r = g = b = i = *ptr++;
                 break;
             case 16:
-                packed = i = *(uint16_t *)ptr++;
+                packed = i = *reinterpret_cast<const uint16_t *>(ptr);
+                ptr += sizeof(packed);
                 b = ((packed) & 0x1f) << 3;
                 g = ((packed>>5) & 0x1f) << 3;
                 r = ((packed>>10) & 0x1f) << 3;
@@ -219,18 +221,18 @@ bool Image::LoadTGAFromMemory(const char *name, const byte *data, size_t size) {
 PixEncode:
             int idx = (realrow * width + x) * byte_per_pixel;
             if (has_colormap) {
-                unsigned int colormap_idx = i * header->colormap_bpp / 8;
+                unsigned int colormap_idx = i * 4;
                 dest[idx + 0] = colormap[colormap_idx + 0];
                 dest[idx + 1] = colormap[colormap_idx + 1];
                 dest[idx + 2] = colormap[colormap_idx + 2];
-                if (header->bpp == 32) {
+                if (hasAlpha) {
                     dest[idx + 3] = colormap[colormap_idx + 3];
                 }
             } else {
                 dest[idx + 0] = b;
                 dest[idx + 1] = g;
                 dest[idx + 2] = r;
-                if (header->bpp == 32) {
+                if (hasAlpha) {
                     dest[idx + 3] = a;
                 }
             }
@@ -305,7 +307,7 @@ bool Image::WriteTGA(File *fp) const {
 bool Image::WriteTGA(const char *filename) const {
     File *fp = fileSystem.OpenFile(filename, File::Mode::Write);
     if (!fp) {
-        BE_WARNLOG("Image::WriteTGA: file open error\n");
+        BE_WARNLOG("Image::WriteTGA: failed to open file '%s' for writing\n", filename);
         return false;
     }
 
