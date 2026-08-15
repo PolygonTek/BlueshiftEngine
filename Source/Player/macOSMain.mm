@@ -550,7 +550,7 @@ static void DisplayContext(BE1::Graphics::Handle contextHandle, void *dataPtr) {
     while (1) {
         int t = BE1::PlatformTime::Milliseconds();
         int elapsedMsec = t - t0;
-        BE1::Clamp(elapsedMsec, 0, 1000);
+        elapsedMsec = BE1::Clamp(elapsedMsec, 0, 1000);
 
         t0 = t;
 

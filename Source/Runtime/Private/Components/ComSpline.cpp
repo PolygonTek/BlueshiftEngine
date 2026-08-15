@@ -72,9 +72,9 @@ void ComSpline::Awake() {
 
 Vec3 ComSpline::GetCurrentOrigin(float time) const {
     if (loop) {
-        Wrap(time, 0.0f, 1.0f);
+        time = Wrap(time, 0.0f, 1.0f);
     } else {
-        Clamp(time, 0.0f, 1.0f);
+        time = Clamp(time, 0.0f, 1.0f);
     }
     const ComTransform *transform = GetEntity()->GetTransform();
     return transform->GetMatrix().TransformPos(originCurve->GetCurrentValue(time));
@@ -82,9 +82,9 @@ Vec3 ComSpline::GetCurrentOrigin(float time) const {
 
 Mat3 ComSpline::GetCurrentAxis(float time) const {
     if (loop) {
-        Wrap(time, 0.0f, 1.0f);
+        time = Wrap(time, 0.0f, 1.0f);
     } else {
-        Clamp(time, 0.0f, 1.0f);
+        time = Clamp(time, 0.0f, 1.0f);
     }
     const ComTransform *transform = GetEntity()->GetTransform();
     return transform->GetMatrix().ToMat3() * anglesCurve->GetCurrentValue(time).ToMat3();

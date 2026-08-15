@@ -160,9 +160,9 @@ const Color3 Color3::yellow                 = Color3(1.000000000f, 1.000000000f,
 const Color3 Color3::yellowGreen            = Color3(0.603921592f, 0.803921640f, 0.196078449f);
 
 void Color3::Clip() {
-    Clamp01(r);
-    Clamp01(g);
-    Clamp01(b);
+    r = Clamp01(r);
+    g = Clamp01(g);
+    b = Clamp01(b);
 }
 
 void Color3::Invert() {
@@ -360,7 +360,7 @@ Color3 Color3::FromCIE1931Wavelength(float wavelengthNm) {
 }
 
 Color3 Color3::FromColorTemperature(float temp) {
-    Clamp(temp, 1000.0f, 15000.0f);
+    temp = Clamp(temp, 1000.0f, 15000.0f);
 
     float temp2 = temp * temp;
 

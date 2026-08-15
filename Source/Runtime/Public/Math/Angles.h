@@ -277,9 +277,9 @@ BE_INLINE Angles Angles::SyncAngles(const Angles &baseAngles) const {
 }
 
 BE_INLINE void Angles::Clamp(const Angles &min, const Angles &max) {
-    BE1::Clamp(x, min.x, max.x);
-    BE1::Clamp(y, min.y, max.y);
-    BE1::Clamp(z, min.z, max.z);
+    x = BE1::Clamp(x, min.x, max.x);
+    y = BE1::Clamp(y, min.y, max.y);
+    z = BE1::Clamp(z, min.z, max.z);
 }
 
 BE_INLINE void Angles::SetFromLerp(const Angles &a1, const Angles &a2, const float t) {

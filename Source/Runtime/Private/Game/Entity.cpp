@@ -328,8 +328,8 @@ bool Entity::RemoveComponent(Component *component) {
 }
 
 bool Entity::SwapComponent(int fromIndex, int toIndex) {
-    Clamp(fromIndex, 1, components.Count());
-    Clamp(toIndex, 1, components.Count());
+    fromIndex = Clamp(fromIndex, 1, components.Count());
+    toIndex = Clamp(toIndex, 1, components.Count());
 
     if (fromIndex == toIndex) {
         return false;

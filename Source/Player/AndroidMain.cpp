@@ -657,7 +657,7 @@ void android_main(android_app *appState) {
 
             int currentMsec = BE1::PlatformTime::Milliseconds();
             int elapsedMsec = currentMsec - lastMsec;
-            BE1::Clamp(elapsedMsec, 0, 1000);
+            elapsedMsec = BE1::Clamp(elapsedMsec, 0, 1000);
 
             lastMsec = currentMsec;
 

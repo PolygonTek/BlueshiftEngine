@@ -904,9 +904,9 @@ float ExprData::GetTableValue(int reg, float findex) const {
     if (table->snap) {
         i0 = (int)Math::Floor(findex);
         if (table->wrap) {
-            Wrap(i0, 0, table->numElements - 1);
+            i0 = Wrap(i0, 0, table->numElements);
         } else {
-            Clamp(i0, 0, table->numElements - 1);
+            i0 = Clamp(i0, 0, table->numElements - 1);
         }
 
         output = table->elements[i0];
@@ -914,16 +914,16 @@ float ExprData::GetTableValue(int reg, float findex) const {
         i0 = (int)Math::Floor(findex);
         float fraction = findex - (float)i0;
         if (table->wrap) {
-            Wrap(i0, 0, table->numElements - 1);
+            i0 = Wrap(i0, 0, table->numElements);
         } else {
-            Clamp(i0, 0, table->numElements - 1);
+            i0 = Clamp(i0, 0, table->numElements - 1);
         }
 
         i1 = i0 + 1;
         if (table->wrap) {
-            Wrap(i1, 0, table->numElements - 1);
+            i1 = Wrap(i1, 0, table->numElements);
         } else {
-            Clamp(i1, 0, table->numElements - 1);
+            i1 = Clamp(i1, 0, table->numElements - 1);
         }
         
         output = table->elements[i0] + (table->elements[i1] - table->elements[i0]) * fraction;

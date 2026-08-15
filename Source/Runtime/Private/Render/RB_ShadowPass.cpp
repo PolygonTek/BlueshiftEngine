@@ -691,7 +691,7 @@ static void RB_CascadedShadowMapPass(const VisLight *visLight) {
             backEnd.csmUpdateRatio[cascadeIndex] = 1.0f;
         } else {
             backEnd.csmUpdateRatio[cascadeIndex] = r_CSM_updateRatio.GetFloat() * (1.0f - ((float)cascadeIndex / (float)csmCount));
-            Clamp(backEnd.csmUpdateRatio[cascadeIndex], 0.1f, 1.0f);
+            backEnd.csmUpdateRatio[cascadeIndex] = Clamp(backEnd.csmUpdateRatio[cascadeIndex], 0.1f, 1.0f);
         }
 
         backEnd.csmUpdate[cascadeIndex] += backEnd.csmUpdateRatio[cascadeIndex];

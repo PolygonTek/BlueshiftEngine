@@ -328,7 +328,7 @@ int APIENTRY _tWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPTSTR lpCm
     while (1) {
         uint64_t t = BE1::PlatformTime::Microseconds();
         uint64_t elapsedUsec = t - t0;
-        BE1::Clamp(elapsedUsec, 0ULL, 1000000ULL);
+        elapsedUsec = BE1::Clamp(elapsedUsec, 0ULL, 1000000ULL);
 
         t0 = t;
 

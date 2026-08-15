@@ -758,7 +758,7 @@ void GameClient::DrawStringInRect(const Rect &rect, int marginX, int marginY, co
             }
 
             if (colorIndex >= 0) {
-                Clamp(colorIndex, 0, (int)COUNT_OF(Vec4Color::table) - 1);
+                colorIndex = Clamp(colorIndex, 0, (int)COUNT_OF(Vec4Color::table) - 1);
                 textColor.ToColor3() = Vec4Color::table[colorIndex].ToColor3();
 
                 guiMesh.SetColor(textColor);

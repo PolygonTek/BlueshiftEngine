@@ -119,9 +119,9 @@ void AABB::GetFarthestVertexFromDir(const Vec3 &dir, Vec3 &point) const {
 void AABB::GetClosestPoint(const Vec3 &from, Vec3 &point) const {
     point = from;
 
-    Clamp(point.x, b[0].x, b[1].x);
-    Clamp(point.y, b[0].y, b[1].y);
-    Clamp(point.z, b[0].z, b[1].z);
+    point.x = Clamp(point.x, b[0].x, b[1].x);
+    point.y = Clamp(point.y, b[0].y, b[1].y);
+    point.z = Clamp(point.z, b[0].z, b[1].z);
 }
 
 float AABB::DistanceSqr(const Vec3 &p) const {

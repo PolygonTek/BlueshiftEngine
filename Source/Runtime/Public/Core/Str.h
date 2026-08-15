@@ -942,7 +942,7 @@ BE_INLINE void Str::Append(const char *text, int l) {
 }
    
 BE_INLINE void Str::Insert(const char a, int index) {
-    Clamp(index, 0, len);
+    index = Clamp(index, 0, len);
 
     int l = 1;
     EnsureAlloced(len + l + 1);
@@ -955,7 +955,7 @@ BE_INLINE void Str::Insert(const char a, int index) {
 }
 
 BE_INLINE void Str::Insert(const char *text, int index) {
-    Clamp(index, 0, len);
+    index = Clamp(index, 0, len);
 
     int l = (int)strlen(text);
     EnsureAlloced(len + l + 1);

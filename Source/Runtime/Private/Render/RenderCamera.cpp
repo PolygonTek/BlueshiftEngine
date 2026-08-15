@@ -215,7 +215,7 @@ bool RenderCamera::CalcClipRectFromSphere(const Sphere &sphere, Rect &clipRect) 
 
         if (pz1 < 0) {
             x = planeNormal1.y / (planeNormal1.x * e);
-            Clamp(x, -1.0f, 1.0f);
+            x = Clamp(x, -1.0f, 1.0f);
             int vx = state.renderRect.x + (x + 1.0f) * state.renderRect.w * 0.5f;
 
             xmin = Max(state.renderRect.x, vx);
@@ -225,7 +225,7 @@ bool RenderCamera::CalcClipRectFromSphere(const Sphere &sphere, Rect &clipRect) 
 
         if (pz2 < 0) {
             x = planeNormal2.y / (planeNormal2.x * e);
-            Clamp(x, -1.0f, 1.0f);
+            x = Clamp(x, -1.0f, 1.0f);
             int vx = state.renderRect.x + (x + 1.0f) * state.renderRect.w * 0.5f;
 
             xmax = Min(state.renderRect.x + state.renderRect.w, vx);
@@ -279,7 +279,7 @@ bool RenderCamera::CalcClipRectFromSphere(const Sphere &sphere, Rect &clipRect) 
 
         if (pz1 < 0) {
             y = planeNormal1.x / (planeNormal1.z * e);
-            Clamp(y, -1.0f, 1.0f);
+            y = Clamp(y, -1.0f, 1.0f);
             int vy = state.renderRect.y + (1.0f - y) * state.renderRect.h * 0.5f;
 
             ymin = Max(state.renderRect.y, vy);
@@ -289,7 +289,7 @@ bool RenderCamera::CalcClipRectFromSphere(const Sphere &sphere, Rect &clipRect) 
 
         if (pz2 < 0) {
             y = planeNormal2.x / (planeNormal2.z * e);
-            Clamp(y, -1.0f, 1.0f);
+            y = Clamp(y, -1.0f, 1.0f);
             int vy = state.renderRect.y + (1.0f - y) * state.renderRect.h * 0.5f;
 
             ymax = Min(state.renderRect.y + state.renderRect.h, vy);

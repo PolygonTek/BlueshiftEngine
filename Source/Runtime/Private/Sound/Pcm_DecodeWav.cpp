@@ -130,7 +130,7 @@ static void IMA_ADPCM_DecodeBlock(const uint32_t **in_ptr, int16_t *out, int cha
 
                 // 다음 스텝 인덱스 보정
                 stepIndex += ima_index_adjust[nibble & 7];
-                Clamp<int16_t>(stepIndex, 0, 88);
+                stepIndex = Clamp<int16_t>(stepIndex, 0, 88);
 
                 // 차이값을 구한다 (diff = (nibble + 0.5) * step / 4)
                 int diff = step >> 3;

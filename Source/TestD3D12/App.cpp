@@ -410,7 +410,7 @@ void App::AddCameraMouseDelta(int deltaX, int deltaY) {
 
     targetCameraYaw -= deltaX * MouseSensitivity;
     targetCameraPitch += deltaY * MouseSensitivity;
-    BE1::Clamp(targetCameraPitch, -90.0f, 90.0f);
+    targetCameraPitch = BE1::Clamp(targetCameraPitch, -90.0f, 90.0f);
 }
 
 void App::AddCameraPanDelta(int deltaX, int deltaY) {
@@ -439,11 +439,11 @@ void App::AddCameraDistance(int delta) {
 
     float wheelSteps = (float)delta / MouseWheelDelta;
     targetCameraDistance *= BE1::Math::Pow(1.0f - MouseWheelZoomRatio, wheelSteps);
-    BE1::Clamp(targetCameraDistance, 1.0f, 1000.0f);
+    targetCameraDistance = BE1::Clamp(targetCameraDistance, 1.0f, 1000.0f);
 }
 
 void App::SetCameraDistance(float distance) {
-    BE1::Clamp(distance, 1.0f, 1000.0f);
+    distance = BE1::Clamp(distance, 1.0f, 1000.0f);
     targetCameraDistance = distance;
 }
 

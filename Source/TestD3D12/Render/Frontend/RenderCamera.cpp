@@ -517,7 +517,7 @@ bool RenderCamera::CalcClipRectFromSphere(const BE1::Sphere &sphere, BE1::Rect &
 
         if (pz1 < 0) {
             x = planeNormal1.y / (planeNormal1.x * e);
-            BE1::Clamp(x, -1.0f, 1.0f);
+            x = BE1::Clamp(x, -1.0f, 1.0f);
             int vx = desc.outputRect.x + (x + 1.0f) * desc.outputRect.w * 0.5f;
 
             xmin = BE1::Max(desc.outputRect.x, vx);
@@ -527,7 +527,7 @@ bool RenderCamera::CalcClipRectFromSphere(const BE1::Sphere &sphere, BE1::Rect &
 
         if (pz2 < 0) {
             x = planeNormal2.y / (planeNormal2.x * e);
-            BE1::Clamp(x, -1.0f, 1.0f);
+            x = BE1::Clamp(x, -1.0f, 1.0f);
             int vx = desc.outputRect.x + (x + 1.0f) * desc.outputRect.w * 0.5f;
 
             xmax = BE1::Min(desc.outputRect.x + desc.outputRect.w, vx);
@@ -581,7 +581,7 @@ bool RenderCamera::CalcClipRectFromSphere(const BE1::Sphere &sphere, BE1::Rect &
 
         if (pz1 < 0) {
             y = planeNormal1.x / (planeNormal1.z * e);
-            BE1::Clamp(y, -1.0f, 1.0f);
+            y = BE1::Clamp(y, -1.0f, 1.0f);
             int vy = desc.outputRect.y + (1.0f - y) * desc.outputRect.h * 0.5f;
 
             ymin = BE1::Max(desc.outputRect.y, vy);
@@ -591,7 +591,7 @@ bool RenderCamera::CalcClipRectFromSphere(const BE1::Sphere &sphere, BE1::Rect &
 
         if (pz2 < 0) {
             y = planeNormal2.x / (planeNormal2.z * e);
-            BE1::Clamp(y, -1.0f, 1.0f);
+            y = BE1::Clamp(y, -1.0f, 1.0f);
             int vy = desc.outputRect.y + (1.0f - y) * desc.outputRect.h * 0.5f;
 
             ymax = BE1::Min(desc.outputRect.y + desc.outputRect.h, vy);
@@ -629,10 +629,10 @@ bool RenderCamera::CalcClipRectFromOBB(const BE1::OBB &obb, BE1::Rect &clipRect)
         }
     }
 
-    BE1::Clamp(bounds[0][1], -1.0f, 1.0f);
-    BE1::Clamp(bounds[1][1], -1.0f, 1.0f);
-    BE1::Clamp(bounds[0][2], -1.0f, 1.0f);
-    BE1::Clamp(bounds[1][2], -1.0f, 1.0f);
+    bounds[0][1] = BE1::Clamp(bounds[0][1], -1.0f, 1.0f);
+    bounds[1][1] = BE1::Clamp(bounds[1][1], -1.0f, 1.0f);
+    bounds[0][2] = BE1::Clamp(bounds[0][2], -1.0f, 1.0f);
+    bounds[1][2] = BE1::Clamp(bounds[1][2], -1.0f, 1.0f);
 
     if (bounds[1][1] - bounds[0][1] <= 0) {
         return false;
@@ -664,10 +664,10 @@ bool RenderCamera::CalcClipRectFromFrustum(const BE1::Frustum &frustum, BE1::Rec
         }
     }
 
-    BE1::Clamp(bounds[0][1], -1.0f, 1.0f);
-    BE1::Clamp(bounds[1][1], -1.0f, 1.0f);
-    BE1::Clamp(bounds[0][2], -1.0f, 1.0f);
-    BE1::Clamp(bounds[1][2], -1.0f, 1.0f);
+    bounds[0][1] = BE1::Clamp(bounds[0][1], -1.0f, 1.0f);
+    bounds[1][1] = BE1::Clamp(bounds[1][1], -1.0f, 1.0f);
+    bounds[0][2] = BE1::Clamp(bounds[0][2], -1.0f, 1.0f);
+    bounds[1][2] = BE1::Clamp(bounds[1][2], -1.0f, 1.0f);
 
     if (bounds[1][1] - bounds[0][1] <= 0) {
         return false;

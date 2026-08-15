@@ -158,14 +158,14 @@ bool RenderSystem::IsFullscreen() const {
 void RenderSystem::SetGamma(double gamma) {
     unsigned short ramp[768];
 
-    Clamp(gamma, 0.5, 3.0);
+    gamma = Clamp(gamma, 0.5, 3.0);
     double one_gamma = 1.0 / gamma;
 
     double div = (double)(1.0 / 255.0);
 
     for (int i = 0; i < 256; i++) {
         unsigned int value = (int)(65535 * Math::Pow((double)(i + 0.5) * div, one_gamma));
-        Clamp(value, (unsigned int)0, (unsigned int)65535);
+        value = Clamp(value, (unsigned int)0, (unsigned int)65535);
 
         ramp[i] = ramp[i + 256] = ramp[i + 512] = (unsigned short)value;
     }

@@ -40,7 +40,7 @@ int Sound::ByteOffset() const {
     float fraction = ((float)playingTime / duration);
     
     int byteOffset = AlignDown((int)(bytes * fraction), numChannels * (bitsWidth >> 3));    
-    Clamp(byteOffset, 0, bytes);
+    byteOffset = Clamp(byteOffset, 0, bytes);
 
     return byteOffset;
 }

@@ -160,12 +160,12 @@ const Color4 Color4::yellow                 = Color4(1.000000000f, 1.000000000f,
 const Color4 Color4::yellowGreen            = Color4(0.603921592f, 0.803921640f, 0.196078449f, 1.000000000f);
 
 void Color4::Clip(bool clipAlpha) {
-    Clamp01(r);
-    Clamp01(g);
-    Clamp01(b);
+    r = Clamp01(r);
+    g = Clamp01(g);
+    b = Clamp01(b);
 
     if (clipAlpha) {
-        Clamp01(a);
+        a = Clamp01(a);
     }
 }
 

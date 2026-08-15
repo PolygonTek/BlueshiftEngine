@@ -198,7 +198,7 @@ void SoundSource::Update() {
     if (sound->NumChannels() == 1 && !sound->localSound) {
         // Do linear attenuation
         float distance = soundSystem.listenerPosition.Distance(sound->origin);
-        Clamp(distance, sound->minDistance, sound->maxDistance);
+        distance = Clamp(distance, sound->minDistance, sound->maxDistance);
         float gain = (1.0f - (distance - sound->minDistance) / (sound->maxDistance - sound->minDistance));
         SetVolume(sound->volume * gain * SoundSystem::s_volume.GetFloat());
     }

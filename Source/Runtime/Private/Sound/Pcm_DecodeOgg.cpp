@@ -105,7 +105,7 @@ int Pcm::DecodeFile_OggVorbis(byte *outBuffer, int len) {
         }
 
         // 최소 읽기 가능 크기 4
-        Clamp<int>(length, 4, sizeof(temp));
+        length = Clamp<int>(length, 4, sizeof(temp));
         if (length > sizeof(temp)) {
             length = sizeof(temp);
         }

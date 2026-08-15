@@ -1098,9 +1098,9 @@ void App::BuildImGuiOverlay() {
                 };
                 ImGui::SetNextItemWidth(fontSize * 12.0f);
                 if (ImGui::ColorEdit3("Color tint", colorGradingTint, ImGuiColorEditFlags_Float | ImGuiColorEditFlags_HDR)) {
-                    BE1::Clamp(colorGradingTint[0], r_colorGradingTintR.GetMinValue(), r_colorGradingTintR.GetMaxValue());
-                    BE1::Clamp(colorGradingTint[1], r_colorGradingTintG.GetMinValue(), r_colorGradingTintG.GetMaxValue());
-                    BE1::Clamp(colorGradingTint[2], r_colorGradingTintB.GetMinValue(), r_colorGradingTintB.GetMaxValue());
+                    colorGradingTint[0] = BE1::Clamp(colorGradingTint[0], r_colorGradingTintR.GetMinValue(), r_colorGradingTintR.GetMaxValue());
+                    colorGradingTint[1] = BE1::Clamp(colorGradingTint[1], r_colorGradingTintG.GetMinValue(), r_colorGradingTintG.GetMaxValue());
+                    colorGradingTint[2] = BE1::Clamp(colorGradingTint[2], r_colorGradingTintB.GetMinValue(), r_colorGradingTintB.GetMaxValue());
                     r_colorGradingTintR.SetFloat(colorGradingTint[0]);
                     r_colorGradingTintG.SetFloat(colorGradingTint[1]);
                     r_colorGradingTintB.SetFloat(colorGradingTint[2]);

@@ -629,7 +629,7 @@ bool Serializable::SetProperty(const PropertyInfo &propertyInfo, const Variant &
     case Variant::Type::Int: {
         int i = value.As<int>();
         if (ranged) {
-            Clamp(i, (int)minValue, (int)maxValue);
+            i = Clamp(i, (int)minValue, (int)maxValue);
         }
         newValue = i;
         break; 
@@ -637,7 +637,7 @@ bool Serializable::SetProperty(const PropertyInfo &propertyInfo, const Variant &
     case Variant::Type::Int64: {
         int64_t i = value.As<int64_t>();
         if (ranged) {
-            Clamp(i, (int64_t)minValue, (int64_t)maxValue);
+            i = Clamp(i, (int64_t)minValue, (int64_t)maxValue);
         }
         newValue = i;
         break;
@@ -648,7 +648,7 @@ bool Serializable::SetProperty(const PropertyInfo &propertyInfo, const Variant &
     case Variant::Type::Float: {
         float f = value.As<float>();
         if (ranged) {
-            Clamp(f, minValue, maxValue);
+            f = Clamp(f, minValue, maxValue);
         }
         newValue = f;
         break;
@@ -656,8 +656,8 @@ bool Serializable::SetProperty(const PropertyInfo &propertyInfo, const Variant &
     case Variant::Type::Vec2: {
         Vec2 vec2 = value.As<Vec2>();
         if (ranged) {
-            Clamp(vec2.x, minValue, maxValue);
-            Clamp(vec2.y, minValue, maxValue);
+            vec2.x = Clamp(vec2.x, minValue, maxValue);
+            vec2.y = Clamp(vec2.y, minValue, maxValue);
         }
         newValue = vec2;
         break; 
@@ -665,9 +665,9 @@ bool Serializable::SetProperty(const PropertyInfo &propertyInfo, const Variant &
     case Variant::Type::Vec3: {
         Vec3 vec3 = value.As<Vec3>();
         if (ranged) {
-            Clamp(vec3.x, minValue, maxValue);
-            Clamp(vec3.y, minValue, maxValue);
-            Clamp(vec3.z, minValue, maxValue);
+            vec3.x = Clamp(vec3.x, minValue, maxValue);
+            vec3.y = Clamp(vec3.y, minValue, maxValue);
+            vec3.z = Clamp(vec3.z, minValue, maxValue);
         }
         newValue = vec3;
         break; 
@@ -675,10 +675,10 @@ bool Serializable::SetProperty(const PropertyInfo &propertyInfo, const Variant &
     case Variant::Type::Vec4: {
         Vec4 vec4 = value.As<Vec4>();
         if (ranged) {
-            Clamp(vec4.x, minValue, maxValue);
-            Clamp(vec4.y, minValue, maxValue);
-            Clamp(vec4.z, minValue, maxValue);
-            Clamp(vec4.w, minValue, maxValue);
+            vec4.x = Clamp(vec4.x, minValue, maxValue);
+            vec4.y = Clamp(vec4.y, minValue, maxValue);
+            vec4.z = Clamp(vec4.z, minValue, maxValue);
+            vec4.w = Clamp(vec4.w, minValue, maxValue);
         }
         newValue = vec4;
         break; 
@@ -686,9 +686,9 @@ bool Serializable::SetProperty(const PropertyInfo &propertyInfo, const Variant &
     case Variant::Type::Color3: {
         Color3 color3 = value.As<Color3>();
         if (ranged) {
-            Clamp(color3.r, minValue, maxValue);
-            Clamp(color3.g, minValue, maxValue);
-            Clamp(color3.b, minValue, maxValue);
+            color3.r = Clamp(color3.r, minValue, maxValue);
+            color3.g = Clamp(color3.g, minValue, maxValue);
+            color3.b = Clamp(color3.b, minValue, maxValue);
         }
         newValue = color3;
         break; 
@@ -696,10 +696,10 @@ bool Serializable::SetProperty(const PropertyInfo &propertyInfo, const Variant &
     case Variant::Type::Color4: {
         Color4 color4 = value.As<Color4>();
         if (ranged) {
-            Clamp(color4.r, minValue, maxValue);
-            Clamp(color4.g, minValue, maxValue);
-            Clamp(color4.b, minValue, maxValue);
-            Clamp(color4.a, minValue, maxValue);
+            color4.r = Clamp(color4.r, minValue, maxValue);
+            color4.g = Clamp(color4.g, minValue, maxValue);
+            color4.b = Clamp(color4.b, minValue, maxValue);
+            color4.a = Clamp(color4.a, minValue, maxValue);
         }
         newValue = color4;
         break; 
@@ -719,9 +719,9 @@ bool Serializable::SetProperty(const PropertyInfo &propertyInfo, const Variant &
     case Variant::Type::Angles: {
         Angles angles = value.As<Angles>();
         if (ranged) {
-            Clamp(angles[0], minValue, maxValue);
-            Clamp(angles[1], minValue, maxValue);
-            Clamp(angles[2], minValue, maxValue);
+            angles[0] = Clamp(angles[0], minValue, maxValue);
+            angles[1] = Clamp(angles[1], minValue, maxValue);
+            angles[2] = Clamp(angles[2], minValue, maxValue);
         }
         newValue = angles;
         break;
@@ -733,8 +733,8 @@ bool Serializable::SetProperty(const PropertyInfo &propertyInfo, const Variant &
     case Variant::Type::Point: {
         Point pt = value.As<Point>();
         if (ranged) {
-            Clamp(pt.x, (int)minValue, (int)maxValue);
-            Clamp(pt.y, (int)minValue, (int)maxValue);
+            pt.x = Clamp(pt.x, (int)minValue, (int)maxValue);
+            pt.y = Clamp(pt.y, (int)minValue, (int)maxValue);
         }
         newValue = pt;
         break;
@@ -742,8 +742,8 @@ bool Serializable::SetProperty(const PropertyInfo &propertyInfo, const Variant &
     case Variant::Type::Size: {
         Size size = value.As<Size>();
         if (ranged) {
-            Clamp(size.w, (int)minValue, (int)maxValue);
-            Clamp(size.h, (int)minValue, (int)maxValue);
+            size.w = Clamp(size.w, (int)minValue, (int)maxValue);
+            size.h = Clamp(size.h, (int)minValue, (int)maxValue);
         }
         newValue = size;
         break;
@@ -751,10 +751,10 @@ bool Serializable::SetProperty(const PropertyInfo &propertyInfo, const Variant &
     case Variant::Type::Rect: {
         Rect rect = value.As<Rect>();
         if (ranged) {
-            Clamp(rect.x, (int)minValue, (int)maxValue);
-            Clamp(rect.y, (int)minValue, (int)maxValue);
-            Clamp(rect.w, (int)minValue, (int)maxValue);
-            Clamp(rect.h, (int)minValue, (int)maxValue);
+            rect.x = Clamp(rect.x, (int)minValue, (int)maxValue);
+            rect.y = Clamp(rect.y, (int)minValue, (int)maxValue);
+            rect.w = Clamp(rect.w, (int)minValue, (int)maxValue);
+            rect.h = Clamp(rect.h, (int)minValue, (int)maxValue);
         }
         newValue = rect;
         break;
@@ -934,7 +934,7 @@ bool Serializable::SetArrayProperty(const PropertyInfo &propertyInfo, int elemen
     case Variant::Type::Int: {
         int i = value.As<int>();
         if (ranged) {
-            Clamp(i, (int)minValue, (int)maxValue);
+            i = Clamp(i, (int)minValue, (int)maxValue);
         }
         newValue = i;
         break; 
@@ -942,7 +942,7 @@ bool Serializable::SetArrayProperty(const PropertyInfo &propertyInfo, int elemen
     case Variant::Type::Int64: {
         int64_t i = value.As<int64_t>();
         if (ranged) {
-            Clamp(i, (int64_t)minValue, (int64_t)maxValue);
+            i = Clamp(i, (int64_t)minValue, (int64_t)maxValue);
         }
         newValue = i;
         break;
@@ -953,7 +953,7 @@ bool Serializable::SetArrayProperty(const PropertyInfo &propertyInfo, int elemen
     case Variant::Type::Float: {
         float f = value.As<float>();
         if (ranged) {
-            Clamp(f, minValue, maxValue);
+            f = Clamp(f, minValue, maxValue);
         }
         newValue = f;
         break;
@@ -961,8 +961,8 @@ bool Serializable::SetArrayProperty(const PropertyInfo &propertyInfo, int elemen
     case Variant::Type::Vec2: {
         Vec2 vec2 = value.As<Vec2>();
         if (ranged) {
-            Clamp(vec2.x, minValue, maxValue);
-            Clamp(vec2.y, minValue, maxValue);
+            vec2.x = Clamp(vec2.x, minValue, maxValue);
+            vec2.y = Clamp(vec2.y, minValue, maxValue);
         }
         newValue = vec2;
         break; 
@@ -970,9 +970,9 @@ bool Serializable::SetArrayProperty(const PropertyInfo &propertyInfo, int elemen
     case Variant::Type::Vec3: {
         Vec3 vec3 = value.As<Vec3>();
         if (ranged) {
-            Clamp(vec3.x, minValue, maxValue);
-            Clamp(vec3.y, minValue, maxValue);
-            Clamp(vec3.z, minValue, maxValue);
+            vec3.x = Clamp(vec3.x, minValue, maxValue);
+            vec3.y = Clamp(vec3.y, minValue, maxValue);
+            vec3.z = Clamp(vec3.z, minValue, maxValue);
         }
         newValue = vec3;
         break; 
@@ -980,10 +980,10 @@ bool Serializable::SetArrayProperty(const PropertyInfo &propertyInfo, int elemen
     case Variant::Type::Vec4: {
         Vec4 vec4 = value.As<Vec4>();
         if (ranged) {
-            Clamp(vec4.x, minValue, maxValue);
-            Clamp(vec4.y, minValue, maxValue);
-            Clamp(vec4.z, minValue, maxValue);
-            Clamp(vec4.w, minValue, maxValue);
+            vec4.x = Clamp(vec4.x, minValue, maxValue);
+            vec4.y = Clamp(vec4.y, minValue, maxValue);
+            vec4.z = Clamp(vec4.z, minValue, maxValue);
+            vec4.w = Clamp(vec4.w, minValue, maxValue);
         }
         newValue = vec4;
         break; 
@@ -991,9 +991,9 @@ bool Serializable::SetArrayProperty(const PropertyInfo &propertyInfo, int elemen
     case Variant::Type::Color3: {
         Color3 color3 = value.As<Color3>();
         if (ranged) {
-            Clamp(color3.r, minValue, maxValue);
-            Clamp(color3.g, minValue, maxValue);
-            Clamp(color3.b, minValue, maxValue);
+            color3.r = Clamp(color3.r, minValue, maxValue);
+            color3.g = Clamp(color3.g, minValue, maxValue);
+            color3.b = Clamp(color3.b, minValue, maxValue);
         }
         newValue = color3;
         break; 
@@ -1001,10 +1001,10 @@ bool Serializable::SetArrayProperty(const PropertyInfo &propertyInfo, int elemen
     case Variant::Type::Color4: {
         Color4 color4 = value.As<Color4>();
         if (ranged) {
-            Clamp(color4.r, minValue, maxValue);
-            Clamp(color4.g, minValue, maxValue);
-            Clamp(color4.b, minValue, maxValue);
-            Clamp(color4.a, minValue, maxValue);
+            color4.r = Clamp(color4.r, minValue, maxValue);
+            color4.g = Clamp(color4.g, minValue, maxValue);
+            color4.b = Clamp(color4.b, minValue, maxValue);
+            color4.a = Clamp(color4.a, minValue, maxValue);
         }
         newValue = color4;
         break; 
@@ -1024,9 +1024,9 @@ bool Serializable::SetArrayProperty(const PropertyInfo &propertyInfo, int elemen
     case Variant::Type::Angles: {
         Angles angles = value.As<Angles>();
         if (ranged) {
-            Clamp(angles[0], minValue, maxValue);
-            Clamp(angles[1], minValue, maxValue);
-            Clamp(angles[2], minValue, maxValue);
+            angles[0] = Clamp(angles[0], minValue, maxValue);
+            angles[1] = Clamp(angles[1], minValue, maxValue);
+            angles[2] = Clamp(angles[2], minValue, maxValue);
         }
         newValue = angles;
         break;
@@ -1034,8 +1034,8 @@ bool Serializable::SetArrayProperty(const PropertyInfo &propertyInfo, int elemen
     case Variant::Type::Point: {
         Point pt = value.As<Point>();
         if (ranged) {
-            Clamp(pt.x, (int)minValue, (int)maxValue);
-            Clamp(pt.y, (int)minValue, (int)maxValue);
+            pt.x = Clamp(pt.x, (int)minValue, (int)maxValue);
+            pt.y = Clamp(pt.y, (int)minValue, (int)maxValue);
         }
         newValue = pt;
         break;
@@ -1043,8 +1043,8 @@ bool Serializable::SetArrayProperty(const PropertyInfo &propertyInfo, int elemen
     case Variant::Type::Size: {
         Size size = value.As<Size>();
         if (ranged) {
-            Clamp(size.w, (int)minValue, (int)maxValue);
-            Clamp(size.h, (int)minValue, (int)maxValue);
+            size.w = Clamp(size.w, (int)minValue, (int)maxValue);
+            size.h = Clamp(size.h, (int)minValue, (int)maxValue);
         }
         newValue = size;
         break;
@@ -1052,10 +1052,10 @@ bool Serializable::SetArrayProperty(const PropertyInfo &propertyInfo, int elemen
     case Variant::Type::Rect: {
         Rect rect = value.As<Rect>();
         if (ranged) {
-            Clamp(rect.x, (int)minValue, (int)maxValue);
-            Clamp(rect.y, (int)minValue, (int)maxValue);
-            Clamp(rect.w, (int)minValue, (int)maxValue);
-            Clamp(rect.h, (int)minValue, (int)maxValue);
+            rect.x = Clamp(rect.x, (int)minValue, (int)maxValue);
+            rect.y = Clamp(rect.y, (int)minValue, (int)maxValue);
+            rect.w = Clamp(rect.w, (int)minValue, (int)maxValue);
+            rect.h = Clamp(rect.h, (int)minValue, (int)maxValue);
         }
         newValue = rect;
         break;

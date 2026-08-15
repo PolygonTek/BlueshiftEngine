@@ -724,86 +724,81 @@ constexpr T DivCeil(T dividend, U divisor) {
 
 /// Tests if the value is aligned.
 template <typename T>
-constexpr bool IsAligned(const T &x, int n) { return IsPowerOf2(n) ? ((x & (n - 1)) == 0) : ((x % n) == 0); }
+[[nodiscard]] constexpr bool IsAligned(const T &x, int n) { return IsPowerOf2(n) ? ((x & (n - 1)) == 0) : ((x % n) == 0); }
 
 /// Returns aligned up value by n.
 template <typename T>
-constexpr T AlignUp(const T &x, int n) { return IsPowerOf2(n) ? ((x + n - 1) & (~(n - 1))) : ((x + n - 1) - (x + n - 1) % n); }
+[[nodiscard]] constexpr T AlignUp(const T &x, int n) { return IsPowerOf2(n) ? ((x + n - 1) & (~(n - 1))) : ((x + n - 1) - (x + n - 1) % n); }
 
 /// Returns aligned down value by n. 
 template <typename T>
-constexpr T AlignDown(const T &x, int n) { return IsPowerOf2(n) ? (x & (~(n - 1))) : (x - x % n); }
+[[nodiscard]] constexpr T AlignDown(const T &x, int n) { return IsPowerOf2(n) ? (x & (~(n - 1))) : (x - x % n); }
 
 /// Returns the smaller of two values.
 template <typename T>
-constexpr T Min(const T &x, const T &y) { return (x < y) ? x : y; }
+[[nodiscard]] constexpr T Min(const T &x, const T &y) { return (x < y) ? x : y; }
 /// Returns the larger of two values.
 template <typename T>
-constexpr T Max(const T &x, const T &y) { return (x > y) ? x : y; }
+[[nodiscard]] constexpr T Max(const T &x, const T &y) { return (x > y) ? x : y; }
 
 /// Returns the smaller index of two values.
 template <typename T>
-constexpr int MinIndex(const T &x, const T &y) { return (x < y) ? 0 : 1; }
+[[nodiscard]] constexpr int MinIndex(const T &x, const T &y) { return (x < y) ? 0 : 1; }
 /// Returns the larger index of two values.
 template <typename T>
-constexpr int MaxIndex(const T &x, const T &y) { return (x > y) ? 0 : 1; }
+[[nodiscard]] constexpr int MaxIndex(const T &x, const T &y) { return (x > y) ? 0 : 1; }
 
 /// Returns the smaller of three values.
 template <typename T>
-constexpr T Min3(const T &x, const T &y, const T &z) { return (x < y) ? ((x < z) ? x : z) : ((y < z) ? y : z); }
+[[nodiscard]] constexpr T Min3(const T &x, const T &y, const T &z) { return (x < y) ? ((x < z) ? x : z) : ((y < z) ? y : z); }
 /// Returns the larger of three values.
 template <typename T>
-constexpr T Max3(const T &x, const T &y, const T &z) { return (x > y) ? ((x > z) ? x : z) : ((y > z) ? y : z); }
+[[nodiscard]] constexpr T Max3(const T &x, const T &y, const T &z) { return (x > y) ? ((x > z) ? x : z) : ((y > z) ? y : z); }
 /// Returns the median of three values.
 template <typename T>
-constexpr T Median(const T &x, const T &y, const T &z) { return (x > y) ? ((x > z) ? Max(y, z) : x) : ((y > z) ? Max(x, z) : y); }
+[[nodiscard]] constexpr T Median(const T &x, const T &y, const T &z) { return (x > y) ? ((x > z) ? Max(y, z) : x) : ((y > z) ? Max(x, z) : y); }
 
 /// Returns the smaller index of three values.
 template <typename T>
-constexpr int Min3Index(const T &x, const T &y, const T &z) { return (x < y) ? ((x < z) ? 0 : 2) : ((y < z) ? 1 : 2); }
+[[nodiscard]] constexpr int Min3Index(const T &x, const T &y, const T &z) { return (x < y) ? ((x < z) ? 0 : 2) : ((y < z) ? 1 : 2); }
 /// Returns the larger index of three values.
 template <typename T>
-constexpr int Max3Index(const T &x, const T &y, const T &z) { return (x > y) ? ((x > z) ? 0 : 2) : ((y > z) ? 1 : 2); }
+[[nodiscard]] constexpr int Max3Index(const T &x, const T &y, const T &z) { return (x > y) ? ((x > z) ? 0 : 2) : ((y > z) ? 1 : 2); }
 /// Returns the median index of three values.
 template <typename T>
-constexpr int MedianIndex(const T &x, const T &y, const T &z) { return (x > y) ? ((x > z) ? MaxIndex(y, z) : 0) : ((y > z) ? MaxIndex(x, z) : 1); }
+[[nodiscard]] constexpr int MedianIndex(const T &x, const T &y, const T &z) { return (x > y) ? ((x > z) ? MaxIndex(y, z) : 0) : ((y > z) ? MaxIndex(x, z) : 1); }
 
 /// Swaps two values.
 template <typename T> 
 void Swap(T &a, T &b) noexcept { T c = std::move(a); a = std::move(b); b = std::move(c); }
 
-/// Clamps a number to a range.
-template <typename T>
-void Clamp(T &v, const T &min, const T &max) { v = (v > max) ? max : (v < min ? min : v); }
-/// Clamps a number to the range [0, 1].
-template <typename T>
-void Clamp01(T &v) { Clamp(v, T(0), T(1)); }
-
 /// Returns the clamped number to a range.
 template <typename T>
-constexpr T Clamp(const T &v, const T &min, const T&max) { return (v > max) ? max : (v < min ? min : v); }
+[[nodiscard]] constexpr T Clamp(const T &v, const T &min, const T&max) { return (v > max) ? max : (v < min ? min : v); }
 /// Returns the clamped number to the range [0, 1].
 template <typename T>
-constexpr T Clamp01(const T &v) { return Clamp(v, T(0), T(1)); }
+[[nodiscard]] constexpr T Clamp01(const T &v) { return Clamp(v, T(0), T(1)); }
 
 /// Returns remainder of the division operation x / y.
 template <typename T>
-constexpr T Mod(const T &x, const T &y) { return std::fmod((T)x, (T)y); }
+[[nodiscard]] constexpr T Mod(const T &x, const T &y) { return std::fmod((T)x, (T)y); }
 template <>
-constexpr int Mod(const int &x, const int &y) { return x % y; }
+[[nodiscard]] constexpr int Mod(const int &x, const int &y) { return x % y; }
 
-/// Wraps a number to a range.
+/// Returns the wrapped number to the range [min, max).
 template <typename T>
-void Wrap(T &v, const T &min, const T &max) {
-    if (v > max) v = min + Mod(v - min, max - min);
-    if (v < min) v = max - Mod(min - v, max - min);
-}
+[[nodiscard]] constexpr T Wrap(const T &v, const T &min, const T &max) {
+    const T range = max - min;
 
-/// Returns the wrapped number to a range.
-template <typename T>
-constexpr T Wrap(const T &v, const T &min, const T &max) {
-    if (v > max) return min + Mod(v - min, max - min);
-    if (v < min) return max - Mod(min - v, max - min);
+    if (v >= max) {
+        return min + Mod(v - min, range);
+    }
+
+    if (v < min) {
+        const T remainder = Mod(min - v, range);
+        return remainder == T(0) ? min : max - remainder;
+    }
+
     return v;
 }
 
