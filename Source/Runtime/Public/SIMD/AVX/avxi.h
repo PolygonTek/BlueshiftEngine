@@ -68,6 +68,71 @@ BE_FORCE_INLINE avxi ps_to_256epi32(const __m256 &a) {
     return _mm256_cvtps_epi32(a);
 }
 
+// Unpacks 32 unsigned 8-bit integers into four groups of 8x32-bit integers.
+BE_FORCE_INLINE void unpack_epu8_to_256epi32(const avxi &a, avxi &r0, avxi &r1, avxi &r2, avxi &r3) {
+    r0 = bx_mm256_cvtepu8_epi32(a.l128i);
+    r1 = bx_mm256_cvtepu8_epi32(_mm_srli_si128(a.l128i, 8));
+    r2 = bx_mm256_cvtepu8_epi32(a.h128i);
+    r3 = bx_mm256_cvtepu8_epi32(_mm_srli_si128(a.h128i, 8));
+}
+
+// Unpacks 32 signed 8-bit integers into four groups of 8x32-bit integers.
+BE_FORCE_INLINE void unpack_epi8_to_256epi32(const avxi &a, avxi &r0, avxi &r1, avxi &r2, avxi &r3) {
+    r0 = bx_mm256_cvtepi8_epi32(a.l128i);
+    r1 = bx_mm256_cvtepi8_epi32(_mm_srli_si128(a.l128i, 8));
+    r2 = bx_mm256_cvtepi8_epi32(a.h128i);
+    r3 = bx_mm256_cvtepi8_epi32(_mm_srli_si128(a.h128i, 8));
+}
+
+// Unpacks 16 unsigned 16-bit integers into two groups of 8x32-bit integers.
+BE_FORCE_INLINE void unpack_epu16_to_256epi32(const avxi &a, avxi &r0, avxi &r1) {
+    r0 = bx_mm256_cvtepu16_epi32(a.l128i);
+    r1 = bx_mm256_cvtepu16_epi32(a.h128i);
+}
+
+// Unpacks 16 signed 16-bit integers into two groups of 8x32-bit integers.
+BE_FORCE_INLINE void unpack_epi16_to_256epi32(const avxi &a, avxi &r0, avxi &r1) {
+    r0 = bx_mm256_cvtepi16_epi32(a.l128i);
+    r1 = bx_mm256_cvtepi16_epi32(a.h128i);
+}
+
+// Converts eight floats to signed integers by truncating toward zero.
+BE_FORCE_INLINE avxi trunc_256ps_to_epi32(const avxf &a) {
+    return _mm256_cvttps_epi32(a);
+}
+
+// Converts eight floats to signed integers by rounding toward negative infinity.
+BE_FORCE_INLINE avxi floor_256ps_to_epi32(const avxf &a) {
+    const __m256i truncated = _mm256_cvttps_epi32(a);
+    const __m256 truncatedFloat = _mm256_cvtepi32_ps(truncated);
+    const __m256 adjustMask = _mm256_cmp_ps(a, truncatedFloat, _CMP_LT_OQ);
+    const __m256i adjustment = bx_mm256_and_si256(
+        _mm256_castps_si256(adjustMask),
+        _mm256_set1_epi32(1));
+
+    return bx_mm256_sub_epi32(truncated, adjustment);
+}
+
+// Saturates and packs four groups of 8x32-bit integers into 32 unsigned bytes.
+BE_FORCE_INLINE avxi packus_256epi32_to_epu8(const avxi &a, const avxi &b, const avxi &c, const avxi &d) {
+    return bx_mm256_packus_epi32_to_epu8(a, b, c, d);
+}
+
+// Saturates and packs four groups of 8x32-bit integers into 32 signed bytes.
+BE_FORCE_INLINE avxi packs_256epi32_to_epi8(const avxi &a, const avxi &b, const avxi &c, const avxi &d) {
+    return bx_mm256_packs_epi32_to_epi8(a, b, c, d);
+}
+
+// Saturates and packs two groups of 8x32-bit integers into 16 unsigned 16-bit integers.
+BE_FORCE_INLINE avxi packus_256epi32_to_epu16(const avxi &a, const avxi &b) {
+    return bx_mm256_packus_epi32_to_epu16(a, b);
+}
+
+// Saturates and packs two groups of 8x32-bit integers into 16 signed 16-bit integers.
+BE_FORCE_INLINE avxi packs_256epi32_to_epi16(const avxi &a, const avxi &b) {
+    return bx_mm256_packs_epi32_to_epi16(a, b);
+}
+
 BE_FORCE_INLINE avxi abs_256epi32(const avxi &a) { 
     return avxi(_mm_abs_epi32(a.l128i), _mm_abs_epi32(a.h128i));
 }
@@ -211,6 +276,19 @@ BE_FORCE_INLINE avxi insert_256epi32(const avxi &a, const ssei &b) { return _mm2
 // Selects 8x32 bits integer using mask.
 BE_FORCE_INLINE avxi select_256epi32(const avxi &a, const avxi &b, const avxb &mask) {
     return _mm256_castps_si256(_mm256_blendv_ps(_mm256_castsi256_ps(a), _mm256_castsi256_ps(b), mask));
+}
+
+// Input values must be in [0, 4294967040].
+BE_FORCE_INLINE avxi trunc_256ps_to_epu32(const avxf &a) {
+    const avxf offset = set1_256ps(2147483648.0f);
+    const avxb highMask = a >= offset;
+    const avxf adjusted = select_256ps(a, a - offset, highMask);
+    const avxi value = trunc_256ps_to_epi32(adjusted);
+
+    return select_256epi32(
+        value,
+        value | set1_256epi32(INT32_MIN),
+        highMask);
 }
 
 BE_FORCE_INLINE avxi min_256epi32(const avxi &a, const avxi &b) { return bx_mm256_min_epi32(a, b); }

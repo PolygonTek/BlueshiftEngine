@@ -256,3 +256,115 @@ BE_FORCE_INLINE ssei sum_epi32(const ssei &a) {
     __m128i hadd = _mm_hadd_epi32(a, a); // (x + y, z + w, x + y, z + w)
     return _mm_hadd_epi32(hadd, hadd); // (x + y + z + w, x + y + z + w, x + y + z + w, x + y + z + w)
 }
+
+// Unpacks 16 unsigned 8-bit integers into four groups of 4x32-bit integers.
+BE_FORCE_INLINE void unpack_epu8_to_epi32(const ssei &a, ssei &r0, ssei &r1, ssei &r2, ssei &r3) {
+    const __m128i zero = _mm_setzero_si128();
+    const __m128i lo16 = _mm_unpacklo_epi8(a, zero);
+    const __m128i hi16 = _mm_unpackhi_epi8(a, zero);
+
+    r0 = ssei(_mm_unpacklo_epi16(lo16, zero));
+    r1 = ssei(_mm_unpackhi_epi16(lo16, zero));
+    r2 = ssei(_mm_unpacklo_epi16(hi16, zero));
+    r3 = ssei(_mm_unpackhi_epi16(hi16, zero));
+}
+
+// Unpacks 16 signed 8-bit integers into four groups of 4x32-bit integers.
+BE_FORCE_INLINE void unpack_epi8_to_epi32(const ssei &a, ssei &r0, ssei &r1, ssei &r2, ssei &r3) {
+    const __m128i zero = _mm_setzero_si128();
+    const __m128i sign8 = _mm_cmpgt_epi8(zero, a);
+    const __m128i lo16 = _mm_unpacklo_epi8(a, sign8);
+    const __m128i hi16 = _mm_unpackhi_epi8(a, sign8);
+    const __m128i loSign16 = _mm_srai_epi16(lo16, 15);
+    const __m128i hiSign16 = _mm_srai_epi16(hi16, 15);
+
+    r0 = ssei(_mm_unpacklo_epi16(lo16, loSign16));
+    r1 = ssei(_mm_unpackhi_epi16(lo16, loSign16));
+    r2 = ssei(_mm_unpacklo_epi16(hi16, hiSign16));
+    r3 = ssei(_mm_unpackhi_epi16(hi16, hiSign16));
+}
+
+// Unpacks 8 unsigned 16-bit integers into two groups of 4x32-bit integers.
+BE_FORCE_INLINE void unpack_epu16_to_epi32(const ssei &a, ssei &r0, ssei &r1) {
+    const __m128i zero = _mm_setzero_si128();
+
+    r0 = ssei(_mm_unpacklo_epi16(a, zero));
+    r1 = ssei(_mm_unpackhi_epi16(a, zero));
+}
+
+// Unpacks 8 signed 16-bit integers into two groups of 4x32-bit integers.
+BE_FORCE_INLINE void unpack_epi16_to_epi32(const ssei &a, ssei &r0, ssei &r1) {
+    const __m128i sign = _mm_srai_epi16(a, 15);
+
+    r0 = ssei(_mm_unpacklo_epi16(a, sign));
+    r1 = ssei(_mm_unpackhi_epi16(a, sign));
+}
+
+// Converts four floats to signed integers by truncating toward zero.
+BE_FORCE_INLINE ssei trunc_ps_to_epi32(const ssef &a) {
+    return _mm_cvttps_epi32(a);
+}
+
+// Input values must be in [0, 4294967040].
+BE_FORCE_INLINE ssei trunc_ps_to_epu32(const ssef &a) {
+    const ssef offset = set1_ps(2147483648.0f);
+    const sseb highMask = a >= offset;
+    const ssef adjusted = select_ps(a, a - offset, highMask);
+    const ssei value = trunc_ps_to_epi32(adjusted);
+
+    return select_epi32(
+        value,
+        value | set1_epi32(INT32_MIN),
+        highMask);
+}
+
+// Converts four floats to signed integers by rounding toward negative infinity.
+BE_FORCE_INLINE ssei floor_ps_to_epi32(const ssef &a) {
+    const __m128i truncated = _mm_cvttps_epi32(a);
+    const __m128 truncatedFloat = _mm_cvtepi32_ps(truncated);
+    const __m128 adjustMask = _mm_cmplt_ps(a, truncatedFloat);
+    const __m128i adjustment = _mm_and_si128(
+        _mm_castps_si128(adjustMask),
+        _mm_set1_epi32(1));
+
+    return _mm_sub_epi32(truncated, adjustment);
+}
+
+// Saturates and packs four groups of 4x32-bit integers into 16 unsigned bytes.
+BE_FORCE_INLINE ssei packus_epi32_to_epu8(const ssei &a, const ssei &b, const ssei &c, const ssei &d) {
+    const __m128i lo16 = _mm_packs_epi32(a, b);
+    const __m128i hi16 = _mm_packs_epi32(c, d);
+
+    return _mm_packus_epi16(lo16, hi16);
+}
+
+// Saturates and packs four groups of 4x32-bit integers into 16 signed bytes.
+BE_FORCE_INLINE ssei packs_epi32_to_epi8(const ssei &a, const ssei &b, const ssei &c, const ssei &d) {
+    const __m128i lo16 = _mm_packs_epi32(a, b);
+    const __m128i hi16 = _mm_packs_epi32(c, d);
+
+    return _mm_packs_epi16(lo16, hi16);
+}
+
+// Saturates and packs two groups of 4x32-bit integers into 8 unsigned 16-bit integers.
+BE_FORCE_INLINE ssei packus_epi32_to_epu16(const ssei &a, const ssei &b) {
+#if defined(__SSE4_1__) || defined(__SSE4_2__)
+    return _mm_packus_epi32(a, b);
+#else
+    const __m128i zero = _mm_setzero_si128();
+    const __m128i maxValue = _mm_set1_epi32(UINT16_MAX);
+    const __m128i bias32 = _mm_set1_epi32(0x8000);
+    const __m128i bias16 = _mm_set1_epi16(INT16_MIN);
+    const __m128i aClamped = _mm_min_epi32(_mm_max_epi32(a, zero), maxValue);
+    const __m128i bClamped = _mm_min_epi32(_mm_max_epi32(b, zero), maxValue);
+
+    return _mm_add_epi16(
+        _mm_packs_epi32(_mm_sub_epi32(aClamped, bias32), _mm_sub_epi32(bClamped, bias32)),
+        bias16);
+#endif
+}
+
+// Saturates and packs two groups of 4x32-bit integers into 8 signed 16-bit integers.
+BE_FORCE_INLINE ssei packs_epi32_to_epi16(const ssei &a, const ssei &b) {
+    return _mm_packs_epi32(a, b);
+}

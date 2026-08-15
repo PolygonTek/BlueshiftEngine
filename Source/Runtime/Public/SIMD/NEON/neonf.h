@@ -61,6 +61,10 @@ BE_FORCE_INLINE neonf epi32_to_ps(const neoni &a) {
     return vcvtq_f32_s32(a);
 }
 
+BE_FORCE_INLINE neonf epu32_to_ps(const neoni &a) {
+    return vcvtq_f32_u32(vreinterpretq_u32_s32(a));
+}
+
 BE_FORCE_INLINE neonf abs_ps(const neonf &a) {
     return vabsq_f32(a);
 }

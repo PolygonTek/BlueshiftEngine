@@ -64,6 +64,15 @@ BE_FORCE_INLINE ssef epi32_to_ps(const __m128i &a) {
     return _mm_cvtepi32_ps(a);
 }
 
+BE_FORCE_INLINE ssef epu32_to_ps(const __m128i &a) {
+    const __m128i lo = _mm_and_si128(a, _mm_set1_epi32(0xFFFF));
+    const __m128i hi = _mm_srli_epi32(a, 16);
+
+    return _mm_add_ps(
+        _mm_cvtepi32_ps(lo),
+        _mm_mul_ps(_mm_cvtepi32_ps(hi), _mm_set1_ps(65536.0f)));
+}
+
 BE_FORCE_INLINE ssef abs_ps(const ssef &a) {
     return _mm_and_ps(a, _mm_castsi128_ps(_mm_set1_epi32(0x7fffffff))); 
 }

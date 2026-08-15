@@ -54,6 +54,176 @@
     #define bx_mm256_unpackhi_epi32(a, b)   _mm256_castps_si256(_mm256_unpackhi_ps(_mm256_castsi256_ps(a), _mm256_castsi256_ps(b)))
 #endif
 
+// Converts the lower 8 unsigned bytes to 8x32-bit integers.
+BE_FORCE_INLINE __m256i bx_mm256_cvtepu8_epi32(const __m128i &a) {
+#ifdef __AVX2__
+    return _mm256_cvtepu8_epi32(a);
+#else
+    const __m128i zero = _mm_setzero_si128();
+    const __m128i u16 = _mm_unpacklo_epi8(a, zero);
+
+    return _mm256_set_m128i(
+        _mm_unpackhi_epi16(u16, zero),
+        _mm_unpacklo_epi16(u16, zero));
+#endif
+}
+
+// Converts the lower 8 signed bytes to 8x32-bit integers.
+BE_FORCE_INLINE __m256i bx_mm256_cvtepi8_epi32(const __m128i &a) {
+#ifdef __AVX2__
+    return _mm256_cvtepi8_epi32(a);
+#else
+    const __m128i zero = _mm_setzero_si128();
+    const __m128i sign8 = _mm_cmpgt_epi8(zero, a);
+    const __m128i i16 = _mm_unpacklo_epi8(a, sign8);
+    const __m128i sign16 = _mm_srai_epi16(i16, 15);
+
+    return _mm256_set_m128i(
+        _mm_unpackhi_epi16(i16, sign16),
+        _mm_unpacklo_epi16(i16, sign16));
+#endif
+}
+
+// Converts 8 unsigned 16-bit integers to 8x32-bit integers.
+BE_FORCE_INLINE __m256i bx_mm256_cvtepu16_epi32(const __m128i &a) {
+#ifdef __AVX2__
+    return _mm256_cvtepu16_epi32(a);
+#else
+    const __m128i zero = _mm_setzero_si128();
+
+    return _mm256_set_m128i(
+        _mm_unpackhi_epi16(a, zero),
+        _mm_unpacklo_epi16(a, zero));
+#endif
+}
+
+// Converts 8 signed 16-bit integers to 8x32-bit integers.
+BE_FORCE_INLINE __m256i bx_mm256_cvtepi16_epi32(const __m128i &a) {
+#ifdef __AVX2__
+    return _mm256_cvtepi16_epi32(a);
+#else
+    const __m128i sign = _mm_srai_epi16(a, 15);
+
+    return _mm256_set_m128i(
+        _mm_unpackhi_epi16(a, sign),
+        _mm_unpacklo_epi16(a, sign));
+#endif
+}
+
+// Saturates and packs four groups of 8x32-bit integers into 32 unsigned bytes.
+BE_FORCE_INLINE __m256i bx_mm256_packus_epi32_to_epu8(const __m256i &a, const __m256i &b, const __m256i &c, const __m256i &d) {
+#ifdef __AVX2__
+    const __m256i lo16 = _mm256_packs_epi32(a, b);
+    const __m256i hi16 = _mm256_packs_epi32(c, d);
+    const __m256i packed8 = _mm256_packus_epi16(lo16, hi16);
+
+    // AVX2 packing operates independently on each 128-bit lane.
+    // Restore the original sequential component order.
+    const __m256i order = _mm256_setr_epi32(0, 4, 1, 5, 2, 6, 3, 7);
+    return _mm256_permutevar8x32_epi32(packed8, order);
+#else
+    const __m128i a16 = _mm_packs_epi32(
+        _mm256_extractf128_si256(a, 0),
+        _mm256_extractf128_si256(a, 1));
+    const __m128i b16 = _mm_packs_epi32(
+        _mm256_extractf128_si256(b, 0),
+        _mm256_extractf128_si256(b, 1));
+    const __m128i c16 = _mm_packs_epi32(
+        _mm256_extractf128_si256(c, 0),
+        _mm256_extractf128_si256(c, 1));
+    const __m128i d16 = _mm_packs_epi32(
+        _mm256_extractf128_si256(d, 0),
+        _mm256_extractf128_si256(d, 1));
+
+    const __m128i lo8 = _mm_packus_epi16(a16, b16);
+    const __m128i hi8 = _mm_packus_epi16(c16, d16);
+
+    return _mm256_set_m128i(hi8, lo8);
+#endif
+}
+
+// Saturates and packs four groups of 8x32-bit integers into 32 signed bytes.
+BE_FORCE_INLINE __m256i bx_mm256_packs_epi32_to_epi8(const __m256i &a, const __m256i &b, const __m256i &c, const __m256i &d) {
+#ifdef __AVX2__
+    const __m256i lo16 = _mm256_packs_epi32(a, b);
+    const __m256i hi16 = _mm256_packs_epi32(c, d);
+    const __m256i packed8 = _mm256_packs_epi16(lo16, hi16);
+
+    // AVX2 packing operates independently on each 128-bit lane.
+    // Restore the original sequential component order.
+    const __m256i order = _mm256_setr_epi32(0, 4, 1, 5, 2, 6, 3, 7);
+    return _mm256_permutevar8x32_epi32(packed8, order);
+#else
+    const __m128i a16 = _mm_packs_epi32(
+        _mm256_extractf128_si256(a, 0),
+        _mm256_extractf128_si256(a, 1));
+    const __m128i b16 = _mm_packs_epi32(
+        _mm256_extractf128_si256(b, 0),
+        _mm256_extractf128_si256(b, 1));
+    const __m128i c16 = _mm_packs_epi32(
+        _mm256_extractf128_si256(c, 0),
+        _mm256_extractf128_si256(c, 1));
+    const __m128i d16 = _mm_packs_epi32(
+        _mm256_extractf128_si256(d, 0),
+        _mm256_extractf128_si256(d, 1));
+
+    const __m128i lo8 = _mm_packs_epi16(a16, b16);
+    const __m128i hi8 = _mm_packs_epi16(c16, d16);
+
+    return _mm256_set_m128i(hi8, lo8);
+#endif
+}
+
+// Saturates and packs two groups of 8x32-bit integers into 16 unsigned 16-bit integers.
+BE_FORCE_INLINE __m256i bx_mm256_packus_epi32_to_epu16(const __m256i &a, const __m256i &b) {
+#ifdef __AVX2__
+    const __m256i packed16 = _mm256_packus_epi32(a, b);
+
+    // AVX2 packing operates independently on each 128-bit lane.
+    // Restore the original sequential component order.
+    return _mm256_permute4x64_epi64(packed16, _MM_SHUFFLE(3, 1, 2, 0));
+#else
+    const __m128i zero = _mm_setzero_si128();
+    const __m128i maxValue = _mm_set1_epi32(UINT16_MAX);
+    const __m128i bias32 = _mm_set1_epi32(0x8000);
+    const __m128i bias16 = _mm_set1_epi16(INT16_MIN);
+
+    const __m128i a0 = _mm_min_epi32(_mm_max_epi32(_mm256_extractf128_si256(a, 0), zero), maxValue);
+    const __m128i a1 = _mm_min_epi32(_mm_max_epi32(_mm256_extractf128_si256(a, 1), zero), maxValue);
+    const __m128i b0 = _mm_min_epi32(_mm_max_epi32(_mm256_extractf128_si256(b, 0), zero), maxValue);
+    const __m128i b1 = _mm_min_epi32(_mm_max_epi32(_mm256_extractf128_si256(b, 1), zero), maxValue);
+
+    const __m128i a16 = _mm_add_epi16(
+        _mm_packs_epi32(_mm_sub_epi32(a0, bias32), _mm_sub_epi32(a1, bias32)),
+        bias16);
+    const __m128i b16 = _mm_add_epi16(
+        _mm_packs_epi32(_mm_sub_epi32(b0, bias32), _mm_sub_epi32(b1, bias32)),
+        bias16);
+
+    return _mm256_set_m128i(b16, a16);
+#endif
+}
+
+// Saturates and packs two groups of 8x32-bit integers into 16 signed 16-bit integers.
+BE_FORCE_INLINE __m256i bx_mm256_packs_epi32_to_epi16(const __m256i &a, const __m256i &b) {
+#ifdef __AVX2__
+    const __m256i packed16 = _mm256_packs_epi32(a, b);
+
+    // AVX2 packing operates independently on each 128-bit lane.
+    // Restore the original sequential component order.
+    return _mm256_permute4x64_epi64(packed16, _MM_SHUFFLE(3, 1, 2, 0));
+#else
+    const __m128i a16 = _mm_packs_epi32(
+        _mm256_extractf128_si256(a, 0),
+        _mm256_extractf128_si256(a, 1));
+    const __m128i b16 = _mm_packs_epi32(
+        _mm256_extractf128_si256(b, 0),
+        _mm256_extractf128_si256(b, 1));
+
+    return _mm256_set_m128i(b16, a16);
+#endif
+}
+
 // Compares packed 32-bit integers in a and b for less-than.
 #define bx_mm256_cmplt_epi32(a, b)          bx_mm256_cmpgt_epi32(b, a)
 

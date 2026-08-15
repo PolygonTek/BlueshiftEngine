@@ -346,6 +346,10 @@ set(COMMON_ENGINE_FILES
     Private/Image/ImageFilePNG.cpp
     Private/Image/ImageFileTGA.cpp
     Private/Image/ImageFormat.cpp
+    Private/Image/ImageFormatUnpackRGBA8888.inl
+    Private/Image/ImageFormatPackRGBA8888.inl
+    Private/Image/ImageFormatUnpackRGBA32F.inl
+    Private/Image/ImageFormatPackRGBA32F.inl
     Private/Image/ImageMipmap.cpp
     Private/Image/ImageProcess.cpp
     Private/Image/ImageResize.cpp

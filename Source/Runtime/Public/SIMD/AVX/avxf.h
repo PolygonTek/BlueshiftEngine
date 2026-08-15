@@ -64,6 +64,15 @@ BE_FORCE_INLINE avxf epi32_to_256ps(const __m256i &a) {
     return _mm256_cvtepi32_ps(a);
 }
 
+BE_FORCE_INLINE avxf epu32_to_256ps(const __m256i &a) {
+    const __m256i lo = bx_mm256_and_si256(a, _mm256_set1_epi32(0xFFFF));
+    const __m256i hi = bx_mm256_srli_epi32(a, 16);
+
+    return _mm256_add_ps(
+        _mm256_cvtepi32_ps(lo),
+        _mm256_mul_ps(_mm256_cvtepi32_ps(hi), _mm256_set1_ps(65536.0f)));
+}
+
 BE_FORCE_INLINE avxf abs_256ps(const avxf &a) {
     return _mm256_and_ps(a, _mm256_castsi256_ps(_mm256_set1_epi32(0x7fffffff)));
 }

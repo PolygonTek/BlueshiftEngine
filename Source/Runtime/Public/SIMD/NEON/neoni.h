@@ -246,3 +246,96 @@ BE_FORCE_INLINE neoni sum_epi32(const neoni &a) {
     neoni sum2 = vcombine_s32(vget_high_s32(sum1), vget_low_s32(sum1)); // (z + w, z + w, x + y, x + y)
     return vaddq_s32(sum1, sum2); // (x + y + z + w, x + y + z + w, x + y + z + w, x + y + z + w)
 }
+
+// Unpacks 16 unsigned 8-bit integers into four groups of 4x32-bit integers.
+BE_FORCE_INLINE void unpack_epu8_to_epi32(const neoni &a, neoni &r0, neoni &r1, neoni &r2, neoni &r3) {
+    const uint8x16_t u8 = vreinterpretq_u8_s32(a);
+    const uint16x8_t lo16 = vmovl_u8(vget_low_u8(u8));
+    const uint16x8_t hi16 = vmovl_u8(vget_high_u8(u8));
+
+    r0 = neoni(vmovl_u16(vget_low_u16(lo16)));
+    r1 = neoni(vmovl_u16(vget_high_u16(lo16)));
+    r2 = neoni(vmovl_u16(vget_low_u16(hi16)));
+    r3 = neoni(vmovl_u16(vget_high_u16(hi16)));
+}
+
+// Unpacks 16 signed 8-bit integers into four groups of 4x32-bit integers.
+BE_FORCE_INLINE void unpack_epi8_to_epi32(const neoni &a, neoni &r0, neoni &r1, neoni &r2, neoni &r3) {
+    const int8x16_t i8 = vreinterpretq_s8_s32(a);
+    const int16x8_t lo16 = vmovl_s8(vget_low_s8(i8));
+    const int16x8_t hi16 = vmovl_s8(vget_high_s8(i8));
+
+    r0 = neoni(vmovl_s16(vget_low_s16(lo16)));
+    r1 = neoni(vmovl_s16(vget_high_s16(lo16)));
+    r2 = neoni(vmovl_s16(vget_low_s16(hi16)));
+    r3 = neoni(vmovl_s16(vget_high_s16(hi16)));
+}
+
+// Unpacks 8 unsigned 16-bit integers into two groups of 4x32-bit integers.
+BE_FORCE_INLINE void unpack_epu16_to_epi32(const neoni &a, neoni &r0, neoni &r1) {
+    const uint16x8_t u16 = vreinterpretq_u16_s32(a);
+
+    r0 = neoni(vmovl_u16(vget_low_u16(u16)));
+    r1 = neoni(vmovl_u16(vget_high_u16(u16)));
+}
+
+// Unpacks 8 signed 16-bit integers into two groups of 4x32-bit integers.
+BE_FORCE_INLINE void unpack_epi16_to_epi32(const neoni &a, neoni &r0, neoni &r1) {
+    const int16x8_t i16 = vreinterpretq_s16_s32(a);
+
+    r0 = neoni(vmovl_s16(vget_low_s16(i16)));
+    r1 = neoni(vmovl_s16(vget_high_s16(i16)));
+}
+
+// Converts four floats to signed integers by truncating toward zero.
+BE_FORCE_INLINE neoni trunc_ps_to_epi32(const neonf &a) {
+    return vcvtq_s32_f32(a);
+}
+
+// Input values must be in [0, 4294967040].
+BE_FORCE_INLINE neoni trunc_ps_to_epu32(const neonf &a) {
+    return neoni(vreinterpretq_s32_u32(vcvtq_u32_f32(a)));
+}
+
+// Converts four floats to signed integers by rounding toward negative infinity.
+BE_FORCE_INLINE neoni floor_ps_to_epi32(const neonf &a) {
+    const int32x4_t truncated = vcvtq_s32_f32(a);
+    const float32x4_t truncatedFloat = vcvtq_f32_s32(truncated);
+    const uint32x4_t adjustMask = vcltq_f32(a, truncatedFloat);
+    const int32x4_t adjustment = vreinterpretq_s32_u32(
+        vandq_u32(adjustMask, vdupq_n_u32(1)));
+
+    return neoni(vsubq_s32(truncated, adjustment));
+}
+
+// Saturates and packs four groups of 4x32-bit integers into 16 unsigned bytes.
+BE_FORCE_INLINE neoni packus_epi32_to_epu8(const neoni &a, const neoni &b, const neoni &c, const neoni &d) {
+    const int16x8_t lo16 = vcombine_s16(vqmovn_s32(a), vqmovn_s32(b));
+    const int16x8_t hi16 = vcombine_s16(vqmovn_s32(c), vqmovn_s32(d));
+    const uint8x16_t u8 = vcombine_u8(vqmovun_s16(lo16), vqmovun_s16(hi16));
+
+    return neoni(vreinterpretq_s32_u8(u8));
+}
+
+// Saturates and packs four groups of 4x32-bit integers into 16 signed bytes.
+BE_FORCE_INLINE neoni packs_epi32_to_epi8(const neoni &a, const neoni &b, const neoni &c, const neoni &d) {
+    const int16x8_t lo16 = vcombine_s16(vqmovn_s32(a), vqmovn_s32(b));
+    const int16x8_t hi16 = vcombine_s16(vqmovn_s32(c), vqmovn_s32(d));
+    const int8x16_t i8 = vcombine_s8(vqmovn_s16(lo16), vqmovn_s16(hi16));
+
+    return neoni(vreinterpretq_s32_s8(i8));
+}
+
+// Saturates and packs two groups of 4x32-bit integers into 8 unsigned 16-bit integers.
+BE_FORCE_INLINE neoni packus_epi32_to_epu16(const neoni &a, const neoni &b) {
+    const uint16x8_t u16 = vcombine_u16(vqmovun_s32(a), vqmovun_s32(b));
+
+    return neoni(vreinterpretq_s32_u16(u16));
+}
+
+// Saturates and packs two groups of 4x32-bit integers into 8 signed 16-bit integers.
+BE_FORCE_INLINE neoni packs_epi32_to_epi16(const neoni &a, const neoni &b) {
+    const int16x8_t i16 = vcombine_s16(vqmovn_s32(a), vqmovn_s32(b));
+
+    return neoni(vreinterpretq_s32_s16(i16));
+}
