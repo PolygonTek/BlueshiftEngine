@@ -2371,7 +2371,7 @@ static void RGBA32FToR16F(const byte *src, byte *dst, int numPixels) {
 static void RGBA32FToR16(const byte *src, byte *dst, int numPixels) {
     const float *srcPtr = reinterpret_cast<const float *>(src);
     const float *srcEnd = srcPtr + numPixels * 4;
-    byte *dstPtr = dst;
+    uint16_t *dstPtr = reinterpret_cast<uint16_t *>(dst);
 
     for (; srcPtr < srcEnd; srcPtr += 4, dstPtr += 1) {
         dstPtr[0] = Math::Ftoui16(UINT16_MAX * Clamp01(srcPtr[0]));
@@ -2422,7 +2422,7 @@ static void RGBA32FToRG16F(const byte *src, byte *dst, int numPixels) {
 static void RGBA32FToRG16(const byte *src, byte *dst, int numPixels) {
     const float *srcPtr = reinterpret_cast<const float *>(src);
     const float *srcEnd = srcPtr + numPixels * 4;
-    byte *dstPtr = dst;
+    uint16_t *dstPtr = reinterpret_cast<uint16_t *>(dst);
 
     for (; srcPtr < srcEnd; srcPtr += 4, dstPtr += 2) {
         dstPtr[0] = Math::Ftoui16(UINT16_MAX * Clamp01(srcPtr[0]));
@@ -2478,7 +2478,7 @@ static void RGBA32FToRGB16F(const byte *src, byte *dst, int numPixels) {
 static void RGBA32FToRGB16(const byte *src, byte *dst, int numPixels) {
     const float *srcPtr = reinterpret_cast<const float *>(src);
     const float *srcEnd = srcPtr + numPixels * 4;
-    byte *dstPtr = dst;
+    uint16_t *dstPtr = reinterpret_cast<uint16_t *>(dst);
 
     for (; srcPtr < srcEnd; srcPtr += 4, dstPtr += 3) {
         dstPtr[0] = Math::Ftoui16(UINT16_MAX * Clamp01(srcPtr[0]));
@@ -2539,7 +2539,7 @@ static void RGBA32FToRGBA16F(const byte *src, byte *dst, int numPixels) {
 static void RGBA32FToRGBA16(const byte *src, byte *dst, int numPixels) {
     const float *srcPtr = reinterpret_cast<const float *>(src);
     const float *srcEnd = srcPtr + numPixels * 4;
-    byte *dstPtr = dst;
+    uint16_t *dstPtr = reinterpret_cast<uint16_t *>(dst);
 
     for (; srcPtr < srcEnd; srcPtr += 4, dstPtr += 4) {
         dstPtr[0] = Math::Ftoui16(UINT16_MAX * Clamp01(srcPtr[0]));
