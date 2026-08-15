@@ -54,6 +54,17 @@
     #define bx_mm256_unpackhi_epi32(a, b)   _mm256_castps_si256(_mm256_unpackhi_ps(_mm256_castsi256_ps(a), _mm256_castsi256_ps(b)))
 #endif
 
+// Logically shifts all 32-bit lanes right by the same runtime count.
+BE_FORCE_INLINE __m256i bx_mm256_srl_epi32(const __m256i &a, const __m128i &count) {
+#ifdef __AVX2__
+    return _mm256_srl_epi32(a, count);
+#else
+    return _mm256_set_m128i(
+        _mm_srl_epi32(_mm256_extractf128_si256(a, 1), count),
+        _mm_srl_epi32(_mm256_extractf128_si256(a, 0), count));
+#endif
+}
+
 // Converts the lower 8 unsigned bytes to 8x32-bit integers.
 BE_FORCE_INLINE __m256i bx_mm256_cvtepu8_epi32(const __m128i &a) {
 #ifdef __AVX2__

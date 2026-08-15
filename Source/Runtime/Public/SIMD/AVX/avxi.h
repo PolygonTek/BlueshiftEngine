@@ -220,6 +220,9 @@ BE_FORCE_INLINE avxi sra_256epi32(const avxi &a, const int32_t &b) { return bx_m
 // Shifts 32-bit lanes right with zero fill.
 BE_FORCE_INLINE avxi srl_256epi32(const avxi &a, const int32_t &b) { return bx_mm256_srli_epi32(a, b); }
 
+// Logically shifts all 32-bit lanes right by the same runtime count.
+BE_FORCE_INLINE avxi srlv_256epi32(const avxi &a, const int32_t &b) { return bx_mm256_srl_epi32(a, _mm_cvtsi32_si128(b)); }
+
 // Shifts 32-bit lanes left with zero fill. Arithmetic and logical left shifts produce identical bit patterns.
 BE_FORCE_INLINE avxi sll_256epi32(const avxi &a, const int32_t &b) { return bx_mm256_slli_epi32(a, b); }
 

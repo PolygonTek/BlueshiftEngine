@@ -156,6 +156,9 @@ BE_FORCE_INLINE neoni sra_epi32(const neoni &a, const int32_t &b) { return vshlq
 // Shifts 32-bit lanes right with zero fill.
 BE_FORCE_INLINE neoni srl_epi32(const neoni &a, const int32_t &b) { return vshlq_u32(a, vdupq_n_s32(-b)); }
 
+// Logically shifts all 32-bit lanes right by the same runtime count.
+BE_FORCE_INLINE neoni srlv_epi32(const neoni &a, const int32_t &b) { return vshlq_u32(a, vdupq_n_s32(-b)); }
+
 // Shifts 32-bit lanes left with zero fill. Arithmetic and logical left shifts produce identical bit patterns.
 BE_FORCE_INLINE neoni sll_epi32(const neoni &a, const int32_t &b) { return vshlq_u32(a, vdupq_n_s32(b)); }
 

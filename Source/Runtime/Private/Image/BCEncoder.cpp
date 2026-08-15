@@ -65,6 +65,34 @@ void BCEncoder::GetMinMaxBBox(const byte *colorBlock, byte *minColor, byte *maxC
 }
 
 void BCEncoder::GetMinMaxAlpha(const byte *colorBlock, const int alphaOffset, byte *minColor, byte *maxColor) {
+    const int alphaShift = alphaOffset * 8;
+
+#if defined(ENABLE_SIMD8_INTRIN)
+    const simd8i rgba0 = loadu_si256(reinterpret_cast<const int32_t *>(colorBlock + 0));
+    const simd8i rgba1 = loadu_si256(reinterpret_cast<const int32_t *>(colorBlock + 32));
+
+    const simd8i alpha0 = srlv_256epi32(rgba0, alphaShift) & 0xFF;
+    const simd8i alpha1 = srlv_256epi32(rgba1, alphaShift) & 0xFF;
+
+    minColor[alphaOffset] = byte(reduce_min_256epi32(min_256epi32(alpha0, alpha1)));
+    maxColor[alphaOffset] = byte(reduce_max_256epi32(max_256epi32(alpha0, alpha1)));
+#elif defined(ENABLE_SIMD4_INTRIN)
+    const simd4i rgba0 = loadu_si128(reinterpret_cast<const int32_t *>(colorBlock + 0));
+    const simd4i rgba1 = loadu_si128(reinterpret_cast<const int32_t *>(colorBlock + 16));
+    const simd4i rgba2 = loadu_si128(reinterpret_cast<const int32_t *>(colorBlock + 32));
+    const simd4i rgba3 = loadu_si128(reinterpret_cast<const int32_t *>(colorBlock + 48));
+
+    const simd4i alpha0 = srlv_epi32(rgba0, alphaShift) & 0xFF;
+    const simd4i alpha1 = srlv_epi32(rgba1, alphaShift) & 0xFF;
+    const simd4i alpha2 = srlv_epi32(rgba2, alphaShift) & 0xFF;
+    const simd4i alpha3 = srlv_epi32(rgba3, alphaShift) & 0xFF;
+
+    const simd4i minAlpha = min_epi32(min_epi32(alpha0, alpha1), min_epi32(alpha2, alpha3));
+    const simd4i maxAlpha = max_epi32(max_epi32(alpha0, alpha1), max_epi32(alpha2, alpha3));
+
+    minColor[alphaOffset] = byte(reduce_min_epi32(minAlpha));
+    maxColor[alphaOffset] = byte(reduce_max_epi32(maxAlpha));
+#else
     byte alphaMin = 255;
     byte alphaMax = 0;
 
@@ -80,6 +108,7 @@ void BCEncoder::GetMinMaxAlpha(const byte *colorBlock, const int alphaOffset, by
 
     minColor[alphaOffset] = (byte)alphaMin;
     maxColor[alphaOffset] = (byte)alphaMax;
+#endif
 }
 
 void BCEncoder::GetMinMaxColorHQ(const byte *colorBlock, byte *minColor, byte *maxColor, const bool ignoreTransparentPixels) {
@@ -300,9 +329,62 @@ int BCEncoder::ComputeAlphaIndices(const byte *colorBlock, const int alphaOffset
         alphas[7] = 255;
     }
 
-    unsigned int indexes[16];
+    ALIGN_AS32 uint32_t indexes[16];
     int error = 0;
 
+#if defined(ENABLE_SIMD8_INTRIN)
+    const int alphaShift = alphaOffset * 8;
+    simd8i totalError8 = setzero_si256();
+
+    for (int group = 0; group < 2; group++) {
+        const simd8i rgba8 = loadu_si256(reinterpret_cast<const int32_t *>(colorBlock + group * 32));
+        const simd8i alpha8 = srlv_256epi32(rgba8, alphaShift) & 0xFF;
+
+        simd8i bestError8 = set1_256epi32(256 * 256);
+        simd8i bestIndex8 = setzero_si256();
+
+        for (int j = 0; j < 8; j++) {
+            const simd8i delta8 = alpha8 - alphas[j];
+            const simd8i distance8 = delta8 * delta8;
+            const simd8b better8 = distance8 < bestError8;
+
+            bestError8 = select_256epi32(bestError8, distance8, better8);
+            bestIndex8 = select_256epi32(bestIndex8, set1_256epi32(j), better8);
+        }
+
+        totalError8 += bestError8;
+        storeu_si256(bestIndex8, reinterpret_cast<int32_t *>(indexes + group * 8));
+    }
+
+    const simd4i totalError4 = extract_256epi32<0>(totalError8) + extract_256epi32<1>(totalError8);
+    error = extract_epi32<0>(totalError4) + extract_epi32<1>(totalError4) + extract_epi32<2>(totalError4) + extract_epi32<3>(totalError4);
+
+#elif defined(ENABLE_SIMD4_INTRIN)
+    const int alphaShift = alphaOffset * 8;
+    simd4i totalError4 = setzero_si128();
+
+    for (int group = 0; group < 4; group++) {
+        const simd4i rgba4 = loadu_si128(reinterpret_cast<const int32_t *>(colorBlock + group * 16));
+        const simd4i alpha4 = srlv_epi32(rgba4, alphaShift) & 0xFF;
+
+        simd4i bestError4 = set1_epi32(256 * 256);
+        simd4i bestIndex4 = setzero_si128();
+
+        for (int j = 0; j < 8; j++) {
+            const simd4i delta4 = alpha4 - alphas[j];
+            const simd4i distance4 = delta4 * delta4;
+            const simd4b better4 = distance4 < bestError4;
+
+            bestError4 = select_epi32(bestError4, distance4, better4);
+            bestIndex4 = select_epi32(bestIndex4, set1_epi32(j), better4);
+        }
+
+        totalError4 += bestError4;
+        storeu_si128(bestIndex4, reinterpret_cast<int32_t *>(indexes + group * 4));
+    }
+
+    error = extract_epi32<0>(totalError4) + extract_epi32<1>(totalError4) + extract_epi32<2>(totalError4) + extract_epi32<3>(totalError4);
+#else
     for (int i = 0; i < 16; i++) {
         unsigned int bestError = 256 * 256;
         byte a = colorBlock[i * 4 + alphaOffset];
@@ -315,6 +397,7 @@ int BCEncoder::ComputeAlphaIndices(const byte *colorBlock, const int alphaOffset
         }
         error += bestError;
     }
+#endif
 
     rindexes[0] = byte((indexes[0] >> 0) | (indexes[1] << 3) | (indexes[2] << 6));
     rindexes[1] = byte((indexes[2] >> 2) | (indexes[3] << 1) | (indexes[4] << 4) | (indexes[5] << 7));
@@ -328,12 +411,15 @@ int BCEncoder::ComputeAlphaIndices(const byte *colorBlock, const int alphaOffset
 }
 
 void BCEncoder::Compute4BitsAlpha(const byte *colorBlock, const int alphaOffset, uint16_t *out) {
-    colorBlock += alphaOffset;
+    for (int y = 0; y < 4; y++) {
+        const byte *row = colorBlock + y * 16 + alphaOffset;
 
-    out[0] = ((int)colorBlock[0] >> 4) | ((int)colorBlock[1] & 0x0F) | (((int)colorBlock[2] & 0x0F) << 8) | (((int)colorBlock[3] & 0xF0) << 12);
-    out[1] = ((int)colorBlock[4] >> 4) | ((int)colorBlock[5] & 0x0F) | (((int)colorBlock[6] & 0x0F) << 8) | (((int)colorBlock[7] & 0xF0) << 12);
-    out[2] = ((int)colorBlock[8] >> 4) | ((int)colorBlock[9] & 0x0F) | (((int)colorBlock[10] & 0x0F) << 8) | (((int)colorBlock[11] & 0xF0) << 12);
-    out[3] = ((int)colorBlock[12] >> 4) | ((int)colorBlock[13] & 0x0F) | (((int)colorBlock[14] & 0x0F) << 8) | (((int)colorBlock[15] & 0xF0) << 12);
+        out[y] =
+            (uint16_t(row[0]) >> 4) |
+            (uint16_t(row[4]) & 0x00F0) |
+            ((uint16_t(row[8]) & 0x00F0) << 4) |
+            ((uint16_t(row[12]) & 0x00F0) << 8);
+    }
 }
 
 void BCEncoder::ComputeColorIndicesFast(const byte *colorBlock, const byte *maxColor, const byte *minColor, uint32_t *out) {
@@ -444,9 +530,89 @@ int BCEncoder::ComputeColorIndices(const byte *colorBlock, const uint16_t color0
 
     assert(!usePunchThroughAlpha || color0 <= color1);
 
-    int error = 0;
     const int numColors = usePunchThroughAlpha ? 3 : 4;
+    int error = 0;
 
+#if defined(ENABLE_SIMD8_INTRIN)
+    const simd8i zero8 = setzero_si256();
+    simd8i totalError8 = zero8;
+
+    for (int group = 0; group < 2; group++) {
+        const simd8i rgba8 = loadu_si256(reinterpret_cast<const int32_t *>(colorBlock + group * 32));
+
+        const simd8i red8 = rgba8 & 0xFF;
+        const simd8i green8 = srl_256epi32(rgba8, 8) & 0xFF;
+        const simd8i blue8 = srl_256epi32(rgba8, 16) & 0xFF;
+
+        simd8i bestError8 = set1_256epi32(256 * 256 * 4);
+        simd8i bestIndex8 = zero8;
+
+        for (int j = 0; j < numColors; j++) {
+            const simd8i dr8 = red8 - colors[j][0];
+            const simd8i dg8 = green8 - colors[j][1];
+            const simd8i db8 = blue8 - colors[j][2];
+            const simd8i distance8 = dr8 * dr8 + dg8 * dg8 + db8 * db8;
+            const simd8b better8 = distance8 < bestError8;
+
+            bestError8 = select_256epi32(bestError8, distance8, better8);
+            bestIndex8 = select_256epi32(bestIndex8, set1_256epi32(j), better8);
+        }
+
+        if (usePunchThroughAlpha) {
+            const simd8b transparent8 = srl_256epi32(rgba8, 24) < 128;
+
+            bestError8 = select_256epi32(bestError8, zero8, transparent8);
+            bestIndex8 = select_256epi32(bestIndex8, set1_256epi32(3), transparent8);
+        }
+
+        totalError8 += bestError8;
+        storeu_si256(bestIndex8, reinterpret_cast<int32_t *>(indexes + group * 8));
+    }
+
+    const simd4i totalError4 = extract_256epi32<0>(totalError8) + extract_256epi32<1>(totalError8);
+    error = extract_epi32<0>(totalError4) + extract_epi32<1>(totalError4) + extract_epi32<2>(totalError4) + extract_epi32<3>(totalError4);
+#elif defined(ENABLE_SIMD4_INTRIN)
+    const simd4i zero4 = setzero_si128();
+    simd4i totalError4 = zero4;
+
+    for (int group = 0; group < 4; group++) {
+        const simd4i rgba4 = loadu_si128(reinterpret_cast<const int32_t *>(colorBlock + group * 16));
+
+        const simd4i red4 = rgba4 & 0xFF;
+        const simd4i green4 = srl_epi32(rgba4, 8) & 0xFF;
+        const simd4i blue4 = srl_epi32(rgba4, 16) & 0xFF;
+
+        simd4i bestError4 = set1_epi32(256 * 256 * 4);
+        simd4i bestIndex4 = zero4;
+
+        for (int j = 0; j < numColors; j++) {
+            const simd4i dr4 = red4 - colors[j][0];
+            const simd4i dg4 = green4 - colors[j][1];
+            const simd4i db4 = blue4 - colors[j][2];
+            const simd4i distance4 = dr4 * dr4 + dg4 * dg4 + db4 * db4;
+            const simd4b better4 = distance4 < bestError4;
+
+            bestError4 = select_epi32(bestError4, distance4, better4);
+            bestIndex4 = select_epi32(bestIndex4, set1_epi32(j), better4);
+        }
+
+        if (usePunchThroughAlpha) {
+            const simd4b transparent4 = srl_epi32(rgba4, 24) < 128;
+
+            bestError4 = select_epi32(bestError4, zero4, transparent4);
+            bestIndex4 = select_epi32(bestIndex4, set1_epi32(3), transparent4);
+        }
+
+        totalError4 += bestError4;
+        storeu_si128(bestIndex4, reinterpret_cast<int32_t *>(indexes + group * 4));
+    }
+
+    error =
+        extract_epi32<0>(totalError4) +
+        extract_epi32<1>(totalError4) +
+        extract_epi32<2>(totalError4) +
+        extract_epi32<3>(totalError4);
+#else
     for (int i = 0; i < 16; i++) {
         const byte *color = &colorBlock[i * 4];
 
@@ -465,6 +631,7 @@ int BCEncoder::ComputeColorIndices(const byte *colorBlock, const uint16_t color0
         }
         error += bestError;
     }
+#endif
 
     result = 0;
     for (int i = 0; i < 16; i++) {
@@ -736,6 +903,16 @@ void BCEncoder::EncodeBC5BlockHQ(const byte *colorBlock, byte **dstPtr) {
 }
 
 BE_INLINE void BCEncoder::ExtractBlock(const byte *src, int srcPitch, int blockWidth, int blockHeight, byte *colorBlock) {
+#if defined(ENABLE_SIMD4_INTRIN)
+    if (blockWidth == 4 && blockHeight == 4) {
+        for (int by = 0; by < 4; by++) {
+            const simd4i row = loadu_si128(reinterpret_cast<const int32_t *>(src + srcPitch * by));
+            storeu_si128(row, reinterpret_cast<int32_t *>(colorBlock + 16 * by));
+        }
+        return;
+    }
+#endif
+
     for (int by = 0; by < 4; by++) {
         const byte *srcPtrY = src + srcPitch * (by % blockHeight);
 

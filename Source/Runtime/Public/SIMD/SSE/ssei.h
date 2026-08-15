@@ -155,6 +155,9 @@ BE_FORCE_INLINE ssei sra_epi32(const ssei &a, const int32_t &b) { return _mm_sra
 // Shifts 32-bit lanes right with zero fill.
 BE_FORCE_INLINE ssei srl_epi32(const ssei &a, const int32_t &b) { return _mm_srli_epi32(a, b); }
 
+// Logically shifts all 32-bit lanes right by the same runtime count.
+BE_FORCE_INLINE ssei srlv_epi32(const ssei &a, const int32_t &b) { return _mm_srl_epi32(a, _mm_cvtsi32_si128(b)); }
+
 // Shifts 32-bit lanes left with zero fill. Arithmetic and logical left shifts produce identical bit patterns.
 BE_FORCE_INLINE ssei sll_epi32(const ssei &a, const int32_t &b) { return _mm_slli_epi32(a, b); }
 
