@@ -10,6 +10,26 @@ BE_NAMESPACE_BEGIN
 //
 //--------------------------------------------------------------------------------------------------
 
+#if defined(ENABLE_SIMD8_INTRIN)
+static BE_FORCE_INLINE simd8i FloatToSNormInt32x8(simd8f value, const simd8f &scale) {
+    value = select_256ps(SIMD_8::F8_zero, value, value == value);
+    value = min_256ps(max_256ps(value, SIMD_8::F8_zero - SIMD_8::F8_one), SIMD_8::F8_one);
+    value *= scale;
+    const simd8f roundBias = select_256ps(SIMD_8::F8_zero - SIMD_8::F8_half, SIMD_8::F8_half, value >= SIMD_8::F8_zero);
+    return trunc_256ps_to_epi32(value + roundBias);
+}
+#endif
+
+#if defined(ENABLE_SIMD4_INTRIN)
+static BE_FORCE_INLINE simd4i FloatToSNormInt32x4(simd4f value, const simd4f &scale) {
+    value = select_ps(SIMD_4::F4_zero, value, value == value);
+    value = min_ps(max_ps(value, SIMD_4::F4_zero - SIMD_4::F4_one), SIMD_4::F4_one);
+    value *= scale;
+    const simd4f roundBias = select_ps(SIMD_4::F4_zero - SIMD_4::F4_half, SIMD_4::F4_half, value >= SIMD_4::F4_zero);
+    return trunc_ps_to_epi32(value + roundBias);
+}
+#endif
+
 static void RGBA32FToL8(const byte *src, byte *dst, int numPixels) {
     const float *srcPtr = reinterpret_cast<const float *>(src);
     const float *srcEnd = srcPtr + numPixels * 4;
@@ -955,9 +975,7 @@ static void RGBA32FToR8SNorm(const byte *src, byte *dst, int numPixels) {
 
 #if defined(ENABLE_SIMD8_INTRIN)
     const float *simd8End = srcPtr + (numPixels & ~31) * 4;
-    const simd8f scale8 = set1_256ps(255.0f / 2.0f);
-    const simd8f minValue8 = set1_256ps(-1.0f);
-    const simd8f maxValue8 = set1_256ps(1.0f);
+    const simd8f scale8 = set1_256ps(127.0f);
 
     for (; srcPtr < simd8End; srcPtr += 128, dstPtr += 32) {
         simd8i values[4];
@@ -979,9 +997,7 @@ static void RGBA32FToR8SNorm(const byte *src, byte *dst, int numPixels) {
             simd8f a;
             transpose2x4x4(rgba04, rgba15, rgba26, rgba37, value, g, b, a);
 
-            value = select_256ps(minValue8, value, value == value);
-            value = min_256ps(max_256ps(value, minValue8), maxValue8);
-            values[group] = floor_256ps_to_epi32(value * scale8);
+            values[group] = FloatToSNormInt32x8(value, scale8);
         }
 
         const simd8i packed8 = packs_256epi32_to_epi8(values[0], values[1], values[2], values[3]);
@@ -992,9 +1008,7 @@ static void RGBA32FToR8SNorm(const byte *src, byte *dst, int numPixels) {
 #if defined(ENABLE_SIMD4_INTRIN)
     const int remainingPixels = static_cast<int>((srcEnd - srcPtr) / 4);
     const float *simd4End = srcPtr + (remainingPixels & ~15) * 4;
-    const simd4f scale4 = set1_ps(255.0f / 2.0f);
-    const simd4f minValue4 = set1_ps(-1.0f);
-    const simd4f maxValue4 = set1_ps(1.0f);
+    const simd4f scale4 = set1_ps(127.0f);
 
     for (; srcPtr < simd4End; srcPtr += 64, dstPtr += 16) {
         simd4i values[4];
@@ -1008,9 +1022,7 @@ static void RGBA32FToR8SNorm(const byte *src, byte *dst, int numPixels) {
             transpose4x4(rgba0, rgba1, rgba2, rgba3);
 
             simd4f value = rgba0;
-            value = select_ps(minValue4, value, value == value);
-            value = min_ps(max_ps(value, minValue4), maxValue4);
-            values[group] = floor_ps_to_epi32(value * scale4);
+            values[group] = FloatToSNormInt32x4(value, scale4);
         }
 
         const simd4i packed8 = packs_epi32_to_epi8(values[0], values[1], values[2], values[3]);
@@ -1018,11 +1030,11 @@ static void RGBA32FToR8SNorm(const byte *src, byte *dst, int numPixels) {
     }
 
     for (; srcPtr < srcEnd; srcPtr += 4, dstPtr++) {
-        dstPtr[0] = Math::Ftoi8(Math::Floor((255.0f / 2.0f) * Clamp(srcPtr[0], -1.0f, 1.0f)));
+        dstPtr[0] = Math::FloatToSNorm8(srcPtr[0]);
     }
 #else
     for (; srcPtr < srcEnd; srcPtr += 4, dstPtr++) {
-        dstPtr[0] = Math::Ftoi8(Math::Floor((255.0f / 2.0f) * Clamp(srcPtr[0], -1.0f, 1.0f)));
+        dstPtr[0] = Math::FloatToSNorm8(srcPtr[0]);
     }
 #endif
 }
@@ -1192,9 +1204,7 @@ static void RGBA32FToRG88SNorm(const byte *src, byte *dst, int numPixels) {
 
 #if defined(ENABLE_SIMD8_INTRIN)
     const float *simd8End = srcPtr + (numPixels & ~15) * 4;
-    const simd8f scale8 = set1_256ps(255.0f / 2.0f);
-    const simd8f minValue8 = set1_256ps(-1.0f);
-    const simd8f maxValue8 = set1_256ps(1.0f);
+    const simd8f scale8 = set1_256ps(127.0f);
 
     for (; srcPtr < simd8End; srcPtr += 64, dstPtr += 32) {
         simd8i values[4];
@@ -1212,12 +1222,8 @@ static void RGBA32FToRG88SNorm(const byte *src, byte *dst, int numPixels) {
 
             simd8f rg0 = shuffle_256ps<0, 1, 0, 1>(rgba02, rgba13);
             simd8f rg1 = shuffle_256ps<0, 1, 0, 1>(rgba46, rgba57);
-            rg0 = select_256ps(minValue8, rg0, rg0 == rg0);
-            rg1 = select_256ps(minValue8, rg1, rg1 == rg1);
-            rg0 = min_256ps(max_256ps(rg0, minValue8), maxValue8);
-            rg1 = min_256ps(max_256ps(rg1, minValue8), maxValue8);
-            values[group * 2 + 0] = floor_256ps_to_epi32(rg0 * scale8);
-            values[group * 2 + 1] = floor_256ps_to_epi32(rg1 * scale8);
+            values[group * 2 + 0] = FloatToSNormInt32x8(rg0, scale8);
+            values[group * 2 + 1] = FloatToSNormInt32x8(rg1, scale8);
         }
 
         const simd8i packed8 = packs_256epi32_to_epi8(values[0], values[1], values[2], values[3]);
@@ -1228,9 +1234,7 @@ static void RGBA32FToRG88SNorm(const byte *src, byte *dst, int numPixels) {
 #if defined(ENABLE_SIMD4_INTRIN)
     const int remainingPixels = static_cast<int>((srcEnd - srcPtr) / 4);
     const float *simd4End = srcPtr + (remainingPixels & ~7) * 4;
-    const simd4f scale4 = set1_ps(255.0f / 2.0f);
-    const simd4f minValue4 = set1_ps(-1.0f);
-    const simd4f maxValue4 = set1_ps(1.0f);
+    const simd4f scale4 = set1_ps(127.0f);
 
     for (; srcPtr < simd4End; srcPtr += 32, dstPtr += 16) {
         simd4i values[4];
@@ -1244,12 +1248,8 @@ static void RGBA32FToRG88SNorm(const byte *src, byte *dst, int numPixels) {
 
             simd4f rg0 = shuffle_ps<0, 1, 0, 1>(rgba0, rgba1);
             simd4f rg1 = shuffle_ps<0, 1, 0, 1>(rgba2, rgba3);
-            rg0 = select_ps(minValue4, rg0, rg0 == rg0);
-            rg1 = select_ps(minValue4, rg1, rg1 == rg1);
-            rg0 = min_ps(max_ps(rg0, minValue4), maxValue4);
-            rg1 = min_ps(max_ps(rg1, minValue4), maxValue4);
-            values[group * 2 + 0] = floor_ps_to_epi32(rg0 * scale4);
-            values[group * 2 + 1] = floor_ps_to_epi32(rg1 * scale4);
+            values[group * 2 + 0] = FloatToSNormInt32x4(rg0, scale4);
+            values[group * 2 + 1] = FloatToSNormInt32x4(rg1, scale4);
         }
 
         const simd4i packed8 = packs_epi32_to_epi8(values[0], values[1], values[2], values[3]);
@@ -1257,13 +1257,13 @@ static void RGBA32FToRG88SNorm(const byte *src, byte *dst, int numPixels) {
     }
 
     for (; srcPtr < srcEnd; srcPtr += 4, dstPtr += 2) {
-        dstPtr[0] = Math::Ftoi8(Math::Floor((255.0f / 2.0f) * Clamp(srcPtr[0], -1.0f, 1.0f)));
-        dstPtr[1] = Math::Ftoi8(Math::Floor((255.0f / 2.0f) * Clamp(srcPtr[1], -1.0f, 1.0f)));
+        dstPtr[0] = Math::FloatToSNorm8(srcPtr[0]);
+        dstPtr[1] = Math::FloatToSNorm8(srcPtr[1]);
     }
 #else
     for (; srcPtr < srcEnd; srcPtr += 4, dstPtr += 2) {
-        dstPtr[0] = Math::Ftoi8(Math::Floor((255.0f / 2.0f) * Clamp(srcPtr[0], -1.0f, 1.0f)));
-        dstPtr[1] = Math::Ftoi8(Math::Floor((255.0f / 2.0f) * Clamp(srcPtr[1], -1.0f, 1.0f)));
+        dstPtr[0] = Math::FloatToSNorm8(srcPtr[0]);
+        dstPtr[1] = Math::FloatToSNorm8(srcPtr[1]);
     }
 #endif
 }
@@ -1440,9 +1440,9 @@ static void RGBA32FToRGB888SNorm(const byte *src, byte *dst, int numPixels) {
     int8_t *dstPtr = reinterpret_cast<int8_t *>(dst);
 
     for (; srcPtr < srcEnd; srcPtr += 4, dstPtr += 3) {
-        dstPtr[0] = Math::Ftoi8(Math::Floor((255.0f / 2.0f) * Clamp(srcPtr[0], -1.0f, 1.0f)));
-        dstPtr[1] = Math::Ftoi8(Math::Floor((255.0f / 2.0f) * Clamp(srcPtr[1], -1.0f, 1.0f)));
-        dstPtr[2] = Math::Ftoi8(Math::Floor((255.0f / 2.0f) * Clamp(srcPtr[2], -1.0f, 1.0f)));
+        dstPtr[0] = Math::FloatToSNorm8(srcPtr[0]);
+        dstPtr[1] = Math::FloatToSNorm8(srcPtr[1]);
+        dstPtr[2] = Math::FloatToSNorm8(srcPtr[2]);
     }
 }
 
@@ -1477,9 +1477,7 @@ static void RGBA32FToRGBA8888SNorm(const byte *src, byte *dst, int numPixels) {
 
 #if defined(ENABLE_SIMD8_INTRIN)
     const float *simd8End = srcPtr + (numPixels & ~7) * 4;
-    const simd8f scale8 = set1_256ps(255.0f / 2.0f);
-    const simd8f minValue8 = set1_256ps(-1.0f);
-    const simd8f maxValue8 = set1_256ps(1.0f);
+    const simd8f scale8 = set1_256ps(127.0f);
 
     for (; srcPtr < simd8End; srcPtr += 32, dstPtr += 32) {
         simd8f rgba0 = loadu_256ps(srcPtr + 0);
@@ -1487,23 +1485,12 @@ static void RGBA32FToRGBA8888SNorm(const byte *src, byte *dst, int numPixels) {
         simd8f rgba2 = loadu_256ps(srcPtr + 16);
         simd8f rgba3 = loadu_256ps(srcPtr + 24);
 
-        // Match Clamp, Math::Floor and Math::Ftoi8:
-        // map NaN to -1, clamp to [-1, 1], scale by 127.5
-        // and round toward negative infinity.
-        rgba0 = select_256ps(minValue8, rgba0, rgba0 == rgba0);
-        rgba1 = select_256ps(minValue8, rgba1, rgba1 == rgba1);
-        rgba2 = select_256ps(minValue8, rgba2, rgba2 == rgba2);
-        rgba3 = select_256ps(minValue8, rgba3, rgba3 == rgba3);
-
-        rgba0 = min_256ps(max_256ps(rgba0, minValue8), maxValue8);
-        rgba1 = min_256ps(max_256ps(rgba1, minValue8), maxValue8);
-        rgba2 = min_256ps(max_256ps(rgba2, minValue8), maxValue8);
-        rgba3 = min_256ps(max_256ps(rgba3, minValue8), maxValue8);
-
-        const simd8i rgba32_0 = floor_256ps_to_epi32(rgba0 * scale8);
-        const simd8i rgba32_1 = floor_256ps_to_epi32(rgba1 * scale8);
-        const simd8i rgba32_2 = floor_256ps_to_epi32(rgba2 * scale8);
-        const simd8i rgba32_3 = floor_256ps_to_epi32(rgba3 * scale8);
+        // Match Math::FloatToSNorm8: map NaN to zero, clamp to [-1, 1],
+        // scale by 127 and round to nearest with ties away from zero.
+        const simd8i rgba32_0 = FloatToSNormInt32x8(rgba0, scale8);
+        const simd8i rgba32_1 = FloatToSNormInt32x8(rgba1, scale8);
+        const simd8i rgba32_2 = FloatToSNormInt32x8(rgba2, scale8);
+        const simd8i rgba32_3 = FloatToSNormInt32x8(rgba3, scale8);
         const simd8i rgba8 = packs_256epi32_to_epi8(rgba32_0, rgba32_1, rgba32_2, rgba32_3);
 
         storeu_si256(rgba8, reinterpret_cast<int32_t *>(dstPtr));
@@ -1513,9 +1500,7 @@ static void RGBA32FToRGBA8888SNorm(const byte *src, byte *dst, int numPixels) {
 #if defined(ENABLE_SIMD4_INTRIN)
     const int remainingPixels = static_cast<int>((srcEnd - srcPtr) / 4);
     const float *simd4End = srcPtr + (remainingPixels & ~3) * 4;
-    const simd4f scale4 = set1_ps(255.0f / 2.0f);
-    const simd4f minValue4 = set1_ps(-1.0f);
-    const simd4f maxValue4 = set1_ps(1.0f);
+    const simd4f scale4 = set1_ps(127.0f);
 
     for (; srcPtr < simd4End; srcPtr += 16, dstPtr += 16) {
         simd4f rgba0 = loadu_ps(srcPtr + 0);
@@ -1523,40 +1508,29 @@ static void RGBA32FToRGBA8888SNorm(const byte *src, byte *dst, int numPixels) {
         simd4f rgba2 = loadu_ps(srcPtr + 8);
         simd4f rgba3 = loadu_ps(srcPtr + 12);
 
-        // Match Clamp, Math::Floor and Math::Ftoi8:
-        // map NaN to -1, clamp to [-1, 1], scale by 127.5
-        // and round toward negative infinity.
-        rgba0 = select_ps(minValue4, rgba0, rgba0 == rgba0);
-        rgba1 = select_ps(minValue4, rgba1, rgba1 == rgba1);
-        rgba2 = select_ps(minValue4, rgba2, rgba2 == rgba2);
-        rgba3 = select_ps(minValue4, rgba3, rgba3 == rgba3);
-
-        rgba0 = min_ps(max_ps(rgba0, minValue4), maxValue4);
-        rgba1 = min_ps(max_ps(rgba1, minValue4), maxValue4);
-        rgba2 = min_ps(max_ps(rgba2, minValue4), maxValue4);
-        rgba3 = min_ps(max_ps(rgba3, minValue4), maxValue4);
-
-        const simd4i rgba32_0 = floor_ps_to_epi32(rgba0 * scale4);
-        const simd4i rgba32_1 = floor_ps_to_epi32(rgba1 * scale4);
-        const simd4i rgba32_2 = floor_ps_to_epi32(rgba2 * scale4);
-        const simd4i rgba32_3 = floor_ps_to_epi32(rgba3 * scale4);
+        // Match Math::FloatToSNorm8: map NaN to zero, clamp to [-1, 1],
+        // scale by 127 and round to nearest with ties away from zero.
+        const simd4i rgba32_0 = FloatToSNormInt32x4(rgba0, scale4);
+        const simd4i rgba32_1 = FloatToSNormInt32x4(rgba1, scale4);
+        const simd4i rgba32_2 = FloatToSNormInt32x4(rgba2, scale4);
+        const simd4i rgba32_3 = FloatToSNormInt32x4(rgba3, scale4);
         const simd4i rgba8 = packs_epi32_to_epi8(rgba32_0, rgba32_1, rgba32_2, rgba32_3);
 
         storeu_si128(rgba8, reinterpret_cast<int32_t *>(dstPtr));
     }
 
     for (; srcPtr < srcEnd; srcPtr += 4, dstPtr += 4) {
-        dstPtr[0] = Math::Ftoi8(Math::Floor((255.0f / 2.0f) * Clamp(srcPtr[0], -1.0f, 1.0f)));
-        dstPtr[1] = Math::Ftoi8(Math::Floor((255.0f / 2.0f) * Clamp(srcPtr[1], -1.0f, 1.0f)));
-        dstPtr[2] = Math::Ftoi8(Math::Floor((255.0f / 2.0f) * Clamp(srcPtr[2], -1.0f, 1.0f)));
-        dstPtr[3] = Math::Ftoi8(Math::Floor((255.0f / 2.0f) * Clamp(srcPtr[3], -1.0f, 1.0f)));
+        dstPtr[0] = Math::FloatToSNorm8(srcPtr[0]);
+        dstPtr[1] = Math::FloatToSNorm8(srcPtr[1]);
+        dstPtr[2] = Math::FloatToSNorm8(srcPtr[2]);
+        dstPtr[3] = Math::FloatToSNorm8(srcPtr[3]);
     }
 #else
     for (; srcPtr < srcEnd; srcPtr += 4, dstPtr += 4) {
-        dstPtr[0] = Math::Ftoi8(Math::Floor((255.0f / 2.0f) * Clamp(srcPtr[0], -1.0f, 1.0f)));
-        dstPtr[1] = Math::Ftoi8(Math::Floor((255.0f / 2.0f) * Clamp(srcPtr[1], -1.0f, 1.0f)));
-        dstPtr[2] = Math::Ftoi8(Math::Floor((255.0f / 2.0f) * Clamp(srcPtr[2], -1.0f, 1.0f)));
-        dstPtr[3] = Math::Ftoi8(Math::Floor((255.0f / 2.0f) * Clamp(srcPtr[3], -1.0f, 1.0f)));
+        dstPtr[0] = Math::FloatToSNorm8(srcPtr[0]);
+        dstPtr[1] = Math::FloatToSNorm8(srcPtr[1]);
+        dstPtr[2] = Math::FloatToSNorm8(srcPtr[2]);
+        dstPtr[3] = Math::FloatToSNorm8(srcPtr[3]);
     }
 #endif
 }
@@ -2051,9 +2025,7 @@ static void RGBA32FToR16SNorm(const byte *src, byte *dst, int numPixels) {
 
 #if defined(ENABLE_SIMD8_INTRIN)
     const float *simd8End = srcPtr + (numPixels & ~15) * 4;
-    const simd8f scale8 = set1_256ps(UINT16_MAX / 2.0f);
-    const simd8f minValue8 = set1_256ps(-1.0f);
-    const simd8f maxValue8 = set1_256ps(1.0f);
+    const simd8f scale8 = set1_256ps(32767.0f);
 
     for (; srcPtr < simd8End; srcPtr += 64, dstPtr += 16) {
         const simd8f rgba01 = loadu_256ps(srcPtr + 0);
@@ -2085,17 +2057,10 @@ static void RGBA32FToR16SNorm(const byte *src, byte *dst, int numPixels) {
         simd8f r1;
         transpose2x4x4(rgba812, rgba913, rgba1014, rgba1115, r1, g, b, a);
 
-        // Match Clamp, Math::Floor and Math::Ftoi16:
-        // map NaN to -1, clamp to [-1, 1], scale by 32767.5
-        // and round toward negative infinity.
-        r0 = select_256ps(minValue8, r0, r0 == r0);
-        r1 = select_256ps(minValue8, r1, r1 == r1);
-
-        r0 = min_256ps(max_256ps(r0, minValue8), maxValue8);
-        r1 = min_256ps(max_256ps(r1, minValue8), maxValue8);
-
-        const simd8i r32_0 = floor_256ps_to_epi32(r0 * scale8);
-        const simd8i r32_1 = floor_256ps_to_epi32(r1 * scale8);
+        // Match Math::FloatToSNorm16: map NaN to zero, clamp to [-1, 1],
+        // scale by 32767 and round to nearest with ties away from zero.
+        const simd8i r32_0 = FloatToSNormInt32x8(r0, scale8);
+        const simd8i r32_1 = FloatToSNormInt32x8(r1, scale8);
         const simd8i r16 = packs_256epi32_to_epi16(r32_0, r32_1);
 
         storeu_si256(r16, reinterpret_cast<int32_t *>(dstPtr));
@@ -2105,9 +2070,7 @@ static void RGBA32FToR16SNorm(const byte *src, byte *dst, int numPixels) {
 #if defined(ENABLE_SIMD4_INTRIN)
     const int remainingPixels = static_cast<int>((srcEnd - srcPtr) / 4);
     const float *simd4End = srcPtr + (remainingPixels & ~7) * 4;
-    const simd4f scale4 = set1_ps(UINT16_MAX / 2.0f);
-    const simd4f minValue4 = set1_ps(-1.0f);
-    const simd4f maxValue4 = set1_ps(1.0f);
+    const simd4f scale4 = set1_ps(32767.0f);
 
     for (; srcPtr < simd4End; srcPtr += 32, dstPtr += 8) {
         simd4f rgba0 = loadu_ps(srcPtr + 0);
@@ -2126,28 +2089,21 @@ static void RGBA32FToR16SNorm(const byte *src, byte *dst, int numPixels) {
         transpose4x4(rgba0, rgba1, rgba2, rgba3);
         simd4f r1 = rgba0;
 
-        // Match Clamp, Math::Floor and Math::Ftoi16:
-        // map NaN to -1, clamp to [-1, 1], scale by 32767.5
-        // and round toward negative infinity.
-        r0 = select_ps(minValue4, r0, r0 == r0);
-        r1 = select_ps(minValue4, r1, r1 == r1);
-
-        r0 = min_ps(max_ps(r0, minValue4), maxValue4);
-        r1 = min_ps(max_ps(r1, minValue4), maxValue4);
-
-        const simd4i r32_0 = floor_ps_to_epi32(r0 * scale4);
-        const simd4i r32_1 = floor_ps_to_epi32(r1 * scale4);
+        // Match Math::FloatToSNorm16: map NaN to zero, clamp to [-1, 1],
+        // scale by 32767 and round to nearest with ties away from zero.
+        const simd4i r32_0 = FloatToSNormInt32x4(r0, scale4);
+        const simd4i r32_1 = FloatToSNormInt32x4(r1, scale4);
         const simd4i r16 = packs_epi32_to_epi16(r32_0, r32_1);
 
         storeu_si128(r16, reinterpret_cast<int32_t *>(dstPtr));
     }
 
     for (; srcPtr < srcEnd; srcPtr += 4, dstPtr++) {
-        dstPtr[0] = Math::Ftoi16(Math::Floor((UINT16_MAX / 2.0f) * Clamp(srcPtr[0], -1.0f, 1.0f)));
+        dstPtr[0] = Math::FloatToSNorm16(srcPtr[0]);
     }
 #else
     for (; srcPtr < srcEnd; srcPtr += 4, dstPtr++) {
-        dstPtr[0] = Math::Ftoi16(Math::Floor((UINT16_MAX / 2.0f) * Clamp(srcPtr[0], -1.0f, 1.0f)));
+        dstPtr[0] = Math::FloatToSNorm16(srcPtr[0]);
     }
 #endif
 }
@@ -2472,9 +2428,7 @@ static void RGBA32FToRG16SNorm(const byte *src, byte *dst, int numPixels) {
 
 #if defined(ENABLE_SIMD8_INTRIN)
     const float *simd8End = srcPtr + (numPixels & ~7) * 4;
-    const simd8f scale8 = set1_256ps(UINT16_MAX / 2.0f);
-    const simd8f minValue8 = set1_256ps(-1.0f);
-    const simd8f maxValue8 = set1_256ps(1.0f);
+    const simd8f scale8 = set1_256ps(32767.0f);
 
     for (; srcPtr < simd8End; srcPtr += 32, dstPtr += 16) {
         const simd8f rgba01 = loadu_256ps(srcPtr + 0);
@@ -2490,17 +2444,10 @@ static void RGBA32FToRG16SNorm(const byte *src, byte *dst, int numPixels) {
         simd8f rg0 = shuffle_256ps<0, 1, 0, 1>(rgba02, rgba13);
         simd8f rg1 = shuffle_256ps<0, 1, 0, 1>(rgba46, rgba57);
 
-        // Match Clamp, Math::Floor and Math::Ftoi16:
-        // map NaN to -1, clamp to [-1, 1], scale by 32767.5
-        // and round toward negative infinity.
-        rg0 = select_256ps(minValue8, rg0, rg0 == rg0);
-        rg1 = select_256ps(minValue8, rg1, rg1 == rg1);
-
-        rg0 = min_256ps(max_256ps(rg0, minValue8), maxValue8);
-        rg1 = min_256ps(max_256ps(rg1, minValue8), maxValue8);
-
-        const simd8i rg32_0 = floor_256ps_to_epi32(rg0 * scale8);
-        const simd8i rg32_1 = floor_256ps_to_epi32(rg1 * scale8);
+        // Match Math::FloatToSNorm16: map NaN to zero, clamp to [-1, 1],
+        // scale by 32767 and round to nearest with ties away from zero.
+        const simd8i rg32_0 = FloatToSNormInt32x8(rg0, scale8);
+        const simd8i rg32_1 = FloatToSNormInt32x8(rg1, scale8);
         const simd8i rg16 = packs_256epi32_to_epi16(rg32_0, rg32_1);
 
         storeu_si256(rg16, reinterpret_cast<int32_t *>(dstPtr));
@@ -2510,9 +2457,7 @@ static void RGBA32FToRG16SNorm(const byte *src, byte *dst, int numPixels) {
 #if defined(ENABLE_SIMD4_INTRIN)
     const int remainingPixels = static_cast<int>((srcEnd - srcPtr) / 4);
     const float *simd4End = srcPtr + (remainingPixels & ~3) * 4;
-    const simd4f scale4 = set1_ps(UINT16_MAX / 2.0f);
-    const simd4f minValue4 = set1_ps(-1.0f);
-    const simd4f maxValue4 = set1_ps(1.0f);
+    const simd4f scale4 = set1_ps(32767.0f);
 
     for (; srcPtr < simd4End; srcPtr += 16, dstPtr += 8) {
         const simd4f rgba0 = loadu_ps(srcPtr + 0);
@@ -2523,30 +2468,23 @@ static void RGBA32FToRG16SNorm(const byte *src, byte *dst, int numPixels) {
         simd4f rg0 = shuffle_ps<0, 1, 0, 1>(rgba0, rgba1);
         simd4f rg1 = shuffle_ps<0, 1, 0, 1>(rgba2, rgba3);
 
-        // Match Clamp, Math::Floor and Math::Ftoi16:
-        // map NaN to -1, clamp to [-1, 1], scale by 32767.5
-        // and round toward negative infinity.
-        rg0 = select_ps(minValue4, rg0, rg0 == rg0);
-        rg1 = select_ps(minValue4, rg1, rg1 == rg1);
-
-        rg0 = min_ps(max_ps(rg0, minValue4), maxValue4);
-        rg1 = min_ps(max_ps(rg1, minValue4), maxValue4);
-
-        const simd4i rg32_0 = floor_ps_to_epi32(rg0 * scale4);
-        const simd4i rg32_1 = floor_ps_to_epi32(rg1 * scale4);
+        // Match Math::FloatToSNorm16: map NaN to zero, clamp to [-1, 1],
+        // scale by 32767 and round to nearest with ties away from zero.
+        const simd4i rg32_0 = FloatToSNormInt32x4(rg0, scale4);
+        const simd4i rg32_1 = FloatToSNormInt32x4(rg1, scale4);
         const simd4i rg16 = packs_epi32_to_epi16(rg32_0, rg32_1);
 
         storeu_si128(rg16, reinterpret_cast<int32_t *>(dstPtr));
     }
 
     for (; srcPtr < srcEnd; srcPtr += 4, dstPtr += 2) {
-        dstPtr[0] = Math::Ftoi16(Math::Floor((UINT16_MAX / 2.0f) * Clamp(srcPtr[0], -1.0f, 1.0f)));
-        dstPtr[1] = Math::Ftoi16(Math::Floor((UINT16_MAX / 2.0f) * Clamp(srcPtr[1], -1.0f, 1.0f)));
+        dstPtr[0] = Math::FloatToSNorm16(srcPtr[0]);
+        dstPtr[1] = Math::FloatToSNorm16(srcPtr[1]);
     }
 #else
     for (; srcPtr < srcEnd; srcPtr += 4, dstPtr += 2) {
-        dstPtr[0] = Math::Ftoi16(Math::Floor((UINT16_MAX / 2.0f) * Clamp(srcPtr[0], -1.0f, 1.0f)));
-        dstPtr[1] = Math::Ftoi16(Math::Floor((UINT16_MAX / 2.0f) * Clamp(srcPtr[1], -1.0f, 1.0f)));
+        dstPtr[0] = Math::FloatToSNorm16(srcPtr[0]);
+        dstPtr[1] = Math::FloatToSNorm16(srcPtr[1]);
     }
 #endif
 }
@@ -2754,9 +2692,9 @@ static void RGBA32FToRGB16SNorm(const byte *src, byte *dst, int numPixels) {
     int16_t *dstPtr = reinterpret_cast<int16_t *>(dst);
 
     for (; srcPtr < srcEnd; srcPtr += 4, dstPtr += 3) {
-        dstPtr[0] = Math::Ftoi16(Math::Floor((UINT16_MAX / 2.0f) * Clamp(srcPtr[0], -1.0f, 1.0f)));
-        dstPtr[1] = Math::Ftoi16(Math::Floor((UINT16_MAX / 2.0f) * Clamp(srcPtr[1], -1.0f, 1.0f)));
-        dstPtr[2] = Math::Ftoi16(Math::Floor((UINT16_MAX / 2.0f) * Clamp(srcPtr[2], -1.0f, 1.0f)));
+        dstPtr[0] = Math::FloatToSNorm16(srcPtr[0]);
+        dstPtr[1] = Math::FloatToSNorm16(srcPtr[1]);
+        dstPtr[2] = Math::FloatToSNorm16(srcPtr[2]);
     }
 }
 
@@ -2877,25 +2815,16 @@ static void RGBA32FToRGBA16SNorm(const byte *src, byte *dst, int numPixels) {
 
 #if defined(ENABLE_SIMD8_INTRIN)
     const float *simd8End = srcPtr + (numPixels & ~3) * 4;
-    const simd8f scale8 = set1_256ps(UINT16_MAX / 2.0f);
-    const simd8f minValue8 = set1_256ps(-1.0f);
-    const simd8f maxValue8 = set1_256ps(1.0f);
+    const simd8f scale8 = set1_256ps(32767.0f);
 
     for (; srcPtr < simd8End; srcPtr += 16, dstPtr += 16) {
         simd8f rgba0 = loadu_256ps(srcPtr + 0);
         simd8f rgba1 = loadu_256ps(srcPtr + 8);
 
-        // Match Clamp, Math::Floor and Math::Ftoi16:
-        // map NaN to -1, clamp to [-1, 1], scale by 32767.5
-        // and round toward negative infinity.
-        rgba0 = select_256ps(minValue8, rgba0, rgba0 == rgba0);
-        rgba1 = select_256ps(minValue8, rgba1, rgba1 == rgba1);
-
-        rgba0 = min_256ps(max_256ps(rgba0, minValue8), maxValue8);
-        rgba1 = min_256ps(max_256ps(rgba1, minValue8), maxValue8);
-
-        const simd8i rgba32_0 = floor_256ps_to_epi32(rgba0 * scale8);
-        const simd8i rgba32_1 = floor_256ps_to_epi32(rgba1 * scale8);
+        // Match Math::FloatToSNorm16: map NaN to zero, clamp to [-1, 1],
+        // scale by 32767 and round to nearest with ties away from zero.
+        const simd8i rgba32_0 = FloatToSNormInt32x8(rgba0, scale8);
+        const simd8i rgba32_1 = FloatToSNormInt32x8(rgba1, scale8);
         const simd8i rgba16 = packs_256epi32_to_epi16(rgba32_0, rgba32_1);
 
         storeu_si256(rgba16, reinterpret_cast<int32_t *>(dstPtr));
@@ -2905,42 +2834,33 @@ static void RGBA32FToRGBA16SNorm(const byte *src, byte *dst, int numPixels) {
 #if defined(ENABLE_SIMD4_INTRIN)
     const int remainingPixels = static_cast<int>((srcEnd - srcPtr) / 4);
     const float *simd4End = srcPtr + (remainingPixels & ~1) * 4;
-    const simd4f scale4 = set1_ps(UINT16_MAX / 2.0f);
-    const simd4f minValue4 = set1_ps(-1.0f);
-    const simd4f maxValue4 = set1_ps(1.0f);
+    const simd4f scale4 = set1_ps(32767.0f);
 
     for (; srcPtr < simd4End; srcPtr += 8, dstPtr += 8) {
         simd4f rgba0 = loadu_ps(srcPtr + 0);
         simd4f rgba1 = loadu_ps(srcPtr + 4);
 
-        // Match Clamp, Math::Floor and Math::Ftoi16:
-        // map NaN to -1, clamp to [-1, 1], scale by 32767.5
-        // and round toward negative infinity.
-        rgba0 = select_ps(minValue4, rgba0, rgba0 == rgba0);
-        rgba1 = select_ps(minValue4, rgba1, rgba1 == rgba1);
-
-        rgba0 = min_ps(max_ps(rgba0, minValue4), maxValue4);
-        rgba1 = min_ps(max_ps(rgba1, minValue4), maxValue4);
-
-        const simd4i rgba32_0 = floor_ps_to_epi32(rgba0 * scale4);
-        const simd4i rgba32_1 = floor_ps_to_epi32(rgba1 * scale4);
+        // Match Math::FloatToSNorm16: map NaN to zero, clamp to [-1, 1],
+        // scale by 32767 and round to nearest with ties away from zero.
+        const simd4i rgba32_0 = FloatToSNormInt32x4(rgba0, scale4);
+        const simd4i rgba32_1 = FloatToSNormInt32x4(rgba1, scale4);
         const simd4i rgba16 = packs_epi32_to_epi16(rgba32_0, rgba32_1);
 
         storeu_si128(rgba16, reinterpret_cast<int32_t *>(dstPtr));
     }
 
     for (; srcPtr < srcEnd; srcPtr += 4, dstPtr += 4) {
-        dstPtr[0] = Math::Ftoi16(Math::Floor((UINT16_MAX / 2.0f) * Clamp(srcPtr[0], -1.0f, 1.0f)));
-        dstPtr[1] = Math::Ftoi16(Math::Floor((UINT16_MAX / 2.0f) * Clamp(srcPtr[1], -1.0f, 1.0f)));
-        dstPtr[2] = Math::Ftoi16(Math::Floor((UINT16_MAX / 2.0f) * Clamp(srcPtr[2], -1.0f, 1.0f)));
-        dstPtr[3] = Math::Ftoi16(Math::Floor((UINT16_MAX / 2.0f) * Clamp(srcPtr[3], -1.0f, 1.0f)));
+        dstPtr[0] = Math::FloatToSNorm16(srcPtr[0]);
+        dstPtr[1] = Math::FloatToSNorm16(srcPtr[1]);
+        dstPtr[2] = Math::FloatToSNorm16(srcPtr[2]);
+        dstPtr[3] = Math::FloatToSNorm16(srcPtr[3]);
     }
 #else
     for (; srcPtr < srcEnd; srcPtr += 4, dstPtr += 4) {
-        dstPtr[0] = Math::Ftoi16(Math::Floor((UINT16_MAX / 2.0f) * Clamp(srcPtr[0], -1.0f, 1.0f)));
-        dstPtr[1] = Math::Ftoi16(Math::Floor((UINT16_MAX / 2.0f) * Clamp(srcPtr[1], -1.0f, 1.0f)));
-        dstPtr[2] = Math::Ftoi16(Math::Floor((UINT16_MAX / 2.0f) * Clamp(srcPtr[2], -1.0f, 1.0f)));
-        dstPtr[3] = Math::Ftoi16(Math::Floor((UINT16_MAX / 2.0f) * Clamp(srcPtr[3], -1.0f, 1.0f)));
+        dstPtr[0] = Math::FloatToSNorm16(srcPtr[0]);
+        dstPtr[1] = Math::FloatToSNorm16(srcPtr[1]);
+        dstPtr[2] = Math::FloatToSNorm16(srcPtr[2]);
+        dstPtr[3] = Math::FloatToSNorm16(srcPtr[3]);
     }
 #endif
 }

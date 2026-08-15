@@ -116,11 +116,11 @@ public:
 };
 
 BE_INLINE short CompressedJointPose::QuatToShort(const float x) {
-    return ClampShort(Math::Ftoi((x < 0) ? (x * 32767.0f - 0.5f) : (x * 32767.0f + 0.5f)));
+    return Math::FloatToSNorm16(x);
 }
 
 BE_INLINE float CompressedJointPose::ShortToQuat(const short x) {
-    return x * (1.0f / 32767.0f);
+    return Math::SNorm16ToFloat(x);
 }
 
 BE_INLINE short CompressedJointPose::TranslationToShort(const float x) {

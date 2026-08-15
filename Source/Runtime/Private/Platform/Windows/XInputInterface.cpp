@@ -16,6 +16,7 @@
 #include "Platform/Platform.h"
 #include "Platform/Windows/XInputInterface.h"
 #include "Input/KeyCodes.h"
+#include "Math/MathCommon.h"
 
 BE_NAMESPACE_BEGIN
 
@@ -110,10 +111,10 @@ void XInputInterface::SendControllerEvents() {
         controllerState.leftTriggerAnalog = (float)state.Gamepad.bLeftTrigger / 255;
         controllerState.rightTriggerAnalog = (float)state.Gamepad.bRightTrigger / 255;
 
-        controllerState.leftXAnalog = Max((float)state.Gamepad.sThumbLX / 32767.0f, -1.0f);
-        controllerState.leftYAnalog = Max((float)state.Gamepad.sThumbLY / 32767.0f, -1.0f);
-        controllerState.rightXAnalog = Max((float)state.Gamepad.sThumbRX / 32767.0f, -1.0f);
-        controllerState.rightYAnalog = Max((float)state.Gamepad.sThumbRY / 32767.0f, -1.0f);
+        controllerState.leftXAnalog = Math::SNorm16ToFloat(state.Gamepad.sThumbLX);
+        controllerState.leftYAnalog = Math::SNorm16ToFloat(state.Gamepad.sThumbLY);
+        controllerState.rightXAnalog = Math::SNorm16ToFloat(state.Gamepad.sThumbRX);
+        controllerState.rightYAnalog = Math::SNorm16ToFloat(state.Gamepad.sThumbRY);
 
         // Apply force feedback
         XINPUT_VIBRATION vibration;

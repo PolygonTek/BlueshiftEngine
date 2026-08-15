@@ -382,6 +382,15 @@ public:
                                 /// Float to byte conversion, truncated toward zero and clamped to the range [0, 255]. NaN maps to zero.
     static byte                 Ftob(float f);
 
+                                /// Converts an 8-bit signed normalized integer to [-1, 1], mapping both -128 and -127 to -1.
+    static float                SNorm8ToFloat(int8_t value);
+                                /// Converts a float to the symmetric 8-bit signed normalized range [-127, 127]. NaN maps to zero.
+    static int8_t               FloatToSNorm8(float value);
+                                /// Converts a 16-bit signed normalized integer to [-1, 1], mapping both -32768 and -32767 to -1.
+    static float                SNorm16ToFloat(int16_t value);
+                                /// Converts a float to the symmetric 16-bit signed normalized range [-32767, 32767]. NaN maps to zero.
+    static int16_t              FloatToSNorm16(float value);
+
                                 /// Returns factorial number without recursive manner.
     static double               Factorial(unsigned int n);
 
@@ -965,6 +974,26 @@ BE_INLINE int16_t Math::Ftoi16(float f) {
     }
     return static_cast<int16_t>(f);
 #endif
+}
+
+BE_INLINE float Math::SNorm8ToFloat(int8_t value) {
+    return Max(-1.0f, value * (1.0f / 127.0f));
+}
+
+BE_INLINE int8_t Math::FloatToSNorm8(float value) {
+    value = value != value ? 0.0f : Clamp(value, -1.0f, 1.0f);
+    value *= 127.0f;
+    return static_cast<int8_t>(value + (value >= 0.0f ? 0.5f : -0.5f));
+}
+
+BE_INLINE float Math::SNorm16ToFloat(int16_t value) {
+    return Max(-1.0f, value * (1.0f / 32767.0f));
+}
+
+BE_INLINE int16_t Math::FloatToSNorm16(float value) {
+    value = value != value ? 0.0f : Clamp(value, -1.0f, 1.0f);
+    value *= 32767.0f;
+    return static_cast<int16_t>(value + (value >= 0.0f ? 0.5f : -0.5f));
 }
 
 BE_INLINE uint16_t Math::Ftoui16(float f) {

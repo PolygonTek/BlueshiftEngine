@@ -18,11 +18,6 @@
 
 BE_NAMESPACE_BEGIN
 
-// Signed normalized bytes are converted by the hardware directly to the
-// floating-point range [-1, 1]. The encoder never produces -128.
-#define SNORM8_TO_FLOAT(x)              Max(-1.0f, (x) * (1.0f / 127.0f))
-#define FLOAT_TO_SNORM8(x)              Math::Ftoi8((x) * 127.0f + ((x) >= 0.0f ? 0.5f : -0.5f))
-
 #if 1
 using VertIndex = uint32_t;
 #else
@@ -200,13 +195,9 @@ BE_INLINE void ConvertNormalToSNorm8(const float &x, const float &y, const float
     sval[1] = (int8_t)extract_epi8<1>(xyzS8);
     sval[2] = (int8_t)extract_epi8<2>(xyzS8);
 #else
-    const float cx = x != x ? 0.0f : Clamp(x, -1.0f, 1.0f);
-    const float cy = y != y ? 0.0f : Clamp(y, -1.0f, 1.0f);
-    const float cz = z != z ? 0.0f : Clamp(z, -1.0f, 1.0f);
-
-    sval[0] = FLOAT_TO_SNORM8(cx);
-    sval[1] = FLOAT_TO_SNORM8(cy);
-    sval[2] = FLOAT_TO_SNORM8(cz);
+    sval[0] = Math::FloatToSNorm8(x);
+    sval[1] = Math::FloatToSNorm8(y);
+    sval[2] = Math::FloatToSNorm8(z);
 #endif
 }
 
@@ -218,7 +209,7 @@ BE_INLINE void VertexGenericLit::Clear() {
 
 BE_INLINE const Vec3 VertexGenericLit::GetNormal() const {
 #ifdef COMPRESSED_VERTEX_NORMAL_TANGENTS
-    Vec3 n(SNORM8_TO_FLOAT(normal[0]), SNORM8_TO_FLOAT(normal[1]), SNORM8_TO_FLOAT(normal[2]));
+    Vec3 n(Math::SNorm8ToFloat(normal[0]), Math::SNorm8ToFloat(normal[1]), Math::SNorm8ToFloat(normal[2]));
     n.Normalize();
     return n;
 #else
@@ -230,7 +221,7 @@ BE_INLINE const Vec3 VertexGenericLit::GetNormal() const {
 
 BE_INLINE const Vec3 VertexGenericLit::GetNormalRaw() const {
 #ifdef COMPRESSED_VERTEX_NORMAL_TANGENTS
-    Vec3 n(SNORM8_TO_FLOAT(normal[0]), SNORM8_TO_FLOAT(normal[1]), SNORM8_TO_FLOAT(normal[2]));
+    Vec3 n(Math::SNorm8ToFloat(normal[0]), Math::SNorm8ToFloat(normal[1]), Math::SNorm8ToFloat(normal[2]));
     return n;
 #else
     Vec3 n(F16Converter::ToF32(normal[0]), F16Converter::ToF32(normal[1]), F16Converter::ToF32(normal[2]));
@@ -302,7 +293,7 @@ BE_INLINE void VertexGenericLit::SetTangent(float x, float y, float z, float w) 
 
 BE_INLINE const Vec3 VertexGenericLit::GetTangent() const {
 #ifdef COMPRESSED_VERTEX_NORMAL_TANGENTS
-    Vec3 t(SNORM8_TO_FLOAT(tangent[0]), SNORM8_TO_FLOAT(tangent[1]), SNORM8_TO_FLOAT(tangent[2]));
+    Vec3 t(Math::SNorm8ToFloat(tangent[0]), Math::SNorm8ToFloat(tangent[1]), Math::SNorm8ToFloat(tangent[2]));
     t.Normalize();
     return t;
 #else
@@ -314,7 +305,7 @@ BE_INLINE const Vec3 VertexGenericLit::GetTangent() const {
 
 BE_INLINE const Vec3 VertexGenericLit::GetTangentRaw() const {
 #ifdef COMPRESSED_VERTEX_NORMAL_TANGENTS
-    Vec3 t(SNORM8_TO_FLOAT(tangent[0]), SNORM8_TO_FLOAT(tangent[1]), SNORM8_TO_FLOAT(tangent[2]));
+    Vec3 t(Math::SNorm8ToFloat(tangent[0]), Math::SNorm8ToFloat(tangent[1]), Math::SNorm8ToFloat(tangent[2]));
     return t;
 #else
     Vec3 t(F16Converter::ToF32(tangent[0]), F16Converter::ToF32(tangent[1]), F16Converter::ToF32(tangent[2]));
