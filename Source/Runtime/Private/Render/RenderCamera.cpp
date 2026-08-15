@@ -215,8 +215,8 @@ bool RenderCamera::CalcClipRectFromSphere(const Sphere &sphere, Rect &clipRect) 
 
         if (pz1 < 0) {
             x = planeNormal1.y / (planeNormal1.x * e);
-            x = Clamp(x, -1.0f, 1.0f);
-            int vx = state.renderRect.x + (x + 1.0f) * state.renderRect.w * 0.5f;
+            const float normalizedX = Math::RemapRangeClamped(x, -1.0f, 1.0f);
+            const int vx = state.renderRect.x + normalizedX * state.renderRect.w;
 
             xmin = Max(state.renderRect.x, vx);
         } else {
@@ -225,8 +225,8 @@ bool RenderCamera::CalcClipRectFromSphere(const Sphere &sphere, Rect &clipRect) 
 
         if (pz2 < 0) {
             x = planeNormal2.y / (planeNormal2.x * e);
-            x = Clamp(x, -1.0f, 1.0f);
-            int vx = state.renderRect.x + (x + 1.0f) * state.renderRect.w * 0.5f;
+            const float normalizedX = Math::RemapRangeClamped(x, -1.0f, 1.0f);
+            const int vx = state.renderRect.x + normalizedX * state.renderRect.w;
 
             xmax = Min(state.renderRect.x + state.renderRect.w, vx);
         } else {
@@ -279,8 +279,8 @@ bool RenderCamera::CalcClipRectFromSphere(const Sphere &sphere, Rect &clipRect) 
 
         if (pz1 < 0) {
             y = planeNormal1.x / (planeNormal1.z * e);
-            y = Clamp(y, -1.0f, 1.0f);
-            int vy = state.renderRect.y + (1.0f - y) * state.renderRect.h * 0.5f;
+            const float normalizedY = Math::RemapRangeClamped(y, -1.0f, 1.0f, 1.0f, 0.0f);
+            const int vy = state.renderRect.y + normalizedY * state.renderRect.h;
 
             ymin = Max(state.renderRect.y, vy);
         } else {
@@ -289,8 +289,8 @@ bool RenderCamera::CalcClipRectFromSphere(const Sphere &sphere, Rect &clipRect) 
 
         if (pz2 < 0) {
             y = planeNormal2.x / (planeNormal2.z * e);
-            y = Clamp(y, -1.0f, 1.0f);
-            int vy = state.renderRect.y + (1.0f - y) * state.renderRect.h * 0.5f;
+            const float normalizedY = Math::RemapRangeClamped(y, -1.0f, 1.0f, 1.0f, 0.0f);
+            const int vy = state.renderRect.y + normalizedY * state.renderRect.h;
 
             ymax = Min(state.renderRect.y + state.renderRect.h, vy);
         } else {

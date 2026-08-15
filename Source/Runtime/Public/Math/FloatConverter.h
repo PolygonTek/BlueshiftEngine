@@ -17,6 +17,8 @@
 #include <limits>
 #include <type_traits>
 
+#include "Math/MathCommon.h"
+
 BE_NAMESPACE_BEGIN
 
 /// Controls whether FromF32 emits denormal values in the target float format.
@@ -46,7 +48,7 @@ public:
                 i = s << IEEE_FLT_SIGN_BIT;
                 return reinterpret_cast<float &>(i);
             } else { // denormal
-                return ldexpf((s ? -(float)m : (float)m), 1 - EBias - MBits);
+                return Math::Ldexp((s ? -(float)m : (float)m), 1 - EBias - MBits);
             }
         } else if (e == (1u << EBits) - 1u) {
             if (m == 0) { // INF
@@ -56,7 +58,7 @@ public:
             }
             return reinterpret_cast<float &>(i);
         } else { // normal number
-            return ldexpf((s ? -1.0f : 1.0f) * (1.0f + m / (float)(1u << MBits)), e - EBias);
+            return Math::Ldexp((s ? -1.0f : 1.0f) * (1.0f + m / (float)(1u << MBits)), e - EBias);
         }
     }
 
@@ -132,7 +134,7 @@ public:
             if (m == 0) { // zero
                 return 0;
             } else { // denormal
-                return ldexpf((float)m, 1 - EBias - MBits);
+                return Math::Ldexp((float)m, 1 - EBias - MBits);
             }
         } else if (e == (1u << EBits) - 1u) {
             if (m == 0) { // INF
@@ -142,7 +144,7 @@ public:
             }
             return reinterpret_cast<float &>(i);
         } else { // normal number
-            return ldexpf(1.0f + m / (float)(1u << MBits), e - EBias);
+            return Math::Ldexp(1.0f + m / (float)(1u << MBits), e - EBias);
         }
     }
 

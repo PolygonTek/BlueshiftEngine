@@ -299,6 +299,11 @@ public:
                                 /// Fast approximate e raised to the power f, with approximately 7.85e-5 maximum observed relative error for inputs in [-87, 87]; inputs outside this range use Exp.
     static float                ExpFast(float f);
 
+                                /// Single-precision 2 raised to the power f.
+    static float                Exp2(float f);
+                                /// Double-precision 2 raised to the power f.
+    static double               Exp2(double f);
+
                                 /// Single-precision natural logarithm.
     static float                Log(float f);
                                 /// Double-precision natural logarithm.
@@ -327,6 +332,16 @@ public:
                                 /// Fast approximate x raised to the power y for positive normal x, with approximately 3.60e-3 maximum observed relative error for x in [0.125, 8] and y in [-8, 8].
     static float                PowFast(float x, float y);
 
+                                /// Single-precision f multiplied by 2 raised to the integer exponent. (f * 2^exponent)
+    static float                Ldexp(float f, int exponent);
+                                /// Double-precision f multiplied by 2 raised to the integer exponent. (f * 2^exponent)
+    static double               Ldexp(double f, int exponent);
+
+                                /// Decomposes a single-precision value into a normalized fraction and an integral power of two. (f == fraction * 2^exponent)
+    static float                Frexp(float f, int &exponent);
+                                /// Decomposes a double-precision value into a normalized fraction and an integral power of two. (f == fraction * 2^exponent)
+    static double               Frexp(double f, int &exponent);
+
                                 /// Integral base-2 logarithm of a positive normal finite floating point value.
     static int                  ILog2(float f);
                                 /// Integral base-2 logarithm of a positive integer value.
@@ -337,8 +352,6 @@ public:
                                 /// Minumum number of bits required to represent a positive integer i.
     static int                  BitsForInteger(int i);
 
-                                /// Returns true if x is a power of 2.
-    static bool                 IsPowerOfTwo(int x);
                                 /// Rounds x down to the largest power of 2 less than or equal to x. Requires x > 0.
     static uint32_t             RoundDownPowerOfTwo(uint32_t x);
                                 /// Rounds x up to the smallest power of 2 greater than or equal to x. Requires x in [1, 0x80000000u].
@@ -394,10 +407,6 @@ public:
                                 /// Converts a bit representation with the specified exponent and mantissa sizes to a float.
     static float                BitsToFloat(int i, int exponentBits, int mantissaBits);
 
-                                /// Returns a smooth Hermite transition from 0 to 1 as x moves from edge0 to edge1.
-                                /// Returns 0 when x <= edge0 and 1 when x >= edge1. Requires edge0 < edge1.
-    static float                SmoothStep(float edge0, float edge1, float x);
-
                                 /// Returns the linearly interpolated value between p0 and p1.
                                 /// Values of t outside [0, 1] perform extrapolation.
     template <typename T> 
@@ -414,6 +423,14 @@ public:
                                 /// t is a Q0.7 fractional parameter in range [0, 127] (x = t / 128).
                                 /// The result is not clamped to the byte range.
     static int                  FixedCerp(int p0, int p1, int p2, int p3, int t);
+
+                                /// Remaps a value from one range to another, clamping it to the target range endpoints.
+                                /// Reversed source and target ranges are supported. Requires sourceBegin != sourceEnd.
+    static float                RemapRangeClamped(float value, float sourceBegin, float sourceEnd, float targetBegin = 0.0f, float targetEnd = 1.0f);
+
+                                /// Returns a smooth Hermite transition from 0 to 1 as x moves from edge0 to edge1.
+                                /// Returns 0 when x <= edge0 and 1 when x >= edge1. Requires edge0 < edge1.
+    static float                SmoothStep(float edge0, float edge1, float x);
 };
 
 BE_INLINE bool Math::IsInf(float f) {
@@ -706,18 +723,6 @@ BE_INLINE float Math::ATan2Fast(float y, float x) {
     }
 }
 
-BE_INLINE float Math::Pow(float x, float y) {
-    return powf(x, y);
-}
-
-BE_INLINE double Math::Pow(double x, double y) {
-    return pow(x, y);
-}
-
-BE_INLINE float Math::PowFast(float x, float y) {
-    return ExpFast(y * LogFast(x));
-}
-
 BE_INLINE float Math::Exp(float f) {
     return expf(f);
 }
@@ -742,6 +747,14 @@ BE_INLINE float Math::ExpFast(float f) {
     const int exponentBits = (exponent + IEEE_FLT_EXPONENT_BIAS) << IEEE_FLT_MANTISSA_BITS;
     const float scale = *reinterpret_cast<const float *>(&exponentBits);
     return scale * polynomial;
+}
+
+BE_INLINE float Math::Exp2(float f) {
+    return exp2f(f);
+}
+
+BE_INLINE double Math::Exp2(double f) {
+    return exp2(f);
 }
 
 BE_INLINE float Math::Log(float f) {
@@ -791,6 +804,34 @@ BE_INLINE float Math::Log10Fast(float f) {
     return LogFast(f) * 0.43429448190325183f;
 }
 
+BE_INLINE float Math::Pow(float x, float y) {
+    return powf(x, y);
+}
+
+BE_INLINE double Math::Pow(double x, double y) {
+    return pow(x, y);
+}
+
+BE_INLINE float Math::PowFast(float x, float y) {
+    return ExpFast(y * LogFast(x));
+}
+
+BE_INLINE float Math::Ldexp(float f, int exponent) {
+    return ldexpf(f, exponent);
+}
+
+BE_INLINE double Math::Ldexp(double f, int exponent) {
+    return ldexp(f, exponent);
+}
+
+BE_INLINE float Math::Frexp(float f, int &exponent) {
+    return frexpf(f, &exponent);
+}
+
+BE_INLINE double Math::Frexp(double f, int &exponent) {
+    return frexp(f, &exponent);
+}
+
 BE_INLINE int Math::ILog2(float f) {
     assert(f >= std::numeric_limits<float>::min() && f <= std::numeric_limits<float>::max());
     return (((*reinterpret_cast<int32_t *>(&f)) >> IEEE_FLT_MANTISSA_BITS) & ((1 << IEEE_FLT_EXPONENT_BITS) - 1)) - IEEE_FLT_EXPONENT_BIAS;
@@ -812,10 +853,6 @@ BE_INLINE int Math::BitsForFloat(float f) {
 BE_INLINE int Math::BitsForInteger(int i) {
     assert(i > 0);
     return ILog2(i) + 1;
-}
-
-BE_INLINE bool Math::IsPowerOfTwo(int x) {
-    return (x & (x - 1)) == 0 && x > 0;
 }
 
 BE_INLINE uint32_t Math::RoundDownPowerOfTwo(uint32_t x) {
@@ -1020,12 +1057,6 @@ BE_INLINE float Math::FlipAngleY(float angle) {
     return ATan2(-s, c);
 }
 
-BE_INLINE float Math::SmoothStep(float edge0, float edge1, float x) {
-    assert(edge0 < edge1);
-    float t = Clamp01((x - edge0) / (edge1 - edge0));
-    return t * t * (3.0 - 2.0 * t);
-}
-
 template <typename T>
 BE_INLINE T Math::Lerp(const T p0, const T p1, float t) {
     return p0 + ((p1 - p0) * t); 
@@ -1142,6 +1173,18 @@ BE_INLINE int Math::FixedCerp(int p0, int p1, int p2, int p3, int t) {
     int value = t * (t * (t * a + b * scale) + c * scaleSquared) + d * scaleCubed;
     return value >> (fractionBits * 3 + 1);
 #endif
+}
+
+BE_INLINE float Math::RemapRangeClamped(float value, float sourceBegin, float sourceEnd, float targetBegin, float targetEnd) {
+    assert(sourceBegin != sourceEnd);
+    const float t = Clamp01((value - sourceBegin) / (sourceEnd - sourceBegin));
+    return Lerp(targetBegin, targetEnd, t);
+}
+
+BE_INLINE float Math::SmoothStep(float edge0, float edge1, float x) {
+    assert(edge0 < edge1);
+    const float t = RemapRangeClamped(x, edge0, edge1);
+    return t * t * (3.0 - 2.0 * t);
 }
 
 BE_NAMESPACE_END

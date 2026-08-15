@@ -70,9 +70,8 @@ void SoundSource::Update() {
         //ds3dBuffer->SetVelocity(sound->velocity.x, sound->velocity.y, sound->velocity.z, DS3D_DEFERRED);
 
         // Do linear attenuation
-        float distance = soundSystem.listenerPosition.Distance(sound->origin);
-        distance = Clamp(distance, sound->minDistance, sound->maxDistance);
-        float gain = (1.0f - (distance - sound->minDistance) / (sound->maxDistance - sound->minDistance));
+        const float distance = soundSystem.listenerPosition.Distance(sound->origin);
+        const float gain = Math::RemapRangeClamped(distance, sound->minDistance, sound->maxDistance, 1.0f, 0.0f);
         SetVolume(sound->volume * gain * SoundSystem::s_volume.GetFloat());
     }
 }

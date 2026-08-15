@@ -320,8 +320,8 @@ void SoundSystem::Update() {
         if (sound->localSound) {
             sound->priority = sound->volume * (sound->looping ? 1.0f : (1.0f - (float)sound->playingTime / (sound->duration + 100)));
         } else {
-            float fallOff = listenerPosition.DistanceSqr(sound->origin) / (sound->maxDistance * sound->maxDistance);
-            sound->priority = 1.0f - Min(fallOff, 1.0f);
+            const float distanceSqr = listenerPosition.DistanceSqr(sound->origin);
+            sound->priority = Math::RemapRangeClamped(distanceSqr, 0.0f, sound->maxDistance * sound->maxDistance, 1.0f, 0.0f);
         }
 
         prioritySounds.Append(sound);

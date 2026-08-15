@@ -449,7 +449,7 @@ void GameClient::DrawStatistics(const RenderContext *renderContext) {
                 // Convert nanoseconds to milliseconds.
                 float durationMs = (endTime - startTime) * 0.000001f;
 
-                Color3 textColor = Color3::FromHSL(0.0f, Clamp(durationMs / 4.0f, 0.0f, 1.0f), 0.65f);
+                Color3 textColor = Color3::FromHSL(0.0f, Math::RemapRangeClamped(durationMs, 0.0f, 4.0f), 0.65f);
 
                 while (stackDepth < lastStackDepth) {
                     ImGui::TreePop();
@@ -486,7 +486,7 @@ void GameClient::DrawStatistics(const RenderContext *renderContext) {
                 // Convert nanoseconds to milliseconds.
                 float durationMs = (endTime - startTime) * 0.000001f;
 
-                Color3 textColor = Color3::FromHSL(0.0f, Clamp(durationMs / 4.0f, 0.0f, 1.0f), 0.65f);
+                Color3 textColor = Color3::FromHSL(0.0f, Math::RemapRangeClamped(durationMs, 0.0f, 4.0f), 0.65f);
 
                 while (stackDepth < lastStackDepth) {
                     ImGui::TreePop();

@@ -20,7 +20,7 @@ BE_NAMESPACE_BEGIN
 
 // Signed normalized bytes are converted by the hardware directly to the
 // floating-point range [-1, 1]. The encoder never produces -128.
-#define SNORM8_TO_FLOAT(x)              ((x) * (1.0f / 127.0f))
+#define SNORM8_TO_FLOAT(x)              Max(-1.0f, (x) * (1.0f / 127.0f))
 #define FLOAT_TO_SNORM8(x)              Math::Ftoi8((x) * 127.0f + ((x) >= 0.0f ? 0.5f : -0.5f))
 
 #if 1

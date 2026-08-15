@@ -60,8 +60,8 @@ RGBE9995 RGBE9995::FromColor3(float r, float g, float b) {
     assert(sharedExp <= RGB9E5_MAX_VALID_BIASED_EXP);
     assert(sharedExp >= 0);
 
-    /* This pow function could be replaced by a table. */
-    double denom = Math::Pow(2.0, (double)(sharedExp - RGB9E5_EXP_BIAS - RGB9E5_MANTISSA_BITS));
+    /* This scale could be replaced by a table. */
+    double denom = Math::Ldexp(1.0, sharedExp - RGB9E5_EXP_BIAS - RGB9E5_MANTISSA_BITS);
 
     int maxm = Math::Round(maxRgb / denom);
     if (maxm == MAX_RGB9E5_MANTISSA + 1) {
@@ -90,7 +90,7 @@ RGBE9995 RGBE9995::FromColor3(float r, float g, float b) {
 Color3 RGBE9995::ToColor3() const {
     int biasedExponent = (value >> (RGB9E5_MANTISSA_BITS * 3)) & ((1 << RGB9E5_EXPONENT_BITS) - 1);
     int exponent = biasedExponent - RGB9E5_EXP_BIAS - RGB9E5_MANTISSA_BITS;
-    float scale = Math::Pow(2.0f, static_cast<float>(exponent));
+    float scale = Math::Ldexp(1.0f, exponent);
     float r = value & ((1 << RGB9E5_MANTISSA_BITS) - 1);
     float g = (value >> RGB9E5_MANTISSA_BITS) & ((1 << RGB9E5_MANTISSA_BITS) - 1);
     float b = (value >> (RGB9E5_MANTISSA_BITS * 2)) & ((1 << RGB9E5_MANTISSA_BITS) - 1);

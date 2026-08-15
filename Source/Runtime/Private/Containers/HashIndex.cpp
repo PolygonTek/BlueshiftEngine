@@ -23,7 +23,7 @@ BE_NAMESPACE_BEGIN
 int HashIndex::EmptyTable[1] = { -1 };
 
 HashIndex::HashIndex(const int initialHashSize, const int initialIndexSize) {
-    assert(Math::IsPowerOfTwo(initialHashSize));
+    assert(IsPowerOfTwo(initialHashSize));
 
     hashSize = initialHashSize;
     hashTable = EmptyTable;
@@ -37,7 +37,7 @@ HashIndex::HashIndex(const int initialHashSize, const int initialIndexSize) {
 }
 
 void HashIndex::Allocate(const int newHashSize, const int newIndexSize) {
-    assert(Math::IsPowerOfTwo(newHashSize));
+    assert(IsPowerOfTwo(newHashSize));
 
     Free();
 

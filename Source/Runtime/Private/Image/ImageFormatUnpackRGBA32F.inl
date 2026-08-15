@@ -1389,7 +1389,7 @@ static void RGBE9995ToRGBA32F(const byte *src, byte *dst, int numPixels) {
     float m;
 
     for (; srcPtr < srcEnd; srcPtr++, dstPtr += 4) {
-        m = Math::Pow(2.0f, static_cast<float>(((*srcPtr >> 27) & 0x1F) - 24));
+        m = Math::Ldexp(1.0f, static_cast<int>((*srcPtr >> 27) & 0x1Fu) - 24);
         dstPtr[0] = (*srcPtr & 0x1FF) * m;
         dstPtr[1] = ((*srcPtr >> 9) & 0x1FF) * m;
         dstPtr[2] = ((*srcPtr >> 18) & 0x1FF) * m;

@@ -43,7 +43,7 @@ static void Float2RGBE(float red, float green, float blue, byte *rgbe) {
     if (v < 1e-32) {
         rgbe[0] = rgbe[1] = rgbe[2] = rgbe[3] = 0;
     } else {
-        v = (float)(frexp(v, &e) * 256.0 / v);
+        v = Math::Frexp(v, e) * 256.0f / v;
         rgbe[0] = (byte)(red * v);
         rgbe[1] = (byte)(green * v);
         rgbe[2] = (byte)(blue * v);
@@ -152,7 +152,7 @@ static void RGBE2Float(const byte *rgbe, float *red, float *green, float *blue) 
     float f;
 
     if (rgbe[3]) { // nonzero pixel
-        f = (float)(ldexp(1.0, rgbe[3] - (int)(128 + 8)));
+        f = Math::Ldexp(1.0f, static_cast<int>(rgbe[3]) - (128 + 8));
         *red   = rgbe[0] * f;
         *green = rgbe[1] * f;
         *blue  = rgbe[2] * f;

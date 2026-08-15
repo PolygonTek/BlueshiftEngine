@@ -390,7 +390,7 @@ private:
 template <typename KeyT, typename ValueT, int BucketGranularity>
 BE_INLINE HashTable<KeyT, ValueT, BucketGranularity>::HashTable(int newTableSize) {
     assert(newTableSize > 0);
-    assert(Math::IsPowerOfTwo(newTableSize));
+    assert(IsPowerOfTwo(newTableSize));
 
     tableSize = newTableSize;
     tableSizeMask = tableSize - 1;
