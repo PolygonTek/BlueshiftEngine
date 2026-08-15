@@ -12,13 +12,8 @@ shader "showTangentSpace" {
 		void main() {
 			vec3 tangents[3];
 
-		#ifdef COMPRESSED_VERTEX_NORMAL_TANGENTS
-			vec3 vNormal = in_normal.xyz * 2.0 - 1.0;
-            vec4 vTangent = in_tangent * 2.0 - 1.0;
-		#else
 			vec3 vNormal = in_normal.xyz;
             vec4 vTangent = in_tangent;
-		#endif
 
 			tangents[0] = in_tangent.xyz;
 			tangents[1] = cross(vNormal, vTangent.xyz) * vTangent.w;

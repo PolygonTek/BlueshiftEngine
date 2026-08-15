@@ -50,7 +50,7 @@ void VertexFormat::Init() {
     vertexFormats[VertexFormat::Type::XyzColor].Create();
 
 #ifdef COMPRESSED_VERTEX_NORMAL_TANGENTS
-    Graphics::VertexElement::Type::Enum normalTangentType = Graphics::VertexElement::Type::UByte;
+    Graphics::VertexElement::Type::Enum normalTangentType = Graphics::VertexElement::Type::Byte;
     bool normalTangentNormalize = true;
 #else
     Graphics::VertexElement::Type::Enum normalTangentType = Graphics::VertexElement::Type::Half;
@@ -231,12 +231,14 @@ void VertexFormat::Append(int stream, int offset, Graphics::VertexElement::Usage
     int typeSize;
     switch (type) {
     case Graphics::VertexElement::Type::UByte:
+    case Graphics::VertexElement::Type::Byte:
         typeSize = 1; 
         break;
     case Graphics::VertexElement::Type::Half:
         typeSize = 2;
         break;
     case Graphics::VertexElement::Type::UInt:
+    case Graphics::VertexElement::Type::Int:
     case Graphics::VertexElement::Type::Float:
         typeSize = 4; 
         break;

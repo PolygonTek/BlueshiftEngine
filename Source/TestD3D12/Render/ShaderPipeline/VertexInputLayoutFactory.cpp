@@ -72,7 +72,7 @@ static RHI::InputLayout CreateXyzStColorInputLayout() {
 
 static constexpr RHI::InputLayoutElement::Format GetNormalTangentFormat() {
 #ifdef COMPRESSED_VERTEX_NORMAL_TANGENTS
-    return RHI::InputLayoutElement::Format::UByte4N;
+    return RHI::InputLayoutElement::Format::Byte4N;
 #else
     return RHI::InputLayoutElement::Format::Half4;
 #endif

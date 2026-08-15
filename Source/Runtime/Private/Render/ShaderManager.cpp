@@ -185,10 +185,6 @@ void ShaderManager::InitGlobalDefines() {
         }
     }
 
-#ifdef COMPRESSED_VERTEX_NORMAL_TANGENTS
-    shaderManager.AddGlobalHeader("#define COMPRESSED_VERTEX_NORMAL_TANGENTS\n");
-#endif
-
     if (r_usePostProcessing.GetBool()) {
         if (r_motionBlur.GetInteger() == 2) {
             shaderManager.AddGlobalHeader("#define OBJECT_MOTION_BLUR\n");

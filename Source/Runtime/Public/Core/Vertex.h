@@ -18,11 +18,10 @@
 
 BE_NAMESPACE_BEGIN
 
-// The hardware converts a byte to a float by division with 255 and in the
-// vertex programs we convert the floating-point value in the range [0, 1]
-// to the range [-1, 1] by multiplying with 2 and subtracting 1.
-#define BYTE_TO_SIGNED_FLOAT(x)         ((x) * (2.0f / 255.0f) - 1.0f)
-#define SIGNED_FLOAT_TO_BYTE(x)         Math::Ftob(((x) + 1.0f) * (255.0f / 2.0f) + 0.5f)
+// Signed normalized bytes are converted by the hardware directly to the
+// floating-point range [-1, 1]. The encoder never produces -128.
+#define SNORM8_TO_FLOAT(x)              ((x) * (1.0f / 127.0f))
+#define FLOAT_TO_SNORM8(x)              Math::Ftoi8((x) * 127.0f + ((x) >= 0.0f ? 0.5f : -0.5f))
 
 #if 1
 using VertIndex = uint32_t;
@@ -145,8 +144,8 @@ BE_INLINE void VertexGeneric::Transform(const Mat3 &rotation, const Vec3 &scale,
 
 struct BE_API VertexGenericLit : public VertexGeneric {
 #ifdef COMPRESSED_VERTEX_NORMAL_TANGENTS
-    byte            normal[4];
-    byte            tangent[4];
+    int8_t          normal[4];
+    int8_t          tangent[4];
 #else
     float16_t       normal[4];
     float16_t       tangent[4];
@@ -188,23 +187,26 @@ struct BE_API VertexGenericLit : public VertexGeneric {
     void            Transform(const Mat3 &rotation, const Vec3 &scale, const Vec3 &translation);
 };
 
-BE_INLINE void ConvertNormalToBytes(const float &x, const float &y, const float &z, byte *bval) {
-#ifdef HAVE_X86_SSE_INTRIN
-    const __m128 vector_float_255_over_2 = { 255.0f / 2.0f, 255.0f / 2.0f, 255.0f / 2.0f, 255.0f / 2.0f };
+BE_INLINE void ConvertNormalToSNorm8(const float &x, const float &y, const float &z, int8_t *sval) {
+#if defined(ENABLE_SIMD4_INTRIN)
+    const simd4f xyz = set_ps(x, y, z, 0.0f);
+    const simd4f xyzScaled = xyz * 127.0f;
+    const simd4f xyzClamped = select_ps(SIMD_4::F4_zero, min_ps(max_ps(xyzScaled, -127.0f), 127.0f), xyz == xyz);
+    const simd4f roundBias = select_ps(SIMD_4::F4_zero - SIMD_4::F4_half, SIMD_4::F4_half, xyzClamped >= SIMD_4::F4_zero);
+    const simd4i xyzI32 = trunc_ps_to_epi32(xyzClamped + roundBias);
+    const simd4i xyzS8 = packs_epi32_to_epi8(xyzI32, xyzI32, xyzI32, xyzI32);
 
-    const __m128 xyz = _mm_setr_ps(x, y, z, 0);
-    const __m128 xyzScaled = _mm_add_ps(_mm_mul_ps(_mm_add_ps(xyz, SIMD_4::F4_one), vector_float_255_over_2), SIMD_4::F4_half);
-    const __m128i xyzI32 = _mm_cvtps_epi32(xyzScaled);
-    const __m128i xyzU16 = _mm_packus_epi32(xyzI32, xyzI32);
-    const __m128i xyzU8 = _mm_packus_epi16(xyzU16, xyzU16);
-
-    bval[0] = (byte)_mm_extract_epi8(xyzU8, 0);
-    bval[1] = (byte)_mm_extract_epi8(xyzU8, 1);
-    bval[2] = (byte)_mm_extract_epi8(xyzU8, 2);
+    sval[0] = (int8_t)extract_epi8<0>(xyzS8);
+    sval[1] = (int8_t)extract_epi8<1>(xyzS8);
+    sval[2] = (int8_t)extract_epi8<2>(xyzS8);
 #else
-    bval[0] = SIGNED_FLOAT_TO_BYTE(x);
-    bval[1] = SIGNED_FLOAT_TO_BYTE(y);
-    bval[2] = SIGNED_FLOAT_TO_BYTE(z);
+    const float cx = x != x ? 0.0f : Clamp(x, -1.0f, 1.0f);
+    const float cy = y != y ? 0.0f : Clamp(y, -1.0f, 1.0f);
+    const float cz = z != z ? 0.0f : Clamp(z, -1.0f, 1.0f);
+
+    sval[0] = FLOAT_TO_SNORM8(cx);
+    sval[1] = FLOAT_TO_SNORM8(cy);
+    sval[2] = FLOAT_TO_SNORM8(cz);
 #endif
 }
 
@@ -216,7 +218,7 @@ BE_INLINE void VertexGenericLit::Clear() {
 
 BE_INLINE const Vec3 VertexGenericLit::GetNormal() const {
 #ifdef COMPRESSED_VERTEX_NORMAL_TANGENTS
-    Vec3 n(BYTE_TO_SIGNED_FLOAT(normal[0]), BYTE_TO_SIGNED_FLOAT(normal[1]), BYTE_TO_SIGNED_FLOAT(normal[2]));
+    Vec3 n(SNORM8_TO_FLOAT(normal[0]), SNORM8_TO_FLOAT(normal[1]), SNORM8_TO_FLOAT(normal[2]));
     n.Normalize();
     return n;
 #else
@@ -228,7 +230,7 @@ BE_INLINE const Vec3 VertexGenericLit::GetNormal() const {
 
 BE_INLINE const Vec3 VertexGenericLit::GetNormalRaw() const {
 #ifdef COMPRESSED_VERTEX_NORMAL_TANGENTS
-    Vec3 n(BYTE_TO_SIGNED_FLOAT(normal[0]), BYTE_TO_SIGNED_FLOAT(normal[1]), BYTE_TO_SIGNED_FLOAT(normal[2]));
+    Vec3 n(SNORM8_TO_FLOAT(normal[0]), SNORM8_TO_FLOAT(normal[1]), SNORM8_TO_FLOAT(normal[2]));
     return n;
 #else
     Vec3 n(F16Converter::ToF32(normal[0]), F16Converter::ToF32(normal[1]), F16Converter::ToF32(normal[2]));
@@ -238,7 +240,7 @@ BE_INLINE const Vec3 VertexGenericLit::GetNormalRaw() const {
 
 BE_INLINE void VertexGenericLit::SetNormal(const Vec3 &n) {
 #ifdef COMPRESSED_VERTEX_NORMAL_TANGENTS
-    ConvertNormalToBytes(n.x, n.y, n.z, normal);
+    ConvertNormalToSNorm8(n.x, n.y, n.z, normal);
 #else
     normal[0] = F16Converter::FromF32(n[0]);
     normal[1] = F16Converter::FromF32(n[1]);
@@ -248,7 +250,7 @@ BE_INLINE void VertexGenericLit::SetNormal(const Vec3 &n) {
 
 BE_INLINE void VertexGenericLit::SetNormal(float x, float y, float z) {
 #ifdef COMPRESSED_VERTEX_NORMAL_TANGENTS
-    ConvertNormalToBytes(x, y, z, normal);
+    ConvertNormalToSNorm8(x, y, z, normal);
 #else
     normal[0] = F16Converter::FromF32(x);
     normal[1] = F16Converter::FromF32(y);
@@ -258,7 +260,7 @@ BE_INLINE void VertexGenericLit::SetNormal(float x, float y, float z) {
 
 BE_INLINE void VertexGenericLit::SetTangent(const Vec3 &t) {
 #ifdef COMPRESSED_VERTEX_NORMAL_TANGENTS
-    ConvertNormalToBytes(t.x, t.y, t.z, tangent);
+    ConvertNormalToSNorm8(t.x, t.y, t.z, tangent);
 #else
     tangent[0] = F16Converter::FromF32(t[0]);
     tangent[1] = F16Converter::FromF32(t[1]);
@@ -268,7 +270,7 @@ BE_INLINE void VertexGenericLit::SetTangent(const Vec3 &t) {
 
 BE_INLINE void VertexGenericLit::SetTangent(float x, float y, float z) {
 #ifdef COMPRESSED_VERTEX_NORMAL_TANGENTS
-    ConvertNormalToBytes(x, y, z, tangent);
+    ConvertNormalToSNorm8(x, y, z, tangent);
 #else
     tangent[0] = F16Converter::FromF32(x);
     tangent[1] = F16Converter::FromF32(y);
@@ -278,7 +280,7 @@ BE_INLINE void VertexGenericLit::SetTangent(float x, float y, float z) {
 
 BE_INLINE void VertexGenericLit::SetTangent(const Vec4 &t) {
 #ifdef COMPRESSED_VERTEX_NORMAL_TANGENTS
-    ConvertNormalToBytes(t.x, t.y, t.z, tangent);
+    ConvertNormalToSNorm8(t.x, t.y, t.z, tangent);
 #else
     tangent[0] = F16Converter::FromF32(t[0]);
     tangent[1] = F16Converter::FromF32(t[1]);
@@ -289,7 +291,7 @@ BE_INLINE void VertexGenericLit::SetTangent(const Vec4 &t) {
 
 BE_INLINE void VertexGenericLit::SetTangent(float x, float y, float z, float w) {
 #ifdef COMPRESSED_VERTEX_NORMAL_TANGENTS
-    ConvertNormalToBytes(x, y, z, tangent);
+    ConvertNormalToSNorm8(x, y, z, tangent);
 #else
     tangent[0] = F16Converter::FromF32(x);
     tangent[1] = F16Converter::FromF32(y);
@@ -300,7 +302,7 @@ BE_INLINE void VertexGenericLit::SetTangent(float x, float y, float z, float w) 
 
 BE_INLINE const Vec3 VertexGenericLit::GetTangent() const {
 #ifdef COMPRESSED_VERTEX_NORMAL_TANGENTS
-    Vec3 t(BYTE_TO_SIGNED_FLOAT(tangent[0]), BYTE_TO_SIGNED_FLOAT(tangent[1]), BYTE_TO_SIGNED_FLOAT(tangent[2]));
+    Vec3 t(SNORM8_TO_FLOAT(tangent[0]), SNORM8_TO_FLOAT(tangent[1]), SNORM8_TO_FLOAT(tangent[2]));
     t.Normalize();
     return t;
 #else
@@ -312,7 +314,7 @@ BE_INLINE const Vec3 VertexGenericLit::GetTangent() const {
 
 BE_INLINE const Vec3 VertexGenericLit::GetTangentRaw() const {
 #ifdef COMPRESSED_VERTEX_NORMAL_TANGENTS
-    Vec3 t(BYTE_TO_SIGNED_FLOAT(tangent[0]), BYTE_TO_SIGNED_FLOAT(tangent[1]), BYTE_TO_SIGNED_FLOAT(tangent[2]));
+    Vec3 t(SNORM8_TO_FLOAT(tangent[0]), SNORM8_TO_FLOAT(tangent[1]), SNORM8_TO_FLOAT(tangent[2]));
     return t;
 #else
     Vec3 t(F16Converter::ToF32(tangent[0]), F16Converter::ToF32(tangent[1]), F16Converter::ToF32(tangent[2]));
@@ -346,7 +348,7 @@ BE_INLINE void VertexGenericLit::SetBiTangent(const Vec3 &t) {
 
 BE_INLINE float VertexGenericLit::GetBiTangentSign() const {
 #ifdef COMPRESSED_VERTEX_NORMAL_TANGENTS
-    return (tangent[3] < 128) ? -1.0f : 1.0f;
+    return (tangent[3] < 0) ? -1.0f : 1.0f;
 #else
     return (F16Converter::ToF32(tangent[3]) < 0.0f) ? -1.0f : 1.0f;
 #endif
@@ -354,7 +356,7 @@ BE_INLINE float VertexGenericLit::GetBiTangentSign() const {
 
 BE_INLINE void VertexGenericLit::SetBiTangentSign(float sign) {
 #ifdef COMPRESSED_VERTEX_NORMAL_TANGENTS
-    tangent[3] = (sign < 0.0f) ? 0 : 255;
+    tangent[3] = (sign < 0.0f) ? -127 : 127;
 #else
     tangent[3] = F16Converter::FromF32((sign < 0.0f) ? -1.0f : 1.0f);
 #endif

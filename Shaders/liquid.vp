@@ -41,13 +41,8 @@ uniform HIGHP mat4 modelViewMatrixTranspose;
 uniform HIGHP mat4 projectionMatrixTranspose;
 
 void main() {
-#ifdef COMPRESSED_VERTEX_NORMAL_TANGENTS
-	vec3 vNormal = in_normal.xyz * 2.0 - 1.0;
-    vec4 vTangent = in_tangent * 2.0 - 1.0;
-#else
 	vec3 vNormal = in_normal.xyz;
     vec4 vTangent = in_tangent;
-#endif
 
 	vec3 tan = vTangent.xyz;
 	vec3 bitan = cross(vNormal, vTangent.xyz) * vTangent.w;

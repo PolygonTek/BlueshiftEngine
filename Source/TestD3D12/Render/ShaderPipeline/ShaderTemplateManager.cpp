@@ -178,10 +178,6 @@ SharedPtr<ShaderTemplate> ShaderTemplateManager::GetShaderTemplate(const char *h
 }
 
 void ShaderTemplateManager::InitGlobalDefines() {
-#ifdef COMPRESSED_VERTEX_NORMAL_TANGENTS
-    AddGlobalDefine("COMPRESSED_VERTEX_NORMAL_TANGENTS");
-#endif
-
     AddGlobalDefine(BE1::va("CSM_COUNT=%i", static_cast<int>(RenderContext::CSMCascadeCount)));
     AddGlobalDefine(BE1::va("CASCADE_SELECTION_METHOD=%i", 1));
 

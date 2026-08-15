@@ -39,19 +39,11 @@ ShaderMaterial GetShaderMaterial(uint shaderMaterialIndex) {
 }
 
 float3 DecodeVertexNormal(float3 normal) {
-#ifdef COMPRESSED_VERTEX_NORMAL_TANGENTS
-    return normal * 2.0f - 1.0f;
-#else
     return normal;
-#endif
 }
 
 float4 DecodeVertexTangent(float4 tangent) {
-#ifdef COMPRESSED_VERTEX_NORMAL_TANGENTS
-    return float4(tangent.xyz * 2.0f - 1.0f, tangent.w < 0.5f ? -1.0f : 1.0f);
-#else
     return float4(tangent.xyz, tangent.w < 0.0f ? -1.0f : 1.0f);
-#endif
 }
 
 float4 CalcClipPosition(float4 localPosition, row_major float3x4 worldMatrix, row_major float4x4 viewProjMatrix) {

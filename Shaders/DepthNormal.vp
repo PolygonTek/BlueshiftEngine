@@ -62,13 +62,8 @@ void main() {
     vec3 tangentLS;
     vec3 bitangentLS;
 
-    #ifdef COMPRESSED_VERTEX_NORMAL_TANGENTS
-        vec3 vNormal = in_normal.xyz * 2.0 - 1.0;
-        vec4 vTangent = in_tangent * 2.0 - 1.0;
-    #else
         vec3 vNormal = in_normal.xyz;
         vec4 vTangent = in_tangent;
-    #endif
 
     #ifdef GPU_SKINNING
         skinningMatrix(in_position, positionLS, vNormal, normalLS, vTangent, tangentLS, bitangentLS);
@@ -79,11 +74,7 @@ void main() {
         bitangentLS = normalize(cross(vNormal, vTangent.xyz) * vTangent.w);
     #endif
 #else
-    #ifdef COMPRESSED_VERTEX_NORMAL_TANGENTS
-        vec3 vNormal = in_normal.xyz * 2.0 - 1.0;
-    #else
         vec3 vNormal = in_normal.xyz;
-    #endif
 
     #ifdef GPU_SKINNING
         skinningMatrix(in_position, positionLS, vNormal, normalLS);

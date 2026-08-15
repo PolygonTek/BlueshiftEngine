@@ -48,11 +48,7 @@ uniform mat4 lightTextureMatrix;
 uniform bool useShadowMap;
 
 void main() {
-#ifdef COMPRESSED_VERTEX_NORMAL_TANGENTS
-	vec3 vNormal = in_normal.xyz * 2.0 - 1.0;
-#else
 	vec3 vNormal = in_normal.xyz;
-#endif
 
 	vec4 localPos;
 	vec3 localNormal;

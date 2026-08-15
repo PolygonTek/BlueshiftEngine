@@ -22,11 +22,7 @@ void main() {
 	vec4 localPosPrev;
 	vec3 localNormal;
 
-#ifdef COMPRESSED_VERTEX_NORMAL_TANGENTS
-	vec3 vNormal = in_normal.xyz * 2.0 - 1.0;
-#else
 	vec3 vNormal = in_normal.xyz;
-#endif
 
 #ifdef GPU_SKINNING
 	skinningMatrix(in_position, localPos, vNormal, localNormal);
