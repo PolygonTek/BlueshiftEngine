@@ -1,4 +1,4 @@
-﻿// Copyright(c) 2017 POLYGONTEK
+// Copyright(c) 2017 POLYGONTEK
 // 
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -65,6 +65,7 @@ bool Pcm::BeginDecodeFile_OggVorbis() {
     int ret = ov_open_callbacks(fp, (OggVorbis_File *)vf, nullptr, 0, vorbisFileCallbacks);
     if (ret < 0) {
         Mem_Free(vf);
+        vf = nullptr;
         return false;
     }
 
@@ -72,6 +73,7 @@ bool Pcm::BeginDecodeFile_OggVorbis() {
     if (!vi) {
         ov_clear((OggVorbis_File *)vf);
         Mem_Free(vf);
+        vf = nullptr;
         return false;
     }
 
@@ -86,9 +88,14 @@ bool Pcm::BeginDecodeFile_OggVorbis() {
 }
 
 void Pcm::EndDecodeFile_OggVorbis() {
+    if (!vf) {
+        return;
+    }
+
     ov_clear((OggVorbis_File *)vf);
 
     Mem_Free(vf);
+    vf = nullptr;
 }
 
 int Pcm::DecodeFile_OggVorbis(byte *outBuffer, int len) {

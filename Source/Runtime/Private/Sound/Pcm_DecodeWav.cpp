@@ -243,59 +243,54 @@ int Pcm::DecodeFile_ImaAdpcmWave(byte *buffer, int len) {
 
 static bool FindChunkInFile(File *fp, uint32_t chunkId, uint32_t *chunkSize) {
     uint32_t id, length;
-    byte *tempBuffer = nullptr;
-    byte *tempMem = nullptr;
-    int tempMemSize = 0;
+    byte tempBuffer[4096];
 
     while (1) {
-        fp->ReadUInt32(id);
-        fp->ReadUInt32(length);
+        if (fp->ReadUInt32(id) != sizeof(id) || fp->ReadUInt32(length) != sizeof(length)) {
+            return false;
+        }
 
         if (id == chunkId) {
             *chunkSize = length;
             return true;
         }
 
-        if (length <= 0x8000) {
-            if (!tempBuffer) {
-                tempBuffer = (byte *)_alloca16(0x8000);
+        uint32_t remaining = length;
+        while (remaining > 0) {
+            const uint32_t readSize = Min<uint32_t>(remaining, sizeof(tempBuffer));
+            if (fp->Read(tempBuffer, readSize) != readSize) {
+                return false;
             }
 
-            fp->Read(tempBuffer, length);
-        } else {
-            if (tempMem && length > tempMemSize) {
-                Mem_AlignedFree(tempMem);
-                tempMem = nullptr;
-            }
+            remaining -= readSize;
+        }
 
-            if (!tempMem) {
-                tempMemSize = length;
-                tempMem = (byte *)Mem_Alloc16(tempMemSize);
+        if (length & 1) {
+            byte padding;
+            if (fp->Read(&padding, sizeof(padding)) != sizeof(padding)) {
+                return false;
             }
-
-            fp->Read(tempMem, length);
         }
     }
-
-    if (tempMem) {
-        Mem_AlignedFree(tempMem);
-    }
-    return false;
 }
 
 bool Pcm::BeginDecodeFile_Wav() {
     uint32_t id, length;
 
-    fp->ReadUInt32(id);
+    if (fp->ReadUInt32(id) != sizeof(id)) {
+        BE_WARNLOG("Invalid wave header\n");
+        return false;
+    }
     
     if (id != WAVE_FOURCC_RIFF) {
         BE_WARNLOG("Missing RIFF chunk\n");
         return false;
     }
 
-    fp->ReadUInt32(length);
-    
-    fp->ReadUInt32(id);
+    if (fp->ReadUInt32(length) != sizeof(length) || fp->ReadUInt32(id) != sizeof(id)) {
+        BE_WARNLOG("Invalid wave header\n");
+        return false;
+    }
 
     if (id != WAVE_FOURCC_WAVE) {
         BE_WARNLOG("Missing WAVE form type\n");
@@ -314,11 +309,32 @@ bool Pcm::BeginDecodeFile_Wav() {
 
     this->waveFormat = (WaveFormatEx *)Mem_Alloc(length);
 
-    fp->Read(this->waveFormat, length);
+    if (fp->Read(this->waveFormat, length) != length) {
+        BE_WARNLOG("Invalid fmt chunk\n");
+        return false;
+    }
 
     if (waveFormat->format != WaveFormat::PCM && waveFormat->format != WaveFormat::DVI_ADPCM) {
         BE_WARNLOG("Unsupported wave format\n");
         return false;
+    }
+
+    if (waveFormat->channels == 0 || waveFormat->sampleRates == 0 || waveFormat->blockAlign == 0) {
+        BE_WARNLOG("Invalid wave format\n");
+        return false;
+    }
+
+    if (waveFormat->format == WaveFormat::DVI_ADPCM && (length < sizeof(WaveImaAdpcmFormat) || waveFormat->channels > 2)) {
+        BE_WARNLOG("Invalid IMA ADPCM format\n");
+        return false;
+    }
+
+    if (length & 1) {
+        byte padding;
+        if (fp->Read(&padding, sizeof(padding)) != sizeof(padding)) {
+            BE_WARNLOG("Invalid fmt chunk padding\n");
+            return false;
+        }
     }
 
     this->channels = waveFormat->channels;
@@ -369,12 +385,18 @@ bool Pcm::SeekFile_Wav(int byteOffset) {
 }
 
 static bool FindChunkInMemory(byte **ptr, const byte *endPtr, uint32_t chunkId, uint32_t *chunkSize) {
-    while (*ptr < endPtr) {
-        uint32_t id = *(uint32_t *)*ptr;
+    while ((size_t)(endPtr - *ptr) >= sizeof(uint32_t) * 2) {
+        uint32_t id;
+        memcpy(&id, *ptr, sizeof(id));
         *ptr += 4;
 
-        uint32_t length = *(uint32_t *)*ptr;
+        uint32_t length;
+        memcpy(&length, *ptr, sizeof(length));
         *ptr += 4;
+
+        if (length > (size_t)(endPtr - *ptr)) {
+            return false;
+        }
 
         if (id == chunkId) {
             *chunkSize = length; 
@@ -382,12 +404,24 @@ static bool FindChunkInMemory(byte **ptr, const byte *endPtr, uint32_t chunkId, 
         }
 
         *ptr += length;
+
+        if (length & 1) {
+            if (*ptr >= endPtr) {
+                return false;
+            }
+            (*ptr)++;
+        }
     }
 
     return false;
 }
 
 bool Pcm::DecodeMemory_Wav(byte *base, size_t fileSize) {
+    if (fileSize < 12) {
+        BE_WARNLOG("Invalid wave header\n");
+        return false;
+    }
+
     byte *ptr = base;
 
     // Skip 'RIFF'.
@@ -421,11 +455,28 @@ bool Pcm::DecodeMemory_Wav(byte *base, size_t fileSize) {
         return false;
     }
 
+    if (fmt->channels == 0 || fmt->sampleRates == 0 || fmt->blockAlign == 0) {
+        BE_WARNLOG("Invalid wave format\n");
+        return false;
+    }
+
+    if (fmt->format == WaveFormat::DVI_ADPCM && (length < sizeof(WaveImaAdpcmFormat) || fmt->channels > 2)) {
+        BE_WARNLOG("Invalid IMA ADPCM format\n");
+        return false;
+    }
+
     this->channels = fmt->channels;
     this->sampleRates = fmt->sampleRates;
     this->bitsWidth = fmt->format == WaveFormat::DVI_ADPCM ? 16 : fmt->bitsWidth;
 
     ptr += length;
+    if (length & 1) {
+        if (ptr >= base + fileSize) {
+            BE_WARNLOG("Invalid fmt chunk padding\n");
+            return false;
+        }
+        ptr++;
+    }
 
     if (!FindChunkInMemory(&ptr, base + fileSize, WAVE_FOURCC_data, &length)) {
         BE_WARNLOG("Missing data chunk\n");

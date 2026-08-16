@@ -77,6 +77,7 @@ bool SoundBuffer::CreateStaticBuffer(int numChannels, int bitsWidth, int sampleR
     hr = dsBuffer->Lock(0, size, &lockedPtr, &lockedSize, nullptr, nullptr, DSBLOCK_ENTIREBUFFER);
     if (hr != DS_OK) {
         dsBuffer->Release();
+        dsBuffer = nullptr;
         return false;
     }
 

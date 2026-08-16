@@ -92,8 +92,15 @@ private:
 BE_INLINE Pcm::Pcm() {
     fileType = FileType::Unknown;
     waveFormat = nullptr;
+    channels = 0;
+    sampleRates = 0;
+    bitsWidth = 0;
     data = nullptr;
+    size = 0;
+    dataPos = 0;
+    readPos = 0;
     fp = nullptr;
+    vf = nullptr;
 }
 
 BE_INLINE Pcm::~Pcm() {

@@ -32,11 +32,6 @@ SoundResource::SoundResource() {
 }
 
 SoundResource::~SoundResource() {
-    if (!sound) {
-        const Str soundPath = resourceGuidMapper.Get(asset->GetGuid());
-        sound = soundSystem.FindSound(soundPath);
-    }
-
     if (sound) {
         soundSystem.ReleaseSound(sound);
     }
@@ -64,8 +59,7 @@ bool SoundResource::Reload() {
     const Str soundPath = resourceGuidMapper.Get(asset->GetGuid());
     Sound *sound = soundSystem.FindSound(soundPath);
     if (sound) {
-        sound->Reload();
-        return true;
+        return sound->Reload();
     }
     return false;
 }

@@ -148,7 +148,11 @@ Sound *Sound::Instantiate() {
 }
 
 void Sound::DuplicateFrom(Sound *sound) {
-    Purge();
+    if (originalSound == sound) {
+        SAFE_DELETE(soundBuffer);
+    } else {
+        Purge();
+    }
 
     originalSound   = sound;
     hashName        = sound->hashName;
@@ -268,8 +272,6 @@ void Sound::UpdatePosition(const Vec3 &origin) {
 }
 
 bool Sound::Load(const char *filename) {
-    Purge();
-
     BE_LOG("Loading sound '%s'...\n", filename);
 
     Pcm pcm;
@@ -288,15 +290,17 @@ bool Sound::Reload() {
         sound = originalSound;
     }
 
-    Str _hashName = hashName;
-    bool ret = Load(_hashName);
+    Str _hashName = sound->hashName;
+    if (!sound->Load(_hashName)) {
+        return false;
+    }
 
     for (LinkList<Sound> *node = sound->dupNode.NextNode(); node; node = node->NextNode()) {
         Sound *s = node->Owner();
         s->DuplicateFrom(sound);
     }
 
-    return ret;
+    return true;
 }
 
 BE_NAMESPACE_END

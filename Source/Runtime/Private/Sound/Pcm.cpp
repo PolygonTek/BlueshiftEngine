@@ -72,6 +72,7 @@ void Pcm::Free() {
 
 bool Pcm::Open(const char *filename) {
     Purge();
+    fileType = FileType::Unknown;
     
     File *fp = fileSystem.OpenFile(filename, File::Mode::Read);
     if (!fp) {
@@ -95,7 +96,16 @@ bool Pcm::Open(const char *filename) {
     } 
 
     BE_WARNLOG("Unsupported sound file '%s'\n", filename);
-    fileSystem.CloseFile(fp);
+
+    if (fileType == FileType::Ogg && vf) {
+        EndDecodeFile_OggVorbis();
+    } else if (fileType == FileType::Wav && waveFormat) {
+        EndDecodeFile_Wav();
+    }
+
+    fileSystem.CloseFile(this->fp);
+    this->fp = nullptr;
+    fileType = FileType::Unknown;
 
     return false;
 }
@@ -106,9 +116,9 @@ void Pcm::Close() {
         return;
     }
 
-    if (fileType == FileType::Ogg) {
+    if (fileType == FileType::Ogg && vf) {
         EndDecodeFile_OggVorbis();
-    } else if (fileType == FileType::Wav) {
+    } else if (fileType == FileType::Wav && waveFormat) {
         EndDecodeFile_Wav();
     }
 
@@ -142,10 +152,16 @@ void Pcm::Seek(int offset) {
 
 bool Pcm::Load(const char *filename) {
     Purge();
+    fileType = FileType::Unknown;
     
     byte *base;
     size_t fileSize = fileSystem.LoadFile(filename, true, (void **)&base);
     if (!base) {
+        return false;
+    }
+
+    if (fileSize < sizeof(uint32_t)) {
+        fileSystem.FreeFile(base);
         return false;
     }
 
@@ -168,6 +184,7 @@ bool Pcm::Load(const char *filename) {
     }
 
     fileSystem.FreeFile(base);
+    fileType = FileType::Unknown;
 
     return false;
 }
