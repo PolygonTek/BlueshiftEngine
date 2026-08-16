@@ -26,19 +26,11 @@ static CVAR_MINMAX(loading_delayMsec, "0", BE1::CVar::Flag::Integer, "artificial
 static CVAR(loading_forceSynchronous, "0", BE1::CVar::Flag::Bool, "force asynchronous load and shader pipeline build requests to run synchronously");
 
 void LoadingSystem::Init() {
-    requestMutex = BE1::PlatformMutex::Create();
-    completionMutex = BE1::PlatformMutex::Create();
-    requestCondition = BE1::PlatformCondition::Create();
-
     Start();
 }
 
 void LoadingSystem::Shutdown() {
     Stop();
-
-    BE1::PlatformCondition::Destroy(requestCondition);
-    BE1::PlatformMutex::Destroy(completionMutex);
-    BE1::PlatformMutex::Destroy(requestMutex);
 }
 
 bool LoadingSystem::IsAsyncAllowed() {
@@ -60,7 +52,7 @@ void LoadingSystem::Stop() {
     {
         BE1::ScopedLock lock(requestMutex);
         stopping = true;
-        BE1::PlatformCondition::Broadcast(requestCondition);
+        requestCondition.Broadcast();
     }
 
     BE1::PlatformThread::Join(thread);
@@ -110,7 +102,7 @@ bool LoadingSystem::EnqueueTextureLoad(SharedPtr<Texture> texture, const char *f
         requests.Append(std::move(request));
 
         // 로딩 요청 큐에 집어넣는다.
-        BE1::PlatformCondition::Signal(requestCondition);
+        requestCondition.Signal();
     }
 
     return true;
@@ -148,7 +140,7 @@ bool LoadingSystem::EnqueueTextureStreamingReplacement(SharedPtr<Texture> textur
         requests.Append(std::move(request));
 
         // 로딩 요청 큐에 집어넣는다.
-        BE1::PlatformCondition::Signal(requestCondition);
+        requestCondition.Signal();
     }
 
     return true;
@@ -176,7 +168,7 @@ bool LoadingSystem::EnqueueMeshLoad(SharedPtr<Mesh> mesh, const char *filename, 
         requests.Append(std::move(request));
 
         // 로딩 요청 큐에 집어넣는다.
-        BE1::PlatformCondition::Signal(requestCondition);
+        requestCondition.Signal();
     }
 
     return true;
@@ -204,7 +196,7 @@ bool LoadingSystem::EnqueueSkeletonLoad(SharedPtr<Skeleton> skeleton, const char
         requests.Append(std::move(request));
 
         // 로딩 요청 큐에 집어넣는다.
-        BE1::PlatformCondition::Signal(requestCondition);
+        requestCondition.Signal();
     }
 
     return true;
@@ -232,7 +224,7 @@ bool LoadingSystem::EnqueueAnimLoad(SharedPtr<Anim> anim, const char *filename, 
         requests.Append(std::move(request));
 
         // 로딩 요청 큐에 집어넣는다.
-        BE1::PlatformCondition::Signal(requestCondition);
+        requestCondition.Signal();
     }
 
     return true;
@@ -259,7 +251,7 @@ bool LoadingSystem::EnqueueShaderPipelineBuild(SharedPtr<ShaderPipeline> shaderP
         requests.Append(std::move(request));
 
         // 로딩 요청 큐에 집어넣는다.
-        BE1::PlatformCondition::Signal(requestCondition);
+        requestCondition.Signal();
     }
 
     return true;
@@ -285,7 +277,7 @@ bool LoadingSystem::BoostTextureLoad(const Texture *texture, uint32_t serial, Lo
     }
 
     if (boosted) {
-        BE1::PlatformCondition::Signal(requestCondition);
+        requestCondition.Signal();
     }
     return boosted;
 }
@@ -310,7 +302,7 @@ bool LoadingSystem::BoostMeshLoad(const Mesh *mesh, uint32_t serial, LoadPriorit
     }
 
     if (boosted) {
-        BE1::PlatformCondition::Signal(requestCondition);
+        requestCondition.Signal();
     }
     return boosted;
 }
@@ -335,7 +327,7 @@ bool LoadingSystem::BoostSkeletonLoad(const Skeleton *skeleton, uint32_t serial,
     }
 
     if (boosted) {
-        BE1::PlatformCondition::Signal(requestCondition);
+        requestCondition.Signal();
     }
     return boosted;
 }
@@ -360,7 +352,7 @@ bool LoadingSystem::BoostAnimLoad(const Anim *anim, uint32_t serial, LoadPriorit
     }
 
     if (boosted) {
-        BE1::PlatformCondition::Signal(requestCondition);
+        requestCondition.Signal();
     }
     return boosted;
 }
@@ -385,7 +377,7 @@ bool LoadingSystem::BoostShaderPipelineBuild(const ShaderPipeline *shaderPipelin
     }
 
     if (boosted) {
-        BE1::PlatformCondition::Signal(requestCondition);
+        requestCondition.Signal();
     }
     return boosted;
 }
@@ -393,7 +385,7 @@ bool LoadingSystem::BoostShaderPipelineBuild(const ShaderPipeline *shaderPipelin
 bool LoadingSystem::PopNextRequest(LoadRequest &outRequest) {
     BE1::ScopedLock lock(requestMutex);
 
-    BE1::PlatformCondition::Wait(requestCondition, requestMutex, [this] {
+    requestCondition.Wait(lock, [this] {
         return requests.Count() > 0 || stopping;
     });
 

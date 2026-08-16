@@ -74,8 +74,9 @@
 #include "PlatformUtils/Android/AndroidGPUInfo.h"
 #endif
 
-// Utils
-#include "Core/ScopedLock.h"
+// Threading
+#include "Threading/Threading.h"
+#include "Threading/Task.h"
 
 // Profiler
 #include "Profiler/Profiler.h"
@@ -93,7 +94,6 @@
 #include "Core/CmdArgs.h"
 #include "Core/CVars.h"
 #include "Core/Cmds.h"
-#include "Core/Task.h"
 #include "Core/Vertex.h"
 #include "Core/JointPose.h"
 

@@ -289,7 +289,7 @@ public:
     struct D3D12QueueFence {
         ID3D12Fence *                   fence = nullptr;
         uint64_t                        value = 0;
-        BE1::PlatformMutex *            signalMutex = nullptr;
+        BE1::Mutex                      signalMutex;
     };
 
     ID3D12Device5 *                     device = nullptr;
@@ -301,8 +301,8 @@ public:
     D3D12CommandListPool *              utilGraphicsCommandListPool = nullptr;
     D3D12CommandListPool *              utilComputeCommandListPool = nullptr;
 
-    BE1::PlatformMutex *                utilGraphicsCommandListMutex = nullptr;
-    BE1::PlatformMutex *                utilComputeCommandListMutex = nullptr;
+    BE1::Mutex                          utilGraphicsCommandListMutex;
+    BE1::Mutex                          utilComputeCommandListMutex;
 
     ID3D12CommandSignature *            drawInstancedIndirectCommandSignature = nullptr;
     ID3D12CommandSignature *            drawIndexedInstancedIndirectCommandSignature = nullptr;
@@ -347,7 +347,7 @@ public:
     BE1::Str                            shaderCacheDir;
     BE1::Str                            psoCacheDir;
 
-    BE1::PlatformMutex *                psoMapMutex = nullptr;
+    BE1::Mutex                          psoMapMutex;
     std::atomic_uint32_t                nextPipelineStateSortIndex { 1 };
     BE1::HashMap<uint64_t, D3D12PipelineState *> graphicsPsoMap;
     BE1::HashMap<uint64_t, D3D12PipelineState *> computePsoMap;
@@ -360,11 +360,11 @@ public:
     IDxcUtils *                         dxcUtils = nullptr;
     IDxcLibrary *                       dxcLibrary = nullptr;
 
-    BE1::PlatformMutex *                releaseRequestMutex = nullptr;
+    BE1::Mutex                          releaseRequestMutex;
     BE1::Array<D3D12ReleaseRequest>     releaseRequests;
     BE1::Array<D3D12RetiredResource>    retiredResources;
 
-    BE1::PlatformMutex *                resourceRequestMutex = nullptr;
+    BE1::Mutex                          resourceRequestMutex;
     BE1::Array<D3D12ResourceRequest>    resourceRequests;
 
     RHI::PipelineState *                genMipmaps2DFloat4PSO = nullptr;

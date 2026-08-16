@@ -51,11 +51,9 @@ set(COMMON_ENGINE_FILES
     Public/Core/Dict.h
     Public/Core/Expr.h
     Public/Core/Lexer.h
-    Public/Core/Task.h
     Public/Core/Event.h
     Public/Core/Object.h
     Public/Core/Property.h
-    Public/Core/ScopedLock.h
     Public/Core/Serializable.h
     Public/Core/Signal.h
     Public/Core/SignalObject.h
@@ -64,6 +62,9 @@ set(COMMON_ENGINE_FILES
     Public/Core/StrColor.h
     Public/Core/Vec4Color.h
     Public/Core/Vertex.h 
+
+    Public/Threading/Threading.h
+    Public/Threading/Task.h
 
     Public/Image/Image.h 
     Public/Image/BayerMatrix.h
@@ -316,7 +317,6 @@ set(COMMON_ENGINE_FILES
     Private/Core/Expr.cpp
     Private/Core/MinMaxCurve.cpp
     Private/Core/Lexer.cpp
-    Private/Core/Task.cpp
     Private/Core/Variant.cpp
     Private/Core/DynamicAABBTree.cpp
     Private/Core/Vec4Color.cpp
@@ -325,6 +325,9 @@ set(COMMON_ENGINE_FILES
     Private/Core/Serializable.cpp
     Private/Core/Signal.cpp
     Private/Core/SignalObject.cpp
+
+    Private/Threading/Threading.cpp
+    Private/Threading/Task.cpp
 
     Private/Image/ImageInternal.h
     Private/Image/Image.cpp

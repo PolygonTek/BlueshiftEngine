@@ -143,9 +143,9 @@ private:
     int                             submittedFrameReadIndex = 0;
     RenderWorkQueue                 renderWorkQueue;
 
-    BE1::PlatformSRWLock *          frameSyncLock = nullptr;
-    BE1::PlatformCondition *        renderCompletedCondition = nullptr;
-    BE1::PlatformCondition *        updateCompletedCondition = nullptr;
+    BE1::RWLock                     frameSyncLock;
+    BE1::Condition                  renderCompletedCondition;
+    BE1::Condition                  updateCompletedCondition;
     BE1::PlatformThread *           renderThread = nullptr;
     bool                            isStoppingRenderThread = false;
     static thread_local bool        isRenderThread;

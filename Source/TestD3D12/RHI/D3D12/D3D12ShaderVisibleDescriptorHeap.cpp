@@ -46,16 +46,9 @@ void D3D12BindlessDescriptorAllocator::Init(const D3D12DescriptorHeapRegion &reg
     this->region = region;
 
     idAllocator.Init(region.descriptorCount - 1);
-
-    mutex = BE1::PlatformMutex::Create();
 }
 
 void D3D12BindlessDescriptorAllocator::Shutdown() {
-    if (mutex) {
-        BE1::PlatformMutex::Destroy(mutex);
-        mutex = nullptr;
-    }
-
     idAllocator.Clear();
 }
 

@@ -242,7 +242,7 @@ void RenderSystem::SubmitFrame(RenderContext *renderContext, RenderFrameData *fr
         submittedFrames.Append(submittedFrame);
 
         // 렌더 스레드에게 업데이트가 완료되었다고 신호를 보낸다.
-        BE1::PlatformCondition::Signal(updateCompletedCondition);
+        updateCompletedCondition.Signal();
     } else {
         // 이전에 사용이 완료된 리소스들을 해제한다.
         RHI::renderer->FreeRetiredResources(false);
@@ -271,7 +271,7 @@ void RenderSystem::WaitFrameRenderCompleted(const RenderFrameData *frameData) {
         BE1::ScopedReadLock lock(frameSyncLock);
 
         // 주어진 프레임에 대한 (렌더 스레드의) 렌더링이 완료되기를 기다린다.
-        BE1::PlatformCondition::Wait(renderCompletedCondition, frameSyncLock, false, [frameData] {
+        renderCompletedCondition.Wait(lock, [frameData] {
             return frameData->frameSyncState == FrameSyncState::RenderCompleted;
         });
     }
@@ -551,9 +551,6 @@ void RenderSystem::DestroyColorGradingLUT() {
 }
 
 void RenderSystem::InitRenderThread() {
-    frameSyncLock = BE1::PlatformSRWLock::Create();
-    renderCompletedCondition = BE1::PlatformCondition::Create();
-    updateCompletedCondition = BE1::PlatformCondition::Create();
     submittedFrames.SetCount(0, false);
     submittedFrameReadIndex = 0;
     isStoppingRenderThread = false;
@@ -568,19 +565,12 @@ void RenderSystem::ShutdownRenderThread() {
         isStoppingRenderThread = true;
 
         // 렌더 스레드가 프레임 제출을 기다리는 중이라면 종료할 수 있도록 깨운다.
-        BE1::PlatformCondition::Signal(updateCompletedCondition);
+        updateCompletedCondition.Signal();
     }
 
     BE1::PlatformThread::Join(renderThread);
     renderThread = nullptr;
 
-    BE1::PlatformCondition::Destroy(renderCompletedCondition);
-    BE1::PlatformCondition::Destroy(updateCompletedCondition);
-    BE1::PlatformSRWLock::Destroy(frameSyncLock);
-
-    renderCompletedCondition = nullptr;
-    updateCompletedCondition = nullptr;
-    frameSyncLock = nullptr;
     submittedFrames.SetCount(0, false);
     submittedFrameReadIndex = 0;
     isStoppingRenderThread = false;
@@ -597,7 +587,7 @@ void RenderSystem::MarkRenderCompleted(RenderFrameData *frameData) {
     frameData->frameSyncState = FrameSyncState::RenderCompleted;
 
     // 메인 스레드에게 렌더링이 완료되었다고 신호를 보낸다.
-    BE1::PlatformCondition::Signal(renderCompletedCondition);
+    renderCompletedCondition.Signal();
 }
 
 bool RenderSystem::WaitSubmittedFrame(SubmittedFrame &submittedFrame) {
@@ -609,7 +599,7 @@ bool RenderSystem::WaitSubmittedFrame(SubmittedFrame &submittedFrame) {
         BE1::ScopedWriteLock lock(frameSyncLock);
 
         // 제출된 프레임 데이터가 생기거나 렌더 스레드 종료 요청이 들어올 때까지 기다린다.
-        BE1::PlatformCondition::Wait(updateCompletedCondition, frameSyncLock, true, [this] {
+        updateCompletedCondition.Wait(lock, [this] {
             return submittedFrameReadIndex < submittedFrames.Count() || isStoppingRenderThread;
         });
 

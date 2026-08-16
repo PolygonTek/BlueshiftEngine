@@ -327,18 +327,7 @@ void D3D12Renderer::Init(const void *mainWindowHandle) {
 
     CreateShaderCompiler();
 
-    releaseRequestMutex = BE1::PlatformMutex::Create();
-    resourceRequestMutex = BE1::PlatformMutex::Create();
-    psoMapMutex = BE1::PlatformMutex::Create();
-
-    for (D3D12QueueFence &queueFence : queueFences) {
-        queueFence.signalMutex = BE1::PlatformMutex::Create();
-    }
-
     InitDefaultStates();
-
-    utilGraphicsCommandListMutex = BE1::PlatformMutex::Create();
-    utilComputeCommandListMutex = BE1::PlatformMutex::Create();
 
     // 메인 스레드의 그래픽스 (Direct) 커맨드 리스트 풀을 생성한다.
     utilGraphicsCommandListPool = new D3D12CommandListPool(nullptr, D3D12_COMMAND_LIST_TYPE_DIRECT, 8, 0);
@@ -543,18 +532,6 @@ void D3D12Renderer::Shutdown() {
         SAFE_DELETE(imguiRenderer);
     }
 
-    BE1::PlatformMutex::Destroy(utilGraphicsCommandListMutex);
-    utilGraphicsCommandListMutex = nullptr;
-
-    BE1::PlatformMutex::Destroy(utilComputeCommandListMutex);
-    utilComputeCommandListMutex = nullptr;
-
-    BE1::PlatformMutex::Destroy(releaseRequestMutex);
-    releaseRequestMutex = nullptr;
-
-    BE1::PlatformMutex::Destroy(resourceRequestMutex);
-    resourceRequestMutex = nullptr;
-
     FreeGenMipmapsPSO();
 
     FreeDefaultStates();
@@ -571,9 +548,6 @@ void D3D12Renderer::Shutdown() {
         SAFE_RELEASE(blob);
     }
 #endif
-
-    BE1::PlatformMutex::Destroy(psoMapMutex);
-    psoMapMutex = nullptr;
 
     SAFE_DELETE(resStagingDescriptorPool);
     SAFE_DELETE(samStagingDescriptorPool);
@@ -592,11 +566,6 @@ void D3D12Renderer::Shutdown() {
     SAFE_RELEASE(drawIndexedInstancedIndirectCommandSignature);
     SAFE_RELEASE(dispatchIndirectCommandSignature);
     SAFE_RELEASE(dispatchMeshIndirectCommandSignature);
-
-    for (D3D12QueueFence &queueFence : queueFences) {
-        BE1::PlatformMutex::Destroy(queueFence.signalMutex);
-        queueFence.signalMutex = nullptr;
-    }
 
     SAFE_RELEASE(commandQueues[to_int(RHI::CommandQueueType::Graphics)]);
     SAFE_RELEASE(commandQueues[to_int(RHI::CommandQueueType::Compute)]);
@@ -819,21 +788,21 @@ void D3D12Renderer::FreeRetiredResources(bool waitPendings) {
 RHI::CommandList *D3D12Renderer::BeginUtilityCommandList(RHI::CommandQueueType queueType) {
     D3D12CommandListPool *commandListPool = nullptr;
     D3D12CommandList *commandList = nullptr;
-    BE1::PlatformMutex *mutex = nullptr;
+    BE1::Mutex *mutex = nullptr;
 
     if (queueType == RHI::CommandQueueType::Graphics) {
-        mutex = utilGraphicsCommandListMutex;
+        mutex = &utilGraphicsCommandListMutex;
         commandListPool = utilGraphicsCommandListPool;
     } else {
-        mutex = utilComputeCommandListMutex;
+        mutex = &utilComputeCommandListMutex;
         commandListPool = utilComputeCommandListPool;
     }
 
-    BE1::PlatformMutex::Lock(mutex);
+    mutex->Lock();
 
     commandList = static_cast<D3D12CommandList *>(commandListPool->Alloc());
     if (!commandList) {
-        BE1::PlatformMutex::Unlock(mutex);
+        mutex->Unlock();
         return nullptr;
     }
 
@@ -846,12 +815,12 @@ RHI::CommandList *D3D12Renderer::BeginUtilityCommandList(RHI::CommandQueueType q
 void D3D12Renderer::EndUtilityCommandList(RHI::CommandList *commandList) {
     D3D12CommandList* _commandList = static_cast<D3D12CommandList *>(commandList);
     D3D12CommandListPool *commandListPool = _commandList->GetParentPool();
-    BE1::PlatformMutex *mutex = nullptr;
+    BE1::Mutex *mutex = nullptr;
 
     if (commandListPool == utilGraphicsCommandListPool) {
-        mutex = utilGraphicsCommandListMutex;
+        mutex = &utilGraphicsCommandListMutex;
     } else if (commandListPool == utilComputeCommandListPool) {
-        mutex = utilComputeCommandListMutex;
+        mutex = &utilComputeCommandListMutex;
     } else {
         BE_ERRLOG("D3D12Renderer::EndCommandList: invalid command list pool\n");
         return;
@@ -859,7 +828,7 @@ void D3D12Renderer::EndUtilityCommandList(RHI::CommandList *commandList) {
 
     commandListPool->Free(static_cast<D3D12CommandList *>(commandList));
 
-    BE1::PlatformMutex::Unlock(mutex);
+    mutex->Unlock();
 }
 
 void D3D12Renderer::SetConstants(RHI::CommandList *commandList, int shaderRegister, const void *data, uint32_t size, uint32_t offset) {

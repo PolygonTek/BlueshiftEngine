@@ -16,30 +16,20 @@
 #include "Platform/PlatformSystem.h"
 #include "Platform/cpuid.h"
 #include "SIMD/SIMD.h"
-#include "Core/ScopedLock.h"
-#include "Core/Task.h"
+#include "Threading/Threading.h"
+#include "Threading/Task.h"
 
 BE_NAMESPACE_BEGIN
 
 TaskManager::TaskManager(int maxTasks) {
     taskRingBuffer.SetCount(maxTasks);
-
-    taskMutex = PlatformMutex::Create();
-    taskCondition = PlatformCondition::Create();
-    finishCondition = PlatformCondition::Create();
-    groupFinishCondition = PlatformCondition::Create();
 }
 
 TaskManager::~TaskManager() {
     Stop();
-
-    PlatformCondition::Destroy(taskCondition);
-    PlatformCondition::Destroy(finishCondition);
-    PlatformCondition::Destroy(groupFinishCondition);
-    PlatformMutex::Destroy(taskMutex);
 }
 
-void TaskManager::Start(int numThreads, bool useAffinity) {
+void TaskManager::Start(int numThreads) {
     ScopedLock lock(taskMutex);
 
     // Return if the threads already started.
@@ -62,9 +52,7 @@ void TaskManager::Start(int numThreads, bool useAffinity) {
     threads.Reserve(numThreads);
 
     for (int i = 0; i < numThreads; i++) {
-        uint64_t affinityMask = useAffinity ? (1ULL << (i % numLogicalProcessors)) : 0xFFFFFFFFFFFFFFFF;
-
-        threads.Append(PlatformThread::Start(TaskManager::ThreadProc, (void *)this, 0, ThreadPriority::Normal, affinityMask));
+        threads.Append(PlatformThread::Start(TaskManager::ThreadProc, (void *)this, 0, ThreadPriority::Normal));
     }
 }
 
@@ -79,7 +67,7 @@ void TaskManager::Stop() {
         }
 
         stopping = true;
-        PlatformCondition::Broadcast(taskCondition);
+        taskCondition.Broadcast();
     }
 
     // Wait until finishing all the task threads.
@@ -100,8 +88,8 @@ void TaskManager::Stop() {
         stopping = false;
 
         // Wake any waiters after resetting the task lifecycle state.
-        PlatformCondition::Broadcast(finishCondition);
-        PlatformCondition::Broadcast(groupFinishCondition);
+        finishCondition.Broadcast();
+        groupFinishCondition.Broadcast();
     }
 }
 
@@ -140,7 +128,7 @@ bool TaskManager::AddTask(TaskFunc taskFunction, void *data, int32_t groupId, bo
     }
 
     if (withWake) {
-        PlatformCondition::Signal(taskCondition);
+        taskCondition.Signal();
     }
 
     return true;
@@ -176,7 +164,7 @@ bool TaskManager::AddTask(TaskWorker *taskWorker, int32_t groupId, bool withWake
     }
 
     if (withWake) {
-        PlatformCondition::Signal(taskCondition);
+        taskCondition.Signal();
     }
 
     return true;
@@ -192,10 +180,10 @@ void TaskManager::WaitFinish(int32_t groupId, bool withWake) {
     }
 
     if (withWake) {
-        PlatformCondition::Broadcast(taskCondition);
+        taskCondition.Broadcast();
     }
 
-    PlatformCondition::Wait(groupFinishCondition, taskMutex, [this, groupId] {
+    groupFinishCondition.Wait(lock, [this, groupId] {
         int32_t *groupTaskCountPtr;
         return !groupActiveTaskCount.Get(groupId, &groupTaskCountPtr) || *groupTaskCountPtr <= 0;
     });
@@ -210,10 +198,10 @@ void TaskManager::WaitFinishAll(bool withWake) {
     }
 
     if (withWake) {
-        PlatformCondition::Broadcast(taskCondition);
+        taskCondition.Broadcast();
     }
 
-    PlatformCondition::Wait(finishCondition, taskMutex, [this] {
+    finishCondition.Wait(lock, [this] {
         return IsTaskEmpty() && activeTaskCount <= 0;
     });
 }
@@ -228,10 +216,10 @@ bool TaskManager::TimedWaitFinish(int ms, int32_t groupId, bool withWake) {
     }
 
     if (withWake) {
-        PlatformCondition::Broadcast(taskCondition);
+        taskCondition.Broadcast();
     }
 
-    return PlatformCondition::TimedWait(groupFinishCondition, taskMutex, ms, [this, groupId] {
+    return groupFinishCondition.TimedWait(lock, ms, [this, groupId] {
         int32_t *groupTaskCountPtr;
         return !groupActiveTaskCount.Get(groupId, &groupTaskCountPtr) || *groupTaskCountPtr <= 0;
     });
@@ -246,10 +234,10 @@ bool TaskManager::TimedWaitFinishAll(int ms, bool withWake) {
     }
 
     if (withWake) {
-        PlatformCondition::Broadcast(taskCondition);
+        taskCondition.Broadcast();
     }
 
-    return PlatformCondition::TimedWait(finishCondition, taskMutex, ms, [this] {
+    return finishCondition.TimedWait(lock, ms, [this] {
         return IsTaskEmpty() && activeTaskCount <= 0;
     });
 }
@@ -270,7 +258,7 @@ void TaskManager::Run() {
             ScopedLock lock(taskMutex);
 
             // Wait for task condition variable.
-            PlatformCondition::Wait(taskCondition, taskMutex, [this] {
+            taskCondition.Wait(lock, [this] {
                 return !IsTaskEmpty() || stopping;
             });
 
@@ -307,14 +295,14 @@ void TaskManager::Run() {
 
                     if (*groupTaskCountPtr <= 0) {
                         // Wake the group finish condition variable when there are no active tasks left in this group.
-                        PlatformCondition::Broadcast(groupFinishCondition);
+                        groupFinishCondition.Broadcast();
                     }
                 }
             }
 
             // Wake the finish condition variable when there are no active tasks remaining.
             if (activeTaskCount == 0 && IsTaskEmpty()) {
-                PlatformCondition::Signal(finishCondition);
+                finishCondition.Signal();
             }
         }
     }

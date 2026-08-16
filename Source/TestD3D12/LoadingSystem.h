@@ -147,9 +147,9 @@ private:
     static unsigned int             ThreadProc(void *param);
 
     BE1::PlatformThread *           thread = nullptr;
-    BE1::PlatformMutex *            requestMutex = nullptr;
-    BE1::PlatformMutex *            completionMutex = nullptr;
-    BE1::PlatformCondition *        requestCondition = nullptr;
+    BE1::Mutex                      requestMutex;
+    BE1::Mutex                      completionMutex;
+    BE1::Condition                  requestCondition;
 
     BE1::Array<LoadRequest>         requests;
     BE1::Array<LoadCompletion>      completions;

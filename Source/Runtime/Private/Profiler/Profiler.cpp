@@ -22,8 +22,6 @@ BE_NAMESPACE_BEGIN
 
 Profiler profiler;
 
-static PlatformMutex *mapMutex;
-
 void Profiler::Init() {
     frameCount = 0;
 
@@ -49,8 +47,6 @@ void Profiler::Init() {
             marker.endQueryHandle = graphics.CreateQuery(Graphics::QueryType::Timestamp);
         }
     }
-
-    mapMutex = (PlatformMutex *)PlatformMutex::Create();
 }
 
 void Profiler::Shutdown() {
@@ -63,8 +59,6 @@ void Profiler::Shutdown() {
             graphics.DestroyQuery(marker.endQueryHandle);
         }
     }
-
-    PlatformMutex::Destroy(mapMutex);
 }
 
 void Profiler::SyncFrame() {
@@ -143,15 +137,13 @@ Profiler::CpuThreadInfo &Profiler::GetCpuThreadInfo() {
         return entry->second;
     }
 
-    PlatformMutex::Lock(mapMutex);
+    ScopedLock lock(mapMutex);
 
     CpuThreadInfo cpuThreadInfo;
     cpuThreadInfo.threadId = tid;
     cpuThreadInfo.frameIndexes[writeFrameIndex] = cpuThreadInfo.currentIndex;
 
     entry = cpuThreadInfoMap.Set(tid, cpuThreadInfo);
-
-    PlatformMutex::Unlock(mapMutex);
 
     return entry->second;
 }

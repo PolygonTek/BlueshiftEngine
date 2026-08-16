@@ -20,8 +20,7 @@ BE_NAMESPACE_BEGIN
 
 class BE_API PlatformPosixThread : public PlatformBaseThread {
 public:
-    static PlatformPosixThread *Start(threadFunc_t startProc, void *param, size_t stackSize = 0,
-        ThreadPriority::Enum priority = ThreadPriority::Enum::Normal, uint64_t affinityMask = 0xFFFFFFFFFFFFFFFF);
+    static PlatformPosixThread *Start(threadFunc_t startProc, void *param, size_t stackSize = 0, ThreadPriority::Enum priority = ThreadPriority::Enum::Normal);
     static void                 Terminate(PlatformPosixThread *thread);
 
     static void                 Detach(PlatformPosixThread *thread);
@@ -31,7 +30,6 @@ public:
 
     static uint64_t             GetCurrentThreadId();
     static void                 SetCurrentThreadName(const char *name);
-    static void                 SetCurrentThreadAffinityMask(uint64_t affinityMask);
     static void                 SetCurrentThreadPriority(ThreadPriority::Enum priority);
     static void                 Yield();
 
@@ -43,7 +41,7 @@ class BE_API PlatformPosixMutex : public PlatformBaseMutex {
     friend class PlatformPosixCondition;
     
 public:
-    static PlatformPosixMutex * Create(int spinCount == 4000);
+    static PlatformPosixMutex * Create(int spinCount = 4000);
     static void                 Destroy(PlatformPosixMutex *mutex);
     
     static void                 Lock(PlatformPosixMutex *mutex);
@@ -71,8 +69,7 @@ public:
     static void                 ReleaseWriteLock(PlatformPosixSRWLock *lock);
 
 private:
-    pthread_rwlock_t            lock;
-    pthread_mutex_t             mutex;
+    pthread_rwlock_t            srwLock;
 };
 
 class BE_API PlatformPosixCondition : public PlatformBaseCondition {
@@ -106,6 +103,8 @@ public:
     
 private:
     pthread_cond_t              cond;
+                                // Serializes the handoff from the caller's lock to the condition wait.
+    pthread_mutex_t             waitMutex;
 };
 
 template <typename Predicate>

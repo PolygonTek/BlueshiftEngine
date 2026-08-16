@@ -59,13 +59,9 @@ void D3D12DescriptorPool::Init(ID3D12Device *device, D3D12DescriptorPool::Type t
     }
 
     idAllocator.Init(maxDescriptorCount);
-
-    mutex = BE1::PlatformMutex::Create();
 }
 
 void D3D12DescriptorPool::Shutdown() {
-    BE1::PlatformMutex::Destroy(mutex);
-
     SAFE_RELEASE(descriptorHeap);
 }
 

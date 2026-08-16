@@ -16,6 +16,7 @@
 
 #include "Containers/Array.h"
 #include "Containers/HashTable.h"
+#include "Threading/Threading.h"
 #include "Platform/PlatformThread.h"
 
 BE_NAMESPACE_BEGIN
@@ -46,7 +47,7 @@ public:
     uint32_t                    NumThreads() const { return threads.Count(); }
 
                                 /// Starts task threads.
-    void                        Start(int numThreads = 0, bool useAffinity = false);
+    void                        Start(int numThreads = 0);
 
                                 /// Finishes all queued tasks and stops the task threads.
     void                        Stop();
@@ -102,10 +103,10 @@ private:
 
     Array<PlatformThread *>     threads;
 
-    PlatformMutex *             taskMutex = nullptr;            ///< Mutex for accessing task list and execution.
-    PlatformCondition *         taskCondition = nullptr;        ///< Condition variable for task execution.
-    PlatformCondition *         finishCondition = nullptr;      ///< Condition variable for finishing task list.
-    PlatformCondition *         groupFinishCondition = nullptr; ///< Condition variable for group finishing task list.
+    Mutex                       taskMutex;                      ///< Mutex for accessing task list and execution.
+    Condition                   taskCondition;                  ///< Condition variable for task execution.
+    Condition                   finishCondition;                ///< Condition variable for finishing task list.
+    Condition                   groupFinishCondition;           ///< Condition variable for group finishing task list.
 };
 
 template <typename Lambda>

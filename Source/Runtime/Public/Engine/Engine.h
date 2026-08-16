@@ -16,7 +16,7 @@
 
 #include "Core/Str.h"
 #include "Core/CmdArgs.h"
-#include "Core/Task.h"
+#include "Threading/Task.h"
 
 BE_NAMESPACE_BEGIN
 

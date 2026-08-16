@@ -100,7 +100,7 @@ public:
 private:
     D3D12DescriptorHeapRegion       region = {};
     BE1::IDAllocator                idAllocator;
-    BE1::PlatformMutex *            mutex = nullptr;
+    BE1::Mutex                      mutex;
 };
 
 BE_INLINE D3D12_CPU_DESCRIPTOR_HANDLE D3D12BindlessDescriptorAllocator::GetCPUDescriptorHandleFromIndex(uint32_t index) const {

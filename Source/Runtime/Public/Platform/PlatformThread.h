@@ -32,7 +32,7 @@ typedef unsigned int (*threadFunc_t)(void *);
 class BE_API PlatformBaseThread {
 public:
     static PlatformBaseThread * Start(threadFunc_t startProc, void *param, size_t stackSize = 0,
-        ThreadPriority::Enum priority = ThreadPriority::Enum::Normal, uint64_t affinityMask = 0xFFFFFFFFFFFFFFFF);
+        ThreadPriority::Enum priority = ThreadPriority::Enum::Normal);
     static void                 Terminate(PlatformBaseThread *thread);
 
     static void                 Detach(PlatformBaseThread *thread);
@@ -43,7 +43,6 @@ public:
     static uint64_t             GetCurrentThreadId();
                                 // Set thread name for use in the debugger.
     static void                 SetCurrentThreadName(const char *name);
-    static void                 SetCurrentThreadAffinityMask(uint64_t affinityMask);
     static void                 SetCurrentThreadPriority(ThreadPriority::Enum priority);
     static void                 Yield();
 };

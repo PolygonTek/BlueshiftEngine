@@ -52,7 +52,7 @@ int main(int argc, char *argv[]) {
 
     Test::TestSIMD();
 
-    //Test::TestThread();
+    Test::TestThread();
 
     //Test::TestTask();
 

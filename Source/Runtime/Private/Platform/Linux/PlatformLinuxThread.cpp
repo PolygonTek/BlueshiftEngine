@@ -18,8 +18,8 @@
 
 BE_NAMESPACE_BEGIN
 
-PlatformLinuxThread *PlatformLinuxThread::Start(threadFunc_t startProc, void *param, size_t stackSize, ThreadPriority::Enum priority, uint64_t affinityMask) {
-    return PlatformPosixThread::Start(startProc, param, stackSize, priority, affinityMask);
+PlatformLinuxThread *PlatformLinuxThread::Start(threadFunc_t startProc, void *param, size_t stackSize, ThreadPriority::Enum priority) {
+    return PlatformPosixThread::Start(startProc, param, stackSize, priority);
 }
 
 uint64_t PlatformLinuxThread::GetCurrentThreadId() {

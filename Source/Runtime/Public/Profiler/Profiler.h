@@ -19,6 +19,7 @@
 #include "Containers/Stack.h"
 #include "Math/Math.h"
 #include "Graphics/GraphicsOpenGL.h"
+#include "Threading/Threading.h"
 
 BE_NAMESPACE_BEGIN
 
@@ -165,6 +166,7 @@ private:
     StaticArray<Tag, MaxTags>   tags;                           ///< tag informations.
     HashMap<uint64_t, CpuThreadInfo> cpuThreadInfoMap;
     GpuThreadInfo               gpuThreadInfo;
+    Mutex                       mapMutex;
 };
 
 template <typename Func>

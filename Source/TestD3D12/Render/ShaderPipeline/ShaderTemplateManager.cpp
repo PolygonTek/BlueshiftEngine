@@ -27,7 +27,6 @@ void ShaderTemplateManager::Init() {
 
     expiredShaderTemplateHashMapCursor = 0;
 
-    globalDefinesMutex = BE1::PlatformMutex::Create();
     globalDefines.Clear();
 
     InitGlobalDefines();
@@ -50,9 +49,6 @@ void ShaderTemplateManager::Shutdown() {
         globalDefineModCount = 0;
         lastInvalidatedGlobalDefineModCount = 0;
     }
-
-    BE1::PlatformMutex::Destroy(globalDefinesMutex);
-    globalDefinesMutex = nullptr;
 }
 
 void ShaderTemplateManager::UpdateFrame() {

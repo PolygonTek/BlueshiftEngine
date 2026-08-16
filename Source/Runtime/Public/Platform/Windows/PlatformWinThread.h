@@ -18,8 +18,7 @@ BE_NAMESPACE_BEGIN
 
 class BE_API PlatformWinThread : public PlatformBaseThread {
 public:
-    static PlatformWinThread *  Start(threadFunc_t startProc, void *param, size_t stackSize = 0,
-        ThreadPriority::Enum priority = ThreadPriority::Enum::Normal, uint64_t affinityMask = 0xFFFFFFFFFFFFFFFF);
+    static PlatformWinThread *  Start(threadFunc_t startProc, void *param, size_t stackSize = 0, ThreadPriority::Enum priority = ThreadPriority::Enum::Normal);
     static void                 Terminate(PlatformWinThread *thread);
 
     static void                 Detach(PlatformWinThread *thread);
@@ -29,7 +28,6 @@ public:
 
     static uint64_t             GetCurrentThreadId();
     static void                 SetCurrentThreadName(const char *name);
-    static void                 SetCurrentThreadAffinityMask(uint64_t affinityMask);
     static void                 SetCurrentThreadPriority(ThreadPriority::Enum priority);
     static void                 Yield();
     

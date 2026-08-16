@@ -66,7 +66,7 @@ private:
     BE1::StrArray                   globalDefines;
     uint32_t                        globalDefineModCount = 0;
     uint32_t                        lastInvalidatedGlobalDefineModCount = 0;
-    BE1::PlatformMutex *            globalDefinesMutex = nullptr;
+    mutable BE1::Mutex              globalDefinesMutex;
 };
 
 extern ShaderTemplateManager        shaderTemplateManager;
