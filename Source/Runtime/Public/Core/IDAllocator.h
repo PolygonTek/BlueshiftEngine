@@ -29,6 +29,9 @@ public:
                         /// Clear all IDs
     void                Clear();
 
+                        /// Return true if the ID is currently allocated.
+    bool                IsIDAllocated(uint32_t id) const;
+
                         /// Allocate a single ID.
     bool                AllocateID(uint32_t &id);
 
@@ -36,10 +39,10 @@ public:
     bool                AllocateRange(uint32_t &startID, size_t count);
 
                         /// Free a single ID.
-    void                FreeID(uint32_t id);
+    bool                FreeID(uint32_t id);
 
                         /// Free a consecutive range of IDs.
-    void                FreeRange(uint32_t startID, size_t count);
+    bool                FreeRange(uint32_t startID, size_t count);
 
                         /// Get the count of available IDs.
     size_t              GetAvailableCount() const;

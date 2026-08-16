@@ -64,6 +64,16 @@ void IDAllocator::Clear() {
     }
 }
 
+bool IDAllocator::IsIDAllocated(uint32_t id) const {
+    if (bitmap.Count() == 0 || id > maxId) {
+        return false;
+    }
+
+    const size_t blockIndex = id / 64;
+    const size_t bitIndex = id % 64;
+    return (bitmap[blockIndex] & (1ULL << bitIndex)) != 0;
+}
+
 bool IDAllocator::AllocateID(uint32_t &id) {
     const size_t count = bitmap.Count();
     for (size_t blockIndex = 0; blockIndex < count; ++blockIndex) {
@@ -112,28 +122,38 @@ bool IDAllocator::AllocateRange(uint32_t &startID, size_t count) {
     return false;
 }
 
-void IDAllocator::FreeID(uint32_t id) {
-    size_t blockIndex = id / 64;
-    size_t bitIndex = id % 64;
+bool IDAllocator::FreeID(uint32_t id) {
+    if (!IsIDAllocated(id)) {
+        assert(false);
+        return false;
+    }
+
+    const size_t blockIndex = id / 64;
+    const size_t bitIndex = id % 64;
 
     // Set the bit to 0
     bitmap[blockIndex] &= ~(1ULL << bitIndex);
     // Increase the count of consecutive free bits
     maxFreeBitsPerBlock[blockIndex]++;
+    return true;
 }
 
-void IDAllocator::FreeRange(uint32_t startID, size_t count) {
-    size_t globalStartIndex = startID;
-    size_t globalEndIndex = startID + count;
+bool IDAllocator::FreeRange(uint32_t startID, size_t count) {
+    assert(count > 0);
 
-    for (size_t i = globalStartIndex; i < globalEndIndex; ++i) {
-        size_t blockIndex = i / 64;
-        size_t bitIndex = i % 64;
+    const size_t endID = (size_t)startID + count;
 
-        // Set the bit to 0
-        bitmap[blockIndex] &= ~(1ULL << bitIndex);
-        maxFreeBitsPerBlock[blockIndex]++;
+    for (size_t id = startID; id < endID; ++id) {
+        if (!IsIDAllocated(static_cast<uint32_t>(id))) {
+            assert(false);
+            return false;
+        }
     }
+
+    for (size_t id = startID; id < endID; ++id) {
+        FreeID(id);
+    }
+    return true;
 }
 
 size_t IDAllocator::GetAvailableCount() const {
