@@ -986,7 +986,69 @@ Mat4 &Mat4::SkewSymmetrizeSelf() {
     return *this;
 }
 
+#if defined(ENABLE_SIMD4_INTRIN)
+static BE_FORCE_INLINE simd4f Mat2AdjugateSIMD(const simd4f &matrix) {
+    return shuffle_ps<3, 1, 2, 0>(matrix) * set_ps(1.0f, -1.0f, -1.0f, 1.0f);
+}
+
+static BE_FORCE_INLINE simd4f Mat2MulSIMD(const simd4f &lhs, const simd4f &rhs) {
+    const simd4f lhsDiagonal = shuffle_ps<0, 0, 2, 2>(lhs);
+    const simd4f lhsOffDiagonal = shuffle_ps<1, 1, 3, 3>(lhs);
+    const simd4f rhsTopRow = shuffle_ps<0, 1, 0, 1>(rhs);
+    const simd4f rhsBottomRow = shuffle_ps<2, 3, 2, 3>(rhs);
+    return madd_ps(lhsOffDiagonal, rhsBottomRow, lhsDiagonal * rhsTopRow);
+}
+
+static BE_FORCE_INLINE float Mat2DeterminantSIMD(const simd4f &matrix) {
+    const simd4f products = matrix * shuffle_ps<3, 2, 1, 0>(matrix);
+    return x_ps(products - shuffle_ps<1, 0, 3, 2>(products));
+}
+#endif
+
 bool Mat4::InverseSelf() {
+#if defined(ENABLE_SIMD4_INTRIN)
+    const simd4f row0 = loadu_ps(mat[0]);
+    const simd4f row1 = loadu_ps(mat[1]);
+    const simd4f row2 = loadu_ps(mat[2]);
+    const simd4f row3 = loadu_ps(mat[3]);
+
+    // Pack each row-major 2x2 block as [ m00, m01, m10, m11 ].
+    const simd4f blockA = shuffle_ps<0, 1, 0, 1>(row0, row1);
+    const simd4f blockB = shuffle_ps<2, 3, 2, 3>(row0, row1);
+    const simd4f blockC = shuffle_ps<0, 1, 0, 1>(row2, row3);
+    const simd4f blockD = shuffle_ps<2, 3, 2, 3>(row2, row3);
+
+    const float determinantA = Mat2DeterminantSIMD(blockA);
+    const float determinantB = Mat2DeterminantSIMD(blockB);
+    const float determinantC = Mat2DeterminantSIMD(blockC);
+    const float determinantD = Mat2DeterminantSIMD(blockD);
+
+    const simd4f adjugateA_B = Mat2MulSIMD(Mat2AdjugateSIMD(blockA), blockB);
+    const simd4f adjugateD_C = Mat2MulSIMD(Mat2AdjugateSIMD(blockD), blockC);
+
+    simd4f blockX = determinantD * blockA - Mat2MulSIMD(blockB, adjugateD_C);
+    simd4f blockY = determinantB * blockC - Mat2MulSIMD(blockD, Mat2AdjugateSIMD(adjugateA_B));
+    simd4f blockZ = determinantC * blockB - Mat2MulSIMD(blockA, Mat2AdjugateSIMD(adjugateD_C));
+    simd4f blockW = determinantA * blockD - Mat2MulSIMD(blockC, adjugateA_B);
+
+    const float trace = x_ps(dot4_ps(adjugateA_B, shuffle_ps<0, 2, 1, 3>(adjugateD_C)));
+    const double determinant = (double)determinantA * determinantD + (double)determinantB * determinantC - trace;
+    if (Math::Fabs(determinant) < MATRIX_INVERSE_EPSILON) {
+        return false;
+    }
+
+    const simd4f inverseDeterminant = set1_ps((float)(1.0 / determinant));
+    blockX = Mat2AdjugateSIMD(blockX) * inverseDeterminant;
+    blockY = Mat2AdjugateSIMD(blockY) * inverseDeterminant;
+    blockZ = Mat2AdjugateSIMD(blockZ) * inverseDeterminant;
+    blockW = Mat2AdjugateSIMD(blockW) * inverseDeterminant;
+
+    storeu_ps(shuffle_ps<0, 1, 0, 1>(blockX, blockY), mat[0]);
+    storeu_ps(shuffle_ps<2, 3, 2, 3>(blockX, blockY), mat[1]);
+    storeu_ps(shuffle_ps<0, 1, 0, 1>(blockZ, blockW), mat[2]);
+    storeu_ps(shuffle_ps<2, 3, 2, 3>(blockZ, blockW), mat[3]);
+    return true;
+#else
 #if 1
     // 84+4+16 = 104 multiplications
     //             1 division
@@ -1246,6 +1308,7 @@ bool Mat4::InverseSelf() {
     mat[3*4+3] = -r3[1][1];
 
     return true;
+#endif
 #endif
 }
 
