@@ -20,6 +20,8 @@ BE_NAMESPACE_BEGIN
 
 class BE_API PlatformPosixThread : public PlatformBaseThread {
 public:
+    virtual ~PlatformPosixThread() = default;
+
     static PlatformPosixThread *Start(threadFunc_t startProc, void *param, size_t stackSize = 0, ThreadPriority::Enum priority = ThreadPriority::Enum::Normal);
     static void                 Terminate(PlatformPosixThread *thread);
 
@@ -32,6 +34,10 @@ public:
     static void                 SetCurrentThreadName(const char *name);
     static void                 SetCurrentThreadPriority(ThreadPriority::Enum priority);
     static void                 Yield();
+
+protected:
+    static bool                 StartInternal(PlatformPosixThread *thread, threadFunc_t startProc, void *param, size_t stackSize, ThreadPriority::Enum priority);
+    static bool                 JoinInternal(PlatformPosixThread *thread);
 
 private:
     pthread_t                   thread;

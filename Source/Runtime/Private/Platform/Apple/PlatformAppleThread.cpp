@@ -15,11 +15,27 @@
 #include "Precompiled.h"
 #include "Platform/PlatformThread.h"
 #include <pthread.h>
+#include <sched.h>
 
 BE_NAMESPACE_BEGIN
 
 PlatformAppleThread *PlatformAppleThread::Start(threadFunc_t startProc, void *param, size_t stackSize, ThreadPriority::Enum priority) {
-    return PlatformPosixThread::Start(startProc, param, stackSize, priority);
+    PlatformAppleThread *appleThread = BE_NEW PlatformAppleThread;
+    if (!StartInternal(appleThread, startProc, param, stackSize, priority)) {
+        delete appleThread;
+        return nullptr;
+    }
+    return appleThread;
+}
+
+void PlatformAppleThread::JoinAll(int numThreads, PlatformAppleThread *appleThreads[]) {
+    for (int i = 0; i < numThreads; ++i) {
+        PlatformAppleThread *appleThread = appleThreads[i];
+        if (!JoinInternal(appleThread)) {
+            return;
+        }
+        delete appleThread;
+    }
 }
 
 uint64_t PlatformAppleThread::GetCurrentThreadId() {

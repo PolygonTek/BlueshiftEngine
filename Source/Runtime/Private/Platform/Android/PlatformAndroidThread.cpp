@@ -25,10 +25,10 @@ struct ThreadStartupData {
     void *param;
 };
 
-static void *ThreadStartup(ThreadStartupData *parg) {
-    ThreadStartupData arg = *parg; 
-    delete parg;
-    parg = nullptr;
+static void *ThreadStartup(void *param) {
+    ThreadStartupData *startup = static_cast<ThreadStartupData *>(param);
+    ThreadStartupData arg = *startup;
+    delete startup;
 
     arg.startProc(arg.param);
 
@@ -74,9 +74,19 @@ static void Android_SetThreadPriority(const pthread_t *pthread, ThreadPriority::
 
 PlatformAndroidThread *PlatformAndroidThread::Start(threadFunc_t startProc, void *param, size_t stackSize, ThreadPriority::Enum priority) {
     pthread_attr_t attr;
-    pthread_attr_init(&attr);
+    int err = pthread_attr_init(&attr);
+    if (err != 0) {
+        BE_FATALERROR("Failed to initialize pthread attributes - %s", strerror(err));
+        return nullptr;
+    }
+
     if (stackSize > 0) {
-        pthread_attr_setstacksize(&attr, stackSize);
+        err = pthread_attr_setstacksize(&attr, stackSize);
+        if (err != 0) {
+            pthread_attr_destroy(&attr);
+            BE_FATALERROR("Failed to set pthread stack size - %s", strerror(err));
+            return nullptr;
+        }
     }
 
     pthread_t tid;
@@ -84,9 +94,13 @@ PlatformAndroidThread *PlatformAndroidThread::Start(threadFunc_t startProc, void
     startup->startProc = startProc;
     startup->param = param;
 
-    int err = pthread_create(&tid, &attr, (void *(*)(void *))ThreadStartup, startup);
+    err = pthread_create(&tid, &attr, ThreadStartup, startup);
+    pthread_attr_destroy(&attr);
+
     if (err != 0) {
+        delete startup;
         BE_FATALERROR("Failed to create pthread - %s", strerror(err));
+        return nullptr;
     }
 
     Android_SetThreadPriority(&tid, priority);
@@ -107,7 +121,7 @@ void PlatformAndroidThread::SetCurrentThreadName(const char *name) {
 }
 
 void PlatformAndroidThread::Yield() {
-    pthread_yield();
+    sched_yield();
 }
 
 void PlatformAndroidThread::Detach(PlatformAndroidThread *androidThread) {

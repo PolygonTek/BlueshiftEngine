@@ -15,16 +15,32 @@
 #include "Precompiled.h"
 #include "Platform/PlatformThread.h"
 #include <pthread.h>
+#include <sys/syscall.h>
+#include <unistd.h>
 
 BE_NAMESPACE_BEGIN
 
 PlatformLinuxThread *PlatformLinuxThread::Start(threadFunc_t startProc, void *param, size_t stackSize, ThreadPriority::Enum priority) {
-    return PlatformPosixThread::Start(startProc, param, stackSize, priority);
+    PlatformLinuxThread *linuxThread = BE_NEW PlatformLinuxThread;
+    if (!StartInternal(linuxThread, startProc, param, stackSize, priority)) {
+        delete linuxThread;
+        return nullptr;
+    }
+    return linuxThread;
+}
+
+void PlatformLinuxThread::JoinAll(int numThreads, PlatformLinuxThread *linuxThreads[]) {
+    for (int i = 0; i < numThreads; ++i) {
+        PlatformLinuxThread *linuxThread = linuxThreads[i];
+        if (!JoinInternal(linuxThread)) {
+            return;
+        }
+        delete linuxThread;
+    }
 }
 
 uint64_t PlatformLinuxThread::GetCurrentThreadId() {
-    // NOTE: the POSIX standard no longer requires pthread_t to be an arithmetic type
-    return pthread_self();
+    return static_cast<uint64_t>(syscall(SYS_gettid));
 }
 
 void PlatformLinuxThread::SetCurrentThreadName(const char *name) {

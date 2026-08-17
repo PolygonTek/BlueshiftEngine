@@ -97,6 +97,8 @@ BE_NAMESPACE_END
 #include "Apple/PlatformAppleThread.h"
 #elif defined(__ANDROID__)
 #include "Android/PlatformAndroidThread.h"
+#elif defined(__LINUX__)
+#include "Linux/PlatformLinuxThread.h"
 #elif defined(__UNIX__) 
 #include "Posix/PlatformPosixThread.h"
 #elif defined(__WIN32__)

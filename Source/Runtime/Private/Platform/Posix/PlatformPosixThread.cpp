@@ -51,10 +51,10 @@ struct ThreadStartupData {
     void *param;
 };
 
-static void *ThreadStartup(ThreadStartupData *parg) {
-    ThreadStartupData arg = *parg; 
-    delete parg;
-    parg = nullptr;
+static void *ThreadStartup(void *param) {
+    ThreadStartupData *startup = static_cast<ThreadStartupData *>(param);
+    ThreadStartupData arg = *startup;
+    delete startup;
 
     arg.startProc(arg.param);
 
@@ -62,27 +62,48 @@ static void *ThreadStartup(ThreadStartupData *parg) {
 }
 
 PlatformPosixThread *PlatformPosixThread::Start(threadFunc_t startProc, void *param, size_t stackSize, ThreadPriority::Enum priority) {
+    PlatformPosixThread *posixThread = BE_NEW PlatformPosixThread;
+    if (!StartInternal(posixThread, startProc, param, stackSize, priority)) {
+        delete posixThread;
+        return nullptr;
+    }
+    return posixThread;
+}
+
+bool PlatformPosixThread::StartInternal(PlatformPosixThread *posixThread, threadFunc_t startProc, void *param, size_t stackSize, ThreadPriority::Enum priority) {
+    assert(posixThread);
+
     pthread_attr_t attr;
-    pthread_attr_init(&attr);
-    if (stackSize > 0) {
-        pthread_attr_setstacksize(&attr, stackSize);
+    int err = pthread_attr_init(&attr);
+    if (err != 0) {
+        BE_FATALERROR("Failed to initialize pthread attributes - %s", strerror(err));
+        return false;
     }
 
-    pthread_t tid;
+    if (stackSize > 0) {
+        err = pthread_attr_setstacksize(&attr, stackSize);
+        if (err != 0) {
+            pthread_attr_destroy(&attr);
+            BE_FATALERROR("Failed to set pthread stack size - %s", strerror(err));
+            return false;
+        }
+    }
+
     ThreadStartupData *startup = BE_NEW ThreadStartupData;
     startup->startProc = startProc;
     startup->param = param;
 
-    int err = pthread_create(&tid, &attr, (void *(*)(void *))ThreadStartup, startup);
+    err = pthread_create(&posixThread->thread, &attr, ThreadStartup, startup);
+    pthread_attr_destroy(&attr);
+
     if (err != 0) {
+        delete startup;
         BE_FATALERROR("Failed to create pthread - %s", strerror(err));
+        return false;
     }
 
-    Posix_SetThreadPriority(tid, priority);
-    
-    PlatformPosixThread *posixThread = BE_NEW PlatformPosixThread;
-    posixThread->thread = tid;
-    return posixThread;
+    Posix_SetThreadPriority(posixThread->thread, priority);
+    return true;
 }
 
 void PlatformPosixThread::Terminate(PlatformPosixThread *posixThread) {
@@ -105,36 +126,38 @@ void PlatformPosixThread::SetCurrentThreadPriority(ThreadPriority::Enum priority
 }
 
 void PlatformPosixThread::Yield() {
-    pthread_yield();
+    sched_yield();
 }
 
 void PlatformPosixThread::Detach(PlatformPosixThread *posixThread) {
     pthread_detach(posixThread->thread);
 }
 
-void PlatformPosixThread::Join(PlatformPosixThread *posixThread) {
+bool PlatformPosixThread::JoinInternal(PlatformPosixThread *posixThread) {
     assert(posixThread);
 
     const int error = pthread_join(posixThread->thread, nullptr);
     if (error != 0) {
         BE_FATALERROR("Failed to join pthread - %s", strerror(error));
-        return;
+        return false;
     }
 
+    return true;
+}
+
+void PlatformPosixThread::Join(PlatformPosixThread *posixThread) {
+    if (!JoinInternal(posixThread)) {
+        return;
+    }
     delete posixThread;
 }
 
 void PlatformPosixThread::JoinAll(int numThreads, PlatformPosixThread *posixThreads[]) {
     for (int i = 0; i < numThreads; ++i) {
         PlatformPosixThread *posixThread = posixThreads[i];
-        assert(posixThread);
-
-        const int error = pthread_join(posixThread->thread, nullptr);
-        if (error != 0) {
-            BE_FATALERROR("Failed to join pthread - %s", strerror(error));
+        if (!JoinInternal(posixThread)) {
             return;
         }
-
         delete posixThread;
     }
 }

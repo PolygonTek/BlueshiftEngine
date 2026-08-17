@@ -22,6 +22,7 @@ BE_NAMESPACE_BEGIN
 class BE_API PlatformLinuxThread : public PlatformPosixThread {
 public:
     static PlatformLinuxThread *Start(threadFunc_t startProc, void *param, size_t stackSize = 0, ThreadPriority::Enum priority = ThreadPriority::Enum::Normal);
+    static void                 JoinAll(int numThreads, PlatformLinuxThread *threads[]);
 
     static uint64_t             GetCurrentThreadId();
 
