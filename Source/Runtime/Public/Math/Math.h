@@ -21,6 +21,7 @@
 #include "Math/Half.h"
 #include "Math/Complex.h"
 #include "Math/Vector.h"
+#include "Math/Octahedral.h"
 #include "Math/Matrix.h"
 #include "Math/EigenSolver.h"
 #include "Math/CovarianceAccumulator.h"
