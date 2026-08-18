@@ -469,7 +469,11 @@ VisLight *RenderWorld::RegisterVisLight(RenderFrameData *frameData, RenderLight 
         visLight->viewProjScaleBiasMatrix[1] = renderLight->viewProjScaleBiasMatrix[1];
     } else if (renderLight->desc.type == RenderLight::Type::Spot) {
         visLight->viewProjScaleBiasMatrix = renderLight->viewProjScaleBiasMatrix;
-        visLight->fallOffMatrix = renderLight->fallOffMatrix;
+
+        VisSpotLightData *spotLightData = frameData->AllocVisSpotLightData();
+        spotLightData->fallOffMatrix = renderLight->fallOffMatrix;
+        visLight->spotLightData = spotLightData;
+
         visLight->axis = renderLight->desc.axis;
     } else if (renderLight->desc.type == RenderLight::Type::BoxDir) {
         visLight->viewProjScaleBiasMatrix = renderLight->viewProjScaleBiasMatrix;
@@ -519,22 +523,25 @@ VisObject *RenderWorld::RegisterVisObject(RenderFrameData *frameData, RenderObje
             visObject->materials[i] = frameData->RetainMaterial(renderObject->desc.materials[i]);
         }
     }
-    if (renderObject->desc.text) {
+    if (renderObject->desc.text && !renderObject->desc.text->text.IsEmpty()) {
         RenderObject::TextDesc &textDesc = *(renderObject->desc.text);
-        if (textDesc.font) {
-            visObject->font = frameData->RetainFont(textDesc.font);
-        }
-        if (!textDesc.text.IsEmpty()) {
+        VisText *visText = frameData->AllocVisText();
+        if (visText) {
+            visText->space = visObject;
+            if (textDesc.font) {
+                visText->font = frameData->RetainFont(textDesc.font);
+            }
+
             int size = textDesc.text.Length() + 1;
             char *textMemPtr = (char *)frameData->MemAlloc(size);
             BE1::Str::Copynz(textMemPtr, textDesc.text.c_str(), size);
-            visObject->text = textMemPtr;
-            visObject->textRect = textDesc.textRect;
-            visObject->textShadowOffset = textDesc.textShadowOffset;
-            visObject->textShadowColor = textDesc.textShadowColor;
-            visObject->textParams = textDesc.textParams;
-            visObject->textScale = textDesc.textScale;
-            visObject->textLineSpacing = textDesc.textLineSpacing;
+            visText->text = textMemPtr;
+            visText->textRect = textDesc.textRect;
+            visText->textShadowOffset = textDesc.textShadowOffset;
+            visText->textShadowColor = textDesc.textShadowColor;
+            visText->textParams = textDesc.textParams;
+            visText->textScale = textDesc.textScale;
+            visText->textLineSpacing = textDesc.textLineSpacing;
         }
     }
 
@@ -779,27 +786,23 @@ void RenderWorld::AddMeshes(RenderFrameData *frameData, const RenderCamera *rend
 void RenderWorld::AddTextMeshes(RenderFrameData *frameData, const RenderCamera *renderCamera, VisCamera *visCamera) {
     PROFILER_CPU_SCOPED_EVENT("RenderWorld::AddTextMeshes");
 
-    for (VisObject &visObjectRef : frameData->GetVisObjects()) {
-        VisObject *visObject = &visObjectRef;
+    for (VisText &visText : frameData->GetVisTexts()) {
+        VisObject *visObject = visText.space;
         if (!visObject->cameraVisible) {
-            continue;
-        }
-
-        if (!visObject->text) {
             continue;
         }
 
         textMesh.Clear();
 
-        if (visObject->textRect.IsEmpty()) {
-            textMesh.DrawText3D(frameData->GetThreadData(0), (RenderObject::TextDrawMode)visObject->textParams.bits.textDrawMode,
-                (RenderObject::TextAnchor)visObject->textParams.bits.textAnchor, (RenderObject::TextHorzAlignment)visObject->textParams.bits.textHorzAlignment,
-                visObject->textLineSpacing, visObject->textScale, BE1::Color4::white.ToUInt32(), visObject->textShadowColor, visObject->textShadowOffset, visObject->font, visObject->text);
+        if (visText.textRect.IsEmpty()) {
+            textMesh.DrawText3D(frameData->GetThreadData(0), (RenderObject::TextDrawMode)visText.textParams.bits.textDrawMode,
+                (RenderObject::TextAnchor)visText.textParams.bits.textAnchor, (RenderObject::TextHorzAlignment)visText.textParams.bits.textHorzAlignment,
+                visText.textLineSpacing, visText.textScale, BE1::Color4::white.ToUInt32(), visText.textShadowColor, visText.textShadowOffset, visText.font, visText.text);
         } else {
-            textMesh.DrawText3D(frameData->GetThreadData(0), (RenderObject::TextDrawMode)visObject->textParams.bits.textDrawMode, visObject->textRect,
-                (RenderObject::TextHorzAlignment)visObject->textParams.bits.textHorzAlignment, (RenderObject::TextVertAlignment)visObject->textParams.bits.textVertAlignment,
-                (RenderObject::TextHorzOverflow)visObject->textParams.bits.textHorzOverflow, (RenderObject::TextVertOverflow)visObject->textParams.bits.textVertOverflow,
-                visObject->textLineSpacing, visObject->textScale, BE1::Color4::white.ToUInt32(), visObject->textShadowColor, visObject->textShadowOffset, visObject->font, visObject->text);
+            textMesh.DrawText3D(frameData->GetThreadData(0), (RenderObject::TextDrawMode)visText.textParams.bits.textDrawMode, visText.textRect,
+                (RenderObject::TextHorzAlignment)visText.textParams.bits.textHorzAlignment, (RenderObject::TextVertAlignment)visText.textParams.bits.textVertAlignment,
+                (RenderObject::TextHorzOverflow)visText.textParams.bits.textHorzOverflow, (RenderObject::TextVertOverflow)visText.textParams.bits.textVertOverflow,
+                visText.textLineSpacing, visText.textScale, BE1::Color4::white.ToUInt32(), visText.textShadowColor, visText.textShadowOffset, visText.font, visText.text);
         }
 
         textMesh.CacheIndexes(frameData->GetThreadData(0));
@@ -1068,7 +1071,7 @@ void RenderWorld::BuildLightZBins(RenderFrameData *frameData, const RenderCamera
                 return false;
             }
             return lhs->index < rhs->index;
-            });
+        });
     }
 
     // Z-bin light index 는 16 비트로 패킹된다. 오버플로가 발생하면 라이트를 누락하지 않고 GPU 경로에서

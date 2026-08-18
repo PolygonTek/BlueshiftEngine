@@ -263,53 +263,69 @@ struct VisCamera {
 // 참조하는 공유 자원은 렌더링 중 파괴되지 않도록 프레임이 끝날 때까지 유지한 후 해제한다.
 struct VisObject {
     ALIGN_AS32 BE1::Mat3x4      worldMatrix;
+    const Material *            baseMaterials[2] = {};
     ALIGN_AS32 BE1::Mat3x4      prevWorldMatrix;
 
-    uint32_t                    index;                      ///< VisObject index
-
     MeshInstance *              meshInstance = nullptr;     ///< Mesh instance
-    const Skeleton *            skeleton = nullptr;         ///< Skeleton information for skeletal mesh
-
-    uint32_t                    numMaterials = 0;
     const Material **           materials = nullptr;
-    const Material *            baseMaterials[4] = {};
+    const Skeleton *            skeleton = nullptr;         ///< Skeleton information for skeletal mesh
+    VisObject *                 nextSkinnedObject = nullptr;
 
-    Font *                      font = nullptr;
-    const char *                text = nullptr;
-    BE1::RectF                  textRect;
-    uint32_t                    textShadowColor;
-    BE1::Vec2                   textShadowOffset;
-    RenderObject::TextParams    textParams;
-    float                       textScale;
-    float                       textLineSpacing;
+    uint32_t                    index;                      ///< VisObject index
+    uint32_t                    numMaterials = 0;
 
     bool                        cameraVisible = false;
     bool                        shadowVisible = false;
-    VisObject *                 nextSkinnedObject = nullptr;
 };
+
+static_assert(sizeof(VisObject) == 160, "VisObject layout changed");
+
+// 한 프레임 렌더링에서만 유효한 카메라별 텍스트 렌더링 데이터.
+// 텍스트가 있는 VisObject 에 대해서만 생성하여 일반 VisObject 의 크기와 텍스트 패스의 순회 비용을 줄인다.
+struct VisText {
+    VisObject *                 space = nullptr;
+    Font *                      font = nullptr;
+    const char *                text = nullptr;
+    BE1::RectF                  textRect;
+    BE1::Vec2                   textShadowOffset;
+    uint32_t                    textShadowColor;
+    RenderObject::TextParams    textParams;
+    float                       textScale;
+    float                       textLineSpacing;
+};
+
+static_assert(sizeof(VisText) == 64, "VisText layout changed");
+
+// Spot 광원에서만 사용하는 한 프레임 렌더링 데이터.
+struct VisSpotLightData {
+    ALIGN_AS32 BE1::Mat3x4      fallOffMatrix;
+};
+
+static_assert(sizeof(VisSpotLightData) == 64, "VisSpotLightData layout changed");
 
 // 한 프레임 렌더링에서만 유효한 카메라별 렌더링 광원.
 // 하나의 RenderLight 가 여러 카메라에 보이면 각 카메라 (view) 마다 별도의 VisLight 로 등록된다.
 // RenderLight 의 렌더링 데이터를 프레임 메모리에 복사하여 생성하므로 별도의 힙 할당은 발생하지 않는다.
 struct VisLight {
     ALIGN_AS32 BE1::Mat4        viewProjScaleBiasMatrix;
-    ALIGN_AS32 BE1::Mat3x4      fallOffMatrix;
+
+    const VisSpotLightData *    spotLightData = nullptr;
 
     uint32_t                    index;                      ///< VisLight index
     uint32_t                    typeIndex;                  ///< VisLight index for same light type
+    uint32_t                    packedTileMin;              ///< Packed minimum light-culling tile coordinate
+    uint32_t                    packedTileMax;              ///< Packed maximum light-culling tile coordinate
 
     BE1::Mat3                   axis;
     BE1::Vec3                   origin;
     BE1::Vec3                   size;                       ///< Point: x is radius. Spot/BoxDir: shape extents
+    float                       zNear;
 
     BE1::Color3                 lightColor;                 ///< Linear RGB light color multiplied by intensity
-    uint32_t                    packedTileMin;              ///< Packed minimum light-culling tile coordinate
-    uint32_t                    packedTileMax;              ///< Packed maximum light-culling tile coordinate
 
     float                       viewZMin;                   ///< Minimum positive-forward linear view Z
     float                       viewZMax;                   ///< Maximum positive-forward linear view Z
 
-    float                       zNear;
     float                       fallOffExponent;
     float                       shadowOffsetFactor;
     float                       shadowOffsetUnits;
@@ -317,3 +333,5 @@ struct VisLight {
     RenderLight::Type           type;
     RenderLight::Flag           flags;
 };
+
+static_assert(sizeof(VisLight) == 192, "VisLight layout changed");

@@ -199,8 +199,10 @@ void ShaderLightTable::Build(const VisLight &visLight, ShaderPointLight &shaderL
 }
 
 void ShaderLightTable::Build(const VisLight &visLight, ShaderSpotLight &shaderLight) const {
+    assert(visLight.spotLightData);
+
     BE1::simdProcessor->Memcpy(&shaderLight.viewProjScaleBiasMatrix, &visLight.viewProjScaleBiasMatrix, sizeof(shaderLight.viewProjScaleBiasMatrix));
-    BE1::simdProcessor->Memcpy(&shaderLight.fallOffMatrix, &visLight.fallOffMatrix, sizeof(shaderLight.fallOffMatrix));
+    BE1::simdProcessor->Memcpy(&shaderLight.fallOffMatrix, &visLight.spotLightData->fallOffMatrix, sizeof(shaderLight.fallOffMatrix));
 
     const BE1::Vec3 &direction = visLight.axis[0];
     shaderLight.origin = float3(visLight.origin.x, visLight.origin.y, visLight.origin.z);

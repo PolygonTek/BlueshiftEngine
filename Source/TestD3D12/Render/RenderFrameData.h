@@ -30,6 +30,8 @@ class MeshInstance;
 class Font;
 struct VisCamera;
 struct VisObject;
+struct VisText;
+struct VisSpotLightData;
 struct VisLight;
 enum class DrawTextFlag : uint16_t;
 
@@ -186,6 +188,10 @@ public:
     ChunkRange<VisObject>           GetVisObjects() const { return ChunkRange<VisObject>(firstVisObjectChunk); }
     [[nodiscard]] VisObject *       AllocVisObject();
 
+    uint32_t                        NumVisTexts() const { return numVisTexts; }
+    ChunkRange<VisText>             GetVisTexts() const { return ChunkRange<VisText>(firstVisTextChunk); }
+    [[nodiscard]] VisText *         AllocVisText();
+
     uint32_t                        NumVisLights() const { return numVisLights; }
     uint32_t                        NumVisLocalLights() const { return numVisLocalLights; }
     uint32_t                        NumVisPointLights() const { return numVisPointLights; }
@@ -193,6 +199,7 @@ public:
     uint32_t                        NumVisBoxDirLights() const { return numVisBoxDirLights; }
     const VisLight *                GetPrimaryDirectionalLight() const { return primaryDirectionalLight; }
     ChunkRange<VisLight>            GetVisLights() const { return ChunkRange<VisLight>(firstVisLightChunk); }
+    [[nodiscard]] VisSpotLightData *AllocVisSpotLightData();
     [[nodiscard]] VisLight *        AllocVisLight(RenderLight::Type type);
 
     uint32_t                        NumLightCullingZBins() const { return numLightCullingZBins; }
@@ -272,6 +279,7 @@ private:
     void                            InitVisCameras(uint32_t maxVisCameras);
     void                            FreeVisCameras();
     void                            FreeVisObjects();
+    void                            FreeVisTexts();
     void                            FreeVisLights();
 
     [[nodiscard]] Chunk *           AllocChunk(uint32_t elementSize, uint32_t elementCount);
@@ -292,6 +300,10 @@ private:
     uint32_t                        numVisObjects = 0;
     Chunk *                         firstVisObjectChunk = nullptr;
     Chunk *                         lastVisObjectChunk = nullptr;
+
+    uint32_t                        numVisTexts = 0;
+    Chunk *                         firstVisTextChunk = nullptr;
+    Chunk *                         lastVisTextChunk = nullptr;
 
     uint32_t                        numVisLights = 0;
     uint32_t                        numVisLocalLights = 0;

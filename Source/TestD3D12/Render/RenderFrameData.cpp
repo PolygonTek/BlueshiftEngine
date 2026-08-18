@@ -25,8 +25,10 @@ static constexpr size_t     FrameMemoryBlockSize = 0x4000000;
 static constexpr int        FrameMemoryAlignment = 32;
 static constexpr uint32_t   MaxVisCamera = 1u << 3;
 static constexpr uint32_t   MaxVisObjects = 1u << 20;
+static constexpr uint32_t   MaxVisTexts = MaxVisObjects;
 static constexpr uint32_t   MaxVisLights = 1u << 17;
 static constexpr uint32_t   VisObjectChunkCapacity = 8192;
+static constexpr uint32_t   VisTextChunkCapacity = 256;
 static constexpr uint32_t   VisLightChunkCapacity = 1024;
 
 void RenderFrameData::Init(int32_t frameIndex, int32_t numFrames) {
@@ -75,6 +77,8 @@ void RenderFrameData::Shutdown() {
     threadData = nullptr;
 
     FreeVisLights();
+
+    FreeVisTexts();
 
     FreeVisObjects();
 
@@ -135,6 +139,8 @@ void RenderFrameData::ResetFrameData() {
 
     FreeVisLights();
 
+    FreeVisTexts();
+
     FreeVisObjects();
 
     ClearRetainedMaterials();
@@ -187,6 +193,19 @@ void RenderFrameData::FreeVisObjects() {
     firstVisObjectChunk = nullptr;
     lastVisObjectChunk = nullptr;
     numVisObjects = 0;
+}
+
+void RenderFrameData::FreeVisTexts() {
+    for (Chunk *chunk = firstVisTextChunk; chunk; chunk = chunk->next) {
+        VisText *visTexts = static_cast<VisText *>(chunk->elements);
+        for (uint32_t i = 0; i < chunk->count; ++i) {
+            visTexts[i].~VisText();
+        }
+    }
+
+    firstVisTextChunk = nullptr;
+    lastVisTextChunk = nullptr;
+    numVisTexts = 0;
 }
 
 void RenderFrameData::FreeVisLights() {
@@ -373,6 +392,38 @@ VisObject *RenderFrameData::AllocVisObject() {
     newVisObject->index = numVisObjects++;
 
     return newVisObject;
+}
+
+VisText *RenderFrameData::AllocVisText() {
+    if (numVisTexts >= MaxVisTexts) {
+        assert(0);
+        return nullptr;
+    }
+
+    if (!lastVisTextChunk || lastVisTextChunk->count >= VisTextChunkCapacity) {
+        Chunk *newChunk = AllocChunk(sizeof(VisText), VisTextChunkCapacity);
+        if (lastVisTextChunk) {
+            lastVisTextChunk->next = newChunk;
+        } else {
+            firstVisTextChunk = newChunk;
+        }
+        lastVisTextChunk = newChunk;
+    }
+
+    VisText *visTexts = static_cast<VisText *>(lastVisTextChunk->elements);
+    VisText *newVisText = &visTexts[lastVisTextChunk->count++];
+
+    // placement new 생성자 호출
+    new (newVisText) VisText();
+
+    numVisTexts++;
+
+    return newVisText;
+}
+
+VisSpotLightData *RenderFrameData::AllocVisSpotLightData() {
+    void *memory = MemAlloc(sizeof(VisSpotLightData));
+    return new (memory) VisSpotLightData();
 }
 
 VisLight *RenderFrameData::AllocVisLight(RenderLight::Type type) {
