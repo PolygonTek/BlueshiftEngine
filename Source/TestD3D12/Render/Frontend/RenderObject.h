@@ -136,8 +136,11 @@ public:
                                     /// Returns local to world matrix.
     const BE1::Mat3x4 &             GetWorldMatrix() const { return desc.worldMatrix; }
 
+                                    /// Returns true if previous world-matrix history is available.
+    bool                            HasPrevWorldMatrix() const { return prevWorldMatrixFrameIndex != UINT64_MAX; }
+
                                     /// Returns the last committed local to world matrix for previous world-matrix history.
-    const BE1::Mat3x4 &             GetPrevWorldMatrix() const { return prevWorldMatrixValid ? prevWorldMatrix : desc.worldMatrix; }
+    const BE1::Mat3x4 &             GetPrevWorldMatrix() const { return HasPrevWorldMatrix() ? prevWorldMatrix : desc.worldMatrix; }
 
                                     /// Returns AABB in world space.
     const BE1::AABB &               GetWorldAABB() const { return worldAABB; }
@@ -160,8 +163,7 @@ private:
     BE1::AABB                       worldAABB = BE1::AABB::empty;
 
     BE1::Mat3x4                     prevWorldMatrix = BE1::Mat3x4::identity;
-    bool                            prevWorldMatrixValid = false;
-    uint64_t                        prevWorldMatrixFrameIndex = 0;
+    uint64_t                        prevWorldMatrixFrameIndex = UINT64_MAX;
     uint64_t                        visibleFrameIndex = 0;
 
     int                             index = -1;                     // RenderWorld::renderObjects 의 인덱스

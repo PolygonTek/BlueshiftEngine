@@ -510,7 +510,11 @@ VisObject *RenderWorld::RegisterVisObject(RenderFrameData *frameData, RenderObje
     const int numMaterials = renderObject->desc.materials.Count();
     visObject->numMaterials = static_cast<uint32_t>(numMaterials);
     if (numMaterials > 0) {
-        visObject->materials = (const Material **)frameData->MemAlloc(numMaterials * sizeof(visObject->materials[0]));
+        if (numMaterials > 4) {
+            visObject->materials = (const Material **)frameData->MemAlloc(numMaterials * sizeof(visObject->materials[0]));
+        } else {
+            visObject->materials = visObject->baseMaterials;
+        }
         for (int i = 0; i < numMaterials; ++i) {
             visObject->materials[i] = frameData->RetainMaterial(renderObject->desc.materials[i]);
         }
@@ -541,9 +545,7 @@ void RenderWorld::SetVisObjectWorldMatrices(const RenderObject *renderObject, Vi
     visObject->worldMatrix = renderObject->GetWorldMatrix();
 
     // 바로 직전 프레임에 prevWorldMatrix 를 세팅했었다면, 움직이던 오브젝트이므로 prevWorldMatrix 를 그대로 사용한다.
-    const bool hasContinuousPrevWorldMatrix = frameIndex > 0 &&
-        renderObject->prevWorldMatrixValid &&
-        renderObject->prevWorldMatrixFrameIndex == frameIndex - 1;
+    const bool hasContinuousPrevWorldMatrix = frameIndex > 0 && renderObject->prevWorldMatrixFrameIndex == frameIndex - 1;
 
     visObject->prevWorldMatrix = hasContinuousPrevWorldMatrix ? renderObject->prevWorldMatrix : renderObject->desc.worldMatrix;
 }
@@ -955,23 +957,23 @@ void RenderWorld::ComputeLightTileRange(const VisCamera *visCamera, const BE1::R
         return;
     }
 
-    const int64_t outputMinX = visCamera->outputRect.x;
-    const int64_t outputMinY = visCamera->outputRect.y;
-    const int64_t outputMaxX = outputMinX + visCamera->outputRect.w;
-    const int64_t outputMaxY = outputMinY + visCamera->outputRect.h;
+    const int32_t outputMinX = visCamera->outputRect.x;
+    const int32_t outputMinY = visCamera->outputRect.y;
+    const int32_t outputMaxX = outputMinX + visCamera->outputRect.w;
+    const int32_t outputMaxY = outputMinY + visCamera->outputRect.h;
 
-    int64_t clipMinX = screenClipRect.x;
-    int64_t clipMinY = screenClipRect.y;
-    int64_t clipMaxX = static_cast<int64_t>(screenClipRect.x) + screenClipRect.w;
-    int64_t clipMaxY = static_cast<int64_t>(screenClipRect.y) + screenClipRect.h;
+    int32_t clipMinX = screenClipRect.x;
+    int32_t clipMinY = screenClipRect.y;
+    int32_t clipMaxX = static_cast<int32_t>(screenClipRect.x) + screenClipRect.w;
+    int32_t clipMaxY = static_cast<int32_t>(screenClipRect.y) + screenClipRect.h;
 
     // 1 픽셀보다 작은 투영 영역은 정수 Rect 에서 크기가 0 이 될 수 있으므로 최소 한 픽셀을 보수적으로 포함한다.
     if (clipMinX >= clipMaxX && screenClipRect.w == 0) {
-        clipMinX = std::min(std::max<int64_t>(screenClipRect.x, outputMinX), outputMaxX - 1);
+        clipMinX = BE1::Clamp<int32_t>(screenClipRect.x, outputMinX, outputMaxX - 1);
         clipMaxX = clipMinX + 1;
     }
     if (clipMinY >= clipMaxY && screenClipRect.h == 0) {
-        clipMinY = std::min(std::max<int64_t>(screenClipRect.y, outputMinY), outputMaxY - 1);
+        clipMinY = BE1::Clamp<int32_t>(screenClipRect.y, outputMinY, outputMaxY - 1);
         clipMaxY = clipMinY + 1;
     }
 
@@ -982,16 +984,16 @@ void RenderWorld::ComputeLightTileRange(const VisCamera *visCamera, const BE1::R
         return;
     }
 
-    const uint64_t outputWidth = static_cast<uint64_t>(visCamera->outputRect.w);
-    const uint64_t outputHeight = static_cast<uint64_t>(visCamera->outputRect.h);
-    const uint64_t renderWidth = visCamera->renderWidth;
-    const uint64_t renderHeight = visCamera->renderHeight;
+    const uint32_t outputWidth = static_cast<uint32_t>(visCamera->outputRect.w);
+    const uint32_t outputHeight = static_cast<uint32_t>(visCamera->outputRect.h);
+    const uint32_t renderWidth = visCamera->renderWidth;
+    const uint32_t renderHeight = visCamera->renderHeight;
 
     // screenClipRect 는 outputRect 좌표계이므로, 동적 해상도를 반영한 렌더 타겟 좌표계로 변환한다.
-    const uint64_t renderMinX = static_cast<uint64_t>(clipMinX - outputMinX) * renderWidth / outputWidth;
-    const uint64_t renderMinY = static_cast<uint64_t>(clipMinY - outputMinY) * renderHeight / outputHeight;
-    const uint64_t renderMaxX = (static_cast<uint64_t>(clipMaxX - outputMinX) * renderWidth + outputWidth - 1) / outputWidth;
-    const uint64_t renderMaxY = (static_cast<uint64_t>(clipMaxY - outputMinY) * renderHeight + outputHeight - 1) / outputHeight;
+    const uint32_t renderMinX = static_cast<uint32_t>(clipMinX - outputMinX) * renderWidth / outputWidth;
+    const uint32_t renderMinY = static_cast<uint32_t>(clipMinY - outputMinY) * renderHeight / outputHeight;
+    const uint32_t renderMaxX = (static_cast<uint32_t>(clipMaxX - outputMinX) * renderWidth + outputWidth - 1) / outputWidth;
+    const uint32_t renderMaxY = (static_cast<uint32_t>(clipMaxY - outputMinY) * renderHeight + outputHeight - 1) / outputHeight;
 
     // 렌더 타겟 좌표계 기준으로 타일 좌표 (MinX, MinY, MaxX, MaxY) 를 구한다.
     const uint32_t tileMinX = static_cast<uint32_t>(renderMinX / ShaderLightTileSize);

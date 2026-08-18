@@ -467,11 +467,10 @@ void RenderWorld::CapturePrevWorldMatrix(RenderObject *renderObject) {
         return;
     }
 
-    if (renderObject->prevWorldMatrixValid && renderObject->prevWorldMatrixFrameIndex == previousFrameIndex) {
+    if (renderObject->prevWorldMatrixFrameIndex == previousFrameIndex) {
         return;
     }
 
     renderObject->prevWorldMatrix = renderObject->desc.worldMatrix;
-    renderObject->prevWorldMatrixValid = true;
     renderObject->prevWorldMatrixFrameIndex = previousFrameIndex;
 }

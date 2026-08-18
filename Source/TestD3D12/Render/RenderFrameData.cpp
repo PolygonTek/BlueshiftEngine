@@ -26,7 +26,7 @@ static constexpr int        FrameMemoryAlignment = 32;
 static constexpr uint32_t   MaxVisCamera = 1u << 3;
 static constexpr uint32_t   MaxVisObjects = 1u << 20;
 static constexpr uint32_t   MaxVisLights = 1u << 17;
-static constexpr uint32_t   VisObjectChunkCapacity = 4096;
+static constexpr uint32_t   VisObjectChunkCapacity = 8192;
 static constexpr uint32_t   VisLightChunkCapacity = 1024;
 
 void RenderFrameData::Init(int32_t frameIndex, int32_t numFrames) {

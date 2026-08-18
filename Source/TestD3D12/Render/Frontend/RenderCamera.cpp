@@ -45,8 +45,9 @@ void RenderCamera::Update(const Desc &desc) {
         // 직교 투영 행렬을 계산한다. viewMatrix 가 오른손 좌표계이므로, 오른손 좌표계용 투영 행렬을 계산한다.
         projMatrix.SetOrthoRH(-desc.sizeX, desc.sizeX, -desc.sizeY, desc.sizeY, desc.zNear, desc.zFar, zNegativeOneToOne, reverseZ);
     } else {
-        const float tanHalfFovX = BE1::Math::Tan(DEG2RAD(desc.fovX * 0.5f));
-        const float tanHalfFovY = BE1::Math::Tan(DEG2RAD(desc.fovY * 0.5f));
+        tanHalfFovX = BE1::Math::Tan(DEG2RAD(desc.fovX * 0.5f));
+        tanHalfFovY = BE1::Math::Tan(DEG2RAD(desc.fovY * 0.5f));
+
         const float aspectRatio = tanHalfFovX / tanHalfFovY;
 
         // Set bounding frustum for perspective view.
@@ -390,9 +391,9 @@ static float DeviceDepthToNDCZ(float depth, const RHI::ProjectionPolicy &project
 }
 
 bool RenderCamera::TransformWorldToNDC(const BE1::Vec3 &worldPosition, BE1::Vec3 &normalizedDeviceCoords) const {
-    BE1::Vec4 clipCoords = viewProjMatrix * BE1::Vec4(worldPosition, 1.0f);
+    const BE1::Vec4 clipCoords = viewProjMatrix * BE1::Vec4(worldPosition, 1.0f);
     if (clipCoords.w > 0) {
-        float invW = 1.0f / clipCoords.w;
+        const float invW = 1.0f / clipCoords.w;
 
         normalizedDeviceCoords.x = clipCoords.x * invW; // Clipping range is [-1, 1]
         normalizedDeviceCoords.y = clipCoords.y * invW; // Clipping range is [-1, 1]
@@ -403,9 +404,9 @@ bool RenderCamera::TransformWorldToNDC(const BE1::Vec3 &worldPosition, BE1::Vec3
 }
 
 void RenderCamera::TransformNDCToPixel(const BE1::Vec3 &normalizedDeviceCoords, BE1::Vec3 &pixelCoords) const {
-    float fx = (normalizedDeviceCoords.x + 1.0f) * 0.5f; // Valid range is [0, 1]
-    float fy = 1.0f - (normalizedDeviceCoords.y + 1.0f) * 0.5f; // Valid range is [0, 1]
-    float fz = NDCZToDeviceDepth(normalizedDeviceCoords.z, desc.projectionPolicy); // Valid range is [0, 1]
+    const float fx = (normalizedDeviceCoords.x + 1.0f) * 0.5f; // Valid range is [0, 1]
+    const float fy = 1.0f - (normalizedDeviceCoords.y + 1.0f) * 0.5f; // Valid range is [0, 1]
+    const float fz = NDCZToDeviceDepth(normalizedDeviceCoords.z, desc.projectionPolicy); // Valid range is [0, 1]
 
     pixelCoords.x = desc.outputRect.x + fx * desc.outputRect.w;
     pixelCoords.y = desc.outputRect.y + fy * desc.outputRect.h;
@@ -423,9 +424,9 @@ bool RenderCamera::TransformWorldToPixel(const BE1::Vec3 &worldPosition, BE1::Ve
 }
 
 void RenderCamera::UntransformPixelToNDC(const BE1::Vec3 &pixelCoords, BE1::Vec3 &normalizedDeviceCoords) const {
-    float fx = (pixelCoords.x - desc.outputRect.x) / desc.outputRect.w;
-    float fy = 1.0f - (pixelCoords.y - desc.outputRect.y) / desc.outputRect.h;
-    float fz = pixelCoords.z; // device depth value
+    const float fx = (pixelCoords.x - desc.outputRect.x) / desc.outputRect.w;
+    const float fy = 1.0f - (pixelCoords.y - desc.outputRect.y) / desc.outputRect.h;
+    const float fz = pixelCoords.z; // device depth value
 
     normalizedDeviceCoords.x = (fx * 2.0f) - 1.0f;
     normalizedDeviceCoords.y = (fy * 2.0f) - 1.0f;
@@ -433,7 +434,7 @@ void RenderCamera::UntransformPixelToNDC(const BE1::Vec3 &pixelCoords, BE1::Vec3
 }
 
 bool RenderCamera::UntransformNDCToWorld(const BE1::Vec3 &normalizedDeviceCoords, BE1::Vec3 &worldCoords) const {
-    BE1::Vec4 worldPosition = viewProjMatrix.Inverse() * BE1::Vec4(normalizedDeviceCoords, 1.0f);
+    const BE1::Vec4 worldPosition = viewProjMatrix.Inverse() * BE1::Vec4(normalizedDeviceCoords, 1.0f);
     if (worldPosition.w > 0) {
         float invW = 1.0f / worldPosition.w;
 
@@ -456,83 +457,94 @@ bool RenderCamera::UntransformPixelToWorld(const BE1::Vec3 &pixelCoords, BE1::Ve
 }
 
 bool RenderCamera::CalcClipRectFromSphere(const BE1::Sphere &sphere, BE1::Rect &clipRect) const {
-    BE1::Vec3 planeNormal1, planeNormal2;
-    int xmin, xmax, ymax, ymin;
-    float x, y;
+    const float r = sphere.radius;
+    const BE1::Vec3 localOrigin = desc.axis.TransposedMulVec(sphere.center - desc.origin);
 
-    float r2 = sphere.radius * sphere.radius;
+    const int rectLeft = desc.outputRect.x;
+    const int rectTop = desc.outputRect.y;
+    const int rectRight = rectLeft + desc.outputRect.w;
+    const int rectBottom = rectTop + desc.outputRect.h;
+    const float halfWidth = desc.outputRect.w * 0.5f;
+    const float halfHeight = desc.outputRect.h * 0.5f;
 
-    // in case camera in in sphere.
-    if (desc.origin.DistanceSqr(sphere.center) < r2) {
+    // Orthogonal projection does not use perspective tangent planes.
+    if (desc.orthogonal) {
+        const float pixelsPerUnitX = halfWidth / desc.sizeX;
+        const float pixelsPerUnitY = halfHeight / desc.sizeY;
+
+        const float centerX = rectLeft + halfWidth - localOrigin.y * pixelsPerUnitX;
+        const float centerY = rectTop + halfHeight - localOrigin.z * pixelsPerUnitY;
+        const float extentX = r * pixelsPerUnitX;
+        const float extentY = r * pixelsPerUnitY;
+
+        const int xmin = BE1::Max(rectLeft, static_cast<int>(BE1::Math::Floor(centerX - extentX)));
+        const int xmax = BE1::Min(rectRight, static_cast<int>(BE1::Math::Ceil(centerX + extentX)));
+        const int ymin = BE1::Max(rectTop, static_cast<int>(BE1::Math::Floor(centerY - extentY)));
+        const int ymax = BE1::Min(rectBottom, static_cast<int>(BE1::Math::Ceil(centerY + extentY)));
+
+        if (xmax - xmin <= 0 || ymax - ymin <= 0) {
+            return false;
+        }
+
+        clipRect.x = xmin;
+        clipRect.y = ymin;
+        clipRect.w = xmax - xmin;
+        clipRect.h = ymax - ymin;
+        return true;
+    }
+
+    const float r2 = r * r;
+    const float x2 = localOrigin.x * localOrigin.x;
+    const float y2 = localOrigin.y * localOrigin.y;
+    const float z2 = localOrigin.z * localOrigin.z;
+
+    // Camera axes are orthonormal, so local and world squared distances are identical.
+    if (x2 + y2 + z2 < r2) {
         clipRect = desc.outputRect;
         return true;
     }
 
-    // sphere 의 중심좌표(L) 를 카메라 로컬좌표계(X, Y, Z = FORWARD, LEFT, UP) 로 변환.
-    BE1::Vec3 localOrigin = desc.axis.TransposedMulVec(sphere.center - desc.origin);
+    int xmin = rectLeft;
+    int xmax = rectRight;
+    int ymin = rectTop;
+    int ymax = rectBottom;
 
-    float x2 = localOrigin.x * localOrigin.x;
-    float y2 = localOrigin.y * localOrigin.y;
-    float z2 = localOrigin.z * localOrigin.z;
+    const float rx = r * localOrigin.x;
+    constexpr float tangentDiscriminantEpsilon = 0.001f;
 
-    // 세로 접평면 T 는 z 축에 평행하고 카메라(C) 를 지나므로,
-    // T = (Nx, Ny, 0, 0) 이면
-    //
-    // 1) T dot L = r 
-    // 2) Nx^2 + Ny^2 = 1
+    // 카메라 원점에서 XY 평면의 구 단면으로 그은 두 접선의 NDC X 를 직접 계산한다.
+    // 기존 접평면 법선 계산에서 공통 분모를 소거한 식이다.
+    const float horizontalTangentDistance2 = x2 + y2 - r2;
+    const float horizontalDiscriminant = x2 * horizontalTangentDistance2;
 
-    // 식1 을 식2 에 대입해서 이차방정식으로 풀수 있다.
-    // 접평면의 Nx 에 대한 판별식
-    float d = r2 * y2 - (y2 + x2) * (r2 - x2);
+    if (horizontalDiscriminant > tangentDiscriminantEpsilon) {
+        const float tangentDistance = BE1::Math::Sqrt(horizontalTangentDistance2);
+        const float xt = localOrigin.x * tangentDistance;
+        const float ry = r * localOrigin.y;
+        const float yt = localOrigin.y * tangentDistance;
 
-    if (d <= 0.001f) {
-        xmin = desc.outputRect.x;
-        xmax = desc.outputRect.x + desc.outputRect.w;
-    } else {
-        d = BE1::Math::Sqrt(d);
+        // The signs match the previous pz1/pz2 < 0 front-facing tests.
+        const float leftDenominator = xt - ry;
+        const float rightDenominator = xt + ry;
 
-        // If the sphere is behind the camera..
-        if (localOrigin.x < 0) {
-            d = -d;
-        }
-
-        // planeNormal1 = left plane
-        planeNormal1.x = (sphere.radius * -localOrigin.y + d) / (y2 + x2);
-        planeNormal1.y = (sphere.radius - planeNormal1.x * -localOrigin.y) / -localOrigin.x;
-        planeNormal1.z = 0.0f;
-
-        // planeNormal2 = right plane
-        planeNormal2.x = (sphere.radius * -localOrigin.y - d) / (y2 + x2);
-        planeNormal2.y = (sphere.radius - planeNormal2.x * -localOrigin.y) / -localOrigin.x;
-        planeNormal2.z = 0.0f;
-
-        float pz1 = -localOrigin.x - sphere.radius * planeNormal1.y;
-        float pz2 = -localOrigin.x - sphere.radius * planeNormal2.y;
-
-        if (pz1 >= 0 && pz2 >= 0) {
+        if (leftDenominator <= 0.0f && rightDenominator <= 0.0f) {
             return false;
         }
 
-        float e = BE1::Math::Tan(DEG2RAD(desc.fovX * 0.5f));
+        if (leftDenominator > 0.0f) {
+            float ndcX = -(rx + yt) / (leftDenominator * tanHalfFovX);
+            ndcX = BE1::Clamp(ndcX, -1.0f, 1.0f);
 
-        if (pz1 < 0) {
-            x = planeNormal1.y / (planeNormal1.x * e);
-            x = BE1::Clamp(x, -1.0f, 1.0f);
-            int vx = desc.outputRect.x + (x + 1.0f) * desc.outputRect.w * 0.5f;
-
-            xmin = BE1::Max(desc.outputRect.x, vx);
-        } else {
-            xmin = desc.outputRect.x;
+            const int vx = static_cast<int>(BE1::Math::Floor(rectLeft + (ndcX + 1.0f) * halfWidth));
+            xmin = BE1::Max(rectLeft, vx);
         }
 
-        if (pz2 < 0) {
-            x = planeNormal2.y / (planeNormal2.x * e);
-            x = BE1::Clamp(x, -1.0f, 1.0f);
-            int vx = desc.outputRect.x + (x + 1.0f) * desc.outputRect.w * 0.5f;
+        if (rightDenominator > 0.0f) {
+            float ndcX = (rx - yt) / (rightDenominator * tanHalfFovX);
+            ndcX = BE1::Clamp(ndcX, -1.0f, 1.0f);
 
-            xmax = BE1::Min(desc.outputRect.x + desc.outputRect.w, vx);
-        } else {
-            xmax = desc.outputRect.x + desc.outputRect.w;
+            const int vx = static_cast<int>(BE1::Math::Ceil(rectLeft + (ndcX + 1.0f) * halfWidth));
+            xmax = BE1::Min(rectRight, vx);
         }
 
         if (xmax - xmin <= 0) {
@@ -540,63 +552,37 @@ bool RenderCamera::CalcClipRectFromSphere(const BE1::Sphere &sphere, BE1::Rect &
         }
     }
 
-    // 가로 접평면 T 는 y 축에 평행하고 카메라(C) 를 지나므로,
-    // T = (Nx, 0, Nz, 0) 이면
-    //
-    // 1) T dot L = r 
-    // 2) Nx^2 + Nz^2 = 1
+    // 카메라 원점에서 XZ 평면의 구 단면으로 그은 두 접선의 NDC Y 를 직접 계산한다.
+    const float verticalTangentDistance2 = x2 + z2 - r2;
+    const float verticalDiscriminant = x2 * verticalTangentDistance2;
 
-    // 접평면의 Nz 에 대한 판별식
-    d = r2 * z2 - (z2 + x2) * (r2 - x2);
+    if (verticalDiscriminant > tangentDiscriminantEpsilon) {
+        const float tangentDistance = BE1::Math::Sqrt(verticalTangentDistance2);
+        const float xt = localOrigin.x * tangentDistance;
+        const float rz = r * localOrigin.z;
+        const float zt = localOrigin.z * tangentDistance;
 
-    if (d <= 0.001f) {
-        ymin = desc.outputRect.y;
-        ymax = desc.outputRect.y + desc.outputRect.h;
-    } else {
-        d = BE1::Math::Sqrt(d);
+        const float topDenominator = xt - rz;
+        const float bottomDenominator = xt + rz;
 
-        // If the sphere is behind the camera..
-        if (localOrigin.x < 0) {
-            d = -d;
-        }
-
-        // planeNormal1 = upper plane
-        planeNormal1.z = (sphere.radius * localOrigin.z - d) / (z2 + x2);
-        planeNormal1.x = (sphere.radius - planeNormal1.z * localOrigin.z) / -localOrigin.x;
-        planeNormal1.y = 0.0f;
-
-        // planeNormal2 = bottom plane
-        planeNormal2.z = (sphere.radius * localOrigin.z + d) / (z2 + x2);
-        planeNormal2.x = (sphere.radius - planeNormal2.z * localOrigin.z) / -localOrigin.x;
-        planeNormal2.y = 0.0f;
-
-        float pz1 = -localOrigin.x - sphere.radius * planeNormal1.x;
-        float pz2 = -localOrigin.x - sphere.radius * planeNormal2.x;
-
-        if (pz1 >= 0 && pz2 >= 0) {
+        if (topDenominator <= 0.0f && bottomDenominator <= 0.0f) {
             return false;
         }
 
-        float e = BE1::Math::Tan(DEG2RAD(desc.fovY * 0.5f));
+        if (topDenominator > 0.0f) {
+            float ndcY = (rx + zt) / (topDenominator * tanHalfFovY);
+            ndcY = BE1::Clamp(ndcY, -1.0f, 1.0f);
 
-        if (pz1 < 0) {
-            y = planeNormal1.x / (planeNormal1.z * e);
-            y = BE1::Clamp(y, -1.0f, 1.0f);
-            int vy = desc.outputRect.y + (1.0f - y) * desc.outputRect.h * 0.5f;
-
-            ymin = BE1::Max(desc.outputRect.y, vy);
-        } else {
-            ymin = desc.outputRect.y;
+            const int vy = static_cast<int>(BE1::Math::Floor(rectTop + (1.0f - ndcY) * halfHeight));
+            ymin = BE1::Max(rectTop, vy);
         }
 
-        if (pz2 < 0) {
-            y = planeNormal2.x / (planeNormal2.z * e);
-            y = BE1::Clamp(y, -1.0f, 1.0f);
-            int vy = desc.outputRect.y + (1.0f - y) * desc.outputRect.h * 0.5f;
+        if (bottomDenominator > 0.0f) {
+            float ndcY = (zt - rx) / (bottomDenominator * tanHalfFovY);
+            ndcY = BE1::Clamp(ndcY, -1.0f, 1.0f);
 
-            ymax = BE1::Min(desc.outputRect.y + desc.outputRect.h, vy);
-        } else {
-            ymax = desc.outputRect.y + desc.outputRect.h;
+            const int vy = static_cast<int>(BE1::Math::Ceil(rectTop + (1.0f - ndcY) * halfHeight));
+            ymax = BE1::Min(rectBottom, vy);
         }
 
         if (ymax - ymin <= 0) {
@@ -608,7 +594,6 @@ bool RenderCamera::CalcClipRectFromSphere(const BE1::Sphere &sphere, BE1::Rect &
     clipRect.y = ymin;
     clipRect.w = xmax - xmin;
     clipRect.h = ymax - ymin;
-
     return true;
 }
 
@@ -747,8 +732,8 @@ bool RenderCamera::CalcDepthBoundsFromFrustum(const BE1::Frustum &frustum, const
 }
 
 void RenderCamera::CalculateFov(float fromFovX, float fromAspectRatio, float toAspectRatio, float *toFovX, float *toFovY) {
-    float tanFovX = BE1::Math::Tan(DEG2RAD(fromFovX * 0.5f));
-    float tanFovY = tanFovX / fromAspectRatio;
+    const float tanFovX = BE1::Math::Tan(DEG2RAD(fromFovX * 0.5f));
+    const float tanFovY = tanFovX / fromAspectRatio;
 
     *toFovX = RAD2DEG(BE1::Math::ATan(tanFovY * toAspectRatio) * 2.0f);
     *toFovY = RAD2DEG(BE1::Math::ATan(tanFovY) * 2.0f);

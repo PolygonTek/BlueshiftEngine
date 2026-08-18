@@ -273,6 +273,8 @@ private:
     void                        UpdateTemporalJitter(bool enableJitter, uint32_t sampleCount);
 
     Desc                        desc;
+    float                       tanHalfFovX;
+    float                       tanHalfFovY;
     BE1::Frustum                frustum;
     BE1::Plane                  frustumPlanes[6];
     BE1::Vec3                   frustumPoints[8];

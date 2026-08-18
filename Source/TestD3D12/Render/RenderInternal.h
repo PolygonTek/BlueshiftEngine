@@ -272,6 +272,7 @@ struct VisObject {
 
     uint32_t                    numMaterials = 0;
     const Material **           materials = nullptr;
+    const Material *            baseMaterials[4] = {};
 
     Font *                      font = nullptr;
     const char *                text = nullptr;
