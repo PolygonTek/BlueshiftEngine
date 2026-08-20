@@ -264,33 +264,63 @@ public:
                                 /// Fast approximate tangent of an angle in radians, with approximately 4.42e-4 maximum observed absolute error for inputs in [-pi, pi], excluding 0.01 radians around the poles.
     static float                TanFast(float a);
 
-                                /// Single-precision arc sine in radians; input is clamped to [-1, 1] to avoid a silent NaN.
+                                /// Single-precision hyperbolic sine.
+    static float                Sinh(float f);
+                                /// Double-precision hyperbolic sine.
+    static double               Sinh(double f);
+
+                                /// Single-precision hyperbolic cosine.
+    static float                Cosh(float f);
+                                /// Double-precision hyperbolic cosine.
+    static double               Cosh(double f);
+
+                                /// Single-precision hyperbolic tangent.
+    static float                Tanh(float f);
+                                /// Double-precision hyperbolic tangent.
+    static double               Tanh(double f);
+
+                                /// Single-precision inverse sine in radians; input is clamped to [-1, 1] to avoid a silent NaN.
     static float                ASin(float a);
-                                /// Double-precision arc sine in radians; input is clamped to [-1, 1] to avoid a silent NaN.
+                                /// Double-precision inverse sine in radians; input is clamped to [-1, 1] to avoid a silent NaN.
     static double               ASin(double a);
-                                /// Fast approximate arc sine in radians; input is clamped to [-1, 1], with approximately 6.76e-5 radians maximum observed absolute error for inputs in [-1, 1].
+                                /// Fast approximate inverse sine in radians; input is clamped to [-1, 1], with approximately 6.76e-5 radians maximum observed absolute error for inputs in [-1, 1].
     static float                ASinFast(float a);
 
-                                /// Single-precision arc cosine in radians; input is clamped to [-1, 1] to avoid a silent NaN.
+                                /// Single-precision inverse cosine in radians; input is clamped to [-1, 1] to avoid a silent NaN.
     static float                ACos(float a);
-                                /// Double-precision arc cosine in radians; input is clamped to [-1, 1] to avoid a silent NaN.
+                                /// Double-precision inverse cosine in radians; input is clamped to [-1, 1] to avoid a silent NaN.
     static double               ACos(double a);
-                                /// Fast approximate arc cosine in radians; input is clamped to [-1, 1], with approximately 6.76e-5 radians maximum observed absolute error for inputs in [-1, 1].
+                                /// Fast approximate inverse cosine in radians; input is clamped to [-1, 1], with approximately 6.76e-5 radians maximum observed absolute error for inputs in [-1, 1].
     static float                ACosFast(float a);
 
-                                /// Single-precision arc tangent in radians.
+                                /// Single-precision inverse tangent in radians.
     static float                ATan(float a);
-                                /// Double-precision arc tangent in radians.
+                                /// Double-precision inverse tangent in radians.
     static double               ATan(double a);
-                                /// Fast approximate arc tangent in radians, with approximately 1.52e-7 radians maximum observed absolute error.
+                                /// Fast approximate inverse tangent in radians, with approximately 1.52e-7 radians maximum observed absolute error.
     static float                ATanFast(float a);
 
-                                /// Single-precision two-argument arc tangent in radians.
+                                /// Single-precision two-argument inverse tangent in radians.
     static float                ATan2(float y, float x);
-                                /// Double-precision two-argument arc tangent in radians.
+                                /// Double-precision two-argument inverse tangent in radians.
     static double               ATan2(double y, double x);
-                                /// Fast approximate two-argument arc tangent in radians, with approximately 2.42e-7 radians maximum observed absolute error.
+                                /// Fast approximate two-argument inverse tangent in radians, with approximately 2.42e-7 radians maximum observed absolute error.
     static float                ATan2Fast(float y, float x);
+
+                                /// Single-precision inverse hyperbolic sine.
+    static float                ASinh(float f);
+                                /// Double-precision inverse hyperbolic sine.
+    static double               ASinh(double f);
+
+                                /// Single-precision inverse hyperbolic cosine.
+    static float                ACosh(float f);
+                                /// Double-precision inverse hyperbolic cosine.
+    static double               ACosh(double f);
+
+                                /// Single-precision inverse hyperbolic tangent.
+    static float                ATanh(float f);
+                                /// Double-precision inverse hyperbolic tangent.
+    static double               ATanh(double f);
 
                                 /// Single-precision e raised to the power f.
     static float                Exp(float f);
@@ -597,6 +627,30 @@ BE_INLINE float Math::TanFast(float a) {
     return result;
 }
 
+BE_INLINE float Math::Sinh(float a) {
+    return sinhf(a);
+}
+
+BE_INLINE double Math::Sinh(double a) {
+    return sinh(a);
+}
+
+BE_INLINE float Math::Cosh(float a) {
+    return coshf(a);
+}
+
+BE_INLINE double Math::Cosh(double a) {
+    return cosh(a);
+}
+
+BE_INLINE float Math::Tanh(float a) {
+    return tanhf(a);
+}
+
+BE_INLINE double Math::Tanh(double a) {
+    return tanh(a);
+}
+
 BE_INLINE float Math::ASin(float a) {
     if (a <= -1.0f) {
         return -HalfPi;
@@ -730,6 +784,30 @@ BE_INLINE float Math::ATan2Fast(float y, float x) {
         }
         return s;
     }
+}
+
+BE_INLINE float Math::ASinh(float a) {
+    return asinhf(a);
+}
+
+BE_INLINE double Math::ASinh(double a) {
+    return asinh(a);
+}
+
+BE_INLINE float Math::ACosh(float a) {
+    return acoshf(a);
+}
+
+BE_INLINE double Math::ACosh(double a) {
+    return acosh(a);
+}
+
+BE_INLINE float Math::ATanh(float a) {
+    return atanhf(a);
+}
+
+BE_INLINE double Math::ATanh(double a) {
+    return atanh(a);
 }
 
 BE_INLINE float Math::Exp(float f) {
