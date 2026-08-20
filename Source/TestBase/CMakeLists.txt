@@ -6,6 +6,7 @@ set(ALL_FILES
     Main.cpp
     Test.h
     TestContainer.cpp
+    TestLexer.cpp
     TestRValue.cpp
     TestMath.cpp
     TestFloatConverter.cpp

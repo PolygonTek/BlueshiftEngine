@@ -17,6 +17,7 @@
 class Test {
 public:
     static void TestContainer();
+    static void TestLexer();
     static void TestRValue();
     static void TestMath();
     static void TestFloatConverter();

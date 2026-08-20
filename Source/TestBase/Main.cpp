@@ -42,6 +42,8 @@ int main(int argc, char *argv[]) {
 
     //Test::TestContainer();
 
+    Test::TestLexer();
+
     //Test::TestRValue();
 
     Test::TestMath();

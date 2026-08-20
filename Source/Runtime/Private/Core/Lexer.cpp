@@ -220,11 +220,21 @@ bool Lexer::ReadNumber(Str *token) {
     int c = ptr[0];
     int c2 = ptr[1];
 
+    bool decimalFloat = false;
     if (c == '0' && c2 != '.') {
+        const char *lookAhead = ptr + 1;
+        while (*lookAhead >= '0' && *lookAhead <= '9') {
+            lookAhead++;
+        }
+        decimalFloat = *lookAhead == '.' || *lookAhead == 'e' || *lookAhead == 'E';
+    }
+
+    if (c == '0' && c2 != '.' && !decimalFloat) {
         if (c2 == 'x' || c2 == 'X') {
             // check for hexadecimal number
             token->Append(*ptr++);
             token->Append(*ptr++);
+            c = *ptr;
             while ((c >= '0' && c <= '9') || (c >= 'a' && c <= 'f') || (c >= 'A' && c <= 'F')) {
                 token->Append(c);
                 c = *(++ptr);
@@ -262,27 +272,33 @@ bool Lexer::ReadNumber(Str *token) {
             c = *(++ptr);
         }
 
-        // if a floating point number
-        if (dot) {
-            tokenType |= TokenType::Float;
-            
-            if (c == 'e') {
-                // check for floating point exponent
+        bool exponent = false;
+        if (c == 'e' || c == 'E') {
+            // check for floating point exponent
+            exponent = true;
+            token->Append(c);
+            c = *(++ptr);
+            if (c == '-' || c == '+') {
                 token->Append(c);
                 c = *(++ptr);
-                if (c == '-') {
-                    token->Append(c);
-                    c = *(++ptr);
-                } else if (c == '+') {
-                    token->Append(c);
-                    c = *(++ptr);
-                }
+            }
 
-                while (c >= '0' && c <= '9') {
-                    token->Append(c);
-                    c = *(++ptr);
-                }
-            } else if (c == '#') {
+            if (c < '0' || c > '9') {
+                Error("missing exponent digits in number '%s'", token->c_str());
+                return false;
+            }
+
+            do {
+                token->Append(c);
+                c = *(++ptr);
+            } while (c >= '0' && c <= '9');
+        }
+
+        // if a floating point number
+        if (dot || exponent) {
+            tokenType |= TokenType::Float;
+
+            if (dot && !exponent && c == '#') {
                 // check for floating point exception infinite 1.#INF or indefinite 1.#IND or NaN
                 tokenType |= TokenType::Nan;
 
