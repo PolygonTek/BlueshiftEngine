@@ -1,8 +1,12 @@
 shader "showTangentSpace" {
 	glsl_vp {
 		in vec4 in_position : POSITION;
+	#ifdef PACKED_VERTEX_TANGENT_FRAME
+		in HIGHP uint in_tangentFrame : NORMAL;
+	#else
 		in LOWP vec3 in_normal : NORMAL;
 		in LOWP vec4 in_tangent : TEXCOORD1;
+	#endif
 
 		out LOWP vec4 v2f_color;
 
@@ -12,10 +16,16 @@ shader "showTangentSpace" {
 		void main() {
 			vec3 tangents[3];
 
+		#ifdef PACKED_VERTEX_TANGENT_FRAME
+			vec3 vNormal;
+			vec4 vTangent;
+			unpackTangentFrame(in_tangentFrame, vNormal, vTangent);
+		#else
 			vec3 vNormal = in_normal.xyz;
-            vec4 vTangent = in_tangent;
+			vec4 vTangent = in_tangent;
+		#endif
 
-			tangents[0] = in_tangent.xyz;
+			tangents[0] = vTangent.xyz;
 			tangents[1] = cross(vNormal, vTangent.xyz) * vTangent.w;
 			tangents[2] = vNormal;
 

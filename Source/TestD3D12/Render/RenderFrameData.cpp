@@ -101,6 +101,8 @@ void RenderFrameData::Shutdown() {
 }
 
 void RenderFrameData::BeginFrame() {
+    PROFILER_CPU_SCOPED_EVENT("RenderFrameData::BeginFrame");
+
     // 프론트 엔드에서 이번 프레임의 프레임 데이터를 사용하기 위해서는, 백엔드에서의 사용이 완료되야 한다.
     WaitFrameFence();
 
@@ -127,6 +129,8 @@ void RenderFrameData::BeginFrame() {
 }
 
 void RenderFrameData::EndFrame() {
+    PROFILER_CPU_SCOPED_EVENT("RenderFrameData::EndFrame");
+
     // 커맨드 버퍼에 커맨드의 끝을 기록.
     CmdEnd();
 

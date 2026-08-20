@@ -48,9 +48,15 @@ void PrepareShadingParms(vec4 albedo) {
     shading.v = normalize(v2f_viewWS.xyz);
 
 #if _NORMAL != 0 || _ANISO != 0 || (_CLEARCOAT != 0 && _CC_NORMAL == 1)
-    shading.tagentToWorldMatrix[0] = normalize(v2f_tangentToWorldAndPackedWorldPosS.xyz);
-    shading.tagentToWorldMatrix[1] = normalize(v2f_tangentToWorldAndPackedWorldPosT.xyz);
-    shading.tagentToWorldMatrix[2] = normalize(v2f_tangentToWorldAndPackedWorldPosR.xyz);
+    HIGHP vec3 normalWS = normalize(v2f_normalWS);
+    HIGHP vec3 tangentWS = v2f_tangentWS.xyz - normalWS * dot(normalWS, v2f_tangentWS.xyz);
+    HIGHP float tangentLengthSquared = dot(tangentWS, tangentWS);
+    tangentWS = tangentLengthSquared > 1e-20 ? tangentWS * inversesqrt(tangentLengthSquared) : vec3(1.0, 0.0, 0.0);
+    HIGHP vec3 bitangentWS = cross(normalWS, tangentWS) * v2f_tangentWS.w;
+
+    shading.tagentToWorldMatrix[0] = tangentWS;
+    shading.tagentToWorldMatrix[1] = bitangentWS;
+    shading.tagentToWorldMatrix[2] = normalWS;
 
     #if _NORMAL != 0
         MEDIUMP vec3 normalTS = normalize(GetNormal(normalMap, baseTc));

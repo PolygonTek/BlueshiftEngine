@@ -24,8 +24,12 @@ struct VSInput {
     float4 position : POSITION;
     float2 texCoord : TEXCOORD0;
     float4 color : COLOR;
+#ifdef PACKED_VERTEX_TANGENT_FRAME
+    uint normal : NORMAL;
+#else
     float4 normal : NORMAL;
     float4 tangent : TEXCOORD1;
+#endif
     uint instanceID : SV_InstanceID;
 };
 
@@ -57,10 +61,28 @@ PSInput VSMain(VSInput input) {
     result.texCoord = input.texCoord;
     result.shaderMaterialIndex = shaderSurface.shaderMaterialIndex;
     result.worldPosition = positionWS.xyz;
-    result.worldNormal = TransformSurfaceNormal(DecodeVertexNormal(input.normal.xyz), shaderSurface.worldMatrix, (shaderSurface.flags & ShaderSurfaceFlagNonUniformScale) != 0);
+    float3 vertexNormal;
 #if USE_SURFACE_TANGENT_FRAME
-    result.worldTangent = TransformSurfaceTangent(DecodeVertexTangent(input.tangent), shaderSurface.worldMatrix);
+    float4 vertexTangent;
+    #ifdef PACKED_VERTEX_TANGENT_FRAME
+        DecodeTangentFrame(input.normal, vertexNormal, vertexTangent);
+    #else
+        vertexNormal = DecodeVertexNormal(input.normal);
+        vertexTangent = DecodeVertexTangent(input.tangent);
+    #endif
+#else
+    #ifdef PACKED_VERTEX_TANGENT_FRAME
+        vertexNormal = DecodeTangentFrameNormal(input.normal);
+    #else
+        vertexNormal = DecodeVertexNormal(input.normal);
+    #endif
 #endif
+
+    result.worldNormal = TransformSurfaceNormal(vertexNormal, shaderSurface.worldMatrix, (shaderSurface.flags & ShaderSurfaceFlagNonUniformScale) != 0);
+#if USE_SURFACE_TANGENT_FRAME
+    result.worldTangent = TransformSurfaceTangent(vertexTangent, shaderSurface.worldMatrix);
+#endif
+
 #ifdef OUTPUT_VELOCITY
     result.currentVelocityPosition = mul(cameraConstants.unjitteredViewProjMatrix, positionWS);
     result.prevVelocityPosition = CalcClipPosition(input.position, shaderSurface.prevWorldMatrix, cameraConstants.prevUnjitteredViewProjMatrix);
@@ -89,6 +111,7 @@ SurfacePSOutput PSMain(PSInput input) {
     const float3 worldNormal = normalize(input.worldNormal);
 
 #if USE_SURFACE_TANGENT_FRAME
+    // worldTangent 를 worldNormal 에 대해 Gram-Schmidt 직교화 + normalize
     float3 worldTangent = input.worldTangent.xyz - worldNormal * dot(worldNormal, input.worldTangent.xyz);
     const float worldTangentLengthSquared = dot(worldTangent, worldTangent);
     worldTangent = worldTangentLengthSquared > FLT_MIN ? worldTangent * rsqrt(worldTangentLengthSquared) : float3(1.0f, 0.0f, 0.0f);

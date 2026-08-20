@@ -1,7 +1,11 @@
 $include "StandardConfig.glsl"
 
 in HIGHP vec4 in_position   : POSITION;
+#ifdef PACKED_VERTEX_TANGENT_FRAME
+in HIGHP uint in_tangentFrame : NORMAL;
+#else
 in LOWP vec3 in_normal      : NORMAL;
+#endif
 in LOWP vec4 in_color       : COLOR;
 in MEDIUMP vec2 in_st       : TEXCOORD0;
 
@@ -15,7 +19,7 @@ out LOWP vec4 v2f_color;
     out MEDIUMP vec2 v2f_tex;
 #endif
 
-#if _NORMAL == 0
+#if _NORMAL == 0 && _ANISO == 0 && !(_CLEARCOAT != 0 && _CC_NORMAL == 1)
     out LOWP vec3 v2f_normalWS;
 #endif
 
@@ -33,16 +37,21 @@ out LOWP vec4 v2f_color;
     out HIGHP vec3 v2f_viewWS;
 
     #if _NORMAL != 0 || _ANISO != 0 || (_CLEARCOAT != 0 && _CC_NORMAL == 1)
-        out HIGHP vec4 v2f_tangentToWorldAndPackedWorldPosS;
-        out HIGHP vec4 v2f_tangentToWorldAndPackedWorldPosT;
-        out HIGHP vec4 v2f_tangentToWorldAndPackedWorldPosR;
+        out HIGHP vec3 v2f_normalWS;
+        out HIGHP vec4 v2f_tangentWS;
+
+        #ifdef INDIRECT_LIGHTING
+            out HIGHP vec3 v2f_positionWS;
+        #endif
     #else
         out HIGHP vec3 v2f_positionWS;
     #endif
 #endif
 
 #if _NORMAL != 0 || _ANISO != 0 || (_CLEARCOAT != 0 && _CC_NORMAL == 1)
+#ifndef PACKED_VERTEX_TANGENT_FRAME
     in LOWP vec4 in_tangent : TANGENT;
+#endif
 #endif
 
 #ifdef USE_SHADOW_MAP
@@ -90,8 +99,14 @@ void main() {
     HIGHP vec3 tangentLS;
     HIGHP vec3 bitangentLS;
 
+    #ifdef PACKED_VERTEX_TANGENT_FRAME
+        HIGHP vec3 vNormal;
+        HIGHP vec4 vTangent;
+        unpackTangentFrame(in_tangentFrame, vNormal, vTangent);
+    #else
         HIGHP vec3 vNormal = in_normal.xyz;
         HIGHP vec4 vTangent = in_tangent;
+    #endif
 
     #ifdef GPU_SKINNING
         skinningMatrix(in_position, positionLS, vNormal, normalLS, vTangent, tangentLS, bitangentLS);
@@ -102,7 +117,11 @@ void main() {
         bitangentLS = normalize(cross(vNormal, vTangent.xyz) * vTangent.w);
     #endif
 #else
+    #ifdef PACKED_VERTEX_TANGENT_FRAME
+        vec3 vNormal = unpackTangentFrameNormal(in_tangentFrame);
+    #else
         vec3 vNormal = in_normal.xyz;
+    #endif
     
     #ifdef GPU_SKINNING
         skinningMatrix(in_position, positionLS, vNormal, normalLS);
@@ -117,6 +136,12 @@ void main() {
 #if defined(DIRECT_LIGHTING) || defined(INDIRECT_LIGHTING)
     v2f_viewWS = viewOrigin.xyz - positionWS.xyz;
 
+    // The OpenGL rendering path assumes uniform scale for surface normal transforms.
+    HIGHP mat3 worldMatrix = mat3(localToWorldMatrix);
+    HIGHP vec3 normalWS = worldMatrix * normalLS;
+    HIGHP float normalLengthSquared = dot(normalWS, normalWS);
+    normalWS = normalLengthSquared > 1e-20 ? normalWS * inversesqrt(normalLengthSquared) : vec3(0.0, 0.0, 1.0);
+
     #if _NORMAL != 0 || _ANISO != 0 || (_CLEARCOAT != 0 && _CC_NORMAL == 1)
         #if _PARALLAX
             vec3 viewLS = mat3(worldToLocalMatrix) * v2f_viewWS;
@@ -126,18 +151,22 @@ void main() {
             v2f_viewTS.z = dot(normalLS, viewLS);
         #endif
 
-        // Build the matrix to transform tangent space into GL world space
-        v2f_tangentToWorldAndPackedWorldPosS.xyz = mat3(localToWorldMatrix) * tangentLS;
-        v2f_tangentToWorldAndPackedWorldPosT.xyz = mat3(localToWorldMatrix) * bitangentLS;
-        v2f_tangentToWorldAndPackedWorldPosR.xyz = mat3(localToWorldMatrix) * normalLS;
+        HIGHP vec3 tangentWS = worldMatrix * tangentLS;
+        HIGHP float tangentLengthSquared = dot(tangentWS, tangentWS);
+        tangentWS = tangentLengthSquared > 1e-20 ? tangentWS * inversesqrt(tangentLengthSquared) : vec3(1.0, 0.0, 0.0);
+
+        HIGHP float worldMatrixDeterminant = dot(worldMatrix[0], cross(worldMatrix[1], worldMatrix[2]));
+        HIGHP float tangentHandedness = vTangent.w < 0.0 ? -1.0 : 1.0;
+        tangentHandedness = worldMatrixDeterminant < 0.0 ? -tangentHandedness : tangentHandedness;
+
+        v2f_normalWS = normalWS;
+        v2f_tangentWS = vec4(tangentWS, tangentHandedness);
 
         #ifdef INDIRECT_LIGHTING
-            v2f_tangentToWorldAndPackedWorldPosS.w = positionWS.x;
-            v2f_tangentToWorldAndPackedWorldPosT.w = positionWS.y;
-            v2f_tangentToWorldAndPackedWorldPosR.w = positionWS.z;
+            v2f_positionWS = positionWS.xyz;
         #endif 
     #else
-        v2f_normalWS = mat3(localToWorldMatrix) * normalLS;
+        v2f_normalWS = normalWS;
 
         v2f_positionWS = positionWS.xyz;
     #endif

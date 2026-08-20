@@ -17,7 +17,7 @@ in LOWP vec4 v2f_color;
     in MEDIUMP vec2 v2f_tex;
 #endif
 
-#if _NORMAL == 0
+#if _NORMAL == 0 && _ANISO == 0 && !(_CLEARCOAT != 0 && _CC_NORMAL == 1)
     in MEDIUMP vec3 v2f_normalWS;
 #endif
 
@@ -35,9 +35,12 @@ in LOWP vec4 v2f_color;
     in HIGHP vec3 v2f_viewWS;
 
     #if _NORMAL != 0 || _ANISO != 0 || (_CLEARCOAT != 0 && _CC_NORMAL == 1)
-        in HIGHP vec4 v2f_tangentToWorldAndPackedWorldPosS;
-        in HIGHP vec4 v2f_tangentToWorldAndPackedWorldPosT;
-        in HIGHP vec4 v2f_tangentToWorldAndPackedWorldPosR;
+        in HIGHP vec3 v2f_normalWS;
+        in HIGHP vec4 v2f_tangentWS;
+
+        #ifdef INDIRECT_LIGHTING
+            in HIGHP vec3 v2f_positionWS;
+        #endif
     #else
         in HIGHP vec3 v2f_positionWS;
     #endif
@@ -234,14 +237,7 @@ void main() {
         vec3 worldS = reflect(-shading.v, shading.n);
 
         #ifdef SPECULAR_PROBE_BOX_PROJECTION
-            #if _NORMAL != 0 || _ANISO != 0 || (_CLEARCOAT != 0 && _CC_NORMAL == 1)
-                vec3 worldPos;
-                worldPos.x = v2f_tangentToWorldAndPackedWorldPosS.w;
-                worldPos.y = v2f_tangentToWorldAndPackedWorldPosT.w;
-                worldPos.z = v2f_tangentToWorldAndPackedWorldPosR.w;
-            #else
-                vec3 worldPos = v2f_positionWS.xyz;
-            #endif
+            vec3 worldPos = v2f_positionWS.xyz;
 
             shading.s0 = BoxProjectedCubemapDirection(worldS, worldPos, probe0Position, probe0Mins, probe0Maxs);
             #ifdef PROBE_BLENDING

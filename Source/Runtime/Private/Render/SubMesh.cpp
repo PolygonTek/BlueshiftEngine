@@ -493,7 +493,7 @@ void SubMesh::ComputeNormals() {
 
     for (int i = 0; i < numVerts; i++) {
         tempNormals[i].Normalize();
-        verts[i].SetNormal(tempNormals[i]);
+        verts[i].SetNormalAndResetTangentFrame(tempNormals[i]);
     }
 
     Mem_AlignedFree(tempNormals);
@@ -605,8 +605,7 @@ static void R_DeriveTangentsWithoutNormals(VertexGenericLit *verts, const int nu
     }
 
     for (int i = 0; i < numVerts; i++) {
-        verts[i].SetTangent(vertexTangents[i]);
-        verts[i].SetBiTangent(vertexBitangents[i]);
+        verts[i].SetTangentFrame(verts[i].GetNormal(), vertexTangents[i], vertexBitangents[i]);
     }
 
     Mem_AlignedFree(vertexTangents);
@@ -735,9 +734,7 @@ static void R_DeriveNormalsAndTangents(VertexGenericLit *verts, const int numVer
 
     // compress the normals and tangents
     for (int i = 0; i < numVerts; i++) {
-        verts[i].SetNormal(vertexNormals[i]);
-        verts[i].SetTangent(vertexTangents[i]);
-        verts[i].SetBiTangent(vertexBitangents[i]);
+        verts[i].SetTangentFrame(vertexNormals[i], vertexTangents[i], vertexBitangents[i]);
     }
 
     Mem_AlignedFree(vertexNormals);
@@ -802,9 +799,7 @@ static void R_DeriveUnsmoothedNormalsAndTangents(VertexGenericLit *verts, const 
         t5 = s1 * (n1 * t0 - n0 * t1);
 #endif
 
-        a->SetNormal(n0, n1, n2);
-        a->SetTangent(t0, t1, t2);
-        a->SetBiTangent(t3, t4, t5);
+        a->SetTangentFrame(Vec3(n0, n1, n2), Vec3(t0, t1, t2), Vec3(t3, t4, t5));
     }
 }
 

@@ -10,7 +10,11 @@ struct VSInput {
     float2 texCoord : TEXCOORD0;
     float4 color : COLOR;
 #ifdef OUTPUT_NORMAL
+#ifdef PACKED_VERTEX_TANGENT_FRAME
+    uint normal : NORMAL;
+#else
     float4 normal : NORMAL;
+#endif
 #endif
     uint instanceID : SV_InstanceID;
 };
@@ -45,7 +49,12 @@ PSInput VSMain(VSInput input) {
     result.prevVelocityPosition = CalcClipPosition(input.position, shaderSurface.prevWorldMatrix, cameraConstants.prevUnjitteredViewProjMatrix);
 #endif
 #ifdef OUTPUT_NORMAL
-    result.worldNormal = TransformSurfaceNormal(DecodeVertexNormal(input.normal.xyz), shaderSurface.worldMatrix, (shaderSurface.flags & ShaderSurfaceFlagNonUniformScale) != 0);
+    #ifdef PACKED_VERTEX_TANGENT_FRAME
+        float3 normal = DecodeTangentFrameNormal(input.normal);
+    #else
+        float3 normal = DecodeVertexNormal(input.normal);
+    #endif
+    result.worldNormal = TransformSurfaceNormal(normal, shaderSurface.worldMatrix, (shaderSurface.flags & ShaderSurfaceFlagNonUniformScale) != 0);
 #endif
 
     return result;

@@ -316,12 +316,16 @@ void RenderSystem::EnqueueRenderWork(UniquePtr<RenderWork> work) {
 }
 
 void RenderSystem::CompleteRenderWorks(RenderFrameData *frameData) {
+    PROFILER_CPU_SCOPED_EVENT("RenderSystem::CompleteRenderWorks");
+
     assert(BE1::Engine::IsInMainThread());
 
     renderWorkQueue.CompleteAttachedWorks(frameData);
 }
 
 void RenderSystem::AttachPendingRenderWorks(RenderFrameData *frameData) {
+    PROFILER_CPU_SCOPED_EVENT("RenderSystem::AttachPendingRenderWorks");
+
     assert(BE1::Engine::IsInMainThread());
 
     static constexpr int MaxRenderWorksPerFrame = 1;

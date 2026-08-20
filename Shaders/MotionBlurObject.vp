@@ -1,5 +1,9 @@
 in vec4 in_position : POSITION;
+#ifdef PACKED_VERTEX_TANGENT_FRAME
+in HIGHP uint in_tangentFrame : NORMAL;
+#else
 in vec3 in_normal : NORMAL;
+#endif
 in vec2 in_st : TEXCOORD0;
 
 out vec2 v2f_texCoord;
@@ -22,7 +26,11 @@ void main() {
 	vec4 localPosPrev;
 	vec3 localNormal;
 
+#ifdef PACKED_VERTEX_TANGENT_FRAME
+	vec3 vNormal = unpackTangentFrameNormal(in_tangentFrame);
+#else
 	vec3 vNormal = in_normal.xyz;
+#endif
 
 #ifdef GPU_SKINNING
 	skinningMatrix(in_position, localPos, vNormal, localNormal);

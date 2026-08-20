@@ -175,6 +175,12 @@ void ShaderManager::Shutdown() {
 }
 
 void ShaderManager::InitGlobalDefines() {
+#ifdef PACKED_VERTEX_TANGENT_FRAME
+    shaderManager.AddGlobalHeader("#define PACKED_VERTEX_TANGENT_FRAME\n");
+    #ifdef PACKED_TANGENT_FRAME_DIAMOND_ENCODING
+        shaderManager.AddGlobalHeader("#define PACKED_TANGENT_FRAME_DIAMOND_ENCODING\n");
+    #endif
+#endif
     if (textureManager.texture_useNormalCompression.GetBool()) {
         if (graphics.SupportsTextureCompressionRGTC()) {
             shaderManager.AddGlobalHeader("#define RGTC_NORMAL\n");

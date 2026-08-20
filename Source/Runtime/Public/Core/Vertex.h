@@ -135,10 +135,13 @@ BE_INLINE void VertexGeneric::Transform(const Mat3 &rotation, const Vec3 &scale,
 -------------------------------------------------------------------------------
 */
 
+#define PACKED_VERTEX_TANGENT_FRAME
 #define COMPRESSED_VERTEX_NORMAL_TANGENTS
 
 struct BE_API VertexGenericLit : public VertexGeneric {
-#ifdef COMPRESSED_VERTEX_NORMAL_TANGENTS
+#ifdef PACKED_VERTEX_TANGENT_FRAME
+    uint32_t        tangentFrame;
+#elif defined(COMPRESSED_VERTEX_NORMAL_TANGENTS)
     int8_t          normal[4];
     int8_t          tangent[4];
 #else
@@ -151,30 +154,22 @@ struct BE_API VertexGenericLit : public VertexGeneric {
     const Vec3      GetNormal() const;
     const Vec3      GetNormalRaw() const;
     
-                    // must be normalized already!
-    void            SetNormal(const Vec3 &n);
-    void            SetNormal(float x, float y, float z);
+                    // Initializes a complete frame from an already normalized normal.
+                    // The previous tangent direction and handedness are not preserved.
+    void            SetNormalAndResetTangentFrame(const Vec3 &normal);
+    void            SetNormalAndResetTangentFrame(float x, float y, float z);
 
     const Vec3      GetTangent() const;
     const Vec3      GetTangentRaw() const;
 
-                    // must be normalized already!
-    void            SetTangent(const Vec3 &t);
-    void            SetTangent(float x, float y, float z);
-    void            SetTangent(const Vec4 &t);
-    void            SetTangent(float x, float y, float z, float w);
+    void            SetTangentFrame(const Vec3 &normal, const Vec3 &tangent, float bitangentSign);
+    void            SetTangentFrame(const Vec3 &normal, const Vec3 &tangent, const Vec3 &bitangent);
 
                     // derived from normal, tangent, and tangent flag
     const Vec3      GetBiTangent() const;
     const Vec3      GetBiTangentRaw() const;
 
-    void            SetBiTangent(float x, float y, float z);
-    void            SetBiTangent(const Vec3 & t);
-
     float           GetBiTangentSign() const;
-
-                    // either 1.0f or -1.0f
-    void            SetBiTangentSign(float sign);
 
     void            Lerp(const VertexGenericLit &a, const VertexGenericLit &b, const float f);
 
@@ -203,12 +198,13 @@ BE_INLINE void ConvertNormalToSNorm8(const float &x, const float &y, const float
 
 BE_INLINE void VertexGenericLit::Clear() {
     VertexGeneric::Clear();
-    SetNormal(0, 0, 1);
-    SetTangent(1, 0, 0);
+    SetTangentFrame(Vec3::unitZ, Vec3::unitX, 1.0f);
 }
 
 BE_INLINE const Vec3 VertexGenericLit::GetNormal() const {
-#ifdef COMPRESSED_VERTEX_NORMAL_TANGENTS
+#ifdef PACKED_VERTEX_TANGENT_FRAME
+    return PackedTangentFrame::UnpackNormal(tangentFrame);
+#elif defined(COMPRESSED_VERTEX_NORMAL_TANGENTS)
     Vec3 n(Math::SNorm8ToFloat(normal[0]), Math::SNorm8ToFloat(normal[1]), Math::SNorm8ToFloat(normal[2]));
     n.Normalize();
     return n;
@@ -220,7 +216,9 @@ BE_INLINE const Vec3 VertexGenericLit::GetNormal() const {
 }
 
 BE_INLINE const Vec3 VertexGenericLit::GetNormalRaw() const {
-#ifdef COMPRESSED_VERTEX_NORMAL_TANGENTS
+#ifdef PACKED_VERTEX_TANGENT_FRAME
+    return PackedTangentFrame::UnpackNormal(tangentFrame);
+#elif defined(COMPRESSED_VERTEX_NORMAL_TANGENTS)
     Vec3 n(Math::SNorm8ToFloat(normal[0]), Math::SNorm8ToFloat(normal[1]), Math::SNorm8ToFloat(normal[2]));
     return n;
 #else
@@ -229,70 +227,47 @@ BE_INLINE const Vec3 VertexGenericLit::GetNormalRaw() const {
 #endif
 }
 
-BE_INLINE void VertexGenericLit::SetNormal(const Vec3 &n) {
-#ifdef COMPRESSED_VERTEX_NORMAL_TANGENTS
-    ConvertNormalToSNorm8(n.x, n.y, n.z, normal);
+BE_INLINE void VertexGenericLit::SetNormalAndResetTangentFrame(const Vec3 &normal) {
+#ifdef PACKED_VERTEX_TANGENT_FRAME
+    tangentFrame = PackedTangentFrame::PackNormal(normal);
 #else
-    normal[0] = F16Converter::FromF32(n[0]);
-    normal[1] = F16Converter::FromF32(n[1]);
-    normal[2] = F16Converter::FromF32(n[2]);
+    Vec3 tangent;
+    Vec3 bitangent;
+    normal.OrthogonalBasis(tangent, bitangent);
+    SetTangentFrame(normal, tangent, bitangent);
 #endif
 }
 
-BE_INLINE void VertexGenericLit::SetNormal(float x, float y, float z) {
-#ifdef COMPRESSED_VERTEX_NORMAL_TANGENTS
-    ConvertNormalToSNorm8(x, y, z, normal);
+BE_INLINE void VertexGenericLit::SetNormalAndResetTangentFrame(float x, float y, float z) {
+    SetNormalAndResetTangentFrame(Vec3(x, y, z));
+}
+
+BE_INLINE void VertexGenericLit::SetTangentFrame(const Vec3 &normal, const Vec3 &tangent, float bitangentSign) {
+#ifdef PACKED_VERTEX_TANGENT_FRAME
+    tangentFrame = PackedTangentFrame::Pack(normal, tangent, bitangentSign);
+#elif defined(COMPRESSED_VERTEX_NORMAL_TANGENTS)
+    ConvertNormalToSNorm8(normal.x, normal.y, normal.z, this->normal);
+    ConvertNormalToSNorm8(tangent.x, tangent.y, tangent.z, this->tangent);
+    this->tangent[3] = (bitangentSign < 0.0f) ? -127 : 127;
 #else
-    normal[0] = F16Converter::FromF32(x);
-    normal[1] = F16Converter::FromF32(y);
-    normal[2] = F16Converter::FromF32(z); 
+    this->normal[0] = F16Converter::FromF32(normal[0]);
+    this->normal[1] = F16Converter::FromF32(normal[1]);
+    this->normal[2] = F16Converter::FromF32(normal[2]);
+    this->tangent[0] = F16Converter::FromF32(tangent[0]);
+    this->tangent[1] = F16Converter::FromF32(tangent[1]);
+    this->tangent[2] = F16Converter::FromF32(tangent[2]);
+    this->tangent[3] = F16Converter::FromF32((bitangentSign < 0.0f) ? -1.0f : 1.0f);
 #endif
 }
 
-BE_INLINE void VertexGenericLit::SetTangent(const Vec3 &t) {
-#ifdef COMPRESSED_VERTEX_NORMAL_TANGENTS
-    ConvertNormalToSNorm8(t.x, t.y, t.z, tangent);
-#else
-    tangent[0] = F16Converter::FromF32(t[0]);
-    tangent[1] = F16Converter::FromF32(t[1]);
-    tangent[2] = F16Converter::FromF32(t[2]);
-#endif
-}
-
-BE_INLINE void VertexGenericLit::SetTangent(float x, float y, float z) {
-#ifdef COMPRESSED_VERTEX_NORMAL_TANGENTS
-    ConvertNormalToSNorm8(x, y, z, tangent);
-#else
-    tangent[0] = F16Converter::FromF32(x);
-    tangent[1] = F16Converter::FromF32(y);
-    tangent[2] = F16Converter::FromF32(z);
-#endif
-}
-
-BE_INLINE void VertexGenericLit::SetTangent(const Vec4 &t) {
-#ifdef COMPRESSED_VERTEX_NORMAL_TANGENTS
-    ConvertNormalToSNorm8(t.x, t.y, t.z, tangent);
-#else
-    tangent[0] = F16Converter::FromF32(t[0]);
-    tangent[1] = F16Converter::FromF32(t[1]);
-    tangent[2] = F16Converter::FromF32(t[2]);
-#endif
-    SetBiTangentSign(t.w);
-}
-
-BE_INLINE void VertexGenericLit::SetTangent(float x, float y, float z, float w) {
-#ifdef COMPRESSED_VERTEX_NORMAL_TANGENTS
-    ConvertNormalToSNorm8(x, y, z, tangent);
-#else
-    tangent[0] = F16Converter::FromF32(x);
-    tangent[1] = F16Converter::FromF32(y);
-    tangent[2] = F16Converter::FromF32(z);
-#endif
-    SetBiTangentSign(w);
+BE_INLINE void VertexGenericLit::SetTangentFrame(const Vec3 &normal, const Vec3 &tangent, const Vec3 &bitangent) {
+    SetTangentFrame(normal, tangent, Vec3::FromCross(normal, tangent).Dot(bitangent));
 }
 
 BE_INLINE const Vec3 VertexGenericLit::GetTangent() const {
-#ifdef COMPRESSED_VERTEX_NORMAL_TANGENTS
+#ifdef PACKED_VERTEX_TANGENT_FRAME
+    return PackedTangentFrame::UnpackTangent(tangentFrame);
+#elif defined(COMPRESSED_VERTEX_NORMAL_TANGENTS)
     Vec3 t(Math::SNorm8ToFloat(tangent[0]), Math::SNorm8ToFloat(tangent[1]), Math::SNorm8ToFloat(tangent[2]));
     t.Normalize();
     return t;
@@ -304,7 +279,9 @@ BE_INLINE const Vec3 VertexGenericLit::GetTangent() const {
 }
 
 BE_INLINE const Vec3 VertexGenericLit::GetTangentRaw() const {
-#ifdef COMPRESSED_VERTEX_NORMAL_TANGENTS
+#ifdef PACKED_VERTEX_TANGENT_FRAME
+    return PackedTangentFrame::UnpackTangent(tangentFrame);
+#elif defined(COMPRESSED_VERTEX_NORMAL_TANGENTS)
     Vec3 t(Math::SNorm8ToFloat(tangent[0]), Math::SNorm8ToFloat(tangent[1]), Math::SNorm8ToFloat(tangent[2]));
     return t;
 #else
@@ -328,28 +305,13 @@ BE_INLINE const Vec3 VertexGenericLit::GetBiTangentRaw() const {
     return bitangent;
 }
 
-BE_INLINE void VertexGenericLit::SetBiTangent(float x, float y, float z) {
-    SetBiTangent(Vec3(x, y, z));
-}
-
-BE_INLINE void VertexGenericLit::SetBiTangent(const Vec3 &t) {
-    Vec3 bitangent = Vec3::FromCross(GetNormal(), GetTangent());
-    SetBiTangentSign(bitangent.Dot(t));
-}
-
 BE_INLINE float VertexGenericLit::GetBiTangentSign() const {
-#ifdef COMPRESSED_VERTEX_NORMAL_TANGENTS
+#ifdef PACKED_VERTEX_TANGENT_FRAME
+    return PackedTangentFrame::UnpackBiTangentSign(tangentFrame);
+#elif defined(COMPRESSED_VERTEX_NORMAL_TANGENTS)
     return (tangent[3] < 0) ? -1.0f : 1.0f;
 #else
     return (F16Converter::ToF32(tangent[3]) < 0.0f) ? -1.0f : 1.0f;
-#endif
-}
-
-BE_INLINE void VertexGenericLit::SetBiTangentSign(float sign) {
-#ifdef COMPRESSED_VERTEX_NORMAL_TANGENTS
-    tangent[3] = (sign < 0.0f) ? -127 : 127;
-#else
-    tangent[3] = F16Converter::FromF32((sign < 0.0f) ? -1.0f : 1.0f);
 #endif
 }
 
@@ -364,15 +326,15 @@ BE_INLINE void VertexGenericLit::Lerp(const VertexGenericLit &a, const VertexGen
     tangent.Normalize();
     bitangent.Normalize();
 
-    SetNormal(normal);
-    SetTangent(tangent);
-    SetBiTangent(bitangent);
+    SetTangentFrame(normal, tangent, bitangent);
 }
 
 BE_INLINE void VertexGenericLit::Transform(const Mat3x4 &transform) {
+    const Vec3 normal = transform.TransformDir(GetNormal());
+    const Vec3 tangent = transform.TransformDir(GetTangent());
+    const float bitangentSign = GetBiTangentSign();
     xyz = transform.TransformPos(xyz);
-    SetNormal(transform.TransformDir(GetNormal()));
-    SetTangent(transform.TransformDir(GetTangent()));
+    SetTangentFrame(normal, tangent, bitangentSign);
 }
 
 BE_INLINE void VertexGenericLit::Transform(const Mat3 &rotation, const Vec3 &scale, const Vec3 &translation) {

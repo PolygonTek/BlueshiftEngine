@@ -16,9 +16,8 @@ uniform LOWP vec4 constantColor;
 #endif
 
 #if _NORMAL != 0
-    in LOWP vec3 v2f_tangentToWorldMatrixS;
-    in LOWP vec3 v2f_tangentToWorldMatrixT;
-    in LOWP vec3 v2f_tangentToWorldMatrixR;
+    in HIGHP vec3 v2f_normalWS;
+    in HIGHP vec4 v2f_tangentWS;
 #else
     in LOWP vec3 v2f_normalWS;
 #endif
@@ -59,8 +58,14 @@ void main() {
     o_fragColor = constantColor;
 
 #if _NORMAL != 0
+    HIGHP vec3 surfaceNormalWS = normalize(v2f_normalWS);
+    HIGHP vec3 tangentWS = v2f_tangentWS.xyz - surfaceNormalWS * dot(surfaceNormalWS, v2f_tangentWS.xyz);
+    HIGHP float tangentLengthSquared = dot(tangentWS, tangentWS);
+    tangentWS = tangentLengthSquared > 1e-20 ? tangentWS * inversesqrt(tangentLengthSquared) : vec3(1.0, 0.0, 0.0);
+    HIGHP vec3 bitangentWS = cross(surfaceNormalWS, tangentWS) * v2f_tangentWS.w;
+
     vec3 normalTS = normalize(GetNormal(normalMap, baseTc));
-    vec3 normalWS = mat3(normalize(v2f_tangentToWorldMatrixS), normalize(v2f_tangentToWorldMatrixT), normalize(v2f_tangentToWorldMatrixR)) * normalTS;
+    vec3 normalWS = mat3(tangentWS, bitangentWS, surfaceNormalWS) * normalTS;
 #else
     vec3 normalWS = normalize(v2f_normalWS.xyz);
 #endif

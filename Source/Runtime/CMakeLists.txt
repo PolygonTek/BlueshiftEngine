@@ -100,6 +100,7 @@ set(COMMON_ENGINE_FILES
     Public/Math/Matrix4.h
     Public/Math/OBB.h
     Public/Math/Octahedral.h
+    Public/Math/PackedTangentFrame.h
     Public/Math/Plane.h
     Public/Math/Pluecker.h
     Public/Math/Point.h

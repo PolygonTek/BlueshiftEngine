@@ -236,7 +236,7 @@ void ComSoftBody::UpdateMeshVertsFromPoints() {
             Vec3 localNormal = inverseWorldMatrix.TransformDir(nodeNormal);
 
             verts[vertexIndex].SetPosition(localPosition);
-            verts[vertexIndex].SetNormal(localNormal);
+            verts[vertexIndex].SetNormalAndResetTangentFrame(localNormal);
         }
 
         baseGraphicsIndex += subMesh->NumVerts();

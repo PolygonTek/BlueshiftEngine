@@ -174,6 +174,12 @@ SharedPtr<ShaderTemplate> ShaderTemplateManager::GetShaderTemplate(const char *h
 }
 
 void ShaderTemplateManager::InitGlobalDefines() {
+#ifdef PACKED_VERTEX_TANGENT_FRAME
+    AddGlobalDefine("PACKED_VERTEX_TANGENT_FRAME");
+    #ifdef PACKED_TANGENT_FRAME_DIAMOND_ENCODING
+        AddGlobalDefine("PACKED_TANGENT_FRAME_DIAMOND_ENCODING");
+    #endif
+#endif
     AddGlobalDefine(BE1::va("CSM_COUNT=%i", static_cast<int>(RenderContext::CSMCascadeCount)));
     AddGlobalDefine(BE1::va("CASCADE_SELECTION_METHOD=%i", 1));
 

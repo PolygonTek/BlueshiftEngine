@@ -105,9 +105,7 @@ bool Mesh::InternalData::LoadBinaryMesh(const char *filename) {
 
             v->SetPosition(bMeshVert->position);
             v->SetTexCoord(bMeshVert->texCoord);
-            v->SetNormal(bMeshVert->normal);
-            v->SetTangent(bMeshVert->tangent);
-            v->SetBiTangent(bMeshVert->bitangent);
+            v->SetTangentFrame(bMeshVert->normal, bMeshVert->tangent, bMeshVert->bitangent);
             v->SetColor(bMeshVert->color);
 
             ptr += sizeof(BMeshVert);

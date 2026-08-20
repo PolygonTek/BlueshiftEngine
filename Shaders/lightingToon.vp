@@ -1,5 +1,9 @@
 in vec4 in_position : POSITION;
+#ifdef PACKED_VERTEX_TANGENT_FRAME
+in HIGHP uint in_tangentFrame : NORMAL;
+#else
 in vec3 in_normal : NORMAL;
+#endif
 in vec4 in_color : COLOR;
 in vec2 in_st : TEXCOORD0;
 
@@ -48,7 +52,11 @@ uniform mat4 lightTextureMatrix;
 uniform bool useShadowMap;
 
 void main() {
+#ifdef PACKED_VERTEX_TANGENT_FRAME
+	vec3 vNormal = unpackTangentFrameNormal(in_tangentFrame);
+#else
 	vec3 vNormal = in_normal.xyz;
+#endif
 
 	vec4 localPos;
 	vec3 localNormal;

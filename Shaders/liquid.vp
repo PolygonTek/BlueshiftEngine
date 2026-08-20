@@ -1,8 +1,14 @@
 in vec4 in_position : POSITION;
+#ifdef PACKED_VERTEX_TANGENT_FRAME
+in HIGHP uint in_tangentFrame : NORMAL;
+#else
 in vec3 in_normal : NORMAL;
+#endif
 in vec4 in_color : COLOR;
 in vec2 in_st : TEXCOORD0;
+#ifndef PACKED_VERTEX_TANGENT_FRAME
 in vec4 in_tangent : TANGENT;
+#endif
 
 out vec3 v2f_color;
 out vec2 v2f_texCoord;
@@ -41,8 +47,14 @@ uniform HIGHP mat4 modelViewMatrixTranspose;
 uniform HIGHP mat4 projectionMatrixTranspose;
 
 void main() {
+#ifdef PACKED_VERTEX_TANGENT_FRAME
+	vec3 vNormal;
+	vec4 vTangent;
+	unpackTangentFrame(in_tangentFrame, vNormal, vTangent);
+#else
 	vec3 vNormal = in_normal.xyz;
-    vec4 vTangent = in_tangent;
+	vec4 vTangent = in_tangent;
+#endif
 
 	vec3 tan = vTangent.xyz;
 	vec3 bitan = cross(vNormal, vTangent.xyz) * vTangent.w;

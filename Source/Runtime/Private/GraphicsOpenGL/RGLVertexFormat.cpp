@@ -55,7 +55,7 @@ Graphics::Handle GraphicsOpenGL::CreateVertexFormat(int numElements, const Verte
         ve->type = toGLType[element->type];
         ve->normalize = element->normalize;
         ve->useFloatAttribute = element->normalize || (ve->type == GL_FLOAT || ve->type == GL_HALF_FLOAT);
-        vertexFormat->vertexSize[stream] += GetTypeSize(element->type);
+        vertexFormat->vertexSize[stream] += GetTypeSize(element->type) * element->components;
     }
 
     int handle = vertexFormatList.FindNull();

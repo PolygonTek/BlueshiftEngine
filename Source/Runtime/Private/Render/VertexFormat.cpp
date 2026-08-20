@@ -49,7 +49,10 @@ void VertexFormat::Init() {
     vertexFormats[VertexFormat::Type::XyzColor].Append(0, 12, Graphics::VertexElement::Usage::Color, 4, Graphics::VertexElement::Type::UByte, true, 0);
     vertexFormats[VertexFormat::Type::XyzColor].Create();
 
-#ifdef COMPRESSED_VERTEX_NORMAL_TANGENTS
+#ifdef PACKED_VERTEX_TANGENT_FRAME
+    Graphics::VertexElement::Type::Enum normalTangentType = Graphics::VertexElement::Type::UInt;
+    bool normalTangentNormalize = false;
+#elif defined(COMPRESSED_VERTEX_NORMAL_TANGENTS)
     Graphics::VertexElement::Type::Enum normalTangentType = Graphics::VertexElement::Type::Byte;
     bool normalTangentNormalize = true;
 #else
@@ -69,7 +72,7 @@ void VertexFormat::Init() {
 
     // GenericXyzSt
     vertexFormats[VertexFormat::Type::GenericXyzSt].Append(0, offsetof(VertexGenericLit, xyz), Graphics::VertexElement::Usage::Position, 3, Graphics::VertexElement::Type::Float, false, 0);
-    vertexFormats[VertexFormat::Type::GenericXyzSt].Append(0, offsetof(VertexGenericLit, st), Graphics::VertexElement::Usage::TexCoord0, 2, Graphics::VertexElement::Type::Half, false, 0);
+    vertexFormats[VertexFormat::Type::GenericXyzSt].Append(0, offsetof(VertexGenericLit, st), Graphics::VertexElement::Usage::TexCoord, 2, Graphics::VertexElement::Type::Half, false, 0);
     vertexFormats[VertexFormat::Type::GenericXyzSt].Create();
 
     // GenericXyzStSkinning1, GenericXyzStSkinning4, GenericXyzStSkinning8
@@ -80,7 +83,7 @@ void VertexFormat::Init() {
 
     // GenericXyzStColor
     vertexFormats[VertexFormat::Type::GenericXyzStColor].Append(0, offsetof(VertexGenericLit, xyz), Graphics::VertexElement::Usage::Position, 3, Graphics::VertexElement::Type::Float, false, 0);
-    vertexFormats[VertexFormat::Type::GenericXyzStColor].Append(0, offsetof(VertexGenericLit, st), Graphics::VertexElement::Usage::TexCoord0, 2, Graphics::VertexElement::Type::Half, false, 0);
+    vertexFormats[VertexFormat::Type::GenericXyzStColor].Append(0, offsetof(VertexGenericLit, st), Graphics::VertexElement::Usage::TexCoord, 2, Graphics::VertexElement::Type::Half, false, 0);
     vertexFormats[VertexFormat::Type::GenericXyzStColor].Append(0, offsetof(VertexGenericLit, color), Graphics::VertexElement::Usage::Color, 4, Graphics::VertexElement::Type::UByte, true, 0);
     vertexFormats[VertexFormat::Type::GenericXyzStColor].Create();
 
@@ -92,7 +95,11 @@ void VertexFormat::Init() {
 
     // GenericXyzNormal
     vertexFormats[VertexFormat::Type::GenericXyzNormal].Append(0, offsetof(VertexGenericLit, xyz), Graphics::VertexElement::Usage::Position, 3, Graphics::VertexElement::Type::Float, false, 0);
+#ifdef PACKED_VERTEX_TANGENT_FRAME
+    vertexFormats[VertexFormat::Type::GenericXyzNormal].Append(0, offsetof(VertexGenericLit, tangentFrame), Graphics::VertexElement::Usage::Normal, 1, normalTangentType, normalTangentNormalize, 0);
+#else
     vertexFormats[VertexFormat::Type::GenericXyzNormal].Append(0, offsetof(VertexGenericLit, normal), Graphics::VertexElement::Usage::Normal, 3, normalTangentType, normalTangentNormalize, 0);
+#endif
     vertexFormats[VertexFormat::Type::GenericXyzNormal].Create();
 
     // GenericXyzNormalSkinning1, GenericXyzNormalSkinning4, GenericXyzNormalSkinning8
@@ -104,8 +111,12 @@ void VertexFormat::Init() {
     // GenericXyzStNT
     vertexFormats[VertexFormat::Type::GenericXyzStNT].Append(0, offsetof(VertexGenericLit, xyz), Graphics::VertexElement::Usage::Position, 3, Graphics::VertexElement::Type::Float, false, 0);
     vertexFormats[VertexFormat::Type::GenericXyzStNT].Append(0, offsetof(VertexGenericLit, st), Graphics::VertexElement::Usage::TexCoord, 2, Graphics::VertexElement::Type::Half, false, 0);
+#ifdef PACKED_VERTEX_TANGENT_FRAME
+    vertexFormats[VertexFormat::Type::GenericXyzStNT].Append(0, offsetof(VertexGenericLit, tangentFrame), Graphics::VertexElement::Usage::Normal, 1, normalTangentType, normalTangentNormalize, 0);
+#else
     vertexFormats[VertexFormat::Type::GenericXyzStNT].Append(0, offsetof(VertexGenericLit, normal), Graphics::VertexElement::Usage::Normal, 3, normalTangentType, normalTangentNormalize, 0);
     vertexFormats[VertexFormat::Type::GenericXyzStNT].Append(0, offsetof(VertexGenericLit, tangent), Graphics::VertexElement::Usage::Tangent, 4, normalTangentType, normalTangentNormalize, 0);
+#endif
     vertexFormats[VertexFormat::Type::GenericXyzStNT].Create();
 
     // GenericXyzStNTSkinning1, GenericXyzStNTSkinning4, GenericXyzStNTSkinning8
@@ -116,10 +127,14 @@ void VertexFormat::Init() {
 
     // GenericXyzStColorNT
     vertexFormats[VertexFormat::Type::GenericXyzStColorNT].Append(0, offsetof(VertexGenericLit, xyz), Graphics::VertexElement::Usage::Position, 3, Graphics::VertexElement::Type::Float, false, 0);
-    vertexFormats[VertexFormat::Type::GenericXyzStColorNT].Append(0, offsetof(VertexGenericLit, st), Graphics::VertexElement::Usage::TexCoord0, 2, Graphics::VertexElement::Type::Half, false, 0);
+    vertexFormats[VertexFormat::Type::GenericXyzStColorNT].Append(0, offsetof(VertexGenericLit, st), Graphics::VertexElement::Usage::TexCoord, 2, Graphics::VertexElement::Type::Half, false, 0);
     vertexFormats[VertexFormat::Type::GenericXyzStColorNT].Append(0, offsetof(VertexGenericLit, color), Graphics::VertexElement::Usage::Color, 4, Graphics::VertexElement::Type::UByte, true, 0);
+#ifdef PACKED_VERTEX_TANGENT_FRAME
+    vertexFormats[VertexFormat::Type::GenericXyzStColorNT].Append(0, offsetof(VertexGenericLit, tangentFrame), Graphics::VertexElement::Usage::Normal, 1, normalTangentType, normalTangentNormalize, 0);
+#else
     vertexFormats[VertexFormat::Type::GenericXyzStColorNT].Append(0, offsetof(VertexGenericLit, normal), Graphics::VertexElement::Usage::Normal, 3, normalTangentType, normalTangentNormalize, 0);
     vertexFormats[VertexFormat::Type::GenericXyzStColorNT].Append(0, offsetof(VertexGenericLit, tangent), Graphics::VertexElement::Usage::Tangent, 4, normalTangentType, normalTangentNormalize, 0);
+#endif
     vertexFormats[VertexFormat::Type::GenericXyzStColorNT].Create();
 
     // GenericXyzStColorNTSkinning1, GenericXyzStColorNTSkinning4, GenericXyzStColorNTSkinning8

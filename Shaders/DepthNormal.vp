@@ -3,11 +3,17 @@
 #endif
 
 in HIGHP vec4 in_position   : POSITION;
+#ifdef PACKED_VERTEX_TANGENT_FRAME
+in HIGHP uint in_tangentFrame : NORMAL;
+#else
 in LOWP vec3 in_normal      : NORMAL;
+#endif
 in MEDIUMP vec2 in_st       : TEXCOORD0;
 
 #if _NORMAL != 0
+#ifndef PACKED_VERTEX_TANGENT_FRAME
     in LOWP vec4 in_tangent : TANGENT;
+#endif
 #endif
 
 #ifdef NEED_BASE_TC
@@ -15,9 +21,8 @@ in MEDIUMP vec2 in_st       : TEXCOORD0;
 #endif
 
 #if _NORMAL != 0
-    out LOWP vec3 v2f_tangentToWorldMatrixS;
-    out LOWP vec3 v2f_tangentToWorldMatrixT;
-    out LOWP vec3 v2f_tangentToWorldMatrixR;
+    out HIGHP vec3 v2f_normalWS;
+    out HIGHP vec4 v2f_tangentWS;
 #else
     out LOWP vec3 v2f_normalWS;
 #endif
@@ -62,8 +67,14 @@ void main() {
     vec3 tangentLS;
     vec3 bitangentLS;
 
+    #ifdef PACKED_VERTEX_TANGENT_FRAME
+        vec3 vNormal;
+        vec4 vTangent;
+        unpackTangentFrame(in_tangentFrame, vNormal, vTangent);
+    #else
         vec3 vNormal = in_normal.xyz;
         vec4 vTangent = in_tangent;
+    #endif
 
     #ifdef GPU_SKINNING
         skinningMatrix(in_position, positionLS, vNormal, normalLS, vTangent, tangentLS, bitangentLS);
@@ -74,7 +85,11 @@ void main() {
         bitangentLS = normalize(cross(vNormal, vTangent.xyz) * vTangent.w);
     #endif
 #else
+    #ifdef PACKED_VERTEX_TANGENT_FRAME
+        vec3 vNormal = unpackTangentFrameNormal(in_tangentFrame);
+    #else
         vec3 vNormal = in_normal.xyz;
+    #endif
 
     #ifdef GPU_SKINNING
         skinningMatrix(in_position, positionLS, vNormal, normalLS);
@@ -95,12 +110,27 @@ void main() {
         v2f_viewTS.y = dot(bitangentLS, viewLS);
         v2f_viewTS.z = dot(normalLS, viewLS);
     #endif
+#endif
 
-    v2f_tangentToWorldMatrixS = mat3(localToWorldMatrix) * tangentLS;
-    v2f_tangentToWorldMatrixT = mat3(localToWorldMatrix) * bitangentLS;
-    v2f_tangentToWorldMatrixR = mat3(localToWorldMatrix) * normalLS;
+// The OpenGL rendering path assumes uniform scale for surface normal transforms.
+HIGHP mat3 worldMatrix = mat3(localToWorldMatrix);
+HIGHP vec3 normalWS = worldMatrix * normalLS;
+HIGHP float normalLengthSquared = dot(normalWS, normalWS);
+normalWS = normalLengthSquared > 1e-20 ? normalWS * inversesqrt(normalLengthSquared) : vec3(0.0, 0.0, 1.0);
+
+#if _NORMAL != 0
+    HIGHP vec3 tangentWS = worldMatrix * tangentLS;
+    HIGHP float tangentLengthSquared = dot(tangentWS, tangentWS);
+    tangentWS = tangentLengthSquared > 1e-20 ? tangentWS * inversesqrt(tangentLengthSquared) : vec3(1.0, 0.0, 0.0);
+
+    HIGHP float worldMatrixDeterminant = dot(worldMatrix[0], cross(worldMatrix[1], worldMatrix[2]));
+    HIGHP float tangentHandedness = vTangent.w < 0.0 ? -1.0 : 1.0;
+    tangentHandedness = worldMatrixDeterminant < 0.0 ? -tangentHandedness : tangentHandedness;
+
+    v2f_normalWS = normalWS;
+    v2f_tangentWS = vec4(tangentWS, tangentHandedness);
 #else
-    v2f_normalWS = mat3(localToWorldMatrix) * normalLS;
+    v2f_normalWS = normalWS;
 #endif
 
 #ifdef INSTANCING
