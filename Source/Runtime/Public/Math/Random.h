@@ -32,7 +32,7 @@ public:
     RNG(uint64_t seed) : state(seed) {}
 
                             // Seeds the random number generator, seed should be non-zero number
-    void                    SetSeed(uint64_t seed) { state = seed; }
+    void                    SetSeed(uint64_t seed) { state = seed; hasGaussianSpare = false; }
 
                             // Gives an uint in range [0, UINT64_MAX]
     constexpr uint64_t      GetNextUInt();
@@ -58,6 +58,12 @@ public:
                             // Gives a float in range [min, max]
     constexpr float         GetNextFloat(float min, float max) { return min + (max - min) * GetNextFloat(); }
 
+                            // Gives a standard Gaussian value with distribution N(0, 1)
+    float                   GetNextGaussian();
+
+                            // Gives two independent standard Gaussian values with distribution N(0, 1)
+    void                    GetNextGaussianPair(float &value0, float &value1);
+
     static int              GetRandom(int minValue, int maxValue);
     static int              GetRandom(int maxValue);
 
@@ -70,12 +76,21 @@ public:
     static float            GetRandom(float minValue, float maxValue);
     static float            GetRandom(float maxValue);
 
+                            // Gives a standard Gaussian value with distribution N(0, 1)
+    static float            GetGaussianRandom();
+
+                            // Gives two independent standard Gaussian values with distribution N(0, 1)
+    static void             GetGaussianPair(float &value0, float &value1);
+
 private:
+    void                    GenerateGaussianPair(float &value0, float &value1);
     static uint64_t         MapUInt64(uint64_t value, uint64_t range);
     static constexpr int64_t UInt64ToInt64(uint64_t value);
     static constexpr int32_t UInt32ToInt32(uint32_t value);
 
     uint64_t                state = 0;
+    float                   gaussianSpare = 0.0f;
+    bool                    hasGaussianSpare = false;
 };
 
 BE_INLINE constexpr uint64_t RNG::GetNextUInt() {

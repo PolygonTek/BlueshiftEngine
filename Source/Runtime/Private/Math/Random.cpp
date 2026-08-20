@@ -19,6 +19,35 @@ BE_NAMESPACE_BEGIN
 
 static thread_local RNG rng(time(nullptr));
 
+void RNG::GenerateGaussianPair(float &value0, float &value1) {
+    // Box-Muller requires its radial input to exclude zero to keep log finite.
+    const float u1 = 1.0f - GetNextFloat();
+    const float u2 = GetNextFloat();
+    const float radius = Math::Sqrt(-2.0f * Math::Log(u1));
+
+    float s, c;
+    Math::SinCos(Math::TwoPi * u2, s, c);
+    value0 = radius * c;
+    value1 = radius * s;
+}
+
+float RNG::GetNextGaussian() {
+    if (hasGaussianSpare) {
+        hasGaussianSpare = false;
+        return gaussianSpare;
+    }
+
+    float value;
+    GenerateGaussianPair(value, gaussianSpare);
+    hasGaussianSpare = true;
+    return value;
+}
+
+void RNG::GetNextGaussianPair(float &value0, float &value1) {
+    value0 = GetNextGaussian();
+    value1 = GetNextGaussian();
+}
+
 int RNG::GetRandom(int minValue, int maxValue) {
     return rng.GetNextInt(minValue, maxValue);
 }
@@ -49,6 +78,14 @@ float RNG::GetRandom(float minValue, float maxValue) {
 
 float RNG::GetRandom(float maxValue) {
     return RNG::GetRandom(0.0f, maxValue);
+}
+
+float RNG::GetGaussianRandom() {
+    return rng.GetNextGaussian();
+}
+
+void RNG::GetGaussianPair(float &value0, float &value1) {
+    rng.GetNextGaussianPair(value0, value1);
 }
 
 BE_NAMESPACE_END

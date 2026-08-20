@@ -782,6 +782,77 @@ static void TestSquareRootContract() {
 
 #undef VERIFY_SQUARE_ROOT_CONTRACT
 
+#define VERIFY_RANDOM(expression) VerifyMathTest((expression), __func__, __LINE__)
+
+static void TestRandom() {
+    BE1::RNG rng0(0x123456789abcdef0ull);
+    BE1::RNG rng1(0x123456789abcdef0ull);
+
+    float value00, value01;
+    float value10, value11;
+    rng0.GetNextGaussianPair(value00, value01);
+    rng1.GetNextGaussianPair(value10, value11);
+
+    VERIFY_RANDOM(std::isfinite(value00));
+    VERIFY_RANDOM(std::isfinite(value01));
+    VERIFY_RANDOM(value00 == value10);
+    VERIFY_RANDOM(value01 == value11);
+
+    // A Gaussian pair consumes exactly two values from the underlying generator.
+    BE1::RNG sequenceRng(0x123456789abcdef0ull);
+    sequenceRng.GetNextFloat();
+    sequenceRng.GetNextFloat();
+    VERIFY_RANDOM(rng0.GetNextUInt() == sequenceRng.GetNextUInt());
+
+    // Scalar generation reuses the second result without advancing the generator.
+    BE1::RNG scalarRng(0x123456789abcdef0ull);
+    VERIFY_RANDOM(scalarRng.GetNextGaussian() == value00);
+    VERIFY_RANDOM(scalarRng.GetNextGaussian() == value01);
+    VERIFY_RANDOM(scalarRng.GetNextUInt() == rng1.GetNextUInt());
+
+    // Reseeding invalidates a pending Gaussian value.
+    BE1::RNG reseededRng(0x123456789abcdef0ull);
+    const float firstValue = reseededRng.GetNextGaussian();
+    reseededRng.SetSeed(0x123456789abcdef0ull);
+    VERIFY_RANDOM(reseededRng.GetNextGaussian() == firstValue);
+
+    // Scalar and pair calls preserve the same Gaussian sequence when interleaved.
+    BE1::RNG sequentialRng(0x123456789abcdef0ull);
+    float sequentialValues[4];
+    for (int i = 0; i < 4; i++) {
+        sequentialValues[i] = sequentialRng.GetNextGaussian();
+    }
+
+    BE1::RNG mixedRng(0x123456789abcdef0ull);
+    VERIFY_RANDOM(mixedRng.GetNextGaussian() == sequentialValues[0]);
+    float mixedValue1, mixedValue2;
+    mixedRng.GetNextGaussianPair(mixedValue1, mixedValue2);
+    VERIFY_RANDOM(mixedValue1 == sequentialValues[1]);
+    VERIFY_RANDOM(mixedValue2 == sequentialValues[2]);
+    VERIFY_RANDOM(mixedRng.GetNextGaussian() == sequentialValues[3]);
+
+    VERIFY_RANDOM(std::isfinite(BE1::RNG::GetGaussianRandom()));
+
+    constexpr int pairCount = 65536;
+    double sum = 0.0;
+    double squaredSum = 0.0;
+    BE1::RNG distributionRng(0x8f3f73b5cf1c9adeull);
+    for (int i = 0; i < pairCount; i++) {
+        float value0, value1;
+        distributionRng.GetNextGaussianPair(value0, value1);
+        sum += static_cast<double>(value0) + static_cast<double>(value1);
+        squaredSum += static_cast<double>(value0) * value0 + static_cast<double>(value1) * value1;
+    }
+
+    const double sampleCount = pairCount * 2.0;
+    const double mean = sum / sampleCount;
+    const double variance = squaredSum / sampleCount - mean * mean;
+    VERIFY_RANDOM(std::abs(mean) < 0.02);
+    VERIFY_RANDOM(std::abs(variance - 1.0) < 0.02);
+}
+
+#undef VERIFY_RANDOM
+
 #define VERIFY_FLOAT_TO_INTEGER(expression) VerifyMathTest((expression), __func__, __LINE__)
 
 static void TestFloatToIntegerConversions() {
@@ -1605,6 +1676,7 @@ static void TestRotationConversions() {
 void Test::TestMath() {
     TestSquareRootContract();
     TestIntegerLog2();
+    TestRandom();
     TestFloatToIntegerConversions();
     TestEigenAnalysis();
     TestMatrixConditionAndPseudoInverse();
