@@ -84,20 +84,11 @@ static void SortRoots(double &x1, double &x2, double &x3) {
 
 // a*x^2 + b*x + c = 0 의 서로 다른 실근을 구한다.
 static int SolveRealQuadraticInternal(double a, double b, double c, double tolerance, double roots[2]) {
-    // 계수에 대한 상대 tolerance 가 방정식의 상수배에 영향받지 않도록 정규화한다.
-    const double coefficientScale = AbsMax3(a, b, c);
-    if (coefficientScale == 0.0) {
-        // 해가 없거나 무한히 많으므로 해를 유일하게 정할 수 없다.
-        return 0;
-    }
-
-    a /= coefficientScale;
-    b /= coefficientScale;
-    c /= coefficientScale;
-
-    // a 가 수치적으로 0 이면 선형 방정식으로 처리한다.
-    if (std::abs(a) <= tolerance) {
-        if (std::abs(b) <= tolerance) {
+    // a 가 정확히 0 이면 선형 방정식으로 처리한다.
+    // 작은 a 를 허용오차로 제거하면 멀리 떨어진 유효한 근을 잃을 수 있다.
+    if (a == 0.0) {
+        if (b == 0.0) {
+            // 해가 없거나 무한히 많으므로 해를 유일하게 정할 수 없다.
             return 0;
         }
 
@@ -105,13 +96,11 @@ static int SolveRealQuadraticInternal(double a, double b, double c, double toler
         return 1;
     }
 
-    // 판별식은 계수와 스케일이 다르므로 계산 항의 크기를 기준으로 별도 epsilon 을 사용한다.
     const double bSquared = b * b;
     const double fourAC = 4.0 * a * c;
     const double discriminant = bSquared - fourAC;
-    const double discriminantTolerance = tolerance * (bSquared + std::abs(fourAC));
 
-    if (discriminant > discriminantTolerance) {
+    if (discriminant > 0.0) {
         const double sqrtDiscriminant = Math::Sqrt(discriminant);
         // catastrophic cancellation 이 덜 발생하는 근을 먼저 구하고,
         // 다른 근은 비에타 정리 x1*x2 = c/a 를 이용해서 구한다.
@@ -119,11 +108,19 @@ static int SolveRealQuadraticInternal(double a, double b, double c, double toler
         roots[0] = q / a;
         roots[1] = c / q;
         SortRoots(roots[0], roots[1]);
+
+        // tolerance 는 방정식의 차수를 낮추거나 판별식의 부호를 바꾸지 않고,
+        // 계산된 두 근이 상대적으로 가까울 때 하나의 근으로 병합하는 데만 사용한다.
+        const double rootScale = AbsMax3(1.0, roots[0], roots[1]);
+        if (roots[1] - roots[0] <= tolerance * rootScale) {
+            roots[0] = -0.5 * b / a;
+            return 1;
+        }
         return 2;
     }
 
     // 중근.
-    if (discriminant >= -discriminantTolerance) {
+    if (discriminant == 0.0) {
         roots[0] = -0.5 * b / a;
         return 1;
     }

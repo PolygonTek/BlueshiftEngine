@@ -472,8 +472,8 @@ public:
     static float                SmoothStep(float edge0, float edge1, float x);
 
                                 /// Solves a*x^2 + b*x + c = 0 for its distinct real roots.
-                                /// Roots are sorted in ascending order. Numerically insignificant leading
-                                /// coefficients fall back to the corresponding lower-degree equation.
+                                /// Roots are sorted in ascending order. A zero leading coefficient falls back
+                                /// to the corresponding lower-degree equation. Tolerance merges nearby roots.
                                 /// On failure or when no real root exists, the output parameters are left unchanged.
                                 /// @return The number of distinct real roots, from zero to two.
     static int                  SolveRealQuadratic(float a, float b, float c, float &x1, float &x2, float tolerance = 1e-6f);
